@@ -89,6 +89,15 @@ function setZoom(z, sx, sy) {
   clampCam();
 }
 
+// Шаг масштаба: dir +1 ближе, −1 дальше; без точки — к центру экрана
+function zoomStep(dir, sx, sy) {
+  if (sx === undefined) { sx = R.canvas.clientWidth / 2; sy = R.canvas.clientHeight / 2; }
+  let k = ZOOMS.indexOf(R.cam.z);
+  if (k < 0) k = ZOOMS.indexOf(2);
+  const nk = Math.max(0, Math.min(ZOOMS.length - 1, k + dir));
+  if (nk !== k) setZoom(ZOOMS[nk], sx, sy);
+}
+
 // ---------- Ввод ----------
 
 const Input = { keys: new Set(), pan: null, leftDown: false, roadStart: null, lastEraseTile: null };
@@ -214,11 +223,18 @@ function initInput() {
     }
   });
 
+  document.getElementById('zoom-in').onclick = () => zoomStep(1);
+  document.getElementById('zoom-out').onclick = () => zoomStep(-1);
+
+  // колесо мыши — шаг за щелчок; тачпад шлёт много мелких событий — копим до порога
+  let wheelAcc = 0;
   cv.addEventListener('wheel', e => {
     e.preventDefault();
-    const k = ZOOMS.indexOf(R.cam.z);
-    const nk = Math.max(0, Math.min(ZOOMS.length - 1, (k < 0 ? 1 : k) + (e.deltaY < 0 ? 1 : -1)));
-    setZoom(ZOOMS[nk], e.offsetX, e.offsetY);
+    const d = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY;
+    wheelAcc += d;
+    if (Math.abs(wheelAcc) < 50) return;
+    zoomStep(wheelAcc < 0 ? 1 : -1, e.offsetX, e.offsetY);
+    wheelAcc = 0;
   }, { passive: false });
 
   window.addEventListener('keydown', e => {
@@ -228,6 +244,8 @@ function initInput() {
     if (e.code === 'Space') { e.preventDefault(); setSpeed(Game.paused ? Game.speed : 0); }
     if (e.code === 'KeyR') setTool(Game.tool && Game.tool.kind === 'road' ? null : { kind: 'road' });
     if (e.code === 'KeyT') rotateTool();
+    if (e.code === 'Equal' || e.code === 'NumpadAdd') zoomStep(1);
+    if (e.code === 'Minus' || e.code === 'NumpadSubtract') zoomStep(-1);
     if (e.code === 'Delete') setTool({ kind: 'erase' });
     if (e.code === 'KeyS' && e.ctrlKey) { e.preventDefault(); if (saveGame('manual')) toast('Игра сохранена'); }
     if (e.code === 'F9') { e.preventDefault(); if (loadGame('manual')) { toast('Игра загружена'); updateUI(true); } }

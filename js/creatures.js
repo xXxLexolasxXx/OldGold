@@ -153,5 +153,5 @@ function drawCreatureAt(c, kind, px, py, face, moving, phase, load, n) {
   c.imageSmoothingEnabled = true;
   if (face < 0) { c.save(); c.translate(px, py); c.scale(-1, 1); c.drawImage(spr, -ax, -ay, w, h); c.restore(); }
   else c.drawImage(spr, px - ax, py - ay, w, h);
-  c.imageSmoothingEnabled = false;
+  c.imageSmoothingEnabled = R.smooth;
 }

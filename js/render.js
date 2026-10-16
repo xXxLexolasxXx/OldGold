@@ -8,19 +8,24 @@ const R = {
   hover: null,           // клетка под курсором [x, y]
   hoverPx: null,         // позиция курсора в экранных px
   roadDrag: null,        // клетки, выделенные протяжкой дороги
+  smooth: false,         // сглаживание спрайтов (только при сильном отдалении)
   clouds: [],
 };
 
-const ZOOMS = [1, 2, 3, 4];
+const ZOOMS = [0.5, 1, 2, 3, 4];
 
-// Сколько CSS-пикселей экрана приходится на пиксель мира (целое число физических пикселей).
 // Плотность пикселей холста: на телефонах с экраном ×3 рисуем в ×2 — заметно быстрее.
 function screenDPR() { return Math.min(2, window.devicePixelRatio || 1); }
 
-function camScale() {
-  const dpr = screenDPR();
-  return Math.max(1, Math.round(R.cam.z * dpr)) / dpr;
+// Физических пикселей холста на пиксель мира: целое при приближении (чёткий пиксель-арт),
+// дробное только при сильном отдалении.
+function devScale() {
+  const zz = R.cam.z * screenDPR();
+  return zz >= 1 ? Math.round(zz) : zz;
 }
+
+// Сколько CSS-пикселей экрана приходится на пиксель мира.
+function camScale() { return devScale() / screenDPR(); }
 
 function initRender(canvas) {
   R.canvas = canvas;
@@ -114,7 +119,7 @@ function drawUnit(c, u) {
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, u.anim === 'sleep' ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
   const spr = personSprite(u, view, pose, frame, opt);
-  c.imageSmoothingEnabled = false;   // гномы — пиксель-арт
+  c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
   if (u.anim === 'sleep') {
     // лежит на земле, бормочет «Zzz»
     c.save(); c.translate(px, py - 1); c.rotate(-Math.PI / 2 * (u.face < 0 ? -1 : 1));
@@ -134,7 +139,7 @@ function drawUnit(c, u) {
     c.drawImage(spr, -PFX, py - PFY, PW, PH);
     c.restore();
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
-  c.imageSmoothingEnabled = false;
+  c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
   // дымок из трубки
   if (u.anim === 'smoke') {
@@ -208,7 +213,7 @@ function drawPile(c, p) {
     drawLoad(c, g);
     c.restore();
   }
-  c.imageSmoothingEnabled = false;
+  c.imageSmoothingEnabled = R.smooth;
 }
 
 // ---------- Животные ----------
@@ -280,7 +285,7 @@ function drawBuilding(c, b, ghost) {
   c.imageSmoothingQuality = 'high';
   if (!ghost && b.state !== 'done') {
     drawSite(c, b, spr, ox, oy, fx, fy, fw, fh);
-    c.imageSmoothingEnabled = false;
+    c.imageSmoothingEnabled = R.smooth;
     return;
   }
   c.drawImage(spr.shadow, ox, oy, spr.w, spr.h);
@@ -288,7 +293,7 @@ function drawBuilding(c, b, ghost) {
   const t = Game.time;
   if (b.type === 'mill' && spr.hub) drawSails(c, ox + spr.hub[0], oy + spr.hub[1], b.anim);
   if (spr.pen && b.stock) drawPigs(c, b, spr, ox, oy);
-  c.imageSmoothingEnabled = false;
+  c.imageSmoothingEnabled = R.smooth;
   if (spr.chimneys && (b.working || b.type === 'inn' || b.type === 'farm' || ghost))
     for (const [sx, sy] of spr.chimneys) drawSmoke(c, ox + sx, oy + sy, b.id + sx, b.working ? 1 : 0.5);
   if (spr.glow && (b.working || b.type === 'crystalmine')) {
@@ -413,7 +418,7 @@ function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
         }
       }
     }
-    c.imageSmoothingEnabled = false;
+    c.imageSmoothingEnabled = R.smooth;
     // строительные леса до текущей высоты
     const topY = S.top < 1e9 ? oy + S.top / k : fy + fh - 10;
     const poleTop = Math.min(fy + fh - 10, topY - 5);
@@ -559,10 +564,10 @@ function render() {
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.fillStyle = '#100c08';
   c.fillRect(0, 0, canvas.width, canvas.height);
-  const dpr = screenDPR();
-  const z = Math.max(1, Math.round(cam.z * dpr));
+  const z = devScale();
+  R.smooth = z < 1;          // сильно отдалено — сглаживаем, чтобы пиксель-арт не рябил
   c.setTransform(z, 0, 0, z, -Math.round(cam.x * z), -Math.round(cam.y * z));
-  c.imageSmoothingEnabled = false;
+  c.imageSmoothingEnabled = R.smooth;
   c.drawImage(TERR.canvas, 0, 0);
   c.drawImage(TERR.roads, 0, 0);
 
