@@ -133,12 +133,7 @@ function drawDecor(c, d, H) {
       win(c, u - (d.w || 6) / 2, H - d.z - (d.h || 7), d.w || 6, d.h || 7, o);
       break;
     }
-    case 'sign': {
-      // запоминаем точку крепления на стене; рисуем вывеску потом поверх здания, лицом к зрителю
-      const p = c.getTransform().transformPoint(new DOMPoint(u, H - d.z));
-      (SIGN_QUEUE.list = SIGN_QUEUE.list || []).push({ x: p.x / BS, y: p.y / BS, kind: d.kind, dir: d.face === 'E' ? 1 : (d.dir || 1) });
-      break;
-    }
+    case 'sign': break;   // вывески теперь ставятся на крышу над входом (см. drawBoxPart)
     case 'lantern': lantern(c, u, H - d.z); break;
     case 'shield': shield(c, u, H - d.z, d.col || '#8c2c20'); break;
     case 'hatch': c.fillStyle = '#120a06'; rrect(c, u - d.w / 2, H - d.z - d.h, d.w, d.h, 1.5); c.fill(); c.fillStyle = '#5a3a1e'; c.fillRect(u - d.w / 2 - 1, H - d.z - d.h - 1, d.w + 2, 1.2); break;
@@ -384,14 +379,6 @@ function decorFor(m, p, w, worldFace, gable = false) {
     d.face = worldFace;
     out.push(d);
   }
-  // вывеска ремесла на пруте у главной двери (если в модели своей нет)
-  const mainDoor = !gable && out.find(d => d.t === 'door' && d.main);
-  if (mainDoor && m.sign && !Object.values(src).some(list => list.some(d => d.t === 'sign'))) {
-    const L = worldFace === 'S' ? w.X1 - w.X0 : w.Y1 - w.Y0;
-    const dw = (mainDoor.w || 10) / 2;
-    const dir = mainDoor.u + dw + 28 < L ? 1 : -1;            // в ту сторону, где хватает стены
-    out.push({ t: 'sign', u: mainDoor.u + dir * (dw + 2.5), z: Math.min(p.h - 2, (mainDoor.h || 16) + 3), kind: m.sign, dir, face: worldFace });
-  }
   return out;
 }
 
@@ -424,6 +411,18 @@ function drawBoxPart(c, m, p) {
     drawFace(c, g, 'S', w, z0, H, p, 1.0, decorFor(m, p, w, 'S'));
   }
   drawRoof(c, m, p, w, H, { S: decorFor(m, p, w, 'S', true), E: decorFor(m, p, w, 'E', true) });
+  // кронштейн с вывеской — на скате крыши над главным входом
+  const hasMain = (p.decor && p.decor.S || []).some(d => d.t === 'door' && d.main);
+  if (hasMain && m.sign && !m.signPlaced && p.roof) {
+    m.signPlaced = true;
+    const md = p.decor.S.find(d => d.main);
+    const lx = m.doorX + (md.shift || 0);
+    const ly = p.y0 + Math.min(10, (p.y1 - p.y0) * 0.25);
+    const [X, Y] = toW(m, lx, ly);
+    const z = roofZ(m, p, w, H, X, Y);
+    const [sx, sy] = P(g, X, Y, z);
+    SIGN_QUEUE.list.push({ x: sx, y: sy, kind: m.sign, dir: 1 });
+  }
   // трубы
   for (const ch of (p.chimneys || [])) {
     const [X, Y] = toW(m, ch.x, ch.y);
@@ -1053,7 +1052,7 @@ function buildingSprite(type, rot = 0) {
   MODELS[type](m);
   SIGN_QUEUE.list = [];
   renderModel(c, m);
-  for (const s of SIGN_QUEUE.list) hangingSign(c, s.x, s.y, s.kind, s.dir);
+  for (const s of SIGN_QUEUE.list) roofSign(c, s.x, s.y, s.kind, s.dir);
   SIGN_QUEUE.list = [];
   grain(cv, 0.05, hashStr(type) + d.rot);
   // пиксель-арт ×2 с палитрой и тёмной обводкой — в одном стиле с гномами

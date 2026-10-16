@@ -673,7 +673,7 @@ function lantern(c, x, y) {
 // на двух цепочках — деревянная доска со значком ремесла, без надписей.
 // (x, y) — где прут входит в стену, dir — в какую сторону он торчит.
 function hangingSign(c, x0, y0, kind, dir = 1) {
-  c.save(); c.translate(x0, y0); c.scale(1.9, 1.9);
+  c.save(); c.translate(x0, y0); c.scale(1.55, 1.55);
   drawHangingSign(c, 0, 0, kind, dir);
   c.restore();
 }
@@ -701,6 +701,16 @@ function drawHangingSign(c, x, y, kind, dir) {
 }
 
 function signBoard(c, x, y, kind) { hangingSign(c, x, y, kind, 1); }
+
+// Вывеска на крыше: кованая стойка на скате, сверху прут вбок и доска на цепочках
+function roofSign(c, x, y, kind, dir = 1) {
+  const top = y - 13;
+  c.fillStyle = '#24201e'; c.fillRect(x - 1.6, y - 1.2, 3.2, 1.6);       // опора на кровле
+  line(c, x, y, x, top, '#24201e', 1.3);
+  line(c, x + 0.4, y, x + 0.4, top, '#5c564f', 0.4);
+  ellipse(c, x, top - 0.8, 1, 1, '#24201e');                           // навершие
+  hangingSign(c, x, top + 1.5, kind, dir);
+}
 
 function signIcon(c, cx, cy, kind) {
   if (kind === 'mug') {
