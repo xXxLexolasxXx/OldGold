@@ -3,7 +3,7 @@
 // фактурные материалы, двор с реквизитом. Рисуются с тройной сверхвыборкой.
 
 const BS = 4;          // сверхвыборка зданий (потом сводится в пиксель-арт ×2)
-const BPADX = 26;      // запас по бокам спрайта
+const BPADX = 38;      // запас по бокам спрайта (место для столба с вывеской)
 const BBOTTOM = 14;    // запас снизу (реквизит перед фасадом)
 
 // ================= Материалы стен =================
@@ -702,14 +702,20 @@ function drawHangingSign(c, x, y, kind, dir) {
 
 function signBoard(c, x, y, kind) { hangingSign(c, x, y, kind, 1); }
 
-// Вывеска на крыше: кованая стойка на скате, сверху прут вбок и доска на цепочках
-function roofSign(c, x, y, kind, dir = 1) {
-  const top = y - 13;
-  c.fillStyle = '#24201e'; c.fillRect(x - 1.6, y - 1.2, 3.2, 1.6);       // опора на кровле
-  line(c, x, y, x, top, '#24201e', 1.3);
-  line(c, x + 0.4, y, x + 0.4, top, '#5c564f', 0.4);
-  ellipse(c, x, top - 0.8, 1, 1, '#24201e');                           // навершие
-  hangingSign(c, x, top + 1.5, kind, dir);
+// Отдельный столб у входа: тёсаный брус в камнях, сверху кованый кронштейн,
+// на цепочках — доска со значком. Доска повёрнута к зрителю при любом развороте здания.
+function postSign(c, x, y, kind, dir = 1) {
+  const H = 30, top = y - H;
+  shadowAt(c, x + 1, y, 5);
+  line(c, x + 2, y, x + 2 + H * 0.5, y - H * 0.14, 'rgba(12,10,6,0.25)', 2.2);   // тень столба
+  c.fillStyle = lingrad(c, x - 1.4, 0, x + 1.4, 0, [[0, '#9a6a38'], [0.5, '#7a4e2a'], [1, '#3e2410']]);
+  c.fillRect(x - 1.4, top, 2.8, H);
+  c.fillStyle = 'rgba(30,15,5,0.45)'; for (let k = 4; k < H; k += 6) c.fillRect(x - 1.4, top + k, 2.8, 0.4);   // трещинки
+  c.fillStyle = '#5a3a1e'; c.fillRect(x - 1.9, top - 1, 3.8, 1.4);                 // шапочка
+  // мох и камушки у основания
+  for (const [dx, s] of [[-2.6, 1.3], [2.4, 1.1], [0.3, 0.9]]) { ellipse(c, x + dx, y - 0.2, s * 1.4, s, '#8e877c'); ellipse(c, x + dx - 0.3, y - 0.6, s * 0.6, s * 0.4, '#cec6ba'); }
+  ellipse(c, x - 0.6, y - 2.2, 1.6, 1, '#4a6e30');
+  hangingSign(c, x + dir * 0.6, top + 2.5, kind, dir);
 }
 
 function signIcon(c, cx, cy, kind) {

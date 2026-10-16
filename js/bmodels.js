@@ -411,17 +411,17 @@ function drawBoxPart(c, m, p) {
     drawFace(c, g, 'S', w, z0, H, p, 1.0, decorFor(m, p, w, 'S'));
   }
   drawRoof(c, m, p, w, H, { S: decorFor(m, p, w, 'S', true), E: decorFor(m, p, w, 'E', true) });
-  // кронштейн с вывеской — на скате крыши над главным входом
-  const hasMain = (p.decor && p.decor.S || []).some(d => d.t === 'door' && d.main);
-  if (hasMain && m.sign && !m.signPlaced && p.roof) {
+  // столб с вывеской — отдельно перед фасадом, сбоку от входа
+  const md = (p.decor && p.decor.S || []).find(d => d.t === 'door' && d.main);
+  if (md && m.sign && !m.signPlaced) {
     m.signPlaced = true;
-    const md = p.decor.S.find(d => d.main);
-    const lx = m.doorX + (md.shift || 0);
-    const ly = p.y0 + Math.min(10, (p.y1 - p.y0) * 0.25);
-    const [X, Y] = toW(m, lx, ly);
-    const z = roofZ(m, p, w, H, X, Y);
-    const [sx, sy] = P(g, X, Y, z);
-    SIGN_QUEUE.list.push({ x: sx, y: sy, kind: m.sign, dir: 1 });
+    const dc = m.doorX + (md.shift || 0), half = (md.w || 10) / 2;
+    // в ту сторону, где больше места по фасаду
+    const side = dc + half + 26 < m.LW ? 1 : -1;
+    const lx = dc + side * (half + 11), ly = p.y0 - 5;
+    const [sx, sy] = PL(m, lx, ly, 0);
+    // при повороте входом вбок «дальше от двери» на экране — это вверх-вправо; кронштейн смотрим наружу
+    SIGN_QUEUE.list.push({ x: sx, y: sy, kind: m.sign, dir: m.rot ? 1 : side });
   }
   // трубы
   for (const ch of (p.chimneys || [])) {
@@ -1052,7 +1052,7 @@ function buildingSprite(type, rot = 0) {
   MODELS[type](m);
   SIGN_QUEUE.list = [];
   renderModel(c, m);
-  for (const s of SIGN_QUEUE.list) roofSign(c, s.x, s.y, s.kind, s.dir);
+  for (const s of SIGN_QUEUE.list) postSign(c, s.x, s.y, s.kind, s.dir);
   SIGN_QUEUE.list = [];
   grain(cv, 0.05, hashStr(type) + d.rot);
   // пиксель-арт ×2 с палитрой и тёмной обводкой — в одном стиле с гномами
