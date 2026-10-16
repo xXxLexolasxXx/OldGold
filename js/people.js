@@ -15,28 +15,31 @@ const BEARDS = ['#ece6cc', '#e0d8b8', '#cfc8a8', '#d8d0c0', '#b8a888', '#9a7a52'
 const GREENS = ['#4e8a2a', '#5a9a30', '#46802a', '#62a036', '#3e7426'];   // лесная зелень туник
 
 // Колпак — цвет профессии (приглушён под лес), одежда у всех зелёная.
+// Колпак и куртка — свои у каждой профессии, чтобы гномов было легко различать.
+// Трудяги — в зелёных колпаках разных оттенков (см. SERF_CAPS) и зелёных туниках.
 const OUTFIT = {
-  serf:       { cap: '#a8682e', pants: '#6a4a2a', frame: true },
-  builder:    { cap: '#c09a34', pants: '#5a4028', apron: '#8a6a44', belt: 'hammer', coat: '#6e1c22' },   // бордовая куртка работяги
-  woodcutter: { cap: '#3e7426', pants: '#5a4028', belt: 'axe' },
-  carpenter:  { cap: '#a0602c', pants: '#5a4028', apron: '#c8a878' },
-  stonemason: { cap: '#7e8078', pants: '#4a4238', apron: '#8a6a44' },
-  farmer:     { cap: '#c8b040', pants: '#6a5434', vest: '#7a5432' },
-  miller:     { cap: '#e4e0d0', pants: '#8a7a5a', dusty: true },
-  baker:      { cap: 'baker', pants: '#7a6a50', apron: '#f4f0e6' },
-  miner:      { cap: '#4a4a62', pants: '#3e3630', candle: true },
-  smelter:    { cap: '#a8401e', pants: '#4a3426', apron: '#3a2414' },
-  breeder:    { cap: '#6a8a32', pants: '#5a4028' },
-  butcher:    { cap: '#8c241a', pants: '#4a3a30', apron: '#ece4d0', blood: true },
-  tanner:     { cap: '#7a5030', pants: '#4a3420', apron: '#5a3a1e' },
-  armorer:    { cap: '#4a5464', pants: '#3a3632', vest: '#5a5a62', rivets: true },
+  serf:       { cap: 'serf', pants: '#6a4a2a', frame: true },
+  builder:    { cap: '#e0a822', pants: '#5a4028', apron: '#8a6a44', belt: 'hammer', coat: '#6e1c22' },   // жёлтый колпак, бордовая куртка
+  woodcutter: { cap: '#c83a28', pants: '#4a3a2a', belt: 'axe', coat: '#2e5a7e' },          // красный колпак, синяя куртка
+  carpenter:  { cap: '#e8782c', pants: '#5a4028', apron: '#c8a878', coat: '#4a6a8a' },     // оранжевый / серо-синяя
+  stonemason: { cap: '#9a9aa6', pants: '#4a4238', apron: '#8a6a44', coat: '#8a6e4c' },     // серый / песочная
+  farmer:     { cap: '#f0d040', pants: '#6a5434', vest: '#7a5432', coat: '#6e8e3a' },      // соломенно-жёлтый / оливковая
+  miller:     { cap: '#f4f0e4', pants: '#8a7a5a', dusty: true, coat: '#b4a280' },          // белый / бежевая
+  baker:      { cap: 'baker', pants: '#7a6a50', apron: '#f4f0e6', coat: '#c86a3a' },       // поварской колпак / рыжая
+  miner:      { cap: '#2e4a7a', pants: '#3e3630', candle: true, coat: '#5e5448' },         // тёмно-синий / серо-бурая
+  smelter:    { cap: '#e04a1e', pants: '#4a3426', apron: '#3a2414', coat: '#5a3a2a' },     // огненный / тёмная
+  breeder:    { cap: '#e886a8', pants: '#5a4028', coat: '#7a6a3a' },                       // розовый / охра
+  butcher:    { cap: '#8a1a1a', pants: '#4a3a30', apron: '#ece4d0', blood: true, coat: '#5a5a62' },
+  tanner:     { cap: '#9a6a34', pants: '#4a3420', apron: '#5a3a1e', coat: '#3e6a5a' },     // кожаный / бирюзовая
+  armorer:    { cap: '#3a4a6a', pants: '#3a3632', vest: '#5a5a62', rivets: true, coat: '#7a2a2a' },
   enchanter:  { cap: 'wizard', pants: '#2a3a20', robe: true },
-  hopgrower:  { cap: '#7aa83e', pants: '#5a4028' },
-  brewer:     { cap: '#b8862c', pants: '#4a3420', apron: '#a87848' },
-  herder:     { cap: '#8aa462', pants: '#5a4028', staff: true },
-  stableman:  { cap: '#6e4630', pants: '#4a3420' },
-  carter:     { cap: '#56586e', pants: '#4a3a24' },
+  hopgrower:  { cap: '#8ad040', pants: '#5a4028', coat: '#8a6a2a' },                       // салатовый / горчичная
+  brewer:     { cap: '#c8862a', pants: '#4a3420', apron: '#a87848', coat: '#5a3a6a' },     // янтарный / сливовая
+  herder:     { cap: '#4aa8d0', pants: '#5a4028', staff: true, coat: '#8a7a5a' },          // небесный / льняная
+  stableman:  { cap: '#7a3a9a', pants: '#4a3420', coat: '#6a4a30' },                       // фиолетовый / коричневая
+  carter:     { cap: '#3a3a5a', pants: '#4a3a24', coat: '#6a5a4a' },
 };
+const SERF_CAPS = ['#3e7426', '#4e8a2a', '#5c9a34', '#2e5a22', '#6aa83e', '#46743a'];
 
 const ANIM_TOOL = { chop: 'axe', mine: 'pick', build: 'hammer', reap: 'sickle', dig: 'spade' };
 
@@ -49,7 +52,8 @@ function lookOf(u) {
     braid: (l >> 7) % 4 === 0,
     capTip: ((l >> 9) & 1) ? 1 : -1,                             // в какую сторону свисает кончик
     green: GREENS[(l >> 11) % GREENS.length],
-    deco: (l >> 13) % 4,                                         // 0 веточка, 1 листья, 2 грибок, 3 только мох
+    deco: (l >> 13) % 6,                                         // 0 веточка, 1 листья, 2 грибок, 3–5 без украшений
+    serfCap: SERF_CAPS[(l >> 3) % SERF_CAPS.length],
     capStyle: (l * 7 + (l >> 3)) % 4,                            // 0 завиток, 1 конус, 2 мешок, 3 короткий загнутый
   };
 }
@@ -345,7 +349,7 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r) {
     return;
   }
   const wizard = O.cap === 'wizard';
-  const col = wizard ? '#4c3080' : O.cap;
+  const col = wizard ? '#4c3080' : O.cap === 'serf' ? L.serfCap : O.cap;
   const style = wizard ? 1 : L.capStyle;
   const tall = wizard ? 13 : CAP_TALL[style];
   const s = e ? -1 : L.capTip;               // боком кончик свисает назад
@@ -356,7 +360,9 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r) {
   c.fillStyle = lingrad(c, hx - 4.5, 0, hx + 5, 0, [[0, shade(col, 0.25)], [0.5, col], [1, shade(col, -0.4)]]);
   c.fill();
   c.clip();
-  if (!wizard) mossSpeckle(c, hx - 5, b - tall * 1.1, 13, tall * 1.1, 0.55, r);
+  // у трудяг колпак весь во мху, у остальных мох лишь налётом — цвет профессии читается
+  const mossy = O.cap === 'serf';
+  if (!wizard) mossSpeckle(c, hx - 5, b - tall * 1.1, 13, tall * 1.1, mossy ? 0.55 : 0.14, r);
   // складки
   c.strokeStyle = shade(col, -0.35); c.lineWidth = 0.35;
   c.beginPath(); c.moveTo(hx - 1.4 * s, b); c.quadraticCurveTo(hx - 1 * s, b - tall * 0.5, hx + 0.6 * s, b - tall * 0.8); c.stroke();
@@ -368,7 +374,7 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r) {
   c.fillStyle = lingrad(c, 0, b - 1.4, 0, b + 1.6, [[0, shade(col, 0.15)], [1, shade(col, -0.35)]]);
   c.fill();
   c.clip();
-  if (!wizard) mossSpeckle(c, hx - 5, b - 1.6, 10, 3.4, 1.4, r);
+  if (!wizard) mossSpeckle(c, hx - 5, b - 1.6, 10, 3.4, mossy ? 1.4 : 0.45, r);
   c.restore();
   if (wizard) {
     c.fillStyle = '#f6d458'; c.fillRect(hx - 1, b - 6, 0.7, 0.7); c.fillRect(hx + 1.2, b - 10, 0.6, 0.6); c.fillRect(hx - 0.2, b - 3, 0.5, 0.5);
