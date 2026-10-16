@@ -69,7 +69,7 @@ kbd {
 #panel > * { flex-shrink: 0; }
 
 #logo {
-  text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: bold;
+  text-align: center; font-size: 26px; letter-spacing: 4px; font-weight: bold;
   background: linear-gradient(#fff2a0, #e4b434 55%, #8e5a18);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -324,7 +324,7 @@ button img { width: 18px; height: 18px; }
   background: radial-gradient(ellipse at center, #2a1c10, #0c0805);
 }
 #loading div {
-  font-size: 56px; letter-spacing: 12px; font-weight: bold;
+  font-size: 56px; letter-spacing: 8px; font-weight: bold;
   background: linear-gradient(#fff2a0, #e4b434 55%, #8e5a18);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
