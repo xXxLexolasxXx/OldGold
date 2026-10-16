@@ -301,7 +301,8 @@ function roofPerches(b) {
     spr.perches = pick;
   }
   const ox = b.x * TILE - spr.padx, oy = b.y * TILE - spr.top;
-  return spr.perches.map(([x, y]) => [ox + x, oy + y + 1]);
+  const ground = (b.y + b.h) * TILE + 10;                 // куда упадёт выроненная вещь — перед фасадом
+  return spr.perches.map(([x, y]) => [ox + x, oy + y + 1, ground]);
 }
 
 function pickPerch(owl) {
@@ -316,6 +317,30 @@ function pickPerch(owl) {
     return p;
   }
   return null;
+}
+
+const OWL_ITEM_CHANCE = 0.4;
+let lastOwlToast = -999;
+
+// Вещь выскальзывает из когтей и летит вниз с крыши
+function owlDrop(o) {
+  const g = o.item; o.item = null;
+  (Game.falling = Game.falling || []).push({ x: o.x, y: o.y, vy: -30, vx: (Math.random() - 0.5) * 30, rot: 0, vr: (Math.random() - 0.5) * 9, g, ground: o.ground || o.y + 40 });
+  if (Game.time - lastOwlToast > 45) { lastOwlToast = Game.time; toast(`Сова уронила с крыши: ${GOODS[g].name.toLowerCase()}! Трудяги подберут`); }
+}
+
+function updateFalling(dt) {
+  const list = Game.falling || [];
+  for (let i = list.length - 1; i >= 0; i--) {
+    const f = list[i];
+    f.vy += 320 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt;
+    if (f.y < f.ground) continue;
+    // упала: кучка на земле (или рядом, если там дом), пыль от удара
+    list.splice(i, 1);
+    const tx = Math.floor(f.x / TILE), ty = Math.floor(f.ground / TILE);
+    dropPile(Math.max(0, Math.min(MAP_W - 1, tx)), Math.max(0, Math.min(MAP_H - 1, ty)), f.g, 1);
+    floater(f.x / TILE, f.ground / TILE - 0.3, 'Бух!', '#d8c8a0');
+  }
 }
 
 function forestPoint() {
@@ -343,13 +368,20 @@ function updateOwls(dt) {
       if (o.f >= 1) {
         o.x = bx; o.y = by;
         if (o.goAway) { o.state = 'away'; o.t = 15 + Math.random() * 30; }
-        else { o.state = 'perch'; o.t = 14 + Math.random() * 30; }
+        else {
+          o.state = 'perch'; o.t = 14 + Math.random() * 30; o.ground = o.to[2];
+          if (o.item) floater(o.x / TILE, o.y / TILE - 0.9, `${GOODS[o.item].name}?`, '#fff2a0');
+        }
       }
     } else if (o.t <= 0) {
       // пора лететь: чаще на другую крышу, иногда в лес
       const away = o.state === 'perch' && Math.random() < 0.3;
       const to = away ? forestPoint() : pickPerch(o);
       if (!to) { o.t = 5; continue; }
+      if (o.state === 'away') {
+        // из леса сова нередко несёт находку — что угодно
+        o.item = Math.random() < OWL_ITEM_CHANCE ? GOOD_KEYS[(Math.random() * GOOD_KEYS.length) | 0] : null;
+      } else if (o.item) owlDrop(o);                     // взлетая, роняет вещь
       o.from = [o.x, o.y]; o.to = to; o.f = 0; o.goAway = away; o.state = 'fly';
       o.speed = 70 / Math.max(40, Math.hypot(to[0] - o.x, to[1] - o.y));
     }
@@ -362,41 +394,172 @@ function updateOwls(dt) {
   }
 }
 
+// ---------- Сова: реалистичный спрайт ----------
+// Рисуется со сверхвыборкой и кэшируется по позе: сидит (взгляд влево/прямо/вправо,
+// моргает) или летит (три положения крыльев). Неясыть: бурая с рыжиной, полосатая
+// грудка, светлый лицевой диск с тёмной каймой, оранжевые глаза, пучки-«ушки».
+
+const OWL_SS = 6;
+const OWL_CACHE = new Map();
+const OWL_W = 16, OWL_H = 20, OWL_FX = 8, OWL_FY = 19;       // сидящая: размер и точка лап
+const OWLF_W = 34, OWLF_H = 20, OWLF_FX = 17, OWLF_FY = 11;  // летящая: центр тела
+
+function owlFeathers(c, x, y, w, h, base, n, r) {
+  // мелкая рябь перьев: дужки светлее и темнее основы
+  for (let k = 0; k < n; k++) {
+    const fx = x + r() * w, fy = y + r() * h;
+    c.strokeStyle = r() < 0.5 ? shade(base, 0.25) : shade(base, -0.35);
+    c.lineWidth = 0.18;
+    c.beginPath(); c.arc(fx, fy, 0.5 + r() * 0.5, 0.2, Math.PI - 0.2); c.stroke();
+  }
+}
+
+function drawOwlPerched(c, look, blink, r) {
+  const L = look * 0.9;
+  // хвост
+  c.fillStyle = '#4a2e18'; c.beginPath(); c.moveTo(-2.2, -3); c.lineTo(2.2, -3); c.lineTo(1.4, 0.4); c.lineTo(-1.4, 0.4); c.closePath(); c.fill();
+  // тело-капля
+  c.fillStyle = radgrad(c, -1.2, -8, 0.5, 7.5, [[0, '#b88a58'], [0.6, '#8a5e36'], [1, '#4a2e18']]);
+  c.beginPath(); c.moveTo(0, -13); c.bezierCurveTo(5.4, -13, 5.6, -4, 3.2, -1.4); c.quadraticCurveTo(0, 0.4, -3.2, -1.4); c.bezierCurveTo(-5.6, -4, -5.4, -13, 0, -13); c.fill();
+  // светлая грудка с продольными пестринами и поперечной рябью
+  c.fillStyle = radgrad(c, 0, -7, 0.4, 4, [[0, '#ecd6ac'], [1, '#c8a070']]);
+  c.beginPath(); c.ellipse(0, -6.6, 2.7, 4.6, 0, 0, Math.PI * 2); c.fill();
+  for (let k = 0; k < 14; k++) {
+    const sx = -2 + r() * 4, sy = -10.4 + r() * 7.4;
+    c.strokeStyle = 'rgba(74,46,24,0.85)'; c.lineWidth = 0.32;
+    c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + (r() - 0.5) * 0.3, sy + 0.9 + r() * 0.6); c.stroke();
+    c.strokeStyle = 'rgba(120,80,40,0.5)'; c.lineWidth = 0.15;
+    c.beginPath(); c.moveTo(sx - 0.5, sy + 0.4); c.lineTo(sx + 0.5, sy + 0.4); c.stroke();
+  }
+  // сложенные крылья: тёмные, со светлыми пятнышками кроющих и кромками маховых
+  for (const s of [-1, 1]) {
+    c.fillStyle = lingrad(c, s * 4.6, 0, s * 1.8, 0, [[0, '#3e2412'], [1, '#7a5030']]);
+    c.beginPath(); c.moveTo(s * 2, -11); c.bezierCurveTo(s * 5.2, -10, s * 5.4, -4, s * 3.4, -0.6); c.lineTo(s * 2.2, -1.6); c.bezierCurveTo(s * 2.8, -5, s * 2.6, -8, s * 2, -11); c.fill();
+    for (let k = 0; k < 5; k++) ellipse(c, s * (3.2 + r() * 1.2), -9.6 + k * 1.6, 0.35, 0.28, '#e0c89a');
+    c.strokeStyle = 'rgba(20,10,4,0.6)'; c.lineWidth = 0.18;
+    for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(s * 2.4, -4 + k * 1); c.quadraticCurveTo(s * 3.8, -3 + k, s * 3.6, -1.8 + k * 0.4); c.stroke(); }
+  }
+  owlFeathers(c, -4.5, -12.5, 9, 11, '#8a5e36', 40, r);
+  // голова
+  c.save(); c.translate(L * 0.35, 0); c.rotate(look * 0.06);
+  c.fillStyle = radgrad(c, -1, -16.6, 0.5, 6, [[0, '#a87a4a'], [1, '#5a3a20']]);
+  c.beginPath(); c.ellipse(0, -15.6, 4.9, 4.2, 0, 0, Math.PI * 2); c.fill();
+  // перьевые «ушки»
+  for (const s of [-1, 1]) {
+    c.fillStyle = '#5a3a20';
+    c.beginPath(); c.moveTo(s * 2.4, -18.6); c.quadraticCurveTo(s * 3.6, -21.6, s * 4.2, -22); c.quadraticCurveTo(s * 4, -19.6, s * 3.8, -18); c.closePath(); c.fill();
+    c.strokeStyle = '#2e1a0c'; c.lineWidth = 0.2; c.beginPath(); c.moveTo(s * 2.8, -18.6); c.lineTo(s * 3.9, -21.6); c.stroke();
+  }
+  // лицевой диск: два светлых круга, радиальные пёрышки, тёмная кайма
+  for (const s of [-1, 1]) {
+    const dx = s * 1.75 + L * 0.25;
+    c.fillStyle = '#3e2412'; c.beginPath(); c.ellipse(dx, -15.2, 2.35, 2.55, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = radgrad(c, dx, -15.2, 0.3, 2.3, [[0, '#7a5434'], [0.45, '#c8a478'], [1, '#d8b88a']]);
+    c.beginPath(); c.ellipse(dx, -15.2, 2.1, 2.3, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(90,58,30,0.55)'; c.lineWidth = 0.14;
+    for (let a = 0; a < Math.PI * 2; a += 0.35) { c.beginPath(); c.moveTo(dx + Math.cos(a) * 1.2, -15.2 + Math.sin(a) * 1.3); c.lineTo(dx + Math.cos(a) * 2.1, -15.2 + Math.sin(a) * 2.3); c.stroke(); }
+    // глаз
+    if (blink) {
+      c.fillStyle = '#8a6440'; c.beginPath(); c.ellipse(dx, -15.3, 1.05, 0.95, 0, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = '#2e1a0c'; c.lineWidth = 0.3; c.beginPath(); c.moveTo(dx - 0.9, -15.2); c.quadraticCurveTo(dx, -14.7, dx + 0.9, -15.2); c.stroke();
+    } else {
+      c.fillStyle = '#1a0e06'; c.beginPath(); c.ellipse(dx, -15.3, 1.1, 1.05, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = radgrad(c, dx, -15.3, 0.2, 0.95, [[0, '#ffd060'], [1, '#e07818']]);
+      c.beginPath(); c.ellipse(dx, -15.3, 0.92, 0.88, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#0a0604'; c.beginPath(); c.ellipse(dx + look * 0.15, -15.3, 0.5, 0.52, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.9)'; c.beginPath(); c.ellipse(dx - 0.3, -15.65, 0.18, 0.16, 0, 0, Math.PI * 2); c.fill();
+    }
+  }
+  // светлые «брови» и клюв
+  c.strokeStyle = '#f0dcb4'; c.lineWidth = 0.35;
+  c.beginPath(); c.moveTo(-2.4 + L * 0.25, -17.2); c.quadraticCurveTo(L * 0.25, -16.4, 2.4 + L * 0.25, -17.2); c.stroke();
+  c.fillStyle = '#6a6460'; c.beginPath(); c.moveTo(-0.5 + L * 0.3, -14.6); c.lineTo(0.5 + L * 0.3, -14.6); c.quadraticCurveTo(0.3 + L * 0.3, -13, L * 0.3, -12.8); c.quadraticCurveTo(-0.3 + L * 0.3, -13, -0.5 + L * 0.3, -14.6); c.fill();
+  c.fillStyle = '#c8b860'; c.fillRect(-0.2 + L * 0.3, -14.5, 0.3, 0.6);
+  owlFeathers(c, -4.4, -19.4, 8.8, 3.6, '#7a5030', 14, r);
+  c.restore();
+  // лапы с когтями держат конёк
+  for (const s of [-1, 1]) {
+    c.fillStyle = '#e8d090'; c.beginPath(); c.ellipse(s * 1.3, -0.4, 0.9, 0.6, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#2a1a10'; c.lineWidth = 0.25;
+    for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(s * 1.3 + k * 0.5, -0.1); c.quadraticCurveTo(s * 1.3 + k * 0.7, 0.5, s * 1.3 + k * 0.6, 0.9); c.stroke(); }
+  }
+}
+
+function drawOwlFlying(c, frame, r) {
+  // крылья: 0 — вверху, 1 — горизонтально, 2 — внизу
+  const lift = [-5.5, -0.5, 3.6][frame];
+  for (const s of [-1, 1]) {
+    c.fillStyle = lingrad(c, 0, -3, 0, 4, [[0, '#9a6c40'], [1, '#5a3a20']]);
+    c.beginPath();
+    c.moveTo(s * 2, -1.6);
+    c.bezierCurveTo(s * 7, -3 + lift * 0.6, s * 12, -2 + lift, s * 16, lift + 0.6);
+    // «пальцы» маховых перьев на концах
+    for (let k = 0; k < 4; k++) c.lineTo(s * (15.4 - k * 1.3), lift + 2.2 + k * 0.5);
+    c.bezierCurveTo(s * 9, 2.2 + lift * 0.4, s * 5, 2.6, s * 2, 2);
+    c.closePath(); c.fill();
+    // поперечные полосы на маховых и светлые пятна на кроющих
+    c.strokeStyle = 'rgba(40,22,10,0.6)'; c.lineWidth = 0.35;
+    for (let k = 1; k < 5; k++) {
+      const t = k / 5;
+      c.beginPath(); c.moveTo(s * (2 + 13 * t), -1.2 + lift * t); c.lineTo(s * (2.6 + 12.4 * t), 1.6 + lift * t * 0.8); c.stroke();
+    }
+    for (let k = 0; k < 6; k++) ellipse(c, s * (3 + r() * 6), -0.6 + lift * 0.2 + r() * 1.4, 0.4, 0.3, '#e0c89a');
+  }
+  // тело и голова
+  c.fillStyle = radgrad(c, 0, -1, 0.5, 4, [[0, '#c89a68'], [1, '#6e4a2c']]);
+  c.beginPath(); c.ellipse(0, 0.4, 2.6, 4, 0, 0, Math.PI * 2); c.fill();
+  for (let k = 0; k < 6; k++) { c.strokeStyle = 'rgba(74,46,24,0.8)'; c.lineWidth = 0.28; const y = -1.6 + k * 0.9; c.beginPath(); c.moveTo(-1.2, y); c.lineTo(1.2, y); c.stroke(); }
+  c.fillStyle = '#8a6440'; c.beginPath(); c.ellipse(0, -3.4, 2.6, 2.2, 0, 0, Math.PI * 2); c.fill();
+  for (const s of [-1, 1]) {
+    c.fillStyle = '#d0ae80'; c.beginPath(); c.ellipse(s * 1.1, -3.3, 1.15, 1.25, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#e07818'; c.beginPath(); c.ellipse(s * 1.1, -3.3, 0.55, 0.55, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#0a0604'; c.fillRect(s * 1.1 - 0.2, -3.5, 0.4, 0.4);
+  }
+  c.fillStyle = '#6a6460'; c.beginPath(); c.moveTo(-0.3, -2.6); c.lineTo(0.3, -2.6); c.lineTo(0, -1.6); c.fill();
+  // поджатые лапы
+  c.fillStyle = '#e8d090'; c.fillRect(-1.2, 4, 0.8, 0.9); c.fillRect(0.4, 4, 0.8, 0.9);
+}
+
+function owlSprite(kind, look, blink, frame) {
+  const key = kind === 'fly' ? 'f' + frame : `p${look}${blink ? 1 : 0}`;
+  let cv = OWL_CACHE.get(key);
+  if (cv) return cv;
+  const fly = kind === 'fly';
+  const W = fly ? OWLF_W : OWL_W, H = fly ? OWLF_H : OWL_H;
+  const [c2, c] = mkSprite(W, H, OWL_SS);
+  c.translate(fly ? OWLF_FX : OWL_FX, fly ? OWLF_FY : OWL_FY);
+  const r = mulberry32(fly ? 41 : 17);
+  if (fly) drawOwlFlying(c, frame, r); else drawOwlPerched(c, look, blink, r);
+  OWL_CACHE.set(key, c2);
+  return c2;
+}
+
 function drawOwls(c) {
+  const prev = c.imageSmoothingEnabled;
+  c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
   for (const o of Game.owls || []) {
     if (o.state === 'away') continue;
-    const x = Math.round(o.x), y = Math.round(o.y);
+    const x = o.x, y = o.y;
     if (o.state === 'fly') {
-      // в полёте: крылья машут, тень скользит по земле
-      const w = Math.sin(o.ph * 14) * 4;
-      c.fillStyle = 'rgba(10,8,4,0.2)'; c.beginPath(); c.ellipse(x, o.to[1] + (o.from[1] - o.to[1]) * (1 - o.f) + 30, 4, 1.4, 0, 0, 7); c.fill();
-      c.fillStyle = '#6e4a2c';
-      c.beginPath(); c.moveTo(x - 1, y); c.quadraticCurveTo(x - 6, y - 4 - w, x - 11, y - 1 - w); c.lineTo(x - 2, y + 2); c.fill();
-      c.beginPath(); c.moveTo(x + 1, y); c.quadraticCurveTo(x + 6, y - 4 - w, x + 11, y - 1 - w); c.lineTo(x + 2, y + 2); c.fill();
-      ellipse(c, x, y, 3, 4, '#7a5a3a'); ellipse(c, x, y + 0.6, 1.8, 2.6, '#c8a878');
-      ellipse(c, x + (o.face || 1) * 0.8, y - 3.6, 2.8, 2.4, '#7a5a3a');
-      c.fillStyle = '#f0c040'; c.fillRect(x - 2 + (o.face || 1), y - 4.4, 1.4, 1.4); c.fillRect(x + 0.6 + (o.face || 1), y - 4.4, 1.4, 1.4);
+      // тень скользит по земле под совой
+      const gy = o.to[1] + (o.from[1] - o.to[1]) * (1 - o.f) + 34;
+      c.fillStyle = 'rgba(10,8,4,0.18)'; c.beginPath(); c.ellipse(x, gy, 8, 2, 0, 0, 7); c.fill();
+      const fr = [0, 1, 2, 1][Math.floor(o.ph * 10) & 3];
+      const spr = owlSprite('fly', 0, 0, fr);
+      c.save(); c.translate(x, y); if (o.face < 0) c.scale(-1, 1);
+      if (o.item) { c.save(); c.translate(0, 6); c.scale(0.4, 0.4); drawLoad(c, o.item); c.restore(); }
+      c.drawImage(spr, -OWLF_FX, -OWLF_FY, OWLF_W, OWLF_H);
+      c.restore();
       continue;
     }
-    // сидит на крыше
-    const hx = x + o.look * 0.8;
-    c.fillStyle = '#1a1210'; c.beginPath(); c.ellipse(x, y - 4.5, 4.2, 5.4, 0, 0, 7); c.fill();          // тёмный контур
-    ellipse(c, x, y - 4.5, 3.6, 4.8, '#7a5a3a');
-    ellipse(c, x, y - 3.6, 2.4, 3.2, '#d8b888');
-    c.fillStyle = '#7a5a3a'; for (let k = 0; k < 4; k++) c.fillRect(x - 1.6 + (k % 2) * 2, y - 5 + k * 1.2, 0.8, 0.6);   // крапинки на грудке
-    ellipse(c, x - 3.2, y - 4.2, 1.2, 3, '#5a3a22'); ellipse(c, x + 3.2, y - 4.2, 1.2, 3, '#5a3a22');                  // крылья
-    // голова с ушками-пучками
-    c.fillStyle = '#1a1210'; c.beginPath(); c.ellipse(hx, y - 10.4, 4, 3.4, 0, 0, 7); c.fill();
-    ellipse(c, hx, y - 10.4, 3.4, 2.9, '#8a6440');
-    poly(c, [[hx - 3.2, y - 12], [hx - 3.4, y - 15], [hx - 1.6, y - 12.8]], '#6e4a2c', '#1a1210', 0.4);
-    poly(c, [[hx + 3.2, y - 12], [hx + 3.4, y - 15], [hx + 1.6, y - 12.8]], '#6e4a2c', '#1a1210', 0.4);
-    ellipse(c, hx - 1.4, y - 10.4, 1.4, 1.3, '#e8d8b0'); ellipse(c, hx + 1.4, y - 10.4, 1.4, 1.3, '#e8d8b0');           // лицевой диск
-    if (o.blink > 0) { c.fillStyle = '#3a2414'; c.fillRect(hx - 2.4, y - 10.6, 2, 0.6); c.fillRect(hx + 0.4, y - 10.6, 2, 0.6); }
-    else {
-      ellipse(c, hx - 1.4, y - 10.4, 0.95, 0.95, '#f6c030'); ellipse(c, hx + 1.4, y - 10.4, 0.95, 0.95, '#f6c030');
-      c.fillStyle = '#120a06'; c.fillRect(hx - 1.6 + o.look * 0.3, y - 10.7, 0.6, 0.7); c.fillRect(hx + 1.2 + o.look * 0.3, y - 10.7, 0.6, 0.7);
-    }
-    poly(c, [[hx - 0.5, y - 9.6], [hx + 0.5, y - 9.6], [hx, y - 8.6]], '#d8a040');
-    c.fillStyle = '#e0a030'; c.fillRect(x - 1.6, y - 0.4, 1, 0.8); c.fillRect(x + 0.6, y - 0.4, 1, 0.8);              // лапки
+    // сидит на крыше; принесённую вещь держит в лапах
+    if (o.item) { c.save(); c.translate(x + 0.5, y + 0.6); c.scale(0.38, 0.38); drawLoad(c, o.item); c.restore(); }
+    const spr = owlSprite('perch', o.look, o.blink > 0, 0);
+    c.drawImage(spr, x - OWL_FX, y - OWL_FY, OWL_W, OWL_H);
   }
+  // вещи, которые сова выронила, — падают на землю
+  for (const f of Game.falling || []) {
+    c.save(); c.translate(f.x, f.y); c.rotate(f.rot); c.scale(0.45, 0.45); drawLoad(c, f.g); c.restore();
+  }
+  c.imageSmoothingEnabled = prev;
 }

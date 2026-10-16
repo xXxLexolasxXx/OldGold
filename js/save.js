@@ -11,7 +11,7 @@ function resetGameState() {
   Game.smokers.clear();
   Game.piles.clear();
   Game.animals = [];
-  Game.critters = []; Game.floaters = []; Game.owls = [];
+  Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
   World.occ.fill(0);
   World.roadDirty = true;
   Game.roadSites.clear();
