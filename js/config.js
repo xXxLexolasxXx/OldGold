@@ -39,7 +39,7 @@ const GOOD_GROUPS = ['Стройка', 'Еда', 'Ценности', 'Ремес
 const FOODS = ['sausage', 'bread'];   // что едят в трактире (по порядку предпочтения)
 
 const UNIT_TYPES = {
-  serf:       { name: 'Курьер',    shirt: '#8a5a3a' },
+  serf:       { name: 'Трудяга',   shirt: '#8a5a3a' },
   builder:    { name: 'Строитель', shirt: '#b0884a' },
   woodcutter: { name: 'Лесоруб',   shirt: '#4a6e33' },
   carpenter:  { name: 'Плотник',   shirt: '#a8662e' },
@@ -72,7 +72,7 @@ const ALL_UNIT_KEYS = Object.keys(UNIT_TYPES);
 const BUILDINGS = {
   storehouse: {
     name: 'Склад', cat: 'Основа', w: 4, h: 3, top: 70, cost: { timber: 6, stone: 6 }, wideDoor: true,
-    desc: 'Большой каменный амбар. Хранит все товары, курьеры свозят сюда излишки.',
+    desc: 'Большой каменный амбар. Хранит все товары, трудяги свозят сюда излишки.',
   },
   school: {
     name: 'Школа', cat: 'Основа', w: 3, h: 3, top: 96, cost: { timber: 5, stone: 5 }, inputs: { gold: 5 },

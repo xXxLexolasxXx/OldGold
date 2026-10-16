@@ -326,7 +326,7 @@ function statusChip(b) {
     ? '<span class="chip ok">Работает</span>' : '<span class="chip ok">Готово</span>';
   if (p === 'noroad') return '<span class="chip bad">Нет дороги к складу</span>';
   if (p === 'paused') return '<span class="chip off">На паузе</span>';
-  if (p === 'noworker') return '<span class="chip bad">Нет рабочего</span>';
+  if (p === 'noworker') return '<span class="chip bad">Нет работяги</span>';
   if (p === 'full') return '<span class="chip wait">Всё заполнено</span>';
   return `<span class="chip bad">Нет: ${GOODS[p.slice(5)].name}</span>`;
 }
@@ -479,9 +479,9 @@ function infoPreview(type) {
 
 function infoTips() {
   return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'scroll', 2)}" alt=""><div><h3>Окно здания</h3><span class="chip off">ничего не выбрано</span></div></div>
-    <div class="tip">Кликните по зданию на карте — здесь появятся его запасы, рабочий и производство.<br><br>
+    <div class="tip">Кликните по зданию на карте — здесь появятся его запасы, работяга и производство.<br><br>
     Наведите на кнопку здания слева — увидите, что оно производит и сколько стоит.<br><br>
-    <b>Значки над домами</b> подсказывают, чего не хватает: рабочего, сырья или места.</div>`;
+    <b>Значки над домами</b> подсказывают, чего не хватает: работяги, сырья или места.</div>`;
 }
 
 // ---------- Обновление ----------
