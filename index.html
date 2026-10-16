@@ -14,7 +14,7 @@
   <aside id="panel">
     <button id="sheet-close" class="m-only">▾ Свернуть</button>
     <div id="logo">OldGold</div>
-    <div class="mm-wrap"><canvas id="minimap" width="288" height="216"></canvas></div>
+    <div class="mm-wrap"><canvas id="minimap" width="288" height="216"></canvas><button id="mm-fold" title="Свернуть / развернуть миникарту">▴</button></div>
     <nav id="tabs">
       <button data-tab="build" class="tab-btn active" title="Строительство"><img data-icon="build" alt=""></button>
       <button data-tab="store" class="tab-btn" title="Склад"><img data-icon="store" alt=""></button>
@@ -54,7 +54,15 @@
         </div>
       </section>
     </div>
-    <section id="info"></section>
+    <div id="split" title="Потяните, чтобы поменять размеры"></div>
+    <section id="info-wrap">
+      <div id="info-bar">
+        <span>Окно здания</span>
+        <button id="info-pop" title="Открепить окно — его можно двигать и растягивать">⧉</button>
+      </div>
+      <div id="info"></div>
+    </section>
+    <div id="panel-resize" title="Потяните, чтобы изменить ширину колонки"></div>
   </aside>
   <main id="view">
     <canvas id="game"></canvas>
@@ -121,6 +129,7 @@
 <script src="js/music.js"></script>
 <script src="js/mobile.js"></script>
 <script src="js/stats.js"></script>
+<script src="js/layout.js"></script>
 <script src="js/main.js"></script>
 <script data-goatcounter="https://lexolas.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>

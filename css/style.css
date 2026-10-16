@@ -209,16 +209,62 @@ button img { width: 18px; height: 18px; }
 
 /* ---------- Нижнее окно здания ---------- */
 
-#info {
+#info-wrap {
   flex: 0 0 auto;
   height: clamp(220px, 40vh, 360px);
-  overflow-y: auto;
-  padding: 8px 9px;
+  display: flex; flex-direction: column;
   background: linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45)), var(--wood-tex), #241a12;
   border: 2px solid #0a0705;
   box-shadow: inset 0 0 0 1px var(--line-hi), inset 0 0 0 3px #0a0705, inset 0 0 18px rgba(0,0,0,0.6), 0 -2px 8px rgba(0,0,0,0.5);
+  min-height: 0;
+}
+#info-bar {
+  flex: none; display: flex; align-items: center; gap: 6px;
+  padding: 3px 4px 2px 9px; font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-dim); border-bottom: 1px solid rgba(90,65,40,0.6);
+}
+#info-bar span { flex: 1; }
+#info-bar button { padding: 0 6px; font-size: 13px; line-height: 18px; }
+#info {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto;
+  padding: 6px 9px 8px;
   scrollbar-width: thin; scrollbar-color: #6a4e30 #120c08;
 }
+
+/* разделитель между вкладками и окном здания */
+#split {
+  flex: none; height: 7px; margin: -3px 0; cursor: ns-resize; position: relative; z-index: 1;
+}
+#split::after {
+  content: ''; position: absolute; left: 40%; right: 40%; top: 2px; height: 3px;
+  background: #6a4e30; box-shadow: 0 1px 0 #0a0705;
+}
+#split:hover::after, #split.drag::after { background: var(--gold); }
+
+/* ширина колонки — за правый край */
+#panel-resize {
+  position: absolute; top: 0; bottom: 0; right: -6px; width: 9px; cursor: ew-resize; z-index: 3;
+}
+#panel-resize:hover, #panel-resize.drag { background: rgba(228,180,52,0.25); }
+
+/* миникарта сворачивается */
+.mm-wrap { position: relative; }
+#mm-fold { position: absolute; top: 6px; right: 6px; padding: 0 5px; font-size: 11px; line-height: 16px; opacity: 0.75; }
+#mm-fold:hover { opacity: 1; }
+body.mm-folded #minimap { display: none; }
+body.mm-folded .mm-wrap { min-height: 26px; }
+
+/* открепленное окно здания — поверх карты, тянется за шапку, растягивается за угол */
+body.info-float #info-wrap {
+  position: fixed; z-index: 6;
+  resize: both; overflow: hidden;
+  min-width: 260px; min-height: 160px;
+  box-shadow: inset 0 0 0 1px var(--line-hi), inset 0 0 0 3px #0a0705, 0 8px 30px rgba(0,0,0,0.8);
+}
+body.info-float #info-bar { cursor: move; background: rgba(0,0,0,0.35); }
+body.info-float #split { display: none; }
+body.info-float #tab-area { flex: 1 1 auto; }
 .ihead { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: center; margin-bottom: 6px; }
 .ihead .bpic {
   width: 64px; height: 56px; object-fit: contain; image-rendering: auto;
@@ -358,11 +404,12 @@ body.mobile #panel {
 }
 body.mobile #sheet-close { order: 0; display: none; padding: 2px; font-size: 13px; }
 body.mobile #tab-area { order: 1; display: none; height: 48vh; flex: none; }
-body.mobile #info { order: 2; display: none; height: auto; max-height: 50vh; }
+body.mobile #info-wrap { order: 2; display: none; height: auto !important; max-height: 50vh; overflow-y: auto; }
+body.mobile #info-bar, body.mobile #split, body.mobile #panel-resize, body.mobile #mm-fold { display: none; }
 body.mobile #tabs { order: 3; }
 body.mobile .tab-btn { height: 46px; }
 body.mobile.sheet-tab #tab-area,
-body.mobile.sheet-info #info,
+body.mobile.sheet-info #info-wrap,
 body.mobile.sheet-tab #sheet-close,
 body.mobile.sheet-info #sheet-close { display: block; }
 
@@ -411,7 +458,7 @@ body.mobile #mtool:not(.hidden) {
 @media (orientation: landscape) {
   body.mobile #panel { right: auto; width: min(400px, 52vw); }
   body.mobile #tab-area { height: calc(100dvh - 120px); }
-  body.mobile #info { max-height: calc(100dvh - 120px); }
+  body.mobile #info-wrap { max-height: calc(100dvh - 120px); }
   body.mobile #mtool:not(.hidden) { left: auto; right: 8px; transform: none; bottom: 8px; }
   body.mobile #topbar { left: auto; width: calc(100% - min(400px, 52vw) - 14px); }
   body.mobile.show-mm .mm-wrap { left: auto; right: 8px; width: min(36vw, 240px); }

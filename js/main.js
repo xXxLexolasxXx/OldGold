@@ -330,6 +330,7 @@ function startGame() {
   initUI();
   initInput();
   initMobile();
+  initLayout();
   resize();
   statsStart();
   initMusic();
