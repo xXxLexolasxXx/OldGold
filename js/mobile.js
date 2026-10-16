@@ -70,6 +70,12 @@ function initMobile() {
     else toast('Сначала коснитесь места на карте');
   };
   initTouch();
+  // первый запуск на телефоне — сразу показать, как управлять
+  if (Mobile.on) {
+    let seen = false;
+    try { seen = localStorage.getItem('oldgold-mhelp') === '1'; localStorage.setItem('oldgold-mhelp', '1'); } catch (e) {}
+    if (!seen) document.getElementById('help').classList.remove('hidden');
+  }
 }
 
 // ---------- Касания ----------

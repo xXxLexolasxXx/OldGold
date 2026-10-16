@@ -14,8 +14,11 @@ const R = {
 const ZOOMS = [1, 2, 3, 4];
 
 // Сколько CSS-пикселей экрана приходится на пиксель мира (целое число физических пикселей).
+// Плотность пикселей холста: на телефонах с экраном ×3 рисуем в ×2 — заметно быстрее.
+function screenDPR() { return Math.min(2, window.devicePixelRatio || 1); }
+
 function camScale() {
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = screenDPR();
   return Math.max(1, Math.round(R.cam.z * dpr)) / dpr;
 }
 
@@ -556,7 +559,7 @@ function render() {
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.fillStyle = '#100c08';
   c.fillRect(0, 0, canvas.width, canvas.height);
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = screenDPR();
   const z = Math.max(1, Math.round(cam.z * dpr));
   c.setTransform(z, 0, 0, z, -Math.round(cam.x * z), -Math.round(cam.y * z));
   c.imageSmoothingEnabled = false;

@@ -46,7 +46,7 @@ function step(dt) {
 // ---------- Камера ----------
 
 function resize() {
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = screenDPR();
   R.canvas.width = Math.round(R.canvas.clientWidth * dpr);
   R.canvas.height = Math.round(R.canvas.clientHeight * dpr);
   clampCam();

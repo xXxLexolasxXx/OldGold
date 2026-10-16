@@ -338,6 +338,11 @@ button img { width: 18px; height: 18px; }
 button { touch-action: manipulation; }
 #game, #minimap { touch-action: none; }
 
+.m-li { display: none; }
+body.mobile .m-li { display: list-item; }
+body.mobile #help { max-height: 86%; overflow-y: auto; padding: 12px 14px; font-size: 13px; }
+body.mobile #help-close { padding: 8px 18px; }
+
 body.mobile #app { display: block; position: relative; height: 100%; height: 100dvh; }
 body.mobile #view { position: absolute; inset: 0; }
 body.mobile .m-only { display: inline-flex; }
@@ -408,5 +413,6 @@ body.mobile #mtool:not(.hidden) {
   body.mobile #tab-area { height: calc(100dvh - 120px); }
   body.mobile #info { max-height: calc(100dvh - 120px); }
   body.mobile #mtool:not(.hidden) { left: auto; right: 8px; transform: none; bottom: 8px; }
-  body.mobile #topbar { left: auto; width: min(60vw, 520px); }
+  body.mobile #topbar { left: auto; width: calc(100% - min(400px, 52vw) - 14px); }
+  body.mobile.show-mm .mm-wrap { left: auto; right: 8px; width: min(36vw, 240px); }
 }
