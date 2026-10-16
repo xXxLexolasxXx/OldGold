@@ -220,20 +220,20 @@ function stumpArt() {
   // ---- детали
   G.stamp(STAMP.branch, -1, 19, P);                     // срезанный сучок слева
   G.stamp(STAMP.sprout, 31, -1, P);                     // вьющийся росток на верхушке
-  G.stamp(STAMP.shelf, 23, 25, P);                      // трутовики «этажеркой»
-  G.stamp(STAMP.shelf, 20, 29, P);
-  G.stamp(STAMP.shelfSmall, 26, 33, P);
-  G.stamp(STAMP.window, 36, 24, P);                     // голубое окошко справа
-  G.stamp(STAMP.door, 11, 36, P);                       // арочная дверь левее центра
+  G.stamp(STAMP.shelf, 21, 25, P);                      // трутовики «этажеркой»
+  G.stamp(STAMP.shelf, 24, 29, P);
+  G.stamp(STAMP.shelfSmall, 20, 33, P);
+  G.stamp(STAMP.window, 12, 27, P);                     // голубое окошко слева
+  G.stamp(STAMP.door, 34, 36, P);                       // арочная дверь правее центра — над клеткой входа
   G.stamp(STAMP.mushroom, 3, 52, P);                    // мухоморы и камушки на холме
   G.stamp(STAMP.mushroomSmall, 10, 57, P);
   G.stamp(STAMP.mushroomSmall, 47, 54, P);
   G.stamp(STAMP.stone, 52, 57, P);
   G.stamp(STAMP.stone, 33, 60, P);
   // отсвет голубого окошка на коре
-  for (const [x, y] of [[35, 26], [35, 27], [43, 27], [43, 28]]) G.set(x, y, '#7a7088');
+  for (const [x, y] of [[11, 29], [11, 30], [19, 30], [19, 31]]) G.set(x, y, '#9a7a70');
   // контур: тёмный снизу-справа, светлая кромка сверху-слева — объём «рукой»
-  selOutline(G, P.K, null);
+  selOutline(G, P.K, '#5a2a1c');
   // ---- в картинку
   const cv = mkCanvas(STUMP_W, STUMP_H), c = cv.getContext('2d');
   for (let y = 0; y < STUMP_H; y++) for (let x = 0; x < STUMP_W; x++) { const col = G.g[y][x]; if (col) { c.fillStyle = col; c.fillRect(x, y, 1, 1); } }

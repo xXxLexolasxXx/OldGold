@@ -741,11 +741,12 @@ const MODELS = {
     // дом лесоруба — в огромном старом пне, как на референсе
     // ручной пиксель-арт накладывается поверх уже готового спрайта (см. buildingSprite)
     m.custom(c => {
-      const [x, y] = PL(m, 40, 30, 0);
+      // ровно по центру участка (а не по косой проекции, как у прямоугольных домов)
+      const x = Math.round(m.g.fx + m.g.fw / 2), y = Math.round(m.g.fy + m.g.fh - 6);
       shadowAt(c, x + 6, y + 4, 30, 9);
       m.g.spr.handArt = { art: stumpArt, x, y, ax: STUMP_AX, ay: STUMP_AY };
-      if (m.sign) SIGN_QUEUE.list.push({ x: x + 33, y: y + 4, kind: m.sign, dir: 1 });
-      (m.g.spr.chimneys = m.g.spr.chimneys || []).push([x + 1, y - 46]);
+      if (m.sign) SIGN_QUEUE.list.push({ x: x - 34, y: y + 4, kind: m.sign, dir: -1 });   // вывеска слева, дверь справа
+      (m.g.spr.chimneys = m.g.spr.chimneys || []).push([x - 3, y - 46]);
     }, 40, 12);
     m.prop((c, x, y) => choppingBlock(c, x, y), 4, 4);
     m.prop((c, x, y) => logPile(c, x, y, 2, 9), 60, 2);
