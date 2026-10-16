@@ -128,6 +128,7 @@ function gesture(u, kind, time, tx) {
   u.gest = kind; u.gestUntil = Game.time + time;
   u.gestFace = tx > u.x ? 1 : -1;
   u.nextSocial = Game.time + 12 + Math.random() * 18;
+  if (kind === 'wave') sfxUnit(u, 'hey'); else if (kind === 'fist') sfxUnit(u, 'grr');
 }
 
 function socialTick(u) {
@@ -207,6 +208,7 @@ function checkCollisions() {
         const part = Math.random() < 0.5 ? 'leg' : 'arm';
         injure(victim, part);
         victim.ouchUntil = Game.time + 2.5;                    // искры из глаз
+        sfxUnit(victim, 'ouch');
         if (isPerson(carrier)) gesture(carrier, 'scratch', 2, victim.x);   // растерянно чешет затылок
         if (Game.time - lastBumpToast > 8) {
           lastBumpToast = Game.time;

@@ -35,10 +35,12 @@ const GOODS = {
   mageArmor:  { name: 'Мантии мага',     color: '#5040a0', group: 'Снаряжение' },
   trash:      { name: 'Мусор',           color: '#7a6a50', group: 'Хозяйство', noStore: true },
   ash:        { name: 'Пепел',           color: '#9e958a', group: 'Хозяйство' },
+  chicken:    { name: 'Курица (тушка)',  color: '#f0c8a0', group: 'Еда' },
+  chickenleg: { name: 'Куски курицы',    color: '#c8803a', group: 'Еда', noStore: true },
 };
 const GOOD_KEYS = Object.keys(GOODS);
 const GOOD_GROUPS = ['Стройка', 'Еда', 'Ценности', 'Ремесло', 'Магия', 'Снаряжение', 'Хозяйство'];
-const FOODS = ['sausage', 'bread'];   // что едят в трактире (по порядку предпочтения)
+const FOODS = ['chickenleg', 'sausage', 'bread'];   // что едят в трактире (по порядку предпочтения)
 
 const UNIT_TYPES = {
   serf:       { name: 'Трудяга',   shirt: '#8a5a3a' },
@@ -81,8 +83,8 @@ const BUILDINGS = {
     desc: 'Двухэтажная школа с колокольней. Обучает жителей за 1 золото.',
   },
   inn: {
-    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, inputs: { bread: 10, sausage: 10, beer: 10 },
-    desc: 'Голодные жители едят здесь колбасу или хлеб и запивают пивом. Пьяный может уснуть прямо на дороге.',
+    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, inputs: { bread: 10, sausage: 10, beer: 10, chicken: 4 },
+    desc: 'Голодные жители едят здесь курицу, колбасу или хлеб и запивают пивом. Тушку курицы разделывают на 4 куска. Пьяный может уснуть прямо на дороге.',
   },
   bonfire: {
     name: 'Большой костёр', cat: 'Основа', w: 3, h: 3, top: 40, noRotate: true, cost: { timber: 4, stone: 2 }, auto: true,

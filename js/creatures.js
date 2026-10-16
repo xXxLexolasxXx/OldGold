@@ -18,8 +18,27 @@ function drawChicken(c, f) {
 }
 
 // Гусь: длинная шея, оранжевый клюв; в атаке шея вытянута вперёд, крылья растопырены
-function drawGoose(c, f, attack) {
+function drawGoose(c, f, attack, swim) {
   const step = f === null ? 0 : Math.sin(f / 4 * Math.PI * 2);
+  if (swim) {
+    // плывёт: лап не видно, тело сидит в воде, вокруг расходятся круги
+    c.save(); c.translate(0, 5.5);
+    c.fillStyle = '#ece8e0'; c.beginPath(); c.moveTo(-8.4, 9); c.lineTo(-5, 11.6); c.lineTo(-8, 12.4); c.closePath(); c.fill();
+    ellipse(c, 0, 12, 7, 4.2, '#f2eee6'); ellipse(c, -1, 12, 5, 2, '#d6d0c4');
+    c.strokeStyle = '#f2eee6'; c.lineWidth = 2.4; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(5, 10); c.quadraticCurveTo(7.4, 6, 6.6, 2.6); c.stroke(); c.lineCap = 'butt';
+    ellipse(c, 7, 2.2, 1.8, 1.5, '#f2eee6');
+    poly(c, [[8.4, 1.8], [11, 2.6], [8.4, 3.2]], '#f08a20');
+    c.fillStyle = '#1a1210'; c.fillRect(7.3, 1.6, 0.6, 0.6);
+    // вода по «ватерлинии» и круги
+    c.fillStyle = 'rgba(44,92,134,0.85)'; c.fillRect(-10, 13.4, 20, 4);
+    c.strokeStyle = 'rgba(214,238,246,0.75)'; c.lineWidth = 0.6;
+    c.beginPath(); c.ellipse(0, 13.6, 8.6 + step, 1.6, 0, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = 'rgba(214,238,246,0.35)';
+    c.beginPath(); c.ellipse(-2, 14, 11.5 + step * 1.4, 2.2, 0, 0, Math.PI * 2); c.stroke();
+    c.restore();
+    return;
+  }
   line(c, -1.4, 15, -1.4 + step * 1.6, 20.4, '#e08a20', 0.9); line(c, 1.4, 15, 1.4 - step * 1.6, 20.4, '#e08a20', 0.9);
   ellipse(c, -1.4 + step * 1.6, 20.6, 1.4, 0.5, '#e08a20'); ellipse(c, 1.4 - step * 1.6, 20.6, 1.4, 0.5, '#e08a20');
   c.fillStyle = '#ece8e0'; c.beginPath(); c.moveTo(-8.4, 9); c.lineTo(-5, 11.6); c.lineTo(-8, 12.4); c.closePath(); c.fill();
@@ -81,7 +100,7 @@ function drawGoatBody(c, f, col, pack, load) {
 
 function drawCreature(c, kind, f, load) {
   if (kind === 'chicken') { drawChicken(c, f); return; }
-  if (kind === 'goose') { drawGoose(c, f, load === 'attack'); return; }
+  if (kind === 'goose') { drawGoose(c, f, load === 'attack', load === 'swim'); return; }
   if (kind === 'goat') { drawGoatBody(c, f, '#d8d0c0', false); return; }
   if (kind === 'packgoat') { drawGoatBody(c, f, '#e4ddd0', true, load); return; }
   if (kind === 'deer') {

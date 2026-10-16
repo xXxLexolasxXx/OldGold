@@ -122,6 +122,7 @@ function step(dt) {
   streetTick(dt);
   updateOwls(dt);
   updateFalling(dt);
+  sfxTick(dt);
   Game.bumpT = (Game.bumpT || 0) + dt;
   if (Game.bumpT >= 0.25) { checkCollisions(); Game.bumpT = 0; }
   Game.dispatchT += dt;
@@ -438,6 +439,7 @@ function startGame() {
   resize();
   statsStart();
   initMusic();
+  initSfx();
   updateMinimapBase();
   updateUI(true);
   requestAnimationFrame(frame);

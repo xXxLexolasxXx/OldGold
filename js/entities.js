@@ -457,6 +457,8 @@ function findInn(u) {
 }
 
 function innFood(b) {
+  // трактирщик разделывает тушку курицы на 4 куска, когда кончились готовые
+  if (b.stock.chickenleg - b.reserved.chickenleg <= 0 && b.stock.chicken > 0) { b.stock.chicken--; b.stock.chickenleg += 4; }
   return FOODS.find(g => b.stock[g] - b.reserved[g] > 0) || null;
 }
 
@@ -634,6 +636,7 @@ class Unit {
       if (a.t === undefined) {
         a.t = a.wait * (this.food <= 0 && !this.noFood ? 1.6 : 1) * (this.injury === 'arm' && a.anim ? 1.5 : 1);
         this.anim = a.anim || null;
+        if (a.anim) sfxUnit(this, a.anim);      // стук молотка, удар топора, затяжка…
       }
       a.t -= dt;
       if (a.t <= 0) { this.anim = null; return true; }

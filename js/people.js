@@ -90,6 +90,18 @@ function drawLoad(c, g) {
       line(c, -2.2, 0.6, 2.2, 0.6, '#8a5a2a', 0.8);
       break;
     }
+    case 'chicken': {
+      // ощипанная тушка
+      ellipse(c, 0, 0.6, 4.6, 3.2, '#f0c8a0');
+      ellipse(c, -0.6, -0.2, 3, 2, '#f6d8b8');
+      line(c, 3.6, 1.4, 6, 3.4, '#e8bc94', 1.4); line(c, -3.6, 1.4, -6, 3.4, '#e8bc94', 1.4);
+      ellipse(c, 6.2, 3.6, 0.9, 0.9, '#f6f2ea'); ellipse(c, -6.2, 3.6, 0.9, 0.9, '#f6f2ea');
+      c.strokeStyle = ol; c.lineWidth = 0.4; c.beginPath(); c.ellipse(0, 0.6, 4.6, 3.2, 0, 0, Math.PI * 2); c.stroke();
+      break;
+    }
+    case 'chickenleg':
+      ellipse(c, -1, 0, 3.4, 2.6, '#c8803a'); line(c, 1.6, 1, 4.6, 3, '#f6f2ea', 1.2); ellipse(c, 4.8, 3.2, 0.9, 0.9, '#ffffff');
+      break;
     case 'trash': {
       // мешок с мусором, торчат объедки и щепки
       c.fillStyle = lingrad(c, -4, 0, 4, 0, [[0, '#8a7a5a'], [1, '#5a4a32']]);

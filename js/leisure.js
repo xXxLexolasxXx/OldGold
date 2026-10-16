@@ -16,6 +16,7 @@ let lastGooseToast = -99, lastGoldToast = -99;
 
 function floater(x, y, text, col = '#fff6d0', icon = null) {
   (Game.floaters = Game.floaters || []).push({ x, y, text, col, icon, t0: Game.time });
+  if (text) sfxFloater(text, x, y);
 }
 
 function drawFloaters(c) {
@@ -92,15 +93,27 @@ function spawnFarmyard() {
 }
 
 // Стайка гусей на берегу, не у самой деревни
+// Стайка гусей плавает на озере у берега. Гусь умеет и плавать, и ходить:
+// движется напрямик, огибать нужно только скалы и дома.
+const isWaterAt = (x, y) => inb(x, y) && World.terrain[idx(x, y)] === T_WATER;
+const gooseCanBe = (x, y) => inb(x, y) && World.terrain[idx(x, y)] !== T_ROCK && !World.bmap[idx(x, y)];
+
 function spawnGeeseFlock() {
   const cx = MAP_W >> 1, cy = MAP_H >> 1;
-  for (let k = 0; k < 300; k++) {
+  for (let k = 0; k < 400; k++) {
     const x = (Math.random() * MAP_W) | 0, y = (Math.random() * MAP_H) | 0;
     const d = Math.hypot(x - cx, y - cy);
-    if (d < 10 || d > 26 || World.terrain[idx(x, y)] !== T_SAND || !isWalkable(x, y)) continue;
+    if (d < 10 || d > 28 || !isWaterAt(x, y)) continue;
+    // вода рядом с берегом и достаточно места вокруг для плавания
+    let shore = false, water = 0;
+    for (let yy = y - 2; yy <= y + 2; yy++) for (let xx = x - 2; xx <= x + 2; xx++) {
+      if (isWaterAt(xx, yy)) water++;
+      else if (inb(xx, yy) && World.terrain[idx(xx, yy)] === T_SAND) shore = true;
+    }
+    if (!shore || water < 12) continue;
     const n = 3 + ((Math.random() * 2) | 0);
     for (let j = 0; j < n; j++) {
-      const s = randomFreeNear(x, y, 0, 2, (xx, yy) => isWalkable(xx, yy)) || [x, y];
+      const s = randomFreeNear(x, y, 0, 2, isWaterAt) || [x, y];
       const a = makeAnimal('goose', s[0], s[1]); a.home = [x, y]; Game.animals.push(a);
     }
     return true;
@@ -108,27 +121,43 @@ function spawnGeeseFlock() {
   return false;
 }
 
+// Шаг гуся напрямик к точке; false — упёрся в скалу или дом
+function gooseMove(a, tx, ty, speed, dt) {
+  const dx = tx - a.x, dy = ty - a.y, d = Math.hypot(dx, dy);
+  if (d < 0.05) { a.moving = false; return true; }
+  const s = Math.min(d, speed * dt), nx = a.x + dx / d * s, ny = a.y + dy / d * s;
+  if (!gooseCanBe(Math.floor(nx), Math.floor(ny))) { a.moving = false; return false; }
+  a.x = nx; a.y = ny; a.moving = true;
+  a.phase += s * (isWaterAt(Math.floor(a.x), Math.floor(a.y)) ? 2.5 : 5);
+  if (Math.abs(dx) > 0.01) a.face = dx > 0 ? 1 : -1;
+  return s >= d;
+}
+
 function updateGoose(a, dt, def) {
+  a.swim = isWaterAt(Math.floor(a.x), Math.floor(a.y));
+  const home = [a.home[0] + 0.5, a.home[1] + 0.5];
   if (a.state === 'chase') {
     const t = Game.unitMap.get(a.target);
-    const far = Math.hypot(a.x - a.home[0], a.y - a.home[1]) > 15;
+    const far = Math.hypot(a.x - home[0], a.y - home[1]) > 15;
     if (!t || t.inside || Game.time > a.chaseUntil || far) {
       a.state = 'back'; a.calmUntil = Game.time + 8 + Math.random() * 8;
-      animalGo(a, a.home[0], a.home[1]);
       return;
     }
-    if (a.think <= 0) { a.think = 0.35; animalGo(a, Math.floor(t.x), Math.floor(t.y)); }
-    animalStep(a, dt, def.speed);
+    // по воде плывёт медленнее, по суше бежит
+    if (!gooseMove(a, t.x, t.y, def.speed * (a.swim ? 0.7 : 1), dt)) { a.state = 'back'; return; }
     if (Math.hypot(t.x - a.x, t.y - a.y) < 0.75 && Game.time >= (a.biteCD || 0)) {
       gooseBite(a, t);
       a.biteCD = Game.time + 2.2;
       a.bites = (a.bites || 0) + 1;
-      if (a.bites >= 3) { a.state = 'back'; a.calmUntil = Game.time + 14; animalGo(a, a.home[0], a.home[1]); }
+      if (a.bites >= 3) { a.state = 'back'; a.calmUntil = Game.time + 14; }
     }
     if (Math.random() < dt * 0.9) floater(a.x, a.y - 1, 'Га-га!', '#ffffff');
     return;
   }
-  if (a.state === 'back') { if (animalStep(a, dt, def.speed * 0.7)) a.state = 'wander'; return; }
+  if (a.state === 'back') {
+    if (gooseMove(a, home[0], home[1], def.speed * 0.6, dt) || !a.moving) { a.state = 'wander'; a.tgt = null; }
+    return;
+  }
   if (a.think <= 0) {
     a.think = 0.5;
     if (Game.time >= (a.calmUntil || 0)) {
@@ -144,12 +173,14 @@ function updateGoose(a, dt, def) {
       }
     }
   }
-  if (a.path) { animalStep(a, dt, def.speed * 0.4); return; }
+  // плавает по озеру неподалёку от своего берега
+  if (a.tgt) { if (gooseMove(a, a.tgt[0], a.tgt[1], def.speed * 0.25, dt) || !a.moving) a.tgt = null; return; }
+  a.moving = false;
   a.wait -= dt;
   if (a.wait <= 0) {
-    a.wait = 2 + Math.random() * 5;
-    const t = randomFreeNear(a.home[0], a.home[1], 0, 3, (x, y) => isWalkable(x, y) && !World.road[idx(x, y)]);
-    if (t) animalGo(a, t[0], t[1]);
+    a.wait = 1.5 + Math.random() * 4;
+    const t = randomFreeNear(a.home[0], a.home[1], 0, 3.5, isWaterAt);
+    if (t) a.tgt = [t[0] + 0.2 + Math.random() * 0.6, t[1] + 0.2 + Math.random() * 0.6];
   }
 }
 
@@ -267,16 +298,36 @@ function* butterflyGen(u) {
   yield { wait: 1.2 };
 }
 
+const CHICKEN_CATCH = 0.22;     // шанс схватить курицу, если догнал вплотную
+
 function* chickenGen(u, hen) {
   for (let k = 0; k < 5 && !hen.dead; k++) {
     u.gest = 'wave'; u.gestUntil = Game.time + 3;
     yield { walk: [Math.floor(hen.x), Math.floor(hen.y)], offroad: true };
     if (Math.random() < 0.3) floater(hen.x, hen.y - 0.8, 'Ко-ко!', '#ffffff');
+    if (!hen.dead && Math.hypot(hen.x - u.x, hen.y - u.y) < 1.3 && Math.random() < CHICKEN_CATCH) {
+      // поймал! тушку — на склад, оттуда трудяги отнесут в трактир
+      removeAnimal(hen);
+      floater(u.x, u.y - 1.2, 'Поймал!', '#fff2a0');
+      sfxUnit(u, 'cluck');
+      if (Game.time - lastHenToast > 40) { lastHenToast = Game.time; toast(`${UNIT_TYPES[u.type].name} поймал курицу — тушку отнесут в трактир`); }
+      u.idleFlag = false;
+      u.carry = 'chicken'; u.carryN = 1;
+      const st = nearestStore(u.x, u.y, 'chicken');
+      const ok = st && (yield { walk: [st.doorX, st.doorY], offroad: true });
+      if (u.carry) {
+        if (ok && !st.removed) st.stock.chicken += 1;
+        else dropPile(Math.floor(u.x), Math.floor(u.y), 'chicken', 1);
+        u.carry = null; u.carryN = 0;
+      }
+      return;
+    }
   }
-  // поймать курицу не выйдет — она всегда шустрее
+  // упорхнула — чешет затылок
   u.gest = 'scratch'; u.gestUntil = Game.time + 1.6;
   yield { wait: 1.4 };
 }
+let lastHenToast = -999;
 
 // ---------- Совы ----------
 // Садятся на коньки крыш и трубы, моргают, вертят головой, ухают,

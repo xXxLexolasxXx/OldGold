@@ -662,7 +662,7 @@ function render() {
   }
   for (const a of Game.animals) {
     if (a.x < x0 - 1 || a.x > x1 + 1 || a.y < y0 - 1 || a.y > y1 + 2) continue;
-    const load = a.kind === 'goose' ? (a.state === 'chase' ? 'attack' : null) : a.loot;
+    const load = a.kind === 'goose' ? (a.state === 'chase' ? 'attack' : a.swim ? 'swim' : null) : a.loot;
     list.push([a.y + 0.2, () => drawCreatureAt(c, a.kind, Math.round(a.x * TILE), Math.round(a.y * TILE + 4), a.face, a.moving, a.phase, load)]);
   }
   for (const b of Game.critters || []) list.push([b.y + 0.1, () => drawButterfly(c, b)]);

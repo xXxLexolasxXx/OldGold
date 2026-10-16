@@ -68,7 +68,7 @@ function* eatGen(u, inn) {
   if (!inn.removed) {
     inn.reserved[food]--;
     inn.stock[food]--;
-    u.food = 1;
+    u.food = food === 'chickenleg' ? 1.25 : 1;     // курица сытнее всего
     // к еде — кружка пива, если есть
     if (inn.stock.beer - inn.reserved.beer > 0 && Math.random() < 0.85) {
       yield { wait: 3 };
