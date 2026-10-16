@@ -61,7 +61,7 @@ class Building {
     this.def = BUILDINGS[type];
     this.x = x; this.y = y;
     const d = bDims(type, rot);
-    this.rot = d.rot;              // 0 — вход на юг, 1 — вход на восток
+    this.rot = d.rot;              // 0 — вход на юг, 1 — на восток, 2 — на запад
     this.w = d.w; this.h = d.h;
     this.doorX = x + d.dx;
     this.doorY = y + d.dy;
@@ -356,7 +356,8 @@ function placeBuilding(type, x, y, done = false, rot = 0) {
     if (rs2) removeRoadSite(rs2);
     setRoad(b.door2[0], b.door2[1], true);
     // перед обеими створками — по клетке дороги, чтобы заходили с двух клеток сразу
-    const front = b.rot ? [[b.doorX + 1, b.doorY], [b.door2[0] + 1, b.door2[1]]] : [[b.doorX, b.doorY + 1], [b.door2[0], b.door2[1] + 1]];
+    const fx1 = b.rot === 2 ? -1 : 1;
+    const front = b.rot ? [[b.doorX + fx1, b.doorY], [b.door2[0] + fx1, b.door2[1]]] : [[b.doorX, b.doorY + 1], [b.door2[0], b.door2[1] + 1]];
     for (const [fx, fy] of front) {
       if (!canPlaceRoad(fx, fy)) continue;
       if (done) { World.obj[idx(fx, fy)] = null; setRoad(fx, fy, true); }
@@ -560,7 +561,7 @@ class Unit {
       if (this.inside && !a.ducked) {
         const b = this.inside;
         a.ducked = true; a.dk = 0.3; this.inside = null; this.anim = 'duck';
-        this.vdir = b.rot ? 'E' : 'S'; this.face = 1;
+        this.vdir = b.rot ? 'E' : 'S'; this.face = b.rot === 2 ? -1 : 1;
       }
       if (a.dk > 0) { a.dk -= dt; if (a.dk > 0) return undefined; this.anim = null; }
       if (!a.path) {
@@ -642,7 +643,7 @@ class Unit {
       // вход: короткое пригибание лицом к двери
       if (a.dt === undefined) {
         a.dt = 0.35; this.anim = 'duck';
-        if (a.enter.rot) { this.vdir = 'E'; this.face = -1; } else this.vdir = 'N';
+        if (a.enter.rot) { this.vdir = 'E'; this.face = a.enter.rot === 2 ? 1 : -1; } else this.vdir = 'N';
       }
       a.dt -= dt;
       if (a.dt > 0) return undefined;

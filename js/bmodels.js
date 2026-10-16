@@ -1021,17 +1021,37 @@ function bDims(type, rot) {
   if (def.noRotate) rot = 0;
   const w = rot ? def.h : def.w, h = rot ? def.w : def.h;
   const doorLX = rot ? (def.w - 1 - Math.floor(def.w / 2) + 0.5) * TILE : (Math.floor(def.w / 2) + 0.5) * TILE;
-  const dx = rot ? w : Math.floor(def.w / 2);
+  const dx = rot === 2 ? -1 : rot ? w : Math.floor(def.w / 2);   // rot 2 — вход на запад
   const dy = rot ? Math.floor(def.w / 2) : h;
   return { w, h, rot, doorLX, dx, dy };
 }
 
 function hashStr(s) { let h = 7; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 2654435761); return h >>> 0; }
 
+// Вход на запад: зеркало восточного варианта (в нашей проекции видны только
+// южная и восточная стены, поэтому западный фасад показываем отражением).
+function mirrorSprite(s, FW) {
+  const flip = src => {
+    const cv = mkCanvas(src.width, src.height), c = cv.getContext('2d');
+    c.translate(src.width, 0); c.scale(-1, 1); c.drawImage(src, 0, 0);
+    return cv;
+  };
+  const W = s.w, pt = p => p && [W - p[0], p[1]];
+  const m = { ...s, canvas: flip(s.canvas), shadow: flip(s.shadow), padx: W - s.padx - FW };
+  if (s.chimneys) m.chimneys = s.chimneys.map(pt);
+  for (const k of ['hub', 'glow', 'fire', 'circle', 'cauldron']) if (s[k]) m[k] = pt(s[k]);
+  if (s.pen) m.pen = [W - s.pen[2], s.pen[1], W - s.pen[0], s.pen[3]];
+  return m;
+}
+
 function buildingSprite(type, rot = 0) {
   const d = bDims(type, rot);
   const key = type + ':' + d.rot;
   if (SPR.buildings[key]) return SPR.buildings[key];
+  if (d.rot === 2) {
+    SPR.buildings[key] = mirrorSprite(buildingSprite(type, 1), d.w * TILE);
+    return SPR.buildings[key];
+  }
   srand = mulberry32(hashStr(type));
   const def = BUILDINGS[type];
   const FW = d.w * TILE, FD = d.h * TILE, top = def.top || 60;
