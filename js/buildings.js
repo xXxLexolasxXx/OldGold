@@ -669,13 +669,40 @@ function lantern(c, x, y) {
   c.fillStyle = '#ffd070'; c.fillRect(x + 2.4, y - 2, 1.6, 2.4);
 }
 
-function signBoard(c, x, y, kind) {
-  line(c, x - 1, y, x + 11, y, '#2e1a0c', 1);
-  line(c, x + 1.5, y, x + 1.5, y + 2.4, '#2e1a0c', 0.4); line(c, x + 9, y, x + 9, y + 2.4, '#2e1a0c', 0.4);
-  c.fillStyle = lingrad(c, 0, y + 2.4, 0, y + 11, [[0, '#b0844c'], [1, '#6a4422']]);
-  rrect(c, x, y + 2.4, 10.5, 8.2, 1); c.fill();
-  c.strokeStyle = '#3a2412'; c.lineWidth = 0.5; c.stroke();
-  const cx = x + 5.25, cy = y + 6.5;
+// Средневековая вывеска: кованый прут из стены с подкосом и завитком,
+// на двух цепочках — деревянная доска со значком ремесла, без надписей.
+// (x, y) — где прут входит в стену, dir — в какую сторону он торчит.
+function hangingSign(c, x0, y0, kind, dir = 1) {
+  c.save(); c.translate(x0, y0); c.scale(1.3, 1.3);
+  drawHangingSign(c, 0, 0, kind, dir);
+  c.restore();
+}
+
+function drawHangingSign(c, x, y, kind, dir) {
+  const iron = '#24201e';
+  c.fillStyle = iron; c.fillRect(x - 0.9, y - 2.2, 1.8, 5.2);                 // накладка на стене
+  c.fillStyle = '#5c564f'; c.fillRect(x - 0.9, y - 2.2, 0.5, 5.2);
+  line(c, x, y, x + dir * 13, y, iron, 0.9);                                  // прут
+  line(c, x, y + 3.6, x + dir * 7.5, y + 0.2, iron, 0.6);                     // подкос
+  c.strokeStyle = iron; c.lineWidth = 0.6;                                    // завиток на конце
+  c.beginPath(); c.arc(x + dir * 13, y - 1, 1, Math.PI / 2, dir > 0 ? Math.PI * 2 : Math.PI, dir < 0); c.stroke();
+  const bx = x + dir * 7.6, top = y + 2;
+  for (const k of [-3.6, 3.6]) line(c, bx + k, y + 0.3, bx + k * 0.95, top + 0.3, '#3a3632', 0.4);   // цепочки
+  // доска с фигурным верхом
+  c.beginPath();
+  c.moveTo(bx - 5, top + 1.2); c.quadraticCurveTo(bx, top - 1.2, bx + 5, top + 1.2);
+  c.lineTo(bx + 5, top + 8.6); c.quadraticCurveTo(bx, top + 9.6, bx - 5, top + 8.6); c.closePath();
+  c.fillStyle = lingrad(c, 0, top, 0, top + 9.5, [[0, '#b88a50'], [1, '#6a4422']]);
+  c.fill();
+  c.strokeStyle = '#2e1a0c'; c.lineWidth = 0.6; c.stroke();
+  c.fillStyle = 'rgba(255,230,180,0.25)'; c.fillRect(bx - 4.2, top + 1.4, 8.4, 0.4);
+  c.fillStyle = '#2a2624'; c.fillRect(bx - 3.7, top + 1, 0.6, 0.6); c.fillRect(bx + 3.1, top + 1, 0.6, 0.6);
+  signIcon(c, bx, top + 5.1, kind);
+}
+
+function signBoard(c, x, y, kind) { hangingSign(c, x, y, kind, 1); }
+
+function signIcon(c, cx, cy, kind) {
   if (kind === 'mug') {
     c.fillStyle = '#d8a840'; c.fillRect(cx - 2, cy - 2.2, 4, 4.8);
     c.fillStyle = '#fffbe8'; c.fillRect(cx - 2.3, cy - 3, 4.6, 1.4);
@@ -695,8 +722,79 @@ function signBoard(c, x, y, kind) {
     poly(c, [[cx - 3.4, cy - 1.4], [cx + 3.4, cy - 1.4], [cx + 1.4, cy + 0.4], [cx + 1.4, cy + 2.4], [cx - 1.4, cy + 2.4], [cx - 1.4, cy + 0.4]], '#3a3a40');
   } else if (kind === 'hide') {
     poly(c, [[cx - 2.4, cy - 3], [cx + 2.4, cy - 3], [cx + 3, cy], [cx + 2, cy + 3], [cx - 2, cy + 3], [cx - 3, cy]], '#c08850');
+  } else if (kind === 'crate') {
+    c.fillStyle = '#c89a5a'; c.fillRect(cx - 3, cy - 2.6, 6, 5.4);
+    c.strokeStyle = '#5a3a1e'; c.lineWidth = 0.6; c.strokeRect(cx - 3, cy - 2.6, 6, 5.4);
+    line(c, cx - 3, cy - 2.6, cx + 3, cy + 2.8, '#5a3a1e', 0.6); line(c, cx + 3, cy - 2.6, cx - 3, cy + 2.8, '#5a3a1e', 0.6);
+  } else if (kind === 'goat') {
+    for (const s of [-1, 1]) {
+      c.strokeStyle = '#d8c8a0'; c.lineWidth = 0.8;
+      c.beginPath(); c.moveTo(cx + s * 0.8, cy - 1.6); c.quadraticCurveTo(cx + s * 3.4, cy - 4.4, cx + s * 3.6, cy - 1.2); c.stroke();
+      ellipse(c, cx + s * 2.4, cy - 0.4, 1, 0.5, '#f0ece0');
+    }
+    ellipse(c, cx, cy + 0.4, 1.7, 2.4, '#f0ece0');
+    c.fillStyle = '#1e1b19'; c.fillRect(cx - 1, cy - 0.2, 0.5, 0.5); c.fillRect(cx + 0.5, cy - 0.2, 0.5, 0.5);
+    poly(c, [[cx - 0.6, cy + 2.6], [cx + 0.6, cy + 2.6], [cx, cy + 4]], '#cec6ba');
+  } else if (kind === 'horseshoe') {
+    c.strokeStyle = '#9e958a'; c.lineWidth = 1.4;
+    c.beginPath(); c.arc(cx, cy - 0.4, 2.6, Math.PI * 0.95, Math.PI * 2.05, true); c.stroke();
+    c.fillStyle = '#2c2825'; for (const a of [0.3, 0.75, 1.25, 1.7]) c.fillRect(cx + Math.cos(a * Math.PI / 2 + 0.2) * 2.6 - 0.25, cy - 0.4 + Math.sin(a * Math.PI / 2 + 0.2) * 2.6 - 0.25, 0.5, 0.5);
+  } else if (kind === 'axe') {
+    line(c, cx - 2.6, cy + 3, cx + 1.8, cy - 2.6, '#6e4428', 0.9);
+    poly(c, [[cx + 0.6, cy - 3.4], [cx + 3.4, cy - 1.6], [cx + 2.6, cy + 0.6], [cx + 1, cy - 1.2]], '#cec6ba', '#3a3632', 0.3);
+  } else if (kind === 'saw') {
+    c.fillStyle = '#b6ada0'; c.fillRect(cx - 3.4, cy - 1.2, 6, 2);
+    c.fillStyle = '#4a4540'; for (let k = 0; k < 6; k++) poly(c, [[cx - 3.4 + k, cy + 0.8], [cx - 2.4 + k, cy + 0.8], [cx - 2.9 + k, cy + 1.7]], '#706960');
+    c.fillStyle = '#7a4a24'; rrect(c, cx + 2.4, cy - 1.8, 1.6, 3.2, 0.5); c.fill();
+  } else if (kind === 'pick') {
+    line(c, cx, cy - 1.6, cx, cy + 3.4, '#6e4428', 0.9);
+    c.strokeStyle = '#9e958a'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(cx - 3.4, cy - 0.4); c.quadraticCurveTo(cx, cy - 3.4, cx + 3.4, cy - 0.4); c.stroke();
+  } else if (kind === 'nugget') {
+    line(c, cx - 2.6, cy + 3, cx + 1.4, cy - 1.6, '#6e4428', 0.7);
+    ellipse(c, cx + 1, cy + 1.6, 1.8, 1.3, '#e4b434'); ellipse(c, cx - 1.2, cy + 2.2, 1.2, 0.9, '#c89226'); ellipse(c, cx + 0.5, cy + 1.1, 0.6, 0.4, '#fff2a0');
+  } else if (kind === 'ingot') {
+    poly(c, [[cx - 3.2, cy + 1.8], [cx + 3.2, cy + 1.8], [cx + 2.2, cy - 1], [cx - 2.2, cy - 1]], '#e4b434', '#7e5214', 0.4);
+    c.fillStyle = '#fff2a0'; c.fillRect(cx - 1.8, cy - 0.6, 3.2, 0.5);
+  } else if (kind === 'wheat') {
+    for (const s of [-1.4, 0, 1.4]) {
+      line(c, cx + s * 0.4, cy + 3.4, cx + s, cy - 1, '#a4701c', 0.4);
+      for (let k = 0; k < 3; k++) ellipse(c, cx + s, cy - 1.2 - k * 0.9, 0.55, 0.6, '#e4b434');
+    }
+    c.fillStyle = '#7e5214'; c.fillRect(cx - 1.4, cy + 1.4, 2.8, 0.6);
+  } else if (kind === 'hops') {
+    line(c, cx, cy - 3.6, cx, cy - 2.4, '#3a5a2a', 0.5);
+    for (let k = 0; k < 4; k++) for (let j = -1; j <= 1; j += 2) if (k < 3 || j < 0) ellipse(c, cx + j * (1.3 - k * 0.3) * (k === 3 ? 0 : 1), cy - 1.6 + k * 1.3, 1.2 - k * 0.15, 0.8, k % 2 ? '#8eab4c' : '#aac462');
+  } else if (kind === 'barrel') {
+    c.fillStyle = lingrad(c, cx - 2.6, 0, cx + 2.6, 0, [[0, '#a06840'], [0.5, '#cc9a64'], [1, '#6e432a']]);
+    c.beginPath(); c.moveTo(cx - 2, cy - 3); c.quadraticCurveTo(cx - 3.2, cy, cx - 2, cy + 3); c.lineTo(cx + 2, cy + 3); c.quadraticCurveTo(cx + 3.2, cy, cx + 2, cy - 3); c.closePath(); c.fill();
+    c.fillStyle = '#3a3632'; c.fillRect(cx - 2.6, cy - 1.6, 5.2, 0.6); c.fillRect(cx - 2.6, cy + 1.1, 5.2, 0.6);
+  } else if (kind === 'flour') {
+    c.fillStyle = '#efe6d0';
+    c.beginPath(); c.moveTo(cx - 2.6, cy + 3); c.quadraticCurveTo(cx - 3.2, cy - 1, cx - 1, cy - 2.4); c.lineTo(cx + 1, cy - 2.4); c.quadraticCurveTo(cx + 3.2, cy - 1, cx + 2.6, cy + 3); c.closePath(); c.fill();
+    c.fillStyle = '#8a6a44'; c.fillRect(cx - 1.2, cy - 2.6, 2.4, 0.7);
+    ellipse(c, cx, cy - 3.2, 1, 0.6, '#efe6d0');
+  } else if (kind === 'pig') {
+    ellipse(c, cx - 0.3, cy + 0.4, 3, 2.1, '#eeaab2');
+    ellipse(c, cx + 2.6, cy + 0.2, 1, 0.9, '#d0808e'); c.fillStyle = '#7a3a4a'; c.fillRect(cx + 2.4, cy, 0.4, 0.4);
+    poly(c, [[cx + 1, cy - 1.4], [cx + 1.8, cy - 2.8], [cx + 2, cy - 1]], '#d0808e');
+    c.fillStyle = '#a85a6a'; c.fillRect(cx - 2, cy + 2.2, 0.8, 1.2); c.fillRect(cx + 0.8, cy + 2.2, 0.8, 1.2);
+  } else if (kind === 'shield') {
+    c.beginPath(); c.moveTo(cx - 3, cy - 3); c.lineTo(cx + 3, cy - 3); c.lineTo(cx + 3, cy); c.quadraticCurveTo(cx + 2.6, cy + 2.6, cx, cy + 3.6); c.quadraticCurveTo(cx - 2.6, cy + 2.6, cx - 3, cy); c.closePath();
+    c.fillStyle = '#8c2c20'; c.fill(); c.strokeStyle = '#cec6ba'; c.lineWidth = 0.5; c.stroke();
+    c.fillStyle = '#e4b434'; c.fillRect(cx - 0.4, cy - 2.4, 0.8, 5); c.fillRect(cx - 2.2, cy - 0.6, 4.4, 0.8);
+  } else if (kind === 'crystal') {
+    poly(c, [[cx, cy - 3.6], [cx + 2, cy - 0.6], [cx + 1, cy + 3.2], [cx - 1, cy + 3.2], [cx - 2, cy - 0.6]], '#9c7ae6', '#38245c', 0.4);
+    poly(c, [[cx, cy - 3.6], [cx + 0.6, cy - 0.4], [cx, cy + 3]], '#e2d6ff');
   }
 }
+
+// Какая вывеска у какого здания
+const SIGN_OF = {
+  storehouse: 'crate', school: 'book', inn: 'mug', goatpen: 'goat', stable: 'horseshoe', woodcutter: 'axe', sawmill: 'saw',
+  quarry: 'pick', goldmine: 'nugget', metallurgist: 'ingot', farm: 'wheat', hopfarm: 'hops', brewery: 'barrel', mill: 'flour',
+  bakery: 'bread', swine: 'pig', butchery: 'ham', tannery: 'hide', armory: 'shield', crystalmine: 'crystal', magicworkshop: 'star',
+};
 
 function anvil(c, x, y) {
   shadowAt(c, x + 4, y + 0.4, 6);

@@ -338,7 +338,7 @@ function drawPebble(c, x, y, s, r) {
 function isRoadAt(x, y) { return inb(x, y) && World.road[idx(x, y)]; }
 
 function roadShape(c, x, y, px, py, grow) {
-  const cx = px + TILE / 2, cy = py + TILE / 2, w = 9.5 + grow;
+  const cx = px + TILE / 2, cy = py + TILE / 2, w = 11.5 + grow;
   c.beginPath();
   c.arc(cx, cy, w, 0, Math.PI * 2);
   if (isRoadAt(x - 1, y)) c.rect(px, cy - w, TILE / 2, w * 2);
@@ -360,37 +360,15 @@ function drawRoadTile(x, y) {
   const r = mulberry32(idx(x, y) * 131 + 7);
   c.save();
   c.beginPath(); c.rect(px, py, TILE, TILE); c.clip();
-  // мягкий тёмный край
+  void r;
+  // бордюр из тёмного камня и сплошная мостовая
   roadShape(c, x, y, px, py, 2);
-  c.fillStyle = 'rgba(70,48,24,0.45)'; c.fill();
+  c.fillStyle = 'rgba(40,34,28,0.55)'; c.fill();
   roadShape(c, x, y, px, py, 0);
-  c.fillStyle = '#a3845a'; c.fill();
+  c.fillStyle = '#4a4540'; c.fill();
   roadShape(c, x, y, px, py, 0);
   c.clip();
-  // утоптанная земля и булыжники
-  for (let k = 0; k < 26; k++) {
-    c.fillStyle = r() < 0.5 ? 'rgba(90,64,36,0.35)' : 'rgba(210,186,140,0.35)';
-    c.fillRect(px + r() * TILE, py + r() * TILE, 1 + r() * 3, 1 + r() * 2);
-  }
-  for (let k = 0; k < 7; k++) {
-    const sx = px + 3 + r() * 26, sy = py + 3 + r() * 26, s = 2 + r() * 2.5;
-    c.fillStyle = 'rgba(60,44,28,0.5)';
-    c.beginPath(); c.ellipse(sx + 0.8, sy + 0.8, s, s * 0.75, 0, 0, 7); c.fill();
-    const v = 150 + r() * 40 | 0;
-    c.fillStyle = `rgb(${v},${v - 10},${v - 26})`;
-    c.beginPath(); c.ellipse(sx, sy, s, s * 0.75, 0, 0, 7); c.fill();
-    c.fillStyle = 'rgba(255,245,220,0.35)';
-    c.beginPath(); c.ellipse(sx - s * 0.3, sy - s * 0.3, s * 0.45, s * 0.3, 0, 0, 7); c.fill();
-  }
-  // колея
-  c.strokeStyle = 'rgba(80,56,30,0.25)'; c.lineWidth = 2;
-  const cx = px + TILE / 2, cy = py + TILE / 2;
-  if (isRoadAt(x - 1, y) || isRoadAt(x + 1, y)) {
-    c.beginPath(); c.moveTo(px, cy - 5); c.lineTo(px + TILE, cy - 5); c.moveTo(px, cy + 5); c.lineTo(px + TILE, cy + 5); c.stroke();
-  }
-  if (isRoadAt(x, y - 1) || isRoadAt(x, y + 1)) {
-    c.beginPath(); c.moveTo(cx - 5, py); c.lineTo(cx - 5, py + TILE); c.moveTo(cx + 5, py); c.lineTo(cx + 5, py + TILE); c.stroke();
-  }
+  paveCobbles(c, px - 4, py - 4, TILE + 8, TILE + 8, 1);
   c.restore();
   // пиксельный вид: жёсткий край и палитра
   const img = c.getImageData(px, py, TILE, TILE);
@@ -398,6 +376,29 @@ function drawRoadTile(x, y) {
   for (let i = 3; i < d.length; i += 4) d[i] = d[i] >= 100 ? 255 : 0;
   quantizeData(d, TILE, TILE, 8, px, py);
   c.putImageData(img, px, py);
+}
+
+// Булыжная мостовая в мировых координатах — без швов между клетками.
+// part (0..1) — сколько рядов уже уложено сверху вниз (для анимации укладки).
+function paveCobbles(c, x0, y0, w, h, part = 1) {
+  const RH = 5, CW = 6;
+  const yLim = y0 + h * part;
+  for (let ry = Math.floor(y0 / RH); ry * RH < y0 + h; ry++) {
+    const y = ry * RH;
+    if (y > yLim) break;
+    const off = (ry & 1) * (CW / 2);
+    for (let cx = Math.floor((x0 - off) / CW) - 1; cx * CW + off < x0 + w; cx++) {
+      const x = cx * CW + off;
+      const hsh = Math.imul(cx * 73856093 ^ ry * 19349663, 2654435761) >>> 0;
+      const v = 128 + (hsh % 46), wj = (hsh >> 8) % 3 * 0.4;
+      const warm = (hsh >> 12) % 5 === 0 ? 10 : 0;
+      c.fillStyle = `rgb(${v + warm},${v - 3},${v - 10 - warm})`;
+      rrect(c, x + 0.6, y + 0.6, CW - 1.2 - wj, RH - 1.2, 1.6); c.fill();
+      c.fillStyle = 'rgba(255,250,235,0.32)'; c.fillRect(x + 1.4, y + 0.9, CW - 3.4 - wj, 0.8);
+      c.fillStyle = 'rgba(20,16,12,0.35)'; c.fillRect(x + 1.2, y + RH - 1.5, CW - 2.6 - wj, 0.7);
+      if ((hsh >> 16) % 23 === 0) { c.fillStyle = 'rgba(80,110,40,0.7)'; c.fillRect(x - 0.4, y + RH - 1.2, 1.4, 1); }   // травинка в шве
+    }
+  }
 }
 
 function redrawTilesAround(x, y) {

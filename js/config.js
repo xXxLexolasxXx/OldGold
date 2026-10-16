@@ -71,7 +71,7 @@ const ALL_UNIT_KEYS = Object.keys(UNIT_TYPES);
 // w, h — фундамент в клетках; top — сколько пикселей спрайт поднимается над фундаментом.
 const BUILDINGS = {
   storehouse: {
-    name: 'Склад', cat: 'Основа', w: 4, h: 3, top: 70, cost: { timber: 6, stone: 6 },
+    name: 'Склад', cat: 'Основа', w: 4, h: 3, top: 70, cost: { timber: 6, stone: 6 }, wideDoor: true,
     desc: 'Большой каменный амбар. Хранит все товары, курьеры свозят сюда излишки.',
   },
   school: {
@@ -196,6 +196,8 @@ const BUILD_ORDER = Object.keys(BUILDINGS);
 const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия'];
 
 const ROAD_STONE = 1;     // сколько камня уходит на клетку дороги
+const ROAD_DIG_HITS = 4;  // взмахов лопатой: корыто под дорогу (бесплатно)
+const ROAD_PAVE_HITS = 4; // ударов молотком: укладка булыжника
 const SITE_HITS = 3;      // ударов на разметку площадки
 const HITS_PER_UNIT = 4;  // ударов молота на единицу материала
 const HIT_TIME = 0.6;     // секунд на удар

@@ -131,7 +131,7 @@ function drawDecor(c, d, H) {
       win(c, u - (d.w || 6) / 2, H - d.z - (d.h || 7), d.w || 6, d.h || 7, o);
       break;
     }
-    case 'sign': c.fillStyle = '#2e1a0c'; c.fillRect(u - 1, H - d.z - 0.6, 12, 1.2); signBoard(c, u + 1, H - d.z, d.kind); break;
+    case 'sign': hangingSign(c, u, H - d.z, d.kind, d.dir || 1); break;
     case 'lantern': lantern(c, u, H - d.z); break;
     case 'shield': shield(c, u, H - d.z, d.col || '#8c2c20'); break;
     case 'hatch': c.fillStyle = '#120a06'; rrect(c, u - d.w / 2, H - d.z - d.h, d.w, d.h, 1.5); c.fill(); c.fillStyle = '#5a3a1e'; c.fillRect(u - d.w / 2 - 1, H - d.z - d.h - 1, d.w + 2, 1.2); break;
@@ -370,11 +370,19 @@ function decorFor(m, p, w, worldFace, gable = false) {
   for (const d0 of (src[lf] || [])) {
     const d = { ...d0 };
     let at = d.at;
-    if (d.main) at = m.doorX;
+    if (d.main) at = m.doorX + (d.shift || 0) * (m.rot ? -1 : 1);
     const lp = lf === 'S' || lf === 'N' ? [at, lf === 'S' ? p.y0 : p.y1] : [lf === 'W' ? p.x0 : p.x1, at];
     const [X, Y] = toW(m, lp[0], lp[1]);
     d.u = worldFace === 'S' ? X - w.X0 : Y - w.Y0;
     out.push(d);
+  }
+  // вывеска ремесла на пруте у главной двери (если в модели своей нет)
+  const mainDoor = !gable && out.find(d => d.t === 'door' && d.main);
+  if (mainDoor && m.sign && !Object.values(src).some(list => list.some(d => d.t === 'sign'))) {
+    const L = worldFace === 'S' ? w.X1 - w.X0 : w.Y1 - w.Y0;
+    const dw = (mainDoor.w || 10) / 2;
+    const dir = mainDoor.u + dw + 20 < L ? 1 : -1;            // в ту сторону, где хватает стены
+    out.push({ t: 'sign', u: mainDoor.u + dir * (dw + 2.5), z: Math.min(p.h - 3, (mainDoor.h || 16) + 1.5), kind: m.sign, dir });
   }
   return out;
 }
@@ -529,7 +537,7 @@ function drawFence(c, m, pts, h = 6) {
 // ================= Конструктор модели =================
 
 function newModel(g) {
-  const m = { g, rot: g.rot, LW: g.LW, LD: g.LD, doorX: g.doorLX, parts: [] };
+  const m = { g, rot: g.rot, LW: g.LW, LD: g.LD, doorX: g.doorLX, parts: [], sign: SIGN_OF[g.type] };
   const key = (x, y) => toW(m, x, y)[1];
   m.box = o => m.parts.push({ kind: 'box', p: o, key: Math.min(key(o.x0, o.y0), key(o.x1, o.y0), key(o.x0, o.y1)), kx: toW(m, o.x0, o.y0)[0] });
   m.tower = o => m.parts.push({ kind: 'tower', p: o, key: key(o.x, o.y) - o.r, kx: toW(m, o.x, o.y)[0] });
@@ -567,8 +575,9 @@ const MODELS = {
       x0: 36, x1: 124, y0: 8, y1: 64, h: 34, wall: 'plaster', col: '#e6d8b8', frame: true, lowerStone: 10, beam: BEAM,
       roof: { type: 'gable', axis: 'X', rise: 30, mat: 'tiles', col: TERRA, ov: 5 },
       decor: {
-        S: [{ t: 'door', main: true, w: 24, h: 26, o: { double: true, braces: true, square: true, col: '#7a4a24' } },
-          { t: 'win', at: 50, z: 15, w: 6, h: 8, o: { shutter: '#5a3a1e' } }, { t: 'win', at: 110, z: 15, w: 6, h: 8, o: { shutter: '#5a3a1e' } },
+        // широкие ворота на две створки — по одной на каждую клетку входа
+        S: [{ t: 'door', main: true, shift: -16, w: 40, h: 26, o: { double: true, braces: true, square: true, col: '#7a4a24' } },
+          { t: 'win', at: 110, z: 15, w: 6, h: 8, o: { shutter: '#5a3a1e' } },
           { t: 'lantern', at: 96, z: 24 }],
         E: [{ t: 'win', at: 22, z: 15, w: 6, h: 8 }, { t: 'win', at: 48, z: 15, w: 6, h: 8 }],
         W: [{ t: 'win', at: 24, z: 15, w: 6, h: 8 }, { t: 'win', at: 48, z: 15, w: 6, h: 8 }],
@@ -910,7 +919,7 @@ const MODELS = {
       roof: { type: 'gable', axis: 'X', rise: 22, mat: 'tiles', col: '#9a4a2c', ov: 4 },
       decor: {
         S: [{ t: 'door', main: true, w: 12, h: 18, o: { frame: 'stone', double: true } }, { t: 'win', at: 14, z: 11, w: 7, h: 8, o: { lit: true, stone: true } }, { t: 'win', at: 62, z: 11, w: 6, h: 8, o: { stone: true } },
-          { t: 'sign', at: 22, z: 25, kind: 'mug' }],
+          { t: 'sign', at: 22, z: 25, kind: 'barrel' }],
         E: [{ t: 'win', at: 30, z: 11, w: 6, h: 8, o: { lit: true } }], W: [{ t: 'win', at: 30, z: 11 }],
       },
       dormers: [{ x: 30, w: 12, h: 9, loft: true }],
@@ -1022,7 +1031,7 @@ function buildingSprite(type, rot = 0) {
   const [scv, sc] = mkSprite(W, H, BS);
   const spr = { canvas: cv, shadow: scv, w: W, h: H, top, padx: BPADX, chimneys: null, hub: null, glow: null };
   const g = {
-    ox: BPADX, oy: top + FD, rot: d.rot, LW: def.w * TILE, LD: def.h * TILE, doorLX: d.doorLX,
+    type, ox: BPADX, oy: top + FD, rot: d.rot, LW: def.w * TILE, LD: def.h * TILE, doorLX: d.doorLX,
     // для построек, нарисованных в экранных координатах
     fx: BPADX, fy: top, fw: FW, fh: FD, w: d.w, h: d.h, base: top + FD - 2, back: top + 8,
     doorCx: BPADX + (d.dx + 0.5) * TILE,

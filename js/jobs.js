@@ -138,13 +138,25 @@ function* buildGen(u, s) {
   while (!s.removed && u.job === s) {
     if (u.wantsEat() && findInn(u)) break;
     if (s.isRoad) {
+      // 1) копает корыто под дорогу — бесплатно
+      if (s.dug < 1) {
+        for (let k = Math.round(s.dug * ROAD_DIG_HITS); k < ROAD_DIG_HITS && !s.removed; k++) {
+          yield { wait: HIT_TIME * 1.3, anim: 'dig' };
+          s.dug = (k + 1) / ROAD_DIG_HITS; s.lastHit = Game.time;
+        }
+        continue;
+      }
+      // 2) стучит по земле, выкладывая булыжник — уже за камень
       if (s.stock.stone >= ROAD_STONE) {
-        yield { wait: 2, anim: 'build' };
+        for (let k = 0; k < ROAD_PAVE_HITS && !s.removed; k++) {
+          yield { wait: HIT_TIME, anim: 'build' };
+          s.pave = (k + 1) / ROAD_PAVE_HITS; s.lastHit = Game.time;
+        }
         if (!s.removed) completeRoad(s);
         break;
       }
-      yield { wait: 1 };
-      continue;
+      // камня ещё нет — не стоим без дела, вернёмся, когда привезут
+      break;
     }
     if (s.state === 'site') {
       // разметка: три удара по колышкам

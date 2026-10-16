@@ -23,8 +23,9 @@ function layoutStart(rng, cx, cy) {
   for (const type of types) {
     let best = null;
     for (let t = 0; t < 400 && !best; t++) {
-      const north = rng() < 0.6;
-      const rot = BUILDINGS[type].noRotate ? 0 : north ? (rng() < 0.3 ? 1 : 0) : 1;   // к югу от улицы — входом вбок
+      const wide = BUILDINGS[type].wideDoor;                  // склад — воротами прямо к улице
+      const north = wide || rng() < 0.6;
+      const rot = BUILDINGS[type].noRotate || wide ? 0 : north ? (rng() < 0.3 ? 1 : 0) : 1;   // к югу от улицы — входом вбок
       const d = bDims(type, rot);
       const gap = 2 + Math.floor(rng() * 3);                  // 2–4 клетки от улицы
       const x = cx - 11 + Math.floor(rng() * 20);
@@ -32,14 +33,15 @@ function layoutStart(rng, cx, cy) {
       if (!fits(x, y, d.w, d.h)) continue;
       if (checkPlacement(type, x, y, rot)) continue;
       const door = [x + d.dx, y + d.dy];
-      // дорожка от входа к улице: прямо по вертикали
+      // дорожка от входа (и от второй створки ворот) к улице: прямо по вертикали
       const path = [];
       const step = door[1] < sy ? 1 : -1;
       let ok = true;
-      for (let yy = door[1] + step; yy !== sy; yy += step) {
-        const i = idx(door[0], yy);
+      const cols = wide ? [door[0], wideDoorTile(type, x, y, rot)[0]] : [door[0]];
+      for (const col of cols) for (let yy = door[1] + step; yy !== sy; yy += step) {
+        const i = idx(col, yy);
         if (World.bmap[i] || taken.has(i) || World.terrain[i] === T_WATER || World.terrain[i] === T_ROCK) { ok = false; break; }
-        path.push([door[0], yy]);
+        path.push([col, yy]);
       }
       if (ok) best = { type, x, y, rot, door, path };
     }
@@ -196,7 +198,7 @@ function buildingAt(t) {
   const i = idx(t[0], t[1]);
   const id = World.bmap[i];
   if (id) return Game.buildings.find(b => b.id === id) || null;
-  if (World.door[i]) return Game.buildings.find(b => b.doorX === t[0] && b.doorY === t[1]) || null;
+  if (World.door[i]) return buildingAtDoor(t[0], t[1]);
   return null;
 }
 

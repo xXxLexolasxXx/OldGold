@@ -316,7 +316,8 @@ function overviewHTML(alerts) {
 // ---------- Окно здания ----------
 
 function statusChip(b) {
-  if (b.isRoad) return '<span class="chip wait">Дорога строится</span>';
+  if (b.isRoad) return b.dug < 1 ? `<span class="chip wait">Копают ${Math.round(b.dug * 100)}%</span>`
+    : b.pave > 0 ? `<span class="chip wait">Мостят ${Math.round(b.pave * 100)}%</span>` : '<span class="chip wait">Выкопано, ждёт камень</span>';
   if (b.state !== 'done' && b.problem() === 'noroad') return '<span class="chip bad">Нет дороги к складу</span>';
   if (b.state === 'site') return '<span class="chip wait">Разметка площадки</span>';
   if (b.state === 'build') return `<span class="chip wait">Строится ${Math.round(b.progress * 100)}%</span>`;
@@ -355,7 +356,8 @@ function infoBuilding(b) {
   if (b.isRoad) {
     return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'road', 2)}" alt=""><div><h3>Дорога</h3>${statusChip(b)}</div></div>
       <div class="slots">${slotHTML('stone', b.stock.stone, ROAD_STONE)}</div>
-      <div class="irow">Строитель: ${b.builder ? 'идёт' : '<span class="muted">ждёт камень</span>'}</div>
+      <div class="irow">Строитель: ${b.builder ? (b.dug < 1 ? 'копает' : 'кладёт камень') : `<span class="muted">${b.dug < 1 ? 'ждёт свободного строителя' : 'ждёт камень'}</span>`}</div>
+      <div class="tip">Сначала строитель бесплатно копает корыто, потом за 1 камень выкладывает мостовую.</div>
       <div class="iactions"><button data-act="demolish">${ui('trash')}Отменить</button></div>`;
   }
   const def = b.def;

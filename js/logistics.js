@@ -120,7 +120,8 @@ function dispatchBuilders() {
   if (!idle.length) return;
   const sites = [
     ...Game.buildings.filter(b => b.state !== 'done' && !b.builder),
-    ...[...Game.roadSites.values()].filter(s => !s.builder && s.stock.stone + s.incoming.stone > 0),
+    // дорогу можно копать сразу, а мостить — когда камень на месте или в пути
+    ...[...Game.roadSites.values()].filter(s => !s.builder && (s.dug < 1 || s.stock.stone + s.incoming.stone > 0)),
   ];
   for (const s of sites) {
     const u = takeNearest(idle, s.doorX, s.doorY);

@@ -203,6 +203,46 @@ function drawUnitFx(c, u, px, py, moving) {
   }
 }
 
+// Стройка дороги: колышки с бечёвкой → корыто растёт с каждым взмахом лопаты
+// (земля в отвал) → булыжник ложится рядами с каждым ударом молотка.
+function drawRoadSite(c, s) {
+  const px = s.x * TILE, py = s.y * TILE;
+  const x0 = px + 5, y0 = py + 5, w = 22, h = 22;
+  // колышки и бечёвка
+  c.fillStyle = '#6e432a';
+  for (const [x, y] of [[x0 - 1, y0 - 3], [x0 + w - 1, y0 - 3], [x0 - 1, y0 + h - 3], [x0 + w - 1, y0 + h - 3]]) c.fillRect(x, y, 2, 4);
+  c.fillStyle = 'rgba(240,214,168,0.8)';
+  c.fillRect(x0, y0 - 2, w, 1); c.fillRect(x0, y0 + h - 2, w, 1);
+  if (s.dug > 0) {
+    // корыто: тёмная влажная земля, растёт к центру
+    const k = s.dug, iw = w * (0.4 + 0.6 * k), ih = h * (0.4 + 0.6 * k);
+    const ix = px + 16 - iw / 2, iy = py + 16 - ih / 2;
+    c.fillStyle = '#45291a'; c.fillRect(ix, iy, iw, ih);
+    c.fillStyle = '#24170f'; c.fillRect(ix, iy, iw, 2);
+    c.fillStyle = 'rgba(160,110,60,0.5)'; c.fillRect(ix, iy + ih - 1, iw, 1);
+    // отвал земли сбоку
+    const mx = px + 27, my = py + 24, ms = 2 + k * 3;
+    c.fillStyle = '#583522'; c.beginPath(); c.ellipse(mx, my, ms + 1, ms * 0.7, 0, Math.PI, 0); c.fill();
+    c.fillStyle = '#875434'; c.fillRect(mx - ms * 0.5, my - ms * 0.6, ms * 0.5, 1);
+    if (s.pave > 0) {
+      c.save(); c.beginPath(); c.rect(ix, iy, iw, ih); c.clip();
+      paveCobbles(c, ix, iy, iw, ih, s.pave);
+      c.restore();
+    }
+  }
+  // привезённый камень лежит у края
+  if (s.stock.stone > 0 && s.pave < 1) {
+    c.fillStyle = '#706960'; c.fillRect(px + 2, py + 22, 6, 5);
+    c.fillStyle = '#b6ada0'; c.fillRect(px + 2, py + 22, 6, 1); c.fillRect(px + 4, py + 20, 3, 2);
+  }
+  // пыль/земля из-под удара
+  if (Game.time - s.lastHit < 0.35) {
+    const a = 1 - (Game.time - s.lastHit) / 0.35;
+    c.fillStyle = s.pave > 0 ? `rgba(200,195,180,${0.7 * a})` : `rgba(120,80,40,${0.8 * a})`;
+    for (let k = 0; k < 4; k++) c.fillRect(px + 12 + k * 3 - a * 2, py + 14 - (1 - a) * 6 - (k & 1) * 2, 2, 2);
+  }
+}
+
 // Рассыпанный груз на земле
 function drawPile(c, p) {
   const x = p.x * TILE + 16, y = p.y * TILE + 22;
@@ -581,18 +621,7 @@ function render() {
     const o = World.obj[idx(x, y)];
     if (o && o.t === 'field') c.drawImage(SPR.fields[o.crop || 'wheat'][fieldStage(o.g)], x * TILE, y * TILE);
   }
-  for (const s of Game.roadSites.values()) {
-    const px = s.x * TILE, py = s.y * TILE;
-    const has = s.stock.stone > 0;
-    c.fillStyle = has ? '#875434' : 'rgba(135,84,52,0.45)';
-    c.fillRect(px + 7, py + 7, 18, 18);
-    c.fillStyle = '#f0d6a8';
-    for (let k = 0; k < 18; k += 4) {
-      c.fillRect(px + 7 + k, py + 7, 2, 1); c.fillRect(px + 7 + k, py + 24, 2, 1);
-      c.fillRect(px + 7, py + 7 + k, 1, 2); c.fillRect(px + 24, py + 7 + k, 1, 2);
-    }
-    if (has) { c.fillStyle = '#9e958a'; c.fillRect(px + 13, py + 13, 6, 5); c.fillStyle = '#cec6ba'; c.fillRect(px + 13, py + 13, 6, 1); }
-  }
+  for (const s of Game.roadSites.values()) drawRoadSite(c, s);
 
   const list = [];
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {

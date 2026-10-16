@@ -65,6 +65,8 @@ class Building {
     this.w = d.w; this.h = d.h;
     this.doorX = x + d.dx;
     this.doorY = y + d.dy;
+    // широкие ворота (склад): второй проход рядом, чтобы курьеры заходили по двое
+    this.door2 = this.def.wideDoor ? wideDoorTile(type, x, y, d.rot) : null;
     this.state = done ? 'done' : 'site';   // site -> build -> done
     this.stock = emptyGoods();
     this.incoming = emptyGoods();
@@ -195,6 +197,9 @@ class RoadSite {
     this.reserved = emptyGoods();
     this.builder = null;
     this.removed = false;
+    this.dug = 0;      // 0..1 — выкопано (бесплатно)
+    this.pave = 0;     // 0..1 — уложено камня
+    this.lastHit = -9;
   }
   offer() { return 0; }
   demand(g) {
@@ -244,6 +249,16 @@ function cleanupPile(p) {
 
 // ---------- Размещение и удаление ----------
 
+function wideDoorTile(type, x, y, rot) {
+  const d = bDims(type, rot);
+  return d.rot ? [x + d.dx, y + d.dy - 1] : [x + d.dx - 1, y + d.dy];
+}
+
+// Здание по клетке входа (основной или второй створки ворот)
+function buildingAtDoor(x, y) {
+  return Game.buildings.find(b => (b.doorX === x && b.doorY === y) || (b.door2 && b.door2[0] === x && b.door2[1] === y)) || null;
+}
+
 function setRoad(x, y, v) {
   World.road[idx(x, y)] = v ? 1 : 0;
   World.roadDirty = true;
@@ -271,6 +286,12 @@ function checkPlacement(type, x, y, rot = 0) {
   if (World.bmap[di] || World.door[di]) return 'Вход загорожен';
   const dobj = World.obj[di];
   if (dobj && dobj.t !== 'stump') return 'Вход загорожен';
+  if (def0.wideDoor) {
+    const [ex, ey] = wideDoorTile(type, x, y, dd.rot);
+    if (!inb(ex, ey)) return 'Ворота за краем карты';
+    const ei = idx(ex, ey), et = World.terrain[ei];
+    if ((et !== T_GRASS && et !== T_SAND) || World.bmap[ei] || World.door[ei] || (World.obj[ei] && World.obj[ei].t !== 'stump')) return 'Перед воротами нужна свободная земля';
+  }
 
   if (def.need === 'stone') {
     if (!findObjNear(dx, dy, 10, o => o.t === 'stone')) return 'Рядом нет камня';
@@ -325,6 +346,13 @@ function placeBuilding(type, x, y, done = false, rot = 0) {
   const rs = Game.roadSites.get(di);
   if (rs) removeRoadSite(rs);
   setRoad(b.doorX, b.doorY, true);
+  if (b.door2) {
+    const ei = idx(b.door2[0], b.door2[1]);
+    World.door[ei] = 1; World.obj[ei] = null;
+    const rs2 = Game.roadSites.get(ei);
+    if (rs2) removeRoadSite(rs2);
+    setRoad(b.door2[0], b.door2[1], true);
+  }
   Game.buildings.push(b);
   return b;
 }
@@ -340,6 +368,7 @@ function removeBuilding(b) {
   for (let yy = b.y; yy < b.y + b.h; yy++) for (let xx = b.x; xx < b.x + b.w; xx++)
     World.bmap[idx(xx, yy)] = 0;
   World.door[idx(b.doorX, b.doorY)] = 0;
+  if (b.door2) World.door[idx(b.door2[0], b.door2[1])] = 0;
   Game.buildings = Game.buildings.filter(o => o !== b);
   for (const u of Game.units) {
     if (u.inside === b) { u.inside = null; u.x = b.doorX + 0.5; u.y = b.doorY + 0.5; }
@@ -527,6 +556,12 @@ class Unit {
         this.inside = null;
         // курьер на дороге ходит только по дорогам; сошедший с неё сначала возвращается
         const onRoad = courier && World.road[idx(sx, sy)] && !a.offroad;
+        // к широким воротам — в свободную или менее загруженную створку
+        if (!a.gate) {
+          a.gate = true;
+          const gb = buildingAtDoor(a.walk[0], a.walk[1]);
+          if (gb && gb.door2) a.walk = pickGate(gb, this.id);
+        }
         a.path = findPath(sx, sy, a.walk[0], a.walk[1], onRoad, courier ? this.id : 0);
         a.i = 0; a.block = 0; a.replanned = false; a.squeeze = false;
         if (!a.path) return false;
@@ -601,12 +636,31 @@ class Unit {
       if (a.dt > 0) return undefined;
       this.anim = null;
       this.inside = a.enter;
-      this.x = a.enter.doorX + 0.5; this.y = a.enter.doorY + 0.5;
+      // вошедший через вторую створку и выйдет через неё
+      const d2 = a.enter.door2, viaGate2 = d2 && Math.floor(this.x) === d2[0] && Math.floor(this.y) === d2[1];
+      this.x = (viaGate2 ? d2[0] : a.enter.doorX) + 0.5; this.y = (viaGate2 ? d2[1] : a.enter.doorY) + 0.5;
       return true;
     }
     if (a.leave) { this.inside = null; return true; }
     return true;
   }
+}
+
+// Выбор створки: сколько курьеров уже идёт к каждой и занята ли она прямо сейчас
+function pickGate(b, selfId) {
+  const gates = [[b.doorX, b.doorY], b.door2];
+  let best = gates[0], bs = 1e9;
+  for (const g of gates) {
+    const i = idx(g[0], g[1]);
+    let s = World.occ[i] && World.occ[i] !== selfId ? 2 : 0;
+    for (const u of Game.units) {
+      const w = u.action && u.action.walk;
+      if (u.id !== selfId && w && w[0] === g[0] && w[1] === g[1]) s++;
+    }
+    s += Math.random() * 0.5;
+    if (s < bs) { bs = s; best = g; }
+  }
+  return best.slice();
 }
 
 function spawnUnit(type, x, y) {

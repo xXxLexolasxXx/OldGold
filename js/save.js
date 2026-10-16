@@ -41,7 +41,7 @@ function serializeGame() {
       used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
       paused: b.paused, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
     })),
-    roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone })),
+    roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
     units: Game.units.map(u => ({
       type: u.type, x: u.x, y: u.y, food: u.food, look: u.look, home: u.home ? u.home.id : 0,
       homePen: u.homePen || 0, homeStable: u.homeStable || 0, smoker: u.smoker,
@@ -85,12 +85,14 @@ function applySave(s) {
     if (d.crops) b.crops = d.crops;
     for (let yy = b.y; yy < b.y + b.h; yy++) for (let xx = b.x; xx < b.x + b.w; xx++) World.bmap[idx(xx, yy)] = b.id;
     World.door[idx(b.doorX, b.doorY)] = 1;
+    if (b.door2) World.door[idx(b.door2[0], b.door2[1])] = 1;
     Game.buildings.push(b);
     byId.set(b.id, b);
   }
   for (const r of s.roadSites) {
     const rs = new RoadSite(r.x, r.y);
     rs.stock.stone = r.stone || 0;
+    rs.dug = r.dug || 0;
     Game.roadSites.set(idx(r.x, r.y), rs);
   }
   for (const d of s.units) {
