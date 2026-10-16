@@ -1,0 +1,148 @@
+'use strict';
+// Пиксель-арт конвейер: ограниченная палитра, уменьшение 2×→1×, цветная обводка.
+
+const PALETTE_HEX = [
+  // зелень
+  '#141c12', '#1c2818', '#243520', '#2f4a26', '#3a5a2a', '#4a6e30', '#5c8236', '#73963e', '#8eab4c', '#aac462', '#c8da84',
+  // олива / сухая трава
+  '#3a3a1c', '#57532a', '#7a7038', '#9c8e48', '#c0ae5c', '#ddd08a',
+  // коричневые
+  '#160e0a', '#24170f', '#341f14', '#45291a', '#583522', '#6e432a', '#875434', '#a06840', '#b8804e', '#cc9a64', '#e0b882', '#f0d6a8',
+  // красные
+  '#2e0e0e', '#4a1614', '#6a2018', '#8c2c20', '#ac3e2a', '#c8583a', '#e07a50', '#f0a070',
+  // золото / охра
+  '#5a3a10', '#7e5214', '#a4701c', '#c89226', '#e4b434', '#f6d458', '#fff2a0',
+  // серые тёплые
+  '#121010', '#1e1b19', '#2c2825', '#3a3632', '#4a4540', '#5c564f', '#706960', '#867e74', '#9e958a', '#b6ada0', '#cec6ba', '#e4ddd2', '#f6f2ea',
+  // синие
+  '#0c1624', '#12263c', '#1a3654', '#22486c', '#2c5c86', '#3a74a0', '#5292bc', '#76b2d4', '#a6d2e6', '#d6eef6',
+  // фиолетовые
+  '#1a1028', '#281a40', '#38245c', '#4c3080', '#6440a8', '#7e58cc', '#9c7ae6', '#bea4f6', '#e2d6ff',
+  // кожа
+  '#4a2a1c', '#6e4430', '#94603e', '#b47c56', '#d09c74', '#e8bc94', '#f6d8b8',
+  // розовые
+  '#7a3a4a', '#a85a6a', '#d0808e', '#eeaab2',
+  '#ffffff',
+];
+const PAL = PALETTE_HEX.map(hexToRgb);
+
+// LUT 32×32×32 -> индекс палитры
+const PAL_LUT = (() => {
+  const lut = new Uint8Array(32768);
+  for (let r = 0; r < 32; r++) for (let g = 0; g < 32; g++) for (let b = 0; b < 32; b++) {
+    const R = r * 8 + 4, G = g * 8 + 4, B = b * 8 + 4;
+    let best = 0, bd = 1e9;
+    for (let i = 0; i < PAL.length; i++) {
+      const p = PAL[i];
+      const dr = R - p[0], dg = G - p[1], db = B - p[2];
+      const rm = (R + p[0]) / 2;
+      const d = (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;
+      if (d < bd) { bd = d; best = i; }
+    }
+    lut[(r << 10) | (g << 5) | b] = best;
+  }
+  return lut;
+})();
+
+function palIndex(r, g, b) {
+  r = r < 0 ? 0 : r > 255 ? 255 : r;
+  g = g < 0 ? 0 : g > 255 ? 255 : g;
+  b = b < 0 ? 0 : b > 255 ? 255 : b;
+  return PAL_LUT[((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)];
+}
+
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v / 16 - 0.47));
+
+// Квантование массива RGBA на месте; dither — сила упорядоченного дизеринга.
+function quantizeData(d, w, h, dither = 0, ox = 0, oy = 0) {
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const o = (y * w + x) * 4;
+    if (d[o + 3] === 0) continue;
+    const t = dither ? BAYER4[((y + oy) & 3) * 4 + ((x + ox) & 3)] * dither : 0;
+    const p = PAL[palIndex(d[o] + t, d[o + 1] + t, d[o + 2] + t)];
+    d[o] = p[0]; d[o + 1] = p[1]; d[o + 2] = p[2];
+  }
+}
+
+// Канвас со сверхвыборкой SS -> пиксельный 1× канвас.
+// opts: outline (bool), alphaCut (порог), keepAlpha (для теней)
+function toPixelArt(src, scale, opts = {}) {
+  const W = Math.round(src.width / scale), H = Math.round(src.height / scale);
+  const sd = src.getContext('2d').getImageData(0, 0, src.width, src.height).data;
+  const out = mkCanvas(W, H);
+  const oc = out.getContext('2d');
+  const img = oc.createImageData(W, H);
+  const d = img.data;
+  const sw = src.width;
+  const n = scale * scale;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    let r = 0, g = 0, b = 0, a = 0;
+    for (let yy = 0; yy < scale; yy++) for (let xx = 0; xx < scale; xx++) {
+      const o = ((y * scale + yy) * sw + x * scale + xx) * 4;
+      const al = sd[o + 3];
+      r += sd[o] * al; g += sd[o + 1] * al; b += sd[o + 2] * al; a += al;
+    }
+    const o = (y * W + x) * 4;
+    if (a > 0) { d[o] = r / a; d[o + 1] = g / a; d[o + 2] = b / a; }
+    const alpha = a / n;
+    if (opts.keepAlpha) d[o + 3] = alpha;
+    else d[o + 3] = alpha >= (opts.alphaCut ?? 110) ? 255 : 0;
+  }
+  if (!opts.keepAlpha) {
+    quantizeData(d, W, H, opts.dither || 0);
+    if (opts.outline !== false) outlineData(d, W, H, opts.outlineDark ?? 0.42);
+  }
+  oc.putImageData(img, 0, 0);
+  return out;
+}
+
+// Цветная обводка: прозрачный пиксель рядом с непрозрачным становится тёмным оттенком соседа.
+function outlineData(d, W, H, dark) {
+  const src = new Uint8ClampedArray(d);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const o = (y * W + x) * 4;
+    if (src[o + 3] !== 0) continue;
+    let nr = -1, ng = 0, nb = 0;
+    for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+      const xx = x + dx, yy = y + dy;
+      if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+      const p = (yy * W + xx) * 4;
+      if (src[p + 3] === 0) continue;
+      nr = src[p]; ng = src[p + 1]; nb = src[p + 2];
+      break;
+    }
+    if (nr < 0) continue;
+    const pi = PAL[palIndex(nr * dark, ng * dark, nb * dark * 1.1)];
+    d[o] = pi[0]; d[o + 1] = pi[1]; d[o + 2] = pi[2]; d[o + 3] = 255;
+  }
+}
+
+// Пиксельная отрисовка прямо в 1×: прямоугольник и линия Брезенхэма.
+function px(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x | 0, y | 0, w | 0, h | 0); }
+
+function pline(c, x0, y0, x1, y1, col, w = 1) {
+  x0 |= 0; y0 |= 0; x1 |= 0; y1 |= 0;
+  c.fillStyle = col;
+  const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx + dy;
+  for (;;) {
+    c.fillRect(x0, y0, w, w);
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * err;
+    if (e2 >= dy) { err += dy; x0 += sx; }
+    if (e2 <= dx) { err += dx; y0 += sy; }
+  }
+}
+
+// Обводка и квантование уже пиксельного 1× канваса.
+function finishPixel(cv, outline = true) {
+  const c = cv.getContext('2d');
+  const img = c.getImageData(0, 0, cv.width, cv.height);
+  const d = img.data;
+  for (let i = 3; i < d.length; i += 4) d[i] = d[i] >= 110 ? 255 : 0;
+  quantizeData(d, cv.width, cv.height, 0);
+  if (outline) outlineData(d, cv.width, cv.height, 0.4);
+  c.putImageData(img, 0, 0);
+  return cv;
+}

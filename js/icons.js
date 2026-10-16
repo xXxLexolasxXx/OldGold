@@ -1,0 +1,198 @@
+'use strict';
+// Пиксельные иконки 16×16: товары и кнопки интерфейса.
+
+function drawGoodIcon(c, g, x, y) {
+  const P = (a, b, w, h, col) => px(c, x + a, y + b, w, h, col);
+  const L = (a, b, a2, b2, col, w) => pline(c, x + a, y + b, x + a2, y + b2, col, w);
+  switch (g) {
+    case 'trunk':
+      P(1, 6, 12, 5, '#6e432a'); P(1, 6, 12, 1, '#a06840'); P(1, 10, 12, 1, '#45291a');
+      P(4, 8, 4, 1, '#583522');
+      P(12, 5, 3, 7, '#cc9a64'); P(13, 6, 1, 5, '#e0b882'); P(13, 8, 1, 1, '#875434');
+      break;
+    case 'timber':
+      for (let k = 0; k < 3; k++) {
+        P(1 + k, 10 - k * 3, 13, 3, k % 2 ? '#cc9a64' : '#e0b882');
+        P(1 + k, 12 - k * 3, 13, 1, '#a06840');
+      }
+      break;
+    case 'stone':
+      P(3, 5, 10, 8, '#867e74'); P(4, 4, 8, 1, '#b6ada0'); P(3, 5, 4, 3, '#b6ada0'); P(10, 6, 3, 7, '#5c564f');
+      P(6, 9, 3, 1, '#5c564f');
+      break;
+    case 'wheat':
+      for (const dx of [-3, 0, 3]) {
+        L(8, 15, 8 + dx, 5, '#9c8e48');
+        P(7 + dx, 1, 2, 5, '#e4b434'); P(7 + dx, 1, 1, 4, '#f6d458');
+      }
+      P(6, 10, 5, 1, '#8c2c20');
+      break;
+    case 'hay':
+      P(2, 6, 12, 8, '#a8a050'); P(3, 5, 10, 1, '#c8c070'); P(2, 6, 4, 3, '#c8c070'); P(11, 7, 3, 7, '#7a7a30');
+      for (let k = 0; k < 5; k++) P(3 + k * 2, 3 + (k % 2), 1, 3, '#b8b060');
+      P(2, 9, 12, 1, '#8a5a2a');
+      break;
+    case 'flour':
+      P(3, 4, 10, 11, '#e4ddd2'); P(4, 3, 8, 1, '#cec6ba'); P(10, 5, 3, 10, '#b6ada0');
+      P(6, 2, 4, 2, '#a06840'); P(5, 8, 4, 3, '#f6f2ea');
+      break;
+    case 'bread':
+      P(2, 7, 12, 6, '#a06840'); P(3, 6, 10, 1, '#b8804e'); P(3, 6, 8, 3, '#cc9a64');
+      P(2, 12, 12, 1, '#6e432a');
+      P(5, 7, 1, 2, '#f0d6a8'); P(8, 7, 1, 2, '#f0d6a8'); P(11, 8, 1, 2, '#f0d6a8');
+      break;
+    case 'pig':
+      P(3, 6, 10, 6, '#eeaab2'); P(4, 5, 8, 1, '#eeaab2'); P(3, 10, 10, 2, '#d0808e');
+      P(12, 7, 3, 3, '#d0808e'); P(13, 8, 1, 1, '#7a3a4a'); P(11, 5, 2, 2, '#d0808e');
+      P(10, 7, 1, 1, '#160e0a'); P(4, 12, 2, 2, '#a85a6a'); P(10, 12, 2, 2, '#a85a6a'); P(1, 6, 2, 1, '#d0808e');
+      break;
+    case 'sausage':
+      L(3, 4, 12, 12, '#8c2c20', 3); L(3, 4, 12, 12, '#ac3e2a', 2); L(4, 4, 12, 11, '#c8583a', 1);
+      P(2, 3, 2, 2, '#e0b882'); P(12, 12, 2, 2, '#e0b882');
+      break;
+    case 'goldore':
+      P(2, 6, 12, 8, '#5c564f'); P(3, 5, 9, 1, '#867e74'); P(2, 6, 4, 3, '#867e74');
+      P(5, 8, 2, 2, '#f6d458'); P(9, 10, 2, 1, '#e4b434'); P(10, 7, 1, 1, '#fff2a0');
+      break;
+    case 'gold':
+      for (let k = 0; k < 4; k++) { P(3, 12 - k * 2, 9, 2, k % 2 ? '#c89226' : '#e4b434'); P(3, 12 - k * 2, 9, 1, '#f6d458'); }
+      P(7, 2, 7, 3, '#e4b434'); P(8, 2, 5, 1, '#fff2a0');
+      break;
+    case 'hide':
+      P(3, 3, 10, 10, '#b8804e'); P(1, 2, 3, 3, '#a06840'); P(12, 2, 3, 3, '#a06840');
+      P(1, 11, 3, 3, '#a06840'); P(12, 11, 3, 3, '#a06840'); P(5, 5, 4, 3, '#cc9a64');
+      break;
+    case 'leather':
+      P(2, 4, 12, 8, '#875434'); P(2, 4, 12, 1, '#a06840'); P(11, 4, 3, 8, '#6e432a');
+      P(12, 6, 2, 4, '#45291a'); P(2, 11, 12, 1, '#583522');
+      break;
+    case 'leatherArmor':
+      P(3, 3, 10, 11, '#875434'); P(1, 3, 3, 5, '#6e432a'); P(12, 3, 3, 5, '#6e432a');
+      P(6, 2, 4, 2, '#45291a'); P(7, 3, 2, 10, '#583522'); P(4, 8, 8, 1, '#45291a');
+      P(4, 5, 1, 1, '#c89226'); P(11, 5, 1, 1, '#c89226');
+      break;
+    case 'magicstone':
+      P(6, 2, 4, 12, '#7e58cc'); P(7, 1, 2, 1, '#bea4f6'); P(6, 2, 2, 9, '#bea4f6');
+      P(2, 7, 4, 7, '#6440a8'); P(2, 7, 1, 5, '#9c7ae6'); P(10, 6, 4, 8, '#4c3080'); P(11, 6, 1, 6, '#7e58cc');
+      P(7, 4, 1, 2, '#ffffff');
+      break;
+    case 'mana':
+      P(5, 1, 6, 2, '#875434'); P(6, 3, 4, 2, '#cec6ba');
+      P(3, 5, 10, 10, '#a6d2e6'); P(4, 7, 8, 7, '#3a74a0'); P(4, 7, 8, 2, '#76b2d4'); P(10, 8, 2, 6, '#22486c');
+      P(5, 9, 1, 2, '#ffffff'); P(3, 14, 10, 1, '#5292bc');
+      break;
+    case 'staff':
+      L(4, 15, 11, 4, '#875434', 2); L(4, 15, 11, 4, '#a06840', 1);
+      P(10, 1, 5, 5, '#7e58cc'); P(11, 1, 2, 2, '#e2d6ff'); P(13, 3, 2, 3, '#4c3080');
+      break;
+    case 'mageArmor':
+      P(4, 2, 8, 13, '#4c3080'); P(2, 4, 3, 6, '#38245c'); P(11, 4, 3, 6, '#38245c'); P(2, 13, 12, 2, '#38245c');
+      P(6, 2, 4, 2, '#281a40'); P(7, 4, 2, 10, '#c89226'); P(5, 8, 1, 1, '#f6d458'); P(10, 11, 1, 1, '#e2d6ff');
+      break;
+    default:
+      P(3, 3, 10, 10, GOODS[g] ? GOODS[g].color : '#ff00ff');
+  }
+}
+
+function drawUiIcon(c, name) {
+  const P = (a, b, w, h, col) => px(c, a, b, w, h, col);
+  const L = (a, b, a2, b2, col, w) => pline(c, a, b, a2, b2, col, w);
+  switch (name) {
+    case 'build':   // молоток
+      L(3, 13, 10, 6, '#875434', 2); P(8, 2, 7, 4, '#867e74'); P(8, 2, 7, 1, '#cec6ba'); P(13, 3, 2, 3, '#5c564f');
+      break;
+    case 'store':   // ящик
+      P(2, 5, 12, 9, '#a06840'); P(2, 5, 12, 2, '#cc9a64'); P(2, 9, 12, 1, '#6e432a'); P(7, 5, 2, 9, '#6e432a');
+      P(3, 3, 10, 2, '#875434');
+      break;
+    case 'people':
+      P(2, 5, 5, 5, '#d09c74'); P(2, 4, 5, 2, '#583522'); P(1, 10, 7, 5, '#875434');
+      P(9, 3, 5, 5, '#e8bc94'); P(9, 2, 5, 2, '#24170f'); P(8, 8, 7, 7, '#4a6e30');
+      break;
+    case 'scroll':
+      P(3, 2, 10, 12, '#e0b882'); P(2, 1, 12, 2, '#a06840'); P(2, 13, 12, 2, '#a06840');
+      for (let k = 0; k < 4; k++) P(5, 5 + k * 2, 6 - (k % 2) * 2, 1, '#583522');
+      break;
+    case 'menu':
+      for (let k = 0; k < 3; k++) { P(2, 3 + k * 4, 12, 2, '#cec6ba'); P(2, 4 + k * 4, 12, 1, '#867e74'); }
+      break;
+    case 'road':
+      P(4, 1, 8, 14, '#a06840'); P(5, 1, 6, 14, '#cc9a64');
+      P(6, 3, 2, 2, '#867e74'); P(8, 8, 2, 2, '#867e74'); P(6, 12, 2, 2, '#867e74');
+      break;
+    case 'erase':
+      L(3, 3, 12, 12, '#ac3e2a', 3); L(12, 3, 3, 12, '#ac3e2a', 3);
+      break;
+    case 'pause':
+      P(4, 3, 3, 10, '#e4ddd2'); P(9, 3, 3, 10, '#e4ddd2');
+      break;
+    case 'play':
+      for (let k = 0; k < 6; k++) P(5 + k, 3 + k, 1, 10 - k * 2, '#8eab4c');
+      break;
+    case 'prev':
+      for (let k = 0; k < 6; k++) P(10 - k, 3 + k, 1, 10 - k * 2, '#e0b882');
+      break;
+    case 'next':
+      for (let k = 0; k < 6; k++) P(5 + k, 3 + k, 1, 10 - k * 2, '#e0b882');
+      break;
+    case 'eye':
+      P(2, 6, 12, 4, '#f6f2ea'); P(4, 5, 8, 6, '#f6f2ea'); P(6, 5, 4, 6, '#3a74a0'); P(7, 6, 2, 4, '#160e0a');
+      break;
+    case 'trash':
+      P(4, 4, 8, 10, '#867e74'); P(3, 3, 10, 2, '#b6ada0'); P(6, 1, 4, 2, '#b6ada0');
+      P(6, 6, 1, 6, '#4a4540'); P(9, 6, 1, 6, '#4a4540');
+      break;
+    case 'save':
+      P(2, 2, 12, 12, '#3a74a0'); P(4, 2, 8, 5, '#e4ddd2'); P(5, 9, 6, 5, '#22486c'); P(9, 3, 2, 3, '#22486c');
+      break;
+    case 'load':
+      P(2, 6, 12, 8, '#c89226'); P(2, 4, 5, 2, '#a4701c'); P(3, 8, 10, 1, '#f6d458');
+      break;
+    case 'new':
+      P(4, 2, 8, 12, '#f6f2ea'); P(10, 2, 2, 2, '#b6ada0'); P(6, 6, 4, 1, '#867e74'); P(6, 9, 4, 1, '#867e74');
+      break;
+    case 'warn':
+      for (let k = 0; k < 7; k++) P(7 - k, 2 + k * 2, 2 + k * 2, 2, '#e4b434');
+      P(7, 5, 2, 5, '#160e0a'); P(7, 11, 2, 2, '#160e0a');
+      break;
+    case 'noworker':
+      P(4, 2, 7, 6, '#d09c74'); P(4, 1, 7, 2, '#583522'); P(3, 8, 9, 7, '#875434');
+      P(11, 0, 4, 2, '#e4b434'); P(13, 2, 2, 2, '#e4b434'); P(12, 4, 2, 1, '#e4b434'); P(12, 6, 2, 2, '#e4b434');
+      break;
+    case 'full':
+      P(2, 4, 12, 10, '#a06840'); P(2, 4, 12, 2, '#cc9a64'); P(5, 0, 6, 4, '#e4b434');
+      break;
+  }
+}
+
+const ICON_URLS = {};
+function iconURL(kind, name, scale = 1) {
+  const key = kind + name + scale;
+  if (ICON_URLS[key]) return ICON_URLS[key];
+  const cv = mkCanvas(18, 18);
+  const c = cv.getContext('2d');
+  if (kind === 'good') drawGoodIcon(c, name, 1, 1); else { c.translate(1, 1); drawUiIcon(c, name); }
+  finishPixel(cv, true);
+  let out = cv;
+  if (scale > 1) {
+    out = mkCanvas(18 * scale, 18 * scale);
+    const oc = out.getContext('2d');
+    oc.imageSmoothingEnabled = false;
+    oc.drawImage(cv, 0, 0, 18 * scale, 18 * scale);
+  }
+  ICON_URLS[key] = out.toDataURL();
+  return ICON_URLS[key];
+}
+
+// Канвас иконки для рисования поверх карты (значки над зданиями).
+const ICON_CANVAS = {};
+function iconCanvas(kind, name) {
+  const key = kind + name;
+  if (ICON_CANVAS[key]) return ICON_CANVAS[key];
+  const cv = mkCanvas(18, 18);
+  const c = cv.getContext('2d');
+  if (kind === 'good') drawGoodIcon(c, name, 1, 1); else { c.translate(1, 1); drawUiIcon(c, name); }
+  finishPixel(cv, true);
+  ICON_CANVAS[key] = cv;
+  return cv;
+}
