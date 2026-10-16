@@ -127,6 +127,7 @@ function onLeftClickTile(t) {
     const err = checkPlacement(tool.type, bx, by, d.rot);
     if (err) { toast(err); return; }
     placeBuilding(tool.type, bx, by, false, d.rot);
+    track('place-1', 'Заложил первое здание');
     if (!Input.keys.has('Shift')) setTool(null);
     return;
   }
@@ -294,6 +295,7 @@ function frame(now) {
   const dt = Math.min(0.1, (now - lastT) / 1000);
   lastT = now;
   scrollByKeys(dt);
+  statsTick(dt);
   if (!Game.paused) {
     acc += dt * Game.speed;
     let steps = 0;
@@ -329,6 +331,7 @@ function startGame() {
   initInput();
   initMobile();
   resize();
+  statsStart();
   initMusic();
   updateMinimapBase();
   updateUI(true);

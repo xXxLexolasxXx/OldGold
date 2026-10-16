@@ -136,6 +136,7 @@ function initUI() {
     const t = e.target.closest('[data-menu]');
     if (!t) return;
     const m = t.dataset.menu;
+    track('menu-' + m, { save: 'Сохранил игру', load: 'Загрузил сохранение', loadauto: 'Загрузил автосохранение', new: 'Открыл «Новая карта»', help: 'Открыл «Как играть»' }[m]);
     if (m === 'save') toast(saveGame('manual') ? 'Игра сохранена' : 'Не удалось сохранить');
     if (m === 'load') { if (loadGame('manual')) { toast('Игра загружена'); updateUI(true); } else toast('Сохранения нет'); }
     if (m === 'loadauto') { if (loadGame('auto')) { toast('Загружено автосохранение'); updateUI(true); } else toast('Автосохранения пока нет'); }

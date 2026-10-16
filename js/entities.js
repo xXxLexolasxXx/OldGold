@@ -360,6 +360,7 @@ function finishBuilding(b) {
   b.stock = emptyGoods();
   b.builder = null;
   toast(`Построено: ${b.def.name}`, b);
+  statsBuilt();
 }
 
 function canPlaceRoad(x, y) {
