@@ -56,6 +56,7 @@ function spawnAnimals() {
   add('rabbit', 9, 10);
   add('goat', 6, 12);
   add('wolf', 3, 17);
+  spawnFarmyard();
 }
 
 function animalGo(a, x, y) {
@@ -101,6 +102,7 @@ function updateAnimal(a, dt) {
     return;
   }
   if (a.calm > Game.time) { a.moving = false; return; }
+  if (def.mood === 'angry') { updateGoose(a, dt, def); return; }
 
   // волк: охота за грузом
   if (def.mood === 'evil') {
@@ -185,5 +187,11 @@ function updateAnimals(dt) {
     if (cnt('deer') < 5) add('deer', 14);
     if (cnt('rabbit') < 6) add('rabbit', 10);
     if (cnt('wolf') < 3 && Math.random() < 0.4) add('wolf', 24);
+    if (cnt('goose') < 4) spawnGeeseFlock();
+    if (cnt('chicken') < 3) {
+      const st = Game.buildings.find(b => b.type === 'storehouse');
+      const s = st && randomFreeNear(st.doorX, st.doorY + 2, 1, 6, (x, y) => isWalkable(x, y) && !World.road[idx(x, y)]);
+      if (s) { const a = makeAnimal('chicken', s[0], s[1]); a.home = [st.doorX, st.doorY + 3]; Game.animals.push(a); }
+    }
   }
 }

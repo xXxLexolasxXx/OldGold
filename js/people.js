@@ -90,6 +90,11 @@ function drawLoad(c, g) {
       line(c, -2.2, 0.6, 2.2, 0.6, '#8a5a2a', 0.8);
       break;
     }
+    case 'mushroom':
+      c.fillStyle = '#efe6d0'; c.fillRect(-1.2, -1, 2.4, 4);
+      c.fillStyle = '#c8341e'; c.beginPath(); c.ellipse(0, -1, 4, 3, 0, Math.PI, 0); c.fill();
+      c.fillStyle = '#fff6ea'; c.fillRect(-2, -3, 1.2, 1); c.fillRect(1, -2.6, 1, 1);
+      break;
     case 'hops':
       for (const [x, y] of [[-3, -1], [0, -2], [3, -1], [-1.5, 1], [1.8, 1]]) { ellipse(c, x, y, 1.6, 2, '#8ab048'); ellipse(c, x - 0.4, y - 0.6, 0.7, 0.8, '#c8e080'); }
       line(c, -4, -3, 4, -3, '#5a3a1e', 0.5);

@@ -15,7 +15,7 @@ function takeNearest(list, x, y) {
 function assignDelivery(u, from, to, g, n = 1) {
   from.reserved[g] += n;
   to.incoming[g] += n;
-  u.idleFlag = false;
+  u.idleFlag = false; u.idleStreak = 0;
   u.action = null; u.anim = null;
   u.proc = deliverGen(u, from, to, g, n);
 }
@@ -128,7 +128,7 @@ function dispatchBuilders() {
     if (!u) return;
     s.builder = u;
     u.job = s;
-    u.idleFlag = false;
+    u.idleFlag = false; u.idleStreak = 0;
     u.proc = null; u.action = null; u.anim = null;
   }
 }
@@ -142,7 +142,7 @@ function dispatchWorkers() {
     if (!u) continue;
     u.home = b;
     b.worker = u;
-    u.idleFlag = false;
+    u.idleFlag = false; u.idleStreak = 0;
     u.proc = null; u.action = null; u.anim = null;
   }
 }

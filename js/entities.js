@@ -606,6 +606,7 @@ class Unit {
       if (a.squeeze) speed *= 0.4;
       if (this.food <= 0 && !this.noFood) speed *= 0.5;
       if (this.injury === 'leg') speed *= 0.55;
+      if (this.fleeUntil > Game.time) speed *= 1.7;     // удирает от гусей
       const step = speed * dt;
       this.walkPhase += step * 6;
       if (Math.abs(dx) > 0.01) this.face = dx > 0 ? 1 : -1;

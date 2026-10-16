@@ -3,7 +3,46 @@
 // Рисуются боком, мордой вправо (влево — отражением). Кэшируются по кадрам.
 
 const CR_CACHE = new Map();
-const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33] };
+const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21] };
+
+// Курица: белая, красный гребешок, семенит
+function drawChicken(c, f) {
+  const step = f === null ? 0 : Math.sin(f / 4 * Math.PI * 2);
+  line(c, -1, 9, -1 + step * 1.2, 13, '#e0a030', 0.6); line(c, 1, 9, 1 - step * 1.2, 13, '#e0a030', 0.6);
+  c.fillStyle = '#f0ece0'; c.beginPath(); c.moveTo(-5.4, 4); c.lineTo(-3.6, 7); c.lineTo(-6, 7.4); c.closePath(); c.fill();   // хвост
+  ellipse(c, -0.4, 7, 4.2, 3, '#f4f0e6'); ellipse(c, -0.8, 7.6, 2.6, 1.6, '#d8d0c0');
+  ellipse(c, 2.8, 3.4, 1.8, 1.8, '#f4f0e6');
+  ellipse(c, 2.6, 1.4, 1.1, 0.7, '#d83a24'); ellipse(c, 3.6, 4.8, 0.5, 0.7, '#d83a24');   // гребешок, бородка
+  poly(c, [[4.4, 3.2], [5.8, 3.6], [4.4, 4.2]], '#e8a028');
+  c.fillStyle = '#1a1210'; c.fillRect(3.1, 2.8, 0.5, 0.5);
+}
+
+// Гусь: длинная шея, оранжевый клюв; в атаке шея вытянута вперёд, крылья растопырены
+function drawGoose(c, f, attack) {
+  const step = f === null ? 0 : Math.sin(f / 4 * Math.PI * 2);
+  line(c, -1.4, 15, -1.4 + step * 1.6, 20.4, '#e08a20', 0.9); line(c, 1.4, 15, 1.4 - step * 1.6, 20.4, '#e08a20', 0.9);
+  ellipse(c, -1.4 + step * 1.6, 20.6, 1.4, 0.5, '#e08a20'); ellipse(c, 1.4 - step * 1.6, 20.6, 1.4, 0.5, '#e08a20');
+  c.fillStyle = '#ece8e0'; c.beginPath(); c.moveTo(-8.4, 9); c.lineTo(-5, 11.6); c.lineTo(-8, 12.4); c.closePath(); c.fill();
+  ellipse(c, 0, 12, 7, 4.2, '#f2eee6');
+  ellipse(c, -1, 13, 5, 2.4, '#d6d0c4');
+  if (attack) {
+    // крылья вверх, шея вперёд-вниз, клюв раскрыт
+    poly(c, [[-3, 9], [-6, 2], [1, 8]], '#e2ddd2', '#b6ada0', 0.3);
+    poly(c, [[0, 9], [2, 1.6], [4, 8.6]], '#ece8e0', '#b6ada0', 0.3);
+    c.strokeStyle = '#f2eee6'; c.lineWidth = 2.6; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(5, 10); c.quadraticCurveTo(8.6, 8, 10.6, 9.6); c.stroke(); c.lineCap = 'butt';
+    ellipse(c, 11, 9.4, 1.9, 1.6, '#f2eee6');
+    poly(c, [[12.4, 8.6], [15, 8.4], [12.6, 9.4]], '#f08a20'); poly(c, [[12.4, 9.8], [14.6, 10.8], [12.4, 10.4]], '#d87010');
+    c.fillStyle = '#1a1210'; c.fillRect(11.2, 8.6, 0.6, 0.6);
+    line(c, 10.2, 8.2, 11.8, 8.4, '#3a2a20', 0.4);   // злая бровь
+  } else {
+    c.strokeStyle = '#f2eee6'; c.lineWidth = 2.4; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(5, 10); c.quadraticCurveTo(7.4, 6, 6.6, 2.6); c.stroke(); c.lineCap = 'butt';
+    ellipse(c, 7, 2.2, 1.8, 1.5, '#f2eee6');
+    poly(c, [[8.4, 1.8], [11, 2.6], [8.4, 3.2]], '#f08a20');
+    c.fillStyle = '#1a1210'; c.fillRect(7.3, 1.6, 0.6, 0.6);
+  }
+}
 
 function crLegs(c, xs, top, len, f, col, w = 1.3) {
   xs.forEach((x, k) => {
@@ -41,6 +80,8 @@ function drawGoatBody(c, f, col, pack, load) {
 }
 
 function drawCreature(c, kind, f, load) {
+  if (kind === 'chicken') { drawChicken(c, f); return; }
+  if (kind === 'goose') { drawGoose(c, f, load === 'attack'); return; }
   if (kind === 'goat') { drawGoatBody(c, f, '#d8d0c0', false); return; }
   if (kind === 'packgoat') { drawGoatBody(c, f, '#e4ddd0', true, load); return; }
   if (kind === 'deer') {
@@ -136,7 +177,7 @@ function creatureSprite(kind, f, load, n = 1) {
   const [w, h, ax, ay] = CR_SIZE[kind];
   const [c2, c] = mkSprite(w, h, 3);
   // перенос так, чтобы копыта/колёса стояли в точке (ax, ay)
-  c.translate(ax, ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11 }[kind]);
+  c.translate(ax, ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6 }[kind]);
   if (kind === 'cart') drawCartRig(c, f, load, n);
   else drawCreature(c, kind, f, load);
   CR_CACHE.set(key, c2);

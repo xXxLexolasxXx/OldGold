@@ -117,6 +117,7 @@ function step(dt) {
   Game.growT += dt;
   if (Game.growT >= 1) { updateGrowth(Game.growT); Game.growT = 0; }
   updateAnimals(dt);
+  updateCritters(dt);
   Game.bumpT = (Game.bumpT || 0) + dt;
   if (Game.bumpT >= 0.25) { checkCollisions(); Game.bumpT = 0; }
   Game.dispatchT += dt;

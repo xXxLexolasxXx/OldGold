@@ -17,6 +17,12 @@ function nearestRoad(x, y, r = 12) {
 }
 
 function* idleGen(u) {
+  // заскучал без дела — досуг: грибы, бабочки, золото в корнях, курица
+  u.idleStreak = (u.idleStreak || 0) + 1;
+  if (u.type !== 'goat' && u.type !== 'carter' && u.idleStreak > LEISURE_IDLE && Game.time >= (u.nextLeisure || 0) && Math.random() < 0.3) {
+    yield* leisureGen(u);
+    return;
+  }
   if (u.isCourier) { yield* courierIdle(u); return; }
   const anchor = nearestStore(u.x, u.y) ||
     Game.buildings.find(b => b.type === 'school' && b.state === 'done');

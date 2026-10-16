@@ -95,7 +95,7 @@ function drawUnit(c, u) {
   }
   let pose = 'idle', frame = 0, view = u.vdir || 'S', face = u.face;
   if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / 1.1) & 7; }
-  else if (u.anim === 'duck') pose = 'duck';
+  else if (u.anim === 'duck' || u.anim === 'forage') pose = 'duck';
   else if (u.anim === 'smoke') { pose = 'smoke'; view = 'E'; }
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
   else if (u.anim === 'sleep') { pose = 'idle'; view = 'E'; }
@@ -642,14 +642,17 @@ function render() {
   }
   for (const a of Game.animals) {
     if (a.x < x0 - 1 || a.x > x1 + 1 || a.y < y0 - 1 || a.y > y1 + 2) continue;
-    list.push([a.y + 0.2, () => drawCreatureAt(c, a.kind, Math.round(a.x * TILE), Math.round(a.y * TILE + 4), a.face, a.moving, a.phase, a.loot)]);
+    const load = a.kind === 'goose' ? (a.state === 'chase' ? 'attack' : null) : a.loot;
+    list.push([a.y + 0.2, () => drawCreatureAt(c, a.kind, Math.round(a.x * TILE), Math.round(a.y * TILE + 4), a.face, a.moving, a.phase, load)]);
   }
+  for (const b of Game.critters || []) list.push([b.y + 0.1, () => drawButterfly(c, b)]);
   for (const p of Game.piles.values()) {
     list.push([p.y + 0.5, () => drawPile(c, p)]);
   }
   list.sort((a, b) => a[0] - b[0]);
   for (const [, fn] of list) fn();
 
+  drawFloaters(c);
   drawClouds(c);
   drawStatusIcons(c, x0, y0, x1, y1);
   drawOverlay(c);
