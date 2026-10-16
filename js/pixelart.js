@@ -125,6 +125,173 @@ function selOutline(G, dark, rimLight) {
   for (const [x, y, c] of add) G.set(x, y, c);
 }
 
+// ---------- Мельница ----------
+// 56×112 пикселей мира, основание в точке (28, 104), ось крыльев в MILL_HUB.
+
+const MILL_W = 56, MILL_H = 112, MILL_AX = 28, MILL_AY = 104, MILL_HUB = [28, 30];
+
+const MILL_PAL = {
+  K: '#24120a',
+  a: '#fbf1d8', b: '#efe2c4', c: '#dccba8', d: '#c3b08c', e: '#a08e6e', f: '#7c6c54',   // белёная штукатурка: свет → тень
+  A: '#b8b0a2', B: '#9a9286', C: '#7c746a', D: '#5e5850', N: '#3e3a34',                // камень цоколя
+  r: '#e07448', s: '#c85a32', t: '#ac462a', u: '#8c3624', v: '#6c281a', w: '#4c1c14',   // красная черепица
+  o: '#2a140a', p: '#a8703c', P: '#cc945a', n: '#5a3018', y: '#f4c848',                // дверь
+  L: '#ffe9a0', l: '#f0b050', h: '#7a4a1e',                                           // тёплое окошко
+  M: '#d4e88a', m: '#9cc44c', g: '#6a9a34', G: '#43682a', H: '#2c461c',               // мох, трава
+  k: '#6e4a2a', j: '#8e6438', i: '#b88a50',                                           // доски галереи
+  F: '#f0ece0', E: '#d8ccb0', X: '#e6c24a',                                           // мешки
+  R: '#e86a9a', W: '#f4f0f6', Y: '#f0d040',                                           // цветы
+};
+
+const MILL_STAMP = {
+  door: [
+    '..KKKKK..',
+    '.KoPpPoK.',
+    'KoPpPpPoK',
+    'KPpPpPpPK',
+    'KPnnnnnPK',
+    'KPpPpPpPK',
+    'KPpPpPyPK',
+    'KPpPpPpPK',
+    'KPnnnnnPK',
+    'KPpPpPpPK',
+    'KPpPpPpPK',
+    'KKKKKKKKK',
+  ],
+  window: [
+    '.KKK.',
+    'KlLlK',
+    'KLLLK',
+    'KKhKK',
+    'KlhlK',
+    'KlhlK',
+    'KKKKK',
+  ],
+  sack: [
+    '.EE.',
+    'FFFE',
+    'FFFE',
+    'FFEE',
+  ],
+  sackGold: [
+    '.EE.',
+    'XXXE',
+    'XXXE',
+    'XXEE',
+  ],
+};
+
+function millArt() {
+  if (millArt.cv) return millArt.cv;
+  const P = MILL_PAL, G = pxGrid(MILL_W, MILL_H), cx = MILL_AX;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  // холмик травы у основания
+  for (let y = 98; y <= 109; y++) for (let x = 2; x < 54; x++) {
+    const e = ((x - cx) / 26) ** 2 + ((y - 104) / 5.5) ** 2;
+    if (e > 1) continue;
+    const t = (y - 98) / 11, side = (x - cx) / 26;
+    let col = t < 0.3 ? P.m : t < 0.6 ? P.g : P.G;
+    if (side < -0.4 && t < 0.4) col = P.M;
+    if (side > 0.5 && col === P.g) col = P.G;
+    G.set(x, y, col);
+  }
+  // ствол башни: сужается кверху; полосы света по цилиндру
+  const halfAt = y => Math.round(y > 86 ? lerp(17, 19, (y - 86) / 16) : lerp(12, 17, (y - 36) / 50));
+  const plaster = [P.a, P.b, P.c, P.d, P.e, P.f], stone = [P.A, P.A, P.B, P.C, P.D, P.N];
+  for (let y = 36; y <= 102; y++) {
+    const hw = halfAt(y), L = cx - hw, Rr = cx + hw;
+    const isBase = y >= 86;
+    for (let x = L; x <= Rr; x++) {
+      const t = (x - L) / (Rr - L);
+      const k = t < 0.12 ? 0 : t < 0.3 ? 1 : t < 0.55 ? 2 : t < 0.75 ? 3 : t < 0.9 ? 4 : 5;
+      if (isBase) {
+        // каменный цоколь: ряды камней со сдвигом, тёмные швы
+        const row = Math.floor((y - 86) / 3), off = row % 2 ? 2 : 0;
+        const seamV = (x + off) % 5 === 0, seamH = (y - 86) % 3 === 2;
+        G.set(x, y, seamV || seamH ? P.N : stone[k]);
+      } else G.set(x, y, plaster[k]);
+    }
+  }
+  // кое-где из-под штукатурки видны камни — следы времени
+  for (const [x0, y0, w, h] of [[17, 58, 5, 4], [33, 74, 4, 3], [20, 46, 3, 3], [31, 54, 3, 2]]) {
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) {
+      const base = G.get(x, y); if (!base) continue;
+      G.set(x, y, (x + y) % 3 === 0 ? P.C : x < cx ? P.A : P.B);
+    }
+  }
+  // мох у основания цоколя
+  const mh = [3, 4, 2, 5, 3, 2, 4, 3, 1, 2, 3, 2, 1, 2, 3, 4, 2, 3, 2, 1, 2, 3, 2, 1, 3, 2, 4, 3, 2, 3, 2, 1, 2, 3, 2, 2, 3, 1];
+  for (let i = 0; i < mh.length; i++) for (let k = 0; k < mh[i]; k++) { const x = 9 + i, y = 101 - k; if (G.get(x, y)) G.set(x, y, k === mh[i] - 1 ? P.M : P.m); }
+  // деревянная галерея с перилами вокруг башни
+  for (let x = cx - 17; x <= cx + 17; x++) {
+    G.set(x, 38, P.i); G.set(x, 39, x < cx + 8 ? P.j : P.k); G.set(x, 40, P.k);
+    if (x % 3 === 0) for (let y = 33; y < 38; y++) G.set(x, y, x < cx ? P.j : P.k);   // стойки перил
+    G.set(x, 33, P.i); G.set(x, 34, P.k);
+  }
+  for (const x of [cx - 15, cx - 7, cx + 1, cx + 9]) { G.set(x, 41, P.k); G.set(x + 1, 42, P.k); }   // подкосы
+  // колпак из красной черепицы: конус с волнистым краем и рядами черепицы
+  const tiles = [P.r, P.s, P.t, P.u, P.v, P.w];
+  for (let y = 6; y <= 33; y++) {
+    const hw = Math.round(lerp(1, 19, (y - 6) / 27)), L = cx - hw, Rr = cx + hw;
+    for (let x = L; x <= Rr; x++) {
+      const t = hw ? (x - L) / (Rr - L) : 0.3;
+      let k = t < 0.15 ? 0 : t < 0.35 ? 1 : t < 0.6 ? 2 : t < 0.8 ? 3 : t < 0.93 ? 4 : 5;
+      if ((y - 6) % 4 === 3) k = Math.min(5, k + 1);                 // нижняя кромка ряда черепицы
+      if ((y - 6) % 4 === 0 && (x + y) % 4 === 0) k = Math.max(0, k - 1);   // блик на выпуклой черепице
+      G.set(x, y, tiles[k]);
+    }
+  }
+  for (let x = cx - 19; x <= cx + 19; x++) if ((x - cx) % 3 === 0) G.set(x, 34, P.w);   // зубчатый свес
+  // шпиль с флажком
+  for (let y = 0; y < 6; y++) G.set(cx, y, P.k);
+  G.set(cx + 1, 0, P.s); G.set(cx + 2, 0, P.s); G.set(cx + 1, 1, P.s);
+  // окна и дверь — дверь правее центра, над клеткой входа
+  G.stamp(MILL_STAMP.window, cx - 8, 46, P);
+  G.stamp(MILL_STAMP.window, cx + 3, 64, P);
+  G.stamp(MILL_STAMP.window, cx - 10, 72, P);
+  G.stamp(MILL_STAMP.door, cx + 1, 90, P);
+  // мешки с мукой и зерном у входа, цветы на холмике
+  G.stamp(MILL_STAMP.sack, cx - 16, 97, P);
+  G.stamp(MILL_STAMP.sackGold, cx - 12, 98, P);
+  G.stamp(MILL_STAMP.sack, cx + 12, 98, P);
+  for (const [x, y, col] of [[6, 104, P.R], [8, 102, P.W], [46, 103, P.Y], [49, 105, P.R], [4, 106, P.Y], [51, 101, P.W]]) { G.set(x, y, col); G.set(x, y + 1, P.G); }
+  selOutline(G, P.K, '#5a3a20');
+  const cv = mkCanvas(MILL_W, MILL_H), c = cv.getContext('2d');
+  for (let y = 0; y < MILL_H; y++) for (let x = 0; x < MILL_W; x++) { const col = G.g[y][x]; if (col) { c.fillStyle = col; c.fillRect(x, y, 1, 1); } }
+  millArt.cv = cv;
+  millArt.perches = [[cx, 1], [cx - 10, 24], [cx + 10, 24]];
+  return cv;
+}
+
+// Крылья мельницы: решётка из реек, парусина на клетках. Заранее рисуется набор
+// кадров поворота (крылья симметричны — хватает четверти оборота), каждый — пиксель-арт.
+const SAIL_FRAMES = 16, SAIL_SIZE = 96;
+function sailFrame(i) {
+  sailFrame.cache = sailFrame.cache || [];
+  if (sailFrame.cache[i]) return sailFrame.cache[i];
+  const S = 4, [cv, c] = mkSprite(SAIL_SIZE, SAIL_SIZE, S);
+  c.translate(SAIL_SIZE / 2, SAIL_SIZE / 2);
+  c.rotate(i / SAIL_FRAMES * Math.PI / 2);
+  for (let k = 0; k < 4; k++) {
+    c.rotate(Math.PI / 2);
+    // махина-рея
+    c.fillStyle = '#4a2c16'; c.fillRect(-1.6, 3, 3.2, 42);
+    c.fillStyle = '#8a5a30'; c.fillRect(-1.6, 3, 1.2, 42);
+    // решётка: рамка с одной стороны от реи
+    const x0 = 1.6, w = 10, y0 = 9, y1 = 44;
+    c.fillStyle = '#efe4c8'; c.fillRect(x0, y0, w, y1 - y0);                  // парусина
+    c.fillStyle = 'rgba(160,140,100,0.45)'; c.fillRect(x0 + w * 0.55, y0, w * 0.45, y1 - y0);
+    c.fillStyle = '#5a3a1e';
+    for (let y = y0; y <= y1; y += 5) c.fillRect(x0, y, w, 1.1);              // поперечные рейки
+    c.fillRect(x0 + w - 1.1, y0, 1.1, y1 - y0); c.fillRect(x0 + w * 0.5, y0, 0.9, y1 - y0);
+  }
+  c.fillStyle = '#3a2414'; c.beginPath(); c.arc(0, 0, 4, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#8a5a30'; c.beginPath(); c.arc(-0.8, -0.8, 1.8, 0, Math.PI * 2); c.fill();
+  const out = toPixelArt(cv, S, { outline: true, outlineDark: 0.25, alphaCut: 90 });
+  sailFrame.cache[i] = out;
+  return out;
+}
+
 // ---------- Пень ----------
 // 60×66 пикселей мира, основание ствола в точке (30, 56).
 

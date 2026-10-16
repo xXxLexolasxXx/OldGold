@@ -850,16 +850,15 @@ const MODELS = {
   },
 
   mill(m) {
-    m.tower({
-      x: 38, y: 30, r: 19, h: 72, taper: 0.76, col: '#d4cab6',
-      roof: { h: 30, mat: 'shingle', col: '#7a4a2a', ov: 4 }, gallery: 54,
-      decor: [{ t: 'door', a: 28, z: 0, w: 9, h: 15, o: { frame: 'stone' } }, { t: 'win', a: -8, z: 30, w: 5, h: 8, o: { arch: true, stone: true } }, { t: 'win', a: 12, z: 58, w: 5, h: 7, o: { arch: true, stone: true } }],
-    });
-    m.g.spr.hub = PL(m, 38, 30 - 18, 78);
-    m.prop((c, x, y) => sack(c, x, y, '#f0ece0'), 4, 6);
-    m.prop((c, x, y) => sack(c, x, y, '#e6c24a'), 12, 4);
-    m.prop((c, x, y) => sack(c, x, y, '#f0ece0'), 60, 4);
-    m.prop((c, x, y) => cart(c, x, y, '#e6c24a'), 52, -8);
+    // мельница нарисована вручную по пикселям (pixelart.js), крылья — готовыми кадрами
+    m.custom(c => {
+      const x = Math.round(m.g.fx + m.g.fw / 2), y = Math.round(m.g.fy + m.g.fh - 4);
+      shadowAt(c, x + 8, y + 3, 24, 7);
+      m.g.spr.handArt = { art: millArt, x, y, ax: MILL_AX, ay: MILL_AY };
+      m.g.spr.hub = [x - MILL_AX + MILL_HUB[0], y - MILL_AY + MILL_HUB[1]];
+      if (m.sign) SIGN_QUEUE.list.push({ x: x - 26, y: y + 4, kind: m.sign, dir: -1 });
+    }, 32, 12);
+    m.prop((c, x, y) => cart(c, x, y, '#e6c24a'), 58, -6);
   },
 
   bakery(m) {

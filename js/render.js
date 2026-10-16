@@ -528,6 +528,15 @@ function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
 }
 
 function drawSails(c, x, y, a) {
+  // пиксельные кадры: крылья симметричны, поэтому достаточно четверти оборота
+  const q = ((a % (Math.PI / 2)) + Math.PI / 2) % (Math.PI / 2);
+  const spr = sailFrame(Math.floor(q / (Math.PI / 2) * SAIL_FRAMES) % SAIL_FRAMES);
+  const prev = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false;
+  c.drawImage(spr, Math.round(x - SAIL_SIZE / 2), Math.round(y - SAIL_SIZE / 2), SAIL_SIZE, SAIL_SIZE);
+  c.imageSmoothingEnabled = prev;
+}
+
+function drawSailsOld(c, x, y, a) {
   c.save();
   c.translate(x, y);
   c.rotate(a);
