@@ -237,11 +237,14 @@ function storeHTML() {
 
 function peopleHTML() {
   const cnt = {}, idle = {}, queued = {};
-  let hungry = 0;
+  let hungry = 0, smoking = 0, sleeping = 0, hurt = 0;
   for (const u of Game.units) {
     cnt[u.type] = (cnt[u.type] || 0) + 1;
-    if (u.idleFlag || (!u.home && u.type !== 'serf' && u.type !== 'builder')) idle[u.type] = (idle[u.type] || 0) + 1;
-    if (u.food < HUNGRY) hungry++;
+    if (u.idleFlag || (!u.home && !u.isCourier && u.type !== 'builder')) idle[u.type] = (idle[u.type] || 0) + 1;
+    if (!u.noFood && u.food < HUNGRY) hungry++;
+    if (u.brk && u.brk.kind === 'sleep') sleeping++;
+    else if (u.brk) smoking++;
+    if (u.injury) hurt++;
   }
   for (const b of Game.buildings) if (b.type === 'school') {
     for (const q of b.queue) queued[q] = (queued[q] || 0) + 1;
@@ -249,11 +252,16 @@ function peopleHTML() {
   }
   let h = `<div class="stat-row"><b>Всего жителей</b><span class="v">${Game.units.length}</span></div>`;
   if (hungry) h += `<div class="stat-row warn">Голодных: ${hungry}</div>`;
-  for (const k of UNIT_KEYS) {
+  if (smoking) h += `<div class="stat-row muted">На перекуре: ${smoking}</div>`;
+  if (sleeping) h += `<div class="stat-row warn">Спят пьяные: ${sleeping}</div>`;
+  if (hurt) h += `<div class="stat-row warn">Травмированы: ${hurt}</div>`;
+  for (const k of ALL_UNIT_KEYS) {
     const c = cnt[k] || 0;
+    const T = UNIT_TYPES[k];
+    if (T.noTrain && !c) continue;
     h += `<div class="prow"><img class="portrait" src="${portraitURL(k)}" alt="">
-      <div><div class="pn">${UNIT_TYPES[k].name}</div><div class="muted small">${idle[k] ? `свободно: ${idle[k]}` : c ? 'все заняты' : 'нет'}${queued[k] ? ` · учится: ${queued[k]}` : ''}</div></div>
-      <span class="pc">${c}</span><button data-train="${k}" title="Обучить в школе (1 золото)">+</button></div>`;
+      <div><div class="pn">${T.name}</div><div class="muted small">${idle[k] ? `свободно: ${idle[k]}` : c ? 'все заняты' : 'нет'}${queued[k] ? ` · учится: ${queued[k]}` : ''}</div></div>
+      <span class="pc">${c}</span>${T.noTrain ? '<span></span>' : `<button data-train="${k}" title="Обучить в школе (1 золото)">+</button>`}</div>`;
   }
   return h;
 }
@@ -426,13 +434,23 @@ function infoBuilding(b) {
     }
     h += `<div class="irow muted">Деревьев рядом: ${n}, взрослых: ${grown}</div>`;
   }
-  if (b.type === 'farm') {
-    const cnt = { wheat: 0, hay: 0 };
-    for (const o of World.obj) if (o && o.t === 'field' && o.farm === b.id) cnt[o.crop || 'wheat']++;
+  if (b.type === 'goatpen') {
+    const n = Game.units.filter(x => x.type === 'goat' && x.homePen === b.id).length;
+    const wild = Game.animals.filter(a => a.kind === 'goat').length;
+    h += `<div class="irow">Вьючных коз: <b>${n}</b> из 3</div><div class="irow muted">Диких коз на карте: ${wild}</div>`;
+  }
+  if (b.type === 'stable') {
+    const n = Game.units.filter(x => x.type === 'carter' && x.homeStable === b.id).length;
+    h += `<div class="irow">Извозчиков: <b>${n}</b> из 3</div><div class="small muted">Лошадь: 3 сена + 2 зерна. Телега везёт сразу весь стек — до 5 штук.</div>`;
+  }
+  if (b.def.crops) {
+    const cnt = {};
+    for (const o of World.obj) if (o && o.t === 'field' && o.farm === b.id) cnt[o.crop || 'wheat'] = (cnt[o.crop || 'wheat'] || 0) + 1;
     h += '<div class="isec">Что сеять</div>';
-    for (const crop of FARM_CROPS)
-      h += `<div class="recipe${b.crops[crop] ? '' : ' off'}">${gi(crop)} ${crop === 'wheat' ? 'Пшеница → зерно' : 'Травы → сено'}<span class="t">полей: ${cnt[crop]}</span><input type="checkbox" data-crop="${crop}" ${b.crops[crop] ? 'checked' : ''}></div>`;
-    h += `<div class="irow muted">Всего полей: ${cnt.wheat + cnt.hay} из ${FARM_FIELDS}</div>`;
+    const CROP_NAMES = { wheat: 'Пшеница → зерно', hay: 'Травы → сено', hops: 'Хмель на шестах' };
+    for (const crop of def.crops)
+      h += `<div class="recipe${b.crops[crop] ? '' : ' off'}">${gi(crop)} ${CROP_NAMES[crop]}<span class="t">полей: ${cnt[crop] || 0}</span>${def.crops.length > 1 ? `<input type="checkbox" data-crop="${crop}" ${b.crops[crop] ? 'checked' : ''}>` : ''}</div>`;
+    h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div>`;
   }
   if (b.type === 'swine') {
     const st = ['', '⅓', '⅔'];

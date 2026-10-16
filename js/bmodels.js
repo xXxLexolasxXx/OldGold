@@ -787,6 +787,102 @@ const MODELS = {
     m.prop((c, x, y) => crate(c, x, y, 6, '#6a4a2a'), 2, 18);
   },
 
+  hopfarm(m) {
+    // жилой домик хмелевода
+    m.box({
+      x0: 2, x1: 44, y0: 12, y1: 50, h: 24, wall: 'plaster', col: '#ecdcb6', frame: true, beam: BEAM,
+      roof: { type: 'gable', axis: 'X', rise: 17, mat: 'tiles', col: '#a85232', ov: 4 },
+      decor: { S: [{ t: 'door', main: true, w: 8, h: 14, o: { square: true } }, { t: 'win', at: 12, z: 9, w: 6, h: 7, o: { shutter: '#3e6a3a', flowers: true } }], E: [], W: [{ t: 'win', at: 30, z: 9 }] },
+      chimneys: [{ x: 10, y: 36, h: 9, kind: 'brick', w: 4 }],
+    });
+    // сушильная башня (как английские хмелесушилки): кирпичный круг и конус с белым колпаком
+    m.tower({
+      x: 70, y: 32, r: 15, h: 34, col: '#b8643c',
+      roof: { h: 44, mat: 'tiles', col: '#a85232', ov: 3 }, finial: true,
+      decor: [{ t: 'win', a: 0, z: 14, w: 5, h: 7, o: { arch: true } }, { t: 'door', a: 40, z: 0, w: 7, h: 12, o: { square: true } }],
+    });
+    m.custom((c, mm) => {
+      // белый колпак-вытяжка на вершине
+      const [x, y] = mm.at(70, 32, 34 + 44);
+      c.fillStyle = '#f0ece2'; c.beginPath(); c.moveTo(x - 4, y + 7); c.lineTo(x + 4, y + 7); c.lineTo(x + 3, y - 2); c.quadraticCurveTo(x + 7, y - 3, x + 6, y + 1); c.lineTo(x + 3, y + 1); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(40,30,20,0.6)'; c.lineWidth = 0.5; c.stroke();
+    }, 70, 10);
+    m.prop((c, x, y) => sack(c, x, y, '#a8c060'), 50, 4);
+    m.prop((c, x, y) => basket(c, x, y, '#9ac050'), 58, 2);
+    m.prop((c, x, y) => { for (let k = 0; k < 4; k++) { line(c, x + k * 3, y, x + k * 3 + 1, y - 14, '#6a4424', 0.7); } }, 88, 6);
+  },
+
+  brewery(m) {
+    m.box({
+      x0: 2, x1: 66, y0: 10, y1: 52, h: 30, wall: 'stone', col: '#a49c90',
+      roof: { type: 'gable', axis: 'X', rise: 22, mat: 'tiles', col: '#9a4a2c', ov: 4 },
+      decor: {
+        S: [{ t: 'door', main: true, w: 12, h: 18, o: { frame: 'stone', double: true } }, { t: 'win', at: 14, z: 11, w: 7, h: 8, o: { lit: true, stone: true } }, { t: 'win', at: 62, z: 11, w: 6, h: 8, o: { stone: true } },
+          { t: 'sign', at: 22, z: 25, kind: 'mug' }],
+        E: [{ t: 'win', at: 30, z: 11, w: 6, h: 8, o: { lit: true } }], W: [{ t: 'win', at: 30, z: 11 }],
+      },
+      dormers: [{ x: 30, w: 12, h: 9, loft: true }],
+      chimneys: [{ x: 52, y: 36, h: 14, kind: 'brick', w: 6 }],
+    });
+    // открытый навес с медным варочным котлом
+    m.box({
+      x0: 66, x1: 94, y0: 12, y1: 44, h: 24, open: true,
+      roof: { type: 'lean', down: 'S', rise: 8, mat: 'shingle', col: '#6a4a2a', ov: 3 },
+      inside: (c, mm) => {
+        const [x, y] = mm.at(80, 24);
+        ellipse(c, x, y + 1, 8, 2.5, 'rgba(0,0,0,0.35)');
+        c.fillStyle = '#5a5048'; c.fillRect(x - 7, y - 4, 14, 5);
+        c.fillStyle = 'rgba(255,140,40,0.85)'; c.fillRect(x - 4, y - 2.5, 8, 2);
+        c.fillStyle = lingrad(c, x - 7, 0, x + 7, 0, [[0, '#e8a060'], [0.4, '#c06a30'], [1, '#6a3010']]);
+        c.beginPath(); c.ellipse(x, y - 9, 7, 6, 0, 0, Math.PI); c.lineTo(x - 7, y - 9); c.fill();
+        ellipse(c, x, y - 9, 7, 2.2, '#8a4a20'); ellipse(c, x, y - 9, 5.6, 1.6, '#c8902c');
+        c.fillStyle = '#c06a30'; c.fillRect(x - 1.5, y - 22, 3, 13);
+      },
+    });
+    m.g.spr.glow = PL(m, 80, 12, 4);
+    m.prop((c, x, y) => barrel(c, x, y), 6, 4);
+    m.prop((c, x, y) => barrel(c, x, y, 0.9), 13, 2);
+    m.prop((c, x, y) => barrel(c, x, y, 0.85), 9, -2);
+    m.prop((c, x, y) => sack(c, x, y, '#e6c24a'), 68, 4);
+    m.prop((c, x, y) => sack(c, x, y, '#a8c060'), 76, 2);
+  },
+
+  goatpen(m) {
+    m.box({
+      x0: 4, x1: 46, y0: 26, y1: 58, h: 18, wall: 'plank', col: '#8a6a40', beam: '#3a2414',
+      roof: { type: 'gable', axis: 'X', rise: 13, mat: 'thatch', col: '#b0903e', ov: 4 },
+      decor: { S: [{ t: 'door', at: 25, w: 9, h: 12, o: { square: true, braces: true } }], E: [{ t: 'hatch', at: 42, z: 4, w: 6, h: 6 }], W: [] },
+    });
+    m.ground((c, mm) => {
+      groundPoly(c, mm, [[2, 2], [94, 2], [94, 62], [2, 62]], 'rgba(120,96,56,0.55)');
+      for (let k = 0; k < 30; k++) { const q = mm.at(rnd(6, 90), rnd(4, 60)); ellipse(c, q[0], q[1], rnd(1, 3), rnd(0.8, 1.6), 'rgba(80,110,40,0.6)'); }
+    });
+    const gx = m.doorX;
+    m.fence([[2, 62], [2, 2], [gx - 8, 2]], 7);
+    m.fence([[gx + 8, 2], [94, 2], [94, 62]], 7);
+    m.prop((c, x, y) => trough(c, x, y, 14, '#b8b060'), 64, 30);
+    m.prop((c, x, y) => hayBale(c, x, y, 0.8), 80, 48);
+    m.prop((c, x, y) => { line(c, x, y, x + 2, y - 16, '#6a4424', 0.9); c.strokeStyle = '#6a4424'; c.lineWidth = 0.9; c.beginPath(); c.arc(x + 3.6, y - 16, 1.6, Math.PI, 0); c.stroke(); }, 54, 6);
+  },
+
+  stable(m) {
+    m.box({
+      x0: 2, x1: 82, y0: 14, y1: 56, h: 26, wall: 'plank', col: '#7a5434', beam: '#3a2414', lowerStone: 8,
+      roof: { type: 'gable', axis: 'X', rise: 20, mat: 'thatch', col: '#b8913e', ov: 5 },
+      decor: {
+        S: [{ t: 'door', main: true, w: 16, h: 20, o: { double: true, braces: true, square: true, col: '#6a4424' } },
+          { t: 'hatch', at: 14, z: 10, w: 9, h: 7 }, { t: 'hatch', at: 30, z: 10, w: 9, h: 7 }, { t: 'hatch', at: 72, z: 10, w: 9, h: 7 }],
+        E: [{ t: 'win', at: 34, z: 12, w: 6, h: 6 }], W: [],
+      },
+      dormers: [{ x: 22, w: 13, h: 9, loft: true }],
+    });
+    m.prop((c, x, y) => cart(c, x, y, null), 84, 6);
+    m.prop((c, x, y) => trough(c, x, y, 16, '#b8b060'), 6, 2);
+    m.prop((c, x, y) => hayBale(c, x, y), 90, 40);
+    m.prop((c, x, y) => sack(c, x, y, '#e6c24a'), 60, 2);
+    m.fence([[86, 20], [94, 20], [94, 50]]);
+  },
+
   magiccircle(m) { m.custom(c => drawMagicCircle(c, m.g), 0, 60); },
 
   magicworkshop(m) {

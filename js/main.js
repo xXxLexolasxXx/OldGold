@@ -18,6 +18,7 @@ function setupStart(seed) {
       else spawnUnit(type, cx - 8 + (Math.random() * 12 | 0), cy + 1 + (Math.random() * 2 | 0));
     }
 
+  spawnAnimals();
   centerOn((cx - 3) * TILE, (cy - 1) * TILE);
 }
 
@@ -35,6 +36,9 @@ function step(dt) {
   for (const b of Game.buildings) b.update(dt);
   Game.growT += dt;
   if (Game.growT >= 1) { updateGrowth(Game.growT); Game.growT = 0; }
+  updateAnimals(dt);
+  Game.bumpT = (Game.bumpT || 0) + dt;
+  if (Game.bumpT >= 0.25) { checkCollisions(); Game.bumpT = 0; }
   Game.dispatchT += dt;
   if (Game.dispatchT >= 0.4) { dispatchAll(); Game.dispatchT = 0; }
 }
@@ -321,6 +325,7 @@ function startGame() {
   document.getElementById('loading').classList.add('hidden');
   initUI();
   initInput();
+  initMusic();
   updateMinimapBase();
   updateUI(true);
   requestAnimationFrame(frame);

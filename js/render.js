@@ -80,25 +80,69 @@ function drawUnit(c, u) {
   const px = Math.round(u.x * TILE), py = Math.round(u.y * TILE + 6);
   const a = u.action;
   const moving = a && a.walk && a.path && !(a.block > 0 && !a.squeeze);
+  // вьючная коза и телега извозчика
+  if (u.type === 'goat' || u.type === 'carter') {
+    drawCreatureAt(c, u.type === 'goat' ? 'packgoat' : 'cart', px, py, u.face, moving, u.walkPhase / 1.4, u.carry, u.carryN || 1);
+    return;
+  }
   let pose = 'idle', frame = 0, view = u.vdir || 'S';
   if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / 1.1) & 7; }
   else if (u.anim === 'duck') pose = 'duck';
+  else if (u.anim === 'smoke') { pose = 'smoke'; view = 'E'; }
+  else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
+  else if (u.anim === 'sleep') { pose = 'idle'; view = 'E'; }
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: Math.floor(Game.time * 5 + u.id) & 3 }; }
   c.fillStyle = 'rgba(10,8,4,0.32)';
-  c.beginPath(); c.ellipse(px + 1.5, py - 0.2, 5.5, 2, 0, 0, 7); c.fill();
+  c.beginPath(); c.ellipse(px + 1.5, py - 0.2, u.anim === 'sleep' ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   const spr = personSprite(u, view, pose, frame);
   c.imageSmoothingEnabled = true;
   c.imageSmoothingQuality = 'high';
-  if (view === 'E' && u.face < 0) {
+  if (u.anim === 'sleep') {
+    // лежит на земле, бормочет «Zzz»
+    c.save(); c.translate(px, py - 1); c.rotate(-Math.PI / 2 * (u.face < 0 ? -1 : 1));
+    if (u.face < 0) c.scale(-1, 1);
+    c.drawImage(spr, -PFX, -PFY + 2, PW, PH);
+    c.restore();
+    const t = Game.time;
+    c.fillStyle = 'rgba(240,240,255,0.9)'; c.font = 'bold 6px serif';
+    for (let k = 0; k < 3; k++) {
+      const p = (t * 0.5 + k / 3) % 1;
+      c.globalAlpha = 1 - p;
+      c.fillText('z', px + 6 + p * 8, py - 10 - p * 14 - k);
+    }
+    c.globalAlpha = 1;
+  } else if (view === 'E' && u.face < 0) {
     c.save(); c.translate(px, 0); c.scale(-1, 1);
     c.drawImage(spr, -PFX, py - PFY, PW, PH);
     c.restore();
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
   c.imageSmoothingEnabled = false;
+  // дымок из трубки
+  if (u.anim === 'smoke') {
+    const bx = px + u.face * 6.4, by = py - 15.6;
+    for (let k = 0; k < 4; k++) {
+      const p = (Game.time * 0.45 + k / 4 + u.id * 0.17) % 1;
+      c.fillStyle = `rgba(220,218,210,${0.55 * (1 - p)})`;
+      c.beginPath(); c.arc(bx + Math.sin(p * 5 + u.id) * 1.6 + u.face * p * 3, by - p * 14, 0.8 + p * 2.4, 0, 7); c.fill();
+    }
+  }
   if (u.food <= 0) {
     c.fillStyle = '#160e0a'; c.fillRect(px + 4, py - 36, 4, 8);
     c.fillStyle = '#e04030'; c.fillRect(px + 5, py - 35, 2, 4); c.fillRect(px + 5, py - 30, 2, 1);
   }
+}
+
+// Рассыпанный груз на земле
+function drawPile(c, p) {
+  const x = p.x * TILE + 16, y = p.y * TILE + 22;
+  c.imageSmoothingEnabled = true;
+  let k = 0;
+  for (const g of GOOD_KEYS) for (let n = 0; n < Math.min(p.stock[g], 3); n++, k++) {
+    c.save(); c.translate(x - 6 + (k % 3) * 6, y - Math.floor(k / 3) * 4); c.scale(0.7, 0.7);
+    drawLoad(c, g);
+    c.restore();
+  }
+  c.imageSmoothingEnabled = false;
 }
 
 // ---------- Животные ----------
@@ -223,6 +267,46 @@ function glow(c, x, y, r, rgb, a) {
   c.fillRect(x - r, y - r, r * 2, r * 2);
 }
 
+// Клетки 4×4 спрайта здания в порядке «снизу вверх, ряд за рядом» — по ним идёт стройка.
+function siteCells(spr) {
+  if (spr.cells) return spr.cells;
+  const cv = spr.canvas, k = cv.width / spr.w, cs = Math.round(4 * k);
+  const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+  const cols = Math.ceil(cv.width / cs), rows = Math.ceil(cv.height / cs);
+  const r = mulberry32(7), cells = [];
+  for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+    let n = 0;
+    for (let y = cy * cs; y < Math.min(cv.height, (cy + 1) * cs); y += 2)
+      for (let x = cx * cs; x < Math.min(cv.width, (cx + 1) * cs); x += 2)
+        if (d[(y * cv.width + x) * 4 + 3] > 30) n++;
+    if (n) cells.push({ x: cx * cs, y: cy * cs, s: cs, key: (rows - cy) + r() * 1.8 });
+  }
+  cells.sort((a, b) => a.key - b.key);
+  spr.cells = cells;
+  return cells;
+}
+
+// Холст стройки здания: на каждый удар молота дорисовываем порцию клеток.
+function siteState(b, spr) {
+  const cells = siteCells(spr);
+  if (!b._site || b._site.spr !== spr) b._site = { spr, cv: mkCanvas(spr.canvas.width, spr.canvas.height), n: 0, pops: [], top: 1e9 };
+  const S = b._site;
+  const target = Math.floor(b.buildFrac * cells.length);
+  if (S.n < target) {
+    const sc = S.cv.getContext('2d');
+    const fresh = S.n > 0;     // при загрузке игры не мигаем всем зданием
+    let k = 0;
+    while (S.n < target) {
+      const cl = cells[S.n++];
+      sc.drawImage(spr.canvas, cl.x, cl.y, cl.s, cl.s, cl.x, cl.y, cl.s, cl.s);
+      S.top = Math.min(S.top, cl.y);
+      if (fresh) S.pops.push({ cl, t: Game.time, dust: k++ % 9 === 0 });
+    }
+    if (S.pops.length > 160) S.pops.splice(0, S.pops.length - 160);
+  }
+  return S;
+}
+
 function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
   c.fillStyle = '#45291a'; c.fillRect(fx + 1, fy + 1, fw - 2, fh - 2);
   c.fillStyle = '#875434'; c.fillRect(fx + 2, fy + 2, fw - 4, fh - 4);
@@ -231,25 +315,48 @@ function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
     c.fillStyle = r() < 0.5 ? '#6e432a' : '#a06840';
     c.fillRect(fx + 2 + ((r() * (fw - 6)) | 0), fy + 2 + ((r() * (fh - 6)) | 0), 2, 1);
   }
-  for (const [sx, sy] of [[fx + 3, fy + 3], [fx + fw - 5, fy + 3], [fx + 3, fy + fh - 5], [fx + fw - 5, fy + fh - 5]]) {
+  // колышки забиваются по одному на каждый удар разметки
+  const stakes = [[fx + 3, fy + 3], [fx + fw - 5, fy + 3], [fx + 3, fy + fh - 5], [fx + fw - 5, fy + fh - 5]];
+  const nStakes = b.state === 'site' ? Math.min(4, 1 + b.hits) : 4;
+  for (const [sx, sy] of stakes.slice(0, nStakes)) {
     c.fillStyle = '#583522'; c.fillRect(sx, sy - 6, 2, 7);
     c.fillStyle = '#e0b882'; c.fillRect(sx, sy - 6, 2, 1);
   }
+  // верёвка разметки
   c.fillStyle = '#e4ddd2';
   c.fillRect(fx + 4, fy + 3, fw - 8, 1); c.fillRect(fx + 4, fy + fh - 4, fw - 8, 1);
   if (b.state === 'build') {
-    const p = b.progress;
-    const visible = Math.max(2, Math.round((spr.h - 8) * p + 8));
-    const sy = spr.h - visible;
+    c.imageSmoothingEnabled = true;
+    const S = siteState(b, spr);
+    c.globalAlpha = Math.min(1, b.buildFrac * 1.5);
+    c.drawImage(spr.shadow, ox, oy, spr.w, spr.h);
+    c.globalAlpha = 1;
+    c.drawImage(S.cv, ox, oy, spr.w, spr.h);
+    // вспышка и пыль там, куда лёг новый «кирпичик»
     const k = spr.canvas.width / spr.w;
-    c.drawImage(spr.canvas, 0, sy * k, spr.canvas.width, visible * k, ox, oy + sy, spr.w, visible);
-    const topY = oy + sy;
-    for (let k = 0; k <= b.w; k++) {
-      const lx = Math.round(fx + 2 + k * (fw - 6) / b.w);
-      c.fillStyle = '#583522'; c.fillRect(lx, Math.min(fy + fh - 10, topY - 4), 2, fy + fh - Math.min(fy + fh - 10, topY - 4));
-      c.fillStyle = '#a06840'; c.fillRect(lx, Math.min(fy + fh - 10, topY - 4), 1, fy + fh - Math.min(fy + fh - 10, topY - 4));
+    for (const p of S.pops) {
+      const age = Game.time - p.t;
+      if (age > 0.6) continue;
+      const cl = p.cl, x = ox + cl.x / k, y = oy + cl.y / k, s = cl.s / k;
+      if (age < 0.3) { c.fillStyle = `rgba(255,248,225,${0.55 * (1 - age / 0.3)})`; c.fillRect(x, y, s, s); }
+      if (p.dust) {
+        c.fillStyle = `rgba(200,180,150,${0.5 * (1 - age / 0.6)})`;
+        for (let d = 0; d < 4; d++) {
+          const a = d * 1.6 + cl.x;
+          c.beginPath(); c.arc(x + s / 2 + Math.cos(a) * age * 14, y + s / 2 + Math.sin(a) * age * 8 - age * 6, 1 + age * 4, 0, 7); c.fill();
+        }
+      }
     }
-    for (let ly = fy + fh - 12; ly > topY - 2; ly -= 12) {
+    c.imageSmoothingEnabled = false;
+    // строительные леса до текущей высоты
+    const topY = S.top < 1e9 ? oy + S.top / k : fy + fh - 10;
+    const poleTop = Math.min(fy + fh - 10, topY - 5);
+    for (let q = 0; q <= b.w; q++) {
+      const lx = Math.round(fx + 2 + q * (fw - 6) / b.w);
+      c.fillStyle = '#583522'; c.fillRect(lx, poleTop, 2, fy + fh - poleTop);
+      c.fillStyle = '#a06840'; c.fillRect(lx, poleTop, 1, fy + fh - poleTop);
+    }
+    for (let ly = fy + fh - 12; ly > poleTop + 2; ly -= 12) {
       c.fillStyle = '#45291a'; c.fillRect(fx, ly + 2, fw, 1);
       c.fillStyle = '#cc9a64'; c.fillRect(fx, ly, fw, 2);
     }
@@ -432,6 +539,13 @@ function render() {
     if (u.inside) continue;
     if (u.x < x0 - 1 || u.x > x1 + 1 || u.y < y0 - 1 || u.y > y1 + 2) continue;
     list.push([u.y + 0.2, () => drawUnit(c, u)]);
+  }
+  for (const a of Game.animals) {
+    if (a.x < x0 - 1 || a.x > x1 + 1 || a.y < y0 - 1 || a.y > y1 + 2) continue;
+    list.push([a.y + 0.2, () => drawCreatureAt(c, a.kind, Math.round(a.x * TILE), Math.round(a.y * TILE + 4), a.face, a.moving, a.phase, a.loot)]);
+  }
+  for (const p of Game.piles.values()) {
+    list.push([p.y + 0.5, () => drawPile(c, p)]);
   }
   list.sort((a, b) => a[0] - b[0]);
   for (const [, fn] of list) fn();

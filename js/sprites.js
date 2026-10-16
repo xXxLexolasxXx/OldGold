@@ -4,7 +4,7 @@
 
 const SS = 2;        // сверхвыборка природных спрайтов
 
-const SPR = { buildings: {}, trees: [], fields: { wheat: [], hay: [] }, boulders: [] };
+const SPR = { buildings: {}, trees: [], fields: {}, boulders: [] };
 
 function mkCanvas(w, h) {
   const c = document.createElement('canvas');
@@ -225,7 +225,7 @@ function makeBoulders() {
 
 // Поля: 0 — пашня, 1 — всходы, 2 — зелёные, 3 — спелые.
 function makeField(crop, stage) {
-  srand = mulberry32(31 + stage + (crop === 'hay' ? 100 : 0));
+  srand = mulberry32(31 + stage + (crop === 'hay' ? 100 : crop === 'hops' ? 200 : 0));
   const [cv, c] = mkSprite(TILE, TILE);
   c.fillStyle = '#6a4828'; c.fillRect(0, 0, TILE, TILE);
   for (let y = 1.5; y < TILE; y += 4) {
@@ -250,6 +250,22 @@ function makeField(crop, stage) {
           c.beginPath(); c.moveTo(x, y); c.lineTo(x + lean, y - h); c.stroke();
           if (ripe && srand() < 0.7) ellipse(c, x + lean, y - h - 0.6, 0.6, 1.3, shade('#f0d060', rnd(-0.1, 0.2)));
         }
+      }
+    }
+  } else if (crop === 'hops') {
+    // хмель: ряды шестов, по которым вьются лозы; спелый — с бледно-зелёными шишками
+    const poles = [[6, 30], [16, 30], [26, 30], [6, 16], [16, 16], [26, 16]];
+    for (const [x, y] of poles) {
+      const h = stage === 0 ? 3 : stage === 1 ? 7 : 13;
+      c.strokeStyle = '#5a3a1e'; c.lineWidth = 0.9;
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x + 0.4, y - h); c.stroke();
+      if (stage >= 1) {
+        c.strokeStyle = '#4a7a2a'; c.lineWidth = 0.9;
+        c.beginPath(); c.moveTo(x, y);
+        for (let t = 0; t <= h; t += 1.5) c.lineTo(x + Math.sin(t * 1.3) * 1.6, y - t);
+        c.stroke();
+        for (let t = 2; t < h; t += 2.2) ellipse(c, x + Math.sin(t * 1.3) * 2.4, y - t, 1.4, 1, shade('#5a9a34', rnd(-0.2, 0.15)));
+        if (stage === 3) for (let t = 4; t < h; t += 2.6) { ellipse(c, x + Math.sin(t * 1.7 + 1) * 2.6, y - t, 0.9, 1.2, '#c8e080'); ellipse(c, x + Math.sin(t * 1.7 + 1) * 2.6 - 0.3, y - t - 0.4, 0.4, 0.5, '#eaf4b0'); }
       }
     }
   } else {

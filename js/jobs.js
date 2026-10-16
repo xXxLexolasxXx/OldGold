@@ -63,47 +63,68 @@ function* eatGen(u, inn) {
     inn.reserved[food]--;
     inn.stock[food]--;
     u.food = 1;
+    // к еде — кружка пива, если есть
+    if (inn.stock.beer - inn.reserved.beer > 0 && Math.random() < 0.65) {
+      yield { wait: 3 };
+      if (!inn.removed && inn.stock.beer > 0) {
+        inn.stock.beer--;
+        u.food = Math.min(1.2, u.food + 0.2);
+        // захмелел: через несколько секунд пути свалится спать
+        if (Math.random() < DRUNK_CHANCE) u.drunkAt = Game.time + 3 + Math.random() * 9;
+      }
+    }
   }
   yield { leave: true };
 }
 
-function* deliverGen(u, from, to, g) {
-  let ok = yield { walk: [from.doorX, from.doorY] };
+// Доставка n единиц товара. Курьеры ходят по дорогам; исключения — камень для
+// строящейся дороги и товар, рассыпанный на земле: туда можно сойти с дороги.
+function* deliverGen(u, from, to, g, n = 1) {
+  let ok = yield { walk: [from.doorX, from.doorY], offroad: !!from.isPile };
   if (from.removed || !ok) {
-    if (!from.removed) from.reserved[g]--;
-    if (!to.removed) to.incoming[g]--;
+    if (!from.removed) from.reserved[g] -= n;
+    if (!to.removed) to.incoming[g] -= n;
     return;
   }
-  from.reserved[g]--;
-  from.stock[g]--;
+  from.reserved[g] -= n;
+  const got = Math.max(0, Math.min(n, from.stock[g]));
+  from.stock[g] -= got;
+  if (got < n && !to.removed) to.incoming[g] -= n - got;
+  n = got;
+  if (from.isPile) cleanupPile(from);
+  if (!n) return;
   yield { wait: 0.5 };
-  u.carry = g;
+  u.carry = g; u.carryN = n;
   for (let tries = 0; tries < 3; tries++) {
     if (to.removed) {
       const comp = compAt(Math.floor(u.x), Math.floor(u.y));
       to = nearestStore(u.x, u.y, g, comp) || nearestStore(u.x, u.y, null, comp);
       if (!to) break;
-      to.incoming[g]++;
+      to.incoming[g] += n;
     }
-    ok = yield { walk: [to.doorX, to.doorY] };
+    ok = yield { walk: [to.doorX, to.doorY], offroad: !!to.isRoad };
+    // груз уронили при столкновении или утащил зверь
+    if (!u.carry) { if (!to.removed) to.incoming[g] -= n; return; }
     if (to.removed) continue;
     if (!ok) {
       // не дойти — несём на ближайший склад
       const st = nearestStore(u.x, u.y, null, compAt(Math.floor(u.x), Math.floor(u.y)));
       if (!st || st === to) break;
-      to.incoming[g]--;
+      to.incoming[g] -= n;
       to = st;
-      to.incoming[g]++;
+      to.incoming[g] += n;
       continue;
     }
-    to.incoming[g]--;
-    to.stock[g]++;
-    u.carry = null;
+    to.incoming[g] -= n;
+    to.stock[g] += n;
+    u.carry = null; u.carryN = 0;
     yield { wait: 0.4 };
     return;
   }
-  if (to && !to.removed) to.incoming[g]--;
-  u.carry = null;   // товар потерян: некуда отнести
+  if (to && !to.removed) to.incoming[g] -= n;
+  // некуда отнести — оставляем кучкой на земле, подберут позже
+  dropPile(Math.floor(u.x), Math.floor(u.y), g, n);
+  u.carry = null; u.carryN = 0;
 }
 
 function* buildGen(u, s) {
@@ -126,15 +147,17 @@ function* buildGen(u, s) {
       continue;
     }
     if (s.state === 'site') {
-      yield { wait: 3, anim: 'build' };
+      // разметка: три удара по колышкам
+      for (let k = 0; k < SITE_HITS && !s.removed; k++) { yield { wait: HIT_TIME, anim: 'build' }; s.hits++; s.lastHit = Game.time; }
       if (!s.removed) s.state = 'build';
       continue;
     }
     const g = ['timber', 'stone'].find(k => s.stock[k] > 0);
     if (g) {
-      yield { wait: 2.2, anim: 'build' };
-      if (s.removed) break;
+      // каждая единица материала — несколько ударов молота, каждый добавляет кусочек здания
       s.stock[g]--; s.usedOf[g]++; s.used++;
+      for (let k = 0; k < HITS_PER_UNIT && !s.removed; k++) { yield { wait: HIT_TIME, anim: 'build' }; s.hits++; s.lastHit = Game.time; }
+      if (s.removed) break;
       if (s.used >= s.total) { finishBuilding(s); break; }
     } else {
       yield { wait: 1 };
@@ -270,7 +293,7 @@ function farmFields(b) {
 
 // Что сеять: включённая культура, под которую сейчас меньше всего полей.
 function pickCrop(b, fields) {
-  const on = FARM_CROPS.filter(c => b.crops[c]);
+  const on = (b.def.crops || []).filter(c => b.crops[c]);
   if (!on.length) return null;
   const cnt = c => fields.filter(f => f.o.crop === c && f.o.g >= 0).length;
   on.sort((a, z) => cnt(a) - cnt(z));
@@ -344,9 +367,49 @@ function feedPigs(b) {
   b.pigs = next;
 }
 
+// Пастух: идёт к ближайшей дикой козе, приручает её, и коза становится вьючной.
+function* goatpenWork(u, b) {
+  const mine = Game.units.filter(x => x.type === 'goat' && x.homePen === b.id).length;
+  if (mine >= 3) { yield { wait: 4 }; return; }
+  const goat = nearestAnimal(b.doorX, b.doorY, 22, a => a.kind === 'goat' && !a.tamedBy && !a.dead);
+  if (!goat) { yield { wait: 5 }; return; }
+  goat.tamedBy = u.id;
+  const ok = yield { walk: [Math.floor(goat.x), Math.floor(goat.y)], offroad: true };
+  if (!ok || goat.dead) { goat.tamedBy = 0; yield { wait: 2 }; return; }
+  goat.calm = Game.time + 10;
+  u.face = goat.x > u.x ? 1 : -1;
+  yield { wait: 4, anim: 'tame' };
+  if (goat.dead) return;
+  // коза идёт за пастухом в загон
+  goat.follow = u.id;
+  if (!(yield* goHome(u, b))) { goat.follow = 0; goat.tamedBy = 0; return; }
+  removeAnimal(goat);
+  const g = spawnUnit('goat', b.doorX, b.doorY);
+  g.homePen = b.id;
+  toast('Пастух приручил козу — она будет возить грузы', b);
+  yield { wait: 2 };
+}
+
+// Конюшня: растит лошадь на сене и зерне, затем выезжает извозчик с телегой.
+function* stableWork(u, b) {
+  const mine = Game.units.filter(x => x.type === 'carter' && x.homeStable === b.id).length;
+  if (mine >= 3 || b.stock.hay < 3 || b.stock.wheat < 2) { yield { wait: 3 }; return; }
+  b.stock.hay -= 3; b.stock.wheat -= 2;
+  b.working = true;
+  yield { wait: 25, anim: 'work' };
+  b.working = false;
+  if (b.removed) return;
+  const c = spawnUnit('carter', b.doorX, b.doorY);
+  c.homeStable = b.id;
+  toast('Из конюшни выехал извозчик с телегой', b);
+}
+
 const WORK = {
   woodcutter: woodcutterWork,
   quarry: quarryWork,
   farm: farmWork,
+  hopfarm: farmWork,
   swine: swineWork,
+  goatpen: goatpenWork,
+  stable: stableWork,
 };

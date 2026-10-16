@@ -509,7 +509,7 @@ function hayBale(c, x, y, s = 1) {
   line(c, x - 6 * s, y - 4 * s, x + 6 * s, y - 4 * s, 'rgba(110,70,20,0.5)', 0.5);
 }
 
-function cart(c, x, y, load) {
+function cart(c, x, y, load = null) {
   shadowAt(c, x + 9, y + 0.5, 11, 2.6);
   c.fillStyle = lingrad(c, 0, y - 9, 0, y - 3, [[0, '#9a6a38'], [1, '#4a2c14']]);
   c.fillRect(x, y - 9, 17, 5.5);

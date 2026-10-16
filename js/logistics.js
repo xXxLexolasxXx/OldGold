@@ -12,20 +12,41 @@ function takeNearest(list, x, y) {
   return bi < 0 ? null : list.splice(bi, 1)[0];
 }
 
-function assignDelivery(u, from, to, g) {
-  from.reserved[g]++;
-  to.incoming[g]++;
+function assignDelivery(u, from, to, g, n = 1) {
+  from.reserved[g] += n;
+  to.incoming[g] += n;
   u.idleFlag = false;
   u.action = null; u.anim = null;
-  u.proc = deliverGen(u, from, to, g);
+  u.proc = deliverGen(u, from, to, g, n);
+}
+
+// Тяжёлое не унести с травмой руки
+const HEAVY = new Set(['trunk', 'stone', 'timber', 'pig', 'goldore', 'leatherArmor']);
+
+function carryCap(u) { return CARRY_CAP[u.type] || 1; }
+function canCarry(u, g) { return !(u.injury === 'arm' && HEAVY.has(g)); }
+
+// Подобрать перевозчика под партию: большой партии — телегу, средней — козу, иначе курьера.
+function pickCarrier(idle, x, y, g, amount) {
+  const ok = idle.filter(u => canCarry(u, g));
+  if (!ok.length) return null;
+  const pref = amount >= 3 ? ['carter', 'goat', 'serf'] : amount >= 2 ? ['goat', 'serf', 'carter'] : ['serf', 'goat', 'carter'];
+  for (const t of pref) {
+    const list = ok.filter(u => u.type === t);
+    if (!list.length) continue;
+    const u = takeNearest(list, x, y);
+    idle.splice(idle.indexOf(u), 1);
+    return u;
+  }
+  return null;
 }
 
 // Курьеры ездят только по дорогам: всё распределяется внутри одной дорожной сети.
 function dispatchSerfs() {
   updateRoadComps();
-  const idleAll = Game.units.filter(u => u.type === 'serf' && u.idleFlag && !u.inside);
+  const idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk);
   if (!idleAll.length) return;
-  // свободные курьеры по сетям
+  // свободные перевозчики по сетям
   const idleBy = new Map();
   for (const u of idleAll) {
     const c = compNear(Math.floor(u.x), Math.floor(u.y));
@@ -34,10 +55,13 @@ function dispatchSerfs() {
     idleBy.get(c).push(u);
   }
   if (!idleBy.size) return;
-  const depots = Game.buildings;
+  const storeComp = (x, y) => { const st = nearestStore(x, y); return st ? compAt(st.doorX, st.doorY) : 0; };
+  const depots = [...Game.buildings, ...Game.piles.values()];
   const compOf = new Map();
-  for (const b of depots) compOf.set(b, compAt(b.doorX, b.doorY));
-  for (const s of Game.roadSites.values()) compOf.set(s, compNear(s.x, s.y));
+  for (const b of Game.buildings) compOf.set(b, compAt(b.doorX, b.doorY));
+  // кучки и стройки дорог могут лежать в стороне от дороги — обслуживает ближайшая сеть
+  for (const p of Game.piles.values()) compOf.set(p, compNear(p.x, p.y) || storeComp(p.x, p.y));
+  for (const s of Game.roadSites.values()) compOf.set(s, compNear(s.x, s.y) || storeComp(s.x, s.y));
 
   const reqs = [];
   for (const [d, comp] of compOf) {
@@ -51,7 +75,8 @@ function dispatchSerfs() {
 
   for (const r of reqs) {
     const idle = idleBy.get(r.comp);
-    for (let k = 0; k < r.n && idle.length; k++) {
+    let need = r.n;
+    while (need > 0 && idle.length) {
       let src = null, sd = 1e9;
       for (const o of depots) {
         if (o === r.d || compOf.get(o) !== r.comp || o.offer(r.g) <= 0) continue;
@@ -59,21 +84,32 @@ function dispatchSerfs() {
         if (dd < sd) { sd = dd; src = o; }
       }
       if (!src) break;
-      assignDelivery(takeNearest(idle, src.doorX, src.doorY), src, r.d, r.g);
+      const avail = src.offer(r.g);
+      const u = pickCarrier(idle, src.doorX, src.doorY, r.g, Math.min(need, avail));
+      if (!u) break;
+      const n = Math.min(need, avail, carryCap(u));
+      assignDelivery(u, src, r.d, r.g, n);
+      need -= n;
     }
   }
 
-  // Готовую продукцию — на ближайший склад той же сети
+  // Готовую продукцию и рассыпанное — на ближайший склад той же сети
   for (const b of depots) {
-    if (b.state !== 'done' || b.isStore() || !b.def.outputs) continue;
+    const isP = b.isPile;
+    if (!isP && (b.state !== 'done' || b.isStore() || !b.def.outputs)) continue;
     const comp = compOf.get(b), idle = idleBy.get(comp);
-    if (!idle) continue;
-    for (const g in b.def.outputs) {
-      let n = b.offer(g);
-      while (n-- > 0 && idle.length) {
+    if (!idle || !idle.length) continue;
+    const goods = isP ? GOOD_KEYS : Object.keys(b.def.outputs);
+    for (const g of goods) {
+      let left = b.offer(g);
+      while (left > 0 && idle.length) {
         const st = nearestStore(b.doorX, b.doorY, g, comp);
         if (!st) break;
-        assignDelivery(takeNearest(idle, b.doorX, b.doorY), b, st, g);
+        const u = pickCarrier(idle, b.doorX, b.doorY, g, left);
+        if (!u) break;
+        const n = Math.min(left, carryCap(u));
+        assignDelivery(u, b, st, g, n);
+        left -= n;
       }
     }
   }

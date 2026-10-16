@@ -9,6 +9,9 @@ const Game = {
   units: [],
   unitMap: new Map(),     // id -> житель
   roadSites: new Map(),   // индекс клетки -> RoadSite
+  piles: new Map(),       // индекс клетки -> Pile (уроненный груз)
+  animals: [],            // дикие звери
+  smokers: new Set(),     // кто сейчас курит
   nextId: 1,
   selected: null,
   tool: null,             // { kind: 'build', type } | { kind: 'road' } | { kind: 'erase' }
@@ -69,6 +72,8 @@ class Building {
     this.usedOf = emptyGoods();
     this.used = 0;
     this.total = Object.values(this.def.cost).reduce((a, b) => a + b, 0);
+    this.hits = 0;                                         // удары молота строителя
+    this.maxHits = SITE_HITS + this.total * HITS_PER_UNIT;
     this.builder = null;
     this.worker = null;
     this.removed = false;
@@ -81,10 +86,13 @@ class Building {
     this.recipeIdx = 0;
     this.autoJob = null;     // текущий цикл здания без рабочего
     this.pigs = [];          // свинарник: стадии подрастающих свиней (1 или 2 трети)
-    this.crops = { wheat: true, hay: true };   // ферма: что сеять
+    this.crops = {};                           // ферма: что сеять
+    for (const c of (this.def.crops || [])) this.crops[c] = true;
   }
 
-  get progress() { return this.state === 'done' ? 1 : this.used / this.total; }
+  get progress() { return this.state === 'done' ? 1 : this.hits / this.maxHits; }
+  // доля «собранного» здания без разметки площадки
+  get buildFrac() { return this.state === 'done' ? 1 : Math.max(0, (this.hits - SITE_HITS) / (this.maxHits - SITE_HITS)); }
 
   // Нужен ли товар хоть одному включённому рецепту
   wantsInput(g) {
@@ -111,7 +119,12 @@ class Building {
       if (this.stock.hay < 1) return 'need:hay';
       return null;
     }
-    if (this.type === 'farm' && !FARM_CROPS.some(c => this.crops[c])) return 'paused';
+    if (this.def.crops && !this.def.crops.some(c => this.crops[c])) return 'paused';
+    if (this.type === 'stable') {
+      const n = Game.units.filter(x => x.type === 'carter' && x.homeStable === this.id).length;
+      if (n < 3 && this.stock.hay < 3) return 'need:hay';
+      if (n < 3 && this.stock.wheat < 2) return 'need:wheat';
+    }
     const rs = this.def.recipes;
     if (rs && rs.length && !rs.some((r, i) => this.recipeOn[i] && recipeCanRun(this, r))) {
       const full = rs.every(r => Object.keys(r.out).some(g => this.stock[g] + r.out[g] > this.def.outputs[g]));
@@ -188,6 +201,45 @@ class RoadSite {
     if (g !== 'stone') return 0;
     return Math.max(0, ROAD_STONE - this.stock.stone - this.incoming.stone);
   }
+}
+
+// ---------- Кучки товара на земле ----------
+// Появляются, когда груз уронили при столкновении. Курьеры подбирают и уносят на склад.
+
+class Pile {
+  constructor(x, y) {
+    this.id = Game.nextId++;
+    this.isPile = true;
+    this.x = x; this.y = y;
+    this.doorX = x; this.doorY = y;
+    this.stock = emptyGoods();
+    this.reserved = emptyGoods();
+    this.incoming = emptyGoods();
+    this.removed = false;
+  }
+  offer(g) { return this.stock[g] - this.reserved[g]; }
+  demand() { return 0; }
+  isStore() { return false; }
+}
+
+function dropPile(x, y, g, n) {
+  if (!g || n <= 0) return null;
+  if (!isWalkable(x, y)) {
+    const near = randomFreeNear(x, y, 0, 2, (xx, yy) => isWalkable(xx, yy));
+    if (!near) return null;
+    [x, y] = near;
+  }
+  const i = idx(x, y);
+  let p = Game.piles.get(i);
+  if (!p || p.removed) { p = new Pile(x, y); Game.piles.set(i, p); }
+  p.stock[g] += n;
+  return p;
+}
+
+function cleanupPile(p) {
+  for (const g of GOOD_KEYS) if (p.stock[g] > 0 || p.reserved[g] > 0) return;
+  p.removed = true;
+  Game.piles.delete(idx(p.x, p.y));
 }
 
 // ---------- Размещение и удаление ----------
@@ -390,9 +442,21 @@ class Unit {
     this.vdir = 'S';        // вид: S — к нам, N — спиной, E — боком
     this.occT = -1;         // занятая клетка дороги
     this.resT = -1;         // забронированная следующая клетка
+    this.blockT = -1;       // клетка, занятая на время перерыва
+    this.carryN = 0;        // сколько единиц груза несёт
+    // привычки и состояние
+    this.smoker = Math.random() < 0.7;
+    this.nextSmoke = Game.time + SMOKE_CD_MIN + Math.random() * (SMOKE_CD_MAX - SMOKE_CD_MIN);
+    this.nextJoin = 0;
+    this.brk = null;        // текущий перерыв: перекур, сон
+    this.injury = null;     // 'leg' | 'arm'
+    this.injuryUntil = 0;
+    this.drunkAt = 0;
   }
 
-  wantsEat() { return this.food < HUNGRY && Game.time >= this.nextEatTry; }
+  get noFood() { return !!UNIT_TYPES[this.type].animal || this.type === 'carter'; }
+
+  wantsEat() { return !this.noFood && this.food < HUNGRY && Game.time >= this.nextEatTry; }
 
   think() {
     if (this.wantsEat()) {
@@ -400,7 +464,7 @@ class Unit {
       if (inn) { this.idleFlag = false; return eatGen(this, inn); }
       this.nextEatTry = Game.time + 15;
     }
-    if (this.type === 'serf') { this.idleFlag = true; return idleGen(this); }
+    if (this.isCourier) { this.idleFlag = true; return idleGen(this); }
     if (this.type === 'builder') {
       if (this.job && !this.job.removed) { this.idleFlag = false; return buildGen(this, this.job); }
       this.job = null;
@@ -413,7 +477,7 @@ class Unit {
     return idleGen(this);
   }
 
-  get isCourier() { return this.type === 'serf'; }
+  get isCourier() { return this.type === 'serf' || this.type === 'goat' || this.type === 'carter'; }
 
   releaseOcc() {
     if (this.occT >= 0 && World.occ[this.occT] === this.id) World.occ[this.occT] = 0;
@@ -422,7 +486,8 @@ class Unit {
   }
 
   update(dt) {
-    this.food = Math.max(0, this.food - dt / FOOD_TIME);
+    if (!this.noFood) this.food = Math.max(0, this.food - dt / FOOD_TIME);
+    lifeTick(this, dt);
     if (this.isCourier && !(this.action && this.action.walk)) this.releaseOcc();
     if (this.action) {
       const r = this.stepAction(dt);
@@ -437,7 +502,11 @@ class Unit {
     }
     const n = this.proc.next(this.lastRes);
     this.lastRes = undefined;
-    if (n.done) { this.proc = null; return; }
+    if (n.done) {
+      if (this.brk) endBreak(this);   // перерыв кончился — продолжаем прерванное дело
+      else this.proc = null;
+      return;
+    }
     this.action = n.value;
   }
 
@@ -456,7 +525,7 @@ class Unit {
       if (!a.path) {
         this.inside = null;
         // курьер на дороге ходит только по дорогам; сошедший с неё сначала возвращается
-        const onRoad = courier && World.road[idx(sx, sy)];
+        const onRoad = courier && World.road[idx(sx, sy)] && !a.offroad;
         a.path = findPath(sx, sy, a.walk[0], a.walk[1], onRoad, courier ? this.id : 0);
         a.i = 0; a.block = 0; a.replanned = false; a.squeeze = false;
         if (!a.path) return false;
@@ -473,7 +542,7 @@ class Unit {
           const headOn = other && other.action && other.action.walk && other.resT === this.occT;
           if (a.block > 0.6 && !a.replanned) {
             a.replanned = true;
-            const np = findPath(sx, sy, a.walk[0], a.walk[1], World.road[idx(sx, sy)] === 1, this.id);
+            const np = findPath(sx, sy, a.walk[0], a.walk[1], World.road[idx(sx, sy)] === 1 && !a.offroad, this.id);
             if (np && np.length && idx(np[0][0], np[0][1]) !== ni) { a.path = np; a.i = 0; a.block = 0; return undefined; }
           }
           // на узкой дороге встречные протискиваются, затор дольше 3 с — проходим насквозь
@@ -489,8 +558,11 @@ class Unit {
       const dist = Math.hypot(dx, dy);
       const onRoad = World.road[idx(sx, sy)];
       let speed = onRoad ? 2.6 : 1.6;
+      if (this.type === 'carter') speed = onRoad ? 2.9 : 1.8;
+      if (this.type === 'goat') speed = onRoad ? 2.5 : 2.0;
       if (a.squeeze) speed *= 0.4;
-      if (this.food <= 0) speed *= 0.5;
+      if (this.food <= 0 && !this.noFood) speed *= 0.5;
+      if (this.injury === 'leg') speed *= 0.55;
       const step = speed * dt;
       this.walkPhase += step * 6;
       if (Math.abs(dx) > 0.01) this.face = dx > 0 ? 1 : -1;
@@ -511,7 +583,7 @@ class Unit {
     }
     if (a.wait !== undefined) {
       if (a.t === undefined) {
-        a.t = a.wait * (this.food <= 0 ? 1.6 : 1);
+        a.t = a.wait * (this.food <= 0 && !this.noFood ? 1.6 : 1) * (this.injury === 'arm' && a.anim ? 1.5 : 1);
         this.anim = a.anim || null;
       }
       a.t -= dt;

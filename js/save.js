@@ -8,6 +8,9 @@ function resetGameState() {
   Game.buildings = [];
   Game.units = [];
   Game.unitMap.clear();
+  Game.smokers.clear();
+  Game.piles.clear();
+  Game.animals = [];
   World.occ.fill(0);
   World.roadDirty = true;
   Game.roadSites.clear();
@@ -35,12 +38,13 @@ function serializeGame() {
     obj, road,
     buildings: Game.buildings.map(b => ({
       id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
-      used: b.used, usedOf: nz(b.usedOf), queue: b.queue, training: b.training,
+      used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
       paused: b.paused, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
     })),
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone })),
     units: Game.units.map(u => ({
       type: u.type, x: u.x, y: u.y, food: u.food, look: u.look, home: u.home ? u.home.id : 0,
+      homePen: u.homePen || 0, homeStable: u.homeStable || 0, smoker: u.smoker,
     })),
   };
 }
@@ -71,6 +75,7 @@ function applySave(s) {
     Object.assign(b.stock, d.stock);
     Object.assign(b.usedOf, d.usedOf);
     b.used = d.used;
+    b.hits = d.hits ?? (b.state === 'done' ? b.maxHits : SITE_HITS + d.used * HITS_PER_UNIT);
     b.queue = d.queue || [];
     b.training = d.training || null;
     b.paused = !!d.paused;
@@ -91,6 +96,8 @@ function applySave(s) {
   for (const d of s.units) {
     const u = new Unit(d.type, 0, 0);
     u.x = d.x; u.y = d.y; u.food = d.food; u.look = d.look;
+    u.homePen = d.homePen || 0; u.homeStable = d.homeStable || 0;
+    if (d.smoker !== undefined) u.smoker = d.smoker;
     const home = byId.get(d.home);
     if (home) { u.home = home; home.worker = u; }
     Game.units.push(u);
@@ -102,6 +109,7 @@ function applySave(s) {
   Object.assign(Game.produced, s.produced || {});
   if (s.cam) { R.cam.x = s.cam.x; R.cam.y = s.cam.y; R.cam.z = ZOOMS.includes(s.cam.z) ? s.cam.z : 2; }
   buildTerrain(s.seed);
+  spawnAnimals();
   updateMinimapBase();
 }
 

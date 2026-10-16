@@ -18,6 +18,8 @@ const GOODS = {
   stone:      { name: 'Камень',          color: '#a3a3a3', group: 'Стройка' },
   wheat:      { name: 'Зерно',           color: '#e6c24a', group: 'Еда' },
   hay:        { name: 'Сено',            color: '#b8b860', group: 'Еда' },
+  hops:       { name: 'Хмель',           color: '#8ab048', group: 'Еда' },
+  beer:       { name: 'Пиво',            color: '#d8a030', group: 'Еда' },
   flour:      { name: 'Мука',            color: '#f4f0e2', group: 'Еда' },
   bread:      { name: 'Хлеб',            color: '#b8742c', group: 'Еда' },
   pig:        { name: 'Свиньи',          color: '#e8a0a0', group: 'Еда' },
@@ -52,8 +54,15 @@ const UNIT_TYPES = {
   tanner:     { name: 'Кожевник',  shirt: '#7a5a3a' },
   armorer:    { name: 'Бронник',   shirt: '#4a4a5a' },
   enchanter:  { name: 'Чародей',   shirt: '#4a3a8a' },
+  hopgrower:  { name: 'Хмелевод',  shirt: '#5a8a3a' },
+  brewer:     { name: 'Пивовар',   shirt: '#9a6a2a' },
+  herder:     { name: 'Пастух',    shirt: '#7a8a5a' },
+  stableman:  { name: 'Конюх',     shirt: '#6a4a3a' },
+  goat:       { name: 'Вьючная коза', shirt: '#d8d0c0', animal: true, noTrain: true },
+  carter:     { name: 'Извозчик',  shirt: '#5a5a6a', noTrain: true },
 };
-const UNIT_KEYS = Object.keys(UNIT_TYPES);
+const UNIT_KEYS = Object.keys(UNIT_TYPES).filter(k => !UNIT_TYPES[k].noTrain);   // кого учат в школе
+const ALL_UNIT_KEYS = Object.keys(UNIT_TYPES);
 
 // inputs / outputs — сколько единиц товара здание держит у себя.
 // recipes — что расходуется и что получается за цикл; несколько рецептов
@@ -70,8 +79,17 @@ const BUILDINGS = {
     desc: 'Двухэтажная школа с колокольней. Обучает жителей за 1 золото.',
   },
   inn: {
-    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, inputs: { bread: 10, sausage: 10 },
-    desc: 'Голодные жители едят здесь колбасу или хлеб.',
+    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, inputs: { bread: 10, sausage: 10, beer: 10 },
+    desc: 'Голодные жители едят здесь колбасу или хлеб и запивают пивом. Пьяный может уснуть прямо на дороге.',
+  },
+  goatpen: {
+    name: 'Загон для коз', cat: 'Основа', w: 3, h: 2, top: 50, cost: { timber: 4, stone: 1 }, worker: 'herder',
+    desc: 'Пастух приручает диких коз. Ручная коза возит груз по дорогам — по 2 штуки за раз. До 3 коз на загон.',
+  },
+  stable: {
+    name: 'Извозчик', cat: 'Основа', w: 3, h: 2, top: 70, cost: { timber: 5, stone: 3 }, worker: 'stableman',
+    inputs: { hay: 6, wheat: 4 },
+    desc: 'Конюх растит лошадей на сене и зерне. Каждая лошадь с телегой — извозчик: везёт сразу весь стек, до 5 штук. До 3 на конюшню.',
   },
   woodcutter: {
     name: 'Дом лесоруба', cat: 'Ресурсы', w: 2, h: 2, top: 50, cost: { timber: 2, stone: 1 }, worker: 'woodcutter',
@@ -103,8 +121,19 @@ const BUILDINGS = {
   },
   farm: {
     name: 'Ферма', cat: 'Еда', w: 4, h: 3, top: 72, cost: { timber: 5, stone: 3 }, worker: 'farmer',
-    outputs: { wheat: 5, hay: 5 },
+    outputs: { wheat: 5, hay: 5 }, crops: ['wheat', 'hay'],
     desc: 'Фермер засевает поля вокруг: пшеницу на зерно или травы на сено.',
+  },
+  hopfarm: {
+    name: 'Хмельник', cat: 'Еда', w: 3, h: 2, top: 92, cost: { timber: 4, stone: 2 }, worker: 'hopgrower',
+    outputs: { hops: 5 }, crops: ['hops'],
+    desc: 'Хмелевод растит хмель на шестах вокруг и сушит шишки в башне.',
+  },
+  brewery: {
+    name: 'Пивоварня', cat: 'Еда', w: 3, h: 2, top: 78, cost: { timber: 4, stone: 4 }, worker: 'brewer',
+    inputs: { wheat: 5, hops: 5 }, outputs: { beer: 6 },
+    recipes: [{ in: { wheat: 1, hops: 1 }, out: { beer: 2 }, time: 12 }],
+    desc: 'Варит пиво из зерна и хмеля. Пиво везут в трактир.',
   },
   mill: {
     name: 'Мельница', cat: 'Еда', w: 2, h: 2, top: 118, noRotate: true, cost: { timber: 4, stone: 2 }, worker: 'miller',
@@ -167,4 +196,18 @@ const BUILD_ORDER = Object.keys(BUILDINGS);
 const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия'];
 
 const ROAD_STONE = 1;     // сколько камня уходит на клетку дороги
-const FARM_CROPS = ['wheat', 'hay'];
+const SITE_HITS = 3;      // ударов на разметку площадки
+const HITS_PER_UNIT = 4;  // ударов молота на единицу материала
+const HIT_TIME = 0.6;     // секунд на удар
+const FARM_CROPS = ['wheat', 'hay', 'hops'];   // все виды полей
+const CARRY_CAP = { serf: 1, goat: 2, carter: 5 };   // сколько единиц за раз
+
+// Жизнь жителей
+const SMOKE_TIME = 15, JOIN_SMOKE_TIME = 8;   // длительность перекура и подсевшего
+const SMOKE_CD_MIN = 60, SMOKE_CD_MAX = 180;  // перезарядка перекура, сек (не чаще раза в минуту)
+const JOIN_CD = 80;                           // перезарядка подсаживания к курящему
+const JOIN_RADIUS = 7;                        // в клетках
+const SLEEP_TIME = 60;                        // пьяный сон
+const DRUNK_CHANCE = 0.45;                    // шанс захмелеть после кружки
+const INJURY_TIME = 150;                      // сколько заживает травма
+const COLLIDE_CHANCE = 0.03;                  // базовый шанс уронить груз при столкновении
