@@ -352,6 +352,13 @@ function placeBuilding(type, x, y, done = false, rot = 0) {
     const rs2 = Game.roadSites.get(ei);
     if (rs2) removeRoadSite(rs2);
     setRoad(b.door2[0], b.door2[1], true);
+    // перед обеими створками — по клетке дороги, чтобы заходили с двух клеток сразу
+    const front = b.rot ? [[b.doorX + 1, b.doorY], [b.door2[0] + 1, b.door2[1]]] : [[b.doorX, b.doorY + 1], [b.door2[0], b.door2[1] + 1]];
+    for (const [fx, fy] of front) {
+      if (!canPlaceRoad(fx, fy)) continue;
+      if (done) { World.obj[idx(fx, fy)] = null; setRoad(fx, fy, true); }
+      else placeRoadSite(fx, fy);
+    }
   }
   Game.buildings.push(b);
   return b;
@@ -636,6 +643,7 @@ class Unit {
       if (a.dt > 0) return undefined;
       this.anim = null;
       this.inside = a.enter;
+      if (this.isCourier) this.releaseOcc();   // внутри здания клетку у входа не держим
       // вошедший через вторую створку и выйдет через неё
       const d2 = a.enter.door2, viaGate2 = d2 && Math.floor(this.x) === d2[0] && Math.floor(this.y) === d2[1];
       this.x = (viaGate2 ? d2[0] : a.enter.doorX) + 0.5; this.y = (viaGate2 ? d2[1] : a.enter.doorY) + 0.5;

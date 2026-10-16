@@ -673,7 +673,7 @@ function lantern(c, x, y) {
 // на двух цепочках — деревянная доска со значком ремесла, без надписей.
 // (x, y) — где прут входит в стену, dir — в какую сторону он торчит.
 function hangingSign(c, x0, y0, kind, dir = 1) {
-  c.save(); c.translate(x0, y0); c.scale(1.3, 1.3);
+  c.save(); c.translate(x0, y0); c.scale(1.9, 1.9);
   drawHangingSign(c, 0, 0, kind, dir);
   c.restore();
 }

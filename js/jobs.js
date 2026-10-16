@@ -79,6 +79,19 @@ function* eatGen(u, inn) {
 
 // Доставка n единиц товара. Курьеры ходят по дорогам; исключения — камень для
 // строящейся дороги и товар, рассыпанный на земле: туда можно сойти с дороги.
+// На складе курьер заходит внутрь — ворота не загорожены. Внутри не больше STORE_CAP.
+const isStoreB = b => !!(b && b.isStore && b.isStore() && !b.isPile);
+function storeInside(b) { let n = 0; for (const x of Game.units) if (x.inside === b) n++; return n; }
+
+function* storeVisit(u, b, t) {
+  while (storeInside(b) >= STORE_CAP && !b.removed) yield { wait: 0.4 };
+  if (b.removed) return;
+  yield { enter: b };
+  yield { wait: t };
+  // выходим той же створкой
+  yield { walk: [Math.floor(u.x), Math.floor(u.y)] };
+}
+
 function* deliverGen(u, from, to, g, n = 1) {
   let ok = yield { walk: [from.doorX, from.doorY], offroad: !!from.isPile };
   if (from.removed || !ok) {
@@ -86,6 +99,7 @@ function* deliverGen(u, from, to, g, n = 1) {
     if (!to.removed) to.incoming[g] -= n;
     return;
   }
+  if (isStoreB(from)) yield* storeVisit(u, from, 0.7);
   from.reserved[g] -= n;
   const got = Math.max(0, Math.min(n, from.stock[g]));
   from.stock[g] -= got;
@@ -93,7 +107,7 @@ function* deliverGen(u, from, to, g, n = 1) {
   n = got;
   if (from.isPile) cleanupPile(from);
   if (!n) return;
-  yield { wait: 0.5 };
+  if (!isStoreB(from)) yield { wait: 0.5 };
   u.carry = g; u.carryN = n;
   for (let tries = 0; tries < 3; tries++) {
     if (to.removed) {
@@ -114,6 +128,18 @@ function* deliverGen(u, from, to, g, n = 1) {
       to = st;
       to.incoming[g] += n;
       continue;
+    }
+    if (isStoreB(to)) {
+      // заносит внутрь и складывает
+      while (storeInside(to) >= STORE_CAP && !to.removed) yield { wait: 0.4 };
+      if (to.removed) continue;
+      yield { enter: to };
+      to.incoming[g] -= n;
+      to.stock[g] += n;
+      u.carry = null; u.carryN = 0;
+      yield { wait: 0.6 };
+      yield { walk: [Math.floor(u.x), Math.floor(u.y)] };
+      return;
     }
     to.incoming[g] -= n;
     to.stock[g] += n;

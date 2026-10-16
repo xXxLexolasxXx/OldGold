@@ -196,6 +196,7 @@ const BUILD_ORDER = Object.keys(BUILDINGS);
 const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия'];
 
 const ROAD_STONE = 1;     // сколько камня уходит на клетку дороги
+const STORE_CAP = 5;      // сколько курьеров одновременно внутри склада
 const ROAD_DIG_HITS = 4;  // взмахов лопатой: корыто под дорогу (бесплатно)
 const ROAD_PAVE_HITS = 4; // ударов молотком: укладка булыжника
 const SITE_HITS = 3;      // ударов на разметку площадки

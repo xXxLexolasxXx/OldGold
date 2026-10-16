@@ -42,6 +42,8 @@ function shadowOf(g, pts3) {
   poly(g.sc, hull(pts), 'rgba(12,10,6,0.36)');
 }
 
+const SIGN_QUEUE = { list: [] };
+
 // ================= Гномский стиль =================
 // Модели описаны в духе K&M (штукатурка, фахверк, черепица). Здесь они
 // переводятся в лесной гномский вид: бревенчатые стены на замшелом камне,
@@ -131,7 +133,12 @@ function drawDecor(c, d, H) {
       win(c, u - (d.w || 6) / 2, H - d.z - (d.h || 7), d.w || 6, d.h || 7, o);
       break;
     }
-    case 'sign': hangingSign(c, u, H - d.z, d.kind, d.dir || 1); break;
+    case 'sign': {
+      // запоминаем точку крепления на стене; рисуем вывеску потом поверх здания, лицом к зрителю
+      const p = c.getTransform().transformPoint(new DOMPoint(u, H - d.z));
+      (SIGN_QUEUE.list = SIGN_QUEUE.list || []).push({ x: p.x / BS, y: p.y / BS, kind: d.kind, dir: d.face === 'E' ? 1 : (d.dir || 1) });
+      break;
+    }
     case 'lantern': lantern(c, u, H - d.z); break;
     case 'shield': shield(c, u, H - d.z, d.col || '#8c2c20'); break;
     case 'hatch': c.fillStyle = '#120a06'; rrect(c, u - d.w / 2, H - d.z - d.h, d.w, d.h, 1.5); c.fill(); c.fillStyle = '#5a3a1e'; c.fillRect(u - d.w / 2 - 1, H - d.z - d.h - 1, d.w + 2, 1.2); break;
@@ -374,6 +381,7 @@ function decorFor(m, p, w, worldFace, gable = false) {
     const lp = lf === 'S' || lf === 'N' ? [at, lf === 'S' ? p.y0 : p.y1] : [lf === 'W' ? p.x0 : p.x1, at];
     const [X, Y] = toW(m, lp[0], lp[1]);
     d.u = worldFace === 'S' ? X - w.X0 : Y - w.Y0;
+    d.face = worldFace;
     out.push(d);
   }
   // вывеска ремесла на пруте у главной двери (если в модели своей нет)
@@ -381,8 +389,8 @@ function decorFor(m, p, w, worldFace, gable = false) {
   if (mainDoor && m.sign && !Object.values(src).some(list => list.some(d => d.t === 'sign'))) {
     const L = worldFace === 'S' ? w.X1 - w.X0 : w.Y1 - w.Y0;
     const dw = (mainDoor.w || 10) / 2;
-    const dir = mainDoor.u + dw + 20 < L ? 1 : -1;            // в ту сторону, где хватает стены
-    out.push({ t: 'sign', u: mainDoor.u + dir * (dw + 2.5), z: Math.min(p.h - 3, (mainDoor.h || 16) + 1.5), kind: m.sign, dir });
+    const dir = mainDoor.u + dw + 28 < L ? 1 : -1;            // в ту сторону, где хватает стены
+    out.push({ t: 'sign', u: mainDoor.u + dir * (dw + 2.5), z: Math.min(p.h - 2, (mainDoor.h || 16) + 3), kind: m.sign, dir, face: worldFace });
   }
   return out;
 }
@@ -1043,7 +1051,10 @@ function buildingSprite(type, rot = 0) {
   }
   const m = newModel(g);
   MODELS[type](m);
+  SIGN_QUEUE.list = [];
   renderModel(c, m);
+  for (const s of SIGN_QUEUE.list) hangingSign(c, s.x, s.y, s.kind, s.dir);
+  SIGN_QUEUE.list = [];
   grain(cv, 0.05, hashStr(type) + d.rot);
   // пиксель-арт ×2 с палитрой и тёмной обводкой — в одном стиле с гномами
   spr.canvas = toPixelArt(cv, BS / 2, { outline: true, outlineDark: 0.4, alphaCut: 100 });
