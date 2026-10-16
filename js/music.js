@@ -436,6 +436,25 @@ function startMusic() {
   if (!Music.on) ctx.suspend();
 }
 
+// Следующий трек: короткое затухание того, что уже запланировано, и сразу новая песня
+function nextTrack() {
+  startMusic();
+  if (!Music.ctx) return;
+  if (!Music.on) { setMusic(true); syncMusicBtn(); }
+  const ctx = Music.ctx, t = ctx.currentTime, g = Music.bus.gain;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(0.0001, t + 0.3);
+  g.setValueAtTime(0.0001, t + 0.55); g.linearRampToValueAtTime(0.62, t + 0.75);
+  Music.track = (Music.track + 1) % TRACKS.length;
+  Music.bar = 0;
+  const tr = TRACKS[Music.track];
+  Music.songs[Music.track] = makeSong(tr, tr.seed + Math.floor(Math.random() * 1000));
+  Music.nextTime = t + 0.6;
+  toast(`Музыка: «${tr.name}»`);
+}
+
+let syncMusicBtn = () => {};
+
 function setMusic(on) {
   Music.on = on;
   try { localStorage.setItem('feod.music', on ? '1' : '0'); } catch (e) { /* нет доступа к хранилищу */ }
@@ -451,8 +470,10 @@ function initMusic() {
   window.addEventListener('keydown', kick);
   const btn = document.getElementById('music-btn');
   if (btn) {
-    const sync = () => { btn.classList.toggle('active', Music.on); btn.title = Music.on ? 'Музыка: вкл' : 'Музыка: выкл'; };
+    const sync = syncMusicBtn = () => { btn.classList.toggle('active', Music.on); btn.title = Music.on ? 'Музыка: вкл' : 'Музыка: выкл'; };
     btn.onclick = (e) => { e.stopPropagation(); startMusic(); setMusic(!Music.on); sync(); };
     sync();
   }
+  const nb = document.getElementById('music-next');
+  if (nb) nb.onclick = (e) => { e.stopPropagation(); nextTrack(); };
 }

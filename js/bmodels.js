@@ -740,14 +740,8 @@ const MODELS = {
   woodcutter(m) {
     // дом лесоруба — в огромном старом пне, как на референсе
     m.custom(c => drawStumpHouse(c, m), 40, 12);
-    m.box({
-      x0: 0, x1: 20, y0: 14, y1: 44, h: 16, open: true, noShadow: true,
-      roof: { type: 'lean', down: 'S', rise: 6, mat: 'shingle', col: '#6a4a2c', ov: 3 },
-      inside: (c, mm) => { const a = mm.at(12, 24); logPile(c, a[0] - 4, a[1], 3, 8); },
-    });
-    m.prop((c, x, y) => choppingBlock(c, x, y), 10, 6);
-    m.prop((c, x, y) => sawHorse(c, x, y, false), 34, 2);
-    m.prop((c, x, y) => logPile(c, x, y, 2, 10), 50, 4);
+    m.prop((c, x, y) => choppingBlock(c, x, y), 4, 4);
+    m.prop((c, x, y) => logPile(c, x, y, 2, 9), 60, 2);
   },
 
   sawmill(m) {
@@ -845,12 +839,8 @@ const MODELS = {
   },
 
   bakery(m) {
-    m.box({
-      x0: 22, x1: 62, y0: 10, y1: 50, h: 26, wall: 'brick', col: '#b8643c', beam: BEAM, gableWall: 'plaster', gableCol: '#ecdcb6', gableFrame: true,
-      roof: { type: 'gable', axis: 'Y', rise: 19, mat: 'tiles', col: '#a85232', ov: 4 },
-      decor: { S: [{ t: 'door', main: true, w: 9, h: 16, o: { square: true } }, { t: 'win', at: 31, z: 9, w: 7, h: 8, o: { lit: true, shutter: '#2e5a3a' } }, { t: 'sign', at: 51, z: 22, kind: 'bread' }], E: [{ t: 'win', at: 30, z: 9, w: 6, h: 8, o: { lit: true } }], W: [] },
-      chimneys: [{ x: 52, y: 38, h: 12, kind: 'brick', w: 4 }],
-    });
+    // хоббитская нора в холме
+    m.custom(c => drawHillHouse(c, m, 20, 64, 8, 56, '#2e5a3a'), 42, 10);
     // купол печи
     m.custom((c, mm) => {
       const [x, y] = mm.at(11, 14);
@@ -911,11 +901,8 @@ const MODELS = {
   },
 
   tannery(m) {
-    m.box({
-      x0: 28, x1: 72, y0: 10, y1: 50, h: 26, wall: 'plank', col: '#8a6440', beam: '#3a2414',
-      roof: { type: 'gable', axis: 'X', rise: 19, mat: 'thatch', col: '#9c7e3a', ov: 4 },
-      decor: { S: [{ t: 'door', main: true, w: 9, h: 16, o: { square: true } }, { t: 'win', at: 62, z: 10, w: 6, h: 7 }, { t: 'sign', at: 54, z: 20, kind: 'hide' }], E: [{ t: 'win', at: 30, z: 10, w: 6, h: 7 }], W: [] },
-    });
+    // нора в холме, вокруг сушилки и чаны
+    m.custom(c => drawHillHouse(c, m, 26, 78, 8, 56, '#8a5a24'), 52, 10);
     m.prop((c, x, y) => dryingRack(c, x - 12, y, 24, 2), 12, 14);
     m.prop((c, x, y) => vat(c, x, y, '#7a5a2a'), 82, 22);
     m.prop((c, x, y) => vat(c, x, y, '#5a6a3a', 5), 90, 8);
@@ -1075,72 +1062,167 @@ function bDims(type, rot) {
 
 function hashStr(s) { let h = 7; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 2654435761); return h >>> 0; }
 
+// ---------- Хоббитская нора в холме ----------
+// Травяной холм, в склоне — каменная арка и круглая дверь с ручкой посередине,
+// круглые окошки с цветочными ящиками, каменная труба торчит из травы.
+function drawHillHouse(c, m, x0, x1, y0, y1, doorCol = '#3e6a2c') {
+  const cxL = (x0 + x1) / 2, cyL = (y0 + y1) / 2;
+  const [sx, sy] = PL(m, cxL, cyL, 0);
+  const rx = (x1 - x0) / 2 + (y1 - y0) * 0.22, H = 26 + (x1 - x0) * 0.08;
+  const groundY = sy + (y1 - y0) * 0.36;
+  shadowAt(c, sx + 8, groundY + 2, rx + 6, 8);
+  // купол холма
+  const hill = new Path2D();
+  hill.moveTo(sx - rx - 6, groundY);
+  hill.bezierCurveTo(sx - rx, groundY - H * 1.1, sx - rx * 0.3, groundY - H * 1.35, sx + rx * 0.1, groundY - H * 1.3);
+  hill.bezierCurveTo(sx + rx * 0.6, groundY - H * 1.25, sx + rx + 2, groundY - H * 0.9, sx + rx + 8, groundY);
+  hill.quadraticCurveTo(sx, groundY + 8, sx - rx - 6, groundY);
+  c.fillStyle = radgrad(c, sx - rx * 0.4, groundY - H * 1.1, 4, rx * 1.6, [[0, '#a8c462'], [0.45, '#73963e'], [1, '#3a5a2a']]);
+  c.fill(hill);
+  c.save(); c.clip(hill);
+  for (let k = 0; k < (x1 - x0) * 2.2; k++) {
+    const x = sx - rx + srand() * rx * 2, y = groundY - srand() * H * 1.3;
+    line(c, x, y, x + rnd(-0.8, 0.8), y - rnd(1.4, 2.8), shade('#5c8236', rnd(-0.25, 0.3)), 0.6);
+  }
+  for (let k = 0; k < (x1 - x0) * 0.5; k++) {
+    const x = sx - rx * 0.8 + srand() * rx * 1.6, y = groundY - H * (0.4 + srand() * 0.8);
+    ellipse(c, x, y, 0.8, 0.8, ['#f4f0f6', '#f0d040', '#e86a9a', '#b080e0'][(srand() * 4) | 0]);
+  }
+  c.fillStyle = lingrad(c, sx + rx * 0.2, 0, sx + rx + 8, 0, [[0, 'rgba(30,20,40,0)'], [1, 'rgba(30,20,40,0.35)']]);
+  c.fillRect(sx - rx - 8, groundY - H * 1.5, rx * 2 + 20, H * 1.6);
+  c.restore();
+  // каменная труба из склона
+  const tx = sx + rx * 0.45, ty = groundY - H * 1.12;
+  wallTex(c, 'fieldstone', tx - 3, ty - 10, 6, 11, '#8e8a78');
+  c.fillStyle = '#4a4540'; c.fillRect(tx - 3.6, ty - 11, 7.2, 1.6);
+  c.fillStyle = '#100c0a'; c.fillRect(tx - 2.4, ty - 11, 4.8, 0.8);
+  (m.g.spr.chimneys = m.g.spr.chimneys || []).push([tx, ty - 12]);
+  // дверь в склоне: каменная арка, круглая дверь, ручка посередине
+  const [dx, dy0] = PL(m, m.doorX, y0 + 2, 0);
+  const dy = Math.min(dy0, groundY) - 8.5, R = 8;
+  ellipse(c, dx, dy, R + 3.6, R + 3.6, '#5c564f');
+  for (let k = 0; k < 12; k++) {
+    const a = k / 12 * Math.PI * 2;
+    ellipse(c, dx + Math.cos(a) * (R + 1.9), dy + Math.sin(a) * (R + 1.9), 2.2, 1.7, shade('#9e958a', rnd(-0.15, 0.15)));
+  }
+  c.fillStyle = radgrad(c, dx - 2, dy - 2, 1, R, [[0, shade(doorCol, 0.25)], [1, shade(doorCol, -0.3)]]);
+  c.beginPath(); c.arc(dx, dy, R, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = 'rgba(20,30,10,0.55)'; c.lineWidth = 0.5;
+  for (let k = -3; k <= 3; k++) { const x = dx + k * 2.2; const hh = Math.sqrt(Math.max(0, R * R - (x - dx) ** 2)); c.beginPath(); c.moveTo(x, dy - hh); c.lineTo(x, dy + hh); c.stroke(); }
+  ellipse(c, dx, dy, 1.3, 1.3, '#d8a840'); ellipse(c, dx - 0.4, dy - 0.4, 0.5, 0.5, '#fff2a0');
+  c.fillStyle = '#7e766c'; c.fillRect(dx - R - 2, dy + R + 1.4, R * 2 + 4, 1.8);
+  // круглые окошки по сторонам с цветочными ящиками
+  for (const s of [-1, 1]) {
+    const wx = dx + s * (R + 11), wy = dy - 1;
+    if (Math.abs(wx - sx) > rx - 4) continue;
+    ellipse(c, wx, wy, 4.8, 4.8, '#5c564f');
+    roundWin(c, wx, wy, 3.4, { lit: true, flowers: true });
+  }
+  // дорожка из плоских камней от двери
+  for (let k = 1; k <= 3; k++) ellipse(c, dx + (k % 2 ? 1.5 : -1.5), dy + R + 3 + k * 3.2, 3, 1.3, shade('#9e958a', rnd(-0.1, 0.1)));
+  if (m.sign) SIGN_QUEUE.list.push({ x: dx + R + 6, y: dy + R + 4, kind: m.sign, dir: 1 });
+}
+
 // ---------- Домик в пне ----------
+// Своя перерисовка по мотивам референса: широкий пень на моховом холме, зубчатый
+// обломанный верх с высоким зубцом справа, срезанный сучок слева, арочная дверь
+// под нависающим мхом, голубое окошко, трутовики, вьющийся росток, мухомор.
 function drawStumpHouse(c, m) {
-  const [cx, cy] = PL(m, 40, 32, 0);          // центр основания ствола на земле
-  const R = 21, RY = 12, Ht = 46;             // радиус, сжатие по глубине, высота ствола
+  const [cx, cy] = PL(m, 40, 30, 0);          // центр основания ствола на земле
+  const R = 20, RY = 10, Ht = 44;
   const top = cy - Ht;
-  // тень и моховой холм с корнями
-  shadowAt(c, cx + 4, cy + 4, 30, 9);
-  c.fillStyle = '#3e5a26';
-  c.beginPath(); c.ellipse(cx, cy + 2, R + 12, RY + 6, 0, 0, Math.PI * 2); c.fill();
-  for (let k = 0; k < 40; k++) { const a = srand() * Math.PI * 2, d = 0.6 + srand() * 0.4; ellipse(c, cx + Math.cos(a) * (R + 10) * d, cy + 2 + Math.sin(a) * (RY + 5) * d, rnd(2, 4), rnd(1.2, 2.4), shade(GMOSS[(srand() * 4) | 0], rnd(-0.1, 0.12))); }
-  // корни-лапы расходятся в стороны
-  for (const [a, l] of [[-2.7, 16], [-0.5, 14], [2.6, 12], [0.4, 10]]) {
-    const ex = cx + Math.cos(a) * (R + l), ey = cy + Math.sin(a) * (RY + l * 0.45) + 2;
-    c.fillStyle = '#4a2e18';
-    c.beginPath(); c.moveTo(cx + Math.cos(a - 0.35) * R, cy + Math.sin(a - 0.35) * RY - 4); c.quadraticCurveTo(ex, ey - 6, ex, ey); c.quadraticCurveTo(ex - 2, ey + 1, cx + Math.cos(a + 0.35) * R, cy + Math.sin(a + 0.35) * RY); c.closePath(); c.fill();
-    line(c, cx + Math.cos(a) * R, cy + Math.sin(a) * RY - 3, ex, ey - 1, '#7a5030', 0.8);
+  const BARK = ['#a8643a', '#8a4c2a', '#6e3a22', '#52281a', '#3a1c12'];
+  shadowAt(c, cx + 5, cy + 5, 32, 9);
+  // моховой холм: неровный край, травинки, тёмные камушки и корни
+  const mound = new Path2D();
+  mound.moveTo(cx - R - 18, cy + 6);
+  mound.quadraticCurveTo(cx - R - 12, cy - 6, cx - R + 2, cy - 8);
+  mound.lineTo(cx + R - 2, cy - 8);
+  mound.quadraticCurveTo(cx + R + 14, cy - 5, cx + R + 22, cy + 7);
+  mound.quadraticCurveTo(cx, cy + RY + 10, cx - R - 18, cy + 6);
+  c.fillStyle = lingrad(c, 0, cy - 8, 0, cy + 16, [[0, '#8eab4c'], [0.5, '#5c8236'], [1, '#3a5a2a']]);
+  c.fill(mound);
+  c.save(); c.clip(mound);
+  for (let k = 0; k < 70; k++) { const x = cx - R - 18 + srand() * (R * 2 + 40), y = cy - 8 + srand() * 22; ellipse(c, x, y, rnd(1, 2.4), rnd(0.8, 1.6), shade(GMOSS[(srand() * 4) | 0], rnd(-0.1, 0.25))); }
+  c.restore();
+  for (let k = 0; k < 16; k++) { const x = cx - R - 14 + srand() * (R * 2 + 30), y = cy + 2 + srand() * 10; line(c, x, y, x + rnd(-1, 1), y - rnd(2, 4), '#a8c462', 0.6); }
+  for (const [dx, dy] of [[-28, 8], [-6, 13], [18, 10], [26, 4]]) { ellipse(c, cx + dx, cy + dy, 2.4, 1.4, '#3a2418'); ellipse(c, cx + dx - 0.6, cy + dy - 0.5, 1, 0.6, '#6e432a'); }
+  // корни расходятся по холму
+  for (const [a, l] of [[-2.8, 14], [-0.3, 12], [2.9, 10]]) {
+    const ex = cx + Math.cos(a) * (R + l), ey = cy + Math.abs(Math.sin(a)) * 6 + 4;
+    c.fillStyle = BARK[3];
+    c.beginPath(); c.moveTo(cx + Math.cos(a) * (R - 4), cy - 6); c.quadraticCurveTo(ex, ey - 7, ex, ey); c.quadraticCurveTo(ex - Math.sign(Math.cos(a)) * 3, ey - 1, cx + Math.cos(a) * (R - 8), cy + 2); c.closePath(); c.fill();
   }
-  // ствол: светлее слева (свет), холоднее и темнее справа
+  // ствол: снизу шире, кверху чуть сужается; зубчатый обломанный верх
   const trunk = new Path2D();
-  trunk.moveTo(cx - R - 2, cy);
-  trunk.quadraticCurveTo(cx - R + 1, cy - Ht * 0.5, cx - R + 3, top + 6);
-  // обломанный зубчатый верх
-  const teeth = [[-R + 3, 6], [-14, -2], [-9, 4], [-4, -8], [1, 2], [6, -4], [10, 5], [14, -12], [17, 0], [R - 3, 8]];
-  for (const [dx, dy] of teeth) trunk.lineTo(cx + dx, top + dy);
-  trunk.quadraticCurveTo(cx + R - 1, cy - Ht * 0.5, cx + R + 2, cy);
-  trunk.quadraticCurveTo(cx, cy + RY + 2, cx - R - 2, cy);
-  c.fillStyle = lingrad(c, cx - R, 0, cx + R, 0, [[0, '#9a6a3e'], [0.35, '#7a4e2c'], [0.75, '#5a3620'], [1, '#3a2418']]);
+  trunk.moveTo(cx - R - 3, cy - 2);
+  trunk.bezierCurveTo(cx - R + 1, cy - Ht * 0.35, cx - R + 2, cy - Ht * 0.7, cx - R + 4, top + 10);
+  for (const [dx, dy] of [[-R + 6, 6], [-11, 8], [-8, 0], [-3, 5], [1, -2], [5, 3], [8, -5], [10, -10], [13, -9], [15, -2], [R - 3, 3]]) trunk.lineTo(cx + dx, top + dy);
+  trunk.bezierCurveTo(cx + R - 1, cy - Ht * 0.6, cx + R + 1, cy - Ht * 0.3, cx + R + 3, cy - 2);
+  trunk.quadraticCurveTo(cx, cy + 6, cx - R - 3, cy - 2);
+  c.fillStyle = lingrad(c, cx - R, 0, cx + R, 0, [[0, BARK[0]], [0.3, BARK[1]], [0.65, BARK[2]], [1, BARK[4]]]);
   c.fill(trunk);
-  // волокна коры
   c.save(); c.clip(trunk);
-  for (let k = 0; k < 26; k++) {
-    const x = cx - R + srand() * R * 2, sway = rnd(-2, 2);
-    c.strokeStyle = srand() < 0.5 ? 'rgba(40,20,10,0.55)' : 'rgba(200,150,100,0.25)'; c.lineWidth = rnd(0.5, 1.2);
-    c.beginPath(); c.moveTo(x, cy + 4); c.quadraticCurveTo(x + sway, cy - Ht * 0.5, x + sway * 0.5, top - 4); c.stroke();
+  // глубокие борозды коры и светлые гребни
+  for (let k = 0; k < 14; k++) {
+    const x = cx - R + 2 + k * (R * 2 - 4) / 13 + rnd(-1, 1), w = rnd(-1.5, 1.5);
+    c.strokeStyle = BARK[4]; c.lineWidth = rnd(0.9, 1.5);
+    c.beginPath(); c.moveTo(x, cy + 2); c.bezierCurveTo(x + w, cy - Ht * 0.3, x - w, cy - Ht * 0.65, x + w * 0.5, top - 4); c.stroke();
+    c.strokeStyle = k < 6 ? 'rgba(220,150,100,0.35)' : 'rgba(150,90,60,0.2)'; c.lineWidth = 0.6;
+    c.beginPath(); c.moveTo(x + 1.6, cy); c.bezierCurveTo(x + 1.6 + w, cy - Ht * 0.3, x + 1.6 - w, cy - Ht * 0.65, x + 1.6, top); c.stroke();
   }
-  // мох ползёт по стволу снизу и с левой стороны
-  for (let k = 0; k < 50; k++) { const y = cy - Math.pow(srand(), 1.8) * Ht * 0.7, x = cx - R + Math.pow(srand(), 1.5) * R * 1.4; ellipse(c, x, y, rnd(1, 2.4), rnd(0.8, 1.6), shade(GMOSS[(srand() * 4) | 0], rnd(-0.1, 0.15))); }
+  // тёплый отсвет по левому краю и холодная тень справа
+  c.fillStyle = lingrad(c, cx - R - 3, 0, cx - R + 6, 0, [[0, 'rgba(240,170,110,0.45)'], [1, 'rgba(240,170,110,0)']]); c.fillRect(cx - R - 3, top - 20, 10, Ht + 30);
+  c.fillStyle = lingrad(c, cx + R - 8, 0, cx + R + 3, 0, [[0, 'rgba(40,20,40,0)'], [1, 'rgba(40,20,40,0.45)']]); c.fillRect(cx + R - 8, top - 20, 12, Ht + 30);
+  // мох стекает с верхнего края и по низу ствола
+  for (let k = 0; k < 30; k++) { const x = cx - R + srand() * R * 2, y = top + rnd(2, 8) + (x > cx + 6 ? 4 : 0); ellipse(c, x, y, rnd(1.4, 3), rnd(1, 2), shade(GMOSS[(srand() * 4) | 0], rnd(0, 0.2))); }
+  for (let k = 0; k < 34; k++) { const x = cx - R + srand() * R * 2, y = cy - Math.pow(srand(), 2) * 12; ellipse(c, x, y, rnd(1.2, 2.6), rnd(0.8, 1.8), shade(GMOSS[(srand() * 4) | 0], rnd(-0.1, 0.2))); }
   c.restore();
-  // срез сверху: годичные кольца
-  c.save(); c.beginPath(); c.ellipse(cx + 2, top + 2, R - 6, 5.5, 0, 0, Math.PI * 2); c.clip();
-  c.fillStyle = '#c8955a'; c.fillRect(cx - R, top - 6, R * 2, 14);
-  c.strokeStyle = 'rgba(110,60,30,0.6)'; c.lineWidth = 0.5;
-  for (let rr = 2; rr < R - 6; rr += 2.5) { c.beginPath(); c.ellipse(cx + 2, top + 2, rr, rr * 0.3, 0, 0, Math.PI * 2); c.stroke(); }
+  // срез сверху: светлая древесина с кольцами за зубцами
+  c.save(); c.beginPath(); c.ellipse(cx - 1, top + 6, R - 7, 4.2, 0, 0, Math.PI * 2); c.clip();
+  c.fillStyle = '#d0a070'; c.fillRect(cx - R, top, R * 2, 12);
+  c.strokeStyle = 'rgba(140,80,40,0.55)'; c.lineWidth = 0.45;
+  for (let rr = 2; rr < R - 7; rr += 2.2) { c.beginPath(); c.ellipse(cx - 1, top + 6, rr, rr * 0.3, 0, 0, Math.PI * 2); c.stroke(); }
   c.restore();
-  // росток с двумя листочками
-  line(c, cx + 6, top + 1, cx + 8, top - 12, '#5c8236', 1);
-  ellipse(c, cx + 11, top - 12, 3.4, 1.6, '#73963e'); ellipse(c, cx + 5, top - 9, 3, 1.4, '#5c8236');
-  // трутовики полочками
-  for (const [dx, dy, s] of [[-13, -26, 1], [-11, -22, 0.8], [12, -30, 1.1]]) {
-    c.fillStyle = '#d8b07a'; c.beginPath(); c.ellipse(cx + dx, cy + dy, 4.4 * s, 1.8 * s, 0, Math.PI, 0); c.fill();
-    c.fillStyle = '#a07040'; c.fillRect(cx + dx - 4.4 * s, cy + dy - 0.2, 8.8 * s, 0.9);
+  ellipse(c, cx - 8, top + 6, 3.4, 1.4, '#73963e'); ellipse(c, cx + 4, top + 7, 2.6, 1.2, '#8eab4c');
+  // срезанный сучок слева, торец с кольцами
+  c.fillStyle = BARK[2]; c.beginPath(); c.moveTo(cx - R + 2, top + 16); c.lineTo(cx - R - 7, top + 13); c.lineTo(cx - R - 7, top + 21); c.lineTo(cx - R + 2, top + 22); c.fill();
+  ellipse(c, cx - R - 7, top + 17, 2.6, 4, '#c89060'); ellipse(c, cx - R - 7, top + 17, 1.6, 2.6, '#a8703e'); ellipse(c, cx - R - 7, top + 17, 0.6, 1, '#7a4a28');
+  // вьющийся росток на верхушке
+  c.strokeStyle = '#5c8236'; c.lineWidth = 0.9;
+  c.beginPath(); c.moveTo(cx + 9, top - 8); c.bezierCurveTo(cx + 8, top - 18, cx + 14, top - 20, cx + 16, top - 16); c.stroke();
+  c.beginPath(); c.moveTo(cx + 11, top - 17); c.bezierCurveTo(cx + 7, top - 22, cx + 4, top - 20, cx + 5, top - 17); c.stroke();
+  ellipse(c, cx + 16.4, top - 17.6, 1.4, 0.9, '#8eab4c'); ellipse(c, cx + 5, top - 16.6, 1.2, 0.8, '#73963e');
+  // трутовики «этажеркой» посередине
+  for (const [dx, dy, s] of [[3, -24, 1.1], [1, -20, 1.3], [4, -16, 0.9]]) {
+    c.fillStyle = '#e0b088'; c.beginPath(); c.ellipse(cx + dx, cy + dy, 4 * s, 1.7 * s, 0, Math.PI, 0); c.fill();
+    c.fillStyle = '#b8805a'; c.fillRect(cx + dx - 4 * s, cy + dy - 0.2, 8 * s, 0.8);
+    c.fillStyle = '#f4d0a8'; c.fillRect(cx + dx - 2.5 * s, cy + dy - 1.2 * s, 3 * s, 0.5);
   }
-  // арочная дверь спереди, у самого основания
-  const [dx, dy] = PL(m, m.doorX, 18, 0);
-  c.fillStyle = '#2a1608'; c.beginPath(); c.moveTo(dx - 7, dy); c.lineTo(dx - 7, dy - 11); c.arc(dx, dy - 11, 7, Math.PI, 0); c.lineTo(dx + 7, dy); c.closePath(); c.fill();
-  door(c, dx, dy, 11, 16.5, { gnome: true, col: '#8a5a32' });
-  // круглое голубое окошко справа
-  roundWin(c, dx + 13, dy - 22, 3.4, { lit: false });
-  ellipse(c, dx + 13, dy - 22, 2.2, 2.2, 'rgba(120,190,230,0.55)');
-  // фонарь у двери и грибочки
-  lantern(c, dx - 11, dy - 16);
-  mushroomProp(c, dx - 16, dy + 4, 1.1, true); mushroomProp(c, dx + 18, dy + 5, 0.8, true); mushroomProp(c, dx + 21, dy + 4, 0.6, false);
+  // арочная дверь левее центра, мох нависает над аркой
+  const [dx0, dy0] = PL(m, m.doorX, 18, 0);
+  const dx = Math.min(dx0, cx - 4), dy = Math.min(dy0, cy - 2);
+  c.fillStyle = '#2a1408'; c.beginPath(); c.moveTo(dx - 7.4, dy); c.lineTo(dx - 7.4, dy - 12); c.arc(dx, dy - 12, 7.4, Math.PI, 0); c.lineTo(dx + 7.4, dy); c.closePath(); c.fill();
+  c.save(); c.beginPath(); c.moveTo(dx - 6, dy); c.lineTo(dx - 6, dy - 12); c.arc(dx, dy - 12, 6, Math.PI, 0); c.lineTo(dx + 6, dy); c.closePath(); c.clip();
+  c.fillStyle = lingrad(c, dx - 6, 0, dx + 6, 0, [[0, '#c8a070'], [1, '#8a6040']]); c.fillRect(dx - 6, dy - 19, 12, 19);
+  for (let x = dx - 6 + 2.4; x < dx + 6; x += 2.4) { c.fillStyle = 'rgba(60,30,12,0.55)'; c.fillRect(x, dy - 19, 0.5, 19); }
+  c.fillStyle = '#5a4030'; c.fillRect(dx - 6, dy - 13, 12, 0.8); c.fillRect(dx - 6, dy - 5, 12, 0.8);
+  c.restore();
+  ellipse(c, dx + 3.6, dy - 8, 0.7, 0.7, '#e0b040');
+  for (let a = Math.PI * 1.05; a < Math.PI * 1.95; a += 0.2) ellipse(c, dx + Math.cos(a) * 8, dy - 12 + Math.sin(a) * 8, rnd(1.6, 2.6), rnd(1.2, 1.8), shade(GMOSS[(srand() * 4) | 0], rnd(0, 0.2)));
+  c.fillStyle = '#7e766c'; c.fillRect(dx - 7, dy - 0.4, 14, 1.6);
+  // голубое окошко справа: тёмная рама, светящееся стекло
+  const wx = cx + 12, wy = cy - 26;
+  c.fillStyle = '#2a1408'; rrect(c, wx - 3, wy - 4.4, 6, 8.4, 2.4); c.fill();
+  c.fillStyle = radgrad(c, wx, wy, 0.4, 4, [[0, '#d6f2ff'], [0.5, '#60b8e8'], [1, '#2c6ca0']]); rrect(c, wx - 2.1, wy - 3.4, 4.2, 6.6, 1.8); c.fill();
+  c.fillStyle = '#2a1408'; c.fillRect(wx - 0.3, wy - 3.4, 0.6, 6.6); c.fillRect(wx - 2.1, wy - 0.4, 4.2, 0.6);
+  glow(c, wx, wy, 6, '120,200,255', 0.25);
+  // мухоморы на холме спереди
+  mushroomProp(c, cx - 15, cy + 9, 1.3, true); mushroomProp(c, cx + 20, cy + 8, 0.8, false); mushroomProp(c, cx - 11, cy + 11, 0.7, true);
   // столб с вывеской (топор) у входа
-  if (m.sign) SIGN_QUEUE.list.push({ x: dx + 24, y: dy + 3, kind: m.sign, dir: 1 });
-  // трубы нет — дым из дупла сверху
-  (m.g.spr.chimneys = m.g.spr.chimneys || []).push([cx - 6 - m.g.ox + m.g.ox, top + 2]);
+  if (m.sign) SIGN_QUEUE.list.push({ x: cx + R + 10, y: cy + 4, kind: m.sign, dir: 1 });
+  // дым — из дупла среди зубцов
+  (m.g.spr.chimneys = m.g.spr.chimneys || []).push([cx - 2, top + 2]);
 }
 
 // Верхние точки силуэта крыши (куда садятся совы), в мировых пикселях спрайта

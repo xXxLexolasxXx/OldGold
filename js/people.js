@@ -580,7 +580,8 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       boot(c, ax, ay + 0.2, 1, l.far ? '#2e1c10' : '#5a3a20');
     };
     const tool = pose === 'work' ? (ANIM_TOOL[frame.anim] || 'hammer') : null;
-    const swingA = tool === 'sickle' || tool === 'spade' ? [1.2, 1.7, 2.2, 2.6] : [-0.7, 0.2, 1.3, 2.1];
+    // замах: 0 — инструмент поднят над плечом, 3 — удар вперёд-вниз; дуга ~100°, без прокрутки
+    const swingA = tool === 'sickle' || tool === 'spade' ? [1.3, 1.7, 2.1, 2.45] : [0.05, 0.6, 1.2, 1.8];
     const ang = tool ? swingA[frame.f] : 0;
     const armA = pose === 'walk' ? -sw * 0.55 : duck ? -0.5 : 0;
     const sling = injury === 'arm';

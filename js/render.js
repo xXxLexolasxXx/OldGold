@@ -82,6 +82,9 @@ function fieldStage(g) {
   return 3;
 }
 
+// Удар туда-обратно: медленный подъём, быстрый удар, короткая отдача — без прокрутки по кругу
+const SWING_SEQ = [0, 0, 1, 1, 2, 3, 3, 2, 1];
+
 // ---------- Жители ----------
 
 function drawUnit(c, u) {
@@ -100,7 +103,7 @@ function drawUnit(c, u) {
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
   else if (u.anim === 'sleep' || u.anim === 'faint') { pose = 'idle'; view = 'E'; }
   else if (u.anim === 'sit') { pose = 'duck'; view = 'S'; }
-  else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: Math.floor(Game.time * 5 + u.id) & 3 }; }
+  else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: SWING_SEQ[Math.floor(Game.time * 9 + u.id * 3) % SWING_SEQ.length] }; }
   // походка и жесты
   const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
   if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {
