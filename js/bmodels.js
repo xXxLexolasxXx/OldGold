@@ -42,6 +42,71 @@ function shadowOf(g, pts3) {
   poly(g.sc, hull(pts), 'rgba(12,10,6,0.36)');
 }
 
+// ================= Гномский стиль =================
+// Модели описаны в духе K&M (штукатурка, фахверк, черепица). Здесь они
+// переводятся в лесной гномский вид: бревенчатые стены на замшелом камне,
+// крутые крыши из замшелой дранки или дёрна, круглые окна и двери, грибы у стен.
+
+const LOG_COLS = ['#7a4e2c', '#84562e', '#6e4628', '#8a5e34'];
+
+function gnomePart(p) {
+  if (p._g) return p;
+  const q = { ...p, _g: true, moss: true };
+  const h = hashStr(`${p.x0},${p.y0},${p.h}`);
+  if (q.wall === 'plaster' || q.wall === 'brick') {
+    q.wall = 'logs'; q.col = LOG_COLS[h % LOG_COLS.length];
+    q.frame = false; q.gableWall = 'plank'; q.gableCol = shade(q.col, -0.08);
+    q.beam = '#3a2414';
+  } else if (q.wall === 'stone') {
+    q.wall = 'fieldstone'; q.col = '#948e7c';
+  } else if (q.wall === 'plank') q.col = q.col || '#7a5030';
+  if (q.lowerStone) { q.lowerStone = Math.max(q.lowerStone, 7); q.stoneCol = '#8e8a78'; }
+  if (q.roof) {
+    const r = q.roof = { ...q.roof };
+    if (r.mat === 'tiles' || r.mat === 'slate' || r.mat === 'shingle') {
+      // маленькие постройки — под дёрном, большие — под замшелой дранкой
+      r.mat = (q.x1 - q.x0) * (q.y1 - q.y0) < 1300 || (h >> 4) % 3 === 0 ? 'turf' : 'moss';
+      r.col = r.mat === 'turf' ? '#5c8236' : '#7a5a36';
+    } else if (r.mat === 'thatch') r.col = '#a8925a';
+    r.rise = (r.rise ?? 18) * 1.12;
+    r.ov = (r.ov ?? 4) + 1.2;
+  }
+  return q;
+}
+
+// Мох и плющ по низу стены, грибы и травка у фундамента (в координатах грани)
+function wallMoss(c, L, H, ground) {
+  if (ground) { groundTufts(c, L, H); return; }
+  c.fillStyle = lingrad(c, 0, H - 9, 0, H, [[0, 'rgba(60,90,30,0)'], [1, 'rgba(60,95,35,0.55)']]);
+  c.fillRect(0, H - 9, L, 9);
+  for (let k = 0; k < L / 1.6; k++) {
+    const x = rnd(0, L), y = H - Math.pow(srand(), 2) * 10;
+    c.fillStyle = GMOSS[(srand() * 4) | 0];
+    c.fillRect(x, y, rnd(0.6, 1.6), rnd(0.5, 1.2));
+  }
+  if (srand() < 0.45 && H > 16) {
+    // плющ ползёт вверх
+    const x0 = rnd(4, Math.max(5, L - 4)), top = H - rnd(10, Math.min(H - 2, 30));
+    for (let y = H; y > top; y -= 0.9) {
+      const x = x0 + Math.sin(y * 0.5) * 2;
+      ellipse(c, x + rnd(-1.6, 1.6), y, rnd(0.8, 1.5), rnd(0.6, 1.1), shade('#3e6a28', rnd(-0.25, 0.2)));
+    }
+  }
+}
+
+function groundTufts(c, L, H) {
+  for (let k = 0; k < L / 4; k++) {
+    const x = rnd(0, L);
+    for (let j = 0; j < 3; j++) line(c, x + j * 0.6, H + 1, x + j * 0.6 + rnd(-0.8, 0.8), H - rnd(1.4, 3), shade('#5c8236', rnd(-0.2, 0.25)), 0.45);
+  }
+  const n = 1 + ((srand() * 3) | 0);
+  for (let k = 0; k < n; k++) {
+    const x = rnd(3, Math.max(4, L - 3));
+    mushroomProp(c, x, H + 1, rnd(0.7, 1.05), srand() < 0.6);
+    if (srand() < 0.5) mushroomProp(c, x + rnd(1.8, 2.8), H + 1.2, rnd(0.5, 0.7), srand() < 0.6);
+  }
+}
+
 // ================= Грани =================
 
 function faceXform(c, g, face, w, ztop) {
@@ -53,8 +118,19 @@ function faceXform(c, g, face, w, ztop) {
 function drawDecor(c, d, H) {
   const u = d.u;
   switch (d.t) {
-    case 'door': door(c, u, H, d.w || 10, d.h || 16, d.o || {}); break;
-    case 'win': win(c, u - (d.w || 6) / 2, H - d.z - (d.h || 7), d.w || 6, d.h || 7, d.o || {}); break;
+    case 'door': {
+      // гномская дверь: полукруглый верх, у одностворчатых — зелёная или красная краска
+      const o = { ...(d.o || {}), square: false, gnome: true };
+      if (!o.double && !o.col && !o.open) o.col = ['#4e7a34', '#8c3a22', '#5a7a3a'][Math.abs(Math.round(u)) % 3];
+      door(c, u, H, d.w || 10, d.h || 16, o);
+      break;
+    }
+    case 'win': {
+      const o = { ...(d.o || {}) };
+      if (!o.arch && (d.w || 6) <= 8) o.round = true;
+      win(c, u - (d.w || 6) / 2, H - d.z - (d.h || 7), d.w || 6, d.h || 7, o);
+      break;
+    }
     case 'sign': c.fillStyle = '#2e1a0c'; c.fillRect(u - 1, H - d.z - 0.6, 12, 1.2); signBoard(c, u + 1, H - d.z, d.kind); break;
     case 'lantern': lantern(c, u, H - d.z); break;
     case 'shield': shield(c, u, H - d.z, d.col || '#8c2c20'); break;
@@ -128,15 +204,30 @@ function drawFace(c, g, face, w, z0, z1, spec, light, decor) {
   if (ls) { c.fillStyle = spec.beam || '#3a2414'; c.fillRect(-0.5, H - ls - 2, L + 1, 2.2); c.fillStyle = 'rgba(255,230,190,0.25)'; c.fillRect(-0.5, H - ls - 2, L + 1, 0.4); }
   wallShade(c, 0, 0, L, H);
   if (z0 === 0 && !spec.noPlinth) plinth(c, 0, H, L);
-  // угловые столбы
-  if (spec.frame || spec.wall === 'plank' || spec.wall === 'logs') {
+  // угловые столбы; у бревенчатых стен — торцы брёвен «в обло»
+  if (spec.wall === 'logs') {
+    const top = z0 === 0 ? H - (ls || 3) : H;
+    const ex = face === 'S' ? 0.6 : L - 0.6;
+    for (let y = top; y > 1; y -= 4) {
+      ellipse(c, ex, y - 2, 1.7, 2.1, '#5a3a1e');
+      ellipse(c, ex, y - 2, 1.2, 1.6, '#c89a64');
+      ellipse(c, ex, y - 2, 0.5, 0.6, '#8a5a32');
+    }
+  } else if (spec.frame || spec.wall === 'plank') {
     c.fillStyle = spec.beam || '#3a2414'; c.fillRect(0, 0, 1.6, H - (z0 === 0 ? 3 : 0)); c.fillRect(L - 1.6, 0, 1.6, H - (z0 === 0 ? 3 : 0));
   } else if (spec.wall === 'plaster' || spec.wall === 'brick') {
     for (let y = H - 4; y > 0; y -= 5) { c.fillStyle = shade('#b0a696', rnd(-0.1, 0.1)); c.fillRect(face === 'S' ? 0 : L - 3, y - 4, 3, 4); }
   }
+  if (spec.moss && z0 === 0) wallMoss(c, L, H, false);
   for (const d of decor) drawDecor(c, d, H);
   if (light < 1) { c.fillStyle = `rgba(14,8,2,${1 - light})`; c.fillRect(-0.5, -0.5, L + 1, H + 0.5); }
   c.strokeStyle = 'rgba(20,10,4,0.6)'; c.lineWidth = 0.5; c.strokeRect(0, 0, L, H);
+  // травка и грибы у фундамента — поверх тени, они на свету
+  if (spec.moss && z0 === 0 && !spec.noPlinth) {
+    c.save(); c.beginPath(); c.rect(-2, H - 12, L + 4, 16); c.clip();
+    wallMoss(c, L, H, true);
+    c.restore();
+  }
   c.restore();
 }
 
@@ -289,6 +380,7 @@ function decorFor(m, p, w, worldFace, gable = false) {
 }
 
 function drawBoxPart(c, m, p) {
+  p = gnomePart(p);
   const g = m.g, w = boxW(m, p), z0 = p.z0 || 0, H = z0 + p.h;
   if (!p.noShadow) {
     const rz = H + (p.roof ? (p.roof.rise || 18) * 0.7 : 0);
@@ -321,7 +413,7 @@ function drawBoxPart(c, m, p) {
     const [X, Y] = toW(m, ch.x, ch.y);
     const cw = ch.w || 5, zb = roofZ(m, p, w, H, X + cw / 2, Y + cw / 2) - 1, zt = zb + ch.h;
     const cwB = { X0: X, X1: X + cw, Y0: Y, Y1: Y + cw };
-    const spec = { wall: ch.kind || 'brick', col: ch.kind === 'stone' ? '#9a9286' : '#9a4e34', noPlinth: true };
+    const spec = { wall: 'fieldstone', col: '#8e8a78', noPlinth: true };   // гномьи трубы — бутовый камень
     drawFace(c, g, 'E', cwB, zb, zt, spec, 0.66, []);
     drawFace(c, g, 'S', cwB, zb, zt, spec, 1.0, []);
     poly(c, [P(g, X - 0.6, Y - 0.6, zt), P(g, X + cw + 0.6, Y - 0.6, zt), P(g, X + cw + 0.6, Y + cw + 0.6, zt), P(g, X - 0.6, Y + cw + 0.6, zt)], '#4a4440', 'rgba(15,10,6,0.7)', 0.5);
@@ -336,9 +428,9 @@ function drawBoxPart(c, m, p) {
     const zr = H + rise * ((yd - p.y0) / hd);
     drawBoxPart(c, m, {
       x0: dm.x - dm.w / 2, x1: dm.x + dm.w / 2, y0: yd, y1: p.y0 + hd * 0.95, z0: zr - 1.5, h: dm.h,
-      wall: 'plaster', col: dm.col || '#e8dcc0', noPlinth: true, noShadow: true, beam: p.beam,
+      wall: 'plank', col: '#7a5030', noPlinth: true, noShadow: true, beam: p.beam,
       decor: { S: [dm.loft ? { t: 'loft', at: dm.x, z: 0.5, w: dm.w - 5, h: dm.h - 2.5 } : { t: 'win', at: dm.x, z: 1.5, w: dm.w - 6, h: dm.h - 4, o: dm.o || {} }] },
-      roof: { type: 'gable', axis: 'Y', rise: dm.w * 0.5, mat: p.roof.mat, col: p.roof.col, ov: 1.6 },
+      roof: { type: 'gable', axis: 'Y', rise: dm.w * 0.5, mat: p.roof.mat, col: p.roof.col, ov: 1.6 }, _g: true,
     });
   }
 }
@@ -943,7 +1035,9 @@ function buildingSprite(type, rot = 0) {
   const m = newModel(g);
   MODELS[type](m);
   renderModel(c, m);
-  grain(cv, 0.07, hashStr(type) + d.rot);
+  grain(cv, 0.05, hashStr(type) + d.rot);
+  // пиксель-арт ×2 с палитрой и тёмной обводкой — в одном стиле с гномами
+  spr.canvas = toPixelArt(cv, BS / 2, { outline: true, outlineDark: 0.4, alphaCut: 100 });
   const blurred = mkCanvas(scv.width, scv.height);
   const bc = blurred.getContext('2d');
   bc.filter = `blur(${BS * 1.4}px)`;

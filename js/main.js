@@ -1,25 +1,103 @@
 'use strict';
 // Запуск, игровой цикл и управление мышью/клавиатурой.
 
+// Стартовая деревня: улица через поляну, склад, школа и трактир в случайных
+// местах по обе стороны с зазорами, к каждому входу — дорожка. Ряд вдоль улицы
+// оставлен свободным, чтобы её можно было расширить до двух полос.
+function layoutStart(rng, cx, cy) {
+  const sy = cy + Math.floor(rng() * 3) - 1;                  // улица чуть выше или ниже центра
+  const taken = new Set();                                     // клетки зданий с отступом в 1
+  const roads = [];
+  // проходы к площадкам под рудник и кристаллы трогать нельзя
+  const corridor = (x, y) => y < sy && ((x >= cx + 7 && x <= cx + 11) || (x >= cx - 12 && x <= cx - 8));
+  const fits = (x0, y0, w, h) => {
+    for (let y = y0 - 1; y <= y0 + h; y++) for (let x = x0 - 1; x <= x0 + w; x++) {
+      if (taken.has(idx(x, y))) return false;
+      if (y >= sy - 1 && y <= sy + 1) return false;            // улица и её вторая полоса
+      if (corridor(x, y)) return false;
+    }
+    return true;
+  };
+  const placed = [];
+  const types = ['storehouse', 'school', 'inn'].sort(() => rng() - 0.5);
+  for (const type of types) {
+    let best = null;
+    for (let t = 0; t < 400 && !best; t++) {
+      const north = rng() < 0.6;
+      const rot = BUILDINGS[type].noRotate ? 0 : north ? (rng() < 0.3 ? 1 : 0) : 1;   // к югу от улицы — входом вбок
+      const d = bDims(type, rot);
+      const gap = 2 + Math.floor(rng() * 3);                  // 2–4 клетки от улицы
+      const x = cx - 11 + Math.floor(rng() * 20);
+      const y = north ? sy - gap - d.h + (rot ? 1 : 0) : sy + gap;
+      if (!fits(x, y, d.w, d.h)) continue;
+      if (checkPlacement(type, x, y, rot)) continue;
+      const door = [x + d.dx, y + d.dy];
+      // дорожка от входа к улице: прямо по вертикали
+      const path = [];
+      const step = door[1] < sy ? 1 : -1;
+      let ok = true;
+      for (let yy = door[1] + step; yy !== sy; yy += step) {
+        const i = idx(door[0], yy);
+        if (World.bmap[i] || taken.has(i) || World.terrain[i] === T_WATER || World.terrain[i] === T_ROCK) { ok = false; break; }
+        path.push([door[0], yy]);
+      }
+      if (ok) best = { type, x, y, rot, door, path };
+    }
+    if (!best) continue;
+    const d = bDims(type, best.rot);
+    for (let yy = best.y - 1; yy <= best.y + d.h; yy++) for (let xx = best.x - 1; xx <= best.x + d.w; xx++) taken.add(idx(xx, yy));
+    placed.push(placeBuilding(type, best.x, best.y, true, best.rot));
+    roads.push(...best.path);
+  }
+  // улица от крайнего входа до крайнего, с запасом
+  const xs = placed.map(b => b.doorX);
+  const x0 = Math.min(cx - 9, ...xs) - 2, x1 = Math.max(cx + 4, ...xs) + 2;
+  for (let x = x0; x <= x1; x++) roads.push([x, sy]);
+  for (const [x, y] of roads) {
+    if (!inb(x, y)) continue;
+    const i = idx(x, y);
+    if (World.bmap[i]) continue;
+    World.terrain[i] = World.terrain[i] === T_SAND ? T_SAND : T_GRASS;
+    World.obj[i] = null;
+    setRoad(x, y, true);
+  }
+  // вторая полоса свободна от деревьев и камней
+  for (let x = x0; x <= x1; x++) if (inb(x, sy + 1) && !World.bmap[idx(x, sy + 1)]) World.obj[idx(x, sy + 1)] = null;
+  return { sy, x0, x1, placed };
+}
+
 function setupStart(seed) {
   resetGameState();
   Game.seed = seed;
   const { cx, cy } = genWorld(seed);
-  const store = placeBuilding('storehouse', cx - 9, cy - 3, true);
-  placeBuilding('school', cx - 4, cy - 3, true);
-  placeBuilding('inn', cx, cy - 3, true);
-  for (let x = cx - 10; x <= cx + 5; x++) setRoad(x, cy, true);
+  const rng = mulberry32(seed ^ 0x5eed);
+  let lay = layoutStart(rng, cx, cy);
+  if (lay.placed.length < 3) {
+    // не нашлось места — запасная прежняя раскладка
+    for (const b of lay.placed) removeBuilding(b);
+    World.road.fill(0);
+    placeBuilding('storehouse', cx - 9, cy - 3, true);
+    placeBuilding('school', cx - 4, cy - 3, true);
+    placeBuilding('inn', cx, cy - 3, true);
+    for (let x = cx - 10; x <= cx + 5; x++) setRoad(x, cy, true);
+    lay = { sy: cy, x0: cx - 10, x1: cx + 5 };
+  }
+  const store = Game.buildings.find(b => b.type === 'storehouse');
   Object.assign(store.stock, { timber: 30, stone: 35, bread: 20, gold: 30, trunk: 4 });
 
+  const { sy, x0, x1 } = lay;
   const start = { serf: 8, builder: 4, woodcutter: 1, carpenter: 1, stonemason: 1, farmer: 1 };
   for (const [type, n] of Object.entries(start))
     for (let k = 0; k < n; k++) {
-      if (type === 'serf') spawnUnit(type, cx - 10 + k * 2, cy);           // курьеры — на дороге
-      else spawnUnit(type, cx - 8 + (Math.random() * 12 | 0), cy + 1 + (Math.random() * 2 | 0));
+      if (type === 'serf') spawnUnit(type, x0 + 1 + Math.floor(k * (x1 - x0 - 2) / n), sy);   // курьеры — на улице
+      else {
+        const s = randomFreeNear((x0 + x1) >> 1, sy + 2, 1, 5) || [(x0 + x1) >> 1, sy + 1];
+        spawnUnit(type, s[0], s[1]);
+      }
     }
 
   spawnAnimals();
-  centerOn((cx - 3) * TILE, (cy - 1) * TILE);
+  centerOn(((x0 + x1) / 2) * TILE, (sy - 2) * TILE);
 }
 
 function newGame() {

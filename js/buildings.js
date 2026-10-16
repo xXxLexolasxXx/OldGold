@@ -2,7 +2,7 @@
 // Здания в духе Knights and Merchants: объёмы с фасадами, крыши трёх типов,
 // фактурные материалы, двор с реквизитом. Рисуются с тройной сверхвыборкой.
 
-const BS = 3;          // сверхвыборка зданий
+const BS = 4;          // сверхвыборка зданий (потом сводится в пиксель-арт ×2)
 const BPADX = 26;      // запас по бокам спрайта
 const BBOTTOM = 14;    // запас снизу (реквизит перед фасадом)
 
@@ -105,6 +105,8 @@ function plinth(c, x, y, w, hgt = 3.6) {
 
 // ================= Крыши =================
 
+const GMOSS = ['#3a5a2a', '#4a6e30', '#5c8236', '#73963e'];
+
 const ROOF = {
   thatch(c, Lu, Lv, col) {
     c.fillStyle = shade(col, -0.2); c.fillRect(-2, -2, Lu + 4, Lv + 4);
@@ -147,6 +149,34 @@ const ROOF = {
       }
       c.fillStyle = 'rgba(25,6,0,0.4)'; c.fillRect(u, -2, 0.55, Lv + 4);
     }
+  },
+  // гномская дранка, заросшая мхом
+  moss(c, Lu, Lv, col) {
+    ROOF.shingle(c, Lu, Lv, col);
+    for (let k = 0; k < Lu * Lv / 55; k++) {
+      const u = rnd(-2, Lu + 1), v = rnd(-2, Lv + 1), r = rnd(1.6, 4.6);
+      ellipse(c, u, v, r, r * 0.75, shade(GMOSS[(srand() * 4) | 0], rnd(-0.15, 0.08)));
+      ellipse(c, u + r * 0.25, v - r * 0.2, r * 0.45, r * 0.35, 'rgba(190,220,110,0.35)');
+    }
+    for (let k = 0; k < Lu * Lv / 14; k++) {
+      c.fillStyle = srand() < 0.5 ? 'rgba(150,190,80,0.55)' : 'rgba(40,60,20,0.4)';
+      c.fillRect(rnd(0, Lu), rnd(0, Lv), 0.7, 0.7);
+    }
+  },
+  // дёрн: трава, цветы, у свеса — земля с корешками
+  turf(c, Lu, Lv, col) {
+    c.fillStyle = shade(col, -0.25); c.fillRect(-2, -2, Lu + 4, Lv + 4);
+    c.lineWidth = 0.5;
+    for (let k = 0; k < Lu * Lv / 2.2; k++) {
+      const u = rnd(-1, Lu + 1), v = rnd(-1, Lv + 1);
+      c.strokeStyle = shade(col, rnd(-0.35, 0.3));
+      c.beginPath(); c.moveTo(u, v); c.lineTo(u - rnd(1.2, 2.6), v + rnd(-0.6, 0.6)); c.stroke();
+    }
+    for (let k = 0; k < Lu * Lv / 70; k++) ellipse(c, rnd(3, Lu), rnd(0, Lv), 0.6, 0.6, ['#f4f4f4', '#f0d040', '#e06a8a', '#a0b8f0'][(srand() * 4) | 0]);
+    c.fillStyle = '#45291a'; c.fillRect(-2, -2, 3.4, Lv + 4);
+    c.strokeStyle = '#6e432a'; c.lineWidth = 0.4;
+    for (let v = 0; v < Lv; v += 1.6) { c.beginPath(); c.moveTo(1, v); c.lineTo(-1.6, v + rnd(-0.8, 0.8)); c.stroke(); }
+    for (let v = 0; v < Lv; v += rnd(2, 5)) ellipse(c, 1.6, v, 1.2, 1.6, shade(col, rnd(-0.2, 0.15)));
   },
   slate(c, Lu, Lv, col) {
     c.fillStyle = shade(col, -0.55); c.fillRect(-2, -2, Lu + 4, Lv + 4);
@@ -193,6 +223,15 @@ function ridgeCap(c, x0, y0, x1, y1, mat, col) {
     for (let k = 0; k <= n; k++) {
       const t = k / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
       line(c, x - 1, y - 1.4, x + 1, y + 1.2, shade(col, -0.35), 0.5);
+    }
+  } else if (mat === 'moss' || mat === 'turf') {
+    // конёк — толстый валик мха с кочками
+    line(c, x0, y0, x1, y1, '#2f4a26', 4.4);
+    line(c, x0, y0 - 0.7, x1, y1 - 0.7, mat === 'turf' ? '#5c8236' : '#4a6e30', 3);
+    const n = Math.hypot(x1 - x0, y1 - y0) / 2.6;
+    for (let k = 0; k <= n; k++) {
+      const t = k / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
+      ellipse(c, x + rnd(-0.6, 0.6), y - 1.2, rnd(1.2, 2.2), rnd(1, 1.6), shade(GMOSS[(srand() * 4) | 0], 0.05));
     }
   } else if (mat === 'tiles') {
     line(c, x0, y0, x1, y1, shade(col, -0.5), 3.4);
@@ -364,7 +403,11 @@ function door(c, cx, base, w, h, o = {}) {
     c.fillRect(cx - w / 2, base - h, w, h);
     c.restore();
     c.strokeStyle = '#c8a050'; c.lineWidth = 0.4;
-    c.beginPath(); c.arc(cx + (o.double ? 1.6 : w / 2 - 1.8), base - h * 0.48, 0.7, 0, 7); c.stroke();
+    if (o.gnome && !o.double) {
+      // гномья круглая дверь: латунная ручка посередине и кованые петли
+      ellipse(c, cx, base - h * 0.5, 1.1, 1.1, '#c8a050'); ellipse(c, cx - 0.3, base - h * 0.5 - 0.3, 0.4, 0.4, '#fff2a0');
+      c.fillStyle = '#2c2a28'; c.fillRect(cx - w / 2, base - h * 0.72, w * 0.45, 1.1); c.fillRect(cx - w / 2, base - h * 0.28, w * 0.45, 1.1);
+    } else { c.beginPath(); c.arc(cx + (o.double ? 1.6 : w / 2 - 1.8), base - h * 0.48, 0.7, 0, 7); c.stroke(); }
   }
   // ступенька
   c.fillStyle = '#7e766c'; c.fillRect(cx - w / 2 - 2, base - 0.3, w + 4, 2);
@@ -372,7 +415,42 @@ function door(c, cx, base, w, h, o = {}) {
   c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(cx - w / 2 - 2, base + 1.4, w + 4, 0.5);
 }
 
+// Круглое гномье окошко в деревянном кольце
+function roundWin(c, cx, cy, r, o = {}) {
+  ellipse(c, cx, cy, r + 1.3, r + 1.3, '#3a2414');
+  ellipse(c, cx, cy, r + 0.8, r + 0.8, '#7a5030');
+  c.save();
+  c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.clip();
+  c.fillStyle = o.magic ? lingrad(c, cx, cy - r, cx, cy + r, [[0, '#f0e8ff'], [1, '#8a60e0']])
+    : o.lit ? radgrad(c, cx, cy, 0.5, r * 1.2, [[0, '#fff4c0'], [1, '#e8943a']])
+      : lingrad(c, cx - r, cy - r, cx + r, cy + r, [[0, '#6c8aa8'], [0.5, '#2a3848'], [1, '#141c26']]);
+  c.fillRect(cx - r, cy - r, r * 2, r * 2);
+  c.fillStyle = '#3a2414';
+  c.fillRect(cx - 0.35, cy - r, 0.7, r * 2); c.fillRect(cx - r, cy - 0.35, r * 2, 0.7);
+  if (!o.lit && !o.magic) { c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(cx - r * 0.6, cy - r * 0.55, 0.7, 0.7); }
+  c.restore();
+  if (o.flowers) {
+    c.fillStyle = '#5a3a1e'; c.fillRect(cx - r - 1, cy + r + 0.8, r * 2 + 2, 1.6);
+    for (let k = 0; k <= 3; k++) {
+      ellipse(c, cx - r + k * (r * 2 / 3), cy + r + 0.6, 0.9, 0.9, '#3e7a2a');
+      ellipse(c, cx - r + k * (r * 2 / 3) + 0.2, cy + r, 0.6, 0.6, ['#e04a5a', '#f0d040', '#f4f4f4', '#d070c0'][k % 4]);
+    }
+  }
+}
+
+// Грибок у стены: красная шляпка в белый горошек или бурый боровик
+function mushroomProp(c, x, y, s = 1, red = true) {
+  c.fillStyle = '#efe6d0'; c.fillRect(x - 0.7 * s, y - 2.4 * s, 1.4 * s, 2.4 * s);
+  const cap = red ? '#c8341e' : '#8a5a2a';
+  c.fillStyle = cap;
+  c.beginPath(); c.ellipse(x, y - 2.4 * s, 2.2 * s, 1.7 * s, 0, Math.PI, 0); c.fill();
+  c.fillStyle = shade(cap, -0.35); c.fillRect(x - 2.2 * s, y - 2.5 * s, 4.4 * s, 0.5 * s);
+  if (red) { c.fillStyle = '#fff6ea'; c.fillRect(x - 1 * s, y - 3.5 * s, 0.7 * s, 0.6 * s); c.fillRect(x + 0.6 * s, y - 3.1 * s, 0.6 * s, 0.6 * s); c.fillRect(x - 0.1 * s, y - 4 * s, 0.5 * s, 0.5 * s); }
+  else { c.fillStyle = 'rgba(255,230,180,0.4)'; c.fillRect(x - 1.2 * s, y - 3.6 * s, 1.2 * s, 0.5 * s); }
+}
+
 function win(c, x, y, w, h, o = {}) {
+  if (o.round) { roundWin(c, x + w / 2, y + h / 2, Math.min(w, h) / 2 + 0.6, o); return; }
   if (o.shutter) {
     for (const sx of [x - 3, x + w]) {
       c.fillStyle = lingrad(c, sx, 0, sx + 3, 0, [[0, shade(o.shutter, 0.15)], [1, shade(o.shutter, -0.25)]]);
