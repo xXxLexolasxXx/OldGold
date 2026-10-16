@@ -40,7 +40,7 @@ const FOODS = ['sausage', 'bread'];   // что едят в трактире (п
 
 const UNIT_TYPES = {
   serf:       { name: 'Трудяга',   shirt: '#8a5a3a' },
-  builder:    { name: 'Строитель', shirt: '#b0884a' },
+  builder:    { name: 'Работяга',  shirt: '#b0884a' },
   woodcutter: { name: 'Лесоруб',   shirt: '#4a6e33' },
   carpenter:  { name: 'Плотник',   shirt: '#a8662e' },
   stonemason: { name: 'Каменотёс', shirt: '#6d6d72' },

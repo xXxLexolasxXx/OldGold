@@ -274,7 +274,7 @@ function collectAlerts() {
   for (const b of Game.buildings) {
     if (b.state !== 'done') {
       if (b.problem() === 'noroad') out.push({ b, icon: ['ui', 'road'], text: `${b.def.name}: стройка без дороги к складу` });
-      else if (!b.builder && !idleBuilders) out.push({ b, icon: ['ui', 'noworker'], text: `${b.def.name}: стройка ждёт строителя` });
+      else if (!b.builder && !idleBuilders) out.push({ b, icon: ['ui', 'noworker'], text: `${b.def.name}: стройка ждёт работягу` });
       continue;
     }
     const p = b.problem();
@@ -326,7 +326,7 @@ function statusChip(b) {
     ? '<span class="chip ok">Работает</span>' : '<span class="chip ok">Готово</span>';
   if (p === 'noroad') return '<span class="chip bad">Нет дороги к складу</span>';
   if (p === 'paused') return '<span class="chip off">На паузе</span>';
-  if (p === 'noworker') return '<span class="chip bad">Нет работяги</span>';
+  if (p === 'noworker') return '<span class="chip bad">Нет рабочего</span>';
   if (p === 'full') return '<span class="chip wait">Всё заполнено</span>';
   return `<span class="chip bad">Нет: ${GOODS[p.slice(5)].name}</span>`;
 }
@@ -356,8 +356,8 @@ function infoBuilding(b) {
   if (b.isRoad) {
     return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'road', 2)}" alt=""><div><h3>Дорога</h3>${statusChip(b)}</div></div>
       <div class="slots">${slotHTML('stone', b.stock.stone, ROAD_STONE)}</div>
-      <div class="irow">Строитель: ${b.builder ? (b.dug < 1 ? 'копает' : 'кладёт камень') : `<span class="muted">${b.dug < 1 ? 'ждёт свободного строителя' : 'ждёт камень'}</span>`}</div>
-      <div class="tip">Сначала строитель бесплатно копает корыто, потом за 1 камень выкладывает мостовую.</div>
+      <div class="irow">Работяга: ${b.builder ? (b.dug < 1 ? 'копает' : 'кладёт камень') : `<span class="muted">${b.dug < 1 ? 'ждёт свободного работягу' : 'ждёт камень'}</span>`}</div>
+      <div class="tip">Сначала работяга бесплатно копает корыто, потом за 1 камень выкладывает мостовую.</div>
       <div class="iactions"><button data-act="demolish">${ui('trash')}Отменить</button></div>`;
   }
   const def = b.def;
@@ -374,7 +374,7 @@ function infoBuilding(b) {
     h += '<div class="isec">Материалы</div><div class="slots">';
     for (const g in def.cost) if (def.cost[g]) h += slotHTML(g, b.usedOf[g] + b.stock[g], def.cost[g]);
     h += '</div>';
-    h += `<div class="irow">Строитель: ${b.builder ? '<span class="good">работает</span>' : '<span class="warn">нет свободного</span>'}</div>`;
+    h += `<div class="irow">Работяга: ${b.builder ? '<span class="good">работает</span>' : '<span class="warn">нет свободного</span>'}</div>`;
     return h + `<div class="idesc">${def.desc}</div>`;
   }
 
@@ -479,9 +479,9 @@ function infoPreview(type) {
 
 function infoTips() {
   return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'scroll', 2)}" alt=""><div><h3>Окно здания</h3><span class="chip off">ничего не выбрано</span></div></div>
-    <div class="tip">Кликните по зданию на карте — здесь появятся его запасы, работяга и производство.<br><br>
+    <div class="tip">Кликните по зданию на карте — здесь появятся его запасы, рабочий и производство.<br><br>
     Наведите на кнопку здания слева — увидите, что оно производит и сколько стоит.<br><br>
-    <b>Значки над домами</b> подсказывают, чего не хватает: работяги, сырья или места.</div>`;
+    <b>Значки над домами</b> подсказывают, чего не хватает: рабочего, сырья или места.</div>`;
 }
 
 // ---------- Обновление ----------
