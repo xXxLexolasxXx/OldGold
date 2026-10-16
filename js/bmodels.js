@@ -49,9 +49,14 @@ const SIGN_QUEUE = { list: [] };
 // переводятся в лесной гномский вид: бревенчатые стены на замшелом камне,
 // крутые крыши из замшелой дранки или дёрна, круглые окна и двери, грибы у стен.
 
-// стиль текущего здания: бревенчатая изба или белёный коттедж (выбирается по типу здания)
+// стиль текущего здания (выбирается по типу): бревенчатая изба, белёный коттедж под
+// соломой или светлый фахверковый дом под красной черепицей — как во второй деревне референсов
 let BUILD_STYLE = 'logs';
-const COTTAGE_TYPES = new Set(['school', 'inn', 'bakery', 'mill', 'brewery', 'tannery', 'butchery', 'hopfarm', 'stable']);
+const COTTAGE_TYPES = new Set(['inn', 'brewery', 'butchery', 'hopfarm', 'stable']);
+const REDROOF_TYPES = new Set(['school', 'mill', 'sawmill', 'metallurgist', 'armory', 'magicworkshop', 'goatpen', 'swine']);
+const RED_TILES = ['#b04a2c', '#a8432a', '#ba5532'];
+const RED_WALLS = ['#e6d4b0', '#ead9b8', '#dfcca6'];
+function styleOf(type) { return COTTAGE_TYPES.has(type) ? 'cottage' : REDROOF_TYPES.has(type) ? 'red' : 'logs'; }
 
 const LOG_COLS = ['#7a4e2c', '#84562e', '#6e4628', '#8a5e34'];
 
@@ -59,8 +64,14 @@ function gnomePart(p) {
   if (p._g) return p;
   const q = { ...p, _g: true, moss: true };
   const h = hashStr(`${p.x0},${p.y0},${p.h}`);
-  const cottage = BUILD_STYLE === 'cottage';
-  if ((q.wall === 'plaster' || q.wall === 'brick') && cottage) {
+  const cottage = BUILD_STYLE === 'cottage', red = BUILD_STYLE === 'red';
+  if ((q.wall === 'plaster' || q.wall === 'brick' || q.wall === 'plank' || q.wall === 'logs') && red) {
+    // светлая штукатурка, тёмный фахверк, каменный цоколь
+    q.wall = 'plaster'; q.col = RED_WALLS[h % 3];
+    q.frame = true; q.beam = '#3e2416'; q.gableWall = 'plaster'; q.gableCol = q.col; q.gableFrame = true;
+    q.lowerStone = Math.max(q.lowerStone || 0, 6);
+    q.cottage = true;                                  // кирпичные трубы и белёные слуховые окна
+  } else if ((q.wall === 'plaster' || q.wall === 'brick') && cottage) {
     // коттедж как на референсах: белёные стены, тёмный фахверк, толстая солома
     q.wall = 'plaster'; q.col = ['#ece2c8', '#e8dcc0', '#f0e6d0'][h % 3];
     q.frame = true; q.beam = '#3a2414'; q.gableWall = 'plaster'; q.gableCol = q.col;
@@ -75,7 +86,12 @@ function gnomePart(p) {
   if (q.lowerStone) { q.lowerStone = Math.max(q.lowerStone, 7); q.stoneCol = '#8e8a78'; }
   if (q.roof) {
     const r = q.roof = { ...q.roof };
-    if (cottage) {
+    if (red) {
+      // тёплая красно-бурая черепица, ровный конёк, немного мха только у свеса
+      r.mat = 'tiles'; r.col = RED_TILES[h % 3];
+      r.rise = (r.rise ?? 18) * 1.15;
+      r.ov = (r.ov ?? 4) + 1.6;
+    } else if (cottage) {
       // толстая соломенная крыша, выше и с глубоким свесом
       r.mat = 'thatch'; r.col = ['#7a6848', '#706044', '#84704c'][h % 3];
       r.rise = (r.rise ?? 18) * 1.25;
@@ -1291,7 +1307,7 @@ function buildingSprite(type, rot = 0) {
   const m = newModel(g);
   MODELS[type](m);
   SIGN_QUEUE.list = [];
-  BUILD_STYLE = COTTAGE_TYPES.has(type) ? 'cottage' : 'logs';
+  BUILD_STYLE = styleOf(type);
   renderModel(c, m);
   BUILD_STYLE = 'logs';
   for (const s of SIGN_QUEUE.list) postSign(c, s.x, s.y, s.kind, s.dir);
