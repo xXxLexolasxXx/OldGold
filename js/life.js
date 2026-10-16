@@ -67,6 +67,7 @@ function lifeTick(u, dt) {
   u.lifeT = (u.lifeT || 0) + dt;
   if (u.lifeT < 0.5) return;
   u.lifeT = 0;
+  socialTick(u);
   if (!interruptible(u)) return;
   // пьяный засыпает где стоит
   if (u.drunkAt && Game.time >= u.drunkAt) {
@@ -98,6 +99,39 @@ function lifeTick(u, dt) {
     u.nextSmoke = Game.time + SMOKE_CD_MIN + Math.random() * (SMOKE_CD_MAX - SMOKE_CD_MIN);
     startBreak(u, 'smoke', null);
     u.proc = smokeGen(u, SMOKE_TIME);
+  }
+}
+
+// ---------- Жесты: окружение ----------
+// Гномы машут встречным, грозят кулаком волкам, показывают на оленя и зайца.
+// Чисто внешнее: работу не прерывает, рисуется поверх походки.
+
+function gesture(u, kind, time, tx) {
+  u.gest = kind; u.gestUntil = Game.time + time;
+  u.gestFace = tx > u.x ? 1 : -1;
+  u.nextSocial = Game.time + 25 + Math.random() * 35;
+}
+
+function socialTick(u) {
+  if (u.inside || u.brk || !isPerson(u) || u.type === 'carter') return;
+  if ((u.nextSocial || 0) > Game.time) return;
+  const a = u.action;
+  if (a && a.anim) return;                       // занят делом
+  for (const an of Game.animals) {
+    if (an.dead) continue;
+    const d = Math.hypot(an.x - u.x, an.y - u.y);
+    if (an.kind === 'wolf' && d < 4.5) { gesture(u, u.carry ? 'scratch' : 'fist', 2.2, an.x); return; }
+    if (an.kind !== 'wolf' && d < 3 && !u.carry && Math.random() < 0.15) { gesture(u, 'point', 1.8, an.x); return; }
+  }
+  if (Math.random() > 0.25) return;
+  for (const o of Game.units) {
+    if (o === u || o.inside || o.brk || !isPerson(o)) continue;
+    const d = Math.hypot(o.x - u.x, o.y - u.y);
+    if (d > 0.3 && d < 1.8) {
+      gesture(u, 'wave', 1.5, o.x);
+      if (!((o.nextSocial || 0) > Game.time) && !o.carry) gesture(o, 'wave', 1.5, u.x);   // машет в ответ
+      return;
+    }
   }
 }
 
@@ -154,6 +188,8 @@ function checkCollisions() {
         const g = dropLoad(carrier);
         const part = Math.random() < 0.5 ? 'leg' : 'arm';
         injure(victim, part);
+        victim.ouchUntil = Game.time + 2.5;                    // искры из глаз
+        if (isPerson(carrier)) gesture(carrier, 'scratch', 2, victim.x);   // растерянно чешет затылок
         if (Game.time - lastBumpToast > 8) {
           lastBumpToast = Game.time;
           toast(`Столкновение: ${UNIT_TYPES[carrier.type].name.toLowerCase()} уронил «${GOODS[g].name}», ${UNIT_TYPES[victim.type].name.toLowerCase()} ${part === 'leg' ? 'теперь хромает' : 'повредил руку'}`);

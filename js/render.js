@@ -85,18 +85,33 @@ function drawUnit(c, u) {
     drawCreatureAt(c, u.type === 'goat' ? 'packgoat' : 'cart', px, py, u.face, moving, u.walkPhase / 1.4, u.carry, u.carryN || 1);
     return;
   }
-  let pose = 'idle', frame = 0, view = u.vdir || 'S';
+  let pose = 'idle', frame = 0, view = u.vdir || 'S', face = u.face;
   if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / 1.1) & 7; }
   else if (u.anim === 'duck') pose = 'duck';
   else if (u.anim === 'smoke') { pose = 'smoke'; view = 'E'; }
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
   else if (u.anim === 'sleep') { pose = 'idle'; view = 'E'; }
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: Math.floor(Game.time * 5 + u.id) & 3 }; }
+  // походка и жесты
+  const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
+  if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {
+    opt.gest = u.gest;
+    if (pose === 'idle') { view = 'E'; face = u.gestFace || face; }
+  } else if (pose === 'idle' && !u.anim) {
+    // заскучал: чешет затылок, потягивается, зевает, оглядывается
+    const cyc = Game.time / 7 + u.id * 0.37, p = cyc % 1, n = Math.floor(cyc);
+    if (p < 0.24) {
+      const k = ['scratch', 'look', 'stretch', 'yawn', 'look'][(n * 7 + u.id * 3) % 5];
+      if (k === 'look') { view = 'E'; face = p < 0.12 ? 1 : -1; }
+      else opt.gest = k;
+    }
+  }
+  if (opt.gait === 'drunk' && moving) px += Math.round(Math.sin(Game.time * 2.3 + u.id) * 1.6);
   c.fillStyle = 'rgba(10,8,4,0.32)';
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, u.anim === 'sleep' ? 10 : 5.5, 2, 0, 0, 7); c.fill();
-  const spr = personSprite(u, view, pose, frame);
-  c.imageSmoothingEnabled = true;
-  c.imageSmoothingQuality = 'high';
+  if (moving) drawStepDust(c, u, px, py, view);
+  const spr = personSprite(u, view, pose, frame, opt);
+  c.imageSmoothingEnabled = false;   // гномы — пиксель-арт
   if (u.anim === 'sleep') {
     // лежит на земле, бормочет «Zzz»
     c.save(); c.translate(px, py - 1); c.rotate(-Math.PI / 2 * (u.face < 0 ? -1 : 1));
@@ -111,12 +126,13 @@ function drawUnit(c, u) {
       c.fillText('z', px + 6 + p * 8, py - 10 - p * 14 - k);
     }
     c.globalAlpha = 1;
-  } else if (view === 'E' && u.face < 0) {
+  } else if (view === 'E' && face < 0) {
     c.save(); c.translate(px, 0); c.scale(-1, 1);
     c.drawImage(spr, -PFX, py - PFY, PW, PH);
     c.restore();
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
   c.imageSmoothingEnabled = false;
+  drawUnitFx(c, u, px, py, moving);
   // дымок из трубки
   if (u.anim === 'smoke') {
     const bx = px + u.face * 6.4, by = py - 15.6;
@@ -129,6 +145,53 @@ function drawUnit(c, u) {
   if (u.food <= 0) {
     c.fillStyle = '#160e0a'; c.fillRect(px + 4, py - 36, 4, 8);
     c.fillStyle = '#e04030'; c.fillRect(px + 5, py - 35, 2, 4); c.fillRect(px + 5, py - 30, 2, 1);
+  }
+}
+
+// Из-под ног: пыль на дороге и песке, травинки на лугу. Каждый шаг — новый клубок.
+function drawStepDust(c, u, px, py, view) {
+  const t = u.walkPhase / 1.1 / 4, p = t % 1, k = Math.floor(t);
+  if (p > 0.7) return;
+  const i = idx(Math.floor(u.x), Math.floor(u.y));
+  const back = view === 'E' ? -u.face : 0;
+  const fx = px + back * (2 + p * 3) + (k & 1 ? 1.5 : -1.5), fy = py - 0.5;
+  const a = 1 - p / 0.7;
+  const ter = World.terrain[i];
+  if (World.road[i] || ter === T_SAND) {
+    c.fillStyle = `rgba(214,196,150,${0.45 * a})`;
+    for (let j = 0; j < 3; j++) { c.beginPath(); c.arc(fx + (j - 1) * 1.6 * (1 + p), fy - p * 2.4 - (j & 1), 0.7 + p * 1.6, 0, 7); c.fill(); }
+  } else if (ter === T_GRASS) {
+    c.fillStyle = `rgba(150,200,90,${0.8 * a})`;
+    for (let j = 0; j < 2; j++) c.fillRect(Math.round(fx + (j ? 1.4 : -1.2) * (1 + p * 2)), Math.round(fy - 1 - p * 3 + j), 1, 1);
+  }
+}
+
+// Над головой: пот под тяжёлой ношей, звёздочки после столкновения, «ик» у пьяного.
+function drawUnitFx(c, u, px, py, moving) {
+  const t = Game.time;
+  if (moving && u.carry && HEAVY.has(u.carry) && u.type !== 'serf') {
+    const p = (t * 0.8 + u.id * 0.3) % 1;
+    if (p < 0.6) {
+      c.fillStyle = `rgba(150,200,255,${0.9 * (1 - p / 0.6)})`;
+      c.fillRect(Math.round(px + 5 * (u.face || 1)), Math.round(py - 24 + p * 6), 1, 2);
+    }
+  }
+  if (u.ouchUntil > t) {
+    for (let k = 0; k < 3; k++) {
+      const a = t * 5 + k * 2.1;
+      c.fillStyle = k === 1 ? '#fff4a0' : '#ffd040';
+      const sx = Math.round(px + Math.cos(a) * 5.5), sy = Math.round(py - 31 + Math.sin(a) * 1.6);
+      c.fillRect(sx, sy - 1, 1, 3); c.fillRect(sx - 1, sy, 3, 1);
+    }
+  }
+  if (u.drunkAt && !u.inside) {
+    const p = (t * 0.4 + u.id * 0.21) % 1;
+    if (p < 0.35) {
+      c.globalAlpha = 1 - p / 0.35;
+      c.fillStyle = '#fff6d0'; c.font = 'bold 5px serif';
+      c.fillText('ик!', px + 5, py - 30 - p * 10);
+      c.globalAlpha = 1;
+    }
   }
 }
 
