@@ -605,9 +605,9 @@ class Unit {
       const dx = tx - this.x, dy = ty - this.y;
       const dist = Math.hypot(dx, dy);
       const onRoad = World.road[idx(sx, sy)];
-      let speed = onRoad ? 2.6 : 1.6;
-      if (this.type === 'carter') speed = onRoad ? 2.9 : 1.8;
-      if (this.type === 'goat') speed = onRoad ? 2.5 : 2.0;
+      let speed = onRoad ? 2.2 : 1.35;      // гномы коротконогие — ходят неспешно
+      if (this.type === 'carter') speed = onRoad ? 2.5 : 1.55;
+      if (this.type === 'goat') speed = onRoad ? 2.15 : 1.7;
       if (a.squeeze) speed *= 0.4;
       if (this.food <= 0 && !this.noFood) speed *= 0.5;
       if (this.injury === 'leg') speed *= 0.55;

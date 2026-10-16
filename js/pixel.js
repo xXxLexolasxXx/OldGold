@@ -83,17 +83,46 @@ function toPixelArt(src, scale, opts = {}) {
       r += sd[o] * al; g += sd[o + 1] * al; b += sd[o + 2] * al; a += al;
     }
     const o = (y * W + x) * 4;
-    if (a > 0) { d[o] = r / a; d[o + 1] = g / a; d[o + 2] = b / a; }
+    if (a > 0) {
+      let R = r / a, G = g / a, B = b / a;
+      if (opts.punch) {
+        // сочнее и контрастнее: тянем от серого и от середины яркости
+        const l = R * 0.3 + G * 0.59 + B * 0.11, s = opts.punch;
+        R = l + (R - l) * (1 + s * 0.9); G = l + (G - l) * (1 + s * 0.9); B = l + (B - l) * (1 + s * 0.9);
+        R = 128 + (R - 128) * (1 + s * 0.5); G = 128 + (G - 128) * (1 + s * 0.5); B = 128 + (B - 128) * (1 + s * 0.5);
+      }
+      d[o] = R; d[o + 1] = G; d[o + 2] = B;
+    }
     const alpha = a / n;
     if (opts.keepAlpha) d[o + 3] = alpha;
     else d[o + 3] = alpha >= (opts.alphaCut ?? 110) ? 255 : 0;
   }
   if (!opts.keepAlpha) {
     quantizeData(d, W, H, opts.dither || 0);
+    if (opts.ink) inkData(d, W, H, opts.ink);
     if (opts.outline !== false) outlineData(d, W, H, opts.outlineDark ?? 0.42);
   }
   oc.putImageData(img, 0, 0);
   return out;
+}
+
+// Внутренние контуры: на резком перепаде яркости тёмная сторона становится почти чёрной
+// линией — так читаются стыки крыши и стен, края окон, дверей, балок.
+function inkData(d, W, H, thr) {
+  const lum = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) lum[i] = d[i * 4 + 3] ? d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11 : -1;
+  const mark = new Uint8Array(W * H);
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const i = y * W + x, l = lum[i];
+    if (l < 0 || l < 26) continue;
+    for (const j of [i - 1, i + 1, i - W, i + W]) {
+      if (lum[j] >= 0 && lum[j] - l > thr) { mark[i] = 1; break; }
+    }
+  }
+  for (let i = 0; i < W * H; i++) if (mark[i]) {
+    const o = i * 4;
+    d[o] = d[o] * 0.28 + 6; d[o + 1] = d[o + 1] * 0.26 + 4; d[o + 2] = d[o + 2] * 0.24 + 3;
+  }
 }
 
 // Цветная обводка: прозрачный пиксель рядом с непрозрачным становится тёмным оттенком соседа.

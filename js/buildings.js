@@ -2,7 +2,7 @@
 // Здания в духе Knights and Merchants: объёмы с фасадами, крыши трёх типов,
 // фактурные материалы, двор с реквизитом. Рисуются с тройной сверхвыборкой.
 
-const BS = 4;          // сверхвыборка зданий (потом сводится в пиксель-арт ×2)
+const BS = 6;          // сверхвыборка зданий (потом сводится в пиксель-арт ×3 — чётче и детальнее)
 const BPADX = 38;      // запас по бокам спрайта (место для столба с вывеской)
 const BBOTTOM = 14;    // запас снизу (реквизит перед фасадом)
 
@@ -153,10 +153,16 @@ const ROOF = {
   // гномская дранка, заросшая мхом
   moss(c, Lu, Lv, col) {
     ROOF.shingle(c, Lu, Lv, col);
-    for (let k = 0; k < Lu * Lv / 55; k++) {
-      const u = rnd(-2, Lu + 1), v = rnd(-2, Lv + 1), r = rnd(1.6, 4.6);
-      ellipse(c, u, v, r, r * 0.75, shade(GMOSS[(srand() * 4) | 0], rnd(-0.15, 0.08)));
-      ellipse(c, u + r * 0.25, v - r * 0.2, r * 0.45, r * 0.35, 'rgba(190,220,110,0.35)');
+    // мох кочками: несколько комочков, тень с подветренной стороны, светлая макушка;
+    // гуще у свеса (u≈0), где дольше держится влага
+    for (let k = 0; k < Lu * Lv / 60; k++) {
+      const u = Math.pow(srand(), 1.6) * (Lu + 2) - 1, v = rnd(-2, Lv + 1), r = rnd(1.4, 3.8);
+      const base = GMOSS[(srand() * 4) | 0];
+      const n = 3 + ((srand() * 4) | 0), pts = [];
+      for (let j = 0; j < n; j++) pts.push([u + rnd(-r, r), v + rnd(-r, r) * 0.8, r * rnd(0.45, 0.8)]);
+      for (const [x, y, rr] of pts) ellipse(c, x - 0.5, y + 0.6, rr, rr * 0.8, shade(base, -0.45));
+      for (const [x, y, rr] of pts) ellipse(c, x, y, rr, rr * 0.8, shade(base, rnd(-0.1, 0.08)));
+      for (const [x, y, rr] of pts) ellipse(c, x + rr * 0.3, y - rr * 0.2, rr * 0.4, rr * 0.3, 'rgba(200,230,120,0.5)');
     }
     for (let k = 0; k < Lu * Lv / 14; k++) {
       c.fillStyle = srand() < 0.5 ? 'rgba(150,190,80,0.55)' : 'rgba(40,60,20,0.4)';

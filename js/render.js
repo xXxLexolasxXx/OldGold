@@ -672,6 +672,7 @@ function render() {
   list.sort((a, b) => a[0] - b[0]);
   for (const [, fn] of list) fn();
 
+  drawOwls(c);
   drawFloaters(c);
   drawClouds(c);
   drawStatusIcons(c, x0, y0, x1, y1);

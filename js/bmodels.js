@@ -1077,8 +1077,8 @@ function buildingSprite(type, rot = 0) {
   for (const s of SIGN_QUEUE.list) postSign(c, s.x, s.y, s.kind, s.dir);
   SIGN_QUEUE.list = [];
   grain(cv, 0.05, hashStr(type) + d.rot);
-  // пиксель-арт ×2 с палитрой и тёмной обводкой — в одном стиле с гномами
-  spr.canvas = toPixelArt(cv, BS / 2, { outline: true, outlineDark: 0.4, alphaCut: 100 });
+  // пиксель-арт ×3: палитра, чёрная внешняя обводка и тёмные линии на стыках деталей
+  spr.canvas = toPixelArt(cv, BS / 3, { outline: true, outlineDark: 0.1, alphaCut: 100, punch: 0.18, ink: 58 });
   const blurred = mkCanvas(scv.width, scv.height);
   const bc = blurred.getContext('2d');
   bc.filter = `blur(${BS * 1.4}px)`;

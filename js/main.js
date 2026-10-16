@@ -120,6 +120,7 @@ function step(dt) {
   updateAnimals(dt);
   updateCritters(dt);
   streetTick(dt);
+  updateOwls(dt);
   Game.bumpT = (Game.bumpT || 0) + dt;
   if (Game.bumpT >= 0.25) { checkCollisions(); Game.bumpT = 0; }
   Game.dispatchT += dt;

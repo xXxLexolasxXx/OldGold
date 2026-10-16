@@ -277,3 +277,126 @@ function* chickenGen(u, hen) {
   u.gest = 'scratch'; u.gestUntil = Game.time + 1.6;
   yield { wait: 1.4 };
 }
+
+// ---------- Совы ----------
+// Садятся на коньки крыш и трубы, моргают, вертят головой, ухают,
+// посидев — перелетают на другой дом или улетают в лес и возвращаются.
+
+const OWL_COUNT = 4;
+
+// Точки на верхнем крае крыши здания (в мировых пикселях), считаются по спрайту один раз
+function roofPerches(b) {
+  const spr = buildingSprite(b.type, b.rot || 0);
+  if (!spr.perches) {
+    const cv = spr.canvas, k = cv.width / spr.w;
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    const tops = [];
+    for (let x = Math.floor(cv.width * 0.2); x < cv.width * 0.8; x += Math.max(1, Math.floor(k * 2))) {
+      for (let y = 0; y < cv.height * 0.7; y++) if (d[(y * cv.width + x) * 4 + 3]) { tops.push([x / k, y / k]); break; }
+    }
+    tops.sort((a, b) => a[1] - b[1]);
+    // самые высокие точки, но не слишком близко друг к другу
+    const pick = [];
+    for (const p of tops) { if (pick.every(q => Math.abs(q[0] - p[0]) > 10)) pick.push(p); if (pick.length >= 4) break; }
+    spr.perches = pick;
+  }
+  const ox = b.x * TILE - spr.padx, oy = b.y * TILE - spr.top;
+  return spr.perches.map(([x, y]) => [ox + x, oy + y + 1]);
+}
+
+function pickPerch(owl) {
+  const homes = Game.buildings.filter(b => b.state === 'done' && b.type !== 'magiccircle' && b.type !== 'bonfire');
+  if (!homes.length) return null;
+  for (let t = 0; t < 6; t++) {
+    const b = homes[(Math.random() * homes.length) | 0];
+    const ps = roofPerches(b);
+    if (!ps.length) continue;
+    const p = ps[(Math.random() * ps.length) | 0];
+    if (Game.owls.some(o => o !== owl && o.to && Math.hypot(o.to[0] - p[0], o.to[1] - p[1]) < 8)) continue;
+    return p;
+  }
+  return null;
+}
+
+function forestPoint() {
+  const s = wildSpot(14, true);
+  return s ? [s[0] * TILE + 16, s[1] * TILE - 10] : [Math.random() * MAP_W * TILE, -40];
+}
+
+function updateOwls(dt) {
+  Game.owls = Game.owls || [];
+  if (Game.buildings.filter(b => b.state === 'done').length < 2) return;
+  while (Game.owls.length < OWL_COUNT) {
+    const p = forestPoint();
+    Game.owls.push({ x: p[0], y: p[1], from: p, to: null, state: 'away', t: Math.random() * 20, ph: Math.random() * 10, look: 0, blink: 0 });
+  }
+  for (const o of Game.owls) {
+    o.ph += dt;
+    o.t -= dt;
+    if (o.state === 'fly') {
+      o.f = Math.min(1, o.f + dt * o.speed);
+      const [ax, ay] = o.from, [bx, by] = o.to;
+      const lift = Math.min(60, Math.hypot(bx - ax, by - ay) * 0.3);
+      o.x = ax + (bx - ax) * o.f;
+      o.y = ay + (by - ay) * o.f - Math.sin(o.f * Math.PI) * lift;
+      o.face = bx > ax ? 1 : -1;
+      if (o.f >= 1) {
+        o.x = bx; o.y = by;
+        if (o.goAway) { o.state = 'away'; o.t = 15 + Math.random() * 30; }
+        else { o.state = 'perch'; o.t = 14 + Math.random() * 30; }
+      }
+    } else if (o.t <= 0) {
+      // пора лететь: чаще на другую крышу, иногда в лес
+      const away = o.state === 'perch' && Math.random() < 0.3;
+      const to = away ? forestPoint() : pickPerch(o);
+      if (!to) { o.t = 5; continue; }
+      o.from = [o.x, o.y]; o.to = to; o.f = 0; o.goAway = away; o.state = 'fly';
+      o.speed = 70 / Math.max(40, Math.hypot(to[0] - o.x, to[1] - o.y));
+    }
+    if (o.state === 'perch') {
+      if (Math.random() < dt * 0.25) o.look = (Math.random() * 3 | 0) - 1;       // повернуть голову
+      if (Math.random() < dt * 0.5) o.blink = 0.18;
+      o.blink = Math.max(0, o.blink - dt);
+      if (Math.random() < dt * 0.03) floater(o.x / TILE, o.y / TILE - 0.6, 'У-ху!', '#e8e0c8');
+    }
+  }
+}
+
+function drawOwls(c) {
+  for (const o of Game.owls || []) {
+    if (o.state === 'away') continue;
+    const x = Math.round(o.x), y = Math.round(o.y);
+    if (o.state === 'fly') {
+      // в полёте: крылья машут, тень скользит по земле
+      const w = Math.sin(o.ph * 14) * 4;
+      c.fillStyle = 'rgba(10,8,4,0.2)'; c.beginPath(); c.ellipse(x, o.to[1] + (o.from[1] - o.to[1]) * (1 - o.f) + 30, 4, 1.4, 0, 0, 7); c.fill();
+      c.fillStyle = '#6e4a2c';
+      c.beginPath(); c.moveTo(x - 1, y); c.quadraticCurveTo(x - 6, y - 4 - w, x - 11, y - 1 - w); c.lineTo(x - 2, y + 2); c.fill();
+      c.beginPath(); c.moveTo(x + 1, y); c.quadraticCurveTo(x + 6, y - 4 - w, x + 11, y - 1 - w); c.lineTo(x + 2, y + 2); c.fill();
+      ellipse(c, x, y, 3, 4, '#7a5a3a'); ellipse(c, x, y + 0.6, 1.8, 2.6, '#c8a878');
+      ellipse(c, x + (o.face || 1) * 0.8, y - 3.6, 2.8, 2.4, '#7a5a3a');
+      c.fillStyle = '#f0c040'; c.fillRect(x - 2 + (o.face || 1), y - 4.4, 1.4, 1.4); c.fillRect(x + 0.6 + (o.face || 1), y - 4.4, 1.4, 1.4);
+      continue;
+    }
+    // сидит на крыше
+    const hx = x + o.look * 0.8;
+    c.fillStyle = '#1a1210'; c.beginPath(); c.ellipse(x, y - 4.5, 4.2, 5.4, 0, 0, 7); c.fill();          // тёмный контур
+    ellipse(c, x, y - 4.5, 3.6, 4.8, '#7a5a3a');
+    ellipse(c, x, y - 3.6, 2.4, 3.2, '#d8b888');
+    c.fillStyle = '#7a5a3a'; for (let k = 0; k < 4; k++) c.fillRect(x - 1.6 + (k % 2) * 2, y - 5 + k * 1.2, 0.8, 0.6);   // крапинки на грудке
+    ellipse(c, x - 3.2, y - 4.2, 1.2, 3, '#5a3a22'); ellipse(c, x + 3.2, y - 4.2, 1.2, 3, '#5a3a22');                  // крылья
+    // голова с ушками-пучками
+    c.fillStyle = '#1a1210'; c.beginPath(); c.ellipse(hx, y - 10.4, 4, 3.4, 0, 0, 7); c.fill();
+    ellipse(c, hx, y - 10.4, 3.4, 2.9, '#8a6440');
+    poly(c, [[hx - 3.2, y - 12], [hx - 3.4, y - 15], [hx - 1.6, y - 12.8]], '#6e4a2c', '#1a1210', 0.4);
+    poly(c, [[hx + 3.2, y - 12], [hx + 3.4, y - 15], [hx + 1.6, y - 12.8]], '#6e4a2c', '#1a1210', 0.4);
+    ellipse(c, hx - 1.4, y - 10.4, 1.4, 1.3, '#e8d8b0'); ellipse(c, hx + 1.4, y - 10.4, 1.4, 1.3, '#e8d8b0');           // лицевой диск
+    if (o.blink > 0) { c.fillStyle = '#3a2414'; c.fillRect(hx - 2.4, y - 10.6, 2, 0.6); c.fillRect(hx + 0.4, y - 10.6, 2, 0.6); }
+    else {
+      ellipse(c, hx - 1.4, y - 10.4, 0.95, 0.95, '#f6c030'); ellipse(c, hx + 1.4, y - 10.4, 0.95, 0.95, '#f6c030');
+      c.fillStyle = '#120a06'; c.fillRect(hx - 1.6 + o.look * 0.3, y - 10.7, 0.6, 0.7); c.fillRect(hx + 1.2 + o.look * 0.3, y - 10.7, 0.6, 0.7);
+    }
+    poly(c, [[hx - 0.5, y - 9.6], [hx + 0.5, y - 9.6], [hx, y - 8.6]], '#d8a040');
+    c.fillStyle = '#e0a030'; c.fillRect(x - 1.6, y - 0.4, 1, 0.8); c.fillRect(x + 0.6, y - 0.4, 1, 0.8);              // лапки
+  }
+}
