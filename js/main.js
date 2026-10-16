@@ -115,6 +115,7 @@ function buildingAt(t) {
 
 function selectBuilding(b) {
   Game.selected = b;
+  if (Mobile.on) mobileSheet(b ? 'info' : null);
   updateUI(true);
 }
 
@@ -245,12 +246,13 @@ function initInput() {
     const r = mm.getBoundingClientRect();
     centerOn((e.clientX - r.left) / r.width * MAP_W * TILE, (e.clientY - r.top) / r.height * MAP_H * TILE);
   };
-  mm.addEventListener('mousedown', e => {
+  mm.addEventListener('pointerdown', e => {
+    e.preventDefault();
     mmMove(e);
     const mv = ev => mmMove(ev);
-    const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); };
-    window.addEventListener('mousemove', mv);
-    window.addEventListener('mouseup', up);
+    const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', mv);
+    window.addEventListener('pointerup', up);
   });
 }
 
@@ -325,6 +327,8 @@ function startGame() {
   document.getElementById('loading').classList.add('hidden');
   initUI();
   initInput();
+  initMobile();
+  resize();
   initMusic();
   updateMinimapBase();
   updateUI(true);

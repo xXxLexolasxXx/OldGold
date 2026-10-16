@@ -70,6 +70,7 @@ function setTool(tool) {
   Game.tool = tool;
   R.roadDrag = null;
   document.querySelectorAll('.bbtn, .tools button').forEach(b => b.classList.remove('active'));
+  mobileTool(tool);
   if (!tool) return;
   if (tool.kind === 'build') document.querySelector(`.bbtn[data-type="${tool.type}"]`)?.classList.add('active');
   if (tool.kind === 'road') document.getElementById('tool-road').classList.add('active');
@@ -112,7 +113,7 @@ function initUI() {
   makeUITextures();
   document.querySelectorAll('img[data-icon]').forEach(im => { im.src = iconURL('ui', im.dataset.icon, 2); });
 
-  document.querySelectorAll('#tabs .tab-btn').forEach(btn => { btn.onclick = () => openTab(btn.dataset.tab); });
+  document.querySelectorAll('#tabs .tab-btn').forEach(btn => { btn.onclick = () => Mobile.on ? mobileTab(btn.dataset.tab) : openTab(btn.dataset.tab); });
 
   const cats = document.getElementById('build-cats');
   BUILD_CATS.forEach((name, k) => {
@@ -208,7 +209,7 @@ function renderBuildList() {
     btn.dataset.type = type;
     btn.innerHTML = `<img class="bimg" src="${buildingIconURL(type)}" alt=""><span class="bname">${def.name}</span>${costHTML(def.cost)}`;
     btn.onclick = () => setTool(Game.tool && Game.tool.type === type ? null : { kind: 'build', type, rot: def.noRotate ? 0 : (UI.lastRot || 0) });
-    btn.onmouseenter = () => { UI.hoverType = type; updateUI(true); };
+    btn.onmouseenter = () => { if (Mobile.on) return; UI.hoverType = type; updateUI(true); };
     btn.onmouseleave = () => { UI.hoverType = null; updateUI(true); };
     if (Game.tool && Game.tool.type === type) btn.classList.add('active');
     list.appendChild(btn);

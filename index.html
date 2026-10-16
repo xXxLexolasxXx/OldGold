@@ -2,13 +2,17 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a130d">
 <title>OldGold</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
   <aside id="panel">
+    <button id="sheet-close" class="m-only">▾ Свернуть</button>
     <div id="logo">OldGold</div>
     <div class="mm-wrap"><canvas id="minimap" width="288" height="216"></canvas></div>
     <nav id="tabs">
@@ -57,6 +61,7 @@
     <div id="vignette"></div>
     <div id="topbar">
       <span id="res-bar"></span>
+      <span class="speed m-only"><button id="mm-btn" title="Миникарта">▦</button></span>
       <span class="speed"><button id="music-btn" title="Музыка">♪</button></span>
       <span id="clock">00:00</span>
       <span class="speed">
@@ -67,6 +72,12 @@
       </span>
     </div>
     <div id="toasts"></div>
+    <div id="mtool" class="hidden">
+      <span id="mtool-text"></span>
+      <button id="mtool-ok" title="Поставить">✓</button>
+      <button id="mtool-rot" title="Повернуть">↻</button>
+      <button id="mtool-x" title="Отмена">✕</button>
+    </div>
     <div id="help" class="hidden">
       <h3>Как играть</h3>
       <p><b>Цель:</b> развить поселение. Здания строят строители, товары возят курьеры.</p>
@@ -107,6 +118,7 @@
 <script src="js/save.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/music.js"></script>
+<script src="js/mobile.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

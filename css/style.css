@@ -329,3 +329,84 @@ button img { width: 18px; height: 18px; }
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 #loading span { color: #c8b080; font-style: italic; }
+
+/* ---------- Телефон ----------
+   Карта на весь экран, вкладки — нижняя панель, содержимое — выезжающая шторка.
+   Класс body.mobile ставит js/mobile.js по ширине экрана и сенсорному вводу. */
+
+.m-only, #mtool { display: none; }
+button { touch-action: manipulation; }
+#game, #minimap { touch-action: none; }
+
+body.mobile #app { display: block; position: relative; height: 100%; height: 100dvh; }
+body.mobile #view { position: absolute; inset: 0; }
+body.mobile .m-only { display: inline-flex; }
+body.mobile #logo { display: none; }
+
+body.mobile #panel {
+  position: absolute; left: 0; right: 0; bottom: 0; width: auto;
+  padding: 4px 6px calc(5px + env(safe-area-inset-bottom));
+  gap: 5px; z-index: 4;
+  border-right: none; border-top: 3px solid #0a0705;
+  box-shadow: 0 -4px 14px rgba(0,0,0,0.7), inset 0 1px 0 var(--line);
+  max-height: 100%;
+}
+body.mobile #sheet-close { order: 0; display: none; padding: 2px; font-size: 13px; }
+body.mobile #tab-area { order: 1; display: none; height: 48vh; flex: none; }
+body.mobile #info { order: 2; display: none; height: auto; max-height: 50vh; }
+body.mobile #tabs { order: 3; }
+body.mobile .tab-btn { height: 46px; }
+body.mobile.sheet-tab #tab-area,
+body.mobile.sheet-info #info,
+body.mobile.sheet-tab #sheet-close,
+body.mobile.sheet-info #sheet-close { display: block; }
+
+/* миникарта поверх карты по кнопке ▦ */
+body.mobile .mm-wrap { display: none; }
+body.mobile.show-mm .mm-wrap {
+  display: block; position: fixed; z-index: 5;
+  top: calc(84px + env(safe-area-inset-top)); left: 8px; width: min(52vw, 260px);
+}
+
+body.mobile #topbar {
+  top: calc(4px + env(safe-area-inset-top)); left: 4px; right: 4px;
+  flex-wrap: wrap; gap: 4px;
+}
+body.mobile #res-bar { order: 5; flex: 1 1 100%; margin-right: 0; overflow-x: auto; scrollbar-width: none; gap: 6px; }
+body.mobile #res-bar img { width: 18px; height: 18px; }
+body.mobile #res-bar span { font-size: 12px; }
+body.mobile #clock { font-size: 13px; min-width: 52px; margin-right: auto; order: -1; }
+body.mobile .speed button { padding: 4px 9px; min-height: 30px; }
+body.mobile #topbar .m-only { order: -2; }
+body.mobile #toasts { top: 84px; width: 92%; }
+body.mobile .toast { font-size: 13px; text-align: center; }
+
+body.mobile #build-list { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+body.mobile #build-cats { overflow-x: auto; scrollbar-width: none; }
+body.mobile #build-cats button { flex: 1 0 auto; padding: 6px 8px; font-size: 12.5px; }
+body.mobile .tools button { padding: 8px 3px; }
+body.mobile .menu-list button { padding: 10px 10px; }
+body.mobile .hotkeys { display: none; }
+body.mobile .iactions button { padding: 6px 8px; }
+
+/* панель инструмента: «коснитесь карты», поставить, повернуть, отмена */
+body.mobile #mtool:not(.hidden) {
+  display: flex; align-items: center; gap: 6px;
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(66px + env(safe-area-inset-bottom));
+  max-width: calc(100% - 16px);
+  padding: 5px 6px 5px 10px; z-index: 3;
+  background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5)), var(--wood-tex), #2a1e14;
+  border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line-hi), 0 3px 8px rgba(0,0,0,0.6);
+}
+#mtool-text { font-size: 13px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#mtool button { min-width: 40px; min-height: 36px; font-size: 18px; padding: 0 8px; }
+
+/* телефон боком: панель слева узкой колонкой, карта справа */
+@media (orientation: landscape) {
+  body.mobile #panel { right: auto; width: min(400px, 52vw); }
+  body.mobile #tab-area { height: calc(100dvh - 120px); }
+  body.mobile #info { max-height: calc(100dvh - 120px); }
+  body.mobile #mtool:not(.hidden) { left: auto; right: 8px; transform: none; bottom: 8px; }
+  body.mobile #topbar { left: auto; width: min(60vw, 520px); }
+}

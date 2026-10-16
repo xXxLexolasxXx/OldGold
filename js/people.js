@@ -50,6 +50,7 @@ function lookOf(u) {
     capTip: ((l >> 9) & 1) ? 1 : -1,                             // в какую сторону свисает кончик
     green: GREENS[(l >> 11) % GREENS.length],
     deco: (l >> 13) % 4,                                         // 0 веточка, 1 листья, 2 грибок, 3 только мох
+    capStyle: (l * 7 + (l >> 3)) % 4,                            // 0 завиток, 1 конус, 2 мешок, 3 короткий загнутый
   };
 }
 
@@ -261,23 +262,43 @@ function mushroom(c, x, y) {
 }
 
 // ---------- Колпак ----------
-// Огромный мшистый колпак: толстый подвёрнутый край на бровях, длинный кончик
-// загибается в сторону и свисает вниз.
+// Мшистый колпак натянут по самые брови — глаз не видно, торчит только нос.
+// Четыре формы: завиток вбок, прямой конус, мягкий мешок, свисающий до уха,
+// и короткий фригийский с загнутым вперёд кончиком.
 
-function capShape(c, hx, b, s, tall) {
+function capShape(c, hx, b, s, tall, style) {
+  const X = k => hx + k * s;
   c.beginPath();
-  c.moveTo(hx - 4.3 * s, b);
-  c.quadraticCurveTo(hx - 4.4 * s, b - tall * 0.62, hx - 0.8 * s, b - tall * 0.88);
-  c.quadraticCurveTo(hx + 2.4 * s, b - tall * 1.12, hx + 5.8 * s, b - tall * 0.86);
-  c.quadraticCurveTo(hx + 7.6 * s, b - tall * 0.72, hx + 7.8 * s, b - tall * 0.42);
-  c.quadraticCurveTo(hx + 6.4 * s, b - tall * 0.66, hx + 3.8 * s, b - tall * 0.7);
-  c.quadraticCurveTo(hx + 4.6 * s, b - tall * 0.34, hx + 4.3 * s, b);
+  c.moveTo(X(-4.3), b);
+  if (style === 1) {
+    c.quadraticCurveTo(X(-3.2), b - tall * 0.55, X(1.4), b - tall);
+    c.quadraticCurveTo(X(3.4), b - tall * 0.5, X(4.3), b);
+  } else if (style === 2) {
+    c.quadraticCurveTo(X(-4.8), b - tall * 0.85, X(0.6), b - tall * 0.9);
+    c.quadraticCurveTo(X(5.6), b - tall * 0.95, X(6.4), b - tall * 0.35);
+    c.quadraticCurveTo(X(6.9), b + 0.2, X(5.6), b + 1.4);
+    c.quadraticCurveTo(X(4.9), b - tall * 0.2, X(3.9), b - tall * 0.45);
+    c.quadraticCurveTo(X(4.5), b - tall * 0.2, X(4.3), b);
+  } else if (style === 3) {
+    c.quadraticCurveTo(X(-4.4), b - tall * 0.95, X(0.6), b - tall);
+    c.quadraticCurveTo(X(3.8), b - tall * 1.05, X(4.4), b - tall * 0.62);
+    c.quadraticCurveTo(X(3.2), b - tall * 0.7, X(3.3), b - tall * 0.45);
+    c.quadraticCurveTo(X(4.5), b - tall * 0.25, X(4.3), b);
+  } else {
+    c.quadraticCurveTo(X(-4.4), b - tall * 0.62, X(-0.8), b - tall * 0.88);
+    c.quadraticCurveTo(X(2.4), b - tall * 1.12, X(5.8), b - tall * 0.86);
+    c.quadraticCurveTo(X(7.4), b - tall * 0.72, X(7.4), b - tall * 0.42);
+    c.quadraticCurveTo(X(6.2), b - tall * 0.66, X(3.8), b - tall * 0.7);
+    c.quadraticCurveTo(X(4.6), b - tall * 0.34, X(4.3), b);
+  }
   c.closePath();
 }
 
+const CAP_TALL = [10.5, 11.5, 9.5, 8.5];
+
 function drawCap(c, O, view, hx, hy, tipSway, L, r) {
   const e = view === 'E';
-  const b = hy - 2.7;                         // низ конуса над ободком
+  const b = hy - 1.1;                         // край натянут на глаза
   if (O.cap === 'baker') {
     // поварской колпак, переходящий в гномий кончик
     const s = e ? -1 : L.capTip;
@@ -292,12 +313,13 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r) {
   }
   const wizard = O.cap === 'wizard';
   const col = wizard ? '#4c3080' : O.cap;
-  const tall = wizard ? 16 : 13;
+  const style = wizard ? 1 : L.capStyle;
+  const tall = wizard ? 13 : CAP_TALL[style];
   const s = e ? -1 : L.capTip;               // боком кончик свисает назад
   if (wizard) ellipse(c, hx, b + 0.6, 5.6, 1.6, shade(col, -0.35));
   // конус
   c.save();
-  capShape(c, hx + tipSway * 0.3, b, s, tall);
+  capShape(c, hx + tipSway * 0.3, b, s, tall, style);
   c.fillStyle = lingrad(c, hx - 4.5, 0, hx + 5, 0, [[0, shade(col, 0.25)], [0.5, col], [1, shade(col, -0.4)]]);
   c.fill();
   c.clip();
@@ -389,25 +411,23 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
     // пухлые румяные щёки
     ellipse(c, hx - 2.4, hy + 1.1, 1.5, 1.2, sk[0]); ellipse(c, hx + 2.4, hy + 1.1, 1.5, 1.2, sk[0]);
     ellipse(c, hx - 2.4, hy + 1.3, 1.1, 0.8, 'rgba(225,100,80,0.55)'); ellipse(c, hx + 2.4, hy + 1.3, 1.1, 0.8, 'rgba(225,100,80,0.55)');
-    // прищуренные глаза под густыми бровями
-    c.fillStyle = '#ffffff'; rrect(c, hx - 2.3, hy - 0.2, 1.6, 0.9, 0.35); c.fill(); rrect(c, hx + 0.7, hy - 0.2, 1.6, 0.9, 0.35); c.fill();
-    c.fillStyle = '#2a1408'; c.fillRect(hx - 1.7, hy - 0.2, 0.8, 0.9); c.fillRect(hx + 1.1, hy - 0.2, 0.8, 0.9);
-    c.fillStyle = shade(bc, -0.08); rrect(c, hx - 2.9, hy - 1.1, 2.6, 1, 0.45); c.fill(); rrect(c, hx + 0.3, hy - 1.1, 2.6, 1, 0.45); c.fill();
+    // глаз не видно: густая тень под колпаком и торчащие из-под края брови
+    ellipse(c, hx, hy + 0.8, 3.3, 0.75, 'rgba(48,22,8,0.55)');
+    c.fillStyle = shade(bc, -0.12); rrect(c, hx - 3.1, hy + 0.3, 2.7, 0.9, 0.4); c.fill(); rrect(c, hx + 0.4, hy + 0.3, 2.7, 0.9, 0.4); c.fill();
     // нос-картошка
-    ellipse(c, hx, hy + 1.3, 1.6, 1.4, sk[1]); ellipse(c, hx, hy + 1.8, 1.2, 0.8, shade(sk[1], -0.08)); ellipse(c, hx - 0.5, hy + 0.9, 0.55, 0.45, 'rgba(255,240,220,0.7)');
+    ellipse(c, hx, hy + 2, 1.9, 1.6, sk[1]); ellipse(c, hx, hy + 2.6, 1.4, 0.9, shade(sk[1], -0.1)); ellipse(c, hx - 0.6, hy + 1.5, 0.6, 0.5, 'rgba(255,240,220,0.75)');
     // пышные усы
-    ellipse(c, hx - 1.8, hy + 2.9, 2, 1, shade(bc, 0.12)); ellipse(c, hx + 1.8, hy + 2.9, 2, 1, shade(bc, 0.05));
+    ellipse(c, hx - 1.9, hy + 3.5, 2.1, 1, shade(bc, 0.12)); ellipse(c, hx + 1.9, hy + 3.5, 2.1, 1, shade(bc, 0.05));
   } else if (view === 'E') {
     drawEar(c, hx - 2.6, hy + 0.2, -1, sk);
     c.fillStyle = radgrad(c, hx, hy - 1, 0.4, R * 1.5, [[0, sk[0]], [0.7, sk[1]], [1, sk[2]]]);
     c.beginPath(); c.ellipse(hx, hy, R * 0.92, R, 0, 0, Math.PI * 2); c.fill();
     const bc = drawBeard(c, 'E', hx, hy, L, type, bottom, r);
     ellipse(c, hx + 1.9, hy + 1.1, 1.3, 1.1, sk[0]); ellipse(c, hx + 1.9, hy + 1.3, 1, 0.7, 'rgba(225,100,80,0.55)');
-    c.fillStyle = '#ffffff'; rrect(c, hx + 1.2, hy - 0.2, 1.4, 0.9, 0.35); c.fill();
-    c.fillStyle = '#2a1408'; c.fillRect(hx + 1.8, hy - 0.2, 0.8, 0.9);
-    c.fillStyle = shade(bc, -0.08); rrect(c, hx + 0.8, hy - 1.1, 2.6, 1, 0.45); c.fill();
-    ellipse(c, hx + 3.8, hy + 1.3, 1.55, 1.4, sk[1]); ellipse(c, hx + 3.4, hy + 0.9, 0.5, 0.4, 'rgba(255,240,220,0.7)');
-    ellipse(c, hx + 2.9, hy + 2.9, 1.8, 0.9, shade(bc, 0.1));
+    ellipse(c, hx + 1.6, hy + 0.8, 2.2, 0.7, 'rgba(48,22,8,0.55)');
+    c.fillStyle = shade(bc, -0.12); rrect(c, hx + 1, hy + 0.3, 2.8, 0.9, 0.4); c.fill();
+    ellipse(c, hx + 4, hy + 1.9, 1.8, 1.5, sk[1]); ellipse(c, hx + 3.5, hy + 1.4, 0.55, 0.45, 'rgba(255,240,220,0.75)');
+    ellipse(c, hx + 3, hy + 3.4, 1.9, 0.9, shade(bc, 0.1));
     if (pipe) {
       line(c, hx + 3, hy + 2.4, hx + 6, hy + 3.2, '#4a2c14', 0.6);
       c.fillStyle = '#6a3c1c'; rrect(c, hx + 5.4, hy + 1.4, 1.7, 2.3, 0.4); c.fill();
