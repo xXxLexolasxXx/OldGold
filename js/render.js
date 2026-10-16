@@ -82,8 +82,20 @@ function fieldStage(g) {
   return 3;
 }
 
-// Удар туда-обратно: медленный подъём, быстрый удар, короткая отдача — без прокрутки по кругу
-const SWING_SEQ = [0, 0, 1, 1, 2, 3, 3, 2, 1];
+
+// Один удар на действие: замах вверх, удар, инструмент остаётся внизу до следующего
+// действия — никакого непрерывного махания по кругу.
+function swingFrame(u) {
+  const a = u.action;
+  // долгое действие (жатва, рубка) — несколько отдельных ударов с паузами, по ~0.9 с на удар
+  const n = a && a.T ? Math.max(1, Math.round(a.T / 0.9)) : 1;
+  const p = a && a.T ? ((1 - Math.max(0, a.t) / a.T) * n) % 1 : 1;
+  if (p < 0.12) return 2;      // начало: рука опущена
+  if (p < 0.3) return 1;       // поднимает
+  if (p < 0.5) return 0;       // замах над плечом
+  if (p < 0.58) return 2;      // удар
+  return 3;                    // инструмент внизу, пауза
+}
 
 // ---------- Жители ----------
 
@@ -103,7 +115,7 @@ function drawUnit(c, u) {
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
   else if (u.anim === 'sleep' || u.anim === 'faint') { pose = 'idle'; view = 'E'; }
   else if (u.anim === 'sit') { pose = 'duck'; view = 'S'; }
-  else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: SWING_SEQ[Math.floor(Game.time * 9 + u.id * 3) % SWING_SEQ.length] }; }
+  else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: swingFrame(u) }; }
   // походка и жесты
   const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
   if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {

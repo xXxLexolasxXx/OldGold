@@ -94,17 +94,17 @@ const SFX = {
   chime: (d, t) => { for (const [f, k] of [[1320, 0], [1760, 0.08], [2640, 0.16]]) tone(d, 'sine', f, f, t + k, 0.5, 0.2); },
 };
 
-function sfxAt(kind, wx, wy, vel = 1) {
+function sfxAt(kind, wx, wy, vel = 1, delay = 0) {
   if (!Sfx.ctx || !SFX[kind]) return;
   const p = sfxPlace(wx, wy);
   if (!p || p.vol < 0.05 || !sfxBudget()) return;
-  const t = Sfx.ctx.currentTime + 0.01 + Math.random() * 0.02;
+  const t = Sfx.ctx.currentTime + 0.01 + delay + Math.random() * 0.02;
   SFX[kind](sfxChain(p, vel), t);
 }
 
 // Звук жителя по анимации (центр клетки → мировые пиксели)
 const ANIM_SFX = { build: 'build', chop: 'chop', mine: 'mine', dig: 'dig', reap: 'reap', forage: 'forage', smoke: 'smoke', faint: 'groan' };
-function sfxUnit(u, kind) { if (!u.inside) sfxAt(ANIM_SFX[kind] || kind, u.x * TILE, u.y * TILE); }
+function sfxUnit(u, kind, delay = 0) { if (!u.inside) sfxAt(ANIM_SFX[kind] || kind, u.x * TILE, u.y * TILE, 1, delay / Math.max(1, Game.speed)); }
 
 // Возгласы по всплывающим надписям
 const FLOAT_SFX = { 'Га-га!': 'honk', 'У-ху!': 'hoot', 'Ай!': 'ouch', 'Ко-ко!': 'cluck', 'Бух!': 'thud', 'Золото!': 'chime' };

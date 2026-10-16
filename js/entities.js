@@ -635,8 +635,11 @@ class Unit {
     if (a.wait !== undefined) {
       if (a.t === undefined) {
         a.t = a.wait * (this.food <= 0 && !this.noFood ? 1.6 : 1) * (this.injury === 'arm' && a.anim ? 1.5 : 1);
+        a.T = a.t;                              // полная длительность — для фаз замаха и удара
         this.anim = a.anim || null;
-        if (a.anim) sfxUnit(this, a.anim);      // стук молотка, удар топора, затяжка…
+        // звук инструмента — в момент удара, а не замаха
+        if (a.anim && ANIM_TOOL[a.anim]) { const n = Math.max(1, Math.round(a.t / 0.9)); for (let k = 0; k < n; k++) sfxUnit(this, a.anim, (k + 0.55) * a.t / n); }
+        else if (a.anim) sfxUnit(this, a.anim);
       }
       a.t -= dt;
       if (a.t <= 0) { this.anim = null; return true; }
