@@ -56,12 +56,16 @@ function dispatchSerfs() {
   }
   if (!idleBy.size) return;
   const storeComp = (x, y) => { const st = nearestStore(x, y); return st ? compAt(st.doorX, st.doorY) : 0; };
+  // сети, где есть склад: только там есть откуда брать камень и кому нести
+  const withStore = new Set(Game.buildings.filter(b => b.isStore()).map(b => compAt(b.doorX, b.doorY)));
+  const servedComp = (x, y) => { const c = compNear(x, y); return c && withStore.has(c) ? c : storeComp(x, y); };
   const depots = [...Game.buildings, ...Game.piles.values()];
   const compOf = new Map();
   for (const b of Game.buildings) compOf.set(b, compAt(b.doorX, b.doorY));
-  // кучки и стройки дорог могут лежать в стороне от дороги — обслуживает ближайшая сеть
-  for (const p of Game.piles.values()) compOf.set(p, compNear(p.x, p.y) || storeComp(p.x, p.y));
-  for (const s of Game.roadSites.values()) compOf.set(s, compNear(s.x, s.y) || storeComp(s.x, s.y));
+  // кучки и стройки дорог могут лежать в стороне или примыкать к оторванному куску
+  // дороги без склада — тогда их обслуживает сеть ближайшего склада (носят по бездорожью)
+  for (const p of Game.piles.values()) compOf.set(p, servedComp(p.x, p.y));
+  for (const s of Game.roadSites.values()) compOf.set(s, servedComp(s.x, s.y));
 
   const reqs = [];
   for (const [d, comp] of compOf) {

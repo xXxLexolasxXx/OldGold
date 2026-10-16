@@ -26,7 +26,7 @@ const World = {
   roadDirty: true,
 };
 
-// Разметка связных дорожных сетей (4-связность).
+// Разметка связных дорожных сетей (8-связность: дороги соединяются и по диагонали).
 function updateRoadComps() {
   if (!World.roadDirty) return;
   World.roadDirty = false;
@@ -40,7 +40,7 @@ function updateRoadComps() {
     comp[s] = id;
     for (let k = 0; k < q.length; k++) {
       const c = q[k], x = c % MAP_W, y = (c / MAP_W) | 0;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
         const nx = x + dx, ny = y + dy;
         if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H) continue;
         const ni = ny * MAP_W + nx;
@@ -61,7 +61,7 @@ function compAt(x, y) {
 function compNear(x, y) {
   const own = compAt(x, y);
   if (own) return own;
-  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const c = compAt(x + dx, y + dy); if (c) return c; }
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) { const c = compAt(x + dx, y + dy); if (c) return c; }
   return 0;
 }
 

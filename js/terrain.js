@@ -337,18 +337,38 @@ function drawPebble(c, x, y, s, r) {
 
 function isRoadAt(x, y) { return inb(x, y) && World.road[idx(x, y)]; }
 
-function roadShape(c, x, y, px, py, grow) {
+// Диагональные связки, проходящие через клетку: пары дорог, соседних только по
+// диагонали (обе боковые клетки — не дорога). Лента идёт от центра к центру.
+function diagBands(x, y) {
+  const out = [];
+  const diagOnly = (ax, ay, bx, by) => isRoadAt(ax, ay) && isRoadAt(bx, by) && !isRoadAt(ax, by) && !isRoadAt(bx, ay);
+  for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+    if (diagOnly(x, y, x + dx, y + dy)) out.push([x, y, x + dx, y + dy]);              // эта клетка — конец ленты
+    if (diagOnly(x + dx, y, x, y + dy)) out.push([x + dx, y, x, y + dy]);    // лента идёт через угол клетки
+  }
+  return out;
+}
+
+function roadShape(c, x, y, px, py, grow, bands) {
   const cx = px + TILE / 2, cy = py + TILE / 2, w = 11.5 + grow;
   c.beginPath();
-  c.arc(cx, cy, w, 0, Math.PI * 2);
-  if (isRoadAt(x - 1, y)) c.rect(px, cy - w, TILE / 2, w * 2);
-  if (isRoadAt(x + 1, y)) c.rect(cx, cy - w, TILE / 2, w * 2);
-  if (isRoadAt(x, y - 1)) c.rect(cx - w, py, w * 2, TILE / 2);
-  if (isRoadAt(x, y + 1)) c.rect(cx - w, cy, w * 2, TILE / 2);
-  // широкая дорога: заполняем углы между соседними полосами
-  for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-    if (isRoadAt(x + dx, y) && isRoadAt(x, y + dy) && isRoadAt(x + dx, y + dy))
-      c.rect(dx > 0 ? cx : px, dy > 0 ? cy : py, TILE / 2, TILE / 2);
+  if (World.road[idx(x, y)]) {
+    c.arc(cx, cy, w, 0, Math.PI * 2);
+    if (isRoadAt(x - 1, y)) c.rect(px, cy - w, TILE / 2, w * 2);
+    if (isRoadAt(x + 1, y)) c.rect(cx, cy - w, TILE / 2, w * 2);
+    if (isRoadAt(x, y - 1)) c.rect(cx - w, py, w * 2, TILE / 2);
+    if (isRoadAt(x, y + 1)) c.rect(cx - w, cy, w * 2, TILE / 2);
+    // широкая дорога: заполняем углы между соседними полосами
+    for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      if (isRoadAt(x + dx, y) && isRoadAt(x, y + dy) && isRoadAt(x + dx, y + dy))
+        c.rect(dx > 0 ? cx : px, dy > 0 ? cy : py, TILE / 2, TILE / 2);
+    }
+  }
+  // диагональ: повёрнутая полоса от центра одной клетки к центру другой
+  for (const [ax, ay, bx, by] of bands) {
+    const x0 = (ax + 0.5) * TILE, y0 = (ay + 0.5) * TILE, x1 = (bx + 0.5) * TILE, y1 = (by + 0.5) * TILE;
+    const L = Math.hypot(x1 - x0, y1 - y0), nx = -(y1 - y0) / L * w, ny = (x1 - x0) / L * w;
+    c.moveTo(x0 + nx, y0 + ny); c.lineTo(x1 + nx, y1 + ny); c.lineTo(x1 - nx, y1 - ny); c.lineTo(x0 - nx, y0 - ny); c.closePath();
   }
 }
 
@@ -356,17 +376,18 @@ function drawRoadTile(x, y) {
   if (!TERR.ready) return;
   const c = TERR.rctx, px = x * TILE, py = y * TILE;
   c.clearRect(px, py, TILE, TILE);
-  if (!World.road[idx(x, y)]) return;
+  const bands = diagBands(x, y);
+  if (!World.road[idx(x, y)] && !bands.length) return;
   const r = mulberry32(idx(x, y) * 131 + 7);
   c.save();
   c.beginPath(); c.rect(px, py, TILE, TILE); c.clip();
   void r;
   // бордюр из тёмного камня и сплошная мостовая
-  roadShape(c, x, y, px, py, 2);
+  roadShape(c, x, y, px, py, 2, bands);
   c.fillStyle = 'rgba(40,34,28,0.55)'; c.fill();
-  roadShape(c, x, y, px, py, 0);
+  roadShape(c, x, y, px, py, 0, bands);
   c.fillStyle = '#4a4540'; c.fill();
-  roadShape(c, x, y, px, py, 0);
+  roadShape(c, x, y, px, py, 0, bands);
   c.clip();
   paveCobbles(c, px - 4, py - 4, TILE + 8, TILE + 8, 1);
   c.restore();
