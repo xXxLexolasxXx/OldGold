@@ -45,6 +45,12 @@ function* joinGen(u, host) {
   yield* smokeGen(u, JOIN_SMOKE_TIME);
 }
 
+let lastFaintToast = -99;
+function* faintGen(u) {
+  u.brk.until = Game.time + FAINT_TIME;
+  yield { wait: FAINT_TIME, anim: 'faint' };
+}
+
 function* sleepGen(u) {
   u.brk.until = Game.time + SLEEP_TIME;
   yield { wait: SLEEP_TIME, anim: 'sleep' };
@@ -64,11 +70,23 @@ function interruptible(u) {
 
 function lifeTick(u, dt) {
   if (u.injury && Game.time >= u.injuryUntil) { u.injury = null; }
+  // долго без еды — копит слабость
+  if (u.food <= 0 && !u.noFood && !u.inside && isPerson(u)) u.starveT = (u.starveT || 0) + dt;
+  else if (u.food > 0) u.starveT = 0;
   u.lifeT = (u.lifeT || 0) + dt;
   if (u.lifeT < 0.5) return;
   u.lifeT = 0;
   socialTick(u);
   if (!interruptible(u)) return;
+  // совсем оголодал — падает без сил и лежит, потом встаёт и плетётся дальше
+  if (u.starveT > STARVE_FAINT) {
+    u.starveT = -STARVE_FAINT;                      // следующий обморок нескоро
+    if (u.carry) dropLoad(u);
+    startBreak(u, 'faint', null);
+    u.proc = faintGen(u);
+    if (Game.time - lastFaintToast > 20) { lastFaintToast = Game.time; toast(`${UNIT_TYPES[u.type].name} упал от голода! Нужна еда в трактире`); }
+    return;
+  }
   // пьяный засыпает где стоит
   if (u.drunkAt && Game.time >= u.drunkAt) {
     u.drunkAt = 0;
@@ -95,7 +113,7 @@ function lifeTick(u, dt) {
     }
   }
   // сам решил покурить
-  if (Game.time >= u.nextSmoke && Math.random() < 0.08) {
+  if (Game.time >= u.nextSmoke && Math.random() < 0.15) {
     u.nextSmoke = Game.time + SMOKE_CD_MIN + Math.random() * (SMOKE_CD_MAX - SMOKE_CD_MIN);
     startBreak(u, 'smoke', null);
     u.proc = smokeGen(u, SMOKE_TIME);
@@ -109,7 +127,7 @@ function lifeTick(u, dt) {
 function gesture(u, kind, time, tx) {
   u.gest = kind; u.gestUntil = Game.time + time;
   u.gestFace = tx > u.x ? 1 : -1;
-  u.nextSocial = Game.time + 25 + Math.random() * 35;
+  u.nextSocial = Game.time + 12 + Math.random() * 18;
 }
 
 function socialTick(u) {
@@ -123,7 +141,7 @@ function socialTick(u) {
     if (an.kind === 'wolf' && d < 4.5) { gesture(u, u.carry ? 'scratch' : 'fist', 2.2, an.x); return; }
     if (an.kind !== 'wolf' && d < 3 && !u.carry && Math.random() < 0.15) { gesture(u, 'point', 1.8, an.x); return; }
   }
-  if (Math.random() > 0.25) return;
+  if (Math.random() > 0.45) return;
   for (const o of Game.units) {
     if (o === u || o.inside || o.brk || !isPerson(o)) continue;
     const d = Math.hypot(o.x - u.x, o.y - u.y);

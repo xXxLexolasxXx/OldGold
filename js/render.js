@@ -98,7 +98,8 @@ function drawUnit(c, u) {
   else if (u.anim === 'duck' || u.anim === 'forage') pose = 'duck';
   else if (u.anim === 'smoke') { pose = 'smoke'; view = 'E'; }
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
-  else if (u.anim === 'sleep') { pose = 'idle'; view = 'E'; }
+  else if (u.anim === 'sleep' || u.anim === 'faint') { pose = 'idle'; view = 'E'; }
+  else if (u.anim === 'sit') { pose = 'duck'; view = 'S'; }
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: Math.floor(Game.time * 5 + u.id) & 3 }; }
   // походка и жесты
   const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
@@ -116,24 +117,35 @@ function drawUnit(c, u) {
   }
   if (opt.gait === 'drunk' && moving) px += Math.round(Math.sin(Game.time * 2.3 + u.id) * 1.6);
   c.fillStyle = 'rgba(10,8,4,0.32)';
-  c.beginPath(); c.ellipse(px + 1.5, py - 0.2, u.anim === 'sleep' ? 10 : 5.5, 2, 0, 0, 7); c.fill();
+  const lying = u.anim === 'sleep' || u.anim === 'faint';
+  c.beginPath(); c.ellipse(px + 1.5, py - 0.2, lying ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
   const spr = personSprite(u, view, pose, frame, opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
-  if (u.anim === 'sleep') {
-    // лежит на земле, бормочет «Zzz»
+  if (lying) {
+    // лежит на земле: пьяный бормочет «Zzz», голодный — без сил, кружатся «звёздочки»
     c.save(); c.translate(px, py - 1); c.rotate(-Math.PI / 2 * (u.face < 0 ? -1 : 1));
     if (u.face < 0) c.scale(-1, 1);
     c.drawImage(spr, -PFX, -PFY + 2, PW, PH);
     c.restore();
     const t = Game.time;
-    c.fillStyle = 'rgba(240,240,255,0.9)'; c.font = 'bold 6px serif';
-    for (let k = 0; k < 3; k++) {
-      const p = (t * 0.5 + k / 3) % 1;
-      c.globalAlpha = 1 - p;
-      c.fillText('z', px + 6 + p * 8, py - 10 - p * 14 - k);
+    if (u.anim === 'sleep') {
+      c.fillStyle = 'rgba(240,240,255,0.9)'; c.font = 'bold 6px serif';
+      for (let k = 0; k < 3; k++) {
+        const p = (t * 0.5 + k / 3) % 1;
+        c.globalAlpha = 1 - p;
+        c.fillText('z', px + 6 + p * 8, py - 10 - p * 14 - k);
+      }
+      c.globalAlpha = 1;
+    } else {
+      // урчит пустой живот: пустая миска над головой и кружок слабости
+      for (let k = 0; k < 3; k++) {
+        const a = t * 3 + k * 2.1;
+        c.fillStyle = '#d8c8a0'; c.fillRect(Math.round(px + Math.cos(a) * 5), Math.round(py - 9 + Math.sin(a) * 1.5), 1, 1);
+      }
+      c.fillStyle = '#6e432a'; c.beginPath(); c.ellipse(px, py - 14, 3.2, 1.6, 0, 0, Math.PI); c.fill();
+      c.fillStyle = '#3a2414'; c.fillRect(px - 3.2, py - 14.4, 6.4, 0.8);
     }
-    c.globalAlpha = 1;
   } else if (view === 'E' && face < 0) {
     c.save(); c.translate(px, 0); c.scale(-1, 1);
     c.drawImage(spr, -PFX, py - PFY, PW, PH);
@@ -341,6 +353,7 @@ function drawBuilding(c, b, ghost) {
     const a = (b.working ? 0.35 : 0.2) + 0.12 * Math.sin(t * 7) + 0.08 * Math.sin(t * 19);
     glow(c, gx, gy, 18, spr.glowColor || '255,160,60', a);
   }
+  if (spr.fire && b.state === 'done') drawBonfireFlames(c, ox + spr.fire[0], oy + spr.fire[1], b.working || b.stock.trash > 0, b.id);
   if (spr.circle) {
     const [cx, cy] = spr.circle;
     const pulse = 0.5 + 0.5 * Math.sin(t * (b.working ? 3 : 1));
@@ -619,7 +632,13 @@ function render() {
 
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const o = World.obj[idx(x, y)];
-    if (o && o.t === 'field') c.drawImage(SPR.fields[o.crop || 'wheat'][fieldStage(o.g)], x * TILE, y * TILE);
+    if (o && o.t === 'field') {
+      c.drawImage(SPR.fields[o.crop || 'wheat'][fieldStage(o.g)], x * TILE, y * TILE);
+      if (o.ash) {   // удобрено пеплом: серые крапинки в бороздах
+        c.fillStyle = 'rgba(200,195,185,0.75)';
+        for (let k = 0; k < 7; k++) c.fillRect(x * TILE + 3 + ((k * 13 + x * 7) % 26), y * TILE + 4 + ((k * 7 + y * 5) % 24), 1, 1);
+      }
+    }
   }
   for (const s of Game.roadSites.values()) drawRoadSite(c, s);
 
@@ -629,6 +648,7 @@ function render() {
     if (!o) continue;
     if (o.t === 'tree') list.push([y + 0.9, () => drawTree(c, x, y, o, i)]);
     else if (o.t === 'stone') list.push([y + 0.8, () => drawStoneObj(c, x, y, o, i)]);
+    else if (isStreetObj(o)) list.push([y + 0.75, () => drawStreetObj(c, x, y, o)]);
     else if (o.t === 'stump') list.push([y + 0.7, () => drawStump(c, x, y)]);
   }
   for (const b of Game.buildings) {

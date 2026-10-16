@@ -33,9 +33,11 @@ const GOODS = {
   mana:       { name: 'Банки маны',      color: '#40a0ff', group: 'Магия' },
   staff:      { name: 'Посохи',          color: '#8a6aff', group: 'Снаряжение' },
   mageArmor:  { name: 'Мантии мага',     color: '#5040a0', group: 'Снаряжение' },
+  trash:      { name: 'Мусор',           color: '#7a6a50', group: 'Хозяйство', noStore: true },
+  ash:        { name: 'Пепел',           color: '#9e958a', group: 'Хозяйство' },
 };
 const GOOD_KEYS = Object.keys(GOODS);
-const GOOD_GROUPS = ['Стройка', 'Еда', 'Ценности', 'Ремесло', 'Магия', 'Снаряжение'];
+const GOOD_GROUPS = ['Стройка', 'Еда', 'Ценности', 'Ремесло', 'Магия', 'Снаряжение', 'Хозяйство'];
 const FOODS = ['sausage', 'bread'];   // что едят в трактире (по порядку предпочтения)
 
 const UNIT_TYPES = {
@@ -82,6 +84,12 @@ const BUILDINGS = {
     name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, inputs: { bread: 10, sausage: 10, beer: 10 },
     desc: 'Голодные жители едят здесь колбасу или хлеб и запивают пивом. Пьяный может уснуть прямо на дороге.',
   },
+  bonfire: {
+    name: 'Большой костёр', cat: 'Основа', w: 3, h: 3, top: 40, noRotate: true, cost: { timber: 4, stone: 2 }, auto: true,
+    inputs: { trash: 12 }, outputs: { ash: 6 },
+    recipes: [{ in: { trash: 1 }, out: { ash: 1 }, time: 10 }],
+    desc: 'Сюда трудяги сносят мусор из урн. Сгорая, он даёт пепел — фермы удобряют им поля, урожай растёт быстрее и богаче.',
+  },
   goatpen: {
     name: 'Загон для коз', cat: 'Основа', w: 3, h: 2, top: 50, cost: { timber: 4, stone: 1 }, worker: 'herder',
     desc: 'Пастух приручает диких коз. Ручная коза возит груз по дорогам — по 2 штуки за раз. До 3 коз на загон.',
@@ -121,12 +129,12 @@ const BUILDINGS = {
   },
   farm: {
     name: 'Ферма', cat: 'Еда', w: 4, h: 3, top: 72, cost: { timber: 5, stone: 3 }, worker: 'farmer',
-    outputs: { wheat: 5, hay: 5 }, crops: ['wheat', 'hay'],
+    inputs: { ash: 4 }, outputs: { wheat: 5, hay: 5 }, crops: ['wheat', 'hay'],
     desc: 'Фермер засевает поля вокруг: пшеницу на зерно или травы на сено.',
   },
   hopfarm: {
     name: 'Хмельник', cat: 'Еда', w: 3, h: 2, top: 92, cost: { timber: 4, stone: 2 }, worker: 'hopgrower',
-    outputs: { hops: 5 }, crops: ['hops'],
+    inputs: { ash: 3 }, outputs: { hops: 5 }, crops: ['hops'],
     desc: 'Хмелевод растит хмель на шестах вокруг и сушит шишки в башне.',
   },
   brewery: {
@@ -207,10 +215,11 @@ const CARRY_CAP = { serf: 1, goat: 2, carter: 5 };   // сколько един�
 
 // Жизнь жителей
 const SMOKE_TIME = 15, JOIN_SMOKE_TIME = 8;   // длительность перекура и подсевшего
-const SMOKE_CD_MIN = 60, SMOKE_CD_MAX = 180;  // перезарядка перекура, сек (не чаще раза в минуту)
-const JOIN_CD = 80;                           // перезарядка подсаживания к курящему
+const SMOKE_CD_MIN = 40, SMOKE_CD_MAX = 110;  // перезарядка перекура, сек
+const JOIN_CD = 50;                           // перезарядка подсаживания к курящему
 const JOIN_RADIUS = 7;                        // в клетках
 const SLEEP_TIME = 60;                        // пьяный сон
-const DRUNK_CHANCE = 0.45;                    // шанс захмелеть после кружки
+const STARVE_FAINT = 25, FAINT_TIME = 15;      // через сколько секунд без еды падает, сколько лежит
+const DRUNK_CHANCE = 0.65;                   // шанс захмелеть после кружки
 const INJURY_TIME = 150;                      // сколько заживает травма
 const COLLIDE_CHANCE = 0.03;                  // базовый шанс уронить груз при столкновении

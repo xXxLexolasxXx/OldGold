@@ -17,7 +17,7 @@ const GREENS = ['#4e8a2a', '#5a9a30', '#46802a', '#62a036', '#3e7426'];   // л�
 // Колпак — цвет профессии (приглушён под лес), одежда у всех зелёная.
 const OUTFIT = {
   serf:       { cap: '#a8682e', pants: '#6a4a2a', frame: true },
-  builder:    { cap: '#c09a34', pants: '#5a4028', apron: '#8a6a44', belt: 'hammer' },
+  builder:    { cap: '#c09a34', pants: '#5a4028', apron: '#8a6a44', belt: 'hammer', coat: '#6e1c22' },   // бордовая куртка работяги
   woodcutter: { cap: '#3e7426', pants: '#5a4028', belt: 'axe' },
   carpenter:  { cap: '#a0602c', pants: '#5a4028', apron: '#c8a878' },
   stonemason: { cap: '#7e8078', pants: '#4a4238', apron: '#8a6a44' },
@@ -88,6 +88,22 @@ function drawLoad(c, g) {
       if (g === 'wheat') for (let k = -5; k <= 5; k += 2) ellipse(c, k * 1.15, -3.8, 0.6, 1.2, '#f0d060');
       else ellipse(c, 0, -2.6, 5.4, 1.6, '#b8b060');
       line(c, -2.2, 0.6, 2.2, 0.6, '#8a5a2a', 0.8);
+      break;
+    }
+    case 'trash': {
+      // мешок с мусором, торчат объедки и щепки
+      c.fillStyle = lingrad(c, -4, 0, 4, 0, [[0, '#8a7a5a'], [1, '#5a4a32']]);
+      c.beginPath(); c.moveTo(-4.4, 4); c.quadraticCurveTo(-5.4, -2, -2, -3.4); c.lineTo(2, -3.4); c.quadraticCurveTo(5.4, -2, 4.4, 4); c.closePath(); c.fill();
+      c.strokeStyle = ol; c.lineWidth = 0.4; c.stroke();
+      line(c, -1, -3.4, -2.4, -6, '#e0b882', 0.8); ellipse(c, 1.4, -4, 1.2, 0.8, '#73963e'); ellipse(c, -0.2, -4.6, 0.8, 0.6, '#b6ada0');
+      break;
+    }
+    case 'ash': {
+      c.fillStyle = lingrad(c, -4, 0, 4, 0, [[0, '#b6ada0'], [1, '#706960']]);
+      c.beginPath(); c.moveTo(-4, 4); c.quadraticCurveTo(-4.6, -1.6, -1.4, -3); c.lineTo(1.4, -3); c.quadraticCurveTo(4.6, -1.6, 4, 4); c.closePath(); c.fill();
+      c.strokeStyle = ol; c.lineWidth = 0.4; c.stroke();
+      c.fillStyle = '#5a3a1e'; c.fillRect(-1.6, -3.6, 3.2, 0.8);
+      ellipse(c, 0, -4.2, 1.6, 0.7, '#cec6ba');
       break;
     }
     case 'mushroom':
@@ -476,7 +492,7 @@ function gestPts(g, f, side, shY, headY, view) {
 
 function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const O = OUTFIT[type] || OUTFIT.serf;
-  const shirt = O.robe ? '#2e5a26' : L.green, pants = O.pants;
+  const shirt = O.robe ? '#2e5a26' : (O.coat || L.green), pants = O.pants;
   const gait = opt.gait || '', gest = carry ? '' : (opt.gest || ''), gf = opt.gf || 0;
   const ph = pose === 'walk' ? frame / 8 * Math.PI * 2 : 0;
   const sw = Math.sin(ph);

@@ -993,6 +993,8 @@ const MODELS = {
 
   magiccircle(m) { m.custom(c => drawMagicCircle(c, m.g), 0, 60); },
 
+  bonfire(m) { m.custom(c => drawBonfire(c, m.g), 0, 60); },
+
   magicworkshop(m) {
     m.box({
       x0: 0, x1: 28, y0: 20, y1: 56, h: 22, wall: 'plaster', col: '#d8ccb0', frame: true, beam: '#38245c',

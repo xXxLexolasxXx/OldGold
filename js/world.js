@@ -192,7 +192,7 @@ function updateGrowth(dt) {
       o.g = Math.min(1, o.g + dt / 150);
       if (o.g >= 1) World.growing.delete(i);
     } else if (o.t === 'field') {
-      if (o.g >= 0 && o.g < 1) o.g = Math.min(1, o.g + dt / 90);
+      if (o.g >= 0 && o.g < 1) o.g = Math.min(1, o.g + dt / (o.ash ? 50 : 90));   // с пеплом растёт быстрее
       if (o.g >= 1 || o.g < 0) World.growing.delete(i);
     } else if (o.t === 'stump') {
       o.g += dt;

@@ -985,6 +985,73 @@ function rockMound(c, pts, x0, y0, w, h, col = '#7e7468') {
 
 // ================= Особые постройки (рисуются в экранных координатах) =================
 
+// Большой костёр: выжженная земля, кольцо из камней, шалаш из досок, куча мусора
+// с одной стороны и горка пепла с лопатой — с другой. Пламя анимируется в render.
+function drawBonfire(c, g) {
+  const cx = g.fx + g.fw / 2, cy = g.fy + g.fh / 2 + 8;
+  shadowAt(c, cx, cy + 4, 30, 12);
+  ellipse(c, cx, cy, 30, 21, '#3a3632');
+  for (let k = 0; k < 60; k++) {
+    const a = srand() * Math.PI * 2, d = Math.sqrt(srand());
+    ellipse(c, cx + Math.cos(a) * d * 26, cy + Math.sin(a) * d * 18, rnd(1.5, 3.5), rnd(1, 2), shade('#5c564f', rnd(-0.2, 0.25)));
+  }
+  // кольцо из камней
+  for (let k = 0; k < 18; k++) {
+    const a = k / 18 * Math.PI * 2;
+    const x = cx + Math.cos(a) * 15, y = cy + Math.sin(a) * 10.5;
+    ellipse(c, x + 0.6, y + 0.8, 3, 2.2, 'rgba(10,8,4,0.4)');
+    ellipse(c, x, y, 3, 2.2, shade('#9e958a', rnd(-0.18, 0.12)));
+    ellipse(c, x - 0.8, y - 0.8, 1.2, 0.8, '#cec6ba');
+  }
+  // угли и пепел внутри
+  ellipse(c, cx, cy, 11.5, 7.5, '#2a2624');
+  for (let k = 0; k < 16; k++) ellipse(c, cx + rnd(-8, 8), cy + rnd(-5, 5), rnd(1, 2.2), rnd(0.7, 1.4), srand() < 0.4 ? '#c8583a' : '#706960');
+  // шалаш из досок
+  for (let k = 0; k < 7; k++) {
+    const a = k / 7 * Math.PI * 2;
+    const bx = cx + Math.cos(a) * 9, by = cy + Math.sin(a) * 6;
+    line(c, bx, by, cx + Math.cos(a) * 1.5, cy - 15, '#3a2414', 2.4);
+    line(c, bx, by - 0.4, cx + Math.cos(a) * 1.5, cy - 15.4, shade('#a06840', rnd(-0.15, 0.1)), 1.5);
+  }
+  // куча мусора слева
+  const tx = cx - 30, ty = cy + 4;
+  ellipse(c, tx, ty, 9, 5, '#45291a');
+  for (let k = 0; k < 14; k++) ellipse(c, tx + rnd(-7, 7), ty + rnd(-4, 2), rnd(1, 2.4), rnd(0.8, 1.8), ['#6e432a', '#9c8e48', '#73963e', '#b6ada0', '#e0b882'][(srand() * 5) | 0]);
+  line(c, tx - 3, ty - 3, tx - 6, ty - 8, '#e0b882', 0.8);
+  // горка пепла справа с лопатой
+  const ax = cx + 29, ay = cy + 5;
+  c.fillStyle = '#9e958a'; c.beginPath(); c.ellipse(ax, ay, 8, 5, 0, Math.PI, 0); c.fill();
+  ellipse(c, ax, ay, 8, 2.4, '#867e74'); ellipse(c, ax - 2, ay - 3, 3, 1.4, '#cec6ba');
+  line(c, ax + 3, ay - 2, ax + 9, ay - 14, '#6e432a', 1);
+  poly(c, [[ax + 1.4, ay - 1], [ax + 4.6, ay - 3.6], [ax + 5.4, ay + 0.4], [ax + 2.6, ay + 1.6]], '#867e74', '#3a3632', 0.4);
+  // бревно-скамья у огня
+  c.fillStyle = '#6e432a'; rrect(c, cx - 12, cy + 15, 24, 3.6, 1.6); c.fill();
+  ellipse(c, cx + 12, cy + 16.8, 1.6, 1.8, '#cc9a64');
+  g.spr.fire = [cx, cy - 6];
+  (g.spr.chimneys = g.spr.chimneys || []).push([cx, cy - 22]);
+}
+
+// Пламя костра: языки дрожат, искры летят вверх
+function drawBonfireFlames(c, x, y, strong, seed) {
+  const t = Game.time;
+  glow(c, x, y - 2, strong ? 34 : 22, '255,150,60', (strong ? 0.38 : 0.22) + 0.08 * Math.sin(t * 9 + seed));
+  const n = strong ? 7 : 4;
+  for (let k = 0; k < n; k++) {
+    const ph = t * 6 + k * 1.7 + seed, h = (strong ? 13 : 8) * (0.6 + 0.4 * Math.abs(Math.sin(ph))), dx = (k - n / 2) * 1.8;
+    c.fillStyle = k % 2 ? '#e07a28' : '#f0a030';
+    c.beginPath(); c.moveTo(x + dx - 2.4, y + 1); c.quadraticCurveTo(x + dx + Math.sin(ph) * 2, y - h * 0.6, x + dx + Math.sin(ph * 1.3), y - h);
+    c.quadraticCurveTo(x + dx + 1.4, y - h * 0.4, x + dx + 2.4, y + 1); c.fill();
+  }
+  c.fillStyle = '#fff2a0'; c.beginPath(); c.ellipse(x, y - 1, 3, 2.4, 0, 0, Math.PI * 2); c.fill();
+  for (let k = 0; k < (strong ? 6 : 3); k++) {
+    const p = (t * 0.7 + k / 6 + seed * 0.1) % 1;
+    c.globalAlpha = 1 - p;
+    c.fillStyle = '#ffd060';
+    c.fillRect(Math.round(x + Math.sin(k * 3.1 + t) * 6 * p), Math.round(y - 8 - p * 26), 1, 1);
+  }
+  c.globalAlpha = 1;
+}
+
 function drawMagicCircle(c, g) {
     const cx = g.fx + g.fw / 2, cy = g.fy + g.fh / 2 + 6;
     ellipse(c, cx, cy, 46, 36, '#5c564f');

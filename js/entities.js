@@ -276,7 +276,7 @@ function checkPlacement(type, x, y, rot = 0) {
     if (World.terrain[i] !== T_GRASS) return 'Строить можно только на траве';
     if (World.bmap[i] || World.door[i]) return 'Место занято';
     if (World.road[i] || Game.roadSites.has(i)) return 'Мешает дорога';
-    if (World.obj[i]) return 'Мешают деревья, камни или поля';
+    if (World.obj[i] && !isStreetObj(World.obj[i])) return 'Мешают деревья, камни или поля';
   }
   const dx = x + def.dx, dy = y + def.dy;
   if (!inb(dx, dy)) return 'Вход за краем карты';
@@ -285,7 +285,7 @@ function checkPlacement(type, x, y, rot = 0) {
   if (dt !== T_GRASS && dt !== T_SAND) return 'Перед входом нужна свободная земля';
   if (World.bmap[di] || World.door[di]) return 'Вход загорожен';
   const dobj = World.obj[di];
-  if (dobj && dobj.t !== 'stump') return 'Вход загорожен';
+  if (dobj && dobj.t !== 'stump' && !isStreetObj(dobj)) return 'Вход загорожен';
   if (def0.wideDoor) {
     const [ex, ey] = wideDoorTile(type, x, y, dd.rot);
     if (!inb(ex, ey)) return 'Ворота за краем карты';
@@ -338,8 +338,11 @@ function blocksPassage(def, x, y) {
 
 function placeBuilding(type, x, y, done = false, rot = 0) {
   const b = new Building(type, x, y, done, rot);
-  for (let yy = y; yy < y + b.h; yy++) for (let xx = x; xx < x + b.w; xx++)
-    World.bmap[idx(xx, yy)] = b.id;
+  for (let yy = y; yy < y + b.h; yy++) for (let xx = x; xx < x + b.w; xx++) {
+    const i = idx(xx, yy);
+    World.bmap[i] = b.id;
+    if (isStreetObj(World.obj[i])) World.obj[i] = null;   // уличное убранство уступает место дому
+  }
   const di = idx(b.doorX, b.doorY);
   World.door[di] = 1;
   World.obj[di] = null;
@@ -405,7 +408,7 @@ function canPlaceRoad(x, y) {
   if (t !== T_GRASS && t !== T_SAND) return false;
   if (World.road[i] || World.bmap[i] || Game.roadSites.has(i)) return false;
   const o = World.obj[i];
-  return !o || o.t === 'stump';
+  return !o || o.t === 'stump' || isStreetObj(o);   // скамейку или фонарь дорога просто сдвинет
 }
 
 function placeRoadSite(x, y) {
@@ -425,11 +428,12 @@ function completeRoad(s) {
   removeRoadSite(s);
   World.obj[idx(s.x, s.y)] = null;
   setRoad(s.x, s.y, true);
+  decorateRoad(s.x, s.y);      // фонарь, скамейка или урна вдоль новой дороги
 }
 
 // Ближайший склад; если указан товар — только тот, что его принимает.
 function nearestStore(x, y, g, comp = 0) {
-  if (g && Game.storeBlock[g]) return null;
+  if (g && (Game.storeBlock[g] || GOODS[g].noStore)) return null;   // мусор на склад не берут — только в костёр
   let best = null, bd = 1e9;
   for (const b of Game.buildings) {
     if (!b.isStore()) continue;

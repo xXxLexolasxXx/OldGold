@@ -27,7 +27,7 @@ function serializeGame() {
   const obj = [];
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
-    if (o) obj.push([i, o.t, o.g ?? 0, o.n ?? 0, o.farm ?? 0, o.crop || '']);
+    if (o) obj.push([i, o.t, o.g ?? 0, o.n ?? (o.ash ? 1 : 0), o.farm ?? 0, o.crop || '']);
   }
   const road = [];
   for (let i = 0; i < N_TILES; i++) if (World.road[i]) road.push(i);
@@ -58,9 +58,9 @@ function applySave(s) {
   World.growing.clear();
   for (const [i, t, g, n, farm, crop] of s.obj) {
     const o = { t };
-    if (t === 'tree' || t === 'field' || t === 'stump') o.g = g;
+    if (t === 'tree' || t === 'field' || t === 'stump' || t === 'bin') o.g = g;
     if (t === 'stone') o.n = n;
-    if (t === 'field') { o.farm = farm; o.crop = crop || 'wheat'; }
+    if (t === 'field') { o.farm = farm; o.crop = crop || 'wheat'; o.ash = n === 1; }
     World.obj[i] = o;
     if ((t === 'tree' && g < 1) || (t === 'field' && g >= 0 && g < 1) || t === 'stump') World.growing.add(i);
   }

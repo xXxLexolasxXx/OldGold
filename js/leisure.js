@@ -196,11 +196,14 @@ function* leisureGen(u) {
   const x = Math.floor(u.x), y = Math.floor(u.y);
   const tree = findObjNear(x, y, 15, o => o.t === 'tree' && o.g >= 1);
   const hen = nearestAnimal(u.x, u.y, 12, a => a.kind === 'chicken');
+  const bench = freeBench(u, 12);
   const opts = ['butterfly'];
   if (tree) opts.push('mushrooms', 'mushrooms', 'gold');
   if (hen) opts.push('chicken', 'chicken');
+  if (bench) opts.push('bench', 'bench', 'bench');
   const what = opts[(Math.random() * opts.length) | 0];
-  if (what === 'mushrooms') yield* mushroomsGen(u, tree);
+  if (what === 'bench') yield* benchGen(u, bench);
+  else if (what === 'mushrooms') yield* mushroomsGen(u, tree);
   else if (what === 'gold') yield* rootGoldGen(u, tree);
   else if (what === 'chicken') yield* chickenGen(u, hen);
   else yield* butterflyGen(u);

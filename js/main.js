@@ -98,6 +98,7 @@ function setupStart(seed) {
       }
     }
 
+  decorateAllRoads();          // фонари, скамейки и урны вдоль стартовых улиц
   spawnAnimals();
   centerOn(((x0 + x1) / 2) * TILE, (sy - 2) * TILE);
 }
@@ -118,6 +119,7 @@ function step(dt) {
   if (Game.growT >= 1) { updateGrowth(Game.growT); Game.growT = 0; }
   updateAnimals(dt);
   updateCritters(dt);
+  streetTick(dt);
   Game.bumpT = (Game.bumpT || 0) + dt;
   if (Game.bumpT >= 0.25) { checkCollisions(); Game.bumpT = 0; }
   Game.dispatchT += dt;
@@ -237,6 +239,7 @@ function eraseAt(t) {
     if (b && (b.state !== 'done' || confirm(`Снести «${b.def.name}»?`))) removeBuilding(b);
     return;
   }
+  if (isStreetObj(World.obj[i])) { World.obj[i] = null; return; }   // убрать фонарь, скамейку или урну
   if (World.road[i] && !World.door[i]) setRoad(t[0], t[1], false);
 }
 

@@ -70,7 +70,7 @@ function* eatGen(u, inn) {
     inn.stock[food]--;
     u.food = 1;
     // к еде — кружка пива, если есть
-    if (inn.stock.beer - inn.reserved.beer > 0 && Math.random() < 0.65) {
+    if (inn.stock.beer - inn.reserved.beer > 0 && Math.random() < 0.85) {
       yield { wait: 3 };
       if (!inn.removed && inn.stock.beer > 0) {
         inn.stock.beer--;
@@ -344,6 +344,11 @@ function pickCrop(b, fields) {
   return on[0];
 }
 
+// Пепел из костра при посеве: поле растёт быстрее и даёт двойной урожай
+function fertilize(b, o) {
+  if (b.stock.ash > 0) { b.stock.ash--; o.ash = true; }
+}
+
 function* farmWork(u, b) {
   const fields = farmFields(b);
   const ripe = fields.find(f => f.o.g >= 1 && !f.o.res && !outFull(b, f.o.crop));
@@ -357,17 +362,24 @@ function* farmWork(u, b) {
     if (!ok) { yield { wait: 2 }; return; }
     if (target === ripe) {
       yield { wait: 4, anim: 'reap' };
+      let extra = false;
       if (World.obj[idx(target.x, target.y)] === target.o) {
         target.o.g = -1;
         u.carry = target.o.crop;
+        extra = !!target.o.ash; target.o.ash = false;     // удобренное поле — двойной урожай
       }
       if (!(yield* goHome(u, b))) return;
-      if (u.carry) { gather(b, u.carry); u.carry = null; }
+      if (u.carry) {
+        gather(b, u.carry);
+        if (extra && !outFull(b, u.carry)) gather(b, u.carry);
+        u.carry = null;
+      }
     } else {
       yield { wait: 3, anim: 'dig' };
       if (World.obj[idx(target.x, target.y)] === target.o) {
         target.o.g = 0;
         target.o.crop = crop;
+        fertilize(b, target.o);
         World.growing.add(idx(target.x, target.y));
       }
     }
@@ -382,6 +394,7 @@ function* farmWork(u, b) {
       if (isFreeGrass(spot[0], spot[1])) {
         const i = idx(spot[0], spot[1]);
         World.obj[i] = { t: 'field', g: 0, farm: b.id, crop };
+        fertilize(b, World.obj[i]);
         World.growing.add(i);
       }
       return;
