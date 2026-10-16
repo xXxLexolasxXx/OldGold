@@ -45,6 +45,33 @@ function* joinGen(u, host) {
   yield* smokeGen(u, JOIN_SMOKE_TIME);
 }
 
+// Отлёт при столкновении: гнома отбрасывает назад по дуге, он падает на спину,
+// полежит со звёздочками перед глазами и встаёт продолжать своё дело.
+function knockBack(u, from) {
+  if (!isPerson(u) || u.type === 'carter' || u.inside) return;
+  if (u.brk && u.brk.kind === 'knock') return;
+  if (!interruptible(u) && !(u.action && u.action.walk)) return;
+  if (u.brk) endBreak(u);
+  let dx = u.x - from.x, dy = u.y - from.y, d = Math.hypot(dx, dy);
+  if (d < 0.05) { dx = u.face ? -u.face : 1; dy = 0; d = 1; }
+  dx /= d; dy /= d;
+  // куда приземлится: до 1.2 клетки назад, если там можно стоять
+  let L = 1.2;
+  while (L > 0.2 && !isWalkable(Math.floor(u.x + dx * L), Math.floor(u.y + dy * L))) L -= 0.3;
+  startBreak(u, 'knock', null);
+  u.proc = knockGen(u, dx * L, dy * L);
+}
+
+function* knockGen(u, dx, dy) {
+  u.knock = { x0: u.x, y0: u.y, dx, dy };
+  u.face = dx > 0 ? -1 : 1;                 // лицом к тому, в кого врезался
+  u.ouchUntil = Game.time + 2.2;
+  yield { wait: 0.42, anim: 'fly' };
+  u.x = u.knock.x0 + dx; u.y = u.knock.y0 + dy;
+  yield { wait: 1.5, anim: 'knocked' };      // лежит, приходит в себя
+  u.knock = null;
+}
+
 let lastFaintToast = -99;
 function* faintGen(u) {
   u.brk.until = Game.time + FAINT_TIME;
@@ -95,7 +122,8 @@ function lifeTick(u, dt) {
     if (Math.random() < 0.3) toast(`${UNIT_TYPES[u.type].name} перебрал пива и уснул на дороге`);
     return;
   }
-  if (!u.smoker || u.type === 'carter') return;
+  if (u.type === 'carter') return;
+  // заразно: подсесть к курящим может кто угодно, даже некурящий; начать сам — только курильщик
   // подсесть к курящим рядом
   if (Game.time >= u.nextJoin && Game.smokers.size) {
     let host = null, bd = JOIN_RADIUS;
@@ -104,7 +132,7 @@ function lifeTick(u, dt) {
       const d = Math.hypot(s.x - u.x, s.y - u.y);
       if (d < bd) { bd = d; host = s; }
     }
-    if (host && Math.random() < 0.5) {
+    if (host && Math.random() < 0.85) {          // увидел курящего — почти наверняка закурит сам
       u.nextJoin = Game.time + JOIN_CD;
       u.nextSmoke = Math.max(u.nextSmoke, Game.time + SMOKE_CD_MIN);
       startBreak(u, 'join', null);
@@ -113,7 +141,7 @@ function lifeTick(u, dt) {
     }
   }
   // сам решил покурить
-  if (Game.time >= u.nextSmoke && Math.random() < 0.15) {
+  if (u.smoker && Game.time >= u.nextSmoke && Math.random() < 0.25) {
     u.nextSmoke = Game.time + SMOKE_CD_MIN + Math.random() * (SMOKE_CD_MAX - SMOKE_CD_MIN);
     startBreak(u, 'smoke', null);
     u.proc = smokeGen(u, SMOKE_TIME);
@@ -209,7 +237,8 @@ function checkCollisions() {
         injure(victim, part);
         victim.ouchUntil = Game.time + 2.5;                    // искры из глаз
         sfxUnit(victim, 'ouch');
-        if (isPerson(carrier)) gesture(carrier, 'scratch', 2, victim.x);   // растерянно чешет затылок
+        // оба отлетают назад друг от друга и падают
+        knockBack(victim, carrier); knockBack(carrier, victim);
         if (Game.time - lastBumpToast > 8) {
           lastBumpToast = Game.time;
           toast(`Столкновение: ${UNIT_TYPES[carrier.type].name.toLowerCase()} уронил «${GOODS[g].name}», ${UNIT_TYPES[victim.type].name.toLowerCase()} ${part === 'leg' ? 'теперь хромает' : 'повредил руку'}`);

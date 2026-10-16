@@ -217,9 +217,9 @@ const CARRY_CAP = { serf: 1, goat: 2, carter: 5 };   // сколько един�
 
 // Жизнь жителей
 const SMOKE_TIME = 15, JOIN_SMOKE_TIME = 8;   // длительность перекура и подсевшего
-const SMOKE_CD_MIN = 40, SMOKE_CD_MAX = 110;  // перезарядка перекура, сек
-const JOIN_CD = 50;                           // перезарядка подсаживания к курящему
-const JOIN_RADIUS = 7;                        // в клетках
+const SMOKE_CD_MIN = 25, SMOKE_CD_MAX = 70;   // перезарядка перекура, сек — курят часто
+const JOIN_CD = 30;                           // перезарядка подсаживания к курящему
+const JOIN_RADIUS = 10;                       // в клетках: перекур заразен, как чума
 const SLEEP_TIME = 60;                        // пьяный сон
 const STARVE_FAINT = 25, FAINT_TIME = 15;      // через сколько секунд без еды падает, сколько лежит
 const DRUNK_CHANCE = 0.65;                   // шанс захмелеть после кружки

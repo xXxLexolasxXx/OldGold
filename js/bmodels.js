@@ -739,7 +739,14 @@ const MODELS = {
 
   woodcutter(m) {
     // дом лесоруба — в огромном старом пне, как на референсе
-    m.custom(c => drawStumpHouse(c, m), 40, 12);
+    // ручной пиксель-арт накладывается поверх уже готового спрайта (см. buildingSprite)
+    m.custom(c => {
+      const [x, y] = PL(m, 40, 30, 0);
+      shadowAt(c, x + 6, y + 4, 30, 9);
+      m.g.spr.handArt = { art: stumpArt, x, y, ax: STUMP_AX, ay: STUMP_AY };
+      if (m.sign) SIGN_QUEUE.list.push({ x: x + 33, y: y + 4, kind: m.sign, dir: 1 });
+      (m.g.spr.chimneys = m.g.spr.chimneys || []).push([x + 1, y - 46]);
+    }, 40, 12);
     m.prop((c, x, y) => choppingBlock(c, x, y), 4, 4);
     m.prop((c, x, y) => logPile(c, x, y, 2, 9), 60, 2);
   },
@@ -1291,6 +1298,15 @@ function buildingSprite(type, rot = 0) {
   // без зерна: шумовая рябь выдаёт машину, у художника — цельные пятна цвета
   // пиксель-арт ×3: палитра, чёрная внешняя обводка и тёмные линии на стыках деталей
   spr.canvas = toPixelArt(cv, BS / 3, { outline: true, outlineDark: 0.18, alphaCut: 100, punch: 0.14, hueShift: 1, clean: true, ink: 62, onData: (d, PWd) => { spr.perches = roofTopPoints(d, PWd, 3); } });
+  // ручной пиксель-арт — поверх, без автоматической обработки: каждый пиксель как нарисован
+  if (spr.handArt) {
+    const h = spr.handArt, art = h.art(), k = spr.canvas.width / spr.w;
+    const oc = spr.canvas.getContext('2d');
+    oc.imageSmoothingEnabled = false;
+    oc.drawImage(art, Math.round((h.x - h.ax) * k), Math.round((h.y - h.ay) * k), art.width * k, art.height * k);
+    spr.perches = (h.art.perches || []).map(([px, py]) => [h.x - h.ax + px, h.y - h.ay + py]);
+    delete spr.handArt;
+  }
   // тень размытая — хватает обычного разрешения (в 36 раз меньше видеопамяти, чем было)
   const blurred = mkCanvas(W, H);
   const bc = blurred.getContext('2d');

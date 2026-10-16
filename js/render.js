@@ -100,7 +100,7 @@ function swingFrame(u) {
 // ---------- Жители ----------
 
 function drawUnit(c, u) {
-  const px = Math.round(u.x * TILE), py = Math.round(u.y * TILE + 6);
+  let px = Math.round(u.x * TILE), py = Math.round(u.y * TILE + 6);
   const a = u.action;
   const moving = a && a.walk && a.path && !(a.block > 0 && !a.squeeze);
   // вьючная коза и телега извозчика
@@ -113,7 +113,7 @@ function drawUnit(c, u) {
   else if (u.anim === 'duck' || u.anim === 'forage') pose = 'duck';
   else if (u.anim === 'smoke') { pose = 'smoke'; view = 'E'; }
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
-  else if (u.anim === 'sleep' || u.anim === 'faint') { pose = 'idle'; view = 'E'; }
+  else if (u.anim === 'sleep' || u.anim === 'faint' || u.anim === 'knocked' || u.anim === 'fly') { pose = 'idle'; view = 'E'; }
   else if (u.anim === 'sit') { pose = 'duck'; view = 'S'; }
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: swingFrame(u) }; }
   // походка и жесты
@@ -132,12 +132,25 @@ function drawUnit(c, u) {
   }
   if (opt.gait === 'drunk' && moving) px += Math.round(Math.sin(Game.time * 2.3 + u.id) * 1.6);
   c.fillStyle = 'rgba(10,8,4,0.32)';
-  const lying = u.anim === 'sleep' || u.anim === 'faint';
+  const lying = u.anim === 'sleep' || u.anim === 'faint' || u.anim === 'knocked';
+  // отлёт при столкновении: летит назад по дуге, заваливаясь на спину
+  let flyP = -1;
+  if (u.anim === 'fly' && u.knock && a && a.T) {
+    flyP = 1 - Math.max(0, a.t) / a.T;
+    px = Math.round((u.knock.x0 + u.knock.dx * flyP) * TILE); py = Math.round((u.knock.y0 + u.knock.dy * flyP) * TILE + 6);
+  }
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, lying ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
   const spr = personSprite(u, view, pose, frame, opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
-  if (lying) {
+  if (flyP >= 0) {
+    // в полёте: подброшен вверх по дуге и заваливается на спину в сторону отлёта
+    const lift = Math.sin(flyP * Math.PI) * 10, back = u.knock.dx >= 0 ? 1 : -1;
+    c.save(); c.translate(px, py - lift); c.rotate(flyP * Math.PI / 2 * 0.95 * back);
+    if (face < 0) c.scale(-1, 1);
+    c.drawImage(spr, -PFX, -PFY, PW, PH);
+    c.restore();
+  } else if (lying) {
     // лежит на земле: пьяный бормочет «Zzz», голодный — без сил, кружатся «звёздочки»
     c.save(); c.translate(px, py - 1); c.rotate(-Math.PI / 2 * (u.face < 0 ? -1 : 1));
     if (u.face < 0) c.scale(-1, 1);
@@ -152,7 +165,7 @@ function drawUnit(c, u) {
         c.fillText('z', px + 6 + p * 8, py - 10 - p * 14 - k);
       }
       c.globalAlpha = 1;
-    } else {
+    } else if (u.anim === 'faint') {
       // урчит пустой живот: пустая миска над головой и кружок слабости
       for (let k = 0; k < 3; k++) {
         const a = t * 3 + k * 2.1;
