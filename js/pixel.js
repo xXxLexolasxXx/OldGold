@@ -70,7 +70,7 @@ function toPixelArt(src, scale, opts = {}) {
   const W = Math.round(src.width / scale), H = Math.round(src.height / scale);
   const sd = src.getContext('2d').getImageData(0, 0, src.width, src.height).data;
   const out = mkCanvas(W, H);
-  const oc = out.getContext('2d');
+  const oc = out.getContext('2d', opts.cpu ? { willReadFrequently: true } : undefined);
   const img = oc.createImageData(W, H);
   const d = img.data;
   const sw = src.width;
@@ -101,6 +101,7 @@ function toPixelArt(src, scale, opts = {}) {
     quantizeData(d, W, H, opts.dither || 0);
     if (opts.ink) inkData(d, W, H, opts.ink);
     if (opts.outline !== false) outlineData(d, W, H, opts.outlineDark ?? 0.42);
+    if (opts.onData) opts.onData(d, W, H);      // пиксели уже в памяти — дёшево разобрать на месте
   }
   oc.putImageData(img, 0, 0);
   return out;

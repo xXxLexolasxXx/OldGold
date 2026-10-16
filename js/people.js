@@ -736,20 +736,37 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
 
 const PEOPLE_CACHE = new Map();
 
+// Внешность выбирается из 48 вариантов: в большом городе гномы делят наборы кадров,
+// иначе у каждого свои сотни спрайтов и кэш не справляется.
+const LOOK_POOL = Array.from({ length: 48 }, (_, i) => (Math.imul(i + 7, 2654435761) >>> 12) & 0xffff);
+const PEOPLE_CACHE_MAX = 4500;
+let PEOPLE_SCRATCH = null;
+
 function personSprite(u, view, pose, frame, opt = {}) {
-  const L = lookOf(u);
+  const look = LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length];
   const fkey = pose === 'work' ? `${frame.anim}${frame.f}` : frame;
   const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gf || 0) : ''}`;
-  const key = `${u.type}|${u.look}|${view}${pose}${fkey}|${u.carry || ''}|${u.injury || ''}|${okey}`;
+  const key = `${u.type}|${look}|${view}${pose}${fkey}|${u.carry || ''}|${u.injury || ''}|${okey}`;
   let cv = PEOPLE_CACHE.get(key);
-  if (!cv) {
-    const [c2, ctx] = mkSprite(PW, PH, PS);
-    // мох и крапинки одинаковые у одного гнома во всех кадрах
-    drawPerson(ctx, u.type, L, view, pose, frame, u.carry, u.injury, mulberry32(u.look * 977 + 13), opt);
-    cv = toPixelArt(c2, PS / PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
-    if (PEOPLE_CACHE.size > 3000) PEOPLE_CACHE.clear();
-    PEOPLE_CACHE.set(key, cv);
+  if (cv) {
+    // недавно нужные кадры — в конец очереди, вытесняются самые давние
+    PEOPLE_CACHE.delete(key); PEOPLE_CACHE.set(key, cv);
+    u._spr = cv;
+    return cv;
   }
+  // не больше 8 новых кадров за кадр отрисовки: иначе толпа на экране даёт рывок
+  if (u._spr && (R.newSprites = (R.newSprites || 0) + 1) > 8) return u._spr;
+  // один черновой холст на всех: меньше мусора в памяти — меньше подвисаний на сборке
+  if (!PEOPLE_SCRATCH) PEOPLE_SCRATCH = mkSprite(PW, PH, PS);
+  const [c2, ctx] = PEOPLE_SCRATCH;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c2.width, c2.height);
+  ctx.setTransform(PS, 0, 0, PS, 0, 0); ctx.globalAlpha = 1;
+  // мох и крапинки одинаковые у одного гнома во всех кадрах
+  drawPerson(ctx, u.type, lookOf({ type: u.type, look }), view, pose, frame, u.carry, u.injury, mulberry32(look * 977 + 13), opt);
+  cv = toPixelArt(c2, PS / PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
+  if (PEOPLE_CACHE.size >= PEOPLE_CACHE_MAX) PEOPLE_CACHE.delete(PEOPLE_CACHE.keys().next().value);
+  PEOPLE_CACHE.set(key, cv);
+  u._spr = cv;
   return cv;
 }
 

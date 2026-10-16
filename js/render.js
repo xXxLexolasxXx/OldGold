@@ -613,6 +613,7 @@ function drawStatusIcons(c, x0, y0, x1, y1) {
 // ---------- Кадр ----------
 
 function render() {
+  R.newSprites = 0;
   const { ctx: c, cam, canvas } = R;
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.fillStyle = '#100c08';

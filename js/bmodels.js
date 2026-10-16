@@ -1028,6 +1028,18 @@ function bDims(type, rot) {
 
 function hashStr(s) { let h = 7; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 2654435761); return h >>> 0; }
 
+// Верхние точки силуэта крыши (куда садятся совы), в мировых пикселях спрайта
+function roofTopPoints(d, W, k) {
+  const H = d.length / 4 / W, tops = [];
+  for (let x = Math.floor(W * 0.2); x < W * 0.8; x += k * 2) {
+    for (let y = 0; y < H * 0.7; y++) if (d[(y * W + x) * 4 + 3]) { tops.push([x / k, y / k]); break; }
+  }
+  tops.sort((a, b) => a[1] - b[1]);
+  const pick = [];
+  for (const p of tops) { if (pick.every(q => Math.abs(q[0] - p[0]) > 10)) pick.push(p); if (pick.length >= 4) break; }
+  return pick;
+}
+
 // Вход на запад: зеркало восточного варианта (в нашей проекции видны только
 // южная и восточная стены, поэтому западный фасад показываем отражением).
 function mirrorSprite(s, FW) {
@@ -1041,6 +1053,7 @@ function mirrorSprite(s, FW) {
   if (s.chimneys) m.chimneys = s.chimneys.map(pt);
   for (const k of ['hub', 'glow', 'fire', 'circle', 'cauldron']) if (s[k]) m[k] = pt(s[k]);
   if (s.pen) m.pen = [W - s.pen[2], s.pen[1], W - s.pen[0], s.pen[3]];
+  if (s.perches) m.perches = s.perches.map(pt);
   return m;
 }
 
@@ -1078,11 +1091,12 @@ function buildingSprite(type, rot = 0) {
   SIGN_QUEUE.list = [];
   grain(cv, 0.05, hashStr(type) + d.rot);
   // пиксель-арт ×3: палитра, чёрная внешняя обводка и тёмные линии на стыках деталей
-  spr.canvas = toPixelArt(cv, BS / 3, { outline: true, outlineDark: 0.1, alphaCut: 100, punch: 0.18, ink: 58 });
-  const blurred = mkCanvas(scv.width, scv.height);
+  spr.canvas = toPixelArt(cv, BS / 3, { outline: true, outlineDark: 0.1, alphaCut: 100, punch: 0.18, ink: 58, onData: (d, PWd) => { spr.perches = roofTopPoints(d, PWd, 3); } });
+  // тень размытая — хватает обычного разрешения (в 36 раз меньше видеопамяти, чем было)
+  const blurred = mkCanvas(W, H);
   const bc = blurred.getContext('2d');
-  bc.filter = `blur(${BS * 1.4}px)`;
-  bc.drawImage(scv, 0, 0);
+  bc.filter = 'blur(1.4px)';
+  bc.drawImage(scv, 0, 0, W, H);
   spr.shadow = blurred;
   SPR.buildings[key] = spr;
   return spr;

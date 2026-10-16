@@ -71,6 +71,7 @@ function layoutStart(rng, cx, cy) {
 function setupStart(seed) {
   resetGameState();
   Game.seed = seed;
+  Game.stress = false;
   const { cx, cy } = genWorld(seed);
   const rng = mulberry32(seed ^ 0x5eed);
   let lay = layoutStart(rng, cx, cy);
@@ -401,14 +402,16 @@ function frame(now) {
   lastT = now;
   scrollByKeys(dt);
   statsTick(dt);
+  const s0 = performance.now();
   if (!Game.paused) {
     acc += dt * Game.speed;
     let steps = 0;
     while (acc >= SIM_DT && steps < 40) { step(SIM_DT); acc -= SIM_DT; steps++; }
     if (steps >= 40) acc = 0;
     autoT += dt;
-    if (autoT > 120) { autoT = 0; saveGame('auto'); }
+    if (autoT > 120 && !Game.stress) { autoT = 0; saveGame('auto'); }   // тестовую карту не сохраняем
   }
+  perfFrame(dt * 1000, performance.now() - s0);
   render();
   uiT += dt; miniT += dt;
   if (uiT > 0.25) { updateUI(); uiT = 0; }

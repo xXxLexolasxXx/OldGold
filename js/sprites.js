@@ -14,7 +14,7 @@ function mkCanvas(w, h) {
 
 function mkSprite(w, h, s = SS) {
   const cv = mkCanvas(Math.ceil(w * s), Math.ceil(h * s));
-  const c = cv.getContext('2d');
+  const c = cv.getContext('2d', { willReadFrequently: true });   // спрайт потом читается попиксельно — держим в обычной памяти
   c.scale(s, s);
   c.lineJoin = 'round';
   return [cv, c];

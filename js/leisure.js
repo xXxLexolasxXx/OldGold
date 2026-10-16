@@ -335,22 +335,11 @@ let lastHenToast = -999;
 
 const OWL_COUNT = 4;
 
-// Точки на верхнем крае крыши здания (в мировых пикселях), считаются по спрайту один раз
+// Точки на верхнем крае крыши здания (в мировых пикселях): считаются один раз
+// при создании спрайта здания (roofTopPoints), здесь только переводятся на карту
 function roofPerches(b) {
   const spr = buildingSprite(b.type, b.rot || 0);
-  if (!spr.perches) {
-    const cv = spr.canvas, k = cv.width / spr.w;
-    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
-    const tops = [];
-    for (let x = Math.floor(cv.width * 0.2); x < cv.width * 0.8; x += Math.max(1, Math.floor(k * 2))) {
-      for (let y = 0; y < cv.height * 0.7; y++) if (d[(y * cv.width + x) * 4 + 3]) { tops.push([x / k, y / k]); break; }
-    }
-    tops.sort((a, b) => a[1] - b[1]);
-    // самые высокие точки, но не слишком близко друг к другу
-    const pick = [];
-    for (const p of tops) { if (pick.every(q => Math.abs(q[0] - p[0]) > 10)) pick.push(p); if (pick.length >= 4) break; }
-    spr.perches = pick;
-  }
+  if (!spr.perches) spr.perches = [];
   const ox = b.x * TILE - spr.padx, oy = b.y * TILE - spr.top;
   const ground = (b.y + b.h) * TILE + 10;                 // куда упадёт выроненная вещь — перед фасадом
   return spr.perches.map(([x, y]) => [ox + x, oy + y + 1, ground]);
