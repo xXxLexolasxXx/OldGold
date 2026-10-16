@@ -49,13 +49,23 @@ const SIGN_QUEUE = { list: [] };
 // переводятся в лесной гномский вид: бревенчатые стены на замшелом камне,
 // крутые крыши из замшелой дранки или дёрна, круглые окна и двери, грибы у стен.
 
+// стиль текущего здания: бревенчатая изба или белёный коттедж (выбирается по типу здания)
+let BUILD_STYLE = 'logs';
+const COTTAGE_TYPES = new Set(['school', 'inn', 'bakery', 'mill', 'brewery', 'tannery', 'butchery', 'hopfarm', 'stable']);
+
 const LOG_COLS = ['#7a4e2c', '#84562e', '#6e4628', '#8a5e34'];
 
 function gnomePart(p) {
   if (p._g) return p;
   const q = { ...p, _g: true, moss: true };
   const h = hashStr(`${p.x0},${p.y0},${p.h}`);
-  if (q.wall === 'plaster' || q.wall === 'brick') {
+  const cottage = BUILD_STYLE === 'cottage';
+  if ((q.wall === 'plaster' || q.wall === 'brick') && cottage) {
+    // коттедж как на референсах: белёные стены, тёмный фахверк, толстая солома
+    q.wall = 'plaster'; q.col = ['#ece2c8', '#e8dcc0', '#f0e6d0'][h % 3];
+    q.frame = true; q.beam = '#3a2414'; q.gableWall = 'plaster'; q.gableCol = q.col;
+    q.cottage = true;
+  } else if (q.wall === 'plaster' || q.wall === 'brick') {
     q.wall = 'logs'; q.col = LOG_COLS[h % LOG_COLS.length];
     q.frame = false; q.gableWall = 'plank'; q.gableCol = shade(q.col, -0.08);
     q.beam = '#3a2414';
@@ -65,13 +75,20 @@ function gnomePart(p) {
   if (q.lowerStone) { q.lowerStone = Math.max(q.lowerStone, 7); q.stoneCol = '#8e8a78'; }
   if (q.roof) {
     const r = q.roof = { ...q.roof };
-    if (r.mat === 'tiles' || r.mat === 'slate' || r.mat === 'shingle') {
-      // маленькие постройки — под дёрном, большие — под замшелой дранкой
-      r.mat = (q.x1 - q.x0) * (q.y1 - q.y0) < 1300 || (h >> 4) % 3 === 0 ? 'turf' : 'moss';
-      r.col = r.mat === 'turf' ? '#5c8236' : '#7a5a36';
-    } else if (r.mat === 'thatch') r.col = '#a8925a';
-    r.rise = (r.rise ?? 18) * 1.12;
-    r.ov = (r.ov ?? 4) + 1.2;
+    if (cottage) {
+      // толстая соломенная крыша, выше и с глубоким свесом
+      r.mat = 'thatch'; r.col = ['#7a6848', '#706044', '#84704c'][h % 3];
+      r.rise = (r.rise ?? 18) * 1.25;
+      r.ov = (r.ov ?? 4) + 2.6;
+    } else {
+      if (r.mat === 'tiles' || r.mat === 'slate' || r.mat === 'shingle') {
+        // маленькие постройки — под дёрном, большие — под замшелой дранкой
+        r.mat = (q.x1 - q.x0) * (q.y1 - q.y0) < 1300 || (h >> 4) % 3 === 0 ? 'turf' : 'moss';
+        r.col = r.mat === 'turf' ? '#5c8236' : '#7a5a36';
+      } else if (r.mat === 'thatch') r.col = '#a8925a';
+      r.rise = (r.rise ?? 18) * 1.12;
+      r.ov = (r.ov ?? 4) + 1.2;
+    }
   }
   return q;
 }
@@ -106,6 +123,39 @@ function groundTufts(c, L, H) {
     const x = rnd(3, Math.max(4, L - 3));
     mushroomProp(c, x, H + 1, rnd(0.7, 1.05), srand() < 0.6);
     if (srand() < 0.5) mushroomProp(c, x + rnd(1.8, 2.8), H + 1.2, rnd(0.5, 0.7), srand() < 0.6);
+  }
+  // цветник у стены, как в деревнях на референсах
+  const fl = (srand() * 3) | 0;
+  for (let k = 0; k < fl; k++) {
+    const x = rnd(4, Math.max(5, L - 4)), col = ['#e86a9a', '#f4f0f6', '#f0d040', '#b080e0', '#e04a3a'][(srand() * 5) | 0];
+    ellipse(c, x, H - 0.6, rnd(2.4, 3.6), rnd(1.6, 2.2), shade('#4a6e30', rnd(-0.15, 0.1)));
+    for (let j = 0; j < 6; j++) {
+      const fx = x + rnd(-2.8, 2.8), fy = H - 1 - rnd(0, 2.2);
+      ellipse(c, fx, fy, 0.75, 0.75, col); ellipse(c, fx - 0.2, fy - 0.2, 0.3, 0.3, '#ffffff');
+    }
+  }
+}
+
+// Мягкий неровный край соломенной крыши: пучки соломы свисают со свеса
+function thatchFringe(c, m, p, w, H) {
+  const r = p.roof;
+  if (!r || r.mat !== 'thatch') return;
+  const g = m.g, ov = r.ov ?? 4, rise = r.rise ?? 18;
+  const { X0, X1, Y0, Y1 } = w;
+  let a, b;
+  if ((r.type || 'gable') === 'gable' && axisW(m, r.axis || 'X') === 'X') {
+    const ovz = ov * rise / ((Y1 - Y0) / 2);
+    a = P(g, X0 - ov, Y0 - ov, H - ovz); b = P(g, X1 + ov, Y0 - ov, H - ovz);
+  } else if (r.type === 'hip' || r.type === 'pyramid') {
+    const ovz = ov * rise / Math.min((X1 - X0) / 2, (Y1 - Y0) / 2);
+    a = P(g, X0 - ov, Y0 - ov, H - ovz); b = P(g, X1 + ov, Y0 - ov, H - ovz);
+  } else return;
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  for (let s = 0; s < len; s += 2.1) {
+    const t = s / len, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
+    const dr = rnd(1.4, 2.6);
+    ellipse(c, x, y + dr * 0.5, 1.5, dr, shade(r.col, rnd(-0.4, -0.15)));
+    ellipse(c, x - 0.3, y + dr * 0.2, 0.8, dr * 0.6, shade(r.col, rnd(0, 0.18)));
   }
 }
 
@@ -411,6 +461,7 @@ function drawBoxPart(c, m, p) {
     drawFace(c, g, 'S', w, z0, H, p, 1.0, decorFor(m, p, w, 'S'));
   }
   drawRoof(c, m, p, w, H, { S: decorFor(m, p, w, 'S', true), E: decorFor(m, p, w, 'E', true) });
+  thatchFringe(c, m, p, w, H);
   // столб с вывеской — отдельно перед фасадом, сбоку от входа
   const md = (p.decor && p.decor.S || []).find(d => d.t === 'door' && d.main);
   if (md && m.sign && !m.signPlaced) {
@@ -428,7 +479,8 @@ function drawBoxPart(c, m, p) {
     const [X, Y] = toW(m, ch.x, ch.y);
     const cw = ch.w || 5, zb = roofZ(m, p, w, H, X + cw / 2, Y + cw / 2) - 1, zt = zb + ch.h;
     const cwB = { X0: X, X1: X + cw, Y0: Y, Y1: Y + cw };
-    const spec = { wall: 'fieldstone', col: '#8e8a78', noPlinth: true };   // гномьи трубы — бутовый камень
+    // гномьи трубы — бутовый камень, у белёных коттеджей — красный кирпич, как на референсах
+    const spec = p.cottage ? { wall: 'brick', col: '#a8442c', noPlinth: true } : { wall: 'fieldstone', col: '#8e8a78', noPlinth: true };
     drawFace(c, g, 'E', cwB, zb, zt, spec, 0.66, []);
     drawFace(c, g, 'S', cwB, zb, zt, spec, 1.0, []);
     poly(c, [P(g, X - 0.6, Y - 0.6, zt), P(g, X + cw + 0.6, Y - 0.6, zt), P(g, X + cw + 0.6, Y + cw + 0.6, zt), P(g, X - 0.6, Y + cw + 0.6, zt)], '#4a4440', 'rgba(15,10,6,0.7)', 0.5);
@@ -443,7 +495,7 @@ function drawBoxPart(c, m, p) {
     const zr = H + rise * ((yd - p.y0) / hd);
     drawBoxPart(c, m, {
       x0: dm.x - dm.w / 2, x1: dm.x + dm.w / 2, y0: yd, y1: p.y0 + hd * 0.95, z0: zr - 1.5, h: dm.h,
-      wall: 'plank', col: '#7a5030', noPlinth: true, noShadow: true, beam: p.beam,
+      wall: p.cottage ? 'plaster' : 'plank', col: p.cottage ? p.col : '#7a5030', frame: !!p.cottage, noPlinth: true, noShadow: true, beam: p.beam,
       decor: { S: [dm.loft ? { t: 'loft', at: dm.x, z: 0.5, w: dm.w - 5, h: dm.h - 2.5 } : { t: 'win', at: dm.x, z: 1.5, w: dm.w - 6, h: dm.h - 4, o: dm.o || {} }] },
       roof: { type: 'gable', axis: 'Y', rise: dm.w * 0.5, mat: p.roof.mat, col: p.roof.col, ov: 1.6 }, _g: true,
     });
@@ -686,13 +738,8 @@ const MODELS = {
   },
 
   woodcutter(m) {
-    m.box({
-      x0: 20, x1: 60, y0: 10, y1: 50, h: 22, wall: 'logs', col: '#8a5e34', beam: '#3a2414',
-      roof: { type: 'gable', axis: 'Y', rise: 20, mat: 'shingle', col: '#6e4a2a', ov: 4 }, gableWall: 'plank', gableCol: '#7a5434',
-      decor: { S: [{ t: 'door', main: true, w: 9, h: 15, o: { square: true } }, { t: 'win', at: 29, z: 9, w: 6, h: 6, o: { shutter: '#5a3a1e' } }], E: [{ t: 'win', at: 30, z: 9, w: 6, h: 6 }], W: [{ t: 'win', at: 30, z: 9, w: 6, h: 6 }] },
-      gable: { S: [{ t: 'antlers', at: 40, z: 9 }] },
-      chimneys: [{ x: 26, y: 38, h: 9, kind: 'stone' }],
-    });
+    // дом лесоруба — в огромном старом пне, как на референсе
+    m.custom(c => drawStumpHouse(c, m), 40, 12);
     m.box({
       x0: 0, x1: 20, y0: 14, y1: 44, h: 16, open: true, noShadow: true,
       roof: { type: 'lean', down: 'S', rise: 6, mat: 'shingle', col: '#6a4a2c', ov: 3 },
@@ -1028,6 +1075,74 @@ function bDims(type, rot) {
 
 function hashStr(s) { let h = 7; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 2654435761); return h >>> 0; }
 
+// ---------- Домик в пне ----------
+function drawStumpHouse(c, m) {
+  const [cx, cy] = PL(m, 40, 32, 0);          // центр основания ствола на земле
+  const R = 21, RY = 12, Ht = 46;             // радиус, сжатие по глубине, высота ствола
+  const top = cy - Ht;
+  // тень и моховой холм с корнями
+  shadowAt(c, cx + 4, cy + 4, 30, 9);
+  c.fillStyle = '#3e5a26';
+  c.beginPath(); c.ellipse(cx, cy + 2, R + 12, RY + 6, 0, 0, Math.PI * 2); c.fill();
+  for (let k = 0; k < 40; k++) { const a = srand() * Math.PI * 2, d = 0.6 + srand() * 0.4; ellipse(c, cx + Math.cos(a) * (R + 10) * d, cy + 2 + Math.sin(a) * (RY + 5) * d, rnd(2, 4), rnd(1.2, 2.4), shade(GMOSS[(srand() * 4) | 0], rnd(-0.1, 0.12))); }
+  // корни-лапы расходятся в стороны
+  for (const [a, l] of [[-2.7, 16], [-0.5, 14], [2.6, 12], [0.4, 10]]) {
+    const ex = cx + Math.cos(a) * (R + l), ey = cy + Math.sin(a) * (RY + l * 0.45) + 2;
+    c.fillStyle = '#4a2e18';
+    c.beginPath(); c.moveTo(cx + Math.cos(a - 0.35) * R, cy + Math.sin(a - 0.35) * RY - 4); c.quadraticCurveTo(ex, ey - 6, ex, ey); c.quadraticCurveTo(ex - 2, ey + 1, cx + Math.cos(a + 0.35) * R, cy + Math.sin(a + 0.35) * RY); c.closePath(); c.fill();
+    line(c, cx + Math.cos(a) * R, cy + Math.sin(a) * RY - 3, ex, ey - 1, '#7a5030', 0.8);
+  }
+  // ствол: светлее слева (свет), холоднее и темнее справа
+  const trunk = new Path2D();
+  trunk.moveTo(cx - R - 2, cy);
+  trunk.quadraticCurveTo(cx - R + 1, cy - Ht * 0.5, cx - R + 3, top + 6);
+  // обломанный зубчатый верх
+  const teeth = [[-R + 3, 6], [-14, -2], [-9, 4], [-4, -8], [1, 2], [6, -4], [10, 5], [14, -12], [17, 0], [R - 3, 8]];
+  for (const [dx, dy] of teeth) trunk.lineTo(cx + dx, top + dy);
+  trunk.quadraticCurveTo(cx + R - 1, cy - Ht * 0.5, cx + R + 2, cy);
+  trunk.quadraticCurveTo(cx, cy + RY + 2, cx - R - 2, cy);
+  c.fillStyle = lingrad(c, cx - R, 0, cx + R, 0, [[0, '#9a6a3e'], [0.35, '#7a4e2c'], [0.75, '#5a3620'], [1, '#3a2418']]);
+  c.fill(trunk);
+  // волокна коры
+  c.save(); c.clip(trunk);
+  for (let k = 0; k < 26; k++) {
+    const x = cx - R + srand() * R * 2, sway = rnd(-2, 2);
+    c.strokeStyle = srand() < 0.5 ? 'rgba(40,20,10,0.55)' : 'rgba(200,150,100,0.25)'; c.lineWidth = rnd(0.5, 1.2);
+    c.beginPath(); c.moveTo(x, cy + 4); c.quadraticCurveTo(x + sway, cy - Ht * 0.5, x + sway * 0.5, top - 4); c.stroke();
+  }
+  // мох ползёт по стволу снизу и с левой стороны
+  for (let k = 0; k < 50; k++) { const y = cy - Math.pow(srand(), 1.8) * Ht * 0.7, x = cx - R + Math.pow(srand(), 1.5) * R * 1.4; ellipse(c, x, y, rnd(1, 2.4), rnd(0.8, 1.6), shade(GMOSS[(srand() * 4) | 0], rnd(-0.1, 0.15))); }
+  c.restore();
+  // срез сверху: годичные кольца
+  c.save(); c.beginPath(); c.ellipse(cx + 2, top + 2, R - 6, 5.5, 0, 0, Math.PI * 2); c.clip();
+  c.fillStyle = '#c8955a'; c.fillRect(cx - R, top - 6, R * 2, 14);
+  c.strokeStyle = 'rgba(110,60,30,0.6)'; c.lineWidth = 0.5;
+  for (let rr = 2; rr < R - 6; rr += 2.5) { c.beginPath(); c.ellipse(cx + 2, top + 2, rr, rr * 0.3, 0, 0, Math.PI * 2); c.stroke(); }
+  c.restore();
+  // росток с двумя листочками
+  line(c, cx + 6, top + 1, cx + 8, top - 12, '#5c8236', 1);
+  ellipse(c, cx + 11, top - 12, 3.4, 1.6, '#73963e'); ellipse(c, cx + 5, top - 9, 3, 1.4, '#5c8236');
+  // трутовики полочками
+  for (const [dx, dy, s] of [[-13, -26, 1], [-11, -22, 0.8], [12, -30, 1.1]]) {
+    c.fillStyle = '#d8b07a'; c.beginPath(); c.ellipse(cx + dx, cy + dy, 4.4 * s, 1.8 * s, 0, Math.PI, 0); c.fill();
+    c.fillStyle = '#a07040'; c.fillRect(cx + dx - 4.4 * s, cy + dy - 0.2, 8.8 * s, 0.9);
+  }
+  // арочная дверь спереди, у самого основания
+  const [dx, dy] = PL(m, m.doorX, 18, 0);
+  c.fillStyle = '#2a1608'; c.beginPath(); c.moveTo(dx - 7, dy); c.lineTo(dx - 7, dy - 11); c.arc(dx, dy - 11, 7, Math.PI, 0); c.lineTo(dx + 7, dy); c.closePath(); c.fill();
+  door(c, dx, dy, 11, 16.5, { gnome: true, col: '#8a5a32' });
+  // круглое голубое окошко справа
+  roundWin(c, dx + 13, dy - 22, 3.4, { lit: false });
+  ellipse(c, dx + 13, dy - 22, 2.2, 2.2, 'rgba(120,190,230,0.55)');
+  // фонарь у двери и грибочки
+  lantern(c, dx - 11, dy - 16);
+  mushroomProp(c, dx - 16, dy + 4, 1.1, true); mushroomProp(c, dx + 18, dy + 5, 0.8, true); mushroomProp(c, dx + 21, dy + 4, 0.6, false);
+  // столб с вывеской (топор) у входа
+  if (m.sign) SIGN_QUEUE.list.push({ x: dx + 24, y: dy + 3, kind: m.sign, dir: 1 });
+  // трубы нет — дым из дупла сверху
+  (m.g.spr.chimneys = m.g.spr.chimneys || []).push([cx - 6 - m.g.ox + m.g.ox, top + 2]);
+}
+
 // Верхние точки силуэта крыши (куда садятся совы), в мировых пикселях спрайта
 function roofTopPoints(d, W, k) {
   const H = d.length / 4 / W, tops = [];
@@ -1086,12 +1201,14 @@ function buildingSprite(type, rot = 0) {
   const m = newModel(g);
   MODELS[type](m);
   SIGN_QUEUE.list = [];
+  BUILD_STYLE = COTTAGE_TYPES.has(type) ? 'cottage' : 'logs';
   renderModel(c, m);
+  BUILD_STYLE = 'logs';
   for (const s of SIGN_QUEUE.list) postSign(c, s.x, s.y, s.kind, s.dir);
   SIGN_QUEUE.list = [];
-  grain(cv, 0.05, hashStr(type) + d.rot);
+  // без зерна: шумовая рябь выдаёт машину, у художника — цельные пятна цвета
   // пиксель-арт ×3: палитра, чёрная внешняя обводка и тёмные линии на стыках деталей
-  spr.canvas = toPixelArt(cv, BS / 3, { outline: true, outlineDark: 0.1, alphaCut: 100, punch: 0.18, ink: 58, onData: (d, PWd) => { spr.perches = roofTopPoints(d, PWd, 3); } });
+  spr.canvas = toPixelArt(cv, BS / 3, { outline: true, outlineDark: 0.18, alphaCut: 100, punch: 0.14, hueShift: 1, clean: true, ink: 62, onData: (d, PWd) => { spr.perches = roofTopPoints(d, PWd, 3); } });
   // тень размытая — хватает обычного разрешения (в 36 раз меньше видеопамяти, чем было)
   const blurred = mkCanvas(W, H);
   const bc = blurred.getContext('2d');

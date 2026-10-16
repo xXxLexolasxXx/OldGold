@@ -91,6 +91,12 @@ function toPixelArt(src, scale, opts = {}) {
         R = l + (R - l) * (1 + s * 0.9); G = l + (G - l) * (1 + s * 0.9); B = l + (B - l) * (1 + s * 0.9);
         R = 128 + (R - 128) * (1 + s * 0.5); G = 128 + (G - 128) * (1 + s * 0.5); B = 128 + (B - 128) * (1 + s * 0.5);
       }
+      if (opts.hueShift) {
+        // как рисует художник: тени холоднее (в сине-лиловое), свет теплее (в золото)
+        const l = R * 0.3 + G * 0.59 + B * 0.11, t = (l - 120) / 120, k = opts.hueShift;
+        if (t < 0) { R += t * 14 * k; G += t * 6 * k; B -= t * 16 * k; }
+        else { R += t * 16 * k; G += t * 8 * k; B -= t * 14 * k; }
+      }
       d[o] = R; d[o + 1] = G; d[o + 2] = B;
     }
     const alpha = a / n;
@@ -99,6 +105,7 @@ function toPixelArt(src, scale, opts = {}) {
   }
   if (!opts.keepAlpha) {
     quantizeData(d, W, H, opts.dither || 0);
+    if (opts.clean) cleanOrphans(d, W, H);
     if (opts.ink) inkData(d, W, H, opts.ink);
     if (opts.outline !== false) outlineData(d, W, H, opts.outlineDark ?? 0.42);
     if (opts.onData) opts.onData(d, W, H);      // пиксели уже в памяти — дёшево разобрать на месте
@@ -121,8 +128,25 @@ function inkData(d, W, H, thr) {
     }
   }
   for (let i = 0; i < W * H; i++) if (mark[i]) {
+    // тёмная линия своего цвета, с лиловым оттенком — не мёртвый чёрный
     const o = i * 4;
-    d[o] = d[o] * 0.28 + 6; d[o + 1] = d[o + 1] * 0.26 + 4; d[o + 2] = d[o + 2] * 0.24 + 3;
+    d[o] = d[o] * 0.3 + 10; d[o + 1] = d[o + 1] * 0.24 + 4; d[o + 2] = d[o + 2] * 0.3 + 14;
+  }
+}
+
+// Чистка «пыли»: одиночный пиксель между двумя одинаковыми соседями принимает их цвет —
+// пятна становятся цельными, как у пиксель-художника, а не шумом
+function cleanOrphans(d, W, H) {
+  const src = new Uint8ClampedArray(d);
+  const same = (a, b) => src[a] === src[b] && src[a + 1] === src[b + 1] && src[a + 2] === src[b + 2] && src[a + 3] && src[b + 3];
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const o = (y * W + x) * 4;
+    if (!src[o + 3]) continue;
+    const l = o - 4, r = o + 4, u = o - W * 4, dn = o + W * 4;
+    let s = -1;
+    if (same(l, r) && !same(o, l)) s = l;
+    else if (same(u, dn) && !same(o, u)) s = u;
+    if (s >= 0) { d[o] = src[s]; d[o + 1] = src[s + 1]; d[o + 2] = src[s + 2]; }
   }
 }
 
