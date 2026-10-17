@@ -654,3 +654,4 @@ body.mobile #hero-btn .hb-lv { display: block; position: absolute; right: -4px; 
 body.mobile.sheet-tab #hero-btn, body.mobile.sheet-info #hero-btn { display: none; }
 #res-btn { padding: 0 !important; }
 #res-btn img { width: 20px; height: 20px; vertical-align: middle; }
+body.mobile #zoom-in, body.mobile #zoom-out { display: none; }
