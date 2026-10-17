@@ -889,7 +889,14 @@ const MODELS = {
 
   bakery(m) {
     // гномья пекарня в духе Оплота: каменный дом в скале, печь-купол сбоку
-    m.custom(c => drawDwarfBakery(c, m), 32, 12);
+    m.custom(c => {
+      const g = m.g, x = Math.round(g.fx + g.fw / 2), y = Math.round(g.fy + g.fh - 6);
+      shadowAt(c, x + 6, y + 4, 36, 10);
+      g.spr.handArt = { art: bakeryArt, x, y, ax: BK_AX, ay: BK_AY };
+      g.spr.chimneys = [[x - BK_AX + 53, y - BK_AY + 1], [x - BK_AX + 88, y - BK_AY + 50]];
+      g.spr.glow = [x - BK_AX + BK_OVEN[0], y - BK_AY + BK_OVEN[1] - 5];
+      if (m.sign) SIGN_QUEUE.list.push({ x: x - 30, y: y + 2, kind: m.sign, dir: -1 });
+    }, 32, 12);
   },
 
   swine(m) {
@@ -936,12 +943,13 @@ const MODELS = {
 
   tannery(m) {
     // нора в холме, вокруг сушилки и чаны
-    m.custom(c => drawHillHouse(c, m, 26, 78, 8, 56, '#8a5a24'), 52, 10);
-    m.prop((c, x, y) => dryingRack(c, x - 12, y, 24, 2), 12, 14);
-    m.prop((c, x, y) => vat(c, x, y, '#7a5a2a'), 82, 22);
-    m.prop((c, x, y) => vat(c, x, y, '#5a6a3a', 5), 90, 8);
-    m.prop((c, x, y) => dryingRack(c, x - 8, y, 16, 1), 88, 40);
-    m.prop((c, x, y) => { for (let k = 0; k < 3; k++) { c.fillStyle = shade('#b8804e', -0.12 * k); c.fillRect(x + k * 0.6, y - k * 1.4, 14, 1.4); } }, 8, 0);
+    m.custom(c => {
+      const g = m.g, x = Math.round(g.fx + g.fw / 2), y = Math.round(g.fy + g.fh - 6);
+      shadowAt(c, x + 4, y + 3, 50, 9);
+      g.spr.handArt = { art: tanneryArt, x, y, ax: TN_AX, ay: TN_AY };
+      g.spr.chimneys = [[x - TN_AX + 87, y - TN_AY + 19]];
+      if (m.sign) SIGN_QUEUE.list.push({ x: x - 46, y: y + 4, kind: m.sign, dir: -1 });
+    }, 52, 10);
   },
 
   armory(m) {

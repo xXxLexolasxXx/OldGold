@@ -44,7 +44,7 @@
     const w = lo.width, h = lo.height;
     const img = ctx.getImageData(0, 0, w, h), d = img.data;
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const o = (y * w + x) * 4, dz = (BAY[(y & 3) * 4 + (x & 3)] - 7.5) * 0.8;
+      const o = (y * w + x) * 4, dz = (BAY[(y & 3) * 4 + (x & 3)] - 7.5) * 0.45;
       const p = PAL[nearest(Math.max(0, Math.min(255, d[o] + dz)), Math.max(0, Math.min(255, d[o + 1] + dz)), Math.max(0, Math.min(255, d[o + 2] + dz)))];
       d[o] = p[0]; d[o + 1] = p[1]; d[o + 2] = p[2]; d[o + 3] = 255;
     }
@@ -695,7 +695,7 @@
 
     stageUpdate(dt); drawStage();
     // гномы по эллипсу: сзади огня — лицом к нам, спереди — спиной
-    const N = CREW.length, rx = 255 * u * 1.7, ry = 70 * u * 1.7;
+    const N = CREW.length, rx = 205 * u * 1.7, ry = 58 * u * 1.7;
     const ring = [];
     for (let i = 0; i < N; i++) {
       const a = Math.PI / 2 + Math.PI / N + i / N * Math.PI * 2 + Math.sin(t * 0.15) * 0.04;
