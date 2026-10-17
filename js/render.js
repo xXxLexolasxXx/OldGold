@@ -712,7 +712,7 @@ function render() {
   for (const b of Game.critters || []) list.push([b.y + 0.1, () => drawButterfly(c, b)]);
   for (const e of Game.ents || []) {
     if (e.x < x0 - 3 || e.x > x1 + 3 || e.y < y0 - 1 || e.y > y1 + 4) continue;
-    list.push([e.y + 0.4, () => drawEnt(c, e)]);
+    list.push([e.y + 0.05, () => drawEnt(c, e)]);   // гном рядом на той же линии — перед деревом
   }
   for (const p of Game.piles.values()) {
     list.push([p.y + 0.5, () => drawPile(c, p)]);
@@ -725,6 +725,7 @@ function render() {
   drawClouds(c);
   drawDusk(c);
   drawNight(c, x0, y0, x1, y1);
+  drawNightFx(c);
   drawStatusIcons(c, x0, y0, x1, y1);
   drawLogMark(c);
   drawTutMarks(c);
