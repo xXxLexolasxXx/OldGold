@@ -216,6 +216,7 @@ function drawUnit(c, u) {
     // особая поза: летит, скользит, лежит, катается, поднимается
     c.save(); c.translate(px, py - (wp.off ? 1 : 0) - wp.lift); c.rotate(wp.rot);
     if (u.face < 0) c.scale(-1, 1);
+    if (wp.rollA !== undefined) c.scale(Math.cos(wp.rollA), 1);   // вращение вокруг продольной оси: спина → живот
     c.drawImage(spr, -PFX, -PFY + wp.off, PW, PH);
     c.restore();
   } else if (lying) {

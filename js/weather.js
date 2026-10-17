@@ -165,7 +165,8 @@ function weatherPose(u) {
     case 'getup': return { pose: 'idle', dx: 0, dy: 0, rot: f * Q * (1 - p * p), lift: Math.sin(p * Math.PI) * 2.5, off: 2 * (1 - p), lying: p < 0.4, belly: true };
     case 'smokeup': return { pose: 'smoke', dx: 0, dy: 0, rot: -0.17 * f, lift: 0, off: 0, lying: false };
     case 'burnfall': return { pose: 'idle', dx: 0, dy: 0, rot: -f * Q * p, lift: Math.sin(p * Math.PI) * 4, off: 2 * p, lying: p > 0.6 };
-    case 'roll': return { pose: 'idle', dx: Math.sin(Game.time * 4.5 + u.id) * 5, dy: 0, rot: f * Game.time * 9, lift: 0, off: 2, lying: true };
+    // катится «колбаской»: лежит вдоль экрана и крутится вокруг своей оси (спина → живот → спина), понемногу уезжая вглубь
+    case 'roll': { const ra = Game.time * 7.5 + u.id; return { pose: 'idle', dx: 0, dy: Math.sin(ra * 0.25) * 6, rot: f * Q, rollA: ra, lift: 0, off: 2, lying: true }; }
     case 'burnout': return { pose: 'idle', dx: 0, dy: 0, rot: -f * Q, lift: 0, off: 2, lying: true };
   }
   return null;

@@ -63,59 +63,96 @@ function drawWaterEyes(c, e, a) {
   c.restore();
 }
 
-// Тело водяного: прозрачная колышущаяся фигура, руки-струи, свечащиеся глаза
+// Тело водяного — как Морфлинг: никакой твёрдой формы, сплошной бегущий поток. Столб из
+// переплетённых струй волной течёт снизу вверх, наверху срывается гребнем-волной с пеной,
+// в гребне горят глаза; руки — две текучие ленты, которые тоже всё время бегут.
 function drawWaterEnt(c, e) {
   const { bx, by, H } = waterGeom(e), k = e.k, t = Game.time;
+  const rage = e.state === 'fight' || e.state === 'smash' || e.state === 'drag';
+  const spd = rage ? 5.2 : e.moving ? 4.2 : 3.2, amp = (rage ? 1.55 : 1) * (e.moving ? 1.2 : 1);
   c.save();
-  c.globalAlpha = e.alpha;
   // лужа и круги у ног
-  c.fillStyle = 'rgba(40,110,160,0.4)'; c.beginPath(); c.ellipse(bx, by, 16 * k + 3, 5, 0, 0, 7); c.fill();
+  c.globalAlpha = e.alpha;
+  c.fillStyle = 'rgba(40,110,160,0.4)'; c.beginPath(); c.ellipse(bx, by, 17 * k + 3, 5.2, 0, 0, 7); c.fill();
   c.strokeStyle = 'rgba(210,245,255,0.55)'; c.lineWidth = 0.7;
-  for (let r = 0; r < 2; r++) { const q = (t * 0.9 + r * 0.5 + e.i * 0.1) % 1; c.globalAlpha = e.alpha * (1 - q) * 0.8; c.beginPath(); c.ellipse(bx, by, 8 + q * 14, 2.4 + q * 4, 0, 0, 7); c.stroke(); }
-  c.globalAlpha = e.alpha * 0.9;
+  for (let r = 0; r < 3; r++) { const q = (t * 0.9 + r * 0.33 + e.i * 0.1) % 1; c.globalAlpha = e.alpha * (1 - q) * 0.8; c.beginPath(); c.ellipse(bx, by, 8 + q * 16, 2.4 + q * 4.4, 0, 0, 7); c.stroke(); }
   if (k > 0.02 && H > 1) {
-    const sway = e.moving ? Math.sin(e.phase * 0.9) * 2 : Math.sin(t * 2 + e.i) * 0.8;
-    // корпус: волнистая юбка-хвост снизу, узкая талия, широкие плечи
-    const half = y => { const u = y / H; return (u < 0.15 ? 12 - u * 20 : u < 0.55 ? 9 - (u - 0.15) * 6 : 6.6 + (u - 0.55) * 7) + Math.sin(t * 3.2 + y * 0.4 + e.phase) * 1.3 * (1 - u); };
-    const pts = [];
-    for (let y = 0; y <= H; y += 3) pts.push([bx + sway * (y / H) - half(y), by - y]);
-    for (let y = H; y >= 0; y -= 3) pts.push([bx + sway * (y / H) + half(y), by - y]);
+    const lean = e.moving ? -e.face * 4 : 0;                              // на ходу хвост волны тянется назад
+    const sway = (e.moving ? Math.sin(e.phase * 0.9) * 2 : Math.sin(t * 1.7 + e.i) * 1.4) + lean;
+    const f = e.face < 0 ? -1 : 1;
+    // огибающая потока: узкая «талия», широкие плечи-гребень
+    const env = u => (u < 0.1 ? 13 - u * 40 : u < 0.5 ? 9 - (u - 0.1) * 8 : 5.8 + (u - 0.5) * 9) * (u > 0.93 ? 0.7 : 1);
+    const xAt = (u, off, ph, a = 1) => bx + off * (1 - u * 0.45) + sway * u * u + Math.sin(u * 7.2 - t * spd + ph) * (1.6 + 4 * Math.sin(u * Math.PI)) * amp * a;
+    // 1) прозрачная основа: тело потока, чтобы между струями не было пустот
+    c.globalAlpha = e.alpha * 0.7;
     const g = c.createLinearGradient(0, by - H, 0, by);
-    g.addColorStop(0, 'rgba(190,240,255,0.92)'); g.addColorStop(0.5, 'rgba(90,180,225,0.82)'); g.addColorStop(1, 'rgba(36,110,170,0.78)');
-    c.fillStyle = g; c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.fill();
-    c.strokeStyle = 'rgba(220,250,255,0.7)'; c.lineWidth = 0.8; c.stroke();
-    // внутри — завитки течения и пузыри
-    c.strokeStyle = 'rgba(230,252,255,0.45)'; c.lineWidth = 0.7;
-    for (let j = 0; j < 4; j++) { const yy = by - H * (0.15 + j * 0.2), ph = t * 2 + j * 1.7 + e.i; c.beginPath(); c.moveTo(bx - 6 + sway, yy); c.quadraticCurveTo(bx + Math.sin(ph) * 4 + sway, yy - 3, bx + 6 + sway, yy + Math.cos(ph) * 1.5); c.stroke(); }
-    for (let j = 0; j < 5; j++) { const q = (t * 0.7 + j * 0.37 + e.i * 0.1) % 1; c.fillStyle = `rgba(240,252,255,${0.7 * (1 - q)})`; c.beginPath(); c.arc(bx + Math.sin(j * 2.1 + e.i) * 5 + sway * 0.5, by - H * (0.1 + q * 0.7), 0.9 + (j % 2) * 0.5, 0, 7); c.fill(); }
-    // голова
-    const hx = bx + sway, hy = by - H * 0.86;
-    c.fillStyle = 'rgba(200,244,255,0.95)'; c.beginPath(); c.arc(hx, hy, 6, 0, 7); c.fill();
-    c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 0.8; c.stroke();
-    // острый гребень-капля на макушке
-    c.fillStyle = 'rgba(190,240,255,0.9)'; c.beginPath(); c.moveTo(hx - 2.6, hy - 5); c.quadraticCurveTo(hx, hy - 13, hx + 2.6, hy - 5); c.fill();
-    // глаза светятся, во время боя и захвата — яростнее
-    const rage = e.state === 'fight' || e.state === 'smash' || e.state === 'drag';
-    c.fillStyle = '#0a2a40'; c.beginPath(); c.ellipse(hx - 2.6, hy - 0.6, 2.2, 1.7, 0, 0, 7); c.ellipse(hx + 2.6, hy - 0.6, 2.2, 1.7, 0, 0, 7); c.fill();
-    c.fillStyle = rage ? '#ffffff' : '#b8f4ff'; c.fillRect(hx - 3.6, hy - 1.2, 2, 1.4); c.fillRect(hx + 1.6, hy - 1.2, 2, 1.4);
-    c.fillStyle = '#0a2a40'; c.beginPath(); c.ellipse(hx, hy + 3.4, 2.2, rage ? 1.8 : 1, 0, 0, 7); c.fill();
-    // руки-струи: плечо → локоть → кисть, на конце три «пальца»-капли
-    const shY = by - H * 0.62, atk = e.atk ? t - e.atk : 9;
+    g.addColorStop(0, 'rgba(170,232,252,0.85)'); g.addColorStop(0.55, 'rgba(70,165,220,0.75)'); g.addColorStop(1, 'rgba(30,100,165,0.7)');
+    c.fillStyle = g; c.beginPath();
+    for (let y = 0; y <= H; y += 3) { const u = y / H; c.lineTo(xAt(u, -env(u) * 0.8, 0, 0.6), by - y); }
+    for (let y = H; y >= 0; y -= 3) { const u = y / H; c.lineTo(xAt(u, env(u) * 0.8, 3, 0.6), by - y); }
+    c.closePath(); c.fill();
+    // 2) струи: восемь лент разной толщины, бегут вверх волнами, налезают друг на друга
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    for (let s = 0; s < 8; s++) {
+      const ph = s * 0.9 + e.phase, off = (s - 3.5) * 2.7, wd = 5.2 - Math.abs(s - 3.5) * 0.7;
+      const pts = [];
+      for (let y = 0; y <= H * (0.93 - (s % 3) * 0.03); y += 3) { const u = y / H; pts.push([xAt(u, off * (0.6 + env(u) / 18), ph), by - y]); }
+      c.globalAlpha = e.alpha * (0.45 + (s % 3) * 0.12);
+      c.strokeStyle = s % 2 ? 'rgba(50,140,205,0.9)' : 'rgba(110,200,240,0.9)'; c.lineWidth = wd;
+      c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+      c.globalAlpha = e.alpha * 0.55;
+      c.strokeStyle = 'rgba(235,252,255,0.95)'; c.lineWidth = 0.9;                      // блик на стрежне струи
+      c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x - wd * 0.25, y) : c.moveTo(x - wd * 0.25, y))); c.stroke();
+    }
+    // 3) пузырьки и пена бегут по потоку вверх
+    for (let j = 0; j < 9; j++) {
+      const q = (t * (0.55 + (j % 3) * 0.12) + j * 0.31 + e.i * 0.07) % 1, u = q * 0.92;
+      c.globalAlpha = e.alpha * (1 - q) * 0.9;
+      c.fillStyle = 'rgba(245,253,255,0.95)'; c.beginPath(); c.arc(xAt(u, (j - 4) * 1.7, j), by - H * u, 0.8 + (j % 3) * 0.45, 0, 7); c.fill();
+    }
+    // 4) гребень-голова: поток закручивается волной в сторону взгляда, пена по кромке
+    const hx = xAt(0.86, 0, 0.4), hy = by - H * 0.86;
+    c.globalAlpha = e.alpha * 0.92;
+    const gh = c.createLinearGradient(0, hy - 14, 0, hy + 8); gh.addColorStop(0, 'rgba(225,250,255,0.95)'); gh.addColorStop(1, 'rgba(90,185,230,0.85)');
+    c.fillStyle = gh; c.beginPath();
+    c.moveTo(hx - 7 * f, hy + 7);
+    c.quadraticCurveTo(hx - 8 * f, hy - 4, hx - 1 * f, hy - 10 - Math.sin(t * spd * 0.7) * 1.2);
+    c.quadraticCurveTo(hx + 10 * f, hy - 15, hx + 12 * f, hy - 5 + Math.sin(t * spd) * 1.2);       // срывающийся гребень
+    c.quadraticCurveTo(hx + 7 * f, hy - 6, hx + 6 * f, hy + 0.5);
+    c.quadraticCurveTo(hx + 6 * f, hy + 6, hx + 3 * f, hy + 8);
+    c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.85)'; c.lineWidth = 1; c.stroke();
+    for (let j = 0; j < 6; j++) { const q = (t * 1.3 + j * 0.17) % 1; c.fillStyle = `rgba(255,255,255,${0.9 * (1 - q)})`; c.beginPath(); c.arc(hx + (4 + j * 1.9) * f + q * 3 * f, hy - 9 + Math.sin(j * 2 + t * 4) * 1.4 - q * 4, 0.9, 0, 7); c.fill(); }
+    // глаза горят в гребне: белые, в ярости — яростные узкие
+    c.fillStyle = '#0a3050'; c.beginPath(); c.ellipse(hx + 1 * f, hy - 1, 2.3, rage ? 1.1 : 1.8, 0, 0, 7); c.ellipse(hx + 6.4 * f, hy - 2, 2.1, rage ? 1 : 1.6, 0, 0, 7); c.fill();
+    c.fillStyle = rage ? '#ffffff' : '#c4f6ff'; c.fillRect(hx + 0.2 * f - 1.2, hy - 1.8, 2.4, rage ? 1.1 : 1.6); c.fillRect(hx + 5.6 * f - 1.2, hy - 2.7, 2.2, rage ? 1 : 1.5);
+    // 5) руки: две текучие ленты от плеч, на ходу и в бою хлещут волнами, с кисти срываются брызги
+    const shY = by - H * 0.66, atk = e.atk ? t - e.atk : 9;
     for (const side of [-1, 1]) {
-      let ex = side * 9, ey = 5, hx2 = side * 10, hy2 = 15;                                   // руки опущены
-      if (e.moving) { const s = Math.sin(e.phase * 0.9 + (side > 0 ? Math.PI : 0)); hx2 += s * 3; hy2 += s * 2; }
+      let hx2 = side * 12, hy2 = 14;                                                // свисают и колышутся
+      let wave = 2.2;
+      if (e.moving) { const s2 = Math.sin(e.phase * 0.9 + (side > 0 ? Math.PI : 0)); hx2 += s2 * 4; hy2 += s2 * 3; }
       if (e.state === 'fight' || e.state === 'smash') {
-        if (atk < 0.35) { ex = side * 8; ey = -7; hx2 = side * 6; hy2 = -17; } else if (atk < 0.8) { ex = side * 12; ey = 2; hx2 = side * 16; hy2 = 12; }
+        if (atk < 0.35) { hx2 = side * 7; hy2 = -19; wave = 4; } else if (atk < 0.8) { hx2 = side * 18; hy2 = 13; wave = 5; }
       }
-      if (e.state === 'drag' && side === e.face) { if (e.t < GRAB_REACH) { ex = side * 12; ey = 7; hx2 = side * 19; hy2 = 16; } else { ex = side * 11; ey = -2; hx2 = side * 15; hy2 = -8; } }
-      c.lineCap = 'round';
-      for (const [col, w] of [['rgba(40,120,180,0.85)', 5], ['rgba(120,205,240,0.85)', 3.4], ['rgba(225,250,255,0.7)', 1.2]]) {
-        c.strokeStyle = col; c.lineWidth = w;
-        c.beginPath(); c.moveTo(bx + sway + side * 6, shY); c.quadraticCurveTo(bx + sway + ex, shY + ey, bx + sway + hx2, shY + hy2); c.stroke();
+      if (e.state === 'drag' && side === e.face) { if (e.t < GRAB_REACH) { hx2 = side * 20; hy2 = 17; wave = 3.4; } else { hx2 = side * 16; hy2 = -8; wave = 2.4; } }
+      const sx = bx + sway * 0.6 + side * 6, ex = bx + sway * 0.6 + hx2, ey = shY + hy2;
+      const L = Math.hypot(ex - sx, ey - shY) || 1, nx = -(ey - shY) / L, ny = (ex - sx) / L;
+      for (const [col, w, al, off] of [['rgba(40,125,190,0.9)', 5.4, 0.55, 0], ['rgba(120,205,240,0.9)', 3.4, 0.7, -0.6], ['rgba(240,253,255,0.9)', 1.1, 0.7, -1.2]]) {
+        c.globalAlpha = e.alpha * al; c.strokeStyle = col; c.lineWidth = w;
+        c.beginPath();
+        for (let q = 0; q <= 1.001; q += 0.1) {
+          const wv = Math.sin(q * 6.5 - t * spd * 1.2 + side) * wave * Math.sin(q * Math.PI) + off;
+          const x = sx + (ex - sx) * q + nx * wv, y = shY + (ey - shY) * q + ny * wv - Math.sin(q * Math.PI) * 2;
+          q ? c.lineTo(x, y) : c.moveTo(x, y);
+        }
+        c.stroke();
       }
-      for (const f of [-0.7, 0, 0.7]) { c.fillStyle = 'rgba(190,240,255,0.9)'; c.beginPath(); c.ellipse(bx + sway + hx2 + Math.sin(f) * 3, shY + hy2 + Math.cos(f) * 2.4, 1.2, 1.9, f, 0, 7); c.fill(); }
-      // с рук капает
-      const q = (t * 1.6 + side) % 1; c.fillStyle = `rgba(200,240,255,${0.8 * (1 - q)})`; c.fillRect(bx + sway + hx2, shY + hy2 + 3 + q * 8, 1.2, 1.8);
+      c.globalAlpha = e.alpha * 0.9;
+      for (let j = 0; j < 4; j++) {                                                       // плеск с кисти
+        const q = (t * 2.1 + j * 0.25 + side) % 1;
+        c.fillStyle = `rgba(215,245,255,${1 - q})`; c.beginPath(); c.arc(ex + Math.sin(j * 3 + t * 6) * 2.4, ey + q * 9, 1.1 - q * 0.5, 0, 7); c.fill();
+      }
     }
   }
   c.restore();

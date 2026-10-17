@@ -20,20 +20,32 @@ const EVE_DARK = 0.35;         // насколько темно вечером
 const ENT_SEE = 5;             // с какого расстояния гном замечает ходячее дерево
 const ENT_ROAM = 4;            // насколько дерево отходит от своего места
 
+// Каждая пятая ночь (5, 10, 15…) в полтора раза длиннее обычной
+const LONG_EVERY = 5, LONG_EXTRA = NIGHT_LEN * 0.5;
+const CYCLE_BLOCK = CYCLE * LONG_EVERY + LONG_EXTRA;
+// какие сейчас сутки: k — номер, p — секунда внутри суток, nl — длина ночи в них
+function cycleAt(t) {
+  const b = Math.floor(t / CYCLE_BLOCK), r = t - b * CYCLE_BLOCK, normal = CYCLE * (LONG_EVERY - 1);
+  if (r < normal) { const k = Math.floor(r / CYCLE); return { k: b * LONG_EVERY + k, p: r - k * CYCLE, nl: NIGHT_LEN }; }
+  return { k: b * LONG_EVERY + LONG_EVERY - 1, p: r - normal, nl: NIGHT_LEN + LONG_EXTRA };
+}
+
 // 0 — ясный день, 1 — глубокая ночь
 function nightAmt(t = Game.time) {
-  const p = t % CYCLE;
+  const { p, nl } = cycleAt(t);
   if (p < EVE_START) return 0;
   if (p < EVE_START + EVE_LEN) { const q = (p - EVE_START) / EVE_LEN; return EVE_DARK * q * q * (3 - 2 * q); }
   if (p < NIGHT_START) return EVE_DARK + (1 - EVE_DARK) * (p - EVE_START - EVE_LEN) / DUSK_LEN;
-  if (p < NIGHT_START + NIGHT_LEN) return 1;
-  return Math.max(0, 1 - (p - NIGHT_START - NIGHT_LEN) / DAWN_LEN);
+  if (p < NIGHT_START + nl) return 1;
+  return Math.max(0, 1 - (p - NIGHT_START - nl) / DAWN_LEN);
 }
 function isNightNow() { return nightAmt() >= 0.5; }
 // вечер и ночь: горят фонари
-function isEveningNow() { const p = Game.time % CYCLE; return p >= EVE_START && nightAmt() > 0.02; }
+function isEveningNow() { return cycleAt(Game.time).p >= EVE_START && nightAmt() > 0.02; }
 // номер текущих «суток тьмы»: одинаков от начала вечера до рассвета
-function nightIndex() { return Math.floor((Game.time - EVE_START) / CYCLE); }
+function nightIndex() { const c = cycleAt(Game.time); return c.p >= EVE_START ? c.k : c.k - 1; }
+// идёт ли сейчас (или готовится) долгая ночь
+function isLongNight() { return (nightIndex() + 1) % LONG_EVERY === 0; }
 // туман густеет только с наступлением ночи
 function fogAmt() { return Math.max(0, (nightAmt() - EVE_DARK) / (1 - EVE_DARK)); }
 // днём на треть бодрее, ночью заметно медленнее
@@ -244,12 +256,14 @@ function drawNightFx(c) {
 
 // ---------- Ходячие деревья ----------
 
-// Сколько нечисти выходит за ночь: обычно до 10, в каждую пятую ночь (5, 10, 15…) — до 25.
+// Сколько нечисти выходит за ночь: сначала по нарастающей, в долгую пятую ночь — до 25.
 // Виды делят это число случайно: деревья, камни, водяные.
 function nightTotal() {
   const n = nightIndex() + 1;
-  if (n % 5 === 0) return 15 + Math.floor(Math.random() * 11);     // 15–25
-  return 6 + Math.floor(Math.random() * 5);                         // 6–10
+  // до первой долгой ночи нечисти прибывает с каждой ночью: 1–3, 3–5, 5–7, 7–9
+  if (n < LONG_EVERY) return Math.max(1, 2 * n - 1 + Math.floor(Math.random() * 3));
+  if (n % LONG_EVERY === 0) return 15 + Math.floor(Math.random() * 11);      // долгая ночь: 15–25
+  return 6 + Math.floor(Math.random() * 5);                                    // обычная: 6–10
 }
 
 function spawnEnts() {
@@ -730,7 +744,7 @@ function drawDusk(c) {
   const n = nightAmt(), d = 4 * n * (1 - n);
   if (d <= 0.01) return;
   const cam = R.cam, z = devScale();
-  const dawn = Game.time % CYCLE >= NIGHT_START + NIGHT_LEN;
+  const cy = cycleAt(Game.time), dawn = cy.p >= NIGHT_START + cy.nl;
   c.fillStyle = dawn ? `rgba(255,170,120,${0.1 * d})` : `rgba(255,120,40,${0.14 * d})`;
   c.fillRect(cam.x - 4, cam.y - 4, R.canvas.width / z + 8, R.canvas.height / z + 8);
 }
