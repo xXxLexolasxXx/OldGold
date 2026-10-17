@@ -351,6 +351,17 @@ function diagBands(x, y) {
   return out;
 }
 
+// Многоугольник в текущий путь всегда по часовой стрелке — как круг и прямоугольники:
+// иначе при заливке «нулевым правилом» пересечения вырезают дыры
+function pathPolyCW(c, pts) {
+  let a = 0;
+  for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length]; a += p[0] * q[1] - q[0] * p[1]; }
+  if (a < 0) pts = pts.slice().reverse();
+  c.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+  c.closePath();
+}
+
 function roadShape(c, x, y, px, py, grow, bands) {
   const cx = px + TILE / 2, cy = py + TILE / 2, w = 11.5 + grow;
   c.beginPath();
@@ -370,7 +381,7 @@ function roadShape(c, x, y, px, py, grow, bands) {
   for (const [ax, ay, bx, by] of bands) {
     const x0 = (ax + 0.5) * TILE, y0 = (ay + 0.5) * TILE, x1 = (bx + 0.5) * TILE, y1 = (by + 0.5) * TILE;
     const L = Math.hypot(x1 - x0, y1 - y0), nx = -(y1 - y0) / L * w, ny = (x1 - x0) / L * w;
-    c.moveTo(x0 + nx, y0 + ny); c.lineTo(x1 + nx, y1 + ny); c.lineTo(x1 - nx, y1 - ny); c.lineTo(x0 - nx, y0 - ny); c.closePath();
+    pathPolyCW(c, [[x0 + nx, y0 + ny], [x1 + nx, y1 + ny], [x1 - nx, y1 - ny], [x0 - nx, y0 - ny]]);
   }
 }
 

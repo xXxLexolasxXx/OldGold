@@ -261,6 +261,27 @@ function drawUnitFx(c, u, px, py, moving) {
 
 // Стройка дороги: колышки с бечёвкой → корыто растёт с каждым взмахом лопаты
 // (земля в отвал) → булыжник ложится рядами с каждым ударом молотка.
+// Корыто дороги повторяет форму будущей мостовой: круг в клетке, перемычки к соседям
+// (готовая дорога или другая стройка) и косые ленты к диагональным соседям
+function isRoadOrSite(x, y) { return inb(x, y) && (World.road[idx(x, y)] || Game.roadSites.has(idx(x, y))); }
+function siteShape(c, s, k) {
+  const px = s.x * TILE, py = s.y * TILE, cx = px + TILE / 2, cy = py + TILE / 2, w = (11.5) * (0.45 + 0.55 * k);
+  c.beginPath();
+  c.arc(cx, cy, w, 0, Math.PI * 2);
+  if (isRoadOrSite(s.x - 1, s.y)) c.rect(px, cy - w, TILE / 2, w * 2);
+  if (isRoadOrSite(s.x + 1, s.y)) c.rect(cx, cy - w, TILE / 2, w * 2);
+  if (isRoadOrSite(s.x, s.y - 1)) c.rect(cx - w, py, w * 2, TILE / 2);
+  if (isRoadOrSite(s.x, s.y + 1)) c.rect(cx - w, cy, w * 2, TILE / 2);
+  for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+    if (!isRoadOrSite(s.x + dx, s.y + dy) || isRoadOrSite(s.x + dx, s.y) || isRoadOrSite(s.x, s.y + dy)) continue;
+    // половина ленты до угла клетки: вторая половина дорисуется в соседней клетке
+    const x1 = cx + dx * TILE / 2, y1 = cy + dy * TILE / 2, L = Math.SQRT2 * TILE / 2;
+    const nx = -(dy) / Math.SQRT2 * w, ny = dx / Math.SQRT2 * w;
+    pathPolyCW(c, [[cx + nx, cy + ny], [x1 + nx, y1 + ny], [x1 - nx, y1 - ny], [cx - nx, cy - ny]]);
+    void L;
+  }
+}
+
 function drawRoadSite(c, s) {
   const px = s.x * TILE, py = s.y * TILE;
   const x0 = px + 5, y0 = py + 5, w = 22, h = 22;
@@ -271,18 +292,19 @@ function drawRoadSite(c, s) {
   c.fillRect(x0, y0 - 2, w, 1); c.fillRect(x0, y0 + h - 2, w, 1);
   if (s.dug > 0) {
     // корыто: тёмная влажная земля, растёт к центру
-    const k = s.dug, iw = w * (0.4 + 0.6 * k), ih = h * (0.4 + 0.6 * k);
-    const ix = px + 16 - iw / 2, iy = py + 16 - ih / 2;
-    c.fillStyle = '#45291a'; c.fillRect(ix, iy, iw, ih);
-    c.fillStyle = '#24170f'; c.fillRect(ix, iy, iw, 2);
-    c.fillStyle = 'rgba(160,110,60,0.5)'; c.fillRect(ix, iy + ih - 1, iw, 1);
+    const k = s.dug;
+    // корыто: тёмная влажная земля той же формы, что и будущая дорога
+    siteShape(c, s, k + 0.25);
+    c.fillStyle = '#24170f'; c.fill();
+    siteShape(c, s, k * 0.92);
+    c.fillStyle = '#45291a'; c.fill();
     // отвал земли сбоку
     const mx = px + 27, my = py + 24, ms = 2 + k * 3;
     c.fillStyle = '#583522'; c.beginPath(); c.ellipse(mx, my, ms + 1, ms * 0.7, 0, Math.PI, 0); c.fill();
     c.fillStyle = '#875434'; c.fillRect(mx - ms * 0.5, my - ms * 0.6, ms * 0.5, 1);
     if (s.pave > 0) {
-      c.save(); c.beginPath(); c.rect(ix, iy, iw, ih); c.clip();
-      paveCobbles(c, ix, iy, iw, ih, s.pave);
+      c.save(); siteShape(c, s, k * 0.92); c.clip();
+      paveCobbles(c, px - 4, py - 4, TILE + 8, TILE + 8, s.pave);
       c.restore();
     }
   }
