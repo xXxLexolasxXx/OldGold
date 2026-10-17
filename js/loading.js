@@ -271,7 +271,7 @@
   function drawBackground(t) {
     const sky = ctx.createLinearGradient(0, 0, 0, H * 0.62);
     sky.addColorStop(0, '#0a0d24'); sky.addColorStop(0.55, '#2a1c4a'); sky.addColorStop(1, '#6a3a4a');
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = sky; ctx.fillRect(0, -240, W, H + 480);
     for (const s of stars) {
       ctx.globalAlpha = 0.45 + 0.4 * Math.sin(t * 1.5 + s.p);
       ctx.fillStyle = '#fff6d8'; ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, 7); ctx.fill();
@@ -302,7 +302,7 @@
     gr.addColorStop(0, '#1c2a1a'); gr.addColorStop(1, '#0c140c');
     ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, H * 0.7);
     for (let x = 0; x <= W; x += 12) ctx.lineTo(x, H * 0.7 + Math.sin(x / W * 7) * 0.008 * H);
-    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+    ctx.lineTo(W, H + 240); ctx.lineTo(0, H + 240); ctx.fill();
   }
   function pine(x, yb, h, w, col) {
     ctx.fillStyle = col; ctx.beginPath();
@@ -368,13 +368,17 @@
   }
 
   // ---------- кадр ----------
-  let last = performance.now(), running = true, T0 = last;
+  let last = performance.now(), running = true, T0 = last, lift = 0;
   function frame(now) {
     if (!running) return;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const t = (now - T0) / 1000;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, W, H);
+    const menu = document.getElementById("loading").classList.contains("with-menu");
+    const sm = document.getElementById("start-menu"), mh = menu && sm ? sm.offsetHeight : 0;
+    lift += ((menu ? Math.max(0, Math.min(H * 0.32, mh * 0.85 - H * 0.02)) : 0) - lift) * Math.min(1, dt * 4);
+    ctx.translate(0, -lift);
     drawBackground(t);
     // летающая нечисть — вдали, тусклая, под дымкой
     for (const f of flyers) {
@@ -386,7 +390,7 @@
     fog.addColorStop(0, 'rgba(90,80,120,0)'); fog.addColorStop(0.5, 'rgba(110,100,140,0.18)'); fog.addColorStop(1, 'rgba(90,80,120,0)');
     ctx.fillStyle = fog; ctx.fillRect(0, H * 0.55, W, H * 0.2);
 
-    const u = Math.min(W, H * 1.45) / 1000;           // масштаб сцены
+    const u = Math.min(W, H * 1.45) / 1000 * (1 - lift / H * 0.8);           // масштаб сцены
     const cx = W / 2, cy = H * 0.76, S = u * 2.5;
     const flick = 0.85 + 0.15 * Math.sin(t * 11) * Math.sin(t * 7.3);
     // отсвет огня на земле
@@ -446,6 +450,7 @@
     wl.addColorStop(0, `rgba(255,150,60,${0.5 * flick})`); wl.addColorStop(1, 'rgba(255,150,60,0)');
     ctx.fillStyle = wl; ctx.fillRect(0, 0, W, H); ctx.restore();
     // виньетка
+    ctx.translate(0, lift);
     const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.65)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);

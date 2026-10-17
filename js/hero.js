@@ -506,10 +506,10 @@ function heroBtnUpdate() {
   setupStart = function (seed) { _setup(seed); spawnHero('Герой'); Game.heroAsk = true; };
 
   const _apply = applySave;
-  applySave = function (s) { _apply(s); if (ensureHero()) Game.heroAsk = true; };
+  applySave = function (s) { _apply(s); Game.heroAsk = ensureHero(); };
 
   const _start = startGame;
-  startGame = function () { _start(); initHeroUI(); updateUI(true); if (Game.heroAsk) { Game.heroAsk = false; askHeroName(); } };
+  startGame = function () { _start(); initHeroUI(); updateUI(true); if (Game.heroAsk && typeof StartMenu === "undefined") { Game.heroAsk = false; askHeroName(); } };
 
   const _newGame = newGame;
   newGame = function () { _newGame(); if (Game.heroAsk) { Game.heroAsk = false; askHeroName(); } };
