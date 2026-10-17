@@ -91,8 +91,8 @@ const BUILDINGS = {
   },
   bonfire: {
     name: 'Большой костёр', cat: 'Основа', w: 3, h: 3, top: 40, noRotate: true, cost: { timber: 4, stone: 2 }, auto: true,
-    inputs: { trash: 12 }, outputs: { ash: 6 },
-    recipes: [{ in: { trash: 1 }, out: { ash: 1 }, time: 10 }],
+    inputs: { trash: 24 }, outputs: { ash: 6 }, burn: true,
+    recipes: [{ in: { trash: 1 }, out: { ash: 1 }, time: 4 }],
     desc: 'Сюда трудяги сносят мусор из урн. Сгорая, он даёт пепел — фермы удобряют им поля, урожай растёт быстрее и богаче.',
   },
   goatpen: {

@@ -31,6 +31,7 @@ function* smokeGen(u, time) {
   u.brk.until = Game.time + time;
   Game.smokers.add(u);
   yield { wait: time, anim: 'smoke' };
+  if (Math.random() < 0.6) litter(u);                 // окурок под ноги
 }
 
 const FOOD_WORKERS = new Set(['farmer', 'miller', 'baker', 'butcher', 'breeder']);

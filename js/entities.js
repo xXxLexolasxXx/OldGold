@@ -33,7 +33,7 @@ Game.produced = emptyGoods();
 
 function recipeCanRun(b, r) {
   for (const g in r.in) if (b.stock[g] < r.in[g]) return false;
-  for (const g in r.out) if (b.stock[g] + r.out[g] > b.def.outputs[g]) return false;
+  if (!b.def.burn) for (const g in r.out) if (b.stock[g] + r.out[g] > b.def.outputs[g]) return false;
   return true;
 }
 
@@ -51,7 +51,7 @@ function pickRecipe(b) {
 function recipeConsume(b, r) { for (const g in r.in) b.stock[g] -= r.in[g]; }
 
 function recipeProduce(b, r) {
-  for (const g in r.out) { b.stock[g] += r.out[g]; Game.produced[g] += r.out[g]; }
+  for (const g in r.out) { b.stock[g] += r.out[g]; Game.produced[g] += r.out[g]; if (b.def.burn && b.stock[g] > b.def.outputs[g]) b.stock[g] = b.def.outputs[g]; }   // костёр: лишний пепел развеивается ветром
 }
 
 class Building {

@@ -57,6 +57,31 @@ function streetTick(dt) {
     if (o.g < 1) o.g = Math.min(1, o.g + step / BIN_FILL_TIME * (0.6 + Math.random() * 0.8));
     else if (!o.res) callCleaner(i, o);
   }
+  dispatchTrash();
+}
+
+// Свободные работяги (и безработные жители) сами несут кучки мусора в костёр — курьеры заняты доставкой.
+function dispatchTrash() {
+  const fires = Game.buildings.filter(b => b.type === 'bonfire' && b.state === 'done' && !b.noDeliver && !b.removed);
+  if (!fires.length) return;
+  for (const p of Game.piles.values()) {
+    if (p.removed) continue;
+    const have = p.stock.trash - p.reserved.trash;
+    if (have <= 0) continue;
+    let fire = null, fd = 1e9;
+    for (const f of fires) { const d = Math.abs(f.doorX - p.x) + Math.abs(f.doorY - p.y); if (f.demand('trash') > 0 && d < fd) { fd = d; fire = f; } }
+    if (!fire) continue;
+    const idle = Game.units.filter(u => !u.isCourier && u.idleFlag && !u.inside && !u.brk && !u.dead && isPerson(u) && canCarry(u, 'trash'));
+    const u = takeNearest(idle, p.x, p.y);
+    if (!u) continue;
+    assignDelivery(u, p, fire, 'trash', Math.min(have, fire.demand('trash'), 2));
+  }
+}
+
+// Мусорит каждый: огрызки и окурки остаются там, где стоит гном
+function litter(u, n = 1) {
+  if (u.inside || u.dead) return;
+  dropPile(Math.floor(u.x), Math.floor(u.y), 'trash', n);
 }
 
 // Ближайший свободный работяга идёт вытряхивать урну
