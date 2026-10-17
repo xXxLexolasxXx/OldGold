@@ -3,7 +3,7 @@
 // Рисуются боком, мордой вправо (влево — отражением). Кэшируются по кадрам.
 
 const CR_CACHE = new Map();
-const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21] };
+const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21], elk: [46, 46, 23, 42], fox: [28, 20, 14, 17] };
 
 // Курица: белая, красный гребешок, семенит
 function drawChicken(c, f, peck) {
@@ -134,6 +134,49 @@ function drawCreature(c, kind, f, load) {
     c.restore();
     return;
   }
+  if (kind === 'elk') {
+    // лось: тёмно-бурый, горбатый, на длинных светлых ногах, огромные плоские рога
+    const col = '#5a3a22', sock = '#b0a088';
+    crLegs(c, [-7, 6.4, -5, 8], 15, 14, f, sock, 1.5);
+    c.fillStyle = lingrad(c, 0, 6, 0, 20, [[0, shade(col, 0.12)], [0.7, col], [1, '#3a2616']]);
+    c.beginPath(); c.ellipse(0, 12, 11, 5.6, 0, 0, Math.PI * 2); c.fill();                    // туловище
+    c.beginPath(); c.ellipse(5.6, 8, 6, 5, 0, 0, Math.PI * 2); c.fill();                      // горб на холке
+    c.fillStyle = shade(col, -0.2); c.beginPath(); c.ellipse(-2, 15, 8, 2.2, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col; c.beginPath(); c.moveTo(9, 7); c.quadraticCurveTo(13, 2, 15, 3); c.lineTo(17, 7); c.quadraticCurveTo(14, 10, 12, 14); c.fill();   // шея
+    ellipse(c, 17.6, 5.8, 3.8, 2.4, col);                                                    // голова
+    c.fillStyle = shade(col, 0.1); c.beginPath(); c.moveTo(18, 7); c.quadraticCurveTo(22, 9, 21, 11.6); c.quadraticCurveTo(18, 10.6, 16, 8); c.fill();   // нависающая морда
+    ellipse(c, 21, 10.4, 1.2, 0.9, '#2a1a10');
+    c.fillStyle = '#1a1210'; c.fillRect(17, 4.6, 0.7, 0.7);
+    c.fillStyle = shade(col, -0.25); c.beginPath(); c.moveTo(15.6, 8); c.lineTo(15.2, 12.6); c.lineTo(17, 8.6); c.fill();                      // «серёжка» под горлом
+    c.fillStyle = '#6a4a30'; c.beginPath(); c.moveTo(14.6, 3.4); c.lineTo(13.8, 0.6); c.lineTo(16, 3); c.fill();                                // ухо
+    // рога: два плоских пятипалых «лопаты»
+    const horn = (dx, flip) => {
+      c.save(); c.translate(15.4 + dx, 3.2); c.scale(flip * 1.3, 1.3);
+      c.fillStyle = '#c8b088'; c.strokeStyle = '#7a6444'; c.lineWidth = 0.5;
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(-1.2, -3.6); c.lineTo(-5, -5); c.lineTo(-3.2, -6.4); c.lineTo(-6.8, -8.6); c.lineTo(-3, -9); c.lineTo(-4, -11.6); c.lineTo(0, -9.4); c.lineTo(3, -11.2); c.lineTo(2.6, -7.6); c.lineTo(6, -7.4); c.lineTo(3.6, -4.6); c.lineTo(5, -2.2); c.lineTo(1.2, -2.8); c.closePath(); c.fill(); c.stroke();
+      c.restore();
+    };
+    horn(-0.6, 1); horn(2, -1);
+    c.fillStyle = shade(col, -0.1); c.beginPath(); c.moveTo(-10, 9); c.lineTo(-13, 11); c.lineTo(-10, 12.4); c.fill();                           // хвостик
+    if (load) { c.save(); c.translate(20, 12); c.scale(0.45, 0.45); drawLoad(c, load); c.restore(); }
+    return;
+  }
+  if (kind === 'fox') {
+    // лиса: рыжая, чёрные «носочки», белая грудка, пушистый хвост с белым кончиком
+    const col = '#d8782a';
+    crLegs(c, [-4, 4, -2.6, 5.4], 9, 5, f, '#2a1c14', 1.1);
+    c.fillStyle = lingrad(c, 0, 4, 0, 12, [[0, shade(col, 0.15)], [1, shade(col, -0.2)]]);
+    c.beginPath(); c.ellipse(0, 8, 7, 3.2, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col; c.beginPath(); c.moveTo(-6, 6); c.quadraticCurveTo(-13, 2, -13.4, 9); c.quadraticCurveTo(-9, 11, -6, 9); c.fill();         // хвост
+    c.fillStyle = '#f6f0e4'; c.beginPath(); c.moveTo(-11.6, 4.4); c.quadraticCurveTo(-14.6, 6, -13.4, 9.4); c.lineTo(-11, 8); c.fill();            // белый кончик
+    c.fillStyle = col; c.beginPath(); c.moveTo(4.6, 6.4); c.quadraticCurveTo(7, 2.6, 9, 3.4); c.lineTo(12.6, 5.4); c.lineTo(8.4, 7.8); c.quadraticCurveTo(7, 9.4, 5, 10.2); c.fill();   // голова
+    c.fillStyle = '#f6f0e4'; c.beginPath(); c.moveTo(7, 8.4); c.lineTo(11.6, 6.2); c.lineTo(8.4, 9.6); c.fill();
+    c.fillStyle = '#2a1c14'; c.beginPath(); c.moveTo(7.4, 3.6); c.lineTo(7.6, 0.4); c.lineTo(9.4, 3); c.fill();
+    c.fillStyle = '#1a1210'; c.fillRect(12.2, 5.2, 0.8, 0.8); c.fillRect(9.6, 4.6, 0.6, 0.6);
+    c.fillStyle = '#f6f0e4'; c.beginPath(); c.moveTo(6, 7.4); c.lineTo(8.4, 6.6); c.lineTo(7.6, 10.4); c.fill();
+    if (load) { c.save(); c.translate(13, 8); c.scale(0.4, 0.4); drawLoad(c, load); c.restore(); }
+    return;
+  }
   if (kind === 'wolf') {
     const col = '#7a7470';
     crLegs(c, [-6, 5, -4.4, 6.6], 13, 8, f, col, 1.5);
@@ -198,7 +241,7 @@ function creatureSprite(kind, f, load, n = 1) {
   const [w, h, ax, ay] = CR_SIZE[kind];
   const [c2, c] = mkSprite(w, h, 3);
   // перенос так, чтобы копыта/колёса стояли в точке (ax, ay)
-  c.translate(ax, ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6 }[kind]);
+  c.translate(ax, ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14 }[kind]);
   if (kind === 'cart') drawCartRig(c, f, load, n);
   else drawCreature(c, kind, f, load);
   CR_CACHE.set(key, c2);

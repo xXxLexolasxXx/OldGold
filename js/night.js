@@ -547,6 +547,7 @@ function purgeDead() {
 function nightTick(dt) {
   if (!Game.ents) Game.ents = [];
   updateEnts(dt);
+  batsTick(dt);
   updateFx(dt);
   purgeDead();
   Game.nightT = (Game.nightT || 0) + dt;
@@ -565,6 +566,7 @@ function nightTick(dt) {
     logEvent('night', 'Наступила ночь, лёг туман');
   }
   if (!night && Game.wasNight) { toast('Рассвет: туман рассеялся'); logEvent('night', 'Рассвет, туман рассеялся'); }
+  if (Game.musicNight !== night) { Game.musicNight = night; musicDayNight(night); }
   Game.wasNight = night;
   if (!eve) return;
   for (const u of Game.units) {

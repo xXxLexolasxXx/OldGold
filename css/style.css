@@ -131,7 +131,7 @@ button img { width: 18px; height: 18px; }
 .tab { display: none; }
 .tab.active { display: block; }
 
-.tools { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 6px; }
+.tools { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 6px; }   /* два ряда по две кнопки: дорога, снос / пшеница, хмель */
 .tools button { font-size: 12px; padding: 4px 3px; }
 
 #build-cats { display: flex; gap: 2px; margin-bottom: 6px; }

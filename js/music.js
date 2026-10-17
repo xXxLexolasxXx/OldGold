@@ -57,6 +57,20 @@ const TRACKS = [
     rhythms: [[1, 1, 1, 1, 1, 1], [2, 1, 2, 1], [3, 1, 1, 1], [1, 1, 1, 3], [2, 1, 1, 1, 1], [3, 3]],
     range: [66, 86],
   },
+  {
+    // «Тревога» — ночной трек: низкий бурдон с тритоном, редкие холодные удары, сердцебиение,
+    // осторожная флейта и далёкий голос. Играет сам с наступлением ночи.
+    name: 'Тревога', eighth: 0.4, swing: 0, bars: 24, voiceFrom: 4, seed: 911, lead: 'lowflute',
+    scale: [50, 51, 53, 55, 57, 58, 60, 62, 63, 65, 67, 69, 70, 72, 74, 75],
+    chords: {
+      Dm: { root: 38, tones: [50, 53, 57, 62, 65, 69] }, Eb: { root: 39, tones: [51, 55, 58, 63, 67, 70] },
+      A: { root: 45, tones: [52, 57, 61, 64, 69, 73] }, Gm: { root: 43, tones: [50, 55, 58, 62, 67, 70] },
+      Bb: { root: 46, tones: [53, 58, 62, 65, 70, 74] },
+    },
+    prog: ['Dm', 'Dm', 'Eb', 'Dm', 'A', 'Dm', 'Gm', 'A', 'Dm', 'Eb', 'Dm', 'A', 'Bb', 'A', 'Dm', 'A'],
+    rhythms: [[6], [4, 2], [3, 3], [2, 4], [6], [5, 1]],
+    range: [55, 73],
+  },
 ];
 
 // ---------- Сочинение ----------
@@ -360,6 +374,18 @@ function scheduleBar(tr, song, bar, t) {
     if (bar >= 8) fiddle(counter, t, len * 0.98, 0.05);                          // скрипка-подголосок
     if (phraseEnd) glock(ch.tones[ch.tones.length - 1], at(4), 0.05);
     if (voiceNow && bar % 2 === 0) { const vt = ch.tones.filter(m => m >= 67 && m <= 76); if (vt[0]) voice(vt[(bar / 2) % vt.length], at(1), len * 2 - E, 0.04, 'u'); }
+  } else if (tr.name === 'Тревога') {
+    // бурдон: ре и соль-диез (тритон) долго тянутся; сердце бьётся «тук-тук … тук-тук»
+    if (bar % 3 === 0) { cello([38, 44], t, len * 3, 0.05); }
+    bodhran(t, 0.2, 70); bodhran(at(1), 0.13, 66); if (bar % 2) { bodhran(at(3), 0.16, 70); bodhran(at(4), 0.1, 66); }
+    bassPluck(ch.root, t, 0.3);
+    // редкие холодные удары в высоком регистре, малая секунда друг над другом
+    if (bar % 2 === 0) { const hi = ch.tones[ch.tones.length - 1]; glock(hi, at(2), 0.06); glock(hi + 1, at(2) + 0.03, 0.035); }
+    if (bar % 4 === 3) dulcimer(up[1] + 12, at(5), 0.1);
+    // осторожная флейта: только первые звуки каждого такта, иногда нет совсем
+    if (bar % 4 !== 2) { let pos = 0; for (const [m, l] of notes.slice(0, 2)) { flute(m, at(pos), l * E * 0.95, 0.11, 'lowflute'); pos += l; } }
+    if (bar % 4 === 0 && voiceNow) { const vt = ch.tones.filter(m => m >= 62 && m <= 72); if (vt[0]) voice(vt[(bar / 4) % vt.length], at(1), len * 2, 0.05, 'u'); }
+    for (let k = 1; k < 6; k += 2) shaker(at(k), 0.009);
   } else {
     // «Ярмарка»: бас на раз и четыре, цимбалы на слабых, бойран джигой, шейкер на каждую восьмую
     bassPluck(ch.root, t, 0.5); bassPluck(ch.root + 7, at(3), 0.38);
@@ -386,7 +412,7 @@ function musicTick() {
     if (Music.bar >= tr.bars) {
       // смена трека с паузой в такт; новые вариации мелодий
       Music.nextTime += tr.eighth * 6;
-      Music.track = (Music.track + 1) % TRACKS.length;
+      Music.track = nextTrackIndex();
       Music.bar = 0;
       const nt = TRACKS[Music.track];
       Music.songs[Music.track] = makeSong(nt, nt.seed + Math.floor(Math.random() * 1000));
@@ -397,6 +423,15 @@ function musicTick() {
     Music.nextTime += tr.eighth * 6;
     Music.bar++;
   }
+}
+
+// Тревожный ночной трек стоит в списке последним; днём он не выбирается
+const ALARM_TRACK = TRACKS.findIndex(t => t.name === 'Тревога');
+function nextTrackIndex() {
+  if (typeof isNightNow === 'function' && isNightNow()) return ALARM_TRACK;
+  let n = (Music.track + 1) % TRACKS.length;
+  if (n === ALARM_TRACK) n = (n + 1) % TRACKS.length;
+  return n;
 }
 
 function makeSong(tr, seed) {
@@ -437,20 +472,30 @@ function startMusic() {
 }
 
 // Следующий трек: короткое затухание того, что уже запланировано, и сразу новая песня
-function nextTrack() {
+// Переключить трек: короткое затухание того, что уже запланировано, и сразу новая песня
+function gotoTrack(i, announce) {
   startMusic();
   if (!Music.ctx) return;
-  if (!Music.on) { setMusic(true); syncMusicBtn(); }
+  if (announce && !Music.on) { setMusic(true); syncMusicBtn(); }
   const ctx = Music.ctx, t = ctx.currentTime, g = Music.bus.gain;
   g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
-  g.linearRampToValueAtTime(0.0001, t + 0.3);
-  g.setValueAtTime(0.0001, t + 0.55); g.linearRampToValueAtTime(0.62, t + 0.75);
-  Music.track = (Music.track + 1) % TRACKS.length;
+  g.linearRampToValueAtTime(0.0001, t + (announce ? 0.3 : 1.6));
+  const t0 = t + (announce ? 0.55 : 1.8);
+  g.setValueAtTime(0.0001, t0); g.linearRampToValueAtTime(0.62, t0 + 0.8);
+  Music.track = i;
   Music.bar = 0;
   const tr = TRACKS[Music.track];
   Music.songs[Music.track] = makeSong(tr, tr.seed + Math.floor(Math.random() * 1000));
-  Music.nextTime = t + 0.6;
-  toast(`Музыка: «${tr.name}»`);
+  Music.nextTime = t0 + 0.05;
+  if (announce) toast(`Музыка: «${tr.name}»`);
+}
+function nextTrack() { gotoTrack(nextTrackIndex(), true); }
+
+// ночью сам включается «Тревога», на рассвете — обычная музыка
+function musicDayNight(night) {
+  if (!Music.started || !Music.ctx) return;
+  if (night && Music.track !== ALARM_TRACK) gotoTrack(ALARM_TRACK, false);
+  else if (!night && Music.track === ALARM_TRACK) gotoTrack(nextTrackIndex(), false);
 }
 
 let syncMusicBtn = () => {};

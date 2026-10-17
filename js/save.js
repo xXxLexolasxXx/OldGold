@@ -13,6 +13,7 @@ function resetGameState() {
   Game.animals = [];
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
   Game.ents = []; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0;
+  Game.bats = [];
   Game.fieldPlans = new Set(); Game.avenge = [];
   World.occ.fill(0);
   World.roadDirty = true;

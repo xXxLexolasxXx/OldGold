@@ -67,7 +67,7 @@ function updateCritters(dt) {
     b.y += dy / d * Math.min(sp, d) + Math.cos(b.ph * 0.23) * dt * 0.6;
   }
   // пара бабочек всегда порхает над лугом у деревни
-  if (list.filter(b => !b.chaser).length < 3 && Math.random() < dt * 0.2) {
+  if (!isNightNow() && !(typeof WX !== 'undefined' && WX.k > 0.3) && list.filter(b => !b.chaser).length < 10 && Math.random() < dt * 0.5) {
     const s = wildSpot(4, false);
     if (s) spawnButterfly(s[0] + 0.5, s[1] + 0.5);
   }
@@ -288,14 +288,16 @@ function* rootGoldGen(u, tree) {
 
 function* butterflyGen(u) {
   const b = spawnButterfly(u.x + (Math.random() - 0.5) * 4, u.y + (Math.random() - 0.5) * 4);
-  b.chaser = u.id; b.life = 30;
+  b.chaser = u.id; b.life = 30; u.netUntil = Game.time + 6;
   for (let k = 0; k < 5 && b.life > 0; k++) {
-    u.gest = 'stretch'; u.gestUntil = Game.time + 3;
+    u.netUntil = Game.time + 6;   // с сачком в руке
+    u.gest = ''; u.gestUntil = 0;
     const s = [Math.floor(b.x), Math.floor(b.y)];
     if (!inb(s[0], s[1]) || !isWalkable(s[0], s[1])) break;
     yield { walk: s, offroad: true };
   }
   b.chaser = 0;
+  u.netUntil = 0;
   u.gest = Math.random() < 0.5 ? 'wave' : 'scratch'; u.gestUntil = Game.time + 1.5;   // упорхнула
   yield { wait: 1.2 };
 }
@@ -411,6 +413,7 @@ function updateOwls(dt) {
       o.face = bx > ax ? 1 : -1;
       if (o.f >= 1) {
         o.x = bx; o.y = by;
+        if (o.hunt) { owlEat(o); continue; }
         if (o.goAway) { o.state = 'away'; o.t = 15 + Math.random() * 30; }
         else {
           o.state = 'perch'; o.t = 14 + Math.random() * 30; o.ground = o.to[2];
@@ -434,6 +437,7 @@ function updateOwls(dt) {
       if (Math.random() < dt * 0.5) o.blink = 0.18;
       o.blink = Math.max(0, o.blink - dt);
       if (Math.random() < dt * 0.03) floater(o.x / TILE, o.y / TILE - 0.6, 'У-ху!', '#e8e0c8');
+      owlHunt(o, dt);
     }
   }
 }
@@ -691,4 +695,166 @@ function avengeTick(dt) {
     }
     if (ev.phase === 'done') { list.splice(i, 1); for (const h of ev.hens) { if (h.avenge === ev) { h.avenge = null; h.state = 'wander'; h.loot = null; h.wait = 2; } } }
   }
+}
+
+// ---------- Лоси ----------
+// Спокойно пасутся. Увидев гнома с грузом, подходят и требуют отдать: одни отдают
+// (груз пропал), другие упрямятся — и получают рогами: отлетают, роняют груз, бывает хромают.
+
+function updateMoose(a, dt, def) {
+  if (a.state === 'charge') {
+    const t = a.target;
+    if (!t || t.dead || t.inside || !t.carry || Game.time > a.chargeUntil) { a.state = 'wander'; a.target = null; a.stealCD = Game.time + 30; return; }
+    if (a.think <= 0) { a.think = 0.4; animalGo(a, Math.floor(t.x), Math.floor(t.y)); }
+    animalStep(a, dt, def.speed);
+    if (Math.hypot(t.x - a.x, t.y - a.y) < 1.0) {
+      a.path = null; a.moving = false;
+      const name = UNIT_TYPES[t.type].name;
+      if (Math.random() < 0.4) {
+        // отдал сам — лось съедает груз
+        const g = dropLoad(t);
+        if (g) { const p = Game.piles.get(idx(Math.floor(t.x), Math.floor(t.y))); void p; }
+        floater(t.x, t.y - 1.3, 'Бери, бери!', '#ffe9a0');
+        floater(a.x, a.y - 1.6, 'Хрум', '#e0d0a0');
+        logEvent('animal', `${name} отдал груз лосю`, a.x, a.y);
+        eatPileAt(Math.floor(t.x), Math.floor(t.y));
+      } else {
+        // не отдал — бодает
+        floater(a.x, a.y - 1.6, 'Бдыщ!', '#ffd0a0');
+        sfxAt('thud', a.x * TILE, a.y * TILE, 1.1);
+        dropLoad(t);
+        knockBack(t, a);
+        if (Math.random() < 0.5) injure(t, 'leg');
+        logEvent('animal', `Лось забодал: ${name.toLowerCase()}`, t.x, t.y);
+        toast(`Лось забодал: ${name.toLowerCase()}!`);
+      }
+      a.stealCD = Game.time + 50 + Math.random() * 40;
+      a.state = 'wander'; a.target = null;
+      const s = wildSpot(12) || a.home; animalGo(a, s[0], s[1]); a.home = s;
+    }
+    return;
+  }
+  if (a.think <= 0) {
+    a.think = 0.9;
+    if (Game.time >= (a.stealCD || 0)) {
+      const prey = nearestPerson(a, 6.5, u => !!u.carry && !u.brk);
+      if (prey) { a.state = 'charge'; a.target = prey; a.chargeUntil = Game.time + 9; floater(a.x, a.y - 1.8, 'Му-уо!', '#e0d0a0'); }
+    }
+  }
+  // иначе пасётся, как нейтральный зверь
+  if (a.path) { animalStep(a, dt, def.speed * 0.45); return; }
+  a.wait -= dt;
+  if (a.wait <= 0) {
+    a.wait = 3 + Math.random() * 7;
+    const t = randomFreeNear(a.home[0], a.home[1], 0, 5, (x, y) => isWalkable(x, y) && !World.road[idx(x, y)]);
+    if (t) animalGo(a, t[0], t[1]);
+  }
+}
+
+// груз, брошенный на землю, съедает лось (кучка исчезает)
+function eatPileAt(x, y) {
+  const p = Game.piles.get(idx(x, y));
+  if (!p) return;
+  for (const g of GOOD_KEYS) p.stock[g] = 0;
+  cleanupPile(p);
+}
+
+// ---------- Охота на воров ----------
+// Волка или лису, убегающих с добычей, догоняют ближайшие гномы. Поймали — зверь убит:
+// возвращается добыча и остаются шкуры для доспехов.
+
+function dispatchHunters(a) {
+  let n = 0;
+  const cand = Game.units.filter(u => isPerson(u) && !u.inside && !u.dead && u.type !== 'carter' && !u.carry && interruptible(u) && Math.hypot(u.x - a.x, u.y - a.y) < 11)
+    .sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y));
+  for (const u of cand) {
+    if (n >= 2) break;
+    startBreak(u, 'hunt', null); u.proc = huntGen(u, a); n++;
+  }
+}
+
+function* huntGen(u, a) {
+  floater(u.x, u.y - 1.2, 'Держи вора!', '#ffd0a0');
+  sfxUnit(u, 'grr');
+  u.huntUntil = Game.time + 16;
+  for (let k = 0; k < 30 && !a.dead && a.loot !== undefined; k++) {
+    if (a.state !== 'flee' || Math.hypot(a.x - u.x, a.y - u.y) > 16) break;
+    yield { walk: [Math.floor(a.x), Math.floor(a.y)], offroad: true };
+    if (a.dead) break;
+    if (Math.hypot(a.x - u.x, a.y - u.y) < 1.4) {
+      if (Math.random() < 0.4) { killPredator(a, u); u.huntUntil = 0; yield { wait: 1.4 }; return; }
+      floater(u.x, u.y - 1.2, 'Увернулся!', '#ffe0e0');
+      if (Math.random() < 0.15) { injure(u, 'arm'); floater(u.x, u.y - 1.6, 'Укусил!', '#ffc0c0'); }
+      yield { wait: 0.4 };
+    }
+  }
+  u.huntUntil = 0;
+  if (!a.dead) floater(u.x, u.y - 1.2, 'Ушёл…', '#e8e0c0');
+  yield { wait: 1 };
+}
+
+function killPredator(a, u) {
+  const x = Math.floor(a.x), y = Math.floor(a.y);
+  const name = ANIMALS[a.kind].name;
+  if (a.loot) dropPile(x, y, a.loot, 1);                 // добыча возвращается
+  dropPile(x, y, 'hide', a.kind === 'wolf' ? 2 : 1);      // шкуры — на доспехи
+  fxBurst(a.x * TILE, a.y * TILE - 6, 10, ['#e8d0a0', '#a08060', '#7a6a50'], 55, 40, 0.7, 2, 160);
+  floater(u.x, u.y - 1.3, 'Попался!', '#fff2a0');
+  floater(a.x, a.y - 0.8, 'Шкура!', '#e0c080');
+  sfxUnit(u, 'hey');
+  u.gest = 'fist'; u.gestUntil = Game.time + 2;
+  logEvent('animal', `${UNIT_TYPES[u.type].name} убил: ${name.toLowerCase()}. Остались шкуры`, a.x, a.y);
+  toast(`${UNIT_TYPES[u.type].name} догнал и убил: ${name.toLowerCase()} — остались шкуры`);
+  removeAnimal(a);
+}
+
+// Сачок: длинная палка с обручем и сетчатым мешком; при ловле взмахивает
+function drawNet(c, u, px, py, face, moving) {
+  const near = Game.critters && Game.critters.some(b => b.chaser === u.id && Math.hypot(b.x - u.x, b.y - u.y) < 1.8);
+  const sw = Math.sin(Game.time * (near ? 11 : 5) + u.id) * (near ? 0.9 : moving ? 0.5 : 0.25);
+  const hx = px + face * 4.2, hy = py - 12;
+  const tx = hx + face * (7 + sw * 6), ty = hy - 12 - Math.abs(sw) * 2;
+  c.save();
+  c.lineCap = 'round';
+  c.strokeStyle = '#6e4428'; c.lineWidth = 1; c.beginPath(); c.moveTo(hx, hy + 2); c.lineTo(tx, ty); c.stroke();
+  const ox = tx + face * 1.2, oy = ty - 2.2;
+  // мешок из сетки под обручем
+  c.fillStyle = 'rgba(244,244,255,0.32)';
+  c.beginPath(); c.moveTo(ox - 4.4, oy); c.quadraticCurveTo(ox - 3.6, oy + 8, ox, oy + 8.6); c.quadraticCurveTo(ox + 3.6, oy + 8, ox + 4.4, oy); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(230,230,245,0.55)'; c.lineWidth = 0.4;
+  for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(ox + k * 1.8, oy); c.lineTo(ox + k * 0.7, oy + 8); c.stroke(); }
+  for (let k = 1; k <= 3; k++) { c.beginPath(); c.moveTo(ox - 4 + k * 0.4, oy + k * 2.2); c.lineTo(ox + 4 - k * 0.4, oy + k * 2.2); c.stroke(); }
+  c.strokeStyle = '#3a2414'; c.lineWidth = 0.9; c.beginPath(); c.ellipse(ox, oy, 4.4, 1.9, 0, 0, Math.PI * 2); c.stroke();   // обруч
+  c.restore();
+}
+
+// Сова иногда ловит бабочку: с крыши пикирует на неё, глотает и возвращается на место
+function owlHunt(o, dt) {
+  o.huntT = (o.huntT || 0) - dt;
+  if (o.huntT > 0) return;
+  o.huntT = 1.2;
+  const list = Game.critters;
+  if (!list || !list.length || Math.random() > 0.4) return;
+  let best = null, bd = 150;
+  for (const b of list) {
+    const d = Math.hypot(b.x * TILE - o.x, b.y * TILE - 10 - o.y);
+    if (d < bd) { bd = d; best = b; }
+  }
+  if (!best) return;
+  o.back = [o.x, o.y, o.ground];
+  o.from = [o.x, o.y]; o.to = [best.x * TILE, best.y * TILE - 10, best.y * TILE]; o.f = 0; o.hunt = best;
+  o.goAway = false; o.state = 'fly'; o.speed = 1.6; o.item = null;
+}
+
+function owlEat(o) {
+  const b = o.hunt, list = Game.critters || [];
+  o.hunt = null;
+  const i = list.indexOf(b);
+  if (i >= 0 && Math.hypot(b.x * TILE - o.x, b.y * TILE - 10 - o.y) < 40) {
+    list.splice(i, 1);
+    floater(o.x / TILE, o.y / TILE - 0.6, 'Ам!', '#fff2a0');
+    fxBurst(o.x, o.y, 6, ['#e8d8b0', '#a08860', b.col], 30, 20, 0.5, 1.4, 80);
+  }
+  // назад на свой насест
+  o.from = [o.x, o.y]; o.to = o.back; o.f = 0; o.speed = 1.1; o.goAway = false; o.state = 'fly';
 }

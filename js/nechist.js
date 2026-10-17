@@ -232,3 +232,75 @@ function drawDamage(c, b, ox, oy, spr) {
     }
   }
 }
+
+// ---------- Летучие мыши ----------
+// С вечера стайка мышей кружит над деревней; пролетевшая у самой головы гнома пугает его
+// ненадолго (взмах руками, возглас). На рассвете улетают.
+
+function batsTick(dt) {
+  const bats = Game.bats || (Game.bats = []);
+  const dark = nightAmt();
+  const cx = Game.units.length ? Game.units.reduce((s, u) => s + u.x, 0) / Game.units.length : MAP_W / 2;
+  const cy = Game.units.length ? Game.units.reduce((s, u) => s + u.y, 0) / Game.units.length : MAP_H / 2;
+  // прилетают с вечера
+  if (dark > 0.3 && bats.length < 8 && Math.random() < dt * 0.8) {
+    const a = Math.random() * Math.PI * 2;
+    bats.push({ x: cx + Math.cos(a) * 24, y: cy + Math.sin(a) * 18, z: 28 + Math.random() * 20, tx: cx, ty: cy, ph: Math.random() * 9, spd: 2.4 + Math.random() * 1.2, retarget: 0, leave: false, cd: 0 });
+  }
+  for (let i = bats.length - 1; i >= 0; i--) {
+    const b = bats[i];
+    b.ph += dt * 16; b.retarget -= dt;
+    if (dark < 0.12) b.leave = true;
+    if (b.leave) { b.tx = b.x + (b.x > cx ? 30 : -30); b.ty = b.y + (b.y > cy ? 20 : -20); if (b.x < -3 || b.y < -3 || b.x > MAP_W + 3 || b.y > MAP_H + 3) { bats.splice(i, 1); continue; } }
+    else if (b.retarget <= 0 || Math.hypot(b.tx - b.x, b.ty - b.y) < 1) {
+      // новая точка кружения: у жилья или у людей
+      const u = Game.units.length ? Game.units[(Math.random() * Game.units.length) | 0] : null;
+      b.tx = (u ? u.x : cx) + (Math.random() - 0.5) * 8; b.ty = (u ? u.y : cy) + (Math.random() - 0.5) * 6; b.retarget = 2 + Math.random() * 3;
+    }
+    const dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy) || 1;
+    // порывистый зигзаг, как у настоящих мышей
+    const wob = Math.sin(b.ph * 0.31) * 1.6;
+    b.x += (dx / d * b.spd + -dy / d * wob) * dt; b.y += (dy / d * b.spd + dx / d * wob) * dt;
+    b.z = Math.max(20, Math.min(52, b.z + Math.sin(b.ph * 0.21) * 8 * dt));
+    b.face = dx >= 0 ? 1 : -1;
+    // пугает гномов внизу
+    b.cd -= dt;
+    if (b.cd <= 0 && !b.leave) {
+      b.cd = 0.4;
+      for (const u of Game.units) {
+        if (u.inside || u.dead || !isPerson(u) || (u.batCD || 0) > Game.time) continue;
+        if (Math.hypot(u.x - b.x, u.y - b.y) < 1.7) {
+          u.batCD = Game.time + 25;
+          gesture(u, 'panic', 1.3, b.x);
+          floater(u.x, u.y - 1.2, ['Летучая мышь!', 'Брысь!', 'Ай, над головой!'][Math.floor(Math.random() * 3)], '#e8e0f0');
+          sfxAt('squeak', b.x * TILE, b.y * TILE, 0.9);
+          break;
+        }
+      }
+    }
+  }
+}
+
+function drawBats(c) {
+  const bats = Game.bats;
+  if (!bats || !bats.length) return;
+  for (const b of bats) {
+    const px = Math.round(b.x * TILE), py = Math.round(b.y * TILE - b.z);
+    const flap = Math.sin(b.ph), w = 5 + Math.abs(flap) * 2.5, up = flap * 3.2;
+    c.fillStyle = 'rgba(10,8,4,0.2)'; c.beginPath(); c.ellipse(px, b.y * TILE + 2, 4, 1.2, 0, 0, 7); c.fill();
+    c.fillStyle = '#16121c';
+    // крылья: перепончатые «зонтики» с зубчатым краем
+    for (const s of [-1, 1]) {
+      c.beginPath(); c.moveTo(px + s * 1, py);
+      c.lineTo(px + s * w, py - 2 - up);
+      c.lineTo(px + s * (w - 1.8), py + 1 - up * 0.4);
+      c.lineTo(px + s * (w - 3.4), py + 0.4);
+      c.lineTo(px + s * (w - 5), py + 2.2);
+      c.closePath(); c.fill();
+    }
+    c.fillRect(px - 1, py - 1, 2, 3);                                 // тело
+    c.fillRect(px - 1, py - 2.6, 2, 1.8);                             // голова
+    c.fillRect(px - 1.4, py - 3.6, 0.8, 1.2); c.fillRect(px + 0.6, py - 3.6, 0.8, 1.2);   // ушки
+    c.fillStyle = '#ff8060'; c.fillRect(px - 0.8, py - 2.2, 0.5, 0.5); c.fillRect(px + 0.3, py - 2.2, 0.5, 0.5);   // красные глазки
+  }
+}

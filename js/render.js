@@ -250,6 +250,7 @@ function drawUnit(c, u) {
   c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
   drawNightUnit(c, u, px, py, face, view, lying || flyP >= 0);
+  if (u.netUntil > Game.time && !lying) drawNet(c, u, px, py, face, moving);
   if (!wp) drawUmbrella(c, u, px, py, face, pose, lying);
   // дымок из трубки
   if (u.anim === 'smoke' || u.anim === 'smokeup') {
@@ -826,6 +827,7 @@ function render() {
   for (const [, fn] of list) fn();
 
   drawOwls(c);
+  drawBats(c);
   drawFloaters(c);
   drawClouds(c);
   drawDusk(c);

@@ -8,6 +8,8 @@ const ANIMALS = {
   rabbit: { name: 'Кролик',    mood: 'neutral', speed: 2.3, flee: 2.0 },
   goat:   { name: 'Дикая коза', mood: 'good',   speed: 1.3, flee: 0 },
   wolf:   { name: 'Волк',      mood: 'evil',    speed: 2.2, flee: 0 },
+  fox:    { name: 'Лиса',      mood: 'evil',    speed: 2.5, flee: 0 },
+  elk:    { name: 'Лось',      mood: 'moose',   speed: 2.3, flee: 0 },
 };
 
 let animalId = 1;
@@ -56,6 +58,8 @@ function spawnAnimals() {
   add('rabbit', 9, 10);
   add('goat', 6, 12);
   add('wolf', 3, 17);
+  add('fox', 4, 14);
+  add('elk', 3, 16);
   spawnFarmyard();
 }
 
@@ -106,16 +110,18 @@ function updateAnimal(a, dt) {
   if (a.calm > Game.time) { a.moving = false; return; }
   if (def.mood === 'angry') { updateGoose(a, dt, def); return; }
 
-  // волк: охота за грузом
+  if (def.mood === 'moose') { updateMoose(a, dt, def); return; }
+
+  // волк и лиса: охота за грузом
   if (def.mood === 'evil') {
     if (a.state === 'flee') {
-      if (animalStep(a, dt, 2.5)) { a.state = 'wander'; a.loot = null; }
+      if (animalStep(a, dt, a.loot ? (a.kind === 'fox' ? 2.3 : 2.1) : 2.5)) { a.state = 'wander'; a.loot = null; }
       return;
     }
     if (a.think <= 0) {
       a.think = 0.8;
       if (Game.time >= a.stealCD) {
-        const prey = nearestPerson(a, 9, u => !!u.carry);
+        const prey = nearestPerson(a, a.kind === 'fox' ? 7 : 9, u => !!u.carry);
         const pile = !prey ? [...Game.piles.values()].find(p => Math.hypot(p.x - a.x, p.y - a.y) < 9) : null;
         a.target = prey || pile;
         if (a.target) { a.state = 'chase'; animalGo(a, Math.floor(a.target.x), Math.floor(a.target.y)); }
@@ -137,10 +143,11 @@ function updateAnimal(a, dt) {
         }
         if (g) {
           a.loot = g;
-          logEvent('animal', `Волк утащил «${GOODS[g].name}»`, a.x, a.y);
-          toast(`Волк утащил «${GOODS[g].name}»!`);
+          logEvent('animal', `${def.name} утащил${a.kind === 'fox' ? 'а' : ''} «${GOODS[g].name}»`, a.x, a.y);
+          toast(`${def.name} утащил${a.kind === 'fox' ? 'а' : ''} «${GOODS[g].name}»!`);
+          dispatchHunters(a);
         }
-        a.stealCD = Game.time + 70 + Math.random() * 40;
+        a.stealCD = Game.time + (a.kind === 'fox' ? 50 : 70) + Math.random() * 40;
         a.state = 'flee'; a.target = null;
         const s = wildSpot(18) || a.home;
         animalGo(a, s[0], s[1]);
@@ -191,6 +198,8 @@ function updateAnimals(dt) {
     if (cnt('deer') < 5) add('deer', 14);
     if (cnt('rabbit') < 6) add('rabbit', 10);
     if (cnt('wolf') < 3 && Math.random() < 0.4) add('wolf', 24);
+    if (cnt('fox') < 3 && Math.random() < 0.5) add('fox', 20);
+    if (cnt('elk') < 2 && Math.random() < 0.4) add('elk', 20);
     if (cnt('goose') < 4) spawnGeeseFlock();
     if (cnt('chicken') < 3) {
       const st = Game.buildings.find(b => b.type === 'storehouse');
