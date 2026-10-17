@@ -80,7 +80,7 @@ function applySave(s) {
     Object.assign(b.usedOf, d.usedOf);
     b.used = d.used;
     b.hits = d.hits ?? (b.state === 'done' ? b.maxHits : SITE_HITS + d.used * HITS_PER_UNIT);
-    b.queue = d.queue || [];
+    b.queue = (d.queue || []).map(q => (UNIT_TYPES[q] && UNIT_TYPES[q].legacy) || q);
     b.training = d.training || null;
     b.paused = !!d.paused;
     b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
@@ -102,7 +102,12 @@ function applySave(s) {
     Game.roadSites.set(idx(r.x, r.y), rs);
   }
   for (const d of s.units) {
-    const u = new Unit(d.type, 0, 0);
+    // слитые профессии: старые жители переходят в новые (хмелевод → пахарь и т.д.)
+    const home0 = byId.get(d.home);
+    let ty = d.type;
+    if (UNIT_TYPES[ty] && UNIT_TYPES[ty].legacy) ty = UNIT_TYPES[ty].legacy;
+    if (ty === 'tanner' && home0 && home0.type === 'tannery') ty = 'breeder';
+    const u = new Unit(ty, 0, 0);
     u.x = d.x; u.y = d.y; u.food = d.food; u.look = d.look;
     u.homePen = d.homePen || 0; u.homeStable = d.homeStable || 0;
     if (d.smoker !== undefined) u.smoker = d.smoker;
