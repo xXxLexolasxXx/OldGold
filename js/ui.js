@@ -152,6 +152,8 @@ function initUI() {
     if (m === 'help') document.getElementById('help').classList.toggle('hidden');
     if (m === 'entdemo' && confirm('Открыть демо с ходячими деревьями? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemo('drag'); }
     if (m === 'entrock' && confirm('Открыть демо с ходячими камнями? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemo('rock'); }
+    if (m === 'entwater' && confirm('Открыть демо с водяными? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemo('water'); }
+    if (m === 'entgroup' && confirm('Открыть демо с групповой дракой? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemoGroup(); }
     if (m === 'entwin' && confirm('Открыть демо с боем гномов и деревьев? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemo('win'); }
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     updateUI(true);
@@ -304,6 +306,7 @@ function collectAlerts() {
     const p = b.problem();
     if (!p || p === 'paused') continue;
     if (p === 'noroad') { out.push({ b, icon: ['ui', 'road'], text: `${b.def.name}: нет дороги к складу` }); continue; }
+    if (p === 'damaged') { out.push({ b, icon: ['ui', 'warn'], text: `${b.def.name}: повреждено нечистью, ждёт ремонта` }); continue; }
     if (p === 'noworker') out.push({ b, icon: ['ui', 'noworker'], text: `${b.def.name}: нужен ${UNIT_TYPES[b.def.worker].name.toLowerCase()}` });
     else if (p === 'full') out.push({ b, icon: ['ui', 'full'], text: `${b.def.name}: всё заполнено` });
     else if (p.startsWith('need:')) out.push({ b, icon: ['good', p.slice(5)], text: `${b.def.name}: нет «${GOODS[p.slice(5)].name}»` });
@@ -351,6 +354,7 @@ function statusChip(b) {
   if (p === 'noroad') return '<span class="chip bad">Нет дороги к складу</span>';
   if (p === 'paused') return '<span class="chip off">На паузе</span>';
   if (p === 'noworker') return '<span class="chip bad">Нет рабочего</span>';
+  if (p === 'damaged') return '<span class="chip bad">Повреждено — ждёт ремонта</span>';
   if (p === 'full') return '<span class="chip wait">Всё заполнено</span>';
   return `<span class="chip bad">Нет: ${GOODS[p.slice(5)].name}</span>`;
 }

@@ -92,6 +92,7 @@ function updateAnimal(a, dt) {
   const def = ANIMALS[a.kind];
   a.think = (a.think || 0) - dt;
   if (a.burn) { burnHenStep(a, dt); return; }   // подожжённая молнией курица мечется
+  if (a.avenge) { avengeHen(a, dt); return; }       // куры мстят за товарища
 
   // коза идёт за пастухом
   if (a.follow) {
@@ -180,6 +181,7 @@ function updateAnimal(a, dt) {
 let respawnT = 0;
 function updateAnimals(dt) {
   for (const a of Game.animals.slice()) updateAnimal(a, dt);
+  avengeTick(dt);
   respawnT += dt;
   if (respawnT > 45) {
     respawnT = 0;

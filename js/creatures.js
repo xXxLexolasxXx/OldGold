@@ -6,15 +6,17 @@ const CR_CACHE = new Map();
 const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21] };
 
 // Курица: белая, красный гребешок, семенит
-function drawChicken(c, f) {
+function drawChicken(c, f, peck) {
   const step = f === null ? 0 : Math.sin(f / 4 * Math.PI * 2);
   line(c, -1, 9, -1 + step * 1.2, 13, '#e0a030', 0.6); line(c, 1, 9, 1 - step * 1.2, 13, '#e0a030', 0.6);
   c.fillStyle = '#f0ece0'; c.beginPath(); c.moveTo(-5.4, 4); c.lineTo(-3.6, 7); c.lineTo(-6, 7.4); c.closePath(); c.fill();   // хвост
   ellipse(c, -0.4, 7, 4.2, 3, '#f4f0e6'); ellipse(c, -0.8, 7.6, 2.6, 1.6, '#d8d0c0');
+  c.save(); if (peck) c.translate(1.8, 3.4);   // клюёт: голова вниз и вперёд
   ellipse(c, 2.8, 3.4, 1.8, 1.8, '#f4f0e6');
   ellipse(c, 2.6, 1.4, 1.1, 0.7, '#d83a24'); ellipse(c, 3.6, 4.8, 0.5, 0.7, '#d83a24');   // гребешок, бородка
   poly(c, [[4.4, 3.2], [5.8, 3.6], [4.4, 4.2]], '#e8a028');
   c.fillStyle = '#1a1210'; c.fillRect(3.1, 2.8, 0.5, 0.5);
+  c.restore();
 }
 
 // Гусь: длинная шея, оранжевый клюв; в атаке шея вытянута вперёд, крылья растопырены
@@ -99,7 +101,7 @@ function drawGoatBody(c, f, col, pack, load) {
 }
 
 function drawCreature(c, kind, f, load) {
-  if (kind === 'chicken') { drawChicken(c, f); return; }
+  if (kind === 'chicken') { drawChicken(c, f, load === 'peck'); return; }
   if (kind === 'goose') { drawGoose(c, f, load === 'attack', load === 'swim'); return; }
   if (kind === 'goat') { drawGoatBody(c, f, '#d8d0c0', false); return; }
   if (kind === 'packgoat') { drawGoatBody(c, f, '#e4ddd0', true, load); return; }

@@ -465,6 +465,7 @@ function drawBuilding(c, b, ghost) {
   }
   c.drawImage(spr.shadow, ox, oy, spr.w, spr.h);
   c.drawImage(spr.canvas, ox, oy, spr.w, spr.h);
+  if (!ghost && b.dmg > 0) drawDamage(c, b, ox, oy, spr);
   const t = Game.time;
   if (b.type === 'mill' && spr.hub) drawSails(c, ox + spr.hub[0], oy + spr.hub[1], b.anim);
   if (spr.pen && b.stock) drawPigs(c, b, spr, ox, oy);
@@ -727,6 +728,7 @@ function drawStatusIcons(c, x0, y0, x1, y1) {
       if (!p && b.noDeliver) icon = ['ui', 'nodeliver'];
       else if (!p) continue;
       else if (p === 'noroad') icon = ['ui', 'road'];
+      else if (p === 'damaged') icon = ['ui', 'warn'];
       else if (p === 'paused') icon = ['ui', 'pause'];
       else if (p === 'noworker') icon = ['ui', 'noworker'];
       else if (p === 'full') icon = ['ui', 'full'];

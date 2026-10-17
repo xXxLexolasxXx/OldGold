@@ -319,7 +319,7 @@ function* chickenGen(u, hen) {
       const st = nearestStore(u.x, u.y, 'chicken');
       const ok = st && (yield { walk: [st.doorX, st.doorY], offroad: true });
       if (u.carry) {
-        if (ok && !st.removed) st.stock.chicken += 1;
+        if (ok && !st.removed) { st.stock.chicken += 1; if (Math.random() < 0.35) triggerAvenge(u); }
         else dropPile(Math.floor(u.x), Math.floor(u.y), 'chicken', 1);
         u.carry = null; u.carryN = 0;
       }
@@ -606,4 +606,89 @@ function drawOwls(c) {
     c.save(); c.translate(f.x, f.y); c.rotate(f.rot); c.scale(0.45, 0.45); drawLoad(c, f.g); c.restore();
   }
   c.imageSmoothingEnabled = prev;
+}
+
+// ---------- Месть кур ----------
+// Гном, отнёсший курицу в таверну, может поплатиться: куры сбегаются стаей, окружают его,
+// заклёвывают, а потом утаскивают. Фазы: gather (сбегаются) → peck (клюют) → drag (тащат) → конец.
+
+function triggerAvenge(u) {
+  if (Game.avenge && Game.avenge.some(ev => ev.vid === u.id)) return;
+  let hens = Game.animals.filter(a => a.kind === 'chicken' && !a.dead);
+  // не хватает кур — набегают соседки с птичьего двора
+  const st = storeB0();
+  while (hens.length < 4 && st) {
+    const s = randomFreeNear(Math.floor(u.x), Math.floor(u.y), 3, 8, (x, y) => isWalkable(x, y) && !World.road[idx(x, y)]);
+    if (!s) break;
+    const a = makeAnimal('chicken', s[0], s[1]); a.home = [st.doorX, st.doorY + 3]; Game.animals.push(a); hens.push(a);
+  }
+  hens.sort((a, b) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(b.x - u.x, b.y - u.y));
+  hens = hens.slice(0, 8);
+  const a0 = Math.random() * Math.PI * 2;
+  const ev = { vid: u.id, phase: 'gather', t: 0, hens, a0, dir: [Math.cos(a0 + 1), Math.sin(a0 + 1)], pk: 0 };
+  hens.forEach((h, k) => { h.avenge = ev; h.slot = k; h.path = null; h.state = 'avenge'; });
+  (Game.avenge = Game.avenge || []).push(ev);
+  floater(u.x, u.y - 1.6, 'Куд-куда-кудах!', '#ffffff');
+  sfxAt('cluck', u.x * TILE, u.y * TILE, 1.2);
+}
+
+function* peckedGen(u, ev) {
+  while (!u.dead && (ev.phase === 'peck' || ev.phase === 'drag')) yield { wait: 0.25, anim: ev.phase === 'peck' ? 'freeze' : 'knocked' };
+}
+
+function avengeHen(a, dt) {
+  const ev = a.avenge, u = ev && Game.unitMap.get(ev.vid);
+  if (!ev || ev.phase === 'done' || !u || u.dead) { a.avenge = null; a.state = 'wander'; a.loot = null; return; }
+  const R = ev.phase === 'gather' ? 1.0 : 0.95;
+  const ang = ev.a0 + a.slot / ev.hens.length * Math.PI * 2;
+  const tx = u.x + Math.cos(ang) * R, ty = u.y + Math.sin(ang) * R * 0.8;
+  const dx = tx - a.x, dy = ty - a.y, d = Math.hypot(dx, dy);
+  const sp = ev.phase === 'drag' ? 1.6 : 2.9;
+  if (d > 0.12) {
+    const s = Math.min(d, sp * dt); a.x += dx / d * s; a.y += dy / d * s; a.moving = true; a.phase += s * 5;
+    if (Math.abs(dx) > 0.01) a.face = dx > 0 ? 1 : -1; a.loot = null;
+  } else {
+    a.moving = false; a.face = u.x > a.x ? 1 : -1;
+    a.loot = ev.phase === 'peck' && (Math.floor(Game.time * 7 + a.id) & 1) ? 'peck' : null;   // клюёт
+  }
+}
+
+function avengeTick(dt) {
+  const list = Game.avenge;
+  if (!list || !list.length) return;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const ev = list[i], u = Game.unitMap.get(ev.vid);
+    ev.t += dt;
+    if (!u || u.dead) { ev.phase = 'done'; }
+    else if (ev.phase === 'gather') {
+      const near = ev.hens.filter(h => !h.dead && Math.hypot(h.x - u.x, h.y - u.y) < 1.5).length;
+      if (near >= Math.min(3, ev.hens.length)) {
+        ev.phase = 'peck'; ev.t = 0;
+        if (u.carry) dropLoad(u);
+        startBreak(u, 'pecked', null); u.proc = peckedGen(u, ev);
+        floater(u.x, u.y - 1.4, 'Караул!', '#ffe0e0'); sfxUnit(u, 'ouch');
+      } else if (ev.t > 25) ev.phase = 'done';
+    } else if (ev.phase === 'peck') {
+      ev.pk -= dt;
+      if (ev.pk <= 0) {
+        ev.pk = 0.55;
+        floater(u.x + (Math.random() - 0.5), u.y - 1.1, ['Ай!', 'Не надо!', 'Кыш!', 'Ой-ой!'][Math.floor(Math.random() * 4)], '#ffd0d0');
+        sfxAt('cluck', u.x * TILE, u.y * TILE, 0.9); sfxUnit(u, 'ouch');
+        fxBurst(u.x * TILE, u.y * TILE - 8, 3, ['#ffffff', '#f0ece0'], 30, 26, 0.5, 1.4, 120);       // перья
+      }
+      if (ev.t > 5) { ev.phase = 'drag'; ev.t = 0; floater(u.x, u.y - 1.4, '…', '#e8e0c0'); }
+    } else if (ev.phase === 'drag') {
+      // гном лежит, куры волокут его за собой
+      u.x += ev.dir[0] * 0.8 * dt; u.y += ev.dir[1] * 0.8 * dt;
+      u.x = Math.max(1, Math.min(MAP_W - 2, u.x)); u.y = Math.max(1, Math.min(MAP_H - 2, u.y));
+      if (ev.t > 3.6) {
+        ev.phase = 'done';
+        floater(u.x, u.y - 1.2, 'Куд-кудах!', '#ffffff');
+        toast(`Куры отомстили: ${UNIT_TYPES[u.type].name} утащен стаей`);
+        logEvent('animal', `Куры отомстили и утащили: ${UNIT_TYPES[u.type].name}`, u.x, u.y);
+        removeUnit(u);
+      }
+    }
+    if (ev.phase === 'done') { list.splice(i, 1); for (const h of ev.hens) { if (h.avenge === ev) { h.avenge = null; h.state = 'wander'; h.loot = null; h.wait = 2; } } }
+  }
 }

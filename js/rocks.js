@@ -199,25 +199,21 @@ function rockHit(tx, ty, o, u, last) {
 
 ENT_LOOK.rock = { bark: ROCK_COL.base, light: ROCK_COL.light, dark: ROCK_COL.dark, crown: [ROCK_COL.mid, ROCK_COL.light] };
 
-function spawnRockEnts() {
+function spawnRockEnts(want) {
   const people = Game.units.filter(u => isPerson(u));
   if (!people.length) return;
-  const want = Math.floor(Math.random() * 4);          // 0–3 камня за ночь
   let made = 0;
-  for (let tries = 0; tries < 600 && made < want; tries++) {
+  for (let tries = 0; tries < 900 && made < want; tries++) {
     const u = people[(Math.random() * people.length) | 0];
-    const a = Math.random() * Math.PI * 2, d = 4 + Math.random() * 12;
+    const a = Math.random() * Math.PI * 2, d = 4 + Math.random() * 14;
     const x = Math.round(u.x + Math.cos(a) * d), y = Math.round(u.y + Math.sin(a) * d);
     if (!inb(x, y)) continue;
     const i = idx(x, y), o = World.obj[i];
     if (!o || o.t !== 'stone' || o.n < 2 || o.res || o.awake) continue;
-    if (Game.ents.some(e => Math.abs(e.hx - x) + Math.abs(e.hy - y) < 6)) continue;
+    if (nearBonfire(x, y, 12)) continue;
+    if (Game.ents.some(e => Math.abs(e.hx - x) + Math.abs(e.hy - y) < 3)) continue;
     o.awake = true; o.res = true;
-    Game.ents.push({
-      rock: true, i, o, hx: x, hy: y, x: x + 0.5, y: y + 0.5, state: 'sleep', t: 0, k: 0,
-      delay: Math.random() * 8, face: 1, phase: Math.random() * 6, alpha: 1,
-      wait: 0, goal: null, moving: false, foe: null, victim: null, seen: new Set(),
-    });
+    Game.ents.push(newEnt({ rock: true, i, o, hx: x, hy: y, x: x + 0.5, y: y + 0.5 }));
     made++;
   }
 }

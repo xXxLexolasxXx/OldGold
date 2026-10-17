@@ -174,6 +174,17 @@ function dispatchBuilders() {
     u.idleFlag = false; u.idleStreak = 0;
     u.proc = null; u.action = null; u.anim = null;
   }
+  // повреждённые нечистью здания чинят свободные работяги
+  if (idle.length) {
+    for (const b of Game.buildings) {
+      if (!(b.dmg > 0.05) || b.repairer || b.removed) continue;
+      const u = takeNearest(idle, b.doorX, b.doorY);
+      if (!u) break;
+      b.repairer = u; u.repairJob = b;
+      u.idleFlag = false; u.idleStreak = 0;
+      u.proc = null; u.action = null; u.anim = null;
+    }
+  }
   // оставшиеся без дела работяги вскапывают заложенные поля (бесплатно)
   if (idle.length && Game.fieldPlans && Game.fieldPlans.size) {
     for (const i of [...Game.fieldPlans]) {

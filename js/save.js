@@ -13,7 +13,7 @@ function resetGameState() {
   Game.animals = [];
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
   Game.ents = []; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0;
-  Game.fieldPlans = new Set();
+  Game.fieldPlans = new Set(); Game.avenge = [];
   World.occ.fill(0);
   World.roadDirty = true;
   Game.roadSites.clear();
@@ -42,7 +42,7 @@ function serializeGame() {
     buildings: Game.buildings.map(b => ({
       id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
       used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
-      paused: b.paused, noDeliver: !!b.noDeliver, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
+      paused: b.paused, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
     })),
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
     units: Game.units.map(u => ({
@@ -82,7 +82,7 @@ function applySave(s) {
     b.queue = d.queue || [];
     b.training = d.training || null;
     b.paused = !!d.paused;
-    b.noDeliver = !!d.noDeliver;
+    b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
     if (d.recipeOn && d.recipeOn.length === b.recipeOn.length) b.recipeOn = d.recipeOn;
     b.recipeIdx = d.recipeIdx || 0;
     if (d.pigs) b.pigs = d.pigs;

@@ -114,6 +114,7 @@ class Building {
   problem() {
     if (this.state !== 'done') return this.roadLinked() ? null : 'noroad';
     if (this.paused) return 'paused';
+    if (this.dmg >= 0.5) return 'damaged';                 // повреждено нечистью — пока не починят, не работает
     if (!this.isStore() && !this.roadLinked()) return 'noroad';
     if (this.def.worker && !(this.worker && this.worker.home === this)) return 'noworker';
     if (this.type === 'swine') {
@@ -523,6 +524,7 @@ class Unit {
     if (this.isCourier) { this.idleFlag = true; return idleGen(this); }
     if (this.type === 'builder') {
       if (this.fieldJob >= 0) { this.idleFlag = false; return fieldDigGen(this, this.fieldJob); }
+      if (this.repairJob) { this.idleFlag = false; return repairGen(this, this.repairJob); }
       if (this.job && !this.job.removed) { this.idleFlag = false; return buildGen(this, this.job); }
       this.job = null;
       this.idleFlag = true;

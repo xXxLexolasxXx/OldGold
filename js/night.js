@@ -117,42 +117,82 @@ function* fleeGen(u) {
 function* fightGen(u, e) {
   floater(u.x, u.y - 1, 'За бороду!', '#ffd0a0');
   sfxUnit(u, 'grr');
-  const side = u.x < e.x ? -1 : 1;
-  const tx = Math.floor(e.x + side * 0.9), ty = Math.floor(e.y);
+  if (!e.fighters) e.fighters = [u];
+  const mine = e.fighters.indexOf(u);
+  const side = mine % 2 ? 1 : -1;                       // бойцы встают по обе стороны нечисти
+  const tx = Math.floor(e.x + side * 0.9), ty = Math.floor(e.y + (mine > 1 ? 0.6 : 0));
   if (isWalkable(tx, ty) && Math.hypot(e.x - u.x, e.y - u.y) > 1.2) yield { walk: [tx, ty], offroad: true };
-  if (e.state !== 'fight' || e.foe !== u) return;
-  const faceOff = () => { u.face = e.x > u.x ? 1 : -1; u.vdir = 'E'; e.face = -u.face; };
+  if (e.state !== 'fight') { u.fighting = null; return; }
+  const faceOff = () => { u.face = e.x > u.x ? 1 : -1; u.vdir = 'E'; };
   faceOff();
-  e.t = 0;
+  if (e.fightT === undefined) { e.fightT = Game.time; e.t = 0; e.face = -u.face; }
   u.fighting = e;
-  const win = e.forceWin !== undefined ? e.forceWin : Math.random() < 0.5;
-  // три схватки: гном рубит — летят щепки; дерево замахивается ветвями — гном пригибается
+  // три схватки: боец рубит — летят осколки; нечисть замахивается — боец пригибается
   for (let k = 0; k < 3; k++) {
     faceOff();
     yield { wait: 0.9, anim: 'chop' };
-    if (e.state !== 'fight' || e.foe !== u) { u.fighting = null; return; }
+    if (e.state !== 'fight') { u.fighting = null; return; }
     entHit(e, u, false);
-    e.atk = Game.time;                         // ответный удар ветвями
+    e.atk = Game.time;                         // ответный удар
     yield { wait: 0.35 };
-    yield { wait: 0.45, anim: 'duck' };        // пригнулся — ветви свистнули над колпаком
+    yield { wait: 0.45, anim: 'duck' };        // пригнулся — удар прошёл над колпаком
     entSlamFx(e, u);
   }
-  u.fighting = null;
-  if (e.state !== 'fight' || e.foe !== u) return;
-  if (win) {
-    // решающий удар
+  // решает первый из бойцов, остальные ждут исхода
+  if (e.state === 'fight' && !e.resolved && e.fighters[0] === u) {
     faceOff();
     yield { wait: 0.9, anim: 'chop' };
-    entHit(e, u, true);
-    entFell(e, u);
-    yield { wait: 2.4 };                       // смотрит, как оно валится
+    resolveFight(e);
+  }
+  u.fighting = null;
+  for (let k = 0; k < 40 && e.state === 'fight'; k++) yield { wait: 0.3 };
+  if (u.dead) return;
+  if (e.state === 'dying' || e.state === 'gone') {
+    yield { wait: 2.2 };                       // смотрит, как оно валится
+    if (u.dead) return;
     u.gest = 'fist'; u.gestUntil = Game.time + 2.5;
-    floater(u.x, u.y - 1.2, 'Ура!', '#fff2a0');
+    floater(u.x, u.y - 1.2, ['Ура!', 'Так вам!', 'Получила!'][Math.floor(Math.random() * 3)], '#fff2a0');
     sfxUnit(u, 'hey');
-    yield { wait: 2.5 };
+    yield { wait: 2.4 };
+  } else if (e.escaped === u) {
+    // уцелел: отлетел, лежит, потом встаёт
+    yield { wait: 1.5, anim: 'knocked' };
+    floater(u.x, u.y - 1.2, 'Жив…', '#e8e0c0');
+    yield { wait: 1 };
+  }
+}
+
+// Исход схватки. Один гном почти наверняка погибает (но может победить или уцелеть),
+// группа убивает нечисть вместе; редко нечисть разделывается со всеми бойцами сразу.
+function resolveFight(e) {
+  const fs = e.fighters.filter(u => !u.dead && u.brk && u.brk.kind === 'fight');
+  e.resolved = true;
+  if (!fs.length) { e.state = 'walk'; e.foe = null; return; }
+  const n = fs.length;
+  let outcome;
+  if (e.forceWin !== undefined) outcome = e.forceWin ? 'win' : 'lose';
+  else if (n === 1) { const r = Math.random(); outcome = r < 0.2 ? 'win' : r < 0.35 ? 'escape' : 'lose'; }
+  else {
+    const r = Math.random(), pWipe = 0.06, pWin = Math.min(0.94, 0.5 + 0.15 * n);
+    outcome = r < pWipe ? 'wipe' : r < pWipe + (1 - pWipe) * pWin ? 'win' : 'lose';
+  }
+  e.foe = null;
+  if (outcome === 'win') {
+    entFell(e, fs[0]);
+    if (n > 1) logEvent('tree', `Нечисть одолели вместе: ${n} гномов`, e.x, e.y);
+  } else if (outcome === 'escape') {
+    e.escaped = fs[0];
+    knockBack(fs[0], e); injure(fs[0], 'arm');
+    e.state = 'walk'; e.wait = 5; e.fighters = []; e.fightT = undefined; e.resolved = false;
+    logEvent('tree', `${UNIT_TYPES[fs[0].type].name} ушёл от нечисти живым`, e.x, e.y);
   } else {
-    entTakes(e, u);
-    yield { wait: 99 };
+    // нечисть берёт одного; остальных, если они выжили, расшвыривает
+    entTakes(e, fs[0]);
+    for (const o of fs.slice(1)) {
+      if (outcome === 'wipe') { floater(o.x, o.y - 1, '!', '#ff6040'); fxBurst(o.x * TILE, o.y * TILE - 6, 8, ['#ffc0c0', '#a02818'], 40, 30, 0.7, 1.8, 160); removeUnit(o); }
+      else { e.escaped = o; knockBack(o, e); injure(o, Math.random() < 0.5 ? 'leg' : 'arm'); }
+    }
+    if (outcome === 'wipe') { toast(`${entName(e)} расправилась со всеми, кто осмелился напасть!`); logEvent('tree', `Нечисть перебила всех нападавших: ${n}`, e.x, e.y); }
   }
 }
 
@@ -204,21 +244,41 @@ function drawNightFx(c) {
 
 // ---------- Ходячие деревья ----------
 
+// Сколько нечисти выходит за ночь: обычно до 10, в каждую пятую ночь (5, 10, 15…) — до 25.
+// Виды делят это число случайно: деревья, камни, водяные.
+function nightTotal() {
+  const n = nightIndex() + 1;
+  if (n % 5 === 0) return 15 + Math.floor(Math.random() * 11);     // 15–25
+  return 6 + Math.floor(Math.random() * 5);                         // 6–10
+}
+
 function spawnEnts() {
   Game.ents = Game.ents || [];
-  const people = Game.units.filter(u => isPerson(u));   // и те, кто в домах: дерево проснётся у двери
+  const people = Game.units.filter(u => isPerson(u));   // и те, кто в домах: нечисть проснётся рядом
   if (!people.length) return;
-  // каждую ночь просыпается случайно от 1 до 5 деревьев
-  const want = 1 + Math.floor(Math.random() * 5);
+  const total = nightTotal();
+  // случайные доли видов: каждый раз разные пропорции
+  const w = [0.15 + Math.random(), 0.15 + Math.random(), 0.15 + Math.random()], sw = w[0] + w[1] + w[2];
+  let nT = Math.round(total * w[0] / sw), nR = Math.round(total * w[1] / sw), nW = total - nT - nR;
+  nW = Math.max(0, nW);
+  spawnTreeEnts(people, nT);
+  spawnRockEnts(nR);
+  spawnWaterEnts(people, nW);
+  Game.nightEntTotal = Game.ents.length;
+}
+
+function spawnTreeEnts(people, want) {
+  let made = 0;
   // сперва ищем на опушке, не нашлось — любое лиственное поближе
-  for (let tries = 0; tries < 900 && Game.ents.length < want; tries++) {
-    const strict = tries < 600;
+  for (let tries = 0; tries < 1200 && made < want; tries++) {
+    const strict = tries < 800;
     const u = people[(Math.random() * people.length) | 0];
-    const a = Math.random() * Math.PI * 2, d = 4 + Math.random() * 10;
+    const a = Math.random() * Math.PI * 2, d = 5 + Math.random() * 12;
     const x = Math.round(u.x + Math.cos(a) * d), y = Math.round(u.y + Math.sin(a) * d);
     if (!inb(x, y)) continue;
     const i = idx(x, y), o = World.obj[i];
     if (!o || o.t !== 'tree' || o.g < 1 || o.res || o.awake) continue;
+    if (nearBonfire(x, y, 12)) continue;
     // только на опушке: перед деревом открыто, чтобы его было видно, а не в глухой чаще
     let front = 0;
     for (let yy = y + 1; yy <= y + 2; yy++) for (let xx = x - 2; xx <= x + 2; xx++) {
@@ -226,15 +286,24 @@ function spawnEnts() {
       if (q && q.t === 'tree') front++;
     }
     if (strict && front > 2) continue;
-    if (Game.ents.some(e => Math.abs(e.hx - x) + Math.abs(e.hy - y) < 7)) continue;
+    if (Game.ents.some(e => Math.abs(e.hx - x) + Math.abs(e.hy - y) < 4)) continue;
     o.awake = true; o.res = true;           // дровосек его не тронет
-    Game.ents.push({
-      i, o, hx: x, hy: y, x: x + 0.5, y: y + 0.5, state: 'sleep', t: 0, k: 0,
-      delay: Math.random() * 8, face: 1, phase: Math.random() * 6, alpha: 1,
-      wait: 0, goal: null, moving: false, foe: null, victim: null, seen: new Set(),
-    });
+    Game.ents.push(newEnt({ i, o, hx: x, hy: y, x: x + 0.5, y: y + 0.5 }));
+    made++;
   }
-  spawnRockEnts();
+}
+
+function newEnt(p) {
+  return Object.assign({
+    state: 'sleep', t: 0, k: 0, delay: Math.random() * 10, face: 1, phase: Math.random() * 6, alpha: 1,
+    wait: 0, goal: null, moving: false, foe: null, victim: null, seen: new Set(), fighters: [],
+  }, p);
+}
+
+// есть ли рядом большой костёр: он отпугивает нечисть
+function nearBonfire(x, y, r) {
+  for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done' && Math.hypot(b.x + b.w / 2 - x, b.y + b.h / 2 - y) <= r) return true;
+  return false;
 }
 
 function entMove(e, tx, ty, speed, dt) {
@@ -251,20 +320,20 @@ function entMove(e, tx, ty, speed, dt) {
 
 // Последний удар: глаза гаснут, дерево шатается и с грохотом валится от гнома
 function entFell(e, u) {
-  e.state = 'dying'; e.t = 0; e.foe = null; e.moving = false;
+  e.state = 'dying'; e.t = 0; e.foe = null; e.moving = false; e.fightT = undefined;
   e.fallDir = u.x < e.x ? 1 : -1;
   sfxAt('creak', e.x * TILE, e.y * TILE, 1.3);
   logEvent('tree', `${UNIT_TYPES[u.type].name} одолел: ${entName(e).toLowerCase()}`, e.x, e.y);
   if (Game.time - (Game.entToastT || -99) > 30) {
     Game.entToastT = Game.time;
-    toast(e.rock ? `${UNIT_TYPES[u.type].name} разбил ходячий камень! Остались камни для каменотёса` : `${UNIT_TYPES[u.type].name} срубил ходячее дерево! Бревно заберёт дровосек`);
+    toast(e.water ? `${UNIT_TYPES[u.type].name} рассеял водяного — осталась лужа` : e.rock ? `${UNIT_TYPES[u.type].name} разбил ходячий камень! Остались камни для каменотёса` : `${UNIT_TYPES[u.type].name} срубил ходячее дерево! Бревно заберёт дровосек`);
   }
 }
 
 // Захват: тянется рукой, хватает, поднимает в кулаке, разворачивается и уносит в туман
 const GRAB_REACH = 0.9, GRAB_LIFT = 1.7, GRAB_TURN = 2.1, GRAB_FADE = 4.8, GRAB_END = 6.8;
 function entTakes(e, u) {
-  e.state = 'drag'; e.t = 0; e.foe = null; e.scream = 0;
+  e.state = 'drag'; e.t = 0; e.foe = null; e.scream = 0; e.sayV = false; e.sayK = false; e.turned = false;
   e.victim = u;
   e.vx0 = u.x; e.vy0 = u.y;
   e.face = u.x > e.x ? 1 : -1;
@@ -274,13 +343,14 @@ function entTakes(e, u) {
   if (Math.abs(e.dragDir[0]) < 0.4) e.dragDir = [-e.face * 0.7, Math.sign(dy || 1) * 0.7];   // уходит вбок, чтобы было видно
   floater(u.x, u.y - 1.2, '!', '#ff6040');
   sfxAt('roar', e.x * TILE, e.y * TILE);
-  toast(`${entName(e)} утащил${e.rock ? '' : 'о'} в туман: ${UNIT_TYPES[u.type].name}`);
-  logEvent('tree', `${entName(e)} утащил${e.rock ? '' : 'о'} в туман: ${UNIT_TYPES[u.type].name}`, e.x, e.y);
+  toast(`${entName(e)} утащил${e.rock || e.water ? '' : 'о'} в туман: ${UNIT_TYPES[u.type].name}`);
+  logEvent('tree', `${entName(e)} утащил${e.rock || e.water ? '' : 'о'} в туман: ${UNIT_TYPES[u.type].name}`, e.x, e.y);
   removeUnit(u);
 }
 
 // стал бревном: на месте дерева — пень (отрастёт), бревно лежит, где упало
 function entToLog(e) {
+  if (e.water) return entWaterRest(e);
   if (e.rock) return rockEntRest(e);
   const home = e.i;
   if (World.obj[home] === e.o) { World.obj[home] = { t: 'stump', g: 0 }; World.growing.add(home); }
@@ -298,6 +368,7 @@ function updateEnts(dt) {
   for (const e of list) {
     e.t += dt;
     e.moving = false;
+    if (entBonfireRepel(e)) continue;
     switch (e.state) {
       case 'sleep':
         // вечером стоит обычным деревом, только глаза горят; вылезает с наступлением ночи
@@ -314,6 +385,11 @@ function updateEnts(dt) {
       case 'walk':
         if (!night) { e.state = 'return'; break; }
         if (e.wait > 0) { e.wait -= dt; break; }
+        // иногда нечисть идёт крушить ближайшее здание
+        if (!e.goal && !e.target && Math.random() < dt * 0.25) {
+          const tb = pickSmashTarget(e);
+          if (tb) { e.target = tb; e.goal = smashSpot(e, tb); }
+        }
         if (!e.goal) {
           for (let k = 0; k < 8 && !e.goal; k++) {
             const x = e.hx + Math.round((Math.random() * 2 - 1) * ENT_ROAM), y = e.hy + Math.round((Math.random() * 2 - 1) * ENT_ROAM);
@@ -321,26 +397,42 @@ function updateEnts(dt) {
           }
           if (!e.goal) { e.wait = 2; break; }
         }
-        if (entMove(e, e.goal[0], e.goal[1], 0.55, dt)) {
+        if (entMove(e, e.goal[0], e.goal[1], e.target ? 0.8 : 0.55, dt)) {
           e.goal = null; e.wait = 1.5 + Math.random() * 3.5;
-          if (Math.random() < 0.3) sfxAt('creak', e.x * TILE, e.y * TILE, 0.7);
+          if (e.target) {
+            // дошла до здания — начинает бить
+            const tb = e.target;
+            if (tb.removed) e.target = null;
+            else { e.state = 'smash'; e.t = 0; e.hitsDone = 0; e.face = tb.x + tb.w / 2 > e.x ? 1 : -1; e.wait = 0; }
+          } else if (Math.random() < 0.3) sfxAt('creak', e.x * TILE, e.y * TILE, 0.7);
         }
         break;
+      case 'smash': {
+        const tb = e.target;
+        if (!tb || tb.removed || !night) { e.target = null; e.state = night ? 'walk' : 'return'; break; }
+        // каждые 1.1 с — удар по зданию: пыль, щепки, треск
+        if (e.t >= 0.6 + e.hitsDone * 1.1) {
+          e.hitsDone++; e.atk = Game.time; e.hitT = Game.time;
+          buildingHit(e, tb);
+        }
+        if (e.hitsDone >= 7) { e.target = null; e.state = 'walk'; e.wait = 3 + Math.random() * 4; }
+        break;
+      }
       case 'fight': {
-        const f = e.foe;
-        // гном передумал (сбили с ног и т. п.) — дерево снова бродит
-        if (!f || f.dead || !f.brk || f.brk.kind !== 'fight') { if (e.t > 1) { e.state = 'walk'; e.foe = null; } break; }
-        if (e.t > 20) { e.state = 'walk'; e.foe = null; }
+        // бойцов не осталось (сбили с ног, убежали) — нечисть снова бродит
+        const alive = (e.fighters || []).filter(f => !f.dead && f.brk && f.brk.kind === 'fight');
+        if (!alive.length) { if (e.t > 1) { e.state = 'walk'; e.foe = null; e.fighters = []; e.fightT = undefined; e.resolved = false; } break; }
+        if (e.t > 30 && !e.resolved) resolveFight(e);
         break;
       }
       case 'dying':
         // шатается → заваливается → удар о землю: пыль, листья, бревно
         if (e.t >= 2.2) {
           const { bx, by } = entBase(e);
-          const off = e.rock ? 0 : e.fallDir;
-          fxBurst(bx + off * 40, by - 2, 30, ['#8a7a60', '#6a5a44', '#a8987a'], 90, 40, 0.9, 3, 80);
+          const off = e.rock || e.water ? 0 : e.fallDir;
+          fxBurst(bx + off * 40, by - 2, 30, e.water ? ['#7ac8f0', '#bfefff', '#4aa0d0'] : ['#8a7a60', '#6a5a44', '#a8987a'], 90, 40, 0.9, 3, 80);
           fxBurst(bx + off * 50, by - 10, 22, ENT_LOOK[entBase(e).kind].crown, 70, 50, 1.4, 2.4, 60);
-          floater(e.x + off * 1.2, e.y - 1, e.rock ? 'Хрусть!' : 'БУХ!', '#e0b882');
+          floater(e.x + off * 1.2, e.y - 1, e.water ? 'Плюх!' : e.rock ? 'Хрусть!' : 'БУХ!', '#e0b882');
           sfxAt('thud', e.x * TILE, e.y * TILE, 1.6);
           entToLog(e); e.state = 'gone';
         }
@@ -358,15 +450,18 @@ function updateEnts(dt) {
           e.moving = true; e.phase += 0.8 * dt * 7;
         }
         // гном орёт и вырывается
-        if (e.t > GRAB_REACH && (e.scream -= dt) <= 0) {
+        if (e.t > GRAB_REACH && e.t < GRAB_FADE - 1.1 && (e.scream -= dt) <= 0) {
           e.scream = 0.9 + Math.random() * 0.5;
           const h = entHandWorld(e);
           floater(h.x / TILE, h.y / TILE - 0.6, ['А-а-а!', 'Помогите!', 'Пусти!', 'Мама!'][Math.floor(Math.random() * 4)], '#ffc0c0');
         }
+        // перед уходом в тень: последние слова жертвы и короткая реплика нечисти
+        if (!e.sayV && e.t >= GRAB_FADE - 0.9) { e.sayV = true; const hh = entHandWorld(e); floater(hh.x / TILE, hh.y / TILE - 0.9, 'А надо было раньше…', '#ffc0c0'); }
+        if (!e.sayK && e.t >= GRAB_FADE - 0.1) { e.sayK = true; floater(e.x, e.y - 2.8, 'А всё.', '#e8e8f4'); sfxAt('roar', e.x * TILE, e.y * TILE, 0.7); }
         e.alpha = e.t < GRAB_FADE ? 1 : Math.max(0, 1 - (e.t - GRAB_FADE) / (GRAB_END - GRAB_FADE));   // растворяется в тумане
         if (e.t >= GRAB_END) {
           // утащил — и тихо вернулся на своё место
-          e.victim = null; e.x = e.hx + 0.5; e.y = e.hy + 0.5;
+          e.victim = null; { const hm = entHomeXY(e); e.x = hm[0]; e.y = hm[1]; }
           e.state = 'fadein'; e.t = 0;
         }
         break;
@@ -376,14 +471,15 @@ function updateEnts(dt) {
         if (e.t >= 2) { e.alpha = 1; e.state = 'root'; e.t = 0; }   // насытилось — уходит в землю до следующей ночи
         break;
       case 'return':
-        if (entMove(e, e.hx + 0.5, e.hy + 0.5, 0.7, dt)) { e.state = 'root'; e.t = 0; }
+        { const hm = entHomeXY(e); if (entMove(e, hm[0], hm[1], 0.7, dt)) { e.state = 'root'; e.t = 0; } }
         break;
       case 'root':
         e.k = Math.max(0, 1 - e.t / 1.8);
         if (e.t >= 1.8) e.state = 'done';
         break;
     }
-    if (e.state === 'done') { e.o.awake = false; e.o.res = false; }
+    if (e.state === 'done' && e.o) { e.o.awake = false; e.o.res = false; }
+    if (e.state === 'done') e.dead = true;
   }
   Game.ents = list.filter(e => e.state !== 'done' && e.state !== 'gone');
 }
@@ -391,18 +487,28 @@ function updateEnts(dt) {
 // Кто увидел ходячее дерево — реагирует один раз на каждое дерево
 function entReact(u) {
   for (const e of Game.ents) {
-    if (!(e.state === 'walk' || (e.state === 'emerge' && e.k > 0.5))) continue;
-    if (e.seen.has(u.id) || Math.hypot(e.x - u.x, e.y - u.y) > ENT_SEE) continue;
+    const open = e.state === 'walk' || e.state === 'smash' || e.state === 'fight' || (e.state === 'emerge' && e.k > 0.5);
+    if (!open || e.seen.has(u.id) || Math.hypot(e.x - u.x, e.y - u.y) > ENT_SEE) continue;
     const lost = u.brk && u.brk.kind === 'lost';
     if (!lost && !interruptible(u)) continue;
     e.seen.add(u.id);
     if (lost) endBreak(u);
+    // друзья рядом придают храбрости: в компании чаще бросаются в драку, в одиночку — застывают или бегут
+    let friends = 0;
+    for (const o of Game.units) if (o !== u && !o.dead && !o.inside && isPerson(o) && Math.hypot(o.x - u.x, o.y - u.y) < 5) friends++;
+    if (e.state === 'fight') {
+      // идёт драка: присоединиться, если ещё не поздно
+      if (!e.resolved && e.fighters.length < 6 && Math.random() < (friends ? 0.75 : 0.5)) { e.fighters.push(u); startBreak(u, 'fight', null); u.proc = fightGen(u, e); }
+      else { startBreak(u, 'flee', null); u.proc = fleeGen(u); }
+      return;
+    }
     const r = Math.random();
-    const canFight = !e.foe && e.state === 'walk';
-    if (r < 0.4) { startBreak(u, 'freeze', null); u.proc = freezeGen(u); }
-    else if (r < 0.75 || !canFight) { startBreak(u, 'flee', null); u.proc = fleeGen(u); }
+    const canFight = e.state === 'walk' || e.state === 'smash';
+    const pFreeze = friends ? 0.12 : 0.4, pFlee = friends ? 0.28 : 0.75;     // накопительные пороги: застыть / бежать / драться
+    if (r < pFreeze) { startBreak(u, 'freeze', null); u.proc = freezeGen(u); }
+    else if (r < pFlee || !canFight) { startBreak(u, 'flee', null); u.proc = fleeGen(u); }
     else {
-      e.state = 'fight'; e.foe = u; e.t = 0; e.goal = null;
+      e.target = null; e.state = 'fight'; e.foe = u; e.t = 0; e.goal = null; e.fighters = [u]; e.fightT = undefined; e.resolved = false;
       startBreak(u, 'fight', null); u.proc = fightGen(u, e);
     }
     return;
@@ -854,6 +960,7 @@ function entSprite(kind, name) {
 
 function entBase(e) {
   const h = hash(e.i);
+  if (e.water) return { spr: null, kind: 'water', bx: Math.round(e.x * TILE), by: Math.round(e.y * TILE + 12) };
   if (e.rock) return { spr: null, kind: 'rock', bx: Math.round(e.x * TILE + ((h >>> 5) % 15) - 7), by: Math.round(e.y * TILE + 10 + ((h >>> 9) % 11) - 5) };
   return {
     spr: SPR.trees[h % SPR.trees.length],
@@ -864,7 +971,7 @@ function entBase(e) {
 }
 
 function entFrameName(e) {
-  if (e.state === 'fight') {
+  if (e.state === 'fight' || e.state === 'smash') {
     // замах ветвями и удар, иначе стоит и ждёт
     const a = e.atk ? Game.time - e.atk : 9;
     return a < 0.35 ? 'f0' : a < 0.8 ? 'f1' : 'idle';
@@ -881,6 +988,7 @@ function entFrameName(e) {
 
 // где сейчас кулак, держащий гнома (мировые пиксели)
 function entHandWorld(e) {
+  if (e.water) return waterEntHand(e);
   if (e.rock) return rockEntHand(e);
   const { kind, bx, by } = entBase(e);
   const f = entSprite(kind, entFrameName(e));
@@ -894,6 +1002,7 @@ function treeEyePos(e) {
 }
 
 function drawTreeEyes(c, e, a) {
+  if (e.water) return drawWaterEyes(c, e, a);
   if (e.rock) return drawRockEyes(c, e, a);
   const p = treeEyePos(e);
   const blink = (Game.time * 0.37 + e.i * 0.13) % 1 < 0.04;     // изредка моргает
@@ -915,6 +1024,7 @@ function drawTreeEyes(c, e, a) {
 
 // где глаза в мире (для свечения сквозь туман)
 function entFacePos(e) {
+  if (e.water) return waterEyeCenter(e);
   if (e.rock) return rockEyeCenter(e);
   if (e.k < 0.3) return treeEyePos(e);
   const { bx, by, kind } = entBase(e);
@@ -924,6 +1034,7 @@ function entFacePos(e) {
 }
 
 function drawEnt(c, e) {
+  if (e.water) return drawWaterEnt(c, e);
   if (e.rock) return drawRockEnt(c, e);
   const { spr, kind, bx, by } = entBase(e);
   const k = e.k;
@@ -1071,35 +1182,36 @@ function entDemo(mode = 'drag') {
   setupStart(seed);
   buildTerrain(seed);
   Game.time = NIGHT_START + 30;                         // глубокая ночь
-  Game.entNight = nightIndex(); Game.wasNight = true;   // своих деревьев не будить
+  Game.entNight = nightIndex(); Game.wasNight = true;   // своих не будить
   const st = storeB0();
   const kinds = ['oak', 'birch', 'pine', 'fir', 'oak'];
   const types = ['serf', 'builder', 'woodcutter', 'farmer', 'stonemason'];
   const used = new Set();
   const y = st.doorY + 4;
   for (let n = 0; n < 5; n++) {
-    // дерево нужной породы — берём его облик и место, куда оно вернётся
+    // дерево или камень нужного вида — берём его облик и место, куда оно вернётся
     let ti = -1;
-    for (let j = 0; j < N_TILES && ti < 0; j++) {
+    if (mode === 'water') ti = 0;
+    else for (let j = 0; j < N_TILES && ti < 0; j++) {
       const o = World.obj[j];
       if (mode === 'rock' ? o && o.t === 'stone' && o.n >= 3 + (n % 3) && !o.awake && !used.has(j)
         : o && o.t === 'tree' && o.g >= 1 && !o.awake && !used.has(j) && ENT_KIND[hash(j) % SPR.trees.length] === kinds[n]) ti = j;
     }
     if (ti < 0) continue;
     used.add(ti);
-    const o = World.obj[ti]; o.awake = true; o.res = true;
+    const o = mode === 'water' ? {} : World.obj[ti]; o.awake = true; o.res = true;
     const x = st.doorX - 6 + n * 3.6;
-    const side = n % 2 ? -1 : 1;                        // гном то слева, то справа от дерева
-    const e = {
-      rock: mode === 'rock', i: ti, o, hx: ti % MAP_W, hy: (ti / MAP_W) | 0, x: x + 0.5, y: y + 0.5, state: 'walk', t: 0, k: 1,
-      delay: 0, face: -side, phase: 0, alpha: 1, wait: 99, goal: null, moving: false, foe: null, victim: null, seen: new Set(),
-    };
+    const side = n % 2 ? -1 : 1;                        // гном то слева, то справа
+    const e = newEnt({
+      rock: mode === 'rock', water: mode === 'water', i: ti, o, hx: mode === 'water' ? Math.floor(x) : ti % MAP_W, hy: mode === 'water' ? y : (ti / MAP_W) | 0,
+      wx: Math.floor(x), wy: y, x: x + 0.5, y: y + 0.5, state: 'walk', k: 1, delay: 0, face: -side, wait: 99,
+    });
     Game.ents.push(e);
     const u = spawnUnit(types[n], x + 0.5 + side * 1.7, y + 0.55);
     u.lantern = true; u.face = -side; u.vdir = 'E';
     e.seen.add(u.id);
     if (mode === 'win') {
-      e.state = 'fight'; e.foe = u; e.forceWin = true;
+      e.state = 'fight'; e.foe = u; e.fighters = [u]; e.forceWin = true;
       startBreak(u, 'fight', null); u.proc = fightGen(u, e);
     } else entTakes(e, u);
   }
@@ -1109,7 +1221,38 @@ function entDemo(mode = 'drag') {
   setSpeed(0);
   toast(mode === 'win'
     ? 'Демо: гномы рубятся с деревьями. Мир на паузе — нажмите ×1'
-    : 'Демо: деревья хватают гномов. Мир на паузе — нажмите ×1, чтобы смотреть с начала');
+    : mode === 'water' ? 'Демо: водяные хватают гномов. Мир на паузе — нажмите ×1'
+    : 'Демо: нечисть хватает гномов. Мир на паузе — нажмите ×1, чтобы смотреть с начала');
+}
+
+// Демо: четверо гномов против одной нечисти (исход случайный) и одинокий гном против другой
+function entDemoGroup() {
+  const seed = (Math.random() * 1e9) | 0;
+  setupStart(seed);
+  buildTerrain(seed);
+  Game.time = NIGHT_START + 30;
+  Game.entNight = nightIndex(); Game.wasNight = true;
+  const st = storeB0(), y = st.doorY + 5;
+  const mk = (x, water) => {
+    const e = newEnt({ water, rock: !water, i: 0, o: { n: 5 }, hx: Math.floor(x), hy: y, wx: Math.floor(x), wy: y, x: x + 0.5, y: y + 0.5, state: 'walk', k: 1, delay: 0, wait: 99 });
+    if (!water) { e.o.n = 5; }
+    Game.ents.push(e); return e;
+  };
+  const e1 = mk(st.doorX - 3, true), e2 = mk(st.doorX + 4, true);
+  const types = ['serf', 'builder', 'woodcutter', 'farmer', 'stonemason'];
+  e1.fighters = [];
+  for (let k = 0; k < 4; k++) {
+    const u = spawnUnit(types[k], st.doorX - 3 + [-2, 2, -1.4, 1.4][k], y + 1.2 + (k > 1 ? 0.6 : 0));
+    u.lantern = true; e1.seen.add(u.id);
+    e1.state = 'fight'; e1.fighters.push(u); startBreak(u, 'fight', null); u.proc = fightGen(u, e1);
+  }
+  const lone = spawnUnit('serf', st.doorX + 4 - 1.8, y + 0.6); lone.lantern = true; e2.seen.add(lone.id);
+  e2.state = 'fight'; e2.fighters = [lone]; startBreak(lone, 'fight', null); lone.proc = fightGen(lone, e2);
+  purgeDead();
+  centerOn((st.doorX + 0.5) * TILE, (y - 1) * TILE);
+  updateMinimapBase();
+  setSpeed(0);
+  toast('Демо: слева четверо гномов против водяного, справа — один. Мир на паузе, нажмите ×1');
 }
 function storeB0() { return Game.buildings.find(b => b.isStore() && !b.isPile); }
-function entName(e) { return e.rock ? 'Ходячий камень' : 'Ходячее дерево'; }
+function entName(e) { return e.rock ? 'Ходячий камень' : e.water ? 'Водяной' : 'Ходячее дерево'; }
