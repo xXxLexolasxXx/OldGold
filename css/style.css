@@ -545,3 +545,8 @@ body.mobile #tut { left: 8px; right: 8px; top: 50px; width: auto; max-height: 46
 .upg:hover { filter: brightness(1.15); }
 .upg.no { border-color: #6a5a3a; color: #b4a37a; filter: grayscale(0.5); }
 .lvl { font-size: 11px; background: #c89226; color: #2a1c08; border-radius: 3px; padding: 1px 5px; vertical-align: middle; }
+
+/* журнал: пиксельные иконки вместо эмодзи */
+.log-filters button { display: inline-flex; align-items: center; gap: 4px; }
+.log-filters button img, .log-i img { width: 16px; height: 16px; image-rendering: pixelated; display: block; }
+.log-i { align-self: center; }

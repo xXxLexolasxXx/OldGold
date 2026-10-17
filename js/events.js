@@ -5,23 +5,23 @@
 
 const LOG_MAX = 300;
 const LOG_KINDS = {
-  build:   { icon: '🏠', name: 'Стройка' },
-  animal:  { icon: '🐺', name: 'Звери' },
-  owl:     { icon: '🦉', name: 'Совы' },
-  bump:    { icon: '💥', name: 'Столкновения' },
-  food:    { icon: '🍞', name: 'Еда' },
-  night:   { icon: '🌙', name: 'Ночь' },
-  weather: { icon: '🌧', name: 'Погода' },
-  tree:    { icon: '🌳', name: 'Деревья' },
-  gold:    { icon: '💰', name: 'Находки' },
-  people:  { icon: '🧔', name: 'Жители' },
-  deliver: { icon: '📦', name: 'Доставки' },
+  build:   { icon: 'build', name: 'Стройка' },
+  animal:  { icon: 'log_animal', name: 'Животные' },
+  owl:     { icon: 'log_owl', name: 'Совы' },
+  bump:    { icon: 'log_gossip', name: 'Дрязги' },
+  food:    { icon: 'log_food', name: 'Еда' },
+  night:   { icon: 'log_night', name: 'Ночь' },
+  weather: { icon: 'log_gossip', name: 'Дрязги' },
+  tree:    { icon: 'log_tree', name: 'Нечисть' },
+  gold:    { icon: 'log_gold', name: 'Находки' },
+  people:  { icon: 'people', name: 'Жители' },
+  deliver: { icon: 'store', name: 'Доставки' },
 };
 const LOG_FILTERS = [
-  ['all', 'Все'], ['build', 'Стройка'], ['animal', 'Звери и совы'], ['bump', 'Столкновения'],
-  ['night', 'Ночь'], ['weather', 'Погода'], ['food', 'Еда'], ['people', 'Жители'],
+  ['all', 'Все', 'log_all'], ['build', 'Стройка', 'build'], ['animal', 'Животные', 'log_animal'], ['night', 'Ночь', 'log_night'],
+  ['food', 'Еда', 'log_food'], ['people', 'Жители', 'people'], ['gossip', 'Дрязги', 'log_gossip'],
 ];
-const LOG_GROUP = { owl: 'animal', tree: 'night', gold: 'people', deliver: 'build' };
+const LOG_GROUP = { owl: 'animal', tree: 'night', gold: 'people', deliver: 'build', bump: 'gossip', weather: 'gossip' };
 
 function logEvent(kind, text, x, y) {
   const log = Game.log || (Game.log = []);
@@ -44,14 +44,14 @@ function fmtTime(t) {
 
 function logHTML() {
   const f = UI.logFilter || 'all';
-  let h = '<div class="log-filters">' + LOG_FILTERS.map(([k, n]) => `<button data-logf="${k}" class="${k === f ? 'active' : ''}">${n}</button>`).join('') + '</div>';
+  let h = '<div class="log-filters">' + LOG_FILTERS.map(([k, n, ic]) => `<button data-logf="${k}" class="${k === f ? 'active' : ''}" title="${n}">${ui(ic)}${n}</button>`).join('') + '</div>';
   const list = (Game.log || []).filter(e => f === 'all' || e.kind === f || LOG_GROUP[e.kind] === f);
   if (!list.length) return h + '<div class="muted small">Пока ничего не случилось.</div>';
   h += '<div class="log-list">';
   for (let i = list.length - 1; i >= 0 && i >= list.length - 120; i--) {
-    const e = list[i], k = LOG_KINDS[e.kind] || { icon: '•' };
+    const e = list[i], k = LOG_KINDS[e.kind] || { icon: 'log_all' };
     const go = e.x !== undefined ? ` data-logx="${e.x}" data-logy="${e.y}" title="Показать на карте"` : '';
-    h += `<div class="log-row${go ? ' click' : ''}"${go}><span class="log-t">${fmtTime(e.t)}</span><span class="log-i">${k.icon}</span><span class="log-x">${e.text}${e.n > 1 ? ` <b>×${e.n}</b>` : ''}</span></div>`;
+    h += `<div class="log-row${go ? ' click' : ''}"${go}><span class="log-t">${fmtTime(e.t)}</span><span class="log-i">${ui(k.icon)}</span><span class="log-x">${e.text}${e.n > 1 ? ` <b>×${e.n}</b>` : ''}</span></div>`;
   }
   return h + '</div>';
 }
