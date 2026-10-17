@@ -850,9 +850,33 @@ function drawOverlay(c) {
     ant((bx + d.dx) * TILE + 2, (by + d.dy) * TILE + 2, TILE - 4, TILE - 4, err ? '#ff5040' : '#60ff80');
   } else if (tool.kind === 'road') {
     const cells = R.roadDrag || [h];
+    const single = cells.length === 1;
     for (const [x, y] of cells) {
-      c.fillStyle = canPlaceRoad(x, y) ? 'rgba(255,230,160,0.5)' : 'rgba(220,40,30,0.4)';
-      c.fillRect(x * TILE + 6, y * TILE + 6, 20, 20);
+      const px = x * TILE, py = y * TILE;
+      const exists = inb(x, y) && (World.road[idx(x, y)] || Game.roadSites.has(idx(x, y)));
+      const ok = canPlaceRoad(x, y);
+      if (exists && single) {
+        // клик уберёт дорогу: красная клетка с крестом, как у полей
+        c.fillStyle = 'rgba(224,64,48,0.4)'; c.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+        c.strokeStyle = '#e04030'; c.lineWidth = 1.2; c.strokeRect(px + 2.5, py + 2.5, TILE - 5, TILE - 5);
+        c.fillStyle = '#e04030';
+        for (let k = 0; k < 14; k++) { c.fillRect(px + 9 + k, py + 9 + k, 2, 2); c.fillRect(px + 22 - k, py + 9 + k, 2, 2); }
+      } else if (exists) {
+        c.fillStyle = 'rgba(200,190,170,0.22)'; c.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);     // уже дорога — просто проходим
+      } else if (ok) {
+        c.fillStyle = 'rgba(214,200,170,0.4)'; c.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+        c.strokeStyle = '#e0d2a8'; c.lineWidth = 1.2; c.strokeRect(px + 2.5, py + 2.5, TILE - 5, TILE - 5);
+        if (single) {   // значок: три булыжника
+          for (const [dx, dy, r] of [[11, 18, 4.4], [20, 17, 4], [16, 11, 4.2]]) {
+            ellipse(c, px + dx + 0.6, py + dy + 0.8, r, r * 0.7, '#2e2822');
+            ellipse(c, px + dx, py + dy, r, r * 0.7, '#8e867a');
+            ellipse(c, px + dx - r * 0.3, py + dy - r * 0.25, r * 0.5, r * 0.3, '#cfc8b8');
+          }
+        }
+      } else {
+        c.fillStyle = 'rgba(224,64,48,0.3)'; c.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+        c.strokeStyle = '#e04030'; c.lineWidth = 1.2; c.strokeRect(px + 2.5, py + 2.5, TILE - 5, TILE - 5);
+      }
     }
   } else if (tool.kind === 'field') {
     const o = World.obj[idx(h[0], h[1])], has = o && o.t === 'field';
