@@ -184,6 +184,7 @@ function entSlamFx(e, u) {
 }
 
 function updateFx(dt) {
+  fxTimersTick();
   const fx = Game.fx;
   if (!fx || !fx.length) return;
   for (const p of fx) { p.t += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.98; }

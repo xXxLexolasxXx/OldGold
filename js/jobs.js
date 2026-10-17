@@ -330,13 +330,22 @@ function* quarryWork(u, b) {
   const ok = yield { walk: spot };
   if (!ok) { s.o.res = false; yield { wait: 2 }; return; }
   u.face = s.x + 0.5 > u.x ? 1 : -1;
-  yield { wait: 5, anim: 'mine' };
+  // пять ударов киркой: искры и осколки, камень трескается; последним откалывается кусок
+  const HITS = 5;
+  for (let k = 0; k < HITS; k++) {
+    u.face = s.x + 0.5 > u.x ? 1 : -1; u.vdir = 'E';
+    fxLater(0.52, () => rockHit(s.x, s.y, s.o, u, k === HITS - 1));   // в момент удара внутри замаха
+    yield { wait: 1, anim: 'mine' };
+    if (World.obj[idx(s.x, s.y)] !== s.o) break;
+  }
   s.o.res = false;
   const i = idx(s.x, s.y);
   if (World.obj[i] === s.o) {
     s.o.n--;
+    s.o.dmg = 0;
     if (s.o.n <= 0) World.obj[i] = null;
     u.carry = 'stone';
+    yield { wait: 0.5, anim: 'duck' };          // нагнулся, поднял отколотый кусок
   }
   if (!(yield* goHome(u, b))) return;
   if (u.carry) { gather(b, 'stone'); u.carry = null; }

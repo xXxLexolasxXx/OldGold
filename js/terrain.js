@@ -134,9 +134,10 @@ function buildTerrain(seed) {
 
         // трава
         const lush = smoothstep(0.3, 0.7, nA);
-        let r = 74 + (104 - 74) * lush, g = 108 + (138 - 108) * lush, b = 36 + (48 - 36) * lush;
+        // сочная «геройская» трава: насыщенная зелень с жёлтыми бликами
+        let r = 58 + (98 - 58) * lush, g = 110 + (160 - 110) * lush, b = 24 + (40 - 24) * lush;
         const dry = smoothstep(0.62, 0.8, nC) * 0.35;
-        r += (128 - r) * dry; g += (130 - g) * dry; b += (60 - b) * dry;
+        r += (150 - r) * dry; g += (152 - g) * dry; b += (56 - b) * dry;
         const dark = smoothstep(0.35, 0.18, nC) * 0.4;
         r *= 1 - dark * 0.35; g *= 1 - dark * 0.25; b *= 1 - dark * 0.35;
         if (nD > 0.66) { const k = 0.78 + (1 - nD) * 0.4; r *= k; g *= k; b *= k; }

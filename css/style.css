@@ -314,7 +314,7 @@ body.info-float #tab-area { flex: 1 1 auto; }
 /* ---------- Игровое поле ---------- */
 
 #view { position: relative; flex: 1; overflow: hidden; }
-#game { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+#game { display: block; width: 100%; height: 100%; image-rendering: pixelated; filter: saturate(1.16) contrast(1.06); }   /* сочные краски в духе «Героев III» */
 
 #vignette {
   position: absolute; inset: 0; pointer-events: none;
