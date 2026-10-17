@@ -455,7 +455,11 @@ function* farmWork(u, b) {
       if (u.carry) {
         // с поля — 3 снопа, с удобренного пеплом — 5
         const n = extra ? 5 : 3;
-        for (let k = 0; k < n; k++) if (k === 0 || !outFull(b, u.carry)) gather(b, u.carry);
+        const crop = u.carry;
+        for (let k = 0; k < n; k++) if (k === 0 || !outFull(b, crop)) gather(b, crop);
+        // солома и ботва — сено: с пшеницы больше, с хмеля меньше
+        const hay = crop === 'hops' ? 1 : extra ? 3 : 2;
+        for (let k = 0; k < hay; k++) if (!outFull(b, 'hay')) gather(b, 'hay');
         u.carry = null;
       }
     } else {

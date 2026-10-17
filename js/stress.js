@@ -148,7 +148,7 @@ function villageAfterHour() {
     // фермам нужно поле вокруг — ставим их на окраине
     const b = placeNear(type, cx, cy, type === 'farm' || type === 'hopfarm' ? 13 : 3);
     if (b && b.def.worker) spawnUnit(b.def.worker, b.doorX, b.doorY);
-    if (b && b.type === 'farm') { seedFields(b, 'wheat', 5); seedFields(b, 'hay', 3); }
+    if (b && b.type === 'farm') seedFields(b, 'wheat', 8);
     if (b && b.type === 'hopfarm') seedFields(b, 'hops', 5);
   }
   for (let k = 0; k < 32; k++) spawnUnit('serf', st.doorX + (k % 8) - 4, st.doorY + 1 + (k >> 3) % 2);

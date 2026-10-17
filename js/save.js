@@ -62,7 +62,7 @@ function applySave(s) {
     const o = { t };
     if (t === 'tree' || t === 'field' || t === 'stump' || t === 'bin') o.g = g;
     if (t === 'stone') o.n = n;
-    if (t === 'field') { o.farm = farm; o.crop = crop || 'wheat'; o.ash = n === 1; o.plan = n === 2; if (o.plan) Game.fieldPlans.add(i); }
+    if (t === 'field') { o.farm = farm; o.crop = !crop || crop === 'hay' ? 'wheat' : crop; o.ash = n === 1; o.plan = n === 2; if (o.plan) Game.fieldPlans.add(i); }
     World.obj[i] = o;
     if ((t === 'tree' && g < 1) || (t === 'field' && g >= 0 && g < 1) || t === 'stump') World.growing.add(i);
   }

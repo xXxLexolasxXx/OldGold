@@ -131,12 +131,12 @@ const BUILDINGS = {
   },
   farm: {
     name: 'Ферма', cat: 'Еда', w: 4, h: 3, top: 72, cost: { timber: 5, stone: 3 }, worker: 'farmer',
-    inputs: { ash: 4 }, outputs: { wheat: 10, hay: 10 }, crops: ['wheat', 'hay'],
-    desc: 'Фермер засевает поля вокруг: пшеницу на зерно или травы на сено.',
+    inputs: { ash: 4 }, outputs: { wheat: 10, hay: 10 }, crops: ['wheat'],
+    desc: 'Фермер сеет и жнёт поля пшеницы, которые вы заложили рядом. Сено — побочный продукт жатвы.',
   },
   hopfarm: {
     name: 'Хмельник', cat: 'Еда', w: 3, h: 2, top: 92, cost: { timber: 4, stone: 2 }, worker: 'hopgrower',
-    inputs: { ash: 3 }, outputs: { hops: 5 }, crops: ['hops'],
+    inputs: { ash: 3 }, outputs: { hops: 5, hay: 5 }, crops: ['hops'],
     desc: 'Хмелевод растит хмель на шестах вокруг и сушит шишки в башне.',
   },
   brewery: {
