@@ -124,7 +124,7 @@ function* benchGen(u, bench) {
 function drawStreetObj(c, x, y, o) {
   const px = x * TILE, py = y * TILE;
   if (o.t === 'lamp') {
-    drawGothicLamp(c, px + 22, py + 24, hash(idx(x, y)) % 4, isEveningNow(), x * 3.1 + y);
+    drawGothicLamp(c, px + 22, py + 24, hash(idx(x, y)) % 7, isEveningNow(), x * 3.1 + y);
   } else if (o.t === 'bench') {
     const bx = px + 6, by = py + 22;
     shadowAt(c, bx + 10, by + 1, 11, 2.4);
@@ -156,7 +156,8 @@ function drawStreetObj(c, x, y, o) {
 }
 
 // ---------- Готические фонари ----------
-// Четыре вида, чтобы улица не была однообразной: шпиль, двойной, кронштейн, кованый.
+// Семь видов, чтобы улица не была однообразной: шпиль, двойной, кронштейн, кованый,
+// стрельчатая свеча, канделябр и горгулья с фонарём.
 // Чёрное кованое железо, стрельчатые проёмы, острые навершия; светят вечером и ночью.
 const IRON = ['#14101a', '#2a2430', '#4a4452'];
 
@@ -210,7 +211,7 @@ function drawGothicLamp(c, bx, by, v, lit, ph) {
     lampCage(c, bx + 11, by - 23, 5, 8, lit, fl);
     glowAt(bx + 11, by - 28, 15);
     ellipse(c, bx, by - 36, 1.3, 1.3, IRON[0]);
-  } else {
+  } else if (v === 3) {
     // кованый: витой столб, завитки-волюты и фонарь-колокол с лилией на навершии
     c.fillStyle = IRON[1]; c.fillRect(bx - 0.8, by - 26, 1.6, 21);
     c.strokeStyle = IRON[2]; c.lineWidth = 0.7;                       // витая оплётка столба
@@ -235,5 +236,55 @@ function drawGothicLamp(c, bx, by, v, lit, ph) {
     c.fillStyle = IRON[0]; c.beginPath(); c.moveTo(lx, ly - 21); c.quadraticCurveTo(lx + 2.2, ly - 18.6, lx, ly - 16.6); c.quadraticCurveTo(lx - 2.2, ly - 18.6, lx, ly - 21); c.fill();
     for (const s of [-1, 1]) { c.beginPath(); c.moveTo(lx, ly - 17.2); c.quadraticCurveTo(lx + s * 3.2, ly - 18.2, lx + s * 2.6, ly - 20.4); c.lineWidth = 0.8; c.stroke(); }
     glowAt(bx, by - 31, 16);
+  } else if (v === 4) {
+    // стрельчатая свеча: высокая узкая лампа-ланцет на столбе с опорными дугами, крест на вершине
+    c.fillStyle = IRON[1]; c.fillRect(bx - 1.1, by - 22, 2.2, 17);
+    c.fillStyle = IRON[2]; c.fillRect(bx - 1.1, by - 22, 0.7, 17);
+    c.strokeStyle = IRON[0]; c.lineWidth = 1; c.lineCap = 'round';
+    for (const s of [-1, 1]) { c.beginPath(); c.moveTo(bx + s * 1, by - 8); c.quadraticCurveTo(bx + s * 6, by - 11, bx + s * 4.6, by - 21); c.stroke(); }   // арочные подпорки
+    c.fillStyle = IRON[0]; c.beginPath(); c.moveTo(bx - 3.4, by - 22); c.lineTo(bx - 3.4, by - 34); c.quadraticCurveTo(bx - 3.4, by - 40, bx, by - 43); c.quadraticCurveTo(bx + 3.4, by - 40, bx + 3.4, by - 34); c.lineTo(bx + 3.4, by - 22); c.closePath(); c.fill();
+    c.fillStyle = lit ? `rgb(255,${196 + fl},100)` : '#5c564c';
+    c.beginPath(); c.moveTo(bx - 2.3, by - 23); c.lineTo(bx - 2.3, by - 34); c.quadraticCurveTo(bx - 2.3, by - 38.6, bx, by - 41); c.quadraticCurveTo(bx + 2.3, by - 38.6, bx + 2.3, by - 34); c.lineTo(bx + 2.3, by - 23); c.closePath(); c.fill();
+    c.fillStyle = IRON[0]; c.fillRect(bx - 0.3, by - 40, 0.6, 17); c.fillRect(bx - 2.4, by - 31, 4.8, 0.6);          // переплёт
+    if (lit) { c.fillStyle = 'rgba(255,248,205,0.9)'; c.fillRect(bx - 0.9, by - 36, 1.8, 5); }
+    c.fillRect(bx - 0.3, by - 47, 0.6, 4.6); c.fillRect(bx - 1.8, by - 45.4, 3.6, 0.6);                              // крест
+    glowAt(bx, by - 33, 19);
+  } else if (v === 5) {
+    // канделябр: столб с короной из пяти свечей-огоньков под стеклянными колпачками
+    c.fillStyle = IRON[1]; c.fillRect(bx - 0.9, by - 21, 1.8, 16);
+    c.strokeStyle = IRON[0]; c.lineWidth = 1; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(bx, by - 21); c.quadraticCurveTo(bx - 7, by - 22, bx - 8, by - 28); c.stroke();
+    c.beginPath(); c.moveTo(bx, by - 21); c.quadraticCurveTo(bx + 7, by - 22, bx + 8, by - 28); c.stroke();
+    c.beginPath(); c.moveTo(bx, by - 21); c.quadraticCurveTo(bx - 3.2, by - 25, bx - 3.6, by - 30); c.stroke();
+    c.beginPath(); c.moveTo(bx, by - 21); c.quadraticCurveTo(bx + 3.2, by - 25, bx + 3.6, by - 30); c.stroke();
+    c.beginPath(); c.moveTo(bx, by - 21); c.lineTo(bx, by - 32); c.stroke();
+    for (const [dx, dy] of [[-8, -28], [8, -28], [-3.6, -30], [3.6, -30], [0, -32]]) {
+      // чашечка, свеча, колпачок и пламя
+      c.fillStyle = IRON[0]; c.fillRect(bx + dx - 1.8, by + dy, 3.6, 1);
+      c.fillStyle = '#e8dcc0'; c.fillRect(bx + dx - 0.8, by + dy - 3.2, 1.6, 3.2);
+      c.fillStyle = lit ? `rgb(255,${190 + fl},80)` : '#6a645a';
+      c.beginPath(); c.ellipse(bx + dx, by + dy - 4.4, 0.9, 1.7, 0, 0, 7); c.fill();
+      if (lit) { c.fillStyle = 'rgba(255,250,210,0.9)'; c.fillRect(bx + dx - 0.3, by + dy - 5, 0.6, 1.2); }
+      c.strokeStyle = 'rgba(170,190,210,0.45)'; c.lineWidth = 0.5; c.beginPath(); c.arc(bx + dx, by + dy - 3.8, 2, Math.PI, 0); c.stroke();
+    }
+    ellipse(c, bx, by - 21, 1.6, 1.6, IRON[0]);
+    glowAt(bx, by - 30, 20);
+  } else {
+    // горгулья: на столбе сидит каменный зверёк с крыльями и держит фонарь на цепи в когтях
+    c.fillStyle = '#6e685e'; c.fillRect(bx - 2.2, by - 22, 4.4, 17);
+    c.fillStyle = '#9a9488'; c.fillRect(bx - 2.2, by - 22, 1.2, 17);
+    c.fillStyle = '#3e3a34'; c.fillRect(bx + 1.2, by - 22, 1, 17);
+    c.fillStyle = '#5a554e'; c.fillRect(bx - 3.4, by - 24, 6.8, 2.2);                                  // капитель
+    c.fillStyle = '#4a463f';                                                                            // сама горгулья
+    c.beginPath(); c.moveTo(bx - 3, by - 24); c.quadraticCurveTo(bx - 4, by - 30, bx - 1.6, by - 31); c.lineTo(bx + 1.8, by - 31); c.quadraticCurveTo(bx + 4, by - 30, bx + 3, by - 24); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(bx - 2.6, by - 28); c.lineTo(bx - 9, by - 34); c.lineTo(bx - 6.6, by - 27); c.closePath(); c.fill();           // крылья
+    c.beginPath(); c.moveTo(bx + 2.6, by - 28); c.lineTo(bx + 9, by - 34); c.lineTo(bx + 6.6, by - 27); c.closePath(); c.fill();
+    c.fillStyle = '#6e685e'; c.beginPath(); c.moveTo(bx - 2.6, by - 28); c.lineTo(bx - 8.2, by - 33.2); c.lineTo(bx - 6.4, by - 28); c.closePath(); c.fill();
+    ellipse(c, bx, by - 33, 2.6, 2.2, '#5a554e');                                                       // голова
+    c.fillStyle = '#4a463f'; c.beginPath(); c.moveTo(bx - 2.2, by - 34.4); c.lineTo(bx - 3.2, by - 37.4); c.lineTo(bx - 0.8, by - 35); c.fill(); c.beginPath(); c.moveTo(bx + 2.2, by - 34.4); c.lineTo(bx + 3.2, by - 37.4); c.lineTo(bx + 0.8, by - 35); c.fill();   // рожки
+    c.fillStyle = lit ? '#ffc060' : '#2a2620'; c.fillRect(bx - 1.6, by - 33.4, 1, 0.9); c.fillRect(bx + 0.6, by - 33.4, 1, 0.9);   // глаза светятся
+    c.strokeStyle = IRON[0]; c.lineWidth = 0.6; c.beginPath(); c.moveTo(bx + 4.2, by - 25); c.lineTo(bx + 5.6, by - 20); c.stroke();      // цепь
+    lampCage(c, bx + 5.6, by - 11, 4.4, 7, lit, fl);
+    glowAt(bx + 5.6, by - 16, 16);
   }
 }
