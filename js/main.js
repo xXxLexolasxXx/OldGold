@@ -73,21 +73,22 @@ function layoutStart(rng, cx, cy) {
 }
 
 
-// Если среди стартовых зданий не нашлось места костру — подыскиваем ему место отдельно:
-// к северу от улицы, вход на юг, к нему двойная дорога до улицы.
-function addStartBonfire(lay) {
-  const { sy } = lay;
+// Если среди стартовых зданий не нашлось места костру или школе — подыскиваем место отдельно:
+// к северу от улицы, вход на юг (не боком), к нему дорога до улицы (у костра — на обе створки).
+function addStartBuilding(lay, type) {
+  const { sy } = lay, d = bDims(type, 0), wide = !!BUILDINGS[type].wideDoor;
   const blocked = (x, y) => Game.buildings.some(b => x >= b.x - 1 && x <= b.x + b.w && y >= b.y - 1 && y <= b.y + b.h);
   for (let gap = 2; gap <= 7; gap++) for (let x = lay.x0 - 16; x <= lay.x1 + 16; x++) {
-    const y = sy - gap - 3;
+    const y = sy - gap - d.h;
     let ok = true;
-    for (let yy = y - 1; yy <= sy && ok; yy++) for (let xx = x - 1; xx <= x + 4 && ok; xx++) if (!inb(xx, yy) || (yy < sy && blocked(xx, yy)) || (World.terrain[idx(xx, yy)] !== T_GRASS && !(yy >= sy - 1 && World.terrain[idx(xx, yy)] === T_SAND))) ok = false;
+    for (let yy = y - 1; yy <= sy && ok; yy++) for (let xx = x - 1; xx <= x + d.w + 1 && ok; xx++) if (!inb(xx, yy) || (yy < sy && blocked(xx, yy)) || (World.terrain[idx(xx, yy)] !== T_GRASS && !(yy >= sy - 1 && World.terrain[idx(xx, yy)] === T_SAND))) ok = false;
     if (!ok) continue;
-    const bad = checkPlacement('bonfire', x, y, 0);
+    const bad = checkPlacement(type, x, y, 0);
     if (bad && bad !== 'Мешают деревья, камни или поля') continue;
-    for (let yy = y; yy < y + 3; yy++) for (let xx = x; xx < x + 3; xx++) World.obj[idx(xx, yy)] = null;
-    const b = placeBuilding('bonfire', x, y, true, 0);
-    for (let yy = b.doorY + 1; yy <= sy; yy++) for (const xx of [b.doorX, b.doorX + 1]) { if (World.bmap[idx(xx, yy)]) continue; World.obj[idx(xx, yy)] = null; setRoad(xx, yy, true); }
+    for (let yy = y; yy < y + d.h; yy++) for (let xx = x; xx < x + d.w; xx++) World.obj[idx(xx, yy)] = null;
+    const b = placeBuilding(type, x, y, true, 0);
+    const cols = wide && b.door2 ? [b.doorX, b.door2[0]] : [b.doorX];
+    for (let yy = b.doorY + 1; yy <= sy; yy++) for (const xx of cols) { if (World.bmap[idx(xx, yy)]) continue; World.obj[idx(xx, yy)] = null; setRoad(xx, yy, true); }
     lay.placed.push(b);
     return b;
   }
@@ -106,7 +107,7 @@ function setupStart(seed) {
     World.road.fill(0);
     lay = layoutStart(rng, cx, cy);
   }
-  if (lay.placed.length >= 3 && !lay.placed.some(b => b.type === 'bonfire')) addStartBonfire(lay);
+  if (lay.placed.length >= 2) for (const t of ['school', 'bonfire']) if (!lay.placed.some(b => b.type === t)) addStartBuilding(lay, t);
   if (lay.placed.length < 3) {
     // не нашлось места — запасная прежняя раскладка
     for (const b of lay.placed) removeBuilding(b);
