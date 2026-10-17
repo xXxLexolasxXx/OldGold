@@ -541,6 +541,7 @@ function entReact(u) {
 function removeUnit(u) {
   if (u.dead) return;
   u.dead = true;
+  if (isPerson(u) && u.type !== 'carter') Game.lostGnomes = (Game.lostGnomes || 0) + 1;     // потери копятся — призраков и скелетов будет больше
   if (u.carry) dropLoad(u);
   else if (u.dlv && u.dlv.from && !u.dlv.from.removed && u.dlv.from.reserved)
     u.dlv.from.reserved[u.dlv.g] = Math.max(0, u.dlv.from.reserved[u.dlv.g] - u.dlv.n);
@@ -571,6 +572,8 @@ function nightTick(dt) {
   updateEnts(dt);
   batsTick(dt);
   ghostsTick(dt);
+  skeletonsTick(dt);
+  graveyardTick(dt);
   updateFx(dt);
   purgeDead();
   Game.nightT = (Game.nightT || 0) + dt;
@@ -581,7 +584,8 @@ function nightTick(dt) {
   if (eve && Game.entNight !== ni) {
     Game.entNight = ni;
     spawnEnts();
-    ghostsSpawn(1 + Math.floor(Math.random() * 3));
+    ghostsSpawn(1 + Math.floor(Math.random() * 3) + Math.floor((Game.lostGnomes || 0) / 2));
+    skeletonsSpawn();
     if (isLongNight()) toast('Эта ночь будет долгой — в полтора раза дольше обычной. Готовьте хлеб и костры!');
     toast('Вечереет: зажглись фонари. В лесу кто-то открыл глаза…');
     logEvent('night', 'Вечер: зажглись фонари');
@@ -666,6 +670,7 @@ function nightLights(x0, y0, x1, y1) {
     if (e.state === 'drag' && e.victim) L.push([bx + e.face * 21, by - 30, 50, 0.8 * e.alpha]);   // фонарь бедняги ещё светит
   }
   weatherLights(L, x0, y0, x1, y1);
+  skeletonLights(L, x0, y0, x1, y1);
   ghostLights(L, x0, y0, x1, y1);
   for (const b of Game.buildings) {
     if (b.state !== 'done' || b.x + b.w < x0 - 3 || b.x > x1 + 3 || b.y + b.h < y0 - 3 || b.y > y1 + 3) continue;

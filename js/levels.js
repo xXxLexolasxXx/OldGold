@@ -193,7 +193,7 @@ function buildingSprite(type, rot = 0, level = 1) {  const lv = level >= 2 && BU
 // ---------- Зелень на зданиях ----------
 // Плющ на стене, ящики с цветами под окнами, на некоторых крышах — мох и травяные кочки.
 
-const NO_GREEN = new Set(['magiccircle', 'bonfire']);
+const NO_GREEN = new Set(['magiccircle', 'bonfire', 'graveyard']);
 
 function greenery(c, base, type, px) {
   const rnd = mulberry32(hashStr(type + 'green'));

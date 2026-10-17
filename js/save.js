@@ -12,7 +12,7 @@ function resetGameState() {
   Game.piles.clear();
   Game.animals = [];
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
-  Game.ents = []; Game.ghosts = []; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0;
+  Game.ents = []; Game.ghosts = []; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0;
   Game.bats = [];
   Game.fieldPlans = new Set(); Game.avenge = [];
   World.occ.fill(0);
@@ -37,7 +37,7 @@ function serializeGame() {
   const nz = o => { const r = {}; for (const k in o) if (o[k]) r[k] = o[k]; return r; };
   return {
     v: 2, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
-    storeBlock: Game.storeBlock, produced: nz(Game.produced),
+    storeBlock: Game.storeBlock, lost: Game.lostGnomes || 0, produced: nz(Game.produced),
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
     obj, road,
     buildings: Game.buildings.map(b => ({
@@ -85,6 +85,7 @@ function applySave(s) {
     b.training = d.training || null;
     b.paused = !!d.paused;
     b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
+    if (b.type === 'graveyard' && b.state !== 'done') { b.selfBuild = true; b.maxHits = SITE_HITS + GY_BUILD_HITS; b.total = 1; }
     if (d.level === 2 && b.def.up) upgradeBuilding(b, true);
     if (d.upg && canUpgrade(b)) { startUpgrade(b); Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
     if (d.recipeOn && d.recipeOn.length === b.recipeOn.length) b.recipeOn = d.recipeOn;

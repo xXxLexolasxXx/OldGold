@@ -460,6 +460,7 @@ function drawBuilding(c, b, ghost) {
   const fx = b.x * TILE, fy = b.y * TILE, fw = b.w * TILE, fh = b.h * TILE;
   c.imageSmoothingEnabled = true;
   c.imageSmoothingQuality = 'high';
+  if (!ghost && b.selfBuild && b.state === 'build') { drawSelfBuild(c, b); return; }
   if (!ghost && b.state !== 'done') {
     drawSite(c, b, spr, ox, oy, fx, fy, fw, fh);
     c.imageSmoothingEnabled = R.smooth;
@@ -818,6 +819,7 @@ function render() {
   }
   for (const b of Game.critters || []) list.push([b.y + 0.1, () => drawButterfly(c, b)]);
   weatherDrawList(list, c, x0, y0, x1, y1);
+  drawSkeletons(list, c, x0, y0, x1, y1);
   for (const e of Game.ents || []) {
     if (e.x < x0 - 3 || e.x > x1 + 3 || e.y < y0 - 1 || e.y > y1 + 4) continue;
     list.push([e.y + 0.05, () => drawEnt(c, e)]);   // гном рядом на той же линии — перед деревом

@@ -35,7 +35,7 @@ function stressMap() {
   for (const cx of cols) for (let y = 7; y <= 58; y++) { if (y < MAP_H) { setRoad(cx, y, true); setRoad(cx + 1, y, true); } }
 
   // здания: верхний ряд — рудники и шахты под скалой, дальше все типы по кругу
-  const types = BUILD_ORDER.filter(t => t !== 'goldmine' && t !== 'crystalmine');
+  const types = BUILD_ORDER.filter(t => t !== 'goldmine' && t !== 'crystalmine' && !BUILDINGS[t].hidden);
   let ti = 0;
   const place = (type, x, y) => {
     const d = bDims(type, 0);

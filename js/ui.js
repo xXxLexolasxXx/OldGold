@@ -231,6 +231,7 @@ function renderBuildList() {
   list.innerHTML = '';
   const cat = BUILD_CATS[UI.cat];
   for (const type of BUILD_ORDER) {
+    if (BUILDINGS[type].hidden) continue;
     const def = BUILDINGS[type];
     if (def.cat !== cat) continue;
     const btn = document.createElement('button');

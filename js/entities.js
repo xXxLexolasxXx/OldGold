@@ -112,6 +112,7 @@ class Building {
   }
 
   problem() {
+    if (this.selfBuild) return null;
     if (this.state !== 'done') return this.roadLinked() ? null : 'noroad';
     if (this.paused) return 'paused';
     if (this.dmg >= 0.5) return 'damaged';                 // повреждено нечистью — пока не починят, не работает

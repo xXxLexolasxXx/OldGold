@@ -8,12 +8,14 @@ const GHOST_SEE = 4.5, GHOST_SEE_ENT = 5.5;
 function ghostsSpawn(n) {
   const gs = Game.ghosts || (Game.ghosts = []);
   const live = Game.units.filter(u => !u.dead);
-  for (let i = 0; i < n && gs.length < 4; i++) {
+  const gy = graveyardOf(), cap = Math.min(12, 4 + Math.floor((Game.lostGnomes || 0) / 3));
+  for (let i = 0; i < n && gs.length < cap; i++) {
     const u = live.length ? live[(Math.random() * live.length) | 0] : null;
     const x = (u ? u.x : MAP_W / 2) + (Math.random() - 0.5) * 16, y = (u ? u.y : MAP_H / 2) + (Math.random() - 0.5) * 12;
-    const gx = Math.max(2, Math.min(MAP_W - 2, x)), gy = Math.max(2, Math.min(MAP_H - 2, y));
-    gs.push({ x: gx, y: gy, hx: gx, hy: gy, alpha: 0, ph: Math.random() * 9, face: 1,
-      mode: 'drift', modeT: 0, tx: gx, ty: gy, retarget: 0, scan: Math.random() });
+    let gx = Math.max(2, Math.min(MAP_W - 2, x)), gy0 = Math.max(2, Math.min(MAP_H - 2, y));
+    if (gy) { gx = gy.x + 1 + Math.random() * (gy.w - 2); gy0 = gy.y + 0.5 + Math.random() * (gy.h - 1); }   // выходят из кладбища
+    gs.push({ x: gx, y: gy0, hx: gx, hy: gy0, alpha: 0, ph: Math.random() * 9, face: 1,
+      mode: 'drift', modeT: 0, tx: gx, ty: gy0, retarget: 0, scan: Math.random() });
   }
   if (n > 0) logEvent('night', 'Над деревней поплыли призраки');
 }
