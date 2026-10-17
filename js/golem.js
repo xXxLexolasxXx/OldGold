@@ -191,8 +191,10 @@ function drawGolemBody(c, view, pose, f) {
       c.globalAlpha = a * 0.35; ellipse(c, rx, ry, 9, 9, GL_GOLD); c.globalAlpha = 1;
       c.strokeStyle = rgba(GL_GOLD, 0.35 + 0.65 * a); c.lineWidth = 1.2;
       c.beginPath(); c.arc(rx, ry, 6.6, 0, Math.PI * 2); c.stroke();                                   // кольцо
-      c.beginPath(); c.moveTo(rx, ry + 5); c.lineTo(rx, ry - 4.4); c.moveTo(rx - 4, ry - 4.6); c.lineTo(rx, ry - 0.4); c.lineTo(rx + 4, ry - 4.6); c.stroke();   // трезубец-«альгиз»
-      c.fillStyle = rgba(GL_GOLD, 0.35 + 0.65 * a); c.fillRect(rx - 0.6, ry + 5.4, 1.2, 1.2);
+      c.beginPath();                                                                                   // спираль
+      for (let k = 0; k <= 26; k++) { const th = k / 26 * Math.PI * 4.2, r = 0.8 + k / 26 * 5; const X = rx + Math.cos(th) * r, Y = ry + Math.sin(th) * r; k ? c.lineTo(X, Y) : c.moveTo(X, Y); }
+      c.stroke();
+      c.fillStyle = rgba(GL_GOLD, 0.35 + 0.65 * a); c.fillRect(rx - 0.6, ry - 0.6, 1.2, 1.2);
     }
   };
 
