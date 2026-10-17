@@ -226,3 +226,24 @@ let smVineShift = 0;
   let rt = 0;
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(decorateVines, 150); });
 }
+
+// ---------- Телефон: ресурсы спрятаны, пока не нажмёшь кнопку ----------
+function initResToggle() {
+  const mm = document.getElementById('mm-btn');
+  if (!mm || document.getElementById('res-btn')) return;
+  let hidden = true;
+  try { hidden = localStorage.getItem('feod.res') !== '1'; } catch (e) { hidden = true; }
+  document.body.classList.toggle('res-hidden', hidden);
+  const b = document.createElement('button');
+  b.id = 'res-btn'; b.title = 'Ресурсы: показать / скрыть';
+  b.innerHTML = `<img src="${iconURL('good', 'gold', 2)}" alt="">`;
+  b.onclick = () => {
+    const h = document.body.classList.toggle('res-hidden');
+    try { localStorage.setItem('feod.res', h ? '0' : '1'); } catch (e) { /* нет доступа к хранилищу */ }
+  };
+  mm.insertAdjacentElement('afterend', b);
+}
+{
+  const _s = startGame;
+  startGame = function () { _s(); initResToggle(); };
+}

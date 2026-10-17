@@ -447,7 +447,7 @@ function initHeroUI() {
 function heroBtnUpdate() {
   const btn = document.getElementById('hero-btn');
   if (!btn || !Game.hero) return;
-  const html = `<img src="${portraitURL('hero', Game.hero.look)}" alt="">${Game.hero.hero.name} · ${Game.hero.hero.level}`;
+  const html = `<img src="${portraitURL("hero", Game.hero.look)}" alt=""><span class="hb-t">${Game.hero.hero.name} · ${Game.hero.hero.level}</span><span class="hb-lv">${Game.hero.hero.level}</span>`;
   if (btn.dataset.h !== html) { btn.dataset.h = html; btn.innerHTML = html; }
 }
 

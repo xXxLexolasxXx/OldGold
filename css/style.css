@@ -642,3 +642,15 @@ body.mm-folded #mm-size { display: none; }
 .sm-btn { position: relative; }
 .sm-vine { position: absolute; pointer-events: none; overflow: visible; z-index: 3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.55)); }
 @media (max-width: 700px) { .sm-panel { gap: 20px; } }
+
+/* ---------- Телефон: меньше всего на экране ---------- */
+body.mobile.res-hidden #res-bar { display: none; }
+body.mobile #music-next { display: none; }
+body.mobile #hero-btn { left: 8px; bottom: calc(66px + env(safe-area-inset-bottom)); padding: 2px; gap: 0; border-radius: 8px; }
+body.mobile #hero-btn img { width: 38px; height: 38px; }
+body.mobile #hero-btn .hb-t { display: none; }
+body.mobile #hero-btn .hb-lv { display: block; position: absolute; right: -4px; bottom: -4px; min-width: 16px; padding: 0 3px; border-radius: 8px; background: #b8902c; color: #1a1008; font-size: 11px; font-weight: bold; text-align: center; }
+#hero-btn .hb-lv { display: none; }
+body.mobile.sheet-tab #hero-btn, body.mobile.sheet-info #hero-btn { display: none; }
+#res-btn { padding: 0 !important; }
+#res-btn img { width: 20px; height: 20px; vertical-align: middle; }
