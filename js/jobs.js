@@ -401,20 +401,52 @@ function removeField(x, y) {
   return true;
 }
 
-// Работяга вскапывает заложенное поле
+// Работяга готовит заложенное поле. Пшеница: лопата, комья земли, борозды проступают рядами.
+// Хмель: молоток, щепки, шесты вбиваются по одному и затягиваются бечёвкой.
 function* fieldDigGen(u, i) {
   const o = World.obj[i], x = i % MAP_W, y = (i / MAP_W) | 0;
   u.fieldJob = -1;
   if (!o || o.t !== 'field' || !o.plan) { if (o) o.res = false; return; }
   const ok = yield { walk: [x, y], offroad: true };
   if (!ok || World.obj[i] !== o) { o.res = false; yield { wait: 2 }; return; }
-  u.face = 1; u.vdir = 'E';
-  for (let k = 0; k < 3; k++) {
-    yield { wait: 1.1, anim: 'dig' };
+  const hop = o.crop === 'hops', hits = hop ? 6 : 4;
+  u.vdir = 'E';
+  for (let k = 0; k < hits; k++) {
+    u.face = x + 0.5 > u.x ? 1 : -1;
+    fxLater(hop ? 0.34 : 0.52, () => fieldWorkFx(x, y, o, hop, k));
+    yield { wait: hop ? 0.8 : 1, anim: hop ? 'build' : 'dig' };
     if (World.obj[i] !== o) return;
+    o.prog = (k + 1) / hits;
   }
-  o.plan = false; o.res = false; o.g = -1;
+  o.plan = false; o.res = false; o.g = -1; o.prog = 1;
   if (Game.fieldPlans) Game.fieldPlans.delete(i);
+  if (hop) floater(x + 0.5, y, 'Шесты стоят', '#c8e080'); else floater(x + 0.5, y, 'Вспахано', '#e8c070');
+}
+
+// эффекты удара при подготовке поля
+function fieldWorkFx(x, y, o, hop, k) {
+  if (World.obj[idx(x, y)] !== o) return;
+  const px = (x + 0.5) * TILE, py = (y + 0.55) * TILE;
+  if (hop) {
+    fxBurst(px + (k % 3 - 1) * 8, py - 4, 7, ['#d8b070', '#a0703a', '#e8cc90'], 60, 45, 0.5, 1.6, 280);   // щепки
+    sfxAt('build', px, py, 0.7);
+  } else {
+    fxBurst(px + rnd0(-8, 8), py + 2, 9, ['#7a5230', '#5a3a20', '#9a7450', '#3e2812'], 55, 40, 0.6, 2.2, 260);  // комья земли
+    sfxAt('dig', px, py, 0.7);
+  }
+}
+const rnd0 = (a, b) => a + Math.random() * (b - a);
+
+// эффекты жатвы: пшеница — золотые стебли и полова, хмель — зелёные шишки сыплются в корзину
+function harvestFx(x, y, crop) {
+  const px = (x + 0.5) * TILE, py = (y + 0.5) * TILE;
+  if (crop === 'hops') {
+    fxBurst(px, py - 12, 7, ['#a8d860', '#c8e880', '#7aae3a'], 38, 62, 0.9, 2.4, 240);
+    fxBurst(px, py - 4, 3, ['#5a8a2a', '#3e6a1e'], 22, 18, 0.7, 1.4, 120);
+  } else {
+    fxBurst(px, py - 4, 11, ['#f0d060', '#d8b040', '#e8c850', '#c89a30'], 55, 38, 0.8, 1.6, 150);
+    fxBurst(px, py - 2, 5, ['#fff0a0', '#e0d0a0'], 28, 24, 1.1, 1.2, 30);
+  }
 }
 
 // Что сеять: включённая культура, под которую сейчас меньше всего полей.
@@ -444,7 +476,9 @@ function* farmWork(u, b) {
     target.o.res = false;
     if (!ok) { yield { wait: 2 }; return; }
     if (target === ripe) {
-      yield { wait: 4, anim: 'reap' };
+      const hopCrop = target.o.crop === 'hops';
+      for (let k = 0; k < 4; k++) fxLater(0.45 + k * 0.95, () => harvestFx(target.x, target.y, target.o.crop));
+      yield { wait: 4, anim: hopCrop ? 'hoppick' : 'reap' };
       let extra = false;
       if (World.obj[idx(target.x, target.y)] === target.o) {
         target.o.g = -1;

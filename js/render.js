@@ -75,16 +75,58 @@ function drawStump(c, x, y) {
   c.fillStyle = '#a06840'; c.fillRect(px + 3, py - 1, 2, 1);
 }
 
-// Заложенное поле: бледный контур и колышки по углам, пока работяга его не вскопал
+// Значок культуры: колос пшеницы или шишка хмеля на шесте — по ним поля узнаются с первого взгляда
+function cropGlyph(c, crop, cx, cy, s = 1) {
+  c.save(); c.translate(cx, cy); c.scale(s, s);
+  if (crop === 'hops') {
+    c.strokeStyle = '#4a2c14'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(0, 6); c.lineTo(0, -8); c.stroke();      // шест
+    c.strokeStyle = '#4a7a2a'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(0, 6); for (let t = 0; t <= 14; t += 2) c.lineTo(Math.sin(t * 0.9) * 2, 6 - t); c.stroke();
+    for (const [dx, dy] of [[-2.6, -1], [2.4, -4], [-2.2, -6]]) {
+      c.fillStyle = '#6a9a30'; c.beginPath(); c.moveTo(dx, dy - 2.6); c.quadraticCurveTo(dx + 2.4, dy - 0.6, dx, dy + 2.4); c.quadraticCurveTo(dx - 2.4, dy - 0.6, dx, dy - 2.6); c.fill();
+      c.fillStyle = '#c8e880'; c.fillRect(dx - 0.5, dy - 1.4, 0.9, 2);
+    }
+  } else {
+    c.strokeStyle = '#c89a30'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, 7); c.quadraticCurveTo(1, 0, 0.4, -6); c.stroke();     // стебель
+    for (let k = 0; k < 5; k++) for (const sd of [-1, 1]) {
+      const y = -6 + k * 2.4;
+      c.fillStyle = k % 2 ? '#f0d060' : '#e0b840'; c.beginPath(); c.ellipse(sd * 1.7 + 0.4, y, 0.9, 1.8, sd * 0.5, 0, 7); c.fill();
+    }
+    c.fillStyle = '#f8e890'; c.beginPath(); c.ellipse(0.4, -8, 0.8, 1.6, 0, 0, 7); c.fill();
+  }
+  c.restore();
+}
+const FIELD_COL = { wheat: ['#e8b84a', 'rgba(255,210,90,0.34)'], hops: ['#9ccc50', 'rgba(130,210,90,0.34)'] };
+
+// Заложенное поле: пшеница — борозды проступают рядами, хмель — шесты вбиваются по одному
 function drawFieldPlan(c, x, y, o) {
-  const px = x * TILE, py = y * TILE;
-  c.globalAlpha = 0.45;
-  c.drawImage(SPR.fields[o.crop || 'wheat'][0], px, py);
-  c.globalAlpha = 1;
-  c.strokeStyle = o.res ? '#f6d458' : '#e8dcc0'; c.lineWidth = 1;
+  const px = x * TILE, py = y * TILE, hop = o.crop === 'hops', col = FIELD_COL[hop ? 'hops' : 'wheat'];
+  const pr = o.prog || 0;
+  c.fillStyle = col[1]; c.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+  if (hop) {
+    // шесты, которые уже вбиты, и бечёвка между ними
+    const poles = [[6, 30], [16, 30], [26, 30], [6, 16], [16, 16], [26, 16]], n = Math.floor(pr * 6 + 0.001);
+    c.fillStyle = 'rgba(80,50,28,0.5)'; for (const [dx, dy] of poles) c.fillRect(px + dx - 1, py + dy - 1, 2, 2);    // метки
+    for (let k = 0; k < n; k++) {
+      const [dx, dy] = poles[k];
+      c.fillStyle = '#4a2c14'; c.fillRect(px + dx - 0.7, py + dy - 11, 1.4, 11);
+      c.fillStyle = '#8a5a30'; c.fillRect(px + dx - 0.7, py + dy - 11, 0.5, 11);
+      c.fillStyle = '#d8b070'; c.fillRect(px + dx - 1, py + dy - 11.6, 2, 1);
+    }
+    if (n >= 3) { c.strokeStyle = 'rgba(240,224,180,0.8)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(px + 6, py + 20); c.lineTo(px + 26, py + 20); c.stroke(); }
+  } else {
+    // борозды: проступают сверху вниз по мере вспашки
+    const rows = Math.ceil(pr * 7);
+    for (let k = 0; k < 7; k++) {
+      const yy = py + 3 + k * 4;
+      if (k < rows) { c.fillStyle = '#4a2e16'; c.fillRect(px + 2, yy, TILE - 4, 1.6); c.fillStyle = '#9a7450'; c.fillRect(px + 2, yy + 1.8, TILE - 4, 1); }
+      else { c.fillStyle = 'rgba(120,90,50,0.35)'; c.fillRect(px + 2, yy + 1, TILE - 4, 0.8); }
+    }
+  }
+  c.strokeStyle = o.res ? '#fff2a0' : col[0]; c.lineWidth = 1;
   c.setLineDash([3, 3]); c.strokeRect(px + 2.5, py + 2.5, TILE - 5, TILE - 5); c.setLineDash([]);
   c.fillStyle = '#6e432a';
   for (const [dx, dy] of [[2, 2], [TILE - 4, 2], [2, TILE - 4], [TILE - 4, TILE - 4]]) c.fillRect(px + dx, py + dy, 2, 4);
+  if (pr < 1) { c.globalAlpha = 0.85; cropGlyph(c, o.crop, px + 16, py + 14, 0.8); c.globalAlpha = 1; }
 }
 
 function fieldStage(g) {
@@ -815,8 +857,13 @@ function drawOverlay(c) {
   } else if (tool.kind === 'field') {
     const o = World.obj[idx(h[0], h[1])], has = o && o.t === 'field';
     const ok = has || isFreeGrass(h[0], h[1]);
-    c.fillStyle = has ? 'rgba(224,64,48,0.4)' : ok ? 'rgba(160,220,80,0.4)' : 'rgba(224,64,48,0.3)';
+    const fc = FIELD_COL[tool.crop === 'hops' ? 'hops' : 'wheat'];
+    c.fillStyle = has ? 'rgba(224,64,48,0.4)' : ok ? fc[1] : 'rgba(224,64,48,0.3)';
     c.fillRect(h[0] * TILE + 2, h[1] * TILE + 2, TILE - 4, TILE - 4);
+    c.strokeStyle = has ? '#e04030' : ok ? fc[0] : '#e04030'; c.lineWidth = 1.2;
+    c.strokeRect(h[0] * TILE + 2.5, h[1] * TILE + 2.5, TILE - 5, TILE - 5);
+    if (has) { c.fillStyle = '#e04030'; for (let k = 0; k < 14; k++) { c.fillRect(h[0] * TILE + 9 + k, h[1] * TILE + 9 + k, 2, 2); c.fillRect(h[0] * TILE + 22 - k, h[1] * TILE + 9 + k, 2, 2); } }
+    else if (ok) { c.globalAlpha = 0.9; cropGlyph(c, tool.crop, h[0] * TILE + 16, h[1] * TILE + 17, 1.1); c.globalAlpha = 1; }
   } else if (tool.kind === 'erase') {
     c.fillStyle = '#e04030';
     for (let k = 0; k < 18; k++) {

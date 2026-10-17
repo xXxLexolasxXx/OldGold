@@ -227,10 +227,21 @@ function makeBoulders() {
 function makeField(crop, stage) {
   srand = mulberry32(31 + stage + (crop === 'hay' ? 100 : crop === 'hops' ? 200 : 0));
   const [cv, c] = mkSprite(TILE, TILE);
-  c.fillStyle = '#6a4828'; c.fillRect(0, 0, TILE, TILE);
-  for (let y = 1.5; y < TILE; y += 4) {
-    c.fillStyle = '#4a2e16'; c.fillRect(0, y, TILE, 1.4);
-    c.fillStyle = '#8a6440'; c.fillRect(0, y + 1.6, TILE, 1.1);
+  const hopSoil = crop === 'hops';
+  c.fillStyle = hopSoil ? '#4e3a2c' : '#6a4828'; c.fillRect(0, 0, TILE, TILE);
+  if (hopSoil) {
+    // хмельник: тёмная рыхлая земля с холмиками под каждым шестом и тропкой между рядами
+    for (const yy of [30, 16]) for (const xx of [6, 16, 26]) {
+      ellipse(c, xx + 1, yy + 2, 6, 2.6, '#2e2018');
+      ellipse(c, xx, yy + 1, 5.4, 2.4, '#6a5038');
+      ellipse(c, xx - 1, yy + 0.2, 2.6, 1, '#8a6a4a');
+    }
+    c.fillStyle = 'rgba(30,22,16,0.4)'; c.fillRect(0, 21, TILE, 2.2);
+  } else {
+    for (let y = 1.5; y < TILE; y += 4) {
+      c.fillStyle = '#4a2e16'; c.fillRect(0, y, TILE, 1.4);
+      c.fillStyle = '#8a6440'; c.fillRect(0, y + 1.6, TILE, 1.1);
+    }
   }
   for (let k = 0; k < 40; k++) ellipse(c, srand() * TILE, srand() * TILE, 0.7, 0.5, srand() < 0.5 ? '#9a7450' : '#3e2812');
   if (crop === 'wheat') {

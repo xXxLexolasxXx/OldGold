@@ -41,7 +41,7 @@ const OUTFIT = {
 };
 const SERF_CAPS = ['#3e7426', '#4e8a2a', '#5c9a34', '#2e5a22', '#6aa83e', '#46743a'];
 
-const ANIM_TOOL = { chop: 'axe', mine: 'pick', build: 'hammer', reap: 'sickle', dig: 'spade' };
+const ANIM_TOOL = { chop: 'axe', mine: 'pick', build: 'hammer', reap: 'sickle', dig: 'spade', hoppick: 'hook' };
 
 function lookOf(u) {
   const l = u.look;
@@ -645,6 +645,13 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (tool === 'axe') poly(c, [[tx, ty], [tx + nx * 2.4, ty + ny * 2.4], [tx + nx * 2.2 - (tx - hx) * 0.22, ty + ny * 2.2 - (ty - hy) * 0.22], [tx - (tx - hx) * 0.15, ty - (ty - hy) * 0.15]], '#b8bcc0', '#3a3a3e', 0.3);
         else if (tool === 'pick') { c.strokeStyle = '#8a8e92'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(tx - nx * 3.2, ty - ny * 3.2); c.quadraticCurveTo(tx + (tx - hx) * 0.08, ty + (ty - hy) * 0.08, tx + nx * 3.2, ty + ny * 3.2); c.stroke(); }
         else if (tool === 'hammer') { c.save(); c.translate(tx, ty); c.rotate(Math.atan2(ty - hy, tx - hx)); c.fillStyle = '#5c564f'; c.fillRect(-0.8, -1.7, 2, 3.4); c.fillStyle = '#9e958a'; c.fillRect(-0.8, -1.7, 2, 0.6); c.restore(); }
+        else if (tool === 'hook') {
+          // длинный шест с крюком и корзинкой: тянут вниз лозу и обрывают шишки
+          c.strokeStyle = '#6e4428'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx + (tx - hx) * 0.9, ty + (ty - hy) * 0.9); c.stroke();
+          const kx = tx + (tx - hx) * 0.9, ky = ty + (ty - hy) * 0.9;
+          c.strokeStyle = '#2a1c10'; c.lineWidth = 0.8; c.beginPath(); c.arc(kx + nx * 1.4, ky + ny * 1.4, 1.5, 0, Math.PI * 1.5); c.stroke();
+          ellipse(c, kx + nx * 2.2, ky + ny * 2.2, 1, 1.3, '#a8d860');
+        }
         else if (tool === 'sickle') { c.strokeStyle = '#d0d4d8'; c.lineWidth = 0.8; c.beginPath(); c.arc(tx + nx * 1.6, ty + ny * 1.6, 2, Math.atan2(ny, nx) + Math.PI * 0.2, Math.atan2(ny, nx) + Math.PI * 1.2); c.stroke(); }
         else { c.fillStyle = '#9e958a'; c.save(); c.translate(tx, ty); c.rotate(Math.atan2(ty - hy, tx - hx)); c.fillRect(0, -1.2, 2.4, 2.4); c.restore(); }
         hand(c, hx, hy, skin[1]);

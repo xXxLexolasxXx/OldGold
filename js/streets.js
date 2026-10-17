@@ -3,7 +3,7 @@
 // скамейки (на них отдыхают жители) и урны. Урны наполняются мусором; свободный
 // работяга вытряхивает полную урну в мешок, а трудяги уносят мусор в большой костёр.
 
-const STREET = { lamp: { gap: 5 }, bench: { gap: 7 }, bin: { gap: 8 } };
+const STREET = { lamp: { gap: 3 }, bench: { gap: 7 }, bin: { gap: 8 } };   // фонари — часто, через три клетки
 const BIN_FILL_TIME = 160;      // за сколько секунд урна наполняется
 let streetT = 0, lastBinToast = -999;
 
@@ -124,19 +124,7 @@ function* benchGen(u, bench) {
 function drawStreetObj(c, x, y, o) {
   const px = x * TILE, py = y * TILE;
   if (o.t === 'lamp') {
-    const bx = px + 22, by = py + 24;
-    shadowAt(c, bx + 1, by, 3.4);
-    c.fillStyle = '#3a2414'; c.fillRect(bx - 1, by - 26, 2.2, 26);
-    c.fillStyle = '#6e432a'; c.fillRect(bx - 1, by - 26, 0.8, 26);
-    c.fillStyle = '#24201e'; c.fillRect(bx - 1, by - 26, 7, 1.4);
-    line(c, bx + 5, by - 25, bx + 5, by - 22, '#24201e', 0.6);
-    // фонарь: кованая рамка, тёплое стекло
-    c.fillStyle = '#24201e'; c.fillRect(bx + 2.6, by - 22, 5, 6.4);
-    const lit = isEveningNow();                    // зажигают вечером
-    c.fillStyle = lit ? '#ffd880' : '#6a6458'; c.fillRect(bx + 3.4, by - 21.2, 3.4, 4.8);
-    c.fillStyle = '#24201e'; c.fillRect(bx + 3, by - 23, 4.4, 1.2);
-    const fl = 0.22 + 0.06 * Math.sin(Game.time * 5 + x * 3.1 + y);
-    if (lit) glow(c, bx + 5, by - 19, 16, '255,200,110', fl + 0.15);
+    drawGothicLamp(c, px + 22, py + 24, hash(idx(x, y)) % 4, isEveningNow(), x * 3.1 + y);
   } else if (o.t === 'bench') {
     const bx = px + 6, by = py + 22;
     shadowAt(c, bx + 10, by + 1, 11, 2.4);
@@ -164,5 +152,79 @@ function drawStreetObj(c, x, y, o) {
         c.fillStyle = '#1a1210'; c.fillRect(Math.round(bx + Math.cos(a) * 5), Math.round(by - 17 + Math.sin(a * 1.3) * 2), 1, 1);
       }
     }
+  }
+}
+
+// ---------- Готические фонари ----------
+// Четыре вида, чтобы улица не была однообразной: шпиль, двойной, кронштейн, башенка.
+// Чёрное кованое железо, стрельчатые проёмы, острые навершия; светят вечером и ночью.
+const IRON = ['#14101a', '#2a2430', '#4a4452'];
+
+function lampCage(c, x, y, w, h, lit, fl) {
+  // стеклянный фонарь со стрельчатым верхом: железная рамка, внутри тёплое пламя
+  c.fillStyle = IRON[0]; c.fillRect(x - w / 2 - 0.8, y - h, w + 1.6, h + 0.8);
+  c.fillStyle = lit ? `rgb(255,${200 + fl},110)` : '#5c564c';
+  c.beginPath(); c.moveTo(x - w / 2, y); c.lineTo(x - w / 2, y - h * 0.55); c.quadraticCurveTo(x - w / 2, y - h * 0.95, x, y - h); c.quadraticCurveTo(x + w / 2, y - h * 0.95, x + w / 2, y - h * 0.55); c.lineTo(x + w / 2, y); c.closePath(); c.fill();
+  c.fillStyle = IRON[0]; c.fillRect(x - 0.4, y - h, 0.8, h);                   // средник
+  if (lit) { c.fillStyle = 'rgba(255,250,210,0.9)'; c.fillRect(x - 0.9, y - h * 0.62, 1.8, h * 0.3); }
+  // островерхая крыша с навершием
+  c.fillStyle = IRON[1]; c.beginPath(); c.moveTo(x - w / 2 - 1.6, y - h); c.lineTo(x, y - h - w * 1.1); c.lineTo(x + w / 2 + 1.6, y - h); c.closePath(); c.fill();
+  c.fillStyle = IRON[2]; c.beginPath(); c.moveTo(x - w / 2 - 1.6, y - h); c.lineTo(x, y - h - w * 1.1); c.lineTo(x - 0.5, y - h); c.closePath(); c.fill();
+  c.fillStyle = IRON[0]; c.fillRect(x - 0.4, y - h - w * 1.1 - 2, 0.8, 2.4);
+  ellipse(c, x, y - h - w * 1.1 - 2.2, 0.9, 0.9, IRON[0]);
+}
+
+function drawGothicLamp(c, bx, by, v, lit, ph) {
+  shadowAt(c, bx + 1, by, 4);
+  const fl = Math.round(Math.sin(Game.time * 6 + ph) * 18);
+  const glowAt = (x, y, r) => { if (lit) glow(c, x, y, r, '255,196,100', 0.26 + 0.06 * Math.sin(Game.time * 5 + ph)); };
+  // каменный цоколь для всех
+  c.fillStyle = '#5a554e'; c.fillRect(bx - 3, by - 3, 6, 3);
+  c.fillStyle = '#8e887c'; c.fillRect(bx - 3, by - 3, 6, 1);
+  c.fillStyle = '#3e3a34'; c.fillRect(bx - 2.2, by - 5.5, 4.4, 2.6);
+  if (v === 0) {
+    // шпиль: тонкий столб с кольцами, одна высокая лампа
+    c.fillStyle = IRON[1]; c.fillRect(bx - 0.9, by - 30, 1.8, 25);
+    c.fillStyle = IRON[2]; c.fillRect(bx - 0.9, by - 30, 0.6, 25);
+    for (const yy of [-10, -17, -24]) { c.fillStyle = IRON[0]; c.fillRect(bx - 2, by + yy, 4, 1.2); }
+    lampCage(c, bx, by - 30, 5.6, 9, lit, fl);
+    glowAt(bx, by - 35, 17);
+  } else if (v === 1) {
+    // двойной: две лампы на витых рожках
+    c.fillStyle = IRON[1]; c.fillRect(bx - 0.9, by - 24, 1.8, 19);
+    c.strokeStyle = IRON[0]; c.lineWidth = 1.2; c.lineCap = 'round';
+    for (const s of [-1, 1]) {
+      c.beginPath(); c.moveTo(bx, by - 21); c.quadraticCurveTo(bx + s * 8, by - 21, bx + s * 8, by - 27); c.stroke();
+      c.beginPath(); c.moveTo(bx + s * 4, by - 21.8); c.quadraticCurveTo(bx + s * 5, by - 25, bx + s * 2.6, by - 26); c.stroke();   // завиток
+      lampCage(c, bx + s * 8, by - 27, 4.4, 7, lit, fl);
+      glowAt(bx + s * 8, by - 31, 13);
+    }
+  } else if (v === 2) {
+    // кронштейн: высокий столб, изогнутая консоль с подвесной лампой на цепи
+    c.fillStyle = IRON[1]; c.fillRect(bx - 1, by - 34, 2, 29);
+    c.fillStyle = IRON[2]; c.fillRect(bx - 1, by - 34, 0.7, 29);
+    c.strokeStyle = IRON[0]; c.lineWidth = 1.3; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(bx, by - 31); c.quadraticCurveTo(bx + 4, by - 38, bx + 11, by - 34); c.stroke();
+    c.beginPath(); c.moveTo(bx, by - 26); c.lineTo(bx + 7, by - 33); c.stroke();                                   // подкос
+    c.strokeStyle = IRON[1]; c.lineWidth = 0.5; c.beginPath(); c.moveTo(bx + 11, by - 34); c.lineTo(bx + 11, by - 31); c.stroke();   // цепь
+    lampCage(c, bx + 11, by - 23, 5, 8, lit, fl);
+    glowAt(bx + 11, by - 28, 15);
+    ellipse(c, bx, by - 36, 1.3, 1.3, IRON[0]);
+  } else {
+    // башенка: каменная колонна со стрельчатой нишей и шпилем-крокетами
+    c.fillStyle = '#6e685e'; c.fillRect(bx - 3.4, by - 24, 6.8, 19);
+    c.fillStyle = '#9a9488'; c.fillRect(bx - 3.4, by - 24, 1.6, 19);
+    c.fillStyle = '#3e3a34'; c.fillRect(bx + 2, by - 24, 1.4, 19);
+    for (let r = 0; r < 4; r++) { c.fillStyle = 'rgba(30,26,22,0.35)'; c.fillRect(bx - 3.4, by - 8 - r * 4.6, 6.8, 0.6); }
+    // ниша-окно
+    c.fillStyle = IRON[0]; c.beginPath(); c.moveTo(bx - 2.2, by - 14); c.lineTo(bx - 2.2, by - 19); c.quadraticCurveTo(bx - 2.2, by - 22.6, bx, by - 23.4); c.quadraticCurveTo(bx + 2.2, by - 22.6, bx + 2.2, by - 19); c.lineTo(bx + 2.2, by - 14); c.closePath(); c.fill();
+    c.fillStyle = lit ? `rgb(255,${200 + fl},110)` : '#5c564c';
+    c.beginPath(); c.moveTo(bx - 1.4, by - 14.8); c.lineTo(bx - 1.4, by - 19); c.quadraticCurveTo(bx - 1.4, by - 21.6, bx, by - 22.2); c.quadraticCurveTo(bx + 1.4, by - 21.6, bx + 1.4, by - 19); c.lineTo(bx + 1.4, by - 14.8); c.closePath(); c.fill();
+    // шпиль с крокетами
+    c.fillStyle = IRON[1]; c.beginPath(); c.moveTo(bx - 4.4, by - 24); c.lineTo(bx, by - 37); c.lineTo(bx + 4.4, by - 24); c.closePath(); c.fill();
+    c.fillStyle = IRON[2]; c.beginPath(); c.moveTo(bx - 4.4, by - 24); c.lineTo(bx, by - 37); c.lineTo(bx - 0.8, by - 24); c.closePath(); c.fill();
+    for (const [dy, s] of [[-27, 1.6], [-31, 1.1]]) for (const sd of [-1, 1]) ellipse(c, bx + sd * (2.6 - (dy + 27) * -0.2), by + dy, s * 0.55, s * 0.55, IRON[0]);
+    ellipse(c, bx, by - 37.6, 0.9, 0.9, IRON[0]);
+    glowAt(bx, by - 18, 15);
   }
 }

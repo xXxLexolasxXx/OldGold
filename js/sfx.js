@@ -107,7 +107,7 @@ function sfxAt(kind, wx, wy, vel = 1, delay = 0) {
 }
 
 // Звук жителя по анимации (центр клетки → мировые пиксели)
-const ANIM_SFX = { build: 'build', chop: 'chop', mine: 'mine', dig: 'dig', reap: 'reap', forage: 'forage', smoke: 'smoke', faint: 'groan' };
+const ANIM_SFX = { build: 'build', chop: 'chop', mine: 'mine', dig: 'dig', reap: 'reap', hoppick: 'forage', forage: 'forage', smoke: 'smoke', faint: 'groan' };
 function sfxUnit(u, kind, delay = 0) { if (!u.inside) sfxAt(ANIM_SFX[kind] || kind, u.x * TILE, u.y * TILE, 1, delay / Math.max(1, Game.speed)); }
 
 // Возгласы по всплывающим надписям
