@@ -247,3 +247,13 @@ function initResToggle() {
   const _s = startGame;
   startGame = function () { _s(); initResToggle(); };
 }
+
+// Субботник — в боковое меню (вкладка «Меню»), а не в верхнюю панель
+{
+  const _s2 = startGame;
+  startGame = function () {
+    _s2();
+    const b = document.getElementById('sub-btn'), list = document.querySelector('#tab-menu .menu-list');
+    if (b && list && b.parentElement !== list) { const wrap = b.parentElement; list.prepend(b); if (wrap && wrap.classList.contains('speed') && !wrap.children.length) wrap.remove(); }
+  };
+}
