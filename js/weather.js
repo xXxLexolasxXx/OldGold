@@ -360,6 +360,9 @@ function fireTick(dt) {
   };
   for (const u of Game.units) {
     if (u.dead) continue;
+    // перерыв сбили (отбросило, спугнули): горение кончается вместе с ним
+    if (u.burn && !(u.brk && u.brk.kind === 'burn')) { u.burn = null; u.panicUntil = 0; if (u.gest === 'panic') u.gestUntil = 0; }
+    if (u.slip && !(u.brk && u.brk.kind === 'slip')) u.slip = null;
     if (u.burn && u.burn.stage) { const l = burnLevel(u); if (l > 0.05) burning(u.x * TILE, u.y * TILE - (u.anim === 'roll' ? 4 : 14), l); else if (puff && u.burn.stage === 'out') fxBurst(u.x * TILE, u.y * TILE - 6, 1, ['rgba(150,150,150,0.45)'], 5, 10, 1.6, 3, -12); }
     // скользит — из-под тела брызги
     if (u.anim === 'slide' && puff) fxBurst(u.x * TILE + (u.slip ? u.slip.d[0] * TILE * (1 - Math.max(0, u.action.t) / u.action.T) : 0), u.y * TILE + 4, 1, ['#9ab0c8', '#c8d8e8'], 30, 14, 0.4, 1.6, 90);
@@ -444,9 +447,9 @@ function weatherDrawList(list, c, x0, y0, x1, y1) {
     if (!e.burnT || e.x < x0 - 3 || e.x > x1 + 3 || e.y < y0 - 1 || e.y > y1 + 4) continue;
     list.push([e.y + 0.3, () => {
       const { bx, by } = entBase(e), lv = e.state === 'dying' ? Math.max(0, 1 - e.t / 2) : 1;
-      drawFlames(c, bx, by - 10, 34, 40, lv, e.i);
-      drawFlames(c, bx - 8, by - 50, 28, 40, lv, e.i + 3);
-      drawFlames(c, bx + 9, by - 60, 22, 34, lv, e.i + 5);
+      drawFlames(c, bx, by - 10, 28, 30, lv, e.i);
+      drawFlames(c, bx - 8, by - 50, 24, 30, lv, e.i + 3);
+      drawFlames(c, bx + 9, by - 60, 18, 26, lv, e.i + 5);
     }]);
   }
 }
