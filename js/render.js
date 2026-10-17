@@ -417,14 +417,16 @@ function pigSpriteHR(stage, f) {
 }
 
 function drawPigs(c, b, spr, ox, oy) {
-  const [x0, y0, x1, y1] = spr.pen;
+  const q = spr.penQuad;
   const pigs = [];
   for (let k = 0; k < b.stock.pig; k++) pigs.push(3);
   for (const s of b.pigs) pigs.push(s);
   pigs.forEach((stage, k) => {
     const t = Game.time * 0.22 + k * 2.3 + b.id;
     const fx = (Math.sin(t) * 0.5 + 0.5), fy = (Math.cos(t * 0.7 + k * 1.7) * 0.5 + 0.5);
-    const x = ox + x0 + fx * (x1 - x0 - 24), y = oy + y0 + fy * (y1 - y0 - 14);
+    // позиция внутри загона: билинейно по углам четырёхугольника (с отступом под размер свиньи)
+    const u = 0.06 + fx * 0.88, v = 0.08 + fy * 0.84;
+    const x = ox + q[0][0] + u * (q[1][0] - q[0][0]) + v * (q[2][0] - q[0][0]) - 12, y = oy + q[0][1] + u * (q[1][1] - q[0][1]) + v * (q[2][1] - q[0][1]) - 14;
     const dir = Math.cos(t) >= 0 ? 1 : -1;
     const moving = Math.abs(Math.cos(t)) > 0.25;
     const s = pigSpriteHR(stage, moving ? Math.floor(Game.time * 5 + k) & 1 : 0);

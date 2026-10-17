@@ -520,7 +520,7 @@ function nightLights(x0, y0, x1, y1) {
   for (const u of Game.units) {
     if (u.inside || u.x < x0 - 4 || u.x > x1 + 4 || u.y < y0 - 4 || u.y > y1 + 4) continue;
     if (u.type === 'carter') L.push([u.x * TILE, u.y * TILE - 6, 62, 0.8]);
-    else if (u.lantern && isPerson(u)) L.push([u.x * TILE + (u.face || 1) * 6, u.y * TILE - 4, 60, 0.85]);
+    else if (u.lantern && isPerson(u)) L.push([u.x * TILE + (u.face || 1) * 6, u.y * TILE - 4, 50, 0.85]);
   }
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const o = World.obj[idx(x, y)];
@@ -559,22 +559,26 @@ function drawNight(c, x0, y0, x1, y1) {
   l.clearRect(0, 0, w, h);
   l.setTransform(1 / S, 0, 0, 1 / S, -ox / S, -oy / S);
   // темнота
-  l.fillStyle = `rgba(6,9,26,${0.82 * n})`;
+  l.fillStyle = `rgba(6,9,26,${0.86 * n})`;
   l.fillRect(ox, oy, w * S, h * S);
-  // туман: медленно плывущие клубы (только ночью)
+  // туман: медленно плывущие густые клубы (только ночью); второй слой — лёгкая дымка
+  // поверх света, чтобы и у фонарей было видно, что вокруг всё в тумане
   const fog = fogAmt();
-  const G = 112, drift = Game.time * 5;
-  if (fog > 0.01)
-  for (let gy = Math.floor(oy / G) - 1; gy <= Math.ceil((oy + h * S) / G) + 1; gy++) {
-    for (let gx = Math.floor((ox - drift) / G) - 1; gx <= Math.ceil((ox + w * S - drift) / G) + 1; gx++) {
-      const hh = hash(gx * 7919 + gy * 104729);
-      const r = G * (0.75 + ((hh >>> 3) % 100) / 160);
-      const fx = gx * G + drift + ((hh >>> 8) % 50) - 25 + Math.sin(Game.time * 0.11 + gy) * 18;
-      const fy = gy * G + ((hh >>> 16) % 50) - 25;
-      l.globalAlpha = fog * (0.3 + ((hh >>> 12) % 100) / 300);
-      l.drawImage(NIGHT.puff, fx - r, fy - r * 0.7, r * 2, r * 1.4);
+  const G = 96, drift = Game.time * 5;
+  const puffs = (mul, size) => {
+    if (fog <= 0.01) return;
+    for (let gy = Math.floor(oy / G) - 1; gy <= Math.ceil((oy + h * S) / G) + 1; gy++) {
+      for (let gx = Math.floor((ox - drift) / G) - 1; gx <= Math.ceil((ox + w * S - drift) / G) + 1; gx++) {
+        const hh = hash(gx * 7919 + gy * 104729);
+        const r = G * size * (0.8 + ((hh >>> 3) % 100) / 140);
+        const fx = gx * G + drift + ((hh >>> 8) % 50) - 25 + Math.sin(Game.time * 0.11 + gy) * 18;
+        const fy = gy * G + ((hh >>> 16) % 50) - 25;
+        l.globalAlpha = Math.min(1, fog * mul * (0.45 + ((hh >>> 12) % 100) / 220));
+        l.drawImage(NIGHT.puff, fx - r, fy - r * 0.7, r * 2, r * 1.4);
+      }
     }
-  }
+  };
+  puffs(1.15, 1.15);
   // свет прорезает и темноту, и туман
   const lights = nightLights(x0, y0, x1, y1);
   l.globalCompositeOperation = 'destination-out';
@@ -584,6 +588,7 @@ function drawNight(c, x0, y0, x1, y1) {
     l.drawImage(NIGHT.hole, x - r * fl, y - r * fl, r * 2 * fl, r * 2 * fl);
   }
   l.globalCompositeOperation = 'source-over';
+  puffs(0.28, 0.9);                                       // лёгкая дымка поверх света
   l.globalAlpha = 1;
   c.save();
   c.imageSmoothingEnabled = true;

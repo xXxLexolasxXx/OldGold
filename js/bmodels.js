@@ -894,6 +894,7 @@ const MODELS = {
   },
 
   swine(m) {
+    if (m.rot) { swineSide(m); return; }
     // хлев вдоль задней стороны
     m.box({
       x0: 6, x1: 122, y0: 58, y1: 92, h: 20, wall: 'plank', col: '#7a5434', beam: '#3a2414',
@@ -915,6 +916,7 @@ const MODELS = {
     m.prop((c, x, y) => { c.fillStyle = '#6e4a2c'; c.fillRect(x - 8, y - 5, 16, 1); c.fillRect(x - 8, y - 2.5, 16, 1); line(c, x - 8, y - 1, x + 8, y - 5, '#6e4a2c', 0.8); }, gx, 2);
     const cs = [[8, 8], [120, 8], [120, 54], [8, 54]].map(q => PL(m, q[0], q[1]));
     m.g.spr.pen = [Math.min(...cs.map(q => q[0])), Math.min(...cs.map(q => q[1])), Math.max(...cs.map(q => q[0])), Math.max(...cs.map(q => q[1]))];
+    m.g.spr.penQuad = [PL(m, 8, 8), PL(m, 120, 8), PL(m, 8, 54)];
   },
 
   butchery(m) {
@@ -1283,6 +1285,7 @@ function mirrorSprite(s, FW) {
   if (s.chimneys) m.chimneys = s.chimneys.map(pt);
   for (const k of ['hub', 'glow', 'fire', 'circle', 'cauldron']) if (s[k]) m[k] = pt(s[k]);
   if (s.pen) m.pen = [W - s.pen[2], s.pen[1], W - s.pen[0], s.pen[3]];
+  if (s.penQuad) m.penQuad = s.penQuad.map(pt);
   if (s.perches) m.perches = s.perches.map(pt);
   return m;
 }
@@ -1440,4 +1443,30 @@ function dwarfBanner(c, x, y, col = '#2f6a3a', h = 34) {
 // валун-соседство: дом вросся в скалу
 function dwarfRocks(m, list) {
   for (const [x, y, rx, ry] of list) m.prop((c, sx, sy) => drawBoulder(c, sx, sy, rx, ry), x, y);
+}
+
+// Свинарник при боковом повороте: хлев тянется вдоль оси X (горизонтально, а не по диагонали
+// глубины), загон лежит перед ним; ворота загона — на стороне входа. Свиньи ходят строго
+// внутри четырёхугольника загона и не попадают на крышу.
+function swineSide(m) {
+  m.box({
+    x0: 92, x1: 126, y0: 4, y1: 92, h: 20, wall: 'plank', col: '#7a5434', beam: '#3a2414',
+    roof: { type: 'gable', axis: 'Y', rise: 15, mat: 'thatch', col: '#a8883e', ov: 4 },
+    decor: { W: [{ t: 'hatch', at: 22, z: 2, w: 10, h: 10 }, { t: 'hatch', at: 48, z: 2, w: 10, h: 10 }, { t: 'hatch', at: 74, z: 2, w: 10, h: 10 }], S: [], E: [] },
+  });
+  m.ground((c, mm) => {
+    groundPoly(c, mm, [[2, 2], [90, 2], [90, 94], [2, 94]], '#6a4a2a');
+    for (let k = 0; k < 50; k++) { const q = mm.at(rnd(6, 86), rnd(6, 90)); ellipse(c, q[0], q[1], rnd(1.5, 5), rnd(1, 2.5), srand() < 0.5 ? '#553a20' : '#866038'); }
+    for (const [x, y] of [[26, 22], [60, 72]]) { const q = mm.at(x, y); ellipse(c, q[0], q[1], 9, 3, '#3e3026'); ellipse(c, q[0] - 1, q[1] - 0.8, 5, 1.2, 'rgba(160,190,210,0.55)'); }
+  });
+  m.prop((c, x, y) => trough(c, x, y, 16, '#b8b060'), 44, 70);
+  m.prop((c, x, y) => trough(c, x, y, 14, '#c8c070'), 70, 24);
+  m.prop((c, x, y) => hayBale(c, x, y), 84, 86);
+  const gx = m.doorX;
+  m.fence([[gx + 8, 2], [90, 2]]);
+  m.fence([[2, 2], [gx - 8, 2]]);
+  m.fence([[2, 2], [2, 94], [90, 94]]);
+  m.prop((c, x, y) => { c.fillStyle = '#6e4a2c'; c.fillRect(x - 8, y - 5, 16, 1); c.fillRect(x - 8, y - 2.5, 16, 1); line(c, x - 8, y - 1, x + 8, y - 5, '#6e4a2c', 0.8); }, gx, 2);
+  m.g.spr.penQuad = [PL(m, 10, 10), PL(m, 84, 10), PL(m, 10, 88)];
+  m.g.spr.pen = [0, 0, 0, 0];
 }

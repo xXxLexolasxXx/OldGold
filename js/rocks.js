@@ -238,9 +238,24 @@ function rockEyeCenter(e) {
   return { x: g.bx, y: g.top - g.S.h * 0.3 };
 }
 
+// Моргание: 0 — глаз открыт, 1 — закрыт. Веко опускается и поднимается плавно (0.28 с),
+// глаз не «выключается». Вечером — спокойная волна по всем глазам, ночью — очень редко и
+// только один глаз за раз.
+function rockBlink(e, k, t) {
+  const DUR = 0.28;
+  const prof = u => (u < 0 || u > 1 ? 0 : Math.sin(u * Math.PI));
+  if (nightAmt() < 0.6) {
+    const P = 4.2, ph = (t + e.i * 0.37) % P - k * 0.16;               // волна бежит от глаза к глазу
+    return prof((ph < 0 ? ph + P : ph) / DUR);
+  }
+  const P = 11, n = Math.floor((t + e.i * 1.3) / P);
+  const who = (n * 5 + e.i) % ROCK_EYES.length;                           // какой глаз моргнёт в этот раз
+  return k === who ? prof(((t + e.i * 1.3) % P) / DUR) : 0;
+}
+
 function drawRockEyes(c, e, a) {
   if (a <= 0.01) return;
-  const p = rockEyeCenter(e);
+  const p = rockEyeCenter(e), t = Game.time;
   c.save();
   c.globalAlpha = a;
   nightSprites();
@@ -248,15 +263,12 @@ function drawRockEyes(c, e, a) {
   c.drawImage(NIGHT.warm, p.x - 12, p.y - 6, 24, 14);
   c.globalCompositeOperation = 'source-over';
   ROCK_EYES.forEach(([dx, dy, s], k) => {
-    // перемигиваются: волна морганий бежит от глаза к глазу
-    const shut = ((Game.time * 0.9 + k * 0.125 + e.i * 0.07) % 1) < 0.12;
-    const x = Math.round(p.x + dx * (e.face < 0 ? -1 : 1)), y = Math.round(p.y + dy);
-    c.fillStyle = '#140a05'; c.beginPath(); c.arc(x + s / 2, y + s / 2 - 0.5, s * 0.75 + 0.5, 0, 7); c.fill();   // глазная ямка
-    if (!shut) {
-      const fl = 70 + Math.round(Math.sin(Game.time * 7 + k + e.i) * 40);
-      c.fillStyle = `rgb(255,${fl},30)`; c.fillRect(x, y - 0.5, s, s);
-      c.fillStyle = '#ffe0a0'; c.fillRect(x, y - 0.5, 1, 1);
-    }
+    const x = p.x + dx * (e.face < 0 ? -1 : 1) + s / 2, y = p.y + dy + s / 2 - 0.5;
+    const b = rockBlink(e, k, t), h = Math.max(0.15, 1 - b);               // высота открытой части глаза
+    c.fillStyle = '#140a05'; c.beginPath(); c.arc(x, y, s * 0.8 + 0.5, 0, 7); c.fill();            // глазная ямка
+    c.fillStyle = '#ffb02a'; c.beginPath(); c.ellipse(x, y, s * 0.62 + 0.2, (s * 0.62 + 0.2) * h, 0, 0, 7); c.fill();   // светящийся глаз
+    if (h > 0.5) { c.fillStyle = '#fff0b8'; c.fillRect(x - 0.5, y - 0.6 * h, 1, 1); }
+    if (b > 0.05) { c.fillStyle = '#3a342c'; c.fillRect(x - s * 0.8 - 0.2, y - s * 0.8 - 0.4, s * 1.6 + 0.4, (s * 0.8 + 0.4) * Math.min(1, b * 1.1)); }   // каменное веко сверху
   });
   c.restore();
 }
