@@ -159,7 +159,7 @@ function drawUnit(c, u) {
   const moving = a && a.walk && a.path && !(a.block > 0 && !a.squeeze);
   // вьючная коза и телега извозчика
   if (u.type === 'goat' || u.type === 'carter') {
-    drawCreatureAt(c, u.type === 'goat' ? 'packgoat' : 'cart', px, py, u.face, moving, u.walkPhase / 1.4, u.carry, u.carryN || 1);
+    drawCreatureAt(c, u.type === 'goat' ? 'packgoat' : 'cart', px, py, u.face, moving, u.walkPhase / 1.4, u.carry, u.carryN || 1, u.type === 'carter' && (u.vdir === 'N' || u.vdir === 'S') ? u.vdir : 'E');
     return;
   }
   let pose = 'idle', frame = 0, view = u.vdir || 'S', face = u.face;

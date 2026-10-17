@@ -599,3 +599,32 @@ function fieldStroke(t, first) {
   if (Input.fieldMode === 'del') { removeField(t[0], t[1]); return; }
   if (Input.fieldMode === 'add') { const err = planField(t[0], t[1], tool.crop); if (err && first) toast(err); }
 }
+
+// Свободный работяга помогает фермерам: жнёт созревшее поле и сам несёт урожай на ферму.
+function* helpHarvestGen(u, i) {
+  const o = World.obj[i], x = i % MAP_W, y = (i / MAP_W) | 0;
+  u.helpField = -1;
+  const b = o && o.t === 'field' && o.farm ? Game.buildings.find(q => q.id === o.farm) : null;
+  if (!b || b.removed || o.g < 1) { if (o) o.res = false; return; }
+  const ok = yield { walk: [x, y], offroad: true };
+  if (!ok || World.obj[i] !== o || o.g < 1) { if (World.obj[i] === o) o.res = false; return; }
+  const hopCrop = o.crop === 'hops';
+  u.vdir = 'E'; u.face = x + 0.5 > u.x ? 1 : -1;
+  for (let k = 0; k < 4; k++) fxLater(0.45 + k * 0.95, () => harvestFx(x, y, o.crop));
+  yield { wait: 4, anim: hopCrop ? 'hoppick' : 'reap' };
+  let extra = false;
+  if (World.obj[i] !== o) return;
+  o.g = -1; o.res = false;
+  extra = !!o.ash; o.ash = false;
+  const crop = o.crop;
+  u.carry = crop; u.carryN = 1;
+  const ok2 = yield { walk: [b.doorX, b.doorY] };
+  if (b.removed || !ok2 || !u.carry) { if (u.carry) dropPile(Math.floor(u.x), Math.floor(u.y), crop, 1); u.carry = null; return; }
+  const n = extra ? 5 : 3;
+  for (let k = 0; k < n; k++) if (k === 0 || !outFull(b, crop)) gather(b, crop);
+  const hay = crop === 'hops' ? 1 : extra ? 3 : 2;
+  for (let k = 0; k < hay; k++) if (!outFull(b, 'hay')) gather(b, 'hay');
+  u.carry = null; u.carryN = 0;
+  floater(b.doorX + 0.5, b.doorY - 0.5, 'Помог с урожаем', '#e8d890');
+  yield { wait: 0.5 };
+}

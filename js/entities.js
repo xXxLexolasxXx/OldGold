@@ -524,6 +524,7 @@ class Unit {
     if (this.isCourier) { this.idleFlag = true; return idleGen(this); }
     if (this.type === 'builder') {
       if (this.fieldJob >= 0) { this.idleFlag = false; return fieldDigGen(this, this.fieldJob); }
+      if (this.helpField >= 0) { this.idleFlag = false; return helpHarvestGen(this, this.helpField); }
       if (this.repairJob) { this.idleFlag = false; return repairGen(this, this.repairJob); }
       if (this.job && !this.job.removed) { this.idleFlag = false; return buildGen(this, this.job); }
       this.job = null;

@@ -200,6 +200,22 @@ function dispatchBuilders() {
       u.proc = null; u.action = null; u.anim = null;
     }
   }
+  // ещё свободные — помогают фермерам убирать созревшие поля
+  if (idle.length) {
+    for (const b of Game.buildings) {
+      if (b.state !== 'done' || !idle.length || !b.def.crops) continue;
+      for (const f of farmFields(b)) {
+        if (f.o.g < 1 || f.o.res || outFull(b, f.o.crop)) continue;
+
+        const u = takeNearest(idle, f.x, f.y);
+        if (!u) break;
+        f.o.res = true;
+        u.helpField = idx(f.x, f.y);
+        u.idleFlag = false; u.idleStreak = 0;
+        u.proc = null; u.action = null; u.anim = null;
+      }
+    }
+  }
 }
 
 function dispatchWorkers() {

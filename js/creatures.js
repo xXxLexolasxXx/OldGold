@@ -234,24 +234,24 @@ function drawCartRig(c, f, load, n) {
   line(c, -1.6, 10, 6, 12, '#3a2414', 0.4);
 }
 
-function creatureSprite(kind, f, load, n = 1) {
-  const key = kind + '|' + f + '|' + (load || '') + '|' + n;
+function creatureSprite(kind, f, load, n = 1, view = 'E') {
+  const key = kind + '|' + f + '|' + (load || '') + '|' + n + '|' + view;
   let cv = CR_CACHE.get(key);
   if (cv) return cv;
   const [w, h, ax, ay] = CR_SIZE[kind];
   const [c2, c] = mkSprite(w, h, 3);
   // перенос так, чтобы копыта/колёса стояли в точке (ax, ay)
   c.translate(ax, ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14 }[kind]);
-  if (kind === 'cart') drawCartRig(c, f, load, n);
+  if (kind === 'cart') { if (view === 'E') drawCartRig(c, f, load, n); else drawCartFront(c, f, load, n, view); }
   else drawCreature(c, kind, f, load);
   CR_CACHE.set(key, c2);
   return c2;
 }
 
 // Нарисовать зверя/упряжку ступнями в точке (px, py)
-function drawCreatureAt(c, kind, px, py, face, moving, phase, load, n) {
+function drawCreatureAt(c, kind, px, py, face, moving, phase, load, n, view = 'E') {
   const f = moving ? Math.floor(phase) & 3 : null;
-  const spr = creatureSprite(kind, f, load, n);
+  const spr = creatureSprite(kind, f, load, n, view);
   const [w, h, ax, ay] = CR_SIZE[kind];
   c.fillStyle = 'rgba(10,8,4,0.3)';
   c.beginPath(); c.ellipse(px + 1, py, w * 0.32, 2.2, 0, 0, 7); c.fill();
@@ -259,4 +259,50 @@ function drawCreatureAt(c, kind, px, py, face, moving, phase, load, n) {
   if (face < 0) { c.save(); c.translate(px, py); c.scale(-1, 1); c.drawImage(spr, -ax, -ay, w, h); c.restore(); }
   else c.drawImage(spr, px - ax, py - ay, w, h);
   c.imageSmoothingEnabled = R.smooth;
+}
+
+// Телега спереди (едет к нам) и сзади (едет от нас): вид сверху-под углом, центр по x = 0.
+function drawCartFront(c, f, load, n, dir) {
+  const south = dir === 'S';
+  const lift = f === null ? [0, 0] : [Math.max(0, Math.sin(f / 4 * Math.PI * 2)) * 1.6, Math.max(0, -Math.sin(f / 4 * Math.PI * 2)) * 1.6];
+  const col = '#7a4a2a';
+  const wheel = x => { ellipse(c, x, 22, 1.7, 5.6, '#2e1a0a'); ellipse(c, x, 22, 1.1, 4.6, '#7a5030'); line(c, x, 17.8, x, 26.2, '#2e1a0a', 0.5); };
+  const box = y0 => {
+    c.fillStyle = lingrad(c, 0, y0, 0, y0 + 10, [[0, '#b88a56'], [1, '#6a4422']]);
+    c.fillRect(-8, y0, 16, 10); c.strokeStyle = '#2e1a0a'; c.lineWidth = 0.5; c.strokeRect(-8, y0, 16, 10);
+    for (let k = 1; k < 3; k++) line(c, -8, y0 + k * 3.3, 8, y0 + k * 3.3, 'rgba(30,15,5,0.5)', 0.4);
+  };
+  const stack = y0 => {
+    if (!load) return;
+    for (let k = 0; k < Math.min(n, 5); k++) { c.save(); c.translate(-5.4 + (k % 3) * 5.4, y0 - Math.floor(k / 3) * 4.2); c.scale(0.62, 0.62); drawLoad(c, load); c.restore(); }
+  };
+  const gnome = (x, y, back) => {
+    c.fillStyle = '#6a5a4a'; c.beginPath(); c.ellipse(x, y + 5, 3.4, 3.4, 0, 0, Math.PI * 2); c.fill();
+    ellipse(c, x, y + 0.4, 2.7, 2.7, back ? shade(SKINS[0][0], -0.1) : SKINS[0][0]);
+    if (!back) { c.fillStyle = '#e8e2d8'; c.beginPath(); c.moveTo(x - 2.4, y + 1.6); c.quadraticCurveTo(x, y + 6, x + 2.4, y + 1.6); c.fill(); c.fillStyle = '#1a1210'; c.fillRect(x - 1.4, y, 0.7, 0.7); c.fillRect(x + 0.8, y, 0.7, 0.7); }
+    c.fillStyle = lingrad(c, x - 3, 0, x + 3, 0, [[0, '#7a7a9a'], [1, '#3a3a5a']]);
+    c.beginPath(); c.moveTo(x - 3.2, y - 1.4); c.quadraticCurveTo(x - 1, y - 7, x + 1.4, y - 8.4); c.quadraticCurveTo(x + 2.4, y - 5, x + 3.2, y - 1.4); c.closePath(); c.fill();
+  };
+  if (south) {
+    wheel(-9.6); wheel(9.6);
+    box(8); stack(7); gnome(0, 2, false);
+    // лошадь мордой к нам: грудь, шея, голова, две передние ноги
+    crLegs(c, [-2.7, 2.7], 19, 8 + 1, f, col, 2);
+    c.fillStyle = lingrad(c, 0, 10, 0, 24, [[0, shade(col, 0.2)], [1, shade(col, -0.3)]]);
+    c.beginPath(); c.ellipse(0, 18, 5.8, 6.6, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col; c.beginPath(); c.moveTo(-2.8, 15); c.quadraticCurveTo(-3.4, 8, -2.4, 6); c.lineTo(2.4, 6); c.quadraticCurveTo(3.4, 8, 2.8, 15); c.fill();
+    c.fillStyle = '#2a1a10'; c.fillRect(-0.8, 5, 1.6, 9);
+    c.fillStyle = shade(col, 0.1); c.beginPath(); c.ellipse(0, 7.4, 2.4, 3.2, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = shade(col, -0.2); c.beginPath(); c.moveTo(-2.4, 5); c.lineTo(-3.4, 2); c.lineTo(-1.4, 4.4); c.fill(); c.beginPath(); c.moveTo(2.4, 5); c.lineTo(3.4, 2); c.lineTo(1.4, 4.4); c.fill();
+    ellipse(c, 0, 10, 1.7, 1.2, '#9a7a62'); c.fillStyle = '#1a1210'; c.fillRect(-1.6, 6.4, 0.7, 0.7); c.fillRect(0.9, 6.4, 0.7, 0.7);
+    line(c, -3, 13, 3, 13, '#3a2414', 0.6);
+  } else {
+    // лошадь впереди (дальше от нас) — видна круп и хвост, телега с возницей перекрывает её
+    c.fillStyle = lingrad(c, 0, 6, 0, 18, [[0, shade(col, 0.2)], [1, shade(col, -0.3)]]);
+    c.beginPath(); c.ellipse(0, 8, 6.8, 5, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = shade(col, -0.35); c.beginPath(); c.moveTo(-2.6, 3.4); c.lineTo(-3.4, 0.6); c.lineTo(-1.4, 2.6); c.fill(); c.beginPath(); c.moveTo(2.6, 3.4); c.lineTo(3.4, 0.6); c.lineTo(1.4, 2.6); c.fill();
+    c.fillStyle = '#2a1a10'; c.beginPath(); c.moveTo(-1.4, 11); c.quadraticCurveTo(-2.6, 18, -1.2, 22); c.lineTo(1.2, 22); c.quadraticCurveTo(2.6, 18, 1.4, 11); c.fill();
+    crLegs(c, [-4.2, 4.2], 12, 7, f, col, 1.8);
+    wheel(-9.6); wheel(9.6);
+    box(18); stack(17); gnome(0, 10, true);
+  }
 }
