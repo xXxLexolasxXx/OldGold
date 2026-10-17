@@ -106,12 +106,12 @@ const BUILDINGS = {
     desc: 'Конюх растит лошадей на сене и зерне. Каждая лошадь с телегой — извозчик: везёт сразу весь стек, до 5 штук. До 3 на конюшню.',
   },
   woodcutter: {
-    name: 'Дом лесоруба', cat: 'Ресурсы', w: 2, h: 2, top: 66, cost: { timber: 2, stone: 1 }, worker: 'woodcutter',
+    name: 'Дом лесоруба', cat: 'Ресурсы', w: 2, h: 2, top: 66, cost: { trunk: 2, stone: 1 }, worker: 'woodcutter',
     outputs: { trunk: 5 },
     desc: 'Бревенчатая избушка. Лесоруб рубит взрослые деревья и сажает новые.',
   },
   sawmill: {
-    name: 'Лесопилка', cat: 'Ресурсы', w: 3, h: 2, top: 58, cost: { timber: 3, stone: 2 }, worker: 'carpenter',
+    name: 'Лесопилка', cat: 'Ресурсы', w: 3, h: 2, top: 58, cost: { trunk: 3, stone: 2 }, worker: 'carpenter',
     inputs: { trunk: 5 }, outputs: { timber: 6 },
     recipes: [{ in: { trunk: 1 }, out: { timber: 2 }, time: 7 }],
     desc: 'Распиливает брёвна на доски.',
