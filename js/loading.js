@@ -95,7 +95,7 @@
     // тень на земле
     ctx.fillStyle = 'rgba(0,0,0,0.38)';
     ctx.beginPath(); ctx.ellipse(0, 2, 26, 7, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.rotate(sway * 0.03);
+    ctx.rotate(sway * 0.075);
     stroke(2.2);
     // сапоги
     for (const s of [-1, 1]) {
@@ -657,6 +657,31 @@
     ctx.globalAlpha = 1;
   }
 
+  // ---------- ноты: гномы поют, ноты всплывают над колпаками ----------
+  const notes = [];
+  const NOTE = [['...##', '...#.#', '...#..', '...#..', '.###.', '####.', '.##..'], ['.#####', '.#...#', '.#...#', '.#...#', '##..##', '##..##', '....#.']];
+  let noteT = 0;
+  function singNotes(dt, t, ring) {
+    noteT -= dt;
+    if (noteT <= 0) {
+      noteT = rnd(0.18, 0.45);
+      const p = ring[Math.floor(Math.random() * ring.length)];
+      notes.push({ x: p.x + rnd(-6, 6) * p.k, y: p.y - 100 * p.k, vy: rnd(24, 36), ph: rnd(0, 6), life: 0, max: rnd(2.4, 3.4), kind: Math.random() < 0.35 ? 1 : 0, col: Math.random() < 0.7 ? '#ffd878' : '#fff0b0' });
+    }
+    const q = PSc;
+    for (let i = notes.length - 1; i >= 0; i--) {
+      const n = notes[i]; n.life += dt; n.y -= n.vy * dt; n.x += Math.cos(n.life * 3.2 + n.ph) * 14 * dt;
+      if (n.life > n.max) { notes.splice(i, 1); continue; }
+      const a = 1 - Math.max(0, (n.life / n.max - 0.65) / 0.35);
+      if (a < 0.5 && Math.floor(n.life * 14) % 2) continue;   // в конце мигают и гаснут
+      const bx = Math.round(n.x / q) * q, by = Math.round(n.y / q) * q;
+      for (const [dx, dy, col] of [[q, q, '#2a1a40'], [0, 0, n.col]]) {
+        ctx.fillStyle = col;
+        NOTE[n.kind].forEach((row, ry) => { for (let rx = 0; rx < row.length; rx++) if (row[rx] === '#') ctx.fillRect(bx + rx * q + dx, by + ry * q + dy, q, q); });
+      }
+    }
+  }
+
   // ---------- кадр ----------
   let last = performance.now(), running = true, T0 = last, lift = 0;
   function frame(now) {
@@ -695,7 +720,7 @@
 
     stageUpdate(dt); drawStage();
     // гномы по эллипсу: сзади огня — лицом к нам, спереди — спиной
-    const N = CREW.length, rx = 205 * u * 1.7, ry = 58 * u * 1.7;
+    const N = CREW.length, rx = 150 * u * 1.7, ry = 46 * u * 1.7;
     const ring = [];
     for (let i = 0; i < N; i++) {
       const a = Math.PI / 2 + Math.PI / N + i / N * Math.PI * 2 + Math.sin(t * 0.15) * 0.04;
@@ -706,7 +731,7 @@
     drawFireBase(cx, cy, S);
     const back = ring.filter(p => p.y < cy), front = ring.filter(p => p.y >= cy);
     const pos = new Map(ring.map(p => [p.i, p]));
-    const sway = i => Math.sin(t * 1.6 + i * 0.9);
+    const sway = i => Math.sin(t * 2.3 + i * 0.55);
     const shoulder = p => ({ x: p.x + Math.sin(sway(p.i) * 0.03) * 0, y: p.y - 48 * p.k });
     const arms = [];
     // руки: от каждого плеча к середине между соседями
@@ -740,6 +765,7 @@
     drawFire(ctx, fx, fy + 1, 'blaze', t, 2, { h: fh, glow: 0, sparks: 16 });
     ctx.restore();
     drawRing(front);
+    singNotes(dt, t, ring);
     // тёплая засветка поверх всей сцены
     ctx.save(); ctx.globalCompositeOperation = 'soft-light';
     const wl = ctx.createRadialGradient(cx, cy - 40 * u, 20, cx, cy - 40 * u, Math.max(W, H) * 0.7);
