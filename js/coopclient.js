@@ -1,0 +1,679 @@
+'use strict';
+// Кооператив, клиентская часть. Одиночная игра не меняется: всё здесь оживает только после входа на сервер
+// (StartMenu.onConnect). В сетевом режиме клиент НЕ считает симуляцию — мир считает сервер (server/, js/coopsim.js),
+// сюда приходят снимки; существующая отрисовка рисует их как обычно. Ввод превращается в команды серверу.
+// Подключается после hero.js и startmenu.js: оборачивает несколько глобальных функций.
+
+const Coop = {
+  on: false, ws: null, nick: '', host: false, meta: null, creds: null, uid: 0,
+  anim: new Map(), bubbles: new Map(), chatLog: [], roadBatch: [], me: null, saveT: 0, regMode: false,
+  lastLoad: 0, reconnecting: false, noticeField: false, heroCmdAt: 0,
+};
+const COOP_SLOT = 'coop';
+
+function coopSend(o) { if (Coop.ws && Coop.ws.readyState === 1) Coop.ws.send(JSON.stringify(o)); }
+
+// ---------- Подключение ----------
+
+function coopConnect(opts) {
+  return new Promise((resolve, reject) => {
+    let ws, settled = false;
+    try { ws = new WebSocket(opts.server); } catch (e) { reject(new Error('Неверный адрес сервера')); return; }
+    Coop.ws = ws; Coop.creds = opts;
+    const fail = msg => { if (settled) return; settled = true; reject(new Error(msg)); try { ws.close(); } catch (e) { /* ничего */ } };
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass }));
+    ws.onerror = () => fail('Сервер не отвечает. Он запущен? Адрес верный?');
+    ws.onclose = () => { if (!settled) fail('Связь оборвана'); else if (Coop.ws === ws) coopLost(); };
+    ws.onmessage = ev => {
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.t === 'err') return fail(m.msg);
+      if (m.t === 'welcome') {
+        Coop.nick = m.nick; Coop.host = m.host; Coop.meta = { classes: m.classes, chat: m.chat };
+        if (m.needClass) coopPickClass(m.classes);
+        return;
+      }
+      if (m.t === 'init') { coopApplyInit(m); if (!settled) { settled = true; resolve(true); } return; }
+      coopHandle(m);
+    };
+  });
+}
+
+function coopApplyInit(m) {
+  Coop.on = true; Game.coop = true;
+  applySave(m.world);
+  Game.units = []; Game.unitMap.clear(); Game.animals = []; Game.hero = null; Game.heroAsk = false; Game.selUnit = null; Game.selected = null;
+  Game.piles.clear();
+  Game.nextId = Math.max(Game.nextId, m.nextId || 0);
+  Game.time = m.time;
+  Game.paused = false; Game.speed = 1;
+  Coop.uid = m.uid; Coop.anim.clear(); Coop.bubbles.clear(); Coop.roadBatch = [];
+  Coop.saveT = 0;
+  renderBuildMenu();
+  coopInitHud();
+  if (Tut.on) { Tut.on = false; if (Tut.el) Tut.el.classList.add('hidden'); tutHighlight([]); }   // обучение в общей деревне не нужно
+}
+
+function coopHandle(m) {
+  switch (m.t) {
+    case 'u': coopUnits(m); break;
+    case 'w': coopWorld(m); break;
+    case 'me': Coop.me = m; coopRefreshHud(); break;
+    case 'toast': toast(m.text); break;
+    case 'fl': floater(m.x, m.y, m.text, m.col || '#fff6d0'); break;
+    case 'chat': coopChat(m); break;
+    case 'saved': break;
+    case 'restarting': Coop.reconnecting = true; toast('Сервер перезапускается…'); break;
+  }
+}
+
+function coopChat(m) {
+  Coop.chatLog.push({ from: m.from, text: m.text, at: Date.now() });
+  if (Coop.chatLog.length > 30) Coop.chatLog.shift();
+  if (m.uid) Coop.bubbles.set(m.uid, { text: m.text, until: Game.time + 5 });
+  coopRefreshHud();
+}
+
+// ---------- Зеркало мира ----------
+
+function coopUnits(m) {
+  if (Math.abs(Game.time - m.time) > 1) Game.time = m.time; else Game.time += (m.time - Game.time) * 0.3;
+  const byId = new Map(Game.buildings.map(b => [b.id, b]));
+  const seen = new Set();
+  for (const d of m.units) {
+    seen.add(d.i);
+    let u = Game.unitMap.get(d.i);
+    if (!u) {
+      u = new Unit(d.t, 0, 0);
+      u.id = d.i; u.x = d.x; u.y = d.y; u.smoker = false;
+      Game.units.push(u); Game.unitMap.set(u.id, u);
+    }
+    u.tx = d.x; u.ty = d.y; u.face = d.f; u.vdir = d.v || 'S'; u.look = d.lk; u.food = d.fd;
+    u.anim = d.a || null; u.carry = d.c || null; u.carryN = d.n || 0;
+    u.inside = d.in ? byId.get(d.in) || null : null;
+    u.injury = d.inj || null; u.drunkAt = d.dr ? 1e9 : 0; u.ouchUntil = d.ou ? Game.time + 0.7 : 0;
+    if (d.m) { if (!(u.action && u.action.walk)) u.action = { walk: [0, 0], path: [1], i: 0, block: 0 }; }
+    else if (d.at !== undefined) { if (!u.action || u.action.walk) u.action = { wait: 1, T: d.aT, anim: d.a }; u.action.t = d.at; }
+    else u.action = null;
+    if (d.ow) {
+      u.owner = d.ow;
+      u.hero = Object.assign(u.hero || {}, { name: d.ow, owner: d.ow, level: d.lv, clsKey: d.cl, hp: d.hp, maxhp: d.mhp, cls: ((Coop.meta && Coop.meta.classes[d.cl]) || {}).name || '', equip: { weapon: null, armor: null } });
+      if (d.i === Coop.uid && Game.hero !== u) {
+        Game.hero = u;
+        if (!Game.selUnit) { selectHero(true); }
+      }
+    }
+  }
+  for (let i = Game.units.length - 1; i >= 0; i--) {
+    const u = Game.units[i];
+    if (!seen.has(u.id)) { Game.units.splice(i, 1); Game.unitMap.delete(u.id); if (Game.hero === u) Game.hero = null; }
+  }
+  // звери
+  const next = [];
+  for (const d of m.animals) {
+    let a = Coop.anim.get(d.i);
+    if (!a) { a = makeAnimal(d.k, 0, 0); a.id = d.i; a.x = d.x; a.y = d.y; Coop.anim.set(d.i, a); }
+    a.tx = d.x; a.ty = d.y; a.face = d.f; a.moving = !!d.m; a.loot = d.l || null; a.state = d.s; a.phase = d.p;
+    next.push(a);
+  }
+  for (const id of [...Coop.anim.keys()]) if (!next.includes(Coop.anim.get(id))) Coop.anim.delete(id);
+  Game.animals = next;
+}
+
+function coopApplyBuilding(d, byId) {
+  let b = byId.get(d.id);
+  const fresh = !b || b.type !== d.type || b.x !== d.x || b.y !== d.y || (b.level || 1) !== (d.level || 1) || !!b.upg !== !!d.upg || (b.rot || 0) !== (d.rot || 0);
+  if (fresh) {
+    if (b) coopDropBuilding(b);
+    b = new Building(d.type, d.x, d.y, d.state === 'done', d.rot || 0);
+    b.id = d.id;
+    if (b.type === 'graveyard' && d.state !== 'done') { b.selfBuild = true; b.maxHits = SITE_HITS + GY_BUILD_HITS; b.total = 1; }
+    if (d.level === 2 && b.def.up) upgradeBuilding(b, true);
+    if (d.upg && canUpgrade(b)) startUpgrade(b);
+    for (let yy = b.y; yy < b.y + b.h; yy++) for (let xx = b.x; xx < b.x + b.w; xx++) World.bmap[idx(xx, yy)] = b.id;
+    World.door[idx(b.doorX, b.doorY)] = 1;
+    if (b.door2) World.door[idx(b.door2[0], b.door2[1])] = 1;
+    Game.buildings.push(b);
+    byId.set(b.id, b);
+  }
+  b.state = d.state;
+  for (const g in b.stock) b.stock[g] = 0;
+  Object.assign(b.stock, d.stock);
+  for (const g in b.usedOf) b.usedOf[g] = 0;
+  Object.assign(b.usedOf, d.usedOf);
+  b.used = d.used;
+  b.hits = d.hits ?? (b.state === 'done' ? b.maxHits : 0);
+  b.queue = d.queue || [];
+  b.training = d.training || null;
+  b.paused = !!d.paused; b.hold = !!d.hold; b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
+  if (d.recipeOn && d.recipeOn.length === b.recipeOn.length) b.recipeOn = d.recipeOn;
+  b.recipeIdx = d.recipeIdx || 0;
+  if (d.pigs) b.pigs = d.pigs;
+  if (d.crops) b.crops = d.crops;
+  if (d.upg && b.upg) { Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
+  b.working = !!d.wk; if (d.an) b.anim = d.an;
+}
+
+function coopDropBuilding(b) {
+  b.removed = true;
+  for (let yy = b.y; yy < b.y + b.h; yy++) for (let xx = b.x; xx < b.x + b.w; xx++) if (World.bmap[idx(xx, yy)] === b.id) World.bmap[idx(xx, yy)] = 0;
+  World.door[idx(b.doorX, b.doorY)] = 0;
+  if (b.door2) World.door[idx(b.door2[0], b.door2[1])] = 0;
+  const k = Game.buildings.indexOf(b);
+  if (k >= 0) Game.buildings.splice(k, 1);
+}
+
+function coopObj(t) {
+  const [i, ty, g, n, farm, crop, dv, dvert] = t;
+  const o = { t: ty };
+  if (ty === 'tree' || ty === 'field' || ty === 'stump' || ty === 'bin') o.g = g;
+  if (ty === 'stone') o.n = n;
+  if (dv !== undefined && dv !== null) o.v = dv;
+  if (dvert) o.vert = true;
+  if (ty === 'field') { o.farm = farm; o.crop = !crop || crop === 'hay' ? 'wheat' : crop; o.ash = n === 1; o.plan = n === 2; }
+  World.obj[i] = o;
+}
+
+function coopWorld(m) {
+  Game.nextId = Math.max(Game.nextId, m.nextId || 0);
+  if (m.bx) for (const id of m.bx) { const b = Game.buildings.find(x => x.id === id); if (b) coopDropBuilding(b); }
+  if (m.b) { const byId = new Map(Game.buildings.map(b => [b.id, b])); for (const d of m.b) coopApplyBuilding(d, byId); }
+  if (m.o) for (const t of m.o) coopObj(t);
+  if (m.ox) for (const i of m.ox) World.obj[i] = null;
+  if (m.r || m.rx) {
+    if (m.r) for (const i of m.r) World.road[i] = 1;
+    if (m.rx) for (const i of m.rx) World.road[i] = 0;
+    World.roadDirty = true;
+  }
+  if (m.rs) {
+    Game.roadSites.clear();
+    for (const r of m.rs) { const s = new RoadSite(r.x, r.y); s.stock.stone = r.st; s.dug = r.dg; s.pave = r.pv; Game.roadSites.set(idx(r.x, r.y), s); }
+  }
+  if (m.pl) {
+    Game.piles.clear();
+    for (const q of m.pl) { const p = new Pile(q.x, q.y); Object.assign(p.stock, q.st); Game.piles.set(idx(q.x, q.y), p); }
+  }
+}
+
+// Вместо step(): время идёт, всё плавно доезжает до последнего снимка
+function coopStep(dt) {
+  Game.time += dt;
+  const k = Math.min(1, dt * 12);
+  for (const u of Game.units) {
+    if (u.tx === undefined) continue;
+    const dx = u.tx - u.x, dy = u.ty - u.y, d = Math.hypot(dx, dy);
+    if (d > 3) { u.x = u.tx; u.y = u.ty; } else if (d > 0.002) {
+      u.x += dx * k; u.y += dy * k;
+      if (u.action && u.action.walk) u.walkPhase += Math.hypot(dx * k, dy * k) * 6;
+    }
+    if (u.action && u.action.t !== undefined && u.action.t > 0) u.action.t -= dt;
+  }
+  for (const a of Game.animals) {
+    if (a.tx === undefined) continue;
+    const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
+    if (d > 3) { a.x = a.tx; a.y = a.ty; } else { a.x += dx * k; a.y += dy * k; a.phase += Math.hypot(dx * k, dy * k) * 3; }
+  }
+  const h = Game.hero;
+  if (h && h.cmd && Game.time - Coop.heroCmdAt > 1.2 && !(h.action && h.action.walk)) h.cmd = null;
+  Coop.saveT += dt;
+  if (Coop.saveT >= 30) { Coop.saveT = 0; coopSaveCopy(); }
+}
+
+// Копия общего мира на случай, когда сервер выключен: свой слот, личные сохранения не трогаем
+function coopSaveCopy() {
+  if (!Coop.on) return;
+  try {
+    const s = serializeGame();
+    localStorage.setItem(SAVE_KEY + COOP_SLOT, JSON.stringify(s));
+    localStorage.setItem(SAVE_KEY + COOP_SLOT + '.meta', JSON.stringify({ at: Date.now(), time: Game.time, people: Game.units.length, nick: Coop.nick }));
+  } catch (e) { console.warn('копия мира не сохранилась', e); }
+}
+
+// ---------- Подключение к игре: оборачиваем глобальные функции ----------
+
+{
+  const _step = step;
+  step = function (dt) { if (Coop.on) coopStep(dt); else _step(dt); };
+
+  const _pb = placeBuilding;
+  placeBuilding = function (type, x, y, done, rot) {
+    if (!Coop.on) return _pb(type, x, y, done, rot);
+    coopSend({ t: 'build', type, x, y, rot: rot || 0 });
+    return null;
+  };
+
+  const _pr = placeRoadSite;
+  placeRoadSite = function (x, y) {
+    if (!Coop.on) return _pr(x, y);
+    if (!canPlaceRoad(x, y)) return null;
+    Coop.roadBatch.push([x, y]);
+    if (Coop.roadBatch.length === 1) setTimeout(() => { coopSend({ t: 'road', cells: Coop.roadBatch }); Coop.roadBatch = []; }, 0);
+    return true;
+  };
+
+  const _er = eraseAt;
+  eraseAt = function (t) {
+    if (!Coop.on) return _er(t);
+    if (!inb(t[0], t[1])) return;
+    const i = idx(t[0], t[1]), id = World.bmap[i];
+    if (id) {
+      const b = Game.buildings.find(o => o.id === id);
+      if (b && b.state === 'done' && !confirm(`Снести «${b.def.name}»? Деревня общая — другие игроки это увидят.`)) return;
+    }
+    coopSend({ t: 'erase', cells: [[t[0], t[1]]] });
+  };
+
+  const _fs = fieldStroke;
+  fieldStroke = function (t, first) {
+    if (!Coop.on) return _fs(t, first);
+    if (!Coop.noticeField) { Coop.noticeField = true; toast('Поля в сетевой игре пока недоступны'); }
+  };
+
+  const _ss = setSpeed;
+  setSpeed = function (s) { if (!Coop.on) return _ss(s); toast('В общей деревне время не остановить'); };
+
+  const _sg = saveGame;
+  saveGame = function (slot) { return Coop.on ? (coopSaveCopy(), true) : _sg(slot); };
+
+  const _lg = loadGame;
+  loadGame = function (slot) {
+    if (Coop.on) { toast('В общей деревне загрузка недоступна'); return false; }
+    return _lg(slot);
+  };
+
+  const _ic = issueCmd;
+  issueCmd = function (hero, c) {
+    if (!Coop.on) return _ic(hero, c);
+    coopSend({ t: 'go', x: c.tx, y: c.ty });
+    hero.cmd = c; Coop.heroCmdAt = Game.time;
+  };
+
+  const _rc = resolveCmd;
+  resolveCmd = function (t) {
+    if (Coop.on && inb(t[0], t[1])) {
+      const b = buildingAt(t);
+      if (b && !b.isRoad && b.type === 'inn' && b.state === 'done' && !b.upg) return { kind: 'tavern', b, tx: b.doorX, ty: b.doorY, label: 'Поесть в трактире' };
+    }
+    return _rc(t);
+  };
+
+  heroPanel = function () { return coopPanel(); };
+  const _hb = heroBtnUpdate;
+  heroBtnUpdate = function () { if (!Coop.on) _hb(); else { const b = document.getElementById('hero-btn'); if (b) b.style.display = Game.hero ? '' : 'none'; if (Game.hero) _hb(); } };
+
+  const _ov = drawOverlay;
+  drawOverlay = function (c) {
+    if (!Coop.on) return _ov(c);
+    const h = Game.hero, nm = h && h.hero ? h.hero.name : null;
+    if (nm !== null) h.hero.name = '';          // свой ник рисуем сами, вместе с остальными
+    _ov(c);
+    if (nm !== null) h.hero.name = nm;
+    coopPlates(c);
+  };
+}
+
+// Ник, полоска здоровья и реплика над головой каждого героя
+function coopPlates(c) {
+  const classes = (Coop.meta && Coop.meta.classes) || {};
+  c.textAlign = 'center';
+  for (const u of Game.units) {
+    if (!u.owner || u.inside) continue;
+    const H = u.hero, px = u.x * TILE, py = u.y * TILE - 38;
+    const col = (classes[H.clsKey] || {}).col || '#f0d890';
+    c.font = 'bold 8px sans-serif';
+    c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; c.strokeText(u.owner, px, py);
+    c.fillStyle = col; c.fillText(u.owner, px, py);
+    const w = 26, ratio = Math.max(0, Math.min(1, H.hp / H.maxhp));
+    c.fillStyle = 'rgba(20,12,4,0.9)'; c.fillRect(px - w / 2 - 1, py + 2, w + 2, 5);
+    c.fillStyle = '#4a1612'; c.fillRect(px - w / 2, py + 3, w, 3);
+    c.fillStyle = ratio > 0.5 ? '#5ac04a' : ratio > 0.25 ? '#e0b030' : '#e04030';
+    c.fillRect(px - w / 2, py + 3, Math.round(w * ratio), 3);
+    const bub = Coop.bubbles.get(u.id);
+    if (bub && bub.until > Game.time) {
+      c.font = 'bold 7px sans-serif';
+      const tw = c.measureText(bub.text).width + 8;
+      c.fillStyle = 'rgba(250,240,210,0.95)'; c.fillRect(px - tw / 2, py - 20, tw, 11);
+      c.strokeStyle = '#3a2a14'; c.lineWidth = 1; c.strokeRect(px - tw / 2 + 0.5, py - 19.5, tw - 1, 10);
+      c.fillStyle = '#2a1c0c'; c.fillText(bub.text, px, py - 12);
+    }
+  }
+  c.textAlign = 'start';
+}
+
+// ---------- Интерфейс ----------
+
+function coopCss() {
+  if (document.getElementById('coop-css')) return;
+  const st = document.createElement('style');
+  st.id = 'coop-css';
+  st.textContent = `
+  .cp-modal{position:fixed;inset:0;background:rgba(8,6,3,.82);z-index:10000;display:flex;align-items:center;justify-content:center;color:#e8dcc0;font-family:inherit}
+  .cp-card{background:#1f1710;border:2px solid #b8902c;border-radius:8px;padding:20px 22px;width:min(560px,94vw);max-height:92vh;overflow:auto;text-align:center}
+  .cp-card h2{margin:0 0 6px;color:#f6d458;font-size:20px}.cp-card p{margin:0 0 12px;font-size:13px;opacity:.85}
+  .cp-cls{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px}
+  .cp-c{background:#2a2014;border:2px solid var(--c);border-radius:6px;padding:8px 4px;cursor:pointer;color:#f6e8c0;font-size:12px;font-family:inherit}
+  .cp-c:hover{background:#3a2c14}.cp-c b{display:block;color:var(--c);font-size:14px;margin-bottom:3px}.cp-c small{opacity:.75;font-size:10px;display:block}
+  .cp-btn{margin:8px 4px 0;padding:7px 18px;font-size:14px;background:#8a6a1c;color:#fff4d0;border:1px solid #d8b04a;border-radius:4px;cursor:pointer;font-family:inherit}
+  .cp-btn.sec{background:#3a2c14;border-color:#7a5f28}
+  #coop-hud{position:absolute;right:10px;bottom:10px;z-index:6;display:flex;flex-direction:column;align-items:flex-end;gap:5px;font-size:12px;color:#f0e4c0;max-width:min(300px,70vw)}
+  #coop-hud .cp-row{display:flex;gap:5px}
+  #coop-hud button{background:rgba(26,19,13,.9);color:#f6d458;border:1px solid #b8902c;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12px;font-family:inherit}
+  #coop-hud button:hover{background:#3a2c14}
+  #cp-log{display:flex;flex-direction:column;gap:2px;align-items:flex-end;pointer-events:none}
+  #cp-log div{background:rgba(26,19,13,.85);border-radius:4px;padding:2px 7px;text-shadow:0 1px 1px #000}
+  #cp-log b{color:#f6d458}
+  #cp-pop{background:rgba(26,19,13,.95);border:1px solid #b8902c;border-radius:6px;padding:8px;display:none;flex-direction:column;gap:5px;min-width:200px}
+  #cp-pop.open{display:flex}
+  #cp-pop button{text-align:left}
+  .cp-inv{display:grid;grid-template-columns:repeat(5,34px);gap:4px}
+  .cp-slot{width:34px;height:34px;background:#120d08;border:1px solid #5a4620;border-radius:4px;position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;color:#f6e8c0;text-align:center;line-height:1}
+  .cp-slot.has:hover{border-color:#f6d458}.cp-slot i{position:absolute;right:2px;bottom:1px;font-style:normal;font-size:9px;color:#ffd45a}
+  .cp-bar{height:8px;background:#2a1410;border-radius:3px;overflow:hidden;border:1px solid #000}.cp-bar i{display:block;height:100%}
+  .cp-sm{font-size:11px;padding:2px 8px;margin:2px 3px 0 0;background:#3a2c14;color:#f6e8c0;border:1px solid #8a6a28;border-radius:4px;cursor:pointer;font-family:inherit}
+  `;
+  document.head.appendChild(st);
+}
+
+function coopPickClass(classes) {
+  coopCss();
+  document.getElementById('cp-class')?.remove();
+  const box = document.createElement('div');
+  box.id = 'cp-class'; box.className = 'cp-modal';
+  box.innerHTML = `<div class="cp-card"><h2>Кто ты, гном?</h2><p>Первый заход в деревню: выбери класс. Он останется с героем.</p>
+    <div class="cp-cls">${Object.entries(classes).map(([k, c]) => `<button class="cp-c" style="--c:${c.col}" data-cls="${k}"><img src="${portraitURL('hero_' + k, 7)}" alt="" style="width:48px;height:48px;image-rendering:pixelated;display:block;margin:0 auto 4px"><b>${c.name}</b>${c.info}<small>здоровье ${c.hp}</small></button>`).join('')}</div></div>`;
+  document.body.appendChild(box);
+  box.addEventListener('click', e => {
+    const b = e.target.closest('[data-cls]');
+    if (!b) return;
+    coopSend({ t: 'class', cls: b.dataset.cls });
+    box.remove();
+  });
+}
+
+const ITEM_NAME = k => (typeof GOODS !== 'undefined' && GOODS[k] ? GOODS[k].name : k);
+
+function coopInvHtml() {
+  const me = Coop.me;
+  const inv = me ? me.inv : Array(10).fill(null);
+  return `<div class="cp-inv">${inv.map((s, i) => s
+    ? `<div class="cp-slot has" data-coop="use" data-slot="${i}" title="${ITEM_NAME(s.k)} — клик: съесть, Shift+клик: выбросить">${ITEM_NAME(s.k).slice(0, 5)}<i>${s.n}</i></div>`
+    : '<div class="cp-slot"></div>').join('')}</div>`;
+}
+
+function coopPanel() {
+  const h = Game.hero, H = h.hero, me = Coop.me || {};
+  const cl = ((Coop.meta && Coop.meta.classes) || {})[H.clsKey] || { col: '#f0d890', name: H.cls };
+  const hp = Math.round(H.hp), mhp = H.maxhp || 1;
+  const food = Math.max(0, Math.min(1, h.food));
+  return `<div class="ihead"><img class="bpic" src="${portraitURL('hero', h.look)}" alt=""><div><h3 style="color:${cl.col}">${H.name}</h3>
+    <span class="muted small">${cl.name} · уровень ${H.level}</span></div></div>
+    <div class="irow">Здоровье <b>${hp}/${mhp}</b></div><div class="cp-bar"><i style="width:${Math.round(100 * hp / mhp)}%;background:#5ac04a"></i></div>
+    <div class="irow">Сытость <b>${Math.round(food * 100)}%</b></div><div class="cp-bar"><i style="width:${Math.round(100 * Math.min(1, food))}%;background:#d0a83a"></i></div>
+    <div class="irow" style="margin-top:6px">Инвентарь (10)</div>${coopInvHtml()}
+    <div class="tip">Клик по земле, стройке, дереву, камню — герой идёт и делает. Клик по трактиру — пойдёт поесть (иногда с пивом…). Строить, класть и сносить дороги могут все, а герой у каждого свой.</div>`;
+}
+
+function coopInitHud() {
+  coopCss();
+  let hud = document.getElementById('coop-hud');
+  if (hud) hud.remove();
+  hud = document.createElement('div');
+  hud.id = 'coop-hud';
+  hud.innerHTML = `<div id="cp-log"></div><div id="cp-pop"></div>
+    <div class="cp-row"><span id="cp-online" style="align-self:center;background:rgba(26,19,13,.85);padding:3px 7px;border-radius:4px"></span>
+    <button data-cp="chat" title="Сказать что-нибудь">Чат</button><button data-cp="inv" title="Инвентарь героя">Рюкзак</button>
+    ${Coop.host ? '<button data-cp="restart" title="Только хост">Сервер ⟳</button>' : ''}<button data-cp="leave" title="Выйти из общей деревни">Выйти</button></div>`;
+  document.getElementById('view').appendChild(hud);
+  hud.addEventListener('click', e => {
+    const b = e.target.closest('[data-cp]');
+    if (b) {
+      const k = b.dataset.cp, pop = document.getElementById('cp-pop');
+      if (k === 'chat') {
+        pop.innerHTML = Coop.meta.chat.map((t, i) => `<button data-cpchat="${i}">${t}</button>`).join('');
+        pop.classList.toggle('open', !(pop.classList.contains('open') && pop.dataset.k === 'chat')); pop.dataset.k = 'chat';
+      } else if (k === 'inv') {
+        pop.innerHTML = coopInvHtml();
+        pop.classList.toggle('open', !(pop.classList.contains('open') && pop.dataset.k === 'inv')); pop.dataset.k = 'inv';
+      } else if (k === 'restart') coopRestartDialog();
+      else if (k === 'leave') { if (confirm('Выйти из общей деревни? Герой и рюкзак сохранятся.')) coopLeaveGame(); }
+      return;
+    }
+    const c = e.target.closest('[data-cpchat]');
+    if (c) { coopSend({ t: 'chat', i: +c.dataset.cpchat }); document.getElementById('cp-pop').classList.remove('open'); return; }
+    const s = e.target.closest('[data-coop]');
+    if (s) coopSlotClick(s, e);
+  });
+  document.getElementById('info').addEventListener('click', e => {
+    const s = e.target.closest('[data-coop]');
+    if (s && Coop.on) coopSlotClick(s, e);
+  });
+  coopRefreshHud();
+}
+
+function coopSlotClick(el, e) {
+  const slot = +el.dataset.slot;
+  coopSend({ t: e.shiftKey ? 'drop' : 'use', slot });
+}
+
+function coopRefreshHud() {
+  if (!Coop.on) return;
+  const on = document.getElementById('cp-online');
+  if (on) on.textContent = 'В деревне: ' + Game.units.filter(u => u.owner).map(u => u.owner).join(', ');
+  const pop = document.getElementById('cp-pop');
+  if (pop && pop.classList.contains('open') && pop.dataset.k === 'inv') pop.innerHTML = coopInvHtml();
+  const lg = document.getElementById('cp-log');
+  if (lg) {
+    const now = Date.now();
+    lg.innerHTML = Coop.chatLog.filter(m => now - m.at < 12000).slice(-5).map(m => `<div><b>${m.from}:</b> ${m.text}</div>`).join('');
+  }
+  if (Game.selUnit && Game.selUnit === Game.hero) updateUI(true);
+}
+setInterval(() => { if (Coop.on) coopRefreshHud(); }, 1000);
+
+function coopRestartDialog() {
+  if (!Coop.host) { toast('Перезапустить сервер может только хост'); return; }
+  const box = document.createElement('div');
+  box.className = 'cp-modal';
+  box.innerHTML = `<div class="cp-card"><h2>Перезапустить сервер?</h2><p>Мир сохранится, все игроки на несколько секунд отвалятся и переподключатся сами.</p>
+    <button class="cp-btn" data-y>Перезапустить</button><button class="cp-btn sec" data-n>Отмена</button></div>`;
+  document.body.appendChild(box);
+  box.addEventListener('click', e => {
+    if (e.target.closest('[data-y]')) { coopSend({ t: 'restart', confirm: true }); box.remove(); }
+    else if (e.target.closest('[data-n]') || e.target === box) box.remove();
+  });
+}
+
+function coopLeaveGame() {
+  const ws = Coop.ws;
+  Coop.on = false; Coop.reconnecting = false; Coop.ws = null; Game.coop = false;
+  try { ws && ws.close(); } catch (e) { /* ничего */ }
+  location.reload();
+}
+
+// ---------- Обрыв связи ----------
+
+function coopLost() {
+  if (!Coop.on) return;
+  Coop.on = false;
+  coopSaveCopyNow();
+  document.getElementById('coop-hud')?.remove();
+  const retry = Coop.reconnecting;
+  const box = document.createElement('div');
+  box.id = 'cp-lost'; box.className = 'cp-modal';
+  box.innerHTML = `<div class="cp-card"><h2>${retry ? 'Сервер перезапускается' : 'Связь с сервером потеряна'}</h2>
+    <p id="cp-lost-msg">${retry ? 'Переподключаемся сами…' : 'Копия общего мира лежит у вас в браузере. Можно подождать сервер или поиграть с копией в одиночку.'}</p>
+    <button class="cp-btn" data-re>Переподключиться</button><button class="cp-btn sec" data-solo>Играть с копией одиночно</button></div>`;
+  document.body.appendChild(box);
+  const msg = box.querySelector('#cp-lost-msg');
+  let stop = false;
+  const tryAgain = () => {
+    if (stop) return;
+    msg.textContent = 'Подключаемся…';
+    coopConnect({ ...Coop.creds, mode: 'login' }).then(() => { stop = true; box.remove(); }).catch(e => {
+      msg.textContent = e.message;
+      if (Coop.reconnecting && !stop) setTimeout(tryAgain, 2500);
+    });
+  };
+  box.addEventListener('click', e => {
+    if (e.target.closest('[data-re]')) tryAgain();
+    else if (e.target.closest('[data-solo]')) { stop = true; box.remove(); coopPlayCopy(); }
+  });
+  if (retry) setTimeout(tryAgain, 2500);
+}
+function coopSaveCopyNow() { Coop.on = true; coopSaveCopy(); Coop.on = false; }
+
+// Копия общего мира как одиночная игра: чужие герои уходят, остаётся свой
+function coopPlayCopy() {
+  Game.coop = false; Coop.on = false;
+  if (!loadGame(COOP_SLOT)) { toast('Копии мира нет'); return false; }
+  const nick = (saveMeta(COOP_SLOT) || {}).nick || Coop.nick;
+  const heroes = Game.units.filter(u => u.type === 'hero');
+  const mine = heroes.find(u => u.hero && u.hero.owner === nick) || heroes[0];
+  for (const u of heroes) if (u !== mine) { u.dead = true; u.proc = null; }
+  purgeDead();
+  Game.hero = mine || null;
+  Game.heroAsk = false;
+  if (mine) { mine.hero.name = mine.hero.name || nick; selectHero(true); }
+  Game.paused = false; Game.speed = 1;
+  updateUI(true);
+  toast('Копия общего мира: теперь это одиночная игра');
+  return true;
+}
+
+// ---------- Меню: вход, регистрация, копия мира ----------
+
+{
+  StartMenu.onConnect = ({ nick, server }) => {
+    const pass = (document.getElementById('sm-pass') || {}).value || '';
+    const mode = Coop.regMode ? 'register' : 'login';
+    Coop.regMode = false;
+    if (!pass) return Promise.reject(new Error('Введите пароль'));
+    return coopConnect({ nick, server, pass, mode });
+  };
+
+  const _start = startGame;
+  startGame = function () {
+    _start();
+    const root = document.getElementById('start-menu');
+    if (!root) return;
+    const mp = root.querySelector('[data-panel="mp"]');
+    if (mp && !document.getElementById('sm-pass')) {
+      const lab = document.createElement('label');
+      lab.innerHTML = 'Пароль<input id="sm-pass" type="password" maxlength="64" autocomplete="current-password" placeholder="Для входа и сохранения героя">';
+      mp.querySelector('label:nth-of-type(2)').insertAdjacentElement('afterend', lab);
+      const reg = document.createElement('button');
+      reg.className = 'sm-btn'; reg.dataset.smReg = '1';
+      reg.innerHTML = '<b>Зарегистрироваться</b><small>новый игрок на этом сервере</small>';
+      mp.querySelector('[data-sm="connect"]').insertAdjacentElement('afterend', reg);
+      reg.addEventListener('click', () => { Coop.regMode = true; mp.querySelector('[data-sm="connect"]').click(); });
+      mp.querySelector('[data-sm="connect"] b').textContent = 'Войти';
+      // адрес по умолчанию — тот сервер, с которого открыта игра
+      const srv = root.querySelector('#sm-server');
+      if (location.protocol.startsWith('http') && location.host && srv && (!srv.value || srv.value === 'ws://localhost:8787')) srv.value = 'ws://' + location.host;
+    }
+    const main = root.querySelector('[data-panel="main"]');
+    if (main && !main.querySelector('[data-sm-coop]')) {
+      const meta = saveMeta(COOP_SLOT);
+      if (meta) {
+        const b = document.createElement('button');
+        b.className = 'sm-btn'; b.dataset.smCoop = '1';
+        b.innerHTML = `<b>Копия общего мира</b><small>${Math.floor(meta.time / 60)} мин · ${meta.people} жит. · на случай, когда сервер выключен</small>`;
+        main.querySelector('[data-sm="mp"]').insertAdjacentElement('afterend', b);
+        b.addEventListener('click', () => smClose(() => coopPlayCopy()));
+      }
+    }
+  };
+}
+
+// ---------- Облик героя по классу: шлем воина, рога варвара, колпак мага… ----------
+// Те же гномы из people.js, только с другим снаряжением: OUTFIT.hero_<класс> и своя шапка в drawCap.
+
+Object.assign(OUTFIT, {
+  hero_warrior:   { cap: 'cls:warrior',   pants: '#3a3632', coat: '#6a6a76', vest: '#9aa0aa', rivets: true, belt: 'hammer' },
+  hero_barbarian: { cap: 'cls:barbarian', pants: '#5a3a22', coat: '#8a5a2a', vest: '#b08a5a', belt: 'axe' },
+  hero_mage:      { cap: 'cls:mage',      pants: '#22284a', robe: true, robeCol: '#2c4a9a', staff: true },
+  hero_archer:    { cap: 'cls:archer',    pants: '#4a3a24', coat: '#3a7a2a', vest: '#6a4a28', belt: 'hammer' },
+  hero_druid:     { cap: 'cls:druid',     pants: '#3a3a20', robe: true, robeCol: '#4e6a2a', staff: true },
+  hero_rogue:     { cap: 'cls:rogue',     pants: '#1e1e26', coat: '#2e2e3a', vest: '#44445a' },
+  hero_monk:      { cap: 'cls:monk',      pants: '#5a3a1c', robe: true, robeCol: '#c8641a' },
+  hero_priest:    { cap: 'cls:priest',    pants: '#6a6458', robe: true, robeCol: '#e4e0d2', staff: true },
+});
+
+function coopHat(c, kind, view, hx, hy, tipSway) {
+  const b = hy - 1.1, e = view === 'E', x0 = e ? hx + 0.6 : hx;
+  const dome = (w, top, col, rim) => {
+    c.beginPath(); c.moveTo(x0 - w, b + 0.8); c.quadraticCurveTo(x0 - w, b - top, x0, b - top); c.quadraticCurveTo(x0 + w, b - top, x0 + w, b + 0.8); c.closePath();
+    c.fillStyle = lingrad(c, x0 - w, 0, x0 + w, 0, [[0, shade(col, 0.3)], [0.5, col], [1, shade(col, -0.4)]]); c.fill();
+    c.strokeStyle = shade(col, -0.5); c.lineWidth = 0.35; c.stroke();
+    if (rim) { rrect(c, x0 - w - 0.4, b - 0.6, w * 2 + 0.8, 2.2, 1); c.fillStyle = rim; c.fill(); }
+  };
+  if (kind === 'warrior') {
+    dome(4.6, 7, '#aab0ba', '#7a808c');
+    if (view === 'S') { c.fillStyle = '#8a909c'; c.fillRect(x0 - 0.6, b + 0.8, 1.2, 3.2); }
+    ellipse(c, x0 + (e ? -1 : 0), b - 8, 1.3, 2.4, '#c8302a');
+    if (e) poly(c, [[x0 - 1, b - 8], [x0 - 5, b - 5 + tipSway * 0.3], [x0 - 2, b - 6.4]], '#c8302a');
+  } else if (kind === 'barbarian') {
+    dome(4.5, 6, '#7a6a58', '#4a3a2a');
+    for (const s of [-1, 1]) {
+      if (e && s > 0) continue;
+      poly(c, [[x0 + s * 4, b - 0.4], [x0 + s * 6.8, b - 2.4], [x0 + s * 6.6, b - 7], [x0 + s * 5.2, b - 4.4], [x0 + s * 3.4, b - 3]], '#eee2c4', '#a89870', 0.3);
+    }
+    c.fillStyle = '#5a4630'; c.fillRect(x0 - 4, b - 1.2, 8, 0.7);
+  } else if (kind === 'mage') {
+    ellipse(c, x0, b + 0.5, 6.6, 1.8, '#1c2c66');
+    c.beginPath(); c.moveTo(x0 - 4.3, b); c.quadraticCurveTo(x0 - 2.5, b - 8, x0 + 2.5 + tipSway * 0.3, b - 14.5); c.quadraticCurveTo(x0 + 3.6, b - 6, x0 + 4.3, b); c.closePath();
+    c.fillStyle = lingrad(c, x0 - 4, 0, x0 + 4, 0, [[0, '#4a6ac0'], [0.5, '#2c4a9a'], [1, '#18286a']]); c.fill();
+    c.fillStyle = '#c89226'; c.fillRect(x0 - 4.2, b - 1.4, 8.4, 0.9);
+    c.fillStyle = '#f6d458'; c.fillRect(x0 - 1, b - 5, 0.8, 0.8); c.fillRect(x0 + 1, b - 9, 0.7, 0.7); c.fillRect(x0 - 0.2, b - 11.5, 0.6, 0.6);
+  } else if (kind === 'archer') {
+    capShape(c, x0, b, e ? -1 : 1, 8.5, 3);
+    c.fillStyle = lingrad(c, x0 - 4, 0, x0 + 5, 0, [[0, '#6aaa4a'], [0.5, '#3a7a2a'], [1, '#1e4a16']]); c.fill();
+    rrect(c, x0 - 4.9, b - 1.2, 9.8, 2.6, 1.3); c.fillStyle = '#2e5a1e'; c.fill();
+    poly(c, [[x0 + 3, b - 3], [x0 + 8, b - 9], [x0 + 6.4, b - 4.6]], '#f4f0e4', '#b8a888', 0.3);
+    line(c, x0 + 3, b - 3, x0 + 7.6, b - 8.4, '#c8302a', 0.5);
+  } else if (kind === 'druid') {
+    dome(4.5, 5, '#6a5230', '#4a3820');
+    for (const s of [-1, 1]) {
+      c.strokeStyle = '#8a6a3a'; c.lineWidth = 0.8;
+      c.beginPath(); c.moveTo(x0 + s * 2.4, b - 4); c.lineTo(x0 + s * 3.4, b - 8); c.lineTo(x0 + s * 5, b - 11); c.moveTo(x0 + s * 3.4, b - 8); c.lineTo(x0 + s * 2.4, b - 11); c.stroke();
+    }
+    for (let k = 0; k < 6; k++) ellipse(c, x0 - 4.2 + k * 1.7, b - 0.2 + (k % 2) * 0.5, 1.1, 0.8, k % 2 ? '#6aaa3a' : '#4a8a2a');
+  } else if (kind === 'rogue') {
+    c.beginPath(); c.moveTo(x0 - 4.9, b + 3); c.quadraticCurveTo(x0 - 5.4, b - 3, x0 - 3.4, b - 6.5); c.quadraticCurveTo(x0, b - 9, x0 + 3.4, b - 6.5);
+    c.quadraticCurveTo(x0 + 5.4, b - 3, x0 + 4.9, b + 3); c.lineTo(x0 + 3, b + 1); c.quadraticCurveTo(x0, b - 0.6, x0 - 3, b + 1); c.closePath();
+    c.fillStyle = lingrad(c, x0 - 5, 0, x0 + 5, 0, [[0, '#4a4a5a'], [0.5, '#2a2a34'], [1, '#14141a']]); c.fill();
+    c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(x0 - 3.4, b - 0.2, 6.8, 1);
+  } else if (kind === 'monk') {
+    rrect(c, x0 - 4.8, b - 1.4, 9.6, 1.8, 0.9); c.fillStyle = '#d8501a'; c.fill();
+    poly(c, [[x0 + 4.4, b - 0.6], [x0 + 7, b + 1.4 + tipSway * 0.2], [x0 + 5, b + 0.2]], '#d8501a');
+    c.fillStyle = '#f6d458'; c.fillRect(x0 - 0.5, b - 1.2, 1, 1);
+  } else if (kind === 'priest') {
+    c.beginPath(); c.moveTo(x0 - 4.3, b); c.quadraticCurveTo(x0 - 3.4, b - 7, x0, b - 12); c.quadraticCurveTo(x0 + 3.4, b - 7, x0 + 4.3, b); c.closePath();
+    c.fillStyle = lingrad(c, x0 - 4, 0, x0 + 4, 0, [[0, '#ffffff'], [1, '#c8c4b8']]); c.fill();
+    c.strokeStyle = '#c89226'; c.lineWidth = 0.4; c.stroke();
+    c.fillStyle = '#d8a828'; c.fillRect(x0 - 0.3, b - 9, 0.7, 4.4); c.fillRect(x0 - 1.4, b - 7.6, 2.9, 0.7); c.fillRect(x0 - 4.4, b - 1.2, 8.8, 0.9);
+  }
+}
+
+{
+  const _cap = drawCap;
+  drawCap = function (c, O, view, hx, hy, tipSway, L, r) {
+    if (typeof O.cap === 'string' && O.cap.startsWith('cls:')) coopHat(c, O.cap.slice(4), view, hx, hy, tipSway);
+    else _cap(c, O, view, hx, hy, tipSway, L, r);
+  };
+  const _ps = personSprite;
+  personSprite = function (u, view, pose, frame, opt) {
+    const k = u.type === 'hero' && u.hero && u.hero.clsKey;
+    if (k && OUTFIT['hero_' + k]) {
+      const sh = { type: 'hero_' + k, look: u.look, carry: u.carry, injury: u.injury, _spr: u._spr };
+      const cv = _ps(sh, view, pose, frame, opt);
+      u._spr = cv;
+      return cv;
+    }
+    return _ps(u, view, pose, frame, opt);
+  };
+  const _pu = portraitURL;
+  portraitURL = function (type, look) {
+    if (type === 'hero' && Coop.on && Game.hero && Game.hero.hero && Game.hero.hero.clsKey) type = 'hero_' + Game.hero.hero.clsKey;
+    return _pu(type, look);
+  };
+}

@@ -519,7 +519,7 @@ function gestPts(g, f, side, shY, headY, view) {
 
 function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const O = OUTFIT[type] || OUTFIT.serf;
-  const shirt = O.robe ? '#2e5a26' : (O.coat || L.green), pants = O.pants;
+  const shirt = O.robe ? (O.robeCol || '#2e5a26') : (O.coat || L.green), pants = O.pants;
   const gait = opt.gait || '', gest = carry ? '' : (opt.gest || ''), gf = opt.gf || 0;
   const ph = pose === 'walk' ? frame / 8 * Math.PI * 2 : 0;
   const sw = Math.sin(ph);
