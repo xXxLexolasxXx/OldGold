@@ -45,6 +45,7 @@ function updateRoadComps() {
         if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H) continue;
         const ni = ny * MAP_W + nx;
         if (!World.road[ni] || comp[ni]) continue;
+        if (dx && dy && !isWalkable(x + dx, y) && !isWalkable(x, y + dy)) continue;
         comp[ni] = id;
         q.push(ni);
       }
@@ -192,7 +193,7 @@ function updateGrowth(dt) {
       o.g = Math.min(1, o.g + dt / 150);
       if (o.g >= 1) World.growing.delete(i);
     } else if (o.t === 'field') {
-      if (o.g >= 0 && o.g < 1) o.g = Math.min(1, o.g + dt / (o.ash ? 50 : 90));   // с пеплом растёт быстрее
+      if (o.g >= 0 && o.g < 1) o.g = Math.min(1, o.g + dt / (o.ash ? 38 : 65));   // с пеплом растёт быстрее
       if (o.g >= 1 || o.g < 0) World.growing.delete(i);
     } else if (o.t === 'stump') {
       o.g += dt;

@@ -63,12 +63,16 @@ function* eatGen(u, inn) {
   const ok = yield { walk: [inn.doorX, inn.doorY] };
   if (inn.removed) return;
   if (!ok) { inn.reserved[food]--; u.nextEatTry = Game.time + 15; return; }
+  const dry = isStoreB(inn);      // на складе — всухомятку, без пива и не досыта
+  if (dry) while (storeInside(inn) >= STORE_CAP && !inn.removed) yield { wait: 0.4 };
+  if (inn.removed) return;
   yield { enter: inn };
-  yield { wait: 5 };
+  yield { wait: dry ? 3 : 5 };
   if (!inn.removed) {
     inn.reserved[food]--;
     inn.stock[food]--;
-    u.food = food === 'chickenleg' ? 1.25 : 1;     // курица сытнее всего
+    u.food = dry ? 0.7 : food === 'chickenleg' ? 1.25 : 1;     // курица сытнее всего
+    if (dry) { yield { leave: true }; return; }
     // к еде — кружка пива, если есть
     if (inn.stock.beer - inn.reserved.beer > 0 && Math.random() < 0.85) {
       yield { wait: 3 };
@@ -111,6 +115,7 @@ function* deliverGen(u, from, to, g, n = 1) {
   from.stock[g] -= got;
   if (got < n && !to.removed) to.incoming[g] -= n - got;
   n = got;
+  if (u.dlv) u.dlv.n = n;
   if (from.isPile) cleanupPile(from);
   if (!n) return;
   if (!isStoreB(from)) yield { wait: 0.5 };
@@ -119,6 +124,7 @@ function* deliverGen(u, from, to, g, n = 1) {
     if (to.removed) {
       const comp = compAt(Math.floor(u.x), Math.floor(u.y));
       to = nearestStore(u.x, u.y, g, comp) || nearestStore(u.x, u.y, null, comp);
+      if (u.dlv) u.dlv.to = to;
       if (!to) break;
       to.incoming[g] += n;
     }
@@ -132,6 +138,7 @@ function* deliverGen(u, from, to, g, n = 1) {
       if (!st || st === to) break;
       to.incoming[g] -= n;
       to = st;
+      if (u.dlv) u.dlv.to = to;
       to.incoming[g] += n;
       continue;
     }
@@ -141,14 +148,14 @@ function* deliverGen(u, from, to, g, n = 1) {
       if (to.removed) continue;
       yield { enter: to };
       to.incoming[g] -= n;
-      to.stock[g] += n;
+      to.stock[g] += Math.min(n, u.carryN || n); u.dlv = null;   // волк мог утащить часть груза
       u.carry = null; u.carryN = 0;
       yield { wait: 0.6 };
       yield { walk: [Math.floor(u.x), Math.floor(u.y)] };
       return;
     }
     to.incoming[g] -= n;
-    to.stock[g] += n;
+    to.stock[g] += Math.min(n, u.carryN || n); u.dlv = null;
     u.carry = null; u.carryN = 0;
     yield { wait: 0.4 };
     return;
@@ -370,8 +377,9 @@ function* farmWork(u, b) {
       }
       if (!(yield* goHome(u, b))) return;
       if (u.carry) {
-        gather(b, u.carry);
-        if (extra && !outFull(b, u.carry)) gather(b, u.carry);
+        // с поля — 3 снопа, с удобренного пеплом — 5
+        const n = extra ? 5 : 3;
+        for (let k = 0; k < n; k++) if (k === 0 || !outFull(b, u.carry)) gather(b, u.carry);
         u.carry = null;
       }
     } else {

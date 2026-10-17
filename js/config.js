@@ -8,7 +8,7 @@ const SIM_DT = 0.05;      // шаг симуляции, сек
 
 const T_GRASS = 0, T_WATER = 1, T_ROCK = 2, T_SAND = 3;
 
-const FOOD_TIME = 420;    // за сколько секунд житель проголодается полностью
+const FOOD_TIME = 720;    // за сколько секунд житель проголодается полностью (12 минут)
 const HUNGRY = 0.3;       // ниже этого уровня сытости идёт в трактир
 const TRAIN_TIME = 12;    // время обучения в школе
 
@@ -83,7 +83,7 @@ const BUILDINGS = {
     desc: 'Двухэтажная школа с колокольней. Обучает жителей за 1 золото.',
   },
   inn: {
-    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, inputs: { bread: 10, sausage: 10, beer: 10, chicken: 4 },
+    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, inputs: { bread: 16, sausage: 16, beer: 10, chicken: 4 },
     desc: 'Голодные жители едят здесь курицу, колбасу или хлеб и запивают пивом. Тушку курицы разделывают на 4 куска. Пьяный может уснуть прямо на дороге.',
   },
   bonfire: {
@@ -131,7 +131,7 @@ const BUILDINGS = {
   },
   farm: {
     name: 'Ферма', cat: 'Еда', w: 4, h: 3, top: 72, cost: { timber: 5, stone: 3 }, worker: 'farmer',
-    inputs: { ash: 4 }, outputs: { wheat: 5, hay: 5 }, crops: ['wheat', 'hay'],
+    inputs: { ash: 4 }, outputs: { wheat: 10, hay: 10 }, crops: ['wheat', 'hay'],
     desc: 'Фермер засевает поля вокруг: пшеницу на зерно или травы на сено.',
   },
   hopfarm: {
@@ -147,25 +147,25 @@ const BUILDINGS = {
   },
   mill: {
     name: 'Мельница', cat: 'Еда', w: 2, h: 2, top: 118, noRotate: true, cost: { timber: 4, stone: 2 }, worker: 'miller',
-    inputs: { wheat: 5 }, outputs: { flour: 5 },
+    inputs: { wheat: 14 }, outputs: { flour: 12 },
     recipes: [{ in: { wheat: 1 }, out: { flour: 1 }, time: 8 }],
     desc: 'Мелет зерно в муку.',
   },
   bakery: {
     name: 'Пекарня', cat: 'Еда', w: 2, h: 2, top: 66, cost: { timber: 3, stone: 3 }, worker: 'baker',
-    inputs: { flour: 5 }, outputs: { bread: 6 },
-    recipes: [{ in: { flour: 1 }, out: { bread: 2 }, time: 9 }],
+    inputs: { flour: 12 }, outputs: { bread: 18 },
+    recipes: [{ in: { flour: 1 }, out: { bread: 3 }, time: 9 }],
     desc: 'Печёт хлеб из муки.',
   },
   swine: {
     name: 'Свинарник', cat: 'Еда', w: 4, h: 3, top: 56, cost: { timber: 4, stone: 2 }, worker: 'breeder',
-    inputs: { hay: 5 }, outputs: { pig: 3 },
+    inputs: { hay: 10 }, outputs: { pig: 5 },
     desc: 'Каждая охапка сена: свиньи подрастают на треть и появляется поросёнок. Взрослых везут на бойню.',
   },
   butchery: {
     name: 'Бойня', cat: 'Еда', w: 2, h: 2, top: 60, cost: { timber: 3, stone: 3 }, worker: 'butcher',
-    inputs: { pig: 4 }, outputs: { sausage: 6, hide: 4 },
-    recipes: [{ in: { pig: 1 }, out: { sausage: 2, hide: 1 }, time: 10 }],
+    inputs: { pig: 6 }, outputs: { sausage: 12, hide: 8 },
+    recipes: [{ in: { pig: 1 }, out: { sausage: 3, hide: 1 }, time: 10 }],
     desc: 'Из свиньи — колбаса и шкура.',
   },
   tannery: {

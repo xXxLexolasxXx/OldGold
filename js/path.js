@@ -109,7 +109,11 @@ function findPath(sx, sy, tx, ty, road = false, selfId = 0) {
     for (const [dx, dy, m] of DIRS) {
       const nx = cx + dx, ny = cy + dy;
       if (!ok(nx, ny)) continue;
-      if (dx && dy && (!ok(cx + dx, cy) || !ok(cx, cy + dy))) continue;
+      // по диагонали: вне дорог — не срезая углы; по дороге хватает одного свободного угла
+      // (так же считаются дорожные сети, иначе курьер видит дом в сети, но не может дойти)
+      if (dx && dy && (road
+        ? !isWalkable(cx + dx, cy) && !isWalkable(cx, cy + dy)
+        : !ok(cx + dx, cy) || !ok(cx, cy + dy))) continue;
       const ni = idx(nx, ny);
       if (PF.closed[ni] === st) continue;
       const ng = PF.g[cur] + m * cost(ni);

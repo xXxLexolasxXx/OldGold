@@ -453,12 +453,19 @@ function findInn(u) {
     const d = Math.abs(b.doorX - u.x) + Math.abs(b.doorY - u.y);
     if (d < bd) { bd = d; best = b; }
   }
+  if (best) return best;
+  // в трактире пусто — перекусить всухомятку на складе (не досыта, зато не упадёт)
+  for (const b of Game.buildings) {
+    if (!b.isStore() || b.isPile || b.state !== 'done' || !innFood(b)) continue;
+    const d = Math.abs(b.doorX - u.x) + Math.abs(b.doorY - u.y);
+    if (d < bd) { bd = d; best = b; }
+  }
   return best;
 }
 
 function innFood(b) {
   // трактирщик разделывает тушку курицы на 4 куска, когда кончились готовые
-  if (b.stock.chickenleg - b.reserved.chickenleg <= 0 && b.stock.chicken > 0) { b.stock.chicken--; b.stock.chickenleg += 4; }
+  if (b.type === 'inn' && b.stock.chickenleg - b.reserved.chickenleg <= 0 && b.stock.chicken > 0) { b.stock.chicken--; b.stock.chickenleg += 4; }
   return FOODS.find(g => b.stock[g] - b.reserved[g] > 0) || null;
 }
 

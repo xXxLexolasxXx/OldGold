@@ -32,6 +32,8 @@ function* smokeGen(u, time) {
   yield { wait: time, anim: 'smoke' };
 }
 
+const FOOD_WORKERS = new Set(['farmer', 'miller', 'baker', 'butcher', 'breeder']);
+
 function* joinGen(u, host) {
   // подойти к курящему и встать рядом
   const hx = Math.floor(host.x), hy = Math.floor(host.y);
@@ -123,9 +125,15 @@ function lifeTick(u, dt) {
     return;
   }
   if (u.type === 'carter') return;
+  // голодный идёт есть, а не курить; трудяга с заказом — сначала донесёт
+  if (u.food < HUNGRY || u.carry || u.dlv) return;
   // заразно: подсесть к курящим может кто угодно, даже некурящий; начать сам — только курильщик
   // подсесть к курящим рядом
-  if (Game.time >= u.nextJoin && Game.smokers.size) {
+  // потолок эпидемии: когда курит больше трети деревни, новые не подсаживаются
+  const smokeRoom = Game.smokers.size < Game.units.length * 0.33;
+  // кто кормит деревню — к чужим перекурам не подсаживается
+  const feeder = FOOD_WORKERS.has(u.type);
+  if (smokeRoom && !feeder && Game.time >= u.nextJoin && Game.smokers.size) {
     let host = null, bd = JOIN_RADIUS;
     for (const s of Game.smokers) {
       if (s === u || !s.brk || s.brk.until - Game.time < JOIN_SMOKE_TIME * 0.6) continue;
@@ -141,7 +149,7 @@ function lifeTick(u, dt) {
     }
   }
   // сам решил покурить
-  if (u.smoker && Game.time >= u.nextSmoke && Math.random() < 0.25) {
+  if (smokeRoom && u.smoker && Game.time >= u.nextSmoke && Math.random() < 0.25) {
     u.nextSmoke = Game.time + SMOKE_CD_MIN + Math.random() * (SMOKE_CD_MAX - SMOKE_CD_MIN);
     startBreak(u, 'smoke', null);
     u.proc = smokeGen(u, SMOKE_TIME);

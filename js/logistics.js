@@ -17,7 +17,24 @@ function assignDelivery(u, from, to, g, n = 1) {
   to.incoming[g] += n;
   u.idleFlag = false; u.idleStreak = 0;
   u.action = null; u.anim = null;
-  u.proc = deliverGen(u, from, to, g, n);
+  // трудяга помнит, что и куда несёт — по этому пересчитывается «в пути»
+  const gen = (function* () { try { yield* deliverGen(u, from, to, g, n); } finally { u.dlv = null; } })();
+  u.dlv = { to, g, n, gen };
+  u.proc = gen;
+}
+
+// Самопроверка: «в пути» у каждого получателя = сумма того, что реально несут к нему.
+// Если какая-то доставка оборвалась и не вычла своё, здание не застрянет в ожидании.
+function auditIncoming() {
+  const holders = [...Game.buildings, ...Game.roadSites.values(), ...Game.piles.values()];
+  for (const h of holders) if (h.incoming) for (const g of GOOD_KEYS) h.incoming[g] = 0;
+  for (const u of Game.units) {
+    const d = u.dlv;
+    if (!d) continue;
+    const alive = u.proc === d.gen || (u.brk && u.brk.saved && u.brk.saved.proc === d.gen);
+    if (!alive) { u.dlv = null; continue; }
+    if (d.to && !d.to.removed && d.to.incoming) d.to.incoming[d.g] += d.n;
+  }
 }
 
 // Тяжёлое не унести с травмой руки
@@ -42,6 +59,11 @@ function pickCarrier(idle, x, y, g, amount) {
 }
 
 // Курьеры ездят только по дорогам: всё распределяется внутри одной дорожной сети.
+// вне очереди — только то, что идёт на еду: в мельницу, пекарню, свинарник, бойню, трактир
+const isFoodProducer = b => b.type === 'farm' || FOOD_DEST.has(b.type);
+const FOOD_DEST = new Set(['mill', 'bakery', 'swine', 'butchery', 'inn']);
+const FOOD_CHAIN = new Set(['wheat', 'flour', 'bread', 'sausage', 'pig', 'hay', 'chicken']);
+
 function dispatchSerfs() {
   updateRoadComps();
   const idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk);
@@ -67,24 +89,34 @@ function dispatchSerfs() {
   for (const p of Game.piles.values()) compOf.set(p, servedComp(p.x, p.y));
   for (const s of Game.roadSites.values()) compOf.set(s, servedComp(s.x, s.y));
 
+  // пищевой цех, у которого склад почти полон, разгружаем раньше всего — иначе он встанет
+  const nearlyFull = b => Object.entries(b.def.outputs).some(([g, cap]) => b.offer(g) >= cap * 0.7);
+  collectOutputs(b => !b.isPile && b.state === 'done' && isFoodProducer(b) && !!b.def.outputs && nearlyFull(b));
+
   const reqs = [];
   for (const [d, comp] of compOf) {
     if (!comp || !idleBy.has(comp)) continue;
     for (const g of GOOD_KEYS) {
       const n = d.demand(g);
-      if (n > 0) reqs.push({ d, g, n, comp, pri: d.isRoad ? 2 : (d.state !== 'done' ? 0 : 1), r: Math.random() });
+      // еда — в первую очередь: голодная деревня встаёт целиком
+      if (n > 0) reqs.push({ d, g, n, comp, pri: FOOD_CHAIN.has(g) && FOOD_DEST.has(d.type) && d.state === 'done' ? (d.type === 'inn' ? -2 : -1) : d.isRoad ? 2 : (d.state !== 'done' ? 0 : 1), r: Math.random() });
     }
   }
   reqs.sort((a, b) => a.pri - b.pri || a.r - b.r);
 
+  let foodOut = false;
   for (const r of reqs) {
+    // после еды для трактира и цехов — урожай и еду с ферм, мельницы, пекарни, бойни,
+    // свинарника: иначе склад здания забивается и работа встаёт
+    if (!foodOut && r.pri >= 0) { foodOut = true; collectOutputs(b => !b.isPile && isFoodProducer(b)); }
     const idle = idleBy.get(r.comp);
     let need = r.n;
     while (need > 0 && idle.length) {
       let src = null, sd = 1e9;
       for (const o of depots) {
         if (o === r.d || compOf.get(o) !== r.comp || o.offer(r.g) <= 0) continue;
-        const dd = mdist(o.doorX, o.doorY, r.d.doorX, r.d.doorY);
+        // сперва забираем у мастерской — иначе она встанет с полным складом, а склад опустеет
+        const dd = mdist(o.doorX, o.doorY, r.d.doorX, r.d.doorY) + (o.isPile || !o.isStore() ? 0 : 25);
         if (dd < sd) { sd = dd; src = o; }
       }
       if (!src) break;
@@ -97,23 +129,30 @@ function dispatchSerfs() {
     }
   }
 
+  if (!foodOut) collectOutputs(b => !b.isPile && isFoodProducer(b));
+  // остальную продукцию и рассыпанное — после заявок
+  collectOutputs(b => b.isPile || !isFoodProducer(b));
+
   // Готовую продукцию и рассыпанное — на ближайший склад той же сети
-  for (const b of depots) {
-    const isP = b.isPile;
-    if (!isP && (b.state !== 'done' || b.isStore() || !b.def.outputs)) continue;
-    const comp = compOf.get(b), idle = idleBy.get(comp);
-    if (!idle || !idle.length) continue;
-    const goods = isP ? GOOD_KEYS : Object.keys(b.def.outputs);
-    for (const g of goods) {
-      let left = b.offer(g);
-      while (left > 0 && idle.length) {
-        const st = nearestStore(b.doorX, b.doorY, g, comp);
-        if (!st) break;
-        const u = pickCarrier(idle, b.doorX, b.doorY, g, left);
-        if (!u) break;
-        const n = Math.min(left, carryCap(u));
-        assignDelivery(u, b, st, g, n);
-        left -= n;
+  function collectOutputs(pred) {
+    for (const b of depots) {
+      if (!pred(b)) continue;
+      const isP = b.isPile;
+      if (!isP && (b.state !== 'done' || b.isStore() || !b.def.outputs)) continue;
+      const comp = compOf.get(b), idle = idleBy.get(comp);
+      if (!idle || !idle.length) continue;
+      const goods = isP ? GOOD_KEYS : Object.keys(b.def.outputs);
+      for (const g of goods) {
+        let left = b.offer(g);
+        while (left > 0 && idle.length) {
+          const st = nearestStore(b.doorX, b.doorY, g, comp);
+          if (!st) break;
+          const u = pickCarrier(idle, b.doorX, b.doorY, g, left);
+          if (!u) break;
+          const n = Math.min(left, carryCap(u));
+          assignDelivery(u, b, st, g, n);
+          left -= n;
+        }
       }
     }
   }
@@ -151,7 +190,9 @@ function dispatchWorkers() {
   }
 }
 
+let auditT = 0;
 function dispatchAll() {
+  if ((auditT += 1) >= 8) { auditT = 0; auditIncoming(); }      // раз в ~3 с
   dispatchWorkers();
   dispatchBuilders();
   dispatchSerfs();

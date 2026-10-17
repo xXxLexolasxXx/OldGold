@@ -93,7 +93,7 @@ function stressMap() {
 // Обычная карта: вокруг стартовой деревни расставляются почти все постройки,
 // к каждой ведётся дорога, работникам — свои дома, затем игра сама проматывает час.
 
-const VILLAGE_PLAN = ['woodcutter', 'woodcutter', 'quarry', 'sawmill', 'farm', 'farm', 'mill', 'bakery', 'swine', 'butchery',
+const VILLAGE_PLAN = ['woodcutter', 'woodcutter', 'quarry', 'sawmill', 'farm', 'farm', 'farm', 'mill', 'bakery', 'swine', 'butchery',
   'hopfarm', 'brewery', 'bonfire', 'goatpen', 'stable', 'tannery', 'armory', 'goldmine', 'metallurgist', 'crystalmine',
   'magiccircle', 'magicworkshop', 'storehouse', 'inn'];
 
@@ -123,8 +123,8 @@ function linkToRoads(b) {
   return true;
 }
 
-function placeNear(type, cx, cy) {
-  for (let r = 3; r < 26; r++) {
+function placeNear(type, cx, cy, rMin = 3) {
+  for (let r = rMin; r < 30; r++) {
     for (let k = 0; k < r * 8; k++) {
       const a = k / (r * 8) * Math.PI * 2;
       const x = Math.round(cx + Math.cos(a) * r), y = Math.round(cy + Math.sin(a) * r * 0.8);
@@ -145,10 +145,11 @@ function villageAfterHour() {
   const st = Game.buildings.find(b => b.isStore());
   const cx = st.doorX + 4, cy = st.doorY;
   for (const type of VILLAGE_PLAN) {
-    const b = placeNear(type, cx, cy);
+    // фермам нужно поле вокруг — ставим их на окраине
+    const b = placeNear(type, cx, cy, type === 'farm' || type === 'hopfarm' ? 13 : 3);
     if (b && b.def.worker) spawnUnit(b.def.worker, b.doorX, b.doorY);
   }
-  for (let k = 0; k < 24; k++) spawnUnit('serf', st.doorX + (k % 6) - 3, st.doorY + 1 + (k > 11 ? 1 : 0));
+  for (let k = 0; k < 32; k++) spawnUnit('serf', st.doorX + (k % 8) - 4, st.doorY + 1 + (k >> 3) % 2);
   for (let k = 0; k < 3; k++) spawnUnit('builder', st.doorX + k, st.doorY + 2);
   Object.assign(st.stock, { timber: 70, stone: 70, gold: 60, bread: 90, sausage: 50, beer: 20, wheat: 20, hay: 20, trunk: 10, leather: 4, flour: 10 });
   decorateAllRoads();
