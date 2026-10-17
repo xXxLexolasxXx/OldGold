@@ -123,21 +123,18 @@ function upgradeBuilding(b, silent) {
 // Поверх готового спрайта: каменный цоколь, мансарда с тёплым окном на коньке крыши,
 // красно-золотой вымпел и фонарь у двери. У каждого типа своя пропорция, цвета слегка разные.
 
-function buildingSprite(type, rot = 0, level = 1) {
-  if (level < 2 || !BUILDINGS[type].up) return buildingSpriteBase(type, rot);
-  const d = bDims(type, rot);
-  const key = type + ':' + d.rot + ':L2';
-  if (SPR.buildings[key]) return SPR.buildings[key];
-  const base = buildingSpriteBase(type, rot);
+function buildingSprite(type, rot = 0, level = 1) {  const lv = level >= 2 && BUILDINGS[type].up ? 2 : 1;  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot);  const d = bDims(type, rot);  const key = type + ':' + d.rot + (lv === 2 ? ':L2' : ':G');  if (SPR.buildings[key]) return SPR.buildings[key];  const base = buildingSpriteBase(type, rot);
   const cv = mkCanvas(base.canvas.width, base.canvas.height), c = cv.getContext('2d');
   c.drawImage(base.canvas, 0, 0);
   c.imageSmoothingEnabled = false;
   const k = base.canvas.width / base.w;
   c.scale(k, k);
   const rnd = mulberry32(hashStr(type + 'L2'));
+  c.save();
   const roofCols = ['#8a3a28', '#5a6a8a', '#3e6a4a', '#7a5a3a'], rc = roofCols[Math.floor(rnd() * roofCols.length)];
   const px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); };
   const OUT = '#1a100a';
+  if (lv === 2) {
   // цоколь из тёсаного камня вдоль южной стены
   const x0 = base.padx - 1, y0 = base.baseY - 3, w = base.fw + 2;
   px(x0 - 1, y0 - 1, w + 2, 6, OUT); px(x0, y0, w, 4, '#9a9388'); px(x0, y0, w, 1, '#c0b9aa');
@@ -160,7 +157,63 @@ function buildingSprite(type, rot = 0, level = 1) {
   // фонарь у двери
   const lx = base.doorCx + 10, ly = base.baseY - 26;
   px(lx - 1, ly - 7, 4, 9, OUT); px(lx, ly - 6, 2, 6, '#ffd060'); px(lx - 1, ly - 8, 4, 1, '#3a2a1a');
+  }
+  greenery(c, base, type, px);
   const spr = Object.assign({}, base, { canvas: cv });
   SPR.buildings[key] = spr;
   return spr;
+}
+
+// ---------- Зелень на зданиях ----------
+// Плющ на стене, ящики с цветами под окнами, на некоторых крышах — мох и травяные кочки.
+
+const NO_GREEN = new Set(['magiccircle', 'bonfire']);
+
+function greenery(c, base, type, px) {
+  const rnd = mulberry32(hashStr(type + 'green'));
+  const gs = ['#2f6a2a', '#4a8a34', '#6aa844', '#8cc85a'], OUT = '#16300f';
+  const x0 = base.padx, w = base.fw, yb = base.baseY;
+  const door = base.doorCx;
+  const spotOK = x => Math.abs(x - door) > 14;
+  // плющ: свисает от карниза по стене; у склада и трактира — гуще
+  if (rnd() < 0.75) {
+    let vx = x0 + 6 + rnd() * (w - 20);
+    for (let t = 0; t < 8 && !spotOK(vx); t++) vx = x0 + 6 + rnd() * (w - 20);
+    const hgt = 14 + Math.floor(rnd() * 16);
+    for (let s = 0; s < 3; s++) {
+      let x = vx + s * 5 + (rnd() - 0.5) * 3;
+      const len = hgt - s * 3;
+      for (let y = 0; y < len; y++) {
+        x += (rnd() - 0.5) * 0.9;
+        px(x, yb - 8 - len + y, 1, 1, OUT);
+        if (rnd() < 0.55) { const col = gs[Math.floor(rnd() * 4)]; px(x - 1, yb - 8 - len + y, 3, 2, OUT); px(x - 0.5, yb - 8 - len + y, 2, 1.5, col); }
+      }
+    }
+  }
+  // ящик с цветами у стены
+  if (rnd() < 0.8) {
+    let fx = x0 + 6 + rnd() * (w - 26);
+    for (let t = 0; t < 8 && !spotOK(fx) && !spotOK(fx + 14); t++) fx = x0 + 6 + rnd() * (w - 26);
+    const cols = [['#e8423a', '#f08070'], ['#f0c840', '#fff0a0'], ['#d070e0', '#f0b0f8'], ['#ffffff', '#f0e8f0']][Math.floor(rnd() * 4)];
+    px(fx - 1, yb - 6, 16, 6, OUT); px(fx, yb - 5, 14, 4, '#7a4e2a'); px(fx, yb - 5, 14, 1, '#9a6a3a');
+    for (let i = 0; i < 6; i++) {
+      const x = fx + 1 + i * 2.3;
+      px(x, yb - 9 - (i % 2), 2, 4, '#3f7a2e');
+      px(x - 0.5, yb - 10 - (i % 2), 3, 2, OUT); px(x, yb - 10 - (i % 2), 2, 1.5, cols[i % 2]);
+    }
+  }
+  // виноградная лоза по шпалере у входа
+  if (rnd() < 0.3) {
+    const gx = door + (rnd() < 0.5 ? -26 : 20);
+    for (let i = 0; i < 14; i++) { const gy = yb - 10 - i * 1.4; px(gx + Math.sin(i * 0.9) * 3, gy, 1, 1, '#4a3418'); if (i % 2) { px(gx + Math.sin(i * 0.9) * 3 - 1, gy, 3, 2, gs[1 + (i % 3)]); } }
+    for (let i = 0; i < 3; i++) { px(gx + 2 + i * 2, yb - 18 + (i % 2), 2, 2, '#6a2a7a'); }
+  }
+  // мох и дерн на крыше: у каждого третьего дома
+  if (rnd() < 0.33 && base.perches && base.perches.length) {
+    for (const P of base.perches.slice(0, 2)) for (let i = 0; i < 7; i++) {
+      const x = P[0] + (rnd() - 0.5) * 22, y = P[1] + 5 + rnd() * 8, sz = 2 + Math.floor(rnd() * 3);
+      px(x - 1, y - 1, sz + 2, 3, OUT); px(x, y - 0.5, sz, 2, gs[Math.floor(rnd() * 4)]);
+      if (rnd() < 0.3) px(x + 1, y - 2, 1, 1, '#f8e060');
+    }
+  }
 }

@@ -745,8 +745,8 @@ const MODELS = {
       x0: 6, x1: 98, y0: 12, y1: 64, h: 46, wall: 'plaster', col: '#efe2c2', frame: true, lowerStone: 20, beam: BEAM,
       roof: { type: 'gable', axis: 'X', rise: 30, mat: 'tiles', col: '#b8582e', ov: 6 },
       decor: {
-        S: [{ t: 'door', main: true, w: 12, h: 18, o: { frame: 'stone' } },
-          { t: 'win', at: 18, z: 6, w: 8, h: 9, o: { lit: true, stone: true } }, { t: 'win', at: 40, z: 6, w: 8, h: 9, o: { lit: true, stone: true } }, { t: 'win', at: 58, z: 6, w: 8, h: 9, o: { lit: true, stone: true } },
+        S: [{ t: 'door', main: true, shift: -16, w: 36, h: 22, o: { frame: 'stone', double: true } },
+          { t: 'win', at: 18, z: 6, w: 8, h: 9, o: { lit: true, stone: true } }, { t: 'win', at: 38, z: 6, w: 8, h: 9, o: { lit: true, stone: true } }, { t: 'win', at: 92, z: 6, w: 8, h: 9, o: { lit: true, stone: true } },
           { t: 'win', at: 18, z: 28, w: 8, h: 9, o: { lit: true, shutter: '#6a2a1a', flowers: true } }, { t: 'win', at: 40, z: 28, w: 8, h: 9, o: { lit: true, shutter: '#6a2a1a', flowers: true } },
           { t: 'win', at: 62, z: 28, w: 8, h: 9, o: { lit: true, shutter: '#6a2a1a' } }, { t: 'win', at: 88, z: 28, w: 8, h: 9, o: { lit: true, shutter: '#6a2a1a' } },
           { t: 'sign', at: 62, z: 24, kind: 'mug' }, { t: 'lantern', at: 88, z: 21 }],
@@ -768,7 +768,7 @@ const MODELS = {
     // веранда
     m.box({ x0: 8, x1: 46, y0: 4, y1: 12, h: 22, open: true, canopy: true, noShadow: true, roof: { type: 'lean', down: 'S', rise: 6, mat: 'shingle', col: '#7a5434', ov: 2 } });
     // полукруглые ступени у входа
-    m.prop((c, x, y) => { for (let k = 2; k >= 0; k--) { ellipse(c, x, y + 1 + k * 0.6, 9 - k * 2, 3.4 - k * 0.8, shade('#a49c90', -k * 0.08)); ellipse(c, x, y + 0.4 + k * 0.6, 9 - k * 2, 3 - k * 0.8, shade('#c8bfb2', -k * 0.08)); } }, m.doorX, 11);
+    m.prop((c, x, y) => { for (let k = 2; k >= 0; k--) { ellipse(c, x, y + 1 + k * 0.6, 9 - k * 2, 3.4 - k * 0.8, shade('#a49c90', -k * 0.08)); ellipse(c, x, y + 0.4 + k * 0.6, 9 - k * 2, 3 - k * 0.8, shade('#c8bfb2', -k * 0.08)); } }, m.doorX - 16, 11);
     m.prop((c, x, y) => table(c, x, y), 14, 8);
     m.prop((c, x, y) => bench(c, x, y, 16), 12, 4);
     m.prop((c, x, y) => table(c, x, y), 30, 8);
