@@ -291,6 +291,73 @@ function coopTick(dt) {
 
 // ---------- Снимки ----------
 
+// Плоская копия состояния для клиентов: числа, строки, массивы и простые объекты; жители и здания — ссылкой по id
+const COOP_SKIP = new Set(['path', 'proc', 'action', 'ref']);
+const COOP_OP = Object.getPrototypeOf({});   // свой Object.prototype контекста (vm), а не хозяйский
+const coopIds = new WeakMap();
+let coopIdN = 1;
+function coopPlain(v, d = 0, top = false) {
+  if (v === null) return null;
+  const t = typeof v;
+  if (t === 'number') return isFinite(v) ? Math.round(v * 1000) / 1000 : 0;
+  if (t === 'string' || t === 'boolean') return v;
+  if (t !== 'object') return undefined;
+  if (v instanceof Unit) return { __u: v.id };
+  if (v instanceof Building) return { __b: v.id };
+  if (Array.isArray(v)) {
+    if (d > 3 || v.length > 300) return undefined;
+    return v.map(x => { const p = coopPlain(x, d + 1); return p === undefined ? null : p; });
+  }
+  const pr = Object.getPrototypeOf(v);
+  if (!top && pr !== COOP_OP && pr !== null) return undefined;
+  if (d > 3) return undefined;
+  const o = {};
+  for (const k in v) { if (COOP_SKIP.has(k)) continue; const p = coopPlain(v[k], d + 1); if (p !== undefined) o[k] = p; }
+  return o;
+}
+function coopList(arr) {
+  const out = [];
+  for (const o of arr || []) {
+    if (!o || typeof o !== 'object') continue;
+    let id = coopIds.get(o);
+    if (!id) { id = coopIdN++; coopIds.set(o, id); }
+    const p = coopPlain(o, 0, true);
+    p.__id = id;
+    out.push(p);
+  }
+  return out;
+}
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil'];
+const COOP_WX = ['k', 'target', 'bolt', 'scorch', 'fires', 'rainEnd', 'nextRain'];
+
+// всё, что нечисть, ночь и погода держат вне жителей и клеток
+function coopMirror() {
+  const m = {
+    ghosts: coopList(Game.ghosts), skels: coopList(Game.skels), ents: coopList(Game.ents), owls: coopList(Game.owls),
+    bats: coopList(Game.bats), critters: coopList(Game.critters), falling: coopList(Game.falling),
+    golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
+    sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
+    lost: Game.lostGnomes || 0,
+    wx: {},
+  };
+  for (const k of COOP_WX) m.wx[k] = coopPlain(WX[k]);
+  return m;
+}
+
+// Тайлы: всё, что лежит на клетке (деревья, фонари, поля…), как есть, без служебной брони res
+function coopTileObj(o) {
+  if (!o) return null;
+  const p = {};
+  for (const k in o) { if (k === 'res') continue; const v = coopPlain(o[k], 1); if (v !== undefined) p[k] = v; }
+  return p;
+}
+function coopAllObjs() {
+  const a = [];
+  for (let i = 0; i < N_TILES; i++) if (World.obj[i]) a.push([i, coopTileObj(World.obj[i])]);
+  return a;
+}
+
+
 const r2 = v => Math.round(v * 100) / 100;
 
 function coopUnitsPacket() {
@@ -307,19 +374,22 @@ function coopUnitsPacket() {
     if (u.injury) o.inj = u.injury;
     if (u.drunkAt || (u.hero && u.hero.drunkUntil > now)) o.dr = 1;
     if (u.ouchUntil > now) o.ou = 1;
+    let ex = null;
+    for (const k of COOP_UNIT_EX) { const v = u[k]; if (v) (ex || (ex = {}))[k] = coopPlain(v, 1); }
+    if (ex) o.ex = ex;
     if (u.owner) o.ow = u.owner;
     if (u.hero && u.owner) { o.hp = Math.round(u.hero.hp); o.mhp = u.hero.maxhp; o.cl = u.hero.clsKey; o.lv = u.hero.level; }
     us.push(o);
   }
   const an = [];
   for (const a of Game.animals) if (!a.dead) an.push({ i: a.id, k: a.kind, x: r2(a.x), y: r2(a.y), f: a.face, m: a.moving ? 1 : 0, p: r2(a.phase), l: a.loot || undefined, s: a.state });
-  return JSON.stringify({ t: 'u', time: r2(now), units: us, animals: an });
+  return JSON.stringify({ t: 'u', time: r2(now), units: us, animals: an, mir: coopMirror() });
 }
 
 function coopInitPacket(uid) {
   const s = serializeGame();
   s.units = [];
-  return JSON.stringify({ t: 'init', world: s, uid, time: Game.time, nextId: Game.nextId });
+  return JSON.stringify({ t: 'init', world: s, ob: coopAllObjs(), uid, time: Game.time, nextId: Game.nextId });
 }
 
 // Разница мира с прошлой рассылкой: здания, объекты на клетках, дороги, стройки дорог, груды
@@ -340,16 +410,15 @@ function coopWorldPacket() {
   coop.shB = nb;
   if (up.length) out.b = up;
   if (rm.length) out.bx = rm;
-  // объекты
-  const no = new Map(), oc = [];
-  for (const t of s.obj) {
-    const sig = t.join(',');
-    no.set(t[0], sig);
-    if (coop.shO.get(t[0]) !== sig) oc.push(t);
+  // объекты на клетках целиком
+  const oc = [], ox = [];
+  for (let i = 0; i < N_TILES; i++) {
+    const o = World.obj[i];
+    const sig = o ? JSON.stringify(coopTileObj(o)) : '';
+    if (coop.shO.get(i) !== sig) {
+      if (sig) { oc.push([i, JSON.parse(sig)]); coop.shO.set(i, sig); } else { ox.push(i); coop.shO.delete(i); }
+    }
   }
-  const ox = [];
-  for (const i of coop.shO.keys()) if (!no.has(i)) ox.push(i);
-  coop.shO = no;
   if (oc.length) out.o = oc;
   if (ox.length) out.ox = ox;
   // дороги

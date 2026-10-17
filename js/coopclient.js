@@ -43,6 +43,10 @@ function coopApplyInit(m) {
   applySave(m.world);
   Game.units = []; Game.unitMap.clear(); Game.animals = []; Game.hero = null; Game.heroAsk = false; Game.selUnit = null; Game.selected = null;
   Game.piles.clear();
+  World.obj.fill(null);
+  for (const [i, o] of m.ob || []) World.obj[i] = o;
+  for (const k of COOP_LISTS) Game[k] = [];
+  Game.golem = null; Game.sub = null;
   Game.nextId = Math.max(Game.nextId, m.nextId || 0);
   Game.time = m.time;
   Game.paused = false; Game.speed = 1;
@@ -91,6 +95,7 @@ function coopUnits(m) {
     u.anim = d.a || null; u.carry = d.c || null; u.carryN = d.n || 0;
     u.inside = d.in ? byId.get(d.in) || null : null;
     u.injury = d.inj || null; u.drunkAt = d.dr ? 1e9 : 0; u.ouchUntil = d.ou ? Game.time + 0.7 : 0;
+    for (const k of COOP_UNIT_EX) u[k] = d.ex && d.ex[k] !== undefined ? d.ex[k] : undefined;
     if (d.m) { if (!(u.action && u.action.walk)) u.action = { walk: [0, 0], path: [1], i: 0, block: 0 }; }
     else if (d.at !== undefined) { if (!u.action || u.action.walk) u.action = { wait: 1, T: d.aT, anim: d.a }; u.action.t = d.at; }
     else u.action = null;
@@ -117,6 +122,7 @@ function coopUnits(m) {
   }
   for (const id of [...Coop.anim.keys()]) if (!next.includes(Coop.anim.get(id))) Coop.anim.delete(id);
   Game.animals = next;
+  if (m.mir) coopMirror(m.mir);
 }
 
 function coopApplyBuilding(d, byId) {
@@ -162,22 +168,46 @@ function coopDropBuilding(b) {
   if (k >= 0) Game.buildings.splice(k, 1);
 }
 
-function coopObj(t) {
-  const [i, ty, g, n, farm, crop, dv, dvert] = t;
-  const o = { t: ty };
-  if (ty === 'tree' || ty === 'field' || ty === 'stump' || ty === 'bin') o.g = g;
-  if (ty === 'stone') o.n = n;
-  if (dv !== undefined && dv !== null) o.v = dv;
-  if (dvert) o.vert = true;
-  if (ty === 'field') { o.farm = farm; o.crop = !crop || crop === 'hay' ? 'wheat' : crop; o.ash = n === 1; o.plan = n === 2; }
-  World.obj[i] = o;
+const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil'];
+
+// ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
+function coopResolve(v) {
+  if (v && typeof v === 'object') {
+    if (v.__u !== undefined) return Game.unitMap.get(v.__u) || null;
+    if (v.__b !== undefined) return Game.buildings.find(b => b.id === v.__b) || null;
+    if (Array.isArray(v)) { for (let i = 0; i < v.length; i++) v[i] = coopResolve(v[i]); return v; }
+    for (const k in v) v[k] = coopResolve(v[k]);
+  }
+  return v;
+}
+
+function coopSyncList(name, arr) {
+  const old = new Map((Game[name] || []).map(o => [o.__id, o]));
+  Game[name] = arr.map(d => {
+    coopResolve(d);
+    const o = old.get(d.__id);
+    if (!o) { if (typeof d.x === 'number') { d.tx = d.x; d.ty = d.y; } return d; }
+    for (const k in d) { if (k === 'x' || k === 'y') continue; o[k] = d[k]; }
+    if (typeof d.x === 'number') { o.tx = d.x; o.ty = d.y; }
+    return o;
+  });
+}
+
+// нечисть, ночные твари, голем, субботник и погода — считает сервер, мы только показываем
+function coopMirror(m) {
+  for (const k of COOP_LISTS) coopSyncList(k, m[k] || []);
+  Game.golem = m.golem ? Object.assign(Game.golem || {}, coopResolve(m.golem)) : null;
+  Game.sub = m.sub ? coopResolve(m.sub) : null;
+  Game.lostGnomes = m.lost || 0;
+  Object.assign(WX, m.wx, { ready: true });
 }
 
 function coopWorld(m) {
   Game.nextId = Math.max(Game.nextId, m.nextId || 0);
   if (m.bx) for (const id of m.bx) { const b = Game.buildings.find(x => x.id === id); if (b) coopDropBuilding(b); }
   if (m.b) { const byId = new Map(Game.buildings.map(b => [b.id, b])); for (const d of m.b) coopApplyBuilding(d, byId); }
-  if (m.o) for (const t of m.o) coopObj(t);
+  if (m.o) for (const [i, o] of m.o) World.obj[i] = o;
   if (m.ox) for (const i of m.ox) World.obj[i] = null;
   if (m.r || m.rx) {
     if (m.r) for (const i of m.r) World.road[i] = 1;
@@ -197,7 +227,7 @@ function coopWorld(m) {
 // Вместо step(): время идёт, всё плавно доезжает до последнего снимка
 function coopStep(dt) {
   Game.time += dt;
-  const k = Math.min(1, dt * 12);
+  const k = Math.min(1, dt * 12), k2 = k;
   for (const u of Game.units) {
     if (u.tx === undefined) continue;
     const dx = u.tx - u.x, dy = u.ty - u.y, d = Math.hypot(dx, dy);
@@ -211,6 +241,11 @@ function coopStep(dt) {
     if (a.tx === undefined) continue;
     const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
     if (d > 3) { a.x = a.tx; a.y = a.ty; } else { a.x += dx * k; a.y += dy * k; a.phase += Math.hypot(dx * k, dy * k) * 3; }
+  }
+  for (const k of COOP_LISTS) for (const o of Game[k]) {
+    if (o.tx === undefined || typeof o.x !== 'number') continue;
+    const dx = o.tx - o.x, dy = o.ty - o.y;
+    if (Math.abs(dx) + Math.abs(dy) > 4) { o.x = o.tx; o.y = o.ty; } else { o.x += dx * k2; o.y += dy * k2; }
   }
   const h = Game.hero;
   if (h && h.cmd && Game.time - Coop.heroCmdAt > 1.2 && !(h.action && h.action.walk)) h.cmd = null;
