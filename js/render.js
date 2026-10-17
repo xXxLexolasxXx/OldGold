@@ -695,6 +695,17 @@ function render() {
     else if (isStreetObj(o)) list.push([y + 0.75, () => drawStreetObj(c, x, y, o)]);
     else if (o.t === 'stump') list.push([y + 0.7, () => drawStump(c, x, y)]);
   }
+  // горы: объёмные скальные массивы по глубине вместе с остальными объектами
+  for (const m of MOUNTS) {
+    const S = MT_SIZES[m.size], ty = m.y / TILE;
+    if (ty < y0 - 1 || ty - 5 > y1 || m.x + S.w / 2 < cam.x || m.x - S.w / 2 > cam.x + vw) continue;
+    list.push([ty + 0.12, () => drawMountain(c, m)]);
+  }
+  // кристаллы на скале — выше гор, чтобы было видно, где ставить шахту
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const i = idx(x, y);
+    if (World.crystal[i] && World.terrain[i] === T_ROCK) list.push([y + 1.3, () => drawCrystalTile(c, x, y, i)]);
+  }
   for (const b of Game.buildings) {
     if (b.x + b.w < x0 - 2 || b.x > x1 + 2 || b.y > y1 + 2 || b.y + b.h < y0 - 2) continue;
     list.push([b.y + b.h - 0.05, () => drawBuilding(c, b, false)]);
