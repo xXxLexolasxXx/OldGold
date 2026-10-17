@@ -1281,7 +1281,7 @@ function mirrorSprite(s, FW) {
     return cv;
   };
   const W = s.w, pt = p => p && [W - p[0], p[1]];
-  const m = { ...s, canvas: flip(s.canvas), shadow: flip(s.shadow), padx: W - s.padx - FW };
+  const m = { ...s, canvas: flip(s.canvas), shadow: flip(s.shadow), padx: W - s.padx - FW, doorCx: W - s.doorCx };
   if (s.chimneys) m.chimneys = s.chimneys.map(pt);
   for (const k of ['hub', 'glow', 'fire', 'circle', 'cauldron']) if (s[k]) m[k] = pt(s[k]);
   if (s.pen) m.pen = [W - s.pen[2], s.pen[1], W - s.pen[0], s.pen[3]];
@@ -1290,12 +1290,12 @@ function mirrorSprite(s, FW) {
   return m;
 }
 
-function buildingSprite(type, rot = 0) {
+function buildingSpriteBase(type, rot = 0) {
   const d = bDims(type, rot);
   const key = type + ':' + d.rot;
   if (SPR.buildings[key]) return SPR.buildings[key];
   if (d.rot === 2) {
-    SPR.buildings[key] = mirrorSprite(buildingSprite(type, 1), d.w * TILE);
+    SPR.buildings[key] = mirrorSprite(buildingSpriteBase(type, 1), d.w * TILE);
     return SPR.buildings[key];
   }
   srand = mulberry32(hashStr(type));
@@ -1304,7 +1304,7 @@ function buildingSprite(type, rot = 0) {
   const W = Math.ceil(FW + BPADX * 2 + FD * SK), H = FD + top + BBOTTOM;
   const [cv, c] = mkSprite(W, H, BS);
   const [scv, sc] = mkSprite(W, H, BS);
-  const spr = { canvas: cv, shadow: scv, w: W, h: H, top, padx: BPADX, chimneys: null, hub: null, glow: null };
+  const spr = { canvas: cv, shadow: scv, w: W, h: H, top, padx: BPADX, chimneys: null, hub: null, glow: null, fw: FW, baseY: top + FD - 2, doorCx: BPADX + (d.dx + 0.5) * TILE };
   const g = {
     type, ox: BPADX, oy: top + FD, rot: d.rot, LW: def.w * TILE, LD: def.h * TILE, doorLX: d.doorLX,
     // для построек, нарисованных в экранных координатах

@@ -455,7 +455,7 @@ function drawPigs(c, b, spr, ox, oy) {
 // ---------- Здания ----------
 
 function drawBuilding(c, b, ghost) {
-  const spr = buildingSprite(b.type, b.rot || 0);
+  const spr = buildingSprite(b.type, b.rot || 0, b.level);
   const ox = b.x * TILE - spr.padx, oy = b.y * TILE - spr.top;
   const fx = b.x * TILE, fy = b.y * TILE, fw = b.w * TILE, fh = b.h * TILE;
   c.imageSmoothingEnabled = true;

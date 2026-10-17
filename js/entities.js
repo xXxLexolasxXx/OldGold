@@ -177,7 +177,7 @@ class Building {
       }
       if (this.training) {
         this.training.t += dt;
-        if (this.training.t >= TRAIN_TIME) {
+        if (this.training.t >= TRAIN_TIME * (this.def.trainMult || 1)) {
           spawnUnit(this.training.type, this.doorX, this.doorY);
           logEvent('people', `Школа выпустила: ${UNIT_TYPES[this.training.type].name}`, this.doorX + 0.5, this.doorY);
           this.training = null;

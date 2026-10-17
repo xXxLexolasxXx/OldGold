@@ -207,6 +207,7 @@ function initUI() {
       Game.selected = null;
     }
     else if (act === 'pause') b.paused = !b.paused;
+    else if (act === 'upgrade') upgradeBuilding(b);
     else if (act === 'deliver') toggleDeliver(b);
     else if (act === 'goto') focusBuilding(b);
     else if (act === 'prev') cycleBuilding(-1);
@@ -390,7 +391,7 @@ function infoBuilding(b) {
   }
   const def = b.def;
   const same = Game.buildings.filter(x => x.type === b.type).length;
-  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type)}" alt=""><div><h3>${def.name}</h3>${statusChip(b)}</div></div>`;
+  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type)}" alt=""><div><h3>${def.name}${b.level === 2 ? ' <span class="lvl">ур. 2</span>' : ''}</h3>${statusChip(b)}</div></div>`;
   h += '<div class="iactions">';
   if (same > 1) h += `<button data-act="prev" title="Предыдущее такое же ([)">${ui('prev')}</button><button data-act="next" title="Следующее такое же (])">${ui('next')}</button>`;
   h += `<button data-act="goto" title="Показать на карте">${ui('eye')}</button>`;
@@ -403,6 +404,11 @@ function infoBuilding(b) {
       : `<button class="deliv open" data-act="deliver" title="Запретить трудягам везти сюда товары (B)">${ui('deliver')}<span><b>Доставки открыты</b><small>нажмите, чтобы закрыть</small></span></button>`;
   }
 
+  if (canUpgrade(b)) {
+    const up = b.def.up, ok = storeHas(up.cost);
+    const cost = Object.keys(up.cost).map(g => `${gi(g)}${up.cost[g]}`).join(' ');
+    h += `<button class="upg${ok ? '' : ' no'}" data-act="upgrade" title="Достроить здание до уровня 2: берётся со склада"><span><b>Уровень 2: ${cost}</b><small>${BUILDINGS[b.type].desc2}</small></span></button>`;
+  }
   if (b.state !== 'done') {
     h += `<div class="bar"><div style="width:${Math.round(b.progress * 100)}%"></div></div>`;
     h += '<div class="isec">Материалы</div><div class="slots">';
@@ -442,7 +448,7 @@ function infoBuilding(b) {
     h += '<div class="isec">Обучение · 1 золото</div>';
     if (b.training) {
       h += `<div class="irow"><img class="portrait" src="${portraitURL(b.training.type)}" alt="">${UNIT_TYPES[b.training.type].name}</div>`;
-      h += `<div class="bar"><div style="width:${Math.round(b.training.t / TRAIN_TIME * 100)}%"></div></div>`;
+      h += `<div class="bar"><div style="width:${Math.round(b.training.t / (TRAIN_TIME * (b.def.trainMult || 1)) * 100)}%"></div></div>`;
     } else if (b.queue.length && b.stock.gold < 1) h += '<div class="warn small">Ждём золото</div>';
     h += '<div class="queue">' + b.queue.map((q, i) => `<img src="${portraitURL(q)}" title="${UNIT_TYPES[q].name} — клик убирает" data-untrain-at="${i}">`).join('') + '</div>';
     h += '<div class="train-grid">';

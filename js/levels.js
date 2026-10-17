@@ -1,0 +1,166 @@
+'use strict';
+// Второй уровень зданий: достройка за товары со склада, новый облик и новые возможности.
+// Здание хранит ссылку на свой def: у уровня 2 это производный описатель (levelDef).
+
+// Сарказм по зданиям: [уровень 1, уровень 2]
+const DESCS = {
+  storehouse: ['Большой каменный амбар. Хранит всё и никому не объясняет, почему именно так.', 'Склад с пристройкой: места стало больше, а порядка — всё равно как было. Внутрь помещается до 8 трудяг, снаружи — их начальство.'],
+  school: ['Школа с колокольней. Учит за 1 золото — рекордно дешёвое образование, никаких стипендий.', 'Второй этаж, второй звонок. Учат вдвое быстрее: отличники сдают экзамен, пока двоечник ищет парту.'],
+  inn: ['Курица, колбаса, хлеб и пиво — меню от шефа, который ничего другого не умеет. Пьяный может уснуть прямо на дороге.', 'Трактир с мансардой: круассаны, стейки, тёмное пиво и свечи на столах. Цены прежние, амбиции выросли.'],
+  bonfire: ['Сюда носят мусор из урн. Сгорая, он даёт пепел — фермы удобряют им поля.', 'Костёр с каменным ободом: жрёт мусор вдвое быстрее и гордится этим на всю округу.'],
+  goatpen: ['Пастух приручает диких коз. Ручная коза возит груз — сама, без профсоюза.', 'Загон с сеновалом: коз больше, а сена они едят меньше, потому что воруют соседское.'],
+  stable: ['Конюх растит лошадей. Лошадь с телегой — извозчик, везёт сразу кучу груза и не жалуется.', 'Конюшня с чердаком: лошади довольнее, конюх спит на сене и называет это апартаментами.'],
+  woodcutter: ['Избушка лесоруба. Рубит деревья, сажает новые — экологи плачут, но тихо.', 'Лесоруб купил вторую пилу и вдвое больше уверенности: брёвен за раз вдвое больше.'],
+  sawmill: ['Распиливает брёвна на доски. Опилки — это тоже еда, если очень надо.', 'Лесопилка с мощным колесом: пилит на четверть быстрее и сильнее кричит.'],
+  quarry: ['Достаёт камень из земли. Земля обычно против.', 'Каменоломня с краном-журавлём: камня за раз вдвое больше, спина каменотёса — на месте.'],
+  goldmine: ['Добывает золотую руду. Жилы обещают всё, но золото — потом.', 'Рудник с вагонетками: копает быстрее. Золота не стало больше, но шахтёры стали важнее.'],
+  metallurgist: ['Плавит руду в золото, сжигая брёвна. Лес жалко, зато блестит.', 'Плавильня с двумя горнами: быстрее, жарче, и от гномов снова пахнет подпалённой бородой.'],
+  farm: ['Ферма: пшеница и сено. Фермер смотрит на небо, а небо — на фермера.', 'Ферма с большим амбаром: влезает вдвое больше, а шутки про урожай стали вдвое длиннее.'],
+  hopfarm: ['Хмельник. Хмелевод утверждает, что работает ради хлеба. Но не ради хлеба.', 'Хмельник с высокой сушильней: больше шишек, и вся деревня знает, зачем.'],
+  brewery: ['Варит пиво из зерна и хмеля. Единственное предприятие, чьи отходы приятно пить.', 'Пивоварня с погребом: варит ещё и тёмное пиво — вдвое сытнее и вдвое опаснее для головы.'],
+  mill: ['Мельница мелет зерно в муку. Ветер её любит и не берёт денег.', 'Мельница с новыми крыльями: мелет быстрее, а мельник машет им рукой всё чаще.'],
+  bakery: ['Печёт хлеб из муки, а хотел бы булочки.', 'Пекарня с мансардой: хлеб остался, но появились круассаны. Пекарь теперь говорит «круассан» и поднимает бровь.'],
+  swine: ['Свинарник. Свиньи подрастают на сене, а гномы — на их надеждах.', 'Свинарник с кормушками: вмещает больше свиней, которые лучше не знают, что их ждёт.'],
+  butchery: ['Из свиньи — колбаса и шкура. Из мясника — философ.', 'Бойня с коптильней: из одной свиньи — шесть стейков. Свинья недовольна, трактир в восторге.'],
+  tannery: ['Выделывает шкуры в кожу. Запах — бесплатное приложение.', 'Дубильня с большими чанами: быстрее, а запах теперь слышно из соседней деревни.'],
+  armory: ['Шьёт кожаные доспехи. Для будущей армии, которой никто не видел.', 'Мастерская с наковальней: шьёт и клепает быстрее, а армия всё равно «в планах».'],
+  crystalmine: ['Добывает магические камни. Камни светятся — шахтёр делает вид, что не боится.', 'Шахта с кристальной крепью: камней больше, света больше, здравого смысла — как раньше.'],
+  magiccircle: ['Камни отдают силу в банки маны. Работает сам, как и положено нормальной магии.', 'Круг с рунным ободом: из камня теперь две банки маны. Алхимики в шоке.'],
+  magicworkshop: ['Чародей создаёт посохи и мантии. Волшебство в рассрочку.', 'Мастерская с башенкой-обсерваторией: быстрее и звёздно. Чародей вдохновлён, вдохновение — тоже ресурс.'],
+};
+
+// Что даёт второй уровень: цена достройки и особые свойства (сверх общего «быстрее/просторнее»)
+const LEVEL2 = {
+  storehouse:    { cost: { timber: 5, stone: 5 }, cap: 8 },
+  school:        { cost: { timber: 4, stone: 4 }, train: 0.5 },
+  inn:           { cost: { timber: 5, stone: 4 }, cozy: true },
+  bonfire:       { cost: { timber: 3, stone: 3 } },
+  goatpen:       { cost: { timber: 3, stone: 2 } },
+  stable:        { cost: { timber: 4, stone: 3 } },
+  woodcutter:    { cost: { timber: 2, stone: 2 }, gather: 2 },
+  sawmill:       { cost: { timber: 3, stone: 3 } },
+  quarry:        { cost: { timber: 3, stone: 2 }, gather: 2 },
+  goldmine:      { cost: { timber: 3, stone: 3 } },
+  metallurgist:  { cost: { timber: 3, stone: 4 } },
+  farm:          { cost: { timber: 4, stone: 3 } },
+  hopfarm:       { cost: { timber: 3, stone: 3 } },
+  brewery:       { cost: { timber: 4, stone: 4 }, addOut: { darkbeer: 6 }, addRecipes: [{ in: { wheat: 1, hops: 1 }, out: { darkbeer: 1 }, time: 14 }] },
+  mill:          { cost: { timber: 3, stone: 3 } },
+  bakery:        { cost: { timber: 4, stone: 3 }, addIn: {}, addOut: { croissant: 9 }, addRecipes: [{ in: { flour: 2 }, out: { croissant: 3 }, time: 11 }] },
+  swine:         { cost: { timber: 4, stone: 3 } },
+  butchery:      { cost: { timber: 3, stone: 4 }, addOut: { steak: 12 }, addRecipes: [{ in: { pig: 1 }, out: { steak: 6 }, time: 12 }] },
+  tannery:       { cost: { timber: 3, stone: 3 } },
+  armory:        { cost: { timber: 3, stone: 4 } },
+  crystalmine:   { cost: { timber: 3, stone: 4 } },
+  magiccircle:   { cost: { stone: 8 }, double: true },
+  magicworkshop: { cost: { timber: 3, stone: 4 } },
+};
+
+// Общий закон уровня 2: циклы на четверть быстрее, склады у здания в полтора раза вместительнее
+const scaleCaps = o => { if (!o) return o; const r = {}; for (const g in o) r[g] = Math.ceil(o[g] * 1.5); return r; };
+
+for (const t in DESCS) if (BUILDINGS[t]) { BUILDINGS[t].desc = DESCS[t][0]; BUILDINGS[t].desc2 = DESCS[t][1]; BUILDINGS[t].up = LEVEL2[t]; }
+
+function levelDef(type) {
+  const d = BUILDINGS[type];
+  if (!d.up) return d;
+  if (d._l2) return d._l2;
+  const u = d.up, o = Object.assign({}, d);
+  o.inputs = d.inputs ? scaleCaps(d.inputs) : undefined;
+  o.outputs = d.outputs ? scaleCaps(d.outputs) : undefined;
+  if (u.addIn) o.inputs = Object.assign(o.inputs || {}, u.addIn);
+  if (u.addOut) o.outputs = Object.assign(o.outputs || {}, u.addOut);
+  if (d.recipes) {
+    o.recipes = d.recipes.map(r => Object.assign({}, r, { time: Math.max(3, Math.round(r.time * 0.75)) }));
+    if (u.double) for (const r of o.recipes) r.out = Object.assign({}, r.out, { mana: (r.out.mana || 1) * 2 });
+    if (u.addRecipes) for (const r of u.addRecipes) o.recipes.push(Object.assign({}, r));
+  }
+  o.desc = d.desc2;
+  o.level2 = true; o.gatherMult = u.gather || 1; o.storeCap = u.cap || 0; o.trainMult = u.train || 1; o.cozy = !!u.cozy;
+  d._l2 = o;
+  return o;
+}
+
+function canUpgrade(b) { return b.state === 'done' && !b.removed && (b.level || 1) < 2 && !!b.def.up && !b.isRoad; }
+
+function storeHas(cost) {
+  const t = {}; for (const g in cost) t[g] = 0;
+  for (const s of Game.buildings) if (s.isStore() && !s.isPile) for (const g in cost) t[g] += s.stock[g] - (s.reserved ? s.reserved[g] : 0);
+  for (const g in cost) if (t[g] < cost[g]) return false;
+  return true;
+}
+
+function storePay(cost) {
+  for (const g in cost) {
+    let n = cost[g];
+    for (const s of Game.buildings) { if (!s.isStore() || s.isPile || n <= 0) continue; const k = Math.min(n, Math.max(0, s.stock[g] - s.reserved[g])); s.stock[g] -= k; n -= k; }
+  }
+}
+
+function upgradeBuilding(b, silent) {
+  if (!silent) {
+    if (!canUpgrade(b)) return false;
+    const cost = b.def.up.cost;
+    if (!storeHas(cost)) { toast('На складе не хватает материалов для достройки'); return false; }
+    storePay(cost);
+  }
+  b.level = 2;
+  b.def = levelDef(b.type);
+  // новые рецепты — в конец списка, прежние галочки остаются
+  while (b.recipeOn.length < (b.def.recipes || []).length) b.recipeOn.push(true);
+  if (!silent) {
+    b.dmg = 0;
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    fxBurst(cx * TILE, cy * TILE, 26, ['#d8b070', '#a0703a', '#e8cc90', '#cfc7b4'], 90, 60, 0.9, 2.4, 240);
+    floater(cx, b.y - 1, 'Уровень 2!', '#ffe08a');
+    logEvent('build', `«${BUILDINGS[b.type].name}» достроено до уровня 2`, cx, cy);
+    sfxAt('build', cx * TILE, cy * TILE);
+  }
+  return true;
+}
+
+// ---------- Облик уровня 2 ----------
+// Поверх готового спрайта: каменный цоколь, мансарда с тёплым окном на коньке крыши,
+// красно-золотой вымпел и фонарь у двери. У каждого типа своя пропорция, цвета слегка разные.
+
+function buildingSprite(type, rot = 0, level = 1) {
+  if (level < 2 || !BUILDINGS[type].up) return buildingSpriteBase(type, rot);
+  const d = bDims(type, rot);
+  const key = type + ':' + d.rot + ':L2';
+  if (SPR.buildings[key]) return SPR.buildings[key];
+  const base = buildingSpriteBase(type, rot);
+  const cv = mkCanvas(base.canvas.width, base.canvas.height), c = cv.getContext('2d');
+  c.drawImage(base.canvas, 0, 0);
+  c.imageSmoothingEnabled = false;
+  const k = base.canvas.width / base.w;
+  c.scale(k, k);
+  const rnd = mulberry32(hashStr(type + 'L2'));
+  const roofCols = ['#8a3a28', '#5a6a8a', '#3e6a4a', '#7a5a3a'], rc = roofCols[Math.floor(rnd() * roofCols.length)];
+  const px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); };
+  const OUT = '#1a100a';
+  // цоколь из тёсаного камня вдоль южной стены
+  const x0 = base.padx - 1, y0 = base.baseY - 3, w = base.fw + 2;
+  px(x0 - 1, y0 - 1, w + 2, 6, OUT); px(x0, y0, w, 4, '#9a9388'); px(x0, y0, w, 1, '#c0b9aa');
+  for (let x = x0 + 5; x < x0 + w - 2; x += 9) px(x, y0 + 1, 1, 3, '#6a645a');
+  // мансарда на коньке крыши
+  const P = (base.perches && base.perches[0]) || [base.padx + base.fw / 2, base.top * 0.4];
+  const mx = P[0], my = P[1] + 20;
+  px(mx - 8, my - 9, 16, 11, OUT); px(mx - 7, my - 8, 14, 9, '#d8b98a'); px(mx - 7, my - 8, 14, 1, '#ecd5ac');
+  // крыша мансарды: ступенчатый треугольник
+  for (let i = 0; i < 8; i++) { px(mx - 10 + i * 1.2, my - 9 - i, 20 - i * 2.4, 2, OUT); }
+  for (let i = 0; i < 8; i++) { px(mx - 9 + i * 1.2, my - 9 - i + 1, 18 - i * 2.4, 1, i < 3 ? rc : '#b55a3c'); }
+  px(mx - 3, my - 7, 6, 7, OUT); px(mx - 2, my - 6, 4, 5, '#ffd878'); px(mx - 0.5, my - 6, 1, 5, '#5a3a1e'); px(mx - 2, my - 3.5, 4, 1, '#5a3a1e');
+  // вымпел на шесте
+  const FX = (base.perches && base.perches[1]) ? base.perches[1] : [mx + 18, P[1] + 4];
+  const fx = Math.abs(FX[0] - mx) < 12 ? mx + 20 : FX[0], fy = Math.min(FX[1], P[1]) + 3;
+  px(fx, fy - 22, 2, 24, OUT); px(fx, fy - 22, 1, 24, '#6a4a2a');
+  c.fillStyle = OUT; c.beginPath(); c.moveTo(fx + 1, fy - 22); c.lineTo(fx + 14, fy - 18); c.lineTo(fx + 1, fy - 13); c.fill();
+  c.fillStyle = '#c03030'; c.beginPath(); c.moveTo(fx + 2, fy - 20); c.lineTo(fx + 11, fy - 17.5); c.lineTo(fx + 2, fy - 15); c.fill();
+  px(fx + 2, fy - 20, 8, 1, '#f0c040');
+  // фонарь у двери
+  const lx = base.doorCx + 10, ly = base.baseY - 26;
+  px(lx - 1, ly - 7, 4, 9, OUT); px(lx, ly - 6, 2, 6, '#ffd060'); px(lx - 1, ly - 8, 4, 1, '#3a2a1a');
+  const spr = Object.assign({}, base, { canvas: cv });
+  SPR.buildings[key] = spr;
+  return spr;
+}

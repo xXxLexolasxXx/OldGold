@@ -343,7 +343,7 @@ const OWL_COUNT = 4;
 // Точки на верхнем крае крыши здания (в мировых пикселях): считаются один раз
 // при создании спрайта здания (roofTopPoints), здесь только переводятся на карту
 function roofPerches(b) {
-  const spr = buildingSprite(b.type, b.rot || 0);
+  const spr = buildingSprite(b.type, b.rot || 0, b.level);
   if (!spr.perches) spr.perches = [];
   const ox = b.x * TILE - spr.padx, oy = b.y * TILE - spr.top;
   const ground = (b.y + b.h) * TILE + 10;                 // куда упадёт выроненная вещь — перед фасадом

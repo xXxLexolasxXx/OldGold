@@ -131,7 +131,7 @@ function drawLoad(c, g) {
       for (const [x, y] of [[-3, -1], [0, -2], [3, -1], [-1.5, 1], [1.8, 1]]) { ellipse(c, x, y, 1.6, 2, '#8ab048'); ellipse(c, x - 0.4, y - 0.6, 0.7, 0.8, '#c8e080'); }
       line(c, -4, -3, 4, -3, '#5a3a1e', 0.5);
       break;
-    case 'beer':
+    case 'beer': case 'darkbeer':
       c.fillStyle = lingrad(c, -4, 0, 4, 0, [[0, '#a87040'], [1, '#5a3418']]);
       c.beginPath(); c.ellipse(0, 0, 4, 3.2, 0, 0, Math.PI * 2); c.fill(); c.stroke();
       c.fillStyle = '#2e2e30'; c.fillRect(-1.6, -3.2, 0.6, 6.4); c.fillRect(1.2, -3.2, 0.6, 6.4);
@@ -142,10 +142,12 @@ function drawLoad(c, g) {
       c.beginPath(); c.moveTo(-4, 3); c.quadraticCurveTo(-5, -1, -2, -3.4); c.lineTo(2, -3.4); c.quadraticCurveTo(5, -1, 4, 3); c.closePath(); c.fill(); c.stroke();
       c.fillStyle = '#8a7050'; c.fillRect(-1.4, -3.8, 2.8, 0.8);
       break;
-    case 'bread': case 'sausage': case 'goldore': case 'magicstone': {
+    case 'bread': case 'croissant': case 'steak': case 'sausage': case 'goldore': case 'magicstone': {
       c.fillStyle = lingrad(c, -4.5, 0, 4.5, 0, [[0, '#c89a58'], [1, '#6a4a22']]);
       c.beginPath(); c.moveTo(-4.6, -0.6); c.lineTo(-3.6, 3); c.lineTo(3.6, 3); c.lineTo(4.6, -0.6); c.closePath(); c.fill(); c.stroke();
       for (let k = 0; k < 3; k++) line(c, -4.2, 0.4 + k, 4.2, 0.4 + k, 'rgba(70,45,15,0.6)', 0.25);
+      if (g === 'croissant') { ellipse(c, -2, -1, 2.2, 1.2, '#d89a3c'); ellipse(c, 1.8, -1.2, 2.2, 1.3, '#c88a30'); }
+      if (g === 'steak') { ellipse(c, -1.5, -1, 2.4, 1.5, '#b8402c'); ellipse(c, 2, -1.2, 2, 1.3, '#a83a28'); }
       if (g === 'bread') { ellipse(c, -2, -1, 2, 1.3, '#c8823a'); ellipse(c, 1.8, -1.2, 2.2, 1.4, '#b8742c'); line(c, 1, -1.8, 2.6, -0.8, '#f0c080', 0.3); }
       if (g === 'sausage') for (let k = -2; k <= 2; k++) ellipse(c, k * 1.5, -1 - Math.abs(k) * 0.2, 0.9, 1.6, k % 2 ? '#a83a2a' : '#8c2c20');
       if (g === 'goldore') for (let k = -2; k <= 2; k++) { ellipse(c, k * 1.6, -1, 1.2, 1, '#6e665c'); c.fillStyle = '#f6d458'; c.fillRect(k * 1.6 - 0.3, -1.4, 0.6, 0.6); }

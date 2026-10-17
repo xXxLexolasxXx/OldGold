@@ -64,23 +64,26 @@ function* eatGen(u, inn) {
   if (inn.removed) return;
   if (!ok) { inn.reserved[food]--; u.nextEatTry = Game.time + 15; return; }
   const dry = isStoreB(inn);      // на складе — всухомятку, без пива и не досыта
-  if (dry) while (storeInside(inn) >= STORE_CAP && !inn.removed) yield { wait: 0.4 };
+  if (dry) while (storeInside(inn) >= storeCapOf(inn) && !inn.removed) yield { wait: 0.4 };
   if (inn.removed) return;
   yield { enter: inn };
   yield { wait: dry ? 3 : 5 };
   if (!inn.removed) {
     inn.reserved[food]--;
     inn.stock[food]--;
-    u.food = dry ? 0.7 : food === 'chickenleg' ? 1.25 : 1;     // курица сытнее всего
+    u.food = dry ? 0.7 : food === 'chickenleg' ? 1.25 : food === 'steak' ? 1.3 : food === 'croissant' ? 1.1 : 1;     // курица и стейк сытнее всего
+    if (!dry && inn.def.cozy) u.food += 0.08;                  // в трактире уровня 2 уютнее
     if (dry) { yield { leave: true }; return; }
-    // к еде — кружка пива, если есть
-    if (inn.stock.beer - inn.reserved.beer > 0 && Math.random() < 0.85) {
+    // к еде — кружка пива (тёмное насыщает вдвое, зато и пьянит вдвое), если есть
+    const mug = (inn.stock.darkbeer - inn.reserved.darkbeer > 0 && (inn.stock.beer - inn.reserved.beer <= 0 || Math.random() < 0.5)) ? 'darkbeer' : 'beer';
+    if (inn.stock[mug] - inn.reserved[mug] > 0 && Math.random() < 0.85) {
       yield { wait: 3 };
-      if (!inn.removed && inn.stock.beer > 0) {
-        inn.stock.beer--;
-        u.food = Math.min(1.2, u.food + 0.2);
+      if (!inn.removed && inn.stock[mug] > 0) {
+        inn.stock[mug]--;
+        const dark = mug === 'darkbeer';
+        u.food = Math.min(dark ? 1.4 : 1.2, u.food + (dark ? 0.4 : 0.2));
         // захмелел: через несколько секунд пути свалится спать
-        if (Math.random() < DRUNK_CHANCE) u.drunkAt = Game.time + 3 + Math.random() * 9;
+        if (Math.random() < Math.min(0.95, DRUNK_CHANCE * (dark ? 2 : 1))) u.drunkAt = Game.time + 3 + Math.random() * 9;
       }
     }
   }
@@ -91,10 +94,11 @@ function* eatGen(u, inn) {
 // строящейся дороги и товар, рассыпанный на земле: туда можно сойти с дороги.
 // На складе курьер заходит внутрь — ворота не загорожены. Внутри не больше STORE_CAP.
 const isStoreB = b => !!(b && b.isStore && b.isStore() && !b.isPile);
+function storeCapOf(b) { return (b.def && b.def.storeCap) || STORE_CAP; }
 function storeInside(b) { let n = 0; for (const x of Game.units) if (x.inside === b) n++; return n; }
 
 function* storeVisit(u, b, t) {
-  while (storeInside(b) >= STORE_CAP && !b.removed) yield { wait: 0.4 };
+  while (storeInside(b) >= storeCapOf(b) && !b.removed) yield { wait: 0.4 };
   if (b.removed) return;
   yield { enter: b };
   yield { wait: t };
@@ -144,7 +148,7 @@ function* deliverGen(u, from, to, g, n = 1) {
     }
     if (isStoreB(to)) {
       // заносит внутрь и складывает
-      while (storeInside(to) >= STORE_CAP && !to.removed) yield { wait: 0.4 };
+      while (storeInside(to) >= storeCapOf(to) && !to.removed) yield { wait: 0.4 };
       if (to.removed) continue;
       yield { enter: to };
       to.incoming[g] -= n;
@@ -258,7 +262,7 @@ function* recipeWork(u, b) {
   recipeProduce(b, r);
 }
 
-function gather(b, g) { b.stock[g]++; Game.produced[g]++; }
+function gather(b, g) { const n = b.def.gatherMult || 1; b.stock[g] += n; Game.produced[g] += n; }
 
 function* woodcutterWork(u, b) {
   const R = 9;
