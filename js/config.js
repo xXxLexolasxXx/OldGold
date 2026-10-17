@@ -91,7 +91,7 @@ const BUILDINGS = {
     desc: 'Голодные жители едят здесь курицу, колбасу или хлеб и запивают пивом. Тушку курицы разделывают на 4 куска. Пьяный может уснуть прямо на дороге.',
   },
   bonfire: {
-    name: 'Большой костёр', cat: 'Ресурсы', w: 3, h: 3, top: 78, noRotate: true, cost: { timber: 4, stone: 2 }, auto: true,
+    name: 'Большой костёр', cat: 'Ресурсы', w: 3, h: 3, top: 78, noRotate: true, wideDoor: true, cost: { timber: 4, stone: 2 }, auto: true,
     inputs: { trash: 24 }, outputs: { ash: 6 }, burn: true,
     recipes: [{ in: { trash: 1 }, out: { ash: 1 }, time: 4 }],
     desc: 'Сюда трудяги сносят мусор из урн. Сгорая, он даёт пепел — фермы удобряют им поля, урожай растёт быстрее и богаче.',
