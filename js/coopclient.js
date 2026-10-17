@@ -442,10 +442,13 @@ function coopInitHud() {
     const s = e.target.closest('[data-coop]');
     if (s) coopSlotClick(s, e);
   });
-  document.getElementById('info').addEventListener('click', e => {
-    const s = e.target.closest('[data-coop]');
-    if (s && Coop.on) coopSlotClick(s, e);
-  });
+  if (!Coop.docHook) {   // слоты в карточке героя (#hero-card) и в окне здания
+    Coop.docHook = true;
+    document.addEventListener('click', e => {
+      const s = e.target.closest('#hero-card [data-coop], #info [data-coop]');
+      if (s && Coop.on) coopSlotClick(s, e);
+    });
+  }
   coopRefreshHud();
 }
 
