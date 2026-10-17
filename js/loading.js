@@ -118,9 +118,9 @@
       // нос-картошка, щёки, глаза, усы
       ctx.fillStyle = shade(skin, -0.12);
       ctx.beginPath(); ctx.ellipse(0, hy + 3, 5, 4.4, 0, 0, 7); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = shade('#e08070', 0.1); ctx.globalAlpha = 0.45;
+      ctx.fillStyle = shade('#e08070', 0.1); const ga0 = ctx.globalAlpha; ctx.globalAlpha = ga0 * 0.45;
       for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(s * 9, hy + 5, 3.4, 0, 7); ctx.fill(); }
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = ga0;
       ctx.fillStyle = '#10100c';
       for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(s * 5.6, hy - 3.5, 1.9, 2.5, 0, 0, 7); ctx.fill(); }
       ctx.fillStyle = '#fff'; for (const s of [-1, 1]) ctx.fillRect(s * 5.6 - 0.5 + lit, hy - 5, 1.3, 1.3);
@@ -367,6 +367,264 @@
     ctx.restore();
   }
 
+  // ---------- гномы-работяги по краям: вышли, сделали дело, растворились ----------
+  let U = 1;
+  const stage = { actors: [], next: 1.2, flash: 0, fx: [] };
+  const rr = (a, b) => a + Math.random() * (b - a);
+
+  function drawHen(x, y, s, dir, ph, peck) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(dir * s, s);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(0, 1, 12, 3.5, 0, 0, 7); ctx.fill();
+    const leg = Math.sin(ph) * 3;
+    ctx.strokeStyle = '#d8902a'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-2, -8); ctx.lineTo(-2 + leg, 0); ctx.moveTo(3, -8); ctx.lineTo(3 - leg, 0); ctx.stroke();
+    stroke(1.6);
+    const g = ctx.createRadialGradient(-3, -16, 2, 0, -12, 16); g.addColorStop(0, '#fff8ec'); g.addColorStop(1, '#c8b8a0');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -12, 11, 8.5, -0.1, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8d8c0'; ctx.beginPath(); ctx.moveTo(-9, -16); ctx.quadraticCurveTo(-18, -22, -14, -10); ctx.quadraticCurveTo(-11, -12, -9, -10); ctx.fill(); ctx.stroke();
+    const hy = peck ? -9 + Math.sin(ph * 2) * 3 : -21, hx = peck ? 13 : 9;
+    ctx.fillStyle = '#fff8ec'; ctx.beginPath(); ctx.arc(hx, hy, 5, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8a030'; ctx.beginPath(); ctx.moveTo(hx + 4, hy - 1.5); ctx.lineTo(hx + 10, hy + 0.5); ctx.lineTo(hx + 4, hy + 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#d83a2a'; ctx.beginPath(); ctx.arc(hx - 1, hy - 5, 2.4, 0, 7); ctx.arc(hx + 2, hy - 4.4, 1.8, 0, 7); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(hx + 1.5, hy - 1, 0.9, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+
+  // руки в координатах гнома (ступни в 0,0, плечи на высоте -50)
+  function hands(l, r, col) {
+    if (l) { drawArm(-13, -50, l[0], l[1], 1, col); drawHand(l[0], l[1], 1); }
+    if (r) { drawArm(13, -50, r[0], r[1], 1, col); drawHand(r[0], r[1], 1); }
+  }
+  const sline = (x0, y0, x1, y1, w, col) => {
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = OUT; ctx.lineWidth = w + 2; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  };
+  // облачко частиц в мировых координатах
+  const puff = (x, y, col, n, up) => { for (let i = 0; i < n; i++) stage.fx.push({ x, y, vx: rr(-25, 25), vy: -rr(up * 0.4, up), life: 0, max: rr(0.6, 1.3), r: rr(2, 5), col }); };
+  // точка в локальных координатах гнома -> мир
+  const wp = (a, lx, ly) => [a.x + lx * a.k * a.dir, a.y + ly * a.k];
+
+  // Сценки: draw(a, s, g) рисует орудие и руки в координатах гнома
+  const SKITS = {
+    dig: { dur: 6, draw(a, s, g) {
+      const p = (s * 0.9) % 1;
+      const up = p < 0.55 ? Math.sin(p / 0.55 * Math.PI * 0.5) : Math.max(0, 1 - (p - 0.55) / 0.15);
+      const bx = 34, by = -26 * up, tx = bx - 8, ty = by - 52;
+      sline(bx, by, tx, ty, 3.2, '#8a6030');
+      ctx.fillStyle = '#a0a8b0'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(bx - 6, by - 2); ctx.lineTo(bx + 6, by - 2); ctx.lineTo(bx + 4, by + 9); ctx.lineTo(bx - 4, by + 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+      hands([tx + 3, ty + 16], [tx + 1, ty + 5], g.coat);
+      const k = Math.floor(s * 0.9);
+      if (a.k2 !== k && p > 0.6) { a.k2 = k; a.cnt = (a.cnt || 0) + 1; const [wx, wy] = wp(a, 34, 0); puff(wx, wy, '#8a6a3a', 6, 60); }
+      const m = Math.min(a.cnt || 0, 5);
+      ctx.fillStyle = '#1a0e06'; ctx.beginPath(); ctx.ellipse(34, 1, 9, 3, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#5a3c20'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(56, 0, 6 + m * 3, 2 + m * 1.8, 0, Math.PI, 0); ctx.fill(); ctx.stroke();
+    } },
+    sow: { dur: 6, draw(a, s, g) {
+      const p = (s * 1.2) % 1, sw = Math.sin(p * Math.PI);
+      ctx.fillStyle = '#c8b070'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(-16, -30, 8, 10, 0.2, 0, 7); ctx.fill(); ctx.stroke();
+      hands([-14, -34], [8 + sw * 30, -44 + sw * 6], g.coat);
+      const k = Math.floor(s * 1.2);
+      if (a.k2 !== k) { a.k2 = k; a.seeds = a.seeds || []; for (let i = 0; i < 5; i++) a.seeds.push({ x: rr(32, 70), g: 0 }); }
+      for (const sd of a.seeds || []) {
+        sd.g = Math.min(1, sd.g + 0.01); const h = sd.g * 14;
+        ctx.strokeStyle = '#4a8a22'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sd.x, 0); ctx.lineTo(sd.x, -h); ctx.stroke();
+        if (sd.g > 0.5) { ctx.fillStyle = '#e8c850'; ctx.beginPath(); ctx.ellipse(sd.x, -h - 2, 1.6, 3.4, 0, 0, 7); ctx.fill(); }
+      }
+    } },
+    chop: { dur: 6, draw(a, s, g) {
+      ctx.fillStyle = '#7a5230'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.roundRect(34, -16, 22, 16, 3); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#c8a070'; ctx.beginPath(); ctx.ellipse(45, -16, 11, 4, 0, 0, 7); ctx.fill(); ctx.stroke();
+      const p = (s * 1.1) % 1, sw = p < 0.6 ? p / 0.6 : 1 - (p - 0.6) / 0.4;   // замах медленно, удар быстро
+      const hx = 16, hy = -48, ang = -2.1 + (1 - sw) * 1.9;
+      const ax = hx + Math.cos(ang) * 38, ay = hy + Math.sin(ang) * 38 * -1 * -1;
+      sline(hx, hy, ax, ay, 3, '#7a5230');
+      ctx.fillStyle = '#b8bcc0'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(ax, ay, 6, 0, 7); ctx.fill(); ctx.stroke();
+      hands([hx - 2, hy + 4], [hx + 4, hy + 2], g.coat);
+      const k = Math.floor(s * 1.1);
+      if (a.k2 !== k && p > 0.92) { a.k2 = k; const [wx, wy] = wp(a, 45, -16); puff(wx, wy, '#e8c890', 5, 50); }
+    } },
+    hammer: { dur: 6, draw(a, s, g) {
+      ctx.fillStyle = '#4a4a54'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(24, -22); ctx.lineTo(56, -22); ctx.lineTo(50, -14); ctx.lineTo(46, -8); ctx.lineTo(50, 0); ctx.lineTo(30, 0); ctx.lineTo(34, -8); ctx.lineTo(30, -14); ctx.closePath(); ctx.fill(); ctx.stroke();
+      const p = (s * 1.6) % 1, heat = 0.5 + 0.5 * Math.sin(s * 3);
+      ctx.fillStyle = `rgba(255,${Math.round(110 + 80 * heat)},40,0.95)`; ctx.beginPath(); ctx.roundRect(32, -27, 14, 5, 2); ctx.fill();
+      const up = p < 0.5 ? Math.sin(p / 0.5 * Math.PI * 0.5) : 1 - (p - 0.5) / 0.5;
+      const hx = 20 + up * 4, hy = -52 - up * 14, hd = hy - 8 + (1 - up) * 18;
+      sline(hx, hy, hx + 14, hd, 3, '#6a4424');
+      ctx.fillStyle = '#7a7a84'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.roundRect(hx + 9, hd - 6, 12, 9, 2); ctx.fill(); ctx.stroke();
+      hands([hx - 2, hy + 2], [hx + 4, hy + 4], g.coat);
+      const k = Math.floor(s * 1.6);
+      if (a.k2 !== k && p > 0.55) { a.k2 = k; const [wx, wy] = wp(a, 38, -26); puff(wx, wy, '#ffc050', 7, 80); }
+    } },
+    mine: { dur: 6, draw(a, s, g) {
+      ctx.fillStyle = '#7a7a84'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(36, 0); ctx.lineTo(40, -26); ctx.lineTo(54, -34); ctx.lineTo(68, -22); ctx.lineTo(66, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e8c840'; for (const [x, y] of [[50, -20], [58, -12], [46, -8]]) { ctx.beginPath(); ctx.arc(x, y, 2 + Math.sin(s * 5 + x) * 0.6, 0, 7); ctx.fill(); }
+      const p = (s * 1.3) % 1, up = p < 0.6 ? p / 0.6 : 1 - (p - 0.6) / 0.4;
+      const hx = 14, hy = -52, ax = hx + 26, ay = hy - 8 + (1 - up) * 26 - 14 * up;
+      sline(hx, hy, ax, ay, 3, '#6a4424');
+      ctx.strokeStyle = '#9a9ea8'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.moveTo(ax - 2, ay - 9); ctx.quadraticCurveTo(ax + 10, ay - 2, ax + 3, ay + 11); ctx.stroke();
+      hands([hx - 3, hy + 3], [hx + 4, hy + 2], g.coat);
+      const k = Math.floor(s * 1.3);
+      if (a.k2 !== k && p > 0.95) { a.k2 = k; const [wx, wy] = wp(a, 44, -22); puff(wx, wy, '#fff0a0', 7, 80); }
+    } },
+    pipe: { dur: 6.5, draw(a, s, g) {
+      ctx.fillStyle = '#7a5230'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.roundRect(-40, -14, 22, 14, 3); ctx.fill(); ctx.stroke();
+      hands([-6, -42], [12, -48 + Math.sin(s * 1.8) * 4], g.coat);
+      sline(8, -52, 20, -56, 2.6, '#5a3a1e'); ctx.fillStyle = '#4a2e18'; ctx.beginPath(); ctx.roundRect(18, -64, 7, 10, 2); ctx.fill();
+      if (Math.floor(s * 2) !== a.k2) { a.k2 = Math.floor(s * 2); const [wx, wy] = wp(a, 22, -66); puff(wx, wy, 'rgba(210,210,220,0.8)', 2, 36); }
+      const fa = s * 4.5;   // муха кружит у головы
+      ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(Math.cos(fa) * 20, -78 + Math.sin(fa * 1.3) * 10, 1.6, 0, 7); ctx.fill();
+    } },
+    drunk: { dur: 7, draw(a, s, g) {
+      a.rot = (s < 3.5 ? Math.sin(s * 2.4) * 0.14 * (s / 3.5) : Math.min(1.5, (s - 3.5) * 1.6)) * a.dir;
+      ctx.fillStyle = '#c89a4a'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.roundRect(14, -62, 11, 14, 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f4f0e0'; ctx.fillRect(14, -65, 11, 4);
+      hands([-2, -34], [16, -52], g.coat);
+    } },
+    wizard: { dur: 6, draw(a, s, g) {
+      const lx = 26, ly = -62 + Math.sin(s * 2) * 4;
+      sline(lx - 6, ly + 14, lx - 8, -2, 3, '#7a5a8a');
+      hands([-4, -40], [lx - 6, ly + 10], g.coat);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const og = ctx.createRadialGradient(lx + 10, ly - 8, 0, lx + 10, ly - 8, 22); og.addColorStop(0, 'rgba(200,160,255,0.9)'); og.addColorStop(1, 'rgba(120,80,255,0)');
+      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(lx + 10, ly - 8, 22, 0, 7); ctx.fill();
+      for (let i = 0; i < 8; i++) { const an = s * 3 + i * 0.8, r = 10 + i * 2.5; ctx.fillStyle = `rgba(255,${180 + i * 8},255,${0.9 - i * 0.08})`; ctx.beginPath(); ctx.arc(lx + 10 + Math.cos(an) * r, ly - 8 + Math.sin(an) * r * 0.6, 1.8, 0, 7); ctx.fill(); }
+      ctx.restore();
+    } },
+    tree: { dur: 7, draw(a, s, g) {
+      const grow = Math.max(0, Math.min(1, (s - 1.6) / 3.6)), dig = s < 1.6;
+      hands(dig ? [18 + Math.sin(s * 6) * 4, -30] : [14, -44], dig ? [22, -26] : [24 + Math.sin(s * 4) * 6, -64], g.coat);
+      ctx.fillStyle = '#5a3c20'; ctx.beginPath(); ctx.ellipse(46, 0, 12, 3, 0, Math.PI, 0); ctx.fill();
+      if (!dig) {
+        const h = 6 + grow * 56; sline(46, 0, 46, -h, 2 + grow * 4, '#6a4424');
+        ctx.fillStyle = '#4a8a2a'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.6;
+        const cr = 4 + grow * 20;
+        for (const [dx, dy, r] of [[0, 0, 1], [-0.7, 0.5, 0.8], [0.7, 0.5, 0.8], [0, -0.7, 0.8]]) { ctx.beginPath(); ctx.arc(46 + dx * cr, -h - 2 + dy * cr * 0.8, cr * r, 0, 7); ctx.fill(); ctx.stroke(); }
+      }
+    } },
+    hen: { dur: 7, draw(a, s, g) {
+      const panic = s > 1.4 ? Math.sin(s * 14) : 0;
+      hands([-14 + panic * 4, -70 - Math.abs(panic) * 8], [14 - panic * 4, -70 - Math.abs(panic) * 8], g.coat);
+      if (s > 1.2) {
+        ctx.save(); ctx.scale(a.dir, 1); ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.strokeStyle = OUT; ctx.lineWidth = 3.5;
+        const ty = -112 - Math.abs(panic) * 3; ctx.strokeText('Ай-яй!', 0, ty); ctx.fillText('Ай-яй!', 0, ty); ctx.restore();
+      }
+    } },
+    zap: { dur: 7, draw(a, s, g) {
+      const t0 = 2.2;
+      hands([-12, -34], [18, -46 + (s < t0 ? Math.sin(s * 5) * 5 : 0)], g.coat);
+      if (s > t0 && !a.zapped) { a.zapped = true; stage.flash = 0.55; a.bolt = 0.3; const [wx, wy] = wp(a, 0, -80); puff(wx, wy, '#555', 10, 60); }
+      if (s > t0 + 0.2 && s < t0 + 4) {
+        ctx.fillStyle = 'rgba(60,60,60,0.5)';
+        for (let i = 0; i < 3; i++) { const py = -96 - ((s * 30 + i * 18) % 50); ctx.beginPath(); ctx.arc(Math.sin(s * 3 + i) * 7, py, 5 + i, 0, 7); ctx.fill(); }
+      }
+      if (s > t0 + 0.3) { ctx.fillStyle = '#ffe070'; for (let i = 0; i < 3; i++) { const an = s * 6 + i * 2.1; ctx.beginPath(); ctx.arc(Math.cos(an) * 16, -112 + Math.sin(an) * 4, 2, 0, 7); ctx.fill(); } }
+    } },
+  };
+
+  function newActor(side) {
+    const types = Object.keys(SKITS).filter(k => !stage.actors.some(a => a.type === k));
+    const type = types[(Math.random() * types.length) | 0];
+    const tall = H > W * 1.05;                 // телефон в портрете: ряд на дальней поляне между заголовком и костром
+    const k = U * (tall ? 1.0 : 1.5) * rr(0.92, 1.08);
+    const zone = tall ? [W * 0.1, W * 0.9] : side < 0 ? [W * 0.03, W * 0.095] : [W * 0.905, W * 0.97];
+    const x = rr(zone[0], zone[1]);
+    const y = tall ? H * rr(0.575, 0.62) : H * rr(0.83, 0.9);
+    const g = CREW[(Math.random() * CREW.length) | 0];
+    const fromX = x < W / 2 ? -70 : W + 70;
+    return { type, g, k, x: fromX, y, dir: x > fromX ? 1 : -1, look: (Math.random() * 99) | 0, state: 'enter', t: 0, s: 0, alpha: 1, fromX, toX: x, rot: 0, bolt: 0, ph: Math.random() * 7, drag: 0 };
+  }
+
+  window.loadingSpawn = (type, side) => { const a = newActor(side || -1); a.type = type; stage.actors.push(a); };
+  function stageUpdate(dt) {
+    stage.next -= dt;
+    const cap = H > W * 1.05 ? 2 : 4;
+    if (stage.next <= 0 && stage.actors.length < cap) {
+      const left = stage.actors.filter(a => a.toX < W / 2).length;
+      stage.actors.push(newActor(left <= stage.actors.length - left ? -1 : 1));
+      stage.next = rr(1.2, 2.8);
+    }
+    for (const a of stage.actors) {
+      a.t += dt;
+      if (a.state === 'enter') {
+        const p = Math.min(1, a.t / 1.5);
+        a.x = a.fromX + (a.toX - a.fromX) * (1 - (1 - p) * (1 - p));
+        if (p >= 1) { a.state = 'act'; a.s = 0; a.dir = a.toX > W / 2 ? -1 : 1; }
+      } else if (a.state === 'act') {
+        a.s += dt;
+        if (a.type === 'hen') {
+          if (a.s > 1.5) { a.drag += dt; a.x += (a.toX < W / 2 ? -1 : 1) * Math.min(300, a.drag * 160) * dt; }
+          if (a.x < -110 || a.x > W + 110 || a.s > 10) a.state = 'gone';
+        } else if (a.s >= SKITS[a.type].dur) {
+          a.state = 'fade'; a.t = 0;
+          const [wx, wy] = wp(a, 0, -40); puff(wx, wy, 'rgba(255,230,150,0.9)', 14, 70);
+        }
+      } else if (a.state === 'fade') {
+        a.alpha = Math.max(0, 1 - a.t / 1.1);
+        if (Math.random() < dt * 30) { const [wx, wy] = wp(a, rr(-14, 14), -rr(10, 90)); puff(wx, wy, 'rgba(255,230,150,0.9)', 1, 60); }
+        if (a.alpha <= 0) a.state = 'gone';
+      }
+    }
+    stage.actors = stage.actors.filter(a => a.state !== 'gone');
+    for (let i = stage.fx.length - 1; i >= 0; i--) { const p = stage.fx[i]; p.life += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 30 * dt; if (p.life > p.max) stage.fx.splice(i, 1); }
+    stage.flash = Math.max(0, stage.flash - dt * 1.8);
+  }
+
+  function drawStage() {
+    const list = stage.actors.slice().sort((p, q) => p.y - q.y);
+    for (const a of list) {
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.globalAlpha = a.alpha;
+      // курицы налетают с обеих сторон, клюют и тащат гнома за бороду и колпак
+      if (a.type === 'hen' && a.state !== 'enter') {
+        for (let i = 0; i < 2; i++) {
+          const sgn = i ? 1 : -1, fl = sgn * 36 * a.k, p = Math.min(1, a.s / 1.4);
+          const x = fl + sgn * (1 - p) * (a.x < W / 2 ? 260 : 260) * (1 - p) * 0 + sgn * (1 - p) * 240;
+          drawHen(x, 2, a.k * 0.9, -sgn, a.s * 12 + i * 1.7, p >= 1);
+        }
+      }
+      ctx.save();
+      ctx.scale(a.dir, 1);
+      ctx.translate(0, a.state === 'enter' ? -Math.abs(Math.sin(a.t * 9)) * 3 * a.k : 0);
+      if (a.rot) ctx.rotate(a.rot * a.dir);
+      const xray = a.type === 'zap' && a.s > 2.2 && a.s < 2.45, charred = a.type === 'zap' && a.s >= 2.45;
+      if (xray) ctx.filter = 'invert(1) contrast(1.4)'; else if (charred) ctx.filter = 'brightness(0.28) sepia(0.8)';
+      const lit = (a.toX < W / 2 ? 1 : -1) * a.dir;
+      drawGnome(a.g, 0, 0, a.k, 'front', lit, a.state === 'enter' ? Math.sin(a.t * 9) * 2 : Math.sin(a.t * 2 + a.ph), a.look);
+      ctx.filter = 'none';
+      ctx.save(); ctx.scale(a.k, a.k);
+      if (a.state === 'enter') hands([-8, -32 + Math.sin(a.t * 9) * 3], [8, -32 - Math.sin(a.t * 9) * 3], a.g.coat);
+      else SKITS[a.type].draw(a, a.s, a.g);
+      ctx.restore();
+      if (a.type === 'drunk' && a.s > 3.4) {
+        ctx.save(); ctx.font = 'bold 14px sans-serif'; ctx.fillStyle = '#e8e0ff'; ctx.strokeStyle = OUT; ctx.lineWidth = 3;
+        for (let i = 0; i < 3; i++) { const zy = -60 * a.k - ((a.s * 18 + i * 14) % 42), zx = 30 + i * 9; ctx.strokeText('z', zx, zy); ctx.fillText('z', zx, zy); }
+        ctx.restore();
+      }
+      ctx.restore();
+      ctx.restore();
+      if (a.bolt > 0) {   // молния с неба в гнома
+        a.bolt -= 0.016;
+        ctx.save(); ctx.strokeStyle = '#fff'; ctx.shadowColor = '#bcd8ff'; ctx.shadowBlur = 18; ctx.lineWidth = 3.4; ctx.beginPath();
+        let bx = a.x + rr(-6, 6), by = -260; ctx.moveTo(bx, by);
+        while (by < a.y - 84 * a.k) { by += 34; bx += rr(-22, 22); ctx.lineTo(bx, by); }
+        ctx.lineTo(a.x, a.y - 84 * a.k); ctx.stroke(); ctx.restore();
+      }
+    }
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const p of stage.fx) {
+      const al = Math.max(0, 1 - p.life / p.max);
+      ctx.globalAlpha = al; ctx.fillStyle = p.col;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (0.6 + al * 0.6), 0, 7); ctx.fill();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   // ---------- кадр ----------
   let last = performance.now(), running = true, T0 = last, lift = 0;
   function frame(now) {
@@ -377,7 +635,7 @@
     ctx.clearRect(0, 0, W, H);
     const menu = document.getElementById("loading").classList.contains("with-menu");
     const sm = document.getElementById("start-menu"), mh = menu && sm ? sm.offsetHeight : 0;
-    lift += ((menu ? Math.max(0, Math.min(H * 0.32, mh * 0.85 - H * 0.02)) : 0) - lift) * Math.min(1, dt * 4);
+    lift += ((menu ? Math.max(0, Math.min(H * 0.42, mh * (H > W ? 1.02 : 0.85) - H * 0.02)) : 0) - lift) * Math.min(1, dt * 4);
     ctx.translate(0, -lift);
     drawBackground(t);
     // летающая нечисть — вдали, тусклая, под дымкой
@@ -390,7 +648,8 @@
     fog.addColorStop(0, 'rgba(90,80,120,0)'); fog.addColorStop(0.5, 'rgba(110,100,140,0.18)'); fog.addColorStop(1, 'rgba(90,80,120,0)');
     ctx.fillStyle = fog; ctx.fillRect(0, H * 0.55, W, H * 0.2);
 
-    const u = Math.min(W, H * 1.45) / 1000 * (1 - lift / H * 0.8);           // масштаб сцены
+    const u = Math.min(W, H * 1.45) / 1000 * (1 - lift / H * 0.8);
+    U = u;
     const cx = W / 2, cy = H * 0.76, S = u * 2.5;
     const flick = 0.85 + 0.15 * Math.sin(t * 11) * Math.sin(t * 7.3);
     // отсвет огня на земле
@@ -402,6 +661,7 @@
     ctx.strokeStyle = '#243a22'; ctx.lineWidth = 1.2;
     for (const g of tufts) { const x = g.x * W, y = H * 0.7 + (g.y - 0.6) * H * 0.75; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.sin(t + x) * 2, y - g.h); ctx.stroke(); }
 
+    stageUpdate(dt); drawStage();
     // гномы по эллипсу: сзади огня — лицом к нам, спереди — спиной
     const N = CREW.length, rx = 255 * u * 1.7, ry = 70 * u * 1.7;
     const ring = [];
@@ -454,6 +714,7 @@
     const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.65)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    if (stage.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(0.8, stage.flash)})`; ctx.fillRect(0, 0, W, H); }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
