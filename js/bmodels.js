@@ -51,10 +51,10 @@ const SIGN_QUEUE = { list: [] };
 
 // стиль текущего здания (выбирается по типу): бревенчатая изба, белёный коттедж под
 // соломой или светлый фахверковый дом под красной черепицей — как во второй деревне референсов
-let BUILD_STYLE = 'logs';
+let BUILD_STYLE = 'logs', BUILD_TYPE = '';
 const COTTAGE_TYPES = new Set(['inn', 'brewery', 'butchery', 'hopfarm', 'stable']);
 const REDROOF_TYPES = new Set(['school', 'mill', 'sawmill', 'metallurgist', 'armory', 'magicworkshop', 'goatpen', 'swine']);
-const DWARF_TYPES = new Set(['storehouse', 'inn']);   // «Оплот»: каменные гномьи дома под тёмной дранкой
+const DWARF_TYPES = new Set(['storehouse']);   // «Оплот»: приземистый каменный склад под холодным сланцем (трактир — тёплый коттедж под соломой)
 const RED_TILES = ['#b04a2c', '#a8432a', '#ba5532'];
 const RED_WALLS = ['#e6d4b0', '#ead9b8', '#dfcca6'];
 function styleOf(type) { return DWARF_TYPES.has(type) ? 'dwarf' : COTTAGE_TYPES.has(type) ? 'cottage' : REDROOF_TYPES.has(type) ? 'red' : 'logs'; }
@@ -102,9 +102,9 @@ function gnomePart(p) {
   if (q.roof) {
     const r = q.roof = { ...q.roof };
     if (dwarf) {
-      // тёмная лиственничная дранка во мху, крутая, с глубоким свесом
-      r.mat = 'shingle'; r.col = ['#5a4028', '#664830', '#52391f'][h % 3];
-      r.rise = (r.rise ?? 18) * 0.95;
+      // холодный серо-синий сланец, пологий и тяжёлый, с глубоким свесом — склад не спутать с тёплым трактиром
+      r.mat = 'slate'; r.col = ['#6a6e74', '#62666c', '#72767c'][h % 3];
+      r.rise = (r.rise ?? 18) * 0.8;
       r.ov = (r.ov ?? 4) + 2;
     } else if (red) {
       // тёплая красно-бурая черепица, ровный конёк, немного мха только у свеса
@@ -113,7 +113,7 @@ function gnomePart(p) {
       r.ov = (r.ov ?? 4) + 1.6;
     } else if (cottage) {
       // толстая соломенная крыша, выше и с глубоким свесом
-      r.mat = 'thatch'; r.col = ['#7a6848', '#706044', '#84704c'][h % 3];
+      r.mat = 'thatch'; r.col = BUILD_TYPE === 'inn' ? ['#d2b45c', '#c8aa52', '#dcbe66'][h % 3] : ['#7a6848', '#706044', '#84704c'][h % 3];   // трактир — яркая золотая солома
       r.rise = (r.rise ?? 18) * 1.25;
       r.ov = (r.ov ?? 4) + 2.6;
     } else {
@@ -703,8 +703,9 @@ const MODELS = {
     m.prop((c, x, y) => cart(c, x - 8, y, '#d8c8a0'), 22, -6);
     // склад вросся в скалу: валуны по бокам и за спиной, знамёна у ворот
     dwarfRocks(m, [[16, 94, 13, 10], [118, 86, 12, 9], [78, 92, 12, 9]]);
-    m.prop((c, x, y) => dwarfBanner(c, x, y, '#2f6a3a', 38), 46, -4);
-    m.prop((c, x, y) => dwarfBanner(c, x, y, '#7a2a22', 38), 116, -4);
+    m.prop((c, x, y) => hoistCrane(c, x, y), 128, 6);                                   // подъёмная стрела с ящиком — сразу видно: склад
+    m.prop((c, x, y) => { crate(c, x, y, 8, '#8a6030'); crate(c, x + 9, y + 1, 7); crate(c, x + 4, y - 7, 6.5); }, 46, -3);
+    m.prop((c, x, y) => { sack(c, x, y, '#c8b890'); sack(c, x + 6, y + 1); sack(c, x + 3, y - 5, '#d8c8a0'); }, 108, -3);
   },
 
   school(m) {
@@ -775,9 +776,8 @@ const MODELS = {
     m.prop((c, x, y) => barrel(c, x, y), 104, 14);
     m.prop((c, x, y) => barrel(c, x, y, 0.8), 110, 12);
     m.prop((c, x, y) => crate(c, x, y, 6), 116, 14);
-    dwarfRocks(m, [[14, 76, 12, 9], [96, 80, 14, 10]]);
-    m.prop((c, x, y) => dwarfBanner(c, x, y, '#2f6a3a', 40), 70, -3);
-    m.prop((c, x, y) => dwarfBanner(c, x, y, '#b08a30', 40), 100, -3);
+    m.prop((c, x, y) => innMugSign(c, x, y), 92, -2);                                    // огромная кружка на кронштейне — вывеска трактира
+    m.prop((c, x, y) => { for (const k of [0, 1, 2]) { c.fillStyle = k % 2 ? '#f0e6d0' : '#b8442a'; c.fillRect(x - 15 + k * 10, y - 1, 10, 4); } }, m.doorX, 1);   // полосатый коврик у двери
   },
 
   woodcutter(m) {
@@ -1320,9 +1320,9 @@ function buildingSpriteBase(type, rot = 0, level = 1) {
   MODELS[type](m);
   if (level === 2) spr.tall = upgradeModel(m);
   SIGN_QUEUE.list = [];
-  BUILD_STYLE = styleOf(type);
+  BUILD_STYLE = styleOf(type); BUILD_TYPE = type;
   renderModel(c, m);
-  BUILD_STYLE = 'logs';
+  BUILD_STYLE = 'logs'; BUILD_TYPE = '';
   for (const s of SIGN_QUEUE.list) postSign(c, s.x, s.y, s.kind, s.dir);
   SIGN_QUEUE.list = [];
   // без зерна: шумовая рябь выдаёт машину, у художника — цельные пятна цвета
@@ -1441,6 +1441,36 @@ function dwarfBanner(c, x, y, col = '#2f6a3a', h = 34) {
   c.beginPath(); c.moveTo(x - 5, y - h + 3); c.lineTo(x + 5, y - h + 3); c.lineTo(x + 5, y - h + 15.6); c.lineTo(x, y - h + 12.4); c.lineTo(x - 5, y - h + 15.6); c.closePath(); c.stroke();
   // руна-молот
   c.fillStyle = '#f0d070'; c.fillRect(x - 0.5, y - h + 5, 1, 6); c.fillRect(x - 2.4, y - h + 5, 4.8, 1.6);
+}
+// подъёмная стрела склада: столб, вынос с блоком, верёвка и ящик на крюке
+function hoistCrane(c, x, y) {
+  shadowAt(c, x + 2, y, 5);
+  c.fillStyle = lingrad(c, x - 2, 0, x + 2, 0, [[0, '#8a5a30'], [1, '#3e2410']]); c.fillRect(x - 2, y - 46, 4, 46);
+  line(c, x, y - 40, x - 20, y - 44, '#6a4422', 2.6);                    // стрела
+  line(c, x, y - 30, x - 14, y - 43, '#4a2c14', 1.4);                    // подкос
+  ellipse(c, x - 20, y - 43.4, 2.2, 2.2, '#3a3632'); ellipse(c, x - 20, y - 43.4, 0.9, 0.9, '#9e958a');   // блок
+  line(c, x - 20, y - 42, x - 20, y - 24, '#d8c8a0', 0.7);               // верёвка
+  c.strokeStyle = '#3a3632'; c.lineWidth = 0.8; c.beginPath(); c.arc(x - 20, y - 23, 1.6, 0, Math.PI); c.stroke();
+  crate(c, x - 20, y - 14, 9, '#a07038');
+  ellipse(c, x, y + 0.5, 3.6, 1.5, '#8e877c');
+}
+// вывеска трактира: большая янтарная кружка с пеной, подвешенная на кованом кронштейне над улицей
+function innMugSign(c, x, y) {
+  const H = 50, top = y - H, mx = x + 14, my = top + 11;
+  shadowAt(c, x + 1, y, 5);
+  c.fillStyle = lingrad(c, x - 1.6, 0, x + 1.6, 0, [[0, '#9a6a38'], [0.5, '#7a4e2a'], [1, '#3e2410']]); c.fillRect(x - 1.6, top, 3.2, H);
+  c.fillStyle = '#5a3a1e'; c.fillRect(x - 2.2, top - 1, 4.4, 1.6);
+  line(c, x + 1, top + 1, mx + 4, top + 1, '#2a2624', 1.1); line(c, x + 1, top + 9, mx - 2, top + 1.4, '#2a2624', 0.8);   // кронштейн и подкос
+  for (const k of [-4, 4]) line(c, mx + k, top + 1.4, mx + k * 0.9, my - 6, '#3a3632', 0.5);                         // цепочки
+  c.fillStyle = lingrad(c, mx - 7, 0, mx + 7, 0, [[0, '#f0c050'], [0.55, '#d89a28'], [1, '#8a5a14']]); c.fillRect(mx - 7, my - 5, 14, 17);   // кружка
+  c.strokeStyle = '#4a2c0c'; c.lineWidth = 0.8; c.strokeRect(mx - 7, my - 5, 14, 17);
+  for (const k of [-2.5, 2.5]) line(c, mx + k, my - 4, mx + k, my + 11, 'rgba(60,30,6,0.5)', 0.6);
+  c.fillStyle = '#6a4a14'; c.fillRect(mx - 7, my + 0.5, 14, 1); c.fillRect(mx - 7, my + 8, 14, 1);
+  c.strokeStyle = '#d89a28'; c.lineWidth = 2.2; c.beginPath(); c.arc(mx + 8.4, my + 4, 4.2, -1.45, 1.45); c.stroke();    // ручка
+  c.strokeStyle = '#4a2c0c'; c.lineWidth = 0.7; c.beginPath(); c.arc(mx + 8.4, my + 4, 5.3, -1.45, 1.45); c.stroke();
+  for (const [dx, r] of [[-4.6, 3.2], [-0.8, 3.8], [3.6, 3.2]]) ellipse(c, mx + dx, my - 5.2, r, r * 0.85, '#fffbe8');   // пена
+  ellipse(c, mx + 6, my - 6.8, 1.6, 1.4, '#fffbe8'); ellipse(c, mx - 6.2, my - 4.4, 1.5, 1.3, '#f0e6c8');
+  c.fillStyle = 'rgba(255,255,255,0.4)'; c.fillRect(mx - 5.6, my - 3, 1.4, 12);
 }
 // валун-соседство: дом вросся в скалу
 function dwarfRocks(m, list) {
