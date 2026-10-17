@@ -132,9 +132,9 @@ const MILL_W = 56, MILL_H = 112, MILL_AX = 28, MILL_AY = 104, MILL_HUB = [28, 30
 
 const MILL_PAL = {
   K: '#24120a',
-  a: '#fbf1d8', b: '#efe2c4', c: '#dccba8', d: '#c3b08c', e: '#a08e6e', f: '#7c6c54',   // белёная штукатурка: свет → тень
+  a: '#d4cab4', b: '#bfb59e', c: '#a89d85', d: '#90856f', e: '#72695a', f: '#554d41',   // бутовый камень башни: свет → тень
   A: '#b8b0a2', B: '#9a9286', C: '#7c746a', D: '#5e5850', N: '#3e3a34',                // камень цоколя
-  r: '#e07448', s: '#c85a32', t: '#ac462a', u: '#8c3624', v: '#6c281a', w: '#4c1c14',   // красная черепица
+  r: '#8a6038', s: '#74502e', t: '#60421f', u: '#4c3219', v: '#3a250f', w: '#27180a',   // тёмная дранка колпака
   o: '#2a140a', p: '#a8703c', P: '#cc945a', n: '#5a3018', y: '#f4c848',                // дверь
   L: '#ffe9a0', l: '#f0b050', h: '#7a4a1e',                                           // тёплое окошко
   M: '#d4e88a', m: '#9cc44c', g: '#6a9a34', G: '#43682a', H: '#2c461c',               // мох, трава
@@ -209,7 +209,12 @@ function millArt() {
         const row = Math.floor((y - 86) / 3), off = row % 2 ? 2 : 0;
         const seamV = (x + off) % 5 === 0, seamH = (y - 86) % 3 === 2;
         G.set(x, y, seamV || seamH ? P.N : stone[k]);
-      } else G.set(x, y, plaster[k]);
+      } else {
+        // кладка: ряды камней со сдвигом и тёмными швами
+        const row = Math.floor((y - 36) / 4), off = row % 2 ? 3 : 0;
+        const seamV = (x + off) % 6 === 0, seamH = (y - 36) % 4 === 3;
+        G.set(x, y, seamH ? plaster[Math.min(5, k + 2)] : seamV ? plaster[Math.min(5, k + 1)] : plaster[k]);
+      }
     }
   }
   // кое-где из-под штукатурки видны камни — следы времени
@@ -244,7 +249,7 @@ function millArt() {
   for (let x = cx - 19; x <= cx + 19; x++) if ((x - cx) % 3 === 0) G.set(x, 34, P.w);   // зубчатый свес
   // шпиль с флажком
   for (let y = 0; y < 6; y++) G.set(cx, y, P.k);
-  G.set(cx + 1, 0, P.s); G.set(cx + 2, 0, P.s); G.set(cx + 1, 1, P.s);
+  G.set(cx + 1, 0, '#4aa05a'); G.set(cx + 2, 0, '#4aa05a'); G.set(cx + 1, 1, '#2f7a40');   // зелёный вымпел
   // окна и дверь — дверь правее центра, над клеткой входа
   G.stamp(MILL_STAMP.window, cx - 8, 46, P);
   G.stamp(MILL_STAMP.window, cx + 3, 64, P);

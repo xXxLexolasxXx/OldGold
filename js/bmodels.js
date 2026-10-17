@@ -54,9 +54,10 @@ const SIGN_QUEUE = { list: [] };
 let BUILD_STYLE = 'logs';
 const COTTAGE_TYPES = new Set(['inn', 'brewery', 'butchery', 'hopfarm', 'stable']);
 const REDROOF_TYPES = new Set(['school', 'mill', 'sawmill', 'metallurgist', 'armory', 'magicworkshop', 'goatpen', 'swine']);
+const DWARF_TYPES = new Set(['storehouse', 'inn']);   // «Оплот»: каменные гномьи дома под тёмной дранкой
 const RED_TILES = ['#b04a2c', '#a8432a', '#ba5532'];
 const RED_WALLS = ['#e6d4b0', '#ead9b8', '#dfcca6'];
-function styleOf(type) { return COTTAGE_TYPES.has(type) ? 'cottage' : REDROOF_TYPES.has(type) ? 'red' : 'logs'; }
+function styleOf(type) { return DWARF_TYPES.has(type) ? 'dwarf' : COTTAGE_TYPES.has(type) ? 'cottage' : REDROOF_TYPES.has(type) ? 'red' : 'logs'; }
 
 const LOG_COLS = ['#7a4e2c', '#84562e', '#6e4628', '#8a5e34'];
 
@@ -64,8 +65,22 @@ function gnomePart(p) {
   if (p._g) return p;
   const q = { ...p, _g: true, moss: true };
   const h = hashStr(`${p.x0},${p.y0},${p.h}`);
-  const cottage = BUILD_STYLE === 'cottage', red = BUILD_STYLE === 'red';
-  if ((q.wall === 'plaster' || q.wall === 'brick' || q.wall === 'plank' || q.wall === 'logs') && red) {
+  const cottage = BUILD_STYLE === 'cottage', red = BUILD_STYLE === 'red', dwarf = BUILD_STYLE === 'dwarf';
+  if (dwarf) {
+    // Оплот: массивный бутовый камень, у высоких домов — тёплый фахверковый верх на каменном низу
+    const tall = (q.h || 0) >= 40;
+    if (tall) {
+      q.wall = 'plaster'; q.col = ['#e2d2ac', '#dccba4', '#e6d8b6'][h % 3];
+      q.frame = true; q.beam = '#3a2414'; q.gableWall = 'plaster'; q.gableCol = q.col; q.gableFrame = true;
+      q.lowerStone = Math.max(q.lowerStone || 0, 22);
+    } else {
+      q.wall = 'fieldstone'; q.col = ['#9a907a', '#8e866f', '#a29882'][h % 3];
+      q.frame = false; q.gableWall = 'fieldstone'; q.gableCol = q.col; q.beam = '#3a2414';
+      q.lowerStone = 0;
+    }
+    q.stoneCol = '#8a806a';
+    q.cottage = false;
+  } else if ((q.wall === 'plaster' || q.wall === 'brick' || q.wall === 'plank' || q.wall === 'logs') && red) {
     // светлая штукатурка, тёмный фахверк, каменный цоколь
     q.wall = 'plaster'; q.col = RED_WALLS[h % 3];
     q.frame = true; q.beam = '#3e2416'; q.gableWall = 'plaster'; q.gableCol = q.col; q.gableFrame = true;
@@ -86,7 +101,12 @@ function gnomePart(p) {
   if (q.lowerStone) { q.lowerStone = Math.max(q.lowerStone, 7); q.stoneCol = '#8e8a78'; }
   if (q.roof) {
     const r = q.roof = { ...q.roof };
-    if (red) {
+    if (dwarf) {
+      // тёмная лиственничная дранка во мху, крутая, с глубоким свесом
+      r.mat = 'shingle'; r.col = ['#5a4028', '#664830', '#52391f'][h % 3];
+      r.rise = (r.rise ?? 18) * 0.95;
+      r.ov = (r.ov ?? 4) + 2;
+    } else if (red) {
       // тёплая красно-бурая черепица, ровный конёк, немного мха только у свеса
       r.mat = 'tiles'; r.col = RED_TILES[h % 3];
       r.rise = (r.rise ?? 18) * 1.15;
@@ -681,6 +701,10 @@ const MODELS = {
     m.prop((c, x, y) => sack(c, x, y, '#c8b890'), 118, 2);
     m.prop((c, x, y) => sack(c, x, y), 14, 4);
     m.prop((c, x, y) => cart(c, x - 8, y, '#d8c8a0'), 22, -6);
+    // склад вросся в скалу: валуны по бокам и за спиной, знамёна у ворот
+    dwarfRocks(m, [[16, 94, 13, 10], [118, 86, 12, 9], [78, 92, 12, 9]]);
+    m.prop((c, x, y) => dwarfBanner(c, x, y, '#2f6a3a', 38), 46, -4);
+    m.prop((c, x, y) => dwarfBanner(c, x, y, '#7a2a22', 38), 116, -4);
   },
 
   school(m) {
@@ -751,6 +775,9 @@ const MODELS = {
     m.prop((c, x, y) => barrel(c, x, y), 104, 14);
     m.prop((c, x, y) => barrel(c, x, y, 0.8), 110, 12);
     m.prop((c, x, y) => crate(c, x, y, 6), 116, 14);
+    dwarfRocks(m, [[14, 76, 12, 9], [96, 80, 14, 10]]);
+    m.prop((c, x, y) => dwarfBanner(c, x, y, '#2f6a3a', 40), 70, -3);
+    m.prop((c, x, y) => dwarfBanner(c, x, y, '#b08a30', 40), 100, -3);
   },
 
   woodcutter(m) {
@@ -1394,4 +1421,23 @@ function drawDwarfBakery(c, m) {
   line(c, x + 13, y + 1, x + 16, y - 16, '#8a5a30', 1);
   ellipse(c, x + 12.6, y + 1.6, 2.2, 1.2, '#a06a3a');
   if (m.sign) SIGN_QUEUE.list.push({ x: x - 30, y: y + 2, kind: m.sign, dir: -1 });
+}
+
+// ---------- Мелочи Оплота ----------
+// знамя на древке: бархатное полотнище с золотой каймой и рунным знаком
+function dwarfBanner(c, x, y, col = '#2f6a3a', h = 34) {
+  shadowAt(c, x + 1, y, 3);
+  c.fillStyle = '#4a2c14'; c.fillRect(x - 0.7, y - h, 1.4, h);
+  c.fillStyle = '#c8a040'; ellipse(c, x, y - h - 0.6, 1.5, 1.5, '#c8a040');
+  c.fillRect(x - 6.5, y - h + 1.5, 13, 1);
+  c.fillStyle = lingrad(c, x - 5, 0, x + 5, 0, [[0, shade(col, 0.2)], [1, shade(col, -0.3)]]);
+  c.beginPath(); c.moveTo(x - 5.5, y - h + 2.5); c.lineTo(x + 5.5, y - h + 2.5); c.lineTo(x + 5.5, y - h + 17); c.lineTo(x, y - h + 13.5); c.lineTo(x - 5.5, y - h + 17); c.closePath(); c.fill();
+  c.strokeStyle = '#d8b050'; c.lineWidth = 0.6;
+  c.beginPath(); c.moveTo(x - 5, y - h + 3); c.lineTo(x + 5, y - h + 3); c.lineTo(x + 5, y - h + 15.6); c.lineTo(x, y - h + 12.4); c.lineTo(x - 5, y - h + 15.6); c.closePath(); c.stroke();
+  // руна-молот
+  c.fillStyle = '#f0d070'; c.fillRect(x - 0.5, y - h + 5, 1, 6); c.fillRect(x - 2.4, y - h + 5, 4.8, 1.6);
+}
+// валун-соседство: дом вросся в скалу
+function dwarfRocks(m, list) {
+  for (const [x, y, rx, ry] of list) m.prop((c, sx, sy) => drawBoulder(c, sx, sy, rx, ry), x, y);
 }
