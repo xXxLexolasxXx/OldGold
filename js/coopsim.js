@@ -28,7 +28,7 @@ const COOP_DRUNK = 5, COOP_FALL = 1, COOP_STARS = 4;
 const coop = {
   players: new Map(),         // ник -> герой (Unit)
   out: [],                    // события для рассылки: { to?, msg }
-  shB: new Map(), shO: new Map(), shR: new Set(), shRS: '', shP: '',
+  shB: new Map(), shO: new Map(), shR: new Set(), shRS: '', shP: '', shSB: '',
   t: 0, lvT: 0,
 };
 
@@ -198,6 +198,20 @@ function coopCmd(name, msgJson) {
       placeBuilding(m.type, m.x, m.y, false, rot);
       break;
     }
+    case 'bact': coopBuildingAct(name, m); break;
+    case 'qt': {
+      if (UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy) queueTraining(m.type);
+      break;
+    }
+    case 'field': {
+      if (!Array.isArray(m.cells) || !['add', 'del'].includes(m.mode)) break;
+      for (const c of m.cells.slice(0, 80)) {
+        if (!Array.isArray(c) || !coopInt(c[0]) || !coopInt(c[1]) || !inb(c[0], c[1])) continue;
+        if (m.mode === 'del') removeField(c[0], c[1]);
+        else if (['wheat', 'hay', 'hops'].includes(m.crop)) planField(c[0], c[1], m.crop);
+      }
+      break;
+    }
     case 'road': {
       if (!Array.isArray(m.cells)) break;
       for (const c of m.cells.slice(0, 300)) if (Array.isArray(c) && coopInt(c[0]) && coopInt(c[1])) placeRoadSite(c[0], c[1]);
@@ -208,6 +222,25 @@ function coopCmd(name, msgJson) {
       for (const c of m.cells.slice(0, 60)) if (Array.isArray(c) && coopInt(c[0]) && coopInt(c[1])) eraseAt([c[0], c[1]]);
       break;
     }
+  }
+}
+
+// Кнопки окна здания: те же действия, что в ui.js, только на сервере и для всех
+function coopBuildingAct(name, m) {
+  const b = Game.buildings.find(x => x.id === m.id);
+  if (!b || b.removed) return;
+  switch (m.act) {
+    case 'pause': if (b.state === 'done' && (b.def.worker || b.def.auto)) b.paused = !b.paused; break;
+    case 'deliver': if (b.state === 'done' && (b.def.inputs || b.isStore())) toggleDeliver(b); break;
+    case 'upgrade': if (canUpgrade(b)) startUpgrade(b); break;
+    case 'upgcancel': if (b.upg) cancelUpgrade(b); break;
+    case 'demolish': removeBuilding(b); break;
+    case 'train': if (UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && b.queue.length < 10) b.queue.push(m.type); break;
+    case 'untrain': if (coopInt(m.i)) b.queue.splice(m.i, 1); break;
+    case 'hire': if (b.def.worker) queueTraining(b.def.worker); break;
+    case 'recipe': if (coopInt(m.i) && m.i >= 0 && m.i < b.recipeOn.length) b.recipeOn[m.i] = !!m.on; break;
+    case 'crop': if (b.crops && m.c in b.crops) b.crops[m.c] = !!m.on; break;
+    case 'block': if (GOODS[m.g]) Game.storeBlock[m.g] = !Game.storeBlock[m.g]; break;
   }
 }
 
@@ -429,13 +462,15 @@ function coopWorldPacket() {
   if (ra.length) out.r = ra;
   if (rx.length) out.rx = rx;
   // стройки дорог и груды: целиком, если изменились
+  const sbj = JSON.stringify(Game.storeBlock);
+  if (sbj !== coop.shSB) { coop.shSB = sbj; out.sb = Game.storeBlock; }
   const rs = [...Game.roadSites.values()].map(q => ({ x: q.x, y: q.y, st: q.stock.stone || 0, dg: r2(q.dug || 0), pv: r2(q.pave || 0) }));
   const rsj = JSON.stringify(rs);
   if (rsj !== coop.shRS) { coop.shRS = rsj; out.rs = rs; }
   const pl = [...Game.piles.values()].filter(p => !p.removed).map(p => { const st = {}; for (const g of GOOD_KEYS) if (p.stock[g] > 0) st[g] = p.stock[g]; return { x: p.x, y: p.y, st }; });
   const plj = JSON.stringify(pl);
   if (plj !== coop.shP) { coop.shP = plj; out.pl = pl; }
-  return out.b || out.bx || out.o || out.ox || out.r || out.rx || out.rs || out.pl ? JSON.stringify(out) : null;
+  return out.b || out.bx || out.o || out.ox || out.r || out.rx || out.rs || out.pl || out.sb ? JSON.stringify(out) : null;
 }
 
 function coopMeData(name) {

@@ -44,6 +44,7 @@ function saveUsers() {
   fs.renameSync(tmp, USERS_FILE);
 }
 const hashPass = (pass, salt) => crypto.scryptSync(pass, salt, 32).toString('hex');
+const sha = s => crypto.createHash('sha256').update(s).digest('hex');
 const nickOk = n => typeof n === 'string' && /^[\p{L}\p{N}_\- ]{2,16}$/u.test(n) && n.trim() === n;
 
 // ---------- Мир ----------
@@ -97,6 +98,7 @@ function flushHeroes() {
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
+  if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
   if (p === '/') p = '/index.html';
   const file = path.normalize(path.join(ROOT, p));
   const rel = path.relative(ROOT, file);
@@ -209,7 +211,7 @@ function onMessage(c, text) {
     if (m.t !== 'auth') return;
     const nick = String(m.nick || '').trim(), pass = String(m.pass || '');
     if (!nickOk(nick)) return c.send({ t: 'err', msg: 'Ник: 2–16 символов, буквы, цифры, пробел, _ и -' });
-    if (pass.length < 3 || pass.length > 64) return c.send({ t: 'err', msg: 'Пароль: от 3 символов' });
+    if (m.mode !== 'token' && (pass.length < 3 || pass.length > 64)) return c.send({ t: 'err', msg: 'Пароль: от 3 символов' });
     const key = nick.toLowerCase();
     let rec = users[key];
     if (m.mode === 'register') {
@@ -217,14 +219,18 @@ function onMessage(c, text) {
       const salt = crypto.randomBytes(16).toString('hex');
       rec = users[key] = { nick, salt, hash: hashPass(pass, salt), hero: null, created: Date.now() };
       saveUsers();
+    } else if (m.mode === 'token') {
+      if (!rec || !(rec.toks || []).includes(sha(String(m.token || '')))) return c.send({ t: 'err', msg: 'Сессия устарела — войдите по паролю', stale: true });
     } else {
       if (!rec) return c.send({ t: 'err', msg: 'Такого игрока нет — сначала зарегистрируйтесь' });
       if (hashPass(pass, rec.salt) !== rec.hash) return c.send({ t: 'err', msg: 'Неверный пароль' });
     }
     for (const o of conns) if (o !== c && o.key === key) return c.send({ t: 'err', msg: 'Этот игрок уже в деревне' });
     c.nick = rec.nick; c.key = key;
+    let token;
+    if (m.mode !== 'token') { token = crypto.randomBytes(24).toString('hex'); rec.toks = [...(rec.toks || []).slice(-4), sha(token)]; saveUsers(); }   // запомнить вход на этом устройстве
     const meta = JSON.parse(call('coopMeta'));
-    c.send({ t: 'welcome', nick: c.nick, host: c.isHost, needClass: !rec.hero, classes: meta.classes, chat: meta.chat });
+    c.send({ t: 'welcome', token, nick: c.nick, host: c.isHost, needClass: !rec.hero, classes: meta.classes, chat: meta.chat });
     if (rec.hero) joinWorld(c);
     return;
   }

@@ -11,6 +11,15 @@ const Coop = {
 };
 const COOP_SLOT = 'coop';
 
+const COOP_TOK = 'feod.coop';
+function coopSaved(set) {
+  try {
+    if (set === null) { localStorage.removeItem(COOP_TOK); return null; }
+    if (set) localStorage.setItem(COOP_TOK, JSON.stringify(set));
+    return JSON.parse(localStorage.getItem(COOP_TOK));
+  } catch (e) { return null; }
+}
+
 function coopSend(o) { if (Coop.ws && Coop.ws.readyState === 1) Coop.ws.send(JSON.stringify(o)); }
 
 // ---------- Подключение ----------
@@ -21,13 +30,14 @@ function coopConnect(opts) {
     try { ws = new WebSocket(opts.server); } catch (e) { reject(new Error('Неверный адрес сервера')); return; }
     Coop.ws = ws; Coop.creds = opts;
     const fail = msg => { if (settled) return; settled = true; reject(new Error(msg)); try { ws.close(); } catch (e) { /* ничего */ } };
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass }));
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token }));
     ws.onerror = () => fail('Сервер не отвечает. Он запущен? Адрес верный?');
     ws.onclose = () => { if (!settled) fail('Связь оборвана'); else if (Coop.ws === ws) coopLost(); };
     ws.onmessage = ev => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
-      if (m.t === 'err') return fail(m.msg);
+      if (m.t === 'err') { if (m.stale) coopSaved(null); return fail(m.msg); }
       if (m.t === 'welcome') {
+        if (m.token) coopSaved({ server: opts.server, nick: m.nick, token: m.token });
         Coop.nick = m.nick; Coop.host = m.host; Coop.meta = { classes: m.classes, chat: m.chat };
         if (m.needClass) coopPickClass(m.classes);
         return;
@@ -54,6 +64,7 @@ function coopApplyInit(m) {
   Coop.saveT = 0;
   renderBuildMenu();
   coopInitHud();
+  coopInitControls();
   if (Tut.on) { Tut.on = false; if (Tut.el) Tut.el.classList.add('hidden'); tutHighlight([]); }   // обучение в общей деревне не нужно
 }
 
@@ -104,7 +115,7 @@ function coopUnits(m) {
       u.hero = Object.assign(u.hero || {}, { name: d.ow, owner: d.ow, level: d.lv, clsKey: d.cl, hp: d.hp, maxhp: d.mhp, cls: ((Coop.meta && Coop.meta.classes[d.cl]) || {}).name || '', equip: { weapon: null, armor: null } });
       if (d.i === Coop.uid && Game.hero !== u) {
         Game.hero = u;
-        if (!Game.selUnit) { selectHero(true); }
+        if (!Game.selUnit) { Game.selUnit = null; centerOn(u.x * TILE, u.y * TILE); }   // без карточки: новичку хватает карты
       }
     }
   }
@@ -129,6 +140,7 @@ function coopApplyBuilding(d, byId) {
   let b = byId.get(d.id);
   const fresh = !b || b.type !== d.type || b.x !== d.x || b.y !== d.y || (b.level || 1) !== (d.level || 1) || !!b.upg !== !!d.upg || (b.rot || 0) !== (d.rot || 0);
   if (fresh) {
+    const was = b && Game.selected === b;
     if (b) coopDropBuilding(b);
     b = new Building(d.type, d.x, d.y, d.state === 'done', d.rot || 0);
     b.id = d.id;
@@ -140,6 +152,7 @@ function coopApplyBuilding(d, byId) {
     if (b.door2) World.door[idx(b.door2[0], b.door2[1])] = 1;
     Game.buildings.push(b);
     byId.set(b.id, b);
+    if (was) Game.selected = b;
   }
   b.state = d.state;
   for (const g in b.stock) b.stock[g] = 0;
@@ -218,6 +231,7 @@ function coopWorld(m) {
     Game.roadSites.clear();
     for (const r of m.rs) { const s = new RoadSite(r.x, r.y); s.stock.stone = r.st; s.dug = r.dg; s.pave = r.pv; Game.roadSites.set(idx(r.x, r.y), s); }
   }
+  if (m.sb) Game.storeBlock = m.sb;
   if (m.pl) {
     Game.piles.clear();
     for (const q of m.pl) { const p = new Pile(q.x, q.y); Object.assign(p.stock, q.st); Game.piles.set(idx(q.x, q.y), p); }
@@ -300,7 +314,16 @@ function coopSaveCopy() {
   const _fs = fieldStroke;
   fieldStroke = function (t, first) {
     if (!Coop.on) return _fs(t, first);
-    if (!Coop.noticeField) { Coop.noticeField = true; toast('Поля в сетевой игре пока недоступны'); }
+    const tool = Game.tool;
+    if (!tool || tool.kind !== 'field' || !inb(t[0], t[1])) return;
+    const key = t.join();
+    if (!first && key === Input.lastFieldTile) return;
+    Input.lastFieldTile = key;
+    if (first) { const o = World.obj[idx(t[0], t[1])]; Input.fieldMode = o && o.t === 'field' ? 'del' : 'add'; }
+    if (!Input.fieldMode) return;
+    Coop.fieldBatch = Coop.fieldBatch || [];
+    Coop.fieldBatch.push([t[0], t[1]]);
+    if (Coop.fieldBatch.length === 1) { const mode = Input.fieldMode; setTimeout(() => { coopSend({ t: 'field', cells: Coop.fieldBatch, mode, crop: tool.crop }); Coop.fieldBatch = []; }, 120); }
   };
 
   const _ss = setSpeed;
@@ -349,6 +372,12 @@ function coopSaveCopy() {
 // Ник, полоска здоровья и реплика над головой каждого героя
 function coopPlates(c) {
   const classes = (Coop.meta && Coop.meta.classes) || {};
+  const hh = Game.hero;
+  if (hh && hh.cmd && hh.cmd.tx != null) {       // куда идёт герой: пульсирующее кольцо
+    const p = (Game.time * 1.6) % 1, fx = (hh.cmd.tx + 0.5) * TILE, fy = (hh.cmd.ty + 0.5) * TILE + 6;
+    c.strokeStyle = `rgba(246,212,88,${0.9 - p * 0.8})`; c.lineWidth = 2;
+    c.beginPath(); c.ellipse(fx, fy, 6 + p * 8, 3 + p * 4, 0, 0, Math.PI * 2); c.stroke();
+  }
   c.textAlign = 'center';
   for (const u of Game.units) {
     if (!u.owner || u.inside) continue;
@@ -381,11 +410,11 @@ function coopCss() {
   const st = document.createElement('style');
   st.id = 'coop-css';
   st.textContent = `
-  .cp-modal{position:fixed;inset:0;background:rgba(8,6,3,.82);z-index:10000;display:flex;align-items:center;justify-content:center;color:#e8dcc0;font-family:inherit}
-  .cp-card{background:#1f1710;border:2px solid #b8902c;border-radius:8px;padding:20px 22px;width:min(560px,94vw);max-height:92vh;overflow:auto;text-align:center}
+  .cp-modal{overflow:auto;position:fixed;inset:0;background:rgba(8,6,3,.82);z-index:10000;display:flex;align-items:center;justify-content:center;color:#e8dcc0;font-family:inherit}
+  .cp-card{box-sizing:border-box;margin:auto;background:#1f1710;border:2px solid #b8902c;border-radius:8px;padding:20px 22px;width:min(560px,94vw);max-height:92vh;overflow:auto;text-align:center}
   .cp-card h2{margin:0 0 6px;color:#f6d458;font-size:20px}.cp-card p{margin:0 0 12px;font-size:13px;opacity:.85}
   .cp-cls{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px}
-  .cp-c{background:#2a2014;border:2px solid var(--c);border-radius:6px;padding:8px 4px;cursor:pointer;color:#f6e8c0;font-size:12px;font-family:inherit}
+  .cp-c{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-width:0;text-align:center;background:#2a2014;border:2px solid var(--c);border-radius:6px;padding:8px 4px;cursor:pointer;color:#f6e8c0;font-size:12px;font-family:inherit}
   .cp-c:hover{background:#3a2c14}.cp-c b{display:block;color:var(--c);font-size:14px;margin-bottom:3px}.cp-c small{opacity:.75;font-size:10px;display:block}
   .cp-btn{margin:8px 4px 0;padding:7px 18px;font-size:14px;background:#8a6a1c;color:#fff4d0;border:1px solid #d8b04a;border-radius:4px;cursor:pointer;font-family:inherit}
   .cp-btn.sec{background:#3a2c14;border-color:#7a5f28}
@@ -534,28 +563,32 @@ function coopLost() {
   Coop.on = false;
   coopSaveCopyNow();
   document.getElementById('coop-hud')?.remove();
-  const retry = Coop.reconnecting;
+  const retry = true;
   const box = document.createElement('div');
   box.id = 'cp-lost'; box.className = 'cp-modal';
-  box.innerHTML = `<div class="cp-card"><h2>${retry ? 'Сервер перезапускается' : 'Связь с сервером потеряна'}</h2>
-    <p id="cp-lost-msg">${retry ? 'Переподключаемся сами…' : 'Копия общего мира лежит у вас в браузере. Можно подождать сервер или поиграть с копией в одиночку.'}</p>
-    <button class="cp-btn" data-re>Переподключиться</button><button class="cp-btn sec" data-solo>Играть с копией одиночно</button></div>`;
+  box.innerHTML = `<div class="cp-card"><h2>${Coop.reconnecting ? 'Сервер перезапускается' : 'Связь потерялась'}</h2>
+    <p id="cp-lost-msg">Переподключаемся сами… Копия общего мира лежит у вас в браузере: пока сервер молчит, можно поиграть с ней в одиночку.</p>
+    <button class="cp-btn" data-re>Попробовать сейчас</button><button class="cp-btn sec" data-solo>Играть с копией одиночно</button></div>`;
   document.body.appendChild(box);
   const msg = box.querySelector('#cp-lost-msg');
   let stop = false;
+  let busy = false;
   const tryAgain = () => {
-    if (stop) return;
+    if (stop || busy) return;
+    busy = true;
     msg.textContent = 'Подключаемся…';
-    coopConnect({ ...Coop.creds, mode: 'login' }).then(() => { stop = true; box.remove(); }).catch(e => {
+    const sv = coopSaved();
+    coopConnect(sv && sv.token ? { server: Coop.creds.server, nick: sv.nick, token: sv.token, mode: 'token' } : { ...Coop.creds, mode: 'login' }).then(() => { stop = true; box.remove(); }).catch(e => {
+      busy = false;
       msg.textContent = e.message;
-      if (Coop.reconnecting && !stop) setTimeout(tryAgain, 2500);
+      if (!stop) setTimeout(tryAgain, 3000);
     });
   };
   box.addEventListener('click', e => {
     if (e.target.closest('[data-re]')) tryAgain();
     else if (e.target.closest('[data-solo]')) { stop = true; box.remove(); coopPlayCopy(); }
   });
-  if (retry) setTimeout(tryAgain, 2500);
+  setTimeout(tryAgain, 2000);
 }
 function coopSaveCopyNow() { Coop.on = true; coopSaveCopy(); Coop.on = false; }
 
@@ -714,4 +747,156 @@ function coopHat(c, kind, view, hx, hy, tipSway) {
     if (type === 'hero' && Coop.on && Game.hero && Game.hero.hero && Game.hero.hero.clsKey) type = 'hero_' + Game.hero.hero.clsKey;
     return _pu(type, look);
   };
+}
+
+
+// ---------- Кнопки окон: действия уходят серверу, а не меняют зеркало ----------
+
+function coopInitControls() {
+  if (Coop.ctl) return;
+  Coop.ctl = true;
+  const stop = e => { e.stopImmediatePropagation(); e.preventDefault(); };
+  const act = (b, a, extra) => coopSend(Object.assign({ t: 'bact', id: b.id, act: a }, extra));
+  // окно здания
+  document.getElementById('info').addEventListener('click', e => {
+    if (!Coop.on) return;
+    const t = e.target.closest('button, [data-untrain-at], [data-block]');
+    const b = Game.selected;
+    if (!t || !b || b.removed) return;
+    const a = t.dataset.act;
+    if (a === 'goto' || a === 'prev' || a === 'next') return;      // только осмотр — оставляем как есть
+    if (t.dataset.hero !== undefined || t.dataset.coop !== undefined) return;
+    stop(e);
+    if (t.dataset.train) act(b, 'train', { type: t.dataset.train });
+    else if (t.dataset.untrainAt) act(b, 'untrain', { i: +t.dataset.untrainAt });
+    else if (a === 'demolish') {
+      if (b.isRoad) coopSend({ t: 'erase', cells: [[b.x, b.y]] });
+      else if (b.state !== 'done' || confirm('Снести «' + b.def.name + '»? Деревня общая — другие игроки это увидят.')) act(b, 'demolish');
+      Game.selected = null;
+    } else if (a) act(b, a);
+    else if (t.dataset.block) act(b, 'block', { g: t.dataset.block });
+    updateUI(true);
+  }, true);
+  document.getElementById('info').addEventListener('change', e => {
+    if (!Coop.on) return;
+    const t = e.target, b = Game.selected;
+    if (!b) return;
+    if (t.dataset.recipe !== undefined) { stop(e); act(b, 'recipe', { i: +t.dataset.recipe, on: t.checked }); }
+    else if (t.dataset.crop) { stop(e); act(b, 'crop', { c: t.dataset.crop, on: t.checked }); }
+  }, true);
+  document.getElementById('store-list').addEventListener('click', e => {
+    const s = Coop.on && e.target.closest('[data-block]');
+    if (!s) return;
+    stop(e);
+    const b = Game.buildings.find(x => x.isStore && x.isStore()) || Game.buildings[0];
+    if (b) coopSend({ t: 'bact', id: b.id, act: 'block', g: s.dataset.block });
+  }, true);
+  document.getElementById('people-list').addEventListener('click', e => {
+    const t = Coop.on && e.target.closest('[data-train]');
+    if (t) { stop(e); coopSend({ t: 'qt', type: t.dataset.train }); }
+  }, true);
+  document.getElementById('tab-menu').addEventListener('click', e => {
+    const t = Coop.on && e.target.closest('[data-menu]');
+    if (!t) return;
+    if (['new', 'load', 'loadauto', 'stress', 'hour', 'entdemo', 'entrock', 'entwater', 'entgroup', 'entwin'].includes(t.dataset.menu)) { stop(e); toast('В общей деревне это недоступно'); }
+  }, true);
+  // горячие клавиши здания: пауза (P) и доставки (B)
+  window.addEventListener('keydown', e => {
+    if (!Coop.on || (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName))) return;
+    const b = Game.selected;
+    if (!b || b.isRoad || b.state !== 'done') return;
+    if (e.code === 'KeyP') { stop(e); act(b, 'pause'); }
+    else if (e.code === 'KeyB' && (b.def.inputs || b.isStore())) { stop(e); act(b, 'deliver'); }
+  }, true);
+}
+
+
+// ---------- Удобство: тап по земле ведёт героя, кнопка «Общая деревня», подсказка новичку ----------
+
+{
+  const _click = onLeftClickTile;
+  onLeftClickTile = function (t) {
+    const h = Game.hero;
+    if (Coop.on && h && !Game.tool && inb(t[0], t[1])) {
+      const b = buildingAt(t);
+      const inn = b && !b.isRoad && b.type === 'inn' && b.state === 'done' && !b.upg;
+      const nearHero = Math.hypot(h.x - (t[0] + 0.5), h.y - (t[1] + 0.5)) < 0.8;
+      if (!nearHero && (inn || (!b && !Game.roadSites.get(idx(t[0], t[1]))))) {
+        const c = resolveCmd(t);
+        if (c) {
+          issueCmd(h, c);
+          if (c.kind !== 'move') floater(c.tx + 0.5, c.ty - 0.4, c.label, '#f6d458');
+          coopHintDone();
+          return;
+        }
+        toast('Сюда не пройти');
+        return;
+      }
+    }
+    _click(t);
+  };
+}
+
+function coopHintDone() {
+  const el = document.getElementById('cp-hint');
+  if (el) el.remove();
+  try { localStorage.setItem('feod.coop.hint', '1'); } catch (e) { /* нет хранилища */ }
+}
+
+function coopHint() {
+  try { if (localStorage.getItem('feod.coop.hint')) return; } catch (e) { /* покажем */ }
+  if (document.getElementById('cp-hint')) return;
+  const tap = Mobile.on ? 'Тапните' : 'Кликните';
+  const el = document.createElement('div');
+  el.id = 'cp-hint';
+  el.innerHTML = `<b>Добро пожаловать в общую деревню!</b>
+    <div>1. ${tap} по земле — ваш герой пойдёт туда. По дереву или камню — будет работать.</div>
+    <div>2. ${tap} по трактиру — герой пойдёт поесть (а иногда и выпить…).</div>
+    <div>3. Кнопка с молотком — стройте дома и дороги вместе с остальными.</div>
+    <button class="cp-btn" style="margin:6px 0 0">Понятно</button>`;
+  el.querySelector('button').onclick = coopHintDone;
+  document.getElementById('view').appendChild(el);
+}
+
+{
+  const css = document.createElement('style');
+  css.textContent = `
+  #cp-hint{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:7;width:min(340px,92vw);background:rgba(26,19,13,.96);border:2px solid #b8902c;border-radius:8px;padding:10px 12px;color:#f0e4c0;font-size:13px;line-height:1.35;box-shadow:0 4px 18px rgba(0,0,0,.6)}
+  #cp-hint b{display:block;color:#f6d458;margin-bottom:4px;font-size:14px}#cp-hint div{margin:2px 0}
+  body.mobile #coop-hud{bottom:calc(118px + env(safe-area-inset-bottom));right:6px;max-width:64vw}
+  body.mobile #cp-hint{bottom:auto;top:96px}
+  body.mobile #coop-hud button{padding:7px 10px;font-size:13px}
+  body.mobile #cp-online{display:none}
+  .cp-modal .cp-btn{min-height:40px}`;
+  document.head.appendChild(css);
+
+  const _start3 = startGame;
+  startGame = function () {
+    _start3();
+    // на странице, открытой с сервера кооператива, «Общая деревня» — первая кнопка меню
+    fetch('coop-info', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => {
+      const root = document.getElementById('start-menu');
+      if (!j || !j.coop || !root || root.querySelector('[data-sm-join]')) return;
+      const main = root.querySelector('[data-panel="main"]');
+      const saved = coopSaved();
+      const b = document.createElement('button');
+      b.className = 'sm-btn primary'; b.dataset.smJoin = '1';
+      b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${j.online}${saved ? ' · войти как ' + saved.nick : ' · вход и регистрация'}</small>`;
+      main.prepend(b);
+      const old = main.querySelector('[data-sm="mp"]'); if (old) old.style.display = 'none';
+      b.addEventListener('click', () => {
+        const sv = coopSaved();
+        if (!sv || !sv.token) { smRender(); smShow('mp'); return; }
+        const small = b.querySelector('small'); small.textContent = 'подключаемся…';
+        coopConnect({ server: 'ws://' + location.host, nick: sv.nick, token: sv.token, mode: 'token' })
+          .then(() => smClose())
+          .catch(e => { small.textContent = e.message; setTimeout(() => { smRender(); smShow('mp'); }, 1200); });
+      });
+      const srv = root.querySelector('#sm-server');
+      if (srv) { srv.value = 'ws://' + location.host; const lab = srv.closest('label'); if (lab) lab.style.display = 'none'; }
+      if (typeof decorateVines === 'function') requestAnimationFrame(decorateVines);
+    }).catch(() => { /* страница не с сервера кооператива — обычное меню */ });
+  };
+  const _init3 = coopApplyInit;
+  coopApplyInit = function (m) { _init3(m); setTimeout(coopHint, 900); };
 }
