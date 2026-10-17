@@ -89,6 +89,95 @@ function stressMap() {
   toast(`Тестовая карта: ${Game.buildings.length} зданий, ${Game.units.length} жителей`);
 }
 
+// ---------- Деревня «через час игры» ----------
+// Обычная карта: вокруг стартовой деревни расставляются почти все постройки,
+// к каждой ведётся дорога, работникам — свои дома, затем игра сама проматывает час.
+
+const VILLAGE_PLAN = ['woodcutter', 'woodcutter', 'quarry', 'sawmill', 'farm', 'farm', 'mill', 'bakery', 'swine', 'butchery',
+  'hopfarm', 'brewery', 'bonfire', 'goatpen', 'stable', 'tannery', 'armory', 'goldmine', 'metallurgist', 'crystalmine',
+  'magiccircle', 'magicworkshop', 'storehouse', 'inn'];
+
+// Дорога от входа к ближайшей дороге сети склада
+function linkToRoads(b) {
+  updateRoadComps();
+  const st = Game.buildings.find(s => s.isStore());
+  const sc = st && compAt(st.doorX, st.doorY);
+  let best = null, bd = 1e9;
+  for (let i = 0; i < N_TILES; i++) {
+    if (!World.road[i] || World.door[i]) continue;
+    const x = i % MAP_W, y = (i / MAP_W) | 0;
+    if (compAt(x, y) !== sc) continue;
+    const d = Math.abs(x - b.doorX) + Math.abs(y - b.doorY);
+    if (d < bd) { bd = d; best = [x, y]; }
+  }
+  if (!best) return false;
+  const path = findPath(b.doorX, b.doorY, best[0], best[1]);
+  if (!path) return false;
+  for (const [x, y] of path) {
+    const i = idx(x, y);
+    if (World.road[i] || World.bmap[i]) continue;
+    World.obj[i] = null;
+    setRoad(x, y, true);
+  }
+  World.roadDirty = true;
+  return true;
+}
+
+function placeNear(type, cx, cy) {
+  for (let r = 3; r < 26; r++) {
+    for (let k = 0; k < r * 8; k++) {
+      const a = k / (r * 8) * Math.PI * 2;
+      const x = Math.round(cx + Math.cos(a) * r), y = Math.round(cy + Math.sin(a) * r * 0.8);
+      for (const rot of BUILDINGS[type].noRotate ? [0] : [0, 1, 2]) {
+        if (checkPlacement(type, x, y, rot)) continue;
+        const b = placeBuilding(type, x, y, true, rot);
+        if (linkToRoads(b)) return b;
+        removeBuilding(b);
+      }
+    }
+  }
+  return null;
+}
+
+function villageAfterHour() {
+  const seed = (Math.random() * 1e9) | 0;
+  setupStart(seed);
+  const st = Game.buildings.find(b => b.isStore());
+  const cx = st.doorX + 4, cy = st.doorY;
+  for (const type of VILLAGE_PLAN) {
+    const b = placeNear(type, cx, cy);
+    if (b && b.def.worker) spawnUnit(b.def.worker, b.doorX, b.doorY);
+  }
+  for (let k = 0; k < 24; k++) spawnUnit('serf', st.doorX + (k % 6) - 3, st.doorY + 1 + (k > 11 ? 1 : 0));
+  for (let k = 0; k < 3; k++) spawnUnit('builder', st.doorX + k, st.doorY + 2);
+  Object.assign(st.stock, { timber: 70, stone: 70, gold: 60, bread: 90, sausage: 50, beer: 20, wheat: 20, hay: 20, trunk: 10, leather: 4, flour: 10 });
+  decorateAllRoads();
+  spawnAnimals();
+  buildTerrain(seed);
+  updateMinimapBase();
+  updateUI(true);
+  // проматываем час жизни кусками, не замораживая страницу
+  const total = 60 * 60 / SIM_DT;
+  let done = 0, lastPct = -1;
+  const wasPaused = Game.paused; Game.paused = true;
+  const chunk = () => {
+    const n = Math.min(1500, total - done);
+    for (let k = 0; k < n; k++) { try { step(SIM_DT); } catch (e) { console.error(e); } }
+    done += n;
+    const pct = Math.floor(done / total * 100);
+    if (pct >= lastPct + 20) { lastPct = pct; toast(`Деревня живёт без тебя: ${pct}% часа`); }
+    if (done < total) setTimeout(chunk, 0);
+    else {
+      Game.paused = wasPaused;
+      updateMinimapBase(); updateUI(true);
+      centerOn((st.doorX + 3) * TILE, st.doorY * TILE);
+      toast(`Прошёл час: ${Game.buildings.length} построек, ${Game.units.length} жителей`);
+    }
+  };
+  centerOn((st.doorX + 3) * TILE, st.doorY * TILE);
+  setTimeout(chunk, 50);
+}
+
 // ---------- Счётчик нагрузки ----------
 
 const Perf = { frames: [], steps: [], last: 0, el: null };

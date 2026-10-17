@@ -142,6 +142,7 @@ function initUI() {
     if (m === 'loadauto') { if (loadGame('auto')) { toast('Загружено автосохранение'); updateUI(true); } else toast('Автосохранения пока нет'); }
     if (m === 'new' && confirm('Начать на новой карте? Несохранённый прогресс пропадёт.')) newGame();
     if (m === 'stress' && confirm('Открыть тестовую карту с большим городом? Несохранённый прогресс пропадёт.')) stressMap();
+    if (m === 'hour' && confirm('Начать с деревни, которая уже прожила час? Несохранённый прогресс пропадёт.')) villageAfterHour();
     if (m === 'help') document.getElementById('help').classList.toggle('hidden');
     updateUI(true);
   });

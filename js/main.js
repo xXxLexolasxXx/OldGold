@@ -406,7 +406,8 @@ function frame(now) {
   if (!Game.paused) {
     acc += dt * Game.speed;
     let steps = 0;
-    while (acc >= SIM_DT && steps < 40) { step(SIM_DT); acc -= SIM_DT; steps++; }
+    // ошибка в одном шаге не должна замораживать всю игру
+    while (acc >= SIM_DT && steps < 40) { try { step(SIM_DT); } catch (e) { if (!frame.errT || Game.time - frame.errT > 5) { console.error(e); frame.errT = Game.time; } } acc -= SIM_DT; steps++; }
     if (steps >= 40) acc = 0;
     autoT += dt;
     if (autoT > 120 && !Game.stress) { autoT = 0; saveGame('auto'); }   // тестовую карту не сохраняем

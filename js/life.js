@@ -217,6 +217,8 @@ function checkCollisions() {
       const list = grid.get(tx + dx + (ty + dy) * MAP_W);
       if (!list) continue;
       for (const o of list) {
+        // гнома могло уже отбросить столкновением — его действие сброшено, дальше не проверяем
+        if (!u.action || !u.action.walk) break;
         if (o === u || o.id < u.id && o.action && o.action.walk) continue;   // пару считаем один раз
         if (Math.hypot(o.x - u.x, o.y - u.y) > 0.42) continue;
         const key = Math.min(u.id, o.id) * 100000 + Math.max(u.id, o.id);
@@ -227,7 +229,7 @@ function checkCollisions() {
         const victim = carrier === u ? o : u;
         if (!isPerson(victim)) continue;
         let p = COLLIDE_CHANCE;
-        if (u.action.squeeze || (o.action && o.action.squeeze)) p += 0.06;
+        if (u.action?.squeeze || o.action?.squeeze) p += 0.06;
         if (o.brk && o.brk.kind === 'sleep') p += 0.18;
         if (u.drunkAt || o.drunkAt) p += 0.06;
         if (HEAVY.has(carrier.carry)) p += 0.02;
