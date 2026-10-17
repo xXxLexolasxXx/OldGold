@@ -91,7 +91,7 @@ const BUILDINGS = {
     desc: 'Голодные жители едят здесь курицу, колбасу или хлеб и запивают пивом. Тушку курицы разделывают на 4 куска. Пьяный может уснуть прямо на дороге.',
   },
   bonfire: {
-    name: 'Большой костёр', cat: 'Основа', w: 3, h: 3, top: 40, noRotate: true, cost: { timber: 4, stone: 2 }, auto: true,
+    name: 'Большой костёр', cat: 'Ресурсы', w: 3, h: 3, top: 78, noRotate: true, cost: { timber: 4, stone: 2 }, auto: true,
     inputs: { trash: 24 }, outputs: { ash: 6 }, burn: true,
     recipes: [{ in: { trash: 1 }, out: { ash: 1 }, time: 4 }],
     desc: 'Сюда трудяги сносят мусор из урн. Сгорая, он даёт пепел — фермы удобряют им поля, урожай растёт быстрее и богаче.',
@@ -213,11 +213,11 @@ const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло'
 // всё из `after` (типы зданий), либо её открывает обучение. Школы в меню нет:
 // она появляется в обучении (noMenu).
 const UNLOCKS = [
-  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill'] },
+  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire'] },
   { id: 'grain', items: ['farm', 'mill', 'bakery', 'storehouse', 'inn', 'tool:wheat'], after: ['woodcutter', 'quarry', 'sawmill'] },
   { id: 'hops',  items: ['hopfarm', 'brewery', 'tool:hops'], after: ['bakery'] },
   { id: 'pigs',  items: ['swine', 'butchery'], after: ['brewery'] },
-  { id: 'base',  items: ['bonfire', 'goatpen', 'stable'], after: ['swine'] },
+  { id: 'base',  items: ['goatpen', 'stable'], after: ['swine'] },
   { id: 'craft', items: ['tannery', 'armory'], after: ['butchery'] },
   { id: 'metal', items: ['goldmine', 'metallurgist'], after: ['armory'] },
   { id: 'magic', items: ['crystalmine', 'magiccircle', 'magicworkshop'], after: ['goldmine', 'metallurgist'] },

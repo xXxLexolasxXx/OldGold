@@ -994,66 +994,108 @@ function rockMound(c, pts, x0, y0, w, h, col = '#7e7468') {
 // Большой костёр: выжженная земля, кольцо из камней, шалаш из досок, куча мусора
 // с одной стороны и горка пепла с лопатой — с другой. Пламя анимируется в render.
 function drawBonfire(c, g) {
-  const cx = g.fx + g.fw / 2, cy = g.fy + g.fh / 2 + 8;
-  shadowAt(c, cx, cy + 4, 30, 12);
-  ellipse(c, cx, cy, 30, 21, '#3a3632');
-  for (let k = 0; k < 60; k++) {
+  // Большой костёр: на все три клетки — каменный вал, гора брёвен-«шалаш» выше человеческого роста,
+  // вокруг — куча мусора, зола с лопатой, скамьи-брёвна и котёл с мусорной похлёбкой.
+  const cx = g.fx + g.fw / 2, cy = g.fy + g.fh / 2 + 10;
+  shadowAt(c, cx, cy + 8, 46, 17);
+  // выжженная земля
+  ellipse(c, cx, cy + 1, 45, 31, '#2a2420'); ellipse(c, cx, cy, 42, 29, '#3a342e');
+  for (let k = 0; k < 90; k++) {
     const a = srand() * Math.PI * 2, d = Math.sqrt(srand());
-    ellipse(c, cx + Math.cos(a) * d * 26, cy + Math.sin(a) * d * 18, rnd(1.5, 3.5), rnd(1, 2), shade('#5c564f', rnd(-0.2, 0.25)));
+    ellipse(c, cx + Math.cos(a) * d * 38, cy + Math.sin(a) * d * 26, rnd(1.5, 4), rnd(1, 2.4), shade('#5c564f', rnd(-0.3, 0.2)));
   }
-  // кольцо из камней
-  for (let k = 0; k < 18; k++) {
-    const a = k / 18 * Math.PI * 2;
-    const x = cx + Math.cos(a) * 15, y = cy + Math.sin(a) * 10.5;
-    ellipse(c, x + 0.6, y + 0.8, 3, 2.2, 'rgba(10,8,4,0.4)');
-    ellipse(c, x, y, 3, 2.2, shade('#9e958a', rnd(-0.18, 0.12)));
-    ellipse(c, x - 0.8, y - 0.8, 1.2, 0.8, '#cec6ba');
+  // задняя половина каменного вала — валуны в два яруса
+  const ring = (back) => {
+    for (let k = 0; k < 26; k++) {
+      const a = k / 26 * Math.PI * 2, sy = Math.sin(a);
+      if ((sy < 0) !== back) continue;
+      const x = cx + Math.cos(a) * 36, y = cy + sy * 24;
+      const s = 5 + ((k * 7) % 3);
+      ellipse(c, x + 0.8, y + 1.4, s, s * 0.7, 'rgba(10,8,4,0.45)');
+      ellipse(c, x, y, s, s * 0.72, shade('#8e867a', rnd(-0.2, 0.14)));
+      ellipse(c, x - s * 0.3, y - s * 0.25, s * 0.45, s * 0.28, '#cec6ba');
+      if (k % 2) { ellipse(c, x + 1, y - 4, s * 0.8, s * 0.55, shade('#9e958a', rnd(-0.15, 0.12))); ellipse(c, x - 0.4, y - 5, s * 0.34, s * 0.2, '#d6cec2'); }
+      c.strokeStyle = 'rgba(20,14,10,0.5)'; c.lineWidth = 0.5; c.beginPath(); c.ellipse(x, y, s, s * 0.72, 0, 0, 7); c.stroke();
+    }
+  };
+  ring(true);
+  // угли в чаше
+  ellipse(c, cx, cy, 26, 17, '#1e1a18');
+  for (let k = 0; k < 40; k++) ellipse(c, cx + rnd(-20, 20), cy + rnd(-12, 12), rnd(1.2, 3), rnd(0.8, 1.7), srand() < 0.45 ? '#d8582a' : '#5a544e');
+  // гора брёвен шалашом: толстые стволы с корой и обугленными концами, верёвочные стяжки
+  const logs = 16, topY = cy - 58;
+  for (let layer = 0; layer < 2; layer++) {
+    for (let k = 0; k < logs; k++) {
+      const a = k / logs * Math.PI * 2 + layer * 0.2;
+      if (layer === 0 && Math.sin(a) < 0) continue;                // задние бревна рисуем отдельно, ниже
+      const rr = layer ? 12 : 22, bx = cx + Math.cos(a) * rr, by = cy + Math.sin(a) * rr * 0.68 + 1;
+      const tx = cx + Math.cos(a) * 2.2, ty = topY + 5 + layer * 5 + rnd(-2, 2);
+      const w = layer ? 5.2 : 6.4;
+      line(c, bx, by, tx, ty, '#1e1208', w + 1.6);
+      line(c, bx, by, tx, ty, shade('#7a4a28', rnd(-0.2, 0.12)), w);
+      line(c, bx - 0.8, by - 0.6, tx - 0.4, ty, shade('#a8703c', rnd(-0.1, 0.12)), w * 0.3);
+      // обугленная верхняя треть
+      const mx = bx + (tx - bx) * 0.55, my = by + (ty - by) * 0.55;
+      line(c, mx, my, tx, ty, '#18110c', w * 0.85);
+      ellipse(c, bx, by, w * 0.55, w * 0.4, '#d8b078');                 // торец
+    }
+    if (layer === 0) {
+      // передний вал — поверх нижних брёвен
+    }
   }
-  // угли и пепел внутри
-  ellipse(c, cx, cy, 11.5, 7.5, '#2a2624');
-  for (let k = 0; k < 16; k++) ellipse(c, cx + rnd(-8, 8), cy + rnd(-5, 5), rnd(1, 2.2), rnd(0.7, 1.4), srand() < 0.4 ? '#c8583a' : '#706960');
-  // шалаш из досок
-  for (let k = 0; k < 7; k++) {
-    const a = k / 7 * Math.PI * 2;
-    const bx = cx + Math.cos(a) * 9, by = cy + Math.sin(a) * 6;
-    line(c, bx, by, cx + Math.cos(a) * 1.5, cy - 15, '#3a2414', 2.4);
-    line(c, bx, by - 0.4, cx + Math.cos(a) * 1.5, cy - 15.4, shade('#a06840', rnd(-0.15, 0.1)), 1.5);
+  // стяжки-верёвки
+  for (const f of [0.35, 0.62]) { const y = cy - 6 - (cy - topY - 6) * f, rx = 14 - f * 9; c.strokeStyle = '#c8a070'; c.lineWidth = 1.4; c.beginPath(); c.ellipse(cx, y, rx, rx * 0.4, 0, 0.1, Math.PI - 0.1); c.stroke(); }
+  // передняя половина вала
+  ring(false);
+  // мусорная куча слева
+  const tx = cx - 40, ty = cy + 10;
+  ellipse(c, tx, ty + 2, 13, 6.5, 'rgba(10,8,4,0.4)'); ellipse(c, tx, ty, 12, 6.8, '#45291a');
+  for (let k = 0; k < 26; k++) ellipse(c, tx + rnd(-10, 10), ty + rnd(-6, 2), rnd(1.2, 3), rnd(1, 2.2), ['#6e432a', '#9c8e48', '#73963e', '#b6ada0', '#e0b882', '#8a3a28'][(srand() * 6) | 0]);
+  line(c, tx - 4, ty - 4, tx - 8, ty - 11, '#e0b882', 1); line(c, tx + 5, ty - 3, tx + 9, ty - 10, '#6e432a', 1.2);
+  // зола с лопатой справа
+  const ax = cx + 40, ay = cy + 9;
+  c.fillStyle = '#9e958a'; c.beginPath(); c.ellipse(ax, ay, 11, 7, 0, Math.PI, 0); c.fill();
+  ellipse(c, ax, ay, 11, 3, '#867e74'); ellipse(c, ax - 3, ay - 4, 4, 1.8, '#cec6ba');
+  line(c, ax + 4, ay - 2, ax + 12, ay - 19, '#6e432a', 1.3);
+  poly(c, [[ax + 2, ay - 1], [ax + 6, ay - 4.6], [ax + 7.4, ay + 0.6], [ax + 3.4, ay + 2.2]], '#867e74', '#3a3632', 0.5);
+  // две скамьи-бревна у огня
+  for (const [bx, by, w] of [[cx - 18, cy + 31, 30], [cx + 14, cy + 28, 26]]) {
+    c.fillStyle = '#2a1a0c'; rrect(c, bx - 1, by - 0.6, w + 2, 6, 2.6); c.fill();
+    c.fillStyle = '#7a4a28'; rrect(c, bx, by, w, 4.6, 2.2); c.fill(); c.fillStyle = '#a8703c'; c.fillRect(bx + 1, by, w - 2, 0.9);
+    ellipse(c, bx + w, by + 2.3, 1.8, 2.3, '#cc9a64');
   }
-  // куча мусора слева
-  const tx = cx - 30, ty = cy + 4;
-  ellipse(c, tx, ty, 9, 5, '#45291a');
-  for (let k = 0; k < 14; k++) ellipse(c, tx + rnd(-7, 7), ty + rnd(-4, 2), rnd(1, 2.4), rnd(0.8, 1.8), ['#6e432a', '#9c8e48', '#73963e', '#b6ada0', '#e0b882'][(srand() * 5) | 0]);
-  line(c, tx - 3, ty - 3, tx - 6, ty - 8, '#e0b882', 0.8);
-  // горка пепла справа с лопатой
-  const ax = cx + 29, ay = cy + 5;
-  c.fillStyle = '#9e958a'; c.beginPath(); c.ellipse(ax, ay, 8, 5, 0, Math.PI, 0); c.fill();
-  ellipse(c, ax, ay, 8, 2.4, '#867e74'); ellipse(c, ax - 2, ay - 3, 3, 1.4, '#cec6ba');
-  line(c, ax + 3, ay - 2, ax + 9, ay - 14, '#6e432a', 1);
-  poly(c, [[ax + 1.4, ay - 1], [ax + 4.6, ay - 3.6], [ax + 5.4, ay + 0.4], [ax + 2.6, ay + 1.6]], '#867e74', '#3a3632', 0.4);
-  // бревно-скамья у огня
-  c.fillStyle = '#6e432a'; rrect(c, cx - 12, cy + 15, 24, 3.6, 1.6); c.fill();
-  ellipse(c, cx + 12, cy + 16.8, 1.6, 1.8, '#cc9a64');
-  g.spr.fire = [cx, cy - 6];
-  (g.spr.chimneys = g.spr.chimneys || []).push([cx, cy - 22]);
+  // котёл на треноге сзади-справа: суп из чего придётся
+  const kx = cx + 34, ky = cy - 12;
+  for (const dx of [-6, 0, 6]) line(c, kx + dx * 0.9, ky + 6, kx + dx * 0.3, ky - 10, '#2a1a10', 1.4);
+  c.fillStyle = lingrad(c, kx - 7, 0, kx + 7, 0, [[0, '#4a4a52'], [1, '#17171c']]); c.beginPath(); c.ellipse(kx, ky - 5, 7, 6, 0, 0, 7); c.fill();
+  ellipse(c, kx, ky - 9, 6.4, 2.2, '#17171c'); ellipse(c, kx, ky - 9.2, 5.4, 1.7, '#7a8a3a');
+  g.spr.fire = [cx, cy - 36];
+  (g.spr.chimneys = g.spr.chimneys || []).push([cx, cy - 70]);
 }
 
-// Пламя костра: языки дрожат, искры летят вверх
+// Пламя костра: высокий столб огня над пирамидой брёвен, языки дрожат, искры и уголь летят вверх
 function drawBonfireFlames(c, x, y, strong, seed) {
-  const t = Game.time;
-  glow(c, x, y - 2, strong ? 34 : 22, '255,150,60', (strong ? 0.38 : 0.22) + 0.08 * Math.sin(t * 9 + seed));
-  const n = strong ? 7 : 4;
-  for (let k = 0; k < n; k++) {
-    const ph = t * 6 + k * 1.7 + seed, h = (strong ? 13 : 8) * (0.6 + 0.4 * Math.abs(Math.sin(ph))), dx = (k - n / 2) * 1.8;
-    c.fillStyle = k % 2 ? '#e07a28' : '#f0a030';
-    c.beginPath(); c.moveTo(x + dx - 2.4, y + 1); c.quadraticCurveTo(x + dx + Math.sin(ph) * 2, y - h * 0.6, x + dx + Math.sin(ph * 1.3), y - h);
-    c.quadraticCurveTo(x + dx + 1.4, y - h * 0.4, x + dx + 2.4, y + 1); c.fill();
+  const t = Game.time, S = strong ? 1 : 0.5;
+  glow(c, x, y - 10, strong ? 92 : 56, '255,140,50', (strong ? 0.42 : 0.24) + 0.08 * Math.sin(t * 9 + seed));
+  glow(c, x, y + 10, strong ? 120 : 70, '255,110,30', 0.16);
+  const n = strong ? 12 : 7;
+  for (let layer = 0; layer < 3; layer++) {
+    const col = ['#c83a1a', '#e87a28', '#ffd060'][layer], sc = [1, 0.72, 0.42][layer];
+    for (let k = 0; k < n; k++) {
+      const ph = t * (5.5 + layer) + k * 1.7 + seed + layer, h = (strong ? 44 : 22) * sc * (0.55 + 0.45 * Math.abs(Math.sin(ph))) * (1 - Math.abs(k - n / 2) / (n * 0.9));
+      const dx = (k - n / 2 + 0.5) * (strong ? 3.2 : 2.6) * (1 - layer * 0.18), w = (strong ? 5.2 : 3.4) * (1 - layer * 0.2);
+      c.fillStyle = col;
+      c.beginPath(); c.moveTo(x + dx - w, y + 4); c.quadraticCurveTo(x + dx - w * 0.4 + Math.sin(ph) * 3, y - h * 0.55, x + dx + Math.sin(ph * 1.3) * 3, y - h);
+      c.quadraticCurveTo(x + dx + w * 0.4 + Math.sin(ph + 1) * 2, y - h * 0.5, x + dx + w, y + 4); c.fill();
+    }
   }
-  c.fillStyle = '#fff2a0'; c.beginPath(); c.ellipse(x, y - 1, 3, 2.4, 0, 0, Math.PI * 2); c.fill();
-  for (let k = 0; k < (strong ? 6 : 3); k++) {
-    const p = (t * 0.7 + k / 6 + seed * 0.1) % 1;
+  c.fillStyle = '#fff6c0'; c.beginPath(); c.ellipse(x, y - 2, 6 * S + 1, 4.4 * S + 1, 0, 0, Math.PI * 2); c.fill();
+  // искры и угольки
+  for (let k = 0; k < (strong ? 14 : 6); k++) {
+    const p = (t * 0.6 + k / 14 + seed * 0.1) % 1;
     c.globalAlpha = 1 - p;
-    c.fillStyle = '#ffd060';
-    c.fillRect(Math.round(x + Math.sin(k * 3.1 + t) * 6 * p), Math.round(y - 8 - p * 26), 1, 1);
+    c.fillStyle = k % 3 ? '#ffd060' : '#ff7a30';
+    c.fillRect(Math.round(x + Math.sin(k * 3.1 + t * 1.3) * (8 + 14 * p)), Math.round(y - 10 - p * (strong ? 70 : 40)), k % 4 ? 1 : 2, k % 4 ? 1 : 2);
   }
   c.globalAlpha = 1;
 }
