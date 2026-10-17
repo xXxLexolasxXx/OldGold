@@ -71,6 +71,7 @@ function setTool(tool) {
   R.roadDrag = null;
   document.querySelectorAll('.bbtn, .tools button').forEach(b => b.classList.remove('active'));
   mobileTool(tool);
+  toolHint(tool);
   if (!tool) return;
   if (tool.kind === 'build') document.querySelector(`.bbtn[data-type="${tool.type}"]`)?.classList.add('active');
   if (tool.kind === 'road') document.getElementById('tool-road').classList.add('active');
@@ -127,7 +128,6 @@ function initUI() {
   renderBuildList();
 
   document.getElementById('tool-road').onclick = () => setTool(Game.tool && Game.tool.kind === 'road' ? null : { kind: 'road' });
-  document.getElementById('tool-rotate').onclick = () => rotateTool();
   document.getElementById('tool-erase').onclick =() => setTool(Game.tool && Game.tool.kind === 'erase' ? null : { kind: 'erase' });
   for (const [crop, label] of [['wheat', 'Пшеница'], ['hops', 'Хмель']]) {
     const btn = document.getElementById('tool-' + crop);
@@ -570,4 +570,14 @@ function toggleDeliver(b) {
   b.noDeliver = !b.noDeliver;
   toast(b.noDeliver ? `${b.def.name}: доставки закрыты — трудяги сюда ничего не везут` : `${b.def.name}: доставки снова открыты`, b);
   logEvent('deliver', b.noDeliver ? `${b.def.name}: доставки закрыты` : `${b.def.name}: доставки открыты`, b.doorX, b.doorY);
+}
+
+// Подсказка при постройке: как повернуть здание (кнопки «Повернуть» больше нет)
+function toolHint(tool) {
+  const el = document.getElementById('tool-hint');
+  if (!el) return;
+  if (!tool || tool.kind !== 'build' || Mobile.on) { el.classList.add('hidden'); return; }
+  const noRot = BUILDINGS[tool.type].noRotate;
+  el.innerHTML = noRot ? '<b>' + BUILDINGS[tool.type].name + '</b>: это здание не поворачивается' : '<kbd>T</kbd> — повернуть здание: вход на юг, восток или запад';
+  el.classList.remove('hidden');
 }

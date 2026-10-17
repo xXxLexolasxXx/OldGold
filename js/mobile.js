@@ -46,7 +46,7 @@ function mobileTool(tool) {
   mobileSheet(null);
   const text = document.getElementById('mtool-text');
   const build = tool.kind === 'build';
-  if (build) text.textContent = `${BUILDINGS[tool.type].name}: коснитесь места`;
+  if (build) text.textContent = `${BUILDINGS[tool.type].name}: коснитесь места${BUILDINGS[tool.type].noRotate ? '' : ' · ↻ — повернуть вход'}`;
   else if (tool.kind === 'road') text.textContent = 'Дорога: ведите пальцем, касание по дороге — убрать';
   else if (tool.kind === 'field') text.textContent = `${FIELD_NAMES[tool.crop]}: касайтесь клеток (повторное касание — убрать)`;
   else text.textContent = 'Снос: коснитесь';

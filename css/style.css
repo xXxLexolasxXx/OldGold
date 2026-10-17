@@ -526,3 +526,12 @@ body.mobile #mtool:not(.hidden) {
   50% { box-shadow: 0 0 0 3px #fff2a0, 0 0 16px 6px rgba(246,212,88,0.9); }
 }
 body.mobile #tut { left: 8px; right: 8px; top: 50px; width: auto; max-height: 46%; overflow-y: auto; font-size: 13px; padding: 8px 10px 10px; }
+
+/* подсказка о повороте при постройке */
+#tool-hint {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 4;
+  padding: 6px 14px; background: rgba(20,14,8,0.88); border: 1px solid var(--line-hi);
+  color: var(--text); font-size: 13px; pointer-events: none; white-space: nowrap;
+}
+#tool-hint.hidden { display: none; }
+#tool-hint kbd { padding: 1px 6px; border: 1px solid var(--gold); border-radius: 3px; background: #1a130d; color: var(--gold-hi); font-weight: bold; }
