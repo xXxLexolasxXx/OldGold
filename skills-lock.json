@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "game-assets": {
+      "source": "opusgamelabs/game-creator",
+      "sourceType": "github",
+      "skillPath": "skills/game-assets/SKILL.md",
+      "computedHash": "11874de3054e82b21db3b090e45f65555b7540b22b8de98f692a38d7324acda8"
+    },
+    "game-audio": {
+      "source": "omer-metin/skills-for-antigravity",
+      "sourceType": "github",
+      "skillPath": "skills/game-audio/SKILL.md",
+      "computedHash": "314718e38c121814e8c116234f6dea5789cd4ed68c8c2fc51a1c9e565bf48a08"
+    },
+    "game-development": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/creative-design/game-development/SKILL.md",
+      "computedHash": "e544e4b64e28cc610cad6043f87f47251570e126946dba8c3129f2c63cecf761"
+    },
+    "pixel-art-sprites": {
+      "source": "omer-metin/skills-for-antigravity",
+      "sourceType": "github",
+      "skillPath": "skills/pixel-art-sprites/SKILL.md",
+      "computedHash": "6d7f3d45af2fa94e0fe9abe08575e859aa0f24297305ee8b89ac64a7534c9825"
+    }
+  }
+}
