@@ -8,8 +8,10 @@
 (function () {
   const cv = document.getElementById('load-cv');
   if (!cv) return;
-  const ctx = cv.getContext('2d');
-  let W = 0, H = 0, DPR = 1;
+  // Сцена рисуется в крошечный холст (lo) и потом укрупняется без сглаживания: палитра + дизеринг = пиксель-арт
+  const vctx = cv.getContext('2d');
+  const lo = document.createElement('canvas'), ctx = lo.getContext('2d', { willReadFrequently: true });
+  let W = 0, H = 0, DPR = 1, Z = 4, PSc = 4;
   const rnd = (a, b) => a + Math.random() * (b - a);
   const OUT = '#1a0f08';
 
@@ -17,9 +19,39 @@
     DPR = Math.min(2, window.devicePixelRatio || 1);
     W = cv.clientWidth; H = cv.clientHeight;
     cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    Z = Math.max(1, Math.round(Math.max(2, Math.round(H / 190)) * DPR)); PSc = Z / DPR;
+    lo.width = Math.ceil(cv.width / Z); lo.height = Math.ceil(cv.height / Z);
   }
   window.addEventListener('resize', resize);
   resize();
+  // линии не тоньше одного пикселя картинки — иначе обводка тает при укрупнении
+  const lwd = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'lineWidth');
+  Object.defineProperty(ctx, 'lineWidth', { get() { return lwd.get.call(this); }, set(v) { lwd.set.call(this, Math.max(v, PSc * 0.95)); } });
+
+  // Палитра ночного костра: рампы со сдвигом оттенка (тени — лиловые и синие, свет — жёлтый)
+  const PAL = '12163a 161a44 221c4c 301f58 462a62 623a68 82485e 6a4a7a 2e2438 442c3c 070a1c 0e1330 1a1840 2a2050 3e2a60 5a3466 7a4260 9c5658 0a1210 10201a 18301f 244a26 36662e 4c8438 1a1410 3a1c14 5c2a1c 8a3e24 b85a2c d88438 f0b048 ffd878 fff0b0 fffbe8 4a141c 7a1c24 b02a2a d84a34 1c2e50 2e5a7e 4a8aa8 8ac0d0 3a5a28 6e8e3a a0b84c 3a2a6a 5a3a82 8a64b0 3a322c 5e544a 8a8070 b8ae98 e0d8c0 f4f0e4 f2c8a0 e4b08a c88a62 3a8a7a 80d8b8 4a3220 7a5230 a8783a e8a850'.split(' ').map(h => { const n = parseInt(h, 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
+  const LUT = new Int16Array(32768).fill(-1), BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  function nearest(r, g, b) {
+    const key = (r >> 3) << 10 | (g >> 3) << 5 | (b >> 3);
+    if (LUT[key] >= 0) return LUT[key];
+    const R = (r >> 3 << 3) + 4, G = (g >> 3 << 3) + 4, B = (b >> 3 << 3) + 4;
+    let best = 0, bd = 1e9;
+    for (let i = 0; i < PAL.length; i++) { const p = PAL[i], dr = p[0] - R, dg = p[1] - G, db = p[2] - B, rm = (p[0] + R) / 2; const d = (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db; if (d < bd) { bd = d; best = i; } }
+    return LUT[key] = best;
+  }
+  const qcv = document.createElement('canvas');
+  function present() {
+    const w = lo.width, h = lo.height;
+    const img = ctx.getImageData(0, 0, w, h), d = img.data;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const o = (y * w + x) * 4, dz = (BAY[(y & 3) * 4 + (x & 3)] - 7.5) * 0.8;
+      const p = PAL[nearest(Math.max(0, Math.min(255, d[o] + dz)), Math.max(0, Math.min(255, d[o + 1] + dz)), Math.max(0, Math.min(255, d[o + 2] + dz)))];
+      d[o] = p[0]; d[o + 1] = p[1]; d[o + 2] = p[2]; d[o + 3] = 255;
+    }
+    qcv.width = w; qcv.height = h; qcv.getContext('2d').putImageData(img, 0, 0);
+    vctx.imageSmoothingEnabled = false; vctx.setTransform(1, 0, 0, 1, 0, 0);
+    vctx.drawImage(qcv, 0, 0, w * Z, h * Z);
+  }
 
   // ---------- гномы ----------
   const CREW = [
@@ -609,7 +641,7 @@
       ctx.restore();
       if (a.bolt > 0) {   // молния с неба в гнома
         a.bolt -= 0.016;
-        ctx.save(); ctx.strokeStyle = '#fff'; ctx.shadowColor = '#bcd8ff'; ctx.shadowBlur = 18; ctx.lineWidth = 3.4; ctx.beginPath();
+        ctx.save(); ctx.strokeStyle = '#fff'; ctx.shadowColor = '#bcd8ff'; ctx.shadowBlur = 5; ctx.lineWidth = 3.4; ctx.beginPath();
         let bx = a.x + rr(-6, 6), by = -260; ctx.moveTo(bx, by);
         while (by < a.y - 84 * a.k) { by += 34; bx += rr(-22, 22); ctx.lineTo(bx, by); }
         ctx.lineTo(a.x, a.y - 84 * a.k); ctx.stroke(); ctx.restore();
@@ -631,8 +663,8 @@
     if (!running) return;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const t = (now - T0) / 1000;
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.clearRect(0, 0, W, H);
+    ctx.setTransform(1 / PSc, 0, 0, 1 / PSc, 0, 0);
+    ctx.clearRect(0, 0, W + PSc, H + PSc);
     const menu = document.getElementById("loading").classList.contains("with-menu");
     const sm = document.getElementById("start-menu"), mh = menu && sm ? sm.offsetHeight : 0;
     lift += ((menu ? Math.max(0, Math.min(H * 0.42, mh * (H > W ? 1.02 : 0.85) - H * 0.02)) : 0) - lift) * Math.min(1, dt * 4);
@@ -700,9 +732,13 @@
     };
     drawRing(back);
     // пламя между задними и передними — задние закрыты огнём лишь частично
-    emitSparks(cx, cy, S, dt);
-    drawFlames(cx, cy - 4 * S, S, t);
-    drawSparks();
+    // пиксельное пламя из js/fire.js: большой язык по центру, два малых по бокам, искры
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const fx = cx / PSc, fy = (cy - lift) / PSc - 2, fh = 96 * S / PSc;
+    drawFire(ctx, fx - 9 * S / PSc * 2.2, fy, 'camp', t, 1, { h: fh * 0.62, glow: 0 });
+    drawFire(ctx, fx + 10 * S / PSc * 2.2, fy, 'camp', t, 4, { h: fh * 0.55, glow: 0 });
+    drawFire(ctx, fx, fy + 1, 'blaze', t, 2, { h: fh, glow: 0, sparks: 16 });
+    ctx.restore();
     drawRing(front);
     // тёплая засветка поверх всей сцены
     ctx.save(); ctx.globalCompositeOperation = 'soft-light';
@@ -715,6 +751,7 @@
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.65)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     if (stage.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(0.8, stage.flash)})`; ctx.fillRect(0, 0, W, H); }
+    present();
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

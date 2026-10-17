@@ -787,11 +787,10 @@ const MODELS = {
       // ровно по центру участка (а не по косой проекции, как у прямоугольных домов)
       const x = Math.round(m.g.fx + m.g.fw / 2), y = Math.round(m.g.fy + m.g.fh - 6);
       shadowAt(c, x + 6, y + 4, 30, 9);
-      m.g.spr.handArt = { art: stumpArt, x, y, ax: STUMP_AX, ay: STUMP_AY };
+      m.g.spr.handArt = { art: woodcutterArt, x, y, ax: WC_AX, ay: WC_AY };
       if (m.sign) SIGN_QUEUE.list.push({ x: x - 34, y: y + 4, kind: m.sign, dir: -1 });   // вывеска слева, дверь справа
-      (m.g.spr.chimneys = m.g.spr.chimneys || []).push([x - 3, y - 46]);
+      (m.g.spr.chimneys = m.g.spr.chimneys || []).push([x + 10, y - 62]);
     }, 40, 12);
-    m.prop((c, x, y) => choppingBlock(c, x, y), 4, 4);
     m.prop((c, x, y) => logPile(c, x, y, 2, 9), 60, 2);
   },
 
@@ -1062,7 +1061,15 @@ const MODELS = {
 
   magiccircle(m) { m.custom(c => drawMagicCircle(c, m.g), 0, 60); },
 
-  bonfire(m) { m.custom(c => drawBonfire(c, m.g), 0, 60); },
+  bonfire(m) {
+    m.custom(c => {
+      const g = m.g, cx = Math.round(g.fx + g.fw / 2), cy = Math.round(g.fy + g.fh / 2 + 10);
+      shadowAt(c, cx, cy + 8, 46, 17);
+      g.spr.handArt = { art: bonfireArt, x: cx, y: cy, ax: BF_AX, ay: BF_AY };
+      g.spr.fire = [cx + BF_FIRE[0] - BF_AX, cy + BF_FIRE[1] - BF_AY];
+      (g.spr.chimneys = g.spr.chimneys || []).push([cx, cy - 70]);
+    }, 0, 60);
+  },
 
   magicworkshop(m) {
     m.box({
