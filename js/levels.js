@@ -108,7 +108,7 @@ function* upgradeGen(u, b) {
   if (!ok) { if (b.upg && b.upg.builder === u) b.upg.builder = null; u.job = null; yield { wait: 3 }; return; }
   while (!b.removed && b.upg && u.job === b) {
     if (u.wantsEat() && findInn(u)) break;
-    const U = b.upg, g = ['timber', 'stone'].find(k => U.stock[k] > 0);
+    const U = b.upg, g = ['trunk', 'timber', 'stone'].find(k => U.stock[k] > 0);
     if (g) {
       U.stock[g]--; U.used[g]++; U.usedN++;
       for (let k = 0; k < HITS_PER_UNIT && !b.removed && b.upg; k++) { yield { wait: HIT_TIME, anim: 'build' }; if (b.upg) { b.upg.hits++; b.lastHit = Game.time; } }

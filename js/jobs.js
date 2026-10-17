@@ -208,7 +208,7 @@ function* buildGen(u, s) {
       if (!s.removed) s.state = 'build';
       continue;
     }
-    const g = ['timber', 'stone'].find(k => s.stock[k] > 0);
+    const g = ['trunk', 'timber', 'stone'].find(k => s.stock[k] > 0);
     if (g) {
       // каждая единица материала — несколько ударов молота, каждый добавляет кусочек здания
       s.stock[g]--; s.usedOf[g]++; s.used++;

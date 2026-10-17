@@ -117,7 +117,7 @@ const BUILDINGS = {
     desc: 'Распиливает брёвна на доски.',
   },
   quarry: {
-    name: 'Каменоломня', cat: 'Ресурсы', w: 2, h: 2, top: 50, cost: { timber: 3, stone: 0 }, worker: 'stonemason',
+    name: 'Каменоломня', cat: 'Ресурсы', w: 2, h: 2, top: 50, cost: { trunk: 3 }, worker: 'stonemason',
     outputs: { stone: 5 }, need: 'stone',
     desc: 'Добывает камень. Ставить рядом с каменными глыбами.',
   },
