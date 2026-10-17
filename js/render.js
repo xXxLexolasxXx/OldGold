@@ -829,6 +829,7 @@ function render() {
 
   drawOwls(c);
   drawBats(c);
+  drawGhosts(c);
   drawFloaters(c);
   drawClouds(c);
   drawDusk(c);

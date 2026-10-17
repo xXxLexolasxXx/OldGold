@@ -421,6 +421,13 @@ function updateEnts(dt) {
           } else if (Math.random() < 0.3) sfxAt('creak', e.x * TILE, e.y * TILE, 0.7);
         }
         break;
+      case 'ghosted': {
+        // испугалась призрака: пятится прочь, потом приходит в себя
+        const f = e.gFrom || [e.x, e.y], dx = e.x - f[0], dy = e.y - f[1], d = Math.hypot(dx, dy) || 1;
+        entMove(e, e.x + dx / d * 2, e.y + dy / d * 2, 0.9, dt);
+        if (e.t > 4.5 || !night) { e.state = night ? 'walk' : 'return'; e.t = 0; e.wait = 1; e.goal = null; }
+        break;
+      }
       case 'smash': {
         const tb = e.target;
         if (!tb || tb.removed || !night) { e.target = null; e.state = night ? 'walk' : 'return'; break; }
@@ -562,6 +569,7 @@ function nightTick(dt) {
   if (!Game.ents) Game.ents = [];
   updateEnts(dt);
   batsTick(dt);
+  ghostsTick(dt);
   updateFx(dt);
   purgeDead();
   Game.nightT = (Game.nightT || 0) + dt;
@@ -572,6 +580,8 @@ function nightTick(dt) {
   if (eve && Game.entNight !== ni) {
     Game.entNight = ni;
     spawnEnts();
+    ghostsSpawn(1 + Math.floor(Math.random() * 3));
+    if (isLongNight()) toast('Эта ночь будет долгой — в полтора раза дольше обычной. Готовьте хлеб и костры!');
     toast('Вечереет: зажглись фонари. В лесу кто-то открыл глаза…');
     logEvent('night', 'Вечер: зажглись фонари');
   }
@@ -655,6 +665,7 @@ function nightLights(x0, y0, x1, y1) {
     if (e.state === 'drag' && e.victim) L.push([bx + e.face * 21, by - 30, 50, 0.8 * e.alpha]);   // фонарь бедняги ещё светит
   }
   weatherLights(L, x0, y0, x1, y1);
+  ghostLights(L, x0, y0, x1, y1);
   for (const b of Game.buildings) {
     if (b.state !== 'done' || b.x + b.w < x0 - 3 || b.x > x1 + 3 || b.y + b.h < y0 - 3 || b.y > y1 + 3) continue;
     if (b.type === 'bonfire') L.push([(b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE, 150, 1]);

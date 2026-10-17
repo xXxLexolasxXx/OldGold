@@ -95,6 +95,7 @@ const SFX = {
   creak: (d, t) => { const ctx = Sfx.ctx, lp = ctx.createBiquadFilter(); lp.type = 'bandpass'; lp.frequency.value = 420; lp.Q.value = 6; lp.connect(d); tone(lp, 'sawtooth', 70, 110, t, 0.9, 0.7, 0.2); tone(lp, 'sawtooth', 95, 60, t + 0.5, 0.7, 0.5, 0.15); },   // скрип ожившего дерева
   roar: (d, t) => { noiseHit(d, 'lowpass', 500, 160, 0.8, t, 1.1, 0.6, 0.12); tone(d, 'sawtooth', 60, 40, t, 1, 0.3, 0.1); },
   scream: (d, t) => gnomeVoice(d, t, [[700, 1100, 0.18], [1100, 650, 0.35]], 0.6, 1500),
+  wail: (d, t) => { for (const f of [420, 428]) { tone(d, 'sine', f, f * 0.62, t, 1.1, 0.14, 0.2); tone(d, 'sine', f * 2.01, f * 1.25, t + 0.05, 0.9, 0.05, 0.2); } },   // протяжный вой призрака
   squeak: (d, t) => { for (const k of [0, 0.07, 0.15]) tone(d, 'sine', 5600 - k * 8000, 8200 - k * 6000, t + k, 0.05, 0.2); },     // писк летучей мыши
   five: (d, t) => { noiseHit(d, 'bandpass', 2400, 1400, 1.6, t, 0.07, 0.7, 0.002); tone(d, 'sine', 900, 300, t, 0.08, 0.35); },   // хлопок ладоней
   chime: (d, t) => { for (const [f, k] of [[1320, 0], [1760, 0.08], [2640, 0.16]]) tone(d, 'sine', f, f, t + k, 0.5, 0.2); },
