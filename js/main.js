@@ -19,25 +19,27 @@ function layoutStart(rng, cx, cy) {
     return true;
   };
   const placed = [];
-  const types = ['storehouse', 'school', 'inn'].sort(() => rng() - 0.5);
+  const types = ['storehouse', 'school', 'bonfire', 'inn'];   // школа и костёр — только к северу от улицы, не боком
   for (const type of types) {
     let best = null;
     for (let t = 0; t < 400 && !best; t++) {
       const wide = BUILDINGS[type].wideDoor;                  // склад — воротами прямо к улице
-      const north = wide || rng() < 0.6;
-      const rot = BUILDINGS[type].noRotate || wide ? 0 : north ? (rng() < 0.3 ? 1 : 0) : 1;   // к югу от улицы — входом вбок
+      const dbl = type === 'bonfire';                         // к костру — двойная дорога
+      const front = wide || dbl || type === 'school';        // эти стоят к северу от улицы лицом к ней
+      const north = front || rng() < 0.6;
+      const rot = BUILDINGS[type].noRotate || front ? 0 : north ? (rng() < 0.3 ? 1 : 0) : 1;   // к югу от улицы — входом вбок
       const d = bDims(type, rot);
       const gap = 2 + Math.floor(rng() * 3);                  // 2–4 клетки от улицы
-      const x = cx - 11 + Math.floor(rng() * 20);
+      const x = cx - 20 + Math.floor(rng() * 38);
       const y = north ? sy - gap - d.h + (rot ? 1 : 0) : sy + gap;
-      if (!fits(x, y, d.w, d.h)) continue;
-      if (checkPlacement(type, x, y, rot)) continue;
+      if (!fits(x, y, d.w + (dbl ? 1 : 0), d.h)) continue;
+      { const bad = checkPlacement(type, x, y, rot); if (bad && bad !== 'Мешают деревья, камни или поля') continue; }   // деревья на месте стройки просто срубаем
       const door = [x + d.dx, y + d.dy];
       // дорожка от входа (и от второй створки ворот) к улице: прямо по вертикали
       const path = [];
       const step = door[1] < sy ? 1 : -1;
       let ok = true;
-      const cols = wide ? [door[0], wideDoorTile(type, x, y, rot)[0]] : [door[0]];
+      const cols = wide ? [door[0], wideDoorTile(type, x, y, rot)[0]] : dbl ? [door[0], door[0] + 1] : [door[0]];
       for (const col of cols) for (let yy = door[1] + step; yy !== sy; yy += step) {
         const i = idx(col, yy);
         if (World.bmap[i] || taken.has(i) || World.terrain[i] === T_WATER || World.terrain[i] === T_ROCK) { ok = false; break; }
@@ -47,9 +49,9 @@ function layoutStart(rng, cx, cy) {
     }
     if (!best) continue;
     const d = bDims(type, best.rot);
-    for (let yy = best.y - 1; yy <= best.y + d.h; yy++) for (let xx = best.x - 1; xx <= best.x + d.w; xx++) taken.add(idx(xx, yy));
-    const pb = placeBuilding(type, best.x, best.y, type !== 'school', best.rot);   // школа — стройка: достраивают в обучении
-    if (type === 'school') pb.hold = true;
+    for (let yy = best.y - 1; yy <= best.y + d.h; yy++) for (let xx = best.x - 1; xx <= best.x + d.w + (type === 'bonfire' ? 1 : 0); xx++) taken.add(idx(xx, yy));
+    for (let yy = best.y; yy <= best.y + d.h; yy++) for (let xx = best.x; xx < best.x + d.w + (type === 'bonfire' ? 1 : 0); xx++) if (inb(xx, yy)) World.obj[idx(xx, yy)] = null;   // расчищаем площадку
+    const pb = placeBuilding(type, best.x, best.y, true, best.rot);   // школа и костёр стоят с самого начала
     placed.push(pb);
     roads.push(...best.path);
   }
@@ -70,6 +72,27 @@ function layoutStart(rng, cx, cy) {
   return { sy, x0, x1, placed };
 }
 
+
+// Если среди стартовых зданий не нашлось места костру — подыскиваем ему место отдельно:
+// к северу от улицы, вход на юг, к нему двойная дорога до улицы.
+function addStartBonfire(lay) {
+  const { sy } = lay;
+  const blocked = (x, y) => Game.buildings.some(b => x >= b.x - 1 && x <= b.x + b.w && y >= b.y - 1 && y <= b.y + b.h);
+  for (let gap = 2; gap <= 7; gap++) for (let x = lay.x0 - 16; x <= lay.x1 + 16; x++) {
+    const y = sy - gap - 3;
+    let ok = true;
+    for (let yy = y - 1; yy <= sy && ok; yy++) for (let xx = x - 1; xx <= x + 4 && ok; xx++) if (!inb(xx, yy) || (yy < sy && blocked(xx, yy)) || (World.terrain[idx(xx, yy)] !== T_GRASS && !(yy >= sy - 1 && World.terrain[idx(xx, yy)] === T_SAND))) ok = false;
+    if (!ok) continue;
+    const bad = checkPlacement('bonfire', x, y, 0);
+    if (bad && bad !== 'Мешают деревья, камни или поля') continue;
+    for (let yy = y; yy < y + 3; yy++) for (let xx = x; xx < x + 3; xx++) World.obj[idx(xx, yy)] = null;
+    const b = placeBuilding('bonfire', x, y, true, 0);
+    for (let yy = b.doorY + 1; yy <= sy; yy++) for (const xx of [b.doorX, b.doorX + 1]) { if (World.bmap[idx(xx, yy)]) continue; World.obj[idx(xx, yy)] = null; setRoad(xx, yy, true); }
+    lay.placed.push(b);
+    return b;
+  }
+  return null;
+}
 function setupStart(seed) {
   resetGameState();
   Game.seed = seed;
@@ -77,12 +100,19 @@ function setupStart(seed) {
   const { cx, cy } = genWorld(seed);
   const rng = mulberry32(seed ^ 0x5eed);
   let lay = layoutStart(rng, cx, cy);
+  // нужны склад, школа и костёр с двойной дорогой: если не вышло — пробуем ещё несколько раскладок
+  for (let attempt = 0; attempt < 8 && !(lay.placed.length >= 3 && lay.placed.some(b => b.type === 'school') && lay.placed.some(b => b.type === 'bonfire')); attempt++) {
+    for (const b of lay.placed) removeBuilding(b);
+    World.road.fill(0);
+    lay = layoutStart(rng, cx, cy);
+  }
+  if (lay.placed.length >= 3 && !lay.placed.some(b => b.type === 'bonfire')) addStartBonfire(lay);
   if (lay.placed.length < 3) {
     // не нашлось места — запасная прежняя раскладка
     for (const b of lay.placed) removeBuilding(b);
     World.road.fill(0);
     placeBuilding('storehouse', cx - 9, cy - 3, true);
-    placeBuilding('school', cx - 4, cy - 3, false).hold = true;
+    placeBuilding('school', cx - 4, cy - 3, true);
     placeBuilding('inn', cx, cy - 3, true);
     for (let x = cx - 10; x <= cx + 5; x++) setRoad(x, cy, true);
     lay = { sy: cy, x0: cx - 10, x1: cx + 5 };
