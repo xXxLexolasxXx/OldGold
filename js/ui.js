@@ -75,6 +75,7 @@ function setTool(tool) {
   if (tool.kind === 'build') document.querySelector(`.bbtn[data-type="${tool.type}"]`)?.classList.add('active');
   if (tool.kind === 'road') document.getElementById('tool-road').classList.add('active');
   if (tool.kind === 'erase') document.getElementById('tool-erase').classList.add('active');
+  if (tool.kind === 'field') document.getElementById('tool-' + tool.crop)?.classList.add('active');
 }
 
 function setSpeed(s) {
@@ -128,6 +129,11 @@ function initUI() {
   document.getElementById('tool-road').onclick = () => setTool(Game.tool && Game.tool.kind === 'road' ? null : { kind: 'road' });
   document.getElementById('tool-rotate').onclick = () => rotateTool();
   document.getElementById('tool-erase').onclick =() => setTool(Game.tool && Game.tool.kind === 'erase' ? null : { kind: 'erase' });
+  for (const [crop, label] of [['wheat', 'Пшеница'], ['hay', 'Сено'], ['hops', 'Хмель']]) {
+    const btn = document.getElementById('tool-' + crop);
+    btn.innerHTML = gi(crop === 'hay' ? 'hay' : crop) + label;
+    btn.onclick = () => setTool(Game.tool && Game.tool.kind === 'field' && Game.tool.crop === crop ? null : { kind: 'field', crop });
+  }
 
   document.querySelectorAll('[data-speed]').forEach(btn => { btn.onclick = () => setSpeed(+btn.dataset.speed); });
   document.getElementById('help-close').onclick = () => document.getElementById('help').classList.add('hidden');
@@ -478,7 +484,7 @@ function infoBuilding(b) {
     const CROP_NAMES = { wheat: 'Пшеница → зерно', hay: 'Травы → сено', hops: 'Хмель на шестах' };
     for (const crop of def.crops)
       h += `<div class="recipe${b.crops[crop] ? '' : ' off'}">${gi(crop)} ${CROP_NAMES[crop]}<span class="t">полей: ${cnt[crop] || 0}</span>${def.crops.length > 1 ? `<input type="checkbox" data-crop="${crop}" ${b.crops[crop] ? 'checked' : ''}>` : ''}</div>`;
-    h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div>`;
+    h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div><div class="small muted">Поля закладывайте сами инструментами «Пшеница», «Сено», «Хмель» рядом с фермой (до ${FARM_R} клеток) — работяга вскопает их бесплатно, хмель стоит доску за подвесы.</div>`;
   }
   if (b.type === 'swine') {
     const st = ['', '⅓', '⅔'];

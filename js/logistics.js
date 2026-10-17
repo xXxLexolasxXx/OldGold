@@ -174,6 +174,21 @@ function dispatchBuilders() {
     u.idleFlag = false; u.idleStreak = 0;
     u.proc = null; u.action = null; u.anim = null;
   }
+  // оставшиеся без дела работяги вскапывают заложенные поля (бесплатно)
+  if (idle.length && Game.fieldPlans && Game.fieldPlans.size) {
+    for (const i of [...Game.fieldPlans]) {
+      const o = World.obj[i];
+      if (!o || o.t !== 'field' || !o.plan) { Game.fieldPlans.delete(i); continue; }
+      if (o.res) continue;
+      const x = i % MAP_W, y = (i / MAP_W) | 0;
+      const u = takeNearest(idle, x, y);
+      if (!u) break;
+      o.res = true;
+      u.fieldJob = i;
+      u.idleFlag = false; u.idleStreak = 0;
+      u.proc = null; u.action = null; u.anim = null;
+    }
+  }
 }
 
 function dispatchWorkers() {

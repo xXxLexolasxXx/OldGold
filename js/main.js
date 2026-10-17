@@ -231,6 +231,7 @@ function onLeftClickTile(t) {
     return;
   }
   if (tool && tool.kind === 'erase') { eraseAt(t); return; }
+  if (tool && tool.kind === 'field') { fieldStroke(t, true); return; }
   const b = buildingAt(t);
   selectBuilding(b || (inb(t[0], t[1]) ? Game.roadSites.get(idx(t[0], t[1])) || null : null));
 }
@@ -246,6 +247,7 @@ function eraseAt(t) {
     if (b && (b.state !== 'done' || confirm(`Снести «${b.def.name}»?`))) removeBuilding(b);
     return;
   }
+  if (removeField(t[0], t[1])) return;                              // убрать поле
   if (isStreetObj(World.obj[i])) { World.obj[i] = null; return; }   // убрать фонарь, скамейку или урну
   if (World.road[i] && !World.door[i]) setRoad(t[0], t[1], false);
 }
@@ -286,6 +288,7 @@ function initInput() {
     R.hoverPx = inside ? [e.clientX - rect.left, e.clientY - rect.top] : null;
     if (Input.leftDown && R.hover && Game.tool) {
       if (Game.tool.kind === 'road' && Input.roadStart) R.roadDrag = lineCells(Input.roadStart, R.hover);
+      if (Game.tool.kind === 'field') fieldStroke(R.hover, false);
       if (Game.tool.kind === 'erase' && R.hover.join() !== Input.lastEraseTile) {
         Input.lastEraseTile = R.hover.join();
         const i = inb(R.hover[0], R.hover[1]) ? idx(R.hover[0], R.hover[1]) : -1;
@@ -304,8 +307,13 @@ function initInput() {
       return;
     }
     if (e.button !== 0) return;
-    Input.leftDown = false;
+    Input.leftDown = false; Input.fieldMode = null; Input.lastFieldTile = null;
     if (Game.tool && Game.tool.kind === 'road' && R.roadDrag) {
+      // одиночный клик по готовой дороге или стройке дороги — убрать её (быстрее, чем «Снести»)
+      const only = R.roadDrag.length === 1 ? R.roadDrag[0] : null;
+      if (only && inb(only[0], only[1]) && (World.road[idx(only[0], only[1])] || Game.roadSites.has(idx(only[0], only[1])))) {
+        eraseAt(only); R.roadDrag = null; Input.roadStart = null; Input.fieldMode = null; return;
+      }
       let n = 0;
       for (const [x, y] of R.roadDrag) if (placeRoadSite(x, y)) n++;
       if (!n && R.roadDrag.length) toast('Здесь нельзя проложить дорогу');

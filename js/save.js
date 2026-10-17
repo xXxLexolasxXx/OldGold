@@ -13,6 +13,7 @@ function resetGameState() {
   Game.animals = [];
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
   Game.ents = []; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0;
+  Game.fieldPlans = new Set();
   World.occ.fill(0);
   World.roadDirty = true;
   Game.roadSites.clear();
@@ -28,7 +29,7 @@ function serializeGame() {
   const obj = [];
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
-    if (o) obj.push([i, o.t, o.g ?? 0, o.n ?? (o.ash ? 1 : 0), o.farm ?? 0, o.crop || '']);
+    if (o) obj.push([i, o.t, o.g ?? 0, o.n ?? (o.plan ? 2 : o.ash ? 1 : 0), o.farm ?? 0, o.crop || '']);
   }
   const road = [];
   for (let i = 0; i < N_TILES; i++) if (World.road[i]) road.push(i);
@@ -61,7 +62,7 @@ function applySave(s) {
     const o = { t };
     if (t === 'tree' || t === 'field' || t === 'stump' || t === 'bin') o.g = g;
     if (t === 'stone') o.n = n;
-    if (t === 'field') { o.farm = farm; o.crop = crop || 'wheat'; o.ash = n === 1; }
+    if (t === 'field') { o.farm = farm; o.crop = crop || 'wheat'; o.ash = n === 1; o.plan = n === 2; if (o.plan) Game.fieldPlans.add(i); }
     World.obj[i] = o;
     if ((t === 'tree' && g < 1) || (t === 'field' && g >= 0 && g < 1) || t === 'stump') World.growing.add(i);
   }

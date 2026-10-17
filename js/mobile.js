@@ -47,7 +47,8 @@ function mobileTool(tool) {
   const text = document.getElementById('mtool-text');
   const build = tool.kind === 'build';
   if (build) text.textContent = `${BUILDINGS[tool.type].name}: коснитесь места`;
-  else if (tool.kind === 'road') text.textContent = 'Дорога: ведите пальцем';
+  else if (tool.kind === 'road') text.textContent = 'Дорога: ведите пальцем, касание по дороге — убрать';
+  else if (tool.kind === 'field') text.textContent = `${FIELD_NAMES[tool.crop]}: касайтесь клеток (повторное касание — убрать)`;
   else text.textContent = 'Снос: коснитесь';
   document.getElementById('mtool-ok').style.display = build ? '' : 'none';
   document.getElementById('mtool-rot').style.display = build && !BUILDINGS[tool.type].noRotate ? '' : 'none';
@@ -150,6 +151,8 @@ function initTouch() {
     const mode = T.mode;
     T.mode = null;
     if (mode === 'road' && R.roadDrag) {
+      const only = R.roadDrag.length === 1 ? R.roadDrag[0] : null;
+      if (only && inb(only[0], only[1]) && (World.road[idx(only[0], only[1])] || Game.roadSites.has(idx(only[0], only[1])))) { eraseAt(only); R.roadDrag = null; Input.roadStart = null; return; }
       let n = 0;
       for (const [x, y] of R.roadDrag) if (placeRoadSite(x, y)) n++;
       if (!n && R.roadDrag.length) toast('Здесь нельзя проложить дорогу');

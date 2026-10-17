@@ -75,6 +75,18 @@ function drawStump(c, x, y) {
   c.fillStyle = '#a06840'; c.fillRect(px + 3, py - 1, 2, 1);
 }
 
+// Заложенное поле: бледный контур и колышки по углам, пока работяга его не вскопал
+function drawFieldPlan(c, x, y, o) {
+  const px = x * TILE, py = y * TILE;
+  c.globalAlpha = 0.45;
+  c.drawImage(SPR.fields[o.crop || 'wheat'][0], px, py);
+  c.globalAlpha = 1;
+  c.strokeStyle = o.res ? '#f6d458' : '#e8dcc0'; c.lineWidth = 1;
+  c.setLineDash([3, 3]); c.strokeRect(px + 2.5, py + 2.5, TILE - 5, TILE - 5); c.setLineDash([]);
+  c.fillStyle = '#6e432a';
+  for (const [dx, dy] of [[2, 2], [TILE - 4, 2], [2, TILE - 4], [TILE - 4, TILE - 4]]) c.fillRect(px + dx, py + dy, 2, 4);
+}
+
 function fieldStage(g) {
   if (g < 0) return 0;
   if (g < 0.35) return 1;
@@ -676,7 +688,7 @@ function render() {
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const o = World.obj[idx(x, y)];
     if (o && o.t === 'field') {
-      c.drawImage(SPR.fields[o.crop || 'wheat'][fieldStage(o.g)], x * TILE, y * TILE);
+      if (o.plan) drawFieldPlan(c, x, y, o); else c.drawImage(SPR.fields[o.crop || 'wheat'][fieldStage(o.g)], x * TILE, y * TILE);
       if (o.ash) {   // удобрено пеплом: серые крапинки в бороздах
         c.fillStyle = 'rgba(200,195,185,0.75)';
         for (let k = 0; k < 7; k++) c.fillRect(x * TILE + 3 + ((k * 13 + x * 7) % 26), y * TILE + 4 + ((k * 7 + y * 5) % 24), 1, 1);
@@ -778,6 +790,11 @@ function drawOverlay(c) {
       c.fillStyle = canPlaceRoad(x, y) ? 'rgba(255,230,160,0.5)' : 'rgba(220,40,30,0.4)';
       c.fillRect(x * TILE + 6, y * TILE + 6, 20, 20);
     }
+  } else if (tool.kind === 'field') {
+    const o = World.obj[idx(h[0], h[1])], has = o && o.t === 'field';
+    const ok = has || isFreeGrass(h[0], h[1]);
+    c.fillStyle = has ? 'rgba(224,64,48,0.4)' : ok ? 'rgba(160,220,80,0.4)' : 'rgba(224,64,48,0.3)';
+    c.fillRect(h[0] * TILE + 2, h[1] * TILE + 2, TILE - 4, TILE - 4);
   } else if (tool.kind === 'erase') {
     c.fillStyle = '#e04030';
     for (let k = 0; k < 18; k++) {

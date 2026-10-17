@@ -148,6 +148,8 @@ function villageAfterHour() {
     // фермам нужно поле вокруг — ставим их на окраине
     const b = placeNear(type, cx, cy, type === 'farm' || type === 'hopfarm' ? 13 : 3);
     if (b && b.def.worker) spawnUnit(b.def.worker, b.doorX, b.doorY);
+    if (b && b.type === 'farm') { seedFields(b, 'wheat', 5); seedFields(b, 'hay', 3); }
+    if (b && b.type === 'hopfarm') seedFields(b, 'hops', 5);
   }
   for (let k = 0; k < 32; k++) spawnUnit('serf', st.doorX + (k % 8) - 4, st.doorY + 1 + (k >> 3) % 2);
   for (let k = 0; k < 3; k++) spawnUnit('builder', st.doorX + k, st.doorY + 2);
@@ -199,4 +201,16 @@ function perfFrame(frameMs, stepMs) {
   const f = avg(Perf.frames);
   Perf.el.style.display = '';
   Perf.el.textContent = `${Math.round(1000 / f)} кадр/с · кадр ${f.toFixed(1)} мс · симуляция ${avg(Perf.steps).toFixed(1)} мс · жителей ${Game.units.length} · зданий ${Game.buildings.length}`;
+}
+
+// Заранее засеянные поля для сценариев без игрока: рядом с каждой фермой и хмельником
+function seedFields(b, crop, n) {
+  let made = 0;
+  for (let tries = 0; tries < 60 && made < n; tries++) {
+    const spot = randomFreeNear(b.doorX, b.y + 1, 2, FARM_R);
+    if (!spot || !isFreeGrass(spot[0], spot[1])) continue;
+    const i = idx(spot[0], spot[1]);
+    World.obj[i] = { t: 'field', g: -1, farm: b.id, crop, plan: false };
+    made++;
+  }
 }

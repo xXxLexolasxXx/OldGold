@@ -364,6 +364,59 @@ function farmFields(b) {
   return fields;
 }
 
+// Бесхозные поля игрока рядом с фермой переходят под её присмотр, если культура подходит
+function claimFields(b, fields) {
+  const crops = b.def.crops || [];
+  for (let y = b.y - FARM_R; y <= b.doorY + FARM_R && fields.length < FARM_FIELDS; y++) for (let x = b.x - FARM_R; x < b.x + b.w + FARM_R && fields.length < FARM_FIELDS; x++) {
+    if (!inb(x, y)) continue;
+    const o = World.obj[idx(x, y)];
+    if (o && o.t === 'field' && !o.plan && !o.farm && crops.includes(o.crop)) { o.farm = b.id; fields.push({ x, y, o }); }
+  }
+}
+
+// ---------- Поля: разбивает игрок, копает работяга ----------
+
+// Заложить поле. Пшеница и сено — бесплатно, хмель — одна доска на подвесы.
+function planField(x, y, crop) {
+  if (!isFreeGrass(x, y)) return 'Здесь нельзя разбить поле';
+  if (crop === 'hops') {
+    const st = Game.buildings.find(b => b.isStore() && b.stock.timber > 0);
+    if (!st) return 'Для хмеля нужна доска на подвесы — на складе её нет';
+    st.stock.timber--;
+  }
+  const i = idx(x, y);
+  World.obj[i] = { t: 'field', g: -1, crop, farm: 0, plan: true };
+  (Game.fieldPlans || (Game.fieldPlans = new Set())).add(i);
+  return null;
+}
+
+function removeField(x, y) {
+  if (!inb(x, y)) return false;
+  const i = idx(x, y), o = World.obj[i];
+  if (!o || o.t !== 'field') return false;
+  // не вскопанное поле хмеля — доска возвращается на склад
+  if (o.plan && o.crop === 'hops') { const st = Game.buildings.find(b => b.isStore()); if (st) st.stock.timber++; }
+  World.obj[i] = null; World.growing.delete(i);
+  if (Game.fieldPlans) Game.fieldPlans.delete(i);
+  return true;
+}
+
+// Работяга вскапывает заложенное поле
+function* fieldDigGen(u, i) {
+  const o = World.obj[i], x = i % MAP_W, y = (i / MAP_W) | 0;
+  u.fieldJob = -1;
+  if (!o || o.t !== 'field' || !o.plan) { if (o) o.res = false; return; }
+  const ok = yield { walk: [x, y], offroad: true };
+  if (!ok || World.obj[i] !== o) { o.res = false; yield { wait: 2 }; return; }
+  u.face = 1; u.vdir = 'E';
+  for (let k = 0; k < 3; k++) {
+    yield { wait: 1.1, anim: 'dig' };
+    if (World.obj[i] !== o) return;
+  }
+  o.plan = false; o.res = false; o.g = -1;
+  if (Game.fieldPlans) Game.fieldPlans.delete(i);
+}
+
 // Что сеять: включённая культура, под которую сейчас меньше всего полей.
 function pickCrop(b, fields) {
   const on = (b.def.crops || []).filter(c => b.crops[c]);
@@ -380,10 +433,11 @@ function fertilize(b, o) {
 
 function* farmWork(u, b) {
   const fields = farmFields(b);
+  claimFields(b, fields);                                   // поля игрока рядом переходят под присмотр фермы
   const ripe = fields.find(f => f.o.g >= 1 && !f.o.res && !outFull(b, f.o.crop));
-  const bare = fields.find(f => f.o.g < 0 && !f.o.res);
-  const crop = pickCrop(b, fields);
-  const target = ripe || (crop && bare);
+  // сеем только то, что включено в окне фермы; культура у каждого поля своя — как заложил игрок
+  const bare = fields.find(f => f.o.g < 0 && !f.o.plan && !f.o.res && b.crops[f.o.crop]);
+  const target = ripe || bare;
   if (target) {
     target.o.res = true;
     const ok = yield { walk: [target.x, target.y] };
@@ -408,27 +462,11 @@ function* farmWork(u, b) {
       yield { wait: 3, anim: 'dig' };
       if (World.obj[idx(target.x, target.y)] === target.o) {
         target.o.g = 0;
-        target.o.crop = crop;
         fertilize(b, target.o);
         World.growing.add(idx(target.x, target.y));
       }
     }
     return;
-  }
-  if (crop && fields.length < FARM_FIELDS) {
-    const spot = randomFreeNear(b.doorX, b.y + 1, 2, FARM_R);
-    if (spot) {
-      const ok = yield { walk: spot };
-      if (!ok) { yield { wait: 2 }; return; }
-      yield { wait: 3, anim: 'dig' };
-      if (isFreeGrass(spot[0], spot[1])) {
-        const i = idx(spot[0], spot[1]);
-        World.obj[i] = { t: 'field', g: 0, farm: b.id, crop };
-        fertilize(b, World.obj[i]);
-        World.growing.add(i);
-      }
-      return;
-    }
   }
   yield { wait: 3 };
 }
@@ -502,3 +540,19 @@ const WORK = {
   goatpen: goatpenWork,
   stable: stableWork,
 };
+
+// ---------- Инструмент «поле» ----------
+const FIELD_NAMES = { wheat: 'Поле пшеницы', hay: 'Поле сена', hops: 'Поле хмеля' };
+
+// Мазок инструмента: первая клетка решает режим — по пустой закладываем поля, по полю — убираем
+function fieldStroke(t, first) {
+  const tool = Game.tool;
+  if (!tool || tool.kind !== 'field' || !inb(t[0], t[1])) return;
+  const key = t.join();
+  if (!first && key === Input.lastFieldTile) return;
+  Input.lastFieldTile = key;
+  const o = World.obj[idx(t[0], t[1])];
+  if (first) Input.fieldMode = o && o.t === 'field' ? 'del' : 'add';
+  if (Input.fieldMode === 'del') { removeField(t[0], t[1]); return; }
+  if (Input.fieldMode === 'add') { const err = planField(t[0], t[1], tool.crop); if (err && first) toast(err); }
+}

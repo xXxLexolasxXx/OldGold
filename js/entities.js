@@ -390,7 +390,7 @@ function removeBuilding(b) {
   if (b.type === 'farm') {
     for (let i = 0; i < N_TILES; i++) {
       const o = World.obj[i];
-      if (o && o.t === 'field' && o.farm === b.id) World.obj[i] = null;
+      if (o && o.t === 'field' && o.farm === b.id) o.farm = 0;   // поля остаются, пока их не снесёт игрок
     }
   }
   if (Game.selected === b) Game.selected = null;
@@ -522,6 +522,7 @@ class Unit {
     }
     if (this.isCourier) { this.idleFlag = true; return idleGen(this); }
     if (this.type === 'builder') {
+      if (this.fieldJob >= 0) { this.idleFlag = false; return fieldDigGen(this, this.fieldJob); }
       if (this.job && !this.job.removed) { this.idleFlag = false; return buildGen(this, this.job); }
       this.job = null;
       this.idleFlag = true;
