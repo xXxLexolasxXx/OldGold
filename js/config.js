@@ -67,6 +67,7 @@ const UNIT_TYPES = {
   stableman:  { name: 'Конюх',     shirt: '#6a4a3a', noTrain: true, legacy: 'herder' },
   goat:       { name: 'Вьючная коза', shirt: '#d8d0c0', animal: true, noTrain: true },
   carter:     { name: 'Извозчик',  shirt: '#5a5a6a', noTrain: true },
+  hero:       { name: 'Герой',     shirt: '#8a1c22', noTrain: true },
 };
 const UNIT_KEYS = Object.keys(UNIT_TYPES).filter(k => !UNIT_TYPES[k].noTrain);   // кого учат в школе
 const ALL_UNIT_KEYS = Object.keys(UNIT_TYPES);

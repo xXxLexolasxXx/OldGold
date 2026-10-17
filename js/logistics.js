@@ -223,7 +223,7 @@ function dispatchWorkers() {
   for (const b of Game.buildings) {
     if (b.state !== 'done' || !b.def.worker || (b.worker && !b.worker.dead && b.worker.home === b)) continue;
     b.worker = null;
-    const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside);
+    const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf);
     const u = takeNearest(idle, b.doorX, b.doorY);
     if (!u) continue;
     u.home = b;

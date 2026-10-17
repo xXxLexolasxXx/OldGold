@@ -49,6 +49,7 @@ function serializeGame() {
     units: Game.units.map(u => ({
       type: u.type, x: u.x, y: u.y, food: u.food, look: u.look, home: u.home ? u.home.id : 0,
       homePen: u.homePen || 0, homeStable: u.homeStable || 0, smoker: u.smoker,
+      h: u.hero || undefined, tm: u.teamOf ? Game.units.findIndex(x => x.id === u.teamOf) : undefined,   // герой и его напарник
     })),
   };
 }
@@ -114,12 +115,15 @@ function applySave(s) {
     if (d.smoker !== undefined) u.smoker = d.smoker;
     const home = byId.get(d.home);
     if (home) { u.home = home; home.worker = u; }
+    if (d.h) { u.hero = d.h; if (u.type === 'hero') { Game.hero = u; u.smoker = false; } }
     Game.units.push(u);
     Game.unitMap.set(u.id, u);
   }
+  s.units.forEach((d, k) => { if (d.tm >= 0 && Game.units[d.tm]) Game.units[k].teamOf = Game.units[d.tm].id; });
   Game.time = s.time;
   Game.nextId = Math.max(s.nextId, Game.nextId);
   Game.storeBlock = s.storeBlock || {};
+  Game.lostGnomes = s.lost || 0;
   Object.assign(Game.produced, s.produced || {});
   if (s.cam) { R.cam.x = s.cam.x; R.cam.y = s.cam.y; R.cam.z = ZOOMS.includes(s.cam.z) ? s.cam.z : 2; }
   buildTerrain(s.seed);

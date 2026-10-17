@@ -523,6 +523,8 @@ class Unit {
       if (inn) { this.idleFlag = false; return eatGen(this, inn); }
       this.nextEatTry = Game.time + 15;
     }
+    if (this.type === 'hero') return heroThink(this);                              // герой: свои команды (hero.js)
+    if (this.teamOf) { const g = teamThink(this); if (g) return g; }               // напарник героя
     if (this.isCourier) { this.idleFlag = true; return idleGen(this); }
     if (this.type === 'builder') {
       if (this.fieldJob >= 0) { this.idleFlag = false; return fieldDigGen(this, this.fieldJob); }
@@ -639,6 +641,7 @@ class Unit {
       if (this.huntUntil > Game.time) speed *= 1.6;        // погоня за вором
       if (this.brk && this.brk.kind === 'lost') speed *= 0.6;   // бредёт наугад в тумане
       if (this.panicUntil > Game.time) speed *= 2;      // удирает от ходячего дерева
+      if (this.type === 'hero' || this.teamOf) speed *= teamSpeedMul(this);   // герой и напарник — одинаково быстрые
       const step = speed * dt;
       this.walkPhase += step * 6;
       if (Math.abs(dx) > 0.01) this.face = dx > 0 ? 1 : -1;
@@ -660,6 +663,7 @@ class Unit {
     if (a.wait !== undefined) {
       if (a.t === undefined) {
         a.t = a.wait * (this.food <= 0 && !this.noFood ? 1.6 : 1) * (this.injury === 'arm' && a.anim ? 1.5 : 1);
+        if (a.anim && (this.type === 'hero' || this.teamOf)) a.t /= teamWorkMul(this);
         a.T = a.t;                              // полная длительность — для фаз замаха и удара
         this.anim = a.anim || null;
         // звук инструмента — в момент удара, а не замаха
