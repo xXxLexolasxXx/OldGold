@@ -550,3 +550,4 @@ body.mobile #tut { left: 8px; right: 8px; top: 50px; width: auto; max-height: 46
 .log-filters button { display: inline-flex; align-items: center; gap: 4px; }
 .log-filters button img, .log-i img { width: 16px; height: 16px; image-rendering: pixelated; display: block; }
 .log-i { align-self: center; }
+.log-s { display: block; color: var(--text-dim); font-size: 11px; opacity: 0.85; margin-top: 1px; }

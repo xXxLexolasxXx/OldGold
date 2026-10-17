@@ -18,10 +18,30 @@ const LOG_KINDS = {
   deliver: { icon: 'store', name: 'Доставки' },
 };
 const LOG_FILTERS = [
-  ['all', 'Все', 'log_all'], ['build', 'Стройка', 'build'], ['animal', 'Животные', 'log_animal'], ['night', 'Ночь', 'log_night'],
-  ['food', 'Еда', 'log_food'], ['people', 'Жители', 'people'], ['gossip', 'Дрязги', 'log_gossip'],
+  ['all', 'Все', 'log_all'], ['gossip', 'Дрязги', 'log_gossip'], ['night', 'Ночь', 'log_night'], ['life', 'Бытовуха', 'people'],
 ];
-const LOG_GROUP = { owl: 'animal', tree: 'night', gold: 'people', deliver: 'build', bump: 'gossip', weather: 'gossip' };
+// Что куда входит: бытовуха — стройка, жители, еда, находки, доставки; дрязги — звери, столкновения, погода
+const LOG_GROUP = { owl: 'gossip', animal: 'gossip', bump: 'gossip', weather: 'gossip', tree: 'night', build: 'life', people: 'life', food: 'life', gold: 'life', deliver: 'life' };
+// Язвительные приписки: подбираются по виду события, стабильно для каждой записи
+const LOG_SARC = {
+  build:   ['Ну наконец-то, а то уже крыши не хватало.', 'Архитектор плачет от счастья. Или от чего-то ещё.', 'Стоит криво, зато своё.', 'Прораб заявляет, что так и задумано.'],
+  people:  ['Жизнь налаживается — ну, у кого-то.', 'Подвиг, достойный минуты молчания.', 'Население в шоке, но делает вид.'],
+  food:    ['Гномы едят, как будто завтра не будет. Завтра будет.', 'Диета отложена на неопределённый срок.', 'Кухня довольна собой.'],
+  gold:    ['Нашлось — значит, кто-то уже потерял.', 'Золото любит тех, кто не ищет. Ага.'],
+  deliver: ['Трудяги трудятся, начальство наблюдает.', 'Доставка прошла почти без потерь морали.'],
+  animal:  ['Природа напоминает, кто тут главный. Не вы.', 'Зверьё не читало договор о ненападении.', 'Волк сыт, гном научен, мешок утерян.'],
+  owl:     ['Сова ничего не знает, но смотрит осуждающе.', 'Птица умнее половины деревни.'],
+  bump:    ['Дорога слишком узкая для двух гномов и двух эго.', 'Извинений не последовало. Колено тоже.', 'Налетели друг на друга — классика жанра.'],
+  weather: ['Небеса снова вспомнили о гномах.', 'Погода: «так надо». Зонтики: «мы предупреждали».', 'Природа в очередной раз проверила крыши на честность.'],
+  night:   ['Страшно? Так и должно быть.', 'Тьма пришла без приглашения, как обычно.', 'Хороший вечер, чтобы лежать под одеялом и не отсвечивать.'],
+  tree:    ['Лес объявил войну. Ожидаемо.', 'Деревья давно копили обиды. Дождались.', 'Топор всегда лучше диалога. Но не всегда.'],
+};
+function logSarc(e) {
+  if (e.n > 1 && e.id % 3) return '';             // не к каждой записи — иначе утомит
+  if (e.id % 3 === 1) return '';
+  const p = LOG_SARC[e.kind];
+  return p ? p[(e.id * 7) % p.length] : '';
+}
 
 function logEvent(kind, text, x, y) {
   const log = Game.log || (Game.log = []);
@@ -51,7 +71,7 @@ function logHTML() {
   for (let i = list.length - 1; i >= 0 && i >= list.length - 120; i--) {
     const e = list[i], k = LOG_KINDS[e.kind] || { icon: 'log_all' };
     const go = e.x !== undefined ? ` data-logx="${e.x}" data-logy="${e.y}" title="Показать на карте"` : '';
-    h += `<div class="log-row${go ? ' click' : ''}"${go}><span class="log-t">${fmtTime(e.t)}</span><span class="log-i">${ui(k.icon)}</span><span class="log-x">${e.text}${e.n > 1 ? ` <b>×${e.n}</b>` : ''}</span></div>`;
+    h += `<div class="log-row${go ? ' click' : ''}"${go}><span class="log-t">${fmtTime(e.t)}</span><span class="log-i">${ui(k.icon)}</span><span class="log-x">${e.text}${e.n > 1 ? ` <b>×${e.n}</b>` : ''}${logSarc(e) ? `<i class="log-s">${logSarc(e)}</i>` : ''}</span></div>`;
   }
   return h + '</div>';
 }
