@@ -54,7 +54,7 @@ function mtSprite(size, v) {
   }
   for (let k = 0; k < S.w / 8; k++) tuftHoMM(c, rnd(cx - S.w * 0.46, cx + S.w * 0.46), base + rnd(0, 5), rnd(3, 6));
   grain(cv, 0.08, seed);
-  const out = toPixelArt(cv, SS, { outline: true, outlineDark: 0.12, alphaCut: 100 });
+  const out = toPixelArt(cv, SS, { outline: true, outlineDark: 0.3, alphaCut: 110 });
   MT_SPR[key] = out;
   return out;
 }
@@ -63,39 +63,41 @@ function mtSprite(size, v) {
 function massif(c, P, cx, base, w, h, n, seed, haze) {
   const r = mulberry32(seed), rr = (a, b) => a + r() * (b - a);
   const hw = w / 2, lerp = (a, b, t) => a + (b - a) * t;
-  // вершина смещена от центра; склоны разной крутизны: один круче, другой положе
-  const peakX = cx + rr(-w * 0.18, w * 0.18), peakY = base - h * rr(0.8, 1);
+  // вершина смещена от центра; один склон круче, другой положе. Силуэт — плавная
+  // кривая с мягкими уступами: никаких игл и зазубрин, как у скал на картах «Героев»
+  const peakX = cx + rr(-w * 0.16, w * 0.16), peakY = base - h * rr(0.82, 1);
   const steep = r() < 0.5 ? -1 : 1;
-  // сторона склона: чередование крутых подъёмов и полок-карнизов
-  const side = (dir, k) => {
-    const pts = [], m = n * 2 + 2, x0 = cx + dir * hw * (steep === dir ? rr(0.7, 0.86) : 1);
+  const side = dir => {
+    const pts = [], m = n + 2, x0 = cx + dir * hw * (steep === dir ? rr(0.78, 0.9) : 1);
     for (let i = 0; i <= m; i++) {
       const t = i / m;
-      let e = Math.pow(t, steep === dir ? 0.62 : 0.95);
-      let x = lerp(x0, peakX, Math.pow(t, 0.95)), y = lerp(base, peakY, e);
+      const e = Math.pow(t, steep === dir ? 0.7 : 0.95);
+      let x = lerp(x0, peakX + dir * w * 0.1, Math.pow(t, steep === dir ? 1.7 : 1.25)), y = lerp(base, peakY, e);   // купол: низ крутой, верх округлый
       if (i && i < m) {
         x += rr(-w * 0.05, w * 0.05);
-        if (i % 2) { y += h * rr(0.01, 0.05); x -= dir * w * rr(0.02, 0.07); }       // карниз: чуть вниз и внутрь
-        else y -= h * rr(0.0, 0.06);                                                       // уступ вверх
+        if (i % 2) { y += h * 0.025; x -= dir * w * 0.03; }          // мягкий уступ: чуть вниз и внутрь
+        y += rr(-h * 0.04, h * 0.04);
       }
       pts.push([x, y]);
     }
-    pts[m] = [peakX, peakY];
     return pts;
   };
   const left = side(-1), right = side(1);
   const m = left.length - 1;
-  // второй пик на плече для крупных массивов — рваная линия хребта
-  if (n >= 6 && r() < 0.8) {
-    const j = Math.floor(m * rr(0.45, 0.7)), dir = r() < 0.5 ? -1 : 1, arr = dir < 0 ? left : right;
-    const [px, py] = arr[j];
-    arr[j] = [px + dir * w * 0.02, py - h * rr(0.1, 0.2)];
-    arr[j + 1] = [px * 0.6 + arr[j + 1][0] * 0.4, py + h * 0.02];
+  // плечо: на одном склоне округлый горб — второй массив рядом с основным
+  if (n >= 6 && r() < 0.75) {
+    const dir = r() < 0.5 ? -1 : 1, arr = dir < 0 ? left : right, j = Math.floor(m * rr(0.4, 0.6));
+    arr[j] = [arr[j][0] + dir * w * 0.03, arr[j][1] - h * rr(0.05, 0.1)];
   }
-  const sil = [...left, ...right.slice(0, m).reverse(), [cx + hw + 2, base + 3], [cx - hw - 2, base + 3]];
+  const sil = [...left.slice(0, m + 1), ...right.slice(0, m).reverse(), [cx + hw * 0.9, base + 2], [cx, base + 4], [cx - hw * 0.9, base + 2]];
+  // плавный замкнутый контур: квадратичные кривые через середины отрезков
+  const smoothClosed = pts => {
+    const k = pts.length;
+    c.moveTo((pts[k - 1][0] + pts[0][0]) / 2, (pts[k - 1][1] + pts[0][1]) / 2);
+    for (let i = 0; i < k; i++) { const p = pts[i], q = pts[(i + 1) % k]; c.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2); }
+  };
   c.save();
-  c.beginPath(); c.moveTo(sil[0][0], sil[0][1]); for (const p of sil) c.lineTo(p[0], p[1]); c.closePath();
-  c.clip();
+  c.beginPath(); smoothClosed(sil); c.clip();
   // освещённая грань
   c.fillStyle = lingrad(c, cx - hw, peakY, cx + hw * 0.4, base, [[0, P.lit[0]], [1, P.lit[1]]]);
   c.fillRect(cx - hw - 4, peakY - 4, w + 8, h + 12);
@@ -117,18 +119,18 @@ function massif(c, P, cx, base, w, h, n, seed, haze) {
     const i = 1 + Math.floor(r() * (src.length - 3));
     const [sx, sy] = src[i];
     const ex = sx + (onLeft ? rr(-w * 0.02, w * 0.14) : rr(-w * 0.1, w * 0.04)), ey = base + 6, bw = rr(w * 0.04, w * 0.1);
-    c.fillStyle = onLeft ? 'rgba(255,244,214,0.2)' : 'rgba(255,230,190,0.07)';
+    c.fillStyle = onLeft ? 'rgba(255,244,214,0.12)' : 'rgba(255,230,190,0.05)';
     c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.lineTo(ex + bw, ey); c.lineTo(sx + bw * 0.5, sy + 3); c.closePath(); c.fill();
-    c.fillStyle = onLeft ? 'rgba(40,28,16,0.2)' : 'rgba(10,8,12,0.22)';
+    c.fillStyle = onLeft ? 'rgba(40,28,16,0.14)' : 'rgba(10,8,12,0.16)';
     c.beginPath(); c.moveTo(sx + bw * 0.5, sy + 3); c.lineTo(ex + bw, ey); c.lineTo(ex + bw + bw * 0.45, ey); c.lineTo(sx + bw * 0.9, sy + 5); c.closePath(); c.fill();
   }
   // карнизы: освещённая верхняя плоскость уступа и тёмная стенка под ним
   for (let k = 0; k < n + 1; k++) {
     const lf = r() < 0.65, arr = lf ? left : right, i = 1 + Math.floor(r() * (arr.length - 3));
     const [lx, ly] = arr[i], dir = lf ? 1 : -1, len = rr(w * 0.08, w * 0.2);
-    c.fillStyle = lf ? 'rgba(255,244,214,0.34)' : 'rgba(200,190,170,0.14)';
+    c.fillStyle = lf ? 'rgba(255,244,214,0.2)' : 'rgba(200,190,170,0.09)';
     c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx + dir * len, ly + 2.2); c.lineTo(lx + dir * len, ly + 4.4); c.lineTo(lx, ly + 2.4); c.closePath(); c.fill();
-    c.fillStyle = 'rgba(20,12,6,0.34)';
+    c.fillStyle = 'rgba(20,12,6,0.2)';
     c.beginPath(); c.moveTo(lx, ly + 2.4); c.lineTo(lx + dir * len, ly + 4.4); c.lineTo(lx + dir * len, ly + 9); c.lineTo(lx, ly + 7); c.closePath(); c.fill();
   }
   // пласты породы
@@ -157,14 +159,15 @@ function massif(c, P, cx, base, w, h, n, seed, haze) {
   c.fillStyle = lingrad(c, 0, base - h * 0.22, 0, base + 3, [[0, 'rgba(20,14,8,0)'], [1, 'rgba(20,14,8,0.5)']]);
   c.fillRect(cx - hw - 4, base - h * 0.22, w + 8, h * 0.22 + 6);
   if (haze) { c.fillStyle = `rgba(80,96,120,${haze})`; c.fillRect(cx - hw - 4, peakY - 4, w + 8, h + 10); }
-  c.restore();
-  // кромка света по левому склону и тёмная по правому
+  // мягкий свет вдоль левого склона и приглушённая тень вдоль правого — внутри силуэта, без жёстких кромок
   c.lineJoin = 'round'; c.lineCap = 'round';
-  c.strokeStyle = P.rim; c.globalAlpha = 0.65 - (haze ? 0.3 : 0); c.lineWidth = 1.1;
-  c.beginPath(); left.forEach(([x, y], i) => (i ? c.lineTo(x + 0.5, y + 0.5) : c.moveTo(x + 0.5, y + 0.5))); c.stroke();
-  c.globalAlpha = 1;
-  c.strokeStyle = 'rgba(18,12,6,0.7)'; c.lineWidth = 0.8;
-  c.beginPath(); right.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+  for (const [lw, a, dx] of [[7, 0.12, 3.5], [3.2, 0.2, 1.8]]) {
+    c.strokeStyle = `rgba(255,244,214,${a * (haze ? 0.4 : 1)})`; c.lineWidth = lw;
+    c.beginPath(); left.forEach(([x, y], i) => (i ? c.lineTo(x + dx, y + dx * 0.6) : c.moveTo(x + dx, y + dx * 0.6))); c.stroke();
+  }
+  c.strokeStyle = 'rgba(14,10,8,0.2)'; c.lineWidth = 6;
+  c.beginPath(); right.forEach(([x, y], i) => (i ? c.lineTo(x - 3, y) : c.moveTo(x - 3, y))); c.stroke();
+  c.restore();
   // мох и кустики на уступах нижней трети
   if (!haze) {
     for (let k = 0; k < n * 2; k++) {
