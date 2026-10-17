@@ -14,8 +14,8 @@ const ROCK_SIZES = {
 const ROCK_COL = { light: '#dccaa4', base: '#988870', mid: '#736655', dark: '#43392e', deep: '#231c15' };
 const ROCK_SPR = {};
 
-function rockSprite(size, variant) {
-  const key = size + variant;
+function rockSprite(size, variant, body = false) {
+  const key = size + variant + (body ? "B" : "");   // B — одна большая глыба: тело ходячего камня
   if (ROCK_SPR[key]) return ROCK_SPR[key];
   const S = ROCK_SIZES[size], K = 2;                 // рисуем вдвое подробнее, чем клетка мира
   const cv = mkCanvas(S.w * K, S.h * K);
@@ -30,9 +30,11 @@ function rockSprite(size, variant) {
     c.beginPath(); c.ellipse(cx + 2, by + 1, S.w * 0.42 - k * 1.6, 5 - k * 0.5, 0, 0, 7); c.fill();
   }
   // валуны: от дальних к ближним
-  const chunks = S.chunks.map(([dx, dy, rx, ry]) => [cx + dx + rnd(-2, 2), by + dy + rnd(-1, 1), rx * rnd(0.88, 1.1), ry * rnd(0.88, 1.1)]);
+  let chunks = S.chunks.map(([dx, dy, rx, ry]) => [cx + dx + rnd(-2, 2), by + dy + rnd(-1, 1), rx * rnd(0.88, 1.1), ry * rnd(0.88, 1.1)]);
+  if (body) chunks = chunks.slice(0, 1);
   chunks.sort((a, b) => a[1] - b[1]);
   for (const ch of chunks) drawBoulder(c, ...ch);
+  if (body) { ROCK_SPR[key] = cv; return cv; }
   // трава и галька у подножия
   for (let k = 0; k < (size === 'S' ? 4 : 8); k++) {
     const x = cx + rnd(-S.w * 0.4, S.w * 0.4), y = by + rnd(-1, 2.5);
@@ -305,7 +307,7 @@ function drawRockEnt(c, e) {
     }
   }
   // сама глыба — тем же рисунком, что и обычные камни
-  const spr = rockSprite(g.size, g.h % ROCK_VARIANTS);
+  const spr = rockSprite(g.size, g.h % ROCK_VARIANTS, true);   // тело — одна большая глыба
   const sc = 0.82 + ((g.h >>> 21) % 30) / 100;
   const tilt = e.moving ? Math.sin(e.phase * 1.6) * 0.04 : e.state === 'fight' ? Math.sin(e.t * 9) * 0.05 : 0;
   c.save();
@@ -344,52 +346,54 @@ function rockEntRest(e) {
   }
 }
 
-// Крабья клешня: толстая каменная «рука», ладонь и две челюсти — верхняя щёлкает
-function crabClaw(c, sx, sy, hx, hy, open, s) {
-  // рука от глыбы к клешне
-  c.lineCap = 'round';
-  for (const [col, w] of [[ROCK_COL.deep, 4.6 * s], [ROCK_COL.mid, 3 * s], [ROCK_COL.light, 0.9 * s]]) {
-    c.strokeStyle = col; c.lineWidth = w;
-    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo((sx + hx) / 2, Math.min(sy, hy) - 4 * s, hx, hy); c.stroke();
-  }
-  const a = Math.atan2(hy - sy, hx - sx);
-  c.save();
-  c.translate(hx, hy); c.rotate(a);
-  // ладонь
-  c.fillStyle = ROCK_COL.deep; c.beginPath(); c.ellipse(1.5 * s, 0, 4.4 * s, 3.4 * s, 0, 0, 7); c.fill();
-  c.fillStyle = ROCK_COL.base; c.beginPath(); c.ellipse(1.2 * s, -0.4 * s, 3.6 * s, 2.7 * s, 0, 0, 7); c.fill();
-  c.fillStyle = ROCK_COL.light; c.beginPath(); c.ellipse(0.4 * s, -1.4 * s, 1.8 * s, 0.9 * s, 0, 0, 7); c.fill();
-  const jaw = (ang, up) => {
-    c.save(); c.translate(4.5 * s, (up ? -1.2 : 1.2) * s); c.rotate(ang);
-    c.fillStyle = ROCK_COL.deep;
-    c.beginPath(); c.moveTo(0, -2.2 * s); c.quadraticCurveTo(6 * s, (up ? -2.6 : 2.6) * s - 1.5 * s, 8.5 * s, (up ? 1 : -1) * s); c.quadraticCurveTo(4 * s, 0.4 * s, 0, 2.2 * s); c.closePath(); c.fill();
-    c.fillStyle = up ? ROCK_COL.base : ROCK_COL.mid;
-    c.beginPath(); c.moveTo(0.6 * s, -1.4 * s); c.quadraticCurveTo(5.4 * s, (up ? -2 : 2) * s - 1 * s, 7.4 * s, (up ? 0.8 : -0.8) * s); c.quadraticCurveTo(3.6 * s, 0.2 * s, 0.6 * s, 1.4 * s); c.closePath(); c.fill();
-    // зубцы по кромке
-    c.fillStyle = ROCK_COL.light;
-    for (let k = 1; k < 4; k++) c.fillRect(k * 1.8 * s, (up ? 0.6 : -1) * s, 0.8 * s, 0.6 * s);
-    c.restore();
-  };
-  jaw(open * 0.4, false);      // нижняя челюсть почти неподвижна
-  jaw(-open, true);            // верхняя распахивается и щёлкает
-  c.restore();
+
+// Клешни — это те самые две передние глыбы: каждая расколота на две челюсти,
+// верхняя распахивается на «шарнире» у тела и щёлкает
+const CLAW_SPR = {};
+function clawJaw(size, variant, k, up) {
+  const key = size + variant + k + (up ? 'u' : 'l');
+  if (CLAW_SPR[key]) return CLAW_SPR[key];
+  const [, , rx0, ry0] = ROCK_SIZES[size].chunks[k];
+  const rx = rx0 * 1.15, ry = ry0 * 1.15, K = 2, W = Math.ceil(rx * 2 + 6), H = Math.ceil(ry * 2 + 6);
+  const cv = mkCanvas(W * K, H * K), c = cv.getContext('2d');
+  c.scale(K, K); c.lineJoin = 'round';
+  const cx = W / 2, cy = H / 2;
+  // челюсть: половина глыбы с зубчатым краем-прикусом
+  const half = [[0, up ? 0 : cy + 0.4], [W, up ? 0 : cy + 0.4]];
+  const bite = [];
+  for (let t = 0; t <= 8; t++) bite.push([W - t * W / 8, cy + (up ? 1 : -0.4) + (t % 2 ? (up ? 1.4 : -1.4) : 0)]);
+  const clip = up ? [half[0], half[1], ...bite] : [[0, cy - 0.6], ...bite.slice().reverse().map(([x, y]) => [x, y]), [W, H], [0, H]];
+  srand = mulberry32(5300 + variant * 31 + k * 7 + size.charCodeAt(0));
+  clipPoly(c, clip, () => drawBoulder(c, cx, cy, rx, ry));
+  // тёмная пасть по линии прикуса
+  c.strokeStyle = ROCK_COL.deep; c.lineWidth = 0.9;
+  c.beginPath(); bite.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+  CLAW_SPR[key] = { cv, W, H, hx: cx - rx * 0.7, hy: cy };   // шарнир — у заднего края
+  return CLAW_SPR[key];
 }
 
-// пара клешней спереди глыбы; одна держит добычу, в бою — машут и щёлкают
 function drawRockClaws(c, e, g) {
-  const { S, bx, by, top } = g;
-  const f = e.face < 0 ? -1 : 1, s = 0.75 + S.w / 110;
+  const { S, bx, top } = g, v = g.h % ROCK_VARIANTS;
+  const f = e.face < 0 ? -1 : 1;
   const atk = e.state === 'fight' && e.atk ? Game.time - e.atk : 9;
-  for (const k of [0, 1]) {                                   // 0 — дальняя, 1 — ближняя к зрителю
-    const sx = bx + f * S.w * 0.22, sy = top - 6 + k * 3;
-    let hx = bx + f * S.w * (0.5 + k * 0.04), hy = top - 10 + k * 7;
-    let open = 0.35 + Math.max(0, Math.sin(Game.time * 3 + k * 2 + e.i)) * 0.4;   // лениво пощёлкивает
-    if (e.state === 'fight') { open = 0.2 + Math.abs(Math.sin(Game.time * 12 + k)) * 0.8; hy -= atk < 0.35 ? 10 : 0; hx += atk >= 0.35 && atk < 0.8 ? f * 6 : 0; }
-    if (e.state === 'drag' && k === 1) {
-      const h = rockEntHand(e);
-      hx = h.x - f * 5 * s; hy = h.y;
-      open = e.t < GRAB_REACH ? 0.9 : 0.12;                   // распахнута — и сжимает гнома
-    }
-    crabClaw(c, sx, sy, hx, hy, open, s);
+  for (const k of [1, 2]) {
+    const side = (k === 1 ? -1 : 1) * f;                       // одна клешня слева спереди, другая справа
+    let cx = bx + side * S.w * 0.33, cy = top - 3 + k;
+    let open = 0.25 + Math.max(0, Math.sin(Game.time * 2.6 + k * 2 + e.i)) * 0.35;   // лениво пощёлкивает
+    if (e.state === 'fight') { open = 0.15 + Math.abs(Math.sin(Game.time * 12 + k)) * 0.75; cy -= atk < 0.35 ? 8 : 0; cx += atk >= 0.35 && atk < 0.8 ? side * 5 : 0; }
+    const holding = e.state === 'drag' && side === f;
+    if (holding) { const h = rockEntHand(e); cx = h.x; cy = h.y; open = e.t < GRAB_REACH ? 0.85 : 0.1; }
+    const lo = clawJaw(g.size, v, k, false), up = clawJaw(g.size, v, k, true);
+    // короткий каменный сустав к телу
+    ellipse(c, (cx + bx + side * S.w * 0.18) / 2, cy + 1, 3, 2.4, ROCK_COL.deep);
+    ellipse(c, (cx + bx + side * S.w * 0.18) / 2 - 0.4, cy + 0.6, 2.2, 1.7, ROCK_COL.mid);
+    c.save();
+    c.imageSmoothingEnabled = true;
+    c.translate(cx, cy); c.scale(side, 1);                     // пасть смотрит наружу
+    c.drawImage(lo.cv, -lo.W / 2, -lo.H / 2, lo.W, lo.H);
+    c.translate(up.hx - up.W / 2, up.hy - up.H / 2); c.rotate(-open);
+    c.drawImage(up.cv, -up.hx, -up.hy, up.W, up.H);
+    c.restore();
   }
+  c.imageSmoothingEnabled = R.smooth;
 }
