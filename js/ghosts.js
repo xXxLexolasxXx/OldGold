@@ -88,36 +88,74 @@ function ghostLights(L, x0, y0, x1, y1) {
 }
 
 function drawGhosts(c) {
+  const t = Game.time;
   for (const g of Game.ghosts || []) {
     if (g.alpha <= 0.01) continue;
-    const bob = Math.sin(g.ph) * 2, px = Math.round(g.x * TILE), py = Math.round(g.y * TILE - 12 - bob);
+    const bob = Math.sin(g.ph) * 2.2, px = Math.round(g.x * TILE), py = Math.round(g.y * TILE - 15 - bob);
     const boo = g.mode === 'boo', calm = g.mode === 'calm';
+    const flick = 0.78 + Math.sin(t * 13 + g.ph * 3) * 0.1 + (Math.sin(t * 31 + g.ph) > 0.93 ? -0.3 : 0);     // мерцает, как гаснущая свеча
+    const A = g.alpha * flick;
     c.save();
-    c.globalAlpha = g.alpha * 0.5;
-    c.fillStyle = 'rgba(160,200,255,0.5)'; c.beginPath(); c.ellipse(px, g.y * TILE + 2, 6, 1.6, 0, 0, 7); c.fill();   // дрожащая тень на траве
-    c.globalAlpha = g.alpha * 0.62;
+    // холодное зеленоватое свечение вокруг
+    c.globalAlpha = A * 0.45; c.globalCompositeOperation = 'lighter';
+    const gl = c.createRadialGradient(px, py, 2, px, py, 26); gl.addColorStop(0, 'rgba(120,255,190,0.5)'); gl.addColorStop(1, 'rgba(120,255,190,0)');
+    c.fillStyle = gl; c.beginPath(); c.arc(px, py, 26, 0, 7); c.fill();
+    c.globalCompositeOperation = 'source-over';
+    // тень на земле: чёрная, дрожащая
+    c.globalAlpha = g.alpha * 0.4; c.fillStyle = 'rgba(0,10,10,0.7)'; c.beginPath(); c.ellipse(px, g.y * TILE + 2, 8 + Math.sin(g.ph * 2) * 1.2, 2.2, 0, 0, 7); c.fill();
     c.translate(px, py); c.scale(g.face, 1);
-    const sway = Math.sin(g.ph * 1.3) * 1.2;
-    // подол «рубахи» волнами вместо ног
-    c.fillStyle = '#dbe8ff';
-    c.beginPath(); c.moveTo(-6, -2); c.quadraticCurveTo(-7, 6, -5 + sway, 11);
-    for (let i = 0; i <= 5; i++) c.lineTo(-5 + sway + i * 2, 11 + (i % 2 ? 2.5 : 0) + Math.sin(g.ph * 2 + i));
-    c.quadraticCurveTo(7, 6, 6, -2); c.quadraticCurveTo(0, -5, -6, -2); c.fill();
-    // руки: поднятые при «бу», опущенные в спокойствии
-    c.strokeStyle = '#cfe0ff'; c.lineWidth = 2.2; c.lineCap = 'round';
-    const up = boo ? -9 : calm ? 3 : -2;
-    for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 5, 1); c.quadraticCurveTo(s * 9, up + 3, s * 8, up + Math.sin(g.ph * 3 + s) * 1.5); c.stroke(); }
-    // борода
-    c.fillStyle = '#f1f6ff'; c.beginPath(); c.moveTo(-4, -1); c.quadraticCurveTo(0, 12, 4, -1); c.quadraticCurveTo(0, 1, -4, -1); c.fill();
-    // голова и колпак
-    c.fillStyle = '#e8f0ff'; c.beginPath(); c.arc(0, -7, 5, 0, 7); c.fill();
-    c.fillStyle = '#c3d4f5'; c.beginPath(); c.moveTo(-6, -8); c.quadraticCurveTo(-2, -13, 3 + sway, -19); c.quadraticCurveTo(4, -13, 6, -8); c.closePath(); c.fill();
-    c.fillRect(-6.2, -9, 12.4, 1.8);
-    // пустые глазницы
-    c.globalAlpha = g.alpha * 0.9; c.fillStyle = '#12202e';
-    c.beginPath(); c.ellipse(-2, -7, 1.2, boo ? 2.4 : 1.6, 0, 0, 7); c.ellipse(2, -7, 1.2, boo ? 2.4 : 1.6, 0, 0, 7); c.fill();
-    if (boo) { c.beginPath(); c.ellipse(0, -3.4, 1.3, 2, 0, 0, 7); c.fill(); }
-    else if (calm) c.fillRect(-1.4, -3.6, 2.8, 0.7);
+    c.globalAlpha = A * 0.8;
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    const sway = Math.sin(g.ph * 1.3) * 1.6;
+    // рваный саван: лохмотья-полосы тянутся вниз и в стороны
+    const sg = c.createLinearGradient(0, -10, 0, 22); sg.addColorStop(0, '#cfe6dc'); sg.addColorStop(0.5, '#7fa89a'); sg.addColorStop(1, 'rgba(60,100,96,0)');
+    c.fillStyle = sg; c.beginPath(); c.moveTo(-8, -6);
+    c.quadraticCurveTo(-11, 6, -9 + sway, 14);
+    for (let i = 0; i < 6; i++) { const x = -9 + sway + i * 3.5, len = 20 + (i * 7 % 5) * 2 + Math.sin(g.ph * 2.2 + i * 1.7) * 2.5; c.lineTo(x + 1.2, len - 3); c.lineTo(x + 2.4, 12 + (i % 2) * 2); }
+    c.quadraticCurveTo(11, 6, 8, -6); c.quadraticCurveTo(0, -11, -8, -6); c.fill();
+    // тёмные складки на саване
+    c.strokeStyle = 'rgba(10,30,30,0.5)'; c.lineWidth = 1.1;
+    for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(i * 3.5, -2); c.quadraticCurveTo(i * 5 + sway * 0.5, 8, i * 4 + sway, 16); c.stroke(); }
+    // длинные костлявые руки с когтями: тянутся вперёд, при «бу» воздеты
+    const rz = boo ? 1 : calm ? -0.3 : 0.2;
+    c.strokeStyle = '#d8f0e6'; c.lineWidth = 2;
+    for (const s of [-1, 1]) {
+      const up = boo ? -17 : calm ? 7 : -3 + Math.sin(g.ph * 2 + s) * 2.4;
+      const hx = s * (boo ? 12 : 13), hy = up + 2;
+      c.beginPath(); c.moveTo(s * 6, -4); c.quadraticCurveTo(s * 11, up * 0.4 + 4, hx, hy); c.stroke();
+      c.lineWidth = 0.9;
+      for (let j = -1; j <= 1; j++) { c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx + s * 3.6 + j * 0.8, hy + j * 2.6 + (boo ? -3 : 1.5)); c.stroke(); }   // когти
+      c.lineWidth = 2;
+    }
+    // борода — клочьями, как мокрые водоросли
+    c.strokeStyle = '#e6f5ee'; c.lineWidth = 1.2;
+    for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 1.2, -4); c.quadraticCurveTo(i * 1.6 + Math.sin(g.ph * 2 + i) * 1.4, 4, i * 1.1 + Math.sin(g.ph * 2.6 + i * 1.3) * 2, 11 + Math.abs(i)); c.stroke(); }
+    // голова: череп с впалыми щеками
+    c.fillStyle = '#e2f2ea'; c.beginPath(); c.ellipse(0, -9, 6, 7.2, 0, 0, 7); c.fill();
+    c.fillStyle = 'rgba(30,60,58,0.45)'; c.beginPath(); c.ellipse(-4.4, -6, 1.6, 3, 0.3, 0, 7); c.ellipse(4.4, -6, 1.6, 3, -0.3, 0, 7); c.fill();   // запавшие щёки
+    // рваный колпак с дырой и сломанным кончиком
+    c.fillStyle = '#7c9a92'; c.beginPath(); c.moveTo(-7, -12); c.quadraticCurveTo(-4, -21, 2 + sway * 0.4, -27); c.lineTo(5 + sway * 0.4, -23); c.lineTo(3.5 + sway, -20); c.quadraticCurveTo(5, -16, 7.5, -12); c.lineTo(5, -13.4); c.lineTo(3, -12); c.lineTo(0.5, -13.6); c.lineTo(-2, -12); c.lineTo(-4.6, -13.2); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(0,0,0,0.85)'; c.beginPath(); c.ellipse(-1.5, -17, 1.3, 1.9, 0.5, 0, 7); c.fill();
+    // впалые чёрные глазницы под сердитым наклоном, внутри — крошечные тлеющие точки
+    c.globalAlpha = g.alpha * 0.98; c.fillStyle = '#010a09';
+    const eh = boo ? 4.4 : 3.6;
+    for (const s of [-1, 1]) {
+      c.beginPath(); c.moveTo(s * 1.0, -11.4 + s * 0.0); c.lineTo(s * 5.4, -12.6); c.lineTo(s * 4.6, -9.2 + eh * 0.2); c.quadraticCurveTo(s * 3.2, -9.4 + eh, s * 1.8, -8.6 + eh * 0.5); c.closePath(); c.fill();
+    }
+    const gz = Math.sin(t * 1.7 + g.ph) * 0.6;
+    c.globalAlpha = g.alpha; c.fillStyle = boo ? '#ff4a2a' : calm ? '#9ad8ff' : '#c8ffd8';
+    c.beginPath(); c.arc(-3 + gz, -9.6, boo ? 1.1 : 0.65, 0, 7); c.arc(3 + gz, -9.6, boo ? 1.1 : 0.65, 0, 7); c.fill();
+    // рот: чёрная рваная пасть-провал, острые клыки сверху
+    c.globalAlpha = g.alpha * 0.98; c.fillStyle = '#010a09';
+    const mh = boo ? 8.5 + Math.sin(t * 22) * 0.9 : calm ? 1.2 : 4.4 + Math.sin(g.ph * 3) * 0.8;
+    c.beginPath(); c.moveTo(-3, -4.4);
+    for (let i = 0; i <= 6; i++) c.lineTo(-3 + i, -4.4 + (i % 2 ? 0.8 : -0.4));
+    c.lineTo(3.2, -4.4 + mh * 0.5); c.lineTo(1.6, -4 + mh); c.lineTo(0, -4 + mh * 0.8); c.lineTo(-1.6, -4 + mh); c.lineTo(-3.2, -4.4 + mh * 0.5); c.closePath(); c.fill();
+    c.fillStyle = '#dcefe6'; for (const x of [-2.2, -0.8, 0.8, 2.2]) { c.beginPath(); c.moveTo(x - 0.6, -4.3); c.lineTo(x, -4.3 + (boo ? 3.2 : 1.8)); c.lineTo(x + 0.6, -4.3); c.fill(); }
+    c.restore();
+    // клочья тумана, уходящие вверх от призрака
+    c.save(); c.globalAlpha = 1;
+    for (let j = 0; j < 4; j++) { const q = (t * 0.5 + j * 0.25 + g.ph) % 1; c.fillStyle = `rgba(190,255,225,${0.28 * (1 - q) * g.alpha})`; c.beginPath(); c.arc(px + Math.sin(q * 6 + j * 2) * 8, py + 10 - q * 30, 2 + q * 3, 0, 7); c.fill(); }
     c.restore();
   }
 }
