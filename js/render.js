@@ -615,6 +615,10 @@ function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
   }
   let mx = fx + 4;
   const my = fy + fh - 3;
+  for (let k = 0; k < b.stock.trunk; k++, mx += 7) {
+    c.fillStyle = '#2e1a0a'; c.fillRect(mx - 1, my - 4, 8, 5);
+    c.fillStyle = '#7a4a22'; c.fillRect(mx, my - 3, 6, 3); c.fillStyle = '#a06a3a'; c.fillRect(mx, my - 3, 6, 1);
+  }
   for (let k = 0; k < b.stock.timber; k++, mx += 6) {
     c.fillStyle = '#583522'; c.fillRect(mx - 1, my - 5, 7, 6);
     c.fillStyle = '#cc9a64'; c.fillRect(mx, my - 4, 5, 4);

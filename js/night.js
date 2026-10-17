@@ -662,6 +662,7 @@ function nightLights(x0, y0, x1, y1) {
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const o = World.obj[idx(x, y)];
     if (o && o.t === 'lamp') L.push([x * TILE + 27, y * TILE + 6, 46, 0.42]);   // в тумане светят слабо
+    if (o && isStreetObj(o) && o.born === undefined || (o && o.born !== undefined && Game.time - o.born > GROW_T)) { const mm = o && isStreetObj(o) ? decorMorph(o, x, y) : 0; if (mm) { const ml = decorMorphLight(mm, x, y); if (ml) L.push(ml); } }
   }
   // ожившее дерево окружено мертвенным отсветом — его силуэт видно в тумане
   for (const e of Game.ents || []) if (e.k > 0.05 && e.state !== 'gone') {

@@ -3,7 +3,7 @@
 // скамейки (на них отдыхают жители) и урны. Урны наполняются мусором; свободный
 // работяга вытряхивает полную урну в мешок, а трудяги уносят мусор в большой костёр.
 
-const STREET = { lamp: { gap: 3 }, bench: { gap: 7 }, bin: { gap: 8 } };   // фонари — часто, через три клетки
+const STREET = { lamp: { gap: 3 }, bench: { gap: 7 }, bin: { gap: 8 }, bed: { gap: 2 }, crate: { gap: 4 }, magic: { gap: 12 }, fence: { gap: 1 } };   // фонари — часто, через три клетки
 const BIN_FILL_TIME = 160;      // за сколько секунд урна наполняется
 let streetT = 0, lastBinToast = -999;
 
@@ -36,7 +36,9 @@ function decorateRoad(x, y) {
   for (const t of ['lamp', 'bench', 'bin']) {
     if (streetNear(sx, sy, STREET[t].gap, t)) continue;
     if (t !== 'lamp' && Math.random() < 0.4) continue;
-    World.obj[idx(sx, sy)] = t === 'bin' ? { t, g: Math.random() * 0.3 } : { t };
+    const o = t === 'lamp' ? { t } : makeDecor(t);
+    if (Game.time > 5) o.born = Game.time;                 // новые вырастают на глазах
+    World.obj[idx(sx, sy)] = o;
     return;
   }
 }
@@ -58,6 +60,8 @@ function streetTick(dt) {
     else if (!o.res) callCleaner(i, o);
   }
   dispatchTrash();
+  decorPlanTick(step);
+  if (typeof subTick === 'function') subTick(step);
 }
 
 // Свободные работяги (и безработные жители) сами несут кучки мусора в костёр — курьеры заняты доставкой.
@@ -124,7 +128,7 @@ function freeBench(u, r) {
   for (let yy = y - r; yy <= y + r; yy++) for (let xx = x - r; xx <= x + r; xx++) {
     if (!inb(xx, yy)) continue;
     const o = World.obj[idx(xx, yy)];
-    if (!o || o.t !== 'bench' || (o.sit && Game.unitMap.get(o.sit) && Game.unitMap.get(o.sit).benchAt === idx(xx, yy))) continue;
+    if (!o || o.t !== 'bench' || (o.sitN || 0) >= benchSeats(o)) continue;
     const d = Math.hypot(xx - x, yy - y);
     if (d < bd) { bd = d; best = [xx, yy, o]; }
   }
@@ -133,15 +137,15 @@ function freeBench(u, r) {
 
 function* benchGen(u, bench) {
   const [x, y, o] = bench;
-  o.sit = u.id;
+  o.sitN = (o.sitN || 0) + 1;
   const ok = yield { walk: [x, y], offroad: true };
-  if (!ok || World.obj[idx(x, y)] !== o) { o.sit = 0; return; }
+  if (!ok || World.obj[idx(x, y)] !== o) { o.sitN = Math.max(0, (o.sitN || 1) - 1); return; }
   u.benchAt = idx(x, y);
   // посидеть, иногда закурить или помахать прохожим
   yield { wait: 6 + Math.random() * 8, anim: 'sit' };
   if (u.smoker && Math.random() < 0.5) yield { wait: 6, anim: 'smoke' };
   u.benchAt = -1;
-  o.sit = 0;
+  o.sitN = Math.max(0, (o.sitN || 1) - 1);
 }
 
 // ---------- Рисование ----------
@@ -149,35 +153,13 @@ function* benchGen(u, bench) {
 function drawStreetObj(c, x, y, o) {
   const px = x * TILE, py = y * TILE;
   if (o.t === 'lamp') {
+    const age = o.born !== undefined ? Game.time - o.born : 99;
+    if (age < 0) return;
+    if (age < GROW_T) { const k = age / GROW_T; c.save(); c.beginPath(); c.rect(px - 10, py + 30 - 50 * k, TILE + 20, 50 * k + 4); c.clip(); c.translate(0, (1 - k) * 6); drawGothicLamp(c, px + 22, py + 24, hash(idx(x, y)) % 7, false, 0); c.restore(); return; }
     drawGothicLamp(c, px + 22, py + 24, hash(idx(x, y)) % 7, isEveningNow(), x * 3.1 + y);
-  } else if (o.t === 'bench') {
-    const bx = px + 6, by = py + 22;
-    shadowAt(c, bx + 10, by + 1, 11, 2.4);
-    c.fillStyle = '#45291a'; c.fillRect(bx + 1, by - 3, 2, 4); c.fillRect(bx + 17, by - 3, 2, 4);
-    c.fillStyle = '#a06840'; rrect(c, bx, by - 5, 20, 2.6, 0.8); c.fill();
-    c.fillStyle = '#cc9a64'; c.fillRect(bx, by - 5, 20, 0.7);
-    c.fillStyle = '#875434'; rrect(c, bx, by - 10, 20, 2.2, 0.8); c.fill();   // спинка
-    c.fillStyle = '#45291a'; c.fillRect(bx + 1, by - 10, 1.4, 6); c.fillRect(bx + 17.6, by - 10, 1.4, 6);
-  } else if (o.t === 'bin') {
-    const bx = px + 16, by = py + 24;
-    shadowAt(c, bx + 1, by, 5);
-    // плетёная урна-корзина
-    c.fillStyle = lingrad(c, bx - 5, 0, bx + 5, 0, [[0, '#a06840'], [0.5, '#875434'], [1, '#583522']]);
-    c.beginPath(); c.moveTo(bx - 5, by - 11); c.lineTo(bx + 5, by - 11); c.lineTo(bx + 4, by); c.lineTo(bx - 4, by); c.closePath(); c.fill();
-    c.fillStyle = 'rgba(30,15,5,0.4)'; for (let k = 0; k < 4; k++) c.fillRect(bx - 4.6, by - 9 + k * 2.6, 9.2, 0.6);
-    c.fillStyle = '#45291a'; c.fillRect(bx - 5.4, by - 12, 10.8, 1.4);
-    // мусор торчит по мере наполнения
-    const f = o.g || 0;
-    if (f > 0.3) { ellipse(c, bx - 1.4, by - 12, 2.2, 1.2, '#9c8e48'); ellipse(c, bx + 2, by - 12.4, 1.6, 1, '#73963e'); }
-    if (f > 0.65) { line(c, bx - 2, by - 12, bx - 4, by - 16, '#e0b882', 0.8); ellipse(c, bx + 0.6, by - 13.6, 2, 1.2, '#b6ada0'); }
-    if (f >= 1) {
-      // переполнена — кружат мухи
-      for (let k = 0; k < 3; k++) {
-        const a = Game.time * 6 + k * 2.1 + x;
-        c.fillStyle = '#1a1210'; c.fillRect(Math.round(bx + Math.cos(a) * 5), Math.round(by - 17 + Math.sin(a * 1.3) * 2), 1, 1);
-      }
-    }
-  }
+    const m = decorMorph(o, x, y);
+    if (m) drawMorph(c, m, px, py, o, Math.min(1, (nightAmt() - 0.35) * 3));
+  } else drawDecorObj(c, x, y, o);
 }
 
 // ---------- Готические фонари ----------

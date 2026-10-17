@@ -97,6 +97,7 @@ function updateAnimal(a, dt) {
   a.think = (a.think || 0) - dt;
   if (a.burn) { burnHenStep(a, dt); return; }   // подожжённая молнией курица мечется
   if (a.avenge) { avengeHen(a, dt); return; }       // куры мстят за товарища
+  if (Game.sub && Game.sub.active ? subAnimal(a, dt) : (a.subSt && subAnimal(a, dt))) return;     // субботник: звери мирные и носят мусор
 
   // коза идёт за пастухом
   if (a.follow) {

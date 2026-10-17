@@ -575,3 +575,10 @@ body.mm-big #minimap { width: 100%; }
 #mm-size { position: absolute; top: 6px; right: 28px; padding: 0 5px; font-size: 11px; line-height: 16px; opacity: 0.75; }
 #mm-size:hover { opacity: 1; }
 body.mm-folded #mm-size { display: none; }
+
+/* кнопка субботника */
+#sub-btn { display: inline-flex; align-items: center; gap: 4px; }
+#sub-btn img { width: 16px; height: 16px; image-rendering: pixelated; }
+#sub-btn.sub-ready { border-color: #a8d060; box-shadow: 0 0 8px rgba(168,208,96,0.6); animation: subpulse 1.6s ease-in-out infinite; }
+#sub-btn.sub-on { background: #3a5a1c; color: #e8ffc0; }
+@keyframes subpulse { 50% { box-shadow: 0 0 14px rgba(168,208,96,0.95); } }
