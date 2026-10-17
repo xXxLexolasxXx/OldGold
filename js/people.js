@@ -702,6 +702,12 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (front) poly(c, [[-3, shY + 0.6], [4, shY + 2.6], [0, shY + 5.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
         return;
       }
+      if (pose === 'smoke' && front && side > 0) {
+        // трубка у рта: рука поднята, локоть в сторону
+        smoothLimb(c, [sx, shY + 0.6], [side * 5.2, shY - 0.4], [side * 2, headY + 3.8], 2.2, col);
+        hand(c, side * 1.8, headY + 3.6, sk);
+        return;
+      }
       if (gest && (side > 0 || gest === 'stretch' || gest === 'clap' || gest === 'panic')) {
         const [e, h] = gestPts(gest, gf, side, shY, headY, 'S');
         smoothLimb(c, [sx, shY + 0.6], e, h, 2.2, col);
@@ -742,6 +748,12 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     drawCap(c, O, view, 0, headY, tipSway, L, r);
     // поднятая рука жеста — поверх головы и бороды
     if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic') arm(-1); }
+    if (pose === 'smoke' && front) {
+      arm(1);
+      // трубка: чубук от губ к руке и дымящая чашечка
+      line(c, 0.4, headY + 4, 3.6, headY + 4.4, '#4a2c14', 0.9);
+      c.fillStyle = '#2a1a10'; c.fillRect(3.2, headY + 2.8, 2, 2.4); c.fillStyle = '#e08030'; c.fillRect(3.5, headY + 2.9, 1.4, 0.7);
+    }
     if (courier && !front) {
       drawFrame(c, 'N', 0, shY + 2.6);
       if (carry) { c.save(); c.translate(0, shY + 0.6); drawLoad(c, carry); c.restore(); }

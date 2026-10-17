@@ -165,13 +165,15 @@ function drawUnit(c, u) {
   let pose = 'idle', frame = 0, view = u.vdir || 'S', face = u.face;
   if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / 1.1) & 7; }
   else if (u.anim === 'duck' || u.anim === 'forage') pose = 'duck';
-  else if (u.anim === 'smoke') { pose = 'smoke'; view = 'E'; }
+  else if (u.anim === 'smoke') { pose = 'smoke'; view = (u.id * 7 + (u.id >> 2)) % 2 ? 'S' : 'E'; }   // кто в анфас, кто боком
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
   else if (u.anim === 'sleep' || u.anim === 'faint' || u.anim === 'knocked' || u.anim === 'fly') { pose = 'idle'; view = 'E'; }
   else if (u.anim === 'sit') { pose = 'duck'; view = 'S'; }
   else if (u.anim === 'lost') { view = 'E'; face = (Math.floor(Game.time * 1.3 + u.id) & 1) ? 1 : -1; }   // озирается в тумане
   else if (u.anim === 'freeze') { view = 'S'; px += (Math.floor(Game.time * 30) & 1) ? 1 : -1; }      // трясётся от ужаса
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: swingFrame(u) }; }
+  // просто стоит — лицом к зрителю, а не боком, как после ходьбы
+  if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
   const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
   if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {
@@ -241,7 +243,8 @@ function drawUnit(c, u) {
   drawNightUnit(c, u, px, py, face, view, lying || flyP >= 0);
   // дымок из трубки
   if (u.anim === 'smoke') {
-    const bx = px + u.face * 6.4, by = py - 15.6;
+    const frontSmoke = view === 'S';
+    const bx = frontSmoke ? px + 4.2 : px + u.face * 6.4, by = frontSmoke ? py - 15 : py - 15.6;
     for (let k = 0; k < 4; k++) {
       const p = (Game.time * 0.45 + k / 4 + u.id * 0.17) % 1;
       c.fillStyle = `rgba(220,218,210,${0.55 * (1 - p)})`;
