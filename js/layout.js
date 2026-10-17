@@ -5,7 +5,7 @@
 // Всё запоминается в localStorage.
 
 const LAYOUT_KEY = 'oldgold-layout';
-const Layout = { panelW: 316, infoH: 0, mmFolded: false, float: false, fx: 340, fy: 60, fw: 360, fh: 420 };
+const Layout = { panelW: 316, infoH: 0, mmFolded: false, mmBig: false, float: false, fx: 340, fy: 60, fw: 360, fh: 420 };
 
 function loadLayout() {
   try { Object.assign(Layout, JSON.parse(localStorage.getItem(LAYOUT_KEY)) || {}); } catch (e) {}
@@ -26,6 +26,8 @@ function applyLayout() {
   }
   panel.style.width = Layout.panelW + 'px';
   cl.toggle('mm-folded', Layout.mmFolded);
+  cl.toggle('mm-big', !!Layout.mmBig);
+  { const b = document.getElementById('mm-size'); if (b) { b.textContent = Layout.mmBig ? '⤡' : '⤢'; b.title = Layout.mmBig ? 'Уменьшить миникарту' : 'Увеличить миникарту'; } }
   document.getElementById('mm-fold').textContent = Layout.mmFolded ? '▾' : '▴';
   cl.toggle('info-float', Layout.float);
   document.getElementById('info-pop').textContent = Layout.float ? '⇲' : '⧉';
@@ -110,6 +112,7 @@ function initLayout() {
     }
     applyLayout(); saveLayout();
   };
+  document.getElementById('mm-size').onclick = () => { Layout.mmBig = !Layout.mmBig; applyLayout(); saveLayout(); };
   document.getElementById('mm-fold').onclick = () => { Layout.mmFolded = !Layout.mmFolded; applyLayout(); saveLayout(); };
 
   // холст карты подстраивается под новую ширину колонки

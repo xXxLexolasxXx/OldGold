@@ -568,3 +568,10 @@ body.mobile #tut { left: 8px; right: 8px; top: 50px; width: auto; max-height: 46
 .log-filters button { padding: 1px 2px; font-size: 10px; gap: 2px; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
 .log-filters button img { width: 12px; height: 12px; }
 .log-filters button { flex: 1 1 auto; }
+
+/* миникарта: по умолчанию маленькая, можно увеличить */
+#minimap { width: 60%; margin: 0 auto; }
+body.mm-big #minimap { width: 100%; }
+#mm-size { position: absolute; top: 6px; right: 28px; padding: 0 5px; font-size: 11px; line-height: 16px; opacity: 0.75; }
+#mm-size:hover { opacity: 1; }
+body.mm-folded #mm-size { display: none; }

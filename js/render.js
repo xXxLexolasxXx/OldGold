@@ -960,5 +960,26 @@ function drawMinimap() {
   const sx = cv.width / (MAP_W * TILE), sy = cv.height / (MAP_H * TILE);
   const s = camScale();
   c.strokeStyle = '#f6f2ea'; c.lineWidth = 2;
+  drawMinimapUnits();
   c.strokeRect(R.cam.x * sx, R.cam.y * sy, R.canvas.clientWidth / s * sx, R.canvas.clientHeight / s * sy);
+}
+
+// Персонажи на миникарте: свои гномы — зелёные, звери — серые, нечисть — красная
+function drawMinimapUnits() {
+  const c = MINI.ctx, cv = MINI.canvas;
+  const kx = cv.width / MAP_W, ky = cv.height / MAP_H, fac = cv.width / Math.max(60, cv.clientWidth);   // точки не мельче 3 пикселей на экране
+  const dot = (x, y, col, s = 2.4) => {
+    s = Math.max(s, 3 * fac); const px = x * kx - s / 2, py = y * ky - s / 2;
+    c.fillStyle = 'rgba(8,6,4,0.85)'; c.fillRect(px - 0.8, py - 0.8, s + 1.6, s + 1.6);
+    c.fillStyle = col; c.fillRect(px, py, s, s);
+  };
+  for (const a of Game.animals || []) if (!a.dead) dot(a.x, a.y, '#b4b4b4', 2);
+  for (const u of Game.units) {
+    if (u.inside || u.dead) continue;
+    if (UNIT_TYPES[u.type].animal) dot(u.x, u.y, '#b4b4b4', 2);          // вьючные козы
+    else dot(u.x, u.y, '#5ee05e', u.hero ? 3.6 : 2.4);
+  }
+  for (const e of Game.ents || []) if (e.k > 0.3 && e.state !== 'sleep' && e.state !== 'done' && e.state !== 'gone' && e.state !== 'root') dot(e.x, e.y, '#ff3a30', 3);
+  for (const s of Game.skels || []) if (s.k > 0.3 && s.state !== 'dead') dot(s.x, s.y, '#ff3a30', 2.6);
+  for (const g of Game.ghosts || []) if (g.alpha > 0.3) dot(g.x, g.y, '#ff3a30', 2.6);
 }
