@@ -156,7 +156,7 @@ function drawStreetObj(c, x, y, o) {
 }
 
 // ---------- Готические фонари ----------
-// Четыре вида, чтобы улица не была однообразной: шпиль, двойной, кронштейн, башенка.
+// Четыре вида, чтобы улица не была однообразной: шпиль, двойной, кронштейн, кованый.
 // Чёрное кованое железо, стрельчатые проёмы, острые навершия; светят вечером и ночью.
 const IRON = ['#14101a', '#2a2430', '#4a4452'];
 
@@ -211,20 +211,29 @@ function drawGothicLamp(c, bx, by, v, lit, ph) {
     glowAt(bx + 11, by - 28, 15);
     ellipse(c, bx, by - 36, 1.3, 1.3, IRON[0]);
   } else {
-    // башенка: каменная колонна со стрельчатой нишей и шпилем-крокетами
-    c.fillStyle = '#6e685e'; c.fillRect(bx - 3.4, by - 24, 6.8, 19);
-    c.fillStyle = '#9a9488'; c.fillRect(bx - 3.4, by - 24, 1.6, 19);
-    c.fillStyle = '#3e3a34'; c.fillRect(bx + 2, by - 24, 1.4, 19);
-    for (let r = 0; r < 4; r++) { c.fillStyle = 'rgba(30,26,22,0.35)'; c.fillRect(bx - 3.4, by - 8 - r * 4.6, 6.8, 0.6); }
-    // ниша-окно
-    c.fillStyle = IRON[0]; c.beginPath(); c.moveTo(bx - 2.2, by - 14); c.lineTo(bx - 2.2, by - 19); c.quadraticCurveTo(bx - 2.2, by - 22.6, bx, by - 23.4); c.quadraticCurveTo(bx + 2.2, by - 22.6, bx + 2.2, by - 19); c.lineTo(bx + 2.2, by - 14); c.closePath(); c.fill();
+    // кованый: витой столб, завитки-волюты и фонарь-колокол с лилией на навершии
+    c.fillStyle = IRON[1]; c.fillRect(bx - 0.8, by - 26, 1.6, 21);
+    c.strokeStyle = IRON[2]; c.lineWidth = 0.7;                       // витая оплётка столба
+    for (let yy = by - 6; yy > by - 26; yy -= 2.6) { c.beginPath(); c.moveTo(bx - 1.4, yy); c.lineTo(bx + 1.4, yy - 1.6); c.stroke(); }
+    c.strokeStyle = IRON[0]; c.lineWidth = 1.1; c.lineCap = 'round';
+    for (const s of [-1, 1]) {                                          // волюты у основания и под лампой
+      c.beginPath(); c.moveTo(bx, by - 7); c.quadraticCurveTo(bx + s * 6, by - 8, bx + s * 5, by - 13); c.quadraticCurveTo(bx + s * 4, by - 16, bx + s * 2, by - 14.6); c.stroke();
+      c.beginPath(); c.moveTo(bx, by - 24); c.quadraticCurveTo(bx + s * 5, by - 24, bx + s * 4.6, by - 28); c.stroke();
+    }
+    // лампа-колокол: широкий стеклянный фонарь с шестью гранями и кольцом
+    const lx = bx, ly = by - 27;
+    c.fillStyle = IRON[0]; c.beginPath(); c.moveTo(lx - 5.2, ly); c.lineTo(lx - 3.6, ly - 8); c.lineTo(lx + 3.6, ly - 8); c.lineTo(lx + 5.2, ly); c.closePath(); c.fill();
     c.fillStyle = lit ? `rgb(255,${200 + fl},110)` : '#5c564c';
-    c.beginPath(); c.moveTo(bx - 1.4, by - 14.8); c.lineTo(bx - 1.4, by - 19); c.quadraticCurveTo(bx - 1.4, by - 21.6, bx, by - 22.2); c.quadraticCurveTo(bx + 1.4, by - 21.6, bx + 1.4, by - 19); c.lineTo(bx + 1.4, by - 14.8); c.closePath(); c.fill();
-    // шпиль с крокетами
-    c.fillStyle = IRON[1]; c.beginPath(); c.moveTo(bx - 4.4, by - 24); c.lineTo(bx, by - 37); c.lineTo(bx + 4.4, by - 24); c.closePath(); c.fill();
-    c.fillStyle = IRON[2]; c.beginPath(); c.moveTo(bx - 4.4, by - 24); c.lineTo(bx, by - 37); c.lineTo(bx - 0.8, by - 24); c.closePath(); c.fill();
-    for (const [dy, s] of [[-27, 1.6], [-31, 1.1]]) for (const sd of [-1, 1]) ellipse(c, bx + sd * (2.6 - (dy + 27) * -0.2), by + dy, s * 0.55, s * 0.55, IRON[0]);
-    ellipse(c, bx, by - 37.6, 0.9, 0.9, IRON[0]);
-    glowAt(bx, by - 18, 15);
+    c.beginPath(); c.moveTo(lx - 4.2, ly - 0.8); c.lineTo(lx - 2.9, ly - 7.2); c.lineTo(lx + 2.9, ly - 7.2); c.lineTo(lx + 4.2, ly - 0.8); c.closePath(); c.fill();
+    c.fillStyle = IRON[0]; for (const dx of [-1.4, 1.4]) c.fillRect(lx + dx - 0.25, ly - 7.2, 0.5, 6.4);
+    if (lit) { c.fillStyle = 'rgba(255,250,210,0.9)'; c.fillRect(lx - 1, ly - 5.4, 2, 2.6); }
+    // колоколообразная крыша и кольцо-подвес
+    c.fillStyle = IRON[1]; c.beginPath(); c.moveTo(lx - 5.6, ly - 8); c.quadraticCurveTo(lx - 4.2, ly - 12, lx, ly - 14); c.quadraticCurveTo(lx + 4.2, ly - 12, lx + 5.6, ly - 8); c.closePath(); c.fill();
+    c.fillStyle = IRON[2]; c.beginPath(); c.moveTo(lx - 5.6, ly - 8); c.quadraticCurveTo(lx - 4.2, ly - 12, lx, ly - 14); c.lineTo(lx - 0.6, ly - 8); c.closePath(); c.fill();
+    c.strokeStyle = IRON[0]; c.lineWidth = 0.8; c.beginPath(); c.arc(lx, ly - 15.4, 1.4, 0, Math.PI * 2); c.stroke();
+    // лилия на навершии
+    c.fillStyle = IRON[0]; c.beginPath(); c.moveTo(lx, ly - 21); c.quadraticCurveTo(lx + 2.2, ly - 18.6, lx, ly - 16.6); c.quadraticCurveTo(lx - 2.2, ly - 18.6, lx, ly - 21); c.fill();
+    for (const s of [-1, 1]) { c.beginPath(); c.moveTo(lx, ly - 17.2); c.quadraticCurveTo(lx + s * 3.2, ly - 18.2, lx + s * 2.6, ly - 20.4); c.lineWidth = 0.8; c.stroke(); }
+    glowAt(bx, by - 31, 16);
   }
 }
