@@ -40,6 +40,9 @@ function buildFireAtlas(size, ramp) {
       for (let y = 0; y < hc; y++) {
         const t = y / hc;                              // 0 у основания, 1 на кончике
         const edge = Math.abs(u);
+        // основание: скруглённый «язычок» вместо ровного среза, нижний ряд рассыпан шахматкой
+        const bh = Math.max(2, h * 0.17);
+        if (y < bh) { const q = 1 - (bh - y - 0.5) / bh; if (edge > Math.sqrt(Math.max(0, 1 - (1 - q) * (1 - q))) * 0.98 + 0.02) continue; const dz = Math.min(4, Math.floor(bh)); if (y < dz) { const bayer = [[0, 2], [3, 1]][(x + f) & 1][y & 1]; if (bayer >= (y + 1) * 4 / (dz + 1) * (dz > 2 ? 1 : 0.8)) continue; } }
         // перекос верхушки в сторону качания, сужение к кончику
         const lean = sway * t * 1.3;
         if (t > 0.45 && Math.abs(u - lean / (hw + 0.6)) > (1 - t * 0.55)) continue;
@@ -84,7 +87,7 @@ function drawFire(c, x, y, size, time, seed, opts) {
   c.save();
   c.imageSmoothingEnabled = false;
   if (opts.alpha !== undefined) c.globalAlpha = opts.alpha;
-  const dx = Math.round(x - dw / 2), dy = Math.round(y - dh);
+  const dx = Math.round(x - dw / 2), dy = Math.round(y - dh + sc);
   if (opts.flip || ((seed || 0) & 1)) { c.translate(dx + dw, dy); c.scale(-1, 1); c.drawImage(atlas, fi * w, 0, w, h, 0, 0, dw, dh); }
   else c.drawImage(atlas, fi * w, 0, w, h, dx, dy, dw, dh);
   c.restore();
