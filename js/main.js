@@ -146,6 +146,8 @@ function viewSize() {
 }
 
 function clampCam() {
+  if (!isFinite(R.cam.x)) R.cam.x = 0;    // скрытая вкладка с нулевым холстом не должна ломать камеру
+  if (!isFinite(R.cam.y)) R.cam.y = 0;
   const [vw, vh] = viewSize();
   R.cam.x = Math.max(-TILE * 2, Math.min(MAP_W * TILE - vw + TILE * 2, R.cam.x));
   R.cam.y = Math.max(-TILE * 3, Math.min(MAP_H * TILE - vh + TILE * 2, R.cam.y));

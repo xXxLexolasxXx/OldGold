@@ -263,7 +263,7 @@ function drawRockEyes(c, e, a) {
 function rockEntHand(e) {
   const g = rockEntGeom(e);
   const reach = e.state === 'drag' && e.t < GRAB_REACH;
-  return { x: g.bx + e.face * g.S.w * (reach ? 0.55 : 0.42), y: reach ? g.by - 4 : g.top - g.S.h * 0.25 };
+  return { x: g.bx + e.face * g.S.w * (reach ? 0.75 : 0.62), y: reach ? g.by - 6 : g.top - 4 };   // в клешне
 }
 
 function rockLeg(c, ax, ay, kx, ky, fx, fy) {
@@ -300,7 +300,6 @@ function drawRockEnt(c, e) {
       let kx = ax + side * (S.w * 0.2 + j * 3) * (0.4 + 0.6 * k), ky = ay - (8 + j * 2) * k - 2;
       const front = side === e.face && j === 0;
       // передняя лапа: тянется к гному, держит его или колет в бою
-      if (front && e.state === 'drag') { const h = rockEntHand(e); fx = h.x; fy = h.y; kx = (ax + fx) / 2 + side * 3; ky = Math.min(ay, fy) - 8; }
       if (front && atk < 0.8) { const up = atk < 0.35; fx = bx + side * S.w * (up ? 0.35 : 0.6); fy = up ? top - 22 : by - 2; kx = (ax + fx) / 2 + side * 4; ky = Math.min(ay, fy) - 8; }
       rockLeg(c, ax, ay, kx, ky, fx, fy);
     }
@@ -327,6 +326,7 @@ function drawRockEnt(c, e) {
       c.stroke();
     }
   }
+  if (k > 0.3) drawRockClaws(c, e, g);   // крабьи клешни спереди
   // глаза (кроме погибшего)
   if (!(e.state === 'dying' && e.t > 0.5)) drawRockEyes(c, e, Math.min(1, 0.3 + nightAmt()));
   c.restore();
@@ -341,5 +341,55 @@ function rockEntRest(e) {
   if (ti >= 0 && ti !== home && !World.obj[ti] && !World.road[ti] && !World.bmap[ti] && isWalkable(tx, ty)) {
     if (World.obj[home] === e.o) World.obj[home] = null;
     World.obj[ti] = e.o;
+  }
+}
+
+// Крабья клешня: толстая каменная «рука», ладонь и две челюсти — верхняя щёлкает
+function crabClaw(c, sx, sy, hx, hy, open, s) {
+  // рука от глыбы к клешне
+  c.lineCap = 'round';
+  for (const [col, w] of [[ROCK_COL.deep, 4.6 * s], [ROCK_COL.mid, 3 * s], [ROCK_COL.light, 0.9 * s]]) {
+    c.strokeStyle = col; c.lineWidth = w;
+    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo((sx + hx) / 2, Math.min(sy, hy) - 4 * s, hx, hy); c.stroke();
+  }
+  const a = Math.atan2(hy - sy, hx - sx);
+  c.save();
+  c.translate(hx, hy); c.rotate(a);
+  // ладонь
+  c.fillStyle = ROCK_COL.deep; c.beginPath(); c.ellipse(1.5 * s, 0, 4.4 * s, 3.4 * s, 0, 0, 7); c.fill();
+  c.fillStyle = ROCK_COL.base; c.beginPath(); c.ellipse(1.2 * s, -0.4 * s, 3.6 * s, 2.7 * s, 0, 0, 7); c.fill();
+  c.fillStyle = ROCK_COL.light; c.beginPath(); c.ellipse(0.4 * s, -1.4 * s, 1.8 * s, 0.9 * s, 0, 0, 7); c.fill();
+  const jaw = (ang, up) => {
+    c.save(); c.translate(4.5 * s, (up ? -1.2 : 1.2) * s); c.rotate(ang);
+    c.fillStyle = ROCK_COL.deep;
+    c.beginPath(); c.moveTo(0, -2.2 * s); c.quadraticCurveTo(6 * s, (up ? -2.6 : 2.6) * s - 1.5 * s, 8.5 * s, (up ? 1 : -1) * s); c.quadraticCurveTo(4 * s, 0.4 * s, 0, 2.2 * s); c.closePath(); c.fill();
+    c.fillStyle = up ? ROCK_COL.base : ROCK_COL.mid;
+    c.beginPath(); c.moveTo(0.6 * s, -1.4 * s); c.quadraticCurveTo(5.4 * s, (up ? -2 : 2) * s - 1 * s, 7.4 * s, (up ? 0.8 : -0.8) * s); c.quadraticCurveTo(3.6 * s, 0.2 * s, 0.6 * s, 1.4 * s); c.closePath(); c.fill();
+    // зубцы по кромке
+    c.fillStyle = ROCK_COL.light;
+    for (let k = 1; k < 4; k++) c.fillRect(k * 1.8 * s, (up ? 0.6 : -1) * s, 0.8 * s, 0.6 * s);
+    c.restore();
+  };
+  jaw(open * 0.4, false);      // нижняя челюсть почти неподвижна
+  jaw(-open, true);            // верхняя распахивается и щёлкает
+  c.restore();
+}
+
+// пара клешней спереди глыбы; одна держит добычу, в бою — машут и щёлкают
+function drawRockClaws(c, e, g) {
+  const { S, bx, by, top } = g;
+  const f = e.face < 0 ? -1 : 1, s = 0.75 + S.w / 110;
+  const atk = e.state === 'fight' && e.atk ? Game.time - e.atk : 9;
+  for (const k of [0, 1]) {                                   // 0 — дальняя, 1 — ближняя к зрителю
+    const sx = bx + f * S.w * 0.22, sy = top - 6 + k * 3;
+    let hx = bx + f * S.w * (0.5 + k * 0.04), hy = top - 10 + k * 7;
+    let open = 0.35 + Math.max(0, Math.sin(Game.time * 3 + k * 2 + e.i)) * 0.4;   // лениво пощёлкивает
+    if (e.state === 'fight') { open = 0.2 + Math.abs(Math.sin(Game.time * 12 + k)) * 0.8; hy -= atk < 0.35 ? 10 : 0; hx += atk >= 0.35 && atk < 0.8 ? f * 6 : 0; }
+    if (e.state === 'drag' && k === 1) {
+      const h = rockEntHand(e);
+      hx = h.x - f * 5 * s; hy = h.y;
+      open = e.t < GRAB_REACH ? 0.9 : 0.12;                   // распахнута — и сжимает гнома
+    }
+    crabClaw(c, sx, sy, hx, hy, open, s);
   }
 }
