@@ -492,7 +492,7 @@ function heroBtnUpdate() {
 
   const _setHTML = setHTML;
   setHTML = function (id, html) {
-    if (id === 'info' && Game.selUnit && Game.selUnit === Game.hero) html = heroPanel();   // вместо окна здания — панель героя
+    if (id === 'info') heroCardUpdate();   // панель героя — отдельное окно, окно здания не трогаем
     _setHTML(id, html);
   };
 
@@ -556,4 +556,31 @@ function heroBtnUpdate() {
       }
     }
   };
+}
+
+// Окно героя: отдельная карточка поверх карты (справа вверху), не закрывает окно здания в колонке
+function heroCardUpdate() {
+  let card = document.getElementById('hero-card');
+  if (!card) {
+    card = document.createElement('div'); card.id = 'hero-card';
+    card.addEventListener('click', e => {
+      if (e.target.closest('.hc-x')) { Game.selUnit = null; updateUI(true); return; }
+      const el = e.target.closest('[data-hero]');
+      if (!el || !Game.hero) return;
+      if (el.dataset.hero === 'leave') { const m = Game.units.find(u => u.teamOf === Game.hero.id); if (m) leaveTeam(m); updateUI(true); }
+      else heroAbility(el.dataset.hero);
+    });
+    document.getElementById('view').appendChild(card);
+    const st = document.createElement('style');
+    st.textContent = `#hero-card{position:absolute;top:58px;right:10px;width:250px;z-index:6;padding:8px 10px 10px;background:rgba(26,19,13,.94);color:#e8dcc0;border:1px solid #b8902c;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.6);font-size:13px;display:none}
+    #hero-card .hc-x{position:absolute;top:3px;right:5px;padding:0 6px;font-size:13px;line-height:18px}
+    #hero-card .ihead{margin-bottom:4px}
+    body.mobile #hero-card{top:auto;bottom:calc(112px + env(safe-area-inset-bottom));right:6px;width:min(250px,64vw)}`;
+    document.head.appendChild(st);
+  }
+  const on = !!(Game.hero && Game.selUnit && Game.selUnit === Game.hero);
+  if (!on) { card.style.display = 'none'; return; }
+  const html = heroPanel() + '<button class="hc-x" title="Закрыть (Esc)">×</button>';
+  if (card.dataset.h !== html) { card.dataset.h = html; card.innerHTML = html; }
+  card.style.display = 'block';
 }

@@ -213,8 +213,8 @@ const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло'
 // всё из `after` (типы зданий), либо её открывает обучение. Школы в меню нет:
 // она появляется в обучении (noMenu).
 const UNLOCKS = [
-  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire'] },
-  { id: 'grain', items: ['farm', 'mill', 'bakery', 'storehouse', 'inn', 'tool:wheat'], after: ['woodcutter', 'quarry', 'sawmill'] },
+  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire', 'inn'] },
+  { id: 'grain', items: ['farm', 'mill', 'bakery', 'storehouse', 'tool:wheat'], after: ['woodcutter', 'quarry', 'sawmill'] },
   { id: 'hops',  items: ['hopfarm', 'brewery', 'tool:hops'], after: ['bakery'] },
   { id: 'pigs',  items: ['swine', 'butchery'], after: ['brewery'] },
   { id: 'base',  items: ['goatpen', 'stable'], after: ['swine'] },
