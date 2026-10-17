@@ -10,7 +10,14 @@ const findB = type => Game.buildings.find(b => b.type === type);
 const storeB = () => Game.buildings.find(b => b.isStore() && !b.isPile);
 // здание связано дорогой со складом
 const linked = b => { const s = storeB(); return !!(b && s && compAt(b.doorX, b.doorY) && compAt(b.doorX, b.doorY) === compAt(s.doorX, s.doorY)); };
-const catBtn = name => `#build-cats button:nth-child(${BUILD_CATS.indexOf(name) + 1})`;
+const catBtn = name => `#build-cats button[data-cat="${name}"]`;
+const tutSeen = () => { try { return localStorage.getItem('oldgold-tut') === 'done'; } catch (e) { return false; } };
+
+// Конец обучения (или пропуск): достраиваем школу и открываем «Ресурсы»
+function releaseStart() {
+  for (const b of Game.buildings) b.hold = false;
+  unlockStage('res', true);
+}
 
 const TUT_STEPS = [
   {
@@ -27,7 +34,16 @@ const TUT_STEPS = [
     done: () => Game.selected && Game.selected.isStore && Game.selected.isStore(),
   },
   {
+    title: 'Школа',
+    enter: () => { for (const b of Game.buildings) b.hold = false; },
+    text: () => `Школа учит новых рабочих за золото. Строить её самому не нужно — работяги уже взялись за дело (бордовые кафтаны у стройки).<br><br>
+      Подождите, пока её достроят — это и будет задание. Пока ждёте, осмотритесь.`,
+    marks: () => { const s = findB('school'); return s ? [[s.x + s.w / 2, s.y]] : []; },
+    done: () => { const s = findB('school'); return !!(s && s.state === 'done'); },
+  },
+  {
     title: 'Дом лесоруба',
+    enter: () => unlockStage('res'),
     text: () => `Всё строится из <b>досок и камня</b>. Доски делают из брёвен, а брёвна рубит лесоруб.<br><br>
       Откройте раздел <b>«Ресурсы»</b>, выберите <b>Дом лесоруба</b> и поставьте его <b>рядом с лесом</b>${isMob() ? ' (коснитесь места, затем ✓)' : ''}. Зелёная рамка — можно строить, красная — нельзя.`,
     hl: () => [catBtn('Ресурсы'), '.bbtn[data-type="woodcutter"]', isMob() ? '[data-tab="build"]' : ''],
@@ -50,6 +66,7 @@ const TUT_STEPS = [
   },
   {
     title: 'Еда',
+    enter: () => unlockStage('grain'),
     text: () => `Голодный гном работает медленно и может упасть без сил. Едят в <b>трактире</b> — он уже есть.<br><br>
       Цепочка хлеба: <b>Ферма → Мельница → Пекарня</b> (раздел «Еда»). Ферма засевает поля вокруг себя — оставьте ей свободную траву. Всё соедините дорогами.`,
     hl: () => [catBtn('Еда'), '.bbtn[data-type="farm"]', '.bbtn[data-type="mill"]', '.bbtn[data-type="bakery"]', isMob() ? '[data-tab="build"]' : ''],
@@ -98,6 +115,7 @@ function tutClose(finished) {
   Tut.on = false;
   try { localStorage.setItem('oldgold-tut', 'done'); } catch (e) { /* нет хранилища */ }
   tutHighlight([]);
+  releaseStart();
   if (Tut.el) Tut.el.classList.add('hidden');
   if (finished) { toast('Обучение пройдено! Его можно повторить в меню'); applaud('Деревня аплодирует: обучение пройдено!'); }
 }
@@ -125,6 +143,7 @@ function tutRender() {
     });
   }
   const s = TUT_STEPS[Tut.i], ok = Tut.doneAt > 0;
+  if (s.enter) s.enter();
   Tut.el.classList.remove('hidden');
   Tut.el.classList.toggle('ok', ok);
   Tut.el.innerHTML = `

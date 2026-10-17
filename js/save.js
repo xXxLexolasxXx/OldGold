@@ -24,6 +24,7 @@ function resetGameState() {
   Game.tool = null;
   Game.storeBlock = {};
   Game.produced = emptyGoods();
+  Game.unlocked = allUnlocked();   // по умолчанию меню открыто целиком; новая игра закрывает его сама
 }
 
 function serializeGame() {
@@ -37,13 +38,13 @@ function serializeGame() {
   const nz = o => { const r = {}; for (const k in o) if (o[k]) r[k] = o[k]; return r; };
   return {
     v: 2, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
-    storeBlock: Game.storeBlock, lost: Game.lostGnomes || 0, produced: nz(Game.produced),
+    storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, produced: nz(Game.produced),
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
     obj, road,
     buildings: Game.buildings.map(b => ({
       id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
       used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
-      level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
+      level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
     })),
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
     units: Game.units.map(u => ({
@@ -84,6 +85,7 @@ function applySave(s) {
     b.queue = (d.queue || []).map(q => (UNIT_TYPES[q] && UNIT_TYPES[q].legacy) || q);
     b.training = d.training || null;
     b.paused = !!d.paused;
+    if (d.hold) b.hold = true;
     b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
     if (b.type === 'graveyard' && b.state !== 'done') { b.selfBuild = true; b.maxHits = SITE_HITS + GY_BUILD_HITS; b.total = 1; }
     if (d.level === 2 && b.def.up) upgradeBuilding(b, true);
@@ -124,6 +126,8 @@ function applySave(s) {
   Game.time = s.time;
   Game.nextId = Math.max(s.nextId, Game.nextId);
   Game.storeBlock = s.storeBlock || {};
+  Game.unlocked = s.unlocked ? Object.fromEntries(s.unlocked.map(k => [k, true])) : allUnlocked();   // старые сохранения — всё открыто
+  UI.shown = null; renderBuildMenu();
   Game.lostGnomes = s.lost || 0;
   Object.assign(Game.produced, s.produced || {});
   if (s.cam) { R.cam.x = s.cam.x; R.cam.y = s.cam.y; R.cam.z = ZOOMS.includes(s.cam.z) ? s.cam.z : 2; }

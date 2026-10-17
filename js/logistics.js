@@ -162,7 +162,7 @@ function dispatchBuilders() {
   const idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside);
   if (!idle.length) return;
   const sites = [
-    ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild),
+    ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold),
     ...Game.buildings.filter(b => b.upg && !b.upg.builder),
     // дорогу можно копать сразу, а мостить — когда камень на месте или в пути
     ...[...Game.roadSites.values()].filter(s => !s.builder && (s.dug < 1 || s.stock.stone + s.incoming.stone > 0)),

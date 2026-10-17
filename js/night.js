@@ -1213,6 +1213,7 @@ function nearLamp(x, y, r) {
 function entDemo(mode = 'drag') {
   const seed = (Math.random() * 1e9) | 0;
   setupStart(seed);
+  unlockAll();
   buildTerrain(seed);
   Game.time = NIGHT_START + 30;                         // глубокая ночь
   Game.entNight = nightIndex(); Game.wasNight = true;   // своих не будить
@@ -1262,6 +1263,7 @@ function entDemo(mode = 'drag') {
 function entDemoGroup() {
   const seed = (Math.random() * 1e9) | 0;
   setupStart(seed);
+  unlockAll();
   buildTerrain(seed);
   Game.time = NIGHT_START + 30;
   Game.entNight = nightIndex(); Game.wasNight = true;

@@ -83,7 +83,7 @@ const BUILDINGS = {
     desc: 'Большой каменный амбар. Хранит все товары, трудяги свозят сюда излишки.',
   },
   school: {
-    name: 'Школа', cat: 'Основа', w: 3, h: 3, top: 96, cost: { timber: 5, stone: 5 }, inputs: { gold: 5 },
+    name: 'Школа', cat: 'Основа', noMenu: true, w: 3, h: 3, top: 96, cost: { timber: 5, stone: 5 }, inputs: { gold: 5 },
     desc: 'Двухэтажная школа с колокольней. Обучает жителей за 1 золото.',
   },
   inn: {
@@ -208,6 +208,20 @@ const BUILDINGS = {
 };
 const BUILD_ORDER = Object.keys(BUILDINGS);
 const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия'];
+
+// Постепенно открывающееся меню строительства. Стадия открывается, когда готово
+// всё из `after` (типы зданий), либо её открывает обучение. Школы в меню нет:
+// она появляется в обучении (noMenu).
+const UNLOCKS = [
+  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill'] },
+  { id: 'grain', items: ['farm', 'mill', 'bakery', 'storehouse', 'inn', 'tool:wheat'], after: ['woodcutter', 'quarry', 'sawmill'] },
+  { id: 'hops',  items: ['hopfarm', 'brewery', 'tool:hops'], after: ['bakery'] },
+  { id: 'pigs',  items: ['swine', 'butchery'], after: ['brewery'] },
+  { id: 'base',  items: ['bonfire', 'goatpen', 'stable'], after: ['swine'] },
+  { id: 'craft', items: ['tannery', 'armory'], after: ['butchery'] },
+  { id: 'metal', items: ['goldmine', 'metallurgist'], after: ['armory'] },
+  { id: 'magic', items: ['crystalmine', 'magiccircle', 'magicworkshop'], after: ['goldmine', 'metallurgist'] },
+];
 
 const ROAD_STONE = 1;     // сколько камня уходит на клетку дороги
 const STORE_CAP = 5;      // сколько курьеров одновременно внутри склада

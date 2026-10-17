@@ -142,6 +142,7 @@ function placeNear(type, cx, cy, rMin = 3) {
 function villageAfterHour() {
   const seed = (Math.random() * 1e9) | 0;
   setupStart(seed);
+  unlockAll();
   const st = Game.buildings.find(b => b.isStore());
   const cx = st.doorX + 4, cy = st.doorY;
   for (const type of VILLAGE_PLAN) {

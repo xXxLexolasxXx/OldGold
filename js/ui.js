@@ -94,7 +94,7 @@ function openTab(name) {
 }
 
 function openBuildCat(k) {
-  if (k < 0 || k >= BUILD_CATS.length) return;
+  if (!(k >= 0 && k < BUILD_CATS.length) || !visibleCats().includes(k)) return;
   UI.cat = k;
   openTab('build');
   renderBuildList();
@@ -109,6 +109,86 @@ function queueTraining(type) {
   toast(`В школу: ${UNIT_TYPES[type].name}`);
 }
 
+// ---------- Постепенное открытие меню ----------
+
+const UNLOCK_NAMES = { res: 'Ресурсы', grain: 'Зерно и хлеб', hops: 'Хмель и пиво', pigs: 'Свиньи и мясо', base: 'Хозяйство', craft: 'Ремесло', metal: 'Плавка золота', magic: 'Магия' };
+
+function allUnlocked() { return Object.fromEntries(UNLOCKS.map(u => [u.id, true])); }
+
+function isUnlocked(item) {
+  const st = UNLOCKS.find(u => u.items.includes(item));
+  return !st || !!Game.unlocked[st.id];
+}
+
+function menuItemShown(type) {
+  const d = BUILDINGS[type];
+  return !d.hidden && !d.noMenu && isUnlocked(type);
+}
+
+function unlockStage(id, quiet) {
+  if (Game.unlocked[id]) return;
+  Game.unlocked[id] = true;
+  if (!quiet) toast('Открыто в меню: ' + UNLOCK_NAMES[id]);
+  renderBuildMenu();
+}
+
+function unlockAll() {
+  Game.unlocked = allUnlocked();
+  for (const b of Game.buildings) b.hold = false;
+  UI.shown = null;
+  renderBuildMenu();
+}
+
+// Каждая следующая стадия открывается, когда достроено всё из предыдущей
+function checkUnlocks() {
+  for (const st of UNLOCKS) {
+    if (Game.unlocked[st.id] || !st.after) continue;
+    if (st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'))) unlockStage(st.id);
+  }
+}
+
+// Вкладки с хотя бы одной открытой позицией (индексы в BUILD_CATS)
+function visibleCats() {
+  return BUILD_CATS.map((c, k) => k).filter(k => buildTypesIn(BUILD_CATS[k]).length);
+}
+function buildTypesIn(cat) { return BUILD_ORDER.filter(t => BUILDINGS[t].cat === cat && menuItemShown(t)); }
+
+function renderBuildMenu() {
+  const vis = visibleCats();
+  if (!vis.includes(UI.cat) && vis.length) UI.cat = vis[0];
+  const all = new Set(BUILD_ORDER.filter(menuItemShown));
+  for (const crop of ['wheat', 'hops']) if (isUnlocked('tool:' + crop)) all.add('tool:' + crop);
+  const fresh = UI.shown ? [...all].filter(t => !UI.shown.has(t)) : [];
+  UI.shown = all;
+  // вкладки: новые появляются плавно, остальные остаются на месте
+  const box = document.getElementById('build-cats');
+  UI.catEls = UI.catEls || {};
+  for (const k of vis) {
+    const name = BUILD_CATS[k];
+    let b = UI.catEls[name];
+    if (!b) {
+      b = UI.catEls[name] = document.createElement('button');
+      b.textContent = name;
+      b.onclick = () => openBuildCat(k);
+      if (UI.shown && UI.catsReady) { b.classList.add('enter'); b.addEventListener('animationend', () => b.classList.remove('enter'), { once: true }); }
+    }
+    b.title = name;
+    b.dataset.cat = name;
+    box.appendChild(b);                          // повторная вставка выстраивает порядок
+  }
+  for (const name in UI.catEls) if (!vis.some(k => BUILD_CATS[k] === name)) { UI.catEls[name].remove(); delete UI.catEls[name]; }
+  UI.catsReady = true;
+  // инструменты полей
+  for (const crop of ['wheat', 'hops']) {
+    const btn = document.getElementById('tool-' + crop), on = isUnlocked('tool:' + crop);
+    btn.classList.toggle('locked', !on);
+    if (on && fresh.includes('tool:' + crop)) { btn.classList.add('enter'); btn.addEventListener('animationend', () => btn.classList.remove('enter'), { once: true }); }
+  }
+  UI.fresh = fresh;
+  renderBuildList();
+  UI.fresh = [];
+}
+
 // ---------- Инициализация ----------
 
 function initUI() {
@@ -117,15 +197,8 @@ function initUI() {
 
   document.querySelectorAll('#tabs .tab-btn').forEach(btn => { btn.onclick = () => Mobile.on ? mobileTab(btn.dataset.tab) : openTab(btn.dataset.tab); });
 
-  const cats = document.getElementById('build-cats');
-  BUILD_CATS.forEach((name, k) => {
-    const b = document.createElement('button');
-    b.innerHTML = `${name}<kbd>${k + 1}</kbd>`;
-    b.title = `${name} (${k + 1})`;
-    b.onclick = () => openBuildCat(k);
-    cats.appendChild(b);
-  });
-  renderBuildList();
+  renderBuildMenu();
+  setInterval(checkUnlocks, 500);
 
   document.getElementById('tool-road').onclick = () => setTool(Game.tool && Game.tool.kind === 'road' ? null : { kind: 'road' });
   document.getElementById('tool-erase').onclick =() => setTool(Game.tool && Game.tool.kind === 'erase' ? null : { kind: 'erase' });
@@ -226,16 +299,14 @@ function initUI() {
 }
 
 function renderBuildList() {
-  document.querySelectorAll('#build-cats button').forEach((b, k) => b.classList.toggle('active', k === UI.cat));
+  document.querySelectorAll('#build-cats button').forEach(b => b.classList.toggle('active', b.dataset.cat === BUILD_CATS[UI.cat]));
   const list = document.getElementById('build-list');
   list.innerHTML = '';
-  const cat = BUILD_CATS[UI.cat];
-  for (const type of BUILD_ORDER) {
-    if (BUILDINGS[type].hidden) continue;
+  for (const type of buildTypesIn(BUILD_CATS[UI.cat])) {
     const def = BUILDINGS[type];
-    if (def.cat !== cat) continue;
     const btn = document.createElement('button');
     btn.className = 'bbtn';
+    if ((UI.fresh || []).includes(type)) { btn.classList.add('enter'); btn.addEventListener('animationend', () => btn.classList.remove('enter'), { once: true }); }
     btn.dataset.type = type;
     btn.innerHTML = `<img class="bimg" src="${buildingIconURL(type)}" alt=""><span class="bname">${def.name}</span>${costHTML(def.cost)}`;
     btn.onclick = () => setTool(Game.tool && Game.tool.type === type ? null : { kind: 'build', type, rot: def.noRotate ? 0 : (UI.lastRot || 0) });

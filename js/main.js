@@ -48,7 +48,9 @@ function layoutStart(rng, cx, cy) {
     if (!best) continue;
     const d = bDims(type, best.rot);
     for (let yy = best.y - 1; yy <= best.y + d.h; yy++) for (let xx = best.x - 1; xx <= best.x + d.w; xx++) taken.add(idx(xx, yy));
-    placed.push(placeBuilding(type, best.x, best.y, true, best.rot));
+    const pb = placeBuilding(type, best.x, best.y, type !== 'school', best.rot);   // школа — стройка: достраивают в обучении
+    if (type === 'school') pb.hold = true;
+    placed.push(pb);
     roads.push(...best.path);
   }
   // улица от крайнего входа до крайнего, с запасом
@@ -80,11 +82,15 @@ function setupStart(seed) {
     for (const b of lay.placed) removeBuilding(b);
     World.road.fill(0);
     placeBuilding('storehouse', cx - 9, cy - 3, true);
-    placeBuilding('school', cx - 4, cy - 3, true);
+    placeBuilding('school', cx - 4, cy - 3, false).hold = true;
     placeBuilding('inn', cx, cy - 3, true);
     for (let x = cx - 10; x <= cx + 5; x++) setRoad(x, cy, true);
     lay = { sy: cy, x0: cx - 10, x1: cx + 5 };
   }
+  Game.unlocked = {};              // меню строительства открывается постепенно
+  UI.shown = null;
+  if (tutSeen()) releaseStart();   // обучение уже проходили — школу достраивают сразу
+  renderBuildMenu();
   const store = Game.buildings.find(b => b.type === 'storehouse');
   Object.assign(store.stock, { timber: 30, stone: 35, bread: 20, gold: 30, trunk: 4 });
 
@@ -354,7 +360,7 @@ function initInput() {
     if (e.code === 'KeyP' && Game.selected && Game.selected.state === 'done') { Game.selected.paused = !Game.selected.paused; updateUI(true); }
     if (e.code === 'KeyB' && Game.selected && !Game.selected.isRoad && Game.selected.state === 'done' && (Game.selected.def.inputs || Game.selected.isStore())) { toggleDeliver(Game.selected); updateUI(true); }
     const dig = e.code.match(/^Digit([1-5])$/);
-    if (dig && !e.ctrlKey) openBuildCat(+dig[1] - 1);
+    if (dig && !e.ctrlKey) openBuildCat(visibleCats()[+dig[1] - 1]);
   });
   window.addEventListener('keyup', e => Input.keys.delete(e.key === 'Shift' ? 'Shift' : e.code));
   window.addEventListener('blur', () => Input.keys.clear());
