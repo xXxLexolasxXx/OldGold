@@ -639,3 +639,5 @@ body.mm-folded #mm-size { display: none; }
   .sm-panel[data-panel="main"] .sm-btn { flex: 1; }
   #start-menu { padding-top: 28px; }
 }
+.sm-btn { position: relative; }
+.sm-vine { position: absolute; pointer-events: none; overflow: visible; z-index: 3; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.55)); }
