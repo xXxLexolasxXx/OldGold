@@ -691,7 +691,7 @@ function render() {
     if (!o) continue;
     if (o.t === 'tree') { if (!o.awake) list.push([y + 0.9, () => drawTree(c, x, y, o, i)]); }   // проснувшееся рисуется само
     else if (o.t === 'log') list.push([y + 0.7, () => drawLog(c, x, y)]);
-    else if (o.t === 'stone') list.push([y + 0.8, () => drawRock(c, x, y, o, i)]);
+    else if (o.t === 'stone') { if (!o.awake) list.push([y + 0.8, () => drawRock(c, x, y, o, i)]); }   // проснувшийся рисуется сам
     else if (isStreetObj(o)) list.push([y + 0.75, () => drawStreetObj(c, x, y, o)]);
     else if (o.t === 'stump') list.push([y + 0.7, () => drawStump(c, x, y)]);
   }

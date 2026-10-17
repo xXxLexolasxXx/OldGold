@@ -234,6 +234,7 @@ function spawnEnts() {
       wait: 0, goal: null, moving: false, foe: null, victim: null, seen: new Set(),
     });
   }
+  spawnRockEnts();
 }
 
 function entMove(e, tx, ty, speed, dt) {
@@ -253,10 +254,10 @@ function entFell(e, u) {
   e.state = 'dying'; e.t = 0; e.foe = null; e.moving = false;
   e.fallDir = u.x < e.x ? 1 : -1;
   sfxAt('creak', e.x * TILE, e.y * TILE, 1.3);
-  logEvent('tree', `${UNIT_TYPES[u.type].name} срубил ходячее дерево — осталось бревно`, e.x, e.y);
+  logEvent('tree', `${UNIT_TYPES[u.type].name} одолел: ${entName(e).toLowerCase()}`, e.x, e.y);
   if (Game.time - (Game.entToastT || -99) > 30) {
     Game.entToastT = Game.time;
-    toast(`${UNIT_TYPES[u.type].name} срубил ходячее дерево! Бревно заберёт дровосек`);
+    toast(e.rock ? `${UNIT_TYPES[u.type].name} разбил ходячий камень! Остались камни для каменотёса` : `${UNIT_TYPES[u.type].name} срубил ходячее дерево! Бревно заберёт дровосек`);
   }
 }
 
@@ -273,13 +274,14 @@ function entTakes(e, u) {
   if (Math.abs(e.dragDir[0]) < 0.4) e.dragDir = [-e.face * 0.7, Math.sign(dy || 1) * 0.7];   // уходит вбок, чтобы было видно
   floater(u.x, u.y - 1.2, '!', '#ff6040');
   sfxAt('roar', e.x * TILE, e.y * TILE);
-  toast(`Ходячее дерево утащило в туман: ${UNIT_TYPES[u.type].name}`);
-  logEvent('tree', `Ходячее дерево утащило в туман: ${UNIT_TYPES[u.type].name}`, e.x, e.y);
+  toast(`${entName(e)} утащил${e.rock ? '' : 'о'} в туман: ${UNIT_TYPES[u.type].name}`);
+  logEvent('tree', `${entName(e)} утащил${e.rock ? '' : 'о'} в туман: ${UNIT_TYPES[u.type].name}`, e.x, e.y);
   removeUnit(u);
 }
 
 // стал бревном: на месте дерева — пень (отрастёт), бревно лежит, где упало
 function entToLog(e) {
+  if (e.rock) return rockEntRest(e);
   const home = e.i;
   if (World.obj[home] === e.o) { World.obj[home] = { t: 'stump', g: 0 }; World.growing.add(home); }
   const lx = Math.floor(e.x + e.fallDir * 0.8), ly = Math.floor(e.y);
@@ -335,9 +337,10 @@ function updateEnts(dt) {
         // шатается → заваливается → удар о землю: пыль, листья, бревно
         if (e.t >= 2.2) {
           const { bx, by } = entBase(e);
-          fxBurst(bx + e.fallDir * 40, by - 2, 30, ['#8a7a60', '#6a5a44', '#a8987a'], 90, 40, 0.9, 3, 80);
-          fxBurst(bx + e.fallDir * 50, by - 10, 22, ENT_LOOK[entBase(e).kind].crown, 70, 50, 1.4, 2.4, 60);
-          floater(e.x + e.fallDir * 1.2, e.y - 1, 'БУХ!', '#e0b882');
+          const off = e.rock ? 0 : e.fallDir;
+          fxBurst(bx + off * 40, by - 2, 30, ['#8a7a60', '#6a5a44', '#a8987a'], 90, 40, 0.9, 3, 80);
+          fxBurst(bx + off * 50, by - 10, 22, ENT_LOOK[entBase(e).kind].crown, 70, 50, 1.4, 2.4, 60);
+          floater(e.x + off * 1.2, e.y - 1, e.rock ? 'Хрусть!' : 'БУХ!', '#e0b882');
           sfxAt('thud', e.x * TILE, e.y * TILE, 1.6);
           entToLog(e); e.state = 'gone';
         }
@@ -526,7 +529,7 @@ function nightLights(x0, y0, x1, y1) {
   // ожившее дерево окружено мертвенным отсветом — его силуэт видно в тумане
   for (const e of Game.ents || []) if (e.k > 0.05 && e.state !== 'gone') {
     const { bx, by } = entBase(e);
-    L.push([bx, by - 50, 80, (e.state === 'drag' ? 0.95 : 0.7) * e.k * e.alpha, 'ent']);
+    L.push([bx, by - (e.rock ? 18 : 50), e.rock ? 50 : 80, (e.state === 'drag' ? 0.95 : 0.7) * e.k * e.alpha, 'ent']);
     if (e.state === 'drag' && e.victim) L.push([bx + e.face * 21, by - 30, 50, 0.8 * e.alpha]);   // фонарь бедняги ещё светит
   }
   for (const b of Game.buildings) {
@@ -595,7 +598,7 @@ function drawNight(c, x0, y0, x1, y1) {
   c.imageSmoothingEnabled = R.smooth;
   // глаза ходячих деревьев горят сквозь туман
   for (const e of Game.ents || []) {
-    if (e.state === 'sleep') { drawTreeEyes(c, e, e.alpha * Math.min(1, n * 4)); continue; }   // вечером — только глаза в стволе
+    if (e.state === 'sleep' || e.rock) { if (!(e.state === 'dying' && e.t > 0.5)) drawTreeEyes(c, e, e.alpha * Math.min(1, n * 4)); continue; }   // вечером — только глаза в стволе
     if (e.k < 0.4 || (e.state === 'dying' && e.t > 0.5) || e.alpha <= 0.05) continue;
     const p = entFacePos(e);
     c.save(); c.globalAlpha = e.alpha * Math.min(1, n * 1.5);
@@ -845,6 +848,7 @@ function entSprite(kind, name) {
 
 function entBase(e) {
   const h = hash(e.i);
+  if (e.rock) return { spr: null, kind: 'rock', bx: Math.round(e.x * TILE + ((h >>> 5) % 15) - 7), by: Math.round(e.y * TILE + 10 + ((h >>> 9) % 11) - 5) };
   return {
     spr: SPR.trees[h % SPR.trees.length],
     kind: ENT_KIND[h % SPR.trees.length] || 'oak',
@@ -871,6 +875,7 @@ function entFrameName(e) {
 
 // где сейчас кулак, держащий гнома (мировые пиксели)
 function entHandWorld(e) {
+  if (e.rock) return rockEntHand(e);
   const { kind, bx, by } = entBase(e);
   const f = entSprite(kind, entFrameName(e));
   return { x: bx + (f.hand[0] - ENT_CX) * (e.face < 0 ? -1 : 1), y: by + Math.round((1 - e.k) * 40) + f.hand[1] - ENT_BASE };
@@ -883,6 +888,7 @@ function treeEyePos(e) {
 }
 
 function drawTreeEyes(c, e, a) {
+  if (e.rock) return drawRockEyes(c, e, a);
   const p = treeEyePos(e);
   const blink = (Game.time * 0.37 + e.i * 0.13) % 1 < 0.04;     // изредка моргает
   const fl = 150 + Math.round(Math.sin(Game.time * 6 + e.i) * 40);
@@ -903,6 +909,7 @@ function drawTreeEyes(c, e, a) {
 
 // где глаза в мире (для свечения сквозь туман)
 function entFacePos(e) {
+  if (e.rock) return rockEyeCenter(e);
   if (e.k < 0.3) return treeEyePos(e);
   const { bx, by, kind } = entBase(e);
   const f = entSprite(kind, entFrameName(e));
@@ -911,6 +918,7 @@ function entFacePos(e) {
 }
 
 function drawEnt(c, e) {
+  if (e.rock) return drawRockEnt(c, e);
   const { spr, kind, bx, by } = entBase(e);
   const k = e.k;
   c.save();
@@ -985,7 +993,7 @@ function drawVictim(c, e) {
   c.drawImage(spr, -PFX, -PFY + 14, PW, PH);
   c.restore();
   // кулак поверх гнома: когти обхватывают пояс
-  if (held) {
+  if (held && !e.rock) {
     const L = ENT_LOOK[entBase(e).kind], LL = L.limb || L;
     c.fillStyle = '#140a05'; c.fillRect(Math.round(h.x) - 5, Math.round(h.y) - 3, 10, 6);
     c.fillStyle = LL.bark; c.fillRect(Math.round(h.x) - 4, Math.round(h.y) - 2, 8, 4);
@@ -1068,7 +1076,8 @@ function entDemo(mode = 'drag') {
     let ti = -1;
     for (let j = 0; j < N_TILES && ti < 0; j++) {
       const o = World.obj[j];
-      if (o && o.t === 'tree' && o.g >= 1 && !o.awake && !used.has(j) && ENT_KIND[hash(j) % SPR.trees.length] === kinds[n]) ti = j;
+      if (mode === 'rock' ? o && o.t === 'stone' && o.n >= 3 + (n % 3) && !o.awake && !used.has(j)
+        : o && o.t === 'tree' && o.g >= 1 && !o.awake && !used.has(j) && ENT_KIND[hash(j) % SPR.trees.length] === kinds[n]) ti = j;
     }
     if (ti < 0) continue;
     used.add(ti);
@@ -1076,7 +1085,7 @@ function entDemo(mode = 'drag') {
     const x = st.doorX - 6 + n * 3.6;
     const side = n % 2 ? -1 : 1;                        // гном то слева, то справа от дерева
     const e = {
-      i: ti, o, hx: ti % MAP_W, hy: (ti / MAP_W) | 0, x: x + 0.5, y: y + 0.5, state: 'walk', t: 0, k: 1,
+      rock: mode === 'rock', i: ti, o, hx: ti % MAP_W, hy: (ti / MAP_W) | 0, x: x + 0.5, y: y + 0.5, state: 'walk', t: 0, k: 1,
       delay: 0, face: -side, phase: 0, alpha: 1, wait: 99, goal: null, moving: false, foe: null, victim: null, seen: new Set(),
     };
     Game.ents.push(e);
@@ -1097,3 +1106,4 @@ function entDemo(mode = 'drag') {
     : 'Демо: деревья хватают гномов. Мир на паузе — нажмите ×1, чтобы смотреть с начала');
 }
 function storeB0() { return Game.buildings.find(b => b.isStore() && !b.isPile); }
+function entName(e) { return e.rock ? 'Ходячий камень' : 'Ходячее дерево'; }

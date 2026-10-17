@@ -190,3 +190,156 @@ function rockHit(tx, ty, o, u, last) {
   fxBurst(hx, hy + 4, last ? 8 : 3, ['rgba(200,186,160,0.55)', 'rgba(170,156,130,0.5)'], 18, 14, 1.1, 3.5, -12);  // пыль
   if (last) { floater(tx + 0.5, ty - 0.2, 'Крак!', '#e8dcc0'); sfxAt('thud', tx * TILE, ty * TILE, 0.8); }
 }
+
+// ---------- Ходячие камни ----------
+// Паукообразная глыба: шесть суставчатых ног и восемь глаз. Вечером лежит обычным
+// камнем, только глаза светятся и перемигиваются; ночью встаёт на ноги и бегает.
+
+ENT_LOOK.rock = { bark: ROCK_COL.base, light: ROCK_COL.light, dark: ROCK_COL.dark, crown: [ROCK_COL.mid, ROCK_COL.light] };
+
+function spawnRockEnts() {
+  const people = Game.units.filter(u => isPerson(u));
+  if (!people.length) return;
+  const want = Math.floor(Math.random() * 4);          // 0–3 камня за ночь
+  let made = 0;
+  for (let tries = 0; tries < 600 && made < want; tries++) {
+    const u = people[(Math.random() * people.length) | 0];
+    const a = Math.random() * Math.PI * 2, d = 4 + Math.random() * 12;
+    const x = Math.round(u.x + Math.cos(a) * d), y = Math.round(u.y + Math.sin(a) * d);
+    if (!inb(x, y)) continue;
+    const i = idx(x, y), o = World.obj[i];
+    if (!o || o.t !== 'stone' || o.n < 2 || o.res || o.awake) continue;
+    if (Game.ents.some(e => Math.abs(e.hx - x) + Math.abs(e.hy - y) < 6)) continue;
+    o.awake = true; o.res = true;
+    Game.ents.push({
+      rock: true, i, o, hx: x, hy: y, x: x + 0.5, y: y + 0.5, state: 'sleep', t: 0, k: 0,
+      delay: Math.random() * 8, face: 1, phase: Math.random() * 6, alpha: 1,
+      wait: 0, goal: null, moving: false, foe: null, victim: null, seen: new Set(),
+    });
+    made++;
+  }
+}
+
+function rockEntGeom(e) {
+  const h = hash(e.i);
+  const size = rockSizeOf(e.o.n), S = ROCK_SIZES[size];
+  const { bx, by } = entBase(e);
+  let lift = 13 * e.k;
+  if (e.state === 'dying') lift *= Math.max(0, 1 - Math.max(0, e.t - 0.9) / 1.1);   // ноги подгибаются
+  return { h, size, S, bx, by, lift, top: by - lift };
+}
+
+// 8 глаз: верхний ряд — четыре мелких, нижний — два крупных в центре и два по краям
+const ROCK_EYES = [[-6, 0, 1], [-2, -1, 1], [2, -1, 1], [6, 0, 1], [-7, 3, 1], [-2.5, 3, 2], [2.5, 3, 2], [7, 3, 1]];
+function rockEyeCenter(e) {
+  const g = rockEntGeom(e);
+  return { x: g.bx, y: g.top - g.S.h * 0.3 };
+}
+
+function drawRockEyes(c, e, a) {
+  if (a <= 0.01) return;
+  const p = rockEyeCenter(e);
+  c.save();
+  c.globalAlpha = a;
+  nightSprites();
+  c.globalCompositeOperation = 'lighter';
+  c.drawImage(NIGHT.warm, p.x - 12, p.y - 6, 24, 14);
+  c.globalCompositeOperation = 'source-over';
+  ROCK_EYES.forEach(([dx, dy, s], k) => {
+    // перемигиваются: волна морганий бежит от глаза к глазу
+    const shut = ((Game.time * 0.9 + k * 0.125 + e.i * 0.07) % 1) < 0.12;
+    const x = Math.round(p.x + dx * (e.face < 0 ? -1 : 1)), y = Math.round(p.y + dy);
+    c.fillStyle = '#140a05'; c.beginPath(); c.arc(x + s / 2, y + s / 2 - 0.5, s * 0.75 + 0.5, 0, 7); c.fill();   // глазная ямка
+    if (!shut) {
+      const fl = 70 + Math.round(Math.sin(Game.time * 7 + k + e.i) * 40);
+      c.fillStyle = `rgb(255,${fl},30)`; c.fillRect(x, y - 0.5, s, s);
+      c.fillStyle = '#ffe0a0'; c.fillRect(x, y - 0.5, 1, 1);
+    }
+  });
+  c.restore();
+}
+
+// где «рука» — поднятая передняя лапа, которой держит гнома
+function rockEntHand(e) {
+  const g = rockEntGeom(e);
+  const reach = e.state === 'drag' && e.t < GRAB_REACH;
+  return { x: g.bx + e.face * g.S.w * (reach ? 0.55 : 0.42), y: reach ? g.by - 4 : g.top - g.S.h * 0.25 };
+}
+
+function rockLeg(c, ax, ay, kx, ky, fx, fy) {
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  for (const [col, w, o] of [[ROCK_COL.deep, 3.4, 0], [ROCK_COL.mid, 1.8, -0.4], [ROCK_COL.light, 0.6, -0.8]]) {
+    c.strokeStyle = col; c.lineWidth = w;
+    c.beginPath(); c.moveTo(ax + o, ay + o); c.lineTo(kx + o, ky + o); c.lineTo(fx + o * 0.5, fy); c.stroke();
+  }
+  // сустав и коготь
+  ellipse(c, kx, ky, 2, 1.7, ROCK_COL.deep); ellipse(c, kx - 0.4, ky - 0.4, 1.3, 1.1, ROCK_COL.base);
+  c.strokeStyle = ROCK_COL.deep; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + (fx > ax ? 1.6 : -1.6), fy + 1.2); c.stroke();
+}
+
+function drawRockEnt(c, e) {
+  const g = rockEntGeom(e), { S, bx, by, top } = g;
+  const k = e.k;
+  c.save();
+  c.globalAlpha = e.alpha;
+  if (e.hitT && Game.time - e.hitT < 0.25) c.translate(Math.round(Math.sin(Game.time * 80) * 2), 0);
+  if (e.state === 'dying' && e.t < 1) c.translate(Math.round(Math.sin(e.t * 40) * 1.5), 0);
+  // тень
+  c.fillStyle = 'rgba(14,10,6,0.35)';
+  c.beginPath(); c.ellipse(bx + 2, by, S.w * 0.45, 5, 0, 0, 7); c.fill();
+  // шесть ног: тройками, как у паука; на ходу тройки шагают попеременно
+  if (k > 0.02) {
+    const atk = e.state === 'fight' && e.atk ? Game.time - e.atk : 9;
+    for (const side of [-1, 1]) for (let j = 0; j < 3; j++) {
+      const grp = (j + (side > 0 ? 1 : 0)) % 2;
+      const sw = e.moving ? Math.sin(e.phase * 1.6 + grp * Math.PI) : 0;
+      // ноги растут из-под глыбы веером: передняя, средняя, задняя; колени высоко и широко
+      const ax = bx + side * (S.w * 0.12 + j * 2), ay = top - 5 + j;
+      let fx = ax + side * (S.w * 0.34 + j * 5) * (0.35 + 0.65 * k) + sw * 3.5, fy = by + (j - 1) * 2.5 - Math.max(0, sw) * 3;
+      let kx = ax + side * (S.w * 0.2 + j * 3) * (0.4 + 0.6 * k), ky = ay - (8 + j * 2) * k - 2;
+      const front = side === e.face && j === 0;
+      // передняя лапа: тянется к гному, держит его или колет в бою
+      if (front && e.state === 'drag') { const h = rockEntHand(e); fx = h.x; fy = h.y; kx = (ax + fx) / 2 + side * 3; ky = Math.min(ay, fy) - 8; }
+      if (front && atk < 0.8) { const up = atk < 0.35; fx = bx + side * S.w * (up ? 0.35 : 0.6); fy = up ? top - 22 : by - 2; kx = (ax + fx) / 2 + side * 4; ky = Math.min(ay, fy) - 8; }
+      rockLeg(c, ax, ay, kx, ky, fx, fy);
+    }
+  }
+  // сама глыба — тем же рисунком, что и обычные камни
+  const spr = rockSprite(g.size, g.h % ROCK_VARIANTS);
+  const sc = 0.82 + ((g.h >>> 21) % 30) / 100;
+  const tilt = e.moving ? Math.sin(e.phase * 1.6) * 0.04 : e.state === 'fight' ? Math.sin(e.t * 9) * 0.05 : 0;
+  c.save();
+  c.imageSmoothingEnabled = true;
+  c.translate(bx, top); c.rotate(tilt);
+  c.scale((g.h >>> 13) & 1 ? -sc : sc, sc);
+  c.drawImage(spr, -S.w / 2, -(S.h - 6), S.w, S.h);
+  c.restore();
+  c.imageSmoothingEnabled = R.smooth;
+  // трещины, пока погибает
+  if (e.state === 'dying') {
+    c.strokeStyle = 'rgba(28,20,12,0.9)'; c.lineWidth = 1;
+    const r = mulberry32(e.i);
+    for (let n = 0; n < 4; n++) {
+      let px = bx + (r() - 0.5) * S.w * 0.4, py = top - S.h * 0.5;
+      c.beginPath(); c.moveTo(px, py);
+      for (let s = 0; s < Math.min(5, e.t * 4); s++) { px += (r() - 0.5) * 6; py += 2 + r() * 3; c.lineTo(px, py); }
+      c.stroke();
+    }
+  }
+  // глаза (кроме погибшего)
+  if (!(e.state === 'dying' && e.t > 0.5)) drawRockEyes(c, e, Math.min(1, 0.3 + nightAmt()));
+  c.restore();
+  if (e.state === 'drag' && e.victim) drawVictim(c, e);
+}
+
+// побеждённый камень рассыпается обратно в обычную глыбу там, где упал
+function rockEntRest(e) {
+  const home = e.i, tx = Math.floor(e.x), ty = Math.floor(e.y);
+  const ti = inb(tx, ty) ? idx(tx, ty) : -1;
+  e.o.awake = false; e.o.res = false; e.o.dmg = 0;
+  if (ti >= 0 && ti !== home && !World.obj[ti] && !World.road[ti] && !World.bmap[ti] && isWalkable(tx, ty)) {
+    if (World.obj[home] === e.o) World.obj[home] = null;
+    World.obj[ti] = e.o;
+  }
+}
