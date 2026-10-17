@@ -174,7 +174,7 @@ function buildTerrain(seed) {
           const gx = (tC[rowT + xr] - tC[rowT + xl]) * 3 + (tD[rowT + xr] - tD[rowT + xl]) * 1.2;
           const gy = (tC[yd + col] - tC[yu + col]) * 3 + (tD[yd + col] - tD[yu + col]) * 1.2;
           const bump = Math.max(0.55, Math.min(1.5, 1 + (0.55 * gx + 0.7 * gy) * 2.2));
-          rr *= bump; rg *= bump; rb *= bump;
+          rr *= bump * 0.8; rg *= bump * 0.8; rb *= bump * 0.8;     // под горами — тёмная скальная земля
           if (Math.abs(nD - 0.5) < 0.012 && nC > 0.5) { rr *= 0.6; rg *= 0.6; rb *= 0.6; }
           const moss = smoothstep(0.6, 0.75, nC) * (1 - smoothstep(0.6, 0.9, rockF)) * 0.5;
           rr += (80 - rr) * moss; rg += (100 - rg) * moss; rb += (50 - rb) * moss;
@@ -220,6 +220,7 @@ function buildTerrain(seed) {
   quantizeData(q.data, PW, PH, 9);
   ctx.putImageData(q, 0, 0);
   TERR.canvas = cv;
+  buildMountains(seed);
 
   TERR.roads = mkCanvas(PW, PH);
   TERR.rctx = TERR.roads.getContext('2d');
@@ -306,7 +307,7 @@ function bakeDecor(c, seed) {
       if (r() < 0.15) drawPebble(c, px + 6 + r() * 20, py + 6 + r() * 20, 1.2 + r() * 1.5, r);
     } else if (t === T_ROCK) {
       if (r() < 0.35) drawPebble(c, px + 6 + r() * 20, py + 6 + r() * 20, 2 + r() * 3, r);
-      if (World.crystal[idx(x, y)]) {
+      if (false && World.crystal[idx(x, y)]) {   // кристаллы рисуются объектами поверх гор (см. render)
         drawCrystalCluster(c, px + 16, py + 26, r);
         if (r() < 0.7) drawCrystalCluster(c, px + 8 + r() * 16, py + 14, r);
       }
