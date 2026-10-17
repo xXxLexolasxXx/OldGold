@@ -151,6 +151,7 @@ class Building {
       const need = (this.def.cost[g] || 0) - this.usedOf[g] - this.stock[g] - this.incoming[g];
       return Math.max(0, need);
     }
+    if (this.upg) return Math.max(0, (this.upg.cost[g] || 0) - this.upg.used[g] - this.upg.stock[g] - this.incoming[g]);   // достройка: везут материалы
     if (this.noDeliver || this.isStore() || !this.def.inputs) return 0;   // закрыто для доставок
     const cap = this.def.inputs[g];
     if (!cap || !this.wantsInput(g)) return 0;
@@ -159,6 +160,7 @@ class Building {
 
   update(dt) {
     if (this.state !== 'done') return;
+    if (this.upg) { this.working = false; return; }          // идёт достройка — производство стоит
     if (this.def.auto) {
       if (!this.autoJob && !this.paused) {
         const r = pickRecipe(this);
@@ -526,7 +528,7 @@ class Unit {
       if (this.fieldJob >= 0) { this.idleFlag = false; return fieldDigGen(this, this.fieldJob); }
       if (this.helpField >= 0) { this.idleFlag = false; return helpHarvestGen(this, this.helpField); }
       if (this.repairJob) { this.idleFlag = false; return repairGen(this, this.repairJob); }
-      if (this.job && !this.job.removed) { this.idleFlag = false; return buildGen(this, this.job); }
+      if (this.job && !this.job.removed) { this.idleFlag = false; return this.job.upg ? upgradeGen(this, this.job) : buildGen(this, this.job); }
       this.job = null;
       this.idleFlag = true;
       return idleGen(this);

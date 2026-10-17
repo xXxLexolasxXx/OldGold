@@ -207,7 +207,8 @@ function initUI() {
       Game.selected = null;
     }
     else if (act === 'pause') b.paused = !b.paused;
-    else if (act === 'upgrade') upgradeBuilding(b);
+    else if (act === 'upgrade') startUpgrade(b);
+    else if (act === 'upgcancel') cancelUpgrade(b);
     else if (act === 'deliver') toggleDeliver(b);
     else if (act === 'goto') focusBuilding(b);
     else if (act === 'prev') cycleBuilding(-1);
@@ -404,10 +405,16 @@ function infoBuilding(b) {
       : `<button class="deliv open" data-act="deliver" title="Запретить трудягам везти сюда товары (B)">${ui('deliver')}<span><b>Доставки открыты</b><small>нажмите, чтобы закрыть</small></span></button>`;
   }
 
-  if (canUpgrade(b)) {
-    const up = b.def.up, ok = storeHas(up.cost);
+  if (b.upg) {
+    const U = b.upg;
+    h += `<div class="isec">Достройка до уровня 2</div><div class="bar"><div style="width:${Math.round(U.hits / U.maxHits * 100)}%"></div></div><div class="slots">`;
+    for (const g in U.cost) if (U.cost[g]) h += slotHTML(g, U.used[g] + U.stock[g], U.cost[g]);
+    h += `</div><div class="irow">Работяга: ${U.builder ? '<span class="good">строит</span>' : '<span class="warn">нет свободного</span>'}</div>`;
+    h += `<button class="upg no" data-act="upgcancel" title="Отменить достройку"><span><b>Отменить достройку</b><small>уже внесённые материалы пропадут</small></span></button>`;
+  } else if (canUpgrade(b)) {
+    const up = b.def.up;
     const cost = Object.keys(up.cost).map(g => `${gi(g)}${up.cost[g]}`).join(' ');
-    h += `<button class="upg${ok ? '' : ' no'}" data-act="upgrade" title="Достроить здание до уровня 2: берётся со склада"><span><b>Уровень 2: ${cost}</b><small>${BUILDINGS[b.type].desc2}</small></span></button>`;
+    h += `<button class="upg" data-act="upgrade" title="Работяги надстроят здание: материалы привезут трудяги"><span><b>Достроить до уровня 2: ${cost}</b><small>${BUILDINGS[b.type].desc2}</small></span></button>`;
   }
   if (b.state !== 'done') {
     h += `<div class="bar"><div style="width:${Math.round(b.progress * 100)}%"></div></div>`;

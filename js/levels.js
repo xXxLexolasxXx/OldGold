@@ -83,27 +83,50 @@ function levelDef(type) {
 
 function canUpgrade(b) { return b.state === 'done' && !b.removed && (b.level || 1) < 2 && !!b.def.up && !b.isRoad; }
 
-function storeHas(cost) {
-  const t = {}; for (const g in cost) t[g] = 0;
-  for (const s of Game.buildings) if (s.isStore() && !s.isPile) for (const g in cost) t[g] += s.stock[g] - (s.reserved ? s.reserved[g] : 0);
-  for (const g in cost) if (t[g] < cost[g]) return false;
+// Достройка — настоящая стройка: материалы везут трудяги, работяга по кирпичику надстраивает
+// здание, пока идёт стройка, производство стоит.
+function startUpgrade(b) {
+  if (!canUpgrade(b) || b.upg) return false;
+  const cost = b.def.up.cost, total = Object.values(cost).reduce((a, n) => a + n, 0);
+  b.upg = { cost, total, used: emptyGoods(), stock: emptyGoods(), usedN: 0, hits: 0, maxHits: Math.max(1, total * HITS_PER_UNIT), builder: null };
+  b.builder = null;
+  b._usite = null;
+  toast(`«${b.def.name}»: начата достройка до уровня 2`, b);
+  logEvent('build', `«${b.def.name}»: начата достройка до уровня 2`, b.doorX + 0.5, b.doorY);
   return true;
 }
 
-function storePay(cost) {
-  for (const g in cost) {
-    let n = cost[g];
-    for (const s of Game.buildings) { if (!s.isStore() || s.isPile || n <= 0) continue; const k = Math.min(n, Math.max(0, s.stock[g] - s.reserved[g])); s.stock[g] -= k; n -= k; }
+function cancelUpgrade(b) {
+  if (!b.upg) return;
+  const u = b.upg.builder; if (u && u.job === b) u.job = null;
+  b.upg = null; b._usite = null;
+}
+
+// Работяга: ждёт материалов, на каждую единицу — несколько ударов молота
+function* upgradeGen(u, b) {
+  const ok = yield { walk: [b.doorX, b.doorY] };
+  if (!ok) { if (b.upg && b.upg.builder === u) b.upg.builder = null; u.job = null; yield { wait: 3 }; return; }
+  while (!b.removed && b.upg && u.job === b) {
+    if (u.wantsEat() && findInn(u)) break;
+    const U = b.upg, g = ['timber', 'stone'].find(k => U.stock[k] > 0);
+    if (g) {
+      U.stock[g]--; U.used[g]++; U.usedN++;
+      for (let k = 0; k < HITS_PER_UNIT && !b.removed && b.upg; k++) { yield { wait: HIT_TIME, anim: 'build' }; if (b.upg) { b.upg.hits++; b.lastHit = Game.time; } }
+      if (b.removed || !b.upg) break;
+      if (U.usedN >= U.total) { finishUpgrade(b); break; }
+    } else yield { wait: 1 };
   }
+  if (b.upg && b.upg.builder === u) b.upg.builder = null;
+  if (u.job === b) u.job = null;
+}
+
+function finishUpgrade(b) {
+  if (!b.upg) return;
+  b.upg = null; b._usite = null;
+  upgradeBuilding(b);
 }
 
 function upgradeBuilding(b, silent) {
-  if (!silent) {
-    if (!canUpgrade(b)) return false;
-    const cost = b.def.up.cost;
-    if (!storeHas(cost)) { toast('На складе не хватает материалов для достройки'); return false; }
-    storePay(cost);
-  }
   b.level = 2;
   b.def = levelDef(b.type);
   // новые рецепты — в конец списка, прежние галочки остаются
@@ -111,9 +134,10 @@ function upgradeBuilding(b, silent) {
   if (!silent) {
     b.dmg = 0;
     const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-    fxBurst(cx * TILE, cy * TILE, 26, ['#d8b070', '#a0703a', '#e8cc90', '#cfc7b4'], 90, 60, 0.9, 2.4, 240);
+    fxBurst(cx * TILE, cy * TILE, 30, ['#d8b070', '#a0703a', '#e8cc90', '#cfc7b4'], 90, 60, 0.9, 2.4, 240);
     floater(cx, b.y - 1, 'Уровень 2!', '#ffe08a');
     logEvent('build', `«${BUILDINGS[b.type].name}» достроено до уровня 2`, cx, cy);
+    toast(`«${BUILDINGS[b.type].name}» достроено до уровня 2`, b);
     sfxAt('build', cx * TILE, cy * TILE);
   }
   return true;
@@ -123,7 +147,7 @@ function upgradeBuilding(b, silent) {
 // Поверх готового спрайта: каменный цоколь, мансарда с тёплым окном на коньке крыши,
 // красно-золотой вымпел и фонарь у двери. У каждого типа своя пропорция, цвета слегка разные.
 
-function buildingSprite(type, rot = 0, level = 1) {  const lv = level >= 2 && BUILDINGS[type].up ? 2 : 1;  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot);  const d = bDims(type, rot);  const key = type + ':' + d.rot + (lv === 2 ? ':L2' : ':G');  if (SPR.buildings[key]) return SPR.buildings[key];  const base = buildingSpriteBase(type, rot);
+function buildingSprite(type, rot = 0, level = 1) {  const lv = level >= 2 && BUILDINGS[type].up ? 2 : 1;  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot);  const d = bDims(type, rot);  const key = type + ':' + d.rot + (lv === 2 ? ':L2' : ':G');  if (SPR.buildings[key]) return SPR.buildings[key];  const base = buildingSpriteBase(type, rot, lv);
   const cv = mkCanvas(base.canvas.width, base.canvas.height), c = cv.getContext('2d');
   c.drawImage(base.canvas, 0, 0);
   c.imageSmoothingEnabled = false;
@@ -139,14 +163,16 @@ function buildingSprite(type, rot = 0, level = 1) {  const lv = level >= 2 && BU
   const x0 = base.padx - 1, y0 = base.baseY - 3, w = base.fw + 2;
   px(x0 - 1, y0 - 1, w + 2, 6, OUT); px(x0, y0, w, 4, '#9a9388'); px(x0, y0, w, 1, '#c0b9aa');
   for (let x = x0 + 5; x < x0 + w - 2; x += 9) px(x, y0 + 1, 1, 3, '#6a645a');
-  // мансарда на коньке крыши
   const P = (base.perches && base.perches[0]) || [base.padx + base.fw / 2, base.top * 0.4];
   const mx = P[0], my = P[1] + 20;
+  if (!base.tall) {
+  // мансарда на коньке крыши
   px(mx - 8, my - 9, 16, 11, OUT); px(mx - 7, my - 8, 14, 9, '#d8b98a'); px(mx - 7, my - 8, 14, 1, '#ecd5ac');
   // крыша мансарды: ступенчатый треугольник
   for (let i = 0; i < 8; i++) { px(mx - 10 + i * 1.2, my - 9 - i, 20 - i * 2.4, 2, OUT); }
   for (let i = 0; i < 8; i++) { px(mx - 9 + i * 1.2, my - 9 - i + 1, 18 - i * 2.4, 1, i < 3 ? rc : '#b55a3c'); }
   px(mx - 3, my - 7, 6, 7, OUT); px(mx - 2, my - 6, 4, 5, '#ffd878'); px(mx - 0.5, my - 6, 1, 5, '#5a3a1e'); px(mx - 2, my - 3.5, 4, 1, '#5a3a1e');
+  }
   // вымпел на шесте
   const FX = (base.perches && base.perches[1]) ? base.perches[1] : [mx + 18, P[1] + 4];
   const fx = Math.abs(FX[0] - mx) < 12 ? mx + 20 : FX[0], fy = Math.min(FX[1], P[1]) + 3;
@@ -215,5 +241,77 @@ function greenery(c, base, type, px) {
       px(x - 1, y - 1, sz + 2, 3, OUT); px(x, y - 0.5, sz, 2, gs[Math.floor(rnd() * 4)]);
       if (rnd() < 0.3) px(x + 1, y - 2, 1, 1, '#f8e060');
     }
+  }
+}
+
+// ---------- Настоящий второй этаж ----------
+// Главный корпус здания поднимается на этаж выше, на новых стенах — ряд освещённых окон;
+// крыша становится круче. Рисуется той же моделью, что и обычное здание, поэтому выглядит родным.
+const UP_EXTRA = 18, UP_FLOOR = 15;
+
+function upgradeModel(m) {
+  let best = null, ba = 0;
+  for (const part of m.parts) {
+    if (part.kind !== 'box') continue;
+    const p = part.p;
+    if (p.open || p.canopy || p.noShadow || !p.roof || p.z0) continue;
+    const a = (p.x1 - p.x0) * (p.y1 - p.y0);
+    if (a > ba) { ba = a; best = part; }
+  }
+  if (!best) return false;
+  const p = best.p, q = { ...p };
+  q.h = p.h + UP_FLOOR;
+  q.roof = { ...p.roof, rise: (p.roof.rise || 18) + 4 };
+  const dec = { S: [...((p.decor && p.decor.S) || [])], E: [...((p.decor && p.decor.E) || [])], W: [...((p.decor && p.decor.W) || [])] };
+  const z = p.h + 3;
+  const sh = ['#6a2a1a', '#3e5a7a', '#5a3a1e'][(p.x0 | 0) % 3];
+  for (let x = p.x0 + 14, i = 0; x < p.x1 - 8; x += 24, i++) dec.S.push({ t: 'win', at: x, z, w: 7, h: 9, o: { lit: true, shutter: sh, flowers: i % 2 === 0 } });
+  for (let y = p.y0 + 14; y < p.y1 - 8; y += 24) dec.E.push({ t: 'win', at: y, z, w: 7, h: 9, o: { lit: true } });
+  q.decor = dec;
+  best.p = q;
+  return true;
+}
+
+// ---------- Достройка на глазах ----------
+// Поверх старого здания по кирпичику проявляется новое (второй этаж, новая крыша),
+// вокруг стоят леса до достигнутой высоты, на месте удара — вспышка и пыль.
+function drawUpgradeLayer(c, b) {
+  const spr = buildingSprite(b.type, b.rot || 0, 2);
+  const fb = { buildFrac: b.upg.hits / b.upg.maxHits, _site: b._usite };
+  const S = siteState(fb, spr);
+  b._usite = fb._site;
+  const ox = b.x * TILE - spr.padx, oy = b.y * TILE - spr.top;
+  const fx = b.x * TILE, fy = b.y * TILE, fw = b.w * TILE, fh = b.h * TILE;
+  c.imageSmoothingEnabled = true;
+  c.drawImage(S.cv, ox, oy, spr.w, spr.h);
+  const k = spr.canvas.width / spr.w;
+  for (const p of S.pops) {
+    const age = Game.time - p.t;
+    if (age > 0.6) continue;
+    const cl = p.cl, x = ox + cl.x / k, y = oy + cl.y / k, s = cl.s / k;
+    if (age < 0.3) { c.fillStyle = `rgba(255,248,225,${0.55 * (1 - age / 0.3)})`; c.fillRect(x, y, s, s); }
+    if (p.dust) {
+      c.fillStyle = `rgba(200,180,150,${0.5 * (1 - age / 0.6)})`;
+      for (let d = 0; d < 4; d++) { const a = d * 1.6 + cl.x; c.beginPath(); c.arc(x + s / 2 + Math.cos(a) * age * 14, y + s / 2 + Math.sin(a) * age * 8 - age * 6, 1 + age * 4, 0, 7); c.fill(); }
+    }
+  }
+  c.imageSmoothingEnabled = R.smooth;
+  // строительные леса до текущей высоты
+  const topY = S.top < 1e9 ? oy + S.top / k : fy + fh - 10;
+  const poleTop = Math.min(fy + fh - 10, topY - 5);
+  for (let q = 0; q <= b.w; q++) {
+    const lx = Math.round(fx + 2 + q * (fw - 6) / b.w);
+    c.fillStyle = '#583522'; c.fillRect(lx, poleTop, 2, fy + fh - poleTop);
+    c.fillStyle = '#a06840'; c.fillRect(lx, poleTop, 1, fy + fh - poleTop);
+  }
+  for (let ly = fy + fh - 12; ly > poleTop + 2; ly -= 12) {
+    c.fillStyle = '#45291a'; c.fillRect(fx, ly + 2, fw, 1);
+    c.fillStyle = '#cc9a64'; c.fillRect(fx, ly, fw, 2);
+  }
+  // сложенные у стены материалы
+  let mx = fx + 4; const my = fy + fh - 3;
+  for (const g of ['timber', 'stone']) for (let n = 0; n < b.upg.stock[g]; n++, mx += 6) {
+    c.fillStyle = g === 'timber' ? '#583522' : '#3a3632'; c.fillRect(mx - 1, my - 5, 7, 6);
+    c.fillStyle = g === 'timber' ? '#cc9a64' : '#9e958a'; c.fillRect(mx, my - 4, 5, 4);
   }
 }

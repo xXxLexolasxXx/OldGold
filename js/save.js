@@ -43,7 +43,7 @@ function serializeGame() {
     buildings: Game.buildings.map(b => ({
       id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
       used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
-      level: b.level || 1, paused: b.paused, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
+      level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
     })),
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
     units: Game.units.map(u => ({
@@ -85,6 +85,7 @@ function applySave(s) {
     b.paused = !!d.paused;
     b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
     if (d.level === 2 && b.def.up) upgradeBuilding(b, true);
+    if (d.upg && canUpgrade(b)) { startUpgrade(b); Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
     if (d.recipeOn && d.recipeOn.length === b.recipeOn.length) b.recipeOn = d.recipeOn;
     b.recipeIdx = d.recipeIdx || 0;
     if (d.pigs) b.pigs = d.pigs;

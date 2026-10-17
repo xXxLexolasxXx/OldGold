@@ -1290,17 +1290,17 @@ function mirrorSprite(s, FW) {
   return m;
 }
 
-function buildingSpriteBase(type, rot = 0) {
+function buildingSpriteBase(type, rot = 0, level = 1) {
   const d = bDims(type, rot);
-  const key = type + ':' + d.rot;
+  const key = type + ':' + d.rot + (level === 2 ? ':U' : '');
   if (SPR.buildings[key]) return SPR.buildings[key];
   if (d.rot === 2) {
-    SPR.buildings[key] = mirrorSprite(buildingSpriteBase(type, 1), d.w * TILE);
+    SPR.buildings[key] = mirrorSprite(buildingSpriteBase(type, 1, level), d.w * TILE);
     return SPR.buildings[key];
   }
   srand = mulberry32(hashStr(type));
   const def = BUILDINGS[type];
-  const FW = d.w * TILE, FD = d.h * TILE, top = def.top || 60;
+  const FW = d.w * TILE, FD = d.h * TILE, top = (def.top || 60) + (level === 2 ? UP_EXTRA : 0);
   const W = Math.ceil(FW + BPADX * 2 + FD * SK), H = FD + top + BBOTTOM;
   const [cv, c] = mkSprite(W, H, BS);
   const [scv, sc] = mkSprite(W, H, BS);
@@ -1318,6 +1318,7 @@ function buildingSpriteBase(type, rot = 0) {
   }
   const m = newModel(g);
   MODELS[type](m);
+  if (level === 2) spr.tall = upgradeModel(m);
   SIGN_QUEUE.list = [];
   BUILD_STYLE = styleOf(type);
   renderModel(c, m);

@@ -147,7 +147,7 @@ function* deliverGen(u, from, to, g, n = 1) {
       to.incoming[g] += n;
       continue;
     }
-    if (isStoreB(to)) {
+    if (isStoreB(to) && !to.upg) {
       // заносит внутрь и складывает
       while (storeInside(to) >= storeCapOf(to) && !to.removed) yield { wait: 0.4 };
       if (to.removed) continue;
@@ -160,7 +160,7 @@ function* deliverGen(u, from, to, g, n = 1) {
       return;
     }
     to.incoming[g] -= n;
-    to.stock[g] += Math.min(n, u.carryN || n); u.dlv = null;
+    (to.upg ? to.upg.stock : to.stock)[g] += Math.min(n, u.carryN || n); u.dlv = null;
     u.carry = null; u.carryN = 0;
     yield { wait: 0.4 };
     return;
@@ -240,7 +240,7 @@ function* workerGen(u, b) {
       if (findInn(u)) { yield { leave: true }; return; }
       u.nextEatTry = Game.time + 15;
     }
-    if (b.paused || b.dmg >= 0.5) { yield { wait: 1 }; continue; }
+    if (b.paused || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
     const work = WORK[b.type] || recipeWork;
     yield* work(u, b);
     if (u.inside !== b && !b.removed && u.home === b) {

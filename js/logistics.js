@@ -99,7 +99,7 @@ function dispatchSerfs() {
     for (const g of GOOD_KEYS) {
       const n = d.demand(g);
       // еда — в первую очередь: голодная деревня встаёт целиком
-      if (n > 0) reqs.push({ d, g, n, comp, pri: FOOD_CHAIN.has(g) && FOOD_DEST.has(d.type) && d.state === 'done' ? (d.type === 'inn' ? -2 : -1) : d.isRoad ? 2 : (d.state !== 'done' ? 0 : 1), r: Math.random() });
+      if (n > 0) reqs.push({ d, g, n, comp, pri: d.upg ? 0 : FOOD_CHAIN.has(g) && FOOD_DEST.has(d.type) && d.state === 'done' ? (d.type === 'inn' ? -2 : -1) : d.isRoad ? 2 : (d.state !== 'done' ? 0 : 1), r: Math.random() });
     }
   }
   reqs.sort((a, b) => a.pri - b.pri || a.r - b.r);
@@ -163,13 +163,14 @@ function dispatchBuilders() {
   if (!idle.length) return;
   const sites = [
     ...Game.buildings.filter(b => b.state !== 'done' && !b.builder),
+    ...Game.buildings.filter(b => b.upg && !b.upg.builder),
     // дорогу можно копать сразу, а мостить — когда камень на месте или в пути
     ...[...Game.roadSites.values()].filter(s => !s.builder && (s.dug < 1 || s.stock.stone + s.incoming.stone > 0)),
   ];
   for (const s of sites) {
     const u = takeNearest(idle, s.doorX, s.doorY);
     if (!u) return;
-    s.builder = u;
+    if (s.upg && s.state === 'done') s.upg.builder = u; else s.builder = u;
     u.job = s;
     u.idleFlag = false; u.idleStreak = 0;
     u.proc = null; u.action = null; u.anim = null;

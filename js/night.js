@@ -550,6 +550,7 @@ function removeUnit(u) {
   u.releaseOcc();
   if (u.home && u.home.worker === u) u.home.worker = null;
   if (u.job && u.job.builder === u) u.job.builder = null;
+  if (u.job && u.job.upg && u.job.upg.builder === u) u.job.upg.builder = null;
   u.home = null; u.job = null; u.brk = null;
   if (Game.selected === u) Game.selected = null;
 }

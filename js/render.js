@@ -467,6 +467,7 @@ function drawBuilding(c, b, ghost) {
   }
   c.drawImage(spr.shadow, ox, oy, spr.w, spr.h);
   c.drawImage(spr.canvas, ox, oy, spr.w, spr.h);
+  if (!ghost && b.upg) drawUpgradeLayer(c, b);
   if (!ghost && b.dmg > 0) drawDamage(c, b, ox, oy, spr);
   const t = Game.time;
   if (b.type === 'mill' && spr.hub) drawSails(c, ox + spr.hub[0], oy + spr.hub[1], b.anim);
