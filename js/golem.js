@@ -12,7 +12,8 @@ const GL_W = 176, GL_H = 128, GL_AX = 88, GL_AY = 116;      // холст в п�
 const GL_ST = { hi: '#b4afa2', mid: '#8a8579', lo: '#5e5951', ink: '#26221f' };
 const GL_MOSS = ['#3e6a22', '#4a6e30', '#5c8236', '#73963e'];
 const GL_GOLD = '#e4b434', GL_EYE = '#ffb02e', GL_EYE2 = '#fff2a0';
-const GL_FRAMES = { walk: 8, idle: 4, wave: 12, pound: 12 };
+const GL_FRAMES = { walk: 8, idle: 4, wave: 12, pound: 12, look: 12, stomp: 12, stretch: 12, scratch: 12, flex: 12 };
+const GL_EMOTES = [['wave', 2.6, 2], ['pound', 3.2, 2], ['look', 3.6, 3], ['stomp', 2.4, 2], ['stretch', 3.4, 2], ['scratch', 3, 2], ['flex', 2.8, 2]];   // имя, длительность с, вес
 const GL_CACHE = new Map();
 let GL_SCRATCH = null, GL_QUEUE = null;
 
@@ -40,17 +41,17 @@ function gBlob(c, x, y, rx, ry, seed, o = {}) {
   if (o.moss) {
     for (let k = 0; k < o.moss; k++) {
       const a = Math.PI * (1.1 + rng() * 0.55), r = 0.62 + rng() * 0.2;
-      ellipse(c, x + Math.cos(a) * rx * r, y + Math.sin(a) * ry * r, 1.8 + rng() * 2.4, 1 + rng() * 1.2, GL_MOSS[(rng() * 4) | 0]);
+      ellipse(c, x + Math.cos(a) * rx * r, y + Math.sin(a) * ry * r, 2.4 + rng() * 3.4, 1.4 + rng() * 1.8, GL_MOSS[(rng() * 4) | 0]);
     }
   }
 }
 
 // Конечность из цепочки валунов поверх тёмной жилы
-function gLimb(c, x0, y0, x1, y1, r0, r1, seed, tone) {
+function gLimb(c, x0, y0, x1, y1, r0, r1, seed, tone, mo = 4) {
   c.lineCap = 'round'; line(c, x0, y0, x1, y1, shade(GL_ST.lo, tone), (r0 + r1) * 1.25); c.lineCap = 'butt';
   for (let i = 0; i <= 3; i++) {
     const t = i / 3, r = r0 + (r1 - r0) * t;
-    gBlob(c, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r * 1.04, r * 0.95, seed + i * 3, { tone, n: 8, crack: i === 1 });
+    gBlob(c, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r * 1.04, r * 0.95, seed + i * 3, { tone, n: 8, crack: i === 1, moss: mo + (i & 1) });
   }
 }
 
@@ -88,8 +89,41 @@ function golemPose(view, pose, f) {
     }
     P.sx = (hit(0) - hit(1)) * 1.5 * ee; P.up = ee * (hit(0) + hit(1)) * 1.4; P.mouth = ee * 0.5; P.head.dy = -ee * 1.2;
     P.rune = 0.35 + 0.65 * Math.max(hit(0), hit(1)) * ee; P.br = ee * 0.8;
-  }
+  } else golemPoseMore(P, pose, f);
   return P;
+}
+
+// Остальные жесты: огляделся, топнул, потянулся, почесал голову, показал силу
+function golemPoseMore(P, pose, f) {
+  const t = f / 12, e = t < 0.18 ? t / 0.18 : t > 0.82 ? (1 - t) / 0.18 : 1, ee = e * e * (3 - 2 * e);
+  if (pose === 'look') {                      // медленно озирается: голова влево-вправо, корпус чуть доворачивается
+    const w = Math.sin(t * Math.PI * 2);
+    P.head.dx = w * 8; P.sx = w * 1.6; P.head.dy = Math.abs(w) * 0.8; P.br = 0.3; P.rune = 0.5 + 0.2 * w;
+    P.arms[0] = { th: 0.2 - w * 0.05, sw: 0, b: -0.28 }; P.arms[1] = { th: 0.2 + w * 0.05, sw: 0, b: -0.28 };
+  } else if (pose === 'stomp') {              // двойной топот: нога вверх — и вниз всем весом
+    const k = Math.floor(t * 2) % 2, u = (t * 2) % 1;
+    const lift = u < 0.55 ? Math.sin(u / 0.55 * Math.PI / 2) : Math.max(0, 1 - (u - 0.55) / 0.12);
+    P.feet[k] = { x: 0, y: lift * 15 };
+    P.up = u < 0.55 ? u * 4 : 0; P.sx = (k ? 1 : -1) * 2 * Math.sin(u * Math.PI);
+    const a = { th: 0.6 + (u > 0.55 ? 0.4 : 0), sw: 0, b: -0.4 };
+    P.arms[0] = a; P.arms[1] = { ...a };
+    P.mouth = u > 0.55 && u < 0.8 ? 0.7 : 0; P.head.dy = u > 0.55 && u < 0.7 ? 1.5 : 0;
+    P.rune = u > 0.55 ? 1 : 0.4;
+  } else if (pose === 'stretch') {            // зевает и тянется: руки медленно вверх, пасть нараспашку
+    const a = { th: 0.2 + ee * 2.75, sw: 0, b: ee * 0.1 - (1 - ee) * 0.28 };
+    P.arms[0] = a; P.arms[1] = { ...a };
+    P.mouth = ee; P.head.dy = -ee * 3; P.br = ee * 1.3; P.up = ee * 2.2; P.rune = 0.5 + 0.3 * ee;
+  } else if (pose === 'scratch') {            // чешет затылок кулаком
+    const w = Math.sin(t * Math.PI * 6) * 0.14 * ee;
+    P.arms[1] = { th: 0.2 + ee * 2.2 + w, sw: 0, b: -0.28 + ee * 2.4 };
+    P.arms[0] = { th: 0.2, sw: 0.05, b: -0.28 };
+    P.head.dx = ee * 7 + w * 6; P.head.dy = ee * 1.5; P.sx = -ee;
+  } else if (pose === 'flex') {               // показывает силу: обе руки согнуты кулаками вверх, дрожит от натуги
+    const tr = Math.sin(t * Math.PI * 14) * 0.5 * ee;
+    const a = { th: 0.2 + ee * 1.35, sw: 0, b: -0.28 + ee * 1.85 };
+    P.arms[0] = a; P.arms[1] = { ...a };
+    P.up = ee * 1.5 + tr; P.mouth = ee * 0.6; P.br = ee * 1.2; P.head.dy = -ee * 1.5; P.rune = 0.4 + 0.6 * ee; P.sx = tr;
+  }
 }
 
 // ---------- Рисование одного кадра ----------
@@ -103,7 +137,7 @@ function drawGolemBody(c, view, pose, f) {
     const s = i ? 1 : -1, hx = s * 13 * kx + sx * 0.4, hy = -30 + bob;
     const fx = hx + P.feet[i].x + (E ? 0 : s * 1.5), fy = -P.feet[i].y;
     gLimb(c, hx, hy, fx, fy - 11, 12.5, 11.5, 20 + i * 5, i ? 0.02 : -0.05);
-    gBlob(c, fx + (E ? 4 : 0), fy - 6.5, E ? 15 : 14.5, 7, 31 + i, { tone: i ? 0.02 : -0.06 });
+    gBlob(c, fx + (E ? 4 : 0), fy - 6.5, E ? 15 : 14.5, 7, 31 + i, { tone: i ? 0.02 : -0.06, moss: 2 });
     if (!N) { c.fillStyle = rgba(GL_ST.ink, 0.8); for (const dx of E ? [8, 11] : [-4, 0, 4]) c.fillRect(fx + (E ? 4 : 0) + dx - 0.4, fy - 4.4, 0.8, 2.6); }   // борозды-пальцы
   };
 
@@ -118,25 +152,37 @@ function drawGolemBody(c, view, pose, f) {
     const fx = ex + d2[0] * 20 * k, fy = ey + d2[1] * 20 * k + (E ? 0 : Math.sin(sw) * 2);
     const tn = i ? 0.0 : -0.07;
     gLimb(c, shx, shy, ex, ey, 11.5, 10.5, 40 + i * 9, tn);
-    gBlob(c, ex, ey, 9, 8.5, 58 + i, { tone: tn, n: 8, moss: i ? 0 : 2 });
+    gBlob(c, ex, ey, 9, 8.5, 58 + i, { tone: tn, n: 8, moss: 5 });
     gLimb(c, ex, ey, fx, fy, 10.5, 10, 62 + i * 9, tn);
-    gBlob(c, fx, fy + 1.5, 12, 10.5, 70 + i, { tone: tn + 0.03, n: 10 });                         // кулак
+    gBlob(c, fx, fy + 1.5, 12, 10.5, 70 + i, { tone: tn + 0.03, n: 10, moss: 3 });                         // кулак
     c.fillStyle = rgba(GL_ST.ink, 0.75); for (const dx of [-4, 0, 4]) c.fillRect(fx + dx - 0.4, fy + 4, 0.8, 3.4);
   };
 
   const pauldron = i => {
     const s = i ? 1 : -1;
-    gBlob(c, s * 31 * kx + sx, -54 + bob, E ? 12 : 15, 12.5, 80 + i, { tone: i ? 0.05 : -0.02, moss: 3, crack: true });
+    gBlob(c, s * 31 * kx + sx, -54 + bob, E ? 12 : 15, 12.5, 80 + i, { tone: i ? 0.05 : -0.02, moss: 11, crack: true });
     if (!i && !N) for (let k = -2; k <= 2; k++) line(c, -31 * kx + sx + k * 2.2, -64 + bob, -31 * kx + sx + k * 2.6 + k * 0.6, -70 + bob - Math.abs(k) * -1.2 - 1, GL_MOSS[2 + (k & 1)], 0.8);   // пучок травы
   };
 
+  // мховая накидка на плечах и свисающие пряди
+  const mantle = () => {
+    const r = mulberry32(555);
+    for (let k = -6; k <= 6; k++) {
+      const x = sx + k * 5 * kx, y = -63 + bob + Math.abs(k) * 0.9 + (r() - 0.5) * 2;
+      ellipse(c, x, y, 5.6, 3.2 + r(), GL_MOSS[(r() * 4) | 0]);
+      if (r() < 0.6) line(c, x + (r() - 0.5) * 3, y + 1, x + (r() - 0.5) * 4, y + 6 + r() * 7, GL_MOSS[(r() * 3) | 0], 1.1);
+    }
+    for (let k = 0; k < 7; k++) ellipse(c, sx + (r() - 0.5) * 40 * kx, -44 + bob + r() * 12, 2.4 + r() * 2.4, 1.6 + r(), GL_MOSS[(r() * 4) | 0]);
+  };
+
   const torso = () => {
-    gBlob(c, sx * 0.5, -29 + bob, 20 * (E ? 0.8 : 1), 11, 90, { tone: -0.1, n: 10 });                    // таз
-    gBlob(c, sx * 0.8, -40 + bob, 24 * (E ? 0.8 : 1), 13, 91, { tone: -0.04, n: 10 });                   // живот
+    gBlob(c, sx * 0.5, -29 + bob, 20 * (E ? 0.8 : 1), 11, 90, { tone: -0.1, n: 10, moss: 5 });                    // таз
+    gBlob(c, sx * 0.8, -40 + bob, 24 * (E ? 0.8 : 1), 13, 91, { tone: -0.04, n: 10, moss: 6 });                   // живот
     c.fillStyle = rgba(GL_ST.ink, 0.8); for (let k = -2; k <= 2; k++) c.fillRect(sx * 0.7 + k * 7 * kx - 0.4, -36 + bob, 0.8, 5);   // швы-плиты
-    gBlob(c, sx + (E ? 2 : 0), -51 + bob - br * 0.4, 31 * (E ? 0.82 : 1), 15.5 + br * 0.9, 92, { tone: 0.02, n: 11, crack: true, moss: 4 });   // грудь
+    gBlob(c, sx + (E ? 2 : 0), -51 + bob - br * 0.4, 31 * (E ? 0.82 : 1), 15.5 + br * 0.9, 92, { tone: 0.02, n: 11, crack: true, moss: 11 });   // грудь
+    mantle();
     if (N) {
-      gBlob(c, sx, -56 + bob, 24, 11, 93, { tone: 0.04, n: 10, moss: 3 });                                // горб
+      gBlob(c, sx, -56 + bob, 24, 11, 93, { tone: 0.04, n: 10, moss: 12 });                                // горб
       for (let k = 0; k < 4; k++) gBlob(c, sx, -66 + bob + k * 9, 5.2 - k * 0.4, 4.4, 95 + k, { tone: 0.08, n: 7 });   // гребень
       c.strokeStyle = rgba(GL_GOLD, 0.85); c.lineWidth = 0.9; c.beginPath(); c.moveTo(sx - 9, -62 + bob); c.lineTo(sx - 6, -52 + bob); c.lineTo(sx - 10, -44 + bob); c.lineTo(sx - 7, -33 + bob); c.stroke();   // золотая жила
     } else {
@@ -144,17 +190,18 @@ function drawGolemBody(c, view, pose, f) {
       const rx = sx + (E ? 4 : 0), ry = -48 + bob, a = 0.45 + 0.55 * P.rune;
       c.globalAlpha = a * 0.35; ellipse(c, rx, ry, 9, 9, GL_GOLD); c.globalAlpha = 1;
       c.strokeStyle = rgba(GL_GOLD, 0.35 + 0.65 * a); c.lineWidth = 1.2;
-      c.beginPath(); c.moveTo(rx, ry - 6.5); c.lineTo(rx + 5, ry); c.lineTo(rx, ry + 6.5); c.lineTo(rx - 5, ry); c.closePath(); c.stroke();
-      c.beginPath(); c.moveTo(rx, ry - 3); c.lineTo(rx, ry + 3); c.moveTo(rx - 2.5, ry); c.lineTo(rx + 2.5, ry); c.stroke();
+      c.beginPath(); c.arc(rx, ry, 6.6, 0, Math.PI * 2); c.stroke();                                   // кольцо
+      c.beginPath(); c.moveTo(rx, ry + 5); c.lineTo(rx, ry - 4.4); c.moveTo(rx - 4, ry - 4.6); c.lineTo(rx, ry - 0.4); c.lineTo(rx + 4, ry - 4.6); c.stroke();   // трезубец-«альгиз»
+      c.fillStyle = rgba(GL_GOLD, 0.35 + 0.65 * a); c.fillRect(rx - 0.6, ry + 5.4, 1.2, 1.2);
     }
   };
 
   const head = () => {
     const hx = sx + (E ? 7 : 0) + P.head.dx, hy = -67 + bob + P.head.dy;
     gBlob(c, sx + (E ? 3 : 0), -59 + bob, 10, 6, 100, { tone: -0.25, n: 8 });                           // шея
-    if (N) { gBlob(c, hx, hy, 12.5, 10.5, 101, { tone: -0.02, n: 10, moss: 3, crack: true }); }
+    if (N) { gBlob(c, hx, hy, 12.5, 10.5, 101, { tone: -0.02, n: 10, moss: 8, crack: true }); }
     else {
-      gBlob(c, hx, hy, 12.5, 9.6, 101, { tone: 0.03, n: 10, moss: 2 });
+      gBlob(c, hx, hy, 12.5, 9.6, 101, { tone: 0.03, n: 10, moss: 7 });
       // рот: щель или раскрытая пасть с жаром внутри
       const m = P.mouth, my = hy + 4.2;
       c.fillStyle = GL_ST.ink; c.fillRect(hx - 5.5 + (E ? 2 : 0), my, 11, 1 + m * 5);
@@ -203,7 +250,7 @@ function golemWarmup() {
   if (!GL_QUEUE) {
     GL_QUEUE = [];
     for (const v of ['S', 'E', 'N']) for (const p of ['walk', 'idle']) for (let f = 0; f < GL_FRAMES[p]; f++) GL_QUEUE.push([v, p, f]);
-    for (const p of ['wave', 'pound']) for (let f = 0; f < GL_FRAMES[p]; f++) GL_QUEUE.push(['S', p, f]);
+    for (const p of Object.keys(GL_FRAMES).slice(2)) for (let f = 0; f < GL_FRAMES[p]; f++) GL_QUEUE.push(['S', p, f]);
   }
   const q = GL_QUEUE.shift();
   if (q) golemSprite(q[0], q[1], q[2], true);
@@ -227,21 +274,21 @@ function golemHome() {
 
 function spawnGolem(at) {
   const [hx, hy] = golemHome();
-  let pos = at && golemFree(at.gx, at.gy) ? [at.gx, at.gy] : null;
+  let pos = at && golemFree(at.gx, at.gy) && Math.hypot(at.gx + 1.5 - hx, at.gy + 1 - hy) > 18 ? [at.gx, at.gy] : null;   // рядом с лагерем не оставляем
   for (let tries = 0; !pos && tries < 1500; tries++) {
-    const r = tries < 800 ? 9 + Math.random() * 10 : 5 + Math.random() * 30, a = Math.random() * Math.PI * 2;
+    const r = tries < 800 ? 24 + Math.random() * 14 : 14 + Math.random() * 28, a = Math.random() * Math.PI * 2;
     const gx = Math.round(hx + Math.cos(a) * r - 1), gy = Math.round(hy + Math.sin(a) * r * 0.7 - 1);
     if (golemFree(gx, gy)) pos = [gx, gy];
   }
   if (!pos) { Game.golem = null; return null; }
-  Game.golem = { fx: pos[0], fy: pos[1], hx, hy, state: 'idle', timer: 2 + Math.random() * 3, view: 'S', face: 1, ph: 0, t: 0, stuck: 0, dust: [], emote: null, lastF: -1 };
+  Game.golem = { fx: pos[0], fy: pos[1], hx: pos[0] + 1.5, hy: pos[1] + 1, state: 'idle', timer: 2 + Math.random() * 3, view: 'S', face: 1, ph: 0, t: 0, stuck: 0, dust: [], emote: null, lastF: -1 };
   return Game.golem;
 }
 
 function golemPickMove(g) {
   const gx = Math.round(g.fx), gy = Math.round(g.fy);
   const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].sort(() => Math.random() - 0.5);
-  const home = Math.hypot(gx + 1.5 - g.hx, gy + 1 - g.hy) > 16;
+  const home = Math.hypot(gx + 1.5 - g.hx, gy + 1 - g.hy) > 12;
   for (const [dx, dy] of dirs) {
     let n = 0, x = gx, y = gy;
     const want = 1 + ((Math.random() * 4) | 0);
@@ -254,6 +301,13 @@ function golemPickMove(g) {
     return true;
   }
   return false;
+}
+
+function golemPickEmote(g) {
+  const list = GL_EMOTES.filter(e => e[0] !== g.lastEmote);
+  let r = Math.random() * list.reduce((a, e) => a + e[2], 0), em = list[0];
+  for (const e of list) { r -= e[2]; if (r <= 0) { em = e; break; } }
+  g.emote = g.lastEmote = em[0]; g.dur = em[1];
 }
 
 function golemTick(dt) {
@@ -276,6 +330,11 @@ function golemTick(dt) {
     }
   } else if (g.state === 'emote') {
     g.et += dt;
+    if (g.emote === 'stomp') {   // удар ноги о землю — пыль
+      const fr = Math.floor(g.et / g.dur * 12), hit = fr === 5 || fr === 11;
+      if (hit && fr !== g.lastF) for (let k = 0; k < 7; k++) g.dust.push({ x: (g.fx + 1.5) * TILE + (fr === 5 ? -14 : 14) + (Math.random() - 0.5) * 24, y: (g.fy + 2) * TILE - 10, vx: (Math.random() - 0.5) * 18, vy: -5 - Math.random() * 7, a: 0.7, r: 3 + Math.random() * 3 });
+      g.lastF = fr;
+    }
     if (g.et >= g.dur) { g.state = 'idle'; g.timer = 4 + Math.random() * 6; g.emote = null; }
   } else {
     g.timer -= dt;
@@ -284,7 +343,7 @@ function golemTick(dt) {
       g.stuck += dt;
       if (golemPickMove(g)) g.stuck = 0; else if (g.stuck > 10) { const at = Game.golem; spawnGolem(); if (!Game.golem) Game.golem = at; return; }
     } else if (g.timer <= 0) {
-      if (Math.random() < 0.38) { g.state = 'emote'; g.emote = Math.random() < 0.5 ? 'wave' : 'pound'; g.et = 0; g.dur = g.emote === 'wave' ? 2.6 : 3.2; g.view = 'S'; }
+      if (Math.random() < 0.38) { g.state = 'emote'; golemPickEmote(g); g.et = 0; g.view = 'S'; g.lastF = -1; }
       else if (!golemPickMove(g)) g.timer = 1 + Math.random() * 2;
     }
   }
