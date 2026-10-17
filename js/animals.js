@@ -135,6 +135,7 @@ function updateAnimal(a, dt) {
         }
         if (g) {
           a.loot = g;
+          logEvent('animal', `Волк утащил «${GOODS[g].name}»`, a.x, a.y);
           toast(`Волк утащил «${GOODS[g].name}»!`);
         }
         a.stealCD = Game.time + 70 + Math.random() * 40;

@@ -20,6 +20,7 @@
       <button data-tab="store" class="tab-btn" title="Склад"><img data-icon="store" alt=""></button>
       <button data-tab="people" class="tab-btn" title="Жители"><img data-icon="people" alt=""></button>
       <button data-tab="overview" class="tab-btn" title="Хозяйство: проблемы и статистика"><img data-icon="scroll" alt=""><span id="alert-badge" class="badge hidden">0</span></button>
+      <button data-tab="log" class="tab-btn" title="Журнал событий: что случилось и где"><img data-icon="log" alt=""><span id="log-badge" class="badge hidden">0</span></button>
       <button data-tab="menu" class="tab-btn" title="Меню"><img data-icon="menu" alt=""></button>
     </nav>
     <div id="tab-area">
@@ -35,6 +36,7 @@
       <section id="tab-store" class="tab"><div id="store-list"></div></section>
       <section id="tab-people" class="tab"><div id="people-list"></div></section>
       <section id="tab-overview" class="tab"><div id="overview"></div></section>
+      <section id="tab-log" class="tab"><div id="log-list"></div></section>
       <section id="tab-menu" class="tab">
         <div class="menu-list">
           <button data-menu="save"><img data-icon="save" alt="">Сохранить <kbd>Ctrl+S</kbd></button>
@@ -43,13 +45,14 @@
           <button data-menu="new"><img data-icon="new" alt="">Новая карта</button>
           <button data-menu="hour"><img data-icon="build" alt="">Деревня через час игры</button>
           <button data-menu="stress"><img data-icon="people" alt="">Тестовая карта (нагрузка)</button>
+          <button data-menu="tutorial"><img data-icon="play" alt="">Обучение (по шагам)</button>
           <button data-menu="help"><img data-icon="scroll" alt="">Как играть</button>
         </div>
         <div id="save-info" class="muted small"></div>
         <div class="hotkeys">
           <div><kbd>1</kbd>–<kbd>5</kbd> разделы строительства</div>
           <div><kbd>R</kbd> дорога, <kbd>Del</kbd> снос, <kbd>Esc</kbd> отмена</div>
-          <div><kbd>P</kbd> пауза здания, <kbd>[</kbd> <kbd>]</kbd> соседнее здание</div>
+          <div><kbd>P</kbd> пауза здания, <kbd>B</kbd> закрыть/открыть доставки, <kbd>[</kbd> <kbd>]</kbd> соседнее здание</div>
           <div><kbd>T</kbd> повернуть здание: вход на юг, восток или запад</div>
           <div><kbd>Shift</kbd>+клик — строить несколько</div>
           <div><kbd>Пробел</kbd> пауза игры</div>
@@ -115,11 +118,13 @@
 <script src="js/world.js"></script>
 <script src="js/path.js"></script>
 <script src="js/entities.js"></script>
+<script src="js/events.js"></script>
 <script src="js/jobs.js"></script>
 <script src="js/life.js"></script>
 <script src="js/animals.js"></script>
 <script src="js/leisure.js"></script>
 <script src="js/streets.js"></script>
+<script src="js/night.js"></script>
 <script src="js/logistics.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/buildings.js"></script>
@@ -138,6 +143,7 @@
 <script src="js/stress.js"></script>
 <script src="js/mobile.js"></script>
 <script src="js/stats.js"></script>
+<script src="js/tutorial.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/main.js"></script>
 <script data-goatcounter="https://lexolas.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>

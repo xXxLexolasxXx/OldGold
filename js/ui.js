@@ -144,6 +144,7 @@ function initUI() {
     if (m === 'stress' && confirm('Открыть тестовую карту с большим городом? Несохранённый прогресс пропадёт.')) stressMap();
     if (m === 'hour' && confirm('Начать с деревни, которая уже прожила час? Несохранённый прогресс пропадёт.')) villageAfterHour();
     if (m === 'help') document.getElementById('help').classList.toggle('hidden');
+    if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     updateUI(true);
   });
 
@@ -169,6 +170,17 @@ function initUI() {
     if (b) focusBuilding(b);
   });
 
+  document.getElementById('log-list').addEventListener('click', e => {
+    const f = e.target.closest('[data-logf]');
+    if (f) { UI.logFilter = f.dataset.logf; updateUI(true); return; }
+    const r = e.target.closest('[data-logx]');
+    if (!r) return;
+    const x = +r.dataset.logx, y = +r.dataset.logy;
+    centerOn(x * TILE, y * TILE);
+    UI.logMark = { x, y, at: performance.now() };
+    if (Mobile.on) mobileSheet(null);
+  });
+
   const info = document.getElementById('info');
   info.addEventListener('click', e => {
     const t = e.target.closest('button, [data-untrain-at], [data-block]');
@@ -184,6 +196,7 @@ function initUI() {
       Game.selected = null;
     }
     else if (act === 'pause') b.paused = !b.paused;
+    else if (act === 'deliver') toggleDeliver(b);
     else if (act === 'goto') focusBuilding(b);
     else if (act === 'prev') cycleBuilding(-1);
     else if (act === 'next') cycleBuilding(1);
@@ -370,6 +383,12 @@ function infoBuilding(b) {
   h += `<button data-act="goto" title="Показать на карте">${ui('eye')}</button>`;
   if (b.state === 'done' && (def.worker || def.auto)) h += `<button data-act="pause" title="Пауза производства (P)" class="${b.paused ? 'active' : ''}">${ui(b.paused ? 'play' : 'pause')}</button>`;
   h += `<span class="grow"></span><button data-act="demolish" title="Снести">${ui('trash')}</button></div>`;
+  // большая понятная кнопка: принимать ли сюда доставки
+  if (b.state === 'done' && (def.inputs || b.isStore())) {
+    h += b.noDeliver
+      ? `<button class="deliv closed" data-act="deliver" title="Трудяги сюда ничего не везут. Нажмите, чтобы снова открыть">${ui('nodeliver')}<span><b>Доставки закрыты</b><small>нажмите, чтобы открыть</small></span></button>`
+      : `<button class="deliv open" data-act="deliver" title="Запретить трудягам везти сюда товары (B)">${ui('deliver')}<span><b>Доставки открыты</b><small>нажмите, чтобы закрыть</small></span></button>`;
+  }
 
   if (b.state !== 'done') {
     h += `<div class="bar"><div style="width:${Math.round(b.progress * 100)}%"></div></div>`;
@@ -514,6 +533,10 @@ function updateUI(force) {
     const fmt = m => m ? `${new Date(m.at).toLocaleString('ru-RU')} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'нет';
     setHTML('save-info', `Сохранение: ${fmt(saveMeta('manual'))}<br>Автосохранение: ${fmt(saveMeta('auto'))}`);
   }
+  if (UI.tab === 'log') { UI.logUnread = 0; setHTML('log-list', logHTML()); }
+  const lb = document.getElementById('log-badge');
+  lb.textContent = UI.logUnread > 99 ? '99+' : UI.logUnread || 0;
+  lb.classList.toggle('hidden', !UI.logUnread);
   const badge = document.getElementById('alert-badge');
   badge.textContent = alerts.length;
   badge.classList.toggle('hidden', !alerts.length);
@@ -526,5 +549,12 @@ function updateUI(force) {
 
   const sec = Math.floor(Game.time);
   document.getElementById('clock').textContent =
-    `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    `${isNightNow() ? '☾' : '☀'} ${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+}
+
+// Закрыть / открыть здание для доставок
+function toggleDeliver(b) {
+  b.noDeliver = !b.noDeliver;
+  toast(b.noDeliver ? `${b.def.name}: доставки закрыты — трудяги сюда ничего не везут` : `${b.def.name}: доставки снова открыты`, b);
+  logEvent('deliver', b.noDeliver ? `${b.def.name}: доставки закрыты` : `${b.def.name}: доставки открыты`, b.doorX, b.doorY);
 }

@@ -119,6 +119,7 @@ function step(dt) {
   Game.growT += dt;
   if (Game.growT >= 1) { updateGrowth(Game.growT); Game.growT = 0; }
   updateAnimals(dt);
+  nightTick(dt);
   updateCritters(dt);
   streetTick(dt);
   updateOwls(dt);
@@ -340,6 +341,7 @@ function initInput() {
     if (e.code === 'BracketLeft' && Game.selected && !Game.selected.isRoad) cycleBuilding(-1);
     if (e.code === 'BracketRight' && Game.selected && !Game.selected.isRoad) cycleBuilding(1);
     if (e.code === 'KeyP' && Game.selected && Game.selected.state === 'done') { Game.selected.paused = !Game.selected.paused; updateUI(true); }
+    if (e.code === 'KeyB' && Game.selected && !Game.selected.isRoad && Game.selected.state === 'done' && (Game.selected.def.inputs || Game.selected.isStore())) { toggleDeliver(Game.selected); updateUI(true); }
     const dig = e.code.match(/^Digit([1-5])$/);
     if (dig && !e.ctrlKey) openBuildCat(+dig[1] - 1);
   });
@@ -442,6 +444,7 @@ function startGame() {
   initLayout();
   resize();
   statsStart();
+  initTutorial();
   initMusic();
   initSfx();
   updateMinimapBase();

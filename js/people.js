@@ -491,6 +491,7 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'scratch': return [[3.8, shY - 1.4], [2, headY - 3.6 + f * 0.5]];
     case 'stretch': return [[1.6, shY - 3.6], [1, headY - 7 - f * 0.6]];
     case 'yawn':    return [[3.2, shY + 1.6], [4.4, headY + 3.4]];
+    case 'clap':    return [[3.4, shY + 1.4], [5.2 + f * 0.9, shY + 0.6]];
     default:        return [[3.4, shY], [6.4, shY - 0.6 - f * 0.3]];     // point
   }
   switch (g) {
@@ -499,6 +500,7 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'scratch': return [[side * 6.6, shY - 1.4], [side * 4.4, headY - 3.4 + f * 0.5]];
     case 'stretch': return [[side * 5.8, shY - 3.2], [side * 4.2, headY - 7.4 - f * 0.6]];
     case 'yawn':    return [[side * 5, shY + 1.6], [side * 1.2, headY + 3.4]];
+    case 'clap':    return [[side * 5.8, shY + 2.4], [side * (0.9 + f * 1.8), shY + 1.2]];     // хлопает перед грудью
     default:        return [[side * 5.8, shY + 0.4], [side * 7.4, shY - 0.6 - f * 0.3]];
   }
 }
@@ -506,7 +508,7 @@ function gestPts(g, f, side, shY, headY, view) {
 // ---------- Фигура ----------
 // pose: idle | walk | work | duck | smoke | tame; frame: 0..7 для шага, {anim, f} для работы
 // opt.gait: '' — вразвалочку, 'drunk' — шатается, 'tired' — голодный плетётся;
-// opt.gest: wave | fist | scratch | stretch | yawn | point, opt.gf — кадр жеста 0/1.
+// opt.gest: wave | fist | scratch | stretch | yawn | clap | point, opt.gf — кадр жеста 0/1.
 
 function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const O = OUTFIT[type] || OUTFIT.serf;
@@ -691,7 +693,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (front) poly(c, [[-3, shY + 0.6], [4, shY + 2.6], [0, shY + 5.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
         return;
       }
-      if (gest && (side > 0 || gest === 'stretch')) {
+      if (gest && (side > 0 || gest === 'stretch' || gest === 'clap')) {
         const [e, h] = gestPts(gest, gf, side, shY, headY, 'S');
         smoothLimb(c, [sx, shY + 0.6], e, h, 2.2, col);
         hand(c, h[0], h[1], sk);
@@ -730,7 +732,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);
     drawCap(c, O, view, 0, headY, tipSway, L, r);
     // поднятая рука жеста — поверх головы и бороды
-    if (gest && front) { arm(1); if (gest === 'stretch') arm(-1); }
+    if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap') arm(-1); }
     if (courier && !front) {
       drawFrame(c, 'N', 0, shY + 2.6);
       if (carry) { c.save(); c.translate(0, shY + 0.6); drawLoad(c, carry); c.restore(); }

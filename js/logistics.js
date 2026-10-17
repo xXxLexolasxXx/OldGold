@@ -19,7 +19,7 @@ function assignDelivery(u, from, to, g, n = 1) {
   u.action = null; u.anim = null;
   // трудяга помнит, что и куда несёт — по этому пересчитывается «в пути»
   const gen = (function* () { try { yield* deliverGen(u, from, to, g, n); } finally { u.dlv = null; } })();
-  u.dlv = { to, g, n, gen };
+  u.dlv = { from, to, g, n, gen };
   u.proc = gen;
 }
 

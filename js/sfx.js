@@ -91,6 +91,10 @@ const SFX = {
   hoot: (d, t) => { tone(d, 'sine', 400, 370, t, 0.32, 0.4, 0.06); tone(d, 'sine', 380, 340, t + 0.45, 0.5, 0.35, 0.08); },
   cluck: (d, t) => { for (const k of [0, 0.09, 0.2]) tone(d, 'square', 700 + Math.random() * 200, 500, t + k, 0.05, 0.12); },
   thud: (d, t) => { tone(d, 'sine', 140, 55, t, 0.2, 0.6); noiseHit(d, 'lowpass', 700, 200, 1, t, 0.12, 0.35); },
+  glass: (d, t) => { noiseHit(d, 'highpass', 5000, 7000, 1, t, 0.12, 0.4); for (const [f, k] of [[3100, 0], [4200, 0.04], [2600, 0.09]]) tone(d, 'sine', f, f * 0.9, t + k, 0.15, 0.14); },   // разбитый фонарь
+  creak: (d, t) => { const ctx = Sfx.ctx, lp = ctx.createBiquadFilter(); lp.type = 'bandpass'; lp.frequency.value = 420; lp.Q.value = 6; lp.connect(d); tone(lp, 'sawtooth', 70, 110, t, 0.9, 0.7, 0.2); tone(lp, 'sawtooth', 95, 60, t + 0.5, 0.7, 0.5, 0.15); },   // скрип ожившего дерева
+  roar: (d, t) => { noiseHit(d, 'lowpass', 500, 160, 0.8, t, 1.1, 0.6, 0.12); tone(d, 'sawtooth', 60, 40, t, 1, 0.3, 0.1); },
+  scream: (d, t) => gnomeVoice(d, t, [[700, 1100, 0.18], [1100, 650, 0.35]], 0.6, 1500),
   chime: (d, t) => { for (const [f, k] of [[1320, 0], [1760, 0.08], [2640, 0.16]]) tone(d, 'sine', f, f, t + k, 0.5, 0.2); },
 };
 
@@ -107,7 +111,7 @@ const ANIM_SFX = { build: 'build', chop: 'chop', mine: 'mine', dig: 'dig', reap:
 function sfxUnit(u, kind, delay = 0) { if (!u.inside) sfxAt(ANIM_SFX[kind] || kind, u.x * TILE, u.y * TILE, 1, delay / Math.max(1, Game.speed)); }
 
 // Возгласы по всплывающим надписям
-const FLOAT_SFX = { 'Га-га!': 'honk', 'У-ху!': 'hoot', 'Ай!': 'ouch', 'Ко-ко!': 'cluck', 'Бух!': 'thud', 'Золото!': 'chime' };
+const FLOAT_SFX = { 'Дзынь!': 'glass', 'А-а-а!': 'scream', 'Ой!': 'ouch', 'Хрясь!': 'chop', 'Га-га!': 'honk', 'У-ху!': 'hoot', 'Ай!': 'ouch', 'Ко-ко!': 'cluck', 'Бух!': 'thud', 'Золото!': 'chime' };
 function sfxFloater(text, x, y) { if (FLOAT_SFX[text]) sfxAt(FLOAT_SFX[text], x * TILE, y * TILE); }
 
 // Периодические звуки: храп спящих, икота пьяных
@@ -140,4 +144,16 @@ function initSfx() {
     btn.onclick = (e) => { e.stopPropagation(); sfxInit(); setSfx(!Sfx.on); sync(); };
     sync();
   }
+}
+
+// Аплодисменты: много коротких хлопков вразнобой и пара довольных возгласов
+function sfxApplause(amount = 1) {
+  if (!Sfx.ctx || !Sfx.on) return;
+  const t0 = Sfx.ctx.currentTime + 0.02, out = Sfx.out;
+  const n = Math.round(25 + 55 * amount);
+  for (let k = 0; k < n; k++) {
+    const t = t0 + Math.pow(Math.random(), 0.8) * 2.8;
+    noiseHit(out, 'bandpass', 1100 + Math.random() * 1600, 900 + Math.random() * 900, 1.4, t, 0.035 + Math.random() * 0.03, 0.06 + Math.random() * 0.1 * amount);
+  }
+  for (let k = 0; k < 3; k++) gnomeVoice(out, t0 + 0.2 + k * 0.5 + Math.random() * 0.3, [[420 + k * 60, 620, 0.1], [620, 560, 0.18]], 0.12, 1100);
 }

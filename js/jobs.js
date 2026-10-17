@@ -262,6 +262,19 @@ function gather(b, g) { b.stock[g]++; Game.produced[g]++; }
 
 function* woodcutterWork(u, b) {
   const R = 9;
+  // бревно от срубленного ходячего дерева — забрать в первую очередь, обтесать и унести
+  const lg = !outFull(b, 'trunk') && findObjNear(b.doorX, b.doorY, R + 5, o => o.t === 'log' && !o.res);
+  if (lg) {
+    lg.o.res = true;
+    const ok = yield { walk: [lg.x, lg.y] };
+    if (!ok) { lg.o.res = false; yield { wait: 2 }; return; }
+    yield { wait: 2, anim: 'chop' };
+    const i = idx(lg.x, lg.y);
+    if (World.obj[i] === lg.o) { World.obj[i] = null; u.carry = 'trunk'; }
+    if (!(yield* goHome(u, b))) return;
+    if (u.carry) { gather(b, 'trunk'); u.carry = null; }
+    return;
+  }
   if (!outFull(b, 'trunk')) {
     const t = findObjNear(b.doorX, b.doorY, R, o => o.t === 'tree' && o.g >= 1 && !o.res);
     if (t) {
@@ -451,6 +464,7 @@ function* goatpenWork(u, b) {
   removeAnimal(goat);
   const g = spawnUnit('goat', b.doorX, b.doorY);
   g.homePen = b.id;
+  logEvent('animal', 'Пастух приручил козу — она будет возить грузы', b.doorX + 0.5, b.doorY);
   toast('Пастух приручил козу — она будет возить грузы', b);
   yield { wait: 2 };
 }
@@ -466,6 +480,7 @@ function* stableWork(u, b) {
   if (b.removed) return;
   const c = spawnUnit('carter', b.doorX, b.doorY);
   c.homeStable = b.id;
+  logEvent('people', 'Из конюшни выехал извозчик с телегой', b.doorX + 0.5, b.doorY);
   toast('Из конюшни выехал извозчик с телегой', b);
 }
 

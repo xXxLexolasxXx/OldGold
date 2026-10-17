@@ -150,7 +150,7 @@ class Building {
       const need = (this.def.cost[g] || 0) - this.usedOf[g] - this.stock[g] - this.incoming[g];
       return Math.max(0, need);
     }
-    if (this.isStore() || !this.def.inputs) return 0;
+    if (this.noDeliver || this.isStore() || !this.def.inputs) return 0;   // закрыто для доставок
     const cap = this.def.inputs[g];
     if (!cap || !this.wantsInput(g)) return 0;
     return Math.max(0, cap - this.stock[g] - this.incoming[g]);
@@ -178,6 +178,7 @@ class Building {
         this.training.t += dt;
         if (this.training.t >= TRAIN_TIME) {
           spawnUnit(this.training.type, this.doorX, this.doorY);
+          logEvent('people', `Школа выпустила: ${UNIT_TYPES[this.training.type].name}`, this.doorX + 0.5, this.doorY);
           this.training = null;
         }
       }
@@ -399,8 +400,12 @@ function finishBuilding(b) {
   b.state = 'done';
   b.stock = emptyGoods();
   b.builder = null;
+  logEvent('build', `Построено: ${b.def.name}`, b.doorX + 0.5, b.doorY);
   toast(`Построено: ${b.def.name}`, b);
   statsBuilt();
+  // каждое третье достроенное здание — вся деревня аплодирует
+  Game.builtN = (Game.builtN || 0) + 1;
+  if (Game.builtN % 3 === 0) applaud(`Деревня аплодирует: построено уже ${Game.builtN}!`);
 }
 
 function canPlaceRoad(x, y) {
@@ -437,7 +442,7 @@ function nearestStore(x, y, g, comp = 0) {
   if (g && (Game.storeBlock[g] || GOODS[g].noStore)) return null;   // мусор на склад не берут — только в костёр
   let best = null, bd = 1e9;
   for (const b of Game.buildings) {
-    if (!b.isStore()) continue;
+    if (!b.isStore() || b.noDeliver) continue;
     if (comp && compAt(b.doorX, b.doorY) !== comp) continue;
     const d = Math.abs(b.doorX - x) + Math.abs(b.doorY - y);
     if (d < bd) { bd = d; best = b; }
@@ -537,6 +542,7 @@ class Unit {
   }
 
   update(dt) {
+    if (this.dead) return;
     if (!this.noFood) this.food = Math.max(0, this.food - dt / FOOD_TIME);
     lifeTick(this, dt);
     if (this.isCourier && !(this.action && this.action.walk)) this.releaseOcc();
@@ -621,6 +627,9 @@ class Unit {
       if (this.food <= 0 && !this.noFood) speed *= 0.5;
       if (this.injury === 'leg') speed *= 0.55;
       if (this.fleeUntil > Game.time) speed *= 1.7;     // удирает от гусей
+      speed *= daySpeedMul();                            // днём бодрее, ночью медленнее
+      if (this.brk && this.brk.kind === 'lost') speed *= 0.6;   // бредёт наугад в тумане
+      if (this.panicUntil > Game.time) speed *= 2;      // удирает от ходячего дерева
       const step = speed * dt;
       this.walkPhase += step * 6;
       if (Math.abs(dx) > 0.01) this.face = dx > 0 ? 1 : -1;

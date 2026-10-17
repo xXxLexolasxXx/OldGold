@@ -189,6 +189,7 @@ function gooseBite(a, u) {
   floater(u.x, u.y - 1.4, 'Ай!', '#ffc8a0');
   if (!u.injury && Math.random() < 0.4) { injure(u, 'leg'); u.injuryUntil = Game.time + 40; }
   if (u.carry && Math.random() < 0.35) dropLoad(u);
+  logEvent('animal', `Гуси щиплют: ${UNIT_TYPES[u.type].name.toLowerCase()}`, u.x, u.y);
   if (Game.time - lastGooseToast > 25) {
     lastGooseToast = Game.time;
     toast(`Гуси щиплют: ${UNIT_TYPES[u.type].name.toLowerCase()} удирает со всех ног!`);
@@ -272,6 +273,7 @@ function* rootGoldGen(u, tree) {
   }
   // нашёл самородок — несёт на склад, по дороге его уже не перебивают
   floater(u.x, u.y - 1.2, 'Золото!', '#f6d458', 'gold');
+  logEvent('gold', `${UNIT_TYPES[u.type].name} нашёл золото в корнях дерева`, u.x, u.y);
   if (Game.time - lastGoldToast > 30) { lastGoldToast = Game.time; toast(`${UNIT_TYPES[u.type].name} нашёл золото в корнях дерева!`); }
   u.idleFlag = false;
   u.carry = 'gold'; u.carryN = 1;
@@ -310,6 +312,7 @@ function* chickenGen(u, hen) {
       removeAnimal(hen);
       floater(u.x, u.y - 1.2, 'Поймал!', '#fff2a0');
       sfxUnit(u, 'cluck');
+      logEvent('food', `${UNIT_TYPES[u.type].name} поймал курицу`, u.x, u.y);
       if (Game.time - lastHenToast > 40) { lastHenToast = Game.time; toast(`${UNIT_TYPES[u.type].name} поймал курицу — тушку отнесут в трактир`); }
       u.idleFlag = false;
       u.carry = 'chicken'; u.carryN = 1;
@@ -366,6 +369,7 @@ let lastOwlToast = -999;
 function owlDrop(o) {
   const g = o.item; o.item = null;
   (Game.falling = Game.falling || []).push({ x: o.x, y: o.y, vy: -30, vx: (Math.random() - 0.5) * 30, rot: 0, vr: (Math.random() - 0.5) * 9, g, ground: o.ground || o.y + 40 });
+  logEvent('owl', `Сова уронила с крыши: ${GOODS[g].name.toLowerCase()}`, o.x / TILE, (o.ground || o.y + 40) / TILE);
   if (Game.time - lastOwlToast > 45) { lastOwlToast = Game.time; toast(`Сова уронила с крыши: ${GOODS[g].name.toLowerCase()}! Трудяги подберут`); }
 }
 

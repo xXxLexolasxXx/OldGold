@@ -6,6 +6,7 @@
 // Перерыв подменяет текущее поведение, а потом возвращает его как было.
 
 function startBreak(u, kind, gen) {
+  if (kind === 'knock' || kind === 'faint' || kind === 'sleep') lanternFall(u);   // упал — фонарь вдребезги
   const saved = { proc: u.proc, action: u.action };
   if (saved.action && saved.action.walk) { saved.action.path = null; saved.action.i = 0; saved.action.block = 0; saved.action.squeeze = false; }
   u.brk = { kind, saved, until: 0 };
@@ -113,6 +114,7 @@ function lifeTick(u, dt) {
     if (u.carry) dropLoad(u);
     startBreak(u, 'faint', null);
     u.proc = faintGen(u);
+    logEvent('food', `${UNIT_TYPES[u.type].name} упал от голода`, u.x, u.y);
     if (Game.time - lastFaintToast > 20) { lastFaintToast = Game.time; toast(`${UNIT_TYPES[u.type].name} упал от голода! Нужна еда в трактире`); }
     return;
   }
@@ -121,6 +123,7 @@ function lifeTick(u, dt) {
     u.drunkAt = 0;
     startBreak(u, 'sleep', null);
     u.proc = sleepGen(u);
+    logEvent('people', `${UNIT_TYPES[u.type].name} перебрал пива и уснул`, u.x, u.y);
     if (Math.random() < 0.3) toast(`${UNIT_TYPES[u.type].name} перебрал пива и уснул на дороге`);
     return;
   }
@@ -249,6 +252,7 @@ function checkCollisions() {
         sfxUnit(victim, 'ouch');
         // оба отлетают назад друг от друга и падают
         knockBack(victim, carrier); knockBack(carrier, victim);
+        logEvent('bump', `Столкновение: ${UNIT_TYPES[carrier.type].name.toLowerCase()} уронил «${GOODS[g].name}», ${UNIT_TYPES[victim.type].name.toLowerCase()} ${part === 'leg' ? 'хромает' : 'повредил руку'}`, victim.x, victim.y);
         if (Game.time - lastBumpToast > 8) {
           lastBumpToast = Game.time;
           toast(`Столкновение: ${UNIT_TYPES[carrier.type].name.toLowerCase()} уронил «${GOODS[g].name}», ${UNIT_TYPES[victim.type].name.toLowerCase()} ${part === 'leg' ? 'теперь хромает' : 'повредил руку'}`);

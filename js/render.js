@@ -115,12 +115,15 @@ function drawUnit(c, u) {
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
   else if (u.anim === 'sleep' || u.anim === 'faint' || u.anim === 'knocked' || u.anim === 'fly') { pose = 'idle'; view = 'E'; }
   else if (u.anim === 'sit') { pose = 'duck'; view = 'S'; }
+  else if (u.anim === 'lost') { view = 'E'; face = (Math.floor(Game.time * 1.3 + u.id) & 1) ? 1 : -1; }   // озирается в тумане
+  else if (u.anim === 'freeze') { view = 'S'; px += (Math.floor(Game.time * 30) & 1) ? 1 : -1; }      // трясётся от ужаса
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: swingFrame(u) }; }
   // походка и жесты
   const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
   if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {
     opt.gest = u.gest;
-    if (pose === 'idle') { view = 'E'; face = u.gestFace || face; }
+    if (u.gest === 'clap') { opt.gf = Math.floor(Game.time * 7 + u.id) & 1; if (pose === 'idle') view = 'S'; }
+    else if (pose === 'idle') { view = 'E'; face = u.gestFace || face; }
   } else if (pose === 'idle' && !u.anim) {
     // заскучал: чешет затылок, потягивается, зевает, оглядывается
     const cyc = Game.time / 7 + u.id * 0.37, p = cyc % 1, n = Math.floor(cyc);
@@ -181,6 +184,7 @@ function drawUnit(c, u) {
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
   c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
+  drawNightUnit(c, u, px, py, face, view, lying || flyP >= 0);
   // дымок из трубки
   if (u.anim === 'smoke') {
     const bx = px + u.face * 6.4, by = py - 15.6;
@@ -629,8 +633,9 @@ function drawStatusIcons(c, x0, y0, x1, y1) {
       else if (!b.builder) icon = ['ui', 'noworker'];
     } else {
       const p = b.problem();
-      if (!p) continue;
-      if (p === 'noroad') icon = ['ui', 'road'];
+      if (!p && b.noDeliver) icon = ['ui', 'nodeliver'];
+      else if (!p) continue;
+      else if (p === 'noroad') icon = ['ui', 'road'];
       else if (p === 'paused') icon = ['ui', 'pause'];
       else if (p === 'noworker') icon = ['ui', 'noworker'];
       else if (p === 'full') icon = ['ui', 'full'];
@@ -684,7 +689,8 @@ function render() {
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const i = idx(x, y), o = World.obj[i];
     if (!o) continue;
-    if (o.t === 'tree') list.push([y + 0.9, () => drawTree(c, x, y, o, i)]);
+    if (o.t === 'tree') { if (!o.awake) list.push([y + 0.9, () => drawTree(c, x, y, o, i)]); }   // проснувшееся рисуется само
+    else if (o.t === 'log') list.push([y + 0.7, () => drawLog(c, x, y)]);
     else if (o.t === 'stone') list.push([y + 0.8, () => drawStoneObj(c, x, y, o, i)]);
     else if (isStreetObj(o)) list.push([y + 0.75, () => drawStreetObj(c, x, y, o)]);
     else if (o.t === 'stump') list.push([y + 0.7, () => drawStump(c, x, y)]);
@@ -704,6 +710,10 @@ function render() {
     list.push([a.y + 0.2, () => drawCreatureAt(c, a.kind, Math.round(a.x * TILE), Math.round(a.y * TILE + 4), a.face, a.moving, a.phase, load)]);
   }
   for (const b of Game.critters || []) list.push([b.y + 0.1, () => drawButterfly(c, b)]);
+  for (const e of Game.ents || []) {
+    if (e.x < x0 - 3 || e.x > x1 + 3 || e.y < y0 - 1 || e.y > y1 + 4) continue;
+    list.push([e.y + 0.4, () => drawEnt(c, e)]);
+  }
   for (const p of Game.piles.values()) {
     list.push([p.y + 0.5, () => drawPile(c, p)]);
   }
@@ -713,7 +723,11 @@ function render() {
   drawOwls(c);
   drawFloaters(c);
   drawClouds(c);
+  drawDusk(c);
+  drawNight(c, x0, y0, x1, y1);
   drawStatusIcons(c, x0, y0, x1, y1);
+  drawLogMark(c);
+  drawTutMarks(c);
   drawOverlay(c);
 }
 
