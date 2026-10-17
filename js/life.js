@@ -186,11 +186,33 @@ function socialTick(u) {
     if (o === u || o.inside || o.brk || !isPerson(o)) continue;
     const d = Math.hypot(o.x - u.x, o.y - u.y);
     if (d > 0.3 && d < 1.8) {
-      gesture(u, 'wave', 1.5, o.x);
-      if (!((o.nextSocial || 0) > Game.time) && !o.carry) gesture(o, 'wave', 1.5, u.x);   // машет в ответ
+      const free = !(o.action && o.action.anim) && !((o.fiveCD || 0) > Game.time);      // одна рука всё равно свободна
+      // встреча: чаще дают пять (30%), реже машут (из остальных — только 20%, иначе проходят мимо)
+      if (free && Math.random() < 0.3) { highFive(u, o); return; }
+      if (Math.random() < 0.2) {
+        gesture(u, 'wave', 1.5, o.x);
+        if (!((o.nextSocial || 0) > Game.time) && !o.carry) gesture(o, 'wave', 1.5, u.x);   // машет в ответ
+      } else u.nextSocial = Game.time + 6 + Math.random() * 8;
       return;
     }
   }
+}
+
+// «Дай пять!»: оба разворачиваются друг к другу, ладони встречаются, хлопок и искры;
+// после этого оба бодрее: скорость +15% на 2 секунды
+function highFive(a, b) {
+  for (const [x, y] of [[a, b], [b, a]]) {
+    gesture(x, 'five', 1.1, y.x);
+    x.boostUntil = Game.time + 1.1 + 2;
+    x.fiveCD = Game.time + 30 + Math.random() * 30;          // не чаще раза в 30–60 с
+    x.nextSocial = Game.time + 8 + Math.random() * 10;
+  }
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - 1.1;
+  fxLater(0.4, () => {
+    fxBurst(mx * TILE, my * TILE, 8, ['#fff2a0', '#ffd860', '#ffffff'], 46, 36, 0.35, 1.4, 120);
+    sfxAt('five', mx * TILE, my * TILE);
+    floater(mx, my - 0.5, 'Дай пять!', '#fff2a0');
+  });
 }
 
 // ---------- Столкновения и травмы ----------
@@ -239,7 +261,7 @@ function checkCollisions() {
         if (!carrier) continue;
         const victim = carrier === u ? o : u;
         if (!isPerson(victim)) continue;
-        let p = COLLIDE_CHANCE;
+        let p = COLLIDE_CHANCE * (1 + 0.2 * rainAmt());   // под дождём толкаются чаще
         if (u.action?.squeeze || o.action?.squeeze) p += 0.06;
         if (o.brk && o.brk.kind === 'sleep') p += 0.18;
         if (u.drunkAt || o.drunkAt) p += 0.06;

@@ -11,6 +11,7 @@ const LOG_KINDS = {
   bump:    { icon: '💥', name: 'Столкновения' },
   food:    { icon: '🍞', name: 'Еда' },
   night:   { icon: '🌙', name: 'Ночь' },
+  weather: { icon: '🌧', name: 'Погода' },
   tree:    { icon: '🌳', name: 'Деревья' },
   gold:    { icon: '💰', name: 'Находки' },
   people:  { icon: '🧔', name: 'Жители' },
@@ -18,7 +19,7 @@ const LOG_KINDS = {
 };
 const LOG_FILTERS = [
   ['all', 'Все'], ['build', 'Стройка'], ['animal', 'Звери и совы'], ['bump', 'Столкновения'],
-  ['night', 'Ночь'], ['food', 'Еда'], ['people', 'Жители'],
+  ['night', 'Ночь'], ['weather', 'Погода'], ['food', 'Еда'], ['people', 'Жители'],
 ];
 const LOG_GROUP = { owl: 'animal', tree: 'night', gold: 'people', deliver: 'build' };
 

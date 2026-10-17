@@ -58,7 +58,7 @@ function tone(dest, type, f0, f1, t, len, vol, attack = 0.004) {
 
 function noiseHit(dest, type, f0, f1, q, t, len, vol, attack = 0.002) {
   const ctx = Sfx.ctx, nb = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-  nb.buffer = Sfx.noise; f.type = type; f.Q.value = q;
+  nb.buffer = Sfx.noise; nb.loop = true; f.type = type; f.Q.value = q;
   f.frequency.setValueAtTime(f0, t); if (f1 !== f0) f.frequency.exponentialRampToValueAtTime(f1, t + len);
   g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
   nb.connect(f); f.connect(g); g.connect(dest); nb.start(t, Math.random() * 0.5); nb.stop(t + len + 0.02);
@@ -95,6 +95,7 @@ const SFX = {
   creak: (d, t) => { const ctx = Sfx.ctx, lp = ctx.createBiquadFilter(); lp.type = 'bandpass'; lp.frequency.value = 420; lp.Q.value = 6; lp.connect(d); tone(lp, 'sawtooth', 70, 110, t, 0.9, 0.7, 0.2); tone(lp, 'sawtooth', 95, 60, t + 0.5, 0.7, 0.5, 0.15); },   // скрип ожившего дерева
   roar: (d, t) => { noiseHit(d, 'lowpass', 500, 160, 0.8, t, 1.1, 0.6, 0.12); tone(d, 'sawtooth', 60, 40, t, 1, 0.3, 0.1); },
   scream: (d, t) => gnomeVoice(d, t, [[700, 1100, 0.18], [1100, 650, 0.35]], 0.6, 1500),
+  five: (d, t) => { noiseHit(d, 'bandpass', 2400, 1400, 1.6, t, 0.07, 0.7, 0.002); tone(d, 'sine', 900, 300, t, 0.08, 0.35); },   // хлопок ладоней
   chime: (d, t) => { for (const [f, k] of [[1320, 0], [1760, 0.08], [2640, 0.16]]) tone(d, 'sine', f, f, t + k, 0.5, 0.2); },
 };
 

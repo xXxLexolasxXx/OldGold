@@ -492,6 +492,7 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'stretch': return [[1.6, shY - 3.6], [1, headY - 7 - f * 0.6]];
     case 'yawn':    return [[3.2, shY + 1.6], [4.4, headY + 3.4]];
     case 'clap':    return [[3.4, shY + 1.4], [5.2 + f * 0.9, shY + 0.6]];
+    case 'five':    return [[2.8, shY - 2.6], [4.6 + f * 0.5, headY - 3.6]];
     case 'panic':   return [[2.4, shY - 2.6], [3.4 + f * 1.4, headY - 4.6 + f * 1.2]];
     default:        return [[3.4, shY], [6.4, shY - 0.6 - f * 0.3]];     // point
   }
@@ -502,6 +503,7 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'stretch': return [[side * 5.8, shY - 3.2], [side * 4.2, headY - 7.4 - f * 0.6]];
     case 'yawn':    return [[side * 5, shY + 1.6], [side * 1.2, headY + 3.4]];
     case 'clap':    return [[side * 5.8, shY + 2.4], [side * (0.9 + f * 1.8), shY + 1.2]];     // хлопает перед грудью
+    case 'five':    return [[side * 6.2, shY - 2], [side * 6.8, headY - 4 + f * 0.5]];                    // ладонь вверх навстречу
     case 'panic':   return [[side * 6.4, shY - 2], [side * (6.6 - f * 1.6), headY - 4.2 + f * 1.6]];   // машет руками над головой
     default:        return [[side * 5.8, shY + 0.4], [side * 7.4, shY - 0.6 - f * 0.3]];
   }

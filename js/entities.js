@@ -629,6 +629,8 @@ class Unit {
       if (this.injury === 'leg') speed *= 0.55;
       if (this.fleeUntil > Game.time) speed *= 1.7;     // удирает от гусей
       speed *= daySpeedMul();                            // днём бодрее, ночью медленнее
+      if (WX.k > 0 && !this.isCourier) speed *= 1 + 0.3 * WX.k;   // под дождём спешат
+      if (this.boostUntil > Game.time) speed *= 1.15;     // после «дай пять» — бодрее на пару секунд
       if (this.brk && this.brk.kind === 'lost') speed *= 0.6;   // бредёт наугад в тумане
       if (this.panicUntil > Game.time) speed *= 2;      // удирает от ходячего дерева
       const step = speed * dt;

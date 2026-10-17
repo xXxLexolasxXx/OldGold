@@ -172,6 +172,8 @@ function drawUnit(c, u) {
   else if (u.anim === 'lost') { view = 'E'; face = (Math.floor(Game.time * 1.3 + u.id) & 1) ? 1 : -1; }   // озирается в тумане
   else if (u.anim === 'freeze') { view = 'S'; px += (Math.floor(Game.time * 30) & 1) ? 1 : -1; }      // трясётся от ужаса
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: swingFrame(u) }; }
+  const wp = weatherPose(u);   // скольжение под дождём, горение
+  if (wp) { pose = wp.pose; view = 'E'; }
   // просто стоит — лицом к зрителю, а не боком, как после ходьбы
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
@@ -191,7 +193,8 @@ function drawUnit(c, u) {
   }
   if (opt.gait === 'drunk' && moving) px += Math.round(Math.sin(Game.time * 2.3 + u.id) * 1.6);
   c.fillStyle = 'rgba(10,8,4,0.32)';
-  const lying = u.anim === 'sleep' || u.anim === 'faint' || u.anim === 'knocked';
+  const lying = u.anim === 'sleep' || u.anim === 'faint' || u.anim === 'knocked' || !!(wp && wp.lying);
+  if (wp) { px += Math.round(wp.dx); py += Math.round(wp.dy); }
   // отлёт при столкновении: летит назад по дуге, заваливаясь на спину
   let flyP = -1;
   if (u.anim === 'fly' && u.knock && a && a.T) {
@@ -208,6 +211,12 @@ function drawUnit(c, u) {
     c.save(); c.translate(px, py - lift); c.rotate(flyP * Math.PI / 2 * 0.95 * back);
     if (face < 0) c.scale(-1, 1);
     c.drawImage(spr, -PFX, -PFY, PW, PH);
+    c.restore();
+  } else if (wp) {
+    // особая поза: летит, скользит, лежит, катается, поднимается
+    c.save(); c.translate(px, py - (wp.off ? 1 : 0) - wp.lift); c.rotate(wp.rot);
+    if (u.face < 0) c.scale(-1, 1);
+    c.drawImage(spr, -PFX, -PFY + wp.off, PW, PH);
     c.restore();
   } else if (lying) {
     // лежит на земле: пьяный бормочет «Zzz», голодный — без сил, кружатся «звёздочки»
@@ -241,8 +250,9 @@ function drawUnit(c, u) {
   c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
   drawNightUnit(c, u, px, py, face, view, lying || flyP >= 0);
+  if (!wp) drawUmbrella(c, u, px, py, face, pose, lying);
   // дымок из трубки
-  if (u.anim === 'smoke') {
+  if (u.anim === 'smoke' || u.anim === 'smokeup') {
     const frontSmoke = view === 'S';
     const bx = frontSmoke ? px + 4.2 : px + u.face * 6.4, by = frontSmoke ? py - 15 : py - 15.6;
     for (let k = 0; k < 4; k++) {
@@ -802,6 +812,7 @@ function render() {
     list.push([a.y + 0.2, () => drawCreatureAt(c, a.kind, Math.round(a.x * TILE), Math.round(a.y * TILE + 4), a.face, a.moving, a.phase, load)]);
   }
   for (const b of Game.critters || []) list.push([b.y + 0.1, () => drawButterfly(c, b)]);
+  weatherDrawList(list, c, x0, y0, x1, y1);
   for (const e of Game.ents || []) {
     if (e.x < x0 - 3 || e.x > x1 + 3 || e.y < y0 - 1 || e.y > y1 + 4) continue;
     list.push([e.y + 0.05, () => drawEnt(c, e)]);   // гном рядом на той же линии — перед деревом
@@ -818,6 +829,7 @@ function render() {
   drawDusk(c);
   drawNight(c, x0, y0, x1, y1);
   drawNightFx(c);
+  drawWeather(c);
   drawStatusIcons(c, x0, y0, x1, y1);
   drawLogMark(c);
   drawTutMarks(c);

@@ -532,6 +532,7 @@ function nightLights(x0, y0, x1, y1) {
     L.push([bx, by - (e.rock ? 18 : 50), e.rock ? 50 : 80, (e.state === 'drag' ? 0.95 : 0.7) * e.k * e.alpha, 'ent']);
     if (e.state === 'drag' && e.victim) L.push([bx + e.face * 21, by - 30, 50, 0.8 * e.alpha]);   // фонарь бедняги ещё светит
   }
+  weatherLights(L, x0, y0, x1, y1);
   for (const b of Game.buildings) {
     if (b.state !== 'done' || b.x + b.w < x0 - 3 || b.x > x1 + 3 || b.y + b.h < y0 - 3 || b.y > y1 + 3) continue;
     if (b.type === 'bonfire') L.push([(b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE, 150, 1]);

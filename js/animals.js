@@ -91,6 +91,7 @@ function nearestPerson(a, r, test = () => true) {
 function updateAnimal(a, dt) {
   const def = ANIMALS[a.kind];
   a.think = (a.think || 0) - dt;
+  if (a.burn) { burnHenStep(a, dt); return; }   // подожжённая молнией курица мечется
 
   // коза идёт за пастухом
   if (a.follow) {
