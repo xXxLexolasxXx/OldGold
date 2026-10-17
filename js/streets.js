@@ -171,10 +171,10 @@ const IRON = ['#14101a', '#2a2430', '#4a4452'];
 function lampCage(c, x, y, w, h, lit, fl) {
   // стеклянный фонарь со стрельчатым верхом: железная рамка, внутри тёплое пламя
   c.fillStyle = IRON[0]; c.fillRect(x - w / 2 - 0.8, y - h, w + 1.6, h + 0.8);
-  c.fillStyle = lit ? `rgb(255,${200 + fl},110)` : '#5c564c';
+  c.fillStyle = lit ? '#7a3412' : '#5c564c';
   c.beginPath(); c.moveTo(x - w / 2, y); c.lineTo(x - w / 2, y - h * 0.55); c.quadraticCurveTo(x - w / 2, y - h * 0.95, x, y - h); c.quadraticCurveTo(x + w / 2, y - h * 0.95, x + w / 2, y - h * 0.55); c.lineTo(x + w / 2, y); c.closePath(); c.fill();
   c.fillStyle = IRON[0]; c.fillRect(x - 0.4, y - h, 0.8, h);                   // средник
-  if (lit) { c.fillStyle = 'rgba(255,250,210,0.9)'; c.fillRect(x - 0.9, y - h * 0.62, 1.8, h * 0.3); }
+  if (lit) drawFire(c, x, y - 0.6, h > 8 ? 'spark' : 'tiny', Game.time, x * 0.37, { glow: 0 });
   // островерхая крыша с навершием
   c.fillStyle = IRON[1]; c.beginPath(); c.moveTo(x - w / 2 - 1.6, y - h); c.lineTo(x, y - h - w * 1.1); c.lineTo(x + w / 2 + 1.6, y - h); c.closePath(); c.fill();
   c.fillStyle = IRON[2]; c.beginPath(); c.moveTo(x - w / 2 - 1.6, y - h); c.lineTo(x, y - h - w * 1.1); c.lineTo(x - 0.5, y - h); c.closePath(); c.fill();
@@ -269,9 +269,8 @@ function drawGothicLamp(c, bx, by, v, lit, ph) {
       // чашечка, свеча, колпачок и пламя
       c.fillStyle = IRON[0]; c.fillRect(bx + dx - 1.8, by + dy, 3.6, 1);
       c.fillStyle = '#e8dcc0'; c.fillRect(bx + dx - 0.8, by + dy - 3.2, 1.6, 3.2);
-      c.fillStyle = lit ? `rgb(255,${190 + fl},80)` : '#6a645a';
-      c.beginPath(); c.ellipse(bx + dx, by + dy - 4.4, 0.9, 1.7, 0, 0, 7); c.fill();
-      if (lit) { c.fillStyle = 'rgba(255,250,210,0.9)'; c.fillRect(bx + dx - 0.3, by + dy - 5, 0.6, 1.2); }
+      if (lit) drawFire(c, bx + dx, by + dy - 3.2, 'tiny', Game.time, dx * 1.3 + ph, { glow: 0 });
+      else { c.fillStyle = '#6a645a'; c.beginPath(); c.ellipse(bx + dx, by + dy - 4.4, 0.9, 1.7, 0, 0, 7); c.fill(); }
       c.strokeStyle = 'rgba(170,190,210,0.45)'; c.lineWidth = 0.5; c.beginPath(); c.arc(bx + dx, by + dy - 3.8, 2, Math.PI, 0); c.stroke();
     }
     ellipse(c, bx, by - 21, 1.6, 1.6, IRON[0]);

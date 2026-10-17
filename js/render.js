@@ -480,6 +480,7 @@ function drawBuilding(c, b, ghost) {
     const gx = ox + spr.glow[0], gy = oy + spr.glow[1];
     const a = (b.working ? 0.35 : 0.2) + 0.12 * Math.sin(t * 7) + 0.08 * Math.sin(t * 19);
     glow(c, gx, gy, 18, spr.glowColor || '255,160,60', a);
+    if (!spr.glowColor && b.working) drawFire(c, gx, gy + 3, 'spark', t, b.id, { glow: 0, sparks: 2 });
   }
   if (spr.fire && b.state === 'done') drawBonfireFlames(c, ox + spr.fire[0], oy + spr.fire[1], b.working || b.stock.trash > 0, b.id);
   if (spr.circle) {

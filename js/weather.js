@@ -395,22 +395,10 @@ function burnLevel(u) {
 
 function drawFlames(c, x, y, w, h, level, seed) {
   if (level <= 0.03) return;
-  const t = performance.now() / 1000;
-  glow(c, x, y - h * 0.5, Math.max(w, h) * 1.4, '255,150,50', 0.35 * level);
-  const n = 3 + Math.round(level * 2);
-  const layers = [['#d8421a', 1], ['#ff9a24', 0.72], ['#ffe27a', 0.42]];
-  for (const [col, sc] of layers) {
-    c.fillStyle = col;
-    for (let i = 0; i < n; i++) {
-      const fx = x + (i / (n - 1) - 0.5) * w * (1.2 - 0.3 * sc);
-      const fh = h * sc * level * (0.55 + 0.45 * Math.abs(Math.sin(t * 9 + seed + i * 1.9))) * (i === (n >> 1) ? 1.15 : 0.85);
-      const hw = Math.max(1, (w / n) * 0.9 * sc + 0.6), lean = Math.sin(t * 6 + seed + i * 2.3) * 1.6;
-      c.beginPath();
-      c.moveTo(fx - hw, y);
-      c.quadraticCurveTo(fx - hw * 0.6 + lean * 0.3, y - fh * 0.55, fx + lean, y - fh);
-      c.quadraticCurveTo(fx + hw * 0.6 + lean * 0.3, y - fh * 0.55, fx + hw, y);
-      c.closePath(); c.fill();
-    }
+  const t = performance.now() / 1000, n = Math.max(1, Math.round(w / Math.max(8, h * 0.7)));
+  for (let i = 0; i < n; i++) {
+    const fx = x + (n === 1 ? 0 : (i / (n - 1) - 0.5) * (w - h * 0.5));
+    drawFire(c, fx, y, 'camp', t, seed + i * 2, { h: Math.max(5, h * level * (i % 2 ? 0.8 : 1)), glow: i === 0 ? level : 0, alpha: Math.min(1, level * 1.6), sparks: i === 0 && h > 20 ? 4 : 0 });
   }
 }
 

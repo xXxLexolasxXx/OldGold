@@ -393,7 +393,7 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r) {
     const cx = e ? hx + 2.6 : hx;
     c.fillStyle = '#b08a3a'; c.fillRect(cx - 0.9, b - 1, 1.8, 0.9);
     c.fillStyle = '#efe6d0'; c.fillRect(cx - 0.55, b - 3.6, 1.1, 2.6);
-    ellipse(c, cx, b - 4.2, 0.55, 0.85, '#ffd060');
+    drawFire(c, cx, b - 3.4, 'tiny', Game.time, cx * 3, { glow: 0 });
   }
   if (O.dusty) { c.fillStyle = 'rgba(255,255,255,0.8)'; for (let k = 0; k < 5; k++) c.fillRect(hx - 2 + k * 1.1, b - 3 - k * 1.3, 0.45, 0.45); }
 }

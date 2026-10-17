@@ -1416,6 +1416,7 @@ function drawDwarfBakery(c, m) {
   c.fillStyle = '#1a0a06'; c.beginPath(); c.ellipse(ox - 1, oy, 4.6, 5.6, 0, Math.PI, 0); c.fill();
   c.fillStyle = radgrad(c, ox - 1, oy - 1, 0.5, 4.5, [[0, '#fff0a0'], [0.5, '#ff9a30'], [1, 'rgba(200,60,10,0.2)']]);
   c.beginPath(); c.ellipse(ox - 1, oy, 3.4, 3.6, 0, Math.PI, 0); c.fill();
+  drawFire(c, ox - 1, oy, 'spark', 0, 2, { glow: 0 });
   wallTex(c, 'brick', ox + 3, oy - 19, 4, 8, '#9a4e34');
   c.fillStyle = '#3e3630'; c.fillRect(ox + 2.4, oy - 20, 5.2, 1.4);
   (m.g.spr.chimneys = m.g.spr.chimneys || []).push([ox + 5, oy - 21]);

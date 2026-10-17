@@ -933,7 +933,7 @@ function cauldron(c, x, y, liquid = '#6440a8') {
   ellipse(c, x, y - 4, 4.4, 1.1, liquid);
   ellipse(c, x - 1.4, y - 4.3, 1.2, 0.35, 'rgba(255,255,255,0.4)');
   // огонь под котлом
-  ellipse(c, x, y + 0.2, 3, 1, 'rgba(255,140,40,0.85)');
+  drawFire(c, x, y + 1.2, 'spark', 0, x, { glow: 0 });
 }
 
 function potionShelf(c, x, y) {
@@ -1075,29 +1075,13 @@ function drawBonfire(c, g) {
 
 // Пламя костра: высокий столб огня над пирамидой брёвен, языки дрожат, искры и уголь летят вверх
 function drawBonfireFlames(c, x, y, strong, seed) {
-  const t = Game.time, S = strong ? 1 : 0.5;
-  glow(c, x, y - 10, strong ? 92 : 56, '255,140,50', (strong ? 0.42 : 0.24) + 0.08 * Math.sin(t * 9 + seed));
+  const t = Game.time;
   glow(c, x, y + 10, strong ? 120 : 70, '255,110,30', 0.16);
-  const n = strong ? 12 : 7;
-  for (let layer = 0; layer < 3; layer++) {
-    const col = ['#c83a1a', '#e87a28', '#ffd060'][layer], sc = [1, 0.72, 0.42][layer];
-    for (let k = 0; k < n; k++) {
-      const ph = t * (5.5 + layer) + k * 1.7 + seed + layer, h = (strong ? 44 : 22) * sc * (0.55 + 0.45 * Math.abs(Math.sin(ph))) * (1 - Math.abs(k - n / 2) / (n * 0.9));
-      const dx = (k - n / 2 + 0.5) * (strong ? 3.2 : 2.6) * (1 - layer * 0.18), w = (strong ? 5.2 : 3.4) * (1 - layer * 0.2);
-      c.fillStyle = col;
-      c.beginPath(); c.moveTo(x + dx - w, y + 4); c.quadraticCurveTo(x + dx - w * 0.4 + Math.sin(ph) * 3, y - h * 0.55, x + dx + Math.sin(ph * 1.3) * 3, y - h);
-      c.quadraticCurveTo(x + dx + w * 0.4 + Math.sin(ph + 1) * 2, y - h * 0.5, x + dx + w, y + 4); c.fill();
-    }
-  }
-  c.fillStyle = '#fff6c0'; c.beginPath(); c.ellipse(x, y - 2, 6 * S + 1, 4.4 * S + 1, 0, 0, Math.PI * 2); c.fill();
-  // искры и угольки
-  for (let k = 0; k < (strong ? 14 : 6); k++) {
-    const p = (t * 0.6 + k / 14 + seed * 0.1) % 1;
-    c.globalAlpha = 1 - p;
-    c.fillStyle = k % 3 ? '#ffd060' : '#ff7a30';
-    c.fillRect(Math.round(x + Math.sin(k * 3.1 + t * 1.3) * (8 + 14 * p)), Math.round(y - 10 - p * (strong ? 70 : 40)), k % 4 ? 1 : 2, k % 4 ? 1 : 2);
-  }
-  c.globalAlpha = 1;
+  if (strong) {
+    drawFire(c, x - 9, y + 2, 'camp', t, seed + 1, { glow: 0, scale: 1 });
+    drawFire(c, x + 9, y + 2, 'camp', t, seed + 3, { glow: 0, scale: 1 });
+    drawFire(c, x, y + 4, 'blaze', t, seed, { glow: 1.4, sparks: 14 });
+  } else drawFire(c, x, y + 4, 'camp', t, seed, { glow: 1, sparks: 5 });
 }
 
 function drawMagicCircle(c, g) {

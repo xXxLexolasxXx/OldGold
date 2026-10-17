@@ -1181,7 +1181,8 @@ function drawNightUnit(c, u, px, py, face, view, lying) {
     c.beginPath(); c.moveTo(lx, ly - 4); c.lineTo(lx, ly - 2); c.stroke();
     c.fillStyle = '#1a1410'; c.fillRect(lx - 2, ly - 2, 4, 5);
     const fl = 200 + Math.round(Math.sin(Game.time * 9 + u.id) * 30);
-    c.fillStyle = `rgb(255,${fl},90)`; c.fillRect(lx - 1.2, ly - 1.2, 2.4, 3.4);
+    c.fillStyle = '#6a2c10'; c.fillRect(lx - 1.2, ly - 1.2, 2.4, 3.4);
+    drawFire(c, lx, ly + 2, 'tiny', Game.time, u.id, { glow: 0 });
     c.fillStyle = '#1a1410'; c.fillRect(lx - 2.4, ly - 2.6, 4.8, 0.9);
     glow(c, lx, ly, 9, '255,200,110', 0.35 * n);
   }
