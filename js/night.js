@@ -7,24 +7,35 @@
 // от ужаса, бросает груз и мчится в трактир или берётся за топор: срубит — останется бревно
 // для дровосека, нет — дерево утащит его в туман навсегда.
 
-const DAY_LEN = 360;           // светлая часть суток, с
-const NIGHT_LEN = 150;         // тёмная часть
-const DUSK_LEN = 24;           // сумерки и рассвет
-const CYCLE = DAY_LEN + NIGHT_LEN;
+// Сутки: день → вечер (темнеет, горят фонари, у деревьев загораются глаза) →
+// сумерки → долгая ночь с туманом → рассвет.
+const DAY_LEN = 220;           // ясный день, с
+const EVE_LEN = 80;            // вечер
+const DUSK_LEN = 20;           // сумерки: из вечера в ночь
+const NIGHT_LEN = 260;         // ночь
+const DAWN_LEN = 25;           // рассвет
+const EVE_START = DAY_LEN, NIGHT_START = DAY_LEN + EVE_LEN + DUSK_LEN;
+const CYCLE = NIGHT_START + NIGHT_LEN + DAWN_LEN;
+const EVE_DARK = 0.35;         // насколько темно вечером
 const ENT_SEE = 5;             // с какого расстояния гном замечает ходячее дерево
-const ENT_ROAM = 2;            // насколько дерево отходит от своего места
+const ENT_ROAM = 4;            // насколько дерево отходит от своего места
 
 // 0 — ясный день, 1 — глубокая ночь
 function nightAmt(t = Game.time) {
   const p = t % CYCLE;
-  if (p < DAY_LEN - DUSK_LEN) return 0;
-  if (p < DAY_LEN) return (p - (DAY_LEN - DUSK_LEN)) / DUSK_LEN;
-  if (p < CYCLE - DUSK_LEN) return 1;
-  return (CYCLE - p) / DUSK_LEN;
+  if (p < EVE_START) return 0;
+  if (p < EVE_START + EVE_LEN) { const q = (p - EVE_START) / EVE_LEN; return EVE_DARK * q * q * (3 - 2 * q); }
+  if (p < NIGHT_START) return EVE_DARK + (1 - EVE_DARK) * (p - EVE_START - EVE_LEN) / DUSK_LEN;
+  if (p < NIGHT_START + NIGHT_LEN) return 1;
+  return Math.max(0, 1 - (p - NIGHT_START - NIGHT_LEN) / DAWN_LEN);
 }
 function isNightNow() { return nightAmt() >= 0.5; }
-// номер текущей ночи: одинаков от сумерек до рассвета
-function nightIndex() { return Math.floor((Game.time - (DAY_LEN - DUSK_LEN / 2)) / CYCLE); }
+// вечер и ночь: горят фонари
+function isEveningNow() { const p = Game.time % CYCLE; return p >= EVE_START && nightAmt() > 0.02; }
+// номер текущих «суток тьмы»: одинаков от начала вечера до рассвета
+function nightIndex() { return Math.floor((Game.time - EVE_START) / CYCLE); }
+// туман густеет только с наступлением ночи
+function fogAmt() { return Math.max(0, (nightAmt() - EVE_DARK) / (1 - EVE_DARK)); }
 // днём на треть бодрее, ночью заметно медленнее
 function daySpeedMul() { return 1.15 - 0.4 * nightAmt(); }
 
@@ -217,8 +228,12 @@ function updateEnts(dt) {
     e.moving = false;
     switch (e.state) {
       case 'sleep':
-        if (!night) e.state = 'done';
-        else if (e.t >= e.delay) { e.state = 'emerge'; e.t = 0; sfxAt('creak', e.x * TILE, e.y * TILE); }
+        // вечером стоит обычным деревом, только глаза горят; вылезает с наступлением ночи
+        if (!night && !isEveningNow()) e.state = 'done';
+        else if (night) {
+          if (e.wakeAt === undefined) e.wakeAt = Game.time + e.delay;
+          if (Game.time >= e.wakeAt) { e.state = 'emerge'; e.t = 0; sfxAt('creak', e.x * TILE, e.y * TILE); }
+        }
         break;
       case 'emerge':
         e.k = Math.min(1, e.t / 1.8);
@@ -252,7 +267,7 @@ function updateEnts(dt) {
       case 'drag':
         e.x += e.dragDir[0] * 0.75 * dt; e.y += e.dragDir[1] * 0.75 * dt;
         e.moving = true; e.phase += 0.75 * dt * 7;
-        e.alpha = Math.max(0, 1 - e.t / 3.5);
+        e.alpha = e.t < 1.5 ? 1 : Math.max(0, 1 - (e.t - 1.5) / 2);   // сначала видно, как тащит, потом растворяется в тумане
         if (e.t >= 3.5) {
           // утащил — и тихо вернулся на своё место
           e.victim = null; e.x = e.hx + 0.5; e.y = e.hy + 0.5;
@@ -333,21 +348,26 @@ function nightTick(dt) {
   Game.nightT = (Game.nightT || 0) + dt;
   if (Game.nightT < 0.5) return;
   Game.nightT = 0;
-  const night = isNightNow(), ni = nightIndex();
-  if (night && Game.entNight !== ni) {
+  const night = isNightNow(), eve = isEveningNow(), ni = nightIndex();
+  // вечер: зажигаются фонари, а в лесу открываются глаза
+  if (eve && Game.entNight !== ni) {
     Game.entNight = ni;
     spawnEnts();
-    toast('Ночь: на деревню лёг туман, гномы зажгли фонари. Берегитесь деревьев…');
+    toast('Вечереет: зажглись фонари. В лесу кто-то открыл глаза…');
+    logEvent('night', 'Вечер: зажглись фонари');
+  }
+  if (night && !Game.wasNight) {
+    toast('Ночь: на деревню лёг туман. Деревья вылезают из земли!');
     logEvent('night', 'Наступила ночь, лёг туман');
   }
   if (!night && Game.wasNight) { toast('Рассвет: туман рассеялся'); logEvent('night', 'Рассвет, туман рассеялся'); }
   Game.wasNight = night;
-  if (!night) return;
+  if (!eve) return;
   for (const u of Game.units) {
     if (!isPerson(u) || u.dead) continue;
-    // каждой ночью — новый фонарь
+    // каждый вечер — новый фонарь
     if (u.nightNo !== ni) { u.nightNo = ni; u.lantern = true; u.rescued = false; u.rescuer = 0; }
-    if (u.inside || u.type === 'carter') continue;
+    if (!night || u.inside || u.type === 'carter') continue;
     if (Game.ents.length) entReact(u);
     // без фонаря в тумане — теряется
     if (!u.lantern && !u.rescued && interruptible(u)) {
@@ -411,7 +431,8 @@ function nightLights(x0, y0, x1, y1) {
   // ожившее дерево окружено мертвенным отсветом — его силуэт видно в тумане
   for (const e of Game.ents || []) if (e.k > 0.05 && e.state !== 'gone') {
     const { bx, by } = entBase(e);
-    L.push([bx, by - 50, 80, 0.7 * e.k * e.alpha, 'ent']);
+    L.push([bx, by - 50, 80, (e.state === 'drag' ? 0.95 : 0.7) * e.k * e.alpha, 'ent']);
+    if (e.state === 'drag' && e.victim) L.push([bx + e.face * 21, by - 30, 50, 0.8 * e.alpha]);   // фонарь бедняги ещё светит
   }
   for (const b of Game.buildings) {
     if (b.state !== 'done' || b.x + b.w < x0 - 3 || b.x > x1 + 3 || b.y + b.h < y0 - 3 || b.y > y1 + 3) continue;
@@ -442,15 +463,17 @@ function drawNight(c, x0, y0, x1, y1) {
   // темнота
   l.fillStyle = `rgba(6,9,26,${0.82 * n})`;
   l.fillRect(ox, oy, w * S, h * S);
-  // туман: медленно плывущие клубы
+  // туман: медленно плывущие клубы (только ночью)
+  const fog = fogAmt();
   const G = 112, drift = Game.time * 5;
+  if (fog > 0.01)
   for (let gy = Math.floor(oy / G) - 1; gy <= Math.ceil((oy + h * S) / G) + 1; gy++) {
     for (let gx = Math.floor((ox - drift) / G) - 1; gx <= Math.ceil((ox + w * S - drift) / G) + 1; gx++) {
       const hh = hash(gx * 7919 + gy * 104729);
       const r = G * (0.75 + ((hh >>> 3) % 100) / 160);
       const fx = gx * G + drift + ((hh >>> 8) % 50) - 25 + Math.sin(Game.time * 0.11 + gy) * 18;
       const fy = gy * G + ((hh >>> 16) % 50) - 25;
-      l.globalAlpha = n * (0.3 + ((hh >>> 12) % 100) / 300);
+      l.globalAlpha = fog * (0.3 + ((hh >>> 12) % 100) / 300);
       l.drawImage(NIGHT.puff, fx - r, fy - r * 0.7, r * 2, r * 1.4);
     }
   }
@@ -477,6 +500,7 @@ function drawNight(c, x0, y0, x1, y1) {
   c.imageSmoothingEnabled = R.smooth;
   // глаза ходячих деревьев горят сквозь туман
   for (const e of Game.ents || []) {
+    if (e.state === 'sleep') { drawTreeEyes(c, e, e.alpha * Math.min(1, n * 4)); continue; }   // вечером — только глаза в стволе
     if (e.k < 0.4 || e.state === 'fall' || e.alpha <= 0.05) continue;
     const p = entFacePos(e);
     c.save(); c.globalAlpha = e.alpha * Math.min(1, n * 1.5);
@@ -494,7 +518,8 @@ function drawDusk(c) {
   const n = nightAmt(), d = 4 * n * (1 - n);
   if (d <= 0.01) return;
   const cam = R.cam, z = devScale();
-  c.fillStyle = Game.time % CYCLE > DAY_LEN ? `rgba(255,170,120,${0.1 * d})` : `rgba(255,120,40,${0.14 * d})`;
+  const dawn = Game.time % CYCLE >= NIGHT_START + NIGHT_LEN;
+  c.fillStyle = dawn ? `rgba(255,170,120,${0.1 * d})` : `rgba(255,120,40,${0.14 * d})`;
   c.fillRect(cam.x - 4, cam.y - 4, R.canvas.width / z + 8, R.canvas.height / z + 8);
 }
 
@@ -574,7 +599,7 @@ function entPose(name, L) {
     const swing = name[0] === 'w' ? -(side < 0 ? sL : sR) * 0.7 : 0;
     if (pose === 'up') return [[sx, shY], [sx + side * 13, shY - 14], [sx + side * 9, shY - 30]];
     if (pose === 'slash') return [[sx, shY], [sx + side * 17, shY - 2], [sx + side * 25, shY + 10]];
-    if (pose === 'grab') return [[sx, shY], [sx + side * 15, shY + 8], [sx + side * 20, shY + 24]];
+    if (pose === 'grab') return [[sx, shY], [sx + side * 15, shY - 8], [sx + side * 21, shY - 2]];   // держит добычу на весу
     // локти наружу, предплечья и когти загнуты внутрь, к телу
     return [[sx, shY], [sx + side * 14 + swing * 0.4, shY + 8], [sx + side * 9 + swing, shY + 24]];
   };
@@ -736,8 +761,34 @@ function entFrameName(e) {
   return 'idle';
 }
 
+// глаза на стволе ещё спящего дерева: у лиственных ствол виден выше, у хвойных — у самой земли
+function treeEyePos(e) {
+  const { bx, by, kind } = entBase(e);
+  return { x: bx, y: by - (kind === 'oak' || kind === 'birch' ? 26 : 11) };
+}
+
+function drawTreeEyes(c, e, a) {
+  const p = treeEyePos(e);
+  const blink = (Game.time * 0.37 + e.i * 0.13) % 1 < 0.04;     // изредка моргает
+  const fl = 150 + Math.round(Math.sin(Game.time * 6 + e.i) * 40);
+  c.save();
+  c.globalAlpha = a;
+  c.globalCompositeOperation = 'lighter';
+  nightSprites();
+  c.drawImage(NIGHT.warm, p.x - 7, p.y - 4, 14, 8);
+  c.globalCompositeOperation = 'source-over';
+  c.fillStyle = '#140a05';
+  c.fillRect(p.x - 4, p.y - 1, 3, 2); c.fillRect(p.x + 1, p.y - 1, 3, 2);
+  if (!blink) {
+    c.fillStyle = `rgb(255,${fl},40)`;
+    c.fillRect(p.x - 3.5, p.y - 0.5, 2, 1); c.fillRect(p.x + 1.5, p.y - 0.5, 2, 1);
+  }
+  c.restore();
+}
+
 // где глаза в мире (для свечения сквозь туман)
 function entFacePos(e) {
+  if (e.k < 0.3) return treeEyePos(e);
   const { bx, by, kind } = entBase(e);
   const f = entSprite(kind, entFrameName(e));
   const rise = Math.round((1 - e.k) * 40);
@@ -760,6 +811,7 @@ function drawEnt(c, e) {
   if (k < 1) {
     c.globalAlpha = e.alpha * (1 - k);
     c.drawImage(spr, Math.round(bx - spr.width / 2), Math.round(by - spr.height * (88 / 92)));
+    if (k < 0.3) drawTreeEyes(c, e, e.alpha * (1 - k / 0.3) * Math.min(1, nightAmt() * 4));
   }
   if (k > 0) {
     const f = entSprite(kind, entFrameName(e));
@@ -853,3 +905,47 @@ function nearLamp(x, y, r) {
   }
   return false;
 }
+
+// ---------- Демо: деревья утаскивают гномов ----------
+// Ночь, пять разных ходячих деревьев в ряд у дороги, у каждого в когтях свой гном.
+// Мир на паузе — можно подойти и рассмотреть; ×1 — досмотреть, как они уходят в туман.
+function entDemo() {
+  const seed = (Math.random() * 1e9) | 0;
+  setupStart(seed);
+  buildTerrain(seed);
+  Game.time = NIGHT_START + 30;                         // глубокая ночь
+  Game.entNight = nightIndex(); Game.wasNight = true;   // своих деревьев не будить
+  const st = storeB0();
+  const kinds = ['oak', 'birch', 'pine', 'fir', 'oak'];
+  const types = ['serf', 'builder', 'woodcutter', 'farmer', 'stonemason'];
+  const used = new Set();
+  const y = st.doorY + 4;
+  for (let n = 0; n < 5; n++) {
+    // дерево нужной породы — берём его облик и место, куда оно вернётся
+    let ti = -1;
+    for (let j = 0; j < N_TILES && ti < 0; j++) {
+      const o = World.obj[j];
+      if (o && o.t === 'tree' && o.g >= 1 && !o.awake && !used.has(j) && ENT_KIND[hash(j) % SPR.trees.length] === kinds[n]) ti = j;
+    }
+    if (ti < 0) continue;
+    used.add(ti);
+    const o = World.obj[ti]; o.awake = true; o.res = true;
+    const x = st.doorX - 6 + n * 3.4;
+    const e = {
+      i: ti, o, hx: ti % MAP_W, hy: (ti / MAP_W) | 0, x: x + 0.5, y: y + 0.5, state: 'walk', t: 0, k: 1,
+      delay: 0, face: n % 2 ? -1 : 1, phase: 0, alpha: 1, wait: 0, goal: null, moving: false, foe: null, victim: null, seen: new Set(),
+    };
+    Game.ents.push(e);
+    const u = spawnUnit(types[n], x + 0.5 - e.face * 1.1, y + 0.6);
+    u.lantern = true;
+    entTakes(e, u);
+    e.dragDir = [e.face * 0.6, 0.8];
+    e.t = 0.5;
+  }
+  purgeDead();
+  centerOn((st.doorX + 1) * TILE, (y - 1.5) * TILE);
+  updateMinimapBase();
+  setSpeed(0);
+  toast('Демо: деревья утаскивают гномов. Мир на паузе — нажмите ×1, чтобы досмотреть');
+}
+function storeB0() { return Game.buildings.find(b => b.isStore() && !b.isPile); }

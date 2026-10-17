@@ -132,10 +132,11 @@ function drawStreetObj(c, x, y, o) {
     line(c, bx + 5, by - 25, bx + 5, by - 22, '#24201e', 0.6);
     // фонарь: кованая рамка, тёплое стекло
     c.fillStyle = '#24201e'; c.fillRect(bx + 2.6, by - 22, 5, 6.4);
-    c.fillStyle = '#ffd880'; c.fillRect(bx + 3.4, by - 21.2, 3.4, 4.8);
+    const lit = isEveningNow();                    // зажигают вечером
+    c.fillStyle = lit ? '#ffd880' : '#6a6458'; c.fillRect(bx + 3.4, by - 21.2, 3.4, 4.8);
     c.fillStyle = '#24201e'; c.fillRect(bx + 3, by - 23, 4.4, 1.2);
     const fl = 0.22 + 0.06 * Math.sin(Game.time * 5 + x * 3.1 + y);
-    glow(c, bx + 5, by - 19, 16, '255,200,110', fl);
+    if (lit) glow(c, bx + 5, by - 19, 16, '255,200,110', fl + 0.15);
   } else if (o.t === 'bench') {
     const bx = px + 6, by = py + 22;
     shadowAt(c, bx + 10, by + 1, 11, 2.4);

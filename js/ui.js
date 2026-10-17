@@ -144,6 +144,7 @@ function initUI() {
     if (m === 'stress' && confirm('Открыть тестовую карту с большим городом? Несохранённый прогресс пропадёт.')) stressMap();
     if (m === 'hour' && confirm('Начать с деревни, которая уже прожила час? Несохранённый прогресс пропадёт.')) villageAfterHour();
     if (m === 'help') document.getElementById('help').classList.toggle('hidden');
+    if (m === 'entdemo' && confirm('Открыть демо с ходячими деревьями? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemo(); }
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     updateUI(true);
   });
@@ -549,7 +550,7 @@ function updateUI(force) {
 
   const sec = Math.floor(Game.time);
   document.getElementById('clock').textContent =
-    `${isNightNow() ? '☾' : '☀'} ${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    `${isNightNow() ? '☾' : isEveningNow() ? '◐' : '☀'} ${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
 }
 
 // Закрыть / открыть здание для доставок
