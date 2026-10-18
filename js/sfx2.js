@@ -138,12 +138,14 @@ function uiSfx(kind, vel = 1) {
 // Дождь: два слоя шума (шелест и гул) и отдельные капли; громкость следует за силой дождя
 function rainSound() {
   const ctx = Sfx.ctx;
+  if (ctx && (ctx.state !== 'running' || document.hidden)) return;
   if (!ctx || !Sfx.on) { if (WX.snd && ctx) WX.snd.g.gain.setTargetAtTime(0, ctx.currentTime, 0.1); return; }
   if (WX.k < 0.01) {
     if (WX.snd) { const s = WX.snd; s.g.gain.setTargetAtTime(0, ctx.currentTime, 0.3); setTimeout(() => { try { s.src.stop(); s.src2.stop(); } catch (e) { /* уже остановлен */ } }, 1500); WX.snd = null; }
     return;
   }
   if (!WX.snd) {
+    AudioCore.keep = true;                // постоянные слои дождя сторож не трогает
     const g = ctx.createGain(); g.gain.value = 0;
     const mk = (type, f, q, rate, lvl) => {
       const src = ctx.createBufferSource(); src.buffer = Sfx.noise; src.loop = true; src.playbackRate.value = rate;
@@ -155,6 +157,7 @@ function rainSound() {
     const src = mk('bandpass', 3200, 0.4, 1, 0.35), src2 = mk('lowpass', 480, 0.7, 0.6, 0.7);
     g.connect(AudioCore.amb);
     WX.snd = { g, src, src2, dropT: 0 };
+    AudioCore.keep = false;
   }
   WX.snd.g.gain.setTargetAtTime(0.2 * WX.k, ctx.currentTime, 0.6);
   // капли: редкие при мороси, частые в ливень; каждая со своим местом в стерео
@@ -172,7 +175,7 @@ function rainSound() {
 
 // Гром: треск разряда, два раската и низкий гул; музыка на время отходит
 function sfxThunder(delay = 0.3) {
-  if (!Sfx.ctx || !Sfx.on) return;
+  if (!Sfx.ctx || !Sfx.on || Sfx.ctx.state !== 'running' || document.hidden) return;
   const ctx = Sfx.ctx, t = ctx.currentTime + 0.02 + delay;
   const o = ctx.createGain(); o.gain.value = 0.8; o.connect(Sfx.out);
   if (Sfx.verb) { const wg = ctx.createGain(); wg.gain.value = 0.4; o.connect(wg); wg.connect(Sfx.verb); }

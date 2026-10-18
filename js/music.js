@@ -8,7 +8,8 @@
 //     └─ Интерфейс (щелчки кнопок, подсказки)
 // Переключатели музыки и звуков управляют своими шинами; когда обе выключены — контекст засыпает.
 
-const AudioCore = { ctx: null, master: null, limiter: null, music: null, musicDuck: null, sfx: null, amb: null, ui: null, noise: null, air: null };
+const AudioCore = { ctx: null, master: null, limiter: null, music: null, musicDuck: null, sfx: null, amb: null, ui: null, noise: null, air: null,
+  an: null, srcs: new Set(), keep: false, hiddenAt: 0, rebuilds: 0, kills: 0, dog: null, wd: { wall: 0, ct: 0, stall: 0, hot: 0, killT: [] } };
 
 function audioCoreInit() {
   if (AudioCore.ctx) return AudioCore.ctx;
@@ -17,11 +18,18 @@ function audioCoreInit() {
   let ctx;
   try { ctx = new AC({ latencyHint: 'interactive' }); } catch (e) { ctx = new AC(); }
   AudioCore.ctx = ctx;
+  AudioCore.srcs = new Set();
+  // учёт источников звука: чтобы знать, сколько их живо, и гасить залипшие (сторож ниже)
+  const mkOsc = ctx.createOscillator.bind(ctx), mkSrc = ctx.createBufferSource.bind(ctx);
+  const track = (n) => { const r = { n, t0: ctx.currentTime, keep: AudioCore.keep }; AudioCore.srcs.add(r); n.onended = () => AudioCore.srcs.delete(r); return n; };
+  ctx.createOscillator = () => track(mkOsc());
+  ctx.createBufferSource = () => track(mkSrc());
   const master = AudioCore.master = ctx.createGain(); master.gain.value = 0.8;
   // лимитер: быстрый и жёсткий, ловит только случайные пики — обычная динамика его не касается
   const lim = AudioCore.limiter = ctx.createDynamicsCompressor();
   lim.threshold.value = -5; lim.knee.value = 3; lim.ratio.value = 18; lim.attack.value = 0.0015; lim.release.value = 0.14;
   master.connect(lim); lim.connect(ctx.destination);
+  AudioCore.an = ctx.createAnalyser(); AudioCore.an.fftSize = 1024; lim.connect(AudioCore.an);   // уровень на выходе — для сторожа
   const bus = (g, to = master) => { const n = ctx.createGain(); n.gain.value = g; n.connect(to); return n; };
   AudioCore.musicDuck = bus(1);
   AudioCore.music = bus(1, AudioCore.musicDuck);
@@ -31,8 +39,97 @@ function audioCoreInit() {
   AudioCore.noise = ctx.createBuffer(1, nl, ctx.sampleRate);
   const nd = AudioCore.noise.getChannelData(0);
   for (let i = 0; i < nl; i++) nd[i] = Math.random() * 2 - 1;
+  if (!AudioCore.dog) AudioCore.dog = setInterval(audioWatch, 1000);
   return ctx;
 }
+
+// ---------- Сон вкладки и сторож ----------
+// Вкладка скрыта → контекст замирает, ничего нового не планируется; при возврате — продолжаем с чистого листа:
+// недолгое скрытие — просто resume, долгое — звук пересоздаётся (никаких «лавин» запоздавших нот и висящих тонов).
+function audioWanted() { return (typeof Music !== 'undefined' && Music.on) || (typeof Sfx !== 'undefined' && Sfx.on); }
+
+function audioHide() {
+  const ctx = AudioCore.ctx;
+  if (!ctx || AudioCore.hiddenAt) return;
+  AudioCore.hiddenAt = performance.now();
+  if (typeof Sfx !== 'undefined') { Sfx.voices = []; Sfx.kindT.clear(); }
+  try { ctx.suspend(); } catch (e) { /* уже закрыт */ }
+}
+
+function audioShow() {
+  const ctx = AudioCore.ctx, was = AudioCore.hiddenAt;
+  AudioCore.hiddenAt = 0;
+  if (!ctx || !was) return;
+  const wd = AudioCore.wd; wd.wall = 0; wd.stall = 0; wd.hot = 0;
+  if (performance.now() - was > 45000 || ctx.state === 'closed') { audioRebuild('long-hidden'); return; }
+  if (typeof Music !== 'undefined' && Music.ctx) Music.nextTime = ctx.currentTime + 0.15;
+  if (audioWanted()) ctx.resume().catch(() => {});
+}
+
+// Пересоздать аудио-ядро целиком: старый контекст закрывается вместе со всеми узлами
+function audioRebuild(why) {
+  const old = AudioCore.ctx; if (!old) return;
+  AudioCore.rebuilds++;
+  if (window.console) console.warn('[audio] пересоздание ядра:', why);
+  const wasMusic = typeof Music !== 'undefined' && Music.started, track = wasMusic ? Music.track : 0;
+  if (typeof Music !== 'undefined') { clearInterval(Music.timer); Music.timer = null; Music.started = false; Music.ctx = null; }
+  if (typeof Sfx !== 'undefined') { Sfx.ctx = null; Sfx.out = null; Sfx.verb = null; Sfx.amb = null; Sfx.voices = []; Sfx.kindT.clear(); Sfx.steps = new WeakMap(); }
+  if (typeof WX !== 'undefined') WX.snd = null;
+  try { AudioCore.master.gain.setValueAtTime(0, old.currentTime); } catch (e) { /* мёртвый контекст */ }
+  AudioCore.ctx = null; AudioCore.srcs = new Set(); AudioCore.hiddenAt = 0;
+  setTimeout(() => { try { old.close(); } catch (e) { /* уже закрыт */ } }, 150);
+  const wd = AudioCore.wd; wd.wall = 0; wd.stall = 0; wd.hot = 0;
+  const ctx = audioCoreInit(); if (!ctx) return;
+  if (typeof sfxInit === 'function') { sfxInit(); audioSetBus('amb', Sfx.on); audioSetBus('ui', Sfx.on); }
+  if (wasMusic && typeof startMusic === 'function') {
+    startMusic();
+    Music.track = track; Music.bar = 0;
+    Music.bus.gain.cancelScheduledValues(0); Music.bus.gain.value = 0.62 * TRACKS[track].level;
+  }
+  // без жеста браузер может оставить новый контекст спящим — разбудим первым же касанием
+  if (ctx.state !== 'running' && !document.hidden) audioKickOnGesture(() => { if (audioWanted() && AudioCore.ctx) AudioCore.ctx.resume(); });
+}
+
+// Сторож (раз в секунду): часы контекста, залипшие и лишние источники, NaN и перегруз на выходе
+function audioWatch() {
+  const ctx = AudioCore.ctx, wd = AudioCore.wd;
+  if (!ctx) return;
+  if (document.hidden) { wd.wall = 0; return; }
+  if (ctx.state === 'closed') { audioRebuild('closed'); return; }
+  if (ctx.state !== 'running') { wd.wall = 0; if (audioWanted() && !AudioCore.hiddenAt) ctx.resume().catch(() => {}); return; }
+  const now = performance.now(), ct = ctx.currentTime;
+  // часы контекста встали, а время идёт — устройство вывода отвалилось
+  if (wd.wall && now - wd.wall > 700 && ct - wd.ct < 0.01) { if (++wd.stall >= 3) { audioRebuild('clock-stall'); return; } } else wd.stall = 0;
+  wd.wall = now; wd.ct = ct;
+  // залипшие разовые источники: ни один не живёт дольше 15 секунд
+  let trans = 0;
+  for (const r of AudioCore.srcs) {
+    if (r.keep) continue;
+    if (ct - r.t0 > 15) { try { r.n.stop(); } catch (e) { /* не запускался */ } AudioCore.srcs.delete(r); AudioCore.kills++; } else trans++;
+  }
+  // лавина узлов: гасим все разовые источники; если повторяется — пересоздаём ядро
+  if (trans > 450) {
+    for (const r of AudioCore.srcs) if (!r.keep) { try { r.n.stop(); } catch (e) { /* не запускался */ } AudioCore.srcs.delete(r); }
+    AudioCore.kills++;
+    wd.killT = wd.killT.filter(x => now - x < 30000); wd.killT.push(now);
+    if (wd.killT.length >= 3) { wd.killT = []; audioRebuild('node-flood'); return; }
+  }
+  // выход: NaN навсегда ломает компрессоры, перегруз подряд — признак зациклившегося тона
+  if (AudioCore.an) {
+    const buf = wd.buf || (wd.buf = new Float32Array(AudioCore.an.fftSize));
+    AudioCore.an.getFloatTimeDomainData(buf);
+    let peak = 0, bad = false;
+    for (let i = 0; i < buf.length; i++) { const v = buf[i]; if (!isFinite(v)) { bad = true; break; } const a = Math.abs(v); if (a > peak) peak = a; }
+    wd.peak = peak;
+    if (bad) { audioRebuild('nan'); return; }
+    wd.hot = peak > 0.97 ? wd.hot + 1 : 0;
+    if (wd.hot >= 6) { wd.hot = 0; audioRebuild('overload'); return; }
+  }
+}
+
+window.addEventListener('pagehide', audioHide);
+window.addEventListener('pageshow', audioShow);
+document.addEventListener('visibilitychange', () => { if (document.hidden) audioHide(); else audioShow(); });
 
 // Шину включают/выключают плавно, без щелчка
 function audioSetBus(name, on) {
@@ -47,7 +144,7 @@ function audioSetBus(name, on) {
 // Когда и музыка, и звуки выключены — контекст спит и не тратит процессор
 function audioMaybeSuspend() {
   const ctx = AudioCore.ctx;
-  if (!ctx) return;
+  if (!ctx || document.hidden) return;
   const anyOn = (typeof Music !== 'undefined' && Music.on) || (typeof Sfx !== 'undefined' && Sfx.on);
   if (anyOn) { if (ctx.state !== 'running') ctx.resume(); }
   else if (ctx.state === 'running') setTimeout(() => { if (!((typeof Music !== 'undefined' && Music.on) || (typeof Sfx !== 'undefined' && Sfx.on))) ctx.suspend(); }, 200);
@@ -482,9 +579,12 @@ function scheduleBar(tr, song, bar, t) {
 }
 
 function musicTick() {
-  if (!Music.on || !Music.ctx || Music.ctx.state !== 'running') return;
+  if (!Music.on || !Music.ctx || Music.ctx !== AudioCore.ctx || Music.ctx.state !== 'running' || document.hidden) return;
   const ctx = Music.ctx;
-  while (Music.nextTime < ctx.currentTime + 0.5) {
+  // таймер отстал (вкладка была в фоне): не догоняем пропущенное, а начинаем с текущего момента
+  if (Music.nextTime < ctx.currentTime - 0.3) Music.nextTime = ctx.currentTime + 0.15;
+  let guard = 0;
+  while (Music.nextTime < ctx.currentTime + 0.5 && guard++ < 6) {
     const tr = TRACKS[Music.track];
     if (Music.bar >= tr.bars) {
       // смена трека с паузой в такт; новые вариации мелодий

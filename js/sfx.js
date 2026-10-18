@@ -105,6 +105,7 @@ function sfxChain(p, vel, def) {
 // Занять голос с учётом лимитов; вернёт узел-приёмник или null (звук пропускается)
 function sfxVoice(kind, def, p, vel, delay = 0) {
   const ctx = Sfx.ctx, t = ctx.currentTime;
+  if (ctx.state !== 'running' || document.hidden) return null;     // пока контекст спит, звуки не копим
   Sfx.voices = Sfx.voices.filter(v => v.end > t);
   const when = t + delay, times = (Sfx.kindT.get(kind) || []).filter(x => x > t - 1);
   if (times.some(x => Math.abs(x - when) < def.cd)) return null;
@@ -313,7 +314,7 @@ const SFX = {
   // летучая мышь: три тихих писка
   squeak: (d, t, v) => { for (const k of [0, 0.07, 0.15]) tone(d, 'sine', 7000 - k * 9000 + v * 800, 4200 - k * 6000, t + k, 0.028, 0.2, 0.003); },
   // хлопок ладоней
-  five: (d, t, v) => { noiseHit(d, 'bandpass', 1500 + v * 400, 1100, 1.2, t, 0.03, 0.7, 0.002); tone(d, 'sine', 700, 300, t, 0.06, 0.3); },
+  five: (d, t, v) => clapPlay(d, t, v),
   // золото/удача: колокольчик с обертонами
   chime: (d, t) => { for (const [f, k] of [[1318, 0], [1760, 0.09], [2637, 0.18]]) { modal(d, t + k, [[f, 1, 0.9], [f * 2.76, 0.25, 0.3]], 0.2, 0.004); } },
   // треск огня: короткие щелчки
@@ -373,6 +374,10 @@ function sfxSteps() {
 // Непрерывные источники с медленно меняющейся громкостью; создаются один раз.
 function sfxAmbInit() {
   if (Sfx.amb || !Sfx.ctx) return;
+  AudioCore.keep = true;                 // эти источники живут вечно — сторож их не трогает
+  try { sfxAmbBuild(); } finally { AudioCore.keep = false; }
+}
+function sfxAmbBuild() {
   const ctx = Sfx.ctx, A = Sfx.amb = {};
   const mkGain = () => { const g = ctx.createGain(); g.gain.value = 0; g.connect(AudioCore.amb); return g; };
   // сверчки: два стрекочущих тона, прерывистые, в разной фазе
@@ -470,17 +475,99 @@ function initSfx() {
   }
 }
 
-// Аплодисменты: много коротких хлопков вразнобой и пара довольных возгласов; музыка чуть отходит
-function sfxApplause(amount = 1) {
-  if (!Sfx.ctx || !Sfx.on) return;
-  const ctx = Sfx.ctx, t0 = ctx.currentTime + 0.02;
-  const out = ctx.createGain(); out.gain.value = 1.3; out.connect(Sfx.out);
-  if (Sfx.verb) { const wg = ctx.createGain(); wg.gain.value = 0.3; out.connect(wg); wg.connect(Sfx.verb); }
-  const n = Math.round(20 + 45 * amount);
-  for (let k = 0; k < n; k++) {
-    const t = t0 + Math.pow(Math.random(), 0.8) * 2.8;
-    noiseHit(out, 'bandpass', 1100 + Math.random() * 1600, 900 + Math.random() * 900, 1.4, t, 0.035 + Math.random() * 0.03, 0.08 + Math.random() * 0.12 * amount, 0.003);
+// ---------- Хлопки ----------
+// Хлопок ладоней — не тон, а короткий шумовой всплеск 5–25 мс через резонанс «кулака» и глухой «пок» ладони.
+// Всё рендерится в буфер на JS: один хлопок — 6 вариантов формы (сухой, гулкий, двойной «флэм», шлепок),
+// толпа — много мелких хлопков с разной громкостью, тембром и панорамой, плотность растёт и спадает.
+// В граф уходит один источник, а не сотни узлов — нечему залипнуть.
+const Clap = { singles: [], crowd: new Map(), busy: 0 };
+
+// опции хлопка: f — центр шума, q — острота, dec — спад (с), body — доля глухого «пока», flam — повтор через мс
+function clapInto(L, R, sr, at, amp, pan, o) {
+  const a = (pan + 1) * Math.PI / 4, gl = amp * Math.cos(a), gr = amp * Math.sin(a);
+  for (let h = 0; h < 1 + (o.flam ? 1 : 0); h++) {
+    const st = Math.floor((at + h * (o.flam || 0)) * sr), hv = h ? 0.6 : 1;
+    const n = Math.floor(o.dec * sr * 6), w = 2 * Math.sin(Math.PI * Math.min(o.f, sr * 0.2) / sr), att = Math.max(2, 0.0007 * sr);
+    let low = 0, band = 0;
+    for (let i = 0; i < n; i++) {
+      const j = st + i; if (j >= L.length) break;
+      const hi = (Math.random() * 2 - 1) - low - band / o.q; band += w * hi; low += w * band;
+      const env = Math.exp(-i / (o.dec * sr)) * Math.min(1, i / att);
+      let s = band * env;
+      if (o.body && i < sr * 0.03) s += o.body * Math.sin(2 * Math.PI * o.bf * i / sr) * Math.exp(-i / (0.006 * sr));
+      L[j] += s * gl * hv; R[j] += s * gr * hv;
+    }
   }
-  for (let k = 0; k < 3; k++) gnomeVoice(out, t0 + 0.2 + k * 0.5 + Math.random() * 0.3, [[300 + k * 50, 480, 0.1], [480, 430, 0.18]], 0.12, 1050);
-  audioDuck(0.3 * amount, 2.2);
+}
+function clapNormalize(L, R, peak) {
+  let m = 0.0001; for (let i = 0; i < L.length; i++) m = Math.max(m, Math.abs(L[i]), Math.abs(R[i]));
+  const k = peak / m; for (let i = 0; i < L.length; i++) { L[i] *= k; R[i] *= k; }
+}
+const clapRnd = (a, b) => a + Math.random() * (b - a);
+
+function clapSingles(ctx) {
+  if (Clap.singles.length) return Clap.singles;
+  const sr = ctx.sampleRate, kinds = [
+    { f: 2300, q: 1.6, dec: 0.005, body: 0.15, bf: 420 },                    // сухой, звонкий
+    { f: 1500, q: 1.1, dec: 0.009, body: 0.45, bf: 330 },                    // гулкий, «чашечкой»
+    { f: 1900, q: 1.3, dec: 0.006, body: 0.25, bf: 380, flam: 0.011 },       // чуть несинхронный
+    { f: 2700, q: 2.0, dec: 0.004, body: 0.05, bf: 500 },                    // шлепок «пять» по ладони
+    { f: 1200, q: 0.9, dec: 0.012, body: 0.5, bf: 280 },                     // мягкий
+    { f: 2000, q: 1.4, dec: 0.007, body: 0.3, bf: 400, flam: 0.016 },
+  ];
+  for (const o of kinds) {
+    const b = ctx.createBuffer(2, Math.floor(sr * 0.18), sr), L = b.getChannelData(0), R = b.getChannelData(1);
+    clapInto(L, R, sr, 0.004, 1, 0, o); clapNormalize(L, R, 0.9);
+    Clap.singles.push(b);
+  }
+  return Clap.singles;
+}
+function clapPlay(d, t, v) {
+  const ctx = Sfx.ctx, bufs = clapSingles(ctx), src = ctx.createBufferSource(), g = ctx.createGain();
+  src.buffer = bufs[Math.floor(Math.random() * bufs.length)];
+  src.playbackRate.value = 0.92 + v * 0.16;
+  g.gain.value = 0.9;
+  src.connect(g); g.connect(d); src.start(t);
+}
+
+// Толпа: dur секунд, плотность — подъём 0.4 с, плато, затухание; amount — сколько людей
+function clapCrowdBuffer(ctx, amount) {
+  const key = Math.round(amount * 3), cached = Clap.crowd.get(key);
+  if (cached && cached.length >= 3 && Math.random() < 0.7) return cached[(Math.random() * cached.length) | 0];
+  const sr = ctx.sampleRate, dur = 2.4 + 2.2 * amount, b = ctx.createBuffer(2, Math.floor(sr * dur), sr), L = b.getChannelData(0), R = b.getChannelData(1);
+  const hold = dur * 0.5, tail = dur * 0.2, n = Math.round(60 + 190 * amount);
+  for (let k = 0, tries = 0; k < n && tries < n * 30; tries++) {
+    const t = Math.random() * (dur - 0.1);
+    const dens = Math.min(1, t / 0.45) * (t < hold ? 1 : Math.exp(-(t - hold) / tail)) * (0.8 + 0.2 * Math.sin(t * 9));
+    if (Math.random() > dens) continue;
+    k++;
+    const near = Math.pow(Math.random(), 2.2);                                // немного громких «рядом», много тихих «вдали»
+    clapInto(L, R, sr, t, 0.12 + 0.88 * near, clapRnd(-0.9, 0.9), {
+      f: clapRnd(1000, 3000) + near * 300, q: clapRnd(0.8, 2.2), dec: clapRnd(0.004, 0.011),
+      body: near * 0.35, bf: clapRnd(280, 480), flam: Math.random() < 0.4 ? clapRnd(0.006, 0.016) : 0,
+    });
+  }
+  clapNormalize(L, R, 0.85);
+  const list = cached || []; list.push(b); Clap.crowd.set(key, list);
+  return b;
+}
+
+// Аплодисменты: толпа мелких хлопков и пара довольных возгласов; музыка чуть отходит
+function sfxApplause(amount = 1) {
+  if (!Sfx.ctx || !Sfx.on || !Sfx.out || Sfx.ctx.state !== 'running' || document.hidden) return;
+  const ctx = Sfx.ctx, t0 = ctx.currentTime + 0.03;
+  if (t0 < Clap.busy) return;                                                 // уже аплодируют — не наслаиваем
+  const buf = clapCrowdBuffer(ctx, Math.max(0.2, Math.min(1, amount)));
+  Clap.busy = t0 + buf.duration * 0.5;
+  const src = ctx.createBufferSource(), g = ctx.createGain(), out = ctx.createGain();
+  src.buffer = buf; src.playbackRate.value = 0.96 + Math.random() * 0.08;
+  const end = t0 + buf.duration / src.playbackRate.value;
+  g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.55 + 0.3 * amount, t0 + 0.05);
+  g.gain.setValueAtTime(0.55 + 0.3 * amount, end - 0.3); g.gain.linearRampToValueAtTime(0.0001, end - 0.02);
+  out.gain.value = 1;
+  src.connect(g); g.connect(out); out.connect(Sfx.out);
+  if (Sfx.verb) { const wg = ctx.createGain(); wg.gain.value = 0.3; out.connect(wg); wg.connect(Sfx.verb); }
+  src.start(t0); src.stop(end);
+  for (let k = 0; k < 2; k++) gnomeVoice(out, t0 + 0.5 + k * 0.7 + Math.random() * 0.4, [[300 + k * 60, 480, 0.1], [480, 430, 0.18]], 0.1, 1050);
+  audioDuck(0.3 * amount, buf.duration * 0.7);
 }
