@@ -58,17 +58,16 @@ function teamWorkMul(u) {
 // Точка появления — у большого костра: табличка стоит у костра, гном возникает рядом.
 // Ничего не хранится в сохранении: место вычисляется по костру детерминированно.
 const SPAWN_SIGNS = [
-  'Далеко от бара тебя занесло, гном…',
-  'Вот ты и нашёл меня, Гном!',
-  'Добро пожаловать. Выход там же, где и вход, — закрыт.',
-  'Опять ты? А мы только подмели.',
-  'Точка сбора героев. Героев пока не набралось.',
-  'Новое начало! Старое, впрочем, было ничуть не лучше.',
-  'Держись подальше от смерти. Это не совет, это мольба склада.',
   'Бесплатное воскрешение. Не благодарите — вы и так всё испортите.',
-  'Трактир вон там. Нет, дальше. Ещё дальше. Ты вообще куда?',
+  'Опять ты? А мы только подмели.',
+  'Добро пожаловать обратно. Смерть тебе, видимо, не понравилась.',
   'Гном возродился. Склад об этом пока не в курсе.',
-  'У костра тепло, а у гнома — привычка искать приключения.'
+  'Место для воскрешений. Скидок нет, гарантии тоже.',
+  'Герой воскрес! Осталось подождать, пока он снова этого не пожалеет.',
+  'У костра тепло, а у гнома — привычка искать приключения.',
+  'Смерть была неплоха, но ты решил продолжить. Смелое решение.',
+  'Здесь выдают гномов повторно. Состояние — как у прежнего: так себе.',
+  'Держись подальше от смерти. Это не совет, это мольба склада.'
 ];
 let spawnSpotCache = null;
 function heroSpawnSpot() {
@@ -684,15 +683,20 @@ function heroCardUpdate() {
     @keyframes hc-up{from{opacity:0;transform:translateY(24px) scale(.92)}to{opacity:1;transform:none}}
     body.mobile #hero-card.mini{width:auto;padding:0;background:none;border:0;box-shadow:none}
     body.mobile #hero-card .hc-ico{padding:2px;border-radius:6px;background:rgba(26,19,13,.8);border:1px solid #b8902c;position:relative}
-    body.mobile #hero-card .hc-ico img{width:30px;height:30px;image-rendering:pixelated;display:block}
+    body.mobile #hero-card .hc-ico img{width:24px;height:24px;image-rendering:pixelated;display:block}
     body.mobile #hero-card .hc-ico b{position:absolute;right:-4px;bottom:-4px;min-width:14px;padding:0 3px;border-radius:7px;background:#b8902c;color:#1a1008;font-size:10px;text-align:center}
     body.mobile #hero-card .hc-m{position:absolute;top:3px;right:48px;padding:0 5px;font-size:12px;line-height:16px}
     body.mobile.sheet-tab #hero-card,body.mobile.sheet-info #hero-card{display:none!important}
     body.mobile #hero-card .hc-t{position:absolute;top:3px;right:26px;padding:0 5px;font-size:12px;line-height:16px}
     body.mobile #hero-card .hc-x{top:3px;right:4px;padding:0 5px;font-size:12px;line-height:16px}
     #hero-card .hc-row{display:flex;align-items:center;gap:5px;min-height:30px}
-    body.mobile #hero-card .hc-row img{width:26px;height:26px}
+    body.mobile #hero-card .hc-row img{width:22px;height:22px}
     #hero-card .hc-row img{width:30px;height:30px;image-rendering:pixelated;border-radius:4px;flex:none}
+    body.mobile #hero-card .hc-body .ihead img{width:30px;height:30px}
+    body.mobile #hero-card .hc-body{zoom:.78;max-height:260px;overflow-y:auto}
+    body.mobile #hero-card .hc-body h3{font-size:12px;margin:0}
+    body.mobile #hero-card .hc-body .hp-bar{height:4px}
+    body.mobile #hero-card .hc-body button{padding:2px 4px;font-size:10px;min-height:22px}
     #hero-card .hc-row .hc-n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     #hero-card .hc-row .hp-ab{flex:none;min-height:26px;padding:1px 6px;font-size:11px}
     #hero-card .hc-body{margin-top:4px;border-top:1px solid #4a3a1c;padding-top:4px}
