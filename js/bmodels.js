@@ -103,7 +103,7 @@ function gnomePart(p) {
     const r = q.roof = { ...q.roof };
     if (dwarf) {
       // холодный серо-синий сланец, пологий и тяжёлый, с глубоким свесом — склад не спутать с тёплым трактиром
-      r.mat = 'slate'; r.col = ['#6a6e74', '#62666c', '#72767c'][h % 3];
+      r.mat = 'slate'; r.col = ['#6e6c68', '#666460', '#767472'][h % 3];
       r.rise = (r.rise ?? 18) * 0.8;
       r.ov = (r.ov ?? 4) + 2;
     } else if (red) {
@@ -132,19 +132,24 @@ function gnomePart(p) {
 // Мох и плющ по низу стены, грибы и травка у фундамента (в координатах грани)
 function wallMoss(c, L, H, ground) {
   if (ground) { groundTufts(c, L, H); return; }
-  c.fillStyle = lingrad(c, 0, H - 9, 0, H, [[0, 'rgba(60,90,30,0)'], [1, 'rgba(60,95,35,0.55)']]);
-  c.fillRect(0, H - 9, L, 9);
-  for (let k = 0; k < L / 1.6; k++) {
-    const x = rnd(0, L), y = H - Math.pow(srand(), 2) * 10;
-    c.fillStyle = GMOSS[(srand() * 4) | 0];
-    c.fillRect(x, y, rnd(0.6, 1.6), rnd(0.5, 1.2));
+  // мох у фундамента: цельная кайма с неровным верхом (ступеньками по 1/3 px) и кочками
+  c.fillStyle = 'rgba(50,80,28,0.55)';
+  for (let x = 0, k = 0; x < L; x += 1, k++) {
+    const hgt = 2 + ((hsh(k, 1, 40) * 3) | 0) * PXU * 2 + (hsh(k >> 2, 2, 40) < 0.3 ? 1.4 : 0);
+    c.fillRect(x, H - hgt, 1, hgt);
+  }
+  for (let k = 0, x = 2 + hsh(0, 3, 41) * 6; x < L - 2; x += 7 + hsh(k, 4, 41) * 9, k++) {
+    const r = 1.4 + hsh(k, 5, 41) * 1.2;
+    ellipse(c, x, H - 1.2, r, r * 0.7, GMOSS[1]); c.fillStyle = GMOSS[3]; c.fillRect(x - r * 0.4, H - 1.6 - r * 0.5, PXU * 2, PXU);
   }
   if (srand() < 0.45 && H > 16) {
-    // плющ ползёт вверх
+    // плющ ползёт вверх: стебель и листья парами, без разброса размеров
     const x0 = rnd(4, Math.max(5, L - 4)), top = H - rnd(10, Math.min(H - 2, 30));
-    for (let y = H; y > top; y -= 0.9) {
+    for (let y = H, k = 0; y > top; y -= 1.2, k++) {
       const x = x0 + Math.sin(y * 0.5) * 2;
-      ellipse(c, x + rnd(-1.6, 1.6), y, rnd(0.8, 1.5), rnd(0.6, 1.1), shade('#3e6a28', rnd(-0.25, 0.2)));
+      c.fillStyle = '#2f4a26'; c.fillRect(x, y - 1.2, PXU, 1.2);
+      if (k % 2) { const g = k % 4 === 1 ? GMOSS[2] : GMOSS[1]; c.fillStyle = g; c.fillRect(x - 1.4, y - 1, 1.2, 1); c.fillStyle = GMOSS[3]; c.fillRect(x - 1.4, y - 1, PXU, PXU); }
+      else { c.fillStyle = GMOSS[2]; c.fillRect(x + 0.4, y - 1.4, 1.2, 1); }
     }
   }
 }
@@ -186,12 +191,14 @@ function thatchFringe(c, m, p, w, H) {
     const ovz = ov * rise / Math.min((X1 - X0) / 2, (Y1 - Y0) / 2);
     a = P(g, X0 - ov, Y0 - ov, H - ovz); b = P(g, X1 + ov, Y0 - ov, H - ovz);
   } else return;
-  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-  for (let s = 0; s < len; s += 2.1) {
+  // ровный ряд пучков соломы: длины чередуются по узору, два оттенка — тень и свет
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]), R = rampOf(r.col), pat = [2.4, 1.8, 2.8, 2.0, 2.2];
+  for (let s = 0, k = 0; s < len; s += 2, k++) {
     const t = s / len, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
-    const dr = rnd(1.4, 2.6);
-    ellipse(c, x, y + dr * 0.5, 1.5, dr, shade(r.col, rnd(-0.4, -0.15)));
-    ellipse(c, x - 0.3, y + dr * 0.2, 0.8, dr * 0.6, shade(r.col, rnd(0, 0.18)));
+    const dr = pat[k % pat.length];
+    c.fillStyle = R[4]; c.fillRect(x - 1, y - 0.5, 2, dr + 0.5);
+    c.fillStyle = R[2]; c.fillRect(x - 1, y - 0.5, 1, dr - 0.3);
+    c.fillStyle = R[0]; c.fillRect(x - 1, y - 0.5, PXU, dr - 1);
   }
 }
 
@@ -338,8 +345,9 @@ function drawGableFace(c, g, face, w, zE, rise, spec, light, decor, shape = 'tri
     c.fillStyle = b; c.fillRect(0, rise - 1.6, L, 1.8);
   }
   for (const d of decor) drawDecor(c, d, rise);
-  c.fillStyle = lingrad(c, 0, 0, 0, rise, [[0, 'rgba(0,0,0,0.5)'], [1, 'rgba(0,0,0,0.05)']]);
-  c.fillRect(0, 0, L, rise + 1);
+  // фронтон под свесом: тень двумя ступенями, без градиента
+  c.fillStyle = 'rgba(0,0,0,0.16)'; c.fillRect(0, 0, L, rise + 1);
+  c.fillStyle = 'rgba(0,0,0,0.22)'; c.fillRect(0, 0, L, Math.min(rise, 3));
   if (light < 1) { c.fillStyle = `rgba(14,8,2,${1 - light})`; c.fillRect(0, 0, L, rise + 1); }
   c.restore();
 }
@@ -549,21 +557,24 @@ function drawTowerPart(c, m, p) {
   const [bx0, by0] = [Math.min(...sil.map(q => q[0])), Math.min(...sil.map(q => q[1]))];
   const [bx1, by1] = [Math.max(...sil.map(q => q[0])), Math.max(...sil.map(q => q[1]))];
   clipPoly(c, sil, () => {
-    c.fillStyle = shade(p.col, -0.45); c.fillRect(bx0, by0, bx1 - bx0, by1 - by0);
-    // ряды камней по передней дуге
+    const TR = rampOf(p.col);
+    c.fillStyle = TR[5]; c.fillRect(bx0, by0, bx1 - bx0, by1 - by0);
+    // ряды камней по передней дуге; оттенок камня — по полосе света на цилиндре (4 ступени)
     for (let z = z0, row = 0; z < H; z += 4.4, row++) {
       const rr = r * (1 - (1 - (p.taper || 1)) * (z - z0) / p.h);
-      for (let t = Math.PI * 0.95 + (row % 2) * 0.12; t < Math.PI * 2.05; t += 0.24) {
+      let k = 0;
+      for (let t = Math.PI * 0.95 + (row % 2) * 0.12; t < Math.PI * 2.05; t += 0.24, k++) {
         const a = P(g, X + Math.cos(t) * rr, Y + Math.sin(t) * rr, z + 4.1);
         const b = P(g, X + Math.cos(t + 0.22) * rr, Y + Math.sin(t + 0.22) * rr, z + 0.3);
+        const u = ((a[0] + b[0]) / 2 - bx0) / (bx1 - bx0);
+        const band = u < 0.2 ? 1 : u < 0.5 ? 2 : u < 0.78 ? 3 : 4;
+        const n = hsh(k, row, 44), vr = n < 0.18 ? -1 : n > 0.86 ? 1 : 0;
         rrect(c, Math.min(a[0], b[0]), a[1], Math.abs(b[0] - a[0]) + 0.4, b[1] - a[1], 0.8);
-        c.fillStyle = shade(p.col, rnd(-0.2, 0.12)); c.fill();
+        c.fillStyle = TR[Math.max(0, Math.min(5, band + vr))]; c.fill();
+        c.fillStyle = TR[Math.max(0, band - 2)]; c.fillRect(Math.min(a[0], b[0]) + 0.6, a[1] + 0.2, Math.abs(b[0] - a[0]) - 1, PXU);
       }
     }
-    c.fillStyle = lingrad(c, bx0, 0, bx1, 0, [[0, 'rgba(255,245,225,0.25)'], [0.35, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.55)']]);
-    c.fillRect(bx0, by0, bx1 - bx0, by1 - by0);
-    c.fillStyle = lingrad(c, 0, by1 - 10, 0, by1, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(40,25,10,0.35)']]);
-    c.fillRect(bx0, by1 - 10, bx1 - bx0, 10);
+    c.fillStyle = 'rgba(40,25,10,0.3)'; c.fillRect(bx0, by1 - 3, bx1 - bx0, 3);
   });
   poly(c, sil, null, 'rgba(20,10,4,0.65)', 0.6);
   // украшения на стене башни: угол a в градусах от фасада (0 — юг, 90 — восток)
@@ -590,22 +601,25 @@ function drawTowerPart(c, m, p) {
     const base = ring(rr, H - 1.5);
     const cone = hull([...base, apex]);
     clipPoly(c, cone, () => {
-      const front = base.filter((q, k) => k >= N / 2 - 2 || k <= 1);
+      // конус: клинья четырёх ступеней света (свет слева), ряды черепицы — тонкие дуги
+      const CR = rampOf(p.roof.col);
       for (let k = 0; k < N; k++) {
         const q = base[k], t = k / N * Math.PI * 2;
         const lit = 0.5 - Math.cos(t + 0.5) * 0.5;
-        c.strokeStyle = shade(p.roof.col, -0.45 + (1 - lit) * 0.55 + rnd(-0.06, 0.06)); c.lineWidth = 3.6;
+        const idx = lit > 0.8 ? 1 : lit > 0.55 ? 2 : lit > 0.3 ? 3 : 4;
+        c.strokeStyle = CR[idx + (k % 5 === 0 ? 1 : 0)]; c.lineWidth = 3.6;
         c.beginPath(); c.moveTo(...apex); c.lineTo(...q); c.stroke();
       }
       for (let f = 0.15; f < 1; f += 0.09) {
-        c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 0.5;
+        c.strokeStyle = CR[5]; c.lineWidth = 0.45;
         c.beginPath();
         for (let k = N / 2 - 2; k <= N; k++) { const q = base[k % N]; const x = apex[0] + (q[0] - apex[0]) * f, y = apex[1] + (q[1] - apex[1]) * f; k === N / 2 - 2 ? c.moveTo(x, y) : c.lineTo(x, y); }
         c.stroke();
+        c.strokeStyle = CR[1]; c.lineWidth = PXU;
+        c.beginPath();
+        for (let k = N / 2 - 2; k <= N * 0.72; k++) { const q = base[k % N]; const x = apex[0] + (q[0] - apex[0]) * (f - 0.012), y = apex[1] + (q[1] - apex[1]) * (f - 0.012); k === N / 2 - 2 ? c.moveTo(x, y) : c.lineTo(x, y); }
+        c.stroke();
       }
-      c.fillStyle = lingrad(c, apex[0] - rr, 0, apex[0] + rr, 0, [[0, 'rgba(255,240,210,0.2)'], [0.45, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.5)']]);
-      c.fillRect(apex[0] - rr - 4, apex[1], 2 * rr + 8, base.reduce((a, q) => Math.max(a, q[1]), 0) - apex[1] + 2);
-      void front;
     });
     poly(c, cone, null, 'rgba(15,8,4,0.7)', 0.7);
     if (p.finial === 'crystal') crystal(c, apex[0], apex[1] + 1, 0.9);

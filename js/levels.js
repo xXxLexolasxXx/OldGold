@@ -147,98 +147,110 @@ function upgradeBuilding(b, silent) {
 // Поверх готового спрайта: каменный цоколь, мансарда с тёплым окном на коньке крыши,
 // красно-золотой вымпел и фонарь у двери. У каждого типа своя пропорция, цвета слегка разные.
 
-function buildingSprite(type, rot = 0, level = 1) {  const lv = level >= 2 && BUILDINGS[type].up ? 2 : 1;  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot);  const d = bDims(type, rot);  const key = type + ':' + d.rot + (lv === 2 ? ':L2' : ':G');  if (SPR.buildings[key]) return SPR.buildings[key];  const base = buildingSpriteBase(type, rot, lv);
+function buildingSprite(type, rot = 0, level = 1) {
+  const lv = level >= 2 && BUILDINGS[type].up ? 2 : 1;
+  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot);
+  const d = bDims(type, rot);
+  const key = type + ':' + d.rot + (lv === 2 ? ':L2' : ':G');
+  if (SPR.buildings[key]) return SPR.buildings[key];
+  const base = buildingSpriteBase(type, rot, lv);
   const cv = mkCanvas(base.canvas.width, base.canvas.height), c = cv.getContext('2d');
   c.drawImage(base.canvas, 0, 0);
   c.imageSmoothingEnabled = false;
+  // Рисуем в пикселях готового арта (их втрое больше мировых): все детали — тем же пикселем,
+  // что и само здание, с 1-px тёмным контуром.
   const k = base.canvas.width / base.w;
-  c.scale(k, k);
   const rnd = mulberry32(hashStr(type + 'L2'));
-  c.save();
-  const roofCols = ['#8a3a28', '#5a6a8a', '#3e6a4a', '#7a5a3a'], rc = roofCols[Math.floor(rnd() * roofCols.length)];
-  const px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); };
+  const px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
   const OUT = '#1a100a';
   if (lv === 2) {
-  const P = (base.perches && base.perches[0]) || [base.padx + base.fw / 2, base.top * 0.4];
-  const mx = P[0], my = P[1] + 20;
-  if (!base.tall) {
-  // мансарда на коньке крыши
-  px(mx - 8, my - 9, 16, 11, OUT); px(mx - 7, my - 8, 14, 9, '#d8b98a'); px(mx - 7, my - 8, 14, 1, '#ecd5ac');
-  // крыша мансарды: ступенчатый треугольник
-  for (let i = 0; i < 8; i++) { px(mx - 10 + i * 1.2, my - 9 - i, 20 - i * 2.4, 2, OUT); }
-  for (let i = 0; i < 8; i++) { px(mx - 9 + i * 1.2, my - 9 - i + 1, 18 - i * 2.4, 1, i < 3 ? rc : '#b55a3c'); }
-  px(mx - 3, my - 7, 6, 7, OUT); px(mx - 2, my - 6, 4, 5, '#ffd878'); px(mx - 0.5, my - 6, 1, 5, '#5a3a1e'); px(mx - 2, my - 3.5, 4, 1, '#5a3a1e');
+    const roofCols = ['#8a3a28', '#5a6a8a', '#3e6a4a', '#7a5a3a'], rc = roofCols[Math.floor(rnd() * roofCols.length)];
+    const P = (base.perches && base.perches[0]) || [base.padx + base.fw / 2, base.top * 0.4];
+    const mx = Math.round(P[0] * k), my = Math.round(P[1] * k) + 20 * k;
+    if (!base.tall) {
+      // мансарда на коньке: белёная стенка, ступенчатая крыша, тёплое окно
+      const W = 44, H = 26;
+      px(mx - W / 2 - 1, my - H - 1, W + 2, H + 2, OUT);
+      px(mx - W / 2, my - H, W, H, '#d8b98a'); px(mx - W / 2, my - H, W, 1, '#ecd5ac');
+      px(mx - W / 2, my - 4, W, 4, '#6e4a2a');                               // нижняя балка
+      for (let i = 0; i < 14; i++) {                                         // крыша: по 1 px на ступень
+        const hw = W / 2 + 4 - i * 1.7;
+        px(mx - hw - 1, my - H - 2 - i, hw * 2 + 2, 1, OUT);
+      }
+      for (let i = 0; i < 13; i++) { const hw = W / 2 + 3 - i * 1.7; px(mx - hw, my - H - 2 - i, hw * 2, 1, i % 4 === 3 ? '#4a2a1e' : i < 6 ? rc : shade(rc, 0.18)); }
+      px(mx - 7, my - 20, 14, 15, OUT); px(mx - 6, my - 19, 12, 13, '#ffd878'); px(mx - 6, my - 19, 12, 6, '#fff0b8');
+      px(mx - 1, my - 19, 1, 13, '#5a3a1e'); px(mx - 6, my - 13, 12, 1, '#5a3a1e');
+    }
+    // вымпел на шесте
+    const FX = (base.perches && base.perches[1]) ? base.perches[1] : [P[0] + 18, P[1] + 4];
+    const fx = Math.round((Math.abs(FX[0] - P[0]) < 12 ? P[0] + 20 : FX[0]) * k), fy = Math.round(Math.min(FX[1], P[1]) * k) + 3 * k;
+    px(fx - 1, fy - 70, 4, 74, OUT); px(fx, fy - 69, 2, 72, '#6a4a2a'); px(fx, fy - 69, 1, 72, '#a07848');
+    for (let i = 0; i < 18; i++) { const w = 38 - i * 2; px(fx + 2, fy - 68 + i, w + 1, 1, OUT); }
+    for (let i = 1; i < 17; i++) { const w = 36 - i * 2; px(fx + 2, fy - 68 + i, w, 1, i > 6 && i < 10 ? '#f0c040' : i > 12 ? '#8a2020' : '#c03030'); }
+    // фонарь у двери
+    const lx = Math.round((base.doorCx + 10) * k), ly = Math.round((base.baseY - 26) * k);
+    px(lx - 3, ly - 22, 12, 26, OUT); px(lx - 2, ly - 21, 10, 3, '#3a2a1a'); px(lx - 2, ly - 18, 10, 18, '#ffd060'); px(lx - 2, ly - 18, 10, 6, '#fff0b8');
+    px(lx + 2, ly - 25, 2, 3, OUT); px(lx - 2, ly, 10, 4, '#3a2a1a');
   }
-  // вымпел на шесте
-  const FX = (base.perches && base.perches[1]) ? base.perches[1] : [mx + 18, P[1] + 4];
-  const fx = Math.abs(FX[0] - mx) < 12 ? mx + 20 : FX[0], fy = Math.min(FX[1], P[1]) + 3;
-  px(fx, fy - 22, 2, 24, OUT); px(fx, fy - 22, 1, 24, '#6a4a2a');
-  c.fillStyle = OUT; c.beginPath(); c.moveTo(fx + 1, fy - 22); c.lineTo(fx + 14, fy - 18); c.lineTo(fx + 1, fy - 13); c.fill();
-  c.fillStyle = '#c03030'; c.beginPath(); c.moveTo(fx + 2, fy - 20); c.lineTo(fx + 11, fy - 17.5); c.lineTo(fx + 2, fy - 15); c.fill();
-  px(fx + 2, fy - 20, 8, 1, '#f0c040');
-  // фонарь у двери
-  const lx = base.doorCx + 10, ly = base.baseY - 26;
-  px(lx - 1, ly - 7, 4, 9, OUT); px(lx, ly - 6, 2, 6, '#ffd060'); px(lx - 1, ly - 8, 4, 1, '#3a2a1a');
-  }
-  greenery(c, base, type, px);
+  greenery(c, base, type, px, k);
   const spr = Object.assign({}, base, { canvas: cv });
   SPR.buildings[key] = spr;
   return spr;
 }
 
 // ---------- Зелень на зданиях ----------
-// Плющ на стене, ящики с цветами под окнами, на некоторых крышах — мох и травяные кочки.
+// Плющ по стене и ящики с цветами под окнами — тем же пикселем, что и здание.
 
 const NO_GREEN = new Set(['magiccircle', 'bonfire', 'graveyard']);
 
-function greenery(c, base, type, px) {
+function greenery(c, base, type, px, k = 3) {
   const rnd = mulberry32(hashStr(type + 'green'));
   const gs = ['#2f6a2a', '#4a8a34', '#6aa844', '#8cc85a'], OUT = '#16300f';
-  const x0 = base.padx, w = base.fw, yb = base.baseY;
-  const door = base.doorCx;
-  const spotOK = x => Math.abs(x - door) > 14;
-  // плющ: свисает от карниза по стене; у склада и трактира — гуще
+  const x0 = base.padx * k, w = base.fw * k, yb = base.baseY * k;
+  const door = base.doorCx * k;
+  const spotOK = x => Math.abs(x - door) > 14 * k;
+  const leaf = (x, y, col) => { px(x, y, 3, 3, OUT); px(x, y, 2, 2, col); px(x + 1, y, 1, 1, '#8cc85a'); };
+  // плющ: стебель с листьями парами
   if (rnd() < 0.75) {
-    let vx = x0 + 6 + rnd() * (w - 20);
-    for (let t = 0; t < 8 && !spotOK(vx); t++) vx = x0 + 6 + rnd() * (w - 20);
-    const hgt = 14 + Math.floor(rnd() * 16);
+    let vx = x0 + (6 + rnd() * (base.fw - 20)) * k;
+    for (let t = 0; t < 8 && !spotOK(vx); t++) vx = x0 + (6 + rnd() * (base.fw - 20)) * k;
+    const hgt = (14 + Math.floor(rnd() * 16)) * k;
     for (let s = 0; s < 3; s++) {
-      let x = vx + s * 5 + (rnd() - 0.5) * 3;
-      const len = hgt - s * 3;
-      for (let y = 0; y < len; y++) {
-        x += (rnd() - 0.5) * 0.9;
-        px(x, yb - 8 - len + y, 1, 1, OUT);
-        if (rnd() < 0.55) { const col = gs[Math.floor(rnd() * 4)]; px(x - 1, yb - 8 - len + y, 3, 2, OUT); px(x - 0.5, yb - 8 - len + y, 2, 1.5, col); }
+      let x = vx + s * 5 * k + (rnd() - 0.5) * 3 * k;
+      const len = hgt - s * 3 * k;
+      for (let y = 0; y < len; y += 2) {
+        x += (rnd() - 0.5) * 1.6;
+        const yy = yb - 8 * k - len + y;
+        px(x, yy, 1, 2, OUT);
+        if (rnd() < 0.5) leaf(x + (rnd() < 0.5 ? -3 : 1), yy - 1, gs[1 + Math.floor(rnd() * 3)]);
       }
     }
   }
   // ящик с цветами у стены
   if (rnd() < 0.8) {
-    let fx = x0 + 6 + rnd() * (w - 26);
-    for (let t = 0; t < 8 && !spotOK(fx) && !spotOK(fx + 14); t++) fx = x0 + 6 + rnd() * (w - 26);
+    let fx = x0 + (6 + rnd() * (base.fw - 26)) * k;
+    for (let t = 0; t < 8 && !spotOK(fx) && !spotOK(fx + 14 * k); t++) fx = x0 + (6 + rnd() * (base.fw - 26)) * k;
     const cols = [['#e8423a', '#f08070'], ['#f0c840', '#fff0a0'], ['#d070e0', '#f0b0f8'], ['#ffffff', '#f0e8f0']][Math.floor(rnd() * 4)];
-    px(fx - 1, yb - 6, 16, 6, OUT); px(fx, yb - 5, 14, 4, '#7a4e2a'); px(fx, yb - 5, 14, 1, '#9a6a3a');
-    for (let i = 0; i < 6; i++) {
-      const x = fx + 1 + i * 2.3;
-      px(x, yb - 9 - (i % 2), 2, 4, '#3f7a2e');
-      px(x - 0.5, yb - 10 - (i % 2), 3, 2, OUT); px(x, yb - 10 - (i % 2), 2, 1.5, cols[i % 2]);
+    const BW = 42, BH = 12;
+    px(fx - 1, yb - BH - 1, BW + 2, BH + 2, OUT); px(fx, yb - BH, BW, BH, '#7a4e2a'); px(fx, yb - BH, BW, 2, '#9a6a3a'); px(fx, yb - BH, BW, 1, '#b88a50');
+    for (let i = 0; i < 7; i++) {
+      const x = fx + 3 + i * 6, dy = (i % 2) * 2;
+      px(x, yb - BH - 6 - dy, 2, 7 + dy, '#3f7a2e'); px(x + 2, yb - BH - 3 - dy, 2, 2, '#3f7a2e');
+      px(x - 1, yb - BH - 10 - dy, 5, 5, OUT); px(x, yb - BH - 9 - dy, 3, 3, cols[0]); px(x, yb - BH - 9 - dy, 1, 1, cols[1]);
     }
   }
   // виноградная лоза по шпалере у входа
   if (rnd() < 0.3) {
-    const gx = door + (rnd() < 0.5 ? -26 : 20);
-    for (let i = 0; i < 14; i++) { const gy = yb - 10 - i * 1.4; px(gx + Math.sin(i * 0.9) * 3, gy, 1, 1, '#4a3418'); if (i % 2) { px(gx + Math.sin(i * 0.9) * 3 - 1, gy, 3, 2, gs[1 + (i % 3)]); } }
-    for (let i = 0; i < 3; i++) { px(gx + 2 + i * 2, yb - 18 + (i % 2), 2, 2, '#6a2a7a'); }
-  }
-  // мох и дерн на крыше: у каждого третьего дома
-  if (rnd() < 0.33 && base.perches && base.perches.length) {
-    for (const P of base.perches.slice(0, 2)) for (let i = 0; i < 7; i++) {
-      const x = P[0] + (rnd() - 0.5) * 22, y = P[1] + 5 + rnd() * 8, sz = 2 + Math.floor(rnd() * 3);
-      px(x - 1, y - 1, sz + 2, 3, OUT); px(x, y - 0.5, sz, 2, gs[Math.floor(rnd() * 4)]);
-      if (rnd() < 0.3) px(x + 1, y - 2, 1, 1, '#f8e060');
+    const gx = door + (rnd() < 0.5 ? -26 : 20) * k;
+    for (let i = 0; i < 40; i++) {
+      const gy = yb - 10 * k - i * 1.4, x = gx + Math.sin(i * 0.3) * 9;
+      px(x, gy, 1, 2, '#4a3418');
+      if (i % 3 === 0) leaf(x + (i % 6 ? 1 : -3), gy - 1, gs[1 + (i % 3)]);
     }
+    for (let i = 0; i < 3; i++) { px(gx + 4 + i * 6, yb - 18 * k + (i % 2) * 3, 4, 4, OUT); px(gx + 5 + i * 6, yb - 18 * k + 1 + (i % 2) * 3, 2, 2, '#6a2a7a'); }
   }
 }
+
 
 // ---------- Настоящий второй этаж ----------
 // Главный корпус здания поднимается на этаж выше, на новых стенах — ряд освещённых окон;
