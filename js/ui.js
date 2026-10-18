@@ -167,6 +167,40 @@ function makeUITextures() {
     }
   });
   document.documentElement.style.setProperty('--plank-tex', `url(${pl.toDataURL()})`);
+
+  // Кожа для верхней строки: пиксельная выделка, морщины, поры; по кромке — медные заклёпки
+  const LW = 96, LH = 96;
+  const lc = mkCanvas(LW, LH), l = lc.getContext('2d');
+  const lq = mulberry32(47);
+  const LB = [122, 78, 44], LR = [0.55, 0.7, 0.84, 0.96, 1.08, 1.2];
+  const lcol = (f) => `rgb(${Math.min(255, LB[0] * f) | 0},${Math.min(255, LB[1] * f) | 0},${Math.min(255, LB[2] * f) | 0})`;
+  for (let y = 0; y < LH; y++) for (let x = 0; x < LW; x++) {
+    // низкочастотная «выделка» + зерно; ячейки 1–2 px
+    const w = Math.sin(x * 0.11 + Math.sin(y * 0.07) * 2) * 0.5 + Math.sin(y * 0.13 + x * 0.03) * 0.5;
+    const t = lq() * 0.9 + w * 0.25;
+    l.fillStyle = lcol(LR[t < 0.18 ? 1 : t < 0.5 ? 2 : t < 0.85 ? 3 : t < 1.1 ? 4 : 5]);
+    l.fillRect(x, y, 1, 1);
+  }
+  for (let k = 0; k < 14; k++) {   // морщины: короткие изогнутые тёмные штрихи со светлой кромкой
+    let cx = (lq() * LW) | 0, cy = (lq() * LH) | 0; const dir = lq() * 6.28, len = 8 + ((lq() * 20) | 0), bend = (lq() - 0.5) * 0.25;
+    for (let i = 0, a = dir; i < len; i++, a += bend) {
+      cx += Math.cos(a); cy += Math.sin(a);
+      l.fillStyle = lcol(LR[0] * 0.9); l.fillRect(((cx | 0) + LW) % LW, ((cy | 0) + LH) % LH, 1, 1);
+      if (i % 2) { l.fillStyle = lcol(LR[5]); l.fillRect(((cx | 0) + LW) % LW, (((cy | 0) + 1) + LH) % LH, 1, 1); }
+    }
+  }
+  for (let k = 0; k < 90; k++) { l.fillStyle = lcol(LR[0] * 0.8); l.fillRect((lq() * LW) | 0, (lq() * LH) | 0, 1, 1); }   // поры
+  document.documentElement.style.setProperty('--leather-tex', `url(${lc.toDataURL()})`);
+  // заклёпка 10×10 с блеском и тенью; горизонтальный и вертикальный ряды
+  const rv = mkCanvas(10, 10), r2 = rv.getContext('2d');
+  const rp = (x, y, c, w = 1, h = 1) => { r2.fillStyle = c; r2.fillRect(x, y, w, h); };
+  rp(3, 3, 'rgba(0,0,0,0.5)', 5, 5);                   // тень под шляпкой
+  rp(3, 2, '#5a3608', 4, 1); rp(2, 3, '#5a3608', 1, 4); rp(7, 3, '#5a3608', 1, 4); rp(3, 7, '#5a3608', 4, 1);   // ободок
+  rp(3, 3, '#c8902a', 4, 4); rp(3, 3, '#f4d060', 2, 2); rp(3, 3, '#fff2b8', 1, 1); rp(6, 6, '#8a5a14', 1, 1); rp(5, 6, '#a87018', 1, 1); rp(6, 5, '#a87018', 1, 1);
+  const rvUrl = `url(${rv.toDataURL()})`;
+  document.documentElement.style.setProperty('--leather',
+    `${rvUrl} repeat-x left 3px top 0, ${rvUrl} repeat-x left 3px bottom 0, ${rvUrl} repeat-y left 0 top 3px, ${rvUrl} repeat-y right 0 top 3px, ` +
+    `linear-gradient(rgba(255,220,160,0.06), rgba(0,0,0,0.22)), var(--leather-tex), #5a3a20`);
 }
 
 function setTool(tool) {
