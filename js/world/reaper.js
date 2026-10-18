@@ -99,11 +99,11 @@ function paintGhostHood(c, tip, sn) {
 function paintGhostPaw(c, hx, hy, ang, len0, boo) {
   c.save(); c.translate(hx, hy); c.rotate(ang);
   c.fillStyle = 'rgba(190,240,230,0.2)'; c.strokeStyle = 'rgba(235,255,250,0.85)'; c.lineWidth = 0.7;
-  c.beginPath(); c.ellipse(1.8, 0, 4.2, 3.4, 0, 0, 7); c.fill(); c.stroke();
+  c.beginPath(); c.ellipse(1.1, 0, 2.4, 1.9, 0, 0, 7); c.fill(); c.stroke();
   for (let j = -1.5; j <= 1.5; j++) {
-    const a2 = j * 0.36 + (boo ? j * 0.12 : 0), len = len0 - Math.abs(j) * 0.9, bx = 4.4, by = j * 1.7, tx = bx + Math.cos(a2) * len, ty = by + Math.sin(a2) * len + 1.3;
+    const a2 = j * 0.36 + (boo ? j * 0.12 : 0), len = len0 - Math.abs(j) * 1.1, bx = 2.6, by = j * 1.0, tx = bx + Math.cos(a2) * len, ty = by + Math.sin(a2) * len + 1.3;
     c.fillStyle = 'rgba(244,255,251,0.95)';
-    c.beginPath(); c.moveTo(bx, by - 0.85); c.quadraticCurveTo((bx + tx) / 2, (by + ty) / 2 - 1.1, tx, ty); c.quadraticCurveTo((bx + tx) / 2 - 0.3, (by + ty) / 2 + 0.9, bx, by + 0.85); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(bx, by - 0.5); c.quadraticCurveTo((bx + tx) / 2, (by + ty) / 2 - 0.9, tx, ty); c.quadraticCurveTo((bx + tx) / 2 - 0.2, (by + ty) / 2 + 0.6, bx, by + 0.5); c.closePath(); c.fill();
   }
   c.restore();
 }
@@ -160,16 +160,19 @@ function paintReaper(c, p, mood, k) {
     const x = L[i][0] + (rnd() * 1.6 - 0.3) * (R[i][0] - L[i][0]) + sn(1, n) * 1.5, z = 0.5 + rnd() * 1;
     c.fillStyle = `rgba(150,${200 + rnd() * 40 | 0},225,${(0.5 - (t - 0.35) * 0.35) * (0.4 + rnd() * 0.6)})`; c.fillRect(x, y, z, z);
   }
-  // коса: древко в бестелесной лапе; взмах — замах назад, бросок вперёд-вниз, отдача
+  // коса Смерти: длинное чёрное древко с набалдашником, на верхушке — оковка и длинное тонкое лезвие-серп, загнутое вниз; кромка с внутренней стороны
   const gx = 6 + lean * 0.5, gy = 2 + sn(1, 1) * 0.8;
   const th = atk ? (-1.15 * wind + (1.15 + 1.2) * strike) * (1 - recoil) + 0.2 * recoil : 0.12 + sn(1, 0.5) * 0.05;
   c.save(); c.translate(gx, gy); c.rotate(th);
-  c.strokeStyle = '#0c0f10'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(0, 22); c.lineTo(0, -26); c.stroke();
-  c.strokeStyle = '#6a5f52'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(0, 22); c.lineTo(0, -26); c.stroke();
-  // лезвие: бледный полумесяц с зазубринами и холодным блеском
-  const bl = c.createLinearGradient(0, -28, 17, -22); bl.addColorStop(0, '#f2fbff'); bl.addColorStop(1, '#6f94a6');
-  c.fillStyle = bl; c.beginPath(); c.moveTo(0, -27); c.quadraticCurveTo(12, -34, 21, -20); c.quadraticCurveTo(12, -27, 1.6, -22.5); c.closePath(); c.fill();
-  c.strokeStyle = 'rgba(210,245,255,0.9)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(0, -27); c.quadraticCurveTo(12, -34, 21, -20); c.stroke();
+  c.strokeStyle = '#050607'; c.lineWidth = 2.8; c.beginPath(); c.moveTo(0, 25); c.lineTo(0, -27); c.stroke();
+  c.strokeStyle = '#8a7a66'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, 25); c.quadraticCurveTo(-0.6, 0, 0, -27); c.stroke();
+  c.fillStyle = '#1b1b1d'; c.beginPath(); c.arc(0, 25.5, 1.6, 0, 7); c.fill();                     // набалдашник
+  c.fillStyle = '#23262a'; c.fillRect(-1.9, -28.5, 3.8, 3.4);                                           // оковка
+  // лезвие: узкий серп, спинка тёмная, режущая кромка светлая
+  c.fillStyle = '#141a1e'; c.beginPath(); c.moveTo(-1, -27.5); c.quadraticCurveTo(13, -36.5, 23.5, -20.5); c.lineTo(24.4, -14.5); c.quadraticCurveTo(21.8, -22, 14, -26.5); c.quadraticCurveTo(7, -29, 1.5, -25.5); c.closePath(); c.fill();
+  const bl = c.createLinearGradient(2, -26, 24, -15); bl.addColorStop(0, '#9fb6c0'); bl.addColorStop(0.6, '#e6f4fa'); bl.addColorStop(1, '#ffffff');
+  c.strokeStyle = bl; c.lineWidth = 1; c.beginPath(); c.moveTo(1.5, -25.6); c.quadraticCurveTo(7, -29, 14, -26.5); c.quadraticCurveTo(21.8, -22, 24.4, -14.5); c.stroke();
+  c.fillStyle = 'rgba(190,230,245,0.35)'; c.beginPath(); c.moveTo(14, -26.5); c.quadraticCurveTo(21.8, -22, 24.4, -14.5); c.lineTo(23, -19); c.closePath(); c.fill();
   c.restore();
   // руки: тонкие контуры из дымки, одна на косе, вторая тянется следом
   const hands = [[gx, gy], [gx - 7 - (atk ? 2 * strike : 0), gy + 10 + sn(1, 2) * 1.2]];
@@ -178,19 +181,25 @@ function paintReaper(c, p, mood, k) {
     const ag = c.createLinearGradient(sx, sy, hx, hy); ag.addColorStop(0, 'rgba(120,180,200,0.45)'); ag.addColorStop(0.5, 'rgba(120,190,205,0.08)'); ag.addColorStop(1, 'rgba(225,255,248,0.6)');
     c.strokeStyle = ag; c.lineWidth = 0.7;
     for (const o of [-1.2, 1.2]) { c.beginPath(); c.moveTo(sx, sy + o); c.quadraticCurveTo(mx, my + o * 1.4, hx, hy + o * 0.5); c.stroke(); }
-    paintGhostPaw(c, hx, hy, Math.atan2(hy - my, hx - mx) + (idx ? 0.2 : 0.5), 7.6 + (atk ? strike * 2 : 0), boo);
+    paintGhostPaw(c, hx, hy, Math.atan2(hy - my, hx - mx) + (idx ? 0.2 : 0.5), 10.5 + (atk ? strike * 2.6 : 0), boo);
   });
-  // голова: глубокий капюшон, внутри — пустота и две тлеющие точки
+  // голова: капюшон Смерти — просторный, ниспадающий складками, без рогов; в глубине тени проглядывает череп
   c.save(); c.translate(lean * 0.7, atk ? 1.5 * strike - wind : 0);
-  const tip = sn(1, 0.6) * 2.4 + lean * 0.4;
-  const hood = c.createLinearGradient(0, -31, 0, 4); hood.addColorStop(0, '#2c4a50'); hood.addColorStop(0.5, '#101e22'); hood.addColorStop(1, '#070f12');
-  c.fillStyle = hood; c.beginPath(); c.moveTo(-9.8, 5);
-  c.quadraticCurveTo(-12, -9, -5.6, -19); c.quadraticCurveTo(-0.6 + tip * 0.3, -26, 4 + tip * 0.6, -33);
-  c.quadraticCurveTo(12.5 + tip, -33, 11.5 + tip, -24.5); c.quadraticCurveTo(9 + tip * 0.6, -26.5, 6.4, -22);
-  c.quadraticCurveTo(12, -10, 9.8, 5); c.quadraticCurveTo(0, 8, -9.8, 5); c.closePath(); c.fill();
-  c.strokeStyle = 'rgba(160,230,235,0.55)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-9.8, 5); c.quadraticCurveTo(-12, -9, -5.6, -19); c.quadraticCurveTo(-0.6 + tip * 0.3, -26, 4 + tip * 0.6, -33); c.stroke();
+  const tip = sn(1, 0.6) * 1.2 + lean * 0.3;
+  const hood = c.createLinearGradient(0, -27, 0, 6); hood.addColorStop(0, '#1b2a2e'); hood.addColorStop(0.5, '#0a1114'); hood.addColorStop(1, '#030607');
+  c.fillStyle = hood; c.beginPath(); c.moveTo(-11, 6);
+  c.quadraticCurveTo(-14.5, -6, -8, -19); c.quadraticCurveTo(-2, -28, 5 + tip, -23.5); c.quadraticCurveTo(7.5 + tip, -21, 7 + tip * 0.6, -18);
+  c.quadraticCurveTo(14, -10, 11.5, 6); c.quadraticCurveTo(0, 10, -11, 6); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,0.7)'; c.lineWidth = 0.9;
+  for (const [x0, x1] of [[-9.5, -11.8], [9, 12]]) { c.beginPath(); c.moveTo(x0, -10); c.quadraticCurveTo(x0 + (x1 - x0) * 0.4, -2, x1, 5); c.stroke(); }     // складки
+  c.strokeStyle = 'rgba(150,215,225,0.5)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-11, 5); c.quadraticCurveTo(-14.5, -6, -8, -19); c.quadraticCurveTo(-2, -28, 5 + tip, -23.5); c.stroke();
   // чёрный провал лица
-  c.fillStyle = '#000'; c.beginPath(); c.ellipse(0.5, -3, 6.4, 8.6, 0, 0, 7); c.fill();
+  c.fillStyle = '#000'; c.beginPath(); c.ellipse(0.5, -2.4, 6.6, 8.8, 0, 0, 7); c.fill();
+  // череп в глубине капюшона: тусклая кость, провалы глазниц, ряд зубов
+  c.fillStyle = 'rgba(205,222,214,0.30)'; c.beginPath(); c.ellipse(0.5, -2.6, 4.6, 5.6, 0, 0, 7); c.fill();
+  c.fillStyle = 'rgba(205,222,214,0.22)'; c.fillRect(-2.6, 3.2, 6.2, 2.6);
+  c.strokeStyle = 'rgba(0,0,0,0.7)'; c.lineWidth = 0.5; for (let q = -2; q <= 3; q++) { c.beginPath(); c.moveTo(q + 0.5, 3.2); c.lineTo(q + 0.5, 5.8); c.stroke(); }
+  c.fillStyle = 'rgba(0,0,0,0.85)'; c.beginPath(); c.moveTo(0.5, -0.4); c.lineTo(-0.3, 1.8); c.lineTo(1.3, 1.8); c.closePath(); c.fill();
   const eyeCol = boo ? '#ff3a1c' : '#6fe0b4', gz = sn(1, 0.4) * 0.6;
   for (const e of [-1, 1]) {
     const ex = e * 3 + gz + 0.5, ey = -3.6;
@@ -199,11 +208,6 @@ function paintReaper(c, p, mood, k) {
     c.fillStyle = eyeCol; c.beginPath(); c.moveTo(ex - 1.8 * e, ey - 0.6); c.lineTo(ex + 2.0 * e, ey - 1.6); c.lineTo(ex + 1.2 * e, ey + 1.2); c.closePath(); c.fill();
     c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey - 0.1, 0.5, 0, 7); c.fill();
   }
-  // тонкая светящаяся щель-рот: при ударе раскрыта
-  if (atk) { c.fillStyle = 'rgba(255,90,60,0.85)'; c.beginPath(); c.ellipse(0.5, 3.4, 2.4, 0.7 + 2.4 * Math.max(wind * 0.5, strike), 0, 0, 7); c.fill(); }
-  else { c.strokeStyle = 'rgba(150,255,200,0.5)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(-2.4, 3.6); c.quadraticCurveTo(0.5, 4.4, 3.4, 3.6); c.stroke(); }
-  // рваная кромка капюшона над лицом и костяные рога
-  c.fillStyle = '#dbe9e1';
-  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 7.6, -9); c.quadraticCurveTo(s * 13, -11 + sn(1, s) * 0.6, s * 14.2, -20); c.quadraticCurveTo(s * 10.4, -13.4, s * 5.6, -11.4); c.closePath(); c.fill(); }
+  if (atk) { c.fillStyle = 'rgba(255,90,60,0.7)'; c.beginPath(); c.ellipse(0.5, 4.4, 2.6, 0.7 + 2.2 * Math.max(wind * 0.5, strike), 0, 0, 7); c.fill(); }
   c.restore();
 }
