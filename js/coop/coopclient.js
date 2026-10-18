@@ -739,7 +739,7 @@ function coopPlayCopy() {
         const b = document.createElement('button');
         b.className = 'sm-btn'; b.dataset.smCoop = '1';
         b.innerHTML = `<b>Копия общего мира</b><small>${Math.floor(meta.time / 60)} мин · ${meta.people} жит. · на случай, когда сервер выключен</small>`;
-        main.querySelector('[data-sm="mp"]').insertAdjacentElement('afterend', b);
+        smSubAdd(b);
         b.addEventListener('click', () => smClose(() => coopPlayCopy()));
       }
     }
@@ -981,8 +981,7 @@ function coopHint() {
       const b = document.createElement('button');
       b.className = 'sm-btn primary'; b.dataset.smJoin = '1';
       b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${j.online}${saved ? ' · войти как ' + saved.nick : ' · вход и регистрация'}</small>`;
-      main.prepend(b);
-      const old = main.querySelector('[data-sm="mp"]'); if (old) old.style.display = 'none';
+      smSubAdd(b, true);
       b.addEventListener('click', () => {
         const sv = coopSaved();
         if (!sv || !sv.token) { smRender(); smShow('mp'); return; }

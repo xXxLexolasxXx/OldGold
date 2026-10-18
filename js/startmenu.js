@@ -296,7 +296,7 @@ function smPixelVine(svgStr) {
 function decorateVines() {
   const btns = document.querySelectorAll('#start-menu .sm-panel:not(.hidden) .sm-btn');
   // нечётная последняя кнопка (скрытые не считаем) занимает весь ряд
-  const vis = [...btns].filter(b => b.offsetWidth);
+  const vis = [...btns].filter(b => b.offsetWidth && !b.closest('.sm-sub'));
   vis.forEach(b => b.classList.remove('sm-wide'));
   if (vis.length % 2) vis[vis.length - 1].classList.add('sm-wide');
   btns.forEach((b, i) => {
@@ -425,7 +425,7 @@ function smGrow(btn, kind) {
     if (!b || b.disabled) return;
     if (smPicking) { e.stopImmediatePropagation(); return; }
     if (!b.querySelector('.sm-grow')) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
-    if (b.dataset.sm === 'back') return;
+    if (b.dataset.sm === 'back' || b.dataset.sm === 'mp') return;
     // действие после роста: перехватываем клик и пускаем заново
     e.stopImmediatePropagation();
     smPicking = true;
@@ -441,4 +441,65 @@ function smGrow(btn, kind) {
     const g = btn.querySelector('.sm-grow');
     if (g) setTimeout(() => { if (!btn.classList.contains('sm-picked') && g.parentNode) g.remove(); }, 1500);
   };
+}
+
+// ---------- «Мультиплеер» — выпадающий список: общая деревня, копия общего мира, свой сервер ----------
+// Кнопка раскрывает плашку над собой; остальные кнопки меню остаются короткими.
+
+function smSub() {
+  const main = document.querySelector('#start-menu [data-panel="main"]');
+  if (!main) return null;
+  let sub = main.querySelector('.sm-sub');
+  if (!sub) {
+    sub = document.createElement('div');
+    sub.className = 'sm-sub hidden';
+    sub.innerHTML = '<button class="sm-btn ghost" data-sm="mpown"><b>Свой сервер</b><small>ник и адрес друга</small></button>';
+    main.appendChild(sub);
+  }
+  return sub;
+}
+// кнопки кооператива (общая деревня, копия мира) складываются в список; первой — главная
+function smSubAdd(btn, first) {
+  const sub = smSub();
+  if (!sub) return;
+  btn.classList.remove('primary');
+  if (first) sub.prepend(btn); else sub.insertBefore(btn, sub.querySelector('[data-sm="mpown"]'));
+  const mp = document.querySelector('#start-menu [data-sm="mp"] small');
+  if (mp && !mp.dataset.sub) { mp.dataset.sub = '1'; mp.textContent = 'общая деревня, друзья ▾'; }
+}
+function smSubToggle(open) {
+  const sub = smSub(), mp = document.querySelector('#start-menu [data-sm="mp"]');
+  if (!sub || !mp) return;
+  const show = open === undefined ? sub.classList.contains('hidden') : open;
+  sub.classList.toggle('hidden', !show);
+  if (show) {
+    const r = mp.getBoundingClientRect(), root = document.getElementById('start-menu').getBoundingClientRect(), w = Math.max(r.width, 220);
+    sub.style.width = w + 'px';
+    sub.style.left = Math.max(8, Math.min(root.width - w - 8, r.left - root.left)) + 'px';
+    sub.style.bottom = (root.bottom - r.top + 8) + 'px';
+    requestAnimationFrame(decorateVines);
+  }
+}
+{
+  const _act = smAction;
+  smAction = function (a) {
+    if (a === 'mp') {
+      const sub = smSub();
+      // в списке только «Свой сервер» — раскрывать нечего, сразу открываем
+      if (sub && sub.children.length > 1) { smSubToggle(); return; }
+      _act('mp'); return;
+    }
+    if (a === 'mpown') { smSubToggle(false); _act('mp'); return; }
+    smSubToggle(false);
+    _act(a);
+  };
+  // нажатие в списке (кроме «Свой сервер») закрывает его; тап мимо — тоже
+  document.addEventListener('click', e => {
+    const sub = document.querySelector('#start-menu .sm-sub');
+    if (!sub || sub.classList.contains('hidden')) return;
+    if (e.target.closest('.sm-sub')) { if (!e.target.closest('[data-sm="mpown"]')) setTimeout(() => smSubToggle(false), 0); return; }
+    if (!e.target.closest('[data-sm="mp"]')) smSubToggle(false);
+  });
+  const _init = initStartMenu;
+  initStartMenu = function () { _init(); smSub(); const mp = document.querySelector('#start-menu [data-sm="mp"] small'); if (mp) mp.textContent = 'играть с друзьями'; };
 }
