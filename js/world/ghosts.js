@@ -140,7 +140,7 @@ function ghostLights(L, x0, y0, x1, y1) {
 // костлявые когти, борода как мокрый туман. 9 кадров плавания (петля) и 8 кадров удара когтями.
 // Кадры рисуются один раз в offscreen-холсты (в 2× для чёткости), в игре только blit.
 
-const GHOST_FRAMES = 9, GHOST_ATK_FRAMES = 8, GHOST_ATK_DUR = 0.9, GHOST_SS = 2, GHOST_W = 60, GHOST_H = 76, GHOST_OX = 30, GHOST_OY = 32;
+const GHOST_FRAMES = 9, GHOST_ATK_FRAMES = 8, GHOST_ATK_DUR = 0.9, GHOST_SS = 3, GHOST_W = 60, GHOST_H = 76, GHOST_OX = 30, GHOST_OY = 32;
 const GHOST_CACHE = {};
 
 function ghostSprite(mood, i) {
@@ -258,16 +258,7 @@ function paintGhost(c, p, mood, k) {
     for (const o of [-1.1, 1.1]) { c.beginPath(); c.moveTo(shx, shy + o); c.quadraticCurveTo(mx, my + o * 1.4, hx, hy + o * 0.6); c.stroke(); }
     // огромная лапа: полупрозрачная ладонь с контуром и длинными изогнутыми когтями
     const ang = Math.atan2(hy - my, hx - mx), pk = gp ? 1 - 0.3 * gp.k : 1;
-    c.save(); c.translate(hx, hy); c.rotate(ang);
-    c.fillStyle = 'rgba(190,240,230,0.2)'; c.strokeStyle = 'rgba(235,255,250,0.85)'; c.lineWidth = 0.7;
-    c.beginPath(); c.ellipse(1.1, 0, 2.4 * pk, 1.9 * pk, 0, 0, 7); c.fill(); c.stroke();
-    for (let j = -1.5; j <= 1.5; j++) {
-      const a2 = j * 0.36 + (boo ? j * 0.12 : 0), len = (11.5 - Math.abs(j) * 1.1 + (atk ? strike * 3 : 0)) * pk;
-      const bx = 2.6 * pk, by = j * 1.0 * pk, tx = bx + Math.cos(a2) * len, ty = by + Math.sin(a2) * len + 1.3;   // коготь загнут к земле
-      c.fillStyle = 'rgba(244,255,251,0.95)';
-      c.beginPath(); c.moveTo(bx, by - 0.5); c.quadraticCurveTo((bx + tx) / 2, (by + ty) / 2 - 0.9, tx, ty); c.quadraticCurveTo((bx + tx) / 2 - 0.2, (by + ty) / 2 + 0.6, bx, by + 0.5); c.closePath(); c.fill();
-    }
-    c.restore();
+    paintGhostPaw(c, hx, hy, ang, 11.5 + (atk ? strike * 3 : 0), boo, pk);
   }
   // голова с колпаком
   c.save(); c.translate(lean * 0.7, atk ? 1.5 * strike - wind : 0);
@@ -330,7 +321,7 @@ function drawGhosts(c) {
     c.translate(px, py); c.scale(g.face, 1);
     c.globalAlpha = A;
     c.imageSmoothingEnabled = true;
-    if (rp) c.drawImage(reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
+    if (rp) c.drawImage(reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES, g.var || 0), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
     else c.drawImage(ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
     if (grab && g.vsnap) { c.imageSmoothingEnabled = false; ghDrawVictim(c, g, Math.min(8, gi), g.alpha, px, py); }
     c.restore();

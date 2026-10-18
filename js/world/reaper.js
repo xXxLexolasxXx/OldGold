@@ -10,6 +10,7 @@
 const REAPER_AURA = 7, REAPER_LANTERN = 4.5, REAPER_REACH = 3.2;
 const REAPER_FRAMES = 9, REAPER_ATK_FRAMES = 8, REAPER_SC = 1.35;     // во столько раз крупнее призрака
 const REAPER_CACHE = {};
+const REAPER_HORNS = 3;       // три формы рогов: завитые бараньи, высокие бычьи с зазубринами, корона из шипов
 
 function reapersWanted() {
   if (nightIndex() < 2) return 0;
@@ -36,7 +37,7 @@ function reapersSpawn() {
       if (Math.hypot(x - cx, y - cy) > 16) break;
     }
     gs.push({ kind: 'reaper', x, y, hx: x, hy: y, alpha: 0, ph: Math.random() * 9, face: 1, rev: false, appear: 0.95, fromGy: true,
-      mode: 'drift', modeT: 0, tx: x, ty: y, retarget: 0, scan: 1 + Math.random(), sweepCD: 0 });
+      mode: 'drift', modeT: 0, tx: x, ty: y, retarget: 0, scan: 1 + Math.random(), sweepCD: 0, var: Math.floor(Math.random() * REAPER_HORNS) });
     have++;
   }
   logEvent('night', 'Из тумана на окраине потянуло могильным холодом: вышел жнец');
@@ -96,20 +97,94 @@ function paintGhostHood(c, tip, sn) {
 }
 
 // Бестелесная лапа с большими когтями (как у призрака, но крупнее)
-function paintGhostPaw(c, hx, hy, ang, len0, boo) {
-  c.save(); c.translate(hx, hy); c.rotate(ang);
-  c.fillStyle = 'rgba(190,240,230,0.2)'; c.strokeStyle = 'rgba(235,255,250,0.85)'; c.lineWidth = 0.7;
-  c.beginPath(); c.ellipse(1.1, 0, 2.4, 1.9, 0, 0, 7); c.fill(); c.stroke();
-  for (let j = -1.5; j <= 1.5; j++) {
-    const a2 = j * 0.36 + (boo ? j * 0.12 : 0), len = len0 - Math.abs(j) * 1.1, bx = 2.6, by = j * 1.0, tx = bx + Math.cos(a2) * len, ty = by + Math.sin(a2) * len + 1.3;
-    c.fillStyle = 'rgba(244,255,251,0.95)';
-    c.beginPath(); c.moveTo(bx, by - 0.5); c.quadraticCurveTo((bx + tx) / 2, (by + ty) / 2 - 0.9, tx, ty); c.quadraticCurveTo((bx + tx) / 2 - 0.2, (by + ty) / 2 + 0.6, bx, by + 0.5); c.closePath(); c.fill();
+function paintGhostPaw(c, hx, hy, ang, len0, boo, pk = 1) {
+  // Костлявая бестелесная лапа: малая ладонь с сухожилиями, пальцы из двух фаланг с суставами, на концах — когти-серпы
+  c.save(); c.translate(hx, hy); c.rotate(ang); c.scale(pk, pk);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.fillStyle = 'rgba(185,238,228,0.2)'; c.strokeStyle = 'rgba(235,255,250,0.8)'; c.lineWidth = 0.6;
+  c.beginPath(); c.ellipse(0.9, 0, 2.3, 1.9, 0, 0, 7); c.fill(); c.stroke();
+  c.strokeStyle = 'rgba(235,255,250,0.35)'; c.lineWidth = 0.4;                                    // сухожилия на тыле кисти
+  for (let t = -1; t <= 1; t++) { c.beginPath(); c.moveTo(-1.3, t * 0.5); c.lineTo(2.3, t * 0.95); c.stroke(); }
+  const fingers = [[-1.5, 0.85], [-0.5, 1], [0.5, 1], [1.5, 0.9], [-2.7, 0.55]];                     // [разворот, длина]; последний — большой палец
+  for (const [j, fl] of fingers) {
+    const thumb = j < -2;
+    const a0 = (thumb ? -0.95 : j * 0.36) + (boo ? j * 0.1 : 0), curl = (boo ? 0.62 : 0.46);
+    const x0 = 2.5, y0 = thumb ? -1.3 : j * 0.85;
+    const l1 = 2.5 * fl, l2 = 2.2 * fl;
+    const x1 = x0 + Math.cos(a0) * l1, y1 = y0 + Math.sin(a0) * l1, a1 = a0 + curl * 0.55;
+    const x2 = x1 + Math.cos(a1) * l2, y2 = y1 + Math.sin(a1) * l2, a2 = a1 + curl;
+    // плоть-дымка и кость пальца
+    c.strokeStyle = 'rgba(160,235,215,0.16)'; c.lineWidth = 1.7;
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    c.strokeStyle = 'rgba(232,255,248,0.9)'; c.lineWidth = 0.65;
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    // суставы: узелки на сгибах
+    c.fillStyle = 'rgba(30,70,70,0.7)'; c.strokeStyle = 'rgba(240,255,250,0.95)'; c.lineWidth = 0.4;
+    for (const [jx, jy, jr] of [[x0, y0, 0.62], [x1, y1, 0.55], [x2, y2, 0.45]]) { c.beginPath(); c.arc(jx, jy, jr, 0, 7); c.fill(); c.stroke(); }
+    // коготь-серп: сильно изогнутый полумесяц, сужающийся в иглу, с бликом по выпуклой кромке
+    const cl = len0 * (thumb ? 0.5 : 0.62) * (0.8 + fl * 0.2), sweep = 2.0 + (boo ? 0.25 : 0), r = cl / sweep, th0 = a2 - Math.PI / 2;
+    const cx = x2 - r * Math.cos(th0), cy = y2 - r * Math.sin(th0), M = 9;
+    c.fillStyle = 'rgba(247,255,252,0.97)'; c.beginPath();
+    for (let m = 0; m <= M; m++) { const t = m / M, th = th0 + t * sweep, rr = r + 0.62 * Math.pow(1 - t, 0.7); c[m ? 'lineTo' : 'moveTo'](cx + Math.cos(th) * rr, cy + Math.sin(th) * rr); }
+    for (let m = M; m >= 0; m--) { const t = m / M, th = th0 + t * sweep, rr = r - 0.62 * Math.pow(1 - t, 0.7); c.lineTo(cx + Math.cos(th) * rr, cy + Math.sin(th) * rr); }
+    c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(40,90,95,0.55)'; c.lineWidth = 0.3; c.beginPath();
+    for (let m = 1; m <= M - 1; m++) { const t = m / M, th = th0 + t * sweep; c[m > 1 ? 'lineTo' : 'moveTo'](cx + Math.cos(th) * (r - 0.15), cy + Math.sin(th) * (r - 0.15)); }
+    c.stroke();
   }
   c.restore();
 }
 
-function reaperSprite(mood, i) {
-  const key = mood + i;
+
+// Демонический рог: изогнутый конус с рёбрами, чёрно-багровый у основания, раскалённый к кончику.
+// pts — три точки кривой [основание, изгиб, кончик], w — толщина у основания; s = ±1 — сторона
+function reaperHorn(c, pts, w, s, boo) {
+  const N = 14, P = [], W = [];
+  for (let n = 0; n <= N; n++) {
+    const t = n / N, u = 1 - t;
+    P.push([pts[0][0] * u * u + 2 * pts[1][0] * u * t + pts[2][0] * t * t, pts[0][1] * u * u + 2 * pts[1][1] * u * t + pts[2][1] * t * t]);
+    W.push(w * Math.pow(u, 0.85) + 0.15);
+  }
+  const edge = (side) => P.map((q, n) => {
+    const a = P[Math.max(0, n - 1)], b = P[Math.min(N, n + 1)], dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1;
+    return [q[0] - dy / d * W[n] * side, q[1] + dx / d * W[n] * side];
+  });
+  const L = edge(1), R = edge(-1);
+  const gr = c.createLinearGradient(pts[0][0], pts[0][1], pts[2][0], pts[2][1]);
+  gr.addColorStop(0, '#120808'); gr.addColorStop(0.55, '#4a1a12'); gr.addColorStop(0.9, boo ? '#ff5a2a' : '#d9733a'); gr.addColorStop(1, '#ffd9a0');
+  c.fillStyle = gr; c.beginPath(); c.moveTo(L[0][0], L[0][1]);
+  for (const q of L) c.lineTo(q[0], q[1]);
+  for (let n = N; n >= 0; n--) c.lineTo(R[n][0], R[n][1]);
+  c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 0.5;                                          // поперечные рёбра
+  for (let n = 2; n < N - 2; n += 3) { c.beginPath(); c.moveTo(L[n][0], L[n][1]); c.lineTo(R[n][0], R[n][1]); c.stroke(); }
+  c.strokeStyle = 'rgba(255,170,110,0.55)'; c.lineWidth = 0.45; c.beginPath();                    // блик по выпуклой стороне
+  for (let n = 1; n < N; n++) c[n > 1 ? 'lineTo' : 'moveTo'](L[n][0], L[n][1]);
+  c.stroke();
+  const g = c.createRadialGradient(P[N][0], P[N][1], 0, P[N][0], P[N][1], 3); g.addColorStop(0, boo ? 'rgba(255,90,50,0.7)' : 'rgba(255,170,90,0.55)'); g.addColorStop(1, 'rgba(255,120,60,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(P[N][0], P[N][1], 3, 0, 7); c.fill();
+}
+
+function reaperHorns(c, v, sn, boo) {
+  const sw = sn(1, 0.7) * 0.5;
+  for (const s of [-1, 1]) {
+    if (v === 1) {            // высокие бычьи: вверх и чуть внутрь, вторая зазубрина на сгибе
+      reaperHorn(c, [[s * 7, -13], [s * 15 + sw * s, -22], [s * 10, -31]], 2.1, s, boo);
+      reaperHorn(c, [[s * 11.6, -20.4], [s * 17, -22.5], [s * 19.5, -27]], 1, s, boo);
+    } else if (v === 2) {     // корона: растопыренные шипы разной длины
+      reaperHorn(c, [[s * 5, -16], [s * 6.5, -23], [s * 5, -30]], 1.6, s, boo);
+      reaperHorn(c, [[s * 8.6, -13], [s * 14, -17], [s * 20.5, -17.5 + sw]], 1.8, s, boo);
+      reaperHorn(c, [[s * 10, -9], [s * 15, -9], [s * 19.5, -4]], 1.2, s, boo);
+    } else {                  // завитые бараньи: широкая дуга назад-вниз и закрут к щеке
+      reaperHorn(c, [[s * 8, -13], [s * 21, -19 + sw], [s * 19, -7]], 2.5, s, boo);
+      reaperHorn(c, [[s * 17.4, -11], [s * 18.5, -3], [s * 13.5, -1.5]], 1.3, s, boo);
+    }
+  }
+  if (v === 2) reaperHorn(c, [[0.5, -18], [0.5, -25], [0.5, -31]], 1.6, 1, boo);     // центральный шип короны
+}
+
+function reaperSprite(mood, i, v = 0) {
+  const key = mood + i + 'v' + v;
   let cv = REAPER_CACHE[key];
   if (cv) return cv;
   cv = REAPER_CACHE[key] = document.createElement('canvas');
@@ -118,11 +193,11 @@ function reaperSprite(mood, i) {
   const c = cv.getContext('2d');
   c.scale(GHOST_SS * REAPER_SC, GHOST_SS * REAPER_SC); c.translate(GHOST_OX, GHOST_OY);
   const atk = mood === 'atk';
-  paintReaper(c, atk ? 0 : i / REAPER_FRAMES, mood, atk ? i / (REAPER_ATK_FRAMES - 1) : 0);
+  paintReaper(c, atk ? 0 : i / REAPER_FRAMES, mood, atk ? i / (REAPER_ATK_FRAMES - 1) : 0, v);
   return cv;
 }
 
-function paintReaper(c, p, mood, k) {
+function paintReaper(c, p, mood, k, v = 0) {
   const atk = mood === 'atk', boo = mood === 'boo' || atk;
   const TAU = Math.PI * 2, sn = (m, o = 0) => Math.sin(p * TAU * m + o);
   const sm = x => x * x * (3 - 2 * x);
@@ -183,19 +258,22 @@ function paintReaper(c, p, mood, k) {
     for (const o of [-1.2, 1.2]) { c.beginPath(); c.moveTo(sx, sy + o); c.quadraticCurveTo(mx, my + o * 1.4, hx, hy + o * 0.5); c.stroke(); }
     paintGhostPaw(c, hx, hy, Math.atan2(hy - my, hx - mx) + (idx ? 0.2 : 0.5), 10.5 + (atk ? strike * 2.6 : 0), boo);
   });
-  // голова: капюшон Смерти — просторный, ниспадающий складками, без рогов; в глубине тени проглядывает череп
+  // голова: чёрный рогатый шлем с наличниками; рога демонические, трёх форм (v)
   c.save(); c.translate(lean * 0.7, atk ? 1.5 * strike - wind : 0);
-  const tip = sn(1, 0.6) * 1.2 + lean * 0.3;
-  const hood = c.createLinearGradient(0, -27, 0, 6); hood.addColorStop(0, '#1b2a2e'); hood.addColorStop(0.5, '#0a1114'); hood.addColorStop(1, '#030607');
-  c.fillStyle = hood; c.beginPath(); c.moveTo(-11, 6);
-  c.quadraticCurveTo(-14.5, -6, -8, -19); c.quadraticCurveTo(-2, -28, 5 + tip, -23.5); c.quadraticCurveTo(7.5 + tip, -21, 7 + tip * 0.6, -18);
-  c.quadraticCurveTo(14, -10, 11.5, 6); c.quadraticCurveTo(0, 10, -11, 6); c.closePath(); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,0.7)'; c.lineWidth = 0.9;
-  for (const [x0, x1] of [[-9.5, -11.8], [9, 12]]) { c.beginPath(); c.moveTo(x0, -10); c.quadraticCurveTo(x0 + (x1 - x0) * 0.4, -2, x1, 5); c.stroke(); }     // складки
-  c.strokeStyle = 'rgba(150,215,225,0.5)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-11, 5); c.quadraticCurveTo(-14.5, -6, -8, -19); c.quadraticCurveTo(-2, -28, 5 + tip, -23.5); c.stroke();
+  reaperHorns(c, v, sn, boo);
+  const steel = c.createLinearGradient(0, -19, 0, 9); steel.addColorStop(0, '#4a5a64'); steel.addColorStop(0.45, '#1c262c'); steel.addColorStop(1, '#070b0e');
+  c.fillStyle = steel; c.beginPath(); c.moveTo(-10.4, 5);
+  c.quadraticCurveTo(-12.4, -8, -6.4, -15.4); c.quadraticCurveTo(0.5, -20, 7.4, -15.4); c.quadraticCurveTo(13, -8, 11.4, 5);
+  c.lineTo(8.4, 9.2); c.lineTo(5.4, 4.8); c.lineTo(0.5, 7.4); c.lineTo(-4.4, 4.8); c.lineTo(-7.4, 9.2); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,0.75)'; c.lineWidth = 0.9;                                          // гребень и бровной обод
+  c.beginPath(); c.moveTo(0.5, -19.6); c.lineTo(0.5, -11); c.stroke();
+  c.beginPath(); c.moveTo(-11, -9.2); c.quadraticCurveTo(0.5, -13, 12, -9.2); c.stroke();
+  c.strokeStyle = 'rgba(170,205,220,0.6)'; c.lineWidth = 0.8;                                      // блик по кромке
+  c.beginPath(); c.moveTo(-10.4, 4); c.quadraticCurveTo(-12.4, -8, -6.4, -15.4); c.quadraticCurveTo(0.5, -20, 7.4, -15.4); c.stroke();
+  c.fillStyle = 'rgba(200,225,235,0.8)'; for (const sx of [-8.6, 9.6]) { c.beginPath(); c.arc(sx, -6, 0.55, 0, 7); c.fill(); }   // заклёпки
   // чёрный провал лица
-  c.fillStyle = '#000'; c.beginPath(); c.ellipse(0.5, -2.4, 6.6, 8.8, 0, 0, 7); c.fill();
-  // череп в глубине капюшона: тусклая кость, провалы глазниц, ряд зубов
+  c.fillStyle = '#000'; c.beginPath(); c.ellipse(0.5, -2.2, 6.2, 7.6, 0, 0, 7); c.fill();
+  // череп в глубине шлема: тусклая кость, провалы глазниц, ряд зубов
   c.fillStyle = 'rgba(205,222,214,0.30)'; c.beginPath(); c.ellipse(0.5, -2.6, 4.6, 5.6, 0, 0, 7); c.fill();
   c.fillStyle = 'rgba(205,222,214,0.22)'; c.fillRect(-2.6, 3.2, 6.2, 2.6);
   c.strokeStyle = 'rgba(0,0,0,0.7)'; c.lineWidth = 0.5; for (let q = -2; q <= 3; q++) { c.beginPath(); c.moveTo(q + 0.5, 3.2); c.lineTo(q + 0.5, 5.8); c.stroke(); }
