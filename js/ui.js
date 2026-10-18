@@ -379,6 +379,7 @@ function initUI() {
     if (m === 'loadauto') { if (loadGame('auto')) { toast('Загружено автосохранение'); updateUI(true); } else toast('Автосохранения пока нет'); }
     if (m === 'new' && confirm('Начать на новой карте? Несохранённый прогресс пропадёт.')) newGame();
     if (m === 'help') document.getElementById('help').classList.toggle('hidden');
+    if (m === 'lang') I18N.toggle();
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     updateUI(true);
   });
@@ -570,7 +571,8 @@ function overviewHTML(alerts) {
   let h = '<div class="group-title">Проблемы</div>';
   if (!alerts.length) h += '<div class="muted small">Всё работает как надо. Подозрительно. Проверьте ещё раз.</div>';
   for (const a of alerts)
-    h += `<div class="alert" ${a.b ? `data-goto="${a.b.id}"` : ''}><img src="${iconURL(a.icon[0], a.icon[1], 2)}" alt="">${a.text}</div>`;
+    h += `<div class="alert" ${a.b ? `data-goto="${a.b.id}"` : ''}><img src="${iconURL(a.icon[0], a.icon[1], 2)}" alt=""><div>${a.text}${Guide.hint(a.b)}</div></div>`;
+  h += Guide.statsHTML();
   h += '<div class="group-title">Произведено за игру</div>';
   let any = false;
   for (const g of GOOD_KEYS) if (Game.produced[g]) {
@@ -636,6 +638,7 @@ function infoBuilding(b) {
   const def = b.def;
   const same = Game.buildings.filter(x => x.type === b.type).length;
   let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type)}" alt=""><div><h3>${def.name}${b.level === 2 ? ' <span class="lvl">ур. 2</span>' : ''}</h3>${statusChip(b)}</div></div>`;
+  h += Guide.whyHTML(b);
   h += '<div class="iactions">';
   if (same > 1) h += `<button data-act="prev" title="Предыдущее такое же ([)">${ui('prev')}</button><button data-act="next" title="Следующее такое же (])">${ui('next')}</button>`;
   h += `<button data-act="goto" title="Показать на карте">${ui('eye')}</button>`;
