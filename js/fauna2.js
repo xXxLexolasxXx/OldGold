@@ -176,7 +176,7 @@ function miceTick(dt) {
     if (m.state !== 'out' && m.state !== 'flee' && m.sc <= 0) {         // гном рядом — удирает
       m.sc = 0.25;
       if (nearestPerson(m, m.state === 'steal' ? 1.1 : 1.7, u => isPerson(u) && u.type !== 'carter')) {
-        m.state = 'flee'; floater(m.x, m.y - 0.5, 'Пи!', '#e8e0d0');
+        m.state = 'flee'; floater(m.x, m.y - 0.5, 'Пи!', '#e8e0d0'); faunaSfx('mouseRustle', m.x, m.y, 1, 0.1);
       }
     }
     if (m.state === 'in') {
@@ -186,6 +186,7 @@ function miceTick(dt) {
       else if (!m.moving) { m.state = 'out'; }
     } else if (m.state === 'steal') {
       m.t += dt;
+      if (Math.random() < dt * 1.8) faunaSfx('mouseGnaw', m.x, m.y);
       if (m.t > 1.4) {
         const b = m.b;
         if (!b.removed && b.stock.flour - b.reserved.flour >= 1) {
@@ -235,7 +236,7 @@ function badgerTick(dt) {
     bd.sc = 0.3;
     const s = shooersNear(bd.x, bd.y, 4, 3, 3.2);
     if (s) {
-      shooWave(s, 'Кыш!'); floater(bd.x, bd.y - 1, 'Фр-р!', '#e0e0e0');
+      shooWave(s, 'Кыш!'); floater(bd.x, bd.y - 1, 'Фр-р!', '#e0e0e0'); faunaSfx('badgerSnort', bd.x, bd.y, 1, 0.5);
       if (bd.carry) { dropPile(Math.floor(bd.x), Math.floor(bd.y), 'flour', bd.carry); bd.carry = 0; }
       bd.state = 'flee'; fstat('badgerShoo'); animalGo(bd, bd.home[0], bd.home[1]);
     }
@@ -248,6 +249,7 @@ function badgerTick(dt) {
     }
   } else if (bd.state === 'dig') {
     bd.dig += dt;
+    if (Math.random() < dt * 2.2) faunaSfx('badgerDig', bd.x, bd.y);
     if (Math.random() < dt * 6) (Game.dirt || (Game.dirt = [])).push({ x: bd.x + bd.face * 0.3, y: bd.y, vx: (Math.random() - 0.5) * 1.4, vy: -1.6 - Math.random(), z: 0.3, t: 0 });
     if (bd.dig > 3.4) {
       const b = bd.b;
@@ -306,7 +308,7 @@ function squirrelsTick(dt) {
     s.t -= dt; s.life -= dt; s.ph += dt;
     if (s.state !== 'hide' && s.state !== 'flee') {
       s.sc = (s.sc || 0) - dt;
-      if (s.sc <= 0) { s.sc = 0.3; if (nearestPerson(s, 2, u => isPerson(u))) { s.state = 'flee'; s.moving = true; } }
+      if (s.sc <= 0) { s.sc = 0.3; if (nearestPerson(s, 2, u => isPerson(u))) { s.state = 'flee'; s.moving = true; faunaSfx('squirrelChatter', s.x, s.y); faunaSfx('barkRustle', s.x, s.y, 1, 0.4); } }
     }
     if (!day && s.state !== 'hide') s.state = 'flee';
     if (s.state === 'flee') {
@@ -321,10 +323,11 @@ function squirrelsTick(dt) {
     }
     if (s.state === 'sit') {
       s.moving = false;
+      if (Math.random() < dt * 0.15) faunaSfx('squirrelCrack', s.x, s.y);
       if (s.t <= 0) {
         if (s.life <= 0) { s.state = 'flee'; continue; }
         const nt = treeSpot(s.tree[0], s.tree[1], 9);
-        if (nt && (nt[0] !== s.tree[0] || nt[1] !== s.tree[1])) { s.dest = nt; s.state = 'run'; } else s.t = 2;
+        if (nt && (nt[0] !== s.tree[0] || nt[1] !== s.tree[1])) { s.dest = nt; s.state = 'run'; faunaSfx('barkRustle', s.x, s.y); } else s.t = 2;
       }
     } else if (s.state === 'run') {
       const d = s.dest;
@@ -358,8 +361,10 @@ function peckersTick(dt) {
     if (!day) { pk.splice(i, 1); continue; }
     if (p.state === 'peck') {
       if (Math.random() < dt * 0.35) floater(p.tree[0] + 0.5, p.tree[1] - 0.6, 'Тук-тук!', '#e8d8b0');
+      p.dr = (p.dr || 0) - dt;
+      if (p.dr <= 0) { p.dr = 1.2 + Math.random() * 2.4; faunaSfx('peckDrum', p.tree[0] + 0.5, p.tree[1]); }
       const near = nearestPerson({ x: p.tree[0] + 0.5, y: p.tree[1] + 0.5 }, 2.2, u => isPerson(u));
-      if (p.t <= 0 || near) { p.state = 'gone'; p.t = 3 + Math.random() * 4; }
+      if (p.t <= 0 || near) { p.state = 'gone'; p.t = 3 + Math.random() * 4; faunaSfx('peckWhistle', p.tree[0] + 0.5, p.tree[1]); }
     } else {
       if (p.life <= 0) { pk.splice(i, 1); continue; }
       if (p.t <= 0) { const nt = treeSpot(p.tree[0], p.tree[1], 8); if (nt) p.tree = nt; p.state = 'peck'; p.t = 8 + Math.random() * 14; p.face = Math.random() < 0.5 ? 1 : -1; }
@@ -395,7 +400,9 @@ function molesTick(dt) {
   for (let i = hills.length - 1; i >= 0; i--) {
     const h = hills[i];
     if (Game.time - h.t0 > h.life) { hills.splice(i, 1); continue; }
+    const wasUp = h.up > 0;
     h.up -= dt;
+    if (wasUp && h.up <= 0) { faunaSfx('moleRustle', h.x, h.y); faunaSfx('molePeep', h.x, h.y, 1, 0.35); }
     if (h.up <= -1.8) h.up = 5 + Math.random() * 9;
     if (h.up < 0 && nearestPerson(h, 1.8, u => isPerson(u))) h.up = 3 + Math.random() * 4;    // спрятался
   }
@@ -437,7 +444,7 @@ function hedgehogsTick(dt) {
     h.t += dt;
     if (nightAmt() < 0.05 && h.state !== 'ball') { hh.splice(i, 1); continue; }
     if (h.ball > 0) { h.ball -= dt; h.moving = false; continue; }
-    if (nearestPerson(h, 2.3, u => isPerson(u))) { h.ball = 5 + Math.random() * 3; h.moving = false; if (Math.random() < 0.4) floater(h.x, h.y - 0.7, 'Фыр!', '#e8e0d0'); continue; }
+    if (nearestPerson(h, 2.3, u => isPerson(u))) { h.ball = 5 + Math.random() * 3; h.moving = false; faunaSfx('hogSpines', h.x, h.y, 1, 0.15); if (Math.random() < 0.4) floater(h.x, h.y - 0.7, 'Фыр!', '#e8e0d0'); continue; }
     h.wait -= dt;
     if (!h.go && h.wait <= 0) { h.wait = 2 + Math.random() * 5; const t = randomFreeNear(Math.floor(h.x), Math.floor(h.y), 1, 3, (x, y) => isFreeGrass(x, y) && !World.bmap[idx(x, y)]); if (t) h.go = [t[0] + 0.5, t[1] + 0.5]; }
     if (h.go) { if (f2move(h, h.go[0], h.go[1], 0.55, dt) || !h.moving) h.go = null; } else h.moving = false;

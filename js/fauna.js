@@ -76,7 +76,7 @@ function gooseShoo(a, s) {
   }
   if (!n) return;
   shooWave(s, 'Кыш!');
-  floater(a.x, a.y - 1, 'Га-га!', '#ffffff');
+  floater(a.x, a.y - 1, 'Га-га!', '#ffffff'); faunaSfx('gooseFlap', a.x, a.y, 1, 0.25);
   if (Game.time - lastShooLog > 20) {
     lastShooLog = Game.time; fstat('shoo');
     logEvent('animal', s.hero ? 'Герой одним видом прогнал гусей' : 'Гномы всем миром прогнали гусей', a.x, a.y);
@@ -273,7 +273,7 @@ function crowStep(c, dt) {
     c.sc = 0.3;
     const s = shooersNear(c.x, c.y, 3.6, 3, 3);
     if (s) {
-      floater(c.x, c.y - 1.2, 'Кар!', '#d8d8f0');
+      floater(c.x, c.y - 1.2, 'Кар!', '#d8d8f0'); faunaSfx('cawRasp', c.x, c.y, 1, 0.3);
       shooWave(s, 'Кыш!');
       fstat('crowShoo');
       crowLeave(c);
@@ -314,6 +314,7 @@ function crowLeave(c) {
   c.state = 'out'; c.go = null;
   c.ex = c.x + Math.cos(ang) * 50; c.ey = c.y + Math.sin(ang) * 40;
   c.z = 4;
+  faunaSfx('wingFlap', c.x, c.y);
 }
 
 function crowsTick(dt) {
@@ -395,7 +396,7 @@ function frogsTick(dt) {
       f.hop += dt * 2.4;
       const k = Math.min(1, f.hop - 0);
       f.x = f.fx + (f.tx - f.fx) * k; f.y = f.fy + (f.ty - f.fy) * k;
-      if (f.hop >= 1) { f.hop = 0; f.t = f.home ? 0.15 : 0.8 + Math.random() * 3; if (isWaterAt(Math.floor(f.x), Math.floor(f.y))) { frogs.splice(i, 1); continue; } }
+      if (f.hop >= 1) { f.hop = 0; f.t = f.home ? 0.15 : 0.8 + Math.random() * 3; if (isWaterAt(Math.floor(f.x), Math.floor(f.y))) { faunaSfx('splash', f.x, f.y); frogs.splice(i, 1); continue; } }
       continue;
     }
     f.t -= dt;
@@ -409,13 +410,14 @@ function frogsTick(dt) {
     const nx = f.x + dx / d * step, ny = f.y + dy / d * step;
     const wet = isWaterAt(Math.floor(nx), Math.floor(ny));
     if (inb(Math.floor(nx), Math.floor(ny)) && !World.bmap[idx(Math.floor(nx), Math.floor(ny))] && (wet || isWalkable(Math.floor(nx), Math.floor(ny)))) {
-      f.fx = f.x; f.fy = f.y; f.tx = nx; f.ty = ny; f.hop = 0.001; if (Math.abs(dx) > 0.05) f.face = dx > 0 ? 1 : -1;
+      f.fx = f.x; f.fy = f.y; f.tx = nx; f.ty = ny; f.hop = 0.001; faunaSfx('frogHop', f.x, f.y); if (Math.abs(dx) > 0.05) f.face = dx > 0 ? 1 : -1;
       if (Math.random() < 0.12) floater(f.x, f.y - 0.7, 'Ква!', '#cfe8a0');
     } else f.t = 0.5;
   }
   for (let i = worms.length - 1; i >= 0; i--) {
     const w = worms[i];
     w.ph += dt; w.age += dt;
+    if (Math.random() < dt * 0.06) faunaSfx('wormSlither', w.x, w.y);
     if (!rain && w.age > 12 + (w.ph * 7 % 12)) { worms.splice(i, 1); continue; }     // подсохли и уползли
     const hen = nearestAnimal(w.x, w.y, 0.8, a => a.kind === 'chicken');
     if (hen) { floater(w.x, w.y - 0.6, 'Ам!', '#ffd8d8'); fstat('worm'); worms.splice(i, 1); }
@@ -468,6 +470,7 @@ function firefliesTick(dt) {
   for (const f of fl) { f.a += f.w * dt; f.ph += dt; }
   if (Game.flyT > 0) return;
   Game.flyT = 2;
+  if (fl.length && Math.random() < 0.4) { const f = fl[(Math.random() * fl.length) | 0]; faunaSfx('firefly', f.cx, f.cy); }
   if (n < 0.3) return;
   const src = fireflySources(), keys = new Set(src.map(s => s.key));
   for (let i = fl.length - 1; i >= 0; i--) if (!keys.has(fl[i].key)) fl.splice(i, 1);      // дерево проснулось или кладбище снесено
