@@ -42,6 +42,8 @@ function nightAmt(t = Game.time) {
 function isNightNow() { return nightAmt() >= 0.5; }
 // вечер и ночь: горят фонари
 function isEveningNow() { return cycleAt(Game.time).p >= EVE_START && nightAmt() > 0.02; }
+// рассвет: ночь кончилась, но ещё не совсем светло (вечер по isEveningNow тянется и сюда)
+function isDawnNow() { const c = cycleAt(Game.time); return c.p >= NIGHT_START + c.nl; }
 // номер текущих «суток тьмы»: одинаков от начала вечера до рассвета
 function nightIndex() { const c = cycleAt(Game.time); return c.p >= EVE_START ? c.k : c.k - 1; }
 // идёт ли сейчас (или готовится) долгая ночь
@@ -292,7 +294,7 @@ function spawnTreeEnts(people, want) {
     if (!inb(x, y)) continue;
     const i = idx(x, y), o = World.obj[i];
     if (!o || o.t !== 'tree' || o.g < 1 || o.res || o.awake) continue;
-    if (nearBonfire(x, y, 12)) continue;
+    if (nearBonfire(x, y, BONFIRE_NOSPAWN)) continue;
     // только на опушке: перед деревом открыто, чтобы его было видно, а не в глухой чаще
     let front = 0;
     for (let yy = y + 1; yy <= y + 2; yy++) for (let xx = x - 2; xx <= x + 2; xx++) {
@@ -581,6 +583,7 @@ function nightTick(dt) {
   Game.nightT = 0;
   const night = isNightNow(), eve = isEveningNow(), ni = nightIndex();
   // вечер: зажигаются фонари, а в лесу открываются глаза
+  if (eve && Game.entNight !== ni && isDawnNow()) Game.entNight = ni;     // загрузились на рассвете: нечисть уже не выходит
   if (eve && Game.entNight !== ni) {
     Game.entNight = ni;
     spawnEnts();
@@ -677,7 +680,7 @@ function nightLights(x0, y0, x1, y1) {
   ghostLights(L, x0, y0, x1, y1);
   for (const b of Game.buildings) {
     if (b.state !== 'done' || b.x + b.w < x0 - 3 || b.x > x1 + 3 || b.y + b.h < y0 - 3 || b.y > y1 + 3) continue;
-    if (b.type === 'bonfire') L.push([(b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE, 150, 1]);
+    if (b.type === 'bonfire') L.push([(b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE, BONFIRE_LIGHT, 1]);
     else if (b.type === 'inn' || b.isStore() || (b.worker && b.worker.inside === b))
       L.push([(b.doorX + 0.5) * TILE, b.doorY * TILE, 36, 0.4]);                // окна и дверь светятся
   }

@@ -184,7 +184,7 @@ function socialTick(u) {
   }
   // нечисть: призрак — пугаются, скелет — грозят кулаком (а то и пускаются наутёк)
   for (const g of Game.ghosts || []) {
-    if (g.exo || Math.hypot(g.x - u.x, g.y - u.y) > 4) continue;
+    if (g.exo || g.alpha < 0.3 || g.mode === 'leave' || g.mode === 'calm' || Math.hypot(g.x - u.x, g.y - u.y) > 4) continue;
     gesture(u, 'panic', 1.6, g.x); return;
   }
   for (const s of Game.skels || []) {

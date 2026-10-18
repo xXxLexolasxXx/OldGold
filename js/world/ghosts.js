@@ -29,8 +29,9 @@ function ghostsTick(dt) {
   for (let i = gs.length - 1; i >= 0; i--) {
     const g = gs[i];
     g.ph += dt * 2.2; g.modeT -= dt; g.retarget -= dt;
-    const leaving = g.mode === 'leave' || (!isNightNow() && !isEveningNow());   // уходят на рассвете (раньше гасли сразу при появлении: вечером ещё светло)
-    g.alpha = Math.max(0, Math.min(1, g.alpha + (leaving ? -dt * 0.5 : dt * 0.35)));
+    const leaving = g.mode === 'leave' || isDawnNow() || (!isNightNow() && !isEveningNow());   // уходят с рассветом (вечером ещё светло — тогда не гаснут)
+    if (!g.fade) g.fade = 0.15 + Math.random() * 0.35;      // растворяются не разом, а кто когда
+    g.alpha = Math.max(0, Math.min(1, g.alpha + (leaving ? -dt * (g.mode === 'leave' ? 0.5 : g.fade) : dt * 0.35)));
     if (leaving && g.alpha <= 0) { gs.splice(i, 1); continue; }
     if (g.mode !== 'drift' && g.modeT <= 0) {
       if (g.mode === 'calm') {
@@ -42,14 +43,14 @@ function ghostsTick(dt) {
     }
     if (g.mode === 'drift' || g.mode === 'boo') {
       if (g.retarget <= 0 || Math.hypot(g.tx - g.x, g.ty - g.y) < 0.6) {
-        g.tx = g.hx + (Math.random() - 0.5) * 18; g.ty = g.hy + (Math.random() - 0.5) * 14; g.retarget = 3 + Math.random() * 5;
+        g.tx = Math.max(1.5, Math.min(MAP_W - 1.5, g.hx + (Math.random() - 0.5) * 18)); g.ty = Math.max(1.5, Math.min(MAP_H - 1.5, g.hy + (Math.random() - 0.5) * 14)); g.retarget = 3 + Math.random() * 5;
         // иногда тянется к ближайшему гному
         if (Math.random() < 0.5) { const u = Game.units[(Math.random() * Game.units.length) | 0]; if (u && !u.inside) { g.tx = u.x; g.ty = u.y; } }
       }
       const dx = g.tx - g.x, dy = g.ty - g.y, d = Math.hypot(dx, dy) || 1, sp = g.mode === 'boo' ? 0.2 : 0.9;
       g.x += dx / d * sp * dt; g.y += dy / d * sp * dt; g.face = dx >= 0 ? 1 : -1;
     }
-    if (leaving) continue;
+    if (leaving || g.alpha < 0.3) continue;      // ещё не проступил (или уже тает) — не пугает
     g.scan -= dt;
     if (g.scan > 0) continue;
     g.scan = 0.7;
@@ -65,7 +66,7 @@ function ghostsTick(dt) {
         logEvent('night', `${UNIT_TYPES[u.type].name} угостил призрака хлебом`, u.x, u.y);
         break;
       }
-      if (!interruptible(u)) continue;
+      if (g.mode === 'calm' || !interruptible(u)) continue;      // успокоенный призрак больше не пугает
       u.ghostCD = Game.time + 40;
       floater(u.x, u.y - 1.2, 'Призрак!', '#dcecff');
       if (Math.random() < 0.5) { startBreak(u, 'freeze', null); u.proc = freezeGen(u); }
@@ -73,6 +74,7 @@ function ghostsTick(dt) {
       if (g.mode === 'drift') { g.mode = 'boo'; g.modeT = 1.6; sfxAt('wail', g.x * TILE, g.y * TILE, 1); }
     }
     // нечисть тоже боится: пятится и бросает свои дела
+    if (g.mode === 'calm') continue;
     for (const e of Game.ents || []) {
       if ((e.state !== 'walk' && e.state !== 'smash') || (e.ghostCD || 0) > Game.time) continue;
       if (Math.hypot(e.x - g.x, e.y - g.y) > GHOST_SEE_ENT) continue;
