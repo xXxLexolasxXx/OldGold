@@ -188,26 +188,29 @@ function crowSprite(kind) {
   return FA_CACHE[kind] = cv;
 }
 
-const FROG_SIT = [
-  '..gg...gg..',
-  '.gwyg.gwyg.',
-  '.ggggggggg.',
-  'dggGGGGGggd',
-  'ddgGGGGGgdd',
-  'd.gggggggd.',
-];
-const FROG_HOP = [
-  '..gg...gg..',
-  '.gwyg.gwyg.',
-  '.ggggggggg.',
-  '..gGGGGGg..',
-  '..ggggggg..',
-  '.d.d...d.d.',
-  'd.........d',
-];
-function frogSprite(hop) {
-  const k = hop ? 'frogHop' : 'frogSit';
-  return FA_CACHE[k] || (FA_CACHE[k] = faSprite(hop ? FROG_HOP : FROG_SIT));
+// Лягушка: 7 кадров — сидит, моргает, квакает (горловой пузырь), присела, толчок, полёт, приземление
+const FROG_FR = {
+  sit:    ['..gg...gg..', '.gwyg.gwyg.', '.ggggggggg.', 'dggGGGGGggd', 'ddgGGGGGgdd', 'd.gggggggd.', 'dd.......dd'],
+  blink:  ['..gg...gg..', '.gkkg.gkkg.', '.ggggggggg.', 'dggGGGGGggd', 'ddgGGGGGgdd', 'd.gggggggd.', 'dd.......dd'],
+  croak:  ['..gg...gg..', '.gwyg.gwyg.', '.ggggggggg.', 'dgqqqqqqqgd', 'ddgqqqqqgdd', 'd.gggggggd.', 'dd.......dd'],
+  crouch: ['..gg...gg..', '.gwyg.gwyg.', '.ggggggggg.', 'dggGGGGGggd', 'dddggggggdd'],
+  launch: ['.....gg.gg.', '....gwygwyg', '.d.ggggggg.', 'dddgGGGGgg.', '.ddgggggg..', '..d.......'],
+  air:    ['......gg.gg.', '.....gwygwyg', 'dd.ggggggggg', 'dddgGGGGGGg.', '.ddggggggg..', '..d..d......'],
+  land:   ['..gg...gg..', '.gwyg.gwyg.', '.ggggggggg.', 'dggGGGGGggd', 'ddggggggddd', '.ddd...ddd.'],
+};
+function frogFrame(f) {
+  if (f.hop > 0) {
+    const k = f.hop;
+    return k < 0.12 ? 'crouch' : k < 0.3 ? 'launch' : k < 0.7 ? 'air' : k < 0.88 ? 'land' : 'crouch';
+  }
+  const t = (f.ph + f.id) % 7;
+  if (t > 5.2 && t < 6.2) return 'croak';
+  if ((f.ph * 1.3 + f.id) % 4 < 0.16) return 'blink';
+  return 'sit';
+}
+function frogSprite(name) {
+  const k = 'frog_' + name;
+  return FA_CACHE[k] || (FA_CACHE[k] = faSprite(FROG_FR[name], { ...FA_PAL, q: '#d8f090' }));
 }
 
 // ---------- Вороны ----------
@@ -373,7 +376,7 @@ function frogsTick(dt) {
     if (frogs.length < 7) {
       const s = frogSpot();
       if (s) {
-        frogs.push({ x: s[0] + 0.5, y: s[1] + 0.5, t: 1 + Math.random() * 2, hop: 0, face: Math.random() < 0.5 ? 1 : -1, fx: 0, fy: 0, tx: 0, ty: 0, home: false, ph: Math.random() * 9 });
+        frogs.push({ x: s[0] + 0.5, y: s[1] + 0.5, t: 1 + Math.random() * 2, hop: 0, id: Math.random() * 7, face: Math.random() < 0.5 ? 1 : -1, fx: 0, fy: 0, tx: 0, ty: 0, home: false, ph: Math.random() * 9 });
         if (Game.time - lastRainFrogLog > 500) { lastRainFrogLog = Game.time; fstat('frog'); logEvent('animal', 'С дождём к воде выбрались лягушки', s[0], s[1]); }
       }
     }
@@ -389,7 +392,7 @@ function frogsTick(dt) {
     f.ph += dt;
     if (!rain) f.home = true;                                   // дождь кончился — домой, в воду
     if (f.hop > 0) {
-      f.hop += dt * 3.2;
+      f.hop += dt * 2.4;
       const k = Math.min(1, f.hop - 0);
       f.x = f.fx + (f.tx - f.fx) * k; f.y = f.fy + (f.ty - f.fy) * k;
       if (f.hop >= 1) { f.hop = 0; f.t = f.home ? 0.15 : 0.8 + Math.random() * 3; if (isWaterAt(Math.floor(f.x), Math.floor(f.y))) { frogs.splice(i, 1); continue; } }
@@ -421,10 +424,10 @@ function frogsTick(dt) {
 
 function drawFrog(c, f) {
   const px = f.x * TILE, py = f.y * TILE + 3;
-  const arc = f.hop > 0 ? Math.sin(Math.min(1, f.hop) * Math.PI) * 9 : 0;
+  const arc = f.hop > 0.1 ? Math.sin(Math.min(1, f.hop) * Math.PI) * 9 : 0;
   c.fillStyle = 'rgba(10,8,4,0.28)';
   c.beginPath(); c.ellipse(px, py, 4.5 - arc * 0.2, 1.6, 0, 0, 7); c.fill();
-  const spr = frogSprite(f.hop > 0), w = spr.width, h = spr.height;
+  const spr = frogSprite(frogFrame(f)), w = spr.width, h = spr.height;
   c.imageSmoothingEnabled = false;
   c.save(); c.translate(Math.round(px), Math.round(py - h - arc + 1));
   if (f.face < 0) c.scale(-1, 1);
@@ -445,28 +448,42 @@ function drawWorm(c, w) {
 }
 
 // ---------- Светлячки ----------
+// Кружат над кладбищем и над деревьями-«нечистью», пока те спят. Когда дерево проснулось — рой разлетается.
+function fireflySources() {
+  const out = [];
+  const gy = graveyardOf();
+  if (gy) out.push({ key: gy, x: gy.x + gy.w / 2, y: gy.y + gy.h / 2 + 0.3, n: 12, r: 2.4 });
+  for (const e of Game.ents || []) if (e.state === 'sleep' && !e.water && !e.dead) {
+    const [x, y] = entHomeXY(e);
+    out.push({ key: e, x, y: y - 0.2, n: 7, r: 1.3 });
+  }
+  return out;
+}
+
 function firefliesTick(dt) {
   const fl = Game.flies || (Game.flies = []);
   const n = nightAmt();
-  if (n < 0.1 || isRaining()) { if (fl.length && (n < 0.1 || rainAmt() > 0.6)) fl.length = 0; return; }
-  const ni = nightIndex();
-  if (n > 0.55 && Game.flyNight !== ni && !fl.length && Game.buildings.filter(b => b.state === 'done').length >= 2) {
-    Game.flyNight = ni;
-    let first = null;
-    for (let c = 0; c < 3; c++) {
-      const s = wildSpot(9, true) || frogSpot();
-      if (!s) continue;
-      first = first || s;
-      const cnt = 6 + ((Math.random() * 4) | 0);
-      for (let k = 0; k < cnt; k++) fl.push({ cx: s[0] + 0.5, cy: s[1] + 0.5, r: 0.5 + Math.random() * 1.5, a: Math.random() * 6.28, w: 0.25 + Math.random() * 0.5, z: 5 + Math.random() * 14, zw: 0.5 + Math.random() * 1.2, ph: Math.random() * 9, bl: 0.9 + Math.random() * 1.6 });
-    }
-    if (first) {
-      fstat('fireflies');
-      logEvent('night', 'Над полянами закружились светлячки', first[0], first[1]);
-      if (Game.time - (Game.flyToast || -999) > 400) { Game.flyToast = Game.time; toast('Тёмной ночью над полянами закружились светлячки'); }
-    }
-  }
+  Game.flyT = (Game.flyT || 0) - dt;
+  if (n < 0.1 || rainAmt() > 0.6) { fl.length = 0; return; }
   for (const f of fl) { f.a += f.w * dt; f.ph += dt; }
+  if (Game.flyT > 0) return;
+  Game.flyT = 2;
+  if (n < 0.3) return;
+  const src = fireflySources(), keys = new Set(src.map(s => s.key));
+  for (let i = fl.length - 1; i >= 0; i--) if (!keys.has(fl[i].key)) fl.splice(i, 1);      // дерево проснулось или кладбище снесено
+  const have = new Set(fl.map(f => f.key));
+  let made = null;
+  for (const s of src) {
+    if (have.has(s.key)) continue;
+    made = made || s;
+    for (let k = 0; k < s.n; k++) fl.push({ key: s.key, cx: s.x, cy: s.y, r: 0.4 + Math.random() * s.r, a: Math.random() * 6.28, w: 0.25 + Math.random() * 0.5, z: 5 + Math.random() * 16, zw: 0.5 + Math.random() * 1.2, ph: Math.random() * 9, bl: 0.9 + Math.random() * 1.6 });
+  }
+  if (made && Game.flyNight !== nightIndex()) {
+    Game.flyNight = nightIndex();
+    fstat('fireflies');
+    logEvent('night', 'Над кладбищем и спящими деревьями замерцали светлячки', made.x, made.y);
+    if (Game.time - (Game.flyToast || -999) > 400) { Game.flyToast = Game.time; toast('Светлячки собрались там, где ночью проснётся нечисть'); }
+  }
 }
 
 function drawFireflies(c) {

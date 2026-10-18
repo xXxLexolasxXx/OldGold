@@ -199,6 +199,7 @@ function step(dt) {
   streetTick(dt);
   updateOwls(dt);
   faunaTick(dt);
+  fauna2Tick(dt);
   updateFalling(dt);
   sfxTick(dt);
   Game.bumpT = (Game.bumpT || 0) + dt;

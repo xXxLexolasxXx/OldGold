@@ -14,7 +14,7 @@ function resetGameState() {
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
   Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0;
   Game.bats = [];
-  Game.crows = []; Game.frogs = []; Game.worms = []; Game.flies = []; Game.faunaStat = {}; Game.flyNight = -1;
+  Game.crows = []; Game.frogs = []; Game.worms = []; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1;
   Game.fieldPlans = new Set(); Game.avenge = [];
   World.occ.fill(0);
   World.roadDirty = true;
