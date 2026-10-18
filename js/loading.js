@@ -14,7 +14,8 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
   if (!cv) return;
   // Сцена рисуется в крошечный холст (lo) и потом укрупняется без сглаживания: палитра + дизеринг = пиксель-арт
   const vctx = cv.getContext('2d');
-  const lo = document.createElement('canvas'), ctx = lo.getContext('2d', { willReadFrequently: true });
+  const lo = document.createElement('canvas'), loCtx = lo.getContext('2d', { willReadFrequently: true });
+  let ctx = loCtx;   // текущий холст рисования: обычно сцена, на время заготовки кадра гнома — его холст
   let W = 0, H = 0, DPR = 1, Z = 4, PSc = 4;
   const rnd = (a, b) => a + Math.random() * (b - a);
   const OUT = '#1a0f08';
@@ -30,7 +31,8 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
   resize();
   // линии не тоньше одного пикселя картинки — иначе обводка тает при укрупнении
   const lwd = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'lineWidth');
-  Object.defineProperty(ctx, 'lineWidth', { get() { return lwd.get.call(this); }, set(v) { lwd.set.call(this, Math.max(v, PSc * 0.95)); } });
+  const thickLines = c => Object.defineProperty(c, 'lineWidth', { get() { return lwd.get.call(this); }, set(v) { lwd.set.call(this, Math.max(v, PSc * 0.95)); } });
+  thickLines(ctx);
 
   // Палитра ночного костра: рампы со сдвигом оттенка (тени — лиловые и синие, свет — жёлтый)
   const PAL = '6aff46 a0ff70 c8ffa0 e8ffc8 b07cff c08cff 7a3ad0 f0d8ff 9a50ff 15112c 1c1838 26204a 2e2858 3a3066 120f28 0e0c20 0b1a14 0f2419 143020 1f4a2c 120e1a 2a2040 0a0710 1c1a2a 34304a 2a2640 16131f ff5a3c ffd250 3a1c10 1a0e24 fff6c0 ffe27a f0b83a d88a30 a8582a f0e0b0 d8c088 b89860 12163a 161a44 221c4c 301f58 462a62 623a68 82485e 6a4a7a 2e2438 442c3c 070a1c 0e1330 1a1840 2a2050 3e2a60 5a3466 7a4260 9c5658 0a1210 10201a 18301f 244a26 36662e 4c8438 1a1410 3a1c14 5c2a1c 8a3e24 b85a2c d88438 f0b048 ffd878 fff0b0 fffbe8 4a141c 7a1c24 b02a2a d84a34 1c2e50 2e5a7e 4a8aa8 8ac0d0 3a5a28 6e8e3a a0b84c 3a2a6a 5a3a82 8a64b0 3a322c 5e544a 8a8070 b8ae98 e0d8c0 f4f0e4 f2c8a0 e4b08a c88a62 3a8a7a 80d8b8 4a3220 7a5230 a8783a e8a850'.split(' ').map(h => { const n = parseInt(h, 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
@@ -44,15 +46,31 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
     return LUT[key] = best;
   }
   const qcv = document.createElement('canvas');
+  let qctx = null;
+  // готовый цвет пикселя (RGBA одним словом) для каждой ячейки LUT — без вызова nearest и четырёх записей на пиксель
+  const LITTLE = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
+  const PAL32 = PAL.map(p => LITTLE ? (0xff000000 | (p[2] << 16) | (p[1] << 8) | p[0]) >>> 0 : ((p[0] << 24) | (p[1] << 16) | (p[2] << 8) | 0xff) >>> 0);
+  const LUT32 = new Uint32Array(32768);
+  const DZ = BAY.map(v => (v - 7.5) * 0.45);
+  // Каждый кадр вся сцена перекрашивается в палитру с дизерингом. Раньше это и был почти весь кадр
+  // заставки (~30 мс на десктопе, на телефоне в разы больше): вызов функции, Math.min/max и 4 записи на пиксель.
   function present() {
     const w = lo.width, h = lo.height;
-    const img = ctx.getImageData(0, 0, w, h), d = img.data;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const o = (y * w + x) * 4, dz = (BAY[(y & 3) * 4 + (x & 3)] - 7.5) * 0.45;
-      const p = PAL[nearest(Math.max(0, Math.min(255, d[o] + dz)), Math.max(0, Math.min(255, d[o + 1] + dz)), Math.max(0, Math.min(255, d[o + 2] + dz)))];
-      d[o] = p[0]; d[o + 1] = p[1]; d[o + 2] = p[2]; d[o + 3] = 255;
+    const img = ctx.getImageData(0, 0, w, h), d = img.data, d32 = new Uint32Array(d.buffer, d.byteOffset, w * h);
+    for (let y = 0, i = 0; y < h; y++) {
+      const row = (y & 3) * 4;
+      for (let x = 0; x < w; x++, i++) {
+        const o = i << 2, dz = DZ[row + (x & 3)];
+        let r = d[o] + dz, g = d[o + 1] + dz, b = d[o + 2] + dz;
+        r = r < 0 ? 0 : r > 255 ? 255 : r; g = g < 0 ? 0 : g > 255 ? 255 : g; b = b < 0 ? 0 : b > 255 ? 255 : b;
+        const key = (r >> 3) << 10 | (g >> 3) << 5 | (b >> 3);
+        let c = LUT32[key];
+        if (!c) c = LUT32[key] = PAL32[nearest(r, g, b)];
+        d32[i] = c;
+      }
     }
-    qcv.width = w; qcv.height = h; qcv.getContext('2d').putImageData(img, 0, 0);
+    if (qcv.width !== w || qcv.height !== h || !qctx) { qcv.width = w; qcv.height = h; qctx = qcv.getContext('2d'); }   // не пересоздаём буфер каждый кадр
+    qctx.putImageData(img, 0, 0);
     vctx.imageSmoothingEnabled = false; vctx.setTransform(1, 0, 0, 1, 0, 0);
     vctx.drawImage(qcv, 0, 0, w * Z, h * Z);
   }
@@ -171,6 +189,38 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
       ctx.beginPath(); ctx.arc(0, hy + 1, 13, 0.1, Math.PI - 0.1); ctx.fill();
     }
     hat(g, view, hy, lit);
+    ctx.restore();
+  }
+
+  // Кадры гномов круга и толпы рисуются один раз и дальше только копируются: гном — это ~40 фигур
+  // с градиентами, а на экране их больше двадцати; раньше вся толпа перерисовывалась каждый кадр.
+  // Покачивание — 9 положений (шаг ~1°, на пиксель-арте незаметно), масштаб — с шагом 2.5%.
+  const GCACHE = new Map();
+  let gcid = 0;
+  function drawGnomeCached(g, x, y, k, view, lit, sway, look) {
+    if (g.tool === 'candle') return drawGnome(g, x, y, k, view, lit, sway, look);   // у свечи живое пламя
+    const m = ctx.getTransform(), s = m.a;
+    if (Math.abs(m.b) > 1e-6 || Math.abs(m.c) > 1e-6) return drawGnome(g, x, y, k, view, lit, sway, look);
+    const kq = Math.round(k * 40) / 40, sq = Math.round(sway * 4) / 4;
+    if (!g._cid) g._cid = ++gcid;
+    const key = g._cid + view + (lit > 0 ? 1 : 0) + ':' + (look % 3) + ':' + kq + ':' + sq + ':' + s.toFixed(4);
+    let e = GCACHE.get(key);
+    if (!e) {
+      if (GCACHE.size > 700) GCACHE.clear();
+      const sc = s * kq, ox = Math.ceil(46 * sc) + 2, oy = Math.ceil(150 * sc) + 2;
+      const c = document.createElement('canvas');
+      c.width = ox * 2; c.height = oy + Math.ceil(16 * sc) + 2;
+      const cc = c.getContext('2d', { willReadFrequently: true });   // программный, как и сцена: копирование без чтения с видеокарты
+      thickLines(cc);
+      cc.setTransform(s, 0, 0, s, ox, oy);
+      const keep = ctx; ctx = cc;
+      try { drawGnome(g, 0, 0, kq, view, lit, sq, look); } finally { ctx = keep; }
+      e = { c, ox, oy };
+      GCACHE.set(key, e);
+    }
+    const px = m.a * x + m.e, py = m.d * y + m.f;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(e.c, Math.round(px - e.ox), Math.round(py - e.oy));
     ctx.restore();
   }
 
@@ -439,19 +489,33 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
     return { w, h, on };
   }
   function paintBmp(b, x0, y0, ramp, t, glint) {
+    if (!b.cache) {
+      const c = document.createElement('canvas'); c.width = b.w + 4; c.height = b.h + 4;
+      paintBmpRaw(c.getContext('2d', { willReadFrequently: true }), b, 2, 2, ramp);
+      b.cache = c;
+    }
+    ctx.drawImage(b.cache, x0 - 2, y0 - 2);
+    if (glint === undefined) return;
+    const { w, h, on } = b;
+    ctx.fillStyle = '#fffbe8';
+    for (let y = 0; y < h; y++) {
+      const x1 = Math.min(w - 1, Math.floor(glint - y * 0.6 + 1.6)), xs = Math.max(0, Math.ceil(glint - y * 0.6 - 1.6));
+      for (let x = xs; x <= x1; x++) if (on[y * w + x] && Math.abs(x + y * 0.6 - glint) < 1.6) ctx.fillRect(x0 + x, y0 + y, 1, 1);
+    }
+  }
+  function paintBmpRaw(cx2, b, x0, y0, ramp) {
     const { w, h, on } = b, at = (x, y) => x >= 0 && y >= 0 && x < w && y < h && on[y * w + x];
     let r0 = h, r1 = 0; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (on[y * w + x]) { r0 = Math.min(r0, y); r1 = Math.max(r1, y); }
     for (let y = -2; y < h + 2; y++) for (let x = -2; x < w + 2; x++) {
       const self = at(x, y);
-      if (!self && (at(x - 1, y - 1) || at(x - 1, y) || at(x, y - 1) || at(x + 1, y) || at(x, y + 1) || at(x - 1, y + 1) || at(x + 1, y - 1) || at(x + 1, y + 1))) { ctx.fillStyle = '#3a1c10'; ctx.fillRect(x0 + x, y0 + y, 1, 1); }
-      else if (!self && (at(x - 1, y - 2) || at(x - 2, y - 1) || at(x - 2, y - 2))) { ctx.fillStyle = '#1a0e24'; ctx.fillRect(x0 + x, y0 + y, 1, 1); }   // тень вниз-вправо
+      if (!self && (at(x - 1, y - 1) || at(x - 1, y) || at(x, y - 1) || at(x + 1, y) || at(x, y + 1) || at(x - 1, y + 1) || at(x + 1, y - 1) || at(x + 1, y + 1))) { cx2.fillStyle = '#3a1c10'; cx2.fillRect(x0 + x, y0 + y, 1, 1); }
+      else if (!self && (at(x - 1, y - 2) || at(x - 2, y - 1) || at(x - 2, y - 2))) { cx2.fillStyle = '#1a0e24'; cx2.fillRect(x0 + x, y0 + y, 1, 1); }   // тень вниз-вправо
     }
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       if (!on[y * w + x]) continue;
       const f = (y - r0) / Math.max(1, r1 - r0);
-      let col = ramp[Math.min(ramp.length - 1, Math.floor(f * ramp.length))];
-      if (glint !== undefined && Math.abs(x + y * 0.6 - glint) < 1.6) col = '#fffbe8';
-      ctx.fillStyle = col; ctx.fillRect(x0 + x, y0 + y, 1, 1);
+      const col = ramp[Math.min(ramp.length - 1, Math.floor(f * ramp.length))];
+      cx2.fillStyle = col; cx2.fillRect(x0 + x, y0 + y, 1, 1);
     }
   }
   function drawTitle(t) {
@@ -875,7 +939,7 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
   function frame(now) {
     if (!running) return;
     if (!cv.clientWidth || !cv.clientHeight) { resize(); last = now; requestAnimationFrame(frame); return; }   // вкладка скрыта и холст нулевой — ждём
-    if (cv.clientWidth !== W || cv.clientHeight !== H) resize();
+    if (cv.clientWidth !== W || cv.clientHeight !== H) { resize(); GCACHE.clear(); }
     if (!isFinite(lift)) lift = 0;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const t = (now - T0) / 1000;
@@ -955,7 +1019,7 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
       for (const p of list) {
         const view = p.extra ? (p.y > cy + ry ? 'back' : 'front') : Math.sin(p.a) > 0 ? 'back' : 'front';
         const lit = p.x < cx ? 1 : -1;
-        drawGnome(p.g, p.x, p.y, p.k, view, lit, sway(p.i), p.i);
+        drawGnomeCached(p.g, p.x, p.y, p.k, view, lit, sway(p.i), p.i);
         // руки, исходящие из этого гнома (к обоим соседям)
         for (const ar of arms) {
           if (ar.p === p || ar.q === p) {
@@ -971,9 +1035,9 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
     // пиксельное пламя из js/fire.js: большой язык по центру, два малых по бокам, искры
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const fx = (cx + pan.x) / PSc, fy = (cy - lift + pan.y) / PSc - 2, fh = 96 * S / PSc;
-    drawFire(ctx, fx - 9 * S / PSc * 2.2, fy, 'camp', t, 1, { h: fh * 0.62, glow: 0 });
-    drawFire(ctx, fx + 10 * S / PSc * 2.2, fy, 'camp', t, 4, { h: fh * 0.55, glow: 0 });
-    drawFire(ctx, fx, fy + 1, 'blaze', t, 2, { h: fh, glow: 0, sparks: 16 });
+    drawFire(ctx, fx - 9 * S / PSc * 2.2, fy, 'camp', t, 1, { h: fh * 0.62, glow: 0, cpu: true });
+    drawFire(ctx, fx + 10 * S / PSc * 2.2, fy, 'camp', t, 4, { h: fh * 0.55, glow: 0, cpu: true });
+    drawFire(ctx, fx, fy + 1, 'blaze', t, 2, { h: fh, glow: 0, sparks: 16, cpu: true });
     ctx.restore();
     drawRing(front);
     singNotes(dt, t, ring);
