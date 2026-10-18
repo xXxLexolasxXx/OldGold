@@ -9,17 +9,17 @@ th{color:#fff;font-weight:normal;text-shadow:0 1px 2px #000}
 td.n{text-align:left;color:#fff;text-shadow:0 1px 2px #000;white-space:nowrap}
 canvas{image-rendering:pixelated;background:#4f7a30}
 </style></head><body>
-<div id="bar"><b>7 трубок и 7 сортов сигарет × 4 кадра: достал · поднёс · затяжка · выдох</b>
+<div id="bar"><b>7 трубок и 7 сортов сигарет × 6 кадров: достал · поднёс · вдох · затяжка · убрал · выдох</b>
 <label>масштаб <select id="sc"><option>4</option><option selected>5</option><option>8</option></select></label> <span id="err" style="color:#f88"></span></div>
 <table id="t"></table>
 <script src="js/smoking.js"></script>
 <script>
 window.Game={time:0};
 function draw(){
- const k=+document.getElementById('sc').value, t=document.getElementById('t'); t.innerHTML='<tr><th></th><th>0 достал</th><th>1 поднёс</th><th>2 затяжка</th><th>3 выдох</th></tr>';
+ const k=+document.getElementById('sc').value, t=document.getElementById('t'); t.innerHTML='<tr><th></th><th>0 достал</th><th>1 поднёс</th><th>2 вдох</th><th>3 затяжка</th><th>4 убрал</th><th>5 выдох</th></tr>';
  SM_ALL.forEach((it,id)=>{
   const tr=document.createElement('tr'); tr.innerHTML=`<td class="n">${id<7?'Трубка':'Сигарета'} ${id%7+1}: ${it.name}</td>`;
-  for(let f=0;f<4;f++){ const s=smokeItemSprite(id,f), d=s.cv.getContext('2d').getImageData(0,0,s.w,s.h).data;
+  for(let f=0;f<SM_NF;f++){ const s=smokeItemSprite(id,f), d=s.cv.getContext('2d').getImageData(0,0,s.w,s.h).data;
    let x0=99,y0=99,x1=0,y1=0; for(let y=0;y<s.h;y++)for(let x=0;x<s.w;x++)if(d[(y*s.w+x)*4+3]){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
    const cv=document.createElement('canvas'); cv.width=(x1-x0+1)*k; cv.height=(y1-y0+1)*k;
    const c=cv.getContext('2d'); c.imageSmoothingEnabled=false; c.drawImage(s.cv,x0,y0,x1-x0+1,y1-y0+1,0,0,cv.width,cv.height);

@@ -174,7 +174,7 @@ function drawUnit(c, u) {
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: swingFrame(u) }; }
   const wp = weatherPose(u);   // скольжение под дождём, горение
   if (wp) { pose = wp.pose; view = 'E'; }
-  if (pose === 'smoke') frame = smokeFrameOf(u);   // 4 кадра курения
+  if (pose === 'smoke') frame = smokeFrameOf(u);   // 6 кадров курения
   // просто стоит — лицом к зрителю, а не боком, как после ходьбы
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
