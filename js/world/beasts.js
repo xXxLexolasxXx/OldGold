@@ -1090,7 +1090,7 @@ function applyBeasts(d) {
 // ---------- Общий ход и отрисовка ----------
 function beastsTick(dt) {
   if (!FAUNA_ON()) return;
-  beFishTick(dt); beHivesTick(dt); beBoarsTick(dt); beBearTick(dt); beCatsTick(dt); beStorkTick(dt); beHeronsTick(dt); beFlockTick(dt);
+  beFishTick(dt); beHivesTick(dt); beBoarsTick(dt); beBearTick(dt); beCatsTick(dt); beStorkTick(dt); beHeronsTick(dt); beFlockTick(dt); stTick(dt);
 }
 
 function beastsDrawList(list, c, x0, y0, x1, y1) {
@@ -1113,4 +1113,5 @@ function beastsDrawList(list, c, x0, y0, x1, y1) {
   for (const h of Game.herons || []) if (vis(h.x, h.y)) list.push([h.y + (h.state === 'fly' || h.state === 'leave' ? 1.6 : 0.1), () => beDrawHeron(c, h)]);
   const fl = Game.flock;
   if (fl && fl.state !== 'away' && fl.crows.length && vis(fl.state === 'land' || fl.state === 'circle' ? fl.fx : fl.x, fl.state === 'land' || fl.state === 'circle' ? fl.fy : fl.y)) list.push([(fl.state === 'land' ? fl.fy + 0.5 : fl.fy + 2.5), () => beDrawFlock(c, fl)]);
+  stDrawList(list, c, x0, y0, x1, y1);
 }
