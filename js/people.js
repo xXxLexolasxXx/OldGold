@@ -11,7 +11,7 @@ const PART = 2;    // пикселей арта на пиксель мира
 const PW = 26, PH = 38, PFX = 13, PFY = 35;
 
 const SKINS = [['#f2c8a0', '#d89e78', '#a86a4c'], ['#e4b08a', '#c88864', '#94583c'], ['#c88e66', '#a46a46', '#6e442a']];
-const BEARDS = ['#ece6cc', '#e0d8b8', '#cfc8a8', '#d8d0c0', '#b8a888', '#9a7a52', '#c8823a', '#eae0b0'];
+const BEARDS = ['#ece6cc', '#e0d8b8', '#cfc8a8', '#d8d0c0', '#b8a888', '#9a7a52', '#c8823a', '#eae0b0', '#6a5a4a', '#3e3028', '#b04a24', '#d8c8a0'];
 const GREENS = ['#4e8a2a', '#5a9a30', '#46802a', '#62a036', '#3e7426'];   // лесная зелень туник
 
 // Колпак — цвет профессии (приглушён под лес), одежда у всех зелёная.
@@ -44,22 +44,34 @@ const OUTFIT = {
 const HAIR = '#c9501c', HAIR_D = '#8e3412', HAIR_L = '#e8742c';   // рыжие волосы официантки
 const SERF_CAPS = ['#3e7426', '#4e8a2a', '#5c9a34', '#2e5a22', '#6aa83e', '#46743a'];
 
-const GIRL_LOOK = { skin: 0, beard: 0, beardLen: 0, braid: false, capTip: 1, green: '#3f7a46', deco: 5, serfCap: '#fff', capStyle: 0 };
+const GIRL_LOOK = { skin: 0, beard: 0, beardLen: 0, beardStyle: 0, must: 0, nose: 0, brow: 0, earring: false, freckles: false, braid: false, capTip: 1, green: '#3f7a46', deco: 5, serfCap: '#fff', capStyle: 0 };
 const ANIM_TOOL = { chop: 'axe', mine: 'pick', build: 'hammer', reap: 'sickle', dig: 'spade', hoppick: 'hook' };
 
+// Внешность гнома целиком выводится из числа look: один и тот же гном всегда выглядит одинаково.
+// Чтобы признаки не зависели друг от друга (как было с битовыми сдвигами), берём их из
+// детерминированного генератора.
 function lookOf(u) {
   const l = u.look;
   if (u.type === 'waitress') return { ...GIRL_LOOK, skin: l % 2 };
+  const r = mulberry32(Math.imul(l + 101, 0x45d9f3b) ^ 0x2545);
+  const pick = n => Math.floor(r() * n);
+  const ench = u.type === 'enchanter';
   return {
-    skin: l % 3,
-    beard: u.type === 'enchanter' ? 0 : (l >> 2) % BEARDS.length,
-    beardLen: u.type === 'enchanter' ? 2 : 1 + ((l >> 5) % 2),   // 1 до груди, 2 до ремня
-    braid: (l >> 7) % 4 === 0,
-    capTip: ((l >> 9) & 1) ? 1 : -1,                             // в какую сторону свисает кончик
-    green: GREENS[(l >> 11) % GREENS.length],
-    deco: (l >> 13) % 6,                                         // 0 веточка, 1 листья, 2 грибок, 3–5 без украшений
-    serfCap: SERF_CAPS[(l >> 3) % SERF_CAPS.length],
-    capStyle: (l * 7 + (l >> 3)) % 4,                            // 0 завиток, 1 конус, 2 мешок, 3 короткий загнутый
+    skin: pick(3),
+    beard: ench ? 0 : pick(BEARDS.length),
+    beardLen: ench ? 2 : 1 + pick(2),              // 1 до груди, 2 до ремня
+    beardStyle: ench ? 2 : pick(5),                // 0 круглая, 1 раздвоенная, 2 клином, 3 лопатой, 4 козлиная бородка
+    must: pick(3),                                 // усы: 0 пышные, 1 закрученные вверх, 2 моржовые, вниз
+    nose: pick(3),                                 // 0 картошка, 1 слива, 2 остренький
+    brow: pick(2),                                 // 1 — брови кустистые, торчат из-под колпака
+    earring: pick(5) === 0,                        // золотое колечко в ухе
+    freckles: pick(4) === 0,                       // веснушки на щеках
+    braid: pick(4) === 0,                          // борода заплетена в косичку
+    capTip: pick(2) ? 1 : -1,                      // в какую сторону свисает кончик
+    green: GREENS[pick(GREENS.length)],
+    deco: pick(8),                                 // 0 веточка, 1 листья, 2 грибок, 3 перо, 4 жёлудь, 5–7 без украшений
+    serfCap: SERF_CAPS[pick(SERF_CAPS.length)],
+    capStyle: pick(10),                            // форма колпака, см. capShape
   };
 }
 
@@ -217,6 +229,15 @@ function drawLoad(c, g) {
   }
 }
 
+// Несколько единиц груза — стопкой, одна на другой (трудяги 2-го и 3-го уровня)
+function drawLoads(c, g, n) {
+  if (n <= 1) { drawLoad(c, g); return; }
+  const step = g === 'trunk' || g === 'timber' ? 4.4 : 3.2;
+  for (let k = n - 1; k >= 0; k--) {
+    c.save(); c.translate((k % 2 ? 0.5 : -0.3) * (k ? 1 : 0), -(n - 1 - k) * step + (n - 1) * step * 0.35); drawLoad(c, g); c.restore();
+  }
+}
+
 // Деревянная заплечная рама курьера
 function drawFrame(c, view, x, y) {
   const w = '#6a4424', d = '#3a2414';
@@ -315,8 +336,12 @@ function mushroom(c, x, y) {
 
 // ---------- Колпак ----------
 // Мшистый колпак натянут по самые брови — глаз не видно, торчит только нос.
-// Четыре формы: завиток вбок, прямой конус, мягкий мешок, свисающий до уха,
-// и короткий фригийский с загнутым вперёд кончиком.
+// Десять форм, цвет всегда профессии:
+//  0 завиток вбок          5 дважды переломленный, зигзагом
+//  1 прямой конус          6 широкий блин с пупочкой (шляпка гриба)
+//  2 мягкий мешок до уха   7 штопор — кончик закручен петлёй
+//  3 короткий фригийский   8 коротышка с помпоном
+//  4 длинный ночной, кончик свисает до плеча   9 раздвоенный, на два рожка
 
 function capShape(c, hx, b, s, tall, style) {
   const X = k => hx + k * s;
@@ -336,6 +361,43 @@ function capShape(c, hx, b, s, tall, style) {
     c.quadraticCurveTo(X(3.8), b - tall * 1.05, X(4.4), b - tall * 0.62);
     c.quadraticCurveTo(X(3.2), b - tall * 0.7, X(3.3), b - tall * 0.45);
     c.quadraticCurveTo(X(4.5), b - tall * 0.25, X(4.3), b);
+  } else if (style === 4) {
+    // длинный ночной колпак: тянется вверх, переламывается и свисает вдоль уха до плеча
+    c.quadraticCurveTo(X(-4.6), b - tall * 0.7, X(-0.4), b - tall * 0.96);
+    c.quadraticCurveTo(X(3.6), b - tall * 1.02, X(5.8), b - tall * 0.5);
+    c.quadraticCurveTo(X(7.6), b - tall * 0.05, X(7.2), b + 5.6);
+    c.quadraticCurveTo(X(6.2), b + 2, X(4.8), b - tall * 0.34);
+    c.quadraticCurveTo(X(4.7), b - tall * 0.1, X(4.3), b);
+  } else if (style === 5) {
+    // зигзаг: середина уходит вбок, кончик возвращается обратно
+    c.quadraticCurveTo(X(-3.4), b - tall * 0.3, X(0.4), b - tall * 0.56);
+    c.quadraticCurveTo(X(-0.8), b - tall * 0.8, X(-2.4), b - tall * 1.02);
+    c.quadraticCurveTo(X(0.8), b - tall * 0.95, X(4.8), b - tall * 0.5);
+    c.quadraticCurveTo(X(5.6), b - tall * 0.2, X(4.3), b);
+  } else if (style === 6) {
+    // блин: широкие мягкие поля нависают над ушами, сверху пупочка
+    c.quadraticCurveTo(X(-7.6), b - tall * 0.12, X(-6.4), b - tall * 0.42);
+    c.quadraticCurveTo(X(-3), b - tall * 0.78, X(-0.5), b - tall * 0.7);
+    c.lineTo(X(-0.3), b - tall * 0.98); c.lineTo(X(1.1), b - tall * 0.98); c.lineTo(X(0.9), b - tall * 0.7);
+    c.quadraticCurveTo(X(4), b - tall * 0.78, X(6.4), b - tall * 0.42);
+    c.quadraticCurveTo(X(7.6), b - tall * 0.12, X(4.3), b);
+  } else if (style === 7) {
+    // штопор: конус, а кончик завит петлёй
+    c.quadraticCurveTo(X(-3.8), b - tall * 0.6, X(0.4), b - tall * 0.8);
+    c.quadraticCurveTo(X(3.2), b - tall * 1.18, X(4.8), b - tall * 0.92);
+    c.quadraticCurveTo(X(5.6), b - tall * 0.64, X(3.4), b - tall * 0.62);
+    c.quadraticCurveTo(X(2.2), b - tall * 0.66, X(2.8), b - tall * 0.8);
+    c.quadraticCurveTo(X(4.8), b - tall * 0.42, X(4.3), b);
+  } else if (style === 8) {
+    // коротышка: круглый куполок, на верхушке помпон (рисуется отдельно)
+    c.quadraticCurveTo(X(-4.2), b - tall * 0.78, X(1.2), b - tall * 0.9);
+    c.quadraticCurveTo(X(4.4), b - tall * 0.7, X(4.3), b);
+  } else if (style === 9) {
+    // два рожка в стороны
+    c.quadraticCurveTo(X(-6.6), b - tall * 0.5, X(-5.4), b - tall * 0.92);
+    c.quadraticCurveTo(X(-2.6), b - tall * 0.56, X(0), b - tall * 0.48);
+    c.quadraticCurveTo(X(2.6), b - tall * 0.56, X(5.4), b - tall * 0.92);
+    c.quadraticCurveTo(X(6.6), b - tall * 0.5, X(4.3), b);
   } else {
     c.quadraticCurveTo(X(-4.4), b - tall * 0.62, X(-0.8), b - tall * 0.88);
     c.quadraticCurveTo(X(2.4), b - tall * 1.12, X(5.8), b - tall * 0.86);
@@ -346,9 +408,22 @@ function capShape(c, hx, b, s, tall, style) {
   c.closePath();
 }
 
-const CAP_TALL = [10.5, 11.5, 9.5, 8.5];
+const CAP_TALL = [10.5, 11.5, 9.5, 8.5, 11, 11.5, 8, 10.5, 7.5, 9.5];
 
-function drawCap(c, O, view, hx, hy, tipSway, L, r) {
+// Перо и жёлудь на колпаке
+function feather(c, x, y, dir) {
+  c.save(); c.translate(x, y); c.rotate(dir * 0.55);
+  c.fillStyle = '#e4d6b4'; c.beginPath(); c.ellipse(0, -3.4, 1.1, 3.6, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#8a5a2a'; c.beginPath(); c.ellipse(0, -6.2, 0.9, 1.2, 0, 0, Math.PI * 2); c.fill();
+  line(c, 0, 0.4, 0, -6.6, '#9a7a4a', 0.3);
+  c.restore();
+}
+function acorn(c, x, y) {
+  ellipse(c, x, y - 0.6, 1, 1.3, '#a87838'); ellipse(c, x, y - 1.5, 1.2, 0.7, '#5a3a1e'); line(c, x, y - 2, x, y - 2.8, '#5a3a1e', 0.4);
+  ellipse(c, x - 0.3, y - 0.7, 0.3, 0.5, 'rgba(255,230,180,0.6)');
+}
+
+function drawCap(c, O, view, hx, hy, tipSway, L, r, lvl = 1) {
   const e = view === 'E';
   const b = hy - 1.1;                         // край натянут на глаза
   if (O.cap === 'baker') {
@@ -390,12 +465,18 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r) {
   c.clip();
   // у трудяг колпак весь во мху, у остальных мох лишь налётом — цвет профессии читается
   const mossy = O.cap === 'serf';
-  if (!wizard) mossSpeckle(c, hx - 5, b - tall * 1.1, 13, tall * 1.1, mossy ? 0.55 : 0.14, r);
+  if (!wizard) mossSpeckle(c, hx - 8, b - tall * 1.2, 16, tall * 1.2 + 7, mossy ? 0.55 : 0.14, r);
   // складки
   c.strokeStyle = shade(col, -0.35); c.lineWidth = 0.35;
   c.beginPath(); c.moveTo(hx - 1.4 * s, b); c.quadraticCurveTo(hx - 1 * s, b - tall * 0.5, hx + 0.6 * s, b - tall * 0.8); c.stroke();
   c.beginPath(); c.moveTo(hx + 2 * s, b); c.quadraticCurveTo(hx + 2.4 * s, b - tall * 0.3, hx + 3.2 * s, b - tall * 0.62); c.stroke();
+  // нашивки за выслугу: золотые полоски над отворотом (2-й и 3-й уровень трудяг и работяг)
+  if (lvl > 1) for (let k = 0; k < lvl - 1; k++) { c.fillStyle = '#e8c040'; c.fillRect(hx - 6, b - 2.9 - k * 1.5, 12, 0.8); c.fillStyle = 'rgba(120,80,0,0.45)'; c.fillRect(hx - 6, b - 2.1 - k * 1.5, 12, 0.3); }
   c.restore();
+  // помпон и жёлуди на рожках — тем же цветом, что колпак, светлее
+  if (style === 8) { ellipse(c, hx + 1.4 * s + tipSway * 0.3, b - tall * 0.98, 2, 1.9, shade(col, 0.3)); ellipse(c, hx + 0.8 * s + tipSway * 0.3, b - tall * 1.08, 0.8, 0.7, shade(col, 0.55)); }
+  if (style === 4) { ellipse(c, hx + 7.2 * s + tipSway * 0.3, b + 6.2, 1.5, 1.4, shade(col, 0.3)); ellipse(c, hx + 6.8 * s + tipSway * 0.3, b + 5.8, 0.6, 0.5, shade(col, 0.55)); }
+  if (style === 9 && !wizard) { acorn(c, hx - 5.4 * s + tipSway * 0.3, b - tall * 0.9 + 1.2); acorn(c, hx + 5.4 * s + tipSway * 0.3, b - tall * 0.9 + 1.2); }
   // толстый подвёрнутый край, весь во мху
   c.save();
   rrect(c, hx - 4.9, b - 1.4, 9.8, 3, 1.5);
@@ -413,6 +494,8 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r) {
     if (L.deco === 0) twig(c, hx + 3.4 * (e ? -1 : 1), b - 0.6, e ? -1 : 1);
     else if (L.deco === 1) oakLeaves(c, hx - 3.6 * (e ? -1 : 1), b - 0.4, e ? 1 : -1);
     else if (L.deco === 2) mushroom(c, hx - 3 * (e ? -1 : 1), b - 0.6);
+    else if (L.deco === 3) feather(c, hx - 3.4 * (e ? -1 : 1), b - 0.8, e ? 1 : -1);
+    else if (L.deco === 4) acorn(c, hx - 3.2 * (e ? -1 : 1), b - 0.4);
   }
   if (O.candle && view !== 'N') {
     const cx = e ? hx + 2.6 : hx;
@@ -432,19 +515,57 @@ function drawEar(c, x, y, dir, sk) {
 
 function drawBeard(c, view, hx, hy, L, type, bottom, r) {
   const bc = type === 'enchanter' ? '#f0ece4' : BEARDS[L.beard];
+  const st = L.beardStyle || 0, mid = (hy + bottom) / 2 + 1;
   c.save();
   c.beginPath();
   if (view === 'S') {
-    // борода начинается ниже щёк и носа
-    c.moveTo(hx - 3.8, hy + 1);
-    c.quadraticCurveTo(hx - 4.9, (hy + bottom) / 2 + 1, hx - 1.6, bottom - 0.4);
-    c.quadraticCurveTo(hx, bottom + 0.8, hx + 1.6, bottom - 0.4);
-    c.quadraticCurveTo(hx + 4.9, (hy + bottom) / 2 + 1, hx + 3.8, hy + 1);
-    c.quadraticCurveTo(hx, hy + 3.2, hx - 3.8, hy + 1);
+    // борода начинается ниже щёк и носа; форма — по beardStyle
+    if (st === 4) {
+      // козлиная бородка: только на подбородке, щёки голые
+      c.moveTo(hx - 2.2, hy + 2.6);
+      c.quadraticCurveTo(hx - 2.6, bottom - 1, hx, bottom + 0.6);
+      c.quadraticCurveTo(hx + 2.6, bottom - 1, hx + 2.2, hy + 2.6);
+      c.quadraticCurveTo(hx, hy + 3.4, hx - 2.2, hy + 2.6);
+    } else {
+      c.moveTo(hx - 3.8, hy + 1);
+      if (st === 1) {          // раздвоенная: два кончика и выемка между ними
+        c.quadraticCurveTo(hx - 5, mid, hx - 2.8, bottom + 0.6);
+        c.quadraticCurveTo(hx - 1.2, bottom - 1.4, hx, bottom - 2.4);
+        c.quadraticCurveTo(hx + 1.2, bottom - 1.4, hx + 2.8, bottom + 0.6);
+        c.quadraticCurveTo(hx + 5, mid, hx + 3.8, hy + 1);
+      } else if (st === 2) {   // клином: сходится в одну точку
+        c.quadraticCurveTo(hx - 4.4, mid - 1, hx, bottom + 1.4);
+        c.quadraticCurveTo(hx + 4.4, mid - 1, hx + 3.8, hy + 1);
+      } else if (st === 3) {   // лопатой: широкая, срезана ровно
+        c.quadraticCurveTo(hx - 5.2, mid, hx - 4.4, bottom - 0.6);
+        c.quadraticCurveTo(hx - 3.6, bottom + 0.6, hx - 2.6, bottom + 0.6);
+        c.lineTo(hx + 2.6, bottom + 0.6);
+        c.quadraticCurveTo(hx + 3.6, bottom + 0.6, hx + 4.4, bottom - 0.6);
+        c.quadraticCurveTo(hx + 5.2, mid, hx + 3.8, hy + 1);
+      } else {                 // круглая
+        c.quadraticCurveTo(hx - 4.9, mid, hx - 1.6, bottom - 0.4);
+        c.quadraticCurveTo(hx, bottom + 0.8, hx + 1.6, bottom - 0.4);
+        c.quadraticCurveTo(hx + 4.9, mid, hx + 3.8, hy + 1);
+      }
+      c.quadraticCurveTo(hx, hy + 3.2, hx - 3.8, hy + 1);
+    }
+  } else if (st === 4) {
+    c.moveTo(hx + 1.4, hy + 2.6);
+    c.quadraticCurveTo(hx + 1.6, bottom - 1, hx + 3, bottom + 0.4);
+    c.quadraticCurveTo(hx + 4.6, bottom - 1.2, hx + 4.4, hy + 2.6);
   } else {
     c.moveTo(hx - 0.6, hy + 1.4);
-    c.quadraticCurveTo(hx - 0.8, (hy + bottom) / 2, hx + 1, bottom);
-    c.quadraticCurveTo(hx + 4.2, bottom - 1.6, hx + 4, hy + 2.2);
+    if (st === 2 || st === 1) {
+      c.quadraticCurveTo(hx - 0.8, mid - 1, hx + 2.4, bottom + 1.2);
+      c.quadraticCurveTo(hx + 4.6, mid - 1, hx + 4, hy + 2.2);
+    } else if (st === 3) {
+      c.quadraticCurveTo(hx - 1, mid, hx + 0.6, bottom + 0.4);
+      c.lineTo(hx + 4.6, bottom + 0.4);
+      c.quadraticCurveTo(hx + 4.8, mid, hx + 4, hy + 2.2);
+    } else {
+      c.quadraticCurveTo(hx - 0.8, (hy + bottom) / 2, hx + 1, bottom);
+      c.quadraticCurveTo(hx + 4.2, bottom - 1.6, hx + 4, hy + 2.2);
+    }
     c.lineTo(hx + 1.6, hy + 1.6);
   }
   c.closePath();
@@ -463,8 +584,58 @@ function drawBeard(c, view, hx, hy, L, type, bottom, r) {
   }
   c.globalAlpha = 1;
   c.restore();
-  if (L.braid && view === 'S') for (let k = 0; k < 3; k++) ellipse(c, hx, bottom + 0.8 + k * 1.1, 0.8, 0.65, shade(bc, -0.08 * k));
+  if (L.braid && view === 'S' && st !== 4) {
+    if (st === 1) for (const sd of [-1, 1]) for (let k = 0; k < 2; k++) ellipse(c, hx + sd * 2.8, bottom + 1.4 + k * 1.1, 0.75, 0.6, shade(bc, -0.08 * k));
+    else for (let k = 0; k < 3; k++) ellipse(c, hx, bottom + (st === 2 ? 1.8 : 0.8) + k * 1.1, 0.8, 0.65, shade(bc, -0.08 * k));
+    // бусина на конце косички
+    ellipse(c, hx + (st === 1 ? -2.8 : 0), bottom + (st === 1 ? 3.4 : st === 2 ? 4.8 : 3.8), 0.7, 0.7, '#c8a050');
+  }
   return bc;
+}
+
+// Усы: 0 пышные, 1 закрученные вверх (гусарские), 2 моржовые — свисают вниз
+function drawMoustache(c, view, hx, hy, bc, must) {
+  const m = must || 0;
+  if (view === 'E') {
+    if (m === 1) { ellipse(c, hx + 3, hy + 3.2, 1.7, 0.8, shade(bc, 0.1)); c.strokeStyle = shade(bc, 0.1); c.lineWidth = 0.7; c.beginPath(); c.moveTo(hx + 4.4, hy + 3); c.quadraticCurveTo(hx + 6.2, hy + 3, hx + 5.8, hy + 1.4); c.stroke(); }
+    else if (m === 2) { c.save(); c.translate(hx + 3.4, hy + 3.6); c.rotate(0.5); ellipse(c, 0, 0, 2.3, 0.8, shade(bc, 0.1)); c.restore(); ellipse(c, hx + 5.2, hy + 5.6, 0.7, 0.9, shade(bc, 0.05)); }
+    else ellipse(c, hx + 3, hy + 3.4, 1.9, 0.9, shade(bc, 0.1));
+    return;
+  }
+  if (m === 1) {
+    ellipse(c, hx - 1.6, hy + 3.4, 1.7, 0.8, shade(bc, 0.12)); ellipse(c, hx + 1.6, hy + 3.4, 1.7, 0.8, shade(bc, 0.05));
+    c.strokeStyle = shade(bc, 0.1); c.lineWidth = 0.7; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(hx - 3, hy + 3.2); c.quadraticCurveTo(hx - 4.8, hy + 3.2, hx - 4.4, hy + 1.6); c.stroke();
+    c.beginPath(); c.moveTo(hx + 3, hy + 3.2); c.quadraticCurveTo(hx + 4.8, hy + 3.2, hx + 4.4, hy + 1.6); c.stroke();
+    c.lineCap = 'butt';
+  } else if (m === 2) {
+    for (const sd of [-1, 1]) { c.save(); c.translate(hx + sd * 2.2, hy + 3.8); c.rotate(sd * 0.55); ellipse(c, 0, 0, 2.4, 0.85, shade(bc, sd < 0 ? 0.12 : 0.05)); c.restore(); ellipse(c, hx + sd * 4.2, hy + 5.8, 0.7, 1, shade(bc, 0.02)); }
+  } else {
+    ellipse(c, hx - 1.9, hy + 3.5, 2.1, 1, shade(bc, 0.12)); ellipse(c, hx + 1.9, hy + 3.5, 2.1, 1, shade(bc, 0.05));
+  }
+}
+
+// Нос: 0 картошка, 1 слива (большой, красноватый), 2 остренький
+function drawNose(c, view, hx, hy, sk, nose) {
+  const n = nose || 0;
+  if (view === 'E') {
+    if (n === 1) { ellipse(c, hx + 4.2, hy + 2.1, 2.2, 1.9, shade(sk[1], -0.04)); ellipse(c, hx + 4.4, hy + 2.6, 1.5, 1, 'rgba(200,80,70,0.35)'); ellipse(c, hx + 3.6, hy + 1.3, 0.6, 0.5, 'rgba(255,240,220,0.75)'); }
+    else if (n === 2) { poly(c, [[hx + 2.4, hy + 0.8], [hx + 5.8, hy + 2.6], [hx + 2.6, hy + 3]], sk[1]); ellipse(c, hx + 3.2, hy + 1.4, 0.45, 0.4, 'rgba(255,240,220,0.75)'); }
+    else { ellipse(c, hx + 4, hy + 1.9, 1.8, 1.5, sk[1]); ellipse(c, hx + 3.5, hy + 1.4, 0.55, 0.45, 'rgba(255,240,220,0.75)'); }
+    return;
+  }
+  if (n === 1) { ellipse(c, hx, hy + 2.2, 2.3, 2, sk[1]); ellipse(c, hx, hy + 2.9, 1.7, 1.1, 'rgba(200,80,70,0.4)'); ellipse(c, hx - 0.7, hy + 1.5, 0.7, 0.55, 'rgba(255,240,220,0.75)'); }
+  else if (n === 2) { poly(c, [[hx - 1.1, hy + 0.9], [hx + 1.1, hy + 0.9], [hx + 0.3, hy + 3.6]], sk[1]); ellipse(c, hx - 0.3, hy + 1.5, 0.45, 0.4, 'rgba(255,240,220,0.75)'); }
+  else { ellipse(c, hx, hy + 2, 1.9, 1.6, sk[1]); ellipse(c, hx, hy + 2.6, 1.4, 0.9, shade(sk[1], -0.1)); ellipse(c, hx - 0.6, hy + 1.5, 0.6, 0.5, 'rgba(255,240,220,0.75)'); }
+}
+
+function drawEarring(c, x, y) {
+  c.strokeStyle = '#e8c040'; c.lineWidth = 0.45; c.beginPath(); c.arc(x, y, 0.8, 0, Math.PI * 2); c.stroke();
+}
+
+function drawFreckles(c, hx, hy, sk, side) {
+  c.fillStyle = shade(sk[2], -0.15);
+  for (const [dx, dy] of [[-1.2, 0.9], [-0.2, 1.4], [-1.6, 1.7], [0.3, 0.6]]) c.fillRect(hx + side * (2.4 + dx * 0.9) - 0.2, hy + dy, 0.45, 0.45);
 }
 
 function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
@@ -478,11 +649,16 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
     // пухлые румяные щёки
     ellipse(c, hx - 2.4, hy + 1.1, 1.5, 1.2, sk[0]); ellipse(c, hx + 2.4, hy + 1.1, 1.5, 1.2, sk[0]);
     ellipse(c, hx - 2.4, hy + 1.3, 1.1, 0.8, 'rgba(225,100,80,0.55)'); ellipse(c, hx + 2.4, hy + 1.3, 1.1, 0.8, 'rgba(225,100,80,0.55)');
+    if (L.freckles && !O.fem) { drawFreckles(c, hx, hy, sk, -1); drawFreckles(c, hx, hy, sk, 1); }
     // глаз не видно: густая тень под колпаком и торчащие из-под края брови
     ellipse(c, hx, hy + 0.8, 3.3, 0.75, 'rgba(48,22,8,0.55)');
     c.fillStyle = shade(bc, -0.12); rrect(c, hx - 3.1, hy + 0.3, 2.7, 0.9, 0.4); c.fill(); rrect(c, hx + 0.4, hy + 0.3, 2.7, 0.9, 0.4); c.fill();
-    // нос-картошка
-    ellipse(c, hx, hy + 2, 1.9, 1.6, sk[1]); ellipse(c, hx, hy + 2.6, 1.4, 0.9, shade(sk[1], -0.1)); ellipse(c, hx - 0.6, hy + 1.5, 0.6, 0.5, 'rgba(255,240,220,0.75)');
+    if (L.brow && !O.fem) {   // кустистые брови: лохматые и торчат за край лица
+      c.fillStyle = shade(bc, -0.05); rrect(c, hx - 3.9, hy + 0.1, 3.3, 1.3, 0.5); c.fill(); rrect(c, hx + 0.6, hy + 0.1, 3.3, 1.3, 0.5); c.fill();
+      for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) line(c, hx + sd * (1 + k * 1.1), hy + 0.5, hx + sd * (1.3 + k * 1.1), hy - 0.6 - (k % 2) * 0.4, shade(bc, -0.05), 0.4);
+    }
+    drawNose(c, 'S', hx, hy, sk, O.fem ? 0 : L.nose);
+    if (L.earring && !O.fem) drawEarring(c, hx + 5.6, hy - 0.4);
     if (O.fem) {
       ellipse(c, hx, hy + 3.6, 1.1, 0.55, '#c8402e'); ellipse(c, hx, hy + 3.4, 0.7, 0.2, '#e8705a');   // губы
       // две рыжие косы свисают на грудь, перевязаны лентами
@@ -494,24 +670,24 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
         ellipse(c, hx + sd * 4.2, hy + 11.4, 1.1, 0.9, '#d82e3a');
         ellipse(c, hx + sd * 4.1, hy + 12.4, 0.9, 0.9, HAIR_L);
       }
-    } else {
-    // пышные усы
-    ellipse(c, hx - 1.9, hy + 3.5, 2.1, 1, shade(bc, 0.12)); ellipse(c, hx + 1.9, hy + 3.5, 2.1, 1, shade(bc, 0.05));
-    }
+    } else drawMoustache(c, 'S', hx, hy, bc, L.must);
   } else if (view === 'E') {
     drawEar(c, hx - 2.6, hy + 0.2, -1, sk);
     c.fillStyle = radgrad(c, hx, hy - 1, 0.4, R * 1.5, [[0, sk[0]], [0.7, sk[1]], [1, sk[2]]]);
     c.beginPath(); c.ellipse(hx, hy, R * 0.92, R, 0, 0, Math.PI * 2); c.fill();
     const bc = O.fem ? HAIR : drawBeard(c, 'E', hx, hy, L, type, bottom, r);
     ellipse(c, hx + 1.9, hy + 1.1, 1.3, 1.1, sk[0]); ellipse(c, hx + 1.9, hy + 1.3, 1, 0.7, 'rgba(225,100,80,0.55)');
+    if (L.freckles && !O.fem) drawFreckles(c, hx - 0.4, hy, sk, 1);
     ellipse(c, hx + 1.6, hy + 0.8, 2.2, 0.7, 'rgba(48,22,8,0.55)');
     c.fillStyle = shade(bc, -0.12); rrect(c, hx + 1, hy + 0.3, 2.8, 0.9, 0.4); c.fill();
-    ellipse(c, hx + 4, hy + 1.9, 1.8, 1.5, sk[1]); ellipse(c, hx + 3.5, hy + 1.4, 0.55, 0.45, 'rgba(255,240,220,0.75)');
+    if (L.brow && !O.fem) { c.fillStyle = shade(bc, -0.05); rrect(c, hx + 0.8, hy + 0.1, 3.6, 1.3, 0.5); c.fill(); for (let k = 0; k < 3; k++) line(c, hx + 1.4 + k * 1.1, hy + 0.5, hx + 1.8 + k * 1.1, hy - 0.6 - (k % 2) * 0.4, shade(bc, -0.05), 0.4); }
+    drawNose(c, 'E', hx, hy, sk, O.fem ? 0 : L.nose);
+    if (L.earring && !O.fem) drawEarring(c, hx - 4.6, hy - 0.6);
     if (O.fem) {
       ellipse(c, hx + 3.3, hy + 3.5, 0.9, 0.5, '#c8402e');
       for (let k = 0; k < 6; k++) { ellipse(c, hx - 3 - k * 0.1, hy + 1.2 + k * 1.75, 1.1, 1, k % 2 ? HAIR : HAIR_L); }   // коса за спиной
       ellipse(c, hx - 3.5, hy + 11.5, 1, 0.9, '#d82e3a');
-    } else ellipse(c, hx + 3, hy + 3.4, 1.9, 0.9, shade(bc, 0.1));
+    } else drawMoustache(c, 'E', hx, hy, bc, L.must);
     if (pipe) {
       line(c, hx + 3, hy + 2.4, hx + 6, hy + 3.2, '#4a2c14', 0.6);
       c.fillStyle = '#6a3c1c'; rrect(c, hx + 5.4, hy + 1.4, 1.7, 2.3, 0.4); c.fill();
@@ -644,7 +820,9 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   c.translate(PFX + sway, PFY + bob);
   c.rotate(roll);
   const hipY = -6.2 + crouch, shY = -12 + crouch, headY = -16.6 + crouch;
-  const beardBottom = L.beardLen === 2 ? hipY + 0.2 : shY + 3.4;
+  const beardBottom = L.beardStyle === 4 ? shY + 0.8 : L.beardLen === 2 ? hipY + 0.2 : shY + 3.4;
+  const lvl = opt.lvl || 1;        // нашивки за выслугу на колпаке
+  const carryN = carry ? Math.max(1, opt.carryN || 1) : 0;
   const upper = fn => { c.save(); c.translate(0, hipY); c.rotate(lean); c.translate(0, -hipY); fn(); c.restore(); };
   const skin = SKINS[L.skin];
 
@@ -703,7 +881,11 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     drawLeg(legs[0]);
     upper(() => {
       if (courier) drawFrame(c, 'E', -3, shY + 3);
-      if (carry && courier) { c.save(); c.translate(-5.2, shY); c.rotate(-Math.PI / 2 * (carry === 'trunk' || carry === 'timber' || carry === 'staff' ? 1 : 0)); drawLoad(c, carry); c.restore(); }
+      if (carry && courier) {
+        const rot = carry === 'trunk' || carry === 'timber' || carry === 'staff';
+        const step = rot ? 4.6 : 3.4;
+        for (let k = carryN - 1; k >= 0; k--) { c.save(); c.translate(-5.2 + (k % 2 ? 0.4 : 0), shY - (carryN - 1 - k) * step + (carryN - 1) * step * 0.4); c.rotate(-Math.PI / 2 * (rot ? 1 : 0)); drawLoad(c, carry); c.restore(); }
+      }
       if (O.staff) line(c, -2.8, shY + 6, -1.2, shY - 8, '#6a4424', 0.8);
     });
     drawLeg(legs[1]);
@@ -741,7 +923,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       }
       if (courier) line(c, -2, shY + 0.2, 2.4, hipY, '#4a2c14', 0.6);
       drawHead(c, 'E', 0.6, headY, L, O, type, pose === 'smoke', beardBottom, r);
-      drawCap(c, O, 'E', 0.6, headY, tipSway, L, r);
+      drawCap(c, O, 'E', 0.6, headY, tipSway, L, r, lvl);
       if (sling) {
         poly(c, [[-0.4, shY + 0.6], [3.4, shY + 3.2], [-0.8, shY + 4.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
         smoothLimb(c, [0.4, shY + 0.4], [0.6, shY + 3], [2.8, shY + 3], 2, shirt);
@@ -779,7 +961,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         smoothLimb(c, [0.4, shY + 0.4], [3, shY + 1.4], [5.8, shY + 2.4], 2, shirt);
         hand(c, 6.1, shY + 2.4, skin[0]);
       } else if (carry && !courier) {
-        c.save(); c.translate(-0.6, headY - 6.4); drawLoad(c, carry); c.restore();
+        c.save(); c.translate(-0.6, headY - 6.4); drawLoads(c, carry, carryN); c.restore();
         smoothLimb(c, [0.4, shY + 0.4], [2.6, shY - 1], [2.2, headY - 3.4], 1.9, shirt); hand(c, 2.2, headY - 3.8, skin[0]);
       } else {
         const ex = 0.4 + Math.sin(armA) * 2.8, ey = shY + Math.cos(armA) * 2.8;
@@ -794,7 +976,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     const lift = pose === 'walk' ? [Math.max(0, sw) * (limp ? 0.6 : 1.2), Math.max(0, -sw) * 1.2] : [0, 0];
     const dip = lean * 2.4;
     c.save(); c.translate(0, dip);
-    if (carry && courier && front) { c.save(); c.translate(0, headY - 4); drawLoad(c, carry); c.restore(); }
+    if (carry && courier && front) { c.save(); c.translate(0, headY - 4); drawLoads(c, carry, carryN); c.restore(); }
     if (courier && front) drawFrame(c, 'S', 0, shY + 3);
     c.restore();
     for (const [k, side] of [[0, -1], [1, 1]]) {
@@ -861,7 +1043,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     if (O.fem && front) femBust(c, shY, skin);
     if (front) { arm(-1); arm(1); }
     drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);
-    drawCap(c, O, view, 0, headY, tipSway, L, r);
+    drawCap(c, O, view, 0, headY, tipSway, L, r, lvl);
     // поднятая рука жеста — поверх головы и бороды
     if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic') arm(-1); }
     if (pose === 'smoke' && front) {
@@ -872,9 +1054,9 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     }
     if (courier && !front) {
       drawFrame(c, 'N', 0, shY + 2.6);
-      if (carry) { c.save(); c.translate(0, shY + 0.6); drawLoad(c, carry); c.restore(); }
+      if (carry) { c.save(); c.translate(0, shY + 0.6); drawLoads(c, carry, carryN); c.restore(); }
     }
-    if (carry && !courier) { c.save(); c.translate(0, headY - 6.6); drawLoad(c, carry); c.restore(); }
+    if (carry && !courier) { c.save(); c.translate(0, headY - 6.6); drawLoads(c, carry, carryN); c.restore(); }
     c.restore();
   }
   c.restore();
@@ -882,16 +1064,18 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
 
 const PEOPLE_CACHE = new Map();
 
-// Внешность выбирается из 48 вариантов: в большом городе гномы делят наборы кадров,
+// Внешность выбирается из 64 вариантов: в большом городе гномы делят наборы кадров,
 // иначе у каждого свои сотни спрайтов и кэш не справляется.
-const LOOK_POOL = Array.from({ length: 48 }, (_, i) => (Math.imul(i + 7, 2654435761) >>> 12) & 0xffff);
+const LOOK_POOL = Array.from({ length: 64 }, (_, i) => (Math.imul(i + 7, 2654435761) >>> 12) & 0xffff);
 const PEOPLE_CACHE_MAX = 4500;
 let PEOPLE_SCRATCH = null;
 
 function personSprite(u, view, pose, frame, opt = {}) {
   const look = LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length];
   const fkey = pose === 'work' ? `${frame.anim}${frame.f}` : frame;
-  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gf || 0) : ''}`;
+  const lvl = (u.type === 'serf' || u.type === 'builder') ? unitLevel(u) : 1;
+  const carryN = u.carry ? Math.min(3, Math.max(1, u.carryN || 1)) : 0;
+  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gf || 0) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}`;
   const key = `${u.type}|${look}|${view}${pose}${fkey}|${u.carry || ''}|${u.injury || ''}|${okey}`;
   let cv = PEOPLE_CACHE.get(key);
   if (cv) {
@@ -908,7 +1092,7 @@ function personSprite(u, view, pose, frame, opt = {}) {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c2.width, c2.height);
   ctx.setTransform(PS, 0, 0, PS, 0, 0); ctx.globalAlpha = 1;
   // мох и крапинки одинаковые у одного гнома во всех кадрах
-  drawPerson(ctx, u.type, lookOf({ type: u.type, look }), view, pose, frame, u.carry, u.injury, mulberry32(look * 977 + 13), opt);
+  drawPerson(ctx, u.type, lookOf({ type: u.type, look }), view, pose, frame, u.carry, u.injury, mulberry32(look * 977 + 13), { ...opt, lvl, carryN });
   cv = toPixelArt(c2, PS / PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
   if (PEOPLE_CACHE.size >= PEOPLE_CACHE_MAX) PEOPLE_CACHE.delete(PEOPLE_CACHE.keys().next().value);
   PEOPLE_CACHE.set(key, cv);

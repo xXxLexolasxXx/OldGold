@@ -327,7 +327,7 @@ function totals() {
 
 function storeHTML() {
   const t = totals();
-  let h = '<div class="muted small">Клик по товару — запретить складам его принимать.</div>';
+  let h = '<div class="muted small">Клик по товару — запретить складам его принимать. Кладовщик и так считает, что ему всё несут зря.</div>';
   for (const grp of GOOD_GROUPS) {
     h += `<div class="group-title">${grp}</div><div class="slots">`;
     for (const g of GOOD_KEYS) if (GOODS[g].group === grp)
@@ -363,9 +363,28 @@ function peopleHTML() {
     if (T.noTrain && !c) continue;
     h += `<div class="prow"><img class="portrait" src="${portraitURL(k)}" alt="">
       <div><div class="pn">${T.name}</div><div class="muted small">${idle[k] ? `свободно: ${idle[k]}` : c ? 'все заняты' : 'нет'}${queued[k] ? ` · учится: ${queued[k]}` : ''}</div></div>
-      <span class="pc">${c}</span>${T.noTrain ? '<span></span>' : `<button data-train="${k}" title="Обучить в школе (1 золото)">+</button>`}</div>`;
+      <span class="pc">${c}</span>${T.noTrain ? '<span></span>' : `<button data-train="${k}" title="Обучить в школе (1 золото). Дорого? Зато без вступительных">+</button>`}</div>`;
+    if (c && LEVEL_XP[k]) h += levelsHTML(k);
   }
   return h;
+}
+
+// Выслуга трудяг и работяг: сколько на каком уровне и шкала до следующего у каждого
+function levelsHTML(type) {
+  const list = Game.units.filter(u => u.type === type).sort((a, b) => (b.xp || 0) - (a.xp || 0));
+  const by = [0, 0, 0, 0];
+  for (const u of list) by[unitLevel(u)]++;
+  const what = type === 'serf' ? ['', 'носит по 1', 'по 2 за раз', 'по 3 за раз'] : ['', 'ждёт подвоза', 'берёт 1 материал', 'берёт 2 материала'];
+  const need = type === 'serf' ? 'доставок' : 'очков (здание 3, дорога 1)';
+  let h = `<div class="lvls"><div class="muted small">${[1, 2, 3].filter(l => by[l]).map(l => `ур.${l}: <b>${by[l]}</b> (${what[l]})`).join(' · ')}</div><div class="xpbars">`;
+  const shown = list.slice(0, 12);
+  for (const u of shown) {
+    const L = unitLevel(u), p = levelProgress(u), xp = u.xp || 0, t = LEVEL_XP[type];
+    const tip = L >= 3 ? `Уровень 3, выслуга ${xp}. Выше некуда, только в начальство` : `Уровень ${L}: ${xp} из ${t[L]} ${need} до следующего`;
+    h += `<span class="xpbar l${L}" title="${tip}"><i style="width:${Math.round(p * 100)}%"></i><b>${L}</b></span>`;
+  }
+  if (list.length > shown.length) h += `<span class="muted small">+${list.length - shown.length}</span>`;
+  return h + '</div></div>';
 }
 
 function collectAlerts() {
@@ -397,7 +416,7 @@ function collectAlerts() {
 
 function overviewHTML(alerts) {
   let h = '<div class="group-title">Проблемы</div>';
-  if (!alerts.length) h += '<div class="muted small">Всё работает как надо.</div>';
+  if (!alerts.length) h += '<div class="muted small">Всё работает как надо. Подозрительно. Проверьте ещё раз.</div>';
   for (const a of alerts)
     h += `<div class="alert" ${a.b ? `data-goto="${a.b.id}"` : ''}><img src="${iconURL(a.icon[0], a.icon[1], 2)}" alt="">${a.text}</div>`;
   h += '<div class="group-title">Произведено за игру</div>';
@@ -459,7 +478,7 @@ function infoBuilding(b) {
     return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'road', 2)}" alt=""><div><h3>Дорога</h3>${statusChip(b)}</div></div>
       <div class="slots">${slotHTML('stone', b.stock.stone, ROAD_STONE)}</div>
       <div class="irow">Работяга: ${b.builder ? (b.dug < 1 ? 'копает' : 'кладёт камень') : `<span class="muted">${b.dug < 1 ? 'ждёт свободного работягу' : 'ждёт камень'}</span>`}</div>
-      <div class="tip">Сначала работяга бесплатно копает корыто, потом за 1 камень выкладывает мостовую.</div>
+      <div class="tip">Сначала работяга бесплатно копает корыто — это он умеет лучше всего. Потом за 1 камень выкладывает мостовую, если камень вообще кто-нибудь привезёт.</div>
       <div class="iactions"><button data-act="demolish">${ui('trash')}Отменить</button></div>`;
   }
   const def = b.def;
@@ -473,8 +492,8 @@ function infoBuilding(b) {
   // большая понятная кнопка: принимать ли сюда доставки
   if (b.state === 'done' && (def.inputs || b.isStore())) {
     h += b.noDeliver
-      ? `<button class="deliv closed" data-act="deliver" title="Трудяги сюда ничего не везут. Нажмите, чтобы снова открыть">${ui('nodeliver')}<span><b>Доставки закрыты</b><small>нажмите, чтобы открыть</small></span></button>`
-      : `<button class="deliv open" data-act="deliver" title="Запретить трудягам везти сюда товары (B)">${ui('deliver')}<span><b>Доставки открыты</b><small>нажмите, чтобы закрыть</small></span></button>`;
+      ? `<button class="deliv closed" data-act="deliver" title="Трудяги сюда ничего не везут и очень этому рады. Нажмите, чтобы испортить им праздник">${ui('nodeliver')}<span><b>Доставки закрыты</b><small>нажмите, чтобы открыть</small></span></button>`
+      : `<button class="deliv open" data-act="deliver" title="Запретить трудягам везти сюда товары (B). Они не обидятся, они вообще редко обижаются на меньшее количество работы">${ui('deliver')}<span><b>Доставки открыты</b><small>нажмите, чтобы закрыть</small></span></button>`;
   }
 
   if (b.upg) {
@@ -482,11 +501,11 @@ function infoBuilding(b) {
     h += `<div class="isec">Достройка до уровня 2</div><div class="bar"><div style="width:${Math.round(U.hits / U.maxHits * 100)}%"></div></div><div class="slots">`;
     for (const g in U.cost) if (U.cost[g]) h += slotHTML(g, U.used[g] + U.stock[g], U.cost[g]);
     h += `</div><div class="irow">Работяга: ${U.builder ? '<span class="good">строит</span>' : '<span class="warn">нет свободного</span>'}</div>`;
-    h += `<button class="upg no" data-act="upgcancel" title="Отменить достройку"><span><b>Отменить достройку</b><small>уже внесённые материалы пропадут</small></span></button>`;
+    h += `<button class="upg no" data-act="upgcancel" title="Отменить достройку: материалы пропадут, работяги вздохнут с облегчением"><span><b>Отменить достройку</b><small>уже внесённые материалы пропадут</small></span></button>`;
   } else if (canUpgrade(b)) {
     const up = b.def.up;
     const cost = Object.keys(up.cost).map(g => `${gi(g)}${up.cost[g]}`).join(' ');
-    h += `<button class="upg" data-act="upgrade" title="Работяги надстроят здание: материалы привезут трудяги"><span><b>Достроить до уровня 2: ${cost}</b><small>${BUILDINGS[b.type].desc2}</small></span></button>`;
+    h += `<button class="upg" data-act="upgrade" title="Работяги надстроят здание: материалы привезут трудяги. Когда-нибудь. Если дорога есть"><span><b>Достроить до уровня 2: ${cost}</b><small>${BUILDINGS[b.type].desc2}</small></span></button>`;
   }
   if (b.state !== 'done') {
     h += `<div class="bar"><div style="width:${Math.round(b.progress * 100)}%"></div></div>`;
@@ -598,9 +617,9 @@ function infoPreview(type) {
 
 function infoTips() {
   return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'scroll', 2)}" alt=""><div><h3>Окно здания</h3><span class="chip off">ничего не выбрано</span></div></div>
-    <div class="tip">Кликните по зданию на карте — здесь появятся его запасы, рабочий и производство.<br><br>
-    Наведите на кнопку здания слева — увидите, что оно производит и сколько стоит.<br><br>
-    <b>Значки над домами</b> подсказывают, чего не хватает: рабочего, сырья или места.</div>`;
+    <div class="tip">Кликните по зданию на карте — здесь появятся его запасы, рабочий и производство. Да, кликать надо по зданию, а не куда-нибудь рядом.<br><br>
+    Наведите на кнопку здания слева — увидите, что оно производит и сколько стоит. Цены не торгуются, гномы не уступают.<br><br>
+    <b>Значки над домами</b> подсказывают, чего не хватает: рабочего, сырья или места. Чаще всего — всего сразу.</div>`;
 }
 
 // ---------- Обновление ----------
@@ -663,6 +682,6 @@ function toolHint(tool) {
   if (!el) return;
   if (!tool || tool.kind !== 'build' || Mobile.on) { el.classList.add('hidden'); return; }
   const noRot = BUILDINGS[tool.type].noRotate;
-  el.innerHTML = noRot ? '<b>' + BUILDINGS[tool.type].name + '</b>: это здание не поворачивается' : '<kbd>T</kbd> — повернуть здание: вход на юг, восток или запад';
+  el.innerHTML = noRot ? '<b>' + BUILDINGS[tool.type].name + '</b>: это здание не поворачивается. Оно и так стоит как надо, спросите у него' : '<kbd>T</kbd> — повернуть здание: вход на юг, восток или запад. На север гномы не ходят, принципиально';
   el.classList.remove('hidden');
 }

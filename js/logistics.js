@@ -40,7 +40,8 @@ function auditIncoming() {
 // Тяжёлое не унести с травмой руки
 const HEAVY = new Set(['trunk', 'stone', 'timber', 'pig', 'goldore', 'leatherArmor']);
 
-function carryCap(u) { return CARRY_CAP[u.type] || 1; }
+// трудяга с выслугой носит 2 и 3 предмета (уровни 2 и 3)
+function carryCap(u) { return u.type === 'serf' ? unitLevel(u) : (CARRY_CAP[u.type] || 1); }
 function canCarry(u, g) { return !(u.injury === 'arm' && HEAVY.has(g)); }
 
 // Подобрать перевозчика под партию: большой партии — телегу, средней — козу, иначе курьера.
@@ -49,8 +50,10 @@ function pickCarrier(idle, x, y, g, amount) {
   if (!ok.length) return null;
   const pref = amount >= 3 ? ['carter', 'goat', 'serf'] : amount >= 2 ? ['goat', 'serf', 'carter'] : ['serf', 'goat', 'carter'];
   for (const t of pref) {
-    const list = ok.filter(u => u.type === t);
+    let list = ok.filter(u => u.type === t);
     if (!list.length) continue;
+    // на большую партию — сперва трудяги с выслугой, которые унесут больше за раз
+    if (t === 'serf' && amount >= 2) { const big = list.filter(u => carryCap(u) >= Math.min(3, amount)); if (big.length) list = big; }
     const u = takeNearest(list, x, y);
     idle.splice(idle.indexOf(u), 1);
     return u;

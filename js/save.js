@@ -49,7 +49,7 @@ function serializeGame() {
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
     units: Game.units.map(u => ({
       type: u.type, x: u.x, y: u.y, food: u.food, look: u.look, home: u.home ? u.home.id : 0,
-      homePen: u.homePen || 0, homeStable: u.homeStable || 0, smoker: u.smoker,
+      homePen: u.homePen || 0, homeStable: u.homeStable || 0, smoker: u.smoker, xp: u.xp || undefined,
       h: u.hero || undefined, tm: u.teamOf ? Game.units.findIndex(x => x.id === u.teamOf) : undefined,   // герой и его напарник
     })),
   };
@@ -116,7 +116,7 @@ function applySave(s) {
     if (ty === 'tanner' && home0 && home0.type === 'tannery') ty = 'breeder';
     const u = new Unit(ty, 0, 0);
     u.x = d.x; u.y = d.y; u.food = d.food; u.look = d.look;
-    u.homePen = d.homePen || 0; u.homeStable = d.homeStable || 0;
+    u.homePen = d.homePen || 0; u.homeStable = d.homeStable || 0; u.xp = d.xp || 0;   // старые сохранения: выслуги нет
     if (d.smoker !== undefined) u.smoker = d.smoker;
     const home = byId.get(d.home);
     if (home) { u.home = home; home.worker = u; }

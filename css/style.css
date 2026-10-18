@@ -668,3 +668,12 @@ body.mobile #zoom-in, body.mobile #zoom-out { display: none; }
 @keyframes sm-stem { to { stroke-dashoffset: 0; } }
 @keyframes sm-pop { 0% { opacity: 0; transform: scale(0.1); } 70% { opacity: 1; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1); } }
 @keyframes sm-spark { 0% { opacity: 0; transform: translate(0,0) scale(1); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3); } }
+
+/* ---------- Выслуга трудяг и работяг (вкладка «Жители») ---------- */
+.lvls { padding: 2px 4px 5px 46px; border-bottom: 1px solid rgba(90,65,40,0.5); }
+.xpbars { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; align-items: center; }
+.xpbar { position: relative; display: inline-block; width: 34px; height: 10px; background: #1a120a; border: 1px solid #4a3524; box-shadow: inset 0 0 0 1px #0a0705; overflow: hidden; }
+.xpbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#8ab048, #4e8a2a); }
+.xpbar.l2 i { background: linear-gradient(#e8c860, #b08a2a); }
+.xpbar.l3 i { background: linear-gradient(#ffe070, #d8a020); }
+.xpbar b { position: absolute; right: 2px; top: -1px; font-size: 9px; line-height: 10px; color: #f6eccc; text-shadow: 0 0 2px #000, 0 0 2px #000; font-family: Consolas, monospace; }

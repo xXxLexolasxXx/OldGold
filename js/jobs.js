@@ -157,6 +157,7 @@ function* deliverGen(u, from, to, g, n = 1) {
       to.incoming[g] -= n;
       to.stock[g] += Math.min(n, u.carryN || n); u.dlv = null;   // волк мог утащить часть груза
       u.carry = null; u.carryN = 0;
+      gainXp(u, 1);
       yield { wait: 0.6 };
       yield { walk: [Math.floor(u.x), Math.floor(u.y)] };
       return;
@@ -164,6 +165,7 @@ function* deliverGen(u, from, to, g, n = 1) {
     to.incoming[g] -= n;
     (to.upg ? to.upg.stock : to.stock)[g] += Math.min(n, u.carryN || n); u.dlv = null;
     u.carry = null; u.carryN = 0;
+    gainXp(u, 1);
     yield { wait: 0.4 };
     return;
   }
@@ -173,7 +175,47 @@ function* deliverGen(u, from, to, g, n = 1) {
   u.carry = null; u.carryN = 0;
 }
 
+// Работяга 2–3 уровня сам берёт со склада недостающий материал (1 или 2 единицы) и несёт на стройку.
+function* fetchForSiteGen(u, s) {
+  const want = unitLevel(u) - 1;
+  if (want <= 0 || u.carry || u.injury === 'arm') return;
+  const comp = compAt(s.doorX, s.doorY) || compNear(s.doorX, s.doorY);
+  // чего не хватает: дороге — камень, зданию — доски, камень, брёвна
+  let g = null, n = 0;
+  for (const k of (s.isRoad ? ['stone'] : ['timber', 'stone', 'trunk'])) {
+    const need = s.demand(k);
+    if (need > 0) { g = k; n = Math.min(want, need); break; }
+  }
+  if (!g) return;
+  const st = nearestStore(u.x, u.y, g, comp);
+  if (!st || st.offer(g) <= 0) return;
+  n = Math.min(n, st.offer(g));
+  st.reserved[g] += n; s.incoming[g] += n;
+  u.dlv = { from: st, to: s, g, n, gen: u.proc };   // чтобы учёт «в пути» видел эту ношу
+  let ok = yield { walk: [st.doorX, st.doorY] };
+  if (!ok || st.removed) { if (!st.removed) st.reserved[g] -= n; if (!s.removed) s.incoming[g] -= n; u.dlv = null; return; }
+  yield* storeVisit(u, st, 0.7);
+  st.reserved[g] -= n;
+  const got = Math.max(0, Math.min(n, st.stock[g]));
+  st.stock[g] -= got;
+  if (got < n && !s.removed) s.incoming[g] -= n - got;
+  n = got;
+  if (u.dlv) u.dlv.n = n;
+  if (!n) { u.dlv = null; return; }
+  u.carry = g; u.carryN = n;
+  ok = yield { walk: [s.doorX, s.doorY] };
+  const have = u.carry ? Math.min(n, u.carryN || n) : 0;   // по дороге могли уронить или отобрать
+  if (!s.removed) s.incoming[g] -= n;
+  u.dlv = null;
+  u.carry = null; u.carryN = 0;
+  if (!have) return;
+  if (!ok || s.removed) { dropPile(Math.floor(u.x), Math.floor(u.y), g, have); return; }
+  s.stock[g] += have;
+  yield { wait: 0.4 };
+}
+
 function* buildGen(u, s) {
+  if (!s.removed && u.job === s) yield* fetchForSiteGen(u, s);
   const ok = yield { walk: [s.doorX, s.doorY] };
   if (!ok) {
     if (s.builder === u) s.builder = null;
@@ -224,6 +266,7 @@ function* buildGen(u, s) {
   }
   if (s.builder === u) s.builder = null;
   if (u.job === s) u.job = null;
+  if (builtIt) gainXp(u, s.isRoad ? 1 : 3);   // выслуга: дорога 1, здание 3
   // закончили стройку: достают фляжки (дорога — реже, чтобы не мельтешило)
   if (builtIt && !u.dead && u.type !== 'hero' && !u.teamOf && Math.random() < (s.isRoad ? 0.25 : 0.8)) yield* flaskGen(u);
 }

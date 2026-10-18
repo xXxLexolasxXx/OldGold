@@ -482,6 +482,41 @@ function innFood(b) {
 
 // ---------- Жители ----------
 
+// Прокачка трудяг и работяг. Уровень считается по выслуге (xp): трудяге капает за каждую
+// доставку, работяге — за стройку (здание 3, дорога 1). Уровень 2 и 3: трудяга носит
+// 2 и 3 предмета за раз, работяга сам берёт со склада 1 и 2 материала на стройку.
+const LEVEL_XP = { serf: [0, 12, 40], builder: [0, 9, 30] };
+function unitLevel(u) {
+  const t = LEVEL_XP[u.type];
+  if (!t) return 1;
+  const xp = u.xp || 0;
+  return xp >= t[2] ? 3 : xp >= t[1] ? 2 : 1;
+}
+// Доля пути до следующего уровня (0..1); на 3-м уровне всегда 1
+function levelProgress(u) {
+  const t = LEVEL_XP[u.type];
+  if (!t) return 1;
+  const L = unitLevel(u), xp = u.xp || 0;
+  if (L >= 3) return 1;
+  return Math.min(1, (xp - t[L - 1]) / (t[L] - t[L - 1]));
+}
+const LEVEL_UP_TEXT = {
+  serf: ['', 'дорос до 2-го уровня: теперь таскает по две штуки и жалуется вдвое громче', 'дорос до 3-го уровня: три предмета за раз и взгляд человека, который видел всё'],
+  builder: ['', 'дорос до 2-го уровня: сам прихватывает со склада материал, чтобы не ждать трудяг', 'дорос до 3-го уровня: тащит на стройку по два материала, строит и поучает'],
+};
+// Начислить выслугу и сообщить, если дорос до нового уровня
+function gainXp(u, n) {
+  if (!LEVEL_XP[u.type]) return;
+  const before = unitLevel(u);
+  u.xp = (u.xp || 0) + n;
+  const after = unitLevel(u);
+  if (after > before) {
+    const msg = `${UNIT_TYPES[u.type].name} ${LEVEL_UP_TEXT[u.type][after - 1]}`;
+    logEvent('people', msg, u.x, u.y);
+    if (typeof toast === 'function') toast(msg);
+  }
+}
+
 class Unit {
   constructor(type, x, y) {
     this.id = Game.nextId++;
@@ -506,6 +541,7 @@ class Unit {
     this.resT = -1;         // забронированная следующая клетка
     this.blockT = -1;       // клетка, занятая на время перерыва
     this.carryN = 0;        // сколько единиц груза несёт
+    this.xp = 0;            // выслуга: трудяги — доставки, работяги — стройки (см. unitLevel)
     // привычки и состояние
     this.smoker = Math.random() < 0.7;
     this.nextSmoke = Game.time + SMOKE_CD_MIN + Math.random() * (SMOKE_CD_MAX - SMOKE_CD_MIN);
