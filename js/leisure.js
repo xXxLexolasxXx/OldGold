@@ -116,7 +116,7 @@ function spawnGeeseFlock() {
     const n = 3 + ((Math.random() * 2) | 0);
     for (let j = 0; j < n; j++) {
       const s = randomFreeNear(x, y, 0, 2, isWaterAt) || [x, y];
-      const a = makeAnimal('goose', s[0], s[1]); a.home = [x, y]; Game.animals.push(a);
+      const a = makeAnimal('goose', s[0], s[1]); a.home = [x, y]; a.lake = [x, y]; Game.animals.push(a);
     }
     return true;
   }
@@ -136,6 +136,7 @@ function gooseMove(a, tx, ty, speed, dt) {
 }
 
 function updateGoose(a, dt, def) {
+  if (gooseShooTick(a, dt, def)) return;      // прогон: трое гномов или герой (fauna.js)
   a.swim = isWaterAt(Math.floor(a.x), Math.floor(a.y));
   const home = [a.home[0] + 0.5, a.home[1] + 0.5];
   if (a.state === 'chase') {
@@ -190,7 +191,7 @@ function updateGoose(a, dt, def) {
     a.wait = 1.5 + Math.random() * 4;
     if (Math.random() < 0.2) {       // стайка понемногу подбирается к деревне, но не вплотную
       const cx = MAP_W >> 1, cy = MAP_H >> 1;
-      if (Math.hypot(a.home[0] - cx, a.home[1] - cy) > 14)
+      if (Game.time >= (a.shyUntil || 0) && Math.hypot(a.home[0] - cx, a.home[1] - cy) > 14)
         a.home = [Math.round(a.home[0] + Math.sign(cx - a.home[0])), Math.round(a.home[1] + Math.sign(cy - a.home[1]))];
     }
     const t = randomFreeNear(a.home[0], a.home[1], 0, 7, (x, y) => gooseCanBe(x, y) && !World.door[idx(x, y)]);
