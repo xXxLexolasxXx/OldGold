@@ -215,56 +215,6 @@ function sprGriffin(fr) {
   });
 }
 
-function sprBrownie() {
-  return fySpr('brw2', 28, 34, c => {
-    c.translate(1, 4);
-    const FU = ['#6e4624', '#9a6a3a', '#c8924e'], HAIR = ['#a04418', '#d8702a'], LP = ['#8a6a38', '#c8a860'], PK = '#eaa496';
-    // лапти
-    fyE(c, 9.6, 28.6, 3.6, 1.8, LP[0]); fyE(c, 9.4, 28.2, 3.2, 1.4, LP[1]); fyE(c, 16.6, 28.6, 3.6, 1.8, LP[0]); fyE(c, 16.4, 28.2, 3.2, 1.4, LP[1]);
-    for (const x of [8, 9.6, 11]) fyD(c, x, 28.4, LP[0]);
-    fyL(c, 10, 25, 9.6, 28, 3.4, 3, FU[0]); fyL(c, 16, 25, 16.4, 28, 3.4, 3, FU[0]);
-    // мохнатое тело
-    fyE3(c, 13, 20.6, 7, 6.6, FU); fyE(c, 13.6, 22.6, 3.6, 3.4, FU[2]);
-    for (const [x, y] of [[6.4, 22], [6, 18.6], [19.8, 20.4], [20.4, 23.4], [9, 26.4], [17.4, 26.6]]) fyL(c, x, y, x + (x < 13 ? -1.6 : 1.6), y + 1.4, 1.8, 0.8, FU[1]);
-    // руки
-    fyL(c, 7, 17.6, 4.4, 22.6, 3, 2.4, FU[0]); fyL(c, 19.6, 17.6, 22.4, 22.6, 3, 2.4, FU[0]); fyE(c, 4, 23.4, 1.8, 1.6, FU[1]); fyE(c, 22.8, 23.4, 1.8, 1.6, FU[1]);
-    // голова
-    fyE3(c, 13, 11, 7.4, 6.6, FU);
-    fyE(c, 5.8, 11.6, 2, 2.4, FU[0]); fyE(c, 5.9, 11.7, 1.2, 1.6, PK); fyE(c, 20.4, 11.6, 2, 2.4, FU[0]); fyE(c, 20.3, 11.7, 1.2, 1.6, PK);
-    // вихры
-    fyL(c, 9, 6, 6.6, -0.6, 3, 0.9, HAIR[0]); fyL(c, 12.4, 5, 12.4, -2.4, 3.2, 0.9, HAIR[0]); fyL(c, 16.4, 6, 19.4, -0.4, 3, 0.9, HAIR[0]); fyL(c, 10.8, 5.4, 9.6, 0.6, 2, 0.6, HAIR[1]); fyL(c, 14.4, 5.4, 15.6, 0.4, 2, 0.6, HAIR[1]);
-    // лицо
-    fyE(c, 9.6, 10, 2.5, 2.8, '#ffffff'); fyE(c, 16.4, 10, 2.5, 2.8, '#ffffff'); fyE(c, 10.2, 10.6, 1.2, 1.5, '#14100a'); fyE(c, 16.8, 10.6, 1.2, 1.5, '#14100a'); fyD(c, 9.8, 9.6, '#ffffff'); fyD(c, 16.4, 9.6, '#ffffff');
-    fyL(c, 7.2, 7, 11.4, 7.6, 1.2, 1.2, FU[0]); fyL(c, 14.6, 7.6, 18.8, 7, 1.2, 1.2, FU[0]);
-    fyE(c, 13, 13.4, 3, 2.5, '#c8786c'); fyE(c, 13, 13, 2.7, 2.2, PK); fyD(c, 12, 12.2, '#ffe2d8'); fyD(c, 11.6, 13.8, '#a85a50'); fyD(c, 14.6, 13.8, '#a85a50');
-    fyL(c, 10.6, 16.2, 15.4, 16.2, 1, 1, '#4a2a18'); fyD(c, 15.4, 15.6, '#4a2a18');
-    fyOutline(c, 28, 34, '#2a1a0e');
-  });
-}
-
-function sprSalamander(fr) {
-  return fySpr('sal2' + fr, 36, 20, c => {
-    c.translate(0, 2);
-    const O = ['#a03c14', '#f08a2a', '#ffc860'], BL = '#ffd890', SP = '#7a2a0c';
-    for (const [x, y] of fr ? [[11, 11], [22, 12]] : [[12, 11], [21, 11]]) { fyL(c, x, y, x - 1, y + 3, 2.6, 2, O[0]); fyL(c, x - 1, y + 3, x + 1, y + 4.4, 1.8, 1.4, O[0]); }
-    // хвост с огненным кончиком
-    fyL(c, 8, 9, 3.4, 10.6, 5, 3.4, O[0]); fyL(c, 3.4, 10.6, 1.6, 13.6, 3.4, 2.2, O[0]); fyL(c, 1.6, 13.6, 4.6, 14.6, 2.2, 1.2, O[0]);
-    fyL(c, 7.6, 8.5, 3, 10, 3.6, 2.4, O[1]); fyL(c, 3, 10, 1.2, 13, 2.4, 1.4, O[1]);
-    fyP(c, [[3.6, 14.8], [6.4, 11.4], [7, 15.4], [9, 13.4], [8.4, 17], [4.4, 17]], '#ff7a20'); fyP(c, [[4.6, 16.6], [6.4, 13.8], [7.4, 16.8]], '#ffe060');
-    // тело
-    fyE(c, 15.5, 9, 9.4, 3.8, O[0]); fyE(c, 15.1, 8.5, 9, 3.3, O[1]); fyE(c, 16.5, 11, 7, 1.6, BL);
-    for (const x of [10, 13, 16, 19, 22]) { fyE(c, x, 6.8, 1.2, 1, SP); fyD(c, x, 6, O[2]); }
-    for (const x of [10, 12.5, 15, 17.5, 20]) { const h = 2 + (fr ? ((x * 3) % 2) : ((x * 5) % 2)); fyP(c, [[x - 1, 6], [x, 6 - h - 1], [x + 1, 6]], x % 2 ? '#ff9a30' : '#ffd060'); }
-    // голова
-    fyE(c, 25.5, 8.4, 4.8, 3.4, O[0]); fyE(c, 25.2, 8, 4.4, 3, O[1]); fyE(c, 29.6, 9.6, 2.8, 1.8, O[1]); fyL(c, 27.5, 10.6, 31.4, 10.6, 1, 1, SP);
-    fyE(c, 25.6, 6.8, 1.6, 1.6, '#ffe04a'); fyD(c, 25.8, 6.6, '#14100a'); fyD(c, 31.2, 8.8, SP);
-    fyP(c, [[22, 5], [21, 2], [24, 4.6]], '#ffd060'); fyP(c, [[24, 4.6], [24, 1.6], [26.4, 4.8]], '#ff9a30');
-    // ближние лапы
-    for (const [x, y] of fr ? [[14, 11], [24, 11]] : [[15, 11], [23, 12]]) { fyL(c, x, y, x + 1, y + 3, 3, 2.2, O[0]); fyL(c, x - 0.3, y, x + 0.7, y + 3, 2, 1.6, O[1]); fyL(c, x + 1, y + 3, x + 3, y + 4.4, 1.8, 1.4, O[1]); for (const dx of [2.4, 3.2]) fyD(c, x + dx, y + 5, O[0]); }
-    fyOutline(c, 36, 20, '#4a1a08');
-  });
-}
-
 const FISH_COL = {
   gold: { b: ['#c8902a', '#f4c840', '#fff0a0'], f: ['#e8782a', '#ffb04a'], e: '#fff6c0', o: '#6a4408' },
   red:  { b: ['#a02418', '#e0402e', '#ff9a7a'], f: ['#c02a1c', '#ff6a4a'], e: '#ffe0d0', o: '#5a1008' },
@@ -288,9 +238,141 @@ function sprFish(kind, fr) {
   });
 }
 
+function sprBabyDragon(fr) {
+  return fySpr('bdra' + fr, 38, 34, c => {
+    c.translate(0, 4);
+    const G = ['#2a7a3a', '#5cbc58', '#a6e68a'], CR = '#f0e6c4', BL = '#f4eeb0', BD = '#cfc884';
+    const wing = (dx, mem, bone) => {
+      const S = [11 + dx, 16], T = fr ? [[3, 22], [7, 27], [13, 27]] : [[4, 5], [9, 1], [15, 4]];
+      const T2 = T.map(([x, y]) => [x + dx, y]);
+      fyP(c, [S, T2[0], [(T2[0][0] + T2[1][0]) / 2 + 1.5, (T2[0][1] + T2[1][1]) / 2 + (fr ? -1.5 : 2)], T2[1], [(T2[1][0] + T2[2][0]) / 2, (T2[1][1] + T2[2][1]) / 2 + (fr ? -1.5 : 2)], T2[2], [14 + dx, 17]], mem);
+      for (const t of T2) fyL(c, S[0], S[1], t[0], t[1], 1.4, 0.8, bone);
+    };
+    wing(-2, '#2a7a4e', '#1c5a38');
+    // хвост
+    fyL(c, 9, 23, 4, 25, 5.4, 4, G[0]); fyL(c, 4, 25, 2, 29, 4, 2.6, G[0]); fyL(c, 2, 29, 6, 31, 2.6, 1.2, G[0]);
+    fyL(c, 8.6, 22.6, 3.6, 24.6, 4, 2.8, G[1]); fyL(c, 3.6, 24.6, 1.6, 28.6, 2.8, 1.6, G[1]);
+    fyP(c, [[5.4, 30.6], [8.6, 29.6], [8.8, 32.6]], G[2]);
+    // лапки
+    fyL(c, 11, 26, 10.6, 29.4, 4.2, 3.4, G[0]); fyE(c, 10.6, 30.2, 3, 1.4, G[0]); fyL(c, 19, 26, 19.6, 29.4, 4.2, 3.4, G[0]); fyE(c, 20, 30.2, 3, 1.4, G[0]);
+    for (const x of [9, 10.6, 12.2, 18.4, 20, 21.6]) fyD(c, x, 31, CR);
+    // круглое тело и пузо
+    fyE(c, 15, 21, 8.6, 7, G[0]); fyE(c, 14.6, 20.4, 8, 6.4, G[1]); fyE(c, 12.5, 16.6, 4.5, 1.6, G[2]);
+    fyE(c, 16, 23, 5.6, 4.4, BD); fyE(c, 15.6, 22.6, 5.1, 3.9, BL);
+    for (const y of [21, 23.4]) fyL(c, 12.4, y, 18.8, y, 1, 1, BD);
+    for (let i = 0; i < 4; i++) { const x = 9 + i * 2.6; fyP(c, [[x - 1, 14.6], [x, 11.6], [x + 1, 14.6]], G[2]); }
+    // голова: большая, милая
+    fyE(c, 21, 15, 4, 4.4, G[0]);
+    fyE(c, 24.5, 11.6, 8, 7, G[0]); fyE(c, 24.1, 11.2, 7.5, 6.5, G[1]); fyE(c, 22, 7.6, 3.4, 1.4, G[2]);
+    fyE(c, 31, 14, 4.2, 3.4, G[0]); fyE(c, 30.7, 13.6, 3.8, 3, G[1]); fyE(c, 30, 16.2, 4, 1.4, BL);
+    fyD(c, 34, 12.4, '#14301a'); fyD(c, 34, 13.4, '#14301a'); fyL(c, 29, 16.6, 33.6, 16.6, 1, 1, '#1c4a26');
+    fyE(c, 25.6, 10.2, 3, 3.3, '#ffffff'); fyE(c, 25.8, 10.2, 2.4, 2.8, '#ffe04a'); fyE(c, 26.4, 10.6, 1.3, 1.9, '#14100a'); fyD(c, 25.4, 9.2, '#ffffff');
+    fyE(c, 22, 14.4, 1.6, 1, '#f09a8a');
+    fyL(c, 21.6, 5.6, 19.4, 0.4, 3, 0.8, CR); fyL(c, 27, 4.6, 28.6, -0.4, 2.8, 0.8, CR);
+    wing(1, '#3e9e66', '#1c5a38');
+    fyOutline(c, 38, 34, '#10301a');
+  });
+}
+
+function sprBrownie() {
+  return fySpr('brw3', 30, 40, c => {
+    c.translate(1, 3);
+    const SK = ['#c88a64', '#eab08a', '#f8d0b0'], HR = ['#8a3a12', '#b8541c', '#e07a30'], SH = ['#4e6a98', '#7a9ac8', '#a6c0e8'], TR = ['#4a3018', '#6a4a2a'], LP = ['#8a6a38', '#c8a860'];
+    // лапти с оборками
+    for (const x of [10, 19]) { fyE(c, x, 36, 4.2, 2, LP[0]); fyE(c, x - 0.2, 35.6, 3.8, 1.6, LP[1]); fyL(c, x - 2.6, 34.4, x + 2.6, 34.4, 1, 1, LP[0]); for (const dx of [-2, 0, 2]) fyD(c, x + dx, 36, LP[0]); }
+    // штаны
+    fyL(c, 11.6, 28, 10.6, 34, 5.2, 4.4, TR[0]); fyL(c, 18.4, 28, 19.4, 34, 5.2, 4.4, TR[0]); fyL(c, 11.2, 28, 10.2, 34, 3.4, 2.8, TR[1]); fyL(c, 18, 28, 19, 34, 3.4, 2.8, TR[1]);
+    // рубаха с заплаткой и пояс
+    fyE3(c, 15, 24, 8.4, 7.4, SH); fyP(c, [[16, 22], [20.4, 22], [20.4, 26], [16, 26]], '#c8a050'); fyL(c, 16, 24, 20.4, 24, 1, 1, '#8a6a30'); fyL(c, 8.6, 27.4, 21.4, 27.4, 2.6, 2.6, '#b03a2a'); fyD(c, 15, 27, '#f0c040');
+    // руки
+    fyL(c, 8, 20, 5, 26.6, 4.2, 3.6, SH[0]); fyL(c, 7.6, 20, 4.6, 26.6, 3, 2.6, SH[1]); fyE(c, 4.6, 28, 2.1, 2, SK[1]);
+    fyL(c, 22, 20, 25, 26.6, 4.2, 3.6, SH[0]); fyE(c, 25.4, 28, 2.1, 2, SK[1]);
+    // голова: кожа, уши, нос
+    fyE(c, 7.4, 13.6, 2, 2.6, SK[0]); fyE(c, 7.6, 13.6, 1.2, 1.8, '#e09878'); fyE(c, 22.6, 13.6, 2, 2.6, SK[0]); fyE(c, 22.4, 13.6, 1.2, 1.8, '#e09878');
+    fyE3(c, 15, 13, 7.8, 7.2, SK);
+    // рыжие вихры и борода
+    fyE(c, 15, 7.6, 8.2, 4.6, HR[0]); fyE(c, 14.6, 7.2, 7.6, 4.1, HR[1]);
+    fyL(c, 9.4, 5, 7, -0.4, 3, 0.9, HR[0]); fyL(c, 13.6, 4, 13.4, -2.4, 3.2, 0.9, HR[1]); fyL(c, 18, 5, 21, 0.2, 3, 0.9, HR[0]); fyL(c, 11.6, 4.4, 10.6, 0.6, 2, 0.6, HR[2]);
+    fyL(c, 8, 9, 8.4, 13, 2.4, 1.2, HR[0]); fyL(c, 22, 9, 21.6, 13, 2.4, 1.2, HR[0]);
+    fyE(c, 15, 19.4, 6.4, 3.8, HR[0]); fyE(c, 14.6, 19, 5.9, 3.3, HR[1]); for (const x of [11, 13.4, 15.8, 18.2]) fyL(c, x, 20, x - 0.2, 22.8, 1.6, 0.8, HR[2]);
+    fyL(c, 11.6, 16.6, 18.4, 16.6, 2.2, 2.2, HR[1]);
+    // лицо
+    fyE(c, 11.8, 11.6, 1.9, 2.1, '#ffffff'); fyE(c, 18.2, 11.6, 1.9, 2.1, '#ffffff'); fyE(c, 12.2, 12, 1, 1.3, '#2a3a1a'); fyE(c, 18.6, 12, 1, 1.3, '#2a3a1a'); fyD(c, 11.8, 11.2, '#ffffff'); fyD(c, 18.2, 11.2, '#ffffff');
+    fyL(c, 9.6, 9, 13.4, 9.4, 1.2, 1.2, HR[0]); fyL(c, 16.6, 9.4, 20.4, 9, 1.2, 1.2, HR[0]);
+    fyE(c, 15, 14.4, 2.6, 2.3, '#d88a6c'); fyE(c, 14.8, 14, 2.3, 1.9, '#f0a888'); fyD(c, 14, 13.2, '#ffe0cc');
+    fyE(c, 9.8, 15, 1.4, 1, '#f09a8a'); fyE(c, 20.2, 15, 1.4, 1, '#f09a8a');
+    fyOutline(c, 30, 40, '#2a1a0e');
+  });
+}
+
+function sprSalamander(fr) {
+  return fySpr('sal3' + fr, 64, 34, c => {
+    c.translate(0, 3);
+    const K = ['#0c0a08', '#221c18', '#3c322a'], Y = ['#e89a10', '#ffd23a', '#fff08a'];
+    const foot = (x, y, d) => { fyL(c, x, y, x + 1 * d, y + 3.4, 4, 3.2, K[0]); fyL(c, x - 0.4, y, x + 0.6 * d, y + 3.4, 2.6, 2, K[1]); fyE(c, x + 1.6 * d, y + 5, 3.6, 1.4, K[0]); for (const t of [-1.8, -0.6, 0.6, 1.8]) fyL(c, x + 1.6 * d + t * 1.1, y + 5.4, x + 1.6 * d + t * 1.5, y + 6.6, 1, 1, K[0]); };
+    // дальние ноги
+    foot(fr ? 38 : 40, 20, 1); foot(fr ? 17 : 15, 20, -1);
+    // хвост: длинный, к кончику тлеет
+    fyL(c, 14, 17, 6, 20.6, 10, 6.4, K[0]); fyL(c, 6, 20.6, 2.6, 26, 6.4, 4, K[0]); fyL(c, 2.6, 26, 8, 30, 4, 1.6, K[0]);
+    fyL(c, 13.6, 16.4, 5.6, 20, 8, 5, K[1]); fyL(c, 5.6, 20, 2.2, 25.4, 5, 2.8, K[1]);
+    for (const [x, y] of [[9.4, 19], [4.4, 23], [4.6, 27.4]]) fyE(c, x, y, 1.5, 1.1, Y[1]);
+    fyP(c, [[6.4, 30.6], [8.4, 26], [10.4, 29.4], [12.4, 26.6], [12, 32.4], [7, 33]], '#ff7a20'); fyP(c, [[8, 32], [9.8, 28.6], [11, 32]], '#ffe060');
+    // туловище: приземистое, блестящее
+    fyE(c, 28, 17, 17, 6.8, K[0]); fyE(c, 27.6, 16.4, 16.4, 6.2, K[1]); fyL(c, 14, 13.4, 40, 12.6, 1.6, 1.6, K[2]);
+    fyE(c, 29, 21, 13, 2.4, '#3a2e26');
+    // жёлтые пятна по спине и бокам
+    for (const [x, y, rx, ry] of [[15, 14, 2.4, 1.6], [20, 12.6, 3, 1.8], [26, 13, 2.2, 1.6], [31, 12.4, 3.2, 1.8], [37, 13.4, 2.4, 1.6], [18, 17.6, 1.6, 1.2], [24, 18, 2, 1.4], [30, 18.4, 1.6, 1.2], [35, 17.6, 2.2, 1.4], [12, 17, 1.4, 1]]) { fyE(c, x, y, rx, ry, Y[0]); fyE(c, x - 0.3, y - 0.3, rx - 0.6, ry - 0.5, Y[1]); }
+    // голова: широкая и плоская, навыкате глаза, жёлто-оранжевые железы
+    fyE(c, 47, 16.4, 9, 5.4, K[0]); fyE(c, 46.6, 16, 8.5, 4.9, K[1]); fyE(c, 54, 18, 5, 3.4, K[1]); fyL(c, 50, 20.6, 58, 20.4, 1.2, 1.2, '#6a4a32');
+    fyE(c, 40.4, 12.6, 4.4, 2.4, '#ff7a20'); fyE(c, 40.2, 12.4, 3.8, 1.9, Y[1]); fyE(c, 45.5, 12.6, 3, 1.6, Y[0]);
+    fyE(c, 47, 11.4, 3, 3, K[0]); fyE(c, 47, 11.2, 2.6, 2.6, '#ffc020'); fyE(c, 47.4, 11.4, 1.2, 2, '#0a0806'); fyD(c, 46.4, 10.2, '#ffffff');
+    fyD(c, 58, 16.4, '#4a3a2e'); fyD(c, 58, 17.4, '#4a3a2e');
+    for (const x of [48, 50.6, 53.2]) fyD(c, x, 12.2, Y[0]);
+    // ближние ноги
+    foot(fr ? 34 : 36, 21, 1); foot(fr ? 21 : 19, 21, -1);
+    fyOutline(c, 64, 34, '#3a1408');
+  });
+}
+
+const FISHN_COL = {
+  amber: { b: ['#a8501a', '#e8842a', '#ffd49a'], f: ['#c0622a', '#ffa860'], e: '#fff0d0', o: '#4a2008' },
+  pink:  { b: ['#982a62', '#e0589a', '#ffb4da'], f: ['#b8386e', '#ff82bc'], e: '#ffe8f4', o: '#4a1030' },
+  teal:  { b: ['#0e6a62', '#22b8a8', '#a0f0e0'], f: ['#1a8a80', '#58d8c8'], e: '#e0fff8', o: '#08302c' },
+};
+// узкая рыбка: плещется в воде для красоты
+function sprFishN(kind, fr) {
+  return fySpr('fishn' + kind + fr, 34, 14, c => {
+    const K = FISHN_COL[kind] || FISHN_COL.teal;
+    c.translate(0, 1);
+    const sw = fr ? 1.6 : -1.6;
+    fyP(c, [[10, 6], [1, 2 + sw], [3, 6], [1, 10 - sw]], K.f[0]); fyP(c, [[10, 6], [2.6, 3.4 + sw], [4, 6], [2.6, 8.6 - sw]], K.f[1]);
+    fyP(c, [[13, 3.4], [17, 0.4], [22, 1.4], [23, 3.6]], K.f[0]);
+    fyP(c, [[16, 8.6], [14, 11.8], [19, 9.4]], K.f[0]);
+    fyE(c, 18, 6, 12, 3.4, K.b[0]); fyE(c, 17.6, 5.6, 11.6, 3, K.b[1]); fyE(c, 18, 7.8, 9.6, 1.2, K.b[2]);
+    for (let x = 11; x < 27; x += 2.6) fyD(c, x, 5.2, K.b[0]);
+    fyL(c, 24, 3.6, 24.4, 8.4, 1, 1, K.b[0]);
+    fyE(c, 27.6, 5.2, 1.6, 1.6, K.e); fyE(c, 27.9, 5.4, 0.8, 0.8, '#14100a'); fyD(c, 27.4, 4.8, '#ffffff');
+    fyOutline(c, 34, 14, K.o);
+  });
+}
+
 function sprEnder(carry) {
-  return fySpr('end' + carry, 40, 62, c => {
+  const W = carry ? 76 : 40, H = carry ? 100 : 62, ox = carry ? 18 : 0, oy = carry ? 38 : 0;
+  return fySpr('end2' + carry, W, H, c => {
     const B = ['#0c0912', '#1c1526', '#2c2240'], EY = '#d060ff', EC = '#f4d0ff';
+    if (carry) {
+      // большое дерево, выкорчеванное с корнем: ствол, раскидистая крона, корни с землёй
+      const TX = 50;
+      fyL(c, TX, 78, TX, 40, 7, 5.4, '#4a2e14'); fyL(c, TX - 1.2, 78, TX - 1.2, 40, 3.4, 2.4, '#7a4e26');
+      for (const [x, y, rx, ry] of [[TX - 14, 40, 13, 10], [TX + 14, 40, 13, 10], [TX, 30, 20, 14]]) fyE(c, x, y, rx, ry, '#154a1e');
+      for (const [x, y, rx, ry] of [[TX - 14, 38, 12, 9], [TX + 14, 38, 12, 9], [TX, 28, 19, 13], [TX - 6, 14, 12, 9], [TX + 7, 15, 11, 8]]) fyE3(c, x, y, rx, ry, ['#1c5a24', '#2f8a38', '#6cc04a']);
+      for (const [x, y] of [[TX - 8, 12], [TX + 2, 8], [TX + 12, 18], [TX - 20, 34], [TX + 18, 34], [TX - 2, 26], [TX + 8, 30]]) { fyD(c, x, y, '#a8e878'); fyD(c, x + 1, y, '#a8e878'); }
+      fyL(c, TX - 2, 52, TX - 9, 44, 2.4, 1, '#4a2e14'); fyL(c, TX + 2, 50, TX + 9, 43, 2.4, 1, '#4a2e14');
+      fyE(c, TX, 80, 9, 4.4, '#3a2410'); fyE(c, TX - 0.6, 79.4, 8, 3.6, '#5a3a1c');
+      for (const [x1, x2] of [[TX - 3, TX - 10], [TX + 3, TX + 10], [TX, TX + 1]]) fyL(c, x1, 80, x2, 87, 3, 1, '#3a2410');
+      for (const x of [TX - 9, TX + 8, TX - 2]) fyD(c, x, 88, '#5a3a1c');
+    }
+    c.translate(ox, oy);
     fyL(c, 13.6, 36, 12.4, 58, 3.6, 2.8, B[0]); fyL(c, 19, 36, 20.4, 58, 3.6, 2.8, B[0]); fyL(c, 13.2, 36, 12, 58, 2.2, 1.6, B[1]); fyL(c, 18.6, 36, 20, 58, 2.2, 1.6, B[1]);
     fyE(c, 12.4, 59, 2.8, 1.2, B[0]); fyE(c, 21, 59, 2.8, 1.2, B[0]);
     fyP(c, [[11.5, 15.5], [21.5, 15.5], [20.5, 37], [12.5, 37]], B[0]); fyP(c, [[12.4, 16.4], [20.6, 16.4], [19.8, 36], [13.2, 36]], B[1]); fyP(c, [[12.6, 17], [14.4, 17], [14, 35], [13.6, 35]], B[2]);
@@ -299,16 +381,13 @@ function sprEnder(carry) {
     fyP(c, [[11.4, 8], [15.6, 8], [15.6, 10.6], [11.4, 10.6]], EY); fyP(c, [[17.4, 8], [21.8, 8], [21.8, 10.6], [17.4, 10.6]], EY);
     fyP(c, [[12.4, 8.6], [14.6, 8.6], [14.6, 10], [12.4, 10]], EC); fyP(c, [[18.4, 8.6], [20.8, 8.6], [20.8, 10], [18.4, 10]], EC);
     if (carry) {
-      fyL(c, 21, 18, 27.4, 26, 3, 2.4, B[0]); fyL(c, 20.6, 17.6, 27, 25.6, 1.8, 1.4, B[1]); fyL(c, 11.4, 18, 24, 28, 3, 2.4, B[0]);
-      fyL(c, 29, 30, 29, 42, 4.4, 3.6, '#5a3a1c'); fyL(c, 28.4, 30, 28.4, 42, 2, 1.6, '#8a5a30');
-      fyE3(c, 29.4, 24, 9.4, 8.2, ['#1c5a24', '#2f8a38', '#6cc04a']); fyE(c, 26, 28, 4.6, 3.4, '#2f8a38'); fyE(c, 33, 27, 4, 3, '#1c5a24');
-      for (const [x, y] of [[32, 14], [25, 19], [34, 23]]) fyD(c, x, y, '#a0e070');
-      fyL(c, 24, 42, 26.4, 44.4, 5, 1, '#3a2410');
+      fyL(c, 21, 18, 32, 20, 3, 2.4, B[0]); fyL(c, 20.6, 17.6, 32, 19.6, 1.8, 1.4, B[1]); fyL(c, 11.4, 18, 32, 26, 3, 2.4, B[0]); fyE(c, 33, 20, 1.8, 1.8, B[0]); fyE(c, 33, 26, 1.8, 1.8, B[0]);
     } else {
       fyL(c, 11.4, 17.6, 7, 40, 3, 2, B[0]); fyL(c, 21.6, 17.6, 26, 40, 3, 2, B[0]); fyL(c, 11, 17.6, 6.6, 40, 1.8, 1.2, B[1]);
       fyE(c, 6.8, 41, 1.8, 1.6, B[0]); fyE(c, 26.2, 41, 1.8, 1.6, B[0]);
     }
-    fyOutline(c, 40, 62, '#4a2a6a');
+    c.translate(-ox, -oy);
+    fyOutline(c, W, H, '#4a2a6a');
   });
 }
 
@@ -515,11 +594,23 @@ function fyNests(F) {
   }
   F.rocks = cands;
   const pick = (far) => { for (let t = 0; t < 40 && cands.length; t++) { const q = cands[(Math.random() * cands.length) | 0]; if (!far || Math.hypot(q[0] - far[0], q[1] - far[1]) > 8) return q; } return cands[0] || null; };
-  if (!F.dr) { const q = F.drSaved || pick(); if (q) F.dr = { nx: q[0], ny: q[1], x: q[0] + 0.5, y: q[1] + 0.5, z: 0, st: 'nest', t: fyR(240, 400), tamed: !!(F.drSaved && F.drSaved[2]), loot: 0, face: 1, ph: 0, pet: 120, tx: 0, ty: 0, src: null }; }
+  if (!F.dr) { const q = F.drSaved || pick(); if (q) F.dr = { nx: q[0], ny: q[1], x: q[0] + 0.5, y: q[1] + 0.5, z: 0, st: 'nest', t: fyR(240, 400), tamed: !!(F.drSaved && F.drSaved[2]), stage: (F.drSaved && F.drSaved[3]) || 0, raids: (F.drSaved && F.drSaved[4]) || 0, loot: 0, face: 1, ph: 0, pet: 120, tx: 0, ty: 0, src: null }; }
   if (!F.gr) { const q = F.grSaved || pick(F.dr ? [F.dr.nx, F.dr.ny] : null); if (q) F.gr = { nx: q[0], ny: q[1], x: q[0] + 0.5, y: q[1] + 0.5, z: 8, tr: q[2] != null ? q[2] : (4 + (Math.random() * 6 | 0)), hp: 70, st: 'patrol', t: 0, face: 1, ph: 0, wx: q[0], wy: q[1], duel: 0, cd: 0, resp: q[3] || 0, seen: 0 }; if (F.gr.resp > 0) { F.gr.st = 'gone'; F.gr.z = 0; } }
 }
 
-// ---------- Дракончик ----------
+// ---------- Дракончик и дракон ----------
+// Малыш (stage 0) таскает по 1–3 золота и редко поджигает поле; после шести удачных набегов (или даров герою) вырастает
+// во взрослого дракона (stage 1): уносит по 3–6 золота и поджигает поля чаще.
+const dragName = d => (d.stage ? 'Дракон' : 'Дракончик');
+function dragGrow(d) {
+  d.raids++;
+  if (!d.stage && d.raids >= 6) {
+    d.stage = 1;
+    fxBurst(d.x * TILE, d.y * TILE - d.z, 30, ['#8ad06a', '#4ca04a', '#fff2a0', '#ffffff'], 90, 70, 1, 2, 60);
+    floater(d.x, d.y - 2, 'Р-рав!', '#c8ffb0'); fstat('dragGrow');
+    logEvent('animal', 'Дракончик вырос в настоящего дракона!', d.x, d.y); toast('Дракончик вырос в настоящего дракона!');
+  }
+}
 function dragonTarget() {
   const fromPile = Game.piles && [...Game.piles.values()].find(p => !p.removed && p.stock.gold - p.reserved.gold > 0);
   if (fromPile) return { x: fromPile.x + 0.5, y: fromPile.y + 0.5, pile: fromPile };
@@ -552,10 +643,10 @@ function dragonTick(dt, F) {
     d.pet -= dt;
     if (d.pet <= 0 && hero) {
       d.pet = fyR(110, 190);
-      const n = 1 + (Math.random() * 3 | 0);
-      dropPile(Math.floor(hero.x), Math.floor(hero.y) + 1, 'gold', n);
+      const n = d.stage ? 2 + (Math.random() * 3 | 0) : 1 + (Math.random() * 3 | 0);
+      dropPile(Math.floor(hero.x), Math.floor(hero.y) + 1, 'gold', n); dragGrow(d);
       floater(d.x, d.y - 1.4, 'Блям!', '#ffd700'); fstat('dragPetGold', n);
-      logEvent('gold', `Ручной дракончик принёс героя золото ×${n}`, d.x, d.y);
+      logEvent('gold', `Ручной ${dragName(d).toLowerCase()} принёс герою золото ×${n}`, d.x, d.y);
     }
     return;
   }
@@ -586,7 +677,7 @@ function dragonTick(dt, F) {
       if (s.hero && !d.triedTame && Math.random() < 0.5) {
         d.tamed = true; d.pet = 90; d.st = 'pet';
         floater(d.x, d.y - 1.6, 'Ур-р!', '#c8ffb0');
-        logEvent('animal', 'Герой приручил дракончика!', d.x, d.y); toast('Герой приручил дракончика! Теперь он носит золото'); fstat('dragTame');
+        logEvent('animal', `Герой приручил существо: ${dragName(d).toLowerCase()}!`, d.x, d.y); toast(`Герой приручил: ${dragName(d).toLowerCase()}! Теперь он носит золото`); fstat('dragTame');
         return;
       }
       d.triedTame = true;
@@ -596,18 +687,18 @@ function dragonTick(dt, F) {
     }
     if (d.t > 1.4 && !d.loot) {
       const src = d.src;
-      let n = 1 + (Math.random() * 3 | 0);
+      let n = d.stage ? 3 + (Math.random() * 4 | 0) : 1 + (Math.random() * 3 | 0);
       if (src && src.pile && !src.pile.removed) { n = Math.min(n, src.pile.stock.gold - src.pile.reserved.gold); src.pile.stock.gold -= n; cleanupPile(src.pile); }
       else if (src && src.store && !src.store.removed) { n = Math.min(n, src.store.stock.gold - src.store.reserved.gold); if (n > 0) src.store.stock.gold -= n; }
       else n = 0;
       if (n > 0) {
-        d.loot = n; fstat('dragRaid'); fstat('dragGold', n);
+        d.loot = n; fstat('dragRaid'); fstat('dragGold', n); dragGrow(d);
         floater(d.x, d.y - 1.4, 'Хр-р!', '#ffb080');
-        logEvent('gold', `Дракончик утащил золото ×${n}`, d.x, d.y);
-        if (Game.time - lastDragToast > 90) { lastDragToast = Game.time; toast(`Дракончик украл золото ×${n}! Герой может его прогнать или приручить`); }
+        logEvent('gold', `${dragName(d)} утащил золото ×${n}`, d.x, d.y);
+        if (Game.time - lastDragToast > 90) { lastDragToast = Game.time; toast(`${dragName(d)} украл золото ×${n}! Герой может его прогнать или приручить`); }
       }
       d.triedTame = d.triedTame || false;
-      d.st = Math.random() < 0.3 ? 'fire' : 'back'; d.t = 0;
+      d.st = Math.random() < (d.stage ? 0.4 : 0.15) ? 'fire' : 'back'; d.t = 0;
       if (d.st === 'fire') { d.fire = dragonFire(F, d); if (!d.fire) d.st = 'back'; }
     }
     return;
@@ -622,8 +713,8 @@ function dragonTick(dt, F) {
         if (typeof WX !== 'undefined' && WX.fires) WX.fires.push({ x: fx + 0.5, y: fy + 0.5, t0: Game.time, life: fyR(4, 7) });
         fxBurst((fx + 0.5) * TILE, (fy + 0.5) * TILE, 18, ['#ffcc50', '#ff8a30', '#ffe890'], 80, 50, 0.8, 2, -10);
         floater(fx + 0.5, fy - 0.4, 'Фр-р-р!', '#ffa060'); fstat('dragFire');
-        logEvent('weather', 'Дракончик подпалил поле', fx + 0.5, fy + 0.5);
-        toast('Дракончик подпалил поле!');
+        logEvent('weather', `${dragName(d)} подпалил поле`, fx + 0.5, fy + 0.5);
+        toast(`${dragName(d)} подпалил поле!`);
       }
       d.st = 'back'; d.fire = null;
     }
@@ -643,11 +734,11 @@ function dragonDraw(list, c, F, x0, y0, x1, y1) {
     const px = d.x * TILE, py = d.y * TILE + 4, air = d.z > 1;
     fyShadow(c, px, py, air ? 7 : 9, air ? 0.16 : 0.3);
     if (d.st === 'nest') {      // спит свернувшись на камне, из ноздри дымок
-      fyBlit(c, sprDragon(1), px, py, 1, 1, 0.8);
+      fyBlit(c, d.stage ? sprDragon(1) : sprBabyDragon(1), px, py, 1, 1, d.stage ? 0.8 : 1);
       if (Math.floor(d.ph * 1.5) % 4 === 0) { c.fillStyle = 'rgba(200,200,200,0.5)'; c.fillRect(Math.round(px + 11), Math.round(py - 18 - (d.ph * 6) % 6), 2, 2); }
       return;
     }
-    fyBlit(c, sprDragon(air ? (Math.floor(d.ph * 8) & 1) : 1), px, py - d.z, d.face || 1, 1, 0.85);
+    fyBlit(c, d.stage ? sprDragon(air ? (Math.floor(d.ph * 8) & 1) : 1) : sprBabyDragon(air ? (Math.floor(d.ph * 9) & 1) : 1), px, py - d.z, d.face || 1, 1, d.stage ? 0.85 : 1);
     if (d.loot && air) { c.save(); c.translate(px + (d.face || 1) * 6, py - d.z + 2); c.scale(0.3, 0.3); drawLoad(c, 'gold'); c.restore(); }
     if (d.st === 'fire' && d.fire) {     // струя огня
       const dir = d.face || 1;
@@ -773,12 +864,75 @@ function salamanderDraw(list, c, F, x0, y0, x1, y1) {
     list.push([sy + 0.1, () => {
       const px = sx * TILE, py = sy * TILE + 3, k = s.bright, fl = 0.75 + Math.sin(s.ph * 11) * 0.12 + Math.sin(s.ph * 17) * 0.08;
       c.save(); c.globalCompositeOperation = 'lighter';
-      const gr = c.createRadialGradient(px, py - 4, 1, px, py - 4, 16 + 14 * k);
+      const gr = c.createRadialGradient(px, py - 6, 1, px, py - 6, 22 + 18 * k);
       gr.addColorStop(0, `rgba(255,150,40,${(0.18 + 0.4 * k) * fl})`); gr.addColorStop(1, 'rgba(255,100,20,0)');
-      c.fillStyle = gr; c.fillRect(px - 34, py - 38, 68, 68);
+      c.fillStyle = gr; c.fillRect(px - 48, py - 54, 96, 96);
       c.restore();
-      fyBlit(c, sprSalamander(k > 0.6 ? (Math.floor(s.ph * 6) & 1) : 0), px, py, 1, 1);
+      fyBlit(c, sprSalamander(k > 0.6 ? (Math.floor(s.ph * 5) & 1) : 0), px, py, 1, 1, 0.9);
       if (k > 0.6 && (Math.floor(s.ph * 8) & 3) === 0) { c.fillStyle = '#ffd860'; c.fillRect(Math.round(px - 5 + Math.sin(s.ph * 9) * 5), Math.round(py - 12 - (s.ph * 14) % 8), 1, 2); }
+    }]);
+  }
+}
+
+
+// ---------- Резвящиеся рыбки (для красоты): плещутся и выпрыгивают из воды ----------
+const FISHY_KINDS = ['amber', 'pink', 'teal'];
+function fishyTick(dt, F) {
+  const L = F.fishy || (F.fishy = []);
+  F.fyT = (F.fyT || 0) - dt;
+  if (F.fyT <= 0) {
+    F.fyT = 5;
+    if (L.length < 9) {
+      for (let t = 0; t < 80; t++) {
+        const x = (Math.random() * MAP_W) | 0, y = (Math.random() * MAP_H) | 0;
+        if (!fyIsWater(x, y)) continue;
+        let w = 0;
+        for (let yy = y - 2; yy <= y + 2; yy++) for (let xx = x - 2; xx <= x + 2; xx++) if (fyIsWater(xx, yy)) w++;
+        if (w < 21) continue;
+        L.push({ x: x + 0.5, y: y + 0.5, ax: x + 0.5, ay: y + 0.5, tx: x + 0.5, ty: y + 0.5, face: Math.random() < 0.5 ? 1 : -1, ph: Math.random() * 9, kind: FISHY_KINDS[(Math.random() * 3) | 0], st: 'swim', jt: fyR(2, 14), jp: 0, hh: 0 });
+        break;
+      }
+    }
+  }
+  const day = nightAmt() < 0.6;
+  for (const f of L) {
+    f.ph += dt;
+    if (f.st === 'jump') {
+      f.jp += dt;
+      f.x += f.face * 1.9 * dt;
+      f.hh = Math.sin(Math.min(1, f.jp / 0.85) * Math.PI) * 17;
+      if (f.jp >= 0.85) { f.st = 'swim'; f.hh = 0; fxBurst(f.x * TILE, f.y * TILE, 8, ['#e8f6ff', '#ffffff', '#a0d0f0'], 36, 40, 0.5, 1.4, 200); if (!fyIsWater(f.x | 0, f.y | 0)) { f.x = f.ax; f.y = f.ay; } }
+      continue;
+    }
+    if (Math.hypot(f.tx - f.x, f.ty - f.y) < 0.2) {
+      for (let t = 0; t < 8; t++) { const x = f.ax + fyR(-3, 3), y = f.ay + fyR(-3, 3); if (fyIsWater(x | 0, y | 0)) { f.tx = x; f.ty = y; break; } }
+    } else {
+      const ox = f.x, oy = f.y; fyMove(f, f.tx, f.ty, 0.9, dt);
+      if (!fyIsWater(f.x | 0, f.y | 0)) { f.x = ox; f.y = oy; f.tx = f.x; f.ty = f.y; }
+    }
+    f.jt -= dt;
+    if (f.jt <= 0 && day) {
+      f.jt = fyR(7, 22);
+      if (fyIsWater((f.x + f.face * 1.9) | 0, f.y | 0) && fyIsWater((f.x + f.face * 0.9) | 0, f.y | 0)) { f.st = 'jump'; f.jp = 0; fxBurst(f.x * TILE, f.y * TILE, 6, ['#e8f6ff', '#ffffff', '#a0d0f0'], 30, 36, 0.5, 1.4, 200); }
+    }
+  }
+}
+function fishyDraw(list, c, F, x0, y0, x1, y1) {
+  for (const f of F.fishy || []) {
+    if (!FY_SEE(f.x, f.y, x0, y0, x1, y1) || (nightAmt() > 0.8 && f.st !== 'jump')) continue;
+    list.push([f.y + (f.st === 'jump' ? 0.3 : -0.2), () => {
+      const px = f.x * TILE, py = f.y * TILE + 2, jump = f.st === 'jump', fr = Math.floor(f.ph * (jump ? 12 : 5)) & 1;
+      if (!jump) {
+        c.strokeStyle = 'rgba(220,240,255,0.35)'; c.beginPath(); c.ellipse(px, py + 1, 8 + (f.ph * 3) % 3, 2.6, 0, 0, 7); c.stroke();
+        fyBlit(c, sprFishN(f.kind, fr), px, py + 3, f.face, 0.5, 0.75);
+      } else {
+        fyShadow(c, px, py + 3, 5, 0.12);
+        const tilt = (f.jp / 0.85 - 0.5) * 1.1 * f.face;
+        c.save(); c.translate(Math.round(px), Math.round(py - f.hh)); c.rotate(tilt); c.imageSmoothingEnabled = false;
+        if (f.face < 0) c.scale(-1, 1);
+        const spr = sprFishN(f.kind, fr); c.drawImage(spr, -Math.round(spr.width / 2), -spr.height + 6);
+        c.restore(); c.imageSmoothingEnabled = R.smooth;
+      }
     }]);
   }
 }
@@ -1010,6 +1164,7 @@ function fairyTick(dt) {
   griffinTick(dt, F);
   salamanderTick(dt, F);
   fishTick(dt, F);
+  fishyTick(dt, F);
   goldGooseTick(dt, F);
   endermanTick(dt, F);
 }
@@ -1023,6 +1178,7 @@ function fairyDrawList(list, c, x0, y0, x1, y1) {
   griffinDraw(list, c, F, x0, y0, x1, y1);
   salamanderDraw(list, c, F, x0, y0, x1, y1);
   fishDraw(list, c, F, x0, y0, x1, y1);
+  fishyDraw(list, c, F, x0, y0, x1, y1);
   goldGooseDraw(list, c, F, x0, y0, x1, y1);
   endermanDraw(list, c, F, x0, y0, x1, y1);
 }
@@ -1035,7 +1191,7 @@ function serializeFairy1() {
     b: F.bw.map(b => [b.bid, b.milk, b.dec, b.prank]), bc: [...F.chk],
     s: F.sal.map(s => s.bid), sc: [...F.salChk],
   };
-  if (F.dr) o.d = [F.dr.nx, F.dr.ny, F.dr.tamed ? 1 : 0];
+  if (F.dr) o.d = [F.dr.nx, F.dr.ny, F.dr.tamed ? 1 : 0, F.dr.stage || 0, F.dr.raids || 0];
   if (F.gr) o.g = [F.gr.nx, F.gr.ny, F.gr.tr, F.gr.st === 'gone' ? Math.round(F.gr.resp) : 0];
   if (F.gg) o.e = F.gg.egg;
   return o;
