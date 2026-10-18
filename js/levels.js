@@ -334,22 +334,63 @@ function drawUpgradeLayer(c, b) {
     }
   }
   c.imageSmoothingEnabled = R.smooth;
-  // строительные леса до текущей высоты
+  // строительные леса до текущей высоты: стойки с раскосами, настилы, ограждение, полотнища
   const topY = S.top < 1e9 ? oy + S.top / k : fy + fh - 10;
   const poleTop = Math.min(fy + fh - 10, topY - 5);
-  for (let q = 0; q <= b.w; q++) {
-    const lx = Math.round(fx + 2 + q * (fw - 6) / b.w);
-    c.fillStyle = '#583522'; c.fillRect(lx, poleTop, 2, fy + fh - poleTop);
-    c.fillStyle = '#a06840'; c.fillRect(lx, poleTop, 1, fy + fh - poleTop);
+  const gy = fy + fh, t = Game.time;
+  const rect = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+  const poles = [];
+  for (let q = 0; q <= b.w; q++) poles.push(Math.round(fx + 2 + q * (fw - 6) / b.w));
+  for (const lx of poles) { rect(lx, poleTop, 3, gy - poleTop, '#3a2414'); rect(lx, poleTop, 2, gy - poleTop, '#8a5a34'); rect(lx, poleTop, 1, gy - poleTop, '#c89a64'); }
+  const decks = [];
+  for (let ly = gy - 12; ly > poleTop + 2; ly -= 12) decks.push(ly);
+  // раскосы крест-накрест в каждом втором пролёте
+  for (let d = 0; d + 1 < decks.length; d++) for (let q = 0; q + 1 < poles.length; q++) {
+    if ((d + q) % 2) continue;
+    const x0 = poles[q] + 2, x1 = poles[q + 1], y0 = decks[d + 1] + 2, y1 = decks[d];
+    for (let n = 0; n <= 10; n++) { const f = n / 10; rect(x0 + (x1 - x0) * f, y1 - (y1 - y0) * f, 1, 1, '#6a4428'); }
   }
-  for (let ly = fy + fh - 12; ly > poleTop + 2; ly -= 12) {
-    c.fillStyle = '#45291a'; c.fillRect(fx, ly + 2, fw, 1);
-    c.fillStyle = '#cc9a64'; c.fillRect(fx, ly, fw, 2);
+  for (const ly of decks) {
+    rect(fx - 2, ly + 2, fw + 4, 2, '#3a2414');
+    rect(fx - 2, ly, fw + 4, 2, '#d8ac72'); rect(fx - 2, ly, fw + 4, 1, '#f0cc94');
+    for (let x = fx + 6; x < fx + fw - 4; x += 14) rect(x, ly, 1, 2, '#9a6a3a');           // щели между досками
   }
-  // сложенные у стены материалы
-  let mx = fx + 4; const my = fy + fh - 3;
-  for (const g of ['timber', 'stone']) for (let n = 0; n < b.upg.stock[g]; n++, mx += 6) {
-    c.fillStyle = g === 'timber' ? '#583522' : '#3a3632'; c.fillRect(mx - 1, my - 5, 7, 6);
-    c.fillStyle = g === 'timber' ? '#cc9a64' : '#9e958a'; c.fillRect(mx, my - 4, 5, 4);
+  // полотнища-фартуки на верхних настилах: колышутся, красно-белые
+  for (let d = Math.max(0, decks.length - 1); d < decks.length; d++) {
+    const ly = decks[d] + 4;
+    for (let x = fx + 4, n = 0; x < fx + fw - 6; x += 6, n++) {
+      const sw = Math.sin(t * 2 + n * 0.9 + b.id) * 1.2, hh = 7 + (n % 2) + Math.round(sw);
+      rect(x, ly, 6, hh, '#2a1a10'); rect(x + 1, ly, 4, hh - 1, n % 2 ? '#f0e6d0' : '#b83c2c'); rect(x + 1, ly, 4, 1, n % 2 ? '#ffffff' : '#d86a50');
+    }
+  }
+  // подъёмный журавль с ведром на верхнем настиле
+  if (decks.length) {
+    const cx = poles[poles.length - 1] + 1, cy = Math.min(decks[decks.length - 1], poleTop + 16) - 2;
+    rect(cx, cy - 12, 2, 12, '#3a2414'); rect(cx - 1, cy - 14, 14, 2, '#3a2414'); rect(cx, cy - 13, 12, 1, '#c89a64');
+    const bob = Math.sin(t * 2.4 + b.id) * 1.5, ry = cy - 12 + bob;
+    rect(cx + 10, cy - 12, 1, ry - cy + 24, '#e4ddd2');
+    rect(cx + 7, cy + 11 + bob, 7, 5, '#2a1a10'); rect(cx + 8, cy + 11 + bob, 5, 4, '#7a5632'); rect(cx + 8, cy + 11 + bob, 5, 1, '#b08a58');
+  }
+  // материалы: аккуратные штабели справа у входа (камень — блоки пирамидкой, брёвна — стопка досок)
+  let sx = fx + fw - 8;
+  const nSt = b.upg.stock.stone, nTi = b.upg.stock.timber;
+  if (nSt > 0) {
+    let left = nSt, row = 0;
+    while (left > 0) {
+      const cnt = Math.min(left, Math.max(1, 4 - row)); left -= cnt;
+      const w0 = cnt * 8;
+      for (let n = 0; n < cnt; n++) {
+        const bx = sx - w0 + n * 8 + row * 4, by = gy - 2 - row * 6;
+        rect(bx - 1, by - 6, 9, 7, '#26221e'); rect(bx, by - 5, 7, 5, '#9e958a'); rect(bx, by - 5, 7, 1, '#d4ccbf'); rect(bx + 5, by - 4, 2, 4, '#7a7268'); rect(bx + 2, by - 2, 2, 1, '#867d72');
+      }
+      row++;
+    }
+    sx -= Math.min(nSt, 4) * 8 + 6;
+  }
+  if (nTi > 0) {
+    for (let n = 0; n < nTi; n++) {
+      const col = n % 3, row = (n / 3) | 0, bx = sx - 22 + col * 7, by = gy - 2 - row * 5;
+      rect(bx - 1, by - 5, 9, 6, '#2e1a0a'); rect(bx, by - 4, 7, 4, '#cc9a64'); rect(bx, by - 4, 7, 1, '#ecc48a'); rect(bx, by - 2, 7, 1, '#a06840');
+    }
   }
 }
