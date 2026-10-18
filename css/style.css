@@ -689,3 +689,21 @@ body.mobile #zoom-in, body.mobile #zoom-out { display: none; }
 }
 .sm-btn b, .sm-btn small { position: relative; z-index: 5; }
 body.mobile #tut { max-height: 38%; line-height: 1.35; } body.mobile #tut h3 { font-size: 15px; margin: 4px 0; }
+
+/* кнопки меню выплывают вбок, лоза прорастает следом (js/startmenu.js) */
+.sm-in-l, .sm-in-r { animation: sm-slide-l 0.55s cubic-bezier(.2,.8,.3,1) var(--d, 0s) both; }
+.sm-in-r { animation-name: sm-slide-r; }
+.sm-in-l .sm-vine { animation: sm-vine-l 0.9s ease-out calc(var(--d, 0s) + 0.35s) both; }
+.sm-in-r .sm-vine { animation: sm-vine-r 0.9s ease-out calc(var(--d, 0s) + 0.35s) both; }
+@keyframes sm-slide-l { from { transform: translateX(-120vw); } to { transform: none; } }
+@keyframes sm-slide-r { from { transform: translateX(120vw); } to { transform: none; } }
+@keyframes sm-vine-l { from { clip-path: inset(-40px 100% -40px -40px); } to { clip-path: inset(-40px -40px -40px -40px); } }
+@keyframes sm-vine-r { from { clip-path: inset(-40px -40px -40px 100%); } to { clip-path: inset(-40px -40px -40px -40px); } }
+/* телефон: кнопки по две в ряд, меню вдвое ниже */
+@media (max-width: 600px) {
+  .sm-panel[data-panel="main"] { flex-direction: row; flex-wrap: wrap; justify-content: space-between; row-gap: 22px; column-gap: 8px; width: min(96vw, 420px); }
+  .sm-panel[data-panel="main"] .sm-btn { flex: 0 0 calc(50% - 6px); min-width: 0; padding: 4px 8px; }
+  .sm-panel[data-panel="main"] .sm-btn:last-child:nth-child(odd) { flex-basis: 100%; }
+  .sm-panel[data-panel="main"] .sm-btn b { font-size: 14px; }
+  .sm-panel[data-panel="main"] .sm-btn small { font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
