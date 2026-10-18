@@ -10,15 +10,15 @@ const SM_GRIP = 7;                                                  // в пик
 const SM_INK = '#1c1216';                                           // контур
 const SM_DUR = [0.6, 0.6, 1.3, 1.6];                                // сколько держится каждый кадр, сек
 const SM_CYCLE = SM_DUR[0] + SM_DUR[1] + SM_DUR[2] + SM_DUR[3];
-const SM_SLOPE = [-0.55, -0.28, 0, -0.14];                             // наклон: рука внизу — курево задрано
+const SM_SLOPE = { E: [-0.55, -0.28, 0, -0.14], S: [-0.5, -0.28, 0.2, 0] };                             // наклон: рука внизу — курево задрано
 const SM_EMBER_LVL = [0, 1, 2, 1];                                  // накал огонька по кадрам
 
 // Положение кулака (мировые пиксели от ног) в каждом кадре; E — боком (лицом вправо), S — анфас
 const SMOKE_ARM = {
-  E: { hand: [[5.0, -8.2], [5.2, -11.2], [5.8, -13.7], [5.6, -12.2]], elbow: [[2.8, -9.4], [2.9, -9.6], [3.0, -9.6], [3.0, -9.6]] },
-  S: { hand: [[4.6, -8.2], [3.9, -10.8], [2.8, -13.0], [3.6, -11.8]], elbow: [[5.4, -8.8], [5.4, -10.4], [5.2, -12.0], [5.2, -11.0]] },
+  E: { hand: [[5.0, -8.2], [5.3, -10.6], [5.9, -13.0], [5.7, -11.8]], elbow: [[2.8, -9.4], [2.9, -9.6], [3.0, -9.6], [3.0, -9.6]] },
+  S: { hand: [[4.6, -8.2], [4.0, -10.6], [3.3, -12.7], [3.9, -11.6]], elbow: [[5.4, -8.8], [5.4, -10.4], [5.2, -12.0], [5.2, -11.0]] },
 };
-const SMOKE_MOUTH = { E: [3.5, -14.2], S: [0.4, -13.4] };
+const SMOKE_MOUTH = { E: [3.6, -13.3], S: [1.0, -13.0] };
 
 // ---------- палитры ----------
 function smHex(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
@@ -228,11 +228,11 @@ const SM_ALL = [...SM_PIPES.map(p => ({ ...p, kind: 'pipe' })), ...SM_CIGS.map(p
 
 // ---------- сборка спрайта: контур, свечение, наклон по кадру ----------
 const SM_CACHE = new Map();
-function smokeItemSprite(id, frame) {
-  const key = id * 4 + frame;
+function smokeItemSprite(id, frame, view = 'E') {
+  const key = (id * 4 + frame) * 2 + (view === 'S' ? 1 : 0);
   let s = SM_CACHE.get(key);
   if (s) return s;
-  const lvl = SM_EMBER_LVL[frame], slope = SM_SLOPE[frame];
+  const lvl = SM_EMBER_LVL[frame], slope = SM_SLOPE[view][frame];
   const g = new SmGrid(lvl);
   SM_ALL[id].build(g);
   const W = SM_W, H = SM_H, src = g.c.getImageData(0, 0, W, H), d = src.data;
@@ -269,6 +269,9 @@ function smokeItemSprite(id, frame) {
 // ---------- кто что курит и какой сейчас кадр ----------
 function smokeKindOf(u) { return (Math.imul((u.id | 0) + 11, 2654435761) >>> 9) % SM_ALL.length; }
 function smokeKindName(u) { return SM_ALL[smokeKindOf(u)].name; }
+// длинное курево анфас торчало бы в ухо — такие гномы курят только боком
+const SM_SHORT = new Set([0, 2, 3, 4, 5, 7, 8, 12]);
+function smokeViewOf(u) { return (u.id * 7 + (u.id >> 2)) % 2 && SM_SHORT.has(smokeKindOf(u)) ? 'S' : 'E'; }
 function smokeFrameOf(u) {
   let t = (Game.time + (u.id | 0) * 0.73) % SM_CYCLE;
   for (let f = 0; f < 4; f++) { if (t < SM_DUR[f]) return f; t -= SM_DUR[f]; }
@@ -292,7 +295,7 @@ function smPuff(c, x, y, size, age, a) {
 
 // Рисует курево в руке гнома и дымок. (px, py) — ноги, view — 'E' или 'S', face — взгляд (±1) для E.
 function drawSmoking(c, u, px, py, view) {
-  const fr = smokeFrameOf(u), id = smokeKindOf(u), sp = smokeItemSprite(id, fr);
+  const fr = smokeFrameOf(u), id = smokeKindOf(u), sp = smokeItemSprite(id, fr, view === 'E' ? 'E' : 'S');
   const face = view === 'E' ? (u.face < 0 ? -1 : 1) : 1, V = view === 'E' ? 'E' : 'S';
   const hand = SMOKE_ARM[V].hand[fr];
   // колонка SM_PAD+SM_GRIP спрайта должна лечь в кулак

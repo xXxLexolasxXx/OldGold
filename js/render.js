@@ -165,7 +165,7 @@ function drawUnit(c, u) {
   let pose = 'idle', frame = 0, view = u.vdir || 'S', face = u.face;
   if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / 1.1) & 7; }
   else if (u.anim === 'duck' || u.anim === 'forage') pose = 'duck';
-  else if (u.anim === 'smoke') { pose = 'smoke'; view = (u.id * 7 + (u.id >> 2)) % 2 ? 'S' : 'E'; }   // кто в анфас, кто боком
+  else if (u.anim === 'smoke') { pose = 'smoke'; view = smokeViewOf(u); }   // кто в анфас (с коротким куревом), кто боком
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
   else if (u.anim === 'sleep' || u.anim === 'faint' || u.anim === 'knocked' || u.anim === 'fly') { pose = 'idle'; view = 'E'; }
   else if (u.anim === 'sit') { pose = 'duck'; view = 'S'; }
