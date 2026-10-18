@@ -529,15 +529,17 @@ function neuDrawList(list, c, x0, y0, x1, y1) {
 }
 
 function neuDrawLair(c, L) {
-  const s = naLairSprite(L.k), px = Math.round(L.x * TILE + 16), py = Math.round(L.y * TILE + 22), t = Game.time;
+  const t = Game.time, live = Game.neutrals.some(N => N.lair === L.id && N.st !== 'die');
+  const s = naLairSprite(L.k, live ? String(Math.floor(t * 1.8 + L.id) % 2) : 'd');
+  const px = Math.round(L.x * TILE + 16), py = Math.round(L.y * TILE + 22);
   c.drawImage(s.cv, px - s.ax, py - s.ay);
-  if (L.k === 'fairy' || L.k === 'spore') {
-    // мерцающие огоньки над поляной
+  if (live && (L.k === 'fairy' || L.k === 'spore' || L.k === 'pixie')) {
+    // плавающие огоньки над логовом (сверх запечённых в кадры)
     c.save(); c.globalCompositeOperation = 'lighter';
-    for (let k = 0; k < 6; k++) {
-      const ph = t * (0.5 + k * 0.09) + k * 1.7, a = k * 1.05 + t * 0.15;
-      const x = px + Math.cos(a) * 17, y = py - 4 - ((ph % 3) / 3) * 22 + Math.sin(a) * 4, al = Math.sin((ph % 3) / 3 * Math.PI);
-      c.fillStyle = L.k === 'fairy' ? `rgba(255,240,150,${0.9 * al})` : `rgba(170,240,110,${0.8 * al})`;
+    for (let k = 0; k < 5; k++) {
+      const ph = t * (0.5 + k * 0.09) + k * 1.7, a = k * 1.25 + t * 0.15;
+      const x = px + Math.cos(a) * 22, y = py - 6 - ((ph % 3) / 3) * 26 + Math.sin(a) * 4, al = Math.sin((ph % 3) / 3 * Math.PI);
+      c.fillStyle = L.k === 'spore' ? `rgba(170,240,110,${0.8 * al})` : L.k === 'pixie' ? `rgba(255,190,230,${0.9 * al})` : `rgba(255,240,150,${0.9 * al})`;
       c.fillRect(Math.round(x), Math.round(y), 1.5, 1.5);
     }
     c.restore();

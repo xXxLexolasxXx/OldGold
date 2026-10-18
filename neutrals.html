@@ -33,9 +33,11 @@ function draw() {
       }
     }
     const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
-    const s = naLairSprite(kind), cv = document.createElement('canvas'); cv.width = s.w * k; cv.height = s.h * k;
-    const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(s.cv, 0, 0, cv.width, cv.height);
-    const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = 'логово'; d.appendChild(sp); row.appendChild(d);
+    for (const v of NA_LAIR_VARS) {
+      const s = naLairSprite(kind, v), cv = document.createElement('canvas'); cv.width = s.w * k; cv.height = s.h * k;
+      const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(s.cv, 0, 0, cv.width, cv.height);
+      const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = NA_LAIR[kind].name + (v === 'd' ? ' — разорено' : ' — кадр ' + (+v + 1)); d.appendChild(sp); row.appendChild(d);
+    }
   }
 }
 document.getElementById('sc').onchange = draw;

@@ -324,69 +324,172 @@ function drawSpore(c, P) {
 const NA_DRAW = { pixie: drawFairy, fairy: drawFairy, leshy: drawLeshy, boar: drawBoar, spore: drawSpore };
 
 // ---------- Логова ----------
+// У каждого логова 3 вида: кадры 0 и 1 (живое, огоньки/дым/свет чуть иные) и 'd' — разорено (зачищено, потухло, поблекло).
 const NA_LAIR = {
-  pixie: { w: 56, h: 44, ax: 28, ay: 30 },
-  fairy: { w: 56, h: 40, ax: 28, ay: 22 },
-  leshy: { w: 60, h: 60, ax: 30, ay: 46 },
-  boar:  { w: 56, h: 36, ax: 28, ay: 22 },
-  spore: { w: 52, h: 36, ax: 26, ay: 22 },
+  pixie: { name: 'Домик цветочных фей', w: 84, h: 76, ax: 42, ay: 56 },
+  fairy: { name: 'Грибное кольцо фей',  w: 92, h: 64, ax: 46, ay: 36 },
+  leshy: { name: 'Дупло лешего',        w: 96, h: 92, ax: 48, ay: 78 },
+  boar:  { name: 'Лёжка кабанов',       w: 96, h: 64, ax: 48, ay: 38 },
+  spore: { name: 'Пятно чумных грибов', w: 88, h: 64, ax: 44, ay: 38 },
 };
+const NA_LAIR_VARS = ['0', '1', 'd'];
 const naLairCache = new Map();
-function naLairSprite(kind) {
-  let s = naLairCache.get(kind);
+
+// мазок «объём»: свет сверху-слева, тень справа-снизу; pts — контур, base — цвет
+function naBlob(c, pts, base, lit = 0.28, dark = -0.32) {
+  poly(c, pts, base);
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  c.save();
+  c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); c.clip();
+  c.fillStyle = shade(base, dark); c.beginPath(); c.ellipse(x1 + (x1 - x0) * 0.1, y1 + (y1 - y0) * 0.2, (x1 - x0) * 0.75, (y1 - y0) * 0.7, 0, 0, 7); c.fill();
+  c.fillStyle = shade(base, lit); c.beginPath(); c.ellipse(x0 + (x1 - x0) * 0.2, y0 + (y1 - y0) * 0.15, (x1 - x0) * 0.4, (y1 - y0) * 0.28, -0.4, 0, 7); c.fill();
+  c.restore();
+}
+function naPuff(c, x, y, r, col, a) { c.fillStyle = col.replace('A', a.toFixed(2)); c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function naShroomB(c, x, y, s, cap, spot, dead) {
+  const st = dead ? '#9a9480' : '#ece0c4', cp = dead ? shade(cap, -0.1) : cap;
+  naBlob(c, [[x - 1.1 * s, y], [x - 0.9 * s, y - 4.6 * s], [x + 0.9 * s, y - 4.6 * s], [x + 1.2 * s, y]], st, 0.2, -0.28);
+  naBlob(c, [[x - 4.2 * s, y - 3.8 * s], [x - 3.4 * s, y - 6.8 * s], [x - 0.8 * s, y - 8.6 * s], [x + 2 * s, y - 8.4 * s], [x + 4 * s, y - 6.4 * s], [x + 4.4 * s, y - 3.8 * s], [x, y - 3 * s]], cp, 0.3, -0.34);
+  if (!dead) { c.fillStyle = spot; c.fillRect(x - 2.2 * s, y - 6.8 * s, 1.1 * s, 1.1 * s); c.fillRect(x + 0.8 * s, y - 7.4 * s, 1.1 * s, 1.1 * s); c.fillRect(x + 2.2 * s, y - 5.6 * s, 0.9 * s, 0.9 * s); }
+}
+function naSparks(c, pts, t, col) {
+  c.save(); c.globalCompositeOperation = 'lighter';
+  for (const [x, y, p] of pts) { const a = 0.5 + 0.5 * Math.sin(t * 3 + p); c.fillStyle = col.replace('A', a.toFixed(2)); c.fillRect(Math.round(x - 0.7), Math.round(y - 0.7), 1.6, 1.6); }
+  c.restore();
+}
+
+function naLairDraw(c, kind, v) {
+  const dead = v === 'd', f = v === '1' ? 1 : 0, R = mulberry32(kind.length * 977 + 11);
+  if (kind === 'pixie') {
+    // тень и тропинка из плиток
+    c.fillStyle = '#4a4430'; c.beginPath(); c.ellipse(1, 1, 24, 6.4, 0, 0, 7); c.fill();
+    for (const [x, y, r] of [[2, 6, 3.2], [-3, 9.6, 2.8], [4, 12.6, 2.6]]) { ellipse(c, x, y, r, r * 0.55, dead ? '#8a8472' : '#b8b09a'); ellipse(c, x - 0.6, y - 0.5, r * 0.6, r * 0.3, dead ? '#a09a86' : '#d6cdb4'); }
+    // ножка: бочка с корой-узором
+    naBlob(c, [[-9, 0], [-8, -16], [-6, -26], [6, -26], [8, -16], [9, 0]], dead ? '#a89c80' : '#f0e2c2', 0.22, -0.3);
+    c.strokeStyle = dead ? '#8a7e66' : '#d4c2a0'; c.lineWidth = 0.7; for (const x of [-4, 0, 4]) { c.beginPath(); c.moveTo(x, -3); c.lineTo(x + 0.4, -22); c.stroke(); }
+    // дверка с аркой
+    naBlob(c, [[-3.6, 0], [-3.6, -9], [-2, -12.4], [2, -12.4], [3.6, -9], [3.6, 0]], dead ? '#4a3a2a' : '#7a4a26', 0.2, -0.4);
+    if (dead) { poly(c, [[0.4, 0], [3.6, -1], [3.6, -9], [0.4, -11]], '#14100a'); }
+    else { c.fillStyle = '#e8c850'; c.fillRect(1.7, -5.4, 1, 1); c.strokeStyle = '#4a2a14'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(0, -11.6); c.lineTo(0, 0); c.stroke(); }
+    // круглое окошко
+    const glow = dead ? '#2a2820' : f ? '#fff2a0' : '#ffd860';
+    ellipse(c, 6.2, -17, 3.1, 3.1, '#6a4a2a'); ellipse(c, 6.2, -17, 2.2, 2.2, glow);
+    if (!dead) { c.strokeStyle = '#6a4a2a'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(6.2, -19.2); c.lineTo(6.2, -14.8); c.moveTo(4, -17); c.lineTo(8.4, -17); c.stroke(); }
+    // шляпка-крыша
+    const cap = dead ? '#9a6a5a' : '#e0486e';
+    naBlob(c, [[-24, -20], [-22, -29], [-15, -38], [-5, -43], [6, -43], [15, -38], [22, -29], [24, -20], [14, -22.4], [0, -24], [-14, -22.4]], cap, 0.3, -0.36);
+    c.fillStyle = shade(cap, -0.45); for (let x = -20; x <= 20; x += 5) c.fillRect(x, -21.2 + Math.abs(x) * 0.02, 2.4, 2.4);   // пластинки по краю
+    if (!dead) for (const [x, y, r] of [[-12, -31, 3.2], [0, -38, 2.8], [11, -30, 2.6], [-3, -27, 1.8], [18, -25, 1.8], [-19, -24, 1.6]]) { ellipse(c, x, y, r, r * 0.78, '#fff4f8'); ellipse(c, x - r * 0.3, y - r * 0.3, r * 0.45, r * 0.3, '#ffffff'); }
+    // труба с дымком
+    naBlob(c, [[10, -37], [10.6, -46], [14.6, -46], [15, -37]], dead ? '#7a6a58' : '#8a6a4a', 0.2, -0.3);
+    if (!dead) { naPuff(c, 12.6 + f * 1.4, -50 - f * 1.5, 2.2, 'rgba(240,240,248,A)', 0.8); naPuff(c, 14 - f, -56 - f * 2, 2.8, 'rgba(240,240,248,A)', 0.55); naPuff(c, 12 + f * 2, -62, 3, 'rgba(240,240,248,A)', 0.3); }
+    // цветы у крыльца
+    for (const [x, y, col] of [[-16, 2, '#ff8ac8'], [-12, 4, '#ffe070'], [-20, 4, '#a8e0ff'], [15, 3, '#c8a0ff'], [20, 5, '#ff8ac8'], [12, 6, '#ffe070']]) {
+      const sw = dead ? 0 : (f ? 0.8 : -0.8);
+      naLimb(c, x, y, x + sw, y - (dead ? 2 : 5), 0.8, dead ? '#6a6a3a' : '#3e8a30');
+      ellipse(c, x + sw, y - (dead ? 1.4 : 5.6), 1.7, dead ? 0.9 : 1.7, dead ? '#8a7a6a' : col); if (!dead) ellipse(c, x + sw, y - 5.6, 0.6, 0.6, '#fff6b0');
+    }
+    if (!dead) naSparks(c, [[-26, -30, 0 + f], [26, -24, 2 + f], [-18, -44, 4 + f * 2], [22, -40, 6 + f], [0, -50, 1 + f]], f * 1.7, 'rgba(255,240,170,A)');
+    else { c.strokeStyle = 'rgba(230,230,230,0.8)'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(-14, -20); c.lineTo(-4, -26); c.moveTo(-14, -26); c.lineTo(-4, -22); c.stroke(); }   // паутина
+  } else if (kind === 'fairy') {
+    c.fillStyle = dead ? 'rgba(120,120,90,0.2)' : 'rgba(110,210,160,0.3)'; c.beginPath(); c.ellipse(0, 0, 34, 12.6, 0, 0, 7); c.fill();
+    c.strokeStyle = dead ? 'rgba(160,150,120,0.5)' : (f ? 'rgba(220,255,236,0.8)' : 'rgba(190,255,220,0.6)'); c.lineWidth = 0.8; c.beginPath(); c.ellipse(0, 0, 30, 10.8, 0, 0, 7); c.stroke();
+    // центр: плоский камень-алтарь с кристаллом
+    naBlob(c, [[-7, 1], [-8, -4], [-4, -7], [5, -7], [9, -3], [8, 1]], dead ? '#7a7870' : '#9a9a9a', 0.28, -0.34);
+    if (!dead) { poly(c, [[-2, -7], [0, -17 - f], [3, -7]], f ? '#d8f6ff' : '#a8e8ff'); poly(c, [[-1, -7], [0, -17 - f], [0.6, -7]], '#ffffff'); c.save(); c.globalCompositeOperation = 'lighter'; ellipse(c, 0.6, -11, 6 + f * 1.5, 7 + f * 1.5, 'rgba(160,240,255,0.25)'); c.restore(); }
+    // кольцо из грибов и цветов
+    const n = 14;
+    const items = [];
+    for (let k = 0; k < n; k++) { const a = k / n * 6.283 + 0.2, x = Math.cos(a) * 30, y = Math.sin(a) * 10.8; items.push([x, y, k]); }
+    items.sort((a, b) => a[1] - b[1]);
+    for (const [x, y, k] of items) {
+      if (k % 3 === 0) naShroomB(c, x, y + 1.5, 1.35, dead ? '#9a7a6a' : '#e85a4a', '#fff0e0', dead);
+      else if (k % 3 === 1) { naLimb(c, x, y + 1, x, y - 4, 0.8, dead ? '#6a6a3a' : '#3e8a30'); ellipse(c, x, y - 4.6, 1.9, 1.9, dead ? '#8a7a6a' : '#f4a8d8'); if (!dead) ellipse(c, x, y - 4.6, 0.7, 0.7, '#fff0a0'); }
+      else naShroomB(c, x, y + 1.5, 0.95, dead ? '#8a7a8a' : '#e0a8f0', '#fff', dead);
+    }
+    if (!dead) naSparks(c, [[-22, -10, f], [18, -14, 2 + f], [-8, -18, 4], [26, -4, 1 + f * 2], [-28, -2, 3 + f], [6, -22, 5 + f], [0, -4, 7 + f]], f * 1.5, 'rgba(255,244,170,A)');
+  } else if (kind === 'leshy') {
+    c.fillStyle = '#4a4430'; c.beginPath(); c.ellipse(0, 1, 30, 7.4, 0, 0, 7); c.fill();
+    const BK = dead ? '#6a5a46' : '#7a5632', MS = dead ? '#6a6a3a' : '#62943a';
+    // корни
+    for (const [x, d] of [[-22, -1], [-17, -1], [20, 1], [25, 1]]) naBlob(c, [[x, 1], [x + d * 6, -3], [x + d * 11, 1], [x + d * 7, 3]], BK, 0.2, -0.34);
+    // ствол-пень
+    naBlob(c, [[-20, 1], [-16, -12], [-13, -30], [-17, -48], [-9, -44], [-3, -54], [4, -46], [11, -53], [14, -44], [19, -40], [15, -28], [18, -12], [22, 1]], BK, 0.24, -0.36);
+    c.strokeStyle = dead ? '#4a3c2c' : '#5a3c20'; c.lineWidth = 0.9; for (const [x0, y0, x1, y1] of [[-10, -6, -11, -38], [-4, -8, -5, -44], [8, -6, 9, -40], [14, -10, 15, -34]]) { c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2 + 1.4, (y0 + y1) / 2, x1, y1); c.stroke(); }
+    // дупло — лицо
+    poly(c, [[-8, 0], [-9, -10], [-6, -20], [0, -24], [6, -20], [9, -10], [8, 0]], '#120a05');
+    poly(c, [[-5, -3], [-6, -10], [-3, -16], [0, -18], [3, -16], [6, -10], [5, -3]], '#1c1008');
+    if (!dead) {
+      const ec = f ? '#fff08a' : '#d8e84a';
+      ellipse(c, -2.6, -14.4, 1.7, 1.2 - f * 0.2, ec); ellipse(c, 3, -14.4, 1.7, 1.2 - f * 0.2, ec);
+      c.save(); c.globalCompositeOperation = 'lighter'; ellipse(c, 0.2, -14.4, 8, 4, 'rgba(210,235,60,' + (f ? 0.22 : 0.14) + ')'); c.restore();
+      c.fillStyle = '#1a2a08'; c.fillRect(-3, -14.8, 0.8, 1.2); c.fillRect(2.6, -14.8, 0.8, 1.2);
+    }
+    // мох сверху, свисающие лианы
+    naBlob(c, [[-19, -44], [-9, -44], [-3, -54], [4, -46], [11, -53], [15, -44], [19, -40], [8, -36], [-4, -40], [-16, -36]], MS, 0.28, -0.32);
+    for (const [x, l] of [[-14, 14], [-6, 10], [6, 16], [13, 11]]) { c.strokeStyle = dead ? '#5a5a30' : '#4a7a2a'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(x, -38); c.quadraticCurveTo(x + (f ? 2 : -2), -38 + l * 0.5, x + (f ? 1 : -1), -38 + l); c.stroke(); }
+    // рога-ветви
+    naLimb(c, -9, -50, -16, -64, 3, dead ? '#4a3c2c' : '#5a3c20'); naLimb(c, -14, -60, -20, -62, 2, dead ? '#4a3c2c' : '#5a3c20'); naLimb(c, 11, -50, 17, -66, 3, dead ? '#4a3c2c' : '#5a3c20'); naLimb(c, 15, -60, 21, -60, 2, dead ? '#4a3c2c' : '#5a3c20');
+    if (!dead) { ellipse(c, -17, -64, 2.4, 1.8, '#7ab04a'); ellipse(c, 18, -66, 2.6, 1.8, '#7ab04a'); }
+    // тотем-череп на колу
+    naLimb(c, 26, 1, 26, -18, 1.8, '#5a3c20'); ellipse(c, 26, -20, 3.2, 3, dead ? '#b8b09a' : '#e6dcc0'); c.fillStyle = '#1a120a'; c.fillRect(24.4, -21, 1.4, 1.6); c.fillRect(27, -21, 1.4, 1.6);
+    naShroomB(c, -26, 3, 1.4, dead ? '#8a7a56' : '#c8883a', '#f6e8c0', dead); naShroomB(c, -22, 4, 0.9, dead ? '#8a7a56' : '#c8883a', '#f6e8c0', dead); naShroomB(c, 30, 4, 1.2, dead ? '#8a7a56' : '#c8883a', '#f6e8c0', dead);
+    if (!dead) naSparks(c, [[-26, -30, f], [24, -34, 3 + f], [0, -30, 5]], f * 1.4, 'rgba(210,240,110,A)');
+    else { naLimb(c, 14, -2, 30, 2, 2.6, '#4a3c2c'); }   // упавшая ветка
+  } else if (kind === 'boar') {
+    c.fillStyle = dead ? '#5a5240' : '#5a4630'; c.beginPath(); c.ellipse(0, 0, 38, 12.6, 0, 0, 7); c.fill();
+    c.fillStyle = dead ? '#4a4434' : '#3e2e1c'; c.beginPath(); c.ellipse(2, 1.6, 28, 8.4, 0, 0, 7); c.fill();
+    // следы копыт
+    c.fillStyle = dead ? '#3a3628' : '#2e2014'; for (const [x, y] of [[-30, 6], [-26, 7.6], [30, 5], [34, 7], [-14, 10]]) { c.fillRect(x, y, 1.4, 1.8); c.fillRect(x + 2.4, y, 1.4, 1.8); }
+    // шалаш из брёвен и веток
+    const LG = dead ? '#6a5c48' : '#7a5a34';
+    if (!dead) {
+      naBlob(c, [[-18, 0], [-14, -14], [-4, -22], [8, -22], [17, -14], [20, 0]], '#6a4a2a', 0.25, -0.36);
+      for (let k = 0; k < 6; k++) naLimb(c, -18 + k * 7, 1, -12 + k * 5, -22 + (k % 2) * 2, 2.6, k % 2 ? '#8a6638' : '#6a4a28');
+      poly(c, [[-7, 0], [-6, -9], [0, -13], [6, -9], [7, 0]], '#0e0804');
+      // дымок-пар изнутри (дыхание)
+      naPuff(c, 2 + f * 3, -9 - f * 2, 2.6, 'rgba(230,230,235,A)', 0.4); naPuff(c, 5 + f * 3, -13 - f * 2, 2, 'rgba(230,230,235,A)', 0.25);
+      c.fillStyle = '#f0d838'; c.fillRect(-1, -6, 1.2, 1); c.fillRect(2.6, -6, 1.2, 1);   // глаза из тьмы
+    } else {
+      for (let k = 0; k < 4; k++) naLimb(c, -16 + k * 9, 1, -8 + k * 8, -3 - (k % 2) * 4, 2.6, LG);
+      naLimb(c, -20, -2, 6, 1, 2.4, LG); naLimb(c, 14, 0, 26, -3, 2.2, LG);
+    }
+    // колья с клыками и кости
+    for (const [x, ang] of [[-30, -0.2], [32, 0.2]]) { naLimb(c, x, 3, x + ang * 14, -17, 1.8, '#5a3c20'); poly(c, [[x + ang * 14 - 2.4, -15], [x + ang * 14 + 0.4, -23], [x + ang * 14 + 2.4, -15]], dead ? '#bfb8a0' : '#f4ecd0'); }
+    naLimb(c, 20, 5, 30, 2, 1.8, '#f0e8cc'); ellipse(c, 31, 1.4, 1.8, 1.8, '#f0e8cc'); ellipse(c, 21, 6, 1.6, 1.6, '#f0e8cc');
+    ellipse(c, -34, 6, 2.6, 1.8, '#e0d8bc'); c.fillStyle = '#6a5c48'; c.fillRect(-35.6, 5.4, 1, 1);
+    // сено
+    c.strokeStyle = dead ? '#8a8458' : '#b8a448'; c.lineWidth = 0.8; for (const [x, y] of [[-14, 6], [-9, 8], [-4, 6.6], [20, 8], [25, 6]]) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + 4, y - 1); c.stroke(); }
+    // муха
+    if (!dead) naSparks(c, [[-12 + f * 3, -20, 0], [30 - f * 2, -12, 2]], f * 1.1, 'rgba(60,50,40,A)');
+  } else {
+    c.fillStyle = dead ? '#55554a' : '#4e3a5a'; c.beginPath(); c.ellipse(0, 1, 34, 12, 0, 0, 7); c.fill();
+    c.fillStyle = dead ? '#62625a' : '#52663a'; c.beginPath(); c.ellipse(0, 1, 21, 7.6, 0, 0, 7); c.fill();
+    // грибница: жилки по земле
+    c.strokeStyle = dead ? 'rgba(150,150,130,0.6)' : 'rgba(200,170,230,0.7)'; c.lineWidth = 0.6;
+    for (let k = 0; k < 9; k++) { const a = k * 0.7 + 0.3; c.beginPath(); c.moveTo(Math.cos(a) * 3, Math.sin(a) * 1.2); c.quadraticCurveTo(Math.cos(a + 0.4) * 16, Math.sin(a + 0.4) * 6, Math.cos(a) * 31, Math.sin(a) * 10.6); c.stroke(); }
+    const set = [[-22, 3, 1.3, '#8a48b0', '#eee0f8'], [-12, -3, 1.9, '#62308a', '#d8c0ec'], [0, 4, 2.3, '#8a48b0', '#eee0f8'], [14, -1, 2.6, '#b676d6', '#fff'], [25, 4, 1.2, '#62308a', '#d8c0ec'], [-4, -5, 1.4, '#b676d6', '#fff'], [8, 7, 1.1, '#62308a', '#d8c0ec'], [-28, -1, 0.9, '#b676d6', '#fff']];
+    set.sort((a, b) => a[1] - b[1]);
+    for (const [x, y, s, cp, sp] of set) naShroomB(c, x, y, s * (dead ? 0.75 : (f && s > 2 ? 1.04 : 1)), dead ? '#8a8294' : cp, sp, dead);
+    if (!dead) {
+      c.save(); c.globalCompositeOperation = 'lighter';
+      for (let k = 0; k < 7; k++) { const a = k * 0.9 + f * 0.8, x = Math.cos(a) * (8 + k * 2.4), y = -10 - ((k * 5 + f * 6) % 22); naPuff(c, x, y, 2.2 + (k % 3) * 0.7, 'rgba(170,240,100,A)', 0.2 + 0.05 * (k % 3)); }
+      c.restore();
+    } else { naLimb(c, -2, -2, 8, -1, 1, '#6a6a5a'); }
+  }
+}
+
+function naLairSprite(kind, v = '0') {
+  const key = kind + v;
+  let s = naLairCache.get(key);
   if (s) return s;
   const S = NA_LAIR[kind], [cv, c] = mkSprite(S.w, S.h, 3);
   c.lineCap = 'round'; c.lineJoin = 'round';
   c.save(); c.translate(S.ax, S.ay);
-  const R = mulberry32(kind.length * 977 + 5);
-  const shroom = (x, y, s, col, col2) => {
-    c.fillStyle = '#e8dcc0'; c.fillRect(x - 0.9 * s, y - 3 * s, 1.8 * s, 3 * s);
-    poly(c, [[x - 3.2 * s, y - 2.6 * s], [x - 2.2 * s, y - 5 * s], [x, y - 6 * s], [x + 2.2 * s, y - 5 * s], [x + 3.2 * s, y - 2.6 * s]], col);
-    c.fillStyle = col2; c.fillRect(x - 1.4 * s, y - 4.6 * s, 0.9 * s, 0.9 * s); c.fillRect(x + 0.8 * s, y - 3.8 * s, 0.9 * s, 0.9 * s);
-  };
-  if (kind === 'pixie') {           // домик-гриб с цветами и тёплым окошком
-    c.fillStyle = 'rgba(10,8,4,0.28)'; c.beginPath(); c.ellipse(0, 1, 15, 4.4, 0, 0, 7); c.fill();
-    poly(c, [[-6, 0], [-5.4, -13], [5.4, -13], [6, 0]], '#efe4cc');
-    poly(c, [[-6, 0], [-3, 0], [-2.4, -13], [-5.4, -13]], '#cdbfa2');
-    poly(c, [[-2.4, 0], [-2.4, -8], [0, -10], [2.4, -8], [2.4, 0]], '#7a4a2a');
-    ellipse(c, 1.4, -4, 0.55, 0.55, '#f0d060');
-    ellipse(c, 4.6, -9.4, 1.5, 1.7, '#ffe890');
-    poly(c, [[-15, -12], [-12, -20], [-5, -25], [0, -26], [5, -25], [12, -20], [15, -12], [9, -13.4], [0, -14.4], [-9, -13.4]], '#d84a78');
-    poly(c, [[-15, -12], [-12, -20], [-5, -25], [-4, -14.4], [-9, -13.4]], '#a02a58');
-    for (const [x, y, r] of [[-7, -19, 1.8], [2, -22, 1.6], [8, -17, 1.5], [-2, -16.6, 1.2]]) ellipse(c, x, y, r, r * 0.8, '#fff0f6');
-    for (const [x, y, col] of [[-12, 0, '#ff8ac8'], [-9, 1.4, '#ffe070'], [10, 1, '#c8a0ff'], [13, -0.4, '#ff8ac8'], [-15, 1, '#a8e0ff']]) { naLimb(c, x, y, x, y - 3, 0.7, '#3e8a30'); ellipse(c, x, y - 3.6, 1.4, 1.4, col); ellipse(c, x, y - 3.6, 0.5, 0.5, '#fff6b0'); }
-  } else if (kind === 'fairy') {            // грибное кольцо с цветами
-    c.fillStyle = 'rgba(120,200,160,0.22)'; c.beginPath(); c.ellipse(0, 0, 22, 9, 0, 0, 7); c.fill();
-    c.strokeStyle = 'rgba(190,255,220,0.55)'; c.lineWidth = 0.6; c.beginPath(); c.ellipse(0, 0, 19, 7.4, 0, 0, 7); c.stroke();
-    const n = 12;
-    for (let k = 0; k < n; k++) { const a = k / n * 6.283, x = Math.cos(a) * 19, y = Math.sin(a) * 7.4; if (k % 3 === 0) shroom(x, y + 1, 1.15, '#e85a4a', '#fff0e0'); else if (k % 3 === 1) { ellipse(c, x, y, 1.4, 1.1, '#f4a8d8'); ellipse(c, x, y, 0.5, 0.5, '#fff0a0'); } else shroom(x, y + 1, 0.8, '#e0a8f0', '#fff'); }
-    shroom(0, 3, 1.5, '#e85a4a', '#fff0e0');
-  } else if (kind === 'leshy') {     // дупло-пень: коряга с мхом и тёмным провалом
-    c.fillStyle = 'rgba(10,8,4,0.3)'; c.beginPath(); c.ellipse(0, 1, 17, 5, 0, 0, 7); c.fill();
-    poly(c, [[-15, 0], [-12, -9], [-9, -22], [-12, -34], [-5, -30], [0, -36], [6, -31], [11, -35], [10, -22], [13, -9], [16, 0]], '#5e4026');
-    poly(c, [[-15, 0], [-12, -9], [-9, -22], [-12, -34], [-8, -32], [-6, -20], [-7, -6], [-6, 0]], '#43301c');
-    poly(c, [[-4, 0], [-5, -9], [-3, -17], [3, -17], [6, -9], [5, 0]], '#120a05');
-    ellipse(c, -1.4, -10, 0.9, 0.7, '#d8e84a'); ellipse(c, 2.6, -10, 0.9, 0.7, '#d8e84a');
-    poly(c, [[-12, -34], [-5, -30], [0, -36], [6, -31], [11, -35], [8, -29], [-9, -29]], '#5a8a38');
-    c.fillStyle = '#3e6a28'; c.fillRect(-9, -29, 3, 1.6); c.fillRect(2, -29.4, 3, 1.6);
-    poly(c, [[-15, 0], [-19, -2], [-17, -5], [-12, -4]], '#5e4026'); poly(c, [[16, 0], [20, -1.4], [18, -5], [12, -4]], '#5e4026');
-    shroom(-14, 1, 1.1, '#c8883a', '#f6e8c0'); shroom(16, 2, 0.9, '#c8883a', '#f6e8c0');
-  } else if (kind === 'boar') {      // кабанья лёжка: вытоптанная земля, кучи веток и кости
-    c.fillStyle = '#5a4630'; c.beginPath(); c.ellipse(0, 0, 21, 8.6, 0, 0, 7); c.fill();
-    c.fillStyle = '#463420'; c.beginPath(); c.ellipse(1, 1, 15, 5.6, 0, 0, 7); c.fill();
-    for (let k = 0; k < 9; k++) { const a = R() * 6.283, r = 6 + R() * 12; naLimb(c, Math.cos(a) * r, Math.sin(a) * r * 0.4 - 1, Math.cos(a) * r + 6 * (R() - 0.5), Math.sin(a) * r * 0.4 - 4 - R() * 3, 1.3, k % 2 ? '#7a5a34' : '#4a3420'); }
-    poly(c, [[-10, 0], [-6, -8], [2, -10], [9, -7], [12, 0]], '#7a6a34');     // подстилка из сена
-    c.fillStyle = '#a69248'; c.fillRect(-4, -8, 3, 1); c.fillRect(2, -6, 4, 1); c.fillRect(-8, -3, 3, 1);
-    naLimb(c, 12, -2, 18, -5, 1.4, '#f0e8cc'); naLimb(c, 18, -5, 20, -3, 1.2, '#f0e8cc');    // кость
-    ellipse(c, -17, 0, 2, 1.4, '#e0d8bc');
-  } else {                           // пятно чумных грибов: фиолетовая поляна
-    c.fillStyle = 'rgba(120,70,150,0.3)'; c.beginPath(); c.ellipse(0, 0, 21, 8, 0, 0, 7); c.fill();
-    c.fillStyle = 'rgba(160,236,90,0.25)'; c.beginPath(); c.ellipse(0, 0, 13, 5, 0, 0, 7); c.fill();
-    for (const [x, y, s, col, c2] of [[-14, 2, 1.1, '#8a48b0', '#eee0f8'], [-7, -2, 1.5, '#62308a', '#d8c0ec'], [3, 3, 1.3, '#8a48b0', '#eee0f8'], [10, -1, 1.7, '#b676d6', '#fff'], [16, 3, 0.9, '#62308a', '#d8c0ec'], [-1, -4, 0.9, '#b676d6', '#fff']]) shroom(x, y, s, col, c2);
-  }
+  naLairDraw(c, kind, v);
   c.restore();
   const out = toPixelArt(cv, 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
   s = { cv: out, ax: S.ax, ay: S.ay, w: S.w, h: S.h };
-  naLairCache.set(kind, s);
+  naLairCache.set(key, s);
   return s;
 }
