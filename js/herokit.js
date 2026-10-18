@@ -42,6 +42,16 @@ function heroKitText(cls) {
 }
 const kitMine = (H, k) => !!(KIT_ITEMS[k] && H && KIT_OF[H.clsKey] && KIT_OF[H.clsKey].includes(k));
 
+// Любая нечисть (призраки, скелеты, летучие мыши) в 8 клетках — оружие выхвачено само
+const UNDEAD_R = 8;
+function heroSeesUndead(u) {
+  const r2 = UNDEAD_R * UNDEAD_R, near = e => e && !e.dead && (e.x - u.x) ** 2 + (e.y - u.y) ** 2 <= r2;
+  for (const g of Game.ghosts || []) if (g.alpha > 0.05 && near(g)) return true;
+  for (const s of Game.skels || []) if (near(s)) return true;
+  for (const b of Game.bats || []) if (near(b)) return true;
+  return false;
+}
+
 // Строка оружия для спрайта (people.js): 'основное|левая рука|1 — выхвачено'
 function heroWpnOf(u) {
   const H = u.hero;
@@ -53,7 +63,7 @@ function heroWpnOf(u) {
   if (!m && !o && H.owner && KIT_OF[H.clsKey]) { const ks = KIT_OF[H.clsKey]; m = look(ks[0]); o = look(ks[1]); }
   if (!m && !o) return '';
   const now = Game.time;
-  const out = u.combatUntil > now || (u.anim && FIGHT_ANIM_SET.has(u.anim)) || (u.hfx && u.hfx.t > now);
+  const out = heroSeesUndead(u) || u.combatUntil > now || (u.anim && FIGHT_ANIM_SET.has(u.anim)) || (u.hfx && u.hfx.t > now);
   return `${m}|${o}|${out ? 1 : 0}`;
 }
 
