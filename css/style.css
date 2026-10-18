@@ -28,6 +28,7 @@
 
 html, body {
   margin: 0; height: 100%;
+  overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-text-size-adjust: 100%;
   background: var(--bg0);
   color: var(--text);
   font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
@@ -341,7 +342,7 @@ body.info-float #tab-area { flex: 1 1 auto; }
   image-rendering: pixelated;
   border: 2px solid #0a0705;
   box-shadow: inset 0 0 0 1px #9a6c3c, inset 0 0 0 2px rgba(0,0,0,0.35), 0 2px 0 rgba(0,0,0,0.5);
-  padding: 7px 11px; display: flex; align-items: center; gap: 4px;
+  padding: 8px 11px; display: flex; align-items: center; gap: 4px;
 }
 .dd { position: relative; display: inline-flex; }
 .dd-l { margin-right: auto; }
@@ -476,7 +477,7 @@ body.mobile .dd-t { min-height: 28px; padding: 4px 7px; font-size: 12px; gap: 3p
 body.mobile .dd-t img { width: 16px; height: 16px; }
 body.mobile .speed { padding: 4px 6px; }
 body.mobile .speed button { padding: 2px 8px; min-height: 26px; }
-body.mobile .dd-menu button { min-height: 34px; min-width: 38px; }
+body.mobile .dd-menu button { min-height: 38px; min-width: 42px; }
 body.mobile #topbar .m-only { order: 0; }
 body.mobile #dd-res .dd-t span:nth-child(n+3) { display: none; }   /* на телефоне в кнопке — дерево и камень, остальное в списке */
 body.mobile #dd-snd .dd-menu, body.mobile #dd-speed .dd-menu { right: 0; }

@@ -191,15 +191,16 @@ function makeUITextures() {
   }
   for (let k = 0; k < 90; k++) { l.fillStyle = lcol(LR[0] * 0.8); l.fillRect((lq() * LW) | 0, (lq() * LH) | 0, 1, 1); }   // поры
   document.documentElement.style.setProperty('--leather-tex', `url(${lc.toDataURL()})`);
-  // заклёпка 10×10 с блеском и тенью; горизонтальный и вертикальный ряды
-  const rv = mkCanvas(10, 10), r2 = rv.getContext('2d');
+  // заклёпка 8×8 (шляпка 3×3 с ободком); ряды по кромке растянуты `space`, поэтому по углам заклёпки ложатся ровно
+  // на одно и то же место (первая плитка рядов — в углу), без наслоения и обрезанных половинок
+  const rv = mkCanvas(8, 8), r2 = rv.getContext('2d');
   const rp = (x, y, c, w = 1, h = 1) => { r2.fillStyle = c; r2.fillRect(x, y, w, h); };
-  rp(3, 3, 'rgba(0,0,0,0.5)', 5, 5);                   // тень под шляпкой
-  rp(3, 2, '#5a3608', 4, 1); rp(2, 3, '#5a3608', 1, 4); rp(7, 3, '#5a3608', 1, 4); rp(3, 7, '#5a3608', 4, 1);   // ободок
-  rp(3, 3, '#c8902a', 4, 4); rp(3, 3, '#f4d060', 2, 2); rp(3, 3, '#fff2b8', 1, 1); rp(6, 6, '#8a5a14', 1, 1); rp(5, 6, '#a87018', 1, 1); rp(6, 5, '#a87018', 1, 1);
+  rp(2, 2, 'rgba(0,0,0,0.55)', 5, 5);                  // тень
+  rp(1, 1, '#4a2c08', 5, 5);                           // ободок
+  rp(2, 2, '#c8902a', 3, 3); rp(2, 2, '#fff2b8'); rp(3, 2, '#f4d060'); rp(2, 3, '#f4d060'); rp(4, 4, '#8a5a14');
   const rvUrl = `url(${rv.toDataURL()})`;
   document.documentElement.style.setProperty('--leather',
-    `${rvUrl} repeat-x left 3px top 0, ${rvUrl} repeat-x left 3px bottom 0, ${rvUrl} repeat-y left 0 top 3px, ${rvUrl} repeat-y right 0 top 3px, ` +
+    `${rvUrl} space no-repeat left top, ${rvUrl} space no-repeat left bottom, ${rvUrl} no-repeat space left top, ${rvUrl} no-repeat space right top, ` +
     `linear-gradient(rgba(255,220,160,0.06), rgba(0,0,0,0.22)), var(--leather-tex), #5a3a20`);
 }
 

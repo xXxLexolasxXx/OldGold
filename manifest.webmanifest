@@ -1,0 +1,11 @@
+{
+  "name": "OldGold",
+  "short_name": "OldGold",
+  "description": "Гномья экономика: строй деревню, корми жителей, веди героя",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#1a130d",
+  "theme_color": "#1a130d",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
