@@ -760,7 +760,7 @@ function setOrder(u, order, pt, leader) {
     R.back = R.order === 'drill' ? 'guard' : R.order;
   }
   R.order = order; R.pt = pt || null; R.target = null;
-  if (!u.brk) { heroStopUnit(u); }
+  if (!u.brk && !(R.train > 0)) heroStopUnit(u);      // новобранца не выдёргиваем с обучения: приказ выполнит после
 }
 
 function* recruitGen(u) {
@@ -1045,13 +1045,20 @@ function guildCoopCmd(name, m, admin) {
 
 // ================= Общая деревня: клик игрока =================
 
-function guildMirrorClick(t) {
-  let near = null, bd = 0.8;
+// Кто под курсором: в толпе рекрут важнее трудяг и героя (иначе его не выбрать)
+function unitAtClick(t) {
+  let near = null, bd = 0.8, rec = null, rd = 0.8;
   for (const u of Game.units) {
     if (u.inside || u.dead) continue;
     const d = Math.hypot(u.x - (t[0] + 0.5), u.y - (t[1] + 0.5));
     if (d < bd) { bd = d; near = u; }
+    if (recOf(u) && d < rd) { rd = d; rec = u; }
   }
+  return rec || near;
+}
+
+function guildMirrorClick(t) {
+  const near = unitAtClick(t);
   if (near && near.gx) { Game.selected = null; Game.selUnit = near; updateUI(true); return true; }
   const s = Game.selUnit;
   if (s && s.gx && near !== Game.hero) {
@@ -1181,12 +1188,7 @@ function guildAnnounceHTML() {
   const _click = onLeftClickTile;
   onLeftClickTile = function (t) {
     if (!isMirror() && !Game.tool && inb(t[0], t[1])) {
-      let near = null, bd = 0.8;
-      for (const u of Game.units) {
-        if (u.inside || u.dead) continue;
-        const d = Math.hypot(u.x - (t[0] + 0.5), u.y - (t[1] + 0.5));
-        if (d < bd) { bd = d; near = u; }
-      }
+      const near = unitAtClick(t);
       if (near && near.rec) { Game.selected = null; Game.selUnit = near; updateUI(true); return; }
       if (near && near.gm && Game.selUnit !== Game.hero) {
         const b = Game.buildings.find(x => x.id === near.gm);
@@ -1255,6 +1257,8 @@ function guildAnnounceHTML() {
       if (u.rec) d.rc = Object.assign({}, u.rec, { target: undefined });
       if (u.gm) { d.gm = u.gm; d.gmn = u.gmName; }
     });
+    // заявки на найм ждут свободного трудягу — не теряем их при сохранении и перезапуске сервера
+    Game.buildings.forEach((b, k) => { const d = s.buildings[k]; if (d && d.id === b.id && b.hireQ > 0) d.hq = b.hireQ; });
     return s;
   };
   const _apply = applySave;
@@ -1266,6 +1270,7 @@ function guildAnnounceHTML() {
       if (d.rc) { u.rec = d.rc; u.smoker = false; }
       if (d.gm) { u.gm = d.gm; u.gmName = d.gmn; u.smoker = false; }
     });
+    for (const d of s.buildings || []) if (d.hq > 0) { const b = Game.buildings.find(x => x.id === d.id); if (b && b.def.guild) b.hireQ = Math.min(recMaxOf(b), d.hq | 0); }
   };
 
   const _start = startGame;
@@ -1316,8 +1321,8 @@ function guildAnnounceHTML() {
     for (const u of Game.units) {
       if (u.dead || u.inside) continue;
       const R = recOf(u);
-      // оружие героя нарисовано в самом спрайте (people.js: в руке, в ножнах, за спиной) — значок только у рекрутов
-      const w = R ? GCLS[R.cls].weapon : u.type === 'hero' && u.hero && u.hero.equip && typeof heroWpnOf !== 'function' ? u.hero.equip.weapon : null;
+      // оружие героя и рекрутов нарисовано в самом спрайте (people.js: в руке, в ножнах, за спиной); значок — только без herokit.js
+      const w = typeof heroWpnOf === 'function' ? null : R ? GCLS[R.cls].weapon : u.type === 'hero' && u.hero && u.hero.equip ? u.hero.equip.weapon : null;
       if (w && GOODS[w] && !u.anim) {
         const ic = iconCanvas('good', w), f = u.face || 1;
         c.save(); c.translate(Math.round(u.x * TILE + f * 6), Math.round(u.y * TILE - 6)); if (f < 0) c.scale(-1, 1);
