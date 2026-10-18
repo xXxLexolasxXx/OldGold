@@ -28,6 +28,7 @@ function resetGameState() {
   Game.tool = null;
   Game.storeBlock = {};
   Game.produced = emptyGoods();
+  Game.diff = Game.pendDiff || 'normal';
   Game.unlocked = allUnlocked();   // по умолчанию меню открыто целиком; новая игра закрывает его сама
 }
 
@@ -70,7 +71,7 @@ function serializeGame() {
   for (let i = 0; i < N_TILES; i++) if (World.road[i]) road.push(i);
   const nz = o => { const r = {}; for (const k in o) if (o[k]) r[k] = o[k]; return r; };
   return {
-    v: 2, mw: MAP_W, mh: MAP_H, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
+    v: 2, df: Game.diff, mw: MAP_W, mh: MAP_H, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
     storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, ch: serializeChests(), fy: serializeFairy1(), f2: serializeFairy(), fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, be: serializeBeasts(), produced: nz(Game.produced),
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
     obj, road,
@@ -110,6 +111,7 @@ function applySave(s) {
   setMapSize(s.mw || MAP_LEGACY_W, s.mh || MAP_LEGACY_H);   // сохранения без размера — старая карта 96×72
   resetGameState();
   Game.seed = s.seed;
+  Game.diff = diffKey(s.df);   // старые сохранения без сложности — «Обычный» (прежний баланс)
   genWorld(s.seed);
   for (const i of s.mined || []) { World.terrain[i] = T_GRASS; World.crystal[i] = 0; ROCKMINE.mined.add(i); }
   for (const [i, n] of s.rockHp || []) ROCKMINE.hp.set(i, n);
@@ -213,7 +215,7 @@ function saveGame(slot = 'manual') {
   try {
     const data = JSON.stringify(serializeGame());
     localStorage.setItem(SAVE_KEY + slot, data);
-    localStorage.setItem(SAVE_KEY + slot + '.meta', JSON.stringify({ at: Date.now(), time: Game.time, people: Game.units.length }));
+    localStorage.setItem(SAVE_KEY + slot + '.meta', JSON.stringify({ at: Date.now(), time: Game.time, people: Game.units.length, df: Game.diff }));
     return true;
   } catch (e) {
     console.warn('save failed', e);

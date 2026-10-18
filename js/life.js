@@ -123,7 +123,7 @@ function lifeTick(u, dt) {
   }
   if (u.injury && Game.time >= u.injuryUntil) { u.injury = null; }
   // долго без еды — копит слабость
-  if (u.food <= 0 && !u.noFood && !u.inside && isPerson(u)) u.starveT = (u.starveT || 0) + dt;
+  if (u.food <= 0 && !u.noFood && !u.inside && isPerson(u) && !dif().noStarve) u.starveT = (u.starveT || 0) + dt * dif().starve;
   else if (u.food > 0) u.starveT = 0;
   u.lifeT = (u.lifeT || 0) + dt;
   if (u.lifeT < 0.5) return;

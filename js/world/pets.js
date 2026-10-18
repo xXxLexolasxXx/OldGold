@@ -449,7 +449,7 @@ function* petAvengeGen(u, enemy, rec) {
   }
   if (enemyGone(enemy)) return;
   const petName = PET_NAME[rec.kind];
-  if (Math.random() < 0.5) {
+  if (Math.random() < 0.5 || dif().noLoss) {
     // победил
     if (enemy.kind) {
       const name = ANIMALS[enemy.kind].name, x = Math.floor(enemy.x), y = Math.floor(enemy.y);
