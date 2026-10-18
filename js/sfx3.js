@@ -211,5 +211,32 @@ Object.assign(FLOAT_SFX, {
   'Фыр!': 'hogSnort', 'Кыш!': 'shoo',
 });
 
+// ---------- Бюджет внимания ----------
+// Звуки живности делятся на два яруса. Фон (шорохи, цокот, рытьё, светлячки…) — не чаще одного раза в 1,6 с на всю
+// карту, не больше 3 за 8 с и не поверх события. События (испуг, взлёт, плюх, писк) — реже одного в 0,25 с и не больше
+// 5 за 5 с. Так слух всегда занят чем-то одним, а не кашей; пропущенное просто не звучит.
+const FAUNA_TIER = {
+  caw: 1, cawRasp: 1, wingFlap: 1, gooseFlap: 1, shoo: 1, splash: 1, badgerGrowl: 1, hogSnort: 1, mousePip: 1, molePeep: 1, squelch: 1,
+  ribbit: 0, frogHop: 0, wormSlither: 0, firefly: 0, mouseRustle: 0, mouseGnaw: 0, badgerDig: 0, badgerSnort: 0,
+  squirrelChatter: 0, squirrelCrack: 0, barkRustle: 0, peckDrum: 0, peckWhistle: 0, moleRustle: 0, hogSpines: 0,
+};
+const FaunaBudget = { ambLast: -9, evLast: -9, amb: [], ev: [] };
+const sfxAtRaw = sfxAt;
+sfxAt = function (kind, wx, wy, vel = 1, delay = 0) {
+  const tier = FAUNA_TIER[kind];
+  if (tier === undefined || !Sfx.ctx) return sfxAtRaw(kind, wx, wy, vel, delay);
+  const now = Sfx.ctx.currentTime + delay, B = FaunaBudget;
+  if (tier === 0) {
+    B.amb = B.amb.filter(x => x > now - 8);
+    if (now - B.ambLast < 1.6 || B.amb.length >= 3 || now - B.evLast < 0.8) return;
+    B.ambLast = now; B.amb.push(now);
+  } else {
+    B.ev = B.ev.filter(x => x > now - 5);
+    if (now - B.evLast < 0.25 || B.ev.length >= 5) return;
+    B.evLast = now; B.ev.push(now);
+  }
+  sfxAtRaw(kind, wx, wy, vel * (tier ? 1 : 0.8), delay);
+};
+
 // Мировые координаты в клетках → sfxAt
 function faunaSfx(kind, x, y, vel = 1, delay = 0) { sfxAt(kind, x * TILE, y * TILE, vel, delay); }
