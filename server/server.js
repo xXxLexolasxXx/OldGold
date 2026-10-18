@@ -50,6 +50,7 @@ const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
 
 // ---------- Статистика игроков ----------
 const stats = createStats(DATA, log);
+const events = require('./events').createEvents(DATA, log);
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {
@@ -138,13 +139,14 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
   if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
+  if (events.handle(req, res, req.socket.remoteAddress || '')) return;
   if (p === '/stats') {
     const q = new URL(req.url, 'http://x').searchParams;
     if (!keyOk(q.get('key'))) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('нужен ключ: /stats?key=… (он в файле stats.key в папке данных сервера)'); return; }
-    stats.save();
+    stats.save(); events.save();
     const x = stats.summary();
-    if (q.has('json')) { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(x, null, 2)); }
-    else { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(printSummary(x) + '\n\nСервер: ' + SERVER_VER + '\n'); }
+    if (q.has('json')) { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify({ ...x, solo: events.summary() }, null, 2)); }
+    else { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(printSummary(x) + '\n\n' + events.printSummary(events.summary()) + '\n\nСервер: ' + SERVER_VER + '\n'); }
     return;
   }
   if (p === '/') p = '/index.html';

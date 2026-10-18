@@ -10,7 +10,73 @@ function track(name, title) {
   Stats.sent.add(name);
   Stats.queue.push({ path: 'event/' + name, title: title || name, event: true });
   flushStats();
+  statsOwn(name);
 }
+
+// ---- Свой анонимный счётчик ----
+// Локальная воронка (localStorage 'oldgold-funnel': событие → время первого достижения) копится всегда, даже офлайн.
+// Очередь на отправку ('oldgold-pending') уходит на кооп-сервер POST /e вместе со случайным id клиента ('oldgold-cid').
+// Id не связан ни с человеком, ни с ником; при сбое сети очередь ждёт следующей попытки, игра не тормозит (fetch с таймаутом).
+const statsLocal = () => /^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname);
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* нет хранилища */ } };
+Stats.cid = null; Stats.timer = 0; Stats.busy = false; Stats.next = 0; Stats.fails = 0;
+
+function statsCid() {
+  if (Stats.cid) return Stats.cid;
+  let c = lsGet('oldgold-cid', '');
+  if (!/^[a-z0-9]{8,32}$/.test(c)) {
+    c = ''; const a = new Uint8Array(12);
+    try { crypto.getRandomValues(a); } catch (e) { for (let i = 0; i < 12; i++) a[i] = Math.random() * 256; }
+    for (const x of a) c += (x % 36).toString(36);
+    lsSet('oldgold-cid', c);
+  }
+  return Stats.cid = c;
+}
+
+function statsOwn(name) {
+  name = String(name).toLowerCase().replace(/[^a-z0-9_-]/g, '-').slice(0, 48);
+  const f = lsGet('oldgold-funnel', {});
+  if (!f[name]) { f[name] = Date.now(); lsSet('oldgold-funnel', f); }
+  if (statsLocal()) return;
+  const q = lsGet('oldgold-pending', []);
+  if (!q.includes(name)) { q.push(name); lsSet('oldgold-pending', q.slice(-200)); }
+  clearTimeout(Stats.timer);
+  Stats.timer = setTimeout(statsSend, 4000);
+}
+
+function statsUrl() {
+  const h = typeof coopDefaultServer === 'function' ? coopDefaultServer() : '';
+  return h ? coopHttpUrl(h).replace(/\/+$/, '') + '/e' : '';
+}
+
+function statsSend(last) {
+  if (statsLocal() || Stats.busy || Date.now() < Stats.next) return;
+  const q = lsGet('oldgold-pending', []), url = statsUrl();
+  if (!q.length || !url) return;
+  const body = JSON.stringify({ c: statsCid(), e: q.slice(0, 60) });
+  if (last === true && navigator.sendBeacon) {   // закрытие вкладки: очередь не чистим, уйдёт ещё раз (сервер считает событие один раз)
+    try { navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' })); } catch (e) { /* ничего */ }
+    return;
+  }
+  Stats.busy = true;
+  const ac = typeof AbortController === 'function' ? new AbortController() : null;
+  const to = setTimeout(() => ac && ac.abort(), 5000);
+  fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'text/plain' }, keepalive: true, signal: ac ? ac.signal : undefined })
+    .then(r => {
+      if (!r.ok && r.status !== 204) throw new Error(r.status);
+      const sent = new Set(JSON.parse(body).e);
+      lsSet('oldgold-pending', lsGet('oldgold-pending', []).filter(n => !sent.has(n)));
+      Stats.fails = 0;
+    })
+    .catch(() => { Stats.fails++; Stats.next = Date.now() + Math.min(600000, 30000 * Stats.fails); })
+    .finally(() => { clearTimeout(to); Stats.busy = false; });
+}
+
+window.addEventListener('pagehide', () => statsSend(true));
+window.addEventListener('online', () => { Stats.next = 0; statsSend(); });
+// из консоли: statsFunnel() — что игрок прошёл (локально)
+function statsFunnel() { return lsGet('oldgold-funnel', {}); }
 
 function flushStats() {
   if (/^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname)) { Stats.queue.length = 0; return; }   // у себя не считаем
@@ -26,6 +92,7 @@ const PLAY_MARKS = [[1, 'Играл минуту'], [5, 'Играл 5 минут
 // Вызывается из игрового цикла: считает только реальное время, когда игра идёт и вкладка открыта.
 function statsTick(dt) {
   if (Stats.queue.length) flushStats();
+  if (!(Stats.tickN = ((Stats.tickN || 0) + 1) % 1800) && lsGet('oldgold-pending', []).length) statsSend();   // раз в ~минуту добиваем неотправленное
   if (Game.paused || document.hidden) return;
   Stats.playT += dt;
   for (const [m, title] of PLAY_MARKS) if (Stats.playT >= m * 60) track(`play-${m}m`, title);
