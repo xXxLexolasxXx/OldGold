@@ -920,7 +920,13 @@
     }
     ring.sort((p, q) => p.y - q.y);
     drawFireBase(cx, cy, S);
-    const back = ring.filter(p => p.y < cy), front = ring.filter(p => p.y >= cy);
+    // толпа за кругом: гномы по бокам и снизу, часть обрезана краем экрана, стоят внахлёст в разной глубине
+    const crowd = [[-0.37, 0.64], [-0.47, 0.74], [-0.31, 0.83], [-0.5, 0.93], [-0.2, 1.0], [0.36, 0.66], [0.46, 0.77], [0.3, 0.87], [0.52, 0.97], [0.12, 1.04], [-0.06, 1.1]].map(([fx, fy], j) => {
+      const x = cx + fx * W + Math.sin(j * 5.1) * 14 * u, y = H * fy;
+      return { i: N + j, a: 0, x, y, k: u * 1.9 * (0.78 + (fy - 0.6) * 1.1), g: CREW[(j * 3 + 1) % N], extra: true };
+    });
+    const all = ring.concat(crowd).sort((p, q) => p.y - q.y);
+    const back = all.filter(p => p.y < cy), front = all.filter(p => p.y >= cy);
     const pos = new Map(ring.map(p => [p.i, p]));
     const sway = i => Math.sin(t * 2.3 + i * 0.55);
     const shoulder = p => ({ x: p.x + Math.sin(sway(p.i) * 0.03) * 0, y: p.y - 48 * p.k });
@@ -933,7 +939,7 @@
     }
     const drawRing = list => {
       for (const p of list) {
-        const view = Math.sin(p.a) > 0 ? 'back' : 'front';
+        const view = p.extra ? (p.y > cy + ry ? 'back' : 'front') : Math.sin(p.a) > 0 ? 'back' : 'front';
         const lit = p.x < cx ? 1 : -1;
         drawGnome(p.g, p.x, p.y, p.k, view, lit, sway(p.i), p.i);
         // руки, исходящие из этого гнома (к обоим соседям)
