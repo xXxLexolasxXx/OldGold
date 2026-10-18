@@ -448,6 +448,42 @@ function roadShape(c, x, y, px, py, grow, bands, chamfers) {
   }
 }
 
+// Сглаженная маска дороги вокруг клетки: фигуры клетки и её соседей (3×3) рисуются в мировых координатах,
+// размываются и обрезаются по порогу — выпуклые и вогнутые углы становятся круглыми, прямые края не сдвигаются.
+// cobbles=true — внутри булыжник цвета мостовой; null — тёмный бордюр.
+const ROAD_M = 10;
+let roadScratch = null;
+function roadMaskCanvas(x, y, grow, cobbles) {
+  const S = TILE + ROAD_M * 2;
+  if (!roadScratch) roadScratch = [mkCanvas(S, S), mkCanvas(S, S)];
+  const [a, b] = roadScratch, ca = a.getContext('2d', { willReadFrequently: true }), cb = b.getContext('2d', { willReadFrequently: true });
+  const ox = x * TILE - ROAD_M, oy = y * TILE - ROAD_M;
+  ca.setTransform(1, 0, 0, 1, 0, 0); ca.clearRect(0, 0, S, S);
+  ca.translate(-ox, -oy);
+  for (let ny = y - 1; ny <= y + 1; ny++) for (let nx = x - 1; nx <= x + 1; nx++) {
+    if (!inb(nx, ny)) continue;
+    const bands = diagBands(nx, ny), chamf = roadChamfers(nx, ny);
+    if (!World.road[idx(nx, ny)] && !bands.length && !chamf.length) continue;
+    roadShape(ca, nx, ny, nx * TILE, ny * TILE, grow, bands, chamf);
+    ca.fillStyle = '#000'; ca.fill();
+  }
+  ca.setTransform(1, 0, 0, 1, 0, 0);
+  cb.setTransform(1, 0, 0, 1, 0, 0); cb.clearRect(0, 0, S, S);
+  cb.filter = 'blur(3.5px)'; cb.drawImage(a, 0, 0); cb.filter = 'none';
+  const img = cb.getImageData(0, 0, S, S), d = img.data, col = cobbles ? [74, 69, 64] : [40, 34, 28];
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] >= 128) { d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = cobbles ? 255 : 140; } else d[i + 3] = 0;
+  }
+  cb.putImageData(img, 0, 0);
+  if (cobbles) {
+    ca.clearRect(0, 0, S, S);
+    ca.save(); ca.translate(-ox, -oy); paveCobbles(ca, ox, oy, S, S, 1); ca.restore();
+    ca.globalCompositeOperation = 'destination-in'; ca.drawImage(b, 0, 0); ca.globalCompositeOperation = 'source-over';
+    return a;
+  }
+  return b;
+}
+
 function drawRoadTile(x, y) {
   if (!TERR.ready) return;
   const px = x * TILE, py = y * TILE, bi = Math.floor(y / TBAND);
@@ -464,17 +500,12 @@ function drawRoadTile(x, y) {
   c.clearRect(px, py, TILE, TILE);
   if (!has) { c.restore(); return; }
   const r = mulberry32(idx(x, y) * 131 + 7);
+  // бордюр из тёмного камня и сплошная мостовая; контуры сглажены (см. roadMaskCanvas): повороты и диагональные стыки скруглены
   c.save();
   c.beginPath(); c.rect(px, py, TILE, TILE); c.clip();
   void r;
-  // бордюр из тёмного камня и сплошная мостовая
-  roadShape(c, x, y, px, py, 2, bands, chamf);
-  c.fillStyle = 'rgba(40,34,28,0.55)'; c.fill();
-  roadShape(c, x, y, px, py, 0, bands, chamf);
-  c.fillStyle = '#4a4540'; c.fill();
-  roadShape(c, x, y, px, py, 0, bands, chamf);
-  c.clip();
-  paveCobbles(c, px - 4, py - 4, TILE + 8, TILE + 8, 1);
+  c.drawImage(roadMaskCanvas(x, y, 2, null), px - ROAD_M, py - ROAD_M);
+  c.drawImage(roadMaskCanvas(x, y, 0, true), px - ROAD_M, py - ROAD_M);
   c.restore();
   c.restore();
   // пиксельный вид: жёсткий край и палитра
