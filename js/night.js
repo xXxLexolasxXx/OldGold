@@ -604,6 +604,8 @@ function nightTick(dt) {
     if (u.nightNo !== ni) { u.nightNo = ni; u.lantern = true; u.rescued = false; u.rescuer = 0; }
     if (!night || u.inside || u.type === 'carter') continue;
     if (Game.ents.length) entReact(u);
+    // фонарь иногда разбивается сам — оступился, задел ветку (раз в ~3 минуты тумана)
+    if (u.lantern && night && !u.brk && Math.random() < 0.003) lanternFall(u);
     // без фонаря в тумане — теряется
     if (!u.lantern && !u.rescued && interruptible(u)) {
       startBreak(u, 'lost', null); u.proc = lostGen(u);

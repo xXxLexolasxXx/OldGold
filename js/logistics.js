@@ -114,7 +114,7 @@ function dispatchSerfs() {
     while (need > 0 && idle.length) {
       let src = null, sd = 1e9;
       for (const o of depots) {
-        if (o === r.d || compOf.get(o) !== r.comp || o.offer(r.g) <= 0) continue;
+        if ((o === r.d && !(r.d.upg && r.d.isStore())) || compOf.get(o) !== r.comp || o.offer(r.g) <= 0) continue;
         // сперва забираем у мастерской — иначе она встанет с полным складом, а склад опустеет
         const dd = mdist(o.doorX, o.doorY, r.d.doorX, r.d.doorY) + (o.isPile || !o.isStore() ? 0 : 25);
         if (dd < sd) { sd = dd; src = o; }

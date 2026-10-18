@@ -498,7 +498,7 @@ function frame(now) {
     while (acc >= SIM_DT && steps < 40) { try { step(SIM_DT); } catch (e) { if (!frame.errT || Game.time - frame.errT > 5) { console.error(e); frame.errT = Game.time; } } acc -= SIM_DT; steps++; }
     if (steps >= 40) acc = 0;
     autoT += dt;
-    if (autoT > 15 && !Game.stress) { autoT = 0; saveGame('auto'); }   // автосохранение каждые 15 секунд; тестовую карту не сохраняем
+    if (autoT > 30 && !Game.stress) { autoT = 0; saveGame('auto'); }   // автосохранение каждые 30 секунд; тестовую карту не сохраняем
   }
   perfFrame(dt * 1000, performance.now() - s0);
   render();
