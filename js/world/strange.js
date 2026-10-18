@@ -77,10 +77,10 @@ function stShardSprite(f) {
     const px = (x, y, col) => { c.fillStyle = col; c.fillRect(x | 0, y | 0, 1, 1); };
     const base = f * (Math.PI * 2 / 5) / 8;
     for (let i = 0; i < 5; i++) {
-      const a = base + i * Math.PI * 2 / 5, cx = mid + Math.cos(a) * 9.5, cy = mid + Math.sin(a) * 5.2, front = Math.sin(a) > 0;
-      for (let dy = -3; dy <= 3; dy++) for (let dx = -1; dx <= 1; dx++) {
-        if (Math.abs(dx) * 3 + Math.abs(dy) > 4) continue;
-        px(cx + dx, cy + dy, dx < 0 ? (front ? '#d0f8ff' : '#80b8d0') : dx > 0 ? (front ? '#60b0e0' : '#406888') : (front ? '#98e4ff' : '#5a98b8'));
+      const a = base + i * Math.PI * 2 / 5, cx = mid + Math.cos(a) * 8.5, cy = mid + Math.sin(a) * 4.6, front = Math.sin(a) > 0;
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -2; dx <= 2; dx++) {
+        if (Math.abs(dx) * 2 + Math.abs(dy) > 4) continue;
+        px(Math.round(cx) + dx, Math.round(cy) + dy, dx < 0 ? (front ? '#d0f8ff' : '#80b8d0') : dx > 0 ? (front ? '#60b0e0' : '#406888') : (front ? '#98e4ff' : '#5a98b8'));
       }
     }
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) px(mid + dx, mid + dy, Math.abs(dx) + Math.abs(dy) < 2 ? '#fff0ff' : '#e090f0');
