@@ -197,6 +197,7 @@ function saveGame(slot = 'manual') {
     return true;
   } catch (e) {
     console.warn('save failed', e);
+    if (slot === 'auto' && typeof toast === 'function' && (!saveGame.warnT || Date.now() - saveGame.warnT > 120000)) { saveGame.warnT = Date.now(); toast('Автосохранение не удалось: нет места в браузере'); }
     return false;
   }
 }

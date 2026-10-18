@@ -1,4 +1,8 @@
 'use strict';
+// iOS/Safari до 16 и старые Chrome: нет roundRect — без него экран загрузки падал
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) { const rr = Math.max(0, Math.min(Array.isArray(r) ? r[0] : (r || 0), Math.abs(w) / 2, Math.abs(h) / 2)); this.moveTo(x + rr, y); this.arcTo(x + w, y, x + w, y + h, rr); this.arcTo(x + w, y + h, x, y + h, rr); this.arcTo(x, y + h, x, y, rr); this.arcTo(x, y, x + w, y, rr); this.closePath(); };
+}
 // Экран загрузки: ночной лес, большой костёр, девять гномов разных ремёсел
 // стоят вокруг, взявшись за руки, а вдали парят призраки и летучие мыши.
 // Самодостаточный файл: грузится первым, анимируется, пока тяжёлые скрипты ещё
