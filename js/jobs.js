@@ -227,7 +227,7 @@ function* buildGen(u, s) {
     yield { wait: 3 };
     return;
   }
-  let builtIt = false;
+  let builtIt = false, idleT = 0;
   while (!s.removed && u.job === s) {
     if (u.wantsEat() && findInn(u)) break;
     if (s.isRoad) {
@@ -264,7 +264,11 @@ function* buildGen(u, s) {
       for (let k = 0; k < HITS_PER_UNIT && !s.removed; k++) { yield { wait: HIT_TIME, anim: 'build' }; s.hits++; s.lastHit = Game.time; }
       if (s.removed) break;
       if (s.used >= s.total) { finishBuilding(s); builtIt = true; break; }
+      idleT = 0;
     } else {
+      // материал не везут (стройку отрезало от дорог, на складе пусто) — не держим её вечно:
+      // отходим, и диспетчер даст работу на другой стройке, а сюда вернёт, когда будет что класть
+      if (!['trunk', 'timber', 'stone'].some(k => s.incoming[k] > 0) && (idleT += 1) > 20) break;
       yield { wait: 1 };
     }
   }

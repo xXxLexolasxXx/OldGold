@@ -376,6 +376,7 @@ function owGrabIndex(o) {
 const owTalonY = p => 5.5 * p.S * (0.4 + 0.6 * p.tal);
 const OW_PAL = { out: '#2a1a0c', fill: '#e8d090', hi: '#fffbe0' };
 
+const OWL_PREY = new Set(['rabbit', 'chicken', 'duck']);
 function owlCanTake(o, dt) {
   o.scanT = (o.scanT || 0) - dt;
   if (o.scanT > 0) return null;
@@ -387,7 +388,8 @@ function owlCanTake(o, dt) {
     if (Math.hypot(u.x * TILE - o.x, u.y * TILE - o.y) > 9 * TILE || nearBonfire(u.x, u.y, BONFIRE_SAFE)) continue;
     c.push({ u });
   }
-  for (const a of Game.animals || []) if (!a.dead && Math.hypot(a.x * TILE - o.x, a.y * TILE - o.y) < 9 * TILE && !nearBonfire(a.x, a.y, BONFIRE_SAFE)) c.push({ a });
+  // сова поднимает только мелочь: кролика, курицу, утку — не лося и не волка
+  for (const a of Game.animals || []) if (!a.dead && OWL_PREY.has(a.kind) && Math.hypot(a.x * TILE - o.x, a.y * TILE - o.y) < 9 * TILE && !nearBonfire(a.x, a.y, BONFIRE_SAFE)) c.push({ a });
   return c.length ? c[(Math.random() * c.length) | 0] : null;
 }
 

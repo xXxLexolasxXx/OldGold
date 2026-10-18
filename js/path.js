@@ -27,11 +27,19 @@ const PF = {
   reg: new Int32Array(N_TILES),   // метки связных областей проходимых клеток (0 — непроходимо)
   regT: -1e9, regN: 0,
   hF: new Float64Array(4096), hI: new Int32Array(4096),   // двоичная куча открытого списка, растёт по надобности
+  q: new Int32Array(N_TILES),     // очередь заливок
 };
+// проходимость клетки по индексу — то же, что isWalkable, без проверки границ (её делает вызывающий)
+function walkIdx(i) {
+  const t = World.terrain[i];
+  if (t === T_WATER || t === T_ROCK || World.bmap[i]) return false;
+  const o = World.obj[i];
+  return !(o && o.t === 'stone');
+}
 function pfResize() {
   PF.g = new Float32Array(N_TILES); PF.from = new Int32Array(N_TILES);
   PF.seen = new Int32Array(N_TILES); PF.closed = new Int32Array(N_TILES); PF.stamp = 0;
-  PF.reg = new Int32Array(N_TILES); PF.regT = -1e9;
+  PF.reg = new Int32Array(N_TILES); PF.regT = -1e9; PF.q = new Int32Array(N_TILES);
 }
 
 const DIRS = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
@@ -41,18 +49,18 @@ const DX8 = [1, -1, 0, 0, 1, 1, -1, -1], DY8 = [0, 0, 1, -1, 1, -1, 1, -1], DM8 
 // Заливка проходимых клеток от точки; возвращает метку для PF.closed.
 function floodFrom(sx, sy) {
   const st = ++PF.stamp;
-  const q = [idx(sx, sy)];
-  PF.closed[q[0]] = st;
-  for (let k = 0; k < q.length; k++) {
-    const c = q[k], cx = c % MAP_W, cy = (c / MAP_W) | 0;
-    for (let d = 0; d < 4; d++) {
-      const nx = cx + DIRS[d][0], ny = cy + DIRS[d][1];
-      if (!isWalkable(nx, ny)) continue;
-      const ni = idx(nx, ny);
-      if (PF.closed[ni] === st) continue;
-      PF.closed[ni] = st;
-      q.push(ni);
-    }
+  const W = MAP_W, N = N_TILES, closed = PF.closed, q = PF.q;
+  if (!inb(sx, sy)) return st;
+  let qh = 0, qt = 0;
+  const s = idx(sx, sy);
+  closed[s] = st; q[qt++] = s;
+  // стартовая клетка может быть непроходимой (дверь склада) — заливаем от неё, как и раньше
+  while (qh < qt) {
+    const c = q[qh++], cx = c % W;
+    if (cx + 1 < W && closed[c + 1] !== st && walkIdx(c + 1)) { closed[c + 1] = st; q[qt++] = c + 1; }
+    if (cx > 0 && closed[c - 1] !== st && walkIdx(c - 1)) { closed[c - 1] = st; q[qt++] = c - 1; }
+    if (c + W < N && closed[c + W] !== st && walkIdx(c + W)) { closed[c + W] = st; q[qt++] = c + W; }
+    if (c - W >= 0 && closed[c - W] !== st && walkIdx(c - W)) { closed[c - W] = st; q[qt++] = c - W; }
   }
   return st;
 }
@@ -66,10 +74,9 @@ function reachedIn(st, x, y) { return inb(x, y) && PF.closed[idx(x, y)] === st; 
 function pfRegions() {
   if (Game.time - PF.regT < 2 && Game.time >= PF.regT) return;
   PF.regT = Game.time;
-  const reg = PF.reg, W = MAP_W, N = N_TILES, ter = World.terrain, bm = World.bmap, obj = World.obj;
-  const walk = i => { const t = ter[i]; if (t === T_WATER || t === T_ROCK || bm[i]) return false; const o = obj[i]; return !(o && o.t === 'stone'); };
+  const reg = PF.reg, W = MAP_W, N = N_TILES, walk = walkIdx;
   reg.fill(0);
-  const q = new Int32Array(N);
+  const q = PF.q;
   let n = 0;
   for (let s = 0; s < N; s++) {
     if (reg[s] || !walk(s)) continue;

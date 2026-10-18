@@ -200,7 +200,10 @@ function dispatchBuilders() {
   dispatchRepairs(idle);
   if (!idle.length) return;
   const sites = [
-    ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold),
+    // стройка без материала и без доставки в пути подождёт: работяга без дела там только стоит
+    ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold &&
+      (b.state === 'site' || ['trunk', 'timber', 'stone'].some(k => b.stock[k] > 0 || b.incoming[k] > 0 ||
+        (b.demand(k) > 0 && (nearestStore(b.doorX, b.doorY, k, compAt(b.doorX, b.doorY))?.offer(k) > 0))))),   // опытный работяга донесёт сам
     ...Game.buildings.filter(b => b.upg && !b.upg.builder),
     // дорогу можно копать сразу, а мостить — когда камень на месте или в пути
     ...[...Game.roadSites.values()].filter(s => !s.builder && (s.dug < 1 || s.stock.stone + s.incoming.stone > 0)),
