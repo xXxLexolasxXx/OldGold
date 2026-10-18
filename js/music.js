@@ -1,5 +1,88 @@
 'use strict';
-// Музыка: три собственных трека, синтез через WebAudio, без файлов. Треки сменяют друг друга.
+// ---------- Аудио-ядро ----------
+// Один общий AudioContext на всю игру. Иерархия шин:
+//   Мастер → лимитер → наушники
+//     ├─ Музыка (с «приседанием» под гром и крики)
+//     ├─ Звуки мира (sfx.js: пространственные, с компрессором)
+//     ├─ Фон (дождь, ветер, сверчки, костёр)
+//     └─ Интерфейс (щелчки кнопок, подсказки)
+// Переключатели музыки и звуков управляют своими шинами; когда обе выключены — контекст засыпает.
+
+const AudioCore = { ctx: null, master: null, limiter: null, music: null, musicDuck: null, sfx: null, amb: null, ui: null, noise: null, air: null };
+
+function audioCoreInit() {
+  if (AudioCore.ctx) return AudioCore.ctx;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  let ctx;
+  try { ctx = new AC({ latencyHint: 'interactive' }); } catch (e) { ctx = new AC(); }
+  AudioCore.ctx = ctx;
+  const master = AudioCore.master = ctx.createGain(); master.gain.value = 0.8;
+  // лимитер: быстрый и жёсткий, ловит только случайные пики — обычная динамика его не касается
+  const lim = AudioCore.limiter = ctx.createDynamicsCompressor();
+  lim.threshold.value = -5; lim.knee.value = 3; lim.ratio.value = 18; lim.attack.value = 0.0015; lim.release.value = 0.14;
+  master.connect(lim); lim.connect(ctx.destination);
+  const bus = (g, to = master) => { const n = ctx.createGain(); n.gain.value = g; n.connect(to); return n; };
+  AudioCore.musicDuck = bus(1);
+  AudioCore.music = bus(1, AudioCore.musicDuck);
+  AudioCore.sfx = bus(1); AudioCore.amb = bus(1); AudioCore.ui = bus(1);
+  // общий белый шум (2 с) — источник для всего шумового синтеза
+  const nl = ctx.sampleRate * 2;
+  AudioCore.noise = ctx.createBuffer(1, nl, ctx.sampleRate);
+  const nd = AudioCore.noise.getChannelData(0);
+  for (let i = 0; i < nl; i++) nd[i] = Math.random() * 2 - 1;
+  return ctx;
+}
+
+// Шину включают/выключают плавно, без щелчка
+function audioSetBus(name, on) {
+  const b = AudioCore[name], ctx = AudioCore.ctx;
+  if (!b || !ctx) return;
+  const t = ctx.currentTime, g = b.gain;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(on ? 1 : 0.0001, t + 0.12);
+  audioMaybeSuspend();
+}
+
+// Когда и музыка, и звуки выключены — контекст спит и не тратит процессор
+function audioMaybeSuspend() {
+  const ctx = AudioCore.ctx;
+  if (!ctx) return;
+  const anyOn = (typeof Music !== 'undefined' && Music.on) || (typeof Sfx !== 'undefined' && Sfx.on);
+  if (anyOn) { if (ctx.state !== 'running') ctx.resume(); }
+  else if (ctx.state === 'running') setTimeout(() => { if (!((typeof Music !== 'undefined' && Music.on) || (typeof Sfx !== 'undefined' && Sfx.on))) ctx.suspend(); }, 200);
+}
+
+// «Приседание» музыки: под гром, крик, аплодисменты музыка на миг отходит назад
+function audioDuck(depth = 0.5, hold = 0.6, delay = 0) {
+  const ctx = AudioCore.ctx; if (!ctx || !AudioCore.musicDuck) return;
+  const g = AudioCore.musicDuck.gain, t = ctx.currentTime + delay;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(1 - depth, t + 0.06);
+  g.setValueAtTime(1 - depth, t + 0.06 + hold);
+  g.linearRampToValueAtTime(1, t + 0.06 + hold + 1.2);
+}
+
+// Импульс реверберации: затухающий шум; decay больше — короче хвост
+function makeImpulse(ctx, sec, decay = 2.6) {
+  const len = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  return buf;
+}
+
+// Запуск по первому касанию (браузеры не дают звук без жеста)
+function audioKickOnGesture(fn) {
+  const kick = () => { fn(); window.removeEventListener('pointerdown', kick); window.removeEventListener('keydown', kick); window.removeEventListener('touchstart', kick); };
+  window.addEventListener('pointerdown', kick);
+  window.addEventListener('keydown', kick);
+  window.addEventListener('touchstart', kick);
+}
+
+// ---------- Музыка ----------
+// Четыре собственных трека, синтез на лету, без файлов. Треки сменяют друг друга.
 //  1) «Чаща»   — лесная, таинственная: ре дорийский, 3/4. Низкая флейта, арфа,
 //                виолончельный бурдон, мягкий бойран «сердцебиением», колокольчики;
 //                во второй половине — протяжные женские распевы.
@@ -7,22 +90,23 @@
 //                арфа и цимбалы перебирают, контрабас щиплет, бубен.
 //  3) «Ярмарка» — живая джига 6/8 в ре мажоре: скрипка с форшлагами, свирель вторит
 //                октавой выше, цимбалы на слабых долях, бойран и шейкер.
+//  4) «Тревога» — ночной: бурдон с тритоном, редкие холодные удары, сердцебиение.
 // Мелодии строятся из мотивов: короткие обороты повторяются и отвечают друг другу.
 
 const Music = {
   ctx: null, master: null, bus: null, rev: null, hall: null, on: true, started: false,
-  bar: 0, nextTime: 0, timer: null, buffers: new Map(), track: 0, songs: [],
+  bar: 0, nextTime: 0, timer: null, buffers: new Map(), track: 0, songs: [], noise: null,
 };
 
 const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
 function musicRng(seed) { let s = seed; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
 
 // ---------- Треки ----------
-// eighth — длительность восьмой (такт всегда 6 восьмых: 3/4 или 6/8)
+// eighth — длительность восьмой (такт всегда 6 восьмых: 3/4 или 6/8); level — общий уровень трека
 
 const TRACKS = [
   {
-    name: 'Чаща', eighth: 0.31, swing: 0, bars: 32, voiceFrom: 16, seed: 71, lead: 'lowflute',
+    name: 'Чаща', eighth: 0.31, swing: 0, bars: 32, voiceFrom: 16, seed: 71, lead: 'lowflute', level: 1,
     scale: [50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77],
     chords: {
       Dm: { root: 38, tones: [50, 53, 57, 62, 65, 69, 74] }, C: { root: 36, tones: [48, 52, 55, 60, 64, 67, 72] },
@@ -34,7 +118,7 @@ const TRACKS = [
     range: [57, 74],
   },
   {
-    name: 'Долина', eighth: 0.22, swing: 0, bars: 48, voiceFrom: 32, seed: 233, lead: 'flute',
+    name: 'Долина', eighth: 0.22, swing: 0, bars: 48, voiceFrom: 32, seed: 233, lead: 'flute', level: 0.95,
     scale: [55, 57, 59, 60, 62, 64, 66, 67, 69, 71, 72, 74, 76, 78, 79, 81, 83],
     chords: {
       G: { root: 43, tones: [55, 59, 62, 67, 71, 74, 79] }, D: { root: 38, tones: [54, 57, 62, 66, 69, 74, 78] },
@@ -46,7 +130,7 @@ const TRACKS = [
     range: [67, 83],
   },
   {
-    name: 'Ярмарка', eighth: 0.165, swing: 0.012, bars: 48, voiceFrom: 999, seed: 517, lead: 'fiddle',
+    name: 'Ярмарка', eighth: 0.165, swing: 0.012, bars: 48, voiceFrom: 999, seed: 517, lead: 'fiddle', level: 0.82,
     scale: [62, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79, 81, 83, 85, 86],
     chords: {
       D: { root: 38, tones: [62, 66, 69, 74, 78, 81, 86] }, G: { root: 43, tones: [62, 67, 71, 74, 79, 83, 86] },
@@ -60,7 +144,7 @@ const TRACKS = [
   {
     // «Тревога» — ночной трек: низкий бурдон с тритоном, редкие холодные удары, сердцебиение,
     // осторожная флейта и далёкий голос. Играет сам с наступлением ночи.
-    name: 'Тревога', eighth: 0.4, swing: 0, bars: 24, voiceFrom: 4, seed: 911, lead: 'lowflute',
+    name: 'Тревога', eighth: 0.4, swing: 0, bars: 24, voiceFrom: 4, seed: 911, lead: 'lowflute', level: 0.9,
     scale: [50, 51, 53, 55, 57, 58, 60, 62, 63, 65, 67, 69, 70, 72, 74, 75],
     chords: {
       Dm: { root: 38, tones: [50, 53, 57, 62, 65, 69] }, Eb: { root: 39, tones: [51, 55, 58, 63, 67, 70] },
@@ -129,15 +213,6 @@ function counterLine(tr, song) {
 
 // ---------- Звук ----------
 
-function makeImpulse(ctx, sec, decay = 2.6) {
-  const len = ctx.sampleRate * sec, buf = ctx.createBuffer(2, len, ctx.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const d = buf.getChannelData(ch);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
-  }
-  return buf;
-}
-
 function out(node, dry = 1, rev = 0, hall = 0) {
   const ctx = Music.ctx;
   if (dry) { const g = ctx.createGain(); g.gain.value = dry; node.connect(g); g.connect(Music.bus); }
@@ -168,7 +243,8 @@ function pluckNote(midi, t, vel, kind, cutoff, len) {
   const ctx = Music.ctx, src = ctx.createBufferSource();
   src.buffer = pluckBuffer(midiHz(midi), kind);
   const g = ctx.createGain();
-  g.gain.setValueAtTime(vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
+  // короткая атака вместо мгновенной — струна без щелчка
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vel, t + 0.004); g.gain.exponentialRampToValueAtTime(0.001, t + len);
   const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cutoff;
   src.connect(f); f.connect(g);
   src.start(t); src.stop(t + len + 0.05);
@@ -179,8 +255,8 @@ const harp = (m, t, v = 0.35) => out(pluckNote(m, t, v, 'harp', 3000, 2.8), 1, 0
 const bassPluck = (m, t, v = 0.5) => out(pluckNote(m, t, v, 'bass', 700, 1.2), 1, 0.08);
 // цимбалы: две слегка расстроенные струны — тот самый звонкий «дребезг»
 function dulcimer(m, t, v = 0.22) {
-  out(pluckNote(m, t, v, 'dulc', 5200, 2.2), 1, 0.3);
-  const s2 = pluckNote(m + 0.08, t + 0.004, v * 0.6, 'dulc', 5200, 2);
+  out(pluckNote(m, t, v, 'dulc', 4600, 2.2), 1, 0.3);
+  const s2 = pluckNote(m + 0.08, t + 0.004, v * 0.6, 'dulc', 4600, 2);
   out(s2, 1, 0.2);
 }
 
@@ -195,8 +271,8 @@ function flute(midi, t, dur, vel, kind = 'flute') {
   lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(hz * (low ? 0.008 : 0.005), t + Math.min(0.45, dur * 0.6));
   lfo.connect(lg); lg.connect(o1.frequency); lg.connect(o2.frequency);
   const g = ctx.createGain(), g2 = ctx.createGain();
-  g2.gain.value = low ? 0.06 : wh ? 0.2 : 0.12;
-  const att = low ? 0.1 : 0.03;
+  g2.gain.value = low ? 0.06 : wh ? 0.16 : 0.12;
+  const att = low ? 0.1 : 0.035;
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(vel, t + att);
   g.gain.setValueAtTime(vel * 0.85, t + dur * 0.7);
@@ -208,7 +284,7 @@ function flute(midi, t, dur, vel, kind = 'flute') {
   if (low) { ng.gain.exponentialRampToValueAtTime(vel * 0.18, t + 0.2); ng.gain.setValueAtTime(vel * 0.18, t + dur); }
   ng.gain.exponentialRampToValueAtTime(0.0001, t + (low ? dur + 0.25 : 0.08));
   nb.connect(nbf); nbf.connect(ng); out(ng, 1, 0, low ? 0.6 : 0.2);
-  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = low ? 1800 : wh ? 6000 : 4000;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = low ? 1800 : wh ? 5200 : 4000;
   o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(lp);
   out(lp, 1, low ? 0 : 0.3, low ? 0.6 : 0.15);
   const end = t + dur + 0.3;
@@ -216,7 +292,8 @@ function flute(midi, t, dur, vel, kind = 'flute') {
   nb.start(t, Math.random()); nb.stop(end);
 }
 
-// Скрипка: две пилы с отстройкой, «корпус» резонансами, смычок шумом в атаке, позднее вибрато
+// Скрипка: две пилы с отстройкой, «корпус» резонансами, смычок шумом в атаке, позднее вибрато.
+// Верх срезан мягче, чем раньше, — чтобы не резала ухо на долгих нотах.
 function fiddle(midi, t, dur, vel = 0.1, grace = false) {
   const ctx = Music.ctx, hz = midiHz(midi);
   const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
@@ -233,18 +310,18 @@ function fiddle(midi, t, dur, vel = 0.1, grace = false) {
   lfo.connect(lg); lg.connect(o1.frequency); lg.connect(o2.frequency);
   const mix = ctx.createGain(); mix.gain.value = 0.5; o1.connect(mix); o2.connect(mix);
   const body1 = ctx.createBiquadFilter(); body1.type = 'peaking'; body1.frequency.value = 520; body1.Q.value = 2; body1.gain.value = 6;
-  const body2 = ctx.createBiquadFilter(); body2.type = 'peaking'; body2.frequency.value = 2900; body2.Q.value = 1.5; body2.gain.value = 5;
-  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200;
+  const body2 = ctx.createBiquadFilter(); body2.type = 'peaking'; body2.frequency.value = 2600; body2.Q.value = 1.5; body2.gain.value = 4;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3400; lp.Q.value = 0.4;
   const env = ctx.createGain();
   env.gain.setValueAtTime(0.0001, t);
-  env.gain.exponentialRampToValueAtTime(vel, t + 0.04);
+  env.gain.exponentialRampToValueAtTime(vel, t + 0.045);
   env.gain.setValueAtTime(vel * 0.9, t + dur * 0.8);
   env.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.1);
   mix.connect(body1); body1.connect(body2); body2.connect(lp); lp.connect(env);
   out(env, 1, 0.35, 0.1);
   const nb = ctx.createBufferSource(), nbf = ctx.createBiquadFilter(), ng = ctx.createGain();
-  nb.buffer = Music.noise; nbf.type = 'bandpass'; nbf.frequency.value = 3000; nbf.Q.value = 0.8;
-  ng.gain.setValueAtTime(vel * 0.25, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+  nb.buffer = Music.noise; nbf.type = 'bandpass'; nbf.frequency.value = 2800; nbf.Q.value = 0.8;
+  ng.gain.setValueAtTime(vel * 0.2, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
   nb.connect(nbf); nbf.connect(ng); out(ng);
   const end = t + dur + 0.15;
   for (const n of [o1, o2, lfo]) { n.start(t); n.stop(end); }
@@ -270,10 +347,10 @@ function cello(midis, t, dur, vel = 0.045) {
 // Колокольчик: чистый тон с «стеклянным» обертоном, быстрый спад
 function glock(midi, t, vel = 0.08) {
   const ctx = Music.ctx, hz = midiHz(midi);
-  for (const [mul, v, len] of [[1, 1, 1.4], [2.76, 0.35, 0.5], [5.4, 0.12, 0.25]]) {
+  for (const [mul, v, len] of [[1, 1, 1.4], [2.76, 0.35, 0.5], [5.4, 0.1, 0.25]]) {
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.type = 'sine'; o.frequency.value = hz * mul;
-    g.gain.setValueAtTime(vel * v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vel * v, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
     o.connect(g); out(g, 1, 0.5, 0.3);
     o.start(t); o.stop(t + len + 0.05);
   }
@@ -312,7 +389,7 @@ function voice(midi, t, dur, vel = 0.07, vowel = 'a') {
 function bodhran(t, vel, pitch = 95) {
   const ctx = Music.ctx, o = ctx.createOscillator(), g = ctx.createGain();
   o.type = 'sine'; o.frequency.setValueAtTime(pitch * 1.6, t); o.frequency.exponentialRampToValueAtTime(pitch * 0.6, t + 0.16);
-  g.gain.setValueAtTime(vel, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vel, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
   o.connect(g); out(g, 1, 0.15);
   o.start(t); o.stop(t + 0.32);
   const nb = ctx.createBufferSource(), f = ctx.createBiquadFilter(), ng = ctx.createGain();
@@ -324,7 +401,7 @@ function bodhran(t, vel, pitch = 95) {
 
 function shaker(t, vel) {
   const ctx = Music.ctx, nb = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-  nb.buffer = Music.noise; f.type = 'bandpass'; f.frequency.value = 7000; f.Q.value = 1.2;
+  nb.buffer = Music.noise; f.type = 'bandpass'; f.frequency.value = 6500; f.Q.value = 1.2;
   g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
   nb.connect(f); f.connect(g); out(g);
   nb.start(t, Math.random()); nb.stop(t + 0.08);
@@ -332,8 +409,8 @@ function shaker(t, vel) {
 
 function tambourine(t, vel) {
   const ctx = Music.ctx, nb = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-  nb.buffer = Music.noise; f.type = 'highpass'; f.frequency.value = 6500;
-  g.gain.setValueAtTime(vel, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+  nb.buffer = Music.noise; f.type = 'highpass'; f.frequency.value = 6000;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
   nb.connect(f); f.connect(g); out(g, 1, 0.1);
   nb.start(t, Math.random()); nb.stop(t + 0.15);
 }
@@ -396,7 +473,7 @@ function scheduleBar(tr, song, bar, t) {
     for (const [m, l] of notes) {
       fiddle(m, at(pos), l * E * 0.92, pos === 0 || pos === 3 ? 0.11 : 0.085, l >= 2 && pos % 3 === 0);
       // со второго прохода свирель вторит октавой выше
-      if (bar >= 16) flute(m + 12, at(pos), l * E * 0.9, 0.07, 'whistle');
+      if (bar >= 16) flute(m + 12, at(pos), l * E * 0.9, 0.06, 'whistle');
       pos += l;
     }
     if (bar >= 32 && bar % 2 === 0) harp(counter, t, 0.22);
@@ -405,7 +482,7 @@ function scheduleBar(tr, song, bar, t) {
 }
 
 function musicTick() {
-  if (!Music.on) return;
+  if (!Music.on || !Music.ctx || Music.ctx.state !== 'running') return;
   const ctx = Music.ctx;
   while (Music.nextTime < ctx.currentTime + 0.5) {
     const tr = TRACKS[Music.track];
@@ -416,6 +493,7 @@ function musicTick() {
       Music.bar = 0;
       const nt = TRACKS[Music.track];
       Music.songs[Music.track] = makeSong(nt, nt.seed + Math.floor(Math.random() * 1000));
+      musicLevel(nt.level, Music.nextTime);
       continue;
     }
     if (Music.bar % 16 === 0 && Music.bar > 0) Music.songs[Music.track] = makeSong(tr, tr.seed + Music.bar * 7);
@@ -423,6 +501,13 @@ function musicTick() {
     Music.nextTime += tr.eighth * 6;
     Music.bar++;
   }
+}
+
+// уровень трека — плавно к нужной отметке к моменту t
+function musicLevel(level, t) {
+  const g = Music.bus.gain, now = Music.ctx.currentTime;
+  g.cancelScheduledValues(now); g.setValueAtTime(g.value, now);
+  g.linearRampToValueAtTime(0.62 * level, Math.max(now + 0.05, t));
 }
 
 // Тревожный ночной трек стоит в списке последним; днём он не выбирается
@@ -440,38 +525,37 @@ function makeSong(tr, seed) {
 }
 
 function buildMixer(ctx) {
-  Music.master = ctx.createGain(); Music.master.gain.value = 0.5;
+  Music.master = ctx.createGain(); Music.master.gain.value = 0.62;
   // мягкий компрессор склеивает инструменты и не даёт пикам резать уши
   const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -20; comp.knee.value = 18; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.25;
+  comp.threshold.value = -22; comp.knee.value = 18; comp.ratio.value = 3; comp.attack.value = 0.012; comp.release.value = 0.25;
   Music.bus = ctx.createGain(); Music.bus.gain.value = 0.62;
   Music.bus.connect(comp); comp.connect(Music.master);
   Music.rev = ctx.createConvolver(); Music.rev.buffer = makeImpulse(ctx, 2.2);
   const rg = ctx.createGain(); rg.gain.value = 0.25; Music.rev.connect(rg); rg.connect(comp);
   Music.hall = ctx.createConvolver(); Music.hall.buffer = makeImpulse(ctx, 4.5, 2);
   const hg = ctx.createGain(); hg.gain.value = 0.35; Music.hall.connect(hg); hg.connect(comp);
-  const nl = ctx.sampleRate * 2;
-  Music.noise = ctx.createBuffer(1, nl, ctx.sampleRate);
-  const nd = Music.noise.getChannelData(0);
-  for (let i = 0; i < nl; i++) nd[i] = Math.random() * 2 - 1;
+  Music.noise = AudioCore.noise;
 }
 
 function startMusic() {
   if (Music.started) return;
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return;
+  const ctx = audioCoreInit();
+  if (!ctx) return;
   Music.started = true;
-  const ctx = Music.ctx = new AC();
+  Music.ctx = ctx;
   buildMixer(ctx);
-  Music.master.connect(ctx.destination);
+  Music.master.connect(AudioCore.music);
   Music.songs = TRACKS.map(tr => makeSong(tr, tr.seed));
   Music.track = 0; Music.bar = 0;
   Music.nextTime = ctx.currentTime + 0.15;
+  // первые секунды — плавный вход, а не сразу в полную силу
+  Music.bus.gain.setValueAtTime(0.0001, ctx.currentTime);
+  Music.bus.gain.linearRampToValueAtTime(0.62 * TRACKS[0].level, ctx.currentTime + 2.5);
   Music.timer = setInterval(musicTick, 80);
-  if (!Music.on) ctx.suspend();
+  audioSetBus('music', Music.on);
 }
 
-// Следующий трек: короткое затухание того, что уже запланировано, и сразу новая песня
 // Переключить трек: короткое затухание того, что уже запланировано, и сразу новая песня
 function gotoTrack(i, announce) {
   startMusic();
@@ -481,10 +565,10 @@ function gotoTrack(i, announce) {
   g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
   g.linearRampToValueAtTime(0.0001, t + (announce ? 0.3 : 1.6));
   const t0 = t + (announce ? 0.55 : 1.8);
-  g.setValueAtTime(0.0001, t0); g.linearRampToValueAtTime(0.62, t0 + 0.8);
   Music.track = i;
   Music.bar = 0;
   const tr = TRACKS[Music.track];
+  g.setValueAtTime(0.0001, t0); g.linearRampToValueAtTime(0.62 * tr.level, t0 + 0.8);
   Music.songs[Music.track] = makeSong(tr, tr.seed + Math.floor(Math.random() * 1000));
   Music.nextTime = t0 + 0.05;
   if (announce) toast(`Музыка: «${tr.name}»`);
@@ -504,15 +588,13 @@ function setMusic(on) {
   Music.on = on;
   try { localStorage.setItem('feod.music', on ? '1' : '0'); } catch (e) { /* нет доступа к хранилищу */ }
   if (!Music.ctx) return;
-  if (on) { Music.ctx.resume(); Music.nextTime = Math.max(Music.nextTime, Music.ctx.currentTime + 0.1); }
-  else Music.ctx.suspend();
+  audioSetBus('music', on);
+  if (on) Music.nextTime = Math.max(Music.nextTime, Music.ctx.currentTime + 0.15);
 }
 
 function initMusic() {
   try { Music.on = localStorage.getItem('feod.music') !== '0'; } catch (e) { Music.on = true; }
-  const kick = () => { startMusic(); window.removeEventListener('pointerdown', kick); window.removeEventListener('keydown', kick); };
-  window.addEventListener('pointerdown', kick);
-  window.addEventListener('keydown', kick);
+  audioKickOnGesture(startMusic);
   const btn = document.getElementById('music-btn');
   if (btn) {
     const sync = syncMusicBtn = () => { btn.classList.toggle('active', Music.on); btn.title = Music.on ? 'Музыка: вкл' : 'Музыка: выкл'; };
