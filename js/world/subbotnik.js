@@ -116,9 +116,11 @@ function* subGen(u) {
 
 function* subTrash(u, pile, fire) {
   pile.reserved.trash++;
+  u.subRes = { pile, gen: u.proc };   // бронь видна аудиту (auditIncoming)
   const ok = yield { walk: [pile.x, pile.y], offroad: true };
-  if (!ok || pile.removed || pile.stock.trash < 1) { if (!pile.removed) pile.reserved.trash = Math.max(0, pile.reserved.trash - 1); yield { wait: 0.5 }; return; }
+  if (!ok || pile.removed || pile.stock.trash < 1) { u.subRes = null; if (!pile.removed) pile.reserved.trash = Math.max(0, pile.reserved.trash - 1); yield { wait: 0.5 }; return; }
   yield { wait: 0.7, anim: 'forage' };
+  u.subRes = null;
   pile.reserved.trash = Math.max(0, pile.reserved.trash - 1);
   if (pile.removed || pile.stock.trash < 1) return;
   pile.stock.trash--; cleanupPile(pile);

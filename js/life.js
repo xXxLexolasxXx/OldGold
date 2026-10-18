@@ -7,6 +7,16 @@
 
 function startBreak(u, kind, gen) {
   if (kind === 'knock' || kind === 'faint' || kind === 'sleep') lanternFall(u);   // упал — фонарь вдребезги
+  // перерыв поверх перерыва (испуг во время перекура, куры клюют спящего…): возвращаться надо к делу,
+  // а не к прерванному перекуру — иначе доставка терялась, а её бронь на складе висела навсегда
+  if (u.brk) {
+    const prev = u.brk;
+    if (u.blockT >= 0 && World.occ[u.blockT] === u.id) World.occ[u.blockT] = 0;
+    u.blockT = -1;
+    if (prev.kind === 'smoke' || prev.kind === 'join') Game.smokers.delete(u);
+    u.brk = null;
+    if (prev.saved) { u.proc = prev.saved.proc; u.action = prev.saved.action; }
+  }
   const saved = { proc: u.proc, action: u.action };
   if (saved.action && saved.action.walk) { saved.action.path = null; saved.action.i = 0; saved.action.block = 0; saved.action.squeeze = false; }
   u.brk = { kind, saved, until: 0 };
@@ -257,24 +267,24 @@ function dropLoad(u) {
 let lastBumpToast = -99;
 
 function checkCollisions() {
+  // клетка -> первый гном в ней, дальше цепочкой через _cn (без массивов на каждую клетку четыре раза в секунду)
   const grid = new Map();
   for (const u of Game.units) {
     if (u.inside) continue;
     const k = Math.floor(u.x) + Math.floor(u.y) * MAP_W;
-    if (!grid.has(k)) grid.set(k, []);
-    grid.get(k).push(u);
+    u._cn = grid.get(k) || null;
+    grid.set(k, u);
   }
   for (const u of Game.units) {
     if (u.inside || !(u.action && u.action.walk && u.action.path)) continue;
     const tx = Math.floor(u.x), ty = Math.floor(u.y);
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const list = grid.get(tx + dx + (ty + dy) * MAP_W);
-      if (!list) continue;
-      for (const o of list) {
+      for (let o = grid.get(tx + dx + (ty + dy) * MAP_W); o; o = o._cn) {
         // гнома могло уже отбросить столкновением — его действие сброшено, дальше не проверяем
         if (!u.action || !u.action.walk) break;
         if (o === u || o.id < u.id && o.action && o.action.walk) continue;   // пару считаем один раз
-        if (Math.hypot(o.x - u.x, o.y - u.y) > 0.42) continue;
+        const ex = o.x - u.x, ey = o.y - u.y;
+        if (ex * ex + ey * ey > 0.42 * 0.42) continue;
         const key = Math.min(u.id, o.id) * 100000 + Math.max(u.id, o.id);
         if ((bumpCD.get(key) || 0) > Game.time) continue;
         bumpCD.set(key, Game.time + 6);

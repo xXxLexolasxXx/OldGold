@@ -60,15 +60,17 @@ function* eatGen(u, inn) {
   const food = innFood(inn);
   if (!food) return;
   inn.reserved[food]++;
+  u.eat = { inn, food, gen: u.proc };   // бронь видна аудиту (auditIncoming): брошенный обед не держит еду вечно
   const ok = yield { walk: [inn.doorX, inn.doorY] };
-  if (inn.removed) return;
-  if (!ok) { inn.reserved[food]--; u.nextEatTry = Game.time + 15; return; }
+  if (inn.removed) { u.eat = null; return; }
+  if (!ok) { inn.reserved[food]--; u.eat = null; u.nextEatTry = Game.time + 15; return; }
   const dry = isStoreB(inn);      // на складе — всухомятку, без пива и не досыта
   if (dry) while (storeInside(inn) >= storeCapOf(inn) && !inn.removed) yield { wait: 0.4 };
   if (inn.removed) return;
   yield { enter: inn };
   if (!dry) { u.dining = inn; u.diningFood = food; }   // сидит за столом на веранде (inside.js)
   yield { wait: dry ? 3 : 5 };
+  u.eat = null;
   if (!inn.removed) {
     inn.reserved[food]--;
     inn.stock[food]--;
@@ -118,6 +120,7 @@ function* deliverGen(u, from, to, g, n = 1) {
   }
   if (isStoreB(from)) yield* storeVisit(u, from, 0.7);
   from.reserved[g] -= n;
+  if (u.dlv) u.dlv.picked = true;     // бронь снята — дальше груз в руках
   const got = Math.max(0, Math.min(n, from.stock[g]));
   from.stock[g] -= got;
   if (got < n && !to.removed) to.incoming[g] -= n - got;
@@ -196,6 +199,7 @@ function* fetchForSiteGen(u, s) {
   if (!ok || st.removed) { if (!st.removed) st.reserved[g] -= n; if (!s.removed) s.incoming[g] -= n; u.dlv = null; return; }
   yield* storeVisit(u, st, 0.7);
   st.reserved[g] -= n;
+  if (u.dlv) u.dlv.picked = true;
   const got = Math.max(0, Math.min(n, st.stock[g]));
   st.stock[g] -= got;
   if (got < n && !s.removed) s.incoming[g] -= n - got;

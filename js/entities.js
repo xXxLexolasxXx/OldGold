@@ -653,7 +653,10 @@ class Unit {
         if (o && o !== this.id) {
           a.block += dt;
           const other = Game.unitMap.get(o);
-          const headOn = other && other.action && other.action.walk && other.resT === this.occT;
+          // встречный: забронировал нашу клетку или сам стоит перед ней (застрявший брони не ставит —
+          // раньше такие пары упирались лбами по 3 с, и почти половину пути курьеры простаивали)
+          const oa = other && other.action, onext = oa && oa.walk && oa.path && oa.path[oa.i];
+          const headOn = !!(oa && oa.walk && (other.resT === this.occT || (onext && idx(onext[0], onext[1]) === this.occT)));
           if (a.block > 0.6 && !a.replanned) {
             a.replanned = true;
             const np = findPath(sx, sy, a.walk[0], a.walk[1], World.road[idx(sx, sy)] === 1 && !a.offroad, this.id);
@@ -691,6 +694,8 @@ class Unit {
       this.vdir = Math.abs(dy) > Math.abs(dx) * 1.2 ? (dy > 0 ? 'S' : 'N') : 'E';
       if (step >= dist) {
         this.x = tx; this.y = ty; a.i++;
+        // ушёл с клетки, где начался перерыв (бежит от гуся, прячется от дождя), — она больше не занята
+        if (this.blockT >= 0 && this.blockT !== ni) { if (World.occ[this.blockT] === this.id) World.occ[this.blockT] = 0; this.blockT = -1; }
         if (courier) {
           if (this.occT >= 0 && World.occ[this.occT] === this.id) World.occ[this.occT] = 0;
           this.occT = ni; this.resT = -1;
@@ -728,6 +733,7 @@ class Unit {
       this.anim = null;
       this.inside = a.enter;
       if (this.isCourier) this.releaseOcc();   // внутри здания клетку у входа не держим
+      if (this.blockT >= 0) { if (World.occ[this.blockT] === this.id) World.occ[this.blockT] = 0; this.blockT = -1; }
       // вошедший через вторую створку и выйдет через неё
       const d2 = a.enter.door2, viaGate2 = d2 && Math.floor(this.x) === d2[0] && Math.floor(this.y) === d2[1];
       this.x = (viaGate2 ? d2[0] : a.enter.doorX) + 0.5; this.y = (viaGate2 ? d2[1] : a.enter.doorY) + 0.5;

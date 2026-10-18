@@ -25,15 +25,35 @@ function assignDelivery(u, from, to, g, n = 1) {
 
 // Самопроверка: «в пути» у каждого получателя = сумма того, что реально несут к нему.
 // Если какая-то доставка оборвалась и не вычла своё, здание не застрянет в ожидании.
+// Так же и бронь в зданиях: = ещё не забранные доставки + обеды в пути. Брошенное задание
+// (гном погиб, его дом снесли, работу перехватили) больше не держит товар «занятым» навсегда.
 function auditIncoming() {
   const holders = [...Game.buildings, ...Game.roadSites.values(), ...Game.piles.values()];
   for (const h of holders) if (h.incoming) for (const g of GOOD_KEYS) h.incoming[g] = 0;
+  const resv = new Map();
+  const book = (h, g, n) => { if (!h || h.removed || !h.reserved) return; let m = resv.get(h); if (!m) resv.set(h, m = {}); m[g] = (m[g] || 0) + n; };
+  const live = (u, gen) => u.proc === gen || (u.brk && u.brk.saved && u.brk.saved.proc === gen);
   for (const u of Game.units) {
+    const e = u.eat;
+    if (e) { if (live(u, e.gen) && !u.dead) book(e.inn, e.food, 1); else u.eat = null; }
+    const sr = u.subRes;   // субботник: мусор из кучки
+    if (sr) { if (live(u, sr.gen) && !u.dead) book(sr.pile, 'trash', 1); else u.subRes = null; }
     const d = u.dlv;
     if (!d) continue;
-    const alive = u.proc === d.gen || (u.brk && u.brk.saved && u.brk.saved.proc === d.gen);
-    if (!alive) { u.dlv = null; continue; }
+    if (!live(u, d.gen)) { u.dlv = null; continue; }
     if (d.to && !d.to.removed && d.to.incoming) d.to.incoming[d.g] += d.n;
+    if (!d.picked) book(d.from, d.g, d.n);
+  }
+  // звери тоже берут из кучек: на субботнике носят мусор, питомцы подбирают находки
+  for (const a of Game.animals) {
+    if (a.dead) continue;
+    if (a.subSt === 'toPile' && a.subPile) book(a.subPile, 'trash', 1);
+    if (a.err && a.err.st === 'toPile' && a.err.pile) book(a.err.pile, a.err.g, 1);
+  }
+  for (const h of [...Game.buildings, ...Game.piles.values()]) {
+    const m = resv.get(h);
+    for (const g of GOOD_KEYS) h.reserved[g] = m ? m[g] || 0 : 0;
+    if (h.isPile && !m) cleanupPile(h);   // забытая бронь держала опустевшую кучку на земле
   }
 }
 
