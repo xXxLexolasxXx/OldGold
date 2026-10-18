@@ -1,4 +1,5 @@
 'use strict';
+let PLANK_TEX = null;
 // Левая колонка: вкладки, строительство, склад, жители, хозяйство, меню и окно здания.
 
 const UI = { cat: 0, tab: 'build', hoverType: null, last: {}, bicons: {} };
@@ -167,6 +168,7 @@ function makeUITextures() {
     }
   });
   document.documentElement.style.setProperty('--plank-tex', `url(${pl.toDataURL()})`);
+  PLANK_TEX = pl;   // те же доски — на строительных лесах (js/levels.js)
 
   // Кожа для верхней строки: пиксельная выделка, морщины, поры; по кромке — медные заклёпки
   const LW = 96, LH = 96;

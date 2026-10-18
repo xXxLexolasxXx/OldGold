@@ -7,7 +7,7 @@
 // Модели описываются в локальных координатах: x — вдоль фасада со входом,
 // y — вглубь от фасада. При rot = 1 фасад смотрит на восток.
 
-const SK = 0.5;   // насколько уходит вправо глубина
+let SK = 0.5;   // насколько уходит вправо глубина (у свинарника с боковым поворотом 0: загон стоит ровно, а не наискось)
 const DK = 0.78;  // насколько сжимается глубина
 
 function P(g, X, Y, Z = 0) { return [g.ox + X + Y * SK, g.oy - Y * DK - Z]; }
@@ -1345,6 +1345,7 @@ function buildingSpriteBase(type, rot = 0, level = 1) {
   srand = mulberry32(hashStr(type));
   const def = BUILDINGS[type];
   const FW = d.w * TILE, FD = d.h * TILE, top = (def.top || 60) + (level === 2 ? UP_EXTRA : 0);
+  SK = type === 'swine' && d.rot ? 0 : 0.5;
   const W = Math.ceil(FW + BPADX * 2 + FD * SK), H = FD + top + BBOTTOM;
   const [cv, c] = mkSprite(W, H, BS);
   const [scv, sc] = mkSprite(W, H, BS);
@@ -1369,6 +1370,7 @@ function buildingSpriteBase(type, rot = 0, level = 1) {
   renderModel(c, m);
   spr.wins = WIN_REC; WIN_REC = null;
   BUILD_STYLE = 'logs'; BUILD_TYPE = '';
+  SK = 0.5;
   for (const s of SIGN_QUEUE.list) postSign(c, s.x, s.y, s.kind, s.dir);
   SIGN_QUEUE.list = [];
   // без зерна: шумовая рябь выдаёт машину, у художника — цельные пятна цвета

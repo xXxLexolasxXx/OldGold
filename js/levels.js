@@ -334,26 +334,64 @@ function drawUpgradeLayer(c, b) {
     }
   }
   c.imageSmoothingEnabled = R.smooth;
-  // строительные леса до текущей высоты: стойки с раскосами, настилы, ограждение, полотнища
+  // строительные леса до текущей высоты: стойки с раскосами, настилы из тех же досок, что и в интерфейсе,
+  // перила, плинтус; такие же леса стоят вдоль боковой стены
   const topY = S.top < 1e9 ? oy + S.top / k : fy + fh - 10;
   const poleTop = Math.min(fy + fh - 10, topY - 5);
   const gy = fy + fh, t = Game.time;
+  const sk = b.type === 'swine' && b.rot ? 0 : SK, dk = DK;
   const rect = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
-  const poles = [];
-  for (let q = 0; q <= b.w; q++) poles.push(Math.round(fx + 2 + q * (fw - 6) / b.w));
-  for (const lx of poles) { rect(lx, poleTop, 3, gy - poleTop, '#3a2414'); rect(lx, poleTop, 2, gy - poleTop, '#8a5a34'); rect(lx, poleTop, 1, gy - poleTop, '#c89a64'); }
+  const tex = PLANK_TEX, seed = b.id * 37;
+  // доска из интерфейсной текстуры: горизонтальный кусок len×h (с тёмным нижним краем)
+  const plank = (x, y, len, h, n) => {
+    if (tex) c.drawImage(tex, (seed + n * 53) % (tex.width - len - 1), (((seed + n * 7) % 24) * 16) % (tex.height - 16), Math.max(1, len), 12, x, y, len, h);
+    else rect(x, y, len, h, '#8a5a34');
+    rect(x, y + h - 1, len, 1, '#1a0f08'); rect(x, y, len, 1, 'rgba(255,230,180,0.35)');
+  };
+  const post = (x, y0, y1) => {                                   // вертикальная стойка из доски, повёрнутой на 90°
+    const h = y1 - y0; if (h <= 0) return;
+    c.save(); c.translate(Math.round(x), Math.round(y1)); c.rotate(-Math.PI / 2);
+    if (tex) c.drawImage(tex, (seed * 3) % (tex.width - h - 1), 32, h, 12, 0, 0, h, 4); else rect(0, 0, h, 4, '#8a5a34');
+    c.restore();
+    rect(x - 1, y0, 1, h, '#1a0f08'); rect(x + 4, y0, 1, h, '#1a0f08');
+  };
+  const brace = (x0, y0, x1, y1) => {                             // косая связь с тёмной обводкой
+    const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0));
+    for (let i = 0; i <= n; i++) { const f = i / n, x = x0 + (x1 - x0) * f, y = y0 + (y1 - y0) * f; rect(x - 1, y - 1, 4, 4, '#1a0f08'); }
+    for (let i = 0; i <= n; i++) { const f = i / n, x = x0 + (x1 - x0) * f, y = y0 + (y1 - y0) * f; rect(x, y, 2, 2, i % 5 === 0 ? '#c89a64' : '#8a5a34'); }
+  };
   const decks = [];
-  for (let ly = gy - 12; ly > poleTop + 2; ly -= 12) decks.push(ly);
-  // раскосы крест-накрест в каждом втором пролёте
-  for (let d = 0; d + 1 < decks.length; d++) for (let q = 0; q + 1 < poles.length; q++) {
-    if ((d + q) % 2) continue;
-    const x0 = poles[q] + 2, x1 = poles[q + 1], y0 = decks[d + 1] + 2, y1 = decks[d];
-    for (let n = 0; n <= 10; n++) { const f = n / 10; rect(x0 + (x1 - x0) * f, y1 - (y1 - y0) * f, 1, 1, '#6a4428'); }
+  for (let ly = gy - 14; ly > poleTop + 2; ly -= 14) decks.push(ly);
+  // боковая стена: стойки по глубине, настилы-параллелограммы, раскосы
+  const sx0 = fx + fw, nSide = Math.max(1, b.h);
+  if (sk > 0) {
+    const sp = [];
+    for (let q = 0; q <= nSide; q++) { const f = q / nSide; sp.push([Math.round(sx0 + f * fh * sk), -f * fh * dk]); }
+    for (const [x, dy] of sp.slice().reverse()) post(x, poleTop + dy, gy + dy);
+    for (let d = 0; d + 1 < decks.length; d++) for (let q = 0; q < nSide; q++) if ((d + q) % 2 === 0) brace(sp[q][0] + 3, decks[d + 1] + sp[q][1] + 2, sp[q + 1][0], decks[d] + sp[q + 1][1]);
+    for (const ly of decks) {
+      c.save(); c.transform(sk, -dk, 0, 1, sx0, ly);
+      if (tex) c.drawImage(tex, (seed * 5 + ly * 11) % (tex.width - fh - 1), ((ly * 3) % 20) * 16 % (tex.height - 16), fh, 12, 0, -2, fh, 6); else { c.fillStyle = '#8a5a34'; c.fillRect(0, -2, fh, 6); }
+      c.fillStyle = '#1a0f08'; c.fillRect(0, 3, fh, 1); c.fillStyle = 'rgba(255,230,180,0.35)'; c.fillRect(0, -2, fh, 1);
+      c.restore();
+    }
   }
-  for (const ly of decks) {
-    rect(fx - 2, ly + 2, fw + 4, 2, '#3a2414');
-    rect(fx - 2, ly, fw + 4, 2, '#d8ac72'); rect(fx - 2, ly, fw + 4, 1, '#f0cc94');
-    for (let x = fx + 6; x < fx + fw - 4; x += 14) rect(x, ly, 1, 2, '#9a6a3a');           // щели между досками
+  // фасад
+  const poles = [];
+  for (let q = 0; q <= b.w; q++) poles.push(Math.round(fx + 1 + q * (fw - 6) / b.w));
+  for (const lx of poles) post(lx, poleTop, gy);
+  for (let d = 0; d + 1 < decks.length; d++) for (let q = 0; q + 1 < poles.length; q++) {
+    if ((d + q) % 2 === 0) brace(poles[q] + 3, decks[d + 1] + 2, poles[q + 1], decks[d]); else brace(poles[q + 1], decks[d + 1] + 2, poles[q] + 3, decks[d]);
+  }
+  decks.forEach((ly, n) => {
+    plank(fx - 2, ly, fw + 4, 5, n);
+    rect(fx - 2, ly + 5, fw + 4, 1, 'rgba(0,0,0,0.3)');
+  });
+  // перила на верхнем настиле
+  if (decks.length) {
+    const ly = decks[decks.length - 1] - 9;
+    plank(fx - 2, ly, fw + 4, 3, 99);
+    for (const lx of poles) rect(lx, ly, 3, 9, '#1a0f08');
   }
   // полотнища-фартуки на верхних настилах: колышутся, красно-белые
   for (let d = Math.max(0, decks.length - 1); d < decks.length; d++) {
