@@ -1102,7 +1102,8 @@ const MODELS = {
 
 function bDims(type, rot) {
   const def = BUILDINGS[type];
-  if (def.noRotate) rot = 0;
+  if (def.noRotate || (def.rots && !def.rots.includes(rot))) rot = 0;
+  if (rot === 3) return { w: def.w, h: def.h, rot, doorLX: (Math.floor(def.w / 2) + 0.5) * TILE, dx: Math.floor(def.w / 2), dy: -1 };   // вход на север (костёр)
   const w = rot ? def.h : def.w, h = rot ? def.w : def.h;
   const doorLX = rot ? (def.w - 1 - Math.floor(def.w / 2) + 0.5) * TILE : (Math.floor(def.w / 2) + 0.5) * TILE;
   const dx = rot === 2 ? -1 : rot ? w : Math.floor(def.w / 2);   // rot 2 — вход на запад
@@ -1307,6 +1308,7 @@ function mirrorSprite(s, FW) {
 
 function buildingSpriteBase(type, rot = 0, level = 1) {
   const d = bDims(type, rot);
+  if (d.rot === 3) return buildingSpriteBase(type, 0, level);   // костёр симметричен — тот же спрайт
   const key = type + ':' + d.rot + (level === 2 ? ':U' : '');
   if (SPR.buildings[key]) return SPR.buildings[key];
   if (d.rot === 2) {

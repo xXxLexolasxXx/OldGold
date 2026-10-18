@@ -256,7 +256,7 @@ function cleanupPile(p) {
 
 function wideDoorTile(type, x, y, rot) {
   const d = bDims(type, rot);
-  return d.rot ? [x + d.dx, y + d.dy - 1] : [x + d.dx - 1, y + d.dy];
+  return d.rot && d.rot !== 3 ? [x + d.dx, y + d.dy - 1] : [x + d.dx - 1, y + d.dy];
 }
 
 // Здание по клетке входа (основной или второй створки ворот)
@@ -275,13 +275,14 @@ function checkPlacement(type, x, y, rot = 0) {
   const def0 = BUILDINGS[type];
   const dd = bDims(type, rot);
   const def = { ...def0, w: dd.w, h: dd.h, dx: dd.dx, dy: dd.dy };
+  let treeBlock = false;   // деревья — самая «мягкая» помеха: вода, песок и чужие стены важнее, их проверяем по всем клеткам раньше
   for (let yy = y; yy < y + def.h; yy++) for (let xx = x; xx < x + def.w; xx++) {
     if (!inb(xx, yy)) return 'За краем карты';
     const i = idx(xx, yy);
     if (World.terrain[i] !== T_GRASS) return 'Строить можно только на траве';
     if (World.bmap[i] || World.door[i]) return 'Место занято';
     if (World.road[i] || Game.roadSites.has(i)) return 'Мешает дорога';
-    if (World.obj[i] && !isStreetObj(World.obj[i])) return 'Мешают деревья, камни или поля';
+    if (World.obj[i] && !isStreetObj(World.obj[i])) treeBlock = true;
   }
   const dx = x + def.dx, dy = y + def.dy;
   if (!inb(dx, dy)) return 'Вход за краем карты';
@@ -313,6 +314,7 @@ function checkPlacement(type, x, y, rot = 0) {
       if (inb(xx, y - 1) && World.crystal[idx(xx, y - 1)]) ok = true;
     if (!ok) return 'Нужна скала с фиолетовыми кристаллами прямо над шахтой';
   }
+  if (treeBlock) return 'Мешают деревья, камни или поля';
   if (blocksPassage(def, x, y)) return 'Перекроет проход к другим зданиям';
   return null;
 }
@@ -362,7 +364,7 @@ function placeBuilding(type, x, y, done = false, rot = 0) {
     setRoad(b.door2[0], b.door2[1], true);
     // перед обеими створками — по клетке дороги, чтобы заходили с двух клеток сразу
     const fx1 = b.rot === 2 ? -1 : 1;
-    const front = b.rot ? [[b.doorX + fx1, b.doorY], [b.door2[0] + fx1, b.door2[1]]] : [[b.doorX, b.doorY + 1], [b.door2[0], b.door2[1] + 1]];
+    const front = b.rot === 3 ? [[b.doorX, b.doorY - 1], [b.door2[0], b.door2[1] - 1]] : b.rot ? [[b.doorX + fx1, b.doorY], [b.door2[0] + fx1, b.door2[1]]] : [[b.doorX, b.doorY + 1], [b.door2[0], b.door2[1] + 1]];
     for (const [fx, fy] of front) {
       if (!canPlaceRoad(fx, fy)) continue;
       if (done) { World.obj[idx(fx, fy)] = null; setRoad(fx, fy, true); }
@@ -585,7 +587,7 @@ class Unit {
       if (this.inside && !a.ducked) {
         const b = this.inside;
         a.ducked = true; a.dk = 0.3; this.inside = null; this.anim = 'duck';
-        this.vdir = b.rot ? 'E' : 'S'; this.face = b.rot === 2 ? -1 : 1;
+        this.vdir = b.rot === 3 ? 'N' : b.rot ? 'E' : 'S'; this.face = b.rot === 2 ? -1 : 1;
       }
       if (a.dk > 0) { a.dk -= dt; if (a.dk > 0) return undefined; this.anim = null; }
       if (!a.path) {
@@ -679,7 +681,7 @@ class Unit {
       // вход: короткое пригибание лицом к двери
       if (a.dt === undefined) {
         a.dt = 0.35; this.anim = 'duck';
-        if (a.enter.rot) { this.vdir = 'E'; this.face = a.enter.rot === 2 ? 1 : -1; } else this.vdir = 'N';
+        if (a.enter.rot === 3) this.vdir = 'S'; else if (a.enter.rot) { this.vdir = 'E'; this.face = a.enter.rot === 2 ? 1 : -1; } else this.vdir = 'N';
       }
       a.dt -= dt;
       if (a.dt > 0) return undefined;

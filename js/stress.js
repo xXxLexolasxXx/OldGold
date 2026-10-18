@@ -128,7 +128,7 @@ function placeNear(type, cx, cy, rMin = 3) {
     for (let k = 0; k < r * 8; k++) {
       const a = k / (r * 8) * Math.PI * 2;
       const x = Math.round(cx + Math.cos(a) * r), y = Math.round(cy + Math.sin(a) * r * 0.8);
-      for (const rot of BUILDINGS[type].noRotate ? [0] : [0, 1, 2]) {
+      for (const rot of BUILDINGS[type].rots || (BUILDINGS[type].noRotate ? [0] : [0, 1, 2])) {
         if (checkPlacement(type, x, y, rot)) continue;
         const b = placeBuilding(type, x, y, true, rot);
         if (linkToRoads(b)) return b;

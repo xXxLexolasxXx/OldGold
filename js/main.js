@@ -22,12 +22,13 @@ function layoutStart(rng, cx, cy) {
   const types = ['storehouse', 'school', 'bonfire', 'inn'];   // школа и костёр — только к северу от улицы, не боком
   for (const type of types) {
     let best = null;
+    const bfNorth = rng() < 0.5;                               // костёр: сторона выбирается один раз, если не вышло — другая
     for (let t = 0; t < 400 && !best; t++) {
       const wide = BUILDINGS[type].wideDoor;                  // склад — воротами прямо к улице
       const dbl = type === 'bonfire';                         // к костру — двойная дорога
-      const front = wide || dbl || type === 'school';        // эти стоят к северу от улицы лицом к ней
-      const north = front || rng() < 0.6;
-      const rot = BUILDINGS[type].noRotate || front ? 0 : north ? (rng() < 0.3 ? 1 : 0) : 1;   // к югу от улицы — входом вбок
+      const front = (wide && type !== 'bonfire') || type === 'school';   // эти стоят к северу от улицы лицом к ней
+      const north = type === 'bonfire' ? (t < 330 ? bfNorth : !bfNorth) : front || rng() < 0.6;   // костёр — то к северу, то к югу (входом вверх)
+      const rot = type === 'bonfire' ? (north ? 0 : 3) : BUILDINGS[type].noRotate || front ? 0 : north ? (rng() < 0.3 ? 1 : 0) : 1;   // к югу от улицы — входом вбок
       const d = bDims(type, rot);
       const gap = 2 + Math.floor(rng() * 3);                  // 2–4 клетки от улицы
       const x = cx - 20 + Math.floor(rng() * 38);
@@ -139,9 +140,17 @@ function setupStart(seed) {
     // не нашлось места — запасная прежняя раскладка
     for (const b of lay.placed) removeBuilding(b);
     clearStartRoads();
-    placeBuilding('storehouse', cx - 9, cy - 3, true);
-    placeBuilding('school', cx - 4, cy - 3, true);
-    placeBuilding('inn', cx, cy - 3, true);
+    // каждое здание — на ближайшее подходящее место (не на воду и не на песок), а не вслепую по сетке
+    for (const [type, px] of [['storehouse', cx - 9], ['school', cx - 4], ['inn', cx]]) {
+      let done = false;
+      for (let r = 0; r < 14 && !done; r++) for (let k = 0; k < 8 && !done; k++) {
+        const x = px + Math.round(Math.cos(k * 0.785) * r), y = cy - 3 - Math.abs(Math.round(Math.sin(k * 0.785) * r));
+        const bad = checkPlacement(type, x, y, 0);
+        if (bad && bad !== 'Мешают деревья, камни или поля') continue;
+        for (let yy = y; yy < y + BUILDINGS[type].h; yy++) for (let xx = x; xx < x + BUILDINGS[type].w; xx++) World.obj[idx(xx, yy)] = null;
+        placeBuilding(type, x, y, true); done = true;
+      }
+    }
     for (let x = cx - 10; x <= cx + 5; x++) setRoad(x, cy, true);
     lay = { sy: cy, x0: cx - 10, x1: cx + 5 };
   }
@@ -445,6 +454,8 @@ function rotateTool() {
   const t = Game.tool;
   if (!t || t.kind !== 'build') return;
   if (BUILDINGS[t.type].noRotate) { toast('Это здание не поворачивается'); return; }
+  const rs = BUILDINGS[t.type].rots;
+  if (rs) { t.rot = rs[(rs.indexOf(t.rot || 0) + 1) % rs.length]; toast(t.rot === 3 ? 'Вход сзади (на север)' : 'Вход спереди (на юг)'); return; }
   t.rot = ((t.rot || 0) + 1) % 3;
   UI.lastRot = t.rot;
   toast(['Вход спереди (на юг)', 'Вход справа (на восток)', 'Вход слева (на запад)'][t.rot]);
