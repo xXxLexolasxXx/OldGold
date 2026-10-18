@@ -29,7 +29,7 @@
   Object.defineProperty(ctx, 'lineWidth', { get() { return lwd.get.call(this); }, set(v) { lwd.set.call(this, Math.max(v, PSc * 0.95)); } });
 
   // Палитра ночного костра: рампы со сдвигом оттенка (тени — лиловые и синие, свет — жёлтый)
-  const PAL = '12163a 161a44 221c4c 301f58 462a62 623a68 82485e 6a4a7a 2e2438 442c3c 070a1c 0e1330 1a1840 2a2050 3e2a60 5a3466 7a4260 9c5658 0a1210 10201a 18301f 244a26 36662e 4c8438 1a1410 3a1c14 5c2a1c 8a3e24 b85a2c d88438 f0b048 ffd878 fff0b0 fffbe8 4a141c 7a1c24 b02a2a d84a34 1c2e50 2e5a7e 4a8aa8 8ac0d0 3a5a28 6e8e3a a0b84c 3a2a6a 5a3a82 8a64b0 3a322c 5e544a 8a8070 b8ae98 e0d8c0 f4f0e4 f2c8a0 e4b08a c88a62 3a8a7a 80d8b8 4a3220 7a5230 a8783a e8a850'.split(' ').map(h => { const n = parseInt(h, 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
+  const PAL = '6aff46 a0ff70 c8ffa0 e8ffc8 b07cff c08cff 7a3ad0 f0d8ff 9a50ff 15112c 1c1838 26204a 2e2858 3a3066 120f28 0e0c20 0b1a14 0f2419 143020 1f4a2c 120e1a 2a2040 0a0710 1c1a2a 34304a 2a2640 16131f ff5a3c ffd250 3a1c10 1a0e24 fff6c0 ffe27a f0b83a d88a30 a8582a f0e0b0 d8c088 b89860 12163a 161a44 221c4c 301f58 462a62 623a68 82485e 6a4a7a 2e2438 442c3c 070a1c 0e1330 1a1840 2a2050 3e2a60 5a3466 7a4260 9c5658 0a1210 10201a 18301f 244a26 36662e 4c8438 1a1410 3a1c14 5c2a1c 8a3e24 b85a2c d88438 f0b048 ffd878 fff0b0 fffbe8 4a141c 7a1c24 b02a2a d84a34 1c2e50 2e5a7e 4a8aa8 8ac0d0 3a5a28 6e8e3a a0b84c 3a2a6a 5a3a82 8a64b0 3a322c 5e544a 8a8070 b8ae98 e0d8c0 f4f0e4 f2c8a0 e4b08a c88a62 3a8a7a 80d8b8 4a3220 7a5230 a8783a e8a850'.split(' ').map(h => { const n = parseInt(h, 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
   const LUT = new Int16Array(32768).fill(-1), BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
   function nearest(r, g, b) {
     const key = (r >> 3) << 10 | (g >> 3) << 5 | (b >> 3);
@@ -300,6 +300,170 @@
   const sparks = [];
   const tufts = Array.from({ length: 120 }, () => ({ x: Math.random(), y: rnd(0.6, 1), h: rnd(4, 10) }));
 
+  // ---------- башня тёмного мага, нечисть с глазами, пиксельный заголовок ----------
+  function glow2(x, y, r, rgb, a) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const poly2 = (pts, col) => { ctx.fillStyle = col; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.fill(); };
+
+  // Одинокая башня тёмного мага на скале далеко за лесом: ядовито-зелёные окна, фиолетовое сияние
+  function drawTower(t) {
+    const cx = W * 0.5, base = H * 0.6, u = Math.min(W, H * 1.45) / 1000 * 1.4, h = H * 0.33;
+    const pulse = 0.75 + 0.25 * Math.sin(t * 1.7), flick = 0.85 + 0.15 * Math.sin(t * 9.1) * Math.sin(t * 5.3);
+    glow2(cx, base - h * 0.85, h * 1.25, '150,70,255', 0.5 * pulse);
+    glow2(cx, base - h * 0.6, h * 0.55, '110,255,70', 0.26 * pulse);
+    // скала-основание: зубцы
+    poly2([[cx - 70 * u, base + 6], [cx - 46 * u, base - h * 0.06], [cx - 30 * u, base - h * 0.16], [cx - 20 * u, base - h * 0.1], [cx + 22 * u, base - h * 0.17], [cx + 44 * u, base - h * 0.07], [cx + 72 * u, base + 6]], '#15112c');
+    poly2([[cx + 22 * u, base - h * 0.17], [cx + 44 * u, base - h * 0.07], [cx + 72 * u, base + 6], [cx + 30 * u, base + 6]], '#0e0c20');
+    const wd = (y0, y1, w0, w1, col, rim) => {   // ярус башни: трапеция, правая грань светлее (луна справа)
+      poly2([[cx - w0, y0], [cx + w0, y0], [cx + w1, y1], [cx - w1, y1]], col);
+      poly2([[cx + w0 * 0.55, y0], [cx + w0, y0], [cx + w1, y1], [cx + w1 * 0.55, y1]], rim);
+    };
+    const y1 = base - h * 0.14, y2 = base - h * 0.46, y3 = base - h * 0.7, y4 = base - h * 0.84;
+    wd(y2, y1, 15 * u, 19 * u, '#2a2452', '#4a3e88');
+    for (let r = 0; r < 6; r++) { ctx.fillStyle = '#120f28'; ctx.fillRect(cx - 19 * u, y1 - r * (y1 - y2) / 6, 38 * u, 1); }   // кладка рядами
+    // балкон с зубцами
+    ctx.fillStyle = '#26204a'; ctx.fillRect(cx - 23 * u, y2 - 3 * u, 46 * u, 4 * u);
+    for (let k = -3; k <= 3; k++) { ctx.fillStyle = '#26204a'; ctx.fillRect(cx + k * 6.6 * u - 1.4 * u, y2 - 7 * u, 2.8 * u, 4 * u); }
+    wd(y3, y2 - 3 * u, 11 * u, 14 * u, '#262050', '#463a82');
+    // верхняя камера — шире, с ядовито-зелёными окнами
+    poly2([[cx - 11 * u, y3], [cx - 16 * u, y3 - (y3 - y4) * 0.45], [cx - 15 * u, y4], [cx + 15 * u, y4], [cx + 16 * u, y3 - (y3 - y4) * 0.45], [cx + 11 * u, y3]], '#1c1838');
+    poly2([[cx + 9 * u, y3], [cx + 16 * u, y3 - (y3 - y4) * 0.45], [cx + 15 * u, y4], [cx + 9 * u, y4]], '#2e2858');
+    const win = (x, y, w, hh, a) => { glow2(x, y, 9 * u, '110,255,70', 0.32 * a); ctx.fillStyle = `rgba(150,255,100,${0.75 + 0.25 * a})`; ctx.fillRect(x - w / 2, y - hh / 2, w, hh); ctx.fillStyle = '#e8ffc8'; ctx.fillRect(x - w / 4, y - hh / 2, w / 2, hh * 0.35); };
+    win(cx, (y3 + y4) / 2 + 1, 4.4 * u, 9 * u, flick); win(cx - 9 * u, (y3 + y4) / 2 + 3, 3 * u, 6 * u, pulse); win(cx + 9.4 * u, (y3 + y4) / 2 + 3, 3 * u, 6 * u, 1.1 - pulse * 0.4);
+    win(cx - 2 * u, (y1 + y2) / 2, 2.6 * u, 8 * u, pulse); win(cx + 5 * u, (y1 + y2) / 2 + 6 * u, 2.2 * u, 6 * u, flick);
+    // кривая островерхая крыша со шпилем, лёгкий изгиб
+    const tip = base - h * 1.13;
+    poly2([[cx - 19 * u, y4], [cx - 9 * u, y4 - (y4 - tip) * 0.5], [cx - 3 * u, tip + 8 * u], [cx + 4 * u, tip - 2 * u], [cx + 5 * u, tip + 12 * u], [cx + 12 * u, y4 - (y4 - tip) * 0.45], [cx + 19 * u, y4]], '#241c46');
+    poly2([[cx + 5 * u, tip + 12 * u], [cx + 12 * u, y4 - (y4 - tip) * 0.45], [cx + 19 * u, y4], [cx + 6 * u, y4]], '#3a3066');
+    // парящий кристалл у острия и три осколка по кругу
+    const oy = tip - 9 * u + Math.sin(t * 2.2) * 1.5 * u;
+    glow2(cx + 4 * u, oy, 22 * u, '170,90,255', 0.5 * pulse);
+    poly2([[cx + 4 * u, oy - 6 * u], [cx + 8 * u, oy], [cx + 4 * u, oy + 6 * u], [cx, oy]], '#c08cff');
+    poly2([[cx + 4 * u, oy - 6 * u], [cx + 8 * u, oy], [cx + 4 * u, oy]], '#f0d8ff');
+    for (let k = 0; k < 3; k++) { const a = t * 1.3 + k * 2.09; ctx.fillStyle = k % 2 ? '#9cff66' : '#b07cff'; ctx.fillRect(cx + 4 * u + Math.cos(a) * 14 * u, oy + Math.sin(a) * 4 * u, 2.4 * u, 2.4 * u); }
+    // зелёный луч в небо
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const bg = ctx.createLinearGradient(0, oy, 0, oy - H * 0.3);
+    bg.addColorStop(0, `rgba(120,255,80,${0.22 * pulse})`); bg.addColorStop(1, 'rgba(120,255,80,0)');
+    ctx.fillStyle = bg; ctx.fillRect(cx + 3 * u, oy - H * 0.3, 2 * u, H * 0.3); ctx.restore();
+  }
+
+  // Нечисть с глазами: деревья и камни. Неподвижные стоят в лесу, ходячие бредут по опушке.
+  function eyes(x, y, s, col, t, ph, blink) {
+    const open = blink && Math.sin(t * 0.7 + ph) > 0.93 ? 0.2 : 1;   // изредка моргают
+    for (const sx of [-1, 1]) {
+      glow2(x + sx * 3.6 * s, y, 11 * s, col, 0.5);
+      ctx.fillStyle = `rgb(${col})`; ctx.beginPath(); ctx.ellipse(x + sx * 3.6 * s, y, 3 * s, 2.3 * s * open, sx * 0.3, 0, 7); ctx.fill();
+      ctx.fillStyle = '#0a0612'; ctx.fillRect(x + sx * 3.6 * s - 0.35 * s, y - 1.5 * s * open, 0.7 * s, 3 * s * open);
+    }
+  }
+  function treeCreature(x, yb, s, t, o) {
+    const walk = o.walk, ph = t * 2.6 + o.seed, bob = walk ? Math.abs(Math.sin(ph)) * 2.2 * s : 0, sway = Math.sin(t * 0.9 + o.seed) * 0.025;
+    ctx.save(); ctx.translate(x, yb - bob); ctx.rotate(sway); ctx.scale(o.dir || 1, 1);
+    if (walk) for (const k of [-1, 1]) {   // корни-ноги шагают
+      const sw = Math.sin(ph + (k > 0 ? Math.PI : 0)) * 7 * s;
+      ctx.strokeStyle = '#0c0a12'; ctx.lineWidth = 4.5 * s; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(k * 4 * s, -12 * s); ctx.quadraticCurveTo(k * 6 * s + sw * 0.5, -5 * s, k * 5 * s + sw, bob > 0 ? bob : 0); ctx.stroke();
+    }
+    const by = walk ? -9 * s : 0;
+    // ветви-руки
+    ctx.strokeStyle = '#0e0a14'; ctx.lineWidth = 3.4 * s; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const k of [-1, 1]) {
+      const a = Math.sin(t * 1.2 + o.seed + k) * 4 * s + (walk ? Math.sin(ph + k) * 4 * s : 0);
+      ctx.beginPath(); ctx.moveTo(k * 6 * s, by - 44 * s); ctx.quadraticCurveTo(k * 17 * s, by - 46 * s, k * 21 * s + a, by - 60 * s); ctx.stroke();
+      ctx.lineWidth = 1.8 * s; ctx.beginPath(); ctx.moveTo(k * 18 * s + a * 0.6, by - 52 * s); ctx.lineTo(k * 24 * s + a, by - 53 * s); ctx.moveTo(k * 21 * s + a, by - 60 * s); ctx.lineTo(k * 18 * s + a, by - 67 * s); ctx.stroke(); ctx.lineWidth = 3.4 * s;
+    }
+    // ствол с лунной кромкой справа
+    poly2([[-9 * s, by], [-6.5 * s, by - 44 * s], [-5 * s, by - 66 * s], [5 * s, by - 66 * s], [6.5 * s, by - 44 * s], [10 * s, by]], '#120e1a');
+    poly2([[4 * s, by - 66 * s], [6.5 * s, by - 44 * s], [10 * s, by], [7 * s, by]], '#2a2040');
+    for (let k = 0; k < 4; k++) { ctx.fillStyle = '#0a0710'; ctx.fillRect(-6 * s + k * 3.6 * s, by - 40 * s - k * 3 * s, 0.9 * s, 14 * s); }
+    // крона: комья хвои / листвы
+    for (const [dx, dy, r, c] of [[-9, -70, 11, '#0b1a14'], [8, -72, 11, '#0b1a14'], [0, -84, 13, '#0f2419'], [-8, -92, 9, '#0f2419'], [9, -93, 9, '#143020'], [0, -102, 8, '#143020']]) { ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(dx * s, by + dy * s, r * s, r * 0.82 * s, 0, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#1f4a2c'; for (const [dx, dy] of [[10, -76], [12, -92], [4, -105]]) ctx.fillRect(dx * s, by + dy * s, 3 * s, 1.6 * s);
+    eyes(0, by - 55 * s, s, o.eye, t, o.seed, true);
+    ctx.fillStyle = '#05030a'; ctx.beginPath(); ctx.moveTo(-3.5 * s, by - 46 * s); for (let k = 0; k < 5; k++) ctx.lineTo((-3.5 + k * 1.75) * s, by - (k % 2 ? 48.5 : 45.5) * s); ctx.lineTo(3.5 * s, by - 44 * s); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  function rockCreature(x, yb, s, t, o) {
+    const walk = o.walk, ph = t * 2 + o.seed, bob = walk ? Math.abs(Math.sin(ph)) * 1.8 * s : 0;
+    ctx.save(); ctx.translate(x, yb - bob); ctx.scale(o.dir || 1, 1);
+    if (walk) for (const k of [-1, 1]) {
+      const sw = Math.sin(ph + (k > 0 ? Math.PI : 0)) * 6 * s;
+      ctx.fillStyle = '#16131f'; ctx.beginPath(); ctx.ellipse(k * 7 * s + sw, -3 * s + (sw > 0 ? -1.5 * s : 0), 5 * s, 4 * s, 0, 0, 7); ctx.fill();
+    }
+    const by = walk ? -6 * s : 2 * s;
+    poly2([[-16 * s, by], [-17 * s, by - 14 * s], [-11 * s, by - 26 * s], [-1 * s, by - 31 * s], [10 * s, by - 27 * s], [17 * s, by - 15 * s], [16 * s, by]], '#1c1a2a');
+    poly2([[-1 * s, by - 31 * s], [10 * s, by - 27 * s], [17 * s, by - 15 * s], [16 * s, by], [8 * s, by], [9 * s, by - 16 * s]], '#34304a');
+    poly2([[-11 * s, by - 26 * s], [-1 * s, by - 31 * s], [2 * s, by - 24 * s], [-8 * s, by - 20 * s]], '#2a2640');
+    ctx.strokeStyle = '#0a0812'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.moveTo(-8 * s, by - 2 * s); ctx.lineTo(-5 * s, by - 10 * s); ctx.lineTo(-9 * s, by - 16 * s); ctx.moveTo(9 * s, by - 24 * s); ctx.lineTo(6 * s, by - 17 * s); ctx.stroke();
+    ctx.fillStyle = '#1f4a2c'; ctx.fillRect(-14 * s, by - 13 * s, 6 * s, 2 * s); ctx.fillRect(-12 * s, by - 11 * s, 3 * s, 1.5 * s);
+    if (walk) for (const k of [-1, 1]) { ctx.fillStyle = '#1c1a2a'; ctx.beginPath(); ctx.ellipse(k * 18 * s, by - 10 * s + Math.sin(ph + k) * 2 * s, 4 * s, 5 * s, 0, 0, 7); ctx.fill(); }
+    eyes(0, by - 19 * s, s * 0.9, o.eye, t, o.seed, true);
+    ctx.restore();
+  }
+  const ENTS = [
+    { k: 'tree', x: 0.05, y: 0.69, s: 1.25, eye: '255,210,80', seed: 1 }, { k: 'tree', x: 0.17, y: 0.67, s: 0.85, eye: '120,255,90', seed: 2 },
+    { k: 'tree', x: 0.9, y: 0.69, s: 1.2, eye: '120,255,90', seed: 3 }, { k: 'tree', x: 0.78, y: 0.665, s: 0.8, eye: '255,90,60', seed: 4 },
+    { k: 'rock', x: 0.11, y: 0.7, s: 1.1, eye: '255,210,80', seed: 5 }, { k: 'rock', x: 0.95, y: 0.71, s: 1.3, eye: '120,255,90', seed: 6 }, { k: 'rock', x: 0.3, y: 0.665, s: 0.7, eye: '255,90,60', seed: 7 },
+    { k: 'tree', walk: true, speed: -0.011, off: 0.7, y: 0.675, s: 1.0, eye: '120,255,90', seed: 8 },
+    { k: 'tree', walk: true, speed: 0.008, off: 0.2, y: 0.685, s: 0.9, eye: '255,210,80', seed: 9 },
+    { k: 'rock', walk: true, speed: 0.006, off: 0.45, y: 0.695, s: 1.0, eye: '255,90,60', seed: 10 },
+  ];
+  function drawEnts(t) {
+    const u = Math.min(W, H * 1.45) / 1000 * 1.6;
+    for (const e of ENTS) {
+      let x = e.x * W, dir = 1;
+      if (e.walk) { const span = 1.3; x = ((((e.off + e.speed * t) % span) + span) % span - 0.15) * W; dir = e.speed < 0 ? -1 : 1; }
+      const o = { walk: !!e.walk, seed: e.seed, eye: e.eye, dir };
+      (e.k === 'tree' ? treeCreature : rockCreature)(x, e.y * H, u * e.s, t, o);
+    }
+  }
+
+  // Заголовок буквами-пикселями: шрифт растрируется в крошечный холст по порогу, потом красится золотой рампой
+  const TITLE = { key: '', a: null, b: null };
+  function bmpText(text, font, ls) {
+    const c = document.createElement('canvas'), x = c.getContext('2d');
+    x.font = font; if (ls) x.letterSpacing = ls;
+    const size = parseInt(font.match(/(\d+)px/)[1]), w = Math.ceil(x.measureText(text).width) + 6, h = Math.ceil(size * 1.45);
+    c.width = w; c.height = h; x.font = font; if (ls) x.letterSpacing = ls;
+    x.fillStyle = '#fff'; x.fillText(text, 3, Math.round(h * 0.76));
+    const d = x.getImageData(0, 0, w, h).data, on = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) on[i] = d[i * 4 + 3] > 115 ? 1 : 0;
+    return { w, h, on };
+  }
+  function paintBmp(b, x0, y0, ramp, t, glint) {
+    const { w, h, on } = b, at = (x, y) => x >= 0 && y >= 0 && x < w && y < h && on[y * w + x];
+    let r0 = h, r1 = 0; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (on[y * w + x]) { r0 = Math.min(r0, y); r1 = Math.max(r1, y); }
+    for (let y = -2; y < h + 2; y++) for (let x = -2; x < w + 2; x++) {
+      const self = at(x, y);
+      if (!self && (at(x - 1, y - 1) || at(x - 1, y) || at(x, y - 1) || at(x + 1, y) || at(x, y + 1) || at(x - 1, y + 1) || at(x + 1, y - 1) || at(x + 1, y + 1))) { ctx.fillStyle = '#3a1c10'; ctx.fillRect(x0 + x, y0 + y, 1, 1); }
+      else if (!self && (at(x - 1, y - 2) || at(x - 2, y - 1) || at(x - 2, y - 2))) { ctx.fillStyle = '#1a0e24'; ctx.fillRect(x0 + x, y0 + y, 1, 1); }   // тень вниз-вправо
+    }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (!on[y * w + x]) continue;
+      const f = (y - r0) / Math.max(1, r1 - r0);
+      let col = ramp[Math.min(ramp.length - 1, Math.floor(f * ramp.length))];
+      if (glint !== undefined && Math.abs(x + y * 0.6 - glint) < 1.6) col = '#fffbe8';
+      ctx.fillStyle = col; ctx.fillRect(x0 + x, y0 + y, 1, 1);
+    }
+  }
+  function drawTitle(t) {
+    const h1 = document.querySelector('#loading .load-title h1'), h2 = document.querySelector('#loading .load-title h2');
+    if (!h1 || !h2) return;
+    const s1 = parseFloat(getComputedStyle(h1).fontSize) / PSc * 0.92, s2 = Math.max(8, parseFloat(getComputedStyle(h2).fontSize) / PSc * 0.95);
+    const key = Math.round(s1) + ':' + Math.round(s2) + ':' + PSc;
+    if (TITLE.key !== key) { TITLE.key = key; TITLE.a = bmpText('Gnomeunity', `bold ${Math.round(s1)}px Georgia, "Times New Roman", serif`, '1px'); TITLE.b = bmpText('OldGold', `bold ${Math.round(s2)}px Georgia, "Times New Roman", serif`, `${Math.max(2, Math.round(s2 * 0.45))}px`); }
+    const r1 = h1.getBoundingClientRect(), r2 = h2.getBoundingClientRect();
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const a = TITLE.a, b = TITLE.b;
+    paintBmp(a, Math.round((r1.left + r1.width / 2) / PSc - a.w / 2), Math.round((r1.top + r1.height / 2) / PSc - a.h * 0.55), ['#fff6c0', '#ffe27a', '#f0b83a', '#d88a30', '#a8582a'], t, ((t * 14) % 160) - 30);
+    paintBmp(b, Math.round((r2.left + r2.width / 2) / PSc - b.w / 2), Math.round((r2.top + r2.height / 2) / PSc - b.h * 0.55), ['#f0e0b0', '#d8c088', '#b89860'], t);
+    ctx.restore();
+  }
+
   function drawBackground(t) {
     const sky = ctx.createLinearGradient(0, 0, 0, H * 0.62);
     sky.addColorStop(0, '#0a0d24'); sky.addColorStop(0.55, '#2a1c4a'); sky.addColorStop(1, '#6a3a4a');
@@ -325,7 +489,7 @@
       for (let x = 0; x <= W; x += 10) ctx.lineTo(x, H * yb + Math.sin(x / W * 5 + ph) * amp * H + Math.sin(x / W * 13 + ph) * amp * H * 0.3);
       ctx.lineTo(W, H); ctx.fill();
     };
-    hill(0.52, 0.03, '#1d1838', 1); hill(0.58, 0.035, '#16162e', 3);
+    hill(0.52, 0.03, '#1d1838', 1); drawTower(t); hill(0.58, 0.035, '#16162e', 3);
     for (const tr of trees.filter(q => q.layer < 0.55)) pine(tr.x * W, H * 0.6, tr.h * H * 0.8, tr.w * W * 0.8, '#10132a');
     hill(0.63, 0.03, '#10182a', 5);
     for (const tr of trees.filter(q => q.layer >= 0.55)) pine(tr.x * W, H * 0.68, tr.h * H, tr.w * W, '#0a1420');
@@ -335,6 +499,7 @@
     ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, H * 0.7);
     for (let x = 0; x <= W; x += 12) ctx.lineTo(x, H * 0.7 + Math.sin(x / W * 7) * 0.008 * H);
     ctx.lineTo(W, H + 240); ctx.lineTo(0, H + 240); ctx.fill();
+    drawEnts(t);
   }
   function pine(x, yb, h, w, col) {
     ctx.fillStyle = col; ctx.beginPath();
@@ -686,6 +851,9 @@
   let last = performance.now(), running = true, T0 = last, lift = 0;
   function frame(now) {
     if (!running) return;
+    if (!cv.clientWidth || !cv.clientHeight) { resize(); last = now; requestAnimationFrame(frame); return; }   // вкладка скрыта и холст нулевой — ждём
+    if (cv.clientWidth !== W || cv.clientHeight !== H) resize();
+    if (!isFinite(lift)) lift = 0;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const t = (now - T0) / 1000;
     ctx.setTransform(1 / PSc, 0, 0, 1 / PSc, 0, 0);
@@ -777,6 +945,7 @@
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.65)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     if (stage.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(0.8, stage.flash)})`; ctx.fillRect(0, 0, W, H); }
+    drawTitle(t);
     present();
     requestAnimationFrame(frame);
   }
