@@ -1,6 +1,6 @@
 'use strict';
 // Лесные нейтралы: пиксель-арт кадры. Четыре вида (лесная фея, леший, кабан-страж, чумной моховик),
-// у каждого по 25 кадров: покой 2 + ходьба 4 + БОЙ 9 + смерть 6 + торжество 4.
+// у каждого по 33 кадра: покой 6 + ходьба 8 + БОЙ 9 + смерть 6 + торжество 4.
 //
 // Бой — ровно 9 кадров, как просили: 1 стойка, 2 шаг в выпад, 3 замах, 4 удар, 5 возврат,
 // 6 парирование, 7 получение урона, 8 пошатнулся, 9 рёв-зов своих.
@@ -13,8 +13,8 @@
 // Все кадры смотрят вправо, влево — отражением при отрисовке. Начало координат — точка земли под ногами.
 
 const NA_FRAMES = {
-  idle: ['i0', 'i1'],
-  walk: ['w0', 'w1', 'w2', 'w3'],
+  idle: ['i0', 'i1', 'i2', 'i3', 'i4', 'i5'],                     // дыхание, покачивание, моргание
+  walk: ['w0', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7'],         // полный шаг: контакт, проход, максимум, проход — на обе ноги
   fight: ['ready', 'step', 'windup', 'strike', 'recover', 'parry', 'hurt', 'stagger', 'roar'],
   die: ['d0', 'd1', 'd2', 'd3', 'd4', 'd5'],
   win: ['v0', 'v1', 'v2', 'v3'],
@@ -22,7 +22,8 @@ const NA_FRAMES = {
 // у фей ещё колдовство (6 кадров) и сон (2 кадра): 14 → 25 + 8 = 33 кадра на вид
 NA_FRAMES.cast = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5'];
 NA_FRAMES.sleep = ['z0', 'z1'];
-const NA_EXTRA = { fairy: ['cast', 'sleep'], pixie: ['cast', 'sleep'] };
+NA_FRAMES.curse = ['k0', 'k1', 'k2', 'k3', 'k4', 'k5'];   // тёмное заклинание: то же движение, но посох чёрно-фиолетовый
+const NA_EXTRA = { fairy: ['cast', 'curse', 'sleep'], pixie: ['cast', 'curse', 'sleep'] };
 const NA_ALL = [].concat(NA_FRAMES.idle, NA_FRAMES.walk, NA_FRAMES.fight, NA_FRAMES.die, NA_FRAMES.win);
 
 // Общая таблица поз; рисовалка каждого вида читает только то, что ей нужно.
@@ -30,10 +31,8 @@ const NA_ALL = [].concat(NA_FRAMES.idle, NA_FRAMES.walk, NA_FRAMES.fight, NA_FRA
 // b — защита (парирование); leg — фаза шага −1…1; mouth — рот; eye — 0 обычный, 1 злой, 2 зажмурен, 3 крестик;
 // hurt — «белая вспышка» от удара; sq — растяжение; wing — взмах; fade — растворение; dead — лежит
 function naPose(n) {
-  const w = { w0: 0, w1: 1, w2: 0, w3: -1 };
+  const w = {};
   const T = {
-    i0: { y: 0, wing: 0 }, i1: { y: -1, wing: 1, a: 0.05 },
-    w0: { leg: 0, wing: -1 }, w1: { leg: 1, y: -1, wing: 1 }, w2: { leg: 0, wing: -1 }, w3: { leg: -1, y: -1, wing: 1 },
     ready: { eye: 1, a: 0, wing: 0 },
     step: { x: 2, leg: 0.9, a: 0.15, eye: 1, wing: 1 },
     windup: { x: -2, rot: -0.1, a: -1, eye: 1, wing: -1 },
@@ -55,6 +54,12 @@ function naPose(n) {
     c3: { a: 0.6, x: 2, y: -2, eye: 0, mouth: 0.4, wing: 1, cast: 1 },
     c4: { a: 1, x: 3, rot: 0.14, eye: 0, wing: -1, cast: 0.8 },
     c5: { a: 0.3, x: 1, eye: 0, wing: 0, cast: 0.3 },
+    k0: { a: -0.6, wing: -1, eye: 1, rot: -0.05, dark: 1 },
+    k1: { up: 1, y: -2, eye: 1, wing: 1, cast: 0.2, dark: 1 },
+    k2: { up: 1, y: -4, rot: 0.08, eye: 1, mouth: 0.5, wing: -1, cast: 0.55, dark: 1 },
+    k3: { a: 0.6, x: 2, y: -2, eye: 1, mouth: 0.4, wing: 1, cast: 1, dark: 1 },
+    k4: { a: 1, x: 3, rot: 0.14, eye: 1, wing: -1, cast: 0.8, dark: 1 },
+    k5: { a: 0.3, x: 1, eye: 1, wing: 0, cast: 0.3, dark: 1 },
     z0: { rot: -1.45, x: -9, y: -3, eye: 2, sleep: 1 },
     z1: { rot: -1.45, x: -9, y: -2.4, eye: 2, sleep: 2 },
     v0: { up: 1, eye: 0, mouth: 0.3, wing: 1 },
@@ -62,7 +67,11 @@ function naPose(n) {
     v2: { up: 1, y: -1, eye: 0, mouth: 0.4, wing: 1 },
     v3: { up: 0.2, a: 0.2, rot: 0.05, eye: 0, mouth: 0.5, wing: 0 },
   };
-  const p = Object.assign({ cast: 0, sleep: 0, x: 0, y: 0, rot: 0, a: 0, up: 0, b: 0, leg: 0, mouth: 0, eye: 0, hurt: 0, sq: 1, wing: 0, fade: 0, dead: 0 }, T[n]);
+  // покой — 6 кадров: вдох-выдох (y, растяжение), мерное махание крыльями, подёргивание рукой, моргание на 5-м кадре
+  for (let k = 0; k < 6; k++) T['i' + k] = { y: [0, -0.4, -0.9, -1, -0.6, -0.2][k], sq: [1, 1.01, 1.02, 1.02, 1.01, 1][k], wing: [0, 1, 1, 0, -1, -1][k], a: [0, 0.03, 0.05, 0.05, 0.03, 0][k], eye: k === 4 ? 2 : 0 };
+  // ходьба — 8 кадров: фаза ноги по синусу, подскок на каждом шаге, крылья в такт
+  for (let k = 0; k < 8; k++) { const ph = Math.sin(k / 8 * 6.2832); T['w' + k] = { leg: Math.round(ph * 100) / 100, y: -Math.round(Math.abs(ph) * 90) / 100, wing: [-1, -0.5, 0.5, 1, 0.5, -0.5, -1, 0][k] }; }
+  const p = Object.assign({ dark: 0, cast: 0, sleep: 0, x: 0, y: 0, rot: 0, a: 0, up: 0, b: 0, leg: 0, mouth: 0, eye: 0, hurt: 0, sq: 1, wing: 0, fade: 0, dead: 0 }, T[n]);
   if (w[n] !== undefined) p.leg = w[n];
   return p;
 }
@@ -185,18 +194,21 @@ function drawFairy(c, P) {
   const [hx, hy, ang] = naArm(c, 0.8, -20, 3.8, 3.6, th, -0.5 + P.b * 0.6, 0.95, SK);
   if (P.b > 0.5) { c.strokeStyle = 'rgba(190,255,230,0.9)'; c.lineWidth = 0.7; c.beginPath(); c.arc(6, -17, 6, -1.2, 1.2); c.stroke(); }
   const [wx, wy] = naDir(ang + 0.2);
-  naLimb(c, hx, hy, hx + wx * 7, hy + wy * 7, 0.8, '#8a6a3a');
+  naLimb(c, hx, hy, hx + wx * 7, hy + wy * 7, P.dark ? 1 : 0.8, P.dark ? '#2a1236' : '#8a6a3a');
+  if (P.dark) { const ex = hx + wx * 7, ey = hy + wy * 7; naLimb(c, ex, ey, ex + wx * 1.6 - wy * 1.4, ey + wy * 1.6 + wx * 1.4, 0.8, '#2a1236'); naLimb(c, ex, ey, ex + wx * 1.6 + wy * 1.4, ey + wy * 1.6 - wx * 1.4, 0.8, '#2a1236'); }   // рогатый навершие
   const tipx = hx + wx * 7.3, tipy = hy + wy * 7.3;
   c.save(); c.globalCompositeOperation = 'lighter';
-  ellipse(c, tipx, tipy, 2.4 + (P.a > 0.5 ? 1.5 : 0), 2.4 + (P.a > 0.5 ? 1.5 : 0), 'rgba(255,240,140,0.55)');
+  ellipse(c, tipx, tipy, 2.4 + (P.a > 0.5 ? 1.5 : 0), 2.4 + (P.a > 0.5 ? 1.5 : 0), P.dark ? 'rgba(170,40,230,0.6)' : 'rgba(255,240,140,0.55)');
   c.restore();
-  ellipse(c, tipx, tipy, 1.15, 1.15, PL.tip || '#fff6b0');
-  if (P.a > 0.5 || P.up > 0.5) for (const [dx, dy] of [[3, -2], [2, 2.4], [4.4, 0.4], [-1, -3]]) { c.fillStyle = '#fff6b0'; c.fillRect(tipx + dx - 0.4, tipy + dy - 0.4, 0.8, 0.8); }
+  ellipse(c, tipx, tipy, 1.3, 1.3, P.dark ? '#1a0a24' : (PL.tip || '#fff6b0'));
+  if (P.dark) { c.fillStyle = '#ff3a8a'; c.fillRect(tipx - 0.5, tipy - 0.5, 1, 1); }
+  if (P.a > 0.5 || P.up > 0.5) for (const [dx, dy] of [[3, -2], [2, 2.4], [4.4, 0.4], [-1, -3]]) { c.fillStyle = P.dark ? '#b04aff' : '#fff6b0'; c.fillRect(tipx + dx - 0.4, tipy + dy - 0.4, 0.8, 0.8); }
   if (P.cast > 0) {   // колдовство: расходящееся кольцо рун вокруг кончика палочки
     c.save(); c.globalCompositeOperation = 'lighter';
     const rr = 3 + P.cast * 7;
-    c.strokeStyle = 'rgba(214,255,176,0.85)'; c.lineWidth = 0.7; c.beginPath(); c.ellipse(tipx, tipy, rr, rr * 0.8, 0, 0, 7); c.stroke();
-    for (let k = 0; k < 6; k++) { const a = k / 6 * 6.283 + P.cast * 2; c.fillStyle = k % 2 ? '#fff6b0' : '#ffb0e0'; c.fillRect(tipx + Math.cos(a) * rr - 0.6, tipy + Math.sin(a) * rr * 0.8 - 0.6, 1.3, 1.3); }
+    c.strokeStyle = P.dark ? 'rgba(190,70,255,0.9)' : 'rgba(214,255,176,0.85)'; c.lineWidth = 0.7; c.beginPath(); c.ellipse(tipx, tipy, rr, rr * 0.8, 0, 0, 7); c.stroke();
+    if (P.dark) { c.beginPath(); c.ellipse(tipx, tipy, rr * 0.6, rr * 0.48, 0, 0, 7); c.stroke(); }   // двойное кольцо, как тёмная печать
+    for (let k = 0; k < 6; k++) { const a = k / 6 * 6.283 + P.cast * 2; c.fillStyle = P.dark ? (k % 2 ? '#ff4a8a' : '#c060ff') : (k % 2 ? '#fff6b0' : '#ffb0e0'); c.fillRect(tipx + Math.cos(a) * rr - 0.6, tipy + Math.sin(a) * rr * 0.8 - 0.6, 1.3, 1.3); }
     c.restore();
   }
   // шея и голова
@@ -213,7 +225,7 @@ function drawFairy(c, P) {
   poly(c, [[hx0 + 2.4, hy0 - 0.6], [hx0 + 5.4, hy0 - 1.8], [hx0 + 2.8, hy0 + 0.4]], SK);                                                  // острое ушко
   if (!P.dead) { ellipse(c, hx0 + 0.2, hy0 - 2.6, 1.3, 0.6, '#ffe070'); c.fillStyle = '#ff6ad0'; c.fillRect(hx0 - 0.1, hy0 - 3.1, 0.7, 0.7); }   // диадема с самоцветом
   if (PL.crown) for (const [fx, fy, fc] of [[-1.8, -2.4, '#ff8ac8'], [2, -2.6, '#ffe070']]) ellipse(c, hx0 + fx, hy0 + fy, 0.9, 0.9, fc);
-  naEye(c, hx0 + 1.5, hy0 - 0.1, P.eye === 1 ? Object.assign({}, P, { eye: 0 }) : P, '#1a3a4a', 0.7);   // без бровей
+  naEye(c, hx0 + 1.5, hy0 - 0.1, P.eye === 1 ? Object.assign({}, P, { eye: 0 }) : P, P.dark ? '#c060ff' : '#1a3a4a', P.dark ? 0.95 : 0.7);   // без бровей; в тёмном заклинании глаза светятся
   if (P.mouth > 0.4) ellipse(c, hx0 + 1.7, hy0 + 1.5, 0.7, 0.8 * P.mouth, '#8a2a3a');
   else { c.fillStyle = '#d0586a'; c.fillRect(hx0 + 1.1, hy0 + 1.3, 1, 0.5); }
   // ближние крылья поверх спины

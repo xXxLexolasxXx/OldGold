@@ -27,7 +27,7 @@ const NSPEC = {
 };
 // из чего состоит логово
 const NLAIR = {
-  pixie: ['pixie', 'pixie'],
+  pixie: ['pixie', 'pixie', 'pixie'],
   fairy: ['fairy', 'fairy', 'fairy'],
   leshy: ['leshy'],
   boar:  ['boar', 'boar'],
@@ -66,46 +66,76 @@ function neuFillLair(lair) {
   lair.respawn = 0; lair.alive = kinds.length;
 }
 
+// Подходящее место для логова: трава в лесу, достижимо от деревни, не у воды и построек, не рядом с другим логовом
+function neuTrySite(rng, stamp, minStart) {
+  const cx = MAP_W >> 1, cy = MAP_H >> 1;
+  const x = 4 + (rng() * (MAP_W - 8) | 0), y = 4 + (rng() * (MAP_H - 8) | 0);
+  const i = idx(x, y);
+  if (World.terrain[i] !== T_GRASS || World.bmap[i] || World.road[i] || !reachedIn(stamp, x, y)) return null;
+  const ds = Math.hypot(x - cx, y - cy);
+  if (ds < minStart) return null;
+  let trees = 0;
+  for (let yy = y - 4; yy <= y + 4; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
+    if (!inb(xx, yy)) return null;
+    const t = World.terrain[idx(xx, yy)], o = World.obj[idx(xx, yy)];
+    if (t === T_WATER || World.bmap[idx(xx, yy)]) return null;
+    if (o && o.t === 'tree') trees++;
+  }
+  if (trees < 11) return null;
+  if (Game.buildings.some(b => Math.hypot(b.x - x, b.y - y) < 12)) return null;
+  if (Game.lairs.some(l => Math.hypot(l.x - x, l.y - y) < 15)) return null;
+  return { x, y, ds };
+}
+
+function neuAddLair(k, site, minStart) {
+  const { x, y, ds } = site;
+  const far = Math.min(1, Math.max(0, (ds - minStart) / 40));
+  const lair = { id: Game.nextId++, k, x, y, lv: k === 'pixie' ? 1 : Math.round((1 + far * 0.45) * 100) / 100, respawn: 0, alive: 0, fr: 0 };
+  // полянка: вырубаем деревья вокруг, чтобы было где жить и драться (к югу шире: кроны южных деревьев иначе закрывают логово)
+  for (let yy = y - 3; yy <= y + 5; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
+    const ex = (xx - x) / 3.4, ey = (yy - y) / (yy >= y ? 4.2 : 2.6);
+    if (!inb(xx, yy) || ex * ex + ey * ey > 1) continue;
+    const o = World.obj[idx(xx, yy)];
+    if (o && (o.t === 'tree' || o.t === 'stump')) { World.obj[idx(xx, yy)] = null; World.growing.delete(idx(xx, yy)); }
+  }
+  Game.lairs.push(lair);
+  neuFillLair(lair);
+  return lair;
+}
+
+const NEU_MIN_PIXIE = 3;   // на каждой карте — не меньше трёх селений цветочных фей
+
 function neuSpawnAll(seed) {
   Game.neutrals = []; Game.lairs = [];
   Game.nstat = { kills: {}, lost: 0, lairs: 0, xp: 0 };
   const rng = mulberry32(((seed | 0) ^ 0xFA17E) >>> 0);
   const cx = MAP_W >> 1, cy = MAP_H >> 1;
-  const want = Math.round(7 * (N_TILES / 6912) * 1.1);
+  const want = Math.max(Math.round(7 * (N_TILES / 6912) * 1.1), NEU_MIN_PIXIE + 3);
   const minStart = mapIsLegacy() ? 20 : 24;
   const stamp = floodFrom(cx, cy);
-  const kinds = ['fairy', 'pixie', 'boar', 'leshy', 'spore'];
+  const kinds = ['fairy', 'boar', 'leshy', 'spore', 'pixie'];
   let tries = 0;
-  while (Game.lairs.length < want && tries++ < 4000) {
-    const x = 4 + (rng() * (MAP_W - 8) | 0), y = 4 + (rng() * (MAP_H - 8) | 0);
-    const i = idx(x, y);
-    if (World.terrain[i] !== T_GRASS || World.bmap[i] || World.road[i] || !reachedIn(stamp, x, y)) continue;
-    const ds = Math.hypot(x - cx, y - cy);
-    if (ds < minStart) continue;
-    let trees = 0, bad = false;
-    for (let yy = y - 4; yy <= y + 4 && !bad; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
-      if (!inb(xx, yy)) { bad = true; break; }
-      const t = World.terrain[idx(xx, yy)], o = World.obj[idx(xx, yy)];
-      if (t === T_WATER || World.bmap[idx(xx, yy)]) { bad = true; break; }
-      if (o && o.t === 'tree') trees++;
-    }
-    if (bad || trees < 11) continue;
-    if (Game.buildings.some(b => Math.hypot(b.x - x, b.y - y) < 12)) continue;
-    if (Game.lairs.some(l => Math.hypot(l.x - x, l.y - y) < 15)) continue;
-    // по кругу, чтобы встретились все виды; чем дальше от деревни, тем опаснее
-    const k = kinds[(Game.lairs.length + (rng() * 2 | 0)) % kinds.length];
-    const far = Math.min(1, Math.max(0, (ds - minStart) / 40));
-    const lair = { id: Game.nextId++, k, x, y, lv: k === 'pixie' ? 1 : Math.round((1 + far * 0.45) * 100) / 100, respawn: 0, alive: 0, fr: 0 };
-    // полянка: вырубаем деревья в радиусе 2,3, чтобы было где жить и драться
-    // (к югу шире: кроны южных деревьев иначе закрывают логово)
-    for (let yy = y - 3; yy <= y + 5; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
-      const ex = (xx - x) / 3.4, ey = (yy - y) / (yy >= y ? 4.2 : 2.6);
-      if (!inb(xx, yy) || ex * ex + ey * ey > 1) continue;
-      const o = World.obj[idx(xx, yy)];
-      if (o && (o.t === 'tree' || o.t === 'stump')) { World.obj[idx(xx, yy)] = null; World.growing.delete(idx(xx, yy)); }
-    }
-    Game.lairs.push(lair);
-    neuFillLair(lair);
+  while (Game.lairs.length < want && tries++ < 6000) {
+    const pix = Game.lairs.filter(l => l.k === 'pixie').length;
+    const needPix = pix < NEU_MIN_PIXIE;
+    // феи — первыми тремя: добрые селения не должны остаться без места; им можно ближе к деревне
+    const site = neuTrySite(rng, stamp, needPix ? minStart - 6 : minStart);
+    if (!site) continue;
+    const k = needPix ? 'pixie' : kinds[(Game.lairs.length + (rng() * 2 | 0)) % kinds.length];
+    neuAddLair(k, site, minStart);
+  }
+  neuEnsurePixies(seed);
+}
+
+// Старые сохранения и запасной случай: догнать число селений фей до минимума
+function neuEnsurePixies(seed) {
+  const have = () => Game.lairs.filter(l => l.k === 'pixie').length;
+  if (have() >= NEU_MIN_PIXIE || Game.stress) return;
+  const rng = mulberry32((((seed | 0) ^ 0x9E3779) + Game.lairs.length * 131) >>> 0);
+  const stamp = floodFrom(MAP_W >> 1, MAP_H >> 1), minStart = mapIsLegacy() ? 14 : 18;
+  for (let tries = 0; have() < NEU_MIN_PIXIE && tries < 8000; tries++) {
+    const site = neuTrySite(rng, stamp, minStart);
+    if (site) neuAddLair('pixie', site, minStart);
   }
 }
 
@@ -260,7 +290,7 @@ function neuMove(N, tx, ty, spd, dt) {
   else if (ok(N.x, ny)) N.y = ny;
   else { N.stuck = (N.stuck || 0) + dt; if (N.stuck > 0.8) { N.stuck = 0; return true; } return false; }
   if (Math.abs(dx) > 0.05) N.face = dx > 0 ? 1 : -1;
-  N.ph += st * 2.2;
+  N.ph += st * 3.6;
   return d - st < 0.08;
 }
 
@@ -275,10 +305,10 @@ function neuFrame(N) {
     if (t < 0.56) return 'recover';
     return 'ready';
   }
-  if (N.st === 'chase' || N.st === 'flee') return N.dist < 3.2 && N.st === 'chase' ? (Math.floor(N.ph) % 2 ? 'step' : 'ready') : 'w' + (Math.floor(N.ph) % 4);
-  if (N.st === 'roam' || N.st === 'home') return 'w' + (Math.floor(N.ph) % 4);
+  if (N.st === 'chase' || N.st === 'flee') return N.dist < 3.2 && N.st === 'chase' ? (Math.floor(N.ph) % 2 ? 'step' : 'ready') : 'w' + (Math.floor(N.ph) % 8);
+  if (N.st === 'roam' || N.st === 'home') return 'w' + (Math.floor(N.ph) % 8);
   if ((N.k === 'pixie' || N.k === 'fairy') && typeof isNightNow === 'function' && isNightNow() && !(Game.time - (N.awake || -99) < 25) && N.st === 'idle') return Math.floor(Game.time * 0.8 + N.id) % 2 ? 'z1' : 'z0';   // ночью феи спят, пока рядом нет нечисти
-  return Math.floor(Game.time * 1.4 + N.id) % 2 ? 'i1' : 'i0';
+  return 'i' + (Math.floor(Game.time * 5 + N.id) % 6);
 }
 
 function neuStrike(N, tg) {
@@ -505,6 +535,7 @@ function neuTick(dt) {
       Game.neutrals.push(N); lair.alive++;
     }
     for (const l of Game.lairs) if (!l.alive && !l.respawn) l.respawn = Game.time + 30;
+    if (!isMirror()) neuEnsurePixies(s.seed);
   };
   const _step = step;
   step = function (dt) { _step(dt); if (!isMirror()) neuTick(dt); };
@@ -727,22 +758,23 @@ function neuPixieMagic(N, dt) {
   N.spT = 8 + Math.random() * 6;
   const L = Game.lairs.find(l => l.id === N.lair), R = NEU_SPELL_R, near = (o, r = R) => Math.hypot(o.x - N.x, o.y - N.y) < r;
   // 1) нечисть: пять заклинаний — по виду цели
-  const cast = (name, col, x, y) => {
-    N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13; N.face = x >= N.x ? 1 : -1; N.awake = Game.time;
+  const cast = (name, col, x, y, dark) => {
+    if (dark) col = ['#c060ff', '#8a2ad0', '#ff4a8a'];
+    N.ov = dark ? NA_FRAMES.curse : NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13; N.face = x >= N.x ? 1 : -1; N.awake = Game.time;
     fxBurst(x * TILE, y * TILE - 10, 18, col, 70, 70, 0.9, 1.8, -20);
     sfxAt('chime', x * TILE, y * TILE, 0.6);
     floater(x, y - 1.9, name, col[0]);
   };
   const g = (Game.ghosts || []).find(o => !o.exo && o.alpha > 0.25 && o.mode !== 'leave' && near(o));
   if (g) {
-    cast('Свет фей!', ['#fff6c0', '#bfe8ff', '#ffe070'], g.x, g.y);
+    cast('Свет фей!', ['#fff6c0', '#bfe8ff', '#ffe070'], g.x, g.y, true);
     g.exo = Game.time; g.mode = 'leave'; g.modeT = 99;
     logEvent('night', 'Цветочные феи прогнали призрака светом', g.x, g.y);
     return;
   }
   const sk = (Game.skels || []).find(o => o.state === 'roam' && o.k > 0.5 && near(o));
   if (sk) {
-    cast('Рассыпься!', ['#e6dfc8', '#c8ffb0', '#fff6b0'], sk.x, sk.y);
+    cast('Рассыпься!', ['#e6dfc8', '#c8ffb0', '#fff6b0'], sk.x, sk.y, true);
     sk.state = 'dead'; sk.t = 0; sk.moving = false; sk.resolved = true;
     sfxAt('rattle', sk.x * TILE, sk.y * TILE, 1.0);
     logEvent('night', 'Цветочные феи рассыпали скелета в кости', sk.x, sk.y);
@@ -750,21 +782,21 @@ function neuPixieMagic(N, dt) {
   }
   const en = (Game.ents || []).find(o => o.state === 'walk' && near(o));
   if (en) {
-    cast('Усни, дерево…', ['#9af0a0', '#d4ffb8', '#7ab04a'], en.x, en.y);
+    cast('Усни, дерево…', ['#9af0a0', '#d4ffb8', '#7ab04a'], en.x, en.y, true);
     en.state = 'root'; en.t = 0; en.alpha = 1;
     logEvent('night', 'Цветочные феи усыпили ходячее дерево', en.x, en.y);
     return;
   }
   const bt = (Game.bats || []).find(o => !o.leave && near(o, R + 4));
   if (bt) {
-    cast('Звон крыльев!', ['#d8f6ff', '#ffffff', '#c8a0ff'], bt.x, bt.y);
+    cast('Звон крыльев!', ['#d8f6ff', '#ffffff', '#c8a0ff'], bt.x, bt.y, true);
     bt.leave = true;
     return;
   }
   // «блуждающие огни»: любую другую нечисть (в т.ч. бродящих рядом с деревней) уводят прочь на пару клеток
   const stray = [...(Game.skels || []).filter(o => o.state === 'roam'), ...(Game.ents || []).filter(o => o.state === 'walk' || o.state === 'emerge')].find(o => near(o, R + 3));
   if (stray) {
-    cast('Блуждающие огни!', ['#bfe8ff', '#ffe070', '#c8ffb0'], stray.x, stray.y);
+    cast('Блуждающие огни!', ['#bfe8ff', '#ffe070', '#c8ffb0'], stray.x, stray.y, true);
     const a = Math.atan2(stray.y - N.y, stray.x - N.x), nx = stray.x + Math.cos(a) * 4, ny = stray.y + Math.sin(a) * 4;
     if (isWalkable(Math.floor(nx), Math.floor(ny))) { stray.x = nx; stray.y = ny; }
     return;
