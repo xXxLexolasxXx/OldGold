@@ -45,6 +45,12 @@ function coopDefaultServer() {
 // адрес для запросов по HTTP к тому же серверу (coop-info)
 const coopHttpUrl = ws => ws.replace(/^ws/i, 'http');
 
+// версия клиента для статистики сервера: откуда открыта игра и когда выложена её страница
+function coopVer() {
+  const d = new Date(document.lastModified), when = isNaN(d) ? '?' : d.toISOString().slice(0, 16).replace('T', ' ');
+  return (/github\.io$/.test(location.hostname) ? 'pages ' : location.protocol === 'file:' ? 'file ' : 'site ') + when;
+}
+
 function coopSend(o) { if (Coop.ws && Coop.ws.readyState === 1) Coop.ws.send(JSON.stringify(o)); }
 
 // ---------- Подключение ----------
@@ -58,7 +64,7 @@ function coopConnect(opts) {
     try { ws = new WebSocket(opts.server); } catch (e) { reject(new Error('Неверный адрес сервера')); return; }
     Coop.ws = ws; Coop.creds = opts;
     const fail = msg => { if (settled) return; settled = true; reject(new Error(msg)); try { ws.close(); } catch (e) { /* ничего */ } };
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token }));
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token, ver: coopVer() }));
     ws.onerror = () => fail('Сервер не отвечает. Он запущен? Адрес верный?');
     ws.onclose = () => { if (!settled) fail('Связь оборвана'); else if (Coop.ws === ws) coopLost(); };
     ws.onmessage = ev => {
@@ -1008,7 +1014,7 @@ function coopAdminOpen() {
   box.id = 'cp-admin'; box.className = 'cp-modal';
   box.innerHTML = `<div class="cp-card"><h2>Что можно игрокам</h2><p>Нажмите — переключите. Зелёное разрешено, серое запрещено. Вам (хосту) можно всегда, а герой у каждого свой.</p>
     <div class="cp-adm"></div>
-    <div class="cp-adm-bar"><button class="cp-btn sec" data-all="1">Разрешить всё</button><button class="cp-btn sec" data-all="0">Запретить всё</button><button class="cp-btn" data-close>Готово</button></div></div>`;
+    <div class="cp-adm-bar"><button class="cp-btn sec" data-all="1">Разрешить всё</button><button class="cp-btn sec" data-all="0">Запретить всё</button><button class="cp-btn sec" data-stats>Статистика</button><button class="cp-btn" data-close>Готово</button></div></div>`;
   document.body.appendChild(box);
   coopAdminRender(box);
   box.addEventListener('click', e => {
@@ -1016,6 +1022,7 @@ function coopAdminOpen() {
     if (t) { coopSend({ t: 'setperm', key: t.dataset.perm, on: !Coop.perms[t.dataset.perm] }); return; }
     const all = e.target.closest('[data-all]');
     if (all) { for (const k of Object.keys(Coop.permLabels)) coopSend({ t: 'setperm', key: k, on: all.dataset.all === '1' }); return; }
+    if (e.target.closest('[data-stats]')) { coopSend({ t: 'stats' }); return; }
     if (e.target.closest('[data-close]') || e.target === box) box.remove();
   });
 }
@@ -1023,6 +1030,7 @@ function coopAdminOpen() {
 {
   const _h = coopHandle;
   coopHandle = function (m) {
+    if (m.t === 'stats') { coopStatsShow(m.s, m.server); return; }
     if (m.t === 'perms') {
       Coop.perms = m.perms;
       const box = document.getElementById('cp-admin');
@@ -1042,4 +1050,24 @@ function coopAdminOpen() {
       b.addEventListener('click', e => { e.stopPropagation(); coopAdminOpen(); });
     }
   };
+}
+
+// Статистика реальных игроков (только хосту): кто, сколько раз, сколько часов
+function coopStatsShow(x, server) {
+  coopCss();
+  document.getElementById('cp-stats')?.remove();
+  const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const dt = t => (t ? new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+  const cls = (Coop.meta && Coop.meta.classes) || {};
+  const box = document.createElement('div');
+  box.id = 'cp-stats'; box.className = 'cp-modal';
+  box.innerHTML = `<div class="cp-card" style="text-align:left;width:min(640px,94vw)"><h2 style="text-align:center">Статистика деревни</h2>
+    <p>Игроков всего: <b>${x.players}</b> · за неделю: <b>${x.activeWeek}</b> · сегодня: <b>${x.today.players}</b> (входов ${x.today.logins}) · сейчас: <b>${x.onlineNow}</b><br>
+    Пик онлайна: <b>${x.peak.n}</b> (${dt(x.peak.at)}) · наиграно всего: <b>${x.totalHours} ч</b> · ведётся с ${dt(x.since)} · сервер ${esc(server)}</p>
+    <table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="color:#f6d458"><th align="left">Игрок</th><th>Класс</th><th>Входов</th><th>Часов</th><th>Последний вход</th></tr>
+    ${x.list.map(p => `<tr><td>${p.online ? '● ' : ''}${esc(p.nick)}</td><td align="center">${esc((cls[p.cls] || {}).name || p.cls || '')}</td><td align="center">${p.logins}</td><td align="center">${p.hours}</td><td align="center">${dt(p.last)}</td></tr>`).join('')}</table>
+    <p style="margin-top:10px">По дням: ${x.days.slice(0, 7).map(d => `${d.day.slice(5)} — ${d.players} игр., ${d.logins} вх., пик ${d.peak}`).join(' · ') || '—'}</p>
+    <div style="text-align:center"><button class="cp-btn" data-close>Закрыть</button></div></div>`;
+  document.body.appendChild(box);
+  box.addEventListener('click', e => { if (e.target.closest('[data-close]') || e.target === box) box.remove(); });
 }

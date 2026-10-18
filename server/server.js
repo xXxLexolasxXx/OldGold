@@ -40,12 +40,36 @@ if (!process.env.OLDGOLD_CHILD) {
 }
 
 const { createHost } = require('./simhost');
+const { createStats, printSummary } = require('./stats');
 
 fs.mkdirSync(DATA, { recursive: true });
 const WORLD_FILE = path.join(DATA, 'world.json');
 const SETTINGS_FILE = path.join(DATA, 'settings.json');
 const USERS_FILE = path.join(DATA, 'players.json');
 const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
+
+// ---------- Статистика игроков ----------
+const stats = createStats(DATA, log);
+// версия сервера — коммит, из которого он запущен
+const SERVER_VER = (() => {
+  try {
+    const head = fs.readFileSync(path.join(ROOT, '.git', 'HEAD'), 'utf8').trim();
+    const ref = head.startsWith('ref: ') ? head.slice(5) : null;
+    const sha = ref ? fs.readFileSync(path.join(ROOT, '.git', ref), 'utf8').trim() : head;
+    return sha.slice(0, 7);
+  } catch (e) { return 'dev'; }
+})();
+stats.serverVersion(SERVER_VER);
+// Сводка по адресу /stats?key=… — ключ из OLDGOLD_STATS_KEY или из файла stats.key в папке данных (создаётся сам)
+const STATS_KEY = (() => {
+  if (process.env.OLDGOLD_STATS_KEY) return process.env.OLDGOLD_STATS_KEY;
+  const f = path.join(DATA, 'stats.key');
+  try { return fs.readFileSync(f, 'utf8').trim(); } catch (e) { /* создадим */ }
+  const k = crypto.randomBytes(18).toString('base64url');
+  try { fs.writeFileSync(f, k + '\n', { mode: 0o600 }); } catch (e) { log('ключ статистики не сохранился:', e.message); }
+  return k;
+})();
+const keyOk = k => { const a = Buffer.from(String(k || '')), b = Buffer.from(STATS_KEY); return a.length === b.length && crypto.timingSafeEqual(a, b); };
 
 // ---------- Аккаунты ----------
 let users = {};
@@ -94,6 +118,7 @@ function saveWorld() {
     if (fs.existsSync(WORLD_FILE)) fs.copyFileSync(WORLD_FILE, WORLD_FILE + '.bak');
     fs.renameSync(tmp, WORLD_FILE);
     flushHeroes();
+    stats.save();
     return true;
   } catch (e) { log('сохранение мира не удалось:', e.message); return false; }
 }
@@ -113,6 +138,15 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
   if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
+  if (p === '/stats') {
+    const q = new URL(req.url, 'http://x').searchParams;
+    if (!keyOk(q.get('key'))) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('нужен ключ: /stats?key=… (он в файле stats.key в папке данных сервера)'); return; }
+    stats.save();
+    const x = stats.summary();
+    if (q.has('json')) { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(x, null, 2)); }
+    else { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(printSummary(x) + '\n\nСервер: ' + SERVER_VER + '\n'); }
+    return;
+  }
   if (p === '/') p = '/index.html';
   const file = path.normalize(path.join(ROOT, p));
   const rel = path.relative(ROOT, file);
@@ -138,8 +172,8 @@ function frame(op, payload) {
 }
 
 class Conn {
-  constructor(sock, isHost) {
-    this.sock = sock; this.isHost = isHost; this.buf = Buffer.alloc(0); this.frag = []; this.fragOp = 0;
+  constructor(sock, isHost, ip, origin) {
+    this.sock = sock; this.isHost = isHost; this.ip = ip; this.origin = origin; this.buf = Buffer.alloc(0); this.frag = []; this.fragOp = 0;
     this.nick = null; this.key = null; this.inGame = false; this.alive = true; this.seen = Date.now();
     sock.on('data', d => this.onData(d));
     sock.on('close', () => this.onClose());
@@ -183,6 +217,7 @@ class Conn {
     this.alive = false;
     conns.delete(this);
     if (this.inGame) {
+      stats.leave(this.key);
       const d = call('coopLeave', this.nick);
       if (d) users[this.key].hero = JSON.parse(d);
       saveUsers();
@@ -200,7 +235,9 @@ server.on('upgrade', (req, sock) => {
   sock.setNoDelay(true);
   const addr = sock.remoteAddress || '';
   const isHost = /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(addr) && !req.headers['x-forwarded-for'];
-  conns.add(new Conn(sock, isHost));
+  // настоящий адрес игрока за прокси — только для хэша в статистике, в открытом виде не хранится
+  const ip = String(req.headers['x-forwarded-for'] || addr).split(',')[0].trim();
+  conns.add(new Conn(sock, isHost, ip, req.headers.origin || ''));
 });
 
 function broadcast(obj) {
@@ -213,6 +250,7 @@ function joinWorld(c) {
   const rec = users[c.key];
   const uid = call('coopJoin', c.nick, JSON.stringify(rec.hero));
   c.inGame = true;
+  stats.join(c.key, c.nick, { cls: rec.hero && rec.hero.cls, ip: c.ip, ver: c.ver, from: c.origin });
   c.sendText(call('coopInitPacket', uid));
   const me = call('coopMeData', c.nick);
   if (me) c.sendText(me);
@@ -246,7 +284,7 @@ function onMessage(c, text) {
       try { o.sock.end(); } catch (e) { /* ничего */ }
       o.onClose();
     }
-    c.nick = rec.nick; c.key = key;
+    c.nick = rec.nick; c.key = key; c.ver = typeof m.ver === 'string' ? m.ver.slice(0, 40) : '';
     if (ADMINS.has(key)) c.isHost = true;
     let token;
     if (m.mode !== 'token') { token = crypto.randomBytes(24).toString('hex'); rec.toks = [...(rec.toks || []).slice(-4), sha(token)]; saveUsers(); }   // запомнить вход на этом устройстве
@@ -272,6 +310,12 @@ function onMessage(c, text) {
     broadcast({ t: 'restarting' });
     saveWorld();
     setTimeout(() => process.exit(42), 300);
+    return;
+  }
+  if (m.t === 'stats') {
+    if (!c.isHost) return c.send({ t: 'toast', text: 'Статистику видит только хост' });
+    stats.save();
+    c.send({ t: 'stats', s: stats.summary(), server: SERVER_VER });
     return;
   }
   if (m.t === 'setperm') {
