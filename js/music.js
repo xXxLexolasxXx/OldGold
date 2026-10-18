@@ -193,6 +193,7 @@ function audioKickOnGesture(fn) {
 const Music = {
   ctx: null, master: null, bus: null, rev: null, hall: null, on: true, started: false,
   bar: 0, nextTime: 0, timer: null, buffers: new Map(), track: 0, songs: [], noise: null,
+  mood: 'day', fightT: -1e9, dawnUntil: -1, waterT: -1e9, waterIn: 0, waterCool: 0, prevNight: null, moodT: 0,
 };
 
 const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
@@ -251,6 +252,48 @@ const TRACKS = [
     prog: ['Dm', 'Dm', 'Eb', 'Dm', 'A', 'Dm', 'Gm', 'A', 'Dm', 'Eb', 'Dm', 'A', 'Bb', 'A', 'Dm', 'A'],
     rhythms: [[6], [4, 2], [3, 3], [2, 4], [6], [5, 1]],
     range: [55, 73],
+  },
+  {
+    // «За дом» — боевой: гномы отбиваются от нечисти. Марш в 6/8: тяжёлые барабаны, горн,
+    // скрипка ведёт напев, наковальня отбивает ритм, мужской хор вступает со второй четверти.
+    // Включается сам, пока идёт схватка, и уходит через несколько секунд после неё.
+    name: 'За дом', special: 'battle', eighth: 0.17, swing: 0, bars: 32, voiceFrom: 8, seed: 1313, lead: 'fiddle', level: 1,
+    scale: [57, 59, 60, 62, 64, 65, 67, 68, 69, 71, 72, 74, 76, 77, 79, 81],
+    chords: {
+      Am: { root: 45, tones: [57, 60, 64, 69, 72, 76, 81] }, G: { root: 43, tones: [55, 59, 62, 67, 71, 74, 79] },
+      F: { root: 41, tones: [53, 57, 60, 65, 69, 72, 77] }, E: { root: 40, tones: [52, 56, 59, 64, 68, 71, 76] },
+      Dm: { root: 38, tones: [50, 53, 57, 62, 65, 69, 74] },
+    },
+    prog: ['Am', 'Am', 'G', 'F', 'Am', 'Am', 'E', 'E', 'Dm', 'Dm', 'Am', 'Am', 'F', 'G', 'E', 'Am'],
+    rhythms: [[1, 1, 1, 1, 1, 1], [2, 1, 2, 1], [3, 3], [1, 1, 2, 2], [2, 2, 2], [3, 1, 1, 1]],
+    range: [57, 79],
+  },
+  {
+    // «Рассвет» — звучит один раз, когда уходит туман: арфа поднимается вверх, виолончель дышит,
+    // тихий горн зовёт, флейта и голоса встречают солнце.
+    name: 'Рассвет', special: 'dawn', eighth: 0.36, swing: 0, bars: 24, voiceFrom: 6, seed: 77, lead: 'flute', level: 0.85,
+    scale: [55, 57, 59, 60, 62, 64, 66, 67, 69, 71, 72, 74, 76, 78, 79, 81, 83],
+    chords: {
+      G: { root: 43, tones: [55, 59, 62, 67, 71, 74, 79] }, C: { root: 36, tones: [55, 60, 64, 67, 72, 76, 79] },
+      D: { root: 38, tones: [54, 57, 62, 66, 69, 74, 78] }, Em: { root: 40, tones: [55, 59, 64, 67, 71, 76, 79] },
+      Am: { root: 45, tones: [57, 60, 64, 69, 72, 76] },
+    },
+    prog: ['G', 'G', 'C', 'D', 'Em', 'C', 'G', 'D', 'C', 'G', 'Am', 'D', 'G', 'Em', 'C', 'G'],
+    rhythms: [[6], [3, 3], [4, 2], [2, 2, 2], [2, 4], [3, 1, 2]],
+    range: [62, 83],
+  },
+  {
+    // «У воды» — когда камера у реки или озера: ре мажор, журчащие арфовые переборы,
+    // калимба, капли, шелест волны и тихая свирель.
+    name: 'У воды', special: 'water', eighth: 0.3, swing: 0, bars: 24, voiceFrom: 999, seed: 404, lead: 'kalimba', level: 0.8,
+    scale: [62, 64, 66, 69, 71, 74, 76, 78, 81, 83, 86],
+    chords: {
+      D: { root: 38, tones: [50, 54, 57, 62, 66, 69, 73, 78] }, Bm: { root: 47, tones: [54, 59, 62, 66, 71, 74, 78] },
+      G: { root: 43, tones: [55, 59, 62, 67, 71, 74, 79] }, A: { root: 45, tones: [57, 61, 64, 69, 73, 76, 81] },
+    },
+    prog: ['D', 'Bm', 'G', 'A', 'D', 'Bm', 'G', 'A', 'Bm', 'G', 'D', 'A', 'G', 'D', 'A', 'D'],
+    rhythms: [[3, 3], [2, 2, 2], [4, 2], [2, 4], [6], [1, 1, 2, 2]],
+    range: [62, 86],
   },
 ];
 
@@ -454,7 +497,7 @@ function glock(midi, t, vel = 0.08) {
 }
 
 // Женский голос: две пилы через форманты гласной, вибрато, долгий отзвук
-const VOWELS = { a: [[800, 1, 7], [1150, 0.5, 9], [2900, 0.22, 12]], u: [[350, 1, 6], [650, 0.35, 8], [2700, 0.08, 10]] };
+const VOWELS = { o: [[450, 1, 6], [800, 0.4, 8], [2800, 0.07, 10]], a:[[800, 1, 7], [1150, 0.5, 9], [2900, 0.22, 12]], u: [[350, 1, 6], [650, 0.35, 8], [2700, 0.08, 10]] };
 function voice(midi, t, dur, vel = 0.07, vowel = 'a') {
   const ctx = Music.ctx, hz = midiHz(midi);
   const o = ctx.createOscillator(), o2 = ctx.createOscillator();
@@ -512,6 +555,80 @@ function tambourine(t, vel) {
   nb.start(t, Math.random()); nb.stop(t + 0.15);
 }
 
+// ---------- Новые инструменты ----------
+
+// Гномий горн: две пилы с отстройкой, фильтр раскрывается к середине ноты — «медный» набор силы
+function mHorn(midi, t, dur, vel = 0.07) {
+  const ctx = Music.ctx, hz = midiHz(midi), env = ctx.createGain(), lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass'; lp.Q.value = 1.2;
+  lp.frequency.setValueAtTime(380, t); lp.frequency.exponentialRampToValueAtTime(1500, t + Math.min(0.35, dur * 0.6));
+  env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(vel, t + 0.09);
+  env.gain.setValueAtTime(vel * 0.9, t + dur * 0.7); env.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.25);
+  lp.connect(env); out(env, 1, 0.25, 0.5);
+  const end = t + dur + 0.3, lfo = ctx.createOscillator(), lg = ctx.createGain();
+  lfo.frequency.value = 5; lg.gain.value = hz * 0.004; lfo.connect(lg);
+  for (const det of [-6, 6]) {
+    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = hz; o.detune.value = det;
+    lg.connect(o.frequency); o.connect(lp); o.start(t); o.stop(end);
+  }
+  lfo.start(t); lfo.stop(end);
+}
+
+// Боевой барабан: низкий гулкий удар с хлопком кожи
+function warDrum(t, vel = 0.4, pitch = 64) {
+  const ctx = Music.ctx, o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(pitch * 2, t); o.frequency.exponentialRampToValueAtTime(pitch * 0.62, t + 0.22);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vel, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+  o.connect(g); out(g, 1, 0.1, 0.7); o.start(t); o.stop(t + 0.55);
+  const nb = ctx.createBufferSource(), f = ctx.createBiquadFilter(), ng = ctx.createGain();
+  nb.buffer = Music.noise; f.type = 'bandpass'; f.frequency.value = 700; f.Q.value = 0.7;
+  ng.gain.setValueAtTime(vel * 0.5, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+  nb.connect(f); f.connect(ng); out(ng, 1, 0.1); nb.start(t, Math.random()); nb.stop(t + 0.09);
+}
+
+// Наковальня: звонкий удар молота по железу — несколько негармоничных обертонов
+function mAnvil(t, vel = 0.07, hz = 1180) {
+  const ctx = Music.ctx;
+  for (const [mul, v, len] of [[1, 1, 0.5], [2.4, 0.5, 0.3], [4.1, 0.3, 0.2], [6.3, 0.15, 0.12]]) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = hz * mul;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vel * v, t + 0.001); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(g); out(g, 1, 0.3, 0.3); o.start(t); o.stop(t + len + 0.03);
+  }
+  const nb = ctx.createBufferSource(), f = ctx.createBiquadFilter(), ng = ctx.createGain();
+  nb.buffer = Music.noise; f.type = 'highpass'; f.frequency.value = 3500;
+  ng.gain.setValueAtTime(vel * 0.6, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+  nb.connect(f); f.connect(ng); out(ng); nb.start(t, Math.random()); nb.stop(t + 0.04);
+}
+
+// Калимба: мягкий деревянный язычок с коротким звонким обертоном
+function kalimba(midi, t, vel = 0.1) {
+  const ctx = Music.ctx, hz = midiHz(midi);
+  for (const [mul, v, len] of [[1, 1, 1.1], [5.4, 0.25, 0.14], [2, 0.18, 0.5]]) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = hz * mul;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vel * v, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(g); out(g, 1, 0.4, 0.3); o.start(t); o.stop(t + len + 0.03);
+  }
+}
+
+// Капля: короткий всплеск с подъёмом тона и долгим отзвуком
+function droplet(t, vel = 0.05) {
+  const ctx = Music.ctx, o = ctx.createOscillator(), g = ctx.createGain(), f = 1400 + Math.random() * 1600;
+  o.type = 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.9, t + 0.07);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vel, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+  o.connect(g); out(g, 0.7, 0.8, 0.8); o.start(t); o.stop(t + 0.2);
+}
+
+// Плеск волны: шум, который накатывает и откатывает
+function mWave(t, len, vel = 0.03) {
+  const ctx = Music.ctx, nb = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+  nb.buffer = Music.noise; f.type = 'lowpass'; f.Q.value = 0.6;
+  f.frequency.setValueAtTime(300, t); f.frequency.linearRampToValueAtTime(1100, t + len * 0.45); f.frequency.linearRampToValueAtTime(260, t + len);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + len * 0.45); g.gain.linearRampToValueAtTime(0.0001, t + len);
+  nb.connect(f); f.connect(g); out(g, 1, 0.2, 0.5); nb.start(t, Math.random()); nb.stop(t + len + 0.05);
+}
+
 // ---------- Такт ----------
 
 function scheduleBar(tr, song, bar, t) {
@@ -560,6 +677,43 @@ function scheduleBar(tr, song, bar, t) {
     if (bar % 4 !== 2) { let pos = 0; for (const [m, l] of notes.slice(0, 2)) { flute(m, at(pos), l * E * 0.95, 0.11, 'lowflute'); pos += l; } }
     if (bar % 4 === 0 && voiceNow) { const vt = ch.tones.filter(m => m >= 62 && m <= 72); if (vt[0]) voice(vt[(bar / 4) % vt.length], at(1), len * 2, 0.05, 'u'); }
     for (let k = 1; k < 6; k += 2) shaker(at(k), 0.009);
+  } else if (tr.name === 'За дом') {
+    // марш: барабан на раз и четыре, дробь-подхват на слабых, бас шагает, наковальня на «и» каждого второго такта
+    warDrum(t, 0.4, 62); warDrum(at(3), 0.3, 70);
+    for (const k of [1, 2, 4, 5]) bodhran(at(k), 0.07, 130);
+    if (bar % 4 === 3) for (let k = 3; k < 6; k++) warDrum(at(k) + E * 0.5, 0.12, 90);               // подхват-дробь перед сменой
+    bassPluck(ch.root, t, 0.55); bassPluck(ch.root + 7, at(2), 0.36); bassPluck(ch.root, at(3), 0.5); bassPluck(ch.root + 7, at(5), 0.34);
+    if (bar % 2 === 0) mAnvil(at(3), 0.06);
+    mHorn(ch.root + 24, t, len * 2 - E, bar % 4 === 0 ? 0.06 : 0.045);                                // гудящий горн на аккорде
+    let pos = 0;
+    for (const [m, l] of notes) { fiddle(m, at(pos), l * E * 0.92, pos === 0 || pos === 3 ? 0.13 : 0.1, l >= 2 && pos % 3 === 0); if (bar >= 8) flute(m + 12, at(pos), l * E * 0.85, 0.05, 'whistle'); pos += l; }
+    if (bar % 2) for (let k = 0; k < 6; k += 2) dulcimer(up[k % up.length] + 12, at(k), 0.08);        // цимбальная дробь
+    if (voiceNow && bar % 2 === 0) { const vt = ch.tones.filter(m => m >= 45 && m <= 60); if (vt[0]) voice(vt[(bar / 2) % vt.length], t, len * 2 - E, 0.06, 'o'); }   // мужской хор «о-о»
+    for (let k = 0; k < 6; k++) tambourine(at(k), k % 3 === 0 ? 0.04 : 0.02);
+    if (phraseEnd) { mHorn(ch.tones[2] + 12, at(0), len - E, 0.07); glock(ch.tones[ch.tones.length - 1], at(4), 0.06); }
+  } else if (tr.name === 'Рассвет') {
+    // арфа поднимается вверх по аккорду, виолончель дышит, колокольчики — лучи
+    up.slice(0, 6).forEach((m, k) => harp(m + (k > 3 ? 12 : 0), at(k), 0.12 + k * 0.012));
+    if (bar % 2 === 0) cello([ch.root, ch.root + 7], t, len * 2, 0.04);
+    bassPluck(ch.root, t, 0.3);
+    if (bar >= 8) bodhran(t, 0.08, 75);
+    if (bar % 2 === 1) { glock(ch.tones[3], at(1), 0.05); glock(ch.tones[5] || ch.tones[4], at(3), 0.04); }
+    kalimba(up[2] + 12, at(2), 0.06); if (bar % 2) kalimba(up[0] + 24, at(4), 0.045);
+    if (phraseEnd) mHorn(ch.root + 24, t, len - E, 0.05);                                              // тихий горн-зов
+    let pos = 0; for (const [m, l] of notes) { flute(m, at(pos), l * E * 0.95, pos === 0 ? 0.16 : 0.12); pos += l; }
+    if (voiceNow && bar % 2 === 0) { const vt = ch.tones.filter(m => m >= 67 && m <= 79); if (vt[0]) voice(vt[(bar / 2) % vt.length], t, len * 2 - E, 0.05, 'a'); }
+  } else if (tr.name === 'У воды') {
+    // ручейковый перебор арфы в обе стороны, калимба поёт мотив, капли и волна, свирель изредка
+    const arp = [0, 1, 2, 3, 2, 1].map(i => up[i % up.length] + 12);
+    arp.forEach((m, k) => harp(m, at(k), k % 3 === 0 ? 0.17 : 0.1));
+    bassPluck(ch.root, t, 0.35);
+    if (bar % 2 === 0) mWave(t, len * 2, 0.026);
+    let pos = 0; for (const [m, l] of notes) { kalimba(m, at(pos), pos === 0 ? 0.12 : 0.09); pos += l; }
+    if (Math.random() < 0.7) droplet(at(1 + (bar * 2) % 4), 0.04);
+    if (bar % 4 === 2) droplet(at(5), 0.03);
+    if (bar % 4 === 0 && bar >= 4) { const m = notes[0][0]; flute(m + 12, t, len - E, 0.07, 'whistle'); }
+    if (phraseEnd) { glock(ch.tones[ch.tones.length - 1], at(2), 0.05); glock(ch.tones[ch.tones.length - 2], at(3), 0.04); }
+    for (let k = 1; k < 6; k += 2) shaker(at(k), 0.006);
   } else {
     // «Ярмарка»: бас на раз и четыре, цимбалы на слабых, бойран джигой, шейкер на каждую восьмую
     bassPluck(ch.root, t, 0.5); bassPluck(ch.root + 7, at(3), 0.38);
@@ -583,6 +737,7 @@ function musicTick() {
   const ctx = Music.ctx;
   // таймер отстал (вкладка была в фоне): не догоняем пропущенное, а начинаем с текущего момента
   if (Music.nextTime < ctx.currentTime - 0.3) Music.nextTime = ctx.currentTime + 0.15;
+  if (ctx.currentTime - Music.moodT >= 1) { Music.moodT = ctx.currentTime; try { musicMoodTick(); } catch (e) { /* игра ещё не готова */ } }
   let guard = 0;
   while (Music.nextTime < ctx.currentTime + 0.5 && guard++ < 6) {
     const tr = TRACKS[Music.track];
@@ -612,11 +767,52 @@ function musicLevel(level, t) {
 
 // Тревожный ночной трек стоит в списке последним; днём он не выбирается
 const ALARM_TRACK = TRACKS.findIndex(t => t.name === 'Тревога');
+const MOOD_TRACK = { night: ALARM_TRACK };
+TRACKS.forEach((t, i) => { if (t.special) MOOD_TRACK[t.special] = i; });
+const MOOD_SET = new Set(Object.values(MOOD_TRACK));           // эти треки сами не выбираются в обычной смене
 function nextTrackIndex() {
+  const mt = MOOD_TRACK[Music.mood];
+  if (mt !== undefined) return mt;
   if (typeof isNightNow === 'function' && isNightNow()) return ALARM_TRACK;
   let n = (Music.track + 1) % TRACKS.length;
-  if (n === ALARM_TRACK) n = (n + 1) % TRACKS.length;
+  while (MOOD_SET.has(n)) n = (n + 1) % TRACKS.length;
   return n;
+}
+
+// ---------- Настроение музыки ----------
+// Раз в секунду смотрим, что происходит: схватка → «За дом»; ночь → «Тревога»; первый свет → «Рассвет»;
+// камера у воды → «У воды»; иначе обычная смена. Бой вступает быстро, остальное — плавно.
+function nearWaterView() {
+  if (typeof R === 'undefined' || !R.canvas || typeof World === 'undefined' || !World.terrain) return false;
+  const s = camScale(), cx = Math.floor((R.cam.x + R.canvas.clientWidth / s / 2) / TILE), cy = Math.floor((R.cam.y + R.canvas.clientHeight / s / 2) / TILE);
+  let n = 0;
+  for (let dy = -7; dy <= 7; dy += 2) for (let dx = -7; dx <= 7; dx += 2) { const x = cx + dx, y = cy + dy; if (inb(x, y) && World.terrain[idx(x, y)] === T_WATER) n++; }
+  return n >= 7;                                                  // из 64 проб — не меньше 7 на воде
+}
+function computeMood() {
+  if (typeof Game === 'undefined' || !Game.units) return 'day';
+  const now = performance.now() / 1000;                           // реальные секунды: не зависят от скорости игры
+  let fight = false;
+  for (const u of Game.units) if (!u.dead && (u.fighting || (u.brk && u.brk.kind === 'fight'))) { fight = true; break; }
+  if (!fight && Game.ents) for (const e of Game.ents) if (e.state === 'fight' || e.state === 'smash') { fight = true; break; }
+  if (fight) Music.fightT = now;
+  if (now - Music.fightT < 10) return 'battle';
+  if (typeof isNightNow === 'function' && isNightNow()) return 'night';
+  if (now < Music.dawnUntil) return 'dawn';
+  // у воды: сперва 6 секунд подряд, уходит через 15; после ухода — пауза в минуту, чтобы не надоедало
+  if (typeof nearWaterView === 'function' && nearWaterView()) Music.waterT = now; else Music.waterIn = 0;
+  if (Music.mood === 'water') { if (now - Music.waterT < 15) return 'water'; Music.waterCool = now + 60; }
+  else if (now - Music.waterT < 1) { Music.waterIn += 1; if (Music.waterIn >= 6 && now > Music.waterCool) return 'water'; }
+  return 'day';
+}
+function musicMoodTick() {
+  const m = computeMood();
+  if (m === Music.mood) return;
+  const prev = Music.mood;
+  Music.mood = m;
+  const cur = Music.track;
+  if (m === 'day') { if (cur !== MOOD_TRACK.dawn && cur !== MOOD_TRACK.water) gotoTrack(nextTrackIndex(), false); return; }   // рассвет и воду дослушиваем
+  if (cur !== MOOD_TRACK[m]) gotoTrack(MOOD_TRACK[m], false, m === 'battle' || prev === 'battle');
 }
 
 function makeSong(tr, seed) {
@@ -657,14 +853,14 @@ function startMusic() {
 }
 
 // Переключить трек: короткое затухание того, что уже запланировано, и сразу новая песня
-function gotoTrack(i, announce) {
+function gotoTrack(i, announce, fast) {
   startMusic();
   if (!Music.ctx) return;
   if (announce && !Music.on) { setMusic(true); syncMusicBtn(); }
   const ctx = Music.ctx, t = ctx.currentTime, g = Music.bus.gain;
   g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
-  g.linearRampToValueAtTime(0.0001, t + (announce ? 0.3 : 1.6));
-  const t0 = t + (announce ? 0.55 : 1.8);
+  g.linearRampToValueAtTime(0.0001, t + (announce || fast ? 0.3 : 1.6));
+  const t0 = t + (announce || fast ? 0.55 : 1.8);
   Music.track = i;
   Music.bar = 0;
   const tr = TRACKS[Music.track];
@@ -677,9 +873,10 @@ function nextTrack() { gotoTrack(nextTrackIndex(), true); }
 
 // ночью сам включается «Тревога», на рассвете — обычная музыка
 function musicDayNight(night) {
+  if (Music.prevNight === true && !night && typeof Game !== 'undefined') Music.dawnUntil = performance.now() / 1000 + 55;     // ночь кончилась — звучит «Рассвет»
+  Music.prevNight = night;
   if (!Music.started || !Music.ctx) return;
-  if (night && Music.track !== ALARM_TRACK) gotoTrack(ALARM_TRACK, false);
-  else if (!night && Music.track === ALARM_TRACK) gotoTrack(nextTrackIndex(), false);
+  musicMoodTick();
 }
 
 let syncMusicBtn = () => {};
