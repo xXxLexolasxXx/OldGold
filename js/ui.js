@@ -376,14 +376,7 @@ function initUI() {
     if (m === 'load') { if (loadGame('manual')) { toast('Игра загружена'); updateUI(true); } else toast('Сохранения нет'); }
     if (m === 'loadauto') { if (loadGame('auto')) { toast('Загружено автосохранение'); updateUI(true); } else toast('Автосохранения пока нет'); }
     if (m === 'new' && confirm('Начать на новой карте? Несохранённый прогресс пропадёт.')) newGame();
-    if (m === 'stress' && confirm('Открыть тестовую карту с большим городом? Несохранённый прогресс пропадёт.')) stressMap();
-    if (m === 'hour' && confirm('Начать с деревни, которая уже прожила час? Несохранённый прогресс пропадёт.')) villageAfterHour();
     if (m === 'help') document.getElementById('help').classList.toggle('hidden');
-    if (m === 'entdemo' && confirm('Открыть демо с ходячими деревьями? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemo('drag'); }
-    if (m === 'entrock' && confirm('Открыть демо с ходячими камнями? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemo('rock'); }
-    if (m === 'entwater' && confirm('Открыть демо с водяными? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemo('water'); }
-    if (m === 'entgroup' && confirm('Открыть демо с групповой дракой? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemoGroup(); }
-    if (m === 'entwin' && confirm('Открыть демо с боем гномов и деревьев? Несохранённый прогресс пропадёт.')) { if (Mobile.on) mobileSheet(null); entDemo('win'); }
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     updateUI(true);
   });

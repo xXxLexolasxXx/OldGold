@@ -95,8 +95,8 @@ function addStartBuilding(lay, type) {
     lay.placed.push(b);
     return b;
   }
-  // нет места к северу — для трактира пробуем к югу от улицы, входом вбок (на восток)
-  if (type === 'inn') {
+  // нет места к северу — для трактира и костра пробуем к югу от улицы, входом вбок (на восток)
+  if (type === 'inn' || type === 'bonfire') {
     const d1 = bDims(type, 1);
     for (let gap = 2; gap <= 7; gap++) for (let x = lay.x0 - 16; x <= lay.x1 + 16; x++) {
       const y = sy + gap;

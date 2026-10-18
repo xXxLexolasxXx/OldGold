@@ -28,6 +28,35 @@ function resetGameState() {
   Game.unlocked = allUnlocked();   // по умолчанию меню открыто целиком; новая игра закрывает его сама
 }
 
+// Ночные существа: хранятся только «где жили»; при загрузке встают заново (спящими / поднимающимися),
+// а номер ночи сохраняется, чтобы вечер не вызвал нечисть повторно
+function serializeNight() {
+  const ents = (Game.ents || []).filter(e => e.state !== 'done' && e.state !== 'gone' && !e.dead && !e.burnT)
+    .map(e => [e.water ? 'w' : e.rock ? 'r' : 't', e.i, e.hx, e.hy, e.wx ?? 0, e.wy ?? 0]);
+  const ghosts = (Game.ghosts || []).filter(g => g.mode !== 'leave').map(g => [+g.x.toFixed(1), +g.y.toFixed(1)]);
+  const skels = (Game.skels || []).filter(k => k.state !== 'dead' && k.state !== 'sink').map(k => [+k.hx.toFixed(1), +k.hy.toFixed(1)]);
+  return { ni: Game.entNight, wn: !!Game.wasNight, ents, ghosts, skels };
+}
+
+function applyNight(n) {
+  if (!n) return;
+  Game.entNight = n.ni ?? null; Game.wasNight = !!n.wn;
+  for (const [k, i, hx, hy, wx, wy] of n.ents || []) {
+    if (k === 'w') {
+      Game.ents.push(newEnt({ water: true, o: {}, i, wx, wy, hx, hy, x: wx + 0.5, y: wy + 0.5 }));
+      continue;
+    }
+    const o = World.obj[i];
+    if (!o || o.t !== (k === 'r' ? 'stone' : 'tree') || o.awake) continue;
+    o.awake = true; o.res = true;
+    Game.ents.push(newEnt(k === 'r' ? { rock: true, i, o, hx, hy, x: hx + 0.5, y: hy + 0.5 } : { i, o, hx, hy, x: hx + 0.5, y: hy + 0.5 }));
+  }
+  Game.nightEntTotal = Game.ents.length;
+  Game.ghosts = (n.ghosts || []).map(([x, y]) => ({ x, y, hx: x, hy: y, alpha: 0, ph: Math.random() * 9, face: 1,
+    mode: 'drift', modeT: 0, tx: x, ty: y, retarget: 0, scan: Math.random() }));
+  for (const [x, y] of n.skels || []) skelRise(x, y, Math.random() * 2);
+}
+
 function serializeGame() {
   const obj = [];
   for (let i = 0; i < N_TILES; i++) {
@@ -47,6 +76,8 @@ function serializeGame() {
       used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
       level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
     })),
+    pets: Game.animals.filter(a => a.owner && !a.dead).map(a => [a.kind, +a.x.toFixed(2), +a.y.toFixed(2), Game.units.findIndex(u => u.id === a.owner)]).filter(p => p[3] >= 0),
+    night: serializeNight(),
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
     units: Game.units.map(u => ({
       type: u.type, x: u.x, y: u.y, food: u.food, look: u.look, home: u.home ? u.home.id : 0,
@@ -138,6 +169,16 @@ function applySave(s) {
   if (s.cam) { R.cam.x = s.cam.x; R.cam.y = s.cam.y; R.cam.z = ZOOMS.includes(s.cam.z) ? s.cam.z : 2; }
   buildTerrain(s.seed);
   spawnAnimals();
+  for (const [kind, x, y, ui] of s.pets || []) {
+    const u = Game.units[ui];
+    if (!u || !ANIMALS[kind]) continue;
+    const a = makeAnimal(kind, Math.floor(x), Math.floor(y));
+    a.x = x; a.y = y;
+    if (kind === 'duck' && isWaterAt(Math.floor(x), Math.floor(y))) a.swim = true;
+    a.owner = u.id; a.tamedBy = u.id; a.state = 'follow'; a.errCD = Game.time + 25 + Math.random() * 30; a.loot = petLoot(a);
+    Game.animals.push(a);
+  }
+  applyNight(s.night);
   updateMinimapBase();
 }
 
