@@ -56,6 +56,7 @@ function naPose(n) {
 }
 
 const NA_SPEC = {
+  pixie:   { name: 'Цветочная фея', w: 84, h: 72, ax: 54, ay: 54, sc: 1.55, pal: { dr: '#8a6ad8', dr2: '#5a3aa0', hr: '#f2f4ff', hr2: '#a8acd8', tip: '#ffb0e0', crown: true } },
   fairy:   { name: 'Лесная фея',    w: 84, h: 72, ax: 54, ay: 54, sc: 1.55 },
   leshy:   { name: 'Леший',         w: 108, h: 72, ax: 68, ay: 66 },
   boar:    { name: 'Кабан-страж',   w: 84, h: 60, ax: 42, ay: 50, sc: 1.25 },
@@ -73,6 +74,7 @@ function naFrame(kind, fr) {
   const [cv, c] = mkSprite(S.w, S.h, 3);
   c.lineCap = 'round'; c.lineJoin = 'round';
   const P = naPose(fr);
+  P.pal = S.pal || null;
   c.save();
   c.translate(S.ax, S.ay);
   if (S.sc) c.scale(S.sc, S.sc);
@@ -126,7 +128,7 @@ function drawFairy(c, P) {
   c.save();
   c.translate(P.x, P.y - lift);
   c.rotate(P.rot);
-  const SK = '#f8dcc0', DR = naK(P, '#4cae3c'), DR2 = naK(P, '#2e7a2c'), HR = naK(P, '#f6d458'), HR2 = naK(P, '#c8921e'), WG = P.dead ? 'rgba(236,250,236,0.55)' : 'rgba(240,252,236,0.72)';
+  const SK = '#f8dcc0', PL = P.pal || {}, DR = naK(P, PL.dr || '#4cae3c'), DR2 = naK(P, PL.dr2 || '#2e7a2c'), HR = naK(P, PL.hr || '#f6d458'), HR2 = naK(P, PL.hr2 || '#c8921e'), WG = P.dead ? 'rgba(236,250,236,0.55)' : 'rgba(240,252,236,0.72)';
   const fl = P.wing;
   // дальнее крыло
   const wt = -6 + (P.dead ? 6 : 0) - fl * 5;
@@ -152,7 +154,7 @@ function drawFairy(c, P) {
   c.save(); c.globalCompositeOperation = 'lighter';
   ellipse(c, tipx, tipy, 2.2 + (P.a > 0.5 ? 1.5 : 0), 2.2 + (P.a > 0.5 ? 1.5 : 0), 'rgba(255,240,140,0.55)');
   c.restore();
-  ellipse(c, tipx, tipy, 1.1, 1.1, '#fff6b0');
+  ellipse(c, tipx, tipy, 1.1, 1.1, PL.tip || '#fff6b0');
   if (P.a > 0.5 || P.up > 0.5) for (const [dx, dy] of [[3, -2], [2, 2.4], [4.4, 0.4], [-1, -3]]) { c.fillStyle = '#fff6b0'; c.fillRect(tipx + dx - 0.4, tipy + dy - 0.4, 0.8, 0.8); }
   // голова
   const hy0 = -15.2 + (P.hurt > 0.5 ? 0.6 : 0);
@@ -161,6 +163,7 @@ function drawFairy(c, P) {
   poly(c, [[-2.4, hy0 - 2.2], [0.5, hy0 - 4.2], [3.6, hy0 - 1.6], [2.6, hy0 - 2.4], [0.2, hy0 - 3.2]], HR);                        // чёлка
   ellipse(c, -2.3, hy0 - 3.8, 1.6, 1.4, HR);                                                                                      // пучок
   poly(c, [[3.2, hy0 - 0.8], [6, hy0 - 2.2], [3.6, hy0 + 0.2]], SK);                                                              // острое ушко
+  if (PL.crown) for (const [fx, fy, fc] of [[-1.6, -4.4, '#ff8ac8'], [1.2, -5, '#ffe070'], [3.4, -3.4, '#ff8ac8']]) ellipse(c, fx, hy0 + fy + 0.6, 0.95, 0.95, fc);
   naEye(c, 1.9, hy0 - 0.1, P, '#1a3a4a', 0.75);
   if (P.mouth > 0.4) ellipse(c, 2.2, hy0 + 1.7, 0.8, 0.9 * P.mouth, '#8a2a3a');
   else { c.fillStyle = '#c85a6a'; c.fillRect(1.6, hy0 + 1.5, 1, 0.5); }
@@ -318,10 +321,11 @@ function drawSpore(c, P) {
   c.restore();
 }
 
-const NA_DRAW = { fairy: drawFairy, leshy: drawLeshy, boar: drawBoar, spore: drawSpore };
+const NA_DRAW = { pixie: drawFairy, fairy: drawFairy, leshy: drawLeshy, boar: drawBoar, spore: drawSpore };
 
 // ---------- Логова ----------
 const NA_LAIR = {
+  pixie: { w: 56, h: 44, ax: 28, ay: 30 },
   fairy: { w: 56, h: 40, ax: 28, ay: 22 },
   leshy: { w: 60, h: 60, ax: 30, ay: 46 },
   boar:  { w: 56, h: 36, ax: 28, ay: 22 },
@@ -340,7 +344,18 @@ function naLairSprite(kind) {
     poly(c, [[x - 3.2 * s, y - 2.6 * s], [x - 2.2 * s, y - 5 * s], [x, y - 6 * s], [x + 2.2 * s, y - 5 * s], [x + 3.2 * s, y - 2.6 * s]], col);
     c.fillStyle = col2; c.fillRect(x - 1.4 * s, y - 4.6 * s, 0.9 * s, 0.9 * s); c.fillRect(x + 0.8 * s, y - 3.8 * s, 0.9 * s, 0.9 * s);
   };
-  if (kind === 'fairy') {            // грибное кольцо с цветами
+  if (kind === 'pixie') {           // домик-гриб с цветами и тёплым окошком
+    c.fillStyle = 'rgba(10,8,4,0.28)'; c.beginPath(); c.ellipse(0, 1, 15, 4.4, 0, 0, 7); c.fill();
+    poly(c, [[-6, 0], [-5.4, -13], [5.4, -13], [6, 0]], '#efe4cc');
+    poly(c, [[-6, 0], [-3, 0], [-2.4, -13], [-5.4, -13]], '#cdbfa2');
+    poly(c, [[-2.4, 0], [-2.4, -8], [0, -10], [2.4, -8], [2.4, 0]], '#7a4a2a');
+    ellipse(c, 1.4, -4, 0.55, 0.55, '#f0d060');
+    ellipse(c, 4.6, -9.4, 1.5, 1.7, '#ffe890');
+    poly(c, [[-15, -12], [-12, -20], [-5, -25], [0, -26], [5, -25], [12, -20], [15, -12], [9, -13.4], [0, -14.4], [-9, -13.4]], '#d84a78');
+    poly(c, [[-15, -12], [-12, -20], [-5, -25], [-4, -14.4], [-9, -13.4]], '#a02a58');
+    for (const [x, y, r] of [[-7, -19, 1.8], [2, -22, 1.6], [8, -17, 1.5], [-2, -16.6, 1.2]]) ellipse(c, x, y, r, r * 0.8, '#fff0f6');
+    for (const [x, y, col] of [[-12, 0, '#ff8ac8'], [-9, 1.4, '#ffe070'], [10, 1, '#c8a0ff'], [13, -0.4, '#ff8ac8'], [-15, 1, '#a8e0ff']]) { naLimb(c, x, y, x, y - 3, 0.7, '#3e8a30'); ellipse(c, x, y - 3.6, 1.4, 1.4, col); ellipse(c, x, y - 3.6, 0.5, 0.5, '#fff6b0'); }
+  } else if (kind === 'fairy') {            // грибное кольцо с цветами
     c.fillStyle = 'rgba(120,200,160,0.22)'; c.beginPath(); c.ellipse(0, 0, 22, 9, 0, 0, 7); c.fill();
     c.strokeStyle = 'rgba(190,255,220,0.55)'; c.lineWidth = 0.6; c.beginPath(); c.ellipse(0, 0, 19, 7.4, 0, 0, 7); c.stroke();
     const n = 12;

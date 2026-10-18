@@ -14,6 +14,8 @@ const NEU_FORGET = 28;      // через сколько секунд без д�
 
 // dmg — удар, cd — пауза между ударами, rng — дальность, spd — клеток/с, parry — шанс отвести удар
 const NSPEC = {
+  pixie: { name: 'Цветочная фея', mhp: 18, dmg: [1, 3],  cd: 1.4, rng: 2.4, spd: 2.8, parry: 0.3, xp: 18, fly: true, roam: 3.5, sz: 5, friendly: true,
+    drop: [['mana', 1, 0.5], ['gold', 1, 0.4], ['magicstone', 1, 0.4]], msg: ['Ай! За что?!', 'Мы же добрые!', 'Рощу не троньте!'] },
   fairy: { name: 'Лесная фея',    mhp: 22, dmg: [2, 4],  cd: 1.3, rng: 2.4, spd: 2.7, parry: 0.22, xp: 22, fly: true, roam: 4.5, sz: 6,
     drop: [['magicstone', 1, 0.55], ['mana', 1, 0.4], ['gold', 1, 0.3]], msg: ['Не трожь наш лес!', 'Пыльца — не бесплатная!', 'Ай! Сестрички!'] },
   leshy: { name: 'Леший',         mhp: 82, dmg: [8, 12], cd: 1.9, rng: 1.7, spd: 1.5, parry: 0.1, xp: 90, roam: 2.5, sz: 12,
@@ -25,12 +27,13 @@ const NSPEC = {
 };
 // из чего состоит логово
 const NLAIR = {
+  pixie: ['pixie', 'pixie'],
   fairy: ['fairy', 'fairy', 'fairy'],
   leshy: ['leshy'],
   boar:  ['boar', 'boar'],
   spore: ['spore', 'spore', 'spore'],
 };
-const NEU_LAIR_NAME = { fairy: 'Поляна лесных фей', leshy: 'Дупло лешего', boar: 'Лёжка кабанов', spore: 'Пятно чумных грибов' };
+const NEU_LAIR_NAME = { pixie: 'Домик цветочных фей', fairy: 'Поляна лесных фей', leshy: 'Дупло лешего', boar: 'Лёжка кабанов', spore: 'Пятно чумных грибов' };
 
 Game.neutrals = [];
 Game.lairs = [];
@@ -68,10 +71,10 @@ function neuSpawnAll(seed) {
   Game.nstat = { kills: {}, lost: 0, lairs: 0, xp: 0 };
   const rng = mulberry32(((seed | 0) ^ 0xFA17E) >>> 0);
   const cx = MAP_W >> 1, cy = MAP_H >> 1;
-  const want = Math.round(6 * (N_TILES / 6912) * 1.1);
+  const want = Math.round(7 * (N_TILES / 6912) * 1.1);
   const minStart = mapIsLegacy() ? 20 : 24;
   const stamp = floodFrom(cx, cy);
-  const kinds = ['fairy', 'boar', 'leshy', 'spore'];
+  const kinds = ['fairy', 'pixie', 'boar', 'leshy', 'spore'];
   let tries = 0;
   while (Game.lairs.length < want && tries++ < 4000) {
     const x = 4 + (rng() * (MAP_W - 8) | 0), y = 4 + (rng() * (MAP_H - 8) | 0);
@@ -92,7 +95,7 @@ function neuSpawnAll(seed) {
     // по кругу, чтобы встретились все виды; чем дальше от деревни, тем опаснее
     const k = kinds[(Game.lairs.length + (rng() * 2 | 0)) % kinds.length];
     const far = Math.min(1, Math.max(0, (ds - minStart) / 40));
-    const lair = { id: Game.nextId++, k, x, y, lv: Math.round((1 + far * 0.45) * 100) / 100, respawn: 0, alive: 0 };
+    const lair = { id: Game.nextId++, k, x, y, lv: k === 'pixie' ? 1 : Math.round((1 + far * 0.45) * 100) / 100, respawn: 0, alive: 0, fr: 0 };
     // полянка: вырубаем деревья в радиусе 2,3, чтобы было где жить и драться
     // (к югу шире: кроны южных деревьев иначе закрывают логово)
     for (let yy = y - 3; yy <= y + 5; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
@@ -127,7 +130,9 @@ function neuHurtUnit(u, n) {
       u.proc = (function* () { yield { wait: 4, anim: 'knocked' }; })();
       floater(u.x, u.y - 2, 'Вышел из боя', '#ffd0a0');
     }
+    return;
   }
+  if (Math.random() < 0.35) injure(u, Math.random() < 0.5 ? 'arm' : 'leg');   // обычный житель просто хромает
 }
 const neuUnitHp = u => (u.hero ? u.hero.hp : u.rec ? (u.rec.hp == null ? 1 : u.rec.hp) : 1);
 const neuUnitOut = u => !u || u.dead || u.inside || (u.hero && u.hero.hp <= 0) || (u.rec && u.rec.hp != null && u.rec.hp <= 0 && u.downUntil > Game.time);
@@ -145,6 +150,7 @@ const neuHitChance = (u, N) => Math.min(0.97, 0.5 + 0.5 * unitAtk(u)) * (N.k ===
 
 function neuProvoke(N, u) {
   const now = Game.time;
+  if (NSPEC[N.k].friendly) { const L = Game.lairs.find(l => l.id === N.lair); if (L) { L.fr = 0; L.friend = false; } }
   const first = !(now - N.prov < NEU_FORGET);
   N.prov = now;
   if (u && !neuUnit(N.tg)) N.tg = u.id;
@@ -371,6 +377,7 @@ function neuTick(dt) {
   if (Game.nT < 1) return;
   Game.nT = 0;
   for (const u of Game.units) if (u.rec && u.rec.hp != null) { const max = 30 + 8 * u.rec.lvl; if (u.rec.hp < max) u.rec.hp = Math.min(max, u.rec.hp + 1.1); else u.rec.hp = undefined; }
+  for (const L of Game.lairs) if (L.k === 'pixie') neuWatchGrove(L);
   for (const L of Game.lairs) {
     if (L.respawn && Game.time >= L.respawn && !Game.units.some(u => !u.dead && Math.hypot(u.x - L.x, u.y - L.y) < 9)) {
       neuFillLair(L);
@@ -414,6 +421,8 @@ function neuTick(dt) {
     if (cls === 'rogue' && Math.random() < 0.25) { dmg *= 2; floater(N.x, N.y - 2, 'Крит!', '#e0b0ff'); }
     neuHit(N, u, dmg);
   };
+  const _run = runCmd;
+  runCmd = function* (u, c) { if (c.kind === 'gift') yield* neuGiftGen(u, c); else yield* _run(u, c); };
   const _fight = fightGen;
   fightGen = function* (u, f) {
     if (!NF(f)) { yield* _fight(u, f); return; }
@@ -451,6 +460,9 @@ function neuTick(dt) {
   resolveCmd = function (t) {
     if (inb(t[0], t[1])) {
       const f = foesNear(t[0] + 0.5, t[1] + 0.5, 1.4).find(x => x.kind === 'neu');
+      // дружелюбных фей по клику одаривают; напасть на них — с зажатым Shift
+      if (f && NSPEC[f.o.k].friendly && !(Game.time - f.o.prov < NEU_FORGET) && !(typeof event !== 'undefined' && event && event.shiftKey))
+        return { kind: 'gift', f, tx: Math.floor(f.o.x), ty: Math.floor(f.o.y), label: 'Одарить: ' + NSPEC[f.o.k].name + ' (Shift — напасть)' };
       if (f) return { kind: 'attack', f, tx: Math.floor(f.o.x), ty: Math.floor(f.o.y), label: 'Напасть на: ' + NSPEC[f.o.k].name };
     }
     return _rc(t);
@@ -470,7 +482,7 @@ function neuTick(dt) {
     const s = _ser();
     s.nt = {
       st: Game.nstat,
-      lairs: Game.lairs.map(l => ({ id: l.id, k: l.k, x: l.x, y: l.y, lv: l.lv, rs: l.respawn ? Math.round(l.respawn - Game.time) : 0 })),
+      lairs: Game.lairs.map(l => ({ id: l.id, k: l.k, x: l.x, y: l.y, lv: l.lv, fr: l.fr || 0, fd: l.friend ? 1 : 0, rs: l.respawn ? Math.round(l.respawn - Game.time) : 0 })),
       mem: Game.neutrals.filter(N => N.st !== 'die').map(N => ({ id: N.id, k: N.k, lair: N.lair, x: +N.x.toFixed(2), y: +N.y.toFixed(2), hp: Math.round(N.hp), lv: N.lv })),
     };
     return s;
@@ -481,7 +493,7 @@ function neuTick(dt) {
     Game.neutrals = []; Game.lairs = [];
     if (!s.nt) { if (!Game.stress && !isMirror()) neuSpawnAll(s.seed); return; }
     Game.nstat = Object.assign({ kills: {}, lost: 0, lairs: 0, xp: 0 }, s.nt.st);
-    for (const l of s.nt.lairs) Game.lairs.push({ id: l.id, k: l.k, x: l.x, y: l.y, lv: l.lv || 1, respawn: l.rs ? Game.time + l.rs : 0, alive: 0 });
+    for (const l of s.nt.lairs) Game.lairs.push({ id: l.id, k: l.k, x: l.x, y: l.y, lv: l.lv || 1, respawn: l.rs ? Game.time + l.rs : 0, alive: 0, fr: l.fr || 0, friend: !!l.fd });
     for (const m of s.nt.mem) {
       const lair = Game.lairs.find(l => l.id === m.lair);
       if (!lair) continue;
@@ -596,8 +608,97 @@ function neuAchInit() {
     { id: 'nlair',   name: 'Выселен за неуплату', desc: 'Зачищено лесное логово. Жильцы вернутся… минут через восемь, как обычно.', ev: /зачищено —/ },
     { id: 'nwar',    name: 'Кто разбудил лес?', desc: 'Лесной житель позвал своих на помощь. Драка вышла командная, повестки разослали всем.', ev: /поднял тревогу/ },
     { id: 'nlose',   name: 'Фея — не подарок', desc: 'Герой проиграл бой лесному жителю. Утешает одно: хроника об этом, к сожалению, всё помнит.', ev: /проиграл бой: /, secret: true },
+    { id: 'npix',     name: 'Друг лесных малышей', desc: 'Герой подружился с цветочными феями. Хлеб отдал, зато репутация осталась.', ev: /подружился с цветочными феями/ },
+    { id: 'npixmap',  name: 'Карта сокровищ от доброй феи', desc: 'Феи показали клад. Объяснять, где именно, они, как всегда, не стали — просто махнули крылышком.', ev: /показали клад/ },
+    { id: 'npixmad',  name: 'Не рубите рощу, звери', desc: 'Цветочные феи вышли из себя из-за вырубки. Милые существа, но память у них — как у налоговой.', ev: /феи в ярости/ },
     { id: 'nkill25', name: 'Лесной санитар', desc: 'Двадцать пять побед над лесными жителями. Экологи в ужасе, лесорубы в восторге.', st: 'nkill', need: 25 },
   ];
   for (const a of add) { ACHS.push(a); ACH_BY[a.id] = a; }
 }
 if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', neuAchInit);
+
+// ---------- Цветочные феи: дружба, дары, обида ----------
+
+// чем можно задобрить: вес дружбы (50 — «друг»)
+const NEU_GIFT = { bread: 15, sausage: 15, chickenleg: 15, steak: 18, croissant: 18, hops: 10, magicstone: 35, goldore: 35, ironore: 25, gold: 40, mana: 30 };
+
+function neuGiftGen(u, c) {
+  return (function* () {
+    const N = c.f.o, L = Game.lairs.find(l => l.id === N.lair);
+    if (!neuAlive(N) || !L) return;
+    if (!u.hero) { floater(N.x, N.y - 1.8, 'Мы только с героями дружим', '#ffe9a0'); return; }
+    const H = u.hero;
+    for (let k = 0; k < 8 && Math.hypot(N.x - u.x, N.y - u.y) > 1.6; k++) {
+      const ok = yield { walk: [Math.floor(N.x), Math.floor(N.y)], offroad: true };
+      if (!ok || !neuAlive(N)) return;
+    }
+    u.face = N.x > u.x ? 1 : -1; u.vdir = 'E';
+    const slot = H.inv ? H.inv.findIndex(s => s && NEU_GIFT[s.k]) : -1;
+    if (slot < 0) {
+      floater(N.x, N.y - 1.9, 'С пустыми руками?', '#ffe9a0');
+      toast('Цветочным феям нравятся еда, золото, руда и магические камни: положите дар в рюкзак (хлеб из трактира, руда со склада). Shift + клик — напасть');
+      return;
+    }
+    yield { wait: 0.8, anim: 'build' };
+    if (!neuAlive(N) || !H.inv[slot]) return;
+    const s = H.inv[slot], k = s.k;
+    s.n--; if (s.n <= 0) H.inv[slot] = null;
+    L.fr = Math.min(100, (L.fr || 0) + NEU_GIFT[k]);
+    N.ov = ['roar']; N.ovT = 0; N.ovP = 0.6; N.winT = 2;
+    fxBurst(N.x * TILE, N.y * TILE - 14, 14, ['#ffb0e0', '#fff6b0', '#c8a0ff'], 60, 60, 0.9, 1.6, -30);
+    sfxAt('chime', N.x * TILE, N.y * TILE, 0.7);
+    if (L.fr < 50) { floater(N.x, N.y - 2, `Спасибо! (дружба ${L.fr}/50)`, '#ffb0e0'); return; }
+    if (!L.friend) { L.friend = true; logEvent('animal', `${H.name} подружился с цветочными феями`, N.x, N.y); }
+    neuPixieReward(u, L);
+  })();
+}
+
+function neuPixieReward(u, L) {
+  const H = u.hero, kind = (L.rw = (L.rw || 0) + 1) % 3;
+  const mate = Game.units.filter(x => x.teamOf === u.id);
+  if (kind === 1) {                     // исцеление
+    H.hp = H.maxhp; u.injury = null; for (const m of mate) m.injury = null;
+    floater(u.x, u.y - 2.1, 'Феи исцелили!', '#9af0a0');
+    logEvent('animal', `Цветочные феи исцелили героя ${H.name}`, u.x, u.y);
+  } else if (kind === 2) {              // благословение: бодрее
+    for (const x of [u, ...mate]) x.boostUntil = Game.time + 90;
+    u.dashUntil = Game.time + 40;
+    floater(u.x, u.y - 2.1, 'Благословение лесных фей!', '#ffe070');
+    logEvent('animal', `Цветочные феи благословили героя ${H.name}: бодрее на полторы минуты`, u.x, u.y);
+  } else {                              // клад
+    const a = Math.random() * 6.283, r = 7 + Math.random() * 5;
+    const sp = randomFreeNear(Math.floor(L.x + Math.cos(a) * r), Math.floor(L.y + Math.sin(a) * r), 0, 3, (x, y) => isWalkable(x, y));
+    if (sp) {
+      dropPile(sp[0], sp[1], 'gold', 3 + (Math.random() * 3 | 0)); dropPile(sp[0], sp[1], 'magicstone', 1);
+      fxBurst((sp[0] + 0.5) * TILE, (sp[1] + 0.5) * TILE - 10, 24, ['#ffe070', '#fff6b0'], 70, 90, 1.6, 2, -20);
+      floater(sp[0] + 0.5, sp[1] - 0.5, 'Клад!', '#ffe070');
+      logEvent('animal', `Цветочные феи показали клад — ${H.name} спешит за золотом`, sp[0] + 0.5, sp[1] + 0.5);
+    } else { H.hp = H.maxhp; floater(u.x, u.y - 2.1, 'Феи исцелили!', '#9af0a0'); }
+  }
+  if (typeof updateUI === 'function') updateUI(true);
+}
+
+// рубку рощи феи не прощают: деревьев рядом с домиком стало меньше — нападают на ближайшего жителя
+function neuWatchGrove(L) {
+  let n = 0;
+  for (let y = L.y - 5; y <= L.y + 5; y++) for (let x = L.x - 5; x <= L.x + 5; x++) {
+    if (!inb(x, y)) continue;
+    const o = World.obj[idx(x, y)];
+    if (o && o.t === 'tree') n++;
+  }
+  if (L.trees === undefined || n > L.trees) { L.trees = n; return; }
+  if (n === L.trees) return;
+  L.trees = n;
+  const mem = Game.neutrals.filter(N => N.lair === L.id && neuAlive(N));
+  if (!mem.length || Game.time - (L.angry || -999) < 120) return;
+  let best = null, bd = 16;
+  for (const u of Game.units) {
+    if (u.dead || u.inside || !isPerson(u)) continue;
+    const d = Math.hypot(u.x - L.x, u.y - L.y);
+    if (d < bd) { bd = d; best = u; }
+  }
+  if (!best) return;
+  L.angry = Game.time; L.fr = 0; L.friend = false;
+  logEvent('animal', 'Цветочные феи в ярости: в их роще рубят деревья', L.x + 0.5, L.y + 0.5);
+  neuProvoke(mem[0], best);
+}
