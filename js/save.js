@@ -75,11 +75,7 @@ function serializeGame() {
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
     obj, road,
     mined: [...ROCKMINE.mined], rockHp: [...ROCKMINE.hp],
-    buildings: Game.buildings.map(b => ({
-      id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
-      used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
-      level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
-    })),
+    buildings: Game.buildings.map(b => serializeBuilding(b)),
     pets: Game.animals.filter(a => a.owner && !a.dead).map(a => [a.kind, +a.x.toFixed(2), +a.y.toFixed(2), Game.units.findIndex(u => u.id === a.owner)]).filter(p => p[3] >= 0),
     night: serializeNight(), fest: serializeFestival(),
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
@@ -89,6 +85,16 @@ function serializeGame() {
       homePen: u.homePen || 0, homeStable: u.homeStable || 0, smoker: u.smoker, xp: u.xp || undefined,
       h: u.hero || undefined, tm: u.teamOf ? Game.units.findIndex(x => x.id === u.teamOf) : undefined,   // герой и его напарник
     })),
+  };
+}
+
+// Одно здание — отдельно, чтобы кооп-сервер собирал пакет мира без полного serializeGame
+function serializeBuilding(b) {
+  const nz = o => { const r = {}; for (const k in o) if (o[k]) r[k] = o[k]; return r; };
+  return {
+    id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
+    used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
+    level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
   };
 }
 
