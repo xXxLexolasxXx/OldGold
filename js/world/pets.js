@@ -13,8 +13,8 @@ const PET_GOODS = ['gold', 'bread', 'sausage', 'croissant', 'flour'];    // чт
 const PET_NAME = { rabbit: 'кролик', duck: 'утка' };
 const PET_ACC = { rabbit: 'кролика', duck: 'утку' };
 const PET_MAX = 6;
-const RABBIT_CATCH = 0.2;     // шанс схватить кролика при каждом сближении
-const DUCK_CATCH = 0.16;
+const RABBIT_CATCH = 0.4;     // шанс схватить кролика при каждом сближении
+const DUCK_CATCH = 0.35;
 
 let petInit = false;
 const cellOf = a => [Math.floor(a.x), Math.floor(a.y)];
@@ -139,7 +139,7 @@ function wildRabbitUpdate(a, dt) {
   const u = chaserOf(a);
   if (!u) return false;
   const d = Math.hypot(u.x - a.x, u.y - a.y);
-  if (d < 1.15 && Game.time >= (a.catchCD || 0)) {
+  if (d < 1.5 && Game.time >= (a.catchCD || 0)) {
     a.catchCD = Game.time + 1.3;
     if (Math.random() < RABBIT_CATCH && canTame(u, 'rabbit')) { setTame(a, u); return true; }
     floater(a.x, a.y - 0.8, 'Увернулся!', '#ffe0e0');
@@ -167,7 +167,7 @@ function wildDuckUpdate(a, dt) {
   if (a.hunted) { fx = a.hunted.x; fy = a.hunted.y; sp = def.speed * 2; }
   else if (u) {
     const d = Math.hypot(u.x - a.x, u.y - a.y);
-    if (d < 1.1 && Game.time >= (a.catchCD || 0)) {
+    if (d < 1.5 && Game.time >= (a.catchCD || 0)) {
       a.catchCD = Game.time + 1.4;
       if (Math.random() < DUCK_CATCH && canTame(u, 'duck')) { setTame(a, u); return; }
       floater(a.x, a.y - 0.8, 'Кря!', '#ffffff');
@@ -521,8 +521,8 @@ function leisureExtra(u) {
   if (day) opts.push('flowers', 'flowers');
   const rab = day && canTame(u, 'rabbit') ? nearestAnimal(u.x, u.y, 14, a => a.kind === 'rabbit' && !a.owner && !a.dead && !a.hunted) : null;
   const duck = day && canTame(u, 'duck') ? nearestAnimal(u.x, u.y, 18, a => a.kind === 'duck' && !a.owner && !a.dead && !a.hunted) : null;
-  if (rab) opts.push('rabbit', 'rabbit', 'rabbit');
-  if (duck) opts.push('duck', 'duck');
+  if (rab) opts.push('rabbit', 'rabbit', 'rabbit', 'rabbit', 'rabbit');
+  if (duck) opts.push('duck', 'duck', 'duck', 'duck');
   const what = opts[(Math.random() * opts.length) | 0];
   switch (what) {
     case 'dance': return danceGen(u);
@@ -656,9 +656,9 @@ function* fishGen(u, shore) {
 
 // Погоня за кроликом или уткой: шанс поймать невелик, но пойманный становится ручным
 function* chasePetGen(u, pet) {
-  pet.chasedBy = u.id; pet.chaseEnd = Game.time + 30;
+  pet.chasedBy = u.id; pet.chaseEnd = Game.time + 45;
   u.gest = ''; u.gestUntil = 0;
-  for (let k = 0; k < 10 && !pet.dead && !pet.owner && pet.chasedBy === u.id; k++) {
+  for (let k = 0; k < 15 && !pet.dead && !pet.owner && pet.chasedBy === u.id; k++) {
     if (k === 0) floater(u.x, u.y - 1.2, pet.kind === 'duck' ? 'Иди сюда, утя!' : 'Кролик, стой!', '#ffe8c0');
     u.huntUntil = Game.time + 3;
     const s = [Math.floor(pet.x), Math.floor(pet.y)];
