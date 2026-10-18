@@ -142,28 +142,30 @@ function makeUITextures() {
     // дополнительные широкие зазоры и сорванные куски между рядами
     for (let n = 3 + RN(3); n > 0; n--) { const gx = RN(PW), gw = 4 + RN(14); px(gx, y0 + 11, DARK, gw, 4); px(gx + 1, y0 + 10, DARK, Math.max(1, gw - 3), 1); }
   }
-  // гвозди: прямые, 2 гнутых, 2 вбитых криво
-  const pick = f => nails[Math.min(nails.length - 1, (nails.length * f) | 0)];
-  const bent = pick(0.27), bent2 = pick(0.71), crook = pick(0.46), crook2 = pick(0.88);
-  const same = (a, b) => a[0] === b[0] && a[1] === b[1];
-  for (const n of nails) {
-    const [nx, ny] = n;
-    if (same(n, bent) || same(n, bent2)) {
-      // гнутый: шляпки нет, стержень торчит вверх и загибается вбок; вмятина у основания
-      px(nx - 1, ny + 2, 'rgba(0,0,0,0.7)', 4, 1); px(nx, ny + 1, DARK, 2, 1);
-      for (let k = 0; k < 4; k++) px(nx, ny - k, k ? '#a8a296' : '#6e6a62');
-      px(nx + 1, ny - 4, '#c8c2b4'); px(nx + 2, ny - 4, '#a8a296'); px(nx + 3, ny - 3, '#8a867c'); px(nx + 4, ny - 3, '#c8c2b4');
-      px(nx + 1, ny - 1, 'rgba(0,0,0,0.5)', 1, 3);
-    } else if (same(n, crook) || same(n, crook2)) {
-      // вбитый криво: шляпка скошена и наполовину утоплена, рядом трещина в доске
-      px(nx - 1, ny + 1, 'rgba(0,0,0,0.65)', 5, 1);
-      px(nx - 1, ny, '#5a5852'); px(nx, ny - 1, '#8a867c'); px(nx + 1, ny - 1, '#f0e8d4'); px(nx + 2, ny - 2, '#c8c2b4'); px(nx + 3, ny - 2, '#6a665e'); px(nx + 1, ny, '#2e2c28'); px(nx + 2, ny - 1, '#3a3834');
-      px(nx - 2, ny + 1, DARK); px(nx - 3, ny + 2, DARK); px(nx - 4, ny + 3, DARK); px(nx + 4, ny, 'rgba(255,230,180,0.45)');
+  // гвозди: прямые, гнутые (торчат, шляпки нет) и вбитые криво. Гнутые — только у нижнего гвоздя доски: ему есть куда торчать.
+  const O = '#0c0805', ST = '#b4aea0', STH = '#f0ead8', STD = '#6a665c';
+  nails.forEach(([nx, ny], i) => {
+    const low = i % 4 === 1 || i % 4 === 3;
+    if (low && i % 9 === 1) {
+      // гнутый: стержень торчит из дырки, на высоте 6 px переламывается и уходит вбок остриём вниз
+      px(nx - 2, ny + 2, 'rgba(0,0,0,0.7)', 6, 1); px(nx - 1, ny + 1, O, 3, 1);                       // вмятина
+      for (let k = 0; k < 6; k++) { px(nx - 1, ny - k, O); px(nx + 1, ny - k, O); px(nx, ny - k, k % 2 ? ST : STH); }
+      px(nx - 1, ny - 6, O, 3, 1);
+      px(nx + 1, ny - 6, O); px(nx + 1, ny - 7, O, 4, 1); px(nx + 1, ny - 6, STH, 4, 1);                  // излом, дальше вбок
+      px(nx + 4, ny - 6, O, 2, 1); px(nx + 4, ny - 5, ST); px(nx + 5, ny - 6, ST); px(nx + 5, ny - 5, O); px(nx + 4, ny - 4, O);  // остриё вниз
+      px(nx + 3, ny - 5, STD);
+    } else if (i % 9 === 5) {
+      // вбитый криво: шляпка перекошена и наполовину в доске, рядом трещина и приподнятая щепка
+      px(nx - 2, ny + 2, 'rgba(0,0,0,0.65)', 7, 1);
+      px(nx - 2, ny + 1, O, 2, 1); px(nx - 1, ny, O); px(nx - 2, ny, STD); px(nx - 1, ny, STD);
+      px(nx, ny - 1, STH); px(nx + 1, ny - 1, ST); px(nx + 1, ny - 2, STH); px(nx + 2, ny - 2, ST); px(nx + 3, ny - 3, STH); px(nx + 3, ny - 2, STD);
+      px(nx, ny, STD); px(nx + 1, ny, O); px(nx + 2, ny - 1, O); px(nx + 4, ny - 3, O); px(nx + 4, ny - 2, O);
+      px(nx - 3, ny + 1, DARK); px(nx - 4, ny + 2, DARK); px(nx - 5, ny + 3, DARK); px(nx + 5, ny + 1, 'rgba(255,230,180,0.5)', 2, 1); px(nx + 4, ny + 2, 'rgba(255,230,180,0.4)');
     } else {
       px(nx - 1, ny + 2, 'rgba(0,0,0,0.65)', 4, 1);
-      px(nx - 1, ny - 1, '#8a867c', 3, 3); px(nx - 1, ny - 1, '#f4ecd8'); px(nx, ny - 1, '#c8c2b4'); px(nx + 1, ny + 1, '#3a3834'); px(nx, ny, '#a8a296');
+      px(nx - 1, ny - 1, STD, 3, 3); px(nx - 1, ny - 1, STH); px(nx, ny - 1, ST); px(nx - 1, ny, ST); px(nx + 1, ny + 1, O); px(nx, ny, ST);
     }
-  }
+  });
   document.documentElement.style.setProperty('--plank-tex', `url(${pl.toDataURL()})`);
 }
 
