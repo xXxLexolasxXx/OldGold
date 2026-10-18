@@ -67,7 +67,7 @@ function spawnAnimals() {
 }
 
 function animalGo(a, x, y) {
-  const p = findPath(Math.floor(a.x), Math.floor(a.y), x, y);
+  const p = findPath(Math.floor(a.x), Math.floor(a.y), x, y, false, 0, 3000, 0.9);   // зверю хватает ближних путей: бюджет клеток и «жадная» эвристика
   a.path = p && p.length ? p : null;
   a.pi = 0;
 }
@@ -86,11 +86,16 @@ function animalStep(a, dt, speed) {
 }
 
 function nearestPerson(a, r, test = () => true) {
-  let best = null, bd = r;
-  for (const u of Game.units) {
-    if (u.inside || !test(u)) continue;
-    const d = Math.hypot(u.x - a.x, u.y - a.y);
-    if (d < bd) { bd = d; best = u; }
+  // зовут каждый шаг для каждого зверя: сперва дешёвая рамка, фильтр — только у тех, кто рядом
+  let best = null, bd2 = r * r;
+  const ax = a.x, ay = a.y, us = Game.units;
+  for (let k = 0; k < us.length; k++) {
+    const u = us[k];
+    const dx = u.x - ax, dy = u.y - ay;
+    if (dx >= r || dx <= -r || dy >= r || dy <= -r) continue;
+    const d2 = dx * dx + dy * dy;
+    if (d2 >= bd2 || u.inside || !test(u)) continue;
+    bd2 = d2; best = u;
   }
   return best;
 }

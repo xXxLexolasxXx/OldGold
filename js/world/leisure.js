@@ -402,6 +402,8 @@ function pickPerch(owl) {
 }
 
 const OWL_ITEM_CHANCE = 0.4;
+// мусор и куски курицы склад не принимает — такая находка пролежала бы на земле вечно
+const OWL_GOODS = GOOD_KEYS.filter(g => !GOODS[g].noStore);
 let lastOwlToast = -999;
 
 // Вещь выскальзывает из когтей и летит вниз с крыши
@@ -465,7 +467,7 @@ function updateOwls(dt) {
       if (!to) { o.t = 5; continue; }
       if (o.state === 'away') {
         // из леса сова нередко несёт находку — что угодно
-        o.item = Math.random() < OWL_ITEM_CHANCE ? GOOD_KEYS[(Math.random() * GOOD_KEYS.length) | 0] : null;
+        o.item = Math.random() < OWL_ITEM_CHANCE ? OWL_GOODS[(Math.random() * OWL_GOODS.length) | 0] : null;
       } else if (o.item) owlDrop(o);                     // взлетая, роняет вещь
       o.from = [o.x, o.y]; o.to = to; o.f = 0; o.goAway = away; o.state = 'fly';
       o.speed = 70 / Math.max(40, Math.hypot(to[0] - o.x, to[1] - o.y));

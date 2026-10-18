@@ -20,6 +20,7 @@ function resetGameState() {
   World.roadDirty = true;
   Game.roadSites.clear();
   Game.time = 0;
+  if (typeof PF !== "undefined") PF.regT = -1e9;   // новый мир — области проходимости пересчитать
   Game.nextId = 1;
   Game.selected = null;
   Game.tool = null;
@@ -86,12 +87,27 @@ function serializeGame() {
     pets: Game.animals.filter(a => a.owner && !a.dead).map(a => [a.kind, +a.x.toFixed(2), +a.y.toFixed(2), Game.units.findIndex(u => u.id === a.owner)]).filter(p => p[3] >= 0),
     night: serializeNight(),
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
+    piles: savePiles(),   // кучи на земле и груз в руках — раньше пропадали при сохранении
     units: Game.units.map(u => ({
       type: u.type, x: u.x, y: u.y, food: u.food, look: u.look, home: u.home ? u.home.id : 0,
       homePen: u.homePen || 0, homeStable: u.homeStable || 0, smoker: u.smoker, xp: u.xp || undefined,
       h: u.hero || undefined, tm: u.teamOf ? Game.units.findIndex(x => x.id === u.teamOf) : undefined,   // герой и его напарник
     })),
   };
+}
+
+// Груз в руках после загрузки лежит кучкой там, где его несли: задания доставки не сохраняются
+function savePiles() {
+  const m = new Map();
+  const add = (x, y, g, n) => {
+    if (!GOODS[g] || !(n > 0) || !inb(x, y)) return;
+    const k = idx(x, y);
+    if (!m.has(k)) m.set(k, [x, y, {}]);
+    const st = m.get(k)[2]; st[g] = (st[g] || 0) + n;
+  };
+  for (const p of Game.piles.values()) if (!p.removed) for (const g of GOOD_KEYS) add(p.x, p.y, g, p.stock[g]);
+  for (const u of Game.units) if (u.carry && !u.dead) add(Math.floor(u.x), Math.floor(u.y), u.carry, u.carryN || 1);
+  return [...m.values()];
 }
 
 function applySave(s) {
@@ -186,6 +202,7 @@ function applySave(s) {
     a.owner = u.id; a.tamedBy = u.id; a.state = 'follow'; a.errCD = Game.time + 25 + Math.random() * 30; a.loot = petLoot(a);
     Game.animals.push(a);
   }
+  for (const [x, y, st] of s.piles || []) if (inb(x, y)) for (const g in st) if (GOODS[g] && st[g] > 0) dropPile(x, y, g, st[g]);
   applyNight(s.night);
   updateMinimapBase();
 }

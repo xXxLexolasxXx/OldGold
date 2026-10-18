@@ -40,7 +40,7 @@ function createHost(log = console.log) {
     console, Math, Date, JSON, Object, Array, Map, Set, WeakMap, Number, String, Boolean, Symbol, Error, RegExp, Promise,
     Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, ArrayBuffer,
     parseInt, parseFloat, isFinite, isNaN, setTimeout, clearTimeout, setInterval, clearInterval,
-    performance: { now: () => Date.now() },
+    performance: { now: () => Number(process.hrtime.bigint()) / 1e6 },
     localStorage: { getItem: k => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) },
     document: S, window: null, navigator: { userAgent: 'node', maxTouchPoints: 0 }, location: { search: '', hash: '', href: '' },
     Image: S, Audio: S, AudioContext: S, requestAnimationFrame: () => 0, cancelAnimationFrame: () => {},

@@ -372,6 +372,7 @@ function placeBuilding(type, x, y, done = false, rot = 0) {
     }
   }
   Game.buildings.push(b);
+  PF.regT = -1e9;              // карта проходимости изменилась — пересчитать области
   return b;
 }
 
@@ -388,6 +389,7 @@ function removeBuilding(b) {
   World.door[idx(b.doorX, b.doorY)] = 0;
   if (b.door2) World.door[idx(b.door2[0], b.door2[1])] = 0;
   Game.buildings = Game.buildings.filter(o => o !== b);
+  PF.regT = -1e9;
   for (const u of Game.units) {
     if (u.inside === b) { u.inside = null; u.x = b.doorX + 0.5; u.y = b.doorY + 0.5; }
     if (u.home === b) { u.home = null; freeUnit(u); u.x = b.doorX + 0.5; u.y = b.doorY + 0.5; }
