@@ -238,12 +238,11 @@ function* festDrinkGen(u) {
     u.flaskClinkAt = mate.flaskClinkAt = Game.time;
     const mx = (u.x + mate.x) / 2, my = (u.y + mate.y) / 2 - 1.1;
     fxBurst(mx * TILE, my * TILE, 7, ['#fff2a0', '#e8b030', '#ffffff'], 40, 30, 0.3, 1.2, 100);
-    sfxAt('mug', mx * TILE, my * TILE);
-    floater(mx, my - 0.4, 'Чин-чин!', '#fff2a0');
+    floater(mx, my - 0.4, 'Чин-чин!', '#fff2a0');       // звон кружек — по надписи (FLOAT_SFX), чтобы слышали и в коопе
   } else sfxAt('mug', u.x * TILE, u.y * TILE, 0.6);
   yield { wait: 1.6 + Math.random() * 0.6, anim: 'drink' };
   u.flaskT = 0;
-  if (u.fdrinks >= 3 && Math.random() < 0.5) { floater(u.x, u.y - 1.2, 'Ик!', '#e8d890'); sfxAt('hic', u.x * TILE, u.y * TILE); }
+  if (u.fdrinks >= 3 && Math.random() < 0.5) floater(u.x, u.y - 1.2, 'Ик!', '#e8d890');
 }
 
 function* festDanceGen(u) {
@@ -262,7 +261,6 @@ function* festDanceGen(u) {
 function* festCheerGen(u) {
   u.gest = 'clap'; u.gestUntil = Game.time + 2.4;
   floater(u.x, u.y - 1.3, ['Ура!', 'Хо-хо!', 'За деревню!', 'Эля!'][(Math.random() * 4) | 0], '#fff2a0');
-  sfxAt('cheer', u.x * TILE, u.y * TILE);
   yield { wait: 1.2 };
   fxBurst(u.x * TILE, u.y * TILE - 24, 8, ['#ff7aa8', '#ffe060', '#8ac8ff', '#9be070'], 34, 40, 0.8, 1.4, 140);   // конфетти
   yield { wait: 1.2 };
@@ -287,7 +285,6 @@ function* festStumbleGen(u) {
 
 function* festSingGen(u) {
   floater(u.x, u.y - 1.4, '♪ ♫', '#fff2a0');
-  sfxAt('sing', u.x * TILE, u.y * TILE);
   u.gest = 'wave'; u.gestUntil = Game.time + 2.4;
   yield { wait: 2.4 };
 }
@@ -303,6 +300,15 @@ if (typeof SFX !== 'undefined' && typeof SFX_DEF !== 'undefined') {
     tone(d, 'sine', f0 * 2.1, f0 * 2.08, t, 0.18, 0.07, 0.001);
   };
   SFX_DEF.mug = { pri: 1, gain: 0.4, poly: 3, cd: 0.1, len: 0.45 };
+  // «Ура!» и застольная песня — голосом гнома; идут от надписей над головой (FLOAT_SFX), поэтому слышны и клиентам коопа
+  SFX.cheer = (d, t, v) => gnomeVoice(d, t, [[300 + v * 60, 520, 0.1], [520, 470, 0.22]], 0.4, 1050);
+  SFX_DEF.cheer = { pri: 1, gain: 0.4, poly: 2, cd: 0.3, len: 0.5 };
+  SFX.sing = (d, t, v) => gnomeVoice(d, t, [[260 + v * 40, 330, 0.3], [330, 390, 0.3], [390, 300, 0.45]], 0.35, 900);
+  SFX_DEF.sing = { pri: 1, gain: 0.35, poly: 1, cd: 0.8, len: 1.2 };
+  if (typeof FLOAT_SFX !== 'undefined') {
+    for (const t of ['Ура!', 'Хо-хо!', 'За деревню!', 'Эля!']) FLOAT_SFX[t] = 'cheer';
+    FLOAT_SFX['♪ ♫'] = 'sing'; FLOAT_SFX['Чин-чин!'] = 'mug'; FLOAT_SFX['Ик!'] = 'hic';
+  }
 }
 
 // ---------- Сохранение и кооп ----------
