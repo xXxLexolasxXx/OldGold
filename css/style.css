@@ -755,3 +755,10 @@ canvas.sm-vine { filter: none; }
 .sm-panel[data-panel="main"] .sm-sub .sm-btn, .sm-sub .sm-btn { flex: 0 0 auto; width: 100%; }
 .sm-sub .sm-vine { display: none; }
 .sm-sub .sm-btn small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* телефон: обучение тонкой полосой, в свёрнутом виде остаются кнопки */
+body.mobile #tut { top: calc(42px + env(safe-area-inset-top)); font-size: 12.5px; padding: 6px 9px 8px; max-height: 32%; }
+body.mobile #tut.min .tut-btns { display: flex; margin-top: 4px; }
+body.mobile #tut.min .tut-bar { display: none; }
+body.mobile #tut .tut-btns { margin-top: 6px; }
+body.mobile #tut .tut-btns button { padding: 4px 10px; }

@@ -525,7 +525,10 @@ function initHeroUI() {
   btn.id = 'hero-btn';
   btn.title = 'Выбрать героя (H)';
   document.getElementById('view').appendChild(btn);
-  btn.onclick = () => selectHero(true);
+  btn.onclick = () => {
+    if (Mobile.on && Game.hero && Game.selUnit === Game.hero) { heroCardMini = !heroCardMini; heroCardUpdate(); return; }   // уже выбран — выдвинуть/задвинуть карточку
+    selectHero(true);
+  };
   document.getElementById('info').addEventListener('click', e => {
     const el = e.target.closest('[data-hero]');
     if (!el || !Game.hero) return;
@@ -669,6 +672,7 @@ function heroCardUpdate() {
       const el = e.target.closest('[data-hero]');
       if (!el || !Game.hero) return;
       if (el.dataset.hero === 'leave') { for (const m of Game.units.filter(u => u.teamOf === Game.hero.id)) leaveTeam(m); updateUI(true); }
+      else if (el.dataset.hero === 'center') centerOn(Game.hero.x * TILE, Game.hero.y * TILE);
       else heroAbility(el.dataset.hero);
     });
     document.getElementById('view').appendChild(card);
@@ -676,7 +680,8 @@ function heroCardUpdate() {
     st.textContent = `#hero-card{position:absolute;top:58px;right:10px;width:250px;z-index:6;padding:8px 10px 10px;background:rgba(26,19,13,.94);color:#e8dcc0;border:1px solid #b8902c;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.6);font-size:13px;display:none}
     #hero-card .hc-x{position:absolute;top:3px;right:5px;padding:0 6px;font-size:13px;line-height:18px}
     #hero-card .ihead{margin-bottom:4px}
-    body.mobile #hero-card{top:calc(40px + env(safe-area-inset-top));right:auto;left:4px;width:min(250px,calc(100vw - 8px));padding:3px 62px 3px 4px;font-size:11px;max-height:min(34vh,calc(100dvh - 150px));overflow-y:auto}
+    body.mobile #hero-card{top:auto;bottom:calc(116px + env(safe-area-inset-bottom));right:auto;left:6px;width:min(290px,calc(100vw - 12px));padding:3px 62px 3px 4px;font-size:11px;max-height:min(40vh,calc(100dvh - 200px));overflow-y:auto;transform-origin:left bottom;animation:hc-up .22s ease-out}
+    @keyframes hc-up{from{opacity:0;transform:translateY(24px) scale(.92)}to{opacity:1;transform:none}}
     body.mobile #hero-card.mini{width:auto;padding:0;background:none;border:0;box-shadow:none}
     body.mobile #hero-card .hc-ico{padding:2px;border-radius:6px;background:rgba(26,19,13,.8);border:1px solid #b8902c;position:relative}
     body.mobile #hero-card .hc-ico img{width:30px;height:30px;image-rendering:pixelated;display:block}
@@ -701,12 +706,12 @@ function heroCardUpdate() {
   card.classList.toggle('mini', Mobile.on && heroCardMini);
   let html;
   if (Mobile.on && heroCardMini) {
-    html = `<button class="hc-ico" title="${Game.hero.hero.name}: развернуть карточку"><img src="${portraitURL('hero', Game.hero.look)}" alt=""><b>${Game.hero.hero.level}</b></button>`;
+    card.style.display = 'none'; delete card.dataset.h; return;
   } else if (Mobile.on) {
     // телефон: тонкая плашка сверху (портрет, имя, рывок/клич), по ▾ раскрывается полная панель
     const H = Game.hero.hero, cd = k => Math.max(0, Math.ceil((H[k] || 0) - Game.time));
     const ab = (k, name, lvl, cdk) => H.level < lvl ? '' : `<button class="hp-ab" data-hero="${k}" ${cd(cdk) ? 'disabled' : ''}><b>${name}</b>${cd(cdk) ? ' ' + cd(cdk) : ''}</button>`;
-    html = `<div class="hc-row"><img src="${portraitURL('hero', Game.hero.look)}" alt=""><span class="hc-n"><b>${H.name}</b> · ур. ${H.level}</span>${ab('dash', 'Рывок', 1, 'cdDash')}${ab('cry', 'Клич', 3, 'cdCry')}</div>`
+    html = `<div class="hc-row"><img src="${portraitURL('hero', Game.hero.look)}" alt=""><span class="hc-n"><b>${H.name}</b> · ур. ${H.level}</span><button class="hp-ab" data-hero="center" title="Камера к герою"><b>◎</b></button>${ab('dash', 'Рывок', 1, 'cdDash')}${ab('cry', 'Клич', 3, 'cdCry')}</div>`
       + (heroCardOpen ? `<div class="hc-body">${heroPanel()}</div>` : '')
       + `<button class="hc-m" title="Свернуть в иконку">–</button><button class="hc-t" title="${heroCardOpen ? 'Меньше' : 'Подробнее'}">${heroCardOpen ? '▴' : '▾'}</button><button class="hc-x" title="Снять выбор">×</button>`;
   } else html = heroPanel() + '<button class="hc-x" title="Закрыть (Esc)">×</button>';
