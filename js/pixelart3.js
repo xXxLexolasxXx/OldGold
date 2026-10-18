@@ -1,5 +1,5 @@
 'use strict';
-// Ручной пиксель-арт, часть 3: пекарня и дубильня (кисти и палитры — в pixelart2.js).
+// Ручной пиксель-арт, часть 3: пекарня (кисти и палитры — в pixelart2.js).
 
 // ---------- Пекарня: каменный дом в скале, печь-купол сбоку ----------
 const BK_W = 100, BK_H = 84, BK_AX = 48, BK_AY = 76, BK_OVEN = [82, 73];
@@ -66,62 +66,4 @@ function bakeryArt() {
   bakeryArt.cv = px2Canvas(G);
   bakeryArt.perches = [[44, 15], [30, 17]];
   return bakeryArt.cv;
-}
-
-// ---------- Дубильня: нора в зелёном холме, сушилка со шкурами и чаны ----------
-const TN_W = 116, TN_H = 84, TN_AX = 58, TN_AY = 76;
-
-function tanneryArt() {
-  if (tanneryArt.cv) return tanneryArt.cv;
-  const S = PX2.stone, Gr = PX2.grass, H = PX2.hide, W = PX2.wood, G = pxGrid(TN_W, TN_H);
-  const hx = 64, hy = 76;
-  px2Ell(G, hx, hy, 42, 44, (x, y, a, b) => {
-    if (y > hy + 2) return null;
-    const l = (a * -0.45 + b * -0.7) * 0.5 + 0.5, h = px2hash(x, y, 4);
-    let i = Math.max(0, Math.min(5, Math.floor((1 - l) * 5.2)));
-    if (h < 0.1) i = Math.max(0, i - 1); else if (h > 0.93) i = Math.min(5, i + 1);
-    return Gr[i];
-  });
-  for (let k = 0; k < 70; k++) { const x = 28 + Math.floor(px2hash(k, 1, 5) * 72), y = 38 + Math.floor(px2hash(k, 2, 5) * 36); if (G.get(x, y)) { G.set(x, y, Gr[0]); G.set(x, y - 1, Gr[0]); } }
-  for (const [x, y, c] of [[38, 52, '#f4f0f6'], [96, 56, '#f0d040'], [50, 44, '#e86a9a'], [88, 46, '#b080e0'], [32, 66, '#f0d040'], [100, 66, '#f4f0f6']]) { G.set(x, y, c); G.set(x, y + 1, Gr[4]); }
-  // труба из склона
-  px2Bricks(G, 84, 22, 90, 40, S, 3, 4, 6, (x) => (x < 87 ? 1 : 3));
-  px2Rect(G, 83, 20, 91, 22, (x, y) => (y === 20 ? S[1] : S[4])); px2Rect(G, 85, 20, 89, 20, () => '#14100e');
-  // круглая дверь в каменной арке
-  const dx = 64, dy = 62, R = 9;
-  px2Ell(G, dx, dy, R + 3.4, R + 3.4, (x, y, a) => ((x + y) % 3 === 0 ? S[3] : S[a < -0.1 ? 0 : 2]));
-  px2Ell(G, dx, dy, R, R, (x, y, a) => W[(x - dx) % 4 === 0 ? 4 : a < -0.35 ? 1 : a > 0.4 ? 3 : 2]);
-  px2Rect(G, dx - R, dy - 1, dx + R - 1, dy, () => PX2.iron[3]);
-  G.set(dx + 3, dy + 3, '#f4c848'); G.set(dx + 4, dy + 3, '#c89226');
-  px2Rect(G, dx - R - 3, dy + R + 2, dx + R + 3, dy + R + 3, (x, y) => S[y === dy + R + 2 ? 1 : 3]);
-  // круглые окошки с цветами
-  for (const wx of [40, 88]) {
-    px2Ell(G, wx, 60, 5.6, 5.6, (x, y, a) => S[(x + y) % 3 === 0 ? 4 : a < 0 ? 0 : 3]);
-    px2Ell(G, wx, 60, 3.6, 3.6, (x, y, a, b) => (x === wx || y === 60 ? W[4] : a * a + b * b > 0.5 ? '#f0b048' : '#ffe898'));
-    px2Rect(G, wx - 4, 66, wx + 4, 67, (x, y) => W[y === 66 ? 1 : 3]);
-    G.set(wx - 2, 65, '#e86a9a'); G.set(wx, 65, '#f4f0f6'); G.set(wx + 2, 65, '#e86a9a'); G.set(wx - 1, 64, Gr[3]); G.set(wx + 1, 64, Gr[3]);
-  }
-  for (let k = 0; k < 3; k++) px2Rock(G, dx + (k % 2 ? 2 : -2), dy + R + 8 + k * 2, 4, 1.8, 30 + k, S);   // плоские камни дорожки
-  // сушилка слева: стойки, перекладина, шкуры
-  const rx0 = 4, rx1 = 34, ry = 42;
-  px2Rect(G, rx0, ry, rx0 + 1, 77, (x) => W[x === rx0 ? 1 : 3]); px2Rect(G, rx1, ry, rx1 + 1, 77, (x) => W[x === rx1 ? 1 : 3]);
-  px2Rect(G, rx0 - 1, ry, rx1 + 2, ry + 1, (x, y) => W[y === ry ? 0 : 3]);
-  for (const [x, len, k] of [[8, 22, 0], [16, 28, 1], [24, 20, 2]]) {
-    px2Poly(G, [[x, ry + 2], [x + 7, ry + 2], [x + 8, ry + len * 0.5], [x + 6, ry + len], [x + 3, ry + len - 2], [x + 1, ry + len], [x - 1, ry + len * 0.5]], (X, Y) => {
-      const t = (X - x) / 8, n = px2hash(X, Y, k + 3);
-      return H[Math.max(0, Math.min(5, (t < 0.3 ? 1 : t < 0.65 ? 2 : 3) + (n > 0.88 ? 1 : n < 0.1 ? -1 : 0) + (Y > ry + len - 5 ? 1 : 0)))];
-    });
-  }
-  // чаны и куча шкур справа
-  const vat = (x, y, w, liquid) => {
-    px2Rect(G, x - w, y - 9, x + w, y, (X, Y) => { const t = (X - (x - w)) / (2 * w); return W[(Y - y) % 5 === 0 ? 4 : px2Cyl(t)]; });
-    px2Rect(G, x - w, y - 7, x + w, y - 6, () => PX2.iron[2]); px2Rect(G, x - w, y - 2, x + w, y - 1, () => PX2.iron[2]);
-    px2Ell(G, x, y - 9, w, 2.6, (X, Y, a, b) => (a * a + b * b > 0.7 ? W[0] : liquid[(X + Y) % 4 === 0 ? 1 : 0]));
-  };
-  vat(100, 75, 7, ['#7a8a3a', '#a0b04c']); vat(110, 69, 5, ['#8a5a2a', '#b88a4c']);
-  for (let k = 0; k < 4; k++) px2Rect(G, 84 + (k % 2) * 2, 76 - k * 2, 95 + (k % 2) * 2, 77 - k * 2, (x, y) => H[y === 76 - k * 2 ? 1 : 3]);
-  px2Out(G, PX2.ink, '#3a5a2a');
-  tanneryArt.cv = px2Canvas(G);
-  tanneryArt.perches = [[hx, 33], [87, 21]];
-  return tanneryArt.cv;
 }

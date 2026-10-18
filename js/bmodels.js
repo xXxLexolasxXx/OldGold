@@ -52,7 +52,7 @@ const SIGN_QUEUE = { list: [] };
 // стиль текущего здания (выбирается по типу): бревенчатая изба, белёный коттедж под
 // соломой или светлый фахверковый дом под красной черепицей — как во второй деревне референсов
 let BUILD_STYLE = 'logs', BUILD_TYPE = '';
-const COTTAGE_TYPES = new Set(['inn', 'brewery', 'butchery', 'hopfarm', 'stable']);
+const COTTAGE_TYPES = new Set(['inn', 'brewery', 'butchery', 'tannery', 'hopfarm', 'stable']);
 const REDROOF_TYPES = new Set(['school', 'mill', 'sawmill', 'metallurgist', 'armory', 'magicworkshop', 'goatpen', 'swine']);
 const DWARF_TYPES = new Set(['storehouse']);   // «Оплот»: приземистый каменный склад под холодным сланцем (трактир — тёплый коттедж под соломой)
 const RED_TILES = ['#b04a2c', '#a8432a', '#ba5532'];
@@ -955,14 +955,18 @@ const MODELS = {
   },
 
   tannery(m) {
-    // нора в холме, вокруг сушилки и чаны
-    m.custom(c => {
-      const g = m.g, x = Math.round(g.fx + g.fw / 2), y = Math.round(g.fy + g.fh - 6);
-      shadowAt(c, x + 4, y + 3, 50, 9);
-      g.spr.handArt = { art: tanneryArt, x, y, ax: TN_AX, ay: TN_AY };
-      g.spr.chimneys = [[x - TN_AX + 87, y - TN_AY + 19]];
-      if (m.sign) SIGN_QUEUE.list.push({ x: x - 46, y: y + 4, kind: m.sign, dir: -1 });
-    }, 52, 10);
+    // дом дубильщика: сушилка со шкурами слева, чаны и куча шкур справа
+    m.box({
+      x0: 30, x1: 70, y0: 12, y1: 50, h: 26, wall: 'plaster', col: '#e2d2ac', frame: true, beam: BEAM,
+      roof: { type: 'gable', axis: 'Y', rise: 19, mat: 'tiles', col: '#7e4a34', ov: 4 },
+      decor: { S: [{ t: 'door', main: true, w: 9, h: 16, o: { square: true } }, { t: 'win', at: 59, z: 11, w: 6, h: 8, o: { shutter: '#5a3a1e' } }], E: [{ t: 'win', at: 30, z: 11, w: 6, h: 8 }], W: [] },
+      gable: { S: [{ t: 'win', at: 50, z: 5, w: 5, h: 6 }] },
+      chimneys: [{ x: 38, y: 24, h: 10, kind: 'stone' }],
+    });
+    m.prop((c, x, y) => dryingRack(c, x, y, 22, 3), 2, 14);
+    m.prop((c, x, y) => vat(c, x, y, '#8a9a3a', 7), 84, 12);
+    m.prop((c, x, y) => vat(c, x, y, '#9a6a30', 5.5), 88, 28);
+    m.prop((c, x, y) => { for (let k = 0; k < 3; k++) ellipse(c, x + (k % 2) * 2, y - k * 2, 7 - k, 2.2, ['#b8804e', '#a8703e', '#c8905a'][k]); }, 76, 2);
   },
 
   armory(m) {
