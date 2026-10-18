@@ -15,7 +15,9 @@ let lastGooseToast = -99, lastGoldToast = -99;
 // ---------- Всплывающие значки и надписи ----------
 
 function floater(x, y, text, col = '#fff6d0', icon = null) {
-  (Game.floaters = Game.floaters || []).push({ x, y, text, col, icon, t0: Game.time });
+  const fl = Game.floaters || (Game.floaters = []);
+  fl.push({ x, y, text, col, icon, t0: Game.time });
+  if (fl.length > 120) fl.splice(0, fl.length - 120);   // убираются при отрисовке; без неё (вкладка в фоне) копились бы бесконечно
   if (text) sfxFloater(text, x, y);
 }
 

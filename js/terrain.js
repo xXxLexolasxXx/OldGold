@@ -73,6 +73,9 @@ function cornerField(test) {
 }
 
 function buildTerrain(seed) {
+  // прежние холсты (новая игра, загрузка) отпускаем сразу: на iOS/Android память холстов освобождается не по GC
+  for (const k of ['canvas', 'roads', 'mini']) if (TERR[k]) { TERR[k].width = TERR[k].height = 0; TERR[k] = null; }
+  TERR.ready = false;
   const W = MAP_W + 1, H = MAP_H + 1;
   const tA = makeTex(seed + 1, 4, 4);    // крупные пятна
   const tB = makeTex(seed + 2, 128, 2);  // зерно
@@ -111,8 +114,8 @@ function buildTerrain(seed) {
   const GRASS = new Uint8Array(PW * PH);
   const cv = mkCanvas(PW, PH);
   const ctx = cv.getContext('2d');
-  const img = ctx.createImageData(PW, PH);
-  const D = img.data;
+  let img = ctx.createImageData(PW, PH);
+  let D = img.data;
 
   const bil = (f, i00, fx, fy) => {
     const a = f[i00], b = f[i00 + 1], c = f[i00 + W], d = f[i00 + W + 1];
@@ -214,6 +217,7 @@ function buildTerrain(seed) {
   }
   stampLeaves(D, PW, PH, seed, GRASS);
   ctx.putImageData(img, 0, 0);
+  img = null; D = null;   // 28 МБ буфера отпускаем до второго getImageData — на телефоне это пик памяти
   bakeDecor(ctx, seed);
   // палитра и дизеринг — пиксельный вид
   const q = ctx.getImageData(0, 0, PW, PH);
