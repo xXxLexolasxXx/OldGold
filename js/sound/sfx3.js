@@ -312,6 +312,32 @@ Object.assign(FLOAT_SFX, {
   sfxFloater = function (text, x, y) { if (/^Уровень \d+!$/.test(text)) sfxAt('levelUp', x * TILE, y * TILE); else _lv(text, x, y); };
 }
 
+// Восстание скелета из могилы: осыпь земли, низкий полый стон, костяной перестук и глухой колокол.
+// Слышно только вблизи кладбища (см. LOCAL_ONLY).
+Object.assign(SFX, {
+  graveRise: (d, t, v) => {
+    breath(d, t, 1.6, 500, 140, 0.55, 0.5);                                           // земля расходится
+    scuffs(d, t + 0.1, 8, 0.12, 'bandpass', 900, 0.06, 0.28);                         // комья
+    const ctx = Sfx.ctx, lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700; lp.connect(d);
+    rasp(lp, t + 0.25, 85 + v * 10, 62, 1.5, 0.7, 380, 7, 0.5);                       // стон из-под земли
+    rasp(lp, t + 0.55, 128 + v * 14, 90, 1.2, 0.35, 520, 5, 0.4);
+    for (const f of [220, 233]) tone(d, 'sine', f * (0.97 + v * 0.05), f * 0.5, t + 0.3, 1.6, 0.1, 0.4);   // холодная секунда
+    for (let k = 0; k < 6; k++) { const tt = t + 0.9 + k * (0.07 + Math.random() * 0.08), f = 1700 + Math.random() * 1500; modal(d, tt, [[f, 0.7, 0.04], [f * 1.6, 0.3, 0.025]], 0.22, 0.001); }
+    modal(d, t + 0.7, [[196, 1, 2.4], [310, 0.5, 1.6], [490, 0.3, 1.1]], 0.12, 0.01);   // глухой колокол
+  },
+});
+SFX_DEF.graveRise = { pri: 3, gain: 0.9, poly: 3, cd: 0.4, len: 2.6, wet: 0.55 };
+// звуки, которые слышны только рядом с источником: на дальнем краю экрана молчат
+const LOCAL_ONLY = { graveRise: 0.5 };
+// ночью скелет вылезает из земли (state 'rise', t от 0): один раз на каждого — страшный звук у кладбища
+{
+  const _tick = sfxTick, rose = new WeakSet();
+  sfxTick = function (dt) {
+    _tick(dt);
+    for (const s of Game.skels || []) if (s.state === 'rise' && s.t >= 0 && !rose.has(s)) { rose.add(s); sfxAt('graveRise', s.x * TILE, s.y * TILE, 1.1, Math.random() * 0.4); }
+  };
+}
+
 // ---------- Бюджет внимания ----------
 // Звуки живности делятся на два яруса. Фон (шорохи, цокот, рытьё, светлячки…) — не чаще одного раза в 1,6 с на всю
 // карту, не больше 5 за 8 с и не поверх события. События (испуг, взлёт, плюх, писк) — реже одного в 0,25 с и не больше
@@ -324,6 +350,7 @@ const FAUNA_TIER = {
 const FaunaBudget = { ambLast: -9, evLast: -9, evGap: 0.2, amb: [], ev: [] };
 const sfxAtRaw = sfxAt;
 sfxAt = function (kind, wx, wy, vel = 1, delay = 0) {
+  if (LOCAL_ONLY[kind] !== undefined) { const p = sfxPlace(wx, wy); if (!p || p.far > LOCAL_ONLY[kind]) return; }
   const tier = FAUNA_TIER[kind];
   if (tier === undefined || !Sfx.ctx) return sfxAtRaw(kind, wx, wy, vel, delay);
   const now = Sfx.ctx.currentTime + delay, B = FaunaBudget;

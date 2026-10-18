@@ -194,6 +194,7 @@ const Music = {
   ctx: null, master: null, bus: null, rev: null, hall: null, on: true, started: false,
   bar: 0, nextTime: 0, timer: null, buffers: new Map(), track: 0, songs: [], noise: null,
   mood: 'day', fightT: -1e9, dawnUntil: -1, waterT: -1e9, waterIn: 0, waterCool: 0, prevNight: null, moodT: 0,
+  killT: -1e9, winKill: -1e9, victoryUntil: -1, graveT: -1e9, graveIn: 0, graveCool: 0,
 };
 
 const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
@@ -298,7 +299,7 @@ const TRACKS = [
   {
     // Три эльфийских трека — светлая деревня на опушке: воздушная флейта, арфа, женский хор, струнный пад, колокольчики.
     // «Лунный лес» — ми дорийский, тянущийся хор и тихая лунная флейта.
-    name: 'Лунный лес', elf: true, eighth: 0.34, swing: 0, bars: 32, voiceFrom: 8, seed: 2101, lead: 'lowflute', level: 1.05,
+    name: 'Лунный лес', elf: true, menu: true, eighth: 0.34, swing: 0, bars: 32, voiceFrom: 8, seed: 2101, lead: 'lowflute', level: 1.05,
     scale: [52, 54, 55, 57, 59, 61, 62, 64, 66, 67, 69, 71, 73, 74, 76, 78],
     chords: {
       Em: { root: 40, tones: [52, 55, 59, 64, 67, 71, 76] }, D: { root: 38, tones: [50, 54, 57, 62, 66, 69, 74] },
@@ -311,7 +312,7 @@ const TRACKS = [
   },
   {
     // «Песнь листвы» — соль лидийский, лёгкий 6/8: бегущая арфа, свирель и калимба, одинокий сопрано.
-    name: 'Песнь листвы', elf: true, eighth: 0.26, swing: 0, bars: 32, voiceFrom: 16, seed: 2202, lead: 'flute', level: 0.9,
+    name: 'Песнь листвы', elf: true, menu: true, eighth: 0.26, swing: 0, bars: 32, voiceFrom: 16, seed: 2202, lead: 'flute', level: 0.9,
     scale: [55, 57, 59, 61, 62, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79, 81],
     chords: {
       G: { root: 43, tones: [55, 59, 62, 67, 71, 74, 79] }, D: { root: 38, tones: [54, 57, 62, 66, 69, 74, 78] },
@@ -697,6 +698,7 @@ function scheduleBar(tr, song, bar, t) {
   const notes = song.mel[bi], counter = song.cnt[bi];
   const voiceNow = bar >= tr.voiceFrom;
   const phraseEnd = bi % 8 === 7;
+  if (typeof TRACK_SCHED !== 'undefined' && TRACK_SCHED[tr.name]) { TRACK_SCHED[tr.name](tr, song, bar, t, { E, len, at, up, ch, notes, counter, voiceNow, phraseEnd, bi }); return; }
 
   if (tr.name === 'Чаща') {
     if (bar % 4 === 0) cello([38, 45], t, len * 4, 0.04);                        // бурдон ре+ля
@@ -859,21 +861,25 @@ function musicLevel(level, t) {
   g.linearRampToValueAtTime(0.62 * level, Math.max(now + 0.05, t));
 }
 
-// Тревожный ночной трек стоит в списке последним; днём он не выбирается
-const ALARM_TRACK = TRACKS.findIndex(t => t.name === 'Тревога');
-const MOOD_TRACK = { night: ALARM_TRACK };
-TRACKS.forEach((t, i) => { if (t.special) MOOD_TRACK[t.special] = i; });
-const MOOD_SET = new Set(Object.values(MOOD_TRACK));           // эти треки сами не выбираются в обычной смене
-// На стартовом экране звучат эльфийские треки: по кругу, начиная с случайного
-const ELF_TRACKS = TRACKS.map((t, i) => t.elf ? i : -1).filter(i => i >= 0);
+// Особые треки (сами не выбираются в обычной смене) и стартовые треки меню (в игре не звучат).
+// Заново считается из music2.js после добавления новых треков.
+let ALARM_TRACK = -1, MOOD_TRACK = {}, MOOD_SET = new Set(), MENU_TRACKS = [];
+function musicIndex() {
+  ALARM_TRACK = TRACKS.findIndex(t => t.name === 'Тревога');
+  MOOD_TRACK = { night: ALARM_TRACK };
+  TRACKS.forEach((t, i) => { if (t.special) MOOD_TRACK[t.special] = i; });
+  MOOD_SET = new Set(Object.values(MOOD_TRACK));
+  MENU_TRACKS = TRACKS.map((t, i) => t.menu ? i : -1).filter(i => i >= 0);
+}
+musicIndex();
 function menuOpen() { return typeof StartMenu !== 'undefined' && StartMenu.open; }
 function nextTrackIndex() {
   const mt = MOOD_TRACK[Music.mood];
   if (mt !== undefined) return mt;
-  if (menuOpen() && ELF_TRACKS.length) return ELF_TRACKS[(ELF_TRACKS.indexOf(Music.track) + 1) % ELF_TRACKS.length];
+  if (menuOpen() && MENU_TRACKS.length) return MENU_TRACKS[(MENU_TRACKS.indexOf(Music.track) + 1) % MENU_TRACKS.length];
   if (typeof isNightNow === 'function' && isNightNow()) return ALARM_TRACK;
   let n = (Music.track + 1) % TRACKS.length;
-  while (MOOD_SET.has(n)) n = (n + 1) % TRACKS.length;
+  while (MOOD_SET.has(n) || TRACKS[n].menu) n = (n + 1) % TRACKS.length;
   return n;
 }
 
@@ -887,6 +893,13 @@ function nearWaterView() {
   for (let dy = -7; dy <= 7; dy += 2) for (let dx = -7; dx <= 7; dx += 2) { const x = cx + dx, y = cy + dy; if (inb(x, y) && World.terrain[idx(x, y)] === T_WATER) n++; }
   return n >= 7;                                                  // из 64 проб — не меньше 7 на воде
 }
+// Камера у кладбища: как с водой — сперва 3 секунды подряд, уходит через 12; потом пауза
+function nearGraveyardView() {
+  if (typeof R === 'undefined' || !R.canvas || typeof graveyardOf !== 'function') return false;
+  const g = graveyardOf(); if (!g) return false;
+  const s = camScale(), cx = (R.cam.x + R.canvas.clientWidth / s / 2) / TILE, cy = (R.cam.y + R.canvas.clientHeight / s / 2) / TILE;
+  return Math.hypot(cx - (g.x + g.w / 2), cy - (g.y + g.h / 2)) < 11;
+}
 function computeMood() {
   if (typeof Game === 'undefined' || !Game.units) return 'day';
   if (menuOpen()) return 'day';                                   // на стартовом экране — эльфийская музыка, без боя и ночи
@@ -895,23 +908,41 @@ function computeMood() {
   for (const u of Game.units) if (!u.dead && (u.fighting || (u.brk && u.brk.kind === 'fight'))) { fight = true; break; }
   if (!fight && Game.ents) for (const e of Game.ents) if (e.state === 'fight' || e.state === 'smash') { fight = true; break; }
   if (fight) Music.fightT = now;
+  if (typeof musicScanKills === 'function') musicScanKills(now);
   if (now - Music.fightT < 10) return 'battle';
+  // победа: бой кончился, и в нём кого-то одолели — один раз за схватку, пока играет «Победа»
+  if (Music.killT > Music.fightT - 25 && Music.killT > Music.winKill) { Music.winKill = Music.killT; Music.victoryUntil = now + 20; }
+  if (now < Music.victoryUntil) return 'victory';
+  // кладбище: камера у него 3 секунды подряд, уходит через 12; после ухода — пауза в 40 секунд
+  if (nearGraveyardView()) Music.graveT = now; else Music.graveIn = 0;
+  if (Music.mood === 'grave') { if (now - Music.graveT < 12) return 'grave'; Music.graveCool = now + 40; }
+  else if (now - Music.graveT < 1) { Music.graveIn += 1; if (Music.graveIn >= 3 && now > Music.graveCool) return 'grave'; }
+  const k = typeof WX !== 'undefined' ? WX.k : 0;
+  if (k > 0.6 || (Music.mood === 'storm' && k > 0.4)) return 'storm';
   if (typeof isNightNow === 'function' && isNightNow()) return 'night';
   if (now < Music.dawnUntil) return 'dawn';
+  if (Game.festival && Game.festival.on) return 'feast';          // праздник: пьют, не работают, веселятся
+  if (k > 0.35 || (Music.mood === 'rain' && k > 0.2)) return 'rain';
   // у воды: сперва 6 секунд подряд, уходит через 15; после ухода — пауза в минуту, чтобы не надоедало
   if (typeof nearWaterView === 'function' && nearWaterView()) Music.waterT = now; else Music.waterIn = 0;
   if (Music.mood === 'water') { if (now - Music.waterT < 15) return 'water'; Music.waterCool = now + 60; }
   else if (now - Music.waterT < 1) { Music.waterIn += 1; if (Music.waterIn >= 6 && now > Music.waterCool) return 'water'; }
   return 'day';
 }
+// дослушиваем до конца: рассвет, вода, победа
+const MOOD_FINISH = ['dawn', 'water', 'victory'];
 function musicMoodTick() {
+  // меню ↔ игра: музыка меню в игре не звучит, и наоборот
+  const inMenu = menuOpen(), cur0 = TRACKS[Music.track];
+  if (inMenu && cur0 && !cur0.menu && MENU_TRACKS.length) { gotoTrack(nextTrackIndex(), false); return; }
+  if (!inMenu && cur0 && cur0.menu) { gotoTrack(nextTrackIndex(), false); return; }
   const m = computeMood();
   if (m === Music.mood) return;
   const prev = Music.mood;
   Music.mood = m;
   const cur = Music.track;
-  if (m === 'day') { if (cur !== MOOD_TRACK.dawn && cur !== MOOD_TRACK.water) gotoTrack(nextTrackIndex(), false); return; }   // рассвет и воду дослушиваем
-  if (cur !== MOOD_TRACK[m]) gotoTrack(MOOD_TRACK[m], false, m === 'battle' || prev === 'battle');
+  if (m === 'day') { if (!MOOD_FINISH.some(k => cur === MOOD_TRACK[k])) gotoTrack(nextTrackIndex(), false); return; }
+  if (cur !== MOOD_TRACK[m]) gotoTrack(MOOD_TRACK[m], false, m === 'battle' || prev === 'battle' || m === 'storm');
 }
 
 function makeSong(tr, seed) {
@@ -942,7 +973,7 @@ function startMusic() {
   buildMixer(ctx);
   Music.master.connect(AudioCore.music);
   Music.songs = TRACKS.map(tr => makeSong(tr, tr.seed));
-  Music.track = menuOpen() && ELF_TRACKS.length ? ELF_TRACKS[(Math.random() * ELF_TRACKS.length) | 0] : 0; Music.bar = 0;
+  Music.track = menuOpen() && MENU_TRACKS.length ? MENU_TRACKS[(Math.random() * MENU_TRACKS.length) | 0] : 0; Music.bar = 0;
   Music.nextTime = ctx.currentTime + 0.15;
   // первые секунды — плавный вход, а не сразу в полную силу
   Music.bus.gain.setValueAtTime(0.0001, ctx.currentTime);
