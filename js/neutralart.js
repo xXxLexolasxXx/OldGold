@@ -63,6 +63,7 @@ const NA_SPEC = {
 };
 
 const naCache = new Map();
+function naHash(a, b) { const n = Math.sin(a * 127.1 + b * 311.7 + 374.5) * 43758.5453; return n - Math.floor(n); }
 
 function naFrame(kind, fr) {
   const key = kind + '|' + fr;
@@ -78,6 +79,16 @@ function naFrame(kind, fr) {
   NA_DRAW[kind](c, P, fr);
   c.restore();
   const out = toPixelArt(cv, 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
+  if (P.fade > 0) {   // рассыпается пикселями: случайные точки пропадают (пиксель-арт «дизер»), остальные бледнеют
+    const oc = out.getContext('2d'), img = oc.getImageData(0, 0, out.width, out.height), d = img.data;
+    for (let y = 0; y < out.height; y++) for (let x = 0; x < out.width; x++) {
+      const o = (y * out.width + x) * 4;
+      if (!d[o + 3]) continue;
+      if (naHash(x, y) < P.fade) d[o + 3] = 0;
+      else { d[o] = d[o] + (230 - d[o]) * P.fade * 0.4; d[o + 1] = d[o + 1] + (240 - d[o + 1]) * P.fade * 0.4; d[o + 2] = d[o + 2] + (200 - d[o + 2]) * P.fade * 0.4; }
+    }
+    oc.putImageData(img, 0, 0);
+  }
   s = { cv: out, ax: S.ax, ay: S.ay, w: S.w, h: S.h };
   naCache.set(key, s);
   return s;
