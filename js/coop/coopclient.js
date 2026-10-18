@@ -271,6 +271,7 @@ function coopMirror(m) {
   Game.golem = m.golem ? Object.assign(Game.golem || {}, coopResolve(m.golem)) : null;
   Game.sub = m.sub ? coopResolve(m.sub) : null;
   Game.lostGnomes = m.lost || 0;
+  if (typeof goalMirrorIn === 'function') goalMirrorIn(m.goal);
   const festWas = festOn();
   Game.festival = m.fest || null;
   if (!festWas && festOn()) festCheers();       // праздник начался — аплодисменты и у клиентов

@@ -112,7 +112,7 @@ function loadWorld() {
 }
 if (!loadWorld()) {
   const seed = (Math.random() * 1e9) | 0;
-  run(`setupStart(${seed}); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
+  run(`setupStart(${seed}); goalNew('scenario'); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
   log('создан новый мир, зерно', seed);
 }
 
@@ -367,6 +367,13 @@ function onMessage(c, text) {
     broadcast({ t: 'restarting' });
     saveWorld();
     setTimeout(() => process.exit(42), 300);
+    return;
+  }
+  if (m.t === 'goalmode') {
+    if (!c.isHost) return c.send({ t: 'toast', text: 'Режим мира меняет только хост' });
+    if (m.mode !== 'scenario' && m.mode !== 'free') return;
+    call('goalNew', m.mode);
+    broadcast({ t: 'toast', text: m.mode === 'scenario' ? 'Хост включил сценарий «Тишина дороже золота»' : 'Хост включил свободную игру' });
     return;
   }
   if (m.t === 'stats') {

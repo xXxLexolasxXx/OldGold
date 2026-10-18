@@ -108,6 +108,10 @@ function smAction(a) {
     if (!sv) return;
     smLoadPrepared(sv.slot, root.querySelector('[data-sm="continue"] small'));
   } else if (a === 'new') {
+    smShow('mode');
+  } else if (a === 'mode-scenario' || a === 'mode-free') {
+    track('mode-' + a.slice(5), a === 'mode-scenario' ? 'Новая игра: сценарий' : 'Новая игра: свободная');
+    if (typeof goalNew === 'function') goalNew(a === 'mode-scenario' ? 'scenario' : 'free');
     smClose(() => { if (Game.heroAsk) { Game.heroAsk = false; askHeroName(); } });
   } else if (a === 'mp') {
     smRender(); smShow('mp');
@@ -139,6 +143,11 @@ function initStartMenu() {
       <button class="sm-btn" data-sm="new"><b>Новая игра</b><small>новый мир, назвать героя</small></button>
       <button class="sm-btn" data-sm="mp"><b>Мультиплеер</b><small>играть с друзьями</small></button>
       <button class="sm-btn ghost" data-sm="help"><b>Как играть</b></button>
+    </div>
+    <div class="sm-panel hidden" data-panel="mode">
+      <button class="sm-btn primary" data-sm="mode-scenario"><b>Сценарий</b><small>«Тишина дороже золота»: 6 глав, тёмный маг</small></button>
+      <button class="sm-btn" data-sm="mode-free"><b>Свободная игра</b><small>без сюжета: от поселения до города</small></button>
+      <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
     </div>
     <div class="sm-panel hidden" data-panel="mp">
       <label>Ваш ник<input id="sm-nick" maxlength="16" autocomplete="off" placeholder="Например, Торин"></label>

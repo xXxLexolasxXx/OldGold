@@ -560,6 +560,7 @@ function coopMirror() {
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
     lost: Game.lostGnomes || 0,
+    goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
     wx: {},
   };
