@@ -150,9 +150,9 @@ function vLeaf(x, y, rot, s, kind, col) {
   return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${(s * VS).toFixed(2)})"><path d="${d}" fill="${col}" stroke="${VINE_DARK}" stroke-width="1"/><path d="M0 -1 L0 -14 M0 -6 L-6 -9 M0 -6 L6 -9" stroke="${VINE_DARK}" stroke-width=".7" opacity=".55" fill="none"/></g>`;
 }
 const SM_VAR = { hop: 0, grape: 0, wheat: 0 };   // подряд идущие плоды всегда разные: три варианта по кругу
-function vGrapes(x, y, s) {
+function vGrapes(x, y, s, rot = 0, st = 6, bend = 2) {
   const v = SM_VAR.grape++ % 3;
-  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(s * VS).toFixed(2)})"><path d="M0 -6 Q2 -3 0 0" stroke="${VINE_DARK}" stroke-width="1.4" fill="none"/>`;
+  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${(s * VS).toFixed(2)}) translate(0 ${st})"><path d="M0 ${-st} Q${bend} ${-st / 2} 0 0" stroke="${VINE_DARK}" stroke-width="1.4" fill="none"/>`;
   // 0 — тёмно-фиолетовая круглая гроздь; 1 — зелёная длинная; 2 — розово-красная широкая с плечами
   const V = [
     { rows: [[-6, 0, 6], [-3, 3], [-4, 4], [0]], r: 4.2, dy: 6.6, c: '#5a2a7a', hi: '#c8a0e8' },
@@ -187,7 +187,7 @@ function vWheat(x, y, len, rot) {
   }
   return h + '</g>';
 }
-function vHop(x, y, s) {
+function vHop(x, y, s, rot = 0, st = 7, bend = 2) {
   // шишка: ряды перекрывающихся чешуек, сужается книзу; варианты — обычная, длинная тёмная, короткая жёлто-зелёная
   const v = SM_VAR.hop++ % 3;
   const V = [
@@ -195,7 +195,7 @@ function vHop(x, y, s) {
     { rows: [[-2.4, 2.4], [-3.4, 0, 3.4], [-3.6, -1.2, 1.2, 3.6], [-3.2, 0, 3.2], [-2.6, 0, 2.6], [-1.6, 1.6], [0]], dy: 3.6, cols: ['#78a838', '#5e9230', '#82b440'] },
     { rows: [[-5.6, -1.9, 1.9, 5.6], [-5.6, 0, 5.6], [-3.2, 3.2], [0]], dy: 4.2, cols: ['#d4e46a', '#c0d452', '#e6ee8a'] },
   ][v];
-  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(s * VS).toFixed(2)})"><path d="M0 -7 Q2 -4 0 0" stroke="${VINE_DARK}" stroke-width="1.3" fill="none"/>`;
+  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${(s * VS).toFixed(2)}) translate(0 ${st})"><path d="M0 ${-st} Q${bend} ${-st / 2} 0 0" stroke="${VINE_DARK}" stroke-width="1.3" fill="none"/>`;
   for (let r = V.rows.length - 1; r >= 0; r--) {
     const yy = 2 + r * V.dy, sz = 3.6 - r * (v === 1 ? 0.2 : 0.28);
     V.rows[r].forEach((dx, k) => {
@@ -203,6 +203,12 @@ function vHop(x, y, s) {
     });
   }
   return h + '</g>';
+}
+
+// плод на изогнутой ножке: качается в обе стороны, иногда торчит вбок, ножка то короткая, то длинная
+function smFruit(kind, x, y, sc, side, rnd) {
+  const rot = (rnd() - 0.5) * 80 + side * 12, st = 3 + rnd() * 11, bend = (rnd() - 0.5) * 10;
+  return kind === 'hops' ? vHop(x, y, sc, rot, st, bend) : vGrapes(x, y, sc, rot, st, bend);
 }
 
 function vineSVG(w, h, kind, seed) {
@@ -230,11 +236,12 @@ function vineSVG(w, h, kind, seed) {
     const ang = Math.atan2(ny, nx) * 180 / Math.PI;        // направление стебля
     const side = i % 2 ? 1 : -1;
     if (kind === 'wheat') {
-      if (i % 2 === 0) items += vWheat(x, y, 24 + rnd() * 14, ang + 90 * side + (rnd() - 0.5) * 26);
+      if (rnd() < 0.55) items += vWheat(x, y, 18 + rnd() * 20, ang + 90 * side + (rnd() - 0.5) * 50);
       else items += vLeaf(x, y, ang + 90 * side * 0.9, 0.9, 'plain', '#8aa83a');
     } else {
       items += vLeaf(x, y, ang + 90 * side + (rnd() - 0.5) * 30, 0.9 + rnd() * 0.5, kind, greens[(i * 7) % 4]);
-      if (kind === 'hops' ? i % 3 === 1 : (i % 3 === 0 && y > P + h * 0.8)) items += kind === 'hops' ? vHop(x + side * 3, y + 3, 0.8 + rnd() * 0.4) : vGrapes(x + side * 3, y + 3, 0.8 + rnd() * 0.3);
+      if (rnd() < 0.38) items += smFruit(kind, x + side * 2, y + 2, 0.75 + rnd() * 0.5, side, rnd);
+      if (rnd() < 0.1) items += smFruit(kind, x - side * 2, y + 1, 0.6 + rnd() * 0.3, -side, rnd);   // иногда парой
     }
   }
   // усики-завитки
@@ -345,7 +352,7 @@ function smGrow(btn, kind) {
     const side = (k++ % 2) ? 1 : -1;
     let g;
     if (kind === 'wheat') g = k % 2 ? vWheat(0, 0, 18 + rnd() * 8, ang + side * 25) : vLeaf(0, 0, ang + side * 50, 0.8, 'plain', '#8aa83a');
-    else if (k % 4 === 0) g = kind === 'hops' ? vHop(0, 0, 0.7) : vGrapes(0, 0, 0.7);
+    else if (rnd() < 0.3) g = smFruit(kind, 0, 0, 0.6 + rnd() * 0.2, side, rnd);
     else g = vLeaf(0, 0, ang + side * 55 + (rnd() - 0.5) * 30, 0.75 + rnd() * 0.35, kind, greens[k & 3]);
     items += `<g class="sm-g" style="animation-delay:${(f * 0.5).toFixed(2)}s"><g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">${g}</g></g>`;
   }
