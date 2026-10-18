@@ -56,8 +56,8 @@ function naPose(n) {
 }
 
 const NA_SPEC = {
-  pixie:   { name: 'Цветочная фея', w: 84, h: 72, ax: 54, ay: 54, sc: 1.55, pal: { dr: '#8a6ad8', dr2: '#5a3aa0', hr: '#f2f4ff', hr2: '#a8acd8', tip: '#ffb0e0', crown: true } },
-  fairy:   { name: 'Лесная фея',    w: 84, h: 72, ax: 54, ay: 54, sc: 1.55 },
+  pixie:   { name: 'Цветочная фея', w: 104, h: 92, ax: 62, ay: 70, sc: 1.45, pal: { dr: '#7ad068', dr2: '#3f9a4a', hr: '#a8f0a0', hr2: '#5ab868', wing: '#a6e87a', wing2: '#3a9a4a', wing3: '#f2ffc0', wingBack: '#6cc858', tip: '#ffe0f4', crown: true } },
+  fairy:   { name: 'Лесная фея',    w: 104, h: 92, ax: 62, ay: 70, sc: 1.45 },
   leshy:   { name: 'Леший',         w: 108, h: 72, ax: 68, ay: 66 },
   boar:    { name: 'Кабан-страж',   w: 84, h: 60, ax: 42, ay: 50, sc: 1.25 },
   spore:   { name: 'Чумной моховик', w: 90, h: 64, ax: 54, ay: 54, sc: 1.2 },
@@ -123,54 +123,92 @@ function naEye(c, x, y, P, col, r = 1) {
 
 // =============== Лесная фея ===============
 function drawFairy(c, P) {
-  const lift = 9 + (P.dead ? -9 : 0);
-  naShadow(c, 5.5 - lift * 0.18);
+  const lift = P.dead ? 0 : 7;
   c.save();
   c.translate(P.x, P.y - lift);
   c.rotate(P.rot);
-  const SK = '#f8dcc0', PL = P.pal || {}, DR = naK(P, PL.dr || '#4cae3c'), DR2 = naK(P, PL.dr2 || '#2e7a2c'), HR = naK(P, PL.hr || '#f6d458'), HR2 = naK(P, PL.hr2 || '#c8921e'), WG = P.dead ? 'rgba(236,250,236,0.55)' : 'rgba(240,252,236,0.72)';
-  const fl = P.wing;
-  // дальнее крыло
-  const wt = -6 + (P.dead ? 6 : 0) - fl * 5;
-  poly(c, [[-1, -9], [-8, wt - 4], [-10.4, wt + 1], [-4.4, -6]], 'rgba(200,232,200,0.6)', 'rgba(110,170,120,0.9)', 0.35);
-  // ноги
-  const sw = P.leg * 1.4;
-  naLimb(c, -1, -4.5, -1.5 + sw, -0.5, 1.1, SK); naLimb(c, 1, -4.5, 1.2 - sw, -0.5, 1.1, SK);
-  // платье-колокольчик
-  poly(c, [[-2, -10], [2, -10], [4.6 + P.leg * 0.4, -3.6], [-4.4 - P.leg * 0.4, -3.6]], DR);
-  poly(c, [[-2, -10], [0.4, -10], [0, -3.6], [-4.4, -3.6]], DR2);
-  c.fillStyle = naK(P, '#d8f6a8'); c.fillRect(-4.4, -4.2, 8.8, 0.9);   // подол из листочков
-  // торс и рука с волшебной палочкой
-  ellipse(c, 0, -11, 2.5, 2.7, DR);
+  const PL = P.pal || {}, SK = naK(P, '#f6d8b8'), SK2 = naK(P, '#d9ac88');
+  const DR = naK(P, PL.dr || '#3fa83a'), DR2 = naK(P, PL.dr2 || '#2a7430'), HR = naK(P, PL.hr || '#2f8a3c'), HR2 = naK(P, PL.hr2 || '#1e5a2a');
+  const WC = PL.wing || '#7ad65a', WC2 = PL.wing2 || '#2e8a3a', WC3 = PL.wing3 || '#e4ffb0';
+  const fl = P.dead ? -1 : P.wing;
+  const WX = -1.2, WY = -19.6;   // где крылья крепятся к спине
+  // тонкие длинные крылья-«листья» бабочки: верхние длинные, нижние короче; дальняя пара темнее и чуть выше
+  const wing = (k, col, edge, dy, rot) => {
+    c.save(); c.translate(WX, WY + dy); c.rotate(rot);
+    const up = -15 * k - fl * 3 * k;
+    const leaf = (tx, ty, w) => {
+      c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(tx * 0.2 - w, ty * 0.5, tx, ty); c.quadraticCurveTo(tx * 0.9 + w * 0.2, ty * 0.35, 0, 0); c.closePath();
+      c.fillStyle = col; c.fill(); c.strokeStyle = edge; c.lineWidth = 0.55; c.stroke();
+      c.strokeStyle = WC3; c.lineWidth = 0.35; c.beginPath(); c.moveTo(0, 0); c.lineTo(tx * 0.85, ty * 0.85); c.stroke();
+    };
+    leaf(-9 * k, up, 3.2 * k);
+    leaf(-11 * k, 8 * k + fl * 2 * k, 2.6 * k);
+    ellipse(c, -6.4 * k, up * 0.62, 0.8 * k, 0.8 * k, WC3); ellipse(c, -7.4 * k, 4.4 * k, 0.6 * k, 0.6 * k, WC3);
+    c.restore();
+  };
+  wing(0.92, naK(P, PL.wingBack || '#3f9a3a'), WC2, -0.4, -0.18);
+  // тонкие длинные ноги
+  const sw = P.leg * 1.3;
+  naLimb(c, -0.9, -10.6, -1.3 + sw, -0.6, 1.1, SK2); naLimb(c, 1, -10.6, 1.4 - sw, -0.6, 1.2, SK);
+  ellipse(c, -1.3 + sw, -0.4, 1.1, 0.5, SK2); ellipse(c, 1.5 - sw, -0.4, 1.2, 0.5, SK);
+  // дальняя рука
+  naArm(c, -1.2, WY + 0.6, 3.5, 3.4, P.up > 0.5 ? -2.7 : 0.35 + P.b * 0.2, -0.4, 0.95, SK2);
+  // бёдра и юбка из листьев
+  ellipse(c, 0, -11.6, 3.1, 1.9, SK);
+  poly(c, [[-3.4, -12.4], [3.4, -12.4], [4.6 + P.leg * 0.4, -9.2], [2.6, -10], [0.8, -8.2], [-0.8, -9.8], [-2.8, -8.8], [-4.6 - P.leg * 0.4, -9.4]], DR);
+  poly(c, [[-3.4, -12.4], [-0.4, -12.4], [-0.8, -9.8], [-2.8, -8.8], [-4.6, -9.4]], DR2);
+  c.fillStyle = naK(P, '#d4f59a'); c.fillRect(-3.4, -12.5, 6.8, 0.6);
+  // талия тонкая, плечи и грудь: песочные часы
+  poly(c, [[-1.3, -13.2], [1.3, -13.2], [2.4, -15.4], [3, -17.8], [2.6, -20.2], [-2.6, -20.2], [-3, -17.8], [-2.4, -15.4]], SK);
+  poly(c, [[-1.3, -13.2], [-0.2, -13.2], [-0.6, -20.2], [-2.6, -20.2], [-3, -17.8], [-2.4, -15.4]], SK2);
+  ellipse(c, 0, -20.3, 3.5, 1.1, SK);                         // плечи
+  ellipse(c, 2.9, -17.6, 2.5, 2.3, SK);                       // грудь
+  ellipse(c, 2.4, -18, 1.2, 0.9, shade(SK, 0.25));
+  // топ из двух листьев + лямки
+  poly(c, [[-0.6, -19.4], [5.2, -19.2], [5.4, -16.2], [3.2, -15.4], [0.4, -16.2]], DR);
+  poly(c, [[-0.6, -19.4], [1.6, -19.3], [1.2, -16], [0.4, -16.2]], DR2);
+  c.strokeStyle = DR2; c.lineWidth = 0.5; c.beginPath(); c.moveTo(1, -19.6); c.lineTo(0.2, -21); c.moveTo(4.4, -19.4); c.lineTo(3.6, -21); c.stroke();
+  // ближняя рука с палочкой
   const th = naTheta(P);
-  const sx = 1.2, sy = -11.5;
-  const [hx, hy, ang] = naArm(c, sx, sy, 3.4, 3.2, th, -0.5 + P.b * 0.6, 1.1, SK);
-  if (P.b > 0.5) {   // парирование: крыло-щит и круг света
-    c.strokeStyle = 'rgba(190,255,230,0.9)'; c.lineWidth = 0.7; c.beginPath(); c.arc(5, -11, 5.5, -1.2, 1.2); c.stroke();
-  }
+  const [hx, hy, ang] = naArm(c, 0.8, -20, 3.8, 3.6, th, -0.5 + P.b * 0.6, 0.95, SK);
+  if (P.b > 0.5) { c.strokeStyle = 'rgba(190,255,230,0.9)'; c.lineWidth = 0.7; c.beginPath(); c.arc(6, -17, 6, -1.2, 1.2); c.stroke(); }
   const [wx, wy] = naDir(ang + 0.2);
-  naLimb(c, hx, hy, hx + wx * 6.5, hy + wy * 6.5, 0.8, '#7a5a34');
-  const tipx = hx + wx * 6.8, tipy = hy + wy * 6.8;
+  naLimb(c, hx, hy, hx + wx * 7, hy + wy * 7, 0.8, '#8a6a3a');
+  const tipx = hx + wx * 7.3, tipy = hy + wy * 7.3;
   c.save(); c.globalCompositeOperation = 'lighter';
-  ellipse(c, tipx, tipy, 2.2 + (P.a > 0.5 ? 1.5 : 0), 2.2 + (P.a > 0.5 ? 1.5 : 0), 'rgba(255,240,140,0.55)');
+  ellipse(c, tipx, tipy, 2.4 + (P.a > 0.5 ? 1.5 : 0), 2.4 + (P.a > 0.5 ? 1.5 : 0), 'rgba(255,240,140,0.55)');
   c.restore();
-  ellipse(c, tipx, tipy, 1.1, 1.1, PL.tip || '#fff6b0');
+  ellipse(c, tipx, tipy, 1.15, 1.15, PL.tip || '#fff6b0');
   if (P.a > 0.5 || P.up > 0.5) for (const [dx, dy] of [[3, -2], [2, 2.4], [4.4, 0.4], [-1, -3]]) { c.fillStyle = '#fff6b0'; c.fillRect(tipx + dx - 0.4, tipy + dy - 0.4, 0.8, 0.8); }
-  // голова
-  const hy0 = -15.2 + (P.hurt > 0.5 ? 0.6 : 0);
-  poly(c, [[-3.8, hy0 - 1], [-2, hy0 - 4.6], [2.4, hy0 - 4.4], [3.4, hy0 - 0.4], [1, hy0 + 1.8], [-3.6, hy0 + 3.4]], HR2);   // волосы сзади
-  ellipse(c, 0.6, hy0, 3.1, 3.3, SK);
-  poly(c, [[-2.4, hy0 - 2.2], [0.5, hy0 - 4.2], [3.6, hy0 - 1.6], [2.6, hy0 - 2.4], [0.2, hy0 - 3.2]], HR);                        // чёлка
-  ellipse(c, -2.3, hy0 - 3.8, 1.6, 1.4, HR);                                                                                      // пучок
-  poly(c, [[3.2, hy0 - 0.8], [6, hy0 - 2.2], [3.6, hy0 + 0.2]], SK);                                                              // острое ушко
-  if (PL.crown) for (const [fx, fy, fc] of [[-1.6, -4.4, '#ff8ac8'], [1.2, -5, '#ffe070'], [3.4, -3.4, '#ff8ac8']]) ellipse(c, fx, hy0 + fy + 0.6, 0.95, 0.95, fc);
-  naEye(c, 1.9, hy0 - 0.1, P, '#1a3a4a', 0.75);
-  if (P.mouth > 0.4) ellipse(c, 2.2, hy0 + 1.7, 0.8, 0.9 * P.mouth, '#8a2a3a');
-  else { c.fillStyle = '#c85a6a'; c.fillRect(1.6, hy0 + 1.5, 1, 0.5); }
-  // ближнее крыло (поверх)
-  const wt2 = -9 - fl * 5 + (P.dead ? 7 : 0);
-  poly(c, [[-0.4, -10.5], [-6.8, wt2 - 3.6], [-9.6, wt2 + 2.6], [-3.4, -6.6]], WG, 'rgba(110,170,120,0.95)', 0.35);
-  c.strokeStyle = 'rgba(255,255,255,0.65)'; c.lineWidth = 0.3; c.beginPath(); c.moveTo(-0.4, -10.5); c.lineTo(-8.6, wt2 - 0.5); c.stroke();
+  // шея и голова
+  const hx0 = 0.9, hy0 = -24 + (P.hurt > 0.5 ? 0.6 : 0);
+  c.fillStyle = SK2; c.fillRect(hx0 - 0.9, hy0 + 2, 1.8, 2.4);
+  // длинные волосы струятся за спиной и покачиваются
+  const hsw = fl * 0.9;
+  poly(c, [[hx0 - 2.4, hy0 - 1.6], [hx0 - 4.4 - hsw, hy0 + 4], [hx0 - 5.4 - hsw * 1.4, -11.5], [hx0 - 3.4 - hsw, -10], [hx0 - 1.6, -15], [hx0 + 0.2, hy0 + 3]], HR2);
+  poly(c, [[hx0 - 2.4, hy0 - 1.6], [hx0 - 3.6 - hsw, hy0 + 3.4], [hx0 - 4.6 - hsw, -13], [hx0 - 2.6, hy0 + 3.4]], HR);
+  ellipse(c, hx0, hy0, 2.7, 2.9, SK);
+  ellipse(c, hx0 + 0.9, hy0 + 1.2, 1.2, 0.8, shade(SK, 0.1));
+  poly(c, [[hx0 - 2.6, hy0 - 1.6], [hx0 + 0.4, hy0 - 3.6], [hx0 + 3.4, hy0 - 1.2], [hx0 + 2.4, hy0 - 2], [hx0 + 0.2, hy0 - 2.6]], HR);   // чёлка
+  ellipse(c, hx0 - 1.2, hy0 - 3, 1.5, 1.2, HR);
+  poly(c, [[hx0 + 2.4, hy0 - 0.6], [hx0 + 5.4, hy0 - 1.8], [hx0 + 2.8, hy0 + 0.4]], SK);                                                  // острое ушко
+  if (!P.dead) { ellipse(c, hx0 + 0.2, hy0 - 2.6, 1.3, 0.6, '#ffe070'); c.fillStyle = '#ff6ad0'; c.fillRect(hx0 - 0.1, hy0 - 3.1, 0.7, 0.7); }   // диадема с самоцветом
+  if (PL.crown) for (const [fx, fy, fc] of [[-1.8, -2.4, '#ff8ac8'], [2, -2.6, '#ffe070']]) ellipse(c, hx0 + fx, hy0 + fy, 0.9, 0.9, fc);
+  naEye(c, hx0 + 1.5, hy0 - 0.1, P, '#1a3a4a', 0.7);
+  if (P.mouth > 0.4) ellipse(c, hx0 + 1.7, hy0 + 1.5, 0.7, 0.8 * P.mouth, '#8a2a3a');
+  else { c.fillStyle = '#d0586a'; c.fillRect(hx0 + 1.1, hy0 + 1.3, 1, 0.5); }
+  // ближние крылья поверх спины
+  wing(1, naK(P, WC), WC2, 0, 0.06);
+  // сказочная пыльца: звёздочки-крестики вокруг и след за спиной
+  const dust = [[-12, -3, 0], [-16, -16, 1], [8, -27, 2], [-6, -30, 3], [11, -4, 4], [-12, -25, 5]];
+  c.save(); c.globalCompositeOperation = 'lighter';
+  for (const [dx, dy, k] of dust) {
+    if (P.dead && k > 2) continue;
+    const ph = (k + (fl > 0 ? 1 : 0) + (P.leg > 0 ? 1 : 0)) % 3, x = dx + Math.sin(fl * 2 + k) * 1.2, y = dy + (ph - 1) * 1.1 + P.leg * 0.6;
+    c.fillStyle = ['#fff6b0', '#d4ffb8', '#ffffff'][ph];
+    if (ph === 0) { c.fillRect(x - 1.4, y - 0.35, 2.8, 0.7); c.fillRect(x - 0.35, y - 1.4, 0.7, 2.8); } else c.fillRect(x - 0.5, y - 0.5, 1, 1);
+  }
+  c.restore();
   c.restore();
 }
 
@@ -326,7 +364,7 @@ const NA_DRAW = { pixie: drawFairy, fairy: drawFairy, leshy: drawLeshy, boar: dr
 // ---------- Логова ----------
 // У каждого логова 3 вида: кадры 0 и 1 (живое, огоньки/дым/свет чуть иные) и 'd' — разорено (зачищено, потухло, поблекло).
 const NA_LAIR = {
-  pixie: { name: 'Домик цветочных фей', w: 84, h: 76, ax: 42, ay: 56 },
+  pixie: { name: 'Домик фей на дереве', w: 100, h: 112, ax: 50, ay: 98 },
   fairy: { name: 'Грибное кольцо фей',  w: 92, h: 64, ax: 46, ay: 36 },
   leshy: { name: 'Дупло лешего',        w: 96, h: 92, ax: 48, ay: 78 },
   boar:  { name: 'Лёжка кабанов',       w: 96, h: 64, ax: 48, ay: 38 },
@@ -361,36 +399,56 @@ function naSparks(c, pts, t, col) {
 function naLairDraw(c, kind, v) {
   const dead = v === 'd', f = v === '1' ? 1 : 0, R = mulberry32(kind.length * 977 + 11);
   if (kind === 'pixie') {
-    // тень и тропинка из плиток
-    c.fillStyle = '#4a4430'; c.beginPath(); c.ellipse(1, 1, 24, 6.4, 0, 0, 7); c.fill();
-    for (const [x, y, r] of [[2, 6, 3.2], [-3, 9.6, 2.8], [4, 12.6, 2.6]]) { ellipse(c, x, y, r, r * 0.55, dead ? '#8a8472' : '#b8b09a'); ellipse(c, x - 0.6, y - 0.5, r * 0.6, r * 0.3, dead ? '#a09a86' : '#d6cdb4'); }
-    // ножка: бочка с корой-узором
-    naBlob(c, [[-9, 0], [-8, -16], [-6, -26], [6, -26], [8, -16], [9, 0]], dead ? '#a89c80' : '#f0e2c2', 0.22, -0.3);
-    c.strokeStyle = dead ? '#8a7e66' : '#d4c2a0'; c.lineWidth = 0.7; for (const x of [-4, 0, 4]) { c.beginPath(); c.moveTo(x, -3); c.lineTo(x + 0.4, -22); c.stroke(); }
-    // дверка с аркой
-    naBlob(c, [[-3.6, 0], [-3.6, -9], [-2, -12.4], [2, -12.4], [3.6, -9], [3.6, 0]], dead ? '#4a3a2a' : '#7a4a26', 0.2, -0.4);
-    if (dead) { poly(c, [[0.4, 0], [3.6, -1], [3.6, -9], [0.4, -11]], '#14100a'); }
-    else { c.fillStyle = '#e8c850'; c.fillRect(1.7, -5.4, 1, 1); c.strokeStyle = '#4a2a14'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(0, -11.6); c.lineTo(0, 0); c.stroke(); }
-    // круглое окошко
+    // домик на дереве: старый дуб, в развилке — деревянный дом с листвяной крышей, верёвочная лестница, фонарики
+    c.fillStyle = '#4a4430'; c.beginPath(); c.ellipse(1, 1, 26, 6.6, 0, 0, 7); c.fill();
+    const BK = dead ? '#6a5a46' : '#7a5632', LF = dead ? ['#7a7a3a', '#6a6a30', '#5a5a28'] : ['#2f7a34', '#3f9a42', '#58b552'];
+    // корни и ствол
+    for (const [x, d] of [[-9, -1], [9, 1]]) naBlob(c, [[x, 1], [x + d * 5, -4], [x + d * 11, 1], [x + d * 6, 3]], BK, 0.2, -0.34);
+    naBlob(c, [[-10, 1], [-8, -18], [-7, -42], [-10, -56], [10, -56], [7, -42], [9, -18], [11, 1]], BK, 0.26, -0.36);
+    c.strokeStyle = dead ? '#4a3c2c' : '#5a3c20'; c.lineWidth = 0.9;
+    for (const [x0, y0, x1, y1] of [[-4, -4, -4.6, -40], [1, -6, 0.6, -44], [6, -4, 6.4, -38]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
+    ellipse(c, -3, -24, 1.7, 2.4, '#3a2414');           // дупло-норка
+    // задняя крона
+    const cloud = (cx, cy, r, col) => { const pts = []; for (let k = 0; k < 11; k++) { const a = k / 11 * 6.283, rr = r * (0.82 + 0.18 * Math.sin(k * 2.3 + cx)); pts.push([cx + Math.cos(a) * rr * 1.25, cy + Math.sin(a) * rr * 0.86]); } naBlob(c, pts, col, 0.1, -0.28); };
+    cloud(-22, -66, 14, LF[0]); cloud(22, -64, 14, LF[0]); cloud(0, -80, 16, LF[0]); cloud(-30, -52, 10, LF[0]); cloud(30, -50, 10, LF[0]);
+    // платформа и домик
+    naBlob(c, [[-22, -44], [22, -44], [20, -40], [-20, -40]], '#8a6238', 0.25, -0.36);
+    c.strokeStyle = '#5a3c20'; c.lineWidth = 0.6; for (let x = -18; x <= 18; x += 6) { c.beginPath(); c.moveTo(x, -44); c.lineTo(x, -40.4); c.stroke(); }
+    naBlob(c, [[-13, -44], [-13, -60], [13, -60], [13, -44]], dead ? '#8a6a4a' : '#b0804e', 0.22, -0.34);
+    c.strokeStyle = dead ? '#5a442c' : '#7a5230'; c.lineWidth = 0.6; for (let y = -48; y > -60; y -= 4) { c.beginPath(); c.moveTo(-13, y); c.lineTo(13, y); c.stroke(); }
+    // дверка-арка и круглое окошко
+    naBlob(c, [[-9, -44], [-9, -53], [-7, -56], [-3, -56], [-1, -53], [-1, -44]], dead ? '#14100a' : '#6a4226', 0.2, -0.4);
+    if (!dead) { c.fillStyle = '#e8c850'; c.fillRect(-2.6, -49.4, 1, 1); }
     const glow = dead ? '#2a2820' : f ? '#fff2a0' : '#ffd860';
-    ellipse(c, 6.2, -17, 3.1, 3.1, '#6a4a2a'); ellipse(c, 6.2, -17, 2.2, 2.2, glow);
-    if (!dead) { c.strokeStyle = '#6a4a2a'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(6.2, -19.2); c.lineTo(6.2, -14.8); c.moveTo(4, -17); c.lineTo(8.4, -17); c.stroke(); }
-    // шляпка-крыша
-    const cap = dead ? '#9a6a5a' : '#e0486e';
-    naBlob(c, [[-24, -20], [-22, -29], [-15, -38], [-5, -43], [6, -43], [15, -38], [22, -29], [24, -20], [14, -22.4], [0, -24], [-14, -22.4]], cap, 0.3, -0.36);
-    c.fillStyle = shade(cap, -0.45); for (let x = -20; x <= 20; x += 5) c.fillRect(x, -21.2 + Math.abs(x) * 0.02, 2.4, 2.4);   // пластинки по краю
-    if (!dead) for (const [x, y, r] of [[-12, -31, 3.2], [0, -38, 2.8], [11, -30, 2.6], [-3, -27, 1.8], [18, -25, 1.8], [-19, -24, 1.6]]) { ellipse(c, x, y, r, r * 0.78, '#fff4f8'); ellipse(c, x - r * 0.3, y - r * 0.3, r * 0.45, r * 0.3, '#ffffff'); }
-    // труба с дымком
-    naBlob(c, [[10, -37], [10.6, -46], [14.6, -46], [15, -37]], dead ? '#7a6a58' : '#8a6a4a', 0.2, -0.3);
-    if (!dead) { naPuff(c, 12.6 + f * 1.4, -50 - f * 1.5, 2.2, 'rgba(240,240,248,A)', 0.8); naPuff(c, 14 - f, -56 - f * 2, 2.8, 'rgba(240,240,248,A)', 0.55); naPuff(c, 12 + f * 2, -62, 3, 'rgba(240,240,248,A)', 0.3); }
-    // цветы у крыльца
-    for (const [x, y, col] of [[-16, 2, '#ff8ac8'], [-12, 4, '#ffe070'], [-20, 4, '#a8e0ff'], [15, 3, '#c8a0ff'], [20, 5, '#ff8ac8'], [12, 6, '#ffe070']]) {
-      const sw = dead ? 0 : (f ? 0.8 : -0.8);
-      naLimb(c, x, y, x + sw, y - (dead ? 2 : 5), 0.8, dead ? '#6a6a3a' : '#3e8a30');
-      ellipse(c, x + sw, y - (dead ? 1.4 : 5.6), 1.7, dead ? 0.9 : 1.7, dead ? '#8a7a6a' : col); if (!dead) ellipse(c, x + sw, y - 5.6, 0.6, 0.6, '#fff6b0');
+    ellipse(c, 6, -52, 3.4, 3.4, '#5a3a20'); ellipse(c, 6, -52, 2.5, 2.5, glow);
+    if (!dead) { c.strokeStyle = '#5a3a20'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(6, -54.5); c.lineTo(6, -49.5); c.moveTo(3.5, -52); c.lineTo(8.5, -52); c.stroke(); }
+    // перила балкона
+    c.strokeStyle = '#6a4226'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-22, -50); c.lineTo(-13, -50); c.moveTo(13, -50); c.lineTo(22, -50); c.stroke();
+    for (const x of [-22, -18, -14, 14, 18, 22]) { c.beginPath(); c.moveTo(x, -44); c.lineTo(x, -50); c.stroke(); }
+    // крыша из листьев
+    naBlob(c, [[-18, -58], [-14, -66], [-6, -72], [6, -72], [14, -66], [18, -58], [10, -60], [0, -61], [-10, -60]], LF[1], 0.3, -0.34);
+    for (let k = 0; k < 6; k++) { c.strokeStyle = LF[2]; c.lineWidth = 0.7; c.beginPath(); c.arc(-12 + k * 5, -62 - (k % 2) * 3, 2.6, 0.2, 2.9); c.stroke(); }
+    // гирлянда огоньков по краю крыши
+    if (!dead) for (let k = 0; k < 7; k++) { const x = -15 + k * 5, y = -59.6 + Math.abs(k - 3) * -0.4; c.fillStyle = (k + f) % 2 ? '#ffe070' : '#ff9ad8'; c.fillRect(x - 0.6, y, 1.4, 1.4); }
+    // фонарики на крючках
+    for (const x of [-24, 24]) { naLimb(c, x, -44, x, -40, 0.6, '#5a3c20'); ellipse(c, x, -38, 2, 2.4, dead ? '#3a3a30' : f ? '#fff2a0' : '#ffd060'); }
+    // верёвочная лестница
+    c.strokeStyle = '#a8905a'; c.lineWidth = 0.7; const sw = dead ? 0 : (f ? 1 : -1);
+    c.beginPath(); c.moveTo(-5, -40); c.quadraticCurveTo(-5 + sw, -20, -5 + sw * 1.4, dead ? -10 : 1); c.moveTo(-1, -40); c.quadraticCurveTo(-1 + sw, -20, -1 + sw * 1.4, dead ? -10 : 1); c.stroke();
+    for (let y = -36; y < (dead ? -12 : 0); y += 5) { const k = (y + 40) / 40; c.beginPath(); c.moveTo(-5 + sw * k * 0.5, y); c.lineTo(-1 + sw * k * 0.5, y); c.stroke(); }
+    // передняя листва и цветы
+    cloud(-18, -50, 7, LF[2]); cloud(18, -46, 6, LF[2]);
+    for (const [x, y, col] of [[-15, 2, '#ff8ac8'], [-11, 4, '#ffe070'], [12, 3, '#c8a0ff'], [17, 5, '#ff8ac8'], [8, 6, '#a8e0ff']]) {
+      const w = dead ? 0 : (f ? 0.8 : -0.8);
+      naLimb(c, x, y, x + w, y - (dead ? 2 : 5), 0.8, dead ? '#6a6a3a' : '#3e8a30');
+      ellipse(c, x + w, y - (dead ? 1.4 : 5.6), 1.7, dead ? 0.9 : 1.7, dead ? '#8a7a6a' : col); if (!dead) ellipse(c, x + w, y - 5.6, 0.6, 0.6, '#fff6b0');
     }
-    if (!dead) naSparks(c, [[-26, -30, 0 + f], [26, -24, 2 + f], [-18, -44, 4 + f * 2], [22, -40, 6 + f], [0, -50, 1 + f]], f * 1.7, 'rgba(255,240,170,A)');
-    else { c.strokeStyle = 'rgba(230,230,230,0.8)'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(-14, -20); c.lineTo(-4, -26); c.moveTo(-14, -26); c.lineTo(-4, -22); c.stroke(); }   // паутина
+    // свисающие лианы с цветами
+    for (const [x, l] of [[-18, 12], [-8, 8], [10, 10], [20, 13]]) { c.strokeStyle = dead ? '#5a5a30' : '#4a8a2a'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(x, -40); c.quadraticCurveTo(x + (f ? 1.6 : -1.6), -40 + l * 0.5, x + (f ? 0.8 : -0.8), -40 + l); c.stroke(); if (!dead) ellipse(c, x + (f ? 0.8 : -0.8), -40 + l, 1.3, 1.3, '#ffb0e0'); }
+    // трубочка-дымок
+    if (!dead) { naPuff(c, 9 + f * 1.4, -75 - f, 2, 'rgba(240,240,248,A)', 0.7); naPuff(c, 10.5 - f, -80 - f * 2, 2.6, 'rgba(240,240,248,A)', 0.45); }
+    if (!dead) naSparks(c, [[-28, -60, f], [27, -66, 2 + f], [-20, -86, 4 + f * 2], [18, -88, 6 + f], [0, -96, 1 + f]], f * 1.7, 'rgba(255,240,170,A)');
+    else { c.strokeStyle = 'rgba(230,230,230,0.8)'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(-12, -46); c.lineTo(-3, -54); c.moveTo(-12, -54); c.lineTo(-3, -48); c.stroke(); }
   } else if (kind === 'fairy') {
     c.fillStyle = dead ? 'rgba(120,120,90,0.2)' : 'rgba(110,210,160,0.3)'; c.beginPath(); c.ellipse(0, 0, 34, 12.6, 0, 0, 7); c.fill();
     c.strokeStyle = dead ? 'rgba(160,150,120,0.5)' : (f ? 'rgba(220,255,236,0.8)' : 'rgba(190,255,220,0.6)'); c.lineWidth = 0.8; c.beginPath(); c.ellipse(0, 0, 30, 10.8, 0, 0, 7); c.stroke();

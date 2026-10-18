@@ -33,7 +33,7 @@ const NLAIR = {
   boar:  ['boar', 'boar'],
   spore: ['spore', 'spore', 'spore'],
 };
-const NEU_LAIR_NAME = { pixie: 'Домик цветочных фей', fairy: 'Поляна лесных фей', leshy: 'Дупло лешего', boar: 'Лёжка кабанов', spore: 'Пятно чумных грибов' };
+const NEU_LAIR_NAME = { pixie: 'Домик фей на дереве', fairy: 'Поляна лесных фей', leshy: 'Дупло лешего', boar: 'Лёжка кабанов', spore: 'Пятно чумных грибов' };
 
 Game.neutrals = [];
 Game.lairs = [];
@@ -307,6 +307,7 @@ function neuHeroDown(N, tg) {
   floater(N.x, N.y - 2.1, ['Так-то!', 'Не лезь в лес!', 'Слабак!'][(Math.random() * 3) | 0], '#ffe9a0');
 }
 
+const tg0 = N => neuUnit(N.tg);
 function neuThink(N, dt) {
   const S = NSPEC[N.k], now = Game.time;
   if (N.st === 'die') { N.dt += dt; N.fr = neuFrame(N); return; }
@@ -314,6 +315,7 @@ function neuThink(N, dt) {
   if (N.winT > 0) { N.winT -= dt; N.fr = neuFrame(N); if (N.winT <= 0) { N.winT = 0; N.st = 'idle'; } return; }
   N.cdA -= dt;
   let tg = neuUnit(N.tg);
+  if (N.k === 'pixie' && !tg0(N) && now - N.prov > NEU_FORGET) neuPixieMagic(N, dt);
   if (tg && (neuUnitOut(tg) || now - N.prov > NEU_FORGET || Math.hypot(tg.x - N.hx, tg.y - N.hy) > NEU_LEASH + 4 || Math.hypot(N.x - N.hx, N.y - N.hy) > NEU_LEASH)) {
     if (tg && neuUnitOut(tg) && tg.hero && tg.hero.hp <= 0) neuHeroDown(N, tg);
     N.tg = 0; tg = null; N.st = 'home';
@@ -562,7 +564,7 @@ function neuDraw(c, N) {
   c.drawImage(sp.cv, -sp.ax, -sp.ay);
   c.restore();
   if (!dead && N.hp < N.mhp - 0.5) {
-    const w = 18, hy = py - (N.k === 'leshy' ? 54 : N.k === 'fairy' ? 38 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);
+    const w = 18, hy = py - (N.k === 'leshy' ? 54 : (N.k === 'fairy' || N.k === 'pixie') ? 46 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);
     c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(px - w / 2 - 1, hy - 1, w + 2, 4);
     c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(px - w / 2, hy, Math.round(w * r), 2);
   }
@@ -703,4 +705,78 @@ function neuWatchGrove(L) {
   L.angry = Game.time; L.fr = 0; L.friend = false;
   logEvent('animal', 'Цветочные феи в ярости: в их роще рубят деревья', L.x + 0.5, L.y + 0.5);
   neuProvoke(mem[0], best);
+}
+
+// ---------- Заклинания цветочных фей: 5 добрых для гномов и 5 недобрых для нечисти ----------
+// Каждые 8–14 с фея (если её не тронули) смотрит вокруг в радиусе NEU_SPELL_R клеток. Нечисть гонит всегда;
+// гномов привечает только тогда, когда её логово «подружилось» (дары героя, L.friend).
+const NEU_SPELL_R = 9;
+const NEU_SPELLS_GOOD = [
+  { id: 'heal',  name: 'Исцеление',        col: ['#9af0a0', '#d8ffd8'], need: u => !!u.injury, fn: u => { u.injury = null; if (u.hero) u.hero.hp = Math.min(u.hero.maxhp, u.hero.hp + u.hero.maxhp * 0.15); } },
+  { id: 'vigor', name: 'Бодрость',         col: ['#ffe070', '#fff6c0'], need: u => !(u.boostUntil > Game.time + 5), fn: u => { u.boostUntil = Game.time + 40; } },
+  { id: 'feed',  name: 'Сытость',          col: ['#ffd090', '#ffeccc'], need: u => u.food < 0.55, fn: u => { u.food = Math.min(1.3, u.food + 0.4); } },
+  { id: 'ward',  name: 'Оберег от призраков', col: ['#bfe8ff', '#ffffff'], need: u => !(u.ghostCD > Game.time + 10), fn: u => { u.ghostCD = Game.time + 60; } },
+  { id: 'calm',  name: 'Покой',            col: ['#c8a0ff', '#f0e0ff'], need: u => u.fleeUntil > Game.time || u.panicUntil > Game.time, fn: u => { u.fleeUntil = 0; u.panicUntil = 0; } },
+];
+const neuFairyHome = N => Math.hypot(N.x - N.hx, N.y - N.hy) < 8;
+
+function neuPixieMagic(N, dt) {
+  N.spT = (N.spT === undefined ? 3 + Math.random() * 6 : N.spT) - dt;
+  if (N.spT > 0 || N.st === 'atk' || N.ov) return;
+  N.spT = 8 + Math.random() * 6;
+  const L = Game.lairs.find(l => l.id === N.lair), R = NEU_SPELL_R, near = (o, r = R) => Math.hypot(o.x - N.x, o.y - N.y) < r;
+  // 1) нечисть: пять заклинаний — по виду цели
+  const cast = (name, col, x, y) => {
+    N.ov = ['windup', 'strike', 'recover']; N.ovT = 0; N.ovP = 0.16; N.face = x >= N.x ? 1 : -1;
+    fxBurst(x * TILE, y * TILE - 10, 18, col, 70, 70, 0.9, 1.8, -20);
+    sfxAt('chime', x * TILE, y * TILE, 0.6);
+    floater(x, y - 1.9, name, col[0]);
+  };
+  const g = (Game.ghosts || []).find(o => !o.exo && o.alpha > 0.25 && o.mode !== 'leave' && near(o));
+  if (g) {
+    cast('Свет фей!', ['#fff6c0', '#bfe8ff', '#ffe070'], g.x, g.y);
+    g.exo = Game.time; g.mode = 'leave'; g.modeT = 99;
+    logEvent('night', 'Цветочные феи прогнали призрака светом', g.x, g.y);
+    return;
+  }
+  const sk = (Game.skels || []).find(o => o.state === 'roam' && o.k > 0.5 && near(o));
+  if (sk) {
+    cast('Рассыпься!', ['#e6dfc8', '#c8ffb0', '#fff6b0'], sk.x, sk.y);
+    sk.state = 'dead'; sk.t = 0; sk.moving = false; sk.resolved = true;
+    sfxAt('rattle', sk.x * TILE, sk.y * TILE, 1.0);
+    logEvent('night', 'Цветочные феи рассыпали скелета в кости', sk.x, sk.y);
+    return;
+  }
+  const en = (Game.ents || []).find(o => o.state === 'walk' && near(o));
+  if (en) {
+    cast('Усни, дерево…', ['#9af0a0', '#d4ffb8', '#7ab04a'], en.x, en.y);
+    en.state = 'root'; en.t = 0; en.alpha = 1;
+    logEvent('night', 'Цветочные феи усыпили ходячее дерево', en.x, en.y);
+    return;
+  }
+  const bt = (Game.bats || []).find(o => !o.leave && near(o, R + 4));
+  if (bt) {
+    cast('Звон крыльев!', ['#d8f6ff', '#ffffff', '#c8a0ff'], bt.x, bt.y);
+    bt.leave = true;
+    return;
+  }
+  // «блуждающие огни»: любую другую нечисть (в т.ч. бродящих рядом с деревней) уводят прочь на пару клеток
+  const stray = [...(Game.skels || []).filter(o => o.state === 'roam'), ...(Game.ents || []).filter(o => o.state === 'walk' || o.state === 'emerge')].find(o => near(o, R + 3));
+  if (stray) {
+    cast('Блуждающие огни!', ['#bfe8ff', '#ffe070', '#c8ffb0'], stray.x, stray.y);
+    const a = Math.atan2(stray.y - N.y, stray.x - N.x), nx = stray.x + Math.cos(a) * 4, ny = stray.y + Math.sin(a) * 4;
+    if (isWalkable(Math.floor(nx), Math.floor(ny))) { stray.x = nx; stray.y = ny; }
+    return;
+  }
+  // 2) гномам: только друзья
+  if (!L || !L.friend) return;
+  const pool = Game.units.filter(u => !u.dead && !u.inside && isPerson(u) && near(u));
+  for (const u of pool.sort(() => Math.random() - 0.5)) {
+    const sp = NEU_SPELLS_GOOD.filter(s => s.need(u));
+    if (!sp.length) continue;
+    const s = sp[(Math.random() * sp.length) | 0];
+    s.fn(u);
+    cast(s.name, s.col, u.x, u.y);
+    return;
+  }
 }
