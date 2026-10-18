@@ -350,6 +350,14 @@ function placeBuilding(type, x, y, done = false, rot = 0) {
     World.bmap[i] = b.id;
     if (isStreetObj(World.obj[i])) World.obj[i] = null;   // уличное убранство уступает место дому
   }
+  // кучка груза под фундаментом переезжает на соседнюю клетку: иначе диспетчер без конца шлёт к ней
+  // курьеров, которым туда не дойти, а сам груз лежит под домом до загрузки сохранения
+  for (let yy = y; yy < y + b.h; yy++) for (let xx = x; xx < x + b.w; xx++) {
+    const p = Game.piles.get(idx(xx, yy));
+    if (!p || p.removed) continue;
+    p.removed = true; Game.piles.delete(idx(xx, yy));
+    for (const g of GOOD_KEYS) if (p.stock[g] > 0) dropPile(xx, yy, g, p.stock[g]);
+  }
   const di = idx(b.doorX, b.doorY);
   World.door[di] = 1;
   World.obj[di] = null;

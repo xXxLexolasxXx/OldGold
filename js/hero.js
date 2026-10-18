@@ -225,6 +225,7 @@ function leaveTeam(u) {
 // Сбросить текущее дело: освободить занятое, выйти из здания
 function heroStopUnit(u) {
   if (u.proc && u.proc.return) { try { u.proc.return(); } catch (e) { /* ничего */ } }
+  if (u.brk) dropBreak(u);   // перекур/сон прерван приказом: иначе brk висит до конца нового дела, а клетка перекура занята
   u.proc = null; u.action = null; u.anim = null; u.lastRes = undefined;
   if (u.inside) { const b = u.inside; u.inside = null; u.x = b.doorX + 0.5; u.y = b.doorY + 0.5; }
   if (u.home && !u.home.removed) { if (u.home.worker === u) u.home.worker = null; }
