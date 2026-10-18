@@ -182,14 +182,24 @@ function socialTick(u) {
     if (an.kind === 'wolf' && d < 4.5) { gesture(u, u.carry ? 'scratch' : 'fist', 2.2, an.x); return; }
     if (an.kind !== 'wolf' && d < 3 && !u.carry && Math.random() < 0.15) { gesture(u, 'point', 1.8, an.x); return; }
   }
+  // нечисть: призрак — пугаются, скелет — грозят кулаком (а то и пускаются наутёк)
+  for (const g of Game.ghosts || []) {
+    if (g.exo || Math.hypot(g.x - u.x, g.y - u.y) > 4) continue;
+    gesture(u, 'panic', 1.6, g.x); return;
+  }
+  for (const s of Game.skels || []) {
+    if (s.dead || Math.hypot(s.x - u.x, s.y - u.y) > 4.5) continue;
+    gesture(u, Math.random() < 0.4 ? 'panic' : 'fist', 2, s.x); return;
+  }
   if (Math.random() > 0.45) return;
   for (const o of Game.units) {
     if (o === u || o.inside || o.brk || !isPerson(o)) continue;
     const d = Math.hypot(o.x - u.x, o.y - u.y);
     if (d > 0.3 && d < 1.8) {
+      const close = d < 0.85;            // «пять» — только вплотную друг к другу
       const free = !(o.action && o.action.anim) && !((o.fiveCD || 0) > Game.time);      // одна рука всё равно свободна
       // встреча: чаще дают пять (30%), реже машут (из остальных — только 20%, иначе проходят мимо)
-      if (free && Math.random() < 0.3) { highFive(u, o); return; }
+      if (close && free && Math.random() < 0.3) { highFive(u, o); return; }
       if (Math.random() < 0.2) {
         gesture(u, 'wave', 1.5, o.x);
         if (!((o.nextSocial || 0) > Game.time) && !o.carry) gesture(o, 'wave', 1.5, u.x);   // машет в ответ
@@ -205,6 +215,7 @@ function highFive(a, b) {
   for (const [x, y] of [[a, b], [b, a]]) {
     gesture(x, 'five', 1.1, y.x);
     x.boostUntil = Game.time + 1.1 + 2;
+    x.pauseUntil = Game.time + 1.1;                            // замирают на время хлопка
     x.fiveCD = Game.time + 30 + Math.random() * 30;          // не чаще раза в 30–60 с
     x.nextSocial = Game.time + 8 + Math.random() * 10;
   }

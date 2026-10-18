@@ -529,6 +529,7 @@ class Unit {
     if (this.type === 'hero') return heroThink(this);                              // герой: свои команды (hero.js)
     if (this.teamOf) { const g = teamThink(this); if (g) return g; }               // напарник героя
     if (this.isCourier) { this.idleFlag = true; return idleGen(this); }
+    if (this.repairJob) { this.idleFlag = false; return repairGen(this, this.repairJob); }   // чинит любой свободный гном
     if (this.type === 'builder') {
       if (this.fieldJob >= 0) { this.idleFlag = false; return fieldDigGen(this, this.fieldJob); }
       if (this.helpField >= 0) { this.idleFlag = false; return helpHarvestGen(this, this.helpField); }
@@ -580,6 +581,7 @@ class Unit {
 
   stepAction(dt) {
     const a = this.action;
+    if (a.walk && this.pauseUntil > Game.time) return undefined;   // замер (дал пять, чокается)
     if (a.walk) {
       const courier = this.isCourier;
       const sx = Math.floor(this.x), sy = Math.floor(this.y);

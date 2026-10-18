@@ -149,6 +149,7 @@ function heroStopUnit(u) {
   if (u.home && u.type === 'hero') u.home = null;
   else if (u.home && u.teamOf) u.home = null;
   u.job = null;
+  heroDropLoad(u);
   if (u.carry) { dropPile(Math.floor(u.x), Math.floor(u.y), u.carry, u.carryN || 1); u.carry = null; u.carryN = 0; }
   if (u.cmd) {
     const c = u.cmd;
@@ -174,6 +175,7 @@ function resolveCmd(t) {
     if (b.state !== 'done' || b.upg) return { kind: 'build', b, tx: b.doorX, ty: b.doorY, label: 'Строить' };
     if ((b.def.worker || b.def.auto) && !b.def.auto && !(b.worker && !b.worker.dead && b.worker.home === b))
       return { kind: 'work', b, tx: b.doorX, ty: b.doorY, label: 'Работать: ' + b.def.name };
+    if (b.def.outputs && Object.keys(b.def.outputs).some(k => b.offer(k) > 0)) return { kind: 'haul', b, tx: b.doorX, ty: b.doorY, label: 'Отнести на склад' };
     return { kind: 'move', x: b.doorX, y: b.doorY, tx: b.doorX, ty: b.doorY, label: 'Идти' };
   }
   const rs = Game.roadSites.get(i);
@@ -293,7 +295,8 @@ function* heroPile(u, c) {
 function* runCmd(u, c) {
   switch (c.kind) {
     case 'move': yield { walk: [c.x, c.y] }; break;
-    case 'build': yield* heroBuild(u, c.b); break;
+    case 'build': yield* heroBuildChain(u, c.b); break;
+    case 'haul': yield* heroHaul(u, c); break;
     case 'dig': yield* fieldDigGen(u, c.i); break;
     case 'reap': yield* helpHarvestGen(u, c.i); break;
     case 'chop': yield* heroChop(u, c); break;

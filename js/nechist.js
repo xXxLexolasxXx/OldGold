@@ -238,8 +238,12 @@ function buildingHit(e, b) {
   }
 }
 
-// Работяга чинит повреждённое здание
+// Чинит повреждённое здание любой свободный гном
 function* repairGen(u, b) {
+  u.repairBusy = b;
+  try { yield* repairBody(u, b); } finally { if (u.repairBusy === b) u.repairBusy = null; }
+}
+function* repairBody(u, b) {
   u.repairJob = null;
   if (!b || b.removed || !(b.dmg > 0)) { if (b) b.repairer = null; return; }
   const ok = yield { walk: [b.doorX, b.doorY], offroad: true };

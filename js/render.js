@@ -156,7 +156,7 @@ function swingFrame(u) {
 function drawUnit(c, u) {
   let px = Math.round(u.x * TILE), py = Math.round(u.y * TILE + 6);
   const a = u.action;
-  const moving = a && a.walk && a.path && !(a.block > 0 && !a.squeeze);
+  const moving = a && a.walk && a.path && !(a.block > 0 && !a.squeeze) && !(u.pauseUntil > Game.time);
   // вьючная коза и телега извозчика
   if (u.type === 'goat' || u.type === 'carter') {
     drawCreatureAt(c, u.type === 'goat' ? 'packgoat' : 'cart', px, py, u.face, moving, u.walkPhase / 1.4, u.carry, u.carryN || 1, u.type === 'carter' && (u.vdir === 'N' || u.vdir === 'S') ? u.vdir : 'E');
@@ -178,9 +178,14 @@ function drawUnit(c, u) {
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
   const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
-  if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {
+  if ((u.anim === 'flaskout' || u.anim === 'drink') && pose === 'idle') {
+    opt.gest = u.anim === 'drink' ? 'drink' : 'chest';
+    opt.gf = Math.floor(Game.time * 3 + u.id) & 1;
+    view = (u.id & 1) ? 'S' : 'E';
+  } else if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {
     opt.gest = u.gest;
-    if (u.gest === 'clap') { opt.gf = Math.floor(Game.time * 7 + u.id) & 1; if (pose === 'idle') view = 'S'; }
+    if (u.gest === 'five') { opt.gf = (1.1 - (u.gestUntil - Game.time)) < 0.4 ? 0 : 1; view = 'E'; face = u.gestFace || face; }
+    else if (u.gest === 'clap') { opt.gf = Math.floor(Game.time * 7 + u.id) & 1; if (pose === 'idle') view = 'S'; }
     else if (pose === 'idle') { view = 'E'; face = u.gestFace || face; }
   } else if (pose === 'idle' && !u.anim) {
     // заскучал: чешет затылок, потягивается, зевает, оглядывается
@@ -253,6 +258,7 @@ function drawUnit(c, u) {
   drawNightUnit(c, u, px, py, face, view, lying || flyP >= 0);
   if (u.netUntil > Game.time && !lying) drawNet(c, u, px, py, face, moving);
   if (!wp) drawUmbrella(c, u, px, py, face, pose, lying);
+  if (u.noseUntil > Game.time && !lying) drawRedNose(c, u, px, py, view, face);
   // дымок из трубки
   if (u.anim === 'smoke' || u.anim === 'smokeup') {
     const frontSmoke = view === 'S';

@@ -160,6 +160,7 @@ function dispatchSerfs() {
 
 function dispatchBuilders() {
   const idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside);
+  dispatchRepairs(idle);
   if (!idle.length) return;
   const sites = [
     ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold),
@@ -174,17 +175,6 @@ function dispatchBuilders() {
     u.job = s;
     u.idleFlag = false; u.idleStreak = 0;
     u.proc = null; u.action = null; u.anim = null;
-  }
-  // повреждённые нечистью здания чинят свободные работяги
-  if (idle.length) {
-    for (const b of Game.buildings) {
-      if (!(b.dmg > 0.05) || b.repairer || b.removed) continue;
-      const u = takeNearest(idle, b.doorX, b.doorY);
-      if (!u) break;
-      b.repairer = u; u.repairJob = b;
-      u.idleFlag = false; u.idleStreak = 0;
-      u.proc = null; u.action = null; u.anim = null;
-    }
   }
   // оставшиеся без дела работяги вскапывают заложенные поля (бесплатно)
   if (idle.length && Game.fieldPlans && Game.fieldPlans.size) {
@@ -216,6 +206,26 @@ function dispatchBuilders() {
         u.proc = null; u.action = null; u.anim = null;
       }
     }
+  }
+}
+
+// Повреждённое здание чинит любой свободный гном (не только работяга): сначала свободные работяги,
+// потом все, кто остался без дела (без дома-работы, не курьер, не герой и не напарник).
+function dispatchRepairs(idleBuilders) {
+  let todo = null;
+  for (const b of Game.buildings) {
+    if (b.repairer && (b.repairer.dead || (b.repairer.repairJob !== b && !(b.repairer.proc && b.repairer.repairBusy === b)))) b.repairer = null;   // чинивший погиб или передумал
+    if (b.dmg > 0.05 && !b.repairer && !b.removed) (todo || (todo = [])).push(b);
+  }
+  if (!todo) return;
+  const free = Game.units.filter(u => u.idleFlag && !u.inside && !u.dead && !u.brk && u.type !== 'builder' && !u.isCourier &&
+    u.type !== 'hero' && !u.teamOf && !UNIT_TYPES[u.type].animal && !u.home && u.type !== 'carter');
+  for (const b of todo) {
+    const u = takeNearest(idleBuilders, b.doorX, b.doorY) || takeNearest(free, b.doorX, b.doorY);
+    if (!u) break;
+    b.repairer = u; u.repairJob = b;
+    u.idleFlag = false; u.idleStreak = 0;
+    u.proc = null; u.action = null; u.anim = null;
   }
 }
 

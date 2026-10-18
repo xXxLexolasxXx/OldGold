@@ -181,6 +181,7 @@ function* buildGen(u, s) {
     yield { wait: 3 };
     return;
   }
+  let builtIt = false;
   while (!s.removed && u.job === s) {
     if (u.wantsEat() && findInn(u)) break;
     if (s.isRoad) {
@@ -198,7 +199,7 @@ function* buildGen(u, s) {
           yield { wait: HIT_TIME, anim: 'build' };
           s.pave = (k + 1) / ROAD_PAVE_HITS; s.lastHit = Game.time;
         }
-        if (!s.removed) completeRoad(s);
+        if (!s.removed) { completeRoad(s); builtIt = true; }
         break;
       }
       // камня ещё нет — не стоим без дела, вернёмся, когда привезут
@@ -216,13 +217,15 @@ function* buildGen(u, s) {
       s.stock[g]--; s.usedOf[g]++; s.used++;
       for (let k = 0; k < HITS_PER_UNIT && !s.removed; k++) { yield { wait: HIT_TIME, anim: 'build' }; s.hits++; s.lastHit = Game.time; }
       if (s.removed) break;
-      if (s.used >= s.total) { finishBuilding(s); break; }
+      if (s.used >= s.total) { finishBuilding(s); builtIt = true; break; }
     } else {
       yield { wait: 1 };
     }
   }
   if (s.builder === u) s.builder = null;
   if (u.job === s) u.job = null;
+  // закончили стройку: достают фляжки (дорога — реже, чтобы не мельтешило)
+  if (builtIt && !u.dead && u.type !== 'hero' && !u.teamOf && Math.random() < (s.isRoad ? 0.25 : 0.8)) yield* flaskGen(u);
 }
 
 function* goHome(u, b) {

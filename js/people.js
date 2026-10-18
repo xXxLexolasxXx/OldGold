@@ -541,8 +541,10 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'stretch': return [[1.6, shY - 3.6], [1, headY - 7 - f * 0.6]];
     case 'yawn':    return [[3.2, shY + 1.6], [4.4, headY + 3.4]];
     case 'clap':    return [[3.4, shY + 1.4], [5.2 + f * 0.9, shY + 0.6]];
-    case 'five':    return [[2.8, shY - 2.6], [4.6 + f * 0.5, headY - 3.6]];
+    case 'five':    return f ? [[3.6, shY - 2.4], [5.8, headY - 3.4]] : [[1.8, shY - 3.4], [2.2, headY - 6.4]];   // замах — хлопок
     case 'panic':   return [[2.4, shY - 2.6], [3.4 + f * 1.4, headY - 4.6 + f * 1.2]];
+    case 'chest':   return [[2.4, shY + 2], [1.4, shY + 0.2 + f * 0.6]];                  // рука за пазухой
+    case 'drink':   return [[3, shY + 2], [4.6, headY + 3.2 + f * 0.6]];                  // фляжка у рта
     default:        return [[3.4, shY], [6.4, shY - 0.6 - f * 0.3]];     // point
     case 'eat':     return f ? [[3.2, shY + 0.6], [4.6, headY + 3.4]] : [[3.4, shY + 2.4], [5.2, shY + 3.4]];
     case 'chest':   return [[2.4, shY + 2], [1.4, shY + 0.2 + f * 0.6]];                  // рука за пазухой
@@ -555,13 +557,25 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'stretch': return [[side * 5.8, shY - 3.2], [side * 4.2, headY - 7.4 - f * 0.6]];
     case 'yawn':    return [[side * 5, shY + 1.6], [side * 1.2, headY + 3.4]];
     case 'clap':    return [[side * 5.8, shY + 2.4], [side * (0.9 + f * 1.8), shY + 1.2]];     // хлопает перед грудью
-    case 'five':    return [[side * 6.2, shY - 2], [side * 6.8, headY - 4 + f * 0.5]];                    // ладонь вверх навстречу
+    case 'five':    return f ? [[side * 6.4, shY - 2.2], [side * 6.6, headY - 3.6]] : [[side * 5.6, shY - 3.4], [side * 5.8, headY - 7]];                    // ладонь вверх навстречу
     case 'panic':   return [[side * 6.4, shY - 2], [side * (6.6 - f * 1.6), headY - 4.2 + f * 1.6]];   // машет руками над головой
+    case 'chest':   return [[side * 4.6, shY + 2.4], [side * 1.8, shY + 0.4 + f * 0.6]];
+    case 'drink':   return [[side * 4.6, shY + 1.4], [side * 1.6, headY + 3.6 + f * 0.6]];
     default:        return [[side * 5.8, shY + 0.4], [side * 7.4, shY - 0.6 - f * 0.3]];
     case 'eat':     return f ? [[side * 5, shY + 0.4], [side * 1.4, headY + 4]] : [[side * 5.4, shY + 2.4], [side * 3.4, shY + 4.2]];   // ложка ко рту / в миску
     case 'chest':   return [[side * 4.6, shY + 2.4], [side * 1.8, shY + 0.4 + f * 0.6]];
     case 'drink':   return [[side * 4.6, shY + 1.4], [side * 1.6, headY + 3.6 + f * 0.6]];
   }
+}
+
+// Фляжка: серебристая, с пробкой; tilt — наклон к губам
+function drawFlask(c, x, y, tilt) {
+  c.save(); c.translate(x, y); c.rotate(-tilt);
+  c.fillStyle = '#2a2e34'; c.fillRect(-2, -2.6, 4, 5.4);
+  c.fillStyle = '#8a929c'; c.fillRect(-1.6, -2.2, 3.2, 4.6);
+  c.fillStyle = '#dce4ec'; c.fillRect(-1.4, -1.8, 1, 3.8);
+  c.fillStyle = '#6a4a28'; c.fillRect(-1, -4, 2, 1.6);
+  c.restore();
 }
 
 // ---------- Фигура ----------
@@ -759,6 +773,8 @@ function femBust(c, shY, skin) {
         smoothLimb(c, [0.4, shY + 0.4], e, h, 2.1, shirt);
         hand(c, h[0], h[1], skin[0]);
         if (gest === 'yawn') ellipse(c, 3.6, headY + 3.6, 0.8, 0.6, '#3a1408');
+        if (gest === 'drink') drawFlask(c, h[0] + 1.8, h[1] - 0.8, 0.5);
+        if (gest === 'chest' && gf) drawFlask(c, h[0] + 2.2, h[1] - 1.6, 0.2);
       } else if (pose === 'smoke') {
         smoothLimb(c, [0.4, shY + 0.4], [2.8, shY + 2.4], [4.8, headY + 3.8], 2, shirt);
         hand(c, 5, headY + 3.6, skin[0]);
@@ -811,6 +827,8 @@ function femBust(c, shY, skin) {
         const [e, h] = gestPts(gest, gf, side, shY, headY, 'S');
         smoothLimb(c, [sx, shY + 0.6], e, h, 2.2, col);
         hand(c, h[0], h[1], sk);
+        if (gest === 'drink') drawFlask(c, h[0] + 2.4, h[1] - 0.8, 0.3);
+        if (gest === 'chest' && gf) drawFlask(c, h[0] + 2.2, h[1] - 1.4, 0.2);
         return;
       }
       if (carry && !courier) {
