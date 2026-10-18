@@ -220,7 +220,7 @@ const FAUNA_TIER = {
   ribbit: 0, frogHop: 0, wormSlither: 0, firefly: 0, mouseRustle: 0, mouseGnaw: 0, badgerDig: 0, badgerSnort: 0,
   squirrelChatter: 0, squirrelCrack: 0, barkRustle: 0, peckDrum: 0, peckWhistle: 0, moleRustle: 0, hogSpines: 0,
 };
-const FaunaBudget = { ambLast: -9, evLast: -9, amb: [], ev: [] };
+const FaunaBudget = { ambLast: -9, evLast: -9, evGap: 0.2, amb: [], ev: [] };
 const sfxAtRaw = sfxAt;
 sfxAt = function (kind, wx, wy, vel = 1, delay = 0) {
   const tier = FAUNA_TIER[kind];
@@ -232,8 +232,8 @@ sfxAt = function (kind, wx, wy, vel = 1, delay = 0) {
     B.ambLast = now; B.amb.push(now);
   } else {
     B.ev = B.ev.filter(x => x > now - 5);
-    if (now - B.evLast < 0.25 || B.ev.length >= 5) return;
-    B.evLast = now; B.ev.push(now);
+    if (now - B.evLast < B.evGap || B.ev.length >= 8) return;
+    B.evLast = now; B.ev.push(now); B.evGap = 0.2 + Math.random() * 0.4;
   }
   sfxAtRaw(kind, wx, wy, vel * (tier ? 1 : 0.8), delay);
 };
