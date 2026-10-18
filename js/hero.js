@@ -18,12 +18,15 @@ function heroTownScore() {
   s += Game.units.length / 3;
   return s;
 }
-const heroLevelAt = score => Math.min(40, 1 + Math.floor(Math.sqrt(Math.max(0, score - 9) / 1.5)));
-const heroNeedFor = L => 9 + 1.5 * L * L;     // очки города, с которых начинается уровень L+1
+// 15 уровней; каждый следующий даётся всё труднее: очки растут как L^2.3
+// (5-й — около 57 очков города и боёв, 10-й — около 320, 15-й — около 875)
+const HERO_LVL_MAX = 15;
+const heroNeedFor = L => 8 + 2 * Math.pow(L, 2.3);     // очки, с которых начинается уровень L+1
+const heroLevelAt = score => { let L = 1; while (L < HERO_LVL_MAX && score >= heroNeedFor(L)) L++; return L; };
 
 function heroDefaults(h) {
   h.name = h.name || 'Герой';
-  h.level = h.level || 1;
+  h.level = Math.min(HERO_LVL_MAX, h.level || 1);   // старые сохранения могли дорасти выше 15
   h.cls = h.cls || null;          // профессия из гильдии (маг, лучник, воин, разбойник)
   h.equip = h.equip || { weapon: null, armor: null };
   return h;
@@ -473,7 +476,7 @@ function heroTick(dt) {
 function heroPanel() {
   const h = Game.hero, H = h.hero, s = heroStats(H);
   const score = heroTownScore(), lo = H.level > 1 ? heroNeedFor(H.level - 1) : 0, hi = heroNeedFor(H.level);
-  const pct = Math.max(0, Math.min(100, ((score - lo) / (hi - lo)) * 100));
+  const pct = H.level >= HERO_LVL_MAX ? 100 : Math.max(0, Math.min(100, ((score - lo) / (hi - lo)) * 100));
   const mate = Game.units.find(u => u.teamOf === h.id);
   const cd = k => Math.max(0, Math.ceil((H[k] || 0) - Game.time));
   const bar = (n, c) => `<span class="hp-bar"><i style="width:${Math.min(100, n * 2.2)}%;background:${c}"></i></span>`;
@@ -484,7 +487,7 @@ function heroPanel() {
   };
   return `<div class="ihead"><img class="bpic" src="${portraitURL('hero', h.look)}" alt=""><div><h3>${H.name}</h3>
     <span class="muted small">${H.cls ? H.cls : 'Гном-универсал'} · уровень ${H.level}</span></div></div>
-    <div class="hp-xp" title="Растёт вместе с городом: больше зданий и жителей — выше уровень"><i style="width:${pct}%"></i></div>
+    <div class="hp-xp" title="${H.level >= HERO_LVL_MAX ? 'Высший, 15-й уровень' : `Растёт вместе с городом и боями: ${Math.floor(score)} из ${Math.ceil(hi)} очков до уровня ${H.level + 1}`}"><i style="width:${pct}%"></i></div>
     <div class="hp-stats">
       <div>Сила ${bar(s.str, '#d0603a')}<b>${s.str}</b></div>
       <div>Ловкость ${bar(s.agi, '#6ac04a')}<b>${s.agi}</b></div>

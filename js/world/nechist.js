@@ -207,7 +207,7 @@ function entBonfireRepel(e) {
 // ---------- Удары по зданиям ----------
 
 function pickSmashTarget(e) {
-  let best = null, bd = 8;
+  let best = null, bd = 8 + 2 * (Math.min(4, nightDiff()) - 1);   // с каждой ночью высматривает здания дальше
   for (const b of Game.buildings) {
     if (b.state !== 'done' || b.type === 'bonfire' || b.removed) continue;
     if (nearBonfire(b.x + b.w / 2, b.y + b.h / 2, BONFIRE_SAFE)) continue;
@@ -225,7 +225,7 @@ function smashSpot(e, b) {
 }
 
 function buildingHit(e, b) {
-  const rate = e.rock ? 0.1 : e.water ? 0.06 : 0.08;
+  const rate = (e.rock ? 0.1 : e.water ? 0.06 : 0.08) * (0.75 + 0.25 * Math.min(4, nightDiff()));   // поздние ночи бьют сильнее
   const before = b.dmg || 0;
   b.dmg = Math.min(0.95, before + rate);
   const px = (b.x + b.w / 2 + (Math.random() - 0.5) * b.w * 0.6) * TILE, py = (b.y + b.h - 0.2) * TILE - 6;

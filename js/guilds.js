@@ -12,7 +12,12 @@ const GCLS = {
   archer:  { name: 'Лучник', gm: 'gm_archer', weapon: 'bow', armor: 'leatherArmor', bonus: { agi: 7, str: 2 }, stat: 'agi', range: 7, shot: 'arrow', col: '#7ac85a', verb: 'Выстрел' },
   rogue:   { name: 'Разбойник', gm: 'gm_rogue', weapon: 'dagger', armor: 'leatherArmor', bonus: { agi: 6, int: 3 }, stat: 'agi', range: 1.4, col: '#a88ad0', verb: 'Удар в спину' },
   mage:    { name: 'Маг', gm: 'gm_mage', weapon: 'staff', armor: 'mageArmor', bonus: { int: 8 }, stat: 'int', range: 6, shot: 'bolt', col: '#7aa0ff', verb: 'Огненный шар' },
+  // второй класс гильдии (guild — чья): учит тот же глава, рекрутов таких не бывает
+  barbarian: { name: 'Варвар', gm: 'gm_warrior', guild: 'warrior', weapon: 'sword', armor: 'leatherArmor', bonus: { str: 8, end: 4 }, stat: 'str', range: 1.5, col: '#d08a3a', verb: 'Удар секирой' },
+  druid:     { name: 'Друид', gm: 'gm_mage', guild: 'mage', weapon: 'staff', armor: 'leatherArmor', bonus: { int: 5, end: 4 }, stat: 'int', range: 5, shot: 'thorn', col: '#5ab07a', verb: 'Шип' },
 };
+// какие классы учит гильдия: свой и вторые (варвар — у воинов, друид — у магов)
+const guildClasses = g => [g, ...Object.keys(GCLS).filter(k => GCLS[k].guild === g)];
 const GM_NAMES = { warrior: ['Бранд Железнобокий', 'Ульфгар Щит', 'Хродгар Молот'], archer: ['Эльвин Зоркий', 'Тилла Тетива', 'Фенрик Ястреб'],
   rogue: ['Шныр Тихоступ', 'Мэг Ловкие Пальцы', 'Крюк Одноглазый'], mage: ['Альдрик Звездочёт', 'Мирра Пепельная', 'Озрик Седобород'] };
 const GM_SAY = {
@@ -599,7 +604,8 @@ function payGold(b, n) {
 function heroGuildPrice(H, cls) { return H.clsKey === cls ? 2 + (H.mastery || 0) : 3; }
 
 function* heroGuildGen(u, c) {
-  const b = c.b, H = u.hero, cls = b.def.guild, C = GCLS[cls];
+  // клик по гильдии без выбора: варвар у воинов продолжает учиться на варвара, а не переучивается
+  const cl = c.cls || u.hero.clsKey, b = c.b, H = u.hero, cls = cl && guildClasses(b.def.guild).includes(cl) ? cl : b.def.guild, C = GCLS[cls];
   const ok = yield { walk: [b.doorX, b.doorY] };
   if (!ok || b.removed) return;
   const gm = masterOf(b);
@@ -857,11 +863,16 @@ function guildHTML(b) {
     : `<div class="irow muted">Глава гильдии скоро придёт…</div>`;
   if (H) {
     x += '<div class="isec">Герой</div>';
-    const ms = masteryOf(H), mine = H.clsKey === cls && ms != null, price = mine ? 2 + ms : 3;
-    const st = mine ? `${C.name}, ранг мастерства ${ms} из ${MASTERY_MAX}` : H.clsKey ? `сейчас ${(H.cls || (GCLS[H.clsKey] || {}).name || H.clsKey).toLowerCase()}` : 'без класса';
+    const ms = masteryOf(H), cur = guildClasses(cls).includes(H.clsKey) && ms != null ? GCLS[H.clsKey] : null;
+    const st = cur ? `${cur.name}, ранг мастерства ${ms} из ${MASTERY_MAX}` : H.clsKey ? `сейчас ${(H.cls || (GCLS[H.clsKey] || {}).name || H.clsKey).toLowerCase()}` : 'без класса';
     x += `<div class="irow small">${H.name}: ${st}</div>`;
-    if (!(mine && ms >= MASTERY_MAX))
-      x += `<button class="g-wide" data-coop="1" data-gd="hero:${b.id}" ${gm ? '' : 'disabled'}><b>${mine ? `Урок мастерства — ${price} золота` : `${ms != null ? 'Переучиться' : 'Обучиться'}: ${C.name.toLowerCase()} — ${price} золота`}</b><small>${mine ? `нужен ${(ms + 1) * 2} уровень героя` : `+${Object.entries(C.bonus).map(([k, v]) => ({ str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' })[k] + ' ' + v).join(', ')}; ${C.verb.toLowerCase()} (Q)`}</small></button>`;
+    // в кооперативе класс выбран при входе: гильдия поднимает мастерство своего или своего второго класса
+    for (const k of isMirror() ? [guildClasses(cls).includes(H.clsKey) ? H.clsKey : cls] : guildClasses(cls)) {
+      const K = GCLS[k], mine = H.clsKey === k && ms != null, price = mine ? 2 + ms : 3;
+      if (mine && ms >= MASTERY_MAX) continue;
+      const kit = typeof heroKitText === 'function' ? heroKitText(k) : '';
+      x += `<button class="g-wide" data-coop="1" data-gd="hero:${b.id}:${k}" ${gm ? '' : 'disabled'}><b>${mine ? `Урок мастерства — ${price} золота` : `${ms != null ? 'Переучиться' : 'Обучиться'}: ${K.name.toLowerCase()} — ${price} золота`}</b><small>${mine ? `нужен ${(ms + 1) * 2} уровень героя` : `+${Object.entries(K.bonus).map(([q, v]) => ({ str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' })[q] + ' ' + v).join(', ')}; ${K.verb.toLowerCase()} (Q)${kit ? '; ' + kit : ''}`}</small></button>`;
+    }
   }
   const rs = recruitsOf(b), bad = hireCheck(b);
   x += `<div class="isec">Рекруты · ${rs.length}/${recMaxOf(b)}</div>`;
@@ -944,13 +955,13 @@ function initGuildUI() {
   document.getElementById('info').addEventListener('click', e => {
     const el = e.target.closest('[data-gd]');
     if (!el) return;
-    const [k, v] = el.dataset.gd.split(':');
+    const [k, v, cl] = el.dataset.gd.split(':');
     const b = Game.buildings.find(x => x.id === +v);
     const u = Game.unitMap.get(+v);
     if (isMirror() && k !== 'sel') { if (b || u) coopSend({ t: 'guild', a: k === 'hero' ? 'learn' : k, id: +v }); updateUI(true); return; }
     if (k === 'hire' && b) hireRecruit(b);
     else if (k === 'hero' && b && Game.hero) {
-      const c = { kind: 'guild', b, tx: b.doorX, ty: b.doorY, label: 'Учиться' };
+      const c = { kind: 'guild', b, cls: cl, tx: b.doorX, ty: b.doorY, label: 'Учиться' };
       issueCmd(Game.hero, c);
       floater(b.doorX + 0.5, b.doorY - 0.4, 'Учиться', '#f6d458');
     } else if (k === 'drill' && u) setOrder(u, 'drill');
@@ -1305,7 +1316,8 @@ function guildAnnounceHTML() {
     for (const u of Game.units) {
       if (u.dead || u.inside) continue;
       const R = recOf(u);
-      const w = R ? GCLS[R.cls].weapon : u.type === 'hero' && u.hero && u.hero.equip ? u.hero.equip.weapon : null;
+      // оружие героя нарисовано в самом спрайте (people.js: в руке, в ножнах, за спиной) — значок только у рекрутов
+      const w = R ? GCLS[R.cls].weapon : u.type === 'hero' && u.hero && u.hero.equip && typeof heroWpnOf !== 'function' ? u.hero.equip.weapon : null;
       if (w && GOODS[w] && !u.anim) {
         const ic = iconCanvas('good', w), f = u.face || 1;
         c.save(); c.translate(Math.round(u.x * TILE + f * 6), Math.round(u.y * TILE - 6)); if (f < 0) c.scale(-1, 1);
@@ -1333,6 +1345,14 @@ function guildAnnounceHTML() {
         const a = Math.atan2(yq - y, xq - x);
         c.save(); c.translate(x, y); c.rotate(a);
         line(c, -6, 0, 4, 0, '#8a5a30', 1); poly(c, [[4, -1.4], [7, 0], [4, 1.4]], '#cec6ba'); c.fillStyle = '#e04a3a'; c.fillRect(-7, -1.2, 2, 2.4);
+        c.restore();
+      } else if (s.kind === 'thorn' || s.kind === 'mdart') {
+        // шип друида — зелёный, магическая стрела — сиреневая искра с хвостом
+        const rgb = s.kind === 'thorn' ? '120,220,90' : '200,150,255';
+        c.save(); c.globalCompositeOperation = 'lighter';
+        glow(c, x, y, 7, rgb, 0.45);
+        for (let k = 1; k < 5; k++) { const q = Math.max(0, p - k * 0.04); ellipse(c, x0 + (x1 - x0) * q, y0 + (y1 - y0) * q - Math.sin(q * Math.PI) * 4, 2 - k * 0.35, 2 - k * 0.35, `rgba(${rgb},${0.6 - k * 0.12})`); }
+        ellipse(c, x, y, 1.8, 1.8, s.kind === 'thorn' ? '#d8ffb0' : '#f4e8ff');
         c.restore();
       } else {
         c.save(); c.globalCompositeOperation = 'lighter';

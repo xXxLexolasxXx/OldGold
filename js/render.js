@@ -175,10 +175,14 @@ function drawUnit(c, u) {
   const wp = weatherPose(u);   // скольжение под дождём, горение
   if (wp) { pose = wp.pose; view = 'E'; }
   if (pose === 'smoke') frame = smokeFrameOf(u);   // 6 кадров курения
+  // герой в бою: 9 кадров из people.js (стойка, замах, удар, довод, парирование, удар по нему, победа, выхватывание)
+  const ffr = !wp && fightFrameOf(u, moving);
+  if (ffr) { pose = 'fight'; view = 'E'; frame = ffr; }
   // просто стоит — лицом к зрителю, а не боком, как после ходьбы
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
   const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
+  if (u.type === 'hero' && typeof heroWpnOf === 'function') opt.wpn = heroWpnOf(u);   // оружие героя (herokit.js)
   if ((u.anim === 'flaskout' || u.anim === 'drink') && pose === 'idle') {
     opt.gest = u.anim === 'drink' ? 'drink' : 'chest';
     opt.gf = Math.floor(Game.time * 3 + u.id) & 1;

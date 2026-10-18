@@ -35,6 +35,8 @@ const hlName = k => (HL_GEAR[k] && HL_GEAR[k].name) || (GOODS[k] && GOODS[k].nam
 // ---------- Данные героя ----------
 
 function hlMaxHp(H) { return 40 + 5 * heroStats(H).end; }
+// Малое лечение: 30% здоровья на 1-м уровне и на 10% сильнее с каждым следующим (на 15-м — 72%)
+function hlHealPart(H) { return 0.3 * (1 + 0.1 * ((H.level || 1) - 1)); }
 
 {
   const _hd = heroDefaults;
@@ -219,7 +221,7 @@ function hlCast(k) {
   if (k === 'heal') {
     if ((H.cdHeal || 0) > Game.time) return;
     H.cdHeal = Game.time + HL_HEAL_CD;
-    hlHeal(h, H.maxhp * 0.3);
+    hlHeal(h, H.maxhp * hlHealPart(H));
     h.injury = null;
     const mate = Game.units.find(x => x.teamOf === h.id);
     if (mate) mate.injury = null;
@@ -406,7 +408,7 @@ function hlTick(dt) {
     const hpBlock = `<div class="irow">Здоровье <b>${hp}/${mhp}</b></div><div class="hl-hp"><i style="width:${Math.round(100 * hp / mhp)}%;background:${col}"></i></div>`;
     const cd = k => Math.max(0, Math.ceil((H[k] || 0) - now));
     const spell = (k, name, cdk, desc) => { const c = cd(cdk); return `<button class="hp-ab" data-hero="${k}" ${c ? 'disabled' : ''} title="${desc}"><b>${name}</b><small>${c ? c + ' с' : desc}</small></button>`; };
-    const spells = `<div class="hp-abs">${spell('tp', 'Телепорт', 'cdTp', 'на базу, к складу')}${spell('heal', 'Малое лечение', 'cdHeal', '+30% здоровья')}</div>`;
+    const spells = `<div class="hp-abs">${spell('tp', 'Телепорт', 'cdTp', 'на базу, к складу')}${spell('heal', 'Малое лечение', 'cdHeal', `+${Math.round(hlHealPart(H) * 100)}% здоровья`)}</div>`;
     let inv = '<div class="hl-inv">';
     for (let i = 0; i < HL_INV; i++) {
       const s = H.inv[i];

@@ -128,7 +128,7 @@ function* fleeGen(u) {
   u.panicUntil = 0;
 }
 
-function* fightGen(u, e) {
+function* entFightGen(u, e) {   // не fightGen: так называется бой гильдий (guilds.js), и он затирал эту
   floater(u.x, u.y - 1, 'За бороду!', '#ffd0a0');
   sfxUnit(u, 'grr');
   if (!e.fighters) e.fighters = [u];
@@ -185,9 +185,10 @@ function resolveFight(e) {
   const n = fs.length;
   let outcome;
   if (e.forceWin !== undefined) outcome = e.forceWin ? 'win' : 'lose';
-  else if (n === 1) { const r = Math.random(); outcome = r < 0.2 ? 'win' : r < 0.35 ? 'escape' : 'lose'; }
+  else if (n === 1) { const r = Math.random(), w = 0.2 / Math.sqrt(nightDiff()); outcome = r < w ? 'win' : r < w + 0.15 ? 'escape' : 'lose'; }
   else {
-    const r = Math.random(), pWipe = 0.06, pWin = Math.min(0.94, 0.5 + 0.15 * n);
+    // с каждой ночью нечисть крепче: группе труднее победить, чаще всех расшвыривает
+    const d = nightDiff(), r = Math.random(), pWipe = Math.min(0.2, 0.06 * Math.sqrt(d)), pWin = Math.min(0.94, 0.5 + 0.15 * n) / Math.pow(d, 0.35);
     outcome = r < pWipe ? 'wipe' : r < pWipe + (1 - pWipe) * pWin ? 'win' : 'lose';
   }
   e.foe = null;
@@ -264,8 +265,19 @@ function nightTotal() {
   const n = nightIndex() + 1;
   // до первой долгой ночи нечисти прибывает с каждой ночью: 1–3, 3–5, 5–7, 7–9
   if (n < LONG_EVERY) return Math.max(1, 2 * n - 1 + Math.floor(Math.random() * 3));
-  if (n % LONG_EVERY === 0) return 15 + Math.floor(Math.random() * 11);      // долгая ночь: 15–25
-  return 6 + Math.floor(Math.random() * 5);                                    // обычная: 6–10
+  // дальше — больше с каждой ночью: к 10-й (долгой) — 23–39, к 9-й обычной — 9–15
+  const more = 0.7 + 0.3 * nightDiff(n);
+  if (n % LONG_EVERY === 0) return Math.round((15 + Math.floor(Math.random() * 11)) * more);   // долгая ночь
+  return Math.round((6 + Math.floor(Math.random() * 5)) * more);                                // обычная
+}
+
+// Сложность ночи n (1, 2, …): во сколько раз нечисть крепче, злее и упорнее, чем в первую ночь.
+// 1-я — 1, 3-я — 1,3, 5-я — 1,6, 7-я — 2,1, 10-я — 2,9, потолок — 5 (к 18-й ночи).
+// От неё зависят: число нечисти и скелетов, их здоровье (сколько ударов держат), сила ответных ударов,
+// дальность, на которой они замечают гномов, скорость, частота набегов на здания и исход схваток.
+function nightDiff(n = nightIndex() + 1) {
+  const k = Math.max(0, n - 1);
+  return Math.min(5, 1 + 0.12 * k + 0.01 * k * k);
 }
 
 function spawnEnts() {
@@ -402,7 +414,7 @@ function updateEnts(dt) {
         if (!night) { e.state = 'return'; break; }
         if (e.wait > 0) { e.wait -= dt; break; }
         // иногда нечисть идёт крушить ближайшее здание
-        if (!e.goal && !e.target && Math.random() < dt * 0.25) {
+        if (!e.goal && !e.target && Math.random() < dt * 0.25 * Math.min(2.5, nightDiff())) {   // поздние ночи — набеги чаще
           const tb = pickSmashTarget(e);
           if (tb) { e.target = tb; e.goal = smashSpot(e, tb); }
         }
@@ -413,7 +425,7 @@ function updateEnts(dt) {
           }
           if (!e.goal) { e.wait = 2; break; }
         }
-        if (entMove(e, e.goal[0], e.goal[1], e.target ? 0.8 : 0.55, dt)) {
+        if (entMove(e, e.goal[0], e.goal[1], (e.target ? 0.8 : 0.55) * (1 + 0.12 * (Math.min(4, nightDiff()) - 1)), dt)) {
           e.goal = null; e.wait = 1.5 + Math.random() * 3.5;
           if (e.target) {
             // дошла до здания — начинает бить
@@ -521,7 +533,7 @@ function entReact(u) {
     for (const o of Game.units) if (o !== u && !o.dead && !o.inside && isPerson(o) && Math.hypot(o.x - u.x, o.y - u.y) < 5) friends++;
     if (e.state === 'fight') {
       // идёт драка: присоединиться, если ещё не поздно
-      if (!e.resolved && e.fighters.length < 6 && Math.random() < (friends ? 0.75 : 0.5)) { e.fighters.push(u); startBreak(u, 'fight', null); u.proc = fightGen(u, e); }
+      if (!e.resolved && e.fighters.length < 6 && Math.random() < (friends ? 0.75 : 0.5)) { e.fighters.push(u); startBreak(u, 'fight', null); u.proc = entFightGen(u, e); }
       else { startBreak(u, 'flee', null); u.proc = fleeGen(u); }
       return;
     }
@@ -532,7 +544,7 @@ function entReact(u) {
     else if (r < pFlee || !canFight) { startBreak(u, 'flee', null); u.proc = fleeGen(u); }
     else {
       e.target = null; e.state = 'fight'; e.foe = u; e.t = 0; e.goal = null; e.fighters = [u]; e.fightT = undefined; e.resolved = false;
-      startBreak(u, 'fight', null); u.proc = fightGen(u, e);
+      startBreak(u, 'fight', null); u.proc = entFightGen(u, e);
     }
     return;
   }

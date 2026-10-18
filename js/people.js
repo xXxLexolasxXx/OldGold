@@ -751,8 +751,194 @@ function drawFlask(c, x, y, tilt) {
   c.restore();
 }
 
+// ---------- Оружие героя и 9 кадров боя ----------
+// Оружие приходит строкой opt.wpn = 'основное|в левой руке|1' (1 — выхвачено, иначе в ножнах / за спиной;
+// строку собирает heroWpnOf в herokit.js). Кадры боя — pose 'fight', только вид сбоку, frame — имя кадра:
+// стойка, замах, удар, довод, парирование, получил удар, победа (2 кадра), выхватывание из ножен.
+const FIGHT_FRAMES = ['ready', 'windup', 'strike', 'follow', 'parry', 'hurt', 'win0', 'win1', 'draw'];
+const WPN_STYLE = { sword: 'blade', rsword: 'blade', mace: 'blade', cmace: 'blade', dagger: 'stab', rdagger: 'stab', bdagger: 'stab',
+  axe2: 'heavy', staff: 'staff', sstaff: 'staff', wstaff: 'staff', bow: 'bow', cbow: 'bow', fists: 'fist' };
+// где что носят, пока оружие не в руке: ножны на левом бедре или за спиной
+const WPN_BACK = { axe2: 1, staff: 1, sstaff: 1, wstaff: 1, bow: 1, cbow: 1 };
+// рука с оружием: [угол руки (0 — вверх, π/2 — вперёд, π — вниз), угол оружия, длина руки]
+const FIGHT_ARM = {
+  blade: { ready: [2.0, 0.85], windup: [-0.5, -0.95], strike: [1.5, 1.62], follow: [2.35, 2.5], parry: [1.3, 0.1], hurt: [2.6, 2.1], win0: [-0.08, -0.05], win1: [0.12, 0.2], draw: [3.35, 3.75] },
+  stab:  { ready: [2.1, 1.3], windup: [2.75, 1.45, 3.2], strike: [1.6, 1.6, 4.8], follow: [1.85, 1.85], parry: [1.3, 0.3], hurt: [2.6, 2.2], win0: [-0.1, 0], win1: [0.15, 0.25], draw: [3.3, 3.6] },
+  heavy: { ready: [1.8, 0.5], windup: [-0.6, -1.25], strike: [1.65, 1.9], follow: [2.45, 2.75], parry: [1.0, 0.02], hurt: [2.4, 1.3], win0: [-0.1, 0.08], win1: [0.1, 0.28], draw: [-0.75, -1.1] },
+  staff: { ready: [1.9, 0.22], windup: [0.3, -0.32], strike: [1.45, 1.35], follow: [1.7, 1.0], parry: [1.3, 0.06], hurt: [2.6, 0.6], win0: [-0.05, 0], win1: [0.1, 0.12], draw: [-0.5, -0.6] },
+  bow:   { ready: [1.95, 0.35], windup: [1.55, 0], strike: [1.55, 0], follow: [1.7, 0.15], parry: [1.4, 0.1], hurt: [2.5, 0.6], win0: [-0.15, -0.15], win1: [0.05, 0.05], draw: [-0.6, -0.5] },
+  fist:  { ready: [1.9, 0, 3], windup: [2.3, 0, 2.2], strike: [1.6, 0, 4.9], follow: [1.75, 0, 4.2], parry: [1.0, 0, 3], hurt: [2.6, 0, 3.6], win0: [-0.05, 0, 4.4], win1: [0.2, 0, 4.4], draw: [2.3, 0, 2.6] },
+};
+// вторая рука: [x, y от плеча]; со щитом — щит держит перед собой, у лучника — тетива
+const FIGHT_BACK = {
+  free:   { ready: [1.8, 3.4], windup: [2.8, 2], strike: [-2.6, 2.8], follow: [-2.2, 3.4], parry: [1.6, 2.6], hurt: [-2.6, 1.2], win0: [-2.6, 2.2], win1: [-3, 0.8], draw: [-1.4, 5.4] },
+  shield: { ready: [2.8, 3], windup: [3.4, 2], strike: [2.2, 3.6], follow: [1.8, 4], parry: [4.2, 0.4], hurt: [1.6, 4], win0: [2.6, 3.2], win1: [2.8, 2.6], draw: [2, 3.6] },
+  bow:    { windup: [-0.8, -2.4], strike: [-3, 0.2] },
+};
+// наклон корпуса, присед (минус — подпрыгнул), шаг дальней и ближней ноги
+const FIGHT_BODY = {
+  ready: [0.06, 0.6, -0.4, 0.38], windup: [-0.1, 0.3, -0.45, 0.3], strike: [0.2, 0.8, -0.55, 0.62], follow: [0.26, 1.0, -0.6, 0.66],
+  parry: [0.02, 1.0, -0.5, 0.45], hurt: [-0.28, 0.4, -0.2, 0.08], win0: [-0.06, 0, -0.18, 0.18], win1: [-0.1, -0.7, -0.12, 0.12], draw: [0.04, 0.4, -0.35, 0.3],
+};
+
+function wpnParse(s) { const [m, o, out] = String(s).split('|'); return { m: m || '', o: o || '', out: out === '1' }; }
+
+// Кадр боя по анимации героя (u.anim — f*, u.hfx — короткий удар/парирование поверх всего); null — не бой
+function fightFrameOf(u, moving) {
+  if (u.type !== 'hero' && !(u.hero && u.hero.owner)) return null;
+  if (moving) return null;
+  if (u.hfx && u.hfx.t > Game.time) return u.hfx.k;
+  const an = u.anim;
+  if (!an || an[0] !== 'f' || !FIGHT_ANIM_SET.has(an)) return null;
+  const a = u.action, p = a && a.T ? 1 - Math.max(0, a.t) / a.T : 1;
+  if (an === 'fatk') return p < 0.22 ? 'ready' : p < 0.78 ? 'windup' : 'strike';
+  if (an === 'ffollow') return p < 0.55 ? 'follow' : 'ready';
+  if (an === 'fwin') return Math.floor(p * 6) % 2 ? 'win1' : 'win0';
+  if (an === 'fdraw') return 'draw';
+  if (an === 'fready') return 'ready';
+  if (an === 'fparry') return 'parry';
+  if (an === 'fhurt') return 'hurt';
+  return null;
+}
+const FIGHT_ANIM_SET = new Set(['fatk', 'ffollow', 'fwin', 'fdraw', 'fready', 'fparry', 'fhurt']);
+
+// Клинки и древки: от точки хвата (x, y) по направлению (dx, dy). part 'hilt' — только рукоять (клинок ещё в ножнах)
+function drawWeapon(c, k, x, y, dx, dy, part) {
+  const P = t => [x + dx * t, y + dy * t];
+  const nx = -dy, ny = dx;
+  // тёмный контур под каждой деталью: оружие читается и на сером доспехе, и на траве
+  const OL = '#1e160e';
+  const seg = (t0, t1, col, w) => { const a = P(t0), b = P(t1); line(c, a[0], a[1], b[0], b[1], OL, w + 0.55); line(c, a[0], a[1], b[0], b[1], col, w); };
+  const hl = (t0, t1, col, w) => { const a = P(t0), b = P(t1); line(c, a[0], a[1], b[0], b[1], col, w); };   // блики и обмотки — без контура
+  const side = (t, o) => { const p = P(t); return [p[0] + nx * o, p[1] + ny * o]; };
+  c.lineCap = 'round';
+  const rust = k[0] === 'r' || k === 'bdagger';
+  switch (k) {
+    case 'sword': case 'rsword': {
+      seg(-1.5, 0.6, '#4a2c18', 1); hl(-1.2, 0.2, '#6e4428', 0.5);                     // рукоять с обмоткой
+      const pm = P(-1.7); ellipse(c, pm[0], pm[1], 0.65, 0.65, rust ? '#7a6248' : '#c89226');
+      const g = P(0.75); line(c, g[0] - nx * 1.8, g[1] - ny * 1.8, g[0] + nx * 1.8, g[1] + ny * 1.8, rust ? '#6a5236' : '#c89226', 0.85);
+      if (part === 'hilt') break;
+      poly(c, [side(1, -0.95), side(7.2, -0.8), P(8.5), side(7.2, 0.8), side(1, 0.95)], rust ? '#a89a82' : '#d0d4dc', OL, 0.4);
+      hl(1.1, 7.6, rust ? '#d2c6b0' : '#f6f8fa', 0.35);                                         // блик по долу
+      if (rust) {
+        for (const [t, o] of [[2.2, 0.3], [3.5, -0.35], [5.1, 0.25], [6.2, -0.2]]) { const r = side(t, o); ellipse(c, r[0], r[1], 0.5, 0.42, t > 4 ? '#8a4e2a' : '#a8642e'); }
+        poly(c, [side(4.1, 0.98), side(4.4, 0.35), side(4.7, 0.98)], '#3a3026');                // зазубрина
+      }
+      break;
+    }
+    case 'mace': case 'cmace': {
+      seg(-1.2, 4.4, '#6e4428', 1); seg(-0.8, 0.4, '#3a2416', 1.1);
+      const h = P(5.4);
+      for (let a = 0; a < 6; a++) { const q = a * Math.PI / 3; line(c, h[0], h[1], h[0] + Math.cos(q) * 2.1, h[1] + Math.sin(q) * 2.1, '#5a5e66', 0.6); }
+      ellipse(c, h[0], h[1], 1.55, 1.55, '#8a8e96'); ellipse(c, h[0] - 0.4, h[1] - 0.5, 0.55, 0.5, '#c8ccd4');
+      if (k === 'cmace') line(c, h[0] - 1, h[1] - 0.8, h[0] + 0.9, h[1] + 1, '#2a2a30', 0.35);   // трещина
+      break;
+    }
+    case 'dagger': case 'rdagger': case 'bdagger': {
+      seg(-1.4, 0.4, '#3a2416', 1);
+      const g = P(0.55); line(c, g[0] - nx * 1.4, g[1] - ny * 1.4, g[0] + nx * 1.4, g[1] + ny * 1.4, OL, 1.2); line(c, g[0] - nx * 1.3, g[1] - ny * 1.3, g[0] + nx * 1.3, g[1] + ny * 1.3, rust ? '#8a6a46' : '#a8acb4', 0.65);
+      if (part === 'hilt') break;
+      if (k === 'bdagger') {
+        // сломан: обломок с рваным краем
+        poly(c, [side(0.7, -0.75), side(2.6, -0.65), side(3.0, -0.15), side(2.6, 0.2), side(3.1, 0.65), side(0.7, 0.75)], '#a89c88', OL, 0.4);
+        hl(0.8, 2.5, '#d2c6b0', 0.35);
+      } else {
+        poly(c, [side(0.7, -0.75), side(4.4, -0.55), P(5.5), side(4.4, 0.55), side(0.7, 0.75)], rust ? '#b0a28a' : '#d8dce4', OL, 0.4);
+        hl(0.8, 4.6, rust ? '#dccfb8' : '#f6f8fa', 0.35);
+        if (rust) for (const [t, o] of [[2, 0.3], [3.4, -0.25]]) { const r = side(t, o); ellipse(c, r[0], r[1], 0.45, 0.38, '#a8642e'); }
+      }
+      break;
+    }
+    case 'axe2': {
+      seg(-3.6, 7.6, '#5a361c', 1); hl(-3.4, 7.4, '#8a5e36', 0.35); hl(-0.6, 0.8, '#2a1a10', 1.1);   // длинное топорище, обмотка
+      // ржавое двустороннее полотно с выщербиной
+      poly(c, [side(4.5, 0.4), side(3.9, 3.4), side(4.9, 4.9), side(7.1, 5.1), side(8.3, 3.7), side(7.7, 0.4)], '#9a8e7c', OL, 0.45);
+      poly(c, [side(5.1, -0.4), side(4.8, -2.1), side(7.2, -2.2), side(7.4, -0.4)], '#867a6c', OL, 0.45);
+      line(c, ...side(4.6, 4.7), ...side(7.7, 4.1), '#cfc4b2', 0.5);                         // лезвие
+      for (const [t, o] of [[5.4, 2.1], [6.8, 3.2], [6.3, 1.2]]) { const r = side(t, o); ellipse(c, r[0], r[1], 0.75, 0.6, '#9a5a2e'); }
+      poly(c, [side(5.9, 5.15), side(6.3, 3.9), side(6.8, 5.15)], '#1e1a16');                   // выщербина
+      break;
+    }
+    case 'staff': case 'sstaff': case 'wstaff': {
+      const wood = k === 'wstaff' ? '#6a5a46' : '#6e4428';
+      seg(-4.6, 6.4, wood, 0.8);
+      if (k === 'wstaff') {
+        // увядший: кривой, с сучками, на конце засохший завиток и бурый лист
+        for (const t of [-2, 1.4, 4.2]) { const r = side(t, 0.45); ellipse(c, r[0], r[1], 0.45, 0.4, '#4a3e30'); }
+        const top = P(6.4), q = side(7.6, 1.2);
+        c.strokeStyle = wood; c.lineWidth = 0.75; c.beginPath(); c.moveTo(top[0], top[1]); c.quadraticCurveTo(...P(7.8), q[0], q[1]); c.stroke();
+        const lf = side(6.6, -1);
+        ellipse(c, lf[0], lf[1], 0.9, 0.55, '#a08a4a'); line(c, top[0], top[1], lf[0], lf[1], '#6a5a2e', 0.25);
+      } else if (k === 'sstaff') {
+        // искрящий: на конце треснутый кристалл и искры
+        const t0 = P(6.6), t1 = P(8.6);
+        poly(c, [side(6.4, -0.9), t1, side(6.4, 0.9), P(5.9)], '#7ad0f0', '#2a5a7a', 0.3);
+        poly(c, [side(6.6, -0.35), P(8.1), side(6.8, 0.3)], '#e8fbff');
+        for (const [a, r] of [[0.6, 2.2], [2.4, 1.9], [4.1, 2.4], [5.3, 1.6]]) ellipse(c, t0[0] + Math.cos(a) * r, t0[1] + Math.sin(a) * r, 0.35, 0.35, a > 3 ? '#fff6a0' : '#bff4ff');
+      } else {
+        const t0 = P(6.9); ellipse(c, t0[0], t0[1], 1.2, 1.2, '#5a7ae0'); ellipse(c, t0[0] - 0.35, t0[1] - 0.4, 0.45, 0.4, '#d8e4ff');
+      }
+      break;
+    }
+  }
+}
+
+// Лук: в руке (x, y), наклон tilt (0 — стоит вертикально), pull — точка, куда оттянута тетива
+function drawBow(c, k, x, y, tilt, pull) {
+  const ux = Math.sin(tilt), uy = -Math.cos(tilt), fx = Math.cos(tilt), fy = Math.sin(tilt);
+  const crooked = k === 'cbow';
+  const la = 5.6, lb = crooked ? 4.6 : 5.6;                    // у кривого лука нижнее плечо короче
+  const a = [x + ux * la - fx * 1.6, y + uy * la - fy * 1.6], b = [x - ux * lb - fx * (crooked ? 1 : 1.6), y - uy * lb - fy * (crooked ? 1 : 1.6)];
+  const cx = 2 * (x + fx * 0.6) - (a[0] + b[0]) / 2, cy = 2 * (y + fy * 0.6) - (a[1] + b[1]) / 2;
+  c.lineCap = 'round';
+  for (const [col, w] of [['#1e160e', 1.5], [crooked ? '#b88a4e' : '#c89058', 0.95]]) {
+    c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(cx + (crooked ? ux * 0.8 : 0), cy + (crooked ? uy * 0.8 : 0), b[0], b[1]); c.stroke();
+  }
+  line(c, x - ux * 0.8, y - uy * 0.8, x + ux * 0.8, y + uy * 0.8, '#2a1a10', 1.2);   // обмотка рукояти
+  c.strokeStyle = '#f6eedc'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(a[0], a[1]);
+  if (pull) c.lineTo(pull[0], pull[1]);
+  c.lineTo(b[0], b[1]); c.stroke();
+  if (pull) {                                                      // стрела на тетиве
+    line(c, pull[0], pull[1], x + fx * 2.6, y + fy * 2.6, '#8a5a30', 0.55);
+    poly(c, [[x + fx * 2.6 - ux * 0.6, y + fy * 2.6 - uy * 0.6], [x + fx * 3.8, y + fy * 3.8], [x + fx * 2.6 + ux * 0.6, y + fy * 2.6 + uy * 0.6]], '#cec6ba');
+    ellipse(c, pull[0] + fx * 0.6, pull[1] + fy * 0.6, 0.6, 0.45, '#e04a3a');
+  }
+}
+
+// Деревянный щит: rx/ry — сбоку узкий, спереди круглый
+function drawShield(c, x, y, rx, ry) {
+  ellipse(c, x, y, rx + 0.45, ry + 0.45, '#3a2a1a');
+  c.save(); c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); c.clip();
+  c.fillStyle = lingrad(c, x - rx, 0, x + rx, 0, [[0, '#a8743e'], [0.5, '#8a5a30'], [1, '#5e3c20']]); c.fillRect(x - rx, y - ry, rx * 2, ry * 2);
+  for (let k = -2; k <= 2; k++) line(c, x - rx, y + k * ry * 0.38, x + rx, y + k * ry * 0.38, '#5a3a1e', 0.25);   // доски
+  line(c, x - rx * 0.2, y - ry * 0.7, x + rx * 0.3, y - ry * 0.1, '#3a2414', 0.3);                                 // трещина
+  c.restore();
+  ellipse(c, x, y, Math.min(1.1, rx * 0.5), 1.1, '#7a7e86'); ellipse(c, x - 0.25, y - 0.35, 0.4, 0.35, '#c8ccd4');   // умбон
+}
+
+// Ножны с мечом или кинжалом на бедре: (x, y) — устье, (dx, dy) — вниз по ножнам; full — клинок внутри (рукоять торчит)
+function drawSheath(c, k, x, y, dx, dy, full) {
+  const len = WPN_STYLE[k] === 'stab' ? 3.8 : 6.6;
+  line(c, x, y, x + dx * len, y + dy * len, '#2a180c', 1.5);
+  line(c, x, y, x + dx * len, y + dy * len, '#5a3a20', 1.05);
+  ellipse(c, x + dx * len, y + dy * len, 0.55, 0.55, '#8a8e92');                     // наконечник
+  line(c, x + dx * 0.6, y + dy * 0.6, x + dx * 1.1, y + dy * 1.1, '#c8a050', 1.2);   // обойма
+  if (full) drawWeapon(c, k, x, y, -dx, -dy, 'hilt');
+}
+
+// За спиной: секира, посох, лук или щит (x, y — середина спины, dir 1 — рукоять внизу слева)
+function drawOnBack(c, k, x, y, view) {
+  const e = view === 'E';
+  if (k === 'wshield') { drawShield(c, x, y, e ? 1.6 : 3.1, 3.6); return; }
+  const ang = e ? -0.38 : (view === 'S' ? 0.55 : -0.55);
+  const dx = Math.sin(ang), dy = -Math.cos(ang);
+  if (k === 'bow' || k === 'cbow') { drawBow(c, k, x - dx * 0.5, y - dy * 0.5, ang + (e ? 0.2 : 0), null); return; }
+  drawWeapon(c, k, x - dx * 2.6, y - dy * 2.6, dx, dy);
+}
+
 // ---------- Фигура ----------
-// pose: idle | walk | work | duck | smoke | tame; frame: 0..7 для шага, {anim, f} для работы
+// pose: idle | walk | work | duck | smoke | tame | fight; frame: 0..7 для шага, {anim, f} для работы, имя кадра для боя
 // opt.gait: '' — вразвалочку, 'drunk' — шатается, 'tired' — голодный плетётся;
 // opt.gest: wave | fist | scratch | stretch | yawn | clap | point, opt.gf — кадр жеста 0/1.
 
@@ -798,8 +984,14 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const bob = pose === 'walk' ? -Math.abs(Math.cos(ph)) * (limp ? 1.2 : gait === 'tired' ? 0.3 : 0.7) + 0.3 : 0;
   const courier = !!O.frame;
   const duck = pose === 'duck' || pose === 'tame';
-  const crouch = duck ? 1.8 : 0;
+  // оружие героя: в бою — кадр из FIGHT_*, на ходу и стоя — выхвачено (стойка) или в ножнах/за спиной
+  const W = opt.wpn ? wpnParse(opt.wpn) : null;
+  const fight = pose === 'fight' ? (FIGHT_BODY[frame] ? frame : 'ready') : null;
+  const wst = W ? (WPN_STYLE[W.m] || 'fist') : 'fist';
+  const armed = !!W && !carry && (fight || (W.out && (pose === 'walk' || pose === 'idle')));
+  const crouch = duck ? 1.8 : fight ? FIGHT_BODY[fight][1] : 0;
   let lean = 0;
+  if (fight) lean = FIGHT_BODY[fight][0];
   if (pose === 'walk') lean = carry ? 0.16 : 0.05;
   if (pose === 'walk' && gait === 'tired') lean += 0.16;
   if (pose === 'walk' && gait === 'drunk') lean += Math.cos(ph) * 0.1;
@@ -854,8 +1046,10 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     const legPts = l => {
       if (duck) return l.far ? [2.2, hipY + 2.8, 0.6, -0.2] : [3, hipY + 2.6, 1.4, -0.2];
       const stiff = limp && !l.far;
-      const bend = pose === 'walk' && !stiff ? Math.max(0, Math.sin(ph + (l.far ? Math.PI : 0) + Math.PI / 2)) * 0.7 : 0.05;
-      const th = stiff ? l.th * 0.5 : l.th;
+      let bend = pose === 'walk' && !stiff ? Math.max(0, Math.sin(ph + (l.far ? Math.PI : 0) + Math.PI / 2)) * 0.7 : 0.05;
+      let th = stiff ? l.th * 0.5 : l.th;
+      if (fight) { th = FIGHT_BODY[fight][l.far ? 2 : 3]; bend = l.far ? 0.08 : 0.32; }   // боевая стойка: ноги врозь, ближняя чуть согнута
+      else if (armed && pose === 'idle') { th = l.far ? -0.3 : 0.3; bend = 0.15; }
       const kx = Math.sin(th) * 3.2 + 0.3, ky = hipY + Math.cos(th) * 3.2;
       const ax = kx + Math.sin(th - bend) * 3.1 - 0.3, ay = ky + Math.cos(th - bend) * 3.1;
       return [kx, ky, ax, Math.min(ay, -0.2)];
@@ -873,7 +1067,28 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     const ang = tool ? swingA[frame.f] : 0;
     const armA = pose === 'walk' ? -sw * 0.55 : duck ? -0.5 : 0;
     const sling = injury === 'arm';
-    if (!tool && !carry && pose !== 'smoke') upper(() => {
+    // руки с оружием: кадр боя, а на ходу и стоя с выхваченным оружием — «стойка»
+    const ff = fight || 'ready';
+    let wA = null;
+    if (armed) {
+      const [A, Wd, rr = 4.2] = FIGHT_ARM[wst][ff];
+      const hx = 0.4 + Math.sin(A) * rr, hy = shY + 0.4 - Math.cos(A) * rr;
+      wA = { hx, hy, dx: Math.sin(Wd), dy: -Math.cos(Wd), Wd };
+      const two = (wst === 'heavy' || wst === 'staff') && ff !== 'draw' && !(wst === 'staff' && (ff === 'win0' || ff === 'win1'));
+      let bx, by;
+      if (two) { bx = hx - wA.dx * 2.4; by = hy - wA.dy * 2.4; }          // двуручное: вторая рука ниже на древке
+      else if (wst === 'bow') { const q = FIGHT_BACK.bow[ff]; if (q) { bx = -0.4 + q[0]; by = shY + 0.4 + q[1]; } else { bx = hx - 0.9; by = hy + 0.3; } }
+      else if (!fight && pose === 'walk' && W.o !== 'wshield') { bx = Math.sin(-armA) * 2.8 + 0.8; by = shY + Math.cos(-armA) * 2.8 + 2.6; }
+      else { const q = (W.o === 'wshield' ? FIGHT_BACK.shield : FIGHT_BACK.free)[ff]; bx = -0.4 + q[0]; by = shY + 0.4 + q[1]; }
+      wA.bx = bx; wA.by = by;
+    }
+    if (armed && !sling) upper(() => {
+      // дальняя рука: за телом, держит щит, второй кинжал, древко или тетиву
+      smoothLimb(c, [-0.4, shY + 0.4], [(-0.4 + wA.bx) / 2 + 0.3, (shY + 0.4 + wA.by) / 2 + 0.7], [wA.bx, wA.by], 2.2, shade(shirt, -0.35));
+      if (W.o && WPN_STYLE[W.o] === 'stab') { const d = ff === 'windup' || ff === 'parry' ? [0.95, -0.3] : [0.85, 0.52]; drawWeapon(c, W.o, wA.bx, wA.by, d[0], d[1]); }
+      hand(c, wA.bx, wA.by, skin[2]);
+    });
+    else if (!tool && !carry && pose !== 'smoke') upper(() => {
       const ex = Math.sin(-armA) * 2.8, ey = shY + Math.cos(-armA) * 2.8;
       smoothLimb(c, [-0.4, shY + 0.4], [ex, ey], [ex + 0.8, ey + 2.6], 2.2, shade(shirt, -0.35));
       hand(c, ex + 0.8, ey + 3, skin[2]);
@@ -886,7 +1101,16 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         const step = rot ? 4.6 : 3.4;
         for (let k = carryN - 1; k >= 0; k--) { c.save(); c.translate(-5.2 + (k % 2 ? 0.4 : 0), shY - (carryN - 1 - k) * step + (carryN - 1) * step * 0.4); c.rotate(-Math.PI / 2 * (rot ? 1 : 0)); drawLoad(c, carry); c.restore(); }
       }
-      if (O.staff) line(c, -2.8, shY + 6, -1.2, shY - 8, '#6a4424', 0.8);
+      if (O.staff && !W) line(c, -2.8, shY + 6, -1.2, shY - 8, '#6a4424', 0.8);
+      if (W) {
+        // ножны на левом бедре: пока клинок в них — торчит рукоять; секира, посох, лук и щит — за спиной
+        const st = WPN_STYLE[W.m];
+        if (W.m === 'mace' || W.m === 'cmace') { if (!armed) drawWeapon(c, W.m, -1.4, hipY - 0.8, -0.3, 0.95); }
+        else if (st === 'blade' || st === 'stab') drawSheath(c, W.m, -1.6, hipY + 0.2, -0.55, 0.83, !armed);
+        if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -2.6, hipY + 0.5, -0.35, 0.94, !armed);
+        if (WPN_BACK[W.m] && !armed) drawOnBack(c, W.m, -2.4, shY + 3.4, 'E');
+        if (W.o === 'wshield' && !armed) drawOnBack(c, 'wshield', -3.4, shY + 3.6, 'E');
+      }
     });
     drawLeg(legs[1]);
     upper(() => {
@@ -928,6 +1152,29 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         poly(c, [[-0.4, shY + 0.6], [3.4, shY + 3.2], [-0.8, shY + 4.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
         smoothLimb(c, [0.4, shY + 0.4], [0.6, shY + 3], [2.8, shY + 3], 2, shirt);
         hand(c, 3, shY + 3, skin[0]);
+      } else if (armed) {
+        const { hx, hy, dx, dy } = wA;
+        if (W.o === 'wshield') drawShield(c, wA.bx + 0.9, wA.by - 0.6, 1.7, 3.9);          // щит перед грудью
+        if (fight === 'strike' && (wst === 'blade' || wst === 'heavy')) {
+          // след удара: светлая дуга от замаха к удару
+          const R0 = 4.2 + (wst === 'heavy' ? 7.4 : 7.2);
+          c.strokeStyle = 'rgba(250,246,230,0.7)'; c.lineWidth = 1.3; c.lineCap = 'round';
+          c.beginPath(); c.arc(0.4, shY + 0.4, R0 * 0.82, -2.1, -0.15); c.stroke();
+        }
+        if (wst === 'bow') drawBow(c, W.m, hx, hy, wA.Wd, ff === 'windup' ? [wA.bx, wA.by] : null);
+        else if (wst !== 'fist') drawWeapon(c, W.m, hx, hy, dx, dy, ff === 'draw' && (wst === 'blade' || wst === 'stab') ? 'hilt' : undefined);
+        if (wst === 'staff' && (fight === 'windup' || fight === 'strike' || fight === 'win0' || fight === 'win1')) {
+          // посох копит и выпускает силу: свечение на конце
+          const t = 8.4, gx = hx + dx * t, gy = hy + dy * t, big = fight === 'strike';
+          const col = W.m === 'wstaff' ? ['#7ae070', '#e8ffd0'] : W.m === 'sstaff' ? ['#8ad8ff', '#fffbe0'] : ['#ffb040', '#fff0a0'];
+          ellipse(c, gx, gy, big ? 2.2 : 1.4, big ? 2.2 : 1.4, col[0]); ellipse(c, gx, gy, big ? 1.1 : 0.7, big ? 1.1 : 0.7, col[1]);
+        }
+        smoothLimb(c, [0.4, shY + 0.4], [(0.4 + hx) / 2 + 0.4, (shY + 0.4 + hy) / 2 + 0.6], [hx, hy], 2.1, shirt);
+        if (wst === 'fist') {
+          // кулак в обмотках
+          ellipse(c, hx, hy, 1.5, 1.45, skin[1]);
+          line(c, hx - 1.2, hy - 0.4, hx + 1.2, hy - 0.4, '#e8dcc0', 0.45); line(c, hx - 1.2, hy + 0.5, hx + 1.2, hy + 0.5, '#e8dcc0', 0.45);
+        } else hand(c, hx, hy, skin[1]);
       } else if (tool) {
         const hx = 0.4 + Math.sin(ang) * 3.8, hy = shY - Math.cos(ang) * 3.8;
         const tx = hx + Math.sin(ang) * 6.5, ty = hy - Math.cos(ang) * 6.5;
@@ -1019,9 +1266,19 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       }
       // руки-кулаки у бёдер, как у гнома с референса
       const hy = hipY - 0.2 + (side > 0 ? armSw : -armSw) * (front ? 1 : -1);
+      // выхваченное оружие: в правой руке (спереди — слева от нас), щит или кинжал — в левой
+      const wHand = armed && side === (front ? -1 : 1), oHand = armed && !wHand && W.o;
+      if (wHand && wst !== 'fist') {
+        const v = wst === 'heavy' ? [side * 0.3, -0.95] : wst === 'staff' ? [side * 0.12, -0.99] : [side * 0.42, 0.9];
+        if (wst === 'bow') drawBow(c, W.m, side * 5.1, hy + 0.5, 0, null); else drawWeapon(c, W.m, side * 5.1, hy + 0.5, v[0], v[1]);
+      }
+      if (oHand && W.o !== 'wshield') drawWeapon(c, W.o, side * 5.1, hy + 0.5, side * 0.4, 0.92);
       smoothLimb(c, [sx, shY + 0.6], [side * 5.4, (shY + hy) / 2], [side * 5, hy], 2.3, col);
       hand(c, side * 5.1, hy + 0.5, sk);
+      if (oHand === 'wshield') drawShield(c, side * 5.4, hy - 0.4, front ? 2.6 : 2.2, 3.2);
     };
+    // спереди из-за спины выглядывают посох, лук или секира
+    if (W && front && !armed && WPN_BACK[W.m]) drawOnBack(c, W.m, 0, shY + 3, 'S');
     if (!front) { arm(-1); arm(1); }
     tunicFront();
     if (O.robe) { c.fillStyle = '#c89226'; c.fillRect(-5, -1.4, 10, 0.5); if (front) c.fillRect(-0.3, shY, 0.6, 12); }
@@ -1043,6 +1300,13 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       }
     }
     if (O.fem && front) femBust(c, shY, skin);
+    if (W) {
+      // ножны на левом бедре (спереди — справа от нас, со спины — слева), кинжал — на правом
+      const st = WPN_STYLE[W.m], sx = front ? 4.1 : -4.1, sd = front ? 0.42 : -0.42;
+      if (W.m === 'mace' || W.m === 'cmace') { if (!armed) drawWeapon(c, W.m, sx, hipY - 0.6, sd * 0.6, 0.95); }
+      else if (st === 'blade' || st === 'stab') drawSheath(c, W.m, sx, hipY + 0.3, sd, 0.9, !armed);
+      if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -sx, hipY + 0.4, -sd, 0.9, !armed);
+    }
     if (front) { arm(-1); arm(1); }
     drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);
     drawCap(c, O, view, 0, headY, tipSway, L, r, lvl);
@@ -1050,6 +1314,11 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic') arm(-1); }
     if (pose === 'smoke' && front) {
       arm(1);
+    }
+    if (W && !front && !armed) {
+      // со спины: щит и оружие на ремне поверх туники
+      if (W.o === 'wshield') drawShield(c, 0, shY + 3.8, 3.1, 3.6);
+      if (WPN_BACK[W.m]) drawOnBack(c, W.m, 0, shY + 3.2, 'N');
     }
     if (courier && !front) {
       drawFrame(c, 'N', 0, shY + 2.6);
@@ -1074,7 +1343,7 @@ function personSprite(u, view, pose, frame, opt = {}) {
   const fkey = pose === 'work' ? `${frame.anim}${frame.f}` : frame;
   const lvl = (u.type === 'serf' || u.type === 'builder') ? unitLevel(u) : 1;
   const carryN = u.carry ? Math.min(3, Math.max(1, u.carryN || 1)) : 0;
-  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gf || 0) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}`;
+  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gf || 0) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}${opt.wpn ? 'W' + opt.wpn : ''}`;
   const key = `${u.type}|${look}|${view}${pose}${fkey}|${u.carry || ''}|${u.injury || ''}|${okey}`;
   let cv = PEOPLE_CACHE.get(key);
   if (cv) {

@@ -5,7 +5,11 @@
 
 const SKEL_SEE = 3.2, SKEL_LEASH = 5;
 
-function skelCount() { return Math.min(8, 2 + Math.floor((Game.lostGnomes || 0) / 2)); }
+// с каждой ночью из могил встаёт больше (nightDiff в night.js): к 7-й — на 1–2, к 10-й — на 3 больше, до 12
+function skelCount() { return Math.min(12, 2 + Math.floor((Game.lostGnomes || 0) / 2) + Math.floor((nightDiff() - 1) * 1.8)); }
+// злее с каждой ночью: замечают дальше и бегают быстрее
+const skelSee = () => SKEL_SEE * (1 + 0.15 * (Math.min(4, nightDiff()) - 1));
+const skelPace = () => 1 + 0.12 * (Math.min(4, nightDiff()) - 1);
 
 function skeletonsSpawn() {
   const gy = graveyardOf();
@@ -72,7 +76,7 @@ function skeletonsTick(dt) {
         if (!alive.length) { if (s.t > 1) { s.state = 'roam'; s.fighters = []; s.resolved = false; s.t = 0; s.goal = null; } break; }
         // подходит к первому бойцу
         const f = alive[0];
-        if (Math.hypot(f.x - s.x, f.y - s.y) > 1.1 && !s.resolved) skelMove(s, f.x - Math.sign(f.x - s.x) * 0.9, f.y, 0.9, dt);
+        if (Math.hypot(f.x - s.x, f.y - s.y) > 1.1 && !s.resolved) skelMove(s, f.x - Math.sign(f.x - s.x) * 0.9, f.y, 0.9 * skelPace(), dt);
         else s.face = f.x > s.x ? 1 : -1;
         if (s.t > 30 && !s.resolved) skelResolve(s);
         break;
@@ -94,7 +98,7 @@ function skeletonsTick(dt) {
         if (nearBonfire(s.x, s.y, BONFIRE_SAFE)) { s.state = 'sink'; s.t = 0; continue; }       // у большого костра скелеты не держатся
         for (const u of Game.units) {
           if (u.inside || u.dead || !isPerson(u) || u.type === 'carter' || s.seen.has(u.id)) continue;
-          if (Math.hypot(u.x - s.x, u.y - s.y) > SKEL_SEE || Math.hypot(u.x - s.hx, u.y - s.hy) > SKEL_LEASH) continue;
+          if (Math.hypot(u.x - s.x, u.y - s.y) > skelSee() || Math.hypot(u.x - s.hx, u.y - s.hy) > SKEL_LEASH + skelSee() - SKEL_SEE) continue;
           if (!interruptible(u) && !(u.brk && u.brk.kind === 'lost')) continue;
           skelReact(s, u);
           break;
@@ -176,10 +180,11 @@ function skelResolve(s) {
   const fs = s.fighters.filter(u => !u.dead && u.brk && u.brk.kind === 'fight');
   s.resolved = true;
   if (!fs.length) { s.state = 'roam'; s.fighters = []; return; }
-  const n = fs.length, r = Math.random();
+  const n = fs.length, r = Math.random(), d = nightDiff();
   let outcome;
-  if (n === 1) outcome = r < 0.45 ? 'win' : r < 0.7 ? 'escape' : 'lose';
-  else outcome = r < 0.04 ? 'wipe' : r < 0.04 + 0.96 * Math.min(0.92, 0.4 + 0.2 * n) ? 'win' : 'lose';
+  // поздней ночью скелеты крепче: одиночке и группе труднее их рассыпать
+  if (n === 1) { const w = 0.45 / Math.sqrt(d); outcome = r < w ? 'win' : r < w + 0.25 ? 'escape' : 'lose'; }
+  else { const pw = Math.min(0.15, 0.04 * Math.sqrt(d)); outcome = r < pw ? 'wipe' : r < pw + (1 - pw) * Math.min(0.92, 0.4 + 0.2 * n) / Math.pow(d, 0.3) ? 'win' : 'lose'; }
   if (outcome === 'win') {
     s.state = 'dead'; s.t = 0; s.moving = false;
     sfxAt('rattle', s.x * TILE, s.y * TILE, 1.3);
