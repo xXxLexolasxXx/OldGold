@@ -1,3 +1,6 @@
+@font-face { font-family: 'Kurale'; src: url('../fonts/Kurale-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Ruslan Display'; src: url('../fonts/RuslanDisplay-Regular.ttf') format('truetype'); font-display: swap; }
+
 :root {
   --bg0: #0e0a07;
   --bg1: #1a130d;
@@ -31,7 +34,7 @@ html, body {
   overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-text-size-adjust: 100%;
   background: var(--bg0);
   color: var(--text);
-  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  font-family: 'Kurale', 'Palatino Linotype', Palatino, Georgia, serif;
   font-size: 14px;
   user-select: none;
   overflow: hidden;
@@ -39,7 +42,7 @@ html, body {
 
 img { image-rendering: pixelated; }
 kbd {
-  font-family: Consolas, monospace; font-size: 11px;
+  font-family: 'Kurale', Georgia, serif; font-size: 11px;
   background: var(--bg0); border: 1px solid var(--line); border-bottom-width: 2px;
   padding: 0 4px; color: var(--gold);
 }
@@ -176,7 +179,7 @@ button img { width: 18px; height: 18px; }
 .slot .n {
   position: absolute; right: 2px; bottom: 0; font-size: 12px; font-weight: bold;
   color: #fff; text-shadow: 1px 1px 0 #000, -1px 0 0 #000;
-  font-family: Consolas, monospace;
+  font-family: 'Kurale', Georgia, serif;
 }
 .slot.zero img { opacity: 0.35; }
 .slot.blocked::after {
@@ -197,7 +200,7 @@ button img { width: 18px; height: 18px; }
   box-shadow: inset 0 0 0 1px #4a3524; image-rendering: pixelated;
 }
 .prow .pn { font-size: 13px; }
-.prow .pc { font-family: Consolas, monospace; font-size: 13px; color: var(--gold); text-align: right; }
+.prow .pc { font-family: 'Kurale', Georgia, serif; font-size: 13px; color: var(--gold); text-align: right; }
 .prow button { padding: 1px 7px; }
 
 /* ---------- Хозяйство ---------- */
@@ -210,7 +213,7 @@ button img { width: 18px; height: 18px; }
 .alert img { width: 24px; height: 24px; flex: none; }
 .stat-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 1px 0; }
 .stat-row img { width: 20px; height: 20px; }
-.stat-row .v { margin-left: auto; font-family: Consolas, monospace; color: var(--gold); }
+.stat-row .v { margin-left: auto; font-family: 'Kurale', Georgia, serif; color: var(--gold); }
 
 .menu-list { display: grid; gap: 4px; }
 .menu-list button { justify-content: flex-start; padding: 6px 8px; font-size: 14px; }
@@ -304,7 +307,7 @@ body.info-float #tab-area { flex: 1 1 auto; }
 .recipe {
   display: flex; align-items: center; gap: 4px; padding: 3px 4px; margin: 2px 0;
   background: rgba(0,0,0,0.3); border: 1px solid #0a0705; box-shadow: inset 0 0 0 1px #3a2a1a;
-  font-family: Consolas, monospace; font-size: 12px;
+  font-family: 'Kurale', Georgia, serif; font-size: 12px;
 }
 .recipe.off { opacity: 0.45; }
 .recipe img { width: 22px; height: 22px; }
@@ -346,7 +349,7 @@ body.info-float #tab-area { flex: 1 1 auto; }
 }
 .dd { position: relative; display: inline-flex; }
 .dd-l { margin-right: auto; }
-.dd-t { cursor: pointer; color: var(--text); font-family: Consolas, monospace; font-size: 13px; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 0 #000; gap: 7px; min-height: 30px; }
+.dd-t { cursor: pointer; color: var(--text); font-family: 'Kurale', Georgia, serif; font-size: 13px; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 0 #000; gap: 7px; min-height: 30px; }
 .dd-t:hover { filter: brightness(1.25); }
 .dd-t::after { content: '▾'; font-size: 10px; color: var(--gold); margin-left: 1px; }
 .dd.open > .dd-t { box-shadow: inset 0 0 0 1px var(--gold), 0 2px 0 rgba(0,0,0,0.5); }
@@ -362,12 +365,12 @@ body.info-float #tab-area { flex: 1 1 auto; }
 .dd-l .dd-menu { right: auto; left: 0; }
 .dd.open > .dd-menu { display: flex; }
 #res-bar { flex-direction: column; align-items: stretch; gap: 2px; min-width: 160px; padding: 14px 12px 10px; }
-.res-row { display: flex; align-items: center; gap: 8px; font-family: Consolas, monospace; font-size: 13px; padding: 1px 2px; border-bottom: 1px dotted rgba(20,10,4,0.6); text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 0 #000; }
+.res-row { display: flex; align-items: center; gap: 8px; font-family: 'Kurale', Georgia, serif; font-size: 13px; padding: 1px 2px; border-bottom: 1px dotted rgba(20,10,4,0.6); text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 0 #000; }
 .res-row:last-child { border-bottom: 0; }
 .res-row img { width: 22px; height: 22px; }
 .res-row .rn { flex: 1; font-family: inherit; }
 .res-row b { color: var(--gold-hi); }
-#clock { font-family: Consolas, monospace; color: var(--gold); font-size: 15px; min-width: 64px; justify-content: center; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 0 #000; }
+#clock { font-family: 'Kurale', Georgia, serif; color: var(--gold); font-size: 15px; min-width: 64px; justify-content: center; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 0 #000; }
 .speed { gap: 2px; padding: 3px 6px; }
 .speed button, .dd-menu button { padding: 2px 7px; }
 .dd-menu button { min-width: 34px; min-height: 30px; }
@@ -385,7 +388,8 @@ body.info-float #tab-area { flex: 1 1 auto; }
     linear-gradient(180deg, #d4d8de 0%, #a3a9b2 45%, #7b818b 55%, #a9aeb6 100%);
   border: 2px solid #15120e; border-radius: 3px;
   box-shadow: inset 0 0 0 1px #eef0f3, inset 0 0 0 2px #5d636d, inset 0 -3px 5px rgba(0,0,0,0.3), 0 3px 8px rgba(0,0,0,0.65);
-  padding: 7px 28px; color: #1d1812; font-weight: bold; text-align: center;
+  padding: 7px 28px 8px; color: #1d1812; text-align: center;
+  font-family: 'Ruslan Display', 'Kurale', Georgia, serif; font-size: 15px; letter-spacing: 0.02em;
   text-shadow: 0 1px 0 rgba(255,255,255,0.55), 0 -1px 0 rgba(0,0,0,0.25);
   animation: fade 3.4s forwards;
 }
@@ -413,7 +417,7 @@ body.info-float #tab-area { flex: 1 1 auto; }
 }
 #loading h1, #loading h2 { opacity: 0; }   /* заголовок рисуется пиксельными буквами на холсте, элемент задаёт размер и место */
 #loading h1 {
-  margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(64px, 13vw, 170px); letter-spacing: 0.06em; font-weight: bold; line-height: 1.1;
+  margin: 0; font-family: "Ruslan Display", Georgia, serif; font-size: clamp(64px, 13vw, 170px); letter-spacing: 0.06em; font-weight: bold; line-height: 1.1;
   background: linear-gradient(#fff2a0, #e4b434 55%, #8e5a18);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 18px rgba(255,170,60,0.45));
@@ -718,7 +722,7 @@ body.mobile #dd-zoom { display: none; }
 .xpbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#8ab048, #4e8a2a); }
 .xpbar.l2 i { background: linear-gradient(#e8c860, #b08a2a); }
 .xpbar.l3 i { background: linear-gradient(#ffe070, #d8a020); }
-.xpbar b { position: absolute; right: 2px; top: -1px; font-size: 9px; line-height: 10px; color: #f6eccc; text-shadow: 0 0 2px #000, 0 0 2px #000; font-family: Consolas, monospace; }
+.xpbar b { position: absolute; right: 2px; top: -1px; font-size: 9px; line-height: 10px; color: #f6eccc; text-shadow: 0 0 2px #000, 0 0 2px #000; font-family: 'Kurale', Georgia, serif; }
 
 /* телефон в портрете: название не шире экрана, меню ниже — больше места костру */
 @media (max-width: 600px) {
@@ -777,3 +781,6 @@ body.mobile #tut .tut-btns button { padding: 4px 10px; }
 
 /* рост лозы рисуется покадрово на холсте (js/startmenu.js) — CSS-развёртки для неё больше нет */
 .sm-in-l canvas.sm-vine, .sm-in-r canvas.sm-vine { animation: none; }
+
+/* заголовки — уставный средневековый шрифт */
+h1, h2, h3, #logo, .ihead h3, #help h3 { font-family: 'Ruslan Display', 'Kurale', Georgia, serif; font-weight: normal; letter-spacing: 0.02em; }
