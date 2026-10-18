@@ -300,7 +300,7 @@ function checkPlacement(type, x, y, rot = 0) {
   }
 
   if (def.need === 'stone') {
-    if (!findObjNear(dx, dy, 10, o => o.t === 'stone')) return 'Рядом нет камня';
+    if (!findObjNear(dx, dy, 10, o => o.t === 'stone') && !rockFaceNear(dx, dy, 10)) return 'Рядом нет камня или скалы';
   }
   if (def.need === 'rock') {
     let ok = false;

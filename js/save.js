@@ -12,6 +12,7 @@ function resetGameState() {
   Game.piles.clear();
   Game.animals = [];
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
+  ROCKMINE.hp.clear(); ROCKMINE.mined.clear(); ROCKMINE.res.clear();
   Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0; Game.festival = null; Game.festNext = undefined; Game.festWish = false;
   Game.bats = [];
   Game.crows = []; Game.frogs = []; Game.worms = []; Game.chests = null; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1;
@@ -79,6 +80,7 @@ function serializeGame() {
     storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, ch: serializeChests(), fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, produced: nz(Game.produced),
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
     obj, road,
+    mined: [...ROCKMINE.mined], rockHp: [...ROCKMINE.hp],
     buildings: Game.buildings.map(b => ({
       id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
       used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
@@ -115,6 +117,8 @@ function applySave(s) {
   resetGameState();
   Game.seed = s.seed;
   genWorld(s.seed);
+  for (const i of s.mined || []) { World.terrain[i] = T_GRASS; World.crystal[i] = 0; ROCKMINE.mined.add(i); }
+  for (const [i, n] of s.rockHp || []) ROCKMINE.hp.set(i, n);
   World.obj.fill(null);
   World.growing.clear();
   for (const [i, t, g, n, farm, crop, dv, dvert] of s.obj) {

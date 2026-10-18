@@ -374,10 +374,90 @@ function* woodcutterWork(u, b) {
   yield { wait: 3 };
 }
 
+// ---------- Долбление горы ----------
+// Когда вокруг каменоломни не осталось глыб, каменотёс скалывает саму гору: у каждой клетки скалы
+// свой запас кусков; выработанная клетка рушится — на её месте ровная земля с грудой щебня.
+const ROCKMINE = { hp: new Map(), mined: new Set(), res: new Set() };
+const ROCK_FACE_HP = 60, ROCK_FACE_R = 10;
+
+function rockFaceOpen(x, y) {
+  if (!inb(x, y)) return null;
+  const i = idx(x, y);
+  if (World.terrain[i] !== T_ROCK || World.crystal[i] || ROCKMINE.res.has(i)) return null;
+  if (inb(x, y + 1) && (World.bmap[idx(x, y + 1)] || World.door[idx(x, y + 1)])) return null;   // под скалой стоит рудник — не трогаем
+  return i;
+}
+
+// ближайшая клетка скалы с подходом: { x, y, spot }
+function findRockFace(b) {
+  let best = null, bd = 1e9;
+  for (let y = b.doorY - ROCK_FACE_R; y <= b.doorY + ROCK_FACE_R; y++) for (let x = b.doorX - ROCK_FACE_R; x <= b.doorX + ROCK_FACE_R; x++) {
+    if (rockFaceOpen(x, y) === null) continue;
+    const dd = (x - b.doorX) ** 2 + (y - b.doorY) ** 2;
+    if (dd > ROCK_FACE_R * ROCK_FACE_R || dd >= bd) continue;
+    for (const [dx, dy] of DIRS) if (isWalkable(x + dx, y + dy)) { bd = dd; best = { x, y, spot: [x + dx, y + dy] }; break; }
+  }
+  return best;
+}
+
+function rockFaceNear(x, y, r) {
+  for (let yy = y - r; yy <= y + r; yy++) for (let xx = x - r; xx <= x + r; xx++)
+    if (inb(xx, yy) && World.terrain[idx(xx, yy)] === T_ROCK && !World.crystal[idx(xx, yy)] && (xx - x) ** 2 + (yy - y) ** 2 <= r * r) return true;
+  return false;
+}
+
+function rockFaceHit(x, y, u, last) {
+  const hx = (u.x + (x + 0.5 - u.x) * 0.6) * TILE, hy = (u.y + (y + 0.5 - u.y) * 0.6) * TILE - 6;
+  fxBurst(hx, hy, last ? 10 : 6, ['#fff6c0', '#ffd860', '#ffb040'], 110, 50, 0.3, 1.1, 320);
+  fxBurst(hx, hy, last ? 14 : 5, [ROCK_COL.base, ROCK_COL.mid, ROCK_COL.light, ROCK_COL.dark], 70, 60, 0.75, last ? 2.6 : 1.8, 300);
+  fxBurst(hx, hy + 4, last ? 8 : 3, ['rgba(200,186,160,0.55)', 'rgba(170,156,130,0.5)'], 18, 14, 1.1, 3.5, -12);
+  if (last) sfxAt('thud', x * TILE, y * TILE, 0.6);
+}
+
+// клетка выработана: гора рассыпается
+function crumbleRock(x, y) {
+  const i = idx(x, y);
+  ROCKMINE.hp.delete(i);
+  ROCKMINE.mined.add(i);
+  World.terrain[i] = T_GRASS;
+  World.crystal[i] = 0;
+  if (!World.obj[i]) setStone(i, 2);
+  for (let k = 0; k < 3; k++) fxBurst((x + 0.5) * TILE, (y + 0.7) * TILE, 16, [ROCK_COL.base, ROCK_COL.mid, ROCK_COL.light, 'rgba(200,186,160,0.6)'], 90, 60, 1.0, 3, 200);
+  floater(x + 0.5, y - 0.2, 'Гора поддалась!', '#e8dcc0');
+  toast('Каменотёсы источили кусок горы — он осыпался грудой щебня');
+  sfxAt('thud', x * TILE, y * TILE, 1);
+  buildMountains(Game.seed);       // горы пересобираются по новой карте скал
+  PF.regT = -1e9;                  // проходимость изменилась
+}
+
 function* quarryWork(u, b) {
   if (outFull(b, 'stone')) { yield { wait: 3 }; return; }
   const s = findObjNear(b.doorX, b.doorY, 10, o => o.t === 'stone' && o.n > 0 && !o.res);
-  if (!s) { yield { wait: 4 }; return; }
+  if (!s) {
+    const f = findRockFace(b);
+    if (!f) { yield { wait: 4 }; return; }
+    const fi = idx(f.x, f.y);
+    ROCKMINE.res.add(fi);
+    const ok = yield { walk: f.spot };
+    if (!ok) { ROCKMINE.res.delete(fi); yield { wait: 2 }; return; }
+    for (let k = 0; k < 5; k++) {
+      u.face = f.x + 0.5 > u.x ? 1 : -1; u.vdir = 'E';
+      fxLater(0.52, () => rockFaceHit(f.x, f.y, u, k === 4));
+      yield { wait: 1, anim: 'mine' };
+    }
+    ROCKMINE.res.delete(fi);
+    if (World.terrain[fi] === T_ROCK) {
+      const left = (ROCKMINE.hp.get(fi) ?? ROCK_FACE_HP) - 1;
+      ROCKMINE.hp.set(fi, left);
+      if (left <= 0) crumbleRock(f.x, f.y);
+      u.carry = 'stone';
+      yield { wait: 0.5, anim: 'duck' };
+    }
+    if (!(yield* goHome(u, b))) return;
+    if (u.carry) { gather(b, 'stone'); u.carry = null; }
+    yield { wait: 1 };
+    return;
+  }
   // Встать рядом с глыбой
   let spot = null, bd = 1e9;
   for (const [dx, dy] of DIRS) {
