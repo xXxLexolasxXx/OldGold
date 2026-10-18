@@ -168,7 +168,15 @@ function dispatchSerfs() {
 }
 
 function dispatchBuilders() {
-  const idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside);
+  // строитель, записанный за стройкой, мог уйти в напарники героя, погибнуть или взяться за другое —
+  // тогда стройка навсегда «занята» и её больше никто не берёт
+  const gone = u => u.dead || u.teamOf || !Game.unitMap.has(u.id);
+  for (const s of Game.roadSites.values()) if (s.builder && (gone(s.builder) || s.builder.job !== s)) s.builder = null;
+  for (const b of Game.buildings) {
+    if (b.builder && b.state !== 'done' && (gone(b.builder) || b.builder.job !== b)) b.builder = null;
+    if (b.upg && b.upg.builder && (gone(b.upg.builder) || b.upg.builder.job !== b)) b.upg.builder = null;
+  }
+  const idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead);
   dispatchRepairs(idle);
   if (!idle.length) return;
   const sites = [

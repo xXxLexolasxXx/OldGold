@@ -285,6 +285,7 @@ function* heroBuild(u, s) {
       u.job = null;
     }
     const res = yield r.value;
+    if (r.value && r.value.walk) since = Game.time;   // дорога к стройке — не простой: издалека идут дольше 10 с
     r = g.next(res);
   }
   u.job = null;
