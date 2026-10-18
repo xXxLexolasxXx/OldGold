@@ -16,10 +16,10 @@ const SM_EMBER_LVL = [0, 1, 2, 2, 1, 1];                                  // н�
 
 // Положение кулака (мировые пиксели от ног) в каждом кадре; E — боком (лицом вправо), S — анфас
 const SMOKE_ARM = {
-  E: { hand: [[5.0, -8.2], [5.3, -10.6], [5.9, -13.0], [5.8, -13.0], [5.7, -11.8], [5.4, -10.4]], elbow: [[2.8, -9.4], [2.9, -9.6], [3.0, -9.6], [3.0, -9.6], [3.0, -9.6], [2.9, -9.6]] },
-  S: { hand: [[4.6, -8.2], [4.0, -10.6], [3.3, -12.7], [3.3, -12.8], [3.9, -11.6], [4.0, -10.6]], elbow: [[5.4, -8.8], [5.4, -10.4], [5.2, -12.0], [5.2, -12.0], [5.2, -11.0], [5.4, -10.4]] },
+  E: { hand: [[5.7, -8.2], [6.0, -10.6], [6.6, -13.0], [6.5, -13.0], [6.4, -11.8], [6.1, -10.4]], elbow: [[2.8, -9.4], [2.9, -9.6], [3.0, -9.6], [3.0, -9.6], [3.0, -9.6], [2.9, -9.6]] },
+  S: { hand: [[5.0, -8.2], [4.4, -10.6], [3.7, -12.7], [3.7, -12.8], [4.3, -11.6], [4.4, -10.6]], elbow: [[5.4, -8.8], [5.4, -10.4], [5.2, -12.0], [5.2, -12.0], [5.2, -11.0], [5.4, -10.4]] },
 };
-const SMOKE_MOUTH = { E: [3.6, -13.3], S: [1.0, -13.0] };
+const SMOKE_MOUTH = { E: [4.3, -13.3], S: [1.4, -13.0] };
 
 // ---------- палитры ----------
 function smHex(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
@@ -306,6 +306,13 @@ function drawSmoking(c, u, px, py, view) {
   c.save(); c.translate(px, py); if (face < 0) c.scale(-1, 1);
   c.imageSmoothingEnabled = false;
   c.drawImage(sp.cv, Math.round(ox / SM_U) * SM_U, Math.round(oy / SM_U) * SM_U, sp.w * SM_U, sp.h * SM_U);
+  // кулак поверх курева: оно зажато в руке, а не лежит перед ней
+  const sk = SKINS[lookOf({ type: u.type, look: LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length] }).skin];
+  const fx = Math.round(hand[0] / SM_U) * SM_U - 2 * SM_U, fy = Math.round((hand[1] + 0.25) / SM_U) * SM_U - 2 * SM_U;
+  c.fillStyle = '#3a2214'; c.fillRect(fx - SM_U, fy, 6 * SM_U, 4 * SM_U); c.fillRect(fx, fy - SM_U, 4 * SM_U, 6 * SM_U);
+  c.fillStyle = sk[0]; c.fillRect(fx, fy, 4 * SM_U, 3 * SM_U);
+  c.fillStyle = sk[1]; c.fillRect(fx, fy + 3 * SM_U, 4 * SM_U, SM_U); c.fillRect(fx + 3 * SM_U, fy, SM_U, 4 * SM_U);
+  c.fillStyle = sk[2]; c.fillRect(fx + SM_U, fy + SM_U, SM_U, SM_U);   // костяшка
   // тонкая струйка от огонька всегда; на выдохе — клуб изо рта
   const ex = ox + sp.ember[0] * SM_U, ey = oy + sp.shift(sp.ember[0]) * SM_U + sp.ember[1] * SM_U - 0.3;
   const T = Game.time + u.id * 0.37;
