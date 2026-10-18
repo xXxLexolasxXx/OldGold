@@ -924,11 +924,21 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
     }
     ring.sort((p, q) => p.y - q.y);
     drawFireBase(cx, cy, S);
-    // толпа за кругом: гномы по бокам и снизу, часть обрезана краем экрана, стоят внахлёст в разной глубине
-    const crowd = [[-0.37, 0.64], [-0.47, 0.74], [-0.31, 0.83], [-0.5, 0.93], [-0.2, 1.0], [0.36, 0.66], [0.46, 0.77], [0.3, 0.87], [0.52, 0.97], [0.12, 1.04], [-0.06, 1.1]].map(([fx, fy], j) => {
-      const x = cx + fx * W + Math.sin(j * 5.1) * 14 * u, y = H * fy;
-      return { i: N + j, a: 0, x, y, k: u * 1.9 * (0.78 + (fy - 0.6) * 1.1), g: CREW[(j * 3 + 1) % N], extra: true };
-    });
+    // толпа за кругом: гномы по бокам и снизу, часть обрезана краем экрана; точки берутся жадно,
+    // и силуэты (ширина ≈ 44k, высота ≈ 64k) друг с другом и с кругом не пересекаются
+    const crowd = [];
+    const placed = ring.map(p => ({ x: p.x, y: p.y, k: p.k }));
+    const rows = [0.66, 0.78, 0.9, 1.02, 1.1], cols = [0.03, 0.97, 0.16, 0.84, 0.3, 0.7, 0.5];
+    for (let c = 0, got = 0; c < cols.length; c++, got = 0) for (const fy of rows) {
+      if (got >= 2 || crowd.length >= 11) break;
+      const x = cx + (cols[c] - 0.5) * W * 1.02 + Math.sin(fy * 17 + c * 5.1) * 6 * u, y = H * (fy + (c % 2) * 0.03);
+      const k = u * 1.9 * (0.78 + (fy - 0.6) * 1.1);
+      if (x < -20 * k || x > W + 20 * k) continue;
+      if (placed.some(q => Math.abs(q.x - x) < 44 * (k + q.k) / 2 * 1.05 && Math.abs(q.y - y) < 64 * (k + q.k) / 2 * 0.62)) continue;
+      placed.push({ x, y, k }); got++;
+      const j = crowd.length;
+      crowd.push({ i: N + j, a: 0, x, y, k, g: CREW[(j * 3 + 1) % N], extra: true });
+    }
     const all = ring.concat(crowd).sort((p, q) => p.y - q.y);
     const back = all.filter(p => p.y < cy), front = all.filter(p => p.y >= cy);
     const pos = new Map(ring.map(p => [p.i, p]));

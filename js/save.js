@@ -16,6 +16,7 @@ function resetGameState() {
   Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0; Game.festival = null; Game.festNext = undefined; Game.festWish = false;
   Game.bats = [];
   Game.crows = []; Game.frogs = []; Game.worms = []; Game.chests = null; Game.fairy = null; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1; resetFairy();
+  beastsReset();
   Game.fieldPlans = new Set(); Game.avenge = [];
   World.occ.fill(0);
   World.roadDirty = true;
@@ -35,11 +36,8 @@ function resetGameState() {
 function serializeNight() {
   const ents = (Game.ents || []).filter(e => e.state !== 'done' && e.state !== 'gone' && !e.dead && !e.burnT)
     .map(e => [e.water ? 'w' : e.rock ? 'r' : 't', e.i, e.hx, e.hy, e.wx ?? 0, e.wy ?? 0]);
-  // призрак: [x, y, прозрачность, сколько ещё благодарит (успокоен), дом x, дом y, проступил ли, вышел ли из кладбища]
-  const ghosts = (Game.ghosts || []).filter(g => g.mode !== 'leave').map(g => [+g.x.toFixed(1), +g.y.toFixed(1), +(g.alpha || 0).toFixed(2),
-    g.mode === 'calm' ? +Math.max(0.5, g.modeT || 0).toFixed(1) : 0, +(g.hx ?? g.x).toFixed(1), +(g.hy ?? g.y).toFixed(1), g.rev === false ? 0 : 1, g.fromGy ? 1 : 0]);
   const skels = (Game.skels || []).filter(k => k.state !== 'dead' && k.state !== 'sink').map(k => [+k.hx.toFixed(1), +k.hy.toFixed(1)]);
-  return { ni: Game.entNight, wn: !!Game.wasNight, ents, ghosts, skels };
+  return { ni: Game.entNight, wn: !!Game.wasNight, ents, skels };
 }
 
 function applyNight(n) {
@@ -56,13 +54,9 @@ function applyNight(n) {
     Game.ents.push(newEnt(k === 'r' ? { rock: true, i, o, hx, hy, x: hx + 0.5, y: hy + 0.5 } : { i, o, hx, hy, x: hx + 0.5, y: hy + 0.5 }));
   }
   Game.nightEntTotal = Game.ents.length;
-  // старые сейвы хранят только [x, y]: там призрак проступает заново с нуля
-  const num = (v, d) => Number.isFinite(v) ? v : d;
-  Game.ghosts = (n.ghosts || []).filter(a => Array.isArray(a) && Number.isFinite(a[0]) && Number.isFinite(a[1])).map(a => {
-    const x = Math.max(1.5, Math.min(MAP_W - 1.5, a[0])), y = Math.max(1.5, Math.min(MAP_H - 1.5, a[1])), calm = num(a[3], 0) > 0;
-    return { x, y, hx: num(a[4], x), hy: num(a[5], y), alpha: Math.max(0, Math.min(1, num(a[2], 0))), ph: Math.random() * 9, face: 1,
-      rev: a.length > 6 ? !!a[6] : true, fromGy: !!a[7], mode: calm ? 'calm' : 'drift', modeT: calm ? a[3] : 0, tx: x, ty: y, retarget: 0, scan: Math.random() };
-  });
+  // призраки не сохраняются: ночью они проступают заново сами (старые сейвы с полем ghosts его игнорируют)
+  Game.ghosts = [];
+  if (Game.entNight != null && Game.entNight === nightIndex() && isNightNow() && !isDawnNow()) ghostsSpawn(1 + Math.floor(Math.random() * 3) + Math.floor((Game.lostGnomes || 0) / 2));
   for (const [x, y] of n.skels || []) skelRise(x, y, Math.random() * 2);
 }
 
@@ -77,7 +71,7 @@ function serializeGame() {
   const nz = o => { const r = {}; for (const k in o) if (o[k]) r[k] = o[k]; return r; };
   return {
     v: 2, mw: MAP_W, mh: MAP_H, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
-    storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, ch: serializeChests(), fy: serializeFairy1(), f2: serializeFairy(), fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, produced: nz(Game.produced),
+    storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, ch: serializeChests(), fy: serializeFairy1(), f2: serializeFairy(), fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, be: serializeBeasts(), produced: nz(Game.produced),
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
     obj, road,
     mined: [...ROCKMINE.mined], rockHp: [...ROCKMINE.hp],
@@ -209,6 +203,7 @@ function applySave(s) {
     Game.animals.push(a);
   }
   for (const [x, y, st] of s.piles || []) if (inb(x, y)) for (const g in st) if (GOODS[g] && st[g] > 0) dropPile(x, y, g, st[g]);
+  applyBeasts(s.be);
   applyNight(s.night);
   applyFestival(s.fest);
   updateMinimapBase();
