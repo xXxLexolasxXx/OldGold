@@ -48,6 +48,7 @@ fs.mkdirSync(DATA, { recursive: true });
 const WORLD_FILE = path.join(DATA, 'world.json');
 const SETTINGS_FILE = path.join(DATA, 'settings.json');
 const USERS_FILE = path.join(DATA, 'players.json');
+const VIL_FILE = path.join(DATA, 'village.json');
 const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
 
 // ---------- Статистика игроков ----------
@@ -91,6 +92,7 @@ const host = createHost(log);
 // права игроков (админ-панель хоста) хранятся отдельно от мира
 try { host.ctx.coopSetPerms(JSON.stringify(JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')).perms || {})); } catch (e) { /* прав ещё нет — всё разрешено */ }
 const call = (fn, ...args) => host.ctx[fn](...args);
+try { host.ctx.coopStateSet(fs.readFileSync(VIL_FILE, 'utf8')); } catch (e) { /* серий и рекордов ещё нет */ }
 const run = code => host.run(code);
 const SIM_DT = run('SIM_DT');
 
@@ -121,6 +123,7 @@ function saveWorld() {
     if (fs.existsSync(WORLD_FILE)) fs.copyFileSync(WORLD_FILE, WORLD_FILE + '.bak');
     fs.renameSync(tmp, WORLD_FILE);
     flushHeroes();
+    try { fs.writeFileSync(VIL_FILE, call('coopStateGet')); } catch (e) { log('серии ночей не сохранились:', e.message); }
     stats.save();
     return true;
   } catch (e) { log('сохранение мира не удалось:', e.message); return false; }

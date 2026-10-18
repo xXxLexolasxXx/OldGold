@@ -124,7 +124,7 @@ function coopHandle(m) {
   switch (m.t) {
     case 'u': coopUnits(m); break;
     case 'w': coopWorld(m); break;
-    case 'me': Coop.me = m; coopRefreshHud(); break;
+    case 'me': Coop.me = m; coopRefreshHud(); coopVilHud(m.vil); break;
     case 'toast': toast(m.text); break;
     case 'fl': floater(m.x, m.y, m.text, m.col || '#fff6d0'); break;
     case 'chat': coopChat(m); break;
@@ -478,6 +478,8 @@ function coopCss() {
   #coop-hud .cp-row{display:flex;gap:5px}
   #coop-hud button{background:rgba(26,19,13,.9);color:#f6d458;border:1px solid #b8902c;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12px;font-family:inherit}
   #coop-hud button:hover{background:#3a2c14}
+  #cp-vil{background:rgba(26,19,13,.88);border:1px solid #7a5f28;border-radius:5px;padding:4px 8px;text-align:right;line-height:1.35;pointer-events:none}
+  #cp-vil:empty{display:none}#cp-vil .ok{color:#9fe070}#cp-vil .lo{opacity:.75}
   #cp-log{display:flex;flex-direction:column;gap:2px;align-items:flex-end;pointer-events:none}
   #cp-log div{background:rgba(26,19,13,.85);border-radius:4px;padding:2px 7px;text-shadow:0 1px 1px #000}
   #cp-log b{color:#f6d458}
@@ -538,7 +540,7 @@ function coopInitHud() {
   if (hud) hud.remove();
   hud = document.createElement('div');
   hud.id = 'coop-hud';
-  hud.innerHTML = `<div id="cp-log"></div><div id="cp-pop"></div>
+  hud.innerHTML = `<div id="cp-vil"></div><div id="cp-log"></div><div id="cp-pop"></div>
     <div class="cp-row"><span id="cp-online" style="align-self:center;background:rgba(26,19,13,.85);padding:3px 7px;border-radius:4px"></span>
     <button data-cp="chat" title="Сказать что-нибудь">Чат</button><button data-cp="inv" title="Инвентарь героя">Рюкзак</button>
     ${Coop.host ? '<button data-cp="restart" title="Только хост">Сервер ⟳</button>' : ''}<button data-cp="leave" title="Выйти из общей деревни">Выйти</button></div>`;
@@ -575,6 +577,15 @@ function coopInitHud() {
 function coopSlotClick(el, e) {
   const slot = +el.dataset.slot;
   coopSend({ t: e.shiftKey ? 'drop' : 'use', slot });
+}
+
+// «Заказ деревни» и серия ночей без потерь (считает сервер, приходит вместе с 'me')
+function coopVilHud(v) {
+  const el = document.getElementById('cp-vil');
+  if (!el || !v) return;
+  const q = v.q, tm = q ? `${Math.floor(q.left / 60)}:${String(q.left % 60).padStart(2, '0')}` : '';
+  el.innerHTML = (q ? `<div>${q.done ? '<span class="ok">Заказ выполнен</span>' : 'Заказ деревни'}: ${q.w.toLowerCase()} «${q.g}» <b>${q.have}/${q.need}</b>${q.done ? '' : ` <span class="lo">· до вечера ${tm} · +${q.rw} зол.</span>`}</div>` : '')
+    + `<div class="lo">Ночей без потерь подряд: <b>${v.st}</b> · рекорд ${v.best}${v.hero && v.hero.length ? ' · герои ночи: ' + v.hero.map(h => h[0] + ' ×' + h[1]).join(', ') : ''}</div>`;
 }
 
 function coopRefreshHud() {

@@ -36,6 +36,9 @@ const coop = {
   shB: new Map(), shO: new Map(), shR: new Set(), shRS: '', shP: '', shSB: '',
   t: 0, lvT: 0,
   perms: Object.fromEntries(Object.keys(COOP_PERMS).map(k => [k, true])),
+  // общая жизнь: ночи без потерь и заказы деревни (сохраняются отдельным файлом сервера)
+  vil: { streak: 0, best: 0, nights: 0, hall: {} },
+  quest: null, qDone: 0, prevNight: false, prevEve: false, lostAtEve: null,
 };
 
 // ---------- Герой игрока ----------
@@ -63,7 +66,7 @@ function coopJoin(name, dataJson) {
   u.food = d.food != null ? d.food : 1;
   const level = d.level || 1;
   const H = heroDefaults({ name, level, cls: COOP_CLASSES[cls].name });
-  H.clsKey = cls; H.owner = name;
+  H.clsKey = cls; H.owner = name; H.nightFalls = d.nf || 0;
   H.maxhp = coopBaseHp(cls, level);
   H.hp = d.hp > 0 ? Math.min(d.hp, H.maxhp) : H.maxhp;
   H.inv = Array.from({ length: COOP_INV }, (_, i) => (d.inv && d.inv[i]) || null);
@@ -77,7 +80,7 @@ function coopHeroData(name) {
   const u = coop.players.get(name);
   if (!u) return null;
   const H = u.hero;
-  return JSON.stringify({ cls: H.clsKey, level: H.level, hp: Math.round(H.hp), inv: H.inv, x: u.x, y: u.y, food: u.food, look: u.look });
+  return JSON.stringify({ cls: H.clsKey, level: H.level, hp: Math.round(H.hp), inv: H.inv, x: u.x, y: u.y, food: u.food, look: u.look, nf: H.nightFalls || 0 });
 }
 
 function coopLeave(name) {
@@ -272,6 +275,98 @@ function coopBuildingAct(name, m) {
   }
 }
 
+
+// ---------- Общая жизнь: ночи без потерь и заказы деревни ----------
+// Ночь: от вечера до рассвета считаем потери гномов. Рассвет без потерь — серия растёт, деревня получает золото,
+// а все герои — отдых и хлеб. «Герой ночи» — тот, кто не падал и остался здоровее всех.
+// Заказ: каждый день деревня просит произвести столько-то товара до вечера; делает это весь мир вместе, награда — золото на склад.
+
+const COOP_QUEST_POOL = [
+  { g: 'trunk', n: 30, word: 'Заготовить' }, { g: 'stone', n: 24, word: 'Наколоть' }, { g: 'timber', n: 24, word: 'Напилить' },
+  { g: 'wheat', n: 30, word: 'Собрать' }, { g: 'bread', n: 16, word: 'Испечь' }, { g: 'sausage', n: 12, word: 'Накоптить' },
+  { g: 'beer', n: 12, word: 'Сварить' }, { g: 'flour', n: 20, word: 'Смолоть' },
+];
+
+function coopVillageGold(n) {
+  const st = Game.buildings.find(b => b.type === 'storehouse' && b.state === 'done');
+  if (!st) return false;
+  st.stock.gold = (st.stock.gold || 0) + n;
+  return true;
+}
+
+function coopNewQuest() {
+  const players = Math.max(1, coop.players.size);
+  // берём товары, которые деревня уже производит (или базовые), чтобы заказ был выполним
+  const opts = COOP_QUEST_POOL.filter(q => ['trunk', 'stone', 'timber'].includes(q.g) || (Game.produced[q.g] || 0) > 0);
+  const q = opts[Math.floor(Math.random() * opts.length)] || COOP_QUEST_POOL[0];
+  const need = Math.ceil(q.n * (1 + 0.2 * (players - 1)) / 2) * 2;
+  coop.quest = { g: q.g, need, base: Game.produced[q.g] || 0, word: q.word, reward: 4 + 2 * players, until: 0, done: false };
+  coop.out.push({ msg: { t: 'toast', text: `Заказ деревни: ${q.word.toLowerCase()} «${GOODS[q.g].name}» — ${need} шт. до вечера. Награда — золото на склад` } });
+}
+
+function coopQuestHave() { const q = coop.quest; return q ? Math.max(0, (Game.produced[q.g] || 0) - q.base) : 0; }
+
+function coopVillageTick() {
+  if (!coop.players.size) return;
+  const night = isNightNow(), eve = isEveningNow();
+  // вечер: считаем потери с этой точки; заказ, не выполненный за день, сгорает
+  if (eve && !coop.prevEve) {
+    coop.lostAtEve = Game.lostGnomes || 0;
+    for (const u of coop.players.values()) u.hero.nightFalls = 0;
+    const q = coop.quest;
+    if (q && !q.done) { coop.out.push({ msg: { t: 'toast', text: `Заказ «${GOODS[q.g].name}» не выполнен: ${coopQuestHave()}/${q.need}. Завтра будет новый` } }); }
+    coop.quest = null;
+  }
+  // рассвет: итоги ночи
+  if (!night && coop.prevNight && coop.lostAtEve != null) {
+    const lost = (Game.lostGnomes || 0) - coop.lostAtEve;
+    coop.lostAtEve = null;
+    coop.vil.nights++;
+    const heroes = [...coop.players.values()];
+    const star = heroes.slice().sort((a, b) => (a.hero.nightFalls || 0) - (b.hero.nightFalls || 0) || b.hero.hp - a.hero.hp)[0];
+    if (lost <= 0) {
+      coop.vil.streak++;
+      coop.vil.best = Math.max(coop.vil.best, coop.vil.streak);
+      const gold = Math.min(20, 2 + 2 * coop.vil.streak);
+      const got = coopVillageGold(gold);
+      for (const u of heroes) { u.hero.hp = u.hero.maxhp; if (coop.vil.streak >= 2) coopAddItem(u.hero, 'bread', Math.min(3, Math.floor(coop.vil.streak / 2))); }
+      coop.out.push({ msg: { t: 'toast', text: `Ночь без потерь! Серия: ${coop.vil.streak}${coop.vil.streak >= coop.vil.best && coop.vil.streak > 1 ? ' — рекорд деревни' : ''}. ${got ? `+${gold} золота на склад, ` : ''}герои отдохнули` } });
+    } else {
+      const was = coop.vil.streak;
+      coop.vil.streak = 0;
+      coop.out.push({ msg: { t: 'toast', text: `Ночь унесла гномов: ${lost}.${was ? ` Серия из ${was} прервана.` : ''} Рекорд — ${coop.vil.best}` } });
+    }
+    if (star && heroes.length > 1) {
+      coop.vil.hall[star.owner] = (coop.vil.hall[star.owner] || 0) + 1;
+      coop.out.push({ msg: { t: 'toast', text: `Герой ночи: ${star.owner}${star.hero.nightFalls ? '' : ' — ни разу не упал'} (${coop.vil.hall[star.owner]} раз)` } });
+    }
+    coop.qDone = 0;
+  }
+  // рассвет/день без заказа — выдаём новый (но не вечером и не ночью)
+  if (!coop.quest && !eve && !night && Game.time > 5) coopNewQuest();
+  coop.prevNight = night; coop.prevEve = eve;
+  const q = coop.quest;
+  if (q && !q.done && coopQuestHave() >= q.need) {
+    q.done = true; coop.qDone++;
+    const got = coopVillageGold(q.reward);
+    coop.out.push({ msg: { t: 'toast', text: `Заказ выполнен! «${GOODS[q.g].name}» ${q.need}/${q.need}.${got ? ` +${q.reward} золота на склад.` : ''}` } });
+    for (const u of coop.players.values()) coopAddItem(u.hero, 'bread', 1);
+    if (coop.qDone < 3) coop.quest = null;   // выполнил рано — добавочный заказ (до трёх за день)
+  }
+}
+
+function coopVillageInfo() {
+  const q = coop.quest;
+  const c = cycleAt(Game.time);
+  return {
+    q: q ? { g: GOODS[q.g].name, w: q.word, have: Math.min(q.need, coopQuestHave()), need: q.need, done: q.done, rw: q.reward, left: Math.max(0, Math.round(EVE_START - c.p)) } : null,
+    st: coop.vil.streak, best: coop.vil.best, nights: coop.vil.nights, hero: Object.entries(coop.vil.hall).sort((a, b) => b[1] - a[1]).slice(0, 3),
+  };
+}
+
+function coopStateGet() { return JSON.stringify(coop.vil); }
+function coopStateSet(json) { try { Object.assign(coop.vil, JSON.parse(json)); } catch (e) { /* пусто */ } }
+
 // ---------- Такт игроков ----------
 
 function coopRespawn(u) {
@@ -281,7 +376,7 @@ function coopRespawn(u) {
   const [x, y] = coopHome();
   u.x = x + 0.5; u.y = y + 0.5; u.food = Math.max(u.food, 0.6);
   H.hp = Math.round(H.maxhp * 0.5);
-  H.drunkUntil = 0; H.stunUntil = 0;
+  H.drunkUntil = 0; H.stunUntil = 0; H.nightFalls = (H.nightFalls || 0) + 1;
   coop.out.push({ msg: { t: 'toast', text: `${H.owner} приходит в себя у склада — деревня не отпускает так просто` } });
 }
 
@@ -296,7 +391,7 @@ function coopTick(dt) {
       coop.players.delete(name);
       coopJoin(name, JSON.stringify({ ...data, hp: 0, x: null }));
       const nu = coop.players.get(name);
-      if (nu) { nu.hero.hp = Math.round(nu.hero.maxhp * 0.5); coop.out.push({ msg: { t: 'toast', text: `${name} падает без сил и снова стоит у склада` } }); }
+      if (nu) { nu.hero.hp = Math.round(nu.hero.maxhp * 0.5); nu.hero.nightFalls = (data.nf || 0) + 1; coop.out.push({ msg: { t: 'toast', text: `${name} падает без сил и снова стоит у склада` } }); }
       continue;
     }
     u.nextJoin = 1e9;
@@ -328,6 +423,8 @@ function coopTick(dt) {
     H.seenFly = fly;
     if (H.hp <= 0) coopRespawn(u);
   }
+  coop.vilT = (coop.vilT || 0) + dt;
+  if (coop.vilT >= 1) { coop.vilT = 0; coopVillageTick(); }
   coop.lvT += dt;
   if (coop.lvT >= 2) {
     coop.lvT = 0;
@@ -509,7 +606,7 @@ function coopMeData(name) {
   const u = coop.players.get(name);
   if (!u) return null;
   const H = u.hero;
-  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, food: r2(u.food) });
+  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, food: r2(u.food), vil: coopVillageInfo() });
 }
 
 function coopDrain() {
