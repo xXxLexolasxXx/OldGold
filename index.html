@@ -76,18 +76,18 @@
     <canvas id="game"></canvas>
     <div id="vignette"></div>
     <div id="topbar">
-      <span id="res-bar"></span>
+      <span class="dd dd-l" id="dd-res"><button class="dd-t" id="res-sum" title="Ресурсы: нажмите, чтобы раскрыть список"></button><div class="dd-menu" id="res-bar"></div></span>
       <span class="speed m-only"><button id="mm-btn" title="Миникарта">▦</button></span>
-      <span class="speed"><button id="zoom-out" title="Отдалить (−, колесо мыши)">−</button><button id="zoom-in" title="Приблизить (+, колесо мыши)">+</button></span>
+      <span class="dd" id="dd-zoom"><button class="dd-t" title="Масштаб">🔍</button><div class="dd-menu"><button id="zoom-out" title="Отдалить (−, колесо мыши)">−</button><button id="zoom-in" title="Приблизить (+, колесо мыши)">+</button></div></span>
       <span class="speed"><button id="sub-btn" title="Субботник"><img data-icon="broom" alt=""><span>Субботник</span></button></span>
-      <span class="speed"><button id="music-btn" title="Музыка">♪</button><button id="music-next" title="Следующий трек">⏭</button><button id="sfx-btn" title="Звуки">🔊</button></span>
+      <span class="dd" id="dd-snd"><button class="dd-t" title="Звук и музыка">♪</button><div class="dd-menu"><button id="music-btn" title="Музыка">♪</button><button id="music-next" title="Следующий трек">⏭</button><button id="sfx-btn" title="Звуки">🔊</button></div></span>
       <span id="clock">00:00</span>
-      <span class="speed">
+      <span class="dd" id="dd-speed"><button class="dd-t" id="speed-cur" title="Скорость игры">×1</button><div class="dd-menu">
         <button data-speed="0" title="Пауза (Пробел)">❚❚</button>
         <button data-speed="1" class="active">×1</button>
         <button data-speed="2">×2</button>
         <button data-speed="4">×4</button>
-      </span>
+      </div></span>
     </div>
     <div id="toasts"></div>
     <div id="tool-hint" class="hidden"></div>

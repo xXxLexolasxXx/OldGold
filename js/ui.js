@@ -64,6 +64,52 @@ function makeUITextures() {
   for (let k = 0; k < 18; k++) { w.fillStyle = 'rgba(8,5,2,0.35)'; w.fillRect((r() * 128) | 0, 0, 1, 128); }
   for (let y = 0; y < 128; y += 32) { w.fillStyle = 'rgba(0,0,0,0.35)'; w.fillRect(0, y, 128, 1); w.fillStyle = 'rgba(255,220,160,0.05)'; w.fillRect(0, y + 1, 128, 1); }
   document.documentElement.style.setProperty('--wood-tex', `url(${wood.toDataURL()})`);
+
+  // Доски для верхней панели: две плашки по 16 px со сдвинутыми стыками, прожилки, сучки, гвозди у стыков
+  const PW = 192, PH = 32;
+  const pl = mkCanvas(PW, PH), p = pl.getContext('2d');
+  const q = mulberry32(11);
+  const tones = ['#4a3422', '#3f2c1c', '#53391f', '#46301d'];
+  const plank = y0 => {
+    const tone = tones[(q() * tones.length) | 0];
+    p.fillStyle = tone; p.fillRect(0, y0, PW, 16);
+    // прожилки — длинные волнистые линии вдоль доски
+    for (let g = 0; g < 7; g++) {
+      const gy = y0 + 1 + ((q() * 14) | 0), ph = q() * 6, amp = q() * 0.9 + 0.2, len0 = (q() * PW) | 0, len = 40 + ((q() * 110) | 0);
+      p.fillStyle = q() < 0.6 ? `rgba(14,8,3,${0.28 + q() * 0.25})` : `rgba(150,108,62,${0.12 + q() * 0.12})`;
+      for (let x = len0; x < len0 + len; x++) {
+        const yy = gy + Math.round(Math.sin(x * 0.07 + ph) * amp);
+        if (yy >= y0 && yy < y0 + 15) p.fillRect(x % PW, yy, 1, 1);
+      }
+    }
+    // сучок: тёмный овал с колечками
+    const kx = 20 + ((q() * (PW - 40)) | 0), ky = y0 + 5 + ((q() * 6) | 0);
+    if (q() < 0.8) {
+      for (let r = 4; r >= 1; r--) {
+        p.fillStyle = r % 2 ? 'rgba(12,6,2,0.55)' : 'rgba(110,76,40,0.45)';
+        p.beginPath(); p.ellipse(kx, ky, r * 1.8, r * 0.9, 0, 0, 7); p.fill();
+      }
+    }
+    // верхний блик и нижний шов
+    p.fillStyle = 'rgba(255,220,160,0.10)'; p.fillRect(0, y0, PW, 1);
+    p.fillStyle = 'rgba(0,0,0,0.5)'; p.fillRect(0, y0 + 15, PW, 1);
+    p.fillStyle = 'rgba(0,0,0,0.18)'; p.fillRect(0, y0 + 14, PW, 1);
+  };
+  plank(0); plank(16);
+  // торцевые стыки: у верхней доски на x=0, у нижней на x=96 — и по два гвоздя с каждой стороны
+  const joint = (x, y0) => {
+    p.fillStyle = 'rgba(0,0,0,0.65)'; p.fillRect(x, y0, 1, 16);
+    p.fillStyle = 'rgba(255,220,160,0.12)'; p.fillRect(x + 1, y0, 1, 15);
+  };
+  const nail = (x, y) => {
+    x = (x + PW) % PW;
+    p.fillStyle = 'rgba(0,0,0,0.55)'; p.fillRect(x - 1, y, 3, 3);
+    p.fillStyle = '#9a9488'; p.fillRect(x - 1, y - 1, 2, 2);
+    p.fillStyle = '#e4dccb'; p.fillRect(x - 1, y - 1, 1, 1);
+  };
+  joint(0, 0); joint(96, 16);
+  for (const [jx, y0] of [[0, 0], [96, 16]]) for (const dx of [-5, 5]) { nail(jx + dx, y0 + 3); nail(jx + dx, y0 + 11); }
+  document.documentElement.style.setProperty('--plank-tex', `url(${pl.toDataURL()})`);
 }
 
 function setTool(tool) {
@@ -84,6 +130,22 @@ function setSpeed(s) {
   if (s) Game.speed = s;
   document.querySelectorAll('[data-speed]').forEach(b =>
     b.classList.toggle('active', Game.paused ? b.dataset.speed === '0' : +b.dataset.speed === Game.speed));
+  const cur = document.getElementById('speed-cur');
+  if (cur) cur.textContent = Game.paused ? '❚❚' : '×' + Game.speed;
+}
+
+// Выпадающие панели верхней строки: одна открыта за раз, закрываются по клику мимо и по Esc
+function initDropdowns() {
+  const all = [...document.querySelectorAll('#topbar .dd')];
+  const closeAll = except => all.forEach(d => { if (d !== except) d.classList.remove('open'); });
+  for (const d of all) {
+    const t = d.querySelector('.dd-t');
+    t.addEventListener('click', e => { e.stopPropagation(); closeAll(d); d.classList.toggle('open'); });
+  }
+  document.addEventListener('pointerdown', e => { if (!e.target.closest('#topbar .dd')) closeAll(); }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+  // выбор скорости закрывает панель — кнопка сама показывает текущую
+  document.querySelectorAll('#dd-speed [data-speed]').forEach(b => b.addEventListener('click', () => closeAll()));
 }
 
 function openTab(name) {
@@ -209,6 +271,8 @@ function initUI() {
   }
 
   document.querySelectorAll('[data-speed]').forEach(btn => { btn.onclick = () => setSpeed(+btn.dataset.speed); });
+  initDropdowns();
+  setSpeed(Game.paused ? 0 : Game.speed || 1);
   document.getElementById('help-close').onclick = () => document.getElementById('help').classList.add('hidden');
 
   document.querySelector('#tab-menu').addEventListener('click', e => {
@@ -660,9 +724,11 @@ function updateUI(force) {
 
   const t = totals();
   const food = t.bread + t.sausage;
-  setHTML('res-bar', [['timber', t.timber], ['stone', t.stone], ['gold', t.gold], ['bread', food], ['mana', t.mana]]
-    .map(([g, n]) => `<span title="${g === 'bread' ? 'Еда (хлеб + колбаса)' : GOODS[g].name}">${gi(g)}${n}</span>`).join('')
-    + `<span title="Жители">${ui('people')}${Game.units.length}</span>`);
+  const rows = [['timber', t.timber], ['stone', t.stone], ['gold', t.gold], ['bread', food], ['mana', t.mana]];
+  setHTML('res-sum', [rows[0], rows[1], rows[2]].map(([g, n]) => `<span>${gi(g)}${n}</span>`).join(''));
+  setHTML('res-bar', rows
+    .map(([g, n]) => `<div class="res-row" title="${g === 'bread' ? 'Еда (хлеб + колбаса)' : GOODS[g].name}">${gi(g)}<span class="rn">${g === 'bread' ? 'Еда' : GOODS[g].name}</span><b>${n}</b></div>`).join('')
+    + `<div class="res-row" title="Жители">${ui('people')}<span class="rn">Жители</span><b>${Game.units.length}</b></div>`);
 
   const sec = Math.floor(Game.time);
   document.getElementById('clock').textContent =

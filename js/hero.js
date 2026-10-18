@@ -55,18 +55,88 @@ function teamWorkMul(u) {
 
 // ---------- Появление героя ----------
 
-function spawnHero(name) {
+// Точка появления — у большого костра: табличка стоит у костра, гном возникает рядом.
+// Ничего не хранится в сохранении: место вычисляется по костру детерминированно.
+const SPAWN_SIGNS = [
+  'Далеко от бара тебя занесло, гном…',
+  'Вот ты и нашёл меня, Гном!',
+  'Добро пожаловать. Выход там же, где и вход, — закрыт.',
+  'Опять ты? А мы только подмели.',
+  'Точка сбора героев. Героев пока не набралось.',
+  'Новое начало! Старое, впрочем, было ничуть не лучше.',
+  'Держись подальше от смерти. Это не совет, это мольба склада.',
+  'Бесплатное воскрешение. Не благодарите — вы и так всё испортите.',
+  'Трактир вон там. Нет, дальше. Ещё дальше. Ты вообще куда?',
+  'Гном возродился. Склад об этом пока не в курсе.',
+  'У костра тепло, а у гнома — привычка искать приключения.'
+];
+let spawnSpotCache = null;
+function heroSpawnSpot() {
+  const bf = Game.buildings.find(b => b.type === 'bonfire' && b.state === 'done') || Game.buildings.find(b => b.type === 'bonfire');
   const st = Game.buildings.find(b => b.type === 'storehouse') || Game.buildings[0];
-  let x = 40, y = 30;
-  if (st) {
-    const s = randomFreeNear(st.doorX, st.doorY + 2, 1, 3, (xx, yy) => isWalkable(xx, yy) && !World.door[idx(xx, yy)]);
-    [x, y] = s || [st.doorX, st.doorY + 1];
+  const base = bf || st;
+  if (!base) return null;
+  if (spawnSpotCache && spawnSpotCache.b === base) return spawnSpotCache;
+  const ok = (xx, yy) => inb(xx, yy) && isWalkable(xx, yy) && !World.door[idx(xx, yy)] && !World.bmap[idx(xx, yy)];
+  const cands = [];
+  for (let y = base.doorY - 5; y <= base.doorY + 5; y++) for (let x = base.doorX - 5; x <= base.doorX + 5; x++) {
+    const d = Math.hypot(x - base.doorX, y - base.doorY);
+    if (d >= 2 && d <= 5 && ok(x, y)) cands.push([d, x, y]);
   }
+  cands.sort((a, b) => a[0] - b[0] || a[2] - b[2] || a[1] - b[1]);
+  let spot = null;
+  if (cands.length >= 2) {
+    const [, sx, sy] = cands[0];
+    const nb = cands.find(c => c[1] !== sx || c[2] !== sy);
+    spot = { b: base, sign: [sx, sy], at: [nb[1], nb[2]] };
+  } else spot = { b: base, sign: [base.doorX + 1, base.doorY + 1], at: [base.doorX, base.doorY + 1] };
+  return (spawnSpotCache = spot);
+}
+
+function spawnHero(name) {
+  const spot = heroSpawnSpot();
+  const [x, y] = spot ? spot.at : [40, 30];
   const u = spawnUnit('hero', x, y);
   u.smoker = false;
   u.hero = heroDefaults({ name: name || 'Герой' });
   Game.hero = u;
+  Game.signBump = (Game.signBump || 0) + 1;   // после возрождения надпись на табличке другая
   return u;
+}
+
+function drawSpawnSign(c) {
+  const spot = heroSpawnSpot();
+  if (!spot || !Game.buildings.includes(spot.b)) return;
+  const px = (spot.sign[0] + 0.5) * TILE, py = (spot.sign[1] + 1) * TILE - 2;
+  const n = SPAWN_SIGNS.length;
+  const k = (Math.floor(Game.time / 12) * 7 + (Game.seed | 0) + (Game.signBump || 0) * 3) % n;
+  const text = SPAWN_SIGNS[(k + n) % n];
+  c.save();
+  c.font = 'bold 6px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+  // перенос по словам: ширина доски ~64 px
+  const lines = []; let cur = '';
+  for (const w of text.split(' ')) {
+    const t = cur ? cur + ' ' + w : w;
+    if (c.measureText(t).width > 62 && cur) { lines.push(cur); cur = w; } else cur = t;
+  }
+  lines.push(cur);
+  const bw = 70, bh = 8 + lines.length * 8, top = py - 14 - bh;
+  c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(px - 6 + 3, py - 3, 12, 3);                 // тень у основания
+  c.fillStyle = '#4a3220'; c.fillRect(px - 1, top + bh - 2, 3, py - top - bh + 2);       // столб
+  c.fillStyle = '#6a4a2c'; c.fillRect(px - 1, top + bh - 2, 1, py - top - bh + 2);
+  c.fillStyle = '#0a0705'; c.fillRect(px - bw / 2 - 1, top - 1, bw + 2, bh + 2);         // рамка
+  c.fillStyle = '#7a5630'; c.fillRect(px - bw / 2, top, bw, bh);                          // доска
+  c.fillStyle = '#8a6438'; c.fillRect(px - bw / 2, top, bw, 1);
+  c.fillStyle = 'rgba(30,16,6,0.35)';
+  for (let y = top + 4; y < top + bh - 2; y += 4) c.fillRect(px - bw / 2 + 1, y, bw - 2, 1);   // прожилки
+  c.fillStyle = '#d8d0c0';
+  for (const [nx, ny] of [[-bw / 2 + 3, top + 2], [bw / 2 - 4, top + 2], [-bw / 2 + 3, top + bh - 4], [bw / 2 - 4, top + bh - 4]]) c.fillRect(px + nx, ny, 1, 1);   // гвозди
+  lines.forEach((ln, i) => {
+    const ty = top + 9 + i * 8;
+    c.lineWidth = 2; c.strokeStyle = 'rgba(20,10,2,0.55)'; c.strokeText(ln, px, ty);
+    c.fillStyle = '#fff0c0'; c.fillText(ln, px, ty);
+  });
+  c.restore();
 }
 
 function ensureHero() {
@@ -523,6 +593,7 @@ function heroBtnUpdate() {
   const _overlay = drawOverlay;
   drawOverlay = function (c) {
     _overlay(c);
+    if (typeof drawSpawnSign === 'function') drawSpawnSign(c);
     const h = Game.hero;
     if (!h || h.dead) return;
     const t = Game.time;
@@ -562,7 +633,7 @@ function heroBtnUpdate() {
 }
 
 // Окно героя: отдельная карточка поверх карты (справа вверху), не закрывает окно здания в колонке
-let heroCardOpen = false;
+let heroCardOpen = false, heroCardMini = true, heroCardWasOn = false;   // телефон: по умолчанию карточка — маленькая иконка
 function heroCardUpdate() {
   let card = document.getElementById('hero-card');
   if (!card) {
@@ -570,6 +641,8 @@ function heroCardUpdate() {
     card.addEventListener('click', e => {
       if (e.target.closest('.hc-x')) { Game.selUnit = null; updateUI(true); return; }
       if (e.target.closest('.hc-t')) { heroCardOpen = !heroCardOpen; heroCardUpdate(); return; }
+      if (e.target.closest('.hc-m')) { heroCardMini = true; heroCardUpdate(); return; }
+      if (e.target.closest('.hc-ico')) { heroCardMini = false; heroCardUpdate(); return; }
       const el = e.target.closest('[data-hero]');
       if (!el || !Game.hero) return;
       if (el.dataset.hero === 'leave') { const m = Game.units.find(u => u.teamOf === Game.hero.id); if (m) leaveTeam(m); updateUI(true); }
@@ -580,28 +653,39 @@ function heroCardUpdate() {
     st.textContent = `#hero-card{position:absolute;top:58px;right:10px;width:250px;z-index:6;padding:8px 10px 10px;background:rgba(26,19,13,.94);color:#e8dcc0;border:1px solid #b8902c;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.6);font-size:13px;display:none}
     #hero-card .hc-x{position:absolute;top:3px;right:5px;padding:0 6px;font-size:13px;line-height:18px}
     #hero-card .ihead{margin-bottom:4px}
-    body.mobile #hero-card{top:calc(92px + env(safe-area-inset-top));right:auto;left:6px;width:min(300px,calc(100vw - 12px));padding:4px 68px 4px 6px;font-size:12px;max-height:min(36vh,calc(100dvh - 150px));overflow-y:auto}
+    body.mobile #hero-card{top:calc(40px + env(safe-area-inset-top));right:auto;left:4px;width:min(250px,calc(100vw - 8px));padding:3px 62px 3px 4px;font-size:11px;max-height:min(34vh,calc(100dvh - 150px));overflow-y:auto}
+    body.mobile #hero-card.mini{width:auto;padding:0;background:none;border:0;box-shadow:none}
+    body.mobile #hero-card .hc-ico{padding:2px;border-radius:6px;background:rgba(26,19,13,.8);border:1px solid #b8902c;position:relative}
+    body.mobile #hero-card .hc-ico img{width:30px;height:30px;image-rendering:pixelated;display:block}
+    body.mobile #hero-card .hc-ico b{position:absolute;right:-4px;bottom:-4px;min-width:14px;padding:0 3px;border-radius:7px;background:#b8902c;color:#1a1008;font-size:10px;text-align:center}
+    body.mobile #hero-card .hc-m{position:absolute;top:3px;right:48px;padding:0 5px;font-size:12px;line-height:16px}
     body.mobile.sheet-tab #hero-card,body.mobile.sheet-info #hero-card{display:none!important}
-    body.mobile #hero-card .hc-t{position:absolute;top:3px;right:30px;padding:0 6px;font-size:13px;line-height:18px}
-    body.mobile #hero-card .hc-x{top:3px;right:4px;padding:0 6px}
-    #hero-card .hc-row{display:flex;align-items:center;gap:6px;min-height:34px}
+    body.mobile #hero-card .hc-t{position:absolute;top:3px;right:26px;padding:0 5px;font-size:12px;line-height:16px}
+    body.mobile #hero-card .hc-x{top:3px;right:4px;padding:0 5px;font-size:12px;line-height:16px}
+    #hero-card .hc-row{display:flex;align-items:center;gap:5px;min-height:30px}
+    body.mobile #hero-card .hc-row img{width:26px;height:26px}
     #hero-card .hc-row img{width:30px;height:30px;image-rendering:pixelated;border-radius:4px;flex:none}
     #hero-card .hc-row .hc-n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    #hero-card .hc-row .hp-ab{flex:none;min-height:30px;padding:2px 8px}
+    #hero-card .hc-row .hp-ab{flex:none;min-height:26px;padding:1px 6px;font-size:11px}
     #hero-card .hc-body{margin-top:4px;border-top:1px solid #4a3a1c;padding-top:4px}
     #hero-card .hc-body .tip{display:none}`;
     document.head.appendChild(st);
   }
   const on = !!(Game.hero && Game.selUnit && Game.selUnit === Game.hero);
+  if (on && !heroCardWasOn) { heroCardMini = true; heroCardOpen = false; }   // каждый новый выбор героя — снова маленькая иконка
+  heroCardWasOn = on;
   if (!on) { card.style.display = 'none'; return; }
+  card.classList.toggle('mini', Mobile.on && heroCardMini);
   let html;
-  if (Mobile.on) {
+  if (Mobile.on && heroCardMini) {
+    html = `<button class="hc-ico" title="${Game.hero.hero.name}: развернуть карточку"><img src="${portraitURL('hero', Game.hero.look)}" alt=""><b>${Game.hero.hero.level}</b></button>`;
+  } else if (Mobile.on) {
     // телефон: тонкая плашка сверху (портрет, имя, рывок/клич), по ▾ раскрывается полная панель
     const H = Game.hero.hero, cd = k => Math.max(0, Math.ceil((H[k] || 0) - Game.time));
     const ab = (k, name, lvl, cdk) => H.level < lvl ? '' : `<button class="hp-ab" data-hero="${k}" ${cd(cdk) ? 'disabled' : ''}><b>${name}</b>${cd(cdk) ? ' ' + cd(cdk) : ''}</button>`;
     html = `<div class="hc-row"><img src="${portraitURL('hero', Game.hero.look)}" alt=""><span class="hc-n"><b>${H.name}</b> · ур. ${H.level}</span>${ab('dash', 'Рывок', 1, 'cdDash')}${ab('cry', 'Клич', 3, 'cdCry')}</div>`
       + (heroCardOpen ? `<div class="hc-body">${heroPanel()}</div>` : '')
-      + `<button class="hc-t" title="${heroCardOpen ? 'Свернуть' : 'Подробнее'}">${heroCardOpen ? '▴' : '▾'}</button><button class="hc-x" title="Снять выбор">×</button>`;
+      + `<button class="hc-m" title="Свернуть в иконку">–</button><button class="hc-t" title="${heroCardOpen ? 'Меньше' : 'Подробнее'}">${heroCardOpen ? '▴' : '▾'}</button><button class="hc-x" title="Снять выбор">×</button>`;
   } else html = heroPanel() + '<button class="hc-x" title="Закрыть (Esc)">×</button>';
   if (card.dataset.h !== html) { card.dataset.h = html; card.innerHTML = html; }
   card.style.display = 'block';

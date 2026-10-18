@@ -206,7 +206,9 @@ function hlCast(k) {
       yield { wait: 1.3, anim: 'duck' };
       const st = Game.buildings.find(b => b.type === 'storehouse') || Game.buildings[0];
       let x = 40, y = 30;
-      if (st) { const s = randomFreeNear(st.doorX, st.doorY + 2, 1, 3, (xx, yy) => isWalkable(xx, yy) && !World.door[idx(xx, yy)]); [x, y] = s || [st.doorX, st.doorY + 1]; }
+      const sp = typeof heroSpawnSpot === 'function' ? heroSpawnSpot() : null;   // возрождение у большого костра, где стоит табличка
+  if (sp) { [x, y] = sp.at; Game.signBump = (Game.signBump || 0) + 1; }
+  else if (st) { const s = randomFreeNear(st.doorX, st.doorY + 2, 1, 3, (xx, yy) => isWalkable(xx, yy) && !World.door[idx(xx, yy)]); [x, y] = s || [st.doorX, st.doorY + 1]; }
       h.x = x + 0.5; h.y = y + 0.5;
       HL.fx.push({ kind: 'tp', x: h.x, y: h.y, t0: Game.time, dur: 1.0, arrive: true });
       sfxAt('chime', h.x * TILE, h.y * TILE);
@@ -269,7 +271,7 @@ function hlRespawn(u, why) {
   if (st) { const s = randomFreeNear(st.doorX, st.doorY + 2, 1, 3, (xx, yy) => isWalkable(xx, yy) && !World.door[idx(xx, yy)]); [x, y] = s || [st.doorX, st.doorY + 1]; }
   u.x = x + 0.5; u.y = y + 0.5; u.food = Math.max(u.food, 0.6);
   H.hp = Math.round(H.maxhp * 0.5); H.drunkUntil = 0; H.stunUntil = 0;
-  toast(`${H.name} очнулся у склада${why ? ': ' + why : ''}`);
+  toast(`${H.name} очнулся у костра${why ? ': ' + why : ''}`);
 }
 
 function hlTick(dt) {
