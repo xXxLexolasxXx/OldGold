@@ -139,6 +139,7 @@ function smRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) 
 
 const VINE_KINDS = ['hops', 'grape', 'wheat'];
 const VINE_DARK = '#16220c';
+const VS = 0.6;   // общий масштаб листьев, шишек и колосьев — лоза не должна мешать и выпирать
 
 function vLeaf(x, y, rot, s, kind, col) {
   const d = kind === 'grape'
@@ -146,57 +147,82 @@ function vLeaf(x, y, rot, s, kind, col) {
     : kind === 'hops'
       ? 'M0 0 L-3 1 L-6 -1 L-5 -4 L-9 -4 L-7 -7 L-11 -8 L-7 -11 L-8 -14 L-4 -13 L-3 -17 L-1 -15 L0 -20 L1 -15 L3 -17 L4 -13 L8 -14 L7 -11 L11 -8 L7 -7 L9 -4 L5 -4 L6 -1 L3 1 Z'
       : 'M0 0 C-6 -3 -9 -11 0 -17 C9 -11 6 -3 0 0 Z';
-  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${s.toFixed(2)})"><path d="${d}" fill="${col}" stroke="${VINE_DARK}" stroke-width="1"/><path d="M0 -1 L0 -14 M0 -6 L-6 -9 M0 -6 L6 -9" stroke="${VINE_DARK}" stroke-width=".7" opacity=".55" fill="none"/></g>`;
+  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${(s * VS).toFixed(2)})"><path d="${d}" fill="${col}" stroke="${VINE_DARK}" stroke-width="1"/><path d="M0 -1 L0 -14 M0 -6 L-6 -9 M0 -6 L6 -9" stroke="${VINE_DARK}" stroke-width=".7" opacity=".55" fill="none"/></g>`;
+}
+const SM_VAR = { hop: 0, grape: 0, wheat: 0 };   // подряд идущие плоды всегда разные: три варианта по кругу
+function vGrapes(x, y, s) {
+  const v = SM_VAR.grape++ % 3;
+  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(s * VS).toFixed(2)})"><path d="M0 -6 Q2 -3 0 0" stroke="${VINE_DARK}" stroke-width="1.4" fill="none"/>`;
+  // 0 — тёмно-фиолетовая круглая гроздь; 1 — зелёная длинная; 2 — розово-красная широкая с плечами
+  const V = [
+    { rows: [[-6, 0, 6], [-3, 3], [-4, 4], [0]], r: 4.2, dy: 6.6, c: '#5a2a7a', hi: '#c8a0e8' },
+    { rows: [[-3.5, 3.5], [-3.5, 0, 3.5], [-3.5, 3.5], [0, -0.01], [0]], r: 3.6, dy: 5.6, c: '#9acb4c', hi: '#e6f6a8' },
+    { rows: [[-8, -2.7, 2.7, 8], [-5.4, 0, 5.4], [-2.7, 2.7], [0]], r: 3.9, dy: 6.2, c: '#b8344c', hi: '#f6a0b0' },
+  ][v];
+  let yy = 4;
+  for (const r of V.rows) { for (const dx of r) h += `<circle cx="${dx}" cy="${yy}" r="${V.r}" fill="${V.c}" stroke="${VINE_DARK}" stroke-width="1"/><circle cx="${dx - 1.2}" cy="${yy - 1.4}" r="1.2" fill="${V.hi}" opacity=".8"/>`; yy += V.dy; }
+  return h + '</g>';
+}
+function vWheat(x, y, len, rot) {
+  const v = SM_VAR.wheat++ % 3;
+  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${VS})"><path d="M0 0 Q${v === 1 ? 5 : 2} ${-len * 0.5} 0 ${-len}" stroke="${v === 2 ? '#7a9a3a' : '#9a8a3a'}" stroke-width="1.8" fill="none"/>`;
+  if (v === 0) {   // пшеница: крупные золотые зёрна парами, усики
+    for (let i = 0; i < 6; i++) {
+      const yy = -len + 3 + i * 5;
+      for (const sx of [-1, 1]) h += `<ellipse cx="${sx * 3.2}" cy="${yy}" rx="2.1" ry="4" transform="rotate(${sx * 24} ${sx * 3.2} ${yy})" fill="#e8c850" stroke="#8a6a1a" stroke-width=".8"/>`;
+    }
+    h += `<ellipse cx="0" cy="${-len - 3}" rx="2" ry="4.4" fill="#f0d664" stroke="#8a6a1a" stroke-width=".8"/>`;
+    for (const sx of [-1, 0, 1]) h += `<path d="M${sx * 2} ${-len - 6} L${sx * 5} ${-len - 17}" stroke="#d8b84a" stroke-width=".7"/>`;
+  } else if (v === 1) {   // ячмень: плотный колос, длинные остья в стороны
+    for (let i = 0; i < 8; i++) {
+      const yy = -len + 2 + i * 3.6;
+      for (const sx of [-1, 1]) h += `<ellipse cx="${sx * 2.2}" cy="${yy}" rx="1.7" ry="3" transform="rotate(${sx * 14} ${sx * 2.2} ${yy})" fill="#d8a838" stroke="#7a5a18" stroke-width=".8"/><path d="M${sx * 3} ${yy - 1} L${sx * 11} ${yy - 8}" stroke="#c8a040" stroke-width=".6"/>`;
+    }
+  } else {   // зелёный овёс: метёлка с висящими колосками
+    for (let i = 0; i < 5; i++) {
+      const yy = -len + 2 + i * 5, sx = i % 2 ? 1 : -1;
+      h += `<path d="M0 ${yy} Q${sx * 6} ${yy - 2} ${sx * 7} ${yy + 4}" stroke="#7a9a3a" stroke-width=".8" fill="none"/><ellipse cx="${sx * 7}" cy="${yy + 7}" rx="1.9" ry="3.6" fill="#c8d870" stroke="#5a6a1a" stroke-width=".8"/>`;
+    }
+    h += `<ellipse cx="0" cy="${-len - 2}" rx="1.8" ry="3.8" fill="#d8e080" stroke="#5a6a1a" stroke-width=".8"/>`;
+  }
+  return h + '</g>';
 }
 function vHop(x, y, s) {
-  // шишка: ряды перекрывающихся чешуек, сужается книзу к острому кончику
-  const rows = [[-4.2, 0, 4.2], [-5.2, -1.7, 1.7, 5.2], [-4.6, -1.5, 1.5, 4.6], [-3.4, 0, 3.4], [-1.9, 1.9], [0]];
-  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${s.toFixed(2)})"><path d="M0 -7 Q2 -4 0 0" stroke="${VINE_DARK}" stroke-width="1.3" fill="none"/>`;
-  const cols = ['#b8dc5a', '#9cc848', '#86b83a'];
-  for (let r = rows.length - 1; r >= 0; r--) {
-    const yy = 2 + r * 3.7, sz = 3.6 - r * 0.28;
-    rows[r].forEach((dx, k) => {
-      h += `<path d="M${dx - sz} ${yy - 2.2} Q${dx - sz * 0.9} ${yy + sz * 0.7} ${dx} ${yy + sz * 1.45} Q${dx + sz * 0.9} ${yy + sz * 0.7} ${dx + sz} ${yy - 2.2} Q${dx} ${yy - 3.4} ${dx - sz} ${yy - 2.2} Z" fill="${cols[(r + k) % 3]}" stroke="${VINE_DARK}" stroke-width=".9"/><path d="M${dx} ${yy - 1.4} L${dx} ${yy + sz * 0.9}" stroke="#5a8a22" stroke-width=".6" opacity=".7"/>`;
+  // шишка: ряды перекрывающихся чешуек, сужается книзу; варианты — обычная, длинная тёмная, короткая жёлто-зелёная
+  const v = SM_VAR.hop++ % 3;
+  const V = [
+    { rows: [[-4.2, 0, 4.2], [-5.2, -1.7, 1.7, 5.2], [-4.6, -1.5, 1.5, 4.6], [-3.4, 0, 3.4], [-1.9, 1.9], [0]], dy: 3.7, cols: ['#b8dc5a', '#9cc848', '#86b83a'] },
+    { rows: [[-2.4, 2.4], [-3.4, 0, 3.4], [-3.6, -1.2, 1.2, 3.6], [-3.2, 0, 3.2], [-2.6, 0, 2.6], [-1.6, 1.6], [0]], dy: 3.6, cols: ['#78a838', '#5e9230', '#82b440'] },
+    { rows: [[-5.6, -1.9, 1.9, 5.6], [-5.6, 0, 5.6], [-3.2, 3.2], [0]], dy: 4.2, cols: ['#d4e46a', '#c0d452', '#e6ee8a'] },
+  ][v];
+  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(s * VS).toFixed(2)})"><path d="M0 -7 Q2 -4 0 0" stroke="${VINE_DARK}" stroke-width="1.3" fill="none"/>`;
+  for (let r = V.rows.length - 1; r >= 0; r--) {
+    const yy = 2 + r * V.dy, sz = 3.6 - r * (v === 1 ? 0.2 : 0.28);
+    V.rows[r].forEach((dx, k) => {
+      h += `<path d="M${dx - sz} ${yy - 2.2} Q${dx - sz * 0.9} ${yy + sz * 0.7} ${dx} ${yy + sz * 1.45} Q${dx + sz * 0.9} ${yy + sz * 0.7} ${dx + sz} ${yy - 2.2} Q${dx} ${yy - 3.4} ${dx - sz} ${yy - 2.2} Z" fill="${V.cols[(r + k) % 3]}" stroke="${VINE_DARK}" stroke-width=".9"/><path d="M${dx} ${yy - 1.4} L${dx} ${yy + sz * 0.9}" stroke="#4a7a22" stroke-width=".6" opacity=".7"/>`;
     });
   }
   return h + '</g>';
 }
-function vGrapes(x, y, s) {
-  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${s.toFixed(2)})"><path d="M0 -6 L0 0" stroke="${VINE_DARK}" stroke-width="1.4"/>`;
-  const rows = [[-6, 0, 6], [-3, 3], [-6, 0, 6].slice(0, 0).concat([-4, 4]), [0]];
-  let yy = 4;
-  for (const r of rows) { for (const dx of r) h += `<circle cx="${dx + (rows.indexOf(r) % 2 ? 0 : 0)}" cy="${yy}" r="4.2" fill="#5a2a7a" stroke="${VINE_DARK}" stroke-width="1"/><circle cx="${dx - 1.2}" cy="${yy - 1.4}" r="1.3" fill="#c8a0e8" opacity=".8"/>`; yy += 6.6; }
-  return h + '</g>';
-}
-function vWheat(x, y, len, rot) {
-  let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)})"><path d="M0 0 Q2 ${-len * 0.5} 0 ${-len}" stroke="#9a8a3a" stroke-width="1.8" fill="none"/>`;
-  for (let i = 0; i < 6; i++) {
-    const yy = -len + 3 + i * 5;
-    for (const sx of [-1, 1]) h += `<ellipse cx="${sx * 3.2}" cy="${yy}" rx="2.1" ry="4" transform="rotate(${sx * 24} ${sx * 3.2} ${yy})" fill="#e8c850" stroke="#8a6a1a" stroke-width=".8"/>`;
-  }
-  h += `<ellipse cx="0" cy="${-len - 3}" rx="2" ry="4.4" fill="#f0d664" stroke="#8a6a1a" stroke-width=".8"/>`;
-  for (const sx of [-1, 0, 1]) h += `<path d="M${sx * 2} ${-len - 6} L${sx * 5} ${-len - 17}" stroke="#d8b84a" stroke-width=".7"/>`;
-  return h + '</g>';
-}
 
 function vineSVG(w, h, kind, seed) {
-  const rnd = smRand(seed * 977 + 13), P = 14;
+  const rnd = smRand(seed * 977 + 13), P = 9;
   const W = w + P * 2, H = h + P * 2;
   // путь стебля: слева снизу вверх, по верхней кромке и вниз по правой стороне
   const pts = [];
   const add = (x, y) => pts.push([x, y]);
-  const wob = () => (rnd() - 0.5) * 5;
+  const wob = () => (rnd() - 0.5) * 3;
   const left = rnd() < 0.5;   // с какой стороны поднимается лоза
   const xa = left ? P : P + w, xb = left ? P + w : P;
   const run = (x0, y0, x1, y1, step) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / step)); for (let i = 0; i <= n; i++) add(x0 + (x1 - x0) * i / n + wob(), y0 + (y1 - y0) * i / n + wob()); };
-  run(xa - 3, P - 5, xa - 3, P + h + 3, 15);
-  run(xa - 3, P + h + 3, xa + (xb - xa) * (0.45 + rnd() * 0.4), P + h + 3, 15);
-  run(pts[pts.length - 1][0], P + h + 3, xb + (left ? 3 : -3), P + h * (0.4 + rnd() * 0.4), 15);
+  run(xa - 1, P - 2, xa - 1, P + h + 1, 11);
+  run(xa - 1, P + h + 1, xa + (xb - xa) * (0.45 + rnd() * 0.4), P + h + 1, 11);
+  run(pts[pts.length - 1][0], P + h + 1, xb + (left ? 1 : -1), P + h * (0.4 + rnd() * 0.4), 11);
   let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
   for (let i = 1; i < pts.length - 1; i++) { const mx = (pts[i][0] + pts[i + 1][0]) / 2, my = (pts[i][1] + pts[i + 1][1]) / 2; d += ` Q${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`; }
   const lastP = pts[pts.length - 1]; d += ` L${lastP[0].toFixed(1)} ${lastP[1].toFixed(1)}`;
   let svg = `<svg class="sm-vine" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="left:${-P}px;top:${-P}px" aria-hidden="true">`;
-  svg += `<path d="${d}" fill="none" stroke="${VINE_DARK}" stroke-width="4.6" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${kind === 'wheat' ? '#9a8a3a' : '#4a7a22'}" stroke-width="2.6" stroke-linecap="round"/>`;
+  svg += `<path d="${d}" fill="none" stroke="${VINE_DARK}" stroke-width="3.4" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${kind === 'wheat' ? '#9a8a3a' : '#4a7a22'}" stroke-width="1.8" stroke-linecap="round"/>`;
   const greens = ['#5a9a2a', '#6aaa34', '#4a8a24', '#78b83e'];
   let items = '';
   for (let i = 1; i < pts.length - 1; i++) {
@@ -218,6 +244,10 @@ function vineSVG(w, h, kind, seed) {
 
 function decorateVines() {
   const btns = document.querySelectorAll('#start-menu .sm-panel:not(.hidden) .sm-btn');
+  // нечётная последняя кнопка (скрытые не считаем) занимает весь ряд
+  const vis = [...btns].filter(b => b.offsetWidth);
+  vis.forEach(b => b.classList.remove('sm-wide'));
+  if (vis.length % 2) vis[vis.length - 1].classList.add('sm-wide');
   btns.forEach((b, i) => {
     const old = b.querySelector('.sm-vine'); if (old) old.remove();
     const w = b.offsetWidth, h = b.offsetHeight;
@@ -300,7 +330,7 @@ function smGrow(btn, kind) {
   for (let i = 0; i <= n; i++) {
     const f = i / n, s = f * laps;
     const [x, y, nx, ny] = smPerim(s, w, h);
-    const o = Math.sin(f * laps * Math.PI * 2 * 6) * 5 + 2;   // стебель переплетается: то снаружи, то у кромки
+    const o = Math.sin(f * laps * Math.PI * 2 * 6) * 3 + 1;   // стебель переплетается: то снаружи, то у кромки
     const px = x + nx * o, py = y + ny * o;
     pts.push([px, py, nx, ny, f]);
     d += (i ? ' L' : 'M') + px.toFixed(1) + ' ' + py.toFixed(1);
@@ -328,7 +358,7 @@ function smGrow(btn, kind) {
   }
   btn.insertAdjacentHTML('beforeend',
     `<span class="sm-grow" style="left:${-P}px;top:${-P}px;width:${W}px;height:${H}px"><svg width="${W}" height="${H}" viewBox="${-P} ${-P} ${W} ${H}" style="overflow:visible">` +
-    `<path pathLength="1" class="sm-stem" d="${d}" stroke="${VINE_DARK}" stroke-width="5.2"/><path pathLength="1" class="sm-stem" d="${d}" stroke="${stem}" stroke-width="3"/>${items}</svg>${sparks}</span>`);
+    `<path pathLength="1" class="sm-stem" d="${d}" stroke="${VINE_DARK}" stroke-width="3.8"/><path pathLength="1" class="sm-stem" d="${d}" stroke="${stem}" stroke-width="2"/>${items}</svg>${sparks}</span>`);
 }
 
 // выбор — наведение пальца/мыши и нажатие; действие откладываем на время роста

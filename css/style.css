@@ -701,9 +701,9 @@ body.mobile #tut { max-height: 38%; line-height: 1.35; } body.mobile #tut h3 { f
 @keyframes sm-vine-r { from { clip-path: inset(-40px -40px -40px 100%); } to { clip-path: inset(-40px -40px -40px -40px); } }
 /* телефон: кнопки по две в ряд, меню вдвое ниже */
 @media (max-width: 600px) {
-  .sm-panel[data-panel="main"] { flex-direction: row; flex-wrap: wrap; justify-content: space-between; row-gap: 22px; column-gap: 8px; width: min(96vw, 420px); }
+  .sm-panel[data-panel="main"] { flex-direction: row; flex-wrap: wrap; justify-content: space-between; row-gap: 14px; column-gap: 8px; width: min(96vw, 420px); }
   .sm-panel[data-panel="main"] .sm-btn { flex: 0 0 calc(50% - 6px); min-width: 0; padding: 4px 8px; }
-  .sm-panel[data-panel="main"] .sm-btn:last-child:nth-child(odd) { flex-basis: 100%; }
+  .sm-panel[data-panel="main"] .sm-btn.sm-wide { flex-basis: 100%; }
   .sm-panel[data-panel="main"] .sm-btn b { font-size: 14px; }
   .sm-panel[data-panel="main"] .sm-btn small { font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
