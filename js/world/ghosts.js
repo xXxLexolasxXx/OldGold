@@ -176,16 +176,31 @@ function paintGhost(c, p, mood, k) {
   c.fillStyle = g; c.fillRect(-14, -6, 28, 24);
   c.strokeStyle = 'rgba(224,250,240,0.55)'; c.lineWidth = 0.8;
   for (let r = 0; r < 4; r++) { const y = r * 3.1; c.beginPath(); c.moveTo(-5 + r * 0.4 + lean * 0.5, y); c.quadraticCurveTo(lean * 0.5, y + 2.4, 5 - r * 0.4 + lean * 0.5, y); c.stroke(); }
-  c.strokeStyle = 'rgba(8,28,34,0.5)'; c.lineWidth = 1.1;
-  for (let f = -2; f <= 2; f++) { c.beginPath(); c.moveTo(f * 3.4 + lean * 0.6, 10); c.quadraticCurveTo(f * 4.6 + sway, 24, f * 3 + sway * 1.5, 38); c.stroke(); }
+  // зернистое растворение: чем ниже, тем больше «выеденных» крупинок — хвост не обрезан, а рассыпается в дымку
+  let sd = (Math.floor(p * GHOST_FRAMES) * 131 + Math.floor(k * 7) * 17 + 7) % 2147483647;
+  const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  c.globalCompositeOperation = 'destination-out';
+  for (let n = 0; n < 420; n++) {
+    const t = 0.25 + rnd() * 0.75, i = Math.min(N, Math.floor(t * N)), y = -3 + t * tailLen;
+    if (rnd() > Math.pow(t, 1.5) * 1.05) continue;
+    const x = L[i][0] + rnd() * (R[i][0] - L[i][0]) * 1.3 - 1, z = 0.5 + rnd() * 1.3;
+    c.fillStyle = `rgba(0,0,0,${0.55 + rnd() * 0.45})`; c.fillRect(x, y, z, z);
+  }
+  c.globalCompositeOperation = 'source-over';
   c.restore();
-  // рваные лоскуты и нити тумана по краям хвоста
+  // крупинки ушедшей дымки: парят под и рядом с хвостом, как искры у костра, только холодные
+  for (let n = 0; n < 26; n++) {
+    const t = 0.35 + rnd() * 0.75, i = Math.min(N, Math.floor(t * N)), y = -3 + t * tailLen + rnd() * 4;
+    const x = L[i][0] + (rnd() * 1.6 - 0.3) * (R[i][0] - L[i][0]) + sn(1, n) * 1.5, z = 0.5 + rnd() * 0.9;
+    c.fillStyle = `rgba(${190 + rnd() * 40 | 0},255,${225 + rnd() * 20 | 0},${(0.55 - (t - 0.35) * 0.4) * (0.4 + rnd() * 0.6)})`; c.fillRect(x, y, z, z);
+  }
+  // тончайшие нити тумана по краям хвоста
   for (let w = 0; w < 5; w++) {
-    const side = w % 2 ? 1 : -1, t0 = 0.35 + w * 0.1, a = (side > 0 ? R : L)[Math.floor(t0 * N)];
-    const len = 9 + (w * 5 % 7), ph = p * TAU + w * 1.9;
-    c.strokeStyle = `rgba(190,240,230,${0.5 - w * 0.06})`; c.lineWidth = 1.5 - w * 0.12;
+    const side = w % 2 ? 1 : -1, t0 = 0.3 + w * 0.09, a = (side > 0 ? R : L)[Math.floor(t0 * N)];
+    const len = 11 + (w * 5 % 8), ph = p * TAU + w * 1.9;
+    c.strokeStyle = `rgba(200,245,235,${0.34 - w * 0.04})`; c.lineWidth = 0.55;
     c.beginPath(); c.moveTo(a[0], a[1]);
-    c.bezierCurveTo(a[0] + side * 5, a[1] + len * 0.3, a[0] + side * 3 + Math.sin(ph) * 3.5, a[1] + len * 0.7, a[0] + side * 7 + Math.sin(ph + 1) * 4, a[1] + len);
+    c.bezierCurveTo(a[0] + side * 4, a[1] + len * 0.3, a[0] + side * 2 + Math.sin(ph) * 3.5, a[1] + len * 0.7, a[0] + side * 6 + Math.sin(ph + 1) * 4, a[1] + len);
     c.stroke();
   }
   // порванная цепь на запястье: звенья качаются
@@ -246,7 +261,7 @@ function paintGhost(c, p, mood, k) {
     c.beginPath(); c.moveTo(e * 0.7, -3.2); c.lineTo(e * 5.6, -4.8); c.lineTo(e * 4.9, -0.8 + eh * 0.2); c.quadraticCurveTo(e * 3.2, -0.8 + eh, e * 1.7, 0.2 + eh * 0.5); c.closePath(); c.fill();
   }
   // тлеющие зрачки с ореолом
-  const eyeCol = boo ? '#ff3a1c' : calm ? '#8fd6ff' : '#b8ffcf', gz = sn(1, 0.4) * 0.6, er = boo ? 1.35 : 0.95;
+  const eyeCol = boo ? '#ff3a1c' : calm ? '#8fd6ff' : '#6fe0b4', gz = sn(1, 0.4) * 0.6, er = boo ? 1.35 : 0.95;
   for (const e of [-1, 1]) {
     const ex = e * 3.1 + gz, ey = -0.6;
     g = c.createRadialGradient(ex, ey, 0, ex, ey, 4.4); g.addColorStop(0, eyeCol); g.addColorStop(0.35, boo ? 'rgba(255,60,30,0.35)' : 'rgba(150,255,200,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0)');
