@@ -20,6 +20,9 @@ function coopSaved(set) {
   } catch (e) { return null; }
 }
 
+// адрес сервера, если страница открыта с него же
+function coopOrigin() { return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host; }
+
 function coopSend(o) { if (Coop.ws && Coop.ws.readyState === 1) Coop.ws.send(JSON.stringify(o)); }
 
 // ---------- Подключение ----------
@@ -619,7 +622,7 @@ function coopPlayCopy() {
     const mode = Coop.regMode ? 'register' : 'login';
     Coop.regMode = false;
     if (!pass) return Promise.reject(new Error('Введите пароль'));
-    return coopConnect({ nick, server, pass, mode });
+    return coopConnect({ nick, server: Coop.served ? coopOrigin() : server, pass, mode });
   };
 
   const _start = startGame;
@@ -878,6 +881,7 @@ function coopHint() {
     fetch('coop-info', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => {
       const root = document.getElementById('start-menu');
       if (!j || !j.coop || !root || root.querySelector('[data-sm-join]')) return;
+      Coop.served = true;
       const main = root.querySelector('[data-panel="main"]');
       const saved = coopSaved();
       const b = document.createElement('button');
@@ -889,12 +893,12 @@ function coopHint() {
         const sv = coopSaved();
         if (!sv || !sv.token) { smRender(); smShow('mp'); return; }
         const small = b.querySelector('small'); small.textContent = 'подключаемся…';
-        coopConnect({ server: 'ws://' + location.host, nick: sv.nick, token: sv.token, mode: 'token' })
+        coopConnect({ server: coopOrigin(), nick: sv.nick, token: sv.token, mode: 'token' })
           .then(() => smClose())
           .catch(e => { small.textContent = e.message; setTimeout(() => { smRender(); smShow('mp'); }, 1200); });
       });
       const srv = root.querySelector('#sm-server');
-      if (srv) { srv.value = 'ws://' + location.host; const lab = srv.closest('label'); if (lab) lab.style.display = 'none'; }
+      if (srv) { srv.value = coopOrigin(); const lab = srv.closest('label'); if (lab) lab.style.display = 'none'; }
       if (typeof decorateVines === 'function') requestAnimationFrame(decorateVines);
     }).catch(() => { /* страница не с сервера кооператива — обычное меню */ });
   };
