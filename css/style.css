@@ -766,3 +766,8 @@ body.mobile #tut.min .tut-btns { display: flex; margin-top: 4px; }
 body.mobile #tut.min .tut-bar { display: none; }
 body.mobile #tut .tut-btns { margin-top: 6px; }
 body.mobile #tut .tut-btns button { padding: 4px 10px; }
+
+/* нажатие: лоза сползает с кнопки вниз (ступенчато, как пиксель-арт) и отрастает снова */
+.sm-peel canvas.sm-vine { animation: sm-peel 0.62s steps(10) forwards !important; }
+.sm-regrow canvas.sm-vine { animation: sm-vine-l 0.65s steps(12) both !important; }
+@keyframes sm-peel { from { transform: none; clip-path: inset(-40px -40px -40px -40px); } to { transform: translateY(34px); clip-path: inset(100% -40px -40px -40px); } }
