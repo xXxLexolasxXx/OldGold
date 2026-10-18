@@ -25,7 +25,7 @@ const COOP_CHAT = [
 // Что хост разрешает игрокам (сам хост может всё). Включается и выключается в админ-панели.
 const COOP_PERMS = {
   build: 'Строить здания', road: 'Класть дороги', erase: 'Сносить здания', eraseRoad: 'Убирать дороги и поля',
-  field: 'Размечать поля', upgrade: 'Улучшать здания', manage: 'Паузы, доставки, рецепты, склад', train: 'Обучать жителей', chat: 'Чат',
+  field: 'Размечать поля', upgrade: 'Улучшать здания', manage: 'Паузы, доставки, рецепты, склад', train: 'Обучать жителей', chat: 'Чат', council: 'Совет деревни (голосование раз в сутки)',
 };
 const COOP_INV = 10;
 const COOP_DRUNK = 5, COOP_FALL = 1, COOP_STARS = 4;
@@ -37,8 +37,9 @@ const coop = {
   t: 0, lvT: 0,
   perms: Object.fromEntries(Object.keys(COOP_PERMS).map(k => [k, true])),
   // общая жизнь: ночи без потерь и заказы деревни (сохраняются отдельным файлом сервера)
-  vil: { streak: 0, best: 0, nights: 0, hall: {} },
+  vil: { streak: 0, best: 0, nights: 0, hall: {}, fr: {} },
   quest: null, qDone: 0, prevNight: false, prevEve: false, lostAtEve: null,
+  pairQ: [], pairDay: new Map(), cn: null, cnDay: -1, qT: 0,
 };
 
 // ---------- Герой игрока ----------
@@ -67,11 +68,13 @@ function coopJoin(name, dataJson) {
   const level = d.level || 1;
   const H = heroDefaults({ name, level, cls: COOP_CLASSES[cls].name });
   H.clsKey = cls; H.owner = name; H.nightFalls = d.nf || 0;
+  H.quests = d.q || null; H.xp = d.xp || 0; H.titles = Array.isArray(d.ti) ? d.ti.slice(0, 12) : []; H.qstat = d.qs || {}; H.title = d.tt || null;
   H.maxhp = coopBaseHp(cls, level);
   H.hp = d.hp > 0 ? Math.min(d.hp, H.maxhp) : H.maxhp;
   H.inv = Array.from({ length: COOP_INV }, (_, i) => (d.inv && d.inv[i]) || null);
   u.hero = H;
   coop.players.set(name, u);
+  coopCheckBrothers(H);
   coop.out.push({ msg: { t: 'toast', text: `${name} (${H.cls}) приходит в деревню` } });
   return u.id;
 }
@@ -80,7 +83,7 @@ function coopHeroData(name) {
   const u = coop.players.get(name);
   if (!u) return null;
   const H = u.hero;
-  return JSON.stringify({ cls: H.clsKey, level: H.level, hp: Math.round(H.hp), inv: H.inv, x: u.x, y: u.y, food: u.food, look: u.look, nf: H.nightFalls || 0 });
+  return JSON.stringify({ cls: H.clsKey, level: H.level, hp: Math.round(H.hp), inv: H.inv, x: u.x, y: u.y, food: u.food, look: u.look, nf: H.nightFalls || 0, q: H.quests || null, xp: H.xp || 0, ti: H.titles || [], qs: H.qstat || {}, tt: H.title || null });
 }
 
 function coopLeave(name) {
@@ -141,11 +144,12 @@ function* tavernGen(u, c) {
   yield { wait: 3.5 };
   if (!inn.removed && inn.stock[food] > 0) {
     inn.stock[food]--;
+    coopQEvent(H, 'tavern');
     if (u.food >= 0.85 && coopAddItem(H, food, 1)) floater(u.x, u.y - 1.6, 'Взял с собой', '#ffe8a0');
     else u.food = Math.max(u.food, Math.min(1.3, u.food + (food === 'chickenleg' ? 0.6 : food === 'steak' ? 0.65 : 0.45)));
     H.hp = Math.min(H.maxhp, H.hp + H.maxhp * 0.15);
   }
-  if (Math.random() < 0.4) {
+  if (Math.random() < 0.4 || coopWantsToast(H)) {
     yield { wait: 2 };
     if (!inn.removed) {
       if (inn.stock.beer > 0) inn.stock.beer--;
@@ -153,6 +157,7 @@ function* tavernGen(u, c) {
       H.drunkUntil = Game.time + COOP_DRUNK;
       H.drunkNext = Game.time;
       floater(u.x, u.y - 1.6, 'Ик!', '#ffe070');
+      coopToastDrink(H);
     }
   }
   yield { leave: true };
@@ -200,6 +205,7 @@ function coopCmd(name, msgJson, admin) {
     case 'go': if (u && coopInt(m.x) && coopInt(m.y)) coopGo(u, m.x, m.y); break;
     case 'use': if (u && coopInt(m.slot) && m.slot >= 0 && m.slot < COOP_INV) coopUseItem(u, m.slot); break;
     case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) u.hero.inv[m.slot] = null; break;
+    case 'vote': if (u && coopInt(m.i) && can('upgrade')) coopVote(name, m.i); break;
     case 'chat': {
       if (!can('chat')) break;
       const text = COOP_CHAT[m.i];
@@ -214,6 +220,7 @@ function coopCmd(name, msgJson, admin) {
       const err = checkPlacement(m.type, m.x, m.y, rot);
       if (err) { coopSay(name, err); break; }
       placeBuilding(m.type, m.x, m.y, false, rot);
+      if (u) coopQEvent(u.hero, 'build');
       break;
     }
     case 'bact': {
@@ -231,14 +238,14 @@ function coopCmd(name, msgJson, admin) {
       for (const c of m.cells.slice(0, 80)) {
         if (!Array.isArray(c) || !coopInt(c[0]) || !coopInt(c[1]) || !inb(c[0], c[1])) continue;
         if (m.mode === 'del') removeField(c[0], c[1]);
-        else if (['wheat', 'hay', 'hops'].includes(m.crop)) planField(c[0], c[1], m.crop);
+        else if (['wheat', 'hay', 'hops'].includes(m.crop) && !planField(c[0], c[1], m.crop) && u) coopQEvent(u.hero, 'field');
       }
       break;
     }
     case 'road': {
       if (!can('road')) break;
       if (!Array.isArray(m.cells)) break;
-      for (const c of m.cells.slice(0, 300)) if (Array.isArray(c) && coopInt(c[0]) && coopInt(c[1])) placeRoadSite(c[0], c[1]);
+      for (const c of m.cells.slice(0, 300)) if (Array.isArray(c) && coopInt(c[0]) && coopInt(c[1]) && placeRoadSite(c[0], c[1]) && u) coopQEvent(u.hero, 'road');
       break;
     }
     case 'erase': {
@@ -312,7 +319,7 @@ function coopVillageTick() {
   // вечер: считаем потери с этой точки; заказ, не выполненный за день, сгорает
   if (eve && !coop.prevEve) {
     coop.lostAtEve = Game.lostGnomes || 0;
-    for (const u of coop.players.values()) u.hero.nightFalls = 0;
+    for (const u of coop.players.values()) { u.hero.nightFalls = 0; u.hero.eveIn = true; }
     const q = coop.quest;
     if (q && !q.done) { coop.out.push({ msg: { t: 'toast', text: `Заказ «${GOODS[q.g].name}» не выполнен: ${coopQuestHave()}/${q.need}. Завтра будет новый` } }); }
     coop.quest = null;
@@ -341,10 +348,12 @@ function coopVillageTick() {
       coop.out.push({ msg: { t: 'toast', text: `Герой ночи: ${star.owner}${star.hero.nightFalls ? '' : ' — ни разу не упал'} (${coop.vil.hall[star.owner]} раз)` } });
     }
     coop.qDone = 0;
+    coopDawn();
   }
   // рассвет/день без заказа — выдаём новый (но не вечером и не ночью)
   if (!coop.quest && !eve && !night && Game.time > 5) coopNewQuest();
   coop.prevNight = night; coop.prevEve = eve;
+  try { coopQuestTick(night); } catch (e) { if (!coop.qErr) { coop.qErr = 1; console.log('квесты:', e.stack); } }
   const q = coop.quest;
   if (q && !q.done && coopQuestHave() >= q.need) {
     q.done = true; coop.qDone++;
@@ -537,7 +546,7 @@ function coopUnitsPacket() {
     for (const k of COOP_UNIT_EX) { const v = u[k]; if (v) (ex || (ex = {}))[k] = coopPlain(v, 1); }
     if (ex) o.ex = ex;
     if (u.owner) o.ow = u.owner;
-    if (u.hero && u.owner) { o.hp = Math.round(u.hero.hp); o.mhp = u.hero.maxhp; o.cl = u.hero.clsKey; o.lv = u.hero.level; }
+    if (u.hero && u.owner) { o.hp = Math.round(u.hero.hp); o.mhp = u.hero.maxhp; o.cl = u.hero.clsKey; o.lv = u.hero.level; if (u.hero.title) o.tt = u.hero.title; }
     us.push(o);
   }
   const an = [];
@@ -607,7 +616,7 @@ function coopMeData(name) {
   const u = coop.players.get(name);
   if (!u) return null;
   const H = u.hero;
-  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, food: r2(u.food), vil: coopVillageInfo() });
+  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, food: r2(u.food), vil: coopVillageInfo(), qx: coopQuestInfo(name), xp: H.xp || 0, tt: H.title || null });
 }
 
 function coopDrain() {
@@ -618,4 +627,314 @@ function coopDrain() {
 
 function coopMeta() {
   return JSON.stringify({ classes: COOP_CLASSES, chat: COOP_CHAT, permLabels: COOP_PERMS, perms: coop.perms });
+}
+
+// ---------- Задания героев: личные, парные и «Совет деревни» ----------
+// Личные: 3 слота в сутки на героя (H.quests, живёт в аккаунте вместе с героем), прогресс считает сервер по командам и позициям.
+// Парные: двум игрокам онлайн, без новых механик; награда обоим и счётчик дружбы пары (vil.fr) — 5 совместных дают «Побратимов».
+// Совет: раз в сутки утром 60 секунд голосуют за улучшение здания (или за открытие стадии меню, если она ещё закрыта).
+
+const QDEF = {
+  tavern:   { name: 'Поесть в трактире',              need: 2,  xp: 20, item: ['sausage', 1], title: [5, 'Завсегдатай'] },
+  road:     { name: 'Проложить 15 клеток дороги',     need: 15, xp: 25, item: ['bread', 2],   title: [3, 'Дорожник'] },
+  field:    { name: 'Разметить 6 клеток полей',       need: 6,  xp: 20, item: ['bread', 2] },
+  build:    { name: 'Построить здание',               need: 1,  xp: 25, item: ['steak', 1],   title: [3, 'Строитель'] },
+  night:    { name: 'Пережить ночь, ни разу не упав', need: 1,  xp: 40, item: ['chickenleg', 1], title: [3, 'Ночной сторож'] },
+  far:      { name: 'Дойти до дальней точки',         need: 1,  xp: 30, item: ['sausage', 2] },
+  treasure: { name: 'Найти спрятанный клад',          need: 1,  xp: 45, item: ['steak', 2],   cls: 'rogue', title: [2, 'Кладоискатель'] },
+};
+const PDEF = {
+  tandem: { name: 'Тандем-ночь', text: 'Дожить до рассвета, держась рядом (≤6 клеток), и ни разу не упасть' },
+  levers: { name: 'Два рычага',  text: 'Двоим одновременно постоять у двух меток 5 секунд' },
+  toast:  { name: 'Тост',        text: 'Выпить пива в трактире вдвоём, с разницей не больше 30 секунд' },
+};
+const COOP_PAIR_XP = 40, COOP_BROTHERS = 5, COOP_COUNCIL_SEC = 60;
+const coopDayIx = () => cycleAt(Game.time).k;
+const coopDayP = () => cycleAt(Game.time).p;
+const coopFrKey = (a, b) => [a, b].sort().join('|');
+const coopDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+function coopGiveTitle(H, t) {
+  if (H.titles.includes(t)) return;
+  H.titles.push(t); H.title = t;
+  coopSay(H.owner, `Новый титул: «${t}»!`);
+  coop.out.push({ msg: { t: 'toast', text: `${H.owner} получает титул «${t}»` } });
+}
+
+function coopGiveXp(H, n) {
+  H.xp = (H.xp || 0) + n;
+  while (H.level < HERO_LVL_MAX && H.xp >= 50 * H.level) {
+    H.xp -= 50 * H.level; H.level++; H.maxhp = coopBaseHp(H.clsKey, H.level);
+    coopSay(H.owner, `Уровень героя: ${H.level}`);
+  }
+}
+
+function coopReward(H, xp, item) {
+  coopGiveXp(H, xp);
+  if (item && !coopAddItem(H, item[0], item[1])) coopSay(H.owner, 'Рюкзак полон — награда предметом пропала');
+}
+
+// ---- личные ----
+
+function coopFarPoint() {
+  const st = Game.buildings.find(b => b.type === 'storehouse') || Game.buildings[0];
+  const cx = st ? st.doorX : MAP_W / 2, cy = st ? st.doorY : MAP_H / 2;
+  let best = null, bd = -1;
+  for (let k = 0; k < 90; k++) {
+    const x = 3 + Math.floor(Math.random() * (MAP_W - 6)), y = 3 + Math.floor(Math.random() * (MAP_H - 6));
+    if (!isWalkable(x, y)) continue;
+    const d = Math.hypot(x - cx, y - cy);
+    if (d > bd && d <= 55) { bd = d; best = [x, y]; }
+    if (d >= 35 && d <= 55) return [x, y];
+  }
+  return best;
+}
+
+function coopTreasurePoint() {
+  const st = Game.buildings.find(b => b.type === 'storehouse') || Game.buildings[0];
+  const cx = st ? st.doorX : 40, cy = st ? st.doorY : 30;
+  for (let k = 0; k < 60; k++) {
+    const a = Math.random() * Math.PI * 2, r = 12 + Math.random() * 22;
+    const x = Math.floor(cx + Math.cos(a) * r), y = Math.floor(cy + Math.sin(a) * r);
+    if (inb(x, y) && isWalkable(x, y)) return [x, y];
+  }
+  return null;
+}
+
+function coopMakeQuests(H) {
+  const k = coopDayIx(), day = coopDayP() < EVE_START;
+  const pool = ['tavern', 'road', 'field', 'build', 'far'];
+  if (day) pool.push('night');
+  if (H.clsKey === 'rogue') pool.push('treasure', 'treasure');
+  const list = [];
+  while (list.length < 3 && pool.length) {
+    const id = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    if (list.some(q => q.id === id)) continue;
+    const q = { id, n: 0, need: QDEF[id].need, done: false };
+    if (id === 'far') { const p = coopFarPoint(); if (!p) continue; q.x = p[0]; q.y = p[1]; }
+    if (id === 'treasure') { const p = coopTreasurePoint(); if (!p) continue; q.x = p[0]; q.y = p[1]; }
+    list.push(q);
+  }
+  H.quests = { day: k, list };
+  coopSay(H.owner, 'Новые задания дня — смотри список справа');
+}
+
+function coopQDone(H, q) {
+  const d = QDEF[q.id];
+  q.done = true; q.n = q.need;
+  coopReward(H, d.xp, d.item);
+  H.qstat[q.id] = (H.qstat[q.id] || 0) + 1;
+  coopSay(H.owner, `Задание выполнено: «${d.name}» (+${d.xp} опыта)`);
+  if (d.title && H.qstat[q.id] >= d.title[0]) coopGiveTitle(H, d.title[1]);
+}
+
+function coopQEvent(H, id, n = 1) {
+  const q = H.quests && H.quests.list.find(x => x.id === id && !x.done);
+  if (!q) return;
+  q.n = Math.min(q.need, q.n + n);
+  if (q.n >= q.need) coopQDone(H, q);
+}
+
+function coopCompass(dx, dy) {
+  const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 4));
+  return ['восток', 'юго-восток', 'юг', 'юго-запад', 'запад', 'северо-запад', 'север', 'северо-восток'][((a % 8) + 8) % 8];
+}
+
+function coopDawn() {
+  for (const u of coop.players.values()) {
+    const H = u.hero;
+    if (H.eveIn && !(H.nightFalls > 0)) coopQEvent(H, 'night');
+    H.eveIn = false;
+  }
+  for (const p of coop.pairQ) {
+    if (p.kind !== 'tandem' || p.done) continue;
+    const ua = coop.players.get(p.a), ub = coop.players.get(p.b);
+    if (ua && ub && p.tog >= 90 && !(ua.hero.nightFalls > 0) && !(ub.hero.nightFalls > 0)) coopPairDone(p);
+    else if (ua && ub && p.armed) { p.done = true; coopSay(p.a, 'Тандем-ночь не вышла — вместе мало, или кто-то падал'); coopSay(p.b, 'Тандем-ночь не вышла — вместе мало, или кто-то падал'); }
+  }
+}
+
+// ---- парные ----
+
+function coopWantsToast(H) { return coop.pairQ.some(p => p.kind === 'toast' && !p.done && (p.a === H.owner || p.b === H.owner)); }
+
+function coopToastDrink(H) {
+  for (const p of coop.pairQ) {
+    if (p.kind !== 'toast' || p.done || (p.a !== H.owner && p.b !== H.owner)) continue;
+    p.t[H.owner] = Game.time;
+    const other = p.a === H.owner ? p.b : p.a;
+    if (p.t[other] != null && Game.time - p.t[other] <= 30) coopPairDone(p);
+    else coopSay(other, `${H.owner} пьёт в трактире — присоединяйся за 30 секунд!`);
+  }
+}
+
+function coopPairDone(p) {
+  p.done = true;
+  const key = coopFrKey(p.a, p.b);
+  const n = coop.vil.fr[key] = (coop.vil.fr[key] || 0) + 1;
+  for (const name of [p.a, p.b]) {
+    const u = coop.players.get(name);
+    if (!u) continue;
+    coopReward(u.hero, COOP_PAIR_XP, ['sausage', 1]);
+    coopSay(name, `Парное задание «${PDEF[p.kind].name}» выполнено! (+${COOP_PAIR_XP} опыта) Побратимство: ${Math.min(n, COOP_BROTHERS)}/${COOP_BROTHERS}`);
+  }
+  if (n >= COOP_BROTHERS) { coopCheckBrothers({ owner: p.a }); coopCheckBrothers({ owner: p.b }); }
+}
+
+function coopCheckBrothers(H) {
+  const u = coop.players.get(H.owner);
+  if (!u) return;
+  for (const k in coop.vil.fr) if (coop.vil.fr[k] >= COOP_BROTHERS && k.split('|').includes(H.owner)) { coopGiveTitle(u.hero, 'Побратимы'); break; }
+}
+
+function coopMakePair() {
+  const free = [...coop.players.values()].filter(u => !coop.pairQ.some(p => !p.done && (p.a === u.owner || p.b === u.owner)));
+  if (free.length < 2) return;
+  free.sort((x, y) => x.hero.level - y.hero.level);
+  const k = coopDayIx();
+  let best = null, bd = 1e9;
+  for (let i = 0; i + 1 < free.length; i++) {
+    const a = free[i], b = free[i + 1], key = coopFrKey(a.owner, b.owner);
+    if (coop.pairDay.get(key) === k) continue;
+    const d = Math.abs(a.hero.level - b.hero.level);
+    if (d < bd) { bd = d; best = [a, b]; }
+  }
+  if (!best) return;
+  const [a, b] = best, early = coopDayP() < EVE_START - 40;
+  const kinds = early ? ['tandem', 'levers'] : ['levers'];
+  if (Game.buildings.some(x => x.type === 'inn' && x.state === 'done')) kinds.push('toast');
+  const kind = kinds[Math.floor(Math.random() * kinds.length)];
+  const p = { kind, a: a.owner, b: b.owner, k, done: false, prog: 0, tog: 0, t: {}, armed: false };
+  if (kind === 'levers') {
+    const st = Game.buildings.find(x => x.type === 'storehouse') || Game.buildings[0];
+    const cx = st ? st.doorX : 40, cy = st ? st.doorY + 2 : 30;
+    const ok = (x, y) => isWalkable(x, y) && !World.door[idx(x, y)];
+    const A = randomFreeNear(cx, cy, 3, 8, ok);
+    let B = null;
+    for (let i = 0; i < 25 && A; i++) { const c = randomFreeNear(cx, cy, 3, 9, ok); if (c && Math.hypot(c[0] - A[0], c[1] - A[1]) >= 5) { B = c; break; } }
+    if (!A || !B) return;
+    p.pts = [A, B];
+  }
+  coop.pairQ.push(p);
+  coop.pairDay.set(coopFrKey(p.a, p.b), k);
+  for (const nm of [p.a, p.b]) coopSay(nm, `Парное задание с ${nm === p.a ? p.b : p.a}: «${PDEF[p.kind].name}» — ${PDEF[p.kind].text}`);
+}
+
+function coopPairTick(night) {
+  const k = coopDayIx();
+  coop.pairQ = coop.pairQ.filter(p => p.k === k);
+  for (const p of coop.pairQ) {
+    if (p.done) continue;
+    const ua = coop.players.get(p.a), ub = coop.players.get(p.b);
+    if (!ua || !ub) continue;     // один вышел — квест ждёт до конца суток
+    if (p.kind === 'tandem') {
+      if (night && coopDist(ua, ub) <= 6 && !ua.inside && !ub.inside) { p.tog++; p.armed = true; }
+    } else if (p.kind === 'levers') {
+      const [A, B] = p.pts, at = (u, c) => Math.hypot(u.x - (c[0] + 0.5), u.y - (c[1] + 0.5)) <= 1.4;
+      if ((at(ua, A) && at(ub, B)) || (at(ua, B) && at(ub, A))) { p.prog++; if (p.prog >= 5) coopPairDone(p); }
+      else p.prog = 0;
+    }
+  }
+  if (coop.players.size >= 2 && !night && coopDayP() < EVE_START - 20 && coopDayP() > 6) coopMakePair();
+}
+
+// ---- Совет деревни ----
+
+function coopCouncilOpen() {
+  const k = coopDayIx();
+  const locked = UNLOCKS.filter(s => !Game.unlocked[s.id]);
+  const ups = [], seen = new Set();
+  for (const b of Game.buildings) if (canUpgrade(b) && !b.upg && !seen.has(b.type)) { seen.add(b.type); ups.push({ type: b.type, l: b.def.name }); }
+  let cn = null;
+  if (locked.length && (k % 2 === 1 || !ups.length)) {
+    cn = { kind: 'unlock', q: 'Что открыть в меню строительства?', opts: locked.slice(0, 4).map(s => ({ id: s.id, l: UNLOCK_NAMES[s.id] || s.id })) };
+  } else if (ups.length) {
+    ups.sort(() => Math.random() - 0.5);
+    cn = { kind: 'upgrade', q: 'Какое здание улучшить до уровня 2?', opts: ups.slice(0, 4) };
+  }
+  if (!cn) return;
+  cn.votes = new Map(); cn.until = Game.time + COOP_COUNCIL_SEC;
+  coop.cn = cn;
+  coop.out.push({ msg: { t: 'toast', text: `Совет деревни: ${cn.q} Голосуем ${COOP_COUNCIL_SEC} секунд` } });
+}
+
+function coopVote(name, i) {
+  const cn = coop.cn;
+  if (!cn || i < 0 || i >= cn.opts.length) return;
+  cn.votes.set(name, i);
+}
+
+function coopCouncilClose() {
+  const cn = coop.cn;
+  coop.cn = null;
+  const cnt = cn.opts.map(() => 0);
+  for (const [nm, i] of cn.votes) if (coop.players.has(nm)) cnt[i]++;
+  const top = Math.max(...cnt);
+  if (top <= 0) { coop.out.push({ msg: { t: 'toast', text: 'Совет деревни: никто не проголосовал, всё остаётся как есть' } }); return; }
+  const win = cnt.map((n, i) => n === top ? i : -1).filter(i => i >= 0);
+  const o = cn.opts[win[Math.floor(Math.random() * win.length)]];
+  if (cn.kind === 'upgrade') {
+    const b = Game.buildings.find(x => x.type === o.type && canUpgrade(x) && !x.upg);
+    if (b && startUpgrade(b)) coop.out.push({ msg: { t: 'toast', text: `Совет решил: улучшить «${o.l}» (голосов: ${top})` } });
+    else coop.out.push({ msg: { t: 'toast', text: `Совет выбрал «${o.l}», но улучшить его уже нельзя` } });
+  } else {
+    Game.unlocked[o.id] = true;
+    coop.out.push({ msg: { t: 'unlock', id: o.id } });
+    coop.out.push({ msg: { t: 'toast', text: `Совет решил: открыть в меню «${o.l}» (голосов: ${top})` } });
+  }
+}
+
+function coopCouncilTick() {
+  const cn = coop.cn;
+  if (cn) {
+    const online = [...coop.players.keys()];
+    if (!online.length || Game.time >= cn.until || online.every(n => cn.votes.has(n))) coopCouncilClose();
+    return;
+  }
+  const k = coopDayIx(), p = coopDayP();
+  if (coop.cnDay === k || !coop.players.size || p < 8 || p > EVE_START - 70) return;
+  coop.cnDay = k;
+  if (coop.perms.council && coop.perms.upgrade) coopCouncilOpen();
+}
+
+// ---- такт и данные для клиента ----
+
+function coopQuestTick(night) {
+  const k = coopDayIx();
+  for (const u of coop.players.values()) {
+    const H = u.hero;
+    if (!H.quests || H.quests.day !== k) coopMakeQuests(H);
+    for (const q of H.quests.list) {
+      if (q.done || (q.id !== 'far' && q.id !== 'treasure')) continue;
+      if (Math.hypot(u.x - (q.x + 0.5), u.y - (q.y + 0.5)) <= (q.id === 'far' ? 2 : 1.3)) coopQEvent(H, q.id);
+    }
+  }
+  coopPairTick(night);
+  coopCouncilTick();
+}
+
+function coopQuestInfo(name) {
+  const u = coop.players.get(name);
+  if (!u) return null;
+  const H = u.hero, out = { q: [], ti: H.titles || [] };
+  for (const q of (H.quests && H.quests.list) || []) {
+    const o = { id: q.id, t: QDEF[q.id].name, n: q.n, need: q.need, d: q.done ? 1 : 0 };
+    if (!q.done && (q.id === 'far' || q.id === 'treasure')) {
+      const dx = q.x + 0.5 - u.x, dy = q.y + 0.5 - u.y, d = Math.hypot(dx, dy);
+      if (q.id === 'far') { o.x = q.x; o.y = q.y; o.h = `${Math.round(d)} кл., на ${coopCompass(dx, dy)}`; }
+      else o.h = d < 8 ? 'горячо!' : d < 18 ? 'тепло' : 'холодно';
+    }
+    out.q.push(o);
+  }
+  const p = coop.pairQ.find(x => x.a === name || x.b === name);
+  if (p) {
+    const other = p.a === name ? p.b : p.a;
+    out.p = { t: PDEF[p.kind].name, x: PDEF[p.kind].text, w: other, d: p.done ? 1 : 0, on: coop.players.has(other) ? 1 : 0, fr: Math.min(COOP_BROTHERS, coop.vil.fr[coopFrKey(name, other)] || 0) };
+    if (p.pts && !p.done) out.p.pts = p.pts;
+    if (p.kind === 'tandem' && !p.done) out.p.prog = Math.min(100, Math.round(100 * p.tog / 90));
+    if (p.kind === 'levers' && !p.done) out.p.prog = p.prog * 20;
+  }
+  const cn = coop.cn;
+  if (cn) out.c = { q: cn.q, o: cn.opts.map(o => o.l), v: cn.opts.map((_, i) => [...cn.votes.values()].filter(x => x === i).length), left: Math.max(0, Math.round(cn.until - Game.time)), my: cn.votes.has(name) ? cn.votes.get(name) : -1 };
+  return out;
 }

@@ -124,7 +124,8 @@ function coopHandle(m) {
   switch (m.t) {
     case 'u': coopUnits(m); break;
     case 'w': coopWorld(m); break;
-    case 'me': Coop.me = m; coopRefreshHud(); coopVilHud(m.vil); break;
+    case 'me': Coop.me = m; coopRefreshHud(); coopVilHud(m.vil); coopQuestHud(m.qx, m.tt); break;
+    case 'unlock': if (typeof unlockStage === 'function') unlockStage(m.id, true); break;
     case 'toast': toast(m.text); break;
     case 'fl': floater(m.x, m.y, m.text, m.col || '#fff6d0'); break;
     case 'chat': coopChat(m); break;
@@ -164,7 +165,7 @@ function coopUnits(m) {
     else if (d.at !== undefined) { if (!u.action || u.action.walk) u.action = { wait: 1, T: d.aT, anim: d.a }; u.action.t = d.at; }
     else u.action = null;
     if (d.ow) {
-      u.owner = d.ow;
+      u.owner = d.ow; u.title = d.tt || null;
       u.hero = Object.assign(u.hero || {}, { name: d.ow, owner: d.ow, level: d.lv, clsKey: d.cl, hp: d.hp, maxhp: d.mhp, cls: ((Coop.meta && Coop.meta.classes[d.cl]) || {}).name || '', equip: { weapon: null, armor: null } });
       if (d.i === Coop.uid && Game.hero !== u) {
         Game.hero = u;
@@ -434,6 +435,19 @@ function coopPlates(c) {
     c.strokeStyle = `rgba(246,212,88,${0.9 - p * 0.8})`; c.lineWidth = 2;
     c.beginPath(); c.ellipse(fx, fy, 6 + p * 8, 3 + p * 4, 0, 0, Math.PI * 2); c.stroke();
   }
+  const qx = Coop.qx;
+  if (qx) {      // метки заданий: дальняя точка и рычаги
+    const marks = [];
+    for (const q of qx.q) if (q.x != null) marks.push([q.x, q.y, '#9fe070']);
+    if (qx.p && qx.p.pts) for (const p of qx.p.pts) marks.push([p[0], p[1], '#e8a0f0']);
+    for (const [mx, my, col] of marks) {
+      const p = (Game.time * 1.1) % 1, fx = (mx + 0.5) * TILE, fy = (my + 0.5) * TILE;
+      c.strokeStyle = col; c.globalAlpha = 0.9 - p * 0.7; c.lineWidth = 2;
+      c.beginPath(); c.ellipse(fx, fy, 8 + p * 10, 4 + p * 5, 0, 0, Math.PI * 2); c.stroke();
+      c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx, fy - 26 - p * 4); c.stroke();
+      c.globalAlpha = 1;
+    }
+  }
   c.textAlign = 'center';
   for (const u of Game.units) {
     if (!u.owner || u.inside) continue;
@@ -442,6 +456,7 @@ function coopPlates(c) {
     c.font = 'bold 8px sans-serif';
     c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; c.strokeText(u.owner, px, py);
     c.fillStyle = col; c.fillText(u.owner, px, py);
+    if (u.title) { c.font = 'italic 6px sans-serif'; c.lineWidth = 2; c.strokeText('«' + u.title + '»', px, py - 8); c.fillStyle = '#f0d890'; c.fillText('«' + u.title + '»', px, py - 8); c.font = 'bold 8px sans-serif'; }
     const w = 26, ratio = Math.max(0, Math.min(1, H.hp / H.maxhp));
     c.fillStyle = 'rgba(20,12,4,0.9)'; c.fillRect(px - w / 2 - 1, py + 2, w + 2, 5);
     c.fillStyle = '#4a1612'; c.fillRect(px - w / 2, py + 3, w, 3);
@@ -480,6 +495,9 @@ function coopCss() {
   #coop-hud button:hover{background:#3a2c14}
   #cp-vil{background:rgba(26,19,13,.88);border:1px solid #7a5f28;border-radius:5px;padding:4px 8px;text-align:right;line-height:1.35;pointer-events:none}
   #cp-vil:empty{display:none}#cp-vil .ok{color:#9fe070}#cp-vil .lo{opacity:.75}
+  #cp-qs{background:rgba(26,19,13,.88);border:1px solid #7a5f28;border-radius:5px;padding:4px 8px;line-height:1.35;max-width:100%;box-sizing:border-box}
+  #cp-qs:empty{display:none}#cp-qs .ok{color:#9fe070}#cp-qs .lo{opacity:.7}#cp-qs h4{margin:3px 0 1px;font-size:11px;color:#f6d458;font-weight:bold}
+  #cp-qs .cv{display:block;width:100%;text-align:left;margin:2px 0}#cp-qs .cv.my{border-color:#9fe070}
   #cp-log{display:flex;flex-direction:column;gap:2px;align-items:flex-end;pointer-events:none}
   #cp-log div{background:rgba(26,19,13,.85);border-radius:4px;padding:2px 7px;text-shadow:0 1px 1px #000}
   #cp-log b{color:#f6d458}
@@ -540,7 +558,7 @@ function coopInitHud() {
   if (hud) hud.remove();
   hud = document.createElement('div');
   hud.id = 'coop-hud';
-  hud.innerHTML = `<div id="cp-vil"></div><div id="cp-log"></div><div id="cp-pop"></div>
+  hud.innerHTML = `<div id="cp-vil"></div><div id="cp-qs"></div><div id="cp-log"></div><div id="cp-pop"></div>
     <div class="cp-row"><span id="cp-online" style="align-self:center;background:rgba(26,19,13,.85);padding:3px 7px;border-radius:4px"></span>
     <button data-cp="chat" title="Сказать что-нибудь">Чат</button><button data-cp="inv" title="Инвентарь героя">Рюкзак</button>
     ${Coop.host ? '<button data-cp="restart" title="Только хост">Сервер ⟳</button>' : ''}<button data-cp="leave" title="Выйти из общей деревни">Выйти</button></div>`;
@@ -559,6 +577,8 @@ function coopInitHud() {
       else if (k === 'leave') { if (confirm('Выйти из общей деревни? Герой и рюкзак сохранятся.')) coopLeaveGame(); }
       return;
     }
+    const v = e.target.closest('[data-vote]');
+    if (v) { coopSend({ t: 'vote', i: +v.dataset.vote }); return; }
     const c = e.target.closest('[data-cpchat]');
     if (c) { coopSend({ t: 'chat', i: +c.dataset.cpchat }); document.getElementById('cp-pop').classList.remove('open'); return; }
     const s = e.target.closest('[data-coop]');
@@ -577,6 +597,31 @@ function coopInitHud() {
 function coopSlotClick(el, e) {
   const slot = +el.dataset.slot;
   coopSend({ t: e.shiftKey ? 'drop' : 'use', slot });
+}
+
+// Личные и парные задания, Совет деревни (считает сервер, приходит вместе с 'me')
+function coopQuestHud(x, title) {
+  const el = document.getElementById('cp-qs');
+  if (!el || !x) return;
+  Coop.qx = x;
+  const sig = JSON.stringify([x, title]);
+  if (el.dataset.sig === sig) return;
+  el.dataset.sig = sig;
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let h = '';
+  if (x.c) {
+    h += `<h4>Совет деревни · ${x.c.left} с</h4><div>${esc(x.c.q)}</div>`
+      + x.c.o.map((l, i) => `<button class="cv${x.c.my === i ? ' my' : ''}" data-vote="${i}">${esc(l)} <b>${x.c.v[i]}</b></button>`).join('');
+  }
+  if (x.q.length) {
+    h += '<h4>Задания дня' + (title ? ` · «${esc(title)}»` : '') + '</h4>'
+      + x.q.map(q => `<div class="${q.d ? 'ok' : ''}">${q.d ? '✔' : '•'} ${esc(q.t)}${q.need > 1 && !q.d ? ` <b>${q.n}/${q.need}</b>` : ''}${q.h ? ` <span class="lo">· ${esc(q.h)}</span>` : ''}</div>`).join('');
+  }
+  if (x.p) {
+    h += `<h4>Вдвоём с ${esc(x.p.w)}${x.p.on ? '' : ' (не в сети)'}</h4><div class="${x.p.d ? 'ok' : ''}">${x.p.d ? '✔ ' : ''}${esc(x.p.t)}${x.p.prog != null ? ` <b>${x.p.prog}%</b>` : ''}</div>`
+      + `<div class="lo">${esc(x.p.x)} · побратимство ${x.p.fr}/5</div>`;
+  }
+  el.innerHTML = h;
 }
 
 // «Заказ деревни» и серия ночей без потерь (считает сервер, приходит вместе с 'me')
