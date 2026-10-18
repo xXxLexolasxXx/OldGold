@@ -111,3 +111,43 @@ function* heroHaul(u, c) {
   u.hload = { [g]: n }; heroLoadSync(u);
   yield* heroReturnLoad(u);
 }
+
+// ---------- Трудяга в команде героя ----------
+// Напарник-трудяга не ходит за героем впустую, а носит предметы под его цель: на стройку героя
+// подвозит недостающие материалы со склада (сколько позволяет его уровень), с мастерской,
+// которую герой разгружает, — продукцию на склад.
+
+// одна ходка: со склада на стройку. Возвращает true, если что-то повёз.
+function* serfAssistBuild(u, s) {
+  if (s.removed || (!s.isRoad && s.state === 'done' && !s.upg) || u.injury === 'arm') return false;
+  const cap = carryCap(u);
+  for (const g of (s.isRoad ? ['stone'] : BUILD_GOODS)) {
+    const need = s.demand ? s.demand(g) : 0;
+    if (need <= 0) continue;
+    const st = storeWith(u, g);
+    if (!st) continue;
+    const n = Math.min(cap, need, st.offer(g));
+    if (n <= 0) continue;
+    st.reserved[g] += n; s.incoming[g] += n;
+    u.dlv = { from: st, to: s, g, n, gen: u.proc };
+    yield* deliverGen(u, st, s, g, n);
+    u.dlv = null;
+    return true;
+  }
+  return false;
+}
+
+// продукцию мастерской, которую герой решил убрать, — на склад
+function* serfAssistHaul(u, b) {
+  if (b.removed || !b.def.outputs || u.injury === 'arm') return false;
+  const g = Object.keys(b.def.outputs).find(k => b.offer(k) > 0);
+  if (!g) return false;
+  const st = nearestStore(u.x, u.y, g);
+  if (!st) return false;
+  const n = Math.min(carryCap(u), b.offer(g));
+  b.reserved[g] += n; st.incoming[g] += n;
+  u.dlv = { from: b, to: st, g, n, gen: u.proc };
+  yield* deliverGen(u, b, st, g, n);
+  u.dlv = null;
+  return true;
+}

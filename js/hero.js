@@ -6,7 +6,7 @@
 // несколько глобальных функций (клик, выбор, шаг, интерфейс), не меняя их файлы.
 
 const HERO_NAMES = ['Торин', 'Брунгильд', 'Гимли', 'Дорин', 'Фрейя', 'Балин', 'Хельга', 'Орин', 'Берта', 'Громм', 'Дис', 'Харальд'];
-const TEAM_MAX = 1;                 // сколько гномов герой берёт в команду
+const TEAM_MAX = 3;                 // сколько гномов герой берёт в команду
 const HERO_CARRY = 3;               // сколько несёт за раз из кучи
 const DASH_CD = 45, DASH_TIME = 8, CRY_CD = 70, CRY_TIME = 12;
 
@@ -191,7 +191,7 @@ function selectHero(center) {
 }
 
 function heroCanJoin(u) {
-  return u && u.type !== 'hero' && !u.dead && !u.isCourier && !UNIT_TYPES[u.type].animal;
+  return u && u.type !== 'hero' && !u.dead && u.type !== 'goat' && u.type !== 'carter' && !UNIT_TYPES[u.type].animal;
 }
 
 function joinTeam(hero, u) {
@@ -199,6 +199,7 @@ function joinTeam(hero, u) {
   if (mates.includes(u)) { leaveTeam(u); return; }
   if (mates.length >= TEAM_MAX) leaveTeam(mates[0]);
   heroStopUnit(u);
+  if (u.isCourier) u.releaseOcc();
   u.teamOf = hero.id;
   u.idleFlag = false;
   toast(`${hero.hero.name}: ${UNIT_TYPES[u.type].name} теперь в команде`);
@@ -381,9 +382,19 @@ function* cmdGen(u, c, own) {
   if (own && u.cmd === c) u.cmd = null;
 }
 
+function* serfMateGen(u, h, c) {
+  let did = false;
+  if (c && c.kind === 'build') did = yield* serfAssistBuild(u, c.b);
+  else if (c && c.kind === 'haul') did = yield* serfAssistHaul(u, c.b);
+  if (!did) {
+    if (Math.hypot(u.x - h.x, u.y - h.y) > 2.5) yield* followGen(u, h);
+    else yield { wait: 0.8 };
+  }
+}
+
 function* followGen(u, h) {
   const s = randomFreeNear(Math.floor(h.x), Math.floor(h.y), 1, 2, (x, y) => isWalkable(x, y) && !World.door[idx(x, y)]);
-  if (s) yield { walk: s };
+  if (s) yield { walk: s, offroad: !!u.isCourier };
   yield { wait: 0.6 };
 }
 
@@ -401,6 +412,7 @@ function teamThink(u) {
   u.idleFlag = false; u.job = null;
   if (u.home) { if (u.home.worker === u) u.home.worker = null; u.home = null; }
   const c = h.cmd;
+  if (u.type === 'serf') return serfMateGen(u, h, c);   // трудяга носит предметы под цель героя
   if (c && c.kind !== 'move' && c.kind !== 'work') return cmdGen(u, c, false);
   if (Math.hypot(u.x - h.x, u.y - h.y) > 2.5) return followGen(u, h);
   return (function* () { yield { wait: 0.8 }; })();
@@ -508,7 +520,7 @@ function initHeroUI() {
     const el = e.target.closest('[data-hero]');
     if (!el || !Game.hero) return;
     const k = el.dataset.hero;
-    if (k === 'leave') { const m = Game.units.find(u => u.teamOf === Game.hero.id); if (m) leaveTeam(m); updateUI(true); }
+    if (k === 'leave') { for (const m of Game.units.filter(u => u.teamOf === Game.hero.id)) leaveTeam(m); updateUI(true); }
     else heroAbility(k);
   });
   window.addEventListener('keydown', e => {
@@ -646,7 +658,7 @@ function heroCardUpdate() {
       if (e.target.closest('.hc-ico')) { heroCardMini = false; heroCardUpdate(); return; }
       const el = e.target.closest('[data-hero]');
       if (!el || !Game.hero) return;
-      if (el.dataset.hero === 'leave') { const m = Game.units.find(u => u.teamOf === Game.hero.id); if (m) leaveTeam(m); updateUI(true); }
+      if (el.dataset.hero === 'leave') { for (const m of Game.units.filter(u => u.teamOf === Game.hero.id)) leaveTeam(m); updateUI(true); }
       else heroAbility(el.dataset.hero);
     });
     document.getElementById('view').appendChild(card);
