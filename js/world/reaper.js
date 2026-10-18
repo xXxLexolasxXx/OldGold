@@ -260,6 +260,7 @@ function paintReaper(c, p, mood, k, v = 0) {
   // голова: чёрный рогатый шлем с наличниками; рога демонические, трёх форм (v)
   c.save(); c.translate(lean * 0.7, atk ? 1.5 * strike - wind : 0);
   reaperHorns(c, v, sn, boo);
+  c.save(); c.translate(0.5, 3); c.scale(0.82, 0.82); c.translate(-0.5, -3);      // шлем поменьше, рога прежнего размера
   const steel = c.createLinearGradient(0, -19, 0, 9); steel.addColorStop(0, '#4a5a64'); steel.addColorStop(0.45, '#1c262c'); steel.addColorStop(1, '#070b0e');
   c.fillStyle = steel; c.beginPath(); c.moveTo(-10.4, 5);
   c.quadraticCurveTo(-12.4, -8, -6.4, -15.4); c.quadraticCurveTo(0.5, -20, 7.4, -15.4); c.quadraticCurveTo(13, -8, 11.4, 5);
@@ -286,5 +287,6 @@ function paintReaper(c, p, mood, k, v = 0) {
     c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey - 0.1, 0.5, 0, 7); c.fill();
   }
   if (atk) { c.fillStyle = 'rgba(255,90,60,0.7)'; c.beginPath(); c.ellipse(0.5, 4.4, 2.6, 0.7 + 2.2 * Math.max(wind * 0.5, strike), 0, 0, 7); c.fill(); }
+  c.restore();
   c.restore();
 }
