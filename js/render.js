@@ -846,6 +846,7 @@ function render() {
   faunaDrawList(list, c, x0, y0, x1, y1);
   fauna2DrawList(list, c, x0, y0, x1, y1);
   chestsDrawList(list, c, x0, y0, x1, y1);
+  fairyDrawList(list, c, x0, y0, x1, y1);
   fairy2DrawList(list, c, x0, y0, x1, y1);
   drawSkeletons(list, c, x0, y0, x1, y1);
   golemDrawList(list, c, x0, y0, x1, y1);

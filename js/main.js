@@ -202,6 +202,7 @@ function step(dt) {
   faunaTick(dt);
   fauna2Tick(dt);
   chestsTick(dt);
+  fairyTick(dt);
   fairy2Tick(dt);
   updateFalling(dt);
   sfxTick(dt);
