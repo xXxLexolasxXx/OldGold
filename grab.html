@@ -19,7 +19,7 @@ const CW = 120, CH = 120, GX = 52, GY = 104;        // размер клетки
 const VICTIM = { id: 7, type: 'serf', look: 3 };
 const KINDS = {
   oak: 'Ходячий дуб', birch: 'Ходячая берёза', pine: 'Ходячая сосна', fir: 'Ходячая ель',
-  water: 'Водяной', skel: 'Скелет', ghost: 'Призрак', bat: 'Летучая мышь',
+  water: 'Водяной', skel: 'Скелет', ghost: 'Призрак', bat: 'Летучая мышь', owl: 'Сова',
 };
 const sel = document.getElementById('only');
 for (const k in KINDS) sel.add(new Option(KINDS[k], k));
@@ -48,6 +48,11 @@ function cell(kind, i) {
   } else if (kind === 'ghost') {
     Game.ghosts = [{ x: X, y: Y + 0.03, alpha: 1, ph: 0, face: 1, mode: 'grab', vsnap: VICTIM, vx0: X + 0.51, vy0: Y, _gi: i, gt: 0 }];
     drawGhosts(c);
+  } else if (kind === 'owl') {
+    const vy = (GY - 6) / TILE, gy = vy * TILE + 6, by = (gy - 14) - 9 - owTalonY(owPoseAt(5));
+    const Yb = [by - 40, by - 36, by - 22, by - 8, by - 2, by, by - 3, by - 10, by - 20, by - 24, by - 26, by - 28, by - 30];
+    const o = { x: GX, y: Yb[i], face: 1, vsnap: VICTIM, vx0: GX / TILE, vy0: vy, _gi: i, gt: 0, valpha: 1 };
+    c.imageSmoothingEnabled = true; drawOwlGrab(c, o);
   } else if (kind === 'bat') {
     const p5 = btPoseAt(5), vy = (GY - 6) / TILE, gy = vy * TILE + 6, zGrab = vy * TILE - ((gy - 14) - 9 - btTalonY(p5));
     const Z = [zGrab + 38, zGrab + 30, zGrab + 20, zGrab + 10, zGrab + 3, zGrab, zGrab + 5, zGrab + 13, zGrab + 22, zGrab + 26, zGrab + 28, zGrab + 30, zGrab + 32];
@@ -63,6 +68,7 @@ function nameOf(kind, i) {
   if (kind === 'skel') return skPoseAt(i).nm;
   if (kind === 'ghost') return i < 9 ? GH_POSE[i].nm : 'уносит ' + (i - 8);
   if (kind === 'bat') return btPoseAt(i).nm;
+  if (kind === 'owl') return owPoseAt(i).nm;
   if (kind === 'water') return ['замах струёй', 'бросок', 'тянет струю', 'волна над гномом', 'вода сжала', 'отрывает', 'поднимает', 'держит высоко', 'разворот', 'несёт 1', 'несёт 2', 'несёт 3', 'несёт 4'][i];
   return NAMES.tree[i];
 }

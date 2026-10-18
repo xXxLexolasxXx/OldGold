@@ -346,3 +346,112 @@ function drawBatGrab(c, b) {
     c.fillStyle = '#ff6040'; c.font = 'bold 9px serif'; c.fillText('!', Math.round(b.vx0 * TILE) - 1, Math.round(b.vy0 * TILE) - 28);
   }
 }
+
+// ====================== СОВА ======================
+// С третьей ночи сова с крыши высматривает добычу — гнома или зверя: пикирует, вцепляется когтями, бьёт крыльями и уносит в лес.
+const OW_T = [0.35, 0.7, 1.0, 1.25, 1.45, 1.65, 2.0, 2.4, 3.0];
+// spr: perch — сидячий спрайт, иначе кадр полёта fr (0 вверх, 1 ровно, 2 вниз); S — размер, tilt — наклон носом вниз, tal — выпуск лап, k — сжатие когтей
+const OW_POSE = [
+  { spr: 'perch', S: 1.1, tilt: 0, tal: 0, k: 0, nm: 'высмотрела' },
+  { fr: 0, S: 1.1, tilt: -0.1, tal: 0, k: 0, nm: 'расправила крылья' },
+  { fr: 1, S: 1.2, tilt: 0.8, tal: 0, k: 0, nm: 'пикирует' },
+  { fr: 1, S: 1.3, tilt: 0.4, tal: 0.6, k: 0, nm: 'тормозит' },
+  { fr: 0, S: 1.4, tilt: 0.1, tal: 1, k: 0, nm: 'когти вперёд' },
+  { fr: 0, S: 1.4, tilt: 0, tal: 1, k: 1, nm: 'вцепилась' },
+  { fr: 2, S: 1.4, tilt: 0, tal: 1, k: 1, nm: 'взмах, отрыв' },
+  { fr: 0, S: 1.4, tilt: 0, tal: 1, k: 1, nm: 'вверх' },
+  { fr: 2, S: 1.4, tilt: -0.05, tal: 1, k: 1, nm: 'набирает высоту' },
+];
+const OW_CARRY = [[1, 0.08], [0, 0], [2, -0.08], [0, 0]];
+function owPoseAt(i) {
+  if (i < 9) return OW_POSE[i];
+  const q = OW_CARRY[(i - 9) & 3];
+  return { fr: q[0], S: 1.4, tilt: q[1], tal: 1, k: 1, nm: 'уносит ' + (i - 8) };
+}
+function owGrabIndex(o) {
+  if (o._gi !== undefined) return o._gi;
+  const i = grabIdx(o.gt || 0, OW_T);
+  return i < 9 ? i : 9 + (Math.floor((o.gt || 0) * 8) & 3);
+}
+const owTalonY = p => 5.5 * p.S * (0.4 + 0.6 * p.tal);
+const OW_PAL = { out: '#2a1a0c', fill: '#e8d090', hi: '#fffbe0' };
+
+function owlCanTake(o, dt) {
+  o.scanT = (o.scanT || 0) - dt;
+  if (o.scanT > 0) return null;
+  o.scanT = 1;
+  if (nightIndex() + 1 < 3 || !isNightNow() || (o.grabCD || 0) > Game.time || Math.random() > 0.08) return null;
+  const c = [];
+  for (const u of Game.units) {
+    if (u.inside || u.dead || u.hero || !isPerson(u) || u.type === 'carter') continue;
+    if (Math.hypot(u.x * TILE - o.x, u.y * TILE - o.y) > 9 * TILE || nearBonfire(u.x, u.y, BONFIRE_SAFE)) continue;
+    c.push({ u });
+  }
+  for (const a of Game.animals || []) if (!a.dead && Math.hypot(a.x * TILE - o.x, a.y * TILE - o.y) < 9 * TILE && !nearBonfire(a.x, a.y, BONFIRE_SAFE)) c.push({ a });
+  return c.length ? c[(Math.random() * c.length) | 0] : null;
+}
+
+function owlTakes(o, p) {
+  o.state = 'grab'; o.gt = 0; o.x0 = o.x; o.y0 = o.y; o.grabCD = Game.time + 150; o.item = null; o.hunt = null;
+  o.scream = 0; o.sayV = false; o.vsnap = null; o.pkind = null; o.valpha = 1;
+  if (p.u) {
+    const u = p.u;
+    o.vsnap = snapVictim(u); o.vx0 = u.x; o.vy0 = u.y;
+    toast(`Сова унесла в лес: ${UNIT_TYPES[u.type].name}`);
+    logEvent('owl', `Сова унесла в лес: ${UNIT_TYPES[u.type].name}`, u.x, u.y);
+    floater(u.x, u.y - 1.2, '!', '#ff6040');
+    removeUnit(u);
+  } else {
+    const a = p.a, nm = ANIMALS[a.kind] ? ANIMALS[a.kind].name.toLowerCase() : a.kind;
+    o.pkind = a.kind; o.pface = a.face; o.vx0 = a.x; o.vy0 = a.y;
+    toast(`Сова унесла в лес: ${nm}`);
+    logEvent('owl', `Сова унесла в лес: ${nm}`, a.x, a.y);
+    removeAnimal(a);
+  }
+  o.face = o.vx0 * TILE >= o.x ? 1 : -1;
+  o.fdir = o.x0 > MAP_W * TILE / 2 ? 1 : -1;
+  sfxAt('squeak', o.x, o.y, 1.2);
+}
+
+// когда сова скрылась из виду, она снова «в лесу» (state away)
+function owlGrabTick(o, dt) {
+  o.gt += dt;
+  const p5 = owPoseAt(5), gy = o.vy0 * TILE + 6, hang = o.vsnap ? 14 : 8;
+  const bx = o.vx0 * TILE, by = (gy - hang) - 9 - owTalonY(p5);          // тело при хвате: когти на плечах
+  const T4 = OW_T[4];
+  if (o.gt < T4) {
+    const q = smooth01(o.gt / T4);
+    o.x = o.x0 + (bx - o.x0) * q; o.y = o.y0 + (by - o.y0) * q - Math.sin(q * Math.PI) * 14;
+    o.face = bx >= o.x0 ? 1 : -1;
+  } else if (o.gt < OW_T[5]) { o.x = bx; o.y = by; }
+  else if (o.gt < OW_T[8]) { const q = (o.gt - OW_T[5]) / (OW_T[8] - OW_T[5]); o.x = bx + o.fdir * 6 * q; o.y = by - 26 * q * q; o.face = o.fdir; }
+  else {
+    if (!o.sayV) { o.sayV = true; floater(o.x / TILE, o.y / TILE - 1.4, 'У-ху-у…', '#e8e0c8'); }
+    o.x += o.fdir * 30 * dt; o.y -= 22 * dt; o.valpha = Math.max(0, 1 - (o.gt - OW_T[8] - 1.2) / 2);
+    o.face = o.fdir;
+  }
+  o.ph += dt;
+  if (o.vsnap && o.gt > OW_T[3]) grabScream(o, o.x / TILE, o.y / TILE - 1.6, dt);
+  if (o.gt > 8) { o.state = 'away'; o.t = 25 + Math.random() * 20; o.vsnap = null; o.pkind = null; o.valpha = 1; o.from = [o.x, o.y]; o.to = null; }
+}
+
+function drawOwlGrab(c, o) {
+  const gi = owGrabIndex(o), p = owPoseAt(gi), dir = o.face < 0 ? -1 : 1, hang = o.vsnap ? 14 : 8;
+  const hold = gi >= 5, al = o.valpha === undefined ? 1 : o.valpha, tal = owTalonY(p);
+  const gx = o.vx0 * TILE, gy = o.vy0 * TILE + 6;
+  const pvx = hold ? o.x : gx, py2 = hold ? o.y + tal + 9 : gy - hang;
+  c.save(); c.globalAlpha *= al;
+  c.fillStyle = 'rgba(10,8,4,0.2)'; c.beginPath(); c.ellipse(hold ? o.x : gx, gy, 8, 2, 0, 0, 7); c.fill();
+  if (o.vsnap) drawGrabbed(c, o.vsnap, pvx, py2, hold ? Math.sin(Game.time * 5 + o.vsnap.id) * 0.1 : 0, hold);
+  else if (o.pkind) { c.save(); c.translate(pvx, py2 + 8); c.scale(0.8, 0.8); drawCreatureAt(c, o.pkind, 0, 0, o.pface || 1, hold, Game.time * 6, null); c.restore(); }
+  c.imageSmoothingEnabled = true;
+  c.save(); c.translate(o.x, o.y); c.rotate(p.tilt * dir); if (dir < 0) c.scale(-1, 1);
+  if (p.spr === 'perch') c.drawImage(owlSprite('perch', 0, false, 0), -OWL_FX * p.S, -OWL_FY * p.S + 6, OWL_W * p.S, OWL_H * p.S);
+  else c.drawImage(owlSprite('fly', 0, 0, p.fr), -OWLF_FX * p.S, -OWLF_FY * p.S, OWLF_W * p.S, OWLF_H * p.S);
+  c.restore();
+  c.imageSmoothingEnabled = false;
+  if (hold) { drawGrip(c, pvx - 4, py2 - 9, 1, p.k, OW_PAL, 0.6); drawGrip(c, pvx + 4, py2 - 9, -1, p.k, OW_PAL, 0.6); }
+  else if (p.tal > 0) { c.strokeStyle = '#e8d090'; c.lineWidth = 1; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(o.x + s * 1.5, o.y + 3 * p.S); c.lineTo(o.x + s * 2.5, o.y + tal); c.stroke(); } }
+  if (!hold && o.vsnap && gi >= 2) { c.fillStyle = '#ff6040'; c.font = 'bold 9px serif'; c.fillText('!', Math.round(gx) - 1, Math.round(gy) - 32); }
+  c.restore();
+}

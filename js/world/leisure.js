@@ -441,6 +441,7 @@ function updateOwls(dt) {
   for (const o of Game.owls) {
     o.ph += dt;
     o.t -= dt;
+    if (o.state === 'grab') { owlGrabTick(o, dt); continue; }       // уносит добычу (grab.js)
     if (o.state === 'fly') {
       o.f = Math.min(1, o.f + dt * o.speed);
       const [ax, ay] = o.from, [bx, by] = o.to;
@@ -474,6 +475,8 @@ function updateOwls(dt) {
       if (Math.random() < dt * 0.5) o.blink = 0.18;
       o.blink = Math.max(0, o.blink - dt);
       if (Math.random() < dt * 0.03) floater(o.x / TILE, o.y / TILE - 0.6, 'У-ху!', '#e8e0c8');
+      const prey = owlCanTake(o, dt);
+      if (prey) { owlTakes(o, prey); continue; }              // с третьей ночи — гном или зверь
       owlHunt(o, dt);
     }
   }
@@ -623,6 +626,7 @@ function drawOwls(c) {
   const prev = c.imageSmoothingEnabled;
   c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
   for (const o of Game.owls || []) {
+    if (o.state === 'grab') { drawOwlGrab(c, o); continue; }
     if (o.state === 'away') continue;
     const x = o.x, y = o.y;
     if (o.state === 'fly') {
