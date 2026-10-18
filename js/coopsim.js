@@ -22,6 +22,11 @@ const COOP_CHAT = [
   'Я не ленюсь, я копирую силы для драмы.',
   'Отличный план. Жаль, что не мой.',
 ];
+// Что хост разрешает игрокам (сам хост может всё). Включается и выключается в админ-панели.
+const COOP_PERMS = {
+  build: 'Строить здания', road: 'Класть дороги', erase: 'Сносить здания', eraseRoad: 'Убирать дороги и поля',
+  field: 'Размечать поля', upgrade: 'Улучшать здания', manage: 'Паузы, доставки, рецепты, склад', train: 'Обучать жителей', chat: 'Чат',
+};
 const COOP_INV = 10;
 const COOP_DRUNK = 5, COOP_FALL = 1, COOP_STARS = 4;
 
@@ -30,6 +35,7 @@ const coop = {
   out: [],                    // события для рассылки: { to?, msg }
   shB: new Map(), shO: new Map(), shR: new Set(), shRS: '', shP: '', shSB: '',
   t: 0, lvT: 0,
+  perms: Object.fromEntries(Object.keys(COOP_PERMS).map(k => [k, true])),
 };
 
 // ---------- Герой игрока ----------
@@ -176,21 +182,30 @@ function coopGo(u, x, y) {
 
 const coopInt = v => Number.isInteger(v);
 
-function coopCmd(name, msgJson) {
+function coopSetPerms(json) {
+  const p = JSON.parse(json);
+  for (const k in coop.perms) if (typeof p[k] === 'boolean') coop.perms[k] = p[k];
+  return JSON.stringify(coop.perms);
+}
+
+function coopCmd(name, msgJson, admin) {
   let m;
   try { m = JSON.parse(msgJson); } catch (e) { return; }
   const u = coop.players.get(name);
+  const can = k => { if (admin || coop.perms[k]) return true; coopSay(name, 'Хост запретил: ' + COOP_PERMS[k].toLowerCase()); return false; };
   switch (m.t) {
     case 'go': if (u && coopInt(m.x) && coopInt(m.y)) coopGo(u, m.x, m.y); break;
     case 'use': if (u && coopInt(m.slot) && m.slot >= 0 && m.slot < COOP_INV) coopUseItem(u, m.slot); break;
     case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) u.hero.inv[m.slot] = null; break;
     case 'chat': {
+      if (!can('chat')) break;
       const text = COOP_CHAT[m.i];
       if (!text) break;
       coop.out.push({ msg: { t: 'chat', from: name, text, uid: u ? u.id : 0 } });
       break;
     }
     case 'build': {
+      if (!can('build')) break;
       if (!BUILDINGS[m.type] || !coopInt(m.x) || !coopInt(m.y)) break;
       const rot = m.rot === 1 || m.rot === 2 ? m.rot : 0;
       const err = checkPlacement(m.type, m.x, m.y, rot);
@@ -198,12 +213,17 @@ function coopCmd(name, msgJson) {
       placeBuilding(m.type, m.x, m.y, false, rot);
       break;
     }
-    case 'bact': coopBuildingAct(name, m); break;
+    case 'bact': {
+      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', hire: 'train' }[m.act] || 'manage';
+      if (can(need)) coopBuildingAct(name, m);
+      break;
+    }
     case 'qt': {
-      if (UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy) queueTraining(m.type);
+      if (can('train') && UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy) queueTraining(m.type);
       break;
     }
     case 'field': {
+      if (!can('field')) break;
       if (!Array.isArray(m.cells) || !['add', 'del'].includes(m.mode)) break;
       for (const c of m.cells.slice(0, 80)) {
         if (!Array.isArray(c) || !coopInt(c[0]) || !coopInt(c[1]) || !inb(c[0], c[1])) continue;
@@ -213,13 +233,21 @@ function coopCmd(name, msgJson) {
       break;
     }
     case 'road': {
+      if (!can('road')) break;
       if (!Array.isArray(m.cells)) break;
       for (const c of m.cells.slice(0, 300)) if (Array.isArray(c) && coopInt(c[0]) && coopInt(c[1])) placeRoadSite(c[0], c[1]);
       break;
     }
     case 'erase': {
       if (!Array.isArray(m.cells)) break;
-      for (const c of m.cells.slice(0, 60)) if (Array.isArray(c) && coopInt(c[0]) && coopInt(c[1])) eraseAt([c[0], c[1]]);
+      let denied = false;
+      for (const c of m.cells.slice(0, 60)) {
+        if (!Array.isArray(c) || !coopInt(c[0]) || !coopInt(c[1]) || !inb(c[0], c[1])) continue;
+        const bld = World.bmap[idx(c[0], c[1])] && Game.buildings.find(b => b.id === World.bmap[idx(c[0], c[1])]);
+        const key = bld && !(bld.state !== 'done') ? 'erase' : 'eraseRoad';
+        if (admin || coop.perms[key]) eraseAt([c[0], c[1]]); else denied = key;
+      }
+      if (denied) coopSay(name, 'Хост запретил: ' + COOP_PERMS[denied].toLowerCase());
       break;
     }
   }
@@ -487,5 +515,5 @@ function coopDrain() {
 }
 
 function coopMeta() {
-  return JSON.stringify({ classes: COOP_CLASSES, chat: COOP_CHAT });
+  return JSON.stringify({ classes: COOP_CLASSES, chat: COOP_CHAT, permLabels: COOP_PERMS, perms: coop.perms });
 }

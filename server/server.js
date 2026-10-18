@@ -32,6 +32,7 @@ const { createHost } = require('./simhost');
 
 fs.mkdirSync(DATA, { recursive: true });
 const WORLD_FILE = path.join(DATA, 'world.json');
+const SETTINGS_FILE = path.join(DATA, 'settings.json');
 const USERS_FILE = path.join(DATA, 'players.json');
 const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
 
@@ -49,6 +50,8 @@ const nickOk = n => typeof n === 'string' && /^[\p{L}\p{N}_\- ]{2,16}$/u.test(n)
 
 // ---------- Мир ----------
 const host = createHost(log);
+// права игроков (админ-панель хоста) хранятся отдельно от мира
+try { host.ctx.coopSetPerms(JSON.stringify(JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')).perms || {})); } catch (e) { /* прав ещё нет — всё разрешено */ }
 const call = (fn, ...args) => host.ctx[fn](...args);
 const run = code => host.run(code);
 const SIM_DT = run('SIM_DT');
@@ -230,7 +233,7 @@ function onMessage(c, text) {
     let token;
     if (m.mode !== 'token') { token = crypto.randomBytes(24).toString('hex'); rec.toks = [...(rec.toks || []).slice(-4), sha(token)]; saveUsers(); }   // запомнить вход на этом устройстве
     const meta = JSON.parse(call('coopMeta'));
-    c.send({ t: 'welcome', token, nick: c.nick, host: c.isHost, needClass: !rec.hero, classes: meta.classes, chat: meta.chat });
+    c.send({ t: 'welcome', token, nick: c.nick, host: c.isHost, perms: meta.perms, permLabels: meta.permLabels, needClass: !rec.hero, classes: meta.classes, chat: meta.chat });
     if (rec.hero) joinWorld(c);
     return;
   }
@@ -253,7 +256,17 @@ function onMessage(c, text) {
     setTimeout(() => process.exit(42), 300);
     return;
   }
-  call('coopCmd', c.nick, text);
+  if (m.t === 'setperm') {
+    if (!c.isHost) return c.send({ t: 'toast', text: 'Права меняет только хост' });
+    const cur = JSON.parse(call('coopMeta')).perms;
+    if (!(m.key in cur) || typeof m.on !== 'boolean') return;
+    const now = JSON.parse(call('coopSetPerms', JSON.stringify({ [m.key]: m.on })));
+    try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ perms: now })); } catch (e) { log('права не сохранились:', e.message); }
+    broadcast({ t: 'perms', perms: now });
+    log('права:', m.key, m.on ? 'вкл' : 'выкл');
+    return;
+  }
+  call('coopCmd', c.nick, text, c.isHost);
 }
 
 // ---------- Главный цикл ----------

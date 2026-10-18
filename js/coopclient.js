@@ -38,6 +38,7 @@ function coopConnect(opts) {
       if (m.t === 'err') { if (m.stale) coopSaved(null); return fail(m.msg); }
       if (m.t === 'welcome') {
         if (m.token) coopSaved({ server: opts.server, nick: m.nick, token: m.token });
+        Coop.perms = m.perms; Coop.permLabels = m.permLabels;
         Coop.nick = m.nick; Coop.host = m.host; Coop.meta = { classes: m.classes, chat: m.chat };
         if (m.needClass) coopPickClass(m.classes);
         return;
@@ -899,4 +900,83 @@ function coopHint() {
   };
   const _init3 = coopApplyInit;
   coopApplyInit = function (m) { _init3(m); setTimeout(coopHint, 900); };
+}
+
+
+// ---------- Админ-панель хоста: что разрешено игрокам ----------
+// Серая кнопка — запрещено, зелёная с растущей лозой — разрешено. Права хранит и проверяет сервер.
+
+function coopAdminCss() {
+  if (document.getElementById('cp-admin-css')) return;
+  const st = document.createElement('style');
+  st.id = 'cp-admin-css';
+  st.textContent = `
+  .cp-adm{display:flex;flex-direction:column;gap:15px;margin:10px 0 4px;text-align:left}
+  .cp-tg{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;box-sizing:border-box;min-height:46px;padding:8px 14px;border-radius:7px;cursor:pointer;
+    font-family:inherit;font-size:14px;text-align:left;transition:background .35s,border-color .35s,color .35s;
+    background:linear-gradient(#4a4640,#34312c);border:2px solid #6a655c;color:#a8a296}
+  .cp-tg .cp-st{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.85;position:relative;z-index:4}
+  .cp-tg .cp-nm{position:relative;z-index:4}
+  .cp-tg.on{background:linear-gradient(#4f8a2c,#2f5a1a);border-color:#9ad05a;color:#f4ffe0;box-shadow:0 0 12px rgba(120,200,60,.35)}
+  .cp-tg:active{transform:translateY(1px)}
+  .cp-tg svg.sm-vine{display:none}
+  .cp-tg.on svg.sm-vine{display:block;animation:cp-vine-grow .9s ease-out both,cp-vine-sway 4.5s ease-in-out .9s infinite;transform-origin:0 100%}
+  @keyframes cp-vine-grow{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(-20px -20px -20px -20px)}}
+  @keyframes cp-vine-sway{0%,100%{transform:rotate(0) }50%{transform:rotate(.6deg) translateY(-.5px)}}
+  .cp-adm-bar{display:flex;gap:8px;justify-content:center;margin-top:8px}`;
+  document.head.appendChild(st);
+}
+
+function coopAdminRender(box) {
+  const labels = Coop.permLabels || {}, perms = Coop.perms || {};
+  const list = box.querySelector('.cp-adm');
+  list.innerHTML = Object.keys(labels).map(k =>
+    `<button class="cp-tg${perms[k] ? ' on' : ''}" data-perm="${k}"><span class="cp-nm">${labels[k]}</span><span class="cp-st">${perms[k] ? 'можно' : 'нельзя'}</span></button>`).join('');
+  list.querySelectorAll('.cp-tg.on').forEach((b, i) => {
+    if (typeof vineSVG === 'function') b.insertAdjacentHTML('beforeend', vineSVG(b.offsetWidth || 300, b.offsetHeight || 46, ['hops', 'grape', 'wheat'][i % 3], 11 + i * 7));
+  });
+}
+
+function coopAdminOpen() {
+  if (!Coop.host) { toast('Права меняет только хост'); return; }
+  coopCss(); coopAdminCss();
+  document.getElementById('cp-admin')?.remove();
+  const box = document.createElement('div');
+  box.id = 'cp-admin'; box.className = 'cp-modal';
+  box.innerHTML = `<div class="cp-card"><h2>Что можно игрокам</h2><p>Нажмите — переключите. Зелёное разрешено, серое запрещено. Вам (хосту) можно всегда, а герой у каждого свой.</p>
+    <div class="cp-adm"></div>
+    <div class="cp-adm-bar"><button class="cp-btn sec" data-all="1">Разрешить всё</button><button class="cp-btn sec" data-all="0">Запретить всё</button><button class="cp-btn" data-close>Готово</button></div></div>`;
+  document.body.appendChild(box);
+  coopAdminRender(box);
+  box.addEventListener('click', e => {
+    const t = e.target.closest('.cp-tg');
+    if (t) { coopSend({ t: 'setperm', key: t.dataset.perm, on: !Coop.perms[t.dataset.perm] }); return; }
+    const all = e.target.closest('[data-all]');
+    if (all) { for (const k of Object.keys(Coop.permLabels)) coopSend({ t: 'setperm', key: k, on: all.dataset.all === '1' }); return; }
+    if (e.target.closest('[data-close]') || e.target === box) box.remove();
+  });
+}
+
+{
+  const _h = coopHandle;
+  coopHandle = function (m) {
+    if (m.t === 'perms') {
+      Coop.perms = m.perms;
+      const box = document.getElementById('cp-admin');
+      if (box) coopAdminRender(box);
+      return;
+    }
+    _h(m);
+  };
+  const _ih = coopInitHud;
+  coopInitHud = function () {
+    _ih();
+    const row = document.querySelector('#coop-hud .cp-row');
+    if (Coop.host && row && !row.querySelector('[data-cp="admin"]')) {
+      const b = document.createElement('button');
+      b.dataset.cp = 'admin'; b.title = 'Что можно игрокам'; b.textContent = 'Права';
+      row.insertBefore(b, row.querySelector('[data-cp="restart"]'));
+      b.addEventListener('click', e => { e.stopPropagation(); coopAdminOpen(); });
+    }
+  };
 }
