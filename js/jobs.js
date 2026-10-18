@@ -67,6 +67,7 @@ function* eatGen(u, inn) {
   if (dry) while (storeInside(inn) >= storeCapOf(inn) && !inn.removed) yield { wait: 0.4 };
   if (inn.removed) return;
   yield { enter: inn };
+  if (!dry) { u.dining = inn; u.diningFood = food; }   // сидит за столом на веранде (inside.js)
   yield { wait: dry ? 3 : 5 };
   if (!inn.removed) {
     inn.reserved[food]--;
@@ -88,6 +89,7 @@ function* eatGen(u, inn) {
     }
   }
   yield { leave: true };
+  u.dining = null; u.diningFood = null;
   if (Math.random() < 0.45) litter(u);                // кости и огрызки — на землю
 }
 

@@ -422,7 +422,15 @@ function door(c, cx, base, w, h, o = {}) {
 }
 
 // Круглое гномье окошко в деревянном кольце
+let WIN_REC = null;   // при рисовании здания сюда копятся окна (центр в координатах спрайта) — по ним рисуются силуэты работающих внутри
+function recWin(c, cx, cy, w, h, round) {
+  if (!WIN_REC) return;
+  const t = c.getTransform();
+  WIN_REC.push([(t.a * cx + t.c * cy + t.e) / BS, (t.b * cx + t.d * cy + t.f) / BS, w, h, round ? 1 : 0]);
+}
+
 function roundWin(c, cx, cy, r, o = {}) {
+  recWin(c, cx, cy, r * 2, r * 2, true);
   ellipse(c, cx, cy, r + 1.3, r + 1.3, '#3a2414');
   ellipse(c, cx, cy, r + 0.8, r + 0.8, '#7a5030');
   c.save();
@@ -457,6 +465,7 @@ function mushroomProp(c, x, y, s = 1, red = true) {
 
 function win(c, x, y, w, h, o = {}) {
   if (o.round) { roundWin(c, x + w / 2, y + h / 2, Math.min(w, h) / 2 + 0.6, o); return; }
+  recWin(c, x + w / 2, y + h / 2, w, h, false);
   if (o.shutter) {
     for (const sx of [x - 3, x + w]) {
       c.fillStyle = lingrad(c, sx, 0, sx + 3, 0, [[0, shade(o.shutter, 0.15)], [1, shade(o.shutter, -0.25)]]);

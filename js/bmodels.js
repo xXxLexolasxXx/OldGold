@@ -770,9 +770,8 @@ const MODELS = {
     m.box({ x0: 8, x1: 46, y0: 4, y1: 12, h: 22, open: true, canopy: true, noShadow: true, roof: { type: 'lean', down: 'S', rise: 6, mat: 'shingle', col: '#7a5434', ov: 2 } });
     // полукруглые ступени у входа
     m.prop((c, x, y) => { for (let k = 2; k >= 0; k--) { ellipse(c, x, y + 1 + k * 0.6, 9 - k * 2, 3.4 - k * 0.8, shade('#a49c90', -k * 0.08)); ellipse(c, x, y + 0.4 + k * 0.6, 9 - k * 2, 3 - k * 0.8, shade('#c8bfb2', -k * 0.08)); } }, m.doorX - 16, 11);
-    m.prop((c, x, y) => table(c, x, y), 14, 8);
-    m.prop((c, x, y) => bench(c, x, y, 16), 12, 4);
-    m.prop((c, x, y) => table(c, x, y), 30, 8);
+    m.g.spr.porch = m.at(100, -6);              // здесь рисуется стол с обедающими (inside.js)
+    m.g.spr.doorPt = m.at(m.doorX, 10);
     m.prop((c, x, y) => barrel(c, x, y), 104, 14);
     m.prop((c, x, y) => barrel(c, x, y, 0.8), 110, 12);
     m.prop((c, x, y) => crate(c, x, y, 6), 116, 14);
@@ -1299,6 +1298,10 @@ function mirrorSprite(s, FW) {
   const W = s.w, pt = p => p && [W - p[0], p[1]];
   const m = { ...s, canvas: flip(s.canvas), shadow: flip(s.shadow), padx: W - s.padx - FW, doorCx: W - s.doorCx };
   if (s.chimneys) m.chimneys = s.chimneys.map(pt);
+  if (s.wins) m.wins = s.wins.map(w => [W - w[0], ...w.slice(1)]);
+  if (s.porch) m.porch = pt(s.porch);
+  if (s.doorPt) m.doorPt = pt(s.doorPt);
+
   for (const k of ['hub', 'glow', 'fire', 'circle', 'cauldron']) if (s[k]) m[k] = pt(s[k]);
   if (s.pen) m.pen = [W - s.pen[2], s.pen[1], W - s.pen[0], s.pen[3]];
   if (s.penQuad) m.penQuad = s.penQuad.map(pt);
@@ -1338,7 +1341,9 @@ function buildingSpriteBase(type, rot = 0, level = 1) {
   if (level === 2) spr.tall = upgradeModel(m);
   SIGN_QUEUE.list = [];
   BUILD_STYLE = styleOf(type); BUILD_TYPE = type;
+  WIN_REC = [];
   renderModel(c, m);
+  spr.wins = WIN_REC; WIN_REC = null;
   BUILD_STYLE = 'logs'; BUILD_TYPE = '';
   for (const s of SIGN_QUEUE.list) postSign(c, s.x, s.y, s.kind, s.dir);
   SIGN_QUEUE.list = [];
