@@ -46,7 +46,7 @@ sudo bash install.sh --sslip --admin ВашНик
 Страница на GitHub Pages открыта по https, а браузер с https-страницы пускает только на `wss://` —
 поэтому нужен вариант с `--sslip` или `--domain`.
 
-1. В `js/coopclient.js` впишите адрес сервера:
+1. В `js/coop/coopclient.js` впишите адрес сервера:
    ```js
    const COOP_SERVER = 'wss://1-2-3-4.sslip.io';
    ```

@@ -11,8 +11,8 @@ const ROOT = path.join(__dirname, '..');
 const SKIP = new Set(['loading', 'startmenu', 'perf', 'profile', 'coopclient']);
 function gameFiles() {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  const list = [...html.matchAll(/<script[^>]*\ssrc="js\/([\w-]+)\.js"/g)].map(m => m[1]).filter(f => !SKIP.has(f));
-  return [...list, 'coopsim'];
+  const list = [...html.matchAll(/<script[^>]*\ssrc="js\/((?:[\w-]+\/)?[\w-]+)\.js"/g)].map(m => m[1]).filter(f => !SKIP.has(f.split("/").pop()));
+  return [...list, 'coop/coopsim'];
 }
 const FILES = gameFiles();
 

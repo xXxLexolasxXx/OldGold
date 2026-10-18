@@ -36,11 +36,11 @@
 - `js/world.js`, `js/path.js` — карта, дорожные сети, поиск пути
 - `js/entities.js`, `js/jobs.js`, `js/logistics.js` — здания, жители, работа, доставка
 - `js/life.js` — перекуры, сон, столкновения и травмы
-- `js/animals.js`, `js/creatures.js` — звери, козы, телеги
+- `js/world/animals.js`, `js/world/creatures.js` — звери, козы, телеги
 - `js/buildings.js`, `js/bmodels.js` — материалы и 3D-модели зданий
 - `js/people.js` — гномы
-- `js/sprites.js`, `js/pixel.js`, `js/terrain.js` — природа и земля
-- `js/music.js` — музыка
+- `js/sprites.js`, `js/pixel.js`, `js/world/terrain.js` — природа и земля
+- `js/sound/music.js` — музыка
 - `js/icons.js`, `js/render.js`, `js/ui.js`, `js/save.js`, `js/main.js` — интерфейс и цикл
 
 ## Кооператив (сетевая игра)
