@@ -78,7 +78,7 @@ function px2Bricks(G, x0, y0, x1, y1, ramp, rh, bw, seed, shadeFn) {
 
 // ---------- Большой костёр ----------
 const BF_W = 104, BF_H = 98, BF_AX = 52, BF_AY = 60;   // якорь — центр каменного вала
-const BF_FIRE = [BF_AX, 46];                               // откуда растёт пламя (в координатах картинки)
+const BF_FIRE = [BF_AX, 54];                               // откуда растёт пламя (в координатах картинки)
 
 function bonfireArt() {
   if (bonfireArt.cv) return bonfireArt.cv;
@@ -101,20 +101,20 @@ function bonfireArt() {
   };
   stones(true);
   // жаровня внутри вала: угли
-  px2Ell(G, cx, cy - 2, 31, 14, (x, y, dx, dy) => {
+  px2Ell(G, cx, cy - 2, 27, 12, (x, y, dx, dy) => {
     const r = dx * dx + dy * dy, h = px2hash(x, y, 8);
     if (r > 0.8) return '#241818';
     return h < 0.14 ? '#e0701c' : h < 0.3 ? '#a83a14' : h < 0.55 ? '#5a2018' : '#321814';
   });
   // шалаш из брёвен: каждое — наклонная толстая линия с корой, торец светлый
-  const apex = [cx, 22], logs = [];
-  for (let k = 0; k < 11; k++) {
-    const a = k / 11 * Math.PI * 2, bx = cx + Math.cos(a) * 24, by = cy - 3 + Math.sin(a) * 9.5;
-    logs.push({ bx, by, ax: apex[0] + Math.cos(a) * 2.2, ay: apex[1] + 4 + (k % 3) * 2, k });
+  const apex = [cx, 38], logs = [];   // невысокий шалаш: огонь-великан закрывает середину и верх
+  for (let k = 0; k < 9; k++) {
+    const a = k / 9 * Math.PI * 2, bx = cx + Math.cos(a) * 16, by = cy - 3 + Math.sin(a) * 6.5;
+    logs.push({ bx, by, ax: apex[0] + Math.cos(a) * 1.6, ay: apex[1] + 3 + (k % 3) * 2, k });
   }
   logs.sort((p, q) => p.by - q.by);
   for (const L of logs) {
-    px2Line(G, L.bx, L.by, L.ax, L.ay, 4.4, (x, y, side, t) => {
+    px2Line(G, L.bx, L.by, L.ax, L.ay, 3.4, (x, y, side, t) => {
       const n = px2hash(x, y, L.k);
       let i = side < -0.55 ? 0 : side < -0.1 ? 1 : side < 0.4 ? 2 : side < 0.75 ? 3 : 4;
       if (n < 0.18) i = Math.min(5, i + 1);           // кора в трещинках
@@ -122,7 +122,7 @@ function bonfireArt() {
       return W[i];
     });
     // торец у основания: светлое дерево с кольцом
-    px2Ell(G, L.bx, L.by, 2.4, 1.9, (x, y, dx, dy) => (dx * dx + dy * dy > 0.45 ? W[2] : (x + y) % 2 ? '#f0c888' : '#d89a5c'));
+    px2Ell(G, L.bx, L.by, 1.9, 1.5, (x, y, dx, dy) => (dx * dx + dy * dy > 0.45 ? W[2] : (x + y) % 2 ? '#f0c888' : '#d89a5c'));
   }
   // хворост и мусор вокруг основания
   for (let k = 0; k < 16; k++) {
@@ -148,7 +148,7 @@ function bonfireArt() {
   G.set(12, 59, '#e8dcc0'); G.set(13, 59, '#e8dcc0'); G.set(16, 60, '#b04a30'); G.set(17, 60, '#b04a30'); G.set(15, 58, '#6a8a3a');
   px2Out(G, PX2.ink, '#5a4838');
   bonfireArt.cv = px2Canvas(G);
-  bonfireArt.perches = [[cx, 22], [cx - 24, 40], [cx + 24, 40]];
+  bonfireArt.perches = [[cx, 38], [cx - 24, 40], [cx + 24, 40]];
   return bonfireArt.cv;
 }
 

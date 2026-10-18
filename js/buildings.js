@@ -1082,18 +1082,25 @@ function drawBonfire(c, g) {
   (g.spr.chimneys = g.spr.chimneys || []).push([cx, cy - 70]);
 }
 
-// Пламя костра: высокий столб огня над пирамидой брёвен, языки дрожат, искры и уголь летят вверх
+// Пламя костра: по центру одно большое пламя (9 кадров, fire.js 'bonfire') закрывает середину и верх брёвен;
+// без дела (нет мусора) огня нет — в основании переливаются угольки
 function drawBonfireFlames(c, x, y, strong, seed) {
   const t = Game.time;
-  glow(c, x, y - 20, strong ? 170 : 100, '255,110,30', 0.18);
   if (strong) {
-    // высокий столб огня поверх пирамиды брёвен: центральный язык ×2 и два боковых, чтобы бревна тонули в пламени
-    drawFire(c, x - 15, y + 12, 'camp', t, seed + 1, { glow: 0, scale: 2 });
-    drawFire(c, x + 15, y + 12, 'camp', t, seed + 3, { glow: 0, scale: 2 });
-    drawFire(c, x, y + 14, 'blaze', t, seed, { glow: 1.6, sparks: 18, scale: 2 });
-  } else {
-    drawFire(c, x - 8, y + 12, 'camp', t, seed + 1, { glow: 0, scale: 1 });
-    drawFire(c, x, y + 14, 'blaze', t, seed, { glow: 1.2, sparks: 6, scale: 1 });
+    glow(c, x, y + 10, 130, '255,110,30', 0.18);
+    glow(c, x, y - 14, 80, '255,160,60', 0.3);
+    drawFire(c, x, y + 2, 'bonfire', t, seed, { glow: 0, sparks: 16 });
+    return;
+  }
+  glow(c, x, y + 4, 44, '255,90,24', 0.1 + 0.03 * Math.sin(t * 2 + seed));
+  const P = ['#321814', '#5a2018', '#a83a14', '#e0701c', '#ffb02e', '#ffe066'];
+  for (let k = 0; k < 46; k++) {
+    const a = k * 2.399 + seed, rr = Math.sqrt((k + 0.5) / 46);
+    const px = Math.round(x + Math.cos(a) * rr * 24), py = Math.round(y + 4 + Math.sin(a) * rr * 9);
+    const v = 0.5 + 0.5 * Math.sin(t * (1.6 + (k % 5) * 0.45) + k * 1.7 + seed);   // каждый уголёк тлеет в своём ритме
+    const lv = v > 0.93 ? 5 : v > 0.8 ? 4 : v > 0.55 ? 3 : v > 0.3 ? 2 : v > 0.1 ? 1 : 0;
+    c.fillStyle = P[lv];
+    c.fillRect(px, py, k % 4 === 0 && lv > 1 ? 2 : 1, 1);
   }
 }
 
