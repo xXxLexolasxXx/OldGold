@@ -455,14 +455,18 @@ function coopInitPacket(uid) {
 
 // Разница мира с прошлой рассылкой: здания, объекты на клетках, дороги, стройки дорог, груды
 function coopWorldPacket() {
-  const s = serializeGame();
+  // жителей в дельте не нужно (они уходят пакетом 'u'), а их сериализация дорога при большой деревне
+  const us = Game.units; Game.units = [];
+  let s;
+  try { s = serializeGame(); } finally { Game.units = us; }
   const out = { t: 'w', time: r2(Game.time), nextId: Game.nextId };
-  // здания
-  const nb = new Map(), up = [];
+  // здания; кадр анимации (an) меняется всё время — в подпись не входит, клиент крутит его сам
+  const nb = new Map(), up = [], bById = new Map(Game.buildings.map(x => [x.id, x]));
   for (const d of s.buildings) {
-    const b = Game.buildings.find(x => x.id === d.id);
-    d.wk = b && b.working ? 1 : 0; d.an = b ? r2(b.anim || 0) : 0;
+    const b = bById.get(d.id);
+    d.wk = b && b.working ? 1 : 0;
     const sig = JSON.stringify(d);
+    d.an = b ? r2(b.anim || 0) : 0;
     nb.set(d.id, sig);
     if (coop.shB.get(d.id) !== sig) up.push(d);
   }
@@ -476,7 +480,7 @@ function coopWorldPacket() {
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
     const sig = o ? JSON.stringify(coopTileObj(o)) : '';
-    if (coop.shO.get(i) !== sig) {
+    if ((coop.shO.get(i) || '') !== sig) {
       if (sig) { oc.push([i, JSON.parse(sig)]); coop.shO.set(i, sig); } else { ox.push(i); coop.shO.delete(i); }
     }
   }

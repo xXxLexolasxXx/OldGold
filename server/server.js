@@ -7,6 +7,7 @@ const path = require('path');
 const http = require('http');
 const os = require('os');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { spawn } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
@@ -14,6 +15,7 @@ const DATA = process.env.OLDGOLD_DATA ? path.resolve(process.env.OLDGOLD_DATA) :
 const PORT = +process.env.PORT || 8787;
 const SAVE_EVERY = 30000;        // общий мир сохраняется раз в 30 секунд
 const PAUSE_EMPTY = true;
+const MAX_CONNS = +process.env.OLDGOLD_MAX_CONNS || 80, MAX_PER_IP = +process.env.OLDGOLD_MAX_PER_IP || 12;
 // Хост (права игроков, перезапуск) — подключение с этого же компьютера; на VPS за прокси такого нет,
 // поэтому хостами можно назначить ники: OLDGOLD_ADMIN="Торин,Аня"
 const ADMINS = new Set(String(process.env.OLDGOLD_ADMIN || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean));        // пока на сервере никого нет, деревня стоит (чтобы не пропасть без хозяев)
@@ -138,6 +140,12 @@ function flushHeroes() {
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
+  if (p === '/coop-info' && /metrics|digest/.test(req.url) && /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '') && !req.headers['x-forwarded-for']) {
+    const q = new URL(req.url, 'http://x').searchParams;
+    const out = q.has('metrics') ? metricsSnap() : digest();
+    if (q.has('reset')) metricsReset();
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(out)); return;
+  }
   if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
   if (events.handle(req, res, req.socket.remoteAddress || '')) return;
   if (p === '/stats') {
@@ -164,6 +172,19 @@ const server = http.createServer((req, res) => {
 const conns = new Set();
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
+// Большие сообщения сжимаются deflate (JSON ужимается в 5–10 раз) и идут бинарным кадром — только клиентам, которые это умеют (z в auth)
+const ZMIN = 600;
+function pack(text, z) {
+  const raw = Buffer.from(text, 'utf8');
+  if (z && raw.length >= ZMIN) {
+    const t0 = performance.now();
+    const c = zlib.deflateRawSync(raw, { level: 1 });
+    M.zMs += performance.now() - t0; M.zIn += raw.length; M.zOut += c.length;
+    return frame(2, c);
+  }
+  return frame(1, raw);
+}
+
 function frame(op, payload) {
   const len = payload.length;
   let head;
@@ -176,13 +197,20 @@ function frame(op, payload) {
 class Conn {
   constructor(sock, isHost, ip, origin) {
     this.sock = sock; this.isHost = isHost; this.ip = ip; this.origin = origin; this.buf = Buffer.alloc(0); this.frag = []; this.fragOp = 0;
-    this.nick = null; this.key = null; this.inGame = false; this.alive = true; this.seen = Date.now();
+    this.z = false; this.nick = null; this.key = null; this.inGame = false; this.alive = true; this.seen = Date.now();
     sock.on('data', d => this.onData(d));
     sock.on('close', () => this.onClose());
     sock.on('error', () => { try { sock.destroy(); } catch (e) { /* ничего */ } });
   }
   send(obj) { this.sendText(typeof obj === 'string' ? obj : JSON.stringify(obj)); }
-  sendText(s) { if (this.alive && !this.sock.destroyed) this.sock.write(frame(1, Buffer.from(s, 'utf8'))); }
+  sendText(s) { this.sendFrame(typeof s === 'string' ? pack(s, this.z) : s); }
+  sendFrame(f) {
+    if (!this.alive || this.sock.destroyed) return;
+    // клиент не успевает читать (в буфере больше 4 МБ) — отключаем, иначе память сервера растёт без предела
+    if (this.sock.writableLength > 4 << 20) { this.sock.destroy(); return; }
+    M.bytesOut += f.length; M.msgsOut++;
+    this.sock.write(f);
+  }
   onData(d) {
     this.seen = Date.now();
     this.buf = Buffer.concat([this.buf, d]);
@@ -239,12 +267,35 @@ server.on('upgrade', (req, sock) => {
   const isHost = /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(addr) && !req.headers['x-forwarded-for'];
   // настоящий адрес игрока за прокси — только для хэша в статистике, в открытом виде не хранится
   const ip = String(req.headers['x-forwarded-for'] || addr).split(',')[0].trim();
+  // потолок соединений: лишних отсекаем сразу, чтобы не съесть память
+  if (conns.size >= MAX_CONNS || (!isHost && [...conns].filter(o => o.ip === ip).length >= MAX_PER_IP)) { sock.end(frame(8, Buffer.from([0x03, 0xf3]))); return; }
   conns.add(new Conn(sock, isHost, ip, req.headers.origin || ''));
 });
 
-function broadcast(obj) {
+// Метрики нагрузки: время шага и сборки пакетов, исходящий трафик (отдаются на /coop-info?metrics=1 только с loopback)
+const M = { ticks: 0, stepMs: 0, stepMax: 0, uMs: 0, uMax: 0, wMs: 0, wMax: 0, loopMax: 0, bytesOut: 0, msgsOut: 0, zMs: 0, zIn: 0, zOut: 0, lag: 0, since: Date.now() };
+function metricsReset() { Object.assign(M, { ticks: 0, stepMs: 0, stepMax: 0, uMs: 0, uMax: 0, wMs: 0, wMax: 0, loopMax: 0, bytesOut: 0, msgsOut: 0, lag: 0, uN: 0, wN: 0, since: Date.now() }); }
+function metricsSnap() {
+  const sec = Math.max(0.001, (Date.now() - M.since) / 1000), mu = process.memoryUsage();
+  return {
+    sec: +sec.toFixed(1), online: [...conns].filter(c => c.inGame).length, conns: conns.size,
+    stepAvgMs: +(M.stepMs / Math.max(1, M.ticks)).toFixed(2), stepMaxMs: +M.stepMax.toFixed(1),
+    unitsPktAvgMs: +(M.uMs / Math.max(1, M.uN || 1)).toFixed(2), unitsPktMaxMs: +M.uMax.toFixed(1),
+    worldPktAvgMs: +(M.wMs / Math.max(1, M.wN || 1)).toFixed(2), worldPktMaxMs: +M.wMax.toFixed(1),
+    zipMs: +M.zMs.toFixed(0), zipRatio: M.zOut ? +(M.zIn / M.zOut).toFixed(1) : 0, loopLagMaxMs: +M.loopMax.toFixed(1), outKBps: +(M.bytesOut / 1024 / sec).toFixed(1), outMsgsPerSec: +(M.msgsOut / sec).toFixed(1),
+    rssMB: +(mu.rss / 1048576).toFixed(1), heapMB: +(mu.heapUsed / 1048576).toFixed(1),
+    units: run('Game.units.length'), buildings: run('Game.buildings.length'),
+  };
+}
+function digest() { return JSON.parse(run('JSON.stringify({ roads: World.road.reduce((a, v) => a + v, 0), buildings: Game.buildings.length, bids: Game.buildings.map(b => b.id).sort((a, b) => a - b).join(","), objs: World.obj.filter(Boolean).length })')); }
+
+function broadcast(obj, to) {
   const s = typeof obj === 'string' ? obj : JSON.stringify(obj);
-  for (const c of conns) if (c.inGame) c.sendText(s);
+  let plain, zipped;   // каждый вариант кадра собираем один раз на всех
+  for (const c of conns) {
+    if (!c.inGame || (to && to !== c.nick)) continue;
+    if (c.z) c.sendFrame(zipped || (zipped = pack(s, true))); else c.sendFrame(plain || (plain = pack(s, false)));
+  }
 }
 
 // ---------- Сообщения игроков ----------
@@ -286,7 +337,7 @@ function onMessage(c, text) {
       try { o.sock.end(); } catch (e) { /* ничего */ }
       o.onClose();
     }
-    c.nick = rec.nick; c.key = key; c.ver = typeof m.ver === 'string' ? m.ver.slice(0, 40) : '';
+    c.nick = rec.nick; c.key = key; c.ver = typeof m.ver === 'string' ? m.ver.slice(0, 40) : ''; c.z = m.z === 1;
     if (ADMINS.has(key)) c.isHost = true;
     let token;
     if (m.mode !== 'token') { token = crypto.randomBytes(24).toString('hex'); rec.toks = [...(rec.toks || []).slice(-4), sha(token)]; saveUsers(); }   // запомнить вход на этом устройстве
@@ -330,6 +381,12 @@ function onMessage(c, text) {
     log('права:', m.key, m.on ? 'вкл' : 'выкл');
     return;
   }
+  // защита от заливания командами (залипшая мышь, кривой клиент): ведро на 60 сообщений, 30 в секунду
+  const nowMs = Date.now();
+  c.bucket = Math.min(60, (c.bucket ?? 60) + (nowMs - (c.bucketAt || nowMs)) / 1000 * 30);
+  c.bucketAt = nowMs;
+  if (c.bucket < 1) { if (!c.warned || nowMs - c.warned > 5000) { c.warned = nowMs; c.send({ t: 'toast', text: 'Слишком много команд подряд — чуть помедленнее' }); } return; }
+  c.bucket--;
   call('coopCmd', c.nick, text, c.isHost);
 }
 
@@ -337,27 +394,29 @@ function onMessage(c, text) {
 let last = Date.now(), acc = 0, tU = 0, tW = 0, tMe = 0, tSave = Date.now();
 setInterval(() => {
   const now = Date.now();
+  M.loopMax = Math.max(M.loopMax, now - last - 50);
   const dt = Math.min(0.5, (now - last) / 1000);
   last = now;
   const online = [...conns].some(c => c.inGame);
   if (online || !PAUSE_EMPTY) {
     acc += dt;
     let n = 0;
+    const t0 = performance.now();
     while (acc >= SIM_DT && n < 20) {
       try { host.ctx.step(SIM_DT); } catch (e) { log('ошибка шага:', e.stack); }
       acc -= SIM_DT; n++;
     }
+    if (n) { const ms = (performance.now() - t0) / n; M.ticks += n; M.stepMs += ms * n; M.stepMax = Math.max(M.stepMax, ms); }
     if (n >= 20) acc = 0;
   } else acc = 0;
   if (online) {
     tU += dt; tW += dt; tMe += dt;
-    if (tU >= 0.2) { tU = 0; broadcast(call('coopUnitsPacket')); }
-    if (tW >= 0.5) { tW = 0; const w = call('coopWorldPacket'); if (w) broadcast(w); }
+    if (tU >= 0.2) { tU = 0; const t1 = performance.now(); const p = call('coopUnitsPacket'); const ms = performance.now() - t1; M.uN = (M.uN || 0) + 1; M.uMs += ms; M.uMax = Math.max(M.uMax, ms); broadcast(p); }
+    if (tW >= 0.5) { tW = 0; const t1 = performance.now(); const w = call('coopWorldPacket'); const ms = performance.now() - t1; M.wN = (M.wN || 0) + 1; M.wMs += ms; M.wMax = Math.max(M.wMax, ms); if (w) broadcast(w); }
     if (tMe >= 1) { tMe = 0; for (const c of conns) if (c.inGame) { const me = call('coopMeData', c.nick); if (me) c.sendText(me); } }
     const ev = JSON.parse(call('coopDrain'));
     for (const e of ev) {
-      const s = JSON.stringify(e.msg);
-      for (const c of conns) if (c.inGame && (!e.to || e.to === c.nick)) c.sendText(s);
+      broadcast(e.msg, e.to);
     }
   } else call('coopDrain');
   if (now - tSave >= SAVE_EVERY) { tSave = now; if (saveWorld() && online) broadcast({ t: 'saved' }); }

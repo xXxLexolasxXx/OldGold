@@ -51,6 +51,14 @@ function coopVer() {
   return (/github\.io$/.test(location.hostname) ? 'pages ' : location.protocol === 'file:' ? 'file ' : 'site ') + when;
 }
 
+const COOP_ZIP = typeof DecompressionStream === 'function';
+async function coopInflate(buf) {
+  const ds = new DecompressionStream('deflate-raw');
+  const w = ds.writable.getWriter();
+  w.write(buf); w.close();
+  return await new Response(ds.readable).text();
+}
+
 function coopSend(o) { if (Coop.ws && Coop.ws.readyState === 1) Coop.ws.send(JSON.stringify(o)); }
 
 // ---------- Подключение ----------
@@ -64,11 +72,20 @@ function coopConnect(opts) {
     try { ws = new WebSocket(opts.server); } catch (e) { reject(new Error('Неверный адрес сервера')); return; }
     Coop.ws = ws; Coop.creds = opts;
     const fail = msg => { if (settled) return; settled = true; reject(new Error(msg)); try { ws.close(); } catch (e) { /* ничего */ } };
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token, ver: coopVer() }));
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token, ver: coopVer(), z: COOP_ZIP ? 1 : 0 }));
+    ws.binaryType = 'arraybuffer';
     ws.onerror = () => fail('Сервер не отвечает. Он запущен? Адрес верный?');
     ws.onclose = () => { if (!settled) fail('Связь оборвана'); else if (Coop.ws === ws) coopLost(); };
+    // большие пакеты приходят сжатыми (бинарный кадр deflate-raw); разжатие асинхронное, поэтому порядок держим очередью
+    let pend = Promise.resolve(), pendN = 0;
     ws.onmessage = ev => {
-      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (typeof ev.data !== 'string') {
+        pendN++;
+        pend = pend.then(() => coopInflate(ev.data)).then(t => { pendN--; handleText(t); }, () => { pendN--; });
+      } else if (pendN) { pendN++; pend = pend.then(() => { pendN--; handleText(ev.data); }); } else handleText(ev.data);
+    };
+    const handleText = data => {
+      let m; try { m = JSON.parse(data); } catch (e) { return; }
       if (m.t === 'err') { if (m.stale) coopSaved(null); return fail(m.msg); }
       if (m.t === 'welcome') {
         if (m.token) coopSaved({ server: opts.server, nick: m.nick, token: m.token });
@@ -259,9 +276,9 @@ function coopWorld(m) {
   if (m.o) for (const [i, o] of m.o) World.obj[i] = o;
   if (m.ox) for (const i of m.ox) World.obj[i] = null;
   if (m.r || m.rx) {
-    if (m.r) for (const i of m.r) World.road[i] = 1;
-    if (m.rx) for (const i of m.rx) World.road[i] = 0;
-    World.roadDirty = true;
+    // в слое TERR.roads дорога нарисована заранее — после дельты перерисовываем клетки и соседей
+    if (m.r) for (const i of m.r) setRoad(i % MAP_W, (i / MAP_W) | 0, 1);
+    if (m.rx) for (const i of m.rx) setRoad(i % MAP_W, (i / MAP_W) | 0, 0);
   }
   if (m.rs) {
     Game.roadSites.clear();
@@ -297,6 +314,7 @@ function coopStep(dt) {
     const dx = o.tx - o.x, dy = o.ty - o.y;
     if (Math.abs(dx) + Math.abs(dy) > 4) { o.x = o.tx; o.y = o.ty; } else { o.x += dx * k2; o.y += dy * k2; }
   }
+  for (const b of Game.buildings) b.anim += dt * (b.working ? 3 : 0.25);   // колёса мельницы и т.п.: сервер шлёт кадр только вместе с остальным состоянием
   const h = Game.hero;
   if (h && h.cmd && Game.time - Coop.heroCmdAt > 1.2 && !(h.action && h.action.walk)) h.cmd = null;
   Coop.saveT += dt;
