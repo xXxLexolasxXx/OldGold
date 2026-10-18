@@ -200,6 +200,7 @@ function step(dt) {
   updateOwls(dt);
   faunaTick(dt);
   fauna2Tick(dt);
+  chestsTick(dt);
   updateFalling(dt);
   sfxTick(dt);
   Game.bumpT = (Game.bumpT || 0) + dt;

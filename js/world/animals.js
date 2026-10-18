@@ -63,6 +63,7 @@ function spawnAnimals() {
   add('elk', 3, 16);
   spawnFarmyard();
   spawnPets();
+  if (!Game.chests) spawnChests();
 }
 
 function animalGo(a, x, y) {

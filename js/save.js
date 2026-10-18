@@ -14,7 +14,7 @@ function resetGameState() {
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
   Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0;
   Game.bats = [];
-  Game.crows = []; Game.frogs = []; Game.worms = []; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1;
+  Game.crows = []; Game.frogs = []; Game.worms = []; Game.chests = null; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1;
   Game.fieldPlans = new Set(); Game.avenge = [];
   World.occ.fill(0);
   World.roadDirty = true;
@@ -75,7 +75,7 @@ function serializeGame() {
   const nz = o => { const r = {}; for (const k in o) if (o[k]) r[k] = o[k]; return r; };
   return {
     v: 2, mw: MAP_W, mh: MAP_H, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
-    storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, produced: nz(Game.produced),
+    storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, ch: serializeChests(), fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, produced: nz(Game.produced),
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
     obj, road,
     buildings: Game.buildings.map(b => ({
@@ -172,6 +172,7 @@ function applySave(s) {
   UI.shown = null; renderBuildMenu();
   Game.lostGnomes = s.lost || 0;
   Game.faunaStat = s.fs || {};
+  if (s.ch) loadChests(s.ch);
   Object.assign(Game.produced, s.produced || {});
   if (s.cam) { R.cam.x = s.cam.x; R.cam.y = s.cam.y; R.cam.z = ZOOMS.includes(s.cam.z) ? s.cam.z : 2; }
   buildTerrain(s.seed);
