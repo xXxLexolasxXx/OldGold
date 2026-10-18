@@ -144,14 +144,21 @@ function updateGoose(a, dt, def) {
       return;
     }
     // по воде плывёт медленнее, по суше бежит
-    if (!gooseMove(a, t.x, t.y, def.speed * (a.swim ? 0.7 : 1), dt)) { a.state = 'back'; return; }
+    gooseMove(a, t.x, t.y, def.speed * (a.swim ? 0.7 : 1), dt);
+    if (!a.moving && Math.hypot(t.x - a.x, t.y - a.y) > 0.75) { a.state = 'back'; return; }   // упёрся в скалу или дом
     if (Math.hypot(t.x - a.x, t.y - a.y) < 0.75 && Game.time >= (a.biteCD || 0)) {
-      gooseBite(a, t);
+      if (gooseBite(a, t)) return;
       a.biteCD = Game.time + 2.2;
       a.bites = (a.bites || 0) + 1;
       if (a.bites >= 3) { a.state = 'back'; a.calmUntil = Game.time + 14; }
     }
     if (Math.random() < dt * 0.9) floater(a.x, a.y - 1, 'Га-га!', '#ffffff');
+    return;
+  }
+  if (a.state === 'flee') {      // гусь удирает с украденным к своему берегу
+    if (gooseMove(a, home[0], home[1], def.speed * (Game.time < (a.fleeBoost || 0) ? 1.2 : 0.95), dt) || !a.moving) {
+      a.state = 'wander'; a.loot = null; a.calmUntil = Game.time + 20; a.tgt = null;
+    }
     return;
   }
   if (a.state === 'back') {
@@ -173,13 +180,18 @@ function updateGoose(a, dt, def) {
       }
     }
   }
-  // плавает по озеру неподалёку от своего берега
-  if (a.tgt) { if (gooseMove(a, a.tgt[0], a.tgt[1], def.speed * 0.25, dt) || !a.moving) a.tgt = null; return; }
+  // бродит по берегу и суше неподалёку от своего берега
+  if (a.tgt) { if (gooseMove(a, a.tgt[0], a.tgt[1], def.speed * (a.swim ? 0.25 : 0.4), dt) || !a.moving) a.tgt = null; return; }
   a.moving = false;
   a.wait -= dt;
   if (a.wait <= 0) {
     a.wait = 1.5 + Math.random() * 4;
-    const t = randomFreeNear(a.home[0], a.home[1], 0, 3.5, isWaterAt);
+    if (Math.random() < 0.2) {       // стайка понемногу подбирается к деревне, но не вплотную
+      const cx = MAP_W >> 1, cy = MAP_H >> 1;
+      if (Math.hypot(a.home[0] - cx, a.home[1] - cy) > 14)
+        a.home = [Math.round(a.home[0] + Math.sign(cx - a.home[0])), Math.round(a.home[1] + Math.sign(cy - a.home[1]))];
+    }
+    const t = randomFreeNear(a.home[0], a.home[1], 0, 7, (x, y) => gooseCanBe(x, y) && !World.door[idx(x, y)]);
     if (t) a.tgt = [t[0] + 0.2 + Math.random() * 0.6, t[1] + 0.2 + Math.random() * 0.6];
   }
 }
@@ -188,13 +200,23 @@ function gooseBite(a, u) {
   u.ouchUntil = Game.time + 2;
   floater(u.x, u.y - 1.4, 'Ай!', '#ffc8a0');
   if (!u.injury && Math.random() < 0.4) { injure(u, 'leg'); u.injuryUntil = Game.time + 40; }
-  if (u.carry && Math.random() < 0.35) dropLoad(u);
+  let stole = false;
+  if (u.carry && Math.random() < 0.45) {       // гусь вырывает груз и удирает с ним
+    const g = u.carry;
+    u.carryN = Math.max(0, (u.carryN || 1) - 1);
+    if (!u.carryN) u.carry = null;
+    a.loot = g; a.state = 'flee'; a.target = null; a.fleeBoost = 0; stole = true;
+    logEvent('animal', `Гусь утащил «${GOODS[g].name}»`, a.x, a.y);
+    toast(`Гусь утащил «${GOODS[g].name}»!`);
+  }
   logEvent('animal', `Гуси щиплют: ${UNIT_TYPES[u.type].name.toLowerCase()}`, u.x, u.y);
   if (Game.time - lastGooseToast > 25) {
     lastGooseToast = Game.time;
     toast(`Гуси щиплют: ${UNIT_TYPES[u.type].name.toLowerCase()} удирает со всех ног!`);
   }
   scare(u, a);
+  if (stole) dispatchHunters(a);
+  return stole;
 }
 
 // Гнома гонят — он бросает всё (если может) и удирает, размахивая руками
@@ -773,7 +795,16 @@ function dispatchHunters(a) {
   }
 }
 
+// Шансы погони. Догнать трудно; догнав, чаще отбирают добычу, чем убивают зверя;
+// разница уходит в побег зверя. У гуся две «жизни»: убить его труднее, чем волка и лису.
+const HUNT_ODDS = {
+  wolf:  { catch: 0.5, recover: 0.7,  kill: 0.12, bite: 0.07 },
+  fox:   { catch: 0.5, recover: 0.7,  kill: 0.14, bite: 0.05 },
+  goose: { catch: 0.4, recover: 0.75, kill: 0.08, bite: 0.08 },
+};
+
 function* huntGen(u, a) {
+  const odds = HUNT_ODDS[a.kind] || HUNT_ODDS.wolf;
   floater(u.x, u.y - 1.2, 'Держи вора!', '#ffd0a0');
   sfxUnit(u, 'grr');
   u.huntUntil = Game.time + 16;
@@ -782,10 +813,20 @@ function* huntGen(u, a) {
     yield { walk: [Math.floor(a.x), Math.floor(a.y)], offroad: true };
     if (a.dead) break;
     if (Math.hypot(a.x - u.x, a.y - u.y) < 1.4) {
-      if (Math.random() < 0.4) { killPredator(a, u); u.huntUntil = 0; yield { wait: 1.4 }; return; }
-      floater(u.x, u.y - 1.2, 'Увернулся!', '#ffe0e0');
-      if (Math.random() < 0.15) { injure(u, 'arm'); floater(u.x, u.y - 1.6, 'Укусил!', '#ffc0c0'); }
-      yield { wait: 0.4 };
+      if (Math.random() >= odds.catch) {                       // не догнал
+        floater(u.x, u.y - 1.2, 'Увернулся!', '#ffe0e0');
+        if (Math.random() < odds.bite) { injure(u, 'arm'); floater(u.x, u.y - 1.6, 'Укусил!', '#ffc0c0'); }
+        if (Math.random() < 0.35) { a.fleeBoost = Game.time + 4; break; }   // зверь вырвался и ушёл
+        yield { wait: 0.4 };
+        continue;
+      }
+      // догнал: чаще отбирает добычу, реже убивает зверя
+      const r = Math.random();
+      if (r < odds.recover) { recoverLoot(a, u); u.huntUntil = 0; yield { wait: 1.2 }; return; }
+      if (r < odds.recover + odds.kill && killPredator(a, u)) { u.huntUntil = 0; yield { wait: 1.4 }; return; }
+      floater(u.x, u.y - 1.2, 'Вырвался!', '#ffe0e0');
+      a.fleeBoost = Game.time + 4;
+      break;
     }
   }
   u.huntUntil = 0;
@@ -793,7 +834,23 @@ function* huntGen(u, a) {
   yield { wait: 1 };
 }
 
+// Гном отнял добычу, зверь убежал налегке
+function recoverLoot(a, u) {
+  const x = Math.floor(a.x), y = Math.floor(a.y);
+  if (a.loot) dropPile(x, y, a.loot, 1);
+  a.loot = null; a.state = a.kind === 'goose' ? 'back' : 'wander'; a.path = null; a.calmUntil = Game.time + 15;
+  a.stealCD = Math.max(a.stealCD || 0, Game.time + 30);
+  floater(u.x, u.y - 1.3, 'Отобрал!', '#fff2a0');
+  sfxUnit(u, 'hey');
+  u.gest = 'fist'; u.gestUntil = Game.time + 2;
+  logEvent('animal', `${UNIT_TYPES[u.type].name} отобрал добычу у: ${ANIMALS[a.kind].name.toLowerCase()}`, a.x, a.y);
+}
+
 function killPredator(a, u) {
+  if (a.kind === 'goose') {                       // гусь живуч: нужно два удачных удара
+    a.hp = (a.hp || 2) - 1;
+    if (a.hp > 0) { floater(a.x, a.y - 0.8, 'Га-а!', '#ffffff'); return false; }
+  }
   const x = Math.floor(a.x), y = Math.floor(a.y);
   const name = ANIMALS[a.kind].name;
   if (a.loot) dropPile(x, y, a.loot, 1);                 // добыча возвращается
@@ -806,6 +863,7 @@ function killPredator(a, u) {
   logEvent('animal', `${UNIT_TYPES[u.type].name} убил: ${name.toLowerCase()}. Остались шкуры`, a.x, a.y);
   toast(`${UNIT_TYPES[u.type].name} догнал и убил: ${name.toLowerCase()} — остались шкуры`);
   removeAnimal(a);
+  return true;
 }
 
 // Сачок: длинная палка с обручем и сетчатым мешком; при ловле взмахивает

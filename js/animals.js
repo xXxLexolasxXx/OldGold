@@ -116,7 +116,7 @@ function updateAnimal(a, dt) {
   // волк и лиса: охота за грузом
   if (def.mood === 'evil') {
     if (a.state === 'flee') {
-      if (animalStep(a, dt, a.loot ? (a.kind === 'fox' ? 2.3 : 2.1) : 2.5)) { a.state = 'wander'; a.loot = null; }
+      if (animalStep(a, dt, (a.loot ? (a.kind === 'fox' ? 2.3 : 2.1) : 2.5) * (Game.time < (a.fleeBoost || 0) ? 1.3 : 1))) { a.state = 'wander'; a.loot = null; }
       return;
     }
     if (a.think <= 0) {
