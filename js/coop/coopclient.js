@@ -114,7 +114,8 @@ function coopApplyInit(m) {
   Game.paused = false; Game.speed = 1;
   Coop.uid = m.uid; Coop.anim.clear(); Coop.bubbles.clear(); Coop.roadBatch = [];
   Coop.saveT = 0;
-  renderBuildMenu();
+  if (Coop.host) unlockAll();       // хосту доступно всё, остальным меню открывается по мере развития деревни
+  else renderBuildMenu();
   coopInitHud();
   coopInitControls();
   if (Tut.on) { Tut.on = false; if (Tut.el) Tut.el.classList.add('hidden'); tutHighlight([]); }   // обучение в общей деревне не нужно

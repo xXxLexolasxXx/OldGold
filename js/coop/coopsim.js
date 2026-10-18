@@ -167,7 +167,19 @@ function* tavernGen(u, c) {
   const _rc = runCmd;
   runCmd = function* (u, c) {
     if (c.kind === 'tavern') yield* tavernGen(u, c);
+    else if (c.kind === 'foe') { if (foeAlive(c.f)) yield* fightGen(u, c.f); }
     else yield* _rc(u, c);
+  };
+  const _kf = killFoe;
+  killFoe = function (f, u) {      // зачёт боя игроку: враг убит, а не просто «держится»
+    _kf(f, u);
+    if (u && u.owner && u.hero && !foeAlive(f)) { coopQEvent(u.hero, 'foes'); u.hero.kills = (u.hero.kills || 0) + 1; }
+  };
+  const _us = unlockStage;
+  unlockStage = function (id, quiet) {
+    const had = Game.unlocked[id];
+    _us(id, quiet);
+    if (!had && Game.unlocked[id]) coop.out.push({ msg: { t: 'unlock', id } });
   };
   const _we = Unit.prototype.wantsEat;
   Unit.prototype.wantsEat = function () { return this.owner ? false : _we.call(this); };   // игрок кормит героя сам
@@ -182,7 +194,9 @@ function coopGo(u, x, y) {
   if (!inb(x, y)) return;
   const b = buildingAt([x, y]);
   let c;
-  if (b && !b.isRoad && b.type === 'inn' && b.state === 'done' && !b.upg) c = { kind: 'tavern', b, tx: b.doorX, ty: b.doorY, label: 'Поесть' };
+  const foe = foesNear(x + 0.5, y + 0.5, 1.7)[0];
+  if (foe) c = { kind: 'foe', f: foe, tx: x, ty: y, label: 'Бой' };
+  else if (b && !b.isRoad && b.type === 'inn' && b.state === 'done' && !b.upg) c = { kind: 'tavern', b, tx: b.doorX, ty: b.doorY, label: 'Поесть' };
   else c = resolveCmd([x, y]);
   if (!c) { coopSay(H.owner, 'Сюда не пройти'); return; }
   issueCmd(u, c);
@@ -216,6 +230,7 @@ function coopCmd(name, msgJson, admin) {
     case 'build': {
       if (!can('build')) break;
       if (!BUILDINGS[m.type] || !coopInt(m.x) || !coopInt(m.y)) break;
+      if (!admin && !isUnlocked(m.type)) { coopSay(name, 'Это здание ещё не открыто для деревни'); break; }
       const rot = m.rot === 1 || m.rot === 2 ? m.rot : 0;
       const err = checkPlacement(m.type, m.x, m.y, rot);
       if (err) { coopSay(name, err); break; }
@@ -235,10 +250,11 @@ function coopCmd(name, msgJson, admin) {
     case 'field': {
       if (!can('field')) break;
       if (!Array.isArray(m.cells) || !['add', 'del'].includes(m.mode)) break;
+      if (!admin && m.mode === 'add' && !isUnlocked('tool:' + m.crop)) { coopSay(name, 'Эта культура ещё не открыта'); break; }
       for (const c of m.cells.slice(0, 80)) {
         if (!Array.isArray(c) || !coopInt(c[0]) || !coopInt(c[1]) || !inb(c[0], c[1])) continue;
         if (m.mode === 'del') removeField(c[0], c[1]);
-        else if (['wheat', 'hay', 'hops'].includes(m.crop) && !planField(c[0], c[1], m.crop) && u) coopQEvent(u.hero, 'field');
+        else if (['wheat', 'hay', 'hops'].includes(m.crop) && !planField(c[0], c[1], m.crop) && u) { coopQEvent(u.hero, 'field'); coopFieldPlanted(u.hero, idx(c[0], c[1])); }
       }
       break;
     }
@@ -373,8 +389,31 @@ function coopVillageInfo() {
   };
 }
 
-function coopStateGet() { return JSON.stringify(coop.vil); }
-function coopStateSet(json) { try { Object.assign(coop.vil, JSON.parse(json)); } catch (e) { /* пусто */ } }
+function coopStateGet() {
+  const cn = coop.cn;
+  return JSON.stringify({ ...coop.vil, pq: coop.pairQ, pd: [...coop.pairDay], cnDay: coop.cnDay, cn: cn ? { ...cn, votes: [...cn.votes] } : null });
+}
+function coopStateSet(json) {
+  try {
+    const { pq, pd, cnDay, cn, ...vil } = JSON.parse(json);
+    Object.assign(coop.vil, vil);
+    if (!coop.vil.fr) coop.vil.fr = {};
+    if (Array.isArray(pq)) coop.pairQ = pq;
+    if (Array.isArray(pd)) coop.pairDay = new Map(pd);
+    if (typeof cnDay === 'number') coop.cnDay = cnDay;
+    if (cn && Array.isArray(cn.opts)) coop.cn = { ...cn, votes: new Map(cn.votes || []) };
+  } catch (e) { /* пусто */ }
+}
+
+// Меню строительства для игроков открывается постепенно (как в одиночной игре), хост видит всё.
+// Стадии считаются по уже построенному: так же и со старым миром.
+function coopInitUnlocks() {
+  Game.unlocked = { res: true };
+  for (let ch = true; ch;) {
+    ch = false;
+    for (const st of UNLOCKS) if (!Game.unlocked[st.id] && st.after && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'))) { Game.unlocked[st.id] = true; ch = true; }
+  }
+}
 
 // ---------- Такт игроков ----------
 
@@ -421,6 +460,7 @@ function coopTick(dt) {
       u.action = null;
     }
     if (H.stunUntil > now && u.cmd) u.cmd = null;
+    coopAutoFight(u);
     // здоровье: беды деревни
     if (u.food <= 0) H.hp -= 0.5 * dt;
     else if (H.hp < H.maxhp && u.food > 0.25 && !(u.burn && u.burn.stage)) H.hp = Math.min(H.maxhp, H.hp + 0.4 * dt);
@@ -641,6 +681,9 @@ const QDEF = {
   build:    { name: 'Построить здание',               need: 1,  xp: 25, item: ['steak', 1],   title: [3, 'Строитель'] },
   night:    { name: 'Пережить ночь, ни разу не упав', need: 1,  xp: 40, item: ['chickenleg', 1], title: [3, 'Ночной сторож'] },
   far:      { name: 'Дойти до дальней точки',         need: 1,  xp: 30, item: ['sausage', 2] },
+  foes:     { name: 'Отбить 3 нечисти',               need: 3,  xp: 45, item: ['steak', 2],   title: [3, 'Защитник'] },
+  lamps:    { name: 'Зажечь 3 погасших фонаря',       need: 3,  xp: 40, item: ['sausage', 2], title: [3, 'Хранитель огня'] },
+  grow:     { name: 'Вырастить 4 клетки поля',        need: 4,  xp: 40, item: ['bread', 3],   title: [2, 'Садовод'] },
   treasure: { name: 'Найти спрятанный клад',          need: 1,  xp: 45, item: ['steak', 2],   cls: 'rogue', title: [2, 'Кладоискатель'] },
 };
 const PDEF = {
@@ -705,12 +748,13 @@ function coopMakeQuests(H) {
   const k = coopDayIx(), day = coopDayP() < EVE_START;
   const pool = ['tavern', 'road', 'field', 'build', 'far'];
   if (day) pool.push('night');
-  if (H.clsKey === 'rogue') pool.push('treasure', 'treasure');
+  if (QCLS[H.clsKey]) pool.push(QCLS[H.clsKey], QCLS[H.clsKey]);
   const list = [];
   while (list.length < 3 && pool.length) {
     const id = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
     if (list.some(q => q.id === id)) continue;
     const q = { id, n: 0, need: QDEF[id].need, done: false };
+    if (id === 'grow') { q.cells = []; q.seen = []; }
     if (id === 'far') { const p = coopFarPoint(); if (!p) continue; q.x = p[0]; q.y = p[1]; }
     if (id === 'treasure') { const p = coopTreasurePoint(); if (!p) continue; q.x = p[0]; q.y = p[1]; }
     list.push(q);
@@ -741,6 +785,7 @@ function coopCompass(dx, dy) {
 }
 
 function coopDawn() {
+  coop.lampDawn = true;
   for (const u of coop.players.values()) {
     const H = u.hero;
     if (H.eveIn && !(H.nightFalls > 0)) coopQEvent(H, 'night');
@@ -904,6 +949,8 @@ function coopQuestTick(night) {
   for (const u of coop.players.values()) {
     const H = u.hero;
     if (!H.quests || H.quests.day !== k) coopMakeQuests(H);
+    const gq = H.quests.list.find(q => q.id === 'grow' && !q.done);
+    if (gq) coopGrowTick(u, gq);
     for (const q of H.quests.list) {
       if (q.done || (q.id !== 'far' && q.id !== 'treasure')) continue;
       if (Math.hypot(u.x - (q.x + 0.5), u.y - (q.y + 0.5)) <= (q.id === 'far' ? 2 : 1.3)) coopQEvent(H, q.id);
@@ -911,6 +958,9 @@ function coopQuestTick(night) {
   }
   coopPairTick(night);
   coopCouncilTick();
+  const dawn = coop.lampDawn; coop.lampDawn = false;
+  coopLampTick(night, dawn);
+  checkUnlocks();
 }
 
 function coopQuestInfo(name) {
@@ -937,4 +987,63 @@ function coopQuestInfo(name) {
   const cn = coop.cn;
   if (cn) out.c = { q: cn.q, o: cn.opts.map(o => o.l), v: cn.opts.map((_, i) => [...cn.votes.values()].filter(x => x === i).length), left: Math.max(0, Math.round(cn.until - Game.time)), my: cn.votes.has(name) ? cn.votes.get(name) : -1 };
   return out;
+}
+
+
+// ---------- Бой, фонари и поля героев ----------
+
+const QCLS = { warrior: 'foes', barbarian: 'foes', monk: 'foes', archer: 'foes', mage: 'lamps', druid: 'grow', rogue: 'treasure' };
+const coopCellX = i => i % MAP_W + 0.5, coopCellY = i => Math.floor(i / MAP_W) + 0.5;
+
+function coopFieldPlanted(H, i) {
+  const q = H.quests && H.quests.list.find(x => x.id === 'grow' && !x.done);
+  if (q && q.cells.length < 12 && !q.cells.includes(i)) q.cells.push(i);
+}
+
+// Друид: рядом с его всходами растёт быстрее; созревшая клетка засчитывается один раз
+function coopGrowTick(u, q) {
+  for (const i of q.cells) {
+    const o = World.obj[i];
+    if (!o || o.t !== 'field' || q.seen.includes(i)) continue;
+    if (o.g >= 1) { q.seen.push(i); coopQEvent(u.hero, 'grow'); floater(coopCellX(i), coopCellY(i) - 0.5, 'Созрело!', '#b8e060'); continue; }
+    if (o.g >= 0 && Math.hypot(u.x - coopCellX(i), u.y - coopCellY(i)) <= 3) { o.g = Math.min(1, o.g + 0.04); World.growing.add(i); }
+  }
+}
+
+// Фонари гаснут ночью, рассвет зажигает все. Герой, проходя рядом, зажигает погасший своим фонарём.
+function coopLampTick(night, dawn) {
+  if (!coop.lamps || Game.time > coop.lampsAt) {
+    coop.lamps = []; coop.lampsAt = Game.time + 6;
+    for (let i = 0; i < N_TILES; i++) { const o = World.obj[i]; if (o && o.t === 'lamp' && (o.born === undefined || Game.time - o.born > GROW_T)) coop.lamps.push(i); }
+  }
+  const L = coop.lamps;
+  if (dawn) { for (const i of L) { const o = World.obj[i]; if (o && o.out) o.out = false; } return; }
+  if (night && L.length) {
+    const out = L.filter(i => World.obj[i] && World.obj[i].out).length;
+    if (out < L.length * 0.6 && Math.random() < 0.3) {
+      const i = L[Math.floor(Math.random() * L.length)], o = World.obj[i];
+      if (o && !o.out) { o.out = true; floater(coopCellX(i), coopCellY(i) - 1, 'Фонарь погас', '#b0a890'); }
+    }
+  }
+  if (!night && !isEveningNow()) return;
+  for (const u of coop.players.values()) {
+    if (u.hero.stunUntil > Game.time || u.inside) continue;
+    for (const i of L) {
+      const o = World.obj[i];
+      if (!o || !o.out || Math.hypot(u.x - coopCellX(i), u.y - coopCellY(i)) > 2.3) continue;
+      o.out = false;
+      floater(coopCellX(i), coopCellY(i) - 1, `${u.owner} зажёг фонарь`, '#ffd070');
+      coopQEvent(u.hero, 'lamps');
+    }
+  }
+}
+
+// Герой без дела сам отбивается от нечисти поблизости
+function coopAutoFight(u) {
+  const H = u.hero;
+  if (u.cmd || u.inside || H.stunUntil > Game.time || H.drunkUntil > Game.time || (H.fightCd || 0) > Game.time) return;
+  const f = foesNear(u.x, u.y, 3)[0];
+  if (!f) return;
+  H.fightCd = Game.time + 1.5;
+  issueCmd(u, { kind: 'foe', f, tx: Math.floor(f.o.x), ty: Math.floor(f.o.y), label: 'Бой' });
 }

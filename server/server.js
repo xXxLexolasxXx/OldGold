@@ -102,7 +102,7 @@ function loadWorld() {
     try {
       host.ctx.__saveText = fs.readFileSync(f, 'utf8');
       run('(function(){ const s = JSON.parse(__saveText); __saveText = null; if (s.v !== 2) throw new Error("версия"); applySave(s); })()');
-      run('coopDropHeroes(); Game.unlocked = allUnlocked();');
+      run('coopDropHeroes(); coopInitUnlocks();');
       log('мир загружен из', path.basename(f), '— жителей', run('Game.units.length'), 'зданий', run('Game.buildings.length'));
       return true;
     } catch (e) { log('не вышло прочитать', path.basename(f), e.message); }
@@ -111,7 +111,7 @@ function loadWorld() {
 }
 if (!loadWorld()) {
   const seed = (Math.random() * 1e9) | 0;
-  run(`setupStart(${seed}); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; Game.unlocked = allUnlocked();`);
+  run(`setupStart(${seed}); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
   log('создан новый мир, зерно', seed);
 }
 
