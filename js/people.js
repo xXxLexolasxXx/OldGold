@@ -922,7 +922,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (O.belt === 'axe') { line(c, -1.6, hipY + 0.6, -2.4, hipY + 4, '#6a4424', 0.6); poly(c, [[-2.4, hipY + 3.6], [-3.8, hipY + 3.2], [-3.6, hipY + 4.8]], '#b8bcc0'); }
       }
       if (courier) line(c, -2, shY + 0.2, 2.4, hipY, '#4a2c14', 0.6);
-      drawHead(c, 'E', 0.6, headY, L, O, type, pose === 'smoke', beardBottom, r);
+      drawHead(c, 'E', 0.6, headY, L, O, type, false, beardBottom, r);   // курево рисует drawSmoking (smoking.js)
       drawCap(c, O, 'E', 0.6, headY, tipSway, L, r, lvl);
       if (sling) {
         poly(c, [[-0.4, shY + 0.6], [3.4, shY + 3.2], [-0.8, shY + 4.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
@@ -955,8 +955,9 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (gest === 'drink') drawFlask(c, h[0] + 1.8, h[1] - 0.8, 0.5);
         if (gest === 'chest' && gf) drawFlask(c, h[0] + 2.2, h[1] - 1.6, 0.2);
       } else if (pose === 'smoke') {
-        smoothLimb(c, [0.4, shY + 0.4], [2.8, shY + 2.4], [4.8, headY + 3.8], 2, shirt);
-        hand(c, 5, headY + 3.6, skin[0]);
+        const sa = SMOKE_ARM.E, sf = frame | 0;   // кадр курения 0..3: достал, поднёс, затяжка, выдох
+        smoothLimb(c, [0.4, shY + 0.4], sa.elbow[sf], sa.hand[sf], 2, shirt);
+        hand(c, sa.hand[sf][0], sa.hand[sf][1], skin[0]);
       } else if (pose === 'tame') {
         smoothLimb(c, [0.4, shY + 0.4], [3, shY + 1.4], [5.8, shY + 2.4], 2, shirt);
         hand(c, 6.1, shY + 2.4, skin[0]);
@@ -998,8 +999,9 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       }
       if (pose === 'smoke' && front && side > 0) {
         // трубка у рта: рука поднята, локоть в сторону
-        smoothLimb(c, [sx, shY + 0.6], [side * 5.2, shY - 0.4], [side * 2, headY + 3.8], 2.2, col);
-        hand(c, side * 1.8, headY + 3.6, sk);
+        const sa = SMOKE_ARM.S, sf = frame | 0;
+        smoothLimb(c, [sx, shY + 0.6], sa.elbow[sf], sa.hand[sf], 2.2, col);
+        hand(c, sa.hand[sf][0], sa.hand[sf][1], sk);
         return;
       }
       if (gest && (side > 0 || gest === 'stretch' || gest === 'clap' || gest === 'panic')) {
@@ -1048,9 +1050,6 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic') arm(-1); }
     if (pose === 'smoke' && front) {
       arm(1);
-      // трубка: чубук от губ к руке и дымящая чашечка
-      line(c, 0.4, headY + 4, 3.6, headY + 4.4, '#4a2c14', 0.9);
-      c.fillStyle = '#2a1a10'; c.fillRect(3.2, headY + 2.8, 2, 2.4); c.fillStyle = '#e08030'; c.fillRect(3.5, headY + 2.9, 1.4, 0.7);
     }
     if (courier && !front) {
       drawFrame(c, 'N', 0, shY + 2.6);

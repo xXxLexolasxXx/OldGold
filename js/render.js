@@ -174,6 +174,7 @@ function drawUnit(c, u) {
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: swingFrame(u) }; }
   const wp = weatherPose(u);   // скольжение под дождём, горение
   if (wp) { pose = wp.pose; view = 'E'; }
+  if (pose === 'smoke') frame = smokeFrameOf(u);   // 4 кадра курения
   // просто стоит — лицом к зрителю, а не боком, как после ходьбы
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
@@ -259,16 +260,8 @@ function drawUnit(c, u) {
   if (u.netUntil > Game.time && !lying) drawNet(c, u, px, py, face, moving);
   if (!wp) drawUmbrella(c, u, px, py, face, pose, lying);
   if (u.noseUntil > Game.time && !lying) drawRedNose(c, u, px, py, view, face);
-  // дымок из трубки
-  if (u.anim === 'smoke' || u.anim === 'smokeup') {
-    const frontSmoke = view === 'S';
-    const bx = frontSmoke ? px + 4.2 : px + u.face * 6.4, by = frontSmoke ? py - 15 : py - 15.6;
-    for (let k = 0; k < 4; k++) {
-      const p = (Game.time * 0.45 + k / 4 + u.id * 0.17) % 1;
-      c.fillStyle = `rgba(220,218,210,${0.55 * (1 - p)})`;
-      c.beginPath(); c.arc(bx + Math.sin(p * 5 + u.id) * 1.6 + u.face * p * 3, by - p * 14, 0.8 + p * 2.4, 0, 7); c.fill();
-    }
-  }
+  // трубка или сигарета в руке и дымок (smoking.js)
+  if ((u.anim === 'smoke' || u.anim === 'smokeup') && pose === 'smoke') drawSmoking(c, u, px, py, view);
   if (u.food <= 0) {
     c.fillStyle = '#160e0a'; c.fillRect(px + 4, py - 36, 4, 8);
     c.fillStyle = '#e04030'; c.fillRect(px + 5, py - 35, 2, 4); c.fillRect(px + 5, py - 30, 2, 1);
