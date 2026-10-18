@@ -26,6 +26,13 @@ const DESCS = {
   armory: ['Шьёт кожаные доспехи для будущей армии, которой никто не видел. Доспехи видели все — они пылятся на складе.', 'Мастерская с наковальней: шьёт и клепает быстрее, а армия всё равно «в планах». Планы хранятся рядом с доспехами.'],
   crystalmine: ['Добывает магические камни. Камни светятся — шахтёр делает вид, что не боится, а камни делают вид, что не светятся. Договорились.', 'Шахта с кристальной крепью: камней больше, света больше, здравого смысла — как раньше, то есть по минимуму.'],
   magiccircle: ['Камни отдают силу в банки маны. Работает сам, как и положено нормальной магии: ни работника, ни зарплаты, ни благодарности.', 'Круг с рунным ободом: из камня теперь две банки маны. Алхимики в шоке, чародей — в плюсе, камни — в банках.'],
+  ironmine: ['Добывает железную руду. Скала считает это личным оскорблением и ржавеет в ответ, но шахтёр упрям: у него вагонетка и отпуск не скоро.', 'Рудник с рельсами и воротом: руды за заход вдвое больше, а скала ржавеет ещё обиднее. Шахтёр получил каску и считает себя инженером.'],
+  smeltery: ['Домница с мехами: брёвна на входе, слитки на выходе, копоть везде. Металлург утверждает, что так и задумано.', 'Домница с двойным дутьём: новый рецепт выжимает из руды больше слитков на то же полено. Копоти не стало меньше, зато теперь она эффективная.'],
+  weaponsmith: ['Кузнец гнёт луки, ковёт мечи и точит кинжалы. Покупателей мало: все друг другу ровня и друг друга побаиваются.', 'Оружейная с большим горном: мечи выходят парами, а клиенты — не чаще. Кузнец повесил табличку «Скидок нет» и сам удивился, как это сработало.'],
+  guild_warrior: ['Каменный зал с башней и двором, где бьют чучела. Чучела не жалуются, и потому лучшие рекруты — они.', 'Зал расширен: в гильдию влезает шесть бойцов, а потолок мастерства поднят до 14 уровня. Тренировки бодрее — чучела просят пощады.'],
+  guild_archer: ['Лесная ложа с вышкой. Лучники попадают во всё, кроме тех, кого хотели бы, но стараются.', 'Ложа пристроила второй ярус стрельбища: шесть лучников, 14 уровней и очень уставшие мишени. Ветер, как и прежде, виноват во всём.'],
+  guild_rogue: ['Кособокий дом с подвалом. Атаман клянётся, что всё честно, а ваше оружие забыл положить на место ещё вчера.', 'Подвал расширен и пахнет потайными ходами: шесть ловкачей, 14 уровней и бодрая тренировка. Кошельки соседей напряглись заранее.'],
+  guild_mage: ['Башня со звёздным куполом. Маги серьёзны, пока не попросишь показать фокус: тогда они серьёзны вдвойне, потому что фокус не вышел.', 'Башня выросла: шесть магов, 14 уровней и учёба вдвое быстрее. Звёзды на куполе теперь подмигивают, но это, скорее всего, сквозняк.'],
   magicworkshop: ['Чародей создаёт посохи и мантии. Волшебство в рассрочку: сегодня мана, завтра посох, послезавтра объяснение, почему он не искрит.', 'Мастерская с башенкой-обсерваторией: быстрее и звёздно. Чародей вдохновлён, вдохновение — тоже ресурс, но на склад его не принимают.'],
 };
 
@@ -53,6 +60,13 @@ const LEVEL2 = {
   armory:        { cost: { timber: 3, stone: 4 } },
   crystalmine:   { cost: { timber: 3, stone: 4 } },
   magiccircle:   { cost: { stone: 8 }, double: true },
+  ironmine:      { cost: { timber: 4, stone: 4 }, outMult: 2 },
+  smeltery:      { cost: { timber: 4, stone: 6 }, addRecipes: [{ in: { ironore: 2, trunk: 1 }, out: { iron: 2 }, time: 14 }] },
+  weaponsmith:   { cost: { timber: 4, stone: 6 }, addRecipes: [{ in: { iron: 3, timber: 1 }, out: { sword: 2 }, time: 22 }] },
+  guild_warrior: { cost: { timber: 5, stone: 10 }, recMax: 6, recLvl: 14, drillXp: 40, train: 0.5 },
+  guild_archer:  { cost: { timber: 10, stone: 5 }, recMax: 6, recLvl: 14, drillXp: 40, train: 0.5 },
+  guild_rogue:   { cost: { timber: 7, stone: 6 }, recMax: 6, recLvl: 14, drillXp: 40, train: 0.5 },
+  guild_mage:    { cost: { timber: 5, stone: 10 }, recMax: 6, recLvl: 14, drillXp: 40, train: 0.5 },
   magicworkshop: { cost: { timber: 3, stone: 4 } },
 };
 
@@ -72,11 +86,13 @@ function levelDef(type) {
   if (u.addOut) o.outputs = Object.assign(o.outputs || {}, u.addOut);
   if (d.recipes) {
     o.recipes = d.recipes.map(r => Object.assign({}, r, { time: Math.max(3, Math.round(r.time * 0.75)) }));
+    if (u.outMult) for (const r of o.recipes) { r.out = Object.assign({}, r.out); for (const g in r.out) r.out[g] *= u.outMult; }
     if (u.double) for (const r of o.recipes) r.out = Object.assign({}, r.out, { mana: (r.out.mana || 1) * 2 });
     if (u.addRecipes) for (const r of u.addRecipes) o.recipes.push(Object.assign({}, r));
   }
   o.desc = d.desc2;
   o.level2 = true; o.gatherMult = u.gather || 1; o.storeCap = u.cap || 0; o.trainMult = u.train || 1; o.cozy = !!u.cozy;
+  o.recMax = u.recMax || 0; o.recLvl = u.recLvl || 0; o.drillXp = u.drillXp || 0;
   d._l2 = o;
   return o;
 }
@@ -191,6 +207,20 @@ function buildingSprite(type, rot = 0, level = 1) {
     const lx = Math.round((base.doorCx + 10) * k), ly = Math.round((base.baseY - 26) * k);
     px(lx - 3, ly - 22, 12, 26, OUT); px(lx - 2, ly - 21, 10, 3, '#3a2a1a'); px(lx - 2, ly - 18, 10, 18, '#ffd060'); px(lx - 2, ly - 18, 10, 6, '#fff0b8');
     px(lx + 2, ly - 25, 2, 3, OUT); px(lx - 2, ly, 10, 4, '#3a2a1a');
+  }
+  if (lv === 2 && type === 'ironmine') {
+    // копёр над штольней: две стойки, перекладина и железное колесо ворота
+    const hx = Math.round((base.doorCx - 34) * k / 1), hy = Math.round((base.baseY - 14) * k);
+    for (const sx of [0, 56]) { px(hx + sx - 1, hy - 100, 8, 102, OUT); px(hx + sx, hy - 99, 6, 100, '#6a4a2a'); px(hx + sx, hy - 99, 2, 100, '#a07848'); }
+    px(hx - 3, hy - 104, 68, 10, OUT); px(hx - 2, hy - 103, 66, 8, '#7a5632'); px(hx - 2, hy - 103, 66, 2, '#b08a58');
+    px(hx + 22, hy - 126, 20, 22, OUT); px(hx + 24, hy - 124, 16, 18, '#8a909c'); px(hx + 28, hy - 120, 8, 10, '#2a2c34'); px(hx + 24, hy - 124, 16, 3, '#c4cad4');
+    px(hx + 31, hy - 100, 2, 56, '#2a2018');
+  }
+  if (lv === 2 && type.startsWith('guild_')) {
+    // позолоченный щит над входом цвета класса
+    const col = GCLS[type.slice(6)].col, gx = Math.round(base.doorCx * k), gy = Math.round((base.baseY - 60) * k);
+    px(gx - 14, gy - 2, 30, 36, OUT); px(gx - 12, gy, 26, 30, '#f0c040'); px(gx - 10, gy + 2, 22, 24, col); px(gx - 8, gy + 4, 18, 4, shade(col, 0.25)); px(gx - 8, gy + 26, 18, 2, OUT);
+    px(gx - 1, gy + 4, 4, 22, '#f0c040');
   }
   greenery(c, base, type, px, k);
   const spr = Object.assign({}, base, { canvas: cv });

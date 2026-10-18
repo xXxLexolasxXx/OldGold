@@ -22,6 +22,10 @@ const GM_SAY = {
   mage: ['Сосредоточься.', 'Мана не любит суеты.', 'Не сожги бороду!', 'Звёзды подскажут.'],
 };
 const REC_MAX = 4, REC_LVL_MAX = 10, MASTERY_MAX = 5;
+// гильдия уровня 2 вмещает больше рекрутов, растит их выше и быстрее тренирует
+const recMaxOf = b => (b && b.def && b.def.recMax) || REC_MAX;
+const recLvlMaxOf = R => { const b = R && Game.buildings.find(x => x.id === R.guild && !x.removed); return (b && b.def.recLvl) || REC_LVL_MAX; };
+const drillXpOf = b => (b && b.def && b.def.drillXp) || 25;
 const G = { shots: [], t: 0 };
 // Общая деревня (кооператив): сервер грузит те же файлы и сам ведёт глав и рекрутов; у игроков —
 // зеркало мира, команды гильдии уходят серверу сообщением { t: 'guild' }.
@@ -673,7 +677,7 @@ function hireCheck(b) {
   const C = GCLS[b.def.guild];
   if (!masterOf(b)) return 'Главы гильдии ещё нет';
   const q = b.hireQ || 0;
-  if (recruitsOf(b).length + q >= REC_MAX) return `Не больше ${REC_MAX} рекрутов на гильдию`;
+  if (recruitsOf(b).length + q >= recMaxOf(b)) return `Не больше ${recMaxOf(b)} рекрутов на гильдию`;
   if (!isMirror() && Game.units.filter(u => u.type === 'serf' && !u.dead).length - q <= 4) return 'Трудяг и так мало (нужно больше 4)';
   if (b.stock[C.weapon] < 1 + q) return `Нужно оружие: ${GOODS[C.weapon].name.toLowerCase()} в гильдии`;
   if (b.stock.gold < 1 + q) return 'Нужно 1 золото в казне гильдии';
@@ -700,7 +704,7 @@ function tryHire(b) {
   if (armor) b.stock[C.armor]--;
   u.proc = null; u.action = null; u.anim = null; u.releaseOcc();
   u.type = cls; u.smoker = false; u.idleFlag = false; u._spr = null;
-  u.rec = { cls, lvl: 1, xp: 0, guild: b.id, order: 'guard', train: 12, armor, name: REC_NAMES[(Math.random() * REC_NAMES.length) | 0] };
+  u.rec = { cls, lvl: 1, xp: 0, guild: b.id, order: 'guard', train: Math.round(12 * (b.def.trainMult || 1)), armor, name: REC_NAMES[(Math.random() * REC_NAMES.length) | 0] };
   floater(u.x, u.y - 1.6, 'В гильдию? Я мигом!', '#f6d458');
   logEvent('people', `Трудяга записался в ${b.def.name.toLowerCase()}`, b.doorX + 0.5, b.doorY);
   gnews(`${b.def.name}: новобранец ${u.rec.name} идёт на обучение`, b);
@@ -718,9 +722,10 @@ function dismissRecruit(u) {
 
 function recXp(u, n) {
   const R = u.rec;
-  if (R.lvl >= REC_LVL_MAX) return;
+  const LM = recLvlMaxOf(R);
+  if (R.lvl >= LM) return;
   R.xp += n;
-  while (R.lvl < REC_LVL_MAX && R.xp >= 60 * R.lvl) {
+  while (R.lvl < LM && R.xp >= 60 * R.lvl) {
     R.xp -= 60 * R.lvl; R.lvl++;
     floater(u.x, u.y - 1.9, `Уровень ${R.lvl}!`, '#ffe070');
     fxBurst(u.x * TILE, u.y * TILE - 12, 12, ['#ffe070', GCLS[R.cls].col], 60, 50, 0.9, 1.6, 120);
@@ -788,8 +793,9 @@ function* recruitGen(u) {
     b.working = false;
     if (gm && gm.meet === u) gm.meet = null;
     u.meetB = null;
-    recXp(u, 25);
-    floater(u.x, u.y - 1.7, '+25 опыта', '#ffe8a0');
+    const dx = drillXpOf(b);
+    recXp(u, dx);
+    floater(u.x, u.y - 1.7, `+${dx} опыта`, '#ffe8a0');
     R.order = R.back || 'guard';
     return;
   }
@@ -858,11 +864,11 @@ function guildHTML(b) {
       x += `<button class="g-wide" data-coop="1" data-gd="hero:${b.id}" ${gm ? '' : 'disabled'}><b>${mine ? `Урок мастерства — ${price} золота` : `${ms != null ? 'Переучиться' : 'Обучиться'}: ${C.name.toLowerCase()} — ${price} золота`}</b><small>${mine ? `нужен ${(ms + 1) * 2} уровень героя` : `+${Object.entries(C.bonus).map(([k, v]) => ({ str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' })[k] + ' ' + v).join(', ')}; ${C.verb.toLowerCase()} (Q)`}</small></button>`;
   }
   const rs = recruitsOf(b), bad = hireCheck(b);
-  x += `<div class="isec">Рекруты · ${rs.length}/${REC_MAX}</div>`;
+  x += `<div class="isec">Рекруты · ${rs.length}/${recMaxOf(b)}</div>`;
   for (const u of rs) {
     const R = recOf(u), need = 60 * R.lvl;
     const ord = R.train > 0 ? 'учится' : { guard: 'охраняет гильдию', follow: 'идёт за героем', hold: 'стоит на посту', drill: 'тренируется' }[R.order] || '';
-    x += `<div class="irow g-rec" data-gd="sel:${u.id}"><img class="portrait" src="${portraitURL(u.type, u.look)}" alt=""><div style="flex:1"><div>${R.name || ''} · ур. ${R.lvl}${R.armor ? ' · в доспехе' : ''}</div><div class="g-xp"><i style="width:${R.lvl >= REC_LVL_MAX ? 100 : Math.round(R.xp / need * 100)}%"></i></div><div class="small muted">${ord}</div></div><button data-coop="1" data-gd="drill:${u.id}" title="Тренировка с главой: 1 золото, +25 опыта">⚔</button></div>`;
+    x += `<div class="irow g-rec" data-gd="sel:${u.id}"><img class="portrait" src="${portraitURL(u.type, u.look)}" alt=""><div style="flex:1"><div>${R.name || ''} · ур. ${R.lvl}${R.armor ? ' · в доспехе' : ''}</div><div class="g-xp"><i style="width:${R.lvl >= recLvlMaxOf(R) ? 100 : Math.round(R.xp / need * 100)}%"></i></div><div class="small muted">${ord}</div></div><button data-coop="1" data-gd="drill:${u.id}" title="Тренировка с главой: 1 золото, +${drillXpOf(b)} опыта">⚔</button></div>`;
   }
   if (b.hireQ > 0) x += `<div class="irow small warn">Ждут свободного трудягу: ${b.hireQ}</div>`;
   x += `<button class="g-wide" data-coop="1" data-gd="hire:${b.id}" ${bad ? 'disabled' : ''}><b>Набрать рекрута</b><small>${bad || `трудяга + ${GOODS[C.weapon].name.toLowerCase()} + 1 золото${cls === 'mage' ? ' + мана' : ''}; ${GOODS[C.armor].name.toLowerCase()} — если есть`}</small></button>`;
@@ -874,7 +880,7 @@ function recCardHTML(u) {
   const R = recOf(u), C = GCLS[R.cls], need = 60 * R.lvl;
   const btn = (k, t, on) => `<button class="hp-ab${on ? ' on' : ''}" data-rc="${k}">${t}</button>`;
   return `<div class="ihead"><img class="bpic" src="${portraitURL(u.type, u.look)}" alt=""><div><h3 style="color:${C.col}">${R.name || C.name}</h3><span class="muted small">${C.name} · уровень ${R.lvl}${R.armor ? ' · в доспехе' : ''}</span></div></div>
-    <div class="hp-xp"><i style="width:${R.lvl >= REC_LVL_MAX ? 100 : Math.round(R.xp / need * 100)}%"></i></div>
+    <div class="hp-xp"><i style="width:${R.lvl >= recLvlMaxOf(R) ? 100 : Math.round(R.xp / need * 100)}%"></i></div>
     <div class="irow small">Сила удара: <b>${Math.round(Math.min(0.92, 0.3 + 0.06 * R.lvl + (R.armor ? 0.04 : 0)) * 100)}%</b> · дальность: <b>${C.range}</b></div>
     <div class="hp-abs">${btn('follow', 'За героем', R.order === 'follow')}${btn('guard', 'Охранять гильдию', R.order === 'guard')}</div>
     <div class="hp-abs">${btn('drill', 'Тренировка (1 зол.)', R.order === 'drill')}${btn('dismiss', 'Распустить', false)}</div>
