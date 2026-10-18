@@ -520,12 +520,23 @@ function drawBuilding(c, b, ghost) {
   if (!ghost) drawInside(c, b, spr, ox, oy);   // силуэты в окнах, веранда трактира (inside.js)
 }
 
+// Ореол: радиальный градиент один раз рисуется на офскрин-канвас (кэш по цвету и радиусу), дальше drawImage с globalAlpha
+const _glowCache = new Map();
 function glow(c, x, y, r, rgb, a) {
-  const g = c.createRadialGradient(x, y, 1, x, y, r);
-  g.addColorStop(0, `rgba(${rgb},${a})`);
-  g.addColorStop(1, `rgba(${rgb},0)`);
-  c.fillStyle = g;
-  c.fillRect(x - r, y - r, r * 2, r * 2);
+  const R = Math.max(2, Math.round(r)), key = rgb + '|' + R;
+  let s = _glowCache.get(key);
+  if (!s) {
+    s = document.createElement('canvas'); s.width = s.height = R * 2;
+    const k = s.getContext('2d'), g = k.createRadialGradient(R, R, 1, R, R, R);
+    g.addColorStop(0, `rgba(${rgb},1)`);
+    g.addColorStop(1, `rgba(${rgb},0)`);
+    k.fillStyle = g; k.fillRect(0, 0, R * 2, R * 2);
+    _glowCache.set(key, s);
+  }
+  const pa = c.globalAlpha;
+  c.globalAlpha = pa * a;
+  c.drawImage(s, x - R, y - R);
+  c.globalAlpha = pa;
 }
 
 // Клетки 4×4 спрайта здания в порядке «снизу вверх, ряд за рядом» — по ним идёт стройка.
