@@ -250,6 +250,9 @@ function dispatchWorkers() {
   for (const b of Game.buildings) {
     if (b.state !== 'done' || !b.def.worker || (b.worker && !b.worker.dead && b.worker.home === b)) continue;
     b.worker = null;
+    // у здания «потерялась» запись о работнике, а сам гном за ним числится — возвращаем запись, а не ищем замену
+    const mine = Game.units.find(u => u.home === b && !u.dead && !u.teamOf && u.type !== 'hero');
+    if (mine) { b.worker = mine; continue; }
     const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf);
     const u = takeNearest(idle, b.doorX, b.doorY);
     if (!u) continue;

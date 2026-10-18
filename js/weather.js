@@ -24,7 +24,7 @@ function weatherReset() {
 
 function rainStart(len = wrnd(70, 140)) {
   if (!WX.ready) weatherReset();
-  WX.target = 1; WX.rainEnd = Game.time + len;
+  WX.target = 1; WX.rainEnd = Game.time + len; WX.rainNo = (WX.rainNo || 0) + 1;
   logEvent('weather', 'Начался дождь');
   if (Game.time - (WX.toastT || -99) > 60) { WX.toastT = Game.time; toast('Пошёл дождь: гномы раскрыли зонтики. Под ногами скользко!'); }
 }
@@ -48,6 +48,7 @@ function weatherTick(dt) {
     if (Game.time >= WX.nextBolt) { WX.nextBolt = Game.time + wrnd(9, 22); lightningStrike(); }
   } else WX.nextBolt = 0;
   if (WX.k > 0.2 || WX.target) rainSlipTick(dt);
+  rainShelterTick(dt);
   fireTick(dt);
   if (WX.scorch.length) WX.scorch = WX.scorch.filter(s => Game.time - s.t0 < 150);
 }
@@ -111,6 +112,51 @@ function rainSlipTick(dt) {
     if (Game.time < (u.slipCD || 0) || Math.random() > 0.0016 * WX.k) continue;
     slipUp(u);
     return;
+  }
+}
+
+// Укрытие от дождя: в ливень часть жителей уходит под крышу — работник в своё здание (домашний
+// адрес не теряет: worker/home не трогаем, значок «нет работника» не появляется), остальные — в трактир или на склад.
+const RAIN_HIDE_SHARE = 0.4, RAIN_HIDE_MAX = 90, RAIN_HIDE_DIST = 26;
+
+function rainShelterFor(u) {
+  const ok = b => b && !b.removed && b.state === 'done' && !b.upg && !(b.dmg >= 0.5);
+  if (u.home && ok(u.home) && u.home.worker === u) return u.home;
+  let best = null, bd = RAIN_HIDE_DIST;
+  for (const b of Game.buildings) {
+    if (!ok(b) || !(b.type === 'inn' || b.isStore())) continue;
+    if (storeInside(b) >= Math.min(storeCapOf(b), 8)) continue;
+    const d = Math.abs(b.doorX - u.x) + Math.abs(b.doorY - u.y);
+    if (d < bd) { bd = d; best = b; }
+  }
+  return best;
+}
+
+function* rainHideGen(u, b) {
+  u.brk.until = Game.time + RAIN_HIDE_MAX;
+  const ok = yield { walk: [b.doorX, b.doorY] };
+  if (!ok || b.removed) return;
+  yield { enter: b };
+  const t0 = Game.time;
+  while (!b.removed && WX.k > 0.25 && Game.time - t0 < RAIN_HIDE_MAX && !u.wantsEat()) yield { wait: 1 };
+  if (u.inside === b) yield { leave: true };
+}
+
+function rainShelterTick(dt) {
+  WX.hideT = (WX.hideT || 0) + dt;
+  if (WX.hideT < 2) return;
+  WX.hideT = 0;
+  if (WX.k < 0.6 || WX.target === 0) return;
+  for (const u of Game.units) {
+    if (u.dead || u.type === 'hero' || u.teamOf || u.type === 'carter' || !isPerson(u) || !interruptible(u)) continue;
+    if (u.carry || u.dlv || u.job || u.cmd || u.repairJob || u.fieldJob >= 0 || u.helpField >= 0 || u.food < HUNGRY) continue;
+    if (u.rainNo === WX.rainNo) continue;                         // в этот ливень уже решал
+    u.rainNo = WX.rainNo;
+    if ((u.id * 7 + (WX.rainNo || 0) * 3) % 10 >= RAIN_HIDE_SHARE * 10) continue;
+    const b = rainShelterFor(u);
+    if (!b) continue;
+    startBreak(u, 'rain', null);
+    u.proc = rainHideGen(u, b);
   }
 }
 
