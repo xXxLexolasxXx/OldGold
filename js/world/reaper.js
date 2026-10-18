@@ -108,8 +108,8 @@ function paintGhostPaw(c, hx, hy, ang, len0, boo, pk = 1) {
   const fingers = [[-1.5, 0.85], [-0.5, 1], [0.5, 1], [1.5, 0.9], [-2.7, 0.55]];                     // [разворот, длина]; последний — большой палец
   for (const [j, fl] of fingers) {
     const thumb = j < -2;
-    const a0 = (thumb ? -0.95 : j * 0.36) + (boo ? j * 0.1 : 0), curl = (boo ? 0.62 : 0.46);
-    const x0 = 2.5, y0 = thumb ? -1.3 : j * 0.85;
+    const a0 = (thumb ? -1.2 : j * 0.66) + (boo ? j * 0.14 : 0), curl = (boo ? 0.62 : 0.46);
+    const x0 = 2.4, y0 = thumb ? -1.5 : j * 1.25;
     const l1 = 2.5 * fl, l2 = 2.2 * fl;
     const x1 = x0 + Math.cos(a0) * l1, y1 = y0 + Math.sin(a0) * l1, a1 = a0 + curl * 0.55;
     const x2 = x1 + Math.cos(a1) * l2, y2 = y1 + Math.sin(a1) * l2, a2 = a1 + curl;
@@ -139,11 +139,13 @@ function paintGhostPaw(c, hx, hy, ang, len0, boo, pk = 1) {
 // Демонический рог: изогнутый конус с рёбрами, чёрно-багровый у основания, раскалённый к кончику.
 // pts — три точки кривой [основание, изгиб, кончик], w — толщина у основания; s = ±1 — сторона
 function reaperHorn(c, pts, w, s, boo) {
-  const N = 14, P = [], W = [];
+  const HS = 0.68, b0 = pts[0];                                    // рога невысокие: всё ужато к основанию
+  pts = pts.map(q => [b0[0] + (q[0] - b0[0]) * HS, b0[1] + (q[1] - b0[1]) * HS]); w *= 0.9;
+  const N = 16, P = [], W = [];
   for (let n = 0; n <= N; n++) {
     const t = n / N, u = 1 - t;
     P.push([pts[0][0] * u * u + 2 * pts[1][0] * u * t + pts[2][0] * t * t, pts[0][1] * u * u + 2 * pts[1][1] * u * t + pts[2][1] * t * t]);
-    W.push(w * Math.pow(u, 0.85) + 0.15);
+    W.push((w * Math.pow(u, 0.8) + 0.15) * (1 + 0.34 * Math.sin(n * 2.1 + w) * (n > 1 && n < N - 1 ? 1 : 0)) + (n % 4 === 2 ? 0.45 * u : 0));   // бугры и наросты вдоль рога
   }
   const edge = (side) => P.map((q, n) => {
     const a = P[Math.max(0, n - 1)], b = P[Math.min(N, n + 1)], dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1;
@@ -157,7 +159,7 @@ function reaperHorn(c, pts, w, s, boo) {
   for (let n = N; n >= 0; n--) c.lineTo(R[n][0], R[n][1]);
   c.closePath(); c.fill();
   c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 0.5;                                          // поперечные рёбра
-  for (let n = 2; n < N - 2; n += 3) { c.beginPath(); c.moveTo(L[n][0], L[n][1]); c.lineTo(R[n][0], R[n][1]); c.stroke(); }
+  for (let n = 2; n < N - 2; n += 2) { c.beginPath(); c.moveTo(L[n][0], L[n][1]); c.lineTo(R[n][0], R[n][1]); c.stroke(); }
   c.strokeStyle = 'rgba(255,170,110,0.55)'; c.lineWidth = 0.45; c.beginPath();                    // блик по выпуклой стороне
   for (let n = 1; n < N; n++) c[n > 1 ? 'lineTo' : 'moveTo'](L[n][0], L[n][1]);
   c.stroke();
