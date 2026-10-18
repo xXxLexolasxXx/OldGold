@@ -255,8 +255,9 @@ function coopSyncList(name, arr) {
   Game[name] = arr.map(d => {
     coopResolve(d);
     const o = old.get(d.__id);
-    if (!o) { if (typeof d.x === 'number') { d.tx = d.x; d.ty = d.y; } return d; }
-    for (const k in d) { if (k === 'x' || k === 'y') continue; o[k] = d[k]; }
+    if (!o) { if (typeof d.x === 'number') { d.tx = d.x; d.ty = d.y; } if (name === 'ghosts') d.ta = d.alpha; return d; }
+    for (const k in d) { if (k === 'x' || k === 'y' || (name === 'ghosts' && (k === 'ph' || k === 'alpha'))) continue; o[k] = d[k]; }
+    if (name === 'ghosts') o.ta = d.alpha;      // фазу покачивания ведём сами, прозрачность подтягиваем плавно (coopStep)
     if (typeof d.x === 'number') { o.tx = d.x; o.ty = d.y; }
     return o;
   });
@@ -315,6 +316,10 @@ function coopStep(dt) {
     if (o.tx === undefined || typeof o.x !== 'number') continue;
     const dx = o.tx - o.x, dy = o.ty - o.y;
     if (Math.abs(dx) + Math.abs(dy) > 4) { o.x = o.tx; o.y = o.ty; } else { o.x += dx * k2; o.y += dy * k2; }
+  }
+  for (const g of Game.ghosts) {      // между снимками призрак качается и проступает/тает плавно, а не рывками
+    g.ph += dt * 2.2;
+    if (g.ta !== undefined) g.alpha += (g.ta - g.alpha) * Math.min(1, dt * 4);
   }
   for (const b of Game.buildings) b.anim += dt * (b.working ? 3 : 0.25);   // колёса мельницы и т.п.: сервер шлёт кадр только вместе с остальным состоянием
   const h = Game.hero;

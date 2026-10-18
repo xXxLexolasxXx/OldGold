@@ -4,18 +4,25 @@
 // отдаёт его, призрак успокаивается, благодарит и (иногда) оставляет золотую монету.
 
 const GHOST_SEE = 4.5, GHOST_SEE_ENT = 5.5;
+const GHOST_APPEAR = 0.3;   // проступают, когда потемнело настолько (вечер темнеет до 0.35 — то есть к концу вечера, а не с его начала)
 
+// где появиться: из кладбища, если оно есть, иначе над случайным жителем
+function ghostSpot(gy, live) {
+  if (gy) return { x: gy.x + 1 + Math.random() * (gy.w - 2), y: gy.y + 0.5 + Math.random() * (gy.h - 1), gy: true };
+  const u = live.length ? live[(Math.random() * live.length) | 0] : null;
+  const x = (u ? u.x : MAP_W / 2) + (Math.random() - 0.5) * 16, y = (u ? u.y : MAP_H / 2) + (Math.random() - 0.5) * 12;
+  return { x: Math.max(2, Math.min(MAP_W - 2, x)), y: Math.max(2, Math.min(MAP_H - 2, y)), gy: false };
+}
+
+// Призраки заводятся с началом вечера, но остаются невидимыми (rev: false) до GHOST_APPEAR — см. ghostsTick
 function ghostsSpawn(n) {
   const gs = Game.ghosts || (Game.ghosts = []);
   const live = Game.units.filter(u => !u.dead);
   const gy = graveyardOf(), cap = Math.min(12, 4 + Math.floor((Game.lostGnomes || 0) / 3));
   for (let i = 0; i < n && gs.length < cap; i++) {
-    const u = live.length ? live[(Math.random() * live.length) | 0] : null;
-    const x = (u ? u.x : MAP_W / 2) + (Math.random() - 0.5) * 16, y = (u ? u.y : MAP_H / 2) + (Math.random() - 0.5) * 12;
-    let gx = Math.max(2, Math.min(MAP_W - 2, x)), gy0 = Math.max(2, Math.min(MAP_H - 2, y));
-    if (gy) { gx = gy.x + 1 + Math.random() * (gy.w - 2); gy0 = gy.y + 0.5 + Math.random() * (gy.h - 1); }   // выходят из кладбища
-    gs.push({ x: gx, y: gy0, hx: gx, hy: gy0, alpha: 0, ph: Math.random() * 9, face: 1,
-      mode: 'drift', modeT: 0, tx: gx, ty: gy0, retarget: 0, scan: Math.random() });
+    const sp = ghostSpot(gy, live);
+    gs.push({ x: sp.x, y: sp.y, hx: sp.x, hy: sp.y, alpha: 0, ph: Math.random() * 9, face: 1, rev: false, fromGy: sp.gy,
+      mode: 'drift', modeT: 0, tx: sp.x, ty: sp.y, retarget: 0, scan: Math.random() });
   }
   if (n > 0) logEvent('night', 'Над деревней поплыли призраки');
 }
@@ -25,10 +32,20 @@ function ghostSay(g, text) { floater(g.x, g.y - 1.6, text, '#cfe6ff'); }
 function ghostsTick(dt) {
   const gs = Game.ghosts;
   if (!gs || !gs.length) return;
-  const dark = nightAmt();   // eslint-disable-line no-unused-vars
+  const dark = nightAmt();
+  let gyd, live;
   for (let i = gs.length - 1; i >= 0; i--) {
     const g = gs[i];
     g.ph += dt * 2.2; g.modeT -= dt; g.retarget -= dt;
+    if (g.rev === false) {
+      // ещё не проступил: ждёт темноты. Если за вечер выросло кладбище — выходит уже из него (в ту же ночь)
+      if (dark < GHOST_APPEAR) { if (isDawnNow() || (!isNightNow() && !isEveningNow())) gs.splice(i, 1); continue; }
+      g.rev = true;
+      if (!g.fromGy && (gyd === undefined ? (gyd = graveyardOf() || null) : gyd)) {
+        const sp = ghostSpot(gyd, live || (live = Game.units.filter(u => !u.dead)));
+        g.x = g.hx = g.tx = sp.x; g.y = g.hy = g.ty = sp.y; g.fromGy = true;
+      }
+    }
     const leaving = g.mode === 'leave' || isDawnNow() || (!isNightNow() && !isEveningNow());   // уходят с рассветом (вечером ещё светло — тогда не гаснут)
     if (!g.fade) g.fade = 0.15 + Math.random() * 0.35;      // растворяются не разом, а кто когда
     g.alpha = Math.max(0, Math.min(1, g.alpha + (leaving ? -dt * (g.mode === 'leave' ? 0.5 : g.fade) : dt * 0.35)));

@@ -33,7 +33,9 @@ function resetGameState() {
 function serializeNight() {
   const ents = (Game.ents || []).filter(e => e.state !== 'done' && e.state !== 'gone' && !e.dead && !e.burnT)
     .map(e => [e.water ? 'w' : e.rock ? 'r' : 't', e.i, e.hx, e.hy, e.wx ?? 0, e.wy ?? 0]);
-  const ghosts = (Game.ghosts || []).filter(g => g.mode !== 'leave').map(g => [+g.x.toFixed(1), +g.y.toFixed(1)]);
+  // призрак: [x, y, прозрачность, сколько ещё благодарит (успокоен), дом x, дом y, проступил ли, вышел ли из кладбища]
+  const ghosts = (Game.ghosts || []).filter(g => g.mode !== 'leave').map(g => [+g.x.toFixed(1), +g.y.toFixed(1), +(g.alpha || 0).toFixed(2),
+    g.mode === 'calm' ? +Math.max(0.5, g.modeT || 0).toFixed(1) : 0, +(g.hx ?? g.x).toFixed(1), +(g.hy ?? g.y).toFixed(1), g.rev === false ? 0 : 1, g.fromGy ? 1 : 0]);
   const skels = (Game.skels || []).filter(k => k.state !== 'dead' && k.state !== 'sink').map(k => [+k.hx.toFixed(1), +k.hy.toFixed(1)]);
   return { ni: Game.entNight, wn: !!Game.wasNight, ents, ghosts, skels };
 }
@@ -52,8 +54,13 @@ function applyNight(n) {
     Game.ents.push(newEnt(k === 'r' ? { rock: true, i, o, hx, hy, x: hx + 0.5, y: hy + 0.5 } : { i, o, hx, hy, x: hx + 0.5, y: hy + 0.5 }));
   }
   Game.nightEntTotal = Game.ents.length;
-  Game.ghosts = (n.ghosts || []).map(([x, y]) => ({ x, y, hx: x, hy: y, alpha: 0, ph: Math.random() * 9, face: 1,
-    mode: 'drift', modeT: 0, tx: x, ty: y, retarget: 0, scan: Math.random() }));
+  // старые сейвы хранят только [x, y]: там призрак проступает заново с нуля
+  const num = (v, d) => Number.isFinite(v) ? v : d;
+  Game.ghosts = (n.ghosts || []).filter(a => Array.isArray(a) && Number.isFinite(a[0]) && Number.isFinite(a[1])).map(a => {
+    const x = Math.max(1.5, Math.min(MAP_W - 1.5, a[0])), y = Math.max(1.5, Math.min(MAP_H - 1.5, a[1])), calm = num(a[3], 0) > 0;
+    return { x, y, hx: num(a[4], x), hy: num(a[5], y), alpha: Math.max(0, Math.min(1, num(a[2], 0))), ph: Math.random() * 9, face: 1,
+      rev: a.length > 6 ? !!a[6] : true, fromGy: !!a[7], mode: calm ? 'calm' : 'drift', modeT: calm ? a[3] : 0, tx: x, ty: y, retarget: 0, scan: Math.random() };
+  });
   for (const [x, y] of n.skels || []) skelRise(x, y, Math.random() * 2);
 }
 
