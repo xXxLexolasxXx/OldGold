@@ -707,3 +707,9 @@ body.mobile #tut { max-height: 38%; line-height: 1.35; } body.mobile #tut h3 { f
   .sm-panel[data-panel="main"] .sm-btn b { font-size: 14px; }
   .sm-panel[data-panel="main"] .sm-btn small { font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* пиксельная лоза: холст растягивается без сглаживания, рост — ступенчатая «развёртка» вдоль кнопки */
+canvas.sm-vine { filter: none; }
+.sm-grow-cv { position: absolute; left: 0; top: 0; image-rendering: pixelated; animation: sm-wipe 0.55s steps(14) both; }
+@keyframes sm-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.sm-spark { border-radius: 0; box-shadow: none; width: 3px; height: 3px; }

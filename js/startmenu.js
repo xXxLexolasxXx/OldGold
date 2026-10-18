@@ -139,7 +139,7 @@ function smRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) 
 
 const VINE_KINDS = ['hops', 'grape', 'wheat'];
 const VINE_DARK = '#16220c';
-const VS = 0.6;   // общий масштаб листьев, шишек и колосьев — лоза не должна мешать и выпирать
+const VS = 0.72;   // общий масштаб листьев, шишек и колосьев — лоза не должна мешать и выпирать
 
 function vLeaf(x, y, rot, s, kind, col) {
   const d = kind === 'grape'
@@ -189,12 +189,14 @@ function vWheat(x, y, len, rot) {
 }
 function vHop(x, y, s, rot = 0, st = 7, bend = 2) {
   // шишка: ряды перекрывающихся чешуек, сужается книзу; варианты — обычная, длинная тёмная, короткая жёлто-зелёная
-  const v = SM_VAR.hop++ % 3;
+  const n = SM_VAR.hop++ % 6, v = n % 3;
   const V = [
     { rows: [[-4.2, 0, 4.2], [-5.2, -1.7, 1.7, 5.2], [-4.6, -1.5, 1.5, 4.6], [-3.4, 0, 3.4], [-1.9, 1.9], [0]], dy: 3.7, cols: ['#b8dc5a', '#9cc848', '#86b83a'] },
     { rows: [[-2.4, 2.4], [-3.4, 0, 3.4], [-3.6, -1.2, 1.2, 3.6], [-3.2, 0, 3.2], [-2.6, 0, 2.6], [-1.6, 1.6], [0]], dy: 3.6, cols: ['#78a838', '#5e9230', '#82b440'] },
     { rows: [[-5.6, -1.9, 1.9, 5.6], [-5.6, 0, 5.6], [-3.2, 3.2], [0]], dy: 4.2, cols: ['#d4e46a', '#c0d452', '#e6ee8a'] },
   ][v];
+  // шесть расцветок: зелёная, тёмно-зелёная, салатовая, жёлтая, тёмная (почти чёрно-зелёная), розовая; формы чередуются
+  if (n >= 3) V.cols = [['#f2d84a', '#e0c030', '#f8e676'], ['#3a5028', '#2a3c1c', '#4a6234'], ['#f0a0c0', '#e07ca4', '#f8c0d6']][n - 3];
   let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${(s * VS).toFixed(2)}) translate(0 ${st})"><path d="M0 ${-st} Q${bend} ${-st / 2} 0 0" stroke="${VINE_DARK}" stroke-width="1.3" fill="none"/>`;
   for (let r = V.rows.length - 1; r >= 0; r--) {
     const yy = 2 + r * V.dy, sz = 3.6 - r * (v === 1 ? 0.2 : 0.28);
@@ -212,7 +214,7 @@ function smFruit(kind, x, y, sc, side, rnd) {
 }
 
 function vineSVG(w, h, kind, seed) {
-  const rnd = smRand(seed * 977 + 13), P = 9;
+  const rnd = smRand(seed * 977 + 13), P = 16;
   const W = w + P * 2, H = h + P * 2;
   // путь стебля: слева снизу вверх, по верхней кромке и вниз по правой стороне
   const pts = [];
@@ -220,7 +222,12 @@ function vineSVG(w, h, kind, seed) {
   const wob = () => (rnd() - 0.5) * 3;
   const left = rnd() < 0.5;   // с какой стороны поднимается лоза
   const xa = left ? P : P + w, xb = left ? P + w : P;
-  const run = (x0, y0, x1, y1, step) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / step)); for (let i = 0; i <= n; i++) add(x0 + (x1 - x0) * i / n + wob(), y0 + (y1 - y0) * i / n + wob()); };
+  // стебель вьётся: плавная волна поперёк пути (слегка разной длины и размаха), а не дрожь
+  const run = (x0, y0, x1, y1, step) => {
+    const L = Math.hypot(x1 - x0, y1 - y0) || 1, n = Math.max(2, Math.round(L / step));
+    const nx = -(y1 - y0) / L, ny = (x1 - x0) / L, amp = 3.5 + rnd() * 2.5, fr = 0.75 + rnd() * 0.5, ph = rnd() * 6.28;
+    for (let i = 0; i <= n; i++) { const o = Math.sin(i * fr + ph) * amp; add(x0 + (x1 - x0) * i / n + nx * o, y0 + (y1 - y0) * i / n + ny * o); }
+  };
   run(xa - 1, P - 2, xa - 1, P + h + 1, 11);
   run(xa - 1, P + h + 1, xa + (xb - xa) * (0.45 + rnd() * 0.4), P + h + 1, 11);
   run(pts[pts.length - 1][0], P + h + 1, xb + (left ? 1 : -1), P + h * (0.4 + rnd() * 0.4), 11);
@@ -240,13 +247,49 @@ function vineSVG(w, h, kind, seed) {
       else items += vLeaf(x, y, ang + 90 * side * 0.9, 0.9, 'plain', '#8aa83a');
     } else {
       items += vLeaf(x, y, ang + 90 * side + (rnd() - 0.5) * 30, 0.9 + rnd() * 0.5, kind, greens[(i * 7) % 4]);
-      if (rnd() < 0.38) items += smFruit(kind, x + side * 2, y + 2, 0.75 + rnd() * 0.5, side, rnd);
-      if (rnd() < 0.1) items += smFruit(kind, x - side * 2, y + 1, 0.6 + rnd() * 0.3, -side, rnd);   // иногда парой
+      if (i % 2 === 0) items += smFruit(kind, x + ((i >> 1) % 2 ? 2 : -2), y + 2, 0.8 + rnd() * 0.35, (i >> 1) % 2 ? 1 : -1, rnd);   // по плоду через звено, по очереди с сторон — не толпятся
     }
   }
   // усики-завитки
   for (let k = 0; k < 3; k++) { const [x, y] = pts[1 + ((rnd() * (pts.length - 2)) | 0)]; const r = 4 + rnd() * 3; items += `<path d="M${x.toFixed(1)} ${y.toFixed(1)} q${r} ${-r} ${r * 1.6} 0 q${-r * 0.4} ${r} ${-r * 0.8} ${r * 0.2}" fill="none" stroke="#6aaa34" stroke-width="1.1"/>`; }
   return svg + items + '</svg>';
+}
+
+// Пиксель-арт: рисуем векторную лозу в крошечный холст (клетка SM_PX экранных пикселей),
+// убираем сглаживание (жёсткий альфа-порог) и ужимаем палитру, потом растягиваем без сглаживания
+const SM_PX = 2;
+function smPixelCanvas(svg, W, H, cls, left, top) {
+  const cv = document.createElement('canvas');
+  cv.className = cls;
+  cv.width = Math.max(1, Math.ceil(W / SM_PX)); cv.height = Math.max(1, Math.ceil(H / SM_PX));
+  cv.style.cssText = `left:${left}px;top:${top}px;width:${W}px;height:${H}px;image-rendering:pixelated`;
+  const img = new Image();
+  img.onload = () => {
+    const c = cv.getContext('2d', { willReadFrequently: true });
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(img, 0, 0, cv.width, cv.height);
+    const d = c.getImageData(0, 0, cv.width, cv.height), a = d.data;
+    for (let i = 0; i < a.length; i += 4) {
+      if (a[i + 3] < 90) { a[i + 3] = 0; continue; }
+      a[i + 3] = 255;
+      for (let k = 0; k < 3; k++) a[i + k] = Math.min(255, (a[i + k] >> 5) * 36 + 12);   // 8 уровней на канал
+    }
+    // тёмная обводка в один пиксель вокруг всего рисунка, как у спрайтов игры
+    const w = cv.width, h = cv.height, src = new Uint8ClampedArray(a);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (src[i + 3]) continue;
+      if ((x > 0 && src[i - 1]) || (x < w - 1 && src[i + 7]) || (y > 0 && src[i - w * 4 + 3]) || (y < h - 1 && src[i + w * 4 + 3])) { a[i] = 22; a[i + 1] = 28; a[i + 2] = 12; a[i + 3] = 255; }
+    }
+    c.putImageData(d, 0, 0);
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  return cv;
+}
+function smPixelVine(svgStr) {
+  const m = /width="(\d+)" height="(\d+)" viewBox[^>]*style="left:(-?\d+)px;top:(-?\d+)px"/.exec(svgStr);
+  const svg = svgStr.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/ class="sm-vine"/, '');
+  return smPixelCanvas(svg, +m[1], +m[2], 'sm-vine', +m[3], +m[4]);
 }
 
 function decorateVines() {
@@ -259,7 +302,7 @@ function decorateVines() {
     const old = b.querySelector('.sm-vine'); if (old) old.remove();
     const w = b.offsetWidth, h = b.offsetHeight;
     if (!w || !h) return;
-    b.insertAdjacentHTML('beforeend', vineSVG(w, h, VINE_KINDS[(i + (smVineShift++)) % 3], i * 31 + smVineShift));
+    b.appendChild(smPixelVine(vineSVG(w, h, VINE_KINDS[(i + (smVineShift++)) % 3], i * 31 + smVineShift)));
     if (smSlide) {   // кнопка выплывает вбок со своей стороны, лоза прорастает следом
       const r = b.getBoundingClientRect(), fromRight = r.left + r.width / 2 > window.innerWidth / 2 + 4 || (Math.abs(r.left + r.width / 2 - window.innerWidth / 2) <= 4 && i % 2);
       const d = (i * 0.09).toFixed(2);
@@ -363,9 +406,10 @@ function smGrow(btn, kind) {
     const a = Math.atan2(ny, nx) + (rnd() - 0.5) * 1.6, dist = 14 + rnd() * 26;
     sparks += `<i class="sm-spark" style="left:${(x + P).toFixed(0)}px;top:${(y + P).toFixed(0)}px;--dx:${(Math.cos(a) * dist).toFixed(0)}px;--dy:${(Math.sin(a) * dist - 10).toFixed(0)}px;animation-delay:${(0.1 + rnd() * 0.45).toFixed(2)}s"></i>`;
   }
-  btn.insertAdjacentHTML('beforeend',
-    `<span class="sm-grow" style="left:${-P}px;top:${-P}px;width:${W}px;height:${H}px"><svg width="${W}" height="${H}" viewBox="${-P} ${-P} ${W} ${H}" style="overflow:visible">` +
-    `<path pathLength="1" class="sm-stem" d="${d}" stroke="${VINE_DARK}" stroke-width="3.8"/><path pathLength="1" class="sm-stem" d="${d}" stroke="${stem}" stroke-width="2"/>${items}</svg>${sparks}</span>`);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${-P} ${-P} ${W} ${H}">` +
+    `<path fill="none" stroke-linecap="round" d="${d}" stroke="${VINE_DARK}" stroke-width="3.8"/><path fill="none" stroke-linecap="round" d="${d}" stroke="${stem}" stroke-width="2"/>${items}</svg>`;
+  btn.insertAdjacentHTML('beforeend', `<span class="sm-grow" style="left:${-P}px;top:${-P}px;width:${W}px;height:${H}px">${sparks}</span>`);
+  btn.querySelector('.sm-grow').prepend(smPixelCanvas(svg, W, H, 'sm-grow-cv', 0, 0));
 }
 
 // выбор — наведение пальца/мыши и нажатие; действие откладываем на время роста
