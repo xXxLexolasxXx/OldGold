@@ -135,6 +135,13 @@ function gooseMove(a, tx, ty, speed, dt) {
   return s >= d;
 }
 
+// Гуси не маячат у склада: ни стайка, ни её прогулки не ближе этого радиуса к его двери
+const GOOSE_STORE_R = 9;
+function nearStorehouse(x, y, r) {
+  for (const b of Game.buildings) if (b.type === 'storehouse' && !b.removed && Math.hypot(b.doorX - x, b.doorY - y) < r) return true;
+  return false;
+}
+
 function updateGoose(a, dt, def) {
   if (gooseShooTick(a, dt, def)) return;      // прогон: трое гномов или герой (fauna.js)
   a.swim = isWaterAt(Math.floor(a.x), Math.floor(a.y));
@@ -191,10 +198,13 @@ function updateGoose(a, dt, def) {
     a.wait = 1.5 + Math.random() * 4;
     if (Math.random() < 0.2) {       // стайка понемногу подбирается к деревне, но не вплотную
       const cx = MAP_W >> 1, cy = MAP_H >> 1;
-      if (Game.time >= (a.shyUntil || 0) && Math.hypot(a.home[0] - cx, a.home[1] - cy) > 14)
-        a.home = [Math.round(a.home[0] + Math.sign(cx - a.home[0])), Math.round(a.home[1] + Math.sign(cy - a.home[1]))];
+      if (Game.time >= (a.shyUntil || 0) && Math.hypot(a.home[0] - cx, a.home[1] - cy) > 14) {
+        const nh = [Math.round(a.home[0] + Math.sign(cx - a.home[0])), Math.round(a.home[1] + Math.sign(cy - a.home[1]))];
+        if (!nearStorehouse(nh[0], nh[1], GOOSE_STORE_R + 4)) a.home = nh;    // к складу стайка не подбирается
+      }
     }
-    const t = randomFreeNear(a.home[0], a.home[1], 0, 7, (x, y) => gooseCanBe(x, y) && !World.door[idx(x, y)]);
+    if (a.lake && nearStorehouse(a.home[0], a.home[1], GOOSE_STORE_R + 2)) a.home = [a.lake[0], a.lake[1]];     // уже «прописалась» у склада — возвращается на озеро
+    const t = randomFreeNear(a.home[0], a.home[1], 0, 7, (x, y) => gooseCanBe(x, y) && !World.door[idx(x, y)] && !nearStorehouse(x, y, GOOSE_STORE_R));
     if (t) a.tgt = [t[0] + 0.2 + Math.random() * 0.6, t[1] + 0.2 + Math.random() * 0.6];
   }
 }
