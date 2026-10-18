@@ -22,7 +22,7 @@ const fyIsRock = (x, y) => inb(x, y) && World.terrain[idx(x, y)] === T_ROCK;
 const fyFree = (x, y) => inb(x, y) && isWalkable(x, y) && !World.bmap[idx(x, y)] && !World.road[idx(x, y)];
 
 function fyState() {
-  if (!Game.fairy) Game.fairy = { bw: [], chk: new Set(), sal: [], salChk: new Set(), uni: null, uniDay: -1, uniRoll: -1, dr: null, gr: null, fish: null, gg: null, ggDay: -1, ggEgg: -1, t: 0, nests: false };
+  if (!Game.fairy) Game.fairy = { bw: [], chk: new Set(), sal: [], salChk: new Set(), uni: null, uniDay: -1, uniRoll: -1, dr: null, gr: null, fish: null, end: null, gg: null, ggDay: -1, ggEgg: -1, t: 0, nests: false };
   return Game.fairy;
 }
 function fyBuilding(id) { return Game.buildings.find(b => b.id === id && !b.removed && b.state === 'done'); }
@@ -63,73 +63,258 @@ function fyShadow(c, px, py, rx, a = 0.3) {
   c.fillStyle = `rgba(10,8,4,${a})`; c.beginPath(); c.ellipse(px, py, rx, rx * 0.3, 0, 0, 7); c.fill();
 }
 
+// ---------- Растеризатор: эллипсы, толстые линии, многоугольники, обводка ----------
+function fyE(c, cx, cy, rx, ry, col) {
+  c.fillStyle = col;
+  for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+    const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
+    if (dx * dx + dy * dy <= 1) c.fillRect(x, y, 1, 1);
+  }
+}
+function fyL(c, x0, y0, x1, y1, w0, w1, col) {
+  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
+  for (let i = 0; i <= n; i++) { const t = i / n, r = Math.max(0.5, (w0 + (w1 - w0) * t) / 2); fyE(c, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r, r, col); }
+}
+function fyP(c, pts, col) {
+  c.fillStyle = col;
+  const ys = pts.map(p => p[1]);
+  for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) {
+    const yy = y + 0.5, xs = [];
+    for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; if ((a[1] <= yy && b[1] > yy) || (b[1] <= yy && a[1] > yy)) xs.push(a[0] + (yy - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); }
+    xs.sort((p, q) => p - q);
+    for (let k = 0; k + 1 < xs.length; k += 2) for (let x = Math.round(xs[k]); x < Math.round(xs[k + 1]); x++) c.fillRect(x, y, 1, 1);
+  }
+}
+const fyD = (c, x, y, col) => { c.fillStyle = col; c.fillRect(Math.floor(x), Math.floor(y), 1, 1); };
+// объём: тёмная форма, поверх чуть сдвинутая средняя и светлая
+function fyE3(c, cx, cy, rx, ry, [d, m, l]) { fyE(c, cx, cy, rx, ry, d); fyE(c, cx - 0.5, cy - 0.6, rx - 0.7, ry - 0.8, m); if (l) fyE(c, cx - rx * 0.25, cy - ry * 0.4, rx * 0.5, ry * 0.4, l); }
+function fyOutline(c, w, h, col) {
+  const a = c.getImageData(0, 0, w, h).data, mark = [];
+  const op = (x, y) => x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 100;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!op(x, y) && (op(x - 1, y) || op(x + 1, y) || op(x, y - 1) || op(x, y + 1))) mark.push([x, y]);
+  c.fillStyle = col;
+  for (const [x, y] of mark) c.fillRect(x, y, 1, 1);
+}
+
 function sprUnicorn(fr) {
-  return fySpr('uni' + fr, 26, 20, c => {
-    const w = '#f6f2f6', W = '#c8c2d4', p = '#e07ab8', P = '#a8508c', k = '#2a2236';
-    R_(c, 1, 8, 3, 3, p); R_(c, 0, 10, 3, 6, p); R_(c, 1, 14, 2, 2, P); R_(c, 2, 9, 1, 5, P);              // хвост
-    R_(c, 4, 7, 13, 7, w); R_(c, 4, 13, 13, 1, W); R_(c, 5, 7, 11, 1, '#ffffff');                           // тело
-    const legs = fr ? [[5, 3], [8, 0], [13, 0], [15, 3]] : [[5, 0], [8, 3], [13, 3], [15, 0]];
-    for (const [x, o] of legs) { R_(c, x, 14, 2, 4, w); R_(c, x, 17, 2, 1, W); R_(c, x + (o ? 1 : 0), 18, 2, 2, k); }
-    R_(c, 15, 4, 4, 7, w); R_(c, 15, 4, 1, 7, p);                                                           // шея и грива
-    R_(c, 17, 2, 6, 5, w); R_(c, 21, 4, 4, 3, w); R_(c, 24, 5, 1, 1, W); R_(c, 20, 3, 1, 1, '#4a2a80');     // голова, глаз
-    R_(c, 17, 1, 1, 2, w); R_(c, 15, 2, 2, 5, p); R_(c, 15, 6, 1, 4, P); R_(c, 16, 3, 1, 1, P);             // ухо, чёлка
-    R_(c, 21, 0, 1, 1, '#f0d060'); R_(c, 20, 1, 1, 1, '#f0d060'); R_(c, 19, 2, 1, 1, '#b8902c');            // рог
+  return fySpr('uni2' + fr, 48, 44, c => {
+    c.translate(0, 7);
+    const B = ['#b8aecc', '#f2eef8', '#ffffff'], F = ['#8e84a8', '#c8c0da'], P = '#e878b8', Pd = '#b04a8c', Pl = '#ffb0dc';
+    const leg = (a, b, d, col, hoof) => {
+      fyL(c, a[0], a[1], b[0], b[1], 4.6, 3.4, col[0]); fyL(c, b[0], b[1], d[0], d[1], 3.2, 2.4, col[0]);
+      fyL(c, a[0] - 0.4, a[1], b[0] - 0.4, b[1], 3.4, 2.4, col[1]); fyL(c, b[0] - 0.4, b[1], d[0] - 0.4, d[1], 2.2, 1.6, col[1]);
+      fyE(c, b[0], b[1], 1.7, 1.7, col[1]);
+      fyL(c, d[0], d[1], d[0] + 0.3, d[1] + 1.6, 3, 3, hoof);
+    };
+    const L = fr ? { fn: [[27, 23], [31, 27], [30, 31]], ff: [[23, 23], [24, 29], [24, 34]], hn: [[10, 24], [7, 28], [5, 32]], hf: [[14, 24], [14, 29], [14, 34]] }
+      : { fn: [[27, 23], [28, 29], [28, 34]], ff: [[23, 23], [22, 29], [20, 33]], hn: [[10, 24], [8, 29], [9, 34]], hf: [[14, 24], [16, 29], [17, 34]] };
+    leg(...L.ff, F, '#5a4a6a'); leg(...L.hf, F, '#5a4a6a');
+    // хвост
+    fyL(c, 6, 15, 2, 19, 4.4, 3.4, Pd); fyL(c, 2, 19, 0, 26, 3.4, 3, Pd); fyL(c, 0, 26, 3, 32, 3, 1.2, Pd);
+    fyL(c, 5.6, 15, 1.6, 19, 3, 2.4, P); fyL(c, 1.6, 19, -0.3, 26, 2.4, 2, P); fyL(c, -0.3, 26, 2.5, 31, 2, 0.8, Pl);
+    // тело
+    fyE(c, 18, 19.2, 12, 6.8, B[0]); fyE(c, 10, 20.2, 6.6, 6.6, B[0]); fyE(c, 26, 19.2, 6, 7.8, B[0]);
+    fyE(c, 18, 18.4, 12, 6.2, B[1]); fyE(c, 10, 19.4, 6.2, 6, B[1]); fyE(c, 26, 18.4, 5.6, 7.2, B[1]);
+    fyE(c, 18, 14.6, 8, 1.8, B[2]); fyE(c, 9, 15.5, 3, 2, B[2]);
+    fyL(c, 12, 20, 14, 24, 1, 1, B[0]);
+    leg(...L.hn, B, '#5a4a6a'); leg(...L.fn, B, '#5a4a6a');
+    // шея и голова
+    fyL(c, 25, 15, 32, 6, 9, 5.6, B[0]); fyL(c, 24.6, 14.6, 31.6, 5.6, 7.6, 4.4, B[1]);
+    fyE(c, 35, 6.8, 4.8, 3.8, B[0]); fyE(c, 34.6, 6.4, 4.2, 3.3, B[1]);
+    fyE(c, 39.5, 9.2, 3.4, 2.7, B[0]); fyE(c, 39.2, 8.9, 3, 2.3, '#f8e6f0'); fyE(c, 37, 10.3, 3, 1.5, '#e6d4e4');
+    fyD(c, 41.5, 8.5, '#8a5a7a'); fyD(c, 41.5, 9.5, '#c88ab0'); fyL(c, 38, 11.6, 41, 11.6, 1, 1, '#a07090');
+    fyE(c, 36.4, 5.6, 1.5, 1.7, '#3a1e60'); fyD(c, 36.1, 5.0, '#ffffff'); fyD(c, 37, 6.4, '#9a6ad8');
+    fyL(c, 35, 3.3, 38, 4, 1, 1, '#c8b0d8');
+    fyP(c, [[32.5, 3.5], [33, -1.2], [36, 3]], B[1]); fyP(c, [[33.4, 2.8], [33.5, 0.4], [35, 2.8]], '#f0a8cc');
+    // грива и чёлка
+    fyL(c, 31, 2.4, 29, 9, 3.4, 2.6, Pd); fyL(c, 28.6, 5, 24, 14, 3.8, 3, Pd); fyL(c, 26, 9, 21, 16, 3.4, 2, Pd);
+    fyL(c, 30.6, 2, 28.6, 8.6, 2.2, 1.6, P); fyL(c, 28, 4.6, 23.6, 13.6, 2.6, 1.8, P); fyL(c, 25.6, 8.6, 20.6, 15.6, 2.2, 1.2, Pl);
+    fyL(c, 34.5, 2.4, 36.4, 6.2, 2.6, 1.2, P);
+    // рог: золотая спираль
+    fyL(c, 37, 2.6, 44, -5, 2.8, 0.7, '#b8902c'); fyL(c, 36.8, 2.2, 43.4, -4.6, 1.8, 0.6, '#f4d460');
+    for (const [x, y] of [[38.6, 0.6], [40.2, -1.2], [41.8, -3]]) fyD(c, x, y, '#a07818');
+    fyOutline(c, 48, 44, '#3a2a54');
   });
 }
+
 function sprDragon(fr) {
-  return fySpr('dra' + fr, 26, 20, c => {
-    const g = '#4aa04c', G = '#8ccf6c', d = '#2a6034', y = '#f0d870', r = '#c84a3a', k = '#1a1a22';
-    R_(c, 0, 12, 4, 2, g); R_(c, 0, 11, 2, 1, d); R_(c, 3, 11, 5, 4, g);                                    // хвост
-    R_(c, 6, 8, 10, 7, g); R_(c, 6, 13, 10, 2, y); R_(c, 8, 8, 8, 1, G); R_(c, 6, 14, 10, 1, '#c8b050');
-    for (let x = 7; x < 15; x += 3) R_(c, x, 7, 1, 1, d);                                                    // гребень
-    R_(c, 8, 15, 2, 3, d); R_(c, 13, 15, 2, 3, d); R_(c, 7, 17, 3, 1, k); R_(c, 12, 17, 3, 1, k);
-    R_(c, 15, 6, 7, 6, g); R_(c, 21, 8, 4, 3, g); R_(c, 15, 6, 7, 1, G); R_(c, 24, 8, 1, 1, d);              // голова, морда
-    R_(c, 18, 7, 2, 2, '#fff2a0'); R_(c, 19, 7, 1, 2, k); R_(c, 16, 3, 1, 3, '#d8c8a0'); R_(c, 19, 4, 1, 2, '#d8c8a0');   // глаз, рожки
-    if (fr) { R_(c, 6, 11, 8, 3, d); R_(c, 8, 13, 5, 2, r); R_(c, 4, 12, 3, 2, d); }                         // крылья вниз
-    else { R_(c, 6, 1, 3, 8, d); R_(c, 8, 0, 5, 3, d); R_(c, 9, 3, 4, 5, r); R_(c, 7, 2, 1, 6, '#1a4a24'); R_(c, 13, 2, 1, 5, d); }   // крылья вверх
+  return fySpr('dra2' + fr, 48, 42, c => {
+    c.translate(0, 9);
+    const G = ['#1f5a2c', '#4ca04a', '#8ad06a'], WM = '#2f8a58', WD = '#1c5a38', BN = '#164a28', CR = '#e8dcb8', BL = '#e2e69c', BD = '#b4c068';
+    const wing = (dx, mem, bone) => {
+      const S = [14 + dx, 10], T = fr ? [[2, 15], [7, 22], [14, 24]] : [[3, 0], [9, -6], [17, -6]];
+      const T2 = T.map(([x, y]) => [x + dx, y]);
+      const mid = [0, 1].map(i => [(T2[i][0] + T2[i + 1][0]) / 2 + (S[0] - (T2[i][0] + T2[i + 1][0]) / 2) * 0.28, (T2[i][1] + T2[i + 1][1]) / 2 + (S[1] - (T2[i][1] + T2[i + 1][1]) / 2) * 0.28]);
+      fyP(c, [S, T2[0], mid[0], T2[1], mid[1], T2[2], [17 + dx, 9]], mem);
+      for (const t of T2) fyL(c, S[0], S[1], t[0], t[1], 1.8, 1, bone);
+    };
+    wing(-3, WD, BN);
+    // хвост
+    fyL(c, 9, 16, 4, 20, 6, 4.4, G[0]); fyL(c, 4, 20, 2, 25, 4.4, 3, G[0]); fyL(c, 2, 25, 6, 29, 3, 1.4, G[0]);
+    fyL(c, 8.6, 15.4, 3.6, 19.4, 4.6, 3.2, G[1]); fyL(c, 3.6, 19.4, 1.6, 24.4, 3.2, 2, G[1]); fyL(c, 1.6, 24.4, 5.6, 28.4, 2, 0.8, G[1]);
+    fyP(c, [[5, 28], [9, 27.5], [9.5, 31], [6, 30.5]], G[2]);
+    // задняя лапа
+    fyL(c, 12, 21, 9, 26, 4.4, 3, G[0]); fyL(c, 11.6, 21, 8.6, 26, 3, 2, G[1]); fyE(c, 9, 27, 3, 1.4, G[0]); for (const x of [6.8, 8.6, 10.4]) fyD(c, x, 28, CR);
+    // туловище
+    fyE(c, 16, 17.4, 9, 6.4, G[0]); fyE(c, 15.6, 16.6, 8.4, 5.8, G[1]); fyE(c, 14, 14, 5, 1.6, G[2]);
+    fyE(c, 17, 20.4, 6.6, 3.6, BD); fyE(c, 16.6, 20, 6.1, 3.1, BL);
+    for (const x of [13, 15.5, 18, 20.5]) fyL(c, x, 17.6, x - 0.6, 22.6, 1, 1, BD);
+    // шипы по хребту
+    for (let i = 0; i < 6; i++) { const x = 9.5 + i * 2.5, y = 12.2 - Math.sin(i / 5 * Math.PI) * 0.6; fyP(c, [[x - 1.2, y + 1], [x, y - 3], [x + 1.2, y + 1]], G[2]); }
+    // передняя лапа
+    fyL(c, 20, 21, 22, 26, 4, 2.8, G[0]); fyL(c, 19.6, 21, 21.6, 26, 2.8, 1.8, G[1]); fyE(c, 22.6, 27, 3, 1.4, G[0]); for (const x of [20.6, 22.4, 24.2]) fyD(c, x, 28, CR);
+    // шея и голова
+    fyL(c, 21, 14, 27, 7, 6.8, 4.8, G[0]); fyL(c, 20.6, 13.6, 26.6, 6.6, 5.2, 3.6, G[1]); fyL(c, 21.5, 16, 26.5, 9.5, 2.6, 2.2, BL);
+    fyE(c, 30, 6.2, 4.6, 3.8, G[0]); fyE(c, 29.6, 5.8, 4.1, 3.3, G[1]);
+    fyE(c, 34.6, 7.6, 3.4, 2.4, G[0]); fyE(c, 34.2, 7.2, 3, 2, G[1]);
+    fyE(c, 34, 9.8, 3.1, 1.2, G[0]); fyE(c, 33.6, 9.6, 2.7, 0.8, BL);
+    for (const x of [33, 35.4]) fyD(c, x, 10.8, '#ffffff');
+    fyD(c, 37.2, 6.6, '#14301a'); fyD(c, 37.2, 7.6, '#14301a');
+    fyE(c, 30.4, 5.2, 1.9, 1.7, '#ffe04a'); fyD(c, 30.6, 4.6, '#14100a'); fyD(c, 30.6, 5.6, '#14100a'); fyL(c, 28.5, 3.2, 32.5, 4.3, 1.2, 1.2, G[0]);
+    fyL(c, 27.5, 3.2, 23.5, -1, 2.8, 0.7, CR); fyL(c, 30.4, 2.6, 28, -2.4, 2.4, 0.7, CR);
+    fyP(c, [[26.5, 7], [24, 8.5], [26.5, 9.5]], G[2]);
+    wing(0, WM, BN);
+    fyOutline(c, 48, 42, '#0f2a16');
   });
 }
+
 function sprGriffin(fr) {
-  return fySpr('gri' + fr, 40, 30, c => {
-    const t = '#c88a3c', T = '#8a5a22', w = '#f4ecd4', W = '#c8b890', y = '#f0c040', k = '#1a1612', n = '#6a4420', N = '#3e2a14';
-    R_(c, 2, 14, 3, 4, t); R_(c, 0, 17, 5, 5, n); R_(c, 1, 18, 3, 3, T);                                     // хвост с кисточкой
-    R_(c, 5, 14, 17, 9, t); R_(c, 5, 21, 17, 2, T); R_(c, 6, 14, 15, 1, '#e8a85a');                          // тело льва
-    R_(c, 6, 23, 3, 5, t); R_(c, 6, 27, 3, 2, T); R_(c, 12, 23, 3, 4, T);                                    // задние лапы
-    R_(c, 18, 23, 2, 4, y); R_(c, 17, 27, 4, 2, y); R_(c, 22, 23, 2, 4, y); R_(c, 22, 27, 4, 2, '#c89828'); // передние: орлиные
-    R_(c, 20, 9, 6, 10, w); R_(c, 20, 9, 1, 10, W); R_(c, 22, 14, 4, 5, '#d8c8a0');                         // шея и грудь
-    R_(c, 22, 3, 8, 7, w); R_(c, 22, 3, 8, 1, '#ffffff'); R_(c, 30, 6, 6, 3, y); R_(c, 34, 8, 2, 4, y); R_(c, 30, 5, 5, 1, '#f8d870');   // голова, клюв
-    R_(c, 26, 5, 2, 2, '#e8a020'); R_(c, 27, 5, 1, 2, k); R_(c, 23, 1, 2, 3, w); R_(c, 22, 2, 1, 2, W);     // глаз, перья на затылке
-    if (fr) { R_(c, 4, 18, 18, 4, n); for (let x = 4; x < 22; x += 3) R_(c, x, 21, 2, 3, N); R_(c, 6, 17, 12, 1, T); }   // крылья опущены
-    else { R_(c, 5, 8, 14, 6, n); R_(c, 8, 4, 10, 5, n); R_(c, 11, 1, 6, 4, n); R_(c, 14, 0, 3, 2, N); for (let x = 5; x < 19; x += 3) R_(c, x, 13, 2, 3, N); R_(c, 7, 9, 11, 1, T); R_(c, 10, 5, 7, 1, T); }
+  return fySpr('gri2' + fr, 62, 54, c => {
+    c.translate(0, 7);
+    const T = ['#9a6422', '#c8903e', '#eebb6a'], WH = ['#cfc2a0', '#f6f0e2', '#ffffff'], WB = ['#4e3018', '#7a4e26', '#a8743c'], YE = ['#b07a10', '#f0b830'], TL = '#e8c030', DK = '#3e2a14';
+    const wing = (dx, dark) => {
+      const sx = 22 + dx, sy = 19;
+      const tips = fr ? [[0, 14], [2, 8], [6, 3], [12, 0], [19, -1]] : [[2, 0], [6, -6], [12, -10], [19, -11], [26, -9]];
+      tips.forEach(([x, y]) => { fyL(c, sx - 3, sy - 1, x + dx, y, 4.6, 1.2, dark ? WB[0] : WB[1]); fyL(c, sx - 3, sy - 1.5, x + dx + 0.4, y, 2.4, 0.8, dark ? WB[1] : WB[2]); });
+      fyE(c, sx - 3, sy - 1.5, 5.6, 3.6, dark ? WB[0] : WB[1]); fyE(c, sx - 3.4, sy - 2, 4.4, 2.6, dark ? WB[1] : WB[2]);
+    };
+    wing(-3, true);
+    // хвост и дальняя задняя лапа
+    fyL(c, 8, 26, 3, 31, 4, 3, T[0]); fyL(c, 3, 31, 4, 39, 3, 2.4, T[0]); fyE(c, 4, 41, 3.2, 3.4, DK); fyE(c, 3.6, 40.4, 2.4, 2.6, '#6a4420');
+    fyL(c, 14, 31, 13, 38, 4, 3, T[0]); fyE(c, 14, 43, 3.6, 1.6, T[0]);
+    // тело льва
+    fyE(c, 20, 29.4, 11.5, 6.8, T[0]); fyE(c, 11, 30.4, 6.6, 6.6, T[0]); fyE(c, 28, 28.4, 6, 6.8, T[0]);
+    fyE(c, 20, 28.6, 11, 6.2, T[1]); fyE(c, 11, 29.4, 6.2, 6.1, T[1]); fyE(c, 28, 27.6, 5.6, 6.2, T[1]);
+    fyE(c, 19, 24.6, 8, 1.8, T[2]);
+    // ближняя задняя лапа
+    fyL(c, 10, 32, 8, 38, 5, 3.4, T[0]); fyL(c, 9.6, 32, 7.6, 38, 3.6, 2.4, T[1]); fyE(c, 9, 43, 4, 1.8, T[0]); fyE(c, 8.6, 42.6, 3.4, 1.4, T[1]);
+    for (const x of [6.4, 8.6, 10.8]) fyD(c, x, 44, DK);
+    // орлиная грудь, шея, голова
+    fyL(c, 29, 24, 35, 15, 10, 8, WH[0]); fyL(c, 28.6, 23.6, 34.6, 14.6, 8.4, 6.4, WH[1]);
+    for (const [x, y] of [[28, 26], [30.5, 25], [27, 22], [30, 21.5], [32.4, 18.6], [29.6, 18]]) fyL(c, x, y, x + 0.4, y + 2, 1, 1, WH[0]);
+    fyE(c, 38, 12.4, 5.2, 4.8, WH[0]); fyE(c, 37.6, 12, 4.7, 4.3, WH[1]); fyE(c, 36.4, 10.2, 2.6, 1.4, WH[2]);
+    fyP(c, [[41, 9], [49, 12], [49.6, 16], [47, 14.6], [44, 16.6], [42, 14.5], [41, 13]], YE[1]); fyP(c, [[41.6, 14], [46, 15.6], [43.4, 17], [41.4, 16]], YE[0]);
+    fyD(c, 47.6, 13.4, '#6a4408'); fyD(c, 43.6, 11.4, '#6a4408');
+    fyE(c, 39.4, 11.2, 1.7, 1.7, '#f08a1a'); fyD(c, 39.6, 11.2, '#14100a'); fyD(c, 39, 10.4, '#ffffff'); fyL(c, 37, 8.4, 41.6, 9.6, 1.3, 1.3, WB[1]);
+    fyL(c, 34, 8.6, 31.6, 2.4, 3.2, 1, WH[1]); fyL(c, 36.6, 7.8, 36, 1.6, 2.8, 0.8, WH[0]);
+    // передние лапы: орлиные
+    fyL(c, 29, 31, 28, 38, 4, 2.8, YE[0]); fyL(c, 29, 30, 30.6, 38.4, 3.2, 2.6, YE[1]); fyE(c, 28.4, 31, 4, 3.4, WH[1]);
+    for (const [x, y] of [[35.4, 40.4], [33.4, 42.4], [29, 41.6]]) { fyL(c, 31, 39, x, y, 2, 1.3, TL); fyD(c, x, y, DK); }
+    wing(0, false);
+    fyOutline(c, 62, 54, '#2a1a0a');
   });
 }
+
 function sprBrownie() {
-  return fySpr('brw', 14, 18, c => {
-    const k = '#17131f', h = '#2a2436';
-    R_(c, 4, 0, 6, 2, h); R_(c, 3, 2, 8, 5, k); R_(c, 2, 6, 10, 8, k); R_(c, 4, 12, 6, 4, '#2c2434');          // колпак, голова, борода-тело
-    R_(c, 2, 8, 2, 5, h); R_(c, 10, 8, 2, 5, h); R_(c, 3, 15, 3, 2, k); R_(c, 8, 15, 3, 2, k);
-    R_(c, 4, 4, 2, 1, '#f4e048'); R_(c, 8, 4, 2, 1, '#f4e048');                                              // глаза
+  return fySpr('brw2', 28, 34, c => {
+    c.translate(1, 4);
+    const FU = ['#6e4624', '#9a6a3a', '#c8924e'], HAIR = ['#a04418', '#d8702a'], LP = ['#8a6a38', '#c8a860'], PK = '#eaa496';
+    // лапти
+    fyE(c, 9.6, 28.6, 3.6, 1.8, LP[0]); fyE(c, 9.4, 28.2, 3.2, 1.4, LP[1]); fyE(c, 16.6, 28.6, 3.6, 1.8, LP[0]); fyE(c, 16.4, 28.2, 3.2, 1.4, LP[1]);
+    for (const x of [8, 9.6, 11]) fyD(c, x, 28.4, LP[0]);
+    fyL(c, 10, 25, 9.6, 28, 3.4, 3, FU[0]); fyL(c, 16, 25, 16.4, 28, 3.4, 3, FU[0]);
+    // мохнатое тело
+    fyE3(c, 13, 20.6, 7, 6.6, FU); fyE(c, 13.6, 22.6, 3.6, 3.4, FU[2]);
+    for (const [x, y] of [[6.4, 22], [6, 18.6], [19.8, 20.4], [20.4, 23.4], [9, 26.4], [17.4, 26.6]]) fyL(c, x, y, x + (x < 13 ? -1.6 : 1.6), y + 1.4, 1.8, 0.8, FU[1]);
+    // руки
+    fyL(c, 7, 17.6, 4.4, 22.6, 3, 2.4, FU[0]); fyL(c, 19.6, 17.6, 22.4, 22.6, 3, 2.4, FU[0]); fyE(c, 4, 23.4, 1.8, 1.6, FU[1]); fyE(c, 22.8, 23.4, 1.8, 1.6, FU[1]);
+    // голова
+    fyE3(c, 13, 11, 7.4, 6.6, FU);
+    fyE(c, 5.8, 11.6, 2, 2.4, FU[0]); fyE(c, 5.9, 11.7, 1.2, 1.6, PK); fyE(c, 20.4, 11.6, 2, 2.4, FU[0]); fyE(c, 20.3, 11.7, 1.2, 1.6, PK);
+    // вихры
+    fyL(c, 9, 6, 6.6, -0.6, 3, 0.9, HAIR[0]); fyL(c, 12.4, 5, 12.4, -2.4, 3.2, 0.9, HAIR[0]); fyL(c, 16.4, 6, 19.4, -0.4, 3, 0.9, HAIR[0]); fyL(c, 10.8, 5.4, 9.6, 0.6, 2, 0.6, HAIR[1]); fyL(c, 14.4, 5.4, 15.6, 0.4, 2, 0.6, HAIR[1]);
+    // лицо
+    fyE(c, 9.6, 10, 2.5, 2.8, '#ffffff'); fyE(c, 16.4, 10, 2.5, 2.8, '#ffffff'); fyE(c, 10.2, 10.6, 1.2, 1.5, '#14100a'); fyE(c, 16.8, 10.6, 1.2, 1.5, '#14100a'); fyD(c, 9.8, 9.6, '#ffffff'); fyD(c, 16.4, 9.6, '#ffffff');
+    fyL(c, 7.2, 7, 11.4, 7.6, 1.2, 1.2, FU[0]); fyL(c, 14.6, 7.6, 18.8, 7, 1.2, 1.2, FU[0]);
+    fyE(c, 13, 13.4, 3, 2.5, '#c8786c'); fyE(c, 13, 13, 2.7, 2.2, PK); fyD(c, 12, 12.2, '#ffe2d8'); fyD(c, 11.6, 13.8, '#a85a50'); fyD(c, 14.6, 13.8, '#a85a50');
+    fyL(c, 10.6, 16.2, 15.4, 16.2, 1, 1, '#4a2a18'); fyD(c, 15.4, 15.6, '#4a2a18');
+    fyOutline(c, 28, 34, '#2a1a0e');
   });
 }
+
+function sprSalamander(fr) {
+  return fySpr('sal2' + fr, 36, 20, c => {
+    c.translate(0, 2);
+    const O = ['#a03c14', '#f08a2a', '#ffc860'], BL = '#ffd890', SP = '#7a2a0c';
+    for (const [x, y] of fr ? [[11, 11], [22, 12]] : [[12, 11], [21, 11]]) { fyL(c, x, y, x - 1, y + 3, 2.6, 2, O[0]); fyL(c, x - 1, y + 3, x + 1, y + 4.4, 1.8, 1.4, O[0]); }
+    // хвост с огненным кончиком
+    fyL(c, 8, 9, 3.4, 10.6, 5, 3.4, O[0]); fyL(c, 3.4, 10.6, 1.6, 13.6, 3.4, 2.2, O[0]); fyL(c, 1.6, 13.6, 4.6, 14.6, 2.2, 1.2, O[0]);
+    fyL(c, 7.6, 8.5, 3, 10, 3.6, 2.4, O[1]); fyL(c, 3, 10, 1.2, 13, 2.4, 1.4, O[1]);
+    fyP(c, [[3.6, 14.8], [6.4, 11.4], [7, 15.4], [9, 13.4], [8.4, 17], [4.4, 17]], '#ff7a20'); fyP(c, [[4.6, 16.6], [6.4, 13.8], [7.4, 16.8]], '#ffe060');
+    // тело
+    fyE(c, 15.5, 9, 9.4, 3.8, O[0]); fyE(c, 15.1, 8.5, 9, 3.3, O[1]); fyE(c, 16.5, 11, 7, 1.6, BL);
+    for (const x of [10, 13, 16, 19, 22]) { fyE(c, x, 6.8, 1.2, 1, SP); fyD(c, x, 6, O[2]); }
+    for (const x of [10, 12.5, 15, 17.5, 20]) { const h = 2 + (fr ? ((x * 3) % 2) : ((x * 5) % 2)); fyP(c, [[x - 1, 6], [x, 6 - h - 1], [x + 1, 6]], x % 2 ? '#ff9a30' : '#ffd060'); }
+    // голова
+    fyE(c, 25.5, 8.4, 4.8, 3.4, O[0]); fyE(c, 25.2, 8, 4.4, 3, O[1]); fyE(c, 29.6, 9.6, 2.8, 1.8, O[1]); fyL(c, 27.5, 10.6, 31.4, 10.6, 1, 1, SP);
+    fyE(c, 25.6, 6.8, 1.6, 1.6, '#ffe04a'); fyD(c, 25.8, 6.6, '#14100a'); fyD(c, 31.2, 8.8, SP);
+    fyP(c, [[22, 5], [21, 2], [24, 4.6]], '#ffd060'); fyP(c, [[24, 4.6], [24, 1.6], [26.4, 4.8]], '#ff9a30');
+    // ближние лапы
+    for (const [x, y] of fr ? [[14, 11], [24, 11]] : [[15, 11], [23, 12]]) { fyL(c, x, y, x + 1, y + 3, 3, 2.2, O[0]); fyL(c, x - 0.3, y, x + 0.7, y + 3, 2, 1.6, O[1]); fyL(c, x + 1, y + 3, x + 3, y + 4.4, 1.8, 1.4, O[1]); for (const dx of [2.4, 3.2]) fyD(c, x + dx, y + 5, O[0]); }
+    fyOutline(c, 36, 20, '#4a1a08');
+  });
+}
+
+const FISH_COL = {
+  gold: { b: ['#c8902a', '#f4c840', '#fff0a0'], f: ['#e8782a', '#ffb04a'], e: '#fff6c0', o: '#6a4408' },
+  red:  { b: ['#a02418', '#e0402e', '#ff9a7a'], f: ['#c02a1c', '#ff6a4a'], e: '#ffe0d0', o: '#5a1008' },
+  blue: { b: ['#1e55a8', '#3a86e0', '#9ad4ff'], f: ['#2a6ac8', '#6ab4ff'], e: '#e0f4ff', o: '#0e2a5a' },
+};
+function sprFish(kind, fr) {
+  return fySpr('fish2' + kind + fr, 28, 16, c => {
+    const K = FISH_COL[kind] || FISH_COL.gold;
+    c.translate(0, 1);
+    const sw = fr ? 1.8 : -1.8;
+    fyP(c, [[9, 7], [1, 3 + sw], [2.4, 7], [1, 11 - sw]], K.f[0]); fyP(c, [[9, 7], [2.6, 4 + sw], [3.6, 7], [2.6, 10 - sw]], K.f[1]);
+    fyP(c, [[11, 3.6], [14, -0.6], [19, 0.4], [20, 4]], K.f[0]); fyP(c, [[12, 3.6], [14.4, 0.6], [18, 1.2], [18.6, 4]], K.f[1]);
+    fyP(c, [[13, 11], [15, 14.6], [18, 11.6]], K.f[0]);
+    fyE(c, 15, 7.6, 9, 5, K.b[0]); fyE(c, 14.6, 7.1, 8.6, 4.5, K.b[1]); fyE(c, 15, 10.4, 6.6, 1.8, K.b[2]);
+    for (let y = 5; y <= 10; y += 2) for (let x = 9 + ((y >> 1) & 1) * 1.5; x < 21; x += 3) { fyD(c, x, y, K.b[0]); fyD(c, x + 0.4, y - 1, K.b[2]); }
+    fyL(c, 20, 4.8, 20.6, 10.6, 1, 1, K.b[0]);
+    fyP(c, [[16, 9], [13.4, 12.8], [17.6, 11]], K.f[1]);
+    fyE(c, 22.6, 6.4, 1.9, 1.9, K.e); fyE(c, 22.9, 6.6, 1, 1, '#14100a'); fyD(c, 22.6, 6, '#ffffff');
+    fyD(c, 25, 8.4, K.b[0]);
+    fyOutline(c, 28, 16, K.o);
+  });
+}
+
+function sprEnder(carry) {
+  return fySpr('end' + carry, 40, 62, c => {
+    const B = ['#0c0912', '#1c1526', '#2c2240'], EY = '#d060ff', EC = '#f4d0ff';
+    fyL(c, 13.6, 36, 12.4, 58, 3.6, 2.8, B[0]); fyL(c, 19, 36, 20.4, 58, 3.6, 2.8, B[0]); fyL(c, 13.2, 36, 12, 58, 2.2, 1.6, B[1]); fyL(c, 18.6, 36, 20, 58, 2.2, 1.6, B[1]);
+    fyE(c, 12.4, 59, 2.8, 1.2, B[0]); fyE(c, 21, 59, 2.8, 1.2, B[0]);
+    fyP(c, [[11.5, 15.5], [21.5, 15.5], [20.5, 37], [12.5, 37]], B[0]); fyP(c, [[12.4, 16.4], [20.6, 16.4], [19.8, 36], [13.2, 36]], B[1]); fyP(c, [[12.6, 17], [14.4, 17], [14, 35], [13.6, 35]], B[2]);
+    fyL(c, 16.5, 12, 16.5, 17, 4.4, 4.4, B[0]);
+    fyP(c, [[10.5, 3], [22.5, 3], [23, 13.4], [10, 13.4]], B[0]); fyP(c, [[11.4, 3.8], [21.6, 3.8], [22, 12.6], [11, 12.6]], B[1]); fyP(c, [[11.6, 4], [20, 4], [20, 5.2], [11.6, 5.2]], B[2]);
+    fyP(c, [[11.4, 8], [15.6, 8], [15.6, 10.6], [11.4, 10.6]], EY); fyP(c, [[17.4, 8], [21.8, 8], [21.8, 10.6], [17.4, 10.6]], EY);
+    fyP(c, [[12.4, 8.6], [14.6, 8.6], [14.6, 10], [12.4, 10]], EC); fyP(c, [[18.4, 8.6], [20.8, 8.6], [20.8, 10], [18.4, 10]], EC);
+    if (carry) {
+      fyL(c, 21, 18, 27.4, 26, 3, 2.4, B[0]); fyL(c, 20.6, 17.6, 27, 25.6, 1.8, 1.4, B[1]); fyL(c, 11.4, 18, 24, 28, 3, 2.4, B[0]);
+      fyL(c, 29, 30, 29, 42, 4.4, 3.6, '#5a3a1c'); fyL(c, 28.4, 30, 28.4, 42, 2, 1.6, '#8a5a30');
+      fyE3(c, 29.4, 24, 9.4, 8.2, ['#1c5a24', '#2f8a38', '#6cc04a']); fyE(c, 26, 28, 4.6, 3.4, '#2f8a38'); fyE(c, 33, 27, 4, 3, '#1c5a24');
+      for (const [x, y] of [[32, 14], [25, 19], [34, 23]]) fyD(c, x, y, '#a0e070');
+      fyL(c, 24, 42, 26.4, 44.4, 5, 1, '#3a2410');
+    } else {
+      fyL(c, 11.4, 17.6, 7, 40, 3, 2, B[0]); fyL(c, 21.6, 17.6, 26, 40, 3, 2, B[0]); fyL(c, 11, 17.6, 6.6, 40, 1.8, 1.2, B[1]);
+      fyE(c, 6.8, 41, 1.8, 1.6, B[0]); fyE(c, 26.2, 41, 1.8, 1.6, B[0]);
+    }
+    fyOutline(c, 40, 62, '#4a2a6a');
+  });
+}
+
 function sprBowl(full) {
   return fySpr('bowl' + full, 8, 4, c => {
     R_(c, 0, 1, 8, 1, '#8a8a98'); R_(c, 1, 2, 6, 2, '#6a6a7a'); R_(c, 1, 1, 6, 1, full ? '#fffdf4' : '#4a4a58'); R_(c, 2, 0, 3, 1, full ? '#fffdf4' : 'rgba(0,0,0,0)');
-  });
-}
-function sprSalamander(fr) {
-  return fySpr('sal' + fr, 16, 9, c => {
-    const o = '#ec7a28', O = '#a8421a', f = '#ffd860', k = '#1a1010';
-    R_(c, 0, 5, 3, 2, o); R_(c, 0, 6, 2, 1, f); R_(c, 2, 4, 8, 3, o); R_(c, 3, 4, 1, 1, f); R_(c, 6, 4, 1, 1, f); R_(c, 2, 6, 8, 1, O);
-    R_(c, 9, 3, 5, 4, o); R_(c, 13, 5, 2, 1, O); R_(c, 11, 3, 1, 1, k); R_(c, 12, 4, 1, 1, f);
-    R_(c, fr ? 3 : 4, 7, 1, 2, O); R_(c, fr ? 8 : 7, 7, 1, 2, O); R_(c, 11, 7, 1, 2, O);
-  });
-}
-function sprFish(fr) {
-  return fySpr('fish' + fr, 14, 8, c => {
-    const q = '#f4c840', Q = '#b88a1c', e = '#fff6c0';
-    R_(c, 3, 2, 8, 4, q); R_(c, 4, 1, 5, 1, Q); R_(c, 3, 5, 7, 1, Q); R_(c, 11, 3, 2, 2, q);
-    if (fr) { R_(c, 0, 0, 3, 3, Q); R_(c, 0, 5, 3, 3, Q); R_(c, 1, 3, 2, 2, Q); } else { R_(c, 0, 1, 3, 2, Q); R_(c, 0, 5, 3, 2, Q); R_(c, 1, 3, 2, 2, Q); }
-    R_(c, 9, 3, 1, 1, '#1a1208'); R_(c, 5, 3, 1, 1, e); R_(c, 7, 2, 1, 1, e);
   });
 }
 function sprGoose(fr) {
@@ -600,6 +785,8 @@ function salamanderDraw(list, c, F, x0, y0, x1, y1) {
 
 // ---------- Золотая рыбка ----------
 let lastFishToast = -99;
+const FISH_NAME = { gold: 'золотая', red: 'красная', blue: 'синяя' };
+const FISH_REWARD = { gold: ['gold', 4, 8], red: ['mana', 1, 2], blue: ['magicstone', 1, 2] };   // чем откупаются
 function fishTick(dt, F) {
   let f = F.fish;
   if (!f) {
@@ -614,9 +801,9 @@ function fishTick(dt, F) {
       let shore = false;
       for (const [ax, ay] of DIRS) { const sx = x + ax, sy = y + ay; if (inb(sx, sy) && !fyIsWater(sx, sy) && isWalkable(sx, sy)) shore = true; }
       if (!shore) continue;
-      F.fish = f = { x: x + 0.5, y: y + 0.5, ax: x + 0.5, ay: y + 0.5, tx: x + 0.5, ty: y + 0.5, face: 1, ph: 0, life: 240, st: 'swim', jt: 0 };
-      logEvent('animal', 'В озере мелькнула золотая рыбка', f.x, f.y); fstat('fishSeen');
-      if (Game.time - lastFishToast > 200) { lastFishToast = Game.time; toast('В озере плещется золотая рыбка — герой может её поймать'); }
+      F.fish = f = { x: x + 0.5, y: y + 0.5, ax: x + 0.5, ay: y + 0.5, tx: x + 0.5, ty: y + 0.5, face: 1, ph: 0, life: 240, st: 'swim', jt: 0, kind: ['gold', 'gold', 'red', 'blue'][(Math.random() * 4) | 0] };
+      logEvent('animal', `В озере мелькнула ${FISH_NAME[f.kind]} рыбка`, f.x, f.y); fstat('fishSeen');
+      if (Game.time - lastFishToast > 200) { lastFishToast = Game.time; toast(`В озере плещется ${FISH_NAME[f.kind]} рыбка — герой может её поймать`); }
       return;
     }
     return;
@@ -640,14 +827,15 @@ function fishTick(dt, F) {
   const hero = fyHero();
   if (hero && Math.hypot(hero.x - f.x, hero.y - f.y) < 3.2) {
     f.st = 'caught'; f.jt = 2;
-    const n = 4 + (Math.random() * 5 | 0);
+    const rw = FISH_REWARD[f.kind], n = rw[1] + ((Math.random() * (rw[2] - rw[1] + 1)) | 0);
     floater(f.x, f.y - 1.4, 'Отпусти — откуплюсь!', '#fff2a0');
     const s = randomFreeNear(Math.floor(hero.x), Math.floor(hero.y), 0, 2, (x, y) => isWalkable(x, y)) || [Math.floor(hero.x), Math.floor(hero.y)];
-    dropPile(s[0], s[1], 'gold', n);
-    fstat('fishCaught'); fstat('fishGold', n);
-    logEvent('gold', `Герой поймал золотую рыбку и получил выкуп: золото ×${n}`, f.x, f.y);
-    toast(`Герой поймал золотую рыбку! Выкуп: золото ×${n}`);
-    fxBurst(f.x * TILE, f.y * TILE, 16, ['#fff2a0', '#ffd700', '#ffffff'], 80, 70, 0.8, 1.6, 200);
+    dropPile(s[0], s[1], rw[0], n);
+    fstat('fishCaught'); fstat('fish' + f.kind, n);
+    const what = `${GOODS[rw[0]].name.toLowerCase()} ×${n}`;
+    logEvent('gold', `Герой поймал ${FISH_NAME[f.kind]} рыбку и получил выкуп: ${what}`, f.x, f.y);
+    toast(`Герой поймал ${FISH_NAME[f.kind]} рыбку! Выкуп: ${what}`);
+    fxBurst(f.x * TILE, f.y * TILE, 16, f.kind === 'gold' ? ['#fff2a0', '#ffd700', '#ffffff'] : f.kind === 'red' ? ['#ffb0a0', '#ff5a40', '#ffffff'] : ['#a0d0ff', '#4a90ff', '#ffffff'], 80, 70, 0.8, 1.6, 200);
   }
 }
 function fishDraw(list, c, F, x0, y0, x1, y1) {
@@ -656,7 +844,7 @@ function fishDraw(list, c, F, x0, y0, x1, y1) {
   list.push([f.y, () => {
     const px = f.x * TILE, py = f.y * TILE + 2, up = f.st === 'caught' ? Math.sin(Math.min(1, (2 - f.jt) / 1.2) * Math.PI) * 14 : (f.jt > 0 ? Math.sin(f.jt / 0.6 * Math.PI) * 6 : 0);
     c.strokeStyle = 'rgba(220,240,255,0.45)'; c.beginPath(); c.ellipse(px, py + 2, 9 + (f.ph * 4) % 4, 3 + ((f.ph * 4) % 4) * 0.3, 0, 0, 7); c.stroke();
-    fyBlit(c, sprFish(Math.floor(f.ph * 6) & 1), px, py - up + 3, f.face, f.st === 'caught' ? Math.max(0, f.jt / 1) : 0.92);
+    fyBlit(c, sprFish(f.kind, Math.floor(f.ph * 6) & 1), px, py - up + 3, f.face, f.st === 'caught' ? Math.max(0, f.jt / 1) : 0.92, 0.8);
   }]);
 }
 
@@ -712,6 +900,105 @@ function goldGooseDraw(list, c, F, x0, y0, x1, y1) {
   }]);
 }
 
+
+// ---------- Долговяз (эндермен) ----------
+// Нейтральный: бродит по лесам, никого не трогает, но подходить к нему не стоит — исчезает. Время от времени
+// выкапывает дерево, несёт его и либо сажает в другом месте, либо уносит с собой навсегда.
+let lastEndToast = -99;
+function endBlink(e, why) {
+  fxBurst(e.x * TILE, e.y * TILE - 24, 22, ['#d060ff', '#8a30c8', '#f4d0ff', '#2a1040'], 70, 70, 0.8, 1.8, -10);
+  if (why) floater(e.x, e.y - 2.6, why, '#d8a0ff');
+}
+function endermanTick(dt, F) {
+  let e = F.end;
+  if (!e) {
+    F.eT = (F.eT || 0) - dt;
+    if (F.eT > 0) return;
+    F.eT = 25;
+    if (Game.time < 200 || Math.random() > 0.3) return;
+    const q = wildSpot(14, true);
+    if (!q) return;
+    F.end = e = { x: q[0] + 0.5, y: q[1] + 0.5, face: 1, st: 'roam', t: fyR(10, 25), ph: 0, tree: null, mv: false, go: null, tg: null, dest: null };
+    endBlink(e);
+    fstat('endSeen');
+    logEvent('animal', 'В лесу показался долговязый тёмный силуэт с фиолетовыми глазами', e.x, e.y);
+    return;
+  }
+  e.ph += dt; e.mv = false;
+  const scared = nearestPerson(e, 2.8, p => isPerson(p) && p.type !== 'carter');
+  if (scared && e.st !== 'dig') {      // подошли слишком близко: растворяется и появляется подальше
+    const q = wildSpot(14, true);
+    endBlink(e, 'Вжух!');
+    if (q) { e.x = q[0] + 0.5; e.y = q[1] + 0.5; endBlink(e); }
+    e.go = null;
+    return;
+  }
+  if (e.st === 'roam') {
+    e.t -= dt;
+    if (!e.go || Math.hypot(e.go[0] - e.x, e.go[1] - e.y) < 0.2) {
+      const t = randomFreeNear(Math.floor(e.x), Math.floor(e.y), 2, 6, (x, y) => fyFree(x, y));
+      e.go = t ? [t[0] + 0.5, t[1] + 0.5] : null;
+    }
+    if (e.go) { const ox = e.x, oy = e.y; fyMove(e, e.go[0], e.go[1], 1.1, dt); if (!fyFree(e.x | 0, e.y | 0)) { e.x = ox; e.y = oy; e.go = null; } else e.mv = true; }
+    if (e.t <= 0) {
+      const tr = treeSpot(e.x, e.y, 14);
+      if (tr) { e.tg = tr; e.st = 'goto'; e.go = null; } else e.t = fyR(10, 20);
+    }
+  } else if (e.st === 'goto') {
+    const [tx, ty] = e.tg, o = World.obj[idx(tx, ty)];
+    if (!o || o.t !== 'tree' || o.g < 1) { e.st = 'roam'; e.t = 8; return; }
+    const ox = e.x, oy = e.y, rest = fyMove(e, tx + 0.5, ty + 1.3, 1.5, dt);
+    if (!inb(e.x | 0, e.y | 0) || World.bmap[idx(e.x | 0, e.y | 0)] || fyIsWater(e.x | 0, e.y | 0)) { e.x = ox; e.y = oy; e.st = 'roam'; e.t = 10; return; }
+    e.mv = true;
+    if (rest < 0.2) { e.st = 'dig'; e.t = 3; e.face = 1; floater(e.x, e.y - 2.6, 'Хрусть…', '#d8a0ff'); }
+  } else if (e.st === 'dig') {
+    e.t -= dt;
+    if (Math.floor(e.ph * 6) % 2 === 0) fxBurst(e.tg[0] * TILE + 16 + fyR(-6, 6), (e.tg[1] + 1) * TILE - 4, 1, ['#6a4a2a', '#4a3018'], 40, 40, 0.6, 1.6, 240);
+    if (e.t <= 0) {
+      const i = idx(e.tg[0], e.tg[1]), o = World.obj[i];
+      if (o && o.t === 'tree' && o.g >= 1) {
+        World.obj[i] = { t: 'stump', g: 0 }; World.growing.add(i);
+        e.tree = o; e.st = 'carry'; e.t = fyR(9, 16);
+        const q = wildSpot(10, true); e.dest = q ? [q[0] + 0.5, q[1] + 0.5] : null;
+        fstat('endTree');
+        logEvent('animal', 'Долговяз выкопал дерево и понёс его с собой', e.tg[0] + 0.5, e.tg[1] + 0.5);
+        if (Game.time - lastEndToast > 150) { lastEndToast = Game.time; toast('Тёмный долговяз выкопал дерево и унёс его с собой'); }
+      } else { e.st = 'roam'; e.t = 10; }
+    }
+  } else if (e.st === 'carry') {
+    e.t -= dt;
+    if (e.dest) {
+      const ox = e.x, oy = e.y; fyMove(e, e.dest[0], e.dest[1], 1.7, dt);
+      if (!inb(e.x | 0, e.y | 0) || World.bmap[idx(e.x | 0, e.y | 0)] || fyIsWater(e.x | 0, e.y | 0)) { e.x = ox; e.y = oy; e.dest = null; } else e.mv = true;
+    }
+    if (e.t <= 0 || (e.dest && Math.hypot(e.dest[0] - e.x, e.dest[1] - e.y) < 0.3)) {
+      endBlink(e, 'Вжух!');
+      if (Math.random() < 0.3) {         // уносит дерево навсегда
+        F.end = null; F.eT = fyR(240, 420);
+        logEvent('animal', 'Долговяз исчез вместе с деревом', e.x, e.y);
+        return;
+      }
+      const q = wildSpot(14, true);
+      if (q) { e.x = q[0] + 0.5; e.y = q[1] + 0.5; }
+      const s = randomFreeNear(Math.floor(e.x), Math.floor(e.y), 0, 3, (x, y) => fyFree(x, y) && !World.obj[idx(x, y)]);
+      if (s) { setTree(idx(s[0], s[1]), 0.4); logEvent('animal', 'Долговяз посадил дерево на новом месте', s[0] + 0.5, s[1] + 0.5); fstat('endPlant'); }
+      e.tree = null; e.st = 'roam'; e.t = fyR(60, 140); e.go = null;
+      endBlink(e);
+    }
+  }
+}
+function endermanDraw(list, c, F, x0, y0, x1, y1) {
+  const e = F.end;
+  if (!e || !FY_SEE(e.x, e.y, x0, y0, x1, y1)) return;
+  list.push([e.y + 0.2, () => {
+    const px = e.x * TILE, py = e.y * TILE + 4;
+    fyShadow(c, px, py, 8, 0.28);
+    const bob = e.mv ? Math.abs(Math.sin(e.ph * 6)) * 1.4 : 0;
+    fyBlit(c, sprEnder(e.st === 'carry' ? 1 : 0), px, py - bob, e.face, 1, 0.82);
+    if (Math.floor(e.ph * 9) % 4 === 0) { c.fillStyle = 'rgba(208,96,255,0.8)'; c.fillRect(Math.round(px + fyR(-9, 9)), Math.round(py - fyR(6, 48)), 1, 1); }
+  }]);
+}
+
 // ---------- Общий тик и рисование ----------
 function fairyTick(dt) {
   if (!FAUNA_ON() || !Game.buildings || !Game.buildings.length) return;
@@ -724,6 +1011,7 @@ function fairyTick(dt) {
   salamanderTick(dt, F);
   fishTick(dt, F);
   goldGooseTick(dt, F);
+  endermanTick(dt, F);
 }
 
 function fairyDrawList(list, c, x0, y0, x1, y1) {
@@ -736,6 +1024,7 @@ function fairyDrawList(list, c, x0, y0, x1, y1) {
   salamanderDraw(list, c, F, x0, y0, x1, y1);
   fishDraw(list, c, F, x0, y0, x1, y1);
   goldGooseDraw(list, c, F, x0, y0, x1, y1);
+  endermanDraw(list, c, F, x0, y0, x1, y1);
 }
 
 // ---------- Сохранение ----------
