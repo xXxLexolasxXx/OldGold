@@ -94,6 +94,8 @@ function initTouch() {
   cv.addEventListener('touchstart', e => {
     e.preventDefault();
     if (e.touches.length >= 2) { startPinch(e); return; }
+    const tut = document.getElementById('tut');   // касание карты сворачивает обучение, чтобы не закрывало вид
+    if (tut && !tut.classList.contains('hidden')) tut.classList.add('min');
     const p = local(e.touches[0]);
     const t = screenToTile(p[0], p[1]);
     Object.assign(T, { sx: p[0], sy: p[1], cx: R.cam.x, cy: R.cam.y, moved: false, tile: t, mode: 'one' });

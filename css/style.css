@@ -677,3 +677,15 @@ body.mobile #zoom-in, body.mobile #zoom-out { display: none; }
 .xpbar.l2 i { background: linear-gradient(#e8c860, #b08a2a); }
 .xpbar.l3 i { background: linear-gradient(#ffe070, #d8a020); }
 .xpbar b { position: absolute; right: 2px; top: -1px; font-size: 9px; line-height: 10px; color: #f6eccc; text-shadow: 0 0 2px #000, 0 0 2px #000; font-family: Consolas, monospace; }
+
+/* телефон в портрете: название не шире экрана, меню ниже — больше места костру */
+@media (max-width: 600px) {
+  #loading h1 { font-size: 12.5vw; }
+  #start-menu { padding-top: 20px; }
+  .sm-panel { gap: 20px; }
+  .sm-btn { padding: 5px 14px; min-height: 40px; }
+  .sm-btn b { font-size: 16px; }
+  .sm-btn small { font-size: 11px; }
+}
+.sm-btn b, .sm-btn small { position: relative; z-index: 5; }
+body.mobile #tut { max-height: 38%; line-height: 1.35; } body.mobile #tut h3 { font-size: 15px; margin: 4px 0; }
