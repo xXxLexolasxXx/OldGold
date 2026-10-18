@@ -19,7 +19,7 @@ function ghostsSpawn(n) {
   const gs = Game.ghosts || (Game.ghosts = []);
   const live = Game.units.filter(u => !u.dead);
   const gy = graveyardOf(), cap = Math.min(12, 4 + Math.floor((Game.lostGnomes || 0) / 3));
-  for (let i = 0; i < n && gs.length < cap; i++) {
+  for (let i = 0; i < n && gs.filter(g => g.kind !== 'reaper').length < cap; i++) {
     const sp = ghostSpot(gy, live);
     gs.push({ x: sp.x, y: sp.y, hx: sp.x, hy: sp.y, alpha: 0, ph: Math.random() * 9, face: 1, rev: false, fromGy: sp.gy,
       mode: 'drift', modeT: 0, tx: sp.x, ty: sp.y, retarget: 0, scan: Math.random() });
@@ -39,7 +39,7 @@ function ghostsTick(dt) {
     g.ph += dt * 2.2; g.modeT -= dt; g.retarget -= dt;
     if (g.rev === false) {
       // ещё не проступил: ждёт темноты. Если за вечер выросло кладбище — выходит уже из него (в ту же ночь)
-      if (dark < GHOST_APPEAR) { if (isDawnNow() || (!isNightNow() && !isEveningNow())) gs.splice(i, 1); continue; }
+      if (dark < (g.appear || GHOST_APPEAR)) { if (isDawnNow() || (!isNightNow() && !isEveningNow())) gs.splice(i, 1); continue; }
       g.rev = true;
       if (!g.fromGy && (gyd === undefined ? (gyd = graveyardOf() || null) : gyd)) {
         const sp = ghostSpot(gyd, live || (live = Game.units.filter(u => !u.dead)));
@@ -58,6 +58,7 @@ function ghostsTick(dt) {
         g.mode = 'leave'; g.modeT = 99;
       } else g.mode = 'drift';
     }
+    if (g.kind === 'reaper') { reaperTick(g, dt); if (g.mode === 'boo' && g.modeT <= 0) g.mode = 'drift'; continue; }     // жнец: своя механика (reaper.js)
     if (g.mode === 'grab') { ghGrabTick(g, dt); continue; }       // уносит гнома — больше ничем не занят
     if (g.atkT > 0) ghostStrikeTick(g, dt);
     else if (g.mode === 'drift' || g.mode === 'boo') {
@@ -118,8 +119,9 @@ function ghostStrikeTick(g, dt) {
     else if (k >= 0.6 && d < 1.6) { g.x -= dx / d * 1.6 * dt; g.y -= dy / d * 1.6 * dt; }        // отдача
     if (!g.atkHit && k >= 0.5) {
       g.atkHit = true;
-      if (d < 2.4 && u.hero) {
-        hlHurt(u, 2 + Math.random() * 2, 'ghost');
+      const rp = g.kind === 'reaper';
+      if (d < (rp ? REAPER_REACH : 2.4) && u.hero) {
+        hlHurt(u, rp ? 5 + Math.random() * 3 : 2 + Math.random() * 2, 'ghost');
         fxBurst(u.x * TILE, u.y * TILE - 14, 8, ['#bfffe0', '#6fd0b0', '#e8fff6'], 40, 50, 0.7, 1.6, -20);
         floater(u.x, u.y - 2.4, 'Холод пробирает!', '#bfeaff');
       }
@@ -247,30 +249,34 @@ function paintGhost(c, p, mood, k) {
       hx = s * 14 + (calm ? -s * 4 : 0) + sn(1, s) * 1.6; hy = (calm ? 12 : boo ? -15 : 3) + sn(2, s * 1.3) * 2.6;
     }
     const mx = (shx + hx) / 2 + s * 2, my = (shy + hy) / 2 + 5 + sn(1, s * 2) * 1.4;
-    c.strokeStyle = 'rgba(30,70,72,0.8)'; c.lineWidth = 3.1;
+    // рука бестелесная, как и хвост: от плеча тает в дымку, к кисти снова проступает контуром
+    const ag = c.createLinearGradient(shx, shy, hx, hy);
+    ag.addColorStop(0, 'rgba(200,245,235,0.5)'); ag.addColorStop(0.5, 'rgba(170,230,220,0.1)'); ag.addColorStop(1, 'rgba(225,255,248,0.6)');
+    c.strokeStyle = 'rgba(150,235,215,0.1)'; c.lineWidth = 4.2;
     c.beginPath(); c.moveTo(shx, shy); c.quadraticCurveTo(mx, my, hx, hy); c.stroke();
-    c.strokeStyle = '#dff4ea'; c.lineWidth = 1.9;
-    c.beginPath(); c.moveTo(shx, shy); c.quadraticCurveTo(mx, my, hx, hy); c.stroke();
-    // кисть: четыре длинных когтя веером
-    const ang = Math.atan2(hy - my, hx - mx);
-    c.lineWidth = 0.95; c.strokeStyle = '#f2fffa';
+    c.strokeStyle = ag; c.lineWidth = 0.7;
+    for (const o of [-1.1, 1.1]) { c.beginPath(); c.moveTo(shx, shy + o); c.quadraticCurveTo(mx, my + o * 1.4, hx, hy + o * 0.6); c.stroke(); }
+    // огромная лапа: полупрозрачная ладонь с контуром и длинными изогнутыми когтями
+    const ang = Math.atan2(hy - my, hx - mx), pk = gp ? 1 - 0.3 * gp.k : 1;
+    c.save(); c.translate(hx, hy); c.rotate(ang);
+    c.fillStyle = 'rgba(190,240,230,0.2)'; c.strokeStyle = 'rgba(235,255,250,0.85)'; c.lineWidth = 0.7;
+    c.beginPath(); c.ellipse(1.8, 0, 4.2 * pk, 3.4 * pk, 0, 0, 7); c.fill(); c.stroke();
     for (let j = -1.5; j <= 1.5; j++) {
-      const a2 = ang + j * 0.34 + (boo ? j * 0.1 : 0), len = (5.4 - Math.abs(j) * 0.6 + (atk ? strike * 1.6 : 0)) * (gp ? 1 - 0.45 * gp.k : 1);
-      c.beginPath(); c.moveTo(hx, hy); c.quadraticCurveTo(hx + Math.cos(a2) * len * 0.5, hy + Math.sin(a2) * len * 0.5 + 0.8, hx + Math.cos(a2 + 0.25) * len, hy + Math.sin(a2 + 0.25) * len); c.stroke();
+      const a2 = j * 0.36 + (boo ? j * 0.12 : 0), len = (8 - Math.abs(j) * 0.9 + (atk ? strike * 2.4 : 0)) * pk;
+      const bx = 4.4 * pk, by = j * 1.7 * pk, tx = bx + Math.cos(a2) * len, ty = by + Math.sin(a2) * len + 1.3;   // коготь загнут к земле
+      c.fillStyle = 'rgba(244,255,251,0.95)';
+      c.beginPath(); c.moveTo(bx, by - 0.85); c.quadraticCurveTo((bx + tx) / 2, (by + ty) / 2 - 1.1, tx, ty); c.quadraticCurveTo((bx + tx) / 2 - 0.3, (by + ty) / 2 + 0.9, bx, by + 0.85); c.closePath(); c.fill();
     }
+    c.restore();
   }
   // голова с колпаком
   c.save(); c.translate(lean * 0.7, atk ? 1.5 * strike - wind : 0);
   const tip = sn(1, 0.6) * 2.2 + lean * 0.4;
-  c.fillStyle = 'rgba(58,92,96,0.97)'; c.beginPath(); c.moveTo(-8, -6.4);
-  c.quadraticCurveTo(-5, -17, 1 + tip * 0.5, -25); c.lineTo(4.4 + tip, -21.5); c.lineTo(2.8 + tip, -19); c.lineTo(5.6 + tip * 0.6, -16);
-  c.quadraticCurveTo(7, -11, 8, -6.4); c.lineTo(6.2, -8); c.lineTo(3.8, -6.2); c.lineTo(1.4, -8.2); c.lineTo(-1.2, -6.4); c.lineTo(-4, -8); c.lineTo(-6, -6.8); c.closePath(); c.fill();
-  c.fillStyle = 'rgba(0,0,0,0.88)'; c.beginPath(); c.ellipse(-1.6, -14, 1.1, 1.9, 0.5, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(190,235,225,0.5)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(-6.6, -8.6); c.quadraticCurveTo(-3, -17, 1, -24); c.stroke();
   // череп
   g = c.createRadialGradient(-1.5, -2, 1, 0, 0, 8); g.addColorStop(0, '#f6fffb'); g.addColorStop(1, '#bcd9d0');
   c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, 6.4, 7.2, 0, 0, 7); c.fill();
   c.fillStyle = 'rgba(20,54,58,0.5)'; c.beginPath(); c.ellipse(-4.4, 3, 1.5, 3.1, 0.25, 0, 7); c.ellipse(4.4, 3, 1.5, 3.1, -0.25, 0, 7); c.fill();
+  paintGhostHood(c, tip, sn);
   // глазницы: чёрные провалы под злым наклоном
   const eh = boo ? 4.6 : 3.8;
   c.fillStyle = '#010707';
@@ -305,7 +311,8 @@ function drawGhosts(c) {
     if (g.alpha <= 0.01) continue;
     const bob = Math.sin(g.ph) * 2.4, px = Math.round(g.x * TILE), py = Math.round(g.y * TILE - 17 - bob);
     const atk = (g.atkT || 0) > 0;
-    const grab = g.mode === 'grab' && (g.vsnap || g._gi !== undefined), gi = grab ? ghGrabIndex(g) : -1;
+    const rp = g.kind === 'reaper';
+    const grab = !rp && g.mode === 'grab' && (g.vsnap || g._gi !== undefined), gi = grab ? ghGrabIndex(g) : -1;
     const mood = grab ? (gi < 9 ? 'grab' : 'carry') : atk ? 'atk' : g.mode === 'boo' ? 'boo' : g.mode === 'calm' ? 'calm' : 'idle';
     const frame = grab ? (gi < 9 ? gi : gi - 9) : atk ? Math.min(GHOST_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * GHOST_ATK_FRAMES)) : Math.floor(t * 9 + g.ph * 1.43) % GHOST_FRAMES;
     const flick = 0.82 + Math.sin(t * 13 + g.ph * 3) * 0.08 + (Math.sin(t * 31 + g.ph) > 0.93 ? -0.25 : 0);   // мерцает, как гаснущая свеча
@@ -314,7 +321,7 @@ function drawGhosts(c) {
     // холодное свечение вокруг (поверх тумана — призрак виден издалека), у атаки красноватое
     c.globalAlpha = A * (atk ? 0.6 : 0.45); c.globalCompositeOperation = 'lighter';
     const gl = c.createRadialGradient(px, py, 2, px, py, 30);
-    gl.addColorStop(0, atk ? 'rgba(255,110,80,0.5)' : 'rgba(120,255,190,0.5)'); gl.addColorStop(1, 'rgba(120,255,190,0)');
+    gl.addColorStop(0, atk ? 'rgba(255,110,80,0.5)' : rp ? 'rgba(110,170,255,0.4)' : 'rgba(120,255,190,0.5)'); gl.addColorStop(1, 'rgba(120,255,190,0)');
     c.fillStyle = gl; c.beginPath(); c.arc(px, py, 30, 0, 7); c.fill();
     c.globalCompositeOperation = 'source-over';
     // тень на земле: чёрная, дрожащая
@@ -323,7 +330,8 @@ function drawGhosts(c) {
     c.translate(px, py); c.scale(g.face, 1);
     c.globalAlpha = A;
     c.imageSmoothingEnabled = true;
-    c.drawImage(ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
+    if (rp) c.drawImage(reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
+    else c.drawImage(ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
     if (grab && g.vsnap) { c.imageSmoothingEnabled = false; ghDrawVictim(c, g, Math.min(8, gi), g.alpha, px, py); }
     c.restore();
     // клочья тумана, уходящие вверх от призрака

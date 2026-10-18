@@ -600,6 +600,7 @@ function nightTick(dt) {
     Game.entNight = ni;
     spawnEnts();
     ghostsSpawn(1 + Math.floor(Math.random() * 3) + Math.floor((Game.lostGnomes || 0) / 2));
+    reapersSpawn();
     skeletonsSpawn();
     if (isLongNight()) toast('Эта ночь будет долгой — в полтора раза дольше обычной. Готовьте хлеб и костры!');
     toast('Вечереет: зажглись фонари. В лесу кто-то открыл глаза…');

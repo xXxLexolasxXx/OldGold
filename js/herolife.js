@@ -154,7 +154,7 @@ function* hlEquipGen(u, c) {
 function hlGhostAt(t) {
   let best = null, bd = 1.3;
   for (const g of Game.ghosts || []) {
-    if (g.exo || g.alpha < 0.25 || g.mode === 'leave') continue;
+    if (g.exo || g.kind === 'reaper' || g.alpha < 0.25 || g.mode === 'leave') continue;
     const d = Math.hypot(g.x - (t[0] + 0.5), g.y - (t[1] + 0.5));
     if (d < bd) { bd = d; best = g; }
   }
