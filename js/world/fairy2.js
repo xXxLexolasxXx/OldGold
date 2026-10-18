@@ -5,6 +5,8 @@
 //    Хлеб на пне его смягчает;
 //  • ВОДЯНОЙ и РУСАЛКА — в озере: водяной тащит груз с берега, русалка поёт и заманивает гномов к воде. Пиво в воду — утихают;
 //  • БАНШИ — воет у кладбища и перед бедой гнома (журнал, мигание значка), пугает работников рядом;
+//  • БЛУЖДАЮЩИЕ ОГОНЬКИ — три болотных огонька у воды уводят гнома без фонаря в тину;
+//  • ПОЛУДНИЦА — в зной кружит голову крестьянину в поле; пиво её прогоняет;
 //  • ПРИЗРАЧНЫЙ ВОЛК — ходит за ночной нечистью, воет, отнимает у гномов фонари. Костёр и герой его отгоняют.
 // Существа не сохраняются (как призраки): с вечера заводятся заново. В сохранение идёт счётчик срубленного и гнев лешего (поле f2),
 // итоги — в Game.faunaStat. Звуков нет — только floater-тексты.
@@ -137,34 +139,60 @@ const FZ_KIK_B = [   // руки вскинуты в стороны когтям
   'hh..h..rrrrrr..h..hh',
   'h...u.uuuuuuuu.u...h',
 ];
-const FZ_VOD_A = [
-  '....aa.aa.aa....',
-  '...aSSSSSSSSa...',
-  '..SSSSSSSSSSSS..',
-  '..SSeeSSSSeeSS..',
-  '..SSkeSSSSkeSS..',
-  '..SSSSSSSSSSSS..',
-  '..SSSbbbbbbSSS..',
-  '...SbbbbbbbbS...',
-  '...bbbbbbbbbb...',
-  '..aSSSbbbbSSSa..',
-  '.SSSSSSSSSSSSSS.',
-  'sSSSSSSSSSSSSSSs',
-];
-const FZ_VOD_B = [
-  'S...aa.aa.aa...S',
-  'S..aSSSSSSSSa..S',
-  'SS.SSSSSSSSSS.SS',
-  'SS.SSeeSSSSeeSSS',
-  '.S.SSkeSSSSkeSS.',
-  '.SSSSSSSSSSSSSS.',
-  '..SSSbbbbbbSSS..',
-  '...SbbbbbbbbS...',
-  '...bbbbbbbbbb...',
-  '..aSSSbbbbSSSa..',
-  '.SSSSSSSSSSSSSS.',
-  'sSSSSSSSSSSSSSSs',
-];
+// ВОДЯНОЙ — 24×24: лягушачий рот с пилой зубов, выпученные жёлтые глаза, перепонки-уши, борода и волосы из тины,
+// чешуя на плечах и ракушки в тине; из воды по грудь. B — вскинул перепончатые лапы
+const FZ_VOD_A = fzMirror([
+  '....A.a..a.A',
+  '..a.AaaAaAaA',
+  '.aAaaAAaaAaa',
+  '.aAaSSSSSSSS',
+  '..aSSjSSSSSS',
+  '.ssSSSSSSSSj',
+  'sbsSeeeSSSSS',
+  'sbsSeekeSSSS',
+  '.ssSSeeeSSSS',
+  '..SSSSsSSSSs',
+  '..SSjSSSSSjS',
+  '..Skkkkkkkkk',
+  '..Sktktktktt',
+  '..SSktktktkk',
+  '.aSSSSkkkkkk',
+  'aAaaSSSSSSaA',
+  'aAAaAaaSSaAa',
+  'aAaAAaAaAaAA',
+  'sSaAaAAaAAaA',
+  'sSSaAaAaAaAA',
+  'SSsSSaAaSSaA',
+  'SsSsSSaASsSS',
+  'sSsSsSsSSsSs',
+  'SsSsSsSsSsSs',
+]);
+const FZ_VOD_B = fzMirror([
+  'S...A.a..a.A',
+  'Ss.aAaaAaAaA',
+  'tS.aAAaaAaaA',
+  'tS.aSSSSSSSS',
+  '.S.aSjSSSSSS',
+  '.Ss.SSSSSSSj',
+  '.sbsSeeeSSSS',
+  '.sbsSeekeSSS',
+  '..ssSSeeeSSS',
+  '..sSSSSsSSSs',
+  '..SSSjSSSSjS',
+  '..Skkkkkkkkk',
+  '..Sktktktktt',
+  '..SSktktktkk',
+  '.aSSSSkkkkkk',
+  'aAaaSSSSSSaA',
+  'aAAaAaaSSaAa',
+  'aAaAAaAaAaAA',
+  'sSaAaAAaAAaA',
+  'sSSaAaAaAaAA',
+  'SSsSSaAaSSaA',
+  'SsSsSSaASsSS',
+  'sSsSsSsSSsSs',
+  'SsSsSsSsSsSs',
+]);
 const FZ_RUS_A = [
   '...HhhhhhH...',
   '..hhhhhhhhhH.',
@@ -216,7 +244,7 @@ function fzSprites() {
 
 // ---------- Состояние ----------
 function fz() {
-  return Game.fairy2 || (Game.fairy2 = { day: -1, cut: 0, angryUntil: 0, calmDay: -2, night: -1, kik: [], les: null, pond: null, ban: [], wolves: [], shore: null, lost: -1, omenAt: 0, lastCut: 0 });
+  return Game.fairy2 || (Game.fairy2 = { day: -1, cut: 0, angryUntil: 0, calmDay: -2, night: -1, kik: [], les: null, pond: null, ban: [], wolves: [], wisps: [], noon: null, noonDay: -1, shore: null, lost: -1, omenAt: 0, lastCut: 0 });
 }
 function resetFairy() { Game.fairy2 = null; }
 function serializeFairy() {
@@ -352,6 +380,7 @@ function fzSpawnNight() {
     };
   }
   F.lost = Game.lostGnomes || 0;
+  fzWispsSpawn(F);
   logEvent('night', 'К воде вышли кикимора и русалка — на берегу лучше не задерживаться');
 }
 
@@ -433,7 +462,7 @@ function fzLeshyTick(F, dt) {
 // ---------- Кикимора ----------
 function fzKikTick(F, k, dt, act) {
   k.ph += dt; k.t += dt;
-  if (!act) { k.alpha = Math.max(0, k.alpha - dt * 0.5); return k.alpha <= 0 && !F.kikKeep; }
+  if (!act) { k.alpha = Math.max(0, k.alpha - dt * 0.5); return !!F.over && k.alpha <= 0; }
   k.alpha = Math.min(1, k.alpha + dt * 0.4);
   if (k.sated) { k.state = k.state === 'drag' ? 'hide' : k.state; }
   switch (k.state) {
@@ -522,7 +551,7 @@ function fzPondTick(F, P, dt, act) {
   v.ph += dt; r.ph += dt; v.t += dt; r.t += dt;
   const a = act ? Math.min(1, v.alpha + dt * 0.35) : Math.max(0, v.alpha - dt * 0.4);
   v.alpha = a; r.alpha = a;
-  if (!act) return a <= 0;
+  if (!act) return !!F.over && a <= 0;
   // русалка: поёт по расписанию
   if (!P.calm) {
     r.song -= dt;
@@ -768,6 +797,131 @@ function fzWolfDrop(w, giveBack) {
   return false;
 }
 
+
+// ---------- Блуждающие огоньки ----------
+// Три болотных огонька парят у воды. Гном без фонаря идёт на огонёк, пока тот не погаснет — и блуждает в тине.
+function fzWispsSpawn(F) {
+  F.wisps = [];
+  const s = F.pond ? { x: F.pond.x, y: F.pond.y } : (F.kik[0] ? { x: F.kik[0].hx, y: F.kik[0].hy } : null);
+  if (!s) return;
+  for (let i = 0; i < 3; i++) F.wisps.push({ x: s.x + (Math.random() - 0.5) * 6, y: s.y + (Math.random() - 0.5) * 4, hx: s.x, hy: s.y, tx: s.x, ty: s.y, ph: Math.random() * 9, alpha: 0, retarget: 0, scan: Math.random() * 2 });
+}
+function fzWispsTick(F, act, dt) {
+  for (let i = F.wisps.length - 1; i >= 0; i--) {
+    const w = F.wisps[i];
+    w.ph += dt * 2; w.retarget -= dt; w.scan -= dt;
+    w.alpha = Math.max(0, Math.min(1, w.alpha + (act ? dt * 0.4 : -dt * 0.5)));
+    if (!act && F.over && w.alpha <= 0) { F.wisps.splice(i, 1); continue; }
+    if (w.retarget <= 0 || Math.hypot(w.tx - w.x, w.ty - w.y) < 0.4) { w.tx = w.hx + (Math.random() - 0.5) * 9; w.ty = w.hy + (Math.random() - 0.5) * 6; w.retarget = 3 + Math.random() * 3; }
+    const dx = w.tx - w.x, dy = w.ty - w.y, d = Math.hypot(dx, dy) || 1;
+    w.x += dx / d * 0.7 * dt; w.y += dy / d * 0.7 * dt;
+    if (!act || w.scan > 0) continue;
+    w.scan = 1;
+    for (const u of Game.units) {
+      if (!fzCanBeTaken(u) || u.lantern || (u.wispCD || 0) > Game.time || !interruptible(u)) continue;
+      if (Math.hypot(u.x - w.x, u.y - w.y) > 6) continue;
+      u.wispCD = Game.time + 70;
+      if (u.brk) endBreak(u);
+      startBreak(u, 'lure', null);
+      u.proc = (function* () {
+        floater(u.x, u.y - 1.2, 'Огонёк! Тётя, идём за ним', '#bfffe8');
+        for (let k = 0; k < 3; k++) {
+          const s2 = randomFreeNear(Math.floor(w.x), Math.floor(w.y), 0, 2.6, fzLand);
+          if (s2) yield { walk: s2, offroad: true };
+          yield { wait: 0.6, anim: 'lost' };
+        }
+        floater(u.x, u.y - 1.2, 'Погас… где я?', '#cfe8e0');
+        yield { wait: 2, anim: 'lost' };
+      })();
+      fstat('wispLure');
+      if (Game.time - (F.lastWispLog || -99) > 30) { F.lastWispLog = Game.time; logEvent('night', `Болотный огонёк увёл гнома без фонаря: ${fzName(u)}`, w.x, w.y); }
+      break;
+    }
+  }
+}
+
+// ---------- Полудница ----------
+// В самый зной появляется вихрь пыли с женским лицом, находит работающего в поле крестьянина и кружит ему голову.
+// Пиво — откуп: выпила и ушла.
+function fzNoonTick(F, dt) {
+  const cy = cycleAt(Game.time);
+  const mid = EVE_START * 0.5;
+  if (!F.noon && F.noonDay !== cy.k && nightAmt() < 0.01 && Math.abs(cy.p - mid) < EVE_START * 0.12) {
+    F.noonDay = cy.k;
+    const fs = Game.units.filter(u => u.type === 'farmer' && fzCanBeTaken(u));
+    if (fs.length) {
+      const u = fs[(Math.random() * fs.length) | 0];
+      F.noon = { x: u.x + 7, y: u.y - 1, tgt: u.id, state: 'come', t: 0, ph: Math.random() * 9, alpha: 0, face: -1 };
+      floater(F.noon.x, F.noon.y - 2, 'Ш-ш-ш…', '#e8d8b0');
+      logEvent('animal', 'В зной над полем закружилась Полудница', F.noon.x, F.noon.y);
+    }
+  }
+  const n = F.noon;
+  if (!n) return;
+  n.ph += dt; n.t += dt;
+  const u = Game.unitMap.get(n.tgt);
+  const away = n.state === 'leave' || nightAmt() > 0.05 || !u || u.dead;
+  n.alpha = Math.max(0, Math.min(0.9, n.alpha + (away ? -dt * 0.6 : dt * 0.5)));
+  if (away && n.alpha <= 0) { F.noon = null; return; }
+  if (away) return;
+  if (n.state === 'come') {
+    const dx = u.x - n.x, dy = u.y - n.y, d = Math.hypot(dx, dy) || 1;
+    n.face = dx >= 0 ? 1 : -1;
+    if (d > 1.1) { n.x += dx / d * 1.8 * dt; n.y += dy / d * 1.8 * dt; }
+    else {
+      const g = fzOffer(u, FZ_BEER, 0.2);
+      if (g) {
+        floater(u.x, u.y - 1.3, 'Выпей, Полудница', '#ffe9b0'); floater(n.x, n.y - 2.2, 'Хороша брага…', '#e8d8b0');
+        logEvent('animal', `${UNIT_TYPES[u.type].name} угостил Полудницу пивом — она ушла`, u.x, u.y);
+        fstat('noonPaid'); n.state = 'leave'; return;
+      }
+      n.state = 'haunt'; n.t = 0;
+      if (u.brk) endBreak(u);
+      if (interruptible(u)) {
+        startBreak(u, 'freeze', null);
+        u.proc = (function* () { floater(u.x, u.y - 1.3, 'В голове шумит…', '#f0e0b0'); yield { wait: 7, anim: 'lost' }; floater(u.x, u.y - 1.2, 'Фух, отпустило', '#f0e0b0'); })();
+        fstat('noonDaze');
+        logEvent('animal', `Полудница заморочила голову: ${fzName(u)} застыл в поле`, u.x, u.y);
+      }
+    }
+  } else if (n.state === 'haunt') {
+    n.x = u.x + Math.cos(n.ph * 1.6) * 0.8; n.y = u.y + Math.sin(n.ph * 1.6) * 0.4;
+    if (n.t > 9) n.state = 'leave';
+  } else if (n.state === 'leave') n.alpha = 0;
+}
+
+// Огонёк и Полудница рисуются мягкой кистью
+function fzNoonSprite(p) {
+  return fzCanvas('noon' + p, 46, 70, 23, 62, c => {
+    const ph = p / 6 * Math.PI * 2;
+    // вихрь пыли: расширяющиеся к верху петли
+    for (let i = 0; i < 9; i++) {
+      const t = i / 8, y = -t * 52, rx = 5 + t * 12, sh = Math.sin(ph + t * 5) * 2.6;
+      c.strokeStyle = `rgba(222,196,140,${0.55 - t * 0.2})`; c.lineWidth = 2.2;
+      c.beginPath(); c.ellipse(sh, y, rx, rx * 0.28, 0, 0, 7); c.stroke();
+    }
+    // женская фигура в светлом платье внутри вихря
+    const g = c.createLinearGradient(0, -48, 0, 0); g.addColorStop(0, 'rgba(255,248,226,0.95)'); g.addColorStop(1, 'rgba(240,214,160,0.2)');
+    c.fillStyle = g; c.beginPath(); c.moveTo(-3, -34); c.lineTo(-9 + Math.sin(ph) * 1.4, -2); c.lineTo(9 + Math.sin(ph + 2) * 1.4, -2); c.lineTo(3, -34); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255,244,214,0.97)'; c.beginPath(); c.ellipse(0, -40, 4.2, 5, 0, 0, 7); c.fill();
+    c.fillStyle = 'rgba(70,50,30,0.9)'; c.beginPath(); c.ellipse(0, -43, 5, 4, 0, Math.PI, 0); c.fill();       // платок
+    c.fillStyle = '#2a1a10'; c.fillRect(-2.4, -41, 1.4, 1.8); c.fillRect(1, -41, 1.4, 1.8);
+    c.fillStyle = '#ffd860'; c.fillRect(-2, -40.6, 0.8, 1); c.fillRect(1.4, -40.6, 0.8, 1);
+    c.fillStyle = '#2a1a10'; c.beginPath(); c.ellipse(0, -37.4, 1.3, 0.8, 0, 0, 7); c.fill();
+    // руки с серпом
+    c.strokeStyle = 'rgba(250,236,200,0.9)'; c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(-3, -32); c.lineTo(-11, -24 + Math.sin(ph) * 2); c.moveTo(3, -32); c.lineTo(11, -26); c.stroke();
+    c.strokeStyle = 'rgba(210,220,230,0.95)'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(11, -26); c.quadraticCurveTo(17, -30, 14, -38); c.stroke();
+  });
+}
+function fzWispDraw(c, w) {
+  const px = Math.round(w.x * TILE), py = Math.round(w.y * TILE - 16 + Math.sin(w.ph) * 4), r = 9 + Math.sin(w.ph * 2.3) * 1.5;
+  c.save(); c.globalAlpha *= w.alpha; c.globalCompositeOperation = 'lighter';
+  const g = c.createRadialGradient(px, py, 0, px, py, r * 2.2); g.addColorStop(0, 'rgba(210,255,240,0.95)'); g.addColorStop(0.3, 'rgba(110,240,200,0.5)'); g.addColorStop(1, 'rgba(60,200,180,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(px, py, r * 2.2, 0, 7); c.fill();
+  c.restore();
+}
+
 // ---------- Главный тик ----------
 function fairy2Tick(dt) {
   if (!FZ_ON()) return;
@@ -779,6 +933,7 @@ function fzSelfStep(F, dt) {
   const ni = nightIndex(), eve = isEveningNow(), dawn = isDawnNow();
   if (eve && !dawn && F.night !== ni) { F.night = ni; fzSpawnNight(); }
   const act = fzDark() > 0.35 && !dawn;
+  F.over = dawn || (!eve && !isNightNow());       // ночь кончилась: можно убирать с карты
   F.acc2 = (F.acc2 || 0) + dt;
   if (F.acc2 >= 0.4) { fzCutScan(F); F.acc2 = 0; }
   fzLeshyTick(F, dt);
@@ -789,6 +944,8 @@ function fzSelfStep(F, dt) {
   if (F.pond && fzPondTick(F, F.pond, dt, act)) F.pond = null;
   fzBansheeTick(F, act, dt);
   fzWolvesTick(F, act, dt);
+  fzWispsTick(F, act, dt);
+  fzNoonTick(F, dt);
 }
 
 // ---------- Банши и волк: рисуются «призрачно» (мягкая кисть, как призраки в ghosts.js) один раз в 3× холсты ----------
@@ -803,114 +960,177 @@ function fzCanvas(key, w, h, ox, oy, draw) {
   draw(c);
   return cv;
 }
-// Банши: бледная плакальщица в саване — длинные седые волосы до пояса и ниже, пустые глазницы с тлеющими зрачками,
-// тонкие руки с когтями, платье рвано расходится в дымку. wail — рот раскрыт, руки воздеты. p — фаза (0..5)
+// Банши: бледная плакальщица в саване. Низ — как у призраков: хвост-саван сужается и рассыпается зернистой дымкой, без ног.
+// Длинные седые волосы мягкой пеленой по бокам, пустые глазницы с тлеющими зрачками, бестелесные руки с мелкими когтями.
+// wail — рот раскрыт, руки воздеты. p — фаза (0..5)
 function fzBansheeSprite(wail, p) {
-  return fzCanvas('ban' + wail + p, 64, 80, 32, 30, c => {
-    const ph = p / 6 * Math.PI * 2, sw = Math.sin(ph) * 1.6;
-    const hair = (alpha, minI = 0) => {
-      c.strokeStyle = `rgba(232,246,250,${alpha})`;
-      for (let i = -5; i <= 5; i++) {
-        if (Math.abs(i) < minI) continue;
-        const x0 = i * 1.1, len = 38 + (i & 3) * 3 + (wail ? 4 : 0), side = i * 0.55;
-        c.lineWidth = 2.1 - Math.abs(i) * 0.12;
-        c.beginPath(); c.moveTo(x0, -7);
-        c.bezierCurveTo(x0 + side * 1.6 + sw, 4, x0 + side * 2.4 - sw, 18, x0 + side * 2.7 + Math.sin(ph + i) * 2.4, len - 10);
-        c.stroke();
-      }
-    };
-    // дымка
-    let g = c.createLinearGradient(0, -6, 0, 42);
-    g.addColorStop(0, 'rgba(180,215,245,0.30)'); g.addColorStop(1, 'rgba(100,150,210,0)');
-    c.fillStyle = g; c.beginPath(); c.ellipse(0, 14, 17, 30, 0, 0, 7); c.fill();
-    hair(0.55);                                             // волосы позади
-    // руки (рукава): вскинуты при вое, иначе протянуты вперёд-вниз
-    const arm = (s) => {
-      c.strokeStyle = 'rgba(200,222,244,0.9)'; c.lineWidth = 2.4;
-      const ex = s * (wail ? 12 : 9), ey = wail ? -10 : 8, hx = s * (wail ? 15 : 12), hy = wail ? -20 : 14;
-      c.beginPath(); c.moveTo(s * 4, 4); c.quadraticCurveTo(s * 11, wail ? 0 : 6, ex, ey); c.lineTo(hx, hy); c.stroke();
-      c.strokeStyle = 'rgba(244,252,255,0.95)'; c.lineWidth = 0.9;
-      for (let f = -1; f <= 1; f++) { c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx + s * 2.8 + f * 0.6 * s, hy + (wail ? -4 : 4) + f * 1.8); c.stroke(); }
-    };
-    arm(-1); arm(1);
-    // платье: узкая талия, расходящийся подол, рваный край
-    const N = 18, L = [], R = [];
+  return fzCanvas('ban' + wail + p, 64, 84, 32, 30, c => {
+    const TAU = Math.PI * 2, ph = p / 6 * TAU, sn = (m, o = 0) => Math.sin(ph * m + o);
+    let sd = (p * 131 + wail * 17 + 7) % 2147483647;
+    const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    const tailLen = 46, N = 22, L = [], R = [];
     for (let n = 0; n <= N; n++) {
-      const t = n / N, y = 2 + t * 40;
-      const hw = 4.2 + t * t * 10 + (t > 0.5 ? Math.sin(t * 38 + (n % 3) * 1.6 + ph) * 1.4 * t : 0);
-      const cx = Math.sin(ph - t * 4) * (0.8 + t * 3.6);
+      const t = n / N, y = 2 + t * tailLen;
+      const hw = 7.2 * Math.pow(1 - t, 0.7) + 0.6 + (t > 0.3 ? Math.sin(t * 41 + (n % 3) * 1.7 + ph) * 1.2 * t : 0);
+      const cx = sn(1, -t * 5.2) * (0.8 + t * 6);
       L.push([cx - hw, y]); R.push([cx + hw, y]);
     }
     const body = () => { c.beginPath(); c.moveTo(L[0][0], L[0][1]); for (const q of L) c.lineTo(q[0], q[1]); for (let n = R.length - 1; n >= 0; n--) c.lineTo(R[n][0], R[n][1]); c.closePath(); };
-    g = c.createLinearGradient(0, 0, 0, 44);
-    g.addColorStop(0, 'rgba(228,244,252,0.95)'); g.addColorStop(0.4, 'rgba(160,196,226,0.75)'); g.addColorStop(0.8, 'rgba(90,130,180,0.35)'); g.addColorStop(1, 'rgba(60,100,160,0)');
+    // внешняя дымка
+    let g = c.createLinearGradient(0, -8, 0, 44);
+    g.addColorStop(0, 'rgba(170,215,240,0.38)'); g.addColorStop(1, 'rgba(90,150,210,0)');
+    c.fillStyle = g; c.save(); c.scale(1.5, 1); body(); c.fill(); c.restore();
+    // волосы позади: мягкая пелена, тающая к концам (без отдельных прядей)
+    const lock = (s, alpha) => {
+      const gr = c.createLinearGradient(0, -12, 0, 40);
+      gr.addColorStop(0, `rgba(240,250,255,${alpha})`); gr.addColorStop(0.55, `rgba(205,228,248,${alpha * 0.6})`); gr.addColorStop(1, 'rgba(150,190,235,0)');
+      c.fillStyle = gr; c.beginPath();
+      c.moveTo(s * 3, -13);
+      c.bezierCurveTo(s * 11, -12, s * 13 + sn(1, s) * 1.6, 8, s * 10 + sn(1, 1 + s) * 3, 34 + (wail ? 4 : 0));
+      c.quadraticCurveTo(s * 7, 28, s * 5.2, 12);
+      c.quadraticCurveTo(s * 4, 2, s * 3, -2);
+      c.closePath(); c.fill();
+    };
+    lock(-1, 0.8); lock(1, 0.8);
+    // сам саван: бледный сверху, прозрачный снизу
+    g = c.createLinearGradient(0, -2, 0, 48);
+    g.addColorStop(0, 'rgba(228,246,252,0.96)'); g.addColorStop(0.35, 'rgba(160,200,232,0.8)'); g.addColorStop(0.7, 'rgba(90,135,190,0.42)'); g.addColorStop(1, 'rgba(60,100,170,0)');
     c.fillStyle = g; body(); c.fill();
-    c.save(); body(); c.clip();                              // складки платья
-    c.strokeStyle = 'rgba(70,100,150,0.35)'; c.lineWidth = 0.8;
-    for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 1.2, 8); c.quadraticCurveTo(i * 3.2 + sw, 24, i * 4.4, 44); c.stroke(); }
+    c.save(); body(); c.clip();
+    // тёмная пустота под грудью
+    g = c.createRadialGradient(0, 8, 1, 0, 10, 9); g.addColorStop(0, 'rgba(8,24,40,0.55)'); g.addColorStop(1, 'rgba(8,24,40,0)');
+    c.fillStyle = g; c.fillRect(-12, 0, 24, 20);
+    // зернистое растворение: чем ниже, тем больше «выеденных» крупинок
+    c.globalCompositeOperation = 'destination-out';
+    for (let n = 0; n < 460; n++) {
+      const t = 0.22 + rnd() * 0.78, i = Math.min(N, Math.floor(t * N)), y = 2 + t * tailLen;
+      if (rnd() > Math.pow(t, 1.4) * 1.1) continue;
+      const x = L[i][0] + rnd() * (R[i][0] - L[i][0]) * 1.3 - 1, z = 0.5 + rnd() * 1.4;
+      c.fillStyle = `rgba(0,0,0,${0.55 + rnd() * 0.45})`; c.fillRect(x, y, z, z);
+    }
+    c.globalCompositeOperation = 'source-over';
     c.restore();
+    // крупинки ушедшей дымки под и рядом с хвостом
+    for (let n = 0; n < 30; n++) {
+      const t = 0.35 + rnd() * 0.75, i = Math.min(N, Math.floor(t * N)), y = 2 + t * tailLen + rnd() * 4;
+      const x = L[i][0] + (rnd() * 1.6 - 0.3) * (R[i][0] - L[i][0]) + sn(1, n) * 1.5, z = 0.5 + rnd() * 0.9;
+      c.fillStyle = `rgba(${190 + rnd() * 40 | 0},${225 + rnd() * 25 | 0},255,${(0.55 - (t - 0.35) * 0.4) * (0.4 + rnd() * 0.6)})`; c.fillRect(x, y, z, z);
+    }
     // шея и голова
-    c.fillStyle = 'rgba(224,242,250,0.95)'; c.fillRect(-1.6, -2, 3.2, 5);
-    c.beginPath(); c.ellipse(0, -7, 5.4, 6.8, 0, 0, 7); c.fill();
-    hair(0.95, 4);                                           // пряди спереди по бокам лица
-    c.fillStyle = 'rgba(238,250,255,0.95)'; c.beginPath(); c.ellipse(0, -9.5, 6.4, 4.2, 0, Math.PI, 0); c.fill();   // макушка
-    c.fillStyle = 'rgba(224,242,250,1)'; c.beginPath(); c.ellipse(0, -6.4, 3.9, 5.4, 0, 0, 7); c.fill();           // лицо
-    // пустые глазницы + тлеющие зрачки
-    c.fillStyle = '#0a1620'; c.beginPath(); c.ellipse(-1.9, -7.2, 1.25, 1.8, 0.15, 0, 7); c.ellipse(1.9, -7.2, 1.25, 1.8, -0.15, 0, 7); c.fill();
-    c.fillStyle = '#9affea'; c.fillRect(-2.2, -7, 0.7, 0.9); c.fillRect(1.6, -7, 0.7, 0.9);
-    // ресницы — женская деталь
+    c.fillStyle = 'rgba(226,244,252,0.95)'; c.fillRect(-1.7, -3, 3.4, 6);
+    c.fillStyle = 'rgba(236,250,255,0.97)'; c.beginPath(); c.ellipse(0, -9, 6.1, 6.6, 0, Math.PI, 0); c.fill();         // макушка и волосы над лицом
+    c.fillStyle = 'rgba(226,244,252,1)'; c.beginPath(); c.ellipse(0, -7, 4.2, 5.8, 0, 0, 7); c.fill();                   // лицо
+    // боковые пряди волос впереди — мягкие, как пелена
+    for (const s of [-1, 1]) {
+      const gr = c.createLinearGradient(0, -12, 0, 22);
+      gr.addColorStop(0, 'rgba(244,252,255,0.96)'); gr.addColorStop(1, 'rgba(190,220,245,0)');
+      c.fillStyle = gr; c.beginPath(); c.moveTo(s * 3.6, -13); c.bezierCurveTo(s * 7.6, -12, s * 8.4, -2, s * 7.4 + sn(1, s) * 1.2, 20); c.quadraticCurveTo(s * 5.2, 8, s * 4.2, -3); c.closePath(); c.fill();
+    }
+    // пустые глазницы + тлеющие зрачки, ресницы
+    c.fillStyle = '#0a1620'; c.beginPath(); c.ellipse(-1.9, -7.4, 1.3, 1.9, 0.15, 0, 7); c.ellipse(1.9, -7.4, 1.3, 1.9, -0.15, 0, 7); c.fill();
+    c.fillStyle = '#9affea'; c.fillRect(-2.2, -7.1, 0.8, 1); c.fillRect(1.5, -7.1, 0.8, 1);
     c.strokeStyle = '#0a1620'; c.lineWidth = 0.5;
-    c.beginPath(); c.moveTo(-3.4, -8.4); c.lineTo(-4.2, -9.2); c.moveTo(3.4, -8.4); c.lineTo(4.2, -9.2); c.stroke();
-    // рот: тихо сомкнут или раскрыт в вопле
+    c.beginPath(); c.moveTo(-3.5, -8.7); c.lineTo(-4.4, -9.5); c.moveTo(3.5, -8.7); c.lineTo(4.4, -9.5); c.stroke();
     c.fillStyle = wail ? '#0a1620' : '#7a8aaa';
-    c.beginPath(); c.ellipse(0, wail ? -2.6 : -3, wail ? 1.5 : 1.1, wail ? 2.7 : 0.45, 0, 0, 7); c.fill();
+    c.beginPath(); c.ellipse(0, wail ? -2.8 : -3.2, wail ? 1.6 : 1.1, wail ? 2.9 : 0.45, 0, 0, 7); c.fill();
+    // бестелесные руки: от плеча тают в дымку, к кисти проступают; когти мелкие
+    for (const s of [-1, 1]) {
+      const shx = s * 4.4, shy = 3;
+      const hx = s * (wail ? 13 : 12) + sn(1, s) * 1.4, hy = wail ? -18 + sn(2, s) * 1.6 : 9 + sn(2, s * 1.3) * 2;
+      const mx = (shx + hx) / 2 + s * 3, my = (shy + hy) / 2 + (wail ? 0 : 3) + sn(1, s * 2) * 1.2;
+      const ag = c.createLinearGradient(shx, shy, hx, hy);
+      ag.addColorStop(0, 'rgba(210,235,250,0.55)'); ag.addColorStop(0.5, 'rgba(170,210,240,0.12)'); ag.addColorStop(1, 'rgba(230,248,255,0.75)');
+      c.strokeStyle = 'rgba(150,200,240,0.12)'; c.lineWidth = 4.2;
+      c.beginPath(); c.moveTo(shx, shy); c.quadraticCurveTo(mx, my, hx, hy); c.stroke();
+      c.strokeStyle = ag; c.lineWidth = 0.7;
+      for (const o of [-1, 1]) { c.beginPath(); c.moveTo(shx, shy + o); c.quadraticCurveTo(mx, my + o * 1.3, hx, hy + o * 0.6); c.stroke(); }
+      // кисть и мелкие когти
+      c.fillStyle = 'rgba(232,248,255,0.8)'; c.beginPath(); c.ellipse(hx, hy, 1.7, 2.1, 0, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(244,252,255,0.95)'; c.lineWidth = 0.55;
+      const dir = wail ? -1 : 1;
+      for (let f = -1; f <= 1; f++) { c.beginPath(); c.moveTo(hx + f * 0.9, hy + dir * 1.6); c.lineTo(hx + f * 1.7 + s * 0.4, hy + dir * 4.4); c.stroke(); }
+    }
   });
 }
-// Призрачный волк: полупрозрачный, ледяной мех клочьями, лапы тают в дымку, глаза-огоньки. f — кадр бега 0..3, howl — морда вверх
+// Призрачный волк: тощий, горбатый, ощеренный — вздыбленный загривок, видны рёбра, пасть с клыками, злой прищур.
+// Мех клочьями, лапы и хвост рассыпаются в дымку. f — кадр бега 0..3, howl — морда вверх
 function fzWolfSprite(f, howl) {
-  return fzCanvas('wolf' + f + (howl ? 'h' : ''), 70, 46, 34, 40, c => {
+  return fzCanvas('wolf' + f + (howl ? 'h' : ''), 84, 54, 42, 46, c => {
     const t = f / 4 * Math.PI * 2;
-    const g = c.createLinearGradient(0, -30, 0, 4);
-    g.addColorStop(0, 'rgba(206,226,250,0.95)'); g.addColorStop(0.55, 'rgba(150,184,226,0.75)'); g.addColorStop(1, 'rgba(100,140,200,0)');
+    let sd = (f * 977 + (howl ? 55 : 3)) % 2147483647;
+    const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    const g = c.createLinearGradient(0, -34, 0, 4);
+    g.addColorStop(0, 'rgba(214,232,252,0.96)'); g.addColorStop(0.5, 'rgba(150,186,230,0.8)'); g.addColorStop(1, 'rgba(96,136,200,0.15)');
     const fur = g;
-    // хвост — пушистая дымная метёлка
-    c.strokeStyle = 'rgba(176,204,240,0.75)'; c.lineWidth = 5; c.beginPath(); c.moveTo(-14, -17); c.bezierCurveTo(-24, -20, -30, -14 + Math.sin(t) * 2, -33, -22 + Math.sin(t) * 3); c.stroke();
-    c.strokeStyle = 'rgba(214,232,252,0.55)'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(-16, -17); c.bezierCurveTo(-24, -21, -29, -16, -33, -22 + Math.sin(t) * 3); c.stroke();
+    // зловещее свечение вокруг
+    const gl = c.createRadialGradient(0, -16, 4, 0, -16, 34); gl.addColorStop(0, 'rgba(120,200,255,0.22)'); gl.addColorStop(1, 'rgba(120,200,255,0)');
+    c.fillStyle = gl; c.fillRect(-42, -46, 84, 54);
+    // хвост: низкий, дымный, рассыпается
+    const tg = c.createLinearGradient(-16, -14, -40, -10); tg.addColorStop(0, 'rgba(170,200,238,0.85)'); tg.addColorStop(1, 'rgba(150,190,235,0)');
+    c.strokeStyle = tg; c.lineWidth = 5.4; c.beginPath(); c.moveTo(-18, -18); c.bezierCurveTo(-26, -18, -32, -12 + Math.sin(t) * 2, -41, -11 + Math.sin(t + 1) * 3); c.stroke();
+    c.lineWidth = 2.4; c.strokeStyle = 'rgba(220,238,255,0.5)'; c.beginPath(); c.moveTo(-18, -19); c.bezierCurveTo(-26, -20, -32, -14, -40, -14 + Math.sin(t + 1) * 3); c.stroke();
+    // лапы
     const leg = (x, ph, far) => {
-      const sw = Math.sin(t + ph) * 4.5, lift = Math.max(0, Math.cos(t + ph)) * 2.2;
-      c.strokeStyle = far ? 'rgba(120,152,200,0.7)' : fur; c.lineWidth = 4.2;
-      c.beginPath(); c.moveTo(x, -12); c.lineTo(x + sw * 0.6, -6 - lift); c.lineTo(x + sw, -lift); c.stroke();
+      const sw = Math.sin(t + ph) * 5.5, lift = Math.max(0, Math.cos(t + ph)) * 3;
+      const kx = x + sw * 0.5, ky = -7 - lift, fx = x + sw, fy = -lift;
+      c.strokeStyle = far ? 'rgba(112,146,200,0.75)' : fur; c.lineCap = 'round';
+      c.lineWidth = 5.2; c.beginPath(); c.moveTo(x, -15); c.lineTo(kx, ky); c.stroke();
+      c.lineWidth = 3; c.beginPath(); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
+      c.strokeStyle = far ? 'rgba(200,225,250,0.6)' : 'rgba(240,250,255,0.95)'; c.lineWidth = 0.7;
+      for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(fx + 1 + k * 0.9, fy); c.lineTo(fx + 3.2 + k * 1.1, fy + 1.4); c.stroke(); }     // когти
     };
-    leg(9, 0, true); leg(-9, Math.PI, true);
-    // туловище: круп, спина дугой, грудь
+    leg(11, 0, true); leg(-12, Math.PI, true);
+    // туловище: горб загривка, тонкая талия, глубокая грудь
     c.fillStyle = fur;
-    c.beginPath(); c.moveTo(-17, -14); c.bezierCurveTo(-17, -22, -6, -22, 2, -21); c.bezierCurveTo(9, -22, 14, -21, 16, -17); c.bezierCurveTo(17, -11, 12, -8, 6, -8); c.lineTo(-8, -8); c.bezierCurveTo(-14, -8, -17, -10, -17, -14); c.closePath(); c.fill();
-    // клочья шерсти по спине
-    c.fillStyle = 'rgba(224,238,255,0.9)';
-    for (let i = 0; i < 7; i++) { const x = -13 + i * 4.2; c.beginPath(); c.moveTo(x, -20.4 + Math.abs(i - 3) * 0.5); c.lineTo(x + 1.8, -24.6 + Math.sin(t + i) * 0.8); c.lineTo(x + 3.2, -20.8 + Math.abs(i - 3) * 0.4); c.fill(); }
-    // шея + голова
-    const hy = howl ? -8 : 0;
+    c.beginPath(); c.moveTo(-21, -15); c.bezierCurveTo(-21, -24, -12, -26, -4, -23); c.bezierCurveTo(1, -24, 6, -32, 13, -29); c.bezierCurveTo(20, -26, 22, -18, 17, -11); c.bezierCurveTo(12, -6, 5, -9, 0, -10); c.bezierCurveTo(-8, -8, -21, -8, -21, -15); c.closePath(); c.fill();
+    // рёбра — видна пустота внутри
+    c.strokeStyle = 'rgba(54,84,140,0.55)'; c.lineWidth = 0.9;
+    for (let i = 0; i < 4; i++) { const x = -3 + i * 3.6; c.beginPath(); c.moveTo(x, -22 + (i > 1 ? 2 : 0)); c.quadraticCurveTo(x + 3.4, -17, x + 1.6, -11); c.stroke(); }
+    // вздыбленный загривок
+    c.fillStyle = 'rgba(230,242,255,0.95)';
+    for (let i = 0; i < 9; i++) { const x = -18 + i * 3.7, base = -24 - Math.max(0, i - 3) * 0.9, h = 5 + (i % 2) * 2.2 + (i > 3 ? 1.5 : 0); c.beginPath(); c.moveTo(x, base + 1.5); c.lineTo(x + 1.4 + Math.sin(t + i) * 0.5, base - h); c.lineTo(x + 3.2, base + 1); c.fill(); }
+    // шея и голова (опущена, пасть оскалена)
+    const hy = howl ? -10 : 0;
     c.fillStyle = fur;
-    c.beginPath(); c.moveTo(11, -21); c.lineTo(20 + (howl ? -2 : 0), -27 + hy * 0.3); c.lineTo(24, -22 + hy * 0.5); c.lineTo(17, -12); c.closePath(); c.fill();
-    c.save(); c.translate(howl ? 19 : 21, howl ? -29 : -22); c.rotate(howl ? -0.85 : 0.12);
-    c.fillStyle = 'rgba(196,218,246,0.97)';
-    c.beginPath(); c.ellipse(0, 0, 6.2, 4.5, 0, 0, 7); c.fill();                                 // череп
-    c.beginPath(); c.moveTo(3, -2.4); c.lineTo(12.5, 0.6); c.lineTo(12, 2.4); c.lineTo(3, 3.6); c.closePath(); c.fill();     // морда
-    c.fillStyle = 'rgba(224,238,255,0.95)'; c.beginPath(); c.moveTo(3, 2.4); c.lineTo(12, 2.2); c.lineTo(11, 4); c.lineTo(3, 4.6); c.closePath(); c.fill();   // нижняя челюсть
-    c.fillStyle = '#0c1424'; c.beginPath(); c.arc(12.4, 0.4, 1.3, 0, 7); c.fill();                  // нос
-    c.fillStyle = '#e8f8ff'; c.beginPath(); c.moveTo(8, 2.4); c.lineTo(8.8, 4.6); c.lineTo(9.6, 2.4); c.moveTo(10.4, 2.3); c.lineTo(11, 3.9); c.lineTo(11.6, 2.3); c.fill();   // клыки
-    c.fillStyle = 'rgba(154,255,255,0.35)'; c.beginPath(); c.arc(3.4, -1.1, 3, 0, 7); c.fill();       // свечение глаза
-    c.fillStyle = '#9affff'; c.beginPath(); c.moveTo(1.8, -1.9); c.lineTo(5.2, -0.9); c.lineTo(2.2, -0.1); c.closePath(); c.fill();
-    c.fillStyle = 'rgba(176,204,240,0.97)';                                                          // уши
-    c.beginPath(); c.moveTo(-3, -3); c.lineTo(-4.2, -10.5); c.lineTo(1.6, -4); c.fill();
-    c.beginPath(); c.moveTo(0.4, -3.6); c.lineTo(1.8, -11); c.lineTo(5.2, -3); c.fill();
+    c.beginPath(); c.moveTo(11, -29); c.lineTo(22 + (howl ? -3 : 0), -28 + hy * 0.4); c.lineTo(27, -20 + hy * 0.5); c.lineTo(18, -10); c.closePath(); c.fill();
+    c.save(); c.translate(howl ? 21 : 27, howl ? -35 : -19); c.rotate(howl ? -0.95 : 0.3);
+    // нижняя челюсть: отвисла
+    c.fillStyle = 'rgba(180,206,240,0.97)';
+    c.beginPath(); c.moveTo(1, 2); c.lineTo(13.5, 8 + (howl ? 1 : 0)); c.lineTo(13, 10); c.lineTo(1, 5); c.closePath(); c.fill();
+    // пасть изнутри
+    c.fillStyle = '#10101e'; c.beginPath(); c.moveTo(3, 0); c.lineTo(14, 1); c.lineTo(13.5, 8); c.lineTo(2, 4); c.closePath(); c.fill();
+    c.fillStyle = '#7a3a5a'; c.beginPath(); c.moveTo(5, 4); c.quadraticCurveTo(9, 3.4, 12, 6.4); c.lineTo(10, 7); c.closePath(); c.fill();     // язык
+    // череп и верхняя челюсть
+    c.fillStyle = 'rgba(204,224,248,0.98)';
+    c.beginPath(); c.ellipse(0, -1, 6.8, 5, 0, 0, 7); c.fill();
+    c.beginPath(); c.moveTo(3, -4); c.lineTo(15.5, -1.2); c.lineTo(15, 1.2); c.lineTo(3, 1.6); c.closePath(); c.fill();
+    // клыки сверху и снизу
+    c.fillStyle = '#f6fcff';
+    for (const [x, y, l] of [[8, 1.4, 2.8], [11, 1.2, 3.6], [13.6, 1.2, 2.4]]) { c.beginPath(); c.moveTo(x - 0.9, y); c.lineTo(x + 0.2, y + l); c.lineTo(x + 1, y); c.fill(); }
+    for (const [x, y, l] of [[9, 7.2, 2.8], [12, 8, 3]]) { c.beginPath(); c.moveTo(x - 0.9, y); c.lineTo(x + 0.2, y - l); c.lineTo(x + 1, y); c.fill(); }
+    // нос и морщины ярости
+    c.fillStyle = '#0c1424'; c.beginPath(); c.arc(15.6, -0.8, 1.5, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(60,92,150,0.8)'; c.lineWidth = 0.7;
+    c.beginPath(); c.moveTo(9, -3); c.lineTo(12.4, -2); c.moveTo(8.6, -1.6); c.lineTo(12, -0.6); c.stroke();
+    // злой глаз: свечение, узкий зрачок, нависшая бровь
+    c.fillStyle = 'rgba(154,255,255,0.4)'; c.beginPath(); c.arc(4.6, -1.7, 3.4, 0, 7); c.fill();
+    c.fillStyle = '#c8ffff'; c.beginPath(); c.moveTo(2.4, -1.2); c.lineTo(7.2, -3); c.lineTo(6.4, -0.2); c.lineTo(2.8, 0.2); c.closePath(); c.fill();
+    c.fillStyle = '#0c1a2c'; c.fillRect(4.6, -2.3, 1, 1.8);
+    c.fillStyle = '#26406c'; c.beginPath(); c.moveTo(1.4, -4.4); c.lineTo(8.2, -3.4); c.lineTo(7.8, -2.2); c.lineTo(1.6, -2.6); c.closePath(); c.fill();
+    // уши прижаты назад
+    c.fillStyle = 'rgba(176,204,240,0.98)';
+    c.beginPath(); c.moveTo(-1, -4); c.lineTo(-9, -8); c.lineTo(-2, -0.4); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-3, -2); c.lineTo(-10.5, -3); c.lineTo(-4.4, 1.6); c.closePath(); c.fill();
     c.restore();
-    leg(12, Math.PI * 0.5, false); leg(-6, Math.PI * 1.5, false);
-    // мех снизу растворяется в дымку
+    leg(14, Math.PI * 0.5, false); leg(-8, Math.PI * 1.5, false);
+    // нижняя часть растворяется: градиент и зерно
     c.globalCompositeOperation = 'destination-out';
-    const gg = c.createLinearGradient(0, -9, 0, 3); gg.addColorStop(0, 'rgba(0,0,0,0)'); gg.addColorStop(1, 'rgba(0,0,0,0.95)');
-    c.fillStyle = gg; c.fillRect(-30, -9, 62, 14);
+    const gg = c.createLinearGradient(0, -11, 0, 4); gg.addColorStop(0, 'rgba(0,0,0,0)'); gg.addColorStop(1, 'rgba(0,0,0,0.95)');
+    c.fillStyle = gg; c.fillRect(-44, -11, 88, 16);
+    for (let n = 0; n < 260; n++) { const x = -22 + rnd() * 48, y = -22 + rnd() * 24; if (rnd() > Math.pow((y + 22) / 24, 1.8)) continue; c.fillStyle = `rgba(0,0,0,${0.5 + rnd() * 0.5})`; c.fillRect(x, y, 0.8 + rnd() * 1.2, 0.8 + rnd() * 1.2); }
     c.globalCompositeOperation = 'source-over';
+    // искры холодной дымки
+    for (let n = 0; n < 16; n++) { c.fillStyle = `rgba(200,236,255,${0.2 + rnd() * 0.4})`; c.fillRect(-26 + rnd() * 52, -8 + rnd() * 10, 0.8 + rnd(), 0.8 + rnd()); }
   });
 }
 function fzDrawHi(c, cv, x, y, a, face, dy) {
@@ -997,6 +1217,9 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
       fzDraw(c, r.state === 'sing' && Math.floor(r.ph * 3) % 2 ? S.rusB : S.rusA, r.x, r.y, { a: r.alpha, dy: 3, lift: 0, face: 1 });
     }]);
   }
+  for (const w of F.wisps || []) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.5, () => fzWispDraw(c, w)]);
+  const N = F.noon;
+  if (N && vis(N.x, N.y) && N.alpha > 0) list.push([N.y + 0.2, () => fzDrawHi(c, fzNoonSprite(Math.floor(N.ph * 3) % 6), N.x, N.y, N.alpha, N.face, 6)]);
   for (const b of F.ban) if (vis(b.x, b.y) && b.alpha > 0) list.push([b.y + 0.3, () => {
     fzDrawHi(c, fzBansheeSprite(b.wail > 0 ? 1 : 0, Math.floor(b.ph * 2.2) % 6), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, -14 + Math.sin(b.ph * 1.7) * 3);
   }]);
