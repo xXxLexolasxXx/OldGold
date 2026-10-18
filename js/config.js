@@ -298,7 +298,7 @@ const SITE_HITS = 3;      // ударов на разметку площадки
 const HITS_PER_UNIT = 4;  // ударов молота на единицу материала
 const HIT_TIME = 0.6;     // секунд на удар
 const FARM_CROPS = ['wheat', 'hay', 'hops'];   // все виды полей
-const CARRY_CAP = { serf: 1, goat: 2, carter: 5 };   // сколько единиц за раз
+const CARRY_CAP = { serf: 1, goat: 3, carter: 5 };   // сколько единиц за раз
 
 // Жизнь жителей
 const SMOKE_TIME = 15, JOIN_SMOKE_TIME = 8;   // длительность перекура и подсевшего
