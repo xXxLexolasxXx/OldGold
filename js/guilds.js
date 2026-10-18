@@ -23,9 +23,14 @@ const GM_SAY = {
 };
 const REC_MAX = 4, REC_LVL_MAX = 10, MASTERY_MAX = 5;
 const G = { shots: [], t: 0 };
-// В общей деревне (кооператив) гильдий пока нет: сервер грузит те же файлы, поэтому всё выключаем,
-// а во вкладке «Гильдии» показываем анонс.
-const guildsOff = () => !!Game.coop || typeof coop !== 'undefined';
+// Общая деревня (кооператив): сервер грузит те же файлы и сам ведёт глав и рекрутов; у игроков —
+// зеркало мира, команды гильдии уходят серверу сообщением { t: 'guild' }.
+const isServer = () => typeof coop !== 'undefined';
+const isMirror = () => typeof Coop !== 'undefined' && !!Coop.on;
+const recOf = u => u.rec || (isMirror() ? u.gx : null) || null;
+const masteryOf = H => H.mastery != null ? H.mastery : isMirror() && Game.hero && Game.hero.hero === H && Game.hero.gxh ? Game.hero.gxh - 1 : null;
+function gsay(u, text) { const o = u && u.hero && u.hero.owner; if (o && isServer()) coopSay(o, text); else toast(text); }
+function gnews(text, b) { if (isServer()) coop.out.push({ msg: { t: 'toast', text } }); else toast(text, b); }
 
 // ================= Снаряжение для героя (herolife.js) =================
 if (typeof HL_GEAR !== 'undefined') {
@@ -411,7 +416,7 @@ Object.assign(MODELS, {
   const _st = heroStats;
   heroStats = function (h) {
     const s = _st(h);
-    const C = !guildsOff() && h && h.clsKey && GCLS[h.clsKey];
+    const C = h && h.clsKey && h.mastery != null && GCLS[h.clsKey];
     if (C) { const m = 1 + 0.25 * (h.mastery || 0); for (const k in C.bonus) s[k] += Math.round(C.bonus[k] * m); }
     if (h && h.equip) for (const sl of ['weapon', 'armor']) { const b = GEAR_BONUS[h.equip[sl]]; if (b) for (const k of ['str', 'agi', 'int', 'end']) if (b[k]) s[k] += b[k]; }
     return s;
@@ -428,7 +433,7 @@ function heroAtk(u) {
 function heroDef(u) { const a = u.hero.equip && GEAR_BONUS[u.hero.equip.armor]; return a ? a.def || 0 : 0; }
 
 function recAtk(u) { const R = u.rec; return Math.min(0.92, 0.3 + 0.06 * R.lvl + (R.armor ? 0.04 : 0)); }
-function unitCls(u) { return u.rec ? u.rec.cls : u.type === 'hero' && u.hero && u.hero.clsKey ? u.hero.clsKey : null; }
+function unitCls(u) { return u.rec ? u.rec.cls : u.type === 'hero' && u.hero && GCLS[u.hero.clsKey] ? u.hero.clsKey : null; }
 function unitAtk(u) { return u.type === 'hero' && u.hero ? heroAtk(u) : u.rec ? recAtk(u) : 0.3; }
 function unitRange(u) { const k = unitCls(u); return k ? GCLS[k].range : 1.5; }
 
@@ -530,7 +535,7 @@ function* fightGen(u, f) {
 
 const guildOf = u => u.rec ? Game.buildings.find(b => b.id === u.rec.guild && !b.removed) || null : null;
 function masterOf(b) { return Game.units.find(u => u.gm === b.id && !u.dead) || null; }
-function recruitsOf(b) { return Game.units.filter(u => u.rec && u.rec.guild === b.id && !u.dead); }
+function recruitsOf(b) { return Game.units.filter(u => { const R = recOf(u); return R && R.guild === b.id && !u.dead; }); }
 const isGuild = b => b && !b.isRoad && b.def && b.def.guild && b.state === 'done' && !b.removed;
 
 function spawnMaster(b) {
@@ -540,7 +545,7 @@ function spawnMaster(b) {
   u.look = 32 + ((Math.random() * 30) | 0) * 64;           // длинная борода: (look >> 5) % 2 === 1
   const names = GM_NAMES[cls];
   u.gmName = names[(Math.random() * names.length) | 0];
-  toast(`В ${b.def.name.toLowerCase()} пришёл глава: ${u.gmName}`, b);
+  gnews(`В ${b.def.name.toLowerCase()} пришёл глава: ${u.gmName}`, b);
   logEvent('people', `${UNIT_TYPES[C.gm].name} ${u.gmName} возглавил ${b.def.name.toLowerCase()}`, b.doorX + 0.5, b.doorY);
   floater(u.x, u.y - 1.6, 'Ученики есть?', '#f6d458');
   return u;
@@ -598,7 +603,7 @@ function* heroGuildGen(u, c) {
   if (H.clsKey === cls && (H.mastery || 0) >= MASTERY_MAX) { floater(gm.x, gm.y - 1.7, 'Мне больше нечему тебя учить!', '#f6e8b0'); return; }
   if (H.clsKey === cls && H.level < ((H.mastery || 0) + 1) * 2) { floater(gm.x, gm.y - 1.7, `Подрасти до ${((H.mastery || 0) + 1) * 2} уровня`, '#f6e8b0'); return; }
   const price = heroGuildPrice(H, cls);
-  if (!payGold(b, price)) { floater(gm.x, gm.y - 1.7, `Урок стоит ${price} золота`, '#f6e8b0'); toast(`${b.def.name}: нужно ${price} золота`, b); return; }
+  if (!payGold(b, price)) { floater(gm.x, gm.y - 1.7, `Урок стоит ${price} золота`, '#f6e8b0'); gsay(u, `${b.def.name}: нужно ${price} золота`); return; }
   u.meetB = b; gm.meet = u; gm.proc = null; gm.action = null;
   for (let k = 0; k < 8 && Math.hypot(gm.x - u.x, gm.y - u.y) > 2.2; k++) yield { wait: 0.5 };
   b.working = true;
@@ -614,22 +619,22 @@ function* heroGuildGen(u, c) {
   if (H.clsKey !== cls) {
     const was = H.clsKey && GCLS[H.clsKey];
     H.clsKey = cls; H.cls = C.name; H.mastery = 0;
-    toast(`${H.name} теперь ${C.name.toLowerCase()}${was ? ` (был ${was.name.toLowerCase()})` : ''}! Атака — клавиша Q или клик по врагу`);
+    gsay(u, `${H.name} теперь ${C.name.toLowerCase()}${was ? ` (был ${was.name.toLowerCase()})` : ''}! Атака — клавиша Q или клик по врагу`);
     logEvent('people', `${H.name} обучился в гильдии: ${C.name}`, u.x, u.y);
     floater(u.x, u.y - 1.9, C.name + '!', '#ffe070');
   } else {
     H.mastery = (H.mastery || 0) + 1;
-    toast(`${H.name}: мастерство «${C.name}» — ранг ${H.mastery}`);
+    gsay(u, `${H.name}: мастерство «${C.name}» — ранг ${H.mastery}`);
     floater(u.x, u.y - 1.9, `Ранг ${H.mastery}!`, '#ffe070');
   }
-  if (H.maxhp && typeof hlMaxHp === 'function') H.maxhp = hlMaxHp(H);
+  if (!H.owner && H.maxhp && typeof hlMaxHp === 'function') H.maxhp = hlMaxHp(H);
   fxBurst(u.x * TILE, u.y * TILE - 12, 18, ['#ffe070', '#fff6c0', C.col], 70, 60, 1, 1.8, 120);
   sfxAt('chime', u.x * TILE, u.y * TILE);
   // подарок главы: оружие класса из запасов гильдии
   if (H.equip && !H.equip.weapon && b.stock[C.weapon] > 0 && typeof hlAddItem === 'function' && Array.isArray(H.inv) && hlAddItem(H, C.weapon, 1)) {
     b.stock[C.weapon]--;
     floater(gm.x, gm.y - 1.6, 'Держи — пригодится!', '#f6e8b0');
-    toast(`${gm.gmName || 'Глава'} подарил герою: ${HL_GEAR[C.weapon].name.toLowerCase()}. Наденьте из рюкзака`);
+    gsay(u, `${gm.gmName || 'Глава'} подарил герою: ${HL_GEAR[C.weapon].name.toLowerCase()}. Наденьте из рюкзака`);
   }
   u._spr = null;
 }
@@ -669,7 +674,7 @@ function hireCheck(b) {
   if (!masterOf(b)) return 'Главы гильдии ещё нет';
   const q = b.hireQ || 0;
   if (recruitsOf(b).length + q >= REC_MAX) return `Не больше ${REC_MAX} рекрутов на гильдию`;
-  if (Game.units.filter(u => u.type === 'serf' && !u.dead).length - q <= 4) return 'Трудяг и так мало (нужно больше 4)';
+  if (!isMirror() && Game.units.filter(u => u.type === 'serf' && !u.dead).length - q <= 4) return 'Трудяг и так мало (нужно больше 4)';
   if (b.stock[C.weapon] < 1 + q) return `Нужно оружие: ${GOODS[C.weapon].name.toLowerCase()} в гильдии`;
   if (b.stock.gold < 1 + q) return 'Нужно 1 золото в казне гильдии';
   if (b.def.guild === 'mage' && b.stock.mana < 1 + q) return 'Нужна банка маны';
@@ -679,16 +684,16 @@ function hireCheck(b) {
 // Набор: гильдия ставит заявку и забирает первого трудягу, который освободится
 function hireRecruit(b) {
   const bad = hireCheck(b);
-  if (bad) { toast(`${b.def.name}: ${bad}`, b); return; }
+  if (bad) { gnews(`${b.def.name}: ${bad}`, b); return; }
   b.hireQ = (b.hireQ || 0) + 1;
-  if (!tryHire(b)) toast(`${b.def.name}: ждём, пока освободится трудяга`, b);
+  if (!tryHire(b)) gnews(`${b.def.name}: ждём, пока освободится трудяга`, b);
 }
 
 function tryHire(b) {
   const cls = b.def.guild, C = GCLS[cls], u = freeSerf(b);
   if (!u) return false;
   b.hireQ = Math.max(0, (b.hireQ || 0) - 1);
-  if (b.stock[C.weapon] < 1 || b.stock.gold < 1 || (cls === 'mage' && b.stock.mana < 1)) { toast(`${b.def.name}: заявка снята — не хватает снаряжения`, b); return true; }
+  if (b.stock[C.weapon] < 1 || b.stock.gold < 1 || (cls === 'mage' && b.stock.mana < 1)) { gnews(`${b.def.name}: заявка снята — не хватает снаряжения`, b); return true; }
   b.stock[C.weapon]--; b.stock.gold--;
   if (cls === 'mage') b.stock.mana--;
   const armor = b.stock[C.armor] > 0;
@@ -698,7 +703,7 @@ function tryHire(b) {
   u.rec = { cls, lvl: 1, xp: 0, guild: b.id, order: 'guard', train: 12, armor, name: REC_NAMES[(Math.random() * REC_NAMES.length) | 0] };
   floater(u.x, u.y - 1.6, 'В гильдию? Я мигом!', '#f6d458');
   logEvent('people', `Трудяга записался в ${b.def.name.toLowerCase()}`, b.doorX + 0.5, b.doorY);
-  toast(`${b.def.name}: новобранец ${u.rec.name} идёт на обучение`, b);
+  gnews(`${b.def.name}: новобранец ${u.rec.name} идёт на обучение`, b);
   return true;
 }
 
@@ -725,19 +730,22 @@ function recXp(u, n) {
 
 function recAnchor(u) {
   const R = u.rec, h = Game.hero;
+  const lead = Game.unitMap.get(R.leader);
+  if (R.order === 'follow' && lead && !lead.dead) return [lead.x, lead.y, 6];
   if (R.order === 'follow' && h && !h.dead) return [h.x, h.y, 6];
   if (R.order === 'hold' && R.pt) return [R.pt[0] + 0.5, R.pt[1] + 0.5, 5];
   const b = guildOf(u);
   return b ? [b.doorX + 0.5, b.doorY + 0.5, 7] : [u.x, u.y, 5];
 }
 
-function setOrder(u, order, pt) {
+function setOrder(u, order, pt, leader) {
   const R = u.rec;
   if (!R) return;
+  if (order === 'follow') R.leader = leader ? leader.id : Game.hero ? Game.hero.id : 0;
   if (order === 'drill') {
     const b = guildOf(u);
-    if (!b) { toast('Гильдии больше нет'); return; }
-    if (!payGold(b, 1)) { toast('Тренировка стоит 1 золото'); return; }
+    if (!b) { gsay(leader, 'Гильдии больше нет'); return; }
+    if (!payGold(b, 1)) { gsay(leader, 'Тренировка стоит 1 золото'); return; }
     R.back = R.order === 'drill' ? 'guard' : R.order;
   }
   R.order = order; R.pt = pt || null; R.target = null;
@@ -759,7 +767,7 @@ function* recruitGen(u) {
     R.train = 0;
     yield { leave: true };
     floater(u.x, u.y - 1.7, `${GCLS[R.cls].name} к бою готов!`, '#ffe070');
-    toast(`${unitTitle(u)} закончил обучение`, b);
+    gnews(`${unitTitle(u)} закончил обучение`, b);
     return;
   }
   // приказ «атаковать»
@@ -786,7 +794,7 @@ function* recruitGen(u) {
     return;
   }
   if (R.order === 'follow') {
-    const h = Game.hero;
+    const h = Game.unitMap.get(R.leader) || Game.hero;
     if (!h || h.dead) { R.order = 'guard'; return; }
     if (Math.hypot(u.x - h.x, u.y - h.y) > 2.6) {
       const s = randomFreeNear(Math.floor(h.x), Math.floor(h.y), 1, 2, (x, y) => isWalkable(x, y) && !World.door[idx(x, y)]);
@@ -811,7 +819,8 @@ function* recruitGen(u) {
 // ================= Тик =================
 
 function guildsTick(dt) {
-  if (guildsOff()) { G.shots.length = 0; return; }
+  if (isMirror()) { G.shots.length = 0; return; }
+  if (isServer()) guildServerSync();
   // снаряды
   for (let i = G.shots.length - 1; i >= 0; i--) {
     const s = G.shots[i];
@@ -842,31 +851,31 @@ function guildHTML(b) {
     : `<div class="irow muted">Глава гильдии скоро придёт…</div>`;
   if (H) {
     x += '<div class="isec">Герой</div>';
-    const mine = H.clsKey === cls, price = heroGuildPrice(H, cls);
-    const st = mine ? `${C.name}, ранг мастерства ${H.mastery || 0} из ${MASTERY_MAX}` : H.clsKey ? `сейчас ${GCLS[H.clsKey].name.toLowerCase()}` : 'без класса';
+    const ms = masteryOf(H), mine = H.clsKey === cls && ms != null, price = mine ? 2 + ms : 3;
+    const st = mine ? `${C.name}, ранг мастерства ${ms} из ${MASTERY_MAX}` : H.clsKey ? `сейчас ${(H.cls || (GCLS[H.clsKey] || {}).name || H.clsKey).toLowerCase()}` : 'без класса';
     x += `<div class="irow small">${H.name}: ${st}</div>`;
-    if (!(mine && (H.mastery || 0) >= MASTERY_MAX))
-      x += `<button class="g-wide" data-gd="hero:${b.id}" ${gm ? '' : 'disabled'}><b>${mine ? `Урок мастерства — ${price} золота` : `${H.clsKey ? 'Переучиться' : 'Обучиться'}: ${C.name.toLowerCase()} — ${price} золота`}</b><small>${mine ? `нужен ${((H.mastery || 0) + 1) * 2} уровень героя` : `+${Object.entries(C.bonus).map(([k, v]) => ({ str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' })[k] + ' ' + v).join(', ')}; ${C.verb.toLowerCase()} (Q)`}</small></button>`;
+    if (!(mine && ms >= MASTERY_MAX))
+      x += `<button class="g-wide" data-coop="1" data-gd="hero:${b.id}" ${gm ? '' : 'disabled'}><b>${mine ? `Урок мастерства — ${price} золота` : `${ms != null ? 'Переучиться' : 'Обучиться'}: ${C.name.toLowerCase()} — ${price} золота`}</b><small>${mine ? `нужен ${(ms + 1) * 2} уровень героя` : `+${Object.entries(C.bonus).map(([k, v]) => ({ str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' })[k] + ' ' + v).join(', ')}; ${C.verb.toLowerCase()} (Q)`}</small></button>`;
   }
   const rs = recruitsOf(b), bad = hireCheck(b);
   x += `<div class="isec">Рекруты · ${rs.length}/${REC_MAX}</div>`;
   for (const u of rs) {
-    const R = u.rec, need = 60 * R.lvl;
+    const R = recOf(u), need = 60 * R.lvl;
     const ord = R.train > 0 ? 'учится' : { guard: 'охраняет гильдию', follow: 'идёт за героем', hold: 'стоит на посту', drill: 'тренируется' }[R.order] || '';
-    x += `<div class="irow g-rec" data-gd="sel:${u.id}"><img class="portrait" src="${portraitURL(u.type, u.look)}" alt=""><div style="flex:1"><div>${R.name || ''} · ур. ${R.lvl}${R.armor ? ' · в доспехе' : ''}</div><div class="g-xp"><i style="width:${R.lvl >= REC_LVL_MAX ? 100 : Math.round(R.xp / need * 100)}%"></i></div><div class="small muted">${ord}</div></div><button data-gd="drill:${u.id}" title="Тренировка с главой: 1 золото, +25 опыта">⚔</button></div>`;
+    x += `<div class="irow g-rec" data-gd="sel:${u.id}"><img class="portrait" src="${portraitURL(u.type, u.look)}" alt=""><div style="flex:1"><div>${R.name || ''} · ур. ${R.lvl}${R.armor ? ' · в доспехе' : ''}</div><div class="g-xp"><i style="width:${R.lvl >= REC_LVL_MAX ? 100 : Math.round(R.xp / need * 100)}%"></i></div><div class="small muted">${ord}</div></div><button data-coop="1" data-gd="drill:${u.id}" title="Тренировка с главой: 1 золото, +25 опыта">⚔</button></div>`;
   }
   if (b.hireQ > 0) x += `<div class="irow small warn">Ждут свободного трудягу: ${b.hireQ}</div>`;
-  x += `<button class="g-wide" data-gd="hire:${b.id}" ${bad ? 'disabled' : ''}><b>Набрать рекрута</b><small>${bad || `трудяга + ${GOODS[C.weapon].name.toLowerCase()} + 1 золото${cls === 'mage' ? ' + мана' : ''}; ${GOODS[C.armor].name.toLowerCase()} — если есть`}</small></button>`;
+  x += `<button class="g-wide" data-coop="1" data-gd="hire:${b.id}" ${bad ? 'disabled' : ''}><b>Набрать рекрута</b><small>${bad || `трудяга + ${GOODS[C.weapon].name.toLowerCase()} + 1 золото${cls === 'mage' ? ' + мана' : ''}; ${GOODS[C.armor].name.toLowerCase()} — если есть`}</small></button>`;
   x += '<div class="tip small">Клик по рекруту на карте — выбрать и командовать. Оружие и доспехи везут сюда трудяги из оружейной и мастерской доспехов.</div>';
   return x;
 }
 
 function recCardHTML(u) {
-  const R = u.rec, C = GCLS[R.cls], need = 60 * R.lvl;
+  const R = recOf(u), C = GCLS[R.cls], need = 60 * R.lvl;
   const btn = (k, t, on) => `<button class="hp-ab${on ? ' on' : ''}" data-rc="${k}">${t}</button>`;
   return `<div class="ihead"><img class="bpic" src="${portraitURL(u.type, u.look)}" alt=""><div><h3 style="color:${C.col}">${R.name || C.name}</h3><span class="muted small">${C.name} · уровень ${R.lvl}${R.armor ? ' · в доспехе' : ''}</span></div></div>
     <div class="hp-xp"><i style="width:${R.lvl >= REC_LVL_MAX ? 100 : Math.round(R.xp / need * 100)}%"></i></div>
-    <div class="irow small">Сила удара: <b>${Math.round(recAtk(u) * 100)}%</b> · дальность: <b>${C.range}</b></div>
+    <div class="irow small">Сила удара: <b>${Math.round(Math.min(0.92, 0.3 + 0.06 * R.lvl + (R.armor ? 0.04 : 0)) * 100)}%</b> · дальность: <b>${C.range}</b></div>
     <div class="hp-abs">${btn('follow', 'За героем', R.order === 'follow')}${btn('guard', 'Охранять гильдию', R.order === 'guard')}</div>
     <div class="hp-abs">${btn('drill', 'Тренировка (1 зол.)', R.order === 'drill')}${btn('dismiss', 'Распустить', false)}</div>
     <div class="tip">Клик по земле — встать там на пост, по скелету, ходячему дереву или волку — атаковать. Esc — снять выбор.</div><button class="hc-x" title="Закрыть (Esc)">×</button>`;
@@ -881,15 +890,16 @@ function recCardUpdate() {
       const u = Game.selUnit;
       if (e.target.closest('.hc-x')) { Game.selUnit = null; updateUI(true); return; }
       const el = e.target.closest('[data-rc]');
-      if (!el || !u || !u.rec) return;
+      if (!el || !u || !recOf(u)) return;
       const k = el.dataset.rc;
-      if (k === 'dismiss') { if (confirm('Распустить рекрута? Он снова станет трудягой, оружие вернётся в гильдию.')) dismissRecruit(u); }
+      if (k === 'dismiss') { if (confirm('Распустить рекрута? Он снова станет трудягой, оружие вернётся в гильдию.')) { if (isMirror()) coopSend({ t: 'guild', a: 'dismiss', id: u.id }); else dismissRecruit(u); } }
+      else if (isMirror()) coopSend({ t: 'guild', a: 'order', id: u.id, o: k });
       else setOrder(u, k);
       updateUI(true);
     });
   }
   const u = Game.selUnit;
-  if (!u || !u.rec || u.dead || guildsOff()) { card.style.display = 'none'; return; }
+  if (!u || !recOf(u) || u.dead) { card.style.display = 'none'; return; }
   const html = recCardHTML(u);
   if (card.dataset.h !== html) { card.dataset.h = html; card.innerHTML = html; }
   card.style.display = 'block';
@@ -899,9 +909,11 @@ function heroGuildBlock() {
   const h = Game.hero, H = h && h.hero;
   if (!H) return '';
   const C = H.clsKey && GCLS[H.clsKey];
-  const squad = Game.units.filter(u => u.rec && !u.dead && !(u.rec.train > 0));
+  const squad = Game.units.filter(u => { const R = recOf(u); return R && !u.dead && !(R.train > 0); });
   let x = '';
-  if (C) x += `<div class="hp-abs"><button class="hp-ab" data-hero="g_strike" title="Ближайший враг в радиусе ${C.range + 3} (Q)"><b>${C.verb}</b><small>${C.name}, ранг ${H.mastery || 0} · сила ${Math.round(heroAtk(h) * 100)}%</small></button></div>`;
+  const ms = masteryOf(H);
+  if (C && ms != null) x += `<div class="hp-abs"><button class="hp-ab" data-hero="g_strike" title="Ближайший враг рядом (Q)"><b>${C.verb}</b><small>${C.name}, ранг ${ms}${isMirror() ? '' : ` · сила ${Math.round(heroAtk(h) * 100)}%`}</small></button></div>`;
+  else if (isMirror()) x += '<div class="hp-abs"><button class="hp-ab" data-hero="g_strike" title="Ближайший враг рядом (Q)"><b>Атака</b><small>гильдии научат большему</small></button></div>';
   else x += '<div class="irow small muted">Класс: нет — обучитесь в гильдии воинов, лучников, разбойников или магов</div>';
   if (squad.length) x += `<div class="irow small">Отряд: <b>${squad.length}</b> <button class="hp-sm" data-hero="g_follow">За мной</button><button class="hp-sm" data-hero="g_guard">По гильдиям</button></div>`;
   return x;
@@ -920,8 +932,8 @@ function initGuildUI() {
   #hero-card .hc-guild{margin-top:4px}
   .g-soon{grid-column:1/-1;display:flex;flex-direction:column;gap:3px;margin:0 0 6px;padding:7px 9px;background:linear-gradient(#3a2c14,#241a0e);border:1px dashed #d8b04a;border-radius:5px;font-size:12px;line-height:1.35}
   .g-soon b{color:#f6d458;font-size:13px}.g-soon small{opacity:.7}
-  .bbtn.soon{position:relative;opacity:.55;filter:grayscale(.6)}.bbtn.soon:hover{opacity:.8}
-  .g-badge{position:absolute;top:3px;right:3px;padding:0 5px;background:#8a6a1c;color:#fff4d0;border-radius:3px;font-size:10px;letter-spacing:.5px;text-transform:uppercase}`;
+  .bbtn{position:relative}
+  .g-badge{position:absolute;top:3px;right:3px;padding:0 5px;background:#2f7a3a;color:#fff4d0;border-radius:3px;font-size:10px;letter-spacing:.5px;text-transform:uppercase}`;
   document.head.appendChild(st);
   document.getElementById('info').addEventListener('click', e => {
     const el = e.target.closest('[data-gd]');
@@ -929,6 +941,7 @@ function initGuildUI() {
     const [k, v] = el.dataset.gd.split(':');
     const b = Game.buildings.find(x => x.id === +v);
     const u = Game.unitMap.get(+v);
+    if (isMirror() && k !== 'sel') { if (b || u) coopSend({ t: 'guild', a: k === 'hero' ? 'learn' : k, id: +v }); updateUI(true); return; }
     if (k === 'hire' && b) hireRecruit(b);
     else if (k === 'hero' && b && Game.hero) {
       const c = { kind: 'guild', b, tx: b.doorX, ty: b.doorY, label: 'Учиться' };
@@ -940,8 +953,109 @@ function initGuildUI() {
   });
   window.addEventListener('keydown', e => {
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-    if (e.code === 'KeyQ' && Game.hero && !guildsOff()) heroAbility('g_strike');
+    if (e.code === 'KeyQ' && Game.hero) heroAbility('g_strike');
   });
+}
+
+// ================= Общая деревня: сервер =================
+
+function guildServerSync() {
+  if (!G.hooked) {
+    G.hooked = true;
+    for (const k of ['gx', 'gm', 'gmName', 'gxh']) if (!COOP_UNIT_EX.includes(k)) COOP_UNIT_EX.push(k);
+    const _cc = coopCmd;
+    coopCmd = function (name, json, admin) {
+      let m = null;
+      try { m = JSON.parse(json); } catch (e) { return; }
+      if (m && m.t === 'guild') { guildCoopCmd(name, m, admin); return; }
+      return _cc(name, json, admin);
+    };
+    // ранг мастерства героя переживает выход и возвращение игрока
+    const _hd = coopHeroData;
+    coopHeroData = function (name) {
+      const j = _hd(name), u = coop.players.get(name);
+      if (!j || !u || u.hero.mastery == null) return j;
+      const d = JSON.parse(j); d.ms = u.hero.mastery; return JSON.stringify(d);
+    };
+    const _cj = coopJoin;
+    coopJoin = function (name, json) {
+      const id = _cj(name, json);
+      let d = null; try { d = JSON.parse(json); } catch (e) { /* ничего */ }
+      const u = coop.players.get(name);
+      if (u && d && Number.isInteger(d.ms) && GCLS[u.hero.clsKey]) u.hero.mastery = Math.max(0, Math.min(MASTERY_MAX, d.ms));
+      return id;
+    };
+  }
+  if ((G.syncT || 0) > Game.time) return;      // данные рекрутов для игроков — дважды в секунду
+  G.syncT = Game.time + 0.5;
+  for (const u of Game.units) {
+    const R = u.rec;
+    if (R) u.gx = { cls: R.cls, lvl: R.lvl, xp: R.xp, order: R.order, name: R.name || '', armor: !!R.armor, train: R.train > 0 ? 1 : 0, guild: R.guild, leader: R.leader || 0 };
+    else if (u.gx) u.gx = null;
+    if (u.owner && u.hero) u.gxh = u.hero.mastery != null ? u.hero.mastery + 1 : 0;
+  }
+}
+
+function guildCoopCmd(name, m, admin) {
+  const hero = coop.players.get(name);
+  const can = k => { if (admin || coop.perms[k]) return true; coopSay(name, 'Хост запретил: ' + COOP_PERMS[k].toLowerCase()); return false; };
+  const b = Game.buildings.find(x => x.id === m.id && isGuild(x));
+  const u = Game.unitMap.get(m.id);
+  const rec = u && u.rec && !u.dead ? u : null;
+  switch (m.a) {
+    case 'learn': if (b && hero) issueCmd(hero, { kind: 'guild', b, tx: b.doorX, ty: b.doorY, label: 'Учиться' }); break;
+    case 'hire': if (b && can('train')) hireRecruit(b); break;
+    case 'drill': if (rec && can('manage')) setOrder(rec, 'drill', null, hero); break;
+    case 'dismiss': if (rec && can('manage')) dismissRecruit(rec); break;
+    case 'order':
+      if (!rec || !can('manage')) break;
+      if (m.o === 'hold' && Number.isInteger(m.x) && Number.isInteger(m.y) && inb(m.x, m.y) && isWalkable(m.x, m.y)) setOrder(rec, 'hold', [m.x, m.y], hero);
+      else if (['follow', 'guard', 'drill'].includes(m.o)) setOrder(rec, m.o, null, hero);
+      break;
+    case 'attack': {
+      if (!rec || !can('manage') || !Number.isInteger(m.x) || !Number.isInteger(m.y)) break;
+      const f = foesNear(m.x + 0.5, m.y + 0.5, 1.6)[0];
+      if (f) { setOrder(rec, 'hold', [Math.floor(rec.x), Math.floor(rec.y)], hero); rec.rec.target = f; }
+      break;
+    }
+    case 'squad':
+      if (!hero || !can('manage')) break;
+      for (const x of Game.units) if (x.rec && !x.dead && !(x.rec.train > 0)) setOrder(x, m.o === 'follow' ? 'follow' : 'guard', null, hero);
+      coopSay(name, m.o === 'follow' ? 'Отряд идёт за вашим героем' : 'Рекруты вернулись охранять гильдии');
+      break;
+  }
+}
+
+// ================= Общая деревня: клик игрока =================
+
+function guildMirrorClick(t) {
+  let near = null, bd = 0.8;
+  for (const u of Game.units) {
+    if (u.inside || u.dead) continue;
+    const d = Math.hypot(u.x - (t[0] + 0.5), u.y - (t[1] + 0.5));
+    if (d < bd) { bd = d; near = u; }
+  }
+  if (near && near.gx) { Game.selected = null; Game.selUnit = near; updateUI(true); return true; }
+  const s = Game.selUnit;
+  if (s && s.gx && near !== Game.hero) {
+    const f = foesNear(t[0] + 0.5, t[1] + 0.5, 1.4)[0];
+    if (f) { coopSend({ t: 'guild', a: 'attack', id: s.id, x: Math.floor(f.o.x), y: Math.floor(f.o.y) }); floater(f.o.x, f.o.y - 1.6, 'Атаковать', '#ff9a70'); return true; }
+    const b = buildingAt(t);
+    if (b && b.id === s.gx.guild) { coopSend({ t: 'guild', a: 'order', id: s.id, o: 'guard' }); floater(b.doorX + 0.5, b.doorY - 0.4, 'Охранять', '#f6d458'); return true; }
+    const tx = b ? b.doorX : t[0], ty = b ? b.doorY : t[1];
+    if (!isWalkable(tx, ty)) { toast('Сюда не пройти'); return true; }
+    coopSend({ t: 'guild', a: 'order', id: s.id, o: 'hold', x: tx, y: ty });
+    floater(tx + 0.5, ty - 0.4, 'Встать здесь', '#f6d458');
+    return true;
+  }
+  // герой игрока: клик по гильдии — учиться у главы
+  const b = buildingAt(t), h = Game.hero;
+  if (h && isGuild(b) && !b.upg && Math.hypot(h.x - (t[0] + 0.5), h.y - (t[1] + 0.5)) > 0.8) {
+    coopSend({ t: 'guild', a: 'learn', id: b.id });
+    floater(b.doorX + 0.5, b.doorY - 0.4, 'Учиться у главы', '#f6d458');
+    return true;
+  }
+  return false;
 }
 
 // ================= Анонс для общей деревни =================
@@ -949,19 +1063,13 @@ function initGuildUI() {
 const GUILD_TYPES = ['guild_warrior', 'guild_archer', 'guild_rogue', 'guild_mage'];
 
 function guildAnnounceHTML() {
-  return `<div class="g-soon"><b>Скоро в общей деревне: гильдии!</b>
-    <span>Воины, лучники, разбойники и маги. Главы гильдий будут учить героев-игроков, а рекрутов можно будет водить отрядом вместе с друзьями.</span>
-    <small>Пока гильдии работают только в одиночной игре.</small></div>`;
+  return `<div class="g-soon"><b>Новинка: гильдии уже в общей деревне!</b>
+    <span>Воины, лучники, разбойники и маги. Глава гильдии учит вашего героя и набирает рекрутов — водите отряд вместе с друзьями.</span>
+    <small>Клик героем по гильдии — учиться. Клик по рекруту — командовать. Q — атака.</small></div>`;
 }
 
 {
-  // сервер и клиент общей деревни не дают ставить гильдии
-  const _cp = checkPlacement;
-  checkPlacement = function (type, x, y, rot) {
-    if (BUILDINGS[type] && BUILDINGS[type].guild && guildsOff()) return 'Гильдии в общей деревне появятся позже';
-    return _cp(type, x, y, rot);
-  };
-  // во вкладке «Гильдии» видны все четыре здания с пометкой «скоро»
+  // в общей деревне вкладка «Гильдии» видна сразу — с анонсом
   const _mis = menuItemShown;
   menuItemShown = function (type) { if (Game.coop && GUILD_TYPES.includes(type)) return true; return _mis(type); };
   const _rbl = renderBuildList;
@@ -970,12 +1078,7 @@ function guildAnnounceHTML() {
     if (!Game.coop || BUILD_CATS[UI.cat] !== 'Гильдии') return;
     const list = document.getElementById('build-list');
     list.insertAdjacentHTML('afterbegin', guildAnnounceHTML());
-    for (const btn of list.querySelectorAll('.bbtn')) {
-      if (!GUILD_TYPES.includes(btn.dataset.type)) continue;
-      btn.classList.add('soon');
-      btn.onclick = () => toast('Гильдии в общей деревне появятся позже — пока их можно построить в одиночной игре');
-      btn.insertAdjacentHTML('beforeend', '<span class="g-badge">скоро</span>');
-    }
+    for (const btn of list.querySelectorAll('.bbtn')) if (GUILD_TYPES.includes(btn.dataset.type)) btn.insertAdjacentHTML('beforeend', '<span class="g-badge">новое</span>');
   };
 }
 
@@ -984,13 +1087,13 @@ function guildAnnounceHTML() {
 {
   const _think = Unit.prototype.think;
   Unit.prototype.think = function () {
-    if ((this.gm || this.rec) && !guildsOff()) {
+    if ((this.gm || this.rec) && !isMirror()) {
       if (this.wantsEat()) { const inn = findInn(this); if (inn) { this.idleFlag = false; return eatGen(this, inn); } this.nextEatTry = Game.time + 15; }
       if (this.rec) return recruitGen(this);
       return masterGen(this);
     }
     // рекрут из старого сохранения без данных — делаем по умолчанию
-    if (GCLS[this.type] && UNIT_TYPES[this.type].recruit && !guildsOff()) {
+    if (GCLS[this.type] && UNIT_TYPES[this.type].recruit && !isMirror()) {
       this.rec = { cls: this.type, lvl: 1, xp: 0, guild: 0, order: 'hold', pt: [Math.floor(this.x), Math.floor(this.y)], train: 0 };
       return recruitGen(this);
     }
@@ -1002,8 +1105,7 @@ function guildAnnounceHTML() {
 
   const _rc = resolveCmd;
   resolveCmd = function (t) {
-    const h = Game.hero;
-    if (!guildsOff() && h && !h.dead && inb(t[0], t[1])) {
+    if (inb(t[0], t[1])) {
       const f = foesNear(t[0] + 0.5, t[1] + 0.5, 1.4)[0];
       if (f) return { kind: 'attack', f, tx: Math.floor(f.o.x), ty: Math.floor(f.o.y), label: 'Атаковать' };
       const b = buildingAt(t);
@@ -1018,7 +1120,7 @@ function guildAnnounceHTML() {
     else if (c.kind === 'guild') { if (u.type === 'hero') yield* heroGuildGen(u, c); }
     else if (c.kind === 'equip' && u.hero && u.hero.clsKey && u.hero.inv && u.hero.inv[c.slot] && typeof HL_GEAR !== 'undefined') {
       const k = u.hero.inv[c.slot].k, C = GCLS[u.hero.clsKey];
-      if (HL_GEAR[k] && (k === C.weapon || k === C.armor)) yield* quickEquipGen(u, c);
+      if (C && HL_GEAR[k] && (k === C.weapon || k === C.armor)) yield* quickEquipGen(u, c);
       else yield* _run(u, c);
     } else yield* _run(u, c);
   };
@@ -1033,6 +1135,15 @@ function guildAnnounceHTML() {
   const _ab = heroAbility;
   heroAbility = function (k) {
     const h = Game.hero;
+    if (isMirror() && (k === 'g_strike' || k === 'g_follow' || k === 'g_guard')) {
+      if (!h) return;
+      if (k === 'g_strike') {
+        const f = foesNear(h.x, h.y, 9)[0];
+        if (!f) { floater(h.x, h.y - 1.6, 'Врагов рядом нет', '#e8e0c0'); return; }
+        coopSend({ t: 'go', x: Math.floor(f.o.x), y: Math.floor(f.o.y) });
+      } else coopSend({ t: 'guild', a: 'squad', o: k.slice(2) });
+      return;
+    }
     if (k === 'g_strike') {
       if (!h || h.dead || !h.hero) return;
       const C = h.hero.clsKey && GCLS[h.hero.clsKey];
@@ -1052,7 +1163,7 @@ function guildAnnounceHTML() {
 
   const _click = onLeftClickTile;
   onLeftClickTile = function (t) {
-    if (!guildsOff() && !Game.tool && inb(t[0], t[1])) {
+    if (!isMirror() && !Game.tool && inb(t[0], t[1])) {
       let near = null, bd = 0.8;
       for (const u of Game.units) {
         if (u.inside || u.dead) continue;
@@ -1084,7 +1195,7 @@ function guildAnnounceHTML() {
   const _ib = infoBuilding;
   infoBuilding = function (b) {
     let h = _ib(b);
-    if (isGuild(b) && !b.upg && !guildsOff()) {
+    if (isGuild(b) && !b.upg) {
       const i = h.lastIndexOf('<div class="idesc">');
       h = i >= 0 ? h.slice(0, i) + guildHTML(b) + h.slice(i) : h + guildHTML(b);
     }
@@ -1095,7 +1206,7 @@ function guildAnnounceHTML() {
   heroCardUpdate = function () {
     _hcu();
     const card = document.getElementById('hero-card');
-    if (!card || card.style.display === 'none' || !Game.hero || guildsOff()) { const old = card && card.querySelector('.hc-guild'); if (old) old.remove(); return; }
+    if (!card || card.style.display === 'none' || !Game.hero) return;
     if (Mobile.on && !heroCardOpen) return;
     let el = card.querySelector('.hc-guild');
     if (!el) { el = document.createElement('div'); el.className = 'hc-guild'; const tip = card.querySelector('.tip'); tip ? tip.before(el) : card.appendChild(el); el.dataset.h = ''; }
@@ -1124,7 +1235,7 @@ function guildAnnounceHTML() {
     Game.units.forEach((u, k) => {
       const d = s.units[k];
       if (!d) return;
-      if (u.rec) d.rc = u.rec;
+      if (u.rec) d.rc = Object.assign({}, u.rec, { target: undefined });
       if (u.gm) { d.gm = u.gm; d.gmn = u.gmName; }
     });
     return s;
@@ -1143,11 +1254,27 @@ function guildAnnounceHTML() {
   const _start = startGame;
   startGame = function () {
     _start(); initGuildUI(); updateUI(true);
+    // клиент общей деревни принимает данные глав и рекрутов вместе с юнитами
+    if (typeof COOP_UNIT_EX !== 'undefined') for (const k of ['gx', 'gm', 'gmName', 'gxh']) if (!COOP_UNIT_EX.includes(k)) COOP_UNIT_EX.push(k);
+    // трудяга, ставший рекрутом (и обратно), меняет тип на сервере — зеркало должно его подхватить
+    if (typeof coopUnits === 'function' && !G.unitsHooked) {
+      G.unitsHooked = true;
+      const _cu = coopUnits;
+      coopUnits = function (m) {
+        _cu(m);
+        for (const d of m.units || []) { const u = Game.unitMap.get(d.i); if (u && UNIT_TYPES[d.t] && u.type !== d.t) { u.type = d.t; u._spr = null; } }
+      };
+    }
+    if (!G.clickHooked) {
+      G.clickHooked = true;
+      const _c2 = onLeftClickTile;
+      onLeftClickTile = function (t) { if (isMirror() && !Game.tool && inb(t[0], t[1]) && guildMirrorClick(t)) return; _c2(t); };
+    }
     // при входе в общую деревню — короткое объявление (coopclient.js грузится после нас)
     if (typeof coopApplyInit === 'function' && !G.coopHooked) {
       G.coopHooked = true;
       const _cai = coopApplyInit;
-      coopApplyInit = function (m) { _cai(m); setTimeout(() => toast('Новость: гильдии уже в одиночной игре, в общую деревню придут позже'), 1500); };
+      coopApplyInit = function (m) { _cai(m); setTimeout(() => toast('Новинка: в общей деревне появились гильдии! Вкладка «Гильдии» в строительстве'), 1500); };
     }
   };
 
@@ -1171,18 +1298,19 @@ function guildAnnounceHTML() {
     const ring = (u, col, r) => { c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); c.ellipse(u.x * TILE, u.y * TILE + 6, r, r * 0.5, 0, 0, Math.PI * 2); c.stroke(); };
     for (const u of Game.units) {
       if (u.dead || u.inside) continue;
-      const w = u.rec ? GCLS[u.rec.cls].weapon : u.type === 'hero' && u.hero && u.hero.equip ? u.hero.equip.weapon : null;
+      const R = recOf(u);
+      const w = R ? GCLS[R.cls].weapon : u.type === 'hero' && u.hero && u.hero.equip ? u.hero.equip.weapon : null;
       if (w && GOODS[w] && !u.anim) {
         const ic = iconCanvas('good', w), f = u.face || 1;
         c.save(); c.translate(Math.round(u.x * TILE + f * 6), Math.round(u.y * TILE - 6)); if (f < 0) c.scale(-1, 1);
         c.imageSmoothingEnabled = false; c.drawImage(ic, -5, -9, 11, 11); c.restore();
       }
-      if (u.rec) {
+      if (R) {
         if (Game.selUnit === u) ring(u, `rgba(170,170,255,${0.7 + 0.3 * Math.sin(t * 6)})`, 12);
         c.font = 'bold 7px sans-serif'; c.textAlign = 'center';
-        const lbl = `${GCLS[u.rec.cls].name} ${u.rec.lvl}`, px = u.x * TILE, py = u.y * TILE - 34;
+        const lbl = `${GCLS[R.cls].name} ${R.lvl}`, px = u.x * TILE, py = u.y * TILE - 34;
         c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; c.strokeText(lbl, px, py);
-        c.fillStyle = GCLS[u.rec.cls].col; c.fillText(lbl, px, py); c.textAlign = 'start';
+        c.fillStyle = GCLS[R.cls].col; c.fillText(lbl, px, py); c.textAlign = 'start';
       } else if (u.gm) {
         c.font = 'bold 7px sans-serif'; c.textAlign = 'center';
         const px = u.x * TILE, py = u.y * TILE - 36;
