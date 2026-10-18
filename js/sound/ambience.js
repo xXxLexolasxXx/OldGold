@@ -141,10 +141,10 @@ function ambienceTick() {
     Amb2.bird -= dt;
     if (Amb2.bird <= 0) {
       const dawn = typeof Music !== 'undefined' && now < Music.dawnUntil;
-      Amb2.bird = dawn ? ambRnd(2.5, 6) : ambRnd(8, 22) * (1 + rain);
+      Amb2.bird = dawn ? ambRnd(2.2, 5) : ambRnd(6, 16) * (1 + rain);
       const kinds = [['tweet', 4], ['trill', 2], ['warble', 3], ['coo', 1.5]];
       if (now > Amb2.cuckooAt) kinds.push(['cuckoo', 1]);
-      const k = ambPick(kinds); if (k === 'cuckoo') Amb2.cuckooAt = now + 90;
+      const k = ambPick(kinds); if (k === 'cuckoo') Amb2.cuckooAt = now + 70;
       const [x, y] = ambPoint(); sfxAt(k, x, y, 0.8 + Math.random() * 0.4);
     }
   }
@@ -153,7 +153,7 @@ function ambienceTick() {
   if (night > 0.6) {
     Amb2.owl -= dt;
     if (Amb2.owl <= 0) {
-      Amb2.owl = ambRnd(18, 50);
+      Amb2.owl = ambRnd(12, 35);
       const [x, y] = ambPoint(); sfxAt('hoot', x, y, 0.8);
       if (Math.random() < 0.55) { const [x2, y2] = ambPoint(); sfxAt('hootFar', x2, y2, 0.7, ambRnd(2, 3.5)); }
     }
@@ -163,7 +163,7 @@ function ambienceTick() {
   if (night > 0.7 && fog > 0.4 && now > (Amb2.scaryHold || 0)) {
     Amb2.scary -= dt;
     if (Amb2.scary <= 0) {
-      Amb2.scary = ambRnd(45, 120);
+      Amb2.scary = ambRnd(35, 90);
       const k = ambPick([['howl', 3], ['bell', 2], ['whisper', 2], ['gust', 2]].filter(p => p[0] !== Amb2.lastScary));
       Amb2.lastScary = k;
       const [x, y] = ambPoint(); sfxAt(k, x, y, 1);
@@ -173,7 +173,7 @@ function ambienceTick() {
   // редкий писк летучей мыши, если они над деревней
   if (night > 0.5 && Game.bats && Game.bats.length) {
     Amb2.bat -= dt;
-    if (Amb2.bat <= 0) { Amb2.bat = ambRnd(25, 70); const b = Game.bats[(Math.random() * Game.bats.length) | 0]; sfxAt('squeak', b.x * TILE, b.y * TILE, 0.55); }
+    if (Amb2.bat <= 0) { Amb2.bat = ambRnd(20, 55); const b = Game.bats[(Math.random() * Game.bats.length) | 0]; sfxAt('squeak', b.x * TILE, b.y * TILE, 0.55); }
   }
 }
 
@@ -181,3 +181,17 @@ function ambienceTick() {
   const _tick = sfxTick;
   sfxTick = function (dt) { _tick(dt); ambienceTick(); };
 }
+
+// ---------- Баланс громкости ----------
+// Замер на AnalyserNode после лимитера (звук в центре экрана, vel 1): события 0.12–0.25, фон ≈ 0.06–0.12.
+// Сверху поджаты выбивающиеся (хлопок, горлица, кукушка, белки, дятел, колокол, удары), снизу подняты почти неслышные
+// шорохи (червь, светлячок, кора, мыши). Множители применяются один раз после загрузки всех скриптов.
+// Раз в минуту-две звуки гномов (чихи, свист, трубка) стали чуть чаще: кулдауны × 0.75.
+window.addEventListener('load', () => {
+  const MUL = {
+    five: 0.63, coo: 0.6, cuckoo: 0.6, squirrelCrack: 0.55, peckDrum: 0.55, graveRise: 0.72, thud: 0.78, crit: 0.78, parry: 0.8, bell: 0.75,
+    wormSlither: 5, firefly: 1.8, barkRustle: 2, mouseRustle: 1.8, mouseGnaw: 1.6, whisper: 1.35,
+  };
+  for (const k in MUL) if (SFX_DEF[k]) SFX_DEF[k].gain *= MUL[k];
+  if (typeof GNOME_SFX_CD !== 'undefined') for (const k in GNOME_SFX_CD) GNOME_SFX_CD[k] *= 0.75;
+});

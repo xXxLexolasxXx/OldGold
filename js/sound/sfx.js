@@ -15,6 +15,7 @@ function sfxInit() {
   const ctx = audioCoreInit();
   if (!ctx) return;
   Sfx.ctx = ctx; Sfx.noise = AudioCore.noise;
+  try { clapSingles(ctx); } catch (e) { /* хлопки соберутся при первом звуке */ }   // заранее, чтобы первый хлопок не запаздывал
   // шина мира: мягкий компрессор склеивает удары стройки, затем в общую шину звуков
   const comp = ctx.createDynamicsCompressor();
   comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.18;
