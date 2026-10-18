@@ -497,6 +497,7 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
     } else {
     // пышные усы
     ellipse(c, hx - 1.9, hy + 3.5, 2.1, 1, shade(bc, 0.12)); ellipse(c, hx + 1.9, hy + 3.5, 2.1, 1, shade(bc, 0.05));
+    }
   } else if (view === 'E') {
     drawEar(c, hx - 2.6, hy + 0.2, -1, sk);
     c.fillStyle = radgrad(c, hx, hy - 1, 0.4, R * 1.5, [[0, sk[0]], [0.7, sk[1]], [1, sk[2]]]);
@@ -543,12 +544,10 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'clap':    return [[3.4, shY + 1.4], [5.2 + f * 0.9, shY + 0.6]];
     case 'five':    return f ? [[3.6, shY - 2.4], [5.8, headY - 3.4]] : [[1.8, shY - 3.4], [2.2, headY - 6.4]];   // замах — хлопок
     case 'panic':   return [[2.4, shY - 2.6], [3.4 + f * 1.4, headY - 4.6 + f * 1.2]];
-    case 'chest':   return [[2.4, shY + 2], [1.4, shY + 0.2 + f * 0.6]];                  // рука за пазухой
-    case 'drink':   return [[3, shY + 2], [4.6, headY + 3.2 + f * 0.6]];                  // фляжка у рта
-    default:        return [[3.4, shY], [6.4, shY - 0.6 - f * 0.3]];     // point
     case 'eat':     return f ? [[3.2, shY + 0.6], [4.6, headY + 3.4]] : [[3.4, shY + 2.4], [5.2, shY + 3.4]];
     case 'chest':   return [[2.4, shY + 2], [1.4, shY + 0.2 + f * 0.6]];                  // рука за пазухой
     case 'drink':   return [[3, shY + 2], [4.6, headY + 3.2 + f * 0.6]];                  // фляжка у рта
+    default:        return [[3.4, shY], [6.4, shY - 0.6 - f * 0.3]];     // point
   }
   switch (g) {
     case 'wave':    return [[side * 6.2, shY - 1.6], [side * (6.4 + f * 1.2), headY - 3.4]];
@@ -559,12 +558,10 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'clap':    return [[side * 5.8, shY + 2.4], [side * (0.9 + f * 1.8), shY + 1.2]];     // хлопает перед грудью
     case 'five':    return f ? [[side * 6.4, shY - 2.2], [side * 6.6, headY - 3.6]] : [[side * 5.6, shY - 3.4], [side * 5.8, headY - 7]];                    // ладонь вверх навстречу
     case 'panic':   return [[side * 6.4, shY - 2], [side * (6.6 - f * 1.6), headY - 4.2 + f * 1.6]];   // машет руками над головой
-    case 'chest':   return [[side * 4.6, shY + 2.4], [side * 1.8, shY + 0.4 + f * 0.6]];
-    case 'drink':   return [[side * 4.6, shY + 1.4], [side * 1.6, headY + 3.6 + f * 0.6]];
-    default:        return [[side * 5.8, shY + 0.4], [side * 7.4, shY - 0.6 - f * 0.3]];
     case 'eat':     return f ? [[side * 5, shY + 0.4], [side * 1.4, headY + 4]] : [[side * 5.4, shY + 2.4], [side * 3.4, shY + 4.2]];   // ложка ко рту / в миску
     case 'chest':   return [[side * 4.6, shY + 2.4], [side * 1.8, shY + 0.4 + f * 0.6]];
     case 'drink':   return [[side * 4.6, shY + 1.4], [side * 1.6, headY + 3.6 + f * 0.6]];
+    default:        return [[side * 5.8, shY + 0.4], [side * 7.4, shY - 0.6 - f * 0.3]];
   }
 }
 
@@ -583,17 +580,6 @@ function drawFlask(c, x, y, tilt) {
 // opt.gait: '' — вразвалочку, 'drunk' — шатается, 'tired' — голодный плетётся;
 // opt.gest: wave | fist | scratch | stretch | yawn | clap | point, opt.gf — кадр жеста 0/1.
 
-function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
-  const O = OUTFIT[type] || OUTFIT.serf;
-  const shirt = O.robe ? (O.robeCol || '#2e5a26') : (O.coat || L.green), pants = O.pants;
-  const gait = opt.gait || '', gest = carry ? '' : (opt.gest || ''), gf = opt.gf || 0;
-  const ph = pose === 'walk' ? frame / 8 * Math.PI * 2 : 0;
-  const sw = Math.sin(ph);
-  const limp = injury === 'leg' && pose === 'walk';
-  const bob = pose === 'walk' ? -Math.abs(Math.cos(ph)) * (limp ? 1.2 : gait === 'tired' ? 0.3 : 0.7) + 0.3 : 0;
-  const courier = !!O.frame;
-  const duck = pose === 'duck' || pose === 'tame';
-  const crouch = duck ? 1.8 : 0;
 // Юбка официантки: колоколом до колен, красная с подолом-фестоном и белым фартуком (вид спереди/сзади)
 function femSkirt(c, hipY, front, sw) {
   const top = hipY - 0.2, hem = -1.6, w = 7.4 + Math.abs(sw) * 0.5;
@@ -626,6 +612,17 @@ function femBust(c, shY, skin) {
   ellipse(c, 0, shY - 0.4, 2.2, 0.8, skin[0]);
 }
 
+function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
+  const O = OUTFIT[type] || OUTFIT.serf;
+  const shirt = O.robe ? (O.robeCol || '#2e5a26') : (O.coat || L.green), pants = O.pants;
+  const gait = opt.gait || '', gest = carry ? '' : (opt.gest || ''), gf = opt.gf || 0;
+  const ph = pose === 'walk' ? frame / 8 * Math.PI * 2 : 0;
+  const sw = Math.sin(ph);
+  const limp = injury === 'leg' && pose === 'walk';
+  const bob = pose === 'walk' ? -Math.abs(Math.cos(ph)) * (limp ? 1.2 : gait === 'tired' ? 0.3 : 0.7) + 0.3 : 0;
+  const courier = !!O.frame;
+  const duck = pose === 'duck' || pose === 'tame';
+  const crouch = duck ? 1.8 : 0;
   let lean = 0;
   if (pose === 'walk') lean = carry ? 0.16 : 0.05;
   if (pose === 'walk' && gait === 'tired') lean += 0.16;
@@ -723,6 +720,16 @@ function femBust(c, shY, skin) {
       c.fill(); c.clip();
       mossSpeckle(c, -4, shY - 1, 9, 3, 0.9, r);
       c.restore();
+      if (O.fem) {
+        c.beginPath(); c.moveTo(-3.2, hipY - 0.2); c.lineTo(3.8, hipY - 0.2); c.quadraticCurveTo(5.6, -3.6, 6.4, -1.6);
+        for (let k = 0; k < 5; k++) c.quadraticCurveTo(6.4 - (k + 0.5) * 2.4, -0.5, 6.4 - (k + 1) * 2.4, -1.6);
+        c.quadraticCurveTo(-4.6, -4, -3.2, hipY - 0.2); c.closePath();
+        c.fillStyle = lingrad(c, -5, 0, 6, 0, [[0, shade('#8e3a2c', 0.2)], [0.6, '#8e3a2c'], [1, shade('#8e3a2c', -0.4)]]); c.fill();
+        c.fillStyle = '#e8c860'; c.fillRect(-5.2, -1.9, 11.4, 0.5);
+        c.fillStyle = '#f6f1e4'; c.beginPath(); c.moveTo(1.4, hipY); c.lineTo(4, hipY); c.lineTo(5.4, -2); c.lineTo(1.8, -2); c.closePath(); c.fill();
+        ellipse(c, 2.9, shY + 3.1, 2.3, 2.4, skin[0]); c.fillStyle = '#3f7a46'; c.beginPath(); c.ellipse(2.9, shY + 4.3, 2.4, 1.5, 0, 0, Math.PI); c.fill();    // грудь в профиль
+        ellipse(c, 2.5, shY + 2.2, 0.8, 0.6, 'rgba(255,240,225,0.7)'); ellipse(c, 1.6, shY + 0.4, 2.2, 1, skin[0]);
+      }
       if (O.vest) { c.fillStyle = O.vest; c.beginPath(); c.moveTo(-2, shY); c.lineTo(1.8, shY); c.quadraticCurveTo(4.4, shY + 3, 3, hipY + 0.6); c.lineTo(-2.4, hipY + 0.6); c.fill(); }
       if (O.apron && !O.fem) { c.fillStyle = lingrad(c, 0, shY + 1, 0, -2.4, [[0, O.apron], [1, shade(O.apron, -0.25)]]); c.beginPath(); c.moveTo(1.2, shY + 2); c.lineTo(3.8, shY + 2.4); c.quadraticCurveTo(5, -5, 3.8 + sw * 0.4, -2.4); c.lineTo(1.4, -2.4); c.closePath(); c.fill(); if (O.blood) { ellipse(c, 3, -7.4, 0.6, 0.8, '#9c2c20'); ellipse(c, 3.3, -4.8, 0.5, 0.6, '#ac3e2a'); } }
       if (!O.robe) {
@@ -734,16 +741,6 @@ function femBust(c, shY, skin) {
       }
       if (courier) line(c, -2, shY + 0.2, 2.4, hipY, '#4a2c14', 0.6);
       drawHead(c, 'E', 0.6, headY, L, O, type, pose === 'smoke', beardBottom, r);
-      if (O.fem) {
-        c.beginPath(); c.moveTo(-3.2, hipY - 0.2); c.lineTo(3.8, hipY - 0.2); c.quadraticCurveTo(5.6, -3.6, 6.4, -1.6);
-        for (let k = 0; k < 5; k++) c.quadraticCurveTo(6.4 - (k + 0.5) * 2.4, -0.5, 6.4 - (k + 1) * 2.4, -1.6);
-        c.quadraticCurveTo(-4.6, -4, -3.2, hipY - 0.2); c.closePath();
-        c.fillStyle = lingrad(c, -5, 0, 6, 0, [[0, shade('#8e3a2c', 0.2)], [0.6, '#8e3a2c'], [1, shade('#8e3a2c', -0.4)]]); c.fill();
-        c.fillStyle = '#e8c860'; c.fillRect(-5.2, -1.9, 11.4, 0.5);
-        c.fillStyle = '#f6f1e4'; c.beginPath(); c.moveTo(1.4, hipY); c.lineTo(4, hipY); c.lineTo(5.4, -2); c.lineTo(1.8, -2); c.closePath(); c.fill();
-        ellipse(c, 2.9, shY + 3.1, 2.3, 2.4, skin[0]); c.fillStyle = '#3f7a46'; c.beginPath(); c.ellipse(2.9, shY + 4.3, 2.4, 1.5, 0, 0, Math.PI); c.fill();    // грудь в профиль
-        ellipse(c, 2.5, shY + 2.2, 0.8, 0.6, 'rgba(255,240,225,0.7)'); ellipse(c, 1.6, shY + 0.4, 2.2, 1, skin[0]);
-      }
       drawCap(c, O, 'E', 0.6, headY, tipSway, L, r);
       if (sling) {
         poly(c, [[-0.4, shY + 0.6], [3.4, shY + 3.2], [-0.8, shY + 4.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
@@ -850,6 +847,7 @@ function femBust(c, shY, skin) {
         if (O.apron && !O.fem) { c.fillStyle = lingrad(c, 0, shY + 1.6, 0, -1.6, [[0, O.apron], [1, shade(O.apron, -0.25)]]); c.beginPath(); c.moveTo(-2.8, shY + 2); c.lineTo(2.8, shY + 2); c.lineTo(3.4, -1.6); c.lineTo(-3.4, -1.6); c.closePath(); c.fill(); if (O.blood) { ellipse(c, -1, -6.4, 0.7, 0.9, '#9c2c20'); ellipse(c, 1.4, -4, 0.6, 0.7, '#ac3e2a'); } }
         if (courier) { line(c, -2.8, shY, -2.6, hipY, '#4a2c14', 0.8); line(c, 2.8, shY, 2.6, hipY, '#4a2c14', 0.8); }
       }
+      if (O.fem) femSkirt(c, hipY, front, sw);
       // широкий кожаный ремень с пряжкой и сумочкой
       c.fillStyle = '#5a3a1e'; c.fillRect(-4.9, hipY - 0.4, 9.8, 1.6);
       c.fillStyle = 'rgba(255,220,170,0.25)'; c.fillRect(-4.9, hipY - 0.4, 9.8, 0.35);
@@ -860,12 +858,12 @@ function femBust(c, shY, skin) {
         c.fillStyle = '#5a3a1e'; c.fillRect(2.2, hipY + 0.8, 2.2, 0.6);
       }
     }
+    if (O.fem && front) femBust(c, shY, skin);
     if (front) { arm(-1); arm(1); }
     drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);
     drawCap(c, O, view, 0, headY, tipSway, L, r);
     // поднятая рука жеста — поверх головы и бороды
     if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic') arm(-1); }
-      if (O.fem) femSkirt(c, hipY, front, sw);
     if (pose === 'smoke' && front) {
       arm(1);
       // трубка: чубук от губ к руке и дымящая чашечка
@@ -876,7 +874,6 @@ function femBust(c, shY, skin) {
       drawFrame(c, 'N', 0, shY + 2.6);
       if (carry) { c.save(); c.translate(0, shY + 0.6); drawLoad(c, carry); c.restore(); }
     }
-    if (O.fem && front) femBust(c, shY, skin);
     if (carry && !courier) { c.save(); c.translate(0, headY - 6.6); drawLoad(c, carry); c.restore(); }
     c.restore();
   }
