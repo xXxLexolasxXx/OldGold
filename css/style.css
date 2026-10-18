@@ -20,7 +20,7 @@
     radial-gradient(circle, #e4dcc8 0 1px, #14100b 1.5px 2.6px, transparent 3px) right 1px top 1px / 7px 7px no-repeat,
     radial-gradient(circle, #e4dcc8 0 1px, #14100b 1.5px 2.6px, transparent 3px) left 1px bottom 1px / 7px 7px no-repeat,
     radial-gradient(circle, #e4dcc8 0 1px, #14100b 1.5px 2.6px, transparent 3px) right 1px bottom 1px / 7px 7px no-repeat;
-  --planks: var(--staples), linear-gradient(rgba(0,0,0,0.0), rgba(0,0,0,0.18)), var(--plank-tex), #2a1e14;
+  --planks: var(--staples), var(--plank-tex), #2a1e14;
   --parch-tex: none;
 }
 
@@ -64,8 +64,9 @@ kbd {
   width: 316px; flex: none;
   display: flex; flex-direction: column;
   background:
-    linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.2) 10%, rgba(0,0,0,0.2) 90%, rgba(0,0,0,0.6)),
-    var(--wood-tex), #2a1e14;
+    linear-gradient(90deg, rgba(0,0,0,0.4), rgba(0,0,0,0) 8%, rgba(0,0,0,0) 92%, rgba(0,0,0,0.45)),
+    var(--plank-tex), #5a3e22;
+  image-rendering: pixelated;
   border-right: 3px solid #0a0705;
   box-shadow: 3px 0 10px rgba(0,0,0,0.7), inset -1px 0 0 var(--line);
   padding: 8px 10px 10px;
@@ -81,7 +82,7 @@ kbd {
   background: linear-gradient(#fff2a0, #e4b434 55%, #8e5a18);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 0 #000);
+  filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 2px #000) drop-shadow(0 2px 0 #000);
   line-height: 1.1;
 }
 
@@ -98,7 +99,7 @@ kbd {
 button {
   font-family: inherit; font-size: 13px;
   color: var(--text);
-  background: linear-gradient(#4a3624, #33251a);
+  background: linear-gradient(#5a4128, #3a2a1a);
   border: 2px solid #0a0705;
   border-radius: 0;
   box-shadow: inset 0 1px 0 rgba(255,220,160,0.22), inset 0 -2px 0 rgba(0,0,0,0.4), inset 0 0 0 1px #6a4e30;
@@ -135,7 +136,7 @@ button img { width: 18px; height: 18px; }
   padding: 6px;
   scrollbar-width: thin; scrollbar-color: #6a4e30 #120c08;
 }
-#tab-area { background: rgba(10,7,5,0.55); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line); }
+#tab-area { background: rgba(10,7,5,0.62); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line); }
 .tab { display: none; }
 .tab.active { display: block; }
 
@@ -221,7 +222,7 @@ button img { width: 18px; height: 18px; }
   flex: 0 0 auto;
   height: clamp(220px, 40vh, 360px);
   display: flex; flex-direction: column;
-  background: linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45)), var(--wood-tex), #241a12;
+  background: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.55)), var(--plank-tex), #3a2a1a;
   border: 2px solid #0a0705;
   box-shadow: inset 0 0 0 1px var(--line-hi), inset 0 0 0 3px #0a0705, inset 0 0 18px rgba(0,0,0,0.6), 0 -2px 8px rgba(0,0,0,0.5);
   min-height: 0;
@@ -344,7 +345,7 @@ body.info-float #tab-area { flex: 1 1 auto; }
 }
 .dd { position: relative; display: inline-flex; }
 .dd-l { margin-right: auto; }
-.dd-t { cursor: pointer; color: var(--text); font-family: Consolas, monospace; font-size: 13px; text-shadow: 0 1px 0 #000; gap: 7px; min-height: 30px; }
+.dd-t { cursor: pointer; color: var(--text); font-family: Consolas, monospace; font-size: 13px; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 0 #000; gap: 7px; min-height: 30px; }
 .dd-t:hover { filter: brightness(1.25); }
 .dd-t::after { content: '▾'; font-size: 10px; color: var(--gold); margin-left: 1px; }
 .dd.open > .dd-t { box-shadow: inset 0 0 0 1px var(--gold), 0 2px 0 rgba(0,0,0,0.5); }
@@ -355,12 +356,12 @@ body.info-float #tab-area { flex: 1 1 auto; }
 .dd-l .dd-menu { right: auto; left: 0; }
 .dd.open > .dd-menu { display: flex; }
 #res-bar { flex-direction: column; align-items: stretch; gap: 2px; min-width: 150px; padding: 6px 8px; }
-.res-row { display: flex; align-items: center; gap: 8px; font-family: Consolas, monospace; font-size: 13px; padding: 1px 2px; border-bottom: 1px dotted rgba(138,106,66,0.45); text-shadow: 0 1px 0 #000; }
+.res-row { display: flex; align-items: center; gap: 8px; font-family: Consolas, monospace; font-size: 13px; padding: 1px 2px; border-bottom: 1px dotted rgba(20,10,4,0.6); text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 0 #000; }
 .res-row:last-child { border-bottom: 0; }
 .res-row img { width: 22px; height: 22px; }
 .res-row .rn { flex: 1; font-family: inherit; }
 .res-row b { color: var(--gold-hi); }
-#clock { font-family: Consolas, monospace; color: var(--gold); font-size: 15px; min-width: 64px; justify-content: center; text-shadow: 0 1px 0 #000; }
+#clock { font-family: Consolas, monospace; color: var(--gold); font-size: 15px; min-width: 64px; justify-content: center; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 0 #000; }
 .speed { gap: 2px; padding: 3px 6px; }
 .speed button, .dd-menu button { padding: 2px 7px; }
 .dd-menu button { min-width: 34px; min-height: 30px; }
