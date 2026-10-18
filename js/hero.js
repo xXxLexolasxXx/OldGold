@@ -191,12 +191,21 @@ function selectHero(center) {
 }
 
 function heroCanJoin(u) {
-  return u && u.type !== 'hero' && !u.dead && u.type !== 'goat' && u.type !== 'carter' && !UNIT_TYPES[u.type].animal;
+  return u && u.type !== 'hero' && !u.dead && (u.type === 'goat' || u.type === 'carter' || !UNIT_TYPES[u.type].animal);
+}
+
+// Коза идёт в команду с 5 уровня героя, извозчик — с 10
+const TEAM_LEVEL = { goat: 5, carter: 10 };
+function heroTeamLocked(hero, u) {
+  const need = TEAM_LEVEL[u.type] || 0;
+  return need > hero.hero.level ? need : 0;
 }
 
 function joinTeam(hero, u) {
   const mates = Game.units.filter(x => x.teamOf === hero.id);
   if (mates.includes(u)) { leaveTeam(u); return; }
+  const need = heroTeamLocked(hero, u);
+  if (need) { toast(`${hero.hero.name}: ${UNIT_TYPES[u.type].name.toLowerCase()} пойдёт в команду с ${need} уровня героя`); floater(u.x, u.y - 1.4, `С ${need} ур.`, '#e8a070'); return; }
   if (mates.length >= TEAM_MAX) leaveTeam(mates[0]);
   heroStopUnit(u);
   if (u.isCourier) u.releaseOcc();
@@ -412,7 +421,7 @@ function teamThink(u) {
   u.idleFlag = false; u.job = null;
   if (u.home) { if (u.home.worker === u) u.home.worker = null; u.home = null; }
   const c = h.cmd;
-  if (u.type === 'serf') return serfMateGen(u, h, c);   // трудяга носит предметы под цель героя
+  if (u.isCourier) return serfMateGen(u, h, c);   // трудяга носит предметы под цель героя
   if (c && c.kind !== 'move' && c.kind !== 'work') return cmdGen(u, c, false);
   if (Math.hypot(u.x - h.x, u.y - h.y) > 2.5) return followGen(u, h);
   return (function* () { yield { wait: 0.8 }; })();
