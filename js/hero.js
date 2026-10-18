@@ -532,7 +532,7 @@ function heroBtnUpdate() {
     for (const u of Game.units) if (u.teamOf === h.id) ring(u, 'rgba(120,200,255,0.8)', 10);
     if (!h.inside) {
       c.font = 'bold 8px sans-serif'; c.textAlign = 'center';
-      const nm = h.hero.name, px = h.x * TILE, py = h.y * TILE - 36;
+      const nm = h.hero.name, px = h.x * TILE, py = h.y * TILE - 44;
       c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; c.strokeText(nm, px, py);
       c.fillStyle = sel ? '#ffe070' : '#f0d890'; c.fillText(nm, px, py);
       c.textAlign = 'start';
