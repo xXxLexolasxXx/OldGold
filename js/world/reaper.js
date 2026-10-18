@@ -141,11 +141,12 @@ function paintGhostPaw(c, hx, hy, ang, len0, boo, pk = 1) {
 function reaperHorn(c, pts, w, s, boo) {
   const HS = 0.68, b0 = pts[0];                                    // рога невысокие: всё ужато к основанию
   pts = pts.map(q => [b0[0] + (q[0] - b0[0]) * HS, b0[1] + (q[1] - b0[1]) * HS]); w *= 0.9;
-  const N = 16, P = [], W = [];
+  const N = 28, P = [], W = [], K = pts.length - 1;
+  const cr = (p0, p1, p2, p3, t) => [0, 1].map(i => 0.5 * (2 * p1[i] + (p2[i] - p0[i]) * t + (2 * p0[i] - 5 * p1[i] + 4 * p2[i] - p3[i]) * t * t + (3 * p1[i] - p0[i] - 3 * p2[i] + p3[i]) * t * t * t));
   for (let n = 0; n <= N; n++) {
-    const t = n / N, u = 1 - t;
-    P.push([pts[0][0] * u * u + 2 * pts[1][0] * u * t + pts[2][0] * t * t, pts[0][1] * u * u + 2 * pts[1][1] * u * t + pts[2][1] * t * t]);
-    W.push((w * Math.pow(u, 0.8) + 0.15) * (1 + 0.34 * Math.sin(n * 2.1 + w) * (n > 1 && n < N - 1 ? 1 : 0)) + (n % 4 === 2 ? 0.45 * u : 0));   // бугры и наросты вдоль рога
+    const t = n / N, u = 1 - t, f = Math.min(K - 1e-6, t * K), i = Math.floor(f);          // кривая Катмулла–Рома через точки: рог может виться как угодно
+    P.push(cr(pts[Math.max(0, i - 1)], pts[i], pts[i + 1], pts[Math.min(K, i + 2)], f - i));
+    W.push((w * Math.pow(u, 0.8) + 0.15) * (1 + 0.34 * Math.sin(n * 1.3 + w) * (n > 1 && n < N - 1 ? 1 : 0)) + (n % 5 === 3 ? 0.45 * u : 0));   // бугры и наросты вдоль рога
   }
   const edge = (side) => P.map((q, n) => {
     const a = P[Math.max(0, n - 1)], b = P[Math.min(N, n + 1)], dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1;
@@ -170,19 +171,15 @@ function reaperHorn(c, pts, w, s, boo) {
 function reaperHorns(c, v, sn, boo) {
   const sw = sn(1, 0.7) * 0.5;
   for (const s of [-1, 1]) {
-    if (v === 1) {            // высокие бычьи: вверх и чуть внутрь, вторая зазубрина на сгибе
-      reaperHorn(c, [[s * 7, -13], [s * 15 + sw * s, -22], [s * 10, -31]], 2.1, s, boo);
-      reaperHorn(c, [[s * 11.6, -20.4], [s * 17, -22.5], [s * 19.5, -27]], 1, s, boo);
-    } else if (v === 2) {     // корона: растопыренные шипы разной длины
-      reaperHorn(c, [[s * 5, -16], [s * 6.5, -23], [s * 5, -30]], 1.6, s, boo);
-      reaperHorn(c, [[s * 8.6, -13], [s * 14, -17], [s * 20.5, -17.5 + sw]], 1.8, s, boo);
-      reaperHorn(c, [[s * 10, -9], [s * 15, -9], [s * 19.5, -4]], 1.2, s, boo);
-    } else {                  // завитые бараньи: широкая дуга назад-вниз и закрут к щеке
-      reaperHorn(c, [[s * 8, -13], [s * 21, -19 + sw], [s * 19, -7]], 2.5, s, boo);
-      reaperHorn(c, [[s * 17.4, -11], [s * 18.5, -3], [s * 13.5, -1.5]], 1.3, s, boo);
+    const H = pts => reaperHorn(c, pts.map(([x, y]) => [s * x, y]), pts.w || 2.3, s, boo);
+    if (v === 1) {            // один рог, извивающийся вверх змейкой
+      const q = [[7, -13], [12.5, -17.5], [6.5, -22], [12, -27], [7, -32 + sw], [10, -36]]; q.w = 2.2; H(q);
+    } else if (v === 2) {     // один рог: уходит вбок и закручивается над головой внутрь, как баранья спираль вверх
+      const q = [[7, -13], [13, -16], [17, -23], [14, -30], [8, -31], [6, -26], [9, -24 + sw]]; q.w = 2.3; H(q);
+    } else {                  // завитые бараньи: широкая дуга назад-вниз и тугой закрут к щеке
+      const q = [[8, -13], [16, -19 + sw], [22, -14], [21, -6], [15, -2], [11, -5], [12.5, -8]]; q.w = 2.6; H(q);
     }
   }
-  if (v === 2) reaperHorn(c, [[0.5, -18], [0.5, -25], [0.5, -31]], 1.6, 1, boo);     // центральный шип короны
 }
 
 function reaperSprite(mood, i, v = 0) {
