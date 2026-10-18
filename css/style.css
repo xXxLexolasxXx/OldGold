@@ -371,9 +371,9 @@ body.info-float #tab-area { flex: 1 1 auto; }
 #loading .load-title {
   position: absolute; left: 0; right: 0; top: 5vh; text-align: center; pointer-events: none;
 }
-#loading h1, #loading h2 { opacity: 0; }   /* заголовок рисуется пиксельными буквами на холсте */
+/* заголовок — чёткими буквами поверх холста (пиксельные были нечитаемы) */
 #loading h1 {
-  margin: 0; font-size: clamp(34px, 7vw, 76px); letter-spacing: 0.08em; font-weight: bold;
+  margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(40px, 8vw, 92px); letter-spacing: 0.06em; font-weight: bold;
   background: linear-gradient(#fff2a0, #e4b434 55%, #8e5a18);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 18px rgba(255,170,60,0.45));

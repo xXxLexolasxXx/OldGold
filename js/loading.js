@@ -452,7 +452,7 @@
   }
   function drawTitle(t) {
     const h1 = document.querySelector('#loading .load-title h1'), h2 = document.querySelector('#loading .load-title h2');
-    if (!h1 || !h2) return;
+    if (!h1 || !h2) return;   // заголовок теперь обычный текст поверх холста — пиксельные буквы не рисуем
     const s1 = parseFloat(getComputedStyle(h1).fontSize) / PSc * 0.92, s2 = Math.max(8, parseFloat(getComputedStyle(h2).fontSize) / PSc * 0.95);
     const key = Math.round(s1) + ':' + Math.round(s2) + ':' + PSc;
     if (TITLE.key !== key) { TITLE.key = key; TITLE.a = bmpText('Gnomeunity', `bold ${Math.round(s1)}px Georgia, "Times New Roman", serif`, '1px'); TITLE.b = bmpText('OldGold', `bold ${Math.round(s2)}px Georgia, "Times New Roman", serif`, `${Math.max(2, Math.round(s2 * 0.45))}px`); }
