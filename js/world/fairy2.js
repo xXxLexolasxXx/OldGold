@@ -14,6 +14,7 @@ const FZ_PAL = {
   L: '#5a4630', l: '#8a7050', w: '#b09a70', M: '#3e6a2a', m: '#68a040',
   g: '#6a8a5a', G: '#4a6a40', h: '#2e4a2c', H: '#4a7a44', r: '#5a4632', R: '#3c2e20', u: '#3e3424',
   S: '#4a8a7c', s: '#2e6a5c', b: '#8ad0b0', a: '#2c6a3a', A: '#4a9a50',
+  z: '#c8843a', Z: '#8a5420', X: '#e8b060', x: '#c83a28', q: '#f4ecd8',
   p: '#e6d4c4', P: '#c4a898', c: '#d4607a', T: '#3a9ab8', Y: '#78d4e4', C: '#2a7a98', j: '#58d8c8', J: '#2e9a98', o: '#e8a0b8',
   W: '#f6fbff', V: '#dce8f6', B: '#a8b8d8', D: '#6a7ea8', n: '#1a2438',
   f: '#b6c4e0', F: '#7684a8', y: '#9affff', d: '#56628a',
@@ -22,86 +23,119 @@ const fzSpr = (k, rows) => FZ_CACHE[k] || (FZ_CACHE[k] = faSprite(rows, FZ_PAL))
 const FZ_CACHE = {};
 
 // ---------- Карты ----------
-const FZ_LESHY = [
-  '..l.....mm.....l..',
-  '..wl...mMMm...lw..',
-  '...wl.lMMMMl.lw...',
-  '....wlLLLLLLlw....',
-  '.....LLLLLLLL.....',
-  '....LLEkLLkELL....',
-  '....LLEELLEELL....',
-  '.....LLLLLLLL.....',
-  '.....LmmmmmmL.....',
-  '....MmmmMMmmmM....',
-  '...LMmmmMMmmmML...',
-  '..LLLMmMMMMmMLLL..',
-  '.LLLLLLMMMMLLLLLL.',
-  '.LlLLLLLLLLLLLLlL.',
-  'LL.LLlLLLLLLlLL.LL',
-  'Lw.LLLLLLLLLLLL.wL',
-  'L..LLlLLLLLLlLL..L',
-  '...LLLLLLLLLLLL...',
-  '...LLLLLLLLLLLL...',
-  '...LLl.LLLL.lLL...',
-  '...LL..LLLL..LL...',
-  '...LL..LLLL..LL...',
-  '..LLL..LLLL..LLL..',
-  '.LLLLL.LLLL.LLLLL.',
-];
-const FZ_LESHY_ARMS = [   // воздел руки-ветви: гневная поза
-  'w..l.....mm.....l..w',
-  'lw.wl...mMMm...lw.wl',
-  '.lw.wl.lMMMMl.lw.wl.',
-  '..lw.wlLLLLLLlw.wl..',
-  '...L..LLLLLLLL..L...',
-  '...LL.LLEkLLkELL.LL.',
-  '....L.LLEELLEELL.L..',
-  '.....LLLLLLLLLLLL...',
-  '.....LmmmmmmmmmmL...',
-  '....MmmmmMMmmmmmM...',
-  '...LMmmmmMMmmmmmML..',
-  '..LLLMmmMMMMmmMLLL..',
-  '.LLLLLLMMMMMMLLLLLL.',
-  '.LlLLLLLLLLLLLLLLlL.',
-  '.L.LLlLLLLLLLLlLL.L.',
-  '...LLLLLLLLLLLLLL...',
-  '...LLLLLLLLLLLLLL...',
-  '...LLLLLLLLLLLLLL...',
-  '...LLl..LLLL..lLL...',
-  '...LL...LLLL...LL...',
-  '...LL...LLLL...LL...',
-  '..LLL...LLLL...LLL..',
-  '.LLLLL..LLLL..LLLLL.',
-];
+const fzMirror = rows => rows.map(r => r + r.split('').reverse().join(''));
+// ЛЕШИЙ — 24×30: рога-ветви с листвой, кора, глаза-огоньки, мшистая борода с лозой, грибы на плечах, корни вместо ступней
+const FZ_LESHY = fzMirror([
+  '.m...m..w...',
+  'mMm.mMm.wl.m',
+  '.mMmmMlwl.mM',
+  '..mMMlwLLmMm',
+  '...wlLLLLLLm',
+  '....LLLLLLLL',
+  '....LLEELLLL',
+  '....LLEkLLLL',
+  '....LLLLLLlL',
+  '....LLLLLkkk',
+  '....LmMLLkLL',
+  '...LmMmmLLLL',
+  '..xLmMmMmmMm',
+  '.xqLmmMmMmmM',
+  '.LLLmMmmMmMm',
+  'LLlLLmMmMmmM',
+  'LL.LLLmMmMmm',
+  'LwLLLlLmmMmm',
+  'L.LLlLLLmMmM',
+  'L.LLLLLkkLmm',
+  '..LLLlLLkLLL',
+  '..LLLLLLLLlL',
+  '..LLlLLLLLLL',
+  '..LLLLL.LLLL',
+  '..LLlLL.LLLL',
+  '..LLLLL.LLLL',
+  '.LLLLLL.LLLL',
+  'LLlLLLLL.LLL',
+  'LLLmLLLLL.LL',
+  'mLLLLmLLLLLL',
+]);
+const FZ_LESHY_ARMS = fzMirror([
+  'w..m...m..w.',
+  'lwm.mMm.wl.m',
+  '.lMmmMlwl.mM',
+  '..mMMlwLLmMm',
+  '..lwlLLLLLLm',
+  '...LLLLLLLLL',
+  '...LLLEELLLL',
+  '....LLEkLLLL',
+  '....LLLLLLlL',
+  '....LLLLLkkk',
+  '...LLmMLLkLL',
+  '..LLmMmmLLLL',
+  '.LLxLmMmMmMm',
+  'LLxqLmmMmMmM',
+  'LL.LLmMmmMmM',
+  'L..LLLmMmMmm',
+  'w..LLLlLmMmm',
+  'w..LLlLLLmMm',
+  '...LLLLLkLmm',
+  '...LLLlLLkLL',
+  '...LLLLLLLlL',
+  '...LLlLLLLLL',
+  '...LLLLL.LLL',
+  '...LLlLL.LLL',
+  '...LLLLL.LLL',
+  '..LLLLLL.LLL',
+  '.LLlLLLL.LLL',
+  'LLLmLLLLL.LL',
+  'mLLLLmLLLLLL',
+]);
+// КИКИМОРА — 20×22: длинные волосы до самой тины, глаза залиты светом, руки от плеч
 const FZ_KIK_A = [
-  '..hh.Hh.hh..',
-  '.hhHhhhhHhh.',
-  'hhhggggggghh',
-  'hhgeGggGegh.',
-  'hhggggggggh.',
-  '.hgggttttgg.',
-  '.hhgggggghh.',
-  '..hrrggrrh..',
-  '.hrrrrrrrrh.',
-  'ggrrrrrrrrgg',
-  'g.rrrrrrrr.g',
-  'g.rrRrrRrr.g',
-  '..uuuuuuuu..',
+  '.......hhhhhh.......',
+  '.....hhHhhhhHhh.....',
+  '....hhhhHhhhhhhh....',
+  '...hhhhgggggghhhh...',
+  '...hhhgggggggghhh...',
+  '..hhhggEEggEEgghhh..',
+  '..hhhggEEggEEgghhh..',
+  '..hhhgggggggggghhh..',
+  '..hhHggtgttgtgghhh..',
+  '..hhhgggttttgggHhh..',
+  '..hhhhgggggggghhhh..',
+  '..hhhh.gggggg.hhhh..',
+  '.hhHhhrrrggrrrhhhHh.',
+  '.hhhhrrrrrrrrrrhhhh.',
+  '.hhHgrrrrrrrrrrghHh.',
+  '.hhhg.rrrrrrrr.ghhh.',
+  '.hhHg.rrRrrRrr.ghHh.',
+  '.hhhg.rrrrrrrr.ghhh.',
+  'hhhHgg.rrrrrr.gghHhh',
+  'hhh.tg.rrrrrr.gt.hhh',
+  'hh..t..rrrrrr..t..hh',
+  'h...u.uuuuuuuu.u...h',
 ];
-const FZ_KIK_B = [   // тянет когтистые лапы вперёд-вверх
-  '..hh.Hh.hh..',
-  '.hhHhhhhHhh.',
-  'hhhggggggghh',
-  'hhgEkggkEgh.',
-  'hhggggggggh.',
-  '.hgtttttttg.',
-  'g.hhgggggh.g',
-  'g.hrrggrrh.g',
-  'gg.rrrrrr.gg',
-  'tg.rrrrrr.gt',
-  '..rrrrrrrr..',
-  '..rrRrrRrr..',
-  '..uuuuuuuu..',
+const FZ_KIK_B = [   // руки вскинуты в стороны когтями вверх
+  '.......hhhhhh.......',
+  '.....hhHhhhhHhh.....',
+  '....hhhhHhhhhhhh....',
+  '...hhhhgggggghhhh...',
+  '...hhhgggggggghhh...',
+  '..hhhggEEggEEgghhh..',
+  '..hhhggEEggEEgghhh..',
+  't.hhhgggggggggghhh.t',
+  'tg.hhggtgttgtgghh.gt',
+  '.g.hhgggttttgggHh.g.',
+  '.gg.hhgggggggghh.gg.',
+  '..g.hh.gggggg.hh.g..',
+  '..ggrrrrrggrrrrrgg..',
+  '..hhhrrrrrrrrrrhhh..',
+  '.hhHhrrrrrrrrrrhHhh.',
+  '.hhhh.rrrrrrrr.hhhh.',
+  '.hhHh.rrRrrRrr.hHhh.',
+  '.hhhh.rrrrrrrr.hhhh.',
+  'hhhHhh.rrrrrr.hhHhhh',
+  'hhh.hh.rrrrrr.hh.hhh',
+  'hh..h..rrrrrr..h..hh',
+  'h...u.uuuuuuuu.u...h',
 ];
 const FZ_VOD_A = [
   '....aa.aa.aa....',
@@ -117,7 +151,7 @@ const FZ_VOD_A = [
   '.SSSSSSSSSSSSSS.',
   'sSSSSSSSSSSSSSSs',
 ];
-const FZ_VOD_B = [   // воздет руки из воды
+const FZ_VOD_B = [
   'S...aa.aa.aa...S',
   'S..aSSSSSSSSa..S',
   'SS.SSSSSSSSSS.SS',
@@ -151,53 +185,24 @@ const FZ_RUS_A = [
   '.....CTTC.YTY',
   '......CC...CC',
 ];
-const FZ_RUS_B = FZ_RUS_A.map((r, i) => i === 4 ? '.hhppcccpHhh.' : i === 5 ? '.hhhpcccphhh.' : r);   // поёт: рот открыт
-const FZ_BAN_A = [
-  '...WWWWWW...',
-  '..WWWWWWWW..',
-  '.WWWVVVVWWW.',
-  '.WWVnVVnVWW.',
-  '.WWVnVVnVWW.',
-  '.WWVVVVVVWW.',
-  '.WWVVVVVVWW.',
-  '.WWWVVVVWWW.',
-  '.WWWBBBBWWW.',
-  'WWWBBBBBBWWW',
-  'WW.BBBBBBB.W',
-  'W..BBDBBDBB.',
-  'W..BBBBBBBB.',
-  'W..BDBBBBDB.',
-  '...BBBBBBBB.',
-  '...BBDBBBDB.',
-  '...BBBBBBBB.',
-  '..BBDBBBBDBB',
-  '..BBBBBBBBBB',
-  '.BDBB.BB.BDB',
-  '.B.B..BB..B.',
-];
-const FZ_BAN_B = FZ_BAN_A.map((r, i) => i === 5 ? '.WWVnnnnVWW.' : i === 6 ? '.WWVnnnnVWW.' : i === 7 ? '.WWWVnnVWWW.' : r);   // вой: рот раззявлен
-const FZ_WOLF_A = [
-  '...............w.w..',
-  '..........wwwwwWWWw.',
-  '.w.......wwwwwwWWykW',
-  'ww.....wwwwwwwwwWWWn',
-  'wWw.wwwwwwwwwwwwwWWn',
-  'wwwwwwwwwwwwwwwwwwn.',
-  '.wwwwwwwwwwwwwwwww..',
-  '..fwwwwwwwwwwwwwww..',
-  '...wd.wd......wd.wd.',
-  '...wd.wd......wd.wd.',
-  '...dd.dd......dd.dd.',
-];
-const FZ_WOLF_B = FZ_WOLF_A.slice(0, 8).concat(['..wd.wd.......wd.wd..', '..wd.wd.......wd.wd..', '..dd.dd.......dd.dd..']);
+const FZ_RUS_B = FZ_RUS_A.map((r, i) => i === 4 ? '.hhppcccpHhh.' : i === 5 ? '.hhhpcccphhh.' : r);
+// «подношение»: кочка с булкой; на пне — та же булка
 const FZ_MOUND = [
-  '..mmm.mm..',
-  '.mMMmmMMm.',
-  'rrMrrMrrrr',
-  'RrrrrrrrrR',
-  '.RRRRRRRR.',
+  '....m.....m....m',
+  '...mM..m..mM..mM',
+  '.mmmMmmMmmmMmmMm',
+  'mMmmmmMmmmmmMmmm',
+  'rrMrrrrMrrrrMrrr',
+  'RrrrrRrrrrRrrrrR',
+  '.RRRRRRRRRRRRRR.',
 ];
-const FZ_BREAD = ['.rrrr.', 'rttttr', '.RRRR.'];
+const FZ_LOAF = [
+  '..zXXXXz..',
+  '.zXzXXzXz.',
+  'zXXXXXXXXz',
+  'zzXXXXXXzZ',
+  '.ZZZZZZZZ.',
+];
 
 function fzSprites() {
   return {
@@ -205,9 +210,7 @@ function fzSprites() {
     kikA: fzSpr('kikA', FZ_KIK_A), kikB: fzSpr('kikB', FZ_KIK_B),
     vodA: fzSpr('vodA', FZ_VOD_A), vodB: fzSpr('vodB', FZ_VOD_B),
     rusA: fzSpr('rusA', FZ_RUS_A), rusB: fzSpr('rusB', FZ_RUS_B),
-    banA: fzSpr('banA', FZ_BAN_A), banB: fzSpr('banB', FZ_BAN_B),
-    wolfA: fzSpr('wolfA', FZ_WOLF_A), wolfB: fzSpr('wolfB', FZ_WOLF_B),
-    mound: fzSpr('mound', FZ_MOUND), bread: fzSpr('bread', FZ_BREAD),
+    mound: fzSpr('mound', FZ_MOUND), bread: fzSpr('bread', FZ_LOAF),
   };
 }
 
@@ -703,7 +706,7 @@ function fzWolvesTick(F, act, dt) {
   }
   for (let i = ws.length - 1; i >= 0; i--) {
     const w = ws[i];
-    w.ph += dt * 6; w.t += dt; w.howl -= dt; w.hold = Math.max(0, w.hold - dt);
+    w.ph += dt * 6; w.t += dt; w.howlT = Math.max(0, (w.howlT || 0) - dt); w.howl -= dt; w.hold = Math.max(0, w.hold - dt);
     const away = !act || w.state === 'fade';
     w.alpha = Math.max(0, Math.min(0.62, w.alpha + (away ? -dt * 0.5 : dt * 0.4)));
     if (away && w.alpha <= 0) { fzWolfDrop(w, false); ws.splice(i, 1); continue; }
@@ -751,7 +754,7 @@ function fzWolvesTick(F, act, dt) {
     if (d > 0.1) { const s = Math.min(d, sp * dt); w.x += dx / d * s; w.y += dy / d * s; if (Math.abs(dx) > 0.05) w.face = dx > 0 ? 1 : -1; }
     if (w.howl <= 0 && w.alpha > 0.3) {
       w.howl = 22 + Math.random() * 14;
-      floater(w.x, w.y - 1.6, 'Ау-у-у-у!', '#cfe0ff');
+      floater(w.x, w.y - 1.6, 'Ау-у-у-у!', '#cfe0ff'); w.howlT = 1.8;
       if (fzScareAround(w.x, w.y, 6.5, 50, 'Волк воет!', '#cfe0ff')) fstat('wolfHowl');
     }
   }
@@ -786,6 +789,138 @@ function fzSelfStep(F, dt) {
   if (F.pond && fzPondTick(F, F.pond, dt, act)) F.pond = null;
   fzBansheeTick(F, act, dt);
   fzWolvesTick(F, act, dt);
+}
+
+// ---------- Банши и волк: рисуются «призрачно» (мягкая кисть, как призраки в ghosts.js) один раз в 3× холсты ----------
+const FZ_SS = 3, FZ_CVC = {};
+function fzCanvas(key, w, h, ox, oy, draw) {
+  let cv = FZ_CVC[key];
+  if (cv) return cv;
+  cv = FZ_CVC[key] = document.createElement('canvas');
+  cv.width = w * FZ_SS; cv.height = h * FZ_SS; cv.fzO = [ox, oy, w, h];
+  const c = cv.getContext('2d');
+  c.scale(FZ_SS, FZ_SS); c.translate(ox, oy); c.lineJoin = 'round'; c.lineCap = 'round';
+  draw(c);
+  return cv;
+}
+// Банши: бледная плакальщица в саване — длинные седые волосы до пояса и ниже, пустые глазницы с тлеющими зрачками,
+// тонкие руки с когтями, платье рвано расходится в дымку. wail — рот раскрыт, руки воздеты. p — фаза (0..5)
+function fzBansheeSprite(wail, p) {
+  return fzCanvas('ban' + wail + p, 64, 80, 32, 30, c => {
+    const ph = p / 6 * Math.PI * 2, sw = Math.sin(ph) * 1.6;
+    const hair = (alpha, minI = 0) => {
+      c.strokeStyle = `rgba(232,246,250,${alpha})`;
+      for (let i = -5; i <= 5; i++) {
+        if (Math.abs(i) < minI) continue;
+        const x0 = i * 1.1, len = 38 + (i & 3) * 3 + (wail ? 4 : 0), side = i * 0.55;
+        c.lineWidth = 2.1 - Math.abs(i) * 0.12;
+        c.beginPath(); c.moveTo(x0, -7);
+        c.bezierCurveTo(x0 + side * 1.6 + sw, 4, x0 + side * 2.4 - sw, 18, x0 + side * 2.7 + Math.sin(ph + i) * 2.4, len - 10);
+        c.stroke();
+      }
+    };
+    // дымка
+    let g = c.createLinearGradient(0, -6, 0, 42);
+    g.addColorStop(0, 'rgba(180,215,245,0.30)'); g.addColorStop(1, 'rgba(100,150,210,0)');
+    c.fillStyle = g; c.beginPath(); c.ellipse(0, 14, 17, 30, 0, 0, 7); c.fill();
+    hair(0.55);                                             // волосы позади
+    // руки (рукава): вскинуты при вое, иначе протянуты вперёд-вниз
+    const arm = (s) => {
+      c.strokeStyle = 'rgba(200,222,244,0.9)'; c.lineWidth = 2.4;
+      const ex = s * (wail ? 12 : 9), ey = wail ? -10 : 8, hx = s * (wail ? 15 : 12), hy = wail ? -20 : 14;
+      c.beginPath(); c.moveTo(s * 4, 4); c.quadraticCurveTo(s * 11, wail ? 0 : 6, ex, ey); c.lineTo(hx, hy); c.stroke();
+      c.strokeStyle = 'rgba(244,252,255,0.95)'; c.lineWidth = 0.9;
+      for (let f = -1; f <= 1; f++) { c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx + s * 2.8 + f * 0.6 * s, hy + (wail ? -4 : 4) + f * 1.8); c.stroke(); }
+    };
+    arm(-1); arm(1);
+    // платье: узкая талия, расходящийся подол, рваный край
+    const N = 18, L = [], R = [];
+    for (let n = 0; n <= N; n++) {
+      const t = n / N, y = 2 + t * 40;
+      const hw = 4.2 + t * t * 10 + (t > 0.5 ? Math.sin(t * 38 + (n % 3) * 1.6 + ph) * 1.4 * t : 0);
+      const cx = Math.sin(ph - t * 4) * (0.8 + t * 3.6);
+      L.push([cx - hw, y]); R.push([cx + hw, y]);
+    }
+    const body = () => { c.beginPath(); c.moveTo(L[0][0], L[0][1]); for (const q of L) c.lineTo(q[0], q[1]); for (let n = R.length - 1; n >= 0; n--) c.lineTo(R[n][0], R[n][1]); c.closePath(); };
+    g = c.createLinearGradient(0, 0, 0, 44);
+    g.addColorStop(0, 'rgba(228,244,252,0.95)'); g.addColorStop(0.4, 'rgba(160,196,226,0.75)'); g.addColorStop(0.8, 'rgba(90,130,180,0.35)'); g.addColorStop(1, 'rgba(60,100,160,0)');
+    c.fillStyle = g; body(); c.fill();
+    c.save(); body(); c.clip();                              // складки платья
+    c.strokeStyle = 'rgba(70,100,150,0.35)'; c.lineWidth = 0.8;
+    for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 1.2, 8); c.quadraticCurveTo(i * 3.2 + sw, 24, i * 4.4, 44); c.stroke(); }
+    c.restore();
+    // шея и голова
+    c.fillStyle = 'rgba(224,242,250,0.95)'; c.fillRect(-1.6, -2, 3.2, 5);
+    c.beginPath(); c.ellipse(0, -7, 5.4, 6.8, 0, 0, 7); c.fill();
+    hair(0.95, 4);                                           // пряди спереди по бокам лица
+    c.fillStyle = 'rgba(238,250,255,0.95)'; c.beginPath(); c.ellipse(0, -9.5, 6.4, 4.2, 0, Math.PI, 0); c.fill();   // макушка
+    c.fillStyle = 'rgba(224,242,250,1)'; c.beginPath(); c.ellipse(0, -6.4, 3.9, 5.4, 0, 0, 7); c.fill();           // лицо
+    // пустые глазницы + тлеющие зрачки
+    c.fillStyle = '#0a1620'; c.beginPath(); c.ellipse(-1.9, -7.2, 1.25, 1.8, 0.15, 0, 7); c.ellipse(1.9, -7.2, 1.25, 1.8, -0.15, 0, 7); c.fill();
+    c.fillStyle = '#9affea'; c.fillRect(-2.2, -7, 0.7, 0.9); c.fillRect(1.6, -7, 0.7, 0.9);
+    // ресницы — женская деталь
+    c.strokeStyle = '#0a1620'; c.lineWidth = 0.5;
+    c.beginPath(); c.moveTo(-3.4, -8.4); c.lineTo(-4.2, -9.2); c.moveTo(3.4, -8.4); c.lineTo(4.2, -9.2); c.stroke();
+    // рот: тихо сомкнут или раскрыт в вопле
+    c.fillStyle = wail ? '#0a1620' : '#7a8aaa';
+    c.beginPath(); c.ellipse(0, wail ? -2.6 : -3, wail ? 1.5 : 1.1, wail ? 2.7 : 0.45, 0, 0, 7); c.fill();
+  });
+}
+// Призрачный волк: полупрозрачный, ледяной мех клочьями, лапы тают в дымку, глаза-огоньки. f — кадр бега 0..3, howl — морда вверх
+function fzWolfSprite(f, howl) {
+  return fzCanvas('wolf' + f + (howl ? 'h' : ''), 70, 46, 34, 40, c => {
+    const t = f / 4 * Math.PI * 2;
+    const g = c.createLinearGradient(0, -30, 0, 4);
+    g.addColorStop(0, 'rgba(206,226,250,0.95)'); g.addColorStop(0.55, 'rgba(150,184,226,0.75)'); g.addColorStop(1, 'rgba(100,140,200,0)');
+    const fur = g;
+    // хвост — пушистая дымная метёлка
+    c.strokeStyle = 'rgba(176,204,240,0.75)'; c.lineWidth = 5; c.beginPath(); c.moveTo(-14, -17); c.bezierCurveTo(-24, -20, -30, -14 + Math.sin(t) * 2, -33, -22 + Math.sin(t) * 3); c.stroke();
+    c.strokeStyle = 'rgba(214,232,252,0.55)'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(-16, -17); c.bezierCurveTo(-24, -21, -29, -16, -33, -22 + Math.sin(t) * 3); c.stroke();
+    const leg = (x, ph, far) => {
+      const sw = Math.sin(t + ph) * 4.5, lift = Math.max(0, Math.cos(t + ph)) * 2.2;
+      c.strokeStyle = far ? 'rgba(120,152,200,0.7)' : fur; c.lineWidth = 4.2;
+      c.beginPath(); c.moveTo(x, -12); c.lineTo(x + sw * 0.6, -6 - lift); c.lineTo(x + sw, -lift); c.stroke();
+    };
+    leg(9, 0, true); leg(-9, Math.PI, true);
+    // туловище: круп, спина дугой, грудь
+    c.fillStyle = fur;
+    c.beginPath(); c.moveTo(-17, -14); c.bezierCurveTo(-17, -22, -6, -22, 2, -21); c.bezierCurveTo(9, -22, 14, -21, 16, -17); c.bezierCurveTo(17, -11, 12, -8, 6, -8); c.lineTo(-8, -8); c.bezierCurveTo(-14, -8, -17, -10, -17, -14); c.closePath(); c.fill();
+    // клочья шерсти по спине
+    c.fillStyle = 'rgba(224,238,255,0.9)';
+    for (let i = 0; i < 7; i++) { const x = -13 + i * 4.2; c.beginPath(); c.moveTo(x, -20.4 + Math.abs(i - 3) * 0.5); c.lineTo(x + 1.8, -24.6 + Math.sin(t + i) * 0.8); c.lineTo(x + 3.2, -20.8 + Math.abs(i - 3) * 0.4); c.fill(); }
+    // шея + голова
+    const hy = howl ? -8 : 0;
+    c.fillStyle = fur;
+    c.beginPath(); c.moveTo(11, -21); c.lineTo(20 + (howl ? -2 : 0), -27 + hy * 0.3); c.lineTo(24, -22 + hy * 0.5); c.lineTo(17, -12); c.closePath(); c.fill();
+    c.save(); c.translate(howl ? 19 : 21, howl ? -29 : -22); c.rotate(howl ? -0.85 : 0.12);
+    c.fillStyle = 'rgba(196,218,246,0.97)';
+    c.beginPath(); c.ellipse(0, 0, 6.2, 4.5, 0, 0, 7); c.fill();                                 // череп
+    c.beginPath(); c.moveTo(3, -2.4); c.lineTo(12.5, 0.6); c.lineTo(12, 2.4); c.lineTo(3, 3.6); c.closePath(); c.fill();     // морда
+    c.fillStyle = 'rgba(224,238,255,0.95)'; c.beginPath(); c.moveTo(3, 2.4); c.lineTo(12, 2.2); c.lineTo(11, 4); c.lineTo(3, 4.6); c.closePath(); c.fill();   // нижняя челюсть
+    c.fillStyle = '#0c1424'; c.beginPath(); c.arc(12.4, 0.4, 1.3, 0, 7); c.fill();                  // нос
+    c.fillStyle = '#e8f8ff'; c.beginPath(); c.moveTo(8, 2.4); c.lineTo(8.8, 4.6); c.lineTo(9.6, 2.4); c.moveTo(10.4, 2.3); c.lineTo(11, 3.9); c.lineTo(11.6, 2.3); c.fill();   // клыки
+    c.fillStyle = 'rgba(154,255,255,0.35)'; c.beginPath(); c.arc(3.4, -1.1, 3, 0, 7); c.fill();       // свечение глаза
+    c.fillStyle = '#9affff'; c.beginPath(); c.moveTo(1.8, -1.9); c.lineTo(5.2, -0.9); c.lineTo(2.2, -0.1); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(176,204,240,0.97)';                                                          // уши
+    c.beginPath(); c.moveTo(-3, -3); c.lineTo(-4.2, -10.5); c.lineTo(1.6, -4); c.fill();
+    c.beginPath(); c.moveTo(0.4, -3.6); c.lineTo(1.8, -11); c.lineTo(5.2, -3); c.fill();
+    c.restore();
+    leg(12, Math.PI * 0.5, false); leg(-6, Math.PI * 1.5, false);
+    // мех снизу растворяется в дымку
+    c.globalCompositeOperation = 'destination-out';
+    const gg = c.createLinearGradient(0, -9, 0, 3); gg.addColorStop(0, 'rgba(0,0,0,0)'); gg.addColorStop(1, 'rgba(0,0,0,0.95)');
+    c.fillStyle = gg; c.fillRect(-30, -9, 62, 14);
+    c.globalCompositeOperation = 'source-over';
+  });
+}
+function fzDrawHi(c, cv, x, y, a, face, dy) {
+  const [ox, oy, w, h] = cv.fzO;
+  c.save();
+  c.globalAlpha *= a; c.imageSmoothingEnabled = true;
+  c.translate(Math.round(x * TILE), Math.round(y * TILE + dy));
+  if (face < 0) c.scale(-1, 1);
+  c.drawImage(cv, -ox, -oy, w, h);
+  c.restore();
 }
 
 // ---------- Рисование ----------
@@ -863,10 +998,10 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
     }]);
   }
   for (const b of F.ban) if (vis(b.x, b.y) && b.alpha > 0) list.push([b.y + 0.3, () => {
-    fzDraw(c, b.wail > 0 ? S.banB : S.banA, b.x, b.y, { a: b.alpha, dy: 4 - 10 + Math.sin(b.ph * 1.7) * 3, face: b.face });
+    fzDrawHi(c, fzBansheeSprite(b.wail > 0 ? 1 : 0, Math.floor(b.ph * 2.2) % 6), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, -14 + Math.sin(b.ph * 1.7) * 3);
   }]);
   for (const w of F.wolves) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.1, () => {
-    fzDraw(c, Math.floor(w.ph) % 2 ? S.wolfA : S.wolfB, w.x, w.y, { a: w.alpha, dy: 3 + Math.sin(w.ph) * 0.6, face: w.face });
-    if (w.stole) { c.save(); c.globalAlpha *= w.alpha + 0.3; c.fillStyle = '#ffd880'; c.fillRect(Math.round(w.x * TILE + w.face * 11), Math.round(w.y * TILE - 8), 3, 4); c.restore(); }
+    fzDrawHi(c, fzWolfSprite(Math.floor(w.ph) % 4, w.howlT > 0), w.x, w.y, Math.min(1, w.alpha * 1.4), w.face, 4);
+    if (w.stole) { c.save(); c.globalAlpha *= w.alpha + 0.3; c.fillStyle = '#ffd880'; c.fillRect(Math.round(w.x * TILE + w.face * 14), Math.round(w.y * TILE - 6), 3, 4); c.restore(); }
   }]);
 }
