@@ -1,11 +1,11 @@
 'use strict';
 // Жизнь внутри и около зданий: силуэты работающих гномов в окнах, мерцающий свет изнутри,
-// веранда трактира со столом и до 6 обедающими, гномка-официантка с подносом
+// веранда трактира со столом и до 4 обедающими, гномка-официантка с подносом
 // и навес над столом, раскрывающийся под дождём. Всё рисуется поверх спрайта здания,
 // в сам спрайт (и сохранения) ничего не добавляется.
 
 const DINE_SEATS = [   // [dx, ряд (-1 дальний / 1 ближний)]
-  [-17, -1], [-3, -1], [11, -1], [-10, 1], [4, 1], [18, 1],
+  [-8, -1], [8, -1], [-8, 1], [8, 1],
 ];
 
 let INS_STAMP = '', INS_CNT = new Map(), INS_DINE = new Map();
@@ -83,7 +83,7 @@ function innFoodSprite(c, food, x, y) {
 }
 
 function innDeck(c, x, y) {   // дощатая терраса под столом
-  const x0 = x - 44, x1 = x + 44, y0 = y - 12, y1 = y + 15;
+  const x0 = x - 17, x1 = x + 17, y0 = y - 9, y1 = y + 8;
   c.fillStyle = 'rgba(12,10,6,0.28)'; c.fillRect(x0 + 2, y1 + 1, x1 - x0, 3);
   c.fillStyle = '#6a4424'; c.fillRect(x0, y1, x1 - x0, 3);
   c.fillStyle = '#b08450'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
@@ -94,7 +94,7 @@ function innDeck(c, x, y) {   // дощатая терраса под столо
 }
 
 function innTable(c, x, y) {   // (x, y) — середина стола на земле
-  const w = 56;
+  const w = 28;
   c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(x + 2, y + 1, w / 2 + 2, 3.5, 0, 0, 7); c.fill();
   c.fillStyle = '#3a2210';
   for (const dx of [-w / 2 + 3, w / 2 - 4]) { c.fillRect(x + dx, y - 5, 2, 5); }
@@ -113,7 +113,7 @@ function innBench(c, x, y, w) {
 
 function innAwning(c, x, y, k) {
   // навес на четырёх столбах раскатывается от задней кромки к передней
-  const top = y - 38, bw = 30, fw = 34, depth = 13;
+  const top = y - 30, bw = 16, fw = 19, depth = 11;
   c.globalAlpha = Math.min(1, k * 2);
   c.fillStyle = '#5a3a1e';
   for (const [dx, h0, ph] of [[-bw + 3, top + 2, y - 10], [bw - 3, top + 2, y - 10], [-fw + 3, top + depth, y + 4], [fw - 3, top + depth, y + 4]]) c.fillRect(x + dx - 0.7, h0, 1.6, ph - h0);
@@ -149,7 +149,7 @@ function drawInnPorch(c, b, spr, ox, oy) {
   b.awn = Math.max(0, Math.min(1, (b.awn || 0) + Math.sign(want - (b.awn || 0)) * dt * 0.7));
   c.imageSmoothingEnabled = false;
   innDeck(c, tx, ty);
-  innBench(c, tx, ty - 6, 52);   // дальняя скамья
+  innBench(c, tx, ty - 6, 30);   // дальняя скамья
   const seat = (u, i) => {
     const [dx, row] = DINE_SEATS[i];
     const view = row < 0 ? 'S' : 'N';
@@ -157,7 +157,7 @@ function drawInnPorch(c, b, spr, ox, oy) {
     const sp = personSprite({ type: u.type, look: u.look, carry: null, injury: u.injury }, view, 'idle', 0, opt);
     return { dx, row, sp, u };
   };
-  const seats = diners.slice(0, 6).map((u, i) => seat(u, i));
+  const seats = diners.slice(0, 4).map((u, i) => seat(u, i));
   for (const s of seats) if (s.row < 0) {
     c.drawImage(s.sp, tx + s.dx - PFX, ty + 1 - PFY, PW, PH);
   }
@@ -168,16 +168,16 @@ function drawInnPorch(c, b, spr, ox, oy) {
     if (s.u.diningFood) innFoodSprite(c, s.u.diningFood, fx, fy);
   }
   if (!seats.length) {
-    innFoodSprite(c, 'bread', tx - 12, ty - 6.6);
-    c.fillStyle = '#d8a840'; c.fillRect(tx + 10, ty - 10.6, 2.2, 3); c.fillStyle = '#fffbe8'; c.fillRect(tx + 10, ty - 11, 2.2, 0.9);
+    innFoodSprite(c, 'bread', tx - 6, ty - 6.6);
+    c.fillStyle = '#d8a840'; c.fillRect(tx + 6, ty - 10.6, 2.2, 3); c.fillStyle = '#fffbe8'; c.fillRect(tx + 6, ty - 11, 2.2, 0.9);
   }
   for (const s of seats) if (s.row > 0) {
-    const sy = ty + 14;
-    c.save(); c.beginPath(); c.rect(tx + s.dx - 14, sy - 50, 28, 50 - 5); c.clip();   // ноги скрыты скамьёй
+    const sy = ty + 9;
+    c.save(); c.beginPath(); c.rect(tx + s.dx - 14, sy - 50, 28, 50 - 4); c.clip();   // ноги скрыты скамьёй
     c.drawImage(s.sp, tx + s.dx - PFX, sy - PFY, PW, PH);
     c.restore();
   }
-  innBench(c, tx, ty + 12, 52);   // ближняя скамья — поверх спин
+  innBench(c, tx, ty + 7, 30);   // ближняя скамья — поверх спин
   drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length);
   if (b.awn > 0.02) innAwning(c, tx, ty, b.awn);
   c.imageSmoothingEnabled = R.smooth;
@@ -191,7 +191,7 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests) {
   const dt = Math.min(0.1, Math.max(0, t - w.last)); w.last = t;
   const dp = spr.doorPt || [spr.doorCx, spr.baseY - 6];
   const dx = ox + dp[0], dy = oy + dp[1] + 4;
-  const tgtX = tx - 34, tgtY = ty + 12;
+  const tgtX = tx - 21, tgtY = ty + 9;
   w.t -= dt;
   const walkTo = (X, Y, v) => {
     const ex = X - w.x, ey = Y - w.y, d = Math.hypot(ex, ey);
@@ -227,5 +227,41 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests) {
 function drawInside(c, b, spr, ox, oy) {
   insideScan();
   drawInsideLife(c, b, spr, ox, oy);
-  if (b.type === 'inn') drawInnPorch(c, b, spr, ox, oy);
+  if (b.type === 'inn') { drawInnPorch(c, b, spr, ox, oy); drawInnOven(c, b, spr, ox, oy); drawBarmaid(c, b, spr, ox, oy); }
+}
+
+// Огонь в печи на первом этаже трактира: живое пламя в топке и тёплый отсвет
+function drawInnOven(c, b, spr, ox, oy) {
+  const o = spr.oven;
+  if (!o || b.state !== 'done') return;
+  const x = Math.round(ox + o[0]), y = Math.round(oy + o[1]);
+  glow(c, x, y - 3, 24, '255,140,40', 0.2 + Math.sin(Game.time * 7 + b.id) * 0.04);
+  drawFire(c, x, y - 2, 'tiny', Game.time, b.id + 3, { glow: 0 });
+}
+
+// Бармен: в окне второго этажа хозяйничает женщина — протирает кружку, потом наливает из бочонка
+function drawBarmaid(c, b, spr, ox, oy) {
+  const o = spr.bar;
+  if (!o || b.state !== 'done') return;
+  const ww = 10, wh = 9, x = Math.round(ox + o[0]), y = Math.round(oy + o[1]);   // виртуальное окно 10×9, в мансарде сжато до 7×6
+  const t = Game.time + b.id * 1.9, cyc = t % 6;
+  c.save();
+  c.translate(x, y); c.scale(0.7, 0.7); c.translate(-x, -y);
+  c.beginPath(); c.rect(x - ww / 2, y - wh / 2, ww, wh); c.clip();
+  c.fillStyle = `rgba(255,${196 + Math.sin(t * 8) * 14 | 0},110,0.95)`; c.fillRect(x - ww / 2, y - wh / 2, ww, wh);
+  const sway = Math.sin(t * 1.3) * 0.8, hx = x - 0.5 + sway, hy = y - 2 - Math.abs(Math.sin(t * 2.2)) * 0.2;
+  const pour = cyc > 3.6 && cyc < 5;
+  c.fillStyle = '#5a2a2e'; c.fillRect(Math.round(hx - 3.2), Math.round(hy + 2.2), 6.4, 9);          // платье и плечи
+  c.fillStyle = '#e8d2b0'; c.fillRect(Math.round(hx - 1.4), Math.round(hy + 2.2), 2.8, 1.4);        // вырез
+  c.fillStyle = '#e8b890'; c.beginPath(); c.arc(hx, hy, 2.1, 0, Math.PI * 2); c.fill();             // лицо
+  c.fillStyle = '#b8402c'; c.beginPath(); c.arc(hx, hy - 0.7, 2.3, Math.PI, 0); c.fill();           // косынка
+  c.fillStyle = '#7a4a22'; c.fillRect(Math.round(hx - 2.9), Math.round(hy - 0.2), 1, 3.2);          // коса
+  c.fillStyle = '#2a1a10'; c.fillRect(Math.round(hx - 0.9), Math.round(hy + 0.2), 0.7, 0.7); c.fillRect(Math.round(hx + 0.6), Math.round(hy + 0.2), 0.7, 0.7);
+  const ax = hx + 2.2 + (pour ? 1.6 : Math.sin(t * 6) * 1.1), ay = hy + 5.4 + (pour ? -1 : Math.cos(t * 6) * 0.5);
+  c.strokeStyle = '#5a2a2e'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(hx + 2.4, hy + 3); c.lineTo(ax, ay); c.stroke();
+  c.fillStyle = '#e8b890'; c.fillRect(Math.round(ax - 0.6), Math.round(ay - 0.6), 1.4, 1.4);
+  c.fillStyle = '#d8a840'; c.fillRect(Math.round(ax - 0.4), Math.round(ay + 0.6), 2.6, 2.8);        // кружка
+  c.fillStyle = '#fffbe8'; c.fillRect(Math.round(ax - 0.4), Math.round(ay + 0.4), 2.6, 0.8);
+  if (pour) { c.fillStyle = '#e8b030'; c.fillRect(Math.round(ax + 1), Math.round(ay - 3), 0.8, 3.4); }
+  c.restore();
 }

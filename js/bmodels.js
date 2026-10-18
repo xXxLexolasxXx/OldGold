@@ -772,24 +772,32 @@ const MODELS = {
       dormers: [{ x: 26, w: 13, h: 10, o: { lit: true } }, { x: 52, w: 13, h: 10, o: { lit: true } }],
       chimneys: [{ x: 14, y: 52, h: 16, kind: 'stone', w: 6 }, { x: 86, y: 30, h: 13, kind: 'brick', w: 5 }],
     });
-    // боковое крыло щипцом к улице
+    // боковое крыло: открытый первый этаж (веранда, сбоку печь), на втором — бар, где хозяйничает бармен
     m.box({
-      x0: 96, x1: 126, y0: 22, y1: 92, h: 32, wall: 'plaster', col: '#eadcb8', frame: true, lowerStone: 12, beam: BEAM,
+      x0: 96, x1: 126, y0: 22, y1: 92, h: 20, open: true, noShadow: true,
+      inside: (c, mm) => innOven(c, ...mm.at(119, 56)),
+    });
+    m.box({
+      x0: 96, x1: 126, y0: 22, y1: 92, z0: 20, h: 22, wall: 'plaster', col: '#eadcb8', frame: true, beam: BEAM,
       roof: { type: 'gable', axis: 'Y', rise: 22, mat: 'tiles', col: '#ac522c', ov: 4 },
-      decor: { S: [{ t: 'win', at: 111, z: 15, w: 7, h: 9, o: { lit: true, shutter: '#6a2a1a' } }], E: [{ t: 'win', at: 46, z: 15, w: 7, h: 8, o: { lit: true } }, { t: 'win', at: 70, z: 15, w: 7, h: 8, o: { lit: true } }], W: [] },
-      gable: { S: [{ t: 'win', at: 111, z: 5, w: 5, h: 6, o: { arch: true, lit: true } }] },
+      decor: { S: [{ t: 'win', at: 111, z: 5, w: 10, h: 11, o: { lit: true, shutter: '#6a2a1a', flowers: true } }],
+        E: [{ t: 'win', at: 38, z: 5, w: 10, h: 11, o: { lit: true, shutter: '#6a2a1a', flowers: true } }, { t: 'win', at: 70, z: 5, w: 7, h: 9, o: { lit: true } }], W: [] },
+      gable: { S: [{ t: 'win', at: 111, z: 3, w: 5, h: 6, o: { arch: true, lit: true } }] },
       chimneys: [{ x: 108, y: 76, h: 10, kind: 'brick' }],
     });
-    // веранда
+    // веранда перед открытым этажом — строго в пределах участка, дорогу не трогает
+    m.g.spr.porch = m.at(111, 10);   // здесь рисуется стол с обедающими (inside.js)
+    m.g.spr.oven = m.at(119, 56, 5);          // печь: огонь в топке (inside.js)
+    if (!m.rot) m.g.spr.bar = m.at(52, 17.72, 57.25);   // окно мансарды — здесь хозяйничает бармен (рисует inside.js)
+    // веранда под навесом у входа
     m.box({ x0: 8, x1: 46, y0: 4, y1: 12, h: 22, open: true, canopy: true, noShadow: true, roof: { type: 'lean', down: 'S', rise: 6, mat: 'shingle', col: '#7a5434', ov: 2 } });
     // полукруглые ступени у входа
     m.prop((c, x, y) => { for (let k = 2; k >= 0; k--) { ellipse(c, x, y + 1 + k * 0.6, 9 - k * 2, 3.4 - k * 0.8, shade('#a49c90', -k * 0.08)); ellipse(c, x, y + 0.4 + k * 0.6, 9 - k * 2, 3 - k * 0.8, shade('#c8bfb2', -k * 0.08)); } }, m.doorX - 16, 11);
-    m.g.spr.porch = m.at(100, -6);              // здесь рисуется стол с обедающими (inside.js)
     m.g.spr.doorPt = m.at(m.doorX, 10);
-    m.prop((c, x, y) => barrel(c, x, y), 104, 14);
-    m.prop((c, x, y) => barrel(c, x, y, 0.8), 110, 12);
-    m.prop((c, x, y) => crate(c, x, y, 6), 116, 14);
-    m.prop((c, x, y) => innMugSign(c, x, y), 92, -2);                                    // огромная кружка на кронштейне — вывеска трактира
+    m.prop((c, x, y) => barrel(c, x, y), 3, 20);
+    m.prop((c, x, y) => barrel(c, x, y, 0.8), 3, 11);
+    m.prop((c, x, y) => crate(c, x, y, 6), 3, 3);
+    m.prop((c, x, y) => innMugSign(c, x, y), 92, 4);                                    // огромная кружка на кронштейне — вывеска трактира
     m.prop((c, x, y) => { for (const k of [0, 1, 2]) { c.fillStyle = k % 2 ? '#f0e6d0' : '#b8442a'; c.fillRect(x - 15 + k * 10, y - 1, 10, 4); } }, m.doorX, 1);   // полосатый коврик у двери
   },
 
@@ -1330,7 +1338,7 @@ function mirrorSprite(s, FW) {
   if (s.porch) m.porch = pt(s.porch);
   if (s.doorPt) m.doorPt = pt(s.doorPt);
 
-  for (const k of ['hub', 'glow', 'fire', 'circle', 'cauldron']) if (s[k]) m[k] = pt(s[k]);
+  for (const k of ['hub', 'glow', 'fire', 'circle', 'cauldron', 'oven', 'bar']) if (s[k]) m[k] = pt(s[k]);
   if (s.pen) m.pen = [W - s.pen[2], s.pen[1], W - s.pen[0], s.pen[3]];
   if (s.penQuad) m.penQuad = s.penQuad.map(pt);
   if (s.perches) m.perches = s.perches.map(pt);
@@ -1503,6 +1511,17 @@ function hoistCrane(c, x, y) {
   c.strokeStyle = '#3a3632'; c.lineWidth = 0.8; c.beginPath(); c.arc(x - 20, y - 23, 1.6, 0, Math.PI); c.stroke();
   crate(c, x - 20, y - 14, 9, '#a07038');
   ellipse(c, x, y + 0.5, 3.6, 1.5, '#8e877c');
+}
+// печь на первом этаже трактира: кирпичный свод с тёмной топкой (огонь живой — рисуется в inside.js), труба уходит в потолок
+function innOven(c, x, y) {
+  shadowAt(c, x + 2, y + 1, 9);
+  c.fillStyle = '#6a3a28'; c.fillRect(x - 9, y - 15, 18, 15);                                   // кирпичное тело
+  for (let r = 0; r < 5; r++) for (let q = 0; q < 6; q++) { c.fillStyle = (q + r) % 3 ? '#8a4a32' : '#7a4028'; c.fillRect(x - 9 + q * 3 + (r % 2) * 1.5, y - 15 + r * 3, 2.6, 2.4); }
+  c.fillStyle = '#3a2620'; c.fillRect(x - 10, y - 2, 20, 2.4);                                  // цоколь
+  c.fillStyle = '#2a1a14'; c.beginPath(); c.moveTo(x - 4.5, y - 3); c.lineTo(x - 4.5, y - 8); c.quadraticCurveTo(x, y - 13, x + 4.5, y - 8); c.lineTo(x + 4.5, y - 3); c.closePath(); c.fill();   // зев топки
+  c.fillStyle = '#c8581c'; c.fillRect(x - 3, y - 5, 6, 2);                                      // угли
+  c.fillStyle = '#4a4440'; c.fillRect(x - 3, y - 22, 6, 8); c.fillStyle = '#6a625a'; c.fillRect(x - 3, y - 22, 2, 8);   // труба
+  c.fillStyle = '#9a9488'; c.fillRect(x - 11, y - 15.8, 22, 1.6);                              // плита сверху
 }
 // вывеска трактира: большая янтарная кружка с пеной, подвешенная на кованом кронштейне над улицей
 function innMugSign(c, x, y) {

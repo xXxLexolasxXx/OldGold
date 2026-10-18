@@ -718,7 +718,7 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'stretch': return [[1.6, shY - 3.6], [1, headY - 7 - f * 0.6]];
     case 'yawn':    return [[3.2, shY + 1.6], [4.4, headY + 3.4]];
     case 'clap':    return [[3.4, shY + 1.4], [5.2 + f * 0.9, shY + 0.6]];
-    case 'five':    return f ? [[3.6, shY - 2.4], [5.8, headY - 3.4]] : [[1.8, shY - 3.4], [2.2, headY - 6.4]];   // замах — хлопок
+    case 'five':    return [[[1.6, shY - 3.4], [1.4, headY - 6.2]], [[3, shY - 3.6], [4.4, headY - 5]], [[3.8, shY - 2.6], [5.8, headY - 3.6]], [[2.4, shY - 0.4], [3.2, shY + 0.8]]][f & 3];   // вскинул назад · замах · хлопок · опустил
     case 'panic':   return [[2.4, shY - 2.6], [3.4 + f * 1.4, headY - 4.6 + f * 1.2]];
     case 'eat':     return f ? [[3.2, shY + 0.6], [4.6, headY + 3.4]] : [[3.4, shY + 2.4], [5.2, shY + 3.4]];
     case 'chest':   return [[2.4, shY + 2], [1.4, shY + 0.2 + f * 0.6]];                  // рука за пазухой
@@ -732,7 +732,7 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'stretch': return [[side * 5.8, shY - 3.2], [side * 4.2, headY - 7.4 - f * 0.6]];
     case 'yawn':    return [[side * 5, shY + 1.6], [side * 1.2, headY + 3.4]];
     case 'clap':    return [[side * 5.8, shY + 2.4], [side * (0.9 + f * 1.8), shY + 1.2]];     // хлопает перед грудью
-    case 'five':    return f ? [[side * 6.4, shY - 2.2], [side * 6.6, headY - 3.6]] : [[side * 5.6, shY - 3.4], [side * 5.8, headY - 7]];                    // ладонь вверх навстречу
+    case 'five':    return [[[side * 5.6, shY - 3.4], [side * 5.8, headY - 7]], [[side * 6, shY - 3], [side * 6.2, headY - 5.4]], [[side * 6.4, shY - 2.2], [side * 6.6, headY - 3.6]], [[side * 5.4, shY + 0.4], [side * 5.8, shY + 1.4]]][f & 3];
     case 'panic':   return [[side * 6.4, shY - 2], [side * (6.6 - f * 1.6), headY - 4.2 + f * 1.6]];   // машет руками над головой
     case 'eat':     return f ? [[side * 5, shY + 0.4], [side * 1.4, headY + 4]] : [[side * 5.4, shY + 2.4], [side * 3.4, shY + 4.2]];   // ложка ко рту / в миску
     case 'chest':   return [[side * 4.6, shY + 2.4], [side * 1.8, shY + 0.4 + f * 0.6]];
@@ -762,7 +762,7 @@ const WPN_STYLE = { sword: 'blade', rsword: 'blade', mace: 'blade', cmace: 'blad
 const WPN_BACK = { axe2: 1, staff: 1, sstaff: 1, wstaff: 1, bow: 1, cbow: 1 };
 // рука с оружием: [угол руки (0 — вверх, π/2 — вперёд, π — вниз), угол оружия, длина руки]
 const FIGHT_ARM = {
-  blade: { ready: [2.0, 0.85], windup: [-0.5, -0.95], strike: [1.5, 1.62], follow: [2.35, 2.5], parry: [1.3, 0.1], hurt: [2.6, 2.1], win0: [-0.08, -0.05], win1: [0.12, 0.2], draw: [3.35, 3.75] },
+  blade: { ready: [1.85, 0.4], windup: [-0.5, -0.95], strike: [1.5, 1.62], follow: [2.35, 2.5], parry: [1.3, 0.1], hurt: [2.6, 2.1], win0: [-0.08, -0.05], win1: [0.12, 0.2], draw: [3.35, 3.75] },
   stab:  { ready: [2.1, 1.3], windup: [2.75, 1.45, 3.2], strike: [1.6, 1.6, 4.8], follow: [1.85, 1.85], parry: [1.3, 0.3], hurt: [2.6, 2.2], win0: [-0.1, 0], win1: [0.15, 0.25], draw: [3.3, 3.6] },
   heavy: { ready: [1.8, 0.5], windup: [-0.6, -1.25], strike: [1.65, 1.9], follow: [2.45, 2.75], parry: [1.0, 0.02], hurt: [2.4, 1.3], win0: [-0.1, 0.08], win1: [0.1, 0.28], draw: [-0.75, -1.1] },
   staff: { ready: [1.9, 0.22], windup: [0.3, -0.32], strike: [1.45, 1.35], follow: [1.7, 1.0], parry: [1.3, 0.06], hurt: [2.6, 0.6], win0: [-0.05, 0], win1: [0.1, 0.12], draw: [-0.5, -0.6] },
@@ -817,10 +817,11 @@ function drawWeapon(c, k, x, y, dx, dy, part) {
     case 'sword': case 'rsword': {
       seg(-1.5, 0.6, '#4a2c18', 1); hl(-1.2, 0.2, '#6e4428', 0.5);                     // рукоять с обмоткой
       const pm = P(-1.7); ellipse(c, pm[0], pm[1], 0.65, 0.65, rust ? '#7a6248' : '#c89226');
-      const g = P(0.75); line(c, g[0] - nx * 1.8, g[1] - ny * 1.8, g[0] + nx * 1.8, g[1] + ny * 1.8, rust ? '#6a5236' : '#c89226', 0.85);
+      const g = P(0.75); line(c, g[0] - nx * 2.4, g[1] - ny * 2.4, g[0] + nx * 2.4, g[1] + ny * 2.4, OL, 1.6); line(c, g[0] - nx * 2.3, g[1] - ny * 2.3, g[0] + nx * 2.3, g[1] + ny * 2.3, rust ? '#6a5236' : '#d8a634', 1);
       if (part === 'hilt') break;
-      poly(c, [side(1, -0.95), side(7.2, -0.8), P(8.5), side(7.2, 0.8), side(1, 0.95)], rust ? '#a89a82' : '#d0d4dc', OL, 0.4);
-      hl(1.1, 7.6, rust ? '#d2c6b0' : '#f6f8fa', 0.35);                                         // блик по долу
+      poly(c, [side(1, -1.3), side(8.2, -1.15), P(10), side(8.2, 1.15), side(1, 1.3)], rust ? '#a89a82' : '#c4cad4', OL, 0.45);
+      poly(c, [side(1.1, 0), side(8.8, 0), side(8.2, 1.0), side(1, 1.2)], rust ? '#8a7c66' : '#9aa2b0');   // тень со второй стороны клинка
+      hl(1.4, 8.4, rust ? '#d2c6b0' : '#f8fafc', 0.45);                                         // блик по долу
       if (rust) {
         for (const [t, o] of [[2.2, 0.3], [3.5, -0.35], [5.1, 0.25], [6.2, -0.2]]) { const r = side(t, o); ellipse(c, r[0], r[1], 0.5, 0.42, t > 4 ? '#8a4e2a' : '#a8642e'); }
         poly(c, [side(4.1, 0.98), side(4.4, 0.35), side(4.7, 0.98)], '#3a3026');                // зазубрина
@@ -1073,7 +1074,9 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     if (armed) {
       const [A, Wd, rr = 4.2] = FIGHT_ARM[wst][ff];
       const hx = 0.4 + Math.sin(A) * rr, hy = shY + 0.4 - Math.cos(A) * rr;
-      wA = { hx, hy, dx: Math.sin(Wd), dy: -Math.cos(Wd), Wd };
+      // на ходу клинок покачивается вместе с шагом, рука подпрыгивает: меч несут, а не приклеили
+      const wk = !fight && pose === 'walk' && (wst === 'blade' || wst === 'stab') ? sw : 0;
+      wA = { hx: hx + wk * 0.3, hy: hy + wk * 0.5, dx: Math.sin(Wd + wk * 0.16), dy: -Math.cos(Wd + wk * 0.16), Wd };
       const two = (wst === 'heavy' || wst === 'staff') && ff !== 'draw' && !(wst === 'staff' && (ff === 'win0' || ff === 'win1'));
       let bx, by;
       if (two) { bx = hx - wA.dx * 2.4; by = hy - wA.dy * 2.4; }          // двуручное: вторая рука ниже на древке
@@ -1103,11 +1106,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       }
       if (O.staff && !W) line(c, -2.8, shY + 6, -1.2, shY - 8, '#6a4424', 0.8);
       if (W) {
-        // ножны на левом бедре: пока клинок в них — торчит рукоять; секира, посох, лук и щит — за спиной
-        const st = WPN_STYLE[W.m];
-        if (W.m === 'mace' || W.m === 'cmace') { if (!armed) drawWeapon(c, W.m, -1.4, hipY - 0.8, -0.3, 0.95); }
-        else if (st === 'blade' || st === 'stab') drawSheath(c, W.m, -1.6, hipY + 0.2, -0.55, 0.83, !armed);
-        if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -2.6, hipY + 0.5, -0.35, 0.94, !armed);
+        // секира, посох, лук и щит — за спиной (ножны рисуются поверх туловища, ниже)
         if (WPN_BACK[W.m] && !armed) drawOnBack(c, W.m, -2.4, shY + 3.4, 'E');
         if (W.o === 'wshield' && !armed) drawOnBack(c, 'wshield', -3.4, shY + 3.6, 'E');
       }
@@ -1144,6 +1143,16 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         c.fillStyle = '#7a5030'; rrect(c, -3.2, hipY + 0.8, 1.8, 2, 0.5); c.fill();
         if (O.belt === 'hammer') { line(c, -1.4, hipY + 0.8, -1.8, hipY + 3.6, '#6a4424', 0.6); c.fillStyle = '#6a6a70'; c.fillRect(-2.4, hipY + 0.4, 1.8, 0.9); }
         if (O.belt === 'axe') { line(c, -1.6, hipY + 0.6, -2.4, hipY + 4, '#6a4424', 0.6); poly(c, [[-2.4, hipY + 3.6], [-3.8, hipY + 3.2], [-3.6, hipY + 4.8]], '#b8bcc0'); }
+      }
+      if (W) {
+        // ножны на левом бедре — поверх туловища: ремень-портупея, ножны хвостом назад, над поясом торчит рукоять
+        const st = WPN_STYLE[W.m];
+        if (W.m === 'mace' || W.m === 'cmace') { if (!armed) drawWeapon(c, W.m, -2.6, hipY - 0.8, -0.45, 0.9); }
+        else if (st === 'blade' || st === 'stab') {
+          line(c, -3.2, hipY - 0.4, 1.6, hipY + 0.6, '#3a2414', 0.8);
+          drawSheath(c, W.m, -2.8, hipY + 0.5, -0.66 + (pose === 'walk' ? sw * 0.12 : 0), 0.75, !armed);
+        }
+        if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -3.6, hipY + 0.7, -0.5, 0.86, !armed);
       }
       if (courier) line(c, -2, shY + 0.2, 2.4, hipY, '#4a2c14', 0.6);
       drawHead(c, 'E', 0.6, headY, L, O, type, false, beardBottom, r);   // курево рисует drawSmoking (smoking.js)
@@ -1269,7 +1278,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       // выхваченное оружие: в правой руке (спереди — слева от нас), щит или кинжал — в левой
       const wHand = armed && side === (front ? -1 : 1), oHand = armed && !wHand && W.o;
       if (wHand && wst !== 'fist') {
-        const v = wst === 'heavy' ? [side * 0.3, -0.95] : wst === 'staff' ? [side * 0.12, -0.99] : [side * 0.42, 0.9];
+        const v = wst === 'heavy' ? [side * 0.3, -0.95] : wst === 'staff' ? [side * 0.12, -0.99] : wst === 'blade' ? [side * 0.34, -0.94] : [side * 0.42, 0.9];
         if (wst === 'bow') drawBow(c, W.m, side * 5.1, hy + 0.5, 0, null); else drawWeapon(c, W.m, side * 5.1, hy + 0.5, v[0], v[1]);
       }
       if (oHand && W.o !== 'wshield') drawWeapon(c, W.o, side * 5.1, hy + 0.5, side * 0.4, 0.92);
@@ -1302,7 +1311,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     if (O.fem && front) femBust(c, shY, skin);
     if (W) {
       // ножны на левом бедре (спереди — справа от нас, со спины — слева), кинжал — на правом
-      const st = WPN_STYLE[W.m], sx = front ? 4.1 : -4.1, sd = front ? 0.42 : -0.42;
+      const st = WPN_STYLE[W.m], sx = front ? 4.5 : -4.5, sd = front ? 0.55 : -0.55;
       if (W.m === 'mace' || W.m === 'cmace') { if (!armed) drawWeapon(c, W.m, sx, hipY - 0.6, sd * 0.6, 0.95); }
       else if (st === 'blade' || st === 'stab') drawSheath(c, W.m, sx, hipY + 0.3, sd, 0.9, !armed);
       if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -sx, hipY + 0.4, -sd, 0.9, !armed);

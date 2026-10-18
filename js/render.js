@@ -189,7 +189,7 @@ function drawUnit(c, u) {
     view = (u.id & 1) ? 'S' : 'E';
   } else if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {
     opt.gest = u.gest;
-    if (u.gest === 'five') { opt.gf = (1.1 - (u.gestUntil - Game.time)) < 0.4 ? 0 : 1; view = 'E'; face = u.gestFace || face; }
+    if (u.gest === 'five') { opt.gf = fiveFrameAt(FIVE_T - (u.gestUntil - Game.time)); view = 'E'; face = u.gestFace || face; }
     else if (u.gest === 'clap') { opt.gf = Math.floor(Game.time * 7 + u.id) & 1; if (pose === 'idle') view = 'S'; }
     else if (pose === 'idle') { view = 'E'; face = u.gestFace || face; }
   } else if (pose === 'idle' && !u.anim) {

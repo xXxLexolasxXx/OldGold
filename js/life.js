@@ -100,6 +100,11 @@ function interruptible(u) {
 }
 
 function lifeTick(u, dt) {
+  if (u.fiveSlide) {      // «дай пять»: гномы сходятся вплотную, чтобы ладони встретились
+    const f = u.fiveSlide, k = Math.min(1, (Game.time - f.t0) / 0.3), e = k * k * (3 - 2 * k);
+    u.x = f.x0 + (f.x1 - f.x0) * e; u.y = f.y0 + (f.y1 - f.y0) * e;
+    if (k >= 1) u.fiveSlide = null;
+  }
   if (u.injury && Game.time >= u.injuryUntil) { u.injury = null; }
   // долго без еды — копит слабость
   if (u.food <= 0 && !u.noFood && !u.inside && isPerson(u)) u.starveT = (u.starveT || 0) + dt;
@@ -209,21 +214,25 @@ function socialTick(u) {
   }
 }
 
-// «Дай пять!»: оба разворачиваются друг к другу, ладони встречаются, хлопок и искры;
+// «Дай пять!»: оба сходятся вплотную лицом к лицу (0.3 с), и 4 кадра: рука вскинута назад, замах, хлопок ладонями, опустили;
 // после этого оба бодрее: скорость +15% на 2 секунды
+const FIVE_T = 1.3, FIVE_GAP = 0.36;     // длительность и расстояние между гномами (в клетках) — ладони как раз встречаются
+function fiveFrameAt(el) { return el < 0.3 ? 0 : el < 0.55 ? 1 : el < 0.95 ? 2 : 3; }
 function highFive(a, b) {
-  for (const [x, y] of [[a, b], [b, a]]) {
-    gesture(x, 'five', 1.1, y.x);
-    x.boostUntil = Game.time + 1.1 + 2;
-    x.pauseUntil = Game.time + 1.1;                            // замирают на время хлопка
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, s = b.x >= a.x ? 1 : -1;
+  for (const [x, y, sg] of [[a, b, -s], [b, a, s]]) {
+    gesture(x, 'five', FIVE_T, y.x);
+    x.fiveSlide = { x0: x.x, y0: x.y, x1: mx + sg * FIVE_GAP / 2, y1: my, t0: Game.time };
+    x.boostUntil = Game.time + FIVE_T + 2;
+    x.pauseUntil = Game.time + FIVE_T;                         // замирают на время хлопка
     x.fiveCD = Game.time + 30 + Math.random() * 30;          // не чаще раза в 30–60 с
     x.nextSocial = Game.time + 8 + Math.random() * 10;
   }
-  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - 1.1;
-  fxLater(0.4, () => {
-    fxBurst(mx * TILE, my * TILE, 8, ['#fff2a0', '#ffd860', '#ffffff'], 46, 36, 0.35, 1.4, 120);
-    sfxAt('five', mx * TILE, my * TILE);
-    floater(mx, my - 0.5, 'Дай пять!', '#fff2a0');
+  const hy = my - 0.62;                                        // ладони на уровне головы
+  fxLater(0.55, () => {
+    fxBurst(mx * TILE, hy * TILE, 8, ['#fff2a0', '#ffd860', '#ffffff'], 46, 36, 0.35, 1.4, 120);
+    sfxAt('five', mx * TILE, hy * TILE);
+    floater(mx, hy - 0.5, 'Дай пять!', '#fff2a0');
   });
 }
 
