@@ -33,6 +33,12 @@ const GOODS = {
   mana:       { name: 'Банки маны',      color: '#40a0ff', group: 'Магия' },
   staff:      { name: 'Посохи',          color: '#8a6aff', group: 'Снаряжение' },
   mageArmor:  { name: 'Мантии мага',     color: '#5040a0', group: 'Снаряжение' },
+  ironore:    { name: 'Железная руда',   color: '#8a6a5a', group: 'Металл' },
+  iron:       { name: 'Железные слитки', color: '#9aa0aa', group: 'Металл' },
+  sword:      { name: 'Мечи',            color: '#c8ccd4', group: 'Снаряжение' },
+  bow:        { name: 'Луки',            color: '#a87040', group: 'Снаряжение' },
+  dagger:     { name: 'Кинжалы',         color: '#8a8a9a', group: 'Снаряжение' },
+  ironArmor:  { name: 'Железный доспех', color: '#7a8090', group: 'Снаряжение' },
   trash:      { name: 'Мусор',           color: '#7a6a50', group: 'Хозяйство', noStore: true },
   ash:        { name: 'Пепел',           color: '#9e958a', group: 'Хозяйство' },
   chicken:    { name: 'Курица (тушка)',  color: '#f0c8a0', group: 'Еда' },
@@ -42,7 +48,7 @@ const GOODS = {
   darkbeer:   { name: 'Тёмное пиво',    color: '#5a3418', group: 'Еда' },
 };
 const GOOD_KEYS = Object.keys(GOODS);
-const GOOD_GROUPS = ['Стройка', 'Еда', 'Ценности', 'Ремесло', 'Магия', 'Снаряжение', 'Хозяйство'];
+const GOOD_GROUPS = ['Стройка', 'Еда', 'Ценности', 'Ремесло', 'Металл', 'Магия', 'Снаряжение', 'Хозяйство'];
 const FOODS = ['chickenleg', 'steak', 'croissant', 'sausage', 'bread'];   // что едят в трактире (по порядку предпочтения)
 
 const UNIT_TYPES = {
@@ -68,6 +74,15 @@ const UNIT_TYPES = {
   goat:       { name: 'Вьючная коза', shirt: '#d8d0c0', animal: true, noTrain: true },
   carter:     { name: 'Извозчик',  shirt: '#5a5a6a', noTrain: true },
   hero:       { name: 'Герой',     shirt: '#8a1c22', noTrain: true },
+  // гильдии: главы гильдий приходят сами, рекрутов набирают из трудяг (js/guilds.js)
+  gm_warrior: { name: 'Мастер воинов',   shirt: '#6a6a76', noTrain: true },
+  gm_archer:  { name: 'Мастер лучников', shirt: '#3a7a2a', noTrain: true },
+  gm_rogue:   { name: 'Атаман',          shirt: '#2e2e3a', noTrain: true },
+  gm_mage:    { name: 'Архимаг',         shirt: '#2c4a9a', noTrain: true },
+  warrior:    { name: 'Воин',      shirt: '#6a6a76', noTrain: true, recruit: true },
+  archer:     { name: 'Лучник',    shirt: '#3a7a2a', noTrain: true, recruit: true },
+  rogue:      { name: 'Разбойник', shirt: '#2e2e3a', noTrain: true, recruit: true },
+  mage:       { name: 'Маг',       shirt: '#2c4a9a', noTrain: true, recruit: true },
 };
 const UNIT_KEYS = Object.keys(UNIT_TYPES).filter(k => !UNIT_TYPES[k].noTrain);   // кого учат в школе
 const ALL_UNIT_KEYS = Object.keys(UNIT_TYPES);
@@ -133,6 +148,28 @@ const BUILDINGS = {
     recipes: [{ in: { goldore: 1, trunk: 1 }, out: { gold: 1 }, time: 10 }],
     desc: 'Плавит руду в золото, сжигая брёвна.',
   },
+  ironmine: {
+    name: 'Железный рудник', cat: 'Ресурсы', w: 3, h: 2, top: 70, noRotate: true, cost: { timber: 4, stone: 3 }, worker: 'miner',
+    outputs: { ironore: 5 }, need: 'rock',
+    recipes: [{ in: {}, out: { ironore: 1 }, time: 16 }],
+    desc: 'Добывает железную руду. Ставить вплотную под скалой.',
+  },
+  smeltery: {
+    name: 'Плавильня металла', cat: 'Ремесло', w: 3, h: 2, top: 96, cost: { timber: 3, stone: 6 }, worker: 'smelter',
+    inputs: { ironore: 6, trunk: 6 }, outputs: { iron: 6 },
+    recipes: [{ in: { ironore: 1, trunk: 1 }, out: { iron: 1 }, time: 11 }],
+    desc: 'Домница с мехами: из железной руды и брёвен выходят железные слитки для оружия и доспехов.',
+  },
+  weaponsmith: {
+    name: 'Оружейная', cat: 'Ремесло', w: 3, h: 2, top: 78, cost: { timber: 4, stone: 5 }, worker: 'smelter',
+    inputs: { iron: 6, timber: 4, leather: 3 }, outputs: { sword: 3, bow: 3, dagger: 3 },
+    recipes: [
+      { in: { iron: 2, timber: 1 }, out: { sword: 1 }, time: 14 },
+      { in: { timber: 2, leather: 1 }, out: { bow: 1 }, time: 12 },
+      { in: { iron: 1, leather: 1 }, out: { dagger: 1 }, time: 10 },
+    ],
+    desc: 'Кузнец-оружейник ковёт мечи и кинжалы, гнёт луки. Герой и рекруты берут оружие здесь.',
+  },
   farm: {
     name: 'Ферма', cat: 'Еда', w: 4, h: 3, top: 72, cost: { timber: 5, stone: 3 }, worker: 'farmer',
     inputs: { ash: 4 }, outputs: { wheat: 10, hay: 10 }, crops: ['wheat'],
@@ -180,9 +217,12 @@ const BUILDINGS = {
   },
   armory: {
     name: 'Мастерская доспехов', cat: 'Ремесло', w: 3, h: 2, top: 66, cost: { timber: 3, stone: 4 }, worker: 'tanner',
-    inputs: { leather: 5 }, outputs: { leatherArmor: 4 },
-    recipes: [{ in: { leather: 2 }, out: { leatherArmor: 1 }, time: 12 }],
-    desc: 'Шьёт кожаные доспехи для будущей армии.',
+    inputs: { leather: 5, iron: 4 }, outputs: { leatherArmor: 4, ironArmor: 3 },
+    recipes: [
+      { in: { leather: 2 }, out: { leatherArmor: 1 }, time: 12 },
+      { in: { iron: 2, leather: 1 }, out: { ironArmor: 1 }, time: 18 },
+    ],
+    desc: 'Шьёт кожаные доспехи, а при наличии железа клепает и железные.',
   },
   crystalmine: {
     name: 'Шахта маг. камней', cat: 'Магия', w: 3, h: 2, top: 70, noRotate: true, cost: { timber: 4, stone: 3 }, worker: 'miner',
@@ -205,9 +245,30 @@ const BUILDINGS = {
     ],
     desc: 'Чародей создаёт посохи и мантии мага.',
   },
+  // Гильдии: глава гильдии приходит сам, учит героя классу и набирает рекрутов из трудяг (js/guilds.js)
+  guild_warrior: {
+    name: 'Гильдия воинов', cat: 'Гильдии', w: 3, h: 3, top: 104, cost: { timber: 5, stone: 8 }, guild: 'warrior',
+    inputs: { gold: 6, sword: 3, ironArmor: 2 },
+    desc: 'Каменный зал с башней и тренировочным двором. Мастер воинов учит держать меч и носить железо.',
+  },
+  guild_archer: {
+    name: 'Гильдия лучников', cat: 'Гильдии', w: 3, h: 3, top: 110, cost: { timber: 8, stone: 4 }, guild: 'archer',
+    inputs: { gold: 6, bow: 3, leatherArmor: 2 },
+    desc: 'Лесная ложа с дозорной вышкой и мишенями. Мастер лучников учит меткости и быстрым ногам.',
+  },
+  guild_rogue: {
+    name: 'Гильдия разбойников', cat: 'Гильдии', w: 3, h: 3, top: 92, cost: { timber: 6, stone: 5 }, guild: 'rogue',
+    inputs: { gold: 6, dagger: 3, leatherArmor: 2 },
+    desc: 'Кособокий дом с подвалом и глухими окнами. Атаман учит ловкости рук и тому, что плохо лежит.',
+  },
+  guild_mage: {
+    name: 'Гильдия магов', cat: 'Гильдии', w: 3, h: 3, top: 130, noRotate: true, cost: { timber: 4, stone: 8 }, guild: 'mage',
+    inputs: { gold: 6, staff: 3, mageArmor: 2, mana: 4 },
+    desc: 'Башня со звёздным куполом и библиотекой. Архимаг учит смекалке и заклинаниям.',
+  },
 };
 const BUILD_ORDER = Object.keys(BUILDINGS);
-const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия'];
+const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия', 'Гильдии'];
 
 // Постепенно открывающееся меню строительства. Стадия открывается, когда готово
 // всё из `after` (типы зданий), либо её открывает обучение. Школы в меню нет:
@@ -221,6 +282,8 @@ const UNLOCKS = [
   { id: 'craft', items: ['tannery', 'armory'], after: ['butchery'] },
   { id: 'metal', items: ['goldmine', 'metallurgist'], after: ['armory'] },
   { id: 'magic', items: ['crystalmine', 'magiccircle', 'magicworkshop'], after: ['goldmine', 'metallurgist'] },
+  { id: 'iron',  items: ['ironmine', 'smeltery', 'weaponsmith'], after: ['metallurgist'] },
+  { id: 'guilds', items: ['guild_warrior', 'guild_archer', 'guild_rogue', 'guild_mage'], after: ['weaponsmith'] },
 ];
 
 const ROAD_STONE = 1;     // сколько камня уходит на клетку дороги
