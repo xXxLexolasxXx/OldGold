@@ -806,7 +806,14 @@ function wpnParse(s) { const [m, o, out] = String(s).split('|'); return { m: m |
 function fightFrameOf(u, moving) {
   // герой, рекруты гильдий (u.rec, в общей деревне — u.gx) и главы гильдий
   if (u.type !== 'hero' && !(u.hero && u.hero.owner) && !u.rec && !u.gx && !u.gm) return null;
-  if (moving) return null;
+  if (moving) { u._ffT = 0; return null; }
+  const fr = fightFrameRaw(u);
+  if (fr) { u._ffT = Game.time; return fr; }
+  // между двумя боевыми действиями бывает такт без анимации — держим стойку, а не разворачиваемся к зрителю
+  if (u._ffT && Game.time - u._ffT < 0.25 && !u.anim) return 'ready';
+  return null;
+}
+function fightFrameRaw(u) {
   if (u.hfx && u.hfx.t > Game.time) return u.hfx.k;
   const an = u.anim;
   if (!an || an[0] !== 'f' || !FIGHT_ANIM_SET.has(an)) return null;
