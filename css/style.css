@@ -808,3 +808,10 @@ body.coop #dd-speed .dd-t::after { content: ''; }
   box-shadow: inset 0 0 0 1px #d2a73c, inset 0 0 0 2px #15120e, inset 0 6px 8px rgba(255,255,255,0.05), 0 3px 8px rgba(0,0,0,0.6);
   padding: 8px 14px;
 }
+
+/* обучение: «узнать больше» — свёрнуто, чтобы не перегружать */
+#tut details { margin-top: 5px; }
+#tut summary { cursor: pointer; color: var(--gold-hi); font-size: 12px; }
+#tut details[open] { padding: 2px 0 4px; font-size: 12.5px; color: var(--text-dim); }
+#tut .tut-text { max-height: 46vh; overflow-y: auto; }
+body.mobile #tut .tut-text { max-height: none; overflow: visible; }
