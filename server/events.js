@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 // порядок воронки для сводки («a|b» — достаточно любого из событий)
-const FUNNEL = ['start-desktop|start-mobile', 'menu-new|menu-continue', 'tut-start', 'tut-step-02', 'tut-step-05', 'tut-step-08', 'tut-step-12', 'tut-step-15', 'tut-done',
+const FUNNEL = ['start-desktop|start-mobile', 'menu-new|menu-continue', 'tut-start', 'tut-step-02', 'tut-step-05', 'tut-step-08', 'tut-step-12', 'tut-step-15', 'tut2-step-02', 'tut2-step-05', 'tut2-step-08', 'tut2-step-10', 'tut2-step-12', 'tut-done',
   'place-1', 'built-1', 'built-5', 'built-10', 'night-1', 'night-seen', 'night-long', 'lost-1', 'graveyard', 'profile-open', 'ach-first', 'coop-join', 'play-5m', 'play-15m', 'play-30m', 'play-60m'];
 const MAX_CLIENTS = 300000, MAX_NAMES = 400, MAX_BODY = 4096;
 const NAME_RE = /^[a-z0-9][a-z0-9_-]{0,47}$/, CID_RE = /^[a-z0-9]{8,32}$/;
