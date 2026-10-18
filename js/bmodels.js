@@ -1111,6 +1111,16 @@ const MODELS = {
   },
 };
 
+// Запасной вид для типов, у которых ещё нет своей модели (новые здания добавляются в config.js раньше, чем рисуются):
+// приземистый каменный дом с дверью под черепицей. Игра стартует, а здание сразу видно на карте.
+function modelPlaceholder(m) {
+  m.box({
+    x0: 6, x1: 6 + Math.max(40, m.LW - 12), y0: 10, y1: 10 + Math.max(36, m.LD - 20), h: 26, wall: 'stone', col: '#968e82',
+    roof: { type: 'gable', axis: 'X', rise: 20, mat: 'slate', col: '#6e6c68', ov: 4 },
+    decor: { S: [{ t: 'door', main: true, w: 10, h: 17, o: { frame: 'stone' } }, { t: 'win', at: 14, z: 10, w: 7, h: 8, o: { lit: true, stone: true } }], E: [], W: [] },
+  });
+}
+
 // ================= Спрайт здания =================
 
 function bDims(type, rot) {
@@ -1351,7 +1361,7 @@ function buildingSpriteBase(type, rot = 0, level = 1) {
     sc.fillRect(0, top - 10, W, FD + BBOTTOM + 10);
   }
   const m = newModel(g);
-  MODELS[type](m);
+  (MODELS[type] || modelPlaceholder)(m);
   if (level === 2) spr.tall = upgradeModel(m);
   SIGN_QUEUE.list = [];
   BUILD_STYLE = styleOf(type); BUILD_TYPE = type;
