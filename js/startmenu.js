@@ -257,3 +257,90 @@ function initResToggle() {
     if (b && list && b.parentElement !== list) { const wrap = b.parentElement; list.prepend(b); if (wrap && wrap.classList.contains('speed') && !wrap.children.length) wrap.remove(); }
   };
 }
+
+// ---------- Выбор кнопки: стебель прорастает, обвивает её, летят искры ----------
+
+const SM_DELAY = 620;   // сколько показываем рост, прежде чем выполнить действие
+let smPicking = false;
+
+function smPerim(s, w, h, r) {   // точка на скруглённом периметре кнопки: s ∈ [0,1) от левого верха по часовой
+  const L = 2 * (w + h);
+  let d = ((s % 1) + 1) % 1 * L, x, y, nx, ny;
+  if (d < w) { x = d; y = 0; nx = 0; ny = -1; }
+  else if ((d -= w) < h) { x = w; y = d; nx = 1; ny = 0; }
+  else if ((d -= h) < w) { x = w - d; y = h; nx = 0; ny = 1; }
+  else { d -= w; x = 0; y = h - d; nx = -1; ny = 0; }
+  return [x, y, nx, ny];
+}
+
+function smGrow(btn, kind) {
+  const old = btn.querySelector('.sm-grow'); if (old) old.remove();
+  const w = btn.offsetWidth, h = btn.offsetHeight, P = 22;
+  if (!w || !h) return;
+  const rnd = smRand(Date.now() & 0xffff);
+  const laps = 1.35, n = Math.round((2 * (w + h)) * laps / 7);
+  let d = '';
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const f = i / n, s = f * laps;
+    const [x, y, nx, ny] = smPerim(s, w, h);
+    const o = Math.sin(f * laps * Math.PI * 2 * 6) * 5 + 2;   // стебель переплетается: то снаружи, то у кромки
+    const px = x + nx * o, py = y + ny * o;
+    pts.push([px, py, nx, ny, f]);
+    d += (i ? ' L' : 'M') + px.toFixed(1) + ' ' + py.toFixed(1);
+  }
+  const stem = kind === 'wheat' ? '#9a8a3a' : '#4a7a22';
+  const greens = ['#5a9a2a', '#6aaa34', '#4a8a24', '#78b83e'];
+  let items = '';
+  let k = 0;
+  for (let i = 3; i < pts.length - 1; i += 3) {
+    const [x, y, nx, ny, f] = pts[i];
+    const ang = Math.atan2(ny, nx) * 180 / Math.PI + 90;       // наружу от кнопки
+    const side = (k++ % 2) ? 1 : -1;
+    let g;
+    if (kind === 'wheat') g = k % 2 ? vWheat(0, 0, 18 + rnd() * 8, ang + side * 25) : vLeaf(0, 0, ang + side * 50, 0.8, 'hops', '#8aa83a');
+    else if (k % 4 === 0) g = kind === 'hops' ? vHop(0, 0, 0.7) : vGrapes(0, 0, 0.7);
+    else g = vLeaf(0, 0, ang + side * 55 + (rnd() - 0.5) * 30, 0.75 + rnd() * 0.35, kind, greens[k & 3]);
+    items += `<g class="sm-g" style="animation-delay:${(f * 0.5).toFixed(2)}s"><g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">${g}</g></g>`;
+  }
+  const W = w + P * 2, H = h + P * 2;
+  let sparks = '';
+  for (let i = 0; i < 14; i++) {
+    const [x, y, nx, ny] = smPerim(rnd(), w, h);
+    const a = Math.atan2(ny, nx) + (rnd() - 0.5) * 1.6, dist = 14 + rnd() * 26;
+    sparks += `<i class="sm-spark" style="left:${(x + P).toFixed(0)}px;top:${(y + P).toFixed(0)}px;--dx:${(Math.cos(a) * dist).toFixed(0)}px;--dy:${(Math.sin(a) * dist - 10).toFixed(0)}px;animation-delay:${(0.1 + rnd() * 0.45).toFixed(2)}s"></i>`;
+  }
+  btn.insertAdjacentHTML('beforeend',
+    `<span class="sm-grow" style="left:${-P}px;top:${-P}px;width:${W}px;height:${H}px"><svg width="${W}" height="${H}" viewBox="${-P} ${-P} ${W} ${H}" style="overflow:visible">` +
+    `<path pathLength="1" class="sm-stem" d="${d}" stroke="${VINE_DARK}" stroke-width="5.2"/><path pathLength="1" class="sm-stem" d="${d}" stroke="${stem}" stroke-width="3"/>${items}</svg>${sparks}</span>`);
+}
+
+// выбор — наведение пальца/мыши и нажатие; действие откладываем на время роста
+{
+  const root = () => document.getElementById('start-menu');
+  document.addEventListener('pointerdown', e => {
+    const b = e.target.closest && e.target.closest('#start-menu .sm-btn');
+    if (b && !b.disabled && !smPicking) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
+  }, true);
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('#start-menu [data-sm]');
+    if (!b || b.disabled) return;
+    if (smPicking) { e.stopImmediatePropagation(); return; }
+    if (!b.querySelector('.sm-grow')) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
+    if (b.dataset.sm === 'back') return;
+    // действие после роста: перехватываем клик и пускаем заново
+    e.stopImmediatePropagation();
+    smPicking = true;
+    b.classList.add('sm-picked');
+    setTimeout(() => { smPicking = false; b.classList.remove('sm-picked'); const g = b.querySelector('.sm-grow'); if (g) g.remove(); smAction(b.dataset.sm); }, SM_DELAY);
+  }, true);
+}
+// касание без выбора (палец уехал) — стебель убираем сам
+{
+  const _grow = smGrow;
+  smGrow = function (btn, kind) {
+    _grow(btn, kind);
+    const g = btn.querySelector('.sm-grow');
+    if (g) setTimeout(() => { if (!btn.classList.contains('sm-picked') && g.parentNode) g.remove(); }, 1500);
+  };
+}

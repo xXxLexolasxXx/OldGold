@@ -116,7 +116,7 @@ function selectHero(center) {
   Game.selected = null;
   Game.selUnit = h;
   if (center) centerOn(h.x * TILE, h.y * TILE);
-  if (Mobile.on) mobileSheet('info');
+  if (Mobile.on) mobileSheet(null);   // на телефоне у героя своя компактная плашка, шторки не нужны
   updateUI(true);
 }
 
@@ -569,18 +569,36 @@ function heroCardUpdate() {
       if (!el || !Game.hero) return;
       if (el.dataset.hero === 'leave') { const m = Game.units.find(u => u.teamOf === Game.hero.id); if (m) leaveTeam(m); updateUI(true); }
       else heroAbility(el.dataset.hero);
+      if (e.target.closest('.hc-t')) { heroCardOpen = !heroCardOpen; heroCardUpdate(); return; }
     });
     document.getElementById('view').appendChild(card);
     const st = document.createElement('style');
     st.textContent = `#hero-card{position:absolute;top:58px;right:10px;width:250px;z-index:6;padding:8px 10px 10px;background:rgba(26,19,13,.94);color:#e8dcc0;border:1px solid #b8902c;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.6);font-size:13px;display:none}
     #hero-card .hc-x{position:absolute;top:3px;right:5px;padding:0 6px;font-size:13px;line-height:18px}
     #hero-card .ihead{margin-bottom:4px}
-    body.mobile #hero-card{top:auto;bottom:calc(112px + env(safe-area-inset-bottom));right:6px;width:min(250px,64vw)}`;
+    body.mobile #hero-card{top:calc(92px + env(safe-area-inset-top));right:auto;left:6px;width:min(300px,calc(100vw - 12px));padding:4px 68px 4px 6px;font-size:12px;max-height:min(36vh,calc(100dvh - 150px));overflow-y:auto}
+    body.mobile.sheet-tab #hero-card,body.mobile.sheet-info #hero-card{display:none!important}
+    body.mobile #hero-card .hc-t{position:absolute;top:3px;right:30px;padding:0 6px;font-size:13px;line-height:18px}
+    body.mobile #hero-card .hc-x{top:3px;right:4px;padding:0 6px}
+    #hero-card .hc-row{display:flex;align-items:center;gap:6px;min-height:34px}
+    #hero-card .hc-row img{width:30px;height:30px;image-rendering:pixelated;border-radius:4px;flex:none}
+    #hero-card .hc-row .hc-n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #hero-card .hc-row .hp-ab{flex:none;min-height:30px;padding:2px 8px}
+    #hero-card .hc-body{margin-top:4px;border-top:1px solid #4a3a1c;padding-top:4px}
+    #hero-card .hc-body .tip{display:none}`;
     document.head.appendChild(st);
   }
   const on = !!(Game.hero && Game.selUnit && Game.selUnit === Game.hero);
   if (!on) { card.style.display = 'none'; return; }
-  const html = heroPanel() + '<button class="hc-x" title="Закрыть (Esc)">×</button>';
+  let html;
+  if (Mobile.on) {
+    // телефон: тонкая плашка сверху (портрет, имя, рывок/клич), по ▾ раскрывается полная панель
+    const H = Game.hero.hero, cd = k => Math.max(0, Math.ceil((H[k] || 0) - Game.time));
+    const ab = (k, name, lvl, cdk) => H.level < lvl ? '' : `<button class="hp-ab" data-hero="${k}" ${cd(cdk) ? 'disabled' : ''}><b>${name}</b>${cd(cdk) ? ' ' + cd(cdk) : ''}</button>`;
+    html = `<div class="hc-row"><img src="${portraitURL('hero', Game.hero.look)}" alt=""><span class="hc-n"><b>${H.name}</b> · ур. ${H.level}</span>${ab('dash', 'Рывок', 1, 'cdDash')}${ab('cry', 'Клич', 3, 'cdCry')}</div>`
+      + (heroCardOpen ? `<div class="hc-body">${heroPanel()}</div>` : '')
+      + `<button class="hc-t" title="${heroCardOpen ? 'Свернуть' : 'Подробнее'}">${heroCardOpen ? '▴' : '▾'}</button><button class="hc-x" title="Снять выбор">×</button>`;
+  } else html = heroPanel() + '<button class="hc-x" title="Закрыть (Esc)">×</button>';
   if (card.dataset.h !== html) { card.dataset.h = html; card.innerHTML = html; }
   card.style.display = 'block';
 }

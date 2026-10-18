@@ -467,7 +467,7 @@
   function drawBackground(t) {
     const sky = ctx.createLinearGradient(0, 0, 0, H * 0.62);
     sky.addColorStop(0, '#0a0d24'); sky.addColorStop(0.55, '#2a1c4a'); sky.addColorStop(1, '#6a3a4a');
-    ctx.fillStyle = sky; ctx.fillRect(0, -240, W, H + 480);
+    ctx.fillStyle = sky; ctx.fillRect(-W * 0.3, -240, W * 1.6, H + 480);
     for (const s of stars) {
       ctx.globalAlpha = 0.45 + 0.4 * Math.sin(t * 1.5 + s.p);
       ctx.fillStyle = '#fff6d8'; ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, 7); ctx.fill();
@@ -485,9 +485,9 @@
     for (const [dx, dy, r] of [[-0.3, -0.1, 0.18], [0.25, 0.25, 0.22], [0.1, -0.4, 0.12]]) { ctx.beginPath(); ctx.arc(mx + dx * mr, my + dy * mr, r * mr, 0, 7); ctx.fill(); }
     // холмы и далёкий лес слоями
     const hill = (yb, amp, col, ph) => {
-      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, H);
-      for (let x = 0; x <= W; x += 10) ctx.lineTo(x, H * yb + Math.sin(x / W * 5 + ph) * amp * H + Math.sin(x / W * 13 + ph) * amp * H * 0.3);
-      ctx.lineTo(W, H); ctx.fill();
+      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-W * 0.3, H);
+      for (let x = -W * 0.3; x <= W * 1.3; x += 10) ctx.lineTo(x, H * yb + Math.sin(x / W * 5 + ph) * amp * H + Math.sin(x / W * 13 + ph) * amp * H * 0.3);
+      ctx.lineTo(W * 1.3, H); ctx.fill();
     };
     hill(0.52, 0.03, '#1d1838', 1); drawTower(t); hill(0.58, 0.035, '#16162e', 3);
     for (const tr of trees.filter(q => q.layer < 0.55)) pine(tr.x * W, H * 0.6, tr.h * H * 0.8, tr.w * W * 0.8, '#10132a');
@@ -496,9 +496,9 @@
     // земля
     const gr = ctx.createLinearGradient(0, H * 0.66, 0, H);
     gr.addColorStop(0, '#1c2a1a'); gr.addColorStop(1, '#0c140c');
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, H * 0.7);
-    for (let x = 0; x <= W; x += 12) ctx.lineTo(x, H * 0.7 + Math.sin(x / W * 7) * 0.008 * H);
-    ctx.lineTo(W, H + 240); ctx.lineTo(0, H + 240); ctx.fill();
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(-W * 0.3, H * 0.7);
+    for (let x = -W * 0.3; x <= W * 1.3; x += 12) ctx.lineTo(x, H * 0.7 + Math.sin(x / W * 7) * 0.008 * H);
+    ctx.lineTo(W * 1.3, H + 240); ctx.lineTo(-W * 0.3, H + 240); ctx.fill();
     drawEnts(t);
   }
   function pine(x, yb, h, w, col) {
@@ -849,6 +849,25 @@
 
   // ---------- кадр ----------
   let last = performance.now(), running = true, T0 = last, lift = 0;
+  // сдвиг картинки пальцем (или мышью): фон едет медленнее, передний план — быстрее
+  const pan = { x: 0, y: 0, tx: 0, tz: 0, down: null };
+  {
+    const host = document.getElementById('loading');
+    const lim = () => [Math.min(W, 600) * 0.2, H * 0.05];
+    host.addEventListener('pointerdown', e => {
+      if (e.target.closest('button, input, label, .sm-help')) return;
+      pan.down = { id: e.pointerId, x: e.clientX, y: e.clientY, px: pan.tx, py: pan.tz };
+    });
+    window.addEventListener('pointermove', e => {
+      if (!pan.down || pan.down.id !== e.pointerId) return;
+      const [lx, ly] = lim();
+      pan.tx = Math.max(-lx, Math.min(lx, pan.down.px + (e.clientX - pan.down.x) * 0.6));
+      pan.tz = Math.max(-ly, Math.min(ly, pan.down.py + (e.clientY - pan.down.y) * 0.3));
+    });
+    const up = e => { if (pan.down && pan.down.id === e.pointerId) pan.down = null; };
+    window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+    cv.style.touchAction = 'none'; host.style.touchAction = 'none';
+  }
   function frame(now) {
     if (!running) return;
     if (!cv.clientWidth || !cv.clientHeight) { resize(); last = now; requestAnimationFrame(frame); return; }   // вкладка скрыта и холст нулевой — ждём
@@ -861,8 +880,12 @@
     const menu = document.getElementById("loading").classList.contains("with-menu");
     const sm = document.getElementById("start-menu"), mh = menu && sm ? sm.offsetHeight : 0;
     lift += ((menu ? Math.max(0, Math.min(H * 0.42, mh * (H > W ? 1.02 : 0.85) - H * 0.02)) : 0) - lift) * Math.min(1, dt * 4);
-    ctx.translate(0, -lift);
+    // пружина: отпущенная картинка плавно возвращается к середине
+    if (!pan.down) { const k = Math.min(1, dt * 1.2); pan.tx -= pan.tx * k; pan.tz -= pan.tz * k; }
+    pan.x += (pan.tx - pan.x) * Math.min(1, dt * 10); pan.y += (pan.tz - pan.y) * Math.min(1, dt * 10);
+    ctx.translate(pan.x * 0.4, -lift + pan.y * 0.4);
     drawBackground(t);
+    ctx.translate(pan.x * 0.6, pan.y * 0.6);
     // летающая нечисть — вдали, тусклая, под дымкой
     for (const f of flyers) {
       f.x += f.v * dt; if (f.x > 1.1) f.x = -0.1; if (f.x < -0.1) f.x = 1.1;
@@ -873,7 +896,7 @@
     fog.addColorStop(0, 'rgba(90,80,120,0)'); fog.addColorStop(0.5, 'rgba(110,100,140,0.18)'); fog.addColorStop(1, 'rgba(90,80,120,0)');
     ctx.fillStyle = fog; ctx.fillRect(0, H * 0.55, W, H * 0.2);
 
-    const u = Math.min(W, H * 1.45) / 1000 * (1 - lift / H * 0.8);
+    const u = Math.min(W, H * 1.45) / 1000 * (1 - lift / H * 0.8) * (H > W * 1.05 ? 1.4 : 1);   // на телефоне в портрете сцена крупнее
     U = u;
     const cx = W / 2, cy = H * 0.76, S = u * 2.5;
     const flick = 0.85 + 0.15 * Math.sin(t * 11) * Math.sin(t * 7.3);
@@ -927,7 +950,7 @@
     // пламя между задними и передними — задние закрыты огнём лишь частично
     // пиксельное пламя из js/fire.js: большой язык по центру, два малых по бокам, искры
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const fx = cx / PSc, fy = (cy - lift) / PSc - 2, fh = 96 * S / PSc;
+    const fx = (cx + pan.x) / PSc, fy = (cy - lift + pan.y) / PSc - 2, fh = 96 * S / PSc;
     drawFire(ctx, fx - 9 * S / PSc * 2.2, fy, 'camp', t, 1, { h: fh * 0.62, glow: 0 });
     drawFire(ctx, fx + 10 * S / PSc * 2.2, fy, 'camp', t, 4, { h: fh * 0.55, glow: 0 });
     drawFire(ctx, fx, fy + 1, 'blaze', t, 2, { h: fh, glow: 0, sparks: 16 });
@@ -940,7 +963,7 @@
     wl.addColorStop(0, `rgba(255,150,60,${0.5 * flick})`); wl.addColorStop(1, 'rgba(255,150,60,0)');
     ctx.fillStyle = wl; ctx.fillRect(0, 0, W, H); ctx.restore();
     // виньетка
-    ctx.translate(0, lift);
+    ctx.translate(-pan.x, lift - pan.y);
     const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.65)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
