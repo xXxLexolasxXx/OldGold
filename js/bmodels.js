@@ -113,7 +113,7 @@ function gnomePart(p) {
       r.ov = (r.ov ?? 4) + 1.6;
     } else if (cottage) {
       // толстая соломенная крыша, выше и с глубоким свесом
-      r.mat = 'thatch'; r.col = BUILD_TYPE === 'inn' ? ['#d2b45c', '#c8aa52', '#dcbe66'][h % 3] : ['#7a6848', '#706044', '#84704c'][h % 3];   // трактир — яркая золотая солома
+      r.mat = 'thatch'; r.col = BUILD_TYPE === 'inn' ? ['#d2b45c', '#c8aa52', '#dcbe66'][h % 3] : ['#8c7444', '#846c3e', '#947c4a'][h % 3];   // трактир — яркая золотая солома
       r.rise = (r.rise ?? 18) * 1.25;
       r.ov = (r.ov ?? 4) + 2.6;
     } else {

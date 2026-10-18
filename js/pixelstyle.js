@@ -86,7 +86,7 @@ ROOF.thatch = function (c, Lu, Lv, col) {
   for (let u = -LAY, L = 0; u < Lu + LAY; u += LAY, L++) {
     const base = 2 + rowShade(u, Lu);
     for (let v = -1, k = 0; v < Lv + 1; v += 1, k++) {
-      const n = hsh(k, L, 5), vr = n < 0.14 ? -1 : n < 0.36 ? 1 : 0;
+      const n = hsh(k, L, 5), vr = n < 0.1 ? -1 : n < 0.3 ? 1 : 0;
       c.fillStyle = R[clampI(base + vr, 0, 5)];
       c.fillRect(u, v, LAY, 1);
     }
@@ -418,4 +418,109 @@ chimney = function (c, x, yBase, h, kind = 'brick', w = 5) {
   c.fillStyle = '#100c0a'; c.fillRect(x + 0.6, yBase - h - 1.4, w - 1.2, 0.8);
   c.strokeStyle = 'rgba(20,10,4,0.6)'; c.lineWidth = 0.5; c.strokeRect(x, yBase - h, w, h);
   return [x + w / 2, yBase - h - 2];
+};
+
+// ================= Скальный отвал рудников =================
+// Крупные валуны плоскими пятнами: три ступени света слева направо, блик сверху-слева, тень под камнем
+rockMound = function (c, pts, x0, y0, w, h, col = '#7e7468') {
+  const R = rampOf(col);
+  clipPoly(c, pts, () => {
+    c.fillStyle = R[4]; c.fillRect(x0, y0, w, h);
+    for (let ry = y0 + h, row = 0; ry > y0 - 8; ry -= 6.2, row++) {
+      for (let rx = x0 - (row % 2 ? 5 : 0), k = 0; rx < x0 + w + 8; k++) {
+        const rw = 7 + hsh(k, row, 50) * 5, rh = 5.4 + hsh(k, row, 51) * 1.6;
+        const u = (rx + rw / 2 - x0) / w, band = u < 0.3 ? 1 : u < 0.62 ? 2 : 3;
+        const n = hsh(k, row, 52), vr = n < 0.15 ? 1 : n > 0.9 ? -1 : 0;
+        ellipse(c, rx + rw / 2 + 0.4, ry - rh / 2 + 0.6, rw / 2, rh / 2, R[5]);
+        ellipse(c, rx + rw / 2, ry - rh / 2, rw / 2 - 0.3, rh / 2 - 0.3, R[clampI(band + vr, 0, 5)]);
+        c.fillStyle = R[clampI(band + vr - 2, 0, 5)]; c.fillRect(rx + rw * 0.25, ry - rh + 0.9, rw * 0.4, PXU);
+        if (hsh(k, row, 53) < 0.12) { ellipse(c, rx + rw * 0.4, ry - 1.2, 1.6, 1, GMOSS[1]); c.fillStyle = GMOSS[3]; c.fillRect(rx + rw * 0.3, ry - 1.8, PXU * 2, PXU); }
+        rx += rw + 0.4;
+      }
+    }
+  });
+  poly(c, pts, null, 'rgba(20,10,4,0.5)', 0.7);
+};
+
+// ================= Реквизит без градиентов =================
+barrel = function (c, x, y, s = 1) {
+  const W = rampOf('#8a5428');
+  shadowAt(c, x + 1, y + 0.5, 5 * s);
+  c.beginPath();
+  c.moveTo(x - 3.6 * s, y); c.quadraticCurveTo(x - 4.8 * s, y - 5 * s, x - 3.6 * s, y - 10 * s);
+  c.lineTo(x + 3.6 * s, y - 10 * s); c.quadraticCurveTo(x + 4.8 * s, y - 5 * s, x + 3.6 * s, y);
+  c.closePath(); c.fillStyle = W[2]; c.fill();
+  c.save(); c.clip();
+  c.fillStyle = W[1]; c.fillRect(x - 4.8 * s, y - 10 * s, 2.6 * s, 10 * s);
+  c.fillStyle = W[0]; c.fillRect(x - 3.4 * s, y - 10 * s, 0.8 * s, 10 * s);
+  c.fillStyle = W[3]; c.fillRect(x + 1.2 * s, y - 10 * s, 1.6 * s, 10 * s);
+  c.fillStyle = W[4]; c.fillRect(x + 2.8 * s, y - 10 * s, 2.2 * s, 10 * s);
+  c.fillStyle = W[5]; for (let k = -2; k <= 2; k++) c.fillRect(x + k * 1.6 * s - 0.17, y - 10 * s, PXU, 10 * s);
+  for (const hy of [1.6, 8.4]) { c.fillStyle = '#2e2e30'; c.fillRect(x - 5 * s, y - hy * s - 0.5, 10 * s, 1); c.fillStyle = '#6a6a6e'; c.fillRect(x - 5 * s, y - hy * s - 0.5, 10 * s, PXU); }
+  c.restore();
+  ellipse(c, x, y - 10 * s, 3.6 * s, 1.3 * s, W[4]);
+  ellipse(c, x, y - 10 * s, 2.8 * s, 0.9 * s, W[1]);
+};
+
+crate = function (c, x, y, s = 7, col = '#9a6a36') {
+  const W = rampOf(col);
+  shadowAt(c, x + s / 2 + 2, y + 0.5, s * 0.7);
+  const top = y - s;
+  poly(c, [[x, top], [x + s, top], [x + s + 2.4, top - 2], [x + 2.4, top - 2]], W[0]);
+  poly(c, [[x + s, top], [x + s + 2.4, top - 2], [x + s + 2.4, y - 2], [x + s, y]], W[4]);
+  c.fillStyle = W[2]; c.fillRect(x, top, s, s);
+  c.fillStyle = W[1]; c.fillRect(x, top, s, s * 0.4);
+  c.fillStyle = W[5]; c.fillRect(x, top, s, 0.4); c.fillRect(x, y - 0.4, s, 0.4); c.fillRect(x, top, 0.4, s); c.fillRect(x + s - 0.4, top, 0.4, s);
+  line(c, x + 0.8, top + 0.8, x + s - 0.8, y - 0.8, W[4], 0.6);
+  c.fillStyle = W[4]; c.fillRect(x, top + s / 2, s, 0.4);
+};
+
+sack = function (c, x, y, col = '#d8c8a0', s = 1) {
+  const S = rampOf(col);
+  shadowAt(c, x + 1, y + 0.4, 4.5 * s);
+  c.beginPath();
+  c.moveTo(x - 4 * s, y); c.quadraticCurveTo(x - 5 * s, y - 5.5 * s, x - 1.6 * s, y - 7.5 * s);
+  c.lineTo(x + 1.6 * s, y - 7.5 * s); c.quadraticCurveTo(x + 5 * s, y - 5.5 * s, x + 4 * s, y);
+  c.closePath(); c.fillStyle = S[2]; c.fill();
+  c.save(); c.clip();
+  c.fillStyle = S[1]; c.fillRect(x - 5 * s, y - 8 * s, 4.2 * s, 8 * s);
+  c.fillStyle = S[0]; c.fillRect(x - 3 * s, y - 7 * s, 1.6 * s, 2.6 * s);
+  c.fillStyle = S[3]; c.fillRect(x + 2.2 * s, y - 8 * s, 3 * s, 8 * s);
+  c.fillStyle = S[4]; c.fillRect(x - 5 * s, y - 1.2 * s, 10 * s, 1.2 * s);
+  c.fillStyle = S[3]; c.fillRect(x - 2 * s, y - 3 * s, 3.6 * s, 0.5);
+  c.restore();
+  c.fillStyle = '#7a6040'; c.fillRect(x - 1.6 * s, y - 8 * s, 3.2 * s, 1.2 * s);
+  ellipse(c, x, y - 8.6 * s, 1.4 * s, 0.8 * s, S[3]);
+};
+
+hayBale = function (c, x, y, s = 1) {
+  const H = rampOf('#d8b848');
+  shadowAt(c, x + 1, y + 0.5, 7 * s);
+  c.beginPath(); c.moveTo(x - 7 * s, y); c.quadraticCurveTo(x - 7.5 * s, y - 9 * s, x, y - 10 * s); c.quadraticCurveTo(x + 7.5 * s, y - 9 * s, x + 7 * s, y); c.closePath();
+  c.fillStyle = H[2]; c.fill();
+  c.save(); c.clip();
+  c.fillStyle = H[1]; c.fillRect(x - 8 * s, y - 10 * s, 6 * s, 10 * s);
+  c.fillStyle = H[0]; c.fillRect(x - 5 * s, y - 9 * s, 2.4 * s, 3 * s);
+  c.fillStyle = H[3]; c.fillRect(x + 3 * s, y - 10 * s, 5 * s, 10 * s);
+  c.fillStyle = H[4]; c.fillRect(x - 8 * s, y - 1.4 * s, 16 * s, 1.4 * s);
+  for (let k = -6; k <= 6; k += 2) { c.fillStyle = H[k < 0 ? 2 : 4]; c.fillRect(x + k * s, y - 8 * s + Math.abs(k) * 0.5, PXU, 7 * s); }
+  c.fillStyle = H[4]; c.fillRect(x - 7 * s, y - 4 * s, 14 * s, 0.5);
+  c.restore();
+};
+
+logPile = function (c, x, y, rows = 3, len = 9) {
+  const W = rampOf('#7a4a24');
+  shadowAt(c, x + rows * 3, y + 0.5, rows * 4 + 3);
+  for (let row = 0; row < rows; row++) for (let k = 0; k < rows - row; k++) {
+    const lx = x + k * 5.6 + row * 2.8, ly = y - 2.6 - row * 4.8;
+    c.fillStyle = W[0]; c.fillRect(lx - len, ly - 2.6, len, 1);
+    c.fillStyle = W[1]; c.fillRect(lx - len, ly - 1.6, len, 1.4);
+    c.fillStyle = W[3]; c.fillRect(lx - len, ly - 0.2, len, 1.6);
+    c.fillStyle = W[5]; c.fillRect(lx - len, ly + 1.4, len, 1.2);
+    ellipse(c, lx, ly, 2.7, 2.6, W[4]);
+    ellipse(c, lx, ly, 2.2, 2.1, '#dcb27a');
+    c.strokeStyle = '#a8784a'; c.lineWidth = 0.4;
+    c.beginPath(); c.arc(lx, ly, 1.3, 0, 7); c.stroke();
+    c.fillStyle = '#a8784a'; c.fillRect(lx - 0.35, ly - 0.35, 0.7, 0.7);
+  }
 };

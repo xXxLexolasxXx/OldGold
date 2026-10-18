@@ -30,11 +30,22 @@ MODELS.graveyard = function (m) {
     c.save(); c.translate(x, y); c.rotate(tilt);
     c.fillStyle = 'rgba(10,8,6,0.35)'; c.beginPath(); c.ellipse(1, 0, 6, 2, 0, 0, 7); c.fill();
     ellipse(c, 0, -0.5, 6, 2.4, '#4a4234');                                   // свежий холмик
-    const g = c.createLinearGradient(-4, 0, 4, 0); g.addColorStop(0, '#b8b4a8'); g.addColorStop(1, '#6c685e');
-    c.fillStyle = g; c.strokeStyle = '#1e1a16'; c.lineWidth = 0.9;
-    if (kind === 0) { c.beginPath(); c.moveTo(-3.4, -1); c.lineTo(-3.4, -11); c.quadraticCurveTo(0, -15, 3.4, -11); c.lineTo(3.4, -1); c.closePath(); c.fill(); c.stroke(); line(c, 0, -10, 0, -5, '#2a241c', 0.8); line(c, -1.8, -8, 1.8, -8, '#2a241c', 0.8); }
-    else if (kind === 1) { c.fillRect(-1.2, -15, 2.4, 14); c.strokeRect(-1.2, -15, 2.4, 14); c.fillRect(-4.5, -12, 9, 2.4); c.strokeRect(-4.5, -12, 9, 2.4); }
-    else { c.beginPath(); c.moveTo(-4, -1); c.lineTo(-4, -8); c.lineTo(0, -12); c.lineTo(4, -8); c.lineTo(4, -1); c.closePath(); c.fill(); c.stroke(); line(c, -2, -6, 2, -6, '#2a241c', 0.7); }
+    // камень плоскими пятнами: светлая левая грань, тёмная правая, без градиента
+    c.fillStyle = '#9e9a8e'; c.strokeStyle = '#1e1a16'; c.lineWidth = 0.9;
+    if (kind === 0) {
+      c.beginPath(); c.moveTo(-3.4, -1); c.lineTo(-3.4, -11); c.quadraticCurveTo(0, -15, 3.4, -11); c.lineTo(3.4, -1); c.closePath(); c.fill();
+      c.save(); c.clip(); c.fillStyle = '#c4c0b4'; c.fillRect(-3.4, -15, 2.2, 15); c.fillStyle = '#6c685e'; c.fillRect(1.4, -15, 2.2, 15); c.restore(); c.stroke();
+      line(c, 0, -10, 0, -5, '#2a241c', 0.8); line(c, -1.8, -8, 1.8, -8, '#2a241c', 0.8);
+    } else if (kind === 1) {
+      c.fillRect(-1.2, -15, 2.4, 14); c.fillRect(-4.5, -12, 9, 2.4);
+      c.fillStyle = '#c4c0b4'; c.fillRect(-1.2, -15, 0.8, 14); c.fillRect(-4.5, -12, 9, 0.7);
+      c.fillStyle = '#6c685e'; c.fillRect(0.5, -15, 0.7, 14); c.fillRect(-4.5, -10.3, 9, 0.7);
+      c.strokeRect(-1.2, -15, 2.4, 14); c.strokeRect(-4.5, -12, 9, 2.4);
+    } else {
+      c.beginPath(); c.moveTo(-4, -1); c.lineTo(-4, -8); c.lineTo(0, -12); c.lineTo(4, -8); c.lineTo(4, -1); c.closePath(); c.fill();
+      c.save(); c.clip(); c.fillStyle = '#c4c0b4'; c.fillRect(-4, -12, 2.4, 12); c.fillStyle = '#6c685e'; c.fillRect(1.6, -12, 2.4, 12); c.restore(); c.stroke();
+      line(c, -2, -6, 2, -6, '#2a241c', 0.7);
+    }
     ellipse(c, -4, -1, 2, 1.1, 'rgba(60,84,40,0.8)');                          // мох у основания
     c.restore();
   };
