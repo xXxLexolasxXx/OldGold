@@ -42,6 +42,53 @@ function smClose(then) {
   if (then) then();
 }
 
+// Загрузка сохранения из меню. Меню ещё открыто (карта под ним не рисуется), а всё тяжёлое для первого кадра —
+// спрайты зданий из сохранения и земля в кадре — готовится по кусочку за кадр, и заставка не замирает.
+// Раньше это делалось в первом кадре игры: деревня из 30 видов зданий давала застывший кадр 1.8 с на ПК и ~14 с на слабом телефоне.
+function smLoadPrepared(slot, label, onLoaded, onFail) {
+  if (StartMenu.busy) return;
+  StartMenu.busy = true;
+  let ok = false;
+  try { ok = loadGame(slot); } catch (e) { console.error(e); }
+  if (!ok) { StartMenu.busy = false; if (onFail) onFail(); return; }
+  const keys = [...new Set(Game.buildings.map(b => b.type + '|' + (b.rot || 0) + '|' + (b.level || 1)))];
+  let i = 0;
+  const BH = TBAND * TILE;
+  const visLeft = () => {   // полосы земли в кадре, которые ещё не построены
+    if (typeof TERR === 'undefined' || !TERR.job) return 0;
+    const [, vh] = viewSize();
+    let n = 0;
+    for (let b = Math.max(0, Math.floor(R.cam.y / BH)); b <= Math.min(TERR.job.done.length - 1, Math.floor((R.cam.y + vh) / BH)); b++) if (!TERR.job.done[b]) n++;
+    return n;
+  };
+  const vis0 = Math.max(1, visLeft());
+  (function tick() {
+    const t0 = performance.now();
+    while (i < keys.length && performance.now() - t0 < 8) {
+      const [t, r, l] = keys[i++].split('|');
+      if (BUILDINGS[t]) { try { buildingSprite(t, +r, +l); } catch (e) { console.error(e); } }
+    }
+    let left = 0;
+    if (i >= keys.length) { left = visLeft(); if (left) terrStep(8); left = visLeft(); }
+    const p = (i + (vis0 - Math.min(vis0, left))) / (keys.length + vis0);
+    if (label) label.textContent = 'Загружаем деревню… ' + Math.round(p * 100) + '%';
+    if (i < keys.length || left) { requestAnimationFrame(tick); return; }
+    StartMenu.busy = false;
+    if (StartMenu.iconsLater) { StartMenu.iconsLater = false; UI.shown = null; renderBuildMenu(); }   // значки — из уже готовых спрайтов
+    smClose(() => { updateMinimapBase(); updateUI(true); toast('Игра загружена'); if (onLoaded) onLoaded(); });
+  })();
+}
+// Пока сохранение готовится под меню, значки кнопок строительства не рисуем (их не видно, а каждый — это спрайт
+// здания и toDataURL: в загрузке это было 3/4 времени); перед закрытием меню список перерисовывается.
+{
+  const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  const _icon = buildingIconURL;
+  buildingIconURL = function (type) {
+    if (StartMenu.busy && !(UI.bicons && UI.bicons[type])) { StartMenu.iconsLater = true; return BLANK; }
+    return _icon(type);
+  };
+}
+
 function smRender() {
   const root = document.getElementById('start-menu');
   const sv = smBestSave();
@@ -59,7 +106,7 @@ function smAction(a) {
   if (a === 'continue') {
     const sv = smBestSave();
     if (!sv) return;
-    smClose(() => { if (loadGame(sv.slot)) { updateUI(true); toast('Игра загружена'); } });
+    smLoadPrepared(sv.slot, root.querySelector('[data-sm="continue"] small'));
   } else if (a === 'new') {
     smClose(() => { if (Game.heroAsk) { Game.heroAsk = false; askHeroName(); } });
   } else if (a === 'mp') {
