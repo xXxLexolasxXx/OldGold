@@ -298,7 +298,7 @@ const TRACKS = [
   {
     // Три эльфийских трека — светлая деревня на опушке: воздушная флейта, арфа, женский хор, струнный пад, колокольчики.
     // «Лунный лес» — ми дорийский, тянущийся хор и тихая лунная флейта.
-    name: 'Лунный лес', eighth: 0.34, swing: 0, bars: 32, voiceFrom: 8, seed: 2101, lead: 'lowflute', level: 1.05,
+    name: 'Лунный лес', elf: true, eighth: 0.34, swing: 0, bars: 32, voiceFrom: 8, seed: 2101, lead: 'lowflute', level: 1.05,
     scale: [52, 54, 55, 57, 59, 61, 62, 64, 66, 67, 69, 71, 73, 74, 76, 78],
     chords: {
       Em: { root: 40, tones: [52, 55, 59, 64, 67, 71, 76] }, D: { root: 38, tones: [50, 54, 57, 62, 66, 69, 74] },
@@ -311,7 +311,7 @@ const TRACKS = [
   },
   {
     // «Песнь листвы» — соль лидийский, лёгкий 6/8: бегущая арфа, свирель и калимба, одинокий сопрано.
-    name: 'Песнь листвы', eighth: 0.26, swing: 0, bars: 32, voiceFrom: 16, seed: 2202, lead: 'flute', level: 0.9,
+    name: 'Песнь листвы', elf: true, eighth: 0.26, swing: 0, bars: 32, voiceFrom: 16, seed: 2202, lead: 'flute', level: 0.9,
     scale: [55, 57, 59, 61, 62, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79, 81],
     chords: {
       G: { root: 43, tones: [55, 59, 62, 67, 71, 74, 79] }, D: { root: 38, tones: [54, 57, 62, 66, 69, 74, 78] },
@@ -324,7 +324,7 @@ const TRACKS = [
   },
   {
     // «Серебряные чертоги» — ре дорийский, неспешный торжественный ход: хор в три голоса, струнный пад, далёкие колокола.
-    name: 'Серебряные чертоги', eighth: 0.42, swing: 0, bars: 24, voiceFrom: 2, seed: 2303, lead: 'flute', level: 1.3,
+    name: 'Серебряные чертоги', elf: true, eighth: 0.42, swing: 0, bars: 24, voiceFrom: 2, seed: 2303, lead: 'flute', level: 1.3,
     scale: [50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77],
     chords: {
       Dm: { root: 38, tones: [50, 53, 57, 62, 65, 69, 74] }, C: { root: 36, tones: [48, 52, 55, 60, 64, 67, 72] },
@@ -864,9 +864,13 @@ const ALARM_TRACK = TRACKS.findIndex(t => t.name === 'Тревога');
 const MOOD_TRACK = { night: ALARM_TRACK };
 TRACKS.forEach((t, i) => { if (t.special) MOOD_TRACK[t.special] = i; });
 const MOOD_SET = new Set(Object.values(MOOD_TRACK));           // эти треки сами не выбираются в обычной смене
+// На стартовом экране звучат эльфийские треки: по кругу, начиная с случайного
+const ELF_TRACKS = TRACKS.map((t, i) => t.elf ? i : -1).filter(i => i >= 0);
+function menuOpen() { return typeof StartMenu !== 'undefined' && StartMenu.open; }
 function nextTrackIndex() {
   const mt = MOOD_TRACK[Music.mood];
   if (mt !== undefined) return mt;
+  if (menuOpen() && ELF_TRACKS.length) return ELF_TRACKS[(ELF_TRACKS.indexOf(Music.track) + 1) % ELF_TRACKS.length];
   if (typeof isNightNow === 'function' && isNightNow()) return ALARM_TRACK;
   let n = (Music.track + 1) % TRACKS.length;
   while (MOOD_SET.has(n)) n = (n + 1) % TRACKS.length;
@@ -885,6 +889,7 @@ function nearWaterView() {
 }
 function computeMood() {
   if (typeof Game === 'undefined' || !Game.units) return 'day';
+  if (menuOpen()) return 'day';                                   // на стартовом экране — эльфийская музыка, без боя и ночи
   const now = performance.now() / 1000;                           // реальные секунды: не зависят от скорости игры
   let fight = false;
   for (const u of Game.units) if (!u.dead && (u.fighting || (u.brk && u.brk.kind === 'fight'))) { fight = true; break; }
@@ -937,11 +942,11 @@ function startMusic() {
   buildMixer(ctx);
   Music.master.connect(AudioCore.music);
   Music.songs = TRACKS.map(tr => makeSong(tr, tr.seed));
-  Music.track = 0; Music.bar = 0;
+  Music.track = menuOpen() && ELF_TRACKS.length ? ELF_TRACKS[(Math.random() * ELF_TRACKS.length) | 0] : 0; Music.bar = 0;
   Music.nextTime = ctx.currentTime + 0.15;
   // первые секунды — плавный вход, а не сразу в полную силу
   Music.bus.gain.setValueAtTime(0.0001, ctx.currentTime);
-  Music.bus.gain.linearRampToValueAtTime(0.62 * TRACKS[0].level, ctx.currentTime + 2.5);
+  Music.bus.gain.linearRampToValueAtTime(0.62 * TRACKS[Music.track].level, ctx.currentTime + 2.5);
   Music.timer = setInterval(musicTick, 80);
   audioSetBus('music', Music.on);
 }
