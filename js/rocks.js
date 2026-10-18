@@ -241,12 +241,12 @@ function rockBlink(e, k, t) {
   const DUR = 0.28;
   const prof = u => (u < 0 || u > 1 ? 0 : Math.sin(u * Math.PI));
   if (nightAmt() < 0.6) {
-    const P = 4.2, ph = (t + e.i * 0.37) % P - k * 0.16;               // волна бежит от глаза к глазу
+    const P = 2.1, ph = (t + e.i * 0.37) % P - k * 0.16;               // волна бежит от глаза к глазу, моргают часто
     return prof((ph < 0 ? ph + P : ph) / DUR);
   }
-  const P = 11, n = Math.floor((t + e.i * 1.3) / P);
+  const P = 3, n = Math.floor((t + e.i * 1.3) / P);                      // моргает почаще
   const who = (n * 5 + e.i) % ROCK_EYES.length;                           // какой глаз моргнёт в этот раз
-  return k === who ? prof(((t + e.i * 1.3) % P) / DUR) : 0;
+  return (k === who || n % 3 === 0) ? prof(((t + e.i * 1.3) % P) / DUR) : 0;    // раз в три раза — все глаза разом
 }
 
 function drawRockEyes(c, e, a) {
@@ -256,14 +256,14 @@ function drawRockEyes(c, e, a) {
   c.globalAlpha = a;
   nightSprites();
   c.globalCompositeOperation = 'lighter';
-  c.drawImage(NIGHT.warm, p.x - 12, p.y - 6, 24, 14);
+  c.drawImage(NIGHT.eerie, p.x - 12, p.y - 6, 24, 14);
   c.globalCompositeOperation = 'source-over';
   ROCK_EYES.forEach(([dx, dy, s], k) => {
     const x = p.x + dx * (e.face < 0 ? -1 : 1) + s / 2, y = p.y + dy + s / 2 - 0.5;
     const b = rockBlink(e, k, t), h = Math.max(0.15, 1 - b);               // высота открытой части глаза
     c.fillStyle = '#140a05'; c.beginPath(); c.arc(x, y, s * 0.8 + 0.5, 0, 7); c.fill();            // глазная ямка
-    c.fillStyle = '#ffb02a'; c.beginPath(); c.ellipse(x, y, s * 0.62 + 0.2, (s * 0.62 + 0.2) * h, 0, 0, 7); c.fill();   // светящийся глаз
-    if (h > 0.5) { c.fillStyle = '#fff0b8'; c.fillRect(x - 0.5, y - 0.6 * h, 1, 1); }
+    c.fillStyle = '#86f0c0'; c.beginPath(); c.ellipse(x, y, s * 0.62 + 0.2, (s * 0.62 + 0.2) * h, 0, 0, 7); c.fill();   // светящийся глаз
+    if (h > 0.5) { c.fillStyle = '#e6fff2'; c.fillRect(x - 0.5, y - 0.6 * h, 1, 1); }
     if (b > 0.05) { c.fillStyle = '#3a342c'; c.fillRect(x - s * 0.8 - 0.2, y - s * 0.8 - 0.4, s * 1.6 + 0.4, (s * 0.8 + 0.4) * Math.min(1, b * 1.1)); }   // каменное веко сверху
   });
   c.restore();

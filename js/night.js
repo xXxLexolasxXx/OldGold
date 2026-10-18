@@ -650,7 +650,7 @@ function nightSprites() {
   NIGHT.puff = mk('150,162,186');
   NIGHT.hole = mk('0,0,0');
   NIGHT.warm = mk('255,190,105');
-  NIGHT.eerie = mk('120,220,140');
+  NIGHT.eerie = mk('110,240,190');
 }
 
 // Источники света в кадре: [x, y, радиус, сила] в мировых пикселях
@@ -744,17 +744,17 @@ function drawNight(c, x0, y0, x1, y1) {
   }
   c.restore();
   c.imageSmoothingEnabled = R.smooth;
-  // глаза ходячих деревьев горят сквозь туман
+  // у нечисти сквозь туман и кроны остаётся только могильное свечение; сами глаза рисуются вместе со всем (под кронами)
   for (const e of Game.ents || []) {
-    if (e.state === 'sleep' || e.rock) { if (!(e.state === 'dying' && e.t > 0.5)) drawTreeEyes(c, e, e.alpha * Math.min(1, n * 4)); continue; }   // вечером — только глаза в стволе
-    if (e.k < 0.4 || (e.state === 'dying' && e.t > 0.5) || e.alpha <= 0.05) continue;
-    const p = entFacePos(e);
-    c.save(); c.globalAlpha = e.alpha * Math.min(1, n * 1.5);
+    if (e.state === 'gone' || e.state === 'done' || e.alpha <= 0.05 || (e.state === 'dying' && e.t > 0.5)) continue;
+    const asleep = e.state === 'sleep';
+    if (!asleep && e.k < 0.4 && !e.rock && !e.water) continue;
+    const p = asleep || e.rock || e.water ? entFacePos(e) : entFacePos(e);
+    c.save();
     c.globalCompositeOperation = 'lighter';
-    c.globalAlpha *= 0.5; c.drawImage(NIGHT.warm, p.x - 6, p.y - 4, 12, 7); c.globalAlpha = e.alpha * Math.min(1, n * 1.5);
-    c.globalCompositeOperation = 'source-over';
-    c.fillStyle = '#ffd040';
-    c.fillRect(p.x - 5, p.y - 1, 2, 2); c.fillRect(p.x + 3, p.y - 1, 2, 2);
+    c.globalAlpha = e.alpha * Math.min(1, n * 1.5) * (asleep ? 0.38 : 0.5);
+    nightSprites();
+    c.drawImage(NIGHT.eerie, p.x - 8, p.y - 5, 16, 10);
     c.restore();
   }
 }
@@ -1047,12 +1047,12 @@ function drawTreeEyes(c, e, a) {
   c.globalAlpha = a;
   c.globalCompositeOperation = 'lighter';
   nightSprites();
-  c.drawImage(NIGHT.warm, p.x - 7, p.y - 4, 14, 8);
+  c.drawImage(NIGHT.eerie, p.x - 7, p.y - 4, 14, 8);
   c.globalCompositeOperation = 'source-over';
   c.fillStyle = '#140a05';
   c.fillRect(p.x - 4, p.y - 1, 3, 2); c.fillRect(p.x + 1, p.y - 1, 3, 2);
   if (!blink) {
-    c.fillStyle = `rgb(255,${fl},40)`;
+    c.fillStyle = `rgb(${fl - 40},255,${fl + 30})`;
     c.fillRect(p.x - 3.5, p.y - 0.5, 2, 1); c.fillRect(p.x + 1.5, p.y - 0.5, 2, 1);
   }
   c.restore();
@@ -1106,8 +1106,8 @@ function drawEnt(c, e) {
     const look = Math.sin(Game.time * 0.7 + e.i) > 0.3 ? 1 : 0;
     const fl = 170 + Math.round(Math.sin(Game.time * 8 + e.i) * 40);
     if (e.state !== 'dying' || e.t < 0.5) for (const [ex, ey] of f.eyes) {   // после смертельного удара глаза гаснут
-      c.fillStyle = `rgb(255,${fl},40)`; c.fillRect(ex - ENT_CX + look, ey - ENT_BASE, 2, 2);
-      c.fillStyle = '#fff4b0'; c.fillRect(ex - ENT_CX + look, ey - ENT_BASE, 1, 1);
+      c.fillStyle = `rgb(${fl - 40},255,${fl + 30})`; c.fillRect(ex - ENT_CX + look, ey - ENT_BASE, 2, 2);
+      c.fillStyle = '#eafff4'; c.fillRect(ex - ENT_CX + look, ey - ENT_BASE, 1, 1);
     }
     c.restore();
     // комья земли, пока вылезает или уходит в землю

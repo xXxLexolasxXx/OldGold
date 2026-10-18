@@ -377,17 +377,24 @@ function decorPlanTick(step) {
   if (decorCount('lamp') < roads / 3.2) pool.push('lamp', 'lamp');
   if (!pool.length) return;
   const t = pool[(Math.random() * pool.length) | 0];
-  // случайная дорожная клетка со свободным местом рядом
+  // случайная дорожная клетка; скамейки, урны и фонари — рядом с ней, клумбы, ящики и диковины — в стороне, не кучами
+  const far = t === 'bed' || t === 'crate' || t === 'magic';
   for (let k = 0; k < 40; k++) {
     const i = (Math.random() * N_TILES) | 0;
     if (!World.road[i] || World.door[i]) continue;
     const x = i % MAP_W, y = (i / MAP_W) | 0;
-    const spots = [[x, y + 1], [x, y - 1], [x + 1, y], [x - 1, y]].filter(([a, b]) => streetSpot(a, b));
-    if (!spots.length) continue;
-    const [sx, sy] = spots[(Math.random() * spots.length) | 0];
-    if (t === 'magic' && streetNear(sx, sy, 11, 'magic')) continue;
-    if (t !== 'lamp' && t !== 'bed' && streetNear(sx, sy, t === 'crate' ? 3 : 4, t)) continue;
-    if (t === 'lamp' && streetNear(sx, sy, 3, 'lamp')) continue;
+    let sx, sy;
+    if (far) {
+      const s = farSpot(x, y, 5, t === 'magic' ? 9 : 4);
+      if (!s) continue;
+      [sx, sy] = s;
+    } else {
+      const spots = [[x, y + 1], [x, y - 1], [x + 1, y], [x - 1, y]].filter(([a, b]) => streetSpot(a, b));
+      if (!spots.length) continue;
+      [sx, sy] = spots[(Math.random() * spots.length) | 0];
+      if (t !== 'lamp' && streetNear(sx, sy, 4, t)) continue;
+      if (t === 'lamp' && streetNear(sx, sy, 3, 'lamp')) continue;
+    }
     const o = t === 'lamp' ? { t } : makeDecor(t);
     o.born = Game.time;
     World.obj[idx(sx, sy)] = o;
@@ -395,4 +402,41 @@ function decorPlanTick(step) {
     if (t === 'magic' && Math.random() < 0.7) toast(`Из земли выросло что-то странное: ${MAGIC_NAMES[o.v].toLowerCase()}`);
     return;
   }
+}
+
+// ---------- Размещение «на отдалении»: клумбы, ящики, диковины — не вдоль дороги и не кучами ----------
+
+function roadDistance(x, y, max) {
+  let best = max + 1;
+  for (let yy = y - max; yy <= y + max; yy++) for (let xx = x - max; xx <= x + max; xx++) {
+    if (!inb(xx, yy) || !World.road[idx(xx, yy)]) continue;
+    best = Math.min(best, Math.max(Math.abs(xx - x), Math.abs(yy - y)));
+  }
+  return best;
+}
+
+function decorWithin(x, y, r, types) {
+  for (let yy = y - r; yy <= y + r; yy++) for (let xx = x - r; xx <= x + r; xx++) {
+    if (!inb(xx, yy)) continue;
+    const o = World.obj[idx(xx, yy)];
+    if (o && types.includes(o.t) && Math.hypot(xx - x, yy - y) <= r) return true;
+  }
+  return false;
+}
+
+// Свободная трава в 2–4 клетках от дороги вокруг (cx, cy), в стороне от таких же предметов
+function farSpot(cx, cy, r, spacing, taken) {
+  for (let k = 0; k < 70; k++) {
+    const x = Math.floor(cx + (Math.random() * 2 - 1) * r), y = Math.floor(cy + (Math.random() * 2 - 1) * r);
+    if (!inb(x, y) || !isFreeGrass(x, y) || (taken && taken.has(idx(x, y)))) continue;
+    const d = roadDistance(x, y, 5);
+    if (d < 2 || d > 4) continue;
+    let door = false;
+    for (let yy = y - 2; yy <= y + 2 && !door; yy++) for (let xx = x - 2; xx <= x + 2; xx++) if (inb(xx, yy) && World.door[idx(xx, yy)]) { door = true; break; }
+    if (door) continue;
+    if (decorWithin(x, y, spacing, ['bed', 'crate', 'magic', 'bench', 'bin'])) continue;
+    if (taken) { let near = false; for (const ti of taken) if (Math.hypot(ti % MAP_W - x, ((ti / MAP_W) | 0) - y) <= spacing) { near = true; break; } if (near) continue; }
+    return [x, y];
+  }
+  return null;
 }

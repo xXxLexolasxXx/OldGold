@@ -145,9 +145,9 @@ function subSpot(u, r) {
 }
 
 function* subPlant(u) {
-  const sp = subSpot(u, 14);
+  const sp = farSpot(u.x, u.y, 12, 3.5, Game.sub.taken);   // клумбы — на отдалении от дороги и не кучей
   if (!sp) { yield { wait: 2 }; return; }
-  const [x, y, , , key] = sp;
+  const [x, y] = sp, key = idx(x, y);
   Game.sub.taken.add(key);
   const ok = yield { walk: [x, y], offroad: true };
   if (!ok || !isFreeGrass(x, y)) { Game.sub.taken.delete(key); yield { wait: 0.5 }; return; }

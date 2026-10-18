@@ -1076,12 +1076,16 @@ function drawBonfire(c, g) {
 // Пламя костра: высокий столб огня над пирамидой брёвен, языки дрожат, искры и уголь летят вверх
 function drawBonfireFlames(c, x, y, strong, seed) {
   const t = Game.time;
-  glow(c, x, y + 10, strong ? 120 : 70, '255,110,30', 0.16);
+  glow(c, x, y - 20, strong ? 170 : 100, '255,110,30', 0.18);
   if (strong) {
-    drawFire(c, x - 9, y + 2, 'camp', t, seed + 1, { glow: 0, scale: 1 });
-    drawFire(c, x + 9, y + 2, 'camp', t, seed + 3, { glow: 0, scale: 1 });
-    drawFire(c, x, y + 4, 'blaze', t, seed, { glow: 1.4, sparks: 14 });
-  } else drawFire(c, x, y + 4, 'camp', t, seed, { glow: 1, sparks: 5 });
+    // высокий столб огня поверх пирамиды брёвен: центральный язык ×2 и два боковых, чтобы бревна тонули в пламени
+    drawFire(c, x - 15, y + 12, 'camp', t, seed + 1, { glow: 0, scale: 2 });
+    drawFire(c, x + 15, y + 12, 'camp', t, seed + 3, { glow: 0, scale: 2 });
+    drawFire(c, x, y + 14, 'blaze', t, seed, { glow: 1.6, sparks: 18, scale: 2 });
+  } else {
+    drawFire(c, x - 8, y + 12, 'camp', t, seed + 1, { glow: 0, scale: 1 });
+    drawFire(c, x, y + 14, 'blaze', t, seed, { glow: 1.2, sparks: 6, scale: 1 });
+  }
 }
 
 function drawMagicCircle(c, g) {

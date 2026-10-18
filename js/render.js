@@ -828,7 +828,7 @@ function render() {
   golemDrawList(list, c, x0, y0, x1, y1);
   for (const e of Game.ents || []) {
     if (e.x < x0 - 3 || e.x > x1 + 3 || e.y < y0 - 1 || e.y > y1 + 4) continue;
-    list.push([e.y + 0.05, () => drawEnt(c, e)]);   // гном рядом на той же линии — перед деревом
+    list.push([(e.state === 'sleep' || e.k < 0.3) ? Math.floor(e.y) + 0.95 : e.y + 0.05, () => drawEnt(c, e)]);   // спящее — поверх своего ствола, под кронами впереди; гном рядом на той же линии — перед деревом
   }
   for (const p of Game.piles.values()) {
     list.push([p.y + 0.5, () => drawPile(c, p)]);

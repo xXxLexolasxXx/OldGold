@@ -159,10 +159,6 @@ function buildingSprite(type, rot = 0, level = 1) {  const lv = level >= 2 && BU
   const px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); };
   const OUT = '#1a100a';
   if (lv === 2) {
-  // цоколь из тёсаного камня вдоль южной стены
-  const x0 = base.padx - 1, y0 = base.baseY - 3, w = base.fw + 2;
-  px(x0 - 1, y0 - 1, w + 2, 6, OUT); px(x0, y0, w, 4, '#9a9388'); px(x0, y0, w, 1, '#c0b9aa');
-  for (let x = x0 + 5; x < x0 + w - 2; x += 9) px(x, y0 + 1, 1, 3, '#6a645a');
   const P = (base.perches && base.perches[0]) || [base.padx + base.fw / 2, base.top * 0.4];
   const mx = P[0], my = P[1] + 20;
   if (!base.tall) {

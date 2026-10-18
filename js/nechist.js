@@ -68,6 +68,7 @@ function drawWaterEyes(c, e, a) {
 // две мощные руки с когтями. Вместо ног — водоворот-подол, на ходу он тянется шлейфом.
 function drawWaterEnt(c, e) {
   const { bx, by, H } = waterGeom(e), k = e.k, t = Game.time;
+  if (k < 0.3) drawWaterEyes(c, e, e.alpha * (1 - k / 0.3) * Math.min(1, nightAmt() * 4));   // спящий в озере: глаза над водой
   const rage = e.state === 'fight' || e.state === 'smash' || e.state === 'drag';
   const sp = rage ? 5.5 : e.moving ? 4.4 : 2.6;
   const OUT = '#0a2744';
