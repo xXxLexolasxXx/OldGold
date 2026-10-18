@@ -382,6 +382,14 @@ function onMessage(c, text) {
     c.send({ t: 'stats', s: stats.summary(), server: SERVER_VER });
     return;
   }
+  if (m.t === 'setdiff') {
+    if (!c.isHost) return c.send({ t: 'toast', text: 'Сложность выбирает только хост' });
+    const k = call('coopSetDiff', String(m.k));
+    log('сложность:', k);
+    broadcast({ t: 'diff', k });
+    saveWorld();
+    return;
+  }
   if (m.t === 'setperm') {
     if (!c.isHost) return c.send({ t: 'toast', text: 'Права меняет только хост' });
     const cur = JSON.parse(call('coopMeta')).perms;

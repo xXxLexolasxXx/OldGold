@@ -277,7 +277,7 @@ function hlRespawn(u, why) {
   if (sp) { [x, y] = sp.at; Game.signBump = (Game.signBump || 0) + 1; }
   else if (st) { const s = randomFreeNear(st.doorX, st.doorY + 2, 1, 3, (xx, yy) => isWalkable(xx, yy) && !World.door[idx(xx, yy)]); [x, y] = s || [st.doorX, st.doorY + 1]; }
   u.x = x + 0.5; u.y = y + 0.5; u.food = Math.max(u.food, 0.6);
-  H.hp = Math.round(H.maxhp * 0.5); H.drunkUntil = 0; H.stunUntil = 0; H.downT = 0;
+  H.hp = Math.round(H.maxhp * dif().heroHp); H.drunkUntil = 0; H.stunUntil = 0; H.downT = 0;
   u.abfx = null; u.hfx = null; u.combatUntil = 0;
   toast(`${H.name} очнулся у костра${why ? ': ' + why : ''}`);
 }
@@ -285,11 +285,11 @@ function hlRespawn(u, why) {
 // Повержен: падает навзничь, над головой звёздочки, пару секунд лежит — и только потом очнётся у костра
 const HL_DOWN = 2.6;
 function hlDown(u, why) {
-  const H = u.hero, now = Game.time;
+  const H = u.hero, now = Game.time, down = dif().heroDown;   // «Спокойный» поднимает быстро, «Выживание» держит дольше
   heroStopUnit(u);
-  H.downT = now + HL_DOWN; H.downWhy = why; H.stunUntil = H.downT; H.hp = Math.min(H.hp, 0);
+  H.downT = now + down; H.downWhy = why; H.stunUntil = H.downT; H.hp = Math.min(H.hp, 0);
   u.ouchUntil = H.downT;
-  u.proc = (function* () { yield { wait: HL_DOWN, anim: 'knocked' }; })();
+  u.proc = (function* () { yield { wait: down, anim: 'knocked' }; })();
   u.action = null;
   floater(u.x, u.y - 1.8, ['Повержен…', 'Ох…', 'Всё, лежу'][(Math.random() * 3) | 0], '#ff9a80');
   if (typeof sfxAt === 'function') sfxAt('ouch', u.x * TILE, u.y * TILE);
@@ -302,7 +302,7 @@ function hlTick(dt) {
   if (HL.unit && HL.unit !== h && HL.unit.hero && h.hero !== HL.unit.hero) {
     const old = HL.unit.hero;
     h.hero = heroDefaults(old); h.look = HL.unit.look;
-    old.hp = Math.round(hlMaxHp(old) * 0.5); old.drunkUntil = 0; old.stunUntil = 0;
+    old.hp = Math.round(hlMaxHp(old) * dif().heroHp); old.drunkUntil = 0; old.stunUntil = 0;
     toast(`${old.name} погиб и вернулся к складу`);
   }
   HL.unit = h;
@@ -339,7 +339,7 @@ function hlTick(dt) {
     return;
   }
   // здоровье
-  if (!h.noFood && h.food <= 0) H.hp -= 0.5 * dt;
+  if (!h.noFood && h.food <= 0 && !dif().noStarve) H.hp -= 0.5 * dt * dif().starve;
   else if (H.hp < H.maxhp && h.food > 0.25 && !(h.burn && h.burn.stage)) H.hp = Math.min(H.maxhp, H.hp + 0.4 * dt);
   if (h.burn && h.burn.stage) H.hp -= 6 * dt;
   if (h.injury && h.injury !== H.seenInj) hlHurt(h, 8, 'injury');

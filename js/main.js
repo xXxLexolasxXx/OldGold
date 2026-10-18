@@ -30,8 +30,9 @@ function layoutStart(rng, cx, cy) {
       const north = type === 'bonfire' ? (t < 330 ? bfNorth : !bfNorth) : front || rng() < 0.6;   // костёр — то к северу, то к югу (входом вверх)
       const rot = type === 'bonfire' ? (north ? 0 : 3) : BUILDINGS[type].noRotate || front ? 0 : north ? (rng() < 0.3 ? 1 : 0) : 1;   // к югу от улицы — входом вбок
       const d = bDims(type, rot);
-      const gap = 2 + Math.floor(rng() * 3);                  // 2–4 клетки от улицы
-      const x = cx - 20 + Math.floor(rng() * 38);
+      const gap = 2 + Math.floor(rng() * 2);                  // 2–3 клетки от улицы
+      const sweep = t % 46, off = ((sweep + 1) >> 1) * (sweep % 2 ? 1 : -1);   // места перебираем от центра поляны наружу: деревня кучная, улица короткая
+      const x = t < 276 ? cx + off - (d.w >> 1) + Math.floor(rng() * 3) - 1 : cx - 20 + Math.floor(rng() * 38);
       const y = north ? sy - gap - d.h + (rot ? 1 : 0) : sy + gap;
       if (!fits(x, y, d.w, d.h)) continue;
       { const bad = checkPlacement(type, x, y, rot); if (bad && bad !== 'Мешают деревья, камни или поля') continue; }   // деревья на месте стройки просто срубаем
@@ -79,7 +80,11 @@ function layoutStart(rng, cx, cy) {
 function addStartBuilding(lay, type) {
   const { sy } = lay, d = bDims(type, 0), wide = !!BUILDINGS[type].wideDoor;
   const blocked = (x, y) => Game.buildings.some(b => x >= b.x - 1 && x <= b.x + b.w && y >= b.y - 1 && y <= b.y + b.h);
-  for (let gap = 2; gap <= 7; gap++) for (let x = lay.x0 - 16; x <= lay.x1 + 16; x++) {
+  // места перебираем от середины улицы наружу — новое здание встаёт рядом с остальными, а не на краю поляны
+  const mid = (lay.x0 + lay.x1) >> 1, xsNear = [];
+  for (let x = lay.x0 - 16; x <= lay.x1 + 16; x++) xsNear.push(x);
+  xsNear.sort((p, q) => Math.abs(p - mid) - Math.abs(q - mid));
+  for (let gap = 2; gap <= 7; gap++) for (const x of xsNear) {
     const y = sy - gap - d.h;
     let ok = true;
     for (let yy = y - 1; yy <= sy && ok; yy++) for (let xx = x - 1; xx <= x + d.w + 1 && ok; xx++) if (!inb(xx, yy) || (yy < sy && blocked(xx, yy)) || (World.terrain[idx(xx, yy)] !== T_GRASS && !(yy >= sy - 1 && World.terrain[idx(xx, yy)] === T_SAND))) ok = false;
@@ -98,7 +103,7 @@ function addStartBuilding(lay, type) {
   // нет места к северу — для трактира и костра пробуем к югу от улицы, входом вбок (на восток)
   if (type === 'inn' || type === 'bonfire') {
     const d1 = bDims(type, 1);
-    for (let gap = 2; gap <= 7; gap++) for (let x = lay.x0 - 16; x <= lay.x1 + 16; x++) {
+    for (let gap = 2; gap <= 7; gap++) for (const x of xsNear) {
       const y = sy + gap;
       let ok = true;
       for (let yy = sy; yy <= y + d1.h + 1 && ok; yy++) for (let xx = x - 1; xx <= x + d1.w + 1 && ok; xx++) if (!inb(xx, yy) || blocked(xx, yy) || (yy > sy + 1 && World.terrain[idx(xx, yy)] !== T_GRASS)) ok = false;
@@ -128,9 +133,19 @@ function setupStart(seed) {
   setMapSize(MAP_NEW_W, MAP_NEW_H);
   const { cx, cy } = genWorld(seed);
   const rng = mulberry32(seed ^ 0x5eed);
-  let lay = layoutStart(rng, cx, cy);
   // нужны склад, школа и костёр с двойной дорогой: если не вышло — пробуем ещё несколько раскладок
   const full = l => ['storehouse', 'school', 'bonfire', 'inn'].every(t => l.placed.some(b => b.type === t));
+  // из нескольких пробных раскладок берём самую кучную (короткая улица — деревня не растягивается по горизонтали)
+  const tryLay = a => layoutStart(mulberry32(((seed ^ 0x5eed) + a * 7919) >>> 0), cx, cy);
+  let bestA = -1, bestW = 1e9;
+  for (let a = 0; a < 8; a++) {
+    const l = tryLay(a);
+    const w = l.x1 - l.x0 + (l.placed.length < 4 ? 100 : 0);
+    if (full(l) && w < bestW) { bestW = w; bestA = a; }
+    for (const b of l.placed) removeBuilding(b);
+    clearStartRoads();
+  }
+  let lay = bestA >= 0 ? tryLay(bestA) : layoutStart(rng, cx, cy);
   for (let attempt = 0; attempt < 12 && !full(lay); attempt++) {
     for (const b of lay.placed) removeBuilding(b);
     clearStartRoads();
@@ -160,7 +175,7 @@ function setupStart(seed) {
   if (tutSeen()) releaseStart();   // обучение уже проходили — школу достраивают сразу
   renderBuildMenu();
   const store = Game.buildings.find(b => b.type === 'storehouse');
-  Object.assign(store.stock, { timber: 30, stone: 35, bread: 20, gold: 30, trunk: 4 });
+  Object.assign(store.stock, DIFF_STOCK);
 
   const { sy, x0, x1 } = lay;
   const start = { serf: 8, builder: 4, woodcutter: 1, carpenter: 1, stonemason: 1, farmer: 1 };
@@ -173,12 +188,14 @@ function setupStart(seed) {
       }
     }
 
+  diffApplyStart(Game.diff);   // припасы и трудяги под выбранную сложность
   decorateAllRoads();          // фонари, скамейки и урны вдоль стартовых улиц
   spawnAnimals();
   centerOn(((x0 + x1) / 2) * TILE, (sy - 2) * TILE);
 }
 
 function newGame() {
+  Game.pendDiff = Game.diff;   // «Новая карта» — тот же режим игры
   const seed = (Math.random() * 1e9) | 0;
   setupStart(seed);
   buildTerrain(seed);

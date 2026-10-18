@@ -94,7 +94,7 @@ function smRender() {
   const sv = smBestSave();
   const cont = root.querySelector('[data-sm="continue"]');
   cont.disabled = !sv;
-  cont.querySelector('small').textContent = sv ? `${sv.name} · ${Math.floor(sv.meta.time / 60)} мин · ${sv.meta.people} жит.` : 'сохранений пока нет';
+  cont.querySelector('small').textContent = sv ? `${sv.name} · ${Math.floor(sv.meta.time / 60)} мин · ${sv.meta.people} жит.${sv.meta.df && sv.meta.df !== 'normal' ? ' · ' + DIFFS[diffKey(sv.meta.df)].short : ''}` : 'сохранений пока нет';
   const c = mpConfig();
   root.querySelector('#sm-nick').value = c.nick;
   root.querySelector('#sm-server').value = c.server;
@@ -111,7 +111,12 @@ function smAction(a) {
     smShow('mode');
   } else if (a === 'mode-scenario' || a === 'mode-free') {
     track('mode-' + a.slice(5), a === 'mode-scenario' ? 'Новая игра: сценарий' : 'Новая игра: свободная');
-    if (typeof goalNew === 'function') goalNew(a === 'mode-scenario' ? 'scenario' : 'free');
+    StartMenu.goalMode = a === 'mode-scenario' ? 'scenario' : 'free';
+    smShow('diff');   // потом сложность
+  } else if (a.startsWith('diff:')) {
+    const k = diffKey(a.slice(5));
+    track('diff-' + k, 'Выбрал сложность: ' + DIFFS[k].name);
+    Game.pendDiff = k; diffApplyStart(k); if (typeof goalNew === 'function') goalNew(StartMenu.goalMode || 'free'); updateUI(true);
     smClose(() => { if (Game.heroAsk) { Game.heroAsk = false; askHeroName(); } });
   } else if (a === 'mp') {
     smRender(); smShow('mp');
@@ -147,6 +152,11 @@ function initStartMenu() {
     <div class="sm-panel hidden" data-panel="mode">
       <button class="sm-btn primary" data-sm="mode-scenario"><b>Сценарий</b><small>«Тишина дороже золота»: 6 глав, тёмный маг</small></button>
       <button class="sm-btn" data-sm="mode-free"><b>Свободная игра</b><small>без сюжета: от поселения до города</small></button>
+      <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
+    </div>
+    <div class="sm-panel hidden" data-panel="diff">
+      <div class="sm-title">Сложность новой игры</div>
+      ${DIFF_ORDER.map(k => `<button class="sm-btn${k === 'normal' ? ' primary' : ''}" data-sm="diff:${k}" data-diff="${k}"><b>${DIFFS[k].name}</b><small>${DIFFS[k].desc}</small></button>`).join('')}
       <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
     </div>
     <div class="sm-panel hidden" data-panel="mp">
@@ -466,7 +476,7 @@ function smGrow(btn) {
     if (!b || b.disabled) return;
     if (smPicking) { e.stopImmediatePropagation(); return; }
     if (!b.querySelector('.sm-grow')) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
-    if (b.dataset.sm === 'back' || b.dataset.sm === 'mp') return;
+    if (b.dataset.sm === 'back' || b.dataset.sm === 'mp' || b.dataset.sm === 'new') return;
     // действие после роста: перехватываем клик и пускаем заново
     e.stopImmediatePropagation();
     smPicking = true;
