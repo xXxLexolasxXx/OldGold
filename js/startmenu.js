@@ -219,7 +219,7 @@ function vineSVG(w, h, kind, seed) {
   const W = w + P * 2, H = h + P * 2;
   // путь стебля: обвивает кнопку по всему периметру (чуть больше круга), то снаружи кромки, то поверх неё
   const pts = [];
-  const laps = 1.12, per = 2 * (w + h), n = Math.max(8, Math.round(per * laps / 10)), s0 = rnd(), ph = rnd() * 6.28, fr = 5 + rnd() * 2;
+  const laps = 1.12, per = 2 * (w + h), n = Math.max(8, Math.round(per * laps / 10)), s0r = rnd(), s0 = o && o.s0 != null ? o.s0 : s0r, ph = rnd() * 6.28, fr = 5 + rnd() * 2;
   for (let i = 0; i <= n; i++) {
     const f = i / n, [x, y, nx, ny] = smPerim(s0 + f * laps, w, h);
     const o = Math.sin(f * laps * Math.PI * 2 * fr + ph) * 3.4 + 0.5;
@@ -286,6 +286,19 @@ function smPixelVine(svgStr) {
   return smPixelCanvas(svg, +m[1], +m[2], 'sm-vine', +m[3], +m[4]);
 }
 
+function smHint(btn) {
+  const w = btn.offsetWidth, h = btn.offsetHeight;
+  if (!w || !h || btn.classList.contains('sm-grown')) return;
+  const old = btn.querySelector('.sm-hint');
+  if (old && old.dataset.size === w + 'x' + h) return;
+  if (old) old.remove();
+  const per = 2 * (w + h), corners = [0, w / per, (w + h) / per, (2 * w + h) / per];
+  const seed = (Math.random() * 9999) | 0, corner = corners[seed % 4];
+  const cv = smVineCanvas(w, h, VINE_KINDS[seed % 3], seed, false, 0, 1, { s0: corner - 0.02 + 1, span: 0.05 + (seed % 3) * 0.015 });
+  cv.classList.add('sm-hint'); cv.dataset.size = w + 'x' + h;
+  btn.appendChild(cv);
+}
+
 function decorateVines() {
   const btns = document.querySelectorAll('#start-menu .sm-panel:not(.hidden) .sm-btn');
   // нечётная последняя кнопка (скрытые не считаем) занимает весь ряд
@@ -293,9 +306,10 @@ function decorateVines() {
   vis.forEach(b => b.classList.remove('sm-wide'));
   if (vis.length % 2) vis[vis.length - 1].classList.add('sm-wide');
   btns.forEach((b, i) => {
-    const old = b.querySelector('.sm-vine'); if (old && !b.classList.contains('sm-grown')) old.remove();
+    const old = b.querySelector('canvas.sm-vine:not(.sm-hint)'); if (old && !b.classList.contains('sm-grown')) old.remove();
     const w = b.offsetWidth, h = b.offsetHeight;
     if (!w || !h) return;
+    smHint(b);
     if (smSlide) {   // кнопка выплывает вбок со своей стороны, лоза прорастает следом
       const r = b.getBoundingClientRect(), fromRight = r.left + r.width / 2 > window.innerWidth / 2 + 4 || (Math.abs(r.left + r.width / 2 - window.innerWidth / 2) <= 4 && i % 2);
       const d = (i * 0.09).toFixed(2);
@@ -374,13 +388,14 @@ function smGrow(btn) {
     sparks += `<i class="sm-spark" style="left:${(x + P).toFixed(0)}px;top:${(y + P).toFixed(0)}px;--dx:${(Math.cos(a) * dist).toFixed(0)}px;--dy:${(Math.sin(a) * dist - 10).toFixed(0)}px;animation-delay:${(0.05 + rnd() * 0.4).toFixed(2)}s"></i>`;
   }
   btn.insertAdjacentHTML('beforeend', `<span class="sm-grow" style="left:${-P}px;top:${-P}px;width:${w + P * 2}px;height:${h + P * 2}px">${sparks}</span>`);
-  const old = btn.querySelector('canvas.sm-vine'); if (old) old.remove();
+  const old = btn.querySelector('canvas.sm-vine:not(.sm-hint)'); if (old) old.remove();
+  const hint = btn.querySelector('.sm-hint'); if (hint) hint.remove();
   const vc = smVineCanvas(w, h, VINE_KINDS[(smVineShift++) % 3], (Date.now() & 0xffff) + smVineShift, true, 0, 1.8);   // рост в 1,8 раза быстрее
   btn.appendChild(vc);
   btn.classList.add('sm-grown');
   clearTimeout(btn._vineT);
   // кнопка остаётся на экране (список, «назад») — лоза постепенно отцветает и убирается
-  btn._vineT = setTimeout(() => { vc.classList.add('sm-fade'); btn._vineT = setTimeout(() => { vc.remove(); btn.classList.remove('sm-grown'); const g = btn.querySelector('.sm-grow'); if (g) g.remove(); }, 600); }, 2200);
+  btn._vineT = setTimeout(() => { vc.classList.add('sm-fade'); btn._vineT = setTimeout(() => { vc.remove(); btn.classList.remove('sm-grown'); const g = btn.querySelector('.sm-grow'); if (g) g.remove(); smHint(btn); }, 600); }, 2200);
 }
 
 // выбор — наведение пальца/мыши и нажатие; действие откладываем на время роста
@@ -480,7 +495,7 @@ function smSubToggle(open) {
 
 const SM_SPR = 96;   // сторона холста спрайта плода/листа (экранных пикселей), центр — точка прикрепления
 
-function vineData(w, h, kind, seed) {
+function vineData(w, h, kind, seed, o) {
   const rnd = smRand(seed * 977 + 13), P = 16;
   const W = w + P * 2, H = h + P * 2;
   const pts = [];
@@ -562,8 +577,8 @@ const smEase = {
   back: t => { t = Math.min(1, Math.max(0, t)); const c = 2.2; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
 };
 
-function smVineCanvas(w, h, kind, seed, animate, delay, spd = 1) {
-  const D = vineData(w, h, kind, seed), W = D.W, H = D.H, P = D.P, PX = SM_PX;
+function smVineCanvas(w, h, kind, seed, animate, delay, spd = 1, hint) {
+  const D = vineData(w, h, kind, seed, hint), W = D.W, H = D.H, P = D.P, PX = SM_PX;
   const cv = document.createElement('canvas');
   cv.className = 'sm-vine';
   cv.width = Math.ceil(W / PX); cv.height = Math.ceil(H / PX);
@@ -576,7 +591,7 @@ function smVineCanvas(w, h, kind, seed, animate, delay, spd = 1) {
   const frame = tt => {   // tt — секунды от начала роста
     c.clearRect(0, 0, cv.width, cv.height);
     if (tt < 0) return;
-    const p = smEase.out(tt / T_STEM), idx = p * (pts.length - 1), k = Math.min(pts.length - 1, Math.floor(idx)), fr = idx - k;
+    const p = Math.min(hint ? hint.span : 1, smEase.out(tt / T_STEM)), idx = p * (pts.length - 1), k = Math.min(pts.length - 1, Math.floor(idx)), fr = idx - k;
     const path = pts.slice(0, k + 1);
     if (k < pts.length - 1) path.push([pts[k][0] + (pts[k + 1][0] - pts[k][0]) * fr, pts[k][1] + (pts[k + 1][1] - pts[k][1]) * fr]);
     const trace = () => {
@@ -596,7 +611,7 @@ function smVineCanvas(w, h, kind, seed, animate, delay, spd = 1) {
     // усики
     for (const cu of D.curls) {
       const g = smEase.out((tt - cu.f * T_STEM - 0.1) / 0.6);
-      if (g <= 0) continue;
+      if (g <= 0 || (hint && cu.f > hint.span)) continue;
       const m = Math.max(2, Math.round(g * (cu.cp.length - 1)));
       c.beginPath(); c.moveTo(cu.cp[0][0] / PX, cu.cp[0][1] / PX);
       for (let i = 1; i <= m; i++) c.lineTo(cu.cp[i][0] / PX, cu.cp[i][1] / PX);
@@ -605,7 +620,7 @@ function smVineCanvas(w, h, kind, seed, animate, delay, spd = 1) {
     // листья, колосья и плоды: появляются, когда кончик стебля проходит мимо, и «наливаются»
     if (sprites) for (let i = 0; i < D.items.length; i++) {
       const it = D.items[i], sp = sprites[i];
-      if (!sp) continue;
+      if (!sp || (hint && it.f > hint.span)) continue;
       const born = it.f * T_STEM + (it.k === 'fruit' ? 0.3 : 0.04), dur = it.k === 'fruit' ? 0.7 : 0.32;
       const g = (tt - born) / dur;
       if (g <= 0) continue;
@@ -616,14 +631,14 @@ function smVineCanvas(w, h, kind, seed, animate, delay, spd = 1) {
       c.drawImage(sp, -sp.width / 2, -sp.height / 2); c.restore();
     }
     // кончик растущего стебля — яркая искорка
-    if (tt < T_STEM + 0.05) {
+    if (tt < T_STEM + 0.05 || hint) {
       const e = path[path.length - 1], q = path[Math.max(0, path.length - 2)], ang = Math.atan2(e[1] - q[1], e[0] - q[0]);
       for (const sg of [-1, 1]) {   // два крошечных листика-почки на кончике
         c.save(); c.translate(e[0], e[1]); c.rotate(ang + sg * 0.75); c.fillStyle = '#8ad040';
         c.beginPath(); c.ellipse(2.2, 0, 2.2, 1, 0, 0, 7); c.fill(); c.restore();
       }
-      c.fillStyle = '#e8ff90'; c.fillRect(e[0] - 1, e[1] - 1, 2, 2);
-      c.fillStyle = 'rgba(255,240,140,0.8)'; c.fillRect(e[0] - 2, e[1], 1, 1); c.fillRect(e[0] + 1, e[1] - 2, 1, 1);
+      if (!hint) { c.fillStyle = '#e8ff90'; c.fillRect(e[0] - 1, e[1] - 1, 2, 2); }
+      if (!hint) { c.fillStyle = 'rgba(255,240,140,0.8)'; c.fillRect(e[0] - 2, e[1], 1, 1); c.fillRect(e[0] + 1, e[1] - 2, 1, 1); }
     }
     smPost(c, cv.width, cv.height);
   };
