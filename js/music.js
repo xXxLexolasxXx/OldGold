@@ -593,7 +593,9 @@ function setMusic(on) {
 }
 
 function initMusic() {
-  try { Music.on = localStorage.getItem('feod.music') !== '0'; } catch (e) { Music.on = true; }
+  // на локальном сервере (вкладки разработки и тестов) музыка по умолчанию выключена — не жужжит фоном из всех вкладок
+  const dev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+  try { const v = localStorage.getItem('feod.music'); Music.on = v === null ? !dev : v !== '0'; } catch (e) { Music.on = !dev; }
   audioKickOnGesture(startMusic);
   const btn = document.getElementById('music-btn');
   if (btn) {
