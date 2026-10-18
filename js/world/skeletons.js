@@ -56,7 +56,7 @@ function skeletonsTick(dt) {
     s.t += dt; s.moving = false;
     if (s.scared > 0) s.scared -= dt;
     // рассвет: уходят обратно в землю
-    if (!night && s.state !== 'sink' && s.state !== 'dead' && s.state !== 'fight') { s.state = 'sink'; s.t = 0; }
+    if (!night && s.state !== 'sink' && s.state !== 'dead' && s.state !== 'fight' && s.state !== 'grab') { s.state = 'sink'; s.t = 0; }
     switch (s.state) {
       case 'rise':
         if (s.t < 0) { s.k = 0; break; }
@@ -81,6 +81,9 @@ function skeletonsTick(dt) {
         if (s.t > 30 && !s.resolved) skelResolve(s);
         break;
       }
+      case 'grab':
+        skGrabTick(s, dt);
+        break;
       case 'dead':
         if (s.t > 3.2) { sk.splice(i, 1); continue; }
         break;
@@ -196,22 +199,13 @@ function skelResolve(s) {
     s.state = 'roam'; s.fighters = []; s.resolved = false; s.t = 0; s.atk = Game.time;
     logEvent('tree', `${UNIT_TYPES[fs[0].type].name} ушёл от скелета живым`, s.x, s.y);
   } else {
-    // скелет рубит одного ржавым мечом; остальных, если выжили, отбрасывает
+    // скелет хватает одного костлявой рукой и тащит к могиле; остальных, если выжили, отбрасывает
     const v = fs[0];
-    floater(v.x, v.y - 1.2, '!', '#ff6040');
-    fxBurst(v.x * TILE, v.y * TILE - 8, 12, ['#ffc0c0', '#a02818'], 50, 40, 0.7, 1.8, 180);
-    sfxAt('thud', v.x * TILE, v.y * TILE, 1);
-    toast(`Скелет зарубил: ${UNIT_TYPES[v.type].name}`);
-    logEvent('tree', `Скелет зарубил: ${UNIT_TYPES[v.type].name}`, v.x, v.y);
-    const vx = v.x, vy = v.y;
-    removeUnit(v);
     for (const o of fs.slice(1)) {
       if (outcome === 'wipe') { floater(o.x, o.y - 1, '!', '#ff6040'); removeUnit(o); }
       else { s.escaped = o; knockBack(o, s); injure(o, Math.random() < 0.5 ? 'leg' : 'arm'); }
     }
-    // павший гном нередко встаёт скелетом
-    if (Math.random() < 0.55) fxLater(2.5, () => { skelRise(vx, vy, 0); logEvent('tree', 'Павший гном встал скелетом', vx, vy); });
-    s.state = 'roam'; s.fighters = []; s.resolved = false; s.t = 0; s.goal = null;
+    skTakes(s, v);
   }
 }
 
@@ -236,6 +230,7 @@ function drawSkeleton(c, s) {
   const BONE = '#e4ddc6', BONE2 = '#b8b096', INK = '#17120c';
   const moving = s.moving, sw = moving ? Math.sin(s.phase * 1.4) : 0;
   const dead = s.state === 'dead', fight = s.state === 'fight';
+  const gi = skGrabIndex(s), gp = gi >= 0 ? skPoseAt(gi) : null;        // захват: кадры 0…8 и 9…12 (несёт)
   const k = dead ? 1 : s.k;
   c.save();
   c.fillStyle = 'rgba(10,8,4,0.35)'; c.beginPath(); c.ellipse(px, py, 8 * k + 1, 2.4, 0, 0, 7); c.fill();
@@ -252,6 +247,7 @@ function drawSkeleton(c, s) {
     c.restore();
     return;
   }
+  if (gp && gp.behind && s.vsnap) skDrawVictim(c, s, px, py, f, gi, gp, k, 'body');   // на плече — гном сзади туловища
   c.translate(px, py);
   // из земли: клип по высоте
   if (k < 1) { c.beginPath(); c.rect(-16, -42 * k, 32, 44 * k + 2); c.clip(); }
@@ -259,7 +255,7 @@ function drawSkeleton(c, s) {
   c.scale(f, 1);
   c.lineCap = 'round'; c.lineJoin = 'round';
   if (s.scared > 0) c.translate(Math.sin(t * 50) * 0.8, 0);
-  const lean = fight ? 1.5 : 0, bob = moving ? Math.abs(Math.sin(s.phase * 1.4)) * 0.8 : Math.sin(t * 2 + s.phase) * 0.4;
+  const lean = gp ? gp.lean : fight ? 1.5 : 0, bob = moving ? Math.abs(Math.sin(s.phase * 1.4)) * 0.8 : Math.sin(t * 2 + s.phase) * 0.4;
   c.translate(0, -bob);
   const bone = (x1, y1, x2, y2, w = 1.8) => { c.strokeStyle = INK; c.lineWidth = w + 1.2; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.strokeStyle = BONE; c.lineWidth = w; c.stroke(); };
   // ноги: бедро + голень, шагают попеременно, коленные суставы-шарики
@@ -286,8 +282,14 @@ function drawSkeleton(c, s) {
   if (moving) ang = -0.9 + sw * 0.2;
   if (fight) ang = atk < 0.35 ? -2.3 : atk < 0.8 ? 0.7 : -0.9;                     // замах — удар — стойка
   if (s.scared > 0) ang = -2.6;
-  const ax = 5, ay = -22, hx = ax + 4 + Math.cos(ang - 0.7) * 2, hy = ay + 6 + Math.sin(ang - 0.7) * 3;
-  bone(ax, ay, ax + 3.4, ay + 4.4, 1.5); bone(ax + 3.4, ay + 4.4, hx + 1, hy, 1.4);
+  const ax = 5, ay = -22;
+  let hx = ax + 4 + Math.cos(ang - 0.7) * 2, hy = ay + 6 + Math.sin(ang - 0.7) * 3;
+  if (gp) {
+    // рука тянется к гному, хватает и уносит; меч за спиной
+    const gx = gp.h[0], gy = gp.h[1], ex = (ax + gx) / 2 - 1, ey = (ay + gy) / 2 + 3.5;
+    bone(ax, ay, ex, ey, 1.5); bone(ex, ey, gx, gy, 1.4);
+    hx = -6; hy = -20; ang = 2.35;
+  } else { bone(ax, ay, ax + 3.4, ay + 4.4, 1.5); bone(ax + 3.4, ay + 4.4, hx + 1, hy, 1.4); }
   c.save(); c.translate(hx + 1, hy); c.rotate(ang);
   // клинок: ржавый, щербатый, в тёмной обводке
   c.fillStyle = INK; c.beginPath(); c.moveTo(-1.4, -1.7); c.lineTo(15.5, -1.9); c.lineTo(17.4, 0); c.lineTo(15.5, 1.9); c.lineTo(-1.4, 1.7); c.closePath(); c.fill();
@@ -306,7 +308,7 @@ function drawSkeleton(c, s) {
   c.fillStyle = INK; c.beginPath(); c.ellipse(hx2 - 1.7, hy2 - 0.4, 1.4, 1.8, 0.2, 0, 7); c.ellipse(hx2 + 1.9, hy2 - 0.4, 1.4, 1.8, -0.2, 0, 7); c.fill();
   c.fillStyle = '#8dff9c'; c.fillRect(hx2 - 2, hy2 - 0.8, 0.9, 0.9); c.fillRect(hx2 + 1.6, hy2 - 0.8, 0.9, 0.9);
   c.fillStyle = INK; c.beginPath(); c.moveTo(hx2 + 0.1, hy2 + 0.8); c.lineTo(hx2 + 0.9, hy2 + 2); c.lineTo(hx2 - 0.7, hy2 + 2); c.fill();
-  const jaw = fight && atk < 0.5 ? 2.2 : 0.6;                                        // челюсть щёлкает при ударе
+  const jaw = gp || (fight && atk < 0.5) ? 2.2 : 0.6;                                        // челюсть щёлкает при ударе
   c.fillStyle = INK; c.fillRect(hx2 - 3, hy2 + 2.6, 6.2, 1.2 + jaw);
   c.fillStyle = BONE; for (let i = 0; i < 4; i++) c.fillRect(hx2 - 2.6 + i * 1.5, hy2 + 2.6, 1, 1.4);
   // рваный гномий колпак, свисающий кончик с дырой
@@ -319,4 +321,5 @@ function drawSkeleton(c, s) {
   c.strokeStyle = 'rgba(210,204,180,0.7)'; c.lineWidth = 0.7;
   for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(hx2 + i * 1.2, hy2 + 4); c.quadraticCurveTo(hx2 + i * 1.6 + Math.sin(t * 2 + i) * 0.8, hy2 + 7, hx2 + i * 1.3, hy2 + 9.4); c.stroke(); }
   c.restore();
+  if (gp && s.vsnap) skDrawVictim(c, s, px, py, f, gi, gp, k, gp.behind ? 'grip' : undefined);
 }

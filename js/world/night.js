@@ -362,7 +362,7 @@ function entFell(e, u) {
 const GRAB_REACH = 0.9, GRAB_LIFT = 1.7, GRAB_TURN = 2.1, GRAB_FADE = 4.8, GRAB_END = 6.8;
 function entTakes(e, u) {
   e.state = 'drag'; e.t = 0; e.foe = null; e.scream = 0; e.sayV = false; e.sayK = false; e.turned = false;
-  e.victim = u;
+  e.victim = u; e.vsnap = snapVictim(u);
   e.vx0 = u.x; e.vy0 = u.y;
   e.face = u.x > e.x ? 1 : -1;
   let dx = e.x - u.x, dy = e.y - u.y;
@@ -685,7 +685,7 @@ function nightLights(x0, y0, x1, y1) {
   for (const e of Game.ents || []) if (e.k > 0.05 && e.state !== 'gone') {
     const { bx, by } = entBase(e);
     L.push([bx, by - (e.rock ? 18 : 50), e.rock ? 50 : 80, (e.state === 'drag' ? 0.95 : 0.7) * e.k * e.alpha, 'ent']);
-    if (e.state === 'drag' && e.victim) L.push([bx + e.face * 21, by - 30, 50, 0.8 * e.alpha]);   // фонарь бедняги ещё светит
+    if (e.state === 'drag' && (e.victim || e.vsnap)) L.push([bx + e.face * 21, by - 30, 50, 0.8 * e.alpha]);   // фонарь бедняги ещё светит
   }
   weatherLights(L, x0, y0, x1, y1);
   skeletonLights(L, x0, y0, x1, y1);
@@ -841,6 +841,8 @@ function claws(c, x, y, dir, spread, len, n, curl, L, seed, w = 1.8) {
   }
 }
 
+// кисть хватающей руки по кадрам g0…g8 (от центра ствола по x, y в спрайте): замах назад, бросок, тянется, у гнома, сжала, тянет вверх…
+const ENT_GRAB_HAND = [[-6, 34], [14, 42], [24, 62], [28, 84], [27, 91], [27, 82], [27, 72], [27, 62], [27, 54]];
 // Поза: ноги (бедро → колено → ступня) и руки (плечо → локоть → кисть)
 function entPose(name, L) {
   const cx = ENT_CX, hipY = 84, base = ENT_BASE;
@@ -867,9 +869,16 @@ function entPose(name, L) {
     // локти наружу, предплечья и когти загнуты внутрь, к телу
     return [[sx, shY], [sx + side * 14 + swing * 0.4, shY + 8], [sx + side * 9 + swing, shY + 24]];
   };
+  // захват (дерево): g0…g8 — замах, бросок, тянется, обхватывает, сжимает, отрывает от земли, поднимает, разворот; кисть и локоть — по таблице
+  const gm = /^g(\d)$/.exec(name);
+  if (gm) {
+    const i = +gm[1], hnd = ENT_GRAB_HAND[i], sx1 = cx + 8;
+    const grabArm = [[sx1, shY], [(sx1 + cx + hnd[0]) / 2 + 3, (shY + hnd[1]) / 2 + 8], [cx + hnd[0], hnd[1]]];
+    return { legs: [leg(-1, 0, 0), leg(1, 0, 0)], arms: [arm(-1, i < 1 || i > 4 ? 'up' : 'hang'), grabArm], noClaw: i >= 3 };
+  }
   const f = name === 'f0' ? ['up', 'up'] : name === 'f1' ? ['slash', 'slash'] : name === 'drag' ? ['up', 'grab']
     : name === 'reach' ? ['hang', 'reach'] : name === 'hold' || name.startsWith('cw') ? ['up', 'hold'] : ['hang', 'hang'];
-  return { legs: [leg(-1, sL, lL), leg(1, sR, lR)], arms: [arm(-1, f[0]), arm(1, f[1])] };
+  return { legs: [leg(-1, sL, lL), leg(1, sR, lR)], arms: [arm(-1, f[0]), arm(1, f[1])], noClaw: name.startsWith('cw') };
 }
 
 function drawEntCrown(c, kind, L, seed) {
@@ -959,6 +968,7 @@ function drawEntArms(c, kind, L, P, seed) {
     }
     // когтистая кисть: длинные загнутые пальцы-сучья
     const [hx, hy] = a[2], dir = Math.atan2(hy - ey, hx - ex);
+    if (i && P.noClaw) return;                                    // хватающую кисть дорисовывают пальцы поверх гнома
     claws(c, hx, hy, dir, 1.5, 10, 4, side * 0.8, LL, seed + 80 + i * 9, 2);
   });
 }
@@ -1029,9 +1039,8 @@ function entFrameName(e) {
   }
   if (e.state === 'dying') return 'f0';           // вскинул ветви от боли
   if (e.state === 'drag') {
-    if (e.t < GRAB_REACH) return 'reach';
-    if (e.t < GRAB_TURN) return 'hold';
-    return 'cw' + (Math.floor(e.phase / 1.7) & 3);
+    const gi = grabIdx(e.t);
+    return gi < 9 ? 'g' + gi : 'cw' + (Math.floor(e.phase / 1.7) & 3);
   }
   if (e.moving) return 'w' + (Math.floor(e.phase / 1.7) & 3);
   return 'idle';
@@ -1133,15 +1142,15 @@ function drawEnt(c, e) {
         c.fillRect(Math.round(bx - 16 + j * 4.4), Math.round(by - 2 - Math.sin(p * Math.PI) * 8), 2, 2);
       }
     }
-    if (e.state === 'drag' && e.victim) drawVictim(c, e);
+    if (e.state === 'drag' && (e.victim || e.vsnap)) drawVictim(c, e);
   }
   c.restore();
 }
 
 // Схваченный гном: сначала стоит и трясётся, потом его поднимают в кулаке —
 // дрыгает ногами, машет руками и вырывается
-function drawVictim(c, e) {
-  const v = e.victim;
+function drawVictimRock(c, e) {
+  const v = e.victim || e.vsnap;
   const t = e.t;
   const gx = e.vx0 * TILE, gy = e.vy0 * TILE + 6;                  // где стоял (ступни)
   const h = entHandWorld(e);
@@ -1167,6 +1176,28 @@ function drawVictim(c, e) {
     c.fillStyle = LL.bark; c.fillRect(Math.round(h.x) - 4, Math.round(h.y) - 2, 8, 4);
     c.fillStyle = LL.light; c.fillRect(Math.round(h.x) - 4, Math.round(h.y) - 2, 8, 1);
   }
+  if (!held) { c.fillStyle = '#ff6040'; c.font = 'bold 9px serif'; c.fillText('!', Math.round(gx) - 1, Math.round(gy) - 32); }
+}
+
+// Схваченный гном (дерево, водяной): стоит и трясётся, пока тянется рука, затем ладонь сжимается пальцами
+// (кадр g4), и его поднимают — гном всё время в кисти: дрыгает ногами, машет руками, вырывается.
+// Камень — по-старому (drawVictimRock).
+function drawVictim(c, e) {
+  if (e.rock) return drawVictimRock(c, e);
+  const v = e.victim || e.vsnap, gi = grabIdx(e.t);
+  const gx = e.vx0 * TILE, gy = e.vy0 * TILE + 6;                  // где стоял (ступни)
+  const h = entHandWorld(e), f = e.face < 0 ? -1 : 1;
+  const held = gi >= 4;
+  // тень на земле тает, пока поднимают
+  const lift = held ? Math.min(1, (gi - 4) / 3) : 0;
+  c.fillStyle = `rgba(10,8,4,${0.32 * (1 - lift)})`;
+  c.beginPath(); c.ellipse(gx + 1.5, gy, 5.5, 2, 0, 0, 7); c.fill();
+  if (held) drawGrabbed(c, v, h.x + f * 2, h.y + 1, 0, true);     // в кисти, примерно за пояс
+  else drawGrabbed(c, v, gx, gy - 14, 0, false);
+  // пальцы поверх гнома: к кадру g4 сжимаются, до этого кисть раскрыта
+  const k = gi < 3 ? 0 : gi === 3 ? 0.5 : 1;
+  const pal = e.water ? { out: '#0a2744', fill: '#4aa6dc', hi: '#e8fbff' } : (() => { const L = ENT_LOOK[entBase(e).kind], LL = L.limb || L; return { out: '#140a05', fill: LL.bark, hi: LL.light }; })();
+  if (gi >= 2) drawGrip(c, Math.round(h.x), Math.round(h.y), f, k, pal, e.water ? 1.35 : 1.35);
   if (!held) { c.fillStyle = '#ff6040'; c.font = 'bold 9px serif'; c.fillText('!', Math.round(gx) - 1, Math.round(gy) - 32); }
 }
 

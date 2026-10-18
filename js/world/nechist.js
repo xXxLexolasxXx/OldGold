@@ -35,9 +35,18 @@ function waterGeom(e) {
   return { bx, by, H };
 }
 
+// Рука водяного при захвате: 9 кадров g0…g8 (замах струёй, бросок, тянется, обхватывает, сжимает, подъём, поднял, разворот)
+// кисть [x вперёд, y] в системе тела (до масштаба по высоте); дальше — несёт (кадры 9…12)
+const WATER_ARM = [[3, -53], [15, -46], [23, -33], [27, -22], [27, -19], [26, -25], [25, -32], [22, -38], [20, -36]];
+function waterGrabHand(e) {
+  const gi = grabIdx(e.t);
+  if (gi < 9) return WATER_ARM[gi];
+  return [20, -36 + Math.sin(e.phase * 0.9) * 1.2];
+}
 function waterEntHand(e) {
-  const g = waterGeom(e), reach = e.state === 'drag' && e.t < GRAB_REACH;
-  return { x: g.bx + e.face * (reach ? 18 : 13), y: g.by - g.H * (reach ? 0.28 : 0.74) };
+  const g = waterGeom(e);
+  if (e.state === 'drag') { const h = waterGrabHand(e); return { x: g.bx + e.face * h[0], y: g.by + h[1] * g.H / 40 }; }
+  return { x: g.bx + e.face * 13, y: g.by - g.H * 0.74 };
 }
 
 function waterEyeCenter(e) {
@@ -111,7 +120,7 @@ function drawWaterEnt(c, e) {
       if (atk < 0.35) { fh = [9, -50]; bh = [-12, -40]; } else if (atk < 0.8) { fh = [24, -2]; bh = [-14, -16]; }
       else { fh = [20, -22 + wob(0, 3)]; bh = [-17, -14 + wob(2, 3)]; }
     }
-    if (e.state === 'drag') { if (e.t < GRAB_REACH) fh = [20, -11]; else fh = [13, -29]; }
+    if (e.state === 'drag') fh = waterGrabHand(e);
     arm(-11, -28, bh[0], bh[1], true);
     // тело: плотная масса воды, подол из волн
     c.beginPath();
@@ -173,7 +182,7 @@ function drawWaterEnt(c, e) {
     if (e.moving) for (let j = 0; j < 5; j++) { const q = (t * 2.4 + j * 0.2) % 1; c.fillStyle = `rgba(215,245,255,${0.85 * (1 - q)})`; c.beginPath(); c.arc(-12 - q * 12, -2 - Math.sin(q * 3 + j) * 4 - q * 5, 1.6 - q, 0, 7); c.fill(); }
   }
   c.restore();
-  if (e.state === 'drag' && e.victim) drawVictim(c, e);
+  if (e.state === 'drag' && (e.victim || e.vsnap)) drawVictim(c, e);
 }
 
 // сдулся: на земле остаётся мокрое пятно, пока не высохнет
@@ -308,6 +317,7 @@ function batsTick(dt) {
   for (let i = bats.length - 1; i >= 0; i--) {
     const b = bats[i];
     b.ph += dt * 16; b.retarget -= dt;
+    if (b.state === 'grab') { if (batGrabTick(b, dt)) bats.splice(i, 1); continue; }     // уносит гнома
     if (dark < 0.12) b.leave = true;
     if (b.leave) { b.tx = b.x + (b.x > cx ? 30 : -30); b.ty = b.y + (b.y > cy ? 20 : -20); if (b.x < -3 || b.y < -3 || b.x > MAP_W + 3 || b.y > MAP_H + 3) { bats.splice(i, 1); continue; } }
     else if (b.retarget <= 0 || Math.hypot(b.tx - b.x, b.ty - b.y) < 1) {
@@ -329,6 +339,7 @@ function batsTick(dt) {
         if (u.inside || u.dead || !isPerson(u) || (u.batCD || 0) > Game.time) continue;
         if (Math.hypot(u.x - b.x, u.y - b.y) < 1.7) {
           u.batCD = Game.time + 25;
+          if (batCanTake(b, u)) { batTakes(b, u); break; }               // редко: пикирует и уносит одинокого гнома
           gesture(u, 'panic', 1.3, b.x);
           floater(u.x, u.y - 1.2, ['Летучая мышь!', 'Брысь!', 'Ай, над головой!'][Math.floor(Math.random() * 3)], '#e8e0f0');
           sfxAt('squeak', b.x * TILE, b.y * TILE, 0.9);
@@ -343,6 +354,7 @@ function drawBats(c) {
   const bats = Game.bats;
   if (!bats || !bats.length) return;
   for (const b of bats) {
+    if (b.state === 'grab') { drawBatGrab(c, b); continue; }
     const px = Math.round(b.x * TILE), py = Math.round(b.y * TILE - b.z);
     const flap = Math.sin(b.ph), w = 5 + Math.abs(flap) * 2.5, up = flap * 3.2;
     c.fillStyle = 'rgba(10,8,4,0.2)'; c.beginPath(); c.ellipse(px, b.y * TILE + 2, 4, 1.2, 0, 0, 7); c.fill();

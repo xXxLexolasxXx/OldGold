@@ -340,7 +340,7 @@ function drawRockEnt(c, e) {
   // глаза (кроме погибшего)
   if (!(e.state === 'dying' && e.t > 0.5)) drawRockEyes(c, e, Math.min(1, 0.3 + nightAmt()));
   c.restore();
-  if (e.state === 'drag' && e.victim) drawVictim(c, e);
+  if (e.state === 'drag' && (e.victim || e.vsnap)) drawVictim(c, e);
 }
 
 // побеждённый камень рассыпается обратно в обычную глыбу там, где упал

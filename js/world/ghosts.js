@@ -41,6 +41,7 @@ function ghostsTick(dt) {
         g.mode = 'leave'; g.modeT = 99;
       } else g.mode = 'drift';
     }
+    if (g.mode === 'grab') { ghGrabTick(g, dt); continue; }       // уносит гнома — больше ничем не занят
     if (g.atkT > 0) ghostStrikeTick(g, dt);
     else if (g.mode === 'drift' || g.mode === 'boo') {
       if (g.retarget <= 0 || Math.hypot(g.tx - g.x, g.ty - g.y) < 0.6) {
@@ -67,6 +68,7 @@ function ghostsTick(dt) {
         logEvent('night', `${UNIT_TYPES[u.type].name} угостил призрака хлебом`, u.x, u.y);
         break;
       }
+      if (g.mode === 'drift' && ghCanTake(g, u)) { ghTakes(g, u); break; }   // редко: одинокого гнома хватает и уносит
       if (g.mode === 'calm' || !interruptible(u)) continue;      // успокоенный призрак больше не пугает
       u.ghostCD = Game.time + 40;
       floater(u.x, u.y - 1.2, 'Призрак!', '#dcecff');
@@ -130,20 +132,20 @@ function ghostSprite(mood, i) {
   cv.width = GHOST_W * GHOST_SS; cv.height = GHOST_H * GHOST_SS;
   const c = cv.getContext('2d');
   c.scale(GHOST_SS, GHOST_SS); c.translate(GHOST_OX, GHOST_OY);
-  const atk = mood === 'atk';
-  paintGhost(c, atk ? 0 : i / GHOST_FRAMES, mood, atk ? i / (GHOST_ATK_FRAMES - 1) : 0);
+  const atk = mood === 'atk', grab = mood === 'grab' || mood === 'carry';
+  paintGhost(c, grab ? (mood === 'carry' ? i / 4 : 0) : atk ? 0 : i / GHOST_FRAMES, mood, grab ? (mood === 'carry' ? 8 : i) : atk ? i / (GHOST_ATK_FRAMES - 1) : 0);
   return cv;
 }
 
 // p — фаза плавания 0..1 (петля), k — ход удара 0..1: замах (0–.35), бросок (.35–.6), отдача
 function paintGhost(c, p, mood, k) {
-  const atk = mood === 'atk', boo = mood === 'boo' || atk, calm = mood === 'calm';
+  const atk = mood === 'atk', gp = mood === 'grab' || mood === 'carry' ? ghPoseAt(Math.round(k)) : null, boo = mood === 'boo' || atk || !!gp, calm = mood === 'calm';
   const TAU = Math.PI * 2, sn = (m, o = 0) => Math.sin(p * TAU * m + o);
   const sm = x => x * x * (3 - 2 * x);
   const wind = atk ? sm(Math.min(1, k / 0.35)) : 0;
   const strike = atk ? sm(Math.max(0, Math.min(1, (k - 0.35) / 0.25))) : 0;
   const recoil = atk ? sm(Math.max(0, (k - 0.6) / 0.4)) : 0;
-  const lean = atk ? (-3 * wind + 9 * strike) * (1 - recoil) : 0;         // наклон корпуса (+ вперёд)
+  const lean = gp ? gp.lean : atk ? (-3 * wind + 9 * strike) * (1 - recoil) : 0;         // наклон корпуса (+ вперёд)
   const sway = sn(1) * 1.8 + lean * 0.5;
   c.lineJoin = 'round'; c.lineCap = 'round';
   // тело-саван: S-образный хвост, тянущийся за призраком
@@ -202,7 +204,8 @@ function paintGhost(c, p, mood, k) {
   for (const s of [-1, 1]) {
     const shx = s * 6 + lean * 0.5, shy = 1;
     let hx, hy;
-    if (atk) {
+    if (gp) { [hx, hy] = s > 0 ? gp.hf : gp.hn; }
+    else if (atk) {
       // замах: руки воздеты над головой; бросок: обе вперёд и вниз; отдача: обвисли
       const wx = s * 7 - 3, wy = -21, sx = 21 - s * 2, sy = 11 - s * 3, rx = s * 11, ry = 6;
       const lift = Math.max(wind, 0.15);
@@ -220,7 +223,7 @@ function paintGhost(c, p, mood, k) {
     const ang = Math.atan2(hy - my, hx - mx);
     c.lineWidth = 0.95; c.strokeStyle = '#f2fffa';
     for (let j = -1.5; j <= 1.5; j++) {
-      const a2 = ang + j * 0.34 + (boo ? j * 0.1 : 0), len = 5.4 - Math.abs(j) * 0.6 + (atk ? strike * 1.6 : 0);
+      const a2 = ang + j * 0.34 + (boo ? j * 0.1 : 0), len = (5.4 - Math.abs(j) * 0.6 + (atk ? strike * 1.6 : 0)) * (gp ? 1 - 0.45 * gp.k : 1);
       c.beginPath(); c.moveTo(hx, hy); c.quadraticCurveTo(hx + Math.cos(a2) * len * 0.5, hy + Math.sin(a2) * len * 0.5 + 0.8, hx + Math.cos(a2 + 0.25) * len, hy + Math.sin(a2 + 0.25) * len); c.stroke();
     }
   }
@@ -254,7 +257,7 @@ function paintGhost(c, p, mood, k) {
   // нос-провал
   c.fillStyle = '#031010'; c.beginPath(); c.moveTo(0, 1.2); c.lineTo(-1, 3.4); c.lineTo(1, 3.4); c.closePath(); c.fill();
   // пасть: у удара раззявлена в беззвучном крике
-  const mh = atk ? 5 + 7 * Math.max(wind * 0.5, strike) * (1 - recoil * 0.6) : boo ? 8.5 + sn(6) * 0.8 : calm ? 1.2 : 4.2 + sn(2) * 1.0;
+  const mh = gp ? 11 : atk ? 5 + 7 * Math.max(wind * 0.5, strike) * (1 - recoil * 0.6) : boo ? 8.5 + sn(6) * 0.8 : calm ? 1.2 : 4.2 + sn(2) * 1.0;
   c.fillStyle = '#010707'; c.beginPath(); c.moveTo(-3.4, 4.2);
   for (let q = 0; q <= 6; q++) c.lineTo(-3.4 + q * 1.13, 4.2 + (q % 2 ? 0.9 : -0.3));
   c.lineTo(3.4, 4.4 + mh * 0.5); c.lineTo(1.7, 4.6 + mh); c.lineTo(0, 4.4 + mh * 0.85); c.lineTo(-1.7, 4.6 + mh); c.lineTo(-3.4, 4.4 + mh * 0.5); c.closePath(); c.fill();
@@ -270,8 +273,9 @@ function drawGhosts(c) {
     if (g.alpha <= 0.01) continue;
     const bob = Math.sin(g.ph) * 2.4, px = Math.round(g.x * TILE), py = Math.round(g.y * TILE - 17 - bob);
     const atk = (g.atkT || 0) > 0;
-    const mood = atk ? 'atk' : g.mode === 'boo' ? 'boo' : g.mode === 'calm' ? 'calm' : 'idle';
-    const frame = atk ? Math.min(GHOST_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * GHOST_ATK_FRAMES)) : Math.floor(t * 9 + g.ph * 1.43) % GHOST_FRAMES;
+    const grab = g.mode === 'grab' && (g.vsnap || g._gi !== undefined), gi = grab ? ghGrabIndex(g) : -1;
+    const mood = grab ? (gi < 9 ? 'grab' : 'carry') : atk ? 'atk' : g.mode === 'boo' ? 'boo' : g.mode === 'calm' ? 'calm' : 'idle';
+    const frame = grab ? (gi < 9 ? gi : gi - 9) : atk ? Math.min(GHOST_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * GHOST_ATK_FRAMES)) : Math.floor(t * 9 + g.ph * 1.43) % GHOST_FRAMES;
     const flick = 0.82 + Math.sin(t * 13 + g.ph * 3) * 0.08 + (Math.sin(t * 31 + g.ph) > 0.93 ? -0.25 : 0);   // мерцает, как гаснущая свеча
     const A = g.alpha * flick;
     c.save();
@@ -288,6 +292,7 @@ function drawGhosts(c) {
     c.globalAlpha = A;
     c.imageSmoothingEnabled = true;
     c.drawImage(ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
+    if (grab && g.vsnap) { c.imageSmoothingEnabled = false; ghDrawVictim(c, g, Math.min(8, gi), g.alpha, px, py); }
     c.restore();
     // клочья тумана, уходящие вверх от призрака
     c.save(); c.globalAlpha = 1;

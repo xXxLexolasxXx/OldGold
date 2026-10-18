@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Лист кадров: нечисть забирает гнома</title>
+<style>
+body{margin:0;background:#4a6e30;color:#eee;font:12px/1.3 sans-serif}
+#bar{position:sticky;top:0;background:#222c;padding:6px 10px;display:flex;gap:12px;align-items:center;z-index:2;flex-wrap:wrap}
+h3{margin:10px 10px 2px;color:#fff;text-shadow:0 1px 2px #000}
+.row{display:flex;flex-wrap:wrap;gap:4px;padding:4px 10px}
+.cell{display:flex;flex-direction:column;align-items:center}
+.cell canvas{image-rendering:pixelated;background:#4f7a30;border:1px solid #3a5a24}
+.cell span{font-size:10px;color:#fff;text-shadow:0 1px 2px #000;max-width:130px;text-align:center}
+</style></head><body>
+<div id="bar"><b>Нечисть забирает гнома: по 9 кадров захвата + 4 кадра «несёт» у каждого вида</b>
+<label>масштаб <select id="sc"><option selected>2</option><option>3</option><option>4</option></select></label>
+<label>вид <select id="only"><option value="">все</option></select></label> <span id="err" style="color:#f88"></span></div>
+<div id="out"></div>
+<script src="js/world/fire.js"></script><script src="js/loading.js"></script><script src="js/config.js"></script><script src="js/world.js"></script><script src="js/path.js"></script><script src="js/entities.js"></script><script src="js/levels.js"></script><script src="js/events.js"></script><script src="js/jobs.js"></script><script src="js/life.js"></script><script src="js/world/animals.js"></script><script src="js/world/leisure.js"></script><script src="js/world/streets.js"></script><script src="js/world/night.js"></script><script src="js/world/rocks.js"></script><script src="js/world/nechist.js"></script><script src="js/world/ghosts.js"></script><script src="js/world/skeletons.js"></script><script src="js/world/grab.js"></script><script src="js/world/mountains.js"></script><script src="js/logistics.js"></script><script src="js/sprites.js"></script><script src="js/buildings.js"></script><script src="js/bmodels.js"></script><script src="js/world/graveyard.js"></script><script src="js/world/decor.js"></script><script src="js/world/subbotnik.js"></script><script src="js/pixel.js"></script><script src="js/pixelart.js"></script><script src="js/pixelart2.js"></script><script src="js/pixelart3.js"></script><script src="js/pixelstyle.js"></script><script src="js/smoking.js"></script><script src="js/icons.js"></script><script src="js/people.js"></script><script src="js/world/creatures.js"></script><script src="js/world/terrain.js"></script><script src="js/render.js"></script><script src="js/inside.js"></script><script src="js/save.js"></script>
+<script>
+const CW = 120, CH = 120, GX = 52, GY = 104;        // размер клетки листа, точка земли
+const VICTIM = { id: 7, type: 'serf', look: 3 };
+const KINDS = {
+  oak: 'Ходячий дуб', birch: 'Ходячая берёза', pine: 'Ходячая сосна', fir: 'Ходячая ель',
+  water: 'Водяной', skel: 'Скелет', ghost: 'Призрак', bat: 'Летучая мышь',
+};
+const sel = document.getElementById('only');
+for (const k in KINDS) sel.add(new Option(KINDS[k], k));
+const mids = () => GRAB_T.map((e, i) => (e + (i ? GRAB_T[i - 1] : 0)) / 2);
+
+// клетка: рисуем настоящими функциями игры на холсте 1×, потом увеличиваем
+function cell(kind, i) {
+  const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH;
+  const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+  Game.time = 0.4 + i * 0.0;
+  const X = GX / TILE, Y = (GY - 12) / TILE;
+  let name = 'g' + i, ok = true;
+  if (kind === 'water' || ['oak', 'birch', 'pine', 'fir'].includes(kind)) {
+    // дерево/водяной: время кадра; для «несёт» — через фазу шага
+    const t = i < 9 ? mids()[i] : 2.5;
+    const e = { i: ['oak', 'birch', 'pine', 'fir'].indexOf(kind) < 0 ? 5 : [0, 3, 4, 5][['oak', 'birch', 'pine', 'fir'].indexOf(kind)], water: kind === 'water', rock: false, state: 'drag', t, k: 1, alpha: 1,
+      x: X + (i === 0 ? 0.0 : 0), y: Y, face: 1, phase: i < 9 ? 0 : (i - 9) * 1.7, moving: i >= 9, victim: VICTIM, vsnap: VICTIM, vx0: X + 0.85, vy0: Y + 0.05, hitT: 0, atk: 0, wx: 0, wy: 0 };
+    if (i >= 9) { e.vx0 = X + 0.85; }
+    // дерево лысого 'i' выбирает спрайт по хэшу: подбираем i, пока порода совпадёт
+    if (kind !== 'water') { const want = kind; for (let n = 0; n < 4000; n++) { e.i = n; if (entBase(e).kind === want) break; } }
+    drawEnt(c, e);
+  } else if (kind === 'skel') {
+    const s = { x: X, y: Y - 0.0, face: 1, k: 1, state: 'grab', t: 0, phase: i >= 9 ? (i - 9) * 1.12 + 0.2 : 0, moving: i >= 9, scared: 0, atk: -9, vsnap: VICTIM, vx0: X + 15 / TILE, vy0: Y + 0.0, _gi: i };
+    s.y = (GY - 6) / TILE;
+    s.vy0 = s.y; drawSkeleton(c, s);
+  } else if (kind === 'ghost') {
+    Game.ghosts = [{ x: X, y: Y + 0.03, alpha: 1, ph: 0, face: 1, mode: 'grab', vsnap: VICTIM, vx0: X + 0.51, vy0: Y, _gi: i, gt: 0 }];
+    drawGhosts(c);
+  } else if (kind === 'bat') {
+    const p5 = btPoseAt(5), vy = (GY - 6) / TILE, gy = vy * TILE + 6, zGrab = vy * TILE - ((gy - 14) - 9 - btTalonY(p5));
+    const Z = [zGrab + 38, zGrab + 30, zGrab + 20, zGrab + 10, zGrab + 3, zGrab, zGrab + 5, zGrab + 13, zGrab + 22, zGrab + 26, zGrab + 28, zGrab + 30, zGrab + 32];
+    Game.bats = [{ x: GX / TILE, y: vy, z: Z[i], ph: i * 0.9, face: 1, state: 'grab', vsnap: VICTIM, vx0: GX / TILE, vy0: vy, _gi: i, gt: 0, valpha: 1 }];
+    drawBats(c);
+  }
+  return cv;
+}
+const NAMES = {
+  tree: ['замах назад', 'бросок', 'тянется', 'ладонь над гномом', 'пальцы сомкнулись', 'отрывает от земли', 'поднимает', 'держит высоко', 'разворот', 'несёт 1', 'несёт 2', 'несёт 3', 'несёт 4'],
+};
+function nameOf(kind, i) {
+  if (kind === 'skel') return skPoseAt(i).nm;
+  if (kind === 'ghost') return i < 9 ? GH_POSE[i].nm : 'уносит ' + (i - 8);
+  if (kind === 'bat') return btPoseAt(i).nm;
+  if (kind === 'water') return ['замах струёй', 'бросок', 'тянет струю', 'волна над гномом', 'вода сжала', 'отрывает', 'поднимает', 'держит высоко', 'разворот', 'несёт 1', 'несёт 2', 'несёт 3', 'несёт 4'][i];
+  return NAMES.tree[i];
+}
+function draw() {
+  const k = +document.getElementById('sc').value, out = document.getElementById('out'), only = sel.value || new URLSearchParams(location.search).get('only');
+  out.innerHTML = '';
+  for (const kind in KINDS) {
+    if (only && only !== kind) continue;
+    const h = document.createElement('h3'); h.textContent = KINDS[kind]; out.appendChild(h);
+    const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
+    for (let i = 0; i < 13; i++) {
+      let cv;
+      try { cv = cell(kind, i); } catch (e) { document.getElementById('err').textContent = kind + ' ' + i + ': ' + e.message + ' ' + (e.stack || '').split('\n')[1]; throw e; }
+      const big = document.createElement('canvas'); big.width = CW * k; big.height = CH * k;
+      const b = big.getContext('2d'); b.imageSmoothingEnabled = false; b.drawImage(cv, 0, 0, big.width, big.height);
+      const d = document.createElement('div'); d.className = 'cell'; d.appendChild(big);
+      const sp = document.createElement('span'); sp.textContent = (i + 1) + ' ' + nameOf(kind, i); d.appendChild(sp); row.appendChild(d);
+    }
+  }
+}
+// крупный план: ?zoom=oak&f=3,4,5&crop=56,50,50,62&sc=5
+function zoomView(kind, frames, crop, sc) {
+  const out = document.getElementById('out'); out.innerHTML = '';
+  const [x0, y0, w, h] = crop, cv = document.createElement('canvas'); cv.width = w * sc * frames.length; cv.height = h * sc;
+  const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.fillStyle = '#4f7a30'; c.fillRect(0, 0, cv.width, cv.height);
+  frames.forEach((f, i) => { c.drawImage(cell(kind, f), x0, y0, w, h, i * w * sc, 0, w * sc, h * sc); c.fillStyle = '#fff'; c.font = '12px sans-serif'; c.fillText(f + 1, i * w * sc + 4, 12); });
+  out.appendChild(cv);
+}
+document.getElementById('sc').onchange = draw; sel.onchange = draw;
+const Q = new URLSearchParams(location.search);
+try { Game.time = 1; if (Q.get('zoom')) zoomView(Q.get('zoom'), (Q.get('f') || '0,1,2,3').split(',').map(Number), (Q.get('crop') || '0,0,120,120').split(',').map(Number), +(Q.get('sc') || 3)); else draw(); } catch (e) { document.getElementById('err').textContent = e.message + ' ' + (e.stack || '').split('\n')[1]; console.error(e); }
+</script></body></html>
