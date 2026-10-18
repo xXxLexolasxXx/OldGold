@@ -532,15 +532,46 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
     ctx.restore();
   }
 
+  // Неподвижный фон заготавливается двумя слоями (до башни и после) и дальше только копируется:
+  // небо, луна, холмы, лес и земля — это ~170 фигур с градиентами каждый кадр. Живые — звёзды, башня, глазастые деревья.
+  const BG = { key: '', a: null, b: null };
+  function bgLayer(paint) {
+    const c = document.createElement('canvas');
+    c.width = Math.ceil(W * 1.6 / PSc) + 2; c.height = Math.ceil((H + 480) / PSc) + 2;
+    const cc = c.getContext('2d', { willReadFrequently: true });   // программный, как и сцена
+    thickLines(cc);
+    cc.setTransform(1 / PSc, 0, 0, 1 / PSc, W * 0.3 / PSc, 240 / PSc);
+    const keep = ctx; ctx = cc;
+    try { paint(); } finally { ctx = keep; }
+    return c;
+  }
+  function blitLayer(c) {
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(c, -W * 0.3, -240, c.width * PSc, c.height * PSc);
+    ctx.restore();
+  }
   function drawBackground(t) {
+    const key = W + 'x' + H + ':' + PSc;
+    if (BG.key !== key) { BG.key = key; BG.a = bgLayer(bgFar); BG.b = bgLayer(bgNear); }
+    blitLayer(BG.a);
+    // звёзды поверх неба, но не на луне и не на холмах; на пиксельной картинке это точки — квадрат дешевле круга
+    const mx = W * 0.78, my = H * 0.16, mr = Math.min(W, H) * 0.07;
+    ctx.fillStyle = '#fff6d8';
+    for (const s of stars) {
+      const x = s.x * W, y = s.y * H;
+      if (y > H * 0.47 || Math.hypot(x - mx, y - my) < mr * 1.1) continue;
+      ctx.globalAlpha = 0.45 + 0.4 * Math.sin(t * 1.5 + s.p);
+      ctx.fillRect(x - s.r, y - s.r, s.r * 2, s.r * 2);
+    }
+    ctx.globalAlpha = 1;
+    drawTower(t);
+    blitLayer(BG.b);
+    drawEnts(t);
+  }
+  function bgFar() {
     const sky = ctx.createLinearGradient(0, 0, 0, H * 0.62);
     sky.addColorStop(0, '#0a0d24'); sky.addColorStop(0.55, '#2a1c4a'); sky.addColorStop(1, '#6a3a4a');
     ctx.fillStyle = sky; ctx.fillRect(-W * 0.3, -240, W * 1.6, H + 480);
-    for (const s of stars) {
-      ctx.globalAlpha = 0.45 + 0.4 * Math.sin(t * 1.5 + s.p);
-      ctx.fillStyle = '#fff6d8'; ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, 7); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
     // луна
     const mx = W * 0.78, my = H * 0.16, mr = Math.min(W, H) * 0.07;
     const mg = ctx.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 4);
@@ -557,7 +588,16 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
       for (let x = -W * 0.3; x <= W * 1.3; x += 10) ctx.lineTo(x, H * yb + Math.sin(x / W * 5 + ph) * amp * H + Math.sin(x / W * 13 + ph) * amp * H * 0.3);
       ctx.lineTo(W * 1.3, H); ctx.fill();
     };
-    hill(0.52, 0.03, '#1d1838', 1); drawTower(t); hill(0.58, 0.035, '#16162e', 3);
+    hill(0.52, 0.03, '#1d1838', 1);
+  }
+  function bgHill(yb, amp, col, ph) {
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-W * 0.3, H);
+    for (let x = -W * 0.3; x <= W * 1.3; x += 10) ctx.lineTo(x, H * yb + Math.sin(x / W * 5 + ph) * amp * H + Math.sin(x / W * 13 + ph) * amp * H * 0.3);
+    ctx.lineTo(W * 1.3, H); ctx.fill();
+  }
+  function bgNear() {
+    const hill = bgHill;
+    hill(0.58, 0.035, '#16162e', 3);
     for (const tr of trees.filter(q => q.layer < 0.55)) pine(tr.x * W, H * 0.6, tr.h * H * 0.8, tr.w * W * 0.8, '#10132a');
     hill(0.63, 0.03, '#10182a', 5);
     for (const tr of trees.filter(q => q.layer >= 0.55)) pine(tr.x * W, H * 0.68, tr.h * H, tr.w * W, '#0a1420');
@@ -567,7 +607,6 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
     ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(-W * 0.3, H * 0.7);
     for (let x = -W * 0.3; x <= W * 1.3; x += 12) ctx.lineTo(x, H * 0.7 + Math.sin(x / W * 7) * 0.008 * H);
     ctx.lineTo(W * 1.3, H + 240); ctx.lineTo(-W * 0.3, H + 240); ctx.fill();
-    drawEnts(t);
   }
   function pine(x, yb, h, w, col) {
     ctx.fillStyle = col; ctx.beginPath();
@@ -936,8 +975,12 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
     window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     cv.style.touchAction = 'none'; host.style.touchAction = 'none';
   }
+  let lastDraw = 0;
   function frame(now) {
     if (!running) return;
+    // когда на экране меню, сцена — просто фон: 30 кадров в секунду хватает, а слабым телефонам остаётся время на интерфейс
+    if (document.getElementById("loading").classList.contains("with-menu") && now - lastDraw < 30) { requestAnimationFrame(frame); return; }
+    lastDraw = now;
     if (!cv.clientWidth || !cv.clientHeight) { resize(); last = now; requestAnimationFrame(frame); return; }   // вкладка скрыта и холст нулевой — ждём
     if (cv.clientWidth !== W || cv.clientHeight !== H) { resize(); GCACHE.clear(); }
     if (!isFinite(lift)) lift = 0;
