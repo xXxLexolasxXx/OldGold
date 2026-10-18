@@ -133,7 +133,7 @@ function festivalTick(dt) {
   for (const u of Game.units) {
     if (u.dead || !isPerson(u) || u.type === 'carter') continue;
     if (!u.inside && !u.brk && u.type !== 'hero') festDraft(u);
-    if (u.brk && u.brk.kind === 'feast' && FEST_FOOD_MUL) u.food = Math.max(0, u.food - step / FOOD_TIME * FEST_FOOD_MUL);
+    if (u.brk && u.brk.kind === 'feast' && FEST_FOOD_MUL) u.food = Math.max(0, u.food - step / (FOOD_TIME * dif().food) * FEST_FOOD_MUL);
   }
 }
 

@@ -601,7 +601,7 @@ class Unit {
 
   update(dt) {
     if (this.dead) return;
-    if (!this.noFood) this.food = Math.max(0, this.food - dt / FOOD_TIME);
+    if (!this.noFood) this.food = Math.max(0, this.food - dt / (FOOD_TIME * dif().food));
     lifeTick(this, dt);
     if (this.isCourier && !(this.action && this.action.walk)) this.releaseOcc();
     if (this.action) {

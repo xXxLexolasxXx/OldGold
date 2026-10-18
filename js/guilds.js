@@ -1257,9 +1257,14 @@ function guildAnnounceHTML() {
       if (u.rec) d.rc = Object.assign({}, u.rec, { target: undefined });
       if (u.gm) { d.gm = u.gm; d.gmn = u.gmName; }
     });
-    // заявки на найм ждут свободного трудягу — не теряем их при сохранении и перезапуске сервера
-    Game.buildings.forEach((b, k) => { const d = s.buildings[k]; if (d && d.id === b.id && b.hireQ > 0) d.hq = b.hireQ; });
     return s;
+  };
+  // заявки на найм ждут свободного трудягу — не теряем их при сохранении и перезапуске сервера
+  const _serB = serializeBuilding;
+  serializeBuilding = function (b) {
+    const d = _serB(b);
+    if (b.hireQ > 0) d.hq = b.hireQ;
+    return d;
   };
   const _apply = applySave;
   applySave = function (s) {
