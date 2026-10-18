@@ -424,12 +424,12 @@
 
   // Заголовок буквами-пикселями: шрифт растрируется в крошечный холст по порогу, потом красится золотой рампой
   const TITLE = { key: '', a: null, b: null };
-  function bmpText(text, font, ls) {
+  function bmpText(text, font, ls, sx = 1) {
     const c = document.createElement('canvas'), x = c.getContext('2d');
     x.font = font; if (ls) x.letterSpacing = ls;
-    const size = parseInt(font.match(/(\d+)px/)[1]), w = Math.ceil(x.measureText(text).width) + 6, h = Math.ceil(size * 1.45);
+    const size = parseInt(font.match(/(\d+)px/)[1]), w = Math.ceil(x.measureText(text).width * sx) + 8, h = Math.ceil(size * 1.45);
     c.width = w; c.height = h; x.font = font; if (ls) x.letterSpacing = ls;
-    x.fillStyle = '#fff'; x.fillText(text, 3, Math.round(h * 0.76));
+    x.fillStyle = '#fff'; x.save(); x.scale(sx, 1); x.fillText(text, 4 / sx, Math.round(h * 0.76)); x.restore();   // sx > 1 — буквы шире
     const d = x.getImageData(0, 0, w, h).data, on = new Uint8Array(w * h);
     for (let i = 0; i < w * h; i++) on[i] = d[i * 4 + 3] > 115 ? 1 : 0;
     return { w, h, on };
@@ -451,16 +451,16 @@
     }
   }
   function drawTitle(t) {
-    const h1 = document.querySelector('#loading .load-title h1'), h2 = document.querySelector('#loading .load-title h2');
-    if (!h1 || !h2) return;   // заголовок теперь обычный текст поверх холста — пиксельные буквы не рисуем
-    const s1 = parseFloat(getComputedStyle(h1).fontSize) / PSc * 0.92, s2 = Math.max(8, parseFloat(getComputedStyle(h2).fontSize) / PSc * 0.95);
-    const key = Math.round(s1) + ':' + Math.round(s2) + ':' + PSc;
-    if (TITLE.key !== key) { TITLE.key = key; TITLE.a = bmpText('Gnomeunity', `bold ${Math.round(s1)}px Georgia, "Times New Roman", serif`, '1px'); TITLE.b = bmpText('OldGold', `bold ${Math.round(s2)}px Georgia, "Times New Roman", serif`, `${Math.max(2, Math.round(s2 * 0.45))}px`); }
-    const r1 = h1.getBoundingClientRect(), r2 = h2.getBoundingClientRect();
+    // пиксельное название в стиле заставки: крупные широкие буквы, золотая рампа, тёмная обводка, тень и бегущий блик
+    const h1 = document.querySelector('#loading .load-title h1');
+    if (!h1) return;
+    const s1 = parseFloat(getComputedStyle(h1).fontSize) / PSc * 0.95;
+    const key = Math.round(s1) + ':' + PSc;
+    if (TITLE.key !== key) { TITLE.key = key; TITLE.a = bmpText('OldGold', `bold ${Math.round(s1)}px Georgia, "Times New Roman", serif`, `${Math.max(1, Math.round(s1 * 0.05))}px`, 1.3); }
+    const r1 = h1.getBoundingClientRect();
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const a = TITLE.a, b = TITLE.b;
-    paintBmp(a, Math.round((r1.left + r1.width / 2) / PSc - a.w / 2), Math.round((r1.top + r1.height / 2) / PSc - a.h * 0.55), ['#fff6c0', '#ffe27a', '#f0b83a', '#d88a30', '#a8582a'], t, ((t * 14) % 160) - 30);
-    paintBmp(b, Math.round((r2.left + r2.width / 2) / PSc - b.w / 2), Math.round((r2.top + r2.height / 2) / PSc - b.h * 0.55), ['#f0e0b0', '#d8c088', '#b89860'], t);
+    const a = TITLE.a;
+    paintBmp(a, Math.round((r1.left + r1.width / 2) / PSc - a.w / 2), Math.round((r1.top + r1.height / 2) / PSc - a.h * 0.55), ['#fff6c0', '#ffe27a', '#f0b83a', '#d88a30', '#a8582a'], t, ((t * 14) % (a.w + 60)) - 30);
     ctx.restore();
   }
 
