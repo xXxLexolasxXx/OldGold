@@ -149,6 +149,7 @@ function neuProvoke(N, u) {
   N.prov = now;
   if (u && !neuUnit(N.tg)) N.tg = u.id;
   if (!first || !u) return;
+  if (u.hero && typeof track === 'function' && !isServerSim()) track('neu-attack', 'Герой напал на лесных нейтралов');
   let called = 0;
   for (const M of Game.neutrals) {
     if (M === N || !neuAlive(M) || M.tg || Math.hypot(M.x - N.x, M.y - N.y) > NEU_CALL_R) continue;
@@ -208,9 +209,9 @@ function neuKill(N, killer) {
   const xp = Math.round(S.xp * (N.lv || 1));
   neuGiveXp(N, killer, xp);
   const who = killer ? neuName(killer) : 'Кто-то';
-  logEvent('animal', `${who} победил: ${S.name}`, N.x, N.y);
   const p = typeof profCur === 'function' && !isServerSim() ? profCur() : null;
   if (p) { p.st.nkill = (p.st.nkill || 0) + 1; profSave(); }
+  logEvent('animal', `${who} победил: ${S.name}`, N.x, N.y);
   if (typeof track === 'function') { track('neu-kill', 'Победил лесного нейтрала'); track('neu-kill-' + N.k, 'Победил: ' + S.name); }
   // последний в логове: зачищено
   if (lair && !lair.alive) {
@@ -295,6 +296,7 @@ function neuHeroDown(N, tg) {
   const name = tg.hero ? tg.hero.name : neuName(tg);
   logEvent('animal', `${name} проиграл бой: ${NSPEC[N.k].name}`, N.x, N.y);
   Game.nstat.lost++;
+  if (typeof track === 'function' && !isServerSim() && tg.hero) track('neu-lose', 'Герой проиграл бой лесному жителю');
   for (const M of Game.neutrals) if (neuAlive(M) && M.tg === tg.id) { M.tg = 0; M.prov = -99; M.winT = 3.2; M.ov = null; M.st = 'idle'; M.ovT = 0; }
   floater(N.x, N.y - 2.1, ['Так-то!', 'Не лезь в лес!', 'Слабак!'][(Math.random() * 3) | 0], '#ffe9a0');
 }
@@ -477,7 +479,7 @@ function neuTick(dt) {
   applySave = function (s) {
     _apply(s);
     Game.neutrals = []; Game.lairs = [];
-    if (!s.nt) { if (!Game.stress) neuSpawnAll(s.seed); return; }
+    if (!s.nt) { if (!Game.stress && !isMirror()) neuSpawnAll(s.seed); return; }
     Game.nstat = Object.assign({ kills: {}, lost: 0, lairs: 0, xp: 0 }, s.nt.st);
     for (const l of s.nt.lairs) Game.lairs.push({ id: l.id, k: l.k, x: l.x, y: l.y, lv: l.lv || 1, respawn: l.rs ? Game.time + l.rs : 0, alive: 0 });
     for (const m of s.nt.mem) {
@@ -551,3 +553,51 @@ function neuDraw(c, N) {
     c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(px - w / 2, hy, Math.round(w * r), 2);
   }
 }
+
+// Зеркало для кооператива: только то, что нужно для рисования (id — общий с сервером)
+function neuMirror() {
+  const r = v => Math.round(v * 100) / 100;
+  return Game.neutrals.map(N => ({ __id: N.id, id: N.id, k: N.k, x: r(N.x), y: r(N.y), face: N.face, st: N.st, fr: N.fr, hp: Math.round(N.hp), mhp: N.mhp, dt: r(N.dt), lv: N.lv }));
+}
+function neuMirrorLairs() { return Game.lairs.map(L => ({ __id: L.id, id: L.id, k: L.k, x: L.x, y: L.y })); }
+
+// Строка в карточке героя: победы над лесными жителями и опыт боёв
+function neuPanelRow() {
+  const h = Game.hero, H = h && h.hero, st = Game.nstat;
+  const kills = st && st.kills ? Object.values(st.kills).reduce((a, b) => a + b, 0) : 0;
+  if (!H || (!H.cxp && !kills && !(st && st.lost))) return '';
+  return `<div class="irow small muted" title="Победы над лесными жителями дают опыт: он повышает уровень героя вместе с ростом города">Лесные бои: побед ${kills} · опыт ${H.cxp || 0}${st.lost ? ' · поражений ' + st.lost : ''}</div>`;
+}
+
+// Логова на миникарте: янтарные точки; зачищенное — серое
+{
+  const _dm = drawMinimapUnits;
+  drawMinimapUnits = function () {
+    _dm();
+    const c = MINI.ctx, cv = MINI.canvas, kx = cv.width / MAP_W, ky = cv.height / MAP_H, fac = cv.width / Math.max(60, cv.clientWidth);
+    const s = Math.max(2.4, 3 * fac);
+    for (const L of Game.lairs || []) {
+      const live = Game.neutrals.some(N => N.lair === L.id && N.st !== 'die');
+      const px = (L.x + 0.5) * kx - s / 2, py = (L.y + 0.5) * ky - s / 2;
+      c.fillStyle = 'rgba(8,6,4,0.85)'; c.fillRect(px - 0.8, py - 0.8, s + 1.6, s + 1.6);
+      c.fillStyle = live ? '#f0b030' : '#8a8478'; c.fillRect(px, py, s, s);
+    }
+  };
+}
+
+// Ачивки (profile.js грузится позже — вписываем их после загрузки страницы)
+function neuAchInit() {
+  if (typeof ACHS === 'undefined' || typeof ACH_BY === 'undefined' || ACH_BY.nfairy) return;
+  const add = [
+    { id: 'nfairy',  name: 'Пыльца в качестве компенсации', desc: 'Побеждена лесная фея. Крылышки — не броня, а комариный аргумент.', ev: /победил: Лесная фея/ },
+    { id: 'nboar',   name: 'Свинина по-лесному', desc: 'Побеждён кабан-страж. Охрана леса уволена без выходного пособия.', ev: /победил: Кабан-страж/ },
+    { id: 'nspore',  name: 'Грибной сезон открыт', desc: 'Побеждён чумной моховик. Остальные грибы сделали вид, что их тут не было.', ev: /победил: Чумной моховик/ },
+    { id: 'nleshy',  name: 'Лес остался без хозяина', desc: 'Побеждён леший. Мох ещё долго будет припоминать это в суде.', ev: /победил: Леший/ },
+    { id: 'nlair',   name: 'Выселен за неуплату', desc: 'Зачищено лесное логово. Жильцы вернутся… минут через восемь, как обычно.', ev: /зачищено —/ },
+    { id: 'nwar',    name: 'Кто разбудил лес?', desc: 'Лесной житель позвал своих на помощь. Драка вышла командная, повестки разослали всем.', ev: /поднял тревогу/ },
+    { id: 'nlose',   name: 'Фея — не подарок', desc: 'Герой проиграл бой лесному жителю. Утешает одно: хроника об этом, к сожалению, всё помнит.', ev: /проиграл бой: /, secret: true },
+    { id: 'nkill25', name: 'Лесной санитар', desc: 'Двадцать пять побед над лесными жителями. Экологи в ужасе, лесорубы в восторге.', st: 'nkill', need: 25 },
+  ];
+  for (const a of add) { ACHS.push(a); ACH_BY[a.id] = a; }
+}
+if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('DOMContentLoaded', neuAchInit);

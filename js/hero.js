@@ -496,6 +496,7 @@ function heroPanel() {
     <div class="hp-abs">${abil('dash', 'Рывок', 1, 'cdDash', 'скорость ×1.4 на 8 с')}${abil('cry', 'Клич', 3, 'cdCry', 'гномы рядом бодрее')}</div>
     <div class="irow">Команда: ${mate ? `<b>${UNIT_TYPES[mate.type].name}</b> <button data-hero="leave" class="hp-sm">Отпустить</button>` : '<span class="muted">пусто — кликните по гному</span>'}</div>
     <div class="irow muted small">Оружие: ${H.equip.weapon || 'нет'} · Доспех: ${H.equip.armor || 'нет'}</div>
+    ${typeof neuPanelRow === 'function' ? neuPanelRow() : ''}
     <div class="tip">Кликните по стройке, полю, дереву, камню, куче груза или зданию без работника — ${H.name} пойдёт делать это. По земле — просто идёт. Esc — снять выбор.</div>`;
 }
 
