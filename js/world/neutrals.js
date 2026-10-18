@@ -277,6 +277,7 @@ function neuFrame(N) {
   }
   if (N.st === 'chase' || N.st === 'flee') return N.dist < 3.2 && N.st === 'chase' ? (Math.floor(N.ph) % 2 ? 'step' : 'ready') : 'w' + (Math.floor(N.ph) % 4);
   if (N.st === 'roam' || N.st === 'home') return 'w' + (Math.floor(N.ph) % 4);
+  if ((N.k === 'pixie' || N.k === 'fairy') && typeof isNightNow === 'function' && isNightNow() && !(Game.time - (N.awake || -99) < 25) && N.st === 'idle') return Math.floor(Game.time * 0.8 + N.id) % 2 ? 'z1' : 'z0';   // ночью феи спят, пока рядом нет нечисти
   return Math.floor(Game.time * 1.4 + N.id) % 2 ? 'i1' : 'i0';
 }
 
@@ -727,7 +728,7 @@ function neuPixieMagic(N, dt) {
   const L = Game.lairs.find(l => l.id === N.lair), R = NEU_SPELL_R, near = (o, r = R) => Math.hypot(o.x - N.x, o.y - N.y) < r;
   // 1) нечисть: пять заклинаний — по виду цели
   const cast = (name, col, x, y) => {
-    N.ov = ['windup', 'strike', 'recover']; N.ovT = 0; N.ovP = 0.16; N.face = x >= N.x ? 1 : -1;
+    N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13; N.face = x >= N.x ? 1 : -1; N.awake = Game.time;
     fxBurst(x * TILE, y * TILE - 10, 18, col, 70, 70, 0.9, 1.8, -20);
     sfxAt('chime', x * TILE, y * TILE, 0.6);
     floater(x, y - 1.9, name, col[0]);

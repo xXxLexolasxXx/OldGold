@@ -19,6 +19,10 @@ const NA_FRAMES = {
   die: ['d0', 'd1', 'd2', 'd3', 'd4', 'd5'],
   win: ['v0', 'v1', 'v2', 'v3'],
 };
+// у фей ещё колдовство (6 кадров) и сон (2 кадра): 14 → 25 + 8 = 33 кадра на вид
+NA_FRAMES.cast = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5'];
+NA_FRAMES.sleep = ['z0', 'z1'];
+const NA_EXTRA = { fairy: ['cast', 'sleep'], pixie: ['cast', 'sleep'] };
 const NA_ALL = [].concat(NA_FRAMES.idle, NA_FRAMES.walk, NA_FRAMES.fight, NA_FRAMES.die, NA_FRAMES.win);
 
 // Общая таблица поз; рисовалка каждого вида читает только то, что ей нужно.
@@ -45,19 +49,27 @@ function naPose(n) {
     d3: { x: -9, rot: -1.5, y: -3, eye: 3, dead: 1, wing: 0 },
     d4: { x: -9, rot: -1.5, y: -3, eye: 3, dead: 1, fade: 0.45 },
     d5: { x: -9, rot: -1.5, y: -3, eye: 3, dead: 1, fade: 0.85 },
+    c0: { a: -0.6, wing: -1, eye: 0, rot: -0.05 },
+    c1: { up: 1, y: -2, eye: 0, wing: 1, cast: 0.2 },
+    c2: { up: 1, y: -4, rot: 0.08, eye: 0, mouth: 0.5, wing: -1, cast: 0.55 },
+    c3: { a: 0.6, x: 2, y: -2, eye: 0, mouth: 0.4, wing: 1, cast: 1 },
+    c4: { a: 1, x: 3, rot: 0.14, eye: 0, wing: -1, cast: 0.8 },
+    c5: { a: 0.3, x: 1, eye: 0, wing: 0, cast: 0.3 },
+    z0: { rot: -1.45, x: -9, y: -3, eye: 2, sleep: 1 },
+    z1: { rot: -1.45, x: -9, y: -2.4, eye: 2, sleep: 2 },
     v0: { up: 1, eye: 0, mouth: 0.3, wing: 1 },
     v1: { up: 1, y: -5, eye: 0, mouth: 1, wing: -1 },
     v2: { up: 1, y: -1, eye: 0, mouth: 0.4, wing: 1 },
     v3: { up: 0.2, a: 0.2, rot: 0.05, eye: 0, mouth: 0.5, wing: 0 },
   };
-  const p = Object.assign({ x: 0, y: 0, rot: 0, a: 0, up: 0, b: 0, leg: 0, mouth: 0, eye: 0, hurt: 0, sq: 1, wing: 0, fade: 0, dead: 0 }, T[n]);
+  const p = Object.assign({ cast: 0, sleep: 0, x: 0, y: 0, rot: 0, a: 0, up: 0, b: 0, leg: 0, mouth: 0, eye: 0, hurt: 0, sq: 1, wing: 0, fade: 0, dead: 0 }, T[n]);
   if (w[n] !== undefined) p.leg = w[n];
   return p;
 }
 
 const NA_SPEC = {
-  pixie:   { name: 'Цветочная фея', w: 104, h: 92, ax: 62, ay: 70, sc: 1.45, pal: { dr: '#7ad068', dr2: '#3f9a4a', hr: '#a8f0a0', hr2: '#5ab868', wing: '#a6e87a', wing2: '#3a9a4a', wing3: '#f2ffc0', wingBack: '#6cc858', tip: '#ffe0f4', crown: true } },
-  fairy:   { name: 'Лесная фея',    w: 104, h: 92, ax: 62, ay: 70, sc: 1.45 },
+  pixie:   { name: 'Цветочная фея', w: 104, h: 104, ax: 62, ay: 82, sc: 1.45, pal: { dr: '#7ad068', dr2: '#3f9a4a', hr: '#a8f0a0', hr2: '#5ab868', wing: '#a6e87a', wing2: '#3a9a4a', wing3: '#f2ffc0', wingBack: '#6cc858', tip: '#ffe0f4', crown: true } },
+  fairy:   { name: 'Лесная фея',    w: 104, h: 104, ax: 62, ay: 82, sc: 1.45 },
   leshy:   { name: 'Леший',         w: 108, h: 72, ax: 68, ay: 66 },
   boar:    { name: 'Кабан-страж',   w: 84, h: 60, ax: 42, ay: 50, sc: 1.25 },
   spore:   { name: 'Чумной моховик', w: 90, h: 64, ax: 54, ay: 54, sc: 1.2 },
@@ -123,14 +135,14 @@ function naEye(c, x, y, P, col, r = 1) {
 
 // =============== Лесная фея ===============
 function drawFairy(c, P) {
-  const lift = P.dead ? 0 : 7;
+  const lift = P.dead ? 0 : P.sleep ? 1 : 7;
   c.save();
   c.translate(P.x, P.y - lift);
   c.rotate(P.rot);
   const PL = P.pal || {}, SK = naK(P, '#f6d8b8'), SK2 = naK(P, '#d9ac88');
   const DR = naK(P, PL.dr || '#3fa83a'), DR2 = naK(P, PL.dr2 || '#2a7430'), HR = naK(P, PL.hr || '#2f8a3c'), HR2 = naK(P, PL.hr2 || '#1e5a2a');
   const WC = PL.wing || '#7ad65a', WC2 = PL.wing2 || '#2e8a3a', WC3 = PL.wing3 || '#e4ffb0';
-  const fl = P.dead ? -1 : P.wing;
+  const fl = P.dead || P.sleep ? -1 : P.wing;
   const WX = -1.2, WY = -19.6;   // где крылья крепятся к спине
   // тонкие длинные крылья-«листья» бабочки: верхние длинные, нижние короче; дальняя пара темнее и чуть выше
   const wing = (k, col, edge, dy, rot) => {
@@ -162,10 +174,10 @@ function drawFairy(c, P) {
   poly(c, [[-1.3, -13.2], [1.3, -13.2], [2.4, -15.4], [3, -17.8], [2.6, -20.2], [-2.6, -20.2], [-3, -17.8], [-2.4, -15.4]], SK);
   poly(c, [[-1.3, -13.2], [-0.2, -13.2], [-0.6, -20.2], [-2.6, -20.2], [-3, -17.8], [-2.4, -15.4]], SK2);
   ellipse(c, 0, -20.3, 3.5, 1.1, SK);                         // плечи
-  ellipse(c, 2.9, -17.6, 2.5, 2.3, SK);                       // грудь
-  ellipse(c, 2.4, -18, 1.2, 0.9, shade(SK, 0.25));
+  ellipse(c, 2.5, -17.8, 1.85, 1.7, SK);                      // грудь
+  ellipse(c, 2.1, -18.1, 0.9, 0.7, shade(SK, 0.25));
   // топ из двух листьев + лямки
-  poly(c, [[-0.6, -19.4], [5.2, -19.2], [5.4, -16.2], [3.2, -15.4], [0.4, -16.2]], DR);
+  poly(c, [[-0.6, -19.4], [4.4, -19.2], [4.5, -16.6], [2.8, -16], [0.4, -16.4]], DR);
   poly(c, [[-0.6, -19.4], [1.6, -19.3], [1.2, -16], [0.4, -16.2]], DR2);
   c.strokeStyle = DR2; c.lineWidth = 0.5; c.beginPath(); c.moveTo(1, -19.6); c.lineTo(0.2, -21); c.moveTo(4.4, -19.4); c.lineTo(3.6, -21); c.stroke();
   // ближняя рука с палочкой
@@ -180,6 +192,13 @@ function drawFairy(c, P) {
   c.restore();
   ellipse(c, tipx, tipy, 1.15, 1.15, PL.tip || '#fff6b0');
   if (P.a > 0.5 || P.up > 0.5) for (const [dx, dy] of [[3, -2], [2, 2.4], [4.4, 0.4], [-1, -3]]) { c.fillStyle = '#fff6b0'; c.fillRect(tipx + dx - 0.4, tipy + dy - 0.4, 0.8, 0.8); }
+  if (P.cast > 0) {   // колдовство: расходящееся кольцо рун вокруг кончика палочки
+    c.save(); c.globalCompositeOperation = 'lighter';
+    const rr = 3 + P.cast * 7;
+    c.strokeStyle = 'rgba(214,255,176,0.85)'; c.lineWidth = 0.7; c.beginPath(); c.ellipse(tipx, tipy, rr, rr * 0.8, 0, 0, 7); c.stroke();
+    for (let k = 0; k < 6; k++) { const a = k / 6 * 6.283 + P.cast * 2; c.fillStyle = k % 2 ? '#fff6b0' : '#ffb0e0'; c.fillRect(tipx + Math.cos(a) * rr - 0.6, tipy + Math.sin(a) * rr * 0.8 - 0.6, 1.3, 1.3); }
+    c.restore();
+  }
   // шея и голова
   const hx0 = 0.9, hy0 = -24 + (P.hurt > 0.5 ? 0.6 : 0);
   c.fillStyle = SK2; c.fillRect(hx0 - 0.9, hy0 + 2, 1.8, 2.4);
@@ -194,13 +213,13 @@ function drawFairy(c, P) {
   poly(c, [[hx0 + 2.4, hy0 - 0.6], [hx0 + 5.4, hy0 - 1.8], [hx0 + 2.8, hy0 + 0.4]], SK);                                                  // острое ушко
   if (!P.dead) { ellipse(c, hx0 + 0.2, hy0 - 2.6, 1.3, 0.6, '#ffe070'); c.fillStyle = '#ff6ad0'; c.fillRect(hx0 - 0.1, hy0 - 3.1, 0.7, 0.7); }   // диадема с самоцветом
   if (PL.crown) for (const [fx, fy, fc] of [[-1.8, -2.4, '#ff8ac8'], [2, -2.6, '#ffe070']]) ellipse(c, hx0 + fx, hy0 + fy, 0.9, 0.9, fc);
-  naEye(c, hx0 + 1.5, hy0 - 0.1, P, '#1a3a4a', 0.7);
+  naEye(c, hx0 + 1.5, hy0 - 0.1, P.eye === 1 ? Object.assign({}, P, { eye: 0 }) : P, '#1a3a4a', 0.7);   // без бровей
   if (P.mouth > 0.4) ellipse(c, hx0 + 1.7, hy0 + 1.5, 0.7, 0.8 * P.mouth, '#8a2a3a');
   else { c.fillStyle = '#d0586a'; c.fillRect(hx0 + 1.1, hy0 + 1.3, 1, 0.5); }
   // ближние крылья поверх спины
   wing(1, naK(P, WC), WC2, 0, 0.06);
   // сказочная пыльца: звёздочки-крестики вокруг и след за спиной
-  const dust = [[-12, -3, 0], [-16, -16, 1], [8, -27, 2], [-6, -30, 3], [11, -4, 4], [-12, -25, 5]];
+  const dust = P.sleep ? [] : [[-12, -3, 0], [-16, -16, 1], [8, -27, 2], [-6, -30, 3], [11, -4, 4], [-12, -25, 5]];
   c.save(); c.globalCompositeOperation = 'lighter';
   for (const [dx, dy, k] of dust) {
     if (P.dead && k > 2) continue;
@@ -209,6 +228,11 @@ function drawFairy(c, P) {
     if (ph === 0) { c.fillRect(x - 1.4, y - 0.35, 2.8, 0.7); c.fillRect(x - 0.35, y - 1.4, 0.7, 2.8); } else c.fillRect(x - 0.5, y - 0.5, 1, 1);
   }
   c.restore();
+  if (P.sleep) {   // спит: «z-z-z» над головой (в координатах кадра, не повёрнутых)
+    c.fillStyle = '#f2ffd0';
+    const zz = (x, y, k) => { c.fillRect(x, y, 3 * k, 0.8 * k); c.fillRect(x + 2 * k, y + 0.8 * k, 0.9 * k, 0.9 * k); c.fillRect(x + 1 * k, y + 1.6 * k, 0.9 * k, 0.9 * k); c.fillRect(x, y + 2.4 * k, 3 * k, 0.8 * k); };
+    zz(-12 + (P.sleep > 1 ? 2 : 0), -14 - (P.sleep > 1 ? 3 : 0), 1); zz(-8 + (P.sleep > 1 ? 3 : 0), -21 - (P.sleep > 1 ? 4 : 0), 0.7);
+  }
   c.restore();
 }
 

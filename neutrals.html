@@ -22,7 +22,8 @@ function draw() {
   for (const kind of Object.keys(NA_SPEC)) {
     if (only && only !== kind) continue;
     const h = document.createElement('h3'); h.textContent = NA_SPEC[kind].name; out.appendChild(h);
-    for (const [gn, frames] of GR) {
+    const extra = (NA_EXTRA[kind] || []).map(k => [k === 'cast' ? 'Колдовство (6)' : 'Сон (2)', NA_FRAMES[k]]);
+    for (const [gn, frames] of GR.concat(extra)) {
       const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
       for (const f of frames) {
         const s = naFrame(kind, f), cv = document.createElement('canvas');
