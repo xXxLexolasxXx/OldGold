@@ -95,6 +95,7 @@ const call = (fn, ...args) => host.ctx[fn](...args);
 try { host.ctx.coopStateSet(fs.readFileSync(VIL_FILE, 'utf8')); } catch (e) { /* серий и рекордов ещё нет */ }
 const run = code => host.run(code);
 const SIM_DT = run('SIM_DT');
+const COOP_SPEED = 1.2;
 
 function loadWorld() {
   for (const f of [WORLD_FILE, WORLD_FILE + '.bak']) {
@@ -402,7 +403,7 @@ setInterval(() => {
   last = now;
   const online = [...conns].some(c => c.inGame);
   if (online || !PAUSE_EMPTY) {
-    acc += dt;
+    acc += dt * COOP_SPEED;   // в общей деревне время идёт чуть быстрее обычного
     let n = 0;
     const t0 = performance.now();
     while (acc >= SIM_DT && n < 20) {

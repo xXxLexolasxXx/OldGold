@@ -102,6 +102,8 @@ function coopConnect(opts) {
 
 function coopApplyInit(m) {
   Coop.on = true; Coop.mirror = true; Game.coop = true;
+  document.body.classList.add('coop');   // в онлайне время не крутится: меню скорости скрыто, показано ×1.2
+  { const sc = document.getElementById('speed-cur'); if (sc) sc.textContent = '×1.2'; }
   applySave(m.world);
   Game.units = []; Game.unitMap.clear(); Game.animals = []; Game.hero = null; Game.heroAsk = false; Game.selUnit = null; Game.selected = null;
   Game.piles.clear();
