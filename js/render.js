@@ -766,8 +766,7 @@ function render() {
   R.smooth = z < 1;          // сильно отдалено — сглаживаем, чтобы пиксель-арт не рябил
   c.setTransform(z, 0, 0, z, -Math.round(cam.x * z), -Math.round(cam.y * z));
   c.imageSmoothingEnabled = R.smooth;
-  c.drawImage(TERR.canvas, 0, 0);
-  c.drawImage(TERR.roads, 0, 0);
+  terrDraw(c, cam, canvas.width / z, canvas.height / z);
 
   const vw = canvas.width / z, vh = canvas.height / z;
   const x0 = Math.max(0, Math.floor(cam.x / TILE) - 2), y0 = Math.max(0, Math.floor(cam.y / TILE) - 1);

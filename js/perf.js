@@ -18,8 +18,8 @@ try {
 
 function perfCanvasMB() {
   let px = 0;
-  for (const c of [R.canvas, TERR.canvas, TERR.roads, TERR.mini, typeof NIGHT !== 'undefined' && NIGHT.cv, MINI && MINI.base]) if (c) px += c.width * c.height;
-  return px * 4 / 1048576;
+  for (const c of [R.canvas, typeof NIGHT !== 'undefined' && NIGHT.cv, MINI && MINI.base]) if (c) px += c.width * c.height;
+  return px * 4 / 1048576 + terrCanvasMB();
 }
 
 // Сброс кэшей, которые пересоздаются сами; вызывается при нехватке памяти и когда вкладка уходит в фон

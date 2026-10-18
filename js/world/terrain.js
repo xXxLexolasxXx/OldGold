@@ -33,7 +33,36 @@ function makeTex(seed, freq, octaves) {
   return out;
 }
 
-const TERR = { canvas: null, roads: null, rctx: null, mini: null, ready: false };
+// Земля — полосы холста по TBAND рядов клеток (одним куском карта 160×120 = 5120×3840 не влезла бы в iOS и съела бы 80 МБ дважды).
+// Дороги — такие же полосы, но создаются лишь там, где дорога есть. Рисуются только полосы в кадре.
+const TBAND = 8;
+const TERR = { bands: [], rb: [], mini: null, ready: false };
+
+function terrFree() {
+  // прежние холсты (новая игра, загрузка) отпускаем сразу: на iOS/Android память холстов освобождается не по GC
+  for (const b of TERR.bands) if (b) b.cv.width = b.cv.height = 0;
+  for (const b of TERR.rb) if (b) b.cv.width = b.cv.height = 0;
+  TERR.bands = []; TERR.rb = [];
+  if (TERR.mini) { TERR.mini.width = TERR.mini.height = 0; TERR.mini = null; }
+}
+
+// Земля и дороги в кадре: cam — {x,y}, vw/vh — размер кадра в мировых пикселях
+function terrDraw(c, cam, vw, vh) {
+  for (let i = 0; i < TERR.bands.length; i++) {
+    const b = TERR.bands[i];
+    if (!b || b.y0 + b.h < cam.y - 2 || b.y0 > cam.y + vh + 2) continue;
+    c.drawImage(b.cv, 0, b.y0);
+    const r = TERR.rb[i];
+    if (r) c.drawImage(r.cv, 0, r.y0);
+  }
+}
+function terrCanvasMB() {
+  let px = 0;
+  for (const b of TERR.bands) if (b) px += b.cv.width * b.cv.height;
+  for (const b of TERR.rb) if (b) px += b.cv.width * b.cv.height;
+  if (TERR.mini) px += TERR.mini.width * TERR.mini.height;
+  return px * 4 / 1048576;
+}
 
 function smoothstep(a, b, x) {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -73,8 +102,7 @@ function cornerField(test) {
 }
 
 function buildTerrain(seed) {
-  // прежние холсты (новая игра, загрузка) отпускаем сразу: на iOS/Android память холстов освобождается не по GC
-  for (const k of ['canvas', 'roads', 'mini']) if (TERR[k]) { TERR[k].width = TERR[k].height = 0; TERR[k] = null; }
+  terrFree();
   TERR.ready = false;
   const W = MAP_W + 1, H = MAP_H + 1;
   const tA = makeTex(seed + 1, 4, 4);    // крупные пятна
@@ -110,12 +138,7 @@ function buildTerrain(seed) {
     light[y * W + x] = Math.max(0.5, Math.min(1.45, 1 + (d - Lz) * 1.6));
   }
 
-  const PW = MAP_W * TILE, PH = MAP_H * TILE;
-  const GRASS = new Uint8Array(PW * PH);
-  const cv = mkCanvas(PW, PH);
-  const ctx = cv.getContext('2d');
-  let img = ctx.createImageData(PW, PH);
-  let D = img.data;
+  const PW = MAP_W * TILE;
 
   const bil = (f, i00, fx, fy) => {
     const a = f[i00], b = f[i00 + 1], c = f[i00 + W], d = f[i00 + W + 1];
@@ -123,7 +146,17 @@ function buildTerrain(seed) {
     return top + (bot - top) * fy;
   };
 
-  for (let ty = 0; ty < MAP_H; ty++) for (let tx = 0; tx < MAP_W; tx++) {
+  const nBands = Math.ceil(MAP_H / TBAND);
+  TERR.mini = mkCanvas(MAP_W * 3, MAP_H * 3);
+  const mctx = TERR.mini.getContext('2d');
+  for (let bi = 0; bi < nBands; bi++) {
+  const bty0 = bi * TBAND, bty1 = Math.min(MAP_H, bty0 + TBAND), y0px = bty0 * TILE, bh = (bty1 - bty0) * TILE;
+  const GRASS = new Uint8Array(PW * bh);
+  const cv = mkCanvas(PW, bh);
+  const ctx = cv.getContext('2d');
+  let img = ctx.createImageData(PW, bh);
+  let D = img.data;
+  for (let ty = bty0; ty < bty1; ty++) for (let tx = 0; tx < MAP_W; tx++) {
     const c00 = ty * W + tx;
     for (let py = 0; py < TILE; py++) {
       const fy = (py + 0.5) / TILE;
@@ -209,30 +242,29 @@ function buildTerrain(seed) {
 
         // зерно
         const gr = 0.93 + nB * 0.14;
-        const o = (wy * PW + wx) * 4;
+        const o = ((wy - y0px) * PW + wx) * 4;
         D[o] = r * gr; D[o + 1] = g * gr; D[o + 2] = b * gr; D[o + 3] = 255;
-        GRASS[wy * PW + wx] = grassMask > 0.9 ? 1 : 0;
+        GRASS[(wy - y0px) * PW + wx] = grassMask > 0.9 ? 1 : 0;
       }
     }
   }
-  stampLeaves(D, PW, PH, seed, GRASS);
+  stampLeaves(D, PW, bh, seed + bi * 977, GRASS);
   ctx.putImageData(img, 0, 0);
-  img = null; D = null;   // 28 МБ буфера отпускаем до второго getImageData — на телефоне это пик памяти
-  bakeDecor(ctx, seed);
-  // палитра и дизеринг — пиксельный вид
-  const q = ctx.getImageData(0, 0, PW, PH);
-  quantizeData(q.data, PW, PH, 9);
+  img = null; D = null;
+  ctx.save(); ctx.translate(0, -y0px);
+  bakeDecor(ctx, seed, Math.max(0, bty0 - 1), Math.min(MAP_H, bty1 + 1));   // кусты и цветы соседних рядов заходят в полосу
+  ctx.restore();
+  // палитра и дизеринг — пиксельный вид (рисунок дизера зависит от координат: полоса кратна 4 пикселям)
+  const q = ctx.getImageData(0, 0, PW, bh);
+  quantizeData(q.data, PW, bh, 9, 0, y0px);
   ctx.putImageData(q, 0, 0);
-  TERR.canvas = cv;
+  TERR.bands.push({ cv, y0: y0px, h: bh });
+  mctx.drawImage(cv, 0, bty0 * 3, MAP_W * 3, (bty1 - bty0) * 3);
+  }
   buildMountains(seed);
 
-  TERR.roads = mkCanvas(PW, PH);
-  TERR.rctx = TERR.roads.getContext('2d');
   TERR.ready = true;
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) drawRoadTile(x, y);
-
-  TERR.mini = mkCanvas(MAP_W * 3, MAP_H * 3);
-  TERR.mini.getContext('2d').drawImage(cv, 0, 0, MAP_W * 3, MAP_H * 3);
 }
 
 // Мелкие «листовые» пучки травы, как в Stoneshard: светлый верх, тёмная тень снизу.
@@ -276,9 +308,9 @@ function drawCrystalCluster(c, x, y, r) {
 }
 
 // Кустики травы, цветы, камушки, камыш у воды — запекаются в землю.
-function bakeDecor(c, seed) {
-  const r = mulberry32(seed + 77);
-  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
+function bakeDecor(c, seed, ya = 0, yb = MAP_H) {
+  for (let y = ya; y < yb; y++) for (let x = 0; x < MAP_W; x++) {
+    const r = mulberry32(((seed + 77) ^ Math.imul(y * MAP_W + x + 1, 2654435761)) >>> 0);   // у каждой клетки свой генератор — рисунок не зависит от порядка полос
     const t = World.terrain[idx(x, y)];
     const px = x * TILE, py = y * TILE;
     if (t === T_GRASS) {
@@ -418,10 +450,19 @@ function roadShape(c, x, y, px, py, grow, bands, chamfers) {
 
 function drawRoadTile(x, y) {
   if (!TERR.ready) return;
-  const c = TERR.rctx, px = x * TILE, py = y * TILE;
-  c.clearRect(px, py, TILE, TILE);
+  const px = x * TILE, py = y * TILE, bi = Math.floor(y / TBAND);
   const bands = diagBands(x, y), chamf = roadChamfers(x, y);
-  if (!World.road[idx(x, y)] && !bands.length && !chamf.length) return;
+  const has = World.road[idx(x, y)] || bands.length || chamf.length;
+  let rb = TERR.rb[bi];
+  if (!rb) {
+    if (!has) return;
+    const b = TERR.bands[bi];
+    rb = TERR.rb[bi] = { cv: mkCanvas(b.cv.width, b.h), y0: b.y0 };
+  }
+  const c = rb.cv.getContext('2d', { willReadFrequently: true }), ly = py - rb.y0;
+  c.save(); c.translate(0, -rb.y0);   // рисуем в мировых координатах: булыжник и фаски без швов между полосами
+  c.clearRect(px, py, TILE, TILE);
+  if (!has) { c.restore(); return; }
   const r = mulberry32(idx(x, y) * 131 + 7);
   c.save();
   c.beginPath(); c.rect(px, py, TILE, TILE); c.clip();
@@ -435,12 +476,13 @@ function drawRoadTile(x, y) {
   c.clip();
   paveCobbles(c, px - 4, py - 4, TILE + 8, TILE + 8, 1);
   c.restore();
+  c.restore();
   // пиксельный вид: жёсткий край и палитра
-  const img = c.getImageData(px, py, TILE, TILE);
+  const img = c.getImageData(px, ly, TILE, TILE);
   const d = img.data;
   for (let i = 3; i < d.length; i += 4) d[i] = d[i] >= 100 ? 255 : 0;
   quantizeData(d, TILE, TILE, 8, px, py);
-  c.putImageData(img, px, py);
+  c.putImageData(img, px, ly);
 }
 
 // Булыжная мостовая в мировых координатах — без швов между клетками.
