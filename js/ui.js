@@ -69,46 +69,45 @@ function makeUITextures() {
   const PW = 192, PH = 32;
   const pl = mkCanvas(PW, PH), p = pl.getContext('2d');
   const q = mulberry32(11);
-  const tones = ['#4a3422', '#3f2c1c', '#53391f', '#46301d'];
+  const tones = ['#6a4a2a', '#5a3e22', '#76532e', '#634426'];
   const plank = y0 => {
     const tone = tones[(q() * tones.length) | 0];
     p.fillStyle = tone; p.fillRect(0, y0, PW, 16);
-    // прожилки — длинные волнистые линии вдоль доски
-    for (let g = 0; g < 7; g++) {
-      const gy = y0 + 1 + ((q() * 14) | 0), ph = q() * 6, amp = q() * 0.9 + 0.2, len0 = (q() * PW) | 0, len = 40 + ((q() * 110) | 0);
-      p.fillStyle = q() < 0.6 ? `rgba(14,8,3,${0.28 + q() * 0.25})` : `rgba(150,108,62,${0.12 + q() * 0.12})`;
-      for (let x = len0; x < len0 + len; x++) {
-        const yy = gy + Math.round(Math.sin(x * 0.07 + ph) * amp);
-        if (yy >= y0 && yy < y0 + 15) p.fillRect(x % PW, yy, 1, 1);
+    // выраженные прожилки вдоль доски: тёмные и светлые волнистые нити
+    for (let g = 0; g < 9; g++) {
+      const gy = y0 + 2 + ((q() * 11) | 0), ph = q() * 6, amp = q() * 1.2 + 0.3, x0 = (q() * PW) | 0, len = 50 + ((q() * 120) | 0);
+      p.fillStyle = g % 3 ? `rgba(24,12,4,${0.5 + q() * 0.3})` : `rgba(190,140,82,${0.35 + q() * 0.2})`;
+      for (let x = x0; x < x0 + len; x++) {
+        const yy = gy + Math.round(Math.sin(x * 0.09 + ph) * amp);
+        if (yy > y0 && yy < y0 + 14) p.fillRect(x % PW, yy, 1, 1);
       }
     }
-    // сучок: тёмный овал с колечками
-    const kx = 20 + ((q() * (PW - 40)) | 0), ky = y0 + 5 + ((q() * 6) | 0);
-    if (q() < 0.8) {
-      for (let r = 4; r >= 1; r--) {
-        p.fillStyle = r % 2 ? 'rgba(12,6,2,0.55)' : 'rgba(110,76,40,0.45)';
-        p.beginPath(); p.ellipse(kx, ky, r * 1.8, r * 0.9, 0, 0, 7); p.fill();
-      }
+    // сучок: колечки
+    const kx = 24 + ((q() * (PW - 48)) | 0), ky = y0 + 6 + ((q() * 4) | 0);
+    for (let r = 4; r >= 1; r--) {
+      p.fillStyle = r % 2 ? 'rgba(20,9,2,0.7)' : 'rgba(150,105,56,0.6)';
+      p.beginPath(); p.ellipse(kx, ky, r * 2, r, 0, 0, 7); p.fill();
     }
-    // верхний блик и нижний шов
-    p.fillStyle = 'rgba(255,220,160,0.10)'; p.fillRect(0, y0, PW, 1);
-    p.fillStyle = 'rgba(0,0,0,0.5)'; p.fillRect(0, y0 + 15, PW, 1);
-    p.fillStyle = 'rgba(0,0,0,0.18)'; p.fillRect(0, y0 + 14, PW, 1);
+    // блик сверху, широкий тёмный зазор между досками снизу
+    p.fillStyle = 'rgba(255,225,170,0.28)'; p.fillRect(0, y0, PW, 1);
+    p.fillStyle = 'rgba(0,0,0,0.25)'; p.fillRect(0, y0 + 12, PW, 1);
+    p.fillStyle = 'rgba(0,0,0,0.55)'; p.fillRect(0, y0 + 13, PW, 1);
+    p.fillStyle = '#080503'; p.fillRect(0, y0 + 14, PW, 2);
   };
   plank(0); plank(16);
   // торцевые стыки: у верхней доски на x=0, у нижней на x=96 — и по два гвоздя с каждой стороны
   const joint = (x, y0) => {
-    p.fillStyle = 'rgba(0,0,0,0.65)'; p.fillRect(x, y0, 1, 16);
-    p.fillStyle = 'rgba(255,220,160,0.12)'; p.fillRect(x + 1, y0, 1, 15);
+    p.fillStyle = '#080503'; p.fillRect(x, y0, 2, 14);
+    p.fillStyle = 'rgba(255,225,170,0.25)'; p.fillRect(x + 2, y0, 1, 13);
   };
   const nail = (x, y) => {
     x = (x + PW) % PW;
-    p.fillStyle = 'rgba(0,0,0,0.55)'; p.fillRect(x - 1, y, 3, 3);
+    p.fillStyle = 'rgba(0,0,0,0.6)'; p.fillRect(x - 1, y, 3, 3);
     p.fillStyle = '#9a9488'; p.fillRect(x - 1, y - 1, 2, 2);
-    p.fillStyle = '#e4dccb'; p.fillRect(x - 1, y - 1, 1, 1);
+    p.fillStyle = '#f0e8d4'; p.fillRect(x - 1, y - 1, 1, 1);
   };
   joint(0, 0); joint(96, 16);
-  for (const [jx, y0] of [[0, 0], [96, 16]]) for (const dx of [-5, 5]) { nail(jx + dx, y0 + 3); nail(jx + dx, y0 + 11); }
+  for (const [jx, y0] of [[0, 0], [96, 16]]) for (const dx of [-5, 6]) { nail(jx + dx, y0 + 3); nail(jx + dx, y0 + 9); }
   document.documentElement.style.setProperty('--plank-tex', `url(${pl.toDataURL()})`);
 }
 
