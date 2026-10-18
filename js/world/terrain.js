@@ -36,9 +36,11 @@ function makeTex(seed, freq, octaves) {
 // Земля — полосы холста по TBAND рядов клеток (одним куском карта 160×120 = 5120×3840 не влезла бы в iOS и съела бы 80 МБ дважды).
 // Дороги — такие же полосы, но создаются лишь там, где дорога есть. Рисуются только полосы в кадре.
 const TBAND = 8;
-const TERR = { bands: [], rb: [], mini: null, ready: false };
+const TERR = { bands: [], rb: [], mini: null, ready: false, lazy: false, make: null, stash: [], restoring: [], gen: 0 };
 
 function terrFree() {
+  TERR.gen++; TERR.stash = []; TERR.restoring = [];
+  TERR.job = null;   // недостроенные полосы прежнего мира больше не нужны
   // прежние холсты (новая игра, загрузка) отпускаем сразу: на iOS/Android память холстов освобождается не по GC
   for (const b of TERR.bands) if (b) b.cv.width = b.cv.height = 0;
   for (const b of TERR.rb) if (b) b.cv.width = b.cv.height = 0;
@@ -48,9 +50,12 @@ function terrFree() {
 
 // Земля и дороги в кадре: cam — {x,y}, vw/vh — размер кадра в мировых пикселях
 function terrDraw(c, cam, vw, vh) {
-  for (let i = 0; i < TERR.bands.length; i++) {
+  const n = Math.max(TERR.bands.length, TERR.job ? TERR.job.done.length : 0), BH = TBAND * TILE;
+  for (let i = 0; i < n; i++) {
+    if (i * BH + BH < cam.y - 2 || i * BH > cam.y + vh + 2) continue;
+    if (!TERR.bands[i]) terrRunBand(i);   // полоса в кадре, а её ещё не успели построить — достраиваем сейчас
     const b = TERR.bands[i];
-    if (!b || b.y0 + b.h < cam.y - 2 || b.y0 > cam.y + vh + 2) continue;
+    if (!b) continue;
     c.drawImage(b.cv, 0, b.y0);
     const r = TERR.rb[i];
     if (r) c.drawImage(r.cv, 0, r.y0);
@@ -101,9 +106,105 @@ function cornerField(test) {
   return f;
 }
 
+// Постепенная постройка земли. Раньше вся карта (≈20 млн пикселей) считалась одним куском при запуске:
+// 2–4 с на ПК и до 25 с на слабом телефоне висел неподвижный экран загрузки. Теперь каждая полоса —
+// генератор, который отдаёт управление после каждой строки пикселей; пока открыто меню (или идёт игра),
+// полосы достраиваются по ~4 мс за кадр, начиная с ближайших к камере, а полоса, попавшая в кадр, — сразу.
+function terrRunBand(bi) {
+  const j = TERR.job;
+  if (!j || TERR.bands[bi]) return;
+  if (TERR.lazy && j.done[bi] && terrRestore(bi)) return;   // выгруженная полоса лежит сжатой — распаковывается за пару кадров
+  if (j.done[bi]) { if (!TERR.lazy) return; j.done[bi] = false; j.gens[bi] = null; }   // экономный режим: полоса была выгружена — строим заново
+  const g = j.gens[bi] || (j.gens[bi] = j.make(bi));
+  while (!g.next().done);
+  terrBandDone(j, bi);
+}
+function terrBandDone(j, bi) {
+  if (j.done[bi]) return;
+  j.done[bi] = true; j.gens[bi] = null;
+  if (--j.left <= 0 && TERR.job === j && !TERR.lazy) TERR.job = null;
+}
+// Полосы кадра: [первая, последняя] с запасом m полос; нужны, чтобы в экономном режиме держать в памяти только их
+function terrWindow(m) {
+  const BH = TBAND * TILE;
+  if (typeof R === 'undefined' || !R.cam || !R.canvas || !R.canvas.clientHeight) return [0, 1e9];
+  const vh = R.canvas.clientHeight / camScale();
+  return [Math.floor(R.cam.y / BH) - m, Math.floor((R.cam.y + vh) / BH) + m];
+}
+// Выгрузка полосы: рисунок сжимается в PNG (≈1 МБ вместо 5 МБ холста) — вернуть его дешевле, чем считать заново
+function terrFreeBand(i, stash) {
+  const b = TERR.bands[i], r = TERR.rb[i];
+  if (b) {
+    if (stash && b.cv.toBlob) { const g = TERR.gen; b.cv.toBlob(bl => { if (bl && g === TERR.gen) TERR.stash[i] = bl; }, 'image/png'); }
+    b.cv.width = b.cv.height = 0;
+  }
+  if (r) r.cv.width = r.cv.height = 0;
+  TERR.bands[i] = null; TERR.rb[i] = null;
+}
+function terrRestore(i) {
+  const bl = TERR.stash[i];
+  if (!bl || typeof createImageBitmap !== 'function') return false;
+  if (TERR.restoring[i]) return true;
+  TERR.restoring[i] = true;
+  const g = TERR.gen;
+  createImageBitmap(bl).then(bm => {
+    if (g !== TERR.gen) { bm.close(); return; }
+    const y0 = i * TBAND * TILE, bh = (Math.min(MAP_H, (i + 1) * TBAND) - i * TBAND) * TILE;
+    const cv = mkCanvas(MAP_W * TILE, bh);
+    cv.getContext('2d').drawImage(bm, 0, 0); bm.close();
+    TERR.bands[i] = { cv, y0, h: bh };
+    for (let y = i * TBAND; y < Math.min(MAP_H, (i + 1) * TBAND); y++) for (let x = 0; x < MAP_W; x++) drawRoadTile(x, y);
+    TERR.restoring[i] = false;
+  }, () => { TERR.restoring[i] = false; TERR.stash[i] = null; });
+  return true;
+}
+// Экономный режим (слабый телефон, нехватка памяти): земля карты 160×120 — это 80 МБ холстов и столько же дорог,
+// поэтому в памяти остаются полосы кадра ±1, остальные выгружаются и строятся заново, когда камера подходит
+function terrSetLazy(on) {
+  if (TERR.lazy === !!on) return;
+  TERR.lazy = !!on;
+  if (!TERR.ready || !TERR.make) return;
+  const n = TERR.bands.length;
+  if (!TERR.job) TERR.job = { make: TERR.make, gens: new Array(n).fill(null), done: new Array(n).fill(true), left: 0 };
+  const j = TERR.job;
+  if (!on) for (let i = 0; i < n; i++) if (!TERR.bands[i] && j.done[i]) { j.done[i] = false; j.gens[i] = null; j.left++; }   // обычный режим: возвращаем выгруженные полосы
+  terrKick();
+}
+function terrStep(budget) {
+  const j = TERR.job;
+  if (!j) return;
+  const t0 = performance.now();
+  if (TERR.lazy) {      // выгружаем то, что ушло из кадра больше чем на 2 полосы
+    const [w0, w1] = terrWindow(2);
+    for (let i = 0; i < j.done.length; i++) if (TERR.bands[i] && (i < w0 || i > w1)) { terrFreeBand(i, true); j.done[i] = true; j.gens[i] = null; }
+  }
+  const [v0, v1] = TERR.lazy ? terrWindow(1) : [0, 1e9];
+  let cb = 0;
+  if (typeof R !== 'undefined' && R.cam && R.canvas && R.canvas.clientHeight) cb = Math.floor((R.cam.y + R.canvas.clientHeight / camScale() / 2) / (TBAND * TILE));
+  const want = i => (!j.done[i] || (TERR.lazy && !TERR.bands[i])) && (!TERR.lazy || !j.done[i] || (i >= v0 && i <= v1));
+  while (TERR.job === j && performance.now() - t0 < budget) {
+    let bi = -1, bd = 1e9;
+    for (let i = 0; i < j.done.length; i++) if (want(i) && Math.abs(i - cb) < bd) { bd = Math.abs(i - cb); bi = i; }
+    if (bi < 0) break;
+    if (j.done[bi]) { if (terrRestore(bi)) break; j.done[bi] = false; j.gens[bi] = null; }
+    const g = j.gens[bi] || (j.gens[bi] = j.make(bi));
+    while (performance.now() - t0 < budget) if (g.next().done) { terrBandDone(j, bi); break; }
+  }
+}
+function terrKick() {
+  if (TERR.kick || typeof requestAnimationFrame !== 'function') return;
+  TERR.kick = true;
+  requestAnimationFrame(function tick() {
+    if (!TERR.job) { TERR.kick = false; return; }
+    terrStep(4);
+    requestAnimationFrame(tick);
+  });
+}
+
 function buildTerrain(seed) {
   terrFree();
   TERR.ready = false;
+  TERR.lazy = (typeof perfWeakDevice === 'function' && perfWeakDevice()) || (typeof Fps !== 'undefined' && !!Fps.eco);
   const W = MAP_W + 1, H = MAP_H + 1;
   const tA = makeTex(seed + 1, 4, 4);    // крупные пятна
   const tB = makeTex(seed + 2, 128, 2);  // зерно
@@ -149,19 +250,19 @@ function buildTerrain(seed) {
   const nBands = Math.ceil(MAP_H / TBAND);
   TERR.mini = mkCanvas(MAP_W * 3, MAP_H * 3);
   const mctx = TERR.mini.getContext('2d');
-  for (let bi = 0; bi < nBands; bi++) {
+  const bandGen = function* (bi) {
   const bty0 = bi * TBAND, bty1 = Math.min(MAP_H, bty0 + TBAND), y0px = bty0 * TILE, bh = (bty1 - bty0) * TILE;
   const GRASS = new Uint8Array(PW * bh);
   const cv = mkCanvas(PW, bh);
   const ctx = cv.getContext('2d');
   let img = ctx.createImageData(PW, bh);
   let D = img.data;
-  for (let ty = bty0; ty < bty1; ty++) for (let tx = 0; tx < MAP_W; tx++) {
-    const c00 = ty * W + tx;
-    for (let py = 0; py < TILE; py++) {
-      const fy = (py + 0.5) / TILE;
-      const wy = ty * TILE + py;
-      const rowT = (wy & (TEX - 1)) * TEX;
+  for (let ty = bty0; ty < bty1; ty++) for (let py = 0; py < TILE; py++) {   // построчно: можно прерваться после каждой строки
+    const fy = (py + 0.5) / TILE;
+    const wy = ty * TILE + py;
+    const rowT = (wy & (TEX - 1)) * TEX;
+    for (let tx = 0; tx < MAP_W; tx++) {
+      const c00 = ty * W + tx;
       for (let px = 0; px < TILE; px++) {
         const fx = (px + 0.5) / TILE;
         const wx = tx * TILE + px;
@@ -247,24 +348,39 @@ function buildTerrain(seed) {
         GRASS[(wy - y0px) * PW + wx] = grassMask > 0.9 ? 1 : 0;
       }
     }
+    yield;   // строка пикселей (5120 px): на медленном телефоне это ~5 мс — кусок не должен выходить за бюджет кадра
   }
-  stampLeaves(D, PW, bh, seed + bi * 977, GRASS);
+  yield* stampLeavesGen(D, PW, bh, seed + bi * 977, GRASS);
   ctx.putImageData(img, 0, 0);
   img = null; D = null;
-  ctx.save(); ctx.translate(0, -y0px);
-  bakeDecor(ctx, seed, Math.max(0, bty0 - 1), Math.min(MAP_H, bty1 + 1));   // кусты и цветы соседних рядов заходят в полосу
-  ctx.restore();
+  yield;
+  // кусты и цветы соседних рядов заходят в полосу; у каждой клетки свой генератор — можно по ряду за раз
+  for (let y = Math.max(0, bty0 - 1); y < Math.min(MAP_H, bty1 + 1); y++) {
+    ctx.save(); ctx.translate(0, -y0px);
+    bakeDecor(ctx, seed, y, y + 1);
+    ctx.restore();
+    yield;
+  }
   // палитра и дизеринг — пиксельный вид (рисунок дизера зависит от координат: полоса кратна 4 пикселям)
   const q = ctx.getImageData(0, 0, PW, bh);
-  quantizeData(q.data, PW, bh, 9, 0, y0px);
-  ctx.putImageData(q, 0, 0);
-  TERR.bands.push({ cv, y0: y0px, h: bh });
-  mctx.drawImage(cv, 0, bty0 * 3, MAP_W * 3, (bty1 - bty0) * 3);
+  for (let r0 = 0; r0 < bh; r0 += 4) {   // по 4 строки: рисунок дизера тот же, он считается от координат
+    const rows = Math.min(4, bh - r0);
+    quantizeData(q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4), PW, rows, 9, 0, y0px + r0);
+    yield;
   }
+  ctx.putImageData(q, 0, 0);
+  TERR.bands[bi] = { cv, y0: y0px, h: bh };
+  mctx.drawImage(cv, 0, bty0 * 3, MAP_W * 3, (bty1 - bty0) * 3);
+  if (TERR.lazy) { const [w0, w1] = terrWindow(1); if (bi < w0 || bi > w1) { terrFreeBand(bi, true); return; } }   // миникарта уже нарисована — полоса вне кадра не нужна
+  for (let y = bty0; y < bty1; y++) for (let x = 0; x < MAP_W; x++) drawRoadTile(x, y);   // дороги этой полосы
+  };
   buildMountains(seed);
 
   TERR.ready = true;
-  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) drawRoadTile(x, y);
+  TERR.bands = new Array(nBands).fill(null);
+  TERR.make = bandGen;
+  TERR.job = { make: bandGen, gens: new Array(nBands).fill(null), done: new Array(nBands).fill(false), left: nBands };
+  terrKick();
 }
 
 // Мелкие «листовые» пучки травы, как в Stoneshard: светлый верх, тёмная тень снизу.
@@ -276,10 +392,12 @@ const LEAF_STAMPS = [
   [[1, 0, 1.35], [0, 1, 1.18], [1, 1, 1.2], [2, 1, 1.1], [0, 2, 0.75], [1, 2, 0.72], [2, 2, 0.75]],
 ];
 
-function stampLeaves(D, PW, PH, seed, GRASS) {
+function stampLeaves(D, PW, PH, seed, GRASS) { const g = stampLeavesGen(D, PW, PH, seed, GRASS); while (!g.next().done); }
+function* stampLeavesGen(D, PW, PH, seed, GRASS) {
   const r = mulberry32(seed + 31);
   const n = (PW * PH / 22) | 0;
   for (let k = 0; k < n; k++) {
+    if ((k & 2047) === 2047) yield;
     const x = (r() * (PW - 4)) | 0, y = (r() * (PH - 3)) | 0;
     if (!GRASS[y * PW + x]) continue;
     const st = LEAF_STAMPS[(r() * LEAF_STAMPS.length) | 0];
@@ -487,6 +605,7 @@ function roadMaskCanvas(x, y, grow, cobbles) {
 function drawRoadTile(x, y) {
   if (!TERR.ready) return;
   const px = x * TILE, py = y * TILE, bi = Math.floor(y / TBAND);
+  if (!TERR.bands[bi]) return;   // полоса ещё строится — её дороги нарисуются, когда она будет готова
   const bands = diagBands(x, y), chamf = roadChamfers(x, y);
   const has = World.road[idx(x, y)] || bands.length || chamf.length;
   let rb = TERR.rb[bi];

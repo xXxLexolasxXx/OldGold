@@ -196,7 +196,10 @@ function dispatchBuilders() {
     if (b.builder && b.state !== 'done' && (gone(b.builder) || b.builder.job !== b)) b.builder = null;
     if (b.upg && b.upg.builder && (gone(b.upg.builder) || b.upg.builder.job !== b)) b.upg.builder = null;
   }
-  const idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead);
+  // на перерыве (перекур, сон, испуг) не трогаем: иначе proc обнуляется, а brk остаётся — гном до конца стройки
+  // «непрерываем» (не ест, не пугается, не ходит на праздник), клетка перекура занята, а после стройки он
+  // продолжает прерванное перекуром дело, как будто ничего не было
+  const idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead && !u.brk);
   dispatchRepairs(idle);
   if (!idle.length) return;
   const sites = [
@@ -276,7 +279,7 @@ function dispatchWorkers() {
     // у здания «потерялась» запись о работнике, а сам гном за ним числится — возвращаем запись, а не ищем замену
     const mine = Game.units.find(u => u.home === b && !u.dead && !u.teamOf && u.type !== 'hero');
     if (mine) { b.worker = mine; continue; }
-    const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf);
+    const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf && !u.brk);   // не с перерыва (см. dispatchBuilders)
     const u = takeNearest(idle, b.doorX, b.doorY);
     if (!u) continue;
     u.home = b;
@@ -286,9 +289,35 @@ function dispatchWorkers() {
   }
 }
 
-let auditT = 0;
+// Бронь объектов на карте (o.res у деревьев, глыб, полей, брёвен, урн; ROCKMINE.res у скалы) снимает тот, кто её
+// поставил, — но не если он погиб, его дом снесли или диспетчер дал ему другое дело (proc просто обнуляют).
+// Такая бронь висела вечно: лесоруб обходил «занятое» дерево, каменотёс — глыбу. Раз в ~25 с проверяем:
+// у брони нет претендента (никто не стоит рядом, не идёт туда, не держит её в приказе) три проверки подряд — снимаем.
+const resStale = new Map();   // индекс клетки -> сколько проверок подряд без претендента
+function auditReserved() {
+  const claim = new Set();
+  const mark = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inb(x + dx, y + dy)) claim.add(idx(x + dx, y + dy)); };
+  for (const u of Game.units) {
+    if (u.dead) continue;
+    mark(Math.floor(u.x), Math.floor(u.y));
+    for (const a of [u.action, u.brk && u.brk.saved && u.brk.saved.action]) if (a && a.walk) mark(a.walk[0], a.walk[1]);
+    if (u.cmd && u.cmd.i != null) claim.add(u.cmd.i);
+    if (u.fieldJob >= 0) claim.add(u.fieldJob);
+    if (u.helpField >= 0) claim.add(u.helpField);
+  }
+  const stale = i => { if (claim.has(i)) { resStale.delete(i); return false; } const n = (resStale.get(i) || 0) + 1; if (n >= 3) { resStale.delete(i); return true; } resStale.set(i, n); return false; };
+  for (const i of [...resStale.keys()]) { const o = World.obj[i]; if (!(o && o.res) && !ROCKMINE.res.has(i)) resStale.delete(i); }
+  for (let i = 0; i < N_TILES; i++) {
+    const o = World.obj[i];
+    if (!o || !o.res || o.awake) continue;          // awake — ожившее дерево ночи, его бронь снимает nightTick
+    if (stale(i)) o.res = false;
+  }
+  for (const i of [...ROCKMINE.res]) if (stale(i)) ROCKMINE.res.delete(i);
+}
+
+let auditT = 0, resT = 0;
 function dispatchAll() {
-  if ((auditT += 1) >= 8) { auditT = 0; auditIncoming(); }      // раз в ~3 с
+  if ((auditT += 1) >= 8) { auditT = 0; auditIncoming(); if ((resT += 1) >= 8) { resT = 0; auditReserved(); } }      // раз в ~3 с; бронь объектов — раз в ~25 с
   dispatchWorkers();
   dispatchBuilders();
   dispatchSerfs();

@@ -33,7 +33,7 @@ const COOP_DRUNK = 5, COOP_FALL = 1, COOP_STARS = 4;
 const coop = {
   players: new Map(),         // ник -> герой (Unit)
   out: [],                    // события для рассылки: { to?, msg }
-  shB: new Map(), shO: new Map(), shR: new Set(), shRS: '', shP: '', shSB: '',
+  shB: new Map(), shO: null, shOr: null, shOf: null, shRa: null, shRS: '', shP: '', shSB: '',
   t: 0, lvT: 0,
   perms: Object.fromEntries(Object.keys(COOP_PERMS).map(k => [k, true])),
   // общая жизнь: ночи без потерь и заказы деревни (сохраняются отдельным файлом сервера)
@@ -559,7 +559,8 @@ function coopMirror() {
     neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
-    lost: Game.lostGnomes || 0,
+    lost: Game.lostGnomes || 0, df: Game.diff,
+    goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
     wx: {},
   };
@@ -615,20 +616,37 @@ function coopInitPacket(uid) {
   return JSON.stringify({ t: 'init', world: s, ob: coopAllObjs(), uid, time: Game.time, nextId: Game.nextId });
 }
 
-// Разница мира с прошлой рассылкой: здания, объекты на клетках, дороги, стройки дорог, груды
+// Разница мира с прошлой рассылкой: здания, объекты на клетках, дороги, стройки дорог, груды.
+// Полный serializeGame здесь не нужен (он же вызывался раз в полсекунды и тормозил сервер):
+// здания собираем по одному, а клетку переводим в JSON, только если её объект сменился или поменял поля.
+function coopTileFlat(o) {   // плоский слепок полей клетки; null — есть вложенные объекты, сверять через JSON
+  const f = [];
+  for (const k in o) {
+    if (k === 'res') continue;
+    const v = o[k];
+    if (v !== null && typeof v === 'object') return null;
+    f.push(k, v);
+  }
+  return f;
+}
+function coopTileSame(o, f) {
+  let j = 0;
+  for (const k in o) {
+    if (k === 'res') continue;
+    if (f[j] !== k || f[j + 1] !== o[k]) return false;
+    j += 2;
+  }
+  return j === f.length;
+}
 function coopWorldPacket() {
-  // жителей в дельте не нужно (они уходят пакетом 'u'), а их сериализация дорога при большой деревне
-  const us = Game.units; Game.units = [];
-  let s;
-  try { s = serializeGame(); } finally { Game.units = us; }
   const out = { t: 'w', time: r2(Game.time), nextId: Game.nextId };
   // здания; кадр анимации (an) меняется всё время — в подпись не входит, клиент крутит его сам
-  const nb = new Map(), up = [], bById = new Map(Game.buildings.map(x => [x.id, x]));
-  for (const d of s.buildings) {
-    const b = bById.get(d.id);
-    d.wk = b && b.working ? 1 : 0;
+  const nb = new Map(), up = [];
+  for (const b of Game.buildings) {
+    const d = serializeBuilding(b);
+    d.wk = b.working ? 1 : 0;
     const sig = JSON.stringify(d);
-    d.an = b ? r2(b.anim || 0) : 0;
+    d.an = r2(b.anim || 0);
     nb.set(d.id, sig);
     if (coop.shB.get(d.id) !== sig) up.push(d);
   }
@@ -637,22 +655,42 @@ function coopWorldPacket() {
   coop.shB = nb;
   if (up.length) out.b = up;
   if (rm.length) out.bx = rm;
-  // объекты на клетках целиком
-  const oc = [], ox = [];
+  // объекты на клетках целиком. shOr/shOf — объект клетки и его сырые поля при прошлой сверке (не изменились — клетку
+  // пропускаем без JSON); shO — что ушло клиентам: округлённые поля плоского объекта или JSON сложного
+  if (!coop.shOr || coop.shOr.length !== N_TILES) { coop.shOr = new Array(N_TILES).fill(null); coop.shOf = new Array(N_TILES).fill(null); coop.shO = new Array(N_TILES).fill(null); }
+  const oc = [], ox = [], ref = coop.shOr, raw = coop.shOf, sent = coop.shO;
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
-    const sig = o ? JSON.stringify(coopTileObj(o)) : '';
-    if ((coop.shO.get(i) || '') !== sig) {
-      if (sig) { oc.push([i, JSON.parse(sig)]); coop.shO.set(i, sig); } else { ox.push(i); coop.shO.delete(i); }
+    if (!o) {
+      if (sent[i] !== null) { ox.push(i); sent[i] = ref[i] = raw[i] = null; }
+      continue;
+    }
+    if (ref[i] === o && raw[i] && coopTileSame(o, raw[i])) continue;
+    const f = coopTileFlat(o);
+    ref[i] = o; raw[i] = f;
+    if (f) {
+      const r = [];
+      for (let j = 0; j < f.length; j += 2) { const v = coopPlain(f[j + 1], 1); if (v !== undefined) r.push(f[j], v); }
+      const was = sent[i];
+      if (Array.isArray(was) && was.length === r.length && was.every((v, j) => v === r[j])) continue;
+      sent[i] = r;
+      const p = {};
+      for (let j = 0; j < r.length; j += 2) p[r[j]] = r[j + 1];
+      oc.push([i, p]);
+    } else {
+      const p = coopTileObj(o), sig = JSON.stringify(p);
+      if (sent[i] !== sig) { oc.push([i, p]); sent[i] = sig; }
     }
   }
   if (oc.length) out.o = oc;
   if (ox.length) out.ox = ox;
-  // дороги
-  const nr = new Set(s.road), ra = [], rx = [];
-  for (const i of nr) if (!coop.shR.has(i)) ra.push(i);
-  for (const i of coop.shR) if (!nr.has(i)) rx.push(i);
-  coop.shR = nr;
+  // дороги: сверяем с копией посланной карты дорог
+  if (!coop.shRa || coop.shRa.length !== N_TILES) { coop.shRa = new Uint8Array(N_TILES); }
+  const ra = [], rx = [], road = World.road, sra = coop.shRa;
+  for (let i = 0; i < N_TILES; i++) {
+    const r = road[i] ? 1 : 0;
+    if (r !== sra[i]) { sra[i] = r; (r ? ra : rx).push(i); }
+  }
   if (ra.length) out.r = ra;
   if (rx.length) out.rx = rx;
   // стройки дорог и груды: целиком, если изменились
@@ -680,6 +718,10 @@ function coopDrain() {
   return JSON.stringify(o);
 }
 
+function coopSetDiff(k) {
+  Game.diff = diffKey(k);
+  return Game.diff;
+}
 function coopMeta() {
   return JSON.stringify({ classes: COOP_CLASSES, chat: COOP_CHAT, permLabels: COOP_PERMS, perms: coop.perms });
 }

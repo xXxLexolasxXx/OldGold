@@ -271,6 +271,8 @@ function coopMirror(m) {
   Game.golem = m.golem ? Object.assign(Game.golem || {}, coopResolve(m.golem)) : null;
   Game.sub = m.sub ? coopResolve(m.sub) : null;
   Game.lostGnomes = m.lost || 0;
+  if (typeof goalMirrorIn === 'function') goalMirrorIn(m.goal);
+  if (m.df) Game.diff = diffKey(m.df);
   const festWas = festOn();
   Game.festival = m.fest || null;
   if (!festWas && festOn()) festCheers();       // праздник начался — аплодисменты и у клиентов
@@ -1090,6 +1092,14 @@ function coopAdminRender(box) {
   });
 }
 
+// сложность общей деревни: выбирает хост, считает сервер (ночи, голод, нейтралы)
+function coopDiffRender(box) {
+  const el = box.querySelector('.cp-diff');
+  if (!el) return;
+  el.innerHTML = '<div class="cp-nm" style="margin:6px 0 4px">Сложность деревни</div><div class="cp-adm-bar" style="margin:0 0 10px">' + DIFF_ORDER.map(k =>
+    `<button class="cp-btn${Game.diff === k ? '' : ' sec'}" data-diff="${k}" title="${DIFFS[k].desc}">${DIFFS[k].name}</button>`).join('') + '</div>';
+}
+
 function coopAdminOpen() {
   if (!Coop.host) { toast('Права меняет только хост'); return; }
   coopCss(); coopAdminCss();
@@ -1097,11 +1107,15 @@ function coopAdminOpen() {
   const box = document.createElement('div');
   box.id = 'cp-admin'; box.className = 'cp-modal';
   box.innerHTML = `<div class="cp-card"><h2>Что можно игрокам</h2><p>Нажмите — переключите. Зелёное разрешено, серое запрещено. Вам (хосту) можно всегда, а герой у каждого свой.</p>
+    <div class="cp-diff"></div>
     <div class="cp-adm"></div>
     <div class="cp-adm-bar"><button class="cp-btn sec" data-all="1">Разрешить всё</button><button class="cp-btn sec" data-all="0">Запретить всё</button><button class="cp-btn sec" data-stats>Статистика</button><button class="cp-btn" data-close>Готово</button></div></div>`;
   document.body.appendChild(box);
   coopAdminRender(box);
+  coopDiffRender(box);
   box.addEventListener('click', e => {
+    const d = e.target.closest('[data-diff]');
+    if (d) { coopSend({ t: 'setdiff', k: d.dataset.diff }); return; }
     const t = e.target.closest('.cp-tg');
     if (t) { coopSend({ t: 'setperm', key: t.dataset.perm, on: !Coop.perms[t.dataset.perm] }); return; }
     const all = e.target.closest('[data-all]');
@@ -1115,6 +1129,13 @@ function coopAdminOpen() {
   const _h = coopHandle;
   coopHandle = function (m) {
     if (m.t === 'stats') { coopStatsShow(m.s, m.server); return; }
+    if (m.t === 'diff') {
+      Game.diff = diffKey(m.k);
+      toast('Сложность деревни: ' + dif().name);
+      const box = document.getElementById('cp-admin');
+      if (box) coopDiffRender(box);
+      return;
+    }
     if (m.t === 'perms') {
       Coop.perms = m.perms;
       const box = document.getElementById('cp-admin');

@@ -70,6 +70,7 @@ function perfLoadEco() {
 }
 function perfSetEco(on, silent) {
   Fps.eco = !!on;
+  if (typeof terrSetLazy === 'function') terrSetLazy(on);   // земля: только полосы кадра, остальное выгружается
   try { localStorage.setItem('feod.eco', on ? '1' : '0'); } catch (e) { /* нет доступа к хранилищу */ }
   if (typeof resize === 'function') resize();
   perfMenuSync();

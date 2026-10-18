@@ -47,6 +47,9 @@ function createHost(log = console.log, opts = {}) {
     document: S, window: null, navigator: { userAgent: 'node', maxTouchPoints: 0 }, location: { search: '', hash: '', href: '' },
     Image: S, Audio: S, AudioContext: S, requestAnimationFrame: () => 0, cancelAnimationFrame: () => {},
     OffscreenCanvas: S, HTMLElement: function () {}, matchMedia: () => ({ matches: false, addEventListener() {} }),
+    // файлы интерфейса трогают прототипы DOM при загрузке (i18n подменяет textContent/innerHTML): без этих
+    // заглушек сервер падал на первом же таком файле с ReferenceError
+    Node: S, Element: S, Document: S, CharacterData: S, HTMLInputElement: S, HTMLImageElement: S, MutationObserver: S,
     devicePixelRatio: 1, innerWidth: 1280, innerHeight: 720,
     addEventListener() {}, removeEventListener() {}, confirm: () => true, alert() {},
   };

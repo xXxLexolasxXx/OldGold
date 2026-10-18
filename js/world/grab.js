@@ -173,7 +173,7 @@ function ghGrabIndex(g) {
 const GH_PAL = { out: 'rgba(24,60,64,0.95)', fill: '#dff4ea', hi: '#ffffff' };
 
 function ghCanTake(g, u) {
-  if (u.hero || u.type === 'carter' || (g.grabCD || 0) > Game.time || nightDiff() < 1.25) return false;
+  if (u.hero || u.type === 'carter' || dif().noLoss || (g.grabCD || 0) > Game.time || nightDiff() < 1.25) return false;
   if (!interruptible(u) && !(u.brk && u.brk.kind === 'lost')) return false;
   if (nearBonfire(u.x, u.y, BONFIRE_SAFE)) return false;
   for (const o of Game.units) if (o !== u && !o.dead && !o.inside && isPerson(o) && Math.hypot(o.x - u.x, o.y - u.y) < 5) return false;   // в одиночку — боязливее
@@ -256,7 +256,7 @@ const btTalonY = p => (2 + 2.6 * p.tal) * p.S;
 const BT_PAL = { out: '#0c0910', fill: '#3a3248', hi: '#e8d8ff' };
 
 function batCanTake(b, u) {
-  if (b.state === 'grab' || b.leave || u.hero || (b.grabCD || 0) > Game.time || nightDiff() < 1.25) return false;
+  if (b.state === 'grab' || b.leave || u.hero || dif().noLoss || (b.grabCD || 0) > Game.time || nightDiff() < 1.25) return false;
   if (!interruptible(u)) return false;
   if (nearBonfire(u.x, u.y, BONFIRE_SAFE)) return false;
   for (const o of Game.units) if (o !== u && !o.dead && !o.inside && isPerson(o) && Math.hypot(o.x - u.x, o.y - u.y) < 5) return false;
@@ -384,7 +384,7 @@ function owlCanTake(o, dt) {
   if (nightIndex() + 1 < 3 || !isNightNow() || (o.grabCD || 0) > Game.time || Math.random() > 0.08) return null;
   const c = [];
   for (const u of Game.units) {
-    if (u.inside || u.dead || u.hero || !isPerson(u) || u.type === 'carter') continue;
+    if (u.inside || u.dead || u.hero || !isPerson(u) || u.type === 'carter' || dif().noLoss) continue;
     if (Math.hypot(u.x * TILE - o.x, u.y * TILE - o.y) > 9 * TILE || nearBonfire(u.x, u.y, BONFIRE_SAFE)) continue;
     c.push({ u });
   }

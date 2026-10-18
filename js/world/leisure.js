@@ -660,6 +660,7 @@ function drawOwls(c) {
 // заклёвывают, а потом утаскивают. Фазы: gather (сбегаются) → peck (клюют) → drag (тащат) → конец.
 
 function triggerAvenge(u) {
+  if (dif().noLoss) return;   // «Спокойный»: куры не мстят насмерть
   if (Game.avenge && Game.avenge.some(ev => ev.vid === u.id)) return;
   let hens = Game.animals.filter(a => a.kind === 'chicken' && !a.dead);
   // не хватает кур — набегают соседки с птичьего двора
