@@ -296,14 +296,16 @@ function decorateVines() {
     const old = b.querySelector('.sm-vine'); if (old) old.remove();
     const w = b.offsetWidth, h = b.offsetHeight;
     if (!w || !h) return;
-    b.appendChild(smPixelVine(vineSVG(w, h, VINE_KINDS[(i + (smVineShift++)) % 3], i * 31 + smVineShift)));
+    let grow = 0;
     if (smSlide) {   // кнопка выплывает вбок со своей стороны, лоза прорастает следом
       const r = b.getBoundingClientRect(), fromRight = r.left + r.width / 2 > window.innerWidth / 2 + 4 || (Math.abs(r.left + r.width / 2 - window.innerWidth / 2) <= 4 && i % 2);
       const d = (i * 0.09).toFixed(2);
       b.classList.remove('sm-in-l', 'sm-in-r'); void b.offsetWidth;
       b.style.setProperty('--d', d + 's');
       b.classList.add(fromRight ? 'sm-in-r' : 'sm-in-l');
+      grow = 0.45 + i * 0.09;   // лоза начинает расти, когда кнопка доехала
     }
+    b.appendChild(smVineCanvas(w, h, VINE_KINDS[(i + (smVineShift++)) % 3], i * 31 + smVineShift, smSlide, grow));
   });
 }
 let smVineShift = 0, smSlide = false;
@@ -380,8 +382,8 @@ function smGrow(btn) {
   btn.classList.add('sm-peel');
   clearTimeout(btn._peelT);
   btn._peelT = setTimeout(() => {
-    btn.classList.remove('sm-peel'); void btn.offsetWidth; btn.classList.add('sm-regrow');
-    btn._peelT = setTimeout(() => btn.classList.remove('sm-regrow'), 700);
+    btn.classList.remove('sm-peel'); void btn.offsetWidth;
+    const cv = btn.querySelector('canvas.sm-vine'); if (cv && cv._play) cv._play(0);   // отрастает заново по-настоящему
   }, SM_DELAY + 40);
 }
 
@@ -474,4 +476,167 @@ function smSubToggle(open) {
   });
   const _init = initStartMenu;
   initStartMenu = function () { _init(); smSub(); const mp = document.querySelector('#start-menu [data-sm="mp"] small'); if (mp) mp.textContent = 'играть с друзьями'; };
+}
+
+// ---------- Лоза, которая растёт: стебель тянется по кнопке, листья разворачиваются, плоды наливаются ----------
+// Кадры рисуются в крошечный холст (клетка SM_PX), каждый кадр — альфа-порог, палитра и обводка,
+// поэтому всё остаётся пиксель-артом. Готовая лоза — последний кадр; в покое холст не перерисовывается.
+
+const SM_SPR = 96;   // сторона холста спрайта плода/листа (экранных пикселей), центр — точка прикрепления
+
+function vineData(w, h, kind, seed) {
+  const rnd = smRand(seed * 977 + 13), P = 16;
+  const W = w + P * 2, H = h + P * 2;
+  const pts = [];
+  const laps = 1.12, per = 2 * (w + h), n = Math.max(8, Math.round(per * laps / 10)), s0 = rnd(), ph = rnd() * 6.28, fr = 5 + rnd() * 2;
+  for (let i = 0; i <= n; i++) {
+    const f = i / n, [x, y, nx, ny] = smPerim(s0 + f * laps, w, h);
+    const o = Math.sin(f * laps * Math.PI * 2 * fr + ph) * 3.4 + 0.5;
+    pts.push([P + x + nx * o, P + y + ny * o]);
+  }
+  const greens = ['#5a9a2a', '#6aaa34', '#4a8a24', '#78b83e'];
+  const items = [];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [x, y] = pts[i], dx = pts[i + 1][0] - pts[i - 1][0], dy = pts[i + 1][1] - pts[i - 1][1];
+    const ang = Math.atan2(dy, dx) * 180 / Math.PI, side = i % 2 ? 1 : -1, f = i / n;
+    if (kind === 'wheat') {
+      if (rnd() < 0.55) items.push({ x, y, f, k: 'ear', frag: vWheat(0, 0, 18 + rnd() * 20, ang + 90 * side + (rnd() - 0.5) * 50) });
+      else items.push({ x, y, f, k: 'leaf', frag: vLeaf(0, 0, ang + 90 * side * 0.9, 0.9, 'plain', '#8aa83a') });
+    } else {
+      items.push({ x, y, f, k: 'leaf', frag: vLeaf(0, 0, ang + 90 * side + (rnd() - 0.5) * 30, 0.9 + rnd() * 0.5, kind, greens[(i * 7) % 4]) });
+      if (i % 2 === 0) {
+        const fs = (i >> 1) % 2 ? 1 : -1;
+        items.push({ x: x + fs * 2, y: y + 2, f, k: 'fruit', frag: smFruit(kind, 0, 0, 0.8 + rnd() * 0.35, fs, rnd) });
+      }
+    }
+  }
+  // усики: спираль от стебля, растёт вслед за кончиком
+  const curls = [];
+  for (let k = 0; k < 4; k++) {
+    const i = 2 + ((rnd() * (pts.length - 4)) | 0), [x, y] = pts[i];
+    const dx = pts[i + 1][0] - pts[i - 1][0], dy = pts[i + 1][1] - pts[i - 1][1], a0 = Math.atan2(dy, dx) + (rnd() < 0.5 ? 1.57 : -1.57), dir = rnd() < 0.5 ? 1 : -1, r0 = 5 + rnd() * 4;
+    const cp = [];
+    for (let t = 0; t <= 1.001; t += 0.1) {
+      const a = a0 + dir * t * 6.2, r = r0 * (1 - t * 0.85) * (0.4 + t);
+      cp.push([x + Math.cos(a0) * t * r0 * 0.9 + Math.cos(a) * r * 0.5, y + Math.sin(a0) * t * r0 * 0.9 + Math.sin(a) * r * 0.5]);
+    }
+    curls.push({ f: i / n, cp });
+  }
+  return { pts, items, curls, W, H, P, n };
+}
+
+function smSprite(frag) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SM_SPR}" height="${SM_SPR}" viewBox="0 0 ${SM_SPR} ${SM_SPR}"><g transform="translate(${SM_SPR / 2} ${SM_SPR / 2})">${frag}</g></svg>`;
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => { const c = document.createElement('canvas'); c.width = c.height = SM_SPR / SM_PX; const g = c.getContext('2d'); g.drawImage(im, 0, 0, c.width, c.height); res(c); };
+    im.onerror = () => res(null);
+    im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+}
+
+// пиксельная обработка кадра: жёсткий альфа-порог, 8 уровней на канал, тёмная обводка в один пиксель
+function smPost(c, w, h) {
+  const d = c.getImageData(0, 0, w, h), a = d.data;
+  for (let i = 0; i < a.length; i += 4) {
+    if (a[i + 3] < 90) { a[i + 3] = 0; continue; }
+    a[i + 3] = 255;
+    for (let k = 0; k < 3; k++) a[i + k] = Math.min(255, (a[i + k] >> 5) * 36 + 12);
+  }
+  const src = new Uint8ClampedArray(a);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4;
+    if (src[i + 3]) continue;
+    if ((x > 0 && src[i - 1]) || (x < w - 1 && src[i + 7]) || (y > 0 && src[i - w * 4 + 3]) || (y < h - 1 && src[i + w * 4 + 3])) { a[i] = 22; a[i + 1] = 28; a[i + 2] = 12; a[i + 3] = 255; }
+  }
+  c.putImageData(d, 0, 0);
+}
+
+const smEase = {
+  out: t => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 2.2),
+  back: t => { t = Math.min(1, Math.max(0, t)); const c = 2.2; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
+};
+
+function smVineCanvas(w, h, kind, seed, animate, delay) {
+  const D = vineData(w, h, kind, seed), W = D.W, H = D.H, P = D.P, PX = SM_PX;
+  const cv = document.createElement('canvas');
+  cv.className = 'sm-vine';
+  cv.width = Math.ceil(W / PX); cv.height = Math.ceil(H / PX);
+  cv.style.cssText = `left:${-P}px;top:${-P}px;width:${W}px;height:${H}px;image-rendering:pixelated`;
+  const c = cv.getContext('2d', { willReadFrequently: true });
+  const T_STEM = 1.15, T_END = 2.1;   // стебель дотягивается за 1,15 с, всё готово к 2,1 с
+  const pts = D.pts.map(p => [p[0] / PX, p[1] / PX]);
+  const stemCol = kind === 'wheat' ? '#a89a3c' : '#4e8024', stemDark = '#16220c';
+  let sprites = null;
+  const frame = tt => {   // tt — секунды от начала роста
+    c.clearRect(0, 0, cv.width, cv.height);
+    if (tt < 0) return;
+    const p = smEase.out(tt / T_STEM), idx = p * (pts.length - 1), k = Math.min(pts.length - 1, Math.floor(idx)), fr = idx - k;
+    const path = pts.slice(0, k + 1);
+    if (k < pts.length - 1) path.push([pts[k][0] + (pts[k + 1][0] - pts[k][0]) * fr, pts[k][1] + (pts[k + 1][1] - pts[k][1]) * fr]);
+    const trace = () => {
+      c.beginPath(); c.moveTo(path[0][0], path[0][1]);
+      for (let i = 1; i < path.length - 1; i++) { const mx = (path[i][0] + path[i + 1][0]) / 2, my = (path[i][1] + path[i + 1][1]) / 2; c.quadraticCurveTo(path[i][0], path[i][1], mx, my); }
+      if (path.length > 1) c.lineTo(path[path.length - 1][0], path[path.length - 1][1]);
+    };
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    // корень: утолщение в начале стебля
+    const r0 = pts[0];
+    c.fillStyle = stemDark; c.beginPath(); c.arc(r0[0], r0[1], 2.6, 0, 7); c.fill();
+    c.fillStyle = stemCol; c.beginPath(); c.arc(r0[0], r0[1], 1.5, 0, 7); c.fill();
+    if (path.length > 1) {
+      trace(); c.strokeStyle = stemDark; c.lineWidth = 2.5; c.stroke();
+      trace(); c.strokeStyle = stemCol; c.lineWidth = 1.2; c.stroke();
+    }
+    // усики
+    for (const cu of D.curls) {
+      const g = smEase.out((tt - cu.f * T_STEM - 0.1) / 0.6);
+      if (g <= 0) continue;
+      const m = Math.max(2, Math.round(g * (cu.cp.length - 1)));
+      c.beginPath(); c.moveTo(cu.cp[0][0] / PX, cu.cp[0][1] / PX);
+      for (let i = 1; i <= m; i++) c.lineTo(cu.cp[i][0] / PX, cu.cp[i][1] / PX);
+      c.strokeStyle = '#6aaa34'; c.lineWidth = 0.9; c.stroke();
+    }
+    // листья, колосья и плоды: появляются, когда кончик стебля проходит мимо, и «наливаются»
+    if (sprites) for (let i = 0; i < D.items.length; i++) {
+      const it = D.items[i], sp = sprites[i];
+      if (!sp) continue;
+      const born = it.f * T_STEM + (it.k === 'fruit' ? 0.3 : 0.04), dur = it.k === 'fruit' ? 0.7 : 0.32;
+      const g = (tt - born) / dur;
+      if (g <= 0) continue;
+      const sc = it.k === 'fruit' ? 0.15 + 0.85 * smEase.out(g) : smEase.back(g);
+      const sway = tt > T_END ? 0 : Math.sin(tt * 5 + i) * 0.05 * (1 - Math.min(1, g));
+      const unfurl = it.k === 'fruit' ? 0 : (1 - Math.min(1, g)) * 0.9 * (i % 2 ? 1 : -1);
+      c.save(); c.translate(it.x / PX, it.y / PX); c.rotate(sway + unfurl); c.scale(sc, sc);
+      c.drawImage(sp, -sp.width / 2, -sp.height / 2); c.restore();
+    }
+    // кончик растущего стебля — яркая искорка
+    if (tt < T_STEM + 0.05) {
+      const e = path[path.length - 1], q = path[Math.max(0, path.length - 2)], ang = Math.atan2(e[1] - q[1], e[0] - q[0]);
+      for (const sg of [-1, 1]) {   // два крошечных листика-почки на кончике
+        c.save(); c.translate(e[0], e[1]); c.rotate(ang + sg * 0.75); c.fillStyle = '#8ad040';
+        c.beginPath(); c.ellipse(2.2, 0, 2.2, 1, 0, 0, 7); c.fill(); c.restore();
+      }
+      c.fillStyle = '#e8ff90'; c.fillRect(e[0] - 1, e[1] - 1, 2, 2);
+      c.fillStyle = 'rgba(255,240,140,0.8)'; c.fillRect(e[0] - 2, e[1], 1, 1); c.fillRect(e[0] + 1, e[1] - 2, 1, 1);
+    }
+    smPost(c, cv.width, cv.height);
+  };
+  let raf = 0;
+  const play = dly => {
+    cancelAnimationFrame(raf); frame(-1);
+    const t0 = performance.now() + (dly || 0) * 1000;
+    const step = now => {
+      if (!cv.isConnected) return;
+      const tt = (now - t0) / 1000;
+      if (tt < T_END + 0.1) { frame(tt); raf = requestAnimationFrame(step); } else frame(T_END + 1);
+    };
+    raf = requestAnimationFrame(step);
+  };
+  cv._play = play; cv._frame = frame;
+  Promise.all(D.items.map(it => smSprite(it.frag))).then(list => {
+    sprites = list;
+    if (animate) play(delay); else frame(T_END + 1);
+  });
+  return cv;
 }
