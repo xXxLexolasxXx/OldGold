@@ -57,10 +57,11 @@ function spawnAnimals() {
   add('deer', 7, 14);
   add('rabbit', 9, 10);
   add('goat', 6, 12);
-  add('wolf', 3, 17);
-  add('fox', 4, 14);
+  add('wolf', 5, 17);
+  add('fox', 6, 14);
   add('elk', 3, 16);
   spawnFarmyard();
+  spawnPets();
 }
 
 function animalGo(a, x, y) {
@@ -97,6 +98,7 @@ function updateAnimal(a, dt) {
   a.think = (a.think || 0) - dt;
   if (a.burn) { burnHenStep(a, dt); return; }   // подожжённая молнией курица мечется
   if (a.avenge) { avengeHen(a, dt); return; }       // куры мстят за товарища
+  if ((a.owner || a.hunted || a.chasedBy || a.kind === 'duck' || a.state === 'petchase' || a.stolenPet) && petUpdate(a, dt)) return;     // ручные кролики и утки, охота хищников на них
   if (Game.sub && Game.sub.active ? subAnimal(a, dt) : (a.subSt && subAnimal(a, dt))) return;     // субботник: звери мирные и носят мусор
 
   // коза идёт за пастухом
@@ -190,6 +192,7 @@ let respawnT = 0;
 function updateAnimals(dt) {
   for (const a of Game.animals.slice()) updateAnimal(a, dt);
   avengeTick(dt);
+  petsTick(dt);
   respawnT += dt;
   if (respawnT > 45) {
     respawnT = 0;
@@ -198,8 +201,9 @@ function updateAnimals(dt) {
     if (cnt('goat') < 4) add('goat', 14);
     if (cnt('deer') < 5) add('deer', 14);
     if (cnt('rabbit') < 6) add('rabbit', 10);
-    if (cnt('wolf') < 3 && Math.random() < 0.4) add('wolf', 24);
-    if (cnt('fox') < 3 && Math.random() < 0.5) add('fox', 20);
+    if (cnt('wolf') < 5 && Math.random() < 0.5) add('wolf', 24);
+    if (cnt('fox') < 6 && Math.random() < 0.6) add('fox', 20);
+    petsRespawn(cnt);
     if (cnt('elk') < 2 && Math.random() < 0.4) add('elk', 20);
     if (cnt('goose') < 4) spawnGeeseFlock();
     if (cnt('chicken') < 3) {

@@ -91,7 +91,7 @@ function isPerson(u) { return !UNIT_TYPES[u.type].animal; }
 
 // Можно ли сейчас прервать жителя: он снаружи и просто идёт или ждёт без работы.
 function interruptible(u) {
-  if (u.brk || u.inside || !isPerson(u)) return false;
+  if (u.brk || u.glide || u.inside || !isPerson(u)) return false;
   const a = u.action;
   if (!a) return true;
   if (a.walk) return true;

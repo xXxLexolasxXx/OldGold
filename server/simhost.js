@@ -10,7 +10,7 @@ const ROOT = path.join(__dirname, '..');
 const FILES = ['config', 'world', 'path', 'entities', 'levels', 'events', 'jobs', 'life', 'animals', 'leisure', 'streets',
   'night', 'rocks', 'nechist', 'ghosts', 'skeletons', 'mountains', 'logistics', 'sprites', 'buildings', 'bmodels', 'graveyard',
   'decor', 'subbotnik', 'pixel', 'pixelart', 'fire', 'icons', 'people', 'creatures', 'terrain', 'render', 'save', 'ui',
-  'music', 'sfx', 'weather', 'sfx2', 'stress', 'mobile', 'stats', 'tutorial', 'layout', 'main', 'hero', 'herolife', 'flask', 'herochain', 'golem', 'coopsim'];
+  'music', 'sfx', 'weather', 'sfx2', 'stress', 'mobile', 'stats', 'tutorial', 'layout', 'main', 'hero', 'herolife', 'flask', 'herochain', 'golem', 'pets', 'coopsim'];
 
 // Универсальная заглушка: любое свойство — снова заглушка, вызов — заглушка
 function stub() {

@@ -255,6 +255,8 @@ function* leisureGen(u) {
   if (tree) opts.push('mushrooms', 'mushrooms', 'gold');
   if (hen) opts.push('chicken', 'chicken');
   if (bench) opts.push('bench', 'bench', 'bench');
+  const extra = leisureExtra(u);              // новые забавы, параплан и питомцы (pets.js)
+  if (extra) { yield* extra; return; }
   const what = opts[(Math.random() * opts.length) | 0];
   if (what === 'bench') yield* benchGen(u, bench);
   else if (what === 'mushrooms') yield* mushroomsGen(u, tree);
@@ -798,8 +800,8 @@ function dispatchHunters(a) {
 // Шансы погони. Догнать трудно; догнав, чаще отбирают добычу, чем убивают зверя;
 // разница уходит в побег зверя. У гуся две «жизни»: убить его труднее, чем волка и лису.
 const HUNT_ODDS = {
-  wolf:  { catch: 0.5, recover: 0.7,  kill: 0.12, bite: 0.07 },
-  fox:   { catch: 0.5, recover: 0.7,  kill: 0.14, bite: 0.05 },
+  wolf:  { catch: 0.38, recover: 0.72, kill: 0.1,  bite: 0.1 },
+  fox:   { catch: 0.42, recover: 0.72, kill: 0.12, bite: 0.07 },
   goose: { catch: 0.4, recover: 0.75, kill: 0.08, bite: 0.08 },
 };
 
@@ -847,9 +849,10 @@ function recoverLoot(a, u) {
 }
 
 function killPredator(a, u) {
-  if (a.kind === 'goose') {                       // гусь живуч: нужно два удачных удара
-    a.hp = (a.hp || 2) - 1;
-    if (a.hp > 0) { floater(a.x, a.y - 0.8, 'Га-а!', '#ffffff'); return false; }
+  const need = { goose: 2, wolf: 3, fox: 2 }[a.kind] || 1;     // звери живучи: волка надо ударить удачно трижды, лису и гуся — дважды
+  if (need > 1) {
+    a.hp = (a.hp || need) - 1;
+    if (a.hp > 0) { floater(a.x, a.y - 0.8, a.kind === 'goose' ? 'Га-а!' : 'Р-р!', '#ffffff'); return false; }
   }
   const x = Math.floor(a.x), y = Math.floor(a.y);
   const name = ANIMALS[a.kind].name;

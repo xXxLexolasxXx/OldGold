@@ -3,7 +3,7 @@
 // Рисуются боком, мордой вправо (влево — отражением). Кэшируются по кадрам.
 
 const CR_CACHE = new Map();
-const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21], elk: [46, 46, 23, 42], fox: [28, 20, 14, 17] };
+const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21], elk: [46, 46, 23, 42], fox: [28, 20, 14, 17], duck: [22, 20, 11, 17] };
 
 // Курица: белая, красный гребешок, семенит
 function drawChicken(c, f, peck) {
@@ -16,6 +16,54 @@ function drawChicken(c, f, peck) {
   ellipse(c, 2.6, 1.4, 1.1, 0.7, '#d83a24'); ellipse(c, 3.6, 4.8, 0.5, 0.7, '#d83a24');   // гребешок, бородка
   poly(c, [[4.4, 3.2], [5.8, 3.6], [4.4, 4.2]], '#e8a028');
   c.fillStyle = '#1a1210'; c.fillRect(3.1, 2.8, 0.5, 0.5);
+  c.restore();
+}
+
+// Ручной питомец (кролик, утка): красный бантик на шее и посылка на спине.
+// load — флаги через запятую: T (ручной), swim (плывёт), c:<товар> (несёт посылку)
+function petFlags(load) {
+  const fl = typeof load === 'string' ? load.split(',') : [];
+  const cg = fl.find(x => x.startsWith('c:'));
+  return { tame: fl.includes('T'), swim: fl.includes('swim'), cargo: cg ? cg.slice(2) : null };
+}
+function petGear(c, load, nx, ny, bx, by) {
+  const fl = petFlags(load);
+  if (fl.tame) {
+    poly(c, [[nx, ny], [nx + 1.9, ny - 1.1], [nx + 1.9, ny + 1.3]], '#d83a3a');
+    poly(c, [[nx, ny], [nx - 1.9, ny - 1.1], [nx - 1.9, ny + 1.3]], '#b02828');
+    ellipse(c, nx, ny, 0.55, 0.55, '#f0d060');
+  }
+  if (fl.cargo && GOODS[fl.cargo]) {
+    // холщовый узелок с товаром на спине
+    ellipse(c, bx, by - 0.2, 2.5, 1.7, '#cdbb92');
+    c.strokeStyle = 'rgba(60,40,20,0.7)'; c.lineWidth = 0.35; c.beginPath(); c.ellipse(bx, by - 0.2, 2.5, 1.7, 0, 0, 7); c.stroke();
+    c.save(); c.translate(bx, by - 2.6); c.scale(0.34, 0.34); drawLoad(c, fl.cargo); c.restore();
+  }
+}
+
+// Утка: крякающая кряква. На суше семенит, на воде сидит в круге ряби
+function drawDuck(c, f, load) {
+  const fl = petFlags(load);
+  const step = f === null ? 0 : Math.sin(f / 4 * Math.PI * 2);
+  const dy = fl.swim ? 2.4 : 0;
+  if (fl.swim) {
+    c.strokeStyle = 'rgba(235,245,255,0.55)'; c.lineWidth = 0.5;
+    c.beginPath(); c.ellipse(0, 12.6, 8 + step * 0.6, 2.3, 0, 0, 7); c.stroke();
+    c.beginPath(); c.ellipse(0, 12.6, 5.6, 1.5, 0, 0, 7); c.stroke();
+  } else {
+    line(c, -1, 10.4, -1.4 + step * 1.3, 13, '#e08a24', 0.7); line(c, 1.2, 10.4, 1.6 - step * 1.3, 13, '#e08a24', 0.7);
+    line(c, -2.4 + step * 1.3, 13, -0.4 + step * 1.3, 13, '#e08a24', 0.6); line(c, 0.2 - step * 1.3, 13, 2.4 - step * 1.3, 13, '#e08a24', 0.6);
+  }
+  c.save(); c.translate(0, dy);
+  poly(c, [[-4.4, 7.2], [-7.6, 4.6], [-6.4, 9]], '#5a4630');                                   // хвост
+  ellipse(c, -0.6, 8, 5.4, 3.5, '#8a6a46');                                                      // тело
+  ellipse(c, 0.4, 9.2, 4.2, 1.9, '#cdbb98');                                                     // светлое брюшко
+  ellipse(c, -1.4, 7.6, 2.6, 1.5, '#6e5436'); poly(c, [[-2.8, 8.4], [0.2, 8.5], [-1, 9.1]], '#3a5aa0');   // крыло с «зеркальцем»
+  ellipse(c, 3.2, 4.8, 1.9, 1.2, '#f2eee6');                                                     // белое кольцо на шее
+  ellipse(c, 4.4, 2.6, 2.1, 1.9, '#2f7040');                                                     // зелёная голова
+  poly(c, [[6.2, 2.4], [9, 3.3], [6.2, 4.2]], '#e8b830');                                        // клюв
+  c.fillStyle = '#10100c'; c.fillRect(4.8, 1.7, 0.6, 0.6);
+  petGear(c, load, 3.2, 5.4, -1, 5.2);
   c.restore();
 }
 
@@ -103,6 +151,7 @@ function drawGoatBody(c, f, col, pack, load) {
 function drawCreature(c, kind, f, load) {
   if (kind === 'chicken') { drawChicken(c, f, load === 'peck'); return; }
   if (kind === 'goose') { drawGoose(c, f, load === 'attack', load === 'swim'); return; }
+  if (kind === 'duck') { drawDuck(c, f, load); return; }
   if (kind === 'goat') { drawGoatBody(c, f, '#d8d0c0', false); return; }
   if (kind === 'packgoat') { drawGoatBody(c, f, '#e4ddd0', true, load); return; }
   if (kind === 'deer') {
@@ -131,6 +180,7 @@ function drawCreature(c, kind, f, load) {
     ellipse(c, 3.1, 2.6, 0.35, 1.8, '#e0b0a8');
     c.fillStyle = '#1a1210'; c.fillRect(4.6, 5.4, 0.5, 0.5);
     ellipse(c, -4.2, 7.4, 1.2, 1.2, '#f4f0e8');
+    petGear(c, load, 3.2, 4.8, 0, 5.2);
     c.restore();
     return;
   }
@@ -241,7 +291,7 @@ function creatureSprite(kind, f, load, n = 1, view = 'E') {
   const [w, h, ax, ay] = CR_SIZE[kind];
   const [c2, c] = mkSprite(w, h, 3);
   // перенос так, чтобы копыта/колёса стояли в точке (ax, ay)
-  c.translate(ax, ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14 }[kind]);
+  c.translate(ax, ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14, duck: 13 }[kind]);
   if (kind === 'cart') { if (view === 'E') drawCartRig(c, f, load, n); else drawCartFront(c, f, load, n, view); }
   else drawCreature(c, kind, f, load);
   CR_CACHE.set(key, c2);
