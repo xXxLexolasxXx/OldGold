@@ -30,6 +30,7 @@ function coopSend(o) { if (Coop.ws && Coop.ws.readyState === 1) Coop.ws.send(JSO
 function coopConnect(opts) {
   return new Promise((resolve, reject) => {
     let ws, settled = false;
+    if (location.protocol === 'https:' && opts.server.startsWith('ws://')) { reject(new Error('Страница открыта по https, а сервер без шифрования. Откройте игру с адреса сервера: http://<адрес>:8787/')); return; }
     try { ws = new WebSocket(opts.server); } catch (e) { reject(new Error('Неверный адрес сервера')); return; }
     Coop.ws = ws; Coop.creds = opts;
     const fail = msg => { if (settled) return; settled = true; reject(new Error(msg)); try { ws.close(); } catch (e) { /* ничего */ } };
@@ -607,7 +608,12 @@ function coopPlayCopy() {
   purgeDead();
   Game.hero = mine || null;
   Game.heroAsk = false;
-  if (mine) { mine.hero.name = mine.hero.name || nick; selectHero(true); }
+  if (mine) {
+    mine.hero.name = mine.hero.name || nick;
+    if (Coop.me && Coop.me.inv) mine.hero.inv = Coop.me.inv.map(s => (s ? { k: s.k, n: s.n } : null));   // рюкзак уходит с героем
+    heroDefaults(mine.hero);
+    selectHero(true);
+  }
   Game.paused = false; Game.speed = 1;
   updateUI(true);
   toast('Копия общего мира: теперь это одиночная игра');
