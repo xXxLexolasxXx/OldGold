@@ -213,7 +213,7 @@ Object.assign(FLOAT_SFX, {
 
 // ---------- Бюджет внимания ----------
 // Звуки живности делятся на два яруса. Фон (шорохи, цокот, рытьё, светлячки…) — не чаще одного раза в 1,6 с на всю
-// карту, не больше 3 за 8 с и не поверх события. События (испуг, взлёт, плюх, писк) — реже одного в 0,25 с и не больше
+// карту, не больше 5 за 8 с и не поверх события. События (испуг, взлёт, плюх, писк) — реже одного в 0,25 с и не больше
 // 5 за 5 с. Так слух всегда занят чем-то одним, а не кашей; пропущенное просто не звучит.
 const FAUNA_TIER = {
   caw: 1, cawRasp: 1, wingFlap: 1, gooseFlap: 1, shoo: 1, splash: 1, badgerGrowl: 1, hogSnort: 1, mousePip: 1, molePeep: 1, squelch: 1,
@@ -228,7 +228,7 @@ sfxAt = function (kind, wx, wy, vel = 1, delay = 0) {
   const now = Sfx.ctx.currentTime + delay, B = FaunaBudget;
   if (tier === 0) {
     B.amb = B.amb.filter(x => x > now - 8);
-    if (now - B.ambLast < 1.6 || B.amb.length >= 3 || now - B.evLast < 0.8) return;
+    if (now - B.ambLast < 1.6 || B.amb.length >= 5 || now - B.evLast < 0.8) return;
     B.ambLast = now; B.amb.push(now);
   } else {
     B.ev = B.ev.filter(x => x > now - 5);
