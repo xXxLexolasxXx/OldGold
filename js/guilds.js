@@ -23,6 +23,9 @@ const GM_SAY = {
 };
 const REC_MAX = 4, REC_LVL_MAX = 10, MASTERY_MAX = 5;
 const G = { shots: [], t: 0 };
+// В общей деревне (кооператив) гильдий пока нет: сервер грузит те же файлы, поэтому всё выключаем,
+// а во вкладке «Гильдии» показываем анонс.
+const guildsOff = () => !!Game.coop || typeof coop !== 'undefined';
 
 // ================= Снаряжение для героя (herolife.js) =================
 if (typeof HL_GEAR !== 'undefined') {
@@ -408,7 +411,7 @@ Object.assign(MODELS, {
   const _st = heroStats;
   heroStats = function (h) {
     const s = _st(h);
-    const C = h && h.clsKey && GCLS[h.clsKey];
+    const C = !guildsOff() && h && h.clsKey && GCLS[h.clsKey];
     if (C) { const m = 1 + 0.25 * (h.mastery || 0); for (const k in C.bonus) s[k] += Math.round(C.bonus[k] * m); }
     if (h && h.equip) for (const sl of ['weapon', 'armor']) { const b = GEAR_BONUS[h.equip[sl]]; if (b) for (const k of ['str', 'agi', 'int', 'end']) if (b[k]) s[k] += b[k]; }
     return s;
@@ -808,6 +811,7 @@ function* recruitGen(u) {
 // ================= Тик =================
 
 function guildsTick(dt) {
+  if (guildsOff()) { G.shots.length = 0; return; }
   // снаряды
   for (let i = G.shots.length - 1; i >= 0; i--) {
     const s = G.shots[i];
@@ -885,7 +889,7 @@ function recCardUpdate() {
     });
   }
   const u = Game.selUnit;
-  if (!u || !u.rec || u.dead) { card.style.display = 'none'; return; }
+  if (!u || !u.rec || u.dead || guildsOff()) { card.style.display = 'none'; return; }
   const html = recCardHTML(u);
   if (card.dataset.h !== html) { card.dataset.h = html; card.innerHTML = html; }
   card.style.display = 'block';
@@ -913,7 +917,11 @@ function initGuildUI() {
   .g-wide small{opacity:.75;font-size:11px}
   .g-rec{cursor:pointer}.g-rec:hover{background:rgba(255,220,140,.06)}
   .g-xp{height:4px;background:#2a2014;border-radius:2px;overflow:hidden;margin:2px 0}.g-xp i{display:block;height:100%;background:#f6d458}
-  #hero-card .hc-guild{margin-top:4px}`;
+  #hero-card .hc-guild{margin-top:4px}
+  .g-soon{grid-column:1/-1;display:flex;flex-direction:column;gap:3px;margin:0 0 6px;padding:7px 9px;background:linear-gradient(#3a2c14,#241a0e);border:1px dashed #d8b04a;border-radius:5px;font-size:12px;line-height:1.35}
+  .g-soon b{color:#f6d458;font-size:13px}.g-soon small{opacity:.7}
+  .bbtn.soon{position:relative;opacity:.55;filter:grayscale(.6)}.bbtn.soon:hover{opacity:.8}
+  .g-badge{position:absolute;top:3px;right:3px;padding:0 5px;background:#8a6a1c;color:#fff4d0;border-radius:3px;font-size:10px;letter-spacing:.5px;text-transform:uppercase}`;
   document.head.appendChild(st);
   document.getElementById('info').addEventListener('click', e => {
     const el = e.target.closest('[data-gd]');
@@ -932,8 +940,43 @@ function initGuildUI() {
   });
   window.addEventListener('keydown', e => {
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-    if (e.code === 'KeyQ' && Game.hero) heroAbility('g_strike');
+    if (e.code === 'KeyQ' && Game.hero && !guildsOff()) heroAbility('g_strike');
   });
+}
+
+// ================= Анонс для общей деревни =================
+
+const GUILD_TYPES = ['guild_warrior', 'guild_archer', 'guild_rogue', 'guild_mage'];
+
+function guildAnnounceHTML() {
+  return `<div class="g-soon"><b>Скоро в общей деревне: гильдии!</b>
+    <span>Воины, лучники, разбойники и маги. Главы гильдий будут учить героев-игроков, а рекрутов можно будет водить отрядом вместе с друзьями.</span>
+    <small>Пока гильдии работают только в одиночной игре.</small></div>`;
+}
+
+{
+  // сервер и клиент общей деревни не дают ставить гильдии
+  const _cp = checkPlacement;
+  checkPlacement = function (type, x, y, rot) {
+    if (BUILDINGS[type] && BUILDINGS[type].guild && guildsOff()) return 'Гильдии в общей деревне появятся позже';
+    return _cp(type, x, y, rot);
+  };
+  // во вкладке «Гильдии» видны все четыре здания с пометкой «скоро»
+  const _mis = menuItemShown;
+  menuItemShown = function (type) { if (Game.coop && GUILD_TYPES.includes(type)) return true; return _mis(type); };
+  const _rbl = renderBuildList;
+  renderBuildList = function () {
+    _rbl();
+    if (!Game.coop || BUILD_CATS[UI.cat] !== 'Гильдии') return;
+    const list = document.getElementById('build-list');
+    list.insertAdjacentHTML('afterbegin', guildAnnounceHTML());
+    for (const btn of list.querySelectorAll('.bbtn')) {
+      if (!GUILD_TYPES.includes(btn.dataset.type)) continue;
+      btn.classList.add('soon');
+      btn.onclick = () => toast('Гильдии в общей деревне появятся позже — пока их можно построить в одиночной игре');
+      btn.insertAdjacentHTML('beforeend', '<span class="g-badge">скоро</span>');
+    }
+  };
 }
 
 // ================= Подключение =================
@@ -941,13 +984,13 @@ function initGuildUI() {
 {
   const _think = Unit.prototype.think;
   Unit.prototype.think = function () {
-    if (this.gm || this.rec) {
+    if ((this.gm || this.rec) && !guildsOff()) {
       if (this.wantsEat()) { const inn = findInn(this); if (inn) { this.idleFlag = false; return eatGen(this, inn); } this.nextEatTry = Game.time + 15; }
       if (this.rec) return recruitGen(this);
       return masterGen(this);
     }
     // рекрут из старого сохранения без данных — делаем по умолчанию
-    if (GCLS[this.type] && UNIT_TYPES[this.type].recruit) {
+    if (GCLS[this.type] && UNIT_TYPES[this.type].recruit && !guildsOff()) {
       this.rec = { cls: this.type, lvl: 1, xp: 0, guild: 0, order: 'hold', pt: [Math.floor(this.x), Math.floor(this.y)], train: 0 };
       return recruitGen(this);
     }
@@ -960,7 +1003,7 @@ function initGuildUI() {
   const _rc = resolveCmd;
   resolveCmd = function (t) {
     const h = Game.hero;
-    if (h && !h.dead && inb(t[0], t[1])) {
+    if (!guildsOff() && h && !h.dead && inb(t[0], t[1])) {
       const f = foesNear(t[0] + 0.5, t[1] + 0.5, 1.4)[0];
       if (f) return { kind: 'attack', f, tx: Math.floor(f.o.x), ty: Math.floor(f.o.y), label: 'Атаковать' };
       const b = buildingAt(t);
@@ -1009,7 +1052,7 @@ function initGuildUI() {
 
   const _click = onLeftClickTile;
   onLeftClickTile = function (t) {
-    if (!Game.tool && inb(t[0], t[1])) {
+    if (!guildsOff() && !Game.tool && inb(t[0], t[1])) {
       let near = null, bd = 0.8;
       for (const u of Game.units) {
         if (u.inside || u.dead) continue;
@@ -1041,7 +1084,7 @@ function initGuildUI() {
   const _ib = infoBuilding;
   infoBuilding = function (b) {
     let h = _ib(b);
-    if (isGuild(b) && !b.upg) {
+    if (isGuild(b) && !b.upg && !guildsOff()) {
       const i = h.lastIndexOf('<div class="idesc">');
       h = i >= 0 ? h.slice(0, i) + guildHTML(b) + h.slice(i) : h + guildHTML(b);
     }
@@ -1052,7 +1095,7 @@ function initGuildUI() {
   heroCardUpdate = function () {
     _hcu();
     const card = document.getElementById('hero-card');
-    if (!card || card.style.display === 'none' || !Game.hero) return;
+    if (!card || card.style.display === 'none' || !Game.hero || guildsOff()) { const old = card && card.querySelector('.hc-guild'); if (old) old.remove(); return; }
     if (Mobile.on && !heroCardOpen) return;
     let el = card.querySelector('.hc-guild');
     if (!el) { el = document.createElement('div'); el.className = 'hc-guild'; const tip = card.querySelector('.tip'); tip ? tip.before(el) : card.appendChild(el); el.dataset.h = ''; }
@@ -1098,7 +1141,15 @@ function initGuildUI() {
   };
 
   const _start = startGame;
-  startGame = function () { _start(); initGuildUI(); updateUI(true); };
+  startGame = function () {
+    _start(); initGuildUI(); updateUI(true);
+    // при входе в общую деревню — короткое объявление (coopclient.js грузится после нас)
+    if (typeof coopApplyInit === 'function' && !G.coopHooked) {
+      G.coopHooked = true;
+      const _cai = coopApplyInit;
+      coopApplyInit = function (m) { _cai(m); setTimeout(() => toast('Новость: гильдии уже в одиночной игре, в общую деревню придут позже'), 1500); };
+    }
+  };
 
   // одежда глав гильдий и рекрутов: те же шапки классов, что у героев кооператива (coopclient.js)
   Object.assign(OUTFIT, {
