@@ -31,6 +31,7 @@ function sfxInit() {
 function sfxPlace(wx, wy) {
   if (!Sfx.on || !Sfx.ctx || !R.canvas) return null;
   const s = camScale(), W = R.canvas.clientWidth, H = R.canvas.clientHeight;
+  if (!(W > 0 && H > 0 && s > 0)) return null;           // холст свёрнут/ещё без размера — деление на ноль дало бы NaN в аудио-параметрах
   const sx = (wx - R.cam.x) * s, sy = (wy - R.cam.y) * s;
   const m = Math.min(W, H) * 0.2;                        // чуть-чуть слышно и за краем экрана
   if (sx < -m || sy < -m || sx > W + m || sy > H + m) return null;

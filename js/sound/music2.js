@@ -325,7 +325,7 @@ TRACKS.push(
   },
   {
     // «Кладбище» — ля гармонический минор, редкие удары: колокол, хрусталь, призрачные голоса, кости и ветер.
-    name: 'Кладбище', special: 'grave', eighth: 0.5, swing: 0, bars: 24, voiceFrom: 4, seed: 3808, lead: 'kalimba', level: 0.95,
+    name: 'Кладбище', special: 'grave', eighth: 0.5, swing: 0, bars: 24, voiceFrom: 4, seed: 3808, lead: 'kalimba', level: 1.35,
     scale: [57, 59, 60, 62, 64, 65, 68, 69, 71, 72, 74, 76, 77, 80, 81],
     chords: {
       Am: { root: 45, tones: [57, 60, 64, 69, 72, 76] }, E: { root: 40, tones: [56, 59, 64, 68, 71, 76] },

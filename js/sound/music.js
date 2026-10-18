@@ -62,7 +62,7 @@ function audioShow() {
   if (!ctx || !was) return;
   const wd = AudioCore.wd; wd.wall = 0; wd.stall = 0; wd.hot = 0;
   if (performance.now() - was > 45000 || ctx.state === 'closed') { audioRebuild('long-hidden'); return; }
-  if (typeof Music !== 'undefined' && Music.ctx) Music.nextTime = ctx.currentTime + 0.15;
+  // часы приостановленного контекста стоят, так что музыка продолжается ровно с того же места (nextTime не трогаем: иначе новый такт ляжет поверх уже запланированного)
   if (audioWanted()) ctx.resume().catch(() => {});
 }
 
@@ -77,6 +77,11 @@ function audioRebuild(why) {
   if (typeof WX !== 'undefined') WX.snd = null;
   try { AudioCore.master.gain.setValueAtTime(0, old.currentTime); } catch (e) { /* мёртвый контекст */ }
   AudioCore.ctx = null; AudioCore.srcs = new Set(); AudioCore.hiddenAt = 0;
+  // всё, что хранит время аудио-часов (они у нового контекста начинаются с нуля), иначе звуки молчат, пока новое время не догонит старое
+  if (typeof Music !== 'undefined') Music.moodT = 0;
+  if (typeof UiSfx !== 'undefined') UiSfx.last.clear();
+  if (typeof Clap !== 'undefined') Clap.busy = 0;
+  if (typeof FaunaBudget !== 'undefined') { FaunaBudget.ambLast = -9; FaunaBudget.evLast = -9; FaunaBudget.amb = []; FaunaBudget.ev = []; }
   setTimeout(() => { try { old.close(); } catch (e) { /* уже закрыт */ } }, 150);
   const wd = AudioCore.wd; wd.wall = 0; wd.stall = 0; wd.hot = 0;
   const ctx = audioCoreInit(); if (!ctx) return;
@@ -101,11 +106,11 @@ function audioWatch() {
   // часы контекста встали, а время идёт — устройство вывода отвалилось
   if (wd.wall && now - wd.wall > 700 && ct - wd.ct < 0.01) { if (++wd.stall >= 3) { audioRebuild('clock-stall'); return; } } else wd.stall = 0;
   wd.wall = now; wd.ct = ct;
-  // залипшие разовые источники: ни один не живёт дольше 15 секунд
+  // залипшие разовые источники: ни один не живёт дольше 25 секунд
   let trans = 0;
   for (const r of AudioCore.srcs) {
     if (r.keep) continue;
-    if (ct - r.t0 > 15) { try { r.n.stop(); } catch (e) { /* не запускался */ } AudioCore.srcs.delete(r); AudioCore.kills++; } else trans++;
+    if (ct - r.t0 > 25) { try { r.n.stop(); } catch (e) { /* не запускался */ } AudioCore.srcs.delete(r); AudioCore.kills++; } else trans++;
   }
   // лавина узлов: гасим все разовые источники; если повторяется — пересоздаём ядро
   if (trans > 450) {
@@ -286,7 +291,7 @@ const TRACKS = [
   {
     // «У воды» — когда камера у реки или озера: ре мажор, журчащие арфовые переборы,
     // калимба, капли, шелест волны и тихая свирель.
-    name: 'У воды', special: 'water', eighth: 0.3, swing: 0, bars: 24, voiceFrom: 999, seed: 404, lead: 'kalimba', level: 0.8,
+    name: 'У воды', special: 'water', eighth: 0.3, swing: 0, bars: 24, voiceFrom: 999, seed: 404, lead: 'kalimba', level: 1.1,
     scale: [62, 64, 66, 69, 71, 74, 76, 78, 81, 83, 86],
     chords: {
       D: { root: 38, tones: [50, 54, 57, 62, 66, 69, 73, 78] }, Bm: { root: 47, tones: [54, 59, 62, 66, 71, 74, 78] },
