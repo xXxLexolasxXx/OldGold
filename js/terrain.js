@@ -362,11 +362,38 @@ function pathPolyCW(c, pts) {
   c.closePath();
 }
 
-function roadShape(c, x, y, px, py, grow, bands) {
+// Скосы на поворотах: в квадрате 2×2 три клетки дороги — значит, дорога поворачивает
+// в угловой клетке; внутренний угол поворота заливаем треугольником под 45°.
+// Скос задевает все четыре клетки квадрата, поэтому собираем их со всех квадратов вокруг.
+function roadChamfers(x, y) {
+  const out = [];
+  for (let by = y - 1; by <= y; by++) for (let bx = x - 1; bx <= x; bx++) {
+    const cells = [[bx, by], [bx + 1, by], [bx, by + 1], [bx + 1, by + 1]];
+    const miss = cells.filter(([a, b]) => !isRoadAt(a, b));
+    if (miss.length !== 1) continue;
+    const [mx, my] = miss[0];
+    const cxx = bx * 2 + 1 - mx, cyy = by * 2 + 1 - my;   // угловая клетка — напротив пустой
+    out.push([cxx, cyy, Math.sign(mx - cxx), Math.sign(my - cyy)]);
+  }
+  return out;
+}
+
+// Восьмиугольник вместо круга: внешний угол поворота и тупик тоже скошены, а не скруглены
+function octPath(c, cx, cy, w) {
+  const k = w * 0.586;
+  pathPolyCW(c, [[cx - w + k, cy - w], [cx + w - k, cy - w], [cx + w, cy - w + k], [cx + w, cy + w - k],
+    [cx + w - k, cy + w], [cx - w + k, cy + w], [cx - w, cy + w - k], [cx - w, cy - w + k]]);
+}
+
+function roadShape(c, x, y, px, py, grow, bands, chamfers) {
   const cx = px + TILE / 2, cy = py + TILE / 2, w = 11.5 + grow;
   c.beginPath();
+  for (const [ux, uy, sx, sy] of chamfers || []) {
+    const qx = (ux + 0.5) * TILE + sx * w, qy = (uy + 0.5) * TILE + sy * w, k = 12 + grow;
+    pathPolyCW(c, [[qx - sx * 1, qy - sy * 1], [qx + sx * k, qy - sy * 1], [qx - sx * 1, qy + sy * k]]);
+  }
   if (World.road[idx(x, y)]) {
-    c.arc(cx, cy, w, 0, Math.PI * 2);
+    octPath(c, cx, cy, w);
     if (isRoadAt(x - 1, y)) c.rect(px, cy - w, TILE / 2, w * 2);
     if (isRoadAt(x + 1, y)) c.rect(cx, cy - w, TILE / 2, w * 2);
     if (isRoadAt(x, y - 1)) c.rect(cx - w, py, w * 2, TILE / 2);
@@ -389,18 +416,18 @@ function drawRoadTile(x, y) {
   if (!TERR.ready) return;
   const c = TERR.rctx, px = x * TILE, py = y * TILE;
   c.clearRect(px, py, TILE, TILE);
-  const bands = diagBands(x, y);
-  if (!World.road[idx(x, y)] && !bands.length) return;
+  const bands = diagBands(x, y), chamf = roadChamfers(x, y);
+  if (!World.road[idx(x, y)] && !bands.length && !chamf.length) return;
   const r = mulberry32(idx(x, y) * 131 + 7);
   c.save();
   c.beginPath(); c.rect(px, py, TILE, TILE); c.clip();
   void r;
   // бордюр из тёмного камня и сплошная мостовая
-  roadShape(c, x, y, px, py, 2, bands);
+  roadShape(c, x, y, px, py, 2, bands, chamf);
   c.fillStyle = 'rgba(40,34,28,0.55)'; c.fill();
-  roadShape(c, x, y, px, py, 0, bands);
+  roadShape(c, x, y, px, py, 0, bands, chamf);
   c.fillStyle = '#4a4540'; c.fill();
-  roadShape(c, x, y, px, py, 0, bands);
+  roadShape(c, x, y, px, py, 0, bands, chamf);
   c.clip();
   paveCobbles(c, px - 4, py - 4, TILE + 8, TILE + 8, 1);
   c.restore();

@@ -267,11 +267,16 @@ function zoomStep(dir, sx, sy) {
 const Input = { keys: new Set(), pan: null, leftDown: false, roadStart: null, lastEraseTile: null };
 
 function lineCells(a, b) {
-  // Г-образная линия: сначала по горизонтали, затем по вертикали
+  // Почти вдоль оси — Г-образная линия (сначала по горизонтали, затем по вертикали);
+  // ближе к 45° — сначала косой участок по диагонали, остаток прямо
   const cells = [];
   const sx = Math.sign(b[0] - a[0]), sy = Math.sign(b[1] - a[1]);
+  const ax = Math.abs(b[0] - a[0]), ay = Math.abs(b[1] - a[1]);
   let x = a[0], y = a[1];
   cells.push([x, y]);
+  if (Math.min(ax, ay) > Math.max(ax, ay) * 0.4) {
+    while (x !== b[0] && y !== b[1]) { x += sx; y += sy; cells.push([x, y]); }
+  }
   while (x !== b[0]) { x += sx; cells.push([x, y]); }
   while (y !== b[1]) { y += sy; cells.push([x, y]); }
   return cells;
