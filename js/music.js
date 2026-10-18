@@ -295,6 +295,46 @@ const TRACKS = [
     rhythms: [[3, 3], [2, 2, 2], [4, 2], [2, 4], [6], [1, 1, 2, 2]],
     range: [62, 86],
   },
+  {
+    // Три эльфийских трека — светлая деревня на опушке: воздушная флейта, арфа, женский хор, струнный пад, колокольчики.
+    // «Лунный лес» — ми дорийский, тянущийся хор и тихая лунная флейта.
+    name: 'Лунный лес', eighth: 0.34, swing: 0, bars: 32, voiceFrom: 8, seed: 2101, lead: 'lowflute', level: 1.05,
+    scale: [52, 54, 55, 57, 59, 61, 62, 64, 66, 67, 69, 71, 73, 74, 76, 78],
+    chords: {
+      Em: { root: 40, tones: [52, 55, 59, 64, 67, 71, 76] }, D: { root: 38, tones: [50, 54, 57, 62, 66, 69, 74] },
+      A: { root: 45, tones: [52, 57, 61, 64, 69, 73, 76] }, G: { root: 43, tones: [55, 59, 62, 67, 71, 74, 79] },
+      Bm: { root: 47, tones: [54, 59, 62, 66, 71, 74, 78] },
+    },
+    prog: ['Em', 'Em', 'D', 'A', 'Em', 'G', 'D', 'A', 'Bm', 'G', 'D', 'Em', 'A', 'D', 'G', 'Em'],
+    rhythms: [[6], [4, 2], [3, 3], [2, 2, 2], [2, 4], [3, 1, 2]],
+    range: [59, 78],
+  },
+  {
+    // «Песнь листвы» — соль лидийский, лёгкий 6/8: бегущая арфа, свирель и калимба, одинокий сопрано.
+    name: 'Песнь листвы', eighth: 0.26, swing: 0, bars: 32, voiceFrom: 16, seed: 2202, lead: 'flute', level: 0.9,
+    scale: [55, 57, 59, 61, 62, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79, 81],
+    chords: {
+      G: { root: 43, tones: [55, 59, 62, 67, 71, 74, 79] }, D: { root: 38, tones: [54, 57, 62, 66, 69, 74, 78] },
+      Em: { root: 40, tones: [55, 59, 64, 67, 71, 76, 79] }, A: { root: 45, tones: [57, 61, 64, 69, 73, 76, 81] },
+      Bm: { root: 47, tones: [59, 62, 66, 71, 74, 78] },
+    },
+    prog: ['G', 'D', 'Em', 'A', 'G', 'D', 'Bm', 'A', 'Em', 'G', 'D', 'A', 'G', 'Bm', 'A', 'G'],
+    rhythms: [[2, 1, 1, 2], [3, 1, 2], [2, 2, 2], [1, 1, 2, 2], [4, 2], [2, 4]],
+    range: [64, 83],
+  },
+  {
+    // «Серебряные чертоги» — ре дорийский, неспешный торжественный ход: хор в три голоса, струнный пад, далёкие колокола.
+    name: 'Серебряные чертоги', eighth: 0.42, swing: 0, bars: 24, voiceFrom: 2, seed: 2303, lead: 'flute', level: 1.3,
+    scale: [50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77],
+    chords: {
+      Dm: { root: 38, tones: [50, 53, 57, 62, 65, 69, 74] }, C: { root: 36, tones: [48, 52, 55, 60, 64, 67, 72] },
+      G: { root: 43, tones: [50, 55, 59, 62, 67, 71, 74] }, Am: { root: 45, tones: [52, 57, 60, 64, 69, 72, 76] },
+      F: { root: 41, tones: [53, 57, 60, 65, 69, 72, 77] },
+    },
+    prog: ['Dm', 'C', 'Dm', 'G', 'Am', 'G', 'F', 'C', 'Dm', 'C', 'F', 'G', 'Am', 'G', 'Dm', 'Dm'],
+    rhythms: [[6], [4, 2], [3, 3], [2, 4], [6], [3, 3]],
+    range: [57, 77],
+  },
 ];
 
 // ---------- Сочинение ----------
@@ -497,7 +537,7 @@ function glock(midi, t, vel = 0.08) {
 }
 
 // Женский голос: две пилы через форманты гласной, вибрато, долгий отзвук
-const VOWELS = { o: [[450, 1, 6], [800, 0.4, 8], [2800, 0.07, 10]], a:[[800, 1, 7], [1150, 0.5, 9], [2900, 0.22, 12]], u: [[350, 1, 6], [650, 0.35, 8], [2700, 0.08, 10]] };
+const VOWELS = { e: [[500, 1, 7], [1750, 0.4, 9], [2600, 0.1, 11]], i: [[300, 1, 7], [2300, 0.45, 10], [3000, 0.12, 12]], o:[[450, 1, 6], [800, 0.4, 8], [2800, 0.07, 10]], a:[[800, 1, 7], [1150, 0.5, 9], [2900, 0.22, 12]], u: [[350, 1, 6], [650, 0.35, 8], [2700, 0.08, 10]] };
 function voice(midi, t, dur, vel = 0.07, vowel = 'a') {
   const ctx = Music.ctx, hz = midiHz(midi);
   const o = ctx.createOscillator(), o2 = ctx.createOscillator();
@@ -629,6 +669,25 @@ function mWave(t, len, vel = 0.03) {
   nb.connect(f); f.connect(g); out(g, 1, 0.2, 0.5); nb.start(t, Math.random()); nb.stop(t + len + 0.05);
 }
 
+// Хор: несколько женских голосов в унисон-аккорде, вступают не разом — получается живое «облако»
+function choir(midis, t, dur, vel = 0.045, vowel = 'a') {
+  midis.forEach((m, k) => voice(m, t + k * 0.12, dur - k * 0.12, vel, vowel));
+}
+
+// Струнный пад: светлые пилы, мягкий фильтр, медленное дыхание — ложится под хор
+function strPad(midis, t, dur, vel = 0.03) {
+  const ctx = Music.ctx, env = ctx.createGain(), lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.linearRampToValueAtTime(2400, t + dur * 0.5); lp.frequency.linearRampToValueAtTime(1000, t + dur); lp.Q.value = 0.4;
+  env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(vel, t + Math.min(1.6, dur * 0.4));
+  env.gain.setValueAtTime(vel, t + dur * 0.7); env.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.8);
+  lp.connect(env); out(env, 1, 0.3, 0.7);
+  const end = t + dur + 0.9;
+  for (const m of midis) for (const det of [-7, 7]) {
+    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = midiHz(m); o.detune.value = det;
+    o.connect(lp); o.start(t); o.stop(end);
+  }
+}
+
 // ---------- Такт ----------
 
 function scheduleBar(tr, song, bar, t) {
@@ -677,6 +736,41 @@ function scheduleBar(tr, song, bar, t) {
     if (bar % 4 !== 2) { let pos = 0; for (const [m, l] of notes.slice(0, 2)) { flute(m, at(pos), l * E * 0.95, 0.11, 'lowflute'); pos += l; } }
     if (bar % 4 === 0 && voiceNow) { const vt = ch.tones.filter(m => m >= 62 && m <= 72); if (vt[0]) voice(vt[(bar / 4) % vt.length], at(1), len * 2, 0.05, 'u'); }
     for (let k = 1; k < 6; k += 2) shaker(at(k), 0.009);
+  } else if (tr.name === 'Лунный лес') {
+    // тихий пульс арфы, хор тянется через такт, флейта поёт редко, звёздочки-колокольчики
+    [up[0], up[1], up[2], up[3] || up[1] + 12, up[2], up[1]].forEach((m, k) => harp(m + 12, at(k), k === 0 ? 0.16 : 0.1));
+    if (bar % 2 === 0) bassPluck(ch.root, t, 0.26);
+    if (bar % 4 === 0) strPad([up[0], up[2], up[4] || up[2] + 12], t, len * 4, 0.028);
+    if (voiceNow && bar % 2 === 0) choir([up[1], up[2], up[3] || up[1] + 12].map(m => m + 12), t, len * 2 - E, 0.04, bar % 4 === 0 ? 'u' : 'a');
+    if (!(voiceNow && bar % 8 < 3)) { let pos = 0; for (const [m, l] of notes) { flute(m, at(pos), l * E * 0.95, pos === 0 ? 0.15 : 0.11, 'lowflute'); pos += l; } }
+    if (bar % 2 === 1) glock(ch.tones[ch.tones.length - 1 - (bar % 3)], at(2 + (bar % 3)), 0.04);
+    if (phraseEnd) [0, 2, 4].forEach((k, j) => glock(ch.tones[ch.tones.length - 1 - j], at(k), 0.05));
+  } else if (tr.name === 'Песнь листвы') {
+    // бегущая арфа в 6/8, калимба вторит, свирель и скрипка — только на повторе, одинокий сопрано
+    [0, 1, 2, 1, 2, 3].forEach((i, k) => harp(up[i % up.length] + 12, at(k), k % 3 === 0 ? 0.15 : 0.09));
+    bassPluck(ch.root, t, 0.3); if (bar % 2) bassPluck(ch.root + 7, at(3), 0.2);
+    let pos = 0;
+    for (const [m, l] of notes) {
+      flute(m, at(pos), l * E * 0.95, pos === 0 ? 0.15 : 0.11);
+      if (bar % 2 === 1) kalimba(m + 12, at(pos), 0.05);
+      if (bar >= 8) flute(m + 12, at(pos), l * E * 0.85, 0.04, 'whistle');
+      pos += l;
+    }
+    if (bar % 4 === 0) strPad([up[0], up[2]], t, len * 4, 0.022);
+    if (voiceNow && bar % 2 === 1) { const vt = ch.tones.filter(m => m >= 71 && m <= 83); if (vt[0]) voice(vt[(bar >> 1) % vt.length], at(1), len * 2 - E * 2, 0.045, 'e'); }
+    tambourine(t, 0.012); tambourine(at(3), 0.01);
+    if (phraseEnd) glock(ch.tones[ch.tones.length - 1], at(2), 0.05);
+  } else if (tr.name === 'Серебряные чертоги') {
+    // торжественный ход: хор из трёх голосов на каждом такте, пад, редкий горн и колокола
+    const vow = ['a', 'o', 'u', 'a'][bar % 4];
+    if (voiceNow) choir([ch.tones[1], ch.tones[2], ch.tones[3]].map(m => m + 12 > 79 ? m : m + 12), t, len - E * 0.5, 0.042, vow);
+    if (bar % 2 === 0) strPad([ch.tones[0], ch.tones[2], ch.tones[4]], t, len * 2, 0.03);
+    if (bar % 8 === 0) mHorn(ch.root + 24, t, len * 2 - E, 0.035);
+    harp(up[0] + 12, t, 0.13); harp(up[2] + 12, at(3), 0.09);
+    if (bar % 2) glock(ch.tones[ch.tones.length - 1], at(2), 0.045);
+    if (bar % 4 === 0) bodhran(t, 0.09, 70);
+    if (bar >= 4) { let pos = 0; for (const [m, l] of notes) { flute(m, at(pos), l * E * 0.95, pos === 0 ? 0.13 : 0.1, bar % 8 < 4 ? 'flute' : 'whistle'); pos += l; } }
+    if (phraseEnd) voice(ch.tones[ch.tones.length - 1] + (ch.tones[ch.tones.length - 1] > 70 ? 0 : 12), at(1), len - E, 0.05, 'i');
   } else if (tr.name === 'За дом') {
     // марш: барабан на раз и четыре, дробь-подхват на слабых, бас шагает, наковальня на «и» каждого второго такта
     warDrum(t, 0.4, 62); warDrum(at(3), 0.3, 70);
