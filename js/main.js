@@ -494,6 +494,7 @@ function scrollByKeys(dt) {
 let lastT = performance.now(), acc = 0, uiT = 0, miniT = 0, autoT = 0;
 
 function frame(now) {
+  requestAnimationFrame(frame);   // сразу: исключение ниже не должно навсегда останавливать цикл (чёрный экран/зависание)
   const dt = Math.min(0.1, (now - lastT) / 1000);
   lastT = now;
   scrollByKeys(dt);
@@ -508,13 +509,14 @@ function frame(now) {
     autoT += dt;
     if (autoT > 30 && !Game.stress) { autoT = 0; saveGame('auto'); }   // автосохранение каждые 30 секунд; тестовую карту не сохраняем
   }
-  perfFrame(dt * 1000, performance.now() - s0);
-  render();
-  uiT += dt; miniT += dt;
-  if (uiT > 0.25) { updateUI(); uiT = 0; }
-  if (miniT > 1) { updateMinimapBase(); miniT = 0; }
-  drawMinimap();
-  requestAnimationFrame(frame);
+  try {
+    perfFrame(dt * 1000, performance.now() - s0);
+    render();
+    uiT += dt; miniT += dt;
+    if (uiT > 0.25) { updateUI(); uiT = 0; }
+    if (miniT > 1) { updateMinimapBase(); miniT = 0; }
+    drawMinimap();
+  } catch (e) { if (!frame.errR || now - frame.errR > 5000) { console.error(e); frame.errR = now; } }
 }
 
 window.addEventListener('load', () => {
