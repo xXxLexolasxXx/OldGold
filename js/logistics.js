@@ -91,7 +91,8 @@ function dispatchSerfs() {
 
   // пищевой цех, у которого склад почти полон, разгружаем раньше всего — иначе он встанет
   const nearlyFull = b => Object.entries(b.def.outputs).some(([g, cap]) => b.offer(g) >= cap * 0.7);
-  collectOutputs(b => !b.isPile && b.state === 'done' && isFoodProducer(b) && !!b.def.outputs && nearlyFull(b));
+  let nfDone = false;
+  const collectNearlyFull = () => { if (nfDone) return; nfDone = true; collectOutputs(b => !b.isPile && b.state === 'done' && isFoodProducer(b) && !!b.def.outputs && nearlyFull(b)); };
 
   const reqs = [];
   for (const [d, comp] of compOf) {
@@ -106,6 +107,8 @@ function dispatchSerfs() {
 
   let foodOut = false;
   for (const r of reqs) {
+    // еда в трактир — самое первое, иначе ферма с полным амбаром забирает всех курьеров, а деревня голодает
+    if (r.pri >= 0) collectNearlyFull();          // заявки трактира и пищевых цехов — раньше разгрузки полных ферм
     // после еды для трактира и цехов — урожай и еду с ферм, мельницы, пекарни, бойни,
     // свинарника: иначе склад здания забивается и работа встаёт
     if (!foodOut && r.pri >= 0) { foodOut = true; collectOutputs(b => !b.isPile && isFoodProducer(b)); }
@@ -129,9 +132,11 @@ function dispatchSerfs() {
     }
   }
 
+  collectNearlyFull();
   if (!foodOut) collectOutputs(b => !b.isPile && isFoodProducer(b));
-  // остальную продукцию и рассыпанное — после заявок
-  collectOutputs(b => b.isPile || !isFoodProducer(b));
+  // рассыпанное по земле (в том числе зерно и хлеб) — раньше, чем продукция неспешных мастерских
+  collectOutputs(b => b.isPile);
+  collectOutputs(b => !b.isPile && !isFoodProducer(b));
 
   // Готовую продукцию и рассыпанное — на ближайший склад той же сети
   function collectOutputs(pred) {
@@ -142,16 +147,17 @@ function dispatchSerfs() {
       const comp = compOf.get(b), idle = idleBy.get(comp);
       if (!idle || !idle.length) continue;
       const goods = isP ? GOOD_KEYS : Object.keys(b.def.outputs);
+      let taken = 0;                                           // на одно здание — не больше 3 перевозчиков за раз (диспетчер идёт каждые 0.4 с)
       for (const g of goods) {
         let left = b.offer(g);
-        while (left > 0 && idle.length) {
+        while (left > 0 && idle.length && taken < 3) {
           const st = nearestStore(b.doorX, b.doorY, g, comp);
           if (!st) break;
           const u = pickCarrier(idle, b.doorX, b.doorY, g, left);
           if (!u) break;
           const n = Math.min(left, carryCap(u));
           assignDelivery(u, b, st, g, n);
-          left -= n;
+          left -= n; taken++;
         }
       }
     }

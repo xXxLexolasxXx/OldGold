@@ -90,7 +90,7 @@ function* eatGen(u, inn) {
   }
   yield { leave: true };
   u.dining = null; u.diningFood = null;
-  if (Math.random() < 0.45) litter(u);                // кости и огрызки — на землю
+  if (Math.random() < 0.2) litter(u);                 // кости и огрызки — на землю
 }
 
 // Доставка n единиц товара. Курьеры ходят по дорогам; исключения — камень для
@@ -135,7 +135,7 @@ function* deliverGen(u, from, to, g, n = 1) {
       if (!to) break;
       to.incoming[g] += n;
     }
-    ok = yield { walk: [to.doorX, to.doorY], offroad: !!to.isRoad };
+    ok = yield { walk: [to.doorX, to.doorY], offroad: !!to.isRoad || !u.isCourier };   // не-курьеры (мусор в костёр, помощь) идут и без дороги
     // груз уронили при столкновении или утащил зверь
     if (!u.carry) { if (!to.removed) to.incoming[g] -= n; return; }
     if (to.removed) continue;

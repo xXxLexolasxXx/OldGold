@@ -25,11 +25,11 @@ function ghostSay(g, text) { floater(g.x, g.y - 1.6, text, '#cfe6ff'); }
 function ghostsTick(dt) {
   const gs = Game.ghosts;
   if (!gs || !gs.length) return;
-  const dark = nightAmt();
+  const dark = nightAmt();   // eslint-disable-line no-unused-vars
   for (let i = gs.length - 1; i >= 0; i--) {
     const g = gs[i];
     g.ph += dt * 2.2; g.modeT -= dt; g.retarget -= dt;
-    const leaving = g.mode === 'leave' || dark < 0.12;
+    const leaving = g.mode === 'leave' || (!isNightNow() && !isEveningNow());   // уходят на рассвете (раньше гасли сразу при появлении: вечером ещё светло)
     g.alpha = Math.max(0, Math.min(1, g.alpha + (leaving ? -dt * 0.5 : dt * 0.35)));
     if (leaving && g.alpha <= 0) { gs.splice(i, 1); continue; }
     if (g.mode !== 'drift' && g.modeT <= 0) {
