@@ -516,13 +516,13 @@ function drawBuilding(c, b, ghost) {
     }
     c.globalAlpha = 1;
   }
+  if (!ghost) drawInside(c, b, spr, ox, oy);   // силуэты в окнах, веранда трактира (inside.js)
 }
 
 function glow(c, x, y, r, rgb, a) {
   const g = c.createRadialGradient(x, y, 1, x, y, r);
   g.addColorStop(0, `rgba(${rgb},${a})`);
   g.addColorStop(1, `rgba(${rgb},0)`);
-  if (!ghost) drawInside(c, b, spr, ox, oy);   // силуэты в окнах, веранда трактира (inside.js)
   c.fillStyle = g;
   c.fillRect(x - r, y - r, r * 2, r * 2);
 }

@@ -562,17 +562,18 @@ function heroBtnUpdate() {
 }
 
 // Окно героя: отдельная карточка поверх карты (справа вверху), не закрывает окно здания в колонке
+let heroCardOpen = false;
 function heroCardUpdate() {
   let card = document.getElementById('hero-card');
   if (!card) {
     card = document.createElement('div'); card.id = 'hero-card';
     card.addEventListener('click', e => {
       if (e.target.closest('.hc-x')) { Game.selUnit = null; updateUI(true); return; }
+      if (e.target.closest('.hc-t')) { heroCardOpen = !heroCardOpen; heroCardUpdate(); return; }
       const el = e.target.closest('[data-hero]');
       if (!el || !Game.hero) return;
       if (el.dataset.hero === 'leave') { const m = Game.units.find(u => u.teamOf === Game.hero.id); if (m) leaveTeam(m); updateUI(true); }
       else heroAbility(el.dataset.hero);
-      if (e.target.closest('.hc-t')) { heroCardOpen = !heroCardOpen; heroCardUpdate(); return; }
     });
     document.getElementById('view').appendChild(card);
     const st = document.createElement('style');
