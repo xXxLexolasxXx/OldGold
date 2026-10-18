@@ -69,7 +69,7 @@ function coopJoin(name, dataJson) {
   H.inv = Array.from({ length: COOP_INV }, (_, i) => (d.inv && d.inv[i]) || null);
   u.hero = H;
   coop.players.set(name, u);
-  coop.out.push({ msg: { t: 'toast', text: `${name} (${H.cls}) вошёл в деревню` } });
+  coop.out.push({ msg: { t: 'toast', text: `${name} (${H.cls}) приходит в деревню` } });
   return u.id;
 }
 
@@ -282,7 +282,7 @@ function coopRespawn(u) {
   u.x = x + 0.5; u.y = y + 0.5; u.food = Math.max(u.food, 0.6);
   H.hp = Math.round(H.maxhp * 0.5);
   H.drunkUntil = 0; H.stunUntil = 0;
-  coop.out.push({ msg: { t: 'toast', text: `${H.owner} очнулся у склада — деревня не пускает так просто` } });
+  coop.out.push({ msg: { t: 'toast', text: `${H.owner} приходит в себя у склада — деревня не отпускает так просто` } });
 }
 
 function coopTick(dt) {
@@ -296,7 +296,7 @@ function coopTick(dt) {
       coop.players.delete(name);
       coopJoin(name, JSON.stringify({ ...data, hp: 0, x: null }));
       const nu = coop.players.get(name);
-      if (nu) { nu.hero.hp = Math.round(nu.hero.maxhp * 0.5); coop.out.push({ msg: { t: 'toast', text: `${name} погиб и вернулся к складу` } }); }
+      if (nu) { nu.hero.hp = Math.round(nu.hero.maxhp * 0.5); coop.out.push({ msg: { t: 'toast', text: `${name} падает без сил и снова стоит у склада` } }); }
       continue;
     }
     u.nextJoin = 1e9;

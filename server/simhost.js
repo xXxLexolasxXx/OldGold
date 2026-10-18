@@ -6,11 +6,15 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
-// порядок как в index.html; интерфейс, звук, отрисовка и меню не нужны
-const FILES = ['config', 'world', 'path', 'entities', 'levels', 'events', 'jobs', 'life', 'animals', 'leisure', 'streets',
-  'night', 'rocks', 'nechist', 'ghosts', 'skeletons', 'mountains', 'logistics', 'sprites', 'buildings', 'bmodels', 'graveyard',
-  'decor', 'subbotnik', 'pixel', 'pixelart', 'fire', 'icons', 'people', 'creatures', 'terrain', 'render', 'save', 'ui',
-  'music', 'sfx', 'weather', 'sfx2', 'stress', 'mobile', 'stats', 'tutorial', 'layout', 'main', 'hero', 'herolife', 'flask', 'herochain', 'golem', 'pets', 'coopsim'];
+// порядок как в index.html — список берём оттуда же, чтобы новые файлы игры не забывались
+// (без них сервер падал на первом же вызове). Интерфейс меню, заставка, профиль и сетевой клиент не нужны.
+const SKIP = new Set(['loading', 'startmenu', 'perf', 'profile', 'coopclient']);
+function gameFiles() {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const list = [...html.matchAll(/<script[^>]*\ssrc="js\/([\w-]+)\.js"/g)].map(m => m[1]).filter(f => !SKIP.has(f));
+  return [...list, 'coopsim'];
+}
+const FILES = gameFiles();
 
 // Универсальная заглушка: любое свойство — снова заглушка, вызов — заглушка
 function stub() {
@@ -54,6 +58,14 @@ function createHost(log = console.log) {
   }
   const run = code => vm.runInContext(code, ctx);
   run('R.canvas = { clientWidth: 1280, clientHeight: 720 }; R.cam = R.cam || { x: 0, y: 0, z: 2 }; renderBuildMenu = function () {}; updateUI = function () {}; updateMinimapBase = function () {}; buildTerrain = function () {};');
+  // Спрайты зданий симуляции нужны только ради точек на крыше (совы, параплан): рисовать их без холста нельзя,
+  // поэтому сервер берёт примерный конёк — ряд точек над зданием
+  run(`buildingSprite = function () { return { perches: [], padx: 0, top: 0, w: 0, h: 0 }; };
+    roofPerches = function (b) {
+      const out = [], y = (b.y + 0.2) * TILE - TILE * 0.9, ground = (b.y + b.h) * TILE + 10;
+      for (let k = 0; k < Math.max(2, b.w * 2); k++) out.push([(b.x + 0.4 + k * (b.w - 0.8) / Math.max(1, b.w * 2 - 1)) * TILE, y, ground]);
+      return out;
+    };`);
   return { ctx, run };
 }
 

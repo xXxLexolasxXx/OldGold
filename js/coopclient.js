@@ -20,8 +20,30 @@ function coopSaved(set) {
   } catch (e) { return null; }
 }
 
+// Общий сервер по умолчанию — для игры, открытой не с самого сервера (GitHub Pages, файл с диска).
+// Страница по https (GitHub Pages) может подключиться только к wss:// — см. server/DEPLOY.md.
+// Можно подменить ссылкой: ...?server=wss://адрес
+const COOP_SERVER = '';
+
 // адрес сервера, если страница открыта с него же
 function coopOrigin() { return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host; }
+
+// «1.2.3.4», «1.2.3.4:8787», «http://…», «https://…» → адрес WebSocket
+function coopWsUrl(a) {
+  a = String(a || '').trim().replace(/\/+$/, '');
+  if (!a) return '';
+  if (/^https:\/\//i.test(a)) return 'wss://' + a.slice(8);
+  if (/^http:\/\//i.test(a)) return 'ws://' + a.slice(7);
+  if (/^wss?:\/\//i.test(a)) return a;
+  return (location.protocol === 'https:' ? 'wss://' : 'ws://') + a;
+}
+function coopDefaultServer() {
+  let q = '';
+  try { q = new URLSearchParams(location.search).get('server') || ''; } catch (e) { /* старый браузер */ }
+  return coopWsUrl(q || COOP_SERVER);
+}
+// адрес для запросов по HTTP к тому же серверу (coop-info)
+const coopHttpUrl = ws => ws.replace(/^ws/i, 'http');
 
 function coopSend(o) { if (Coop.ws && Coop.ws.readyState === 1) Coop.ws.send(JSON.stringify(o)); }
 
@@ -30,7 +52,9 @@ function coopSend(o) { if (Coop.ws && Coop.ws.readyState === 1) Coop.ws.send(JSO
 function coopConnect(opts) {
   return new Promise((resolve, reject) => {
     let ws, settled = false;
-    if (location.protocol === 'https:' && opts.server.startsWith('ws://')) { reject(new Error('Страница открыта по https, а сервер без шифрования. Откройте игру с адреса сервера: http://<адрес>:8787/')); return; }
+    opts = { ...opts, server: coopWsUrl(opts.server) };
+    if (!opts.server) { reject(new Error('Укажите адрес сервера')); return; }
+    if (location.protocol === 'https:' && opts.server.startsWith('ws://')) { reject(new Error('Страница открыта по https, а сервер без шифрования (ws://). Откройте игру с адреса сервера: ' + coopHttpUrl(opts.server) + '/ — или настройте wss (server/DEPLOY.md)')); return; }
     try { ws = new WebSocket(opts.server); } catch (e) { reject(new Error('Неверный адрес сервера')); return; }
     Coop.ws = ws; Coop.creds = opts;
     const fail = msg => { if (settled) return; settled = true; reject(new Error(msg)); try { ws.close(); } catch (e) { /* ничего */ } };
@@ -54,7 +78,7 @@ function coopConnect(opts) {
 }
 
 function coopApplyInit(m) {
-  Coop.on = true; Game.coop = true;
+  Coop.on = true; Coop.mirror = true; Game.coop = true;
   applySave(m.world);
   Game.units = []; Game.unitMap.clear(); Game.animals = []; Game.hero = null; Game.heroAsk = false; Game.selUnit = null; Game.selected = null;
   Game.piles.clear();
@@ -83,6 +107,7 @@ function coopHandle(m) {
     case 'chat': coopChat(m); break;
     case 'saved': break;
     case 'restarting': Coop.reconnecting = true; toast('Сервер перезапускается…'); break;
+    case 'kicked': Coop.kicked = m.msg || 'Вы вошли в деревню из другого окна'; break;
   }
 }
 
@@ -286,7 +311,8 @@ function coopSaveCopy() {
 
 {
   const _step = step;
-  step = function (dt) { if (Coop.on) coopStep(dt); else _step(dt); };
+  // пока связь потеряна, на экране зеркало общего мира: своя симуляция по нему не идёт (у жителей там нет настоящих дел)
+  step = function (dt) { if (Coop.on) coopStep(dt); else if (!Coop.mirror) _step(dt); };
 
   const _pb = placeBuilding;
   placeBuilding = function (type, x, y, done, rot) {
@@ -572,8 +598,10 @@ function coopLost() {
   const retry = true;
   const box = document.createElement('div');
   box.id = 'cp-lost'; box.className = 'cp-modal';
-  box.innerHTML = `<div class="cp-card"><h2>${Coop.reconnecting ? 'Сервер перезапускается' : 'Связь потерялась'}</h2>
-    <p id="cp-lost-msg">Переподключаемся сами… Копия общего мира лежит у вас в браузере: пока сервер молчит, можно поиграть с ней в одиночку.</p>
+  const kicked = Coop.kicked;
+  Coop.kicked = null;
+  box.innerHTML = `<div class="cp-card"><h2>${kicked ? 'Герой ушёл в другое окно' : Coop.reconnecting ? 'Сервер перезапускается' : 'Связь потерялась'}</h2>
+    <p id="cp-lost-msg">${kicked ? kicked + '. Нажмите «Попробовать сейчас», чтобы играть здесь.' : 'Переподключаемся сами… Копия общего мира лежит у вас в браузере: пока сервер молчит, можно поиграть с ней в одиночку.'}</p>
     <button class="cp-btn" data-re>Попробовать сейчас</button><button class="cp-btn sec" data-solo>Играть с копией одиночно</button></div>`;
   document.body.appendChild(box);
   const msg = box.querySelector('#cp-lost-msg');
@@ -583,18 +611,22 @@ function coopLost() {
     if (stop || busy) return;
     busy = true;
     msg.textContent = 'Подключаемся…';
-    const sv = coopSaved();
-    coopConnect(sv && sv.token ? { server: Coop.creds.server, nick: sv.nick, token: sv.token, mode: 'token' } : { ...Coop.creds, mode: 'login' }).then(() => { stop = true; box.remove(); }).catch(e => {
+    // токен в браузере один на всех: годится, только если он от этого же героя (в соседней вкладке мог войти другой)
+    const sv = coopSaved(), cr = Coop.creds, nick = Coop.nick || cr.nick;
+    const opts = sv && sv.token && sv.nick === nick ? { server: cr.server, nick, token: sv.token, mode: 'token' }
+      : cr.pass ? { server: cr.server, nick, pass: cr.pass, mode: 'login' } : null;
+    if (!opts) { busy = false; stop = true; msg.textContent = 'Войдите заново через меню (Выйти → Общая деревня).'; return; }
+    coopConnect(opts).then(() => { stop = true; box.remove(); }).catch(e => {
       busy = false;
       msg.textContent = e.message;
-      if (!stop) setTimeout(tryAgain, 3000);
+      if (!stop && !Coop.kicked) setTimeout(tryAgain, 3000);
     });
   };
   box.addEventListener('click', e => {
     if (e.target.closest('[data-re]')) tryAgain();
     else if (e.target.closest('[data-solo]')) { stop = true; box.remove(); coopPlayCopy(); }
   });
-  setTimeout(tryAgain, 2000);
+  if (!kicked) setTimeout(tryAgain, 2000);
 }
 function coopSaveCopyNow() { Coop.on = true; coopSaveCopy(); Coop.on = false; }
 
@@ -602,6 +634,7 @@ function coopSaveCopyNow() { Coop.on = true; coopSaveCopy(); Coop.on = false; }
 function coopPlayCopy() {
   Game.coop = false; Coop.on = false;
   if (!loadGame(COOP_SLOT)) { toast('Копии мира нет'); return false; }
+  Coop.mirror = false;
   const nick = (saveMeta(COOP_SLOT) || {}).nick || Coop.nick;
   const heroes = Game.units.filter(u => u.type === 'hero');
   const mine = heroes.find(u => u.hero && u.hero.owner === nick) || heroes[0];
@@ -632,6 +665,18 @@ function coopPlayCopy() {
     return coopConnect({ nick, server: Coop.served ? coopOrigin() : server, pass, mode });
   };
 
+  // адрес по умолчанию: общий сервер игры (COOP_SERVER / ?server=), иначе тот, с которого открыта страница
+  let srv0 = null;
+  const coopFillServer = () => {
+    const srv = document.getElementById('sm-server');
+    if (!srv || (srv.value && srv.value !== 'ws://localhost:8787')) return;
+    const def = coopDefaultServer();
+    if (def) srv.value = def;
+    else if (location.protocol.startsWith('http') && location.host) srv.value = coopOrigin();
+  };
+  const _smr = smRender;
+  smRender = function () { _smr(); coopFillServer(); };
+
   const _start = startGame;
   startGame = function () {
     _start();
@@ -648,10 +693,10 @@ function coopPlayCopy() {
       mp.querySelector('[data-sm="connect"]').insertAdjacentElement('afterend', reg);
       reg.addEventListener('click', () => { Coop.regMode = true; mp.querySelector('[data-sm="connect"]').click(); });
       mp.querySelector('[data-sm="connect"] b').textContent = 'Войти';
-      // адрес по умолчанию — тот сервер, с которого открыта игра
-      const srv = root.querySelector('#sm-server');
-      if (location.protocol.startsWith('http') && location.host && srv && (!srv.value || srv.value === 'ws://localhost:8787')) srv.value = 'ws://' + location.host;
+      srv0 = root.querySelector('#sm-server');
+      if (srv0) srv0.placeholder = 'wss://адрес или 1.2.3.4:8787';
     }
+    coopFillServer();
     const main = root.querySelector('[data-panel="main"]');
     if (main && !main.querySelector('[data-sm-coop]')) {
       const meta = saveMeta(COOP_SLOT);
@@ -885,10 +930,17 @@ function coopHint() {
   startGame = function () {
     _start3();
     // на странице, открытой с сервера кооператива, «Общая деревня» — первая кнопка меню
-    fetch('coop-info', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => {
+    // на странице, открытой не с сервера (GitHub Pages), — то же самое для общего сервера по умолчанию
+    const info = url => fetch(url, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => (j && j.coop ? j : null)).catch(() => null);
+    const remote = coopDefaultServer();
+    const canRemote = remote && !(location.protocol === 'https:' && remote.startsWith('ws://'));
+    info('coop-info').then(j => {
+      if (j) { Coop.served = true; Coop.target = coopOrigin(); return j; }
+      if (!canRemote) return null;
+      return info(coopHttpUrl(remote) + '/coop-info').then(r => { if (r) Coop.target = remote; return r; });
+    }).then(j => {
       const root = document.getElementById('start-menu');
-      if (!j || !j.coop || !root || root.querySelector('[data-sm-join]')) return;
-      Coop.served = true;
+      if (!j || !root || root.querySelector('[data-sm-join]')) return;
       const main = root.querySelector('[data-panel="main"]');
       const saved = coopSaved();
       const b = document.createElement('button');
@@ -900,12 +952,12 @@ function coopHint() {
         const sv = coopSaved();
         if (!sv || !sv.token) { smRender(); smShow('mp'); return; }
         const small = b.querySelector('small'); small.textContent = 'подключаемся…';
-        coopConnect({ server: coopOrigin(), nick: sv.nick, token: sv.token, mode: 'token' })
+        coopConnect({ server: Coop.target, nick: sv.nick, token: sv.token, mode: 'token' })
           .then(() => smClose())
           .catch(e => { small.textContent = e.message; setTimeout(() => { smRender(); smShow('mp'); }, 1200); });
       });
       const srv = root.querySelector('#sm-server');
-      if (srv) { srv.value = coopOrigin(); const lab = srv.closest('label'); if (lab) lab.style.display = 'none'; }
+      if (srv && Coop.served) { srv.value = coopOrigin(); const lab = srv.closest('label'); if (lab) lab.style.display = 'none'; }
       if (typeof decorateVines === 'function') requestAnimationFrame(decorateVines);
     }).catch(() => { /* страница не с сервера кооператива — обычное меню */ });
   };

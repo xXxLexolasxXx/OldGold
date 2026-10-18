@@ -10,10 +10,13 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const DATA = path.join(__dirname, 'data');
+const DATA = process.env.OLDGOLD_DATA ? path.resolve(process.env.OLDGOLD_DATA) : path.join(__dirname, 'data');
 const PORT = +process.env.PORT || 8787;
 const SAVE_EVERY = 30000;        // общий мир сохраняется раз в 30 секунд
-const PAUSE_EMPTY = true;        // пока на сервере никого нет, деревня стоит (чтобы не пропасть без хозяев)
+const PAUSE_EMPTY = true;
+// Хост (права игроков, перезапуск) — подключение с этого же компьютера; на VPS за прокси такого нет,
+// поэтому хостами можно назначить ники: OLDGOLD_ADMIN="Торин,Аня"
+const ADMINS = new Set(String(process.env.OLDGOLD_ADMIN || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean));        // пока на сервере никого нет, деревня стоит (чтобы не пропасть без хозяев)
 
 // ---------- Надсмотрщик: перезапуск по команде хоста (код выхода 42) ----------
 if (!process.env.OLDGOLD_CHILD) {
@@ -23,7 +26,15 @@ if (!process.env.OLDGOLD_CHILD) {
       if (code === 42) { console.log('\n=== Перезапуск сервера ===\n'); setTimeout(run, 500); }
       else process.exit(code || 0);
     });
+    cur = ch;
   };
+  let cur = null;
+  // Ctrl+C / systemctl stop: ребёнок сам сохраняет мир и выходит, надсмотрщик ждёт его
+  // (в Windows Ctrl+C и так приходит ребёнку, а kill() там убивает без сохранения — не пересылаем)
+  for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => {
+    if (!cur || cur.exitCode !== null) process.exit(0);
+    else if (process.platform !== 'win32') cur.kill(sig);
+  });
   run();
   return;
 }
@@ -101,7 +112,7 @@ function flushHeroes() {
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
-  if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
+  if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
   if (p === '/') p = '/index.html';
   const file = path.normalize(path.join(ROOT, p));
   const rel = path.relative(ROOT, file);
@@ -129,7 +140,7 @@ function frame(op, payload) {
 class Conn {
   constructor(sock, isHost) {
     this.sock = sock; this.isHost = isHost; this.buf = Buffer.alloc(0); this.frag = []; this.fragOp = 0;
-    this.nick = null; this.key = null; this.inGame = false; this.alive = true;
+    this.nick = null; this.key = null; this.inGame = false; this.alive = true; this.seen = Date.now();
     sock.on('data', d => this.onData(d));
     sock.on('close', () => this.onClose());
     sock.on('error', () => { try { sock.destroy(); } catch (e) { /* ничего */ } });
@@ -137,6 +148,7 @@ class Conn {
   send(obj) { this.sendText(typeof obj === 'string' ? obj : JSON.stringify(obj)); }
   sendText(s) { if (this.alive && !this.sock.destroyed) this.sock.write(frame(1, Buffer.from(s, 'utf8'))); }
   onData(d) {
+    this.seen = Date.now();
     this.buf = Buffer.concat([this.buf, d]);
     for (;;) {
       const b = this.buf;
@@ -174,7 +186,7 @@ class Conn {
       const d = call('coopLeave', this.nick);
       if (d) users[this.key].hero = JSON.parse(d);
       saveUsers();
-      broadcast({ t: 'toast', text: `${this.nick} ушёл из деревни` });
+      broadcast({ t: 'toast', text: `${this.nick} покидает деревню` });
       log('вышел', this.nick);
     }
   }
@@ -228,8 +240,14 @@ function onMessage(c, text) {
       if (!rec) return c.send({ t: 'err', msg: 'Такого игрока нет — сначала зарегистрируйтесь' });
       if (hashPass(pass, rec.salt) !== rec.hash) return c.send({ t: 'err', msg: 'Неверный пароль' });
     }
-    for (const o of conns) if (o !== c && o.key === key) return c.send({ t: 'err', msg: 'Этот игрок уже в деревне' });
+    // тот же игрок с другой вкладки или после обрыва связи: старое соединение уступает новому
+    for (const o of conns) if (o !== c && o.key === key) {
+      o.send({ t: 'kicked', msg: 'Вы вошли в деревню с другого окна или устройства' });
+      try { o.sock.end(); } catch (e) { /* ничего */ }
+      o.onClose();
+    }
     c.nick = rec.nick; c.key = key;
+    if (ADMINS.has(key)) c.isHost = true;
     let token;
     if (m.mode !== 'token') { token = crypto.randomBytes(24).toString('hex'); rec.toks = [...(rec.toks || []).slice(-4), sha(token)]; saveUsers(); }   // запомнить вход на этом устройстве
     const meta = JSON.parse(call('coopMeta'));
@@ -299,11 +317,21 @@ setInterval(() => {
   if (now - tSave >= SAVE_EVERY) { tSave = now; if (saveWorld() && online) broadcast({ t: 'saved' }); }
 }, 50);
 
+// Пинг: браузер сам отвечает на него, а молчащее больше минуты соединение (сон ноутбука, обрыв Wi-Fi) закрываем —
+// иначе герой висит в деревне, а игрок не может зайти снова
+setInterval(() => {
+  const now = Date.now();
+  for (const c of conns) {
+    if (now - c.seen > 60000) { try { c.sock.destroy(); } catch (e) { /* ничего */ } c.onClose(); }
+    else if (!c.sock.destroyed) c.sock.write(frame(9, Buffer.alloc(0)));
+  }
+}, 20000);
+
 function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); process.exit(0); }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, process.env.HOST || '0.0.0.0', () => {
   log(`Сервер OldGold запущен на порту ${PORT}`);
   log(`Хост играет здесь:  http://localhost:${PORT}/`);
   for (const list of Object.values(os.networkInterfaces()))
