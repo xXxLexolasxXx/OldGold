@@ -21,10 +21,10 @@ const FIRE_ATLAS = {};
 
 function fireHash(a, b) { const n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return n - Math.floor(n); }
 
-function buildFireAtlas(size, ramp) {
+function buildFireAtlas(size, ramp, cpu) {
   const [w, h, hw] = FIRE_SIZES[size], NF = fireFrames(size);
   const cv = document.createElement('canvas'); cv.width = w * NF; cv.height = h;
-  const g = cv.getContext('2d'), img = g.createImageData(cv.width, h);
+  const g = cv.getContext('2d', cpu ? { willReadFrequently: true } : undefined), img = g.createImageData(cv.width, h);
   const rgb = ramp.map(s => [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)]);
   const cx = (w - 1) / 2, tongues = Math.max(1.2, hw / 2.6);
   for (let f = 0; f < NF; f++) {
@@ -62,9 +62,12 @@ function buildFireAtlas(size, ramp) {
   return cv;
 }
 
-function fireAtlas(size, magic) {
-  const key = size + (magic || '');
-  return FIRE_ATLAS[key] || (FIRE_ATLAS[key] = buildFireAtlas(size, magic ? FIRE_MAGIC[magic] : FIRE_RAMP));
+// cpu — атлас в программном холсте: для рисования на холст, который потом читают попиксельно
+// (заставка). Копирование с холста видеокарты на такой холст каждый раз вычитывает пиксели с GPU (~2 мс).
+const FIRE_ATLAS_CPU = {};
+function fireAtlas(size, magic, cpu) {
+  const key = size + (magic || ''), A = cpu ? FIRE_ATLAS_CPU : FIRE_ATLAS;
+  return A[key] || (A[key] = buildFireAtlas(size, magic ? FIRE_MAGIC[magic] : FIRE_RAMP, cpu));
 }
 
 // подобрать размер и целочисленный масштаб под желаемую высоту
@@ -82,7 +85,7 @@ function drawFire(c, x, y, size, time, seed, opts) {
   if (typeof size === 'number' || opts.h) { [sz, sc] = fireSizeFor(opts.h || size); if (opts.scale) sc = opts.scale; }
   const [w, h] = FIRE_SIZES[sz];
   const NF = fireFrames(sz), f = Math.floor(time * 9 + (seed || 0) * 1.7) % NF, fi = f < 0 ? f + NF : f;
-  const atlas = fireAtlas(sz, opts.magic);
+  const atlas = fireAtlas(sz, opts.magic, opts.cpu);
   const dw = w * sc, dh = h * sc, gl = opts.glow === undefined ? 1 : opts.glow;
   if (gl > 0 && typeof glow === 'function') {
     const r = Math.max(dw, dh) * 1.9 + 4, fl = 1 + 0.12 * Math.sin(time * 11 + (seed || 0));
