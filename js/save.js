@@ -38,7 +38,7 @@ function serializeGame() {
   for (let i = 0; i < N_TILES; i++) if (World.road[i]) road.push(i);
   const nz = o => { const r = {}; for (const k in o) if (o[k]) r[k] = o[k]; return r; };
   return {
-    v: 2, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
+    v: 2, mw: MAP_W, mh: MAP_H, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
     storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, produced: nz(Game.produced),
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
     obj, road,
@@ -57,6 +57,7 @@ function serializeGame() {
 }
 
 function applySave(s) {
+  setMapSize(s.mw || MAP_LEGACY_W, s.mh || MAP_LEGACY_H);   // сохранения без размера — старая карта 96×72
   resetGameState();
   Game.seed = s.seed;
   genWorld(s.seed);

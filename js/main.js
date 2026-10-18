@@ -125,6 +125,7 @@ function setupStart(seed) {
   resetGameState();
   Game.seed = seed;
   Game.stress = false;
+  setMapSize(MAP_NEW_W, MAP_NEW_H);
   const { cx, cy } = genWorld(seed);
   const rng = mulberry32(seed ^ 0x5eed);
   let lay = layoutStart(rng, cx, cy);

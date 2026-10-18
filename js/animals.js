@@ -53,7 +53,8 @@ function wildSpot(minDist, nearForest = true) {
 
 function spawnAnimals() {
   Game.animals = [];
-  const add = (kind, n, minDist) => { for (let k = 0; k < n; k++) { const s = wildSpot(minDist, kind !== 'goat'); if (s) Game.animals.push(makeAnimal(kind, s[0], s[1])); } };
+  const areaK = 1 + (N_TILES / (MAP_LEGACY_W * MAP_LEGACY_H) - 1) * 0.7;   // на большой карте зверья больше
+  const add = (kind, n, minDist) => { n = Math.round(n * areaK); for (let k = 0; k < n; k++) { const s = wildSpot(minDist, kind !== 'goat'); if (s) Game.animals.push(makeAnimal(kind, s[0], s[1])); } };
   add('deer', 7, 14);
   add('rabbit', 9, 10);
   add('goat', 6, 12);

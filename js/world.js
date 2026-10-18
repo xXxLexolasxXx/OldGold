@@ -10,7 +10,7 @@ function mulberry32(a) {
   };
 }
 
-const N_TILES = MAP_W * MAP_H;
+let N_TILES = MAP_W * MAP_H;
 
 const World = {
   terrain: new Uint8Array(N_TILES),
@@ -25,6 +25,25 @@ const World = {
   roadComp: new Int32Array(N_TILES), // номер связной дорожной сети (0 — не дорога)
   roadDirty: true,
 };
+
+// Смена размера карты: пересоздаёт все массивы по клеткам (вызывать до genWorld и только при новом размере).
+function setMapSize(w, h) {
+  if (w === MAP_W && h === MAP_H && World.terrain.length === w * h) return;
+  MAP_W = w; MAP_H = h; N_TILES = w * h;
+  World.terrain = new Uint8Array(N_TILES);
+  World.road = new Uint8Array(N_TILES);
+  World.bmap = new Int32Array(N_TILES);
+  World.door = new Uint8Array(N_TILES);
+  World.obj = new Array(N_TILES).fill(null);
+  World.crystal = new Uint8Array(N_TILES);
+  World.noise = new Float32Array(N_TILES);
+  World.occ = new Int32Array(N_TILES);
+  World.roadComp = new Int32Array(N_TILES);
+  World.growing.clear();
+  World.roadDirty = true;
+  if (typeof pfResize === 'function') pfResize();
+}
+const mapIsLegacy = () => MAP_W === MAP_LEGACY_W && MAP_H === MAP_LEGACY_H;
 
 // Разметка связных дорожных сетей (8-связность: дороги соединяются и по диагонали).
 function updateRoadComps() {
@@ -100,6 +119,8 @@ function genWorld(seed) {
   const nForest = makeNoise(rng, 9), nStone = makeNoise(rng, 4);
   const nTint = makeNoise(rng, 7);
   const cx = MAP_W >> 1, cy = MAP_H >> 1;
+  const legacy = mapIsLegacy();   // старые сохранения должны воссоздаваться ровно как раньше
+  const farK = (x, y) => Math.max(0, Math.min(1, (Math.hypot(x - cx, (y - cy) * 1.2) - 20) / 28));
 
   World.obj.fill(null);
   World.growing.clear();
@@ -110,9 +131,10 @@ function genWorld(seed) {
     World.noise[i] = nTint(x, y) * 0.85 + rng() * 0.15;   // плавный оттенок без «шахматки»
     const w = nWater(x, y) * 0.7 + nWater2(x, y) * 0.3;
     const r = nRock(x, y) * 0.7 + nRock2(x, y) * 0.3;
+    const far = legacy ? 0 : farK(x, y);   // в новых краях карты больше озёр и гор
     let t = T_GRASS;
-    if (w < 0.28) t = T_WATER;
-    else if (r > 0.7) t = T_ROCK;
+    if (w < 0.28 + far * 0.05) t = T_WATER;
+    else if (r > 0.7 - far * 0.05) t = T_ROCK;
     World.terrain[i] = t;
   }
 
@@ -141,7 +163,7 @@ function genWorld(seed) {
     const i = idx(x, y);
     if (World.terrain[i] !== T_ROCK || World.terrain[idx(x, y + 1)] === T_ROCK) continue;
     const nearStart = Math.abs(x - (cx - 10)) <= 3 && y >= cy - 13 && y <= cy - 10;
-    if (nearStart || nCrys(x, y) > 0.72) World.crystal[i] = 1;
+    if (nearStart || nCrys(x, y) > (legacy ? 0.72 : 0.72 - farK(x, y) * 0.06)) World.crystal[i] = 1;
   }
 
   // Песок по берегам
@@ -164,9 +186,10 @@ function genWorld(seed) {
     let nearRock = false;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
       if (inb(x + dx, y + dy) && World.terrain[idx(x + dx, y + dy)] === T_ROCK) nearRock = true;
+    const fk = legacy ? 0 : farK(x, y);
     if (nearRock && nStone(x, y) > 0.55 && rng() < 0.5) setStone(i, 4 + (rng() * 4 | 0));
-    else if (nStone(x, y) > 0.84 && rng() < 0.5) setStone(i, 3 + (rng() * 4 | 0));
-    else if (nForest(x, y) > 0.6 && rng() < 0.75) setTree(i, rng() < 0.12 ? rng() * 0.9 : 1);
+    else if (nStone(x, y) > 0.84 - fk * 0.04 && rng() < 0.5) setStone(i, 3 + (rng() * 4 | 0));
+    else if (nForest(x, y) > 0.6 - fk * 0.1 && rng() < 0.75 + fk * 0.12) setTree(i, rng() < 0.12 ? rng() * 0.9 : 1);
     else if (rng() < 0.012) setTree(i, 1);
   }
 

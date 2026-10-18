@@ -25,6 +25,10 @@ const PF = {
   closed: new Int32Array(N_TILES),
   stamp: 0,
 };
+function pfResize() {
+  PF.g = new Float32Array(N_TILES); PF.from = new Int32Array(N_TILES);
+  PF.seen = new Int32Array(N_TILES); PF.closed = new Int32Array(N_TILES); PF.stamp = 0;
+}
 
 const DIRS = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
   [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];

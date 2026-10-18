@@ -5,6 +5,7 @@
 
 function stressMap() {
   const seed = 777;
+  setMapSize(MAP_LEGACY_W, MAP_LEGACY_H);   // раскладка стресс-карты написана под 96×72
   resetGameState();
   Game.seed = seed;
   genWorld(seed);
