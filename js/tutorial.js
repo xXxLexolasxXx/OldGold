@@ -133,6 +133,7 @@ const TUT_STEPS = [
 ];
 
 function tutStart() {
+  track('tut-start', 'Обучение: началось');
   Tut.on = true; Tut.i = 0; Tut.doneAt = 0;
   Tut.cam0 = { x: R.cam.x, y: R.cam.y, z: R.cam.z };
   document.getElementById('help').classList.add('hidden');
@@ -140,6 +141,8 @@ function tutStart() {
 }
 
 function tutClose(finished) {
+  if (finished) track('tut-done', 'Обучение: пройдено до конца');
+  else if (Tut.on) track('tut-skip-' + String(Tut.i + 1).padStart(2, '0'), 'Обучение: закрыл на шаге ' + (Tut.i + 1));
   Tut.on = false;
   try { localStorage.setItem('oldgold-tut', 'done'); } catch (e) { /* нет хранилища */ }
   tutHighlight([]);
@@ -171,6 +174,8 @@ function tutRender() {
     });
   }
   const s = TUT_STEPS[Tut.i], ok = Tut.doneAt > 0;
+  track('tut-step-' + String(Tut.i + 1).padStart(2, '0'), 'Обучение: дошёл до шага ' + (Tut.i + 1));
+  if (ok) track('tut-ok-' + String(Tut.i + 1).padStart(2, '0'), 'Обучение: выполнил шаг ' + (Tut.i + 1));
   if (s.enter) s.enter();
   Tut.el.classList.remove('hidden');
   Tut.el.classList.toggle('ok', ok);
@@ -226,5 +231,5 @@ function initTutorial() {
   setInterval(tutTick, 300);
   let seen = false;
   try { seen = localStorage.getItem('oldgold-tut') === 'done'; } catch (e) { /* нет хранилища */ }
-  if (!seen) setTimeout(tutStart, 600);
+  if (!seen) setTimeout(tutStart, 600); else track('tut-seen-before', 'Обучение не показано (уже проходил)');
 }

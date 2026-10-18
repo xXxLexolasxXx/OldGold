@@ -77,7 +77,7 @@ function coopConnect(opts) {
         if (m.needClass) coopPickClass(m.classes);
         return;
       }
-      if (m.t === 'init') { coopApplyInit(m); if (!settled) { settled = true; resolve(true); } return; }
+      if (m.t === 'init') { coopApplyInit(m); if (!settled) { settled = true; track('coop-join', 'Зашёл в кооп'); resolve(true); } return; }
       coopHandle(m);
     };
   });

@@ -55,6 +55,7 @@ function smRender() {
 
 function smAction(a) {
   const root = document.getElementById('start-menu');
+  if (['continue', 'new', 'mp', 'help'].includes(a)) track('menu-' + a, { continue: 'Нажал «Продолжить»', new: 'Нажал «Новая игра»', mp: 'Открыл «Мультиплеер»', help: 'Открыл «Как играть» в стартовом меню' }[a]);
   if (a === 'continue') {
     const sv = smBestSave();
     if (!sv) return;

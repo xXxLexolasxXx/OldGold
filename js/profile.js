@@ -67,6 +67,7 @@ function achGet(id) {
   if (!ACH_BY[id] || p.ach[id]) return;
   p.ach[id] = Date.now();
   profSave();
+  track('ach-first', 'Получил первую ачивку'); track('ach-' + id, 'Ачивка: ' + ACH_BY[id].name);
   achToast(ACH_BY[id]);
   if (UI && UI.tab !== undefined) profRefresh();
 }
@@ -119,6 +120,7 @@ function achPoll() {
     if (!was && u.dead && isPerson(u) && u.type !== 'carter') {
       const p = profCur();
       p.st.lost = (p.st.lost || 0) + 1; profSave();
+      statsLost();
       for (const a of ACHS) if (a.die && !p.ach[a.id] && p.st.lost >= a.die) achGet(a.id);
     }
   };
@@ -134,6 +136,8 @@ let profMsg = '';
 function profOpen(tab) {
   profLoad_ensure();
   profTab = tab || profTab;
+  track('profile-open', 'Открыл «Профиль и ачивки»');
+  if (profTab === 'ach') track('ach-open', 'Открыл список ачивок');
   document.getElementById('prof-win').classList.remove('hidden');
   profRefresh();
 }
