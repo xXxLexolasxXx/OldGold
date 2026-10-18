@@ -201,6 +201,7 @@ function step(dt) {
   updateOwls(dt);
   faunaTick(dt);
   fauna2Tick(dt);
+  beastsTick(dt);
   chestsTick(dt);
   fairyTick(dt);
   fairy2Tick(dt);

@@ -639,7 +639,7 @@ function* fishGen(u, shore) {
     if (!u.fun.bite && Game.time - t0 > bite) { u.fun.bite = Game.time + 1.4; floater(u.x, u.y - 1.3, '!', '#ffe060'); }
     yield { wait: 0.4 };
   }
-  const got = Math.random() < 0.6;
+  const got = Math.random() < 0.6 && !u.fun.stolen;   // цапля могла стащить улов (beasts.js)
   fxBurst(wx * TILE, wy * TILE, 9, ['#ffffff', '#c8e4f8', '#8ac0e8'], 30, 38, 0.5, 1.4, 150);
   if (got) {
     floater(u.x, u.y - 1.3, 'Рыбка!', '#c8f0ff');
