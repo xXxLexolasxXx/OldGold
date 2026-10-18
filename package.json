@@ -1,0 +1,11 @@
+{
+  "name": "oldgold",
+  "private": true,
+  "description": "OldGold — браузерная экономическая стратегия. Зависимостей нет; package.json нужен только для команд проверок.",
+  "scripts": {
+    "test": "node tests/run.js",
+    "test:long": "node tests/run.js --long",
+    "check": "node tests/check-load.js"
+  },
+  "engines": { "node": ">=18" }
+}
