@@ -151,8 +151,8 @@ function vLeaf(x, y, rot, s, kind, col) {
   return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${(s * VS).toFixed(2)})"><path d="${d}" fill="${col}" stroke="${VINE_DARK}" stroke-width="1"/><path d="M0 -1 L0 -14 M0 -6 L-6 -9 M0 -6 L6 -9" stroke="${VINE_DARK}" stroke-width=".7" opacity=".55" fill="none"/></g>`;
 }
 const SM_VAR = { hop: 0, grape: 0, wheat: 0 };   // подряд идущие плоды всегда разные: три варианта по кругу
-function vGrapes(x, y, s, rot = 0, st = 6, bend = 2) {
-  const v = SM_VAR.grape++ % 3;
+function vGrapes(x, y, s, rot = 0, st = 6, bend = 2, vf) {
+  const v = (vf ?? SM_VAR.grape++) % 3;
   let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${(s * VS).toFixed(2)}) translate(0 ${st})"><path d="M0 ${-st} Q${bend} ${-st / 2} 0 0" stroke="${VINE_DARK}" stroke-width="1.4" fill="none"/>`;
   // 0 — тёмно-фиолетовая круглая гроздь; 1 — зелёная длинная; 2 — розово-красная широкая с плечами
   const V = [
@@ -164,8 +164,8 @@ function vGrapes(x, y, s, rot = 0, st = 6, bend = 2) {
   for (const r of V.rows) { for (const dx of r) h += `<circle cx="${dx}" cy="${yy}" r="${V.r}" fill="${V.c}" stroke="${VINE_DARK}" stroke-width="1"/><circle cx="${dx - 1.2}" cy="${yy - 1.4}" r="1.2" fill="${V.hi}" opacity=".8"/>`; yy += V.dy; }
   return h + '</g>';
 }
-function vWheat(x, y, len, rot) {
-  const v = SM_VAR.wheat++ % 3;
+function vWheat(x, y, len, rot, vf) {
+  const v = (vf ?? SM_VAR.wheat++) % 3;
   let h = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${VS})"><path d="M0 0 Q${v === 1 ? 5 : 2} ${-len * 0.5} 0 ${-len}" stroke="${v === 2 ? '#7a9a3a' : '#9a8a3a'}" stroke-width="1.8" fill="none"/>`;
   if (v === 0) {   // пшеница: крупные золотые зёрна парами, усики
     for (let i = 0; i < 6; i++) {
@@ -188,9 +188,9 @@ function vWheat(x, y, len, rot) {
   }
   return h + '</g>';
 }
-function vHop(x, y, s, rot = 0, st = 7, bend = 2) {
+function vHop(x, y, s, rot = 0, st = 7, bend = 2, vf) {
   // шишка: ряды перекрывающихся чешуек, сужается книзу; варианты — обычная, длинная тёмная, короткая жёлто-зелёная
-  const n = SM_VAR.hop++ % 6, v = n % 3;
+  const n = (vf ?? SM_VAR.hop++) % 6, v = n % 3;
   const V = [
     { rows: [[-4.2, 0, 4.2], [-5.2, -1.7, 1.7, 5.2], [-4.6, -1.5, 1.5, 4.6], [-3.4, 0, 3.4], [-1.9, 1.9], [0]], dy: 3.7, cols: ['#b8dc5a', '#9cc848', '#86b83a'] },
     { rows: [[-2.4, 2.4], [-3.4, 0, 3.4], [-3.6, -1.2, 1.2, 3.6], [-3.2, 0, 3.2], [-2.6, 0, 2.6], [-1.6, 1.6], [0]], dy: 3.6, cols: ['#78a838', '#5e9230', '#82b440'] },
@@ -293,19 +293,16 @@ function decorateVines() {
   vis.forEach(b => b.classList.remove('sm-wide'));
   if (vis.length % 2) vis[vis.length - 1].classList.add('sm-wide');
   btns.forEach((b, i) => {
-    const old = b.querySelector('.sm-vine'); if (old) old.remove();
+    const old = b.querySelector('.sm-vine'); if (old && !b.classList.contains('sm-grown')) old.remove();
     const w = b.offsetWidth, h = b.offsetHeight;
     if (!w || !h) return;
-    let grow = 0;
     if (smSlide) {   // кнопка выплывает вбок со своей стороны, лоза прорастает следом
       const r = b.getBoundingClientRect(), fromRight = r.left + r.width / 2 > window.innerWidth / 2 + 4 || (Math.abs(r.left + r.width / 2 - window.innerWidth / 2) <= 4 && i % 2);
       const d = (i * 0.09).toFixed(2);
       b.classList.remove('sm-in-l', 'sm-in-r'); void b.offsetWidth;
       b.style.setProperty('--d', d + 's');
       b.classList.add(fromRight ? 'sm-in-r' : 'sm-in-l');
-      grow = 0.45 + i * 0.09;   // лоза начинает расти, когда кнопка доехала
     }
-    b.appendChild(smVineCanvas(w, h, VINE_KINDS[(i + (smVineShift++)) % 3], i * 31 + smVineShift, smSlide, grow));
   });
 }
 let smVineShift = 0, smSlide = false;
@@ -352,7 +349,7 @@ function initResToggle() {
 
 // ---------- Выбор кнопки: стебель прорастает, обвивает её, летят искры ----------
 
-const SM_DELAY = 620;   // сколько показываем рост, прежде чем выполнить действие
+const SM_DELAY = 760;   // сколько показываем рост, прежде чем выполнить действие
 let smPicking = false;
 
 function smPerim(s, w, h, r) {   // точка на скруглённом периметре кнопки: s ∈ [0,1) от левого верха по часовой
@@ -366,7 +363,7 @@ function smPerim(s, w, h, r) {   // точка на скруглённом пе�
 }
 
 function smGrow(btn) {
-  const old = btn.querySelector('.sm-grow'); if (old) old.remove();
+  const og = btn.querySelector('.sm-grow'); if (og) og.remove();
   const w = btn.offsetWidth, h = btn.offsetHeight, P = 22;
   if (!w || !h) return;
   const rnd = smRand(Date.now() & 0xffff);
@@ -377,14 +374,13 @@ function smGrow(btn) {
     sparks += `<i class="sm-spark" style="left:${(x + P).toFixed(0)}px;top:${(y + P).toFixed(0)}px;--dx:${(Math.cos(a) * dist).toFixed(0)}px;--dy:${(Math.sin(a) * dist - 10).toFixed(0)}px;animation-delay:${(0.05 + rnd() * 0.4).toFixed(2)}s"></i>`;
   }
   btn.insertAdjacentHTML('beforeend', `<span class="sm-grow" style="left:${-P}px;top:${-P}px;width:${w + P * 2}px;height:${h + P * 2}px">${sparks}</span>`);
-  // та же лоза сползает вниз и исчезает, потом отрастает заново
-  btn.classList.remove('sm-peel', 'sm-regrow'); void btn.offsetWidth;
-  btn.classList.add('sm-peel');
-  clearTimeout(btn._peelT);
-  btn._peelT = setTimeout(() => {
-    btn.classList.remove('sm-peel'); void btn.offsetWidth;
-    const cv = btn.querySelector('canvas.sm-vine'); if (cv && cv._play) cv._play(0);   // отрастает заново по-настоящему
-  }, SM_DELAY + 40);
+  const old = btn.querySelector('canvas.sm-vine'); if (old) old.remove();
+  const vc = smVineCanvas(w, h, VINE_KINDS[(smVineShift++) % 3], (Date.now() & 0xffff) + smVineShift, true, 0, 1.8);   // рост в 1,8 раза быстрее
+  btn.appendChild(vc);
+  btn.classList.add('sm-grown');
+  clearTimeout(btn._vineT);
+  // кнопка остаётся на экране (список, «назад») — лоза постепенно отцветает и убирается
+  btn._vineT = setTimeout(() => { vc.classList.add('sm-fade'); btn._vineT = setTimeout(() => { vc.remove(); btn.classList.remove('sm-grown'); const g = btn.querySelector('.sm-grow'); if (g) g.remove(); }, 600); }, 2200);
 }
 
 // выбор — наведение пальца/мыши и нажатие; действие откладываем на время роста
@@ -496,17 +492,19 @@ function vineData(w, h, kind, seed) {
   }
   const greens = ['#5a9a2a', '#6aaa34', '#4a8a24', '#78b83e'];
   const items = [];
+  const hopV = kind === 'hops' ? 6 : 3;
   for (let i = 1; i < pts.length - 1; i++) {
     const [x, y] = pts[i], dx = pts[i + 1][0] - pts[i - 1][0], dy = pts[i + 1][1] - pts[i - 1][1];
     const ang = Math.atan2(dy, dx) * 180 / Math.PI, side = i % 2 ? 1 : -1, f = i / n;
     if (kind === 'wheat') {
-      if (rnd() < 0.55) items.push({ x, y, f, k: 'ear', frag: vWheat(0, 0, 18 + rnd() * 20, ang + 90 * side + (rnd() - 0.5) * 50) });
-      else items.push({ x, y, f, k: 'leaf', frag: vLeaf(0, 0, ang + 90 * side * 0.9, 0.9, 'plain', '#8aa83a') });
+      if (rnd() < 0.55) { const v = (rnd() * 3) | 0; items.push({ x, y, f, k: 'ear', key: 'E:' + v, mk: () => vWheat(0, 0, 26, 0, v), rot: ang + 90 * side + (rnd() - 0.5) * 50, sc: 0.7 + rnd() * 0.6 }); }
+      else items.push({ x, y, f, k: 'leaf', key: 'L:plain:0', mk: () => vLeaf(0, 0, 0, 1, 'plain', '#8aa83a'), rot: ang + 90 * side * 0.9, sc: 0.9 });
     } else {
-      items.push({ x, y, f, k: 'leaf', frag: vLeaf(0, 0, ang + 90 * side + (rnd() - 0.5) * 30, 0.9 + rnd() * 0.5, kind, greens[(i * 7) % 4]) });
+      const gi = (i * 7) % 4;
+      items.push({ x, y, f, k: 'leaf', key: 'L:' + kind + ':' + gi, mk: () => vLeaf(0, 0, 0, 1, kind, greens[gi]), rot: ang + 90 * side + (rnd() - 0.5) * 30, sc: 0.9 + rnd() * 0.5 });
       if (i % 2 === 0) {
-        const fs = (i >> 1) % 2 ? 1 : -1;
-        items.push({ x: x + fs * 2, y: y + 2, f, k: 'fruit', frag: smFruit(kind, 0, 0, 0.8 + rnd() * 0.35, fs, rnd) });
+        const fs = (i >> 1) % 2 ? 1 : -1, v = (rnd() * hopV) | 0;
+        items.push({ x: x + fs * 2, y: y + 2, f, k: 'fruit', key: 'F:' + kind + ':' + v, mk: () => kind === 'hops' ? vHop(0, 0, 1, 0, 6, 0, v) : vGrapes(0, 0, 1, 0, 6, 0, v), rot: (rnd() - 0.5) * 80 + fs * 12, sc: 0.8 + rnd() * 0.35 });
       }
     }
   }
@@ -525,7 +523,14 @@ function vineData(w, h, kind, seed) {
   return { pts, items, curls, W, H, P, n };
 }
 
-function smSprite(frag) {
+const SM_SPR_CACHE = new Map();
+function smSprite(key, mk) {
+  if (SM_SPR_CACHE.has(key)) return SM_SPR_CACHE.get(key);
+  const pr = smSpriteMake(mk());
+  SM_SPR_CACHE.set(key, pr);
+  return pr;
+}
+function smSpriteMake(frag) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SM_SPR}" height="${SM_SPR}" viewBox="0 0 ${SM_SPR} ${SM_SPR}"><g transform="translate(${SM_SPR / 2} ${SM_SPR / 2})">${frag}</g></svg>`;
   return new Promise(res => {
     const im = new Image();
@@ -557,7 +562,7 @@ const smEase = {
   back: t => { t = Math.min(1, Math.max(0, t)); const c = 2.2; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
 };
 
-function smVineCanvas(w, h, kind, seed, animate, delay) {
+function smVineCanvas(w, h, kind, seed, animate, delay, spd = 1) {
   const D = vineData(w, h, kind, seed), W = D.W, H = D.H, P = D.P, PX = SM_PX;
   const cv = document.createElement('canvas');
   cv.className = 'sm-vine';
@@ -607,7 +612,7 @@ function smVineCanvas(w, h, kind, seed, animate, delay) {
       const sc = it.k === 'fruit' ? 0.15 + 0.85 * smEase.out(g) : smEase.back(g);
       const sway = tt > T_END ? 0 : Math.sin(tt * 5 + i) * 0.05 * (1 - Math.min(1, g));
       const unfurl = it.k === 'fruit' ? 0 : (1 - Math.min(1, g)) * 0.9 * (i % 2 ? 1 : -1);
-      c.save(); c.translate(it.x / PX, it.y / PX); c.rotate(sway + unfurl); c.scale(sc, sc);
+      c.save(); c.translate(it.x / PX, it.y / PX); c.rotate(it.rot * Math.PI / 180 + sway + unfurl); c.scale(sc * it.sc, sc * it.sc);
       c.drawImage(sp, -sp.width / 2, -sp.height / 2); c.restore();
     }
     // кончик растущего стебля — яркая искорка
@@ -626,17 +631,45 @@ function smVineCanvas(w, h, kind, seed, animate, delay) {
   const play = dly => {
     cancelAnimationFrame(raf); frame(-1);
     const t0 = performance.now() + (dly || 0) * 1000;
+    let last = 0;
     const step = now => {
       if (!cv.isConnected) return;
-      const tt = (now - t0) / 1000;
-      if (tt < T_END + 0.1) { frame(tt); raf = requestAnimationFrame(step); } else frame(T_END + 1);
+      const tt = (now - t0) / 1000 * spd;
+      if (tt >= T_END + 0.1) { frame(T_END + 1); return; }
+      if (now - last >= 30) { last = now; frame(tt); }
+      raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
   };
   cv._play = play; cv._frame = frame;
-  Promise.all(D.items.map(it => smSprite(it.frag))).then(list => {
+  Promise.all(D.items.map(it => smSprite(it.key, it.mk))).then(list => {
     sprites = list;
     if (animate) play(delay); else frame(T_END + 1);
   });
   return cv;
+}
+
+// Пока открыто меню, экран загрузки непрозрачен и закрывает карту целиком: рисовать её под ним — лишняя
+// работа каждый кадр (на телефоне заметная). При закрытии флаг снимается сразу, и карта видна уже во время растворения.
+{
+  const _render = render, _mini = drawMinimap, _miniBase = updateMinimapBase;
+  render = function () { if (StartMenu.open) return; _render(); };
+  drawMinimap = function () { if (StartMenu.open) return; _mini(); };
+  updateMinimapBase = function () { if (StartMenu.open) { StartMenu.miniStale = true; return; } StartMenu.miniStale = false; _miniBase(); };
+}
+
+// спрайты листьев и плодов готовим заранее, в простое: к первому нажатию рост стартует без паузы
+function smWarm() {
+  const jobs = [];
+  for (const kind of VINE_KINDS) for (let sd = 1; sd <= 4; sd++) jobs.push([kind, sd]);
+  const next = () => {
+    const j = jobs.shift(); if (!j) return;
+    for (const it of vineData(180, 44, j[0], j[1] * 53).items) smSprite(it.key, it.mk);
+    (window.requestIdleCallback || (f => setTimeout(f, 80)))(next);
+  };
+  next();
+}
+{
+  const _sg = startGame;
+  startGame = function () { _sg(); setTimeout(smWarm, 1500); };
 }
