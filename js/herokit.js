@@ -57,15 +57,23 @@ function heroSeesUndead(u) {
   return false;
 }
 
+// оружие рекрутов и глав гильдий — по классу (то, что им выдаёт гильдия)
+const REC_WPN = { warrior: 'sword', archer: 'bow', rogue: 'dagger', mage: 'staff', barbarian: 'axe2', druid: 'staff' };
+
 // Строка оружия для спрайта (people.js): 'основное|левая рука|1 — выхвачено'
 function heroWpnOf(u) {
   const H = u.hero;
-  if (!H) return '';
-  const eq = H.equip || {};
-  const look = k => (k && KIT_ITEMS[k] ? KIT_ITEMS[k].w : WPN_LOOK[k] || '');
-  let m = look(eq.weapon), o = look(eq.off);
-  // в общей деревне рюкзаки чужих героев не видны: облик — по оружию класса
-  if (!m && !o && H.owner && KIT_OF[H.clsKey]) { const ks = KIT_OF[H.clsKey]; m = look(ks[0]); o = look(ks[1]); }
+  let m = '', o = '';
+  if (H) {
+    const eq = H.equip || {};
+    const look = k => (k && KIT_ITEMS[k] ? KIT_ITEMS[k].w : WPN_LOOK[k] || '');
+    m = look(eq.weapon); o = look(eq.off);
+    // в общей деревне рюкзаки чужих героев не видны: облик — по оружию класса
+    if (!m && !o && H.owner && KIT_OF[H.clsKey]) { const ks = KIT_OF[H.clsKey]; m = look(ks[0]); o = look(ks[1]); }
+  } else {
+    const Rc = u.rec || u.gx, cls = Rc ? Rc.cls : u.gm && typeof u.type === 'string' && u.type.startsWith('gm_') ? u.type.slice(3) : null;
+    m = REC_WPN[cls] || '';
+  }
   if (!m && !o) return '';
   const now = Game.time;
   const want = !!(heroSeesUndead(u) || u.combatUntil > now || (u.anim && FIGHT_ANIM_SET.has(u.anim)) || (u.hfx && u.hfx.t > now));
@@ -128,19 +136,43 @@ function heroBuf(u, key) {
   return s;
 }
 
+const kitMirror = () => typeof Coop !== 'undefined' && !!Coop.on;
+const kitServer = () => typeof coop !== 'undefined' && !!coop.players;
+// сообщение игроку: в общей деревне — только ему, в одиночной — тостом
+function abSay(h, text) { const o = h && h.hero && h.hero.owner; if (o && typeof coopSay === 'function' && kitServer()) coopSay(o, text); else toast(text); }
+
+// Кнопка или клавиша способности. В общей деревне — просьба серверу (он проверит и применит), перезарядку видно сразу.
 function heroUseAbility(i) {
   const h = Game.hero, H = h && h.hero, as = heroAbils(H);
-  if (!kitOn() || !as || h.dead) return;
+  if (!as || !h || h.dead) return;
+  if (kitMirror()) {
+    H.abCd = h.abcd || {}; H.abT = h.abt || {};
+    const a = as[i];
+    if (!a) return;
+    if ((H.level || 1) < (a.lvl || 1)) { toast(`${a.name} — с ${a.lvl} уровня героя`); return; }
+    if (!abReady(H, a)) return;
+    if ((h._abSent || 0) > Game.time) return;              // не засыпать сервер повторами, пока ждём ответ
+    h._abSent = Game.time + 0.4;
+    coopSend({ t: 'abil', i });                           // перезарядку и время действия пришлёт сервер (u.abcd / u.abt)
+    return;
+  }
+  if (kitOn()) heroAbilityFor(h, i);
+}
+
+function heroAbilityFor(h, i) {
+  const H = h && h.hero, as = heroAbils(H);
+  if (!as || h.dead) return false;
   const a = as[i];
-  if (!a) return;
-  if ((H.level || 1) < (a.lvl || 1)) { toast(`${a.name} — с ${a.lvl} уровня героя`); return; }
-  if (!abReady(H, a)) return;
-  if (H.stunUntil > Game.time) { toast(`${H.name} лежит — не до приёмов`); return; }
-  const now = Game.time, col = (GCLS[H.clsKey] || {}).col || '#ffe070';
+  if (!a) return false;
+  if ((H.level || 1) < (a.lvl || 1)) { abSay(h, `${a.name} — с ${a.lvl} уровня героя`); return false; }
+  if (!abReady(H, a)) return false;
+  if (H.stunUntil > Game.time || H.downT) { abSay(h, `${H.name} лежит — не до приёмов`); return false; }
+  if (h.inside) { abSay(h, `${H.name}: сперва выйти наружу`); return false; }
+  const now = Game.time, col = ABIL_COL[a.k] || (GCLS[H.clsKey] || {}).col || '#ffe070';
   if (a.shots || a.turn) {
     // нужны враги рядом — иначе приём не тратится
     const fs = foesNear(h.x, h.y, a.shots ? a.shots.r : 6);
-    if (!fs.length) { floater(h.x, h.y - 1.6, 'Врагов рядом нет', '#e8e0c0'); return; }
+    if (!fs.length) { floater(h.x, h.y - 1.6, 'Врагов рядом нет', '#e8e0c0'); return false; }
     if (a.shots) {
       for (let n = 0; n < a.shots.n; n++) {
         const f = fs[n % fs.length], d = Math.hypot(f.o.x - h.x, f.o.y - h.y);
@@ -162,19 +194,39 @@ function heroUseAbility(i) {
   }
   if (a.heal) {
     const part = a.heal + 0.02 * ((H.level || 1) - 1);
-    hlHeal(h, H.maxhp * part); h.injury = null;
-    if (a.team) for (const m of Game.units) if (m.teamOf === h.id && Math.hypot(m.x - h.x, m.y - h.y) < 8) { m.injury = null; if (m.rec && m.rec.hp != null) m.rec.hp = Math.min(30 + 8 * m.rec.lvl, m.rec.hp + 15); }
-    HL.fx.push({ kind: 'heal', x: h.x, y: h.y, t0: now, dur: 1.2 });
+    H.hp = Math.min(H.maxhp, H.hp + H.maxhp * part); h.injury = null;
+    // команда рядом: напарники героя, его отряд (рекруты «за героем») и другие герои общей деревни
+    if (a.team) for (const m of Game.units) {
+      if (m === h || m.dead || m.inside || Math.hypot(m.x - h.x, m.y - h.y) > 8) continue;
+      if (!(m.teamOf === h.id || (m.rec && m.rec.order === 'follow') || (m.hero && m.hero.owner))) continue;
+      m.injury = null;
+      if (m.rec && m.rec.hp != null) m.rec.hp = Math.min(30 + 8 * m.rec.lvl, m.rec.hp + 15);
+      if (m.hero && m.hero.maxhp) m.hero.hp = Math.min(m.hero.maxhp, m.hero.hp + m.hero.maxhp * part * 0.6);
+      m.abbu = { k: a.k, s: now };
+    }
   }
   if (a.dur) (H.abT || (H.abT = {}))[a.k] = now + a.dur;
   if (a.next) H.abNext = a.next;
   (H.abCd || (H.abCd = {}))[a.k] = now + a.cd;
-  KIT.fx.push({ k: a.k, u: h, t0: now, dur: a.dur || 1.2, col });
+  // копии на самом жителе: сервер общей деревни отправляет их игроку — кнопки показывают перезарядку
+  if (H.owner) { h.abcd = Object.assign({}, H.abCd); h.abt = Object.assign({}, H.abT); }
+  // видимый эффект (уходит игрокам общей деревни вместе с героем): вспышка и, у долгих, свечение на всё время
+  h.abbu = { k: a.k, s: now };
+  if (a.dur || a.next) h.abfx = { k: a.k, s: now, t: now + (a.next ? 60 : a.dur) };
+  if (!a.shots && !a.turn) { h.hfx = { k: 'win0', t: now + 0.55 }; h.vdir = 'E'; }   // вскинул оружие: приём!
   floater(h.x, h.y - 1.9, a.name + '!', col);
   sfxAt('chime', h.x * TILE, h.y * TILE, 0.8);
-  if (typeof track === 'function') track('abil-' + a.k, 'Способность героя: ' + a.name);
+  if (typeof track === 'function' && !kitServer()) track('abil-' + a.k, 'Способность героя: ' + a.name);
   updateUI(true);
+  return true;
 }
+
+// цвета способностей (вспышка, свечение, надпись)
+const ABIL_COL = {
+  wind: '#ff8a7a', surge: '#ffe070', rage: '#ff5a3a', reckless: '#ff9a40', missile: '#c8a0ff', shield: '#8ac8ff',
+  wild: '#c8964a', mend: '#8ae070', sneak: '#9a8ab8', evade: '#cfe8ff', aimed: '#ff6a5a', volley: '#e8d0a0',
+  flurry: '#ffd080', patience: '#f0a8d0', bless: '#ffe890', turn: '#fff2a0',
+};
 
 // ---------- Значки способностей 12×12 (своя пиксельная графика) ----------
 const ABIL_ICON = {
@@ -236,7 +288,9 @@ function abilIconURL(k) {
 }
 
 // ---------- Подключение: характеристики, удары, урон по герою ----------
-const KIT = { fx: [], t: 0, hooked: false };
+const KIT = { t: 0, hooked: false };
+// поля жителя, которые сервер общей деревни отправляет игрокам: кадр удара/парирования, вспышка и свечение способности
+const KIT_SYNC = ['hfx', 'abfx', 'abbu', 'abcd', 'abt'];
 
 {
   // левая рука (щит, второй кинжал) тоже даёт бонус
@@ -292,7 +346,7 @@ const KIT = { fx: [], t: 0, hooked: false };
     // без промаха: «скрытая атака», «меткий выстрел», искры и стрелы способностей
     const sure = f.sure || H.abNext || 0;
     if (sure) {
-      if (!f.sure) H.abNext = 0;
+      if (!f.sure) { H.abNext = 0; if (u.abfx && (u.abfx.k === 'sneak' || u.abfx.k === 'aimed')) u.abfx = null; }
       const o = f.o;
       floater(o.x, o.y - 2, sure >= 2 ? 'Точно в цель!' : 'В цель!', '#ffe070');
       if (f.kind === 'neu') neuHit(o, u, neuDamageOf(u) * sure * (0.9 + Math.random() * 0.2));
@@ -357,7 +411,7 @@ function heroParry(u) {
         if (Math.random() < heroDodge(u)) { heroParry(u); return; }
         n *= 1 - Math.max(-0.5, Math.min(0.85, heroBuf(u, 'red')));
         if (n >= 1) u.hfx = { k: 'hurt', t: Game.time + 0.35 };
-      }
+      } else if (u && u.rec && !u.dead && n >= 1) u.hfx = { k: 'hurt', t: Game.time + 0.35 };
       _nh(u, n);
     };
   }
@@ -365,48 +419,82 @@ function heroParry(u) {
   if (typeof neuStrike === 'function') {
     const _ns = neuStrike;
     neuStrike = function (N, tg) {
-      const hp = tg && tg.hero ? tg.hero.hp : null;
+      const hpOf = t => (t && t.hero ? t.hero.hp : t && t.rec ? t.rec.hp : null);
+      const hp = hpOf(tg);
       _ns(N, tg);
-      if (hp != null && tg.hero.hp === hp && !(tg.hfx && tg.hfx.t > Game.time)) tg.hfx = { k: 'parry', t: Game.time + 0.35 };
+      if (hp != null && hpOf(tg) === hp && !tg.dead && !(tg.hfx && tg.hfx.t > Game.time)) tg.hfx = { k: 'parry', t: Game.time + 0.35 };
     };
   }
 
   // Анимация боя героя: выхватить оружие → замах → удар → довод → стойка … → победа
-  const heroFightWrap = (inner, u, isAlive) => (function* () {
+  // Бой героя и рекрутов: выхватить → замах → удар → довод → стойка … → победа (только если враг пал)
+  const heroFightWrap = (inner, u, isAlive, died) => (function* () {
     const H = u.hero;
     const had = isAlive();
-    if (!(u.combatUntil > Game.time) && had) { u.combatUntil = Game.time + 8; yield { wait: WPN_DRAW_T, anim: 'fdraw' }; }
+    if (had && !(u.combatUntil > Game.time) && !u._wo) {
+      // оружие ещё в ножнах — выхватить (уже в руке, потому что рядом нечисть, — сразу в бой)
+      u.combatUntil = Game.time + 8; u._wo = true; u._wanim = null;
+      yield { wait: WPN_DRAW_T, anim: 'fdraw' };
+    }
     let r = inner.next(), after = 0;
     while (!r.done) {
       let v = r.value;
       u.combatUntil = Game.time + 8;
-      if (v && v.wait != null && !v.walk) {
-        const fast = 1 - Math.min(0.6, heroBuf(u, 'spd'));
-        if (v.anim === 'chop' || v.anim === 'build') { v = Object.assign({}, v, { anim: 'fatk', wait: v.wait * fast }); after = 1; }
-        else if (v.anim === 'duck') v = Object.assign({}, v, { anim: 'fparry' });
-        else if (!v.anim) { v = Object.assign({}, v, { anim: after === 1 ? 'ffollow' : 'fready', wait: v.wait * fast }); after = 2; }
-      }
+      if (v && v.wait != null && !v.walk) { v = fightAnim(u, v, after); after = v._after; }
       r = inner.next(yield v);
     }
-    if (had && !isAlive() && !u.dead && !(H && H.hp <= 0) && !u.brk) {
-      floater(u.x, u.y - 2, ['Ха!', 'Следующий!', 'Вот так!', 'За деревню!'][(Math.random() * 4) | 0], '#fff2a0');
+    if (had && died() && !u.dead && !(H && H.hp <= 0) && !(u.rec && u.rec.hp != null && u.rec.hp <= 0) && !u.brk) {
+      floater(u.x, u.y - 2, (u.rec ? ['Есть!', 'Готов!', 'За гильдию!'] : ['Ха!', 'Следующий!', 'Вот так!', 'За деревню!'])[(Math.random() * (u.rec ? 3 : 4)) | 0], '#fff2a0');
       yield { wait: 1.3, anim: 'fwin' };
     }
   })();
+  // рабочие кадры боевых генераторов → боевые: топор/молот — удар, пригнулся — парирование, пауза — довод или стойка
+  function fightAnim(u, v, after) {
+    const fast = 1 - Math.min(0.6, heroBuf(u, 'spd'));
+    if (v.anim === 'chop' || v.anim === 'build') return Object.assign({}, v, { anim: 'fatk', wait: v.wait * fast, _after: 1 });
+    if (v.anim === 'duck') return Object.assign({}, v, { anim: 'fparry', _after: 0 });
+    if (!v.anim) return Object.assign({}, v, { anim: after === 1 ? 'ffollow' : 'fready', wait: v.wait * fast, _after: 2 });
+    return Object.assign({}, v, { _after: 0 });
+  }
+  const foeDied = f => {
+    const o = f.o;
+    if (f.kind === 'skel') return o.state === 'dead';
+    if (f.kind === 'ent') return o.state === 'dying' || o.state === 'gone';
+    if (f.kind === 'neu') return o.st === 'die' || !Game.neutrals.includes(o);
+    if (f.kind === 'beast') return !!o.dead || !Game.animals.includes(o);
+    return false;
+  };
+  const isFighter = u => (u.type === 'hero' && !!u.hero) || !!u.rec;
 
   const _fg = fightGen;
   fightGen = function (u, f) {
-    if (u.type !== 'hero' || !u.hero || !f || !f.kind) return _fg(u, f);
-    return heroFightWrap(_fg(u, f), u, () => foeAlive(f));
+    if (!isFighter(u) || !f || !f.kind) return _fg(u, f);
+    return heroFightWrap(_fg(u, f), u, () => foeAlive(f), () => foeDied(f));
   };
   // если героя затянуло в ночную драку как простого гнома — те же кадры
   if (typeof skelFightGen === 'function') {
     const _sf = skelFightGen;
-    skelFightGen = function (u, s) { return u.type === 'hero' && u.hero ? heroFightWrap(_sf(u, s), u, () => s.state === 'fight' || s.state === 'roam') : _sf(u, s); };
+    skelFightGen = function (u, s) { return u.type === 'hero' && u.hero ? heroFightWrap(_sf(u, s), u, () => s.state === 'fight' || s.state === 'roam', () => s.state === 'dead') : _sf(u, s); };
   }
   if (typeof entFightGen === 'function') {
     const _ef = entFightGen;
-    entFightGen = function (u, e) { return u.type === 'hero' && u.hero ? heroFightWrap(_ef(u, e), u, () => e.state === 'fight' || e.state === 'walk') : _ef(u, e); };
+    entFightGen = function (u, e) { return u.type === 'hero' && u.hero ? heroFightWrap(_ef(u, e), u, () => e.state === 'fight' || e.state === 'walk', () => e.state === 'dying' || e.state === 'gone') : _ef(u, e); };
+  }
+  // тренировка с главой и учебные удары рекрутов во дворе гильдии — теми же боевыми кадрами
+  if (typeof recruitGen === 'function') {
+    const _rg = recruitGen;
+    recruitGen = function (u) {
+      const inner = _rg(u);
+      return (function* () {
+        let r = inner.next(), after = 0;
+        while (!r.done) {
+          let v = r.value;
+          const conv = v && v.wait != null && !v.walk && (v.anim === 'chop' || v.anim === 'build' || v.anim === 'duck' || (!v.anim && after === 1 && v.wait <= 0.6));
+          if (conv) { v = fightAnim(u, v, after); after = v._after; } else after = 0;
+          r = inner.next(yield v);
+        }
+      })();
+    };
   }
 
   // своё оружие первого уровня надевается с первого раза
@@ -435,13 +523,13 @@ function heroParry(u) {
   step = function (dt) { _step(dt); kitTick(dt); };
 
   const _reset = resetGameState;
-  resetGameState = function () { _reset(); KIT.fx.length = 0; };
+  resetGameState = function () { _reset(); KIT.t = 0; };
 
   const _start = startGame;
   startGame = function () {
     _start();
     // клиент общей деревни: кадры «удар по нему / парировал» приходят вместе с жителями
-    if (typeof COOP_UNIT_EX !== 'undefined' && !COOP_UNIT_EX.includes('hfx')) COOP_UNIT_EX.push('hfx');
+    if (typeof COOP_UNIT_EX !== 'undefined') for (const k of KIT_SYNC) if (!COOP_UNIT_EX.includes(k)) COOP_UNIT_EX.push(k);
     if (!KIT.keys && typeof window !== 'undefined' && window.addEventListener) {
       KIT.keys = true;
       window.addEventListener('keydown', e => {
@@ -457,8 +545,9 @@ function heroParry(u) {
   heroCardUpdate = function () {
     _hcu();
     const card = typeof document !== 'undefined' && document.getElementById && document.getElementById('hero-card');
-    if (!card || card.style.display === 'none' || !Game.hero || !kitOn()) return;
+    if (!card || card.style.display === 'none' || !Game.hero || !(kitOn() || kitMirror())) return;
     const H = Game.hero.hero;
+    if (kitMirror()) { H.abCd = Game.hero.abcd || {}; H.abT = Game.hero.abt || {}; }   // перезарядки — с сервера
     if (Mobile.on && !heroCardOpen) {
       // телефон, тонкая плашка: под ней строка из двух способностей (значок и название)
       const row = card.querySelector('.hc-row');
@@ -495,30 +584,119 @@ function heroParry(u) {
     };
   }
 
-  // вспышки способностей поверх мира
+  // Сам герой под способностью: в «Скрытой атаке» полупрозрачен, в «Диком облике» крупнее (медвежья стать),
+  // в «Увёртливости» и «Терпеливой обороне» двоится — за ним тянутся тени
+  if (typeof drawUnit === 'function') {
+    const _du = drawUnit;
+    drawUnit = function (c, u) {
+      const fx = u.abfx;
+      if (!fx || !(fx.t > Game.time) || u.inside || u.dead) return _du(c, u);
+      const k = fx.k, t = Game.time;
+      if (k === 'sneak') { c.save(); c.globalAlpha = 0.42 + 0.08 * Math.sin(t * 5); _du(c, u); c.restore(); return; }
+      if (k === 'wild') {
+        const px = Math.round(u.x * TILE), py = Math.round(u.y * TILE + 6), sc = 1.22 + 0.03 * Math.sin(t * 3);
+        c.save(); c.translate(px, py); c.scale(sc, sc); c.translate(-px, -py); _du(c, u); c.restore(); return;
+      }
+      if (k === 'evade' || k === 'patience') {
+        const dx = (u.face || 1) * -3;
+        for (const [o, a] of [[2, 0.18], [1, 0.3]]) { c.save(); c.globalAlpha = a; c.translate(dx * o + Math.sin(t * 17 + o) * 0.8, 0); _du(c, u); c.restore(); }
+      }
+      _du(c, u);
+    };
+  }
+
+  // свечение и вспышки способностей поверх мира — по полям жителя (в общей деревне они приходят с сервера)
   const _ov = drawOverlay;
   drawOverlay = function (c) {
     _ov(c);
     const t = Game.time;
-    for (const f of KIT.fx) {
-      const u = f.u;
-      if (!u || u.dead || u.inside) continue;
-      const p = Math.min(1, (t - f.t0) / Math.max(0.6, Math.min(1.2, f.dur))), px = u.x * TILE, py = u.y * TILE;
-      c.save(); c.globalCompositeOperation = 'lighter';
-      const rgb = hexRgbStr(f.col);
-      if (f.dur > 1.3 && t - f.t0 > 1.2) {
-        // идёт усиление: мерцающее кольцо у ног и искры
-        const a = 0.35 + 0.15 * Math.sin(t * 7);
-        c.strokeStyle = `rgba(${rgb},${a})`; c.lineWidth = 1.2; c.beginPath(); c.ellipse(px, py + 6, 11, 4.5, 0, 0, 7); c.stroke();
-        if (Math.random() < 0.3) fxBurst(px + (Math.random() - 0.5) * 16, py - Math.random() * 20, 1, [f.col], 10, 20, 0.6, 1.2, -30);
-      } else {
-        c.strokeStyle = `rgba(${rgb},${0.8 * (1 - p)})`; c.lineWidth = 2;
-        c.beginPath(); c.ellipse(px, py + 4, 6 + 20 * p, 2.5 + 8 * p, 0, 0, 7); c.stroke();
-        glow(c, px, py - 12, 10 + 14 * p, rgb, 0.4 * (1 - p));
-      }
-      c.restore();
+    for (const u of Game.units) {
+      if (u.dead || u.inside || !(u.abfx || u.abbu)) continue;
+      if (u.abfx && u.abfx.t > t) drawAbilAura(c, u, u.abfx.k, t - u.abfx.s, u.abfx.t - t);
+      if (u.abbu && t - u.abbu.s < 1.1) drawAbilBurst(c, u, u.abbu.k, (t - u.abbu.s) / 1.1);
     }
   };
+}
+
+// Вспышка в момент приёма: кольцо по земле, свет, у каждого приёма свой узор
+function drawAbilBurst(c, u, k, p) {
+  const px = u.x * TILE, py = u.y * TILE, col = ABIL_COL[k] || '#ffe070', rgb = hexRgbStr(col);
+  c.save(); c.globalCompositeOperation = 'lighter';
+  c.strokeStyle = `rgba(${rgb},${0.85 * (1 - p)})`; c.lineWidth = 2;
+  c.beginPath(); c.ellipse(px, py + 5, 6 + 20 * p, 2.5 + 8 * p, 0, 0, 7); c.stroke();
+  glow(c, px, py - 12, 10 + 14 * p, rgb, 0.45 * (1 - p));
+  if (k === 'wind' || k === 'mend' || k === 'bless') {
+    // лечение: крестики и листья поднимаются вихрем
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * 6.28 + p * 5, r = 9 - p * 3, yy = py - 4 - p * 26 - i * 2.5;
+      c.fillStyle = `rgba(${rgb},${0.9 * (1 - p)})`;
+      const x = px + Math.cos(a) * r;
+      if (k === 'mend') { c.beginPath(); c.ellipse(x, yy, 2, 1.1, a, 0, 7); c.fill(); }
+      else { c.fillRect(x - 0.6, yy - 2, 1.2, 4); c.fillRect(x - 2, yy - 0.6, 4, 1.2); }
+    }
+  } else if (k === 'turn') {
+    // столб света
+    const g = c.createLinearGradient(0, py - 70, 0, py + 6);
+    g.addColorStop(0, 'rgba(255,240,180,0)'); g.addColorStop(0.7, `rgba(255,240,170,${0.6 * (1 - p)})`); g.addColorStop(1, 'rgba(255,255,220,0)');
+    c.fillStyle = g; c.fillRect(px - 10 - 30 * p, py - 70, 20 + 60 * p, 76);
+  } else if (k === 'rage' || k === 'reckless') {
+    // рёв: красные волны от головы
+    for (let i = 0; i < 3; i++) { const q = (p * 1.4 + i / 3) % 1; c.strokeStyle = `rgba(${rgb},${0.7 * (1 - q)})`; c.lineWidth = 1.5; c.beginPath(); c.arc(px, py - 26, 4 + q * 18, -2.6, -0.5); c.stroke(); }
+  } else if (k === 'wild') {
+    for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28; c.fillStyle = `rgba(200,150,74,${0.8 * (1 - p)})`; c.fillRect(px + Math.cos(a) * (6 + 16 * p), py - 10 + Math.sin(a) * (4 + 10 * p), 2, 2); }
+  }
+  c.restore();
+}
+
+// Пока действует: у каждого приёма своё свечение (left — сколько секунд осталось, на исходе мерцает)
+function drawAbilAura(c, u, k, el, left) {
+  const px = u.x * TILE, py = u.y * TILE, t = Game.time, col = ABIL_COL[k] || '#ffe070', rgb = hexRgbStr(col);
+  const fade = left < 2 ? (Math.floor(t * 8) % 2 ? 0.4 : 1) : 1;
+  c.save();
+  if (k === 'shield') {
+    // магический щит: прозрачный пузырь с бегущими по нему рунами
+    c.globalCompositeOperation = 'lighter';
+    const hit = u.hfx && u.hfx.t > t ? 1 : 0;
+    c.fillStyle = `rgba(120,180,255,${(0.1 + 0.25 * hit) * fade})`; c.beginPath(); c.ellipse(px, py - 10, 11, 16, 0, 0, 7); c.fill();
+    c.strokeStyle = `rgba(160,210,255,${(0.55 + 0.4 * hit) * fade})`; c.lineWidth = 1; c.stroke();
+    for (let i = 0; i < 5; i++) { const a = t * 1.6 + i * 1.256; c.fillStyle = `rgba(230,245,255,${0.8 * fade})`; c.fillRect(px + Math.cos(a) * 11 - 0.5, py - 10 + Math.sin(a) * 16 - 0.5, 1.2, 1.2); }
+  } else if (k === 'rage' || k === 'reckless') {
+    // ярость: красное зарево и пар из-под колпака
+    c.globalCompositeOperation = 'lighter';
+    glow(c, px, py - 12, 16 + 2 * Math.sin(t * 9), rgb, (k === 'rage' ? 0.32 : 0.22) * fade);
+    if (Math.random() < 0.25) fxBurst(px + (Math.random() - 0.5) * 6, py - 30, 1, k === 'rage' ? ['#ffb0a0', '#ffffff'] : ['#ffc080'], 8, 26, 0.7, 1.6, -40);
+  } else if (k === 'wild') {
+    c.globalCompositeOperation = 'lighter';
+    glow(c, px, py - 8, 15, '200,150,74', 0.22 * fade);
+    if (Math.random() < 0.15) fxBurst(px + (Math.random() - 0.5) * 14, py - Math.random() * 18, 1, ['#8ad060', '#c8964a'], 12, 14, 0.9, 1.6, 40);   // листья и шерсть
+  } else if (k === 'sneak') {
+    // скрытая атака: дымка и тень под ногами
+    c.fillStyle = 'rgba(20,16,30,0.35)'; c.beginPath(); c.ellipse(px, py + 6, 10, 3.5, 0, 0, 7); c.fill();
+    if (Math.random() < 0.3) fxBurst(px + (Math.random() - 0.5) * 12, py - Math.random() * 14, 1, ['#3a3448', '#5a5068'], 6, 10, 0.8, 2, -20);
+  } else if (k === 'aimed') {
+    // меткий выстрел: прицел над головой
+    const r = 4 + Math.sin(t * 6) * 0.8, cy = py - 46;
+    c.strokeStyle = `rgba(255,90,80,${0.9 * fade})`; c.lineWidth = 0.9;
+    c.beginPath(); c.arc(px, cy, r, 0, 7); c.stroke();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { c.beginPath(); c.moveTo(px + dx * (r - 1.5), cy + dy * (r - 1.5)); c.lineTo(px + dx * (r + 2), cy + dy * (r + 2)); c.stroke(); }
+  } else if (k === 'surge' || k === 'flurry') {
+    // скорость: светлые черты позади
+    c.globalCompositeOperation = 'lighter';
+    const b = -(u.face || 1);
+    for (let i = 0; i < 4; i++) { const yy = py - 6 - i * 6 + Math.sin(t * 13 + i) * 1.2, len = 6 + ((t * 30 + i * 7) % 8); c.strokeStyle = `rgba(${rgb},${0.55 * fade})`; c.lineWidth = 1; c.beginPath(); c.moveTo(px + b * 6, yy); c.lineTo(px + b * (6 + len), yy); c.stroke(); }
+  } else if (k === 'evade' || k === 'patience') {
+    c.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 2; i++) { const a = t * 4 + i * 3.14; c.strokeStyle = `rgba(${rgb},${0.5 * fade})`; c.lineWidth = 1; c.beginPath(); c.ellipse(px, py - 8, 10, 14, 0, a, a + 1.6); c.stroke(); }
+  } else if (k === 'bless') {
+    // благословение: золотой нимб над колпаком
+    c.globalCompositeOperation = 'lighter';
+    c.strokeStyle = `rgba(255,232,140,${0.85 * fade})`; c.lineWidth = 1.4; c.beginPath(); c.ellipse(px, py - 44 + Math.sin(t * 3), 6, 2, 0, 0, 7); c.stroke();
+    if (Math.random() < 0.15) fxBurst(px + (Math.random() - 0.5) * 12, py - 40, 1, ['#fff6c0'], 8, 10, 0.8, 1.2, 30);
+  } else {
+    c.globalCompositeOperation = 'lighter';
+    c.strokeStyle = `rgba(${rgb},${(0.35 + 0.15 * Math.sin(t * 7)) * fade})`; c.lineWidth = 1.2; c.beginPath(); c.ellipse(px, py + 6, 11, 4.5, 0, 0, 7); c.stroke();
+  }
+  c.restore();
 }
 
 function hexRgbStr(hex) {
@@ -550,10 +728,27 @@ function kitAbilHTML(H) {
 
 function kitTick(dt) {
   const now = Game.time;
-  for (let i = KIT.fx.length - 1; i >= 0; i--) if (now - KIT.fx[i].t0 > KIT.fx[i].dur + 0.2) KIT.fx.splice(i, 1);
+  // отжившие вспышки и свечения — снять, чтобы не гонять их игрокам общей деревни
+  if (!kitMirror()) for (const u of Game.units) {
+    if (u.abbu && now - u.abbu.s > 1.5) u.abbu = null;
+    if (u.abfx && !(u.abfx.t > now)) u.abfx = null;
+    if (u.abcd && !Object.values(u.abcd).some(v => v > now)) u.abcd = null;
+    if (u.abt && !Object.values(u.abt).some(v => v > now)) u.abt = null;
+  }
   // сервер общей деревни: кадры удара уходят игрокам; оружие класса — сразу в руках (рюкзака с надеванием там нет)
   if (typeof coop !== 'undefined' && coop.players) {
-    if (!KIT.hooked && typeof COOP_UNIT_EX !== 'undefined') { KIT.hooked = true; if (!COOP_UNIT_EX.includes('hfx')) COOP_UNIT_EX.push('hfx'); }
+    if (!KIT.hooked && typeof COOP_UNIT_EX !== 'undefined') {
+      KIT.hooked = true;
+      for (const k of KIT_SYNC) if (!COOP_UNIT_EX.includes(k)) COOP_UNIT_EX.push(k);
+      // способность от игрока: { t: 'abil', i } — сервер сам проверяет уровень, перезарядку и врагов рядом
+      const _cc = coopCmd;
+      coopCmd = function (name, json, admin) {
+        let m = null;
+        try { m = JSON.parse(json); } catch (e) { return; }
+        if (m && m.t === 'abil') { const u = coop.players.get(name); if (u && (m.i === 0 || m.i === 1)) heroAbilityFor(u, m.i); return; }
+        return _cc(name, json, admin);
+      };
+    }
     for (const u of coop.players.values()) {
       const H = u.hero, ks = H && KIT_OF[H.clsKey];
       if (!ks || H.kitEq === H.clsKey) continue;

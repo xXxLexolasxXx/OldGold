@@ -178,7 +178,7 @@ function drawUnit(c, u) {
   // герой в бою: 9 кадров из people.js (стойка, замах, удар, довод, парирование, удар по нему, победа, выхватывание)
   const ffr = !wp && fightFrameOf(u, moving);
   if (ffr) { pose = 'fight'; view = 'E'; frame = ffr; }
-  else if (!wp && !moving && u.type === 'hero' && typeof heroWpnFrame === 'function') {   // выхватывает / убирает оружие
+  else if (!wp && !moving && u._wanim && typeof heroWpnFrame === 'function') {   // выхватывает / убирает оружие (герой, рекруты)
     const wf = heroWpnFrame(u);
     if (wf) { pose = 'fight'; view = 'E'; frame = wf; }
   }
@@ -186,7 +186,7 @@ function drawUnit(c, u) {
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
   const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
-  if (u.type === 'hero' && typeof heroWpnOf === 'function') opt.wpn = heroWpnOf(u);   // оружие героя (herokit.js)
+  if ((u.type === 'hero' || u.rec || u.gx || u.gm) && typeof heroWpnOf === 'function') opt.wpn = heroWpnOf(u);   // оружие героя, рекрутов и глав гильдий (herokit.js)
   if ((u.anim === 'flaskout' || u.anim === 'drink') && pose === 'idle') {
     opt.gest = u.anim === 'drink' ? 'drink' : 'chest';
     opt.gf = Math.floor(Game.time * 3 + u.id) & 1;

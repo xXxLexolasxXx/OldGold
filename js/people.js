@@ -804,7 +804,8 @@ function wpnParse(s) { const [m, o, out] = String(s).split('|'); return { m: m |
 
 // Кадр боя по анимации героя (u.anim — f*, u.hfx — короткий удар/парирование поверх всего); null — не бой
 function fightFrameOf(u, moving) {
-  if (u.type !== 'hero' && !(u.hero && u.hero.owner)) return null;
+  // герой, рекруты гильдий (u.rec, в общей деревне — u.gx) и главы гильдий
+  if (u.type !== 'hero' && !(u.hero && u.hero.owner) && !u.rec && !u.gx && !u.gm) return null;
   if (moving) return null;
   if (u.hfx && u.hfx.t > Game.time) return u.hfx.k;
   const an = u.anim;
@@ -951,7 +952,7 @@ function drawSheath(c, k, x, y, dx, dy, full) {
 function drawOnBack(c, k, x, y, view) {
   const e = view === 'E';
   if (k === 'wshield') { drawShield(c, x, y, e ? 1.6 : 3.1, 3.6); return; }
-  const ang = e ? -0.38 : (view === 'S' ? 0.55 : -0.55);
+  const ang = e ? -0.38 : (view === 'S' ? 0.42 : -0.82);
   const dx = Math.sin(ang), dy = -Math.cos(ang);
   if (k === 'bow' || k === 'cbow') { drawBow(c, k, x - dx * 0.5, y - dy * 0.5, ang + (e ? 0.2 : 0), null); return; }
   drawWeapon(c, k, x - dx * 2.6, y - dy * 2.6, dx, dy);
@@ -1005,7 +1006,8 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const courier = !!O.frame;
   const duck = pose === 'duck' || pose === 'tame';
   // оружие героя: в бою — кадр из FIGHT_*, на ходу и стоя — выхвачено (стойка) или в ножнах/за спиной
-  const W = opt.wpn ? wpnParse(opt.wpn) : null;
+  // в бою без оружия — на кулаках
+  const W = opt.wpn ? wpnParse(opt.wpn) : pose === 'fight' ? { m: '', o: '', out: true } : null;
   const fight = pose === 'fight' ? (FIGHT_BODY[frame] ? frame : 'ready') : null;
   const wst = W ? (WPN_STYLE[W.m] || 'fist') : 'fist';
   const armed = !!W && !carry && (fight || (W.out && (pose === 'walk' || pose === 'idle')));
@@ -1199,9 +1201,9 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         }
         smoothLimb(c, [0.4, shY + 0.4], [(0.4 + hx) / 2 + 0.4, (shY + 0.4 + hy) / 2 + 0.6], [hx, hy], 2.1, shirt);
         if (wst === 'fist') {
-          // кулак в обмотках
+          // кулак (у монаха — в обмотках)
           ellipse(c, hx, hy, 1.5, 1.45, skin[1]);
-          line(c, hx - 1.2, hy - 0.4, hx + 1.2, hy - 0.4, '#e8dcc0', 0.45); line(c, hx - 1.2, hy + 0.5, hx + 1.2, hy + 0.5, '#e8dcc0', 0.45);
+          if (W.m === 'fists') { line(c, hx - 1.2, hy - 0.4, hx + 1.2, hy - 0.4, '#e8dcc0', 0.45); line(c, hx - 1.2, hy + 0.5, hx + 1.2, hy + 0.5, '#e8dcc0', 0.45); }
         } else hand(c, hx, hy, skin[1]);
       } else if (tool) {
         const hx = 0.4 + Math.sin(ang) * 3.8, hy = shY - Math.cos(ang) * 3.8;
@@ -1306,7 +1308,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       if (oHand === 'wshield') drawShield(c, side * 5.4, hy - 0.4, front ? 2.6 : 2.2, 3.2);
     };
     // спереди из-за спины выглядывают посох, лук или секира
-    if (W && front && !armed && WPN_BACK[W.m]) drawOnBack(c, W.m, 0, shY + 3, 'S');
+    if (W && front && !armed && WPN_BACK[W.m]) drawOnBack(c, W.m, 3.6, shY + 2.6, 'S');
     if (!front) { arm(-1); arm(1); }
     tunicFront();
     if (O.robe) { c.fillStyle = '#c89226'; c.fillRect(-5, -1.4, 10, 0.5); if (front) c.fillRect(-0.3, shY, 0.6, 12); }
@@ -1346,7 +1348,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     if (W && !front && !armed) {
       // со спины: щит и оружие на ремне поверх туники
       if (W.o === 'wshield') drawShield(c, 0, shY + 3.8, 3.1, 3.6);
-      if (WPN_BACK[W.m]) drawOnBack(c, W.m, 0, shY + 3.2, 'N');
+      if (WPN_BACK[W.m]) drawOnBack(c, W.m, -1.2, shY + 2.6, 'N');
     }
     if (courier && !front) {
       drawFrame(c, 'N', 0, shY + 2.6);

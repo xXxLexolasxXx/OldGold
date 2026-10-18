@@ -424,8 +424,21 @@ function coopRespawn(u) {
   const [x, y] = coopHome();
   u.x = x + 0.5; u.y = y + 0.5; u.food = Math.max(u.food, 0.6);
   H.hp = Math.round(H.maxhp * 0.5);
-  H.drunkUntil = 0; H.stunUntil = 0; H.nightFalls = (H.nightFalls || 0) + 1;
+  H.drunkUntil = 0; H.stunUntil = 0; H.downT = 0; H.nightFalls = (H.nightFalls || 0) + 1;
+  u.abfx = null; u.hfx = null; u.combatUntil = 0;
   coop.out.push({ msg: { t: 'toast', text: `${H.owner} приходит в себя у склада — деревня не отпускает так просто` } });
+}
+
+// Повержен: падает со звёздочками над головой, пару секунд лежит — потом приходит в себя у склада
+const COOP_DOWN = 2.6;
+function coopDown(u) {
+  const H = u.hero;
+  heroStopUnit(u);
+  H.downT = Game.time + COOP_DOWN; H.stunUntil = H.downT; H.hp = Math.min(H.hp, 0);
+  u.ouchUntil = H.downT;
+  u.proc = (function* () { yield { wait: COOP_DOWN, anim: 'knocked' }; })();
+  u.action = null;
+  floater(u.x, u.y - 1.8, ['Повержен…', 'Ох…', 'Всё, лежу'][(Math.random() * 3) | 0], '#ff9a80');
 }
 
 function coopTick(dt) {
@@ -443,6 +456,7 @@ function coopTick(dt) {
       continue;
     }
     u.nextJoin = 1e9;
+    if (H.downT) { if (now >= H.downT || u.inside) coopRespawn(u); continue; }
     // пьяная походка: управление сбито, шаги в случайные стороны
     if (H.drunkUntil > now && now >= H.drunkNext && !u.inside) {
       H.drunkNext = now + 0.6;
@@ -470,7 +484,7 @@ function coopTick(dt) {
     const fly = u.anim === 'fly';
     if (fly && !H.seenFly) H.hp -= 5;
     H.seenFly = fly;
-    if (H.hp <= 0) coopRespawn(u);
+    if (H.hp <= 0) coopDown(u);
   }
   coop.vilT = (coop.vilT || 0) + dt;
   if (coop.vilT >= 1) { coop.vilT = 0; coopVillageTick(); }

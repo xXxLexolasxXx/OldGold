@@ -227,6 +227,7 @@ function hlCast(k) {
     const mate = Game.units.find(x => x.teamOf === h.id);
     if (mate) mate.injury = null;
     HL.fx.push({ kind: 'heal', x: h.x, y: h.y, t0: Game.time, dur: 1.2 });
+    if (!h.inside) { h.hfx = { k: 'win0', t: Game.time + 0.55 }; h.vdir = 'E'; }   // поднял руку с оружием — колдует
     sfxAt('chime', h.x * TILE, h.y * TILE);
     floater(h.x, h.y - 1.7, 'Малое лечение', '#9af0a0');
   }
@@ -271,10 +272,27 @@ function hlRespawn(u, why) {
   u.dead = false; u.brk = null; u.burn = null; u.injury = null; u.anim = null; u.drunkAt = 0;
   const st = Game.buildings.find(b => b.type === 'storehouse') || Game.buildings[0];
   let x = 40, y = 30;
-  if (st) { const s = randomFreeNear(st.doorX, st.doorY + 2, 1, 3, (xx, yy) => isWalkable(xx, yy) && !World.door[idx(xx, yy)]); [x, y] = s || [st.doorX, st.doorY + 1]; }
+  // очнётся у большого костра, где табличка (как при телепорте); нет костра — у склада
+  const sp = typeof heroSpawnSpot === 'function' ? heroSpawnSpot() : null;
+  if (sp) { [x, y] = sp.at; Game.signBump = (Game.signBump || 0) + 1; }
+  else if (st) { const s = randomFreeNear(st.doorX, st.doorY + 2, 1, 3, (xx, yy) => isWalkable(xx, yy) && !World.door[idx(xx, yy)]); [x, y] = s || [st.doorX, st.doorY + 1]; }
   u.x = x + 0.5; u.y = y + 0.5; u.food = Math.max(u.food, 0.6);
-  H.hp = Math.round(H.maxhp * 0.5); H.drunkUntil = 0; H.stunUntil = 0;
+  H.hp = Math.round(H.maxhp * 0.5); H.drunkUntil = 0; H.stunUntil = 0; H.downT = 0;
+  u.abfx = null; u.hfx = null; u.combatUntil = 0;
   toast(`${H.name} очнулся у костра${why ? ': ' + why : ''}`);
+}
+
+// Повержен: падает навзничь, над головой звёздочки, пару секунд лежит — и только потом очнётся у костра
+const HL_DOWN = 2.6;
+function hlDown(u, why) {
+  const H = u.hero, now = Game.time;
+  heroStopUnit(u);
+  H.downT = now + HL_DOWN; H.downWhy = why; H.stunUntil = H.downT; H.hp = Math.min(H.hp, 0);
+  u.ouchUntil = H.downT;
+  u.proc = (function* () { yield { wait: HL_DOWN, anim: 'knocked' }; })();
+  u.action = null;
+  floater(u.x, u.y - 1.8, ['Повержен…', 'Ох…', 'Всё, лежу'][(Math.random() * 3) | 0], '#ff9a80');
+  if (typeof sfxAt === 'function') sfxAt('ouch', u.x * TILE, u.y * TILE);
 }
 
 function hlTick(dt) {
@@ -315,6 +333,11 @@ function hlTick(dt) {
     h.action = null;
   }
   if (H.stunUntil > now && h.cmd) h.cmd = null;
+  // повержен — лежит, здоровье не копится, потом очнётся у костра
+  if (H.downT) {
+    if (now >= H.downT || h.inside) hlRespawn(h, H.downWhy || 'деревня не пускает так просто');
+    return;
+  }
   // здоровье
   if (!h.noFood && h.food <= 0) H.hp -= 0.5 * dt;
   else if (H.hp < H.maxhp && h.food > 0.25 && !(h.burn && h.burn.stage)) H.hp = Math.min(H.maxhp, H.hp + 0.4 * dt);
@@ -327,7 +350,7 @@ function hlTick(dt) {
   const frz = h.anim === "freeze";
   if (frz && !H.seenFrz) hlHurt(h, 3, 'fright');
   H.seenFrz = frz;
-  if (H.hp <= 0) hlRespawn(h, 'деревня не пускает так просто');
+  if (H.hp <= 0) hlDown(h, 'деревня не пускает так просто');
 }
 
 // ---------- Подключение ----------
