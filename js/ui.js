@@ -809,7 +809,7 @@ function updateUI(force) {
   if (UI.tab === 'overview') setHTML('overview', overviewHTML(alerts));
   if (UI.tab === 'menu') {
     const fmt = m => m ? `${new Date(m.at).toLocaleString('ru-RU')} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'нет';
-    setHTML('save-info', `Сохранение: ${fmt(saveMeta('manual'))}<br>Автосохранение: ${fmt(saveMeta('auto'))}`);
+    setHTML('save-info', `Режим: <span class="diff-chip" style="background:${dif().color}" title="${dif().desc}">${dif().name}</span><br>Сохранение: ${fmt(saveMeta('manual'))}<br>Автосохранение: ${fmt(saveMeta('auto'))}`);
   }
   if (UI.tab === 'log') { UI.logUnread = 0; setHTML('log-list', logHTML()); }
   const lb = document.getElementById('log-badge');

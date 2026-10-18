@@ -52,7 +52,7 @@ function neuMake(k, lair, i) {
   if (!S.fly && !isWalkable(Math.floor(x), Math.floor(y))) { x = lair.x + 0.5; y = lair.y + 1.5; }
   const N = {
     id: Game.nextId++, k, lair: lair.id, x, y, hx: lair.x + 0.5, hy: lair.y + 0.5,
-    mhp: Math.round(S.mhp * lv), hp: 0, lv, face: Math.random() < 0.5 ? 1 : -1, st: 'idle', t: 1 + Math.random() * 4,
+    mhp: Math.round(S.mhp * lv * dif().neuHp), hp: 0, lv, face: Math.random() < 0.5 ? 1 : -1, st: 'idle', t: 1 + Math.random() * 4,
     fr: 'i0', ph: Math.random() * 6, tg: 0, prov: -99, cdA: 1, atkT: 9, hit: 1, ov: null, ovT: 0, winT: 0, dt: 0, wx: 0, wy: 0, say: 0,
   };
   N.hp = N.mhp;
@@ -251,7 +251,7 @@ function neuKill(N, killer) {
   if (typeof track === 'function') { track('neu-kill', 'Победил лесного нейтрала'); track('neu-kill-' + N.k, 'Победил: ' + S.name); }
   // последний в логове: зачищено
   if (lair && !lair.alive) {
-    lair.respawn = Game.time + NEU_RESPAWN;
+    lair.respawn = Game.time + NEU_RESPAWN * dif().neuResp;
     Game.nstat.lairs++;
     logEvent('animal', `${NEU_LAIR_NAME[lair.k]} зачищено — ${who} чувствует себя хозяином леса`, lair.x + 0.5, lair.y + 0.5);
     for (const [g, n] of [['gold', 2 + (lair.k === 'leshy' ? 2 : 0)]]) dropPile(Math.floor(N.x), Math.floor(N.y), g, n);
@@ -317,7 +317,7 @@ function neuStrike(N, tg) {
   const dodge = tg.hero ? 0.1 + heroStats(tg.hero).agi * 0.004 : 0.12;
   if (Math.random() < dodge) { floater(tg.x, tg.y - 1.8, 'Увернулся!', '#cfe8ff'); return; }
   const def = tg.hero && typeof heroDef === 'function' ? heroDef(tg) : tg.rec && tg.rec.armor ? 0.3 : 0;
-  dmg *= 1 - Math.min(0.6, def);
+  dmg *= (1 - Math.min(0.6, def)) * dif().neuDmg;
   const px = tg.x * TILE, py = tg.y * TILE - 12;
   fxBurst(px, py, N.k === 'fairy' ? 8 : 6, N.k === 'fairy' ? ['#fff6b0', '#ffe070', '#ff9ad8'] : N.k === 'spore' ? ['#b8f070', '#9ad04a'] : ['#ffffff', '#ffd0a0'], 55, 40, 0.5, 1.5, 160);
   sfxAt(N.k === 'fairy' ? 'chime' : 'thud', tg.x * TILE, tg.y * TILE, 0.55);

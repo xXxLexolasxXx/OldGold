@@ -248,7 +248,10 @@ function profCheckName(name, skipId) {
 
 function profLoadSlot(key) {
   const run = () => { if (loadGame(key)) { updateUI(true); toast('Игра загружена'); profClose(); } else { profMsg = 'Не удалось загрузить'; profRefresh(); } };
-  if (typeof StartMenu !== 'undefined' && StartMenu.open) smClose(run); else run();
+  if (typeof StartMenu !== 'undefined' && StartMenu.open) {
+    profClose();
+    smLoadPrepared(key, null, null, () => { profMsg = 'Не удалось загрузить'; profOpen('saves'); });   // загрузка без застывшего кадра
+  } else run();
 }
 
 function profAction(a, k) {

@@ -1,0 +1,59 @@
+/* Цели, вехи, заставки и итог (js/goal.js) */
+#goal-hud {
+  position: absolute; z-index: 20; top: 46px; left: 8px; width: 236px; padding: 6px 9px 7px;
+  font-size: 12px; line-height: 1.3; color: #ecdcb4; border: 1px solid #8a6a28; border-radius: 6px;
+  background: linear-gradient(rgba(36,26,14,0.9), rgba(20,14,8,0.9)); box-shadow: 0 2px 10px rgba(0,0,0,0.5); pointer-events: auto;
+}
+#goal-hud .gh-head { display: flex; align-items: center; justify-content: space-between; color: #f4d070; font-size: 13px; }
+#goal-hud .gh-head button { padding: 0 6px; font-size: 12px; background: none; border: 0; color: #d8c088; cursor: pointer; }
+#goal-hud .gh-sub { margin-top: 5px; color: #d8c088; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+#goal-hud ul { margin: 3px 0 0; padding: 0; list-style: none; }
+#goal-hud li { display: flex; justify-content: space-between; gap: 6px; padding: 1px 0; color: #e8dcc0; }
+#goal-hud li.ok { color: #9ed070; }
+#goal-hud li i { font-style: normal; color: #f0c860; white-space: nowrap; }
+#goal-hud li.ok i { color: #9ed070; }
+#goal-hud ul.small li { font-size: 11px; opacity: 0.85; }
+#goal-hud .gh-hint { margin-top: 4px; font-style: italic; color: #b8a47c; font-size: 11px; }
+#goal-hud .gh-mode { margin-top: 6px; width: 100%; padding: 3px; font-size: 11px; cursor: pointer; }
+body.mobile #goal-hud { top: 40px; width: 200px; font-size: 11px; opacity: 0.92; }
+
+#goal-modal {
+  position: fixed; inset: 0; z-index: 400; display: flex; align-items: flex-end; justify-content: center;
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); background: rgba(6,4,10,0.55);
+}
+#goal-modal.hidden { display: none; }
+.gm-card {
+  width: min(94vw, 560px); padding: 16px 18px; color: #f2e4c0; border: 1px solid #b8902c; border-radius: 8px;
+  background: linear-gradient(#3a2a14, #22170b); box-shadow: 0 4px 0 #120a04, 0 0 30px rgba(255,170,60,0.2);
+  animation: gm-in 0.35s ease-out;
+}
+@keyframes gm-in { from { opacity: 0; transform: translateY(14px); } }
+.gm-card h2 { margin: 0 0 8px; color: #f4d070; font-size: 22px; letter-spacing: 0.04em; text-align: center; }
+.gm-card h2.gm-chap { margin: 18px 0 10px; font-size: 26px; }
+.gm-say { display: flex; gap: 14px; align-items: flex-start; }
+.gm-face {
+  flex: none; width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;
+  font-size: 30px; font-weight: bold; border: 2px solid; border-radius: 8px; box-shadow: inset 0 0 12px rgba(0,0,0,0.6);
+}
+.gm-body { flex: 1; min-width: 0; }
+.gm-name { margin-bottom: 3px; font-weight: bold; font-size: 14px; letter-spacing: 0.04em; }
+.gm-text { font-size: 16px; line-height: 1.45; }
+.gm-text.note { font-style: italic; color: #cbbd98; }
+.gm-text.gm-hint { text-align: center; color: #a8987a; font-size: 12px; }
+.gm-btns { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: 14px; }
+.gm-btns button, .gm-card button.sm-btn {
+  padding: 8px 16px; font: inherit; color: #f6e8c0; cursor: pointer; border-radius: 5px; border: 1px solid #6a5430; background: rgba(20,14,8,0.6);
+}
+.gm-btns button.primary { background: linear-gradient(#a87a22, #6a4a14); border-color: #f0c860; font-weight: bold; }
+.gm-btns button:hover { filter: brightness(1.15); }
+.gm-sum .gm-text { text-align: center; margin: 6px 0 10px; }
+.gm-sum.win h2 { color: #b8e870; text-shadow: 0 0 14px rgba(160,230,90,0.5); }
+.gm-sum.lose h2 { color: #e08070; }
+.gm-title, .gm-reward { text-align: center; margin: 4px 0; font-size: 14px; color: #e8d090; }
+.gm-reward { color: #9ed070; }
+.gm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 18px; margin-top: 10px; padding: 8px 10px; font-size: 13px; background: rgba(10,6,2,0.5); border: 1px solid #5a4620; border-radius: 5px; }
+.gm-stats div { display: flex; justify-content: space-between; gap: 8px; }
+.gm-stats span { color: #bba87c; }
+.gm-modes { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.gm-modes .sm-btn { align-items: center; }
+@media (max-width: 520px) { .gm-stats { grid-template-columns: 1fr; } .gm-face { width: 46px; height: 46px; font-size: 24px; } .gm-text { font-size: 15px; } }

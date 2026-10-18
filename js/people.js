@@ -1375,6 +1375,17 @@ const LOOK_POOL = Array.from({ length: 64 }, (_, i) => (Math.imul(i + 7, 2654435
 const PEOPLE_CACHE_MAX = 4500;
 let PEOPLE_SCRATCH = null;
 
+// Новые кадры спрайтов (гномы, голем) рисуются по бюджету времени на кадр, а не «не больше 8 штук»:
+// на ПК кадр гнома ~1 мс, на слабом телефоне ~6 мс, и восемь подряд роняли кадр до 50+ мс
+// (особенно в первые секунды игры, когда кэш пуст). Кто уже имеет прошлый кадр — подождёт следующего.
+const SPRITE_BUDGET_MS = 6;
+function spriteBudgetOk(hasFallback) {
+  if (!R.newSprites) R.sprMs = 0;          // render обнуляет счётчик в начале каждого кадра
+  R.newSprites = (R.newSprites || 0) + 1;
+  return !hasFallback || (R.sprMs || 0) < SPRITE_BUDGET_MS;
+}
+function spriteSpent(t0) { R.sprMs = (R.sprMs || 0) + performance.now() - t0; }
+
 function personSprite(u, view, pose, frame, opt = {}) {
   const look = LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length];
   const fkey = pose === 'work' ? `${frame.anim}${frame.f}` : frame;
@@ -1390,7 +1401,8 @@ function personSprite(u, view, pose, frame, opt = {}) {
     return cv;
   }
   // не больше 8 новых кадров за кадр отрисовки: иначе толпа на экране даёт рывок
-  if (u._spr && (R.newSprites = (R.newSprites || 0) + 1) > 8) return u._spr;
+  if (!spriteBudgetOk(!!u._spr)) return u._spr;
+  const t0 = performance.now();
   // один черновой холст на всех: меньше мусора в памяти — меньше подвисаний на сборке
   if (!PEOPLE_SCRATCH) PEOPLE_SCRATCH = mkSprite(PW, PH, PS);
   const [c2, ctx] = PEOPLE_SCRATCH;
@@ -1402,6 +1414,7 @@ function personSprite(u, view, pose, frame, opt = {}) {
   if (PEOPLE_CACHE.size >= PEOPLE_CACHE_MAX) PEOPLE_CACHE.delete(PEOPLE_CACHE.keys().next().value);
   PEOPLE_CACHE.set(key, cv);
   u._spr = cv;
+  spriteSpent(t0);
   return cv;
 }
 

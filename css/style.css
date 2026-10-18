@@ -878,3 +878,14 @@ body.mobile.sheet-tab #hint, body.mobile.sheet-info #hint { display: none; }
 body.mobile .g-box { width: 98%; height: 92%; }
 body.mobile .g-t { min-height: 46px; }
 body.mobile #g-q { font-size: 16px; }
+/* выбор сложности в меню «Новая игра» */
+.sm-title { width: 100%; flex: none; text-align: center; color: #f0c880; font-size: 17px; letter-spacing: 0.06em; text-shadow: 0 2px 0 #1a1008; }
+.sm-panel[data-panel="diff"] .sm-btn small { white-space: normal; text-align: center; line-height: 1.25; }
+.sm-btn[data-diff="calm"] { border-color: #7ab85a; }
+.sm-btn[data-diff="survival"] { border-color: #c4504a; }
+@media (min-width: 700px) and (min-height: 521px) {
+  .sm-panel[data-panel="diff"] { flex-direction: row; flex-wrap: wrap; width: min(94vw, 980px); }
+  .sm-panel[data-panel="diff"] .sm-btn { flex: 1 1 0; }
+}
+@media (max-height: 520px) { .sm-panel[data-panel="diff"] .sm-btn small { display: block; font-size: 10px; } }
+.diff-chip { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 12px; color: #1a1008; font-weight: bold; }

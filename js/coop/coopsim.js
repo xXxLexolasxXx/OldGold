@@ -559,7 +559,8 @@ function coopMirror() {
     neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
-    lost: Game.lostGnomes || 0,
+    lost: Game.lostGnomes || 0, df: Game.diff,
+    goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
     wx: {},
   };
@@ -717,6 +718,10 @@ function coopDrain() {
   return JSON.stringify(o);
 }
 
+function coopSetDiff(k) {
+  Game.diff = diffKey(k);
+  return Game.diff;
+}
 function coopMeta() {
   return JSON.stringify({ classes: COOP_CLASSES, chat: COOP_CHAT, permLabels: COOP_PERMS, perms: coop.perms });
 }

@@ -25,9 +25,11 @@ const LONG_EVERY = 5, LONG_EXTRA = NIGHT_LEN * 0.5;
 const CYCLE_BLOCK = CYCLE * LONG_EVERY + LONG_EXTRA;
 // какие сейчас сутки: k — номер, p — секунда внутри суток, nl — длина ночи в них
 function cycleAt(t) {
-  const b = Math.floor(t / CYCLE_BLOCK), r = t - b * CYCLE_BLOCK, normal = CYCLE * (LONG_EVERY - 1);
-  if (r < normal) { const k = Math.floor(r / CYCLE); return { k: b * LONG_EVERY + k, p: r - k * CYCLE, nl: NIGHT_LEN }; }
-  return { k: b * LONG_EVERY + LONG_EVERY - 1, p: r - normal, nl: NIGHT_LEN + LONG_EXTRA };
+  // длина ночи зависит от сложности (Game.diff); у «Обычного» множитель 1 — всё как раньше
+  const nl0 = NIGHT_LEN * dif().nightLen, cyc = NIGHT_START + nl0 + DAWN_LEN, extra = nl0 * 0.5, block = cyc * LONG_EVERY + extra;
+  const b = Math.floor(t / block), r = t - b * block, normal = cyc * (LONG_EVERY - 1);
+  if (r < normal) { const k = Math.floor(r / cyc); return { k: b * LONG_EVERY + k, p: r - k * cyc, nl: nl0 }; }
+  return { k: b * LONG_EVERY + LONG_EVERY - 1, p: r - normal, nl: nl0 + extra };
 }
 
 // 0 — ясный день, 1 — глубокая ночь
@@ -191,6 +193,7 @@ function resolveFight(e) {
     const d = nightDiff(), r = Math.random(), pWipe = Math.min(0.2, 0.06 * Math.sqrt(d)), pWin = Math.min(0.94, 0.5 + 0.15 * n) / Math.pow(d, 0.35);
     outcome = r < pWipe ? 'wipe' : r < pWipe + (1 - pWipe) * pWin ? 'win' : 'lose';
   }
+  if (dif().noLoss && (outcome === 'lose' || outcome === 'wipe')) outcome = n === 1 ? 'escape' : 'win';   // «Спокойный»: гномы не гибнут
   e.foe = null;
   if (outcome === 'win') {
     entFell(e, fs[0]);
@@ -264,11 +267,12 @@ function drawNightFx(c) {
 function nightTotal() {
   const n = nightIndex() + 1;
   // до первой долгой ночи нечисти прибывает с каждой ночью: 1–3, 3–5, 5–7, 7–9
-  if (n < LONG_EVERY) return Math.max(1, 2 * n - 1 + Math.floor(Math.random() * 3));
+  const mul = dif().nightN, cnt = k => Math.max(1, Math.round(k * mul));
+  if (n < LONG_EVERY) return cnt(Math.max(1, 2 * n - 1 + Math.floor(Math.random() * 3)));
   // дальше — больше с каждой ночью: к 10-й (долгой) — 23–39, к 9-й обычной — 9–15
   const more = 0.7 + 0.3 * nightDiff(n);
-  if (n % LONG_EVERY === 0) return Math.round((15 + Math.floor(Math.random() * 11)) * more);   // долгая ночь
-  return Math.round((6 + Math.floor(Math.random() * 5)) * more);                                // обычная
+  if (n % LONG_EVERY === 0) return cnt((15 + Math.floor(Math.random() * 11)) * more);   // долгая ночь
+  return cnt((6 + Math.floor(Math.random() * 5)) * more);                                // обычная
 }
 
 // Сложность ночи n (1, 2, …): во сколько раз нечисть крепче, злее и упорнее, чем в первую ночь.
@@ -277,7 +281,7 @@ function nightTotal() {
 // дальность, на которой они замечают гномов, скорость, частота набегов на здания и исход схваток.
 function nightDiff(n = nightIndex() + 1) {
   const k = Math.max(0, n - 1);
-  return Math.min(5, 1 + 0.12 * k + 0.01 * k * k);
+  return Math.min(5, 1 + 0.12 * k + 0.01 * k * k) * dif().foe;
 }
 
 function spawnEnts() {
@@ -555,7 +559,7 @@ function entReact(u) {
 function removeUnit(u) {
   if (u.dead) return;
   u.dead = true;
-  if (isPerson(u) && u.type !== 'carter') Game.lostGnomes = (Game.lostGnomes || 0) + 1;     // потери копятся — призраков и скелетов будет больше
+  if (isPerson(u) && u.type !== 'carter') Game.lostGnomes = (Game.lostGnomes || 0) + dif().lossW;     // потери копятся — призраков и скелетов будет больше
   if (u.carry) dropLoad(u);
   else if (u.dlv && u.dlv.from && !u.dlv.from.removed && u.dlv.from.reserved)
     u.dlv.from.reserved[u.dlv.g] = Math.max(0, u.dlv.from.reserved[u.dlv.g] - u.dlv.n);

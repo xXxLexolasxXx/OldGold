@@ -30,11 +30,17 @@ function startBreak(u, kind, gen) {
 
 function endBreak(u) {
   const s = u.brk.saved;
+  dropBreak(u);
+  u.proc = s.proc; u.action = s.action; u.anim = null; u.lastRes = undefined;
+}
+
+// Перерыв отменяется насовсем (гному дали приказ, он погиб или возродился): прерванное дело не возвращаем,
+// но клетку перекура освобождаем и из курящих вычёркиваем — иначе она занята, пока он снова на неё не наступит
+function dropBreak(u) {
   if (u.blockT >= 0 && World.occ[u.blockT] === u.id) World.occ[u.blockT] = 0;
   u.blockT = -1;
-  if (u.brk.kind === 'smoke' || u.brk.kind === 'join') Game.smokers.delete(u);
+  Game.smokers.delete(u);
   u.brk = null;
-  u.proc = s.proc; u.action = s.action; u.anim = null; u.lastRes = undefined;
 }
 
 function* smokeGen(u, time) {
@@ -117,7 +123,7 @@ function lifeTick(u, dt) {
   }
   if (u.injury && Game.time >= u.injuryUntil) { u.injury = null; }
   // долго без еды — копит слабость
-  if (u.food <= 0 && !u.noFood && !u.inside && isPerson(u)) u.starveT = (u.starveT || 0) + dt;
+  if (u.food <= 0 && !u.noFood && !u.inside && isPerson(u) && !dif().noStarve) u.starveT = (u.starveT || 0) + dt * dif().starve;
   else if (u.food > 0) u.starveT = 0;
   u.lifeT = (u.lifeT || 0) + dt;
   if (u.lifeT < 0.5) return;

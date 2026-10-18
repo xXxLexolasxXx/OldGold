@@ -175,7 +175,7 @@ function setupStart(seed) {
   if (tutSeen()) releaseStart();   // обучение уже проходили — школу достраивают сразу
   renderBuildMenu();
   const store = Game.buildings.find(b => b.type === 'storehouse');
-  Object.assign(store.stock, { timber: 30, stone: 35, bread: 20, gold: 30, trunk: 4 });
+  Object.assign(store.stock, DIFF_STOCK);
 
   const { sy, x0, x1 } = lay;
   const start = { serf: 8, builder: 4, woodcutter: 1, carpenter: 1, stonemason: 1, farmer: 1 };
@@ -188,12 +188,14 @@ function setupStart(seed) {
       }
     }
 
+  diffApplyStart(Game.diff);   // припасы и трудяги под выбранную сложность
   decorateAllRoads();          // фонари, скамейки и урны вдоль стартовых улиц
   spawnAnimals();
   centerOn(((x0 + x1) / 2) * TILE, (sy - 2) * TILE);
 }
 
 function newGame() {
+  Game.pendDiff = Game.diff;   // «Новая карта» — тот же режим игры
   const seed = (Math.random() * 1e9) | 0;
   setupStart(seed);
   buildTerrain(seed);
