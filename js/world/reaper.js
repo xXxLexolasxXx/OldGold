@@ -260,18 +260,21 @@ function paintReaper(c, p, mood, k, v = 0) {
   // голова: чёрный рогатый шлем с наличниками; рога демонические, трёх форм (v)
   c.save(); c.translate(lean * 0.7, atk ? 1.5 * strike - wind : 0);
   reaperHorns(c, v, sn, boo);
+  c.save(); c.translate(0.5, 3); c.scale(0.82, 0.82); c.translate(-0.5, -3);      // шлем поменьше, рога прежнего размера
   const steel = c.createLinearGradient(0, -19, 0, 9); steel.addColorStop(0, '#4a5a64'); steel.addColorStop(0.45, '#1c262c'); steel.addColorStop(1, '#070b0e');
   c.fillStyle = steel; c.beginPath(); c.moveTo(-10.4, 5);
   c.quadraticCurveTo(-12.4, -8, -6.4, -15.4); c.quadraticCurveTo(0.5, -20, 7.4, -15.4); c.quadraticCurveTo(13, -8, 11.4, 5);
   c.lineTo(8.4, 9.2); c.lineTo(5.4, 4.8); c.lineTo(0.5, 7.4); c.lineTo(-4.4, 4.8); c.lineTo(-7.4, 9.2); c.closePath(); c.fill();
   c.strokeStyle = 'rgba(0,0,0,0.75)'; c.lineWidth = 0.9;                                          // гребень и бровной обод
   c.beginPath(); c.moveTo(0.5, -19.6); c.lineTo(0.5, -11); c.stroke();
-  c.beginPath(); c.moveTo(-11, -9.2); c.quadraticCurveTo(0.5, -13, 12, -9.2); c.stroke();
   c.strokeStyle = 'rgba(170,205,220,0.6)'; c.lineWidth = 0.8;                                      // блик по кромке
   c.beginPath(); c.moveTo(-10.4, 4); c.quadraticCurveTo(-12.4, -8, -6.4, -15.4); c.quadraticCurveTo(0.5, -20, 7.4, -15.4); c.stroke();
   c.fillStyle = 'rgba(200,225,235,0.8)'; for (const sx of [-8.6, 9.6]) { c.beginPath(); c.arc(sx, -6, 0.55, 0, 7); c.fill(); }   // заклёпки
   // чёрный провал лица
-  c.fillStyle = '#000'; c.beginPath(); c.ellipse(0.5, -2.2, 6.2, 7.6, 0, 0, 7); c.fill();
+  // вырез шлема: широкая прорезь с нахмуренной бровью — глаза открыты, видна пустота и кость
+  c.fillStyle = '#000'; c.beginPath(); c.moveTo(-8.4, -9.8); c.lineTo(-1.4, -6.2); c.lineTo(0.5, -7.4); c.lineTo(2.4, -6.2); c.lineTo(9.4, -9.8);
+  c.lineTo(8.6, -1); c.lineTo(6, 5.8); c.lineTo(0.5, 8); c.lineTo(-5, 5.8); c.lineTo(-7.6, -1); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(170,205,220,0.5)'; c.lineWidth = 0.6; c.stroke();                         // обод выреза
   // череп в глубине шлема: тусклая кость, провалы глазниц, ряд зубов
   c.fillStyle = 'rgba(205,222,214,0.30)'; c.beginPath(); c.ellipse(0.5, -2.6, 4.6, 5.6, 0, 0, 7); c.fill();
   c.fillStyle = 'rgba(205,222,214,0.22)'; c.fillRect(-2.6, 3.2, 6.2, 2.6);
@@ -279,12 +282,13 @@ function paintReaper(c, p, mood, k, v = 0) {
   c.fillStyle = 'rgba(0,0,0,0.85)'; c.beginPath(); c.moveTo(0.5, -0.4); c.lineTo(-0.3, 1.8); c.lineTo(1.3, 1.8); c.closePath(); c.fill();
   const eyeCol = boo ? '#ff3a1c' : '#6fe0b4', gz = sn(1, 0.4) * 0.6;
   for (const e of [-1, 1]) {
-    const ex = e * 3 + gz + 0.5, ey = -3.6;
-    g = c.createRadialGradient(ex, ey, 0, ex, ey, 5.2); g.addColorStop(0, eyeCol); g.addColorStop(0.35, boo ? 'rgba(255,60,30,0.35)' : 'rgba(150,255,200,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-    c.fillStyle = g; c.beginPath(); c.arc(ex, ey, 5.2, 0, 7); c.fill();
-    c.fillStyle = eyeCol; c.beginPath(); c.moveTo(ex - 1.8 * e, ey - 0.6); c.lineTo(ex + 2.0 * e, ey - 1.6); c.lineTo(ex + 1.2 * e, ey + 1.2); c.closePath(); c.fill();
-    c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey - 0.1, 0.5, 0, 7); c.fill();
+    const ex = e * 3.6 + gz + 0.5, ey = -3.2;
+    g = c.createRadialGradient(ex, ey, 0, ex, ey, 7); g.addColorStop(0, eyeCol); g.addColorStop(0.3, boo ? 'rgba(255,60,30,0.5)' : 'rgba(150,255,200,0.45)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(ex, ey, 7, 0, 7); c.fill();
+    c.fillStyle = eyeCol; c.beginPath(); c.moveTo(ex - 2.6 * e, ey - 0.4); c.lineTo(ex + 2.8 * e, ey - 2.2); c.lineTo(ex + 1.8 * e, ey + 1.6); c.closePath(); c.fill();      // злой раскос
+    c.fillStyle = '#fff'; c.beginPath(); c.ellipse(ex + 0.2 * e, ey - 0.3, 1.1, 0.7, e * -0.35, 0, 7); c.fill();
   }
   if (atk) { c.fillStyle = 'rgba(255,90,60,0.7)'; c.beginPath(); c.ellipse(0.5, 4.4, 2.6, 0.7 + 2.2 * Math.max(wind * 0.5, strike), 0, 0, 7); c.fill(); }
+  c.restore();
   c.restore();
 }

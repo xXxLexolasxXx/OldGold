@@ -4,6 +4,7 @@
 // В первую ночь вида появляется один гарантированно (с записью в журнал); в любую ночь каждый вольный зверь
 // с шансом 15–20 % подменяется одним из открытых странных существ: зверя на ночь убирают, на рассвете он возвращается.
 // Существа безобидны, лишь пугают: глазеют, мигают, тикают. Второй формы нет; у каждого свой набор кадров.
+// 18-я ночь — месяц с глазами на ножках.
 // Звуков нет — только всплывающие надписи. Итоги идут в Game.faunaStat (oddJelly и т. д.); в сейв не пишутся.
 
 const ST_KINDS = [
@@ -12,11 +13,12 @@ const ST_KINDS = [
   { id: 'clock',  name: 'часовой',          night: 10, speed: 1.0, fly: true,  hover: 12, say: 'Тик-так' },
   { id: 'ribbon', name: 'лента',            night: 12, speed: 2.0, fly: true,  hover: 15, say: 'Шшш…' },
   { id: 'shards', name: 'хоровод осколков', night: 15, speed: 0.9, fly: true,  hover: 18, say: 'Динь…' },
+  { id: 'moon',   name: 'месяц',            night: 18, speed: 1.0, fly: false, say: 'Лу-у-у…' },
 ];
 
 const ST_PAL = {
   g: '#2f8a5c', G: '#6adaa0', w: '#f4f4e8', k: '#14141c', m: '#1e5a3c',
-  f: '#2a2a32', y: '#ffe888', Y: '#f0b030', p: '#4a3a2a', c: '#5a4a7a', C: '#3a2e58',
+  f: '#2a2a32', y: '#ffe888', Y: '#f0b030', p: '#9a7a4a', c: '#b04a3a', C: '#3a2e58',
 };
 const ST_DIM = { ...ST_PAL, y: '#8a6a30', Y: '#6a4a20' };
 
@@ -29,10 +31,10 @@ const ST_JELLY = [
   ['.....gg.....', '...ggGGgg...', '..gGGGGGGg..', '..gGwkGwkg..', '..gGGGGGGg..', '...gGGGGg...', '....gGGg....', '.....gg.....', '.....m......'],
   ['............', '.gggggggggg.', 'ggGGGGGGGGgg', 'gGwkGGGGwkGg', 'ggGGGGGGGGgg', 'mmggggggggmm'],
 ];
-// Лампоглав: голова-фонарь на плаще, четыре шага; мигание — тусклая палитра
-const ST_LAMP_HEAD = ['...fffff...', '..fyyyyyf..', '.fyyYYYyyf.', '.fyYYYYYyf.', '.fyyYYYyyf.', '..fyyyyyf..', '...fffff...', '.....p.....'];
-const ST_LAMP_BODY = ['....ccc....', '...ccccc...', '..cccCccc..', '..ccCCCcc..', '.cccCCCccc.'];
-const ST_LAMP_LEGS = [['...p...p...', '..pp...pp..'], ['....p.p....', '....pp.pp..'], ['...p...p...', '..pp...pp..'], ['....p.p....', '...pp.pp...']];
+// Лампоглав: уличный фонарь с ручкой-кольцом и язычком пламени в стекле, на тонком шесте с руками-веточками и шарфом; четыре шага, мигание — тусклая палитра
+const ST_LAMP_HEAD = ['....fff....', '...f...f...', '..fffffff..', '.ffyyyyyff.', '.fyyYYYyyf.', '.fyYYwYYyf.', '.fyyYYYyyf.', '.ffyyyyyff.', '..fffffff..'];
+const ST_LAMP_ARMS = [['.....p.....', '..ppppppp..', '.p...p...p.', '.....p.....', '....ccc....', '.....p.....'], ['.....p.....', '..ppppppp..', '..p..p..p..', '.....p.....', '....ccc....', '.....p.....']];
+const ST_LAMP_LEGS = [['....p.p....', '...pp.pp...'], ['.....p.....', '....p.p....'], ['....p.p....', '..pp...pp..'], ['.....p.....', '....p.p....']];
 
 const ST_CACHE = {};
 function stSprite(key, make) { return ST_CACHE[key] || (ST_CACHE[key] = make()); }
@@ -54,6 +56,12 @@ function stClockSprite(f) {
     const ha2 = f * Math.PI / 24;
     for (let t = 0; t < 3; t++) px(mid + Math.round(Math.cos(ha2) * t), mid + Math.round(Math.sin(ha2) * t), '#a02820');
     px(mid, mid, '#1e1a14');
+    const blink = f === 3 || f === 7, ox = (f >> 1) & 1;               // глаза: моргают, зрачки косят то влево, то вправо
+    for (const ex of [mid - 4, mid + 1]) {
+      if (blink) { px(ex, mid - 2, '#1e1a14'); px(ex + 1, mid - 2, '#1e1a14'); continue; }
+      for (let dy = -3; dy <= -2; dy++) for (let dx = 0; dx < 3; dx++) px(ex + dx, mid + dy, '#ffffff');
+      px(ex + 1 + ox, mid - 3, '#14141c'); px(ex + 1 + ox, mid - 2, '#14141c');
+    }
     return cv;
   });
 }
@@ -87,9 +95,28 @@ function stShardSprite(f) {
     return cv;
   });
 }
+function stMoonSprite(f) {
+  return stSprite('moon' + f, () => {
+    const W = 18, H = 24, cv = mkCanvas(W, H), c = cv.getContext('2d'), cx = 8, cy = 8;
+    const px = (x, y, col) => { c.fillStyle = col; c.fillRect(x | 0, y | 0, 1, 1); };
+    const walk = f < 4 ? f : 0, blink = f >= 4, bob = (walk & 1) ? 1 : 0;
+    for (let y = 0; y < 17; y++) for (let x = 0; x < W; x++) {
+      const inO = Math.hypot(x - cx, y - cy) <= 7.4, inCut = Math.hypot(x - (cx + 5), y - cy) <= 5.7;
+      if (inO && !inCut) { const edge = Math.hypot(x - cx, y - cy) > 6.3 || Math.hypot(x - (cx + 5), y - cy) < 6.7; px(x, y + bob, edge ? '#c9b866' : x < cx - 2 ? '#f4eaa6' : '#e8dc88'); }
+    }
+    for (const ey of [4, 9]) {
+      if (blink) { px(2, ey + 1 + bob, '#3a3220'); px(3, ey + 1 + bob, '#3a3220'); px(4, ey + 1 + bob, '#3a3220'); continue; }
+      for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) px(2 + dx, ey + dy + bob, '#ffffff');
+      px(4, ey + 1 + bob, '#14141c'); px(4, ey + 2 + bob, '#14141c');
+    }
+    const legs = [[[5, 0], [9, 0]], [[6, -1], [9, 1]], [[5, 0], [9, 0]], [[4, 1], [9, -1]]][walk];     // ножки шагают: слегка разведены и поочерёдно поднимаются
+    for (const [lx, dy] of legs) { const top = 16 + bob; for (let y = top; y < 21 + dy; y++) px(lx, y, '#6a5a30'); px(lx - 1, 21 + dy, '#3a3220'); px(lx, 21 + dy, '#3a3220'); px(lx + 1, 21 + dy, '#3a3220'); }
+    return cv;
+  });
+}
 function stLampSprite(f) {
   const dim = f >= 4, walk = f & 3, key = 'lamp' + f;
-  return stSprite(key, () => faSprite([...ST_LAMP_HEAD, ...ST_LAMP_BODY, ...ST_LAMP_LEGS[walk]], dim ? ST_DIM : ST_PAL));
+  return stSprite(key, () => faSprite([...ST_LAMP_HEAD, ...ST_LAMP_ARMS[walk & 1], ...ST_LAMP_LEGS[walk]], dim ? ST_DIM : ST_PAL));
 }
 function stJellySprite(f) { return stSprite('jelly' + f, () => faSprite(ST_JELLY[f], ST_PAL)); }
 
@@ -187,6 +214,7 @@ function stFrame(c) {
   if (c.k === 1) return c.fl > 0 ? 4 + (Math.floor(c.ph * 14) & 1) : (c.moving ? Math.floor(c.ph * 2.2) & 3 : 0);
   if (c.k === 2) return Math.floor(c.ph * 4) & 7;
   if (c.k === 3) return Math.floor(c.ph * 9) & 7;
+  if (c.k === 5) return (Math.floor(c.ph * 0.7) % 5 === 4 && !c.moving) ? 4 + (Math.floor(c.ph * 6) & 1) : (c.moving ? Math.floor(c.ph * 3) & 3 : 0);
   return Math.floor(c.ph * 6) & 7;
 }
 function stDraw(c, o) {
@@ -196,9 +224,9 @@ function stDraw(c, o) {
   const lift = K.fly ? K.hover + Math.sin(o.ph * 2) * 2 : 0;
   c.globalAlpha = vis;
   c.fillStyle = 'rgba(10,8,4,' + (0.28 - (K.fly ? 0.12 : 0)) + ')'; c.beginPath(); c.ellipse(px, py, K.fly ? 6 : 5, 1.8, 0, 0, 7); c.fill();
-  const spr = o.k === 0 ? stJellySprite(f) : o.k === 1 ? stLampSprite(f) : o.k === 2 ? stClockSprite(f) : o.k === 3 ? stRibbonSprite(f) : stShardSprite(f);
+  const spr = o.k === 0 ? stJellySprite(f) : o.k === 1 ? stLampSprite(f) : o.k === 2 ? stClockSprite(f) : o.k === 3 ? stRibbonSprite(f) : o.k === 5 ? stMoonSprite(f) : stShardSprite(f);
   const w = spr.width, h = spr.height;
-  const glow = o.k === 1 ? [255, 220, 120, o.fl > 0 ? 0.08 : 0.22, 18, -h + 6] : o.k === 4 ? [140, 220, 255, 0.2, 18, -h / 2] : o.k === 2 ? [255, 210, 120, 0.1, 12, -h / 2] : null;
+  const glow = o.k === 1 ? [255, 220, 120, o.fl > 0 ? 0.08 : 0.22, 18, -h + 6] : o.k === 4 ? [140, 220, 255, 0.2, 18, -h / 2] : o.k === 2 ? [255, 210, 120, 0.1, 12, -h / 2] : o.k === 5 ? [255, 244, 170, 0.16, 16, -h / 2] : null;
   if (glow) {
     const prev = c.globalCompositeOperation; c.globalCompositeOperation = 'lighter';
     for (let r = 3; r >= 1; r--) { c.fillStyle = `rgba(${glow[0]},${glow[1]},${glow[2]},${glow[3] * vis / r})`; const R2 = glow[4] * (4 - r) / 3; c.beginPath(); c.ellipse(px, py - lift + glow[5], R2, R2 * 0.8, 0, 0, 7); c.fill(); }
