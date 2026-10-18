@@ -50,6 +50,7 @@ const scriptTest = (name, file) => test(name, r => {
 });
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
 scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test.js');
+scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 
 // ---------- 2. Симуляция: инварианты
 function simRun(seed, minutes, r, opts = {}) {

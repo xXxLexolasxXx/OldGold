@@ -270,8 +270,10 @@ function loadGame(slot = 'manual') {
     saveBrokenNotice(`Сохранение повреждено (${err}). Загружена резервная копия — до нескольких минут игры могли пропасть.`);
     return true;
   }
+  // битый текст откладываем в сторону (если хватит места): автосейв новой игры его иначе затрёт, а по нему можно найти причину
+  try { localStorage.setItem(SAVE_KEY + slot + '.broken', raw); } catch (e) { /* нет места — не страшно */ }
   try { newGame(); } catch (e) { console.warn('newGame после битого сейва', e); }
-  saveBrokenNotice(`Не удалось загрузить сохранение: ${err}. Начата новая игра; старый сейв не удалён (его можно отправить автору через «Скопировать журнал»).`);
+  saveBrokenNotice(`Не удалось загрузить сохранение: ${err}. Начата новая игра, повреждённый файл отложен в сторону.`);
   return false;
 }
 
@@ -292,7 +294,7 @@ function saveBrokenNotice(text) {
   try {
     if (typeof document === 'undefined' || !document.body || !document.createElement) return;
     const el = document.createElement('div');
-    el.style.cssText = 'position:fixed;left:50%;top:20%;transform:translateX(-50%);z-index:10000;max-width:440px;padding:16px 18px;background:#2a1e14;color:#f3e6c8;border:2px solid #a8743a;border-radius:8px;font:14px/1.45 sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.6)';
+    el.style.cssText = 'position:fixed;left:50%;top:20%;transform:translateX(-50%);z-index:100001;max-width:440px;padding:16px 18px;background:#2a1e14;color:#f3e6c8;border:2px solid #a8743a;border-radius:8px;font:14px/1.45 sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.6)';
     el.textContent = text;
     const b = document.createElement('button');
     b.textContent = 'Понятно'; b.style.cssText = 'display:block;margin:12px auto 0;padding:6px 18px';

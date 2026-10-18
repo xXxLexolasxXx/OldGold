@@ -17,10 +17,9 @@ function crashVer() { return typeof GAME_VERSION !== 'undefined' ? GAME_VERSION 
 // Где сейчас игрок: загрузка, стартовое меню, одиночная игра или кооператив
 function crashPhase() {
   try {
-    const ld = document.getElementById('loading');
-    if (ld && !ld.classList.contains('hidden')) return 'loading';
-    const sm = document.getElementById('start-menu');
-    if (sm && !sm.classList.contains('hidden') && sm.style.display !== 'none') return 'menu';
+    const shown = id => { const el = document.getElementById(id); return !!el && !el.classList.contains('hidden') && getComputedStyle(el).display !== 'none'; };
+    if (shown('start-menu')) return 'menu';   // меню рисуется поверх заставки загрузки
+    if (shown('loading')) return 'loading';
     if (typeof Coop !== 'undefined' && Coop.on) return 'coop';
     if (typeof Game !== 'undefined' && Game.time > 0) return 'game';
   } catch (e) { /* документ ещё не готов */ }
@@ -32,7 +31,8 @@ function crashDevice() {
   const ua = navigator.userAgent || '';
   const br = (ua.match(/(Edg|OPR|YaBrowser|SamsungBrowser|Firefox|CriOS|FxiOS|Chrome|Version)\/(\d+)/) || [])
     .slice(1).join(' ').replace(/^Version/, 'Safari').replace(/^Edg/, 'Edge') || 'другой';
-  const os = /Android (\d+)/.test(ua) ? 'Android ' + RegExp.$1 : /iPhone|iPad|iPod/.test(ua) ? 'iOS' + ((ua.match(/OS (\d+)_/) || [])[1] ? ' ' + ua.match(/OS (\d+)_/)[1] : '')
+  const and = ua.match(/Android (\d+)/), ios = ua.match(/OS (\d+)_/);
+  const os = and ? 'Android ' + and[1] : /iPhone|iPad|iPod/.test(ua) ? 'iOS' + (ios ? ' ' + ios[1] : '')
     : /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : 'другая';
   const touch = (navigator.maxTouchPoints || 0) > 0;
   return { br, os, mob: touch && /Android|iPhone|iPad|Mobile/.test(ua) ? 1 : 0, mem: navigator.deviceMemory || 0 };
@@ -59,8 +59,7 @@ function crashNote(kind, msg, src, stack) {
   const log = crashGet(CRASH_ERR, []);
   log.push(e);
   crashSet(CRASH_ERR, log.slice(-30));
-  const s = crashGet(CRASH_SESS, null);
-  if (s) { s.errs = (s.errs || 0) + 1; s.lastErr = Date.now(); crashSet(CRASH_SESS, s); }
+  if (CrashLog.upd) CrashLog.upd(c => { c.errs = (c.errs || 0) + 1; c.lastErr = Date.now(); });
   if (kind !== 'save') crashSend(e);
 }
 
@@ -102,24 +101,43 @@ window.addEventListener('unhandledrejection', ev => {
 
 // ---------- Сессии: чем кончился прошлый запуск ----------
 // vis — видна ли вкладка; closed — штатный уход (pagehide); beat — последний «пульс» (раз в 10 с, пока видна)
+function crashLastMem(diag) { const l = (diag && diag.last) || []; return l[l.length - 1] || {}; }
+// Почему оборвался запуск p (запись сессии без closed): фон, ошибка, память или неизвестно
+function crashClassify(p, diag) {
+  const h = crashLastMem(diag);
+  if (p.vis === 'hidden') return 'bg';                                              // выгружена, пока была в фоне
+  if (p.lastErr && p.beat && p.lastErr >= p.beat - 15000) return 'error';            // оборвалась вскоре после ошибки
+  if ((h.heap && h.lim && h.heap > h.lim * 0.6) || (h.cvMB || 0) > 250) return 'memory';   // памяти было впритык
+  return 'unknown';                                                                  // на экране без явной причины (чаще всего тоже память)
+}
 {
-  const prev = crashGet(CRASH_SESS, null);
-  if (prev && !prev.closed) {
-    const heap = (crashGet('feod.diag', null) || {}).last || [];
-    const h = heap[heap.length - 1] || {};
-    const memHigh = h.heap && h.lim && h.heap > h.lim * 0.6;
-    const reason = prev.vis === 'hidden' ? 'bg'                                  // выгружена, пока была в фоне
-      : prev.lastErr && prev.beat && prev.lastErr >= prev.beat - 15000 ? 'error'   // оборвалась вскоре после ошибки
-      : memHigh || (h.cvMB || 0) > 250 ? 'memory'                                 // памяти было впритык
-      : 'unknown';                                                                // оборвалась на экране без явной причины (чаще всего тоже память)
-    const exits = crashGet(CRASH_EXITS, []);
-    exits.push({ t: prev.beat || prev.start, r: reason, ph: prev.ph, v: prev.v, min: Math.round(((prev.beat || prev.start) - prev.start) / 60000), errs: prev.errs || 0, heap: h.heap || null, lim: h.lim || null });
-    crashSet(CRASH_EXITS, exits.slice(-20));
-    CrashLog.prev = reason;
-  }
+  // у каждой вкладки своя запись (несколько открытых вкладок не считаются вылетами друг друга)
+  const me = Math.random().toString(36).slice(2, 10);
+  const all = () => { const a = crashGet(CRASH_SESS, {}); return a && typeof a === 'object' && !a.start ? a : {}; };   // старый формат (одна запись) — выбрасываем
+  // разбор чужих записей: закрытые удаляем, замолчавшие дольше 12 с — оборванные запуски
+  const reap = () => {
+    const a = all(), now = Date.now(), diag = crashGet('feod.diag', null);
+    let ch = false;
+    for (const id in a) {
+      if (id === me) continue;
+      const p = a[id];
+      if (p.closed) { delete a[id]; ch = true; continue; }
+      if (now - (p.beat || 0) < 12000) continue;   // соседняя живая вкладка (или только что упавшая — посмотрим ещё раз позже)
+      const reason = crashClassify(p, diag), h = crashLastMem(diag);
+      const exits = crashGet(CRASH_EXITS, []);
+      exits.push({ t: p.beat || p.start, r: reason, ph: p.ph, v: p.v, min: Math.round(((p.beat || p.start) - p.start) / 60000), errs: p.errs || 0, heap: h.heap || null, lim: h.lim || null });
+      crashSet(CRASH_EXITS, exits.slice(-20));
+      CrashLog.prev = reason;
+      delete a[id]; ch = true;
+    }
+    if (ch) crashSet(CRASH_SESS, a);
+  };
   const s = { start: Date.now(), beat: Date.now(), vis: 'visible', closed: false, ph: 'start', v: '?', errs: 0 };
-  crashSet(CRASH_SESS, s);
-  const upd = f => { const c = crashGet(CRASH_SESS, s); f(c); crashSet(CRASH_SESS, c); };
+  { const a = all(); a[me] = s; crashSet(CRASH_SESS, a); }
+  reap();
+  setTimeout(reap, 15000);
+  const upd = f => { const a = all(); const c = a[me] || s; f(c); a[me] = c; crashSet(CRASH_SESS, a); };
+  CrashLog.upd = upd;
   setInterval(() => { if (document.visibilityState !== 'hidden') upd(c => { c.beat = Date.now(); c.ph = crashPhase(); c.v = crashVer(); }); }, 10000);
   document.addEventListener('visibilitychange', () => upd(c => { c.vis = document.visibilityState; c.beat = Date.now(); c.ph = crashPhase(); }));
   window.addEventListener('pagehide', () => upd(c => { c.closed = true; c.beat = Date.now(); }));
@@ -161,7 +179,7 @@ function crashCopyLog() {
   const fallback = () => {
     // окно с текстом: на телефонах без доступа к буферу его можно выделить пальцем
     const box = document.createElement('div');
-    box.style.cssText = 'position:fixed;inset:8% 6%;z-index:10000;display:flex;flex-direction:column;gap:8px;padding:12px;background:#2a1e14;border:2px solid #a8743a;border-radius:8px';
+    box.style.cssText = 'position:fixed;inset:8% 6%;z-index:100001;display:flex;flex-direction:column;gap:8px;padding:12px;background:#2a1e14;border:2px solid #a8743a;border-radius:8px';
     const ta = document.createElement('textarea');
     ta.value = text; ta.readOnly = true;
     ta.style.cssText = 'flex:1;font:11px/1.35 Consolas,monospace;background:#1a120c;color:#f3e6c8;border:1px solid #5a4128';
