@@ -185,7 +185,7 @@ function drawUnit(c, u) {
   // просто стоит — лицом к зрителю, а не боком, как после ходьбы
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
-  const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
+  const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 || u.hangUntil > Game.time ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
   if ((u.type === 'hero' || u.rec || u.gx || u.gm) && typeof heroWpnOf === 'function') opt.wpn = heroWpnOf(u);   // оружие героя, рекрутов и глав гильдий (herokit.js)
   if ((u.anim === 'flaskout' || u.anim === 'drink') && pose === 'idle') {
     opt.gest = u.anim === 'drink' ? 'drink' : 'chest';
@@ -842,6 +842,7 @@ function render() {
   }
   for (const b of Game.critters || []) list.push([b.y + 0.1, () => drawButterfly(c, b)]);
   weatherDrawList(list, c, x0, y0, x1, y1);
+  festDrawList(list, c, x0, y0, x1, y1);
   faunaDrawList(list, c, x0, y0, x1, y1);
   fauna2DrawList(list, c, x0, y0, x1, y1);
   chestsDrawList(list, c, x0, y0, x1, y1);

@@ -239,7 +239,7 @@ function coopDropBuilding(b) {
 }
 
 const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lairs'];
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
 function coopResolve(v) {
@@ -271,6 +271,7 @@ function coopMirror(m) {
   Game.golem = m.golem ? Object.assign(Game.golem || {}, coopResolve(m.golem)) : null;
   Game.sub = m.sub ? coopResolve(m.sub) : null;
   Game.lostGnomes = m.lost || 0;
+  Game.festival = m.fest || null;
   Object.assign(WX, m.wx, { ready: true });
 }
 

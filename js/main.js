@@ -194,6 +194,7 @@ function step(dt) {
   if (Game.growT >= 1) { updateGrowth(Game.growT); Game.growT = 0; }
   updateAnimals(dt);
   nightTick(dt);
+  festivalTick(dt);
   weatherTick(dt);
   updateCritters(dt);
   streetTick(dt);

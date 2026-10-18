@@ -12,7 +12,7 @@ function resetGameState() {
   Game.piles.clear();
   Game.animals = [];
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
-  Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0;
+  Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0; Game.festival = null; Game.festNext = undefined; Game.festWish = false;
   Game.bats = [];
   Game.crows = []; Game.frogs = []; Game.worms = []; Game.chests = null; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1;
   Game.fieldPlans = new Set(); Game.avenge = [];
@@ -85,7 +85,7 @@ function serializeGame() {
       level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
     })),
     pets: Game.animals.filter(a => a.owner && !a.dead).map(a => [a.kind, +a.x.toFixed(2), +a.y.toFixed(2), Game.units.findIndex(u => u.id === a.owner)]).filter(p => p[3] >= 0),
-    night: serializeNight(),
+    night: serializeNight(), fest: serializeFestival(),
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
     piles: savePiles(),   // кучи на земле и груз в руках — раньше пропадали при сохранении
     units: Game.units.map(u => ({
@@ -204,6 +204,7 @@ function applySave(s) {
   }
   for (const [x, y, st] of s.piles || []) if (inb(x, y)) for (const g in st) if (GOODS[g] && st[g] > 0) dropPile(x, y, g, st[g]);
   applyNight(s.night);
+  applyFestival(s.fest);
   updateMinimapBase();
 }
 

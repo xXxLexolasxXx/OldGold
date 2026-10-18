@@ -17,12 +17,13 @@ const LOG_KINDS = {
   gold:    { icon: 'log_gold', name: 'Находки' },
   people:  { icon: 'people', name: 'Жители' },
   deliver: { icon: 'store', name: 'Доставки' },
+  festival: { icon: 'log_gossip', name: 'Праздник' },
 };
 const LOG_FILTERS = [
   ['all', 'Все', 'log_all'], ['gossip', 'Дрязги', 'log_gossip'], ['night', 'Ночь', 'log_night'], ['life', 'Бытовуха', 'people'],
 ];
 // Что куда входит: бытовуха — стройка, жители, еда, находки, доставки; дрязги — звери, столкновения, погода
-const LOG_GROUP = { owl: 'gossip', crow: 'gossip', animal: 'gossip', bump: 'gossip', weather: 'gossip', tree: 'night', build: 'life', people: 'life', food: 'life', gold: 'life', deliver: 'life' };
+const LOG_GROUP = { owl: 'gossip', crow: 'gossip', animal: 'gossip', bump: 'gossip', weather: 'gossip', festival: 'gossip', tree: 'night', build: 'life', people: 'life', food: 'life', gold: 'life', deliver: 'life' };
 // Язвительные приписки: подбираются по виду события, стабильно для каждой записи
 const LOG_SARC = {
   build:   ['Ну наконец-то, а то уже крыши не хватало.', 'Архитектор плачет от счастья. Или от чего-то ещё.', 'Стоит криво, зато своё.', 'Прораб заявляет, что так и задумано.'],

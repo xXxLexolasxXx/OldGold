@@ -560,6 +560,7 @@ function coopMirror() {
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
     lost: Game.lostGnomes || 0,
+    fest: festOn() ? { on: true, until: Game.festival.until } : null,
     wx: {},
   };
   for (const k of COOP_WX) m.wx[k] = coopPlain(WX[k]);

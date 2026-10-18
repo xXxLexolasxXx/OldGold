@@ -432,6 +432,7 @@ function initUI() {
     else if (act === 'upgrade') startUpgrade(b);
     else if (act === 'upgcancel') cancelUpgrade(b);
     else if (act === 'deliver') toggleDeliver(b);
+    else if (act === 'festival') { if (!festOn()) { const bad = festivalStart('manual'); if (bad) toast(bad); } }
     else if (act === 'goto') focusBuilding(b);
     else if (act === 'prev') cycleBuilding(-1);
     else if (act === 'next') cycleBuilding(1);
@@ -643,6 +644,11 @@ function infoBuilding(b) {
     h += b.noDeliver
       ? `<button class="deliv closed" data-act="deliver" title="Трудяги сюда ничего не везут и очень этому рады. Нажмите, чтобы испортить им праздник">${ui('nodeliver')}<span><b>Доставки закрыты</b><small>нажмите, чтобы открыть</small></span></button>`
       : `<button class="deliv open" data-act="deliver" title="Запретить трудягам везти сюда товары (B). Они не обидятся, они вообще редко обижаются на меньшее количество работы">${ui('deliver')}<span><b>Доставки открыты</b><small>нажмите, чтобы закрыть</small></span></button>`;
+  }
+
+  if (b.type === 'inn' && b.state === 'done' && !(typeof Coop !== 'undefined' && Coop.mirror)) {
+    const bad = festOn() ? '' : festCanStart(), on = festOn();
+    h += `<button class="deliv ${on || !bad ? 'open' : 'closed'}" data-act="festival" title="Все бросают работу, пьют эль, пляшут и кричат «ура». Нужен эль в трактире; прерывается нечистью и вечером"><span><b>${on ? 'Праздник идёт!' : 'Устроить праздник'}</b><small>${on ? 'гуляют до вечера' : bad || 'на 1–2 дня, расход эля выше'}</small></span></button>`;
   }
 
   if (b.upg) {
