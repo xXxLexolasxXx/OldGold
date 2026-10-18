@@ -23,7 +23,7 @@ function coopSaved(set) {
 // Общий сервер по умолчанию — для игры, открытой не с самого сервера (GitHub Pages, файл с диска).
 // Страница по https (GitHub Pages) может подключиться только к wss:// — см. server/DEPLOY.md.
 // Можно подменить ссылкой: ...?server=wss://адрес
-const COOP_SERVER = '';
+const COOP_SERVER = 'wss://151-252-107-75.sslip.io';
 
 // адрес сервера, если страница открыта с него же
 function coopOrigin() { return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host; }
