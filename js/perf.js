@@ -107,7 +107,8 @@ function perfMenuSync() {
           `холст ${R.canvas.width}×${R.canvas.height} · DPR ${(window.devicePixelRatio || 1).toFixed(2)} · ${Fps.eco ? 'экономно' : 'обычно'}\n` +
           `жителей ${Game.units.length} · зданий ${Game.buildings.length} · куч ${Game.piles.size}
 ` +
-          `память: куча ${(Fps.mem[Fps.mem.length - 1] || {}).heap ?? '—'} МБ · холсты ${perfCanvasMB().toFixed(0)} МБ · сбоев ${Fps.crashes}`;
+          `память: куча ${(Fps.mem[Fps.mem.length - 1] || {}).heap ?? '—'} МБ · холсты ${perfCanvasMB().toFixed(0)} МБ · сбоев ${Fps.crashes}` +
+          (typeof crashSummary === 'function' ? `\nвылеты: ${crashSummary().text} · ошибок в журнале ${crashSummary().errors} (меню → «Скопировать журнал»)` : '');
       }
     }
     requestAnimationFrame(tick);
@@ -149,6 +150,14 @@ function perfMenuSync() {
       const sub = document.getElementById('sub-btn');
       (sub && sub.parentElement === list ? sub : list.firstChild).insertAdjacentElement(sub ? 'afterend' : 'beforebegin', b);
       perfMenuSync();
+      // журнал сбоев (js/crashlog.js): текст для автора — вылеты, ошибки, память, устройство
+      if (typeof crashCopyLog === 'function') {
+        const lb = document.createElement('button');
+        lb.id = 'crashlog-btn'; lb.title = 'Скопировать журнал сбоев и вылетов, чтобы отправить автору (без ника и сохранений)';
+        lb.innerHTML = '<span>Скопировать журнал</span>';
+        lb.onclick = () => crashCopyLog();
+        b.insertAdjacentElement('afterend', lb);
+      }
     }
     if (Fps.eco) resize();
   };
