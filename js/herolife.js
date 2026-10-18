@@ -179,6 +179,7 @@ function* hlExorcise(u, c) {
   sfxAt('chime', g.x * TILE, g.y * TILE);
   for (let k = 0; k < 4; k++) {
     u.gest = 'fist'; u.gestUntil = Game.time + 0.7; u.gestFace = u.face;
+    if (k === 1 || k === 3) ghostStrike(g, u);      // призрак огрызается: бросок когтями
     yield { wait: 0.6 };
     if (g.exo || (Game.ghosts || []).indexOf(g) < 0) break;
     fxBurst(g.x * TILE, g.y * TILE - 14, 7, ['#fff6c0', '#ffe070', '#bfe8ff'], 50, 60, 0.9, 1.6, -40);

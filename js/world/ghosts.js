@@ -41,7 +41,8 @@ function ghostsTick(dt) {
         g.mode = 'leave'; g.modeT = 99;
       } else g.mode = 'drift';
     }
-    if (g.mode === 'drift' || g.mode === 'boo') {
+    if (g.atkT > 0) ghostStrikeTick(g, dt);
+    else if (g.mode === 'drift' || g.mode === 'boo') {
       if (g.retarget <= 0 || Math.hypot(g.tx - g.x, g.ty - g.y) < 0.6) {
         g.tx = Math.max(1.5, Math.min(MAP_W - 1.5, g.hx + (Math.random() - 0.5) * 18)); g.ty = Math.max(1.5, Math.min(MAP_H - 1.5, g.hy + (Math.random() - 0.5) * 14)); g.retarget = 3 + Math.random() * 5;
         // иногда тянется к ближайшему гному
@@ -86,76 +87,207 @@ function ghostsTick(dt) {
   }
 }
 
+// Удар: призрак бросается на героя, дерзнувшего его изгонять; на самого гнома он не нападает — только пугает
+function ghostStrike(g, u) { if (!(g.atkT > 0)) { g.atkT = 0.001; g.atkU = u; g.atkHit = false; g.face = u.x >= g.x ? 1 : -1; sfxAt('wail', g.x * TILE, g.y * TILE, 1); } }
+function ghostStrikeTick(g, dt) {
+  g.atkT += dt;
+  const u = g.atkU, k = g.atkT / GHOST_ATK_DUR;
+  if (u && !u.dead) {
+    const dx = u.x - g.x, dy = u.y - g.y, d = Math.hypot(dx, dy) || 1;
+    g.face = dx >= 0 ? 1 : -1;
+    if (k > 0.3 && k < 0.6 && d > 1.0) { g.x += dx / d * 5 * dt; g.y += dy / d * 5 * dt; }      // бросок
+    else if (k >= 0.6 && d < 1.6) { g.x -= dx / d * 1.6 * dt; g.y -= dy / d * 1.6 * dt; }        // отдача
+    if (!g.atkHit && k >= 0.5) {
+      g.atkHit = true;
+      if (d < 2.4 && u.hero) {
+        hlHurt(u, 2 + Math.random() * 2, 'ghost');
+        fxBurst(u.x * TILE, u.y * TILE - 14, 8, ['#bfffe0', '#6fd0b0', '#e8fff6'], 40, 50, 0.7, 1.6, -20);
+        floater(u.x, u.y - 2.4, 'Холод пробирает!', '#bfeaff');
+      }
+    }
+  }
+  if (g.atkT >= GHOST_ATK_DUR) { g.atkT = 0; g.atkU = null; }
+}
+
 function ghostLights(L, x0, y0, x1, y1) {
   for (const g of Game.ghosts || []) if (g.x > x0 - 4 && g.x < x1 + 4 && g.y > y0 - 4 && g.y < y1 + 4)
     L.push([g.x * TILE, g.y * TILE - 12, 46, 0.5 * g.alpha, 'ent']);
+}
+
+// ---------- Спрайты ----------
+// Призрак-гном в духе некрополя: рваный саван без ног, пустые глазницы с тлеющими зрачками,
+// костлявые когти, борода как мокрый туман. 9 кадров плавания (петля) и 8 кадров удара когтями.
+// Кадры рисуются один раз в offscreen-холсты (в 2× для чёткости), в игре только blit.
+
+const GHOST_FRAMES = 9, GHOST_ATK_FRAMES = 8, GHOST_ATK_DUR = 0.9, GHOST_SS = 2, GHOST_W = 60, GHOST_H = 76, GHOST_OX = 30, GHOST_OY = 32;
+const GHOST_CACHE = {};
+
+function ghostSprite(mood, i) {
+  const key = mood + i;
+  let cv = GHOST_CACHE[key];
+  if (cv) return cv;
+  cv = GHOST_CACHE[key] = document.createElement('canvas');
+  cv.width = GHOST_W * GHOST_SS; cv.height = GHOST_H * GHOST_SS;
+  const c = cv.getContext('2d');
+  c.scale(GHOST_SS, GHOST_SS); c.translate(GHOST_OX, GHOST_OY);
+  const atk = mood === 'atk';
+  paintGhost(c, atk ? 0 : i / GHOST_FRAMES, mood, atk ? i / (GHOST_ATK_FRAMES - 1) : 0);
+  return cv;
+}
+
+// p — фаза плавания 0..1 (петля), k — ход удара 0..1: замах (0–.35), бросок (.35–.6), отдача
+function paintGhost(c, p, mood, k) {
+  const atk = mood === 'atk', boo = mood === 'boo' || atk, calm = mood === 'calm';
+  const TAU = Math.PI * 2, sn = (m, o = 0) => Math.sin(p * TAU * m + o);
+  const sm = x => x * x * (3 - 2 * x);
+  const wind = atk ? sm(Math.min(1, k / 0.35)) : 0;
+  const strike = atk ? sm(Math.max(0, Math.min(1, (k - 0.35) / 0.25))) : 0;
+  const recoil = atk ? sm(Math.max(0, (k - 0.6) / 0.4)) : 0;
+  const lean = atk ? (-3 * wind + 9 * strike) * (1 - recoil) : 0;         // наклон корпуса (+ вперёд)
+  const sway = sn(1) * 1.8 + lean * 0.5;
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  // тело-саван: S-образный хвост, тянущийся за призраком
+  const tailLen = 44 - (atk ? 6 * strike : 0), N = 22, L = [], R = [];
+  for (let n = 0; n <= N; n++) {
+    const t = n / N, y = -3 + t * tailLen;
+    const hw = 9.5 * Math.pow(1 - t, 0.75) + 0.6 + (t > 0.3 ? Math.sin(t * 41 + (n % 3) * 1.7 + p * TAU) * 1.3 * t : 0);
+    const cx = lean * (1 - t) * 0.9 + sn(1, -t * 5.2) * (1.2 + t * 7) - (atk ? strike * t * 6 : 0);
+    L.push([cx - hw, y]); R.push([cx + hw, y]);
+  }
+  const body = () => {
+    c.beginPath(); c.moveTo(L[0][0], L[0][1]);
+    for (const q of L) c.lineTo(q[0], q[1]);
+    for (let n = R.length - 1; n >= 0; n--) c.lineTo(R[n][0], R[n][1]);
+    c.closePath();
+  };
+  // внешняя дымка
+  let g = c.createLinearGradient(0, -8, 0, 40);
+  g.addColorStop(0, 'rgba(150,235,215,0.40)'); g.addColorStop(1, 'rgba(90,200,200,0)');
+  c.fillStyle = g; c.save(); c.scale(1.22, 1); body(); c.fill(); c.restore();
+  // сам саван: бледный сверху, прозрачный снизу
+  g = c.createLinearGradient(0, -8, 0, 40);
+  g.addColorStop(0, 'rgba(226,248,240,0.95)'); g.addColorStop(0.35, 'rgba(150,205,198,0.78)'); g.addColorStop(0.7, 'rgba(80,140,150,0.4)'); g.addColorStop(1, 'rgba(50,100,125,0)');
+  c.fillStyle = g; body(); c.fill();
+  // тёмная пустота внутри: сквозь грудь виден мрак, рёбра, складки
+  c.save(); body(); c.clip();
+  g = c.createRadialGradient(lean * 0.5, 4, 1, lean * 0.5, 6, 11); g.addColorStop(0, 'rgba(6,24,30,0.7)'); g.addColorStop(1, 'rgba(6,24,30,0)');
+  c.fillStyle = g; c.fillRect(-14, -6, 28, 24);
+  c.strokeStyle = 'rgba(224,250,240,0.55)'; c.lineWidth = 0.8;
+  for (let r = 0; r < 4; r++) { const y = r * 3.1; c.beginPath(); c.moveTo(-5 + r * 0.4 + lean * 0.5, y); c.quadraticCurveTo(lean * 0.5, y + 2.4, 5 - r * 0.4 + lean * 0.5, y); c.stroke(); }
+  c.strokeStyle = 'rgba(8,28,34,0.5)'; c.lineWidth = 1.1;
+  for (let f = -2; f <= 2; f++) { c.beginPath(); c.moveTo(f * 3.4 + lean * 0.6, 10); c.quadraticCurveTo(f * 4.6 + sway, 24, f * 3 + sway * 1.5, 38); c.stroke(); }
+  c.restore();
+  // рваные лоскуты и нити тумана по краям хвоста
+  for (let w = 0; w < 5; w++) {
+    const side = w % 2 ? 1 : -1, t0 = 0.35 + w * 0.1, a = (side > 0 ? R : L)[Math.floor(t0 * N)];
+    const len = 9 + (w * 5 % 7), ph = p * TAU + w * 1.9;
+    c.strokeStyle = `rgba(190,240,230,${0.5 - w * 0.06})`; c.lineWidth = 1.5 - w * 0.12;
+    c.beginPath(); c.moveTo(a[0], a[1]);
+    c.bezierCurveTo(a[0] + side * 5, a[1] + len * 0.3, a[0] + side * 3 + Math.sin(ph) * 3.5, a[1] + len * 0.7, a[0] + side * 7 + Math.sin(ph + 1) * 4, a[1] + len);
+    c.stroke();
+  }
+  // порванная цепь на запястье: звенья качаются
+  const chx = -11 + sn(2, 1) * 1.2 - (atk ? 4 * wind : 0), chy = 9 + sn(1, 2) * 1.6;
+  c.strokeStyle = 'rgba(150,170,175,0.85)'; c.lineWidth = 1.1;
+  for (let l = 0; l < 3; l++) { c.beginPath(); c.ellipse(chx - 1 + l * 0.6, chy + l * 2.6, 1.2, 1.7, l % 2 ? 0.6 : -0.4, 0, 7); c.stroke(); }
+  // борода: длинные пряди тумана
+  c.lineWidth = 1.3;
+  for (let b = -3; b <= 3; b++) {
+    c.strokeStyle = `rgba(236,252,246,${0.85 - Math.abs(b) * 0.08})`;
+    c.beginPath(); c.moveTo(b * 1.3 + lean * 0.4, 3);
+    c.quadraticCurveTo(b * 2 + sn(1, b * 0.9) * 2.2 + lean * 0.5, 9, b * 1.5 + sn(2, b * 1.3) * 3 + lean * 0.3 - strike * 3, 15 + Math.abs(b) * 1.3 + (3 - Math.abs(b)) * 2);
+    c.stroke();
+  }
+  // костлявые руки с когтями
+  for (const s of [-1, 1]) {
+    const shx = s * 6 + lean * 0.5, shy = 1;
+    let hx, hy;
+    if (atk) {
+      // замах: руки воздеты над головой; бросок: обе вперёд и вниз; отдача: обвисли
+      const wx = s * 7 - 3, wy = -21, sx = 21 - s * 2, sy = 11 - s * 3, rx = s * 11, ry = 6;
+      const lift = Math.max(wind, 0.15);
+      hx = (wx + (sx - wx) * strike) * (1 - recoil) + rx * recoil; hy = (wy + (sy - wy) * strike) * (1 - recoil) + ry * recoil;
+      hx = shx + (hx - shx) * lift; hy = shy + (hy - shy) * lift;
+    } else {
+      hx = s * 14 + (calm ? -s * 4 : 0) + sn(1, s) * 1.6; hy = (calm ? 12 : boo ? -15 : 3) + sn(2, s * 1.3) * 2.6;
+    }
+    const mx = (shx + hx) / 2 + s * 2, my = (shy + hy) / 2 + 5 + sn(1, s * 2) * 1.4;
+    c.strokeStyle = 'rgba(30,70,72,0.8)'; c.lineWidth = 3.1;
+    c.beginPath(); c.moveTo(shx, shy); c.quadraticCurveTo(mx, my, hx, hy); c.stroke();
+    c.strokeStyle = '#dff4ea'; c.lineWidth = 1.9;
+    c.beginPath(); c.moveTo(shx, shy); c.quadraticCurveTo(mx, my, hx, hy); c.stroke();
+    // кисть: четыре длинных когтя веером
+    const ang = Math.atan2(hy - my, hx - mx);
+    c.lineWidth = 0.95; c.strokeStyle = '#f2fffa';
+    for (let j = -1.5; j <= 1.5; j++) {
+      const a2 = ang + j * 0.34 + (boo ? j * 0.1 : 0), len = 5.4 - Math.abs(j) * 0.6 + (atk ? strike * 1.6 : 0);
+      c.beginPath(); c.moveTo(hx, hy); c.quadraticCurveTo(hx + Math.cos(a2) * len * 0.5, hy + Math.sin(a2) * len * 0.5 + 0.8, hx + Math.cos(a2 + 0.25) * len, hy + Math.sin(a2 + 0.25) * len); c.stroke();
+    }
+  }
+  // голова с колпаком
+  c.save(); c.translate(lean * 0.7, atk ? 1.5 * strike - wind : 0);
+  const tip = sn(1, 0.6) * 2.2 + lean * 0.4;
+  c.fillStyle = 'rgba(58,92,96,0.97)'; c.beginPath(); c.moveTo(-8, -6.4);
+  c.quadraticCurveTo(-5, -17, 1 + tip * 0.5, -25); c.lineTo(4.4 + tip, -21.5); c.lineTo(2.8 + tip, -19); c.lineTo(5.6 + tip * 0.6, -16);
+  c.quadraticCurveTo(7, -11, 8, -6.4); c.lineTo(6.2, -8); c.lineTo(3.8, -6.2); c.lineTo(1.4, -8.2); c.lineTo(-1.2, -6.4); c.lineTo(-4, -8); c.lineTo(-6, -6.8); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(0,0,0,0.88)'; c.beginPath(); c.ellipse(-1.6, -14, 1.1, 1.9, 0.5, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(190,235,225,0.5)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(-6.6, -8.6); c.quadraticCurveTo(-3, -17, 1, -24); c.stroke();
+  // череп
+  g = c.createRadialGradient(-1.5, -2, 1, 0, 0, 8); g.addColorStop(0, '#f6fffb'); g.addColorStop(1, '#bcd9d0');
+  c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, 6.4, 7.2, 0, 0, 7); c.fill();
+  c.fillStyle = 'rgba(20,54,58,0.5)'; c.beginPath(); c.ellipse(-4.4, 3, 1.5, 3.1, 0.25, 0, 7); c.ellipse(4.4, 3, 1.5, 3.1, -0.25, 0, 7); c.fill();
+  // глазницы: чёрные провалы под злым наклоном
+  const eh = boo ? 4.6 : 3.8;
+  c.fillStyle = '#010707';
+  for (const e of [-1, 1]) {
+    c.beginPath(); c.moveTo(e * 0.7, -3.2); c.lineTo(e * 5.6, -4.8); c.lineTo(e * 4.9, -0.8 + eh * 0.2); c.quadraticCurveTo(e * 3.2, -0.8 + eh, e * 1.7, 0.2 + eh * 0.5); c.closePath(); c.fill();
+  }
+  // тлеющие зрачки с ореолом
+  const eyeCol = boo ? '#ff3a1c' : calm ? '#8fd6ff' : '#b8ffcf', gz = sn(1, 0.4) * 0.6, er = boo ? 1.35 : 0.95;
+  for (const e of [-1, 1]) {
+    const ex = e * 3.1 + gz, ey = -0.6;
+    g = c.createRadialGradient(ex, ey, 0, ex, ey, 4.4); g.addColorStop(0, eyeCol); g.addColorStop(0.35, boo ? 'rgba(255,60,30,0.35)' : 'rgba(150,255,200,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(ex, ey, 4.4, 0, 7); c.fill();
+    c.fillStyle = eyeCol; c.beginPath(); c.arc(ex, ey, er, 0, 7); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey, er * 0.5, 0, 7); c.fill();
+  }
+  // нос-провал
+  c.fillStyle = '#031010'; c.beginPath(); c.moveTo(0, 1.2); c.lineTo(-1, 3.4); c.lineTo(1, 3.4); c.closePath(); c.fill();
+  // пасть: у удара раззявлена в беззвучном крике
+  const mh = atk ? 5 + 7 * Math.max(wind * 0.5, strike) * (1 - recoil * 0.6) : boo ? 8.5 + sn(6) * 0.8 : calm ? 1.2 : 4.2 + sn(2) * 1.0;
+  c.fillStyle = '#010707'; c.beginPath(); c.moveTo(-3.4, 4.2);
+  for (let q = 0; q <= 6; q++) c.lineTo(-3.4 + q * 1.13, 4.2 + (q % 2 ? 0.9 : -0.3));
+  c.lineTo(3.4, 4.4 + mh * 0.5); c.lineTo(1.7, 4.6 + mh); c.lineTo(0, 4.4 + mh * 0.85); c.lineTo(-1.7, 4.6 + mh); c.lineTo(-3.4, 4.4 + mh * 0.5); c.closePath(); c.fill();
+  c.fillStyle = '#eefaf4';
+  for (const x of [-2.4, -0.8, 0.8, 2.4]) { c.beginPath(); c.moveTo(x - 0.65, 4.3); c.lineTo(x, 4.3 + (boo ? 3.4 : 1.9)); c.lineTo(x + 0.65, 4.3); c.fill(); }
+  if (mh > 6) for (const x of [-1.6, 0, 1.6]) { c.beginPath(); c.moveTo(x - 0.55, 4.6 + mh); c.lineTo(x, 4.6 + mh - 2.2); c.lineTo(x + 0.55, 4.6 + mh); c.fill(); }
+  c.restore();
 }
 
 function drawGhosts(c) {
   const t = Game.time;
   for (const g of Game.ghosts || []) {
     if (g.alpha <= 0.01) continue;
-    const bob = Math.sin(g.ph) * 2.2, px = Math.round(g.x * TILE), py = Math.round(g.y * TILE - 15 - bob);
-    const boo = g.mode === 'boo', calm = g.mode === 'calm';
-    const flick = 0.78 + Math.sin(t * 13 + g.ph * 3) * 0.1 + (Math.sin(t * 31 + g.ph) > 0.93 ? -0.3 : 0);     // мерцает, как гаснущая свеча
+    const bob = Math.sin(g.ph) * 2.4, px = Math.round(g.x * TILE), py = Math.round(g.y * TILE - 17 - bob);
+    const atk = (g.atkT || 0) > 0;
+    const mood = atk ? 'atk' : g.mode === 'boo' ? 'boo' : g.mode === 'calm' ? 'calm' : 'idle';
+    const frame = atk ? Math.min(GHOST_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * GHOST_ATK_FRAMES)) : Math.floor(t * 9 + g.ph * 1.43) % GHOST_FRAMES;
+    const flick = 0.82 + Math.sin(t * 13 + g.ph * 3) * 0.08 + (Math.sin(t * 31 + g.ph) > 0.93 ? -0.25 : 0);   // мерцает, как гаснущая свеча
     const A = g.alpha * flick;
     c.save();
-    // холодное зеленоватое свечение вокруг
-    c.globalAlpha = A * 0.45; c.globalCompositeOperation = 'lighter';
-    const gl = c.createRadialGradient(px, py, 2, px, py, 26); gl.addColorStop(0, 'rgba(120,255,190,0.5)'); gl.addColorStop(1, 'rgba(120,255,190,0)');
-    c.fillStyle = gl; c.beginPath(); c.arc(px, py, 26, 0, 7); c.fill();
+    // холодное свечение вокруг (поверх тумана — призрак виден издалека), у атаки красноватое
+    c.globalAlpha = A * (atk ? 0.6 : 0.45); c.globalCompositeOperation = 'lighter';
+    const gl = c.createRadialGradient(px, py, 2, px, py, 30);
+    gl.addColorStop(0, atk ? 'rgba(255,110,80,0.5)' : 'rgba(120,255,190,0.5)'); gl.addColorStop(1, 'rgba(120,255,190,0)');
+    c.fillStyle = gl; c.beginPath(); c.arc(px, py, 30, 0, 7); c.fill();
     c.globalCompositeOperation = 'source-over';
     // тень на земле: чёрная, дрожащая
     c.globalAlpha = g.alpha * 0.4; c.fillStyle = 'rgba(0,10,10,0.7)'; c.beginPath(); c.ellipse(px, g.y * TILE + 2, 8 + Math.sin(g.ph * 2) * 1.2, 2.2, 0, 0, 7); c.fill();
+    // кадр
     c.translate(px, py); c.scale(g.face, 1);
-    c.globalAlpha = A * 0.8;
-    c.lineJoin = 'round'; c.lineCap = 'round';
-    const sway = Math.sin(g.ph * 1.3) * 1.6;
-    // рваный саван: лохмотья-полосы тянутся вниз и в стороны
-    const sg = c.createLinearGradient(0, -10, 0, 22); sg.addColorStop(0, '#cfe6dc'); sg.addColorStop(0.5, '#7fa89a'); sg.addColorStop(1, 'rgba(60,100,96,0)');
-    c.fillStyle = sg; c.beginPath(); c.moveTo(-8, -6);
-    c.quadraticCurveTo(-11, 6, -9 + sway, 14);
-    for (let i = 0; i < 6; i++) { const x = -9 + sway + i * 3.5, len = 20 + (i * 7 % 5) * 2 + Math.sin(g.ph * 2.2 + i * 1.7) * 2.5; c.lineTo(x + 1.2, len - 3); c.lineTo(x + 2.4, 12 + (i % 2) * 2); }
-    c.quadraticCurveTo(11, 6, 8, -6); c.quadraticCurveTo(0, -11, -8, -6); c.fill();
-    // тёмные складки на саване
-    c.strokeStyle = 'rgba(10,30,30,0.5)'; c.lineWidth = 1.1;
-    for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(i * 3.5, -2); c.quadraticCurveTo(i * 5 + sway * 0.5, 8, i * 4 + sway, 16); c.stroke(); }
-    // длинные костлявые руки с когтями: тянутся вперёд, при «бу» воздеты
-    const rz = boo ? 1 : calm ? -0.3 : 0.2;
-    c.strokeStyle = '#d8f0e6'; c.lineWidth = 2;
-    for (const s of [-1, 1]) {
-      const up = boo ? -17 : calm ? 7 : -3 + Math.sin(g.ph * 2 + s) * 2.4;
-      const hx = s * (boo ? 12 : 13), hy = up + 2;
-      c.beginPath(); c.moveTo(s * 6, -4); c.quadraticCurveTo(s * 11, up * 0.4 + 4, hx, hy); c.stroke();
-      c.lineWidth = 0.9;
-      for (let j = -1; j <= 1; j++) { c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx + s * 3.6 + j * 0.8, hy + j * 2.6 + (boo ? -3 : 1.5)); c.stroke(); }   // когти
-      c.lineWidth = 2;
-    }
-    // борода — клочьями, как мокрые водоросли
-    c.strokeStyle = '#e6f5ee'; c.lineWidth = 1.2;
-    for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 1.2, -4); c.quadraticCurveTo(i * 1.6 + Math.sin(g.ph * 2 + i) * 1.4, 4, i * 1.1 + Math.sin(g.ph * 2.6 + i * 1.3) * 2, 11 + Math.abs(i)); c.stroke(); }
-    // голова: череп с впалыми щеками
-    c.fillStyle = '#e2f2ea'; c.beginPath(); c.ellipse(0, -9, 6, 7.2, 0, 0, 7); c.fill();
-    c.fillStyle = 'rgba(30,60,58,0.45)'; c.beginPath(); c.ellipse(-4.4, -6, 1.6, 3, 0.3, 0, 7); c.ellipse(4.4, -6, 1.6, 3, -0.3, 0, 7); c.fill();   // запавшие щёки
-    // рваный колпак с дырой и сломанным кончиком
-    c.fillStyle = '#7c9a92'; c.beginPath(); c.moveTo(-7, -12); c.quadraticCurveTo(-4, -21, 2 + sway * 0.4, -27); c.lineTo(5 + sway * 0.4, -23); c.lineTo(3.5 + sway, -20); c.quadraticCurveTo(5, -16, 7.5, -12); c.lineTo(5, -13.4); c.lineTo(3, -12); c.lineTo(0.5, -13.6); c.lineTo(-2, -12); c.lineTo(-4.6, -13.2); c.closePath(); c.fill();
-    c.fillStyle = 'rgba(0,0,0,0.85)'; c.beginPath(); c.ellipse(-1.5, -17, 1.3, 1.9, 0.5, 0, 7); c.fill();
-    // впалые чёрные глазницы под сердитым наклоном, внутри — крошечные тлеющие точки
-    c.globalAlpha = g.alpha * 0.98; c.fillStyle = '#010a09';
-    const eh = boo ? 4.4 : 3.6;
-    for (const s of [-1, 1]) {
-      c.beginPath(); c.moveTo(s * 1.0, -11.4 + s * 0.0); c.lineTo(s * 5.4, -12.6); c.lineTo(s * 4.6, -9.2 + eh * 0.2); c.quadraticCurveTo(s * 3.2, -9.4 + eh, s * 1.8, -8.6 + eh * 0.5); c.closePath(); c.fill();
-    }
-    const gz = Math.sin(t * 1.7 + g.ph) * 0.6;
-    c.globalAlpha = g.alpha; c.fillStyle = boo ? '#ff4a2a' : calm ? '#9ad8ff' : '#c8ffd8';
-    c.beginPath(); c.arc(-3 + gz, -9.6, boo ? 1.1 : 0.65, 0, 7); c.arc(3 + gz, -9.6, boo ? 1.1 : 0.65, 0, 7); c.fill();
-    // рот: чёрная рваная пасть-провал, острые клыки сверху
-    c.globalAlpha = g.alpha * 0.98; c.fillStyle = '#010a09';
-    const mh = boo ? 8.5 + Math.sin(t * 22) * 0.9 : calm ? 1.2 : 4.4 + Math.sin(g.ph * 3) * 0.8;
-    c.beginPath(); c.moveTo(-3, -4.4);
-    for (let i = 0; i <= 6; i++) c.lineTo(-3 + i, -4.4 + (i % 2 ? 0.8 : -0.4));
-    c.lineTo(3.2, -4.4 + mh * 0.5); c.lineTo(1.6, -4 + mh); c.lineTo(0, -4 + mh * 0.8); c.lineTo(-1.6, -4 + mh); c.lineTo(-3.2, -4.4 + mh * 0.5); c.closePath(); c.fill();
-    c.fillStyle = '#dcefe6'; for (const x of [-2.2, -0.8, 0.8, 2.2]) { c.beginPath(); c.moveTo(x - 0.6, -4.3); c.lineTo(x, -4.3 + (boo ? 3.2 : 1.8)); c.lineTo(x + 0.6, -4.3); c.fill(); }
+    c.globalAlpha = A;
+    c.imageSmoothingEnabled = true;
+    c.drawImage(ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
     c.restore();
     // клочья тумана, уходящие вверх от призрака
     c.save(); c.globalAlpha = 1;
