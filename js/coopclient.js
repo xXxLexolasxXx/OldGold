@@ -359,7 +359,8 @@ function coopSaveCopy() {
     return _rc(t);
   };
 
-  heroPanel = function () { return coopPanel(); };
+  const _hp = heroPanel;
+  heroPanel = function () { return Coop.on ? coopPanel() : _hp(); };   // в одиночной игре — панель героя из hero.js / herolife.js
   const _hb = heroBtnUpdate;
   heroBtnUpdate = function () { if (!Coop.on) _hb(); else { const b = document.getElementById('hero-btn'); if (b) b.style.display = Game.hero ? '' : 'none'; if (Game.hero) _hb(); } };
 
