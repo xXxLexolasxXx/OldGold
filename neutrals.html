@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Лист лесных нейтралов</title>
+<style>
+body{margin:0;background:#4a6e30;color:#eee;font:12px/1.3 sans-serif}
+#bar{position:sticky;top:0;background:#222c;padding:6px 10px;display:flex;gap:12px;align-items:center;z-index:2}
+h3{margin:10px 10px 2px;color:#fff;text-shadow:0 1px 2px #000}
+.row{display:flex;flex-wrap:wrap;gap:6px;padding:4px 10px}
+.cell{display:flex;flex-direction:column;align-items:center}
+.cell canvas{image-rendering:pixelated;background:#4f7a30}
+.cell span{font-size:10px;color:#fff;text-shadow:0 1px 2px #000}
+</style></head><body>
+<div id="bar"><b>Лесные нейтралы: покой 2 · ходьба 4 · БОЙ 9 · смерть 6 · торжество 4</b>
+<label>масштаб <select id="sc"><option>2</option><option selected>3</option><option>4</option></select></label> <span id="err" style="color:#f88"></span></div>
+<div id="out"></div>
+<script src="js/config.js"></script><script src="js/world.js"></script><script src="js/sprites.js"></script><script src="js/pixel.js"></script><script src="js/neutralart.js"></script>
+<script>
+const GR = [['Покой', NA_FRAMES.idle], ['Ходьба', NA_FRAMES.walk], ['Бой (9)', NA_FRAMES.fight], ['Смерть (6)', NA_FRAMES.die], ['Торжество (4)', NA_FRAMES.win]];
+const NAMES = { ready: '1 стойка', step: '2 шаг', windup: '3 замах', strike: '4 удар', recover: '5 возврат', parry: '6 парирование', hurt: '7 урон', stagger: '8 шатание', roar: '9 рёв' };
+function draw() {
+  const k = +document.getElementById('sc').value, out = document.getElementById('out'); out.innerHTML = '';
+  const only = new URLSearchParams(location.search).get('only');
+  for (const kind of Object.keys(NA_SPEC)) {
+    if (only && only !== kind) continue;
+    const h = document.createElement('h3'); h.textContent = NA_SPEC[kind].name; out.appendChild(h);
+    for (const [gn, frames] of GR) {
+      const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
+      for (const f of frames) {
+        const s = naFrame(kind, f), cv = document.createElement('canvas');
+        cv.width = s.w * k; cv.height = s.h * k;
+        const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(s.cv, 0, 0, cv.width, cv.height);
+        const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv);
+        const sp = document.createElement('span'); sp.textContent = NAMES[f] || f; d.appendChild(sp); row.appendChild(d);
+      }
+    }
+    const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
+    const s = naLairSprite(kind), cv = document.createElement('canvas'); cv.width = s.w * k; cv.height = s.h * k;
+    const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(s.cv, 0, 0, cv.width, cv.height);
+    const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = 'логово'; d.appendChild(sp); row.appendChild(d);
+  }
+}
+document.getElementById('sc').onchange = draw;
+try { draw(); } catch (e) { document.getElementById('err').textContent = e.message + ' ' + (e.stack || '').split('\n')[1]; }
+</script></body></html>

@@ -1,0 +1,553 @@
+'use strict';
+// Лесные нейтралы: логова в лесах (грибное кольцо фей, дупло лешего, лёжка кабанов, пятно чумных моховиков).
+// Нейтральны: ни на кого не нападают, пока их не тронули. Герой (по клику) и рекруты гильдий могут напасть;
+// тронутый нейтрал дерётся в ответ и зовёт своих. За победу: добыча падает на землю (её подбирают трудяги),
+// опыт получают герой и все жители и рекруты в радиусе NEU_XP_R. Поражение героя — как в herolife.js.
+// Симуляция идёт там же, где и вся игра (в кооперативе — на сервере), клиенты получают нейтралов зеркалом.
+// Подключается после guilds.js: оборачивает их «врагов» (foesNear, strike, fightGen…), рисует через drawSkeletons.
+
+const NEU_LEASH = 16;       // дальше от логова не гонятся
+const NEU_XP_R = 12;        // радиус, в котором жители получают опыт
+const NEU_CALL_R = 10;      // радиус зова своих
+const NEU_RESPAWN = 480;    // через сколько секунд логово заселяется снова
+const NEU_FORGET = 28;      // через сколько секунд без драки нейтрал успокаивается
+
+// dmg — удар, cd — пауза между ударами, rng — дальность, spd — клеток/с, parry — шанс отвести удар
+const NSPEC = {
+  fairy: { name: 'Лесная фея',    mhp: 22, dmg: [2, 4],  cd: 1.3, rng: 2.4, spd: 2.7, parry: 0.22, xp: 22, fly: true, roam: 4.5, sz: 6,
+    drop: [['magicstone', 1, 0.55], ['mana', 1, 0.4], ['gold', 1, 0.3]], msg: ['Не трожь наш лес!', 'Пыльца — не бесплатная!', 'Ай! Сестрички!'] },
+  leshy: { name: 'Леший',         mhp: 82, dmg: [8, 12], cd: 1.9, rng: 1.7, spd: 1.5, parry: 0.1, xp: 90, roam: 2.5, sz: 12,
+    drop: [['trunk', 4, 1], ['timber', 2, 0.6], ['gold', 2, 0.5], ['magicstone', 1, 0.3]], msg: ['Кто бродит по моим кочкам?!', 'Уходи по-хорошему!', 'Мох мне свидетель!'] },
+  boar:  { name: 'Кабан-страж',   mhp: 46, dmg: [4, 6],  cd: 1.5, rng: 1.3, spd: 3.1, parry: 0.14, xp: 48, roam: 3.2, sz: 14,
+    drop: [['hide', 2, 1], ['sausage', 2, 0.8], ['gold', 1, 0.2]], msg: ['Хрю! (угрожающе)', 'Хрррр!', 'Хрюк-хрюк!'] },
+  spore: { name: 'Чумной моховик', mhp: 36, dmg: [3, 6],  cd: 1.5, rng: 1.7, spd: 1.35, parry: 0.08, xp: 30, roam: 2.6, sz: 9,
+    drop: [['hops', 2, 1], ['magicstone', 1, 0.5], ['mana', 1, 0.35]], msg: ['Апчхи! (на вас)', 'Мы — грибы. Мы — везде.', 'Не наступай на семью!'] },
+};
+// из чего состоит логово
+const NLAIR = {
+  fairy: ['fairy', 'fairy', 'fairy'],
+  leshy: ['leshy'],
+  boar:  ['boar', 'boar'],
+  spore: ['spore', 'spore', 'spore'],
+};
+const NEU_LAIR_NAME = { fairy: 'Поляна лесных фей', leshy: 'Дупло лешего', boar: 'Лёжка кабанов', spore: 'Пятно чумных грибов' };
+
+Game.neutrals = [];
+Game.lairs = [];
+Game.nstat = { kills: {}, lost: 0, lairs: 0, xp: 0 };
+
+const neuAlive = N => N && N.st !== 'die';
+const neuUnit = id => (id ? Game.unitMap.get(id) || null : null);
+function neuR(a, b) { return a + Math.random() * (b - a); }
+
+// ---------- Рождение ----------
+
+function neuMake(k, lair, i) {
+  const S = NSPEC[k], lv = lair.lv || 1;
+  const a = i * 2.4 + Math.random(), r = 1 + Math.random() * 1.6;
+  let x = lair.x + 0.5 + Math.cos(a) * r, y = lair.y + 0.5 + Math.sin(a) * r * 0.7;
+  if (!S.fly && !isWalkable(Math.floor(x), Math.floor(y))) { x = lair.x + 0.5; y = lair.y + 1.5; }
+  const N = {
+    id: Game.nextId++, k, lair: lair.id, x, y, hx: lair.x + 0.5, hy: lair.y + 0.5,
+    mhp: Math.round(S.mhp * lv), hp: 0, lv, face: Math.random() < 0.5 ? 1 : -1, st: 'idle', t: 1 + Math.random() * 4,
+    fr: 'i0', ph: Math.random() * 6, tg: 0, prov: -99, cdA: 1, atkT: 9, hit: 1, ov: null, ovT: 0, winT: 0, dt: 0, wx: 0, wy: 0, say: 0,
+  };
+  N.hp = N.mhp;
+  return N;
+}
+
+function neuFillLair(lair) {
+  const kinds = NLAIR[lair.k].slice();
+  if (lair.lv > 1.25 && lair.k !== 'leshy') kinds.push(lair.k);          // дальние логова населены гуще
+  kinds.forEach((k, i) => Game.neutrals.push(neuMake(k, lair, i)));
+  lair.respawn = 0; lair.alive = kinds.length;
+}
+
+function neuSpawnAll(seed) {
+  Game.neutrals = []; Game.lairs = [];
+  Game.nstat = { kills: {}, lost: 0, lairs: 0, xp: 0 };
+  const rng = mulberry32(((seed | 0) ^ 0xFA17E) >>> 0);
+  const cx = MAP_W >> 1, cy = MAP_H >> 1;
+  const want = Math.round(6 * (N_TILES / 6912) * 1.1);
+  const minStart = mapIsLegacy() ? 20 : 24;
+  const stamp = floodFrom(cx, cy);
+  const kinds = ['fairy', 'boar', 'leshy', 'spore'];
+  let tries = 0;
+  while (Game.lairs.length < want && tries++ < 4000) {
+    const x = 4 + (rng() * (MAP_W - 8) | 0), y = 4 + (rng() * (MAP_H - 8) | 0);
+    const i = idx(x, y);
+    if (World.terrain[i] !== T_GRASS || World.bmap[i] || World.road[i] || !reachedIn(stamp, x, y)) continue;
+    const ds = Math.hypot(x - cx, y - cy);
+    if (ds < minStart) continue;
+    let trees = 0, bad = false;
+    for (let yy = y - 4; yy <= y + 4 && !bad; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
+      if (!inb(xx, yy)) { bad = true; break; }
+      const t = World.terrain[idx(xx, yy)], o = World.obj[idx(xx, yy)];
+      if (t === T_WATER || World.bmap[idx(xx, yy)]) { bad = true; break; }
+      if (o && o.t === 'tree') trees++;
+    }
+    if (bad || trees < 11) continue;
+    if (Game.buildings.some(b => Math.hypot(b.x - x, b.y - y) < 12)) continue;
+    if (Game.lairs.some(l => Math.hypot(l.x - x, l.y - y) < 15)) continue;
+    // по кругу, чтобы встретились все виды; чем дальше от деревни, тем опаснее
+    const k = kinds[(Game.lairs.length + (rng() * 2 | 0)) % kinds.length];
+    const far = Math.min(1, Math.max(0, (ds - minStart) / 40));
+    const lair = { id: Game.nextId++, k, x, y, lv: Math.round((1 + far * 0.45) * 100) / 100, respawn: 0, alive: 0 };
+    // полянка: вырубаем деревья в радиусе 2,3, чтобы было где жить и драться
+    // (к югу шире: кроны южных деревьев иначе закрывают логово)
+    for (let yy = y - 3; yy <= y + 5; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
+      const ex = (xx - x) / 3.4, ey = (yy - y) / (yy >= y ? 4.2 : 2.6);
+      if (!inb(xx, yy) || ex * ex + ey * ey > 1) continue;
+      const o = World.obj[idx(xx, yy)];
+      if (o && (o.t === 'tree' || o.t === 'stump')) { World.obj[idx(xx, yy)] = null; World.growing.delete(idx(xx, yy)); }
+    }
+    Game.lairs.push(lair);
+    neuFillLair(lair);
+  }
+}
+
+// ---------- Урон и награда ----------
+
+function neuHurtUnit(u, n) {
+  if (!u || u.dead) return;
+  if (u.hero) {
+    const H = u.hero;
+    H.hp = Math.max(-5, H.hp - n);   // ниже нуля: иначе подлечивание в hlTick успевает вернуть героя «в строй» раньше проверки
+    if (n >= 1) floater(u.x, u.y - 1.8, '−' + Math.round(n), '#ff8a70');
+    return;
+  }
+  if (u.rec) {
+    const R = u.rec, max = 30 + 8 * R.lvl;
+    if (R.hp == null) R.hp = max;
+    R.hp = Math.max(0, R.hp - n);
+    floater(u.x, u.y - 1.8, '−' + Math.round(n), '#ff8a70');
+    if (R.hp <= 0 && !(u.downUntil > Game.time)) {
+      u.downUntil = Game.time + 8;
+      heroStopUnit(u); R.target = null;
+      u.proc = (function* () { yield { wait: 4, anim: 'knocked' }; })();
+      floater(u.x, u.y - 2, 'Вышел из боя', '#ffd0a0');
+    }
+  }
+}
+const neuUnitHp = u => (u.hero ? u.hero.hp : u.rec ? (u.rec.hp == null ? 1 : u.rec.hp) : 1);
+const neuUnitOut = u => !u || u.dead || u.inside || (u.hero && u.hero.hp <= 0) || (u.rec && u.rec.hp != null && u.rec.hp <= 0 && u.downUntil > Game.time);
+
+// урон по нейтралу от жителя u
+function neuDamageOf(u) {
+  if (u.type === 'hero' && u.hero) {
+    const s = heroStats(u.hero), w = u.hero.equip && u.hero.equip.weapon, wb = typeof GEAR_BONUS !== 'undefined' && GEAR_BONUS[w];
+    return (5 + s.str * 0.55) * (1 + (wb && wb.atk ? wb.atk * 2 : 0));
+  }
+  if (u.rec) return (5 + u.rec.lvl * 2.2) * (u.rec.armor ? 1.08 : 1);
+  return 3;
+}
+const neuHitChance = (u, N) => Math.min(0.97, 0.5 + 0.5 * unitAtk(u)) * (N.k === 'fairy' ? 0.9 : 1);
+
+function neuProvoke(N, u) {
+  const now = Game.time;
+  const first = !(now - N.prov < NEU_FORGET);
+  N.prov = now;
+  if (u && !neuUnit(N.tg)) N.tg = u.id;
+  if (!first || !u) return;
+  let called = 0;
+  for (const M of Game.neutrals) {
+    if (M === N || !neuAlive(M) || M.tg || Math.hypot(M.x - N.x, M.y - N.y) > NEU_CALL_R) continue;
+    M.tg = u.id; M.prov = now; M.cdA = 0.5 + Math.random() * 0.9; called++;
+    if (called <= 2) { M.ov = ['roar']; M.ovT = 0; M.ovP = 0.55; }
+  }
+  N.ov = ['roar']; N.ovT = 0; N.ovP = 0.5;
+  const S = NSPEC[N.k];
+  floater(N.x, N.y - 2.1, S.msg[(Math.random() * S.msg.length) | 0], '#ffe9a0');
+  logEvent('animal', called ? `${S.name} поднял тревогу — «свои» бегут на помощь` : `${S.name} дерётся с ${neuName(u)}`, N.x, N.y);
+  sfxAt('thud', N.x * TILE, N.y * TILE, 0.7);
+}
+function neuName(u) { return u.hero ? u.hero.name : (typeof unitTitle === 'function' ? unitTitle(u) : 'житель'); }
+
+function neuHit(N, u, dmg) {
+  if (!neuAlive(N)) return;
+  const S = NSPEC[N.k];
+  neuProvoke(N, u);
+  const px = N.x * TILE, py = N.y * TILE - 12;
+  if (Math.random() < S.parry) {
+    dmg *= 0.25;
+    N.ov = ['parry']; N.ovT = 0; N.ovP = 0.28;
+    floater(N.x, N.y - 1.9, 'Отбил!', '#cfe8ff');
+    fxBurst(px, py, 5, ['#ffffff', '#cfe8ff'], 40, 20, 0.3, 1.3, 120);
+  } else {
+    N.ov = ['hurt', 'stagger']; N.ovT = 0; N.ovP = 0.14;
+    N.cdA = Math.max(N.cdA, 0.35); N.atkT = 9;
+    const d = Math.hypot(N.x - u.x, N.y - u.y) || 1, kx = N.x + (N.x - u.x) / d * 0.3, ky = N.y + (N.y - u.y) / d * 0.3;
+    if (S.fly ? inb(Math.floor(kx), Math.floor(ky)) : isWalkable(Math.floor(kx), Math.floor(ky))) { N.x = kx; N.y = ky; }
+    fxBurst(px, py, 7, N.k === 'spore' ? ['#b8f070', '#9ad04a'] : N.k === 'fairy' ? ['#fff6b0', '#ffe070'] : ['#c8a070', '#8a6a4a'], 60, 40, 0.5, 1.6, 200);
+  }
+  N.hp -= dmg;
+  floater(N.x, N.y - 1.6, '−' + Math.max(1, Math.round(dmg)), '#ffd070');
+  sfxAt('thud', N.x * TILE, N.y * TILE, 0.5);
+  if (N.hp <= 0) neuKill(N, u);
+}
+
+function neuKill(N, killer) {
+  const S = NSPEC[N.k];
+  N.st = 'die'; N.dt = 0; N.hp = 0; N.tg = 0; N.ov = null;
+  const lair = Game.lairs.find(l => l.id === N.lair);
+  if (lair) lair.alive = Math.max(0, (lair.alive || 1) - 1);
+  Game.nstat.kills[N.k] = (Game.nstat.kills[N.k] || 0) + 1;
+  fxBurst(N.x * TILE, N.y * TILE - 10, 22, N.k === 'fairy' ? ['#fff6b0', '#ffe070', '#bfe8ff'] : N.k === 'spore' ? ['#b8f070', '#8a48b0'] : N.k === 'leshy' ? ['#7ab04a', '#8c6438'] : ['#8a6a4a', '#c8a070'], 80, 60, 1.1, 2, 220);
+  sfxAt('wail', N.x * TILE, N.y * TILE, 0.5);
+  // добыча
+  const tx = Math.floor(N.x), ty = Math.floor(N.y);
+  let any = false;
+  for (const [g, n0, p] of S.drop) {
+    if (Math.random() > p) continue;
+    const n = n0 > 1 ? Math.max(1, n0 - (Math.random() < 0.5 ? 1 : 0)) : 1;
+    const o = any ? randomFreeNear(tx, ty, 0, 1, (x, y) => isWalkable(x, y)) || [tx, ty] : [tx, ty];
+    dropPile(o[0], o[1], g, n); any = true;
+  }
+  if (!any) dropPile(tx, ty, S.drop[0][0], 1);
+  // опыт: герой, рекруты и жители рядом
+  const xp = Math.round(S.xp * (N.lv || 1));
+  neuGiveXp(N, killer, xp);
+  const who = killer ? neuName(killer) : 'Кто-то';
+  logEvent('animal', `${who} победил: ${S.name}`, N.x, N.y);
+  const p = typeof profCur === 'function' && !isServerSim() ? profCur() : null;
+  if (p) { p.st.nkill = (p.st.nkill || 0) + 1; profSave(); }
+  if (typeof track === 'function') { track('neu-kill', 'Победил лесного нейтрала'); track('neu-kill-' + N.k, 'Победил: ' + S.name); }
+  // последний в логове: зачищено
+  if (lair && !lair.alive) {
+    lair.respawn = Game.time + NEU_RESPAWN;
+    Game.nstat.lairs++;
+    logEvent('animal', `${NEU_LAIR_NAME[lair.k]} зачищено — ${who} чувствует себя хозяином леса`, lair.x + 0.5, lair.y + 0.5);
+    for (const [g, n] of [['gold', 2 + (lair.k === 'leshy' ? 2 : 0)]]) dropPile(Math.floor(N.x), Math.floor(N.y), g, n);
+  }
+}
+const isServerSim = () => typeof coop !== 'undefined';
+
+function neuGiveXp(N, killer, xp) {
+  let heroGot = 0, crew = 0;
+  for (const u of Game.units) {
+    if (u.dead || u.inside) continue;
+    const d = Math.hypot(u.x - N.x, u.y - N.y);
+    const near = d <= NEU_XP_R;
+    if (u.hero) {
+      if (!near && u !== killer) continue;
+      const k = u === killer ? 1.25 : 1, n = Math.round(xp * k);
+      u.hero.cxp = (u.hero.cxp || 0) + n; Game.nstat.xp += n; heroGot = n;
+      floater(u.x, u.y - 2.1, '+' + n + ' опыта', '#ffe070');
+    } else if (!near) continue;
+    else if (u.rec) { const n = Math.round(xp * 0.8 * (u === killer ? 1.25 : 1)); recXp(u, n); floater(u.x, u.y - 2.1, '+' + n, '#ffe8a0'); crew++; }
+    else if (isPerson(u) && typeof LEVEL_XP !== 'undefined' && LEVEL_XP[u.type]) { gainXp(u, Math.max(1, Math.round(xp / 8))); crew++; }
+  }
+  if (heroGot && crew) toast(`Опыт за победу получили и ${crew} рядом стоявших`);
+}
+
+// ---------- Поведение ----------
+
+function neuMove(N, tx, ty, spd, dt) {
+  const S = NSPEC[N.k], dx = tx - N.x, dy = ty - N.y, d = Math.hypot(dx, dy);
+  if (d < 0.05) return true;
+  const st = Math.min(d, spd * dt);
+  const nx = N.x + dx / d * st, ny = N.y + dy / d * st;
+  const ok = (x, y) => (S.fly ? x > 0.5 && y > 0.5 && x < MAP_W - 0.5 && y < MAP_H - 0.5 : isWalkable(Math.floor(x), Math.floor(y)));
+  if (ok(nx, ny)) { N.x = nx; N.y = ny; }
+  else if (ok(nx, N.y)) N.x = nx;
+  else if (ok(N.x, ny)) N.y = ny;
+  else { N.stuck = (N.stuck || 0) + dt; if (N.stuck > 0.8) { N.stuck = 0; return true; } return false; }
+  if (Math.abs(dx) > 0.05) N.face = dx > 0 ? 1 : -1;
+  N.ph += st * 2.2;
+  return d - st < 0.08;
+}
+
+function neuFrame(N) {
+  if (N.st === 'die') { const k = Math.min(5, Math.floor(N.dt / 0.11)); return 'd' + k; }
+  if (N.winT > 0) return 'v' + [0, 1, 2, 3, 2, 1][Math.floor((N.winT * 5) % 6)];
+  if (N.ov) { const i = Math.floor(N.ovT / (N.ovP || 0.14)); if (i < N.ov.length) return N.ov[i]; N.ov = null; }
+  if (N.st === 'atk') {
+    const t = N.atkT;
+    if (t < 0.24) return 'windup';
+    if (t < 0.36) return 'strike';
+    if (t < 0.56) return 'recover';
+    return 'ready';
+  }
+  if (N.st === 'chase' || N.st === 'flee') return N.dist < 3.2 && N.st === 'chase' ? (Math.floor(N.ph) % 2 ? 'step' : 'ready') : 'w' + (Math.floor(N.ph) % 4);
+  if (N.st === 'roam' || N.st === 'home') return 'w' + (Math.floor(N.ph) % 4);
+  return Math.floor(Game.time * 1.4 + N.id) % 2 ? 'i1' : 'i0';
+}
+
+function neuStrike(N, tg) {
+  const S = NSPEC[N.k];
+  let dmg = neuR(S.dmg[0], S.dmg[1]) * (1 + ((N.lv || 1) - 1) * 0.5);
+  const dodge = tg.hero ? 0.1 + heroStats(tg.hero).agi * 0.004 : 0.12;
+  if (Math.random() < dodge) { floater(tg.x, tg.y - 1.8, 'Увернулся!', '#cfe8ff'); return; }
+  const def = tg.hero && typeof heroDef === 'function' ? heroDef(tg) : tg.rec && tg.rec.armor ? 0.3 : 0;
+  dmg *= 1 - Math.min(0.6, def);
+  const px = tg.x * TILE, py = tg.y * TILE - 12;
+  fxBurst(px, py, N.k === 'fairy' ? 8 : 6, N.k === 'fairy' ? ['#fff6b0', '#ffe070', '#ff9ad8'] : N.k === 'spore' ? ['#b8f070', '#9ad04a'] : ['#ffffff', '#ffd0a0'], 55, 40, 0.5, 1.5, 160);
+  sfxAt(N.k === 'fairy' ? 'chime' : 'thud', tg.x * TILE, tg.y * TILE, 0.55);
+  if (N.k === 'spore' && Math.random() < 0.3 && !tg.hero) injure(tg, Math.random() < 0.5 ? 'arm' : 'leg');
+  neuHurtUnit(tg, dmg);
+  tg.ouchUntil = Game.time + 0.5;
+  if (tg.hero && tg.hero.hp <= 0) neuHeroDown(N, tg);
+}
+
+function neuHeroDown(N, tg) {
+  if (tg._lostT > Game.time - 6) return;
+  tg._lostT = Game.time;
+  const name = tg.hero ? tg.hero.name : neuName(tg);
+  logEvent('animal', `${name} проиграл бой: ${NSPEC[N.k].name}`, N.x, N.y);
+  Game.nstat.lost++;
+  for (const M of Game.neutrals) if (neuAlive(M) && M.tg === tg.id) { M.tg = 0; M.prov = -99; M.winT = 3.2; M.ov = null; M.st = 'idle'; M.ovT = 0; }
+  floater(N.x, N.y - 2.1, ['Так-то!', 'Не лезь в лес!', 'Слабак!'][(Math.random() * 3) | 0], '#ffe9a0');
+}
+
+function neuThink(N, dt) {
+  const S = NSPEC[N.k], now = Game.time;
+  if (N.st === 'die') { N.dt += dt; N.fr = neuFrame(N); return; }
+  if (N.ov) N.ovT += dt;
+  if (N.winT > 0) { N.winT -= dt; N.fr = neuFrame(N); if (N.winT <= 0) { N.winT = 0; N.st = 'idle'; } return; }
+  N.cdA -= dt;
+  let tg = neuUnit(N.tg);
+  if (tg && (neuUnitOut(tg) || now - N.prov > NEU_FORGET || Math.hypot(tg.x - N.hx, tg.y - N.hy) > NEU_LEASH + 4 || Math.hypot(N.x - N.hx, N.y - N.hy) > NEU_LEASH)) {
+    if (tg && neuUnitOut(tg) && tg.hero && tg.hero.hp <= 0) neuHeroDown(N, tg);
+    N.tg = 0; tg = null; N.st = 'home';
+  }
+  if (tg) {
+    N.dist = Math.hypot(tg.x - N.x, tg.y - N.y);
+    if (N.st === 'atk' && N.atkT < 0.56) {
+      // замах и удар: урон — на кадре «удар»
+      N.atkT += dt;
+      N.face = tg.x >= N.x ? 1 : -1;
+      if (!N.hit && N.atkT >= 0.24) { N.hit = 1; if (N.dist <= S.rng + 0.8) neuStrike(N, tg); }
+    } else {
+      const low = N.k === 'fairy' && N.hp < N.mhp * 0.3;
+      if (low && N.dist < 5) {                       // фея ранена — удирает по воздуху, потом вернётся
+        N.st = 'flee';
+        const a = Math.atan2(N.y - tg.y, N.x - tg.x);
+        neuMove(N, N.x + Math.cos(a) * 3, N.y + Math.sin(a) * 3, S.spd * 1.1, dt);
+        N.hp = Math.min(N.mhp, N.hp + dt * 1.5);
+      } else if (N.dist > S.rng) {
+        N.st = 'chase';
+        neuMove(N, tg.x, tg.y, S.spd, dt);
+      } else {
+        N.face = tg.x >= N.x ? 1 : -1;
+        if (N.cdA <= 0) { N.st = 'atk'; N.atkT = 0; N.hit = 0; N.cdA = S.cd * neuR(0.9, 1.2); }
+        else if (N.st === 'atk') { N.st = 'chase'; N.atkT = 9; }
+      }
+    }
+  } else if (N.st === 'atk') { N.st = 'idle'; N.atkT = 9; }
+  else {
+    // спокойная жизнь у логова
+    if (N.hp < N.mhp) N.hp = Math.min(N.mhp, N.hp + dt * 2.2);
+    const home = Math.hypot(N.x - N.hx, N.y - N.hy);
+    if (N.st === 'home' || home > S.roam + 1.5) {
+      N.st = 'home';
+      if (neuMove(N, N.hx + neuR(-1, 1), N.hy + neuR(-0.6, 0.6), S.spd * 0.8, dt) || home < 1.4) { N.st = 'idle'; N.t = 1 + Math.random() * 3; }
+    } else if (N.st === 'roam') {
+      if (neuMove(N, N.wx, N.wy, S.spd * 0.45, dt)) { N.st = 'idle'; N.t = 2 + Math.random() * 5; }
+    } else {
+      N.st = 'idle';
+      N.t -= dt;
+      if (N.t <= 0) {
+        const a = Math.random() * 6.283, r = 0.8 + Math.random() * S.roam;
+        N.wx = N.hx + Math.cos(a) * r; N.wy = N.hy + Math.sin(a) * r * 0.75; N.st = 'roam';
+        if (!S.fly && !isWalkable(Math.floor(N.wx), Math.floor(N.wy))) { N.st = 'idle'; N.t = 1; }
+      }
+    }
+  }
+  N.fr = neuFrame(N);
+}
+
+function neuTick(dt) {
+  if (!Game.neutrals) return;
+  const list = Game.neutrals;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const N = list[i];
+    neuThink(N, dt);
+    if (N.st === 'die' && N.dt > 3.4) list.splice(i, 1);
+  }
+  // рекруты после боя приходят в себя
+  Game.nT = (Game.nT || 0) + dt;
+  if (Game.nT < 1) return;
+  Game.nT = 0;
+  for (const u of Game.units) if (u.rec && u.rec.hp != null) { const max = 30 + 8 * u.rec.lvl; if (u.rec.hp < max) u.rec.hp = Math.min(max, u.rec.hp + 1.1); else u.rec.hp = undefined; }
+  for (const L of Game.lairs) {
+    if (L.respawn && Game.time >= L.respawn && !Game.units.some(u => !u.dead && Math.hypot(u.x - L.x, u.y - L.y) < 9)) {
+      neuFillLair(L);
+      logEvent('animal', `${NEU_LAIR_NAME[L.k]}: в логове снова завелись жильцы`, L.x + 0.5, L.y + 0.5);
+    }
+  }
+}
+
+// ---------- Подключение к «врагам» гильдий и к приказам героя ----------
+
+{
+  const NF = f => f.kind === 'neu';
+  const _alive = foeAlive;
+  foeAlive = function (f) { return NF(f) ? neuAlive(f.o) && Game.neutrals.includes(f.o) : _alive(f); };
+  const _near = foesNear;
+  foesNear = function (x, y, r) {
+    const out = _near(x, y, r);
+    // тронутые нейтралы — обычные враги для рекрутов; нетронутых выбирают только прицельным кликом (r ≤ 1,45)
+    for (const N of Game.neutrals) {
+      if (!neuAlive(N)) continue;
+      if (!(r <= 1.45 || Game.time - N.prov < NEU_FORGET)) continue;
+      if (Math.hypot(N.x - x, N.y - y) < r + (r <= 1.45 ? 0.5 : 0)) out.push({ kind: 'neu', o: N });
+    }
+    out.sort((p, q) => Math.hypot(p.o.x - x, p.o.y - y) - Math.hypot(q.o.x - x, q.o.y - y));
+    return out;
+  };
+  const _kill = killFoe;
+  killFoe = function (f, u) { if (NF(f)) neuHit(f.o, u, f.o.hp + 1); else _kill(f, u); };
+  const _strike = strike;
+  strike = function (u, f) {
+    if (!NF(f)) return _strike(u, f);
+    const N = f.o;
+    if (!neuAlive(N)) return;
+    if (Math.random() > neuHitChance(u, N)) {
+      floater(N.x, N.y - 1.7, 'Мимо!', '#e8e0c0');
+      neuProvoke(N, u);
+      return;
+    }
+    let dmg = neuDamageOf(u) * neuR(0.8, 1.25);
+    const cls = unitCls(u);
+    if (cls === 'rogue' && Math.random() < 0.25) { dmg *= 2; floater(N.x, N.y - 2, 'Крит!', '#e0b0ff'); }
+    neuHit(N, u, dmg);
+  };
+  const _fight = fightGen;
+  fightGen = function* (u, f) {
+    if (!NF(f)) { yield* _fight(u, f); return; }
+    const cls = unitCls(u), C = cls && GCLS[cls], range = unitRange(u);
+    neuProvoke(f.o, u);
+    for (let round = 0; round < 90 && !neuUnitOut(u); round++) {
+      if (!foeAlive(f)) {       // добил — сразу берётся за следующего, кто на него напал
+        const nx = foesNear(u.x, u.y, 7).find(x => x.kind === 'neu' && x.o.tg === u.id);
+        if (!nx) break;
+        f = nx;
+      }
+      const o = f.o, d = Math.hypot(o.x - u.x, o.y - u.y);
+      if (d > range + 0.3) {
+        const keep = C && C.shot ? range * 0.7 : 0.9;
+        let tx = Math.floor(o.x + (u.x - o.x) / d * keep), ty = Math.floor(o.y + (u.y - o.y) / d * keep);
+        if (!isWalkable(tx, ty)) { const s = randomFreeNear(tx, ty, 0, 2, (x, y) => isWalkable(x, y)); if (!s) return; [tx, ty] = s; }
+        const ok = yield { walk: [tx, ty], offroad: true };
+        if (!ok) return;
+        continue;
+      }
+      u.face = o.x > u.x ? 1 : -1; u.vdir = 'E';
+      yield { wait: 0.55, anim: C && C.shot ? 'build' : 'chop' };
+      if (!foeAlive(f) || neuUnitOut(u)) break;
+      if (C && C.shot) {
+        const sh = { kind: C.shot, x: u.x, y: u.y - 0.7, f, u, t: 0, dur: Math.max(0.25, d / (C.shot === 'arrow' ? 14 : 8)) };
+        G.shots.push(sh);
+        sfxAt(C.shot === 'arrow' ? 'thud' : 'chime', u.x * TILE, u.y * TILE, 0.6);
+        yield { wait: sh.dur + 0.1 };
+      } else strike(u, f);
+      yield { wait: 0.4 };
+    }
+  };
+  // нетронутое нейтральное существо под курсором — приказ «Напасть»; поражённый герой приказов не слушает
+  const _rc = resolveCmd;
+  resolveCmd = function (t) {
+    if (inb(t[0], t[1])) {
+      const f = foesNear(t[0] + 0.5, t[1] + 0.5, 1.4).find(x => x.kind === 'neu');
+      if (f) return { kind: 'attack', f, tx: Math.floor(f.o.x), ty: Math.floor(f.o.y), label: 'Напасть на: ' + NSPEC[f.o.k].name };
+    }
+    return _rc(t);
+  };
+  // опыт боёв повышает уровень героя вместе с городом
+  const _ts = heroTownScore;
+  heroTownScore = function () {
+    const h = Game.hero;
+    return _ts() + (h && h.hero && h.hero.cxp ? h.hero.cxp / 10 : 0);
+  };
+  const _reset = resetGameState;
+  resetGameState = function () { _reset(); Game.neutrals = []; Game.lairs = []; Game.nstat = { kills: {}, lost: 0, lairs: 0, xp: 0 }; };
+  const _setup = setupStart;
+  setupStart = function (seed) { _setup(seed); if (!Game.stress) neuSpawnAll(seed); };
+  const _ser = serializeGame;
+  serializeGame = function () {
+    const s = _ser();
+    s.nt = {
+      st: Game.nstat,
+      lairs: Game.lairs.map(l => ({ id: l.id, k: l.k, x: l.x, y: l.y, lv: l.lv, rs: l.respawn ? Math.round(l.respawn - Game.time) : 0 })),
+      mem: Game.neutrals.filter(N => N.st !== 'die').map(N => ({ id: N.id, k: N.k, lair: N.lair, x: +N.x.toFixed(2), y: +N.y.toFixed(2), hp: Math.round(N.hp), lv: N.lv })),
+    };
+    return s;
+  };
+  const _apply = applySave;
+  applySave = function (s) {
+    _apply(s);
+    Game.neutrals = []; Game.lairs = [];
+    if (!s.nt) { if (!Game.stress) neuSpawnAll(s.seed); return; }
+    Game.nstat = Object.assign({ kills: {}, lost: 0, lairs: 0, xp: 0 }, s.nt.st);
+    for (const l of s.nt.lairs) Game.lairs.push({ id: l.id, k: l.k, x: l.x, y: l.y, lv: l.lv || 1, respawn: l.rs ? Game.time + l.rs : 0, alive: 0 });
+    for (const m of s.nt.mem) {
+      const lair = Game.lairs.find(l => l.id === m.lair);
+      if (!lair) continue;
+      const N = neuMake(m.k, lair, 0);
+      N.id = m.id; N.x = m.x; N.y = m.y; N.lv = m.lv || 1; N.mhp = Math.round(NSPEC[m.k].mhp * N.lv); N.hp = Math.min(N.mhp, m.hp || N.mhp);
+      Game.neutrals.push(N); lair.alive++;
+    }
+    for (const l of Game.lairs) if (!l.alive && !l.respawn) l.respawn = Game.time + 30;
+  };
+  const _step = step;
+  step = function (dt) { _step(dt); if (!isMirror()) neuTick(dt); };
+}
+
+// ---------- Рисование ----------
+
+{
+  const _ds = drawSkeletons;
+  drawSkeletons = function (list, c, x0, y0, x1, y1) {
+    _ds(list, c, x0, y0, x1, y1);
+    neuDrawList(list, c, x0, y0, x1, y1);
+  };
+}
+
+function neuDrawList(list, c, x0, y0, x1, y1) {
+  for (const L of Game.lairs || []) {
+    if (L.x < x0 - 3 || L.x > x1 + 3 || L.y < y0 - 3 || L.y > y1 + 4) continue;
+    list.push([L.y + 0.12, () => neuDrawLair(c, L)]);
+  }
+  for (const N of Game.neutrals || []) {
+    if (N.x < x0 - 3 || N.x > x1 + 3 || N.y < y0 - 3 || N.y > y1 + 4) continue;
+    list.push([N.y + 0.2, () => neuDraw(c, N)]);
+  }
+}
+
+function neuDrawLair(c, L) {
+  const s = naLairSprite(L.k), px = Math.round(L.x * TILE + 16), py = Math.round(L.y * TILE + 22), t = Game.time;
+  c.drawImage(s.cv, px - s.ax, py - s.ay);
+  if (L.k === 'fairy' || L.k === 'spore') {
+    // мерцающие огоньки над поляной
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (let k = 0; k < 6; k++) {
+      const ph = t * (0.5 + k * 0.09) + k * 1.7, a = k * 1.05 + t * 0.15;
+      const x = px + Math.cos(a) * 17, y = py - 4 - ((ph % 3) / 3) * 22 + Math.sin(a) * 4, al = Math.sin((ph % 3) / 3 * Math.PI);
+      c.fillStyle = L.k === 'fairy' ? `rgba(255,240,150,${0.9 * al})` : `rgba(170,240,110,${0.8 * al})`;
+      c.fillRect(Math.round(x), Math.round(y), 1.5, 1.5);
+    }
+    c.restore();
+  }
+}
+
+function neuDraw(c, N) {
+  const S = NSPEC[N.k], sp = naFrame(N.k, N.fr || 'i0'), t = Game.time;
+  const px = Math.round(N.x * TILE), py = Math.round(N.y * TILE + 6);
+  const dead = N.st === 'die';
+  const al = dead ? Math.max(0, Math.min(1, 1 - (N.dt - 0.9) / 2.3)) : 1;
+  if (al <= 0) return;
+  c.save();
+  c.globalAlpha = al;
+  c.fillStyle = 'rgba(10,8,4,0.3)';
+  c.beginPath(); c.ellipse(px, py + 1, S.sz * (dead ? 1.1 : 0.8), S.sz * 0.28, 0, 0, 7); c.fill();
+  const bob = N.k === 'fairy' && !dead ? Math.round(Math.sin(t * 3.2 + N.id) * 1.3) : 0;
+  c.translate(px, py + bob);
+  if (N.face < 0) c.scale(-1, 1);
+  c.drawImage(sp.cv, -sp.ax, -sp.ay);
+  c.restore();
+  if (!dead && N.hp < N.mhp - 0.5) {
+    const w = 18, hy = py - (N.k === 'leshy' ? 54 : N.k === 'fairy' ? 38 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);
+    c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(px - w / 2 - 1, hy - 1, w + 2, 4);
+    c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(px - w / 2, hy, Math.round(w * r), 2);
+  }
+}
