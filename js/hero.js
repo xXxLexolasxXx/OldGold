@@ -81,7 +81,7 @@ function heroSpawnSpot() {
   const cands = [];
   for (let y = base.doorY - 5; y <= base.doorY + 5; y++) for (let x = base.doorX - 5; x <= base.doorX + 5; x++) {
     const d = Math.hypot(x - base.doorX, y - base.doorY);
-    if (d >= 2 && d <= 5 && ok(x, y)) cands.push([d, x, y]);
+    if (d >= 2 && d <= BONFIRE_HERO && ok(x, y)) cands.push([d, x, y]);
   }
   cands.sort((a, b) => a[0] - b[0] || a[2] - b[2] || a[1] - b[1]);
   let spot = null;

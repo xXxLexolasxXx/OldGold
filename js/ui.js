@@ -749,6 +749,7 @@ function infoBuilding(b) {
       h += `<div class="recipe${b.crops[crop] ? '' : ' off'}">${gi(crop)} ${CROP_NAMES[crop]}<span class="t">полей: ${cnt[crop] || 0}</span>${def.crops.length > 1 ? `<input type="checkbox" data-crop="${crop}" ${b.crops[crop] ? 'checked' : ''}>` : ''}</div>`;
     h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div><div class="small muted">Поля закладывайте сами инструментами «Пшеница» и «Хмель» рядом с фермой (до ${FARM_R} клеток) — работяга вскопает их бесплатно, хмель стоит доску за подвесы. Сено — побочный продукт жатвы.</div>`;
   }
+  if (b.type === 'bonfire') h += `<div class="small muted">Кольца на карте: свет и защита от нечисти — ${BONFIRE_SAFE} клеток, у костра возрождаются герои — ${BONFIRE_HERO}, вне ${BONFIRE_NOSPAWN} нечисть и не появляется.</div>`;
   if (b.type === 'swine') {
     const st = ['', '⅓', '⅔'];
     h += '<div class="isec">Загон</div>';

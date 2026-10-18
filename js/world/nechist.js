@@ -18,7 +18,7 @@ function spawnWaterEnts(people, want) {
     // берег рядом: вылезает из воды на сушу
     const land = nb.map(([dx, dy]) => [x + dx, y + dy]).find(([lx, ly]) => inb(lx, ly) && World.terrain[idx(lx, ly)] !== T_WATER && isWalkable(lx, ly) && !World.bmap[idx(lx, ly)] && !World.road[idx(lx, ly)]);
     if (!land) continue;
-    if (nearBonfire(land[0], land[1], 12)) continue;
+    if (nearBonfire(land[0], land[1], BONFIRE_NOSPAWN)) continue;
     if (Game.ents.some(e => Math.abs(e.hx - land[0]) + Math.abs(e.hy - land[1]) < 3)) continue;
     Game.ents.push(newEnt({ water: true, o: {}, i: idx(x, y), wx: x, wy: y, hx: land[0], hy: land[1], x: x + 0.5, y: y + 0.5 }));
     made++;
@@ -196,7 +196,7 @@ function drawPuddles(c) {
 
 function entBonfireRepel(e) {
   if (e.state === 'done' || e.state === 'gone' || e.state === 'dying' || e.state === 'return' || e.state === 'root' || e.state === 'drag') return false;
-  if (!nearBonfire(e.x, e.y, 9)) return false;
+  if (!nearBonfire(e.x, e.y, BONFIRE_SAFE)) return false;
   if (e.state === 'sleep') { e.state = 'done'; if (e.o) { e.o.awake = false; e.o.res = false; } return true; }
   if (e.state === 'fight') return false;                    // уж ввязалась — не отступает
   if (!e.scared) { e.scared = true; floater(e.x, e.y - 2, 'Огонь!', '#ffb060'); sfxAt('hic', e.x * TILE, e.y * TILE, 0.6); }
@@ -210,7 +210,7 @@ function pickSmashTarget(e) {
   let best = null, bd = 8;
   for (const b of Game.buildings) {
     if (b.state !== 'done' || b.type === 'bonfire' || b.removed) continue;
-    if (nearBonfire(b.x + b.w / 2, b.y + b.h / 2, 9)) continue;
+    if (nearBonfire(b.x + b.w / 2, b.y + b.h / 2, BONFIRE_SAFE)) continue;
     const d = Math.hypot(b.x + b.w / 2 - e.x, b.y + b.h / 2 - e.y);
     if (d < bd) { bd = d; best = b; }
   }

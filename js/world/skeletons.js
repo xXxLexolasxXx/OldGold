@@ -91,7 +91,7 @@ function skeletonsTick(dt) {
       s.scan -= dt;
       if (s.scan <= 0) {
         s.scan = 0.5;
-        if (nearBonfire(s.x, s.y, 7)) { s.state = 'sink'; s.t = 0; continue; }       // у большого костра скелеты не держатся
+        if (nearBonfire(s.x, s.y, BONFIRE_SAFE)) { s.state = 'sink'; s.t = 0; continue; }       // у большого костра скелеты не держатся
         for (const u of Game.units) {
           if (u.inside || u.dead || !isPerson(u) || u.type === 'carter' || s.seen.has(u.id)) continue;
           if (Math.hypot(u.x - s.x, u.y - s.y) > SKEL_SEE || Math.hypot(u.x - s.hx, u.y - s.hy) > SKEL_LEASH) continue;

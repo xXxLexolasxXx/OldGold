@@ -854,6 +854,30 @@ function render() {
   drawOverlay(c);
 }
 
+// Радиусы большого костра: кольца с подписями (выбран костёр, ставится новый или ?rings=1)
+const BONFIRE_RINGS = [
+  [BONFIRE_NOSPAWN, 'rgba(150,110,220,', 'нечисть не рождается'],
+  [BONFIRE_SAFE, 'rgba(255,170,60,', 'свет и защита'],
+  [BONFIRE_HERO, 'rgba(110,210,120,', 'возрождение и сбор'],
+];
+R.showRings = typeof location !== 'undefined' && /[?&]rings=1/.test(location.search);
+function drawBonfireRings(c, cx, cy) {
+  c.save();
+  c.font = '10px sans-serif'; c.textAlign = 'center';
+  for (const [r, col, label] of BONFIRE_RINGS) {
+    const px = r * TILE;
+    c.fillStyle = col + '0.07)'; c.strokeStyle = col + '0.75)'; c.lineWidth = 1.5;
+    c.setLineDash([6, 5]); c.lineDashOffset = -Game.time * 8;
+    c.beginPath(); c.arc(cx, cy, px, 0, 7); c.fill(); c.stroke();
+    c.setLineDash([]);
+    const t = label + ' · ' + r;
+    const w = c.measureText(t).width + 8;
+    c.fillStyle = 'rgba(20,16,10,0.7)'; c.fillRect(cx - w / 2, cy - px - 7, w, 14);
+    c.fillStyle = col + '1)'; c.fillText(t, cx, cy - px + 4);
+  }
+  c.restore();
+}
+
 function drawOverlay(c) {
   const sel = Game.selected;
   const ant = (x, y, w, h, col) => {
@@ -866,6 +890,8 @@ function drawOverlay(c) {
     if (sel.isRoad) ant(sel.x * TILE + 2, sel.y * TILE + 2, TILE - 4, TILE - 4, '#f6d458');
     else ant(sel.x * TILE, sel.y * TILE, sel.w * TILE, sel.h * TILE, '#f6d458');
   }
+  if (sel && !sel.removed && sel.type === 'bonfire') drawBonfireRings(c, (sel.x + sel.w / 2) * TILE, (sel.y + sel.h / 2) * TILE);
+  else if (R.showRings) for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done') drawBonfireRings(c, (b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE);
   const tool = Game.tool, h = R.hover;
   if (!tool && h && inb(h[0], h[1])) {
     const id = World.bmap[idx(h[0], h[1])];
@@ -877,6 +903,7 @@ function drawOverlay(c) {
     const d = bDims(tool.type, tool.rot || 0);
     const bx = h[0] - Math.floor(d.w / 2), by = h[1] - d.h + 1;
     const err = checkPlacement(tool.type, bx, by, d.rot);
+    if (tool.type === 'bonfire') drawBonfireRings(c, (bx + d.w / 2) * TILE, (by + d.h / 2) * TILE);
     c.fillStyle = err ? 'rgba(220,40,30,0.35)' : 'rgba(60,220,80,0.3)';
     c.fillRect(bx * TILE, by * TILE, d.w * TILE, d.h * TILE);
     c.globalAlpha = 0.7;

@@ -210,7 +210,7 @@ function spawnRockEnts(want) {
     if (!inb(x, y)) continue;
     const i = idx(x, y), o = World.obj[i];
     if (!o || o.t !== 'stone' || o.n < 2 || o.res || o.awake) continue;
-    if (nearBonfire(x, y, 12)) continue;
+    if (nearBonfire(x, y, BONFIRE_NOSPAWN)) continue;
     if (Game.ents.some(e => Math.abs(e.hx - x) + Math.abs(e.hy - y) < 3)) continue;
     o.awake = true; o.res = true;
     Game.ents.push(newEnt({ rock: true, i, o, hx: x, hy: y, x: x + 0.5, y: y + 0.5 }));

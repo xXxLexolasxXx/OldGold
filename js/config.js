@@ -8,6 +8,8 @@ const MAP_LEGACY_W = 96, MAP_LEGACY_H = 72;
 const MAP_NEW_W = 128, MAP_NEW_H = 96;
 let MAP_W = MAP_NEW_W;
 let MAP_H = MAP_NEW_H;
+// Радиусы большого костра (клетки): нечисть и скелеты не заходят в BONFIRE_SAFE, свет ночью покрывает ту же зону, а у самого костра — тепло и точка возрождения героев
+const BONFIRE_SAFE = 8, BONFIRE_NOSPAWN = 12, BONFIRE_LIGHT = BONFIRE_SAFE * 30, BONFIRE_HERO = 5;
 const SIM_DT = 0.05;      // шаг симуляции, сек
 
 const T_GRASS = 0, T_WATER = 1, T_ROCK = 2, T_SAND = 3;
