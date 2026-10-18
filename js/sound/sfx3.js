@@ -326,14 +326,26 @@ Object.assign(SFX, {
     modal(d, t + 0.7, [[196, 1, 2.4], [310, 0.5, 1.6], [490, 0.3, 1.1]], 0.12, 0.01);   // глухой колокол
   },
 });
+// Наступление ночи у кладбища: три удара глухого колокола, ветер и протяжный вой из-под земли
+SFX.graveHowl = (d, t, v) => {
+  for (let k = 0; k < 3; k++) modal(d, t + k * 1.15, [[147, 1, 3.2], [233, 0.55, 2.2], [370, 0.3, 1.4], [588, 0.12, 0.8]], 0.2 - k * 0.04, 0.008);
+  breath(d, t, 4.5, 900, 250, 0.35, 1.6);
+  const ctx = Sfx.ctx, lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 800; lp.connect(d);
+  rasp(lp, t + 0.6, 95 + v * 10, 150, 3.2, 0.5, 420, 5, 0.3);
+  rasp(lp, t + 1.4, 140 + v * 14, 82, 3.4, 0.35, 520, 4, 0.3);
+};
+SFX_DEF.graveHowl = { pri: 3, gain: 0.8, poly: 1, cd: 5, len: 5, wet: 0.7 };
 SFX_DEF.graveRise = { pri: 3, gain: 0.9, poly: 3, cd: 0.4, len: 2.6, wet: 0.55 };
 // звуки, которые слышны только рядом с источником: на дальнем краю экрана молчат
-const LOCAL_ONLY = { graveRise: 0.5 };
+const LOCAL_ONLY = { graveRise: 0.5, graveHowl: 0.7 };
 // ночью скелет вылезает из земли (state 'rise', t от 0): один раз на каждого — страшный звук у кладбища
 {
-  const _tick = sfxTick, rose = new WeakSet();
+  const _tick = sfxTick, rose = new WeakSet(); let wasNight = null;
   sfxTick = function (dt) {
     _tick(dt);
+    const night = typeof nightAmt === 'function' && nightAmt() >= 0.5;
+    if (night && wasNight === false && typeof graveyardOf === 'function') { const g = graveyardOf(); if (g) sfxAt('graveHowl', (g.x + g.w / 2) * TILE, (g.y + g.h / 2) * TILE, 1.1); }
+    wasNight = night;
     for (const s of Game.skels || []) if (s.state === 'rise' && s.t >= 0 && !rose.has(s)) { rose.add(s); sfxAt('graveRise', s.x * TILE, s.y * TILE, 1.1, Math.random() * 0.4); }
   };
 }
