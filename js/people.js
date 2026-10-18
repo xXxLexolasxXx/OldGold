@@ -781,6 +781,25 @@ const FIGHT_BODY = {
   parry: [0.02, 1.0, -0.5, 0.45], hurt: [-0.28, 0.4, -0.2, 0.08], win0: [-0.06, 0, -0.18, 0.18], win1: [-0.1, -0.7, -0.12, 0.12], draw: [0.04, 0.4, -0.35, 0.3],
 };
 
+// Выхватывание и убирание: по 4 кадра d0..d3 (рука к рукояти → вытягивает → замах над собой → вскинул к стойке)
+// и s0..s3 (то же в обратную сторону). Клинки и кинжалы идут из ножен на бедре с разворотом через спину,
+// секира, посох и лук — из-за спины через плечо, кулаки (обмотки) прячутся к груди — «за пазуху».
+const WPN_DRAW_T = 0.44;
+(function () {
+  const L = (a, b, t) => a + (b - a) * t, TS = [0, 0.3, 0.62, 0.88];
+  for (const st in FIGHT_ARM) {
+    const A = FIGHT_ARM[st], d = A.draw, r = A.ready, wrap = st === 'blade' || st === 'stab';
+    const mk = t => [L(d[0], r[0], t), L(d[1], wrap ? r[1] + 2 * Math.PI : r[1], t), L(d[2] ?? 4.2, r[2] ?? 4.2, t)];
+    TS.forEach((t, i) => { A['d' + i] = mk(t); A['s' + (3 - i)] = mk(t); });
+  }
+  const lerpArr = (a, b, t) => a.map((v, i) => L(v, b[i], t));
+  for (const T of [FIGHT_BODY, FIGHT_BACK.free, FIGHT_BACK.shield]) {
+    TS.forEach((t, i) => { T['d' + i] = T['s' + (3 - i)] = lerpArr(T.draw, T.ready, t); });
+  }
+})();
+// кадр выхватывания / убирания по времени с начала (null — анимация кончилась)
+function wpnAnimFrame(k, el) { return el >= 0 && el < WPN_DRAW_T ? k + Math.min(3, Math.floor(el / WPN_DRAW_T * 4)) : null; }
+
 function wpnParse(s) { const [m, o, out] = String(s).split('|'); return { m: m || '', o: o || '', out: out === '1' }; }
 
 // Кадр боя по анимации героя (u.anim — f*, u.hfx — короткий удар/парирование поверх всего); null — не бой
@@ -794,7 +813,7 @@ function fightFrameOf(u, moving) {
   if (an === 'fatk') return p < 0.22 ? 'ready' : p < 0.78 ? 'windup' : 'strike';
   if (an === 'ffollow') return p < 0.55 ? 'follow' : 'ready';
   if (an === 'fwin') return Math.floor(p * 6) % 2 ? 'win1' : 'win0';
-  if (an === 'fdraw') return 'draw';
+  if (an === 'fdraw') return wpnAnimFrame('d', p * WPN_DRAW_T) || 'ready';
   if (an === 'fready') return 'ready';
   if (an === 'fparry') return 'parry';
   if (an === 'fhurt') return 'hurt';
@@ -1077,7 +1096,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       // на ходу клинок покачивается вместе с шагом, рука подпрыгивает: меч несут, а не приклеили
       const wk = !fight && pose === 'walk' && (wst === 'blade' || wst === 'stab') ? sw : 0;
       wA = { hx: hx + wk * 0.3, hy: hy + wk * 0.5, dx: Math.sin(Wd + wk * 0.16), dy: -Math.cos(Wd + wk * 0.16), Wd };
-      const two = (wst === 'heavy' || wst === 'staff') && ff !== 'draw' && !(wst === 'staff' && (ff === 'win0' || ff === 'win1'));
+      const two = (wst === 'heavy' || wst === 'staff') && ff !== 'draw' && ff !== 'd0' && ff !== 's3' && !(wst === 'staff' && (ff === 'win0' || ff === 'win1'));
       let bx, by;
       if (two) { bx = hx - wA.dx * 2.4; by = hy - wA.dy * 2.4; }          // двуручное: вторая рука ниже на древке
       else if (wst === 'bow') { const q = FIGHT_BACK.bow[ff]; if (q) { bx = -0.4 + q[0]; by = shY + 0.4 + q[1]; } else { bx = hx - 0.9; by = hy + 0.3; } }
@@ -1171,7 +1190,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
           c.beginPath(); c.arc(0.4, shY + 0.4, R0 * 0.82, -2.1, -0.15); c.stroke();
         }
         if (wst === 'bow') drawBow(c, W.m, hx, hy, wA.Wd, ff === 'windup' ? [wA.bx, wA.by] : null);
-        else if (wst !== 'fist') drawWeapon(c, W.m, hx, hy, dx, dy, ff === 'draw' && (wst === 'blade' || wst === 'stab') ? 'hilt' : undefined);
+        else if (wst !== 'fist') drawWeapon(c, W.m, hx, hy, dx, dy, (ff === 'draw' || ff === 'd0' || ff === 's3') && (wst === 'blade' || wst === 'stab') ? 'hilt' : undefined);
         if (wst === 'staff' && (fight === 'windup' || fight === 'strike' || fight === 'win0' || fight === 'win1')) {
           // посох копит и выпускает силу: свечение на конце
           const t = 8.4, gx = hx + dx * t, gy = hy + dy * t, big = fight === 'strike';

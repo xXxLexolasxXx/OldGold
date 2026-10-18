@@ -178,6 +178,10 @@ function drawUnit(c, u) {
   // герой в бою: 9 кадров из people.js (стойка, замах, удар, довод, парирование, удар по нему, победа, выхватывание)
   const ffr = !wp && fightFrameOf(u, moving);
   if (ffr) { pose = 'fight'; view = 'E'; frame = ffr; }
+  else if (!wp && !moving && u.type === 'hero' && typeof heroWpnFrame === 'function') {   // выхватывает / убирает оружие
+    const wf = heroWpnFrame(u);
+    if (wf) { pose = 'fight'; view = 'E'; frame = wf; }
+  }
   // просто стоит — лицом к зрителю, а не боком, как после ходьбы
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты

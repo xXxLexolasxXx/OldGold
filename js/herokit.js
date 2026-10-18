@@ -42,6 +42,11 @@ function heroKitText(cls) {
 }
 const kitMine = (H, k) => !!(KIT_ITEMS[k] && H && KIT_OF[H.clsKey] && KIT_OF[H.clsKey].includes(k));
 
+function heroWpnFrame(u) {
+  const w = u._wanim;
+  return w ? wpnAnimFrame(w.k, Game.time - w.t0) : null;
+}
+
 // Любая нечисть (призраки, скелеты, летучие мыши) в 8 клетках — оружие выхвачено само
 const UNDEAD_R = 8;
 function heroSeesUndead(u) {
@@ -63,7 +68,11 @@ function heroWpnOf(u) {
   if (!m && !o && H.owner && KIT_OF[H.clsKey]) { const ks = KIT_OF[H.clsKey]; m = look(ks[0]); o = look(ks[1]); }
   if (!m && !o) return '';
   const now = Game.time;
-  const out = heroSeesUndead(u) || u.combatUntil > now || (u.anim && FIGHT_ANIM_SET.has(u.anim)) || (u.hfx && u.hfx.t > now);
+  const want = !!(heroSeesUndead(u) || u.combatUntil > now || (u.anim && FIGHT_ANIM_SET.has(u.anim)) || (u.hfx && u.hfx.t > now));
+  // смена состояния запускает 4-кадровое выхватывание или убирание (кадры берёт heroWpnFrame в render.js)
+  if (u._wo === undefined) u._wo = want;
+  if (want !== u._wo) { u._wo = want; u._wanim = { k: want ? 'd' : 's', t0: now }; }
+  const out = u._wo || (u._wanim && u._wanim.k === 's' && now - u._wanim.t0 < WPN_DRAW_T);
   return `${m}|${o}|${out ? 1 : 0}`;
 }
 
@@ -366,7 +375,7 @@ function heroParry(u) {
   const heroFightWrap = (inner, u, isAlive) => (function* () {
     const H = u.hero;
     const had = isAlive();
-    if (!(u.combatUntil > Game.time) && had) { u.combatUntil = Game.time + 8; yield { wait: 0.32, anim: 'fdraw' }; }
+    if (!(u.combatUntil > Game.time) && had) { u.combatUntil = Game.time + 8; yield { wait: WPN_DRAW_T, anim: 'fdraw' }; }
     let r = inner.next(), after = 0;
     while (!r.done) {
       let v = r.value;
