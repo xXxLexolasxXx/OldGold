@@ -6,7 +6,8 @@
 // · в общей деревне — лоты между игроками (вещь из рюкзака за вещь) и личное задание «Сыграть в конкурсе ярмарки».
 // С «Праздником» (festival.js) не пересекается: в день ярмарки праздник не начинается и наоборот;
 // удачная ярмарка (все конкурсы сыграны) зовёт праздник на следующий день.
-// Game.fair = { on, x, y, offers, cs, ci, lots, res } — сегодняшняя ярмарка; Game.fairDay — номер дня следующей.
+// Game.fair = { id, on, x, y, offers, cs, ci, lots, res } — сегодняшняя ярмарка; Game.fairDay — номер дня следующей.
+// fairOn() и Game.fair.id читает торговля (trade.js): в день ярмарки караван приходит сразу и выгоднее.
 
 const FAIR_GAP = [5, 7];              // через сколько суток следующая
 const FAIR_FIRST = 3;                 // первая — на 3–4-е сутки
@@ -74,7 +75,8 @@ function fairStart() {
   pool.sort((a, b) => (Object.entries(b.give).every(([g, n]) => frHave(g) >= n) - Object.entries(a.give).every(([g, n]) => frHave(g) >= n)) || Math.random() - 0.5);
   const offers = pool.slice(0, 6).map(o => ({ give: o.give, get: o.get, left: 3 }));
   const ks = Object.keys(FAIR_CONTESTS).sort(() => Math.random() - 0.5).slice(0, 3);
-  Game.fair = { on: true, x: x + 0.5, y: y + 0.5, offers, cs: ks.map(k => ({ k, st: 'wait', sc: [] })), ci: 0, next: Game.time + 20, lots: [], res: [], lotN: 1, t0: Game.time };
+  Game.fairN = (Game.fairN || 0) + 1;
+  Game.fair = { id: Game.fairN, on: true, x: x + 0.5, y: y + 0.5, offers, cs: ks.map(k => ({ k, st: 'wait', sc: [] })), ci: 0, next: Game.time + 20, lots: [], res: [], lotN: 1, t0: Game.time };
   frSay('Ярмарка открылась на площади у склада! Обмен с купцами и конкурсы — кнопка «Ярмарка» вверху');
   logEvent('festival', 'Открылась ярмарка: пять лавок и три конкурса', x + 0.5, y);
   if (typeof sfxAt === 'function') sfxAt('chime', x * TILE, y * TILE);
@@ -507,7 +509,7 @@ function fairMirror() {
   const F = Game.fair;
   if (!F) return null;
   const c = F.cs[F.ci];
-  return { on: F.on, x: F.x, y: F.y, ci: F.ci, next: F.next, offers: F.offers, res: F.res, lots: F.lots,
+  return { id: F.id, on: F.on, x: F.x, y: F.y, ci: F.ci, next: F.next, offers: F.offers, res: F.res, lots: F.lots,
     cs: F.cs.map(x => x === c ? { k: x.k, st: x.st, end: x.end, sc: x.sc.map(e => ({ who: e.who, name: e.name, n: e.n, best: e.best, rec: e.rec || 0 })) } : { k: x.k, st: x.st, sc: [] }) };
 }
 
@@ -561,14 +563,14 @@ function frServerHook() {
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser();
-    s.fair = { day: Game.fairDay, ann: Game.fairAnn ? 1 : 0, f: Game.fair || null, ret: Game.fairRet || null };
+    s.fair = { day: Game.fairDay, ann: Game.fairAnn ? 1 : 0, n: Game.fairN || 0, f: Game.fair || null, ret: Game.fairRet || null };
     return s;
   };
   const _apply = applySave;
   applySave = function (s) {
     _apply(s);
     const d = s.fair || {};
-    Game.fairDay = d.day != null ? d.day : undefined; Game.fairAnn = !!d.ann;
+    Game.fairDay = d.day != null ? d.day : undefined; Game.fairAnn = !!d.ann; Game.fairN = d.n || 0;
     Game.fair = d.f && d.f.on ? d.f : null; Game.fairRet = d.ret || null;
   };
   const _reset = resetGameState;

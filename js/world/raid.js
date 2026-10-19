@@ -16,7 +16,7 @@
 const RAID_KINDS = {};
 const RAID_TANKS = new Set(['warrior', 'barbarian', 'monk']);
 const RAID_HP = 260;           // на одного героя
-const RAID_RISE_R = 6, RAID_COOLDOWN = 3;
+const RAID_RISE_R = 6, RAID_COOLDOWN = 3, RAID_MIN_LVL = 3;   // герои ниже 3-го уровня князя не будят
 const RD = { t: 0, hooked: false, cHooked: false, el: null };
 
 const rdServer = () => typeof coop !== 'undefined' && !!coop.players;
@@ -33,7 +33,7 @@ function raidHeroes(x, y, r) {
   return hs.filter(h => !h.dead && !h.inside && h.hero && h.hero.hp > 0 && (x == null || Math.hypot(h.x - x, h.y - y) <= r));
 }
 function raidParty(x, y, r) {
-  const hs = raidHeroes(x, y, r);
+  const hs = raidHeroes(x, y, r).filter(h => (h.hero.level || 1) >= RAID_MIN_LVL);
   if (rdServer()) return hs.length;
   if (!hs.length) return 0;
   const recs = Game.units.filter(u => u.rec && !u.dead && u.rec.order === 'follow' && !(u.rec.train > 0) && (x == null || Math.hypot(u.x - x, u.y - y) <= r + 4)).length;
@@ -142,7 +142,7 @@ function raidTick(dt) {
   if (!night) { S.omen = false; return; }
   if (rdNight() - (S.last || -9) < RAID_COOLDOWN || S.tried === rdNight()) return;
   if (!S.omen) {
-    if (raidParty() >= 2) { S.omen = true; rdSay(`Над курганом загорелись синие огни… ${K.name} ждёт гостей. Подойдите туда вдвоём или больше`); }
+    if (raidParty() >= 2) { S.omen = true; rdSay(`Над курганом загорелись синие огни… ${K.name} ждёт гостей. Подойдите туда вдвоём или больше (герои от ${RAID_MIN_LVL} уровня)`); }
     return;
   }
   if (raidParty(S.site.x, S.site.y, RAID_RISE_R) >= 2) { S.tried = rdNight(); raidStart('kurgan', S.site.x, S.site.y + 1.2); }
@@ -380,7 +380,7 @@ function raidDrawMarks(c, F) {
   const t = Game.time;
   c.save();
   for (const m of F.marks) {
-    const left = Math.max(0, m.t - t), k = 1 - left / 1.6, x = m.x * TILE, y = m.y * TILE + 6;
+    const left = Math.max(0, m.t - t), k = Math.max(0.05, Math.min(1, 1 - left / 1.6)), x = m.x * TILE, y = m.y * TILE + 6;
     c.strokeStyle = `rgba(150,225,255,${0.5 + 0.5 * k})`; c.lineWidth = 1.5;
     c.beginPath(); c.ellipse(x, y, 34, 15, 0, 0, 7); c.stroke();
     c.fillStyle = `rgba(90,190,255,${0.12 + 0.3 * k})`; c.beginPath(); c.ellipse(x, y, 34 * k, 15 * k, 0, 0, 7); c.fill();
@@ -503,7 +503,7 @@ function raidHud() {
   if (!S || (!F && !S.omen)) { el.style.display = 'none'; return; }
   const K = RAID_KINDS[(F && F.k) || 'kurgan'];
   let h;
-  if (!F) h = `<b>Синие огни над курганом</b> — ${K.name} ждёт. Подойдите туда вдвоём или больше${rdMirror() ? '' : ' (одному — герой и 2 рекрута «За героем»)'}.`;
+  if (!F) h = `<b>Синие огни над курганом</b> — ${K.name} ждёт. Подойдите туда вдвоём или больше, герои от ${RAID_MIN_LVL} уровня${rdMirror() ? '' : ' (одному — герой и 2 рекрута «За героем»)'}.`;
   else {
     const N = Game.neutrals.find(M => M.id === F.nid), r = N ? Math.max(0, N.hp / N.mhp) : 0, P = K.phases[F.ph - 1] || K.phases[0];
     h = `<b>${K.name}</b> · фаза ${['I', 'II', 'III'][F.ph - 1] || 'I'}: «${P.n}»<div class="rb"><i style="width:${Math.round(r * 100)}%"></i></div>${F.hint || P.hint}`;
