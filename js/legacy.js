@@ -199,6 +199,7 @@ function lgStartBonus() {
 
 function lgApplyStart() {
   if (typeof Coop !== 'undefined' && Coop.on) return;
+  if (typeof profCur !== 'function') return;   // кооп-сервер и тесты: профиля игрока нет
   const store = Game.buildings.find(b => b.type === 'storehouse');
   if (!store) return;
   const mul = typeof dif === 'function' ? dif().stock : 1;

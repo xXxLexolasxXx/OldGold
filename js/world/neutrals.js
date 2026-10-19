@@ -106,6 +106,7 @@ function neuAddLair(k, site, minStart) {
 const NEU_MIN_PIXIE = 3;   // на каждой карте — не меньше трёх селений цветочных фей
 
 function neuSpawnAll(seed) {
+  if (MapOpt.custom && MapOpt.custom.nm !== 'auto') { meSpawnLairs(); return; }   // карта игрока: логова расставил автор
   Game.neutrals = []; Game.lairs = [];
   Game.nstat = { kills: {}, lost: 0, lairs: 0, xp: 0 };
   const rng = mulberry32(((seed | 0) ^ 0xFA17E) >>> 0);
@@ -130,7 +131,7 @@ function neuSpawnAll(seed) {
 // Старые сохранения и запасной случай: догнать число селений фей до минимума
 function neuEnsurePixies(seed) {
   const have = () => Game.lairs.filter(l => l.k === 'pixie').length;
-  if (have() >= NEU_MIN_PIXIE || Game.stress) return;
+  if (have() >= NEU_MIN_PIXIE || Game.stress || (MapOpt.custom && MapOpt.custom.nm !== 'auto')) return;
   const rng = mulberry32((((seed | 0) ^ 0x9E3779) + Game.lairs.length * 131) >>> 0);
   const stamp = floodFrom(MAP_W >> 1, MAP_H >> 1), minStart = mapIsLegacy() ? 14 : 18;
   for (let tries = 0; have() < NEU_MIN_PIXIE && tries < 8000; tries++) {

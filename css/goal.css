@@ -15,6 +15,8 @@
 #goal-hud ul.small li { font-size: 11px; opacity: 0.85; }
 #goal-hud .gh-hint { margin-top: 4px; font-style: italic; color: #b8a47c; font-size: 11px; }
 #goal-hud .gh-mode { margin-top: 6px; width: 100%; padding: 3px; font-size: 11px; cursor: pointer; }
+/* на телефоне карточка обучения занимает то же место сверху — цели прячем, пока она открыта (там те же задания) */
+body.mobile:has(#tut:not(.hidden):not(.min)) #goal-hud { display: none !important; }
 body.mobile #goal-hud { top: 40px; width: 200px; font-size: 11px; opacity: 0.92; }
 
 #goal-modal {

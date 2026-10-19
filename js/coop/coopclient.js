@@ -277,6 +277,7 @@ function coopMirror(m) {
   if (typeof goalMirrorIn === 'function') goalMirrorIn(m.goal);
   if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
   if (typeof dilMirrorIn === 'function') dilMirrorIn(m.dil);
+  if (typeof lawMirrorIn === 'function') lawMirrorIn(m.law);
   if (m.df) Game.diff = diffKey(m.df);
   const festWas = festOn();
   Game.festival = m.fest || null;
@@ -672,7 +673,25 @@ function coopRestartDialog() {
   const box = document.createElement('div');
   box.className = 'cp-modal';
   box.innerHTML = `<div class="cp-card"><h2>Перезапустить сервер?</h2><p>Мир сохранится, все игроки на несколько секунд отвалятся и переподключатся сами.</p>
-    <button class="cp-btn" data-y>Перезапустить</button><button class="cp-btn sec" data-n>Отмена</button></div>`;
+    <button class="cp-btn" data-y>Перезапустить</button><button class="cp-btn sec" data-n>Отмена</button>
+    <h2>Новый мир</h2><p>Текущий мир уйдёт в архив на сервере, деревня начнётся заново. Свои карты — из «Редактора карт» на этом устройстве.</p>
+    <div class="cp-maps"></div><div data-ask hidden><p></p><button class="cp-btn" data-go>Да, начать заново</button></div></div>`;
+  const list = box.querySelector('.cp-maps');
+  const pick = (label, map) => {
+    const b = document.createElement('button');
+    b.className = 'cp-btn sec';
+    b.textContent = label;   // имя карты — только текстом
+    b.addEventListener('click', () => {
+      if (map) { const v = meValidate(map); if (v.errors.length) { toast('Карта не готова: ' + v.errors[0]); return; } }
+      const ask = box.querySelector('[data-ask]');
+      ask.hidden = false;
+      ask.querySelector('p').textContent = 'Начать новый мир: ' + label + '?';
+      ask.querySelector('[data-go]').onclick = () => { coopSend({ t: 'newworld', confirm: true, map: map ? meEncode(map) : null }); box.remove(); };
+    });
+    list.appendChild(b);
+  };
+  pick('Обычная карта', null);
+  if (typeof meList === 'function') for (const e of meList()) pick('🗺 ' + e.map.name, e.map);
   document.body.appendChild(box);
   box.addEventListener('click', e => {
     if (e.target.closest('[data-y]')) { coopSend({ t: 'restart', confirm: true }); box.remove(); }

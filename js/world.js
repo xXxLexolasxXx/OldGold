@@ -113,6 +113,7 @@ function setStone(i, n) {
 }
 
 function genWorld(seed) {
+  if (MapOpt.custom) return meGenWorld(seed);   // карта игрока: рельеф и деревья берутся из неё (mapedit.js)
   const rng = mulberry32(seed);
   const nWater = makeNoise(rng, 16), nWater2 = makeNoise(rng, 6);
   const nRock = makeNoise(rng, 12), nRock2 = makeNoise(rng, 5);

@@ -112,11 +112,12 @@ function smMapSync() {
 function smMapGo(root) {
   if (StartMenu.busy) return;
   const txt = root.querySelector('#sm-seed').value, sz = MAP_SIZES[StartMenu.map.size];
-  const same = !txt.trim() && MapOpt.biome === StartMenu.map.bio && MAP_W === sz.w && MAP_H === sz.h;
+  const same = !txt.trim() && !MapOpt.custom && !StartMenu.dirty && MapOpt.biome === StartMenu.map.bio && MAP_W === sz.w && MAP_H === sz.h;
   track('map-' + StartMenu.map.bio, 'Карта: ' + BIOMES[StartMenu.map.bio].name + ', ' + sz.name);
   if (same) { smShow('diff'); return; }
   const msg = root.querySelector('#sm-map-msg');
   StartMenu.busy = true;
+  StartMenu.dirty = false;
   msg.textContent = 'Создаём карту…';
   setTimeout(() => {
     try {
