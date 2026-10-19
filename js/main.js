@@ -219,6 +219,7 @@ function step(dt) {
   weatherTick(dt);
   updateCritters(dt);
   streetTick(dt);
+  gamesTick(dt);
   updateOwls(dt);
   faunaTick(dt);
   fauna2Tick(dt);

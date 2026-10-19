@@ -108,7 +108,7 @@ function rainSlipTick(dt) {
   WX.slipT = 0;
   if (WX.k < 0.45) return;
   for (const u of Game.units) {
-    if (u.dead || u.inside || !isPerson(u) || u.type === 'carter' || u.brk) continue;
+    if (u.dead || u.inside || !isPerson(u) || u.type === 'carter' || u.brk || u.hopUntil > Game.time) continue;     // на классиках не падают
     const a = u.action;
     if (!(a && a.walk && a.path && a.path[a.i])) continue;
     if (Game.time < (u.slipCD || 0) || Math.random() > 0.0016 * WX.k) continue;
