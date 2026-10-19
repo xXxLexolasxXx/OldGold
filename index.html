@@ -53,6 +53,7 @@
           <button data-menu="new"><img data-icon="new" alt="">Новая карта</button>
           <button data-menu="tutorial"><img data-icon="play" alt="">Обучение (по шагам)</button>
           <button data-menu="help"><img data-icon="scroll" alt="">Как играть</button>
+          <button data-guide="open"><img data-icon="scroll" alt="">Справка <kbd>H</kbd></button>
         </div>
         <div id="save-info" class="muted small"></div>
         <div class="hotkeys">
@@ -124,6 +125,7 @@
   </main>
 </div>
 <div id="loading"><canvas id="load-cv"></canvas><div class="load-title"><h1>OldGold</h1></div><span class="load-msg">Создаём мир…</span></div>
+<script src="js/crashlog.js"></script>
 <script src="js/world/fire.js"></script>
 <script src="js/loading.js"></script>
 <script src="js/sound/mute.js"></script>
@@ -204,8 +206,10 @@
 <script src="js/world/golem.js"></script>
 <script src="js/world/pets.js"></script>
 <script src="js/world/festival.js"></script>
+<script src="js/world/enemy.js"></script>
 <script src="js/coop/coopclient.js"></script>
 <script src="js/changelog.js"></script>
+<script src="js/guide.js"></script>
 <script src="js/native.js"></script>
 <script src="js/pwa.js"></script>
 <script data-goatcounter="https://lexolas.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
