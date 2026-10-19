@@ -288,7 +288,7 @@ function seaTick(dt) {
   const _reset = resetGameState;
   resetGameState = function () { _reset(); Game.sea = seaNew(); Game.wfx = []; };
   const _setup = setupStart;
-  setupStart = function (seed) { _setup(seed); Game.sea = Game.sea && Game.sea.fixed != null ? Game.sea : seaNew(); };
+  setupStart = function (seed, ...o) { _setup(seed, ...o); Game.sea = Game.sea && Game.sea.fixed != null ? Game.sea : seaNew(); };
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser(), S = SEA();
