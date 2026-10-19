@@ -7,3 +7,12 @@ Thumbs.db
 # Данные сервера кооператива (аккаунты, общий мир)
 server/data/
 node_modules/
+
+# Сборки обёрток (генерируются: node desktop/build-www.js)
+desktop/www/
+desktop/dist/
+mobile/www/
+mobile/android/app/src/main/assets/public/
+mobile/android/capacitor-cordova-android-plugins/
+mobile/ios/App/App/public/
+mobile/ios/App/Pods/

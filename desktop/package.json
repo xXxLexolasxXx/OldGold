@@ -1,0 +1,47 @@
+{
+  "name": "oldgold-desktop",
+  "version": "0.1.0",
+  "description": "OldGold — гномья экономика (обёртка для Steam)",
+  "main": "main.js",
+  "author": "OldGold",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "www": "node build-www.js www",
+    "start": "npm run www && electron .",
+    "smoke": "npm run www && node smoke.js",
+    "dist": "npm run www && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.0.0",
+    "esbuild": "^0.24.2",
+    "sharp": "^0.33.5"
+  },
+  "build": {
+    "appId": "ru.oldgold.game",
+    "productName": "OldGold",
+    "files": [
+      "main.js",
+      "preload.js",
+      "steam.js",
+      "www/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "dir",
+      "icon": "../icons/icon-512.png"
+    },
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "../icons/icon-512.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Game",
+      "icon": "../icons/icon-512.png"
+    }
+  }
+}
