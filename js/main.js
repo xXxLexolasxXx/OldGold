@@ -241,8 +241,15 @@ function step(dt) {
 
 function resize() {
   const dpr = screenDPR();
+  // поворот телефона / смена размера окна: на месте остаётся точка в центре экрана, а не левый верхний угол
+  const s = camScale(), ow = R.vw, oh = R.vh;
   R.canvas.width = Math.round(R.canvas.clientWidth * dpr);
   R.canvas.height = Math.round(R.canvas.clientHeight * dpr);
+  R.vw = R.canvas.clientWidth; R.vh = R.canvas.clientHeight;
+  if (ow && oh && R.vw && R.vh && isFinite(R.cam.x) && (ow !== R.vw || oh !== R.vh)) {
+    R.cam.x += (ow - R.vw) / 2 / s;
+    R.cam.y += (oh - R.vh) / 2 / s;
+  }
   clampCam();
 }
 

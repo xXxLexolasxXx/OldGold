@@ -39,6 +39,7 @@ body.mobile.land .mm-wrap {
   width: var(--mmw); padding: 2px; transform: none;
 }
 body.mobile.land #mm-fold { display: none; }
+body.mobile.land #minimap { width: 100%; }   /* старое правило «миникарта 60%» сжимало карту в углу рамки */
 body.mobile.land #mm-size { min-width: 26px; min-height: 22px; font-size: 13px; top: 2px; right: 2px; opacity: 0.8; padding: 0; }
 body.mobile.land.show-mm .mm-wrap { z-index: 30; width: min(58vw, calc((100dvh - 60px) * 4 / 3), 420px); transform: none; left: auto; }
 body.mobile.land.show-mm.mm-big .mm-wrap { left: auto; transform: none; width: min(70vw, calc((100dvh - 40px) * 4 / 3)); }

@@ -25,6 +25,6 @@ body.mobile .pr-seg button { min-height: 38px; font-size: 13px; }
 #pause-banner.hidden { display: none; }
 #pause-banner b { color: #ffd877; }
 #pause-banner kbd { padding: 0 5px; border: 1px solid var(--gold, #d2a73c); border-radius: 3px; background: #1a130d; color: var(--gold-hi, #f0d27a); }
-body.mobile #pause-banner { bottom: auto; top: 44px; font-size: 12px; }
+body.mobile #pause-banner { bottom: calc(74px + env(safe-area-inset-bottom)); top: auto; font-size: 12px; }   /* над нижней панелью: сверху тесно (ресурсы, цели, вызов дня) */
 /* онлайн: скорость выбирает хост, остальным — только пауза голосованием */
 body.coop:not(.coop-host) #dd-speed [data-speed]:not([data-speed="0"]) { display: none; }

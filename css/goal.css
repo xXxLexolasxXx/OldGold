@@ -17,7 +17,7 @@
 #goal-hud .gh-mode { margin-top: 6px; width: 100%; padding: 3px; font-size: 11px; cursor: pointer; }
 /* на телефоне карточка обучения занимает то же место сверху — цели прячем, пока она открыта (там те же задания) */
 body.mobile:has(#tut:not(.hidden)) #goal-hud { display: none !important; }
-body.mobile #goal-hud { top: 40px; width: 200px; font-size: 11px; opacity: 0.92; }
+body.mobile #goal-hud { top: calc(48px + env(safe-area-inset-top)); width: 200px; font-size: 11px; opacity: 0.92; }
 
 #goal-modal {
   position: fixed; inset: 0; z-index: 400; display: flex; align-items: flex-end; justify-content: center;
