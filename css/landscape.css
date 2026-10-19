@@ -83,11 +83,12 @@ body.mobile.land #hint {
 body.mobile.land #pause-banner { left: var(--left); right: auto; transform: none; bottom: calc(var(--sb) + 8px); top: auto; max-width: 40vw; font-size: 11px; }
 body.mobile.land #help { max-height: 88%; }
 
-/* панель инструмента (поставить/повернуть/отмена) — по центру карты, под большой палец рядом с картой */
+/* панель инструмента (поставить/повернуть/отмена) — строкой у правого края, под правый большой палец */
 body.mobile.land #mtool:not(.hidden) {
-  left: calc(50% + var(--rail) / 2); right: auto; transform: translateX(-50%);
-  bottom: calc(var(--sb) + 8px); max-width: min(56vw, 480px);
+  flex-direction: row; align-items: center; width: auto; left: auto; transform: none;
+  right: calc(var(--sr) + var(--mmw) + 14px); bottom: calc(var(--sb) + 6px); max-width: min(52vw, 440px);
 }
+body.mobile.land #mtool-text { flex: 1; min-width: 0; font-size: 12px; }
 body.mobile.land #mtool button { min-width: 44px; min-height: 40px; }
 
 /* оповещения нельзя нажимать «сквозь» карту: тосты ловят касание, но не двигают карту */
