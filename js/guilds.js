@@ -781,6 +781,8 @@ function* recruitGen(u) {
     gnews(`${unitTitle(u)} закончил обучение`, b);
     return;
   }
+  // дозорный пост на башне (defensewar.js)
+  if (R.order === 'post' && R.post && typeof defPostGen === 'function') { yield* defPostGen(u); return; }
   // приказ «атаковать»
   if (R.target) { const f = R.target; R.target = null; if (foeAlive(f)) { yield* fightGen(u, f); return; } }
   // враги рядом с точкой, которую охраняет
@@ -878,7 +880,7 @@ function guildHTML(b) {
   x += `<div class="isec">Рекруты · ${rs.length}/${recMaxOf(b)}</div>`;
   for (const u of rs) {
     const R = recOf(u), need = 60 * R.lvl;
-    const ord = R.train > 0 ? 'учится' : { guard: 'охраняет гильдию', follow: 'идёт за героем', hold: 'стоит на посту', drill: 'тренируется' }[R.order] || '';
+    const ord = R.train > 0 ? 'учится' : { guard: 'охраняет гильдию', follow: 'идёт за героем', hold: 'стоит на посту', post: 'на башне', drill: 'тренируется' }[R.order] || '';
     x += `<div class="irow g-rec" data-gd="sel:${u.id}"><img class="portrait" src="${portraitURL(u.type, u.look)}" alt=""><div style="flex:1"><div>${R.name || ''} · ур. ${R.lvl}${R.armor ? ' · в доспехе' : ''}</div><div class="g-xp"><i style="width:${R.lvl >= recLvlMaxOf(R) ? 100 : Math.round(R.xp / need * 100)}%"></i></div><div class="small muted">${ord}</div></div><button data-coop="1" data-gd="drill:${u.id}" title="Тренировка с главой: 1 золото, +${drillXpOf(b)} опыта">⚔</button></div>`;
   }
   if (b.hireQ > 0) x += `<div class="irow small warn">Ждут свободного трудягу: ${b.hireQ}</div>`;

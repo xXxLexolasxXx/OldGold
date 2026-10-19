@@ -814,6 +814,7 @@ function render() {
     else if (o.t === 'stone') { if (!o.awake) list.push([y + 0.8, () => drawRock(c, x, y, o, i)]); }   // проснувшийся рисуется сам
     else if (isStreetObj(o)) list.push([y + 0.75, () => drawStreetObj(c, x, y, o)]);
     else if (o.t === 'stump') list.push([y + 0.7, () => drawStump(c, x, y)]);
+    else if (o.t === 'fort') list.push([y + (o.f === 'pit' || o.f === 'spike' || o.f === 'fire' ? 0.3 : 0.85), () => drawFort(c, x, y, o)]);
   }
   // горы: объёмные скальные массивы по глубине вместе с остальными объектами
   for (const m of MOUNTS) {
@@ -850,6 +851,7 @@ function render() {
   fairyDrawList(list, c, x0, y0, x1, y1);
   fairy2DrawList(list, c, x0, y0, x1, y1);
   drawSkeletons(list, c, x0, y0, x1, y1);
+  defDrawList(list, c, x0, y0, x1, y1);
   golemDrawList(list, c, x0, y0, x1, y1);
   if (typeof tradeDrawList === 'function') tradeDrawList(list, c, x0, y0, x1, y1);
   for (const e of Game.ents || []) {
@@ -934,6 +936,8 @@ function drawOverlay(c) {
     drawBuilding(c, { type: tool.type, rot: d.rot, x: bx, y: by, w: d.w, h: d.h, doorX: bx + d.dx, doorY: by + d.dy, state: 'done', anim: 0, id: 0, stock: emptyGoods(), pigs: [] }, true);
     c.globalAlpha = 1;
     ant((bx + d.dx) * TILE + 2, (by + d.dy) * TILE + 2, TILE - 4, TILE - 4, err ? '#ff5040' : '#60ff80');
+  } else if (tool.kind === 'fort') {
+    defPreview(c, h);
   } else if (tool.kind === 'road') {
     const cells = R.roadDrag || [h];
     const single = cells.length === 1;

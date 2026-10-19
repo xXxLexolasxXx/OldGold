@@ -7,7 +7,7 @@ function isWalkable(x, y) {
   if (t === T_WATER || t === T_ROCK) return false;
   if (World.bmap[i]) return false;
   const o = World.obj[i];
-  if (o && o.t === 'stone') return false;
+  if (o && (o.t === 'stone' || o.blk)) return false;
   return true;
 }
 
@@ -34,7 +34,7 @@ function walkIdx(i) {
   const t = World.terrain[i];
   if (t === T_WATER || t === T_ROCK || World.bmap[i]) return false;
   const o = World.obj[i];
-  return !(o && o.t === 'stone');
+  return !(o && (o.t === 'stone' || o.blk));
 }
 function pfResize() {
   PF.g = new Float32Array(N_TILES); PF.from = new Int32Array(N_TILES);
@@ -114,7 +114,7 @@ function findPath(sx, sy, tx, ty, road = false, selfId = 0, limit = 0, hw = 0.6)
   const ter = World.terrain, bm = World.bmap, obj = World.obj, rd = World.road, occ = World.occ;
   const g = PF.g, from = PF.from, seen = PF.seen, closed = PF.closed;
   // проходимость клетки по индексу (координаты проверяет вызывающий)
-  const walk = i => { const t = ter[i]; if (t === T_WATER || t === T_ROCK || bm[i]) return false; const o = obj[i]; return !(o && o.t === 'stone'); };
+  const walk = i => { const t = ter[i]; if (t === T_WATER || t === T_ROCK || bm[i]) return false; const o = obj[i]; return !(o && (o.t === 'stone' || o.blk)); };
   const ok = road ? i => walk(i) && (rd[i] === 1 || i === target) : walk;
   const st = ++PF.stamp;
   let hF = PF.hF, hI = PF.hI, hn = 0;

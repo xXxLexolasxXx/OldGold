@@ -1362,6 +1362,7 @@ function buildingSpriteBase(type, rot = 0, level = 1) {
     sc.fillRect(0, top - 10, W, FD + BBOTTOM + 10);
   }
   const m = newModel(g);
+  m.lv = level;
   (MODELS[type] || modelPlaceholder)(m);
   if (level === 2) spr.tall = upgradeModel(m);
   SIGN_QUEUE.list = [];

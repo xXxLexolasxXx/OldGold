@@ -340,6 +340,8 @@ function onLeftClickTile(t) {
   }
   if (tool && tool.kind === 'erase') { eraseAt(t); return; }
   if (tool && tool.kind === 'field') { fieldStroke(t, true); return; }
+  if (tool && tool.kind === 'fort') { defToolClick(t); return; }
+  if (!tool && defClickTile(t)) return;
   const b = buildingAt(t);
   selectBuilding(b || (inb(t[0], t[1]) ? Game.roadSites.get(idx(t[0], t[1])) || null : null));
 }
@@ -356,6 +358,7 @@ function eraseAt(t) {
     return;
   }
   if (removeField(t[0], t[1])) return;                              // убрать поле
+  if (fortAt(t[0], t[1])) { defEraseAct(t); return; }              // стена, ворота, ловушка, факел
   if (isStreetObj(World.obj[i])) { World.obj[i] = null; return; }   // убрать фонарь, скамейку или урну
   if (World.road[i] && !World.door[i]) setRoad(t[0], t[1], false);
 }
@@ -378,6 +381,7 @@ function initInput() {
       return;
     }
     if (Game.tool && Game.tool.kind === 'erase') Input.lastEraseTile = t.join();
+    if (defToolDown(t)) return;
     onLeftClickTile(t);
   });
 
@@ -397,6 +401,7 @@ function initInput() {
     if (Input.leftDown && R.hover && Game.tool) {
       if (Game.tool.kind === 'road' && Input.roadStart) R.roadDrag = lineCells(Input.roadStart, R.hover);
       if (Game.tool.kind === 'field') fieldStroke(R.hover, false);
+      if (Game.tool.kind === 'fort') defToolMove(R.hover);
       if (Game.tool.kind === 'erase' && R.hover.join() !== Input.lastEraseTile) {
         Input.lastEraseTile = R.hover.join();
         const i = inb(R.hover[0], R.hover[1]) ? idx(R.hover[0], R.hover[1]) : -1;
@@ -416,6 +421,7 @@ function initInput() {
     }
     if (e.button !== 0) return;
     Input.leftDown = false; Input.fieldMode = null; Input.lastFieldTile = null;
+    if (Input.fortStart) defToolUp();
     if (Game.tool && Game.tool.kind === 'road' && R.roadDrag) {
       // одиночный клик по готовой дороге или стройке дороги — убрать её (быстрее, чем «Снести»)
       const only = R.roadDrag.length === 1 ? R.roadDrag[0] : null;

@@ -183,7 +183,7 @@ function buildingSprite(type, rot = 0, level = 1) {
     const roofCols = ['#8a3a28', '#5a6a8a', '#3e6a4a', '#7a5a3a'], rc = roofCols[Math.floor(rnd() * roofCols.length)];
     const P = (base.perches && base.perches[0]) || [base.padx + base.fw / 2, base.top * 0.4];
     const mx = Math.round(P[0] * k), my = Math.round(P[1] * k) + 20 * k;
-    if (!base.tall) {
+    if (!base.tall && type !== 'watchtower') {
       // мансарда на коньке: белёная стенка, ступенчатая крыша, тёплое окно
       const W = 44, H = 26;
       px(mx - W / 2 - 1, my - H - 1, W + 2, H + 2, OUT);
