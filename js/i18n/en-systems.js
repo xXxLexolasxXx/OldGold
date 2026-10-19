@@ -235,7 +235,7 @@ I18N.add('en', {
   "Детей:": "Children:",
   "Старейшин:": "Elders:",
   "поколений {0} · свадеб {1} · родилось {2}": "generations {0} · weddings {1} · born {2}",
-  "Летопись": "Chronicle",
+  "Семейная летопись": "Family chronicle",
   "Сутки {0}": "Day {0}",
   "Пока тихо: ни свадеб, ни крестин. Весёлые одинокие гномы рано или поздно найдут друг друга.": "Quiet so far: no weddings, no christenings. Cheerful single gnomes will find each other sooner or later.",
   "Свадьбы бывают у весёлых одиноких гномов. Детям нужна еда на складах; на третий год гномёнок берётся за работу. Старики работают медленнее и однажды уходят к предкам.": "Cheerful single gnomes get married. Children need food in the stores; in their third year gnomelings start working. Elders work slower and one day join the ancestors.",

@@ -42,6 +42,7 @@ function famOf(u) {
   if (u.fam) return u.fam;
   const fem = u.type === 'waitress' || (u.type !== 'kid' && Math.random() < 0.45);
   u.fam = { n: famPick(fem ? FAM_F : FAM_M), r: famPick(FAM_CLANS), sx: fem ? 'f' : 'm', a: u.type === 'kid' ? 0 : Math.round((4 + Math.random() * 18) * 10) / 10, sp: 0, pn: null, kn: [], g: 1 };
+  u.cname = u.fam.n;                                    // летопись деревни (chronicle.js) зовёт гнома тем же именем
   return u.fam;
 }
 
@@ -111,7 +112,7 @@ function famBirth(mom, dad) {
   k.look = heir.look;                                   // весь в отца (или в мать): колпак, борода, нос
   const fem = Math.random() < 0.45;
   k.fam = { n: famPick(fem ? FAM_F : FAM_M), r: dad.fam.r, sx: fem ? 'f' : 'm', a: 0, sp: 0, pn: [dad.fam.n, mom.fam.n], kn: [], g: Math.max(dad.fam.g || 1, mom.fam.g || 1) + 1 };
-  k.food = 1;
+  k.food = 1; k.cname = k.fam.n;
   for (const u of [mom, dad]) { u.fam.kn = (u.fam.kn || []).concat(k.fam.n).slice(-6); if (typeof moodPoke === 'function') moodPoke(u, 'baby', 10, 400); }
   G.st.born++; G.st.gen = Math.max(G.st.gen, k.fam.g);
   famNote(`В семье ${dad.fam.r} пополнение: ${fem ? 'дочка' : 'сын'} ${k.fam.n}, ${k.fam.g}-е поколение. ${heir === dad ? 'Весь в отца' : 'Вся в мать'}`);
@@ -293,6 +294,7 @@ if (typeof step === 'function') {
       u.fam = { n: str(f.n, famPick(FAM_M)), r: str(f.r, famPick(FAM_CLANS)), sx: f.sx === 'f' ? 'f' : 'm', a: Number.isFinite(f.a) ? Math.max(0, Math.min(60, f.a)) : 10,
         sp: 0, pn: Array.isArray(f.pn) && f.pn.length === 2 ? f.pn.map(x => str(x, '?')) : null, kn: Array.isArray(f.kn) ? f.kn.slice(-6).map(x => str(x, '?')) : [], g: Number.isInteger(f.g) && f.g > 0 ? Math.min(f.g, 99) : 1, _sp: Number.isInteger(f.sp) ? f.sp : -1 };
     });
+    for (const u of Game.units) if (u.fam) u.cname = u.fam.n;
     for (const u of Game.units) if (u.fam && u.fam._sp != null) { const o = Game.units[u.fam._sp]; if (o && o !== u) u.fam.sp = o.id; delete u.fam._sp; }
     Game.fam = null;
     const m = s.fam;
@@ -315,7 +317,7 @@ function famHTML() {
   const rank = Game.goal ? Math.min(2, Game.goal.rank | 0) : 0;
   let h = `<div class="lw-top"><span>Семей: <b>${pairs}</b></span><span>Детей: <b>${kids}</b></span><span>Старейшин: <b>${old}</b></span><span class="muted small">поколений ${G.st.gen} · свадеб ${G.st.wed} · родилось ${G.st.born}</span></div>`;
   if (ppl.length >= FAM_CAP[rank]) h += `<div class="muted small lw-note">Деревне тесно: детей не заводят, пока жителей ${FAM_CAP[rank]} и больше${rank < 2 ? ' — новое звание даст простор' : ''}.</div>`;
-  h += '<div class="mc-t">Летопись</div>';
+  h += '<div class="mc-t">Семейная летопись</div>';
   if (!G.chron.length) h += '<div class="muted small">Пока тихо: ни свадеб, ни крестин. Весёлые одинокие гномы рано или поздно найдут друг друга.</div>';
   else h += '<div class="fm-chron">' + G.chron.slice(-10).reverse().map(c => `<div class="fm-c"><span class="fm-d">Сутки ${c[0]}</span>${String(c[1]).replace(/[&<>]/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[x]))}</div>`).join('') + '</div>';
   h += '<div class="muted small md-tips">Свадьбы бывают у весёлых одиноких гномов. Детям нужна еда на складах; на третий год гномёнок берётся за работу. Старики работают медленнее и однажды уходят к предкам.</div>';

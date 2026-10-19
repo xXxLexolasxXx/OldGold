@@ -133,6 +133,7 @@ function coopHandle(m) {
     case 'toast': toast(m.text, null, 'coop'); break;
     case 'fl': floater(m.x, m.y, m.text, m.col || '#fff6d0'); break;
     case 'chat': coopChat(m); break;
+    case 'chron': if (typeof chronMirrorIn === 'function') chronMirrorIn(m.e); break;
     case 'saved': break;
     case 'restarting': Coop.reconnecting = true; toast('Сервер перезапускается…'); break;
     case 'kicked': Coop.kicked = m.msg || 'Вы вошли в деревню из другого окна'; break;

@@ -57,6 +57,9 @@ scriptTest('sick: болезни и лазарет, сохранение', 'sick
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
+scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
+scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
+scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
 
