@@ -204,6 +204,7 @@ function terrKick() {
 function buildTerrain(seed) {
   terrFree();
   TERR.ready = false;
+  biomeSpritesApply();   // деревья и валуны под биом карты
   TERR.lazy = (typeof perfWeakDevice === 'function' && perfWeakDevice()) || (typeof Fps !== 'undefined' && !!Fps.eco);
   const W = MAP_W + 1, H = MAP_H + 1;
   const tA = makeTex(seed + 1, 4, 4);    // крупные пятна
@@ -240,6 +241,8 @@ function buildTerrain(seed) {
   }
 
   const PW = MAP_W * TILE;
+  const P = biomePal();   // цвета земли выбранного биома (луга — прежние)
+  const iceW = !!P.ice;
 
   const bil = (f, i00, fx, fy) => {
     const a = f[i00], b = f[i00 + 1], c = f[i00 + W], d = f[i00 + W + 1];
@@ -272,20 +275,20 @@ function buildTerrain(seed) {
         // трава
         const lush = smoothstep(0.3, 0.7, nA);
         // сочная «геройская» трава: насыщенная зелень с жёлтыми бликами
-        let r = 58 + (98 - 58) * lush, g = 110 + (160 - 110) * lush, b = 24 + (40 - 24) * lush;
-        const dry = smoothstep(0.62, 0.8, nC) * 0.35;
-        r += (150 - r) * dry; g += (152 - g) * dry; b += (56 - b) * dry;
+        let r = P.g0[0] + (P.g1[0] - P.g0[0]) * lush, g = P.g0[1] + (P.g1[1] - P.g0[1]) * lush, b = P.g0[2] + (P.g1[2] - P.g0[2]) * lush;
+        const dry = smoothstep(0.62, 0.8, nC) * P.dryK;
+        r += (P.dry[0] - r) * dry; g += (P.dry[1] - g) * dry; b += (P.dry[2] - b) * dry;
         const dark = smoothstep(0.35, 0.18, nC) * 0.4;
         r *= 1 - dark * 0.35; g *= 1 - dark * 0.25; b *= 1 - dark * 0.35;
         if (nD > 0.66) { const k = 0.78 + (1 - nD) * 0.4; r *= k; g *= k; b *= k; }
         else if (nD < 0.3) { r *= 1.08; g *= 1.1; b *= 1.04; }
         // пятна вытоптанной земли с тёмной каймой
         const dv = nA * 0.55 + nC * 0.45;
-        const dirt = smoothstep(0.66, 0.69, dv);
-        const rim = smoothstep(0.62, 0.66, dv) * (1 - dirt);
+        const dirt = smoothstep(P.dirtT, P.dirtT + 0.03, dv);
+        const rim = smoothstep(P.dirtT - 0.04, P.dirtT, dv) * (1 - dirt);
         if (rim > 0) { r *= 1 - rim * 0.35; g *= 1 - rim * 0.3; b *= 1 - rim * 0.35; }
         if (dirt > 0) {
-          const dr = 98 + nB * 24, dg = 84 + nB * 20, db = 58 + nB * 14;
+          const dr = P.dirt[0] + nB * 24, dg = P.dirt[1] + nB * 20, db = P.dirt[2] + nB * 14;
           r += (dr - r) * dirt; g += (dg - g) * dirt; b += (db - b) * dirt;
         }
         let grassMask = 1 - dirt;
@@ -293,7 +296,7 @@ function buildTerrain(seed) {
         // песок / берег
         const sandW = smoothstep(0.32, 0.55, bil(fSand, c00, fx, fy) + (nC - 0.5) * 0.35);
         if (sandW > 0) {
-          const sr = 196 + (nA - 0.5) * 30, sg = 172 + (nA - 0.5) * 26, sb = 118 + (nA - 0.5) * 20;
+          const sr = P.sand[0] + (nA - 0.5) * 30, sg = P.sand[1] + (nA - 0.5) * 26, sb = P.sand[2] + (nA - 0.5) * 20;
           r += (sr - r) * sandW; g += (sg - g) * sandW; b += (sb - b) * sandW;
           grassMask *= 1 - sandW;
         }
@@ -311,17 +314,19 @@ function buildTerrain(seed) {
           const gx = (tC[rowT + xr] - tC[rowT + xl]) * 3 + (tD[rowT + xr] - tD[rowT + xl]) * 1.2;
           const gy = (tC[yd + col] - tC[yu + col]) * 3 + (tD[yd + col] - tD[yu + col]) * 1.2;
           const bump = Math.max(0.55, Math.min(1.5, 1 + (0.55 * gx + 0.7 * gy) * 2.2));
-          rr *= bump * 0.8; rg *= bump * 0.8; rb *= bump * 0.8;     // под горами — тёмная скальная земля
+          rr *= bump * 0.8 * P.rk[0]; rg *= bump * 0.8 * P.rk[1]; rb *= bump * 0.8 * P.rk[2];     // под горами — тёмная скальная земля
           if (Math.abs(nD - 0.5) < 0.012 && nC > 0.5) { rr *= 0.6; rg *= 0.6; rb *= 0.6; }
           const moss = smoothstep(0.6, 0.75, nC) * (1 - smoothstep(0.6, 0.9, rockF)) * 0.5;
-          rr += (80 - rr) * moss; rg += (100 - rg) * moss; rb += (50 - rb) * moss;
+          rr += (P.moss[0] - rr) * moss; rg += (P.moss[1] - rg) * moss; rb += (P.moss[2] - rb) * moss;
+          if (P.snow) { const sn = smoothstep(0.42, 0.62, nA * 0.5 + nC * 0.5) * 0.85; rr += (236 - rr) * sn; rg += (242 - rg) * sn; rb += (250 - rb) * sn; }   // снег лежит на уступах
           r += (rr - r) * rockW; g += (rg - g) * rockW; b += (rb - b) * rockW;
           grassMask *= 1 - rockW;
         }
 
         // освещение рельефа
         const li = bil(light, c00, fx, fy);
-        r *= li; g *= li; b *= li;
+        if (P.snow) { const k = 1 + (li - 1) * 0.4; r *= k * (li < 1 ? 0.96 : 1); g *= k; b *= k * (li < 1 ? 1.05 : 1); }   // тени на снегу — голубоватые, а не серо-бурые
+        else { r *= li; g *= li; b *= li; }
 
         // вода (поверх, без рельефного света)
         const waterF = bil(fWater, c00, fx, fy) + (nC - 0.5) * 0.28;
@@ -329,20 +334,24 @@ function buildTerrain(seed) {
         if (waterW > 0) {
           grassMask *= 1 - waterW;
           const depth = smoothstep(0.45, 0.95, bil(fDeep, c00, fx, fy));
-          let wr = 64 + (24 - 64) * depth, wg = 128 + (68 - 128) * depth, wb = 138 + (112 - 138) * depth;
+          let wr = P.w0[0] + (P.w1[0] - P.w0[0]) * depth, wg = P.w0[1] + (P.w1[1] - P.w0[1]) * depth, wb = P.w0[2] + (P.w1[2] - P.w0[2]) * depth;
           const wave = (nB - 0.5) * 14 + (nD > 0.7 ? 10 : 0);
           wr += wave * 0.6; wg += wave; wb += wave;
+          if (iceW) {   // лёд: светлые блики и тёмные трещины
+            if (Math.abs(nD - 0.5) < 0.014 || Math.abs(nC - 0.5) < 0.008) { wr *= 0.55; wg *= 0.62; wb *= 0.75; }
+            else if (nA > 0.52 && nB > 0.6) { wr += 40; wg += 36; wb += 28; }
+          }
           r += (wr - r) * waterW; g += (wg - g) * waterW; b += (wb - b) * waterW;
         }
         // пена у берега
         const foam = smoothstep(0.42, 0.5, waterF) * (1 - smoothstep(0.5, 0.6, waterF));
         if (foam > 0) {
           const k = foam * (0.45 + nB * 0.4);
-          r += (235 - r) * k; g += (242 - g) * k; b += (240 - b) * k;
+          r += (P.foam[0] - r) * k * P.foamK; g += (P.foam[1] - g) * k * P.foamK; b += (P.foam[2] - b) * k * P.foamK;
         }
 
         // зерно
-        const gr = 0.93 + nB * 0.14;
+        const gr = P.snow ? 0.97 + nB * 0.06 : 0.93 + nB * 0.14;
         const o = ((wy - y0px) * PW + wx) * 4;
         D[o] = r * gr; D[o + 1] = g * gr; D[o + 2] = b * gr; D[o + 3] = 255;
         GRASS[(wy - y0px) * PW + wx] = grassMask > 0.9 ? 1 : 0;
@@ -365,7 +374,7 @@ function buildTerrain(seed) {
   const q = ctx.getImageData(0, 0, PW, bh);
   for (let r0 = 0; r0 < bh; r0 += 4) {   // по 4 строки: рисунок дизера тот же, он считается от координат
     const rows = Math.min(4, bh - r0);
-    quantizeData(q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4), PW, rows, 9, 0, y0px + r0);
+    quantizeData(q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4), PW, rows, P.snow ? 3 : 9, 0, y0px + r0);   // снег — почти без дизеринга, иначе рябит
     yield;
   }
   ctx.putImageData(q, 0, 0);
@@ -427,15 +436,17 @@ function drawCrystalCluster(c, x, y, r) {
 
 // Кустики травы, цветы, камушки, камыш у воды — запекаются в землю.
 function bakeDecor(c, seed, ya = 0, yb = MAP_H) {
+  const P = biomePal(), bio = biomeDef(), swamp = MapOpt.biome === 'swamp';
   for (let y = ya; y < yb; y++) for (let x = 0; x < MAP_W; x++) {
     const r = mulberry32(((seed + 77) ^ Math.imul(y * MAP_W + x + 1, 2654435761)) >>> 0);   // у каждой клетки свой генератор — рисунок не зависит от порядка полос
     const t = World.terrain[idx(x, y)];
     const px = x * TILE, py = y * TILE;
     if (t === T_GRASS) {
       const tufts = r() < 0.55 ? 1 + (r() * 3 | 0) : 0;
-      for (let k = 0; k < tufts; k++) drawTuft(c, px + 3 + r() * 26, py + 6 + r() * 24, r);
-      if (r() < 0.12) {
-        const col = ['#f4e46a', '#f2f2f6', '#d47cc8', '#e86a4a', '#8ab4f0'][r() * 5 | 0];
+      for (let k = 0; k < tufts; k++) drawTuft(c, px + 3 + r() * 26, py + 6 + r() * 24, r, P.tuft);
+      const fl = r();
+      if (fl < P.flower) {
+        const col = P.flCols[r() * P.flCols.length | 0];
         const fx = px + 4 + r() * 22, fy = py + 4 + r() * 22;
         for (let k = 0; k < 4 + r() * 5; k++) {
           c.fillStyle = 'rgba(40,70,20,0.6)';
@@ -446,6 +457,7 @@ function bakeDecor(c, seed, ya = 0, yb = MAP_H) {
         }
       }
       if (r() < 0.05) drawPebble(c, px + 6 + r() * 20, py + 6 + r() * 20, 1.5 + r() * 2, r);
+      if (swamp && r() < 0.22) drawReeds(c, px + 4 + r() * 24, py + 10 + r() * 18, r);   // камыш и рогоз на кочках
     } else if (t === T_SAND) {
       let nearWater = false;
       for (const [dx, dy] of DIRS) if (inb(x + dx, y + dy) && World.terrain[idx(x + dx, y + dy)] === T_WATER) nearWater = true;
@@ -461,6 +473,7 @@ function bakeDecor(c, seed, ya = 0, yb = MAP_H) {
       if (r() < 0.15) drawPebble(c, px + 6 + r() * 20, py + 6 + r() * 20, 1.2 + r() * 1.5, r);
     } else if (t === T_ROCK) {
       if (r() < 0.35) drawPebble(c, px + 6 + r() * 20, py + 6 + r() * 20, 2 + r() * 3, r);
+      if (bio && r() < bio.ore && y + 1 < MAP_H && World.terrain[idx(x, y + 1)] !== T_ROCK) drawOre(c, px + 6 + r() * 20, py + 14 + r() * 14, r);   // жилы руды у подножия скал
       if (false && World.crystal[idx(x, y)]) {   // кристаллы рисуются объектами поверх гор (см. render)
         drawCrystalCluster(c, px + 16, py + 26, r);
         if (r() < 0.7) drawCrystalCluster(c, px + 8 + r() * 16, py + 14, r);
@@ -469,13 +482,34 @@ function bakeDecor(c, seed, ya = 0, yb = MAP_H) {
   }
 }
 
-function drawTuft(c, x, y, r) {
+function drawTuft(c, x, y, r, cols = ['rgba(46,78,22,0.85)', 'rgba(130,168,70,0.85)']) {
   const n = 4 + (r() * 4 | 0);
   for (let k = 0; k < n; k++) {
     const a = -Math.PI / 2 + (r() - 0.5) * 1.4, h = 3 + r() * 4;
-    c.strokeStyle = r() < 0.5 ? 'rgba(46,78,22,0.85)' : 'rgba(130,168,70,0.85)';
+    c.strokeStyle = r() < 0.5 ? cols[0] : cols[1];
     c.lineWidth = 1;
     c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * h, y + Math.sin(a) * h); c.stroke();
+  }
+}
+
+// Камыш с бурыми початками (болото)
+function drawReeds(c, rx, ry, r) {
+  for (let k = 0; k < 5; k++) {
+    const sx = rx + (r() - 0.5) * 9, h = 6 + r() * 8;
+    c.strokeStyle = k % 2 ? '#3e5a24' : '#587c32'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(sx, ry); c.quadraticCurveTo(sx + 1, ry - h / 2, sx + (r() - 0.5) * 4, ry - h); c.stroke();
+    if (r() < 0.35) { c.fillStyle = '#5a3a1e'; c.fillRect(sx - 1, ry - h - 3, 2, 4); }
+  }
+}
+
+// Самородки в скале: золото (жёлтые крапины) или железо (ржавые с блеском)
+function drawOre(c, x, y, r) {
+  const gold = r() < 0.55, n = 2 + (r() * 3 | 0);
+  for (let k = 0; k < n; k++) {
+    const ox = x + (r() - 0.5) * 8, oy = y + (r() - 0.5) * 5, s = 1 + r() * 1.4;
+    c.fillStyle = gold ? '#a4701c' : '#5a3a2e'; c.fillRect(ox, oy + 1, s + 1, s);
+    c.fillStyle = gold ? '#f6d458' : '#a06a52'; c.fillRect(ox, oy, s + 1, s);
+    c.fillStyle = gold ? '#fff2a0' : '#d8b8a8'; c.fillRect(ox, oy, 1, 1);
   }
 }
 

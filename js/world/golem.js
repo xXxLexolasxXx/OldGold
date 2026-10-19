@@ -405,7 +405,7 @@ function golemDrawList(list, c, x0, y0, x1, y1) {
   resetGameState = function () { _reset(); Game.golem = null; };
 
   const _setup = setupStart;
-  setupStart = function (seed) { _setup(seed); spawnGolem(); golemIdleWarm(); };   // пока открыто меню, браузер простаивает — кадры голема готовятся заранее
+  setupStart = function (seed, ...o) { _setup(seed, ...o); spawnGolem(); golemIdleWarm(); };   // пока открыто меню, браузер простаивает — кадры голема готовятся заранее
 
   const _step = step;
   step = function (dt) { _step(dt); golemTick(dt); };

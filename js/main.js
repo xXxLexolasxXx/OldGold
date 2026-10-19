@@ -126,11 +126,15 @@ function clearStartRoads() {
   for (let i = 0; i < N_TILES; i++) if (World.road[i]) setRoad(i % MAP_W, (i / MAP_W) | 0, false);
 }
 
-function setupStart(seed) {
+// opts: { biome, size } — биом карты (по умолчанию луга) и размер из MAP_SIZES (по умолчанию большая)
+function setupStart(seed, opts = {}) {
   resetGameState();
   Game.seed = seed;
   Game.stress = false;
-  setMapSize(MAP_NEW_W, MAP_NEW_H);
+  MapOpt.biome = BIOMES[opts.biome] ? opts.biome : 'meadow';
+  MAPEV.cur = null; MAPEV.low = null;
+  const sz = MAP_SIZES[opts.size] || MAP_SIZES.large;
+  setMapSize(sz.w, sz.h);
   const { cx, cy } = genWorld(seed);
   const rng = mulberry32(seed ^ 0x5eed);
   // нужны склад, школа и костёр с двойной дорогой: если не вышло — пробуем ещё несколько раскладок
@@ -194,10 +198,10 @@ function setupStart(seed) {
   centerOn(((x0 + x1) / 2) * TILE, (sy - 2) * TILE);
 }
 
-function newGame() {
+function newGame(opts) {
   Game.pendDiff = Game.diff;   // «Новая карта» — тот же режим игры
-  const seed = (Math.random() * 1e9) | 0;
-  setupStart(seed);
+  const seed = opts && opts.seed != null ? opts.seed : (Math.random() * 1e9) | 0;
+  setupStart(seed, opts);
   buildTerrain(seed);
   updateMinimapBase();
   updateUI(true);

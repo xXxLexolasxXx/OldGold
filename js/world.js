@@ -119,7 +119,9 @@ function genWorld(seed) {
   const nForest = makeNoise(rng, 9), nStone = makeNoise(rng, 4);
   const nTint = makeNoise(rng, 7);
   const cx = MAP_W >> 1, cy = MAP_H >> 1;
-  const legacy = mapIsLegacy();   // старые сохранения должны воссоздаваться ровно как раньше
+  const bio = biomeDef();          // null — карта без биома: старые сохранения должны воссоздаваться ровно как раньше
+  const legacy = !bio && mapIsLegacy();
+  const wT = bio ? bio.wT : 0.28, rT = bio ? bio.rT : 0.7, fT = bio ? bio.fT : 0.6, fP = bio ? bio.fP : 0.75, sT = bio ? bio.sT : 0.012, stT = bio ? bio.stT : 0.84, crT = bio ? bio.crys : 0.72;
   const farK = (x, y) => Math.max(0, Math.min(1, (Math.hypot(x - cx, (y - cy) * 1.2) - 20) / 28));
 
   World.obj.fill(null);
@@ -133,10 +135,12 @@ function genWorld(seed) {
     const r = nRock(x, y) * 0.7 + nRock2(x, y) * 0.3;
     const far = legacy ? 0 : farK(x, y);   // в новых краях карты больше озёр и гор
     let t = T_GRASS;
-    if (w < 0.28 + far * 0.05) t = T_WATER;
-    else if (r > 0.7 - far * 0.05) t = T_ROCK;
+    if (w < wT + far * 0.05) t = T_WATER;
+    else if (r > rT - far * 0.05) t = T_ROCK;
     World.terrain[i] = t;
   }
+
+  if (bio) genBiomeFeatures(seed, cx, cy);   // реки, озёра, хребты, заводи
 
   // Стартовая поляна и гарантированные ресурсы рядом с ней
   const disc = (ox, oy, rad, fn) => {
@@ -163,7 +167,7 @@ function genWorld(seed) {
     const i = idx(x, y);
     if (World.terrain[i] !== T_ROCK || World.terrain[idx(x, y + 1)] === T_ROCK) continue;
     const nearStart = Math.abs(x - (cx - 10)) <= 3 && y >= cy - 13 && y <= cy - 10;
-    if (nearStart || nCrys(x, y) > (legacy ? 0.72 : 0.72 - farK(x, y) * 0.06)) World.crystal[i] = 1;
+    if (nearStart || nCrys(x, y) > (legacy ? 0.72 : crT - farK(x, y) * 0.06)) World.crystal[i] = 1;
   }
 
   // Песок по берегам
@@ -188,9 +192,9 @@ function genWorld(seed) {
       if (inb(x + dx, y + dy) && World.terrain[idx(x + dx, y + dy)] === T_ROCK) nearRock = true;
     const fk = legacy ? 0 : farK(x, y);
     if (nearRock && nStone(x, y) > 0.55 && rng() < 0.5) setStone(i, 4 + (rng() * 4 | 0));
-    else if (nStone(x, y) > 0.84 - fk * 0.04 && rng() < 0.5) setStone(i, 3 + (rng() * 4 | 0));
-    else if (nForest(x, y) > 0.6 - fk * 0.1 && rng() < 0.75 + fk * 0.12) setTree(i, rng() < 0.12 ? rng() * 0.9 : 1);
-    else if (rng() < 0.012) setTree(i, 1);
+    else if (nStone(x, y) > stT - fk * 0.04 && rng() < 0.5) setStone(i, 3 + (rng() * 4 | 0));
+    else if (nForest(x, y) > fT - fk * 0.1 && rng() < fP + fk * 0.12) setTree(i, rng() < 0.12 ? rng() * 0.9 : 1);
+    else if (rng() < sT) setTree(i, 1);
   }
 
   disc(cx - 15, cy + 3, 5, (x, y, i) => {

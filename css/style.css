@@ -831,3 +831,17 @@ canvas.sm-vine.sm-fade { opacity: 0; }
 }
 @media (max-height: 520px) { .sm-panel[data-panel="diff"] .sm-btn small { display: block; font-size: 10px; } }
 .diff-chip { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 12px; color: #1a1008; font-weight: bold; }
+
+/* Выбор карты в «Новой игре» */
+.sm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sm-sizes { grid-template-columns: repeat(3, 1fr); }
+.sm-chip { padding: 6px 8px; min-width: 0; }
+.sm-chip b { font-size: 15px; }
+.sm-sizes .sm-chip small { font-size: 10px; }
+.sm-seedrow { display: flex; gap: 8px; }
+.sm-seedrow input { flex: 1; min-width: 0; }
+.sm-dice { flex: 0 0 auto; min-height: 0; padding: 4px 12px; }
+.sm-panel[data-panel="map"] { width: min(94vw, 460px); }
+@media (max-height: 520px) { .sm-panel[data-panel="map"] .sm-chip small { display: none; } .sm-panel[data-panel="map"] { gap: 6px; } }
+.sm-panel[data-panel="map"] .sm-msg { min-height: 2.4em; }
+.sm-btn.sm-sel { filter: brightness(1.2); border-color: #f0c860; box-shadow: 0 3px 0 #1a1008, 0 0 16px rgba(255,200,80,0.55); }

@@ -100,6 +100,37 @@ function smRender() {
   root.querySelector('#sm-server').value = c.server;
 }
 
+// Выбор карты в «Новой игре»: по умолчанию — луга, большая карта, случайный сид
+StartMenu.map = { bio: 'meadow', size: 'large' };
+function smMapSync() {
+  const root = document.getElementById('start-menu');
+  for (const b of root.querySelectorAll('[data-bio]')) b.classList.toggle('sm-sel', b.dataset.bio === StartMenu.map.bio);
+  for (const b of root.querySelectorAll('[data-size]')) b.classList.toggle('sm-sel', b.dataset.size === StartMenu.map.size);
+  root.querySelector('#sm-map-msg').textContent = BIOMES[StartMenu.map.bio].desc;
+}
+// Строит выбранный мир под меню и переходит к сложности. Если выбор совпал с уже готовым миром и сид не задан — берём готовый.
+function smMapGo(root) {
+  if (StartMenu.busy) return;
+  const txt = root.querySelector('#sm-seed').value, sz = MAP_SIZES[StartMenu.map.size];
+  const same = !txt.trim() && MapOpt.biome === StartMenu.map.bio && MAP_W === sz.w && MAP_H === sz.h;
+  track('map-' + StartMenu.map.bio, 'Карта: ' + BIOMES[StartMenu.map.bio].name + ', ' + sz.name);
+  if (same) { smShow('diff'); return; }
+  const msg = root.querySelector('#sm-map-msg');
+  StartMenu.busy = true;
+  msg.textContent = 'Создаём карту…';
+  setTimeout(() => {
+    try {
+      const seed = mapSeedFrom(txt);
+      setupStart(seed, { biome: StartMenu.map.bio, size: StartMenu.map.size });
+      buildTerrain(seed);
+      updateMinimapBase();
+      msg.textContent = BIOMES[StartMenu.map.bio].desc;
+      smShow('diff');
+    } catch (e) { console.error(e); msg.textContent = 'Не вышло создать карту — попробуйте другой сид'; }
+    StartMenu.busy = false;
+  }, 30);
+}
+
 function smAction(a) {
   const root = document.getElementById('start-menu');
   if (['continue', 'new', 'mp', 'help'].includes(a)) track('menu-' + a, { continue: 'Нажал «Продолжить»', new: 'Нажал «Новая игра»', mp: 'Открыл «Мультиплеер»', help: 'Открыл «Как играть» в стартовом меню' }[a]);
@@ -112,7 +143,16 @@ function smAction(a) {
   } else if (a === 'mode-scenario' || a === 'mode-free') {
     track('mode-' + a.slice(5), a === 'mode-scenario' ? 'Новая игра: сценарий' : 'Новая игра: свободная');
     StartMenu.goalMode = a === 'mode-scenario' ? 'scenario' : 'free';
-    smShow('diff');   // потом сложность
+    smMapSync();
+    smShow('map');   // потом карта, потом сложность
+  } else if (a.startsWith('bio:') || a.startsWith('size:')) {
+    const [k, v] = a.split(':');
+    StartMenu.map[k] = v;
+    smMapSync();
+  } else if (a === 'dice') {
+    root.querySelector('#sm-seed').value = String((Math.random() * 1e6) | 0);
+  } else if (a === 'map-go') {
+    smMapGo(root);
   } else if (a.startsWith('diff:')) {
     const k = diffKey(a.slice(5));
     track('diff-' + k, 'Выбрал сложность: ' + DIFFS[k].name);
@@ -122,6 +162,8 @@ function smAction(a) {
     smRender(); smShow('mp');
   } else if (a === 'help') {
     smShow('help');
+  } else if (a === 'mode-back') {
+    smShow('mode');
   } else if (a === 'back') {
     smShow('main');
   } else if (a === 'connect') {
@@ -153,6 +195,14 @@ function initStartMenu() {
       <button class="sm-btn primary" data-sm="mode-scenario"><b>Сценарий</b><small>«Тишина дороже золота»: 6 глав, тёмный маг</small></button>
       <button class="sm-btn" data-sm="mode-free"><b>Свободная игра</b><small>без сюжета: от поселения до города</small></button>
       <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
+    </div>
+    <div class="sm-panel hidden" data-panel="map">
+      <div class="sm-title">Карта</div>
+      <div class="sm-grid">${BIOME_ORDER.map(k => `<button class="sm-btn sm-chip" data-sm="bio:${k}" data-bio="${k}"><b>${BIOMES[k].icon} ${BIOMES[k].name}</b></button>`).join('')}</div>
+      <div class="sm-grid sm-sizes">${MAP_SIZE_ORDER.map(k => `<button class="sm-btn sm-chip" data-sm="size:${k}" data-size="${k}"><b>${MAP_SIZES[k].name}</b><small>${MAP_SIZES[k].desc}</small></button>`).join('')}</div>
+      <label>Сид карты (пусто — случайный)<span class="sm-seedrow"><input id="sm-seed" maxlength="12" autocomplete="off" inputmode="numeric" placeholder="например, 4242"><button class="sm-btn ghost sm-dice" data-sm="dice" title="Случайный сид">🎲</button></span></label>
+      <div id="sm-map-msg" class="sm-msg"></div>
+      <div class="sm-grid"><button class="sm-btn ghost" data-sm="mode-back"><b>Назад</b></button><button class="sm-btn primary" data-sm="map-go"><b>Дальше</b></button></div>
     </div>
     <div class="sm-panel hidden" data-panel="diff">
       <div class="sm-title">Сложность новой игры</div>
@@ -469,7 +519,7 @@ function smGrow(btn) {
   const root = () => document.getElementById('start-menu');
   document.addEventListener('pointerdown', e => {
     const b = e.target.closest && e.target.closest('#start-menu .sm-btn');
-    if (b && !b.disabled && !smPicking) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
+    if (b && !b.disabled && !smPicking && !/^(bio:|size:|dice$)/.test(b.dataset.sm || '')) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
   }, true);
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('#start-menu [data-sm]');
@@ -477,6 +527,7 @@ function smGrow(btn) {
     if (smPicking) { e.stopImmediatePropagation(); return; }
     if (!b.querySelector('.sm-grow')) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
     if (b.dataset.sm === 'back' || b.dataset.sm === 'mp' || b.dataset.sm === 'new') return;
+    if (/^(bio:|size:|dice$)/.test(b.dataset.sm)) return;   // выбор параметров карты — сразу, без лозы
     // действие после роста: перехватываем клик и пускаем заново
     e.stopImmediatePropagation();
     smPicking = true;

@@ -339,7 +339,7 @@ function goalTick(dt) {
   };
   if (typeof newGame === 'function') {
     const _ng = newGame;
-    newGame = function () { _ng(); goalNew('free'); GoalUI.pendingMode = true; };
+    newGame = function (...a) { _ng(...a); goalNew('free'); GoalUI.pendingMode = true; };
   }
 }
 

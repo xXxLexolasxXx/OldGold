@@ -111,9 +111,11 @@ function loadWorld() {
   return false;
 }
 if (!loadWorld()) {
-  const seed = (Math.random() * 1e9) | 0;
-  run(`setupStart(${seed}); goalNew('scenario'); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
-  log('создан новый мир, зерно', seed);
+  // карту выбирает хост: OLDGOLD_BIOME (meadow, forest, steppe, mountain, swamp, winter), OLDGOLD_SIZE (small, medium, large), OLDGOLD_SEED
+  const biome = String(process.env.OLDGOLD_BIOME || 'meadow').replace(/[^a-z]/g, ''), size = String(process.env.OLDGOLD_SIZE || 'large').replace(/[^a-z]/g, '');
+  const seed = process.env.OLDGOLD_SEED ? run(`mapSeedFrom(${JSON.stringify(String(process.env.OLDGOLD_SEED))})`) : (Math.random() * 1e9) | 0;
+  run(`setupStart(${seed}, { biome: '${biome}', size: '${size}' }); goalNew('scenario'); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
+  log('создан новый мир, зерно', seed, 'биом', biome, 'размер', size);
 }
 
 function saveWorld() {

@@ -22,9 +22,9 @@ const MT_SPR = {};
 let MOUNTS = [];
 
 function mtSprite(size, v) {
-  const key = size + v;
+  const bp = MT_PAL_BIOME[MapOpt.biome], key = (bp ? MapOpt.biome : '') + size + v;   // горы биома — свои цвета (зимой — в снегу)
   if (MT_SPR[key]) return MT_SPR[key];
-  const S = MT_SIZES[size], P = MT_PAL[v % MT_PAL.length];
+  const S = MT_SIZES[size], P = bp ? bp[v % bp.length] : MT_PAL[v % MT_PAL.length];
   const [cv, c] = mkSprite(S.w, S.h);
   const seed = 7000 + v * 97 + S.k * 13;
   srand = mulberry32(seed + 1);
