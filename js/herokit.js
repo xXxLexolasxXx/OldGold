@@ -22,10 +22,12 @@ const KIT_ITEMS = {
   crookedBow:   { slot: 'weapon', name: 'Кривой лук', w: 'cbow', bonus: { agi: 2 }, atk: 0.06 },
   oldWraps:     { slot: 'weapon', name: 'Потёртые обмотки', w: 'fists', bonus: { agi: 1, end: 1 }, atk: 0.04 },
   crackedMace:  { slot: 'weapon', name: 'Треснувшая булава', w: 'cmace', bonus: { str: 1, int: 1 }, atk: 0.05 },
+  bentRapier:   { slot: 'weapon', name: 'Гнутая шпага', w: 'rsword', bonus: { agi: 1, int: 1 }, atk: 0.05 },
 };
 const KIT_OF = {
   warrior: ['rustySword', 'woodShield'], barbarian: ['rustyAxe2'], mage: ['sparkStaff'], druid: ['witherStaff'],
   rogue: ['rustyDagger', 'brokenDagger'], archer: ['crookedBow'], monk: ['oldWraps'], priest: ['crackedMace'],
+  bard: ['bentRapier'], paladin: ['crackedMace', 'woodShield'],
 };
 // облик оружия из оружейной
 const WPN_LOOK = { sword: 'sword', dagger: 'dagger', staff: 'staff', bow: 'bow' };
@@ -120,6 +122,15 @@ const HERO_ABIL = {
   priest: [
     { k: 'bless', name: 'Благословение', cd: 40, heal: 0.25, team: true, dur: 12, buf: { atk: 0.2 }, desc: '+25% здоровья себе и команде рядом, 12 с точность +20%' },
     { k: 'turn', name: 'Изгнание нежити', cd: 60, lvl: 4, turn: true, desc: 'Скелеты в 6 клетках рассыпаются (шанс растёт с уровнем), нечисть пятится' },
+  ],
+  // бард и паладин — Клятвы Песни и Костра (oaths.js добавляет им действие на гномов: oath)
+  bard: [
+    { k: 'inspire', name: 'Вдохновение', cd: 45, dur: 12, buf: { atk: 0.2 }, oath: 'song', desc: '12 с: попадает на 20% точнее, гномы в 6 клетках веселеют — «Бард играет»' },
+    { k: 'five', name: 'Дай пять!', cd: 60, lvl: 4, oath: 'five', desc: 'До шести гномов рядом получают «Дали пять»: настроение вверх на полторы минуты' },
+  ],
+  paladin: [
+    { k: 'hands', name: 'Наложение рук', cd: 45, heal: 0.3, team: true, desc: '+30% здоровья себе и команде рядом, снимает раны' },
+    { k: 'smite', name: 'Божественная кара', cd: 30, lvl: 4, next: 2.5, desc: 'Следующий удар — без промаха и в 2,5 раза сильнее; по нечисти бьёт святым светом' },
   ],
 };
 const ABIL_KEYS = ['KeyZ', 'KeyX'];
@@ -226,6 +237,7 @@ const ABIL_COL = {
   wind: '#ff8a7a', surge: '#ffe070', rage: '#ff5a3a', reckless: '#ff9a40', missile: '#c8a0ff', shield: '#8ac8ff',
   wild: '#c8964a', mend: '#8ae070', sneak: '#9a8ab8', evade: '#cfe8ff', aimed: '#ff6a5a', volley: '#e8d0a0',
   flurry: '#ffd080', patience: '#f0a8d0', bless: '#ffe890', turn: '#fff2a0',
+  inspire: '#f0a0d0', five: '#ffd070', hands: '#fff0b0', smite: '#ffe060',
 };
 
 // ---------- Значки способностей 12×12 (своя пиксельная графика) ----------
@@ -245,6 +257,11 @@ const ABIL_ICON = {
   flurry: ['F:#e4b08a w:#e8dcc0', '..FFFF..FFFF', '.FFFFFF.FFFF', '.FwwwwF.FwwF', '.FFFFFF.FFFF', '..FFFF...FF.', '............', 'FFFF..FFFF..', 'FFFFF.FFFFF.', 'FwwwF.FwwwF.', 'FFFFF.FFFFF.', '.FFF...FFF..', '............'],
   patience: ['P:#e8a0c0 p:#c86a9a G:#5a9a4a Y:#f6d458', '.....Y......', '....PPP.....', '..p.PPP.p...', '.pPPPPPPPp..', '..pPPPPPp...', '...pPPPp....', 'GGGGGGGGGGG.', '.GGGGGGGGG..', '............', '............', '............', '............'],
   bless: ['Y:#f6d458 W:#fff6c0', '.....Y......', '..Y..Y..Y...', '...Y.Y.Y....', '....YYY.....', 'YYYYYWYYYYY.', '....YYY.....', '...Y.Y.Y....', '..Y..Y..Y...', '.....Y......', '............', '............', '............'],
+  // лютня, ладонь, сияющие руки, меч в огне
+  inspire: ['b:#8a5a2a o:#c88a4a k:#3a2416 W:#f4e8c8 P:#f0a0d0', '.........kk.', '........kWk.', '.......kWk..', '......kWk...', '..oooo.k..P.', '.obbbbo...PP', 'obbkkbbo..P.', 'obkbbkbo.PP.', 'obbkkbbo.P..', '.obbbbo.....', '..oooo......', '............'],
+  five: ['F:#e4b08a f:#b8845a Y:#ffe070', '.F.F.F......', '.F.F.F.F....', '.F.F.F.F....', '.FFFFFFF.Y..', '.FFFFFFF..Y.', '.FFFFFFFF...', '..FFFFFFF.Y.', '..FFFFFF..Y.', '..fFFFFf....', '...fFFf...Y.', '...ffff.....', '............'],
+  hands: ['F:#e4b08a W:#fff6c0 Y:#ffe070', '.....Y......', '..Y..W..Y...', '....WWW.....', '.Y.WWWWW.Y..', '............', 'FF.......FF.', 'FFF.....FFF.', '.FFF...FFF..', '..FFF.FFF...', '...FFFFF....', '....FFF.....', '............'],
+  smite: ['S:#c8ccd0 W:#fff6c0 Y:#ffe070 O:#ff9a30 b:#6a4a28', 'Y.........YO', '.........SWO', '..Y.....SWS.', '.......SWS..', '......SWS.Y.', '.....SWS....', '..b.SWS.....', '..bbWS......', '...bb.......', '..bb.b...Y..', '.bb.........', 'Y...........'],
   turn: ['W:#e6dfc8 k:#2a2420 Y:#fff2a0', 'Y....YY....Y', '...WWWWWW...', '..WWWWWWWW..', '.WWWWWWWWWW.', '.WWkkWWkkWW.', '.WWkkWWkkWW.', '.WWWWkkWWWW.', '..WWWWWWWW..', '...WkWkWkW..', '...WWWWWW...', 'Y..........Y', '............'],
 };
 const ABIL_ICON_URL = {};

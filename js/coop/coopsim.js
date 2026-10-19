@@ -13,6 +13,8 @@ const COOP_CLASSES = {
   rogue:     { name: 'Плут',   hp: 90,  col: '#8a6aaa', info: 'Всё, что плохо лежит, лежит хорошо' },
   monk:      { name: 'Монах',  hp: 110, col: '#d8b84a', info: 'Спокойствие и крепкие кулаки' },
   priest:    { name: 'Жрец',   hp: 100, col: '#e8e0c8', info: 'Лечит словом и пивом' },
+  paladin:   { name: 'Паладин', hp: 120, col: '#f0c860', info: 'Держит костёр, бьёт нечисть светом' },
+  bard:      { name: 'Бард',   hp: 90,  col: '#e07ab0', info: 'Поёт, пьёт и вдохновляет других' },
 };
 const COOP_CHAT = [
   'Опять всё самому делать?',
@@ -1070,7 +1072,7 @@ function coopQuestInfo(name) {
 
 // ---------- Бой, фонари и поля героев ----------
 
-const QCLS = { warrior: 'foes', barbarian: 'foes', monk: 'foes', archer: 'foes', mage: 'lamps', druid: 'grow', rogue: 'treasure' };
+const QCLS = { warrior: 'foes', barbarian: 'foes', monk: 'foes', paladin: 'foes', archer: 'foes', mage: 'lamps', druid: 'grow', rogue: 'treasure' };
 const coopCellX = i => i % MAP_W + 0.5, coopCellY = i => Math.floor(i / MAP_W) + 0.5;
 
 function coopFieldPlanted(H, i) {

@@ -27,6 +27,8 @@ const HL_CLASS = {
   rogue: { weapon: 'dagger', anim: 'mine' },
   monk: { weapon: 'fists', anim: 'build' },
   priest: { weapon: 'mace', anim: 'build' },
+  bard: { weapon: 'dagger', anim: 'mine' },
+  paladin: { weapon: 'mace', anim: 'chop' },
 };
 const HL_FOOD = { bread: 0.45, sausage: 0.55, chickenleg: 0.6, steak: 0.65, croissant: 0.5 };
 const hlOn = () => !!(Game.hero && !Game.coop);

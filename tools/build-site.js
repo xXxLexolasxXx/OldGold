@@ -29,7 +29,7 @@ const GCLS = grab('js/guilds.js', 'GCLS'), ABIL = grab('js/herokit.js', 'HERO_AB
 const FSPEC = grab('js/world/enemy.js', 'FSPEC'), FOE_STAGES = grab('js/world/enemy.js', 'FOE_STAGES');
 const SP = JSON.parse(fs.readFileSync(path.join(OUT, 'data/sprites.json'), 'utf8'));
 const STAT_RU = { str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' };
-const CLS_EXTRA = { monk: 'Монах', priest: 'Жрец' };
+const CLS_EXTRA = {};
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const TELEGRAM_URL = '';   // ссылка на Telegram-канал: впиши, когда канал опубликован — кнопка появится сама

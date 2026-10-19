@@ -844,6 +844,8 @@ Object.assign(OUTFIT, {
   hero_rogue:     { cap: 'cls:rogue',     pants: '#1e1e26', coat: '#2e2e3a', vest: '#44445a' },
   hero_monk:      { cap: 'cls:monk',      pants: '#5a3a1c', robe: true, robeCol: '#c8641a' },
   hero_priest:    { cap: 'cls:priest',    pants: '#6a6458', robe: true, robeCol: '#e4e0d2', staff: true },
+  hero_paladin:   { cap: 'cls:paladin',   pants: '#3a3632', coat: '#e0dcd0', vest: '#c8ccd4', rivets: true, belt: 'hammer' },
+  hero_bard:      { cap: 'cls:bard',      pants: '#3a2a4a', coat: '#b03a7a', vest: '#f0c860' },
 });
 
 function coopHat(c, kind, view, hx, hy, tipSway) {
@@ -899,6 +901,21 @@ function coopHat(c, kind, view, hx, hy, tipSway) {
     c.fillStyle = lingrad(c, x0 - 4, 0, x0 + 4, 0, [[0, '#ffffff'], [1, '#c8c4b8']]); c.fill();
     c.strokeStyle = '#c89226'; c.lineWidth = 0.4; c.stroke();
     c.fillStyle = '#d8a828'; c.fillRect(x0 - 0.3, b - 9, 0.7, 4.4); c.fillRect(x0 - 1.4, b - 7.6, 2.9, 0.7); c.fillRect(x0 - 4.4, b - 1.2, 8.8, 0.9);
+  } else if (kind === 'paladin') {
+    // светлый шлем с золотым гребнем-пламенем: Клятва Костра
+    dome(4.6, 7, '#dcdce4', '#a8a070');
+    if (view === 'S') { c.fillStyle = '#c8a040'; c.fillRect(x0 - 2.2, b + 0.6, 4.4, 0.7); c.fillRect(x0 - 0.35, b - 4, 0.7, 4.6); }
+    poly(c, [[x0 - 1.4, b - 6.6], [x0 - 0.4 + tipSway * 0.2, b - 11], [x0 + 0.4, b - 8.6], [x0 + 1.2 + tipSway * 0.3, b - 10.4], [x0 + 1.6, b - 6.6]], '#ffb030', '#c86a1a', 0.3);
+    ellipse(c, x0, b - 7.4, 0.9, 1.2, '#ffe070');
+  } else if (kind === 'bard') {
+    // берет набок с длинным пером: Клятва Песни
+    ellipse(c, x0 + 0.6, b - 1.6, 5.4, 2.4, '#b03a7a');
+    ellipse(c, x0 + 0.2, b - 2.4, 4.2, 1.5, '#d05a98');
+    c.fillStyle = '#f0c860'; c.fillRect(x0 - 4.4, b - 0.8, 8.8, 0.8);
+    c.strokeStyle = '#f4f0e4'; c.lineWidth = 0.9;
+    c.beginPath(); c.moveTo(x0 + 2.4, b - 2.8); c.quadraticCurveTo(x0 + 6, b - 6, x0 + 4.6 + tipSway * 0.4, b - 10.5); c.stroke();
+    c.strokeStyle = '#3aa0c8'; c.lineWidth = 0.4;
+    c.beginPath(); c.moveTo(x0 + 2.6, b - 2.8); c.quadraticCurveTo(x0 + 5.6, b - 6, x0 + 4.6 + tipSway * 0.4, b - 10.2); c.stroke();
   }
 }
 

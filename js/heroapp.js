@@ -15,7 +15,7 @@ const HA_MUST_NAMES = ['Пышные', 'Закрученные', 'Моржовы
 const HA_DECO_NAMES = ['Веточка', 'Листья', 'Грибок', 'Перо', 'Жёлудь', 'Без украшений'];
 // индексы массива: 0 колпак, 1 цвет колпака, 2 цвет бороды, 3 форма бороды, 4 длина, 5 усы, 6 кожа, 7 куртка, 8 украшение
 const HA_MAX = [9, 11, 11, 4, 1, 2, 2, 11, 5];
-const HA_CLS_CAP = { warrior: '#9aa0aa', barbarian: '#8a6a4a', mage: '#2c4a9a', archer: '#3a7a2a', druid: '#6a5230', rogue: '#2a2a34', monk: '#d8501a', priest: '#e4e0d2' };
+const HA_CLS_CAP = { warrior: '#9aa0aa', barbarian: '#8a6a4a', mage: '#2c4a9a', archer: '#3a7a2a', druid: '#6a5230', rogue: '#2a2a34', monk: '#d8501a', priest: '#e4e0d2', bard: '#b03a7a', paladin: '#d8d8e0' };
 const HA = { last: null, hooked: false, types: new Map(), look: {} };
 
 function haClean(a) {

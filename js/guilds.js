@@ -15,8 +15,13 @@ const GCLS = {
   // второй класс гильдии (guild — чья): учит тот же глава, рекрутов таких не бывает
   barbarian: { name: 'Варвар', gm: 'gm_warrior', guild: 'warrior', weapon: 'sword', armor: 'leatherArmor', bonus: { str: 8, end: 4 }, stat: 'str', range: 1.5, col: '#d08a3a', verb: 'Удар секирой' },
   druid:     { name: 'Друид', gm: 'gm_mage', guild: 'mage', weapon: 'staff', armor: 'leatherArmor', bonus: { int: 5, end: 4 }, stat: 'int', range: 5, shot: 'thorn', col: '#5ab07a', verb: 'Шип' },
+  // Клятвы предков (КЛАССЫ.md): монах и жрец — бывшие классы только общей деревни, бард и паладин — новые
+  paladin:   { name: 'Паладин', gm: 'gm_warrior', guild: 'warrior', weapon: 'sword', armor: 'ironArmor', bonus: { str: 5, end: 5 }, stat: 'str', range: 1.5, col: '#f0c860', verb: 'Святой удар' },
+  monk:      { name: 'Монах', gm: 'gm_archer', guild: 'archer', weapon: 'staff', armor: 'leatherArmor', bonus: { agi: 5, end: 4 }, stat: 'agi', range: 1.4, col: '#d8b84a', verb: 'Удар кулаком' },
+  bard:      { name: 'Бард', gm: 'gm_rogue', guild: 'rogue', weapon: 'dagger', armor: 'leatherArmor', bonus: { int: 5, agi: 4 }, stat: 'int', range: 1.5, col: '#e07ab0', verb: 'Укол шпагой' },
+  priest:    { name: 'Жрец', gm: 'gm_mage', guild: 'mage', weapon: 'staff', armor: 'mageArmor', bonus: { int: 5, end: 4 }, stat: 'int', range: 1.5, col: '#e8e0c8', verb: 'Удар булавой' },
 };
-// какие классы учит гильдия: свой и вторые (варвар — у воинов, друид — у магов)
+// какие классы учит гильдия: свой и вторые (воины — варвар и паладин, лучники — монах, разбойники — бард, маги — друид и жрец)
 const guildClasses = g => [g, ...Object.keys(GCLS).filter(k => GCLS[k].guild === g)];
 const GM_NAMES = { warrior: ['Бранд Железнобокий', 'Ульфгар Щит', 'Хродгар Молот'], archer: ['Эльвин Зоркий', 'Тилла Тетива', 'Фенрик Ястреб'],
   rogue: ['Шныр Тихоступ', 'Мэг Ловкие Пальцы', 'Крюк Одноглазый'], mage: ['Альдрик Звездочёт', 'Мирра Пепельная', 'Озрик Седобород'] };

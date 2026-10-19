@@ -218,8 +218,8 @@ let hcStyled = false;
     if (!on || (Mobile.on && heroCardMini)) { card.style.display = 'none'; delete card.dataset.h; return; }
     const h = Game.hero, H = h.hero, touch = Mobile.on || (window.matchMedia && matchMedia('(hover: none)').matches);
     const full = !Mobile.on || heroCardOpen;
-    const tabs = full ? `<div class="hc-tabs"><button data-tab="skills" class="${heroCardTab === 'skills' ? 'on' : ''}">Скиллы</button><button data-tab="hero" class="${heroCardTab === 'hero' ? 'on' : ''}">Герой</button></div>` : '';
-    const body = !full || heroCardTab === 'skills' ? hcSkillsHTML(touch) : `<div class="hc-body">${hcHeroHTML()}</div>`;
+    const tabs = full ? `<div class="hc-tabs"><button data-tab="skills" class="${heroCardTab === 'skills' ? 'on' : ''}">Скиллы</button><button data-tab="hero" class="${heroCardTab === 'hero' ? 'on' : ''}">Герой</button>${typeof oathTabHTML === 'function' ? `<button data-tab="oath" class="${heroCardTab === 'oath' ? 'on' : ''}">Клятва</button>` : ''}</div>` : '';
+    const body = !full || heroCardTab === 'skills' ? hcSkillsHTML(touch) : heroCardTab === 'oath' && typeof oathTabHTML === 'function' ? `<div class="hc-body">${oathTabHTML(H)}</div>` : `<div class="hc-body">${hcHeroHTML()}</div>`;
     const html = hcHeader(H, h, Mobile.on) + tabs + body;
     if (card.dataset.h !== html) {
       const sc = card.scrollTop;
@@ -237,6 +237,8 @@ const SWING = {
   rogue:     { kind: 'cross', R: 15, arc: 1.7, w: 4, dur: 0.26, col: ['#ffffff', '#d8e0e8', '#8a94a8'] },
   monk:      { kind: 'fist',  R: 16, dur: 0.3, col: ['#ffffff', '#ffd8b0', '#e49860'] },
   priest:    { kind: 'slash', R: 20, arc: 2.2, w: 6, dur: 0.38, col: ['#ffffff', '#ffe890', '#e0a830'], sparks: true },
+  paladin:   { kind: 'slash', R: 22, arc: 2.6, w: 7, dur: 0.38, col: ['#ffffff', '#fff0a0', '#f0b040'], sparks: true },
+  bard:      { kind: 'cross', R: 16, arc: 1.8, w: 4, dur: 0.28, col: ['#ffffff', '#ffd0ec', '#c060a0'] },
   mage:      { kind: 'bolt',  dur: 0.5, col: ['#ffffff', '#d8b8ff', '#8a50e8'] },
   druid:     { kind: 'bolt',  dur: 0.5, col: ['#f4ffd0', '#8ae060', '#3a8a30'], leaf: true },
   archer:    { kind: 'arrow', dur: 0.42, col: ['#ffffff', '#ffeea0', '#c8a040'] },

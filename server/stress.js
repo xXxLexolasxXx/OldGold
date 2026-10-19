@@ -14,7 +14,7 @@ const N = +arg('bots', 10), SECS = +arg('secs', 60), BASE = arg('url', 'ws://loc
 const U = new URL(BASE), HOST = U.hostname, PORT = +U.port || 80;
 const MAP_W = 96;
 const TYPES = ['woodcutter', 'quarry', 'farm', 'sawmill', 'mill', 'bakery', 'swine', 'goatpen', 'brewery', 'hopfarm'];
-const CLASSES = ['warrior', 'barbarian', 'mage', 'archer', 'druid', 'rogue', 'monk', 'priest'];
+const CLASSES = ['warrior', 'barbarian', 'mage', 'archer', 'druid', 'rogue', 'monk', 'priest', 'paladin', 'bard'];
 const RUN = crypto.randomBytes(3).toString('hex');
 
 function getJson(path) {

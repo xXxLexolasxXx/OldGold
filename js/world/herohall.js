@@ -14,7 +14,7 @@ const HH_TIERS = [
   { name: 'Старый ветеран арены', info: 'Видел сотни героев и ни одного хорошего.', lvl: 4, hp: 115, pw: 12, gold: 5, xp: 40, hon: 2, item: ['sausage', 2], title: [3, 'Испытанный'] },
   { name: 'Каменный чемпион', info: 'Только для зала второго уровня. Без шуток: он правда каменный.', lvl: 9, hp: 175, pw: 16, gold: 10, xp: 80, hon: 4, item: ['steak', 2], title: [2, 'Чемпион арены'], l2: true },
 ];
-const HH_CLS_PW = { warrior: 1.1, barbarian: 1.15, monk: 1.05, rogue: 1, archer: 1, mage: 0.95, druid: 0.9, priest: 0.85 };
+const HH_CLS_PW = { warrior: 1.1, barbarian: 1.15, monk: 1.05, rogue: 1, archer: 1, mage: 0.95, druid: 0.9, priest: 0.85, bard: 0.85, paladin: 1.05 };
 const HH_CHANGE_LVL = 3, HH_CHANGE_DAYS = 2, HH_REROLL_GOLD = 3;
 const HH = { hooked: false, duels: [], trials: new Map(), asks: new Map(), log: [], ui: { tab: 'q' }, board: null, boardAt: 0, askShown: '' };
 

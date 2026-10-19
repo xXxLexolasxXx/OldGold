@@ -9,7 +9,7 @@ const CB = { mul: 1, hooked: false, hint: false };
 const CB_ROLL_T = 0.45, CB_ROLL_CD = 5, CB_WIND = 0.24;
 
 // стихия удара по классу и слабости врагов (множитель урона)
-const CB_EL = { warrior: 'steel', barbarian: 'steel', rogue: 'steel', monk: 'blunt', archer: 'pierce', mage: 'fire', priest: 'holy', druid: 'nature' };
+const CB_EL = { warrior: 'steel', barbarian: 'steel', rogue: 'steel', monk: 'blunt', archer: 'pierce', mage: 'fire', priest: 'holy', druid: 'nature', paladin: 'holy', bard: 'steel' };
 const CB_ELN = { fire: 'огонь', holy: 'свет', steel: 'сталь', pierce: 'стрелы', nature: 'природа', blunt: 'кулаки' };
 const CB_WEAK = {
   pixie: { steel: 1.3, nature: 0.7 }, fairy: { steel: 1.3, nature: 0.7 },
@@ -20,6 +20,7 @@ const CB_WEAK = {
 // добивание третьим ударом подряд: эффект по классу [эффект, секунд, надпись, цвет]
 const CB_FIN = {
   warrior: ['stun', 1.0, 'Оглушён!', '#ffe070'], monk: ['stun', 0.8, 'Оглушён!', '#ffe070'], priest: ['stun', 0.8, 'Ослеплён!', '#fff2a0'],
+  paladin: ['stun', 0.9, 'Ослеплён!', '#fff2a0'], bard: ['slow', 3, 'Сбит с ритма!', '#f0a0d0'],
   barbarian: ['bleed', 4, 'Кровь!', '#ff6a5a'], rogue: ['bleed', 4, 'Кровь!', '#ff6a5a'],
   druid: ['slow', 4, 'Корни!', '#8ae070'], archer: ['slow', 3, 'В колено!', '#9ec8ff'], mage: ['burn', 3, 'Горит!', '#ff9a40'],
 };
