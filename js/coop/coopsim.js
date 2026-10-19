@@ -217,6 +217,7 @@ function coopCmd(name, msgJson, admin) {
   const can = k => { if (admin || coop.perms[k]) return true; coopSay(name, 'Хост запретил: ' + COOP_PERMS[k].toLowerCase()); return false; };
   switch (m.t) {
     case 'go': if (u && coopInt(m.x) && coopInt(m.y)) coopGo(u, m.x, m.y); break;
+    case 'prio': if (can('manage')) coop.out.push({ msg: prioCmd(m) }); break;
     case 'use': if (u && coopInt(m.slot) && m.slot >= 0 && m.slot < COOP_INV) coopUseItem(u, m.slot); break;
     case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) u.hero.inv[m.slot] = null; break;
     case 'vote': if (u && coopInt(m.i) && can('upgrade')) coopVote(name, m.i); break;

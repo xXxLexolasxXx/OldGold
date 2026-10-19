@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="css/profile.css">
 <link rel="stylesheet" href="css/goal.css">
 <link rel="stylesheet" href="css/trade.css">
+<link rel="stylesheet" href="css/prio.css">
 </head>
 <body>
 <div id="app">
@@ -30,6 +31,7 @@
       <button data-tab="overview" class="tab-btn" title="Хозяйство: проблемы и статистика"><img data-icon="scroll" alt=""><span id="alert-badge" class="badge hidden">0</span></button>
       <button data-tab="log" class="tab-btn" title="Журнал событий: что случилось и где"><img data-icon="log" alt=""><span id="log-badge" class="badge hidden">0</span></button>
       <button data-tab="trade" class="tab-btn" title="Торговля: караваны, обмен на золото"><img data-icon="trade" alt=""><span id="trade-badge" class="badge hidden">●</span></button>
+      <button data-tab="prio" class="tab-btn" title="Приоритеты работ: еда, стройка, дрова, оборона, профессии"><img data-icon="prio" alt=""><span id="prio-badge" class="badge hidden">●</span></button>
       <button data-tab="menu" class="tab-btn" title="Меню"><img data-icon="menu" alt=""></button>
     </nav>
     <div id="tab-area">
@@ -48,6 +50,7 @@
       <section id="tab-overview" class="tab"><div id="overview"></div></section>
       <section id="tab-log" class="tab"><div id="log-list"></div></section>
       <section id="tab-trade" class="tab"><div id="trade-list"></div></section>
+      <section id="tab-prio" class="tab"><div id="prio-list"></div></section>
       <section id="tab-menu" class="tab">
         <div class="menu-list">
           <button data-menu="save"><img data-icon="save" alt="">Сохранить <kbd>Ctrl+S</kbd></button>
@@ -91,10 +94,11 @@
       <span class="dd" id="dd-snd"><button class="dd-t" title="Звук и музыка">♪</button><div class="dd-menu"><button id="music-btn" title="Музыка">♪</button><button id="music-next" title="Следующий трек">⏭</button><button id="sfx-btn" title="Звуки">🔊</button></div></span>
       <span id="clock">00:00</span>
       <span class="dd" id="dd-speed"><button class="dd-t" id="speed-cur" title="Скорость игры">×1</button><div class="dd-menu">
-        <button data-speed="0" title="Пауза (Пробел)">❚❚</button>
-        <button data-speed="1" class="active">×1</button>
-        <button data-speed="2">×2</button>
-        <button data-speed="4">×4</button>
+        <button data-speed="0" title="Пауза: можно планировать — дороги, здания, поля, снос (Пробел)">❚❚</button>
+        <button data-speed="0.5" title="Медленно (Shift+1)">×0,5</button>
+        <button data-speed="1" class="active" title="Обычная (Shift+2)">×1</button>
+        <button data-speed="2" title="Быстро (Shift+3)">×2</button>
+        <button data-speed="3" title="Очень быстро (Shift+4)">×3</button>
       </div></span>
     </div>
     <div id="toasts"></div>
@@ -121,6 +125,7 @@
         <li>Магия: <b>шахта маг. камней</b> под скалой с кристаллами → <b>магический круг</b> (камни → мана + обычный камень) → <b>магическая мастерская</b>: посохи и мантии.</li>
         <li>Железо: <b>железный рудник</b> под скалой → <b>плавильня металла</b> (руда + брёвна → слитки) → <b>оружейная</b> (мечи, луки, кинжалы) и <b>мастерская доспехов</b> (железный доспех). Герой берёт снаряжение кликом по мастерской.</li>
         <li><b>Гильдии</b> воинов, лучников, разбойников и магов: глава гильдии учит героя классу (клик героем по гильдии) и набирает рекрутов из трудяг. Клик по рекруту — выбрать, по земле — пост, по врагу — атака. Атака героя — <kbd>Q</kbd>.</li>
+        <li><b>Пауза</b> — <kbd>Пробел</kbd>; скорость ×0,5 / ×1 / ×2 / ×3 — <kbd>Shift+1…4</kbd> или кнопка времени справа сверху. На паузе можно ставить дороги, здания, поля и сносить, а гномы начнут работать, когда снимете паузу. Вкладка <b>«Приоритеты»</b> решает, чем гномы заняты в первую очередь (еда, стройка, дрова, оборона, профессии) и что отключить.</li>
         <li>Значки над зданиями подсказывают, чего не хватает. Вкладка «Хозяйство» собирает все проблемы в один список, чтобы вам было удобнее расстраиваться.</li>
       </ul>
       <button id="help-close">Понятно</button>
@@ -206,6 +211,7 @@
 <script src="js/guildpath.js"></script>
 <script src="js/goal.js"></script>
 <script src="js/trade.js"></script>
+<script src="js/prio.js"></script>
 <script src="js/startmenu.js"></script>
 <script src="js/perf.js"></script>
 <script src="js/profile.js"></script>

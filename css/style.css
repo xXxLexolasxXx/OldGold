@@ -124,7 +124,7 @@ button img { width: 18px; height: 18px; }
 
 /* ---------- Вкладки-иконки ---------- */
 
-#tabs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+#tabs { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
 .tab-btn { height: 44px; padding: 0; position: relative; }
 .tab-btn img { width: 36px; height: 36px; }
 .badge {
@@ -796,9 +796,6 @@ body.mobile #view #hero-card.mini { background: none; border: 0; box-shadow: non
 #view #hero-card h3 { color: #f0d27a; text-shadow: 0 1px 0 #000; }
 
 /* онлайн: время нельзя менять, остаётся только указатель скорости */
-body.coop #dd-speed .dd-menu { display: none !important; }
-body.coop #dd-speed .dd-t { pointer-events: none; }
-body.coop #dd-speed .dd-t::after { content: ''; }
 
 /* верхняя панель (ресурсы, масштаб, звук, время, скорость): воронёная сталь в латунной окантовке, как карточка героя */
 #clock, .speed, .dd-t, .dd-menu {

@@ -221,11 +221,8 @@ function setTool(tool) {
 
 function setSpeed(s) {
   Game.paused = s === 0;
-  if (s) Game.speed = s;
-  document.querySelectorAll('[data-speed]').forEach(b =>
-    b.classList.toggle('active', Game.paused ? b.dataset.speed === '0' : +b.dataset.speed === Game.speed));
-  const cur = document.getElementById('speed-cur');
-  if (cur) cur.textContent = Game.paused ? '❚❚' : '×' + Game.speed;
+  if (s) Game.speed = SPEEDS.includes(s) ? s : 1;      // 0,5 / 1 / 2 / 3 (старое ×4 из сохранений и скриптов — обычная скорость)
+  tempoShow();
 }
 
 // Выпадающие панели верхней строки: одна открыта за раз, закрываются по клику мимо и по Esc
@@ -364,7 +361,7 @@ function initUI() {
     btn.onclick = () => setTool(Game.tool && Game.tool.kind === 'field' && Game.tool.crop === crop ? null : { kind: 'field', crop });
   }
 
-  document.querySelectorAll('[data-speed]').forEach(btn => { btn.onclick = () => setSpeed(+btn.dataset.speed); });
+  document.querySelectorAll('[data-speed]').forEach(btn => { btn.onclick = () => { const s = +btn.dataset.speed; if (!s) togglePause(); else pickSpeed(SPEEDS.indexOf(s)); }; });
   initDropdowns();
   setSpeed(Game.paused ? 0 : Game.speed || 1);
   document.getElementById('help-close').onclick = () => document.getElementById('help').classList.add('hidden');
