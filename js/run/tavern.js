@@ -104,7 +104,7 @@ function tavernOpen() {
   el.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#120b06;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:inherit;color:#f1dfb0;';
   el.innerHTML = `<div style="position:relative;width:min(100vw,calc(100vh*16/9*0.62));max-width:960px">
     <canvas id="tav-cv" width="320" height="180" style="width:100%;image-rendering:pixelated;border:2px solid #b8902c;border-radius:6px;display:block;background:#1a0f08"></canvas>
-    <div id="tav-say" style="position:absolute;left:50%;top:6%;transform:translateX(-10%);max-width:46%;background:#f4e6c0;color:#3a2410;border:2px solid #6a4a1a;border-radius:8px;padding:6px 10px;font-size:clamp(11px,1.6vw,15px);box-shadow:0 2px 8px #000a"></div>
+    <div id="tav-say" style="${innerWidth < 640 ? 'position:static;margin:6px 0 0;min-height:34px;' : 'position:absolute;left:50%;top:6%;transform:translateX(-10%);max-width:46%;'}background:#f4e6c0;color:#3a2410;border:2px solid #6a4a1a;border-radius:8px;padding:6px 10px;font-size:clamp(11px,1.6vw,15px);box-shadow:0 2px 8px #000a"></div>
     <button id="tav-x" style="position:absolute;right:6px;top:6px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;padding:4px 10px;cursor:pointer">✕ Выйти</button>
   </div>
   <div id="tav-cards" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px;max-width:960px;padding:0 8px"></div>
@@ -115,6 +115,7 @@ function tavernOpen() {
   Tav.keyH = e => { if (e.key === 'Escape' && Tav.open && !Run.on) tavernClose(); };
   window.addEventListener('keydown', Tav.keyH);
   Tav.lines = tavernKeeperSay(); Tav.sayI = 0; Tav.sayT = 0; Tav.t = 0; Tav.parts = [];
+  RSfx.ambStart('tavern'); RSfx.play('clink');
   tavernRender();
   let last = performance.now();
   const loop = now => {
@@ -128,7 +129,7 @@ function tavernOpen() {
 
 function tavernClose() {
   if (!Tav.open) return;
-  Tav.open = false; cancelAnimationFrame(Tav.raf);
+  Tav.open = false; cancelAnimationFrame(Tav.raf); RSfx.ambStop();
   window.removeEventListener('keydown', Tav.keyH);
   if (Tav.el) Tav.el.remove();
   Tav.el = null;
@@ -144,11 +145,11 @@ function tavernRender() {
     const locked = d.need === 'win' && !m.wins;
     const best = d.weekly ? (m.weekBest[wk] || 0) : 0;
     return `<button data-d="${d.id}" ${locked ? 'disabled' : ''} style="${btn};width:218px;text-align:left;${locked ? 'opacity:.45;cursor:default' : ''}">
-      <b style="font-size:16px;display:block">${d.name}${locked ? ' 🔒' : ''}</b><small style="display:block">${locked ? 'Победите Малгора, чтобы открыть' : d.desc}</small>${best ? `<small style="display:block">Рекорд недели: ${best}</small>` : ''}</button>`;
+      <span style="display:block;width:100%;text-align:left"><b style="font-size:16px;display:block">${d.name}${locked ? ' 🔒' : ''}</b><small style="display:block">${locked ? 'Победите Малгора, чтобы открыть' : d.desc}</small>${best ? `<small style="display:block">Рекорд недели: ${best}</small>` : ''}</span></button>`;
   }).join('');
   cards.querySelectorAll('button[data-d]').forEach(b => {
     b.onmouseenter = () => { const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (d && !b.disabled) tavernSay(d.say); };
-    b.onclick = () => { const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (d && !b.disabled) { tavernClose(); runStart(d); } };
+    b.onclick = () => { const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (d && !b.disabled) { RSfx.play('ui'); tavernClose(); runStart(d); } };
   });
   const pal = RUN_PALS[m.pal];
   Tav.el.querySelector('#tav-bar').innerHTML =
@@ -169,6 +170,7 @@ function tavernFrame(dt) {
     Tav.sayI = (Tav.sayI + 1) % Tav.lines.length;
     tavernSay(Tav.lines[Tav.sayI]); Tav.sayT = 5.5;
   }
+  RSfx.ambTick(dt);
   tavernDraw(Tav.cv.getContext('2d'), Tav.t);
 }
 
