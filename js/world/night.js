@@ -194,6 +194,8 @@ function resolveFight(e) {
     outcome = r < pWipe ? 'wipe' : r < pWipe + (1 - pWipe) * pWin ? 'win' : 'lose';
   }
   if (dif().noLoss && (outcome === 'lose' || outcome === 'wipe')) outcome = n === 1 ? 'escape' : 'win';   // «Спокойный»: гномы не гибнут
+  // потолок потерь за ночь (grab.js nightTakeOk): сверх него нечисть не уносит, а расшвыривает — деревня не вымирает за ночь
+  if ((outcome === 'lose' || outcome === 'wipe') && !nightTakeOk()) outcome = 'escape';
   e.foe = null;
   if (outcome === 'win') {
     entFell(e, fs[0]);
@@ -365,6 +367,7 @@ function entFell(e, u) {
 // Захват: тянется рукой, хватает, поднимает в кулаке, разворачивается и уносит в туман
 const GRAB_REACH = 0.9, GRAB_LIFT = 1.7, GRAB_TURN = 2.1, GRAB_FADE = 4.8, GRAB_END = 6.8;
 function entTakes(e, u) {
+  nightTook();
   e.state = 'drag'; e.t = 0; e.foe = null; e.scream = 0; e.sayV = false; e.sayK = false; e.turned = false;
   e.victim = u; e.vsnap = snapVictim(u);
   e.vx0 = u.x; e.vy0 = u.y;

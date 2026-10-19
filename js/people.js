@@ -514,7 +514,7 @@ function drawEar(c, x, y, dir, sk) {
 }
 
 function drawBeard(c, view, hx, hy, L, type, bottom, r) {
-  const bc = type === 'enchanter' ? '#f0ece4' : BEARDS[L.beard];
+  const bc = type === 'enchanter' ? '#f0ece4' : (L.bcol || BEARDS[L.beard]);
   const st = L.beardStyle || 0, mid = (hy + bottom) / 2 + 1;
   c.save();
   c.beginPath();
@@ -695,7 +695,7 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
     }
   } else {
     drawEar(c, hx - 3.4, hy + 0.2, -1, sk); drawEar(c, hx + 3.4, hy + 0.2, 1, sk);
-    const bc = O.fem ? HAIR : type === 'enchanter' ? '#f0ece4' : BEARDS[L.beard];
+    const bc = O.fem ? HAIR : type === 'enchanter' ? '#f0ece4' : (L.bcol || BEARDS[L.beard]);
     c.fillStyle = bc; c.beginPath(); c.ellipse(hx, hy + 0.4, R, R * 0.95, 0, 0, Math.PI * 2); c.fill();
     c.strokeStyle = shade(bc, -0.25); c.lineWidth = 0.3;
     for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(hx + k * 1.2, hy - 1); c.lineTo(hx + k * 1.3, hy + 3.6); c.stroke(); }
@@ -1464,7 +1464,7 @@ function spriteBudgetOk(hasFallback) {
 function spriteSpent(t0) { R.sprMs = (R.sprMs || 0) + performance.now() - t0; }
 
 function personSprite(u, view, pose, frame, opt = {}) {
-  const look = LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length];
+  const look = (u.look >>> 0) >= 0x20000 ? u.look : LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length];   // 0x20000+ — особые гномы наследия (legacy.js)
   const fkey = pose === 'work' ? `${frame.anim}${frame.f}` : frame;
   const lvl = (u.type === 'serf' || u.type === 'builder') ? unitLevel(u) : 1;
   const carryN = u.carry ? Math.min(3, Math.max(1, u.carryN || 1)) : 0;
