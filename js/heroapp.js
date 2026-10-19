@@ -13,8 +13,8 @@ const HA_BEARD_NAMES = ['Круглая', 'Раздвоенная', 'Клино�
 const HA_LEN_NAMES = ['До груди', 'До ремня'];
 const HA_MUST_NAMES = ['Пышные', 'Закрученные', 'Моржовые'];
 const HA_DECO_NAMES = ['Веточка', 'Листья', 'Грибок', 'Перо', 'Жёлудь', 'Без украшений'];
-// индексы массива: 0 колпак, 1 цвет колпака, 2 цвет бороды, 3 форма бороды, 4 длина, 5 усы, 6 кожа, 7 куртка, 8 украшение
-const HA_MAX = [9, 11, 11, 4, 1, 2, 2, 11, 5];
+// индексы массива: 0 колпак (-1 — шлем или шапка класса), 1 цвет колпака (у шлема класса — перекраска), 9 жилет/доспех, 2 цвет бороды, 3 форма бороды, 4 длина, 5 усы, 6 кожа, 7 куртка, 8 украшение
+const HA_MAX = [9, 11, 11, 4, 1, 2, 2, 11, 5, 11];   // 9 — цвет жилета/доспеха
 const HA_CLS_CAP = { warrior: '#9aa0aa', barbarian: '#8a6a4a', mage: '#2c4a9a', archer: '#3a7a2a', druid: '#6a5230', rogue: '#2a2a34', monk: '#d8501a', priest: '#e4e0d2', bard: '#b03a7a', paladin: '#d8d8e0' };
 const HA = { last: null, hooked: false, types: new Map(), look: {} };
 
@@ -37,6 +37,8 @@ function haType(base, ap) {
   if (ap[0] >= 0 || (ap[1] >= 0 && !cls)) {
     o.cap = ap[1] >= 0 ? HA_CAP_COLS[ap[1]] : cls ? HA_CLS_CAP[O.cap.slice(4)] || '#8a6a4a' : O.cap;
   }
+  if (cls && ap[0] < 0 && ap[1] >= 0) o.tint = HA_CAP_COLS[ap[1]];   // шлем класса остаётся, но перекрашивается
+  if (ap[9] >= 0 && O.vest) o.vest = HA_COAT_COLS[ap[9]];
   if (ap[7] >= 0) { if (O.robe) o.robeCol = HA_COAT_COLS[ap[7]]; else o.coat = HA_COAT_COLS[ap[7]]; }
   OUTFIT[key] = o;
   const L = {};
@@ -53,6 +55,43 @@ function haType(base, ap) {
 }
 
 // ---------- Рисование ----------
+
+// Перекраска шлема класса: шлем рисуется через «прокладку» над холстом, которая сдвигает оттенок каждой краски к выбранному цвету.
+// Светлые детали (рога, перья, белое) остаются как есть.
+function haRetint(col, t) {
+  const m = /^#([0-9a-f]{6})$/i.exec(col) || /^#([0-9a-f]{3})$/i.exec(col);
+  let r, g, b, a = 1;
+  if (m) { let h = m[1]; if (h.length === 3) h = h.replace(/./g, '$&$&'); r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16); }
+  else { const q = /^rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)$/.exec(col); if (!q) return col; r = +q[1]; g = +q[2]; b = +q[3]; if (q[4] != null) a = +q[4]; }
+  const mx = Math.max(r, g, b) / 255, mn = Math.min(r, g, b) / 255, l = (mx + mn) / 2;
+  if (l > 0.82) return col;
+  // целевой цвет с яркостью исходной: сохраняем объём и складки
+  const tr = t.rgb[0] / 255, tg = t.rgb[1] / 255, tb = t.rgb[2] / 255, tl = (Math.max(tr, tg, tb) + Math.min(tr, tg, tb)) / 2 || 0.0001;
+  const sc = l / tl;
+  const cl = v => Math.max(0, Math.min(255, Math.round(v * sc * 255)));
+  const R2 = cl(tr), G2 = cl(tg), B2 = cl(tb);
+  return a < 1 ? `rgba(${R2},${G2},${B2},${a})` : `rgb(${R2},${G2},${B2})`;
+}
+function haTintCtx(c, hex) {
+  const h = hex.replace('#', ''), rgb = [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  const t = { rgb, l: (Math.max(...rgb) + Math.min(...rgb)) / 510 };
+  const wrapG = g => { const add = g.addColorStop.bind(g); g.addColorStop = (o, col) => add(o, typeof col === 'string' ? haRetint(col, t) : col); return g; };
+  return new Proxy(c, {
+    get(o, k) {
+      if (k === 'createLinearGradient' || k === 'createRadialGradient') return (...a) => wrapG(o[k](...a));
+      const v = o[k];
+      return typeof v === 'function' ? v.bind(o) : v;
+    },
+    set(o, k, v) { o[k] = (k === 'fillStyle' || k === 'strokeStyle') && typeof v === 'string' ? haRetint(v, t) : v; return true; },
+  });
+}
+{
+  const _dc = drawCap;
+  drawCap = function (c, O, view, hx, hy, tipSway, L, r, lvl) {
+    if (O && O.tint && typeof O.cap === 'string' && O.cap.startsWith('cls:')) return _dc(haTintCtx(c, O.tint), O, view, hx, hy, tipSway, L, r, lvl);
+    return _dc(c, O, view, hx, hy, tipSway, L, r, lvl);
+  };
+}
 
 {
   const _lo = lookOf;
@@ -134,8 +173,9 @@ function haOpenEditor(opts) {
     <div class="ha-body"><div class="ha-pv"><canvas id="ha-body" width="120" height="132"></canvas>
       ${opts.name != null ? `<input id="ha-name" maxlength="16" value="${String(opts.name).replace(/"/g, '&quot;')}" autocomplete="off" placeholder="Имя героя">` : `<div class="ha-nm">${opts.nick || ''}</div>`}</div>
     <div class="ha-rows">
-      ${step(0, 'Колпак')}<div class="ha-row"><span>Цвет колпака</span>${sw(1, HA_CAP_COLS)}</div>
+      ${step(0, 'Колпак')}<div class="ha-row"><span>Цвет колпака / шлема</span>${sw(1, HA_CAP_COLS)}</div>
       ${step(8, 'Украшение')}
+      <div class="ha-row"><span>Жилет, доспех</span>${sw(9, HA_COAT_COLS)}</div>
       ${step(3, 'Борода')}${step(4, 'Длина')}<div class="ha-row"><span>Цвет бороды</span>${sw(2, HA_BEARD_COLS)}</div>
       ${step(5, 'Усы')}
       <div class="ha-row"><span>Кожа</span>${sw(6, HA_SKIN_COLS)}</div>
