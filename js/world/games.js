@@ -113,6 +113,7 @@ function enlist(g, u, slot, leader) {
 
 function* gameMemberGen(u, g, slot) {
   const gp = u.gp;
+  if (!gp) return;   // игра уже распущена к моменту старта: иначе ниже gp.here падало на null
   const ok = yield { walk: [slot.cx, slot.cy], offroad: true };
   if (!g.alive || u.gp !== gp || !ok) { if (u.gp === gp) u.gp = null; return; }
   u.fiveSlide = { x0: u.x, y0: u.y, x1: slot.x, y1: slot.y, t0: Game.time };
