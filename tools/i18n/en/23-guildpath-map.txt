@@ -1,0 +1,128 @@
+##### js/guildpath.js#2
+Novices
+Journeymen
+recruits arrive already at tier 2
+Masters
+the hero's lesson costs 1 gold less; tier 3 can be built
+Legend
+the guild's recruits hit 10% harder
+Guardian
+takes {0}% less damage
+Hacker
+damage +{0}%
+Sniper
+range +{0}, accuracy +{1}%
+Tracker
+XP +{0}%, spots enemies farther
+Shade
+another +{0}% crit chance
+Pickpocket
+gold from victories ({0}%)
+Pyromancer
+Healer
+heals the nearby squad for {0} every 6 s
+beat the fiends: skeletons, walking trees
+Hunt
+beat wolves, foxes or forest neutrals
+Drills
+recruit training with the master
+Study
+the hero's lessons with guildmasters
+A hall under a golden crown: recruits grow up to level 18, training gets fiercer, and the hero can become a grandmaster. The dummies handed in their notice.
+A lodge under a golden crown: archers grow up to level 18, and the hero can become a grandmaster. The targets went on a one-way vacation.
+A house under a golden crown (don't ask where it came from): sneaks grow up to level 18, and the hero can become a grandmaster.
+A tower under a golden crown: mages grow up to level 18, and the hero can become a grandmaster. The stars on the dome now wink on purpose.
+{0}: title "{1}"! Now {2}
+{0} earned the title "{1}"
+{0}: tier 3 unlocked — the button is in the guild window
++{0} fame
+Guild quest for today — "{0}": {1} ({2}). Each guild's contribution goes to the "Village Cup"
+Guild quest "{0}" complete! Participants get +10 fame and 2 gold to the treasury{1}
+, {0} tried hardest (+5)
+The "Village Cup" goes to the guild: {0} (+{1} fame over {2} days)! Its recruits get 20% more XP until the next cup
+{0} won the "Village Cup"
+{0} reached level {1} — choose a branch on the recruit's card (click them)
+Branch!
+Tier 3!
+"{0}" upgraded to tier 3
+"{0}" — tier 3: recruits up to level 18, the hero gets mastery rank 6
+Master arrived
+the guildmaster arrives a couple of seconds after construction
+teaches the hero and recruits fighters
+Hero's lesson
+the "Train" button below or click the guild with the hero
+class "{0}": a bonus to stats and the Q strike
+First recruit
+needs a weapon in the guild and 1 gold — the "Recruit" button
+a fighter guards the guild and joins the hero's squad
+Recruit branch (lv. {0})
+drills (⚔) and fights grow a recruit; the branch is chosen on their card
+Title "{0}" ({1} fame)
+fame — from lessons, drills, recruit victories and daily quests
+Tier 2
+the "Upgrade" button in this window: logs, planks and stone
+6 recruits, up to level 14, training twice as fast
+win daily quests and the "Village Cup"
+Tier 3
+needs tier 2 and the "Masters" title
+recruits up to level 18, hero mastery rank 6
+don't stop
+Guild Path
+Title:
+Village Cup
+Guild fame: {0}{1}
+Fame {0}{1}
+· {1} more to "{0}"
+· top title
+Done:
+How: {0}
+Gives: {0}
+Tier 3 unlocks with the "Masters" title ({0} fame)
+Guild quest for today
+done!
+{0} of {1}
+· this guild's contribution: {0}
+Village Cup · fame over {0} days
+· cup
+Branch:
+· veteran
+from level {0}: {1}
+From level {0} — branch: {1}
+Choose a branch
+{0} — branch "{1}": {2}
+{0} chose the branch "{1}"
+"{0}": upgrade to tier 3 started
+Crit from the shadows!
++1 gold
+Upgrade to tier 3
+Upgrade to tier 3
+Grandmaster — from level {0}
+The last lesson costs {0} gold
+The last lesson. Don't let us down.
+{0} — grandmaster: "{1}", rank {2}!
+{0} became a grandmaster: {1}
+Grandmaster!
+##### js/mapgen.js#2
+Small
+96×72: cramped, quick
+Medium
+Large
+160×120: room to roam
+Meadows
+green hills, rivers and lakes — familiar ground
+Deep Forest
+dense thickets: plenty of wood, few clearings
+Steppe
+wide open and windy: little forest, but enough stone and space
+Mountains
+ridges and gorges, lots of ore and crystals; few flat spots
+Swamp
+bog, backwaters and hummocks: little dry land, some wood, little stone
+Winter
+snow, ice on lakes and rivers, blizzards
+A blizzard began
+❄ Blizzard! Snow comes down in sheets, the streets are slippery — gnomes huddle by the houses.
+Flood
+🌊 Flood: the river burst its banks, the fords are underwater. Wait it out — the water will recede soon.
+The blizzard died down
+The water receded

@@ -164,6 +164,8 @@ function smAction(a) {
     smShow('help');
   } else if (a === 'mode-back') {
     smShow('mode');
+  } else if (a === 'lang') {
+    I18N.toggle();
   } else if (a === 'back') {
     smShow('main');
   } else if (a === 'connect') {
@@ -190,6 +192,7 @@ function initStartMenu() {
       <button class="sm-btn" data-sm="new"><b>Новая игра</b><small>новый мир, назвать героя</small></button>
       <button class="sm-btn" data-sm="mp"><b>Мультиплеер</b><small>играть с друзьями</small></button>
       <button class="sm-btn ghost" data-sm="help"><b>Как играть</b></button>
+      <button class="sm-btn ghost" data-sm="lang"><b class="lang-name">${I18N.other}</b></button>
     </div>
     <div class="sm-panel hidden" data-panel="mode">
       <button class="sm-btn primary" data-sm="mode-scenario"><b>Сценарий</b><small>«Тишина дороже золота»: 6 глав, тёмный маг</small></button>
