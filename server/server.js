@@ -383,6 +383,7 @@ function onMessage(c, text) {
     const meta = JSON.parse(call('coopMeta'));
     if (!meta.classes[m.cls]) return;
     rec.hero = { cls: m.cls, level: 1, hp: meta.classes[m.cls].hp, inv: [{ k: 'bread', n: 2 }], look: (Math.random() * 1000) | 0 };
+    if (Array.isArray(m.ap) && m.ap.length <= 12) rec.hero.ap = m.ap.map(v => (Number.isInteger(v) ? v : -1));   // облик героя (heroapp.js чистит значения при входе)
     saveUsers();
     joinWorld(c);
     return;
@@ -401,6 +402,20 @@ function onMessage(c, text) {
     if (m.mode !== 'scenario' && m.mode !== 'free') return;
     call('goalNew', m.mode);
     broadcast({ t: 'toast', text: m.mode === 'scenario' ? 'Хост включил сценарий «Тишина дороже золота»' : 'Хост включил свободную игру' });
+    return;
+  }
+  if (m.t === 'board') {
+    // доска почёта зала героев: лучшие герои сервера, в том числе те, кого сейчас нет в деревне
+    const nowMs = Date.now();
+    if (c.boardAt && nowMs - c.boardAt < 2000) return;
+    c.boardAt = nowMs;
+    const online = new Set();
+    for (const o of conns) if (o.inGame) { online.add(o.key); const d = call('coopHeroData', o.nick); if (d) users[o.key].hero = JSON.parse(d); }
+    const list = Object.entries(users).filter(([, r]) => r.hero).map(([k, r]) => {
+      const h = r.hero, hl = h.hl || {};
+      return { n: r.nick, c: h.cls, l: h.level || 1, p: hl.p || 0, dw: hl.dw || 0, dl: hl.dl || 0, tw: hl.tw || 0, t: (h.ti || []).length, tt: h.tt || null, on: online.has(k) ? 1 : 0 };
+    }).sort((a, b) => b.p - a.p || b.l - a.l || a.n.localeCompare(b.n)).slice(0, 10);
+    c.send({ t: 'board', list });
     return;
   }
   if (m.t === 'stats') {

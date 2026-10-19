@@ -48,6 +48,8 @@ const ACHS = [
   { id: 'lamp',     name: 'Экономия на освещении', desc: 'Гном упал и разбил фонарь. Теперь у него два повода для темноты.', ev: /разбил фонарь/ },
   { id: 'fog',      name: 'Налево от здравого смысла', desc: 'Гном заблудился в тумане посреди собственной деревни. Талант.', ev: /заблудился в тумане/ },
   { id: 'beer',     name: 'Кто не работает — тот не падает', desc: 'Гном перебрал пива и уснул на ходу. Рабочий день удался.', ev: /перебрал пива/ },
+  { id: 'brawl',    name: 'Выпил — подрался', desc: 'На празднике гномы подрались: кулаки, пинки и бутыль. Начали за мир, закончили на земле.', ev: /^Пьяная драка/ },
+  { id: 'brawlhero', name: 'Мимо проходил', desc: 'Героя зацепило в пьяной драке, и он отлетел на пару клеток. Урон небольшой, обида — большая.', ev: /попал под раздачу/, secret: true },
   { id: 'ghostfood', name: 'Угостил призрака', desc: 'Призраку выдали хлеб. Он не голоден — просто вежливо взял.', ev: /угостил призрака хлебом/ },
   { id: 'entwin',   name: 'Дровосек поневоле', desc: 'Гном одолел нечисть. Лес запомнит. Лес очень злопамятный.', ev: /одолел: / },
   { id: 'entlose',  name: 'Деревья тоже умеют', desc: 'Нечисть утащила гнома в туман. Обещал вернуться к ужину.', ev: /в туман: / },
@@ -122,9 +124,9 @@ function achToast(a) {
   const box = document.getElementById('ach-toasts');
   if (!box) return;
   const el = document.createElement('div');
-  el.className = 'ach-toast';
+  el.className = 'ach-toast v' + (Date.now() % 3);
   el.innerHTML = `<div class="ach-cup">★</div><div><small>Достижение получено</small><b>${esc(a.name)}</b><span>${esc(a.desc)}</span></div>`;
-  el.onclick = () => profOpen('ach');
+  el.onclick = () => { profOpen('ach'); if (typeof toastClose === 'function') toastClose(el); };
   box.appendChild(el);
   while (box.childElementCount > 3) box.firstChild.remove();
   setTimeout(() => el.remove(), 6500);
@@ -212,6 +214,7 @@ function profRefresh() {
   let h = `<div class="prof-head"><h3>Игрок: ${esc(p.name)}</h3><button data-pa="close" title="Закрыть">✕</button></div>` +
     `<div class="prof-tabs"><button data-pt="saves" class="${profTab === 'saves' ? 'active' : ''}">Сохранения</button>` +
     `<button data-pt="ach" class="${profTab === 'ach' ? 'active' : ''}">Ачивки ${got}/${ACHS.length}</button>` +
+    (typeof lgRender === 'function' ? `<button data-pt="legacy" class="${profTab === 'legacy' ? 'active' : ''}">Наследие ${lgLevel()}</button>` : '') +
     `<button data-pt="who" class="${profTab === 'who' ? 'active' : ''}">Игроки</button></div>`;
   if (profMsg) h += `<div class="prof-msg">${esc(profMsg)}</div>`;
   if (profTab === 'saves') {
@@ -219,6 +222,8 @@ function profRefresh() {
     for (let n = 1; n <= PROF_SLOTS; n++) h += slotLine('Слот ' + n, slotKey(n), { save: true, del: true });
     h += '<div class="prof-sec">Общие (старые) сохранения</div>';
     h += slotLine('Ручное', 'manual', { save: true, del: false }) + slotLine('Автосохранение', 'auto', { save: false, del: false });
+  } else if (profTab === 'legacy' && typeof lgRender === 'function') {
+    h += lgRender();
   } else if (profTab === 'ach') {
     h += '<div class="ach-list">';
     for (const a of ACHS) {
@@ -259,6 +264,7 @@ function profAction(a, k) {
   const win = document.getElementById('prof-win');
   profMsg = '';
   if (a === 'close') return profClose();
+  if (a.startsWith('lg-') && typeof lgAction === 'function') { profMsg = lgAction(a, k); return profRefresh(); }
   if (a === 'save') {
     if (typeof StartMenu !== 'undefined' && StartMenu.open) profMsg = 'Сохранять можно только во время игры';
     else if (saveMeta(k) && !confirm('Перезаписать это сохранение?')) return;
@@ -317,7 +323,7 @@ function profImport(file) {
       while (Object.values(Prof.list).some(q => q.name.toLowerCase() === name.toLowerCase())) name = name.slice(0, 17) + ' +';
       let i = 1; while (Prof.list['p' + i]) i++;
       const id = 'p' + i;
-      Prof.list[id] = { name, created: o.profile.created || Date.now(), ach: o.profile.ach && typeof o.profile.ach === 'object' ? o.profile.ach : {}, st: o.profile.st && typeof o.profile.st === 'object' ? o.profile.st : {} };
+      Prof.list[id] = { name, created: o.profile.created || Date.now(), ach: o.profile.ach && typeof o.profile.ach === 'object' ? o.profile.ach : {}, st: o.profile.st && typeof o.profile.st === 'object' ? o.profile.st : {}, meta: o.profile.meta && typeof o.profile.meta === 'object' ? o.profile.meta : undefined };
       for (const n in o.slots || {}) {
         if (!(n >= 1 && n <= PROF_SLOTS)) continue;
         const s = o.slots[n];
@@ -335,7 +341,8 @@ function profImport(file) {
 
 function profBtnLabel() {
   const b = document.querySelector('#start-menu [data-sm="profile"] small');
-  if (b) b.textContent = profCur().name;
+  const ttl = typeof lgTitle === 'function' ? ' · ' + lgTitle() : '';
+  if (b) b.textContent = profCur().name + ttl;
   const m = document.querySelector('[data-menu="profile"] span');
   if (m) m.textContent = profCur().name;
 }
@@ -370,7 +377,8 @@ function initProfile() {
   if (list && !list.querySelector('[data-menu="profile"]')) {
     list.insertAdjacentHTML('afterbegin',
       '<button data-menu="profile"><img data-icon="scroll" alt="">Игрок и слоты: <span></span></button>' +
-      '<button data-menu="ach"><img data-icon="scroll" alt="">Ачивки</button>');
+      '<button data-menu="ach"><img data-icon="scroll" alt="">Ачивки</button>' +
+      '<button data-menu="legacy"><img data-icon="scroll" alt="">Наследие</button>');
     list.querySelectorAll('img[data-icon]').forEach(im => { im.src = iconURL('ui', im.dataset.icon, 2); });
   }
   document.querySelector('#tab-menu').addEventListener('click', e => {
@@ -378,6 +386,7 @@ function initProfile() {
     if (!t) return;
     if (t.dataset.menu === 'profile') { if (Mobile.on) mobileSheet(null); profOpen('saves'); }
     if (t.dataset.menu === 'ach') { if (Mobile.on) mobileSheet(null); profOpen('ach'); }
+    if (t.dataset.menu === 'legacy') { if (Mobile.on) mobileSheet(null); profOpen('legacy'); }
   });
   const root = document.getElementById('start-menu');
   if (root && !root.querySelector('[data-sm="profile"]')) {

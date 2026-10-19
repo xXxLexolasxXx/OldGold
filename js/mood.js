@@ -308,14 +308,14 @@ function mdBreak(u, M, now, G) {
   const name = UNIT_TYPES[u.type].name;
   if (pick === 'fight') {
     const foe = foes.sort((a, b) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(b.x - u.x, b.y - u.y))[0];
-    if (mdFight(u, foe)) { G.fightAt = now + MD.FIGHT_GAP; st.fights++; return; }
+    if (mdFight(u, foe)) { G.fightAt = now + MD.FIGHT_GAP; st.fights++; floater(u.x, u.y - 1.5, mdPick(MD_BREAK_Q.fight), '#ff9a70'); return; }
     pick = inn ? 'drink' : 'sulk';
   }
   if (pick === 'drink' && inn) {
     st.drinks++;
     floater(u.x, u.y - 1.5, mdPick(MD_BREAK_Q.drink), '#ffb890');
     mdNote(u, G, `${name} бросил всё и пошёл в трактир заливать тоску`);
-    startBreak(u, 'brawl', null);
+    startBreak(u, 'rage', null);
     u.proc = mdDrinkGen(u, inn);
     return;
   }
@@ -360,48 +360,11 @@ function* mdSulkGen(u) {
   mdBump(u, 'rest', 0.2);
 }
 
-// Драка двух гномов. Если в игре есть настоящие драки (brawlStart из сессии «Драки») — отдаём им.
+// Драка двух гномов — настоящая, из brawl.js (кулаки, пинки, бутыль; один бой на деревню за раз)
 function mdFight(a, b) {
-  if (!b || !interruptible(b)) return false;
-  if (typeof brawlStart === 'function') {
-    try { if (brawlStart(a, b, { why: 'mood' })) return true; } catch (e) { /* падаем на свою потасовку */ }
-  }
-  const G = mdG();
-  const fight = { done: false };
-  const name = UNIT_TYPES[a.type].name, nb = UNIT_TYPES[b.type].name;
-  floater(a.x, a.y - 1.5, mdPick(MD_BREAK_Q.fight), '#ff9a70');
-  mdNote(a, G, `${name} полез в драку с соседом (${nb})`);
-  startBreak(a, 'brawl', null); a.proc = mdFightGen(a, b, fight, true);
-  startBreak(b, 'brawl', null); b.proc = mdFightGen(b, a, fight, false);
-  return true;
-}
-
-function* mdFightGen(u, foe, fight, hitter) {
-  if (hitter) {
-    const s = randomFreeNear(Math.floor(foe.x), Math.floor(foe.y), 1, 1.6, (x, y) => isWalkable(x, y) && !World.bmap[idx(x, y)] && !World.door[idx(x, y)]);
-    if (s) yield { walk: s, offroad: true };
-    for (let k = 0; k < 3 && !foe.dead; k++) {
-      u.face = foe.x > u.x ? 1 : -1; u.vdir = 'E';
-      foe.face = -u.face;
-      gesture(u, 'fist', 1.1, foe.x);
-      floater((u.x + foe.x) / 2, (u.y + foe.y) / 2 - 1.3, mdPick(['Бам!', 'Хрясь!', 'Получай!', 'Сам такой!']), '#ffd0a0');
-      sfxUnit(foe, 'ouch');
-      yield { wait: 1.1 };
-    }
-    fight.done = true;
-    if (!foe.dead) {
-      knockBack(foe, u);
-      if (Math.random() < 0.35) { injure(foe, Math.random() < 0.5 ? 'leg' : 'arm'); }
-      if (Math.random() < 0.2) injure(u, Math.random() < 0.5 ? 'leg' : 'arm');
-    }
-    const M = mdOf(u); M.low = 0; M.m = Math.min(100, M.m + 6);
-    moodPoke(u, 'vent', 7, 120);
-    mdBump(u, 'fun', 0.15);
-  } else {
-    for (let k = 0; k < 40 && !fight.done; k++) yield { wait: 0.5 };
-    const M = mdOf(u); M.m = Math.max(0, M.m - 6);
-    moodPoke(u, 'beaten', -8, 140);
-  }
+  if (!b || !interruptible(b) || typeof brawlGather !== 'function' || Game.brawl || festThreat()) return false;
+  brawlGather([a, b], 'mood');
+  return !!Game.brawl;
 }
 
 // Уходит насовсем: идёт к краю карты. Потери деревни это не «гибель»: призраки не заводятся
@@ -524,6 +487,20 @@ function mdHook() {
   };
   const _lg = leisureGen;
   leisureGen = function* (u) { yield* _lg(u); mdBump(u, 'fun', 0.3); mdBump(u, 'soc', 0.05); };
+  // итог драки (и с праздника, и от тоски): победитель выпустил пар, проигравший получил по шапке
+  if (typeof brawlEnd === 'function') {
+    const _be = brawlEnd;
+    brawlEnd = function (B, why) {
+      _be(B, why);
+      if (why !== 'done') return;
+      B.fs.forEach((u, k) => {
+        if (!mdOn(u)) return;
+        const M = mdOf(u);
+        M.low = 0; mdBump(u, 'fun', 0.15);
+        if (k === B.lose) { moodPoke(u, 'beaten', -8, 140); M.m = Math.max(0, M.m - 6); } else { moodPoke(u, 'vent', 7, 120); M.m = Math.min(100, M.m + 6); }
+      });
+    };
+  }
   const _hf = highFive;
   highFive = function (a, b) { _hf(a, b); for (const x of [a, b]) { moodPoke(x, 'five', 4, 70); mdBump(x, 'soc', 0.1); mdBump(x, 'fun', 0.05); } };
   if (typeof COOP_UNIT_EX !== 'undefined' && !COOP_UNIT_EX.includes('mdr')) COOP_UNIT_EX.push('mdr');

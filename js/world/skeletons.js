@@ -189,6 +189,7 @@ function skelResolve(s) {
   if (n === 1) { const w = 0.45 / Math.sqrt(d); outcome = r < w ? 'win' : r < w + 0.25 ? 'escape' : 'lose'; }
   else { const pw = Math.min(0.15, 0.04 * Math.sqrt(d)); outcome = r < pw ? 'wipe' : r < pw + (1 - pw) * Math.min(0.92, 0.4 + 0.2 * n) / Math.pow(d, 0.3) ? 'win' : 'lose'; }
   if (dif().noLoss && (outcome === 'lose' || outcome === 'wipe')) outcome = n === 1 ? 'escape' : 'win';   // «Спокойный»: гномы не гибнут
+  if ((outcome === 'lose' || outcome === 'wipe') && !nightTakeOk()) outcome = 'escape';   // потолок потерь за ночь (grab.js)
   if (outcome === 'win') {
     s.state = 'dead'; s.t = 0; s.moving = false;
     sfxAt('rattle', s.x * TILE, s.y * TILE, 1.3);

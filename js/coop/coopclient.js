@@ -130,7 +130,7 @@ function coopHandle(m) {
     case 'w': coopWorld(m); break;
     case 'me': Coop.me = m; coopRefreshHud(); coopVilHud(m.vil); coopQuestHud(m.qx, m.tt); break;
     case 'unlock': if (typeof unlockStage === 'function') unlockStage(m.id, true); break;
-    case 'toast': toast(m.text); break;
+    case 'toast': toast(m.text, null, 'coop'); break;
     case 'fl': floater(m.x, m.y, m.text, m.col || '#fff6d0'); break;
     case 'chat': coopChat(m); break;
     case 'saved': break;
@@ -240,7 +240,7 @@ function coopDropBuilding(b) {
 }
 
 const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lairs', 'raiders', 'foeShots', 'games'];
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'mdr'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
 function coopResolve(v) {

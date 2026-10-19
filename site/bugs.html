@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Сообщить об ошибке — OldGold</title>
+<meta name="description" content="Нашли баг или есть идея для OldGold? Сообщите через GitHub или Telegram — без сбора личных данных.">
+<meta name="theme-color" content="#1a130d">
+<meta property="og:title" content="Сообщить об ошибке — OldGold"><meta property="og:description" content="Нашли баг или есть идея для OldGold? Сообщите через GitHub или Telegram — без сбора личных данных."><meta property="og:type" content="website">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/site.css">
+</head><body>
+<header class="top"><div class="wrap">
+<a class="logo" href="index.html"><img src="../favicon.svg" alt="" width="28" height="26">OldGold</a>
+<button id="burger" type="button" aria-label="Меню" aria-expanded="false">☰</button>
+<nav><a href="index.html">Главная</a><a href="lore.html">Лор</a><a href="bestiary.html">Бестиарий</a><a href="guide.html">Справочник</a><a href="changelog.html">Обновления</a><a href="bugs.html" aria-current="page">Баги</a><a class="play" href="../">Играть</a></nav>
+</div></header>
+<main>
+<div class="wrap fade"><div class="hero" style="padding-bottom:6px;text-align:left"><h1>Сообщить об ошибке</h1><p class="dim" style="max-width:720px">Нашли баг, опечатку или хотите предложить идею? Расскажите — мы читаем всё.</p></div></div>
+<div class="wrap" style="max-width:760px">
+<form id="bugform" class="panel" autocomplete="off">
+<label for="kind">Что это</label>
+<select id="kind" name="kind"><option>Ошибка</option><option>Идея</option><option>Вопрос</option></select>
+<label for="title">Коротко</label>
+<input type="text" id="title" name="title" maxlength="100" placeholder="Например: гном застрял у склада">
+<label for="what">Что случилось</label>
+<textarea id="what" name="what" maxlength="2000" required placeholder="Что вы делали и что пошло не так"></textarea>
+<label for="steps">Как повторить (по желанию)</label>
+<textarea id="steps" name="steps" maxlength="2000" style="min-height:80px" placeholder="1. Построил… 2. Нажал…"></textarea>
+<label class="chk"><input type="checkbox" id="env" name="env"> <span>Добавить сведения об устройстве: браузер, система, размер экрана и версия игры. Ничего больше. По умолчанию выключено.</span></label>
+<div class="btns"><button class="btn" type="submit">Открыть заявку на GitHub</button><button class="btn" type="button" id="copy">Скопировать текст</button></div>
+<div class="dim" style="font-size:13px;margin-top:10px">Предпросмотр того, что уйдёт в заявку:</div>
+<div id="preview" aria-live="polite"></div>
+</form>
+<div class="panel" style="margin-top:16px">
+<h3>Как это работает</h3>
+<p>Сайт сам ничего не отправляет и не хранит: форма лишь собирает текст и открывает страницу новой заявки на GitHub, где вы можете проверить и поправить его. Для отправки там нужен аккаунт GitHub; если его нет — скопируйте текст и напишите в Telegram.</p>
+<p>Если ошибка случилась в игре, откройте меню и нажмите «Скопировать журнал» — приложите его к заявке. Подробности о данных — в <a href="../privacy.html">политике конфиденциальности</a>.</p>
+</div>
+</div>
+</main>
+<footer><div class="wrap">OldGold — браузерная игра про деревню лесных гномов. Вся графика и звук нарисованы для игры.<br>
+<a href="../privacy.html">Конфиденциальность</a> · <a href="https://github.com/xXxLexolasxXx/OldGold">GitHub</a> · <a href="bugs.html">Сообщить об ошибке</a></div></footer>
+<div id="lb" role="dialog" aria-label="Скриншот"><img alt=""></div>
+<script src="js/site.js" defer></script>
+</body></html>

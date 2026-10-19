@@ -144,11 +144,16 @@ function swingFrame(u) {
   // долгое действие (жатва, рубка) — несколько отдельных ударов с паузами, по ~0.9 с на удар
   const n = a && a.T ? Math.max(1, Math.round(a.T / 0.9)) : 1;
   const p = a && a.T ? ((1 - Math.max(0, a.t) / a.T) * n) % 1 : 1;
-  if (p < 0.12) return 2;      // начало: рука опущена
-  if (p < 0.3) return 1;       // поднимает
-  if (p < 0.5) return 0;       // замах над плечом
-  if (p < 0.58) return 2;      // удар
-  return 3;                    // инструмент внизу, пауза
+  // 8 кадров: рука опущена → поднимает (4 кадра) → над плечом → отведена назад → удар → инструмент внизу
+  if (p < 0.08) return 4;
+  if (p < 0.16) return 3;
+  if (p < 0.24) return 2;
+  if (p < 0.32) return 1;
+  if (p < 0.42) return 0;      // замах над плечом
+  if (p < 0.5) return 7;       // чуть назад — разгон
+  if (p < 0.54) return 5;      // удар
+  if (p < 0.6) return 6;       // инструмент в нижней точке
+  return 6;                    // пауза
 }
 
 // ---------- Жители ----------
@@ -172,8 +177,10 @@ function drawUnit(c, u) {
   else if (u.anim === 'lost') { view = 'E'; face = (Math.floor(Game.time * 1.3 + u.id) & 1) ? 1 : -1; }   // озирается в тумане
   else if (u.anim === 'freeze') { view = 'S'; px += (Math.floor(Game.time * 30) & 1) ? 1 : -1; }      // трясётся от ужаса
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: swingFrame(u) }; }
-  const wp = weatherPose(u);   // скольжение под дождём, горение
-  if (wp) { pose = wp.pose; view = 'E'; }
+  let wp = weatherPose(u);   // скольжение под дождём, горение
+  const bw = !wp && u.brawl && typeof brawlPose === 'function' ? brawlPose(u) : null;   // пьяная драка и отлёт героя (brawl.js)
+  if (bw) wp = bw;
+  if (wp) { pose = wp.pose; view = 'E'; if (wp.frame) frame = wp.frame; }
   if (pose === 'smoke') frame = smokeFrameOf(u);   // 6 кадров курения
   // герой в бою: 9 кадров из people.js (стойка, замах, удар, довод, парирование, удар по нему, победа, выхватывание)
   const ffr = !wp && fightFrameOf(u, moving);
@@ -185,16 +192,16 @@ function drawUnit(c, u) {
   // просто стоит — лицом к зрителю, а не боком, как после ходьбы
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
-  const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 || u.hangUntil > Game.time ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
+  const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 || u.hangUntil > Game.time ? 'tired' : '', gest: '', gf: gestCyc(Game.time * 4 + u.id) };
   if ((u.type === 'hero' || u.rec || u.gx || u.gm) && typeof heroWpnOf === 'function') opt.wpn = heroWpnOf(u);   // оружие героя, рекрутов и глав гильдий (herokit.js)
   if ((u.anim === 'flaskout' || u.anim === 'drink') && pose === 'idle') {
     opt.gest = u.anim === 'drink' ? 'drink' : 'chest';
-    opt.gf = Math.floor(Game.time * 3 + u.id) & 1;
+    opt.gf = gestCyc(Game.time * 3 + u.id);
     view = (u.id & 1) ? 'S' : 'E';
   } else if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {
     opt.gest = u.gest;
     if (u.gest === 'five') { opt.gf = fiveFrameAt(FIVE_T - (u.gestUntil - Game.time)); view = 'E'; face = u.gestFace || face; }
-    else if (u.gest === 'clap') { opt.gf = Math.floor(Game.time * 7 + u.id) & 1; if (pose === 'idle') view = 'S'; }
+    else if (u.gest === 'clap') { opt.gf = gestCyc(Game.time * 7 + u.id); if (pose === 'idle') view = 'S'; }
     else if (pose === 'idle') { view = 'E'; face = u.gestFace || face; }
   } else if (pose === 'idle' && !u.anim) {
     // заскучал: чешет затылок, потягивается, зевает, оглядывается
@@ -217,6 +224,9 @@ function drawUnit(c, u) {
   }
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, lying ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
+  if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 6 тактов, 2 позы
+  // жест и так движется: в покое без дыхания, на ходу — две опорные позы (шаг уже даёт 8 кадров), чтобы не множить спрайты
+  if (opt.gest && opt.gest !== 'five') { if (pose === 'idle') frame = 0; else if (pose === 'walk') opt.gf = gestK(opt.gf) >= 0.5 ? 1 : 0; }
   const spr = personSprite(u, view, pose, frame, opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
   if (flyP >= 0) {
@@ -264,6 +274,7 @@ function drawUnit(c, u) {
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
   c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
+  if (bw && typeof brawlFx === 'function') brawlFx(c, u, bw, px, py);
   drawNightUnit(c, u, px, py, face, view, lying || flyP >= 0);
   if (u.netUntil > Game.time && !lying) drawNet(c, u, px, py, face, moving);
   if (!wp) drawUmbrella(c, u, px, py, face, pose, lying);

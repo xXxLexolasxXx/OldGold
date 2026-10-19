@@ -381,22 +381,58 @@ body.info-float #tab-area { flex: 1 1 auto; }
   position: absolute; left: 50%; top: 52px; transform: translateX(-50%);
   display: flex; flex-direction: column; gap: 4px; align-items: center;
 }
-.toast {
-  /* полированная сталь: 4 заклёпки по углам, блик по диагонали, гравированный тёмный шрифт */
-  background: radial-gradient(circle at 9px 9px, #f4f1e8 0 1px, #b9b4a6 2px, #6c675c 3.6px, #1c1914 4.4px, transparent 5px), radial-gradient(circle at calc(100% - 9px) 9px, #f4f1e8 0 1px, #b9b4a6 2px, #6c675c 3.6px, #1c1914 4.4px, transparent 5px), radial-gradient(circle at 9px calc(100% - 9px), #f4f1e8 0 1px, #b9b4a6 2px, #6c675c 3.6px, #1c1914 4.4px, transparent 5px), radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), #f4f1e8 0 1px, #b9b4a6 2px, #6c675c 3.6px, #1c1914 4.4px, transparent 5px),
-    linear-gradient(105deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.45) 45%, rgba(255,255,255,0) 58%),
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0 1px, rgba(0,0,0,0.05) 1px 3px),
-    linear-gradient(180deg, #d4d8de 0%, #a3a9b2 45%, #7b818b 55%, #a9aeb6 100%);
-  border: 2px solid #15120e; border-radius: 3px;
-  box-shadow: inset 0 0 0 1px #eef0f3, inset 0 0 0 2px #5d636d, inset 0 -3px 5px rgba(0,0,0,0.3), 0 3px 8px rgba(0,0,0,0.65);
-  padding: 14px 32px 15px; min-height: 50px; display: flex; align-items: center; justify-content: center; color: #1d1812; text-align: center;
-  font-family: 'Ruslan Display', 'Kurale', Georgia, serif; font-size: 15px; letter-spacing: 0.02em;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.55), 0 -1px 0 rgba(0,0,0,0.25);
-  animation: fade 3.4s forwards;
+/* ===== Оповещения: обожжённый пергамент (чистый CSS, без картинок и фильтров) ===== */
+#toasts { pointer-events: none; z-index: 18; }
+.toast, .ach-toast {
+  --wax: #b3261e; --wax-hi: #e8624f; --wax-lo: #5e100b; --ribbon: #8c2a1c; --mark: '✦';
+  position: relative; box-sizing: border-box; pointer-events: auto; cursor: pointer; transform-origin: 50% 0;
+  background:
+    radial-gradient(circle at 9% 78%, #1d0e05 0 2.2px, #6a3310 3px, rgba(120,60,18,0.55) 4.8px, transparent 6.5px),
+    radial-gradient(circle at 93% 24%, #1d0e05 0 1.6px, #6a3310 2.4px, rgba(120,60,18,0.5) 4px, transparent 5.5px),
+    radial-gradient(ellipse at 3% 3%, rgba(70,28,6,0.75), transparent 38%),
+    radial-gradient(ellipse at 97% 100%, rgba(70,28,6,0.8), transparent 40%),
+    radial-gradient(ellipse at 100% 0%, rgba(90,40,10,0.45), transparent 30%),
+    radial-gradient(ellipse at 0% 100%, rgba(90,40,10,0.45), transparent 30%),
+    radial-gradient(ellipse 22px 9px at 62% 30%, rgba(150,100,40,0.22), transparent),
+    radial-gradient(ellipse 30px 10px at 34% 74%, rgba(140,90,30,0.2), transparent),
+    linear-gradient(97deg, transparent 41%, rgba(120,80,30,0.16) 42%, transparent 44%),
+    linear-gradient(172deg, transparent 58%, rgba(120,80,30,0.13) 59%, transparent 61%),
+    linear-gradient(90deg, var(--ribbon) 0 100%) 0 0 / 100% 3px no-repeat,
+    radial-gradient(ellipse at 50% 45%, #f1deaa 0%, #e6cd92 60%, #cfae6c 100%);
+  box-shadow: inset 0 0 0 4px #24110a, inset 0 0 0 5px rgba(150,70,20,0.7), inset 0 0 14px 6px rgba(80,32,8,0.78), inset 0 0 26px 8px rgba(120,70,20,0.28);
+  clip-path: var(--c0);
+  color: #2a1608; text-shadow: 0 0 1px rgba(255,238,190,0.55);
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 12px 24px 13px 52px; min-height: 52px; max-width: min(440px, 92vw);
+  font-family: 'Ruslan Display', 'Kurale', Georgia, serif; font-size: 15px; line-height: 1.25; letter-spacing: 0.01em;
+  animation: pUnfold 0.42s cubic-bezier(.2,.8,.3,1) both, pBurn 0.5s ease-in var(--life, 2.9s) forwards;
+  -webkit-tap-highlight-color: transparent;
 }
-.toast.link { cursor: pointer; }
-.toast.link:hover { box-shadow: inset 0 0 0 1px var(--gold), 0 3px 8px rgba(0,0,0,0.6); }
-@keyframes fade { 0% { opacity: 0; transform: translateY(-6px); } 8%, 78% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.toast::before, .ach-cup::before {
+  content: var(--mark); position: absolute; left: 11px; top: 50%; width: 30px; height: 30px; margin-top: -15px;
+  display: flex; align-items: center; justify-content: center; border-radius: 50% 46% 52% 48%;
+  font: 15px/1 Georgia, serif; color: rgba(255,225,190,0.92); text-shadow: 0 -1px 0 rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.18);
+  background: radial-gradient(circle at 34% 30%, var(--wax-hi) 0, var(--wax) 55%, var(--wax-lo) 100%);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,0.18), inset 0 0 0 3px rgba(255,200,160,0.14), 0 1px 2px rgba(40,10,0,0.6);
+}
+.toast::after, .ach-toast::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, rgba(40,14,2,0), rgba(40,14,2,0.9)); opacity: 0; animation: pChar 0.5s ease-in var(--life, 2.9s) forwards; }
+.toast.burn, .ach-toast.burn { animation: pBurn 0.3s ease-in forwards; }
+.toast.burn::after, .ach-toast.burn::after { animation: pChar 0.3s ease-in forwards; }
+/* типы: цвет сургуча и ленты */
+.toast.imp, .ach-toast { --wax: #c28a14; --wax-hi: #f6d458; --wax-lo: #6c4706; --ribbon: #b8861c; --mark: '!'; }
+.toast.night { --wax: #4b3a82; --wax-hi: #8a78c8; --wax-lo: #1e1640; --ribbon: #3f3070; --mark: '☾'; }
+.toast.coop { --wax: #2f6f54; --wax-hi: #6fbf94; --wax-lo: #123524; --ribbon: #2c6a4e; --mark: '⚑'; }
+.toast.imp::before { color: #3a2204; text-shadow: 0 1px 0 rgba(255,240,180,0.4); font-weight: bold; }
+.toast.link:hover { filter: none; box-shadow: inset 0 0 0 4px #24110a, inset 0 0 0 5px #e4b434, inset 0 0 14px 6px rgba(80,32,8,0.78); }
+.toast:active, .ach-toast:active { transform: scale(0.98); }
+@keyframes pUnfold { 0% { opacity: 0; transform: translateY(-8px) scaleY(0.25); } 60% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes pBurn { 0% { clip-path: var(--c0); opacity: 1; } 100% { clip-path: var(--c1); opacity: 0; } }
+@keyframes pChar { 0% { opacity: 0; } 100% { opacity: 0.95; } }
+@media (prefers-reduced-motion: reduce) { .toast, .ach-toast { animation-duration: 0.01s, 0.3s; } }
+.toast.v0, .ach-toast.v0 { --c0: polygon(0% 5px, 11.1% 0px, 22.2% 2.2px, 33.3% 2.4px, 44.4% 2.6px, 55.6% 3.1px, 66.7% 3.8px, 77.8% 0.2px, 88.9% 3.5px, 100% 5px, calc(100% - 1.2px) 33.3%, calc(100% - 2.8px) 66.7%, 100% calc(100% - 5px), 88.9% calc(100% - 2px), 77.8% calc(100% - 1.7px), 66.7% calc(100% - 3.9px), 55.6% calc(100% - 2.3px), 44.4% calc(100% - 1.8px), 33.3% calc(100% - 2.8px), 22.2% calc(100% - 0.6px), 11.1% calc(100% - 2.8px), 0% calc(100% - 5px), 1.7px 66.7%, 3.4px 33.3%); --c1: polygon(calc(0% + 10px) 16px, calc(11.1% + 10px) 11px, calc(22.2% + 10px) 13.2px, calc(33.3% + 10px) 13.4px, calc(44.4% + 10px) 13.6px, calc(55.6% + -10px) 14.1px, calc(66.7% + -10px) 14.8px, calc(77.8% + -10px) 11.2px, calc(88.9% + -10px) 14.5px, calc(100% + -10px) 16px, calc(100% - 17.2px) calc(33.3% + 6px), calc(100% - 18.8px) calc(66.7% + -6px), calc(100% + -10px) calc(100% - 16.0px), calc(88.9% + -10px) calc(100% - 13.0px), calc(77.8% + -10px) calc(100% - 12.7px), calc(66.7% + -10px) calc(100% - 14.9px), calc(55.6% + -10px) calc(100% - 13.3px), calc(44.4% + 10px) calc(100% - 12.8px), calc(33.3% + 10px) calc(100% - 13.8px), calc(22.2% + 10px) calc(100% - 11.6px), calc(11.1% + 10px) calc(100% - 13.8px), calc(0% + 10px) calc(100% - 16.0px), 17.7px calc(66.7% + -6px), 19.4px calc(33.3% + 6px)); }
+.toast.v1, .ach-toast.v1 { --c0: polygon(0% 5px, 11.1% 0px, 22.2% 2.7px, 33.3% 3.1px, 44.4% 3.9px, 55.6% 3.2px, 66.7% 3.3px, 77.8% 2.7px, 88.9% 0.5px, 100% 5px, calc(100% - 2.4px) 33.3%, calc(100% - 2.7px) 66.7%, 100% calc(100% - 5px), 88.9% calc(100% - 0.1px), 77.8% calc(100% - 1.6px), 66.7% calc(100% - 3.8px), 55.6% calc(100% - 0.9px), 44.4% calc(100% - 2.3px), 33.3% calc(100% - 1.9px), 22.2% calc(100% - 3.3px), 11.1% calc(100% - 1.2px), 0% calc(100% - 5px), 3.8px 66.7%, 4px 33.3%); --c1: polygon(calc(0% + 10px) 16px, calc(11.1% + 10px) 11px, calc(22.2% + 10px) 13.7px, calc(33.3% + 10px) 14.1px, calc(44.4% + 10px) 14.9px, calc(55.6% + -10px) 14.2px, calc(66.7% + -10px) 14.3px, calc(77.8% + -10px) 13.7px, calc(88.9% + -10px) 11.5px, calc(100% + -10px) 16px, calc(100% - 18.4px) calc(33.3% + 6px), calc(100% - 18.7px) calc(66.7% + -6px), calc(100% + -10px) calc(100% - 16.0px), calc(88.9% + -10px) calc(100% - 11.1px), calc(77.8% + -10px) calc(100% - 12.6px), calc(66.7% + -10px) calc(100% - 14.8px), calc(55.6% + -10px) calc(100% - 11.9px), calc(44.4% + 10px) calc(100% - 13.3px), calc(33.3% + 10px) calc(100% - 12.9px), calc(22.2% + 10px) calc(100% - 14.3px), calc(11.1% + 10px) calc(100% - 12.2px), calc(0% + 10px) calc(100% - 16.0px), 19.8px calc(66.7% + -6px), 20px calc(33.3% + 6px)); }
+.toast.v2, .ach-toast.v2 { --c0: polygon(0% 5px, 11.1% 0px, 22.2% 3.2px, 33.3% 3.9px, 44.4% 1.1px, 55.6% 3.3px, 66.7% 2.7px, 77.8% 1.2px, 88.9% 1.6px, 100% 5px, calc(100% - 3.6px) 33.3%, calc(100% - 2.5px) 66.7%, 100% calc(100% - 5px), 88.9% calc(100% - 2.2px), 77.8% calc(100% - 1.6px), 66.7% calc(100% - 3.7px), 55.6% calc(100% - 3.6px), 44.4% calc(100% - 2.8px), 33.3% calc(100% - 1.1px), 22.2% calc(100% - 2px), 11.1% calc(100% - 3.5px), 0% calc(100% - 5px), 1.8px 66.7%, 0.5px 33.3%); --c1: polygon(calc(0% + 10px) 16px, calc(11.1% + 10px) 11px, calc(22.2% + 10px) 14.2px, calc(33.3% + 10px) 14.9px, calc(44.4% + 10px) 12.1px, calc(55.6% + -10px) 14.3px, calc(66.7% + -10px) 13.7px, calc(77.8% + -10px) 12.2px, calc(88.9% + -10px) 12.6px, calc(100% + -10px) 16px, calc(100% - 19.6px) calc(33.3% + 6px), calc(100% - 18.5px) calc(66.7% + -6px), calc(100% + -10px) calc(100% - 16.0px), calc(88.9% + -10px) calc(100% - 13.2px), calc(77.8% + -10px) calc(100% - 12.6px), calc(66.7% + -10px) calc(100% - 14.7px), calc(55.6% + -10px) calc(100% - 14.6px), calc(44.4% + 10px) calc(100% - 13.8px), calc(33.3% + 10px) calc(100% - 12.1px), calc(22.2% + 10px) calc(100% - 13.0px), calc(11.1% + 10px) calc(100% - 14.5px), calc(0% + 10px) calc(100% - 16.0px), 17.8px calc(66.7% + -6px), 16.5px calc(33.3% + 6px)); }
+
 
 #help {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -492,8 +528,9 @@ body.mobile .dd-menu button { min-height: 38px; min-width: 42px; }
 body.mobile #topbar .m-only { order: 0; }
 body.mobile #dd-res .dd-t span:nth-child(n+3) { display: none; }   /* на телефоне в кнопке — дерево и камень, остальное в списке */
 body.mobile #dd-snd .dd-menu, body.mobile #dd-speed .dd-menu { right: 0; }
-body.mobile #toasts { top: 84px; width: 92%; }
-body.mobile .toast { font-size: 14px; text-align: center; padding: 10px 26px 11px; min-height: 42px; }
+body.mobile #toasts { top: 84px; width: 94%; }
+body.mobile .toast, body.mobile .ach-toast { font-size: 13.5px; padding: 9px 18px 10px 46px; min-height: 44px; gap: 8px; }
+body.mobile .toast::before, body.mobile .ach-cup::before { left: 9px; width: 28px; height: 28px; margin-top: -14px; }
 
 body.mobile #build-list { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 body.mobile #build-cats { overflow-x: auto; scrollbar-width: none; }

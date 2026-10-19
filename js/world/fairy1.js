@@ -96,6 +96,20 @@ function fyOutline(c, w, h, col) {
   for (const [x, y] of mark) c.fillRect(x, y, 1, 1);
 }
 
+// Кадры фей-зверей: fr 0/1 — опорные позы (как раньше), 10..17 — 8 кадров цикла, 20..25 — 6 кадров;
+// промежуточные позы тянутся между опорными по косинусу (fyMix), кэш по номеру кадра
+function fyK(fr) {
+  if (fr < 2) return fr;
+  const N = fr >= 20 ? 6 : 8, i = fr - (fr >= 20 ? 20 : 10);
+  return (1 - Math.cos(i / N * Math.PI * 2)) / 2;
+}
+function fyMix(a, b, k) {
+  if (typeof a === 'number') return a + (b - a) * k;
+  if (Array.isArray(a)) return a.map((v, n) => fyMix(v, b[n], k));
+  const o = {}; for (const n in a) o[n] = fyMix(a[n], b[n], k); return o;
+}
+const fyCyc8 = t => 10 + (Math.floor(t) & 7), fyCyc6 = t => 20 + (Math.floor(t) % 6);
+
 function sprUnicorn(fr) {
   return fySpr('uni2' + fr, 48, 44, c => {
     c.translate(0, 7);
@@ -106,8 +120,8 @@ function sprUnicorn(fr) {
       fyE(c, b[0], b[1], 1.7, 1.7, col[1]);
       fyL(c, d[0], d[1], d[0] + 0.3, d[1] + 1.6, 3, 3, hoof);
     };
-    const L = fr ? { fn: [[27, 23], [31, 27], [30, 31]], ff: [[23, 23], [24, 29], [24, 34]], hn: [[10, 24], [7, 28], [5, 32]], hf: [[14, 24], [14, 29], [14, 34]] }
-      : { fn: [[27, 23], [28, 29], [28, 34]], ff: [[23, 23], [22, 29], [20, 33]], hn: [[10, 24], [8, 29], [9, 34]], hf: [[14, 24], [16, 29], [17, 34]] };
+    const L = fyMix({ fn: [[27, 23], [28, 29], [28, 34]], ff: [[23, 23], [22, 29], [20, 33]], hn: [[10, 24], [8, 29], [9, 34]], hf: [[14, 24], [16, 29], [17, 34]] }, { fn: [[27, 23], [31, 27], [30, 31]], ff: [[23, 23], [24, 29], [24, 34]], hn: [[10, 24], [7, 28], [5, 32]], hf: [[14, 24], [14, 29], [14, 34]] }
+      , fyK(fr));   // кадр шага: позы ног тянутся одна в другую
     leg(...L.ff, F, '#5a4a6a'); leg(...L.hf, F, '#5a4a6a');
     // хвост
     fyL(c, 6, 15, 2, 19, 4.4, 3.4, Pd); fyL(c, 2, 19, 0, 26, 3.4, 3, Pd); fyL(c, 0, 26, 3, 32, 3, 1.2, Pd);
@@ -142,7 +156,7 @@ function sprDragon(fr) {
     c.translate(0, 9);
     const G = ['#1f5a2c', '#4ca04a', '#8ad06a'], WM = '#2f8a58', WD = '#1c5a38', BN = '#164a28', CR = '#e8dcb8', BL = '#e2e69c', BD = '#b4c068';
     const wing = (dx, mem, bone) => {
-      const S = [14 + dx, 10], T = fr ? [[2, 15], [7, 22], [14, 24]] : [[3, 0], [9, -6], [17, -6]];
+      const S = [14 + dx, 10], T = fyMix([[3, 0], [9, -6], [17, -6]], [[2, 15], [7, 22], [14, 24]], fyK(fr));
       const T2 = T.map(([x, y]) => [x + dx, y]);
       const mid = [0, 1].map(i => [(T2[i][0] + T2[i + 1][0]) / 2 + (S[0] - (T2[i][0] + T2[i + 1][0]) / 2) * 0.28, (T2[i][1] + T2[i + 1][1]) / 2 + (S[1] - (T2[i][1] + T2[i + 1][1]) / 2) * 0.28]);
       fyP(c, [S, T2[0], mid[0], T2[1], mid[1], T2[2], [17 + dx, 9]], mem);
@@ -184,7 +198,7 @@ function sprGriffin(fr) {
     const T = ['#9a6422', '#c8903e', '#eebb6a'], WH = ['#cfc2a0', '#f6f0e2', '#ffffff'], WB = ['#4e3018', '#7a4e26', '#a8743c'], YE = ['#b07a10', '#f0b830'], TL = '#e8c030', DK = '#3e2a14';
     const wing = (dx, dark) => {
       const sx = 22 + dx, sy = 19;
-      const tips = fr ? [[0, 14], [2, 8], [6, 3], [12, 0], [19, -1]] : [[2, 0], [6, -6], [12, -10], [19, -11], [26, -9]];
+      const tips = fyMix([[2, 0], [6, -6], [12, -10], [19, -11], [26, -9]], [[0, 14], [2, 8], [6, 3], [12, 0], [19, -1]], fyK(fr));
       tips.forEach(([x, y]) => { fyL(c, sx - 3, sy - 1, x + dx, y, 4.6, 1.2, dark ? WB[0] : WB[1]); fyL(c, sx - 3, sy - 1.5, x + dx + 0.4, y, 2.4, 0.8, dark ? WB[1] : WB[2]); });
       fyE(c, sx - 3, sy - 1.5, 5.6, 3.6, dark ? WB[0] : WB[1]); fyE(c, sx - 3.4, sy - 2, 4.4, 2.6, dark ? WB[1] : WB[2]);
     };
@@ -224,7 +238,7 @@ function sprFish(kind, fr) {
   return fySpr('fish2' + kind + fr, 28, 16, c => {
     const K = FISH_COL[kind] || FISH_COL.gold;
     c.translate(0, 1);
-    const sw = fr ? 1.8 : -1.8;
+    const sw = fyMix(-1.8, 1.8, fyK(fr));
     fyP(c, [[9, 7], [1, 3 + sw], [2.4, 7], [1, 11 - sw]], K.f[0]); fyP(c, [[9, 7], [2.6, 4 + sw], [3.6, 7], [2.6, 10 - sw]], K.f[1]);
     fyP(c, [[11, 3.6], [14, -0.6], [19, 0.4], [20, 4]], K.f[0]); fyP(c, [[12, 3.6], [14.4, 0.6], [18, 1.2], [18.6, 4]], K.f[1]);
     fyP(c, [[13, 11], [15, 14.6], [18, 11.6]], K.f[0]);
@@ -243,9 +257,9 @@ function sprBabyDragon(fr) {
     c.translate(0, 4);
     const G = ['#2a7a3a', '#5cbc58', '#a6e68a'], CR = '#f0e6c4', BL = '#f4eeb0', BD = '#cfc884';
     const wing = (dx, mem, bone) => {
-      const S = [11 + dx, 16], T = fr ? [[3, 22], [7, 27], [13, 27]] : [[4, 5], [9, 1], [15, 4]];
+      const S = [11 + dx, 16], T = fyMix([[4, 5], [9, 1], [15, 4]], [[3, 22], [7, 27], [13, 27]], fyK(fr));
       const T2 = T.map(([x, y]) => [x + dx, y]);
-      fyP(c, [S, T2[0], [(T2[0][0] + T2[1][0]) / 2 + 1.5, (T2[0][1] + T2[1][1]) / 2 + (fr ? -1.5 : 2)], T2[1], [(T2[1][0] + T2[2][0]) / 2, (T2[1][1] + T2[2][1]) / 2 + (fr ? -1.5 : 2)], T2[2], [14 + dx, 17]], mem);
+      fyP(c, [S, T2[0], [(T2[0][0] + T2[1][0]) / 2 + 1.5, (T2[0][1] + T2[1][1]) / 2 + fyMix(2, -1.5, fyK(fr))], T2[1], [(T2[1][0] + T2[2][0]) / 2, (T2[1][1] + T2[2][1]) / 2 + fyMix(2, -1.5, fyK(fr))], T2[2], [14 + dx, 17]], mem);
       for (const t of T2) fyL(c, S[0], S[1], t[0], t[1], 1.4, 0.8, bone);
     };
     wing(-2, '#2a7a4e', '#1c5a38');
@@ -311,7 +325,7 @@ function sprSalamander(fr) {
     const K = ['#0c0a08', '#221c18', '#3c322a'], Y = ['#e89a10', '#ffd23a', '#fff08a'];
     const foot = (x, y, d) => { fyL(c, x, y, x + 1 * d, y + 3.4, 4, 3.2, K[0]); fyL(c, x - 0.4, y, x + 0.6 * d, y + 3.4, 2.6, 2, K[1]); fyE(c, x + 1.6 * d, y + 5, 3.6, 1.4, K[0]); for (const t of [-1.8, -0.6, 0.6, 1.8]) fyL(c, x + 1.6 * d + t * 1.1, y + 5.4, x + 1.6 * d + t * 1.5, y + 6.6, 1, 1, K[0]); };
     // дальние ноги
-    foot(fr ? 38 : 40, 20, 1); foot(fr ? 17 : 15, 20, -1);
+    foot(fyMix(40, 38, fyK(fr)), 20, 1); foot(fyMix(15, 17, fyK(fr)), 20, -1);
     // хвост: длинный, к кончику тлеет
     fyL(c, 14, 17, 6, 20.6, 10, 6.4, K[0]); fyL(c, 6, 20.6, 2.6, 26, 6.4, 4, K[0]); fyL(c, 2.6, 26, 8, 30, 4, 1.6, K[0]);
     fyL(c, 13.6, 16.4, 5.6, 20, 8, 5, K[1]); fyL(c, 5.6, 20, 2.2, 25.4, 5, 2.8, K[1]);
@@ -329,7 +343,7 @@ function sprSalamander(fr) {
     fyD(c, 58, 16.4, '#4a3a2e'); fyD(c, 58, 17.4, '#4a3a2e');
     for (const x of [48, 50.6, 53.2]) fyD(c, x, 12.2, Y[0]);
     // ближние ноги
-    foot(fr ? 34 : 36, 21, 1); foot(fr ? 21 : 19, 21, -1);
+    foot(fyMix(36, 34, fyK(fr)), 21, 1); foot(fyMix(19, 21, fyK(fr)), 21, -1);
     fyOutline(c, 64, 34, '#3a1408');
   });
 }
@@ -344,7 +358,7 @@ function sprFishN(kind, fr) {
   return fySpr('fishn' + kind + fr, 34, 14, c => {
     const K = FISHN_COL[kind] || FISHN_COL.teal;
     c.translate(0, 1);
-    const sw = fr ? 1.6 : -1.6;
+    const sw = fyMix(-1.6, 1.6, fyK(fr));
     fyP(c, [[10, 6], [1, 2 + sw], [3, 6], [1, 10 - sw]], K.f[0]); fyP(c, [[10, 6], [2.6, 3.4 + sw], [4, 6], [2.6, 8.6 - sw]], K.f[1]);
     fyP(c, [[13, 3.4], [17, 0.4], [22, 1.4], [23, 3.6]], K.f[0]);
     fyP(c, [[16, 8.6], [14, 11.8], [19, 9.4]], K.f[0]);
@@ -401,7 +415,7 @@ function sprGoose(fr) {
     const q = '#f4cc40', Q = '#c8982a', e = '#fff2a0', o = '#e8782a';
     R_(c, 2, 7, 11, 6, q); R_(c, 0, 6, 4, 3, q); R_(c, 3, 7, 9, 1, e); R_(c, 3, 12, 10, 1, Q); R_(c, 5, 9, 5, 2, Q);        // тело, хвост, крыло
     R_(c, 11, 2, 3, 7, q); R_(c, 11, 2, 1, 7, e); R_(c, 12, 0, 4, 3, q); R_(c, 15, 1, 4, 2, o); R_(c, 14, 1, 1, 1, '#1a1208');
-    R_(c, fr ? 5 : 6, 13, 1, 4, o); R_(c, fr ? 9 : 8, 13, 1, 4, o); R_(c, fr ? 4 : 5, 16, 3, 1, o); R_(c, fr ? 8 : 7, 16, 3, 1, o);
+    { const q = fyK(fr), m = (a, b) => Math.round(fyMix(a, b, q)); R_(c, m(6, 5), 13, 1, 4, o); R_(c, m(8, 9), 13, 1, 4, o); R_(c, m(5, 4), 16, 3, 1, o); R_(c, m(7, 8), 16, 3, 1, o); };
   });
 }
 function sprEgg() { return fySpr('egg', 5, 6, c => { R_(c, 1, 0, 3, 1, '#f4cc40'); R_(c, 0, 1, 5, 4, '#f4cc40'); R_(c, 1, 5, 3, 1, '#c8982a'); R_(c, 1, 1, 1, 2, '#fff6c0'); }); }
@@ -571,7 +585,7 @@ function unicornDraw(list, c, F, x0, y0, x1, y1) {
   const u = F.uni;
   if (!u || !FY_SEE(u.x, u.y, x0, y0, x1, y1)) return;
   list.push([u.y + 0.1, () => {
-    const px = u.x * TILE, py = u.y * TILE + 4, fr = u.mv ? (Math.floor(u.ph * (u.st === 'flee' ? 10 : 4)) & 1) : 0;
+    const px = u.x * TILE, py = u.y * TILE + 4, fr = u.mv ? fyCyc8(u.ph * (u.st === 'flee' ? 10 : 4) * 4) : 0;
     const a = u.life < 3 && u.st !== 'flee' ? Math.max(0, u.life / 3) : 1;
     fyShadow(c, px, py, 11);
     const rear = u.st === 'flee' && Math.floor(u.t * 9) % 6 === 0 ? 1 : 0;
@@ -738,7 +752,7 @@ function dragonDraw(list, c, F, x0, y0, x1, y1) {
       if (Math.floor(d.ph * 1.5) % 4 === 0) { c.fillStyle = 'rgba(200,200,200,0.5)'; c.fillRect(Math.round(px + 11), Math.round(py - 18 - (d.ph * 6) % 6), 2, 2); }
       return;
     }
-    fyBlit(c, d.stage ? sprDragon(air ? (Math.floor(d.ph * 8) & 1) : 1) : sprBabyDragon(air ? (Math.floor(d.ph * 9) & 1) : 1), px, py - d.z, d.face || 1, 1, d.stage ? 0.85 : 1);
+    fyBlit(c, d.stage ? sprDragon(air ? fyCyc8(d.ph * 32) : 1) : sprBabyDragon(air ? fyCyc8(d.ph * 36) : 1), px, py - d.z, d.face || 1, 1, d.stage ? 0.85 : 1);
     if (d.loot && air) { c.save(); c.translate(px + (d.face || 1) * 6, py - d.z + 2); c.scale(0.3, 0.3); drawLoad(c, 'gold'); c.restore(); }
     if (d.st === 'fire' && d.fire) {     // струя огня
       const dir = d.face || 1;
@@ -819,7 +833,7 @@ function griffinDraw(list, c, F, x0, y0, x1, y1) {
   list.push([g.y + 0.3, () => {
     const px = g.x * TILE, py = g.y * TILE + 4, air = g.z > 1;
     fyShadow(c, px, py, air ? 8 : 12, air ? 0.16 : 0.3);
-    fyBlit(c, sprGriffin(air || g.st === 'duel' ? (Math.floor(g.ph * 4) & 1) : 1), px, py - g.z, g.face, 1, 1, 0.8);
+    fyBlit(c, sprGriffin(air || g.st === 'duel' ? fyCyc8(g.ph * 16) : 1), px, py - g.z, g.face, 1, 1, 0.8);
   }]);
 }
 
@@ -868,7 +882,7 @@ function salamanderDraw(list, c, F, x0, y0, x1, y1) {
       gr.addColorStop(0, `rgba(255,150,40,${(0.18 + 0.4 * k) * fl})`); gr.addColorStop(1, 'rgba(255,100,20,0)');
       c.fillStyle = gr; c.fillRect(px - 48, py - 54, 96, 96);
       c.restore();
-      fyBlit(c, sprSalamander(k > 0.6 ? (Math.floor(s.ph * 5) & 1) : 0), px, py, 1, 1, 0.9);
+      fyBlit(c, sprSalamander(k > 0.6 ? fyCyc8(s.ph * 20) : 0), px, py, 1, 1, 0.9);
       if (k > 0.6 && (Math.floor(s.ph * 8) & 3) === 0) { c.fillStyle = '#ffd860'; c.fillRect(Math.round(px - 5 + Math.sin(s.ph * 9) * 5), Math.round(py - 12 - (s.ph * 14) % 8), 1, 2); }
     }]);
   }
@@ -921,7 +935,7 @@ function fishyDraw(list, c, F, x0, y0, x1, y1) {
   for (const f of F.fishy || []) {
     if (!FY_SEE(f.x, f.y, x0, y0, x1, y1) || (nightAmt() > 0.8 && f.st !== 'jump')) continue;
     list.push([f.y + (f.st === 'jump' ? 0.3 : -0.2), () => {
-      const px = f.x * TILE, py = f.y * TILE + 2, jump = f.st === 'jump', fr = Math.floor(f.ph * (jump ? 12 : 5)) & 1;
+      const px = f.x * TILE, py = f.y * TILE + 2, jump = f.st === 'jump', fr = fyCyc6(f.ph * (jump ? 12 : 5) * 3);
       if (!jump) {
         c.strokeStyle = 'rgba(220,240,255,0.35)'; c.beginPath(); c.ellipse(px, py + 1, 8 + (f.ph * 3) % 3, 2.6, 0, 0, 7); c.stroke();
         fyBlit(c, sprFishN(f.kind, fr), px, py + 3, f.face, 0.5, 0.75);
@@ -998,7 +1012,7 @@ function fishDraw(list, c, F, x0, y0, x1, y1) {
   list.push([f.y, () => {
     const px = f.x * TILE, py = f.y * TILE + 2, up = f.st === 'caught' ? Math.sin(Math.min(1, (2 - f.jt) / 1.2) * Math.PI) * 14 : (f.jt > 0 ? Math.sin(f.jt / 0.6 * Math.PI) * 6 : 0);
     c.strokeStyle = 'rgba(220,240,255,0.45)'; c.beginPath(); c.ellipse(px, py + 2, 9 + (f.ph * 4) % 4, 3 + ((f.ph * 4) % 4) * 0.3, 0, 0, 7); c.stroke();
-    fyBlit(c, sprFish(f.kind, Math.floor(f.ph * 6) & 1), px, py - up + 3, f.face, f.st === 'caught' ? Math.max(0, f.jt / 1) : 0.92, 0.8);
+    fyBlit(c, sprFish(f.kind, fyCyc6(f.ph * 18)), px, py - up + 3, f.face, f.st === 'caught' ? Math.max(0, f.jt / 1) : 0.92, 0.8);
   }]);
 }
 
@@ -1049,7 +1063,7 @@ function goldGooseDraw(list, c, F, x0, y0, x1, y1) {
   list.push([g.y + 0.15, () => {
     const px = g.x * TILE, py = g.y * TILE + 4;
     fyShadow(c, px, py, 8);
-    fyBlit(c, sprGoose(g.mv ? (Math.floor(g.ph * 6) & 1) : 0), px, py, g.face, 1, 1, 0.9);
+    fyBlit(c, sprGoose(g.mv ? fyCyc6(g.ph * 18) : 0), px, py, g.face, 1, 1, 0.9);
     if ((Math.floor(g.ph * 6) % 5) === 0) { c.fillStyle = '#fffbd0'; c.fillRect(Math.round(px + Math.sin(g.ph * 5) * 8), Math.round(py - 12 + Math.cos(g.ph * 3) * 5), 1, 1); }
   }]);
 }

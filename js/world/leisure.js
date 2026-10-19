@@ -577,7 +577,9 @@ function drawOwlPerched(c, look, blink, r) {
 
 function drawOwlFlying(c, frame, r) {
   // крылья: 0 — вверху, 1 — горизонтально, 2 — внизу
-  const lift = [-5.5, -0.5, 3.6][frame];
+  // 0..2 — опорные позы (захват, grab.js); 10..17 — 8 кадров полётного взмаха
+  const wa = frame >= 10 ? Math.cos((frame - 10) / 8 * Math.PI * 2) : 0;
+  const lift = frame >= 10 ? (wa >= 0 ? -0.5 - 5 * wa : -0.5 - 4.1 * wa) : [-5.5, -0.5, 3.6][frame];
   for (const s of [-1, 1]) {
     c.fillStyle = lingrad(c, 0, -3, 0, 4, [[0, '#9a6c40'], [1, '#5a3a20']]);
     c.beginPath();
@@ -635,7 +637,7 @@ function drawOwls(c) {
       // тень скользит по земле под совой
       const gy = o.to[1] + (o.from[1] - o.to[1]) * (1 - o.f) + 34;
       c.fillStyle = 'rgba(10,8,4,0.18)'; c.beginPath(); c.ellipse(x, gy, 8, 2, 0, 0, 7); c.fill();
-      const fr = [0, 1, 2, 1][Math.floor(o.ph * 10) & 3];
+      const fr = 10 + (Math.floor(o.ph * 20) & 7);   // 8 кадров взмаха
       const spr = owlSprite('fly', 0, 0, fr);
       c.save(); c.translate(x, y); if (o.face < 0) c.scale(-1, 1);
       if (o.item) { c.save(); c.translate(0, 6); c.scale(0.4, 0.4); drawLoad(c, o.item); c.restore(); }

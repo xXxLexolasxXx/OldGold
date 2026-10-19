@@ -153,7 +153,7 @@ function drawInnPorch(c, b, spr, ox, oy) {
   const seat = (u, i) => {
     const [dx, row] = DINE_SEATS[i];
     const view = row < 0 ? 'S' : 'N';
-    const opt = { gait: '', gest: 'eat', gf: Math.floor(t * 1.8 + u.id * 0.7) & 1 };
+    const opt = { gait: '', gest: 'eat', gf: gestCyc(t * 1.8 + u.id * 0.7) };
     const sp = personSprite({ type: u.type, look: u.look, carry: null, injury: u.injury }, view, 'idle', 0, opt);
     return { dx, row, sp, u };
   };
