@@ -385,6 +385,21 @@ if (typeof skelMove === 'function') {
   };
 }
 
+// Дикие звери (волки, лисы, олени…) не проходят закрытые ворота; ручные и пастушьи — как жители
+if (typeof animalStep === 'function') {
+  const _animalStep = animalStep;
+  animalStep = function (a, dt, speed) {
+    if (a.path && !a.owner && !a.follow && !a.tamedBy) {
+      const c = a.path[a.pi], o = c && fortAt(c[0], c[1]);
+      if (o && o.f === 'gate' && !o.open && fortDone(o) && (Math.floor(a.x) !== c[0] || Math.floor(a.y) !== c[1])) {
+        a.path = null; a.moving = false; a.wait = 1.5 + Math.random() * 2;   // стоит у ворот, путь переищет позже
+        return true;
+      }
+    }
+    return _animalStep(a, dt, speed);
+  };
+}
+
 // ================= Страж на башне =================
 
 function* defPostGen(u) {
