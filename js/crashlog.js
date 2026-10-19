@@ -158,6 +158,8 @@ function crashLogText() {
   L.push(`OldGold ${crashVer()} · ${d.br} · ${d.os} · ${d.mob ? 'телефон' : 'компьютер'} · память устройства ${d.mem || '?'} ГБ · экран ${screen.width}×${screen.height} @${(window.devicePixelRatio || 1).toFixed(2)}`);
   L.push(`Сейчас: ${crashPhase()}${typeof Game !== 'undefined' ? `, игровое время ${Math.round((Game.time || 0) / 60)} мин, жителей ${(Game.units || []).length}, зданий ${(Game.buildings || []).length}` : ''}${typeof Fps !== 'undefined' ? `, ${Fps.fps.toFixed(0)} кадр/с, ${Fps.eco ? 'экономная' : 'обычная'} графика` : ''}`);
   L.push(`Прерванные запуски: ${sum.exits} (${sum.text})`);
+  // метка «жив» из perf.js: стоит, пока вкладка на экране; счётчик — запуски, после которых она осталась (вкладку убили)
+  try { const al = localStorage.getItem('feod.alive'); L.push(`Метка «жив»: ${al ? 'стоит с ' + iso(+al) : 'нет'} · сбоев по метке: ${localStorage.getItem('feod.crashes') || 0} · экономная графика: ${localStorage.getItem('feod.eco') || 'авто'}`); } catch (e) { /* ничего */ }
   for (const x of crashGet(CRASH_EXITS, []).slice(-10)) L.push(`  ${iso(x.t)}  ${CRASH_REASONS[x.r] || x.r}, фаза ${x.ph}, версия ${x.v}, шло ${x.min} мин, ошибок ${x.errs}${x.heap ? `, куча ${x.heap}/${x.lim} МБ` : ''}`);
   L.push(`Ошибки (последние ${Math.min(15, sum.errors)} из ${sum.errors}):`);
   for (const e of crashGet(CRASH_ERR, []).slice(-15)) L.push(`  ${iso(e.t)}  [${e.k}] ${e.m}  ${e.f}${e.st && e.st.length ? '  ← ' + e.st.join(' ← ') : ''}  (${e.ph}, ${e.v})`);
@@ -173,26 +175,42 @@ function crashLogText() {
   return L.join('\n');
 }
 
-function crashCopyLog() {
+// btn — нажатая кнопка: на ней коротко показываем итог (тосты на телефоне могут быть закрыты панелями)
+function crashCopyLog(btn) {
   const text = crashLogText();
-  const done = ok => { if (typeof toast === 'function') toast(ok ? 'Журнал скопирован — вставьте его в сообщение автору' : 'Не вышло скопировать: выделите текст и скопируйте вручную'); };
-  const fallback = () => {
-    // окно с текстом: на телефонах без доступа к буферу его можно выделить пальцем
+  const say = (m, short) => {
+    if (typeof toast === 'function') toast(m);
+    const sp = btn && (btn.querySelector('span') || btn);
+    if (sp && short) { const was = sp.textContent; sp.textContent = short; clearTimeout(btn._crT); btn._crT = setTimeout(() => { sp.textContent = was; }, 2500); }
+  };
+  const ok = () => say('Скопировано: журнал в буфере обмена — вставьте его в сообщение автору', 'Скопировано ✓');
+  // 1) сразу, пока длится нажатие: старый способ через скрытое поле работает и там, где Clipboard API закрыт
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+  document.body.appendChild(ta);
+  ta.select(); try { ta.setSelectionRange(0, text.length); } catch (e) { /* старые браузеры */ }
+  let done = false;
+  try { done = document.execCommand('copy'); } catch (e) { done = false; }
+  ta.remove();
+  if (done) { ok(); return text; }
+  // окно с текстом: на телефонах без доступа к буферу его можно выделить пальцем
+  const manual = () => {
     const box = document.createElement('div');
     box.style.cssText = 'position:fixed;inset:8% 6%;z-index:100001;display:flex;flex-direction:column;gap:8px;padding:12px;background:#2a1e14;border:2px solid #a8743a;border-radius:8px';
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.readOnly = true;
-    ta.style.cssText = 'flex:1;font:11px/1.35 Consolas,monospace;background:#1a120c;color:#f3e6c8;border:1px solid #5a4128';
+    const t = document.createElement('textarea');
+    t.value = text; t.readOnly = true;
+    t.style.cssText = 'flex:1;font:11px/1.35 Consolas,monospace;background:#1a120c;color:#f3e6c8;border:1px solid #5a4128';
     const b = document.createElement('button');
     b.textContent = 'Закрыть'; b.onclick = () => box.remove();
-    box.append(ta, b); document.body.appendChild(box);
-    ta.focus(); ta.select();
-    let ok = false;
-    try { ok = document.execCommand('copy'); } catch (e) { /* старый способ недоступен */ }
-    done(ok);
+    box.append(t, b); document.body.appendChild(box);
+    t.focus(); t.select();
+    say('Не вышло скопировать само: выделите текст в окне и скопируйте вручную', 'Выделите текст в окне');
   };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done(true), fallback);
-  else fallback();
+  // 2) приложение (Capacitor) — его плагин буфера; 3) Clipboard API браузера; иначе — окно
+  const cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Clipboard;
+  const p = cap ? cap.write({ string: text }) : navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : null;
+  if (p && p.then) p.then(ok, manual); else manual();
   return text;
 }
 window.crashLogText = crashLogText;

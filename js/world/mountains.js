@@ -52,7 +52,7 @@ function mtSprite(size, v) {
     const x = cx - S.w * 0.4 + (k + 0.5) / nb * S.w * 0.8 + rnd(-4, 4), y = base + rnd(0, 3.5);
     drawBoulder(c, x, y, rnd(4.5, 7 + S.k * 1.5), rnd(3.4, 5 + S.k));
   }
-  for (let k = 0; k < S.w / 8; k++) tuftHoMM(c, rnd(cx - S.w * 0.46, cx + S.w * 0.46), base + rnd(0, 5), rnd(3, 6));
+  for (let k = 0; k < S.w / 8; k++) tuftPebbles(c, rnd(cx - S.w * 0.46, cx + S.w * 0.46), base + rnd(0, 5), rnd(3, 6));
   grain(cv, 0.08, seed);
   const out = toPixelArt(cv, SS, { outline: true, outlineDark: 0.12, alphaCut: 100 });
   MT_SPR[key] = out;

@@ -142,7 +142,7 @@ function flushHeroes() {
 }
 
 // ---------- HTTP ----------
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
   if (p === '/coop-info' && /metrics|digest/.test(req.url) && /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '') && !req.headers['x-forwarded-for']) {
@@ -166,10 +166,16 @@ const server = http.createServer((req, res) => {
   if (p === '/') p = '/index.html';
   const file = path.normalize(path.join(ROOT, p));
   const rel = path.relative(ROOT, file);
-  if (rel.startsWith('..') || /^(server|\.git|\.claude)([\\/]|$)/.test(rel) || /(^|[\\/])\./.test(rel) || /coopsim\.js$/.test(rel)) { res.writeHead(404); res.end('нет'); return; }
+  if (rel.startsWith('..') || /^(server|desktop|mobile|\.git|\.claude)([\\/]|$)/.test(rel) || /(^|[\\/])\./.test(rel) || /coopsim\.js$/.test(rel)) { res.writeHead(404); res.end('нет'); return; }
   fs.readFile(file, (err, buf) => {
     if (err) { res.writeHead(404); res.end('нет'); return; }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    const ext = path.extname(file).toLowerCase();
+    const h = { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': /^\.(ttf|woff2|png)$/.test(ext) ? 'public, max-age=604800' : 'no-cache', Vary: 'Accept-Encoding' };
+    if (/^\.(html|js|css|svg|json|webmanifest|ttf)$/.test(ext) && buf.length > 1024 && /gzip/.test(req.headers['accept-encoding'] || '')) {
+      h['Content-Encoding'] = 'gzip';
+      res.writeHead(200, h); res.end(zlib.gzipSync(buf, { level: 6 })); return;
+    }
+    res.writeHead(200, h);
     res.end(buf);
   });
 });

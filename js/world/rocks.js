@@ -38,7 +38,7 @@ function rockSprite(size, variant, body = false) {
   // трава и галька у подножия
   for (let k = 0; k < (size === 'S' ? 4 : 8); k++) {
     const x = cx + rnd(-S.w * 0.4, S.w * 0.4), y = by + rnd(-1, 2.5);
-    tuftHoMM(c, x, y, rnd(2.5, 4.5));
+    tuftPebbles(c, x, y, rnd(2.5, 4.5));
   }
   for (let k = 0; k < (size === 'S' ? 4 : 7); k++) {
     const x = cx + rnd(-S.w * 0.45, S.w * 0.45), y = by + rnd(0, 3.5), r = rnd(0.8, 1.8);
@@ -123,7 +123,7 @@ function drawBoulder(c, x, y, rx, ry) {
 }
 
 // пучок травы, как на картах «Героев»: несколько изогнутых травинок с тёмным низом
-function tuftHoMM(c, x, y, h) {
+function tuftPebbles(c, x, y, h) {
   for (let k = 0; k < 5; k++) {
     const a = -Math.PI / 2 + rnd(-0.7, 0.7);
     c.strokeStyle = k < 2 ? '#3a5a18' : srand() < 0.5 ? '#6a9a2c' : '#8ab83a';

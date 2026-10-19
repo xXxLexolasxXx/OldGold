@@ -109,7 +109,8 @@ function perfMenuSync() {
           `жителей ${Game.units.length} · зданий ${Game.buildings.length} · куч ${Game.piles.size}
 ` +
           `память: куча ${(Fps.mem[Fps.mem.length - 1] || {}).heap ?? '—'} МБ · холсты ${perfCanvasMB().toFixed(0)} МБ · сбоев ${Fps.crashes}` +
-          (typeof crashSummary === 'function' ? `\nвылеты: ${crashSummary().text} · ошибок в журнале ${crashSummary().errors} (меню → «Скопировать журнал»)` : '');
+          (typeof crashSummary === 'function' ? `\nвылеты: ${crashSummary().text} · ошибок в журнале ${crashSummary().errors} (кнопка ниже или меню → «Скопировать журнал»)` : '');
+        if (Fps.logBtn) Fps.logBtn.style.top = (Fps.el.offsetHeight + 10) + 'px';   // кнопка журнала — сразу под панелью
       }
     }
     requestAnimationFrame(tick);
@@ -135,6 +136,15 @@ function perfMenuSync() {
         document.body.appendChild(Fps.el);
       }
       Fps.el.style.display = Fps.show ? 'block' : 'none';
+      // кнопка журнала рядом с панелью (сама панель «прозрачна» для мыши, чтобы не мешать игре)
+      if (!Fps.logBtn && typeof crashCopyLog === 'function') {
+        Fps.logBtn = document.createElement('button');
+        Fps.logBtn.textContent = 'Скопировать журнал';
+        Fps.logBtn.style.cssText = 'position:fixed;left:6px;z-index:9998;padding:3px 8px;font:11px sans-serif;background:#2a1e14;color:#f3e6c8;border:1px solid #a8743a;border-radius:4px;cursor:pointer';
+        Fps.logBtn.onclick = () => crashCopyLog(Fps.logBtn);
+        document.body.appendChild(Fps.logBtn);
+      }
+      if (Fps.logBtn) { Fps.logBtn.style.display = Fps.show ? 'block' : 'none'; Fps.logBtn.style.top = (Fps.el.offsetHeight + 10) + 'px'; }
     }
   });
 
@@ -156,7 +166,7 @@ function perfMenuSync() {
         const lb = document.createElement('button');
         lb.id = 'crashlog-btn'; lb.title = 'Скопировать журнал сбоев и вылетов, чтобы отправить автору (без ника и сохранений)';
         lb.innerHTML = '<span>Скопировать журнал</span>';
-        lb.onclick = () => crashCopyLog();
+        lb.onclick = () => crashCopyLog(lb);
         b.insertAdjacentElement('afterend', lb);
       }
     }
