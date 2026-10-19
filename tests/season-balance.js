@@ -15,7 +15,7 @@ for (const seed of SEEDS) {
   while (true) {
     L.stepN(sim, 200);                                   // 10 игровых секунд
     if (Math.round(sim.h.run('Game.time')) % 60 < 10) L.botTurn(sim);
-    const st = JSON.parse(sim.h.run('JSON.stringify({ idx: seaIdx(), day: seaDay(), snow: SEA().snow, h: seaHayInfo(), pl: SEA().pigsLost, lost: SEA().lost, t: Game.time, pigs: Game.buildings.reduce((a, b) => a + seaHerd(b), 0), hayMade: Math.round(Game.produced.hay || 0), farms: Game.buildings.filter(b => b.type === 'farm').length, starve: Game.log.filter(l => /голод|умер/i.test(l.text || l.msg || "")).length })'));
+    const st = JSON.parse(sim.h.run('JSON.stringify({ idx: seaIdx(), day: seaDay(), snow: SEA().snow, h: seaHayInfo(), pl: SEA().pigsLost, lost: SEA().lost, t: Game.time, pigs: Game.buildings.reduce((a, b) => a + seaHerd(b), 0), hayMade: Math.round(Game.produced.hay || 0), farms: Game.buildings.filter(b => b.type === "farm").length, starve: Game.log.filter(l => /голод|умер/i.test(l.text || l.msg || "")).length })'));
     if (st.day >= target) break;
     if (st.idx === 2 && !win) win = { seed, y: Math.floor(st.day / (len * 4)) + 1, need: st.h.need, have: st.h.have, pigs0: st.pigs, hayMade: st.hayMade - (hay0 || 0), farms: st.farms, ppl0: people() };
     if (st.idx !== 2 && win) { hay0 = st.hayMade; win.pigsLost = st.pl; win.wildLost = st.lost; win.ppl1 = people(); win.sec = ((Date.now() - t0) / 1000) | 0; rows.push(win); console.log(JSON.stringify(win)); win = null; }
