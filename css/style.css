@@ -521,7 +521,7 @@ body.mobile #topbar {
   top: calc(4px + env(safe-area-inset-top)); left: 4px; right: 4px;
   flex-wrap: nowrap; gap: 3px;
 }
-body.mobile #clock { font-size: 12px; min-width: 0; padding: 4px 8px; margin-right: auto; margin-left: auto; }
+body.mobile #clock { font-size: 12px; min-width: 0; padding: 4px 11px; margin-right: auto; margin-left: auto; }
 body.mobile .dd-t { min-height: 28px; padding: 4px 7px; font-size: 12px; gap: 3px; }
 body.mobile .dd-t img { width: 16px; height: 16px; }
 body.mobile .speed { padding: 4px 6px; }

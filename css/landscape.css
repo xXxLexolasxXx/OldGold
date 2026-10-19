@@ -32,7 +32,7 @@ body.mobile.land-a #topbar { left: calc(var(--rail) + 6px); }
 body.mobile.land-b #topbar { left: calc(var(--sl) + 6px); }
 body.mobile.land #topbar > * { height: var(--bh); margin: 0; flex: none; }
 body.mobile.land #topbar .dd-t, body.mobile.land #topbar .speed, body.mobile.land #clock {
-  box-sizing: border-box; height: var(--bh); min-height: 0; padding: 0 8px; font-size: 11.5px; line-height: 1; white-space: nowrap;
+  box-sizing: border-box; height: var(--bh); min-height: 0; padding: 0 10px; font-size: 11.5px; line-height: 1; white-space: nowrap;
 }
 body.mobile.land #topbar .dd-t img { width: 16px; height: 16px; }
 body.mobile.land #topbar .dd-l { margin-right: 0; }
@@ -43,9 +43,9 @@ body.mobile.land #topbar #clock { position: absolute; left: 50%; top: 0; transfo
 /* значки-кнопки (▦, ♪, ×1) — одинаковой ширины */
 body.mobile.land #topbar .speed { padding: 0 3px; gap: 0; }
 body.mobile.land #topbar .speed button { min-height: 0; height: 100%; min-width: 26px; padding: 0 4px; background: none; border: 0; box-shadow: none; }
-body.mobile.land #dd-snd .dd-t, body.mobile.land #dd-speed .dd-t { min-width: 44px; padding: 0 6px; justify-content: center; }
+body.mobile.land #dd-snd .dd-t, body.mobile.land #dd-speed .dd-t { min-width: 46px; padding: 0 10px; justify-content: center; }
 body.mobile.land #sub-btn span { display: none; }
-body.mobile.land #clock { min-width: 0; color: var(--gold); }
+body.mobile.land #clock { min-width: 0; padding: 0 11px; color: var(--gold); }   /* заклёпки рамки — 3–9 px от края, текст за ними */
 body.mobile.land .dd-menu button { min-height: 36px; }
 
 /* ---- общее: миникарта в правом нижнем углу ---- */
