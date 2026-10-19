@@ -25,10 +25,10 @@ body.mobile.land #topbar { top: calc(var(--st) + 2px); right: calc(var(--sr) + 4
 body.mobile.land-a #topbar { left: calc(var(--rail) + 4px); }
 body.mobile.land-b #topbar { left: calc(var(--sl) + 4px); }
 body.mobile.land .dd-t { min-height: 24px; padding: 2px 6px; font-size: 11px; }
-body.mobile.land .speed { padding: 2px 4px; }
+body.mobile.land .speed { padding: 2px 10px; }   /* заклёпки рамки — 3–9 px от края, текст за ними */
 body.mobile.land .speed button { min-height: 22px; padding: 0 6px; }
 body.mobile.land #sub-btn span { display: none; }
-body.mobile.land #clock { font-size: 11px; padding: 2px 6px; white-space: nowrap; }
+body.mobile.land #clock { font-size: 11px; padding: 2px 11px; white-space: nowrap; }
 body.mobile.land #topbar .dd-t { white-space: nowrap; }
 body.mobile.land .dd-menu button { min-height: 36px; }
 
