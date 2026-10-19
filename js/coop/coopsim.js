@@ -250,6 +250,8 @@ function coopCmd(name, msgJson, admin) {
       coopSay(name, tradeDo(m.side, m.g, Math.min(m.n, 999)).text);
       break;
     }
+    case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
+    case 'dilmode': if (admin && typeof dilSetMode === 'function') dilSetMode(m.mode); else if (!admin) coopSay(name, 'Режим событий меняет только хост'); break;
     case 'qt': {
       if (can('train') && UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy) queueTraining(m.type);
       break;
@@ -571,6 +573,7 @@ function coopMirror() {
     lost: Game.lostGnomes || 0, df: Game.diff,
     goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
+    dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
     wx: {},
   };
