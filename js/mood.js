@@ -56,6 +56,8 @@ const MD_WHY = {
   cheer: 'Подъём духа в деревне',
   dil: ['Хорошие вести в деревне', 'Дурные вести в деревне'],
   law: ['Порядки по душе', 'Порядки не по душе'],
+  ill: 'Хворает',
+  cured: 'Поправился!',
   base: 'Жить можно',
 };
 const MD_SIGN = c => { const w = MD_WHY[c]; return typeof w === 'string' ? [w, w] : w; };
@@ -216,6 +218,7 @@ function mdUpdate(u, now) {
   if (G.cheer > now) add('cheer', 4);
   if (Game.dil && Game.dil.mood) add('dil', Game.dil.mood * 2);   // вести и события-дилеммы (dilemma.js)
   if (typeof lawMood === 'function') add('law', lawMood(night));     // указы деревни (laws.js)
+  if (typeof sickMood === 'function') add('ill', sickMood(u));        // недуги и эпидемия (sickness.js)
 
   let tgt = 50;
   for (const r of R) tgt += r[1];
@@ -234,6 +237,7 @@ function mdUpdate(u, now) {
   if (G.gloom > now) mul *= 0.98;
   if (G.cheer > now) mul *= 1.02;
   if (typeof lawWork === 'function') mul *= lawWork();
+  if (typeof sickMul === 'function') mul *= sickMul(u);
   u.mdMul = Math.round(mul * 1000) / 1000;
   M.low = M.m <= MD.CRIT ? M.low + el : Math.max(0, M.low - el * 2);
   M.hi = M.m >= MD.GOOD ? M.hi + el : Math.max(0, M.hi - el);

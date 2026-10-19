@@ -21,3 +21,16 @@ body.mobile .tab-btn img { width: 32px; height: 32px; }
 .lw-btns button.on { box-shadow: inset 0 0 0 2px var(--gold, #d2a73c); }
 .lw-why { color: #a99c80; font-size: 11.5px; }
 body.mobile .lw-btns button { min-height: 36px; font-size: 13px; }
+/* Здоровье (js/sickness.js) */
+.md-epi { margin: 2px 0 8px; padding: 6px 8px; background: rgba(60,110,30,0.35); border: 1px solid #7ad04a; color: #e0ffc8; line-height: 1.4; }
+.md-inf { padding: 3px 2px; color: #e9dcc0; font-size: 12px; }
+.md-bad { color: #f09080; }
+.md-list { margin: 6px 0; }
+.md-row { display: grid; grid-template-columns: 10px auto 1fr 54px; align-items: center; gap: 6px; padding: 3px 2px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.md-row:hover { background: rgba(255,255,255,0.05); }
+.md-dot { width: 9px; height: 9px; border-radius: 2px; }
+.md-n { color: #f0e6c8; }
+.md-k { color: #a99c80; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-bar { height: 6px; background: rgba(0,0,0,0.45); border: 1px solid #4a3a20; }
+.md-bar i { display: block; height: 100%; }
+.md-tips { padding: 6px 2px 2px; line-height: 1.35; }
