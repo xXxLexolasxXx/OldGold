@@ -124,9 +124,9 @@ function achToast(a) {
   const box = document.getElementById('ach-toasts');
   if (!box) return;
   const el = document.createElement('div');
-  el.className = 'ach-toast';
+  el.className = 'ach-toast v' + (Date.now() % 3);
   el.innerHTML = `<div class="ach-cup">★</div><div><small>Достижение получено</small><b>${esc(a.name)}</b><span>${esc(a.desc)}</span></div>`;
-  el.onclick = () => profOpen('ach');
+  el.onclick = () => { profOpen('ach'); if (typeof toastClose === 'function') toastClose(el); };
   box.appendChild(el);
   while (box.childElementCount > 3) box.firstChild.remove();
   setTimeout(() => el.remove(), 6500);
