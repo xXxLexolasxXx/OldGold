@@ -252,6 +252,7 @@ function coopCmd(name, msgJson, admin) {
       break;
     }
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
+    case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
     case 'dilmode': if (admin && typeof dilSetMode === 'function') dilSetMode(m.mode); else if (!admin) coopSay(name, 'Режим событий меняет только хост'); break;
     case 'qt': {
       if (can('train') && UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy) queueTraining(m.type);
@@ -575,6 +576,7 @@ function coopMirror() {
     goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
     dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
+    law: typeof lawMirrorOut === 'function' ? lawMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
     sea: typeof seaMirrorOut === 'function' ? seaMirrorOut() : null, wfx: coopList(Game.wfx),
     wx: {},

@@ -52,6 +52,7 @@ scriptTest('load: скрипты, пути, синтаксис', 'check-load.js'
 scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
+scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');

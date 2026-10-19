@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="css/prio.css">
 <link rel="stylesheet" href="css/dilemma.css">
 <link rel="stylesheet" href="css/mapedit.css">
+<link rel="stylesheet" href="css/council.css">
 </head>
 <body>
 <div id="app">
@@ -36,6 +37,7 @@
       <button data-tab="log" class="tab-btn" title="Журнал событий: что случилось и где"><img data-icon="log" alt=""><span id="log-badge" class="badge hidden">0</span></button>
       <button data-tab="trade" class="tab-btn" title="Торговля: караваны, обмен на золото"><img data-icon="trade" alt=""><span id="trade-badge" class="badge hidden">●</span></button>
       <button data-tab="prio" class="tab-btn" title="Приоритеты работ: еда, стройка, дрова, оборона, профессии"><img data-icon="prio" alt=""><span id="prio-badge" class="badge hidden">●</span></button>
+      <button data-tab="council" class="tab-btn" title="Совет деревни: указы и порядки"><img data-icon="council" alt=""><span id="council-badge" class="badge hidden">●</span></button>
       <button data-tab="menu" class="tab-btn" title="Меню"><img data-icon="menu" alt=""></button>
     </nav>
     <div id="tab-area">
@@ -55,6 +57,7 @@
       <section id="tab-log" class="tab"><div id="log-list"></div></section>
       <section id="tab-trade" class="tab"><div id="trade-list"></div></section>
       <section id="tab-prio" class="tab"><div id="prio-list"></div></section>
+      <section id="tab-council" class="tab"><div id="council-list"></div></section>
       <section id="tab-menu" class="tab">
         <div class="menu-list">
           <button data-menu="save"><img data-icon="save" alt="">Сохранить <kbd>Ctrl+S</kbd></button>
@@ -238,6 +241,8 @@
 <script src="js/world/brawl.js"></script>
 <script src="js/world/games.js"></script>
 <script src="js/mood.js"></script>
+<script src="js/council.js"></script>
+<script src="js/laws.js"></script>
 <script src="js/world/fair.js"></script>
 <script src="js/world/raid.js"></script>
 <script src="js/world/enemy.js"></script>
