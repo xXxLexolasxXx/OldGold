@@ -55,6 +55,7 @@ scriptTest('prio: приоритеты работ, сохранение', 'prio-
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
+scriptTest('daily: вызов дня', 'daily-test.js');
 
 // ---------- 2. Симуляция: инварианты
 function simRun(seed, minutes, r, opts = {}) {
