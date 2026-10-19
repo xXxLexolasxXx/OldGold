@@ -1,5 +1,6 @@
 package ru.oldgold.game;
 
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -22,6 +23,11 @@ public class MainActivity extends BridgeActivity {
             getWindow().getAttributes().layoutInDisplayCutoutMode =
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
+        // поля под вырез камеры (старые WebView без passthrough safe-area) — цвет игры, а не белые
+        int bg = Color.parseColor("#1a130d");
+        getWindow().getDecorView().setBackgroundColor(bg);
+        getWindow().setStatusBarColor(bg);
+        getWindow().setNavigationBarColor(bg);
         WebView web = getBridge().getWebView();
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         WebSettings s = web.getSettings();
