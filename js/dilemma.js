@@ -15,7 +15,6 @@ const DIL_CALM = 8;              // сколько секунд должно б�
 const DIL_REL = { fairy: 'Феи', neutral: 'Лесные', guilds: 'Гильдии', traders: 'Купцы' };
 const DIL_RAR = ['', 'обычное', 'необычное', 'редкое'];
 const DIL_SEASONS = ['весна', 'лето', 'осень', 'зима'];
-const DIL_SEASON_DAYS = 6;       // сутки на сезон (сезоны нужны только событиям и подписи)
 
 // ---------- Данные событий ----------
 // id, t — заголовок, ic — значок, r — редкость (1–3), d — история, c — условия, o — варианты.
@@ -228,7 +227,12 @@ const dilRnd = (a, b) => a + Math.random() * (b - a);
 const dilEsc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const dilClamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dilDay = () => cycleAt(Game.time).k;
-function dilSeason() { return typeof isWinterMap === 'function' && isWinterMap() ? 3 : Math.floor(dilDay() / DIL_SEASON_DAYS) % 4; }
+// сезон для событий: 0 весна, 1 лето, 2 осень, 3 зима (порядок DIL_SEASONS); считает world/season.js (там лето — 0), длина сезона — SEASON_DAYS
+function dilSeason() {
+  if (typeof isWinterMap === 'function' && isWinterMap()) return 3;
+  if (typeof seaIdx === 'function' && typeof Game !== 'undefined' && Game.sea) return (seaIdx() + 1) % 4;
+  return (Math.floor(dilDay() / SEASON_DAYS) + 1) % 4;
+}
 const dilGoodName = g => (typeof GOODS !== 'undefined' && GOODS[g] ? GOODS[g].name : g);
 function dilPop() { let n = 0; for (const u of Game.units) if (isPerson(u) && !u.dead && u.type !== 'hero' && u.type !== 'carter') n++; return n; }
 const dilHero = () => Game.units.find(u => u.type === 'hero' && !u.dead && u.hero && !u.inside) || null;
