@@ -275,6 +275,7 @@ function coopMirror(m) {
   Game.lostGnomes = m.lost || 0;
   if (typeof goalMirrorIn === 'function') goalMirrorIn(m.goal);
   if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
+  if (typeof dilMirrorIn === 'function') dilMirrorIn(m.dil);
   if (m.df) Game.diff = diffKey(m.df);
   const festWas = festOn();
   Game.festival = m.fest || null;
