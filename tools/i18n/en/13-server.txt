@@ -1,0 +1,82 @@
+##### manifest.webmanifest
+Gnome economy: build a village, feed the gnomes, lead the hero
+##### server/events.js
+events.json was not saved:
+=== Single-player funnel (anonymous clients) ===
+Clients total: {0}, visited today: {1}
+Returned next day: {0}/{1} ({2}), within a week: {3}/{4} ({5})
+Other events (clients): {0}
+New clients by day: {0}
+##### server/server.js
+=== Server restart ===
+stats key was not saved:
+(function(){ const s = JSON.parse(__saveText); __saveText = null; if (s.v !== 2) throw new Error("version"); applySave(s); })()
+world loaded from
+— gnomes
+buildings
+couldn't read
+a new world created, seed
+night streaks were not saved:
+world save failed:
+key needed: /stats?key=… (it's in stats.key in the server's data folder)
+Server: {0}
+error in message:
+{0} leaves the village
+left
+joined
+(host)
+Nickname: 2–16 characters, letters, digits, space, _ and -
+Password: at least 3 characters
+That nickname is taken
+Session expired — sign in with your password
+No such player — register first
+Wrong password
+You entered the village from another window or device
+host requested a restart
+Only the host can see the statistics
+permissions were not saved:
+permissions:
+on
+off
+Too many commands in a row — a little slower
+step error:
+stopping, saving the world…
+OldGold server started on port {0}
+The host plays here: http://localhost:{0}/
+For friends on the network: http://{0}:{1}/
+Data: {0}
+##### server/simhost.js
+loading {0}: {1}
+loaded
+600 steps in
+ms; time
+error
+##### server/stats.js
+statistics were not saved:
+OldGold statistics since {0}
+Players total: {0} · this week: {1} · today: {2} (logins {3}) · online now: {4}
+Peak online: {0}{1} · total played: {2} h
+Client versions: {0}
+Day logins players hours peak
+Player logins hours last login networks
+No statistics yet in
+##### server/stress.js
+no upgrade
+Stress test: {0} bots, {1} s, {2}, reconnects ~{3}/s per bot-10
+server metrics unavailable:
+didn't join:
+joined {0}/{1} in {2} s; initial snapshot {3} KB
+{0}: roads {1}/{2}, buildings {3}/{4}
+by packet type (per bot/s):
+{0}: {1} pcs, {2} KB
+=== Result ===
+bots in game: {0}/{1}, reconnects total: {2}, errors: {3}
+client traffic: {0} KB/s overall, {1} KB/s per bot; messages {2}/s per bot
+interval between gnome snapshots (target 200 ms): p50 {0} ms, p95 {1} ms, p99 {2} ms, max {3} ms
+JSON parse at the bot: {0} ms/msg.
+server (since start):
+sample peaks: RSS {0} MB, step {1} ms, loop lag {2} ms, outbound traffic {3} KB/s
+server state: roads {0}, buildings {1}
+digest unavailable
+MISMATCH on {0} bots:
+no mismatches: roads and buildings of all bots match the server

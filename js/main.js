@@ -449,7 +449,9 @@ function initInput() {
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     Input.keys.add(e.key === 'Shift' ? 'Shift' : e.code);
     if (e.code === 'Escape') { setTool(null); selectBuilding(null); }
-    if (e.code === 'Space') { e.preventDefault(); setSpeed(Game.paused ? Game.speed : 0); }
+    if (e.code === 'Space') { e.preventDefault(); togglePause(); }
+    const spd = (e.shiftKey && e.code.match(/^Digit([1-4])$/)) || e.code.match(/^Numpad([1-4])$/);   // Shift+1…4 и цифры справа: ×0,5 / ×1 / ×2 / ×3
+    if (spd) { e.preventDefault(); pickSpeed(+spd[1] - 1); }
     if (e.code === 'KeyR') setTool(Game.tool && Game.tool.kind === 'road' ? null : { kind: 'road' });
     if (e.code === 'KeyT') rotateTool();
     if (e.code === 'Equal' || e.code === 'NumpadAdd') zoomStep(1);
@@ -462,7 +464,7 @@ function initInput() {
     if (e.code === 'KeyP' && Game.selected && Game.selected.state === 'done') { Game.selected.paused = !Game.selected.paused; updateUI(true); }
     if (e.code === 'KeyB' && Game.selected && !Game.selected.isRoad && Game.selected.state === 'done' && (Game.selected.def.inputs || Game.selected.isStore())) { toggleDeliver(Game.selected); updateUI(true); }
     const dig = e.code.match(/^Digit([1-5])$/);
-    if (dig && !e.ctrlKey) openBuildCat(visibleCats()[+dig[1] - 1]);
+    if (dig && !e.ctrlKey && !e.shiftKey) openBuildCat(visibleCats()[+dig[1] - 1]);
   });
   window.addEventListener('keyup', e => Input.keys.delete(e.key === 'Shift' ? 'Shift' : e.code));
   window.addEventListener('blur', () => Input.keys.clear());

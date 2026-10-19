@@ -1,0 +1,140 @@
+##### js/world/fairy1.js
+Baker
+Saucer!
+{0} set out a saucer of milk for the brownie
+{0} forgot the saucer of milk for the brownie
+fixed
+baked bread in
+ground flour in
+Knock-knock!
+Bread!
+Overnight the brownie {0}
+fixed the building
+the bakery
+the mill
+The brownie tripped someone up: {0} dropped the load
+Hee-hee!
+The brownie hid a tool: {0} stands idle until it's found
+The brownie took offense at no milk and hid a tool: {0}
+A unicorn appeared at the spring in the evening glade
+A unicorn showed up in the glade by the spring — don't scare it, it heals the wounded
+Shh…
+Neigh!
+The unicorn got scared and galloped off
+The unicorn dissolved in the evening light
+The unicorn healed: {0}
+Dragon
+Dragonling
+Rawr!
+The dragonling grew into a real dragon!
+Clink!
+The tame {0} brought the hero gold ×{1}
+Rrr!
+The hero tamed a creature: {0}!
+The hero tamed: {0}! Now it carries gold
+Hrrr!
+Scat!
+{0} carried off gold ×{1}
+{0} stole gold ×{1}! The hero can chase it off or tame it
+Frrr!
+{0} set a field on fire
+{0} set a field on fire!
+The griffin rushed to defend its treasure
+The griffin is guarding its treasure!
+Krr-yaw!
+{0} beat the griffin: treasure gold ×{1}
+Recruit
+The griffin flew off, dropping its treasure: gold ×{0}
+Krr!
+The griffin chased a gnome away from its nest
+Fff-whoosh!
+The salamander fanned the flames: {0} did some extra work
+Sss…
+golden
+red
+blue
+A {0} fish flashed in the lake
+A {0} fish splashes in the lake — the hero can catch it
+Let me go — I'll pay my way out!
+The hero caught a {0} fish and got a ransom: {1}
+The hero caught a {0} fish! Ransom: {1}
+A golden goose was spotted among the geese
+A golden goose walks among the geese — don't bully the flock and it will lay golden eggs
+Honk!
+The golden goose was upset — no egg today
+The golden goose laid a golden egg (gold ×2)
+A lanky dark silhouette with purple eyes appeared in the forest
+Whoosh!
+Crunch…
+Lanky dug up a tree and carried it off
+Dark Lanky dug up a tree and carried it away
+Lanky vanished along with the tree
+Lanky planted the tree in a new place
+##### js/world/fairy2.js
+Where am I going?..
+Where am I?..
+Oh… where am I?
+Drowning!
+Ew, slime!
+A kikimora and a mermaid came to the water — better not linger on the shore
+The leshy is unhappy about the logging: woodcutters will start wandering the forest
+The forest is angry: the leshy sent the woodcutters astray
+Fine, live…
+The leshy backed off: the forest is calm again
+Bread, master of the forest
+Hm… you honour me
+{0} left bread on a stump — the leshy softened
+The leshy leads them in circles: {0} wanders the forest
+This is for you, swamp-lady
+Hee-hee… thanks
+{0} left food on a hummock — the kikimora is pleased
+Come here…
+Mine!
+The kikimora dragged into the mud: {0}{1}
+(along with the load)
+La-a-a… ♪
+What a voice…
+The mermaid lured to the water: {0}
+Splash! The lantern…
+{0} dropped the lantern in the water
+Mine-e!
+My load!
+Splash!
+The water sprite dragged into the pool: {0} ×{1}
+Splash! Drink up, master
+Glug-glug… much obliged
+{0} threw beer in the lake — the water sprite and mermaid went quiet
+and returned the stolen goods
+The water sprite put the stolen goods back on the shore
+Wooo-oo!
+near {0}
+The banshee wailed{0}: {1}
+The banshee wails — trouble is coming!
+Banshee!
+another gnome won't return
+a gnome is hurt
+fiends near a gnome
+Ooo-oo…
+Eee-ee…
+Banshee!..
+The banshee wails at the graveyard — workers are terrified
+Yow!
+{0} drove off the ghostly wolf{1}
+— the lantern returned to its owner
+Bonfire
+Lantern!
+Grrr…
+The ghostly wolf took the lantern from: {0}
+Awoo-oo-oo!
+The wolf howls!
+A little light! Come on, let's follow it
+It went out… where am I?
+A will-o'-the-wisp led off a gnome without a lantern: {0}
+Sh-sh-sh…
+In the heat, the Noon Witch swirled over the field
+Have a drink, Noon Witch
+Good brew…
+{0} treated the Noon Witch to beer — she left
+My head is buzzing…
+Phew, it's passed
+The Noon Witch befuddled: {0} froze in the field

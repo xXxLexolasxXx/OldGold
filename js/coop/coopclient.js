@@ -102,8 +102,9 @@ function coopConnect(opts) {
 
 function coopApplyInit(m) {
   Coop.on = true; Coop.mirror = true; Game.coop = true;
-  document.body.classList.add('coop');   // в онлайне время не крутится: меню скорости скрыто, показано ×1.2
-  { const sc = document.getElementById('speed-cur'); if (sc) sc.textContent = '×1.2'; }
+  document.body.classList.add('coop');   // в онлайне время считает сервер: скорость выбирает хост, паузу просят голосованием
+  document.body.classList.toggle('coop-host', !!Coop.host);
+  Coop.tempo = Coop.tempo || { speed: 1, paused: false };
   applySave(m.world);
   Game.units = []; Game.unitMap.clear(); Game.animals = []; Game.hero = null; Game.heroAsk = false; Game.selUnit = null; Game.selected = null;
   Game.piles.clear();
@@ -274,6 +275,7 @@ function coopMirror(m) {
   Game.lostGnomes = m.lost || 0;
   if (typeof goalMirrorIn === 'function') goalMirrorIn(m.goal);
   if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
+  if (typeof dilMirrorIn === 'function') dilMirrorIn(m.dil);
   if (m.df) Game.diff = diffKey(m.df);
   const festWas = festOn();
   Game.festival = m.fest || null;
@@ -1131,6 +1133,8 @@ function coopAdminOpen() {
   const _h = coopHandle;
   coopHandle = function (m) {
     if (m.t === 'stats') { coopStatsShow(m.s, m.server); return; }
+    if (m.t === 'tempo') { Coop.tempo = { speed: m.speed, paused: m.paused, votes: m.votes, need: m.need }; tempoShow(); return; }
+    if (m.t === 'prio') { prioApply(m.p); updateUI(true); return; }
     if (m.t === 'diff') {
       Game.diff = diffKey(m.k);
       toast('Сложность деревни: ' + dif().name);
@@ -1164,7 +1168,7 @@ function coopStatsShow(x, server) {
   coopCss();
   document.getElementById('cp-stats')?.remove();
   const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const dt = t => (t ? new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+  const dt = t => (t ? new Date(t).toLocaleString(I18N.locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
   const cls = (Coop.meta && Coop.meta.classes) || {};
   const box = document.createElement('div');
   box.id = 'cp-stats'; box.className = 'cp-modal';

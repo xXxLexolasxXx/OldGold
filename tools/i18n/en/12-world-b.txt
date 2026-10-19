@@ -1,0 +1,197 @@
+##### js/world/leisure.js
+Chicken
+Goose
+The goose carried off "{0}"
+The goose carried off "{0}"!
+Geese are pecking: {0}
+Geese are pecking: {0} runs for dear life!
+{0} found gold in the tree roots
+{0} found gold in the tree roots!
+{0} caught a chicken
+{0} caught a chicken — the carcass goes to the tavern
+The owl dropped from the roof: {0}
+The owl dropped from the roof: {0}! Haulers will pick it up
+Help!
+Don't!
+Oh no!
+Cluck-cluck!
+The chickens got revenge: {0} dragged off by the flock
+The chickens got revenge and dragged off: {0}
+Take it, take it!
+{0} gave the load to an elk
+Bam!
+An elk gored: {0}
+An elk gored: {0}!
+Stop thief!
+Broke free!
+{0} took the loot from: {1}
+Hide!
+{0} killed: {1}. Hides remain
+{0} caught up and killed: {1} — hides remain
+##### js/world/night.js
+{0} fell and broke the lantern
+{0} got lost in the fog
+Smells like bread!
+This way, to the light!
+{0} with a lantern led the lost one out
+By the beard!
+Take that!
+Got you!
+Alive…
+Fiends beaten together: {0} gnomes
+{0} escaped the fiends alive
+{0} dealt with everyone who dared attack!
+Fiends wiped out all the attackers: {0}
+CRACK!
+Thunk!
+Take this!
+{0} defeated: {1}
+{0} dispersed the water sprite — a puddle remains
+{0} smashed a walking rock! Stones remain for the stonecutter
+{0} chopped down a walking tree! The woodcutter will take the log
+{0} dragged {2} into the fog
+​
+Crunch!
+BOOM!
+Help!
+Let go!
+Mommy!
+Should've done that sooner…
+And that's all.
+This night will be a long one — one and a half times longer than usual. Prepare bread and bonfires!
+Evening: lanterns lit. Someone in the forest opened their eyes…
+Evening: lanterns lit
+Night: fog has settled on the village. Trees crawl out of the ground!
+Night has fallen, fog has settled
+Dawn: the fog has lifted
+Dawn, the fog has lifted
+Lantern! Found it!
+{0} made it to a street lantern
+Thanks!
+Walking Rock
+Water Sprite
+##### js/world/pets.js
+Duck
+rabbit
+duck
+rabbit
+duck
+{0} tamed: {1}
+{0} caught and tamed: {1}! It will carry small parcels
+Quack!
+{0} brought to the storehouse: {1}
+skeleton
+{0} carried off: {2}{3}
+(tame)
+{0} carried off {2}{3}!
+the tame one
+{0} attacked a tame pet: {1}
+{0} attacked a tame pet: {1}!
+My duck!
+My rabbit!
+{0} took revenge for {1}: killed {2}
+{0} caught up and killed: {1} — {2} saved
+{0} smashed a skeleton to bones for {1}
+{0} smashed a skeleton to bones — {1} saved
+Saved!
+Got it!
+{0} died defending {1}
+The owl caught {0}{1}
+The owl carried off a tame rabbit from {0}
+Look!
+Whoa!
+A flower!
+{0} times! Record!
+{0} times
+{0} caught a fish and ate it
+It got away…
+Come here, ducky!
+Rabbit, stop!
+It ran off…
+{0} jumped off the roof with a paraglider and landed 15 tiles away
+##### js/world/reaper.js
+A grave chill drifted from the fog on the outskirts: the reaper has come out
+The light is going out…
+Reaper!
+##### js/world/rocks.js
+Crack!
+##### js/world/skeletons.js
+Rusty scrap — to the junkyard!
+Lie back down!
+Lie still!
+Bones — into the ground!
+{0} smashed the skeleton to bones
+Gnomes together
+{0} escaped the skeleton alive
+##### js/world/strange.js
+goo
+Blub!
+lampskull
+Blim…
+sentinel
+Tick-tock
+ribbon
+Shhh…
+shard round-dance
+Ding…
+crescent
+Mo-o-oon…
+Tonight some of the beasts were swapped for strange creatures: {0}
+Night {0}: something strange wandered into the village — {1}
+Night {0}: a strange creature appeared — {1}
+A gnome ran into a strange creature: {0}
+##### js/world/streets.js
+Trash piles up by the roads — build a big bonfire and haulers will carry it there
+##### js/world/subbotnik.js
+Cleanup Day is daytime only, from the morning
+Cleanup Day already happened today. Again tomorrow morning
+The morning is gone: Cleanup Day starts at sunrise
+Cleanup Day! But there's no bonfire — nowhere to take the trash, so we'll plant flowers
+Cleanup Day! Everyone to the cleanup, the animals have been told to behave too
+Cleanup Day declared: the village grabs brooms
+Cleanup Day is over: trash cleared — {0}, flowerbeds — {1}, fences — {2}
+. Not much, but the effort counts
+. The village shines — until the first smoke break
+The village is pleased: clean, pretty, smells of flowers
+Cleanup Day {0}
+Cleanup Day in progress
+Declare Cleanup Day: everyone picks up trash, plants flowers, puts up fences (once a day, in the morning)
+Cleanup Day!
+Cleanliness is the key to health!
+Well, here we go…
+Give me a broom, a broom!
+Flowers!
+Beautiful!
+Grow big
+##### js/world/weather.js
+Rain began
+It started raining: gnomes opened umbrellas. The ground is slippery!
+The rain is easing
+The rain stopped
+{0} slipped on the wet ground and sprawled
+Pff…
+Wet!
+Going well…
+Boom!
+Lightning struck the ground
+I'm on fire!
+Lightning struck a gnome: {0} caught fire
+Lightning hit a gnome! {0} is burning
+Put it out!
+Save me!
+Rolling!
+The rain helped!
+Singed…
+Phew!
+{0} put themselves out and got up
+, singed
+Cluck-cluck-cluck!
+Lightning struck a chicken, it caught fire
+The chicken burned up from lightning
+Whew!
+The chicken went out and survived
+Lightning split {0}
+Lightning split a walking rock!
+Lightning set on fire: {0}
+Lightning set a walking tree on fire!
+{0} burned and collapsed

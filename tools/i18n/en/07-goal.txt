@@ -1,0 +1,123 @@
+##### js/goal.js
+Silence Is Golden
+Settlement
+Village
+Elder
+Smoke rose over the roofs, and rumours in the tavern. This is a village now: there's someone to complain to.
+City
+Mayor
+Thirty gnomes, a heap of buildings and not one reason for modesty. Congratulations: this is a city.
+gnomes
+buildings
+nights
+bread
+planks
+gold
+planks
+stone
+bread
+beer
+Grum Grumbler
+G
+Malgor the Dark
+M
+We've Arrived
+Chapter 1. We've Arrived
+The wagons creaked and stopped. Ahead: a clearing, a forest and not a living soul. If you don't count the gnomes.
+The land is free. Suspiciously free. That usually happens when nobody wants it.
+Far above the forest, a tower sticks out of a cliff. Its windows glow a poisonous green.
+That's probably a lighthouse. Or a neighbour. Let's start with firewood and see.
+A woodcutter's house, a quarry, a sawmill — and survive till morning. At night the forest isn't as simple as by day.
+Someone is chopping trees at the foot of my tower. I'll remember that. I remember everything, but slowly.
+Bread and Distrust
+Chapter 2. Bread and Distrust
+A gnome without bread is just a small angry man with a beard. Let's build a farm, a mill and a bakery.
+Noise. Noise again. Who allowed hammering in my forest?
+The forest isn't his, but arguing with a man who owns a tower feels somehow awkward.
+Farm → mill → bakery. Forty loaves of bread and fourteen gnomes.
+Beer Instead of Conscience
+Chapter 3. Beer Instead of Conscience
+A scroll lay by the gate in the morning. Heraldic paper, green ink, a whiff of sulphur.
+INVOICE for breach of silence: 40 gold and your conscience. The conscience may be paid in installments.
+No gold, and the conscience was drunk away long ago. So, beer. We need hops and a brewer.
+A hop yard, a brewery, twenty-five mugs — and survive three nights.
+A Pig Is a Gnome's Friend
+Chapter 4. A Pig Is a Gnome's Friend
+Sausage. Leather. Armor. In exactly that order, because sausage is tastier.
+You breed pigs. In my tower I have spiders. We are different people.
+A pigsty, a slaughterhouse, a tannery, an armor workshop. The fifth night is a long one.
+The fifth night is behind us, and we're still here. That's almost an achievement. Almost.
+Shine and Iron
+Chapter 5. Shine and Iron
+Gold is beautiful. Iron is useful. The hero needs the second, the gnomes the first. As usual.
+The tower on the cliff blinked its windows. It seems to have looked at the village.
+Well, well. Guilds, iron, a hero… And my magic stones in your storehouse. Curious. No, I'm not curious. I don't like it.
+Build any guild
+Mines, a smelter, an armory, any guild — and the title "City".
+Chapter 6. Silence Is Golden
+I asked for silence and my stones back. You brought noise and forgot the stones. The nights are mine now.
+He means it. I'd be scared, but I'm old and lazy.
+A hero, guilds, bonfires and bread. All we've got. We'll manage.
+A dark mage in the Black Spire. Gather the hero, guilds and supplies, go to the spire and defeat Malgor.
+Epilogue
+The tower went dark all at once, like a candle that was finally noticed. The forest grew quiet.
+The silence is over. Now the noise is ours. By right. And on schedule.
+The village hummed till dawn. The baker swore he heard the mage apologize. Nobody believed him.
+Build: {0}
+Gnomes
+Survive nights
+Produce: {0}
+Title "{0}"
+Defeat the dark mage Malgor
+Survive the nights of the siege
+A supply wagon: 10 bread dropped off
+A wagon of flour passed by: +10 bread to the storehouse
+A scroll lies at the gate: Malgor sent a bill for the noise
+Malgor sent a bill for breach of silence
+Festival postponed: {0}
+Reward for the chapter: {0}.
+Chapter {0} complete: "{1}"
+The settlement has grown: "{0}"
+New milestone: "{0}"! Reward: {1}
+VICTORY: {0}
+DEFEAT: {0}
+The dark mage is defeated, the tower has gone dark. The village is noisy again.
+The city survived {0} nights and kept its beard. This is called prosperity.
+All the gnomes have died. The village is empty, but the night remains.
+{0} h {1} min
+{0} min
+Milestone
+Planks sawn
+Bread baked
+Buildings finished
+Gnomes lost
+Gnomes now / record
+Nights survived
+Time
+Press "Next"
+Next ▸
+Skip
+New milestone: {0}
+Reward to the storehouse: {0}
+Play on
+Your title:
+Victory
+The village is empty
+Keep playing
+To menu
+Start over
+Look at the ashes
+Free play: goals are settlement milestones
+New game
+Scenario
+"{0}": 6 chapters, cutscenes and a dark mage
+Free play
+no story: milestones "settlement → city"
+Switch the world mode? Scenario progress will reset.
+Chapter {0}/{1}: {2}
+Scenario complete
+To "{0}"
+Victory: "City" and {0} nights ({1}/{2})
+{0} (host)
+Mode: scenario ⇄
+Mode: free ⇄
