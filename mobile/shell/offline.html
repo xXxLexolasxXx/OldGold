@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OldGold — нет сети</title>
+<style>
+html,body{margin:0;height:100%;background:#1a130d;color:#e8d9b5;font:18px/1.4 sans-serif;text-align:center}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
+img{width:96px;height:96px;image-rendering:pixelated;margin-bottom:16px}
+h1{margin:0 0 8px;font-size:24px;color:#e0b341}
+p{margin:0 0 24px;max-width:22em;opacity:.85}
+button{font:inherit;font-weight:bold;color:#1a130d;background:#e0b341;border:0;border-radius:10px;padding:14px 32px}
+button:active{background:#c79a2d}
+</style></head><body>
+<img src="icon.png" alt="">
+<h1>Нет связи с сайтом</h1>
+<p>OldGold грузится из интернета. Включите Wi-Fi или мобильную сеть — игра запустится сама.</p>
+<button id="r">Повторить</button>
+<script>
+var URL_='https://xxxlexolasxxx.github.io/OldGold/';
+function go(){location.href=URL_;}
+document.getElementById('r').onclick=go;
+addEventListener('online',go);
+</script></body></html>

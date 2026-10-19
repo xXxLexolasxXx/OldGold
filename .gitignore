@@ -16,3 +16,11 @@ mobile/android/app/src/main/assets/public/
 mobile/android/capacitor-cordova-android-plugins/
 mobile/ios/App/App/public/
 mobile/ios/App/Pods/
+
+# Личный APK (не коммитим) и локальные пути SDK
+mobile/*.apk
+*.apk
+mobile/android/local.properties
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/.gradle/

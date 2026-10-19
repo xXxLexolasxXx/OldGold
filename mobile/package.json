@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "www": "node ../desktop/build-www.js www",
-    "sync": "npm run www && cap sync",
+    "sync": "cap sync android",
     "android": "npm run sync && cap open android",
     "ios": "npm run sync && cap open ios"
   },
