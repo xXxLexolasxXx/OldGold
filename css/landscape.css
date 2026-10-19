@@ -63,11 +63,15 @@ body.mobile.land.sheet-tab #hero-card, body.mobile.land.sheet-info #hero-card { 
 body.mobile.land.sheet-tab #hero-btn, body.mobile.land.sheet-info #hero-btn { display: flex; }
 
 /* ---- общее: оповещения, подсказки, обучение — не выше 40% высоты ---- */
-body.mobile.land #toasts { top: auto; bottom: calc(var(--sb) + 56px); flex-direction: column-reverse; width: min(52%, 440px); left: calc(50% + var(--rail) / 2); max-height: var(--maxh); overflow: hidden; }
+/* тосты («Лиса утащила…») — сверху под полосой ресурсов, между обучением и карточкой героя, а не посреди карты */
+body.mobile.land #toasts { top: var(--top); bottom: auto; width: min(34vw, 320px); left: calc(50% + var(--rail) / 2); max-height: var(--maxh); overflow: hidden; }
 body.mobile.land .toast, body.mobile.land .ach-toast { font-size: 12.5px; padding: 5px 12px 6px 40px; min-height: 36px; }
 body.mobile.land .toast::before, body.mobile.land .ach-cup::before { width: 24px; height: 24px; margin-top: -12px; left: 8px; }
 /* открыта шторка — тосты и подсказка по центру оставшейся карты */
-body.mobile.land.sheet-tab #toasts, body.mobile.land.sheet-info #toasts { left: calc((var(--sheet-left) + var(--sheet-w) + 100% - var(--sr)) / 2); width: min(calc(100% - var(--sheet-left) - var(--sheet-w) - 24px), 360px); bottom: calc(var(--sb) + var(--mmw) * 0.75 + 20px); }
+body.mobile.land.sheet-tab #toasts, body.mobile.land.sheet-info #toasts { left: calc((var(--sheet-left) + var(--sheet-w) + 100% - var(--sr)) / 2); width: min(calc(100% - var(--sheet-left) - var(--sheet-w) - 24px), 320px); }
+/* развёрнутое обучение занимает верх слева — тосты встают под него */
+body.mobile.land:has(#tut.min:not(.hidden)) #toasts { top: calc(var(--top) + 96px); }   /* свёрнутое обучение — около 90 px */
+body.mobile.land:has(#tut:not(.hidden):not(.min)) #toasts { top: calc(var(--top) + var(--maxh) + 6px); }
 body.mobile.land #ach-toasts { top: var(--top); bottom: auto; right: calc(var(--sr) + 6px); left: auto; max-height: var(--maxh); overflow: hidden; align-items: flex-end; }
 body.mobile.land #tut {
   left: var(--left); right: auto; top: var(--top); width: min(330px, 44vw);
@@ -99,13 +103,21 @@ body.mobile.land #tab-area, body.mobile.land #info-wrap {
   position: absolute; display: none; order: 0; flex: none; z-index: 6;
   top: calc(var(--st) + var(--bar) + 4px); bottom: calc(var(--sb) + 6px); height: auto !important; max-height: none;
   width: var(--sheet-w); box-sizing: border-box;
-  animation: land-in .18s ease-out both;
+  animation: land-in .34s cubic-bezier(.22, .9, .26, 1) both;
+  will-change: transform;
 }
 body.mobile.land #info-wrap { background: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.55)), #3a2a1a; overflow-y: auto; }
 body.mobile.land #tab-area { background: rgba(14,10,6,0.96); min-height: 0; }
 body.mobile.land.sheet-tab #tab-area, body.mobile.land.sheet-info #info-wrap { display: block; }
 body.mobile.land.sheet-info #info-wrap { display: flex; }
-@keyframes land-in { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+/* шторка мягко выкатывается из-под колонки и так же плавно закатывается (land-out ставит js/landscape.js) */
+@keyframes land-in { from { opacity: 0.35; transform: translateX(-104%); } 60% { opacity: 1; } to { opacity: 1; transform: none; } }
+@keyframes land-out { from { opacity: 1; transform: none; } to { opacity: 0.2; transform: translateX(-104%); } }
+body.mobile.land.land-out #tab-area, body.mobile.land.land-out #info-wrap { animation: land-out .24s cubic-bezier(.5, 0, .75, .4) both; }
+body.mobile.land.land-out #sheet-close { opacity: 0; transition: opacity .12s; }
+body.mobile.land #sheet-close { animation: land-fade .3s ease-out .12s both; }
+@keyframes land-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { body.mobile.land #tab-area, body.mobile.land #info-wrap, body.mobile.land #sheet-close { animation-duration: .01s !important; } }
 body.mobile.land #sheet-close {
   position: absolute; z-index: 7; top: calc(var(--st) + var(--bar) + 4px); min-width: 40px; min-height: 40px; padding: 0; font-size: 18px; display: none;
   overflow: hidden; white-space: nowrap; width: 40px; text-indent: -999px;
@@ -142,7 +154,7 @@ body.mobile.land-b #tabs {
   display: none; position: fixed; left: calc(var(--sl) + 58px); bottom: calc(var(--sb) + 6px);
   grid-template-columns: repeat(5, 44px); gap: 4px; padding: 5px; z-index: 9;
   background: var(--planks); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line-hi), 0 4px 12px rgba(0,0,0,0.7);
-  animation: land-pop .14s ease-out both;
+  animation: land-pop .26s cubic-bezier(.22, .9, .26, 1) both;
 }
 body.mobile.land-b.land-tabs #tabs, body.mobile.land-b:has(#tabs .tut-hl) #tabs { display: grid; }
 body.mobile.land-b .tab-btn { height: 44px; }
@@ -172,3 +184,15 @@ body.mobile.land-b.sheet-tab #land-build, body.mobile.land-b.sheet-info #land-bu
 #land-modal .lm-opt.active { box-shadow: inset 0 0 0 2px var(--gold); }
 #land-modal .lm-close { margin-top: 8px; width: 100%; min-height: 36px; }
 @media (max-width: 460px) { #land-modal .lm-opts { flex-direction: column; } }
+
+
+/* значок придержанных оповещений («✉ N») — над кнопкой героя, чтобы не залезал под карточку героя */
+body.mobile.land #nq-pill { top: auto; left: auto; right: calc(var(--sr) + 6px); bottom: calc(var(--sb) + var(--mmw) * 0.75 + 70px); }
+
+/* открыта шторка — цели, вызов дня и обучение не лезут поверх неё */
+body.mobile.land.sheet-tab #goal-hud, body.mobile.land.sheet-info #goal-hud,
+body.mobile.land.sheet-tab #daily-hud, body.mobile.land.sheet-info #daily-hud { display: none !important; }
+/* а обучение подсказывает, что нажать в шторке, — оно встаёт справа от неё */
+body.mobile.land.sheet-tab #tut, body.mobile.land.sheet-info #tut {
+  left: calc(var(--sheet-left) + var(--sheet-w) + 54px); right: calc(var(--sr) + 6px); width: auto; z-index: 8;
+}

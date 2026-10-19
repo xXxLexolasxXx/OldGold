@@ -956,3 +956,19 @@ body.mobile.show-mm.mm-big .mm-wrap { left: 50%; right: auto; transform: transla
   font-size: 14px;
 }
 .team-ask button { min-width: 44px; min-height: 40px; font-size: 20px; }
+
+/* меню игры: четыре кнопки, группы раскрываются плавно (js/menugroups.js) */
+.mg.hidden { display: none; }
+.mg-h { width: 100%; }
+.mg-h .mg-n { margin-left: auto; min-width: 20px; padding: 0 5px; font-size: 11px; color: var(--text-dim); border: 1px solid var(--line); border-radius: 9px; }
+.mg-h .mg-arr { margin-left: 6px; transition: transform .3s cubic-bezier(.22, .9, .26, 1); }
+.mg.open > .mg-h { background: linear-gradient(#7a5a2c, #4e3816); box-shadow: inset 0 0 0 1px var(--gold), inset 0 1px 0 rgba(255,240,180,0.4); color: #fff6dc; }
+.mg.open .mg-arr { transform: rotate(90deg); }
+.mg-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s cubic-bezier(.22, .9, .26, 1); }
+.mg.open .mg-wrap { grid-template-rows: 1fr; }
+.mg-body { min-height: 0; overflow: hidden; display: grid; gap: 4px; padding-left: 12px; opacity: 0; transform: translateY(-6px); transition: opacity .25s ease, transform .32s cubic-bezier(.22, .9, .26, 1); }
+.mg.open .mg-body { opacity: 1; transform: none; padding-top: 4px; padding-bottom: 2px; }
+.mg-body button { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .mg-wrap, .mg-body, .mg-arr { transition: none; } }
+/* «Графика» больше не показывается: на слабых телефонах экономный режим включается сам */
+#eco-btn { display: none !important; }

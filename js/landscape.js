@@ -37,6 +37,26 @@ function applyLand() {
   if (typeof iconURL === 'function') document.querySelectorAll('#land-build img[data-icon], [data-land="open"] img[data-icon]').forEach(im => { if (!im.src) try { im.src = iconURL('ui', im.dataset.icon, 2); } catch (e) {} });
 }
 
+// Закрытие шторки в горизонтали — с анимацией: класс шторки держится, пока она плавно уезжает влево
+{
+  const _sheet = mobileSheet;
+  let outT = 0;
+  mobileSheet = function (kind) {
+    const cl = document.body.classList;
+    const open = cl.contains('sheet-tab') || cl.contains('sheet-info');
+    clearTimeout(outT);
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (Land.on && !kind && open && !reduce) {
+      if (cl.contains('land-out')) return;
+      cl.add('land-out');
+      outT = setTimeout(() => { cl.remove('land-out'); _sheet(null); }, 230);
+      return;
+    }
+    cl.remove('land-out');
+    _sheet(kind);
+  };
+}
+
 function setLandVariant(v) {
   if (v !== 'a' && v !== 'b') return;
   Land.variant = v;
