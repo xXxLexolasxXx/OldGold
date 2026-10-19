@@ -348,4 +348,4 @@ function lgAction(a, k) {
     try { const g = lgTick(); if (g > 0) toast(`Наследие: +${g} опыта за эту деревню`); } catch (e) { console.warn(e); }
   };
 }
-setInterval(() => { try { lgTick(); } catch (e) { console.warn(e); } }, 5000);
+setInterval(() => { if (typeof profCur !== 'function') return; try { lgTick(); } catch (e) { console.warn(e); } }, 5000);   // кооп-сервер и тесты: профиля нет — не сорим ReferenceError в журнал
