@@ -243,6 +243,13 @@ function coopCmd(name, msgJson, admin) {
       if (can(need)) coopBuildingAct(name, m);
       break;
     }
+    case 'trade': {
+      if (!can('manage') || !u) break;
+      if (m.side !== 'buy' && m.side !== 'sell') break;
+      if (typeof m.g !== 'string' || !coopInt(m.n) || m.n < 1) break;
+      coopSay(name, tradeDo(m.side, m.g, Math.min(m.n, 999)).text);
+      break;
+    }
     case 'qt': {
       if (can('train') && UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy) queueTraining(m.type);
       break;
@@ -557,10 +564,13 @@ function coopMirror() {
     ghosts: coopList(Game.ghosts), skels: coopList(Game.skels), ents: coopList(Game.ents), owls: coopList(Game.owls),
     bats: coopList(Game.bats), critters: coopList(Game.critters), falling: coopList(Game.falling),
     neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
+    raiders: typeof foeMirrorRaiders === 'function' ? foeMirrorRaiders() : [], foeShots: typeof foeMirrorShots === 'function' ? foeMirrorShots() : [],
+    foe: typeof foeMirror === 'function' ? foeMirror() : null,
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
     lost: Game.lostGnomes || 0, df: Game.diff,
     goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
+    trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
     wx: {},
   };

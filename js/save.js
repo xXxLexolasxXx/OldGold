@@ -219,9 +219,27 @@ function applySave(s) {
   updateMinimapBase();
 }
 
+// Ревизия формата сохранения (поле sv; поле v = 2 остаётся ради старых клиентов и сервера).
+// Поменял формат — подними SAVE_REV и допиши миграцию: SAVE_MIGRATIONS[n] переводит сейв из ревизии n в n + 1.
+const SAVE_REV = 1;
+const SAVE_MIGRATIONS = [
+  s => s,   // 0 → 1: сейвы до появления ревизии, формат тот же
+];
+function migrateSave(s) {
+  let r = s.sv | 0;
+  if (r > SAVE_REV) throw new Error(`сохранение из более новой версии игры (формат ${r}, игра понимает до ${SAVE_REV})`);
+  while (r < SAVE_REV) { s = SAVE_MIGRATIONS[r](s) || s; r++; s.sv = r; }
+  return s;
+}
+const SAVE_BACKUP_EVERY = 180000;   // копия автосейва обновляется не чаще раза в 3 минуты: если свежий сейв окажется битым, назад откатываемся недалеко
+
 function saveGame(slot = 'manual') {
   try {
-    const data = JSON.stringify(serializeGame());
+    const obj = serializeGame();
+    obj.sv = SAVE_REV;
+    if (typeof GAME_VERSION !== 'undefined') obj.gv = GAME_VERSION;
+    const data = JSON.stringify(obj);
+    if (slot === 'auto') saveBackup(slot);
     localStorage.setItem(SAVE_KEY + slot, data);
     localStorage.setItem(SAVE_KEY + slot + '.meta', JSON.stringify({ at: Date.now(), time: Game.time, people: Game.units.length, df: Game.diff }));
     return true;
@@ -232,12 +250,68 @@ function saveGame(slot = 'manual') {
   }
 }
 
+// Резервная копия предыдущего автосейва (slot.bak): перед записью нового старый копируется, если копия устарела.
+// Не хватило места — копию удаляем, основной сейв важнее.
+function saveBackup(slot) {
+  try {
+    const meta = saveMeta(slot + '.bak');
+    if (meta && Date.now() - meta.at < SAVE_BACKUP_EVERY) return;
+    const cur = localStorage.getItem(SAVE_KEY + slot);
+    if (!cur) return;
+    try { JSON.parse(cur); } catch (e) { return; }   // битый сейв в копию не кладём
+    localStorage.setItem(SAVE_KEY + slot + '.bak', cur);
+    localStorage.setItem(SAVE_KEY + slot + '.bak.meta', localStorage.getItem(SAVE_KEY + slot + '.meta') || JSON.stringify({ at: Date.now() }));
+  } catch (e) {
+    try { localStorage.removeItem(SAVE_KEY + slot + '.bak'); localStorage.removeItem(SAVE_KEY + slot + '.bak.meta'); } catch (x) { /* ничего */ }
+  }
+}
+
+// Безопасная загрузка: битый или непонятный сейв не должен оставлять полупустой мир и чёрный экран.
+// При ошибке пробуем резервную копию, а если и она не годится — начинаем новую игру и честно говорим об этом.
 function loadGame(slot = 'manual') {
-  let s = null;
-  try { s = JSON.parse(localStorage.getItem(SAVE_KEY + slot)); } catch (e) { s = null; }
-  if (!s || s.v !== 2) return false;
-  applySave(s);
-  return true;
+  const raw = (() => { try { return localStorage.getItem(SAVE_KEY + slot); } catch (e) { return null; } })();
+  if (!raw) return false;
+  const err = loadSaveText(raw);
+  if (!err) return true;
+  console.warn('сохранение ' + slot + ' не загрузилось:', err);
+  if (typeof crashNote === 'function') crashNote('save', slot + ': ' + err);
+  const bak = !/\.bak$/.test(slot) && (() => { try { return localStorage.getItem(SAVE_KEY + slot + '.bak'); } catch (e) { return null; } })();
+  if (bak && !loadSaveText(bak)) {
+    saveBrokenNotice(`Сохранение повреждено (${err}). Загружена резервная копия — до нескольких минут игры могли пропасть.`);
+    return true;
+  }
+  // битый текст откладываем в сторону (если хватит места): автосейв новой игры его иначе затрёт, а по нему можно найти причину
+  try { localStorage.setItem(SAVE_KEY + slot + '.broken', raw); } catch (e) { /* нет места — не страшно */ }
+  try { newGame(); } catch (e) { console.warn('newGame после битого сейва', e); }
+  saveBrokenNotice(`Не удалось загрузить сохранение: ${err}. Начата новая игра, повреждённый файл отложен в сторону.`);
+  return false;
+}
+
+// Разбор и применение текста сейва; возвращает текст ошибки или null
+function loadSaveText(raw) {
+  let s;
+  try { s = JSON.parse(raw); } catch (e) { return 'файл повреждён (обрезан или испорчен)'; }
+  if (!s || typeof s !== 'object' || s.v !== 2 || !Array.isArray(s.obj) || !Array.isArray(s.buildings) || !Array.isArray(s.units)) return 'неизвестный формат';
+  try { s = migrateSave(s); } catch (e) { return e.message; }
+  try { applySave(s); } catch (e) { return 'ошибка при разборе: ' + (e && e.message || e); }
+  if (!Game.buildings.length) return 'в сохранении нет ни одного здания';
+  return null;
+}
+
+function saveBrokenNotice(text) {
+  saveBrokenNotice.last = text;
+  if (typeof toast === 'function') toast(text);
+  try {
+    if (typeof document === 'undefined' || !document.body || !document.createElement) return;
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;left:50%;top:20%;transform:translateX(-50%);z-index:100001;max-width:440px;padding:16px 18px;background:#2a1e14;color:#f3e6c8;border:2px solid #a8743a;border-radius:8px;font:14px/1.45 sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.6)';
+    el.textContent = text;
+    const b = document.createElement('button');
+    b.textContent = 'Понятно'; b.style.cssText = 'display:block;margin:12px auto 0;padding:6px 18px';
+    b.onclick = () => el.remove();
+    el.appendChild(b);
+    document.body.appendChild(el);
+  } catch (e) { /* без окна обойдёмся тостом */ }
 }
 
 function saveMeta(slot) {

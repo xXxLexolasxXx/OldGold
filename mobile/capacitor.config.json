@@ -1,0 +1,9 @@
+{
+  "appId": "ru.oldgold.game",
+  "appName": "OldGold",
+  "webDir": "www",
+  "backgroundColor": "#1a130d",
+  "server": { "androidScheme": "https" },
+  "ios": { "contentInset": "never", "backgroundColor": "#1a130d" },
+  "android": { "backgroundColor": "#1a130d", "allowMixedContent": false }
+}
