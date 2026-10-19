@@ -191,6 +191,7 @@ function applySave(s) {
   }
   s.units.forEach((d, k) => { if (d.tm >= 0 && Game.units[d.tm]) Game.units[k].teamOf = Game.units[d.tm].id; });
   Game.time = s.time;
+  if (typeof defGatesSync === 'function') defGatesSync();   // ворота «Авто» — по времени суток сейва (defLoad шёл ещё при нулевом времени)
   Game.nextId = Math.max(s.nextId, Game.nextId);
   Game.storeBlock = s.storeBlock || {};
   Game.unlocked = s.unlocked ? Object.fromEntries(s.unlocked.map(k => [k, true])) : allUnlocked();   // старые сохранения — всё открыто

@@ -368,6 +368,17 @@ function defLoad(list) {
   }
   PF.regT = -1e9;
 }
+// Ворота «Авто» закрыты вечером и ночью; возвращает клетки ворот, что сменили положение
+function defGatesSync() {
+  const night = fortNight(), moved = [];
+  for (const i of DEF.set) {
+    const o = World.obj[i];
+    if (!o || o.f !== 'gate' || o.bt !== undefined) continue;
+    const want = o.mode === 'open' || (o.mode === 'auto' && !night);
+    if (o.open !== want) { o.open = want; moved.push(i); }
+  }
+  return moved;
+}
 function defRescan() {
   DEF.set.clear();
   for (let i = 0; i < N_TILES; i++) { const o = World.obj[i]; if (o && o.t === 'fort') DEF.set.add(i); }

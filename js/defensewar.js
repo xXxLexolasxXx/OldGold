@@ -279,13 +279,7 @@ function defenseTick(dt) {
   DEF.gateT = (DEF.gateT || 0) + step;
   if (DEF.gateT >= 0.5) {
     DEF.gateT = 0;
-    const night = fortNight();
-    for (const i of DEF.set) {
-      const o = World.obj[i];
-      if (!o || o.f !== 'gate' || o.bt !== undefined) continue;
-      const want = o.mode === 'open' || (o.mode === 'auto' && !night);
-      if (o.open !== want) { o.open = want; sfxAt('creak', (i % MAP_W) * TILE, ((i / MAP_W) | 0) * TILE, 0.5); }
-    }
+    for (const i of defGatesSync()) sfxAt('creak', (i % MAP_W) * TILE, ((i / MAP_W) | 0) * TILE, 0.5);
   }
 
   // днём стены понемногу подновляют сами (кто-то же должен): +1 прочность за 8 с, пока не бьют
