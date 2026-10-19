@@ -59,6 +59,7 @@ const MD_WHY = {
   ill: 'Хворает',
   cured: 'Поправился!',
   rsc: 'Праздничный календарь',
+  wed: 'Свадьба!', wedg: 'Гуляли на свадьбе', baby: 'Пополнение в семье', grief: 'Горе в семье',
   base: 'Жить можно',
 };
 const MD_SIGN = c => { const w = MD_WHY[c]; return typeof w === 'string' ? [w, w] : w; };
@@ -241,6 +242,7 @@ function mdUpdate(u, now) {
   if (typeof lawWork === 'function') mul *= lawWork();
   if (typeof sickMul === 'function') mul *= sickMul(u);
   if (typeof resWork === 'function') mul *= resWork(u);
+  if (typeof famMul === 'function') mul *= famMul(u);                // старость (family.js)
   u.mdMul = Math.round(mul * 1000) / 1000;
   M.low = M.m <= MD.CRIT ? M.low + el : Math.max(0, M.low - el * 2);
   M.hi = M.m >= MD.GOOD ? M.hi + el : Math.max(0, M.hi - el);

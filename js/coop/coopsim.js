@@ -560,7 +560,7 @@ function coopList(arr) {
   }
   return out;
 }
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam'];
 const COOP_WX = ['k', 'target', 'bolt', 'scorch', 'fires', 'rainEnd', 'nextRain'];
 
 // всё, что нечисть, ночь и погода держат вне жителей и клеток
@@ -580,6 +580,7 @@ function coopMirror() {
     law: typeof lawMirrorOut === 'function' ? lawMirrorOut() : null,
     med: typeof medMirrorOut === 'function' ? medMirrorOut() : null,
     rsc: typeof rscMirrorOut === 'function' ? rscMirrorOut() : null,
+    fam: typeof famMirrorOut === 'function' ? famMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
     sea: typeof seaMirrorOut === 'function' ? seaMirrorOut() : null, wfx: coopList(Game.wfx),
     wx: {},

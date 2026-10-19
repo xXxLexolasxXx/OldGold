@@ -41,3 +41,8 @@ body.mobile .lw-btns button { min-height: 36px; font-size: 13px; }
 .rs-node.done { border-left-color: #7cc860; }
 .rs-node.ready { border-left-color: #f0d27a; background: rgba(90,66,20,0.25); }
 .rs-node.off .lw-name b { color: #b8ab8c; }
+/* Семьи (js/family.js) */
+.fm-name { padding: 2px 0 3px; color: #f0e6c8; font-size: 12.5px; }
+.fm-chron { margin: 2px 0 6px; }
+.fm-c { padding: 3px 2px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #e9dcc0; font-size: 12px; line-height: 1.35; }
+.fm-d { display: inline-block; min-width: 64px; margin-right: 6px; color: #a99c80; font-size: 11px; }

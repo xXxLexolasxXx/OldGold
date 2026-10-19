@@ -240,7 +240,7 @@ function coopDropBuilding(b) {
 }
 
 const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lairs', 'raiders', 'foeShots', 'games', 'dshots', 'dtowers', 'wfx'];
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
 function coopResolve(v) {
@@ -279,6 +279,7 @@ function coopMirror(m) {
   if (typeof lawMirrorIn === 'function') lawMirrorIn(m.law);
   if (typeof medMirrorIn === 'function') medMirrorIn(m.med);
   if (typeof rscMirrorIn === 'function') rscMirrorIn(m.rsc);
+  if (typeof famMirrorIn === 'function') famMirrorIn(m.fam);
   if (m.df) Game.diff = diffKey(m.df);
   const festWas = festOn();
   Game.festival = m.fest || null;

@@ -55,6 +55,7 @@ scriptTest('prio: приоритеты работ, сохранение', 'prio-
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
+scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
