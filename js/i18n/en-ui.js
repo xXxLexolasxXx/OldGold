@@ -546,6 +546,8 @@ I18N.add('en', {
   "новый мир, назвать героя": "new world, name your hero",
   "Мультиплеер": "Multiplayer",
   "играть с друзьями": "play with friends",
+  "Ещё": "More",
+  "вызов дня, редактор, ачивки": "daily challenge, editor, achievements",
   "Ваш ник": "Your nickname",
   "Адрес сервера": "Server address",
   "Подключиться": "Connect",

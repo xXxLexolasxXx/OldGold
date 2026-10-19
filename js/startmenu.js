@@ -139,6 +139,14 @@ function smAction(a) {
     const sv = smBestSave();
     if (!sv) return;
     smLoadPrepared(sv.slot, root.querySelector('[data-sm="continue"] small'));
+  } else if (a === 'more') {
+    // главное меню — три кнопки и «Ещё»; второстепенное (вызов дня, редактор, ачивки, справка, язык) — по нажатию
+    const main = root.querySelector('[data-panel="main"]'), on = main.classList.toggle('sm-more');
+    const mb = main.querySelector('[data-sm="more"]');
+    mb.querySelector('b').textContent = on ? 'Назад' : 'Ещё';
+    mb.querySelector('small').textContent = on ? '' : 'вызов дня, редактор, ачивки';
+    smSubToggle(false);
+    smShow('main');
   } else if (a === 'new') {
     smShow('mode');
   } else if (a === 'mode-scenario' || a === 'mode-free') {
@@ -194,6 +202,7 @@ function initStartMenu() {
       <button class="sm-btn" data-sm="mp"><b>Мультиплеер</b><small>играть с друзьями</small></button>
       <button class="sm-btn ghost" data-sm="help"><b>Как играть</b></button>
       <button class="sm-btn ghost" data-sm="lang"><b class="lang-name">${I18N.other}</b></button>
+      <button class="sm-btn ghost" data-sm="more"><b>Ещё</b><small>вызов дня, редактор, ачивки</small></button>
     </div>
     <div class="sm-panel hidden" data-panel="mode">
       <button class="sm-btn primary" data-sm="mode-scenario"><b>Сценарий</b><small>«Тишина дороже золота»: 6 глав, тёмный маг</small></button>

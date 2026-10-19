@@ -925,3 +925,6 @@ body.mobile.show-mm.mm-big .mm-wrap { left: 50%; right: auto; transform: transla
 @media (prefers-reduced-motion: reduce) { .mg-wrap, .mg-body, .mg-arr { transition: none; } }
 /* «Графика» больше не показывается: на слабых телефонах экономный режим включается сам */
 #eco-btn { display: none !important; }
+/* стартовое меню: «Продолжить», «Новая игра», «Мультиплеер» и «Ещё»; остальное — после «Ещё» (js/startmenu.js) */
+.sm-panel[data-panel="main"]:not(.sm-more) > .sm-btn:not([data-sm="continue"]):not([data-sm="new"]):not([data-sm="mp"]):not([data-sm="more"]),
+.sm-panel[data-panel="main"].sm-more > .sm-btn:is([data-sm="continue"], [data-sm="new"], [data-sm="mp"]) { display: none; }
