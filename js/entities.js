@@ -605,7 +605,7 @@ class Unit {
     lifeTick(this, dt);
     if (this.isCourier && !(this.action && this.action.walk)) this.releaseOcc();
     if (this.action) {
-      const r = this.stepAction(dt);
+      const r = this.stepAction(this.mdMul ? dt * this.mdMul : dt);   // настроение (mood.js): бодрый делает и ходит быстрее, хмурый медленнее
       if (r === undefined) return;
       this.lastRes = r;
       this.action = null;

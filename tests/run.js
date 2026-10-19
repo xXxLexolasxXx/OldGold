@@ -193,6 +193,20 @@ test(`coop: клиент не расходится с сервером, ${COOP_M
       L.botTurn(srv);
     }
   }
+  // настроение: клиент просит данные гнома (mpick) — сервер присылает число, потребности и причины только для него
+  {
+    const gid = srv.h.run('(Game.units.find(u => mdOn(u) && u.md) || {}).id');
+    if (gid) {
+      srv.h.run(`coopCmd('бот1', JSON.stringify({ t: 'mpick', id: ${gid} }), true)`);
+      L.stepN(srv, 60);
+      cli.h.ctx.__m = srv.h.run('coopUnitsPacket()'); cli.h.run('coopHandle(JSON.parse(__m))');
+      const d = cli.h.run(`(function () { const u = Game.unitMap.get(${gid}); return u && u.mdr && mdCardData(u) ? JSON.stringify(mdCardData(u)) : ''; })()`);
+      if (!d) r.fails.push('настроение: клиент не получил данные выбранного гнома (mdr)');
+      else { const o = JSON.parse(d); if (!(o.m >= 0 && o.m <= 100) || o.n.length !== 7 || !o.r.length) r.fails.push('настроение: данные гнома у клиента неполные: ' + d); }
+      const html = cli.h.run(`mdCardHTML(Game.unitMap.get(${gid}))`);
+      if (!/Потребности/.test(html)) r.fails.push('настроение: карточка гнома у клиента пустая');
+    }
+  }
   for (const e of srv.errors) r.fails.push('сервер: ' + e);
   for (const e of cli.errors) r.fails.push('клиент: ' + e);
   const c = L.checkInvariants(srv, 'кооп-сервер');
