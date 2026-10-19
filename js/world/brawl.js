@@ -151,7 +151,7 @@ function brawlMaybeStart() {
 }
 
 // сходятся к общей точке
-function brawlGather(fs) {
+function brawlGather(fs, why) {   // why === 'mood': драка от тоски (mood.js), не на празднике
   const cx = fs.reduce((s, u) => s + u.x, 0) / fs.length, cy = fs.reduce((s, u) => s + u.y, 0) / fs.length;
   const free = (x, y) => isWalkable(x, y) && !World.bmap[idx(x, y)] && !World.door[idx(x, y)];
   const taken = [];
@@ -171,6 +171,7 @@ function brawlGather(fs) {
     })();
   }
   floater(fs[0].x, fs[0].y - 1.4, BR_SHOUT[(Math.random() * BR_SHOUT.length) | 0], '#ffb090');
+  if (why === 'mood') { logEvent('people', `От тоски ${fs.map(brName).join(' и ')} полезли в драку`, cx, cy); return; }
   logEvent('festival', `Пьяная драка на празднике: ${fs.map(brName).join(' и ')} не поделили кружку`, cx, cy);
   toast('На празднике назревает драка…');
 }
