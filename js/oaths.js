@@ -25,22 +25,22 @@ const OATHS = {
   archer: { name: 'Клятва Тропы', role: 'разведчик, урон', st: [['agi', 2], ['str', 1], ['agi', 2], ['agi', 2]], mod: { melee: 0.8 },
     quote: 'Волк знает тебя в лицо. Скелет — тоже, но ему всё равно.',
     gift: 'Бьёт издалека: дальность 7 клеток', price: 'Враг вплотную — попадает на 20% хуже', vil: 'Лесорубы, пастухи и охотники рядом бодрее: «Следопыт показал тропу»' },
-  monk: { name: 'Клятва Тишины', role: 'танк-уворот', st: [['agi', 2], ['end', 2], ['agi', 2], ['str', 2]], mod: { spd: 1.06, noArmor: true },
+  monk: { name: 'Клятва Тишины', role: 'танк-уворот', st: [['agi', 2], ['end', 2], ['agi', 2], ['str', 2]], mod: { spd: 1.06, noArmor: true, dodge: 0.1 },
     quote: 'Доспех — для тех, кто не умеет уворачиваться.',
-    gift: 'Быстрее на 6%, шквал ударов', price: 'Доспех не защищает совсем', vil: 'Гномы рядом не срываются и не дерутся: «Монах рядом — тихо»' },
+    gift: 'Быстрее на 6%, уходит от 10% ударов (15% с 15 уровня), шквал ударов', price: 'Доспех не защищает совсем', vil: 'Гномы рядом не срываются и не дерутся: «Монах рядом — тихо»' },
   rogue: { name: 'Клятва Тени', role: 'разведчик, добыча', st: [['agi', 2], ['int', 1], ['agi', 2], ['agi', 2]], mod: { hp: 0.85, coin: true },
     quote: 'Всё, что плохо лежит, теперь лежит у тебя. Включая золото деревни, если деревня грустит.',
     gift: 'Удар в спину; с 5 уровня находит монетки на складе', price: 'Здоровья на 15% меньше; когда деревня тоскует, прикарманивает золото',
     vil: 'Деревне — ничего: плуту не до неё' },
-  bard: { name: 'Клятва Песни', role: 'саппорт', st: [['int', 2], ['agi', 2], ['int', 2], ['agi', 2]], mod: { hp: 0.9, atk: 0.85, beer: true },
+  bard: { name: 'Клятва Песни', role: 'саппорт', st: [['int', 2], ['agi', 2], ['int', 2], ['agi', 2]], mod: { hp: 0.9, atk: 0.9, beer: true },
     quote: 'Драться не умеешь, зато умеешь сделать так, чтобы дрались за тебя. И пили — тоже за тебя.',
-    gift: 'Вдохновение и «Дай пять!»', price: 'Точность −15%, здоровье −10%; пьёт пиво со склада', vil: 'Гномы рядом веселее: «Бард играет»' },
+    gift: 'Вдохновение и «Дай пять!»', price: 'Точность −10%, здоровье −10%; пьёт пиво со склада', vil: 'Гномы рядом веселее: «Бард играет»' },
   mage: { name: 'Клятва Звезды', role: 'урон', st: [['int', 2], ['end', 1], ['int', 2], ['int', 2]], mod: { hp: 0.85 },
     quote: 'Сила звёзд в твоих руках. Здоровье — в чужих.',
     gift: 'Магическая стрела, щит, огненный шар', price: 'Здоровья на 15% меньше: стекло', vil: 'Фонари, зажжённые магом, горят дольше' },
-  priest: { name: 'Клятва Кружки', role: 'лекарь', st: [['int', 2], ['end', 2], ['int', 2], ['end', 2]], mod: { atk: 0.85, faith: true },
+  priest: { name: 'Клятва Кружки', role: 'лекарь', st: [['int', 2], ['end', 2], ['int', 2], ['end', 2]], mod: { atk: 0.9, faith: true },
     quote: 'Благословляешь пиво, хворых и урожай. Пока в тебя верят. Пока пиво есть.',
-    gift: 'Благословение и Изгнание нежити', price: 'Точность −15%; довольная деревня — лечит сильнее, тоскующая — приёмы дольше перезаряжаются',
+    gift: 'Благословение и Изгнание нежити', price: 'Точность −10%; довольная деревня — лечит сильнее, тоскующая — приёмы дольше перезаряжаются',
     vil: 'Хворь у гномов рядом проходит быстрее' },
   druid: { name: 'Клятва Корня', role: 'лекарь, саппорт', st: [['int', 2], ['end', 2], ['int', 2], ['end', 2]], mod: { noIron: true },
     quote: 'Лес тебя слушает. Железо — нет.',
@@ -109,6 +109,11 @@ function oathPerkStats(H) {
       return p;
     };
   }
+  // монах: доспех не держит, зато уходит от ударов сам
+  if (typeof heroDodge === 'function') {
+    const _dg = heroDodge;
+    heroDodge = function (u) { const O = oathOf(u && u.hero); return O && O.mod.dodge ? Math.min(0.75, _dg(u) + O.mod.dodge * oathMul(u.hero)) : _dg(u); };
+  }
   const _spd = teamSpeedMul;
   teamSpeedMul = function (u) {
     const m = _spd(u), h = typeof heroOf === 'function' ? heroOf(u) : null, O = h && oathOf(h.hero);
@@ -152,6 +157,7 @@ if (typeof heroAbilityFor === 'function') {
         else if (n < 6) { moodPoke(g, 'five', 8, 90); floater(g.x, g.y - 1.5, 'Пять!', '#ffd070'); n++; }
       }
     }
+    if (typeof coopPairAbil === 'function' && H.owner) coopPairAbil(h);
     if (!O) return ok;
     if (O.mod.faith && a.heal) {
       const m = oathVillageMood();
@@ -176,7 +182,7 @@ function oathTick() {
     const H = h.hero, O = oathOf(H);
     // принял Клятву (новый класс) — цитата предков; при загрузке молчим
     if (h._oathK !== H.clsKey) {
-      if (h._oathK !== undefined && O) { oathSay(h, `${O.name}: «${O.quote}»`); floater(h.x, h.y - 2.4, O.name, (GCLS[H.clsKey] || {}).col || '#ffe070'); }
+      if (h._oathK !== undefined && O) { oathSay(h, !H.owner && typeof t === 'function' ? t('{0}: «{1}»', O.name, O.quote) : `${O.name}: «${O.quote}»`); floater(h.x, h.y - 2.4, O.name, (GCLS[H.clsKey] || {}).col || '#ffe070'); }
       h._oathK = H.clsKey;
     }
     if (!O) continue;
@@ -239,14 +245,18 @@ function oathStyle() {
   if (oathStyled || typeof document === 'undefined' || !document.head || !document.createElement) return;
   oathStyled = true;
   const st = document.createElement('style');
-  st.textContent = '.oath-r{display:block;margin:3px 0;line-height:1.35}.oath-r i{color:#f0e0b0}';
+  st.textContent = '.oath-r{display:block;margin:3px 0;line-height:1.35}.oath-r i{color:#f0e0b0}.oath-q::before{content:"«"}.oath-q::after{content:"»"}';
   document.head.appendChild(st);
 }
 
 function oathLine(k) {
   const O = OATHS[k], C = GCLS[k];
-  return `<div class="oath-r small"><b style="color:${C.col}">${O.name}</b> — ${C.name.toLowerCase()}, ${O.role}<br><span class="muted">дар:</span> ${O.gift}<br><span class="muted">цена:</span> ${O.price}</div>`;
+  return `<div class="oath-r small"><b style="color:${C.col}">${O.name}</b> <span class="muted">(${C.name.toLowerCase()} · ${O.role})</span>`
+    + `<br><span class="muted">дар:</span> <span>${O.gift}</span><br><span class="muted">цена:</span> <span>${O.price}</span></div>`;
 }
+
+const OATH_GUILD_RU = { warrior: 'Гильдия воинов', archer: 'Гильдия лучников', rogue: 'Гильдия разбойников', mage: 'Гильдия магов' };
+const OATH_ROMAN = ['—', 'I', 'II', 'III'];
 
 function oathTabHTML(H) {
   oathStyle();
@@ -254,23 +264,23 @@ function oathTabHTML(H) {
   if (!O) {
     const by = {};
     for (const k in OATHS) { const g = (GCLS[k] && (GCLS[k].guild || k)) || k; (by[g] || (by[g] = [])).push(k); }
-    const gn = { warrior: 'воинов', archer: 'лучников', rogue: 'разбойников', mage: 'магов' };
     return `<div class="oath-r small">${OATH_GUILD_LORE}</div><div class="oath-r small muted">Клятвы ещё нет — примите её у главы гильдии.</div>`
-      + Object.entries(by).map(([g, ks]) => `<div class="oath-r small">Гильдия ${gn[g] || g}: ${ks.map(k => `<b style="color:${GCLS[k].col}">${OATHS[k].name}</b>`).join(', ')}</div>`).join('');
+      + Object.entries(by).map(([g, ks]) => `<div class="oath-r small"><span>${OATH_GUILD_RU[g] || g}</span>: ${ks.map(k => `<b style="color:${GCLS[k].col}">${OATHS[k].name}</b>`).join(', ')}</div>`).join('');
   }
   const lv = H.level || 1, tier = oathTier(H), now = Game.time;
-  const perks = [[1, `${O.name}: дар и цена, круг ${oathR({ level: 1 })} клеток`]];
-  OATH_PERK_LVL.forEach((l, i) => perks.push([l, `${OATH_STAT[O.st[i][0]]} +${O.st[i][1]}`]));
-  perks.push([5, `Обет I: круг 6 клеток${H.clsKey === 'rogue' ? ', находит монетки' : ''}`], [10, `Обет II: круг 8 клеток${H.clsKey === 'paladin' ? ', раны гномов заживают' : ''}`], [15, 'Обет III: круг 10 клеток, дар деревне ×1,5']);
+  // перк — [уровень, имя жирным (может быть пустым), текст, добавка по классу]
+  const perks = [[1, O.name, `: дар и цена, круг ${oathR({ level: 1 })} клеток`, '']];
+  OATH_PERK_LVL.forEach((l, i) => perks.push([l, '', `${OATH_STAT[O.st[i][0]]} +${O.st[i][1]}`, '']));
+  perks.push([5, '', 'Обет I: круг 6 клеток', H.clsKey === 'rogue' ? 'находит монетки' : ''], [10, '', 'Обет II: круг 8 клеток', H.clsKey === 'paladin' ? 'раны гномов заживают' : ''], [15, '', 'Обет III: круг 10 клеток', 'дар деревне ×1,5']);
   perks.sort((a, b) => a[0] - b[0]);
   const crack = H.clsKey === 'paladin' && (H.oathCrack || 0) > now ? `<div class="oath-r small warn">Клятва дрожит ещё ${Math.ceil(H.oathCrack - now)} с: погиб гном</div>` : '';
-  return `<div class="oath-r"><b style="color:${C.col}">${O.name}</b> <span class="muted small">· ${O.role}</span></div>`
-    + `<div class="oath-r small"><i>«${O.quote}»</i></div>${crack}`
-    + `<div class="oath-r small"><span class="muted">Дар:</span> ${O.gift}</div>`
-    + `<div class="oath-r small"><span class="muted">Цена:</span> ${O.price}</div>`
-    + `<div class="oath-r small"><span class="muted">Деревне:</span> ${O.vil} <span class="muted">(круг ${oathR(H)} клеток, обет ${['—', 'I', 'II', 'III'][tier]})</span></div>`
+  return `<div class="oath-r"><b style="color:${C.col}">${O.name}</b> <span class="muted small">(${O.role})</span></div>`
+    + `<div class="oath-r small"><i class="oath-q">${O.quote}</i></div>${crack}`
+    + `<div class="oath-r small"><span class="muted">Дар:</span> <span>${O.gift}</span></div>`
+    + `<div class="oath-r small"><span class="muted">Цена:</span> <span>${O.price}</span></div>`
+    + `<div class="oath-r small"><span class="muted">Деревне:</span> <span>${O.vil}</span> <span class="muted">(круг ${oathR(H)} клеток, обет ${OATH_ROMAN[tier]})</span></div>`
     + `<div class="oath-r small muted">Перки по уровням</div>`
-    + perks.map(([l, t]) => `<div class="oath-r small${lv >= l ? '' : ' muted'}">${lv >= l ? '✓' : '·'} ${l} ур. — ${t}</div>`).join('');
+    + perks.map(([l, nm, t, x]) => `<div class="oath-r small${lv >= l ? '' : ' muted'}">${lv >= l ? '✓' : '·'} <b>${l}</b> · ${nm ? `<b>${nm}</b>` : ''}<span>${t}</span>${x ? `<span>, ${x}</span>` : ''}</div>`).join('');
 }
 
 if (typeof guildHTML === 'function') {

@@ -10,7 +10,7 @@
 (function (g) {
   const LS = 'og_lang';
   const CYR = /[А-Яа-яЁё]/;
-  const EN_FILES = ['en-ui', 'en-world', 'en-hero', 'en-misc', 'en-manual', 'en-systems'];   // js/i18n/<имя>.js (отсутствующие молча пропускаются)
+  const EN_FILES = ['en-ui', 'en-world', 'en-hero', 'en-misc', 'en-manual', 'en-systems', 'en-oaths'];   // js/i18n/<имя>.js (отсутствующие молча пропускаются)
   const LANGS = { ru: 'Русский', en: 'English' };
 
   function pick() {

@@ -74,6 +74,47 @@ const back = J('return Game.hero && Game.hero.hero ? Game.hero.hero.clsKey + ":"
 ok(back === 'bard:2', `после загрузки герой стал ${back}`);
 S.runFor(sim, 30, 10, () => {});
 
+
+// ---------- Кооп: парные задания по ролям ----------
+const srv = S.newSim(9, { coop: true });
+const R = code => JSON.parse(srv.h.run(`JSON.stringify((() => { ${code} })())`));
+srv.h.run(`coopJoin('танк', JSON.stringify({ cls: 'paladin' })); coopJoin('лекарь', JSON.stringify({ cls: 'priest' }))`);
+S.runFor(srv, 10, 5, () => {});
+// выдача: у пары «танк + лекарь» утром бывает «Щит и свеча», у двух без разведчика «Тропы» нет
+const kinds = R(`const seen = {};
+  for (let i = 0; i < 60; i++) { coop.pairQ = []; coop.pairDay = new Map(); coopMakePair(); const p = coop.pairQ[0]; if (p) seen[p.kind] = (seen[p.kind] || 0) + 1; }
+  coop.pairQ = []; coop.pairDay = new Map(); return seen;`);
+ok(kinds.shield > 0, 'танк и лекарь не получили «Щит и свеча»: ' + JSON.stringify(kinds));
+ok(!kinds.trail && !kinds.song, 'паре без разведчика и саппорта выдали чужое задание: ' + JSON.stringify(kinds));
+// «Щит и свеча»: минуту у костра ночью
+const sh = R(`const k = coopDayIx(), a = coop.players.get('танк'), b = coop.players.get('лекарь');
+  const f = Game.buildings.find(x => x.type === 'bonfire' && x.state === 'done'); if (!f) return 'нет костра';
+  const p = { kind: 'shield', a: 'танк', b: 'лекарь', k, done: false, prog: 0, tog: 0, t: {}, armed: false }; coop.pairQ = [p];
+  for (const u of [a, b]) { u.x = f.x + f.w / 2 + 2; u.y = f.y + f.h + 1; u.hero.nightFalls = 0; }
+  for (let i = 0; i < 61; i++) coopPairTick(true);
+  return p.done ? 'ok' : 'tog ' + p.tog;`);
+ok(sh === 'ok', '«Щит и свеча» не засчитано: ' + sh);
+// «Тропа и тень»: оба у клада — золото в казну
+srv.h.run(`coopLeave('лекарь'); coopJoin('плут', JSON.stringify({ cls: 'rogue' }))`);
+const tr = R(`const k = coopDayIx(), a = coop.players.get('танк'), b = coop.players.get('плут'), gold = () => Game.buildings.filter(x => x.type === 'storehouse').reduce((s, x) => s + (x.stock.gold || 0), 0);
+  const p = { kind: 'trail', a: 'танк', b: 'плут', k, done: false, prog: 0, tog: 0, t: {}, armed: false, pts: [[Math.floor(a.x), Math.floor(a.y)]] }; coop.pairQ = [p];
+  const me = JSON.parse(coopMeData('плут')); const g0 = gold();
+  b.x = a.x; b.y = a.y; coopPairTick(false);
+  return { done: p.done, gold: gold() - g0, hint: !!(me.qx ? me.qx.p : me.p) };`);
+ok(tr.done && tr.gold === 3, '«Тропа и тень» не засчитано: ' + JSON.stringify(tr));
+// «Песня и меч»: по два приёма рядом — бард настоящими способностями
+srv.h.run(`coopLeave('плут'); coopJoin('бард', JSON.stringify({ cls: 'bard' }))`);
+const sg = R(`const k = coopDayIx(), a = coop.players.get('танк'), b = coop.players.get('бард');
+  const p = { kind: 'song', a: 'бард', b: 'танк', k, done: false, prog: 0, tog: 0, t: { 'бард': 0, 'танк': 0 }, armed: false }; coop.pairQ = [p];
+  b.x = a.x + 1; b.y = a.y; b.hero.level = 6; b.hero.abCd = {};
+  const r1 = heroAbilityFor(b, 0); const r2 = heroAbilityFor(b, 1);
+  coopPairAbil(a); coopPairAbil(a);
+  return { r1, r2, t: p.t, done: p.done };`);
+ok(sg.done, '«Песня и меч» не засчитано: ' + JSON.stringify(sg));
+S.runFor(srv, 20, 5, () => {});
+ok(!srv.errors.length, 'кооп: исключения: ' + srv.errors.slice(0, 3).join(' | '));
+console.log(`кооп: задания по ролям ${JSON.stringify(kinds)}, щит ${sh}, тропа ${tr.done}, песня ${sg.done}`);
+
 ok(!sim.errors.length, 'исключения: ' + sim.errors.slice(0, 3).join(' | '));
 const inv = S.checkInvariants(sim, 'клятвы'); for (const p of inv.problems) ok(false, p);
 console.log(fails.length ? `Проверка клятв: провалов ${fails.length}` : 'Проверка клятв: всё в порядке');

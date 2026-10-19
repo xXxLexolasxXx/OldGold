@@ -770,7 +770,15 @@ const PDEF = {
   tandem: { name: 'Тандем-ночь', text: 'Дожить до рассвета, держась рядом (≤6 клеток), и ни разу не упасть' },
   levers: { name: 'Два рычага',  text: 'Двоим одновременно постоять у двух меток 5 секунд' },
   toast:  { name: 'Тост',        text: 'Выпить пива в трактире вдвоём, с разницей не больше 30 секунд' },
+  // по ролям Клятв (oaths.js, КЛАССЫ.md): выдаются, только если роли пары подходят
+  shield: { name: 'Щит и свеча',  text: 'Танк и лекарь: ночью продержаться вдвоём у большого костра (≤8 клеток) минуту и не упасть' },
+  trail:  { name: 'Тропа и тень', text: 'Разведчик ведёт: дойти вдвоём до старого клада по метке на карте — золото в казну' },
+  song:   { name: 'Песня и меч',  text: 'Саппорт и урон: каждому применить по два приёма, пока напарник рядом (≤6 клеток)' },
 };
+// роли героя из его Клятвы: танк, лекарь, разведчик, урон, саппорт
+const coopRole = (u, r) => !!(typeof OATHS !== 'undefined' && OATHS[u.hero.clsKey] && OATHS[u.hero.clsKey].role.includes(r));
+const coopRoles2 = (a, b, r1, r2) => (coopRole(a, r1) && coopRole(b, r2)) || (coopRole(a, r2) && coopRole(b, r1));
+const COOP_SONG_N = 2, COOP_SHIELD_T = 60, COOP_TRAIL_GOLD = 3;
 const COOP_PAIR_XP = 40, COOP_BROTHERS = 5, COOP_COUNCIL_SEC = 60;
 const coopDayIx = () => cycleAt(Game.time).k;
 const coopDayP = () => cycleAt(Game.time).p;
@@ -893,6 +901,20 @@ function coopToastDrink(H) {
   }
 }
 
+// «Песня и меч»: приём героя засчитывается, если напарник рядом (зовёт oaths.js после удачного приёма)
+function coopPairAbil(u) {
+  const name = u.hero && u.hero.owner;
+  if (!name) return;
+  for (const p of coop.pairQ) {
+    if (p.kind !== 'song' || p.done || (p.a !== name && p.b !== name)) continue;
+    const o = coop.players.get(p.a === name ? p.b : p.a);
+    if (!o || coopDist(u, o) > 6 || (p.t[name] || 0) >= COOP_SONG_N) continue;
+    p.t[name] = (p.t[name] || 0) + 1;
+    if (p.t[p.a] >= COOP_SONG_N && p.t[p.b] >= COOP_SONG_N) coopPairDone(p);
+    else coopSay(o.hero.owner, `${name} применил приём рядом: ${p.t[name]}/${COOP_SONG_N}`);
+  }
+}
+
 function coopPairDone(p) {
   p.done = true;
   const key = coopFrKey(p.a, p.b);
@@ -928,8 +950,14 @@ function coopMakePair() {
   const [a, b] = best, early = coopDayP() < EVE_START - 40;
   const kinds = early ? ['tandem', 'levers'] : ['levers'];
   if (Game.buildings.some(x => x.type === 'inn' && x.state === 'done')) kinds.push('toast');
+  // задания по ролям — вдвое чаще остальных, когда пара подходит
+  if (early && coopRoles2(a, b, 'танк', 'лекарь') && Game.buildings.some(x => x.type === 'bonfire' && x.state === 'done')) kinds.push('shield', 'shield');
+  if (coopRole(a, 'разведчик') || coopRole(b, 'разведчик')) kinds.push('trail', 'trail');
+  if (coopRoles2(a, b, 'саппорт', 'урон')) kinds.push('song', 'song');
   const kind = kinds[Math.floor(Math.random() * kinds.length)];
   const p = { kind, a: a.owner, b: b.owner, k, done: false, prog: 0, tog: 0, t: {}, armed: false };
+  if (kind === 'trail') { const c = coopTreasurePoint(); if (!c) return; p.pts = [c]; }
+  if (kind === 'song') p.t = { [p.a]: 0, [p.b]: 0 };
   if (kind === 'levers') {
     const st = Game.buildings.find(x => x.type === 'storehouse') || Game.buildings[0];
     const cx = st ? st.doorX : 40, cy = st ? st.doorY + 2 : 30;
@@ -958,6 +986,17 @@ function coopPairTick(night) {
       const [A, B] = p.pts, at = (u, c) => Math.hypot(u.x - (c[0] + 0.5), u.y - (c[1] + 0.5)) <= 1.4;
       if ((at(ua, A) && at(ub, B)) || (at(ua, B) && at(ub, A))) { p.prog++; if (p.prog >= 5) coopPairDone(p); }
       else p.prog = 0;
+    } else if (p.kind === 'shield') {
+      // у костра вдвоём ночью; упал кто-то — задание сгорело
+      if (ua.hero.nightFalls > 0 || ub.hero.nightFalls > 0) { if (p.armed) { p.done = true; for (const nm of [p.a, p.b]) coopSay(nm, '«Щит и свеча» не вышло: кто-то упал'); } continue; }
+      if (night && !ua.inside && !ub.inside && nearBonfire(ua.x, ua.y, 8) && nearBonfire(ub.x, ub.y, 8)) { p.tog++; p.armed = true; if (p.tog >= COOP_SHIELD_T) coopPairDone(p); }
+    } else if (p.kind === 'trail') {
+      const [C] = p.pts, at = u => Math.hypot(u.x - (C[0] + 0.5), u.y - (C[1] + 0.5)) <= 1.6;
+      if (at(ua) && at(ub)) {
+        const got = coopVillageGold(COOP_TRAIL_GOLD);
+        floater(C[0] + 0.5, C[1] - 0.5, got ? `Клад! +${COOP_TRAIL_GOLD} золота` : 'Клад!', '#ffe070');
+        coopPairDone(p);
+      }
     }
   }
   if (coop.players.size >= 2 && !night && coopDayP() < EVE_START - 20 && coopDayP() > 6) coopMakePair();
@@ -1063,6 +1102,9 @@ function coopQuestInfo(name) {
     if (p.pts && !p.done) out.p.pts = p.pts;
     if (p.kind === 'tandem' && !p.done) out.p.prog = Math.min(100, Math.round(100 * p.tog / 90));
     if (p.kind === 'levers' && !p.done) out.p.prog = p.prog * 20;
+    if (p.kind === 'shield' && !p.done) out.p.prog = Math.min(100, Math.round(100 * p.tog / COOP_SHIELD_T));
+    if (p.kind === 'song' && !p.done) out.p.prog = Math.round(100 * (Math.min(COOP_SONG_N, p.t[p.a] || 0) + Math.min(COOP_SONG_N, p.t[p.b] || 0)) / (2 * COOP_SONG_N));
+    if (p.kind === 'trail' && !p.done) { const C = p.pts[0], d = Math.hypot(C[0] + 0.5 - u.x, C[1] + 0.5 - u.y); out.p.x += ` · ${Math.round(d)} кл., на ${coopCompass(C[0] + 0.5 - u.x, C[1] + 0.5 - u.y)}`; }
   }
   const cn = coop.cn;
   if (cn) out.c = { q: cn.q, o: cn.opts.map(o => o.l), v: cn.opts.map((_, i) => [...cn.votes.values()].filter(x => x === i).length), left: Math.max(0, Math.round(cn.until - Game.time)), my: cn.votes.has(name) ? cn.votes.get(name) : -1 };
