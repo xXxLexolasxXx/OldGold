@@ -16,3 +16,34 @@
 .ch-e.ch-big::first-letter { font-size: 1.5em; color: #8a2a14; }
 .ch-e.ch-dead { color: #4a1c14; font-style: italic; }
 .ch-empty { margin-top: 40px; text-align: center; font-style: italic; opacity: 0.8; }
+
+/* Фото-режим (js/photo.js): всё, кроме холста карты, прячется */
+body.photo #panel, body.photo #split, body.photo #panel-resize { display: none !important; }
+body.photo #view > *:not(#game):not(#ph-root) { display: none !important; }
+body.photo #app { display: block; }
+body.photo #view { position: absolute; inset: 0; }
+#ph-root { position: absolute; inset: 0; pointer-events: none; }
+#ph-root.hidden { display: none; }
+#ph-fx { position: absolute; inset: 0; isolation: auto; }
+#ph-fx i { position: absolute; inset: 0; }
+#ph-ov { position: absolute; inset: 0; width: 100%; height: 100%; }
+#ph-flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+#ph-flash.go { animation: ph-flash .35s ease-out; }
+@keyframes ph-flash { from { opacity: .85; } to { opacity: 0; } }
+#ph-msg { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); max-width: 90%; padding: 6px 12px; border-radius: 4px; background: rgba(26,19,13,.88); color: #f2dca0; font-size: 13px; opacity: 0; transition: opacity .3s; text-align: center; }
+#ph-msg.on { opacity: 1; }
+#ph-ui { position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: flex; flex-direction: column; gap: 5px; padding: 8px; pointer-events: auto;
+  background: rgba(26,19,13,.82); border: 1px solid #6a4a2a; border-radius: 6px; }
+.ph-row { display: flex; gap: 5px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.ph-scroll { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.ph-scroll::-webkit-scrollbar { display: none; }
+.ph-chip, .ph-snap { flex: none; padding: 6px 10px; font: inherit; font-size: 13px; color: #e8d4a0; background: #3a2a1a; border: 1px solid #6a4a2a; border-radius: 4px; cursor: pointer; }
+.ph-chip.on { background: #6a4a22; color: #ffe9a8; box-shadow: inset 0 0 0 1px #f0d27a; }
+.ph-snap { background: #8a5a1c; color: #fff1c8; font-weight: bold; padding: 7px 16px; }
+#ph-ui.fold .ph-scroll { display: none; }
+@media (max-width: 520px) {
+  #ph-ui { gap: 3px; padding: 5px; }
+  .ph-chip, .ph-snap { padding: 4px 7px; font-size: 12px; }
+  .ph-snap { padding: 5px 10px; }
+  .ph-row { gap: 3px; }
+}
