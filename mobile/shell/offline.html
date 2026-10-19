@@ -10,7 +10,7 @@ p{margin:0 0 24px;max-width:22em;opacity:.85}
 button{font:inherit;font-weight:bold;color:#1a130d;background:#e0b341;border:0;border-radius:10px;padding:14px 32px}
 button:active{background:#c79a2d}
 </style></head><body>
-<img src="icon.png" alt="">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAEBUlEQVR4nO3Zsc0jVRiF4Y1X+hL+7GpSJGogoQ9K2CZogXBFHRSAiAgJKYACNiA/JEPq36xtjcfnCd7Qmuu554nmw3qbSKu0D0cfQFoHBoDSHABKcwAozQGgNAeA0hwASnMAKM0BoDQHgNIcAEpzACjNAaA0B4DSHABKcwAozQGgNAeA0hwASnMAKM0BoDQHgNIcAEpzACjNAaA0B4DSHABKcwAozQGgNAeA0hwAd2j75uNNHX3+VRwAdwiAOW0A3CEA5rQBcIcAmNMGwB0CYE4bAHcIgDltANwhAOa0AXCHAJjTBsCVXRrwT3/+eFNwzGEBcGUAzEsGwJUBMC8ZAFcGwLxkAFwZAPOSAXBlAMxLBsCVATAvGQBXBsC8ZADsvfex6paB//DL9xf7WhyAzM0BsAfAVAbAHgBTGQB7AExlAOwBMJUBsAfAVAbAHgBTWQ2AIwd+C4D3fgvH3BQAAKQ5AABIcwAAkOYAACDNAQBAmgMAgDQHAABp7mUAPHLg9xj5owB8LQ5ABgAApj4AAEhzAACQ5gAAIM0BAECaAwCANAcAAGmuBsC3n7672CMH/sgu/ScABgAAAFgAAADAAAAAAAsAAAAYAAAAAAAA0t6pANwycAGyABAAA4AAWABoAwCA5jYAAGhuAwCA5jYAAGhuA+B1AOj+rSe4cwAAAOANAAAACABPMIqm1hPcOQAAAPAGAAAABIAnGEVT6wnuHAAAAHgD4GYcX377uS4DHwAAAGABAAAAA0BbAAwAAACwAAAAgAGgLQAGAAAAWAC8D+BIQJee+9fnTxcDYAAAAIAFAAAADAAAALAAAACAAQAAABYAAAAwADxywM8aAAMAAAAsAAAAYABoC4ABAAAAFgAAADAAtAXAAAAAAOtVAFy6zH++/K3/2QYIAM1tAADQ3AYAAM1tAADQ3AYAAM1tAADQ3AYAAP/1x++/XuyokT7yXBsAAADwEYCzBAAACwAAABgAAABgAQAAAAMAAAAsAJ53aM96rg2AcwH4Whz3AHLGDHwAAACABQAAAAwAbQEwAAAAwAIAAAAGgLYAGAAAAGA1ADgSyJEf0Qx8bgoAANIcAACkOQAASHMAAJDmAAAgzQEAQJqrAXArkGft6Pe2Th4Ae0cPGYA5JAD2jh4yAHNIAOwdPWQA5pAA2Dt6yADMIQGwd/SQAZhDAmDv6CEDMIcEwN7RQwZgDgkApTkAlOYAUJoDQGkOAKU5AJTmAFCaA0BpDgClOQCU5gBQmgNAaQ4ApTkAlOYAUJoDQGkOAKU5AJTmAFCaA0BpDgClOQCU5gBQmgNAaQ4ApTkAlOYAUJoDQGkOAKU5AJTmAFCaA0BpDgClOQCU5gBQmgNAaQ4ApTkAlOb+BbPjSD1EjOWCAAAAAElFTkSuQmCC" alt="">
 <h1>Нет связи с сайтом</h1>
 <p>OldGold грузится из интернета. Включите Wi-Fi или мобильную сеть — игра запустится сама.</p>
 <button id="r">Повторить</button>
@@ -18,5 +18,8 @@ button:active{background:#c79a2d}
 var URL_='https://xxxlexolasxxx.github.io/OldGold/';
 function go(){location.href=URL_;}
 document.getElementById('r').onclick=go;
+// событие online в WebView ненадёжно — раз в 4 с проверяем, отвечает ли сайт, и сразу открываем игру
+function probe(){fetch(URL_+'manifest.webmanifest?p='+Date.now(),{mode:'no-cors',cache:'no-store'}).then(go,function(){});}
 addEventListener('online',go);
+setInterval(probe,4000);
 </script></body></html>
