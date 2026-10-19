@@ -34,3 +34,10 @@ body.mobile .lw-btns button { min-height: 36px; font-size: 13px; }
 .md-bar { height: 6px; background: rgba(0,0,0,0.45); border: 1px solid #4a3a20; }
 .md-bar i { display: block; height: 100%; }
 .md-tips { padding: 6px 2px 2px; line-height: 1.35; }
+/* Открытия (js/research.js) */
+.rs-branch { margin: 6px 0 8px; }
+.rs-bn { padding: 2px 4px; color: #d8c088; font-size: 12px; letter-spacing: 0.05em; border-bottom: 1px solid #5a4620; }
+.rs-node { padding: 6px 6px 7px 12px; border-left: 2px solid #4a3a20; margin-left: 4px; }
+.rs-node.done { border-left-color: #7cc860; }
+.rs-node.ready { border-left-color: #f0d27a; background: rgba(90,66,20,0.25); }
+.rs-node.off .lw-name b { color: #b8ab8c; }

@@ -105,6 +105,7 @@ const skOn = u => typeof mdOn === 'function' ? mdOn(u) : (!u.dead && isPerson(u)
 const skCalm = () => !!dif().noLoss;
 const skDay = () => cycleAt(Game.time).k;
 const skLaw = id => typeof lawIsOn === 'function' && lawIsOn(id);
+const skHerbs = () => typeof RSCC !== 'undefined' && RSCC.herbs > 0;   // открытие «Травник» (research.js)
 function skStoreHave(g) { let n = 0; for (const s of Game.buildings) if (s.isStore() && !s.removed) n += Math.max(0, s.offer(g)); return n; }
 function skStoreTake(g) {
   for (const s of Game.buildings) if (s.isStore() && !s.removed && s.offer(g) > 0) { s.stock[g]--; return true; }
@@ -185,7 +186,7 @@ function sickCheck(u, now, units) {
   const winter = typeof isWinterMap === 'function' && isWinterMap();
   const rain = typeof WX !== 'undefined' && WX.k > 0.3 && !inside && !u.umbrella;
   const md = u.md, tired = md && md.rest < 0.2, sad = md && md.m < 30;
-  const calm = skCalm() ? 0.5 : 1;
+  const calm = (skCalm() ? 0.5 : 1) * (skHerbs() ? 0.75 : 1);
   const I = u.ill;
   if (!I) {
     // простуда: холод и сырость; живот: голод и скудный стол
@@ -215,7 +216,7 @@ function sickCheck(u, now, units) {
   if (u.ward) return;                                    // в лазарете тяжесть считает палата
   // тяжелеет от холода, голода и усталости, иначе понемногу проходит
   const bad = (I.k === 'cold' && (rain || winter && !inside)) || u.food < HUNGRY || tired;
-  I.s += bad ? K.grow * (skCalm() ? 0.6 : 1) : -K.heal * (inside ? 1.4 : 1) * (skCalm() ? 1.5 : 1);
+  I.s += bad ? K.grow * (skCalm() ? 0.6 : 1) : -K.heal * (inside ? 1.4 : 1) * (skCalm() ? 1.5 : 1) * (skHerbs() ? 1.3 : 1);
   if (u.brk && u.brk.kind === 'sick') I.s -= K.heal * 1.5;
   I.s = Math.round(Math.min(1, I.s) * 1000) / 1000;
   if (I.s <= 0) { sickCure(u, 'self'); return; }

@@ -278,6 +278,7 @@ function coopMirror(m) {
   if (typeof dilMirrorIn === 'function') dilMirrorIn(m.dil);
   if (typeof lawMirrorIn === 'function') lawMirrorIn(m.law);
   if (typeof medMirrorIn === 'function') medMirrorIn(m.med);
+  if (typeof rscMirrorIn === 'function') rscMirrorIn(m.rsc);
   if (m.df) Game.diff = diffKey(m.df);
   const festWas = festOn();
   Game.festival = m.fest || null;
