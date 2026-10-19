@@ -17,19 +17,35 @@ body.mobile.land {
   --sheet-w: min(46vw, 380px);
   --maxh: 40vh;                             /* оповещения — не выше 40% экрана */
 }
-body.mobile.land-a { --sheet-left: calc(50px + var(--sl)); --rail: calc(50px + var(--sl)); --left: calc(var(--rail) + 8px); }
+body.mobile.land-a { --rail: calc(42px + var(--sl)); --sheet-left: var(--rail); --left: calc(var(--rail) + 8px); }
 body.mobile.land-b { --sheet-left: calc(var(--sl) + 56px); --rail: 0px; --left: calc(var(--sl) + 62px); }
 
-/* ---- общее: верхняя полоса ---- */
-body.mobile.land #topbar { top: calc(var(--st) + 2px); right: calc(var(--sr) + 4px); gap: 2px; }
-body.mobile.land-a #topbar { left: calc(var(--rail) + 4px); }
-body.mobile.land-b #topbar { left: calc(var(--sl) + 4px); }
-body.mobile.land .dd-t { min-height: 24px; padding: 2px 6px; font-size: 11px; }
-body.mobile.land .speed { padding: 2px 10px; }   /* заклёпки рамки — 3–9 px от края, текст за ними */
-body.mobile.land .speed button { min-height: 22px; padding: 0 6px; }
+/* ---- общее: верхняя полоса ----
+   Слева ресурсы и миникарта, по центру часы с сезоном, справа звук и скорость.
+   Все плашки одной высоты (--bh), без «рамки в рамке». */
+body.mobile.land { --bh: 26px; }
+body.mobile.land #topbar {
+  top: calc(var(--st) + 3px); right: calc(var(--sr) + 6px); width: auto; height: var(--bh);
+  gap: 4px; align-items: stretch; justify-content: flex-start;
+}
+body.mobile.land-a #topbar { left: calc(var(--rail) + 6px); }
+body.mobile.land-b #topbar { left: calc(var(--sl) + 6px); }
+body.mobile.land #topbar > * { height: var(--bh); margin: 0; flex: none; }
+body.mobile.land #topbar .dd-t, body.mobile.land #topbar .speed, body.mobile.land #clock {
+  box-sizing: border-box; height: var(--bh); min-height: 0; padding: 0 10px; font-size: 11.5px; line-height: 1; white-space: nowrap;
+}
+body.mobile.land #topbar .dd-t img { width: 16px; height: 16px; }
+body.mobile.land #topbar .dd-l { margin-right: 0; }
+body.mobile.land #topbar > * { order: 2; }
+body.mobile.land #topbar #dd-res { order: 0; }
+body.mobile.land #topbar .m-only { order: 1; margin-right: auto; }   /* дальше — правая группа */
+body.mobile.land #topbar #clock { position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
+/* значки-кнопки (▦, ♪, ×1) — одинаковой ширины */
+body.mobile.land #topbar .speed { padding: 0 3px; gap: 0; }
+body.mobile.land #topbar .speed button { min-height: 0; height: 100%; min-width: 26px; padding: 0 4px; background: none; border: 0; box-shadow: none; }
+body.mobile.land #dd-snd .dd-t, body.mobile.land #dd-speed .dd-t { min-width: 46px; padding: 0 10px; justify-content: center; }
 body.mobile.land #sub-btn span { display: none; }
-body.mobile.land #clock { font-size: 11px; padding: 2px 11px; white-space: nowrap; }
-body.mobile.land #topbar .dd-t { white-space: nowrap; }
+body.mobile.land #clock { min-width: 0; padding: 0 11px; color: var(--gold); }   /* заклёпки рамки — 3–9 px от края, текст за ними */
 body.mobile.land .dd-menu button { min-height: 36px; }
 
 /* ---- общее: миникарта в правом нижнем углу ---- */
@@ -130,13 +146,14 @@ body.mobile.land .iactions button { min-height: 36px; }
 
 /* ================= Вариант А: колонка иконок слева ================= */
 body.mobile.land-a #panel {
-  position: fixed; left: 0; top: 0; bottom: 0; right: auto; width: var(--rail); max-height: none;
-  padding: calc(var(--st) + 3px) 3px calc(var(--sb) + 3px) calc(var(--sl) + 3px);
-  gap: 0; border-top: 0; border-right: 3px solid #0a0705; box-shadow: 3px 0 10px rgba(0,0,0,0.7); z-index: 7; display: flex; flex-direction: column;
+  position: fixed; left: 0; top: 0; bottom: 0; right: auto; width: var(--rail); max-height: none; box-sizing: border-box;
+  /* иконки прижаты к левому краю (за вычетом выреза), досок вокруг — по 1–2 px */
+  padding: calc(var(--st) + 2px) 2px calc(var(--sb) + 2px) calc(var(--sl) + 1px);
+  gap: 0; border-top: 0; border-right: 2px solid #0a0705; box-shadow: 2px 0 8px rgba(0,0,0,0.7); z-index: 7; display: flex; flex-direction: column;
 }
 body.mobile.land-a #tabs { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-height: 0; order: 0; }
-body.mobile.land-a .tab-btn { flex: 1 1 0; height: auto; min-height: 28px; max-height: 44px; }
-body.mobile.land-a .tab-btn img { width: min(30px, 100%); height: min(30px, 100%); max-height: 7.5vh; object-fit: contain; }
+body.mobile.land-a .tab-btn { flex: 1 1 0; width: 100%; height: auto; min-height: 26px; max-height: 42px; min-width: 0; padding: 0; }
+body.mobile.land-a .tab-btn img { width: min(28px, 100%); height: min(28px, 100%); max-height: 7.5vh; object-fit: contain; }
 body.mobile.land-a #tab-area, body.mobile.land-a #info-wrap { left: var(--rail); }
 body.mobile.land-a #sheet-close { left: calc(var(--rail) + var(--sheet-w) + 6px); }
 /* тап по значку «Хозяйство» и пр. — бейджи не вылезают за колонку */
@@ -153,7 +170,7 @@ body.mobile.land-b #tab-area, body.mobile.land-b #info-wrap { left: calc(var(--s
 body.mobile.land-b #sheet-close { left: calc(var(--sl) + 56px + var(--sheet-w) + 6px); }
 body.mobile.land-b #tabs {
   display: none; position: fixed; left: calc(var(--sl) + 58px); bottom: calc(var(--sb) + 6px);
-  grid-template-columns: repeat(5, 44px); gap: 4px; padding: 5px; z-index: 9;
+  grid-template-columns: repeat(5, 44px); gap: 3px; padding: 3px; z-index: 9;
   background: var(--planks); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line-hi), 0 4px 12px rgba(0,0,0,0.7);
   animation: land-pop .26s cubic-bezier(.22, .9, .26, 1) both;
 }
