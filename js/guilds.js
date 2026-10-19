@@ -864,12 +864,12 @@ function guildHTML(b) {
   if (H) {
     x += '<div class="isec">Герой</div>';
     const ms = masteryOf(H), cur = guildClasses(cls).includes(H.clsKey) && ms != null ? GCLS[H.clsKey] : null;
-    const st = cur ? `${cur.name}, ранг мастерства ${ms} из ${MASTERY_MAX}` : H.clsKey ? `сейчас ${(H.cls || (GCLS[H.clsKey] || {}).name || H.clsKey).toLowerCase()}` : 'без класса';
+    const st = cur ? `${cur.name}, ранг мастерства ${ms} из ${typeof gpMasteryCap === 'function' ? gpMasteryCap(b) : MASTERY_MAX}` : H.clsKey ? `сейчас ${(H.cls || (GCLS[H.clsKey] || {}).name || H.clsKey).toLowerCase()}` : 'без класса';
     x += `<div class="irow small">${H.name}: ${st}</div>`;
     // в кооперативе класс выбран при входе: гильдия поднимает мастерство своего или своего второго класса
     for (const k of isMirror() ? [guildClasses(cls).includes(H.clsKey) ? H.clsKey : cls] : guildClasses(cls)) {
-      const K = GCLS[k], mine = H.clsKey === k && ms != null, price = mine ? 2 + ms : 3;
-      if (mine && ms >= MASTERY_MAX) continue;
+      const K = GCLS[k], mine = H.clsKey === k && ms != null, price = typeof gpLessonPrice === 'function' ? gpLessonPrice(b, ms, mine) : mine ? 2 + ms : 3;
+      if (mine && ms >= (typeof gpMasteryCap === 'function' ? gpMasteryCap(b) : MASTERY_MAX)) continue;
       const kit = typeof heroKitText === 'function' ? heroKitText(k) : '';
       x += `<button class="g-wide" data-coop="1" data-gd="hero:${b.id}:${k}" ${gm ? '' : 'disabled'}><b>${mine ? `Урок мастерства — ${price} золота` : `${ms != null ? 'Переучиться' : 'Обучиться'}: ${K.name.toLowerCase()} — ${price} золота`}</b><small>${mine ? `нужен ${(ms + 1) * 2} уровень героя` : `+${Object.entries(K.bonus).map(([q, v]) => ({ str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' })[q] + ' ' + v).join(', ')}; ${K.verb.toLowerCase()} (Q)${kit ? '; ' + kit : ''}`}</small></button>`;
     }
@@ -999,7 +999,7 @@ function guildServerSync() {
       const id = _cj(name, json);
       let d = null; try { d = JSON.parse(json); } catch (e) { /* ничего */ }
       const u = coop.players.get(name);
-      if (u && d && Number.isInteger(d.ms) && GCLS[u.hero.clsKey]) u.hero.mastery = Math.max(0, Math.min(MASTERY_MAX, d.ms));
+      if (u && d && Number.isInteger(d.ms) && GCLS[u.hero.clsKey]) u.hero.mastery = Math.max(0, Math.min(typeof GP_MASTERY3 !== 'undefined' ? GP_MASTERY3 : MASTERY_MAX, d.ms));
       return id;
     };
   }
