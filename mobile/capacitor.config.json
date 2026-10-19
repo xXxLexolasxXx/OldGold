@@ -1,9 +1,18 @@
 {
-  "appId": "ru.oldgold.game",
+  "appId": "ru.oldgold.personal",
   "appName": "OldGold",
-  "webDir": "www",
+  "webDir": "shell",
   "backgroundColor": "#1a130d",
-  "server": { "androidScheme": "https" },
+  "server": {
+    "url": "https://xxxlexolasxxx.github.io/OldGold/",
+    "cleartext": false,
+    "androidScheme": "https",
+    "allowNavigation": ["xxxlexolasxxx.github.io"],
+    "errorPath": "offline.html"
+  },
   "ios": { "contentInset": "never", "backgroundColor": "#1a130d" },
-  "android": { "backgroundColor": "#1a130d", "allowMixedContent": false }
+  "android": { "backgroundColor": "#1a130d", "allowMixedContent": false, "webContentsDebuggingEnabled": false },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#1a130d", "showSpinner": false }
+  }
 }
