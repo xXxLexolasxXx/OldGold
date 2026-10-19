@@ -1015,6 +1015,8 @@ function initMinimap(canvas) {
 }
 
 function updateMinimapBase() {
+  // карты бывают разного размера (малая, вызов дня, редактор): холст подгоняем, иначе остаются куски прошлой карты
+  if (MINI.base.width !== MAP_W * 3 || MINI.base.height !== MAP_H * 3) { MINI.base.width = MAP_W * 3; MINI.base.height = MAP_H * 3; }
   const c = MINI.base.getContext('2d');
   c.drawImage(TERR.mini, 0, 0);
   for (let i = 0; i < N_TILES; i++) {
