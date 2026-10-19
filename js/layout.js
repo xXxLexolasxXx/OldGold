@@ -22,6 +22,8 @@ function applyLayout() {
     // на телефоне своя вёрстка — ручные размеры убираем
     panel.style.width = ''; wrap.removeAttribute('style');
     cl.remove('info-float', 'mm-folded');
+    cl.toggle('mm-big', !!Layout.mmBig);   // на телефоне ⤢ тоже работает: карта разворачивается на экран
+    { const b = document.getElementById('mm-size'); if (b) b.textContent = Layout.mmBig ? '⤡' : '⤢'; }
     return;
   }
   panel.style.width = Layout.panelW + 'px';
