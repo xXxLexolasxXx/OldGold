@@ -65,7 +65,7 @@ function serializeGame() {
   const obj = [];
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
-    if (o) obj.push([i, o.t, o.g ?? 0, o.n ?? (o.plan ? 2 : o.ash ? 1 : 0), o.farm ?? 0, o.crop || '', o.v, o.vert ? 1 : 0]);
+    if (o && o.t !== 'fort') obj.push([i, o.t, o.g ?? 0, o.n ?? (o.plan ? 2 : o.ash ? 1 : 0), o.farm ?? 0, o.crop || '', o.v, o.vert ? 1 : 0]);
   }
   const road = [];
   for (let i = 0; i < N_TILES; i++) if (World.road[i]) road.push(i);
@@ -74,7 +74,7 @@ function serializeGame() {
     v: 2, df: Game.diff, mw: MAP_W, mh: MAP_H, bi: MapOpt.biome || undefined, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
     storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, ch: serializeChests(), fy: serializeFairy1(), f2: serializeFairy(), fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, be: serializeBeasts(), produced: nz(Game.produced),
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
-    obj, road,
+    obj, road, dfn: defSave(),
     mined: [...ROCKMINE.mined], rockHp: [...ROCKMINE.hp],
     buildings: Game.buildings.map(b => serializeBuilding(b)),
     pets: Game.animals.filter(a => a.owner && !a.dead).map(a => [a.kind, +a.x.toFixed(2), +a.y.toFixed(2), Game.units.findIndex(u => u.id === a.owner)]).filter(p => p[3] >= 0),
@@ -135,6 +135,7 @@ function applySave(s) {
     World.obj[i] = o;
     if ((t === 'tree' && g < 1) || (t === 'field' && g >= 0 && g < 1) || t === 'stump') World.growing.add(i);
   }
+  defLoad(s.dfn);
   World.road.fill(0);
   for (const i of s.road) World.road[i] = 1;
   World.roadDirty = true;

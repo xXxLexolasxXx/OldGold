@@ -102,6 +102,7 @@ function initTouch() {
     const tool = Game.tool;
     if (tool && tool.kind === 'road') { T.mode = 'road'; Input.roadStart = t; R.roadDrag = [t]; R.hover = t; }
     else if (tool && tool.kind === 'erase') { T.mode = 'erase'; Input.lastEraseTile = t.join(); }
+    else if (tool && tool.kind === 'fort' && typeof defToolDown === 'function' && defToolDown(t)) { T.mode = 'fort'; R.hover = t; }
   }, { passive: false });
 
   cv.addEventListener('touchmove', e => {
@@ -126,6 +127,7 @@ function initTouch() {
     if (Math.abs(dx) + Math.abs(dy) > 10) T.moved = true;
     const t = screenToTile(p[0], p[1]);
     if (T.mode === 'road') { R.roadDrag = lineCells(Input.roadStart, t); R.hover = t; return; }
+    if (T.mode === 'fort') { defToolMove(t); R.hover = t; return; }
     if (T.mode === 'erase') {
       if (T.moved && t.join() !== Input.lastEraseTile) {
         Input.lastEraseTile = t.join();
@@ -161,6 +163,7 @@ function initTouch() {
       R.roadDrag = null; Input.roadStart = null;
       return;
     }
+    if (mode === 'fort') { defToolUp(); return; }
     if (mode === 'erase' && !T.moved) { eraseAt(T.tile); return; }
     if (mode === 'one' && !T.moved) tapTile(T.tile);
   };
