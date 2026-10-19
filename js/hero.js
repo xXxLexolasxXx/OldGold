@@ -640,12 +640,15 @@ function heroBtnUpdate() {
       c.fillStyle = sel ? '#ffe070' : '#f0d890'; c.fillText(nm, px, py);
       c.textAlign = 'start';
     }
-    // флажок на цели команды
+    // цель команды: пульсирующие угольники на клетке (вместо флажка); удар героя рисует herocard.js
     const cm = h.cmd;
     if (sel && cm && cm.tx != null) {
-      const fx = (cm.tx + 0.5) * TILE, fy = (cm.ty + 0.5) * TILE, b = Math.sin(t * 8) * 2;
-      c.fillStyle = '#f6d458'; c.fillRect(fx - 1, fy - 16 + b, 2, 14);
-      c.fillStyle = '#d83a2a'; c.beginPath(); c.moveTo(fx + 1, fy - 16 + b); c.lineTo(fx + 9, fy - 12 + b); c.lineTo(fx + 1, fy - 8 + b); c.fill();
+      const fx = (cm.tx + 0.5) * TILE, fy = (cm.ty + 0.5) * TILE, r = 10 + Math.round(Math.abs(Math.sin(t * 4)) * 3);
+      c.fillStyle = '#f6d458';
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const x = Math.round(fx + sx * r), y = Math.round(fy + sy * r * 0.8);
+        c.fillRect(x - (sx > 0 ? 3 : 0), y, 4, 2); c.fillRect(x - (sx > 0 ? 1 : 0), y - (sy > 0 ? 3 : 0), 2, 4);
+      }
     }
     // подсказка под курсором: что сделает клик
     if (sel && R.hover && !Game.tool) {
