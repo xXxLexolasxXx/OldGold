@@ -1,6 +1,6 @@
 'use strict';
 // Времена года. Лето → осень → зима → весна, круг привязан к игровым суткам (cycleAt из night.js):
-// в каждом сезоне Game.sea.len суток (по умолчанию 4; ?seasondays=N или localStorage 'feod.seasondays' для новых игр).
+// в каждом сезоне Game.sea.len суток (по умолчанию SEASON_DAYS из config.js = 8; ?seasondays=N или localStorage 'feod.seasondays' для новых игр).
 // Старые сохранения без поля sea начинают с лета с текущих суток. Game.sea.fixed (0..3) замораживает сезон —
 // для карт с постоянной зимой (биом): seaFix(2).
 //
@@ -12,17 +12,21 @@
 // Рисование снега и льда — snow.js, зимние забавы и Дед Мороз — winterlife.js, ледяной элементаль — frostart.js.
 
 const SEA_NAMES = ['Лето', 'Осень', 'Зима', 'Весна'];
-const SEA_LEN_DEFAULT = 4, SEA_LEN_MIN = 1, SEA_LEN_MAX = 30;
-const SEA_FEED_PERIOD = CYCLE / 2;      // как часто зимой свиньи и звери едят
+const SEA_LEN_DEFAULT = SEASON_DAYS, SEA_LEN_LEGACY = 4, SEA_LEN_MIN = 1, SEA_LEN_MAX = 30;
+const SEA_FEED_PERIOD = CYCLE * 2 / 3;  // как часто зимой свиньи и звери едят: 1,5 раза в сутки — 12 кормёжек за зиму из 8 суток
+const SEA_FEEDS_PER_DAY = CYCLE / SEA_FEED_PERIOD;
 const SEA_PIG_PER_HAY = 4;              // сколько свиней кормит одна охапка за раз
 const SEA_WILD_KINDS = ['deer', 'rabbit', 'goat'];
 const SEA_SNOW_TIME = 110, SEA_MELT_TIME = 130, SEA_ICE_TIME = 140;
+const SEA_STARVE_K = 0.6;              // падёж диких зверей на кормёжку (зима длиннее — на один раунд мягче)
+const SEA_PRESNOW = 0.28;             // сколько снега ложится к концу последних осенних суток (ниже порога «земля промёрзла» 0.4)
 
 function seaLoadLen() {
   let n = 0;
   try { const m = /[?&]seasondays=(\d+)/.exec(location.search); n = m ? +m[1] : +localStorage.getItem('feod.seasondays'); } catch (e) {}
   return n >= SEA_LEN_MIN && n <= SEA_LEN_MAX ? Math.floor(n) : SEA_LEN_DEFAULT;
 }
+function localStorageLen() { try { return !!+localStorage.getItem('feod.seasondays'); } catch (e) { return false; } }
 function seaNew() {
   return { off: 0, len: seaLoadLen(), snow: 0, ice: 0, fall: 0, fallTgt: 0, fallT: 0, idx: 0, feedAt: 0, yr: 0, frostYr: -1, santaYr: -1, fixed: null,
     lost: 0, pigsLost: 0, warnDay: -1 };
@@ -60,11 +64,15 @@ function seaDaysToWinter() {
 // включить сезон с текущего момента (отладка, постоянная зима биома): seaSet(2)
 function seaSet(i) { const S = SEA(); S.off = i * S.len - cycleAt(Game.time).k; S.idx = i; if (i === 2) S.snow = S.ice = 1; }
 function seaFix(i) { const S = SEA(); S.fixed = i; S.idx = i; if (i === 2) { S.snow = 1; S.ice = 1; } }
+// сменить длину сезона так, чтобы текущие год, сезон и день в нём не скачнули (старые сейвы, отладка)
+function seaRelen(S, n) {
+  const day = seaDay(), oldLen = S.len, yr = Math.floor(day / (oldLen * 4)), cur = Math.floor(day / oldLen) % 4, di = day % oldLen;
+  S.len = n;
+  S.off = (yr * 4 + cur) * n + Math.min(di, n - 1) - cycleAt(Game.time).k;
+}
 function seaSetLen(n) {
   n = Math.max(SEA_LEN_MIN, Math.min(SEA_LEN_MAX, Math.floor(+n) || SEA_LEN_DEFAULT));
-  const S = SEA(), cur = seaIdx(), di = seaDayIn();
-  S.len = n;
-  S.off = cur * n + Math.min(di, n - 1) - cycleAt(Game.time).k;     // текущий сезон и день в нём не скачут
+  seaRelen(SEA(), n);
   try { localStorage.setItem('feod.seasondays', String(n)); } catch (e) {}
   return n;
 }
@@ -76,7 +84,7 @@ function seaPigYards() { return Game.buildings.filter(b => b.type === 'swine' &&
 function seaStoreYards() { return Game.buildings.filter(b => b.type === 'storehouse' && b.state === 'done' && !b.removed); }
 // сколько сена нужно на зиму и сколько заготовлено (в свинарниках и складах)
 function seaHayInfo() {
-  const S = SEA(), feeds = S.len * 2;
+  const S = SEA(), feeds = Math.ceil(S.len * SEA_FEEDS_PER_DAY);
   let need = 0, have = 0;
   for (const b of seaPigYards()) { need += Math.ceil(Math.max(5, seaHerd(b)) / SEA_PIG_PER_HAY) * feeds; have += b.stock.hay || 0; }
   for (const b of seaStoreYards()) have += b.stock.hay || 0;
@@ -181,7 +189,7 @@ function seaFeedRound() {
   }
   // кто не поел — тот ослаб: иногда падает от голода
   let starved = 0;
-  for (const a of herb) if (!fedSet.has(a) && !(a.fedUntil > now) && Math.random() < (Game.diff === 'survival' ? 0.25 : Game.diff === 'calm' ? 0.08 : 0.15) && herb.length > 3 && starved < 2) { removeAnimal(a); S.lost++; starved++; }
+  for (const a of herb) if (!fedSet.has(a) && !(a.fedUntil > now) && Math.random() < (Game.diff === 'survival' ? 0.25 : Game.diff === 'calm' ? 0.08 : 0.15) * SEA_STARVE_K && herb.length > 3 && starved < 2) { removeAnimal(a); S.lost++; starved++; }
   if (starved) { toast(`Зима: звери голодают, ${starved} не пережили стужу. Оставь им сено на складе`); logEvent('animal', `Зима: ${starved} диких зверей пало от голода`); }
 }
 
@@ -235,11 +243,18 @@ function seaFrostAggro() {
 
 // ---------- Ход времени ----------
 
+// на сколько должна быть заснежена земля: к концу осени — припорошило, зимой — сугробы, весной тает за первую треть сезона
+function seaSnowTarget(i) {
+  if (i === 2) return 1;
+  if (i === 1) { const p = seaProgress(); return p > 0.8 ? SEA_PRESNOW * Math.min(1, (p - 0.8) / 0.2) : 0; }
+  if (i === 3) return Math.max(0, 1 - seaProgress() * 3);
+  return 0;
+}
 function seaAnim(dt) {      // и клиент, и сервер: плавное движение снега и льда к цели
-  const S = SEA(), win = seaIdx() === 2;
-  const tgt = win ? 1 : 0;
-  S.snow += Math.sign(tgt - S.snow) * Math.min(Math.abs(tgt - S.snow), dt / (win ? SEA_SNOW_TIME : SEA_MELT_TIME));
-  const itgt = win && S.snow > 0.7 ? 1 : 0;
+  const S = SEA(), i = seaIdx(), win = i === 2;
+  const tgt = seaSnowTarget(i);
+  S.snow += Math.sign(tgt - S.snow) * Math.min(Math.abs(tgt - S.snow), dt / (tgt > S.snow ? SEA_SNOW_TIME : SEA_MELT_TIME));
+  const itgt = (win && S.snow > 0.7) || (i === 3 && S.ice > 0 && S.snow > 0.45) ? 1 : 0;   // весной лёд сходит, когда снег уже сошёл наполовину
   S.ice += Math.sign(itgt - S.ice) * Math.min(Math.abs(itgt - S.ice), dt / (itgt ? SEA_ICE_TIME : SEA_ICE_TIME * 0.6));
   S.fall += Math.sign(S.fallTgt - S.fall) * Math.min(Math.abs(S.fallTgt - S.fall), dt / 8);
 }
@@ -255,6 +270,7 @@ function seaTick(dt) {
   S.fallT -= dt;
   if (S.fallT <= 0) {
     if (idx === 2) { S.fallTgt = [0.15, 0.4, 0.7, 1][(Math.random() * 4) | 0]; S.fallT = 40 + Math.random() * 70; }
+    else if (idx === 1 && seaProgress() > 0.85) { S.fallTgt = 0.12; S.fallT = 40 + Math.random() * 40; }   // первые снежинки перед зимой
     else if (idx === 3 && S.snow > 0.2) { S.fallTgt = Math.random() < 0.3 ? 0.3 : 0; S.fallT = 60 + Math.random() * 60; }
     else { S.fallTgt = 0; S.fallT = 30; }
   }
@@ -262,7 +278,11 @@ function seaTick(dt) {
   S.tickT = 0;
   if (idx === 1) {
     const dd = seaDayIn();
-    if (dd !== S.warnD2) { S.warnD2 = dd; if (dd > 0) seaAutumnWarn(false); }
+    if (dd !== S.warnD2) {
+      S.warnD2 = dd;
+      const d = seaDaysToWinter();          // напоминаем не каждые сутки, а за 4, 2 и 1 сутки до зимы
+      if (dd > 0 && d <= Math.ceil(S.len / 2) && (d <= 2 || d % 2 === 0)) seaAutumnWarn(false);
+    }
   }
   if (idx === 2) {
     if (Game.time >= S.feedAt) { S.feedAt = Game.time + SEA_FEED_PERIOD; seaFeedRound(); }
@@ -292,7 +312,7 @@ function seaTick(dt) {
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser(), S = SEA();
-    s.sea = { off: S.off, len: S.len, snow: +S.snow.toFixed(3), ice: +S.ice.toFixed(3), idx: S.idx, yr: S.yr, fy: S.frostYr, sy: S.santaYr, fx: S.fixed,
+    s.sea = { v: 2, off: S.off, len: S.len, snow: +S.snow.toFixed(3), ice: +S.ice.toFixed(3), idx: S.idx, yr: S.yr, fy: S.frostYr, sy: S.santaYr, fx: S.fixed,
       lost: S.lost, pl: S.pigsLost, fd: Math.max(0, Math.round(S.feedAt - Game.time)),
       sm: (Game.wfx || []).filter(w => w.k === 'man').map(w => [w.x, w.y, w.hat, w.scarf, w.face]) };
     return s;
@@ -304,9 +324,11 @@ function seaTick(dt) {
     Game.wfx = [];
     if (s.sea) {
       const q = s.sea;
-      S.off = q.off || 0; S.len = q.len || S.len; S.snow = q.snow || 0; S.ice = q.ice || 0; S.idx = q.idx != null ? q.idx : seaIdx();
+      S.off = q.off || 0; S.len = q.len || SEA_LEN_LEGACY; S.snow = q.snow || 0; S.ice = q.ice || 0; S.idx = q.idx != null ? q.idx : seaIdx();
       S.yr = q.yr || 0; S.frostYr = q.fy != null ? q.fy : -1; S.santaYr = q.sy != null ? q.sy : -1; S.fixed = q.fx != null ? q.fx : null;
       S.lost = q.lost || 0; S.pigsLost = q.pl || 0; S.feedAt = Game.time + (q.fd || 0);
+      // сохранения, где сезон был 4 суток: растягиваем до SEASON_DAYS, но год, сезон и сутки в нём остаются прежними
+      if (!q.v && S.fixed == null && S.len === SEA_LEN_LEGACY && S.len !== SEA_LEN_DEFAULT && !localStorageLen()) { S.idx = q.idx != null ? q.idx : 0; seaRelen(S, SEA_LEN_DEFAULT); S.idx = seaIdx(); }
       for (const m of q.sm || []) Game.wfx.push({ k: 'man', id: Game.nextId++, x: m[0], y: m[1], hat: m[2], scarf: m[3], face: m[4] || 1, born: Game.time });
     } else {
       // старое сохранение: лето начинается с текущих суток

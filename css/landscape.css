@@ -1,0 +1,198 @@
+/* ---------- Телефон боком (js/landscape.js) ----------
+   Работает только при body.mobile.land (телефон повёрнут, высота ≤ 540 px).
+   Вариант А (body.land-a): узкая колонка-иконки слева, панели выезжают поверх карты.
+   Вариант Б (body.land-b): карта на весь экран, кнопка ☰ со вкладками и быстрые кнопки по краям.
+   В портрете и на компьютере ничего не меняется. */
+
+#land-fab, #land-build { display: none; }
+
+body.mobile.land {
+  --sl: env(safe-area-inset-left, 0px);
+  --sr: env(safe-area-inset-right, 0px);
+  --st: env(safe-area-inset-top, 0px);
+  --sb: env(safe-area-inset-bottom, 0px);
+  --bar: 28px;                              /* тонкая верхняя полоса */
+  --top: calc(var(--st) + var(--bar) + 6px); /* где начинается свободная карта */
+  --mmw: clamp(96px, 30vh, 150px);          /* ширина миникарты */
+  --sheet-w: min(46vw, 380px);
+  --maxh: 40vh;                             /* оповещения — не выше 40% экрана */
+}
+body.mobile.land-a { --sheet-left: calc(50px + var(--sl)); --rail: calc(50px + var(--sl)); --left: calc(var(--rail) + 8px); }
+body.mobile.land-b { --sheet-left: calc(var(--sl) + 56px); --rail: 0px; --left: calc(var(--sl) + 62px); }
+
+/* ---- общее: верхняя полоса ---- */
+body.mobile.land #topbar { top: calc(var(--st) + 2px); right: calc(var(--sr) + 4px); gap: 2px; }
+body.mobile.land-a #topbar { left: calc(var(--rail) + 4px); }
+body.mobile.land-b #topbar { left: calc(var(--sl) + 4px); }
+body.mobile.land .dd-t { min-height: 24px; padding: 2px 6px; font-size: 11px; }
+body.mobile.land .speed { padding: 2px 4px; }
+body.mobile.land .speed button { min-height: 22px; padding: 0 6px; }
+body.mobile.land #sub-btn span { display: none; }
+body.mobile.land #clock { font-size: 11px; padding: 2px 6px; white-space: nowrap; }
+body.mobile.land #topbar .dd-t { white-space: nowrap; }
+body.mobile.land .dd-menu button { min-height: 36px; }
+
+/* ---- общее: миникарта в правом нижнем углу ---- */
+body.mobile.land .mm-wrap {
+  display: block; position: fixed; z-index: 5; left: auto; top: auto;
+  right: calc(var(--sr) + 6px); bottom: calc(var(--sb) + 6px);
+  width: var(--mmw); padding: 2px; transform: none;
+}
+body.mobile.land #mm-fold { display: none; }
+body.mobile.land #mm-size { min-width: 26px; min-height: 22px; font-size: 13px; top: 2px; right: 2px; opacity: 0.8; padding: 0; }
+body.mobile.land.show-mm .mm-wrap { z-index: 30; width: min(58vw, calc((100dvh - 60px) * 4 / 3), 420px); transform: none; left: auto; }
+body.mobile.land.show-mm.mm-big .mm-wrap { left: auto; transform: none; width: min(70vw, calc((100dvh - 40px) * 4 / 3)); }
+
+/* ---- общее: карточка героя и скиллы — компактно справа, карту не закрывают ---- */
+body.mobile.land #hero-card {
+  top: var(--top); bottom: auto; left: auto; right: calc(var(--sr) + 6px);
+  width: clamp(196px, 27vw, 232px); max-height: 44vh; overflow-y: auto; font-size: 10.5px; padding: 4px 6px 6px;
+}
+body.mobile.land #hero-card .hs { width: 34px; height: 34px; }
+body.mobile.land #hero-card .hs img { width: 26px; height: 26px; margin-top: 3px; }
+body.mobile.land #hero-card .hc-head > img { width: 26px; height: 26px; }
+body.mobile.land #hero-card .hc-btns button { padding: 0 4px; min-width: 24px; min-height: 26px; }
+body.mobile.land #hero-card .hc-bars { margin: 3px 0 2px; gap: 2px; }
+body.mobile.land #hero-card .hs-det { min-height: 0; margin-top: 3px; padding: 2px 4px; }
+body.mobile.land #hero-btn {
+  left: auto; right: calc(var(--sr) + 6px);
+  bottom: calc(var(--sb) + var(--mmw) * 0.75 + 16px);
+}
+body.mobile.land #hero-btn img { width: 34px; height: 34px; }
+body.mobile.land.sheet-tab #hero-card, body.mobile.land.sheet-info #hero-card { display: block !important; }
+body.mobile.land.sheet-tab #hero-btn, body.mobile.land.sheet-info #hero-btn { display: flex; }
+
+/* ---- общее: оповещения, подсказки, обучение — не выше 40% высоты ---- */
+/* тосты («Лиса утащила…») — сверху под полосой ресурсов, между обучением и карточкой героя, а не посреди карты */
+body.mobile.land #toasts { top: var(--top); bottom: auto; width: min(34vw, 320px); left: calc(50% + var(--rail) / 2); max-height: var(--maxh); overflow: hidden; }
+body.mobile.land .toast, body.mobile.land .ach-toast { font-size: 12.5px; padding: 5px 12px 6px 40px; min-height: 36px; }
+body.mobile.land .toast::before, body.mobile.land .ach-cup::before { width: 24px; height: 24px; margin-top: -12px; left: 8px; }
+/* открыта шторка — тосты и подсказка по центру оставшейся карты */
+body.mobile.land.sheet-tab #toasts, body.mobile.land.sheet-info #toasts { left: calc((var(--sheet-left) + var(--sheet-w) + 100% - var(--sr)) / 2); width: min(calc(100% - var(--sheet-left) - var(--sheet-w) - 24px), 320px); }
+/* развёрнутое обучение занимает верх слева — тосты встают под него */
+body.mobile.land:has(#tut.min:not(.hidden)) #toasts { top: calc(var(--top) + 96px); }   /* свёрнутое обучение — около 90 px */
+body.mobile.land:has(#tut:not(.hidden):not(.min)) #toasts { top: calc(var(--top) + var(--maxh) + 6px); }
+body.mobile.land #ach-toasts { top: var(--top); bottom: auto; right: calc(var(--sr) + 6px); left: auto; max-height: var(--maxh); overflow: hidden; align-items: flex-end; }
+body.mobile.land #tut {
+  left: var(--left); right: auto; top: var(--top); width: min(330px, 44vw);
+  max-height: var(--maxh); overflow-y: auto; font-size: 11.5px; padding: 5px 8px 6px;
+}
+body.mobile.land #tut h3 { font-size: 13px; margin: 2px 0; }
+body.mobile.land:has(#tut:not(.hidden)) #goal-hud { display: none !important; }   /* обучение и цели в одном углу — пока идёт обучение, цели прячутся */
+body.mobile.land #goal-hud { top: var(--top); left: var(--left); width: min(190px, 28vw); max-height: var(--maxh); overflow-y: auto; font-size: 10.5px; }
+body.mobile.land #daily-hud { top: auto; right: auto; left: var(--left); bottom: calc(var(--sb) + 34px); max-height: 22vh; overflow: hidden; }
+body.mobile.land #hint {
+  left: calc(50% + var(--rail) / 2); bottom: calc(var(--sb) + 8px); width: min(340px, 46vw); max-height: var(--maxh); overflow-y: auto; font-size: 11.5px; padding: 5px 8px;
+}
+body.mobile.land #pause-banner { left: var(--left); right: auto; transform: none; bottom: calc(var(--sb) + 8px); top: auto; max-width: 40vw; font-size: 11px; }
+body.mobile.land #help { max-height: 88%; }
+
+/* панель инструмента (поставить/повернуть/отмена) — строкой у правого края, под правый большой палец */
+body.mobile.land #mtool:not(.hidden) {
+  flex-direction: row; align-items: center; width: auto; left: auto; transform: none;
+  right: calc(var(--sr) + var(--mmw) + 14px); bottom: calc(var(--sb) + 6px); max-width: min(52vw, 440px);
+}
+body.mobile.land #mtool-text { flex: 1; min-width: 0; font-size: 12px; }
+body.mobile.land #mtool button { min-width: 44px; min-height: 40px; }
+
+/* оповещения нельзя нажимать «сквозь» карту: тосты ловят касание, но не двигают карту */
+body.mobile.land #toasts .toast { pointer-events: auto; }
+
+/* ---- общее: шторки поверх карты ---- */
+body.mobile.land #tab-area, body.mobile.land #info-wrap {
+  position: absolute; display: none; order: 0; flex: none; z-index: 6;
+  top: calc(var(--st) + var(--bar) + 4px); bottom: calc(var(--sb) + 6px); height: auto !important; max-height: none;
+  width: var(--sheet-w); box-sizing: border-box;
+  animation: land-in .34s cubic-bezier(.22, .9, .26, 1) both;
+  will-change: transform;
+}
+body.mobile.land #info-wrap { background: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.55)), #3a2a1a; overflow-y: auto; }
+body.mobile.land #tab-area { background: rgba(14,10,6,0.96); min-height: 0; }
+body.mobile.land.sheet-tab #tab-area, body.mobile.land.sheet-info #info-wrap { display: block; }
+body.mobile.land.sheet-info #info-wrap { display: flex; }
+/* шторка мягко выкатывается из-под колонки и так же плавно закатывается (land-out ставит js/landscape.js) */
+@keyframes land-in { from { opacity: 0.35; transform: translateX(-104%); } 60% { opacity: 1; } to { opacity: 1; transform: none; } }
+@keyframes land-out { from { opacity: 1; transform: none; } to { opacity: 0.2; transform: translateX(-104%); } }
+body.mobile.land.land-out #tab-area, body.mobile.land.land-out #info-wrap { animation: land-out .24s cubic-bezier(.5, 0, .75, .4) both; }
+body.mobile.land.land-out #sheet-close { opacity: 0; transition: opacity .12s; }
+body.mobile.land #sheet-close { animation: land-fade .3s ease-out .12s both; }
+@keyframes land-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { body.mobile.land #tab-area, body.mobile.land #info-wrap, body.mobile.land #sheet-close { animation-duration: .01s !important; } }
+body.mobile.land #sheet-close {
+  position: absolute; z-index: 7; top: calc(var(--st) + var(--bar) + 4px); min-width: 40px; min-height: 40px; padding: 0; font-size: 18px; display: none;
+  overflow: hidden; white-space: nowrap; width: 40px; text-indent: -999px;
+}
+body.mobile.land #sheet-close::after { content: '✕'; text-indent: 0; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+body.mobile.land.sheet-tab #sheet-close, body.mobile.land.sheet-info #sheet-close { display: block; }
+body.mobile.land #build-list { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+body.mobile.land .iactions button { min-height: 36px; }
+
+/* ================= Вариант А: колонка иконок слева ================= */
+body.mobile.land-a #panel {
+  position: fixed; left: 0; top: 0; bottom: 0; right: auto; width: var(--rail); max-height: none;
+  padding: calc(var(--st) + 3px) 3px calc(var(--sb) + 3px) calc(var(--sl) + 3px);
+  gap: 0; border-top: 0; border-right: 3px solid #0a0705; box-shadow: 3px 0 10px rgba(0,0,0,0.7); z-index: 7; display: flex; flex-direction: column;
+}
+body.mobile.land-a #tabs { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-height: 0; order: 0; }
+body.mobile.land-a .tab-btn { flex: 1 1 0; height: auto; min-height: 28px; max-height: 44px; }
+body.mobile.land-a .tab-btn img { width: min(30px, 100%); height: min(30px, 100%); max-height: 7.5vh; object-fit: contain; }
+body.mobile.land-a #tab-area, body.mobile.land-a #info-wrap { left: var(--rail); }
+body.mobile.land-a #sheet-close { left: calc(var(--rail) + var(--sheet-w) + 6px); }
+/* тап по значку «Хозяйство» и пр. — бейджи не вылезают за колонку */
+body.mobile.land-a .badge { top: -2px; right: -2px; min-width: 14px; height: 14px; font-size: 9px; padding: 0 2px; }
+body.mobile.land-a #hero-btn { right: calc(var(--sr) + 6px); }
+
+/* ================= Вариант Б: карта на весь экран ================= */
+body.mobile.land-b #panel {
+  position: fixed; inset: 0; width: auto; padding: 0; background: none; border: 0; box-shadow: none; pointer-events: none;
+  max-height: none; z-index: 7;
+}
+body.mobile.land-b #panel > * { pointer-events: auto; }
+body.mobile.land-b #tab-area, body.mobile.land-b #info-wrap { left: calc(var(--sl) + 56px); }
+body.mobile.land-b #sheet-close { left: calc(var(--sl) + 56px + var(--sheet-w) + 6px); }
+body.mobile.land-b #tabs {
+  display: none; position: fixed; left: calc(var(--sl) + 58px); bottom: calc(var(--sb) + 6px);
+  grid-template-columns: repeat(5, 44px); gap: 4px; padding: 5px; z-index: 9;
+  background: var(--planks); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line-hi), 0 4px 12px rgba(0,0,0,0.7);
+  animation: land-pop .26s cubic-bezier(.22, .9, .26, 1) both;
+}
+body.mobile.land-b.land-tabs #tabs, body.mobile.land-b:has(#tabs .tut-hl) #tabs { display: grid; }
+body.mobile.land-b .tab-btn { height: 44px; }
+body.mobile.land-b .tab-btn img { width: 30px; height: 30px; }
+@keyframes land-pop { from { opacity: 0; transform: scale(.9); transform-origin: 0 100%; } to { opacity: 1; transform: none; } }
+body.mobile.land-b #land-fab, body.mobile.land-b #land-build {
+  display: flex; position: fixed; z-index: 8; left: calc(var(--sl) + 6px); width: 48px; height: 48px; min-width: 0; padding: 0; font-size: 22px;
+  border-radius: 24px; background: var(--planks); box-shadow: inset 0 0 0 1px var(--line-hi), 0 3px 8px rgba(0,0,0,0.7);
+}
+body.mobile.land-b #land-fab { bottom: calc(var(--sb) + 6px); }
+body.mobile.land-b #land-build { bottom: calc(var(--sb) + 60px); }
+body.mobile.land-b #land-fab img, body.mobile.land-b #land-build img { width: 30px; height: 30px; }
+body.mobile.land-b.land-tabs #land-fab, body.mobile.land-b:has(#tabs .tut-hl) #land-fab { filter: brightness(1.25); box-shadow: inset 0 0 0 2px var(--gold), 0 3px 8px rgba(0,0,0,0.7); }
+body.mobile.land-b #land-fab .badge { top: -3px; right: -3px; }
+body.mobile.land-b.sheet-tab #land-build, body.mobile.land-b.sheet-info #land-build { display: none; }
+
+/* ---- окно «Интерфейс» ---- */
+#land-modal { position: fixed; inset: 0; z-index: 460; display: flex; align-items: center; justify-content: center; padding: 10px; background: rgba(6,4,2,0.7); }
+#land-modal.hidden { display: none; }
+#land-modal .lm-box { width: min(520px, 100%); max-height: 94%; overflow-y: auto; padding: 12px 14px; background: linear-gradient(rgba(14,10,6,0.86), rgba(14,10,6,0.92)), var(--planks); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line-hi), 0 8px 24px rgba(0,0,0,0.8); }
+#land-modal h3 { margin: 0 0 4px; color: var(--gold-hi); font-size: 18px; }
+#land-modal .lm-note { font-size: 12px; color: var(--text-dim); margin: 0 0 8px; }
+#land-modal .lm-opts { display: flex; gap: 8px; }
+#land-modal .lm-opt { flex: 1; flex-direction: column; align-items: flex-start; text-align: left; padding: 8px 10px; gap: 3px; font-size: 13px; }
+#land-modal .lm-opt b { font-size: 15px; color: var(--gold-hi); }
+#land-modal .lm-opt small { font-size: 11.5px; color: var(--text-dim); line-height: 1.3; white-space: normal; }
+#land-modal .lm-opt.active { box-shadow: inset 0 0 0 2px var(--gold); }
+#land-modal .lm-close { margin-top: 8px; width: 100%; min-height: 36px; }
+@media (max-width: 460px) { #land-modal .lm-opts { flex-direction: column; } }
+
+
+/* значок придержанных оповещений («✉ N») — над кнопкой героя, чтобы не залезал под карточку героя */
+body.mobile.land #nq-pill { top: auto; left: auto; right: calc(var(--sr) + 6px); bottom: calc(var(--sb) + var(--mmw) * 0.75 + 70px); }
+
+/* открыта шторка — цели, вызов дня и обучение не лезут поверх неё */
+body.mobile.land.sheet-tab #goal-hud, body.mobile.land.sheet-info #goal-hud,
+body.mobile.land.sheet-tab #daily-hud, body.mobile.land.sheet-info #daily-hud { display: none !important; }
+/* а обучение подсказывает, что нажать в шторке, — оно встаёт справа от неё */
+body.mobile.land.sheet-tab #tut, body.mobile.land.sheet-info #tut {
+  left: calc(var(--sheet-left) + var(--sheet-w) + 54px); right: calc(var(--sr) + 6px); width: auto; z-index: 8;
+}

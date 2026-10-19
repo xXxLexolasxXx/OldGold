@@ -11,7 +11,7 @@
     "errorPath": "offline.html"
   },
   "ios": { "contentInset": "never", "backgroundColor": "#1a130d" },
-  "android": { "backgroundColor": "#1a130d", "allowMixedContent": false, "webContentsDebuggingEnabled": false },
+  "android": { "backgroundColor": "#1a130d", "allowMixedContent": false },
   "plugins": {
     "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#1a130d", "showSpinner": false }
   }
