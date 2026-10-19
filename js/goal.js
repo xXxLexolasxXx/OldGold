@@ -304,7 +304,7 @@ function goalTick(dt) {
       }
     }
     // свободная игра
-    if (g.mode === 'free' && !g.won && g.rank >= 2 && S.nights >= GOAL_FREE_NIGHTS) goalFinish('win', `Город пережил ${GOAL_FREE_NIGHTS} ночей и не потерял бороду. Это называется процветание.`);
+    if (g.mode === 'free' && !g.won && !g.custom && g.rank >= 2 && S.nights >= GOAL_FREE_NIGHTS) goalFinish('win', `Город пережил ${GOAL_FREE_NIGHTS} ночей и не потерял бороду. Это называется процветание.`);
   }
   // поражение: гномов не осталось
   if ((!g.over || g.over.res === 'win') && Game.time > 30 && S.pop === 0) {
@@ -478,10 +478,10 @@ function goalHudRender() {
   let html = `<div class="gh-head"><b>${goalEsc(GOAL_RANKS[v.rank].name)}${GOAL_RANKS[v.rank].title ? ' · ' + goalEsc(GOAL_RANKS[v.rank].title) : ''}</b>
     <button data-gh="fold" title="Свернуть / развернуть">${GoalUI.fold ? '▸' : '▾'}</button></div>`;
   if (!GoalUI.fold) {
-    if (v.objs) html += `<div class="gh-sub">Глава ${v.ch + 1}/${v.chN}: ${goalEsc(v.chName)}</div><ul>${v.objs.map(bar).join('')}</ul><div class="gh-hint">${goalEsc(v.hint || '')}</div>`;
+    if (v.objs) html += `<div class="gh-sub">${v.custom ? 'Цель карты' : 'Глава ' + (v.ch + 1) + '/' + v.chN}: ${goalEsc(v.chName)}</div><ul>${v.objs.map(bar).join('')}</ul><div class="gh-hint">${goalEsc(v.hint || '')}</div>`;
     else if (g.mode === 'scenario') html += `<div class="gh-sub">Сценарий пройден</div>`;
     if (v.next) html += `<div class="gh-sub">До «${goalEsc(v.next.name)}»</div><ul class="small">${v.next.objs.map(bar).join('')}</ul>`;
-    if (g.mode === 'free' && !g.won) html += `<div class="gh-sub">Победа: «Город» и ${v.free} ночей (${Math.min(v.nights, v.free)}/${v.free})</div>`;
+    if (g.mode === 'free' && !g.won && !v.custom) html += `<div class="gh-sub">Победа: «Город» и ${v.free} ночей (${Math.min(v.nights, v.free)}/${v.free})</div>`;
     if (typeof Coop !== 'undefined' && Coop.host && Coop.mirror) html += `<button class="gh-mode" data-gh="mode">${g.mode === 'scenario' ? 'Режим: сценарий ⇄' : 'Режим: свободный ⇄'} (хост)</button>`;
   }
   if (html !== GoalUI.hudHtml) { GoalUI.hudHtml = html; goalHudEl().innerHTML = html; }

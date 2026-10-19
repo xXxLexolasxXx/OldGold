@@ -131,7 +131,15 @@ if (!loadWorld()) {
   // карту выбирает хост: OLDGOLD_BIOME (meadow, forest, steppe, mountain, swamp, winter), OLDGOLD_SIZE (small, medium, large), OLDGOLD_SEED
   const biome = String(process.env.OLDGOLD_BIOME || 'meadow').replace(/[^a-z]/g, ''), size = String(process.env.OLDGOLD_SIZE || 'large').replace(/[^a-z]/g, '');
   const seed = process.env.OLDGOLD_SEED ? run(`mapSeedFrom(${JSON.stringify(String(process.env.OLDGOLD_SEED))})`) : (Math.random() * 1e9) | 0;
-  run(`setupStart(${seed}, { biome: '${biome}', size: '${size}' }); goalNew('scenario'); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
+  // OLDGOLD_MAP=путь к файлу карты игрока (редактор карт, КАРТЫ_РЕДАКТОР.md): вместо генерации, свободная игра с правилами карты
+  let custom = false;
+  if (process.env.OLDGOLD_MAP) {
+    try {
+      host.ctx.__mapText = fs.readFileSync(process.env.OLDGOLD_MAP, 'utf8');
+      custom = run('(function(){ const r = meParse(__mapText); __mapText = null; if (r.err) throw new Error(r.err); const v = meValidate(r.map); if (v.errors.length) throw new Error(v.errors.join("; ")); __customMap = r.map; return true; })()');
+    } catch (e) { log('карта игрока не принята, делаем обычную:', e.message); }
+  }
+  run(`setupStart(${seed}, ${custom ? '{ custom: __customMap }' : `{ biome: '${biome}', size: '${size}' }`}); goalNew('${custom ? 'free' : 'scenario'}'); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
   log('создан новый мир, зерно', seed, 'биом', biome, 'размер', size);
 }
 

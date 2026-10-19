@@ -1,0 +1,65 @@
+/* Редактор карт: экран редактора, список своих карт в стартовом меню. Стиль кнопок — как у меню игры (.sm-btn). */
+#me-ed {
+  position: fixed; inset: 0; z-index: 100000; display: flex; flex-direction: column;
+  background: #14100a; color: #f6e8c0; font-family: inherit; user-select: none; -webkit-user-select: none;
+}
+#me-ed.me-hidden, .me-dlg.me-hidden { display: none; }
+.me-top {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px calc(6px);
+  padding-top: calc(6px + env(safe-area-inset-top)); background: linear-gradient(#2c2112, #1c150b); border-bottom: 1px solid #6a5430;
+}
+.me-top input, .me-top select, .me-dlg input[type=text], .me-dlg input[type=number], .me-dlg select, .me-dlg textarea {
+  padding: 7px 9px; font: inherit; font-size: 15px; color: #f6e8c0; background: rgba(12,8,4,0.85); border: 1px solid #7a5f28; border-radius: 5px; min-width: 0;
+}
+.me-top input { flex: 1 1 140px; max-width: 280px; }
+.me-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 10px; min-height: 40px; font: inherit; font-size: 14px; color: #f6e8c0; cursor: pointer;
+  border-radius: 6px; background: linear-gradient(#5a4220, #3a2a14); border: 1px solid #b8902c; box-shadow: 0 2px 0 #1a1008; white-space: nowrap;
+}
+.me-btn.primary { background: linear-gradient(#a87a22, #6a4a14); border-color: #f0c860; box-shadow: 0 2px 0 #1a1008, 0 0 12px rgba(255,190,70,0.3); }
+.me-btn.ghost { background: rgba(20,14,8,0.55); border-color: #6a5430; }
+.me-btn.sel { background: linear-gradient(#a87a22, #6a4a14); border-color: #f0e090; box-shadow: 0 0 0 2px rgba(240,200,96,0.55), 0 2px 0 #1a1008; }
+.me-btn:hover:not(:disabled) { filter: brightness(1.15); }
+.me-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+.me-btn:disabled { opacity: 0.45; cursor: default; }
+.me-body { flex: 1 1 auto; display: flex; min-height: 0; }
+.me-tools { flex: none; width: 156px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 5px; background: #1c150b; border-right: 1px solid #6a5430; }
+.me-tools h4 { margin: 8px 0 0; font-size: 12px; font-weight: normal; letter-spacing: 0.08em; text-transform: uppercase; color: #c8a050; }
+.me-tools .me-btn { justify-content: flex-start; width: 100%; }
+.me-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.me-row .me-btn { width: auto; flex: 1 1 auto; justify-content: center; padding: 6px 8px; min-width: 38px; }
+.me-view { position: relative; flex: 1 1 auto; min-width: 0; overflow: hidden; }
+#me-cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; image-rendering: pixelated; }
+.me-hud { position: absolute; left: 8px; bottom: 8px; padding: 3px 8px; font-size: 12px; background: rgba(12,8,4,0.78); border: 1px solid #5a4620; border-radius: 4px; pointer-events: none; }
+.me-flash { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); max-width: 90%; padding: 6px 12px; font-size: 14px; text-align: center; background: rgba(12,8,4,0.92); border: 1px solid #b8902c; border-radius: 6px; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
+.me-flash.on { opacity: 1; }
+.me-dlg { position: fixed; inset: 0; z-index: 100001; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(6,4,2,0.72); }
+.me-card { width: min(94vw, 520px); max-height: 90vh; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: linear-gradient(#2c2112, #1c150b); border: 1px solid #b8902c; border-radius: 8px; box-shadow: 0 6px 30px rgba(0,0,0,0.6); }
+.me-card h3 { margin: 0; font-size: 18px; letter-spacing: 0.05em; color: #f0c880; text-align: center; }
+.me-card label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: #d8c088; }
+.me-card textarea { min-height: 110px; resize: vertical; font-size: 12px; font-family: monospace; word-break: break-all; }
+.me-card ul { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.4; }
+.me-card li.bad { color: #ff9a8a; } .me-card li.warn { color: #f0d070; } .me-card li.ok { color: #9ad078; list-style: none; margin-left: -18px; }
+.me-info { font-size: 13px; color: #c8b890; line-height: 1.4; }
+.me-btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.me-rule { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; padding: 6px; background: rgba(12,8,4,0.55); border: 1px solid #5a4620; border-radius: 5px; }
+.me-rule select, .me-rule input { flex: 1 1 100px; }
+.me-rule input[type=number] { max-width: 90px; flex: 0 0 80px; }
+.me-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.me-chips .me-btn { flex: 1 1 30%; }
+/* список карт в стартовом меню */
+.me-list { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; padding: 2px; }
+.me-item { display: flex; flex-direction: column; gap: 5px; padding: 8px 10px; background: rgba(12,8,4,0.7); border: 1px solid #5a4620; border-radius: 6px; }
+.me-item b { font-size: 15px; color: #f6e8c0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-item small { font-size: 12px; color: #c8b890; }
+.me-item small.bad { color: #ff9a8a; } .me-item small.ok { color: #9ad078; }
+.me-item .me-row .me-btn { min-height: 36px; font-size: 13px; }
+.me-empty { padding: 14px; text-align: center; font-size: 13px; color: #c8b890; background: rgba(12,8,4,0.6); border: 1px dashed #5a4620; border-radius: 6px; }
+@media (max-width: 700px) {
+  .me-body { flex-direction: column-reverse; }
+  .me-tools { width: auto; max-height: 38vh; flex-direction: row; flex-wrap: wrap; border-right: 0; border-top: 1px solid #6a5430; padding: 5px 6px calc(5px + env(safe-area-inset-bottom)); gap: 4px; }
+  .me-tools h4 { display: none; }
+  .me-tools .me-btn { width: auto; flex: 1 1 auto; min-width: 56px; padding: 5px 7px; font-size: 13px; }
+  .me-top .me-btn { padding: 6px 8px; font-size: 13px; }
+  .me-top input { max-width: none; flex-basis: 100%; }
+}

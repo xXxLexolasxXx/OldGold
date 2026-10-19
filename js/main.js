@@ -131,9 +131,10 @@ function setupStart(seed, opts = {}) {
   resetGameState();
   Game.seed = seed;
   Game.stress = false;
-  MapOpt.biome = BIOMES[opts.biome] ? opts.biome : 'meadow';
+  MapOpt.custom = opts.custom || null;   // карта игрока (mapedit.js): биом и размер берутся из неё
+  MapOpt.biome = MapOpt.custom ? MapOpt.custom.biome : BIOMES[opts.biome] ? opts.biome : 'meadow';
   MAPEV.cur = null; MAPEV.low = null;
-  const sz = MAP_SIZES[opts.size] || MAP_SIZES.large;
+  const sz = MapOpt.custom ? { w: MapOpt.custom.w, h: MapOpt.custom.h } : MAP_SIZES[opts.size] || MAP_SIZES.large;
   setMapSize(sz.w, sz.h);
   const { cx, cy } = genWorld(seed);
   const rng = mulberry32(seed ^ 0x5eed);

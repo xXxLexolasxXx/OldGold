@@ -58,7 +58,7 @@ const BIOME_PAL = {
   winter:   { g0: [204, 226, 240], g1: [244, 250, 254], dry: [196, 220, 238], dryK: 0.25, dirtT: 0.93, dirt: [96, 90, 86], sand: [168, 188, 212], rk: [0.95, 1.0, 1.12], moss: [196, 212, 228], w0: [200, 222, 236], w1: [150, 188, 216], foam: [248, 252, 255], foamK: 0, ice: true, snow: true, tuft: ['rgba(96,116,140,0.9)', 'rgba(250,252,255,0.95)'], flower: 0, flCols: [] },
 };
 
-const MapOpt = { biome: null };       // null — карта без биома (старые сейвы)
+const MapOpt = { biome: null, custom: null };       // biome null — карта без биома (старые сейвы); custom — пользовательская карта (mapedit.js)
 const biomeId = () => MapOpt.biome;
 const biomeDef = () => (MapOpt.biome ? BIOMES[MapOpt.biome] || null : null);
 const biomePal = () => BIOME_PAL[MapOpt.biome] || BIOME_PAL.meadow;
