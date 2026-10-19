@@ -295,6 +295,10 @@ function spawnEnts() {
   const w = [0.15 + Math.random(), 0.15 + Math.random(), 0.15 + Math.random()], sw = w[0] + w[1] + w[2];
   let nT = Math.round(total * w[0] / sw), nR = Math.round(total * w[1] / sw), nW = total - nT - nR;
   nW = Math.max(0, nW);
+  // мягкий старт: в первые ночи — деревья (хотя бы одно); камни и водяные подключаются позже (START_GRACE)
+  if (!startOpen('rockEnts')) nR = 0;
+  if (!startOpen('waterEnts')) nW = 0;
+  if (nT + nR + nW === 0) nT = 1;
   spawnTreeEnts(people, nT);
   spawnRockEnts(nR);
   spawnWaterEnts(people, nW);
@@ -606,9 +610,9 @@ function nightTick(dt) {
   if (eve && Game.entNight !== ni) {
     Game.entNight = ni;
     spawnEnts();
-    ghostsSpawn(1 + Math.floor(Math.random() * 3) + Math.floor((Game.lostGnomes || 0) / 2));
-    reapersSpawn();
-    skeletonsSpawn();
+    ghostsSpawn(startNights() <= 1 && START_GRACE.on && !Game.noGrace ? START_GRACE.firstGhosts : 1 + Math.floor(Math.random() * 3) + Math.floor((Game.lostGnomes || 0) / 2));
+    if (startOpen('reaper')) reapersSpawn();
+    if (startOpen('skeletons')) skeletonsSpawn();
     if (isLongNight()) toast('Эта ночь будет долгой — в полтора раза дольше обычной. Готовьте хлеб и костры!');
     toast('Вечереет: зажглись фонари. В лесу кто-то открыл глаза…');
     logEvent('night', 'Вечер: зажглись фонари');

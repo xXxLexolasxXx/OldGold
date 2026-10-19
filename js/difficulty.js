@@ -9,8 +9,9 @@ const DIFFS = {
   calm: {
     name: 'Спокойный', short: 'Спокойно', color: '#8ad06a',
     desc: 'Строй и разведка без потерь: ночи мягче и короче, гномы не гибнут и не падают от голода.',
-    nightN: 0.4,        // сколько нечисти выходит за ночь
-    foe: 0.7,           // сила нечисти и частота набегов (множитель nightDiff)
+    nightN: 0.3,        // сколько нечисти выходит за ночь
+    grace: 1.6, amb: 0.5,   // мягкий старт: сроки открытия систем ×1,6 (START_GRACE), мелкие неприятности (столкновения, молнии, воровство) вдвое реже
+    foe: 0.6,           // сила нечисти и частота набегов (множитель nightDiff)
     nightLen: 0.6,      // длина ночи
     food: 2,            // во сколько раз дольше гном сыт
     noStarve: true,     // голод не валит с ног и не бьёт героя
@@ -24,13 +25,13 @@ const DIFFS = {
   normal: {
     name: 'Обычный', short: 'Обычный', color: '#e8c850',
     desc: 'Задуманный баланс: ночи растут с каждым днём, гномы устают, едят и иногда гибнут.',
-    nightN: 1, foe: 1, nightLen: 1, food: 1, noStarve: false, starve: 1, noLoss: false, lossW: 1,
+    nightN: 1, foe: 1, grace: 1, amb: 1, nightLen: 1, food: 1, noStarve: false, starve: 1, noLoss: false, lossW: 1,
     neuDmg: 1, neuHp: 1, neuResp: 1, heroDown: 2.6, heroHp: 0.5, stock: 1, serfs: 0,
   },
   survival: {
     name: 'Выживание', short: 'Выживание', color: '#e0645a',
     desc: 'Злые ночи, быстрый голод, тощий склад: каждая потеря — это призраки и скелеты на следующую ночь.',
-    nightN: 1.5, foe: 1.25, nightLen: 1.3, food: 0.75, noStarve: false, starve: 1.6, noLoss: false, lossW: 1.5,
+    nightN: 1.5, foe: 1.25, grace: 0.7, amb: 1.2, nightLen: 1.3, food: 0.75, noStarve: false, starve: 1.6, noLoss: false, lossW: 1.5,
     neuDmg: 1.5, neuHp: 1.3, neuResp: 0.6, heroDown: 8, heroHp: 0.25, stock: 0.7, serfs: -2,
   },
 };

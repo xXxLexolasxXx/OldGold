@@ -244,6 +244,7 @@ function chestsTick(dt) {
       }
       continue;
     }
+    if (!startOpen('mimic')) continue;       // мягкий старт: мимики пока притворяются сундуками
     mimicStep(c, dt, i);
   }
 }

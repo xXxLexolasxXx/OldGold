@@ -278,6 +278,7 @@ function fairTick(dt) {
   if (Game.fairDay == null) Game.fairDay = k + FAIR_FIRST + Math.floor(Math.random() * 2);
   const F = Game.fair;
   if (!F) {
+    if (!startOpen('fair')) { if (Game.fairDay <= k + 1) Game.fairDay = k + 2; return; }      // рано: объявим, когда система откроется
     if (k > Game.fairDay) Game.fairDay = k + 1;
     if (k === Game.fairDay - 1 && !Game.fairAnn && isEveningNow()) { Game.fairAnn = true; frSay('Завтра на площади у склада ярмарка: лавки, обмен и конкурсы!'); }
     if (k === Game.fairDay && p > 6 && p < EVE_START - 90) { if (fairStart()) Game.fairDay = k + 1; }

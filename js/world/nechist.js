@@ -310,7 +310,7 @@ function batsTick(dt) {
   const cx = Game.units.length ? Game.units.reduce((s, u) => s + u.x, 0) / Game.units.length : MAP_W / 2;
   const cy = Game.units.length ? Game.units.reduce((s, u) => s + u.y, 0) / Game.units.length : MAP_H / 2;
   // прилетают с вечера
-  if (dark > 0.3 && bats.length < 3 && Math.random() < dt * 0.12) {
+  if (dark > 0.3 && bats.length < 3 && Math.random() < dt * 0.12 && startOpen('bats')) {
     const a = Math.random() * Math.PI * 2;
     bats.push({ x: cx + Math.cos(a) * 24, y: cy + Math.sin(a) * 18, z: 28 + Math.random() * 20, tx: cx, ty: cy, ph: Math.random() * 9, spd: 2.4 + Math.random() * 1.2, retarget: 0, leave: false, cd: 0 });
   }

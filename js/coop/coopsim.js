@@ -425,7 +425,7 @@ function coopInitUnlocks() {
   Game.unlocked = { res: true };
   for (let ch = true; ch;) {
     ch = false;
-    for (const st of UNLOCKS) if (!Game.unlocked[st.id] && st.after && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'))) { Game.unlocked[st.id] = true; ch = true; }
+    for (const st of UNLOCKS) if (!Game.unlocked[st.id] && unlockReady(st)) { Game.unlocked[st.id] = true; ch = true; }
   }
 }
 

@@ -1,0 +1,117 @@
+/* ---------- Обучение (js/tutorial.js) ---------- */
+/* Окно задания: на компьютере — внизу слева над кнопкой героя, чек-лист — справа (не под панелью целей сценария), на телефоне — тонкой полосой.
+   .flip — цель оказалась под окном, окно переехало к другому краю. */
+#tut {
+  position: absolute; left: 12px; bottom: 54px; z-index: 60;
+  width: min(430px, calc(100% - 236px));
+  padding: 8px 13px 10px;
+  background: linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45)), var(--wood-tex), #2a1e14;
+  border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--gold), 0 8px 30px rgba(0,0,0,0.8);
+  font-size: 13.5px; line-height: 1.42; color: var(--text, #ecdcb4);
+}
+#tut.flip { bottom: auto; top: 52px; left: auto; right: 272px; }
+#tut.hidden, #tut-list.hidden, #tut-dim.hidden, #tut-arrow.hidden { display: none; }
+#tut.ok { box-shadow: inset 0 0 0 2px #8eab4c, 0 0 24px rgba(142,171,76,0.6); }
+#tut h3 { margin: 5px 0 4px; color: var(--gold-hi); font-size: 17px; }
+#tut.ok h3 { color: #c8e090; }
+#tut kbd { padding: 0 4px; border: 1px solid var(--line-hi); border-radius: 3px; background: #1a130d; font-size: 11px; }
+.tut-head { display: flex; align-items: center; gap: 4px; }
+.tut-n { flex: 1; color: var(--text-dim); font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; }
+.tut-head button { padding: 0 7px; font-size: 12px; }
+.tut-bar { height: 4px; background: #120c08; margin-top: 5px; }
+.tut-bar div { height: 100%; background: linear-gradient(90deg, #8e5a18, var(--gold-hi)); transition: width 0.4s; }
+#tut .tut-text { max-height: 40vh; overflow-y: auto; }
+/* «что нажать сейчас» — главная строка окна */
+.tut-do { margin-top: 7px; padding: 5px 8px; border-left: 3px solid var(--gold-hi); background: rgba(246,212,88,0.12); color: #fff2c4; font-weight: bold; }
+.tut-do i { font-style: normal; color: var(--gold-hi); margin-right: 6px; display: inline-block; animation: tutNudge 0.9s ease-in-out infinite; }
+.tut-do.hidden { display: none; }
+#tut.ok .tut-do { border-left-color: #8eab4c; background: rgba(142,171,76,0.16); }
+.tut-btns { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.tut-btns > :last-child { margin-left: auto; }
+.tut-btns button { padding: 5px 12px; }
+.tut-btns button.primary { background: linear-gradient(#e4b434, #a4701c); color: #1a0f05; font-weight: bold; }
+#tut.min .tut-text { display: none; }
+#tut.min h3 { font-size: 14px; margin-bottom: 0; }
+#tut details { margin-top: 5px; }
+#tut summary { cursor: pointer; color: var(--gold-hi); font-size: 12px; }
+#tut details[open] { padding: 2px 0 4px; font-size: 12.5px; color: var(--text-dim); }
+
+/* мигающая обводка нужной кнопки */
+.tut-hl { position: relative; z-index: 2; animation: tutPulse 1.1s ease-in-out infinite; }
+@keyframes tutPulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--gold-hi), 0 0 6px 2px rgba(246,212,88,0.5); }
+  50% { box-shadow: 0 0 0 3px #fff2a0, 0 0 16px 6px rgba(246,212,88,0.9); }
+}
+@keyframes tutNudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+
+/* затемнение всего, кроме цели: «окно» — сам элемент, тень вокруг. Клики проходят насквозь */
+#tut-dim {
+  position: fixed; z-index: 50; pointer-events: none; border-radius: 8px;
+  box-shadow: 0 0 0 200vmax rgba(8,5,2,0.6);
+  outline: 2px solid rgba(246,212,88,0.9); outline-offset: 0;
+  transition: left 0.18s, top 0.18s, width 0.18s, height 0.18s;
+  animation: tutRing 1.1s ease-in-out infinite;
+}
+#tut-dim.map { box-shadow: 0 0 0 200vmax rgba(8,5,2,0.5); border-radius: 14px; transition: none; }
+@keyframes tutRing { 0%, 100% { outline-color: rgba(246,212,88,0.5); } 50% { outline-color: #fff2a0; } }
+
+/* стрелка-указатель: прыгает к цели */
+#tut-arrow { position: fixed; z-index: 61; pointer-events: none; width: 0; height: 0; }
+#tut-arrow i {
+  position: absolute; left: -15px; width: 30px; height: 34px;
+  background: #f6d458; filter: drop-shadow(0 0 2px #160e0a) drop-shadow(0 0 1px #160e0a) drop-shadow(0 3px 4px rgba(0,0,0,0.6));
+  clip-path: polygon(30% 0, 70% 0, 70% 50%, 100% 50%, 50% 100%, 0 50%, 30% 50%);
+}
+.tut-arrow-down i { top: -38px; animation: tutBobD 0.7s ease-in-out infinite alternate; }
+.tut-arrow-up i { top: 4px; transform: rotate(180deg); animation: tutBobU 0.7s ease-in-out infinite alternate; }
+.tut-arrow-left i { top: -17px; left: 6px; transform: rotate(90deg); animation: tutBobL 0.7s ease-in-out infinite alternate; }
+@keyframes tutBobD { to { top: -48px; } }
+@keyframes tutBobU { to { top: 14px; } }
+@keyframes tutBobL { to { left: 16px; } }
+
+/* чек-лист целей сбоку */
+#tut-list {
+  position: absolute; right: 10px; bottom: 62px; z-index: 55; width: 196px; max-height: 46%; overflow-y: auto;
+  padding: 6px 9px 7px; font-size: 12px; line-height: 1.3; color: #ecdcb4; cursor: pointer;
+  border: 1px solid #8a6a28; border-radius: 6px; background: linear-gradient(rgba(36,26,14,0.92), rgba(20,14,8,0.92));
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+#tut-list .tl-h { color: var(--gold-hi); font-weight: bold; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; display: flex; justify-content: space-between; gap: 6px; }
+#tut-list ol { margin: 4px 0 0; padding: 0; list-style: none; }
+#tut-list li { padding: 1px 0 1px 16px; position: relative; color: var(--text-dim); }
+#tut-list li::before { content: '○'; position: absolute; left: 0; }
+#tut-list li.cur { color: #fff2c4; font-weight: bold; }
+#tut-list li.cur::before { content: '▶'; color: var(--gold-hi); }
+#tut-list li.ok { color: #b8d080; }
+#tut-list li.ok::before { content: '✔'; color: #9ec860; }
+#tut-list li.skip { text-decoration: line-through; opacity: 0.7; }
+#tut-list li.skip::before { content: '–'; }
+#tut-list ul { margin: 2px 0 2px; padding: 0; list-style: none; font-weight: normal; font-size: 11.5px; }
+#tut-list ul li { padding-left: 14px; }
+
+/* телефон: окно — полоса сверху, текст сворачивается сам; чек-лист — значок «Цели N/M», по нажатию раскрывается */
+body.mobile #tut {
+  left: 8px; right: 8px; width: auto; top: calc(42px + env(safe-area-inset-top)); bottom: auto;
+  max-height: 44%; overflow-y: auto; font-size: 12.5px; line-height: 1.35; padding: 6px 9px 7px;
+}
+body.mobile #tut.flip { top: auto; bottom: calc(118px + env(safe-area-inset-bottom)); }
+body.mobile #tut h3 { font-size: 15px; margin: 3px 0; }
+body.mobile #tut .tut-text { max-height: none; overflow: visible; }
+body.mobile #tut.min .tut-bar { display: none; }
+body.mobile #tut .tut-do { margin-top: 4px; padding: 3px 7px; }
+body.mobile #tut .tut-btns { margin-top: 5px; }
+body.mobile #tut .tut-btns button { padding: 4px 10px; }
+body.mobile #tut-list { right: 6px; top: auto; bottom: calc(118px + env(safe-area-inset-bottom)); width: auto; max-width: 64vw; padding: 4px 8px; }
+body.mobile #tut-list:not(.open) ol { display: none; }
+body.mobile #tut-list.open { width: 200px; }
+/* шторка снизу открыта или в руке инструмент (внизу ✓ ↻ ✕) — чек-лист не мешает */
+body.mobile.sheet-tab #tut-list, body.mobile.sheet-info #tut-list, body.mobile #tut-list.tool { display: none; }
+/* телефон лёжа: место окна задаёт css/landscape.css (верх слева, справа от шторки). Здесь — чтобы кнопки «Повторить» и
+   «Пропустить» всегда влезали (окно чуть выше 40%), «переезд» вправо и значок целей слева внизу, не на миникарте */
+body.mobile.land #view > #tut { max-height: calc(100% - var(--top, 40px) - 8px); }
+body.mobile.land #tut .tut-bar { margin-top: 3px; }
+body.mobile.land #tut .tut-do { margin-top: 3px; padding: 2px 6px; }
+body.mobile.land #tut .tut-btns { margin-top: 4px; }
+body.mobile.land #tut .tut-btns button { padding: 2px 9px; min-height: 0; font-size: 12px; }
+body.mobile.land #tut.flip { top: var(--top, 40px); bottom: auto; left: auto; right: calc(var(--sr, 0px) + 6px); }   /* внизу — панель инструмента с ✓ */
+body.mobile.land #tut-list { right: auto; left: var(--left, 60px); bottom: calc(var(--sb, 0px) + 8px); }

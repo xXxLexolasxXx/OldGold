@@ -47,7 +47,7 @@ function weatherTick(dt) {
   // молнии — только в разгар ливня
   if (WX.k > 0.6) {
     if (!WX.nextBolt) WX.nextBolt = Game.time + wrnd(5, 12);
-    if (Game.time >= WX.nextBolt) { WX.nextBolt = Game.time + wrnd(9, 22); lightningStrike(); }
+    if (Game.time >= WX.nextBolt) { WX.nextBolt = Game.time + wrnd(9, 22) / (dif().amb || 1); if (startOpen('lightning')) lightningStrike(); }
   } else WX.nextBolt = 0;
   if (WX.k > 0.2 || WX.target) rainSlipTick(dt);
   rainShelterTick(dt);

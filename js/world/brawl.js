@@ -138,7 +138,7 @@ function brFighter(u) {
 function brName(u) { return (UNIT_TYPES[u.type] ? UNIT_TYPES[u.type].name : 'гном').toLowerCase(); }
 
 function brawlMaybeStart() {
-  if (!festOn() || festThreat() || Game.time < Game.brawlNext || Game.time - (Game.festival.t0 || 0) < BR_HELLO) return;
+  if (!festOn() || festThreat() || !startOpen('brawl') || Game.time < Game.brawlNext || Game.time - (Game.festival.t0 || 0) < BR_HELLO) return;
   if (Math.random() > BR_CHANCE) return;
   const cand = Game.units.filter(brFighter);
   if (cand.length < 2) return;
