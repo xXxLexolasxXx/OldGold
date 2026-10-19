@@ -723,6 +723,11 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'yawn':    return [[3.2, shY + 1.6], [4.4, headY + 3.4]];
     case 'clap':    return [[3.4, shY + 1.4], [5.2 + f * 0.9, shY + 0.6]];
     case 'five':    return [[[1.6, shY - 3.4], [1.4, headY - 6.2]], [[3, shY - 3.6], [4.4, headY - 5]], [[3.8, shY - 2.6], [5.8, headY - 3.6]], [[2.4, shY - 0.4], [3.2, shY + 0.8]]][f & 3];   // вскинул назад · замах · хлопок · опустил
+    // эпизод в трактире (inside.js, drawSlapScene): ухаживание гнома, замах и пощёчина трактирщицы, реакция
+    case 'flirt':   return [[[3, shY + 1.2], [4.6, shY + 2.4]], [[3.4, shY + 0.4], [5.6, shY + 1]], [[3.6, shY], [6.4, shY - 0.2]], [[2.6, shY - 0.8], [4.6, headY + 2.4]], [[3.4, shY], [6.8, shY + 0.4]], [[3.6, shY - 0.4], [7.4, shY + 0.8]]][f % 6];
+    case 'wslap':   return [[[1.6, shY + 2.6], [2, shY + 5]], [[-0.6, shY + 1.6], [-3, shY + 0.8]], [[-1.6, shY - 1], [-4.6, shY - 3.2]], [[2.2, shY - 2], [5.6, shY - 2.4]], [[3.8, shY - 2.6], [8, headY + 1]], [[3, shY - 0.6], [4.6, shY + 0.6]]][f % 6];
+    case 'hips':    return [[3.4, shY + 2.6], [1.4, shY + 5.4]];
+    case 'cheek':   return [[3, shY + 1.2], [4.4, headY + 3.2 + (f & 1) * 0.4]];
     case 'panic':   return [[2.4, shY - 2.6], [3.4 + f * 1.4, headY - 4.6 + f * 1.2]];
     case 'eat':     return f >= 0.5 ? [[3.2, shY + 0.6], [4.6, headY + 3.4]] : [[3.4, shY + 2.4], [5.2, shY + 3.4]];
     case 'chest':   return [[2.4, shY + 2], [1.4, shY + 0.2 + f * 0.6]];                  // рука за пазухой

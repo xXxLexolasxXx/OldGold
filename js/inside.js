@@ -178,7 +178,8 @@ function drawInnPorch(c, b, spr, ox, oy) {
     c.restore();
   }
   innBench(c, tx, ty + 7, 30);   // ближняя скамья — поверх спин
-  drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length);
+  if (slapTick(b, diners.length)) drawSlapScene(c, b, spr, tx, ty, ox, oy);
+  else drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length);
   if (b.awn > 0.02) innAwning(c, tx, ty, b.awn);
   c.imageSmoothingEnabled = R.smooth;
 }
@@ -264,4 +265,150 @@ function drawBarmaid(c, b, spr, ox, oy) {
   c.fillStyle = '#fffbe8'; c.fillRect(Math.round(ax - 0.4), Math.round(ay + 0.4), 2.6, 0.8);
   if (pour) { c.fillStyle = '#e8b030'; c.fillRect(Math.round(ax + 1), Math.round(ay - 3), 0.8, 3.4); }
   c.restore();
+}
+
+// ---------- Эпизод у трактира: гном пристаёт к трактирщице и получает пощёчину ----------
+// Чисто визуальная сценка поверх веранды (в сохранение не пишется): раз в 3–5 минут днём, когда на веранде никого нет.
+// Раскадровка (12 к/с): 0–1.6 с гном с кружкой идёт от двери · 1.6–3.1 ухаживает (6 кадров ×3: подмигивает, тянется к руке, сердечки),
+// она хмурится, «!», руки в бока · 3.1–3.5 замах (отвела руку назад, анти-кадр) · 3.5 смаз · 3.58 контакт (стоп-кадр, вспышка, звёздочки,
+// отпечаток ладони, брызги пива) · дальше голова гнома отскакивает пружиной, он шатнулся, хватается за щёку, пар из ушей,
+// разворачивается и понуро уходит; она уперла руки в бока, фыркает и уходит в дверь. Тест: ?slap=1 — запустить сразу.
+const SLAP_T = 7.5;
+const SLAP_DEBUG = typeof location !== 'undefined' && /[?&]slap=1/.test(location.search);
+
+function slapTick(b, guests) {
+  if (b._slap) { if (Game.time - b._slap.t0 > SLAP_T) b._slap = null; else return true; }
+  if (b.state !== 'done' || guests > 0) return false;
+  if (b._slapNext === undefined) b._slapNext = Game.time + (SLAP_DEBUG ? 1 : 60 + Math.random() * 120);
+  if (Game.time < b._slapNext) return false;
+  if (!SLAP_DEBUG && ((typeof isNightNow === 'function' && isNightNow()) || (typeof isEveningNow === 'function' && isEveningNow()) || isRaining() || Math.random() > 0.25)) { b._slapNext = Game.time + 20; return false; }
+  if (b._wt && b._wt.st !== 'in') return false;                  // официантка занята — ждём
+  b._slapN = (b._slapN || 0) + 1;
+  b._slap = { t0: Game.time, look: (b.id * 29 + b._slapN * 17) | 0, fx: {} };
+  b._slapNext = Game.time + (SLAP_DEBUG ? 4 : 180 + Math.random() * 120);
+  return true;
+}
+
+// человечек по строкам: каждая строка сдвигается на целое число пикселей — «удар по голове» без размытия пикселей
+function slapPerson(c, sp, x, y, flip, shear) {
+  const ky = sp.height / PH;
+  c.save(); c.translate(Math.round(x), Math.round(y));
+  if (flip) c.scale(-1, 1);
+  for (let r = 0; r < PH; r++) {
+    const k = Math.max(0, (PFY - r) / PFY), off = Math.round(shear * k * k);
+    c.drawImage(sp, 0, r * ky, sp.width, ky, -PFX + off, -PFY + r, PW, 1);
+  }
+  c.restore();
+}
+
+function slapPx(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); }
+function slapHeart(c, x, y, a) {
+  c.globalAlpha = a;
+  const rows = ['.X.X.', 'XXXXX', 'XXXXX', '.XXX.', '..X..'];
+  rows.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === 'X') slapPx(c, x + i - 2, y + j, 1, 1, j === 0 && i === 1 ? '#ffb0c0' : j > 2 ? '#b8203c' : '#e8405a'); });
+  c.globalAlpha = 1;
+}
+function slapStar(c, x, y) { slapPx(c, x - 1, y, 3, 1, '#ffd848'); slapPx(c, x, y - 1, 1, 3, '#ffd848'); slapPx(c, x, y, 1, 1, '#fff8d0'); }
+
+function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
+  const S = b._slap, el = Game.time - S.t0, fx = S.fx;
+  const dp = spr.doorPt || [spr.doorCx, spr.baseY - 6], dx = ox + dp[0], dy = oy + dp[1] + 4;
+  const sx = tx, sy = ty + 6, wx = sx + 7, gx0 = sx - 7;                 // сцена: гном слева, трактирщица справа
+  const ease = k => k * k * (3 - 2 * k), clamp = k => Math.max(0, Math.min(1, k));
+  const mk = (type, look, view, pose, frame, opt) => personSprite({ type, look, carry: null }, view, pose, frame, Object.assign({ gait: '', gest: '', gf: 0 }, opt || {}));
+  const gl = S.look, wl = b.id * 37 + 5;
+  const T_HIT = 3.583, e = el - T_HIT;                                   // e — время с контакта
+  c.imageSmoothingEnabled = false;
+  // ---- гном ----
+  let gx = gx0, gy = sy, gsp, gflip = false, gsh = 0;
+  if (el < 1.6) {
+    const p = ease(el / 1.6);
+    gx = dx + (gx0 - dx) * p; gy = dy + (sy - dy) * p;
+    gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 12) % 8);
+  } else if (el < T_HIT) {
+    gsp = mk('serf', gl, 'E', 'idle', 0, { gest: 'flirt', gf: Math.floor((el - 1.6) * 12) % 6 });
+    gsh = 1.2 + Math.sin(el * 4.5) * 1.3;                                // наваливается на стойку
+  } else {
+    const st = el > 5.5 ? 0 : 4 * (1 - Math.exp(-8 * e));
+    gx = gx0 - st;
+    if (el < 3.95) gsp = mk('serf', gl, 'E', 'idle', 0);
+    else if (el < 5.2) gsp = mk('serf', gl, 'E', 'idle', 0, { gest: 'cheek', gf: Math.floor(el * 3) });
+    else if (el < 5.5) gsp = mk('serf', gl, 'S', 'idle', 0, { gest: 'cheek', gf: 0 });
+    else {
+      const p = ease(clamp((el - 5.5) / 1.8));
+      gx = gx0 - 4 + (dx - (gx0 - 4)) * p; gy = sy + (dy - sy) * p; gflip = gx < gx0;
+      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 9) % 8); gsh = 1.6;     // голова понурая
+    }
+    if (el < 5.2) gsh = e < 0.17 ? -2 : -9 * Math.exp(-4.5 * (e - 0.17)) * Math.cos(12 * (e - 0.17)) + (el > 3.95 ? 1 : 0);
+  }
+  // ---- трактирщица ----
+  let wX = wx, wY = sy, wsp, wflip = true, wsh = 0;
+  if (el < 2.1) wsp = mk('waitress', wl, 'E', 'idle', 0);
+  else if (el < 3.1) { wsp = mk('waitress', wl, 'E', 'idle', 0, { gest: 'hips' }); wsh = -1; }
+  else if (el < 3.5) { wsp = mk('waitress', wl, 'E', 'idle', 0, { gest: 'wslap', gf: el < 3.2 ? 1 : 2 }); wsh = el < 3.2 ? -1 : -2.5; }
+  else if (el < T_HIT) { wsp = mk('waitress', wl, 'E', 'idle', 0, { gest: 'wslap', gf: 3 }); wsh = 3; }
+  else if (el < 3.75) { wsp = mk('waitress', wl, 'E', 'idle', 0, { gest: 'wslap', gf: 4 }); wsh = 3.5; }
+  else if (el < 3.833) { wsp = mk('waitress', wl, 'E', 'idle', 0, { gest: 'wslap', gf: 5 }); wsh = 2; }
+  else if (el < 6.0) { wsp = mk('waitress', wl, 'E', 'idle', 0, { gest: 'hips' }); wsh = -1 + Math.sin(el * 7) * 0.4; }   // фыркает
+  else {
+    const p = ease(clamp((el - 6.0) / 1.2));
+    wX = wx + (dx - wx) * p; wY = sy + (dy - sy) * p; wflip = dx < wx;
+    wsp = mk('waitress', wl, 'E', 'walk', Math.floor(el * 11) % 8);
+  }
+  if (el > 3.3 && el < 3.9) wX -= el < 3.5 ? (el - 3.3) * 7.5 : el < 3.75 ? 3.2 : 3.2 * (3.9 - el) / 0.15;   // выпад вперёд на ударе
+  const shadow = (x, y) => { c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(Math.round(x) + 1, Math.round(y), 5.5, 2, 0, 0, 7); c.fill(); };
+  const gVis = el < 7.2, wVis = el < 7.2;
+  if (gVis) { shadow(gx, gy); slapPerson(c, gsp, gx, gy, gflip, gsh); }
+  if (wVis) { shadow(wX, wY); slapPerson(c, wsp, wX, wY, wflip, wsh); }
+  // ---- эффекты ----
+  const hx = gx + 3.5, hy = gy - 16;                                     // щека гнома
+  for (const t0 of [1.9, 2.45, 3.0]) {                                   // сердечки над головой ухажёра
+    const a = el - t0;
+    if (a > 0 && a < 1 && el < T_HIT) slapHeart(c, gx + 3 + Math.sin(a * 6 + t0) * 2.2, gy - 34 - a * 11, a > 0.7 ? 1 - (a - 0.7) / 0.3 : 1);
+  }
+  if (el > 2.2 && el < 2.9) { slapPx(c, wX - 1, wY - 40, 2, 5, '#e8501c'); slapPx(c, wX - 1, wY - 33, 2, 2, '#e8501c'); }   // «!»
+  if (el > 2.9 && el < 3.5) { const q = Math.sin(el * 30) > 0 ? 1 : 0; slapPx(c, wX - 2 + q, wY - 25, 3, 1, '#d02818'); slapPx(c, wX - 1 + q, wY - 26, 1, 3, '#d02818'); }   // жилка на виске
+  if (el >= 3.5 && el < T_HIT) {                                         // смаз: белая дуга ладони
+    c.lineCap = 'round'; c.strokeStyle = '#ffffff';
+    c.globalAlpha = 0.85; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(wX - 1, wY - 28); c.quadraticCurveTo(wX - 8, wY - 25, hx + 1, hy + 1); c.stroke();
+    c.globalAlpha = 0.35; c.lineWidth = 4;
+    c.beginPath(); c.moveTo(wX - 1, wY - 28); c.quadraticCurveTo(wX - 8, wY - 25, hx + 1, hy + 1); c.stroke();
+    c.globalAlpha = 1;
+  }
+  if (e >= 0 && !fx.hit) {                                               // контакт: звук, реплики
+    fx.hit = 1;
+    const wxp = ox + hx, wyp = oy + hy;
+    if (typeof sfxAt === 'function') { sfxAt('five', wxp, wyp); sfxAt('thud', wxp, wyp); }
+    if (typeof floater === 'function') {
+      floater((ox + wX) / TILE, (oy + wY) / TILE - 2.4, ['Нахал!', 'Ах ты!', 'Не смей!'][S.look % 3], '#ffe9a0');
+      if (typeof fxLater === 'function') fxLater(1.2, () => floater((ox + gx0) / TILE, (oy + sy) / TILE - 2.4, 'Ой…', '#d8d0c0'));
+    }
+  }
+  if (e >= 0 && e < 0.25) {                                              // вспышка удара
+    const r = 3 + e * 20; c.globalAlpha = 1 - e / 0.25;
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + 0.4; slapPx(c, hx + Math.cos(a) * r, hy + Math.sin(a) * r, 1, 1, k % 2 ? '#fff8d0' : '#ffd848'); slapPx(c, hx + Math.cos(a) * (r + 2), hy + Math.sin(a) * (r + 2), 1, 1, '#ffffff'); }
+    c.globalAlpha = 1;
+  }
+  if (e >= 0 && e < 1.3 && gVis) {                                       // звёздочки по кругу над головой
+    const hxc = gx + Math.round(gsh * 0.7), hyc = gy - 31;
+    c.globalAlpha = e > 1 ? 1 - (e - 1) / 0.3 : 1;
+    for (let k = 0; k < 3; k++) { const a = e * 7 + k * 2.09; slapStar(c, hxc + Math.cos(a) * 7, hyc + Math.sin(a) * 2.4); }
+    c.globalAlpha = 1;
+  }
+  if (e >= 0 && el < 5.5 && gVis) {                                      // красный отпечаток ладони на щеке
+    c.globalAlpha = el > 5 ? 1 - (el - 5) / 0.5 : 1;
+    const px = hx + Math.round(gsh * 0.55) - 1, py = hy - 2;
+    slapPx(c, px, py, 3, 4, '#e0584a'); for (const k of [0, 1, 2]) slapPx(c, px + k, py - 1 - (k === 1 ? 1 : 0), 1, 1, '#c8483c'); slapPx(c, px + 1, py + 1, 1, 2, '#f08878');
+    c.globalAlpha = 1;
+  }
+  if (e >= 0 && e < 0.6) {                                               // пиво из кружки разлетается каплями
+    for (let k = 0; k < 6; k++) slapPx(c, gx + 8 + (k - 2.5) * 14 * e, gy - 14 - Math.sin(Math.min(1, e / 0.6 + k * 0.05) * Math.PI) * 9 + e * e * 30, 1, 1, k % 2 ? '#e8b030' : '#fff4c8');
+  }
+  if (el > 4.1 && el < 5.2 && gVis) {                                    // пар из ушей: обида
+    for (const sd of [-1, 1]) for (let k = 0; k < 2; k++) {
+      const a = (el * 1.6 + k * 0.5 + (sd > 0 ? 0.25 : 0)) % 1;
+      c.globalAlpha = 0.7 * (1 - a); slapPx(c, gx + sd * 5 - 1, gy - 24 - a * 9, 2 + (a > 0.5 ? 1 : 0), 2, '#f4f4f0'); c.globalAlpha = 1;
+    }
+  }
 }
