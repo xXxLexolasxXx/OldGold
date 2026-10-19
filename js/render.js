@@ -807,6 +807,7 @@ function render() {
     }
   }
   for (const s of Game.roadSites.values()) drawRoadSite(c, s);
+  drawGamesGround(c, x0, y0, x1, y1);      // чертёж, карты и круг ножичков на земле (games.js)
 
   const list = [];
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -817,6 +818,7 @@ function render() {
     else if (o.t === 'stone') { if (!o.awake) list.push([y + 0.8, () => drawRock(c, x, y, o, i)]); }   // проснувшийся рисуется сам
     else if (isStreetObj(o)) list.push([y + 0.75, () => drawStreetObj(c, x, y, o)]);
     else if (o.t === 'stump') list.push([y + 0.7, () => drawStump(c, x, y)]);
+    else if (o.t === 'hop') list.push([y + 0.01, () => drawHopObj(c, x, y, o)]);       // классики мелом на дороге (games.js)
   }
   // горы: объёмные скальные массивы по глубине вместе с остальными объектами
   for (const m of MOUNTS) {
@@ -865,6 +867,7 @@ function render() {
   list.sort((a, b) => a[0] - b[0]);
   for (const [, fn] of list) fn();
 
+  drawGamesAir(c);
   drawOwls(c);
   drawBats(c);
   drawGhosts(c);

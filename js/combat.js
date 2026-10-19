@@ -89,6 +89,7 @@ function cbFxSet(N, k, dur, src, text, col) {
     let extra = 0, say = '', res = false;
     if (f.kind === 'skel') { if (el === 'holy') { extra = 1; say = 'Свет жжёт кости!'; } else if (el === 'blunt') { extra = 1; say = 'Кости трещат!'; } else if (el === 'pierce') res = true; }
     else if (el === 'fire') { extra = 1; say = 'Дерево горит!'; } else if (u.rec ? u.rec.cls === 'barbarian' : unitCls(u) === 'barbarian') { extra = 1; say = 'Топор по дереву!'; } else if (el === 'nature') res = true;
+    if (o.open > Game.time) { extra += 1; say = say || 'Открыт: двойной удар!'; }
     _kf(f, u);
     if (!foeAlive(f) || o.nhp == null || o.nhp < 1) return;
     if (res && Math.random() < 0.4) { o.nhp++; floater(o.x, o.y - 2.3, 'Стойкий', '#a8b8c8'); }
@@ -232,8 +233,46 @@ function cbRoll(h) {
   return true;
 }
 
+// ответный удар нечисти герою: раньше мгновенный (10% × (ночь−1) за удар), теперь с красным кругом на 0,6 с — можно отойти или перекатиться
+CB.swings = [];
+{
+  const _hh = heroHit;
+  heroHit = function (u, n, say) {
+    if (!CB.direct && u && u.hero && (say === 'Скелет рубит!' || say === 'Ветвью наотмашь!')) {
+      const f = foesNear(u.x, u.y, 2.2).find(x => (x.kind === 'skel' || x.kind === 'ent') && !x.o.tel);
+      if (f) {
+        const now = Game.time, T = { k: 'heavy', x: cbR2(u.x), y: cbR2(u.y), r: 1.1, t0: cbR2(now), at: cbR2(now + 0.6) };
+        f.o.tel = T; CB.swings.push({ u, f, n, say, T });
+        floater(f.o.x, f.o.y - 2.6, '!', '#ff5a3a');
+        return;
+      }
+    }
+    return _hh(u, n, say);
+  };
+}
+function cbSwings() {
+  const now = Game.time;
+  for (let i = CB.swings.length - 1; i >= 0; i--) {
+    const S = CB.swings[i], T = S.T;
+    if (now < T.at) continue;
+    CB.swings.splice(i, 1);
+    const o = S.f.o, u = S.u, H = u.hero;
+    if (o.tel === T) o.tel = null;
+    if (!foeAlive(S.f) || u.dead || !H) continue;
+    const inside = Math.hypot(u.x - T.x, u.y - T.y) <= T.r, early = H.rollAt >= T.t0 - 0.05, rolled = H.rollT > now;
+    if (early || (inside && rolled)) {
+      floater(u.x, u.y - 2.1, 'Идеальный уворот!', '#ffe070');
+      fxBurst(u.x * TILE, u.y * TILE - 14, 12, ['#ffffff', '#ffe070'], 60, 40, 0.5, 1.6, 100);
+      o.open = now + 3; H.cxp = (H.cxp || 0) + 6;
+      floater(o.x, o.y - 2.8, 'Открыт!', '#ffd040');
+    } else if (inside) { CB.direct = true; try { heroHit(u, S.n, S.say); } finally { CB.direct = false; } }
+    else floater(o.x, o.y - 1.8, 'Мимо!', '#e8e0c0');
+  }
+}
+
 function cbTick(dt) {
   const now = Game.time;
+  cbSwings();
   if (!CB.hooked && typeof coop !== 'undefined' && coop.players && typeof coopCmd === 'function') {
     CB.hooked = true;
     const _cc = coopCmd;
@@ -282,20 +321,45 @@ function cbTick(dt) {
 // ---------- Рисование: красный круг удара, значки эффектов ----------
 function cbTop(N) { return N.k === 'leshy' ? 62 : (N.k === 'fairy' || N.k === 'pixie') ? 54 : N.k === 'boar' ? 46 : 48; }
 
+function cbRing(c, x, y, r, p, col, from) {
+  const px = x * TILE, py = y * TILE + 4, rr = r * TILE;
+  c.save();
+  c.fillStyle = `rgba(${col},${0.1 + 0.15 * p})`;
+  c.beginPath(); c.ellipse(px, py, rr, rr * 0.62, 0, 0, 7); c.fill();
+  c.fillStyle = `rgba(${col},${0.2 + 0.3 * p})`;
+  c.beginPath(); c.ellipse(px, py, rr * p, rr * 0.62 * p, 0, 0, 7); c.fill();
+  c.strokeStyle = `rgba(${col},0.9)`; c.lineWidth = 1.5; c.setLineDash([4, 3]);
+  c.beginPath(); c.ellipse(px, py, rr, rr * 0.62, 0, 0, 7); c.stroke();
+  if (from) { c.beginPath(); c.moveTo(from[0] * TILE, from[1] * TILE + 4); c.lineTo(px, py); c.stroke(); }
+  c.restore();
+}
+
 function cbDrawTel(c, N) {
   const T = N.tel;
   if (!T || N.st === 'die') return;
-  const px = T.x * TILE, py = T.y * TILE + 4, r = T.r * TILE, p = Math.min(1, T.p || 0);
-  const col = T.k === 'cloud' ? '150,230,60' : '255,60,30';
-  c.save();
-  c.fillStyle = `rgba(${col},${0.1 + 0.15 * p})`;
-  c.beginPath(); c.ellipse(px, py, r, r * 0.62, 0, 0, 7); c.fill();
-  c.fillStyle = `rgba(${col},${0.2 + 0.3 * p})`;
-  c.beginPath(); c.ellipse(px, py, r * p, r * 0.62 * p, 0, 0, 7); c.fill();
-  c.strokeStyle = `rgba(${col},0.9)`; c.lineWidth = 1.5; c.setLineDash([4, 3]);
-  c.beginPath(); c.ellipse(px, py, r, r * 0.62, 0, 0, 7); c.stroke();
-  c.beginPath(); c.moveTo(N.x * TILE, N.y * TILE + 4); c.lineTo(px, py); c.stroke();
-  c.restore();
+  cbRing(c, T.x, T.y, T.r, Math.min(1, T.p || 0), T.k === 'cloud' ? '150,230,60' : '255,60,30', [N.x, N.y]);
+}
+
+// ночная нечисть: удар по зданию и ответные удары по бойцам — тоже с красным предупреждением; ответ герою — круг, от которого можно уйти
+function cbNightTel(list, c) {
+  const now = Game.time;
+  for (const e of Game.ents || []) {
+    if (e.state === 'smash' && e.target && !e.target.removed) {
+      const tt = 0.6 + (e.hitsDone || 0) * 1.1 - e.t;
+      if (tt > 0 && tt < 0.5) {
+        const b = e.target, p = 1 - tt / 0.5;
+        list.push([b.y - 0.5, () => {
+          c.save(); c.fillStyle = `rgba(255,60,30,${0.1 + 0.2 * p})`; c.strokeStyle = 'rgba(255,80,40,0.9)'; c.lineWidth = 1.5; c.setLineDash([5, 3]);
+          c.fillRect(b.x * TILE, (b.y + b.h - 0.6) * TILE, b.w * TILE, 0.9 * TILE); c.strokeRect(b.x * TILE, (b.y + b.h - 0.6) * TILE, b.w * TILE, 0.9 * TILE); c.restore();
+        }]);
+      }
+    } else if (e.state === 'fight' && e.atk && now - e.atk >= 0 && now - e.atk < 0.75) {
+      const p = (now - e.atk) / 0.75;
+      for (const u of Game.units) if (!u.dead && !u.inside && Math.hypot(u.x - e.x, u.y - e.y) < 1.5) list.push([u.y - 0.5, () => cbRing(c, u.x, u.y, 0.8, p, '255,60,30')]);
+    }
+    if (e.tel) { const T = e.tel; list.push([T.y - 0.5, () => cbRing(c, T.x, T.y, T.r, Math.max(0, Math.min(1, (Game.time - T.t0) / (T.at - T.t0))), '255,60,30', [e.x, e.y])]); }
+  }
+  for (const s of Game.skels || []) if (s.tel) { const T = s.tel; list.push([T.y - 0.5, () => cbRing(c, T.x, T.y, T.r, Math.max(0, Math.min(1, (Game.time - T.t0) / (T.at - T.t0))), '255,60,30', [s.x, s.y])]); }
 }
 
 function cbDrawFx(c, N) {
@@ -323,6 +387,7 @@ function cbDrawFx(c, N) {
   const _ds = drawSkeletons;
   drawSkeletons = function (list, c, x0, y0, x1, y1) {
     _ds(list, c, x0, y0, x1, y1);
+    cbNightTel(list, c);
     for (const N of Game.neutrals || []) {
       if (N.x < x0 - 3 || N.x > x1 + 3 || N.y < y0 - 3 || N.y > y1 + 4) continue;
       if (N.tel) {

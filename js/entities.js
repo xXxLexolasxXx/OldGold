@@ -657,7 +657,7 @@ class Unit {
       if (a.i >= a.path.length) { if (courier) this.releaseOcc(); return true; }
       const [px, py] = a.path[a.i];
       const ni = idx(px, py);
-      if (courier && World.road[ni] && this.resT !== ni && !a.squeeze) {
+      if (courier && World.road[ni] && this.resT !== ni && !a.squeeze && !(World.obj[ni] && World.obj[ni].t === 'hop')) {   // на классиках проходят сквозь друг друга
         const o = World.occ[ni];
         if (o && o !== this.id) {
           a.block += dt;
