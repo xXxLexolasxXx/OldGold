@@ -727,6 +727,7 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'flirt':   return [[[3, shY + 1.2], [4.6, shY + 2.4]], [[3.4, shY + 0.4], [5.6, shY + 1]], [[3.6, shY], [6.4, shY - 0.2]], [[2.6, shY - 0.8], [4.6, headY + 2.4]], [[3.4, shY], [6.8, shY + 0.4]], [[3.6, shY - 0.4], [7.4, shY + 0.8]]][f % 6];
     case 'wslap':   return [[[1.6, shY + 2.6], [2, shY + 5]], [[-0.6, shY + 1.6], [-3, shY + 0.8]], [[-1.6, shY - 1], [-4.6, shY - 3.2]], [[2.2, shY - 2], [5.6, shY - 2.4]], [[3.8, shY - 2.6], [8, headY + 1]], [[3, shY - 0.6], [4.6, shY + 0.6]]][f % 6];
     case 'hips':    return [[3.4, shY + 2.6], [1.4, shY + 5.4]];
+    case 'hat':     return [[2.6, shY - 3], [2.8, headY - 5.5]];                          // несёт колпак к макушке
     case 'cheek':   return [[3, shY + 1.2], [4.4, headY + 3.2 + (f & 1) * 0.4]];
     case 'panic':   return [[2.4, shY - 2.6], [3.4 + f * 1.4, headY - 4.6 + f * 1.2]];
     case 'eat':     return f >= 0.5 ? [[3.2, shY + 0.6], [4.6, headY + 3.4]] : [[3.4, shY + 2.4], [5.2, shY + 3.4]];
@@ -1265,7 +1266,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       }
       if (courier) line(c, -2, shY + 0.2, 2.4, hipY, '#4a2c14', 0.6);
       drawHead(c, 'E', 0.6, headY, L, O, type, false, beardBottom, r);   // курево рисует drawSmoking (smoking.js)
-      drawCap(c, O, 'E', 0.6, headY, tipSway, L, r, lvl);
+      if (!opt.nohat) drawCap(c, O, 'E', 0.6, headY, tipSway, L, r, lvl);
       if (sling) {
         poly(c, [[-0.4, shY + 0.6], [3.4, shY + 3.2], [-0.8, shY + 4.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
         smoothLimb(c, [0.4, shY + 0.4], [0.6, shY + 3], [2.8, shY + 3], 2, shirt);
@@ -1428,7 +1429,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     }
     if (front) { arm(-1); arm(1); }
     drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);
-    drawCap(c, O, view, 0, headY, tipSway, L, r, lvl);
+    if (!opt.nohat) drawCap(c, O, view, 0, headY, tipSway, L, r, lvl);
     // поднятая рука жеста — поверх головы и бороды
     if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic') arm(-1); }
     if (pose === 'smoke' && front) {
@@ -1473,7 +1474,7 @@ function personSprite(u, view, pose, frame, opt = {}) {
   const fkey = pose === 'work' ? `${frame.anim}${frame.f}` : frame;
   const lvl = (u.type === 'serf' || u.type === 'builder') ? unitLevel(u) : 1;
   const carryN = u.carry ? Math.min(3, Math.max(1, u.carryN || 1)) : 0;
-  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gest === 'five' ? (opt.gf || 0) : gestK(opt.gf || 0)) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}${opt.wpn ? 'W' + opt.wpn : ''}`;
+  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gest === 'five' ? (opt.gf || 0) : gestK(opt.gf || 0)) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}${opt.wpn ? 'W' + opt.wpn : ''}${opt.nohat ? 'H0' : ''}`;
   const key = `${u.type}|${look}|${view}${pose}${fkey}|${u.carry || ''}|${u.injury || ''}|${okey}`;
   let cv = PEOPLE_CACHE.get(key);
   if (cv) {
