@@ -465,7 +465,7 @@ function nqMenu() {
   #whatsnew.nq-short li{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   #whatsnew.nq-short ul{padding-left:4px}#whatsnew.nq-short li::before{content:'✦ ';color:#c9a24a}
   #whatsnew .nq-all{display:block;text-align:center;margin:12px 0 0;color:#ffd877;font-size:13px}
-  #whatsnew .wn-box>button{position:sticky;bottom:0;box-shadow:0 -6px 0 6px #22180f,0 -14px 12px 8px rgba(20,14,8,.85)}
+  #whatsnew .wn-box>button{position:sticky;bottom:0;box-shadow:0 0 0 100vmax #22180f;clip-path:inset(-10px -100vmax -6px -100vmax)}
   body.mobile #whatsnew.nq-short{align-items:flex-start;padding-top:64px}
   body.mobile #whatsnew button{min-height:44px}
   /* телефон, спокойный режим: задания и заказ — по одной строке, нажатие раскрывает */
