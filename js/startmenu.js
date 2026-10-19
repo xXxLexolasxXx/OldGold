@@ -338,7 +338,7 @@ function vineSVG(w, h, kind, seed) {
   const W = w + P * 2, H = h + P * 2;
   // путь стебля: обвивает кнопку по всему периметру (чуть больше круга), то снаружи кромки, то поверх неё
   const pts = [];
-  const laps = 1.12, per = 2 * (w + h), n = Math.max(8, Math.round(per * laps / 10)), s0r = rnd(), s0 = o && o.s0 != null ? o.s0 : s0r, ph = rnd() * 6.28, fr = 5 + rnd() * 2;
+  const laps = 1.12, per = 2 * (w + h), n = Math.max(8, Math.round(per * laps / 10)), s0 = rnd(), ph = rnd() * 6.28, fr = 5 + rnd() * 2;   // раньше читалась необъявленная o → ReferenceError
   for (let i = 0; i <= n; i++) {
     const f = i / n, [x, y, nx, ny] = smPerim(s0 + f * laps, w, h);
     const o = Math.sin(f * laps * Math.PI * 2 * fr + ph) * 3.4 + 0.5;
