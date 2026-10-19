@@ -507,6 +507,7 @@ function coopCss() {
   .cp-modal{overflow:auto;position:fixed;inset:0;background:rgba(8,6,3,.82);z-index:10000;display:flex;align-items:center;justify-content:center;color:#e8dcc0;font-family:inherit}
   .cp-card{box-sizing:border-box;margin:auto;background:#1f1710;border:2px solid #b8902c;border-radius:8px;padding:20px 22px;width:min(560px,94vw);max-height:92vh;overflow:auto;text-align:center}
   .cp-card h2{margin:0 0 6px;color:#f6d458;font-size:20px}.cp-card p{margin:0 0 12px;font-size:13px;opacity:.85}
+  .cp-card .cp-nw{margin-top:22px;padding-top:14px;border-top:1px solid #5a4520}.cp-maps{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 4px}
   .cp-cls{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px}
   .cp-c{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-width:0;text-align:center;background:#2a2014;border:2px solid var(--c);border-radius:6px;padding:8px 4px;cursor:pointer;color:#f6e8c0;font-size:12px;font-family:inherit}
   .cp-c:hover{background:#3a2c14}.cp-c b{display:block;color:var(--c);font-size:14px;margin-bottom:3px}.cp-c small{opacity:.75;font-size:10px;display:block}
@@ -677,7 +678,7 @@ function coopRestartDialog() {
   box.className = 'cp-modal';
   box.innerHTML = `<div class="cp-card"><h2>Перезапустить сервер?</h2><p>Мир сохранится, все игроки на несколько секунд отвалятся и переподключатся сами.</p>
     <button class="cp-btn" data-y>Перезапустить</button><button class="cp-btn sec" data-n>Отмена</button>
-    <h2>Новый мир</h2><p>Текущий мир уйдёт в архив на сервере, деревня начнётся заново. Свои карты — из «Редактора карт» на этом устройстве.</p>
+    <h2 class="cp-nw">Новый мир</h2><p>Текущий мир уйдёт в архив на сервере, деревня начнётся заново. Свои карты — из «Редактора карт» на этом устройстве.</p>
     <div class="cp-maps"></div><div data-ask hidden><p></p><button class="cp-btn" data-go>Да, начать заново</button></div></div>`;
   const list = box.querySelector('.cp-maps');
   const pick = (label, map) => {
@@ -737,7 +738,7 @@ function coopLost() {
     const opts = sv && sv.token && sv.nick === nick ? { server: cr.server, nick, token: sv.token, mode: 'token' }
       : cr.pass ? { server: cr.server, nick, pass: cr.pass, mode: 'login' } : null;
     if (!opts) { busy = false; stop = true; msg.textContent = 'Войдите заново через меню (Выйти → Общая деревня).'; return; }
-    coopConnect(opts).then(() => { stop = true; box.remove(); }).catch(e => {
+    coopConnect(opts).then(() => { stop = true; Coop.reconnecting = false; box.remove(); }).catch(e => {
       busy = false;
       msg.textContent = e.message;
       if (!stop && !Coop.kicked) setTimeout(tryAgain, 3000);
