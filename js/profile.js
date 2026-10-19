@@ -112,6 +112,7 @@ function achGet(id) {
   AchQ.q = AchQ.q.filter(x => x !== id);
   p.ach[id] = Date.now();
   profSave();
+  if (window.OldGoldNative) { try { OldGoldNative.achievement(id); } catch (e) { /* оболочка без Steam */ } }
   track('ach-first', 'Получил первую ачивку'); track('ach-' + id, 'Ачивка: ' + ACH_BY[id].name);
   achToast(ACH_BY[id]);
   if (UI && UI.tab !== undefined) profRefresh();
