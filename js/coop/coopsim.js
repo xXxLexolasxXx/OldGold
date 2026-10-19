@@ -576,6 +576,7 @@ function coopMirror() {
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
     dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
+    sea: typeof seaMirrorOut === 'function' ? seaMirrorOut() : null, wfx: coopList(Game.wfx),
     wx: {},
   };
   for (const k of COOP_WX) m.wx[k] = coopPlain(WX[k]);

@@ -47,7 +47,7 @@ function festivalStart(why, days) {
   if (!days) days = Math.random() < 0.35 ? 2 : 1;
   Game.festival = { on: true, until: festDayEnd(), left: days - 1, why: why || 'timer', t0: Game.time };
   Game.festWish = false;
-  const txt = why === 'victory' ? 'Победа! Трактирщик ставит бочку: в деревне праздник!' : why === 'manual' ? 'Праздник! Все бросили работу и несут кружки' : 'Сегодня праздник! Все бросили дела и тянутся к трактиру';
+  const txt = why === 'newyear' ? 'Новый год! Все бросили работу: гуляем у трактира, Дед Мороз уже в пути' : why === 'victory' ? 'Победа! Трактирщик ставит бочку: в деревне праздник!' : why === 'manual' ? 'Праздник! Все бросили работу и несут кружки' : 'Сегодня праздник! Все бросили дела и тянутся к трактиру';
   toast(txt + (days > 1 ? ' (два дня)' : ''));
   logEvent('festival', txt, ...festPoint());
   festCheers();
