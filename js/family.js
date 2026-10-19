@@ -247,7 +247,9 @@ function famYears(n) { const a = n % 10, b = n % 100; return a === 1 && b !== 11
 if (typeof mdCardHTML === 'function') {
   const _mc = mdCardHTML;
   mdCardHTML = function (u) {
-    const h = _mc(u), add = famCardHTML(u);
+    let h = _mc(u);
+    const add = famCardHTML(u);
+    if (u && u.type === 'kid') h = h.replace('Присматриваемся к настроению…', 'Гномята не грустят: играют, едят и растут');
     if (!add) return h;
     const i = h.lastIndexOf('<button class="hc-x"');
     return i >= 0 ? h.slice(0, i) + add + h.slice(i) : h + add;

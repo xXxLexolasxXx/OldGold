@@ -636,9 +636,11 @@ function* fishGen(u, shore) {
   const bite = total * (0.55 + Math.random() * 0.3);
   const t0 = Game.time;
   while (Game.time - t0 < total) {
+    if (!u.fun) return;                                // досуг прервали (игры гномов, драка) и вернули старый генератор
     if (!u.fun.bite && Game.time - t0 > bite) { u.fun.bite = Game.time + 1.4; floater(u.x, u.y - 1.3, '!', '#ffe060'); }
     yield { wait: 0.4 };
   }
+  if (!u.fun) return;
   const got = Math.random() < 0.6 && !u.fun.stolen;   // цапля могла стащить улов (beasts.js)
   fxBurst(wx * TILE, wy * TILE, 9, ['#ffffff', '#c8e4f8', '#8ac0e8'], 30, 38, 0.5, 1.4, 150);
   if (got) {

@@ -242,4 +242,5 @@ I18N.add('en', {
   "Род продолжается. Борода — тоже.": "The clan goes on. So does the beard.",
   "Тёща уже интересуется, где тут склад.": "The mother-in-law is already asking where the storehouse is.",
   "Летопись толстеет быстрее старосты.": "The chronicle grows fatter than the headman.",
+  "Гномята не грустят: играют, едят и растут": "Gnomelings don't mope: they play, eat and grow",
 });
