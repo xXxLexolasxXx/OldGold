@@ -52,6 +52,7 @@ const SIGN_QUEUE = { list: [] };
 // стиль текущего здания (выбирается по типу): бревенчатая изба, белёный коттедж под
 // соломой или светлый фахверковый дом под красной черепицей — как во второй деревне референсов
 let BUILD_STYLE = 'logs', BUILD_TYPE = '';
+let BUILD_ERA = 2;   // эпоха облика: 1 — солома и дерево, 2 — камень и дерево, 3 — дворцовый (камень, черепица, колонны, статуи)
 const COTTAGE_TYPES = new Set(['inn', 'brewery', 'butchery', 'hopfarm', 'stable']);
 const REDROOF_TYPES = new Set(['school', 'mill', 'sawmill', 'metallurgist', 'armory', 'magicworkshop', 'goatpen', 'swine']);
 const DWARF_TYPES = new Set(['storehouse']);   // «Оплот»: приземистый каменный склад под холодным сланцем (трактир — тёплый коттедж под соломой)
@@ -126,7 +127,52 @@ function gnomePart(p) {
       r.ov = (r.ov ?? 4) + 1.2;
     }
   }
+  if (BUILD_ERA !== 2) eraPart(q, p, h);
+  else eraStonePlinth(q);
   return q;
+}
+
+// ---------- Эпохи облика ----------
+// Эпоха 1 — деревня: бревенчатые и дощатые стены без камня, соломенные крыши.
+// Эпоха 2 — как раньше, но с каменным цоколем и деревянной дранкой вместо красной черепицы.
+// Эпоха 3 — дворцовый вид: светлый тёсаный камень, терракотовая черепица, колонны, статуи, знамёна (см. eraExtras).
+const STRAW = ['#c9a95a', '#bf9f50', '#d3b564'];
+const PALACE_WALLS = ['#d9d2bf', '#d2cab5', '#ddd6c4'];
+const PALACE_TILES = ['#b6482a', '#ae4126', '#bd502e'];
+
+function eraStonePlinth(q) {
+  if (q.open || !q.wall || q.wall === 'fieldstone' || q.wall === 'stone') return;
+  q.lowerStone = Math.max(q.lowerStone || 0, Math.min(9, (q.h || 20) * 0.4));
+  q.stoneCol = q.stoneCol || '#8e8a78';
+  const r = q.roof;
+  if (r && r.mat === 'tiles') { r.mat = 'moss'; r.col = '#7a5a36'; r.rise = (r.rise ?? 18) * 0.92; }
+}
+
+function eraPart(q, p, h) {
+  const r0 = p.roof;
+  if (BUILD_ERA === 1) {
+    if (!q.open && q.wall) {
+      const tall = (q.h || 0) >= 34 && h % 2 === 0;
+      q.wall = tall ? 'plank' : 'logs'; q.col = tall ? '#7a5030' : LOG_COLS[h % LOG_COLS.length];
+      q.frame = false; q.lowerStone = 0; q.beam = '#3a2414'; q.cottage = false;
+      q.gableWall = 'plank'; q.gableCol = shade(q.col, -0.08); q.gableFrame = false;
+    }
+    if (r0) {
+      const r = q.roof = { ...q.roof };
+      r.mat = 'thatch'; r.col = STRAW[h % 3];
+      r.rise = (r0.rise ?? 18) * 1.2; r.ov = (r0.ov ?? 4) + 2.4;
+    }
+  } else if (BUILD_ERA === 3) {
+    if (!q.open && q.wall) {
+      q.wall = 'stone'; q.col = PALACE_WALLS[h % 3]; q.frame = false; q.moss = false;
+      q.lowerStone = 0; q.cottage = false; q.gableWall = 'stone'; q.gableCol = q.col; q.gableFrame = false;
+    }
+    if (r0) {
+      const r = q.roof = { ...q.roof };
+      r.mat = 'tiles'; r.col = PALACE_TILES[h % 3];
+      r.rise = (r0.rise ?? 18) * 1.1; r.ov = (r0.ov ?? 4) + 1.5;
+    }
+  }
 }
 
 // Мох и плющ по низу стены, грибы и травка у фундамента (в координатах грани)
@@ -495,6 +541,7 @@ function drawBoxPart(c, m, p) {
     if (w.Y1 - w.Y0 > 30) posts.push([w.X1, (w.Y0 + w.Y1) / 2]);
     for (const [X, Y] of posts) {
       const a = P(g, X, Y, 0), b = P(g, X, Y, H);
+      if (BUILD_ERA === 3 && p.canopy) { palaceColumn(c, a[0], a[1], b[1]); continue; }   // навес-портик: колонны вместо столбов
       c.fillStyle = lingrad(c, a[0] - 1.3, 0, a[0] + 1.3, 0, [[0, '#9a6a38'], [1, '#3e2410']]);
       c.fillRect(a[0] - 1.3, b[1], 2.6, a[1] - b[1]);
     }
@@ -547,6 +594,11 @@ function drawBoxPart(c, m, p) {
 }
 
 function drawTowerPart(c, m, p) {
+  if (BUILD_ERA !== 2) {   // эпохи: башня — деревянная под соломой / светлый камень под черепицей (цвета, форма та же)
+    const h = hashStr(BUILD_TYPE + (p.x | 0));
+    p = { ...p, col: BUILD_ERA === 1 ? '#8a6238' : PALACE_WALLS[h % 3] };
+    if (p.roof) p.roof = { ...p.roof, col: BUILD_ERA === 1 ? STRAW[h % 3] : PALACE_TILES[h % 3] };
+  }
   const g = m.g;
   const [X, Y] = toW(m, p.x, p.y);
   const r = p.r, z0 = p.z0 || 0, H = z0 + p.h;
@@ -1333,13 +1385,107 @@ function mirrorSprite(s, FW) {
   return m;
 }
 
-function buildingSpriteBase(type, rot = 0, level = 1) {
+// ---------- Эпоха 3: колонны, портик, статуи, знамёна ----------
+function palaceColumn(c, sx, sy0, sy1) {
+  const w = 2.7;
+  shadowAt(c, sx + 1.2, sy0, 4);
+  c.fillStyle = lingrad(c, sx - w, 0, sx + w, 0, [[0, '#f4efe0'], [0.5, '#d9d1bb'], [1, '#8f8777']]);
+  c.fillRect(sx - w, sy1, w * 2, sy0 - sy1);
+  c.fillStyle = 'rgba(70,60,44,0.35)';
+  for (const f of [-1.1, 0.5, 1.7]) c.fillRect(sx + f, sy1 + 2, 0.45, sy0 - sy1 - 3.6);   // каннелюры
+  c.fillStyle = '#cfc7b2'; c.fillRect(sx - w - 1, sy0 - 1.8, w * 2 + 2, 1.8);               // база
+  c.fillStyle = '#efe8d4'; c.fillRect(sx - w - 1, sy0 - 1.8, w * 2 + 2, PXU);
+  c.fillStyle = '#e2dac4'; c.fillRect(sx - w - 1.4, sy1, w * 2 + 2.8, 2);                   // капитель
+  c.fillStyle = '#f8f2e2'; c.fillRect(sx - w - 1.4, sy1, w * 2 + 2.8, PXU);
+  c.fillStyle = '#a89f8a'; c.fillRect(sx - w - 1.4, sy1 + 1.7, w * 2 + 2.8, 0.5);
+}
+
+// гном-страж из белого камня на постаменте: шлем, борода, секира; kind 0 — секира справа, 1 — молот и щит
+function palaceStatue(c, sx, sy, kind) {
+  shadowAt(c, sx + 1.5, sy, 6);
+  const px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(sx + x, sy + y, w, h); };
+  const LT = '#f1ecdd', MD = '#d3cbb6', DK = '#948b78', GD = '#e0b440';
+  // постамент
+  px(-5, -8, 10, 8, MD); px(-5, -8, 4, 8, LT); px(2, -8, 3, 8, DK);
+  px(-6, -9.4, 12, 1.6, LT); px(-6, -1.2, 12, 1.2, DK); px(-5, -5, 10, 0.5, DK);
+  const y = -9.4;
+  // ноги, плащ, туловище
+  px(-3, y - 4, 2.4, 4, MD); px(0.6, y - 4, 2.4, 4, DK);
+  px(-3.6, y - 12, 7.2, 8.4, MD); px(-3.6, y - 12, 2.6, 8.4, LT); px(1.8, y - 12, 1.8, 8.4, DK);
+  px(-3.6, y - 6.4, 7.2, 1, GD);                                      // пояс
+  // голова: шлем с гребнем, лицо, борода
+  px(-2.4, y - 17.6, 4.8, 2.4, LT); px(-0.4, y - 19.4, 0.9, 2, GD);   // шлем и гребень
+  px(-1.8, y - 15.6, 3.6, 2, '#e8d6b8');                              // лицо
+  px(-2.4, y - 14, 4.8, 3.6, LT); px(1, y - 14, 1.4, 3.6, MD);       // борода
+  // руки и оружие
+  if (kind === 0) {
+    px(3.6, y - 11, 1.6, 1.8, MD); px(4.2, y - 21, 0.9, 16, '#8a6a3a');
+    px(2.6, y - 21, 2.6, 4, DK); px(2.2, y - 20.4, 1.4, 3, LT);        // лезвие секиры
+    px(-5.4, y - 10.6, 1.8, 4.6, DK);
+  } else {
+    px(-6.2, y - 12, 3.4, 5.6, GD); px(-5.6, y - 11.4, 2.2, 4.4, '#b88a24');   // щит
+    px(3.6, y - 11, 1.6, 1.8, MD); px(4.2, y - 18, 1.1, 12, '#8a6a3a'); px(3, y - 19.6, 3.6, 2.6, DK);   // молот
+  }
+}
+
+function palaceFlag(c, x, y, col, h = 30) {
+  shadowAt(c, x + 1, y, 2);
+  c.fillStyle = '#d8b050'; c.fillRect(x - 0.6, y - h, 1.2, h);
+  ellipse(c, x, y - h - 0.6, 1.4, 1.4, GD_FLAG);
+  c.fillStyle = lingrad(c, x, 0, x + 12, 0, [[0, shade(col, 0.22)], [1, shade(col, -0.3)]]);
+  c.beginPath(); c.moveTo(x + 0.6, y - h + 1.5); c.lineTo(x + 12.6, y - h + 2.6); c.lineTo(x + 9.6, y - h + 6.4); c.lineTo(x + 12.4, y - h + 10.4); c.lineTo(x + 0.6, y - h + 9.6); c.closePath(); c.fill();
+  c.fillStyle = GD_FLAG; c.fillRect(x + 2.4, y - h + 4.2, 4.6, 1);
+}
+const GD_FLAG = '#f0cc60';
+const PALACE_FLAGS = ['#8a1e2a', '#1e3f8a', '#2c6a3a', '#6a2a8a'];
+
+function eraExtras(m, era) {
+  if (era < 3) return;
+  let part = null, pa = 0;
+  for (const q of m.parts) {
+    const p = q.p;
+    if (q.kind !== 'box' || p.open || p.canopy || !p.decor || !p.decor.S) continue;
+    const a = (p.x1 - p.x0) * (p.y1 - p.y0);
+    if (a > pa && p.decor.S.some(d => d.t === 'door' && d.main)) { part = q; pa = a; }
+  }
+  const side = (x, kind, y) => { if (x > 5 && x < m.LW - 5) m.custom((c, mm) => { const [sx, sy] = mm.at(x, y, 0); palaceStatue(c, sx, sy, kind); }, x, y - 0.1); };
+  if (!part) {
+    // здание без «главного короба» (домик в скале и т. п.): только стражи у входа
+    side(m.doorX - 24, 0, 5); side(m.doorX + 24, 1, 5);
+    return;
+  }
+  const p = part.p, md = p.decor.S.find(d => d.t === 'door' && d.main);
+  const dc = m.doorX + (md.shift || 0) * (m.rot ? -1 : 1), half = (md.w || 10) / 2;
+  const H = (p.z0 || 0) + p.h;
+  const hs = hashStr(BUILD_TYPE + 'palace');
+  const xa = Math.max(p.x0 + 1, dc - half - 9), xb = Math.min(p.x1 - 1, dc + half + 9);
+  const yf = Math.max(1.5, p.y0 - 5);
+  const porch = m.parts.find(q => q.kind === 'box' && q.p.open && q.p.canopy && q.p.x0 <= dc && q.p.x1 >= dc && q.p.y1 <= p.y0 + 1);
+  if (porch) {
+    // крыльцо-навес уже есть: оно само станет портиком (см. drawBoxPart), по бокам — стражи
+    side(porch.p.x0 - 13, 0, porch.p.y0 + 3); side(porch.p.x1 + 13, 1, porch.p.y0 + 3);
+  } else if (xb - xa >= 22 && H >= 16 && p.y0 - yf >= 2) {
+    // портик: две колонны, антаблемент и фронтон
+    const zc = H - 6;
+    for (const x of [xa + 3, xb - 3]) m.custom((c, mm) => { const [sx, sy0] = mm.at(x, yf + 1, 0), [, sy1] = mm.at(x, yf + 1, zc); palaceColumn(c, sx, sy0, sy1); }, x, yf);
+    m.box({ x0: xa, x1: xb, y0: yf - 1.5, y1: p.y0, z0: zc, h: 6, wall: 'stone', col: '#e4dcc6', _g: true, noShadow: true, noPlinth: true,
+      roof: { type: 'gable', axis: 'X', rise: 8, mat: 'tiles', col: PALACE_TILES[hs % 3], ov: 1.6 } });
+    side(xa - 10, 0, yf + 3); side(xb + 10, 1, yf + 3);
+  } else {
+    side(dc - half - 14, 0, 3); side(dc + half + 14, 1, 3);
+  }
+  // знамя на коньке главной крыши
+  const w = boxW(m, p), cx = (p.x0 + p.x1) / 2, cy = (p.y0 + p.y1) / 2, [X, Y] = toW(m, cx, cy);
+  m.custom((c, mm) => { const [sx, sy] = P(mm.g, X, Y, roofZ(mm, p, w, H, X, Y) - 1); palaceFlag(c, sx, sy, PALACE_FLAGS[(hs >> 3) % 4], Math.max(10, Math.min(28, sy - 4))); }, cx, p.y0 - 0.2);
+}
+
+function buildingSpriteBase(type, rot = 0, level = 1, era = buildingEra(type, level)) {
   const d = bDims(type, rot);
-  if (d.rot === 3) return buildingSpriteBase(type, 0, level);   // костёр симметричен — тот же спрайт
-  const key = type + ':' + d.rot + (level === 2 ? ':U' : '');
+  if (d.rot === 3) return buildingSpriteBase(type, 0, level, era);   // костёр симметричен — тот же спрайт
+  const key = type + ':' + d.rot + (level === 2 ? ':U' : '') + '#e' + era;
   if (SPR.buildings[key]) return SPR.buildings[key];
   if (d.rot === 2) {
-    SPR.buildings[key] = mirrorSprite(buildingSpriteBase(type, 1, level), d.w * TILE);
+    SPR.buildings[key] = mirrorSprite(buildingSpriteBase(type, 1, level, era), d.w * TILE);
     return SPR.buildings[key];
   }
   srand = mulberry32(hashStr(type));
@@ -1364,12 +1510,14 @@ function buildingSpriteBase(type, rot = 0, level = 1) {
   const m = newModel(g);
   (MODELS[type] || modelPlaceholder)(m);
   if (level === 2) spr.tall = upgradeModel(m);
+  BUILD_ERA = era;
+  eraExtras(m, era);
   SIGN_QUEUE.list = [];
   BUILD_STYLE = styleOf(type); BUILD_TYPE = type;
   WIN_REC = [];
   renderModel(c, m);
   spr.wins = WIN_REC; WIN_REC = null;
-  BUILD_STYLE = 'logs'; BUILD_TYPE = '';
+  BUILD_STYLE = 'logs'; BUILD_TYPE = ''; BUILD_ERA = 2;
   SK = 0.5;
   for (const s of SIGN_QUEUE.list) postSign(c, s.x, s.y, s.kind, s.dir);
   SIGN_QUEUE.list = [];

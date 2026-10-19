@@ -54,7 +54,7 @@ function drawGrip(c, hx, hy, f, k, pal, S = 1) {
 
 // Схваченный гном: pivot — центр тела (в 14 px над ступнями), rot — поворот, held — уже в руке (машет и вырывается)
 function drawGrabbed(c, v, px, py, rot, held, alpha = 1) {
-  const opt = { gait: '', gest: 'panic', gf: Math.floor(Game.time * (held ? 10 : 6) + v.id) & 1 };
+  const opt = { gait: '', gest: 'panic', gf: gestCyc(Game.time * (held ? 10 : 6) + v.id) };
   const spr = held ? personSprite(v, 'S', 'walk', Math.floor(Game.time * 16) & 7, opt) : personSprite(v, 'S', 'idle', 0, opt);
   c.save();
   if (alpha < 1) c.globalAlpha *= alpha;
