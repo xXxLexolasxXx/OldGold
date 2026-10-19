@@ -23,7 +23,7 @@ function runMeta() {
   let m = null;
   try { m = JSON.parse(localStorage.getItem(RUN_META_KEY)); } catch (e) { /* нет хранилища */ }
   m = m && typeof m === 'object' ? m : {};
-  return Object.assign({ stones: 0, shards: 0, runs: 0, wins: 0, best: 0, cloak: 0, pal: 'warrior', weekBest: {}, hurtUntil: 0 }, m);
+  return Object.assign({ ups: {}, weapons: {}, weapon: 'pick', stones: 0, shards: 0, runs: 0, wins: 0, best: 0, cloak: 0, pal: 'warrior', weekBest: {}, hurtUntil: 0 }, m);
 }
 function runMetaSave(m) { try { localStorage.setItem(RUN_META_KEY, JSON.stringify(m)); } catch (e) { /* нет хранилища */ } }
 function runWeekSeed() { const d = new Date(); const t = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); return Math.floor((t / 86400000 + 3) / 7); }  // неделя с понедельника
@@ -70,13 +70,21 @@ Object.assign(MODELS, {
 // ---------- доступность ----------
 function squadTavernOpen() {
   const g = Game.goal;
-  if (!g) return true;                       // старые сохранения — открыто
+  if (!g) return false;
   if (g.mode === 'scenario') return g.ch >= 3;   // глава 3 «Пиво вместо совести» пройдена
   return Game.buildings.some(b => b.type === 'brewery' && b.state === 'done');   // свободная игра: пивоварня стоит
 }
-setInterval(() => {
-  try { if (Game && Game.buildings && !Game.unlocked.squad && squadTavernOpen()) unlockStage('squad'); } catch (e) { /* игра ещё не создана */ }
-}, 2000);
+{
+  const _step = step;
+  let acc = 0;
+  step = function (dt) {
+    _step(dt);
+    acc += dt;
+    if (acc < 2) return;
+    acc = 0;
+    if (Game.unlocked && !Game.unlocked.squad && squadTavernOpen()) unlockStage('squad');
+  };
+}
 
 // ---------- реплики хозяина ----------
 function tavernKeeperSay() {
@@ -134,6 +142,7 @@ function tavernClose() {
   if (Tav.el) Tav.el.remove();
   Tav.el = null;
   try { setSpeed(Tav.prevSpeed || 1); } catch (e) { /* без паузы */ }
+  if (runMeta().hurtUntil > Date.now()) { try { toast('Герой отлёживается в таверне — набирается сил'); } catch (e) { /* без тоста */ } }
 }
 
 function tavernRender() {
@@ -143,9 +152,10 @@ function tavernRender() {
   const hurt = m.hurtUntil > Date.now();
   cards.innerHTML = RUN_DIFFS.map(d => {
     const locked = d.need === 'win' && !m.wins;
+    const lvl = d.id === 'curse' ? Math.max(1, Math.min(5, m.wins)) : 0;
     const best = d.weekly ? (m.weekBest[wk] || 0) : 0;
     return `<button data-d="${d.id}" ${locked ? 'disabled' : ''} style="${btn};width:218px;text-align:left;${locked ? 'opacity:.45;cursor:default' : ''}">
-      <span style="display:block;width:100%;text-align:left"><b style="font-size:16px;display:block">${d.name}${locked ? ' 🔒' : ''}</b><small style="display:block">${locked ? 'Победите Малгора, чтобы открыть' : d.desc}</small>${best ? `<small style="display:block">Рекорд недели: ${best}</small>` : ''}</span></button>`;
+      <span style="display:block;width:100%;text-align:left"><b style="font-size:16px;display:block">${d.name}${lvl ? ' ' + lvl : ''}${locked ? ' 🔒' : ''}</b><small style="display:block">${locked ? 'Победите Малгора, чтобы открыть' : d.desc}</small>${best ? `<small style="display:block">Рекорд недели: ${best}</small>` : ''}</span></button>`;
   }).join('');
   cards.querySelectorAll('button[data-d]').forEach(b => {
     b.onmouseenter = () => { const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (d && !b.disabled) tavernSay(d.say); };
@@ -155,10 +165,12 @@ function tavernRender() {
   Tav.el.querySelector('#tav-bar').innerHTML =
     `<button id="tb-cloak" style="${btn}">Переодеться: плащ «${RUN_CLOAKS[m.cloak % RUN_CLOAKS.length][0]}»</button>
      <button id="tb-pal" style="${btn}">Напарник: ${pal[0]}</button>
+     <button id="tb-shop" style="${btn}">Мастерская деда</button>
      <button id="tb-arena" style="${btn};opacity:.6">Арена (скоро)</button>
      <span style="align-self:center;font-size:13px;opacity:.85">💎 ${m.stones} &nbsp; ◆ ${m.shards} &nbsp; Забегов: ${m.runs} · Побед: ${m.wins}${hurt ? ' · герой отлёживается' : ''}</span>`;
   Tav.el.querySelector('#tb-cloak').onclick = () => { const mm = runMeta(); mm.cloak = (mm.cloak + 1) % RUN_CLOAKS.length; runMetaSave(mm); tavernRender(); tavernSay('Красный тебе шёл, но вкус — дело хозяйское.'); };
   Tav.el.querySelector('#tb-pal').onclick = () => { const ks = Object.keys(RUN_PALS), mm = runMeta(); mm.pal = ks[(ks.indexOf(mm.pal) + 1) % ks.length]; runMetaSave(mm); tavernRender(); tavernSay(RUN_PALS[mm.pal][1] + '.'); };
+  Tav.el.querySelector('#tb-shop').onclick = tavernShop;
   Tav.el.querySelector('#tb-arena').onclick = () => tavernSay('Арена? Там пока делают трибуны. Приходи позже.');
 }
 
@@ -245,6 +257,40 @@ function tavernDraw(c, t) {
   // виньетка
   const v = c.createRadialGradient(160, 90, 60, 160, 90, 200); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.55)');
   c.fillStyle = v; c.fillRect(0, 0, 320, 180);
+}
+
+
+// ---------- Мастерская деда: траты камней на мету ----------
+const RUN_SHOP = [
+  { id: 'hp', name: 'Крепкая кожа', desc: '+10 здоровья за уровень', max: 5, cost: l => 6 + l * 4, kind: 'up' },
+  { id: 'dmg', name: 'Точильный камень', desc: '+8% урона за уровень', max: 5, cost: l => 8 + l * 5, kind: 'up' },
+  { id: 'choice', name: 'Зоркий глаз', desc: 'Четыре награды вместо трёх после этажа', max: 1, cost: () => 30, kind: 'up' },
+  { id: 'xbow', name: 'Арбалет', desc: 'Стартовое оружие: бьёт издали', cost: () => 15, kind: 'weapon' },
+  { id: 'staff', name: 'Посох', desc: 'Стартовое оружие: урон по площади', cost: () => 25, kind: 'weapon' },
+];
+function tavernShop() {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:absolute;inset:0;z-index:5;background:#000b;display:flex;align-items:center;justify-content:center;padding:8px;overflow:auto';
+  Tav.el.appendChild(box);
+  const draw = () => {
+    const m = runMeta(), U = m.ups || {}, W = m.weapons || {};
+    const row = it => {
+      let state, can = false, act;
+      if (it.kind === 'up') { const l = U[it.id] | 0; state = l >= it.max ? 'макс.' : `${it.cost(l)} 💎`; can = l < it.max && m.stones >= it.cost(l); act = `ur('${it.id}')`; return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0"><span><b>${it.name}</b> ${l}/${it.max}<br><small>${it.desc}</small></span><button ${can ? '' : 'disabled'} onclick="${act}" style="padding:5px 10px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;${can ? 'cursor:pointer' : 'opacity:.5'}">${state}</button></div>`; }
+      const own = W[it.id], cur = m.weapon === it.id;
+      state = cur ? 'в руках' : own ? 'взять' : `${it.cost()} 💎`; can = !cur && (own || m.stones >= it.cost());
+      return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0"><span><b>${it.name}</b><br><small>${it.desc}</small></span><button ${can ? '' : 'disabled'} onclick="uw('${it.id}')" style="padding:5px 10px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;${can ? 'cursor:pointer' : 'opacity:.5'}">${state}</button></div>`;
+    };
+    box.innerHTML = `<div style="background:#2a1a0e;border:2px solid #b8902c;border-radius:8px;padding:14px;max-width:420px;width:100%;color:#f1dfb0">
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px">Мастерская деда <span style="float:right;font-size:14px">💎 ${m.stones}</span></div>
+      ${RUN_SHOP.map(row).join('')}
+      <div style="margin:6px 0"><button onclick="uw('pick')" ${m.weapon === 'pick' || !m.weapon ? 'disabled' : ''} style="padding:5px 10px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px">Вернуть кирку</button></div>
+      <div style="text-align:right"><button id="shop-x" style="padding:6px 14px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;cursor:pointer">Закрыть</button></div></div>`;
+    box.querySelector('#shop-x').onclick = () => { box.remove(); tavernRender(); };
+  };
+  window.ur = id => { const m = runMeta(), it = RUN_SHOP.find(x => x.id === id), U = m.ups = m.ups || {}, l = U[id] | 0; if (l >= it.max || m.stones < it.cost(l)) return; m.stones -= it.cost(l); U[id] = l + 1; runMetaSave(m); RSfx.play('pick'); draw(); };
+  window.uw = id => { const m = runMeta(), W = m.weapons = m.weapons || {}; const it = RUN_SHOP.find(x => x.id === id); if (id !== 'pick' && !W[id]) { if (m.stones < it.cost()) return; m.stones -= it.cost(); W[id] = true; } m.weapon = id; runMetaSave(m); RSfx.play('pick'); draw(); };
+  draw();
 }
 
 // ---------- клик по зданию в деревне ----------

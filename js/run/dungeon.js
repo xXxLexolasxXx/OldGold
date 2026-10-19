@@ -18,6 +18,10 @@ function runStart(diff) {
     hero: { x: 0, y: 0, hp: 100, max: 100, spd: 62, dmg: 12, cd: 0, rate: 0.55, dash: 0, dashCd: 0, slamCd: 0, face: 1, hit: 0, inv: 0, gold: 0 },
     kills: 0, ups: [],
   });
+  const U = meta.ups || {};
+  Run.hero.max = Run.hero.hp = 100 + 10 * (U.hp | 0); Run.hero.dmg = 12 * (1 + 0.08 * (U.dmg | 0));
+  Run.weapon = meta.weapon || 'pick'; Run.choices = 3 + ((U.choice | 0) ? 1 : 0); Run.pal = null; Run.props = [];
+  if (diff.id === 'curse') { const lvl = Math.max(1, Math.min(5, meta.wins)); Run.diff = Object.assign({}, diff, { mult: 1.3 + 0.2 * lvl, lvl, name: 'Проклятие ' + lvl }); }
   try { setSpeed(0); } catch (e) { /* без паузы */ }
   const el = document.createElement('div');
   el.id = 'run-ui';
@@ -78,7 +82,20 @@ function runFloorBuild() {
   R.map = map; R.rooms = rooms; R.rng = rng; R.boss = boss;
   const s = rooms[0], e = rooms[rooms.length - 1];
   R.hero.x = (s.cx + 0.5) * RT; R.hero.y = (s.cy + 0.5) * RT;
-  R.pal = { x: R.hero.x - 14, y: R.hero.y, hp: 60, max: 60, cd: 0, kind: R.meta.pal, hit: 0 };
+  if (!R.pal) R.pal = { x: R.hero.x - 14, y: R.hero.y, hp: 60, max: 60, cd: 0, kind: R.meta.pal, hit: 0 };
+  else { R.pal.x = R.hero.x - 14; R.pal.y = R.hero.y; }
+  R.props = []; R.rescue = null;
+  // комнаты-события: сундук, кузнец, шипы; на середине пути — закованный напарник, если свой пал
+  for (let k = 1; k < rooms.length - (boss ? 1 : 0); k++) {
+    const r = rooms[k], roll = rng();
+    if (roll < 0.3) R.props.push({ k: 'chest', x: (r.cx + 0.5) * RT, y: (r.cy + 0.5) * RT, used: false });
+    else if (roll < 0.45 && R.floor >= 1 && !R.props.some(p => p.k === 'smith')) R.props.push({ k: 'smith', x: (r.cx + 0.5) * RT, y: (r.cy + 0.5) * RT, used: false });
+    else if (roll < 0.7) for (let q = 0; q < 4; q++) R.props.push({ k: 'spikes', x: (r.x + 1.5 + rng() * (r.w - 3)) * RT, y: (r.y + 1.5 + rng() * (r.h - 3)) * RT, ph: rng() * 3 });
+  }
+  if (R.floor === 2 && R.pal.dead && rooms.length > 2) {
+    const r = rooms[(rooms.length / 2) | 0], used = [R.meta.pal, R.pal.kind], kinds = Object.keys(RUN_PALS).filter(x => !used.includes(x));
+    R.rescue = { x: (r.cx + 0.5) * RT, y: (r.cy + 0.5) * RT, kind: kinds[(rng() * kinds.length) | 0] || 'archer' };
+  }
   R.stairs = { x: (e.cx + 0.5) * RT, y: (e.cy + 0.5) * RT, open: false };
   R.enemies = []; R.shots = []; R.pops = []; R.drops = [];
   const m = R.diff.mult * (1 + R.floor * 0.28);
@@ -120,7 +137,7 @@ function runHurt(e, d) {
   if (e.hp <= 0) {
     RSfx.play(e.boss ? 'boom' : 'kill'); RSfx.play('coin');
     Run.kills++; Run.hero.gold += e.boss ? 40 : 2 + (Math.random() * 3 | 0);
-    if (e.boss) runEnd(true);
+    if (e.boss) { R.msg = 'Малгор: «Наконец-то… тишина.»'; R.msgT = 3; runEnd(true); }
     else if (Math.random() < 0.12) Run.drops.push({ x: e.x, y: e.y, heal: 20 });
   }
 }
@@ -145,8 +162,13 @@ function runUpdate(dt) {
   h.moving = Math.hypot(ix, iy) > 0.1; if (h.moving) { h.stepT = (h.stepT || 0) - dt; if (h.stepT <= 0) { h.stepT = 0.28; RSfx.play('step', 0.7); } }
   runMove(h, ix * sp, iy * sp);
   // автоатака ближайшего
-  const tgt = runNearest(h, R.enemies, 26);
-  if (tgt && h.cd <= 0) { h.cd = h.rate; h.swing = 0.15; runHurt(tgt, h.dmg); }
+  const wp = R.weapon, tgt = runNearest(h, R.enemies, wp === 'xbow' ? 85 : wp === 'staff' ? 50 : 26);
+  if (tgt && h.cd <= 0) {
+    h.cd = wp === 'xbow' ? h.rate * 1.25 : h.rate; h.swing = 0.15;
+    if (wp === 'xbow') { const dd = Math.hypot(tgt.x - h.x, tgt.y - h.y) || 1; RSfx.play('shoot'); R.shots.push({ x: h.x, y: h.y - 4, vx: (tgt.x - h.x) / dd * 190, vy: (tgt.y - h.y) / dd * 190, own: 'p', dmg: h.dmg * 0.9, t: 0.8, r: 0 }); }
+    else if (wp === 'staff') { RSfx.play('bolt'); R.flash = Math.max(R.flash, 0.03); for (const z of R.enemies) if (z.hp > 0 && Math.hypot(z.x - tgt.x, z.y - tgt.y) < 22) runHurt(z, h.dmg * (z === tgt ? 0.8 : 0.5)); }
+    else runHurt(tgt, h.dmg);
+  }
   h.swing = Math.max(0, (h.swing || 0) - dt);
   // напарник
   const p = R.pal; p.cd -= dt; p.hit -= dt;
@@ -166,7 +188,7 @@ function runUpdate(dt) {
     if (e.hp <= 0) continue;
     alive++; e.hit -= dt; e.cd -= dt;
     const d = Math.hypot(h.x - e.x, h.y - e.y);
-    if (!e.awake && d < 90) { e.awake = true; RSfx.play(e.boss ? 'boss' : e.kind === 'raven' ? 'caw' : 'rattle', 0.6); }
+    if (!e.awake && d < 90) { e.awake = true; RSfx.play(e.boss ? 'boss' : e.kind === 'raven' ? 'caw' : 'rattle', 0.6); if (e.boss) { R.msg = 'Малгор: «Шум. Опять шум.»'; R.msgT = 2.6; } }
     if (!e.awake) continue;
     if (e.boss) {
       const ph = e.hp > e.max * 0.66 ? 0 : e.hp > e.max * 0.33 ? 1 : 2;
@@ -199,6 +221,21 @@ function runUpdate(dt) {
   }
   for (let i = R.drops.length - 1; i >= 0; i--) { const d = R.drops[i]; if (Math.hypot(d.x - h.x, d.y - h.y) < 9) { h.hp = Math.min(h.max, h.hp + d.heal); RSfx.play('heal'); runPop(h.x, h.y - 12, '+' + d.heal, '#8aff9a'); R.drops.splice(i, 1); } }
   for (let i = R.pops.length - 1; i >= 0; i--) { R.pops[i].t -= dt; R.pops[i].y -= 14 * dt; if (R.pops[i].t <= 0) R.pops.splice(i, 1); }
+  for (const q of R.props) {
+    const dd = Math.hypot(h.x - q.x, h.y - q.y);
+    if (q.k === 'chest' && !q.used && dd < 10) { q.used = true; const g = 12 + ((R.rng() * 18) | 0); h.gold += g; RSfx.play('coin'); runPop(q.x, q.y - 12, '+' + g + ' зол.', '#ffd84a'); if (R.rng() < 0.4) R.drops.push({ x: q.x + 8, y: q.y, heal: 25 }); }
+    else if (q.k === 'smith' && dd < 12) {
+      if (!q.used && h.gold >= 20) { q.used = true; h.gold -= 20; h.dmg *= 1.15; RSfx.play('pick'); runPop(q.x, q.y - 14, 'Заточка! +15% урона', '#8ad8ff'); }
+      else if (!q.used && R.t - (q.say || -9) > 2.5) { q.say = R.t; runPop(q.x, q.y - 14, 'Кузнец: 20 золота', '#f1dfb0'); }
+    } else if (q.k === 'spikes') {
+      const on = ((R.t + q.ph) % 3) > 2.2; q.on = on;
+      if (on && dd < 6) runHurtHero(8 * R.diff.mult);
+    }
+  }
+  if (R.rescue && Math.hypot(h.x - R.rescue.x, h.y - R.rescue.y) < 11) {
+    const k = R.rescue.kind; R.pal = { x: R.rescue.x, y: R.rescue.y, hp: 60, max: 60, cd: 0, kind: k, hit: 0 };
+    R.meta.pal2 = k; RSfx.play('heal'); R.msg = 'Новый напарник: ' + RUN_PALS[k][0]; R.msgT = 2.4; R.rescue = null;
+  }
   // лестница
   if (!R.stairs.open && !alive && !R.boss) { R.stairs.open = true; RSfx.play('stairs'); R.msg = 'Лестница открыта'; R.msgT = 1.8; }
   if (R.stairs.open && Math.hypot(h.x - R.stairs.x, h.y - R.stairs.y) < 10) runUpgrade();
@@ -226,10 +263,10 @@ const RUN_UPS = [
 function runUpgrade() {
   const R = Run;
   if (R.floor + 1 >= R.diff.floors) { runEnd(true); return; }
-  const opts = RUN_UPS.slice().sort(() => R.rng() - 0.5).slice(0, 3), box = R.el.querySelector('#run-pick');
+  const opts = RUN_UPS.slice().sort(() => R.rng() - 0.5).slice(0, R.choices || 3), box = R.el.querySelector('#run-pick');
   R.pick = true; box.style.display = 'flex';
   box.innerHTML = '<div style="width:100%;text-align:center;color:#f1dfb0;font:700 22px sans-serif;margin-bottom:6px">Выберите награду</div>' + opts.map((u, i) =>
-    `<button data-i="${i}" style="width:190px;padding:14px 10px;background:#3a2410;color:#f1dfb0;border:2px solid #b8902c;border-radius:8px;cursor:pointer"><b style="font-size:16px">${u.n}</b><br><small>${u.d}</small></button>`).join('');
+    `<button data-i="${i}" style="width:min(190px,44vw);padding:14px 10px;background:#3a2410;color:#f1dfb0;border:2px solid #b8902c;border-radius:8px;cursor:pointer"><b style="font-size:16px">${u.n}</b><br><small>${u.d}</small></button>`).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => {
     RSfx.play('pick'); opts[+b.dataset.i].f(R.hero); R.ups.push(opts[+b.dataset.i].n);
     R.pick = null; box.style.display = 'none'; R.floor++; runFloorBuild();
@@ -282,6 +319,17 @@ function runDraw() {
   // лестница
   const st = R.stairs;
   if (st.x > 0) { c.fillStyle = R.stairs.open ? '#2a6a8a' : '#2a2a34'; c.fillRect(st.x - 7, st.y - 7, 14, 14); c.fillStyle = R.stairs.open ? '#7ad8ff' : '#444'; for (let k = 0; k < 4; k++) c.fillRect(st.x - 6 + k, st.y - 6 + k * 3, 12 - k * 2, 2); }
+  for (const q of R.props) {
+    const x = Math.round(q.x), y = Math.round(q.y);
+    if (q.k === 'chest') { c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(x - 6, y + 3, 12, 3); c.fillStyle = q.used ? '#4a3220' : '#8a5a2a'; c.fillRect(x - 6, y - 4, 12, 8); c.fillStyle = q.used ? '#3a2a1a' : '#a8702e'; c.fillRect(x - 6, y - 6, 12, 3); c.fillStyle = '#d8b050'; c.fillRect(x - 6, y - 1, 12, 1); c.fillRect(x - 1, y - 2, 2, 3); if (!q.used) { c.fillStyle = '#ffe680'; c.fillRect(x + 2, y - 8 + Math.sin(R.t * 4) , 1, 2); } }
+    else if (q.k === 'smith') { c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(x - 7, y + 3, 14, 3); c.fillStyle = '#3a3a44'; c.fillRect(x - 6, y - 2, 12, 4); c.fillRect(x - 3, y + 2, 6, 3); c.fillStyle = '#6a6a78'; c.fillRect(x - 6, y - 3, 12, 2); c.fillRect(x + 5, y - 2, 3, 1); c.fillStyle = q.used ? '#6a6a78' : '#ffb43c'; c.fillRect(x - 2, y - 5, 4, 2); }
+    else if (q.k === 'spikes') { c.fillStyle = '#2a2234'; c.fillRect(x - 5, y - 2, 10, 5); c.fillStyle = q.on ? '#d8d0c0' : '#4a4258'; for (let k = -1; k <= 1; k++) c.fillRect(x + k * 3 - 1, q.on ? y - 5 : y - 2, 2, q.on ? 6 : 2); }
+  }
+  if (R.rescue) {
+    const q = R.rescue; runDrawDwarf(c, q.x, q.y, '#6a6a70', 1, false, true, false, q.kind);
+    c.fillStyle = '#9a9aa8'; c.fillRect(q.x - 6, q.y - 2, 12, 1); c.fillRect(q.x - 6, q.y + 1, 12, 1);
+    c.font = 'bold 7px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#f1dfb0'; c.fillText('Спаси меня!', q.x, q.y - 20 + Math.sin(R.t * 3));
+  }
   for (const d of R.drops) { c.fillStyle = '#c8402a'; c.fillRect(d.x - 3, d.y - 3, 6, 6); c.fillStyle = '#ffd0c0'; c.fillRect(d.x - 1, d.y - 2, 2, 4); }
   // сущности по глубине
   const ents = [];
