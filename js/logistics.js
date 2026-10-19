@@ -69,6 +69,7 @@ function pickCarrier(idle, x, y, g, amount) {
   const ok = idle.filter(u => canCarry(u, g));
   if (!ok.length) return null;
   const pref = amount >= 3 ? ['carter', 'goat', 'serf'] : amount >= 2 ? ['goat', 'serf', 'carter'] : ['serf', 'goat', 'carter'];
+  if (Game.prio) pref.sort((a, b) => prioLv('jobs', prioJobKey(b)) - prioLv('jobs', prioJobKey(a)));   // «Высокий» перевозчик — первым (порядок при равных не меняется)
   for (const t of pref) {
     let list = ok.filter(u => u.type === t);
     if (!list.length) continue;
@@ -89,7 +90,7 @@ const FOOD_CHAIN = new Set(['wheat', 'flour', 'bread', 'sausage', 'pig', 'hay', 
 
 function dispatchSerfs() {
   updateRoadComps();
-  const idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk);
+  const idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk && prioJobLv(u) !== 0);
   if (!idleAll.length) return;
   // свободные перевозчики по сетям
   const idleBy = new Map();
@@ -120,10 +121,11 @@ function dispatchSerfs() {
   const reqs = [];
   for (const [d, comp] of compOf) {
     if (!comp || !idleBy.has(comp)) continue;
+    if (prioBlocked(d)) continue;      // адресат выключен во вкладке «Приоритеты»
     for (const g of GOOD_KEYS) {
       const n = d.demand(g);
       // еда — в первую очередь: голодная деревня встаёт целиком
-      if (n > 0) reqs.push({ d, g, n, comp, pri: d.upg ? 0 : FOOD_CHAIN.has(g) && FOOD_DEST.has(d.type) && d.state === 'done' ? (d.type === 'inn' ? -2 : -1) : d.isRoad ? 2 : (d.state !== 'done' ? 0 : 1), r: Math.random() });
+      if (n > 0) reqs.push({ d, g, n, comp, pri: (d.upg ? 0 : FOOD_CHAIN.has(g) && FOOD_DEST.has(d.type) && d.state === 'done' ? (d.type === 'inn' ? -2 : -1) : d.isRoad ? 2 : (d.state !== 'done' ? 0 : 1)) - prioScore(d), r: Math.random() });
     }
   }
   reqs.sort((a, b) => a.pri - b.pri || a.r - b.r);
@@ -199,7 +201,7 @@ function dispatchBuilders() {
   // на перерыве (перекур, сон, испуг) не трогаем: иначе proc обнуляется, а brk остаётся — гном до конца стройки
   // «непрерываем» (не ест, не пугается, не ходит на праздник), клетка перекура занята, а после стройки он
   // продолжает прерванное перекуром дело, как будто ничего не было
-  const idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead && !u.brk);
+  const idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead && !u.brk && prioJobLv(u) !== 0);
   dispatchRepairs(idle);
   if (!idle.length) return;
   const sites = [
@@ -210,7 +212,8 @@ function dispatchBuilders() {
     ...Game.buildings.filter(b => b.upg && !b.upg.builder),
     // дорогу можно копать сразу, а мостить — когда камень на месте или в пути
     ...[...Game.roadSites.values()].filter(s => !s.builder && (s.dug < 1 || s.stock.stone + s.incoming.stone > 0)),
-  ];
+  ].filter(s => !prioBlocked(s));
+  if (Game.prio) sites.sort((a, b) => prioScore(b) - prioScore(a));      // «Высокий» приоритет — первым в очереди на работяг
   for (const s of sites) {
     const u = takeNearest(idle, s.doorX, s.doorY);
     if (!u) return;
@@ -220,7 +223,7 @@ function dispatchBuilders() {
     u.proc = null; u.action = null; u.anim = null;
   }
   // оставшиеся без дела работяги вскапывают заложенные поля (бесплатно)
-  if (idle.length && Game.fieldPlans && Game.fieldPlans.size) {
+  if (idle.length && Game.fieldPlans && Game.fieldPlans.size && prioLv('tasks', 'food') !== 0) {
     for (const i of [...Game.fieldPlans]) {
       const o = World.obj[i];
       if (!o || o.t !== 'field' || !o.plan) { Game.fieldPlans.delete(i); continue; }
@@ -237,7 +240,7 @@ function dispatchBuilders() {
   // ещё свободные — помогают фермерам убирать созревшие поля
   if (idle.length) {
     for (const b of Game.buildings) {
-      if (b.state !== 'done' || !idle.length || !b.def.crops) continue;
+      if (b.state !== 'done' || !idle.length || !b.def.crops || prioOff(b)) continue;
       for (const f of farmFields(b)) {
         if (f.o.g < 1 || f.o.res || outFull(b, f.o.crop)) continue;
 
@@ -273,8 +276,10 @@ function dispatchRepairs(idleBuilders) {
 }
 
 function dispatchWorkers() {
-  for (const b of Game.buildings) {
+  const bs = Game.prio ? [...Game.buildings].sort((a, b) => prioScore(b) - prioScore(a)) : Game.buildings;   // «Высокий» цех получает свободного гнома первым
+  for (const b of bs) {
     if (b.state !== 'done' || !b.def.worker || (b.worker && !b.worker.dead && b.worker.home === b)) continue;
+    if (prioOff(b)) continue;      // выключен во вкладке «Приоритеты» — нового рабочего не ставим
     b.worker = null;
     // у здания «потерялась» запись о работнике, а сам гном за ним числится — возвращаем запись, а не ищем замену
     const mine = Game.units.find(u => u.home === b && !u.dead && !u.teamOf && u.type !== 'hero');

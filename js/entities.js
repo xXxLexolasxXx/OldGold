@@ -114,7 +114,7 @@ class Building {
   problem() {
     if (this.selfBuild) return null;
     if (this.state !== 'done') return this.roadLinked() ? null : 'noroad';
-    if (this.paused) return 'paused';
+    if (this.paused || prioOff(this)) return 'paused';
     if (this.dmg >= 0.5) return 'damaged';                 // повреждено нечистью — пока не починят, не работает
     if (!this.isStore() && !this.roadLinked()) return 'noroad';
     if (this.def.worker && !(this.worker && this.worker.home === this)) return 'noworker';
@@ -163,7 +163,7 @@ class Building {
     if (this.state !== 'done') return;
     if (this.upg) { this.working = false; return; }          // идёт достройка — производство стоит
     if (this.def.auto) {
-      if (!this.autoJob && !this.paused) {
+      if (!this.autoJob && !this.paused && !prioOff(this)) {
         const r = pickRecipe(this);
         if (r) { recipeConsume(this, r); this.autoJob = { r, t: r.time }; }
       }
@@ -645,7 +645,8 @@ class Unit {
         // к широким воротам — в свободную или менее загруженную створку
         if (!a.gate) {
           a.gate = true;
-          const gb = buildingAtDoor(a.walk[0], a.walk[1]);
+          // выходящий из склада идёт «на свою клетку» — створку не переназначаем, иначе он выходил через другие ворота
+          const gb = a.walk[0] === sx && a.walk[1] === sy ? null : buildingAtDoor(a.walk[0], a.walk[1]);
           if (gb && gb.door2) a.walk = pickGate(gb, this.id);
         }
         a.path = findPath(sx, sy, a.walk[0], a.walk[1], onRoad, courier ? this.id : 0);
@@ -656,7 +657,7 @@ class Unit {
       if (a.i >= a.path.length) { if (courier) this.releaseOcc(); return true; }
       const [px, py] = a.path[a.i];
       const ni = idx(px, py);
-      if (courier && World.road[ni] && this.resT !== ni && !a.squeeze) {
+      if (courier && World.road[ni] && this.resT !== ni && !a.squeeze && !(World.obj[ni] && World.obj[ni].t === 'hop')) {   // на классиках проходят сквозь друг друга
         const o = World.occ[ni];
         if (o && o !== this.id) {
           a.block += dt;

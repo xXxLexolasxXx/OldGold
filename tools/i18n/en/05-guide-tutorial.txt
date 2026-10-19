@@ -1,0 +1,273 @@
+##### js/guide.js
+The construction site has no road to the storehouse — nobody can bring materials.
+Press "Road" (R) and drag it from the storehouse to the building's entrance.
+The construction site is waiting for a free builder.
+Train builders at the school ("Gnomes" tab). The busy ones will come when they're done.
+Deliveries are closed: haulers bring nothing here.
+Press "Deliveries closed" in the building window (key B) to open them.
+The building is paused — you chose that yourself.
+The ⏵ button in the building window, or the P key.
+The entrance isn't connected to the storehouse by road. Haulers don't walk on grass, they have principles.
+Press "Road" (R) and drag it from the storehouse to this building's entrance.
+Fiends damaged the building: until it's repaired, it doesn't work.
+A free builder is needed — they'll fix it themselves. Better yet, another one from the school.
+No worker: a {0} is needed.
+Open the "Gnomes" tab or the school and press "Train". Training costs 1 gold.
+Nowhere to put the finished goods: the output is jammed, the workshop stopped.
+Check the road to the storehouse, whether the storehouse is closed to this good ("Storehouse" tab), and build a consumer or a second storehouse.
+Build a storehouse.
+Gnomes carry trash from the bins themselves — just wait.
+Deliveries are closed — open them (key B).
+The storehouse refuses "{0}" ("Storehouse" tab) — allow it.
+The storehouse has "{0}" — it's being delivered, wait. If it takes long: check the road and free haulers.
+It produces: {0} — check whether it is stuck itself (the icon above it).
+Build: {0}.
+There's nowhere to get this yet.
+Missing: {0}.
+What building is this?
+Balance per minute
+Counting… need half a minute of game time.
+Nothing is being mined or spent yet. Calm, smooth, poverty.
+waiting: {0}
+low
++ produced, − spent (per minute), on the right — in the storehouse. Red means shortage. Click a row for help.
+Everything gets carried here. Whatever lands here is lost… I mean, saved.
+The only school where "graduation" means "go to work".
+Gnomes come for bread and leave for adventure. And for seconds.
+Trash is burned, ash goes to the fields. The circle of gnome life.
+The forest is big, the woodcutter persistent. The forest isn't complaining yet. Out loud.
+Turns logs into planks, and silence into screeching.
+Stone never runs out. Gnomes' patience does.
+Wheat grows by itself. No, not by itself, but you don't go there.
+Spins while there's grain. After that it spins too — for show.
+Bread is the basis of everything. Including mood.
+Beer raises morale. And the chance of falling asleep on the road.
+Pigs eat hay and think about nothing. Enviable.
+Here a pig becomes sausage. Sad, tasty.
+They teach how to hit the enemy. And sometimes not to hit your own.
+Lots of stars, even more mana bills.
+Gold loves those who dig. And those who guard.
+Works by itself. If only everyone did.
+The base of everything. Without it the rest is just a pile of logs.
+Mining: heavy, dusty, but honest.
+Whoever feeds the gnomes is in charge.
+The more complex the chain, the more places for it to stall.
+Mana is pricey, but pretty.
+Professional brawlers. At your expense.
+They make planks, firewood and a reason to argue with the forest.
+Without planks gnomes only build plans.
+Everything stands on stone — roads, storehouses and pride.
+Grain: bread, beer and feed come from it. The universal soldier.
+A by-product of harvest. Pigs are thrilled.
+The currency of joy. Gets spent faster than it's brewed.
+The main food. No bread — a riot starts, quiet and hungry.
+A pig that survived a promotion.
+Needed for training and guilds. Drains away like water.
+Magic in jars. Keep away from gnomes.
+Heavy, expensive, for serious business.
+Carried off to the bonfire. Somebody has to.
+Fertilizer for fields. From nothing, a harvest.
+Carries goods along roads. At tier 2–3 carries 2–3 items and fetches building materials itself. Has no respect for grass.
+The main engine of the economy. Gratitude is not in the staffing table.
+Builds and digs roads. There are few of them — construction sites wait for exactly them. Trains at school for gold.
+Constantly hears: "When will it be ready?" Answers with a hammer blow.
+Your fighter and jack of all trades: builds, repairs, carries food, defends against fiends. Learns a class from a guildmaster. If killed — respawns at the big bonfire.
+Your favourite. The gnomes are jealous.
+Ghost
+Comes at night; the more losses, the more ghosts. Scares gnomes. Doesn't appear near the big bonfire. Gnomes with a lantern in hand are braver.
+A former resident. Doesn't forget a grudge.
+Skeleton
+A night fiend weaker than a ghost, but armed. Keep warriors at the village borders and drown them in bonfires.
+They died — and still go to work. An example for employees.
+Walking tree
+At night trees come alive and wander near their spot. A gnome who sees one drops the load and runs to hide or to chop.
+The woodcutter once started — the forest decided to finish.
+Reaper
+Takes fallen gnomes. Better not to cross paths.
+That's the job. No vacations.
+Fairies, leshy, mimics
+Neutral forest dwellers: they may help (healing, pollen, maps) or set you up. Read what they offer.
+Fairies are no gift. There's no free cheese, you know.
+Wild animals
+Wolves, owls, crows, boars. Wolves are dangerous at night and outside the village. Crows love shiny things — the gold in the storehouse too.
+Nature is in charge of trouble.
+Goat and carter
+A goat (pen) hauls 3 items, a horse with a cart (carter) — up to 5 at once. They speed up long-distance deliveries.
+Transport with character.
+Strange guests
+Goo, Lampskull, Sentinel, Ribbon, Shard Round-Dance: from night 5 they come in place of ordinary beasts. They look like nobody.
+What it is — nobody knows. The author doesn't either.
+Hero and combat
+Click a guild with the hero — they learn a class. Attack — Q. Click a recruit to select, the ground to set a post, an enemy to attack. Health bar on the left; the hero takes food from the tavern, mana from jars. If killed — respawns at the big bonfire.
+Not immortal, just persistent.
+Night and fiends
+A day: day → evening (darkens, lanterns) → foggy night → dawn. Every 5th night is longer. Near the big bonfire (radius 8 tiles) fiends don't come and it's bright. A fallen gnome = a broken lantern, and they get lost in the fog. Losses grow the number of ghosts and skeletons.
+Food and hunger
+A hungry gnome (fullness below 30%) goes to the tavern. No food — they faint and die. Chains: farm → mill → bakery (bread); hay → pigsty → slaughterhouse (sausage); wheat + hops → brewery.
+A hungry gnome is an angry gnome, but not for long.
+Roads and deliveries
+Haulers walk on roads only. If a building's entrance isn't connected to the storehouse, it stands idle. A road two tiles wide has two lanes. The "Deliveries" button in the building window forbids bringing goods there (B).
+A road from nowhere to nowhere isn't a road, it's landscape design.
+Tiers and upgrades
+Haulers and builders grow up to tier 3 (patches on caps). Buildings upgrade to tier 2: the "Upgrade" button in the building window — haulers bring the materials, and production stands still while it's being built.
+Everyone can grow. Except salaries.
+Controls: PC
+Map: right button / WASD, wheel zooms. To build: pick a building and click; Shift — several; T — rotate; R — road; Del — demolish; P — pause building; B — deliveries; [ ] — neighbouring; Space — pause; H — this help.
+More hotkeys than nerves.
+Controls: phone
+One finger pans the map, two zoom. Tap a building to select; with a building in hand the first tap shows the spot, the second (or ✓) places it; ↻ rotates. Draw roads with your finger. The tabs at the bottom open the sheet; ▦ is the minimap. Tap a building with a problem — the reason pops up.
+One finger, two complaints.
+Standing: {0}.{1}
+Works: {0}.
+Works on its own.
+from the depths
+Group: {0}.
+Makes: {0}.
+Needs: {0}.
+nowhere (a find or mined)
+for construction and trade
+Creatures
+Section
+Buildings
+Nights
+We don't know that. Either it doesn't exist or you made it up.
+Opened the help
+The first hungry one! Below 30% fullness a gnome heads to the tavern. No food — they'll fall, and then trouble. The chain: farm → mill → bakery.
+It's getting dark. Fiends come out at night, and a gnome who falls without a lantern gets lost in the fog. Stay near the big bonfire: within 8 tiles of it it's bright and safe.
+The first loss. Every gnome who dies returns at night as a ghost, and the more losses, the more fiends. Look after your folk and keep the bonfire going.
+A ghost! It scares gnomes and makes them drop their loads. Fiends don't appear near the big bonfire, and warriors and the hero will handle the rest.
+The first tier-2 building! The upgrade adds new recipes, but production stands still while it's being built. The building window tells what's new.
+An icon above a building means it has stalled. Tap (click) the building: the window shows the reason and what to do. All problems are collected in the "Estate" tab.
+Phone: one finger pans, two zoom, tap a building to select it, with a building in hand a tap shows the spot, the second places it. Draw roads with your finger.
+Hint: {0}
+##### js/tutorial.js
+Village
+Welcome to OldGold!
+You are the elder of the forest gnomes: you build, you feed, and you try not to lose anyone. The gnomes help — depending on mood.
+Look around:
+pan the map with a finger, zoom with two
+pan the map
+with the right mouse button
+or with the keys
+, mouse wheel zooms
+Starter kit
+Some things already stand (arrows on the map):
+storehouse
+— all the goods: logs, planks, stone, food, gold;
+school
+— trains workers for 1 gold, no exams and no expulsions;
+bonfire
+— burns trash, ash goes to the fields;
+tavern
+— food and ale. A hungry gnome grumbles and falls over.
+{0} the storehouse
+— the building window opens below with its stock.
+Tap
+Click
+Everything is built from
+planks and stone
+. Planks come from logs, and logs are felled by the woodcutter.
+Open the
+"Resources"
+section, pick
+and place
+near the forest
+{0}. Green frame — allowed, red — not allowed. Builders or the hero will finish it — more on them later.
+(tap a spot, then ✓)
+Lay a road
+Gnomes walk on roads only.
+There's a bit of road in front of the building's door — connect it to the road by the storehouse, otherwise construction and mining will wait forever.
+Press
+"Road"
+and {0} from a finished road to the arrow. A tile costs 1 stone.
+drag a finger
+drag with the mouse
+Quarry and sawmill
+Stone and planks:
+— by the grey cliffs.
+— wherever convenient.
+Both are in "Resources", and both
+connect with a road
+. Materials are brought by haulers (green caps), buildings are built by builders (maroon coats). Short on hands — the school will train more.
+Daily bread
+The tavern feeds, but someone has to feed the tavern. The chain:
+Farm → Mill → Bakery
+("Food" section), all connected by roads. The farm sows grass around it, leave it room.
+After that the menu unlocks by itself: finish a chain — a new section appears. They won't give you everything at once, no panic.
+Estate and log
+Clicking a building opens its window: worker, stock,
+"Deliveries open/closed"
+Icons above houses
+tell you what's missing: a road, a worker, materials.
+The
+"Estate"
+tab (the scroll) gathers all the problems,
+"Log"
+(the book) — all the events. Click a row to show the place on the map. Open either one.
+(key
+Night and fog
+Days pass on their own. Lanterns light in the evening, fog settles at night, gnomes trudge slower, and in the forest
+trees come alive
+, skeletons and ghosts roam.
+• Every gnome has a lantern.
+Fall — lantern broken
+, and the gnome is lost until someone with a light finds them.
+• By evening keep the tavern stocked with food and the roads lined with lanterns.
+• Every
+5th night
+is one and a half times longer and meaner. {0}
+Learn more
+From night 5 strange creatures appear: Goo, Lampskull and company. They're harmless, they just watch. Which is worse.
+Your hero
+— a gnome, the fastest and a jack of all trades. Grows along with the village, up to level 15.
+Select the hero:
+{0}. Then give them a job: {1} a
+tree
+stone
+building site
+or a ripe field. On empty ground they simply walk. When done they pull out a flask — and never get drunk.
+the portrait at bottom-left (◎ on the card jumps the camera to the hero)
+the portrait at bottom-left, the hero on the map, or the key
+tap
+click
+Combat and mana
+Fiends and beasts are the hero's job. They have
+health
+mana
+and spells:
+(from level 3),
+to base. Dash and Rally Cry are there too. Buttons are on the hero card.
+Attack order — click the enemy. Dying isn't the end of the world, but it's annoying. {0}
+Forest neutrals (fairies, leshy, boars, mossmen) don't pick fights unless provoked. Victory is a reward, defeat is a lesson. With the hero selected, click a gnome: they become a sidekick and help (click again to release). Chests in the forest can be mimics: open at your own risk.
+Guilds and classes
+Menu sections unlock in a chain: bread → beer → pigs → crafts → metal. When you reach the
+armory
+— it will unlock the
+of warriors, archers, rogues and mages.
+teaches the hero a class
+for gold, and recruits become a squad. A long road, but never dull. {0}
+Buildings have a tier 2: the "Upgrade" button in the building window. The stable gives a carter, the pen gives a goat. Both come in handy.
+Finale
+You're on your own!
+The main things: roads, bread, a non-empty storehouse, by night — light and the hero in place. The rest as you go.
+Good luck, elder! The gnomes believe in you. Well, some of them.
+Festival and Cleanup Day
+Festival — a button in the tavern: everyone dances, drinks, then suffers. Cleanup Day — the button at the top, once a day in the morning: the whole village picks up trash.
+Co-op
+Menu → Multiplayer: a shared village, quests and the Village Council. Friends help, and even hinder sometimes.
+Speed and help
+Pause and speed are at the top right. You can repeat this tutorial from the menu.
+Tutorial: started
+Tutorial: completed
+Tutorial 2: closed at step {0}
+Tutorial complete! You can repeat it from the menu
+The village applauds: tutorial complete!
+Tutorial 2: reached step {0}
+Tutorial 2: completed step {0}
+Tutorial · {0} of {1}{2}
+← Back
+complete the task or
+Start playing
+Next →
+Skip
+Tutorial not shown (already completed)

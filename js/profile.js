@@ -196,7 +196,7 @@ function profClose() { document.getElementById('prof-win').classList.add('hidden
 
 function slotLine(label, key, opts) {
   const m = saveMeta(key);
-  const info = m ? `${new Date(m.at).toLocaleString('ru-RU')} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'пусто';
+  const info = m ? `${new Date(m.at).toLocaleString(I18N.locale())} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'пусто';
   return `<div class="prof-slot${m ? '' : ' empty'}"><div class="ps-t"><b>${label}</b><small>${info}</small></div>` +
     `<div class="ps-b">${opts.save ? `<button data-pa="save" data-k="${key}">Сохранить</button>` : ''}` +
     `<button data-pa="load" data-k="${key}"${m ? '' : ' disabled'}>Загрузить</button>` +
@@ -223,7 +223,7 @@ function profRefresh() {
     h += '<div class="ach-list">';
     for (const a of ACHS) {
       const at = p.ach[a.id], hide = !at && a.secret;
-      h += `<div class="ach-row${at ? ' got' : ''}"><div class="ach-cup">${at ? '★' : '☆'}</div><div><b>${hide ? '??? Секретная ачивка' : esc(a.name)}</b><span>${hide ? 'Описание откроется, когда вы сделаете то, чего делать не стоило.' : esc(a.desc)}</span>${at ? `<small>${new Date(at).toLocaleDateString('ru-RU')}</small>` : ''}</div></div>`;
+      h += `<div class="ach-row${at ? ' got' : ''}"><div class="ach-cup">${at ? '★' : '☆'}</div><div><b>${hide ? '??? Секретная ачивка' : esc(a.name)}</b><span>${hide ? 'Описание откроется, когда вы сделаете то, чего делать не стоило.' : esc(a.desc)}</span>${at ? `<small>${new Date(at).toLocaleDateString(I18N.locale())}</small>` : ''}</div></div>`;
     }
     h += '</div>';
   } else {
