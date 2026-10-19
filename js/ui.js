@@ -248,6 +248,20 @@ function initDropdowns() {
   document.querySelectorAll('#dd-speed [data-speed]').forEach(b => b.addEventListener('click', () => closeAll()));
 }
 
+// Меню → «Выйти в главное меню»: одиночная игра сохраняется в автосохранение и открывается стартовый экран
+// («Продолжить» вернёт туда же); в общей деревне — просто выходим из неё.
+function exitToMainMenu() {
+  if (typeof Coop !== 'undefined' && Coop.on && typeof coopLeaveGame === 'function') {
+    if (confirm('Выйти из общей деревни в главное меню?')) coopLeaveGame();
+    return;
+  }
+  if (!confirm('Выйти в главное меню? Игра сохранится в автосохранение.')) return;
+  let ok = false;
+  try { ok = saveGame('auto'); } catch (e) { console.error(e); }
+  if (!ok && !confirm('Не удалось сохранить игру. Всё равно выйти?')) return;
+  location.reload();
+}
+
 function openTab(name) {
   UI.tab = name;
   document.querySelectorAll('#tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -388,6 +402,7 @@ function initUI() {
     if (m === 'lang') I18N.toggle();
     if (m === 'lang') I18N.toggle();
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
+    if (m === 'mainmenu') exitToMainMenu();
     updateUI(true);
   });
 
