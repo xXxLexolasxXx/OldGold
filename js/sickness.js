@@ -19,9 +19,9 @@ const SICK = {
   EPI: 0.15,           // доля чумных для эпидемии (не меньше 3 гномов)
 };
 const SICK_KINDS = {
-  cold: { t: 'Простуда', grow: 0.010, heal: 0.016, spread: 0.0025, mul: 0.22, mood: 4, col: '#8ac8e8' },
+  cold: { t: 'Простуда', grow: 0.010, heal: 0.016, spread: 0.0012, mul: 0.22, mood: 4, col: '#8ac8e8' },
   gut:  { t: 'Хворь живота', grow: 0.014, heal: 0.018, spread: 0, mul: 0.3, mood: 5, col: '#b8c048' },
-  pox:  { t: 'Чумная хворь', grow: 0.02, heal: 0.008, spread: 0.014, mul: 0.4, mood: 8, col: '#7ad04a', deadly: true },
+  pox:  { t: 'Чумная хворь', grow: 0.02, heal: 0.008, spread: 0.006, mul: 0.4, mood: 8, col: '#7ad04a', deadly: true },
 };
 
 // ---------- Товар, профессия, здание ----------
@@ -215,7 +215,8 @@ function sickCheck(u, now, units) {
   if (u.ward && !(u.brk && u.brk.kind === 'sick')) u.ward = null;   // поход в лазарет прервали (испуг, драка)
   if (u.ward) return;                                    // в лазарете тяжесть считает палата
   // тяжелеет от холода, голода и усталости, иначе понемногу проходит
-  const bad = (I.k === 'cold' && (rain || winter && !inside)) || u.food < HUNGRY || tired;
+  // тяжелеет от холода (простуда), пустого живота и сильной усталости; просто «голодноват» — уже не мешает поправляться
+  const bad = (I.k === 'cold' && (rain || winter && !inside)) || u.food <= 0.05 || (md && md.rest < 0.1);
   I.s += bad ? K.grow * (skCalm() ? 0.6 : 1) : -K.heal * (inside ? 1.4 : 1) * (skCalm() ? 1.5 : 1) * (skHerbs() ? 1.3 : 1);
   if (u.brk && u.brk.kind === 'sick') I.s -= K.heal * 1.5;
   I.s = Math.round(Math.min(1, I.s) * 1000) / 1000;
@@ -349,7 +350,7 @@ function sickDrawList(list, c, x0, y0, x1, y1) {
     if (!I || u.dead || u.inside || u.x < x0 - 1 || u.x > x1 + 1 || u.y < y0 - 1 || u.y > y1 + 2) continue;
     list.push([u.y + 0.06, () => {
       const K = SICK_KINDS[I.k] || SICK_KINDS.cold;
-      const x = Math.round(u.x * TILE), y = Math.round(u.y * TILE - 27 + Math.sin(Game.time * 2 + u.id) * 1);
+      const x = Math.round(u.x * TILE), y = Math.round(u.y * TILE - 27);   // без покачивания: на телефоне не рябит
       c.save();
       c.globalAlpha = 0.85;
       c.fillStyle = 'rgba(20,14,8,0.6)'; c.fillRect(x - 5, y - 5, 10, 10);
@@ -418,7 +419,7 @@ if (typeof step === 'function') {
 
 function medHTML() {
   const M = Game.med || { st: { sick: 0, cured: 0, died: 0, potions: 0, epi: 0 }, epi: false };
-  const sick = Game.units.filter(u => u.ill && !u.dead);
+  const sick = Game.units.filter(u => u.ill && !u.dead).sort((a, b) => a.id - b.id);   // порядок не скачет
   const inf = Game.buildings.filter(b => b.type === 'infirmary' && !b.removed);
   const potions = skStoreHave('potion') + inf.reduce((n, b) => n + (b.stock.potion || 0), 0);
   let h = '';
@@ -432,7 +433,7 @@ function medHTML() {
   if (sick.length) {
     h += '<div class="md-list">';
     for (const u of sick.slice(0, 12)) {
-      const K = SICK_KINDS[u.ill.k] || SICK_KINDS.cold, p = Math.round(u.ill.s * 100);
+      const K = SICK_KINDS[u.ill.k] || SICK_KINDS.cold, p = Math.min(100, Math.ceil(u.ill.s * 10) * 10);   // ступенями по 10%: полоска не дёргается
       h += `<div class="md-row" data-cn="med:go:${u.id}"><span class="md-dot" style="background:${K.col}"></span><span class="md-n">${UNIT_TYPES[u.type].name}</span><span class="md-k">${K.t}${u.ward ? ' · в лазарете' : ''}</span><span class="md-bar"><i style="width:${p}%;background:${p >= SICK.BED * 100 ? '#e06a4a' : K.col}"></i></span></div>`;
     }
     if (sick.length > 12) h += `<div class="muted small">и ещё ${sick.length - 12}…</div>`;

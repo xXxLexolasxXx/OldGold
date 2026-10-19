@@ -243,4 +243,8 @@ I18N.add('en', {
   "Тёща уже интересуется, где тут склад.": "The mother-in-law is already asking where the storehouse is.",
   "Летопись толстеет быстрее старосты.": "The chronicle grows fatter than the headman.",
   "Гномята не грустят: играют, едят и растут": "Gnomelings don't mope: they play, eat and grow",
+  "Деревне тесно: {0} из {1} жителей": "The village is crowded: {0} of {1} residents",
+  "Детей и так полон двор: {0} из {1}": "The yard is already full of children: {0} of {1}",
+  "Мало еды на складах для детей: нужно {0}": "Not enough food in the stores for children: {0} needed",
+  " — новое звание даст простор": " — a new rank will give more room",
 });

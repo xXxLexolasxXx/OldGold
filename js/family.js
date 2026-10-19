@@ -6,12 +6,14 @@
 //     Ребёнок наследует облик (колпак и бороду) одного из родителей и род отца. Гномята рождаются уже с бородой — так заведено.
 //   Старость: с 28 лет работает медленнее, после 32 может тихо уйти к предкам (не «потеря»: призраков не прибавит;
 //     на «Спокойном» старики не умирают). Горе в семье — родные тоскуют.
-// Рождаемость ограничена: не больше ребёнка в сутки, деревня не растёт выше FAM_CAP по званию, нужна еда на складах.
+// Рождаемость: не больше FAM_DAY детей в сутки (раз в 2 минуты), не больше 2 + взрослые/8 детей разом, нужна еда на складах;
+// к мягкому потолку жителей по званию (FAM_CAP) шанс тает до нуля.
 // Веха «жители» (goal.js) считает только взрослых. Хроника — Game.fam.chron, часть «Семьи» во вкладке «Совет»,
 // семья видна в карточке гнома. Сейв: s.units[k].fam (супруг — номером в списке), s.fam. Кооп: fam в пакете жителей.
 
 const FAM_ADULT = 3, FAM_OLD = 28, FAM_DIE = 32;   // лет
-const FAM_CAP = [18, 28, 40];                       // потолок жителей для рождений по званию
+const FAM_CAP = [24, 34, 48];                       // потолок жителей по званию: чем ближе к нему, тем реже рождения
+const FAM_DAY = 2;                                  // рождений за сутки, не больше
 const FAM_KIDS = 3;                                 // детей на пару
 const FAM_M = ['Брун', 'Гром', 'Дорн', 'Кетиль', 'Ульф', 'Хаград', 'Торбин', 'Гурни', 'Бальд', 'Ракк', 'Мурт', 'Сверр', 'Дробин', 'Хэмли', 'Тарк', 'Корм', 'Ойвин', 'Грюн', 'Бодо', 'Фаст'];
 const FAM_F = ['Гильда', 'Брунна', 'Дагни', 'Хельга', 'Ингрид', 'Руна', 'Сигна', 'Торва', 'Эльда', 'Марна', 'Бетта', 'Ведда', 'Ормхильд', 'Кайса', 'Тюра', 'Ловиса'];
@@ -77,17 +79,30 @@ function famTick(dt) {
     const a = free.filter(u => u.fam.sx === 'm'), b = free.filter(u => u.fam.sx === 'f');
     if (a.length && b.length) { G.wedDay = day; famWed(famPick(a), famPick(b)); }
   }
-  // рождение: не чаще раза в сутки, нужна еда и место
-  if (G.birthDay !== day && Math.random() < step / 150) {
-    const rank = Game.goal ? Math.min(2, Game.goal.rank | 0) : 0;
-    const food = famStore('bread') + famStore('sausage') + famStore('croissant') + famStore('steak');
-    if (people.length < FAM_CAP[rank] && food >= Math.max(6, people.length / 2)) {
-      const moms = people.filter(u => u.fam.sx === 'f' && u.type !== 'kid' && u.fam.a < FAM_OLD - 4 && u.fam.sp && (u.fam.kn || []).length < FAM_KIDS && !u.inside && !u.brk);
-      const mom = moms.length ? famPick(moms) : null;
-      const dad = mom && Game.unitMap.get(mom.fam.sp);
-      if (mom && dad && !dad.dead) { G.birthDay = day; famBirth(mom, dad); }
-    }
+  // рождение: не больше FAM_DAY в сутки и не чаще раза в 2 минуты; шанс тает у потолка жителей
+  if (G.birthDay !== day) { G.birthDay = day; G.birthN = 0; }
+  const room = famRoom(people);
+  if (room.ok && (G.birthN || 0) < FAM_DAY && Game.time >= (G.birthT || 0) && Math.random() < step / 90 * room.k) {
+    const moms = people.filter(u => u.fam.sx === 'f' && u.type !== 'kid' && u.fam.a < FAM_OLD - 4 && u.fam.sp && (u.fam.kn || []).length < FAM_KIDS && !u.inside && !u.brk);
+    const mom = moms.length ? famPick(moms) : null;
+    const dad = mom && Game.unitMap.get(mom.fam.sp);
+    if (mom && dad && !dad.dead) { G.birthN = (G.birthN || 0) + 1; G.birthT = Game.time + 120; famBirth(mom, dad); }
   }
+}
+
+// Есть ли место для ребёнка: потолок по званию (мягкий), сколько детей уже растёт, хватит ли еды.
+// k — множитель шанса: 1 вдали от потолка, к потолку падает до нуля.
+function famRoom(people) {
+  people = people || Game.units.filter(u => famOn(u));
+  const rank = Game.goal ? Math.min(2, Game.goal.rank | 0) : 0, cap = FAM_CAP[rank];
+  const kids = people.filter(u => u.type === 'kid').length, adults = people.length - kids;
+  const kidsMax = 2 + Math.floor(adults / 8);
+  const food = famStore('bread') + famStore('sausage') + famStore('croissant') + famStore('steak');
+  const needFood = 4 + kids * 2;
+  if (people.length >= cap) return { ok: false, k: 0, why: `Деревне тесно: ${people.length} из ${cap} жителей`, cap };
+  if (kids >= kidsMax) return { ok: false, k: 0, why: `Детей и так полон двор: ${kids} из ${kidsMax}`, cap };
+  if (food < needFood) return { ok: false, k: 0, why: `Мало еды на складах для детей: нужно ${needFood}`, cap };
+  return { ok: true, k: Math.min(1, (cap - people.length) / 6), why: '', cap };
 }
 function famStore(g) { let n = 0; for (const s of Game.buildings) if (s.isStore() && !s.removed) n += Math.max(0, s.offer(g)); return n; }
 
@@ -175,7 +190,7 @@ function* kidGen(u) {
       if (spot) yield { walk: spot };
     }
   }
-  if (Math.random() < 0.15 && typeof floater === 'function') floater(u.x, u.y - 1.2, famPick(['А я тоже хочу молоток!', 'Догони!', 'Дедушка, а почему ночью страшно?', 'Я гриб нашёл!', 'Когда вырасту — буду героем', 'Мам, есть хочу']), '#fff0c8');
+  if (Math.random() < 0.06 && Game.time >= (FAMT.quipAt || 0) && typeof floater === 'function' && (FAMT.quipAt = Game.time + 25)) floater(u.x, u.y - 1.2, famPick(['А я тоже хочу молоток!', 'Догони!', 'Дедушка, а почему ночью страшно?', 'Я гриб нашёл!', 'Когда вырасту — буду героем', 'Мам, есть хочу']), '#fff0c8');
   yield { wait: 2 + Math.random() * 3 };
 }
 
@@ -283,7 +298,7 @@ if (typeof step === 'function') {
       d.fam = { n: f.n, r: f.r, sx: f.sx, a: f.a, sp, pn: f.pn || undefined, kn: f.kn && f.kn.length ? f.kn : undefined, g: f.g };
     });
     const G = Game.fam;
-    if (G) s.fam = { chron: G.chron, st: G.st, wd: G.wedDay, bd: G.birthDay };
+    if (G) s.fam = { chron: G.chron, st: G.st, wd: G.wedDay, bd: G.birthDay, bn: G.birthN || 0 };
     return s;
   };
   const _as = applySave;
@@ -304,7 +319,7 @@ if (typeof step === 'function') {
       const G = famG();
       G.chron = Array.isArray(m.chron) ? m.chron.filter(c => Array.isArray(c) && typeof c[1] === 'string').slice(-40) : [];
       for (const k in G.st) if (m.st && Number.isFinite(m.st[k])) G.st[k] = m.st[k];
-      G.wedDay = Number.isFinite(m.wd) ? m.wd : -1; G.birthDay = Number.isFinite(m.bd) ? m.bd : -1;
+      G.wedDay = Number.isFinite(m.wd) ? m.wd : -1; G.birthDay = Number.isFinite(m.bd) ? m.bd : -1; G.birthN = Number.isInteger(m.bn) ? Math.min(FAM_DAY, Math.max(0, m.bn)) : 0;
     }
   };
 }
@@ -318,7 +333,8 @@ function famHTML() {
   const pairs = ppl.filter(u => u.fam.sp && u.fam.sx === 'f').length;
   const rank = Game.goal ? Math.min(2, Game.goal.rank | 0) : 0;
   let h = `<div class="lw-top"><span>Семей: <b>${pairs}</b></span><span>Детей: <b>${kids}</b></span><span>Старейшин: <b>${old}</b></span><span class="muted small">поколений ${G.st.gen} · свадеб ${G.st.wed} · родилось ${G.st.born}</span></div>`;
-  if (ppl.length >= FAM_CAP[rank]) h += `<div class="muted small lw-note">Деревне тесно: детей не заводят, пока жителей ${FAM_CAP[rank]} и больше${rank < 2 ? ' — новое звание даст простор' : ''}.</div>`;
+  const room = famMirror() ? null : famRoom(ppl);
+  if (room && !room.ok && pairs) h += `<div class="muted small lw-note">${room.why}${room.why.startsWith('Деревне') && rank < 2 ? ' — новое звание даст простор' : ''}.</div>`;
   h += '<div class="mc-t">Семейная летопись</div>';
   if (!G.chron.length) h += '<div class="muted small">Пока тихо: ни свадеб, ни крестин. Весёлые одинокие гномы рано или поздно найдут друг друга.</div>';
   else h += '<div class="fm-chron">' + G.chron.slice(-10).reverse().map(c => `<div class="fm-c"><span class="fm-d">Сутки ${c[0]}</span>${String(c[1]).replace(/[&<>]/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[x]))}</div>`).join('') + '</div>';
