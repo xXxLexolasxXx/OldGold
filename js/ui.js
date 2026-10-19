@@ -22,7 +22,9 @@ function toast(text, target, kind) {
   el.textContent = text;
   el.onclick = () => { if (target) focusBuilding(target); toastClose(el); };
   box.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+  // чем длиннее текст, тем дольше висит; на телефоне — заметно дольше; уходит «сгоранием», а не щелчком
+  const mob = document.body.classList.contains('mobile');
+  setTimeout(() => toastClose(el), Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70)));
 }
 
 function focusBuilding(b) {

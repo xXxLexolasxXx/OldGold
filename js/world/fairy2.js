@@ -1149,10 +1149,11 @@ function fzDraw(c, spr, x, y, o = {}) {
   const px = Math.round(x * TILE), py = Math.round(y * TILE + (o.dy || 0));
   c.save();
   c.globalAlpha *= o.a === undefined ? 1 : o.a;
-  c.imageSmoothingEnabled = false;
+  const S = o.s || 1;
+  c.imageSmoothingEnabled = S !== 1;   // дробный масштаб без сглаживания рвёт контур в пунктир
+  if (S !== 1) c.imageSmoothingQuality = 'high';
   c.translate(px, py);
   if (o.face < 0) c.scale(-1, 1);
-  const S = o.s || 1;
   c.drawImage(spr, Math.round(-spr.width * S / 2), Math.round(-spr.height * S + (o.lift || 0)), spr.width * S, spr.height * S);
   c.restore();
 }

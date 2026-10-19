@@ -50,7 +50,9 @@ function fySpr(key, w, h, draw) {
 // рисует спрайт с низом по центру в точке (px, py); flip — зеркально
 function fyBlit(c, spr, px, py, face = 1, alpha = 1, scale = 1) {
   c.save();
-  c.imageSmoothingEnabled = false;
+  // при дробном масштабе «ближайший сосед» выкидывает строки и столбцы — чёрный контур рвётся в пунктир; тут сглаживаем
+  c.imageSmoothingEnabled = scale !== 1;
+  if (scale !== 1) c.imageSmoothingQuality = 'high';
   c.globalAlpha = alpha;
   c.translate(Math.round(px), Math.round(py));
   if (face < 0) c.scale(-1, 1);
@@ -92,8 +94,11 @@ function fyOutline(c, w, h, col) {
   const a = c.getImageData(0, 0, w, h).data, mark = [];
   const op = (x, y) => x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 100;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!op(x, y) && (op(x - 1, y) || op(x + 1, y) || op(x, y - 1) || op(x, y + 1))) mark.push([x, y]);
+  // getImageData читает без трансформации, а у спрайтов стоит c.translate(0, 7): без сброса контур съезжал вниз и рвался в пунктир
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
   c.fillStyle = col;
   for (const [x, y] of mark) c.fillRect(x, y, 1, 1);
+  c.restore();
 }
 
 // Кадры фей-зверей: fr 0/1 — опорные позы (как раньше), 10..17 — 8 кадров цикла, 20..25 — 6 кадров;
