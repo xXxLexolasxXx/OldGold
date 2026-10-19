@@ -1,0 +1,33 @@
+/* Вкладка «Торговля» (js/trade.js) */
+#trade-list { font-size: 13px; }
+.tr-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 2px 6px; flex-wrap: wrap; }
+.tr-gold { display: flex; align-items: center; gap: 5px; color: #ffd877; font-size: 16px; }
+.tr-gold img { width: 24px; height: 24px; }
+.tr-rank { color: #e9dcc0; font-weight: bold; }
+.tr-card { margin: 4px 0 6px; padding: 7px 9px; border: 1px solid #8a6a28; border-radius: 6px; background: linear-gradient(rgba(60,42,20,0.6), rgba(30,20,10,0.6)); }
+.tr-card.ambush { border-color: #c8402c; box-shadow: 0 0 10px rgba(220,60,40,0.45); }
+.tr-ct { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; flex-wrap: wrap; color: #f4d070; }
+.tr-where { color: #bda878; font-size: 12px; }
+.tr-warn { margin-top: 5px; padding: 5px 7px; color: #ffcfc0; background: rgba(120,30,20,0.45); border-radius: 4px; }
+.tr-warn button { margin-top: 5px; }
+.tr-fair, .tr-star { padding: 0 5px; border-radius: 8px; font-size: 10px; color: #2a1a06; background: #f0c860; text-transform: uppercase; letter-spacing: 0.04em; }
+.tr-star { background: #c89cff; }
+.tr-event { margin: 2px 0 6px; padding: 5px 8px; color: #fff0c0; background: rgba(90,60,120,0.5); border-left: 3px solid #c89cff; border-radius: 3px; }
+.tr-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 4px 3px; border-bottom: 1px solid rgba(255,230,160,0.08); }
+.tr-row.zero { opacity: 0.7; }
+.tr-row.rare { background: rgba(160,110,240,0.12); }
+.tr-g { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.tr-g img { width: 28px; height: 28px; flex: none; }
+.tr-p { text-align: right; color: #ffd877; font-weight: bold; white-space: nowrap; }
+.tr-p small { margin-left: 2px; color: #bda878; font-weight: normal; }
+.tr-b { display: flex; gap: 3px; }
+.tr-b button { min-width: 38px; min-height: 34px; padding: 0 6px; }
+.tr-up { color: #e8896a; font-size: 11px; } .tr-dn { color: #8ac870; font-size: 11px; } .tr-flat { color: #8a8070; }
+.tr-mkt { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 3px; margin: 4px 0; }
+.tr-m { display: flex; align-items: center; gap: 4px; padding: 2px 4px; background: rgba(0,0,0,0.25); border-radius: 4px; font-size: 12px; }
+.tr-m img { width: 20px; height: 20px; }
+.tr-note { margin-top: 6px; }
+.group-title.click { cursor: pointer; }
+body.mobile .tr-b button { min-width: 44px; min-height: 40px; }
+body.mobile .tr-row.sell { grid-template-columns: 1fr auto; }
+body.mobile .tr-row.sell .tr-b { grid-column: 1 / -1; justify-content: flex-end; }

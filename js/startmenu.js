@@ -42,6 +42,53 @@ function smClose(then) {
   if (then) then();
 }
 
+// Загрузка сохранения из меню. Меню ещё открыто (карта под ним не рисуется), а всё тяжёлое для первого кадра —
+// спрайты зданий из сохранения и земля в кадре — готовится по кусочку за кадр, и заставка не замирает.
+// Раньше это делалось в первом кадре игры: деревня из 30 видов зданий давала застывший кадр 1.8 с на ПК и ~14 с на слабом телефоне.
+function smLoadPrepared(slot, label, onLoaded, onFail) {
+  if (StartMenu.busy) return;
+  StartMenu.busy = true;
+  let ok = false;
+  try { ok = loadGame(slot); } catch (e) { console.error(e); }
+  if (!ok) { StartMenu.busy = false; if (onFail) onFail(); return; }
+  const keys = [...new Set(Game.buildings.map(b => b.type + '|' + (b.rot || 0) + '|' + (b.level || 1)))];
+  let i = 0;
+  const BH = TBAND * TILE;
+  const visLeft = () => {   // полосы земли в кадре, которые ещё не построены
+    if (typeof TERR === 'undefined' || !TERR.job) return 0;
+    const [, vh] = viewSize();
+    let n = 0;
+    for (let b = Math.max(0, Math.floor(R.cam.y / BH)); b <= Math.min(TERR.job.done.length - 1, Math.floor((R.cam.y + vh) / BH)); b++) if (!TERR.job.done[b]) n++;
+    return n;
+  };
+  const vis0 = Math.max(1, visLeft());
+  (function tick() {
+    const t0 = performance.now();
+    while (i < keys.length && performance.now() - t0 < 8) {
+      const [t, r, l] = keys[i++].split('|');
+      if (BUILDINGS[t]) { try { buildingSprite(t, +r, +l); } catch (e) { console.error(e); } }
+    }
+    let left = 0;
+    if (i >= keys.length) { left = visLeft(); if (left) terrStep(8); left = visLeft(); }
+    const p = (i + (vis0 - Math.min(vis0, left))) / (keys.length + vis0);
+    if (label) label.textContent = 'Загружаем деревню… ' + Math.round(p * 100) + '%';
+    if (i < keys.length || left) { requestAnimationFrame(tick); return; }
+    StartMenu.busy = false;
+    if (StartMenu.iconsLater) { StartMenu.iconsLater = false; UI.shown = null; renderBuildMenu(); }   // значки — из уже готовых спрайтов
+    smClose(() => { updateMinimapBase(); updateUI(true); toast('Игра загружена'); if (onLoaded) onLoaded(); });
+  })();
+}
+// Пока сохранение готовится под меню, значки кнопок строительства не рисуем (их не видно, а каждый — это спрайт
+// здания и toDataURL: в загрузке это было 3/4 времени); перед закрытием меню список перерисовывается.
+{
+  const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  const _icon = buildingIconURL;
+  buildingIconURL = function (type) {
+    if (StartMenu.busy && !(UI.bicons && UI.bicons[type])) { StartMenu.iconsLater = true; return BLANK; }
+    return _icon(type);
+  };
+}
+
 function smRender() {
   const root = document.getElementById('start-menu');
   const sv = smBestSave();
@@ -53,24 +100,70 @@ function smRender() {
   root.querySelector('#sm-server').value = c.server;
 }
 
+// Выбор карты в «Новой игре»: по умолчанию — луга, большая карта, случайный сид
+StartMenu.map = { bio: 'meadow', size: 'large' };
+function smMapSync() {
+  const root = document.getElementById('start-menu');
+  for (const b of root.querySelectorAll('[data-bio]')) b.classList.toggle('sm-sel', b.dataset.bio === StartMenu.map.bio);
+  for (const b of root.querySelectorAll('[data-size]')) b.classList.toggle('sm-sel', b.dataset.size === StartMenu.map.size);
+  root.querySelector('#sm-map-msg').textContent = BIOMES[StartMenu.map.bio].desc;
+}
+// Строит выбранный мир под меню и переходит к сложности. Если выбор совпал с уже готовым миром и сид не задан — берём готовый.
+function smMapGo(root) {
+  if (StartMenu.busy) return;
+  const txt = root.querySelector('#sm-seed').value, sz = MAP_SIZES[StartMenu.map.size];
+  const same = !txt.trim() && MapOpt.biome === StartMenu.map.bio && MAP_W === sz.w && MAP_H === sz.h;
+  track('map-' + StartMenu.map.bio, 'Карта: ' + BIOMES[StartMenu.map.bio].name + ', ' + sz.name);
+  if (same) { smShow('diff'); return; }
+  const msg = root.querySelector('#sm-map-msg');
+  StartMenu.busy = true;
+  msg.textContent = 'Создаём карту…';
+  setTimeout(() => {
+    try {
+      const seed = mapSeedFrom(txt);
+      setupStart(seed, { biome: StartMenu.map.bio, size: StartMenu.map.size });
+      buildTerrain(seed);
+      updateMinimapBase();
+      msg.textContent = BIOMES[StartMenu.map.bio].desc;
+      smShow('diff');
+    } catch (e) { console.error(e); msg.textContent = 'Не вышло создать карту — попробуйте другой сид'; }
+    StartMenu.busy = false;
+  }, 30);
+}
+
 function smAction(a) {
   const root = document.getElementById('start-menu');
   if (['continue', 'new', 'mp', 'help'].includes(a)) track('menu-' + a, { continue: 'Нажал «Продолжить»', new: 'Нажал «Новая игра»', mp: 'Открыл «Мультиплеер»', help: 'Открыл «Как играть» в стартовом меню' }[a]);
   if (a === 'continue') {
     const sv = smBestSave();
     if (!sv) return;
-    smClose(() => { if (loadGame(sv.slot)) { updateUI(true); toast('Игра загружена'); } });
+    smLoadPrepared(sv.slot, root.querySelector('[data-sm="continue"] small'));
   } else if (a === 'new') {
-    smShow('diff');   // сначала режим игры, потом имя героя
+    smShow('mode');
+  } else if (a === 'mode-scenario' || a === 'mode-free') {
+    track('mode-' + a.slice(5), a === 'mode-scenario' ? 'Новая игра: сценарий' : 'Новая игра: свободная');
+    StartMenu.goalMode = a === 'mode-scenario' ? 'scenario' : 'free';
+    smMapSync();
+    smShow('map');   // потом карта, потом сложность
+  } else if (a.startsWith('bio:') || a.startsWith('size:')) {
+    const [k, v] = a.split(':');
+    StartMenu.map[k] = v;
+    smMapSync();
+  } else if (a === 'dice') {
+    root.querySelector('#sm-seed').value = String((Math.random() * 1e6) | 0);
+  } else if (a === 'map-go') {
+    smMapGo(root);
   } else if (a.startsWith('diff:')) {
     const k = diffKey(a.slice(5));
     track('diff-' + k, 'Выбрал сложность: ' + DIFFS[k].name);
-    Game.pendDiff = k; diffApplyStart(k); updateUI(true);
+    Game.pendDiff = k; diffApplyStart(k); if (typeof goalNew === 'function') goalNew(StartMenu.goalMode || 'free'); updateUI(true);
     smClose(() => { if (Game.heroAsk) { Game.heroAsk = false; askHeroName(); } });
   } else if (a === 'mp') {
     smRender(); smShow('mp');
   } else if (a === 'help') {
     smShow('help');
+  } else if (a === 'mode-back') {
+    smShow('mode');
   } else if (a === 'back') {
     smShow('main');
   } else if (a === 'connect') {
@@ -97,6 +190,19 @@ function initStartMenu() {
       <button class="sm-btn" data-sm="new"><b>Новая игра</b><small>новый мир, назвать героя</small></button>
       <button class="sm-btn" data-sm="mp"><b>Мультиплеер</b><small>играть с друзьями</small></button>
       <button class="sm-btn ghost" data-sm="help"><b>Как играть</b></button>
+    </div>
+    <div class="sm-panel hidden" data-panel="mode">
+      <button class="sm-btn primary" data-sm="mode-scenario"><b>Сценарий</b><small>«Тишина дороже золота»: 6 глав, тёмный маг</small></button>
+      <button class="sm-btn" data-sm="mode-free"><b>Свободная игра</b><small>без сюжета: от поселения до города</small></button>
+      <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
+    </div>
+    <div class="sm-panel hidden" data-panel="map">
+      <div class="sm-title">Карта</div>
+      <div class="sm-grid">${BIOME_ORDER.map(k => `<button class="sm-btn sm-chip" data-sm="bio:${k}" data-bio="${k}"><b>${BIOMES[k].icon} ${BIOMES[k].name}</b></button>`).join('')}</div>
+      <div class="sm-grid sm-sizes">${MAP_SIZE_ORDER.map(k => `<button class="sm-btn sm-chip" data-sm="size:${k}" data-size="${k}"><b>${MAP_SIZES[k].name}</b><small>${MAP_SIZES[k].desc}</small></button>`).join('')}</div>
+      <label>Сид карты (пусто — случайный)<span class="sm-seedrow"><input id="sm-seed" maxlength="12" autocomplete="off" inputmode="numeric" placeholder="например, 4242"><button class="sm-btn ghost sm-dice" data-sm="dice" title="Случайный сид">🎲</button></span></label>
+      <div id="sm-map-msg" class="sm-msg"></div>
+      <div class="sm-grid"><button class="sm-btn ghost" data-sm="mode-back"><b>Назад</b></button><button class="sm-btn primary" data-sm="map-go"><b>Дальше</b></button></div>
     </div>
     <div class="sm-panel hidden" data-panel="diff">
       <div class="sm-title">Сложность новой игры</div>
@@ -413,7 +519,7 @@ function smGrow(btn) {
   const root = () => document.getElementById('start-menu');
   document.addEventListener('pointerdown', e => {
     const b = e.target.closest && e.target.closest('#start-menu .sm-btn');
-    if (b && !b.disabled && !smPicking) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
+    if (b && !b.disabled && !smPicking && !/^(bio:|size:|dice$)/.test(b.dataset.sm || '')) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
   }, true);
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('#start-menu [data-sm]');
@@ -421,6 +527,7 @@ function smGrow(btn) {
     if (smPicking) { e.stopImmediatePropagation(); return; }
     if (!b.querySelector('.sm-grow')) smGrow(b, VINE_KINDS[(Math.random() * 3) | 0]);
     if (b.dataset.sm === 'back' || b.dataset.sm === 'mp' || b.dataset.sm === 'new') return;
+    if (/^(bio:|size:|dice$)/.test(b.dataset.sm)) return;   // выбор параметров карты — сразу, без лозы
     // действие после роста: перехватываем клик и пускаем заново
     e.stopImmediatePropagation();
     smPicking = true;

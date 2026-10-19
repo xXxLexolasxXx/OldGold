@@ -25,13 +25,15 @@ function weatherReset() {
 function rainStart(len = wrnd(70, 140)) {
   if (!WX.ready) weatherReset();
   WX.target = 1; WX.rainEnd = Game.time + len; WX.rainNo = (WX.rainNo || 0) + 1;
-  logEvent('weather', 'Начался дождь');
-  if (Game.time - (WX.toastT || -99) > 60) { WX.toastT = Game.time; toast('Пошёл дождь: гномы раскрыли зонтики. Под ногами скользко!'); }
+  const snow = isWinterMap();
+  logEvent('weather', snow ? 'Пошёл снег' : 'Начался дождь');
+  if (Game.time - (WX.toastT || -99) > 60) { WX.toastT = Game.time; toast(snow ? 'Пошёл снег: гномы подняли воротники. Под ногами скользко!' : 'Пошёл дождь: гномы раскрыли зонтики. Под ногами скользко!'); }
 }
 
 function weatherTick(dt) {
   if (!WX.ready || Game.time < WX.last - 0.5) weatherReset();
   WX.last = Game.time;
+  mapEvTick();   // метель и паводок по расписанию карты
   if (WX.target === 0 && Game.time >= WX.nextRain) rainStart();
   else if (WX.target === 1 && Game.time >= WX.rainEnd) {
     WX.target = 0; WX.nextRain = Game.time + wrnd(150, 360);
@@ -512,6 +514,17 @@ function drawWeather(c) {
     c.save();
     c.lineCap = 'butt';
     const area = vw * vh, base = Math.min(900, area / 240);
+    if (isWinterMap()) {   // зимой вместо ливня — снегопад: хлопья медленно кружатся
+      c.fillStyle = `rgba(235,242,252,${0.8 * Math.min(1, k * 1.4)})`;
+      const n = Math.round(base * k * 0.7);
+      for (let i = 0; i < n; i++) {
+        const sx = frac01(i * 0.731), sy = frac01(i * 1.337 + 3), sz = 1 + (i % 3 === 0 ? 1 : 0);
+        const y = ((sy * vh + now * (38 + (i % 4) * 14)) % (vh + 20)) - 10;
+        const x = (sx * (vw + 40) - 20 + Math.sin(now * 0.9 + i) * 10 + vw * 4) % (vw + 40) - 10;
+        c.fillRect(Math.round(cam.x + x), Math.round(cam.y + y), sz, sz);
+      }
+      c.restore(); c.save();
+    } else
     for (const [layer, len, spd, alpha, lw] of [[0, 5, 260, 0.28, 0.8], [1, 8, 420, 0.45, 1]]) {
       const n = Math.round(base * k * (layer ? 0.55 : 0.8));
       c.strokeStyle = `rgba(190,208,235,${alpha * Math.min(1, k * 1.4)})`; c.lineWidth = lw;
@@ -526,7 +539,7 @@ function drawWeather(c) {
     }
     // круги от капель на земле
     c.lineWidth = 0.6;
-    const ns = Math.round(base * k * 0.16);
+    const ns = isWinterMap() ? 0 : Math.round(base * k * 0.16);
     for (let j = 0; j < ns; j++) {
       const q = now * 1.9 + frac01(j * 3.1), cyc = Math.floor(q), p = q - cyc;
       const x = cam.x + frac01(j * 7.7 + cyc * 1.3) * vw, y = cam.y + frac01(j * 4.9 + cyc * 2.1 + 9) * vh;
@@ -535,6 +548,7 @@ function drawWeather(c) {
     }
     c.restore();
   }
+  drawMapEvent(c);
   const b = WX.bolt;
   if (b) {
     const age = (performance.now() - b.wall) / 1000;

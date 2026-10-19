@@ -605,7 +605,7 @@ function heroBtnUpdate() {
   resetGameState = function () { _reset(); Game.hero = null; Game.selUnit = null; Game.heroT = 0; };
 
   const _setup = setupStart;
-  setupStart = function (seed) { _setup(seed); spawnHero('Герой'); Game.heroAsk = true; };
+  setupStart = function (seed, ...o) { _setup(seed, ...o); spawnHero('Герой'); Game.heroAsk = true; };
 
   const _apply = applySave;
   applySave = function (s) { _apply(s); Game.heroAsk = ensureHero(); };
@@ -614,7 +614,7 @@ function heroBtnUpdate() {
   startGame = function () { _start(); initHeroUI(); updateUI(true); if (Game.heroAsk && typeof StartMenu === "undefined") { Game.heroAsk = false; askHeroName(); } };
 
   const _newGame = newGame;
-  newGame = function () { _newGame(); if (Game.heroAsk) { Game.heroAsk = false; askHeroName(); } };
+  newGame = function (...a) { _newGame(...a); if (Game.heroAsk) { Game.heroAsk = false; askHeroName(); } };
 
   const _load = loadGame;
   loadGame = function (slot) { const ok = _load(slot); if (ok && Game.heroAsk) { Game.heroAsk = false; askHeroName(); } return ok; };

@@ -236,7 +236,8 @@ function golemSprite(view, pose, f, force) {
   const key = view + pose + f;
   let cv = GL_CACHE.get(key);
   if (cv) return cv;
-  if (!force && (R.newSprites = (R.newSprites || 0) + 1) > 3) return null;
+  if (!force && !spriteBudgetOk(true)) return null;   // у голема всегда есть запасной кадр (g.last)
+  const t0 = performance.now();
   if (!GL_SCRATCH) GL_SCRATCH = mkSprite(GL_W, GL_H, PS);
   const [c2, ctx] = GL_SCRATCH;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c2.width, c2.height);
@@ -244,10 +245,22 @@ function golemSprite(view, pose, f, force) {
   drawGolemBody(ctx, view, pose, f);
   cv = toPixelArt(c2, PS / PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
   GL_CACHE.set(key, cv);
+  if (!force) spriteSpent(t0);
   return cv;
 }
 
-// Очередь прогрева: по одному кадру за шаг, чтобы не было рывка
+// Очередь прогрева. Раньше — по кадру на каждый шаг симуляции: 120 кадров по ~11 мс (на телефоне ~60 мс)
+// подряд в первые 6 секунд игры, а на ускорении и по несколько за кадр — главный лаг после выхода из меню.
+// Теперь — только в простое браузера; нет простоя (или requestIdleCallback) — кадры рисуются по мере показа.
+let GL_IDLE = false;
+function golemIdleWarm() {
+  if (GL_IDLE || typeof requestIdleCallback !== 'function') return;
+  GL_IDLE = true;
+  requestIdleCallback(function warm(dl) {
+    while (Game.golem && (GL_QUEUE === null || GL_QUEUE.length) && dl.timeRemaining() > 14) golemWarmup();
+    if (Game.golem && (GL_QUEUE === null || GL_QUEUE.length)) requestIdleCallback(warm); else GL_IDLE = false;
+  });
+}
 function golemWarmup() {
   if (!GL_QUEUE) {
     GL_QUEUE = [];
@@ -315,7 +328,7 @@ function golemPickEmote(g) {
 function golemTick(dt) {
   const g = Game.golem;
   if (!g) return;
-  if (GL_QUEUE === null || GL_QUEUE.length) golemWarmup();
+  if (GL_QUEUE === null || GL_QUEUE.length) golemIdleWarm();
   g.t += dt;
   const gx = Math.round(g.fx), gy = Math.round(g.fy);
   if (g.state === 'walk') {
@@ -392,7 +405,7 @@ function golemDrawList(list, c, x0, y0, x1, y1) {
   resetGameState = function () { _reset(); Game.golem = null; };
 
   const _setup = setupStart;
-  setupStart = function (seed) { _setup(seed); spawnGolem(); };
+  setupStart = function (seed, ...o) { _setup(seed, ...o); spawnGolem(); golemIdleWarm(); };   // пока открыто меню, браузер простаивает — кадры голема готовятся заранее
 
   const _step = step;
   step = function (dt) { _step(dt); golemTick(dt); };

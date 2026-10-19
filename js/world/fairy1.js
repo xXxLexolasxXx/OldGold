@@ -1194,6 +1194,10 @@ function serializeFairy1() {
   if (F.dr) o.d = [F.dr.nx, F.dr.ny, F.dr.tamed ? 1 : 0, F.dr.stage || 0, F.dr.raids || 0];
   if (F.gr) o.g = [F.gr.nx, F.gr.ny, F.gr.tr, F.gr.st === 'gone' ? Math.round(F.gr.resp) : 0];
   if (F.gg) o.e = F.gg.egg;
+  // дракончик, грифон и яйцо после загрузки встают не сразу — до этого их сохранённые данные не должны теряться
+  if (!o.d && F.drSaved) o.d = F.drSaved;
+  if (!o.g && F.grSaved) o.g = F.grSaved;
+  if (o.e == null && F.ggSaved != null) o.e = F.ggSaved;
   return o;
 }
 function loadFairy1(o) {

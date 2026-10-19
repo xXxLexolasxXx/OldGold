@@ -112,6 +112,7 @@ function achGet(id) {
   AchQ.q = AchQ.q.filter(x => x !== id);
   p.ach[id] = Date.now();
   profSave();
+  if (window.OldGoldNative) { try { OldGoldNative.achievement(id); } catch (e) { /* оболочка без Steam */ } }
   track('ach-first', 'Получил первую ачивку'); track('ach-' + id, 'Ачивка: ' + ACH_BY[id].name);
   achToast(ACH_BY[id]);
   if (UI && UI.tab !== undefined) profRefresh();
@@ -248,7 +249,10 @@ function profCheckName(name, skipId) {
 
 function profLoadSlot(key) {
   const run = () => { if (loadGame(key)) { updateUI(true); toast('Игра загружена'); profClose(); } else { profMsg = 'Не удалось загрузить'; profRefresh(); } };
-  if (typeof StartMenu !== 'undefined' && StartMenu.open) smClose(run); else run();
+  if (typeof StartMenu !== 'undefined' && StartMenu.open) {
+    profClose();
+    smLoadPrepared(key, null, null, () => { profMsg = 'Не удалось загрузить'; profOpen('saves'); });   // загрузка без застывшего кадра
+  } else run();
 }
 
 function profAction(a, k) {

@@ -22,9 +22,9 @@ const MT_SPR = {};
 let MOUNTS = [];
 
 function mtSprite(size, v) {
-  const key = size + v;
+  const bp = MT_PAL_BIOME[MapOpt.biome], key = (bp ? MapOpt.biome : '') + size + v;   // горы биома — свои цвета (зимой — в снегу)
   if (MT_SPR[key]) return MT_SPR[key];
-  const S = MT_SIZES[size], P = MT_PAL[v % MT_PAL.length];
+  const S = MT_SIZES[size], P = bp ? bp[v % bp.length] : MT_PAL[v % MT_PAL.length];
   const [cv, c] = mkSprite(S.w, S.h);
   const seed = 7000 + v * 97 + S.k * 13;
   srand = mulberry32(seed + 1);
@@ -52,7 +52,7 @@ function mtSprite(size, v) {
     const x = cx - S.w * 0.4 + (k + 0.5) / nb * S.w * 0.8 + rnd(-4, 4), y = base + rnd(0, 3.5);
     drawBoulder(c, x, y, rnd(4.5, 7 + S.k * 1.5), rnd(3.4, 5 + S.k));
   }
-  for (let k = 0; k < S.w / 8; k++) tuftHoMM(c, rnd(cx - S.w * 0.46, cx + S.w * 0.46), base + rnd(0, 5), rnd(3, 6));
+  for (let k = 0; k < S.w / 8; k++) tuftPebbles(c, rnd(cx - S.w * 0.46, cx + S.w * 0.46), base + rnd(0, 5), rnd(3, 6));
   grain(cv, 0.08, seed);
   const out = toPixelArt(cv, SS, { outline: true, outlineDark: 0.12, alphaCut: 100 });
   MT_SPR[key] = out;

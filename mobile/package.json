@@ -1,0 +1,20 @@
+{
+  "name": "oldgold-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "www": "node ../desktop/build-www.js www",
+    "sync": "npm run www && cap sync",
+    "android": "npm run sync && cap open android",
+    "ios": "npm run sync && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4"
+  }
+}

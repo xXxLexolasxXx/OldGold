@@ -110,7 +110,7 @@ function coopApplyInit(m) {
   World.obj.fill(null);
   for (const [i, o] of m.ob || []) World.obj[i] = o;
   for (const k of COOP_LISTS) Game[k] = [];
-  Game.golem = null; Game.sub = null;
+  Game.golem = null; Game.sub = null; Game.foe = null;
   Game.nextId = Math.max(Game.nextId, m.nextId || 0);
   Game.time = m.time;
   Game.paused = false; Game.speed = 1;
@@ -238,7 +238,7 @@ function coopDropBuilding(b) {
   if (k >= 0) Game.buildings.splice(k, 1);
 }
 
-const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lairs'];
+const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lairs', 'raiders', 'foeShots'];
 const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
@@ -268,9 +268,12 @@ function coopSyncList(name, arr) {
 // нечисть, ночные твари, голем, субботник и погода — считает сервер, мы только показываем
 function coopMirror(m) {
   for (const k of COOP_LISTS) coopSyncList(k, m[k] || []);
+  if (m.foe !== undefined) Game.foe = m.foe ? Object.assign(Game.foe || {}, m.foe) : null;     // шпиль Малгора (enemy.js)
   Game.golem = m.golem ? Object.assign(Game.golem || {}, coopResolve(m.golem)) : null;
   Game.sub = m.sub ? coopResolve(m.sub) : null;
   Game.lostGnomes = m.lost || 0;
+  if (typeof goalMirrorIn === 'function') goalMirrorIn(m.goal);
+  if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
   if (m.df) Game.diff = diffKey(m.df);
   const festWas = festOn();
   Game.festival = m.fest || null;

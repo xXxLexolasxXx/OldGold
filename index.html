@@ -8,12 +8,14 @@
 <meta name="theme-color" content="#1a130d">
 <title>OldGold</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OldGold">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/profile.css">
+<link rel="stylesheet" href="css/goal.css">
+<link rel="stylesheet" href="css/trade.css">
 </head>
 <body>
 <div id="app">
@@ -27,6 +29,7 @@
       <button data-tab="people" class="tab-btn" title="Жители"><img data-icon="people" alt=""></button>
       <button data-tab="overview" class="tab-btn" title="Хозяйство: проблемы и статистика"><img data-icon="scroll" alt=""><span id="alert-badge" class="badge hidden">0</span></button>
       <button data-tab="log" class="tab-btn" title="Журнал событий: что случилось и где"><img data-icon="log" alt=""><span id="log-badge" class="badge hidden">0</span></button>
+      <button data-tab="trade" class="tab-btn" title="Торговля: караваны, обмен на золото"><img data-icon="trade" alt=""><span id="trade-badge" class="badge hidden">●</span></button>
       <button data-tab="menu" class="tab-btn" title="Меню"><img data-icon="menu" alt=""></button>
     </nav>
     <div id="tab-area">
@@ -44,6 +47,7 @@
       <section id="tab-people" class="tab"><div id="people-list"></div></section>
       <section id="tab-overview" class="tab"><div id="overview"></div></section>
       <section id="tab-log" class="tab"><div id="log-list"></div></section>
+      <section id="tab-trade" class="tab"><div id="trade-list"></div></section>
       <section id="tab-menu" class="tab">
         <div class="menu-list">
           <button data-menu="save"><img data-icon="save" alt="">Сохранить <kbd>Ctrl+S</kbd></button>
@@ -52,6 +56,7 @@
           <button data-menu="new"><img data-icon="new" alt="">Новая карта</button>
           <button data-menu="tutorial"><img data-icon="play" alt="">Обучение (по шагам)</button>
           <button data-menu="help"><img data-icon="scroll" alt="">Как играть</button>
+          <button data-guide="open"><img data-icon="scroll" alt="">Справка <kbd>H</kbd></button>
         </div>
         <div id="save-info" class="muted small"></div>
         <div class="hotkeys">
@@ -123,11 +128,13 @@
   </main>
 </div>
 <div id="loading"><canvas id="load-cv"></canvas><div class="load-title"><h1>OldGold</h1></div><span class="load-msg">Создаём мир…</span></div>
+<script src="js/crashlog.js"></script>
 <script src="js/world/fire.js"></script>
 <script src="js/loading.js"></script>
 <script src="js/sound/mute.js"></script>
 <script src="js/config.js"></script>
 <script src="js/difficulty.js"></script>
+<script src="js/mapgen.js"></script>
 <script src="js/world.js"></script>
 <script src="js/path.js"></script>
 <script src="js/entities.js"></script>
@@ -197,6 +204,8 @@
 <script src="js/herokit.js"></script>
 <script src="js/heromana.js"></script>
 <script src="js/guildpath.js"></script>
+<script src="js/goal.js"></script>
+<script src="js/trade.js"></script>
 <script src="js/startmenu.js"></script>
 <script src="js/perf.js"></script>
 <script src="js/profile.js"></script>
@@ -205,8 +214,12 @@
 <script src="js/world/festival.js"></script>
 <script src="js/world/fair.js"></script>
 <script src="js/world/raid.js"></script>
+<script src="js/world/enemy.js"></script>
 <script src="js/coop/coopclient.js"></script>
 <script src="js/changelog.js"></script>
+<script src="js/guide.js"></script>
+<script src="js/native.js"></script>
+<script src="js/pwa.js"></script>
 <script data-goatcounter="https://lexolas.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

@@ -54,6 +54,7 @@ const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
 // ---------- Статистика игроков ----------
 const stats = createStats(DATA, log);
 const events = require('./events').createEvents(DATA, log);
+const errReports = require('./errors').createErrors(DATA, log);   // анонимные отчёты об ошибках у игроков (POST /err)
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {
@@ -111,9 +112,11 @@ function loadWorld() {
   return false;
 }
 if (!loadWorld()) {
-  const seed = (Math.random() * 1e9) | 0;
-  run(`setupStart(${seed}); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
-  log('создан новый мир, зерно', seed);
+  // карту выбирает хост: OLDGOLD_BIOME (meadow, forest, steppe, mountain, swamp, winter), OLDGOLD_SIZE (small, medium, large), OLDGOLD_SEED
+  const biome = String(process.env.OLDGOLD_BIOME || 'meadow').replace(/[^a-z]/g, ''), size = String(process.env.OLDGOLD_SIZE || 'large').replace(/[^a-z]/g, '');
+  const seed = process.env.OLDGOLD_SEED ? run(`mapSeedFrom(${JSON.stringify(String(process.env.OLDGOLD_SEED))})`) : (Math.random() * 1e9) | 0;
+  run(`setupStart(${seed}, { biome: '${biome}', size: '${size}' }); goalNew('scenario'); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
+  log('создан новый мир, зерно', seed, 'биом', biome, 'размер', size);
 }
 
 function saveWorld() {
@@ -141,7 +144,7 @@ function flushHeroes() {
 }
 
 // ---------- HTTP ----------
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
   if (p === '/coop-info' && /metrics|digest/.test(req.url) && /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '') && !req.headers['x-forwarded-for']) {
@@ -152,22 +155,29 @@ const server = http.createServer((req, res) => {
   }
   if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
   if (events.handle(req, res, req.socket.remoteAddress || '')) return;
+  if (errReports.handle(req, res, req.socket.remoteAddress || '')) return;
   if (p === '/stats') {
     const q = new URL(req.url, 'http://x').searchParams;
     if (!keyOk(q.get('key'))) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('нужен ключ: /stats?key=… (он в файле stats.key в папке данных сервера)'); return; }
-    stats.save(); events.save();
+    stats.save(); events.save(); errReports.save();
     const x = stats.summary();
-    if (q.has('json')) { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify({ ...x, solo: events.summary() }, null, 2)); }
-    else { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(printSummary(x) + '\n\n' + events.printSummary(events.summary()) + '\n\nСервер: ' + SERVER_VER + '\n'); }
+    if (q.has('json')) { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify({ ...x, solo: events.summary(), errors: errReports.summary() }, null, 2)); }
+    else { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(printSummary(x) + '\n\n' + events.printSummary(events.summary()) + '\n\n' + errReports.printSummary(errReports.summary()) + '\n\nСервер: ' + SERVER_VER + '\n'); }
     return;
   }
   if (p === '/') p = '/index.html';
   const file = path.normalize(path.join(ROOT, p));
   const rel = path.relative(ROOT, file);
-  if (rel.startsWith('..') || /^(server|\.git|\.claude)([\\/]|$)/.test(rel) || /(^|[\\/])\./.test(rel) || /coopsim\.js$/.test(rel)) { res.writeHead(404); res.end('нет'); return; }
+  if (rel.startsWith('..') || /^(server|desktop|mobile|\.git|\.claude)([\\/]|$)/.test(rel) || /(^|[\\/])\./.test(rel) || /coopsim\.js$/.test(rel)) { res.writeHead(404); res.end('нет'); return; }
   fs.readFile(file, (err, buf) => {
     if (err) { res.writeHead(404); res.end('нет'); return; }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    const ext = path.extname(file).toLowerCase();
+    const h = { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': /^\.(ttf|woff2|png)$/.test(ext) ? 'public, max-age=604800' : 'no-cache', Vary: 'Accept-Encoding' };
+    if (/^\.(html|js|css|svg|json|webmanifest|ttf)$/.test(ext) && buf.length > 1024 && /gzip/.test(req.headers['accept-encoding'] || '')) {
+      h['Content-Encoding'] = 'gzip';
+      res.writeHead(200, h); res.end(zlib.gzipSync(buf, { level: 6 })); return;
+    }
+    res.writeHead(200, h);
     res.end(buf);
   });
 });
@@ -367,6 +377,13 @@ function onMessage(c, text) {
     broadcast({ t: 'restarting' });
     saveWorld();
     setTimeout(() => process.exit(42), 300);
+    return;
+  }
+  if (m.t === 'goalmode') {
+    if (!c.isHost) return c.send({ t: 'toast', text: 'Режим мира меняет только хост' });
+    if (m.mode !== 'scenario' && m.mode !== 'free') return;
+    call('goalNew', m.mode);
+    broadcast({ t: 'toast', text: m.mode === 'scenario' ? 'Хост включил сценарий «Тишина дороже золота»' : 'Хост включил свободную игру' });
     return;
   }
   if (m.t === 'stats') {

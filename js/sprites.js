@@ -327,5 +327,7 @@ function initSprites() {
   makeTrees();
   makeBoulders();
   makeFields();
-  for (const t of BUILD_ORDER) buildingSprite(t);
+  // при загрузке — только то, что стоит на старте и открыто в меню сразу; остальные виды рисуются при первом
+  // появлении (раньше все ~30 видов строились здесь: ~1.4 с на ПК и секунды на телефоне при застывшей заставке)
+  for (const t of ['storehouse', 'school', 'inn', 'bonfire', 'woodcutter', 'quarry', 'sawmill']) if (BUILDINGS[t]) buildingSprite(t);
 }

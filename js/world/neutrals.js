@@ -509,7 +509,7 @@ function neuTick(dt) {
   const _reset = resetGameState;
   resetGameState = function () { _reset(); Game.neutrals = []; Game.lairs = []; Game.nstat = { kills: {}, lost: 0, lairs: 0, xp: 0 }; };
   const _setup = setupStart;
-  setupStart = function (seed) { _setup(seed); if (!Game.stress) neuSpawnAll(seed); };
+  setupStart = function (seed, ...o) { _setup(seed, ...o); if (!Game.stress) neuSpawnAll(seed); };
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser();
