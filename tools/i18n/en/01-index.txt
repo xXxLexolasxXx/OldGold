@@ -1,0 +1,99 @@
+##### index.html
+Enlarge minimap
+Collapse / expand minimap
+Build
+Storehouse
+Gnomes
+Estate: problems and stats
+Event log: what happened and where
+Menu
+Road (R)
+Demolish (Del)
+Wheat field: mark the tiles, a builder will dig them for free. Click a field to remove it
+Hop field: one plank per tile for the trellises. Click a field to remove it
+Drag to resize
+Detach the window: you can move and stretch it
+Drag to change the column width
+Resources: tap to expand the list
+Minimap
+Zoom
+Zoom out (−, mouse wheel)
+Zoom in (+, mouse wheel)
+Cleanup Day
+Sound and music
+Music
+Next track
+Sounds
+Game speed
+Pause (Space)
+Place
+Rotate
+Cancel
+▾ Collapse
+Road
+Demolish
+Save
+Load
+Autosave
+New map
+Tutorial (step by step)
+How to play
+Help
+build categories
+road,
+demolish,
+cancel
+pause building,
+close/open deliveries,
+neighbouring building
+rotate building: entrance faces south, east or west
++click — build several
+Space
+pause the game
+Zoom: mouse wheel,
+or the buttons at the top
+Building window
+Goal:
+grow your settlement. Builders build, haulers haul, and everything is, of course, your fault.
+On a phone:
+one finger pans the map, two zoom. The tabs at the bottom open the sheet. Pick a building, tap a spot to see a preview, tap again or hit ✓. Draw roads with your finger.
+Pick a building on the left and click the map. A bit of road appears in front of the door; connect it to the road network.
+Haulers walk on roads only.
+Not one step on grass, they have principles. A building with no road to the storehouse gets no deliveries (the icon above it will remind you at length and with reproach).
+— drag with the mouse, a tile costs 1 stone. Start new roads from an existing one: a road from nowhere to nowhere isn't a road, it's landscape design.
+A road two tiles wide has two lanes: haulers pass without slowing down. On a narrow one they squeeze past each other slowly and give you a look of silent reproach.
+Workers train at the
+school
+for gold. The "Train" button in the building window queues the right one. Haulers and builders eventually
+level up to tier 2 and 3
+: they carry 2–3 items and fetch building materials themselves. Watch the patches on their caps and the bars in the "Gnomes" tab.
+Food:
+farm (wheat) → mill → bakery
+or
+hay (a by-product of harvest) → pigsty → slaughterhouse
+(sausage). You mark the fields yourself with the "Wheat" and "Hops" tools next to the farm.
+Pigsty: every armful of hay makes the pigs a third bigger and a piglet is born; adults go to the slaughterhouse.
+Leather: the slaughterhouse yields hides →
+tannery
+→ leather →
+armor workshop
+Magic:
+magic stone mine
+under a cliff with crystals →
+magic circle
+(stones → mana + plain stone) →
+magic workshop
+: staves and robes.
+Iron:
+iron mine
+under a cliff →
+metal smelter
+(ore + logs → ingots) →
+armory
+(swords, bows, daggers) and
+(iron armor). The hero picks up gear by clicking the workshop.
+Guilds
+of warriors, archers, rogues and mages: the guildmaster teaches the hero a class (click a guild with the hero) and recruits from the haulers. Click a recruit to select, the ground to set a post, an enemy to attack. Hero attack —
+Icons above buildings tell you what's missing. The "Estate" tab gathers all the problems into one list, so you can be upset more conveniently.
+Got it
+Creating the world…

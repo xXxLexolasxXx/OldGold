@@ -1,0 +1,151 @@
+##### js/world/fair.js#2
+Hammer Throw
+paces
+Throw
+Heh!
+Fly!
+Oof!
+Target Shooting
+points
+Bullseye!
+Almost!
+The bowstring sings
+The Stargazer's Riddles
+riddles
+Answer
+Eureka!
+Is it… a mushroom?
+I know!
+Pie-Eating Contest
+pies
+Pie
+Nom!
+One more…
+Bread Stall
+Beer Stall
+Sorcery Stall
+Hides and Leather
+Brock
+Gunda
+Tilmi
+Froda
+Ham
+Skeggi
+Ulma
+Run
+The fair is already on
+It's a festival today — the fair can wait
+A storehouse is needed: it has the square
+The fair opens in the daytime
+Too few gnomes — nobody to trade
+The fair opened on the square by the storehouse! Trading and contests — the "Fair" button at the top
+The fair opened: five stalls and three contests
+The fair is closed. All contests played — tomorrow, who knows, a festival!
+The fair is closed — the stalls fold their awnings
+Fair closed
+That item is already taken
+The storehouses are short: {0} ({1})
+No storehouse
+Trade: {0}
+{0} traded at the fair: {1} → {2}
+Contest "{0}"! {1} seconds, {2} attempts each — heroes must stand on the square
+No contest right now — the next one is coming
+Come to the fair square
+The hero has no time for contests
+Attempts used up — waiting for results
+"{0}": {1} wins — {2} {3}! A prize for the hero and 2 gold to the treasury
+"{0}": {1} wins ({2} {3}){4}. 2 gold to the treasury
+— glory to their guild!
+Winner: {0}
+Fair Champion
+Prize: {0} ×2, +30 XP, the title "Fair Champion"
+Fair Champion!
+No more than three lots per player
+This slot is empty
+{0} put up at the fair: {1} ×{2}{3}
+for {0} ×{1}
+— free
+Lot withdrawn — the item is back in the backpack
+{0} isn't in the village now — trade when they return
+Needed: {0} ×{1}
+Trade done: {0} ×{1}
+{0} took your lot{1}
+and gave {0} ×{1}
+Tomorrow a fair on the square by the storehouse: stalls, trading and contests!
+How much is the bread?
+I'll take it!
+A bit pricey…
+Any discount?
+Wrap it up!
+Oh, lovely
+Collapse
+Contest soon:
+(in {0} s)
+Contest:
+· {0} s left
+decided by the hero's {0} and luck
+Go to the square
+(attempts: {0})
+(recruit)
+Prizes: {0}
+Merchants trade
+(from storehouses to storehouse)
+Left: {0}
+Player lots
+(a backpack item for an item)
+from {0}
+for {0}{1}
+free
+Withdraw
+Take
+for
+Offer
+The backpack is empty — nothing to offer
+· contest on!
+Play in a fair contest
+Soul of the Fair
+The host forbade: trading from storehouses
+Fair items went back to the backpack
+Fair today — the festival comes later
+##### js/world/raid.js#2
+{0} has awakened! Two or more heroes are needed — hints at the top of the screen
+{0} rose from its {1}
+lair
+{0} — phase {1}: "{2}". {3}
+Dawn: {0} retreats into its {1}. It will be back
+lair
+{0} left at dawn
+Squad Blade
+Squad Shield
+Ward Breaker
+Victory! +{0} XP, roast ×2, titles: {1}
+The prince is beaten! +{0} XP, titles: {1}
+{0} is defeated! {1}{2}The loot is on the ground by the barrow
+Squad Blade — {0}.
+Squad Shield — {0}.
+{0} defeated{1}
+Blue lights lit over the barrow… {0} awaits guests. Go there two or more together (heroes from level {1})
+Barrow Prince
+barrow
+Prince Slayer
+Who disturbs my sleep?!
+The barrow is mine, and so are you!
+Bow to the prince!
+Bone Ward
+Bone Shield
+While two wards stand, the prince takes only a quarter of the damage. Archers, mages and druids hit wards twice as hard; the priest's "Turn Undead" breaks them at once.
+Grave Chill
+Blue circles flare under the heroes — step out of them! A warrior, barbarian or monk right next to the prince takes his blows on themselves.
+The prince hits more often and drinks life. A rogue from behind hits twice as hard; heal the team with abilities Z/X.
+Rise, servants!
+Chill of the graves!
+Chill!
+Holding!
+The wards are broken — the prince's shield has fallen!
+Ward shield!
+From behind!
+· shield
+Blue Lights over the Barrow
+— {0} is waiting. Go there two or more together, heroes from level {1}{2}.
+(alone — the hero and 2 "Follow hero" recruits)
+· phase {0}: "{1}"

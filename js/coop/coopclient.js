@@ -1165,7 +1165,7 @@ function coopStatsShow(x, server) {
   coopCss();
   document.getElementById('cp-stats')?.remove();
   const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const dt = t => (t ? new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+  const dt = t => (t ? new Date(t).toLocaleString(I18N.locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
   const cls = (Coop.meta && Coop.meta.classes) || {};
   const box = document.createElement('div');
   box.id = 'cp-stats'; box.className = 'cp-modal';

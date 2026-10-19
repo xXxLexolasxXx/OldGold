@@ -1,0 +1,73 @@
+##### js/changelog.js#2
+Guilds grow, a fair and the Barrow Prince
+Guilds: fame and titles for the guildmaster — Novices, Journeymen, Masters, Legend (stars above the master), each rank with its own bonus. The guild window has the "Guild Path": what's done, the next step and what it gives
+Recruit branches from level 5 ("veteran" from 10): Guardian or Hacker, Sniper or Tracker, Shade or Pickpocket, Pyromancer or Healer — chosen on the recruit's card
+A daily guild quest ("Night Watch", "Hunt", "Drills", "Study") and the "Village Cup" every three days: the guild with the most fame gets the cup and +20% XP for its recruits
+Guild tier 3 (needs tier 2 and the "Masters" rank): a golden crown above the hall, recruits up to level 18, and the hero can become a grandmaster (rank 6)
+A fair every 5–7 days on the square by the storehouse: five stalls, trading with merchants, contests (hammer, target, riddles, pies) — the hero against gnomes and recruits, prizes and the "Fair Champion" title. After a good fair — a festival
+Co-op: at the fair players swap items from their backpacks (lots), and on fair day there's a personal quest "Play in a contest"
+The Barrow Prince — a boss for two or more heroes (from level 3; solo — the hero and two "Follow hero" recruits): blue lights over the barrow at night, three phases — bone wards, grave chill, rage. Archers break the wards, fighters hold the prince, the rogue strikes from behind. Rewards and titles: "Prince Slayer", "Squad Blade", "Squad Shield", "Ward Breaker"
+Different maps: biomes, rivers and blizzards
+New game → after the mode, pick a map: meadows, deep forest, steppe, mountains, swamp or winter (snow, ice on the water, blizzards); size small 96×72 / medium 128×96 / large 160×120; your own seed (empty — random)
+Rivers with fords, irregular lakes, mountain ridges with passes and veins of gold and iron; more crystals in the mountains and winter
+Own trees, rocks and mountains for each biome: snowy firs, yellow steppe, dark thicket, reeds in the swamp; in winter snow falls instead of rain
+Terrain events: blizzard (winter, mountains) and flood (meadows, forest, steppe, swamp) — water floods the floodplains and fords, gnomes slip
+Biome and size are stored in the save; old saves load as before. In co-op the server builds the map from the seed (variables OLDGOLD_BIOME, OLDGOLD_SIZE, OLDGOLD_SEED), clients draw it themselves
+Trade and caravans
+New building "Trading Post" ("Basics" tab, unlocked after the bakery). Caravans arrive along the road from beyond the map edge: a bread wagon, a wandering peddler, later iron and sorcerer ones
+The "Trade" tab (the purse on the panel): a merchant sells and buys goods for gold from the storehouses. Prices float: they rise when you buy, fall when you sell, and drift back to normal. There are rare goods and a small purse for each merchant
+Events: robbers on the road (send the hero or guild fighters to the wagon — otherwise the merchant arrives robbed), rare goods, price shifts ("crop failure", "war rumours", "construction")
+Turnover grows: Shop → Trading Post → Market → … — caravans come more often and richer. At the fair a caravan arrives at once and on better terms; during Malgor's raids they come less often
+The caravan is visible on the map (wagon, mule, merchant). Works on a phone too; in co-op the server counts everything, everyone sees it. Saved along with the game
+No more lag
+The main menu no longer stutters: the bonfire backdrop draws 6–10 times faster (on a weak phone — smooth instead of jerky)
+The game opens faster: to the menu on PC ~1 s instead of 4, on a weak phone ~8 s instead of almost half a minute — the ground finishes drawing while you're in the menu
+"Continue" without a frozen screen: a big village loads with a percentage, and the first seconds of a new game run smoothly
+Gnomes on the road stand idle less: oncoming ones on a narrow road no longer lock horns for 3 seconds, delivery is faster
+Pathfinding ~9 times faster: beasts across the river no longer hang the game
+Piles on the ground and loads in hands no longer vanish when saving
+A scare during a smoke break and similar cases no longer lose a delivery; goods don't stay "busy" forever
+A builder doesn't stand forever at a site with no material — goes to another one
+The owl no longer carries off elk and wolves (only rabbits, chickens and ducks) and doesn't bring trash with nowhere to put it
+The dark mage Malgor
+The fiends got a master: the dark mage Malgor lives in the Black Spire — that very tower from the intro — at the far edge of the map
+His wrath grows every night and with the village's size: green windows and watch fires → scout crows → curses (lanterns go out, famine plague, extra skeletons) → raids → a siege with dark knights
+Minions come out of the fog at night, beat gnomes and haul goods from the storehouse; they can't stand against the big bonfire, at dawn they leave and drop their loot
+The march to the spire: Malgor fights in three phases — summoning servants, green fire under the guardian knight's shield, rage with teleports. Victory puts out the spire for good and gives gold, magic stones and a title
+The spire is on the minimap, wrath and stage are on the hero card; new achievements. In co-op the server counts everything, the fight with Malgor is shared
+Help for newcomers
+In the building window — a red "why it's stuck" plate with a reason and action: no road, no worker, missing goods (and where to get them), all full, paused, damaged. Tap a building on a phone — the reason pops up at once
+The "Estate" tab: every problem has a hint on what to do, and there's a "Balance per minute" — what's produced and spent per resource, how much is in the storehouse, where the shortage is
+Help (menu button or the H key): buildings, resources, creatures, hero, nights, controls — short sarcastic cards with search by name. From the building window — "What building is this?"
+First-time hints, one at a time and once: first hunger, evening, first loss, ghost, tier-2 building, the icon above a stalled building, phone gestures. They don't cover the map and go away by themselves
+New game: choose "Scenario" or "Free play". Goals panel at the top left (collapsible)
+Difficulty: Calm, Normal, Survival
+"New game" now has a difficulty choice. "Calm": nights twice as gentle and shorter, fiends weaker, gnomes don't die or collapse from hunger, more supplies at the start — just build and explore
+"Normal" — the old balance, all old saves continue in it
+"Survival": nights longer and meaner, more fiends, faster hunger, a poorer storehouse, the hero lies longer and gets up with a quarter health, and each gnome lost adds ghosts and skeletons
+Forest neutrals depend on the mode too: in "Calm" they hit weaker and respawn slower, in "Survival" they're meaner and tougher
+The mode shows in the "Menu" tab and on the "Continue" card; saved in the save. In co-op the host picks the village difficulty (the player-permissions window), the server counts it
+Reaper's eyes
+The reaper's helmet has a wide cut-out with a frowning brow: the angry eyes are clearly visible
+Dark tales: new faces
+The banshee is now like a ghost, only a woman: long hair, a hem crumbling into haze, light hands with tiny claws
+The ghostly wolf — thin, hunched, snarling, with raised hackles and visible ribs
+The water sprite got toothy: bulging eyes, a mouth with a saw of teeth, a beard of slime
+New: will-o'-the-wisps lead a gnome without a lantern into the mud, and the Noon Witch in the heat addles a peasant's head in the field (beer drives her off)
+The kikimora, mermaid and water sprite no longer vanish at the very start of the evening
+Dragonling, dragon and slim fish
+A baby dragonling appeared: steals 1–3 gold, and after six raids grows into a big dragon (3–6 gold, sets fields on fire more often)
+Slim fish of new colours splash in the lakes — amber, pink, turquoise: they leap from the water with spray
+The brownie Kuzya looks like a human now: pink skin, ginger beard, a shirt with a patch
+The fire salamander got big and recognizable: black with yellow spots, a broad head, a smouldering tail
+Lanky now carries off big trees with their roots
+A smaller reaper helmet
+The reaper's helmet got smaller, the horns stayed the same size
+Fairy-tale creatures in detail
+The unicorn, dragonling, griffin, brownie Kuzya and fire salamander were redrawn: more detail, joints, smooth shapes and outlines
+Fish in the lake come in three colours — gold, red and blue: the hero who catches one gets a ransom (gold, mana jars or magic stones)
+Lanky — a dark neutral silhouette with purple eyes: roams the forests, digs up trees and carries them off (sometimes plants them elsewhere); if you come near — it vanishes
+Crescent on legs
+A new night creature from night 18: a crescent moon with eyes on legs (steps, blinks)
+The sentinel got eyes: they squint and blink
+The lampskull was redone: a street lantern with a handle and a flame on a pole with twig arms and a scarf

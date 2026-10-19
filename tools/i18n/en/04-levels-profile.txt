@@ -1,0 +1,246 @@
+##### js/levels.js
+A big stone barn. Stores everything and explains nothing. If something's missing, you didn't bring it — it didn't lose it.
+A storehouse with an annex: more room, exactly as much order as before. Up to 8 haulers fit inside, their bosses stand outside looking important.
+A school with a bell tower. Teaches for 1 gold — record-cheap education, no scholarships, no knowledge beyond what's needed. A graduate can do one thing, but does it firmly.
+Second floor, second bell. Teaching twice as fast: honor students pass the exam while the slacker is still looking for his desk. Diplomas are still handed out at the exit, unread.
+Chicken, sausage, bread and beer — a menu from a chef who can't cook anything else and is proud of it. A drunk may fall asleep right on the road, and that's no bug, it's tradition.
+A tavern with an attic: croissants, steaks, dark beer and candles on the tables. Same prices, bigger ambitions, same level of conversation.
+Trash from the bins is brought here. Burning, it makes ash — farms fertilize their fields with it. The only place in the village where junk turns into something useful instead of the other way around.
+A bonfire with a stone rim: eats trash twice as fast and brags about it all over the neighbourhood. Still nobody asks to warm up by it.
+The herder tames wild goats. A tame goat hauls loads on its own, no union, but with attitude: what it can't carry, it eats.
+A pen with a hayloft: more goats, and they eat less hay because they steal the neighbour's. The herder pretends it's training.
+The stableman raises horses. A horse with a cart is a carter: hauls a heap of cargo at once and never complains, because there's nobody to complain to.
+A stable with a loft: the horses are happier, the stableman sleeps on hay and calls it an apartment. He charges himself rent.
+The woodcutter's hut. Fells trees, plants new ones — environmentalists weep, but quietly, because the woodcutter has an axe.
+The woodcutter bought a second saw and twice the confidence: twice the logs at a time, the same number of fingers. For now.
+Saws logs into planks. Sawdust is food too, if you really have to, and the carpenter has checked.
+A sawmill with a mighty wheel: saws a quarter faster and screams louder. The neighbours think it's the same thing.
+Pulls stone out of the ground. The ground is usually against it, but nobody thought to ask.
+A quarry with a crane: twice the stone at a time, the stonecutter's back stays put. For now.
+Mines gold ore. The veins promise everything, the gold comes later, the miner believes. Three in one boat.
+A mine with minecarts: digs faster. There's no more gold, but the miners got more important and now carry a candle like a medal.
+Smelts ore into gold, burning logs. A pity about the forest, but it sparkles. The village picks sparkly.
+A smelter with two furnaces: faster, hotter, and the gnomes smell of singed beard again. That's their perfume.
+A farm: wheat and hay. The farmer looks at the sky, the sky looks at the farmer, both waiting for the other to blink.
+A farm with a big barn: twice as much fits, and the harvest jokes got twice as long. The harvest didn't.
+A hop yard. The hop-grower claims he works for bread. No bread has ever come from hops, and everyone knows it.
+A hop yard with a tall drying tower: more cones, and the whole village knows what for. The hop-grower still says "for the aroma".
+Brews beer from grain and hops. The only business whose waste is pleasant to drink — so says the brewer, and nobody sober argues.
+A brewery with a cellar: also brews dark beer — twice as filling and twice as dangerous for the head. The cellar exists so there's somewhere to look for it afterwards.
+The mill grinds grain into flour. The wind loves it and takes no pay — the only worker with no salary and no complaints.
+A mill with new sails: grinds faster, and the miller waves at it more often. The sails don't answer, but he doesn't lose hope.
+Bakes bread from flour, though he'd rather make buns. The baker's dream — the only thing in the village that rises without yeast.
+A bakery with an attic: the bread stayed, but croissants appeared. The baker now says "croissant" breathily and raises an eyebrow as if he invented it.
+A pigsty. Pigs grow on hay, gnomes on the pigs' hopes. The pigs' hopes aren't counted.
+A pigsty with troughs: holds more pigs, who still don't know what awaits them. They're fine, let them enjoy it.
+A pig becomes sausage and a hide. A butcher becomes a philosopher: every evening he ponders mortality, every morning he picks up the cleaver.
+A slaughterhouse with a smokehouse: six steaks from one pig. The pig is displeased, the tavern delighted, the butcher wrote the recipe on his apron.
+Cures hides into leather. The smell is a free add-on you can't uninstall.
+A tannery with big vats: faster, and now the smell reaches the next village. The neighbours consider it a declaration of war.
+Sews leather armor for a future army nobody has seen. The armor everyone has seen — it gathers dust in the storehouse.
+A workshop with an anvil: sews and rivets faster, yet the army is still "in the works". The works are stored next to the armor.
+Mines magic stones. The stones glow — the miner pretends not to be afraid, the stones pretend not to glow. Deal.
+A mine with crystal supports: more stones, more light, common sense as before — which is to say, bare minimum.
+Stones give their power to mana jars. Works on its own, as proper magic should: no worker, no salary, no thanks.
+A circle with a runic rim: two jars of mana per stone now. Alchemists are shocked, the sorcerer is in profit, the stones are in jars.
+Mines iron ore. The cliff takes it as a personal insult and rusts in response, but the miner is stubborn: he has a minecart and no vacation soon.
+A mine with rails and a winch: twice the ore per trip, and the cliff rusts even more resentfully. The miner got a hard hat and considers himself an engineer.
+A bloomery with bellows: logs in, ingots out, soot everywhere. The smelter claims it's by design.
+A bloomery with double blast: the new recipe squeezes more ingots from ore for the same log. Soot didn't decrease, but now it's efficient.
+The smith bends bows, forges swords and sharpens daggers. Few customers: everyone's an equal and a little afraid of each other.
+An armory with a big forge: swords come in pairs, customers not so often. The smith hung a "No discounts" sign and was surprised it worked.
+A stone hall with a tower and a yard where they beat dummies. Dummies don't complain, which is why they make the best recruits.
+The hall is extended: six fighters fit in the guild, and the skill ceiling is raised to level 14. Training is livelier — the dummies beg for mercy.
+A forest lodge with a tower. Archers hit everything except what they aimed at, but they try.
+The lodge added a second tier to the range: six archers, 14 levels and very tired targets. The wind is, as before, to blame for everything.
+A lopsided house with a cellar. The Gang Boss swears it's all honest, and your weapon he forgot to put back yesterday.
+The cellar is extended and smells of secret passages: six sneaks, 14 levels and brisk training. The neighbours' purses tensed in advance.
+A tower with a starry dome. Mages are serious until you ask for a trick: then they're doubly serious, because the trick failed.
+The tower grew: six mages, 14 levels and studying twice as fast. The stars on the dome now wink, but that's most likely a draft.
+The sorcerer makes staves and robes. Magic on installments: mana today, a staff tomorrow, the day after — an explanation why it doesn't spark.
+A workshop with an observatory turret: faster and starrier. The sorcerer is inspired; inspiration is a resource too, but the storehouse won't take it.
+"{0}": upgrade to tier 2 started
+Level 2!
+"{0}" upgraded to tier 2
+##### js/profile.js
+Nameless Gnome
+The Wolf Is Full, the Gnome Is Wiser
+A wolf took a gnome's load. First meeting with wildlife went as usual.
+Red Tax Collector
+A fox dragged off a load. Cunning vs. dumb stubbornness: 1–0.
+First Loss
+The first gnome has died. The settlement will definitely remember him… for about two weeks.
+Statistics Don't Lie
+Five dead. The graveyard is eyeing you as a regular customer.
+Staff Turnover
+Fifteen dead. It's not the climate — it's the management.
+One, Two, Hammered Together
+Your first own building is up. It leans, but it's in the report.
+Accidental City Planner
+Fifteen buildings of your own. It just sort of happened.
+The Mayor Nobody Elected
+Forty buildings. Nobody pays taxes, though.
+Build Up, Don't Stop
+A building upgraded to tier 2. The foundation grunted nervously.
+Lumberjack, Wolf to Lumberjack
+300 planks sawn. Squirrels filed a class-action suit.
+The Forest Ran Out, You Didn't
+Two thousand planks. The horizon is noticeably roomier.
+Stone Upon Stone
+300 stone mined. Road building is a terrible force.
+Gold Rush (Mild Form)
+150 gold produced. We'll spend it on everything, as usual.
+Bread Is the Head of Everything
+200 loaves baked. The diet is postponed indefinitely.
+No Longer a Cult
+40 gnomes in the village. The assembly finally looks like an assembly.
+Cozy but Fun
+80 gnomes. Everyone knows everything about everyone, and that's a problem.
+Higher Education Without the Education
+The school graduated its first student. The diploma is, of course, drawn in charcoal.
+Survived the Night, Hooray
+Made it to the first dawn. The darkness left a one-star review.
+Hired Night Watchman
+Ten nights survived. The habit of sleeping with one eye open is permanent.
+Saving on Lighting
+A gnome fell and broke the lantern. Now he has two reasons for darkness.
+Left of Common Sense
+A gnome got lost in the fog in the middle of his own village. Talent.
+He Who Doesn't Work Doesn't Fall
+A gnome overdid the beer and fell asleep mid-stride. A successful workday.
+Treated a Ghost
+A ghost was handed bread. It isn't hungry — it just took it politely.
+Lumberjack Against His Will
+A gnome beat a fiend. The forest will remember. The forest holds grudges.
+Trees Can Too
+Fiends dragged a gnome into the fog. Promised to be back for dinner.
+Heroes Aren't Loved Here
+Fiends wiped out all the attackers. The tactical "hooray" was premature.
+From the Grave to the Crew
+A fallen gnome rose as a skeleton. Works without lunch, which is why he rose.
+Real Estate with an Eternity View
+A graveyard grew on the outskirts all by itself. The real estate agency is delighted.
+The Broom Is a Tool of Labor
+Cleanup Day declared. Voluntary-compulsory, like all the best traditions.
+Sat on a Bench During the Invasion
+While fiends roamed the village, one gnome calmly sat on a bench. Someone clearly knows more than the rest.
+Professional Hero
+The hero reached a new level. Now he tells the tavern about it even louder.
+Settled in Seriously
+45 minutes in the game. Real life can wait — it's duller anyway.
+An Hour of Gnome-World Life
+Two hours in the game. The tea went cold long ago, the gnomes haven't yet.
+Ear to Ear
+500 grain gathered. The mill is already asking for a day off.
+A Granary with Reserves
+Three thousand grain. The mice opened a branch.
+Flour Fog
+300 flour milled. Everyone in the village is slightly whitish.
+Stakhanovite Baker
+A thousand loaves. Suspiciously many for gnomes on a diet.
+Foamy Five-Year Plan
+150 mugs of beer brewed. The tavern hums like a hive.
+The Dark Side of the Barrel
+60 dark beer brewed. Morning will be hard, but evening will be easy.
+Sausage Factory
+120 sausages. The pigs figured it out and went into opposition.
+Medium-Rare Steak
+60 steaks. The cook demands to be called chef.
+French Accent
+60 croissants. Gnomes roll their R's and put their noses up.
+Found the Vein
+150 gold ore mined. Pickaxes moan in unison.
+Not Giving It to the Dragon
+600 gold produced. The treasurer sleeps with a calculator.
+Mountain Sickness
+1500 stone mined. The cliffs look on reproachfully.
+Leather Philosophy
+100 leather. Hides ran out before ideas did.
+Iron Will
+100 iron ingots. The furnace hasn't gone out since Monday.
+Sharp Wit
+30 swords forged. Now to find someone to swing them.
+String Drawn
+30 bows. The targets filed for resignation in terror.
+Canned Goods on Legs
+20 iron armors. Walk loud, hiding is pointless.
+Jar After Jar
+40 jars of mana. The mages stopped complaining about fatigue.
+Gnome Megapolis
+100 gnomes. The tavern queue is visible from space.
+Capital of the Whole Forest
+150 gnomes. There's already a bureaucrat of your own.
+Construction of the Century (One of)
+Seventy buildings. The roads will run out soon, then the map.
+Your Own Rome
+A hundred and twenty buildings. Rome wasn't built in a day either, but you're faster.
+Night Watch
+Twenty nights survived. Bags under the eyes became part of the look.
+Bearded Owl
+Fifty nights. The sun already greets you by name.
+Bitter Experience
+Thirty dead. The graveyard is expanding, and you keep building.
+Graduation Ball
+The school graduated 10 students. The diplomas are still charcoal.
+Talent Forge
+40 graduates. The school principal demands a monument.
+Rush Hour
+10 road collisions. The haulers, of course, had nothing to do with it.
+Ghostbuster
+Three ghosts put to rest. Or on vacation — who can tell.
+Master's Diploma
+The hero trained at a guild. Now he looks proudly in the mirror.
+Who's in Charge Here
+A gnome took charge of a building. The subordinates list: one gnome and grumbling.
+Goat Path
+The herder tamed a goat. The goat thinks the herder was tamed.
+Carter on Lodging
+The first carter left the stable. The roads sighed.
+Lunch by Schedule
+A gnome collapsed from hunger. The schedule existed only in dreams.
+Home, Sweet Home
+Five hours in the game. The gnomes count you as family.
+Got the First Achievement
+Achievement: {0}
+Achievement unlocked
+Opened "Profile and achievements"
+Opened the achievements list
+{0} · {1} min · {2} gnomes
+empty
+Player: {0}
+Saves
+Achievements {0}/{1}
+Players
+Player slots
+Slot {0}
+Shared (old) saves
+Manual
+??? Secret achievement
+The description opens when you do what you shouldn't have.
+Current player
+Rename
+All players
+Create
+Transfer to another device
+Download profile
+Load from file
+Profiles and saves live in this browser. Clearing site data wipes them too — that's what the file export is for.
+Delete player "{0}" with all slots
+Name can't be empty
+That player already exists
+Couldn't load
+You can only save during a game
+Overwrite this save?
+Saved
+Couldn't save: no space or no storage access
+Load the save? Unsaved progress will be lost.
+Delete this save forever?
+Player "{0}" created
+Playing: {0}
+Delete player "{0}", their slots and achievements forever?
+Import
+Player "{0}" loaded from file
+That file doesn't look like an OldGold profile
+Player and slots:
+Achievements
+Player and achievements

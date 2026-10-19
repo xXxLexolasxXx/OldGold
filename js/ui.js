@@ -380,6 +380,7 @@ function initUI() {
     if (m === 'new' && confirm('Начать на новой карте? Несохранённый прогресс пропадёт.')) newGame();
     if (m === 'help') document.getElementById('help').classList.toggle('hidden');
     if (m === 'lang') I18N.toggle();
+    if (m === 'lang') I18N.toggle();
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     updateUI(true);
   });
@@ -808,7 +809,7 @@ function updateUI(force) {
   const alerts = collectAlerts();
   if (UI.tab === 'overview') setHTML('overview', overviewHTML(alerts));
   if (UI.tab === 'menu') {
-    const fmt = m => m ? `${new Date(m.at).toLocaleString('ru-RU')} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'нет';
+    const fmt = m => m ? `${new Date(m.at).toLocaleString(I18N.locale())} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'нет';
     setHTML('save-info', `Режим: <span class="diff-chip" style="background:${dif().color}" title="${dif().desc}">${dif().name}</span><br>Сохранение: ${fmt(saveMeta('manual'))}<br>Автосохранение: ${fmt(saveMeta('auto'))}`);
   }
   if (UI.tab === 'log') { UI.logUnread = 0; setHTML('log-list', logHTML()); }

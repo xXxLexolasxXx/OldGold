@@ -47,7 +47,7 @@ for (const f of allJs) {
 }
 
 // ---- 3. Осиротевшие js и ссылки на старые пути
-for (const f of allJs.filter(f => f.startsWith('js/'))) if (!seen.has(f) && f !== 'js/coop/coopsim.js') warn(`файл не подключён в index.html: ${f}`);
+for (const f of allJs.filter(f => f.startsWith('js/'))) if (!seen.has(f) && f !== 'js/coop/coopsim.js' && !f.startsWith('js/i18n/')) warn(`файл не подключён в index.html: ${f}`);
 for (const f of allJs.filter(f => f.startsWith('js/'))) {
   const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
   for (const m of src.matchAll(/['"`](js\/[\w\/.-]+\.js)['"`]/g)) if (!exists(m[1])) err(`${f}: ссылка на несуществующий файл ${m[1]}`);

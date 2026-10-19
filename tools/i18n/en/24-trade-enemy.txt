@@ -1,0 +1,141 @@
+##### js/trade.js#2
+Bread Wagon
+Wandering Peddler
+Iron Caravan
+Sorcerers' Caravan
+Crop Failure Nearby
+Crop failure nearby: food gets pricier
+Bumper Year
+Bumper year: food gets cheaper
+War Rumours
+War rumours: weapons and armor are in demand
+Construction Nearby
+The neighbours are building: planks and stone are in demand
+Magic Fad
+Magic is in fashion: mana and staves sell eagerly
+The caravan fought off the robbers and arrived intact
+The road is clear
+The wheels creak, but keep dragging
+Shop
+Trading Post
+Market
+Trading House
+Merchants' Guild
+Free City
+The caravan "{0}" has set out and will soon reach the post
+Dust on the road: the caravan "{0}" is coming
+Robbers plundered the caravan "{0}" — it still arrived, but with half the goods
+Robbers wrecked the caravan! The merchant arrived with what was left
+The caravan "{0}" stopped at the Trading Post — trading is open
+The caravan "{0}" is at the post! Open the "Trade" tab
+The price shift is over: "{0}" is behind us
+Robbers driven off! The merchant is grateful: added to the purse and produced a rarity
+Robbers scattered! In gratitude the merchant revealed a special item
+The caravan "{0}" packed up and left down the road beyond the map edge
+There's no caravan at the post
+Nothing to trade
+This merchant doesn't take that
+Not in the storehouse: {0}
+The merchant is short of cash
+Sold: {0} ×{1} for {2} gold
+The merchant doesn't have that
+Not enough gold in the storehouse
+Bought: {0} ×{1} for {2} gold
+Caravans arrive here along the road from beyond the map edge. Swap surplus for gold, take other people's goods at a fair price. Needs a storehouse with gold.
+Trade
+gold in storehouses
+· turnover {0}
+No trade routes yet.
+Build a "Trading Post" ("Basics" tab). Caravans will arrive along the road from beyond the map edge and swap goods for gold. Merchants' prices float: sell surplus while prices are high.
+{0} · ~{1} min left
+Caravan on the way
+Meanwhile stock up on goods: merchants take whatever lies in the storehouse. A storehouse with gold is needed for purchases.
+The first caravan will soon set out on the road
+Nobody travels roads at night — the caravan arrives in the morning
+The next in about {0} s ({1} min)
+heading to the post
+leaving
+AMBUSH!
+stays {0} s more
+Merchant's purse:
+gold{0}
+fair
+· was robbed
+Robbers attacked the caravan! Send the hero or guild fighters to the wagon — they have ~{0} s.
+The merchant sells
+The stall is empty.
+{0} left · {1}
+gold
+rarity
+The merchant buys
+Needs nothing else.
+need {0} · you have {1} · {2}
+all
+Storehouses don't go down to zero on their own: the merchant takes only what you actually have lying free.
+Market prices {0}
+On the left — what they'll pay you, on the right — what they'll ask of you. Magic stones aren't traded.
+##### js/world/enemy.js#2
+Scout Crow
+Minion of Darkness
+Dark Knight
+Summon
+Green Fire
+The Black Spire is marked on the minimap. Gather the hero and a squad — Malgor waits at his door.
+Far beyond the forest, a poisonous green light flared in the Black Spire's windows… Someone there has woken.
+Crows of the Black Spire circle over the village — someone is scouting you.
+The dark mage Malgor knows about your village. He starts sending curses.
+Malgor sends servants: raids on storehouses at night. Stay close to the big bonfire!
+Siege! Malgor sent dark knights. Only a march on the Black Spire will end this.
+Malgor's servants come out of the fog: {0}! To the bonfire and into the houses!
+Malgor's raid: servants came out of the fog ({0})
+Malgor's curse: the village lanterns go out one by one!
+Malgor's curse: dying lanterns
+Malgor's curse: famine plague — bellies are empty!
+Malgor's curse: famine plague
+Malgor's curse: evil whisper — extra skeletons rise from the graves!
+Malgor's curse: evil whisper over the graveyard
+Malgor's crows circle over the village ({0})
+Shield of darkness!
+{0} shot down a scout crow
+Malgor Slayer
+Heroes
+{0} defeated the dark mage Malgor! The Black Spire went dark, the raids and curses are over.
+{0} defeated: the dark mage Malgor — the Black Spire went dark, the villain is down
+The dark mage Malgor is defeated
+Raid!
+Wretched mortal!
+Darkness is stronger!
+{0} carried off from the storehouse: {1} ×{2}
+Carrying: {0}
+Malgor's crow circled the village and disappeared toward the spire…
+A scout crow circled the village — Malgor knows more about you now
+Enough! Behold the green flame!
+Malgor summoned the guardian knight: while it lives, the shield of darkness absorbs blows. Strike the guardian!
+Nobodies! I'll scatter you!
+Malgor is enraged: he vanishes and appears nearby, showering fire!
+Who dares enter my house?!
+Malgor has awakened! The battle at the Black Spire!
+To me, servants!
+The Black Spire is visible in the distance — home of the one who sends the fiends.
+The dark mage's Black Spire found
+Malgor · phase {0}: {1}
+Asleep
+Noticed
+Scouting
+Curses
+Raids
+Siege
+The dark mage's wrath grows with the nights and the village's size. He can only be beaten by the hero marching to the Black Spire.
+The dark mage Malgor is defeated ✔
+Malgor: wrath {0}/100 · {1}{2}
+· spire on the map
+Didn't Get to Caw
+Malgor's scout crow shot down. The denunciation stayed unsent.
+Servant of Two Masters? No, of One
+A minion of darkness defeated. You can only quit that service feet first.
+Knight of the Woeful Countenance
+A dark knight defeated. The armor is heavy, and the morale heavier still.
+Raid Repelled
+Malgor's servant carried goods off the storehouse. The storehouse, though, draws its own conclusions.
+Light at the End of the Tower
+The dark mage Malgor defeated. The spire went dark, and the ghost neighbours suddenly have a lot of free time.

@@ -289,7 +289,8 @@ function golemHome() {
 
 function spawnGolem(at) {
   const [hx, hy] = golemHome();
-  let pos = at && golemFree(at.gx, at.gy) && Math.hypot(at.gx + 1.5 - hx, at.gy + 1 - hy) > 18 ? [at.gx, at.gy] : null;   // рядом с лагерем не оставляем
+  // из сохранения — где и стоял (сам дошёл, пусть стоит); «не ближе 18 клеток к лагерю» — только для нового места
+  let pos = at && golemFree(at.gx, at.gy) ? [at.gx, at.gy] : null;
   for (let tries = 0; !pos && tries < 1500; tries++) {
     const r = tries < 800 ? 24 + Math.random() * 14 : 14 + Math.random() * 28, a = Math.random() * Math.PI * 2;
     const gx = Math.round(hx + Math.cos(a) * r - 1), gy = Math.round(hy + Math.sin(a) * r * 0.7 - 1);
