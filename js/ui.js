@@ -6,14 +6,21 @@ const UI = { cat: 0, tab: 'build', hoverType: null, last: {}, bicons: {} };
 
 // ---------- Мелочи ----------
 
-function toast(text, target) {
+let toastN = 0;
+function toastKind(text) {   // тип оповещения → цвет печати: night / imp / (coop приходит аргументом)
+  if (/ноч|призрак|нечист|сов[аы] |мыш|Малгор|гоблин|тёмн/i.test(text)) return 'night';
+  if (/достиг уровня|веха|погиб|упал от голода|Мало памяти|не выполнен|Победа|Поражение/i.test(text)) return 'imp';
+  return '';
+}
+function toastClose(el) { if (!el || !el.parentNode || el.classList.contains('burn')) return; el.classList.add('burn'); setTimeout(() => el.remove(), 320); }
+function toast(text, target, kind) {
   const box = document.getElementById('toasts');
   if (!box) return;
   if (box.childElementCount > 3) box.firstChild.remove();
   const el = document.createElement('div');
-  el.className = 'toast' + (target ? ' link' : '');
+  el.className = 'toast v' + (toastN++ % 3) + (target ? ' link' : '') + ' ' + (kind || toastKind(String(text)));
   el.textContent = text;
-  if (target) el.onclick = () => focusBuilding(target);
+  el.onclick = () => { if (target) focusBuilding(target); toastClose(el); };
   box.appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }

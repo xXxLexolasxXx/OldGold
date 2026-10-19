@@ -130,7 +130,7 @@ function coopHandle(m) {
     case 'w': coopWorld(m); break;
     case 'me': Coop.me = m; coopRefreshHud(); coopVilHud(m.vil); coopQuestHud(m.qx, m.tt); break;
     case 'unlock': if (typeof unlockStage === 'function') unlockStage(m.id, true); break;
-    case 'toast': toast(m.text); break;
+    case 'toast': toast(m.text, null, 'coop'); break;
     case 'fl': floater(m.x, m.y, m.text, m.col || '#fff6d0'); break;
     case 'chat': coopChat(m); break;
     case 'saved': break;
