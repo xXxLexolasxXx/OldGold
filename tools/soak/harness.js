@@ -176,7 +176,7 @@ H.check = function () {
   }
   let bmapOrphan = 0, doorOrphan = 0;
   for (let i = 0; i < N_TILES; i++) {
-    if (World.bmap[i] && !bids.has(World.bmap[i])) bmapOrphan++;
+    if (World.bmap[i] > 0 && !bids.has(World.bmap[i])) bmapOrphan++;   // -1 — непроходимая метка без здания (башня врага в enemy.js, временная в blocksPassage)
     if (World.door[i] && !buildingAtDoor(i % MAP_W, (i / MAP_W) | 0)) doorOrphan++;
   }
   if (bmapOrphan) out('bmap-orphan', 'клеток bmap без здания: ' + bmapOrphan, 'err');

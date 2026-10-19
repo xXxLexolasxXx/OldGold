@@ -11,7 +11,7 @@ body{margin:0;background:#4a6e30;color:#eee;font:12px/1.3 sans-serif}
 .lbl{color:#fff;text-shadow:0 1px 2px #000}
 </style></head><body>
 <div id="bar"><b id="title"></b> <label>масштаб <select id="sc"><option>2</option><option selected>3</option><option>4</option></select></label>
-<label><input type="checkbox" id="lv2"> уровень 2</label> <label><input type="checkbox" id="rot"> поворот (вход на восток)</label> <button id='save'>сохранить PNG</button> <span id="err" style="color:#f88"></span></div>
+<label>эпоха <select id="era"><option value="0">по игре</option><option>1</option><option>2</option><option>3</option></select></label> <label><input type="checkbox" id="lv2"> уровень 2</label> <label><input type="checkbox" id="rot"> поворот (вход на восток)</label> <button id='save'>сохранить PNG</button> <span id="err" style="color:#f88"></span></div>
 <div class="row" id="out"></div>
 <script>
 const q=new URLSearchParams(location.search), base=q.get('base')||'js';
@@ -23,12 +23,12 @@ window.ENT_LOOK={};const files=['js/world/fire.js','js/config.js','js/world.js',
  window.ENT_LOOK=window.ENT_LOOK||{};if(typeof Game==='undefined')window.Game={time:0,buildings:[]};
  if(typeof R==='undefined')window.R={smooth:false};
  window.TILE=window.TILE||32;
- if(q.get('sc'))document.getElementById('sc').value=q.get('sc'); if(q.get('lv2'))document.getElementById('lv2').checked=true; if(q.get('rot'))document.getElementById('rot').checked=true; draw(); if(q.get('save'))await savePng(q.get('save'));
- for(const id of['sc','lv2','rot'])document.getElementById(id).onchange=draw; document.getElementById('save').onclick=savePng;
+ if(q.get('sc'))document.getElementById('sc').value=q.get('sc'); if(q.get('era'))document.getElementById('era').value=q.get('era'); if(q.get('lv2'))document.getElementById('lv2').checked=true; if(q.get('rot'))document.getElementById('rot').checked=true; draw(); if(q.get('save'))await savePng(q.get('save'));
+ for(const id of['sc','era','lv2','rot'])document.getElementById(id).onchange=draw; document.getElementById('save').onclick=savePng;
 })();
 window.CELLS=[];
 async function savePng(nm){const cells=CELLS;const k=+document.getElementById("sc").value;const COLS=+q.get("cols")||4;const cw=Math.max(...cells.map(c=>c.cv.width))+8,ch=Math.max(...cells.map(c=>c.cv.height))+22;const rows=Math.ceil(cells.length/COLS);const big=document.createElement("canvas");big.width=cw*COLS;big.height=ch*rows;const c=big.getContext("2d");c.fillStyle="#4f7a30";c.fillRect(0,0,big.width,big.height);c.strokeStyle="#5c8236";for(let x=0;x<big.width;x+=32*k){c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,big.height);c.stroke();}for(let y=0;y<big.height;y+=32*k){c.beginPath();c.moveTo(0,y+.5);c.lineTo(big.width,y+.5);c.stroke();}c.imageSmoothingEnabled=false;cells.forEach((cl,i)=>{const x=(i%COLS)*cw+4,y=Math.floor(i/COLS)*ch+2;c.drawImage(cl.cv,x,y+ch-22-cl.cv.height);c.fillStyle="#fff";c.font="12px sans-serif";c.fillText(cl.name,x,y+ch-6);});const lv=document.getElementById("lv2").checked?2:1,rot=document.getElementById("rot").checked?1:0;const name=(typeof nm==="string"&&nm!=="1")?nm+".png":(base==="js"?"after":"before")+"_x"+k+"_L"+lv+"_r"+rot+".png";const r=await fetch("/save?name="+name,{method:"POST",body:big.toDataURL("image/png")});document.getElementById("err").textContent=await r.text();}
-function draw(){CELLS=[];
+function draw(){CELLS=[];window.ERA_FORCE=+document.getElementById('era').value||0;if(typeof eraEvict==='function')eraEvict([window.ERA_FORCE||2]);
  const out=document.getElementById('out');out.innerHTML='';
  const k=+document.getElementById('sc').value, lv=document.getElementById('lv2').checked?2:1, rot=document.getElementById('rot').checked?1:0;
  let types=[...BUILD_ORDER,'graveyard'].filter(t=>BUILDINGS[t]); if(q.get('only'))types=q.get('only').split(',');
