@@ -555,7 +555,7 @@ function coopList(arr) {
   }
   return out;
 }
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'brawl'];
 const COOP_WX = ['k', 'target', 'bolt', 'scorch', 'fires', 'rainEnd', 'nextRain'];
 
 // всё, что нечисть, ночь и погода держат вне жителей и клеток

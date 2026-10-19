@@ -216,6 +216,7 @@ function step(dt) {
   updateAnimals(dt);
   nightTick(dt);
   festivalTick(dt);
+  brawlTick(dt);
   weatherTick(dt);
   updateCritters(dt);
   streetTick(dt);
