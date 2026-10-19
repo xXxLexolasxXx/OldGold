@@ -237,7 +237,15 @@ function defFinish(i, silent) {
   const F = FORTS[o.f];
   delete o.bt;
   o.hp = fortMax(o);
-  if (F.blk) o.blk = 1;
+  if (F.blk) {
+    o.blk = 1;
+    // груз, упавший на клетку во время стройки, переезжает на соседнюю: под стеной ему не место
+    const pile = Game.piles.get(i);
+    if (pile && !pile.removed) {
+      pile.removed = true; Game.piles.delete(i);
+      for (const g of GOOD_KEYS) if (pile.stock[g] > 0) dropPile(i % MAP_W, (i / MAP_W) | 0, g, pile.stock[g]);
+    }
+  }
   DEF.prog.delete(i);
   const x = i % MAP_W, y = (i / MAP_W) | 0;
   if (!silent) { fxBurst(x * TILE + 16, y * TILE + 16, 10, ['#d8b070', '#a0703a', '#cfc7b4'], 50, 40, 0.6, 1.8, 220); sfxAt('build', x * TILE, y * TILE, 0.5); }
