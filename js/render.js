@@ -192,16 +192,16 @@ function drawUnit(c, u) {
   // просто стоит — лицом к зрителю, а не боком, как после ходьбы
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
-  const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 || u.hangUntil > Game.time ? 'tired' : '', gest: '', gf: Math.floor(Game.time * 4 + u.id) & 1 };
+  const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 || u.hangUntil > Game.time ? 'tired' : '', gest: '', gf: gestCyc(Game.time * 4 + u.id) };
   if ((u.type === 'hero' || u.rec || u.gx || u.gm) && typeof heroWpnOf === 'function') opt.wpn = heroWpnOf(u);   // оружие героя, рекрутов и глав гильдий (herokit.js)
   if ((u.anim === 'flaskout' || u.anim === 'drink') && pose === 'idle') {
     opt.gest = u.anim === 'drink' ? 'drink' : 'chest';
-    opt.gf = Math.floor(Game.time * 3 + u.id) & 1;
+    opt.gf = gestCyc(Game.time * 3 + u.id);
     view = (u.id & 1) ? 'S' : 'E';
   } else if (u.gestUntil > Game.time && (pose === 'walk' || pose === 'idle')) {
     opt.gest = u.gest;
     if (u.gest === 'five') { opt.gf = fiveFrameAt(FIVE_T - (u.gestUntil - Game.time)); view = 'E'; face = u.gestFace || face; }
-    else if (u.gest === 'clap') { opt.gf = Math.floor(Game.time * 7 + u.id) & 1; if (pose === 'idle') view = 'S'; }
+    else if (u.gest === 'clap') { opt.gf = gestCyc(Game.time * 7 + u.id); if (pose === 'idle') view = 'S'; }
     else if (pose === 'idle') { view = 'E'; face = u.gestFace || face; }
   } else if (pose === 'idle' && !u.anim) {
     // заскучал: чешет затылок, потягивается, зевает, оглядывается
@@ -224,7 +224,9 @@ function drawUnit(c, u) {
   }
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, lying ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
-  if (pose === 'idle' && frame === 0) frame = Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES);   // дыхание: 6 кадров
+  if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 6 тактов, 2 позы
+  // жест и так движется: в покое без дыхания, на ходу — две опорные позы (шаг уже даёт 8 кадров), чтобы не множить спрайты
+  if (opt.gest && opt.gest !== 'five') { if (pose === 'idle') frame = 0; else if (pose === 'walk') opt.gf = gestK(opt.gf) >= 0.5 ? 1 : 0; }
   const spr = personSprite(u, view, pose, frame, opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
   if (flyP >= 0) {

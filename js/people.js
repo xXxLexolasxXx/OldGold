@@ -514,7 +514,7 @@ function drawEar(c, x, y, dir, sk) {
 }
 
 function drawBeard(c, view, hx, hy, L, type, bottom, r) {
-  const bc = type === 'enchanter' ? '#f0ece4' : BEARDS[L.beard];
+  const bc = type === 'enchanter' ? '#f0ece4' : (L.bcol || BEARDS[L.beard]);
   const st = L.beardStyle || 0, mid = (hy + bottom) / 2 + 1;
   c.save();
   c.beginPath();
@@ -695,7 +695,7 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
     }
   } else {
     drawEar(c, hx - 3.4, hy + 0.2, -1, sk); drawEar(c, hx + 3.4, hy + 0.2, 1, sk);
-    const bc = O.fem ? HAIR : type === 'enchanter' ? '#f0ece4' : BEARDS[L.beard];
+    const bc = O.fem ? HAIR : type === 'enchanter' ? '#f0ece4' : (L.bcol || BEARDS[L.beard]);
     c.fillStyle = bc; c.beginPath(); c.ellipse(hx, hy + 0.4, R, R * 0.95, 0, 0, Math.PI * 2); c.fill();
     c.strokeStyle = shade(bc, -0.25); c.lineWidth = 0.3;
     for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(hx + k * 1.2, hy - 1); c.lineTo(hx + k * 1.3, hy + 3.6); c.stroke(); }
@@ -710,6 +710,10 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
 
 // ---------- Жесты ----------
 // Локоть и кисть для жеста: E — сбоку (лицом вправо, плечо в x≈0.4), S/N — рука side=±1.
+// Жесты: 4 такта туда-обратно между опорными позами 0 и 1. t — прежний счётчик (полный цикл = 2 единицы)
+const GEST_FRAMES = 4;   // 4 такта туда-обратно = 3 различимые позы (0, середина, 1) — плавнее прежних двух, без раздувания кэша
+function gestCyc(t) { return 10 + (Math.floor(t * GEST_FRAMES / 2) % GEST_FRAMES); }
+function gestK(gf) { return gf < 10 ? gf : (1 - Math.cos((gf - 10) / GEST_FRAMES * Math.PI * 2)) / 2; }
 function gestPts(g, f, side, shY, headY, view) {
   if (view === 'E') switch (g) {
     case 'wave':    return [[2.6, shY - 2.2], [3.4 + f * 1.2, headY - 3.4]];
@@ -720,7 +724,7 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'clap':    return [[3.4, shY + 1.4], [5.2 + f * 0.9, shY + 0.6]];
     case 'five':    return [[[1.6, shY - 3.4], [1.4, headY - 6.2]], [[3, shY - 3.6], [4.4, headY - 5]], [[3.8, shY - 2.6], [5.8, headY - 3.6]], [[2.4, shY - 0.4], [3.2, shY + 0.8]]][f & 3];   // вскинул назад · замах · хлопок · опустил
     case 'panic':   return [[2.4, shY - 2.6], [3.4 + f * 1.4, headY - 4.6 + f * 1.2]];
-    case 'eat':     return f ? [[3.2, shY + 0.6], [4.6, headY + 3.4]] : [[3.4, shY + 2.4], [5.2, shY + 3.4]];
+    case 'eat':     return f >= 0.5 ? [[3.2, shY + 0.6], [4.6, headY + 3.4]] : [[3.4, shY + 2.4], [5.2, shY + 3.4]];
     case 'chest':   return [[2.4, shY + 2], [1.4, shY + 0.2 + f * 0.6]];                  // рука за пазухой
     case 'drink':   return [[3, shY + 2], [4.6, headY + 3.2 + f * 0.6]];                  // фляжка у рта
     default:        return [[3.4, shY], [6.4, shY - 0.6 - f * 0.3]];     // point
@@ -734,7 +738,7 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'clap':    return [[side * 5.8, shY + 2.4], [side * (0.9 + f * 1.8), shY + 1.2]];     // хлопает перед грудью
     case 'five':    return [[[side * 5.6, shY - 3.4], [side * 5.8, headY - 7]], [[side * 6, shY - 3], [side * 6.2, headY - 5.4]], [[side * 6.4, shY - 2.2], [side * 6.6, headY - 3.6]], [[side * 5.4, shY + 0.4], [side * 5.8, shY + 1.4]]][f & 3];
     case 'panic':   return [[side * 6.4, shY - 2], [side * (6.6 - f * 1.6), headY - 4.2 + f * 1.6]];   // машет руками над головой
-    case 'eat':     return f ? [[side * 5, shY + 0.4], [side * 1.4, headY + 4]] : [[side * 5.4, shY + 2.4], [side * 3.4, shY + 4.2]];   // ложка ко рту / в миску
+    case 'eat':     return f >= 0.5 ? [[side * 5, shY + 0.4], [side * 1.4, headY + 4]] : [[side * 5.4, shY + 2.4], [side * 3.4, shY + 4.2]];   // ложка ко рту / в миску
     case 'chest':   return [[side * 4.6, shY + 2.4], [side * 1.8, shY + 0.4 + f * 0.6]];
     case 'drink':   return [[side * 4.6, shY + 1.4], [side * 1.6, headY + 3.6 + f * 0.6]];
     default:        return [[side * 5.8, shY + 0.4], [side * 7.4, shY - 0.6 - f * 0.3]];
@@ -797,6 +801,16 @@ const WPN_DRAW_T = 0.44;
     TS.forEach((t, i) => { T['d' + i] = T['s' + (3 - i)] = lerpArr(T.draw, T.ready, t); });
   }
 })();
+// Каст и лечение: 6 кадров c0..c5 (стойка → вскинул оружие → пик силы → опускает), стандарт «каст 6»
+const CAST_FRAMES = 6;
+(function () {
+  const L = (a, b, t) => a + (b - a) * t;
+  const P = [[0.3, 0], [0.7, 0], [1, 0], [1, 0.6], [0.8, 0], [0.4, 0]];   // [доля ready→win0, доля win0→win1]
+  const mix = (r, w0, w1, [a, b], def) => r.map((v, n) => L(L(v, w0[n] ?? def, a), w1[n] ?? def, b));
+  for (const st in FIGHT_ARM) { const A = FIGHT_ARM[st]; P.forEach((q, i) => { A['c' + i] = mix([A.ready[0], A.ready[1], A.ready[2] ?? 4.2], A.win0, A.win1, q, 4.2); }); }
+  for (const T of [FIGHT_BODY, FIGHT_BACK.free, FIGHT_BACK.shield]) P.forEach((q, i) => { T['c' + i] = mix(T.ready, T.win0, T.win1, q, 0); });
+})();
+const isCastF = f => typeof f === 'string' && f.length === 2 && f[0] === 'c';
 // ---------- Драка и отлёт (js/world/brawl.js) ----------
 // Кадры пьяной драки поверх тех же таблиц: пинок (kwind/kick/kfollow), бутыль (bwind/bhit/bfollow — после удара остаётся «розочка»),
 // шатание (sg0/sg1), падение (fl0 — на землю его кладёт поворот в render.js), вставание (up0/up1), отлёт героя (fy0/fy1/fy2) и сидение (sit).
@@ -860,7 +874,11 @@ function fightFrameOf(u, moving) {
   return null;
 }
 function fightFrameRaw(u) {
-  if (u.hfx && u.hfx.t > Game.time) return u.hfx.k;
+  if (u.hfx && u.hfx.t > Game.time) {
+    const h = u.hfx;
+    if (h.k !== 'cast') return h.k;
+    return 'c' + Math.min(CAST_FRAMES - 1, Math.max(0, Math.floor((1 - (h.t - Game.time) / h.d) * CAST_FRAMES)));
+  }
   const an = u.anim;
   if (!an || an[0] !== 'f' || !FIGHT_ANIM_SET.has(an)) return null;
   const a = u.action, p = a && a.T ? 1 - Math.max(0, a.t) / a.T : 1;
@@ -1014,7 +1032,7 @@ function drawOnBack(c, k, x, y, view) {
 // ---------- Фигура ----------
 // pose: idle | walk | work | duck | smoke | tame | fight; frame: 0..7 для шага, {anim, f} для работы, имя кадра для боя
 // opt.gait: '' — вразвалочку, 'drunk' — шатается, 'tired' — голодный плетётся;
-// opt.gest: wave | fist | scratch | stretch | yawn | clap | point, opt.gf — кадр жеста 0/1.
+// opt.gest: wave | fist | scratch | stretch | yawn | clap | point, opt.gf — кадр жеста: 0/1 (опорные позы) или gestCyc() — 4 такта (3 позы).
 
 // Юбка официантки: колоколом до колен, красная с подолом-фестоном и белым фартуком (вид спереди/сзади)
 function femSkirt(c, hipY, front, sw) {
@@ -1050,7 +1068,10 @@ function femBust(c, shY, skin) {
 
 // Стандарт кадров: покой 6 (дыхание), ходьба 8, работа 8 (замах → удар → возврат), бой 9
 const IDLE_FRAMES = 6, WORK_FRAMES = 8;
-const IDLE_BREATH = [0, 0.18, 0.4, 0.5, 0.34, 0.1];
+// при 2 px мира на пиксель арта подъём груди различим только как «ниже/выше на пиксель»: 6 тактов цикла,
+// но спрайта два (IDLE_POSE — какой из них показывать на такте), иначе кэш гномов растёт вшестеро
+const IDLE_BREATH = [0, 0, 0, 0.5, 0, 0];
+const IDLE_POSE = [0, 0, 3, 3, 3, 0];
 // углы руки с инструментом по кадрам: 0 — над плечом, 6 — удар вниз, 7 — отведён назад перед ударом
 const SWING_A = [0.05, 0.35, 0.63, 0.92, 1.2, 1.5, 1.8, -0.14];
 const SWING_SICKLE = [1.3, 1.5, 1.68, 1.88, 2.06, 2.26, 2.45, 1.17];
@@ -1059,7 +1080,7 @@ const SWING_DIP = [-0.3, -0.15, 0, 0.05, 0.1, 0.3, 0.5, -0.4];
 function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const O = OUTFIT[type] || OUTFIT.serf;
   const shirt = O.robe ? (O.robeCol || '#2e5a26') : (O.coat || L.green), pants = O.pants;
-  const gait = opt.gait || '', gest = carry ? '' : (opt.gest || ''), gf = opt.gf || 0;
+  const gait = opt.gait || '', gest = carry ? '' : (opt.gest || ''), gf = gest === 'five' ? (opt.gf || 0) : gestK(opt.gf || 0);
   const ph = pose === 'walk' ? frame / 8 * Math.PI * 2 : 0;
   const sw = Math.sin(ph);
   const limp = injury === 'leg' && pose === 'walk';
@@ -1160,7 +1181,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       // на ходу клинок покачивается вместе с шагом, рука подпрыгивает: меч несут, а не приклеили
       const wk = !fight && pose === 'walk' && (wst === 'blade' || wst === 'stab') ? sw : 0;
       wA = { hx: hx + wk * 0.3, hy: hy + wk * 0.5, dx: Math.sin(Wd + wk * 0.16), dy: -Math.cos(Wd + wk * 0.16), Wd };
-      const two = (wst === 'heavy' || wst === 'staff') && ff !== 'draw' && ff !== 'd0' && ff !== 's3' && !(wst === 'staff' && (ff === 'win0' || ff === 'win1'));
+      const two = (wst === 'heavy' || wst === 'staff') && ff !== 'draw' && ff !== 'd0' && ff !== 's3' && !(wst === 'staff' && (ff === 'win0' || ff === 'win1' || isCastF(ff)));
       let bx, by;
       if (two) { bx = hx - wA.dx * 2.4; by = hy - wA.dy * 2.4; }          // двуручное: вторая рука ниже на древке
       else if (wst === 'bow') { const q = FIGHT_BACK.bow[ff]; if (q) { bx = -0.4 + q[0]; by = shY + 0.4 + q[1]; } else { bx = hx - 0.9; by = hy + 0.3; } }
@@ -1255,9 +1276,9 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         }
         if (wst === 'bow') drawBow(c, W.m, hx, hy, wA.Wd, ff === 'windup' ? [wA.bx, wA.by] : null);
         else if (wst !== 'fist') drawWeapon(c, W.m, hx, hy, dx, dy, (ff === 'draw' || ff === 'd0' || ff === 's3') && (wst === 'blade' || wst === 'stab') ? 'hilt' : undefined);
-        if (wst === 'staff' && (fight === 'windup' || fight === 'strike' || fight === 'win0' || fight === 'win1')) {
+        if (wst === 'staff' && (fight === 'windup' || fight === 'strike' || fight === 'win0' || fight === 'win1' || (isCastF(fight) && fight !== 'c0' && fight !== 'c5'))) {
           // посох копит и выпускает силу: свечение на конце
-          const t = 8.4, gx = hx + dx * t, gy = hy + dy * t, big = fight === 'strike';
+          const t = 8.4, gx = hx + dx * t, gy = hy + dy * t, big = fight === 'strike' || fight === 'c3';
           const col = W.m === 'wstaff' ? ['#7ae070', '#e8ffd0'] : W.m === 'sstaff' ? ['#8ad8ff', '#fffbe0'] : ['#ffb040', '#fff0a0'];
           ellipse(c, gx, gy, big ? 2.2 : 1.4, big ? 2.2 : 1.4, col[0]); ellipse(c, gx, gy, big ? 1.1 : 0.7, big ? 1.1 : 0.7, col[1]);
         }
@@ -1293,7 +1314,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         hand(c, h[0], h[1], skin[0]);
         if (gest === 'yawn') ellipse(c, 3.6, headY + 3.6, 0.8, 0.6, '#3a1408');
         if (gest === 'drink') drawFlask(c, h[0] + 1.8, h[1] - 0.8, 0.5);
-        if (gest === 'chest' && gf) drawFlask(c, h[0] + 2.2, h[1] - 1.6, 0.2);
+        if (gest === 'chest' && gf >= 0.5) drawFlask(c, h[0] + 2.2, h[1] - 1.6, 0.2);
       } else if (pose === 'smoke') {
         const sa = SMOKE_ARM.E, sf = frame | 0;   // кадр курения 0..3: достал, поднёс, затяжка, выдох
         smoothLimb(c, [0.4, shY + 0.4], sa.elbow[sf], sa.hand[sf], 2, shirt);
@@ -1349,7 +1370,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         smoothLimb(c, [sx, shY + 0.6], e, h, 2.2, col);
         hand(c, h[0], h[1], sk);
         if (gest === 'drink') drawFlask(c, h[0] + 2.4, h[1] - 0.8, 0.3);
-        if (gest === 'chest' && gf) drawFlask(c, h[0] + 2.2, h[1] - 1.4, 0.2);
+        if (gest === 'chest' && gf >= 0.5) drawFlask(c, h[0] + 2.2, h[1] - 1.4, 0.2);
         return;
       }
       if (carry && !courier) {
@@ -1443,11 +1464,11 @@ function spriteBudgetOk(hasFallback) {
 function spriteSpent(t0) { R.sprMs = (R.sprMs || 0) + performance.now() - t0; }
 
 function personSprite(u, view, pose, frame, opt = {}) {
-  const look = LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length];
+  const look = (u.look >>> 0) >= 0x20000 ? u.look : LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length];   // 0x20000+ — особые гномы наследия (legacy.js)
   const fkey = pose === 'work' ? `${frame.anim}${frame.f}` : frame;
   const lvl = (u.type === 'serf' || u.type === 'builder') ? unitLevel(u) : 1;
   const carryN = u.carry ? Math.min(3, Math.max(1, u.carryN || 1)) : 0;
-  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gf || 0) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}${opt.wpn ? 'W' + opt.wpn : ''}`;
+  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gest === 'five' ? (opt.gf || 0) : gestK(opt.gf || 0)) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}${opt.wpn ? 'W' + opt.wpn : ''}`;
   const key = `${u.type}|${look}|${view}${pose}${fkey}|${u.carry || ''}|${u.injury || ''}|${okey}`;
   let cv = PEOPLE_CACHE.get(key);
   if (cv) {

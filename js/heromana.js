@@ -108,7 +108,7 @@ function hmCast(k) {
     const f = hmFoe(u, 9);
     if (!f) { floater(u.x, u.y - 1.6, 'Нет цели', '#e8a070'); return; }
     u.face = f.o.x > u.x ? 1 : -1; u.vdir = 'E';
-    if (!u.inside) u.hfx = { k: 'win0', t: Game.time + 0.55 };      // поднял оружие — колдует (кадр из herokit/people)
+    if (!u.inside) u.hfx = { k: 'cast', t: Game.time + 0.55, d: 0.55 };      // поднял оружие — колдует (кадр из herokit/people)
     sfxAt('crackle', u.x * TILE, u.y * TILE, 0.9);
     hmBolt(u.x, u.y, f.o.x, f.o.y, ['#fff0a0', '#ff9a30', '#e04a18'], () => {
       const o = f.o;
@@ -137,7 +137,7 @@ function hmCast(k) {
       e.target = null; e.goal = null; e.state = 'ghosted'; e.t = 0; e.gFrom = [u.x, u.y]; n++;
     }
     H.wardUntil = Game.time + 20;
-    if (!u.inside) u.hfx = { k: 'win0', t: Game.time + 0.55 };
+    if (!u.inside) u.hfx = { k: 'cast', t: Game.time + 0.55, d: 0.55 };
     sfxAt('hiss', u.x * TILE, u.y * TILE, 1);
     fxBurst(u.x * TILE, u.y * TILE - 12, 30, ['#fff6c0', '#ffe070', '#ffffff'], 110, 20, 0.9, 2, 0);
     floater(u.x, u.y - 1.6, S.name + (n ? '!' : ' (никого рядом)'), '#fff0a0');
