@@ -645,7 +645,8 @@ class Unit {
         // к широким воротам — в свободную или менее загруженную створку
         if (!a.gate) {
           a.gate = true;
-          const gb = buildingAtDoor(a.walk[0], a.walk[1]);
+          // выходящий из склада идёт «на свою клетку» — створку не переназначаем, иначе он выходил через другие ворота
+          const gb = a.walk[0] === sx && a.walk[1] === sy ? null : buildingAtDoor(a.walk[0], a.walk[1]);
           if (gb && gb.door2) a.walk = pickGate(gb, this.id);
         }
         a.path = findPath(sx, sy, a.walk[0], a.walk[1], onRoad, courier ? this.id : 0);

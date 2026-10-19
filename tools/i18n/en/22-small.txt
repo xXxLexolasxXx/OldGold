@@ -1,0 +1,90 @@
+##### desktop/build-www.js#2
+esbuild not found — no minification
+www: {0} files, {1} MB → {2}
+##### desktop/steam.js#2
+[steam] couldn't hook up steamworks.js:
+[steam] achievement
+##### index.html#2
+Trade: caravans, swapping for gold
+##### js/coop/coopclient.js#2
+Village difficulty
+Village difficulty: {0}
+##### js/crashlog.js#2
+other
+other
+{0} failed to load
+unloaded in the background
+out of memory
+after an error
+cut off on screen
+none
+OldGold {0} · {1} · {2} · {3} · device memory {4} GB · screen {5}×{6} @{7}
+phone
+computer
+Now: {0}{1}{2}
+, game time {0} min, gnomes {1}, buildings {2}
+, {0} fps, {1} graphics
+lite
+normal
+Interrupted launches: {0} ({1})
+"Alive" marker: {0} · marker failures: {1} · lite graphics: {2}
+stuck since {0}
+auto
+{0} {1}, phase {2}, version {3}, ran {4} min, errors {5}{6}
+, heap {0}/{1} MB
+Errors (last {0} of {1}):
+Memory (latest samples): {0}
+{0}s: heap {1}/{2} MB, canvases {3} MB, {4} fps
+Saves: {0} KB in the browser
+Copied: the log is on the clipboard — paste it into a message to the author
+Copied ✓
+Couldn't copy automatically: select the text in the window and copy by hand
+Select the text in the window
+##### js/difficulty.js#2
+Calm
+Calm
+Build and explore without losses: gentler, shorter nights; gnomes don't die or collapse from hunger.
+Normal
+The intended balance: nights grow longer each day, gnomes get tired, eat and sometimes die.
+Survival
+Mean nights, fast hunger, a lean storehouse: every loss means ghosts and skeletons for the next night.
+##### js/guide.js#2
+{0}: produced {1}/min, spent {2}/min, in storehouse {3}
+Search by name…
+##### js/perf.js#2
+memory: heap {0} MB · canvases {1} MB · failures {2}{3}
+crashes: {0} · errors in the log {1} (button below or menu → "Copy log")
+Copy log
+Copy the crash and failure log to send to the author (without nickname or saves)
+##### js/save.js#2
+save from a newer game version (format {0}, the game understands up to {1})
+save {0} failed to load:
+The save is corrupted ({0}). A backup was loaded — up to a few minutes of play may be lost.
+newGame after a broken save
+Couldn't load the save: {0}. A new game was started, the damaged file was set aside.
+file is damaged (truncated or spoiled)
+unknown format
+parse error: {0}
+the save has no buildings at all
+##### js/startmenu.js#2
+{0} · {1} min · {2} gnomes{3}
+Map: {0}, {1}
+Creating the map…
+Couldn't create the map — try another seed
+Picked difficulty: {0}
+e.g. 4242
+Random seed
+Map
+Map seed (empty — random)
+Next
+New game difficulty
+##### js/ui.js#2
+Mode:
+##### js/world/weather.js#2
+Snow began
+It started snowing: gnomes turned up their collars. The ground is slippery!
+##### server/server.js#2
+biome
+size
+Only the host picks the difficulty
+difficulty:

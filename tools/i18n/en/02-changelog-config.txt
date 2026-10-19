@@ -1,0 +1,190 @@
+##### js/changelog.js
+New reaper horns
+Reaper horns: the ram ones curl tighter; the second kind is a single horn wriggling upward like a snake; the third is a single horn spiralling over the head
+Tutorial updated
+The tutorial got shorter (12 steps instead of 15) and goes in order: village and road → bread and estate → night → hero → combat and mana → guilds → "you're on your own"
+Neutrals, fairies, mimics, the festival, Cleanup Day, co-op and the goat with the carter get short collapsible "Learn more" blurbs, no overload
+The window header shows the tutorial section; on phone and PC the window folds into a single line so it doesn't cover the map
+The tutorial no longer starts under the start menu and the "What's your hero's name?" window
+Removed the confusing steps: the "come here" order is merged with hero work; dash, rally cry and sidekick moved into the combat step
+Strange night visitors
+Five strange creatures nothing like animals: Goo (from night 5), Lampskull (from 7), Sentinel (from 10), Ribbon (from 12) and the Shard Round-Dance (from 15)
+Each night a wild beast has a 15–20% chance to be swapped for one of the unlocked creatures, and returns at dawn; on the night a new kind unlocks, it always shows up
+Each has its own frames: Goo hops (6), Lampskull steps and blinks (6), Sentinel's gears tick (8), Ribbon writhes (8), Shards swirl (8)
+Menagerie
+Boar roams the forest rooting for acorns and mushrooms; charges and bites a lone gnome (limp), backs off from the hero and three gnomes, and can be hunted by the hero: hides and meat
+Bear reaches for beehives for honey, fears no bees and is dangerous to anyone who comes near; only four together can drive it off, it mauls the hero, but the hero can beat it
+Four cats (ginger, grey tabby, black, white-spotted) settle near the storehouse and bakery, catch mice, can be tamed with bread and purr
+Storks nest on a tall roof by the water and haul fish from the lake; the heron stands in the shallows among reeds and steals the anglers' catch (the hero or three gnomes chase it off)
+Fish are visible in the lakes: a shadow under the water, splashes and a flash when one jumps
+Farms get beehives with bees: gnomes collect honey in passing, and the bear steals it
+A big flock of crows circles over a ripe field and pecks the harvest; a scarecrow, the hero or three gnomes scare them off
+Fairy-tale creatures
+A brownie behind the oven of the bakery and mill: in the evening the baker sets out a saucer of milk, and at night the brownie fixes the building and bakes bread or grinds flour itself; forget the saucer and it hides a tool and drops a load. Rarely seen: eyes glow at night and a silhouette flickers by every few minutes
+The unicorn comes to the spring on a clear evening and heals the wounded, but gets spooked if you come too close
+A mountain dragonling hauls gold from piles and the storehouse by day and sometimes sets a field on fire; the hero can chase it off or tame it — then it carries gold for you
+A griffin patrols the mountains and guards a treasure: it scares gnomes, while the hero and recruits can beat it and take the hoard
+A fire salamander by the smelter and armory: when they're stoking, it glows brighter and work goes a little faster
+A goldfish in the lake (the hero catches it — get a ransom in gold) and a golden goose among the geese: once a day it lays a golden egg, if the flock isn't bullied
+Dark tales
+A kikimora in the reeds by the water: grabs a gnome from the shore and drags them into the mud along with the load. Pay-off — food left on a hummock
+The leshy, master of the forest: if too many trees get felled in a day, he leads the woodcutters in circles. Bread on a stump softens him up
+A water sprite and a mermaid in the lake: the sprite drags loads off the shore, the mermaid sings and lures gnomes to the water. Beer into the water — and both go quiet
+A banshee wails at the graveyard and before a gnome's doom (log entry, blinking icon), scaring nearby workers
+A ghostly wolf follows the night fiends, howls and steals lanterns. A bonfire and the hero drive it off, the lantern comes back
+Festival!
+New event — "Festival": every few days, via a button in the tavern or after beating the fiends, all gnomes drop their work, head to the tavern, drink ale, dance and shout "hooray". Lasts a day or two
+Garlands with flags between the lanterns and on the tavern, barrels by the door, confetti, clinking mugs
+Ale and food go faster, and after the festival gnomes suffer hangovers and move sluggishly
+Fiends and the coming of evening break up the party; at night it quiets down, and a multi-day festival resumes in the morning
+Horned reapers and sickle claws
+The reaper now wears a black horned helmet; the horns are demonic, in three shapes: curled ram, tall bull, a crown of spikes (each reaper has its own)
+Fingers of ghosts and the reaper: jointed phalanges and sickle claws, curved and sharp
+New event — "Festival": every few days (via a button in the tavern, or after beating the fiends) all gnomes drop their work, head to the tavern, drink ale, dance and shout "hooray". Lasts a day or two
+Garlands with flags between the lanterns and on the tavern, barrels by the door, confetti; clinking mugs and a general hum
+Fiends and the coming of evening break up the party
+Look of the undead
+The reaper now looks like Death: a roomy black hood with a skull in the shadow and a long scythe with a sickle blade
+Ghost hands got smaller, with longer and thinner claws
+Ghosts and the reaper
+Ghosts were redrawn from scratch: bodiless paws with claws, a sinister hood with bone horns, a grainy tail, grave eyes (red only when scaring)
+New tier-2 undead — the reaper ghost: from night 3, on the outskirts, one at a time. Takes no bread, can't be banished by prayer, snuffs lanterns, scares the whole neighbourhood and scythes the hero
+Ghosts have 9 hover frames and 8 strike frames: if the hero banishes a ghost, it snaps back with claws
+Ghosts no longer drift off the edge of the map
+A ghost soothed with bread stopped scaring gnomes
+Ghosts dissolve when dawn begins, not at the very end; loading at dawn doesn't summon new fiends
+What's new
+Fixed
+New
+Version
+##### js/config.js
+Logs
+Construction
+Planks
+Stone
+Grain
+Food
+Hay
+Hops
+Beer
+Flour
+Bread
+Pigs
+Sausage
+Gold ore
+Valuables
+Gold
+Hides
+Crafts
+Leather
+Leather armor
+Gear
+Magic stones
+Magic
+Mana jars
+Staves
+Mage robes
+Iron ore
+Metal
+Iron ingots
+Swords
+Bows
+Daggers
+Iron armor
+Trash
+Estate
+Ash
+Chicken (whole)
+Chicken pieces
+Croissants
+Steaks
+Dark beer
+Hauler
+Builder
+Woodcutter
+Carpenter
+Stonecutter
+Plowman
+Miller
+Baker-Miller
+Miner
+Smelter
+Swineherd-Tanner
+Butcher
+Armorer
+Sorcerer
+Hop-grower
+Brewer
+Herder-Stableman
+Stableman
+Pack goat
+Carter
+Hero
+Warrior Master
+Archery Master
+Gang Boss
+Archmage
+Warrior
+Archer
+Rogue
+Mage
+Basics
+A big stone barn. Stores all goods; haulers bring the surplus here.
+School
+A two-storey school with a bell tower. Trains gnomes for 1 gold.
+Tavern
+Hungry gnomes eat chicken, sausage or bread here and wash it down with beer. A chicken carcass is cut into 4 pieces. A drunk may fall asleep right on the road.
+Big bonfire
+Resources
+Haulers carry trash here from the bins. Burning, it makes ash — farms use it to fertilize fields, so crops grow faster and richer.
+Goat pen
+The herder tames wild goats. A tame goat hauls goods along roads — 2 at a time. Up to 3 goats per pen.
+The stableman raises horses on hay and grain. Each horse with a cart is a carter: hauls a whole stack at once, up to 5 items. Up to 3 per stable.
+Woodcutter's house
+A log cabin. The woodcutter fells mature trees and plants new ones.
+Sawmill
+Saws logs into planks.
+Quarry
+Mines stone. Build next to boulders.
+Gold mine
+Mines gold ore. Build flush against a cliff.
+Smelter
+Smelts ore into gold, burning logs.
+Iron mine
+Mines iron ore. Build flush against a cliff.
+Metal smelter
+A bloomery with bellows: iron ore and logs become iron ingots for weapons and armor.
+Armory
+The smith-armorer forges swords and daggers, bends bows. The hero and recruits take weapons here.
+Farm
+The farmer sows and reaps the wheat fields you marked nearby. Hay is a by-product of harvest.
+Hop yard
+The hop-grower raises hops on poles around and dries the cones in the tower.
+Brewery
+Brews beer from grain and hops. Beer goes to the tavern.
+Mill
+Grinds grain into flour.
+Bakery
+Bakes bread from flour.
+Pigsty
+Every armful of hay: the pigs grow a third bigger and a piglet appears. Adults go to the slaughterhouse.
+Slaughterhouse
+A pig becomes sausage and a hide.
+Tannery
+Cures hides into leather.
+Armor workshop
+Sews leather armor, and with iron on hand rivets iron armor too.
+Magic stone mine
+The miner digs magic stones. Build under a cliff with crystals.
+Magic circle
+Stones give their power to mana jars and turn into plain stones. Works on its own.
+Magic workshop
+The sorcerer makes staves and mage robes.
+Warriors' guild
+A stone hall with a tower and a training yard. The Warrior Master teaches how to hold a sword and wear iron.
+Archers' guild
+A forest lodge with a watchtower and targets. The Archery Master teaches marksmanship and quick feet.
+Rogues' guild
+A lopsided house with a cellar and blind windows. The Gang Boss teaches sleight of hand and the finer points of what's lying around.
+Mages' guild
+A tower with a starry dome and a library. The Archmage teaches wits and spells.
