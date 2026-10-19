@@ -47,6 +47,8 @@ const { createStats, printSummary } = require('./stats');
 fs.mkdirSync(DATA, { recursive: true });
 const WORLD_FILE = path.join(DATA, 'world.json');
 const SETTINGS_FILE = path.join(DATA, 'settings.json');
+const MAP_FILE = path.join(DATA, 'custom-map.json');   // карта, которую хост выбрал из игры («Новый мир на своей карте»)
+let noSave = false;                                       // мир отложен в архив, идёт перезапуск — старый мир не сохранять
 const USERS_FILE = path.join(DATA, 'players.json');
 const VIL_FILE = path.join(DATA, 'village.json');
 const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
@@ -133,17 +135,20 @@ if (!loadWorld()) {
   const seed = process.env.OLDGOLD_SEED ? run(`mapSeedFrom(${JSON.stringify(String(process.env.OLDGOLD_SEED))})`) : (Math.random() * 1e9) | 0;
   // OLDGOLD_MAP=путь к файлу карты игрока (редактор карт, КАРТЫ_РЕДАКТОР.md): вместо генерации, свободная игра с правилами карты
   let custom = false;
-  if (process.env.OLDGOLD_MAP) {
+  // карта, выбранная хостом из игры (custom-map.json), важнее переменной окружения
+  const mapPath = fs.existsSync(MAP_FILE) ? MAP_FILE : process.env.OLDGOLD_MAP;
+  if (mapPath) {
     try {
-      host.ctx.__mapText = fs.readFileSync(process.env.OLDGOLD_MAP, 'utf8');
+      host.ctx.__mapText = fs.readFileSync(mapPath, 'utf8');
       custom = run('(function(){ const r = meParse(__mapText); __mapText = null; if (r.err) throw new Error(r.err); const v = meValidate(r.map); if (v.errors.length) throw new Error(v.errors.join("; ")); __customMap = r.map; return true; })()');
     } catch (e) { log('карта игрока не принята, делаем обычную:', e.message); }
   }
   run(`setupStart(${seed}, ${custom ? '{ custom: __customMap }' : `{ biome: '${biome}', size: '${size}' }`}); goalNew('${custom ? 'free' : 'scenario'}'); coopDropHeroes(); for (const b of Game.buildings) b.hold = false; coopInitUnlocks();`);
-  log('создан новый мир, зерно', seed, 'биом', biome, 'размер', size);
+  log('создан новый мир, зерно', seed, custom ? 'карта игрока ' + run('MapOpt.custom.name') : 'биом ' + biome + ', размер ' + size);
 }
 
 function saveWorld() {
+  if (noSave) return false;
   try {
     const text = run('JSON.stringify(serializeGame())');
     const tmp = WORLD_FILE + '.tmp';
@@ -402,6 +407,29 @@ function onMessage(c, text) {
     log('хост запросил перезапуск');
     broadcast({ t: 'restarting' });
     saveWorld();
+    setTimeout(() => process.exit(42), 300);
+    return;
+  }
+  if (m.t === 'newworld') {
+    // хост начинает новый мир: на своей карте (m.map — карта в формате файла) или обычной генерацией (m.map = null)
+    if (!c.isHost || m.confirm !== true) return c.send({ t: 'toast', text: 'Новый мир начинает только хост' });
+    let text = null;
+    if (m.map != null) {
+      try { text = JSON.stringify(m.map); } catch (e) { text = ''; }
+      if (!text || text.length > 400000) return c.send({ t: 'toast', text: 'Карта слишком большая' });
+      host.ctx.__mapText = text;
+      const bad = run('(function(){ const r = meParse(__mapText); __mapText = null; if (r.err) return r.err; const v = meValidate(r.map); return v.errors.length ? v.errors.join("; ") : ""; })()');
+      if (bad) return c.send({ t: 'toast', text: 'Карта не принята: ' + bad });
+    }
+    saveWorld();
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    try {
+      for (const f of [WORLD_FILE, WORLD_FILE + '.bak']) if (fs.existsSync(f)) fs.renameSync(f, f.replace(/\.json(\.bak)?$/, '-' + stamp + '.json$1'));
+      if (text) fs.writeFileSync(MAP_FILE, text); else if (fs.existsSync(MAP_FILE)) fs.unlinkSync(MAP_FILE);
+    } catch (e) { log('новый мир не начат:', e.message); return c.send({ t: 'toast', text: 'Сервер не смог начать новый мир' }); }
+    noSave = true;
+    log('хост начал новый мир', text ? 'на своей карте' : 'обычной генерацией', '— старый мир в архиве', stamp);
+    broadcast({ t: 'restarting' });
     setTimeout(() => process.exit(42), 300);
     return;
   }

@@ -53,6 +53,8 @@ scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
+scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
+scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
 
 // ---------- 2. Симуляция: инварианты
 function simRun(seed, minutes, r, opts = {}) {
