@@ -130,7 +130,7 @@ function updateAnimal(a, dt) {
     }
     if (a.think <= 0) {
       a.think = 0.8;
-      if (Game.time >= a.stealCD) {
+      if (Game.time >= a.stealCD && startOpen('thieves')) {
         const prey = nearestPerson(a, a.kind === 'fox' ? 7 : 9, u => !!u.carry);
         const pile = !prey ? [...Game.piles.values()].find(p => Math.hypot(p.x - a.x, p.y - a.y) < 9) : null;
         a.target = prey || pile;

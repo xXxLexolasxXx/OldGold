@@ -144,7 +144,7 @@ function sickTick(dt) {
   SKT.acc += dt;
   if (SKT.acc < 1) return;
   const step = SKT.acc; SKT.acc = 0;
-  if (Game.time < 30) return;
+  if (Game.time < 30 || !startOpen('sickness')) return;
   const M = medEnsure(), now = Game.time;
   // гномы проверяются по очереди: каждый — раз в SICK.STEP секунд
   SKT.phase = (SKT.phase + 1) % SICK.STEP;

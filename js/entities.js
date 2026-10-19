@@ -523,7 +523,10 @@ function gainXp(u, n) {
   if (after > before) {
     const msg = `${UNIT_TYPES[u.type].name} ${LEVEL_UP_TEXT[u.type][after - 1]}`;
     logEvent('people', msg, u.x, u.y);
-    if (typeof toast === 'function') toast(msg);
+    // мягкий старт: в первые двое суток всплывашка — только про первое повышение каждого звания, остальные в журнале
+    const key = u.type + after, seen = Game.lvToast || (Game.lvToast = {});
+    if (typeof toast === 'function' && (!seen[key] || startOpen('lvToast'))) toast(msg);
+    seen[key] = 1;
   }
 }
 

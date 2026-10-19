@@ -411,7 +411,7 @@ function neuTick(dt) {
   if (Game.nT < 1) return;
   Game.nT = 0;
   for (const u of Game.units) if (u.rec && u.rec.hp != null) { const max = 30 + 8 * u.rec.lvl; if (u.rec.hp < max) u.rec.hp = Math.min(max, u.rec.hp + 1.1); else u.rec.hp = undefined; }
-  for (const L of Game.lairs) if (L.k === 'pixie') neuWatchGrove(L);
+  if (startOpen('neutrals')) for (const L of Game.lairs) if (L.k === 'pixie') neuWatchGrove(L);
   for (const L of Game.lairs) {
     if (L.respawn && Game.time >= L.respawn && !Game.units.some(u => !u.dead && Math.hypot(u.x - L.x, u.y - L.y) < 9)) {
       neuFillLair(L);

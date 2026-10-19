@@ -1174,7 +1174,7 @@ function endermanDraw(list, c, F, x0, y0, x1, y1) {
 
 // ---------- Общий тик и рисование ----------
 function fairyTick(dt) {
-  if (!FAUNA_ON() || !Game.buildings || !Game.buildings.length) return;
+  if (!FAUNA_ON() || !Game.buildings || !Game.buildings.length || !startOpen('fairy')) return;
   const F = fyState();
   fyNests(F);
   brownieTick(dt, F);

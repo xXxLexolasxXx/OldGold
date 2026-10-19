@@ -243,7 +243,7 @@ function tradeTick(dt) {
   if (!car) {
     const fair = typeof fairOn === 'function' && fairOn();
     if (fair && t.fairDone !== (Game.fair && Game.fair.id)) { t.fairDone = Game.fair && Game.fair.id; t.next = Math.min(t.next, Game.time + 20); }
-    if (Game.time >= t.next && !isNightNow() && !isEveningNow()) trSpawnCaravan(post);
+    if (Game.time >= t.next && !isNightNow() && !isEveningNow() && startOpen('trade')) trSpawnCaravan(post);
     return;
   }
   if (car.st === 'in' || car.st === 'out') trMoveCaravan(t, car, dt, post);
@@ -348,7 +348,7 @@ if (typeof BUILDINGS !== 'undefined' && !BUILDINGS.tradepost) {
     desc: 'Сюда по дороге из-за края карты приходят караваны. Меняйте излишки на золото, берите чужое по честной цене. Нужен склад с золотом.',
   };
   BUILD_ORDER.push('tradepost');
-  UNLOCKS.push({ id: 'trade', items: ['tradepost'], after: ['bakery'] });
+  UNLOCKS.push({ id: 'trade', items: ['tradepost'], after: ['bakery'], rank: 1 });
   if (typeof DESCS !== 'undefined') DESCS.tradepost = [BUILDINGS.tradepost.desc, BUILDINGS.tradepost.desc];
   if (typeof SIGN_OF !== 'undefined') SIGN_OF.tradepost = 'coin';
 }

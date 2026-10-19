@@ -548,7 +548,7 @@ function beCatsTick(dt) {
   Game.catT = (Game.catT ?? 25) - dt;
   if (Game.catT <= 0) {
     Game.catT = 70 + Math.random() * 80;
-    if (homes.length && cats.length < 4) {
+    if (homes.length && cats.length < 4 && startOpen('cats')) {
       const used = new Set(cats.map(k => k.v)), free = [0, 1, 2, 3].filter(v => !used.has(v));
       const h = homes[(Math.random() * homes.length) | 0];
       const s = randomFreeNear(h.doorX, h.doorY, 9, 13, (x, y) => isWalkable(x, y) && !World.bmap[idx(x, y)]);
@@ -1090,7 +1090,10 @@ function applyBeasts(d) {
 // ---------- Общий ход и отрисовка ----------
 function beastsTick(dt) {
   if (!FAUNA_ON()) return;
-  beFishTick(dt); beHivesTick(dt); beBoarsTick(dt); beBearTick(dt); beCatsTick(dt); beStorkTick(dt); beHeronsTick(dt); beFlockTick(dt); stTick(dt);
+  beFishTick(dt); beCatsTick(dt);
+  if (startOpen('bear')) { beHivesTick(dt); beBoarsTick(dt); beBearTick(dt); }
+  if (startOpen('critters')) { beStorkTick(dt); beHeronsTick(dt); beFlockTick(dt); }
+  stTick(dt);
 }
 
 function beastsDrawList(list, c, x0, y0, x1, y1) {

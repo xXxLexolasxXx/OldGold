@@ -148,6 +148,7 @@ const FOE_STAGE_MSG = [
 function foeEvening(F, ni) {
   F.nights++;
   F.wrath = Math.max(F.wrath, foeWrathNow(F));
+  if (!startOpen('foe')) return;           // мягкий старт: враг присматривается, но не нападает
   let stage = 0;
   if (F.nights >= FOE_GRACE) for (let i = 0; i < FOE_STAGES.length; i++) if (F.wrath >= FOE_STAGES[i]) stage = i + 1;
   if (stage > F.stage) {

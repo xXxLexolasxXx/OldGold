@@ -106,7 +106,7 @@ function festivalTick(dt) {
   festScanVictory();
   if (!f) {
     if (Game.festNext === undefined) Game.festNext = Math.max(Game.time, FEST_FIRST) + Math.random() * CYCLE;   // старые сохранения и новая игра
-    if (festPeople() < 6 || !festIsDay()) return;
+    if (festPeople() < 6 || !festIsDay() || !startOpen('festival')) return;
     if ((Game.festWish && Game.time > 120) || Game.time >= Game.festNext) {
       if (!festCanStart()) festivalStart(Game.festWish ? 'victory' : 'timer');
       else Game.festNext = Game.time + 60;       // не вышло (мало эля, нечисть) — попробуем чуть позже

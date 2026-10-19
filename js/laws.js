@@ -90,6 +90,7 @@ const lawWork = () => LAWC.work;
 function lawWhyNot(id) {
   const L = lawEnsure(), d = LAW_BY_ID[id];
   if (!d) return 'Нет такого указа';
+  if (!startOpen('laws')) return 'Указы появятся позже: сперва поселению нужно стать деревней';
   if (L.on.includes(id)) return 'Уже действует';
   if (L.prop) return 'Идёт голосование';
   if (L.day === lawDay()) return 'Порядки сегодня уже меняли — завтра';

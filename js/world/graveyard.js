@@ -69,7 +69,7 @@ function graveyardTick(dt) {
   const lost = Game.lostGnomes || 0;
   let gy = Game.buildings.find(b => b.type === 'graveyard' && !b.removed);
   if (!gy) {
-    if (lost < 1 || Game.time < (Game.gyNext || 0) || !Game.units.length) return;
+    if (lost < 1 || Game.time < (Game.gyNext || 0) || !Game.units.length || !startOpen('skeletons')) return;
     gy = spawnGraveyard();
     if (!gy) { Game.gyNext = Game.time + 60; return; }
     Game.gyNext = Game.time + 400;

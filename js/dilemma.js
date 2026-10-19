@@ -422,7 +422,7 @@ function dilTick(dt) {
     }
     return;
   }
-  if (dilDay() < D.next) return;
+  if (dilDay() < D.next || !startOpen('dilemma')) return;
   if (dilServer() && !coop.players.size) return;
   if (dilHasUI() && typeof GoalUI !== 'undefined' && GoalUI.open) return;
   if (Game.goal && Game.goal.over && Game.goal.over.res === 'lose') return;

@@ -277,7 +277,7 @@ const BUILD_ORDER = Object.keys(BUILDINGS);
 const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия', 'Гильдии'];
 
 // Постепенно открывающееся меню строительства. Стадия открывается, когда готово
-// всё из `after` (типы зданий), либо её открывает обучение. Школы в меню нет:
+// всё из `after` (типы зданий) и достигнута веха `rank` цели (1 — «Деревня», 2 — «Город»), либо её открывает обучение. Школы в меню нет:
 // она появляется в обучении (noMenu).
 const UNLOCKS = [
   { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire', 'inn'] },
@@ -286,10 +286,10 @@ const UNLOCKS = [
   { id: 'pigs',  items: ['swine', 'butchery'], after: ['brewery'] },
   { id: 'base',  items: ['goatpen', 'stable'], after: ['swine'] },
   { id: 'craft', items: ['tannery', 'armory'], after: ['butchery'] },
-  { id: 'metal', items: ['goldmine', 'metallurgist'], after: ['armory'] },
-  { id: 'magic', items: ['crystalmine', 'magiccircle', 'magicworkshop'], after: ['goldmine', 'metallurgist'] },
-  { id: 'iron',  items: ['ironmine', 'smeltery', 'weaponsmith'], after: ['metallurgist'] },
-  { id: 'guilds', items: ['guild_warrior', 'guild_archer', 'guild_rogue', 'guild_mage'], after: ['weaponsmith'] },
+  { id: 'metal', items: ['goldmine', 'metallurgist'], after: ['armory'], rank: 1 },
+  { id: 'magic', items: ['crystalmine', 'magiccircle', 'magicworkshop'], after: ['goldmine', 'metallurgist'], rank: 1 },
+  { id: 'iron',  items: ['ironmine', 'smeltery', 'weaponsmith'], after: ['metallurgist'], rank: 1 },
+  { id: 'guilds', items: ['guild_warrior', 'guild_archer', 'guild_rogue', 'guild_mage'], after: ['weaponsmith'], rank: 1 },
 ];
 
 const ROAD_STONE = 1;     // сколько камня уходит на клетку дороги
@@ -312,3 +312,75 @@ const STARVE_FAINT = 25, FAINT_TIME = 15;      // через сколько се
 const DRUNK_CHANCE = 0.65;                   // шанс захмелеть после кружки
 const INJURY_TIME = 150;                      // сколько заживает травма
 const COLLIDE_CHANCE = 0.03;                  // базовый шанс уронить груз при столкновении
+
+// ---------- Мягкий старт: когда просыпаются системы ----------
+// Новичку в первые минуты хватает экономики и первой ночи. Остальные системы открываются по порядку: по суткам,
+// по номеру ночи, по зданиям и по вехам цели («Поселение» → «Деревня» → «Город»). Всё настраивается здесь.
+//   day   — не раньше N-х суток (1 — с самого начала; сутки ≈ 9,5 игровых минут)
+//   night — не раньше N-й ночи (с её вечера)
+//   after — должны быть достроены эти здания
+//   rank  — веха цели: 1 — «Деревня», 2 — «Город»
+// «Спокойный» растягивает сроки (множитель grace в difficulty.js), «Выживание» сжимает. on: false — всё как раньше.
+const START_GRACE = {
+  on: true,
+  sys: {
+    dilemma:  { day: 3, after: ['inn'] },     // дилеммы жителей
+    festival: { day: 3, after: ['inn'] },     // праздники
+    fair:     { day: 3, after: ['inn'] },     // ярмарка
+    brawl:    { day: 4, after: ['inn'] },     // драки на празднике
+    trade:    { day: 2 },                     // караваны торговцев (поверх торгового поста)
+    games:    { day: 2 },                     // карты, ножички, классики, параплан
+    raid:     { night: 4, rank: 1 },          // набеги: курган и прочее
+    foe:      { night: 4, rank: 1 },          // вылазки врага вне сюжета
+    strange:  { night: 3 },                   // странные существа ночи
+    mimic:    { day: 3 },                     // сундуки-мимики
+    fairy:    { day: 3 },                     // сказочные звери (единорог, дракончик, грифон...)
+    fairy2:   { night: 3 },                   // ночная нежить фей: кикимора, банши, волки, огоньки, леший
+    neutrals: { day: 2 },                     // нейтралы в лесу не нападают
+    rockEnts: { night: 2 },                   // ожившие камни
+    waterEnts:{ night: 3 },                   // кикимора и русалка у воды
+    reaper:   { night: 3 },                   // жнец
+    skeletons:{ night: 2 },                   // скелеты кладбища
+    bats:     { night: 2 },                   // летучие мыши
+    sickness: { day: 3 },                     // болезни
+    laws:     { day: 4, rank: 1 },            // указы
+    moodMass: { day: 3 },                     // хандра, подъём духа и драки от тоски
+    achieve:  { gap: 20 },                    // ачивки не пачкой: не чаще раза в gap секунд, остальные ждут в очереди
+    flood:    { day: 3 },                     // паводок
+    lightning:{ day: 3 },                     // молнии в гномов
+    lvToast:  { day: 3 },                     // всплывашки о повышении каждого гнома (раньше — только первое по званию)
+    thieves:  { day: 3 },                     // волк и лиса таскают груз, гуси щиплют
+    owls:     { day: 3 },                     // сова роняет вещи
+    cats:     { day: 2 },                     // коты прибиваются к складу
+    bear:     { day: 3 },                     // медведь, кабаны, ульи
+    critters: { day: 2 },                     // мыши, кроты, барсуки, дятлы, белки, вороны
+  },
+  firstGhosts: 1,       // сколько призраков выходит в самую первую ночь (дальше — как раньше)
+  bump: 0.35,           // шанс столкновений с грузом в первые двое суток (доля обычного)
+};
+
+// какие сейчас сутки (с 1) и сколько ночей уже наступило (вечер новой ночи считается)
+function startDay() { return typeof cycleAt === 'function' ? cycleAt(Game.time).k + 1 : 1; }
+function startNights() { if (typeof cycleAt !== 'function') return 0; const c = cycleAt(Game.time); return c.p >= EVE_START ? c.k + 1 : c.k; }
+function startRank() { return Game.goal && typeof Game.goal.rank === 'number' ? Game.goal.rank : 9; }
+// множитель сроков по сложности
+function startGraceMul() { return (typeof dif === 'function' && dif().grace) || 1; }
+// доля обычного шанса столкновений в первые двое суток
+function startBump() { return START_GRACE.on && !Game.noGrace && startDay() < 3 ? START_GRACE.bump : 1; }
+// открыта ли система для событий
+function startOpen(id) {
+  if (!START_GRACE.on || Game.noGrace) return true;
+  const s = START_GRACE.sys[id];
+  if (!s) return true;
+  const g = startGraceMul();
+  if (s.day && startDay() < 1 + Math.ceil((s.day - 1) * g)) return false;
+  if (s.night && startNights() < Math.ceil(s.night * g)) return false;
+  if (s.rank && startRank() < s.rank) return false;
+  if (s.after && !s.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done' && !b.removed))) return false;
+  return true;
+}
+
+// стадия меню готова к открытию: достроено всё из after и достигнута веха
+function unlockReady(st) {
+  return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
+}

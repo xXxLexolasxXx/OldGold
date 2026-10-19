@@ -305,7 +305,7 @@ function unlockAll() {
 function checkUnlocks() {
   for (const st of UNLOCKS) {
     if (Game.unlocked[st.id] || !st.after) continue;
-    if (st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'))) unlockStage(st.id);
+    if (unlockReady(st)) unlockStage(st.id);
   }
 }
 

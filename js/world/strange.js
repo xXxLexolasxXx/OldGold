@@ -166,7 +166,7 @@ function stEnd(S) {
 function stTick(dt) {
   const S = Game.strange || (Game.strange = { list: [], hidden: [], night: -1 });
   const n = nightAmt();
-  if (n > 0.5 && S.night !== nightIndex()) { S.night = nightIndex(); stStart(S); }
+  if (n > 0.5 && S.night !== nightIndex() && startOpen('strange')) { S.night = nightIndex(); stStart(S); }
   if (n < 0.08 && (S.list.length || S.hidden.length)) stEnd(S);
   for (const c of S.list) {
     const K = ST_KINDS[c.k];
