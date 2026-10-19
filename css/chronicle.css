@@ -1,0 +1,18 @@
+/* Летопись деревни (js/chronicle.js) и фото-режим */
+#chron { position: absolute; inset: 0; z-index: 40; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; }
+#chron.hidden { display: none; }
+.ch-box { position: relative; width: min(560px, 94%); height: min(640px, 90%); display: flex; flex-direction: column; padding: 14px 18px 12px;
+  background: radial-gradient(ellipse at 30% 20%, #f1e2b4, #dcc58a 70%, #c9ad6d); color: #3a2a14; border: 2px solid #3a2a14; border-radius: 4px;
+  box-shadow: inset 0 0 40px rgba(120,80,30,0.45), 0 10px 40px #000; font-family: Georgia, 'Times New Roman', serif; }
+.ch-head { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 4px; }
+.ch-head button { font: inherit; font-size: 13px; padding: 3px 10px; background: rgba(90,60,25,0.15); color: #3a2a14; border: 1px solid #7a5a2a; border-radius: 3px; cursor: pointer; }
+#ch-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 6px; user-select: text; }
+.ch-title { text-align: center; font-size: 15px; letter-spacing: 1px; margin-bottom: 10px; }
+.ch-title b { font-size: 22px; color: #5a2a14; letter-spacing: 0; }
+.ch-mini { font: inherit; font-size: 13px; background: none; border: none; color: #7a5a2a; cursor: pointer; padding: 0 4px; }
+.ch-day { margin: 14px 0 4px; padding-bottom: 2px; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: #7a4a1a; border-bottom: 1px solid rgba(122,74,26,0.45); }
+.ch-e { margin: 5px 0; font-size: 15px; line-height: 1.45; }
+.ch-e.ch-big { font-weight: bold; color: #5a2a14; }
+.ch-e.ch-big::first-letter { font-size: 1.5em; color: #8a2a14; }
+.ch-e.ch-dead { color: #4a1c14; font-style: italic; }
+.ch-empty { margin-top: 40px; text-align: center; font-style: italic; opacity: 0.8; }

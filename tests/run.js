@@ -53,6 +53,7 @@ scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
+scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 
 // ---------- 2. Симуляция: инварианты
 function simRun(seed, minutes, r, opts = {}) {
