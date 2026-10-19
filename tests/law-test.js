@@ -8,6 +8,7 @@ const ok = (c, m) => { if (!c) { fails.push(m); console.log('  ✗ ' + m); } };
 
 function run(label, setup, seed = 7) {
   const sim = S.newSim(seed);
+  sim.h.run("Game.noGrace = true");
   if (setup) sim.h.run(setup);
   S.runFor(sim, MIN * 60, 10, k => { if (k % 3 === 0) S.botTurn(sim); });
   const r = S.inspect(sim);

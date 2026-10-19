@@ -596,39 +596,6 @@ body.mobile #mtool:not(.hidden) {
 .log-i { flex: none; width: 18px; text-align: center; }
 .log-x b { color: var(--gold-hi); }
 
-/* ---------- Обучение ---------- */
-#tut {
-  position: absolute; left: 12px; top: 52px; z-index: 6;
-  width: min(390px, calc(100% - 24px));
-  padding: 10px 14px 12px;
-  background: linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45)), var(--wood-tex), #2a1e14;
-  border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--gold), 0 8px 30px rgba(0,0,0,0.8);
-  font-size: 13.5px; line-height: 1.45;
-}
-#tut.hidden { display: none; }
-#tut.ok { box-shadow: inset 0 0 0 2px #8eab4c, 0 0 24px rgba(142,171,76,0.6); }
-#tut h3 { margin: 6px 0 6px; color: var(--gold-hi); font-size: 17px; }
-#tut.ok h3 { color: #c8e090; }
-#tut kbd { padding: 0 4px; border: 1px solid var(--line-hi); border-radius: 3px; background: #1a130d; font-size: 11px; }
-.tut-head { display: flex; align-items: center; gap: 4px; }
-.tut-n { flex: 1; color: var(--text-dim); font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; }
-.tut-head button { padding: 0 7px; font-size: 12px; }
-.tut-bar { height: 4px; background: #120c08; margin-top: 5px; }
-.tut-bar div { height: 100%; background: linear-gradient(90deg, #8e5a18, var(--gold-hi)); transition: width 0.4s; }
-.tut-btns { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.tut-btns > :last-child { margin-left: auto; }
-.tut-btns button { padding: 5px 12px; }
-.tut-btns button.primary { background: linear-gradient(#e4b434, #a4701c); color: #1a0f05; font-weight: bold; }
-.tut-wait { color: var(--text-dim); font-size: 11px; font-style: italic; margin-left: auto; }
-.tut-wait + button { margin-left: 0 !important; }
-#tut.min .tut-text, #tut.min .tut-btns { display: none; }
-#tut.min h3 { font-size: 14px; margin-bottom: 0; }
-.tut-hl { position: relative; z-index: 2; animation: tutPulse 1.1s ease-in-out infinite; }
-@keyframes tutPulse {
-  0%, 100% { box-shadow: 0 0 0 2px var(--gold-hi), 0 0 6px 2px rgba(246,212,88,0.5); }
-  50% { box-shadow: 0 0 0 3px #fff2a0, 0 0 16px 6px rgba(246,212,88,0.9); }
-}
-body.mobile #tut { left: 8px; right: 8px; top: 50px; width: auto; max-height: 46%; overflow-y: auto; font-size: 13px; padding: 8px 10px 10px; }
 
 /* подсказка о повороте при постройке */
 #tool-hint {
@@ -776,7 +743,6 @@ body.mobile #dd-zoom { display: none; }
   .sm-btn small { font-size: 11px; }
 }
 .sm-btn b, .sm-btn small { position: relative; z-index: 5; }
-body.mobile #tut { max-height: 38%; line-height: 1.35; } body.mobile #tut h3 { font-size: 15px; margin: 4px 0; }
 
 /* кнопки меню выплывают вбок, лоза прорастает следом (js/startmenu.js) */
 .sm-in-l, .sm-in-r { animation: sm-slide-l 0.55s cubic-bezier(.2,.8,.3,1) var(--d, 0s) both; }
@@ -807,13 +773,6 @@ canvas.sm-vine { filter: none; }
 .sm-sub.hidden { display: none; }
 .sm-panel[data-panel="main"] .sm-sub .sm-btn, .sm-sub .sm-btn { flex: 0 0 auto; width: 100%; }
 .sm-sub .sm-btn small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* телефон: обучение тонкой полосой, в свёрнутом виде остаются кнопки */
-body.mobile #tut { top: calc(42px + env(safe-area-inset-top)); font-size: 12.5px; padding: 6px 9px 8px; max-height: 32%; }
-body.mobile #tut.min .tut-btns { display: flex; margin-top: 4px; }
-body.mobile #tut.min .tut-bar { display: none; }
-body.mobile #tut .tut-btns { margin-top: 6px; }
-body.mobile #tut .tut-btns button { padding: 4px 10px; }
 
 /* нажатие: лоза сползает с кнопки вниз (ступенчато, как пиксель-арт) и отрастает снова */
 .sm-peel canvas.sm-vine { animation: sm-peel 0.62s steps(10) forwards !important; }
@@ -847,12 +806,6 @@ body.mobile #view #hero-card.mini { background: none; border: 0; box-shadow: non
   padding: 8px 14px;
 }
 
-/* обучение: «узнать больше» — свёрнуто, чтобы не перегружать */
-#tut details { margin-top: 5px; }
-#tut summary { cursor: pointer; color: var(--gold-hi); font-size: 12px; }
-#tut details[open] { padding: 2px 0 4px; font-size: 12.5px; color: var(--text-dim); }
-#tut .tut-text { max-height: 46vh; overflow-y: auto; }
-body.mobile #tut .tut-text { max-height: none; overflow: visible; }
 
 /* лоза вырастает только при нажатии и потом отцветает */
 canvas.sm-vine { transition: opacity 0.6s; }

@@ -178,7 +178,7 @@ function updateGoose(a, dt, def) {
   if (a.think <= 0) {
     a.think = 0.5;
     if (Game.time >= (a.calmUntil || 0)) {
-      const p = nearestPerson(a, 5.5, u => isPerson(u) && u.type !== 'carter' && !u.inside);
+      const p = startOpen('thieves') ? nearestPerson(a, 5.5, u => isPerson(u) && u.type !== 'carter' && !u.inside) : null;
       if (p) {
         // вся стайка бросается на одного
         for (const g of Game.animals) {
@@ -468,7 +468,7 @@ function updateOwls(dt) {
       if (o.state === 'away') {
         // из леса сова нередко несёт находку — что угодно
         o.item = Math.random() < OWL_ITEM_CHANCE ? OWL_GOODS[(Math.random() * OWL_GOODS.length) | 0] : null;
-      } else if (o.item) owlDrop(o);                     // взлетая, роняет вещь
+      } else if (o.item) { if (startOpen('owls')) owlDrop(o); else o.item = null; }     // взлетая, роняет вещь
       o.from = [o.x, o.y]; o.to = to; o.f = 0; o.goAway = away; o.state = 'fly';
       o.speed = 70 / Math.max(40, Math.hypot(to[0] - o.x, to[1] - o.y));
     }

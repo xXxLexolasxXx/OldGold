@@ -142,7 +142,7 @@ leisureExtra = function (u) {
 };
 
 function groupLeisure(u) {
-  if (Game.time < gameNext || GROUPS.length >= GAME_CAP || Game.units.length < 3 || u.gp || Math.random() > GAME_P || !gameWeatherOK()) return null;
+  if (Game.time < gameNext || !startOpen('games') || GROUPS.length >= GAME_CAP || Game.units.length < 3 || u.gp || Math.random() > GAME_P || !gameWeatherOK()) return null;
   if (u.type === 'hero' || u.teamOf || u.rec || u.gx || u.gm || u.glide) return null;
   const kinds = ['plan', 'plan', 'cards', 'cards', 'knives', 'knives', 'hop', 'hop'];
   while (kinds.length) {

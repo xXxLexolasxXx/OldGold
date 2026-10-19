@@ -530,7 +530,7 @@ function drawFireflies(c) {
 // ---------- Общий ход и отрисовка ----------
 function faunaTick(dt) {
   if (!FAUNA_ON()) return;
-  crowsTick(dt);
+  if (startOpen('critters')) crowsTick(dt);
   frogsTick(dt);
   firefliesTick(dt);
 }

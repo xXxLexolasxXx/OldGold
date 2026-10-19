@@ -299,7 +299,7 @@ function checkCollisions() {
         if (!carrier) continue;
         const victim = carrier === u ? o : u;
         if (!isPerson(victim)) continue;
-        let p = COLLIDE_CHANCE * (1 + 0.2 * rainAmt());   // под дождём толкаются чаще
+        let p = COLLIDE_CHANCE * (1 + 0.2 * rainAmt()) * (dif().amb || 1) * startBump();   // под дождём толкаются чаще
         if (u.action?.squeeze || o.action?.squeeze) p += 0.06;
         if (o.brk && o.brk.kind === 'sleep') p += 0.18;
         if (u.drunkAt || o.drunkAt) p += 0.06;

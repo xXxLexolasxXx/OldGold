@@ -288,7 +288,7 @@ function mdBehave(u, M, now, el, G) {
     }
   }
   // срыв
-  if (M.low >= MD.LOW_BREAK && now >= M.cool && !festOn()) {
+  if (M.low >= MD.LOW_BREAK && now >= M.cool && !festOn() && startOpen('moodMass')) {
     M.cool = now + MD.BREAK_CD[0] + Math.random() * (MD.BREAK_CD[1] - MD.BREAK_CD[0]);
     mdBreak(u, M, now, G);
   }
@@ -421,7 +421,7 @@ function mdVillageTick(now) {
   const G = mdG(), V = mdVillage();
   if ((Game.lostGnomes || 0) > (G.lostSeen || 0)) G.lostAt = now;
   G.lostSeen = Game.lostGnomes || 0;
-  if (V.n < 6) { G.lowSince = G.hiSince = 0; return V; }
+  if (V.n < 6 || !startOpen('moodMass')) { G.lowSince = G.hiSince = 0; return V; }
   // хандра
   if (V.bad / V.n >= MD.GLOOM_FRAC) G.lowSince = G.lowSince || now; else G.lowSince = 0;
   if (G.lowSince && now - G.lowSince >= MD.GLOOM_SEC && now >= G.nextGloom && G.gloom <= now && !festOn()) {

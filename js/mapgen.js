@@ -217,7 +217,7 @@ function mapEvLow() {
 
 // Раз в тик симуляции: начало и конец события, дождь/снегопад под него
 function mapEvTick() {
-  const ev = mapEvAt(Game.time);
+  const ev = startOpen('flood') ? mapEvAt(Game.time) : null;
   const was = MAPEV.cur;
   MAPEV.cur = ev;
   MAPEV.k = ev ? ev.k : 0;

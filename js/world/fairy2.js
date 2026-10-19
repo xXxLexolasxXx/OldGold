@@ -924,7 +924,7 @@ function fzWispDraw(c, w) {
 
 // ---------- Главный тик ----------
 function fairy2Tick(dt) {
-  if (!FZ_ON()) return;
+  if (!FZ_ON() || !startOpen('fairy2')) return;
   const F = fz();
   F.acc = (F.acc || 0) + dt;
   fzSelfStep(F, dt);

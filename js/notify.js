@@ -376,6 +376,12 @@ function nqSteps() {
   else if (E.step === 5) {
     if (!E.coop && Notify.want.tut && typeof tutStart === 'function' && !nqTutSeen()) { Notify.want.tut = false; tutStart(); did = true; }
     if (E.coop && Notify.want.coopHint && nqCoopHintRaw) { Notify.want.coopHint = false; nqCoopHintRaw(); did = true; }
+    // общая деревня: новичку — короткое обучение без стройки (только на его экране), после подсказки коопа
+    if (E.coop && Notify.want.tut && typeof tutStart === 'function' && !nqTutSeen()) {
+      Notify.want.tut = false;
+      setTimeout(() => { if (!nqTutSeen() && !Tut.on && typeof Coop !== 'undefined' && Coop.on) tutStart('coop'); }, did ? 5000 : 0);
+      did = true;
+    }
     E.step = 6; E.doneAt = t + (did ? 2000 : 0);
   }
   E.next = t + (did ? gap : 150);

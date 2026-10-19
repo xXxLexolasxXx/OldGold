@@ -140,6 +140,7 @@ function raidTick(dt) {
   if (F) { if (!isNightNow() && !isEveningNow()) raidEnd('dawn'); return; }
   const night = isNightNow();
   if (!night) { S.omen = false; return; }
+  if (!startOpen('raid')) return;
   if (rdNight() - (S.last || -9) < RAID_COOLDOWN || S.tried === rdNight()) return;
   if (!S.omen) {
     if (raidParty() >= 2) { S.omen = true; rdSay(`Над курганом загорелись синие огни… ${K.name} ждёт гостей. Подойдите туда вдвоём или больше (герои от ${RAID_MIN_LVL} уровня)`); }

@@ -469,7 +469,7 @@ function dirtTick(dt) {
 }
 
 function fauna2Tick(dt) {
-  if (!FAUNA_ON()) return;
+  if (!FAUNA_ON() || !startOpen('critters')) return;
   miceTick(dt); badgerTick(dt); squirrelsTick(dt); peckersTick(dt); molesTick(dt); hedgehogsTick(dt); dirtTick(dt);
 }
 
