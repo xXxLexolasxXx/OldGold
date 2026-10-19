@@ -8,7 +8,7 @@ const vm = require('vm');
 const ROOT = path.join(__dirname, '..');
 // порядок как в index.html — список берём оттуда же, чтобы новые файлы игры не забывались
 // (без них сервер падал на первом же вызове). Интерфейс меню, заставка, профиль и сетевой клиент не нужны.
-const SKIP = new Set(['loading', 'startmenu', 'perf', 'profile', 'coopclient']);
+const SKIP = new Set(['crashlog', 'loading', 'startmenu', 'perf', 'profile', 'coopclient']);
 function gameFiles() {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const list = [...html.matchAll(/<script[^>]*\ssrc="js\/((?:[\w-]+\/)?[\w-]+)\.js"/g)].map(m => m[1]).filter(f => !SKIP.has(f.split("/").pop()));
@@ -33,11 +33,13 @@ function stub() {
   return p;
 }
 
-function createHost(log = console.log) {
+// opts.files — свой список файлов (тесты грузят клиент кооператива вместо серверного)
+function createHost(log = console.log, opts = {}) {
   const S = stub();
   const store = new Map();
   const sandbox = {
-    console, Math, Date, JSON, Object, Array, Map, Set, WeakMap, Number, String, Boolean, Symbol, Error, RegExp, Promise,
+    console, Math: Object.create(Math), Date,   // свой Math: тесты подменяют random, не задевая соседние песочницы
+    JSON, Object, Array, Map, Set, WeakMap, Number, String, Boolean, Symbol, Error, RegExp, Promise,
     Uint8Array, Uint16Array, Uint32Array, Int8Array, Int16Array, Int32Array, Float32Array, Float64Array, ArrayBuffer,
     parseInt, parseFloat, isFinite, isNaN, setTimeout, clearTimeout, setInterval, clearInterval,
     performance: { now: () => Number(process.hrtime.bigint()) / 1e6 },
@@ -54,7 +56,7 @@ function createHost(log = console.log) {
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   const ctx = vm.createContext(sandbox);
-  for (const f of FILES) {
+  for (const f of opts.files || FILES) {
     const file = path.join(ROOT, 'js', f + '.js');
     try { vm.runInContext(fs.readFileSync(file, 'utf8'), ctx, { filename: file }); }
     catch (e) { log('загрузка ' + f + ': ' + (e && e.message)); throw e; }
