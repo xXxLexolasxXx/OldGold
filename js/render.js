@@ -473,7 +473,9 @@ function drawPigs(c, b, spr, ox, oy) {
 // ---------- Здания ----------
 
 function drawBuilding(c, b, ghost) {
-  const spr = buildingSprite(b.type, b.rot || 0, b.level);
+  if (b.eraFx && Game.time - b.eraFx.t0 > ERA_FX.dur) b.eraFx = null;   // перестройка кончилась, пока здание было за кадром
+  const eraFx = !ghost && b.eraFx && !b.upg && b.state === 'done';
+  const spr = buildingSprite(b.type, b.rot || 0, b.level, eraFx ? b.eraFx.from : undefined);
   const ox = b.x * TILE - spr.padx, oy = b.y * TILE - spr.top;
   const fx = b.x * TILE, fy = b.y * TILE, fw = b.w * TILE, fh = b.h * TILE;
   c.imageSmoothingEnabled = true;
@@ -486,6 +488,7 @@ function drawBuilding(c, b, ghost) {
   }
   c.drawImage(spr.shadow, ox, oy, spr.w, spr.h);
   c.drawImage(spr.canvas, ox, oy, spr.w, spr.h);
+  if (eraFx) eraDrawFx(c, b, spr, ox, oy);
   if (!ghost && b.upg) drawUpgradeLayer(c, b);
   if (!ghost && b.dmg > 0) drawDamage(c, b, ox, oy, spr);
   const t = Game.time;
