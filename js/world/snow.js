@@ -227,11 +227,12 @@ function seaTint(c) {
 const SEA_GLYPH = ['☀', '🍂', '❄', '🌱'];
 function seaChipText() {
   const S = SEA(), i = seaIdx(), d = seaDayIn() + 1;
-  return SEA_GLYPH[i] + ' ' + SEA_NAMES[i] + (document.body.classList.contains('mobile') ? '' : ` ${d}/${S.len}`);
+  if (S.fixed != null) return SEA_GLYPH[i] + ' ' + SEA_NAMES[i];            // постоянный сезон биома — счётчик суток не нужен
+  return SEA_GLYPH[i] + ' ' + SEA_NAMES[i] + (document.body.classList.contains('mobile') ? ` ${d}/${S.len}` : ` · день ${d} из ${S.len}`);
 }
 function seaChipTip() {
   const S = SEA(), i = seaIdx(), h = i === 1 || i === 2 ? (isMirror() ? S.hay : seaHayInfo()) : null;
-  let tip = `${SEA_NAMES[i]}: сутки ${seaDayIn() + 1} из ${S.len}.`;
+  let tip = `${SEA_NAMES[i]}: день ${seaDayIn() + 1} из ${S.len}.` + (S.fixed == null ? ` Смена сезона через ${S.len - seaDayIn()} сут.` : '');
   if (i === 0) tip += ' Всё растёт. Осенью пора делать заготовки.';
   if (i === 1) tip += ' Осень: заготовь сено и зерно, зимой ничего не растёт.';
   if (i === 2) tip += ' Зима: снег, лёд, ничего не растёт; свиньи и звери едят сено.';
