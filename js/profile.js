@@ -372,15 +372,7 @@ function initProfile() {
   });
   win.querySelector('#prof-file').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) profImport(f); });
 
-  // кнопки в боковом меню и на стартовом экране
-  const list = document.querySelector('#tab-menu .menu-list');
-  if (list && !list.querySelector('[data-menu="profile"]')) {
-    list.insertAdjacentHTML('afterbegin',
-      '<button data-menu="profile"><img data-icon="scroll" alt="">Игрок и слоты: <span></span></button>' +
-      '<button data-menu="ach"><img data-icon="scroll" alt="">Ачивки</button>' +
-      '<button data-menu="legacy"><img data-icon="scroll" alt="">Наследие</button>');
-    list.querySelectorAll('img[data-icon]').forEach(im => { im.src = iconURL('ui', im.dataset.icon, 2); });
-  }
+  // игрок, слоты, ачивки и наследие — на стартовом экране («Игрок и ачивки»); в меню игры их больше нет
   document.querySelector('#tab-menu').addEventListener('click', e => {
     const t = e.target.closest('[data-menu]');
     if (!t) return;
