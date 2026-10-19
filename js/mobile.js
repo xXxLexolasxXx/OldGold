@@ -46,7 +46,7 @@ function mobileTool(tool) {
   mobileSheet(null);
   const text = document.getElementById('mtool-text');
   const build = tool.kind === 'build';
-  if (build) text.textContent = `${BUILDINGS[tool.type].name}: коснитесь места${BUILDINGS[tool.type].noRotate ? '' : ' · ↻ — повернуть вход'}`;
+  if (build) text.textContent = `${BUILDINGS[tool.type].name}: коснитесь места или тяните здание${BUILDINGS[tool.type].noRotate ? '' : ' · ↻ — повернуть вход'}`;
   else if (tool.kind === 'road') text.textContent = 'Дорога: ведите пальцем, касание по дороге — убрать';
   else if (tool.kind === 'field') text.textContent = `${FIELD_NAMES[tool.crop]}: касайтесь клеток (повторное касание — убрать)`;
   else text.textContent = 'Снос: коснитесь';
@@ -100,7 +100,14 @@ function initTouch() {
     const t = screenToTile(p[0], p[1]);
     Object.assign(T, { sx: p[0], sy: p[1], cx: R.cam.x, cy: R.cam.y, moved: false, tile: t, mode: 'one' });
     const tool = Game.tool;
-    if (tool && tool.kind === 'road') { T.mode = 'road'; Input.roadStart = t; R.roadDrag = [t]; R.hover = t; }
+    // здание в руке: палец рядом с призраком — тянем призрак (со смещением, без прыжка), иначе тянем карту
+    if (tool && tool.kind === 'build' && R.hover) {
+      const d = bDims(tool.type, tool.rot || 0);
+      const bx = R.hover[0] - Math.floor(d.w / 2), by = R.hover[1] - d.h + 1;
+      if (t[0] >= bx - 1 && t[0] <= bx + d.w && t[1] >= by - 1 && t[1] <= by + d.h) { T.mode = 'ghost'; T.gh = [R.hover[0] - t[0], R.hover[1] - t[1]]; }
+    }
+    if (T.mode === 'ghost') { /* режим выбран выше */ }
+    else if (tool && tool.kind === 'road') { T.mode = 'road'; Input.roadStart = t; R.roadDrag = [t]; R.hover = t; }
     else if (tool && tool.kind === 'erase') { T.mode = 'erase'; Input.lastEraseTile = t.join(); }
     else if (tool && tool.kind === 'fort' && typeof defToolDown === 'function' && defToolDown(t)) { T.mode = 'fort'; R.hover = t; }
   }, { passive: false });
@@ -126,6 +133,7 @@ function initTouch() {
     const dx = p[0] - T.sx, dy = p[1] - T.sy;
     if (Math.abs(dx) + Math.abs(dy) > 10) T.moved = true;
     const t = screenToTile(p[0], p[1]);
+    if (T.mode === 'ghost') { if (T.moved) R.hover = [t[0] + T.gh[0], t[1] + T.gh[1]]; return; }
     if (T.mode === 'road') { R.roadDrag = lineCells(Input.roadStart, t); R.hover = t; return; }
     if (T.mode === 'fort') { defToolMove(t); R.hover = t; return; }
     if (T.mode === 'erase') {
@@ -165,7 +173,7 @@ function initTouch() {
     }
     if (mode === 'fort') { defToolUp(); return; }
     if (mode === 'erase' && !T.moved) { eraseAt(T.tile); return; }
-    if (mode === 'one' && !T.moved) tapTile(T.tile);
+    if ((mode === 'one' || mode === 'ghost') && !T.moved) tapTile(T.tile);
   };
   cv.addEventListener('touchend', end, { passive: false });
   cv.addEventListener('touchcancel', end, { passive: false });

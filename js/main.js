@@ -389,6 +389,8 @@ function initInput() {
   });
 
   window.addEventListener('mousemove', e => {
+    // телефон: после тапа по кнопке браузер шлёт «мышиное» движение туда же — призрак здания не должен прыгать к кнопке
+    if (typeof Mobile !== 'undefined' && Mobile.on && e.target !== cv) return;
     if (Input.pan) {
       const dx = e.clientX - Input.pan.x, dy = e.clientY - Input.pan.y;
       if (Math.abs(dx) + Math.abs(dy) > 4) Input.pan.moved = true;
