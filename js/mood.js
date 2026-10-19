@@ -3,7 +3,7 @@
 // У каждого жителя семь потребностей: еда, сон, уют (крыша, погода, свет и тепло), досуг, общение (пиво, компания),
 // безопасность ночью и курево. Из них, плюс короткие «события» (кружка пива, дай пять, похмелье, драка, праздник),
 // складывается настроение 0–100 и список причин «почему» — он виден в карточке гнома (клик по гному).
-// Последствия: хорошее настроение — бодрее и словоохотливее (до +8 % к темпу), плохое — ворчат и ленятся (до −8 %),
+// Последствия: хорошее настроение — бодрее и словоохотливее (до +6 % к темпу), плохое — ворчат и ленятся (до −6 %),
 // а в самом низу срываются: идут пить, дерутся, бросают работу «назло всем», а совсем отчаявшиеся уходят.
 // Массовая тоска (тоскует каждый третий) — событие «Хандра».
 // Считает только хозяин мира (одиночная игра или кооп-сервер): раз в ~2 с на гнома, дёшево. Клиент кооператива
@@ -12,16 +12,16 @@
 
 const MD = {
   STEP: 2,                 // секунд между пересчётами одного гнома (гномы считаются по очереди, четвертинками)
-  BASE: 6,                 // «жить можно»: надбавка к 50
+  BASE: 9,                 // «жить можно»: надбавка к 50
   SMOOTH: 18,              // настроение подтягивается к цели за ~18 с, а не прыгает
-  REST_T: 1500, FUN_T: 1500, SOC_T: 1800, SM_T: 260,   // за сколько секунд пустеют сон, досуг, общение; как быстро накатывает тяга к куреву
+  REST_T: 2100, FUN_T: 1500, SOC_T: 1800, SM_T: 260,   // за сколько секунд пустеют сон, досуг, общение; как быстро накатывает тяга к куреву
   GOOD: 68, BAD: 38, CRIT: 22,        // границы: бодр / ворчит / на грани
-  SPEED: 0.08,                        // насколько настроение влияет на темп: ±8 % на краях шкалы
+  SPEED: 0.06,                        // насколько настроение влияет на темп: ±6 % на краях шкалы
   LOW_BREAK: 28,                      // сколько секунд подряд «на грани», чтобы сорваться
   LEAVE_LOW: 170,                     // сколько секунд на самом дне, чтобы собрать узелок
   BREAK_CD: [240, 360],               // пауза между срывами одного гнома
   FIGHT_GAP: 70,                      // не чаще одной драки на деревню за столько секунд
-  GLOOM_FRAC: 0.34, GLOOM_SEC: 30, GLOOM_CD: 420, GLOOM_LEN: 100,
+  GLOOM_FRAC: 0.4, GLOOM_SEC: 30, GLOOM_CD: 420, GLOOM_LEN: 100,
   QUIP_GAP: 1.6,                      // не чаще одной реплики на деревню за столько секунд
 };
 
@@ -228,9 +228,9 @@ function mdUpdate(u, now) {
 
   // --- последствия
   const dev = M.m - 50;
-  let mul = 1 + (Math.abs(dev) < 6 ? 0 : mdClamp(dev / 50, -1, 1)) * MD.SPEED;
-  if (G.gloom > now) mul *= 0.97;
-  if (G.cheer > now) mul *= 1.03;
+  let mul = 1 + (Math.abs(dev) < 8 ? 0 : mdClamp(dev / 50, -1, 1)) * MD.SPEED;
+  if (G.gloom > now) mul *= 0.98;
+  if (G.cheer > now) mul *= 1.02;
   u.mdMul = Math.round(mul * 1000) / 1000;
   M.low = M.m <= MD.CRIT ? M.low + el : Math.max(0, M.low - el * 2);
   M.hi = M.m >= MD.GOOD ? M.hi + el : Math.max(0, M.hi - el);
@@ -259,7 +259,7 @@ function mdBehave(u, M, now, el, G) {
   }
   if (!ok) return;
   // лень: на ходу замирает — «перекур — святое»
-  if (M.m <= MD.BAD && u.action && u.action.walk && Math.random() < el * 0.006 * (M.m <= MD.CRIT ? 2 : 1)) {
+  if (M.m <= MD.BAD && u.action && u.action.walk && Math.random() < el * 0.004 * (M.m <= MD.CRIT ? 2 : 1)) {
     u.pauseUntil = now + 2 + Math.random() * 3;
     mdStat().slacks++;
     return;
@@ -305,7 +305,7 @@ function mdBreak(u, M, now, G) {
   const sum = w.drink + w.fight + w.sulk;
   let r = Math.random() * sum, pick = 'sulk';
   for (const k of ['drink', 'fight', 'sulk']) { if ((r -= w[k]) < 0) { pick = k; break; } }
-  const name = UNIT_TYPES[u.type].name.toLowerCase();
+  const name = UNIT_TYPES[u.type].name;
   if (pick === 'fight') {
     const foe = foes.sort((a, b) => Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(b.x - u.x, b.y - u.y))[0];
     if (mdFight(u, foe)) { G.fightAt = now + MD.FIGHT_GAP; st.fights++; return; }
@@ -329,7 +329,7 @@ function mdBreak(u, M, now, G) {
 // В журнал — всегда, во всплывашку — не чаще раза в 20 с (иначе заспамит)
 function mdNote(u, G, text) {
   logEvent('people', text, u.x, u.y);
-  if (Game.time - G.toastAt > 20) { G.toastAt = Game.time; toast(text.charAt(0).toUpperCase() + text.slice(1) + '. Пиво, праздник и сытный обед лечат такое лучше нотаций.'); }
+  if (Game.time - G.toastAt > 20) { G.toastAt = Game.time; toast(text); }
 }
 
 function* mdDrinkGen(u, inn) {
@@ -368,7 +368,7 @@ function mdFight(a, b) {
   }
   const G = mdG();
   const fight = { done: false };
-  const name = UNIT_TYPES[a.type].name.toLowerCase(), nb = UNIT_TYPES[b.type].name.toLowerCase();
+  const name = UNIT_TYPES[a.type].name, nb = UNIT_TYPES[b.type].name;
   floater(a.x, a.y - 1.5, mdPick(MD_BREAK_Q.fight), '#ff9a70');
   mdNote(a, G, `${name} полез в драку с соседом (${nb})`);
   startBreak(a, 'brawl', null); a.proc = mdFightGen(a, b, fight, true);
@@ -407,7 +407,7 @@ function* mdFightGen(u, foe, fight, hitter) {
 // Уходит насовсем: идёт к краю карты. Потери деревни это не «гибель»: призраки не заводятся
 function mdLeave(u, G) {
   const st = mdStat();
-  const name = UNIT_TYPES[u.type].name.toLowerCase();
+  const name = UNIT_TYPES[u.type].name;
   floater(u.x, u.y - 1.5, mdPick(MD_BREAK_Q.leave), '#ffb890');
   mdNote(u, G, `${name} собрал узелок и ушёл из деревни`);
   startBreak(u, 'leave', null);
