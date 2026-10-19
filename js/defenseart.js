@@ -294,7 +294,12 @@ function fortSprite(o, mask) {
 function drawFort(c, x, y, o) {
   const px = x * TILE, py = y * TILE, k = TILE / DFA.W;
   const mask = fortIsWall(o) ? fortMask(x, y) : 0;
-  const s = fortSprite(o, mask);
+  // закрытые ворота открываются перед жителем: проходят все, кроме нечисти
+  let sp = o;
+  if (o.f === 'gate' && !o.open && o.bt === undefined) {
+    for (const u of Game.units) if (!u.inside && !u.dead && Math.abs(u.x - x - 0.5) < 1.4 && Math.abs(u.y - y - 0.5) < 1.4) { sp = Object.assign({}, o, { open: true }); break; }
+  }
+  const s = fortSprite(sp, mask);
   const sm = c.imageSmoothingEnabled;
   c.imageSmoothingEnabled = false;
   const done = o.bt === undefined;
@@ -521,27 +526,27 @@ function defPreview(c, h) {
   const tool = Game.tool;
   if (!tool || tool.kind !== 'fort') return;
   const F = FORTS[tool.f];
-  const cells = R.fortDrag || [h];
-  const have = {};
-  let n = 0, total = {};
+  const cells = F.noMulti ? [R.fortDrag ? R.fortDrag[0] : h] : R.fortDrag || [h];
+  const total = {}, placed = [];
+  let n = 0;
   for (const [x, y] of cells) {
     const px = x * TILE, py = y * TILE;
     let err = defCheck(tool.f, x, y, true);
-    if (!err && tool.f === 'torch' && cells.some(([a, b], j) => j < cells.indexOf(cells.find(q => q[0] === x && q[1] === y)) && Math.abs(a - x) < 2 && Math.abs(b - y) < 2)) err = 'близко';
+    if (!err && tool.f === 'torch' && placed.some(([a, b]) => Math.abs(a - x) < 2 && Math.abs(b - y) < 2)) err = 'близко';   // факелы через клетку
     if (!err) {
       for (const g in F.cost[0]) total[g] = (total[g] || 0) + F.cost[0][g];
-      if (defHave(total)) err = defNeedText(defHave(total));
+      const lack = defHave(total);
+      if (lack) err = defNeedText(lack);
     }
     c.fillStyle = err ? 'rgba(220,40,30,0.38)' : 'rgba(60,220,80,0.32)';
     c.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
     if (!err) {
-      n++;
+      n++; placed.push([x, y]);
       const o = { t: 'fort', f: tool.f, lv: 1, hp: F.hp ? F.hp[0] : F.charges[0], m: 'wood', open: true };
-      c.globalAlpha = 0.6;
       const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false;
-      const mask = fortIsWall(o) ? 0 : 0;
-      c.drawImage(fortSprite(o, mask).cv, px, py - DFA.M * TILE / DFA.W, TILE, (96 + DFA.M) * TILE / DFA.W);
-      c.imageSmoothingEnabled = sm; c.globalAlpha = 1;
+      c.globalAlpha = 0.6;
+      c.drawImage(fortSprite(o, 0).cv, px, py - DFA.M * TILE / DFA.W, TILE, (96 + DFA.M) * TILE / DFA.W);
+      c.globalAlpha = 1; c.imageSmoothingEnabled = sm;
     }
     c.strokeStyle = err ? '#ff5040' : '#60ff80'; c.lineWidth = 1; c.strokeRect(px + 1.5, py + 1.5, TILE - 3, TILE - 3);
   }

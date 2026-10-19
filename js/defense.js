@@ -207,6 +207,7 @@ function defPlace(f, x, y, free) {
   }
   if (old && f === 'gate') { if (fortDone(old)) defRefund(FORTS[old.f].cost[0], FORT_REFUND); DEF.set.delete(i); }
   World.obj[i] = defMake(f, extra);
+  if (f === 'gate' && !World.road[i]) setRoad(x, y, true);       // под воротами дорога: курьеры ходят только по дорогам
   World.growing.delete(i);
   DEF.set.add(i); DEF.prog.set(i, 0);
   if (free) { defFinish(i, true); }
