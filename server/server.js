@@ -97,6 +97,22 @@ try { host.ctx.coopStateSet(fs.readFileSync(VIL_FILE, 'utf8')); } catch (e) { /*
 const run = code => host.run(code);
 const SIM_DT = run('SIM_DT');
 const COOP_SPEED = 1.2;
+// Время общей деревни: скорость ×0,5/×1/×2/×3 выбирает хост (запоминается в settings.json), пауза — хост сразу или голосованием
+const SPEEDS_OK = [0.5, 1, 2, 3];
+const tempo = { speed: 1, paused: false };
+function writeSettings(patch) {
+  let cur = {};
+  try { cur = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); } catch (e) { /* файла ещё нет */ }
+  try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(Object.assign(cur, patch))); } catch (e) { log('настройки не сохранились:', e.message); }
+}
+try { const sp = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')).speed; if (SPEEDS_OK.includes(sp)) tempo.speed = sp; } catch (e) { /* скорость ещё не выбирали */ }
+const tempoMsg = () => { const n = [...conns].filter(c => c.inGame).length; return { t: 'tempo', speed: tempo.speed, paused: tempo.paused, votes: [...conns].filter(c => c.inGame && c.vote).length, need: Math.floor(n / 2) + 1 }; };
+function setPaused(on, who) {
+  tempo.paused = on;
+  for (const c of conns) c.vote = false;
+  broadcast(tempoMsg());
+  if (who) broadcast({ t: 'toast', text: who + (on ? ': пауза — можно планировать' : ': игра продолжается') });
+}
 
 function loadWorld() {
   for (const f of [WORLD_FILE, WORLD_FILE + '.bak']) {
@@ -319,6 +335,7 @@ function joinWorld(c) {
   c.inGame = true;
   stats.join(c.key, c.nick, { cls: rec.hero && rec.hero.cls, ip: c.ip, ver: c.ver, from: c.origin });
   c.sendText(call('coopInitPacket', uid));
+  c.send(tempoMsg());
   const me = call('coopMeData', c.nick);
   if (me) c.sendText(me);
   log('вошёл', c.nick, c.isHost ? '(хост)' : '');
@@ -415,12 +432,31 @@ function onMessage(c, text) {
     saveWorld();
     return;
   }
+  if (m.t === 'speed') {
+    if (!c.isHost) return c.send({ t: 'toast', text: 'Скорость выбирает только хост' });
+    if (!SPEEDS_OK.includes(m.v)) return;
+    tempo.speed = m.v;
+    writeSettings({ speed: m.v });
+    broadcast(tempoMsg());
+    return;
+  }
+  if (m.t === 'pause') {
+    const on = m.on === true;
+    if (on === tempo.paused) { c.vote = false; return; }
+    if (c.isHost) return setPaused(on, 'Хост ' + c.nick);
+    c.vote = true;
+    const t = tempoMsg();
+    if (t.votes >= t.need) return setPaused(on, 'Голосование');
+    broadcast(t);
+    broadcast({ t: 'toast', text: c.nick + (on ? ' просит паузу' : ' просит продолжить') + ' (' + t.votes + '/' + t.need + ')' });
+    return;
+  }
   if (m.t === 'setperm') {
     if (!c.isHost) return c.send({ t: 'toast', text: 'Права меняет только хост' });
     const cur = JSON.parse(call('coopMeta')).perms;
     if (!(m.key in cur) || typeof m.on !== 'boolean') return;
     const now = JSON.parse(call('coopSetPerms', JSON.stringify({ [m.key]: m.on })));
-    try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ perms: now })); } catch (e) { log('права не сохранились:', e.message); }
+    try { writeSettings({ perms: now }); } catch (e) { log('права не сохранились:', e.message); }
     broadcast({ t: 'perms', perms: now });
     log('права:', m.key, m.on ? 'вкл' : 'выкл');
     return;
@@ -443,7 +479,7 @@ setInterval(() => {
   last = now;
   const online = [...conns].some(c => c.inGame);
   if (online || !PAUSE_EMPTY) {
-    acc += dt * COOP_SPEED;   // в общей деревне время идёт чуть быстрее обычного
+    if (tempo.paused) acc = 0; else acc += dt * COOP_SPEED * tempo.speed;   // в общей деревне время идёт чуть быстрее обычного
     let n = 0;
     const t0 = performance.now();
     while (acc >= SIM_DT && n < 20) {
@@ -452,7 +488,7 @@ setInterval(() => {
     }
     if (n) { const ms = (performance.now() - t0) / n; M.ticks += n; M.stepMs += ms * n; M.stepMax = Math.max(M.stepMax, ms); }
     if (n >= 20) acc = 0;
-  } else acc = 0;
+  } else { acc = 0; if (tempo.paused) setPaused(false); }
   if (online) {
     tU += dt; tW += dt; tMe += dt;
     if (tU >= 0.2) { tU = 0; const t1 = performance.now(); const p = call('coopUnitsPacket'); const ms = performance.now() - t1; M.uN = (M.uN || 0) + 1; M.uMs += ms; M.uMax = Math.max(M.uMax, ms); broadcast(p); }

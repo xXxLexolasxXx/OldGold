@@ -108,7 +108,7 @@ function rainSlipTick(dt) {
   WX.slipT = 0;
   if (WX.k < 0.45) return;
   for (const u of Game.units) {
-    if (u.dead || u.inside || !isPerson(u) || u.type === 'carter' || u.brk) continue;
+    if (u.dead || u.inside || !isPerson(u) || u.type === 'carter' || u.brk || u.hopUntil > Game.time) continue;     // на классиках не падают
     const a = u.action;
     if (!(a && a.walk && a.path && a.path[a.i])) continue;
     if (Game.time < (u.slipCD || 0) || Math.random() > 0.0016 * WX.k) continue;
@@ -233,9 +233,10 @@ function lightningStrike() {
   // каждая третья молния — просто в землю
   let t = Math.random() < 0.3 || !cands.length ? null : cands[(Math.random() * cands.length) | 0];
   if (!t) {
-    // в землю: чаще на виду, иначе возле деревни
+    // в землю: чаще на виду, иначе возле деревни (на сервере коопа камеры нет — всегда возле жителей,
+    // иначе 70 % молний били в левый верхний угол карты)
     let x, y;
-    if (Math.random() < 0.7) { x = wrnd(vx0 + 1, vx1 - 1); y = wrnd(vy0 + 1, vy1 - 1); }
+    if (typeof coop === 'undefined' && Math.random() < 0.7) { x = wrnd(vx0 + 1, vx1 - 1); y = wrnd(vy0 + 1, vy1 - 1); }
     else { const u = Game.units[(Math.random() * Game.units.length) | 0]; x = (u ? u.x : MAP_W / 2) + wrnd(-12, 12); y = (u ? u.y : MAP_H / 2) + wrnd(-12, 12); }
     x = Math.max(1, Math.min(MAP_W - 2, x)); y = Math.max(1, Math.min(MAP_H - 2, y));
     t = { kind: 'ground', x, y };

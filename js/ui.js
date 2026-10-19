@@ -6,14 +6,21 @@ const UI = { cat: 0, tab: 'build', hoverType: null, last: {}, bicons: {} };
 
 // ---------- Мелочи ----------
 
-function toast(text, target) {
+let toastN = 0;
+function toastKind(text) {   // тип оповещения → цвет печати: night / imp / (coop приходит аргументом)
+  if (/ноч|призрак|нечист|сов[аы] |мыш|Малгор|гоблин|тёмн/i.test(text)) return 'night';
+  if (/достиг уровня|веха|погиб|упал от голода|Мало памяти|не выполнен|Победа|Поражение/i.test(text)) return 'imp';
+  return '';
+}
+function toastClose(el) { if (!el || !el.parentNode || el.classList.contains('burn')) return; el.classList.add('burn'); setTimeout(() => el.remove(), 320); }
+function toast(text, target, kind) {
   const box = document.getElementById('toasts');
   if (!box) return;
   if (box.childElementCount > 3) box.firstChild.remove();
   const el = document.createElement('div');
-  el.className = 'toast' + (target ? ' link' : '');
+  el.className = 'toast v' + (toastN++ % 3) + (target ? ' link' : '') + ' ' + (kind || toastKind(String(text)));
   el.textContent = text;
-  if (target) el.onclick = () => focusBuilding(target);
+  el.onclick = () => { if (target) focusBuilding(target); toastClose(el); };
   box.appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
@@ -221,11 +228,8 @@ function setTool(tool) {
 
 function setSpeed(s) {
   Game.paused = s === 0;
-  if (s) Game.speed = s;
-  document.querySelectorAll('[data-speed]').forEach(b =>
-    b.classList.toggle('active', Game.paused ? b.dataset.speed === '0' : +b.dataset.speed === Game.speed));
-  const cur = document.getElementById('speed-cur');
-  if (cur) cur.textContent = Game.paused ? '❚❚' : '×' + Game.speed;
+  if (s) Game.speed = SPEEDS.includes(s) ? s : 1;      // 0,5 / 1 / 2 / 3 (старое ×4 из сохранений и скриптов — обычная скорость)
+  tempoShow();
 }
 
 // Выпадающие панели верхней строки: одна открыта за раз, закрываются по клику мимо и по Esc
@@ -364,7 +368,7 @@ function initUI() {
     btn.onclick = () => setTool(Game.tool && Game.tool.kind === 'field' && Game.tool.crop === crop ? null : { kind: 'field', crop });
   }
 
-  document.querySelectorAll('[data-speed]').forEach(btn => { btn.onclick = () => setSpeed(+btn.dataset.speed); });
+  document.querySelectorAll('[data-speed]').forEach(btn => { btn.onclick = () => { const s = +btn.dataset.speed; if (!s) togglePause(); else pickSpeed(SPEEDS.indexOf(s)); }; });
   initDropdowns();
   setSpeed(Game.paused ? 0 : Game.speed || 1);
   document.getElementById('help-close').onclick = () => document.getElementById('help').classList.add('hidden');
@@ -379,6 +383,7 @@ function initUI() {
     if (m === 'loadauto') { if (loadGame('auto')) { toast('Загружено автосохранение'); updateUI(true); } else toast('Автосохранения пока нет'); }
     if (m === 'new' && confirm('Начать на новой карте? Несохранённый прогресс пропадёт.')) newGame();
     if (m === 'help') document.getElementById('help').classList.toggle('hidden');
+    if (m === 'lang') I18N.toggle();
     if (m === 'lang') I18N.toggle();
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     updateUI(true);
@@ -808,7 +813,7 @@ function updateUI(force) {
   const alerts = collectAlerts();
   if (UI.tab === 'overview') setHTML('overview', overviewHTML(alerts));
   if (UI.tab === 'menu') {
-    const fmt = m => m ? `${new Date(m.at).toLocaleString('ru-RU')} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'нет';
+    const fmt = m => m ? `${new Date(m.at).toLocaleString(I18N.locale())} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'нет';
     setHTML('save-info', `Режим: <span class="diff-chip" style="background:${dif().color}" title="${dif().desc}">${dif().name}</span><br>Сохранение: ${fmt(saveMeta('manual'))}<br>Автосохранение: ${fmt(saveMeta('auto'))}`);
   }
   if (UI.tab === 'log') { UI.logUnread = 0; setHTML('log-list', logHTML()); }

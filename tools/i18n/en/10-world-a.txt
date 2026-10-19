@@ -1,0 +1,185 @@
+##### js/world/animals.js
+Deer
+Rabbit
+Wild goat
+Wolf
+Fox
+Elk
+{0} snatched "{2}"
+​
+{0} snatched "{2}"!
+##### js/world/beasts.js
+ginger
+grey tabby
+black
+white-spotted
+The hero beat the boar: loot — hides and meat
+The boar is down! Hides and meat are left on the ground
+Oink!
+A boar attacked a gnome and bit them
+A boar attacked a gnome! You need the hero or three gnomes together
+The boar roots through the forest floor: acorns and mushrooms
+A beehive was set up by the fields: bees pollinate the crops
+A beehive appeared at the farm — gnomes will gather honey
+Bzzz…
++{0} honey
+A gnome collected honey from the hive: {0} pots
+Ouch, a bee!
+A bear was seen in the forest: apiaries aren't safe now
+The hero beat the bear: hides and meat
+The hero defeated the bear! Hides and meat are left on the ground
+Grr!
+The bear mauled {0}
+the hero
+a gnome
+The bear attacked! Four together can drive it off, the hero it breaks
+The bear wrecked the hive and ate the honey ({0})
+The bear wrecked the hive and ate the honey!
+A cat wandered up to the {0}: {1}
+storehouse
+A cat wandered into the settlement ({0}). Feed it and it will tame
+Meow!
+The cat ({0}) caught a mouse
+The cat caught a mouse — the flour is safer
+The cat is tame: {0} settled at the {1}
+The cat ({0}) is tame and stays at the {1}
+Purr…
+Storks built a nest on a roof: {0}
+Storks have settled on a tall roof — they say it means an addition to the family
+Clack-clack!
+Clack!
+A stork caught a fish in the lake
+Stork chicks are chirping in the nest on the roof
+The storks' chicks hatched — an addition to the village (for looks only so far)
+A heron has come to the shallows — eyeing the fish
+Kraa!
+The hero chased the heron off the shallows
+The gnomes chased the heron off the shallows
+Snap!
+My fish!
+The heron stole an angler's catch — chase it off with the hero or three gnomes
+The heron stole an angler's catch! The hero or three gnomes will chase it off
+The heron snatched a fish out of the water
+A scarecrow scared a flock of crows away from the field
+A big flock of crows landed on the field and is pecking the harvest
+A flock of crows is pecking the harvest in the field! Chase them off with the hero, three gnomes, or set up a scarecrow
+The hero drove the flock of crows off the field
+The gnomes drove the crows off the field together
+##### js/world/decor.js
+Rune Stone
+Wishing Well
+Scarecrow
+Mushroom Ring
+Stone Gnome
+Cauldron
+Crystal Pillar
+Eyes on the Backrest
+Grinning Urn
+Bloody Flowers
+Glowing Flowers
+Rattling Crate
+Green Ooze
+Ghostly Flame
+Red Runes
+Whisper of the Well
+Head Turn
+Spores
+Weeping Gnome
+Face in the Smoke
+Crystal Lightning
+Hand from the Ground
+Something strange sprouted from the ground: {0}
+##### js/world/fauna.js
+The hero drove off the geese with a mere look
+The gnomes drove off the geese together
+The hero drove off the geese — they'll keep quiet for a long while
+The gnomes gathered and drove off the geese — they'll keep quiet for a long while
+A crow stole something shiny: {0}
+A crow stole something shiny: {0}! Chase them off — with the hero or three gnomes
+Frogs came out to the water with the rain
+Fireflies flickered over the graveyard and the sleeping trees
+Fireflies gathered where fiends will wake at night
+##### js/world/fauna2.js
+Mice are hauling off flour: {0}
+Mice are stealing flour: {0}!
+A badger dug in and carried off flour: {0}
+A badger dug in and carried off flour! Chase it off with the hero or three gnomes
+A mole ploughed up the lawn: heaps of earth
+##### js/world/festival.js
+The festival is already on
+A tavern is needed
+Festivals are held only in the daytime
+Evening is near — better to start the festival in the morning
+Fiends are near — no time for a festival
+The taverns are low on ale (at least {0} mugs needed)
+Victory! The innkeeper rolls out a barrel: festival in the village!
+Festival! Everyone dropped their work and is bringing mugs
+Today is a festival! Everyone dropped their chores and is drifting to the tavern
+(two days)
+Fiends ruined the festival! The revellers scattered back to work
+It's dark — the festival is over, gnomes wander off
+The festival is over. Heads ring, work waits
+(hungover)
+My head…
+Morning of the festival's second day: let's party on!
+Festival, day two
+Evening falls: the party quiets down, we'll continue tomorrow
+Heave-ho!
+Ale!
+##### js/world/ghosts.js
+Ghosts have drifted over the village
+Thank you…
+Tasty… I remember the taste…
+Now I can rest in peace
+The ghost thanked you with a gold coin
+Bread… here, take this
+{0} treated the ghost to bread
+Ooooh!..
+Chills run through me!
+##### js/world/graveyard.js
+It grew by itself, where the fiends got the most gnomes. At night skeletons rise here and ghosts come out. The more losses, the more undead.
+Quietly, without a single knock, a graveyard grew on the outskirts…
+A graveyard grew on the outskirts by itself
+A graveyard began to grow out of the ground on the outskirts…
+A graveyard began to grow out of the ground on the outskirts
+##### js/world/mimics.js
+oak
+walnut
+gilded
+mossy
+stone
+pirate
+casket
+forged
+icy
+bone
+magic
+wicker
+gold ×{0}, {1} ×{2}
+Chest!
+The hero opened the chest: {0}
+Creak…
+A gnome suspected the chest was breathing suspiciously
+Chomp!
+The chest turned out to be a mimic! It jumped at a gnome
+The mimic leaped out of the chest and jumped at: {0}
+The hero beat the mimic chest: {0}
+The hero beat the mimic! It spilled out: {0}
+##### js/world/nechist.js
+Fire!
+{0} damaged by fiends — repairs needed
+{0} damaged by fiends
+{0} repaired
+Bat!
+Ouch, overhead!
+##### js/world/neutralart.js
+Flower Fairy
+Forest Fairy
+Leshy
+Boar Guardian
+Plague Mossling
+Fairy Treehouse
+Fairy Mushroom Ring
+Leshy's Hollow
+Boar Lair
+Patch of Plague Mushrooms

@@ -13,7 +13,7 @@ function resetGameState() {
   Game.animals = [];
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
   ROCKMINE.hp.clear(); ROCKMINE.mined.clear(); ROCKMINE.res.clear();
-  Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0; Game.festival = null; Game.festNext = undefined; Game.festWish = false;
+  Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0; Game.festival = null; Game.festNext = undefined; Game.festWish = false; Game.brawl = null; Game.brawlNext = undefined; Game.brawlN = 0;
   Game.bats = [];
   Game.crows = []; Game.frogs = []; Game.worms = []; Game.chests = null; Game.fairy = null; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1; resetFairy();
   beastsReset();
@@ -78,7 +78,7 @@ function serializeGame() {
     mined: [...ROCKMINE.mined], rockHp: [...ROCKMINE.hp],
     buildings: Game.buildings.map(b => serializeBuilding(b)),
     pets: Game.animals.filter(a => a.owner && !a.dead).map(a => [a.kind, +a.x.toFixed(2), +a.y.toFixed(2), Game.units.findIndex(u => u.id === a.owner)]).filter(p => p[3] >= 0),
-    night: serializeNight(), fest: serializeFestival(),
+    night: serializeNight(), fest: serializeFestival(), brawl: serializeBrawl(),
     roadSites: [...Game.roadSites.values()].map(s => ({ x: s.x, y: s.y, stone: s.stock.stone, dug: s.dug })),
     piles: savePiles(),   // кучи на земле и груз в руках — раньше пропадали при сохранении
     units: Game.units.map(u => ({
@@ -216,6 +216,7 @@ function applySave(s) {
   applyBeasts(s.be);
   applyNight(s.night);
   applyFestival(s.fest);
+  applyBrawl(s.brawl);
   updateMinimapBase();
 }
 

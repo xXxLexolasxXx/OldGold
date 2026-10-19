@@ -172,8 +172,10 @@ function drawUnit(c, u) {
   else if (u.anim === 'lost') { view = 'E'; face = (Math.floor(Game.time * 1.3 + u.id) & 1) ? 1 : -1; }   // озирается в тумане
   else if (u.anim === 'freeze') { view = 'S'; px += (Math.floor(Game.time * 30) & 1) ? 1 : -1; }      // трясётся от ужаса
   else if (u.anim && ANIM_TOOL[u.anim]) { pose = 'work'; view = 'E'; frame = { anim: u.anim, f: swingFrame(u) }; }
-  const wp = weatherPose(u);   // скольжение под дождём, горение
-  if (wp) { pose = wp.pose; view = 'E'; }
+  let wp = weatherPose(u);   // скольжение под дождём, горение
+  const bw = !wp && u.brawl && typeof brawlPose === 'function' ? brawlPose(u) : null;   // пьяная драка и отлёт героя (brawl.js)
+  if (bw) wp = bw;
+  if (wp) { pose = wp.pose; view = 'E'; if (wp.frame) frame = wp.frame; }
   if (pose === 'smoke') frame = smokeFrameOf(u);   // 6 кадров курения
   // герой в бою: 9 кадров из people.js (стойка, замах, удар, довод, парирование, удар по нему, победа, выхватывание)
   const ffr = !wp && fightFrameOf(u, moving);
@@ -264,6 +266,7 @@ function drawUnit(c, u) {
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
   c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
+  if (bw && typeof brawlFx === 'function') brawlFx(c, u, bw, px, py);
   drawNightUnit(c, u, px, py, face, view, lying || flyP >= 0);
   if (u.netUntil > Game.time && !lying) drawNet(c, u, px, py, face, moving);
   if (!wp) drawUmbrella(c, u, px, py, face, pose, lying);
@@ -804,6 +807,7 @@ function render() {
     }
   }
   for (const s of Game.roadSites.values()) drawRoadSite(c, s);
+  drawGamesGround(c, x0, y0, x1, y1);      // чертёж, карты и круг ножичков на земле (games.js)
 
   const list = [];
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -814,6 +818,7 @@ function render() {
     else if (o.t === 'stone') { if (!o.awake) list.push([y + 0.8, () => drawRock(c, x, y, o, i)]); }   // проснувшийся рисуется сам
     else if (isStreetObj(o)) list.push([y + 0.75, () => drawStreetObj(c, x, y, o)]);
     else if (o.t === 'stump') list.push([y + 0.7, () => drawStump(c, x, y)]);
+    else if (o.t === 'hop') list.push([y + 0.01, () => drawHopObj(c, x, y, o)]);       // классики мелом на дороге (games.js)
   }
   // горы: объёмные скальные массивы по глубине вместе с остальными объектами
   for (const m of MOUNTS) {
@@ -862,6 +867,7 @@ function render() {
   list.sort((a, b) => a[0] - b[0]);
   for (const [, fn] of list) fn();
 
+  drawGamesAir(c);
   drawOwls(c);
   drawBats(c);
   drawGhosts(c);

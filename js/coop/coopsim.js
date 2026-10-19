@@ -217,6 +217,7 @@ function coopCmd(name, msgJson, admin) {
   const can = k => { if (admin || coop.perms[k]) return true; coopSay(name, 'Хост запретил: ' + COOP_PERMS[k].toLowerCase()); return false; };
   switch (m.t) {
     case 'go': if (u && coopInt(m.x) && coopInt(m.y)) coopGo(u, m.x, m.y); break;
+    case 'prio': if (can('manage')) coop.out.push({ msg: prioCmd(m) }); break;
     case 'use': if (u && coopInt(m.slot) && m.slot >= 0 && m.slot < COOP_INV) coopUseItem(u, m.slot); break;
     case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) u.hero.inv[m.slot] = null; break;
     case 'vote': if (u && coopInt(m.i) && can('upgrade')) coopVote(name, m.i); break;
@@ -250,6 +251,8 @@ function coopCmd(name, msgJson, admin) {
       coopSay(name, tradeDo(m.side, m.g, Math.min(m.n, 999)).text);
       break;
     }
+    case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
+    case 'dilmode': if (admin && typeof dilSetMode === 'function') dilSetMode(m.mode); else if (!admin) coopSay(name, 'Режим событий меняет только хост'); break;
     case 'qt': {
       if (can('train') && UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy) queueTraining(m.type);
       break;
@@ -555,14 +558,14 @@ function coopList(arr) {
   }
   return out;
 }
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl'];
 const COOP_WX = ['k', 'target', 'bolt', 'scorch', 'fires', 'rainEnd', 'nextRain'];
 
 // всё, что нечисть, ночь и погода держат вне жителей и клеток
 function coopMirror() {
   const m = {
     ghosts: coopList(Game.ghosts), skels: coopList(Game.skels), ents: coopList(Game.ents), owls: coopList(Game.owls),
-    bats: coopList(Game.bats), critters: coopList(Game.critters), falling: coopList(Game.falling),
+    bats: coopList(Game.bats), critters: coopList(Game.critters), falling: coopList(Game.falling), games: coopList(Game.games),
     neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
     raiders: typeof foeMirrorRaiders === 'function' ? foeMirrorRaiders() : [], foeShots: typeof foeMirrorShots === 'function' ? foeMirrorShots() : [],
     foe: typeof foeMirror === 'function' ? foeMirror() : null,
@@ -571,6 +574,7 @@ function coopMirror() {
     lost: Game.lostGnomes || 0, df: Game.diff,
     goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
+    dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
     wx: {},
   };
