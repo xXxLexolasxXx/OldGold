@@ -7,7 +7,7 @@ const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26
 
 // Курица: белая, красный гребешок, семенит
 function drawChicken(c, f, peck) {
-  const step = f === null ? 0 : Math.sin(f / 4 * Math.PI * 2);
+  const step = f === null ? 0 : Math.sin(f / CR_N * Math.PI * 2);
   line(c, -1, 9, -1 + step * 1.2, 13, '#e0a030', 0.6); line(c, 1, 9, 1 - step * 1.2, 13, '#e0a030', 0.6);
   c.fillStyle = '#f0ece0'; c.beginPath(); c.moveTo(-5.4, 4); c.lineTo(-3.6, 7); c.lineTo(-6, 7.4); c.closePath(); c.fill();   // хвост
   ellipse(c, -0.4, 7, 4.2, 3, '#f4f0e6'); ellipse(c, -0.8, 7.6, 2.6, 1.6, '#d8d0c0');
@@ -44,7 +44,7 @@ function petGear(c, load, nx, ny, bx, by) {
 // Утка: крякающая кряква. На суше семенит, на воде сидит в круге ряби
 function drawDuck(c, f, load) {
   const fl = petFlags(load);
-  const step = f === null ? 0 : Math.sin(f / 4 * Math.PI * 2);
+  const step = f === null ? 0 : Math.sin(f / CR_N * Math.PI * 2);
   const dy = fl.swim ? 2.4 : 0;
   if (fl.swim) {
     c.strokeStyle = 'rgba(235,245,255,0.55)'; c.lineWidth = 0.5;
@@ -69,7 +69,7 @@ function drawDuck(c, f, load) {
 
 // Гусь: длинная шея, оранжевый клюв; в атаке шея вытянута вперёд, крылья растопырены
 function drawGoose(c, f, attack, swim) {
-  const step = f === null ? 0 : Math.sin(f / 4 * Math.PI * 2);
+  const step = f === null ? 0 : Math.sin(f / CR_N * Math.PI * 2);
   if (swim) {
     // плывёт: лап не видно, тело сидит в воде, вокруг расходятся круги
     c.save(); c.translate(0, 5.5);
@@ -115,7 +115,7 @@ function drawGoose(c, f, attack, swim) {
 
 function crLegs(c, xs, top, len, f, col, w = 1.3) {
   xs.forEach((x, k) => {
-    const sw = f === null ? 0 : Math.sin(f / 4 * Math.PI * 2 + (k % 2 ? Math.PI : 0)) * 1.4;
+    const sw = f === null ? 0 : Math.sin(f / CR_N * Math.PI * 2 + (k % 2 ? Math.PI : 0)) * 1.4;
     smoothLimb(c, [x, top], [x + sw * 0.4, top + len * 0.5], [x + sw, top + len], w, k < 2 ? shade(col, -0.3) : col);
   });
 }
@@ -172,7 +172,7 @@ function drawCreature(c, kind, f, load) {
     return;
   }
   if (kind === 'rabbit') {
-    const hop = f === null ? 0 : Math.abs(Math.sin(f / 4 * Math.PI * 2)) * 2.4;
+    const hop = f === null ? 0 : Math.abs(Math.sin(f / CR_N * Math.PI * 2)) * 2.4;
     c.save(); c.translate(0, -hop);
     ellipse(c, 0, 8, 4.4, 3, '#9a8a74'); ellipse(c, 0.4, 9, 3, 1.8, '#c8bca8');
     ellipse(c, 3.8, 6, 2, 1.8, '#9a8a74');
@@ -245,7 +245,7 @@ function drawCreature(c, kind, f, load) {
 
 // Телега извозчика: лошадь, двухколёсная повозка, гном-возница, груз стопкой.
 function drawCartRig(c, f, load, n) {
-  const ph = f === null ? 0 : f / 4 * Math.PI * 2;
+  const ph = f === null ? 0 : f / CR_N * Math.PI * 2;
   // повозка
   c.fillStyle = lingrad(c, 0, 14, 0, 22, [[0, '#a87848'], [1, '#5a3a1a']]);
   c.fillRect(-26, 14, 24, 7);
@@ -284,11 +284,17 @@ function drawCartRig(c, f, load, n) {
   line(c, -1.6, 10, 6, 12, '#3a2414', 0.4);
 }
 
+// Кадров ходьбы: мелкая живность 6, крупные звери и упряжка 8 (стандарт кадров, КАДРЫ.md)
+const CR_FRAMES = { rabbit: 6, chicken: 6, duck: 6, goose: 6 };
+let CR_N = 8;
+const crFrames = kind => CR_FRAMES[kind] || 8;
+
 function creatureSprite(kind, f, load, n = 1, view = 'E') {
   const key = kind + '|' + f + '|' + (load || '') + '|' + n + '|' + view;
   let cv = CR_CACHE.get(key);
   if (cv) return cv;
   const [w, h, ax, ay] = CR_SIZE[kind];
+  CR_N = crFrames(kind);
   const [c2, c] = mkSprite(w, h, 3);
   // перенос так, чтобы копыта/колёса стояли в точке (ax, ay)
   c.translate(ax, ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14, duck: 13 }[kind]);
@@ -300,7 +306,7 @@ function creatureSprite(kind, f, load, n = 1, view = 'E') {
 
 // Нарисовать зверя/упряжку ступнями в точке (px, py)
 function drawCreatureAt(c, kind, px, py, face, moving, phase, load, n, view = 'E') {
-  const f = moving ? Math.floor(phase) & 3 : null;
+  const f = moving ? Math.floor(phase * crFrames(kind) / 4) % crFrames(kind) : null;   // период шага прежний (4), кадров больше
   const spr = creatureSprite(kind, f, load, n, view);
   const [w, h, ax, ay] = CR_SIZE[kind];
   c.fillStyle = 'rgba(10,8,4,0.3)';
@@ -314,7 +320,7 @@ function drawCreatureAt(c, kind, px, py, face, moving, phase, load, n, view = 'E
 // Телега спереди (едет к нам) и сзади (едет от нас): вид сверху-под углом, центр по x = 0.
 function drawCartFront(c, f, load, n, dir) {
   const south = dir === 'S';
-  const lift = f === null ? [0, 0] : [Math.max(0, Math.sin(f / 4 * Math.PI * 2)) * 1.6, Math.max(0, -Math.sin(f / 4 * Math.PI * 2)) * 1.6];
+  const lift = f === null ? [0, 0] : [Math.max(0, Math.sin(f / CR_N * Math.PI * 2)) * 1.6, Math.max(0, -Math.sin(f / CR_N * Math.PI * 2)) * 1.6];
   const col = '#7a4a2a';
   const wheel = x => { ellipse(c, x, 22, 1.7, 5.6, '#2e1a0a'); ellipse(c, x, 22, 1.1, 4.6, '#7a5030'); line(c, x, 17.8, x, 26.2, '#2e1a0a', 0.5); };
   const box = y0 => {
