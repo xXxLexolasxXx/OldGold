@@ -273,7 +273,7 @@ function drawBarmaid(c, b, spr, ox, oy) {
 // она хмурится, «!», руки в бока · 3.1–3.5 замах (отвела руку назад, анти-кадр) · 3.5 смаз · 3.58 контакт (стоп-кадр, вспышка, звёздочки,
 // отпечаток ладони, брызги пива) · дальше голова гнома отскакивает пружиной, он шатнулся, хватается за щёку, пар из ушей,
 // разворачивается и понуро уходит; она уперла руки в бока, фыркает и уходит в дверь. Тест: ?slap=1 — запустить сразу.
-const SLAP_T = 7.5;
+const SLAP_T = 9.2;
 const SLAP_DEBUG = typeof location !== 'undefined' && /[?&]slap=1/.test(location.search);
 
 function slapTick(b, guests) {
@@ -310,6 +310,40 @@ function slapHeart(c, x, y, a) {
 }
 function slapStar(c, x, y) { slapPx(c, x - 1, y, 3, 1, '#ffd848'); slapPx(c, x, y - 1, 1, 3, '#ffd848'); slapPx(c, x, y, 1, 1, '#fff8d0'); }
 
+// колпак отдельным спрайтом: разница между гномом в колпаке и без него (один раз на облик), центр — от ног
+const SLAP_HATS = {};
+function slapHatOf(type, look) {
+  const key = type + look;
+  if (SLAP_HATS[key]) return SLAP_HATS[key];
+  const o = { gait: '', gest: '', gf: 0 }, u = { type, look, carry: null };
+  const full = personSprite(u, 'E', 'idle', 0, o), w = full.width, h = full.height;
+  const rd = cv => { const t = document.createElement('canvas'); t.width = w; t.height = h; const x = t.getContext('2d'); x.drawImage(cv, 0, 0); return x.getImageData(0, 0, w, h); };
+  const A = rd(full);                                       // сразу копируем: личный холст спрайта могут переиспользовать
+  const B = rd(personSprite(u, 'E', 'idle', 0, Object.assign({ nohat: true }, o))), cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const out = cv.getContext('2d').createImageData(w, h);
+  let x0 = w, y0 = h, x1 = 0, y1 = 0;
+  for (let i = 0; i < w * h; i++) {
+    const k = i * 4;
+    if (A.data[k + 3] > 0 && (B.data[k + 3] === 0 || A.data[k] !== B.data[k] || A.data[k + 1] !== B.data[k + 1] || A.data[k + 2] !== B.data[k + 2])) {
+      for (let q = 0; q < 4; q++) out.data[k + q] = A.data[k + q];
+      const px = i % w, py = (i / w) | 0; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+  }
+  cv.getContext('2d').putImageData(out, 0, 0);
+  const kx = w / PW, ky = h / PH;
+  const hat = { cv, cx: (x0 + x1) / 2 / kx - PFX, cy: (y0 + y1) / 2 / ky - PFY };
+  // полёт: из головы назад-вверх, кувырок, приземление на траву и подскок
+  hat.vx = -17; hat.vy = -38;
+  hat.tl = (-hat.vy + Math.sqrt(hat.vy * hat.vy - 240 * (hat.cy + 2))) / 120;
+  hat.land = hat.vx * hat.tl;
+  return SLAP_HATS[key] = hat;
+}
+function slapHatDraw(c, hat, x, y, ang, flip) {
+  c.save(); c.translate(Math.round(x), Math.round(y)); if (flip) c.scale(-1, 1); c.rotate(ang);
+  c.drawImage(hat.cv, Math.round(-(PFX + hat.cx)), Math.round(-(PFY + hat.cy)), PW, PH);
+  c.restore();
+}
+
 function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
   const S = b._slap, el = Game.time - S.t0, fx = S.fx;
   const dp = spr.doorPt || [spr.doorCx, spr.baseY - 6], dx = ox + dp[0], dy = oy + dp[1] + 4;
@@ -320,7 +354,9 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
   const T_HIT = 3.583, e = el - T_HIT;                                   // e — время с контакта
   c.imageSmoothingEnabled = false;
   // ---- гном ----
-  let gx = gx0, gy = sy, gsp, gflip = false, gsh = 0;
+  const hat = slapHatOf('serf', gl), nh = { nohat: true };
+  let gx = gx0, gy = sy, gsp, gflip = false, gsh = 0, hatArm = false;
+  const pickX = gx0 - 4 + hat.land + 5, tHat = 5.5, tPick = 6.3, tUp = 7.0, tOn = 7.5;   // где лежит колпак и когда его поднимают
   if (el < 1.6) {
     const p = ease(el / 1.6);
     gx = dx + (gx0 - dx) * p; gy = dy + (sy - dy) * p;
@@ -329,15 +365,24 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
     gsp = mk('serf', gl, 'E', 'idle', 0, { gest: 'flirt', gf: Math.floor((el - 1.6) * 12) % 6 });
     gsh = 1.2 + Math.sin(el * 4.5) * 1.3;                                // наваливается на стойку
   } else {
-    const st = el > 5.5 ? 0 : 4 * (1 - Math.exp(-8 * e));
-    gx = gx0 - st;
-    if (el < 3.95) gsp = mk('serf', gl, 'E', 'idle', 0);
-    else if (el < 5.2) gsp = mk('serf', gl, 'E', 'idle', 0, { gest: 'cheek', gf: Math.floor(el * 3) });
-    else if (el < 5.5) gsp = mk('serf', gl, 'S', 'idle', 0, { gest: 'cheek', gf: 0 });
-    else {
-      const p = ease(clamp((el - 5.5) / 1.8));
-      gx = gx0 - 4 + (dx - (gx0 - 4)) * p; gy = sy + (dy - sy) * p; gflip = gx < gx0;
-      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 9) % 8); gsh = 1.6;     // голова понурая
+    gx = gx0 - (el > tHat ? 4 : 4 * (1 - Math.exp(-8 * e)));
+    if (el < 3.95) gsp = mk('serf', gl, 'E', 'idle', 0, nh);
+    else if (el < 5.2) gsp = mk('serf', gl, 'E', 'idle', 0, Object.assign({ gest: 'cheek', gf: Math.floor(el * 3) }, nh));
+    else if (el < tHat) gsp = mk('serf', gl, 'S', 'idle', 0, Object.assign({ gest: 'cheek', gf: 0 }, nh));
+    else if (el < tPick) {                                               // идёт к колпаку
+      const p = ease((el - tHat) / (tPick - tHat));
+      gx = gx0 - 4 + (pickX - (gx0 - 4)) * p; gflip = pickX < gx0 - 4;
+      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 9) % 8, nh); gsh = 1.6;     // голова понурая
+    } else if (el < tUp) {                                               // нагибается
+      gx = pickX; gflip = pickX < gx0 - 4;
+      gsp = mk('serf', gl, 'E', 'duck', 0, nh); gsh = 0;
+    } else if (el < tOn) {                                               // несёт колпак к голове
+      gx = pickX; gflip = pickX < gx0 - 4; hatArm = true;
+      gsp = mk('serf', gl, 'E', 'idle', 0, Object.assign({ gest: 'hat', gf: 0 }, nh));
+    } else {                                                             // колпак снова часть спрайта
+      const p = ease(clamp((el - tOn) / 1.5));
+      gx = pickX + (dx - pickX) * p; gy = sy + (dy - sy) * p; gflip = dx < pickX;
+      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 9) % 8); gsh = 1;
     }
     if (el < 5.2) gsh = e < 0.17 ? -2 : -9 * Math.exp(-4.5 * (e - 0.17)) * Math.cos(12 * (e - 0.17)) + (el > 3.95 ? 1 : 0);
   }
@@ -357,9 +402,22 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
   }
   if (el > 3.3 && el < 3.9) wX -= el < 3.5 ? (el - 3.3) * 7.5 : el < 3.75 ? 3.2 : 3.2 * (3.9 - el) / 0.15;   // выпад вперёд на ударе
   const shadow = (x, y) => { c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(Math.round(x) + 1, Math.round(y), 5.5, 2, 0, 0, 7); c.fill(); };
-  const gVis = el < 7.2, wVis = el < 7.2;
+  const gVis = el < 9, wVis = el < 7.2;
   if (gVis) { shadow(gx, gy); slapPerson(c, gsp, gx, gy, gflip, gsh); }
   if (wVis) { shadow(wX, wY); slapPerson(c, wsp, wX, wY, wflip, wsh); }
+  if (e >= 0 && el < tOn) {                                              // колпак: слетел · кувыркается · упал · подскочил · лежит · в руке
+    const hx0 = gx0 + hat.cx, hy0 = sy + hat.cy;
+    if (e < hat.tl) slapHatDraw(c, hat, hx0 + hat.vx * e, hy0 + hat.vy * e + 60 * e * e, -e * 16, false);
+    else if (el < tPick + 0.35) {
+      const q = e - hat.tl, hop = q < 0.55 ? 4.5 * Math.abs(Math.sin(q * 8)) * Math.exp(-q * 4) : 0;
+      slapHatDraw(c, hat, hx0 + hat.land, sy - 2 - hop, -hat.tl * 16, false);
+      if (hop > 0.4) { c.fillStyle = 'rgba(200,190,150,0.5)'; c.fillRect(Math.round(hx0 + hat.land - 3), sy - 1, 1, 1); c.fillRect(Math.round(hx0 + hat.land + 4), sy - 1, 1, 1); }
+    }
+  }
+  if (hatArm) {                                                          // поднял и несёт на голову: к концу ровно на место
+    const p = ease(clamp((el - tUp) / (tOn - tUp))), dir = gflip ? -1 : 1;
+    slapHatDraw(c, hat, gx + dir * (hat.cx * p + 3.5 * (1 - p)), gy + hat.cy * p + (-17) * (1 - p), (1 - p) * 0.9 * dir, gflip);
+  }
   // ---- эффекты ----
   const hx = gx + 3.5, hy = gy - 16;                                     // щека гнома
   for (const t0 of [1.9, 2.45, 3.0]) {                                   // сердечки над головой ухажёра
@@ -379,7 +437,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
   if (e >= 0 && !fx.hit) {                                               // контакт: звук, реплики
     fx.hit = 1;
     const wxp = ox + hx, wyp = oy + hy;
-    if (typeof sfxAt === 'function') { sfxAt('five', wxp, wyp); sfxAt('thud', wxp, wyp); }
+    if (typeof sfxAt === 'function') { sfxAt('slap', wxp, wyp); sfxAt('thud', wxp, wyp); }
     if (typeof floater === 'function') {
       floater((ox + wX) / TILE, (oy + wY) / TILE - 2.4, ['Нахал!', 'Ах ты!', 'Не смей!'][S.look % 3], '#ffe9a0');
       if (typeof fxLater === 'function') fxLater(1.2, () => floater((ox + gx0) / TILE, (oy + sy) / TILE - 2.4, 'Ой…', '#d8d0c0'));

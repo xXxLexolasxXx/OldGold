@@ -189,7 +189,7 @@ function ambienceTick() {
 // Раз в минуту-две звуки гномов (чихи, свист, трубка) стали чуть чаще: кулдауны × 0.75.
 window.addEventListener('load', () => {
   const MUL = {
-    five: 0.63, coo: 0.6, cuckoo: 0.6, squirrelCrack: 0.55, peckDrum: 0.55, graveRise: 0.72, thud: 0.78, crit: 0.78, parry: 0.8, bell: 0.75,
+    five: 0.63, slap: 0.8, coo: 0.6, cuckoo: 0.6, squirrelCrack: 0.55, peckDrum: 0.55, graveRise: 0.72, thud: 0.78, crit: 0.78, parry: 0.8, bell: 0.75,
     wormSlither: 5, firefly: 1.8, barkRustle: 2, mouseRustle: 1.8, mouseGnaw: 1.6, whisper: 1.35,
   };
   for (const k in MUL) if (SFX_DEF[k]) SFX_DEF[k].gain *= MUL[k];

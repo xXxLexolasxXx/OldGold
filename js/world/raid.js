@@ -509,5 +509,7 @@ function raidHud() {
     h = `<b>${K.name}</b> · фаза ${['I', 'II', 'III'][F.ph - 1] || 'I'}: «${P.n}»<div class="rb"><i style="width:${Math.round(r * 100)}%"></i></div>${F.hint || P.hint}`;
   }
   if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; }
+  // в общей деревне внизу справа — панель заданий: поднимаемся над ней
+  if (!(typeof Mobile !== 'undefined' && Mobile.on)) el.style.bottom = rdMirror() ? '160px' : '';
   el.style.display = 'block';
 }

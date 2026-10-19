@@ -46,6 +46,10 @@ function defHurt(h, p, dmg, from, label) {
   DEF_KILLER.x = from[0]; DEF_KILLER.y = from[1];
   if (h.kind === 'skel' || h.kind === 'beast') { defKill(h, label); return true; }
   if (h.kind === 'raid') { foeHit(h.o, DEF_KILLER, dmg); return true; }
+  if (h.kind === 'ent') {                                   // ожившее дерево или камень: берёт хуже скелета
+    if (typeof ENT_HIT === 'undefined' || !ENT_HIT.has(h.o.state) || Math.random() > (h.o.rock ? 0.35 : 0.5)) return false;
+    entFell(h.o, DEF_KILLER); return true;
+  }
   return false;
 }
 
@@ -190,7 +194,7 @@ function defTowerTick(b, step, hostiles, vis) {
   }
   // стрельба: у каждого стрелка своя перезарядка
   const sh = defShooters(b, T);
-  const targets = hostiles.filter(h => h.kind !== 'ghost' && h.kind !== 'ent' && !(h.kind === 'raid' && h.o.st === 'die'));
+  const targets = hostiles.filter(h => h.kind !== 'ghost' && !(h.kind === 'raid' && h.o.st === 'die'));
   for (let k = 0; k < sh.length; k++) {
     T.cd[k] = (T.cd[k] || 0) - step;
     if (T.cd[k] > 0) continue;
