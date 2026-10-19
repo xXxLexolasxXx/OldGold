@@ -112,7 +112,7 @@ function drawSpawnSign(c) {
   const px = (spot.sign[0] + 0.5) * TILE, py = (spot.sign[1] + 1) * TILE - 2;
   const n = SPAWN_SIGNS.length;
   const k = (Math.floor(Game.time / 12) * 7 + (Game.seed | 0) + (Game.signBump || 0) * 3) % n;
-  const text = SPAWN_SIGNS[(k + n) % n];
+  const text = t(SPAWN_SIGNS[(k + n) % n]);
   c.save();
   c.font = 'bold 6px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
   // перенос по словам: ширина доски ~64 px

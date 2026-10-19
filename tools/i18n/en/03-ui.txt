@@ -1,0 +1,199 @@
+##### js/layout.js
+Shrink minimap
+Put the window back in the column
+##### js/main.js
+Placed the first building
+Demolish "{0}"?
+You can't lay a road here
+Game saved
+Game loaded
+This building can't be rotated
+Entrance at the back (north)
+Entrance at the front (south)
+Entrance on the right (east)
+Entrance on the left (west)
+##### js/mobile.js
+{0}: tap a spot{1}
+· ↻ rotates the entrance
+Road: drag a finger, tap a road to remove it
+{0}: tap tiles (tap again to remove)
+Demolish: tap
+First tap a spot on the map
+##### js/render.js
+hic!
+no fiends spawn
+light and protection
+respawn and rally
+##### js/save.js
+Autosave failed: no space left in the browser
+##### js/startmenu.js
+Save
+Loading the village… {0}%
+no saves yet
+Pressed "Continue"
+Pressed "New game"
+Opened "Multiplayer"
+Opened "How to play" in the start menu
+Enter a nickname so other players can see you
+Online play is still getting ready: nickname and address are saved, connecting arrives in the next update.
+Couldn't connect
+Error: {0}
+Continue
+New game
+new world, name your hero
+Multiplayer
+play with friends
+Your nickname
+Server address
+Connect
+Back
+Build roads and houses: haulers carry goods, builders build.
+The hero is faster: select them (button bottom-left, or H) and click where the work is.
+Mouse wheel zooms, right button drags the map. On a phone: one finger pans, pinch zooms.
+Keep an eye on the "Estate" tab: it lists all the village's problems.
+Resources: show / hide
+Own server
+a friend's nickname and address
+shared village, friends ▾
+##### js/ui.js
+No school built yet
+The school queue is full
+To school: {0}
+Grain and bread
+Hops and beer
+Pigs and meat
+Gold smelting
+Unlocked in the menu: {0}
+Wheat
+Saved the game
+Loaded a save
+Loaded the autosave
+Opened "New map"
+Opened "How to play"
+Couldn't save
+No save found
+Autosave loaded
+No autosave yet
+Start on a new map? Unsaved progress will be lost.
+Storehouses refuse: {0}
+Storehouses accept again: {0}
+Click a good to stop storehouses accepting it. The storekeeper already thinks everything is brought in vain.
+Total gnomes
+Hungry: {0}
+On a smoke break: {0}
+Sleeping it off: {0}
+Injured: {0}
+free: {0}
+all busy
+· training: {0}
+carries 1
+2 at a time
+3 at a time
+waiting for a delivery
+takes 1 material
+takes 2 materials
+deliveries
+points (building 3, road 1)
+Lv.{0}:
+Level 3, {0} served. Nowhere to go but management
+Level {0}: {1} of {2} {3} to the next
+{0}: construction has no road to the storehouse
+{0}: construction is waiting for a builder
+{0}: no road to the storehouse
+{0}: damaged by fiends, awaiting repair
+{0}: needs a {1}
+{0}: everything is full
+{0}: no "{1}"
+The school is waiting for gold
+Hungry gnomes: {0}{1}
+— no food in the tavern
+Problems
+Everything works as it should. Suspicious. Check again.
+Produced this game
+Nothing yet.
+Digging {0}%
+Paving {0}%
+Dug, waiting for stone
+No road to the storehouse
+Marking out the site
+Building {0}%
+Working
+Paused
+No worker
+Damaged — awaiting repair
+Everything is full
+Missing: {0}
+{0}s
+working
+inside
+on the way / outside
+none — needs training
+Train
+Builder: {0}
+First a builder digs the trough for free — that's what they do best. Then for 1 stone they lay the paving, if anyone ever brings the stone.
+{0}Cancel
+digging
+laying stone
+waiting for a free builder
+waiting for stone
+tier 2
+Deliveries closed
+tap to open
+Deliveries open
+tap to close
+Festival in progress!
+Throw a festival
+partying until evening
+for 1–2 days, higher ale consumption
+Upgrade to tier 2
+building
+none free
+Cancel upgrade
+materials already delivered are lost
+Upgrade to tier 2: {0}
+Materials
+Production{0}
+(ticks — what to make)
+Stored (click — refuse)
+Delivered
+Ready for pickup
+Training · 1 gold
+Waiting for gold
+Stone around: {0}
+Trees nearby: {0}, mature: {1}
+Pack goats:
+of 3
+Wild goats on the map: {0}
+Carters:
+A horse: 3 hay + 2 grain. The cart takes a whole stack at once — up to 5 items.
+What to sow
+Wheat → grain
+Grass → hay
+Hops on poles
+fields: {0}
+Fields in total: {0} of {1}
+Mark fields yourself with the "Wheat" and "Hops" tools next to the farm (up to {0} tiles) — a builder digs them for free, hops cost a plank for the trellises. Hay is a by-product of harvest.
+Rings on the map: light and protection from fiends — {0} tiles, heroes respawn at the bonfire — {1}, beyond {2} fiends don't even appear.
+Pen
+Adults (3/3):
+of {0}
+Growing: {0}
+Every armful of hay: all grow a third bigger and a piglet is born.
+Cost
+Worker: {0}
+Works without a worker
+Production
+Produces
+nothing selected
+Click a building on the map — its stock, worker and production will show up here. Yes, click the building, not somewhere near it.
+Hover over a building button on the left to see what it makes and what it costs. Prices don't haggle, gnomes don't back down.
+tell you what's missing: a worker, materials or room. Most often — everything at once.
+Save: {0}
+Autosave: {0}
+Food (bread + sausage)
+{0}: deliveries closed — haulers bring nothing here
+{0}: deliveries open again
+{0}: deliveries closed
+{0}: deliveries open
+: this building can't be rotated. It stands just right as it is, ask it yourself
+— rotate building: entrance faces south, east or west. Gnomes don't go north, on principle

@@ -1,7 +1,7 @@
 {
   "name": "OldGold",
   "short_name": "OldGold",
-  "description": "Гномья экономика: строй деревню, корми жителей, веди героя",
+  "description": "Gnome economy: build a village, feed the gnomes, lead the hero. Гномья экономика: строй деревню, корми жителей, веди героя",
   "start_url": "./index.html",
   "display": "fullscreen",
   "orientation": "any",
