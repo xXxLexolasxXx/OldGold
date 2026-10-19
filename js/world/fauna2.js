@@ -207,8 +207,8 @@ function miceTick(dt) {
 }
 function drawMouse(c, m) {
   const px = m.x * TILE, py = m.y * TILE + 3;
-  const run = m.moving && (Math.floor(m.ph) & 1);
-  f2draw(c, run ? 'mouseB' : 'mouseA', run ? MOUSE_B : MOUSE_A, px, py, m.face, 0);
+  if (m.moving) { const i = Math.floor(m.ph * 3) % 6; f2draw(c, 'mouseW' + i, gaitRows(MOUSE_A, 1, 6, i), px, py, m.face, 0); }   // 6 кадров семенящего шага
+  else f2draw(c, 'mouseA', MOUSE_A, px, py, m.face, 0);
   if (m.carry) { c.fillStyle = F2_PAL.F; c.fillRect(Math.round(px) + m.face * 4 - 1, Math.round(py) - 8, 3, 3); c.fillStyle = F2_PAL.M; c.fillRect(Math.round(px) + m.face * 4 - 1, Math.round(py) - 8, 3, 1); }
 }
 
@@ -339,7 +339,7 @@ function squirrelsTick(dt) {
 function drawSquirrel(c, s) {
   if (s.state === 'hide') return;
   const px = s.x * TILE, py = s.y * TILE + 2;
-  if (s.moving) { const f = Math.floor(s.ph * 8) & 1; f2draw(c, f ? 'sqR2' : 'sqR', f ? SQ_RUN2 : SQ_RUN, px, py, s.face, f ? 2 : 0); }
+  if (s.moving) { const i = Math.floor(s.ph * 24) % 6; f2draw(c, 'sqW' + i, gaitRows(i < 3 ? SQ_RUN : SQ_RUN2, 1, 6, i), px, py, s.face, [0, 1, 2, 2, 1, 0][i]); }   // скачет: 6 кадров, дуга прыжка
   else f2draw(c, 'sqS', SQ_SIT, px, py, s.face, 0);
 }
 
@@ -455,7 +455,8 @@ function hedgehogsTick(dt) {
 function drawHedgehog(c, h) {
   const px = h.x * TILE, py = h.y * TILE + 3;
   if (h.ball > 0) f2draw(c, 'hgBall', HEDGE_BALL, px, py, h.face, 0);
-  else f2draw(c, 'hg', HEDGE, px, py, h.face, h.moving && (Math.floor(h.ph * 2) & 1) ? 1 : 0);
+  else if (h.moving) { const i = Math.floor(h.ph * 2) % 4; f2draw(c, 'hgW' + i, gaitRows(HEDGE, 1, 4, i), px, py, h.face, 0); }   // топочет: 4 кадра
+  else f2draw(c, 'hg', HEDGE, px, py, h.face, 0);
 }
 
 // ---------- Брызги земли, общий ход и отрисовка ----------
