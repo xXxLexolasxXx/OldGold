@@ -470,7 +470,12 @@ function tutUpdate(force) {
 
 // Поставить точку карты (мировые px) в середину той части экрана, которую не закрывает окно обучения
 function tutCenter(wx, wy) {
-  const cr = R.canvas.getBoundingClientRect(), pr = Tut.home || Tut.el.getBoundingClientRect(), W = cr.width, H = cr.height - (isMob() ? 60 : 0);   // home — где окно стоит обычно; на телефоне снизу полоса вкладок
+  // где окно стоит обычно (без «переезда»), прямо сейчас: шторки могли его сдвинуть
+  const fl = Tut.el.classList.contains('flip');
+  if (fl) Tut.el.classList.remove('flip');
+  const pr = Tut.home = Tut.el.getBoundingClientRect();
+  if (fl) Tut.el.classList.add('flip');
+  const cr = R.canvas.getBoundingClientRect(), W = cr.width, H = cr.height - (isMob() ? 60 : 0);   // на телефоне снизу полоса вкладок
   const l = pr.left - cr.left, t = pr.top - cr.top, rgt = pr.right - cr.left, btm = pr.bottom - cr.top;
   // из четырёх свободных полос (слева, справа, сверху, снизу от окна) — самая большая
   const free = [[l * H, l / 2, H / 2], [(W - rgt) * H, (rgt + W) / 2, H / 2], [t * W, W / 2, t / 2], [(H - btm) * W, W / 2, (btm + H) / 2]];

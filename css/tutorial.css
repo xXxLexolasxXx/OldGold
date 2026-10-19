@@ -106,11 +106,12 @@ body.mobile #tut-list:not(.open) ol { display: none; }
 body.mobile #tut-list.open { width: 200px; }
 /* шторка снизу открыта или в руке инструмент (внизу ✓ ↻ ✕) — чек-лист не мешает */
 body.mobile.sheet-tab #tut-list, body.mobile.sheet-info #tut-list, body.mobile #tut-list.tool { display: none; }
-/* телефон лёжа: высоты мало — окно уже, справа от боковых кнопок */
-@media (orientation: landscape) and (max-height: 520px) {
-  /* под верхней полосой (ресурсы, время, скорость) справа — её не закрываем */
-  body.mobile #tut { left: auto; right: 8px; width: min(380px, 48vw); max-height: calc(100% - 100px); top: calc(46px + env(safe-area-inset-top)); }
-  /* слева в этой ориентации — шторка с вкладками и окном здания, поэтому уезжаем вниз, а не влево */
-  body.mobile #tut.flip { top: auto; bottom: calc(40px + env(safe-area-inset-bottom)); }
-  body.mobile #tut-list { bottom: calc(10px + env(safe-area-inset-bottom)); }
-}
+/* телефон лёжа: место окна задаёт css/landscape.css (верх слева, справа от шторки). Здесь — чтобы кнопки «Повторить» и
+   «Пропустить» всегда влезали (окно чуть выше 40%), «переезд» вправо и значок целей слева внизу, не на миникарте */
+body.mobile.land #view > #tut { max-height: calc(100% - var(--top, 40px) - 8px); }
+body.mobile.land #tut .tut-bar { margin-top: 3px; }
+body.mobile.land #tut .tut-do { margin-top: 3px; padding: 2px 6px; }
+body.mobile.land #tut .tut-btns { margin-top: 4px; }
+body.mobile.land #tut .tut-btns button { padding: 2px 9px; min-height: 0; font-size: 12px; }
+body.mobile.land #tut.flip { top: var(--top, 40px); bottom: auto; left: auto; right: calc(var(--sr, 0px) + 6px); }   /* внизу — панель инструмента с ✓ */
+body.mobile.land #tut-list { right: auto; left: var(--left, 60px); bottom: calc(var(--sb, 0px) + 8px); }
