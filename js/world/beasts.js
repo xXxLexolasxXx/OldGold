@@ -237,7 +237,7 @@ function beFlySprite(key, o, frame) {
   for (let x = 24; x < 24 + o.beak; x++) px(x, 7, o.bill);                        // клюв
   px(23, 7, o.body); px(23, 6, o.body); px(24, 6, o.body); px(24, 6, o.eye);
   for (let t = 0; t < 6; t++) px(5 - t, 11 + (t > 2 ? 1 : 0), o.leg);              // ноги за хвост
-  const wing = frame === 0 ? [[9, 9], [17, 9], [16, 1], [3, 3]] : frame === 1 ? [[8, 9], [17, 9], [17, 7], [2, 7]] : [[9, 11], [16, 11], [14, 19], [5, 18]];
+  const wing = flapPose([[9, 9], [17, 9], [16, 1], [3, 3]], [[8, 9], [17, 9], [17, 7], [2, 7]], [[9, 11], [16, 11], [14, 19], [5, 18]], frame, 8);   // 8 кадров взмаха
   poly(wing, o.wing, o.tip);
   cv.beFace = 1;
   return BE_CACHE[k] = cv;
@@ -823,7 +823,7 @@ function beDrawStork(c, s) {
   const py = s.y * TILE + 4;
   c.fillStyle = 'rgba(10,8,4,' + (air ? 0.16 : 0.28) + ')'; c.beginPath(); c.ellipse(px, py, 6, 2, 0, 0, 7); c.fill();
   if (air && s.z > 1.5) {
-    const spr = beFlySprite('storkF', BE_STORK_FLY, [0, 1, 2, 1][Math.floor(s.ph * 5) & 3]);
+    const spr = beFlySprite('storkF', BE_STORK_FLY, Math.floor(s.ph * 10) & 7);
     c.imageSmoothingEnabled = false;
     c.save(); c.translate(Math.round(px), Math.round(py - s.z - 10)); if (s.face < 0) c.scale(-1, 1); c.drawImage(spr, -15, 0); c.restore();
     c.imageSmoothingEnabled = R.smooth;
@@ -934,7 +934,7 @@ function beDrawHeron(c, h) {
   const px = h.x * TILE, py = h.y * TILE + 4;
   if (h.state === 'fly' || h.state === 'leave') {
     c.fillStyle = 'rgba(10,8,4,0.16)'; c.beginPath(); c.ellipse(px, py, 6, 2, 0, 0, 7); c.fill();
-    const spr = beFlySprite('heronF', BE_HERON_FLY, [0, 1, 2, 1][Math.floor(h.ph * 5) & 3]);
+    const spr = beFlySprite('heronF', BE_HERON_FLY, Math.floor(h.ph * 10) & 7);
     c.imageSmoothingEnabled = false;
     c.save(); c.translate(Math.round(px), Math.round(py - h.z - 10)); if (h.face < 0) c.scale(-1, 1); c.drawImage(spr, -15, 0); c.restore();
     c.imageSmoothingEnabled = R.smooth;
