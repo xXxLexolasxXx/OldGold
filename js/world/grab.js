@@ -103,6 +103,7 @@ function skGrabIndex(s) {
 }
 
 function skTakes(s, u) {
+  nightTook();
   s.state = 'grab'; s.t = 0; s.fighters = []; s.resolved = false; s.goal = null; s.foe = null; s.moving = false;
   s.vsnap = snapVictim(u); s.vx0 = u.x; s.vy0 = u.y; s.face = u.x >= s.x ? 1 : -1; s.scream = 0; s.sayV = false;
   floater(u.x, u.y - 1.2, '!', '#ff6040');
