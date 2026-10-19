@@ -296,7 +296,7 @@ function* workerGen(u, b) {
       if (findInn(u)) { yield { leave: true }; return; }
       u.nextEatTry = Game.time + 15;
     }
-    if (b.paused || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
+    if (b.paused || prioOff(b) || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
     const work = WORK[b.type] || recipeWork;
     yield* work(u, b);
     if (u.inside !== b && !b.removed && u.home === b) {
