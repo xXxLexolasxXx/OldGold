@@ -735,7 +735,7 @@ function foeTick(dt) {
   const _reset = resetGameState;
   resetGameState = function () { _reset(); Game.raiders = []; Game.foeShots = []; Game.foe = null; };
   const _setup = setupStart;
-  setupStart = function (seed) { _setup(seed); foeInit(seed); };
+  setupStart = function (seed, ...o) { _setup(seed, ...o); foeInit(seed); };
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser(), F = Game.foe;
