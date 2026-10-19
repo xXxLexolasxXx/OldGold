@@ -1,0 +1,235 @@
+##### js/guilds.js
+Sword Strike
+Shot
+Backstab
+Fireball
+Axe Strike
+Spike
+Brand Ironside
+Ulfgar Shield
+Hrodgar Hammer
+Elvin Keeneye
+Tilla Bowstring
+Fenrik Hawk
+Snyr Softfoot
+Meg Nimblefingers
+Hook One-Eye
+Aldrik Stargazer
+Mirra Ashen
+Ozrik Greybeard
+Shield higher!
+Don't wave it — strike!
+Iron loves the stubborn.
+Again, with feeling!
+Breathe evenly…
+Wind from the left!
+Aim for the bullseye, not at me.
+The bow is an extension of the arm.
+Quiet, quiet…
+A purse isn't a target, it's an occasion.
+The shadow is your best friend.
+Saw it? Neither did anyone else.
+Focus.
+Mana hates a rush.
+Don't burn your beard!
+The stars will tell.
+Sword
+Bow
+Dagger
+Iron and weapons
+a skeleton
+a wolf
+a fox
+Clack…
+{0} defeated {1}
+Crit!
+Miss!
+Ouch!
+{1} arrived as head of {0}
+{0} {1} now leads {2}
+Any students?
+There is no guildmaster
+I've nothing left to teach you!
+Reach level {0} first
+The lesson costs {0} gold
+{0}: needs {1} gold
+Let's continue the lesson.
+Become: {0}!
+{0} is now {1}{2}! Attack: the Q key or click an enemy
+(was {0})
+{0} trained at the guild: {1}
+{0}: skill "{1}" — rank {2}
+Rank {0}!
+Here, take it — it'll come in handy!
+{0} gave the hero: {1}. Equip it from the backpack
+Head
+Fits like it's mine!
+Bork
+Gunn
+Tilda
+Fram
+Hjal
+Skegg
+Oda
+Vardi
+Knut
+Ragna
+Einar
+Bruni
+Sigrid
+Thor
+Ulf
+Ingrid
+The guild has no head yet
+No more than {0} recruits per guild
+Haulers are few already (need more than 4)
+Needs a weapon: {0} in the guild
+Needs 1 gold in the guild treasury
+Needs a mana jar
+{0}: waiting for a hauler to free up
+{0}: application withdrawn — not enough gear
+To the guild? I'm on it!
+A hauler enlisted in {0}
+{0}: recruit {1} goes to training
+Fine, I'll keep lugging sacks
+Level {0}!
+{0} reached level {1}
+The guild is gone
+Training costs 1 gold
+{0} is ready to fight!
+{0} finished training
+For the guild!
+Come at me, vermin!
+Target spotted!
++{0} XP
+Guildmaster
+{0} · teaches the hero and recruits
+The guildmaster will be here soon…
+{0}, skill rank {1} of {2}
+now {0}
+no class
+Skill lesson — {0} gold
+{0}: {1} — {2} gold
+Retrain
+Train
+hero level {0} required
+strength
+dexterity
+wits
+toughness
+Recruits · {0}/{1}
+training
+guarding the guild
+following the hero
+on post
+drilling
+{0} · lv. {1}{2}
+· armored
+Waiting for a free hauler: {0}
+Recruit
+hauler + {0} + 1 gold{1}; {2} if available
++ mana
+Click a recruit on the map to select and command. Weapons and armor are brought here by haulers from the armory and the armor workshop.
+{0} · level {1}{2}
+Strike power:
+· range:
+Click the ground to hold a post there, click a skeleton, walking tree or wolf to attack. Esc — clear selection.
+Follow hero
+Guard the guild
+Training (1 gold)
+Dismiss
+Dismiss the recruit? They become a hauler again, the weapon goes back to the guild.
+{0}, rank {1}{2}
+· power {0}%
+Attack
+guilds teach more
+Class: none — train at the warriors', archers', rogues' or mages' guild
+Squad:
+Follow me
+To guilds
+Train
+The squad follows your hero
+Recruits went back to guard the guilds
+Attack
+Guard
+Hold here
+Learn from the master
+New: guilds are now in the shared village!
+Warriors, archers, rogues and mages. A guildmaster teaches your hero and recruits fighters — lead the squad together with friends.
+Click a guild with the hero to train. Click a recruit to command. Q — attack.
+new
+No enemies nearby
+The squad follows the hero
+New: guilds have appeared in the shared village! The "Guilds" tab in building
+##### js/hero.js
+Thorin
+Brunhild
+Gimli
+Dorin
+Freya
+Balin
+Helga
+Orin
+Berta
+Gromm
+Dis
+Harald
+Free resurrection. Don't thank us — you'll ruin everything anyway.
+You again? We just swept up.
+Welcome back. Death, apparently, wasn't your thing.
+A gnome has respawned. The storehouse isn't aware yet.
+A place for resurrections. No discounts, no warranty either.
+The hero is back! Now we wait until they regret it again.
+The bonfire is warm, and the gnome has a habit of seeking adventure.
+Death wasn't bad, but you decided to carry on. Bold choice.
+Gnomes reissued here. Condition same as the previous one: meh.
+Stay away from death. Not advice — a plea from the storehouse.
+What's your hero's name?
+They will lead your town: walks and works faster than ordinary gnomes, can do any job and grows along with the town.
+Off we go
+{0}: {1} will join the team at hero level {2}
+From lv. {0}
+{0}: {1} is now on the team
+On the team
+Build
+Work: {0}
+Carry to the storehouse
+Go
+Build road
+Clear the pile
+Dig
+Reap
+Chop
+Mine stone
+No materials
+Can't reach
+Dash!
+Follow me!
+{0}: the rally cry inspired {1} gnomes.
+The hero is back in town
+{0} reached level {1}: the town has grown!
+from level {0}
+{0}s
+Strength {0}
+Dexterity {0}
+Wits {0}
+Toughness {0}
+Speed:
+· work:
+Team: {0}
+Weapon: {0} · Armor: {1}
+Click a construction site, field, tree, rock, cargo pile or a building without a worker — {0} will go and do it. Ground — just walks there. Esc — clear selection.
+All-round Gnome
+Maximum, level 15
+Grows with the town and fights: {0} of {1} points to level {2}
+Dash
+speed ×1.4 for 8 s
+Rally Cry
+nearby gnomes perk up
+Release
+empty — click a gnome
+none
+Select hero (H)
+· lv. {0}
+Less
+More

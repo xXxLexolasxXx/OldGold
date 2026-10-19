@@ -103,6 +103,7 @@ function skGrabIndex(s) {
 }
 
 function skTakes(s, u) {
+  nightTook();
   s.state = 'grab'; s.t = 0; s.fighters = []; s.resolved = false; s.goal = null; s.foe = null; s.moving = false;
   s.vsnap = snapVictim(u); s.vx0 = u.x; s.vy0 = u.y; s.face = u.x >= s.x ? 1 : -1; s.scream = 0; s.sayV = false;
   floater(u.x, u.y - 1.2, '!', '#ff6040');
@@ -172,15 +173,32 @@ function ghGrabIndex(g) {
 }
 const GH_PAL = { out: 'rgba(24,60,64,0.95)', fill: '#dff4ea', hi: '#ffffff' };
 
+// Потолок «тихих» похищений за ночь (сова, мышь, призрак): не больше 2 + 10 % жителей и не из последних пяти —
+// иначе с третьей ночи деревня без присмотра пустела за несколько ночей (headless-прогоны: 12 из 12 вымерли,
+// 59 % смертей — совы). Нечисть и скелеты дерутся как раньше: это видимая угроза, с ней игрок может бороться.
+function nightTakeOk() {
+  const ni = nightIndex();
+  if (!Game.nightTake || Game.nightTake.ni !== ni) Game.nightTake = { ni, n: 0 };
+  let people = 0;
+  for (const u of Game.units) if (!u.dead && isPerson(u) && u.type !== 'carter') people++;
+  return people > 5 && Game.nightTake.n < 2 + Math.floor(people * 0.1);
+}
+function nightTook() { if (Game.nightTake) Game.nightTake.n++; }
+// одинокий гном вдали от своих — лёгкая добыча; в толпе похитители не рискуют
+function unitAlone(u) {
+  for (const o of Game.units) if (o !== u && !o.dead && !o.inside && isPerson(o) && Math.hypot(o.x - u.x, o.y - u.y) < 5) return false;
+  return true;
+}
+
 function ghCanTake(g, u) {
   if (u.hero || u.type === 'carter' || dif().noLoss || (g.grabCD || 0) > Game.time || nightDiff() < 1.25) return false;
   if (!interruptible(u) && !(u.brk && u.brk.kind === 'lost')) return false;
-  if (nearBonfire(u.x, u.y, BONFIRE_SAFE)) return false;
-  for (const o of Game.units) if (o !== u && !o.dead && !o.inside && isPerson(o) && Math.hypot(o.x - u.x, o.y - u.y) < 5) return false;   // в одиночку — боязливее
+  if (nearBonfire(u.x, u.y, BONFIRE_SAFE) || !unitAlone(u) || !nightTakeOk()) return false;   // в одиночку — боязливее
   return Math.random() < 0.012 * nightDiff() * (u.brk && u.brk.kind === 'lost' ? 3 : 1);
 }
 
 function ghTakes(g, u) {
+  nightTook();
   if (u.brk && u.brk.kind === 'lost') endBreak(u);
   g.mode = 'grab'; g.modeT = 999; g.gt = 0; g.grabCD = Game.time + 150; g.atkT = 0;
   g.vsnap = snapVictim(u); g.vx0 = u.x; g.vy0 = u.y; g.face = u.x >= g.x ? 1 : -1; g.scream = 0; g.sayV = false;
@@ -258,12 +276,12 @@ const BT_PAL = { out: '#0c0910', fill: '#3a3248', hi: '#e8d8ff' };
 function batCanTake(b, u) {
   if (b.state === 'grab' || b.leave || u.hero || dif().noLoss || (b.grabCD || 0) > Game.time || nightDiff() < 1.25) return false;
   if (!interruptible(u)) return false;
-  if (nearBonfire(u.x, u.y, BONFIRE_SAFE)) return false;
-  for (const o of Game.units) if (o !== u && !o.dead && !o.inside && isPerson(o) && Math.hypot(o.x - u.x, o.y - u.y) < 5) return false;
+  if (nearBonfire(u.x, u.y, BONFIRE_SAFE) || !unitAlone(u) || !nightTakeOk()) return false;
   return Math.random() < 0.09 * Math.min(2, nightDiff());
 }
 
 function batTakes(b, u) {
+  nightTook();
   b.state = 'grab'; b.gt = 0; b.grabCD = Game.time + 200; b.z0 = b.z; b.x0 = b.x; b.y0 = b.y;
   b.vsnap = snapVictim(u); b.vx0 = u.x; b.vy0 = u.y; b.scream = 0; b.t = 0; b.sayV = false; b.valpha = 1;
   floater(u.x, u.y - 1.2, '!', '#ff6040');
@@ -383,9 +401,11 @@ function owlCanTake(o, dt) {
   o.scanT = 1;
   if (nightIndex() + 1 < 3 || !isNightNow() || (o.grabCD || 0) > Game.time || Math.random() > 0.08) return null;
   const c = [];
-  for (const u of Game.units) {
-    if (u.inside || u.dead || u.hero || !isPerson(u) || u.type === 'carter' || dif().noLoss) continue;
-    if (Math.hypot(u.x * TILE - o.x, u.y * TILE - o.y) > 9 * TILE || nearBonfire(u.x, u.y, BONFIRE_SAFE)) continue;
+  // гнома — только одинокого, свободного (не за работой, не в драке) и в пределах ночного потолка — как мышь и призрак;
+  // раньше сова хватала любого прямо с улицы и была главным убийцей деревни
+  if (nightTakeOk()) for (const u of Game.units) {
+    if (u.inside || u.dead || u.hero || !isPerson(u) || u.type === 'carter' || dif().noLoss || !interruptible(u)) continue;
+    if (Math.hypot(u.x * TILE - o.x, u.y * TILE - o.y) > 9 * TILE || nearBonfire(u.x, u.y, BONFIRE_SAFE) || !unitAlone(u)) continue;
     c.push({ u });
   }
   // сова поднимает только мелочь: кролика, курицу, утку — не лося и не волка
@@ -398,6 +418,7 @@ function owlTakes(o, p) {
   o.scream = 0; o.sayV = false; o.vsnap = null; o.pkind = null; o.valpha = 1;
   if (p.u) {
     const u = p.u;
+    nightTook();
     o.vsnap = snapVictim(u); o.vx0 = u.x; o.vy0 = u.y;
     toast(`Сова унесла в лес: ${UNIT_TYPES[u.type].name}`);
     logEvent('owl', `Сова унесла в лес: ${UNIT_TYPES[u.type].name}`, u.x, u.y);

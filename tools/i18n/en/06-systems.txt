@@ -1,0 +1,282 @@
+##### js/entities.js
+School graduated: {0}
+Beyond the map edge
+You can only build on grass
+Spot taken
+A road is in the way
+Entrance is beyond the map edge
+The ground in front of the entrance must be free
+The entrance is blocked
+The gate is beyond the map edge
+The ground in front of the gate must be free
+No stone or cliff nearby
+A mine goes flush under a cliff
+Needs a cliff with purple crystals right above the mine
+Trees, rocks or fields are in the way
+It would block the way to other buildings
+Built: {0}
+The village applauds: {0} built already!
+grew to tier 2: now hauls two at a time and complains twice as loud
+grew to tier 3: three items at a time and the look of someone who has seen it all
+grew to tier 2: now grabs materials from the storehouse to avoid waiting for haulers
+grew to tier 3: hauls two materials to the site, builds and lectures
+##### js/events.js
+Animals
+Owls
+Crows
+Squabbles
+Night
+Fiends
+Finds
+Deliveries
+Festival
+All
+Daily Grind
+Finally, we were running out of roof.
+The architect weeps with joy. Or something else.
+It leans, but it's ours.
+The foreman claims it's by design.
+Life is getting better — well, for somebody.
+A feat worthy of a minute of silence.
+The population is shocked but pretends otherwise.
+Gnomes eat as if there's no tomorrow. There is.
+The diet is postponed indefinitely.
+The kitchen is pleased with itself.
+Found — meaning someone already lost it.
+Gold loves those who aren't looking. Yeah, right.
+Haulers haul, management observes.
+The delivery went with almost no loss of morale.
+Nature reminds you who's in charge. Not you.
+The beasts haven't read the non-aggression pact.
+The wolf is full, the gnome is wiser, the sack is lost.
+The owl knows nothing but looks on disapprovingly.
+A bird smarter than half the village.
+Shiny means mine. The crow's philosophy.
+Gold loves those who carry it off. The crow is aware.
+Storehouse security: two gnomes and one nervous chicken.
+The road is too narrow for two gnomes and two egos.
+No apology followed. Nor did the knee.
+Ran into each other — a classic of the genre.
+The heavens remembered the gnomes again.
+Weather: "it's meant to be". Umbrellas: "we warned you".
+Nature once again tested the roofs for honesty.
+Scared? You're supposed to be.
+Darkness came uninvited, as usual.
+A fine evening to lie under a blanket and keep a low profile.
+The forest declared war. Expected.
+The trees had long been hoarding grudges. Their time came.
+An axe is always better than dialogue. But not always.
+Nothing has happened yet.
+data-logx="{0}" data-logy="{1}" title="Show on map"
+Hooray!
+Bravo!
+Ho-ho!
+Well done!
+##### js/flask.js
+Cheers!
+##### js/herochain.js
+Nothing to carry
+##### js/herolife.js
+Mage robe
+Staff
+No gear
+Took: {0}
+Right, putting it on…
+Let's hold this a moment…
+Oof!
+It won't fit…
+Stuck!
+A bit tight…
+Heavy!
+Where does this go?
+Ouch!
+How do people hold this?
+Uuugh!
+Fits like a glove!
+Now that's a weapon!
+Got stuck and fell!
+Dropped it on a foot!
+Gone…
+In the village's name — begone!
+Light… at last…
+Thanks for letting me go…
+I'm going home…
+{0} let the ghost go, it left a coin
+{0} chased the ghost off to the next world
+{0} isn't in a state to cast right now
+Minor heal
+Equip
+Can't eat it or wear it
+{0} woke up by the bonfire{1}
+{0} died and returned to the storehouse
+the village won't let go that easily
+Where?..
+Banish ghost
+Take gear
+Teleport
+back to base, to the storehouse
++{0}% health
+— equip (30% chance of luck)
+— eat
+Weapon
+Armor
+Backpack ({0}/{1})
+~hic~
+##### js/heromana.js
+burns the nearest skeleton or fiend
+Charm
+drives off ghosts, scares skeletons
+No mana jars
+Mana is already full
++{0} mana
+{0} mana jars
+backpack full
+Nothing to take
+From level {0}
+Not enough mana
+No target
+{0} incinerated a skeleton with a fireball
+Retreating!
+It's burning!
+{0} set a walking tree on fire
+Aaaah!
+(nobody nearby)
+Cold… −3 mana
+Take mana jars and gear
+Mana is back
+Healthy!
+wounded by a skeleton
+Mana
+· jars:
+Drink
+{0} mana · {1}
+Minor heal [E]
+##### js/jobs.js
+The mountain gave way!
+Stonecutters ground down a piece of the mountain — it crumbled into a heap of rubble
+You can't make a field here
+Hops need a plank for trellises — none in the storehouse
+The poles are up
+Plowed
+The herder tamed a goat — it will haul goods
+A carter with a cart rode out of the stable
+Wheat field
+Hay field
+Hop field
+Helped with the harvest
+##### js/life.js
+{0} collapsed from hunger
+{0} collapsed from hunger! The tavern needs food
+{0} overdid the beer and fell asleep
+{0} overdid the beer and fell asleep on the road
+High five!
+Collision: {0} dropped "{1}", {2} {3}
+limps
+hurt a hand
+now limps
+##### js/loading.js
+Oh dear!
+##### js/perf.js
+Low memory — lite graphics enabled
+Lite graphics: the game draws lighter
+Normal graphics
+Graphics: lite
+Graphics: normal
+The game was running slowly — lite graphics enabled (you can turn it off in the menu)
+{0} fps · render {1} ms · step {2} ms
+canvas {0}×{1} · DPR {2} · {3}
+gnomes {0} · buildings {1} · heaps {2}
+memory: heap {0} MB · canvases {1} MB · failures {2}
+lite
+normal
+Lite graphics: the game draws at normal pixel density. F3 — show frames per second
+##### js/sound/music.js
+[audio] recreating the core:
+Thicket
+Valley
+Fair
+Alarm
+For Home
+Dawn
+By the Water
+Moonlit Forest
+Song of the Leaves
+Silver Halls
+Music: "{0}"
+Music: on
+Music: off
+##### js/sound/music2.js
+Crystal Cove
+Firefly Dance
+Tree of Memory
+Thunderstorm
+Rain
+Victory
+Graveyard
+##### js/sound/sfx.js
+Ding!
+Aaah!
+Crack!
+Honk!
+Hoo-hoo!
+Cluck!
+Thud!
+Gold!
+Sounds: on
+Sounds: off
+##### js/sound/sfx3.js
+Caw!
+Ribbit!
+Nom!
+Squeak!
+Frrr!
+Snort!
+Shoo!
+Dodged!
+Parried!
+Fended off!
+The fairies healed!
+Treasure!
+A fish!
+Caught it!
+Moo-oh!
+Crunch
+Hooray! Again!
+Yoo-hoo!
+Skeleton!
+Ghost!
+Bit you!
+Gotcha!
+Snatched it!
+Mine!
+Tra-la-la!
+Cluck-cluck
+Cluck-cluck-cluck!
+Shoo, featherbrain!
+Repaired
+It's cracking!
+Burnt up…
+I'll fly a bit!
+##### js/stats.js
+Played a minute
+Played 5 minutes
+Played 15 minutes
+Played 30 minutes
+Played an hour
+Survived to the first evening/night
+Survived the first night
+Survived the first long (5th) night
+Built a graveyard
+Came back the next day
+Came back after 2–7 days
+Came back after 8+ days
+Came back (not the first visit)
+Launched from a phone
+Launched from a computer
+Lost the first gnome
+Built the first building
+Built 5 buildings
+Built 10 buildings
+Built 20 buildings
+##### js/stress.js
+{0} fps · frame {1} ms · simulation {2} ms · gnomes {3} · buildings {4}

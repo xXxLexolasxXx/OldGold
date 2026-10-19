@@ -48,6 +48,8 @@ const ACHS = [
   { id: 'lamp',     name: 'Экономия на освещении', desc: 'Гном упал и разбил фонарь. Теперь у него два повода для темноты.', ev: /разбил фонарь/ },
   { id: 'fog',      name: 'Налево от здравого смысла', desc: 'Гном заблудился в тумане посреди собственной деревни. Талант.', ev: /заблудился в тумане/ },
   { id: 'beer',     name: 'Кто не работает — тот не падает', desc: 'Гном перебрал пива и уснул на ходу. Рабочий день удался.', ev: /перебрал пива/ },
+  { id: 'brawl',    name: 'Выпил — подрался', desc: 'На празднике гномы подрались: кулаки, пинки и бутыль. Начали за мир, закончили на земле.', ev: /^Пьяная драка/ },
+  { id: 'brawlhero', name: 'Мимо проходил', desc: 'Героя зацепило в пьяной драке, и он отлетел на пару клеток. Урон небольшой, обида — большая.', ev: /попал под раздачу/, secret: true },
   { id: 'ghostfood', name: 'Угостил призрака', desc: 'Призраку выдали хлеб. Он не голоден — просто вежливо взял.', ev: /угостил призрака хлебом/ },
   { id: 'entwin',   name: 'Дровосек поневоле', desc: 'Гном одолел нечисть. Лес запомнит. Лес очень злопамятный.', ev: /одолел: / },
   { id: 'entlose',  name: 'Деревья тоже умеют', desc: 'Нечисть утащила гнома в туман. Обещал вернуться к ужину.', ev: /в туман: / },
@@ -122,9 +124,9 @@ function achToast(a) {
   const box = document.getElementById('ach-toasts');
   if (!box) return;
   const el = document.createElement('div');
-  el.className = 'ach-toast';
+  el.className = 'ach-toast v' + (Date.now() % 3);
   el.innerHTML = `<div class="ach-cup">★</div><div><small>Достижение получено</small><b>${esc(a.name)}</b><span>${esc(a.desc)}</span></div>`;
-  el.onclick = () => profOpen('ach');
+  el.onclick = () => { profOpen('ach'); if (typeof toastClose === 'function') toastClose(el); };
   box.appendChild(el);
   while (box.childElementCount > 3) box.firstChild.remove();
   setTimeout(() => el.remove(), 6500);
@@ -196,7 +198,7 @@ function profClose() { document.getElementById('prof-win').classList.add('hidden
 
 function slotLine(label, key, opts) {
   const m = saveMeta(key);
-  const info = m ? `${new Date(m.at).toLocaleString('ru-RU')} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'пусто';
+  const info = m ? `${new Date(m.at).toLocaleString(I18N.locale())} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'пусто';
   return `<div class="prof-slot${m ? '' : ' empty'}"><div class="ps-t"><b>${label}</b><small>${info}</small></div>` +
     `<div class="ps-b">${opts.save ? `<button data-pa="save" data-k="${key}">Сохранить</button>` : ''}` +
     `<button data-pa="load" data-k="${key}"${m ? '' : ' disabled'}>Загрузить</button>` +
@@ -223,7 +225,7 @@ function profRefresh() {
     h += '<div class="ach-list">';
     for (const a of ACHS) {
       const at = p.ach[a.id], hide = !at && a.secret;
-      h += `<div class="ach-row${at ? ' got' : ''}"><div class="ach-cup">${at ? '★' : '☆'}</div><div><b>${hide ? '??? Секретная ачивка' : esc(a.name)}</b><span>${hide ? 'Описание откроется, когда вы сделаете то, чего делать не стоило.' : esc(a.desc)}</span>${at ? `<small>${new Date(at).toLocaleDateString('ru-RU')}</small>` : ''}</div></div>`;
+      h += `<div class="ach-row${at ? ' got' : ''}"><div class="ach-cup">${at ? '★' : '☆'}</div><div><b>${hide ? '??? Секретная ачивка' : esc(a.name)}</b><span>${hide ? 'Описание откроется, когда вы сделаете то, чего делать не стоило.' : esc(a.desc)}</span>${at ? `<small>${new Date(at).toLocaleDateString(I18N.locale())}</small>` : ''}</div></div>`;
     }
     h += '</div>';
   } else {

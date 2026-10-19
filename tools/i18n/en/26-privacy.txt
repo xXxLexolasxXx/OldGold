@@ -1,0 +1,33 @@
+##### privacy.html#2
+OldGold — Privacy Policy
+OldGold Privacy Policy
+Version of 19 Oct 2026. The game OldGold (the "Game") has no ads, no sale of data, and single-player needs no registration.
+1. What stays only with you
+Saves, the hero profile, achievements, sound and interface settings live in your device's storage (browser, app). We don't receive them. If you clear browser data or delete the app, they are gone. In the Steam version a copy of the saves is also placed in the "cloud" folder (Steam Cloud), unless you turned it off.
+2. Anonymous statistics
+Browser version:
+counter
+) counts visits and events such as "reached the first night". No cookies and no personal identifier.
+Our own counter:
+the game sends the OldGold server short names of milestones ("finished the tutorial", "plays 5 minutes") together with a random installation code (created on the device, not tied to you, your nickname or an account) and the game version. This is needed to see where players drop the tutorial. The code is reset by clearing the game's data.
+Error reports:
+on a crash the game may send the error text, the file and line in the code, the game version, browser/system in one line, device type, memory size and the game phase — without nickname, saves or installation identifier (no more than 5 reports per launch and 20 per day).
+Apps (Steam, iOS, Android):
+there is no third-party counter in the app; our own counter works only when connected to the server.
+3. Shared play (co-op)
+If you connect to a co-op server, it stores: the chosen nickname, the password as an irreversible hash (scrypt; the password itself is not stored), hero progress, the village's shared world, in-game chat messages and service statistics (login times, client version, a salted hash of your network address — the address can't be recovered from it). Don't use real names, phone numbers, addresses or passwords from other services in your nickname and chat. To delete your account and server data, write to the address in section 6.
+4. What there isn't
+No ads, no advertising identifiers, no tracking between apps, no in-game purchases, no geolocation, no access to contacts, camera, microphone or photos. Data is not sold and not passed to ad networks.
+5. Children
+The Game doesn't collect personal data intentionally. Co-op asks you to make up a nickname and password — children under 13 (or under the age of digital consent in your country) should play it only with a parent's permission. The age rating and content description are on the game's store page.
+6. Contact and rights
+You can request access to, correction or deletion of co-op data. Contact:
+[developer's e-mail — will be given before publication in the stores]
+. If your country's law gives you more rights (GDPR, CCPA, 152-FZ), they remain.
+7. Changes
+When the policy changes, the date at the top of the page will be updated; significant changes will be mentioned in the "What's new" window.
+##### server/errors.js#2
+errors.json was not saved:
+=== Player errors over {0} days: {1} reports, {2} distinct ===
+versions: {0} · {1} · phase: {2} · from phone {3} · last {4}
+No errors were reported.

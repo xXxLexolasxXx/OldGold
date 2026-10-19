@@ -282,13 +282,14 @@ function checkCollisions() {
     grid.set(k, u);
   }
   for (const u of Game.units) {
-    if (u.inside || !(u.action && u.action.walk && u.action.path)) continue;
+    if (u.inside || !(u.action && u.action.walk && u.action.path) || u.hopUntil > Game.time || u.gp) continue;   // на классиках и за игрой не толкаются (games.js)
     const tx = Math.floor(u.x), ty = Math.floor(u.y);
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       for (let o = grid.get(tx + dx + (ty + dy) * MAP_W); o; o = o._cn) {
         // гнома могло уже отбросить столкновением — его действие сброшено, дальше не проверяем
         if (!u.action || !u.action.walk) break;
         if (o === u || o.id < u.id && o.action && o.action.walk) continue;   // пару считаем один раз
+        if (o.hopUntil > Game.time || o.gp) continue;
         const ex = o.x - u.x, ey = o.y - u.y;
         if (ex * ex + ey * ey > 0.42 * 0.42) continue;
         const key = Math.min(u.id, o.id) * 100000 + Math.max(u.id, o.id);

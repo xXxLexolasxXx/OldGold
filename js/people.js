@@ -797,6 +797,52 @@ const WPN_DRAW_T = 0.44;
     TS.forEach((t, i) => { T['d' + i] = T['s' + (3 - i)] = lerpArr(T.draw, T.ready, t); });
   }
 })();
+// ---------- Драка и отлёт (js/world/brawl.js) ----------
+// Кадры пьяной драки поверх тех же таблиц: пинок (kwind/kick/kfollow), бутыль (bwind/bhit/bfollow — после удара остаётся «розочка»),
+// шатание (sg0/sg1), падение (fl0 — на землю его кладёт поворот в render.js), вставание (up0/up1), отлёт героя (fy0/fy1/fy2) и сидение (sit).
+// Кулачные кадры берутся готовые: ready, windup, strike, follow, parry, hurt, win0, win1.
+Object.assign(FIGHT_BODY, {
+  kwind: [-0.14, 0.6, -0.5, -0.55], kick: [-0.34, 0.15, -0.35, 1.5], kfollow: [-0.12, 0.55, -0.4, 0.95],
+  bwind: [-0.14, 0.35, -0.45, 0.3], bhit: [0.24, 0.85, -0.55, 0.62], bfollow: [0.3, 1.0, -0.6, 0.66],
+  sg0: [-0.4, 0.5, -0.65, 0.5], sg1: [0.3, 0.7, 0.55, -0.55], fl0: [-0.3, 0.2, 0.35, 0.6],
+  up0: [0.32, 1.6, -0.35, 0.7], up1: [0.22, 0.9, -0.3, 0.35],
+  fy0: [-0.35, 0, 0.7, 0.45], fy1: [-0.1, -0.2, 1.0, -0.8], fy2: [0.1, 0.1, 0.5, 0.75], sit: [0.08, 1.9, 1.4, 1.25],
+});
+Object.assign(FIGHT_ARM.fist, {
+  kwind: [2.5, 0, 3], kick: [2.8, 0, 3.4], kfollow: [2.2, 0, 3],
+  bwind: [-0.45, 0, 3.6], bhit: [1.75, 0, 4.9], bfollow: [2.35, 0, 4.2],
+  sg0: [-0.5, 0, 3.4], sg1: [2.9, 0, 3.1], fl0: [-0.9, 0, 3.6], up0: [2.7, 0, 3.2], up1: [2.2, 0, 3],
+  fy0: [-0.8, 0, 3.8], fy1: [0.15, 0, 4.2], fy2: [2.9, 0, 3.4], sit: [0.5, 0, 2.4],
+});
+Object.assign(FIGHT_BACK.free, {
+  kwind: [-2.2, 2.6], kick: [-2.8, 1.2], kfollow: [-1.8, 3], bwind: [2.2, 2.4], bhit: [-2.4, 2.6], bfollow: [-2, 3.2],
+  sg0: [-2.8, 0.6], sg1: [2.4, 0.5], fl0: [-2.4, -0.6], up0: [1.4, 4.6], up1: [1.6, 3.4],
+  fy0: [-3, -0.4], fy1: [-3, 0.8], fy2: [-2.4, 3.6], sit: [1.2, 4],
+});
+// герой и рекруты держат оружие: у новых кадров те же углы, что у «получил удар»
+for (const st in FIGHT_ARM) for (const n in FIGHT_BODY) if (!FIGHT_ARM[st][n]) FIGHT_ARM[st][n] = FIGHT_ARM[st].hurt;
+for (const k of ['free', 'shield']) for (const n in FIGHT_BODY) if (!FIGHT_BACK[k][n]) FIGHT_BACK[k][n] = FIGHT_BACK[k].hurt;
+// бутыль в кулаке: [угол (0 — вверх, π/2 — вперёд), разбита ли]
+const BOTTLE_POSE = { bwind: [-0.55, 0], bhit: [1.95, 0], bfollow: [2.6, 1] };
+function drawBottle(c, x, y, ang, broken) {
+  const dx = Math.sin(ang), dy = -Math.cos(ang), nx = -dy, ny = dx;
+  const P = t => [x + dx * t, y + dy * t];
+  const OL = '#12200f';
+  if (broken) {
+    // «розочка»: горлышко и зубья битого стекла
+    const a = P(0), b = P(2.3);
+    line(c, a[0], a[1], b[0], b[1], OL, 2.1); line(c, a[0], a[1], b[0], b[1], '#3f8a4a', 1.5);
+    poly(c, [[-1.3, 2.3], [-0.7, 3.7], [-0.1, 2.5], [0.5, 3.9], [1.3, 2.4]].map(([o, t]) => [P(t)[0] + nx * o, P(t)[1] + ny * o]), '#b8f0c0', OL, 0.3);
+    return;
+  }
+  const a = P(-0.8), m = P(3.8), n1 = P(4.2), n2 = P(7);
+  line(c, a[0], a[1], m[0], m[1], OL, 3.3); line(c, a[0], a[1], m[0], m[1], '#2f8a3e', 2.6);
+  line(c, n1[0], n1[1], n2[0], n2[1], OL, 2); line(c, n1[0], n1[1], n2[0], n2[1], '#48a055', 1.3);
+  const h1 = P(0.2), h2 = P(3);
+  line(c, h1[0] + nx * 0.5, h1[1] + ny * 0.5, h2[0] + nx * 0.5, h2[1] + ny * 0.5, 'rgba(235,255,230,0.75)', 0.4);   // блик
+  const lb = P(1.5); ellipse(c, lb[0], lb[1], 1.1, 1.1, '#e8d8a0');                                                // этикетка
+}
+
 // кадр выхватывания / убирания по времени с начала (null — анимация кончилась)
 function wpnAnimFrame(k, el) { return el >= 0 && el < WPN_DRAW_T ? k + Math.min(3, Math.floor(el / WPN_DRAW_T * 4)) : null; }
 
@@ -1002,6 +1048,14 @@ function femBust(c, shY, skin) {
   ellipse(c, 0, shY - 0.4, 2.2, 0.8, skin[0]);
 }
 
+// Стандарт кадров: покой 6 (дыхание), ходьба 8, работа 8 (замах → удар → возврат), бой 9
+const IDLE_FRAMES = 6, WORK_FRAMES = 8;
+const IDLE_BREATH = [0, 0.18, 0.4, 0.5, 0.34, 0.1];
+// углы руки с инструментом по кадрам: 0 — над плечом, 6 — удар вниз, 7 — отведён назад перед ударом
+const SWING_A = [0.05, 0.35, 0.63, 0.92, 1.2, 1.5, 1.8, -0.14];
+const SWING_SICKLE = [1.3, 1.5, 1.68, 1.88, 2.06, 2.26, 2.45, 1.17];
+const SWING_DIP = [-0.3, -0.15, 0, 0.05, 0.1, 0.3, 0.5, -0.4];
+
 function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const O = OUTFIT[type] || OUTFIT.serf;
   const shirt = O.robe ? (O.robeCol || '#2e5a26') : (O.coat || L.green), pants = O.pants;
@@ -1018,7 +1072,9 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const fight = pose === 'fight' ? (FIGHT_BODY[frame] ? frame : 'ready') : null;
   const wst = W ? (WPN_STYLE[W.m] || 'fist') : 'fist';
   const armed = !!W && !carry && (fight || (W.out && (pose === 'walk' || pose === 'idle')));
-  const crouch = duck ? 1.8 : fight ? FIGHT_BODY[fight][1] : 0;
+  // дыхание в покое: 6 кадров, грудь и голова чуть поднимаются на вдохе; в работе корпус подаётся в удар
+  const breath = pose === 'idle' && typeof frame === 'number' ? IDLE_BREATH[frame % IDLE_FRAMES] : 0;
+  const crouch = (duck ? 1.8 : fight ? FIGHT_BODY[fight][1] : 0) - breath + (pose === 'work' ? SWING_DIP[frame.f] : 0);
   let lean = 0;
   if (fight) lean = FIGHT_BODY[fight][0];
   if (pose === 'walk') lean = carry ? 0.16 : 0.05;
@@ -1092,8 +1148,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     };
     const tool = pose === 'work' ? (ANIM_TOOL[frame.anim] || 'hammer') : null;
     // замах: 0 — инструмент поднят над плечом, 3 — удар вперёд-вниз; дуга ~100°, без прокрутки
-    const swingA = tool === 'sickle' || tool === 'spade' ? [1.3, 1.7, 2.1, 2.45] : [0.05, 0.6, 1.2, 1.8];
-    const ang = tool ? swingA[frame.f] : 0;
+    const ang = tool ? (tool === 'sickle' || tool === 'spade' ? SWING_SICKLE : SWING_A)[frame.f] : 0;
     const armA = pose === 'walk' ? -sw * 0.55 : duck ? -0.5 : 0;
     const sling = injury === 'arm';
     // руки с оружием: кадр боя, а на ходу и стоя с выхваченным оружием — «стойка»
@@ -1209,7 +1264,8 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         smoothLimb(c, [0.4, shY + 0.4], [(0.4 + hx) / 2 + 0.4, (shY + 0.4 + hy) / 2 + 0.6], [hx, hy], 2.1, shirt);
         if (wst === 'fist') {
           // кулак (у монаха — в обмотках)
-          ellipse(c, hx, hy, 1.5, 1.45, skin[1]);
+          ellipse(c, hx, hy, fight === 'strike' || fight === 'bhit' ? 1.95 : 1.5, fight === 'strike' || fight === 'bhit' ? 1.9 : 1.45, skin[1]);
+          if (fight && BOTTLE_POSE[fight]) drawBottle(c, hx, hy, BOTTLE_POSE[fight][0], BOTTLE_POSE[fight][1]);
           if (W.m === 'fists') { line(c, hx - 1.2, hy - 0.4, hx + 1.2, hy - 0.4, '#e8dcc0', 0.45); line(c, hx - 1.2, hy + 0.5, hx + 1.2, hy + 0.5, '#e8dcc0', 0.45); }
         } else hand(c, hx, hy, skin[1]);
       } else if (tool) {

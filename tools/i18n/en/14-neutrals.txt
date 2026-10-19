@@ -1,0 +1,143 @@
+##### js/smoking.js
+Clay Stubby
+Chibouk
+Briar
+Corncob
+Bone
+Carved with Lid
+Hookah with Bowl
+Roll-up
+Regular
+Slim
+Cigar
+Long with Holder
+Bidi
+Cigarillo
+##### js/world/grab.js
+Help!
+Let go!
+Mommy!
+By my beard!
+wind-up
+forward throw
+reaching
+fingers on the belt
+grabbed
+lifts off the ground
+raised
+swings
+onto the shoulder
+carries {0}
+A skeleton dragged into the grave: {0}
+Not to the grave!..
+Clack.
+A fallen gnome rose as a skeleton
+raised hands
+lunge
+claws around the gnome
+presses down
+carries off
+A ghost carried into the fog: {0}
+Should've done that sooner…
+circles
+spotted
+dive
+pulls out of the dive
+paws forward
+clutched
+flap, lift-off
+up
+gaining height
+carries off {0}
+A bat carried into the fog: {0}
+Should've worn a sturdier cap…
+spotted
+spread its wings
+dives
+brakes
+talons forward
+An owl carried into the forest: {0}
+Hoo-hoooo…
+##### js/world/neutrals.js
+Ow! What for?!
+We're the nice ones!
+Leave the grove alone!
+Don't touch our forest!
+Pollen isn't free!
+Ow! Sisters!
+Who's walking on my hummocks?!
+Leave the easy way!
+Moss is my witness!
+Oink! (menacingly)
+Grrrr!
+Oink-oink!
+Achoo! (at you)
+We're mushrooms. We're everywhere.
+Don't step on the family!
+Fairy Forest Glade
+Left the fight
+The hero attacked the forest neutrals
+{0} raised the alarm — "friends" come running to help
+{0} is fighting {1}
+resident
+Someone
+{0} won: {1}
+Defeated a forest neutral
+Defeated: {0}
+{0} cleared out — {1} feels like the master of the forest
+{0} gnomes standing nearby got XP for the victory too
+{0} lost the fight: {1}
+The hero lost a fight to a forest dweller
+Take that!
+Don't mess with the forest!
+Weakling!
+{0}: new tenants have moved into the lair
+Give a gift: {0} (Shift — attack)
+Attack: {0}
+Victories over forest dwellers give XP: it raises the hero's level as the town grows
+Forest fights: wins {0} · XP {1}{2}
+· losses {0}
+Pollen as Compensation
+A forest fairy defeated. Little wings aren't armor, just a mosquito's argument.
+Pork, Forest Style
+A boar guardian defeated. The forest guard was fired without severance.
+Mushroom Season Is Open
+A plague mossling defeated. The other mushrooms pretended they were never here.
+The Forest Is Left Without a Master
+The leshy defeated. The moss will bring this up in court for a long time.
+Evicted for Non-Payment
+A forest lair cleared. The tenants will be back… in about eight minutes, as usual.
+Who Woke the Forest?
+A forest dweller called for help. The brawl turned into a team one, summons were sent to all.
+A Fairy Is No Gift
+The hero lost a fight to a forest dweller. Consolation: the chronicle, sadly, remembers it all.
+Friend of the Forest Little Ones
+The hero befriended the flower fairies. Gave away the bread, but the reputation stayed.
+Treasure Map from a Kind Fairy
+The fairies showed a treasure. As usual, they didn't explain where exactly — just waved a little wing.
+Don't Chop the Grove, Beasts
+The flower fairies lost their temper over the logging. Sweet creatures, but with a memory like the tax office.
+Forest Orderly
+Twenty-five victories over forest dwellers. Ecologists are horrified, woodcutters delighted.
+We Only Befriend Heroes
+Empty-handed?
+Flower fairies like food, gold, ore and magic stones: put a gift in the backpack (bread from the tavern, ore from the storehouse). Shift + click — attack
+Thank you! (friendship {0}/50)
+{0} befriended the flower fairies
+The flower fairies healed the hero {0}
+Blessing of the forest fairies!
+The flower fairies blessed the hero {0}: livelier for a minute and a half
+The flower fairies showed a treasure — {0} hurries for the gold
+The flower fairies are furious: trees are being chopped in their grove
+Healing
+Vigor
+Ghost Ward
+Peace
+Fairy light!
+The flower fairies drove a ghost off with light
+Crumble!
+The flower fairies smashed a skeleton to bones
+Sleep, tree…
+The flower fairies put a walking tree to sleep
+Wing chime!
+Will-o'-the-wisps!

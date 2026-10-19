@@ -270,7 +270,7 @@ function drawBadger(c, bd) {
   if (bd.state === 'away') return;
   const px = bd.x * TILE, py = bd.y * TILE + 4;
   if (bd.state === 'dig') f2draw(c, 'badgerD', BADGER_DIG, px, py, bd.face, 0);
-  else if (bd.moving && (Math.floor(bd.ph) & 1)) f2draw(c, 'badgerB', BADGER_B, px, py, bd.face, 0);
+  else if (bd.moving) { const i = Math.floor(bd.ph * 3) % 6; f2draw(c, 'badgerW' + i, gaitRows(BADGER_A, 2, 6, i), px, py, bd.face, 0); }
   else f2draw(c, 'badgerA', BADGER_A, px, py, bd.face, 0);
   if (bd.carry) { c.fillStyle = F2_PAL.F; c.fillRect(Math.round(px) + bd.face * 8 - 2, Math.round(py) - 11, 5, 4); c.fillStyle = F2_PAL.M; c.fillRect(Math.round(px) + bd.face * 8 - 2, Math.round(py) - 11, 5, 1); }
 }
