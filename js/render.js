@@ -144,11 +144,16 @@ function swingFrame(u) {
   // долгое действие (жатва, рубка) — несколько отдельных ударов с паузами, по ~0.9 с на удар
   const n = a && a.T ? Math.max(1, Math.round(a.T / 0.9)) : 1;
   const p = a && a.T ? ((1 - Math.max(0, a.t) / a.T) * n) % 1 : 1;
-  if (p < 0.12) return 2;      // начало: рука опущена
-  if (p < 0.3) return 1;       // поднимает
-  if (p < 0.5) return 0;       // замах над плечом
-  if (p < 0.58) return 2;      // удар
-  return 3;                    // инструмент внизу, пауза
+  // 8 кадров: рука опущена → поднимает (4 кадра) → над плечом → отведена назад → удар → инструмент внизу
+  if (p < 0.08) return 4;
+  if (p < 0.16) return 3;
+  if (p < 0.24) return 2;
+  if (p < 0.32) return 1;
+  if (p < 0.42) return 0;      // замах над плечом
+  if (p < 0.5) return 7;       // чуть назад — разгон
+  if (p < 0.54) return 5;      // удар
+  if (p < 0.6) return 6;       // инструмент в нижней точке
+  return 6;                    // пауза
 }
 
 // ---------- Жители ----------
@@ -219,6 +224,7 @@ function drawUnit(c, u) {
   }
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, lying ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
+  if (pose === 'idle' && frame === 0) frame = Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES);   // дыхание: 6 кадров
   const spr = personSprite(u, view, pose, frame, opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
   if (flyP >= 0) {
