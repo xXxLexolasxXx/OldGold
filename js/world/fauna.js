@@ -116,6 +116,17 @@ const FA_PAL = {
   g: '#4a8a34', G: '#8cc654', d: '#2c5a24', y: '#e8d048', w: '#1a1810', r: '#d89aa0', R: '#a8606c',
 };
 
+// Походка по готовому кадру: из рядов спрайта «стоит» делает i-й из N кадров шага. Нижние legN рядов — ноги:
+// задняя пара (левая половина) и передняя (правая) качаются навстречу, на проходе корпус приподнимается на пиксель.
+function gaitRows(rows, legN, N, i) {
+  const w = Math.max(...rows.map(r => r.length)), body = rows.slice(0, rows.length - legN), legs = rows.slice(rows.length - legN).map(r => r.padEnd(w, '.'));
+  const sn = Math.sin(i / N * Math.PI * 2), sh = Math.round(sn * 1.4), mid = w >> 1;
+  const mv = (r, k) => k > 0 ? '.'.repeat(k) + r.slice(0, r.length - k) : k < 0 ? r.slice(-k) + '.'.repeat(-k) : r;
+  const lg = legs.map(r => mv(r.slice(0, mid), sh) + mv(r.slice(mid), -sh));
+  const lift = sh === 0 && Math.abs(sn) < 0.3;
+  return lift ? body.concat([body[body.length - 1]], lg) : body.concat(lg);
+}
+
 function faSprite(rows, pal = FA_PAL) {
   const w = Math.max(...rows.map(r => r.length)), h = rows.length;
   const cv = mkCanvas(w, h), c = cv.getContext('2d');

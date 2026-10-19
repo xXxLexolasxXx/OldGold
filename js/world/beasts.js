@@ -352,7 +352,7 @@ function beBoarsTick(dt) {
 function beDrawBoar(c, b) {
   const px = b.x * TILE, py = b.y * TILE + 4;
   if (b.root > 0) beDraw(c, 'boarR', BOAR_ROOT, px, py, b.face);
-  else if (b.moving && (Math.floor(b.ph * 0.6) & 1)) beDraw(c, 'boarB', BOAR_B, px, py, b.face);
+  else if (b.moving) { const i = Math.floor(b.ph * 0.6 * 4) % 8; beDraw(c, 'boarW' + i, gaitRows(BOAR_A, 2, 8, i), px, py, b.face); }   // 8 кадров шага
   else beDraw(c, 'boarA', BOAR_A, px, py, b.face);
 }
 
@@ -518,7 +518,7 @@ function beDrawBear(c, bd) {
   if (bd.state === 'away') return;
   const px = bd.x * TILE, py = bd.y * TILE + 5;
   if (bd.state === 'eat') beDraw(c, 'bearE', BEAR_EAT, px, py, bd.face, Math.round(Math.sin(bd.eat * 7)), true);
-  else if (bd.moving && (Math.floor(bd.ph * 0.9) & 1)) beDraw(c, 'bearB', BEAR_B, px, py, bd.face);
+  else if (bd.moving) { const i = Math.floor(bd.ph * 0.9 * 4) % 8; beDraw(c, 'bearW' + i, gaitRows(BEAR_A, 3, 8, i), px, py, bd.face); }
   else beDraw(c, 'bearA', BEAR_A, px, py, bd.face);
   if (bd.state === 'eat') {                                           // разъярённые пчёлы вокруг морды
     for (let k = 0; k < 4; k++) {
@@ -646,7 +646,7 @@ function beDrawCat(c, k) {
   const px = k.x * TILE, py = k.y * TILE + 3, pal = CAT_VARS[k.v].pal;
   const key = 'cat' + k.v;
   if (k.state === 'sleep') beDraw(c, key + 's', CAT_SLEEP, px, py, k.face, 0, true, pal);
-  else if (k.moving) { const f = Math.floor(k.ph * 0.9) & 1; beDraw(c, key + (f ? 'wb' : 'wa'), f ? CAT_WALK_B : CAT_WALK_A, px, py, k.face, 0, true, pal); }
+  else if (k.moving) { const i = Math.floor(k.ph * 0.9 * 3) % 6; beDraw(c, key + 'w' + i, gaitRows(CAT_WALK_A, 2, 6, i), px, py, k.face, 0, true, pal); }
   else beDraw(c, key + 'i', CAT_SIT, px, py, k.face, 0, true, pal);
 }
 
