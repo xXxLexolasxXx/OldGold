@@ -87,9 +87,10 @@ function meAct(a) {
 }
 
 // Принять карту из файла или кода и положить в список
-function meImport(text) {
+// onErr — куда показать ошибку (окно «Код…» остаётся открытым, список под ним не виден)
+function meImport(text, onErr) {
   Promise.resolve(meFromCode(text)).then(r => {
-    if (r.err) { meListMsg(r.err); return; }
+    if (r.err) { (onErr || meListMsg)(r.err); return; }
     const s = meSave(r.map);
     meListMsg(s.err || 'Карта «' + r.map.name + '» добавлена');
     meRenderList();
@@ -197,8 +198,8 @@ function meFromTemplate(m, sizeKey, done) {
 
 function meDlgCode() {
   meDlg(`<h3>Карта по коду</h3><label>Вставьте код (OGM…) или содержимое файла карты<textarea id="me-code" spellcheck="false" placeholder="OGM2.…"></textarea></label>
-    <div class="me-btns"><button class="me-btn primary" data-d="ok">Принять</button><button class="me-btn ghost" data-d="x">Отмена</button></div>`,
-  a => { if (a === 'x') meDlgClose(); else if (a === 'ok') meImport(meEl('me-code').value); });
+    <div class="me-btns"><button class="me-btn primary" data-d="ok">Принять</button><button class="me-btn ghost" data-d="x">Отмена</button></div><div class="sm-msg me-info" id="me-codemsg"></div>`,
+  a => { if (a === 'x') meDlgClose(); else if (a === 'ok') meImport(meEl('me-code').value, t => { const m = meEl('me-codemsg'); if (m) m.textContent = t; }); });
 }
 
 function meDlgShare(map) {
@@ -555,9 +556,11 @@ function meBindCanvas(cv) {
   cv.addEventListener('pointerdown', e => {
     const E = MEUI.E;
     if (!E) return;
-    cv.setPointerCapture(e.pointerId);
+    try { cv.setPointerCapture(e.pointerId); } catch (err) { /* указатель уже отпущен */ }
     E.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (E.ptr.size >= 2) {   // два пальца — двигать и масштабировать
+      // первый палец щипка успел начать мазок — убираем его, щипок не рисует
+      if (E.stroke && performance.now() - E.stroke.at < 300) meUndo();
       E.stroke = null;
       const [a, b] = [...E.ptr.values()];
       E.gest = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, z: E.z, ox: E.ox, oy: E.oy };
@@ -566,7 +569,7 @@ function meBindCanvas(cv) {
     if (e.button === 1 || e.button === 2 || E.tool === 'hand' || E.space) { E.pan = { x: e.clientX, y: e.clientY, ox: E.ox, oy: E.oy }; return; }
     mePush();
     const t = meTile(e);
-    E.stroke = { last: t };
+    E.stroke = { last: t, at: performance.now() };
     meLine(t, t, true);
   });
   cv.addEventListener('pointermove', e => {

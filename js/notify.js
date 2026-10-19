@@ -156,7 +156,7 @@ toast = function (text, target, kind) {
   // ответ на действие игрока (нажал — и сразу «Сюда не пройти») показываем всегда
   const urgent = t - Notify.lastInput < 1500 || NQ_URGENT.test(text);
   if (!urgent) {
-    if (t < Notify.quietUntil || (Notify.entry && Notify.entry.step < 2)) { Notify.held++; nqJournal(text, k); return; }
+    if (t < Notify.quietUntil || !Notify.entry || Notify.entry.step < 2) { Notify.held++; nqJournal(text, k); return; }   // вход ещё не начался (меню, мир не пришёл) — тоже ждём
     if (!nqFull() && NQ_MINOR.test(text)) { nqJournal(text, k); return; }
     if (nqAlarm() && k !== 'night' && k !== 'imp') { nqJournal(text, k); return; }
   }
@@ -164,6 +164,9 @@ toast = function (text, target, kind) {
   if (urgent) Notify.q.unshift(item); else Notify.q.push(item);
   nqPump();
 };
+
+// идут шаги входа (и пара секунд после последнего) — обычные тосты не встревают между ними
+function nqEntering(t) { const E = Notify.entry; return !!E && (E.step <= 5 || t < (E.doneAt || 0) + 4000); }
 
 function nqPump() {
   const t = nqNow();
@@ -179,7 +182,7 @@ function nqPump() {
   if (Notify.q.length && Notify.q[0].urgent && live >= max) { toastClose(now[0]); live--; }
   while (Notify.q.length && live < max) {
     const x = Notify.q[0];
-    if (!x.urgent && (!nqRateOk() || t < Notify.quietUntil || nqBusy())) break;   // под открытым окном тосты не видны — ждут
+    if (!x.urgent && (!nqRateOk() || t < Notify.quietUntil || nqBusy() || nqEntering(t))) break;   // под открытым окном тосты не видны — ждут
     Notify.q.shift();
     const el = nqShow(x.n > 1 ? x.text + ' ×' + x.n : x.text, x.kind, null, x.target);
     if (el) { el.dataset.nq = x.text; el.dataset.n = x.n; }
@@ -334,7 +337,7 @@ function nqGreet(E) {
     Notify.heldTold = held;
     return true;
   }
-  if (!E.back) return false;   // новичка встречает окно имени героя и обучение
+  if (!E.back || (Game.time || 0) < 30) return false;   // новичка и новую карту встречают окно имени героя, заставка и обучение
   nqShow(`С возвращением! Жителей в деревне: ${nqPeople()}`, '', null);
   return true;
 }
@@ -350,7 +353,7 @@ function nqQuestLine(E) {
     nqShow('Сегодня: ' + parts.join(' · '), 'coop', null);
     return true;
   }
-  if (!E.back) return false;
+  if (!E.back || (Notify.want.tut && !nqTutSeen())) return false;   // впереди обучение — оно само расскажет, что делать
   const v = Game.goalView, o = v && v.objs && v.objs.find(o => o.cur < o.need);
   if (!o) return false;
   nqShow(`Цель: ${o.t}${o.need > 1 ? ` (${o.cur}/${o.need})` : ''}`, '', null);
@@ -373,14 +376,14 @@ function nqSteps() {
   else if (E.step === 5) {
     if (!E.coop && Notify.want.tut && typeof tutStart === 'function' && !nqTutSeen()) { Notify.want.tut = false; tutStart(); did = true; }
     if (E.coop && Notify.want.coopHint && nqCoopHintRaw) { Notify.want.coopHint = false; nqCoopHintRaw(); did = true; }
-    E.step = 6;
+    E.step = 6; E.doneAt = t + (did ? 2000 : 0);
   }
   E.next = t + (did ? gap : 150);
 }
 
 // конец «тишины»: что отложили и ещё не рассказали — одной строкой
 function nqQuietEnd() {
-  if (!Notify.entry || nqNow() < Notify.quietUntil || Notify.quietDone === Notify.quietUntil || Notify.entry.step <= 5 || nqBusy()) return;
+  if (!Notify.entry || nqNow() < Notify.quietUntil || Notify.quietDone === Notify.quietUntil || nqEntering(nqNow() - 1500) || nqBusy() || nqLive().length) return;
   Notify.quietDone = Notify.quietUntil;
   const more = Notify.unread - Notify.heldTold;
   if (more > 0) nqShow(`Пока вы осматривались: ${more} ${nqWord(more)} — в журнале ▸`, Notify.entry.coop ? 'coop' : '', nqJournalOpen);
