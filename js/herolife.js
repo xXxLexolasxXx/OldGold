@@ -190,8 +190,8 @@ function* hlExorcise(u, c) {
   g.exo = Game.time; g.mode = 'leave'; g.modeT = 99;
   ghostSay(g, ['Свет… наконец-то…', 'Спасибо, что отпустил…', 'Я иду домой…'][(Math.random() * 3) | 0]);
   sfxAt('wail', g.x * TILE, g.y * TILE, 0.8);
-  if (Math.random() < 0.45) { dropPile(Math.floor(g.x), Math.floor(g.y), 'gold', 1); logEvent('night', `${u.hero.name} отпустил призрака, тот оставил монету`, g.x, g.y); }
-  else logEvent('night', `${u.hero.name} прогнал призрака в мир иной`, g.x, g.y);
+  if (Math.random() < 0.45) { dropPile(Math.floor(g.x), Math.floor(g.y), 'gold', 1); logEvent('night', `${u.hero ? u.hero.name : "Лекарь"} отпустил призрака, тот оставил монету`, g.x, g.y); }
+  else logEvent('night', `${u.hero ? u.hero.name : "Лекарь"} прогнал призрака в мир иной`, g.x, g.y);
   yield { wait: 0.6 };
 }
 

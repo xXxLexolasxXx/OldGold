@@ -302,6 +302,7 @@ function defenseTick(dt) {
   const hostiles = defHostiles(false);
   defTrapsTick(hostiles);
   defTorchTick(hostiles);
+  defHealersTick();
   if (hasTower) {
     const vis = defHostiles(true);
     for (const b of Game.buildings) if (b.type === 'watchtower' && b.state === 'done' && !b.removed) defTowerTick(b, step, hostiles, vis);
@@ -310,6 +311,27 @@ function defenseTick(dt) {
   for (let k = Game.dtowers.length - 1; k >= 0; k--) {
     const T = Game.dtowers[k];
     if (!Game.buildings.some(b => b.id === T.b && !b.removed)) { Game.dtowers.splice(k, 1); DEF.towers.delete(T.b); }
+  }
+}
+
+// ================= Лекарь прогоняет призраков =================
+
+// Лекарь (лазарет, sickness.js) сам идёт к призраку поблизости и отпускает его, как герой. Башни и стрелы призраков не берут.
+function defHealersTick() {
+  if (typeof hlExorcise !== 'function' || !(Game.ghosts || []).length) return;
+  for (const u of Game.units) {
+    if (u.type !== 'healer' || u.dead || u.inside || !interruptible(u) || Game.time < (u.exoCd || 0)) continue;
+    let best = null, bd = 9;
+    for (const g of Game.ghosts) {
+      if (g.exo || typeof g.x !== 'number' || (g.alpha !== undefined && g.alpha < 0.2)) continue;
+      const d = Math.hypot(g.x - u.x, g.y - u.y);
+      if (d < bd) { bd = d; best = g; }
+    }
+    if (!best) continue;
+    u.exoCd = Game.time + 20;
+    startBreak(u, 'exorcise', null);
+    u.proc = hlExorcise(u, { g: best });
+    floater(u.x, u.y - 1.8, 'Лекарь на вызов!', '#cfe6ff');
   }
 }
 
