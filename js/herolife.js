@@ -227,7 +227,7 @@ function hlCast(k) {
     const mate = Game.units.find(x => x.teamOf === h.id);
     if (mate) mate.injury = null;
     HL.fx.push({ kind: 'heal', x: h.x, y: h.y, t0: Game.time, dur: 1.2 });
-    if (!h.inside) { h.hfx = { k: 'win0', t: Game.time + 0.55 }; h.vdir = 'E'; }   // поднял руку с оружием — колдует
+    if (!h.inside) { h.hfx = { k: 'cast', t: Game.time + 0.55, d: 0.55 }; h.vdir = 'E'; }   // поднял руку с оружием — колдует
     sfxAt('chime', h.x * TILE, h.y * TILE);
     floater(h.x, h.y - 1.7, 'Малое лечение', '#9af0a0');
   }

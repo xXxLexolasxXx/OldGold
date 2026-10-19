@@ -852,9 +852,9 @@ const ENT_GRAB_HAND = [[-6, 34], [14, 42], [24, 62], [28, 84], [27, 91], [27, 82
 function entPose(name, L) {
   const cx = ENT_CX, hipY = 84, base = ENT_BASE;
   let sL = 0, sR = 0, lL = 0, lR = 0;
-  const wi = name[0] === 'w' ? +name[1] : name.startsWith('cw') ? +name[2] : -1;   // кадр шага (cw — шагает с добычей)
+  const wi = name[0] === 'w' ? +name.slice(1) : name.startsWith('cw') ? +name.slice(2) : -1;   // кадр шага (cw — шагает с добычей)
   if (wi >= 0) {
-    const p = wi / 4 * Math.PI * 2;
+    const p = wi / 8 * Math.PI * 2;   // 8 кадров шага
     sL = 7 * Math.sin(p); sR = -sL;
     lL = Math.max(0, -Math.cos(p)) * 6; lR = Math.max(0, Math.cos(p)) * 6;
   }
@@ -1045,9 +1045,9 @@ function entFrameName(e) {
   if (e.state === 'dying') return 'f0';           // вскинул ветви от боли
   if (e.state === 'drag') {
     const gi = grabIdx(e.t);
-    return gi < 9 ? 'g' + gi : 'cw' + (Math.floor(e.phase / 1.7) & 3);
+    return gi < 9 ? 'g' + gi : 'cw' + (Math.floor(e.phase / 1.7 * 2) & 7);
   }
-  if (e.moving) return 'w' + (Math.floor(e.phase / 1.7) & 3);
+  if (e.moving) return 'w' + (Math.floor(e.phase / 1.7 * 2) & 7);
   return 'idle';
 }
 
@@ -1166,7 +1166,7 @@ function drawVictimRock(c, e) {
   // тень на земле тает, пока поднимают
   c.fillStyle = `rgba(10,8,4,${0.32 * (1 - ease)})`;
   c.beginPath(); c.ellipse(gx + 1.5, gy, 5.5, 2, 0, 0, 7); c.fill();
-  const opt = { gait: '', gest: 'panic', gf: Math.floor(Game.time * (held ? 10 : 6) + v.id) & 1 };
+  const opt = { gait: '', gest: 'panic', gf: gestCyc(Game.time * (held ? 10 : 6) + v.id) };
   const spr = held ? personSprite(v, 'S', 'walk', Math.floor(Game.time * 16) & 7, opt) : personSprite(v, 'S', 'idle', 0, opt);
   c.save();
   const shake = held ? 0 : (Math.floor(Game.time * 30) & 1 ? 0.8 : -0.8);   // трясётся от ужаса

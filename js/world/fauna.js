@@ -197,7 +197,8 @@ const FA_CACHE = {};
 function crowSprite(kind) {
   if (FA_CACHE[kind]) return FA_CACHE[kind];
   let cv;
-  if (kind.startsWith('s')) {                 // s0..s2 — стоя, ноги в разных позах
+  if (kind[0] === 'w') cv = faSprite(gaitRows([...CROW_STAND, ...CROW_LEGS[0]], 2, 6, +kind.slice(1)));   // шаг по земле: 6 кадров
+  else if (kind.startsWith('s')) {                 // s0..s2 — стоя, ноги в разных позах
     const legs = CROW_LEGS[+kind[1]];
     cv = faSprite([...CROW_STAND, ...legs]);
   } else cv = crowFlySprite(+kind[1]);        // f0..f2
@@ -347,7 +348,7 @@ function drawCrow(c, cr) {
   c.beginPath(); c.ellipse(px, py, air ? 6 : 6.5, 2, 0, 0, 7); c.fill();
   let spr;
   if (air) spr = crowSprite('f' + (Math.floor(cr.ph * 18) & 7));
-  else spr = crowSprite('s' + (cr.walking ? [1, 0, 2, 0][Math.floor(cr.ph * 7) & 3] : 0));
+  else spr = (cr.walking ? crowSprite('w' + (Math.floor(cr.ph * 10.5) % 6)) : crowSprite('s0'));
   const w = spr.width, h = spr.height;
   const lift = air ? cr.z : (cr.peck > 0 && (Math.floor(cr.ph * 6) & 1) ? -1 : 0);
   const y0 = air ? py - cr.z - h * 0.62 : py - h + 1;
