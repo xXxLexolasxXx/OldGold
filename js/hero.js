@@ -217,6 +217,37 @@ function joinTeam(hero, u) {
   floater(u.x, u.y - 1.4, 'В команде', '#f6d458');
 }
 
+// Мини-диалог «Взять в команду? ✓ ✕» (телефон): сверху, подальше от пальца; первые 0,4 с кнопки глухие, через 6 с гаснет
+let teamAskEl = null, teamAskTimer = 0;
+function teamAskClose() {
+  clearTimeout(teamAskTimer);
+  if (teamAskEl) { teamAskEl.remove(); teamAskEl = null; }
+}
+function askTeam(hero, u) {
+  teamAskClose();
+  const mate = u.teamOf === hero.id;
+  const el = teamAskEl = document.createElement('div');
+  el.className = 'team-ask';
+  el.innerHTML = `<span>${mate ? 'Отпустить' : 'Взять в команду'}: ${UNIT_TYPES[u.type].name}?</span><button class="ta-no" title="Нет">✕</button><button class="ta-ok" title="Да">✓</button>`;
+  const t0 = performance.now();
+  let down = null;
+  el.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const moved = down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 12;
+    down = null;
+    if (b.classList.contains('ta-ok')) {
+      if (performance.now() - t0 < 400 || moved || u.dead) return;
+      teamAskClose();
+      joinTeam(hero, u);
+      updateUI(true);
+    } else teamAskClose();
+  });
+  document.body.appendChild(el);
+  teamAskTimer = setTimeout(teamAskClose, 6000);
+}
+
 function leaveTeam(u) {
   u.teamOf = null;
   heroStopUnit(u);
@@ -569,7 +600,12 @@ function heroBtnUpdate() {
       }
       if (near === h) { selectHero(false); return; }
       if (Game.selUnit === h) {
-        if (near && heroCanJoin(near)) { joinTeam(h, near); updateUI(true); return; }
+        if (near && heroCanJoin(near)) {
+          if (typeof Mobile !== 'undefined' && Mobile.on) askTeam(h, near);   // на телефоне тап по гному слишком случаен: спрашиваем
+          else { joinTeam(h, near); updateUI(true); }
+          return;
+        }
+        teamAskClose();
         const c = resolveCmd(t);
         if (c) {
           issueCmd(h, c);
