@@ -163,13 +163,34 @@ function upgradeBuilding(b, silent) {
 // Поверх готового спрайта: каменный цоколь, мансарда с тёплым окном на коньке крыши,
 // красно-золотой вымпел и фонарь у двери. У каждого типа своя пропорция, цвета слегка разные.
 
-function buildingSprite(type, rot = 0, level = 1) {
+// ---------- Эпохи облика ----------
+// Облик здания = эпоха поселения (веха: поселение → деревня → город) плюс шаг за уровень 2
+// и нижняя планка для зданий с каменным нравом (гильдии). Спрайты кэшируются по эпохе (#e1…#e3);
+// спрайты ненужных эпох выбрасываются (eraEvict), поэтому память не растёт.
+const ERA_MIN = { guild_warrior: 2, guild_archer: 2, guild_rogue: 2, guild_mage: 2, weaponsmith: 2, smeltery: 2, magicworkshop: 2 };
+function settleEra() {
+  if (typeof window !== 'undefined' && window.ERA_FORCE) return window.ERA_FORCE;
+  const g = typeof Game !== 'undefined' && Game.goal;
+  return 1 + Math.max(0, Math.min(2, (g && g.rank) | 0));
+}
+function buildingEra(type, level = 1, settle = settleEra()) {
+  const forced = typeof window !== 'undefined' && window.ERA_FORCE;
+  const e = settle + (level >= 2 && !forced ? 1 : 0);
+  return Math.max(1, Math.min(3, forced ? settle : Math.max(e, ERA_MIN[type] || 1)));
+}
+// выбросить спрайты зданий всех эпох, кроме перечисленных
+function eraEvict(keep) {
+  for (const k in SPR.buildings) { const e = +k.split('#e')[1]; if (e && !keep.includes(e)) delete SPR.buildings[k]; }
+}
+
+function buildingSprite(type, rot = 0, level = 1, settle) {
   const lv = level >= 2 && BUILDINGS[type].up ? 2 : 1;
-  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot);
+  const era = buildingEra(type, lv, settle);
+  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot, 1, era);
   const d = bDims(type, rot);
-  const key = type + ':' + d.rot + (lv === 2 ? ':L2' : ':G');
+  const key = type + ':' + d.rot + (lv === 2 ? ':L2' : ':G') + '#e' + era;
   if (SPR.buildings[key]) return SPR.buildings[key];
-  const base = buildingSpriteBase(type, rot, lv);
+  const base = buildingSpriteBase(type, rot, lv, era);
   const cv = mkCanvas(base.canvas.width, base.canvas.height), c = cv.getContext('2d');
   c.drawImage(base.canvas, 0, 0);
   c.imageSmoothingEnabled = false;
