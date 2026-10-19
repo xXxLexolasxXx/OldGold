@@ -542,7 +542,6 @@ if (typeof step === 'function') {
     Game.dil = s.dil ? Object.assign({ next: 0, lastT: -9999, cur: null, last: null, flags: {}, chain: [], rel: {}, mood: 0, moodT: Game.time, seen: {}, n: 0, seq: 0, mode: 'vote', calm: 0, acc: 0 }, s.dil) : null;
     if (Game.dil) {
       Game.dil.rel = Object.assign({ fairy: 0, neutral: 0, guilds: 0, traders: 0 }, Game.dil.rel);
-      Game.dil.moodT = Game.time;
       if (Game.dil.cur && !DIL_BY_ID[Game.dil.cur.id]) Game.dil.cur = null;
       if (Game.dil.cur && dilServer()) Game.dil.cur.dl = Game.time + DIL_VOTE_T;
     }
