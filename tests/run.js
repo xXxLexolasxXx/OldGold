@@ -53,6 +53,8 @@ scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
+scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
+scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');

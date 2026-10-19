@@ -179,7 +179,7 @@ I18N.add('en', {
   "Добро пожаловать обратно. Смерть тебе, видимо, не понравилась.": "Welcome back. Death, apparently, wasn't your thing.",
   "Гном возродился. Склад об этом пока не в курсе.": "A gnome has respawned. The storehouse isn't aware yet.",
   "Место для воскрешений. Скидок нет, гарантии тоже.": "A place for resurrections. No discounts, no warranty either.",
-  "Герой воскрес! Осталось подождать, пока он снова этого не пожалеет.": "The hero is back! Now we wait until they regret it again.",
+  "Герой воскрес! Осталось подождать, когда он снова об этом пожалеет.": "The hero is back! Now we wait until they regret it again.",
   "У костра тепло, а у гнома — привычка искать приключения.": "The bonfire is warm, and the gnome has a habit of seeking adventure.",
   "Смерть была неплоха, но ты решил продолжить. Смелое решение.": "Death wasn't bad, but you decided to carry on. Bold choice.",
   "Здесь выдают гномов повторно. Состояние — как у прежнего: так себе.": "Gnomes reissued here. Condition same as the previous one: meh.",

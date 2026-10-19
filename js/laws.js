@@ -49,7 +49,7 @@ const lawDay = () => cycleAt(Game.time).k;
 function lawEnsure() { return Game.laws || (Game.laws = { on: [], day: -9, seq: 0, prop: null, beer: { t: 0, ok: true }, last: null }); }
 function lawSay(text) { if (lawServer()) coop.out.push({ msg: { t: 'toast', text } }); else if (typeof toast === 'function') toast(text); }
 function lawRank() { return Game.goal ? Math.max(0, Math.min(2, Game.goal.rank | 0)) : 0; }
-const lawSlots = () => LAW_SLOTS[lawRank()];
+const lawSlots = () => LAW_SLOTS[lawRank()] + (typeof RSCC !== 'undefined' ? RSCC.slot : 0);   // «Совет мудрецов» (research.js) — ещё место
 const lawIsOn = id => !!(Game.laws && Game.laws.on.includes(id));
 function lawPop() { let n = 0; for (const u of Game.units) if (isPerson(u) && !u.dead && u.type !== 'hero' && u.type !== 'carter' && !u.owner && !u.rec) n++; return n; }
 
@@ -306,7 +306,7 @@ function lawHTML() {
   const L = Game.laws || { on: [], day: -9, prop: null, beer: { ok: true } };
   const slots = lawSlots(), mirror = lawMirror(), today = L.day === lawDay();
   let h = `<div class="lw-top"><span>Мест под указы: <b>${L.on.length}/${slots}</b></span><span class="muted small">${today ? 'сегодня порядки уже меняли' : 'менять порядки можно раз в сутки'} · указ — ${LAW_COST} зол.</span></div>`;
-  if (lawRank() < 2) h += `<div class="muted small lw-note">Новое звание деревни («${GOAL_RANKS[lawRank() + 1].name}») даст ещё одно место.</div>`;
+  if (lawRank() < 2 && !(typeof RSCC !== 'undefined' && RSCC.slot)) h += `<div class="muted small lw-note">Новое звание деревни («${GOAL_RANKS[lawRank() + 1].name}») даст ещё одно место.</div>`;
   const P = L.prop;
   if (P && LAW_BY_ID[P.id]) {
     const v = Object.values(P.votes || {}), y = v.filter(Boolean).length, mine = mirror && P.votes ? P.votes[Coop.nick] : undefined;
