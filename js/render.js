@@ -851,6 +851,7 @@ function render() {
   fairy2DrawList(list, c, x0, y0, x1, y1);
   drawSkeletons(list, c, x0, y0, x1, y1);
   golemDrawList(list, c, x0, y0, x1, y1);
+  if (typeof tradeDrawList === 'function') tradeDrawList(list, c, x0, y0, x1, y1);
   for (const e of Game.ents || []) {
     if (e.x < x0 - 3 || e.x > x1 + 3 || e.y < y0 - 1 || e.y > y1 + 4) continue;
     list.push([(e.state === 'sleep' || e.k < 0.3) ? Math.floor(e.y) + 0.95 : e.y + 0.05, () => drawEnt(c, e)]);   // спящее — поверх своего ствола, под кронами впереди; гном рядом на той же линии — перед деревом

@@ -124,7 +124,7 @@ button img { width: 18px; height: 18px; }
 
 /* ---------- Вкладки-иконки ---------- */
 
-#tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+#tabs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .tab-btn { height: 44px; padding: 0; position: relative; }
 .tab-btn img { width: 36px; height: 36px; }
 .badge {

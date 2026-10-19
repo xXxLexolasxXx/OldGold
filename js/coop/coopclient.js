@@ -273,6 +273,7 @@ function coopMirror(m) {
   Game.sub = m.sub ? coopResolve(m.sub) : null;
   Game.lostGnomes = m.lost || 0;
   if (typeof goalMirrorIn === 'function') goalMirrorIn(m.goal);
+  if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
   if (m.df) Game.diff = diffKey(m.df);
   const festWas = festOn();
   Game.festival = m.fest || null;
