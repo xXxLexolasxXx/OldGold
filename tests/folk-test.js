@@ -66,6 +66,8 @@ ok(h.run('Game.folk && Game.folk.st.bah') >= 1, 'счётчик «Бах!» не
 const old = JSON.parse(JSON.stringify(s));
 delete old.fam; for (const d of old.units || []) delete d.fam;
 h.ctx.__o = old; h.run('applySave(__o)');
+ok(h.run('Game.units.every(u => !u.fam)'), 'старый сейв: семьи появились сразу (fam-test ждёт ленивых)');
+h.run('for (const u of Game.units) if (famOn(u)) famOf(u)');
 ok(h.run('Game.units.filter(u => famOn(u)).every(u => u.fam && u.fam.sx === "m" && u.fam.a >= FAM_ADULT)'), 'старый сейв: не все взрослые мужчины');
 
 console.log(fails.length ? `ПРОВАЛ: ${fails.length}` : 'OK');

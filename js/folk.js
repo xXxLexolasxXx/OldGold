@@ -68,6 +68,19 @@ if (typeof spawnUnit === 'function') {
   };
 }
 
+// житель из сейва до семей — взрослый мужчина
+if (typeof famOf === 'function') {
+  const _fo = famOf;
+  famOf = function (u) {
+    if (u.fam || !u.folkOld) return _fo(u);
+    const f = _fo(u);
+    u.folkOld = false;
+    if (f.sx === 'f') { f.sx = 'm'; f.n = famPick(FAM_M); u.cname = f.n; }
+    if (f.a < FAM_ADULT) f.a = FAM_ADULT + 2;
+    return f;
+  };
+}
+
 // ---------- Работа: поле, печь ----------
 if (typeof Unit !== 'undefined') {
   const _sa = Unit.prototype.stepAction;
@@ -470,13 +483,8 @@ if (typeof step === 'function') {
   applySave = function (s) {
     _as(s);
     // сейв до семей: все жители — взрослые мужчины (новых гномок приведут беженцы и рождения)
-    if (!s.fam) (s.units || []).forEach((d, k) => {
-      const u = Game.units[k];
-      if (!u || !d || d.fam || typeof famOn !== 'function' || !famOn(u)) return;
-      const f = famOf(u);
-      if (f.sx === 'f') { f.sx = 'm'; f.n = famPick(FAM_M); u.cname = f.n; }
-      if (f.a < FAM_ADULT) f.a = FAM_ADULT + 2;
-    });
+    // (семья заводится лениво, famOf ниже: помечаем, кем она должна быть)
+    if (!s.fam) (s.units || []).forEach((d, k) => { const u = Game.units[k]; if (u && d && !d.fam) { u.fam = null; u.folkOld = true; } });
     (s.units || []).forEach((d, k) => { const u = Game.units[k]; if (u && u.fam && d && d.fam && Number.isInteger(d.fam.ls)) u.fam.ls = Math.max(0, Math.min(999, d.fam.ls)); });
     for (const u of Game.units) { u.bah = null; if (folkKid(u) || folkFem(u)) u.smoker = false; }
     Game.folk = null;
