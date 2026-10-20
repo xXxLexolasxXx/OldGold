@@ -117,7 +117,7 @@ ok(h.run(`!${kid(0)}.kp`), 'трубка не убрана');
 ok(!h.run('Game.smokers && Game.smokers.size') || true, '');
 
 // ---- взросление: чего не хватает деревне
-h.run(`Game.time += 1; globalThis.__fake = []; const mk = (type, w) => { const b = { removed: false, state: 'done', type, def: { worker: w }, worker: null, queue: [] }; Game.buildings.push(b); __fake.push(b); return b; };
+h.run(`Game.time += 1; globalThis.__fake = []; const mk = (type, w) => { const b = { removed: false, state: 'done', type, def: { worker: w }, worker: null, queue: [], problem() { return null; } }; Game.buildings.push(b); __fake.push(b); return b; };
   mk('bakery', 'baker'); mk('woodcutter', 'woodcutter');
   for (const u of Game.units) if (!u.dead && (u.type === 'baker' || u.type === 'woodcutter' || u.type === 'miller')) u.type = 'serf';`);
 let job = h.run(`kidPickJob(${kid(0)})`);
@@ -129,7 +129,7 @@ ok(h.run(`Game.fam.chron.some(c => /пекар/i.test(c[1]))`), 'нет запи
 h.run(`for (const b of __fake) if (b.type === 'bakery') b.worker = ${kid(0)}; ${kid(0)}.home = __fake[0]; __fake[0].worker = ${kid(0)}; ${kid(0)}.home = __fake[0];`);
 job = h.run(`kidPickJob(${kid(1)})`);
 ok(job && job.type === 'woodcutter' && job.why === 'дрова', 'второй по приоритету — лесоруб (дрова): ' + JSON.stringify(job));
-h.run(`for (const b of __fake) { const i = Game.buildings.indexOf(b); if (i >= 0) Game.buildings.splice(i, 1); }`);
+h.run(`for (const b of __fake) { const i = Game.buildings.indexOf(b); if (i >= 0) Game.buildings.splice(i, 1); } for (const u of Game.units) if (__fake.includes(u.home)) u.home = null;`);
 job = h.run(`kidPickJob(${kid(1)})`);
 ok(!job || job.type === 'serf' || job.why === 'семья' || job.why === 'ремесло', 'без дефицита должен быть выбор по склонности');
 
