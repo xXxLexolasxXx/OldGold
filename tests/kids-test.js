@@ -60,6 +60,8 @@ h.run(`Game.time = Math.ceil(Game.time / CYCLE) * CYCLE + 40; WX.k = 0; WX.targe
 let spot = h.run('__kids.findIndex(k => !!sandSpot(Game.unitMap.get(k)))');
 if (spot >= 0) {
   h.run(`{ const u = Game.unitMap.get(__kids[${spot}]); const s = sandSpot(u); u.x = s.sx + 0.5; u.y = s.sy + 0.5; globalThis.__sc = s; globalThis.__si = ${spot}; }`);
+  // игра в снежки или новая общая игра могла увести гномёнка — на время проверки замка игр нет
+  h.run(`for (const g of GROUPS.slice()) endGroup(g, 'test'); GROUPS.length = 0; Game.games.length = 0; gameNext = Game.time + 999; for (const k of __kids) Game.unitMap.get(k).gp = null;`);
   h.run(`{ const k = ${kid('__si')}; k.proc = (function* () { yield* sandGen(k, __sc); })(); k.action = null; k.anim = null; k.kpAt = Game.time + 999; }`);
   S.runFor(sim, 30, 0.5, () => {});
   ok(h.run('World.obj[idx(__sc.cx, __sc.cy)]?.t') === 'sandc', 'замок не заложен');
@@ -81,6 +83,7 @@ if (spot >= 0) {
   h.run('{ const s = __sc; World.obj[idx(s.cx, s.cy)] = { t: "sandc", v: 2, b: Game.time - 30, bd: 12 }; WX.k = 0.9; Math.random = () => 0.1; sandTick(3); Math.random = __rnd; WX.k = 0; WX.target = 0; WX.nextRain = 1e12; }');
   ok(h.run('World.obj[idx(__sc.cx, __sc.cy)].w > 0'), 'дождь не смыл замок');
   h.run('World.obj[idx(__sc.cx, __sc.cy)] = null');
+  h.run('gameNext = 0');
 } else console.log('  (на этой карте нет песка у воды — замки пропущены)');
 
 // ---- приручение: 80 % и укус хищника
