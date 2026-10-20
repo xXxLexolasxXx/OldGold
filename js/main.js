@@ -356,7 +356,7 @@ function onLeftClickTile(t) {
     const d = bDims(tool.type, tool.rot || 0);
     const bx = t[0] - Math.floor(d.w / 2), by = t[1] - d.h + 1;
     const err = checkPlacement(tool.type, bx, by, d.rot);
-    if (err) { toast(err + (/скал|кристалл/.test(err) ? mineSpotHint(tool.type, bx, by) : '')); return; }
+    if (err) { toast(/скал|кристалл/.test(err) ? err + '.' + mineSpotHint(tool.type, bx, by) : err); return; }
     placeBuilding(tool.type, bx, by, false, d.rot);
     track('place-1', 'Заложил первое здание');
     if (!Input.keys.has('Shift')) setTool(null);

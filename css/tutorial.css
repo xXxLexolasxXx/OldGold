@@ -91,7 +91,7 @@
 
 /* телефон: окно — полоса сверху, текст сворачивается сам; чек-лист — значок «Цели N/M», по нажатию раскрывается */
 body.mobile #tut {
-  left: 8px; right: 8px; width: auto; top: calc(42px + env(safe-area-inset-top)); bottom: auto;
+  left: 8px; right: 8px; width: auto; top: calc(54px + env(safe-area-inset-top)); bottom: auto;   /* ниже верхней полосы (она в две строки — до 49 px) */
   max-height: 44%; overflow-y: auto; font-size: 12.5px; line-height: 1.35; padding: 6px 9px 7px;
 }
 body.mobile #tut.flip { top: auto; bottom: calc(118px + env(safe-area-inset-bottom)); }
