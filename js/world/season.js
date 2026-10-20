@@ -93,17 +93,53 @@ function seaHayInfo() {
   return { need: need + wneed, have, pigs: need, wild: wneed };
 }
 
+// Заготовки: осенью и зимой, пока сена на зиму не хватает, свинарник не разводит свиней — каждая охапка идёт в запас
+// (раньше свиньи съедали всё сено ещё осенью, и к зиме склад был пуст). Осенью с поля пшеницы вяжут лишний сноп сена.
+function seaHoldHay() {
+  const S = SEA(), i = seaIdx();
+  if (S.fixed != null || !(i === 1 || i === 2 || (i === 0 && seaDaysToWinter() <= 2))) return false;
+  if (S.holdT != null && Math.abs(Game.time - S.holdT) < 3) return S.hold;
+  const h = seaHayInfo(), need = i === 2 ? h.need * (1 - seaProgress()) : h.need;
+  S.holdT = Game.time; S.hold = h.have < need;
+  return S.hold;
+}
+function seaHayBonus(crop) { return crop !== 'hops' && seaIdx() === 1 && SEA().fixed == null ? 1 : 0; }
+
+// Еда на зиму: зимой поля стоят, хлеб пекут только из запасов зерна. Считаем в обедах (гном ест раз в ~FOOD_TIME·(1−HUNGRY) с):
+// готовая еда + мука и зерно (1 зерно → 1 мука → 3 хлеба, если есть мельница и пекарня) + взрослые свиньи (свинья → 3 колбасы)
+const SEA_MEAL_FOODS = ['bread', 'sausage', 'chicken', 'croissant', 'steak'];
+function seaFoodInfo() {
+  const S = SEA(), ppl = Game.units.filter(u => !u.dead && !u.noFood && isPerson(u)).length;
+  const meal = FOOD_TIME * (1 - HUNGRY) * dif().food, left = seaIdx() === 2 ? 1 - seaProgress() : 1;
+  const need = Math.ceil(ppl * S.len * CYCLE * left / meal);
+  let ready = 0, grain = 0, pigs = 0;
+  for (const b of Game.buildings) {
+    if (b.state !== 'done' || b.removed) continue;
+    for (const g of SEA_MEAL_FOODS) ready += b.stock[g] || 0;
+    grain += (b.stock.wheat || 0) + (b.stock.flour || 0);
+    pigs += b.stock.pig || 0;
+  }
+  const canBake = Game.buildings.some(b => b.type === 'bakery' && b.state === 'done') && Game.buildings.some(b => b.type === 'mill' && b.state === 'done');
+  const have = Math.round(ready + (canBake ? grain * 3 : 0) + pigs * 3);
+  return { need, have, ready, grain, ppl };
+}
+// куда вести игрока по нажатию: свинарник (сено), ферма, склад
+function seaHayPlace() { return seaPigYards()[0] || Game.buildings.find(b => b.type === 'farm' && b.state === 'done') || seaStoreYards()[0] || null; }
+
 function seaAutumnWarn(first) {
-  const S = SEA(), h = seaHayInfo(), d = seaDaysToWinter();
+  const S = SEA(), h = seaHayInfo(), f = seaFoodInfo(), d = seaDaysToWinter();
   if (S.warnDay === seaDay()) return;
   S.warnDay = seaDay();
-  const when = d <= 1 ? 'Зима уже на пороге' : `До зимы ${d} ${d < 5 ? 'суток' : 'суток'}`;
+  const when = d <= 1 ? 'Зима уже на пороге' : `До зимы ${d} суток`;
+  const farms = Game.buildings.some(b => b.type === 'farm' && b.state === 'done');
   if (first) {
-    toast(`Осень! Пора делать заготовки: зимой ничего не растёт, а свиньи и звери едят сено. ${h.need ? `Нужно ≈${h.need} охапок, сейчас ${h.have}.` : 'Построй свинарник или хотя бы склад и запасай сено.'}`);
+    toast(`Осень! Пора делать заготовки: зимой ничего не растёт. Сено ${h.have}/${h.need || '—'}, еда ${f.have}/${f.need} обедов.` + (farms ? '' : ' Построй ферму и заложи поля пшеницы!'), seaHayPlace());
     logEvent('weather', 'Наступила осень: пора заготавливать сено и зерно на зиму');
-  } else if (h.need > h.have) {
-    toast(`${when}: сена ${h.have} из ${h.need}. Засей поля сеном и заготовь побольше!`);
-  } else if (d <= 1 && h.need) toast(`${when}. Сена хватает (${h.have}/${h.need}) — можно зимовать.`);
+  } else if (d <= 2 && (h.need > h.have || f.need > f.have)) {
+    // каждый день не напоминаем — висит закреплённая подсказка вверху (pins.js); тост — за двое и за сутки до зимы
+    const miss = [h.need > h.have ? `сена ${h.have} из ${h.need}` : '', f.need > f.have ? `еды ${f.have} из ${f.need} обедов` : ''].filter(Boolean).join(', ');
+    toast(`${when}: ${miss}. Больше полей пшеницы у ферм — и зерно, и солома на сено`, seaHayPlace());
+  } else if (d <= 1 && h.need) toast(`${when}. Запасов хватает — можно зимовать.`);
 }
 
 function seaChange(from, to) {

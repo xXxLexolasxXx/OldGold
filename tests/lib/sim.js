@@ -89,7 +89,7 @@ const BOT = `(function () {
   bot.i++; bot.fails = 0;
   return 'построил ' + type;
 })()`;
-function botTurn(sim) { return sim.h.run(BOT.replace('__PLAN__', JSON.stringify(PLAN))); }
+function botTurn(sim, plan) { return sim.h.run(BOT.replace('__PLAN__', JSON.stringify(plan || PLAN))); }
 
 // ---- Инварианты
 const INV = `(function () {

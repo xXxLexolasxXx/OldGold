@@ -633,7 +633,7 @@ function* farmWork(u, b) {
         const crop = u.carry;
         for (let k = 0; k < n; k++) if (k === 0 || !outFull(b, crop)) gather(b, crop);
         // солома и ботва — сено: с пшеницы больше, с хмеля меньше
-        const hay = crop === 'hops' ? 1 : extra ? 3 : 2;
+        const hay = (crop === 'hops' ? 1 : extra ? 3 : 2) + (typeof seaHayBonus === 'function' ? seaHayBonus(crop) : 0);   // осенью солому вяжут в снопы на зиму
         for (let k = 0; k < hay; k++) if (!outFull(b, 'hay')) gather(b, 'hay');
         u.carry = null;
       }
@@ -653,7 +653,8 @@ function* farmWork(u, b) {
 // Свинарник: каждая охапка сена — все подрастающие свиньи растут на треть,
 // появляется новый поросёнок; выросшая (3/3) свинья ждёт отправки на бойню.
 function* swineWork(u, b) {
-  if (b.stock.hay < 1 || b.stock.pig >= b.def.outputs.pig) { yield { wait: 2 }; return; }
+  // осенью и зимой, пока сена на зиму не хватает, свиней не разводят — сено копится на корм (season.js)
+  if (b.stock.hay < 1 || b.stock.pig >= b.def.outputs.pig || (typeof seaHoldHay === 'function' && seaHoldHay())) { yield { wait: 2 }; return; }
   b.stock.hay--;
   b.working = true;
   yield { wait: 7, anim: 'work' };
@@ -758,7 +759,7 @@ function* helpHarvestGen(u, i) {
   if (b.removed || !ok2 || !u.carry) { if (u.carry) dropPile(Math.floor(u.x), Math.floor(u.y), crop, 1); u.carry = null; return; }
   const n = extra ? 5 : 3;
   for (let k = 0; k < n; k++) if (k === 0 || !outFull(b, crop)) gather(b, crop);
-  const hay = crop === 'hops' ? 1 : extra ? 3 : 2;
+  const hay = (crop === 'hops' ? 1 : extra ? 3 : 2) + (typeof seaHayBonus === 'function' ? seaHayBonus(crop) : 0);   // осенью солому вяжут в снопы на зиму
   for (let k = 0; k < hay; k++) if (!outFull(b, 'hay')) gather(b, 'hay');
   u.carry = null; u.carryN = 0;
   floater(b.doorX + 0.5, b.doorY - 0.5, 'Помог с урожаем', '#e8d890');
