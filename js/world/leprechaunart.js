@@ -40,7 +40,7 @@ function lepPose(n) {
   if ((m = /^i(\d)$/.exec(n))) {          // покой: дыхание, поза «руки в боки/большие пальцы за жилет», приподнимает шляпу, поглаживает кошель
     const k = +m[1], br = [0, -0.3, -0.7, -0.7, -0.3, 0][k];
     const P = d({ y: br, sq: 1 + (k === 2 || k === 3 ? 0.012 : 0), eye: k === 4 ? 2 : 0, hat: [0, 0.02, 0.05, 0.05, 0.02, 0][k], mouth: k === 3 ? 0.4 : 0 });
-    if (k === 2 || k === 3) { P.rh = [5, -18]; P.tip = 1; P.lh = [-4.4, -1.4]; }                 // коснулся шляпы
+    if (k === 2 || k === 3) { P.rh = [5.2, -1]; P.lh = [-5.2, -1]; P.ep = 'hip'; }                 // руки на пояс
     else if (k === 1) { P.lh = [-4.2, -2]; P.rh = [4.6, -3.4]; P.ep = 'hip'; }               // большие пальцы за жилет
     else if (k === 5) { P.rh = [4.2, -2.4]; P.lh = [-5.4, 2.4]; }
     return P;
@@ -65,14 +65,14 @@ function lepPose(n) {
     case 'x3': return d({ y: 2, sq: 0.88, lf: [-2.5, 0], rf: [2.5, 0], lh: [-1, -17], rh: [5, -18], ingot: 2, mouth: 0.5, eye: 2, hat: 0.1, ep: 'up' });
     // исход (б): пощёчина
     case 'l0': return d({ x: -1, rot: -0.12, y: 1, lf: [-3.5, 0], rf: [3, 0], lh: [9.5, -8], rh: [10.5, -6], eye: 4, mouth: 0.5, ep: 'tug', hat: -0.04 });       // ждёт удара, зажмурился
-    case 'l1': return d({ x: -6, rot: -0.46, y: -1, lf: [-8, -1], rf: [-1, 0], lh: [-6, -3], rh: [-3, -8], eye: 3, mouth: 0.9, head: -0.55, hurt: 1, cheek: 1, hat: -0.55, stars: 1, ep: '' });   // голова мотнулась
+    case 'l1': return d({ x: -6, rot: -0.46, y: -1, lf: [-8, -1], rf: [-1, 0], lh: [-6, -3], rh: [-3, -8], eye: 3, mouth: 0.9, head: -0.35, hurt: 1, cheek: 1, hat: -0.25, stars: 1, ep: '' });   // голова мотнулась
     case 'l2': return d({ x: -4, rot: -0.3, y: 0, lf: [-6, 0], rf: [0, -0.5], lh: [-7, -4], rh: [-6, -10], eye: 3, mouth: 0.6, head: -0.3, hurt: 0.6, cheek: 1, hat: -0.3, stars: 1 });
     case 'l3': return d({ x: -1, rot: 0.2, y: 0, lf: [-3, 0], rf: [3.5, -1.2], lh: [-6.4, -5], rh: [-4, -10.5], eye: 3, mouth: 0.4, head: 0.18, hurt: 0.3, cheek: 1, hat: 0.2, stars: 1 });
-    case 'l4': return d({ x: -1, rot: 0.08, y: 1, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.4, -9.4], eye: 5, mouth: -1, head: 0.05, cheek: 1, hat: 0.16, sq: 0.97, ep: 'cheek' });   // рука на щеке, грустные глаза
-    case 'l5': return d({ x: -1, rot: 0.12, y: 1.6, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.4, -9.2], eye: 6, mouth: -1, head: 0.1, cheek: 1, hat: 0.24, sq: 0.95, ep: 'cheek' });
-    case 'l6': return d({ x: -1, rot: 0.1, y: 1.2, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.4, -9.4], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.34, ep: 'cheek' });
-    case 'l7': return d({ x: -1, rot: 0.1, y: 0.4, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.4, -9.4], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.64, sq: 0.92, ep: 'cheek' });
-    case 'l8': return d({ x: -1, rot: 0.1, y: 0, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.4, -9.4], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.9, sq: 0.88, ep: 'cheek' });
+    case 'l4': return d({ x: -1, rot: 0.08, y: 1, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -11], eye: 5, mouth: -1, head: 0.05, cheek: 1, hat: 0.16, sq: 0.97, ep: 'cheek' });   // рука на щеке, грустные глаза
+    case 'l5': return d({ x: -1, rot: 0.12, y: 1.6, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -10.6], eye: 6, mouth: -1, head: 0.1, cheek: 1, hat: 0.24, sq: 0.95, ep: 'cheek' });
+    case 'l6': return d({ x: -1, rot: 0.1, y: 1.2, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -11], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.34, ep: 'cheek' });
+    case 'l7': return d({ x: -1, rot: 0.1, y: 0.4, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -11], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.64, sq: 0.92, ep: 'cheek' });
+    case 'l8': return d({ x: -1, rot: 0.1, y: 0, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -11], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.9, sq: 0.88, ep: 'cheek' });
   }
   return d({});
 }
@@ -91,7 +91,10 @@ function lepDancePose(k, d) {
     [2.4, 0, 0.03, [1.8, 0], [-1.8, 0], 1, 0.1],           // 6 глубокий присед на скрещённых ногах, щелчок
     [-6.4, 0, -0.04, [-4.4, -4.4], [4.4, -4.4], 0, -0.16],     // 7 высокий прыжок «ножницы»
   ][i];
-  const [y, x, rot, lf, rf, click, hat] = A;
+  // размашистее: на экране гном ростом ~30 px, мелкие движения не читаются
+  const bigL = f => [f[0] * 1.6, f[1] * 1.5], bigR = f => [f[0] * 1.6, f[1] * 1.5];
+  const [y0, x, rot0, lf0, rf0, click, hat] = A;
+  const y = y0 * 1.3, rot = rot0 * 1.8, lf = bigL(lf0), rf = bigR(rf0);
   const mir = sw ? -1 : 1;
   const P = d({
     y, x, rot: rot * mir, hat: hat * mir, click, mouth: i === 7 || i === 1 ? 0.7 : 0.3, eye: 0,
@@ -143,7 +146,7 @@ function drawLep(c, P) {
   c.save();
   c.translate(P.x, 0);
   // всё тело — от бедра: наклон вокруг ступней
-  const hipY = -10 + P.y, hipX = 0;
+  const hipY = -12.2 + P.y, hipX = 0;
   c.translate(0, hipY); c.rotate(P.rot); c.scale(1 / Math.sqrt(P.sq), P.sq);
   // ступни заданы от земли — переводим в систему бедра
   const toL = (pt) => {
@@ -162,7 +165,7 @@ function drawLep(c, P) {
   };
   // дальняя нога и дальняя рука
   leg(-1.8, footL, false);
-  const sh = { far: [-2.8, -9.4], near: [3.2, -9.4] };
+  const sh = { far: [-3.4, -9.6], near: [3.6, -9.6] };
   const armTo = (s, hand, far) => {
     let pref = [-0.5, 1];
     if (P.ep === 'hip') pref = far ? [1, 0.2] : [-1, 0.3];
@@ -190,38 +193,47 @@ function drawLep(c, P) {
   c.fillStyle = LP.band; c.fillRect(-0.8, -2.5, 1.6, 1.5);
   // ближняя нога
   leg(1.8, footR, true);
+  // ближняя рука рисуется перед головой, если опущена (борода её перекрывает), и после — если поднята к лицу
+  const nh = P.rh, na = armTo(sh.near, nh, false);
+  const nearArm = () => {
+    lepLimb(c, sh.near, na.e, na.b, 3, 2.6, k(LP.coat), k(LP.coat));
+    c.fillStyle = k(LP.shirt); c.fillRect(na.b[0] - 1.6, na.b[1] - 1.2, 3.2, 2.4);
+    ellipse(c, na.b[0], na.b[1], 1.6, 1.6, k(LP.skin));
+    if (P.ingot === 1) lepIngot(c, na.b[0] + 1.6, na.b[1] - 0.2, -0.3, 0.9);
+    if (P.ingot === 2) lepIngot(c, na.b[0] + 1.4, na.b[1] - 2.6, -0.4, 1.0);
+  };
+  const armHigh = na.b[1] < -14 || P.ep === 'cheek';
+  if (!armHigh) nearArm();
   // голова: наклон от шеи
   c.save();
-  c.translate(0.6, -10.8); c.rotate(P.head); c.scale(1.14, 1.14);
+  c.translate(0.6, -11.6); c.rotate(P.head); c.scale(1.14, 1.14);
   // борода — густая, рыжая, из-под щёк
-  poly(c, [[-5.4, 1.6], [-6, 5], [-2.8, 8.6], [0.6, 10.4], [4, 8.6], [6.2, 5], [5.8, 1.8], [2.4, 3.8], [-1.6, 3.8]], k(LP.beard));
-  poly(c, [[-5.4, 1.6], [-3.4, 3], [-3.4, 7.4], [-2.8, 8.6], [-6, 5]], k(LP.beardD));
-  poly(c, [[1.6, 4], [4.4, 3.6], [5.4, 6.4], [3.6, 9], [2.4, 7]], k(LP.beardL));
+  poly(c, [[-5.4, 1.6], [-6.2, 5], [-3.4, 8.6], [0.6, 10], [4.4, 8.4], [6.4, 4.6], [5.8, 1.8], [2.4, 3.8], [-1.6, 3.8]], k(LP.beard));
+  poly(c, [[-5.4, 1.6], [-3.4, 3], [-3.4, 7], [-3.4, 8.6], [-6.2, 5]], k(LP.beardD));
+  poly(c, [[1.6, 4], [4.4, 3.6], [5.6, 5.4], [4.4, 8.4], [2.4, 7]], k(LP.beardL));
   // лицо
   ellipse(c, 0.4, -0.6, 6, 5.6, k(LP.skin));
-  ellipse(c, 2.8, 1.2, 2.6, 1.8, k(P.cheek ? LP.blush : LP.skinD));
   if (P.cheek && P.hurt > 0.01) ellipse(c, 2.8, 1.2, 3.1, 2.3, '#e84a44');       // красная щека от пощёчины
   // пышные усы и бакенбарды
   poly(c, [[-1.4, 3.2], [5.6, 2.6], [7.2, 4.4], [3.2, 5.2], [0.8, 4.4]], k(LP.beardL));
-  poly(c, [[-5.2, -1], [-3.6, -2], [-3.4, 4.6], [-5.4, 5]], k(LP.beardD));
   // нос
   ellipse(c, 6, 0.4, 1.9, 1.7, k('#f08a68'));
   // глаза: 0 обычные, 1 азартные, 2 зажмурен, 3 крестиком, 4 зажмурился в ожидании, 5 грустные, 6 грустные с крупной слезой
-  const ex = 2.8, ey = -2;
+  const ex = 2.6, ey = -1.6;
   if (P.eye === 2 || P.eye === 4) { c.strokeStyle = '#2a1408'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(ex - 1.2, ey + 0.4); c.lineTo(ex + 1.4, ey + 0.6); c.stroke(); }
   else if (P.eye === 3) { c.strokeStyle = '#2a1408'; c.lineWidth = 0.65; c.beginPath(); c.moveTo(ex - 1, ey - 1); c.lineTo(ex + 1.2, ey + 1); c.moveTo(ex + 1.2, ey - 1); c.lineTo(ex - 1, ey + 1); c.stroke(); }
   else {
-    ellipse(c, ex, ey, 1.5, P.eye === 5 || P.eye === 6 ? 1.3 : 1.6, '#ffffff');
-    ellipse(c, ex + 0.5, ey + (P.eye >= 5 ? 0.5 : 0.1), 0.85, 0.85, P.eye === 1 ? '#2a8a2a' : '#1a3a18');
+    ellipse(c, ex, ey, 1.9, P.eye === 5 || P.eye === 6 ? 1.6 : 2, '#ffffff');
+    ellipse(c, ex + 0.6, ey + (P.eye >= 5 ? 0.6 : 0.1), 1.1, 1.1, P.eye === 1 ? '#1a7a2a' : '#101010');
     c.fillStyle = '#fff'; c.fillRect(ex + 0.2, ey - 0.4, 0.5, 0.5);
     if (P.eye === 1) { c.strokeStyle = LP.beardD; c.lineWidth = 0.8; c.beginPath(); c.moveTo(ex - 2, ey - 2.4); c.lineTo(ex + 2, ey - 1.6); c.stroke(); }          // азартная бровь
     if (P.eye >= 5) { c.strokeStyle = LP.beardD; c.lineWidth = 0.7; c.beginPath(); c.moveTo(ex - 2, ey - 1.4); c.lineTo(ex + 2, ey - 2.4); c.stroke(); }          // скорбная бровь домиком
-    if (P.eye === 6) { c.fillStyle = '#9ad8ff'; c.fillRect(ex + 1.6, ey + 1.6, 1, 2); c.fillRect(ex + 1.8, ey + 3.2, 0.6, 0.6); }
+    if (P.eye === 6) { c.fillStyle = '#9ad8ff'; c.fillRect(ex + 1.6, ey + 1.6, 1, 1.6); }
   }
   // рот в бороде
-  if (P.mouth > 0.3) ellipse(c, 3.2, 6.4, 1.6, 1 + P.mouth * 1.2, '#4a1408');
-  else if (P.mouth < -0.3) { c.strokeStyle = '#4a1408'; c.lineWidth = 0.7; c.beginPath(); c.arc(3.2, 8, 1.7, 3.6, 5.8); c.stroke(); }
-  else { c.strokeStyle = '#4a1408'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(2, 6.2); c.lineTo(4.6, 6.4); c.stroke(); }
+  if (P.mouth > 0.3) ellipse(c, 3.2, 5.2, 1.5, 0.8 + P.mouth * 1, '#4a1408');
+  else if (P.mouth < -0.3) { c.strokeStyle = '#4a1408'; c.lineWidth = 0.7; c.beginPath(); c.arc(3.2, 6.8, 1.6, 3.6, 5.8); c.stroke(); }
+  else { c.strokeStyle = '#4a1408'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(2, 5.2); c.lineTo(4.6, 5.4); c.stroke(); }
   // шляпа: высокая, чёрная лента, большая золотая пряжка
   c.save();
   c.translate(0, -4.6); c.rotate(P.hat + (P.tip ? -0.22 : 0));
@@ -237,15 +249,7 @@ function drawLep(c, P) {
   c.fillStyle = '#7ae070'; for (const [dx, dy] of [[-3.6, -2.4], [-3.6, -1.2], [-2.8, -1.8]]) c.fillRect(dx, dy, 0.8, 0.8);
   c.restore();
   c.restore();
-  // ближняя рука
-  const nh = P.rh;
-  const na = armTo(sh.near, nh, false);
-  lepLimb(c, sh.near, na.e, na.b, 3, 2.6, k(LP.coat), k(LP.coat));
-  c.fillStyle = k(LP.shirt); c.fillRect(na.b[0] - 1.6, na.b[1] - 1.2, 3.2, 2.4);       // манжета
-  ellipse(c, na.b[0], na.b[1] + (P.ep === 'cheek' ? -0.4 : 0), 1.6, 1.6, k(LP.skin));
-  // слиток в руках
-  if (P.ingot === 1) lepIngot(c, na.b[0] + 1.6, na.b[1] - 0.2, -0.3, 0.9);
-  if (P.ingot === 2) lepIngot(c, na.b[0] + 1.4, na.b[1] - 2.6, -0.4, 1.0);
+  if (armHigh) nearArm();
   c.restore();
   // искры: щелчок каблуков, звёздочки, золотая россыпь
   if (P.click) { c.fillStyle = '#fff6b0'; for (const [dx, dy] of [[-3, -3], [3, -3.6], [0, -5.6], [-5, -5], [5, -6]]) c.fillRect(P.x + dx, dy, 1, 1); }
