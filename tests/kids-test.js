@@ -11,7 +11,7 @@ const h = sim.h;
 const food = 'for (const s of Game.buildings) if (s.isStore()) { s.stock.bread = (s.stock.bread||0) + 200; s.stock.sausage = (s.stock.sausage||0) + 100; break; }';
 h.run(food);
 // три гномёнка от двух пар, день без дождя
-h.run(`Game.time = 30; WX.k = 0; for (const u of Game.units) if (famOn(u)) famOf(u);
+h.run(`Game.time = 30; WX.k = 0; WX.target = 0; WX.nextRain = 1e12; for (const u of Game.units) if (famOn(u)) famOf(u);
   { const m = Game.units.filter(u => famOn(u)); m[0].fam.sx = 'm'; m[1].fam.sx = 'f'; m[1].fam.a = 10; m[2].fam.sx = 'm'; m[3].fam.sx = 'f'; m[3].fam.a = 10;
     famWed(m[0], m[1]); famWed(m[2], m[3]); famBirth(m[1], m[0]); famBirth(m[1], m[0]); famBirth(m[3], m[2]);
     globalThis.__kids = Game.units.filter(u => u.type === 'kid').map(u => u.id); for (const k of __kids) { const u = Game.unitMap.get(k); u.food = 1; u.kpAt = 1e9; } }`);
@@ -39,7 +39,7 @@ ok(fall > 0, 'ни одна чурка не разлетелась');
 ok(h.run('GROUPS.length') <= 2, 'групп больше потолка');
 
 // ---- снежки (зимой)
-h.run(`Game.sea.fixed = 2; Game.sea.snow = 1; Game.time = Math.ceil(Game.time / CYCLE) * CYCLE + 40; WX.k = 0; gameNext = 0; GROUPS.length = 0; Game.games.length = 0;
+h.run(`Game.sea.fixed = 2; Game.sea.snow = 1; Game.time = Math.ceil(Game.time / CYCLE) * CYCLE + 40; WX.k = 0; WX.target = 0; WX.nextRain = 1e12; gameNext = 0; GROUPS.length = 0; Game.games.length = 0;
   for (const k of __kids) { const u = Game.unitMap.get(k); u.gp = null; u.food = 1; u.kpAt = 1e9; }`);
 for (let t = 0; t < 6; t++) {      // место и компания подбираются случайно, а клетка могла оказаться недоступной — пробуем другого заводилу
   play(t % 3, 'snow'); S.runFor(sim, 10, 0.5, () => {});
@@ -56,11 +56,11 @@ ok(flew && hit, 'снежки не летали или не попадали');
 h.run('Game.sea.fixed = null; Game.sea.snow = 0; Game.sea.fixed = 0;');
 
 // ---- песочные замки
-h.run(`Game.time = Math.ceil(Game.time / CYCLE) * CYCLE + 40; WX.k = 0;`);
+h.run(`Game.time = Math.ceil(Game.time / CYCLE) * CYCLE + 40; WX.k = 0; WX.target = 0; WX.nextRain = 1e12;`);
 let spot = h.run('__kids.findIndex(k => !!sandSpot(Game.unitMap.get(k)))');
 if (spot >= 0) {
   h.run(`{ const u = Game.unitMap.get(__kids[${spot}]); const s = sandSpot(u); u.x = s.sx + 0.5; u.y = s.sy + 0.5; globalThis.__sc = s; globalThis.__si = ${spot}; }`);
-  h.run(`{ const k = ${kid('__si')}; k.proc = (function* () { yield* sandGen(k); })(); k.action = null; k.anim = null; k.kpAt = Game.time + 999; }`);
+  h.run(`{ const k = ${kid('__si')}; k.proc = (function* () { yield* sandGen(k, __sc); })(); k.action = null; k.anim = null; k.kpAt = Game.time + 999; }`);
   S.runFor(sim, 30, 0.5, () => {});
   ok(h.run('sandCount()') === 1, 'замок не заложен');
   // сохранение и загрузка
@@ -76,13 +76,13 @@ if (spot >= 0) {
   S.runFor(sim, 5, 0.5, () => {});
   ok(h.run('sandCount()') === 0, 'замок не исчез после смыва');
   // дождь смывает
-  h.run('{ const s = __sc; World.obj[idx(s.cx, s.cy)] = { t: "sandc", v: 2, b: Game.time - 30, bd: 12 }; WX.k = 0.9; Math.random = () => 0.1; sandTick(3); Math.random = __rnd; WX.k = 0; }');
+  h.run('{ const s = __sc; World.obj[idx(s.cx, s.cy)] = { t: "sandc", v: 2, b: Game.time - 30, bd: 12 }; WX.k = 0.9; Math.random = () => 0.1; sandTick(3); Math.random = __rnd; WX.k = 0; WX.target = 0; WX.nextRain = 1e12; }');
   ok(h.run('World.obj[idx(__sc.cx, __sc.cy)].w > 0'), 'дождь не смыл замок');
   h.run('World.obj[idx(__sc.cx, __sc.cy)] = null');
 } else console.log('  (на этой карте нет песка у воды — замки пропущены)');
 
 // ---- приручение: 80 % и укус хищника
-h.run(`Math.random = __rnd; Game.time = Math.ceil(Game.time / CYCLE) * CYCLE + 40; WX.k = 0; GROUPS.length = 0; Game.games.length = 0;
+h.run(`Math.random = __rnd; Game.time = Math.ceil(Game.time / CYCLE) * CYCLE + 40; WX.k = 0; WX.target = 0; WX.nextRain = 1e12; GROUPS.length = 0; Game.games.length = 0;
   for (const k of __kids) { const u = Game.unitMap.get(k); u.gp = null; u.food = 1; u.injury = null; }
   Game.animals = Game.animals.filter(a => !a.owner);`);
 const tame = (kind, rnd) => {

@@ -266,8 +266,8 @@ function sandSpot(u) {
   return { cx: p[1], cy: p[2], sx: p[1], sy: p[2] + 1 };
 }
 
-function* sandGen(u) {
-  const sp = sandSpot(u);
+function* sandGen(u, spot) {
+  const sp = spot || sandSpot(u);
   if (!sp) return;
   if (!(yield { walk: [sp.sx, sp.sy], offroad: true })) return;
   const i = idx(sp.cx, sp.cy);
