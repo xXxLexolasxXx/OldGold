@@ -928,3 +928,37 @@ body.mobile.show-mm.mm-big .mm-wrap { left: 50%; right: auto; transform: transla
 /* стартовое меню: «Продолжить», «Новая игра», «Мультиплеер» и «Ещё»; остальное — после «Ещё» (js/startmenu.js) */
 .sm-panel[data-panel="main"]:not(.sm-more) > .sm-btn:not([data-sm="continue"]):not([data-sm="new"]):not([data-sm="mp"]):not([data-sm="more"]),
 .sm-panel[data-panel="main"].sm-more > .sm-btn:is([data-sm="continue"], [data-sm="new"], [data-sm="mp"]) { display: none; }
+
+/* ---------- Порядок слоёв и отступы HUD (аудит перекрытий) ---------- */
+/* верхняя полоса выше целей, вызова дня и обучения, иначе их плашки накрывают выпадающие меню (скорость, звук, ресурсы) */
+#topbar { z-index: 25; }
+#topbar:has(.dd.open) { z-index: 65; }
+body.mobile.show-mm #panel { z-index: 65; }   /* миникарта лежит внутри #panel: поднимаем панель целиком — выше окна обучения (z 60) и целей */
+body.mobile.sheet-tab #nq-pill, body.mobile.sheet-info #nq-pill { display: none; }   /* значок «✉ N» не лезет на открытую шторку */
+body.mobile:has(#hint:not(.hidden)) #pause-banner { display: none; }   /* баннер паузы и подсказка делят одно место — пока висит подсказка, баннер ждёт */
+/* «Снежок»: кнопка зимнего действия — в углу, а не по центру внизу (там нижняя панель, подсказки, баннер паузы) */
+#snow-btn { position: absolute; right: 12px; bottom: 14px; z-index: 6; padding: 7px 14px; background: #3a2a18; color: #e8f4ff; border: 2px solid #0a0705;
+  box-shadow: inset 0 0 0 1px #9a6c3c, 0 2px 0 rgba(0,0,0,.5); font: 14px Kurale, Georgia, serif; cursor: pointer; text-shadow: 0 0 3px #000; }
+body.mobile #snow-btn .kb { display: none; }   /* клавиши на телефоне нет */
+body.mobile:not(.land) #snow-btn { left: calc(8px + 44px + 6px); right: auto; bottom: calc(66px + env(safe-area-inset-bottom)); min-width: 44px; min-height: 44px; padding: 0 10px; font-size: 13px; }
+/* телефон, портрет: низ слева — ряд «герой, снежок, оповещения»; баннер паузы и подсказка выше ряда, а при панели инструмента (справа) уже неё */
+body.mobile:not(.land) #nq-pill { top: auto; right: auto; left: calc(8px + 44px + 6px); bottom: calc(66px + env(safe-area-inset-bottom)); height: 44px; box-sizing: border-box; }
+body.mobile:not(.land) #pause-banner { bottom: calc(116px + env(safe-area-inset-bottom)); }
+body.mobile:not(.land) #hint { bottom: calc(160px + env(safe-area-inset-bottom)); }
+body.mobile:not(.land):has(#mtool:not(.hidden)) :is(#hint, #pause-banner) { left: 8px; transform: none; width: auto; max-width: calc(100% - 156px); animation: none; }
+body.mobile:has(#mtool:not(.hidden)) #hero-card { display: none !important; }   /* карточка героя не закрывает ✓ ↻ ✕ */
+
+/* ---------- Вырез камеры и тёмный фон (телефон боком) ---------- */
+/* страница рисуется во весь экран (viewport-fit=cover), всё, что не занято холстом, — тёмное; UA-белый («canvas» страницы) не просвечивает */
+:root { color-scheme: dark; background: #1a130d; }
+html, body { width: 100%; background-color: #1a130d; }
+#app { width: 100%; background: #1a130d; }
+body.mobile #app { position: fixed; inset: 0; height: auto; }   /* ровно по окну, а не по 100% высоты родителя: после поворота не остаётся полосы */
+/* стартовое меню и окна поверх карты не заходят под вырез камеры */
+#start-menu { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+.sm-panel { max-width: calc(100vw - 2 * max(16px, env(safe-area-inset-left), env(safe-area-inset-right))); box-sizing: border-box; }
+body.mobile #guide, body.mobile #chron, body.mobile #land-modal { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); box-sizing: border-box; }
+/* в зиму «Снежок» стоит рядом с героем, значок оповещений — правее него */
+body.mobile:not(.land):has(#snow-btn:not([style*="none"])) #nq-pill { left: calc(8px + 44px + 6px + 106px); }
+/* открытая карточка героя (портрет, снизу слева) занимает место подсказки и баннера паузы — они ждут, пока карточку не закроют */
+body.mobile:not(.land):has(#hero-card[style*="block"]) :is(#hint, #pause-banner) { display: none; }

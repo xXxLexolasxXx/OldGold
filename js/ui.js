@@ -221,7 +221,7 @@ function setTool(tool) {
   document.querySelectorAll('.bbtn, .tools button').forEach(b => b.classList.remove('active'));
   mobileTool(tool);
   toolHint(tool);
-  if (!tool) return;
+  if (!tool) { R.hover = null; return; }
   if (tool.kind === 'build') document.querySelector(`.bbtn[data-type="${tool.type}"]`)?.classList.add('active');
   if (tool.kind === 'road') document.getElementById('tool-road').classList.add('active');
   if (tool.kind === 'erase') document.getElementById('tool-erase').classList.add('active');
