@@ -87,7 +87,9 @@ h.run(`Math.random = __rnd; Game.time = Math.ceil(Game.time / CYCLE) * CYCLE + 4
   Game.animals = Game.animals.filter(a => !a.owner);`);
 const tame = (kind, rnd) => {
   h.run(`{ const k = ${kid(2)}; const [x, y] = randomFreeNear(Math.floor(k.x), Math.floor(k.y), 3, 6, isWalkable) || [Math.floor(k.x) + 2, Math.floor(k.y)];
-    const a = makeAnimal('${kind}', x, y); Game.animals.push(a); globalThis.__pet = a; k.injury = null; k.proc = tameGen(k, a); k.action = null; Math.random = ${rnd}; }`);
+    const a = makeAnimal('${kind}', x, y); Game.animals.push(a); globalThis.__pet = a; k.injury = null; k.proc = tameGen(k, a); k.action = null; Math.random = ${rnd};
+    for (const t of ['ents', 'ghosts', 'skels', 'raiders']) if (Array.isArray(Game[t])) Game[t].length = 0;
+    Game.animals = Game.animals.filter(x => x.kind !== 'goose'); }`);   // гусь или нечисть рядом спугнут гномёнка — проверка не о том
   S.runFor(sim, 14, 0.25, () => {});
   h.run('Math.random = __rnd');
   return { owner: h.run('__pet.owner'), inj: h.run(`${kid(2)}.injury`), id: h.run(`${kid(2)}.id`) };
