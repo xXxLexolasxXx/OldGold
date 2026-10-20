@@ -20,6 +20,9 @@ const Spire = { prep: null, prepT: -9, path: null, pathT: -99, ui: null };
 
 const spireHome = F => [Math.floor(F.tx + 1.5), F.ty + 4];      // перед дверью, где стоит Малгор
 const spireBoss = () => Game.raiders && Game.raiders.find(N => N.k === 'malgor' && N.st !== 'die' && N.st !== 'vanish') || null;
+// куда идти сейчас: к стражу текущего яруса (guards.js), а когда все пали — к Малгору
+const spireFront = F => (typeof guardsFront === 'function' && guardsFront()) || spireHome(F);
+const spireFoe = () => spireBoss() || (typeof guardsCurrent === 'function' ? guardsCurrent() : null);
 const spireOn = () => { const F = Game.foe; return !!F && !F.defeated; };
 // показывать ли подсказки похода: глава 6 сценария, или шпиль уже найден
 function spireActive() {
@@ -84,7 +87,7 @@ function spireCarvePath(sx, sy, tx, ty) {
 function spireEnsureRoute(sx, sy) {
   const F = Game.foe;
   if (!F) return { ok: false, why: 'шпиля нет на этой карте' };
-  const h = spireNearWalk(...spireHome(F));
+  const h = spireNearWalk(...spireFront(F));
   if (!h) return { ok: false, why: 'подножие шпиля завалено' };
   const st = spireNearWalk(sx, sy) || [sx, sy];
   if (findPath(st[0], st[1], h[0], h[1])) return { ok: true, carved: 0 };
@@ -147,14 +150,14 @@ function spireFoodStock() {
 function spireRouteState(h) {
   if (Game.time - Spire.pathT < 3 && Spire.path) return Spire.path;
   Spire.pathT = Game.time;
-  const F = Game.foe, home = spireNearWalk(...spireHome(F));
+  const F = Game.foe, fr = spireFront(F), home = spireNearWalk(...fr);
   const from = h && !h.dead ? [Math.floor(h.x), Math.floor(h.y)] : spireVillage();
   const st = spireNearWalk(from[0], from[1]) || from;
   let p = home ? findPath(st[0], st[1], home[0], home[1]) : null;
   Spire.path = { ok: !!p, len: p ? p.length : 0, camp: null, why: '' };
   if (p) {
     // привал: первая клетка пути ближе SPIRE_CAMP к Малгору
-    const hx = F.tx + 1.5, hy = F.ty + 3.2;
+    const hx = fr[0] + 0.5, hy = fr[1] - 0.8;
     let camp = p[p.length - 1];
     for (const c of p) if (Math.hypot(c[0] - hx, c[1] - hy) < SPIRE_CAMP) { camp = c; break; }
     Spire.path.camp = camp;
@@ -178,9 +181,9 @@ function spirePrep() {
   ];
   if (!coop) items.push({ t: `Провиант: ${SPIRE_FOOD} хлеба или колбасы на складе (есть ${Math.floor(food)})`, ok: food >= SPIRE_FOOD });
   items.push({ t: R.ok ? `Путь до шпиля открыт (${R.len} кл.)` : 'Путь: ' + R.why, ok: R.ok, must: true });
-  const boss = spireBoss();
-  const near = !!(h && boss && Math.hypot(h.x - F.tx - 1.5, h.y - F.ty - 3) < SPIRE_CAMP + 4);
-  return { items, ready: items.every(i => i.ok), can: alive, near, boss: boss ? { hp: Math.round(boss.hp), mhp: boss.mhp, fz: boss.fz || boss.phase || 1, shield: !!boss.shield } : null, going: !!Game.spireGo };
+  const boss = spireFoe(), fr = spireFront(F);
+  const near = !!(h && boss && Math.hypot(h.x - fr[0], h.y - fr[1]) < SPIRE_CAMP + 4);
+  return { items, ready: items.every(i => i.ok), can: alive, near, boss: boss ? { hp: Math.round(boss.hp), mhp: boss.mhp, fz: boss.fz || boss.phase || 1, shield: !!boss.shield, name: boss.k === 'malgor' ? 'Малгор' : FSPEC[boss.k].name, gk: FSPEC[boss.k].gk || '' } : null, going: !!Game.spireGo };
 }
 
 // ---------- Приказы ----------
@@ -229,9 +232,9 @@ function spireGo() {
 
 // в бой: напасть на Малгора (с привала или откуда угодно)
 function spireFight() {
-  const h = Game.hero, N = spireBoss();
+  const h = Game.hero, N = spireFoe();
   if (!h || h.dead || !N) return;
-  issueCmd(h, { kind: 'attack', f: { kind: 'foe', o: N }, tx: Math.floor(N.x), ty: Math.floor(N.y), label: 'Бой с Малгором' });
+  issueCmd(h, { kind: 'attack', f: { kind: 'foe', o: N }, tx: Math.floor(N.x), ty: Math.floor(N.y), label: N.k === 'malgor' ? 'Бой с Малгором' : 'Бой: ' + FSPEC[N.k].name });
 }
 
 // привал у подножия: отряд подкрепился (на симуляции; в коопе — по героям игроков у шпиля)
@@ -241,7 +244,8 @@ function spireCampTick() {
   const G = Game.spireGo;
   for (const h of Game.units) {
     if (!h.hero || h.dead || h._spireCamp === F.tx * 1000 + F.ty) continue;
-    if (Math.hypot(h.x - F.tx - 1.5, h.y - F.ty - 3.2) > SPIRE_CAMP + 2.5) continue;
+    const fr = spireFront(F);
+    if (Math.hypot(h.x - fr[0] - 0.5, h.y - fr[1] + 0.8) > SPIRE_CAMP + 2.5) continue;
     if (h === Game.hero && !G && !(typeof isServerSim === 'function' && isServerSim())) continue;   // пришёл сам, без похода — без привала
     h._spireCamp = F.tx * 1000 + F.ty;
     const full = !G || G.prov >= SPIRE_FOOD;
@@ -303,13 +307,14 @@ function spirePrepHTML() {
   let x = '<div class="gh-sub">Поход к Чёрному шпилю</div>';
   if (P.boss && P.near) {
     const pc = Math.max(0, Math.round(100 * P.boss.hp / P.boss.mhp));
-    x += `<div class="sp-boss"><div class="sp-bar"><i style="width:${pc}%"></i></div><span>Малгор ${P.boss.hp}/${P.boss.mhp} · ${spEsc(PH[P.boss.fz] || '')}${P.boss.shield ? ' · щит!' : ''}</span></div>`;
+    x += `<div class="sp-boss"><div class="sp-bar"><i style="width:${pc}%"></i></div><span>${spEsc(P.boss.name)} ${P.boss.hp}/${P.boss.mhp}${P.boss.gk ? '' : ' · ' + spEsc(PH[P.boss.fz] || '')}${P.boss.shield ? ' · щит!' : ''}</span></div>`;
   } else {
     x += '<ul class="small sp-list">' + P.items.map(i => `<li class="${i.ok ? 'ok' : i.must ? 'bad' : ''}"><span>${i.ok ? '✔' : i.must ? '✖' : '○'} ${spEsc(i.t)}</span></li>`).join('') + '</ul>';
     x += `<div class="gh-hint">${P.ready ? 'Всё готово — можно выступать.' : P.can ? 'Идти можно и так, но ○ — это риск: Малгор бьёт сильно, а поражение — возврат к костру.' : 'Сейчас не выйти: смотрите ✖.'}</div>`;
   }
   x += '<div class="sp-btns">';
-  if (P.boss && P.near) x += '<button data-sp="fight" class="primary">В бой с Малгором!</button>';
+  if (typeof guardsTotal === 'function' && Game.foe.tiers && !Game.foe.tiers.none) x = x.replace('</div>', `</div><div class="small muted">Ярусы шпиля: стражей побеждено ${guardsDone()}/${guardsTotal()}</div>`);
+  if (P.boss && P.near) x += `<button data-sp="fight" class="primary">${P.boss.gk ? 'В бой со стражем!' : 'В бой с Малгором!'}</button>`;
   else x += `<button data-sp="go" class="primary"${P.can ? '' : ' disabled'}>${P.going ? 'Снова в поход ▸' : 'Выступить в поход ▸'}</button>`;
   x += '<button data-sp="show">Показать шпиль</button></div>';
   return x;

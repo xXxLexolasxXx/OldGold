@@ -26,8 +26,8 @@ for (const seed of SEEDS) {
   ok(taps.every(k => k === 'attack'), `сид ${seed}: тап по башне: ${taps}`);
 
   // завал: кольцо скал вокруг подножия — тропа прорубается
-  const carve = J(`const F = Game.foe, cx = F.tx + 1.5, cy = F.ty + 3;
-    for (let y = F.ty - 12; y <= F.ty + 14; y++) for (let x = F.tx - 12; x <= F.tx + 14; x++) {
+  const carve = J(`const F = Game.foe, fr = spireFront(F), cx = fr[0] + 0.5, cy = fr[1] + 0.5;
+    for (let y = Math.floor(cy) - 12; y <= cy + 12; y++) for (let x = Math.floor(cx) - 12; x <= cx + 12; x++) {
       if (!inb(x, y)) continue; const d = Math.hypot(x - cx, y - cy); if (d >= 8 && d < 10 && !World.bmap[idx(x, y)]) World.terrain[idx(x, y)] = T_ROCK; }
     PF.regT = -1e9; const v = spireVillage(); const r = spireEnsureRoute(v[0], v[1]); return r;`);
   ok(carve.ok && carve.carved > 0, `сид ${seed}: тропа через скалы не прорублена ${JSON.stringify(carve)}`);
@@ -43,16 +43,31 @@ for (const seed of SEEDS) {
   const food0 = J('return spireFoodStock()');
   J('spireGo(); return 1;');
   ok(J('return !!Game.spireGo && !!Game.hero.cmd') && food0 - J('return spireFoodStock()') === 10, `сид ${seed}: поход не начался или провиант не взят`);
-  let camp = false, won = false, phases = new Set(), t = 0;
-  for (; t < 900 && !won; t += 5) {
+  let camp = false, won = false, phases = new Set(), t = 0, gmax = 0, midSave = null;
+  const tiers = J('const T = Game.foe.tiers; return T ? { n: T.n, tw: T.towers.length } : null');
+  ok(tiers && tiers.n >= 3 && tiers.tw >= 4, `сид ${seed}: ярусы шпиля не поднялись ${JSON.stringify(tiers)}`);
+  for (; t < 2400 && !won; t += 5) {
     S.runFor(sim, 5, 5, () => {});
-    const s = J(`const N = spireBoss(), h = Game.hero, H = h.hero; if (H.hp < H.maxhp * 0.5 && !(H.downT > Game.time)) H.hp = H.maxhp; h.food = 1;
+    const s = J(`const N = spireFoe(), h = Game.hero, H = h.hero; H.maxhp = Math.max(H.maxhp, H._tmax || (H._tmax = H.maxhp)); if (H.hp < H.maxhp * 0.5 && !(H.downT > Game.time)) H.hp = H.maxhp; h.food = 1;
       if (N && !h.cmd && !(H.downT > Game.time)) spireFight();
-      return { camp: !!h._spireCamp, fz: N ? N.fz : 0, hp: N ? Math.round(N.hp) : 0, dead: !!Game.foe.defeated, over: Game.goal.over && Game.goal.over.res };`);
-    camp = camp || s.camp; if (s.fz) phases.add(s.fz);
+      const B = spireBoss(); return { camp: !!h._spireCamp, gd: guardsDone(), fz: B ? B.fz : 0, hp: N ? Math.round(N.hp) : 0, dead: !!Game.foe.defeated, over: Game.goal.over && Game.goal.over.res };`);
+    camp = camp || s.camp; if (s.fz) phases.add(s.fz); gmax = Math.max(gmax, s.gd);
+    if (t % 40 === 0) {                       // отрисовка всего, что есть на подъёме (холст-заглушка: ловит ошибки кода рисования)
+      const e = J(`try { const c = document.createElement('canvas').getContext('2d'), F = Game.foe, list = [];
+        drawSkeletons(list, c, F.tx - 40, F.ty - 40, F.tx + 40, F.ty + 40); for (const [, fn] of list) fn();
+        for (const N of Game.raiders) { foeDrawRaider(c, N); N.hurtT = Game.time; foeDrawRaider(c, N); N.hurtT = -9; }
+        gdDrawEclipse(c); return { n: list.length }; } catch (e) { return { err: String(e && e.stack || e).slice(0, 300) }; }`);
+      ok(!e.err, `сид ${seed}: ошибка отрисовки: ${e.err}`);
+    }
+    if (s.gd === 1 && !midSave) {             // бой можно прервать: сохранение посреди подъёма
+      midSave = J(`const s = JSON.parse(JSON.stringify(serializeGame())); applySave(s); const T = Game.foe.tiers;
+        return { open: T.open, guards: Game.raiders.filter(N => N.gi != null).length, boss: !!spireBoss(), wall: T.gates[1].filter(k => World.bmap[k] === -1).length, n: T.n };`);
+      ok(midSave.open === 1 && midSave.guards === midSave.n - 1 && !midSave.boss && midSave.wall > 0, `сид ${seed}: сейв посреди подъёма ${JSON.stringify(midSave)}`);
+    }
     won = s.dead && s.over === 'win';
   }
   ok(camp, `сид ${seed}: привал у подножия не случился`);
+  ok(gmax === (tiers && tiers.n), `сид ${seed}: побеждено стражей ${gmax}/${tiers && tiers.n}`);
   ok(won, `сид ${seed}: Малгор не побеждён за ${t} с (фазы ${[...phases]})`);
   ok(phases.has(3) || won && phases.size >= 2, `сид ${seed}: бой прошёл не все фазы: ${[...phases]}`);
   if (won) {
@@ -67,7 +82,7 @@ for (const seed of SEEDS) {
   S.runFor(sim, 20, 10, () => {});
   ok(!sim.errors.length, `сид ${seed}: исключения: ` + sim.errors.slice(0, 3).join(' | '));
   const inv = S.checkInvariants(sim, 'шпиль'); for (const p of inv.problems) ok(false, `сид ${seed}: ` + p);
-  console.log(`сид ${seed}: тропа ${carve.carved} кл., привал ${camp}, фазы ${[...phases]}, победа ${won} за ${t} с`);
+  console.log(`сид ${seed}: ярусов ${tiers && tiers.n}, стражей ${gmax}, тропа ${carve.carved} кл., привал ${camp}, фазы ${[...phases]}, победа ${won} за ${t} с`);
 }
 
 // ---------- Кооп: тап по башне на сервере — бой с Малгором ----------
