@@ -70,6 +70,7 @@ scriptTest('abil: способности классов, ресурс, лече�
 scriptTest('icon: значки, названия и описания всех способностей, окно гильдии', 'icon-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
+scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
