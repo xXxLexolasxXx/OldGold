@@ -135,7 +135,7 @@ function n2Night(n) {
   const cap = n2Cap(n), cx = MAP_W >> 1, cy = MAP_H >> 1;
   N2.stamp = null;
   for (const L of Game.lairs) if (L.k !== 'pixie' && L.k !== 'frost') L.rk0 = Math.max(1, cap - 2);
-  const pool = Game.neutrals.filter(N => neuAlive(N) && !NSPEC[N.k].friendly && N.k !== 'frost' && n2Rk(N) < cap);
+  const pool = Game.neutrals.filter(N => neuAlive(N) && N.lair && !NSPEC[N.k].friendly && N.k !== 'frost' && n2Rk(N) < cap);
   pool.sort((a, b) => Math.hypot(b.x - cx, b.y - cy) * (0.7 + n2Rand() * 0.6) - Math.hypot(a.x - cx, a.y - cy) * (0.7 + n2Rand() * 0.6));
   // первым крепнет вожак — самый сильный из ещё не достигших потолка: так к поздним ночам в лесу есть звери высших рангов
   const lead = pool.reduce((m, N) => (!N.tg && (!m || n2Rk(N) > n2Rk(m)) ? N : m), null);
@@ -161,7 +161,7 @@ function N2_SCHED_UPTO(kind, n) { let c = 0; for (let k = 1; k <= n; k++) for (c
 function n2EnsureRank2(n) {
   if (n < 1 || Game.neutrals.some(N => neuAlive(N) && n2Rk(N) >= 2)) return;
   const cx = MAP_W >> 1, cy = MAP_H >> 1;
-  const c = Game.neutrals.filter(N => neuAlive(N) && !NSPEC[N.k].friendly && N.k !== 'frost').sort((a, b) => Math.hypot(b.x - cx, b.y - cy) - Math.hypot(a.x - cx, a.y - cy))[0];
+  const c = Game.neutrals.filter(N => neuAlive(N) && N.lair && !NSPEC[N.k].friendly && N.k !== 'frost').sort((a, b) => Math.hypot(b.x - cx, b.y - cy) - Math.hypot(a.x - cx, a.y - cy))[0];
   if (c) { n2SetRank(c, 2); logEvent('animal', `В лесу окреп ${NSPEC[c.k].name}: теперь 2 ранга`, c.x, c.y); }
 }
 
@@ -345,7 +345,7 @@ function n2RollThink(N, dt) {
     // гномтавр на скаку цокает
     if ((N.k === 'gtSpear' || N.k === 'gtBow') && N.st === 'chase' && !(N.galT > now)) { N.galT = now + 0.9; sfxAt('gtGallop', N.x * TILE, N.y * TILE, 0.35); }
     // начать патруль: с ростом дней всё дальше; ледяные и дружелюбные феи сидят дома
-    if (!tg && N.st === 'idle' && !S.friendly && N.k !== 'frost' && startDay() >= 2 && startOpen('neutrals')) {
+    if (!tg && N.lair && N.st === 'idle' && !S.friendly && N.k !== 'frost' && startDay() >= 2 && startOpen('neutrals')) {
       N.patT = (N.patT === undefined ? 20 + n2Rand() * 60 : N.patT) - dt;
       if (N.patT <= 0) {
         N.patT = 40 + n2Rand() * 50;
