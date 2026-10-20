@@ -265,13 +265,12 @@ const TUT_STEPS = [
     done: heroCmd,
   },
   {
-    ph: 'Бой', title: 'Заклинания',
-    text: () => `Нечисть — забота героя. <b>Огненный шар</b>${isMob() ? '' : ' (<kbd>F</kbd>)'} жжёт скелетов и наглые деревья, мана копится сама. Днём целей нет — просто попробуйте.`,
+    ph: 'Бой', title: 'Способности',
+    text: () => `Нечисть — забота героя. В углу экрана — панель способностей: <b>атака</b>${isMob() ? '' : ' (<kbd>Q</kbd>)'} бьёт ближайшего врага, а свои приёмы у каждого класса появятся после учёбы в гильдии${isMob() ? '' : ' (клавиши <kbd>1</kbd>–<kbd>5</kbd>)'}. ${isMob() ? 'Касание — применить, удержание — подсказка.' : 'Наведите — подсказка.'} Днём целей нет — просто попробуйте.`,
     focus: () => heroFocus(() => {
-      const fire = document.querySelector('#hero-card .hs[data-sk="fire"]');
-      // телефон: карточка героя свёрнута в иконку — второе касание портрета её выдвигает
-      if (!fire || !fire.getClientRects().length) return uiF('#hero-btn', 'Коснитесь портрета ещё раз — выдвинется карточка героя.');
-      return uiF('#hero-card .hs[data-sk="fire"]', isMob() ? 'Коснитесь «Огненного шара» дважды: первый раз — подсказка, второй — заклинание.' : 'Нажмите значок «Огненный шар» в карточке героя.');
+      const b = document.querySelector('#ab-bar [data-abu="u_atk"]');
+      if (!b || !b.getClientRects().length) return uiF('#hero-btn', 'Выберите героя — появится панель способностей.');
+      return uiF('#ab-bar [data-abu="u_atk"]', isMob() ? 'Коснитесь кнопки атаки — одно касание, без меню.' : 'Нажмите кнопку атаки на панели (или Q).');
     }),
     done: () => Tut.cast,
   },
@@ -387,11 +386,11 @@ function tutEls() {
     if (k === 'list') Tut.list.classList.toggle('open');
   });
   Tut.list.addEventListener('click', () => Tut.list.classList.toggle('open'));
-  // заклинание засчитываем и с клавиатуры, и из карточки героя
-  if (typeof hmCast === 'function' && !hmCast.tut) {
-    const raw = hmCast;
-    hmCast = function (k) { if (Tut.on) Tut.cast = true; return raw.apply(this, arguments); };
-    hmCast.tut = true;
+  // способность засчитываем и с клавиатуры, и с панели (heroabil.js тоже ставит Tut.cast)
+  if (typeof heroAbility === 'function' && !heroAbility.tut) {
+    const raw = heroAbility;
+    heroAbility = function (k) { if (Tut.on && (k === 'g_strike' || /^ab\d$/.test(k))) Tut.cast = true; return raw.apply(this, arguments); };
+    heroAbility.tut = true;
   }
 }
 

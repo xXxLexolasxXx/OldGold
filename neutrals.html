@@ -9,12 +9,13 @@ h3{margin:10px 10px 2px;color:#fff;text-shadow:0 1px 2px #000}
 .cell canvas{image-rendering:pixelated;background:#4f7a30}
 .cell span{font-size:10px;color:#fff;text-shadow:0 1px 2px #000}
 </style></head><body>
-<div id="bar"><b>Лесные нейтралы: покой 6 · ходьба 8 · БОЙ 9 · смерть 6 · торжество 4</b>
+<div id="bar"><b>Лесные нейтралы: покой 6 · ходьба 8 · БОЙ 9 · удар по нему 4 · смерть 6 · торжество 4</b>
 <label>масштаб <select id="sc"><option>2</option><option selected>3</option><option>4</option></select></label> <span id="err" style="color:#f88"></span></div>
 <div id="out"></div>
-<script src="js/config.js"></script><script src="js/world.js"></script><script src="js/sprites.js"></script><script src="js/pixel.js"></script><script src="js/world/neutralart.js"></script><script src="js/world/frostart.js"></script>
+<script src="js/config.js"></script><script src="js/world.js"></script><script src="js/sprites.js"></script><script src="js/pixel.js"></script><script src="js/world/neutralart.js"></script><script src="js/world/frostart.js"></script><script src="js/world/neutralart2.js"></script>
 <script>
-const GR = [['Покой', NA_FRAMES.idle], ['Ходьба', NA_FRAMES.walk], ['Бой (9)', NA_FRAMES.fight], ['Смерть (6)', NA_FRAMES.die], ['Торжество (4)', NA_FRAMES.win]];
+const GR = [['Покой', NA_FRAMES.idle], ['Ходьба', NA_FRAMES.walk], ['Бой (9)', NA_FRAMES.fight], ['Получение удара (4)', NA_FRAMES.hurt4], ['Смерть (6)', NA_FRAMES.die], ['Торжество (4)', NA_FRAMES.win]];
+const XN = { cast: 'Колдовство (6)', curse: 'Тёмное колдовство (6)', sleep: 'Сон (2)', curl: 'Сворачивание (4)', roll: 'Качение (8)', uncurl: 'Разворот (4)', bounce: 'Отскок (4)' };
 const NAMES = { ready: '1 стойка', step: '2 шаг', windup: '3 замах', strike: '4 удар', recover: '5 возврат', parry: '6 парирование', hurt: '7 урон', stagger: '8 шатание', roar: '9 рёв' };
 function draw() {
   const k = +document.getElementById('sc').value, out = document.getElementById('out'); out.innerHTML = '';
@@ -22,7 +23,7 @@ function draw() {
   for (const kind of Object.keys(NA_SPEC)) {
     if (only && only !== kind) continue;
     const h = document.createElement('h3'); h.textContent = NA_SPEC[kind].name; out.appendChild(h);
-    const extra = (NA_EXTRA[kind] || []).map(k => [k === 'cast' ? 'Колдовство (6)' : 'Сон (2)', NA_FRAMES[k]]);
+    const extra = (NA_EXTRA[kind] || []).map(k => [XN[k] || k, NA_FRAMES[k]]);
     for (const [gn, frames] of GR.concat(extra)) {
       const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
       for (const f of frames) {
@@ -34,7 +35,7 @@ function draw() {
       }
     }
     const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
-    for (const v of NA_LAIR_VARS) {
+    if (NA_LAIR[kind]) for (const v of NA_LAIR_VARS) {
       const s = naLairSprite(kind, v), cv = document.createElement('canvas'); cv.width = s.w * k; cv.height = s.h * k;
       const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(s.cv, 0, 0, cv.width, cv.height);
       const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = NA_LAIR[kind].name + (v === 'd' ? ' — разорено' : ' — кадр ' + (+v + 1)); d.appendChild(sp); row.appendChild(d);

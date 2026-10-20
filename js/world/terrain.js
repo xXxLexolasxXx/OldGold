@@ -38,7 +38,11 @@ function makeTex(seed, freq, octaves) {
 const TBAND = 8;
 const TERR = { bands: [], rb: [], mini: null, ready: false, lazy: false, make: null, stash: [], restoring: [], gen: 0 };
 
+// Виды земли (groundstyle.js, groundsets.js): у каждого биома карты свой набор; песок, камень и вода — по палитре биома
+function terrGroundOn() { if (typeof gsSetBiome !== 'function') return false; gsSetBiome(MapOpt.biome || 'meadow'); return true; }
+
 function terrFree() {
+  if (typeof gsFree === 'function') gsFree();
   TERR.gen++; TERR.stash = []; TERR.restoring = [];
   TERR.job = null;   // недостроенные полосы прежнего мира больше не нужны
   // прежние холсты (новая игра, загрузка) отпускаем сразу: на iOS/Android память холстов освобождается не по GC
@@ -251,6 +255,7 @@ function buildTerrain(seed) {
   };
 
   const nBands = Math.ceil(MAP_H / TBAND);
+  const gst0 = terrGroundOn();
   TERR.mini = mkCanvas(MAP_W * 3, MAP_H * 3);
   const mctx = TERR.mini.getContext('2d');
   const bandGen = function* (bi) {
@@ -260,6 +265,9 @@ function buildTerrain(seed) {
   const ctx = cv.getContext('2d');
   let img = ctx.createImageData(PW, bh);
   let D = img.data;
+  // биомы земли: вид и тон травы считаются по полосе заранее, цикл ниже берёт готовый цвет
+  let gst = terrGroundOn() ? gsMakeState('world', PW, bh, 0, y0px, seed, GRASS) : null;
+  if (gst) yield* gsBaseGen(gst);
   for (let ty = bty0; ty < bty1; ty++) for (let py = 0; py < TILE; py++) {   // построчно: можно прерваться после каждой строки
     const fy = (py + 0.5) / TILE;
     const wy = ty * TILE + py;
@@ -292,6 +300,10 @@ function buildTerrain(seed) {
           r += (dr - r) * dirt; g += (dg - g) * dirt; b += (db - b) * dirt;
         }
         let grassMask = 1 - dirt;
+        if (gst) {   // трава биома: ступени тона без шума, пятна земли тоже из биома
+          const gc = GS_HEXRGB[gst.col[(wy - y0px) * PW + wx]];
+          r = gc[0]; g = gc[1]; b = gc[2]; grassMask = 1;
+        }
 
         // песок / берег
         const sandW = smoothstep(0.32, 0.55, bil(fSand, c00, fx, fy) + (nC - 0.5) * 0.35);
@@ -326,7 +338,7 @@ function buildTerrain(seed) {
         // освещение рельефа
         const li = bil(light, c00, fx, fy);
         if (P.snow) { const k = 1 + (li - 1) * 0.4; r *= k * (li < 1 ? 0.96 : 1); g *= k; b *= k * (li < 1 ? 1.05 : 1); }   // тени на снегу — голубоватые, а не серо-бурые
-        else { r *= li; g *= li; b *= li; }
+        else { const lk = gst && grassMask > 0.5 ? 1 + (li - 1) * 0.3 : li; r *= lk; g *= lk; b *= lk; }   // траву холмы красят слабо: ступени тона чистые
 
         // вода (поверх, без рельефного света)
         const waterF = bil(fWater, c00, fx, fy) + (nC - 0.5) * 0.28;
@@ -351,7 +363,7 @@ function buildTerrain(seed) {
         }
 
         // зерно
-        const gr = P.snow ? 0.97 + nB * 0.06 : 0.93 + nB * 0.14;
+        const gr = gst && grassMask > 0.9 ? 1 : P.snow ? 0.97 + nB * 0.06 : 0.93 + nB * 0.14;   // зерно не лежит на траве биома
         const o = ((wy - y0px) * PW + wx) * 4;
         D[o] = r * gr; D[o + 1] = g * gr; D[o + 2] = b * gr; D[o + 3] = 255;
         GRASS[(wy - y0px) * PW + wx] = grassMask > 0.9 ? 1 : 0;
@@ -359,7 +371,10 @@ function buildTerrain(seed) {
     }
     yield;   // строка пикселей (5120 px): на медленном телефоне это ~5 мс — кусок не должен выходить за бюджет кадра
   }
-  yield* stampLeavesGen(D, PW, bh, seed + bi * 977, GRASS);
+  if (gst) {   // травинки, цветы, грибы, камни биома: клетки соседних рядов заходят в полосу, у каждой клетки свой генератор по сиду
+    yield* gsDecorGen(gst, D, 0, MAP_W - 1, Math.max(0, bty0 - 1), Math.min(MAP_H - 1, bty1), (tx, ty) => World.terrain[idx(tx, ty)] === T_GRASS);
+    gst = null;
+  } else yield* stampLeavesGen(D, PW, bh, seed + bi * 977, GRASS);
   ctx.putImageData(img, 0, 0);
   img = null; D = null;
   yield;
@@ -374,7 +389,7 @@ function buildTerrain(seed) {
   const q = ctx.getImageData(0, 0, PW, bh);
   for (let r0 = 0; r0 < bh; r0 += 4) {   // по 4 строки: рисунок дизера тот же, он считается от координат
     const rows = Math.min(4, bh - r0);
-    quantizeData(q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4), PW, rows, P.snow ? 3 : 9, 0, y0px + r0);   // снег — почти без дизеринга, иначе рябит
+    quantizeData(q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4), PW, rows, gst0 ? 0 : P.snow ? 3 : 9, 0, y0px + r0);   // снег — почти без дизеринга, иначе рябит
     yield;
   }
   ctx.putImageData(q, 0, 0);
@@ -436,16 +451,16 @@ function drawCrystalCluster(c, x, y, r) {
 
 // Кустики травы, цветы, камушки, камыш у воды — запекаются в землю.
 function bakeDecor(c, seed, ya = 0, yb = MAP_H) {
-  const P = biomePal(), bio = biomeDef(), swamp = MapOpt.biome === 'swamp';
+  const P = biomePal(), bio = biomeDef(), swamp = MapOpt.biome === 'swamp', gsOn = terrGroundOn();   // gsOn: травинки, цветы и камешки рисует groundstyle.js
   for (let y = ya; y < yb; y++) for (let x = 0; x < MAP_W; x++) {
     const r = mulberry32(((seed + 77) ^ Math.imul(y * MAP_W + x + 1, 2654435761)) >>> 0);   // у каждой клетки свой генератор — рисунок не зависит от порядка полос
     const t = World.terrain[idx(x, y)];
     const px = x * TILE, py = y * TILE;
     if (t === T_GRASS) {
-      const tufts = r() < 0.55 ? 1 + (r() * 3 | 0) : 0;
+      const tufts = !gsOn && r() < 0.55 ? 1 + (r() * 3 | 0) : 0;
       for (let k = 0; k < tufts; k++) drawTuft(c, px + 3 + r() * 26, py + 6 + r() * 24, r, P.tuft);
       const fl = r();
-      if (fl < P.flower) {
+      if (!gsOn && fl < P.flower) {
         const col = P.flCols[r() * P.flCols.length | 0];
         const fx = px + 4 + r() * 22, fy = py + 4 + r() * 22;
         for (let k = 0; k < 4 + r() * 5; k++) {
@@ -456,7 +471,7 @@ function bakeDecor(c, seed, ya = 0, yb = MAP_H) {
           c.fillRect(ax - 0.5, ay - 0.5, 2, 2);
         }
       }
-      if (r() < 0.05) drawPebble(c, px + 6 + r() * 20, py + 6 + r() * 20, 1.5 + r() * 2, r);
+      if (!gsOn && r() < 0.05) drawPebble(c, px + 6 + r() * 20, py + 6 + r() * 20, 1.5 + r() * 2, r);
       if (swamp && r() < 0.22) drawReeds(c, px + 4 + r() * 24, py + 10 + r() * 18, r);   // камыш и рогоз на кочках
     } else if (t === T_SAND) {
       let nearWater = false;

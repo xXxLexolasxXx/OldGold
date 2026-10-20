@@ -1,7 +1,7 @@
 'use strict';
 // Карточка героя, версия 2: компактная шапка (портрет, полоски здоровья/маны/опыта), две вкладки —
 // «Скиллы» (пиксельные значки 16×16: горячая клавиша, мана, перезарядка, уровень открытия, подсказка по наведению/тапу)
-// и «Герой» (характеристики, команда, снаряжение, рюкзак) — и взмахи оружия вместо красного флажка.
+// и «Герой» (характеристики, команда, снаряжение, рюкзак). С 0.10.69 в «Скиллах» — только способности класса (до пяти) — и взмахи оружия вместо красного флажка.
 // Подключается после heromana.js. В общей деревне (Coop) работает прежняя карточка.
 
 // ---------- Значки умений 16×16 (контур и поля добавляет abilIcon16) ----------
@@ -34,45 +34,38 @@ let heroCardTab = 'skills', heroCardSel = null;
 
 function heroSkills() {
   const h = Game.hero, H = h.hero, now = Game.time, L = [];
-  const left = k => Math.max(0, (H[k] || 0) - now);
-  if (typeof GCLS !== 'undefined' && H.clsKey && GCLS[H.clsKey] && typeof masteryOf === 'function' && masteryOf(H) != null)
-    L.push({ k: 'g_strike', run: 'g_strike', name: GCLS[H.clsKey].verb, key: 'Q', lvl: 1, cd: 0, left: 0, desc: `Приём класса «${GCLS[H.clsKey].name}»: бьёт ближайшего врага рядом` });
+  // только способности класса (до пяти, 0.10.69); атака, еда, привал и «домой» — на панели быстрых способностей (heroabil.js)
   const as = typeof heroAbils === 'function' ? heroAbils(H) : null;
-  if (as && typeof kitOn === 'function' && kitOn()) as.forEach((a, i) => L.push({
-    k: a.k, run: 'ab' + i, name: a.name, key: ABIL_KEYS[i].slice(3), lvl: a.lvl || 1, cd: a.cd,
-    left: Math.max(0, ((H.abCd || {})[a.k] || 0) - now), on: ((H.abT || {})[a.k] || 0) > now, desc: a.desc,
+  const rk = typeof abResKind === 'function' ? abResKind(H) : null;
+  if (as) as.forEach((a, i) => L.push({
+    k: a.k, run: 'ab' + i, name: a.name, key: a.passive ? '' : ABIL_KEYN[i], lvl: a.lvl || 1, cd: a.passive ? 0 : a.cd, passive: !!a.passive,
+    cost: a.cost || 0, res: rk, left: Math.max(0, ((H.abCd || {})[a.k] || 0) - now), on: ((H.abT || {})[a.k] || 0) > now, desc: a.desc,
   }));
-  L.push({ k: 'dash', run: 'dash', name: 'Рывок', key: '', lvl: 1, cd: DASH_CD, left: left('cdDash'), on: (h.dashUntil || 0) > now, desc: `Скорость ×1.4 на ${DASH_TIME} с` });
-  L.push({ k: 'cry', run: 'cry', name: 'Боевой клич', key: '', lvl: 3, cd: CRY_CD, left: left('cdCry'), desc: `Гномы в 9 клетках работают и ходят бодрее ${CRY_TIME} с` });
-  if (typeof hlOn === 'function' && hlOn()) {
-    L.push({ k: 'tp', run: 'tp', name: 'Телепорт', key: '', lvl: 1, cd: HL_TP_CD, left: left('cdTp'), desc: 'Герой уходит на базу — к большому костру или складу' });
-    L.push({ k: 'heal', run: 'heal', name: 'Малое лечение', key: 'E', lvl: 1, cd: HL_HEAL_CD, left: left('cdHeal'), desc: `+${Math.round(hlHealPart(H) * 100)}% здоровья себе, снимает раны герою, напарнику и гномам рядом` });
-    if (typeof HM_SPELLS !== 'undefined') for (const k of ['fire', 'ward']) {
-      const S = HM_SPELLS[k];
-      L.push({ k, run: k, name: S.name, key: S.key, lvl: S.lvl, cd: S.cd, left: left(S.cdk), cost: S.cost, desc: S.desc[0].toUpperCase() + S.desc.slice(1) });
-    }
-  }
   return L;
 }
+const hcResName = s => (s.res && typeof ABIL_RES !== 'undefined' ? ABIL_RES[s.res].name.toLowerCase() : 'мана');
+const hcLack = (s, H) => s.cost > 0 && typeof abResGet === 'function' && abResGet(H) < s.cost;
 
 function hcTile(s, H) {
-  const lock = (H.level || 1) < s.lvl, lack = !lock && s.cost > (H.mana || 0) && !(H.jars > 0);
-  const cl = ['hs']; if (lock) cl.push('lock'); else if (s.left > 0) cl.push('cd'); else if (lack) cl.push('lack'); if (s.on) cl.push('on'); if (heroCardSel === s.k) cl.push('sel');
+  const lock = (H.level || 1) < s.lvl, lack = !lock && hcLack(s, H);
+  const cl = ['hs']; if (lock) cl.push('lock'); else if (s.left > 0) cl.push('cd'); else if (lack) cl.push('lack'); if (s.on) cl.push('on'); if (s.passive) cl.push('pas'); if (heroCardSel === s.k) cl.push('sel');
   const pct = s.cd ? Math.min(100, Math.round(100 * s.left / s.cd)) : 0;
+  const rc = s.res && typeof ABIL_RES !== 'undefined' ? ABIL_RES[s.res].col : '#8ab8ff';
   return `<button class="${cl.join(' ')}" data-sk="${s.k}" aria-label="${s.name}"><img src="${abilIcon16(s.k)}" alt="">`
-    + (s.key ? `<i class="hs-key">${s.key}</i>` : '') + (s.cost ? `<b class="hs-mp">${s.cost}</b>` : '')
+    + (s.key ? `<i class="hs-key">${s.key}</i>` : '') + (s.cost ? `<b class="hs-mp" style="color:${rc}">${s.cost}</b>` : '') + (s.passive && !lock ? '<b class="hs-mp hs-pas">∞</b>' : '')
     + (lock ? `<em class="hs-lock">ур.${s.lvl}</em>` : s.left > 0 ? `<span class="hs-cd" style="height:${pct}%"></span><em>${Math.ceil(s.left)}</em>` : '')
     + '</button>';
 }
 
 function hcDetail(list, H, touch) {
   const s = list.find(x => x.k === heroCardSel);
-  if (!s) return `<div class="hs-det muted">${touch ? 'Нажмите на значок — подсказка, ещё раз — применить' : 'Наведите на значок — подсказка, клик — применить'}</div>`;
+  if (!s) return `<div class="hs-det muted">${!list.length ? 'Способностей пока нет: герой выучится им в гильдии — у каждого класса свои.' : touch ? 'Нажмите на значок — подсказка. Применять удобнее с панели в углу экрана.' : 'Наведите на значок — подсказка, клик — применить (или клавиши 1–5)'}</div>`;
   const lock = (H.level || 1) < s.lvl;
-  const meta = [s.cost ? `мана ${s.cost}` : '', s.cd ? `перезарядка ${s.cd} с` : '', s.lvl > 1 ? `с ${s.lvl} уровня` : '', s.key ? `клавиша ${s.key}` : ''].filter(Boolean).join(' · ');
-  const state = lock ? `откроется на ${s.lvl} уровне` : s.left > 0 ? `готово через ${Math.ceil(s.left)} с` : s.on ? 'действует' : s.cost > (H.mana || 0) && !(H.jars > 0) ? 'не хватает маны' : '';
+  const meta = s.passive ? ['пассивно, действует всегда', s.lvl > 1 ? `с ${s.lvl} уровня` : ''].filter(Boolean).join(' · ')
+    : [s.cost ? `${hcResName(s)} ${s.cost}` : '', s.cd ? `перезарядка ${s.cd} с` : '', s.lvl > 1 ? `с ${s.lvl} уровня` : '', s.key ? `клавиша ${s.key}` : ''].filter(Boolean).join(' · ');
+  const state = lock ? `откроется на ${s.lvl} уровне` : s.passive ? '' : s.left > 0 ? `готово через ${Math.ceil(s.left)} с` : s.on ? 'действует' : hcLack(s, H) ? `не хватает: ${hcResName(s)}` : '';
   return `<div class="hs-det"><div><b>${s.name}</b>${state ? ` <span class="hs-st">${state}</span>` : ''}</div><div>${s.desc}</div><div class="muted">${meta}</div>`
-    + (touch && !lock && s.left <= 0 ? `<button class="hs-cast" data-run="${s.run}">Применить</button>` : '') + '</div>';
+    + (touch && !lock && !s.passive && s.left <= 0 ? `<button class="hs-cast" data-run="${s.run}">Применить</button>` : '') + '</div>';
 }
 
 function hcSkillsHTML(touch) {
@@ -94,13 +87,13 @@ function hcHeroHTML() {
     const eq = (slot, label, un) => H.equip[slot] ? `${label}: <b>${hlName(H.equip[slot])}</b> <button data-hero="${un}" class="hp-sm">снять</button>` : '';
     const eqs = [eq('weapon', 'Оружие', 'unw'), eq('armor', 'Доспех', 'una'), eq('off', 'Левая рука', 'uno')].filter(Boolean);
     x += `<div class="irow small">${eqs.length ? eqs.join(' · ') : '<span class="muted">Без оружия и доспеха</span>'}</div>`;
+    if (typeof durHeroHTML === 'function') x += durHeroHTML(H);
     let inv = '<div class="hl-inv">';
     for (let i = 0; i < HL_INV; i++) {
       const it = H.inv[i];
       inv += it ? `<button class="hl-slot" data-hero="use${i}" title="${hlName(it.k)}${HL_GEAR[it.k] ? ' — надеть (шанс удачи 30%)' : HL_FOOD[it.k] ? ' — съесть' : ''}. Правый клик — выбросить"><img src="${iconURL('good', it.k, 2)}" alt="">${it.n > 1 ? `<i>${it.n}</i>` : ''}</button>` : '<span class="hl-slot empty"></span>';
     }
     x += `<div class="irow small muted">Рюкзак (${H.inv.filter(Boolean).length}/${HL_INV})</div>${inv}</div>`;
-    if (typeof HM_SPELLS !== 'undefined' && H.jars != null) x += `<div class="irow small">Банок маны: <b>${H.jars}</b> <button data-hero="drink" class="hp-sm" title="Выпить банку маны [G]" ${H.jars ? '' : 'disabled'}>Выпить</button></div>`;
   }
   if (typeof heroGuildBlock === 'function') {
     const sq = Game.units.filter(u => { const R = typeof recOf === 'function' && recOf(u); return R && !u.dead && !(R.train > 0); });
@@ -115,11 +108,12 @@ function hcHeader(H, h, mobile) {
   const lifeOn = typeof hlOn === 'function' && hlOn() && H.maxhp;
   const hp = lifeOn ? Math.max(0, Math.round(H.hp)) : 0;
   const hpc = lifeOn ? (hp / H.maxhp > 0.5 ? '#5ac04a' : hp / H.maxhp > 0.25 ? '#e0b030' : '#e04a3a') : '';
-  const mm = typeof hmMax === 'function' && H.mana != null ? hmMax(H) : 0;
+  // полоска ресурса класса: мана, ярость, энергия или вера
+  const rk = typeof abResKind === 'function' ? abResKind(H) : null, mm = rk ? abResMax(H) : 0, rv = rk ? Math.round(abResGet(H)) : 0, RS = rk ? ABIL_RES[rk] : null;
   const score = heroTownScore(), lo = H.level > 1 ? heroNeedFor(H.level - 1) : 0, hi = heroNeedFor(H.level);
   const xp = H.level >= HERO_LVL_MAX ? 100 : Math.max(0, Math.min(100, ((score - lo) / (hi - lo)) * 100));
   const bars = (lifeOn ? `<div class="hc-bar" title="Здоровье ${hp}/${H.maxhp}"><i style="width:${Math.round(100 * hp / H.maxhp)}%;background:${hpc}"></i><span>${hp}/${H.maxhp}</span></div>` : '')
-    + (mm ? `<div class="hc-bar mp" title="Мана ${Math.round(H.mana)}/${mm}"><i style="width:${Math.round(100 * H.mana / mm)}%"></i><span>${Math.round(H.mana)}/${mm}</span></div>` : '')
+    + (mm ? `<div class="hc-bar mp" title="${RS.name} ${rv}/${mm}"><i style="width:${Math.round(100 * rv / mm)}%;background:${RS.col}"></i><span>${RS.name.toLowerCase()} ${rv}/${mm}</span></div>` : '')
     + `<div class="hc-bar xp" title="${H.level >= HERO_LVL_MAX ? 'Высший, 15-й уровень' : `Опыт растёт вместе с городом и боями: ${Math.floor(score)} из ${Math.ceil(hi)}`}"><i style="width:${xp}%"></i></div>`;
   return `<div class="hc-head"><img src="${portraitURL('hero', h.look)}" alt=""><div class="hc-id"><b>${H.name}</b><small>${H.clsKey && GCLS[H.clsKey] ? GCLS[H.clsKey].name : H.cls || 'Гном-универсал'} · ур. ${H.level}</small></div>`
     + `<div class="hc-btns"><button class="hc-c" data-hero="center" title="Камера к герою">◎</button>${mobile ? `<button class="hc-t" title="${heroCardOpen ? 'Свернуть' : 'Подробнее'}">${heroCardOpen ? '▴' : '▾'}</button><button class="hc-m" title="Спрятать в иконку">–</button>` : ''}<button class="hc-x" title="Снять выбор (Esc)">×</button></div></div><div class="hc-bars">${bars}</div>`;
@@ -153,6 +147,7 @@ let hcStyled = false;
           if (!s) return;
           if (touch() && heroCardSel !== s.k) { heroCardSel = s.k; heroCardUpdate(); return; }
           heroCardSel = s.k;
+          if (s.passive) { heroCardUpdate(); return; }
           if ((Game.hero.hero.level || 1) < s.lvl) { toast(`${s.name} — с ${s.lvl} уровня героя`); heroCardUpdate(); return; }
           if (s.left > 0) { heroCardUpdate(); return; }
           cast(s.run); return;
@@ -194,6 +189,7 @@ let hcStyled = false;
       #hero-card .hs.on{border-color:#7fe0ff;box-shadow:0 0 6px rgba(127,224,255,.7)}
       #hero-card .hs.lock img,#hero-card .hs.lack img{filter:grayscale(1) brightness(.6)}#hero-card .hs.cd img{filter:brightness(.55)}
       #hero-card .hs.lack{border-color:#4a68a8}
+      #hero-card .hs.pas{border-style:dashed;border-color:#b8a060}#hero-card .hs .hs-pas{color:#f0d880;font-size:11px}
       #hero-card .hs i,#hero-card .hs b,#hero-card .hs em{position:absolute;font-style:normal;font-size:9px;line-height:10px;text-shadow:0 1px 0 #000;pointer-events:none}
       #hero-card .hs .hs-key{left:2px;top:1px;color:#ffe9a8;font-weight:bold}#hero-card .hs .hs-mp{right:2px;bottom:1px;color:#8ab8ff}
       #hero-card .hs em{inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#fff}

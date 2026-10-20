@@ -269,7 +269,8 @@ function gamesTick(dt) {
     if (g.kind === 'plan') planTick(g, gatherOK(g));
     else if (g.kind === 'cards') cardsTick(g, gatherOK(g));
     else if (g.kind === 'knives') knifeTick(g, g.members.every(u => u.gp.here));
-    else hopTick(g, true);
+    else if (g.kind === 'hop') hopTick(g, true);
+    else if (typeof kidGroupTick === 'function') kidGroupTick(g);          // городки и снежки детей (kidsplay.js)
   }
   const L = gamesList();
   for (let i = L.length - 1; i >= 0; i--) if (L[i].out && now - L[i].out > 2.2) L.splice(i, 1);

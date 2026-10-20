@@ -116,7 +116,7 @@ const GOAL_CHAPTERS = [
       ['grum', 'Герой, гильдии, костры и хлеб. Всё, что у нас есть. Разберёмся.'],
     ],
     goals: [{ k: 'enemy', id: 'darkMage' }],
-    hint: 'Тёмный маг в Чёрном шпиле. Соберите героя, гильдии и запасы, идите к шпилю и победите Малгора.',
+    hint: 'Чёрный шпиль — фиолетовая башня на краю карты: к ней ведёт стрелка у края экрана, на миникарте — мигающее кольцо. Соберите героя, отряд и провиант, жмите «Выступить в поход» или просто тапните по башне.',
     chapter: 6,
     final: true,
   },
@@ -480,6 +480,7 @@ function goalHudRender() {
   if (!GoalUI.fold) {
     if (v.objs) html += `<div class="gh-sub">${v.custom ? 'Цель карты' : 'Глава ' + (v.ch + 1) + '/' + v.chN}: ${goalEsc(v.chName)}</div><ul>${v.objs.map(bar).join('')}</ul><div class="gh-hint">${goalEsc(v.hint || '')}</div>`;
     else if (g.mode === 'scenario') html += `<div class="gh-sub">Сценарий пройден</div>`;
+    if (typeof spirePrepHTML === 'function') html += spirePrepHTML();     // поход к Чёрному шпилю (world/spire.js)
     if (v.next) html += `<div class="gh-sub">До «${goalEsc(v.next.name)}»</div><ul class="small">${v.next.objs.map(bar).join('')}</ul>`;
     if (g.mode === 'free' && !g.won && !v.custom) html += `<div class="gh-sub">Победа: «Город» и ${v.free} ночей (${Math.min(v.nights, v.free)}/${v.free})</div>`;
     if (typeof Coop !== 'undefined' && Coop.host && Coop.mirror) html += `<button class="gh-mode" data-gh="mode">${g.mode === 'scenario' ? 'Режим: сценарий ⇄' : 'Режим: свободный ⇄'} (хост)</button>`;

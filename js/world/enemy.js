@@ -571,11 +571,10 @@ function rdBoss(N, dt) {
       const d = Math.hypot(u.x - N.hx, u.y - N.hy);
       if (d < bd) { bd = d; best = u; }
     }
-    if (best) {
-      N.tg = best.id; tg = best; N.prov = Game.time;
-      if (!N.woke) { N.woke = true; floater(N.x, N.y - 3.4, 'Кто посмел войти в мой дом?!', '#b8ff90'); toast('Малгор проснулся! Бой у Чёрного шпиля!'); sfxAt('wail', N.x * TILE, N.y * TILE, 1.2); }
-    }
+    if (best) { N.tg = best.id; tg = best; N.prov = Game.time; }
   }
+  // проснулся: и когда герой подошёл, и когда ударил первым издалека
+  if (tg && !N.woke) { N.woke = true; floater(N.x, N.y - 3.4, 'Кто посмел войти в мой дом?!', '#b8ff90'); toast('Малгор проснулся! Бой у Чёрного шпиля!'); sfxAt('wail', N.x * TILE, N.y * TILE, 1.2); }
   if (!tg) {                                      // никого: возвращается и лечится
     N.st = 'idle'; N.woke = false;
     rdStep(N, N.hx, N.hy, S.spd, dt);

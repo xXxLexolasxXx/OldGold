@@ -481,7 +481,7 @@ function initSfx() {
   audioKickOnGesture(sfxInit);
   const btn = document.getElementById('sfx-btn');
   if (btn) {
-    const sync = () => { btn.classList.toggle('active', Sfx.on); btn.textContent = Sfx.on ? '🔊' : '🔈'; btn.title = Sfx.on ? 'Звуки: вкл' : 'Звуки: выкл'; };
+    const sync = () => { btn.classList.toggle('active', Sfx.on); btn.classList.toggle('off', !Sfx.on); btn.textContent = Sfx.on ? '🔊 Звуки' : '🔈 Звуки: выкл'; btn.title = Sfx.on ? 'Звуки: вкл' : 'Звуки: выкл'; };
     btn.onclick = (e) => { e.stopPropagation(); sfxInit(); setSfx(!Sfx.on); sync(); };
     sync();
   }

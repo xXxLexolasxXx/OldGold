@@ -242,7 +242,7 @@ function coopCmd(name, msgJson, admin) {
       break;
     }
     case 'bact': {
-      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', hire: 'train' }[m.act] || 'manage';
+      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', untrainall: 'train', hire: 'train' }[m.act] || 'manage';
       if (can(need)) coopBuildingAct(name, m);
       break;
     }
@@ -253,6 +253,7 @@ function coopCmd(name, msgJson, admin) {
       coopSay(name, tradeDo(m.side, m.g, Math.min(m.n, 999)).text);
       break;
     }
+    case 'trav': if (typeof travCmd === 'function') travCmd(name, m); break;
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
     case 'rsc': if (typeof rscCmd === 'function' && can('council')) rscCmd(name, m); break;
     case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
@@ -305,6 +306,7 @@ function coopBuildingAct(name, m) {
     case 'demolish': removeBuilding(b); break;
     case 'train': if (UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && b.queue.length < 10) b.queue.push(m.type); break;
     case 'untrain': if (coopInt(m.i)) b.queue.splice(m.i, 1); break;
+    case 'untrainall': b.queue.length = 0; break;
     case 'hire': if (b.def.worker) queueTraining(b.def.worker); break;
     case 'recipe': if (coopInt(m.i) && m.i >= 0 && m.i < b.recipeOn.length) b.recipeOn[m.i] = !!m.on; break;
     case 'crop': if (b.crops && m.c in b.crops) b.crops[m.c] = !!m.on; break;
@@ -491,7 +493,7 @@ function coopTick(dt) {
     coopAutoFight(u);
     // здоровье: беды деревни
     if (u.food <= 0) H.hp -= 0.5 * dt;
-    else if (H.hp < H.maxhp && u.food > 0.25 && !(u.burn && u.burn.stage)) H.hp = Math.min(H.maxhp, H.hp + 0.4 * dt);
+    else if (H.hp < H.maxhp && u.food > 0.25 && !(u.burn && u.burn.stage)) H.hp = Math.min(H.maxhp, H.hp + (typeof hlRegen === 'function' ? hlRegen(u) : 0.2) * dt);   // медленно: лечение — отдыхом (0.10.69)
     if (u.burn && u.burn.stage) H.hp -= 6 * dt;
     if (u.injury && u.injury !== H.seenInj) H.hp -= 8;
     H.seenInj = u.injury || null;
@@ -562,7 +564,7 @@ function coopList(arr) {
   }
   return out;
 }
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp'];
 const COOP_WX = ['k', 'target', 'bolt', 'scorch', 'fires', 'rainEnd', 'nextRain'];
 
 // всё, что нечисть, ночь и погода держат вне жителей и клеток
@@ -570,7 +572,7 @@ function coopMirror() {
   const m = {
     ghosts: coopList(Game.ghosts), skels: coopList(Game.skels), ents: coopList(Game.ents), owls: coopList(Game.owls),
     bats: coopList(Game.bats), critters: coopList(Game.critters), falling: coopList(Game.falling), games: coopList(Game.games),
-    neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
+    lepr: typeof lepMirror === 'function' ? lepMirror() : [], neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
     raiders: typeof foeMirrorRaiders === 'function' ? foeMirrorRaiders() : [], foeShots: typeof foeMirrorShots === 'function' ? foeMirrorShots() : [],
     foe: typeof foeMirror === 'function' ? foeMirror() : null,
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
@@ -579,6 +581,7 @@ function coopMirror() {
     goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
     dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
+    trav: typeof travMirrorOut === 'function' ? travMirrorOut() : null,
     law: typeof lawMirrorOut === 'function' ? lawMirrorOut() : null,
     med: typeof medMirrorOut === 'function' ? medMirrorOut() : null,
     rsc: typeof rscMirrorOut === 'function' ? rscMirrorOut() : null,

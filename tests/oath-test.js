@@ -57,7 +57,7 @@ ok(g2 > grow + 8 / 65 + 0.03, `друид: поле выросло только 
 // бард: «Дай пять!» поднимает настроение гномам рядом
 const five = J(`const h = Game.hero, H = h.hero; H.clsKey = 'bard'; H.level = 6; H.abCd = {};
   const g = Game.units.find(u => u.md && !u.dead && !u.inside); if (!g) return -1;
-  h.x = g.x + 0.5; h.y = g.y; heroAbilityFor(h, 1);
+  h.x = g.x + 0.5; h.y = g.y; heroAbilityFor(h, 2);
   return Game.units.filter(u => u.md && u.md.ev.some(e => e[0] === 'five')).length;`);
 ok(five >= 1, `бард: «Дай пять» никому не досталось (${five})`);
 
@@ -107,7 +107,7 @@ srv.h.run(`coopLeave('плут'); coopJoin('бард', JSON.stringify({ cls: 'ba
 const sg = R(`const k = coopDayIx(), a = coop.players.get('танк'), b = coop.players.get('бард');
   const p = { kind: 'song', a: 'бард', b: 'танк', k, done: false, prog: 0, tog: 0, t: { 'бард': 0, 'танк': 0 }, armed: false }; coop.pairQ = [p];
   b.x = a.x + 1; b.y = a.y; b.hero.level = 6; b.hero.abCd = {};
-  const r1 = heroAbilityFor(b, 0); const r2 = heroAbilityFor(b, 1);
+  const r1 = heroAbilityFor(b, 0); const r2 = heroAbilityFor(b, 2);   // песня и «Дай пять!» (аккорду нужны враги)
   coopPairAbil(a); coopPairAbil(a);
   return { r1, r2, t: p.t, done: p.done };`);
 ok(sg.done, '«Песня и меч» не засчитано: ' + JSON.stringify(sg));
