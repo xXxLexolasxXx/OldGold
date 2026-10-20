@@ -299,14 +299,18 @@ function rdGuard(N, dt) {
   if (N.castT > 0) N.castT -= dt;
   if (N.veil && Game.time > N.veilT) N.veil = false;
   if (N.shield && Game.time > N.shieldT) { N.shield = false; gdVuln(N, 'Панцирь треснул — бейте!'); }
-  let tg = foeUnit(N.tg);
+  const T = gdT();
+  N.inv = T && N.gi > T.open ? 1 : 0;              // страж за запертыми вратами спит и неуязвим, пока не откроют его ярус
+  let tg = N.inv ? null : foeUnit(N.tg);
   if (tg && (neuUnitOut(tg) || tg.inside || Math.hypot(tg.x - N.home[0], tg.y - N.home[1]) > 15)) { N.tg = 0; tg = null; }
   N.scan -= dt;
-  if (!tg && N.scan <= 0) {
+  if (!tg && !N.inv && N.scan <= 0) {
     N.scan = 0.5;
     const t = gdTargetNear(N, N.home[0], N.home[1], N.woke ? 13 : 10);
-    if (t) { if (!N.woke) gdWake(N, t); else { N.tg = t.id; N.prov = Game.time; } tg = t; }
+    if (t) { N.tg = t.id; N.prov = Game.time; tg = t; }
   }
+  if (N.inv) N.tg = 0;
+  if (tg && !N.woke) gdWake(N, tg);                 // проснулся и когда подошли, и когда ударили первым
   if (!tg) {                                          // никого: домой и залечиться
     if (N.woke) { N.woke = false; N.sk = ''; N.shield = false; N.veil = false; }
     if (rdStep(N, N.home[0], N.home[1], S.spd, dt)) N.st = 'idle'; else N.st = 'chase';
@@ -724,12 +728,17 @@ function gdGateCells(T) {
   GD_DRAW.key = key; GD_DRAW.cells = cells;
   return cells;
 }
+// врата — сплошная низкая стена из тёмных блоков, над ней дрожит фиолетовая завеса
 function gdDrawGate(c, x, y, i) {
-  const t = Game.time, px = x * TILE, py = y * TILE, h = (x * 7 + y * 13) % 5;
-  gdFp(c, px + 8, py + 6 - h, 16, 22 + h, '#1c1838'); gdFp(c, px + 18, py + 6 - h, 6, 22 + h, '#3a3066'); gdFp(c, px + 8, py + 6 - h, 16, 2, '#6a5ab8');
-  const a = 0.25 + 0.2 * Math.sin(t * 3 + x * 0.7 + y * 0.5);
-  c.fillStyle = `rgba(176,124,255,${a})`; c.fillRect(px, py - 10, TILE, 30);
-  gdFp(c, px + 14, py + 12 - h, 4, 3, i % 2 ? '#9cff66' : '#c08cff');
+  const t = Game.time, px = x * TILE, py = y * TILE + 26, h = (x * 7 + y * 13) % 3;
+  gdFp(c, px - 1, py - 13 - h, TILE + 2, 13 + h, '#241e48');
+  gdFp(c, px - 1, py - 13 - h, TILE + 2, 2, '#4a3e88'); gdFp(c, px - 1, py - 2, TILE + 2, 2, '#15112c');
+  gdFp(c, px + 10 + h * 3, py - 11 - h, 1, 9 + h, '#15112c'); gdFp(c, px + 1, py - 7, 9 + h * 3, 1, '#15112c');
+  const a = 0.5 + 0.5 * Math.sin(t * 3 + x * 0.7 + y * 0.5);
+  c.save(); c.globalCompositeOperation = 'lighter';
+  c.fillStyle = `rgba(176,124,255,${0.1 + 0.12 * a})`; c.fillRect(px, py - 27 - h, TILE, 14);
+  c.fillStyle = `rgba(210,170,255,${0.3 * a})`; c.fillRect(px, py - 14 - h, TILE, 1);
+  c.restore();
 }
 function gdDrawZone(c, z) {
   const k = Math.min(1, z.t / z.dur), px = z.x * TILE, py = z.y * TILE, R = z.r * TILE;

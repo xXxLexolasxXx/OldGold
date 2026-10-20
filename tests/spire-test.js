@@ -46,10 +46,15 @@ for (const seed of SEEDS) {
   let camp = false, won = false, phases = new Set(), t = 0, gmax = 0, midSave = null;
   const tiers = J('const T = Game.foe.tiers; return T ? { n: T.n, tw: T.towers.length } : null');
   ok(tiers && tiers.n >= 3 && tiers.tw >= 4, `сид ${seed}: ярусы шпиля не поднялись ${JSON.stringify(tiers)}`);
+  S.runFor(sim, 1, 5, () => {});
+  const lock = J('const T = Game.foe.tiers; return Game.raiders.filter(N => N.gi > T.open).map(N => !!N.inv && !N.woke)');
+  ok(lock.length && lock.every(Boolean), `сид ${seed}: стражи за запертыми вратами не спят: ${lock}`);
   for (; t < 2400 && !won; t += 5) {
     S.runFor(sim, 5, 5, () => {});
     const s = J(`const N = spireFoe(), h = Game.hero, H = h.hero; H.maxhp = Math.max(H.maxhp, H._tmax || (H._tmax = H.maxhp)); if (H.hp < H.maxhp * 0.5 && !(H.downT > Game.time)) H.hp = H.maxhp; h.food = 1;
-      if (N && !h.cmd && !(H.downT > Game.time)) spireFight();
+      const kn = N && N.shield && Game.raiders.find(M => M.id === N.guard && foeLive(M));      // щит тьмы: сначала рыцарь-страж, как советует игра
+      if (kn && !(H.downT > Game.time) && !(h.cmd && h.cmd.f && h.cmd.f.o === kn)) issueCmd(h, { kind: 'attack', f: { kind: 'foe', o: kn }, tx: Math.floor(kn.x), ty: Math.floor(kn.y), label: 'Бой' });
+      else if (N && !h.cmd && !(H.downT > Game.time)) spireFight();
       const B = spireBoss(); return { camp: !!h._spireCamp, gd: guardsDone(), fz: B ? B.fz : 0, hp: N ? Math.round(N.hp) : 0, dead: !!Game.foe.defeated, over: Game.goal.over && Game.goal.over.res };`);
     camp = camp || s.camp; if (s.fz) phases.add(s.fz); gmax = Math.max(gmax, s.gd);
     if (t % 40 === 0) {                       // отрисовка всего, что есть на подъёме (холст-заглушка: ловит ошибки кода рисования)
