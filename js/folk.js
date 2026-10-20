@@ -289,7 +289,7 @@ function* folkKidFun(u) {
       u.gest = 'fist'; u.gestUntil = Game.time + 2;
       yield { walk: [Math.floor(a.x), Math.floor(a.y)], offroad: true };
       if (a.dead || Math.hypot(a.x - u.x, a.y - u.y) > 2.6) continue;
-      if (what === 'goose') gooseShoo(a, u);
+      if (what === 'goose') gooseShoo(a, { hero: null, who: [u], x: u.x, y: u.y });   // прогон гусей ждёт «отряд»
       else {
         a.state = 'flee'; a.target = null; a.fleeBoost = Game.time + 3; a.stealCD = Math.max(a.stealCD || 0, Game.time + 60);
         const s = (typeof wildSpot === 'function' && wildSpot(18)) || a.home;
