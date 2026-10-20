@@ -53,6 +53,9 @@ ok(capS.sim.h.run('Game.__mx') <= 1, 'лимит трудяг 1 нарушен: 
   const bid = site ? h.run(`(() => { const u = Game.units.find(u => u.type === "builder" && !u.dead); return wkSetPin(u, { b: ${site} }) ? u.id : 0; })()`) : 0;
   if (site) ok(bid, 'работяга не закрепился за стройкой');
   else console.log('  ⚠ не нашлось места для стройки — закрепление работяги не проверено');
+  // брёвна у источника — чтобы маршруту было что возить
+  h.run(`{ const b = Game.buildings.find(b => b.id === ${src}); const g = Object.keys(b.def.outputs)[0]; b.stock[g] = b.def.outputs[g]; }`);
+  S.runFor(sim, 20, 2);                // закреплённый донёс то, что было в руках
   h.run('Game.__jobs = new Set();');
   S.runFor(sim, 3 * 60, 2, () => h.run(bid ? `{ const u = Game.unitMap.get(${bid}); if (u && u.job) Game.__jobs.add(u.job.id); }` : '0'));
   const mine = h.run(`JSON.stringify(Game.__log.filter(l => l[0] === ${sid}))`);

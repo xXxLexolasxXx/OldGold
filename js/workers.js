@@ -247,10 +247,13 @@ function wkSetPin(u, p) {
   if (!wkEligible(u) || !wkManaged(u) || !wkPinValid(u, p)) return false;
   // закрепление переназначает: бросаем текущую автоматическую работу (не трогаем доставку с грузом в руках)
   u.wk = p || null;
-  if (p && u.idleFlag === false && !u.carry && !u.brk && (p.off || p.b != null) && u.type === 'builder' && u.job && (!p.b || u.job.id !== p.b)) {
+  // работяге — и с перекура: после перерыва он вернётся не к старой стройке, а к закреплённой (с материалом в руках — донесёт)
+  if (p && u.type === 'builder' && u.job && !u.inside && !u.carry && (p.off || u.job.id !== p.b)) {
     if (u.job.builder === u) u.job.builder = null;
     if (u.job.upg && u.job.upg.builder === u) u.job.upg.builder = null;
-    u.job = null; u.proc = null; u.action = null; u.anim = null;
+    u.job = null;
+    if (u.brk) { if (u.brk.saved) u.brk.saved = { proc: null, action: null }; }
+    else { u.proc = null; u.action = null; u.anim = null; }
   }
   return true;
 }
