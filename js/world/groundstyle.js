@@ -39,6 +39,7 @@ const GS_STONE = ['#2c2825', '#3a3632', '#4a4540', '#5c564f', '#706960', '#867e7
 
 // Виды клеток поля
 const K_GRASS = 0, K_DIRT = 1, K_PATH = 2, K_MOSS = 3, K_GLADE = 4, K_CRACK = 5, K_DAMP = 6, K_CLOVER = 7;
+const K_P0 = 8;   // 8, 9, 10, 11 — пятна, которые задаёт сам вид (V.p[i]: ramp, dep — «ямка» с краем, grass — на них растёт мелочь)
 const GS_DEPR = new Set([K_DIRT, K_PATH, K_CRACK, K_DAMP]);   // «ямки»: тёмный край сверху-слева, светлая губа снизу-справа
 
 const GROUND_VARIANTS = {
@@ -138,6 +139,7 @@ const GROUND_VARIANTS = {
 
 // Итоговый цвет клетки поля с учётом рампы вида
 function gsColor(V, k, l) {
+  if (k >= K_P0) return V.p[k - K_P0].ramp[l];
   if (k === K_PATH) return V.path[l];
   if (k === K_DIRT || k === K_DAMP) return V.dirt[l];
   if (k === K_CRACK) return V.dirt[l];
@@ -157,19 +159,41 @@ function gsHexIdx(h) {
   return i;
 }
 for (const rp of GS_RAMPS) for (const h of rp) gsHexIdx(h);
-(function () {
-  let n = 0;
-  for (const id of Object.keys(GROUND_VARIANTS)) {
-    const V = GROUND_VARIANTS[id]; V.id = id; V.idx = n++;
-    for (const k of ['ramp', 'ramp2', 'greens', 'dirt', 'path', 'moss']) if (V[k]) for (const h of V[k]) gsHexIdx(h);
+let GS_N = 0;
+function gsRegister(id, V) {
+  GROUND_VARIANTS[id] = V; V.id = id; V.idx = GS_N++;
+  for (const k of ['ramp', 'ramp2', 'greens', 'dirt', 'path', 'moss']) if (V[k]) { for (const h of V[k]) gsHexIdx(h); if (GS_RAMPS.indexOf(V[k]) < 0 && k !== 'greens') GS_RAMPS.push(V[k]); }
+  if (V.p) for (const q of V.p) { for (const h of q.ramp) gsHexIdx(h); GS_RAMPS.push(q.ramp); }
+}
+for (const id of Object.keys(GROUND_VARIANTS)) { const V = GROUND_VARIANTS[id]; delete GROUND_VARIANTS[id]; gsRegister(id, V); }
+
+// Наборы видов земли по биомам карты (заполняет groundsets.js): доли площади и необязательное «пятно» (степь на лугах)
+const GS_SETS = {}, GS_ACT = { id: 'meadow' };
+const GS_QT = [[0.2, 0], [0.241, 0.05], [0.291, 0.1], [0.358, 0.2], [0.408, 0.3], [0.455, 0.4], [0.5, 0.5], [0.544, 0.6], [0.591, 0.7], [0.643, 0.8], [0.709, 0.9], [0.759, 0.95], [0.82, 1]];
+function gsRank(v) {   // шум биомов → доля площади (0..1): так доли в наборах получаются настоящими
+  if (v <= GS_QT[0][0]) return 0;
+  for (let i = 1; i < GS_QT.length; i++) if (v <= GS_QT[i][0]) { const a = GS_QT[i - 1], b = GS_QT[i]; return a[1] + (b[1] - a[1]) * (v - a[0]) / (b[0] - a[0]); }
+  return 1;
+}
+function gsMakeSet(id, shares, patch) {   // shares: [[id вида, доля], …]; patch: {id, thr} или null
+  const lut = new Array(1024), tot = shares.reduce((a, b) => a + b[1], 0);
+  for (let i = 0; i < 1024; i++) {
+    const q = gsRank((i + 0.5) / 1024 * 0.82 + 0.2 * 0) * tot; let acc = 0, pick = shares[shares.length - 1][0];
+    for (const [vid, w] of shares) { acc += w; if (q < acc) { pick = vid; break; } }
+    lut[i] = GROUND_VARIANTS[pick];
   }
-})();
+  GS_SETS[id] = { id, shares, patch: patch || null, lut, pv: patch ? GROUND_VARIANTS[patch.id] : null, list: shares.map(a => GROUND_VARIANTS[a[0]]).concat(patch ? [GROUND_VARIANTS[patch.id]] : []) };
+}
+function gsSetBiome(id) { const nid = GS_SETS[id] ? id : 'meadow'; if (GS_ACT.id !== nid) { gsFree(); GS_ACT.id = nid; } }
+const gsActiveList = () => (GS_SETS[GS_ACT.id] || GS_SETS.meadow).list;
 
 // Биом в точке карты: низкочастотный шум режет мир на области (≈15 клеток), у каждой свой вид земли.
 // Пропорции: луг, поляны, тропы и мшистая глушь — основные; цветущий луг — реже; степь — небольшими пятнами.
-function gsBiomeOf(v, steppe) {   // v — шум биомов, steppe — шум степных пятен (уже с рваным краем)
-  if (steppe > 0.71) return GROUND_VARIANTS.steppe;
-  return v < 0.43 ? GROUND_VARIANTS.meadow : v < 0.49 ? GROUND_VARIANTS.glades : v < 0.55 ? GROUND_VARIANTS.trails : v < 0.59 ? GROUND_VARIANTS.spring : GROUND_VARIANTS.mossy;
+function gsBiomeOf(v, v2) {   // v — шум биомов, v2 — шум пятен (уже с рваным краем)
+  const S = GS_SETS[GS_ACT.id];
+  if (S.pv && v2 > S.patch.thr) return S.pv;
+  const i = (v * 1024 / 0.82) | 0;   // v в 0..0.82 → ячейка таблицы
+  return S.lut[i < 0 ? 0 : i > 1023 ? 1023 : i];
 }
 // Точное значение в одной точке (медленно — для редких запросов у края полосы)
 function gsPick(x, y, s) {
@@ -180,7 +204,7 @@ function gsPick(x, y, s) {
 // Запечённая плитка вида: тип клетки, тон и цвет с рельефом края (бесшовно, 512×512)
 const GS_BAKE = { seed: -1, done: false, gen: null, rg: null };
 function* gsBakeGen(seed) {
-  const sd = seed * 131, N = GS_PER, list = GS_LIST();
+  const sd = seed * 131, N = GS_PER, list = gsActiveList();
   GS_BAKE.rg = new Float32Array(N * N);
   for (let y = 0; y < N; y++) { for (let x = 0; x < N; x++) GS_BAKE.rg[y * N + x] = (gsVN(x, y, 9, sd + 103) - 0.5) * 0.03; if ((y & 31) === 31) yield; }
   for (const V of list) {
@@ -190,17 +214,18 @@ function* gsBakeGen(seed) {
       if ((y & 15) === 15) yield;
     }
     const at = (x, y) => ((y & (N - 1)) * N) + (x & (N - 1));
+    const dp = kk => GS_DEPR.has(kk) || (kk >= K_P0 && !!V.p && !!V.p[kk - K_P0] && !!V.p[kk - K_P0].dep);
     for (let y = 0; y < N; y++) {
       for (let x = 0; x < N; x++) {
         const i = y * N + x, k = K[i];
         let l = L[i];
         const up = K[at(x, y - 1)], lf = K[at(x - 1, y)], dn = K[at(x, y + 1)], rt = K[at(x + 1, y)];
-        if (GS_DEPR.has(k)) {
-          if ((up !== k && !GS_DEPR.has(up)) || (lf !== k && !GS_DEPR.has(lf))) l = 0;
-          else if ((dn !== k && !GS_DEPR.has(dn)) || (rt !== k && !GS_DEPR.has(rt))) l = Math.min(2, l + 1);
+        if (dp(k)) {
+          if ((up !== k && !dp(up)) || (lf !== k && !dp(lf))) l = 0;
+          else if ((dn !== k && !dp(dn)) || (rt !== k && !dp(rt))) l = Math.min(V.depMax || 2, l + 1);
         } else if (k === K_GRASS && l >= 0) {
-          if (GS_DEPR.has(dn) || GS_DEPR.has(rt)) l = Math.max(0, l - 1);          // тень травы над ямкой
-          else if (GS_DEPR.has(up) || GS_DEPR.has(lf)) l = Math.min(V.ramp.length - 1, l + 1);   // светлая кромка снизу-справа
+          if (dp(dn) || dp(rt)) l = Math.max(0, l - 1);          // тень травы над ямкой
+          else if (dp(up) || dp(lf)) l = Math.min(V.ramp.length - 1, l + 1);   // светлая кромка снизу-справа
           else if (up === K_GLADE || lf === K_GLADE) l = 0;
         } else if (k === K_GLADE) {
           if (up !== K_GLADE || lf !== K_GLADE) l = 3;
@@ -275,7 +300,9 @@ function* gsDecorGen(st, D, tx0, tx1, ty0, ty1, tileOk) {
     grassAt(x, y) {
       x |= 0; y |= 0;
       if (mask && x >= 0 && y >= 0 && x < W && y < H && !mask[y * W + x]) return false;
-      const k = S.k(x, y); return k === K_GRASS || k === K_GLADE || k === K_CLOVER || k === K_MOSS;
+      const k = S.k(x, y);
+      if (k >= K_P0) { const q = S.V && S.V.p && S.V.p[k - K_P0]; return !!(q && q.grass); }
+      return k === K_GRASS || k === K_GLADE || k === K_CLOVER || k === K_MOSS;
     },
     shade(hex, d) { for (const rp of GS_RAMPS) { const i = rp.indexOf(hex); if (i >= 0) return rp[Math.max(0, Math.min(rp.length - 1, i + d))]; } return hex; },
     // --- мелочи ---
@@ -378,15 +405,16 @@ function* gsDecorGen(st, D, tx0, tx1, ty0, ty1, tileOk) {
       for (let x = 1; x < w; x++) S.put(x0 + x, y0 + h, '#243520');
       if (moss) { S.put(x0 + 1, y0 - 1, '#5c8236'); S.put(x0 + 2, y0 - 1, '#73963e'); }
     },
-    stalks(r, p) {
+    stalks(r, p, cols) {
+      const cA = cols ? cols[0] : '#c0ae5c', cB = cols ? cols[1] : '#ddd08a', cC = cols ? cols[2] : '#c89226';
       const n = r() < p ? 2 + (r() * 5 | 0) : 0;
       for (let i = 0; i < n; i++) {
         const x = S.cx + 2 + (r() * 28 | 0), y = S.cy + 7 + (r() * 22 | 0);
-        if (S.k(x, y) !== K_GRASS) continue;
+        if (!S.grassAt(x, y)) continue;
         const h = 6 + (r() * 5 | 0), lean = r() < 0.5 ? -1 : 1;
-        for (let j = 0; j < h; j++) S.put(x + (j > h * 0.6 ? lean : 0), y - j, j === 0 ? '#57532a' : '#c0ae5c');
-        S.put(x + lean, y - h, '#ddd08a'); S.put(x + lean, y - h - 1, '#c89226'); S.put(x + 2 * lean, y - h + 1, '#c0ae5c');
-        S.put(x - lean, y - 3, '#9c8e48');
+        for (let j = 0; j < h; j++) S.put(x + (j > h * 0.6 ? lean : 0), y - j, j === 0 ? '#57532a' : cA);
+        S.put(x + lean, y - h, cB); S.put(x + lean, y - h - 1, cC); S.put(x + 2 * lean, y - h + 1, cA);
+        S.put(x - lean, y - 3, cA);
       }
     },
     thistles(r, p) {
@@ -397,14 +425,15 @@ function* gsDecorGen(st, D, tx0, tx1, ty0, ty1, tileOk) {
       S.put(x - 1, y - 2, '#73963e'); S.put(x + 1, y - 3, '#73963e'); S.put(x - 1, y - 1, '#2f4a26');
       S.put(x - 1, y - 6, '#9c7ae6'); S.put(x, y - 6, '#7e58cc'); S.put(x + 1, y - 6, '#9c7ae6'); S.put(x, y - 5, '#4c3080'); S.put(x, y - 7, '#bea4f6');
     },
-    cracks(r) {
+    cracks(r, kind, c1, c2) {
+      kind = kind === undefined ? K_CRACK : kind; c1 = c1 || '#341f14'; c2 = c2 || '#a06840';
       for (let q = 0; q < 6; q++) {
         let x = S.cx + (r() * 32 | 0), y = S.cy + (r() * 32 | 0);
-        if (S.k(x, y) !== K_CRACK) continue;
+        if (S.k(x, y) !== kind) continue;
         const len = 4 + (r() * 9 | 0);
         for (let j = 0; j < len; j++) {
-          if (S.k(x, y) !== K_CRACK) break;
-          S.put(x, y, '#341f14'); if (j % 3 === 0) S.put(x + 1, y + 1, '#a06840');
+          if (S.k(x, y) !== kind) break;
+          S.put(x, y, c1); if (j % 3 === 0) S.put(x + 1, y + 1, c2);
           const m = r(); if (m < 0.4) x++; else if (m < 0.7) y++; else if (m < 0.85) x--; else y--;
         }
       }
@@ -420,15 +449,150 @@ function* gsDecorGen(st, D, tx0, tx1, ty0, ty1, tileOk) {
         else { S.put(x, y, '#9e958a'); S.put(x + 1, y, '#706960'); S.put(x, y - 1, '#b6ada0'); S.put(x + 1, y + 1, '#3a3632'); }  // серый кремень
       }
     },
-    roots(r, p) {
+    roots(r, p, kind) {
+      kind = kind === undefined ? K_DAMP : kind;
       if (r() >= p) return;
       let x = S.cx + (r() * 32 | 0), y = S.cy + (r() * 32 | 0);
-      if (S.k(x, y) !== K_DAMP) return;
+      if (S.k(x, y) !== kind) return;
       const len = 5 + (r() * 8 | 0), dir = r() < 0.5 ? 1 : -1;
       for (let j = 0; j < len; j++) {
-        if (S.k(x, y) !== K_DAMP) break;
+        if (S.k(x, y) !== kind) break;
         S.put(x, y, '#6e432a'); S.put(x, y + 1, '#341f14'); S.put(x - dir, y - 1, j % 3 ? '#875434' : '#583522');
         x += dir; if (r() < 0.4) y += r() < 0.5 ? 1 : -1;
+      }
+    },
+    reeds(r, p) {
+      if (r() >= p) return;
+      const x0 = S.cx + 4 + (r() * 24 | 0), y0 = S.cy + 8 + (r() * 20 | 0), n = 3 + (r() * 3 | 0);
+      if (!S.grassAt(x0, y0)) return;
+      for (let i = 0; i < n; i++) {
+        const x = x0 + i * 2 - n, h = 6 + (r() * 6 | 0), lean = r() < 0.5 ? 0 : (r() < 0.5 ? -1 : 1);
+        for (let j = 0; j < h; j++) S.put(x + (j > h * 0.6 ? lean : 0), y0 - j, j < 2 ? '#2f4a26' : j % 3 ? '#4a6e30' : '#5c8236');
+        if (r() < 0.55) { S.put(x + lean, y0 - h, '#583522'); S.put(x + lean, y0 - h - 1, '#6e432a'); S.put(x + lean, y0 - h - 2, '#45291a'); }
+      }
+      S.put(x0, y0 + 1, '#243520');
+    },
+    puddle(r, p) {
+      if (r() >= p) return;
+      const w = 6 + (r() * 6 | 0), h = 3 + (r() * 2 | 0), x0 = S.cx + 5 + (r() * 16 | 0), y0 = S.cy + 8 + (r() * 16 | 0);
+      if (!S.grassAt(x0, y0)) return;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const nx = (x - (w - 1) / 2) / (w / 2), ny = (y - (h - 1) / 2) / (h / 2);
+        const d = nx * nx + ny * ny;
+        if (d > 1.05) continue;
+        S.put(x0 + x, y0 + y, d > 0.7 ? '#12263c' : y <= h / 3 ? '#1a3654' : '#22486c');
+      }
+      S.put(x0 + 1, y0, '#5292bc'); S.put(x0 + 2, y0, '#3a74a0');
+      for (let x = 1; x < w - 1; x++) S.put(x0 + x, y0 + h, '#243520');
+      if (r() < 0.4) { S.put(x0 + w - 3, y0 + 1, '#4a6e30'); S.put(x0 + w - 2, y0 + 1, '#5c8236'); S.put(x0 + w - 3, y0 + 2, '#2f4a26'); }
+    },
+    berries(r, p, cols) {
+      if (r() >= p) return;
+      const x0 = S.cx + 5 + (r() * 22 | 0), y0 = S.cy + 8 + (r() * 18 | 0);
+      if (!S.grassAt(x0, y0)) return;
+      const w = 6 + (r() * 3 | 0), h = 4;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const nx = (x - (w - 1) / 2) / (w / 2), ny = (y - (h - 1) / 2) / (h / 2);
+        if (nx * nx + ny * ny > 1.1) continue;
+        const lit = 0.5 - nx * 0.35 - ny * 0.5;
+        S.put(x0 + x, y0 + y, lit > 0.6 ? '#73963e' : lit > 0.25 ? '#4a6e30' : '#2f4a26');
+      }
+      const c = cols[r() * cols.length | 0];
+      for (let i = 0; i < 4 + (r() * 3 | 0); i++) { const bx = x0 + 1 + (r() * (w - 2) | 0), by = y0 + (r() * h | 0); S.put(bx, by, c); }
+      for (let x = 1; x < w; x++) S.put(x0 + x, y0 + h, '#1c2818');
+    },
+    bells(r, p, c) {
+      if (r() >= p) return;
+      const n = 2 + (r() * 3 | 0), x0 = S.cx + 5 + (r() * 22 | 0), y0 = S.cy + 8 + (r() * 18 | 0);
+      for (let i = 0; i < n; i++) {
+        const x = (x0 + (r() - 0.5) * 8) | 0, y = (y0 + (r() - 0.5) * 6) | 0;
+        if (!S.grassAt(x, y)) continue;
+        S.put(x, y + 1, '#2f4a26'); S.put(x, y, '#3a5a2a'); S.put(x, y - 1, '#4a6e30'); S.put(x + 1, y - 2, '#4a6e30');
+        S.put(x + 1, y - 3, c); S.put(x, y - 3, '#bea4f6' === c ? c : '#d6eef6'); S.put(x + 2, y - 3, c); S.put(x + 1, y - 4, c);
+      }
+    },
+    heather(r, p) {
+      if (r() >= p) return;
+      const x0 = S.cx + 4 + (r() * 24 | 0), y0 = S.cy + 8 + (r() * 20 | 0), cols = ['#6440a8', '#7e58cc', '#4c3080', '#9c7ae6'];
+      if (!S.grassAt(x0, y0)) return;
+      for (let i = 0; i < 6 + (r() * 6 | 0); i++) {
+        const x = (x0 + (r() - 0.5) * 9) | 0, y = (y0 + (r() - 0.5) * 6) | 0;
+        S.put(x, y + 1, '#243520'); S.put(x, y, cols[r() * 4 | 0]); if (r() < 0.6) S.put(x, y - 1, cols[r() * 4 | 0]);
+      }
+    },
+    twigs(r, p) {
+      if (r() >= p) return;
+      const x0 = S.cx + 3 + (r() * 24 | 0), y0 = S.cy + 6 + (r() * 22 | 0), len = 4 + (r() * 4 | 0), dir = r() < 0.5 ? 1 : -1;
+      if (!S.grassAt(x0, y0)) return;
+      for (let j = 0; j < len; j++) {
+        const x = x0 + j, y = y0 + ((j * dir * 0.35) | 0);
+        S.put(x, y, j % 3 ? '#583522' : '#875434'); S.put(x, y + 1, '#24170f');
+        if (j === 2 && r() < 0.6) S.put(x, y - 1, '#583522');
+      }
+    },
+    litter(r, n, cols) {
+      for (let q = 0; q < n; q++) {
+        const x = S.cx + (r() * 32 | 0), y = S.cy + (r() * 32 | 0);
+        if (!S.grassAt(x, y)) continue;
+        const c = cols[r() * cols.length | 0];
+        S.put(x, y, c); if (r() < 0.5) S.put(x + 1, y - 1, c);
+      }
+    },
+    tracks(r, p) {
+      if (r() >= p) return;
+      let x = S.cx + 3 + (r() * 14 | 0), y = S.cy + 6 + (r() * 20 | 0), n = 3 + (r() * 4 | 0), step = r() < 0.5 ? 1 : -1;
+      for (let i = 0; i < n; i++) {
+        if (S.k(x, y) < 0 || S.k(x, y) >= K_P0 && !(S.V.p[S.k(x, y) - K_P0] || {}).grass) break;
+        S.put(x, y, '#76b2d4'); S.put(x + 1, y, '#a6d2e6'); S.put(x, y + 1, '#5292bc');
+        x += 3; y += step * ((i & 1) ? 2 : -2) * 0 + ((i & 1) ? 1 : -1);
+      }
+    },
+    sparkle(r, n) {
+      for (let q = 0; q < n; q++) {
+        const x = S.cx + (r() * 32 | 0), y = S.cy + (r() * 32 | 0);
+        if (!S.grassAt(x, y)) continue;
+        S.put(x, y, '#ffffff'); if (r() < 0.25) { S.put(x - 1, y, '#d6eef6'); S.put(x + 1, y, '#d6eef6'); S.put(x, y - 1, '#d6eef6'); S.put(x, y + 1, '#d6eef6'); }
+      }
+    },
+    sage(r, p) {
+      if (r() >= p) return;
+      const x0 = S.cx + 4 + (r() * 22 | 0), y0 = S.cy + 8 + (r() * 18 | 0);
+      if (!S.grassAt(x0, y0)) return;
+      for (let y = 0; y < 5; y++) for (let x = 0; x < 7; x++) {
+        const nx = (x - 3) / 3.4, ny = (y - 2) / 2.6;
+        if (nx * nx + ny * ny > 1.05 || (r() < 0.12 && y === 0)) continue;
+        const lit = 0.5 - nx * 0.4 - ny * 0.5;
+        S.put(x0 + x, y0 + y, lit > 0.62 ? '#9e958a' : lit > 0.35 ? '#706960' : '#4a4540');
+      }
+      for (let x = 1; x < 7; x++) S.put(x0 + x, y0 + 5, '#3a3a1c');
+      S.put(x0 + 2, y0 - 1, '#b6ada0'); S.put(x0 + 4, y0 - 1, '#9e958a');
+    },
+    stump(r, p) {
+      if (r() >= p) return;
+      const x0 = S.cx + 5 + (r() * 20 | 0), y0 = S.cy + 8 + (r() * 16 | 0);
+      if (!S.grassAt(x0, y0)) return;
+      for (let x = 1; x < 6; x++) { S.put(x0 + x, y0, '#cc9a64'); S.put(x0 + x, y0 + 1, x === 3 ? '#a06840' : '#b8804e'); }
+      S.put(x0, y0 + 1, '#a06840'); S.put(x0 + 6, y0 + 1, '#875434'); S.put(x0 + 3, y0, '#a06840');
+      for (let j = 2; j < 5; j++) for (let x = 0; x < 7; x++) S.put(x0 + x, y0 + j, x < 2 ? '#6e432a' : x < 5 ? '#583522' : '#45291a');
+      S.put(x0 + 1, y0 + 3, '#875434'); S.put(x0 + 4, y0 + 4, '#341f14');
+      for (let x = 0; x < 8; x++) S.put(x0 + x, y0 + 5, '#1c2818');
+      if (r() < 0.6) { S.put(x0 + 1, y0 - 1, '#73963e'); S.put(x0 + 2, y0 - 1, '#5c8236'); }
+    },
+    gravel(r, n) {
+      for (let q = 0; q < n; q++) {
+        const x = S.cx + (r() * 32 | 0), y = S.cy + (r() * 31 | 0);
+        const a = GS_STONE[2 + (r() * 5 | 0)];
+        S.put(x, y, a); if (r() < 0.5) S.put(x + 1, y, GS_STONE[1 + (r() * 4 | 0)]);
+        if (r() < 0.4) S.put(x, y + 1, GS_STONE[1]);
+      }
+    },
+    cotton(r, p) {
+      const n = r() < p ? 1 + (r() * 3 | 0) : 0;
+      for (let i = 0; i < n; i++) {
+        const x = S.cx + 3 + (r() * 26 | 0), y = S.cy + 7 + (r() * 22 | 0);
+        if (!S.grassAt(x, y)) continue;
+        for (let j = 0; j < 5; j++) S.put(x, y - j, j ? '#4a6e30' : '#2f4a26');
+        S.put(x, y - 5, '#f6f2ea'); S.put(x, y - 6, '#ffffff'); S.put(x - 1, y - 5, '#e4ddd2'); S.put(x + 1, y - 5, '#e4ddd2');
       }
     },
     // штрихи-травинки по всей земле: светлый пиксель над тёмным, цвета берутся с фона
@@ -448,7 +612,7 @@ function* gsDecorGen(st, D, tx0, tx1, ty0, ty1, tileOk) {
       const r = mulberry32((((seed + 77) ^ Math.imul(ty * 4096 + tx + 1, 2654435761)) >>> 0));   // у каждой клетки свой генератор — рисунок один и тот же при любом порядке (кооп: по сиду)
       S.cx = tx * GS_TILE - ox; S.cy = ty * GS_TILE - oy;
       const V = pickAt(tx * GS_TILE + 16, ty * GS_TILE + 16);
-      S.kc = () => S.k(S.cx + 16, S.cy + 16);
+      S.V = V; S.kc = () => S.k(S.cx + 16, S.cy + 16);
       S.sprinkle(r, V.ticks);
       V.decor(S, tx, ty, r);
     }
@@ -458,6 +622,7 @@ function* gsDecorGen(st, D, tx0, tx1, ty0, ty1, tileOk) {
 
 // Витрина: заплатка tw×th клеток одного вида (лист ground.html)
 function groundPatch(id, tw, th, seed = 1) {
+  gsSetBiome(GROUND_VARIANTS[id].set || 'meadow');
   const V = GROUND_VARIANTS[id], W = tw * GS_TILE, H = th * GS_TILE;
   const cv = mkCanvas(W, H), ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), D = img.data;
   const st = gsMakeState(V, W, H, 0, 0, seed);
@@ -468,7 +633,8 @@ function groundPatch(id, tw, th, seed = 1) {
   return cv;
 }
 // Карта биомов: заплатка из нескольких биомов (для листа и проверки)
-function groundPatchBiomes(tw, th, seed = 1) {
+function groundPatchBiomes(tw, th, seed = 1, setId = 'meadow') {
+  gsSetBiome(setId);
   const W = tw * GS_TILE, H = th * GS_TILE;
   const cv = mkCanvas(W, H), ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), D = img.data;
   const st = gsMakeState('world', W, H, 0, 0, seed);

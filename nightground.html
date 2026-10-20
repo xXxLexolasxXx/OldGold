@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Лист ночной земли</title>
+<style>
+body{margin:0;background:#12161e;color:#eee;font:13px/1.35 sans-serif}
+#bar{position:sticky;top:0;background:#000c;padding:6px 10px;display:flex;gap:12px;align-items:center;z-index:2}
+h3{margin:12px 10px 2px;color:#f6d458}.row{display:flex;flex-wrap:wrap;gap:8px;padding:4px 10px}
+.cell{display:flex;flex-direction:column;align-items:center;font-size:10px;color:#aab}
+canvas{image-rendering:pixelated;background:#1a2230}
+</style></head><body>
+<div id="bar"><b>Ночная земля: кадры и сцена</b>
+<label>биом <select id="st"><option>meadow</option><option>forest</option><option>steppe</option><option>mountain</option><option>swamp</option><option>winter</option></select></label>
+<label>масштаб <select id="sc"><option>3</option><option selected>4</option><option>5</option></select></label>
+<label>время <input id="tm" type="range" min="0" max="60" step="0.1" value="3" style="width:260px"></label><span id="err" style="color:#f88"></span></div>
+<div id="out"></div>
+<script src="js/config.js"></script><script src="js/world.js"></script><script src="js/sprites.js"></script><script src="js/world/groundstyle.js"></script><script src="js/world/groundsets.js"></script><script src="js/world/nightground.js"></script>
+<script>
+function strip(title, sprites, k) {
+  const h = document.createElement('h3'); h.textContent = title; out.appendChild(h);
+  const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
+  sprites.forEach((s, i) => {
+    const cv = document.createElement('canvas'); cv.width = s.width * k; cv.height = s.height * k;
+    const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(s, 0, 0, cv.width, cv.height);
+    const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = 'кадр ' + (i + 1); d.appendChild(sp); row.appendChild(d);
+  });
+}
+function draw() {
+  out.innerHTML = '';
+  const set = st.value, k = +sc.value, t = +tm.value, seed = 7;
+  strip('Рука скелета (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngHand(set, f)), k);
+  strip('Плотоядный цветок (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngFlower(set, f)), k);
+  strip('Надгробие поднимается (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngTomb(set, f)), k);
+  strip('Глаза (3 кадра) и туман', [0, 1, 2].map(f => ngEyes(set, f)).concat([ngFog(set, 0)]), k);
+  const h = document.createElement('h3'); h.textContent = 'Сцена ночью (ползунок — время)'; out.appendChild(h);
+  const V = Object.values(GROUND_VARIANTS).filter(v => v.set === set)[0];
+  const tw = 14, th = 8, g = groundPatch(V.id, tw, th, seed), cv = document.createElement('canvas');
+  cv.width = tw * 32; cv.height = th * 32; const c = cv.getContext('2d');
+  c.drawImage(g, 0, 0);
+  // ночное затемнение (как в игре — синий оттенок)
+  c.fillStyle = 'rgba(8,14,40,0.62)'; c.fillRect(0, 0, cv.width, cv.height);
+  // раскладка: каждая клетка — по сиду; внизу ряд с «чистыми» примерами
+  for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) {
+    const kd = ngKindAt(tx, ty, seed);
+    if (!kd) continue;
+    ngDrawTile(c, kd, set, tx, ty, seed, t, 1, false);
+  }
+  c.fillStyle = 'rgba(8,14,40,0.0)';
+  for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) { if (ngKindAt(tx, ty, seed) === 4) ngDrawTile(c, 4, set, tx, ty, seed, t, 1, true); }
+  for (let i = 0; i < 6; i++) {   // туман поверх
+    const s = ngFog(set, i & 1); c.globalAlpha = 0.3; c.drawImage(s, ((i * 97) % 380) + Math.sin(t * 0.05 + i) * 26, (i * 53) % 200); c.globalAlpha = 1;
+  }
+  const out2 = document.createElement('canvas'); out2.width = cv.width * (k - 1); out2.height = cv.height * (k - 1);
+  const o = out2.getContext('2d'); o.imageSmoothingEnabled = false; o.drawImage(cv, 0, 0, out2.width, out2.height);
+  const row = document.createElement('div'); row.className = 'row'; row.appendChild(out2); out.appendChild(row);
+}
+for (const e of [st, sc, tm]) e.oninput = draw;
+const q = new URLSearchParams(location.search); if (q.get('set')) st.value = q.get('set'); if (q.get('t')) tm.value = q.get('t');
+window.onerror = (m, s, l) => { err.textContent = m + ' @' + l; };
+draw();
+</script></body></html>

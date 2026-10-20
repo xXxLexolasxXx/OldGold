@@ -38,8 +38,8 @@ function makeTex(seed, freq, octaves) {
 const TBAND = 8;
 const TERR = { bands: [], rb: [], mini: null, ready: false, lazy: false, make: null, stash: [], restoring: [], gen: 0 };
 
-// Биомы земли (groundstyle.js) — на лугах и старых картах; зима, болото, степь и прочие биомы карты красятся своей палитрой
-function terrGroundOn() { return typeof gsMakeState === 'function' && (!MapOpt.biome || MapOpt.biome === 'meadow'); }
+// Виды земли (groundstyle.js, groundsets.js): у каждого биома карты свой набор; песок, камень и вода — по палитре биома
+function terrGroundOn() { if (typeof gsSetBiome !== 'function') return false; gsSetBiome(MapOpt.biome || 'meadow'); return true; }
 
 function terrFree() {
   if (typeof gsFree === 'function') gsFree();
