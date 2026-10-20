@@ -17,7 +17,7 @@ const HC_ICON = {
 const HC_ICON_URL = {};
 function abilIcon16(k) {
   if (HC_ICON_URL[k]) return HC_ICON_URL[k];
-  const g = HC_ICON[k] || (typeof ABIL_ICON !== 'undefined' && ABIL_ICON[k]);
+  const g = typeof abilIconGlyph === 'function' ? abilIconGlyph(k) : HC_ICON[k];   // единая таблица и запасной значок (herokit.js)
   if (!g || typeof document === 'undefined' || !document.createElement) return '';
   const pal = {};
   for (const p of g[0].split(' ')) { const [ch, col] = p.split(':'); pal[ch] = col; }
