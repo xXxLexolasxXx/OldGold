@@ -889,7 +889,7 @@ I18N.add('en', {
   "Я просил тишины и вернуть мои камни. Вы принесли шум и забыли про камни. Ночи теперь будут моими.": "I asked for silence and my stones back. You brought noise and forgot the stones. The nights are mine now.",
   "Он серьёзно. Я бы испугался, но я старый, и мне лень.": "He means it. I'd be scared, but I'm old and lazy.",
   "Герой, гильдии, костры и хлеб. Всё, что у нас есть. Разберёмся.": "A hero, guilds, bonfires and bread. All we've got. We'll manage.",
-  "Тёмный маг в Чёрном шпиле. Соберите героя, гильдии и запасы, идите к шпилю и победите Малгора.": "A dark mage in the Black Spire. Gather the hero, guilds and supplies, go to the spire and defeat Malgor.",
+  "Чёрный шпиль — фиолетовая башня на краю карты: к ней ведёт стрелка у края экрана, на миникарте — мигающее кольцо. Соберите героя, отряд и провиант, жмите «Выступить в поход» или просто тапните по башне.": "The Black Spire is the purple tower at the edge of the map: an arrow at the screen edge points to it, and a blinking ring marks it on the minimap. Gather the hero, a squad and provisions, press “Set out” or just tap the tower.",
   "Эпилог": "Epilogue",
   "Башня погасла разом, как свеча, которую наконец-то заметили. Над лесом стало тихо.": "The tower went dark all at once, like a candle that was finally noticed. The forest grew quiet.",
   "Тишина закончилась. Теперь шум — наш. По праву. И по расписанию.": "The silence is over. Now the noise is ours. By right. And on schedule.",

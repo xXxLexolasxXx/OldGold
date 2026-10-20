@@ -59,7 +59,7 @@ function* hmSupplyGen(u, c) {
   if (j > 0) { b.stock.mana -= j; H.jars += j; parts.push(`${j} банк. маны`); }
   const gk = hlGearIn(b);
   if (gk) {
-    if (hlAddItem(H, gk, 1)) { b.stock[gk]--; parts.push(hlName(gk)); }
+    if (hlAddItem(H, gk, 1)) { b.stock[gk]--; if (typeof durFresh === 'function') durFresh(H, gk); parts.push(hlName(gk)); }
     else parts.push('рюкзак полон');
   }
   floater(u.x, u.y - 1.4, parts.length ? 'Взял: ' + parts.join(', ') : 'Нечего брать', '#c8e0ff');
