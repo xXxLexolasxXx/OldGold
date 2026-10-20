@@ -605,7 +605,8 @@ function roadShape(c, x, y, px, py, grow, bands, chamfers) {
 // cobbles=true — внутри булыжник цвета мостовой; null — тёмный бордюр.
 const ROAD_M = 10;
 let roadScratch = null;
-function roadMaskCanvas(x, y, grow, cobbles) {
+// Размытая и обрезанная по порогу маска формы дороги: Uint8Array S×S (1 — дорога). Рисует в scratch-холстах.
+function roadMaskBits(x, y, grow) {
   const S = TILE + ROAD_M * 2;
   if (!roadScratch) roadScratch = [mkCanvas(S, S), mkCanvas(S, S)];
   const [a, b] = roadScratch, ca = a.getContext('2d', { willReadFrequently: true }), cb = b.getContext('2d', { willReadFrequently: true });
@@ -622,9 +623,36 @@ function roadMaskCanvas(x, y, grow, cobbles) {
   ca.setTransform(1, 0, 0, 1, 0, 0);
   cb.setTransform(1, 0, 0, 1, 0, 0); cb.clearRect(0, 0, S, S);
   cb.filter = 'blur(3.5px)'; cb.drawImage(a, 0, 0); cb.filter = 'none';
-  const img = cb.getImageData(0, 0, S, S), d = img.data, col = cobbles ? [74, 69, 64] : [40, 34, 28];
-  for (let i = 0; i < d.length; i += 4) {
-    if (d[i + 3] >= 128) { d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = cobbles ? 255 : 140; } else d[i + 3] = 0;
+  const d = cb.getImageData(0, 0, S, S).data, bits = new Uint8Array(S * S);
+  for (let i = 0; i < bits.length; i++) bits[i] = d[i * 4 + 3] >= 128 ? 1 : 0;
+  return bits;
+}
+
+// Тёмный бордюр: 1 пиксель вокруг булыжника, а на прямых отрезках (ровный край от 5 пикселей) — 2.
+// На скосах и диагоналях второй ряд не нужен: лесенка даёт там лишние чёрные пиксели-утолщения.
+function roadBorderPx(inner, S, px, py) {
+  const at = (x, y) => x >= 0 && y >= 0 && x < S && y < S && inner[y * S + x] === 1;
+  if (at(px + 1, py) || at(px - 1, py) || at(px, py + 1) || at(px, py - 1)) return true;
+  for (const [dx, dy] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) {
+    const qx = px + dx, qy = py + dy;
+    if (!at(qx, qy)) continue;
+    const ex = dy ? 1 : 0, ey = dy ? 0 : 1;   // вдоль края
+    if (at(qx + ex, qy + ey) && at(qx - ex, qy - ey) && at(qx + 2 * ex, qy + 2 * ey) && at(qx - 2 * ex, qy - 2 * ey)) return true;
+  }
+  return false;
+}
+
+function roadMaskCanvas(x, y, grow, cobbles) {
+  const S = TILE + ROAD_M * 2;
+  const inner = cobbles ? null : roadMaskBits(x, y, 0);
+  const bits = roadMaskBits(x, y, grow);
+  const [a, b] = roadScratch, ca = a.getContext('2d', { willReadFrequently: true }), cb = b.getContext('2d', { willReadFrequently: true });
+  const ox = x * TILE - ROAD_M, oy = y * TILE - ROAD_M;
+  const img = cb.createImageData(S, S), d = img.data, col = cobbles ? [74, 69, 64] : [40, 34, 28];
+  for (let i = 0; i < bits.length; i++) {
+    if (!bits[i]) continue;
+    if (inner && !inner[i] && !roadBorderPx(inner, S, i % S, (i / S) | 0)) continue;
+    const j = i * 4; d[j] = col[0]; d[j + 1] = col[1]; d[j + 2] = col[2]; d[j + 3] = cobbles ? 255 : 140;
   }
   cb.putImageData(img, 0, 0);
   if (cobbles) {
