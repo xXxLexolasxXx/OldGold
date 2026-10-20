@@ -62,7 +62,9 @@ if (spot >= 0) {
   h.run(`{ const u = Game.unitMap.get(__kids[${spot}]); const s = sandSpot(u); u.x = s.sx + 0.5; u.y = s.sy + 0.5; globalThis.__sc = s; globalThis.__si = ${spot}; }`);
   h.run(`{ const k = ${kid('__si')}; k.proc = (function* () { yield* sandGen(k, __sc); })(); k.action = null; k.anim = null; k.kpAt = Game.time + 999; }`);
   S.runFor(sim, 30, 0.5, () => {});
-  ok(h.run('sandCount()') === 1, 'замок не заложен');
+  ok(h.run('World.obj[idx(__sc.cx, __sc.cy)]?.t') === 'sandc', 'замок не заложен');
+  // другие гномята за эти полминуты могли заложить свои замки — для проверок сохранения и смыва оставляем только наш
+  h.run('for (const i of sandList()) if (i !== idx(__sc.cx, __sc.cy)) World.obj[i] = null;');
   // сохранение и загрузка
   const s = JSON.parse(h.run('JSON.stringify(serializeGame())'));
   const row = s.obj.find(r => r[1] === 'sandc');

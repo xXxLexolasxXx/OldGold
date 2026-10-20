@@ -346,6 +346,7 @@ function* injWaitGen(u) {
 // лекарь идёт к раненому и перевязывает на месте
 function* injVisitGen(h, p) {
   p.injDoc = h;
+  if (h.inside) yield { leave: true };                   // из лазарета или из-под крыши, где пережидал дождь
   const near = () => p.inside ? Math.hypot(p.inside.doorX - h.x, p.inside.doorY - h.y) < 2.5 : Math.hypot(p.x - h.x, p.y - h.y) < 2.5;
   // раненый может отойти, пока лекарь идёт, — догоняет (до трёх раз)
   for (let k = 0; k < 3 && p.injury && !p.dead && !near(); k++) yield { walk: p.inside ? [p.inside.doorX, p.inside.doorY] : [Math.floor(p.x), Math.floor(p.y)], offroad: true };
@@ -364,15 +365,24 @@ function* injVisitGen(h, p) {
     }
   }
   if (p.injDoc === h) p.injDoc = null;
-  h.injPat = null;
+  h.injPat = null; h.injGo = null;
 }
+// лекарь сейчас идёт по вызову (а не перебит перекуром или дождём)
+const injGoing = h => !!h.injGo && h.proc === h.injGo;
+function injVisitStart(h) { h.injGo = injVisitGen(h, h.injPat); return h.injGo; }
+// перекур и укрытие от дождя вызов к раненому не держат
+const INJ_SKIP_BRK = new Set(['smoke', 'join', 'rain']);
 
 // раз в секунду: раненых — в лазарет, к тем, кто не дошёл, — лекаря
 function injTick(now) {
   let healers = null;
   for (const u of Game.units) {
     // вызов к раненому, которого уже вылечили (или он ушёл в лазарет), снимаем — иначе лекарь «занят» навсегда
-    if (u.injPat && (u.injPat.dead || !u.injPat.injury || u.injPat.injDoc !== u)) u.injPat = null;
+    if (u.injPat && (u.injPat.dead || !u.injPat.injury || u.injPat.injDoc !== u)) { u.injPat = null; u.injGo = null; }
+    if (u.injPat && !injGoing(u) && !u.dead && (u.brk ? INJ_SKIP_BRK.has(u.brk.kind) : interruptible(u))) {
+      startBreak(u, 'medcall', null);
+      u.proc = injVisitStart(u);
+    }
     if (u.injDoc && (!u.injury || u.injDoc.dead || u.injDoc.injPat !== u)) u.injDoc = null;   // лекарь не дошёл или уже не идёт
     if (!u.injury) continue;
     if (!injCanTreat(u)) continue;
@@ -393,7 +403,7 @@ function injTick(now) {
     }
     if (now - (u.injAt || 0) < INJ.CALL) continue;
     // долго не может дойти — зовём лекаря
-    if (!healers) healers = Game.units.filter(h => h.type === 'healer' && !h.dead && !h.injPat && !h.brk && !h.injury && (interruptible(h) || h.inside === h.home));
+    if (!healers) healers = Game.units.filter(h => h.type === 'healer' && !h.dead && !h.injPat && !h.injury && (h.brk ? INJ_SKIP_BRK.has(h.brk.kind) : interruptible(h) || h.inside === h.home));
     let best = null, bd = 40;
     for (const h of healers) { const d = Math.hypot(h.x - u.x, h.y - u.y); if (d < bd) { bd = d; best = h; } }
     if (best) { best.injPat = u; u.injDoc = best; healers.splice(healers.indexOf(best), 1); }
@@ -439,7 +449,7 @@ function injNoteTick() {
 if (typeof Unit !== 'undefined') {
   const _think = Unit.prototype.think;
   Unit.prototype.think = function () {
-    if (injCalled(this)) { this.idleFlag = false; return injVisitGen(this, this.injPat); }
+    if (injCalled(this)) { this.idleFlag = false; return injVisitStart(this); }
     if (!this.carry && injWants(this)) { this.idleFlag = false; return injWardTrip(this); }
     return _think.call(this);
   };

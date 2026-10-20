@@ -212,7 +212,7 @@ function updateGoose(a, dt, def) {
 function gooseBite(a, u) {
   u.ouchUntil = Game.time + 2;
   floater(u.x, u.y - 1.4, 'Ай!', '#ffc8a0');
-  if (!u.injury && Game.time >= (Game.injGapAt || 0) && Math.random() < 0.15) { Game.injGapAt = Game.time + INJURY_GAP; injure(u, 'leg'); u.injuryUntil = Game.time + 40; }   // общий с толчками лимит: щиплют часто, ранят редко
+  if (!u.injury && Game.time >= (Game.injGapAt || 0) && Math.random() < 0.08) { Game.injGapAt = Game.time + INJURY_GAP; injure(u, 'leg'); u.injuryUntil = Game.time + 40; }   // общий с толчками лимит: щиплют часто, ранят редко
   let stole = false;
   if (u.carry && Math.random() < 0.45) {       // гусь вырывает груз и удирает с ним
     const g = u.carry;
