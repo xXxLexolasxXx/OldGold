@@ -24,7 +24,9 @@ function toast(text, target, kind) {
   box.appendChild(el);
   // чем длиннее текст, тем дольше висит; на телефоне — заметно дольше; уходит «сгоранием», а не щелчком
   const mob = document.body.classList.contains('mobile');
-  setTimeout(() => toastClose(el), Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70)));
+  // важное (поход, зима, голод, золото школы) висит заметно дольше
+  const keep = /поход|Зим|Осень|голод|школ.*золот|золот.*школ|Малгор|Победа|Поражение/i.test(String(text)) ? 1.7 : 1;
+  setTimeout(() => toastClose(el), keep * Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70)));
 }
 
 function focusBuilding(b) {
@@ -33,7 +35,7 @@ function focusBuilding(b) {
   centerOn((b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE);
 }
 
-const gi = (g, cls = '') => `<img class="${cls}" src="${iconURL('good', g, 2)}" alt="" title="${GOODS[g].name}">`;
+const gi = (g, cls = '') => `<img class="${cls}" src="${iconURL('good', g, 2)}" alt="" data-g="${g}" title="${GOODS[g].name}">`;
 const ui = n => `<img src="${iconURL('ui', n, 2)}" alt="">`;
 
 function costHTML(cost) {
