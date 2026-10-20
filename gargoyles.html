@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Лист горгулий на фонарях</title>
+<style>
+body{margin:0;background:#1a1c22;color:#eee;font:13px/1.35 sans-serif}
+#bar{position:sticky;top:0;background:#000c;padding:6px 10px;display:flex;gap:12px;align-items:center;z-index:2}
+h3{margin:12px 10px 2px;color:#f6d458}.row{display:flex;flex-wrap:wrap;gap:10px;padding:4px 10px}
+.cell{display:flex;flex-direction:column;align-items:center;font-size:11px;color:#aab}
+canvas{image-rendering:pixelated}
+</style></head><body>
+<div id="bar"><b>Горгульи на фонарях</b><label>масштаб <select id="sc"><option>4</option><option selected>5</option><option>6</option></select></label><span id="err" style="color:#f88"></span></div>
+<div id="out"></div>
+<script src="js/config.js"></script><script src="js/sprites.js"></script>
+<script>
+// заглушки того, что в игре лежит в других файлах
+const Game = { time: 0 }; let NIGHT = 0; function nightAmt() { return NIGHT; }
+const IRON = ['#14101a', '#2a2430', '#4a4452'];
+function shadowAt(c, x, y, rx, ry = rx * 0.32) { ellipse(c, x + rx * 0.3, y, rx, ry, 'rgba(10,8,4,0.32)'); }
+function glow(c, x, y, r, rgb, a) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(1, `rgba(${rgb},0)`); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
+function lampCage(c, x, y, w, h, lit) {
+  c.fillStyle = IRON[0]; c.fillRect(x - w / 2 - 0.8, y - h, w + 1.6, h + 0.8);
+  c.fillStyle = lit ? '#ffb85a' : '#5c564c'; c.fillRect(x - w / 2, y - h * 0.9, w, h * 0.9);
+  c.fillStyle = IRON[0]; c.fillRect(x - 0.4, y - h, 0.8, h);
+  c.fillStyle = IRON[1]; c.beginPath(); c.moveTo(x - w / 2 - 1.6, y - h); c.lineTo(x, y - h - w * 1.1); c.lineTo(x + w / 2 + 1.6, y - h); c.closePath(); c.fill();
+}
+</script>
+<script src="js/world/gargoyle.js"></script>
+<script>
+function view(style, time, night, k, bgc) {
+  const W = 36, H = 74, cv = document.createElement('canvas'); cv.width = W * k; cv.height = H * k;
+  const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.fillStyle = bgc; c.fillRect(0, 0, cv.width, cv.height);
+  c.save(); c.scale(k, k); Game.time = time; NIGHT = night; c.translate(0, 0);
+  drawGargoyleLamp(c, 14, 70, night > 0.1, 1, style);
+  if (night > 0.5) { c.fillStyle = 'rgba(8,14,40,0.0)'; }
+  c.restore(); return cv;
+}
+function draw() {
+  const k = +sc.value; out.innerHTML = '';
+  const names = { A: 'A — Страж: сидит на капители, фонарь в когте', B: 'B — Химера: высунулась из столба, держит цепь в зубах', C: 'C — Хранитель: на крыше фонаря, крылья распахнуты' };
+  for (const st of ['A', 'B', 'C']) {
+    const h = document.createElement('h3'); h.textContent = names[st]; out.appendChild(h);
+    const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
+    const add = (cv, label) => { const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = label; d.appendChild(sp); row.appendChild(d); };
+    add(view(st, 0, 0, k, '#7a8a5a'), 'день (глаза тёмные)');
+    add(view(st, 0, 0.5, k, '#3a4258'), 'вечер (глаза разгораются)');
+    // ночные кадры: голова и крылья
+    for (let i = 0; i < 6; i++) add(view(st, i * 0.32 + 0.25, 1, k, '#161b2c'), 'ночь, кадр ' + (i + 1));
+  }
+}
+sc.oninput = draw; window.onerror = (m, s, l) => { err.textContent = m + ' @' + l; }; draw();
+</script></body></html>

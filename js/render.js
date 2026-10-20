@@ -765,7 +765,11 @@ function drawStatusIcons(c, x0, y0, x1, y1) {
     let icon = null;
     if (b.state !== 'done') {
       if (b.problem() === 'noroad') icon = ['ui', 'road'];
-      else if (!b.builder) icon = ['ui', 'noworker'];
+      else if (!b.builder) {
+        // нечего класть и никто не везёт — значок материала, а не «нет работяги» (работяги-то свободны)
+        const M = ['trunk', 'timber', 'stone'], m = M.find(k => (b.def.cost[k] || 0) - b.usedOf[k] > b.stock[k] + b.incoming[k]);
+        icon = b.state !== 'site' && m && !M.some(k => b.stock[k] > 0 || b.incoming[k] > 0) ? ['good', m] : ['ui', 'noworker'];
+      }
     } else {
       const p = b.problem();
       if (!p && b.noDeliver) icon = ['ui', 'nodeliver'];
@@ -944,6 +948,21 @@ function drawOverlay(c) {
     const id = World.bmap[idx(h[0], h[1])];
     const hb = id && Game.buildings.find(b => b.id === id);
     if (hb && hb !== sel) ant(hb.x * TILE, hb.y * TILE, hb.w * TILE, hb.h * TILE, 'rgba(255,255,255,0.6)');
+  }
+  // рудник и шахта кристаллов: подсветить все места, где их можно поставить (место у скалы найти непросто)
+  if (tool && tool.kind === 'build' && (BUILDINGS[tool.type].need === 'rock' || BUILDINGS[tool.type].need === 'crystal')) {
+    const d = bDims(tool.type, 0), pulse = 0.55 + 0.35 * Math.sin(Game.time * 4);
+    for (const [sx, sy] of mineSpots(tool.type)) {
+      c.fillStyle = 'rgba(90,230,120,0.12)'; c.fillRect(sx * TILE + 2, sy * TILE + 2, d.w * TILE - 4, d.h * TILE - 4);
+      c.strokeStyle = 'rgba(120,255,150,0.55)'; c.lineWidth = 1; c.strokeRect(sx * TILE + 2.5, sy * TILE + 2.5, d.w * TILE - 5, d.h * TILE - 5);
+      // кристаллик-искра на скале над входом в шахту
+      const cx = (sx + d.w / 2) * TILE, cy = (sy - 0.5) * TILE;
+      c.globalAlpha = pulse;
+      c.fillStyle = BUILDINGS[tool.type].need === 'crystal' ? '#d8a0ff' : tool.type === 'goldmine' ? '#ffe070' : '#d8e4f0';
+      c.beginPath(); c.moveTo(cx, cy - 6); c.lineTo(cx + 4, cy); c.lineTo(cx, cy + 6); c.lineTo(cx - 4, cy); c.closePath(); c.fill();
+      c.fillStyle = '#ffffff'; c.fillRect(cx - 1, cy - 3, 2, 2);
+      c.globalAlpha = 1;
+    }
   }
   if (!tool || !h) return;
   if (tool.kind === 'build') {

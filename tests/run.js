@@ -38,8 +38,8 @@ function test(name, fn) {
 
 // ---------- 1. Загрузка
 // отдельный скрипт-проверка: строки «✗ …» — провалы, «⚠ …» — замечания, остальное без отступа — сводка
-const scriptTest = (name, file) => test(name, r => {
-  const p = spawnSync(process.execPath, [path.join(__dirname, file)], { encoding: 'utf8', timeout: 180000 });
+const scriptTest = (name, file, args = []) => test(name, r => {
+  const p = spawnSync(process.execPath, [path.join(__dirname, file), ...args], { encoding: 'utf8', timeout: 180000 });
   const out = (p.stdout || '') + (p.stderr || '');
   for (const l of out.split('\n')) {
     if (/^\s*✗/.test(l)) r.fails.push(l.replace(/^\s*✗\s*/, ''));
@@ -51,11 +51,13 @@ const scriptTest = (name, file) => test(name, r => {
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
 scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
+scriptTest('neutrals2: ранги и новые народы леса, сейв', 'neutrals2-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
+scriptTest('injury: травмы — частота, лазарет, лекарь, сводка, груз, куры', 'injury-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
 scriptTest('kids: детские игры, замки, приручение, трубка, взросление', 'kids-test.js');
@@ -71,6 +73,7 @@ scriptTest('maps: свои карты — формат, проверка, мир
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
 scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
+scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 
 // ---------- 2. Симуляция: инварианты
 function simRun(seed, minutes, r, opts = {}) {

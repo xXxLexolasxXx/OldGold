@@ -36,7 +36,7 @@ BUILDINGS.infirmary = {
   name: 'Лазарет', cat: 'Основа', w: 3, h: 2, top: 64, cost: { timber: 5, stone: 3 }, worker: 'healer',
   inputs: { hops: 8, bread: 6 }, outputs: { potion: 8 },
   recipes: [{ in: { hops: 2, bread: 1 }, out: { potion: 2 }, time: 14 }],
-  desc: 'Лекарь варит целебные зелья из хмеля и хлеба и выхаживает больных: тяжёлые гномы приходят сюда сами. Мест — четыре.',
+  desc: 'Лекарь варит целебные зелья из хмеля и хлеба и выхаживает больных и раненых: они приходят сюда сами, а к тем, кто не дойдёт, лекарь выйдет. Мест — четыре.',
 };
 BUILD_ORDER.push('infirmary');
 UNLOCKS.push({ id: 'med', items: ['infirmary'], after: ['brewery'] });
@@ -144,6 +144,7 @@ function sickTick(dt) {
   SKT.acc += dt;
   if (SKT.acc < 1) return;
   const step = SKT.acc; SKT.acc = 0;
+  injTick(Game.time); injNoteTick();
   if (Game.time < 30 || !startOpen('sickness')) return;
   const M = medEnsure(), now = Game.time;
   // гномы проверяются по очереди: каждый — раз в SICK.STEP секунд
@@ -262,24 +263,196 @@ function* sickRestGen(u) {
 
 function* sickWardGen(u, b) {
   u.ward = b;
-  const ok = yield { walk: [b.doorX, b.doorY] };
-  if (!ok || b.removed) { u.ward = null; yield* sickRestGen(u); return; }
+  const ok = yield { walk: [b.doorX, b.doorY], offroad: true };   // больной и хромой доковыляет и по траве
+  if (!ok || b.removed) {
+    u.ward = null;
+    if (!ok && u.injury) injWhy(u, 'road');
+    if (u.ill) yield* sickRestGen(u);
+    return;
+  }
   yield { enter: b };
+  if (u.injury) injCareStart(u, 'ward');
   let potion = false;
-  for (let t = 0; t < 150 && u.ill && !b.removed; t += 2) {
+  for (let t = 0; t < 150 && (u.ill || u.injury) && !b.removed; t += 2) {
     yield { wait: 2 };
-    if (!u.ill || b.removed) break;
+    if (b.removed) break;
     const doc = b.worker && !b.worker.dead && b.worker.inside === b;
-    if (!potion) {
+    // зелье: больному — всегда, травмированному — если лекаря нет на месте (лекарь перевяжет и без зелья)
+    if (!potion && (u.ill || !doc)) {
       if (b.stock.potion - (b.reserved.potion || 0) > 0) { b.stock.potion--; potion = true; }
       else if (skStoreHave('potion') > 0 && skStoreTake('potion')) potion = true;
-      if (potion) { u.ill.s -= 0.4; medEnsure().st.potions++; }
+      if (potion) {
+        if (u.ill) u.ill.s -= 0.4;
+        if (u.injury) injHeal(u, 'ward');
+        medEnsure().st.potions++;
+      }
     }
+    if (u.injury) {
+      u.injuryUntil = Math.min(u.injuryUntil, Game.time + (doc ? INJ.WARD_DOC : INJ.WARD_BED));
+      if (Game.time >= u.injuryUntil) injHeal(u, 'ward');
+    }
+    if (!u.ill) continue;
     u.ill.s -= doc ? 0.03 : 0.012;
     if (u.ill.s <= 0.02) { sickCure(u, 'ward'); break; }
   }
   u.ward = null;
   if (!b.removed) yield { leave: true };
+}
+
+// ---------- Травмы: лазарет и лекарь ----------
+// Травма (u.injury: 'leg' | 'arm', life.js) заживает сама за INJURY_TIME. Раненый бросает дела и идёт в лазарет
+// (койка — быстрее, лекарь — ещё быстрее, зелье — сразу). Не может дойти (работает, дороги нет, коек нет) — лекарь
+// сам выходит к нему и перевязывает на месте. Почему не лечатся — одной сводкой раз в минуту, без спама.
+const INJ = {
+  WARD_DOC: 8,         // с лекарем в лазарете заживает за столько секунд
+  WARD_BED: 30,        // на койке без лекаря
+  CALL: 12,            // через столько секунд после травмы лекарь идёт к раненому сам
+  BANDAGE: 10,         // перевязанный лекарем на месте долечивается столько секунд
+  RETRY: 25,           // пауза перед новой попыткой дойти, если в прошлый раз не вышло
+  NOTE: 60,            // сводка о травмах — не чаще
+};
+function injCanTreat(u) { return !!u && !u.dead && !!u.injury && isPerson(u) && u.type !== 'hero' && u.type !== 'carter' && !u.teamOf; }
+function injCareStart(u, how) { if (!u.injCare) { u.injCare = how; u.healedAt = Game.time; u.healedBy = how; } }   // healedBy — и для таймера в lifeTick
+function injHeal(u, how) {
+  if (!u.injury) return;
+  u.injury = null; u.injuryUntil = 0;
+  u.healedBy = how; u.healedAt = u.healedAt || Game.time; u.injCare = null;
+  const M = medEnsure(); M.st.healed = (M.st.healed || 0) + 1;
+  if (typeof moodPoke === 'function') moodPoke(u, 'cured', 4, 90);
+  if (typeof floater === 'function') floater(u.x, u.y - 1.5, how === 'doc' ? 'Перевязали!' : 'Как новенький!', '#a0ffb0');
+}
+// есть ли смысл идти в лазарет прямо сейчас
+function injWants(u) {
+  if (!injCanTreat(u) || u.injCare || u.ward || u.injDoc) return false;
+  if (Game.time < (u.injTry || 0)) return false;
+  return !!sickWardFor(u);
+}
+// лекарю пора выйти к раненому
+function injCalled(h) { return h.type === 'healer' && !!h.injPat && !h.injPat.dead && !!h.injPat.injury; }
+
+function* injWardTrip(u) {
+  u.injTry = Game.time + INJ.RETRY;
+  const ward = sickWardFor(u);
+  if (!ward) return;
+  if (typeof floater === 'function') floater(u.x, u.y - 1.5, 'Мне бы к лекарю…', '#c8e0a8');
+  yield* sickWardGen(u, ward);
+}
+
+function* injWaitGen(u) {
+  if (typeof floater === 'function') floater(u.x, u.y - 1.5, 'Жду лекаря…', '#c8e0a8');
+  for (let t = 0; t < 40 && u.injury && (u.injDoc || u.injCare === 'doc'); t++) yield { wait: 1 };
+}
+
+// лекарь идёт к раненому и перевязывает на месте
+function* injVisitGen(h, p) {
+  p.injDoc = h;
+  if (h.inside) yield { leave: true };                   // из лазарета или из-под крыши, где пережидал дождь
+  const near = () => p.inside ? Math.hypot(p.inside.doorX - h.x, p.inside.doorY - h.y) < 2.5 : Math.hypot(p.x - h.x, p.y - h.y) < 2.5;
+  // раненый может отойти, пока лекарь идёт, — догоняет (до трёх раз)
+  for (let k = 0; k < 3 && p.injury && !p.dead && !near(); k++) yield { walk: p.inside ? [p.inside.doorX, p.inside.doorY] : [Math.floor(p.x), Math.floor(p.y)], offroad: true };
+  if (near() && p.injury && !p.dead) {
+    h.face = p.x > h.x ? 1 : -1;
+    injCareStart(p, 'doc');
+    yield { wait: 3, anim: 'work' };
+    if (p.injury) {
+      // зелье из лазарета или со склада — сразу на ноги, иначе повязка и чуть-чуть подождать
+      const b = h.home && h.home.type === 'infirmary' && !h.home.removed ? h.home : null;
+      let potion = false;
+      if (b && b.stock.potion - (b.reserved.potion || 0) > 0) { b.stock.potion--; potion = true; }
+      else if (skStoreHave('potion') > 0 && skStoreTake('potion')) potion = true;
+      if (potion) { medEnsure().st.potions++; injHeal(p, 'doc'); }
+      else p.injuryUntil = Math.min(p.injuryUntil, Game.time + INJ.BANDAGE);
+    }
+  }
+  if (p.injDoc === h) p.injDoc = null;
+  h.injPat = null; h.injGo = null;
+}
+// лекарь сейчас идёт по вызову (а не перебит перекуром или дождём)
+const injGoing = h => !!h.injGo && h.proc === h.injGo;
+function injVisitStart(h) { h.injGo = injVisitGen(h, h.injPat); return h.injGo; }
+// перекур и укрытие от дождя вызов к раненому не держат
+const INJ_SKIP_BRK = new Set(['smoke', 'join', 'rain']);
+
+// раз в секунду: раненых — в лазарет, к тем, кто не дошёл, — лекаря
+function injTick(now) {
+  let healers = null;
+  for (const u of Game.units) {
+    // вызов к раненому, которого уже вылечили (или он ушёл в лазарет), снимаем — иначе лекарь «занят» навсегда
+    if (u.injPat && (u.injPat.dead || !u.injPat.injury || u.injPat.injDoc !== u)) { u.injPat = null; u.injGo = null; }
+    if (u.injPat && !injGoing(u) && !u.dead && (u.brk ? INJ_SKIP_BRK.has(u.brk.kind) : interruptible(u))) {
+      startBreak(u, 'medcall', null);
+      u.proc = injVisitStart(u);
+    }
+    if (u.injDoc && (!u.injury || u.injDoc.dead || u.injDoc.injPat !== u)) u.injDoc = null;   // лекарь не дошёл или уже не идёт
+    if (!u.injury) continue;
+    if (!injCanTreat(u)) continue;
+    // перевязанный лекарем: заживает по таймеру и внутри здания (снаружи lifeTick снимет и сам)
+    if (u.healedBy === 'doc' && now >= u.injuryUntil) { injHeal(u, 'doc'); continue; }
+    // лекарь уже идёт — раненый налегке садится и ждёт, а не убегает от него по делам
+    if (u.injDoc && !u.injCare && !u.carry && interruptible(u)) {
+      startBreak(u, 'sick', null);
+      u.proc = injWaitGen(u);
+      continue;
+    }
+    if (u.injCare || u.ward || u.injDoc) continue;
+    // идёт налегке — сразу к лекарю (работа подождёт: после перерыва вернётся к делу)
+    if (!u.carry && interruptible(u) && injWants(u)) {
+      startBreak(u, 'sick', null);
+      u.proc = injWardTrip(u);
+      continue;
+    }
+    if (now - (u.injAt || 0) < INJ.CALL) continue;
+    // долго не может дойти — зовём лекаря
+    if (!healers) healers = Game.units.filter(h => h.type === 'healer' && !h.dead && !h.injPat && !h.injury && (h.brk ? INJ_SKIP_BRK.has(h.brk.kind) : interruptible(h) || h.inside === h.home));
+    let best = null, bd = 40;
+    for (const h of healers) { const d = Math.hypot(h.x - u.x, h.y - u.y); if (d < bd) { bd = d; best = h; } }
+    if (best) { best.injPat = u; u.injDoc = best; healers.splice(healers.indexOf(best), 1); }
+  }
+}
+
+// ---------- Сводка о травмах (вместо тоста на каждый толчок) ----------
+
+function injNoteEnsure() { const M = medEnsure(); return M.inj || (M.inj = { n: 0, t: Game.time, why: {} }); }
+function injNote(u) {
+  injNoteEnsure().n++;
+  if (typeof logEvent === 'function') logEvent('med', `${UNIT_TYPES[u.type].name} ${u.injury === 'leg' ? 'повредил ногу' : 'повредил руку'}`, u.x, u.y);
+}
+function injWhy(u, k) { const N = injNoteEnsure(); N.why[k] = (N.why[k] || 0) + 1; }
+// почему раненые не лечатся у лекаря ('' — всё в порядке)
+function injReason() {
+  const wards = Game.buildings.filter(b => b.type === 'infirmary' && !b.removed);
+  const ready = wards.filter(b => b.state === 'done');
+  const N = Game.med && Game.med.inj;
+  if (!ready.length) return wards.length ? 'лазарет ещё строится, пока заживает само' : 'заживёт само, но в лазарете лечат быстрее';
+  const doc = ready.some(b => b.worker && !b.worker.dead);
+  let pot = skStoreHave('potion');
+  for (const b of ready) pot += Math.max(0, b.stock.potion || 0);
+  if (!doc) return pot ? 'в лазарете нет лекаря — лечатся дольше' : 'в лазарете нет ни лекаря, ни зелий — обучите лекаря в школе';
+  if (N && N.why.road) return 'раненые не могут дойти до лазарета — проведите туда дорогу';
+  if (ready.every(b => sickBeds(b) >= SICK.BEDS)) return 'все койки лазарета заняты';
+  return '';
+}
+function injNoteTick() {
+  const N = Game.med && Game.med.inj;
+  if (!N || Game.time - N.t < INJ.NOTE) return;
+  if (N.n) {
+    const why = injReason();
+    const hurt = Game.units.filter(u => u.injury && !u.dead && isPerson(u)).length;
+    // всё в порядке — только в журнал; есть причина — одна сводка на минуту
+    if (why && hurt) skSay(`Травмы за минуту: ${N.n}${hurt > 1 ? `, ранены ${hurt}` : ''} — ${why}`);
+    else if (typeof logEvent === 'function') logEvent('med', `Травмы за минуту: ${N.n}${why ? ' — ' + why : ', лечатся у лекаря'}`);
+  }
+  Game.med.inj = { n: 0, t: Game.time, why: {} };
+}
+
+// раненый между делами идёт лечиться; лекаря, которого позвали, отпускает к раненому
+if (typeof Unit !== 'undefined') {
+  const _think = Unit.prototype.think;
+  Unit.prototype.think = function () {
+    if (injCalled(this)) { this.idleFlag = false; return injVisitStart(this); }
+    if (!this.carry && injWants(this)) { this.idleFlag = false; return injWardTrip(this); }
+    return _think.call(this);
+  };
 }
 
 // бродяги через открытые ворота иногда приносят хворь
@@ -389,7 +562,7 @@ if (typeof step === 'function') {
   const _step = step;
   step = function (dt) { _step(dt); if (!skMirror()) sickTick(dt); };
   const _rgs = resetGameState;
-  resetGameState = function () { _rgs(); Game.med = null; };
+  resetGameState = function () { _rgs(); Game.med = null; Game.injGapAt = 0; };
   const _sg = serializeGame;
   serializeGame = function () {
     const s = _sg();
