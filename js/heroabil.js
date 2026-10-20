@@ -664,6 +664,19 @@ function abDrawZone(c, z, t) {
   c.restore();
 }
 
+// ---------- Значки способностей класса в окне гильдии (что даст обучение) ----------
+function abilRowHTML(cls, H) {
+  const as = HERO_ABIL[cls];
+  if (!as || typeof abilIcon16 !== 'function') return '';
+  const L = (H && H.level) || 1;
+  return '<span class="ab-row">' + as.map((a, i) => `<img src="${abilIcon16(a.k)}" alt="" data-abi="${a.k}" title="${a.name}${a.passive ? ' (пассивно)' : ''}, с ${a.lvl || 1} ур.: ${a.desc}"${L < (a.lvl || 1) ? ' class="lk"' : ''}>`).join('') + '</span>';
+}
+if (typeof document !== 'undefined' && document.createElement && document.head && document.head.appendChild) {
+  const st = document.createElement('style');
+  st.textContent = '.g-wide .ab-row{display:flex;gap:3px;margin-top:4px}.g-wide .ab-row img{width:24px;height:24px;image-rendering:pixelated;background:#241a0e;border:1px solid #8a6a28;border-radius:4px}.g-wide .ab-row img.lk{opacity:.55}';
+  document.head.appendChild(st);
+}
+
 // ---------- Панель быстрых способностей (одно касание) ----------
 
 const AB_UTIL = [
