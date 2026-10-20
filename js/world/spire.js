@@ -7,7 +7,7 @@
 //   • чек-лист «что нужно, чтобы идти» в панели целей (герой, уровень, отряд, здоровье, провиант, путь),
 //     кнопки «Выступить в поход», «В бой» и «Показать шпиль»;
 //   • поход: отряд идёт за героем, провиант со склада, привал у подножия лечит отряд;
-//   • стрелка-компас к шпилю у края экрана, пока он за кадром (глава 6 или шпиль уже найден).
+//   • указатель-компас на шпиль (значок в углу, сворачивается; глава 6 или шпиль уже найден).
 // Кооператив: приказы уходят тем же путём, что и обычный тап (coopSend 'go' / отряд 'squad'),
 // тропу и привал считает сервер.
 
@@ -20,6 +20,9 @@ const Spire = { prep: null, prepT: -9, path: null, pathT: -99, ui: null };
 
 const spireHome = F => [Math.floor(F.tx + 1.5), F.ty + 4];      // перед дверью, где стоит Малгор
 const spireBoss = () => Game.raiders && Game.raiders.find(N => N.k === 'malgor' && N.st !== 'die' && N.st !== 'vanish') || null;
+// куда идти сейчас: к стражу текущего яруса (guards.js), а когда все пали — к Малгору
+const spireFront = F => (typeof guardsFront === 'function' && guardsFront()) || spireHome(F);
+const spireFoe = () => spireBoss() || (typeof guardsCurrent === 'function' ? guardsCurrent() : null);
 const spireOn = () => { const F = Game.foe; return !!F && !F.defeated; };
 // показывать ли подсказки похода: глава 6 сценария, или шпиль уже найден
 function spireActive() {
@@ -84,7 +87,7 @@ function spireCarvePath(sx, sy, tx, ty) {
 function spireEnsureRoute(sx, sy) {
   const F = Game.foe;
   if (!F) return { ok: false, why: 'шпиля нет на этой карте' };
-  const h = spireNearWalk(...spireHome(F));
+  const h = spireNearWalk(...spireFront(F));
   if (!h) return { ok: false, why: 'подножие шпиля завалено' };
   const st = spireNearWalk(sx, sy) || [sx, sy];
   if (findPath(st[0], st[1], h[0], h[1])) return { ok: true, carved: 0 };
@@ -147,14 +150,14 @@ function spireFoodStock() {
 function spireRouteState(h) {
   if (Game.time - Spire.pathT < 3 && Spire.path) return Spire.path;
   Spire.pathT = Game.time;
-  const F = Game.foe, home = spireNearWalk(...spireHome(F));
+  const F = Game.foe, fr = spireFront(F), home = spireNearWalk(...fr);
   const from = h && !h.dead ? [Math.floor(h.x), Math.floor(h.y)] : spireVillage();
   const st = spireNearWalk(from[0], from[1]) || from;
   let p = home ? findPath(st[0], st[1], home[0], home[1]) : null;
   Spire.path = { ok: !!p, len: p ? p.length : 0, camp: null, why: '' };
   if (p) {
     // привал: первая клетка пути ближе SPIRE_CAMP к Малгору
-    const hx = F.tx + 1.5, hy = F.ty + 3.2;
+    const hx = fr[0] + 0.5, hy = fr[1] - 0.8;
     let camp = p[p.length - 1];
     for (const c of p) if (Math.hypot(c[0] - hx, c[1] - hy) < SPIRE_CAMP) { camp = c; break; }
     Spire.path.camp = camp;
@@ -178,9 +181,9 @@ function spirePrep() {
   ];
   if (!coop) items.push({ t: `Провиант: ${SPIRE_FOOD} хлеба или колбасы на складе (есть ${Math.floor(food)})`, ok: food >= SPIRE_FOOD });
   items.push({ t: R.ok ? `Путь до шпиля открыт (${R.len} кл.)` : 'Путь: ' + R.why, ok: R.ok, must: true });
-  const boss = spireBoss();
-  const near = !!(h && boss && Math.hypot(h.x - F.tx - 1.5, h.y - F.ty - 3) < SPIRE_CAMP + 4);
-  return { items, ready: items.every(i => i.ok), can: alive, near, boss: boss ? { hp: Math.round(boss.hp), mhp: boss.mhp, fz: boss.fz || boss.phase || 1, shield: !!boss.shield } : null, going: !!Game.spireGo };
+  const boss = spireFoe(), fr = spireFront(F);
+  const near = !!(h && boss && Math.hypot(h.x - fr[0], h.y - fr[1]) < SPIRE_CAMP + 4);
+  return { items, ready: items.every(i => i.ok), can: alive, near, boss: boss ? { hp: Math.round(boss.hp), mhp: boss.mhp, fz: boss.fz || boss.phase || 1, shield: !!boss.shield, name: boss.k === 'malgor' ? 'Малгор' : FSPEC[boss.k].name, gk: FSPEC[boss.k].gk || '' } : null, going: !!Game.spireGo };
 }
 
 // ---------- Приказы ----------
@@ -190,6 +193,7 @@ function spireShow() {
   if (!F || typeof centerOn !== 'function') return;
   F.known = true;
   centerOn((F.tx + 1.5) * TILE, (F.ty - 1) * TILE);
+  if (typeof spirePtrFull === 'function') spirePtrFull();
 }
 
 // поход: отряд за героем, провиант, герой идёт на привал у подножия
@@ -229,9 +233,9 @@ function spireGo() {
 
 // в бой: напасть на Малгора (с привала или откуда угодно)
 function spireFight() {
-  const h = Game.hero, N = spireBoss();
+  const h = Game.hero, N = spireFoe();
   if (!h || h.dead || !N) return;
-  issueCmd(h, { kind: 'attack', f: { kind: 'foe', o: N }, tx: Math.floor(N.x), ty: Math.floor(N.y), label: 'Бой с Малгором' });
+  issueCmd(h, { kind: 'attack', f: { kind: 'foe', o: N }, tx: Math.floor(N.x), ty: Math.floor(N.y), label: N.k === 'malgor' ? 'Бой с Малгором' : 'Бой: ' + FSPEC[N.k].name });
 }
 
 // привал у подножия: отряд подкрепился (на симуляции; в коопе — по героям игроков у шпиля)
@@ -241,7 +245,8 @@ function spireCampTick() {
   const G = Game.spireGo;
   for (const h of Game.units) {
     if (!h.hero || h.dead || h._spireCamp === F.tx * 1000 + F.ty) continue;
-    if (Math.hypot(h.x - F.tx - 1.5, h.y - F.ty - 3.2) > SPIRE_CAMP + 2.5) continue;
+    const fr = spireFront(F);
+    if (Math.hypot(h.x - fr[0] - 0.5, h.y - fr[1] + 0.8) > SPIRE_CAMP + 2.5) continue;
     if (h === Game.hero && !G && !(typeof isServerSim === 'function' && isServerSim())) continue;   // пришёл сам, без похода — без привала
     h._spireCamp = F.tx * 1000 + F.ty;
     const full = !G || G.prov >= SPIRE_FOOD;
@@ -303,13 +308,14 @@ function spirePrepHTML() {
   let x = '<div class="gh-sub">Поход к Чёрному шпилю</div>';
   if (P.boss && P.near) {
     const pc = Math.max(0, Math.round(100 * P.boss.hp / P.boss.mhp));
-    x += `<div class="sp-boss"><div class="sp-bar"><i style="width:${pc}%"></i></div><span>Малгор ${P.boss.hp}/${P.boss.mhp} · ${spEsc(PH[P.boss.fz] || '')}${P.boss.shield ? ' · щит!' : ''}</span></div>`;
+    x += `<div class="sp-boss"><div class="sp-bar"><i style="width:${pc}%"></i></div><span>${spEsc(P.boss.name)} ${P.boss.hp}/${P.boss.mhp}${P.boss.gk ? '' : ' · ' + spEsc(PH[P.boss.fz] || '')}${P.boss.shield ? ' · щит!' : ''}</span></div>`;
   } else {
     x += '<ul class="small sp-list">' + P.items.map(i => `<li class="${i.ok ? 'ok' : i.must ? 'bad' : ''}"><span>${i.ok ? '✔' : i.must ? '✖' : '○'} ${spEsc(i.t)}</span></li>`).join('') + '</ul>';
     x += `<div class="gh-hint">${P.ready ? 'Всё готово — можно выступать.' : P.can ? 'Идти можно и так, но ○ — это риск: Малгор бьёт сильно, а поражение — возврат к костру.' : 'Сейчас не выйти: смотрите ✖.'}</div>`;
   }
   x += '<div class="sp-btns">';
-  if (P.boss && P.near) x += '<button data-sp="fight" class="primary">В бой с Малгором!</button>';
+  if (typeof guardsTotal === 'function' && Game.foe.tiers && !Game.foe.tiers.none) x = x.replace('</div>', `</div><div class="small muted">Ярусы шпиля: стражей побеждено ${guardsDone()}/${guardsTotal()}</div>`);
+  if (P.boss && P.near) x += `<button data-sp="fight" class="primary">${P.boss.gk ? 'В бой со стражем!' : 'В бой с Малгором!'}</button>`;
   else x += `<button data-sp="go" class="primary"${P.can ? '' : ' disabled'}>${P.going ? 'Снова в поход ▸' : 'Выступить в поход ▸'}</button>`;
   x += '<button data-sp="show">Показать шпиль</button></div>';
   return x;
@@ -326,44 +332,154 @@ if (typeof document !== 'undefined' && document.addEventListener) {
   }, true);
 }
 
-// ---------- Компас: стрелка к шпилю у края экрана ----------
+// ---------- Компас: указатель на шпиль (DOM-значок, а не рисунок на карте) ----------
+// Три вида: «крупно» (у края экрана по направлению к шпилю — первые секунды главы и по запросу), «компакт» (маленький
+// полупрозрачный значок в свободном углу, по умолчанию) и «свёрнут» (крошечный компас; тап по значку сворачивает и разворачивает).
+// Совсем скрыт: настройка «Указатель шпиля» (меню), шпиль в кадре, герой рядом с ним или идёт к нему, Малгор побеждён.
 
+const SPTR_NEAR = 34;         // герой ближе этого (кл.) к шпилю — указатель не нужен
+const SPTR_FULL = 9;          // сколько секунд показывать крупно
+const SPtr = { el: null, fullUntil: 0, spot: null, spotT: -9 };
+
+function spireSetting() { try { return localStorage.getItem('feod.spirePtr') !== '0'; } catch (e) { return true; } }
+function spireSetSetting(on) {
+  try { localStorage.setItem('feod.spirePtr', on ? '1' : '0'); } catch (e) { /* нет доступа к хранилищу */ }
+  spirePtrMenuSync();
+  if (typeof toast === 'function') toast(on ? 'Указатель шпиля включён' : 'Указатель шпиля скрыт. Вернуть — в меню, «Настройки».');
+}
+function spireFolded() {
+  const g = Game.goal;
+  if (g && g.ptr && g.ptr.fold != null) return !!g.ptr.fold;
+  try { return localStorage.getItem('feod.spireFold') === '1'; } catch (e) { return false; }
+}
+function spireSetFold(f) {
+  const g = Game.goal;
+  if (g) (g.ptr || (g.ptr = {})).fold = f ? 1 : 0;
+  try { localStorage.setItem('feod.spireFold', f ? '1' : '0'); } catch (e) { /* нет доступа к хранилищу */ }
+  SPtr.fullUntil = 0;
+}
+// «по запросу»: показать крупно (кнопка «Показать шпиль»)
+function spirePtrFull() {
+  SPtr.fullUntil = performance.now() + SPTR_FULL * 1000;
+  const g = Game.goal;
+  if (g && g.ptr) g.ptr.fold = 0;
+}
+// герой у шпиля или идёт к нему
+function spireHeroNear() {
+  const F = Game.foe, h = Game.hero;
+  if (!F || !h || h.dead) return false;
+  const cx = F.tx + 1.5, cy = F.ty + 3;
+  if (Math.hypot(h.x - cx, h.y - cy) < SPTR_NEAR) return true;
+  const c = h.cmd;
+  if (!c) return false;
+  if (c.kind === 'attack' && c.f && c.f.kind === 'foe') return true;
+  return c.tx != null && Math.hypot(c.tx - cx, c.ty - cy) < SPTR_NEAR;
+}
+const spirePtrShow = () => spireActive() && spireSetting() && !spireHeroNear();
+
+const SPTR_SVG = '<svg viewBox="-12 -12 24 24" aria-hidden="true"><g class="sp-rot"><path d="M10 0 L-6 -7 L-2.5 0 L-6 7 Z" fill="#9cff66"/></g></svg>';
+function spirePtrEl() {
+  if (SPtr.el) return SPtr.el;
+  const e = document.createElement('div');
+  e.id = 'spire-ptr'; e.className = 'hidden';
+  e.innerHTML = SPTR_SVG + '<span class="sp-lab"></span><b class="sp-x">✕</b>';
+  e.addEventListener('click', ev => {
+    ev.stopPropagation();
+    spireSetFold(e.classList.contains('full') ? true : !spireFolded());
+  });
+  for (const t of ['mousedown', 'touchstart', 'pointerdown', 'wheel']) e.addEventListener(t, ev => ev.stopPropagation(), { passive: true });
+  (document.getElementById('view') || document.body).appendChild(e);
+  return (SPtr.el = e);
+}
+// свободный угол: первый из кандидатов, где под значком нет ничего, кроме карты
+function spirePtrSpot(e, sz) {
+  const v = document.getElementById('view');
+  if (!v) return null;
+  const r = v.getBoundingClientRect(), m = 8, tb = document.getElementById('topbar');
+  const top = (tb ? tb.getBoundingClientRect().bottom : r.top) + 6;
+  const bot = r.bottom - (document.body.classList.contains('mobile') ? 70 : 14) - sz;
+  const L = r.left + m, Rr = r.right - m - sz, mid = (top + bot) / 2;
+  const cand = [[L, bot], [Rr, bot], [L, top], [Rr, top], [L, mid], [Rr, mid], [L, (top + mid) / 2], [Rr, (top + mid) / 2], [L, (bot + mid) / 2], [Rr, (bot + mid) / 2]];
+  const keep = SPtr.spot;
+  if (keep) cand.unshift(keep);
+  const cv = document.getElementById('game');
+  const free = (x, y) => {
+    for (const [px, py] of [[x, y], [x + sz, y], [x, y + sz], [x + sz, y + sz], [x + sz / 2, y + sz / 2], [x + sz + 6, y + sz / 2], [x - 6, y + sz / 2]]) {
+      if (px < r.left || px > r.right || py < r.top || py > r.bottom) continue;
+      for (const o of document.elementsFromPoint(px, py)) {
+        if (o === e || e.contains(o) || o.contains(v) || o === cv || o === v || o === document.body || o === document.documentElement || o.id === 'vignette' || o.id === 'toasts') continue;
+        return false;
+      }
+    }
+    return true;
+  };
+  for (const [x, y] of cand) if (free(x, y)) return [x, y];
+  return keep || cand[1];
+}
+function spirePtrUpdate() {
+  if (typeof document === 'undefined' || typeof R === 'undefined' || !R.canvas) return;
+  const e = spirePtrEl(), g = Game.goal;
+  if (!spirePtrShow()) { e.classList.add('hidden'); return; }
+  // первое появление главы — крупно, один раз за сохранение
+  if (g && !(g.ptr && g.ptr.seen)) {
+    const p = g.ptr || (g.ptr = {});
+    p.seen = 1;
+    if (!spireFolded()) SPtr.fullUntil = performance.now() + SPTR_FULL * 1000;
+  }
+  const F = Game.foe, z = devScale(), cw = R.canvas.width, ch = R.canvas.height, dpr = cw / (R.canvas.clientWidth || cw);
+  const sx = ((F.tx + 1.5) * TILE - R.cam.x) * z, sy = ((F.ty - 1) * TILE - R.cam.y) * z;
+  if (sx > 0 && sx < cw && sy > 0 && sy < ch) { e.classList.add('hidden'); return; }     // шпиль в кадре
+  const now = performance.now(), full = now < SPtr.fullUntil, fold = !full && spireFolded();
+  const cx = cw / 2, cy = ch / 2, dx = sx - cx, dy = sy - cy, ang = Math.atan2(dy, dx);
+  const h = Game.hero, dist = h ? Math.round(Math.hypot(h.x - F.tx - 1.5, h.y - F.ty - 3)) : 0;
+  const mode = full ? 'full' : fold ? 'fold' : 'compact';
+  if (e.dataset.mode !== mode) { e.dataset.mode = mode; e.classList.toggle('full', full); e.classList.toggle('fold', fold); SPtr.spotT = -9; }
+  e.classList.remove('hidden');
+  const lab = e.querySelector('.sp-lab'), t = full ? 'Чёрный шпиль · ' + dist + ' кл.' : dist + '';
+  if (lab.textContent !== t) lab.textContent = t;
+  e.title = fold ? 'Указатель на Чёрный шпиль — тап, чтобы развернуть' : 'Чёрный шпиль — тап, чтобы свернуть';
+  e.querySelector('.sp-rot').setAttribute('transform', `rotate(${(ang * 180 / Math.PI).toFixed(1)})`);
+  const vr = (document.getElementById('view') || document.body).getBoundingClientRect();
+  if (full) {                                   // у края карты, в сторону шпиля
+    const w = e.offsetWidth, hgt = e.offsetHeight, tb = document.getElementById('topbar'), mob = document.body.classList.contains('mobile');
+    const x0 = document.body.classList.contains('land') ? 54 : 8, x1 = vr.width - 8 - w;
+    const y0 = (tb ? Math.max(0, tb.getBoundingClientRect().bottom - vr.top) : 0) + 6, y1 = vr.height - (mob ? 78 : 14) - hgt;
+    const hw = (x1 - x0) / 2, hh = (y1 - y0) / 2, k = Math.min(hw / Math.abs(dx / dpr || 1e-6), hh / Math.abs(dy / dpr || 1e-6));
+    e.style.left = Math.round((x0 + x1) / 2 + dx / dpr * k) + 'px';
+    e.style.top = Math.round((y0 + y1) / 2 + dy / dpr * k) + 'px';
+  } else {
+    if (now - SPtr.spotT > 600) { SPtr.spot = spirePtrSpot(e, Math.max(e.offsetWidth, e.offsetHeight, 30)); SPtr.spotT = now; }
+    if (SPtr.spot) { e.style.left = Math.round(SPtr.spot[0] - vr.left) + 'px'; e.style.top = Math.round(SPtr.spot[1] - vr.top) + 'px'; }
+  }
+}
 {
   const _ov = drawOverlay;
   drawOverlay = function (c) {
     _ov(c);
-    try { spireDrawCompass(c); } catch (e) { if (!spireDrawCompass.err) { spireDrawCompass.err = 1; console.error(e); } }
+    try { spirePtrUpdate(); } catch (e) { if (!spirePtrUpdate.err) { spirePtrUpdate.err = 1; console.error(e); } }
   };
 }
-function spireDrawCompass(c) {
-  if (!spireActive() || typeof R === 'undefined' || !R.canvas) return;
-  const F = Game.foe, z = devScale(), cw = R.canvas.width, ch = R.canvas.height;
-  const wx = (F.tx + 1.5) * TILE, wy = (F.ty - 1) * TILE;
-  const sx = (wx - R.cam.x) * z, sy = (wy - R.cam.y) * z;
-  const m = 46 * (window.devicePixelRatio || 1);
-  if (sx > 0 && sx < cw && sy > 0 && sy < ch) return;               // шпиль в кадре
-  const cx = cw / 2, cy = ch / 2, dx = sx - cx, dy = sy - cy;
-  const k = Math.min((cw / 2 - m) / Math.abs(dx || 1e-6), (ch / 2 - m) / Math.abs(dy || 1e-6));
-  const ax = cx + dx * k, ay = cy + dy * k, ang = Math.atan2(dy, dx);
-  const h = Game.hero, dist = h ? Math.round(Math.hypot(h.x - F.tx - 1.5, h.y - F.ty - 3)) : 0;
-  const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 260), s = window.devicePixelRatio || 1;
-  c.save();
-  c.setTransform(1, 0, 0, 1, 0, 0);
-  c.translate(ax, ay);
-  c.fillStyle = 'rgba(16,10,30,0.85)'; c.strokeStyle = `rgba(176,124,255,${0.7 + 0.3 * pulse})`; c.lineWidth = 2 * s;
-  c.beginPath(); c.arc(0, 0, 17 * s, 0, Math.PI * 2); c.fill(); c.stroke();
-  c.rotate(ang);
-  c.fillStyle = '#9cff66';
-  c.beginPath(); c.moveTo(13 * s, 0); c.lineTo(-6 * s, -8 * s); c.lineTo(-2 * s, 0); c.lineTo(-6 * s, 8 * s); c.closePath(); c.fill();
-  c.rotate(-ang);
-  c.font = `bold ${11 * s}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'top';
-  const lab = 'Чёрный шпиль' + (dist ? ' · ' + dist + ' кл.' : '');
-  const ty = ay > ch / 2 ? -36 * s : 21 * s;
-  const tw = c.measureText(lab).width + 10 * s;
-  let tx = Math.max(tw / 2 + 4 - ax, Math.min(cw - tw / 2 - 4 - ax, 0));
-  c.fillStyle = 'rgba(16,10,30,0.85)'; c.fillRect(tx - tw / 2, ty - 2 * s, tw, 15 * s);
-  c.fillStyle = '#d8c0ff'; c.fillText(lab, tx, ty);
-  c.restore();
+
+// настройка в меню («Настройки»)
+function spirePtrMenuSync() {
+  const b = typeof document !== 'undefined' && document.getElementById('spireptr-btn');
+  if (b) b.querySelector('span').textContent = 'Указатель шпиля: ' + (spireSetting() ? 'показывать' : 'скрывать');
+}
+{
+  const _s = startGame;
+  startGame = function () {
+    _s();
+    const list = document.querySelector('#tab-menu .menu-list');
+    if (list && !document.getElementById('spireptr-btn')) {
+      const b = document.createElement('button');
+      b.id = 'spireptr-btn'; b.title = 'Стрелка-компас к Чёрному шпилю в поздней игре: показывать или скрывать совсем';
+      b.innerHTML = '<span></span>';
+      b.onclick = () => spireSetSetting(!spireSetting());
+      const eco = document.getElementById('eco-btn');
+      (eco && eco.parentElement === list ? eco : list.firstChild).insertAdjacentElement(eco ? 'afterend' : 'beforebegin', b);
+      spirePtrMenuSync();
+    }
+  };
 }
 
 // миникарта: на главе 6 шпиль мигает кольцом, чтобы его нельзя было не заметить

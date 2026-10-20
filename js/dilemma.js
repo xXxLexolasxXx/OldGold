@@ -259,7 +259,7 @@ function dilAfford(cost) { for (const g in cost || {}) if (dilHave(g) < cost[g])
 
 function dilNightLike() { return isNightNow() || isEveningNow(); }
 function dilBusy() {
-  if ((Game.raiders || []).some(N => N.st !== 'die' && N.st !== 'vanish' && N.k !== 'raven' && (N.k !== 'malgor' || N.tg))) return true;     // Малгор в башне — не бой
+  if ((Game.raiders || []).some(N => N.st !== 'die' && N.st !== 'vanish' && N.k !== 'raven' && (N.k !== 'malgor' && !(typeof FSPEC !== 'undefined' && FSPEC[N.k] && FSPEC[N.k].big) || N.tg))) return true;     // Малгор в башне — не бой
   if (Game.raid && Game.raid.f) return true;
   if ((Game.skels || []).length) return true;
   if ((Game.ghosts || []).some(g => g.mode === 'atk' || g.mode === 'grab' || g.mode === 'carry')) return true;
