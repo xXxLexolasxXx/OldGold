@@ -664,6 +664,19 @@ body.mm-folded #mm-size { display: none; }
 }
 #loading:not(.with-menu) #start-menu { display: none; }
 #loading.with-menu .load-msg { display: none; }
+#sm-music {
+  position: absolute; z-index: 6; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right));
+  width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
+  color: #f6e8c0; cursor: pointer; border-radius: 50%;
+  background: linear-gradient(#5a4220, #3a2a14); border: 1px solid #b8902c; box-shadow: 0 3px 0 #1a1008, 0 0 12px rgba(255,170,60,0.12);
+}
+@media (max-width: 700px) { #sm-music { width: 36px; height: 36px; top: calc(6px + env(safe-area-inset-top)); right: calc(6px + env(safe-area-inset-right)); } #sm-music svg { width: 18px; height: 18px; } }
+#sm-music:hover { filter: brightness(1.15); }
+#sm-music:active { transform: translateY(2px); box-shadow: 0 1px 0 #1a1008; }
+#sm-music .sm-music-x { opacity: 0; }
+#sm-music.off { color: #9a8458; background: rgba(20,14,8,0.7); border-color: #6a5430; }
+#sm-music.off .sm-music-x { opacity: 1; }
+#loading:not(.with-menu) #sm-music { display: none; }
 .sm-panel { display: flex; flex-direction: column; gap: 10px; width: min(92vw, 380px); }
 .sm-panel.hidden { display: none; }
 .sm-btn {
@@ -743,6 +756,11 @@ body.mobile #dd-zoom { display: none; }
   .sm-btn small { font-size: 11px; }
 }
 .sm-btn b, .sm-btn small { position: relative; z-index: 5; }
+/* телефон в ландшафте: название компактное — по высоте экрана (≈24%), а не по ширине; кнопки меню не сдвигаются */
+@media (orientation: landscape) and (max-height: 520px) {
+  #loading .load-title { top: 3vh; }
+  #loading h1 { font-size: min(13vw, 22vh); line-height: 1.05; }
+}
 
 /* кнопки меню выплывают вбок, лоза прорастает следом (js/startmenu.js) */
 .sm-in-l, .sm-in-r { animation: sm-slide-l 0.55s cubic-bezier(.2,.8,.3,1) var(--d, 0s) both; }
@@ -962,3 +980,27 @@ body.mobile #guide, body.mobile #chron, body.mobile #land-modal { padding-left: 
 body.mobile:not(.land):has(#snow-btn:not([style*="none"])) #nq-pill { left: calc(8px + 44px + 6px + 106px); }
 /* открытая карточка героя (портрет, снизу слева) занимает место подсказки и баннера паузы — они ждут, пока карточку не закроют */
 body.mobile:not(.land):has(#hero-card[style*="block"]) :is(#hint, #pause-banner) { display: none; }
+/* подсказка по иконке ресурса (js/restip.js) */
+img[data-g] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+#restip {
+  position: fixed; z-index: 400; max-width: min(280px, calc(100vw - 12px)); box-sizing: border-box; padding: 8px 10px 9px;
+  background: linear-gradient(180deg, var(--bg3), var(--bg1)); color: var(--text); font: 12px/1.35 'PT Serif', Georgia, serif;
+  box-shadow: inset 0 0 0 1px var(--line-hi), inset 0 0 0 2px rgba(0,0,0,0.45), 0 0 0 2px #0e0a07, 0 6px 14px rgba(0,0,0,0.75);
+  pointer-events: none; text-shadow: 0 1px 0 #000;
+}
+#restip.hidden { display: none; }
+#restip .rt-head { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+#restip .rt-head img { width: 36px; height: 36px; image-rendering: pixelated; background: rgba(0,0,0,0.35); box-shadow: inset 0 0 0 1px var(--line); padding: 2px; }
+#restip .rt-head b { display: block; color: var(--gold-hi); font-size: 14px; }
+#restip .rt-head i { color: var(--text-dim); font-style: normal; font-size: 11px; }
+#restip .rt-row { margin-top: 2px; }
+#restip .rt-row b { color: var(--gold-hi); }
+#restip .rt-row.ok b { color: var(--green); }
+#restip .rt-row.bad b { color: var(--red); }
+#restip .rt-row.dim { color: var(--text-dim); font-size: 11px; }
+
+/* звук и музыка: кнопка в верхней полосе показывает, выключена ли музыка; в меню подписи */
+#dd-snd .dd-menu button { white-space: nowrap; padding: 2px 10px; }
+#dd-snd .dd-menu button.off { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--red); }
+#dd-snd.mute > .dd-t { color: var(--red); position: relative; }
+#dd-snd.mute > .dd-t::before { content: ''; position: absolute; left: 6px; top: 50%; width: 14px; height: 2px; background: var(--red); box-shadow: 0 0 0 1px #000; transform: rotate(-35deg); pointer-events: none; }
