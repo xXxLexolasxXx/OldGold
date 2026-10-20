@@ -32,24 +32,24 @@ const LEP_ALL = [].concat(LEP_IDLE, LEP_WALK, LEP_DANCE, LEP_TUG, LEP_STEAL, LEP
 // ep — куда сгибать локти ('hip' — руки на поясе); tip — шляпа приподнята рукой; hat — наклон шляпы; mouth/eye;
 // ingot: 1 — слиток в руках, 2 — над головой; click — искры щелчка каблуков; cheek/hurt/fade — пощёчина
 
-const LEP_HIPS = { lh: [-4.4, -1.4], rh: [4.6, -1.4], ep: 'hip' };       // руки на поясе (кисти по обе стороны бёдер)
+const LEP_HIPS = { lh: [-3.4, -2.6], rh: [-0.6, -2.8], ep: 'hip' };       // руки на поясе (кисти по обе стороны бёдер)
 
 function lepPose(n) {
-  const d = (o) => Object.assign({ x: 0, y: 0, rot: 0, lf: [-2.6, 0], rf: [2.6, 0], lh: [-6.6, 1.2], rh: [7, 0.2], ep: '', hat: 0, mouth: 0, eye: 0, ingot: 0, click: 0, cheek: 0, hurt: 0, fade: 0, tip: 0, head: 0, sq: 1, stars: 0 }, o);
+  const d = (o) => Object.assign({ x: 0, y: 0, rot: 0, lf: [-2.6, 0], rf: [2.6, 0], lh: [-4.6, 3.6], rh: [-1.6, 4], ep: '', hat: 0, mouth: 0, eye: 0, ingot: 0, click: 0, cheek: 0, hurt: 0, fade: 0, tip: 0, head: 0, sq: 1, stars: 0 }, o);
   let m;
   if ((m = /^i(\d)$/.exec(n))) {          // покой: дыхание, поза «руки в боки/большие пальцы за жилет», приподнимает шляпу, поглаживает кошель
     const k = +m[1], br = [0, -0.3, -0.7, -0.7, -0.3, 0][k];
     const P = d({ y: br, sq: 1 + (k === 2 || k === 3 ? 0.012 : 0), eye: k === 4 ? 2 : 0, hat: [0, 0.02, 0.05, 0.05, 0.02, 0][k], mouth: k === 3 ? 0.4 : 0 });
-    if (k === 2 || k === 3) { P.rh = [5.2, -1]; P.lh = [-5.2, -1]; P.ep = 'hip'; }                 // руки на пояс
-    else if (k === 1) { P.lh = [-4.2, -2]; P.rh = [4.6, -3.4]; P.ep = 'hip'; }               // большие пальцы за жилет
-    else if (k === 5) { P.rh = [4.2, -2.4]; P.lh = [-5.4, 2.4]; }
+    if (k === 2 || k === 3) { P.rh = [-0.6, -2.8]; P.lh = [-3.4, -2.6]; P.ep = 'hip'; }                 // руки на пояс
+    else if (k === 1) { P.lh = [-3.4, -2.6]; P.rh = [-0.8, -3.2]; P.ep = 'hip'; }               // большие пальцы за жилет
+    else if (k === 5) { P.rh = [-1, -2.6]; P.lh = [-4.6, 3.6]; }
     return P;
   }
   if ((m = /^w(\d)$/.exec(n))) {          // ходьба: 8 кадров, шаг пружинистый, носки врозь
     const ph = +m[1] / 8 * 6.2832, s = Math.sin(ph), c = Math.cos(ph);
     return d({
       y: -Math.abs(s) * 1.1 + 0.3, rot: 0.04 * s, lf: [-s * 5.4, -Math.max(0, c) * 3.4], rf: [s * 5.4, -Math.max(0, -c) * 3.4],
-      lh: [-4 - s * 3.6, 2], rh: [4.2 + s * 3.6, 1.6], hat: -0.03 * c, mouth: 0,
+      lh: [-3 - s * 4, 4], rh: [-1 + s * 4, 4], hat: -0.03 * c, mouth: 0,
     });
   }
   if ((m = /^p(\d+)$/.exec(n))) return lepDancePose(+m[1], d);
