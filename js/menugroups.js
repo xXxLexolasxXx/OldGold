@@ -7,7 +7,7 @@
 
 const MENU_GROUPS = [
   { k: 'save', icon: 'save', name: 'Сохранение', sel: '[data-menu="save"], [data-menu="load"], [data-menu="loadauto"]' },
-  { k: 'set', icon: 'menu', name: 'Настройки', sel: '[data-land="open"], [data-nq="mode"], [data-menu="lang"], #eco-btn' },
+  { k: 'set', icon: 'menu', name: 'Настройки', sel: '[data-land="open"], [data-nq="mode"], [data-menu="lang"], #eco-btn, [data-reveal]' },
   { k: 'more', icon: 'scroll', name: 'Ещё', sel: '*' },
 ];
 

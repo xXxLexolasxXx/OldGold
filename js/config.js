@@ -279,11 +279,12 @@ const BUILD_ORDER = Object.keys(BUILDINGS);
 const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия', 'Гильдии'];
 
 // Постепенно открывающееся меню строительства. Стадия открывается, когда готово
-// всё из `after` (типы зданий) и достигнута веха `rank` цели (1 — «Деревня», 2 — «Город»), либо её открывает обучение. Школы в меню нет:
-// она появляется в обучении (noMenu).
+// всё из `after` (типы зданий), достигнута веха `rank` цели (1 — «Деревня», 2 — «Город») и пережито `night` ночей,
+// либо её открывает обучение. Школы в меню нет: она появляется в обучении (noMenu).
+// На старте — только дорога и «Ресурсы»: лесоруб, каменоломня, лесопилка, большой костёр. Хмель — только вместе с пивоварней.
 const UNLOCKS = [
-  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire', 'inn'] },
-  { id: 'grain', items: ['farm', 'mill', 'bakery', 'storehouse', 'tool:wheat'], after: ['woodcutter', 'quarry', 'sawmill'] },
+  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire'] },
+  { id: 'grain', items: ['farm', 'mill', 'bakery', 'storehouse', 'inn', 'tool:wheat'], after: ['woodcutter', 'quarry', 'sawmill'] },
   { id: 'hops',  items: ['hopfarm', 'brewery', 'tool:hops'], after: ['bakery'] },
   { id: 'pigs',  items: ['swine', 'butchery'], after: ['brewery'] },
   { id: 'base',  items: ['goatpen', 'stable'], after: ['swine'] },
@@ -386,7 +387,7 @@ function startOpen(id) {
 
 // стадия меню готова к открытию: достроено всё из after и достигнута веха
 function unlockReady(st) {
-  return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
+  return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && (!st.night || startNights() >= st.night) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
 }
 
 // ---------- Запас прочности снаряжения (js/durability.js) ----------
