@@ -1187,6 +1187,8 @@ I18N.add('en', {
   "трясина, заводи и кочки: мало сухой земли, дерево есть, камня мало": "bog, backwaters and hummocks: little dry land, some wood, little stone",
   "Зима": "Winter",
   "снег, лёд на озёрах и реках, метели": "snow, ice on lakes and rivers, blizzards",
+  "Побережье": "Coast",
+  "море у края земли: бухты, острова, пляжи с галькой, чайки и крабы": "the sea at the edge of the land: bays, islands, pebble beaches, gulls and crabs",
   "Началась метель": "A blizzard began",
   "❄ Метель! Снег валит стеной, на улицах скользко — гномы жмутся к домам.": "❄ Blizzard! Snow comes down in sheets, the streets are slippery — gnomes huddle by the houses.",
   "Паводок": "Flood",

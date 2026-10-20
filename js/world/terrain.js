@@ -247,6 +247,8 @@ function buildTerrain(seed) {
   const PW = MAP_W * TILE;
   const P = biomePal();   // цвета земли выбранного биома (луга — прежние)
   const iceW = !!P.ice;
+  const ocOn = !iceW && typeof oceanPrep === 'function' && !!oceanPrep(true);   // живая вода (ocean.js): рампа тона водоёма вместо общей заливки
+  const ocC = [0, 0, 0];
 
   const bil = (f, i00, fx, fy) => {
     const a = f[i00], b = f[i00 + 1], c = f[i00 + W], d = f[i00 + W + 1];
@@ -341,14 +343,15 @@ function buildTerrain(seed) {
         else { const lk = gst && grassMask > 0.5 ? 1 + (li - 1) * 0.3 : li; r *= lk; g *= lk; b *= lk; }   // траву холмы красят слабо: ступени тона чистые
 
         // вода (поверх, без рельефного света)
+        let ocPx = false;   // чистая вода рампы: мимо палитры и дизера (альфа 254 — метка до квантования)
         const waterF = bil(fWater, c00, fx, fy) + (nC - 0.5) * 0.28;
         const waterW = smoothstep(0.46, 0.56, waterF);
         if (waterW > 0) {
           grassMask *= 1 - waterW;
           const depth = smoothstep(0.45, 0.95, bil(fDeep, c00, fx, fy));
           let wr = P.w0[0] + (P.w1[0] - P.w0[0]) * depth, wg = P.w0[1] + (P.w1[1] - P.w0[1]) * depth, wb = P.w0[2] + (P.w1[2] - P.w0[2]) * depth;
-          const wave = (nB - 0.5) * 14 + (nD > 0.7 ? 10 : 0);
-          wr += wave * 0.6; wg += wave; wb += wave;
+          if (ocOn && oceanBakeColor(tx, ty, fx, fy, wx, wy, ocC)) { wr = ocC[0]; wg = ocC[1]; wb = ocC[2]; if (waterW > 0.995) ocPx = true; }
+          else { const wave = (nB - 0.5) * 14 + (nD > 0.7 ? 10 : 0); wr += wave * 0.6; wg += wave; wb += wave; }
           if (iceW) {   // лёд: светлые блики и тёмные трещины
             if (Math.abs(nD - 0.5) < 0.014 || Math.abs(nC - 0.5) < 0.008) { wr *= 0.55; wg *= 0.62; wb *= 0.75; }
             else if (nA > 0.52 && nB > 0.6) { wr += 40; wg += 36; wb += 28; }
@@ -358,14 +361,15 @@ function buildTerrain(seed) {
         // пена у берега
         const foam = smoothstep(0.42, 0.5, waterF) * (1 - smoothstep(0.5, 0.6, waterF));
         if (foam > 0) {
-          const k = foam * (0.45 + nB * 0.4);
+          const k = foam * (0.45 + nB * 0.4) * (ocOn ? 0.35 : 1);   // при живой воде пену катит прибой
           r += (P.foam[0] - r) * k * P.foamK; g += (P.foam[1] - g) * k * P.foamK; b += (P.foam[2] - b) * k * P.foamK;
         }
 
         // зерно
         const gr = gst && grassMask > 0.9 ? 1 : P.snow ? 0.97 + nB * 0.06 : 0.93 + nB * 0.14;   // зерно не лежит на траве биома
         const o = ((wy - y0px) * PW + wx) * 4;
-        D[o] = r * gr; D[o + 1] = g * gr; D[o + 2] = b * gr; D[o + 3] = 255;
+        if (ocPx) { D[o] = r; D[o + 1] = g; D[o + 2] = b; D[o + 3] = 254; }
+        else { D[o] = r * gr; D[o + 1] = g * gr; D[o + 2] = b * gr; D[o + 3] = 255; }
         GRASS[(wy - y0px) * PW + wx] = grassMask > 0.9 ? 1 : 0;
       }
     }
@@ -389,7 +393,9 @@ function buildTerrain(seed) {
   const q = ctx.getImageData(0, 0, PW, bh);
   for (let r0 = 0; r0 < bh; r0 += 4) {   // по 4 строки: рисунок дизера тот же, он считается от координат
     const rows = Math.min(4, bh - r0);
-    quantizeData(q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4), PW, rows, gst0 ? 0 : P.snow ? 3 : 9, 0, y0px + r0);   // снег — почти без дизеринга, иначе рябит
+    const qd = q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4);
+    if (ocOn) ocQuantize(qd, PW, rows, gst0 ? 0 : 9, y0px + r0);
+    else quantizeData(qd, PW, rows, gst0 ? 0 : P.snow ? 3 : 9, 0, y0px + r0);   // снег — почти без дизеринга, иначе рябит
     yield;
   }
   ctx.putImageData(q, 0, 0);
