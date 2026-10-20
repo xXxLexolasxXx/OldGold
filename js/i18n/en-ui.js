@@ -196,6 +196,8 @@ I18N.add('en', {
   "Куски курицы": "Chicken pieces",
   "Круассаны": "Croissants",
   "Стейки": "Steaks",
+  "Рыба": "Fish",
+  "Жемчуг": "Pearls",
   "Тёмное пиво": "Dark beer",
   "Трудяга": "Hauler",
   "Работяга": "Builder",

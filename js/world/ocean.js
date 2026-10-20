@@ -390,6 +390,7 @@ function oceanGlow(c, x0, y0, x1, y1) {
     }
   }
   c.globalAlpha = ga;
+  if (typeof seaLifeGlow === 'function') seaLifeGlow(c, x0, y0, x1, y1, k0);   // светящиеся медузы
 }
 
 // Куда смотрит камера: сколько видно береговых клеток каждого вида (для прибоя в звуке)
