@@ -36,9 +36,10 @@ function whyInfo(b) {
   if (!b || b.isRoad || b.removed) return null;
   if (b.state !== 'done') {
     if (b.problem() === 'noroad') return { t: 'Стройка не соединена дорогой со складом — материалы некому привезти.', a: 'Нажмите «Дорога» (R) и протяните её от склада ко входу здания.', icon: 'road' };
-    if (!b.builder) return { t: 'Стройка ждёт свободного работягу.', a: 'Обучите работяг в школе (вкладка «Жители»). Занятые закончат — придут.', icon: 'noworker' };
-    return null;
+    return siteWhy(b);
   }
+  const sw = b.type === 'school' && schoolWhy(b);
+  if (sw) return sw;
   const p = b.problem();
   if (!p && b.noDeliver) return { t: 'Доставки закрыты: трудяги сюда ничего не везут.', a: 'Нажмите «Доставки закрыты» в окне здания (клавиша B), чтобы открыть.', icon: 'nodeliver' };
   if (!p) return null;
@@ -47,7 +48,9 @@ function whyInfo(b) {
   if (p === 'damaged') return { t: 'Нечисть повредила здание: пока не починят, оно не работает.', a: 'Нужен свободный работяга — он починит сам. Лучше — ещё один в школе.', icon: 'warn' };
   if (p === 'noworker') {
     const w = UNIT_TYPES[b.def.worker].name.toLowerCase();
-    return { t: `Нет рабочего: нужен ${w}.`, a: 'Откройте вкладку «Жители» или школу и нажмите «Обучить». Обучение стоит 1 золото.', icon: 'noworker' };
+    const free = Game.units.some(u => u.type === b.def.worker && !u.home && !u.dead && !u.teamOf);
+    if (free) return { t: `Свободный ${w} уже есть — сейчас придёт.`, a: 'Если долго: проверьте вкладку «Приоритеты» — не выключена ли эта профессия.', icon: 'noworker' };
+    return { t: `Нет рабочего: нужен именно ${w} — работяги и трудяги его не заменят.`, a: 'Откройте вкладку «Жители» или школу и нажмите «Обучить». Обучение стоит 1 золото.', icon: 'noworker' };
   }
   if (p === 'full') {
     const store = Game.buildings.some(x => x.isStore());
@@ -69,6 +72,56 @@ function whyInfo(b) {
     return { t: `Не хватает: ${name}.`, a, icon: 'g:' + g };
   }
   return null;
+}
+
+// Почему стройка стоит — по-настоящему: раньше на любую стройку без работяги писали «Обучите работяг»,
+// даже когда свободных работяг полно, а нет материала или все трудяги заняты.
+const SITE_MATS = ['trunk', 'timber', 'stone'];
+function siteWhy(b) {
+  if (b.builder || b.hold) return null;
+  if (prioBlocked(b)) return { t: 'Стройки выключены во вкладке «Приоритеты».', a: 'Поставьте «Стройка» на «Авто» или «Высокий».', icon: 'pause' };
+  const comp = compAt(b.doorX, b.doorY);
+  const left = k => (b.def.cost[k] || 0) - b.usedOf[k];
+  const onSite = SITE_MATS.some(k => b.stock[k] > 0), coming = SITE_MATS.some(k => b.incoming[k] > 0);
+  const need = SITE_MATS.filter(k => left(k) > b.stock[k] + b.incoming[k]);
+  const gone = need.filter(k => !storeHaving(b.doorX, b.doorY, k, comp));
+  const people = Game.units.filter(u => !u.dead && !u.teamOf);
+  const bTot = people.filter(u => u.type === 'builder').length;
+  const bFree = people.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.brk).length;
+  const sTot = people.filter(u => u.isCourier).length;
+  const sFree = people.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk).length;
+  if (b.state !== 'site' && !onSite && !coming && gone.length === need.length && need.length) {
+    const g = gone[0], name = GOODS[g].name.toLowerCase();
+    const pr = producersOf(g).filter(hasBuilt);
+    return { t: `Нет материала: ${gone.map(k => GOODS[k].name.toLowerCase()).join(', ')} — на складах этой дорожной сети пусто.`,
+      a: storeHas(g) > 0 ? `«${name}» лежит на складе, не связанном дорогой с этой стройкой — протяните дорогу.` : pr.length ? `Это делает: ${pr.map(bName).join(', ')} — проверьте, работает ли.` : `Постройте: ${producersOf(g).slice(0, 2).map(bName).join(' или ')}.`, icon: 'g:' + g };
+  }
+  if (!bTot) return { t: 'В деревне нет ни одного работяги.', a: 'Обучите работягу в школе (вкладка «Жители»), 1 золото.', icon: 'noworker' };
+  if (!bFree) return { t: `Все работяги заняты (${bTot}). Закончат — придут.`, a: 'Быстрее: обучите ещё работяг в школе или поставьте «Стройка» на «Высокий» во вкладке «Приоритеты».', icon: 'noworker' };
+  if (need.length && !sFree) return { t: `Материал на складе есть, но все трудяги заняты (свободно 0 из ${sTot}).`, a: 'Работяга сейчас придёт и принесёт сам. Чтобы быстрее — обучите трудяг или поднимите «Стройку» в «Приоритетах».', icon: 'g:' + need[0] };
+  return { t: `Работяга уже идёт (свободно ${bFree} из ${bTot}).`, a: 'Подождите немного.', icon: 'noworker' };
+}
+
+// Школа с очередью стоит без золота — почему именно и что делать
+function goldAnywhere() {
+  let n = 0;
+  for (const b of Game.buildings) if (b.type !== 'school') n += Math.max(0, b.stock.gold - b.reserved.gold);
+  for (const p of Game.piles.values()) n += p.stock.gold;
+  for (const u of Game.units) if (u.carry === 'gold') n += u.carryN || 1;
+  return n;
+}
+function schoolWhy(b) {
+  if (b.training || !b.queue.length || b.stock.gold >= 1) return null;
+  if (b.incoming.gold > 0) return { t: 'Золото уже везут.', a: 'Обучение начнётся, как только трудяга донесёт слиток.', icon: 'g:gold' };
+  if (b.noDeliver) return { t: 'Доставки в школу закрыты — золото сюда не везут.', a: 'Нажмите «Доставки закрыты» в окне школы (клавиша B).', icon: 'nodeliver' };
+  const comp = compAt(b.doorX, b.doorY);
+  if (!storeHaving(b.doorX, b.doorY, 'gold', comp)) {
+    if (goldAnywhere() > 0) return { t: 'Золото есть, но не на складе, связанном дорогой со школой.', a: 'Протяните дорогу от школы до склада с золотом или до плавильни.', icon: 'road' };
+    return { t: 'Золота нет нигде — школе нечем платить учителю.', a: 'Постройте золотой рудник под скалой и плавильню. Очередь можно очистить кнопкой ниже.', icon: 'g:gold' };
+  }
+  const serfs = Game.units.filter(u => u.isCourier && !u.dead && !u.teamOf);
+  if (!serfs.length) return { t: 'Нет ни одного трудяги, чтобы привезти золото.', a: 'Школа сама возьмёт слиток со склада и выучит трудягу.', icon: 'noworker' };
+  return { t: 'Золото на складе есть — его привезут первым же свободным трудягой.', a: 'Если долго: проверьте вкладку «Приоритеты» (трудяги не на «Выкл»).', icon: 'g:gold' };
 }
 
 function whyHTML(b) {
@@ -173,7 +226,7 @@ const CREATURES = [
 ];
 
 const GUIDE_TOPICS = [
-  ['hero', 'Герой и бой', 'Клик героем по гильдии — учит классу. Атака — Q. Клик по рекруту — выбор, по земле — пост, по врагу — атака. Полоска здоровья слева; еду герой берёт в трактире, ману — банками. Погиб — возродится у большого костра.', 'Он не бессмертный, просто настойчивый.'],
+  ['hero', 'Герой и бой', 'Клик героем по гильдии — учит классу; у каждого класса до пяти своих способностей — панель в углу, клавиши 1–5. Атака — Q. Клик по рекруту — выбор, по земле — пост, по врагу — атака. Лечится герой привалом, у костра, в трактире и лазарете. Погиб — очнётся у большого костра со «Слабостью».', 'Он не бессмертный, просто настойчивый.'],
   ['night', 'Ночь и нечисть', 'Сутки: день → вечер (темнеет, фонари) → ночь с туманом → рассвет. Каждая 5-я ночь длиннее. Возле большого костра (радиус 8 клеток) нечисть не заходит и светло. Падение гнома = разбитый фонарь, он теряется в тумане. Потери растят число призраков и скелетов.', 'Страшно? Так и должно быть.'],
   ['def', 'Оборона', 'Вкладка «Оборона»: частокол и каменная стена (тяните линию), ворота, баррикады, ловушки (яма, шипы, огонь), факелы и сторожевая башня. Стены непроходимы, но вход любого здания закрыть нельзя — ставьте ворота: жители и курьеры проходят всегда, нечисть — когда открыто (щёлкните по воротам: авто / открыты / закрыты). Налётчики Малгора ломают стены, ловушки их ранят, башня стреляет и замечает врага заранее; свободные лучники и воины гильдий сами идут на башню. У большого костра есть кнопка «Обнести частоколом».', 'Забор — лучший друг гнома. Особенно с воротами.'],
   ['food', 'Еда и голод', 'Голодный (сытость ниже 30%) идёт в трактир. Нет еды — падает в обморок и умирает. Цепочки: ферма → мельница → пекарня (хлеб); сено → свинарник → бойня (колбаса); пшеница + хмель → пивоварня.', 'Голодный гном — это сердитый гном, но недолго.'],

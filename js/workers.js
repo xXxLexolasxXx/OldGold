@@ -247,15 +247,20 @@ function wkSetPin(u, p) {
   if (!wkEligible(u) || !wkManaged(u) || !wkPinValid(u, p)) return false;
   // закрепление переназначает: бросаем текущую автоматическую работу (не трогаем доставку с грузом в руках)
   u.wk = p || null;
-  // работяге — и с перекура: после перерыва он вернётся не к старой стройке, а к закреплённой (с материалом в руках — донесёт)
-  if (p && u.type === 'builder' && u.job && !u.inside && !u.carry && (p.off || u.job.id !== p.b)) {
-    if (u.job.builder === u) u.job.builder = null;
-    if (u.job.upg && u.job.upg.builder === u) u.job.upg.builder = null;
-    u.job = null;
-    if (u.brk) { if (u.brk.saved) u.brk.saved = { proc: null, action: null }; }
-    else { u.proc = null; u.action = null; u.anim = null; }
-  }
+  wkRelease(u);
   return true;
+}
+// Закреплённый работяга (или «отдыхающий») не держит чужую стройку: снимаем и сразу при закреплении,
+// и потом на каждом такте диспетчера — он мог быть на перекуре или нести материал и вернуться к старому делу
+function wkRelease(u) {
+  const p = u.wk;
+  if (!p || u.type !== 'builder' || !u.job || u.inside || u.carry || wkBoosted(u) && p.off) return;
+  if (!p.off && u.job.id === p.b) return;
+  if (u.job.builder === u) u.job.builder = null;
+  if (u.job.upg && u.job.upg.builder === u) u.job.upg.builder = null;
+  u.job = null;
+  if (u.brk) { if (u.brk.saved) u.brk.saved = { proc: null, action: null }; }
+  else { u.proc = null; u.action = null; u.anim = null; }
 }
 function wkSetCap(job, v) {
   if (!WK_JOBS.includes(job)) return false;
@@ -303,7 +308,7 @@ function wkReset() { Game.wk = { cap: {} }; for (const u of Game.units) u.wk = n
   };
   const _da = dispatchAll;
   let whyT = 0;
-  dispatchAll = function () { _da(); wkHook(); if ((whyT += 1) >= 3) { whyT = 0; wkWhyAll(); } };
+  dispatchAll = function () { for (const u of Game.units) if (u.wk) wkRelease(u); _da(); wkHook(); if ((whyT += 1) >= 3) { whyT = 0; wkWhyAll(); } };
 }
 
 // Подключение к коопу: ленивое — coopsim и coopclient грузятся позже

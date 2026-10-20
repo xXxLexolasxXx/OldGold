@@ -336,13 +336,27 @@ function selectBuilding(b) {
   updateUI(true);
 }
 
+// Протянутая дорога. Занятые клетки (дерево, камень, вода, дом) раньше пропускались молча — дорога
+// выходила с дырой, и здание за ней «не соединялось», хотя дорогу вроде построили
+function placeRoadDrag(cells) {
+  let n = 0, gap = 0;
+  for (const [x, y] of cells) {
+    const has = inb(x, y) && (World.road[idx(x, y)] || Game.roadSites.has(idx(x, y)));
+    if (placeRoadSite(x, y)) n++;
+    else if (!has && !(inb(x, y) && World.door[idx(x, y)])) gap++;
+  }
+  if (!n && cells.length) toast('Здесь нельзя проложить дорогу');
+  else if (gap) toast(`Дорога с разрывом: ${gap} кл. не проложено (дерево, камень, вода или дом) — по ней не пройдут. Обведите помеху или уберите её`);
+  return n;
+}
+
 function onLeftClickTile(t) {
   const tool = Game.tool;
   if (tool && tool.kind === 'build') {
     const d = bDims(tool.type, tool.rot || 0);
     const bx = t[0] - Math.floor(d.w / 2), by = t[1] - d.h + 1;
     const err = checkPlacement(tool.type, bx, by, d.rot);
-    if (err) { toast(err); return; }
+    if (err) { toast(err + (/скал|кристалл/.test(err) ? mineSpotHint(tool.type, bx, by) : '')); return; }
     placeBuilding(tool.type, bx, by, false, d.rot);
     track('place-1', 'Заложил первое здание');
     if (!Input.keys.has('Shift')) setTool(null);
@@ -440,9 +454,7 @@ function initInput() {
       if (only && inb(only[0], only[1]) && (World.road[idx(only[0], only[1])] || Game.roadSites.has(idx(only[0], only[1])))) {
         eraseAt(only); R.roadDrag = null; Input.roadStart = null; Input.fieldMode = null; return;
       }
-      let n = 0;
-      for (const [x, y] of R.roadDrag) if (placeRoadSite(x, y)) n++;
-      if (!n && R.roadDrag.length) toast('Здесь нельзя проложить дорогу');
+      placeRoadDrag(R.roadDrag);
       R.roadDrag = null;
       Input.roadStart = null;
     }
