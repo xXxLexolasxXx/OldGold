@@ -17,7 +17,7 @@ h3{margin:10px 10px 2px;color:#fff;text-shadow:0 1px 2px #000}
 const GR = [['Покой (6)', LEP_IDLE], ['Ходьба (8)', LEP_WALK], ['Ирландский танец (16): фраза 1 — p0…p7, фраза 2 (ноги меняются) — p8…p15', LEP_DANCE], ['Перетягивание слитка (3)', LEP_TUG],
   ['Исход (а) лепрекон украл: рывок · победный прыжок · нырок · в горшке', LEP_STEAL], ['Исход (б) пощёчина: съёжился · ПЛЯК · шатание ×2 · рука на щеке ×2 · растворение ×3', LEP_SLAP]];
 function put(row, s, k, label) {
-  const X = s.ax - 24, Y = s.ay - 50, W = 48, H = 58;   // кадр обрезан по фигуре
+  const X = s.ax - 24, Y = s.ay - 56, W = 48, H = 64;   // кадр обрезан по фигуре
   const cv = document.createElement('canvas'); cv.width = W * k; cv.height = H * k;
   const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(s.cv, X, Y, W, H, 0, 0, cv.width, cv.height);
   const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv);

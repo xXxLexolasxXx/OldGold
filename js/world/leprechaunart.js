@@ -35,7 +35,7 @@ const LEP_ALL = [].concat(LEP_IDLE, LEP_WALK, LEP_DANCE, LEP_TUG, LEP_STEAL, LEP
 const LEP_HIPS = { lh: [-4.4, -1.4], rh: [4.6, -1.4], ep: 'hip' };       // руки на поясе (кисти по обе стороны бёдер)
 
 function lepPose(n) {
-  const d = (o) => Object.assign({ x: 0, y: 0, rot: 0, lf: [-2.6, 0], rf: [2.6, 0], lh: [-5.4, 2.4], rh: [5.6, 1.4], ep: '', hat: 0, mouth: 0, eye: 0, ingot: 0, click: 0, cheek: 0, hurt: 0, fade: 0, tip: 0, head: 0, sq: 1, stars: 0 }, o);
+  const d = (o) => Object.assign({ x: 0, y: 0, rot: 0, lf: [-2.6, 0], rf: [2.6, 0], lh: [-6.6, 1.2], rh: [7, 0.2], ep: '', hat: 0, mouth: 0, eye: 0, ingot: 0, click: 0, cheek: 0, hurt: 0, fade: 0, tip: 0, head: 0, sq: 1, stars: 0 }, o);
   let m;
   if ((m = /^i(\d)$/.exec(n))) {          // покой: дыхание, поза «руки в боки/большие пальцы за жилет», приподнимает шляпу, поглаживает кошель
     const k = +m[1], br = [0, -0.3, -0.7, -0.7, -0.3, 0][k];
@@ -68,11 +68,11 @@ function lepPose(n) {
     case 'l1': return d({ x: -6, rot: -0.46, y: -1, lf: [-8, -1], rf: [-1, 0], lh: [-6, -3], rh: [-3, -8], eye: 3, mouth: 0.9, head: -0.35, hurt: 1, cheek: 1, hat: -0.25, stars: 1, ep: '' });   // голова мотнулась
     case 'l2': return d({ x: -4, rot: -0.3, y: 0, lf: [-6, 0], rf: [0, -0.5], lh: [-7, -4], rh: [-6, -10], eye: 3, mouth: 0.6, head: -0.3, hurt: 0.6, cheek: 1, hat: -0.3, stars: 1 });
     case 'l3': return d({ x: -1, rot: 0.2, y: 0, lf: [-3, 0], rf: [3.5, -1.2], lh: [-6.4, -5], rh: [-4, -10.5], eye: 3, mouth: 0.4, head: 0.18, hurt: 0.3, cheek: 1, hat: 0.2, stars: 1 });
-    case 'l4': return d({ x: -1, rot: 0.08, y: 1, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -11], eye: 5, mouth: -1, head: 0.05, cheek: 1, hat: 0.16, sq: 0.97, ep: 'cheek' });   // рука на щеке, грустные глаза
-    case 'l5': return d({ x: -1, rot: 0.12, y: 1.6, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -10.6], eye: 6, mouth: -1, head: 0.1, cheek: 1, hat: 0.24, sq: 0.95, ep: 'cheek' });
-    case 'l6': return d({ x: -1, rot: 0.1, y: 1.2, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -11], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.34, ep: 'cheek' });
-    case 'l7': return d({ x: -1, rot: 0.1, y: 0.4, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -11], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.64, sq: 0.92, ep: 'cheek' });
-    case 'l8': return d({ x: -1, rot: 0.1, y: 0, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4, -11], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.9, sq: 0.88, ep: 'cheek' });
+    case 'l4': return d({ x: -1, rot: 0.08, y: 1, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.2, -15.4], eye: 5, mouth: -1, head: 0.05, cheek: 1, hat: 0.16, sq: 0.97, ep: 'cheek' });   // рука на щеке, грустные глаза
+    case 'l5': return d({ x: -1, rot: 0.12, y: 1.6, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.2, -15], eye: 6, mouth: -1, head: 0.1, cheek: 1, hat: 0.24, sq: 0.95, ep: 'cheek' });
+    case 'l6': return d({ x: -1, rot: 0.1, y: 1.2, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.2, -15.4], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.34, ep: 'cheek' });
+    case 'l7': return d({ x: -1, rot: 0.1, y: 0.4, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.2, -15.4], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.64, sq: 0.92, ep: 'cheek' });
+    case 'l8': return d({ x: -1, rot: 0.1, y: 0, lf: [-2.8, 0], rf: [2.6, 0], lh: [-5.6, 1.4], rh: [4.2, -15.4], eye: 5, mouth: -1, head: 0.08, cheek: 1, hat: 0.2, fade: 0.9, sq: 0.88, ep: 'cheek' });
   }
   return d({});
 }
@@ -177,7 +177,7 @@ function drawLep(c, P) {
   const farHand = P.ep === 'tug' ? [P.lh[0] - 1.2, P.lh[1] + 1.4] : P.lh;
   const fa = armTo(sh.far, farHand, true);
   lepLimb(c, sh.far, fa.e, fa.b, 2.9, 2.5, k(LP.coatD), k(LP.coatD));
-  ellipse(c, fa.b[0], fa.b[1], 1.5, 1.5, k(LP.skinD));
+  ellipse(c, fa.b[0], fa.b[1], 1.7, 1.7, k(LP.skinD));
   // полы фрака и тело
   poly(c, [[-5.6, -2], [5.2, -2], [7.4, 3.6], [1.4, 2], [-1.6, 4.4], [-7, 3]], k(LP.coatD));
   poly(c, [[-6, -10.4], [5.6, -10.4], [6.8, -1], [-6.6, -1]], k(LP.coat));
@@ -196,21 +196,22 @@ function drawLep(c, P) {
   // ближняя рука рисуется перед головой, если опущена (борода её перекрывает), и после — если поднята к лицу
   const nh = P.rh, na = armTo(sh.near, nh, false);
   const nearArm = () => {
-    lepLimb(c, sh.near, na.e, na.b, 3, 2.6, k(LP.coat), k(LP.coat));
+    lepLimb(c, sh.near, na.e, na.b, 4.4, 4, k(LP.coatD), k(LP.coatD));        // тёмный контур рукава: рука не сливается с телом
+    lepLimb(c, sh.near, na.e, na.b, 3, 2.6, k(LP.coatL), k(LP.coatL));
     c.fillStyle = k(LP.shirt); c.fillRect(na.b[0] - 1.6, na.b[1] - 1.2, 3.2, 2.4);
-    ellipse(c, na.b[0], na.b[1], 1.6, 1.6, k(LP.skin));
+    ellipse(c, na.b[0], na.b[1], 1.9, 1.9, k(LP.skin));
     if (P.ingot === 1) lepIngot(c, na.b[0] + 1.6, na.b[1] - 0.2, -0.3, 0.9);
     if (P.ingot === 2) lepIngot(c, na.b[0] + 1.4, na.b[1] - 2.6, -0.4, 1.0);
   };
-  const armHigh = na.b[1] < -14 || P.ep === 'cheek';
+  const armHigh = true;       // рука всегда поверх головы и бороды: голова поднята над плечами, борода до груди, руки видны
   if (!armHigh) nearArm();
   // голова: наклон от шеи
   c.save();
-  c.translate(0.6, -11.6); c.rotate(P.head); c.scale(1.14, 1.14);
+  c.translate(0.6, -17.4); c.rotate(P.head); c.scale(1.14, 1.14);
   // борода — густая, рыжая, из-под щёк
-  poly(c, [[-5.4, 1.6], [-6.2, 5], [-3.4, 8.6], [0.6, 10], [4.4, 8.4], [6.4, 4.6], [5.8, 1.8], [2.4, 3.8], [-1.6, 3.8]], k(LP.beard));
-  poly(c, [[-5.4, 1.6], [-3.4, 3], [-3.4, 7], [-3.4, 8.6], [-6.2, 5]], k(LP.beardD));
-  poly(c, [[1.6, 4], [4.4, 3.6], [5.6, 5.4], [4.4, 8.4], [2.4, 7]], k(LP.beardL));
+  poly(c, [[-5.4, 1.6], [-6.2, 4.6], [-3.4, 7.4], [0.6, 8.6], [4.4, 7.2], [6.4, 4.2], [5.8, 1.8], [2.4, 3.8], [-1.6, 3.8]], k(LP.beard));
+  poly(c, [[-5.4, 1.6], [-3.4, 3], [-3.4, 6], [-3.4, 7.4], [-6.2, 4.6]], k(LP.beardD));
+  poly(c, [[1.6, 4], [4.4, 3.6], [5.6, 5], [4.4, 7.2], [2.4, 6.4]], k(LP.beardL));
   // лицо
   ellipse(c, 0.4, -0.6, 6, 5.6, k(LP.skin));
   if (P.cheek && P.hurt > 0.01) ellipse(c, 2.8, 1.2, 3.1, 2.3, '#e84a44');       // красная щека от пощёчины
@@ -258,7 +259,7 @@ function drawLep(c, P) {
 
 // ---------- кадр → спрайт ----------
 
-const LEP_SPEC = { w: 84, h: 88, ax: 42, ay: 70, sc: 0.7 };
+const LEP_SPEC = { w: 84, h: 92, ax: 42, ay: 74, sc: 0.64 };
 const lepCache = new Map();
 function lepFrame(fr) {
   let s = lepCache.get(fr);
