@@ -202,7 +202,6 @@ function drawUnit(c, u) {
     opt.gest = u.gest;
     if (u.gest === 'five') { opt.gf = fiveFrameAt(FIVE_T - (u.gestUntil - Game.time)); view = 'E'; face = u.gestFace || face; }
     else if (u.gest === 'clap') { opt.gf = gestCyc(Game.time * 7 + u.id); if (pose === 'idle') view = 'S'; }
-    else if (u.gest === 'six7') { opt.gf = gestCyc(Game.time * 6 + u.id); if (pose === 'idle') view = 'S'; else opt.gest = ''; }   // мем «шесть-семь» (memes.js): только стоя, лицом к зрителю
     else if (pose === 'idle') { view = 'E'; face = u.gestFace || face; }
   } else if (pose === 'idle' && !u.anim) {
     // заскучал: чешет затылок, потягивается, зевает, оглядывается

@@ -142,7 +142,6 @@ function ghostLights(L, x0, y0, x1, y1) {
 
 const GHOST_FRAMES = 9, GHOST_ATK_FRAMES = 8, GHOST_ATK_DUR = 0.9, GHOST_SS = 3, GHOST_W = 60, GHOST_H = 76, GHOST_OX = 30, GHOST_OY = 32;
 const GHOST_CACHE = {};
-const GHOST_FINGERS = [[-1.9, 0.85], [0, 1], [1.9, 0.9], [-3.1, 0.55]];     // три пальца и большой (было пять): веером шире, чтобы читались при 2 px на пиксель
 
 function ghostSprite(mood, i) {
   const key = mood + i;
@@ -259,7 +258,7 @@ function paintGhost(c, p, mood, k) {
     for (const o of [-1.1, 1.1]) { c.beginPath(); c.moveTo(shx, shy + o); c.quadraticCurveTo(mx, my + o * 1.4, hx, hy + o * 0.6); c.stroke(); }
     // огромная лапа: полупрозрачная ладонь с контуром и длинными изогнутыми когтями
     const ang = Math.atan2(hy - my, hx - mx), pk = gp ? 1 - 0.3 * gp.k : 1;
-    paintGhostPaw(c, hx, hy, ang, 11.5 + (atk ? strike * 3 : 0), boo, pk, GHOST_FINGERS);
+    paintGhostPaw(c, hx, hy, ang, 11.5 + (atk ? strike * 3 : 0), boo, pk);
   }
   // голова с колпаком
   c.save(); c.translate(lean * 0.7, atk ? 1.5 * strike - wind : 0);

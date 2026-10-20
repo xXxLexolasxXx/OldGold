@@ -277,6 +277,7 @@ function coopMirror(m) {
   if (typeof goalMirrorIn === 'function') goalMirrorIn(m.goal);
   if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
   if (typeof dilMirrorIn === 'function') dilMirrorIn(m.dil);
+  if (typeof travMirrorIn === 'function') travMirrorIn(m.trav);
   if (typeof lawMirrorIn === 'function') lawMirrorIn(m.law);
   if (typeof medMirrorIn === 'function') medMirrorIn(m.med);
   if (typeof rscMirrorIn === 'function') rscMirrorIn(m.rsc);

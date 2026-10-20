@@ -197,94 +197,40 @@ function sprDragon(fr) {
   });
 }
 
-// Грифон. Позы (кадров): idle — дыхание, моргание, хвост (6); walk — шаг по земле (8); fly — взмах крыльев (8);
-// take — взлёт (6); atk — замах, бросок клювом и когтями, возврат (9); die — вскрик, падение, лежит (8).
-// Хвост и клюв двигаются во всех позах. Опорные позы крыла: GRI_UP — вверх, GRI_DN — вниз, GRI_FOLD — сложено на спине.
-const GRI_DIE_T = 1.1, GRI_ATK_T = 0.9, GRI_WIND = 0.9, GRI_TAKE_T = 0.6;
-const GRI_N = { idle: 6, walk: 8, fly: 8, take: 6, atk: 9, die: 8 };
-const GRI_UP = [[2, 0], [6, -6], [12, -10], [19, -11], [26, -9]], GRI_DN = [[0, 14], [2, 8], [6, 3], [12, 0], [19, -1]];
-const GRI_FOLD = [[1, 23], [4, 21], [8, 19.5], [12, 18.5], [16, 18]], GRI_DROOP = [[3, 31], [6, 30], [10, 28.5], [14, 27], [18, 25]];
-function griParams(pose, i) {
-  const S = Math.sin, ph = i / GRI_N[pose] * Math.PI * 2, sm = x => x * x * (3 - 2 * x), cl = x => Math.max(0, Math.min(1, x));
-  const P = { wing: GRI_FOLD, by: 0, hx: 0, hy: 0, beak: 0, tail: 0, tlift: 0, lf: 0, lr: 0, tuck: 0, claw: 0, eye: 1 };
-  if (pose === 'idle') {
-    P.by = S(ph) > 0.35 ? -1 : 0; P.hy = P.by; P.tail = S(ph - 0.8) * 2.6; P.tlift = S(ph) * 0.8;
-    P.wing = GRI_FOLD.map(([x, y]) => [x, y + S(ph) * 0.6]); P.beak = i === 3 ? 0.4 : 0; P.eye = i === 5 ? 0 : 1;
-  } else if (pose === 'walk') {
-    P.lf = S(ph) * 3.4; P.lr = -S(ph) * 3.4; P.by = Math.cos(ph * 2) > 0.3 ? -1 : 0; P.hy = P.by; P.hx = Math.round(S(ph) * 0.9);
-    P.tail = S(ph - 1.2) * 3.2; P.tlift = S(ph * 2) * 0.8; P.wing = GRI_FOLD.map(([x, y]) => [x, y + S(ph * 2) * 0.5]); P.beak = i === 5 ? 0.3 : 0;
-  } else if (pose === 'fly') {
-    const k = (1 - Math.cos(ph)) / 2;
-    P.wing = fyMix(GRI_UP, GRI_DN, k); P.by = Math.round(-1.6 * (1 - Math.cos(ph - 0.9)) / 2); P.hy = Math.round(P.by * 0.5);
-    P.tuck = 0.75; P.lf = S(ph - 1) * 1.2; P.lr = -S(ph - 1) * 1.2; P.tail = S(ph - 1.5) * 3.6; P.tlift = -P.by + S(ph - 1.5) * 1.2;
-    P.beak = (i === 2 || i === 3) ? 0.55 : 0;
-  } else if (pose === 'take') {
-    const t = i / 5;
-    P.wing = t < 0.5 ? fyMix(GRI_FOLD, GRI_UP, sm(t / 0.5)) : fyMix(GRI_UP, GRI_DN, sm((t - 0.5) / 0.5));
-    P.by = i === 0 ? 1 : -Math.round(t * 2); P.hy = i === 0 ? 1 : 0; P.hx = i === 0 ? -1 : 0; P.tuck = t * 0.75; P.lr = i < 2 ? -2 : 0; P.lf = i < 2 ? 2 : 0;
-    P.tail = -2 * t + S(ph) * 1.2; P.tlift = t * 3; P.beak = (i === 2 || i === 3) ? 0.7 : 0;
-  } else if (pose === 'atk') {
-    const k = i / 8, wind = sm(cl(k / 0.33)), strike = sm(cl((k - 0.33) / 0.22)), rec = sm(cl((k - 0.6) / 0.4));
-    P.wing = k < 0.33 ? fyMix(GRI_FOLD, GRI_UP, wind) : k < 0.6 ? fyMix(GRI_UP, GRI_DN, strike) : fyMix(GRI_DN, GRI_FOLD, rec);
-    P.hx = Math.round(-2 * wind * (1 - strike) + 7 * strike * (1 - rec)); P.hy = Math.round(wind * (1 - strike) + 3 * strike * (1 - rec));
-    P.beak = cl(0.3 * wind * (1 - strike) + strike * (1 - rec) * 1.1); P.claw = strike * (1 - rec); P.lf = P.claw * 6;
-    P.by = Math.round(-wind * (1 - strike) * 1.4); P.tail = -3 * strike + S(ph) * 1.2; P.tlift = wind * 3 * (1 - rec);
-  } else if (pose === 'die') {
-    const t = i / 7, drop = sm(cl((t - 0.15) / 0.55)), down = sm(cl((t - 0.2) / 0.5));
-    P.by = Math.round(drop * 6);
-    P.wing = t < 0.15 ? GRI_UP : fyMix(fyMix(GRI_UP, GRI_DN, 0.5), GRI_DROOP, sm(cl((t - 0.15) / 0.6)));
-    P.hx = i < 2 ? -3 : Math.round(-3 + 6 * down); P.hy = (i < 2 ? -2 : Math.round(-2 + 10 * down)) + P.by;
-    P.beak = i < 2 ? 1 : i < 4 ? 0.5 : 0; P.eye = i < 3 ? 1 : 0; P.tuck = sm(cl(t / 0.6)) * 0.9; P.lf = -2 * drop; P.lr = 2 * drop;
-    P.tail = S(ph * 1.5) * 2 * (1 - drop); P.tlift = -drop * 2;
-  }
-  return P;
-}
-function sprGriffin(pose, i = 0) {
-  return fySpr('gri3' + pose + i, 62, 60, c => {
-    c.translate(0, 13);
-    const P = griParams(pose, i), R = Math.round, by = P.by;
+function sprGriffin(fr) {
+  return fySpr('gri2' + fr, 62, 54, c => {
+    c.translate(0, 7);
     const T = ['#9a6422', '#c8903e', '#eebb6a'], WH = ['#cfc2a0', '#f6f0e2', '#ffffff'], WB = ['#4e3018', '#7a4e26', '#a8743c'], YE = ['#b07a10', '#f0b830'], TL = '#e8c030', DK = '#3e2a14';
-    const ty = y => y - P.tuck * Math.max(0, y - 33) * 0.75;     // лапы подтянуты к брюху
     const wing = (dx, dark) => {
-      const sx = 22 + dx, sy = 19 + by;
-      P.wing.forEach(([x, y]) => { fyL(c, sx - 3, sy - 1, x + dx, y + by, 4.6, 1.2, dark ? WB[0] : WB[1]); fyL(c, sx - 3, sy - 1.5, x + dx + 0.4, y + by, 2.4, 0.8, dark ? WB[1] : WB[2]); });
+      const sx = 22 + dx, sy = 19;
+      const tips = fyMix([[2, 0], [6, -6], [12, -10], [19, -11], [26, -9]], [[0, 14], [2, 8], [6, 3], [12, 0], [19, -1]], fyK(fr));
+      tips.forEach(([x, y]) => { fyL(c, sx - 3, sy - 1, x + dx, y, 4.6, 1.2, dark ? WB[0] : WB[1]); fyL(c, sx - 3, sy - 1.5, x + dx + 0.4, y, 2.4, 0.8, dark ? WB[1] : WB[2]); });
       fyE(c, sx - 3, sy - 1.5, 5.6, 3.6, dark ? WB[0] : WB[1]); fyE(c, sx - 3.4, sy - 2, 4.4, 2.6, dark ? WB[1] : WB[2]);
     };
     wing(-3, true);
-    // хвост: кисть качается и подбрасывается; дальняя задняя лапа
-    const tw = P.tail, tl = P.tlift, jx = R(tw * 0.5);
-    fyL(c, 8, 26 + by, 3 + jx, 31 - R(tl * 0.4) + by, 4, 3, T[0]); fyL(c, 3 + jx, 31 - R(tl * 0.4) + by, 4 + R(tw), 39 - R(tl) + by, 3, 2.4, T[0]);
-    fyE(c, 4 + R(tw), 41 - R(tl) + by, 3.2, 3.4, DK); fyE(c, 3.6 + R(tw), 40.4 - R(tl) + by, 2.4, 2.6, '#6a4420');
-    fyL(c, 14, 31 + by, 13 + R(P.lr), ty(38) + by, 4, 3, T[0]); fyE(c, 14 + R(P.lr), ty(43) + by, 3.6, 1.6, T[0]);
+    // хвост и дальняя задняя лапа
+    fyL(c, 8, 26, 3, 31, 4, 3, T[0]); fyL(c, 3, 31, 4, 39, 3, 2.4, T[0]); fyE(c, 4, 41, 3.2, 3.4, DK); fyE(c, 3.6, 40.4, 2.4, 2.6, '#6a4420');
+    fyL(c, 14, 31, 13, 38, 4, 3, T[0]); fyE(c, 14, 43, 3.6, 1.6, T[0]);
     // тело льва
-    fyE(c, 20, 29.4 + by, 11.5, 6.8, T[0]); fyE(c, 11, 30.4 + by, 6.6, 6.6, T[0]); fyE(c, 28, 28.4 + by, 6, 6.8, T[0]);
-    fyE(c, 20, 28.6 + by, 11, 6.2, T[1]); fyE(c, 11, 29.4 + by, 6.2, 6.1, T[1]); fyE(c, 28, 27.6 + by, 5.6, 6.2, T[1]);
-    fyE(c, 19, 24.6 + by, 8, 1.8, T[2]);
+    fyE(c, 20, 29.4, 11.5, 6.8, T[0]); fyE(c, 11, 30.4, 6.6, 6.6, T[0]); fyE(c, 28, 28.4, 6, 6.8, T[0]);
+    fyE(c, 20, 28.6, 11, 6.2, T[1]); fyE(c, 11, 29.4, 6.2, 6.1, T[1]); fyE(c, 28, 27.6, 5.6, 6.2, T[1]);
+    fyE(c, 19, 24.6, 8, 1.8, T[2]);
     // ближняя задняя лапа
-    const lx = R(-P.lr);
-    fyL(c, 10, 32 + by, 8 + lx, ty(38) + by, 5, 3.4, T[0]); fyL(c, 9.6, 32 + by, 7.6 + lx, ty(38) + by, 3.6, 2.4, T[1]); fyE(c, 9 + lx, ty(43) + by, 4, 1.8, T[0]); fyE(c, 8.6 + lx, ty(43) - 0.4 + by, 3.4, 1.4, T[1]);
-    for (const x of [6.4, 8.6, 10.8]) fyD(c, x + lx, ty(44) + by, DK);
-    // орлиная грудь, шея, голова (голова смещается целиком на hx, hy)
-    const hx = P.hx, hy = P.hy, hu = P.beak > 0.6 ? 1 : 0;
-    fyL(c, 29, 24 + by, 35 + hx * 0.5, 15 + hy * 0.5 + by, 10, 8, WH[0]); fyL(c, 28.6, 23.6 + by, 34.6 + hx * 0.5, 14.6 + hy * 0.5 + by, 8.4, 6.4, WH[1]);
-    for (const [x, y] of [[28, 26], [30.5, 25], [27, 22], [30, 21.5], [32.4, 18.6], [29.6, 18]]) fyL(c, x, y + by, x + 0.4, y + 2 + by, 1, 1, WH[0]);
-    c.save(); c.translate(hx, hy);
+    fyL(c, 10, 32, 8, 38, 5, 3.4, T[0]); fyL(c, 9.6, 32, 7.6, 38, 3.6, 2.4, T[1]); fyE(c, 9, 43, 4, 1.8, T[0]); fyE(c, 8.6, 42.6, 3.4, 1.4, T[1]);
+    for (const x of [6.4, 8.6, 10.8]) fyD(c, x, 44, DK);
+    // орлиная грудь, шея, голова
+    fyL(c, 29, 24, 35, 15, 10, 8, WH[0]); fyL(c, 28.6, 23.6, 34.6, 14.6, 8.4, 6.4, WH[1]);
+    for (const [x, y] of [[28, 26], [30.5, 25], [27, 22], [30, 21.5], [32.4, 18.6], [29.6, 18]]) fyL(c, x, y, x + 0.4, y + 2, 1, 1, WH[0]);
     fyE(c, 38, 12.4, 5.2, 4.8, WH[0]); fyE(c, 37.6, 12, 4.7, 4.3, WH[1]); fyE(c, 36.4, 10.2, 2.6, 1.4, WH[2]);
-    const bo = P.beak;
-    fyP(c, [[41, 9], [49, 12 - bo * 1.6], [49.6, 16 - bo * 1.6], [47, 14.6 - bo * 1.2], [44, 16.6 - bo], [42, 14.5], [41, 13]], YE[1]);
-    if (bo > 0.15) { fyP(c, [[42, 14], [47.4, 14.4 - bo * 0.6], [47.6, 16.2 + bo * 1.8], [42.6, 16.4]], '#4a1a10'); fyD(c, 46, 15.6 + bo * 0.5, '#d8564a'); }
-    fyP(c, [[41.6, 14 + bo * 1.4], [46, 15.6 + bo * 2.6], [43.4, 17 + bo * 2.4], [41.4, 16 + bo * 1.4]], YE[0]);
-    fyD(c, 47.6, 13.4 - bo * 1.2, '#6a4408'); fyD(c, 43.6, 11.4, '#6a4408');
-    if (P.eye) { fyE(c, 39.4, 11.2, 1.7, 1.7, '#f08a1a'); fyD(c, 39.6, 11.2, '#14100a'); fyD(c, 39, 10.4, '#ffffff'); } else fyL(c, 38, 11.4, 41, 11.4, 1, 1, '#14100a');
-    fyL(c, 37, 8.4 + (P.eye ? 0 : 1), 41.6, 9.6 + (P.eye ? 0 : 1), 1.3, 1.3, WB[1]);
-    fyL(c, 34, 8.6, 31.6, 2.4 + hu, 3.2, 1, WH[1]); fyL(c, 36.6, 7.8, 36, 1.6 + hu, 2.8, 0.8, WH[0]);
-    c.restore();
-    // передние лапы: орлиные; в броске тянутся вперёд
-    const fx = R(P.lf), cr = P.claw;
-    fyL(c, 29, 31 + by, 28 + fx, ty(38) + by, 4, 2.8, YE[0]); fyL(c, 29, 30 + by, 30.6 + fx, ty(38.4) + by, 3.2, 2.6, YE[1]); fyE(c, 28.4, 31 + by, 4, 3.4, WH[1]);
-    for (const [x, y] of [[35.4, 40.4], [33.4, 42.4], [29, 41.6]]) { const yy = ty(y) - cr * 6, xx = x + fx + cr * 3; fyL(c, 31 + fx, ty(39) + by, xx, yy + by, 2, 1.3, TL); fyD(c, xx, yy + by, DK); }
+    fyP(c, [[41, 9], [49, 12], [49.6, 16], [47, 14.6], [44, 16.6], [42, 14.5], [41, 13]], YE[1]); fyP(c, [[41.6, 14], [46, 15.6], [43.4, 17], [41.4, 16]], YE[0]);
+    fyD(c, 47.6, 13.4, '#6a4408'); fyD(c, 43.6, 11.4, '#6a4408');
+    fyE(c, 39.4, 11.2, 1.7, 1.7, '#f08a1a'); fyD(c, 39.6, 11.2, '#14100a'); fyD(c, 39, 10.4, '#ffffff'); fyL(c, 37, 8.4, 41.6, 9.6, 1.3, 1.3, WB[1]);
+    fyL(c, 34, 8.6, 31.6, 2.4, 3.2, 1, WH[1]); fyL(c, 36.6, 7.8, 36, 1.6, 2.8, 0.8, WH[0]);
+    // передние лапы: орлиные
+    fyL(c, 29, 31, 28, 38, 4, 2.8, YE[0]); fyL(c, 29, 30, 30.6, 38.4, 3.2, 2.6, YE[1]); fyE(c, 28.4, 31, 4, 3.4, WH[1]);
+    for (const [x, y] of [[35.4, 40.4], [33.4, 42.4], [29, 41.6]]) { fyL(c, 31, 39, x, y, 2, 1.3, TL); fyD(c, x, y, DK); }
     wing(0, false);
-    fyOutline(c, 62, 60, '#2a1a0a');
+    fyOutline(c, 62, 54, '#2a1a0a');
   });
 }
 
@@ -825,11 +771,6 @@ function griffinTick(dt, F) {
   const g = F.gr;
   if (!g) return;
   g.ph += dt; g.cd -= dt;
-  if (g.st === 'dying') {            // падает с вскриком (кадры смерти), затем исчезает до возрождения
-    g.dyT += dt; g.z = Math.max(0, g.z - 22 * dt);
-    if (g.dyT >= GRI_DIE_T) { g.st = 'gone'; g.z = 0; }
-    return;
-  }
   if (g.st === 'gone') {
     g.resp -= dt;
     if (g.resp <= 0) { g.st = 'patrol'; g.hp = 70; g.tr = 4 + (Math.random() * 6 | 0); g.x = g.nx + 0.5; g.y = g.ny + 0.5; g.z = 8; g.wx = g.nx; g.wy = g.ny; }
@@ -839,15 +780,13 @@ function griffinTick(dt, F) {
   const near = Game.units.filter(u => !u.dead && !u.inside && isPerson(u) && u.type !== 'carter' && Math.hypot(u.x - (g.nx + 0.5), u.y - (g.ny + 0.5)) < 4.2);
   const fighter = near.find(u => (u.hero || u.rec) && Math.hypot(u.x - (g.nx + 0.5), u.y - (g.ny + 0.5)) < 2.6 && typeof neuUnitOut === 'function' && !neuUnitOut(u));
   if (fighter) { g.st = 'duel'; g.foe = fighter.id; }
-  else if (g.st === 'duel') { g.st = 'patrol'; g.foe = 0; g.at = 0; }
+  else if (g.st === 'duel') { g.st = 'patrol'; g.foe = 0; }
   if (g.st === 'duel') {
     const foe = Game.unitMap.get(g.foe);
-    if (!foe || neuUnitOut(foe)) { g.st = 'patrol'; g.at = 0; return; }
-    g.perch = false; g.tk = 0; g.z = 4; fyMove(g, foe.x - 0.9 * (foe.x > g.x ? 1 : -1), foe.y, 2.5, dt);
+    if (!foe || neuUnitOut(foe)) { g.st = 'patrol'; return; }
+    g.z = 4; fyMove(g, foe.x - 0.9 * (foe.x > g.x ? 1 : -1), foe.y, 2.5, dt);
     g.face = foe.x > g.x ? 1 : -1;
     g.duel += dt;
-    if (g.duel > GRI_WIND && !(g.at > 0)) g.at = 0.001;           // замах: удар придётся на кадр ~4 из 9, интервал между ударами прежний — 1,3 с
-    if (g.at > 0) { g.at += dt; if (g.at >= GRI_ATK_T) g.at = 0; }
     if (g.duel > 1.3) {
       g.duel = 0;
       if (!g.seen) { g.seen = 1; fstat('grifFight'); logEvent('animal', 'Грифон бросился защищать сокровище', g.x, g.y); toast('Грифон защищает своё сокровище!'); }
@@ -855,7 +794,7 @@ function griffinTick(dt, F) {
       const dmg = neuDamageOf(foe) * (0.7 + Math.random() * 0.5);
       g.hp -= dmg; floater(g.x, g.y - 2, '−' + Math.round(dmg), '#ffffff');
       if (g.hp <= 0) {
-        g.st = 'dying'; g.dyT = 0; g.at = 0; g.resp = 600 + Math.random() * 300;
+        g.st = 'gone'; g.resp = 600 + Math.random() * 300; g.z = 0;
         dropPile(Math.floor(foe.x), Math.floor(foe.y), 'gold', g.tr);
         dropPile(Math.floor(foe.x), Math.floor(foe.y), 'magicstone', 1);
         fstat('grifWin'); logEvent('gold', `${foe.hero ? foe.hero.name : 'Рекрут'} одолел грифона: сокровище золото ×${g.tr}`, g.x, g.y);
@@ -876,7 +815,7 @@ function griffinTick(dt, F) {
     }
   }
   // патруль: облетает горы и окрестности, иногда садится на гнездо
-  if (!g.perch && !(g.tk > 0)) g.z = 14 + Math.sin(g.ph * 1.3) * 3;       // на гнезде и при взлёте высота ведётся ниже
+  g.z = 14 + Math.sin(g.ph * 1.3) * 3;
   g.t -= dt;
   if (g.t <= 0 || Math.hypot(g.wx - g.x, g.wy - g.y) < 0.8) {
     g.t = fyR(12, 28);
@@ -885,38 +824,21 @@ function griffinTick(dt, F) {
     else if (F.rocks && F.rocks.length && roll < 0.75) { const q = F.rocks[(Math.random() * F.rocks.length) | 0]; g.wx = q[0] + 0.5; g.wy = q[1] + 0.5; }
     else { g.wx = Math.max(2, Math.min(MAP_W - 3, g.nx + fyR(-26, 26))); g.wy = Math.max(2, Math.min(MAP_H - 3, g.ny + fyR(-20, 20))); }
   }
-  if (g.rest > 0 && Math.hypot(g.nx + 0.5 - g.x, g.ny + 0.5 - g.y) < 0.7) {
-    g.perch = true; g.wlk = false;
-    if (g.z > 0.3) { g.z = Math.max(0, g.z - 30 * dt); return; }                // сажусь на гнездо
-    g.z = 0; g.rest -= dt; g.pt = (g.pt || 0) - dt;
-    if (g.pt <= 0) { g.pt = fyR(2, 6); g.pgx = g.nx + 0.5 + fyR(-0.45, 0.45); g.pgy = g.ny + 0.5 + fyR(-0.3, 0.3); }   // переминается у сокровища
-    if (g.pgx != null && fyMove(g, g.pgx, g.pgy, 0.7, dt) > 0.05) g.wlk = true;
-    return;
-  }
-  if (g.perch) { g.perch = false; g.wlk = false; g.tk = GRI_TAKE_T; g.rest = 0; }       // взлёт с гнезда
-  if (g.tk > 0) { g.tk -= dt; g.z = 14 * (1 - Math.max(0, g.tk) / GRI_TAKE_T); }
-  fyMove(g, g.wx, g.wy, g.tk > 0 ? 1.2 : 3.2, dt);
+  if (g.rest > 0 && Math.hypot(g.nx + 0.5 - g.x, g.ny + 0.5 - g.y) < 0.7) { g.rest -= dt; g.z = 0; return; }
+  fyMove(g, g.wx, g.wy, 3.2, dt);
 }
 
 function griffinDraw(list, c, F, x0, y0, x1, y1) {
   const g = F.gr;
   if (!g) return;
-  if (FY_SEE(g.nx, g.ny, x0, y0, x1, y1) && g.st !== 'gone' && g.st !== 'dying') {       // сокровище в гнезде
+  if (FY_SEE(g.nx, g.ny, x0, y0, x1, y1) && g.st !== 'gone') {       // сокровище в гнезде
     list.push([g.ny + 0.05, () => { const px = (g.nx + 0.5) * TILE, py = (g.ny + 0.5) * TILE + 6; c.fillStyle = 'rgba(40,24,8,0.55)'; c.beginPath(); c.ellipse(px, py, 11, 4, 0, 0, 7); c.fill(); for (let i = 0; i < Math.min(5, g.tr); i++) { c.save(); c.translate(px - 8 + i * 4, py - 2 - (i & 1)); c.scale(0.4, 0.4); drawLoad(c, 'gold'); c.restore(); } if (Math.floor(Game.time * 2) % 3 === 0) { c.fillStyle = '#fff6b0'; c.fillRect(Math.round(px + Math.sin(Game.time) * 8), Math.round(py - 6), 1, 1); } }]);
   }
   if (g.st === 'gone' || !FY_SEE(g.x, g.y, x0, y0, x1, y1)) return;
   list.push([g.y + 0.3, () => {
     const px = g.x * TILE, py = g.y * TILE + 4, air = g.z > 1;
     fyShadow(c, px, py, air ? 8 : 12, air ? 0.16 : 0.3);
-    let pose, fr, al = 1;
-    if (g.st === 'dying') { pose = 'die'; fr = Math.min(7, Math.floor(g.dyT / GRI_DIE_T * 8)); al = Math.min(1, (GRI_DIE_T - g.dyT) / 0.3 + 0.01); }
-    else if (g.at > 0) { pose = 'atk'; fr = Math.min(8, Math.floor(g.at / GRI_ATK_T * 9)); }
-    else if (g.tk > 0) { pose = 'take'; fr = Math.min(5, Math.floor((1 - g.tk / GRI_TAKE_T) * 6)); }
-    else if (g.perch && g.z > 0.3) { pose = 'take'; fr = Math.min(5, Math.floor(g.z / 14 * 6)); }
-    else if (air) { pose = 'fly'; fr = Math.floor(g.ph * 16) & 7; }
-    else if (g.wlk) { pose = 'walk'; fr = Math.floor(g.ph * 12) & 7; }
-    else { pose = 'idle'; fr = Math.floor(g.ph * 6) % 6; }
-    fyBlit(c, sprGriffin(pose, fr), px, py - g.z, g.face, al, 0.8);
+    fyBlit(c, sprGriffin(air || g.st === 'duel' ? fyCyc8(g.ph * 16) : 1), px, py - g.z, g.face, 1, 1, 0.8);
   }]);
 }
 
@@ -1289,7 +1211,7 @@ function serializeFairy1() {
     s: F.sal.map(s => s.bid), sc: [...F.salChk],
   };
   if (F.dr) o.d = [F.dr.nx, F.dr.ny, F.dr.tamed ? 1 : 0, F.dr.stage || 0, F.dr.raids || 0];
-  if (F.gr) o.g = [F.gr.nx, F.gr.ny, F.gr.tr, F.gr.st === 'gone' || F.gr.st === 'dying' ? Math.round(F.gr.resp) : 0];
+  if (F.gr) o.g = [F.gr.nx, F.gr.ny, F.gr.tr, F.gr.st === 'gone' ? Math.round(F.gr.resp) : 0];
   if (F.gg) o.e = F.gg.egg;
   // дракончик, грифон и яйцо после загрузки встают не сразу — до этого их сохранённые данные не должны теряться
   if (!o.d && F.drSaved) o.d = F.drSaved;

@@ -742,7 +742,6 @@ function gestPts(g, f, side, shY, headY, view) {
     case 'stretch': return [[side * 5.8, shY - 3.2], [side * 4.2, headY - 7.4 - f * 0.6]];
     case 'yawn':    return [[side * 5, shY + 1.6], [side * 1.2, headY + 3.4]];
     case 'clap':    return [[side * 5.8, shY + 2.4], [side * (0.9 + f * 1.8), shY + 1.2]];     // хлопает перед грудью
-    case 'six7':    { const k = side > 0 ? f : 1 - f; return [[side * 5.6, shY + 2.4 - k * 1.2], [side * 4.6, shY + 5 - k * 7.4]]; }     // мем «шесть-семь»: ладони вверх, руки качаются вразнобой
     case 'five':    return [[[side * 5.6, shY - 3.4], [side * 5.8, headY - 7]], [[side * 6, shY - 3], [side * 6.2, headY - 5.4]], [[side * 6.4, shY - 2.2], [side * 6.6, headY - 3.6]], [[side * 5.4, shY + 0.4], [side * 5.8, shY + 1.4]]][f & 3];
     case 'panic':   return [[side * 6.4, shY - 2], [side * (6.6 - f * 1.6), headY - 4.2 + f * 1.6]];   // машет руками над головой
     case 'eat':     return f >= 0.5 ? [[side * 5, shY + 0.4], [side * 1.4, headY + 4]] : [[side * 5.4, shY + 2.4], [side * 3.4, shY + 4.2]];   // ложка ко рту / в миску
@@ -1039,7 +1038,7 @@ function drawOnBack(c, k, x, y, view) {
 // ---------- Фигура ----------
 // pose: idle | walk | work | duck | smoke | tame | fight; frame: 0..7 для шага, {anim, f} для работы, имя кадра для боя
 // opt.gait: '' — вразвалочку, 'drunk' — шатается, 'tired' — голодный плетётся;
-// opt.gest: wave | fist | scratch | stretch | yawn | clap | point | six7, opt.gf — кадр жеста: 0/1 (опорные позы) или gestCyc() — 4 такта (3 позы).
+// opt.gest: wave | fist | scratch | stretch | yawn | clap | point, opt.gf — кадр жеста: 0/1 (опорные позы) или gestCyc() — 4 такта (3 позы).
 
 // Юбка официантки: колоколом до колен, красная с подолом-фестоном и белым фартуком (вид спереди/сзади)
 function femSkirt(c, hipY, front, sw) {
@@ -1372,7 +1371,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         hand(c, sa.hand[sf][0], sa.hand[sf][1], sk);
         return;
       }
-      if (gest && (side > 0 || gest === 'stretch' || gest === 'clap' || gest === 'panic' || gest === 'six7')) {
+      if (gest && (side > 0 || gest === 'stretch' || gest === 'clap' || gest === 'panic')) {
         const [e, h] = gestPts(gest, gf, side, shY, headY, 'S');
         smoothLimb(c, [sx, shY + 0.6], e, h, 2.2, col);
         hand(c, h[0], h[1], sk);
@@ -1432,7 +1431,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);
     if (!opt.nohat) drawCap(c, O, view, 0, headY, tipSway, L, r, lvl);
     // поднятая рука жеста — поверх головы и бороды
-    if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic' || gest === 'six7') arm(-1); }
+    if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic') arm(-1); }
     if (pose === 'smoke' && front) {
       arm(1);
     }

@@ -97,8 +97,7 @@ function paintGhostHood(c, tip, sn) {
 }
 
 // Бестелесная лапа с большими когтями (как у призрака, но крупнее)
-// fingers — набор пальцев [разворот, длина]; по умолчанию пять (жнец), у призрака GHOST_FINGERS: четыре, расставлены шире
-function paintGhostPaw(c, hx, hy, ang, len0, boo, pk = 1, fingers = null) {
+function paintGhostPaw(c, hx, hy, ang, len0, boo, pk = 1) {
   // Костлявая бестелесная лапа: малая ладонь с сухожилиями, пальцы из двух фаланг с суставами, на концах — когти-серпы
   c.save(); c.translate(hx, hy); c.rotate(ang); c.scale(pk, pk);
   c.lineCap = 'round'; c.lineJoin = 'round';
@@ -106,7 +105,7 @@ function paintGhostPaw(c, hx, hy, ang, len0, boo, pk = 1, fingers = null) {
   c.beginPath(); c.ellipse(0.9, 0, 2.3, 1.9, 0, 0, 7); c.fill(); c.stroke();
   c.strokeStyle = 'rgba(235,255,250,0.35)'; c.lineWidth = 0.4;                                    // сухожилия на тыле кисти
   for (let t = -1; t <= 1; t++) { c.beginPath(); c.moveTo(-1.3, t * 0.5); c.lineTo(2.3, t * 0.95); c.stroke(); }
-  fingers = fingers || [[-1.5, 0.85], [-0.5, 1], [0.5, 1], [1.5, 0.9], [-2.7, 0.55]];                     // [разворот, длина]; последний — большой палец
+  const fingers = [[-1.5, 0.85], [-0.5, 1], [0.5, 1], [1.5, 0.9], [-2.7, 0.55]];                     // [разворот, длина]; последний — большой палец
   for (const [j, fl] of fingers) {
     const thumb = j < -2;
     const a0 = (thumb ? -1.2 : j * 0.66) + (boo ? j * 0.14 : 0), curl = (boo ? 0.62 : 0.46);
