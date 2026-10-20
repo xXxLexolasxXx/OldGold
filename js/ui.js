@@ -450,6 +450,7 @@ function initUI() {
     const act = t.dataset.act;
     if (t.dataset.train) { if (b.queue.length < 10) b.queue.push(t.dataset.train); }
     else if (t.dataset.untrainAt) b.queue.splice(+t.dataset.untrainAt, 1);
+    else if (act === 'untrainall') b.queue.length = 0;
     else if (act === 'demolish') {
       if (b.isRoad) removeRoadSite(b);
       else if (b.state !== 'done' || confirm(`Снести «${b.def.name}»?`)) removeBuilding(b);
@@ -731,7 +732,11 @@ function infoBuilding(b) {
     if (b.training) {
       h += `<div class="irow"><img class="portrait" src="${portraitURL(b.training.type)}" alt="">${UNIT_TYPES[b.training.type].name}</div>`;
       h += `<div class="bar"><div style="width:${Math.round(b.training.t / (TRAIN_TIME * (b.def.trainMult || 1)) * 100)}%"></div></div>`;
-    } else if (b.queue.length && b.stock.gold < 1) h += '<div class="warn small">Ждём золото</div>';
+    } else if (b.queue.length && b.stock.gold < 1) {
+      const w = schoolWhy(b);
+      h += `<div class="warn small">Ждём золото${w ? ': ' + w.t + ' ' + w.a : ''}</div>`;
+      if (w && w.icon === 'g:gold' && !b.incoming.gold && goldAnywhere() <= 0) h += '<div class="iactions"><button data-act="untrainall">Очистить очередь</button></div>';
+    }
     h += '<div class="queue">' + b.queue.map((q, i) => `<img src="${portraitURL(q)}" title="${UNIT_TYPES[q].name} — клик убирает" data-untrain-at="${i}">`).join('') + '</div>';
     h += '<div class="train-grid">';
     for (const t of UNIT_KEYS) {

@@ -232,6 +232,8 @@ function lightningStrike() {
   for (const e of Game.ents || []) if (e.k > 0.5 && !e.burnT && ['walk', 'fight', 'return'].includes(e.state)) { add('ent', e, e.x, e.y); add('ent', e, e.x, e.y); }
   // каждая третья молния — просто в землю
   let t = Math.random() < 0.3 || !cands.length ? null : cands[(Math.random() * cands.length) | 0];
+  // в гнома — реже: чаще бьёт рядом (отбросит, но не подожжёт), иначе в грозу травмы сыпались каждые полминуты
+  if (t && t.kind === 'unit' && Math.random() < 0.65) t = null;
   if (!t) {
     // в землю: чаще на виду, иначе возле деревни (на сервере коопа камеры нет — всегда возле жителей,
     // иначе 70 % молний били в левый верхний угол карты)
@@ -338,7 +340,7 @@ function* burnGen(u) {
   yield { wait: 1.8, anim: 'burnout' };            // лежит, дымится
   u.burn.stage = 'up';
   yield { wait: 0.6, anim: 'getup' };
-  const ouch = Math.random() < 0.6;
+  const ouch = Math.random() < 0.3;
   if (ouch) injure(u, Math.random() < 0.5 ? 'arm' : 'leg');
   floater(u.x, u.y - 1, ouch ? 'Обгорел…' : 'Фух!', '#fff2a0');
   logEvent('weather', `${UNIT_TYPES[u.type].name} потушил себя и встал${ouch ? ', обгорел' : ''}`, u.x, u.y);

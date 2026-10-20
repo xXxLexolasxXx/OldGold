@@ -152,7 +152,8 @@ class Building {
       const need = (this.def.cost[g] || 0) - this.usedOf[g] - this.stock[g] - this.incoming[g];
       return Math.max(0, need);
     }
-    if (this.upg) return Math.max(0, (this.upg.cost[g] || 0) - this.upg.used[g] - this.upg.stock[g] - this.incoming[g]);   // достройка: везут материалы
+    // достройка: везут материалы; школа при этом учит дальше — золото ей нужно и во время достройки
+    if (this.upg && !(this.type === 'school' && !this.upg.cost[g])) return Math.max(0, (this.upg.cost[g] || 0) - this.upg.used[g] - this.upg.stock[g] - this.incoming[g]);
     if (this.noDeliver || this.isStore() || !this.def.inputs) return 0;   // закрыто для доставок
     const cap = this.def.inputs[g];
     if (!cap || !this.wantsInput(g)) return 0;
@@ -161,7 +162,7 @@ class Building {
 
   update(dt) {
     if (this.state !== 'done') return;
-    if (this.upg) { this.working = false; return; }          // идёт достройка — производство стоит
+    if (this.upg && this.type !== 'school') { this.working = false; return; }          // идёт достройка — производство стоит (школа учит: иначе застрявшая достройка запирала всю деревню без новых жителей)
     if (this.def.auto) {
       if (!this.autoJob && !this.paused && !prioOff(this)) {
         const r = pickRecipe(this);
@@ -174,6 +175,8 @@ class Building {
       } else this.working = false;
     }
     if (this.type === 'school') {
+      if (!this.training && this.queue.length && this.stock.gold < 1 && this.incoming.gold <= 0) schoolStuck(this, dt);
+      else { this.goldWait = 0; if (this.stock.gold >= 1) this.goldHint = false; }
       if (!this.training && this.queue.length && this.stock.gold >= 1) {
         this.stock.gold--;
         this.training = { type: this.queue.shift(), t: 0 };
@@ -188,6 +191,31 @@ class Building {
       }
     }
     this.anim += dt * (this.working ? 3 : 0.25);
+  }
+}
+
+// Защита от «мёртвой хватки» школы: очередь есть, золото не идёт.
+// Нет ни одного перевозчика — слиток со склада той же дороги берёт сам учитель (иначе некому привезти,
+// а научить перевозчика нечем). Золота нет вообще и перевозчиков нет — трудягу учат в долг,
+// чтобы деревня могла хотя бы возить. И одна понятная подсказка вместо молчаливого «Ждём золото».
+function schoolStuck(b, dt) {
+  b.goldWait = (b.goldWait || 0) + dt;
+  if (b.goldWait < 8) return;
+  const carriers = Game.units.some(u => u.isCourier && !u.dead && !u.teamOf);
+  if (!carriers) {
+    const st = storeHaving(b.doorX, b.doorY, 'gold', compAt(b.doorX, b.doorY));
+    if (st) { st.stock.gold--; b.stock.gold++; b.goldWait = 0; return; }
+    if (goldAnywhere() <= 0) {
+      const i = b.queue.indexOf('serf');
+      if (i < 0) b.queue.unshift('serf'); else if (i > 0) { b.queue.splice(i, 1); b.queue.unshift('serf'); }
+      b.stock.gold++; b.goldWait = 0;
+      toast('Школа выучит трудягу в долг: золота нет, а возить некому');
+      return;
+    }
+  }
+  if (b.goldWait > 25 && !b.goldHint && goldAnywhere() <= 0) {
+    b.goldHint = true;
+    toast('Школа стоит: золота нет нигде. Нужен золотой рудник у скалы и плавильня — или очистите очередь в школе', b);
   }
 }
 
@@ -271,7 +299,33 @@ function setRoad(x, y, v) {
 }
 
 // Возвращает null, если можно строить, иначе текст причины.
-function checkPlacement(type, x, y, rot = 0) {
+// Где можно поставить рудник или шахту кристаллов: все места на карте (левый верхний угол), без
+// дорогой проверки «не перекроет ли проход». Кэш на 2 секунды игры — для подсветки и подсказки.
+const MINE_SPOTS = { type: null, t: -99, list: [] };
+function mineSpots(type) {
+  const need = BUILDINGS[type] && BUILDINGS[type].need;
+  if (need !== 'rock' && need !== 'crystal') return [];
+  if (MINE_SPOTS.type === type && Game.time - MINE_SPOTS.t < 2 && Game.time >= MINE_SPOTS.t) return MINE_SPOTS.list;
+  const list = [], d = bDims(type, 0);
+  for (let y = 1; y < MAP_H - d.h; y++) for (let x = 0; x <= MAP_W - d.w; x++) {
+    let edge = false;   // быстрый отсев: над крышей должна быть скала (или кристалл)
+    for (let xx = x; xx < x + d.w && !edge; xx++) { const i = idx(xx, y - 1); edge = need === 'crystal' ? !!World.crystal[i] : World.terrain[i] === T_ROCK; }
+    if (edge && !checkPlacement(type, x, y, 0, true)) list.push([x, y]);
+  }
+  MINE_SPOTS.type = type; MINE_SPOTS.t = Game.time; MINE_SPOTS.list = list;
+  return list;
+}
+// «Нет скалы здесь — ближайшее место там»: текст с расстоянием и сторонами света
+function mineSpotHint(type, x, y) {
+  let best = null, bd = 1e9;
+  for (const s of mineSpots(type)) { const d = Math.hypot(s[0] - x, s[1] - y); if (d < bd) { bd = d; best = s; } }
+  if (!best) return ' Подходящих мест на карте не осталось.';
+  const dx = best[0] - x, dy = best[1] - y;
+  const dir = (dy < -2 ? 'север' : dy > 2 ? 'юг' : '') + (Math.abs(dx) > 2 ? (dy < -2 || dy > 2 ? 'о-' : '') + (dx > 0 ? 'восток' : 'запад') : '');
+  return bd < 1.5 ? '' : ` Ближайшее место — в ${Math.round(bd)} кл.${dir ? ' на ' + dir : ''}; подходящие места подсвечены.`;
+}
+
+function checkPlacement(type, x, y, rot = 0, quick = false) {
   const def0 = BUILDINGS[type];
   const dd = bDims(type, rot);
   const def = { ...def0, w: dd.w, h: dd.h, dx: dd.dx, dy: dd.dy };
@@ -315,7 +369,7 @@ function checkPlacement(type, x, y, rot = 0) {
     if (!ok) return 'Нужна скала с фиолетовыми кристаллами прямо над шахтой';
   }
   if (treeBlock) return 'Мешают деревья, камни или поля';
-  if (blocksPassage(def, x, y)) return 'Перекроет проход к другим зданиям';
+  if (!quick && blocksPassage(def, x, y)) return 'Перекроет проход к другим зданиям';
   return null;
 }
 

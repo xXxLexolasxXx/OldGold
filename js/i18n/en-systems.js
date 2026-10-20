@@ -79,7 +79,7 @@ I18N.add('en', {
   "Целебные зелья": "Healing potions",
   "Лекарь": "Healer",
   "Лазарет": "Infirmary",
-  "Лекарь варит целебные зелья из хмеля и хлеба и выхаживает больных: тяжёлые гномы приходят сюда сами. Мест — четыре.": "The healer brews healing potions from hops and bread and nurses the sick: badly ill gnomes come here on their own. Four beds.",
+  "Лекарь варит целебные зелья из хмеля и хлеба и выхаживает больных и раненых: они приходят сюда сами, а к тем, кто не дойдёт, лекарь выйдет. Мест — четыре.": "The healer brews healing potions from hops and bread and nurses the sick and injured: they come here on their own, and the healer goes out to those who can't make it. Four beds.",
   "Мор в округе": "Plague nearby",
   "Мор в округе: зелья и хлеб в цене": "Plague nearby: potions and bread are in demand",
   "Простуда": "Cold",

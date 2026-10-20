@@ -14,6 +14,8 @@ const PRIO_TASKS = {
     hint: 'Новые здания, дороги и достройка. «Высокий» — стройки получают материалы и работяг раньше хозяйства; «Выкл» — стройка встаёт (ремонт идёт).' },
   wood:    { name: 'Дрова', icon: ['good', 'timber'], types: ['woodcutter', 'sawmill'],
     hint: 'Дом лесоруба и лесопилка: брёвна и доски. «Выкл» — рубка и распил стоят, пока не включите.' },
+  haul:    { name: 'Перенос ресурсов', icon: ['good', 'trunk'], types: [],
+    hint: 'Вывоз готовой продукции из мастерских и рассыпанного с земли на склад. «Высокий» — кучи с земли свозят в первую очередь и больше курьеров на здание; «Низкий» — по одному; «Выкл» — не свозят (кроме еды).' },
   defense: { name: 'Оборона', icon: ['good', 'sword'], types: ['smeltery', 'weaponsmith', 'armory'],
     hint: 'Плавильня металла, оружейная и мастерская доспехов — снаряжение для героя и бойцов. Нужнее перед ночами.' },
 };
@@ -109,6 +111,7 @@ function prioWarnings() {
   if (lv('tasks', 'food') === 0) out.push('Еда выключена: фермы и цеха стоят, гномы скоро проголодаются.' + (Game.diff === 'survival' ? ' В «Выживании» голод быстро заканчивается потерями.' : ''));
   if (lv('jobs', 'serf') === 0) out.push('Трудяги выключены: грузы никто не возит, встанет всё хозяйство.');
   if (lv('jobs', 'builder') === 0 || lv('tasks', 'build') === 0) out.push('Стройка выключена: новые здания и дороги не строятся.');
+  if (lv('tasks', 'haul') === 0) out.push('Перенос ресурсов выключен: продукция копится в мастерских, и они встают.');
   return out;
 }
 
@@ -118,14 +121,17 @@ function prioSeg(kind, key, cur) {
 }
 
 function prioHTML() {
-  let h = `<div class="pr-intro">Кто чем займётся в первую очередь. <b>Авто</b> — как решает игра, трогать не обязательно. <b>Высокий</b> — делают первым, <b>Низкий</b> — последним, <b>Выкл</b> — не делают совсем.</div>`;
+  const wk = typeof wkListHTML === 'function';
+  const tabs = wk ? `<div class="pr-views"><button data-prv="prio" class="${UI.prioView !== 'wk' ? 'on' : ''}">Приоритеты</button><button data-prv="wk" class="${UI.prioView === 'wk' ? 'on' : ''}">Рабочие</button></div>` : '';
+  if (wk && UI.prioView === 'wk') return tabs + wkListHTML();
+  let h = tabs + `<div class="pr-intro">Кто чем займётся в первую очередь. <b>Авто</b> — как решает игра, трогать не обязательно. <b>Высокий</b> — делают первым, <b>Низкий</b> — последним, <b>Выкл</b> — не делают совсем.</div>`;
   const warn = prioWarnings();
   if (warn.length) h += `<div class="pr-warn">${warn.map(w => '⚠ ' + w).join('<br>')}</div>`;
   h += '<h4 class="pr-h">Задачи</h4>';
   for (const k in PRIO_TASKS) {
     const t = PRIO_TASKS[k];
-    const n = k === 'build' ? Game.buildings.filter(b => b.state !== 'done').length + Game.roadSites.size : Game.buildings.filter(b => b.state === 'done' && PRIO_OF[b.type] === k).length;
-    h += `<div class="pr-row"><div class="pr-name"><img src="${iconURL(t.icon[0], t.icon[1], 2)}" alt=""><b>${t.name}</b><span class="pr-n">${k === 'build' ? n + ' строек' : n + ' зд.'}</span></div>${prioSeg('tasks', k, prioLv('tasks', k))}<div class="pr-hint">${t.hint}</div></div>`;
+    const n = k === 'build' ? Game.buildings.filter(b => b.state !== 'done').length + Game.roadSites.size : k === 'haul' ? Game.piles.size : Game.buildings.filter(b => b.state === 'done' && PRIO_OF[b.type] === k).length;
+    h += `<div class="pr-row"><div class="pr-name"><img src="${iconURL(t.icon[0], t.icon[1], 2)}" alt=""><b>${t.name}</b><span class="pr-n">${k === 'build' ? n + ' строек' : k === 'haul' ? n + ' куч' : n + ' зд.'}</span></div>${prioSeg('tasks', k, prioLv('tasks', k))}<div class="pr-hint">${t.hint}</div></div>`;
   }
   h += '<h4 class="pr-h">Профессии</h4>';
   for (const k of prioJobList()) {
