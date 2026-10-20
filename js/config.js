@@ -112,7 +112,7 @@ const BUILDINGS = {
   },
   inn: {
     name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, wideDoor: true, inputs: { bread: 16, sausage: 16, beer: 10, chicken: 4, croissant: 12, steak: 12, darkbeer: 8 },
-    desc: 'Голодные жители едят здесь курицу, колбасу или хлеб и запивают пивом. Тушку курицы разделывают на 4 куска. Пьяный может уснуть прямо на дороге.',
+    desc: 'Голодные жители едят здесь всё, что есть в запасе — курицу, стейк, колбасу, круассаны, хлеб — и запивают пивом. Тушку курицы разделывают на 4 куска. Пьяный может уснуть прямо на дороге.',
   },
   bonfire: {
     name: 'Большой костёр', cat: 'Ресурсы', w: 3, h: 3, top: 78, rots: [0, 3], wideDoor: true, cost: { timber: 4, stone: 2 }, auto: true,
@@ -279,12 +279,14 @@ const BUILD_ORDER = Object.keys(BUILDINGS);
 const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия', 'Гильдии'];
 
 // Постепенно открывающееся меню строительства. Стадия открывается, когда готово
-// всё из `after` (типы зданий) и достигнута веха `rank` цели (1 — «Деревня», 2 — «Город»), либо её открывает обучение. Школы в меню нет:
-// она появляется в обучении (noMenu).
+// всё из `after` (типы зданий), достигнута веха `rank` цели (1 — «Деревня», 2 — «Город») и пережито `night` ночей,
+// либо её открывает обучение. Школы в меню нет: она появляется в обучении (noMenu).
+// На старте — только дорога и «Ресурсы»: лесоруб, каменоломня, лесопилка, большой костёр. Хмель — только вместе с пивоварней.
 const UNLOCKS = [
-  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire', 'inn'] },
+  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire'] },
   { id: 'grain', items: ['farm', 'mill', 'bakery', 'storehouse', 'tool:wheat'], after: ['woodcutter', 'quarry', 'sawmill'] },
   { id: 'hops',  items: ['hopfarm', 'brewery', 'tool:hops'], after: ['bakery'] },
+  { id: 'inn2',  items: ['inn'], after: ['brewery'] },   // стартовый трактир уже стоит; второй — когда пошло пиво
   { id: 'pigs',  items: ['swine', 'butchery'], after: ['brewery'] },
   { id: 'base',  items: ['goatpen', 'stable'], after: ['swine'] },
   { id: 'craft', items: ['tannery', 'armory'], after: ['butchery'] },
@@ -386,7 +388,7 @@ function startOpen(id) {
 
 // стадия меню готова к открытию: достроено всё из after и достигнута веха
 function unlockReady(st) {
-  return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
+  return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && (!st.night || startNights() >= st.night) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
 }
 
 // ---------- Запас прочности снаряжения (js/durability.js) ----------

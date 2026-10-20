@@ -223,7 +223,7 @@ function setTool(tool) {
   document.querySelectorAll('.bbtn, .tools button').forEach(b => b.classList.remove('active'));
   mobileTool(tool);
   toolHint(tool);
-  if (!tool) return;
+  if (!tool) { R.hover = null; return; }
   if (tool.kind === 'build') document.querySelector(`.bbtn[data-type="${tool.type}"]`)?.classList.add('active');
   if (tool.kind === 'road') document.getElementById('tool-road').classList.add('active');
   if (tool.kind === 'erase') document.getElementById('tool-erase').classList.add('active');
@@ -289,7 +289,7 @@ function queueTraining(type) {
 
 // ---------- Постепенное открытие меню ----------
 
-const UNLOCK_NAMES = { res: 'Ресурсы', grain: 'Зерно и хлеб', hops: 'Хмель и пиво', pigs: 'Свиньи и мясо', base: 'Хозяйство', craft: 'Ремесло', metal: 'Плавка золота', magic: 'Магия' };
+const UNLOCK_NAMES = { res: 'Ресурсы', grain: 'Зерно и хлеб', hops: 'Хмель и пиво', inn2: 'Второй трактир', pigs: 'Свиньи и мясо', base: 'Хозяйство', craft: 'Ремесло', metal: 'Плавка золота', magic: 'Магия' };
 
 function allUnlocked() { return Object.fromEntries(UNLOCKS.map(u => [u.id, true])); }
 
@@ -503,13 +503,20 @@ function totals() {
   return t;
 }
 
+// «Запасы и запреты»: числа — в строке ресурсов сверху, здесь только что склады принимают и куда идёт запас.
+// Показываем товары, которые деревня уже видела (есть, производились или запрещены) — без пустых клеток «на вырост».
 function storeHTML() {
-  const t = totals();
-  let h = '<div class="muted small">Клик по товару — запретить складам его принимать. Кладовщик и так считает, что ему всё несут зря.</div>';
+  const t = totals(), r = typeof rates === 'function' ? rates() : null, P = Game.produced || {};
+  let h = '<div class="muted small">Касание по товару — запретить складам его принимать (или снова разрешить). Стрелка — запас растёт или тает. Сколько чего — в строке ресурсов сверху.</div>';
   for (const grp of GOOD_GROUPS) {
+    const gs = GOOD_KEYS.filter(g => GOODS[g].group === grp && !GOODS[g].noStore && (t[g] || P[g] || Game.storeBlock[g]));
+    if (!gs.length) continue;
     h += `<div class="group-title">${grp}</div><div class="slots">`;
-    for (const g of GOOD_KEYS) if (GOODS[g].group === grp)
-      h += `<div class="slot click${t[g] ? '' : ' zero'}${Game.storeBlock[g] ? ' blocked' : ''}" data-block="${g}" title="${GOODS[g].name}">${gi(g)}<span class="n">${t[g]}</span></div>`;
+    for (const g of gs) {
+      const x = r && r[g], net = x ? x.prod - x.cons : 0;
+      const fl = net > 0.3 ? '<span class="fl up">▲</span>' : net < -0.3 ? '<span class="fl dn">▼</span>' : '';
+      h += `<div class="slot click${t[g] ? '' : ' zero'}${Game.storeBlock[g] ? ' blocked' : ''}" data-block="${g}" title="${GOODS[g].name}: ${t[g]}${Game.storeBlock[g] ? ' — склады не принимают' : ''}">${gi(g)}${fl}</div>`;
+    }
     h += '</div>';
   }
   return h;
@@ -541,7 +548,7 @@ function peopleHTML() {
     if (T.noTrain && !c) continue;
     h += `<div class="prow"><img class="portrait" src="${portraitURL(k)}" alt="">
       <div><div class="pn">${T.name}</div><div class="muted small">${idle[k] ? `свободно: ${idle[k]}` : c ? 'все заняты' : 'нет'}${queued[k] ? ` · учится: ${queued[k]}` : ''}</div></div>
-      <span class="pc">${c}</span>${T.noTrain ? '<span></span>' : `<button data-train="${k}" title="Обучить в школе (1 золото). Дорого? Зато без вступительных">+</button>`}</div>`;
+      <span class="pc">${c}</span><span></span></div>`;   // учить — кнопками в окне школы, без дубля здесь
     if (c && LEVEL_XP[k]) h += levelsHTML(k);
   }
   return h;
@@ -748,6 +755,13 @@ function infoBuilding(b) {
   if (b.type === 'inn') {
     const hungry = Game.units.filter(u => u.food < HUNGRY).length;
     h += `<div class="irow ${hungry ? 'warn' : 'muted'}">Голодных: ${hungry}</div>`;
+    if (b.state === 'done') {
+      // что гномы реально съедят: курица разделывается на куски, так что считаем и целые тушки
+      const have = FOODS.map(g => [g, Math.max(0, b.stock[g] - b.reserved[g]) + (g === 'chickenleg' ? Math.max(0, b.stock.chicken) * 4 : 0)]).filter(x => x[1] > 0);
+      h += have.length
+        ? `<div class="irow muted">Еда в запасе: ${have.map(([g, n]) => `${GOODS[g].name.toLowerCase()} ${n}`).join(', ')}</div>`
+        : '<div class="irow warn">Еды нет — голодные идут на склад всухомятку</div>';
+    }
   }
   if (b.type === 'quarry') {
     let n = 0;
@@ -781,7 +795,7 @@ function infoBuilding(b) {
     const CROP_NAMES = { wheat: 'Пшеница → зерно', hay: 'Травы → сено', hops: 'Хмель на шестах' };
     for (const crop of def.crops)
       h += `<div class="recipe${b.crops[crop] ? '' : ' off'}">${gi(crop)} ${CROP_NAMES[crop]}<span class="t">полей: ${cnt[crop] || 0}</span>${def.crops.length > 1 ? `<input type="checkbox" data-crop="${crop}" ${b.crops[crop] ? 'checked' : ''}>` : ''}</div>`;
-    h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div><div class="small muted">Поля закладывайте сами инструментами «Пшеница» и «Хмель» рядом с фермой (до ${FARM_R} клеток) — работяга вскопает их бесплатно, хмель стоит доску за подвесы. Сено — побочный продукт жатвы.</div>`;
+    h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div><div class="small muted">${def.crops.includes('hops') ? `Поля хмеля закладывайте инструментом «Хмель» рядом (до ${FARM_R} клеток): доска за подвесы.` : `Поля закладывайте инструментом «Пшеница» рядом с фермой (до ${FARM_R} клеток) — работяга вскопает их бесплатно.`} Сено — побочный продукт жатвы.</div>`;
   }
   if (b.type === 'bonfire') h += `<div class="small muted">Кольца на карте: свет и защита от нечисти — ${BONFIRE_SAFE} клеток, у костра возрождаются герои — ${BONFIRE_HERO}, вне ${BONFIRE_NOSPAWN} нечисть и не появляется.</div>`;
   if (b.type === 'swine') {
@@ -806,10 +820,7 @@ function infoPreview(type) {
 }
 
 function infoTips() {
-  return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'scroll', 2)}" alt=""><div><h3>Окно здания</h3><span class="chip off">ничего не выбрано</span></div></div>
-    <div class="tip">Кликните по зданию на карте — здесь появятся его запасы, рабочий и производство. Да, кликать надо по зданию, а не куда-нибудь рядом.<br><br>
-    Наведите на кнопку здания слева — увидите, что оно производит и сколько стоит. Цены не торгуются, гномы не уступают.<br><br>
-    <b>Значки над домами</b> подсказывают, чего не хватает: рабочего, сырья или места. Чаще всего — всего сразу.</div>`;
+  return `<div class="tip muted">Ничего не выбрано. ${typeof Mobile !== 'undefined' && Mobile.on ? 'Коснитесь здания' : 'Кликните по зданию'} на карте — здесь появятся его запасы, рабочий и производство.</div>`;
 }
 
 // ---------- Обновление ----------
@@ -854,11 +865,19 @@ function updateUI(force) {
   setHTML('res-sum', [rows[0], rows[1], rows[2]].map(([g, n]) => `<span>${gi(g)}${n}</span>`).join(''));
   setHTML('res-bar', rows
     .map(([g, n]) => `<div class="res-row" title="${g === 'bread' ? 'Еда (хлеб + колбаса)' : GOODS[g].name}">${gi(g)}<span class="rn">${g === 'bread' ? 'Еда' : GOODS[g].name}</span><b>${n}</b></div>`).join('')
-    + `<div class="res-row" title="Жители">${ui('people')}<span class="rn">Жители</span><b>${Game.units.length}</b></div>`);
+    + `<div class="res-row" title="Жители">${ui('people')}<span class="rn">Жители</span><b>${Game.units.length}</b></div>`
+    + resMoreHTML(t, rows));
 
   const sec = Math.floor(Game.time);
   document.getElementById('clock').textContent =
     `${isNightNow() ? '☾' : isEveningNow() ? '◐' : '☀'} ${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+}
+
+// Остальные товары на складах — компактной сеткой под главными (только то, что есть)
+function resMoreHTML(t, rows) {
+  const main = new Set(rows.map(r => r[0]).concat('sausage'));
+  const gs = GOOD_KEYS.filter(g => t[g] > 0 && !main.has(g));
+  return gs.length ? `<div class="res-more">${gs.map(g => `<span title="${GOODS[g].name}">${gi(g)}<b>${t[g]}</b></span>`).join('')}</div>` : '';
 }
 
 // Закрыть / открыть здание для доставок

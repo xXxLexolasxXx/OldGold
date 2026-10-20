@@ -228,6 +228,9 @@ const co = R(`const m = coop.players.get('маг'), w = coop.players.get('стр
 S.runFor(srv, 6, 3, () => {});
 ok(co.cd && co.rs != null && co.rsm > 0 && co.ex, 'кооп: способность или ресурс не дошли: ' + JSON.stringify(co));
 ok(co.camp === 'camp', 'кооп: привал не начался: ' + JSON.stringify(co));
+const mz = R(`const m = coop.players.get('маг'); Game.abz.push({ k: 'holy', own: m.id, x: m.x, y: m.y, r: 3, until: Game.time + 5, tick: 0 });
+  const z = (coopMirror().abz || []).find(z => z.k === 'holy'); return { n: z ? 1 : 0, own: z && 'own' in z };`);
+ok(mz.n === 1 && !mz.own, 'кооп: зоны способностей не уходят игрокам в зеркале мира: ' + JSON.stringify(mz));
 ok(!srv.errors.length, 'кооп: исключения: ' + srv.errors.slice(0, 3).join(' | '));
 
 ok(!sim.errors.length, 'исключения: ' + sim.errors.slice(0, 3).join(' | '));

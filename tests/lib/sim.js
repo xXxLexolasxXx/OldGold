@@ -89,7 +89,7 @@ const BOT = `(function () {
   bot.i++; bot.fails = 0;
   return 'построил ' + type;
 })()`;
-function botTurn(sim) { return sim.h.run(BOT.replace('__PLAN__', JSON.stringify(PLAN))); }
+function botTurn(sim, plan) { return sim.h.run(BOT.replace('__PLAN__', JSON.stringify(plan || PLAN))); }
 // Заложить одно здание с дорогой до сети склада, не дожидаясь других строек (для сценарных тестов)
 function botPlace(sim, type) {
   sim.h.run('Game.__bot = { i: 0, fails: 0 }');

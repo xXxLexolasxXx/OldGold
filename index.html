@@ -6,6 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1a130d">
+<meta name="color-scheme" content="dark">
 <title>OldGold</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -27,6 +28,7 @@
 <link rel="stylesheet" href="css/mapedit.css">
 <link rel="stylesheet" href="css/council.css">
 <link rel="stylesheet" href="css/landscape.css">
+<link rel="stylesheet" href="css/reveal.css">
 </head>
 <body>
 <div id="app">
@@ -36,7 +38,7 @@
     <div class="mm-wrap"><canvas id="minimap" width="288" height="216"></canvas><button id="mm-size" title="Увеличить миникарту">⤢</button><button id="mm-fold" title="Свернуть / развернуть миникарту">▴</button></div>
     <nav id="tabs">
       <button data-tab="build" class="tab-btn active" title="Строительство"><img data-icon="build" alt=""></button>
-      <button data-tab="store" class="tab-btn" title="Склад"><img data-icon="store" alt=""></button>
+      <button data-tab="store" class="tab-btn" title="Запасы и запреты: что склады принимают"><img data-icon="store" alt=""></button>
       <button data-tab="people" class="tab-btn" title="Жители"><img data-icon="people" alt=""></button>
       <button data-tab="overview" class="tab-btn" title="Хозяйство: проблемы и статистика"><img data-icon="scroll" alt=""><span id="alert-badge" class="badge hidden">0</span></button>
       <button data-tab="log" class="tab-btn" title="Журнал событий: что случилось и где"><img data-icon="log" alt=""><span id="log-badge" class="badge hidden">0</span></button>
@@ -134,7 +136,7 @@
         <li><b>Дорога</b> — протяните мышью, клетка стоит 1 камень. Новую дорогу ведите от уже готовой: дорога из ниоткуда в никуда — это не дорога, это ландшафтный дизайн.</li>
         <li>Дорога в 2 клетки шириной — две полосы: трудяги разъезжаются, не тормозя. На узкой встречные протискиваются медленно и смотрят на вас с немым укором.</li>
         <li>Рабочие обучаются в <b>школе</b> за золото. Кнопка «Обучить» в окне здания ставит нужного в очередь. Трудяги и работяги со временем <b>дорастают до 2-го и 3-го уровня</b>: носят по 2–3 предмета и сами берут материалы на стройку — следите за нашивками на колпаках и шкалами во вкладке «Жители».</li>
-        <li>Еда: <b>ферма (пшеница) → мельница → пекарня</b> или <b>сено (побочный продукт жатвы) → свинарник → бойня</b> (колбаса). Поля закладываете сами инструментами «Пшеница» и «Хмель» рядом с фермой.</li>
+        <li>Еда: <b>ферма (пшеница) → мельница → пекарня</b> или <b>сено (побочный продукт жатвы) → свинарник → бойня</b> (колбаса). Поля пшеницы закладываете сами рядом с фермой; хмель появится позже, вместе с пивоварней.</li>
         <li>Свинарник: каждая охапка сена — свиньи подрастают на треть и рождается поросёнок; взрослую везут на бойню.</li>
         <li>Кожа: бойня даёт шкуры → <b>дубильня</b> → кожа → <b>мастерская доспехов</b>.</li>
         <li>Магия: <b>шахта маг. камней</b> под скалой с кристаллами → <b>магический круг</b> (камни → мана + обычный камень) → <b>магическая мастерская</b>: посохи и мантии.</li>
@@ -229,6 +231,7 @@
 <script src="js/combat.js"></script>
 <script src="js/world/neutralart2.js"></script>
 <script src="js/world/neutrals2.js"></script>
+<script src="js/world/frogart.js"></script>
 <script src="js/combatfield.js"></script>
 <script src="js/guildpath.js"></script>
 <script src="js/herocard.js"></script>
@@ -258,6 +261,7 @@
 <script src="js/council.js"></script>
 <script src="js/laws.js"></script>
 <script src="js/sickness.js"></script>
+<script src="js/world/frogs.js"></script>
 <script src="js/research.js"></script>
 <script src="js/family.js"></script>
 <script src="js/world/kidsplay.js"></script>
@@ -265,6 +269,7 @@
 <script src="js/world/raid.js"></script>
 <script src="js/world/enemy.js"></script>
 <script src="js/world/spire.js"></script>
+<script src="js/world/guards.js"></script>
 <script src="js/world/travelers.js"></script>
 <script src="js/defense.js"></script>
 <script src="js/defensewar.js"></script>
@@ -288,8 +293,10 @@
 <script src="js/heroabil.js"></script>
 <script src="js/restip.js"></script>
 <script src="js/notify.js"></script>
+<script src="js/pins.js"></script>
 <script src="js/lore.js"></script>
 <script src="js/menugroups.js"></script>
+<script src="js/reveal.js"></script>
 <script data-goatcounter="https://lexolas.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

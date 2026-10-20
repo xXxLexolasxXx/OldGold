@@ -343,9 +343,15 @@ function loreTick(dt) {
   loreQueue(f);
 }
 
+// на экране плашка «Новое: …» (reveal.js) — она стоит там же, где сцена: ждём, пока догорит
+const loreRvBusy = () => !!document.querySelector('.rv-note:not(.out)');
+
 function loreQueue(f) {
   Lore.pend = f;
-  const show = () => { Lore.pend = null; if (!loreHas(f.id)) loreShow(f); };
+  const show = () => {
+    if (loreRvBusy()) { setTimeout(show, 700); return; }
+    Lore.pend = null; if (!loreHas(f.id)) loreShow(f);
+  };
   if (typeof Notify !== 'undefined' && Notify.modal) Notify.modal('lore:' + f.id, show, 1);
   else show();
 }
@@ -538,7 +544,14 @@ if (LORE_ON) {
     if (e.code !== 'Escape') return;
     if (Lore.bookOpen) loreBookClose(); else if (Lore.cur) loreClose();
   });
-  window.addEventListener('load', () => setTimeout(loreMenu, 200));
+  window.addEventListener('load', () => {
+    setTimeout(loreMenu, 200);
+    // и наоборот: пока идёт сцена, плашки «Новое» ждут своей очереди
+    if (typeof rvNext === 'function') {
+      const raw = rvNext;
+      rvNext = function () { if (Lore.cur) { RV.noteEl = RV.noteEl || {}; setTimeout(() => { if (RV.noteEl && !RV.noteEl.nodeType) RV.noteEl = null; rvNext(); }, 800); return; } return raw.apply(this, arguments); };
+    }
+  });
   window.Lore = Object.assign(Lore, { open: loreBookOpen, frags: LORE_FRAGS, chapters: LORE_CHAPTERS });
 }
 if (typeof module !== 'undefined' && module.exports) module.exports = { LORE_CHAPTERS, LORE_FRAGS, LORE_WHO };
