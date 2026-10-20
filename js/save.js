@@ -65,7 +65,7 @@ function serializeGame() {
   const obj = [];
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
-    if (o && o.t !== 'fort') obj.push([i, o.t, o.g ?? 0, o.n ?? (o.plan ? 2 : o.ash ? 1 : 0), o.farm ?? 0, o.crop || '', o.v, o.vert ? 1 : 0]);
+    if (o && o.t !== 'fort') obj.push([i, o.t, o.g ?? 0, o.n ?? (o.plan ? 2 : o.ash ? 1 : 0), o.farm ?? 0, o.crop || '', o.v, o.vert ? 1 : 0, o.b !== undefined ? Math.round(o.b * 10) / 10 : undefined, o.bd]);
   }
   const road = [];
   for (let i = 0; i < N_TILES; i++) if (World.road[i]) road.push(i);
@@ -125,12 +125,13 @@ function applySave(s) {
   for (const [i, n] of s.rockHp || []) ROCKMINE.hp.set(i, n);
   World.obj.fill(null);
   World.growing.clear();
-  for (const [i, t, g, n, farm, crop, dv, dvert] of s.obj) {
+  for (const [i, t, g, n, farm, crop, dv, dvert, db, dbd] of s.obj) {
     const o = { t };
     if (t === 'tree' || t === 'field' || t === 'stump' || t === 'bin') o.g = g;
     if (t === 'stone') o.n = n;
     if (dv !== undefined && dv !== null) o.v = dv;
     if (dvert) o.vert = true;
+    if (t === 'sandc' && Number.isFinite(db)) { o.b = db; o.bd = Number.isFinite(dbd) ? dbd : 8; }   // песочный замок: когда заложен и сколько строился
     if (t === 'field') { o.farm = farm; o.crop = !crop || crop === 'hay' ? 'wheat' : crop; o.ash = n === 1; o.plan = n === 2; if (o.plan) Game.fieldPlans.add(i); }
     World.obj[i] = o;
     if ((t === 'tree' && g < 1) || (t === 'field' && g >= 0 && g < 1) || t === 'stump') World.growing.add(i);

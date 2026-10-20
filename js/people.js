@@ -45,7 +45,7 @@ const HAIR = '#c9501c', HAIR_D = '#8e3412', HAIR_L = '#e8742c';   // рыжие 
 const SERF_CAPS = ['#3e7426', '#4e8a2a', '#5c9a34', '#2e5a22', '#6aa83e', '#46743a'];
 
 const GIRL_LOOK = { skin: 0, beard: 0, beardLen: 0, beardStyle: 0, must: 0, nose: 0, brow: 0, earring: false, freckles: false, braid: false, capTip: 1, green: '#3f7a46', deco: 5, serfCap: '#fff', capStyle: 0 };
-const ANIM_TOOL = { chop: 'axe', mine: 'pick', build: 'hammer', reap: 'sickle', dig: 'spade', hoppick: 'hook' };
+const ANIM_TOOL = { chop: 'axe', mine: 'pick', build: 'hammer', reap: 'sickle', dig: 'spade', hoppick: 'hook', toss: 'toss', pat: 'pat' };   // toss — бросок без инструмента (снежок, бита: 9 кадров), pat — хлопает песок (8)
 
 // Внешность гнома целиком выводится из числа look: один и тот же гном всегда выглядит одинаково.
 // Чтобы признаки не зависели друг от друга (как было с битовыми сдвигами), берём их из
@@ -1082,6 +1082,11 @@ const IDLE_POSE = [0, 0, 3, 3, 3, 0];
 const SWING_A = [0.05, 0.35, 0.63, 0.92, 1.2, 1.5, 1.8, -0.14];
 const SWING_SICKLE = [1.3, 1.5, 1.68, 1.88, 2.06, 2.26, 2.45, 1.17];
 const SWING_DIP = [-0.3, -0.15, 0, 0.05, 0.1, 0.3, 0.5, -0.4];
+// бросок (детские игры, kidsplay.js), 9 кадров: рука вперёд → вверх → назад → замах → удержание → разгон → отпускание (6) → проводка → возврат
+const TOSS_A = [0.9, 0.1, -0.7, -1.2, -1.3, -0.3, 1.2, 2.0, 1.4];
+const TOSS_DIP = [0, -0.1, -0.2, -0.3, -0.3, 0, 0.3, 0.6, 0.2];
+const PAT_A = [2.0, 2.25, 2.5, 2.7, 2.5, 2.25, 2.0, 1.8];     // хлопает ладонью вниз-вперёд, 8 кадров
+const swingDip = fr => fr.anim === 'toss' ? TOSS_DIP[fr.f] : fr.anim === 'pat' ? 1.4 : SWING_DIP[fr.f];
 
 function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const O = OUTFIT[type] || OUTFIT.serf;
@@ -1101,7 +1106,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const armed = !!W && !carry && (fight || (W.out && (pose === 'walk' || pose === 'idle')));
   // дыхание в покое: 6 кадров, грудь и голова чуть поднимаются на вдохе; в работе корпус подаётся в удар
   const breath = pose === 'idle' && typeof frame === 'number' ? IDLE_BREATH[frame % IDLE_FRAMES] : 0;
-  const crouch = (duck ? 1.8 : fight ? FIGHT_BODY[fight][1] : 0) - breath + (pose === 'work' ? SWING_DIP[frame.f] : 0);
+  const crouch = (duck ? 1.8 : fight ? FIGHT_BODY[fight][1] : 0) - breath + (pose === 'work' ? swingDip(frame) : 0);
   let lean = 0;
   if (fight) lean = FIGHT_BODY[fight][0];
   if (pose === 'walk') lean = carry ? 0.16 : 0.05;
@@ -1109,6 +1114,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   if (pose === 'walk' && gait === 'drunk') lean += Math.cos(ph) * 0.1;
   if (limp) lean += sw > 0 ? 0.12 : -0.02;
   if (pose === 'work' && (frame.anim === 'reap' || frame.anim === 'dig')) lean = 0.28;
+  if (pose === 'work' && frame.anim === 'pat') lean = 0.42;
   if (duck) lean = 0.42;
   if (gest === 'stretch') lean = -0.08;
   const tipSway = pose === 'walk' ? Math.sin(ph + 1) * (gait === 'drunk' ? 1.6 : 1) : gest === 'stretch' ? -0.6 : 0;
@@ -1175,7 +1181,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     };
     const tool = pose === 'work' ? (ANIM_TOOL[frame.anim] || 'hammer') : null;
     // замах: 0 — инструмент поднят над плечом, 3 — удар вперёд-вниз; дуга ~100°, без прокрутки
-    const ang = tool ? (tool === 'sickle' || tool === 'spade' ? SWING_SICKLE : SWING_A)[frame.f] : 0;
+    const ang = tool ? (tool === 'toss' ? TOSS_A : tool === 'pat' ? PAT_A : tool === 'sickle' || tool === 'spade' ? SWING_SICKLE : SWING_A)[frame.f] : 0;
     const armA = pose === 'walk' ? -sw * 0.55 : duck ? -0.5 : 0;
     const sling = injury === 'arm';
     // руки с оружием: кадр боя, а на ходу и стоя с выхваченным оружием — «стойка»
@@ -1299,9 +1305,10 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         const hx = 0.4 + Math.sin(ang) * 3.8, hy = shY - Math.cos(ang) * 3.8;
         const tx = hx + Math.sin(ang) * 6.5, ty = hy - Math.cos(ang) * 6.5;
         smoothLimb(c, [0.4, shY + 0.4], [(0.4 + hx) / 2 + 0.6, (shY + hy) / 2 + 0.5], [hx, hy], 2.1, shirt);
-        line(c, hx - (tx - hx) * 0.25, hy - (ty - hy) * 0.25, tx, ty, '#6e4428', 0.9);
+        if (tool !== 'toss' && tool !== 'pat') line(c, hx - (tx - hx) * 0.25, hy - (ty - hy) * 0.25, tx, ty, '#6e4428', 0.9);
         const nx = -(ty - hy) / 6.5, ny = (tx - hx) / 6.5;
-        if (tool === 'axe') poly(c, [[tx, ty], [tx + nx * 2.4, ty + ny * 2.4], [tx + nx * 2.2 - (tx - hx) * 0.22, ty + ny * 2.2 - (ty - hy) * 0.22], [tx - (tx - hx) * 0.15, ty - (ty - hy) * 0.15]], '#b8bcc0', '#3a3a3e', 0.3);
+        if (tool === 'toss' || tool === 'pat') { /* пустая рука */ }
+        else if (tool === 'axe') poly(c, [[tx, ty], [tx + nx * 2.4, ty + ny * 2.4], [tx + nx * 2.2 - (tx - hx) * 0.22, ty + ny * 2.2 - (ty - hy) * 0.22], [tx - (tx - hx) * 0.15, ty - (ty - hy) * 0.15]], '#b8bcc0', '#3a3a3e', 0.3);
         else if (tool === 'pick') { c.strokeStyle = '#8a8e92'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(tx - nx * 3.2, ty - ny * 3.2); c.quadraticCurveTo(tx + (tx - hx) * 0.08, ty + (ty - hy) * 0.08, tx + nx * 3.2, ty + ny * 3.2); c.stroke(); }
         else if (tool === 'hammer') { c.save(); c.translate(tx, ty); c.rotate(Math.atan2(ty - hy, tx - hx)); c.fillStyle = '#5c564f'; c.fillRect(-0.8, -1.7, 2, 3.4); c.fillStyle = '#9e958a'; c.fillRect(-0.8, -1.7, 2, 0.6); c.restore(); }
         else if (tool === 'hook') {

@@ -830,6 +830,7 @@ function render() {
     else if (isStreetObj(o)) list.push([y + 0.75, () => drawStreetObj(c, x, y, o)]);
     else if (o.t === 'stump') list.push([y + 0.7, () => drawStump(c, x, y)]);
     else if (o.t === 'fort') list.push([y + (o.f === 'pit' || o.f === 'spike' || o.f === 'fire' ? 0.3 : 0.85), () => drawFort(c, x, y, o)]);
+    else if (o.t === 'sandc') list.push([y + 0.6, () => drawSandCastle(c, x, y, o)]);        // песочные замки детей (kidsplay.js)
     else if (o.t === 'hop') list.push([y + 0.01, () => drawHopObj(c, x, y, o)]);       // классики мелом на дороге (games.js)
   }
   // горы: объёмные скальные массивы по глубине вместе с остальными объектами

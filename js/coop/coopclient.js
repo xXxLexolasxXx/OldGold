@@ -241,7 +241,7 @@ function coopDropBuilding(b) {
 }
 
 const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lairs', 'raiders', 'foeShots', 'games', 'dshots', 'dtowers', 'wfx'];
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
 function coopResolve(v) {
