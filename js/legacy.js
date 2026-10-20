@@ -345,7 +345,7 @@ function lgAction(a, k) {
   const _gf = goalFinish;
   goalFinish = function (res, why, lines) {
     _gf(res, why, lines);
-    try { const g = lgTick(); if (g > 0) toast(`Наследие: +${g} опыта за эту деревню`); } catch (e) { console.warn(e); }
+    if (typeof profCur === 'function') try { const g = lgTick(); if (g > 0) toast(`Наследие: +${g} опыта за эту деревню`); } catch (e) { console.warn(e); }
   };
 }
 setInterval(() => { if (typeof profCur !== 'function') return; try { lgTick(); } catch (e) { console.warn(e); } }, 5000);   // кооп-сервер и тесты: профиля нет — не сорим ReferenceError в журнал
