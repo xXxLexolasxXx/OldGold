@@ -1,13 +1,13 @@
 'use strict';
 // Жизнь героя (одиночная игра): здоровье и беды деревни, трактир с пивом, заклинания
-// (телепорт на базу, малое лечение), изгнание призраков, рюкзак на 10 вещей, неловкое надевание
+// (телепорт на базу; малого лечения больше нет — лечение отдыхом, 0.10.66), изгнание призраков, рюкзак на 10 вещей, неловкое надевание
 // доспехов и оружия. Всё хранится в hero.hero (сохраняется вместе с героем).
 // Подключается после hero.js и оборачивает его функции. В кооперативе (Game.coop)
 // не делает ничего: там то же самое считает сервер (js/coopsim.js).
 
 const HL_INV = 10;                    // вещей в рюкзаке
 const HL_DRUNK = 5, HL_FALL = 1, HL_STARS = 4;
-const HL_TP_CD = 60, HL_HEAL_CD = 25;
+const HL_TP_CD = 60;
 const HL_EQUIP_WIN = 0.3;             // шанс удачного надевания: в 70% случаев неудача
 
 // Что можно надеть. Чужим сессиям: добавьте свой товар сюда — он сам станет надеваемым.
@@ -37,8 +37,6 @@ const hlName = k => (HL_GEAR[k] && HL_GEAR[k].name) || (GOODS[k] && GOODS[k].nam
 // ---------- Данные героя ----------
 
 function hlMaxHp(H) { return 40 + 5 * heroStats(H).end; }
-// Малое лечение: 30% здоровья на 1-м уровне и на 10% сильнее с каждым следующим (на 15-м — 72%)
-function hlHealPart(H) { return 0.3 * (1 + 0.1 * ((H.level || 1) - 1)); }
 
 {
   const _hd = heroDefaults;
@@ -65,6 +63,15 @@ function hlHurt(u, n, why) {
   if (why && n >= 3) floater(u.x, u.y - 1.8, '−' + Math.round(n), '#ff8a70');
 }
 function hlHeal(u, n) { const H = u.hero; H.hp = Math.min(H.maxhp, H.hp + n); }
+// Само собой здоровье копится медленно (зелья лечения больше нет, 0.10.66): вне боя 0,2 в секунду,
+// в бою почти ничего; у большого костра втрое быстрее, в трактире и на привале (heroabil.js) — ещё быстрее.
+function hlRegen(u) {
+  const now = Game.time;
+  let r = u.combatUntil > now ? 0.04 : 0.2;
+  if (u.inside && u.inside.type === 'inn') r = 0.8;
+  else if (typeof nearBonfire === 'function' && !u.inside && nearBonfire(u.x, u.y, 5)) r *= 3;
+  return r;
+}
 
 // ---------- Таверна и пиво ----------
 
@@ -91,6 +98,7 @@ function* hlTavernGen(u, c) {
       u.food = Math.min(1.3, u.food + 0.15);
       H.drunkUntil = Game.time + HL_DRUNK; H.drunkNext = Game.time;
       u.drunkAt = 1e9;                       // метка для походки и «ик!»
+      hlHeal(u, H.maxhp * 0.05);                // пиво — малый бонус к здоровью
       floater(u.x, u.y - 1.6, 'Ик!', '#ffe070');
     }
   }
@@ -221,18 +229,6 @@ function hlCast(k) {
     })();
     h.action = null;
   }
-  if (k === 'heal') {
-    if ((H.cdHeal || 0) > Game.time) return;
-    H.cdHeal = Game.time + HL_HEAL_CD;
-    hlHeal(h, H.maxhp * hlHealPart(H));
-    h.injury = null;
-    const mate = Game.units.find(x => x.teamOf === h.id);
-    if (mate) mate.injury = null;
-    HL.fx.push({ kind: 'heal', x: h.x, y: h.y, t0: Game.time, dur: 1.2 });
-    if (!h.inside) { h.hfx = { k: 'cast', t: Game.time + 0.55, d: 0.55 }; h.vdir = 'E'; }   // поднял руку с оружием — колдует
-    sfxAt('chime', h.x * TILE, h.y * TILE);
-    floater(h.x, h.y - 1.7, 'Малое лечение', '#9af0a0');
-  }
   updateUI(true);
 }
 
@@ -342,7 +338,7 @@ function hlTick(dt) {
   }
   // здоровье
   if (!h.noFood && h.food <= 0 && !dif().noStarve) H.hp -= 0.5 * dt * dif().starve;
-  else if (H.hp < H.maxhp && h.food > 0.25 && !(h.burn && h.burn.stage)) H.hp = Math.min(H.maxhp, H.hp + 0.4 * dt);
+  else if (H.hp < H.maxhp && h.food > 0.25 && !(h.burn && h.burn.stage)) H.hp = Math.min(H.maxhp, H.hp + hlRegen(h) * dt);
   if (h.burn && h.burn.stage) H.hp -= 6 * dt;
   if (h.injury && h.injury !== H.seenInj) hlHurt(h, 8, 'injury');
   H.seenInj = h.injury || null;
@@ -415,7 +411,7 @@ function hlTick(dt) {
 
   const _ab = heroAbility;
   heroAbility = function (k) {
-    if (k === 'tp' || k === 'heal') { hlCast(k); return; }
+    if (k === 'tp') { hlCast(k); return; }
     if (/^use\d+$/.test(k)) { hlUse(+k.slice(3)); return; }
     if (k === 'unw' || k === 'una') { hlUnequip(k === 'unw' ? 'weapon' : 'armor'); return; }
     _ab(k);
@@ -434,7 +430,7 @@ function hlTick(dt) {
     const hpBlock = `<div class="irow">Здоровье <b>${hp}/${mhp}</b></div><div class="hl-hp"><i style="width:${Math.round(100 * hp / mhp)}%;background:${col}"></i></div>`;
     const cd = k => Math.max(0, Math.ceil((H[k] || 0) - now));
     const spell = (k, name, cdk, desc) => { const c = cd(cdk); return `<button class="hp-ab" data-hero="${k}" ${c ? 'disabled' : ''} title="${desc}"><b>${name}</b><small>${c ? c + ' с' : desc}</small></button>`; };
-    const spells = `<div class="hp-abs">${spell('tp', 'Телепорт', 'cdTp', 'на базу, к складу')}${spell('heal', 'Малое лечение', 'cdHeal', `+${Math.round(hlHealPart(H) * 100)}% здоровья`)}</div>`;
+    const spells = `<div class="hp-abs">${spell('tp', 'Телепорт', 'cdTp', 'на базу, к складу')}</div>`;
     let inv = '<div class="hl-inv">';
     for (let i = 0; i < HL_INV; i++) {
       const s = H.inv[i];

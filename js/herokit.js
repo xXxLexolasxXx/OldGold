@@ -87,63 +87,138 @@ function heroWpnOf(u) {
 }
 
 // ---------- Способности классов ----------
-// heal — лечит долю здоровья (+2% за уровень), team — и команду рядом; buf на dur секунд:
+// У каждого класса свои 4–5 способностей (общих нет: зелье лечения и огненный шар для всех убраны в 0.10.66),
+// открываются по уровням до 15. Одна ячейка — одна способность: панель быстрых способностей (heroabil.js) и клавиши 1–5.
+// cost — цена в ресурсе класса (мана / ярость / энергия / вера), cd — перезарядка, lvl — с какого уровня.
+// heal — лечит долю здоровья (+1% за уровень), team — и команду рядом; buf на dur секунд:
 // atk — точность, dmg — урон, red — меньше урона по герою (минус — больше), dodge — уклонение, spd — удары чаще,
-// regen — здоровья в секунду; shots — снаряды без промаха по врагам рядом; next — следующий удар без промаха ×mul
+// regen — здоровья в секунду; shots — снаряды без промаха по врагам рядом; next — следующий удар без промаха ×mul;
+// fx — особое действие из ABIL_FX (heroabil.js): оглушение, ловушка, призыв зверя, освящение…;
+// passive — пассивная (не нажимается): { red, atk, dodge, hpr — здоровья в секунду, res — ресурс быстрее ×, heal — лечение сильнее ×, cd — перезарядка × }
 const HERO_ABIL = {
   warrior: [
-    { k: 'wind', name: 'Второе дыхание', cd: 60, heal: 0.25, desc: 'Переводит дух: сразу +25% здоровья (и ещё +2% за каждый уровень)' },
-    { k: 'surge', name: 'Всплеск действий', cd: 75, lvl: 4, dur: 8, buf: { spd: 0.5, atk: 0.25 }, desc: '8 с: бьёт вдвое чаще и на четверть точнее' },
+    { k: 'bash', name: 'Удар щитом', cost: 20, cd: 10, fx: 'bash', desc: 'Бьёт ближайшего врага щитом: удар и оглушение на 3 с' },
+    { k: 'cry', name: 'Боевой клич', lvl: 3, cost: 15, cd: 45, dur: 10, buf: { atk: 0.15 }, fx: 'cry', desc: 'Гномы и отряд в 9 клетках бодрее 20 с, сам 10 с точнее на 15%' },
+    { k: 'stand', name: 'Непоколебимость', lvl: 6, passive: { red: 0.15 }, desc: 'Пассивно: урон по воину меньше на 15%' },
+    { k: 'surge', name: 'Всплеск действий', lvl: 9, cost: 30, cd: 60, dur: 8, buf: { spd: 0.5, atk: 0.25 }, desc: '8 с: бьёт вдвое чаще и на четверть точнее' },
+    { k: 'wall', name: 'Стена щитов', lvl: 12, cost: 40, cd: 90, dur: 8, buf: { red: 0.6 }, fx: 'wall', desc: '8 с: урон по нему −60%, враги в 3 клетках сбиты с ног' },
   ],
   barbarian: [
-    { k: 'rage', name: 'Ярость', cd: 70, dur: 15, buf: { dmg: 0.5, red: 0.4 }, desc: '15 с: урон +50%, а по нему — на 40% слабее' },
-    { k: 'reckless', name: 'Безрассудная атака', cd: 40, lvl: 4, dur: 8, buf: { atk: 0.35, red: -0.25 }, desc: '8 с: попадает на 35% чаще, но и сам открыт: урон по нему +25%' },
-  ],
-  mage: [
-    { k: 'missile', name: 'Магическая стрела', cd: 18, shots: { n: 3, kind: 'mdart', r: 8, mul: 1 }, desc: 'Три искры без промаха в ближайших врагов (до 8 клеток); урон растёт со смекалкой' },
-    { k: 'shield', name: 'Щит', cd: 40, lvl: 4, dur: 6, buf: { red: 0.7 }, desc: '6 с: невидимая преграда — урон по магу меньше на 70%' },
-  ],
-  druid: [
-    { k: 'wild', name: 'Дикий облик', cd: 90, dur: 20, buf: { dmg: 0.4, red: 0.3, regen: 1.5 }, desc: '20 с: медвежья сила — урон +40%, урон по нему −30%, раны затягиваются' },
-    { k: 'mend', name: 'Целебное слово', cd: 35, lvl: 4, heal: 0.3, team: true, desc: 'Слово леса: +30% здоровья себе и команде рядом, снимает раны' },
-  ],
-  rogue: [
-    { k: 'sneak', name: 'Скрытая атака', cd: 22, next: 3, desc: 'Следующий удар — без промаха и втрое сильнее; скелета или дерево — с одного удара' },
-    { k: 'evade', name: 'Увёртливость', cd: 45, lvl: 4, dur: 10, buf: { dodge: 0.5 }, desc: '10 с: уходит от половины ударов' },
+    { k: 'rage', name: 'Ярость', cost: 30, cd: 60, dur: 15, buf: { dmg: 0.5, red: 0.4 }, desc: '15 с: урон +50%, а по нему — на 40% слабее' },
+    { k: 'reckless', name: 'Безрассудная атака', lvl: 3, cost: 15, cd: 30, dur: 8, buf: { atk: 0.35, red: -0.25 }, desc: '8 с: попадает на 35% чаще, но и сам открыт: урон по нему +25%' },
+    { k: 'stomp', name: 'Топот', lvl: 6, cost: 25, cd: 25, fx: 'stomp', desc: 'Топает так, что враги в 3 клетках падают на 2,5 с и получают удар' },
+    { k: 'hide', name: 'Толстая шкура', lvl: 9, passive: { red: 0.12, hpr: 0.3 }, desc: 'Пассивно: урон по нему −12%, ссадины затягиваются сами' },
   ],
   archer: [
-    { k: 'aimed', name: 'Меткий выстрел', cd: 22, next: 2.5, desc: 'Следующий выстрел — без промаха и в 2,5 раза сильнее' },
-    { k: 'volley', name: 'Град стрел', cd: 50, lvl: 4, shots: { n: 5, kind: 'arrow', r: 8, mul: 0.8 }, desc: 'Пять стрел без промаха по всем врагам в 8 клетках' },
+    { k: 'aimed', name: 'Меткий выстрел', cost: 25, cd: 12, next: 2.5, desc: 'Следующий выстрел — без промаха и в 2,5 раза сильнее' },
+    { k: 'volley', name: 'Залп', lvl: 3, cost: 40, cd: 40, shots: { n: 5, kind: 'arrow', r: 8, mul: 0.8 }, desc: 'Пять стрел без промаха по всем врагам в 8 клетках' },
+    { k: 'trap', name: 'Ловушка', lvl: 6, cost: 30, cd: 30, fx: 'trap', desc: 'Ставит капкан под ноги (до двух): враг, наступивший на него, застревает на 5 с' },
+    { k: 'eagle', name: 'Орлиный глаз', lvl: 9, passive: { atk: 0.1 }, desc: 'Пассивно: стреляет на 10% точнее' },
   ],
-  monk: [
-    { k: 'flurry', name: 'Шквал ударов', cd: 45, dur: 8, buf: { spd: 0.5 }, desc: '8 с: бьёт вдвое чаще' },
-    { k: 'patience', name: 'Терпеливая оборона', cd: 45, lvl: 4, dur: 10, buf: { dodge: 0.4, red: 0.2 }, desc: '10 с: уходит от 40% ударов, остальные слабее на 20%' },
+  rogue: [
+    { k: 'sneak', name: 'Скрытая атака', cost: 25, cd: 15, next: 3, desc: 'Следующий удар — без промаха и втрое сильнее; скелета или дерево — с одного удара' },
+    { k: 'trip', name: 'Подножка', lvl: 3, cost: 20, cd: 14, fx: 'trip', desc: 'Ближайший враг падает на 3,5 с — по лежачему не промахнёшься' },
+    { k: 'steal', name: 'Воровство', lvl: 6, cost: 30, cd: 90, fx: 'steal', desc: 'Обчищает ближайшего врага в 3 клетках: золото на склад или еда в рюкзак' },
+    { k: 'vanish', name: 'Исчезновение', lvl: 9, cost: 40, cd: 60, dur: 6, buf: { dodge: 0.9 }, next: 3, fx: 'vanish', desc: '6 с: враги теряют плута из виду, следующий удар — втрое сильнее' },
+    { k: 'nimble', name: 'Увёртливость', lvl: 12, passive: { dodge: 0.15 }, desc: 'Пассивно: уходит от 15% ударов' },
+  ],
+  mage: [
+    { k: 'fire', name: 'Огненный шар', cost: 10, cd: 6, fx: 'fire', desc: 'Летит в ближайшего врага в 9 клетках: скелет рассыпается, дерево загорается' },
+    { k: 'ward', name: 'Оберег', lvl: 3, cost: 12, cd: 25, fx: 'ward', desc: 'Гонит призраков, пугает скелетов и нечисть; 20 с призраки не студят ману' },
+    { k: 'frost', name: 'Ледяная стрела', lvl: 5, cost: 14, cd: 12, fx: 'frost', desc: 'Удар льдом по ближайшему врагу: он замерзает на 4 с' },
+    { k: 'shield', name: 'Щит', lvl: 8, cost: 16, cd: 40, dur: 6, buf: { red: 0.7 }, desc: '6 с: невидимая преграда — урон по магу меньше на 70%' },
+    { k: 'spring', name: 'Источник', lvl: 11, passive: { res: 1.6 }, desc: 'Пассивно: мана копится в 1,6 раза быстрее' },
+  ],
+  druid: [
+    { k: 'thorns', name: 'Шипы', cost: 10, cd: 14, fx: 'thorns', desc: 'Из земли под тремя ближайшими врагами (до 5 клеток) лезут шипы: удар и 2 с в путах' },
+    { k: 'grow', name: 'Рост', lvl: 3, cost: 15, cd: 60, fx: 'grow', desc: 'Поля в 6 клетках разом подрастают на четверть' },
+    { k: 'mend', name: 'Целебное слово', lvl: 5, cost: 20, cd: 35, heal: 0.2, team: true, desc: 'Слово леса: +20% здоровья себе и команде рядом, снимает раны' },
+    { k: 'beast', name: 'Призыв зверя', lvl: 8, cost: 25, cd: 90, dur: 25, fx: 'beast', desc: '25 с рядом бегает дух-волк и кусает ближайших врагов' },
+    { k: 'wild', name: 'Дикий облик', lvl: 12, cost: 30, cd: 90, dur: 20, buf: { dmg: 0.4, red: 0.3, regen: 1.5 }, desc: '20 с: медвежья сила — урон +40%, урон по нему −30%, раны затягиваются' },
   ],
   priest: [
-    { k: 'bless', name: 'Благословение', cd: 40, heal: 0.25, team: true, dur: 12, buf: { atk: 0.2 }, desc: '+25% здоровья себе и команде рядом, 12 с точность +20%' },
-    { k: 'turn', name: 'Изгнание нежити', cd: 60, lvl: 4, turn: true, desc: 'Скелеты в 6 клетках рассыпаются (шанс растёт с уровнем), нечисть пятится' },
+    { k: 'heal', name: 'Исцеление', cost: 18, cd: 30, heal: 0.22, team: true, desc: '+22% здоровья себе и команде в 8 клетках, снимает раны' },
+    { k: 'cure', name: 'Снятие болезней', lvl: 3, cost: 15, cd: 45, fx: 'cure', desc: 'Гномы в 8 клетках выздоравливают от хвори и ран' },
+    { k: 'bless', name: 'Благословение', lvl: 5, cost: 20, cd: 40, dur: 12, buf: { atk: 0.2, red: 0.1 }, fx: 'bless', desc: '12 с: жрец и команда рядом точнее на 20% и крепче' },
+    { k: 'turn', name: 'Изгнание нежити', lvl: 8, cost: 25, cd: 50, turn: true, desc: 'Скелеты в 6 клетках рассыпаются (шанс растёт с уровнем), нечисть пятится' },
+    { k: 'mercy', name: 'Милосердие', lvl: 11, passive: { heal: 1.25, hpr: 0.3 }, desc: 'Пассивно: лечит на четверть сильнее, сам понемногу выздоравливает' },
+  ],
+  paladin: [
+    { k: 'hands', name: 'Наложение рук', cost: 25, cd: 45, heal: 0.25, team: true, desc: '+25% здоровья себе и команде рядом, снимает раны' },
+    { k: 'smite', name: 'Святой удар', lvl: 3, cost: 20, cd: 15, next: 2.5, desc: 'Следующий удар — без промаха и в 2,5 раза сильнее; по нечисти бьёт святым светом' },
+    { k: 'consecrate', name: 'Освящение', lvl: 6, cost: 30, cd: 40, fx: 'consecrate', desc: '10 с земля в 3 клетках светится: нечисть горит, команда в круге выздоравливает' },
+    { k: 'faith', name: 'Щит веры', lvl: 9, cost: 25, cd: 50, dur: 8, buf: { red: 0.4 }, fx: 'faith', desc: '8 с: урон по паладину и команде рядом −40%' },
+    { k: 'aura', name: 'Аура мужества', lvl: 12, passive: { atk: 0.08, red: 0.08 }, desc: 'Пассивно: точнее на 8%, урон по нему −8%' },
   ],
   // бард и паладин — Клятвы Песни и Костра (oaths.js добавляет им действие на гномов: oath)
   bard: [
-    { k: 'inspire', name: 'Вдохновение', cd: 45, dur: 12, buf: { atk: 0.2 }, oath: 'song', desc: '12 с: попадает на 20% точнее, гномы в 6 клетках веселеют — «Бард играет»' },
-    { k: 'five', name: 'Дай пять!', cd: 60, lvl: 4, oath: 'five', desc: 'До шести гномов рядом получают «Дали пять»: настроение вверх на полторы минуты' },
+    { k: 'inspire', name: 'Песня бодрости', cost: 12, cd: 40, dur: 12, buf: { atk: 0.2 }, oath: 'song', desc: '12 с: попадает на 20% точнее, гномы в 6 клетках веселеют — «Бард играет»' },
+    { k: 'chord', name: 'Оглушающий аккорд', lvl: 3, cost: 18, cd: 30, fx: 'chord', desc: 'Враги в 4 клетках оглушены на 2,5 с' },
+    { k: 'five', name: 'Дай пять!', lvl: 5, cost: 10, cd: 60, oath: 'five', desc: 'До шести гномов рядом получают «Дали пять»: настроение вверх на полторы минуты' },
+    { k: 'voice', name: 'Звонкий голос', lvl: 9, passive: { cd: 0.85, res: 1.3 }, desc: 'Пассивно: перезарядка короче на 15%, мана копится быстрее' },
   ],
-  paladin: [
-    { k: 'hands', name: 'Наложение рук', cd: 45, heal: 0.3, team: true, desc: '+30% здоровья себе и команде рядом, снимает раны' },
-    { k: 'smite', name: 'Божественная кара', cd: 30, lvl: 4, next: 2.5, desc: 'Следующий удар — без промаха и в 2,5 раза сильнее; по нечисти бьёт святым светом' },
+  monk: [
+    { k: 'flurry', name: 'Шквал ударов', cost: 30, cd: 40, dur: 8, buf: { spd: 0.5 }, desc: '8 с: бьёт вдвое чаще' },
+    { k: 'palm', name: 'Удар ладонью', lvl: 3, cost: 20, cd: 12, fx: 'palm', desc: 'Ближайший враг получает удар и 2,5 с не может прийти в себя' },
+    { k: 'patience', name: 'Терпеливая оборона', lvl: 6, cost: 25, cd: 40, dur: 10, buf: { dodge: 0.4, red: 0.2 }, desc: '10 с: уходит от 40% ударов, остальные слабее на 20%' },
+    { k: 'calm', name: 'Внутренний покой', lvl: 9, passive: { res: 1.5, dodge: 0.05 }, desc: 'Пассивно: энергия копится в 1,5 раза быстрее, уворот +5%' },
   ],
 };
-const ABIL_KEYS = ['KeyZ', 'KeyX'];
+const ABIL_MAX = 5;
+const ABIL_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'];
+const ABIL_KEYN = ['1', '2', '3', '4', '5'];
+const ABIL_KEYS_OLD = ['KeyZ', 'KeyX'];                    // прежние клавиши первых двух способностей тоже работают
 const kitOn = () => typeof hlOn === 'function' && hlOn();
 
+// ---------- Ресурс класса: мана (маги, друиды, жрецы, барды), ярость (воины, варвары), энергия (лучники, плуты, монахи), вера (паладины) ----------
+const ABIL_RES = {
+  mana: { name: 'Мана', col: '#4a90e8' },
+  rage: { name: 'Ярость', col: '#d8402a' },
+  energy: { name: 'Энергия', col: '#e8c040' },
+  faith: { name: 'Вера', col: '#f0d880' },
+};
+const CLS_RES = { warrior: 'rage', barbarian: 'rage', archer: 'energy', rogue: 'energy', monk: 'energy', mage: 'mana', druid: 'mana', priest: 'mana', bard: 'mana', paladin: 'faith' };
+function abResKind(H) { return (H && CLS_RES[H.clsKey]) || null; }
+function abResMax(H) {
+  const k = abResKind(H);
+  if (k === 'mana') return typeof hmMax === 'function' ? hmMax(H) : 12 + 3 * heroStats(H).int;
+  if (k === 'faith') return 40 + 4 * (H.level || 1);
+  return k ? 100 : 0;
+}
+function abResGet(H) {
+  const k = abResKind(H);
+  if (!k) return 0;
+  if (k === 'mana') return H.mana != null ? H.mana : abResMax(H);
+  return H.rs != null ? H.rs : k === 'rage' ? 20 : abResMax(H);
+}
+function abResAdd(H, n) {
+  const k = abResKind(H);
+  if (!k) return;
+  const v = Math.max(0, Math.min(abResMax(H), abResGet(H) + n));
+  if (k === 'mana') H.mana = v; else H.rs = v;
+}
+// пассивные множители (res, heal, cd): произведение по открытым по уровню пассивкам
+function abPassive(H, key, base) {
+  const as = heroAbils(H);
+  let s = base;
+  if (as) for (const a of as) if (a.passive && a.passive[key] != null && (H.level || 1) >= (a.lvl || 1)) s *= a.passive[key];
+  return s;
+}
+
 function heroAbils(H) { return (H && HERO_ABIL[H.clsKey]) || null; }
-function abReady(H, a) { return !((H.abCd || {})[a.k] > Game.time) && (H.level || 1) >= (a.lvl || 1); }
-// сумма действующих усилений по ключу
+function abReady(H, a) { return !a.passive && !((H.abCd || {})[a.k] > Game.time) && (H.level || 1) >= (a.lvl || 1); }
+// сумма действующих усилений по ключу (и пассивных способностей)
 function heroBuf(u, key) {
   const H = u && u.hero, as = heroAbils(H);
-  if (!as || !H.abT) return 0;
+  if (!as) return 0;
   let s = 0;
-  for (const a of as) if (a.buf && a.buf[key] && H.abT[a.k] > Game.time) s += a.buf[key];
+  const now = Game.time, L = H.level || 1;
+  for (const a of as) {
+    if (a.buf && a.buf[key] && H.abT && H.abT[a.k] > now) s += a.buf[key];
+    else if (a.passive && a.passive[key] && key !== 'res' && key !== 'heal' && key !== 'cd' && L >= (a.lvl || 1)) s += a.passive[key];
+  }
+  // чужие усиления: щит веры и благословение команды (heroabil.js кладёт их на жителя)
+  if (u.abShare && u.abShare.t > now && u.abShare[key]) s += u.abShare[key];
   return s;
 }
 
@@ -155,19 +230,22 @@ function abSay(h, text) { const o = h && h.hero && h.hero.owner; if (o && typeof
 // Кнопка или клавиша способности. В общей деревне — просьба серверу (он проверит и применит), перезарядку видно сразу.
 function heroUseAbility(i) {
   const h = Game.hero, H = h && h.hero, as = heroAbils(H);
-  if (!as || !h || h.dead) return;
+  if (!as || !h || h.dead) return false;
   if (kitMirror()) {
     H.abCd = h.abcd || {}; H.abT = h.abt || {};
     const a = as[i];
-    if (!a) return;
-    if ((H.level || 1) < (a.lvl || 1)) { toast(`${a.name} — с ${a.lvl} уровня героя`); return; }
-    if (!abReady(H, a)) return;
-    if ((h._abSent || 0) > Game.time) return;              // не засыпать сервер повторами, пока ждём ответ
+    if (!a) return false;
+    if ((H.level || 1) < (a.lvl || 1)) { toast(`${a.name} — с ${a.lvl} уровня героя`); return false; }
+    if (a.passive) { toast(`${a.name} — действует всегда`); return false; }
+    if (!abReady(H, a)) return false;
+    if (a.cost && h.rs != null && h.rs < a.cost) { floater(h.x, h.y - 1.6, 'Не хватает: ' + ABIL_RES[abResKind(H)].name.toLowerCase(), '#9ec8ff'); return false; }
+    if ((h._abSent || 0) > Game.time) return false;        // не засыпать сервер повторами, пока ждём ответ
     h._abSent = Game.time + 0.4;
     coopSend({ t: 'abil', i });                           // перезарядку и время действия пришлёт сервер (u.abcd / u.abt)
-    return;
+    return true;
   }
-  if (kitOn()) heroAbilityFor(h, i);
+  if (kitOn()) return heroAbilityFor(h, i);
+  return false;
 }
 
 function heroAbilityFor(h, i) {
@@ -176,10 +254,14 @@ function heroAbilityFor(h, i) {
   const a = as[i];
   if (!a) return false;
   if ((H.level || 1) < (a.lvl || 1)) { abSay(h, `${a.name} — с ${a.lvl} уровня героя`); return false; }
+  if (a.passive) { abSay(h, `${a.name} — действует всегда`); return false; }
   if (!abReady(H, a)) return false;
   if (H.stunUntil > Game.time || H.downT) { abSay(h, `${H.name} лежит — не до приёмов`); return false; }
   if (h.inside) { abSay(h, `${H.name}: сперва выйти наружу`); return false; }
   const now = Game.time, col = ABIL_COL[a.k] || (GCLS[H.clsKey] || {}).col || '#ffe070';
+  const cost = a.cost || 0, rk = abResKind(H);
+  if (cost && rk && abResGet(H) < cost) { floater(h.x, h.y - 1.6, 'Не хватает: ' + ABIL_RES[rk].name.toLowerCase(), ABIL_RES[rk].col); return false; }
+  if (a.fx && typeof ABIL_FX !== 'undefined' && ABIL_FX[a.fx] && ABIL_FX[a.fx](h, a, H, now) === false) return false;
   if (a.shots || a.turn) {
     // нужны враги рядом — иначе приём не тратится
     const fs = foesNear(h.x, h.y, a.shots ? a.shots.r : 6);
@@ -204,12 +286,9 @@ function heroAbilityFor(h, i) {
     }
   }
   if (a.heal) {
-    const part = a.heal + 0.02 * ((H.level || 1) - 1);
+    const part = (a.heal + 0.01 * ((H.level || 1) - 1)) * abPassive(H, 'heal', 1);
     H.hp = Math.min(H.maxhp, H.hp + H.maxhp * part); h.injury = null;
-    // команда рядом: напарники героя, его отряд (рекруты «за героем») и другие герои общей деревни
-    if (a.team) for (const m of Game.units) {
-      if (m === h || m.dead || m.inside || Math.hypot(m.x - h.x, m.y - h.y) > 8) continue;
-      if (!(m.teamOf === h.id || (m.rec && m.rec.order === 'follow') || (m.hero && m.hero.owner))) continue;
+    if (a.team) for (const m of abTeam(h, 8)) {
       m.injury = null;
       if (m.rec && m.rec.hp != null) m.rec.hp = Math.min(30 + 8 * m.rec.lvl, m.rec.hp + 15);
       if (m.hero && m.hero.maxhp) m.hero.hp = Math.min(m.hero.maxhp, m.hero.hp + m.hero.maxhp * part * 0.6);
@@ -218,26 +297,49 @@ function heroAbilityFor(h, i) {
   }
   if (a.dur) (H.abT || (H.abT = {}))[a.k] = now + a.dur;
   if (a.next) H.abNext = a.next;
-  (H.abCd || (H.abCd = {}))[a.k] = now + a.cd;
+  if (cost) abResAdd(H, -cost);
+  (H.abCd || (H.abCd = {}))[a.k] = now + a.cd * abPassive(H, 'cd', 1);
   // копии на самом жителе: сервер общей деревни отправляет их игроку — кнопки показывают перезарядку
-  if (H.owner) { h.abcd = Object.assign({}, H.abCd); h.abt = Object.assign({}, H.abT); }
+  if (H.owner) { h.abcd = Object.assign({}, H.abCd); h.abt = Object.assign({}, H.abT); h.rs = Math.round(abResGet(H)); }
   // видимый эффект (уходит игрокам общей деревни вместе с героем): вспышка и, у долгих, свечение на всё время
   h.abbu = { k: a.k, s: now };
-  if (a.dur || a.next) h.abfx = { k: a.k, s: now, t: now + (a.next ? 60 : a.dur) };
-  if (!a.shots && !a.turn) { h.hfx = { k: 'win0', t: now + 0.55 }; h.vdir = 'E'; }   // вскинул оружие: приём!
+  if (a.dur || a.next) h.abfx = { k: a.k, s: now, t: now + (a.dur || 60) };
+  if (!a.shots && !a.turn && !a.fx) { h.hfx = { k: 'win0', t: now + 0.55 }; h.vdir = 'E'; }   // вскинул оружие: приём!
   floater(h.x, h.y - 1.9, a.name + '!', col);
-  sfxAt('chime', h.x * TILE, h.y * TILE, 0.8);
+  sfxAt(ABIL_SND[a.k] || 'chime', h.x * TILE, h.y * TILE, 0.8);
   if (typeof track === 'function' && !kitServer()) track('abil-' + a.k, 'Способность героя: ' + a.name);
   updateUI(true);
   return true;
 }
 
-// цвета способностей (вспышка, свечение, надпись)
+// команда рядом: напарники героя, его отряд (рекруты «за героем») и другие герои общей деревни
+function abTeam(h, r) {
+  const out = [];
+  for (const m of Game.units) {
+    if (m === h || m.dead || m.inside || Math.hypot(m.x - h.x, m.y - h.y) > r) continue;
+    if (m.teamOf === h.id || (m.rec && m.rec.order === 'follow') || (m.hero && m.hero.owner)) out.push(m);
+  }
+  return out;
+}
+
+// цвета способностей (вспышка, свечение, надпись) и звуки
 const ABIL_COL = {
-  wind: '#ff8a7a', surge: '#ffe070', rage: '#ff5a3a', reckless: '#ff9a40', missile: '#c8a0ff', shield: '#8ac8ff',
-  wild: '#c8964a', mend: '#8ae070', sneak: '#9a8ab8', evade: '#cfe8ff', aimed: '#ff6a5a', volley: '#e8d0a0',
-  flurry: '#ffd080', patience: '#f0a8d0', bless: '#ffe890', turn: '#fff2a0',
-  inspire: '#f0a0d0', five: '#ffd070', hands: '#fff0b0', smite: '#ffe060',
+  bash: '#cfe0ff', cry: '#ffb050', stand: '#c8ccd0', surge: '#ffe070', wall: '#8ac8ff',
+  rage: '#ff5a3a', reckless: '#ff9a40', stomp: '#c8964a', hide: '#b08a5a',
+  aimed: '#ff6a5a', volley: '#e8d0a0', trap: '#c8a070', eagle: '#f0d080',
+  sneak: '#9a8ab8', trip: '#c8b0e0', steal: '#ffd060', vanish: '#8a8aa8', nimble: '#cfe8ff',
+  fire: '#ffb050', ward: '#fff0a0', frost: '#9ee0ff', shield: '#8ac8ff', spring: '#6aa6ff',
+  thorns: '#8ae070', grow: '#a0e060', mend: '#8ae070', beast: '#c8d8e8', wild: '#c8964a',
+  heal: '#9af0a0', cure: '#c0ffd0', bless: '#ffe890', turn: '#fff2a0', mercy: '#fff6c0',
+  hands: '#fff0b0', smite: '#ffe060', consecrate: '#ffe890', faith: '#f0e0a0', aura: '#ffd070',
+  inspire: '#f0a0d0', chord: '#d8a0ff', five: '#ffd070', voice: '#f0a0d0',
+  flurry: '#ffd080', palm: '#ffe0c0', patience: '#f0a8d0', calm: '#c0e0ff',
+};
+const ABIL_SND = {
+  bash: 'parry', cry: 'cheer', surge: 'dash', wall: 'parry', rage: 'roar', stomp: 'rumble', aimed: 'thud', trap: 'click',
+  sneak: 'whoosh', trip: 'whiff', steal: 'treasure', vanish: 'whoosh', fire: 'crackle', ward: 'hiss', frost: 'glass', thorns: 'creak', grow: 'chime',
+  mend: 'heal', beast: 'roar', wild: 'roar', heal: 'heal', cure: 'heal', hands: 'heal', smite: 'chime', consecrate: 'chime', chord: 'toot', five: 'five',
+  inspire: 'pipe', flurry: 'dash', palm: 'slap',
 };
 
 // ---------- Значки способностей 12×12 (своя пиксельная графика) ----------
@@ -307,7 +409,7 @@ function abilIconURL(k) {
 // ---------- Подключение: характеристики, удары, урон по герою ----------
 const KIT = { t: 0, hooked: false };
 // поля жителя, которые сервер общей деревни отправляет игрокам: кадр удара/парирования, вспышка и свечение способности
-const KIT_SYNC = ['hfx', 'abfx', 'abbu', 'abcd', 'abt'];
+const KIT_SYNC = ['hfx', 'abfx', 'abbu', 'abcd', 'abt', 'rs', 'rsm', 'abShare'];
 
 {
   // левая рука (щит, второй кинжал) тоже даёт бонус
@@ -551,7 +653,9 @@ function heroParry(u) {
       KIT.keys = true;
       window.addEventListener('keydown', e => {
         if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-        const i = ABIL_KEYS.indexOf(e.code);
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+        let i = ABIL_KEYS.indexOf(e.code);
+        if (i < 0) i = ABIL_KEYS_OLD.indexOf(e.code);
         if (i >= 0 && Game.hero) heroUseAbility(i);
       });
     }
@@ -566,13 +670,9 @@ function heroParry(u) {
     const H = Game.hero.hero;
     if (kitMirror()) { H.abCd = Game.hero.abcd || {}; H.abT = Game.hero.abt || {}; }   // перезарядки — с сервера
     if (Mobile.on && !heroCardOpen) {
-      // телефон, тонкая плашка: под ней строка из двух способностей (значок и название)
-      const row = card.querySelector('.hc-row');
-      if (!row) return;
-      let el = card.querySelector('.hc-abm');
-      if (!el) { el = document.createElement('div'); el.className = 'hc-abm'; row.after(el); el.dataset.h = ''; }
-      const html = kitAbilButtons(H, true);
-      if (el.dataset.h !== html) { el.dataset.h = html; el.innerHTML = html; }
+      // телефон, тонкая плашка: способности — на панели быстрых способностей (heroabil.js), в плашке их не дублируем
+      const el = card.querySelector('.hc-abm');
+      if (el) el.remove();
       return;
     }
     let el = card.querySelector('.hc-abil');
@@ -728,10 +828,10 @@ function kitAbilButtons(H, mini) {
   return as.map((a, i) => {
     const lock = (H.level || 1) < (a.lvl || 1), cd = Math.max(0, Math.ceil(((H.abCd || {})[a.k] || 0) - Game.time));
     const on = (H.abT || {})[a.k] > Game.time;
-    const tip = `${a.name} (${ABIL_KEYS[i].slice(3)}): ${a.desc}. Перезарядка ${a.cd} с${a.lvl > 1 ? `, с ${a.lvl} уровня` : ''}`;
+    const tip = `${a.name} (${ABIL_KEYN[i]}): ${a.desc}${a.passive ? '' : `. Перезарядка ${a.cd} с`}${a.lvl > 1 ? `, с ${a.lvl} уровня` : ''}`;
     const img = `<img src="${abilIconURL(a.k)}" alt="">`;
     if (mini) return `<button class="hp-ab hk-ab${on ? ' on' : ''}" data-hero="ab${i}" ${lock || cd ? 'disabled' : ''} title="${tip}">${img}<span>${lock ? `с ${a.lvl} ур.` : cd ? cd + ' с' : a.name}</span></button>`;
-    return `<button class="hk-big${on ? ' on' : ''}" data-hero="ab${i}" ${lock || cd ? 'disabled' : ''} title="${tip}">${img}<span><b>${a.name}</b><small>${lock ? `с ${a.lvl} уровня` : cd ? `перезарядка ${cd} с` : on ? 'действует' : `${ABIL_KEYS[i].slice(3)} · ${a.desc}`}</small></span></button>`;
+    return `<button class="hk-big${on ? ' on' : ''}" data-hero="ab${i}" ${lock || cd ? 'disabled' : ''} title="${tip}">${img}<span><b>${a.name}</b><small>${lock ? `с ${a.lvl} уровня` : cd ? `перезарядка ${cd} с` : on ? 'действует' : `${a.passive ? 'пассивно' : ABIL_KEYN[i]} · ${a.desc}`}</small></span></button>`;
   }).join('');
 }
 
@@ -762,7 +862,7 @@ function kitTick(dt) {
       coopCmd = function (name, json, admin) {
         let m = null;
         try { m = JSON.parse(json); } catch (e) { return; }
-        if (m && m.t === 'abil') { const u = coop.players.get(name); if (u && (m.i === 0 || m.i === 1)) heroAbilityFor(u, m.i); return; }
+        if (m && m.t === 'abil') { const u = coop.players.get(name); if (u && Number.isInteger(m.i) && m.i >= 0 && m.i < ABIL_MAX) heroAbilityFor(u, m.i); return; }
         return _cc(name, json, admin);
       };
     }
@@ -777,9 +877,7 @@ function kitTick(dt) {
   const h = Game.hero;
   if (!kitOn() || !h || h.dead || !h.hero) return;
   const H = h.hero;
-  // лечение под «Диким обликом»
-  const rg = heroBuf(h, 'regen');
-  if (rg && H.hp < H.maxhp) H.hp = Math.min(H.maxhp, H.hp + rg * dt);
+  // лечение под «Диким обликом» и пассивками — в heroabil.js (abTick), для всех героев
   KIT.t += dt;
   if (KIT.t < 1) return;
   KIT.t = 0;

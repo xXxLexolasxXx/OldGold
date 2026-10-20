@@ -492,7 +492,7 @@ function coopTick(dt) {
     coopAutoFight(u);
     // здоровье: беды деревни
     if (u.food <= 0) H.hp -= 0.5 * dt;
-    else if (H.hp < H.maxhp && u.food > 0.25 && !(u.burn && u.burn.stage)) H.hp = Math.min(H.maxhp, H.hp + 0.4 * dt);
+    else if (H.hp < H.maxhp && u.food > 0.25 && !(u.burn && u.burn.stage)) H.hp = Math.min(H.maxhp, H.hp + (typeof hlRegen === 'function' ? hlRegen(u) : 0.2) * dt);   // медленно: лечение — отдыхом (0.10.66)
     if (u.burn && u.burn.stage) H.hp -= 6 * dt;
     if (u.injury && u.injury !== H.seenInj) H.hp -= 8;
     H.seenInj = u.injury || null;
