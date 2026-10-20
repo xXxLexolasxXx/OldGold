@@ -1004,3 +1004,10 @@ img[data-g] { -webkit-touch-callout: none; -webkit-user-select: none; user-selec
 #dd-snd .dd-menu button.off { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--red); }
 #dd-snd.mute > .dd-t { color: var(--red); position: relative; }
 #dd-snd.mute > .dd-t::before { content: ''; position: absolute; left: 6px; top: 50%; width: 14px; height: 2px; background: var(--red); box-shadow: 0 0 0 1px #000; transform: rotate(-35deg); pointer-events: none; }
+/* телефон: без заклёпок по углам плашек верхней полосы и карточки героя — на узких кнопках (♪, ×1) они лезли на значки */
+body.mobile #clock, body.mobile .speed, body.mobile .dd-t, body.mobile .dd-menu {
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, rgba(0,0,0,0.06) 1px 3px), linear-gradient(180deg, #3a3e47 0%, #23262d 45%, #181a1f 100%);
+}
+body.mobile #view #hero-card:not(.mini) {
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, rgba(0,0,0,0.06) 1px 3px), linear-gradient(180deg, #3a3e47 0%, #23262d 40%, #181a1f 100%);
+}
