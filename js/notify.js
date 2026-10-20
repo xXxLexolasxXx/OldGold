@@ -25,6 +25,7 @@ const Notify = {
   lastInput: 0,
   entry: null,            // шаги входа
   modals: [],             // чужие окна, ждущие очереди: { id, show, prio }
+  rare: {},
   want: { tut: false, coopHint: false, news: false },
 };
 
@@ -35,6 +36,31 @@ const NQ_BLOCK = '#hero-name, #cp-class, #cp-lost, #cp-admin, #cp-stats, #whatsn
 const NQ_URGENT = /Сервер|соединени|переподключ|не удалось|Мало памяти|Победа|Поражение|опустел|недоступн/i;
 // мелочь, которая в спокойном режиме сразу уходит в журнал
 const NQ_MINOR = /приходит в деревню|покидает деревню|получает титул|Герой ночи|приходит в себя у склада|падает без сил|Новинка:|Новые задания дня/i;
+
+// частые мелкие события: не чаще раза в 5 минут реальных (не игровых) на каждый вид, остальные — в журнал (одинаковые склеиваются «×N»).
+// Банши — раз за ночь. Важное (поход, зима, голод, золото школы, герой, нечисть, победа) сюда не попадает. «Гусей прогнали» тоже остаётся.
+const NQ_RARE_MS = 5 * 60 * 1000;
+const NQ_RARE = [
+  { key: 'banshee', re: /Банши/, night: true },
+  { key: 'pest', re: /Лиса|Барсук|Цапл|Мыши воруют|Ворона стащила|Стая ворон|Гусь утащил|Гуси щиплют|Куры отомстили|ручного|Сова уронила|Лось забодал|утащил[аои]? «|стащил/i },
+  { key: 'flavor', re: /Кот \(|аист|птенцы|Светлячки|улей|единорог|плещется|корнях дерева|поймал курицу|Среди гусей|Дракончик|золотой гусь/i },
+];
+const NQ_KEEP = /поход|Зим|Осень|Весна|голод|голодают|школ.*золот|золот.*школ|Малгор|Победа|Поражение|стужей|погиб/i;   // висят дольше
+function nqRare(text) {
+  if (NQ_KEEP.test(text) && !/Банши/.test(text)) return null;
+  for (const r of NQ_RARE) if (r.re.test(text)) return r;
+  return null;
+}
+function nqRareHold(text) {   // true — этот вид уже был недавно, показывать не надо
+  const r = nqRare(text);
+  if (!r) return false;
+  const t = nqNow();
+  const night = r.night && typeof Game !== 'undefined' && Game.entNight != null ? 'n' + Game.entNight : null;
+  const last = Notify.rare[r.key];
+  if (last && (night ? last.night === night : t - last.t < NQ_RARE_MS * (r.night ? 2 : 1))) return true;
+  Notify.rare[r.key] = { t, night };
+  return false;
+}
 
 try { if (localStorage.getItem(NQ_KEY) === 'full') Notify.mode = 'full'; } catch (e) { /* нет хранилища — спокойный */ }
 
@@ -158,6 +184,7 @@ toast = function (text, target, kind) {
   if (!urgent) {
     if (t < Notify.quietUntil || !Notify.entry || Notify.entry.step < 2) { Notify.held++; nqJournal(text, k); return; }   // вход ещё не начался (меню, мир не пришёл) — тоже ждём
     if (!nqFull() && NQ_MINOR.test(text)) { nqJournal(text, k); return; }
+    if (!nqFull() && nqRareHold(text)) { nqJournal(text, k); return; }
     if (nqAlarm() && k !== 'night' && k !== 'imp') { nqJournal(text, k); return; }
   }
   const item = { text, target, kind: k, at: t, n: 1, urgent };

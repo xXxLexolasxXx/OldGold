@@ -226,12 +226,11 @@ const BUILDINGS = {
   },
   armory: {
     name: 'Мастерская доспехов', cat: 'Ремесло', w: 3, h: 2, top: 66, cost: { timber: 3, stone: 4 }, worker: 'tanner',
-    inputs: { leather: 5, iron: 4 }, outputs: { leatherArmor: 4, ironArmor: 3 },
+    inputs: { leather: 6, iron: 6 }, outputs: { leatherArmor: 3, ironArmor: 2 }, orders: true,
     recipes: [
-      { in: { leather: 2 }, out: { leatherArmor: 1 }, time: 12 },
-      { in: { iron: 2, leather: 1 }, out: { ironArmor: 1 }, time: 18 },
+      { in: { leather: 3 }, out: { leatherArmor: 1 }, time: 26 },
     ],
-    desc: 'Шьёт кожаные доспехи, а при наличии железа клепает и железные.',
+    desc: 'Шьёт кожаные доспехи — долго и вдумчиво. Железные клепают только в мастерской 2-го уровня. Заказы ставятся в очередь.',
   },
   crystalmine: {
     name: 'Шахта маг. камней', cat: 'Магия', w: 3, h: 2, top: 70, noRotate: true, cost: { timber: 4, stone: 3 }, worker: 'miner',
@@ -389,3 +388,22 @@ function startOpen(id) {
 function unlockReady(st) {
   return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
 }
+
+// ---------- Запас прочности снаряжения (js/durability.js) ----------
+// max — очков прочности у новой вещи (у «ржавых» стартовых вещей класса — kit), wear — сколько очков
+// снимает один удар оружием (weapon) или один пропущенный удар по доспеху (armor).
+const DUR = {
+  max: { sword: 160, dagger: 130, bow: 150, staff: 140, leatherArmor: 75, ironArmor: 150, mageArmor: 60 },
+  kit: { weapon: 50, armor: 40 },
+  wear: { sword: 1, dagger: 0.9, bow: 0.7, staff: 0.6, rustyAxe2: 1.3, weapon: 1, armor: 3 },
+  low: 0.25,            // ниже этой доли — предупреждение и слабеющий удар
+  brokenAtk: 0.5,       // сломанное оружие бьёт вполсилы
+  repairShare: 0.6,     // полный ремонт стоит столько от материалов нового
+  keepOnDismiss: 0.5,   // распущенный рекрут возвращает в гильдию только вещи не ниже этой доли
+  repair: {             // где чинят и что нужно на полный ремонт
+    sword: ['weaponsmith', { iron: 2, timber: 1 }], dagger: ['weaponsmith', { iron: 1, leather: 1 }],
+    bow: ['weaponsmith', { timber: 2, leather: 1 }], staff: ['weaponsmith', { timber: 2, leather: 1 }],
+    rustyAxe2: ['weaponsmith', { iron: 2, timber: 1 }], leatherArmor: ['armory', { leather: 3 }],
+    ironArmor: ['armory', { iron: 5, leather: 2 }], mageArmor: ['armory', { leather: 3 }],
+  },
+};

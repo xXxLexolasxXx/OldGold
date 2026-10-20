@@ -648,6 +648,7 @@ function* heroGuildGen(u, c) {
   // подарок главы: оружие класса из запасов гильдии
   if (H.equip && !H.equip.weapon && b.stock[C.weapon] > 0 && typeof hlAddItem === 'function' && Array.isArray(H.inv) && hlAddItem(H, C.weapon, 1)) {
     b.stock[C.weapon]--;
+    if (typeof durFresh === 'function') durFresh(H, C.weapon);
     floater(gm.x, gm.y - 1.6, 'Держи — пригодится!', '#f6e8b0');
     gsay(u, `${gm.gmName || 'Глава'} подарил герою: ${HL_GEAR[C.weapon].name.toLowerCase()}. Наденьте из рюкзака`);
   }
@@ -724,7 +725,9 @@ function tryHire(b) {
 
 function dismissRecruit(u) {
   const b = guildOf(u), C = GCLS[u.rec.cls];
-  if (b) { b.stock[C.weapon] = (b.stock[C.weapon] || 0) + 1; if (u.rec.armor) b.stock[C.armor] = (b.stock[C.armor] || 0) + 1; }
+  // вещи с износом ниже порога в гильдию не возвращаются — их не принимают даже кладовщики
+  const keep = s => { const r = typeof durRatio === 'function' ? durRatio(u, s) : 1; return r == null || r >= DUR.keepOnDismiss; };
+  if (b) { if (keep('weapon')) b.stock[C.weapon] = (b.stock[C.weapon] || 0) + 1; if (u.rec.armor && keep('armor')) b.stock[C.armor] = (b.stock[C.armor] || 0) + 1; }
   heroStopUnit(u);
   floater(u.x, u.y - 1.6, 'Ну и ладно, потаскаю мешки', '#e8e0c0');
   u.type = 'serf'; u.rec = null; u._spr = null; u.smoker = Math.random() < 0.7;
@@ -886,7 +889,7 @@ function guildHTML(b) {
   for (const u of rs) {
     const R = recOf(u), need = 60 * R.lvl;
     const ord = R.train > 0 ? 'учится' : { guard: 'охраняет гильдию', follow: 'идёт за героем', hold: 'стоит на посту', post: 'на башне', drill: 'тренируется' }[R.order] || '';
-    x += `<div class="irow g-rec" data-gd="sel:${u.id}"><img class="portrait" src="${portraitURL(u.type, u.look)}" alt=""><div style="flex:1"><div>${R.name || ''} · ур. ${R.lvl}${R.armor ? ' · в доспехе' : ''}</div><div class="g-xp"><i style="width:${R.lvl >= recLvlMaxOf(R) ? 100 : Math.round(R.xp / need * 100)}%"></i></div><div class="small muted">${ord}</div></div><button data-coop="1" data-gd="drill:${u.id}" title="Тренировка с главой: 1 золото, +${drillXpOf(b)} опыта">⚔</button></div>`;
+    x += `<div class="irow g-rec" data-gd="sel:${u.id}"><img class="portrait" src="${portraitURL(u.type, u.look)}" alt=""><div style="flex:1"><div>${R.name || ''} · ур. ${R.lvl}${R.armor ? ' · в доспехе' : ''}</div><div class="g-xp"><i style="width:${R.lvl >= recLvlMaxOf(R) ? 100 : Math.round(R.xp / need * 100)}%"></i></div><div class="small muted">${ord}${durTag(u)}</div></div><button data-coop="1" data-gd="drill:${u.id}" title="Тренировка с главой: 1 золото, +${drillXpOf(b)} опыта">⚔</button></div>`;
   }
   if (b.hireQ > 0) x += `<div class="irow small warn">Ждут свободного трудягу: ${b.hireQ}</div>`;
   x += `<button class="g-wide" data-coop="1" data-gd="hire:${b.id}" ${bad ? 'disabled' : ''}><b>Набрать рекрута</b><small>${bad || `трудяга + ${GOODS[C.weapon].name.toLowerCase()} + 1 золото${cls === 'mage' ? ' + мана' : ''}; ${GOODS[C.armor].name.toLowerCase()} — если есть`}</small></button>`;
@@ -900,6 +903,7 @@ function recCardHTML(u) {
   return `<div class="ihead"><img class="bpic" src="${portraitURL(u.type, u.look)}" alt=""><div><h3 style="color:${C.col}">${R.name || C.name}</h3><span class="muted small">${C.name} · уровень ${R.lvl}${R.armor ? ' · в доспехе' : ''}</span></div></div>
     <div class="hp-xp"><i style="width:${R.lvl >= recLvlMaxOf(R) ? 100 : Math.round(R.xp / need * 100)}%"></i></div>
     <div class="irow small">Сила удара: <b>${Math.round(Math.min(0.92, 0.3 + 0.06 * R.lvl + (R.armor ? 0.04 : 0)) * 100)}%</b> · дальность: <b>${C.range}</b></div>
+    ${durRecHTML(u)}
     <div class="hp-abs">${btn('follow', 'За героем', R.order === 'follow')}${btn('guard', 'Охранять гильдию', R.order === 'guard')}</div>
     <div class="hp-abs">${btn('drill', 'Тренировка (1 зол.)', R.order === 'drill')}${btn('dismiss', 'Распустить', false)}</div>
     <div class="tip">Клик по земле — встать там на пост, по скелету, ходячему дереву или волку — атаковать. Esc — снять выбор.</div><button class="hc-x" title="Закрыть (Esc)">×</button>`;
@@ -916,6 +920,7 @@ function recCardUpdate() {
       const el = e.target.closest('[data-rc]');
       if (!el || !u || !recOf(u)) return;
       const k = el.dataset.rc;
+      if (k === 'fix') { durSend('fixr:' + u.id); return; }
       if (k === 'dismiss') { if (confirm('Распустить рекрута? Он снова станет трудягой, оружие вернётся в гильдию.')) { if (isMirror()) coopSend({ t: 'guild', a: 'dismiss', id: u.id }); else dismissRecruit(u); } }
       else if (isMirror()) coopSend({ t: 'guild', a: 'order', id: u.id, o: k });
       else setOrder(u, k);
@@ -1014,7 +1019,7 @@ function guildServerSync() {
   G.syncT = Game.time + 0.5;
   for (const u of Game.units) {
     const R = u.rec;
-    if (R) u.gx = { cls: R.cls, lvl: R.lvl, xp: R.xp, order: R.order, name: R.name || '', armor: !!R.armor, train: R.train > 0 ? 1 : 0, guild: R.guild, leader: R.leader || 0 };
+    if (R) u.gx = { cls: R.cls, lvl: R.lvl, xp: R.xp, order: R.order, name: R.name || '', armor: !!R.armor, dw: durPct(u, 'weapon'), da: durPct(u, 'armor'), train: R.train > 0 ? 1 : 0, guild: R.guild, leader: R.leader || 0 };
     else if (u.gx) u.gx = null;
     if (u.owner && u.hero) u.gxh = u.hero.mastery != null ? u.hero.mastery + 1 : 0;
   }
@@ -1029,6 +1034,7 @@ function guildCoopCmd(name, m, admin) {
   switch (m.a) {
     case 'learn': if (b && hero) issueCmd(hero, { kind: 'guild', b, tx: b.doorX, ty: b.doorY, label: 'Учиться' }); break;
     case 'hire': if (b && can('train')) hireRecruit(b); break;
+    case 'dur': if (can('manage') && typeof m.s === 'string' && /^(ord:\d+:\d+:-?1|fixr:\d+|fixall:\d+)$/.test(m.s)) durAct(m.s, name); break;
     case 'drill': if (rec && can('manage')) setOrder(rec, 'drill', null, hero); break;
     case 'dismiss': if (rec && can('manage')) dismissRecruit(rec); break;
     case 'order':

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Лист вариантов земли</title>
+<style>
+body{margin:0;background:#1e1c1a;color:#eee;font:13px/1.35 sans-serif}
+#bar{position:sticky;top:0;background:#000c;padding:6px 10px;display:flex;gap:12px;align-items:center;z-index:2}
+.grid{display:flex;flex-wrap:wrap;gap:8px;padding:8px}
+.card{background:#2a2724;padding:8px;border-radius:6px;max-width:100%}
+.card h3{margin:0 0 2px;color:#f6d458}
+.card p{margin:0 0 6px;max-width:760px;color:#cec6ba}
+canvas{image-rendering:pixelated;display:block}
+</style></head><body>
+<div id="bar"><b>Варианты ДНЕВНОЙ земли</b>
+<label>масштаб <select id="sc"><option>1</option><option selected>2</option><option>3</option></select></label>
+<label>клеток <select id="sz"><option value="12x8" selected>12×8</option><option value="20x12">20×12</option><option value="8x6">8×6</option></select></label>
+<label>сид <input id="sd" type="number" value="7" style="width:60px"></label>
+<span id="err" style="color:#f88"></span></div>
+<div class="grid" id="out"></div>
+<script src="js/config.js"></script><script src="js/world.js"></script><script src="js/sprites.js"></script><script src="js/world/groundstyle.js"></script><script src="js/world/groundsets.js"></script>
+<script>
+function draw() {
+  const k = +sc.value, [tw, th] = sz.value.split('x').map(Number), seed = +sd.value || 1, only = new URLSearchParams(location.search).get('v');
+  out.innerHTML = '';
+  if (only === 'biomes') {
+    const src = groundPatchBiomes(tw * 2, th * 2, seed, new URLSearchParams(location.search).get('set') || 'meadow'), cv = document.createElement('canvas'); cv.width = src.width * k / 2; cv.height = src.height * k / 2;
+    const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(src, 0, 0, cv.width, cv.height);
+    const d = document.createElement('div'); d.className = 'card'; d.innerHTML = '<h3>Все биомы вместе (как на карте в игре)</h3>'; d.appendChild(cv); out.appendChild(d); return;
+  }
+  const setId = new URLSearchParams(location.search).get('set') || 'meadow';
+  for (const id of Object.keys(GROUND_VARIANTS)) {
+    if (GROUND_VARIANTS[id].set !== setId) continue;
+    if (only && only !== id) continue;
+    const V = GROUND_VARIANTS[id], t0 = performance.now(), src = groundPatch(id, tw, th, seed), ms = (performance.now() - t0) | 0;
+    const cv = document.createElement('canvas'); cv.width = src.width * k; cv.height = src.height * k;
+    const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(src, 0, 0, cv.width, cv.height);
+    const d = document.createElement('div'); d.className = 'card'; d.id = id;
+    d.innerHTML = '<h3>' + V.name + '</h3><p>' + V.sub + ' <i>(' + ms + ' мс)</i></p>'; d.appendChild(cv); out.appendChild(d);
+  }
+}
+for (const e of [sc, sz, sd]) e.onchange = draw;
+window.onerror = (m, s, l) => { err.textContent = m + ' @' + l; };
+draw();
+</script></body></html>

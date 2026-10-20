@@ -10,8 +10,8 @@
 ANIMALS.duck = { name: 'Утка', mood: 'duck', speed: 1.7, flee: 3 };
 
 const PET_GOODS = ['gold', 'bread', 'sausage', 'croissant', 'flour'];    // что способна унести мелкая зверушка
-const PET_NAME = { rabbit: 'кролик', duck: 'утка' };
-const PET_ACC = { rabbit: 'кролика', duck: 'утку' };
+const PET_NAME = { rabbit: 'кролик', duck: 'утка', goat: 'коза', fox: 'лиса', wolf: 'волчонок' };
+const PET_ACC = { rabbit: 'кролика', duck: 'утку', goat: 'козу', fox: 'лису', wolf: 'волчонка' };
 const PET_MAX = 6;
 const RABBIT_CATCH = 0.4;     // шанс схватить кролика при каждом сближении
 const DUCK_CATCH = 0.35;
@@ -292,7 +292,7 @@ function petsTick(dt) {
   const night = isNightNow();
   // волки и лисы выбирают кролика или утку
   for (const a of Game.animals) {
-    if (a.dead || (a.kind !== 'wolf' && a.kind !== 'fox') || a.state === 'petchase' || a.state === 'flee' || a.state === 'chase' || a.loot) continue;
+    if (a.dead || a.owner || (a.kind !== 'wolf' && a.kind !== 'fox') || a.state === 'petchase' || a.state === 'flee' || a.state === 'chase' || a.loot) continue;
     if (Game.time < (a.petCD || 0)) continue;
     const prey = nearestAnimal(a.x, a.y, a.kind === 'wolf' ? 7 : 8, p => (p.kind === 'rabbit' || p.kind === 'duck') && !p.dead && !p.hunted && !isWaterAt(Math.floor(p.x), Math.floor(p.y)));
     if (!prey) continue;

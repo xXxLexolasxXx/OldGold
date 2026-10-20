@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Лист лепрекона</title>
+<style>
+body{margin:0;background:#4a6e30;color:#eee;font:12px/1.3 sans-serif}
+#bar{position:sticky;top:0;background:#222c;padding:6px 10px;display:flex;gap:12px;align-items:center;z-index:2}
+h3{margin:10px 10px 2px;color:#fff;text-shadow:0 1px 2px #000}
+.row{display:flex;flex-wrap:wrap;gap:6px;padding:4px 10px}
+.cell{display:flex;flex-direction:column;align-items:center}
+.cell canvas{image-rendering:pixelated;background:#4f7a30}
+.cell span{font-size:10px;color:#fff;text-shadow:0 1px 2px #000}
+</style></head><body>
+<div id="bar"><b>Лепрекон: покой 6 · ходьба 8 · ТАНЕЦ 16 · перетягивание 3 · кража 4 · пощёчина 9 · горшок</b>
+<label>масштаб <select id="sc"><option>3</option><option>4</option><option selected>6</option><option>8</option></select></label> <span id="err" style="color:#f88"></span></div>
+<div id="out"></div>
+<script src="js/config.js"></script><script src="js/world.js"></script><script src="js/sprites.js"></script><script src="js/pixel.js"></script><script src="js/world/neutralart.js"></script><script src="js/world/leprechaunart.js"></script>
+<script>
+const GR = [['Покой (6)', LEP_IDLE], ['Ходьба (8)', LEP_WALK], ['Ирландский танец (16): фраза 1 — p0…p7, фраза 2 (ноги меняются) — p8…p15', LEP_DANCE], ['Перетягивание слитка (3)', LEP_TUG],
+  ['Исход (а) лепрекон украл: рывок · победный прыжок · нырок · в горшке', LEP_STEAL], ['Исход (б) пощёчина: съёжился · ПЛЯК · шатание ×2 · рука на щеке ×2 · растворение ×3', LEP_SLAP]];
+function put(row, s, k, label) {
+  const X = s.ax - 24, Y = s.ay - 56, W = 48, H = 64;   // кадр обрезан по фигуре
+  const cv = document.createElement('canvas'); cv.width = W * k; cv.height = H * k;
+  const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(s.cv, X, Y, W, H, 0, 0, cv.width, cv.height);
+  const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv);
+  const sp = document.createElement('span'); sp.textContent = label; d.appendChild(sp); row.appendChild(d);
+}
+function draw() {
+  const k = +document.getElementById('sc').value, out = document.getElementById('out'); out.innerHTML = '';
+  const only = new URLSearchParams(location.search).get('only');
+  for (const [gn, frames] of GR) {
+    if (only && !gn.startsWith(only)) continue;
+    const h = document.createElement('h3'); h.textContent = gn; out.appendChild(h);
+    const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
+    for (const f of frames) put(row, lepFrame(f), k, f);
+  }
+  const h = document.createElement('h3'); h.textContent = 'Горшок: задняя стенка · передняя · радуга'; out.appendChild(h);
+  const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
+  put(row, lepPotSprite('B'), k, 'potB'); put(row, lepPotSprite('F'), k, 'potF');
+  const cv = document.createElement('canvas'); cv.width = 120 * k; cv.height = 70 * k; const c = cv.getContext('2d'); c.scale(k, k);
+  c.drawImage(lepPotSprite('B').cv, 4, 20); c.drawImage(lepFrame('x3').cv, 4, 22); c.drawImage(lepPotSprite('F').cv, 4, 20);
+  lepDrawRainbow(c, 32, 48, 1, 1, 1);
+  const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = 'в сборе + радуга'; d.appendChild(sp); row.appendChild(d);
+}
+document.getElementById('sc').onchange = draw;
+try { draw(); } catch (e) { document.getElementById('err').textContent = e.message + ' ' + (e.stack || '').split('\n')[1]; }
+</script></body></html>

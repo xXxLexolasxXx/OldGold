@@ -524,7 +524,13 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
     if (!h1) return;
     const s1 = parseFloat(getComputedStyle(h1).fontSize) / PSc * 0.95;
     const key = Math.round(s1) + ':' + PSc;
-    if (TITLE.key !== key) { TITLE.key = key; TITLE.a = bmpText('OldGold', `bold ${Math.round(s1)}px Georgia, "Times New Roman", serif`, `${Math.max(1, Math.round(s1 * 0.05))}px`, 1.3); }
+    if (TITLE.key !== key) {
+      TITLE.key = key;
+      const mk = s => bmpText('OldGold', `bold ${Math.round(s)}px Georgia, "Times New Roman", serif`, `${Math.max(1, Math.round(s * 0.05))}px`, 1.3);
+      TITLE.a = mk(s1);
+      // в ландшафте телефона название не шире 60% экрана — по измеренной ширине, а не по числу букв (имя может смениться)
+      if (innerWidth > innerHeight && innerHeight <= 520 && TITLE.a.w * PSc > innerWidth * 0.6) TITLE.a = mk(s1 * innerWidth * 0.6 / (TITLE.a.w * PSc));
+    }
     const r1 = h1.getBoundingClientRect();
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const a = TITLE.a;

@@ -32,6 +32,10 @@ function endBreak(u) {
   const s = u.brk.saved;
   dropBreak(u);
   u.proc = s.proc; u.action = s.action; u.anim = null; u.lastRes = undefined;
+  // в перерыве уронил ношу (бежал от нечисти, сбили с ног) — нести нечего: не идём пустыми через
+  // всю деревню, а берём новое дело. Учёт «в пути» поправит auditIncoming
+  const d = u.dlv;
+  if (d && d.picked && !u.carry && s.proc && d.gen === s.proc && u.isCourier) { u.dlv = null; u.proc = null; u.action = null; }
 }
 
 // Перерыв отменяется насовсем (гному дали приказ, он погиб или возродился): прерванное дело не возвращаем,
@@ -157,7 +161,7 @@ function lifeTick(u, dt) {
   // потолок эпидемии: когда курит больше трети деревни, новые не подсаживаются
   const smokeRoom = Game.smokers.size < Game.units.length * 0.33;
   // кто кормит деревню — к чужим перекурам не подсаживается
-  const feeder = FOOD_WORKERS.has(u.type);
+  const feeder = FOOD_WORKERS.has(u.type) || u.type === 'kid';   // гномята к куреву не подсаживаются: у них игрушечная трубка (kidsplay.js)
   if (smokeRoom && !feeder && Game.time >= u.nextJoin && Game.smokers.size) {
     let host = null, bd = JOIN_RADIUS;
     for (const s of Game.smokers) {
@@ -174,7 +178,7 @@ function lifeTick(u, dt) {
     }
   }
   // сам решил покурить
-  if (smokeRoom && u.smoker && Game.time >= u.nextSmoke && Math.random() < 0.25) {
+  if (smokeRoom && u.smoker && u.type !== 'kid' && Game.time >= u.nextSmoke && Math.random() < 0.25) {
     u.nextSmoke = Game.time + SMOKE_CD_MIN + Math.random() * (SMOKE_CD_MAX - SMOKE_CD_MIN);
     startBreak(u, 'smoke', null);
     u.proc = smokeGen(u, SMOKE_TIME);
