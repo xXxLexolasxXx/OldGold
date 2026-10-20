@@ -111,7 +111,7 @@ function* hlTakeGen(u, c) {
   yield { enter: b };
   yield { wait: 1.2 };
   if (!b.removed && b.stock[k] > 0) {
-    if (hlAddItem(H, k, 1)) { b.stock[k]--; floater(u.x, u.y - 1.6, 'Взял: ' + hlName(k), '#ffe8a0'); }
+    if (hlAddItem(H, k, 1)) { b.stock[k]--; if (typeof durFresh === 'function') durFresh(H, k); floater(u.x, u.y - 1.6, 'Взял: ' + hlName(k), '#ffe8a0'); }
     else floater(u.x, u.y - 1.6, 'Рюкзак полон', '#e8a070');
   }
   yield { leave: true };
