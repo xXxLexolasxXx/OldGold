@@ -80,6 +80,23 @@ ok(sn.autLast <= 0.3 && sn.autLast >= 0, 'под конец осени снег 
 ok(sn.win === 1, 'зимой цель снега 1');
 ok(sn.spr0 <= 1 && sn.sprMid === 0, 'весной снег должен сойти к середине сезона: ' + JSON.stringify([sn.spr0, sn.sprMid]));
 
+// заготовки: осенью, пока сена свиньям мало, свинарник не плодит свиней; с пшеницы — лишний сноп; склад кормит кашей из зерна
+const prep = J(`const S = SEA(), base = cycleAt(Game.time).k, o = {};
+  const st = Game.buildings.find(b => b.isStore()), keep = { ...st.stock };
+  const pig = { type: 'swine', state: 'done', removed: false, pigs: [], stock: { pig: 4, hay: 0 } };   // заглушка свинарника: считаются только стадо и сено
+  Game.buildings.push(pig);
+  for (const b of Game.buildings) if (b.isStore && b.isStore()) b.stock.hay = 0;
+  S.off = 2 - base; S.holdT = null; o.summer = seaHoldHay(); o.bonusS = seaHayBonus('wheat');
+  S.off = 8 + 2 - base; S.holdT = null; o.autumn = seaHoldHay(); o.bonusA = seaHayBonus('wheat'); o.bonusHop = seaHayBonus('hops');
+  st.stock.hay = 500; S.holdT = null; o.autumnFull = seaHoldHay();
+  const f = seaFoodInfo(); o.food = f.need > 0 && f.have >= 0;
+  for (const g of FOODS) st.stock[g] = 0; st.stock.wheat = 3; o.meal = storeMeal(st); st.stock.bread = 1; o.meal2 = storeMeal(st);
+  Game.buildings.splice(Game.buildings.indexOf(pig), 1); Object.assign(st.stock, keep); S.off = 0; S.holdT = null;
+  return o;`);
+ok(!prep.summer && prep.autumn && !prep.autumnFull, 'сено на зиму: летом свиньи плодятся, осенью без запаса — нет, с запасом — да: ' + JSON.stringify(prep));
+ok(prep.bonusS === 0 && prep.bonusA === 1 && prep.bonusHop === 0, 'осенний сноп сена только с пшеницы: ' + JSON.stringify(prep));
+ok(prep.food && prep.meal === 'wheat' && prep.meal2 === 'bread', 'склад: хлеб, а без него каша из зерна: ' + JSON.stringify(prep));
+
 // симуляция: полный сезонный круг ускоренно без исключений; снег ложится не мгновенно
 h.run('Game.sea = seaNew(); Game.time = 0; for (const b of Game.buildings) b.hold = false;');
 let sawPre = false, maxStep = 0, prevSnow = 0, seen = new Set(), maxSnowAut = 0, ice0 = 0;
