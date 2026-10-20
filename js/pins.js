@@ -108,6 +108,13 @@ function pinRules() {
     }
   }
 
+  // ---- Ночные потери: нечисть утаскивает одиночек вдали от костра — без замены из школы деревня тает
+  if (Game.log && typeof CYCLE !== 'undefined') {
+    let took = 0;
+    for (let i = Game.log.length - 1; i >= 0 && i >= Game.log.length - 300; i--) { const l = Game.log[i]; if (l.t < Game.time - CYCLE * 0.8) break; if (/утащил\S* в туман/.test(l.text || '')) took++; }
+    if (took >= 2) add('taken', took >= 4 ? 2 : 1, '☠', `За ночь утащили ${took} ${took < 5 ? 'гнома' : 'гномов'}`, `Нечисть хватает одиночек дальше ${BONFIRE_SAFE} клеток от костра. Ставь мастерские ближе к костру, не гоняй гномов ночью далеко и учи замену в школе (нужно золото).`, schools[0]);
+  }
+
   // ---- Ночь близко (инфо): вечер, ещё не стемнело
   if (typeof isEveningNow === 'function' && isEveningNow() && !isNightNow()) add('night', 0, '☾', 'Ночь близко — гномы спешат к костру', 'Ночью выходит нечисть; вне света костра опасно.', pinAll('bonfire')[0]);
   return out;
