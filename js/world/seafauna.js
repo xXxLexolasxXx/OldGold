@@ -23,8 +23,18 @@ const SL_TENT_HP = 26;
 const SL = () => Game.seaLife || (Game.seaLife = slNew());
 function slNew() { return { list: [], t: {}, nests: [], tame: {}, kr: 0, krT: -1e9, krWon: 0, seen: {} }; }
 
+// Свой генератор случайных чисел (от сида карты): море не сдвигает общий Math.random — остальная симуляция
+// идёт так же, как без моря, а одинаковый сид даёт одинаковое море
+function slRand() {
+  const S = SL();
+  if (S.rs == null) S.rs = ((Game.seed | 0) ^ 0x5EA11FE) >>> 0;
+  const a = S.rs = (S.rs + 0x6D2B79F5) >>> 0;
+  let t = Math.imul(a ^ (a >>> 15), a | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
 const slOn = () => typeof FAUNA_ON === 'function' && FAUNA_ON() && typeof oceanPrep === 'function';
-const slR = (a, b) => a + Math.random() * (b - a);
+const slR = (a, b) => a + slRand() * (b - a);
 const slFr = (o, anim, fps) => Math.floor((o.ph || 0) * fps) % seaFrames(o.sk || o.k, anim);
 const slIce = () => (typeof SEA === 'function' ? SEA().ice || 0 : 0);
 const slNight = () => (typeof nightAmt === 'function' ? nightAmt() : 0);
@@ -43,7 +53,7 @@ function slBeach(x, y) {
 }
 function slPick(test, tries = 60) {
   for (let k = 0; k < tries; k++) {
-    const x = (Math.random() * MAP_W) | 0, y = (Math.random() * MAP_H) | 0;
+    const x = (slRand() * MAP_W) | 0, y = (slRand() * MAP_H) | 0;
     if (test(x, y)) return [x + 0.5, y + 0.5];
   }
   return null;
@@ -68,8 +78,8 @@ function slPeopleNear(x, y, r, pred) {
 // куда идёт по воде: та же вода (тест), иначе разворот
 function slSwim(o, sp, dt, test) {
   const nx = o.x + Math.cos(o.a) * sp * dt, ny = o.y + Math.sin(o.a) * sp * dt;
-  if (test(nx | 0, ny | 0)) { o.x = nx; o.y = ny; } else o.a += Math.PI * (0.6 + Math.random() * 0.8);
-  if (Math.random() < dt * 0.25) o.a += slR(-1, 1);
+  if (test(nx | 0, ny | 0)) { o.x = nx; o.y = ny; } else o.a += Math.PI * (0.6 + slRand() * 0.8);
+  if (slRand() < dt * 0.25) o.a += slR(-1, 1);
   o.face = Math.cos(o.a) >= 0 ? 1 : -1;
 }
 function slWalk(o, tx, ty, sp, dt) {
@@ -79,7 +89,7 @@ function slWalk(o, tx, ty, sp, dt) {
   o.x += dx / d * s; o.y += dy / d * s;
   return false;
 }
-function slAdd(o) { o.ph = Math.random() * 10; o.face = o.face || 1; SL().list.push(o); return o; }
+function slAdd(o) { o.ph = slRand() * 10; o.face = o.face || 1; SL().list.push(o); return o; }
 
 // ---------- Появление ----------
 function slSpawnTick() {
@@ -88,30 +98,30 @@ function slSpawnTick() {
   if (ice > 0.5) return;   // под льдом никто не появляется
   const want = (k, test) => { if (slHas(k) >= cap(k)) return null; return slPick(test); };
   let p;
-  if ((p = want('shoal', (x, y) => (slKind(x, y) === OC_SEA || slKind(x, y) === OC_LAKE) && slDep(x, y) >= 2))) slAdd({ k: 'shoal', x: p[0], y: p[1], a: Math.random() * 6.28, n: 6 + ((Math.random() * 4) | 0), seed: Math.random() * 99, scat: 0 });
-  if ((p = want('salmon', (x, y) => slKind(x, y) && slKind(x, y) !== OC_SWAMP && slDep(x, y) >= 2))) slAdd({ k: 'salmon', x: p[0], y: p[1], a: Math.random() * 6.28, st: 'swim', t: slR(4, 12) });
+  if ((p = want('shoal', (x, y) => (slKind(x, y) === OC_SEA || slKind(x, y) === OC_LAKE) && slDep(x, y) >= 2))) slAdd({ k: 'shoal', x: p[0], y: p[1], a: slRand() * 6.28, n: 6 + ((slRand() * 4) | 0), seed: slRand() * 99, scat: 0 });
+  if ((p = want('salmon', (x, y) => slKind(x, y) && slKind(x, y) !== OC_SWAMP && slDep(x, y) >= 2))) slAdd({ k: 'salmon', x: p[0], y: p[1], a: slRand() * 6.28, st: 'swim', t: slR(4, 12) });
   if ((p = want('crab', slBeach))) slAdd({ k: 'crab', x: p[0], y: p[1], st: 'idle', t: slR(2, 6), tx: p[0], ty: p[1] });
-  if ((p = want('star', (x, y) => slSea(x, y) && slDep(x, y) === 1))) slAdd({ k: Math.random() < 0.7 ? 'star' : 'urchin', x: p[0] + slR(-0.3, 0.3), y: p[1] + slR(-0.3, 0.3), face: Math.random() < 0.5 ? 1 : -1 });
-  if ((p = want('jelly', (x, y) => slSea(x, y) && slDep(x, y) >= 2))) slAdd({ k: 'jelly', x: p[0], y: p[1], a: Math.random() * 6.28, st: 'swim' });
-  if ((p = want('shell', slBeach))) slAdd({ k: 'shell', x: p[0] + slR(-0.3, 0.3), y: p[1] + slR(-0.3, 0.3), v: Math.random() < 0.5 ? 0 : 1, pearl: Math.random() < 0.12 });
-  if (night < 0.5 && (p = want('gull', (x, y) => slSea(x, y)))) slAdd({ k: 'gull', x: p[0], y: p[1], z: 40, st: 'fly', a: Math.random() * 6.28, t: slR(8, 20), cx: p[0], cy: p[1] });
+  if ((p = want('star', (x, y) => slSea(x, y) && slDep(x, y) === 1))) slAdd({ k: slRand() < 0.7 ? 'star' : 'urchin', x: p[0] + slR(-0.3, 0.3), y: p[1] + slR(-0.3, 0.3), face: slRand() < 0.5 ? 1 : -1 });
+  if ((p = want('jelly', (x, y) => slSea(x, y) && slDep(x, y) >= 2))) slAdd({ k: 'jelly', x: p[0], y: p[1], a: slRand() * 6.28, st: 'swim' });
+  if ((p = want('shell', slBeach))) slAdd({ k: 'shell', x: p[0] + slR(-0.3, 0.3), y: p[1] + slR(-0.3, 0.3), v: slRand() < 0.5 ? 0 : 1, pearl: slRand() < 0.12 });
+  if (night < 0.5 && (p = want('gull', (x, y) => slSea(x, y)))) slAdd({ k: 'gull', x: p[0], y: p[1], z: 40, st: 'fly', a: slRand() * 6.28, t: slR(8, 20), cx: p[0], cy: p[1] });
   if ((p = want('corm', (x, y) => World.terrain[idx(x, y)] === T_ROCK && (slSea(x + 1, y) || slSea(x - 1, y) || slSea(x, y + 1) || slSea(x, y - 1))))) slAdd({ k: 'corm', x: p[0], y: p[1] + 0.2, hx: p[0], hy: p[1] + 0.2, z: 0, st: 'idle', t: slR(12, 30) });
-  if (sum && slHas('turtle') < 1 && Math.random() < 0.25 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) === 1))) slAdd({ k: 'turtle', x: p[0], y: p[1], st: 'swim', a: Math.random() * 6.28, t: slR(20, 40), lay: S.nests.length < 3 });
+  if (sum && slHas('turtle') < 1 && slRand() < 0.25 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) === 1))) slAdd({ k: 'turtle', x: p[0], y: p[1], st: 'swim', a: slRand() * 6.28, t: slR(20, 40), lay: S.nests.length < 3 });
   // редкие: дельфины, кит, осьминог, змей
-  if (night < 0.6 && !slHas('dolphin') && Math.random() < 0.06 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 4))) {
-    const n = 2 + ((Math.random() * 2) | 0), a = Math.random() * 6.28;
+  if (night < 0.6 && !slHas('dolphin') && slRand() < 0.06 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 4))) {
+    const n = 2 + ((slRand() * 2) | 0), a = slRand() * 6.28;
     for (let k = 0; k < n; k++) slAdd({ k: 'dolphin', x: p[0] + k * 0.9, y: p[1] + k * 0.6, a, st: 'swim', t: slR(1, 4), life: 75 });
     if (slOnce('dolphLog', 300)) logEvent('animal', 'В море резвятся дельфины', p[0], p[1]);
   }
-  if (!slHas('whale') && Math.random() < 0.012 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 6, 120))) {
-    slAdd({ k: 'whale', x: p[0], y: p[1], a: Math.random() * 6.28, st: 'swim', t: 6, life: 110 });
+  if (!slHas('whale') && slRand() < 0.012 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 6, 120))) {
+    slAdd({ k: 'whale', x: p[0], y: p[1], a: slRand() * 6.28, st: 'swim', t: 6, life: 110 });
     logEvent('animal', 'У горизонта всплыл кит — видите фонтан?', p[0], p[1]);
     if (slOnce('whaleToast', 900)) toast('🐋 В море кит! Над водой бьёт фонтан, слышна песня.');
     fstat('whale');
   }
-  if (!slHas('octo') && Math.random() < 0.02 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 3))) slAdd({ k: 'octo', x: p[0], y: p[1], a: Math.random() * 6.28, st: 'idle', t: slR(5, 10), life: 50, hp: 8 });
-  if (!slHas('serpent') && cycleAt(Game.time).k >= 3 && Math.random() < 0.01 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 4))) {
-    slAdd({ k: 'serpent', x: p[0], y: p[1], a: Math.random() * 6.28, st: 'swim', t: 4, life: 140, hp: 40 });
+  if (!slHas('octo') && slRand() < 0.02 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 3))) slAdd({ k: 'octo', x: p[0], y: p[1], a: slRand() * 6.28, st: 'idle', t: slR(5, 10), life: 50, hp: 8 });
+  if (!slHas('serpent') && cycleAt(Game.time).k >= 3 && slRand() < 0.01 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 4))) {
+    slAdd({ k: 'serpent', x: p[0], y: p[1], a: slRand() * 6.28, st: 'swim', t: 4, life: 140, hp: 40 });
     logEvent('animal', 'В море мелькнули зелёные горбы — морской змей', p[0], p[1]);
     if (slOnce('serpToast', 900)) toast('🐍 В море плавает морской змей. Герой на берегу может с ним сразиться.');
   }
@@ -124,7 +134,7 @@ function slTick(dt) {
   if (!slOn()) return;
   if (!oceanPrep()) { if (S.list.length) S.list.length = 0; return; }
   S.t.sp = (S.t.sp ?? 3) - dt;
-  if (S.t.sp <= 0) { S.t.sp = 4 + Math.random() * 3; if (startOpen('critters')) slSpawnTick(); }
+  if (S.t.sp <= 0) { S.t.sp = 4 + slRand() * 3; if (startOpen('critters')) slSpawnTick(); }
   const ice = slIce(), night = slNight(), hero = slHero();
   for (let i = S.list.length - 1; i >= 0; i--) {
     const o = S.list[i];
@@ -152,17 +162,17 @@ const SL_TICK = {
   crab(o, dt, hero, night) {
     if (o.st === 'die' || o.st === 'hide') { if ((o.t -= dt) <= 0) return false; return; }
     if (hero && Math.hypot(hero.x - o.x, hero.y - o.y) < 2.2) {
-      if (Math.random() < 0.3 && Math.hypot(hero.x - o.x, hero.y - o.y) < 1.1) {   // поймал
+      if (slRand() < 0.3 && Math.hypot(hero.x - o.x, hero.y - o.y) < 1.1) {   // поймал
         o.st = 'die'; o.t = 1; o.ph = 0; dropPile(o.x | 0, o.y | 0, 'fish', 1); floater(o.x, o.y - 1, 'Краб!', '#ffd0a0'); fstat('crabCaught');
       } else { o.st = 'hide'; o.t = 1; o.ph = 0; floater(o.x, o.y - 0.8, 'Шмыг!', '#f4e0c0'); }
       return;
     }
     if (o.st === 'atk') { if ((o.t -= dt) <= 0) { o.st = 'idle'; o.t = slR(2, 5); } return; }
-    const g = slPeopleNear(o.x, o.y, 0.9, u => u.type !== 'hero')[0];
+    const g = slPeopleNear(o.x, o.y, 0.9, u => u.type !== 'hero' && u.type !== 'kid' && !u.fun)[0];   // гномят и рыбаков с удочкой не щиплет
     if (g && slOnce('crab' + (g.id || ''), 20)) {
       o.st = 'atk'; o.t = 9 / 12; o.ph = 0; o.face = g.x > o.x ? 1 : -1;
       floater(g.x, g.y - 1.4, 'Ай! Щип!', '#ffb090'); faunaSfx('crabSnap', o.x, o.y);
-      scare(g, o); fstat('crabPinch');
+      if (!g.injury) scare(g, o); fstat('crabPinch');
       return;
     }
     if (o.st === 'walk') { if (slWalk(o, o.tx, o.ty, 1.3, dt)) { o.st = 'idle'; o.t = slR(1.5, 5) * (night > 0.5 ? 0.6 : 1); } return; }
@@ -179,14 +189,14 @@ const SL_TICK = {
     if (o.st === 'die') { if (o.ph > 0.8) return false; return; }
     if (o.st === 'beach') {   // вынесло на берег: жалит, кто рядом пройдёт; сохнет
       o.dry = (o.dry || 0) + dt;
-      const g = slPeopleNear(o.x, o.y, 0.8)[0];
-      if (g && slOnce('jel' + (g.id || ''), 30)) { o.st = 'atk'; o.t = 0.75; o.ph = 0; floater(g.x, g.y - 1.4, 'Ай, медуза!', '#f0c0ff'); faunaSfx('jellyZap', o.x, o.y); if (g.type === 'hero') hlHurt(g, 2, true); else scare(g, o); fstat('jellySting'); }
+      const g = slPeopleNear(o.x, o.y, 0.8, u => u.type !== 'kid')[0];
+      if (g && slOnce('jel' + (g.id || ''), 30)) { o.st = 'atk'; o.t = 0.75; o.ph = 0; floater(g.x, g.y - 1.4, 'Ай, медуза!', '#f0c0ff'); faunaSfx('jellyZap', o.x, o.y); if (g.type === 'hero') hlHurt(g, 2, true); else if (!g.injury) scare(g, o); fstat('jellySting'); }
       if (o.dry > 60) { o.st = 'die'; o.ph = 0; }
       return;
     }
     if (o.st === 'atk') { if ((o.t -= dt) <= 0) o.st = o.dry != null ? 'beach' : 'swim'; return; }
     slSwim(o, 0.12, dt, (x, y) => slSea(x, y));
-    if (slDep(o.x | 0, o.y | 0) === 1 && Math.random() < dt * 0.01) { o.st = 'beach'; o.dry = 0; }
+    if (slDep(o.x | 0, o.y | 0) === 1 && slRand() < dt * 0.01) { o.st = 'beach'; o.dry = 0; }
   },
   turtle(o, dt) {
     if (o.st === 'swim') {
@@ -215,7 +225,7 @@ const SL_TICK = {
   gull(o, dt, hero, night) {
     const S = SL();
     if (o.st === 'die') { o.z = Math.max(0, o.z - 30 * dt); if (o.ph > 1) return false; return; }
-    if (night > 0.6 && o.st === 'fly') { o.st = 'leave'; o.a = Math.random() * 6.28; }
+    if (night > 0.6 && o.st === 'fly') { o.st = 'leave'; o.a = slRand() * 6.28; }
     if (o.st === 'leave') { o.x += Math.cos(o.a) * 3 * dt; o.y += Math.sin(o.a) * 3 * dt; o.z += 10 * dt; o.face = Math.cos(o.a) >= 0 ? 1 : -1; if (!inb(o.x | 0, o.y | 0) || o.z > 140) return false; return; }
     if (o.st === 'fly') {   // круги над морем
       o.a += dt * 0.6;
@@ -223,15 +233,15 @@ const SL_TICK = {
       const tx = o.cx + Math.cos(o.a) * r, ty = o.cy + Math.sin(o.a) * r * 0.6;
       o.face = tx > o.x ? 1 : -1; o.x += (tx - o.x) * Math.min(1, dt * 2); o.y += (ty - o.y) * Math.min(1, dt * 2);
       o.z += (40 - o.z) * dt;
-      if (Math.random() < dt * 0.04) { const c = slNearPick(o.cx, o.cy, 7, (x, y) => slSea(x, y)); if (c) { o.cx = c[0]; o.cy = c[1]; } }
+      if (slRand() < dt * 0.04) { const c = slNearPick(o.cx, o.cy, 7, (x, y) => slSea(x, y)); if (c) { o.cx = c[0]; o.cy = c[1]; } }
       if ((o.t -= dt) <= 0) {
         o.t = slR(10, 22);
         const sh = S.list.find(q => q.k === 'shoal' && Math.hypot(q.x - o.x, q.y - o.y) < 6);
         const steal = night < 0.3 && S.tame.gull !== true && slStealPile(o);
         if (steal) { o.st = 'steal'; o.tgt = steal; o.d0 = Math.hypot(steal.x - o.x, steal.y - o.y) || 1; }
         else if (sh) { o.st = 'dive'; o.tgt = sh; }
-        else if (Math.random() < 0.3) { const b = slNearPick(o.x, o.y, 6, slBeach); if (b) { o.st = 'land'; o.tx = b[0]; o.ty = b[1]; } }
-        if (Math.random() < 0.2) faunaSfx('gull', o.x, o.y, 0.7);
+        else if (slRand() < 0.3) { const b = slNearPick(o.x, o.y, 6, slBeach); if (b) { o.st = 'land'; o.tx = b[0]; o.ty = b[1]; } }
+        if (slRand() < 0.2) faunaSfx('gull', o.x, o.y, 0.7);
       }
       return;
     }
@@ -241,7 +251,7 @@ const SL_TICK = {
       o.face = sh.x > o.x ? 1 : -1; slWalk(o, sh.x, sh.y, 4, dt); o.z = Math.max(0, o.z - 50 * dt);
       if (o.z <= 0) {
         slSplash(o.x, o.y, 0.6); sh.scatT = Game.time + 3;
-        if (sh.n > 3 && Math.random() < 0.6) { sh.n--; o.fish = true; fstat('gullFish'); }
+        if (sh.n > 3 && slRand() < 0.6) { sh.n--; o.fish = true; fstat('gullFish'); }
         o.st = 'fly'; o.t = slR(8, 16);
       }
       return;
@@ -252,7 +262,7 @@ const SL_TICK = {
       o.face = p.x + 0.5 > o.x ? 1 : -1; slWalk(o, p.x + 0.5, p.y + 0.5, 4, dt);
       o.z = 40 * Math.min(1, Math.hypot(p.x + 0.5 - o.x, p.y + 0.5 - o.y) / o.d0);
       const sh = shooersNear(o.x, o.y, 2.5, 3);
-      if (sh) { o.st = 'fly'; o.cx = o.x + slR(-5, 5); o.cy = o.y - 4; floater(o.x, o.y - 1.5, 'Кыш!', '#fff2c0'); faunaSfx('gull', o.x, o.y); if (sh.hero && Math.random() < 0.25) { o.st = 'die'; o.ph = 0; fstat('gullDown'); } return; }
+      if (sh) { o.st = 'fly'; o.cx = o.x + slR(-5, 5); o.cy = o.y - 4; floater(o.x, o.y - 1.5, 'Кыш!', '#fff2c0'); faunaSfx('gull', o.x, o.y); if (sh.hero && slRand() < 0.25) { o.st = 'die'; o.ph = 0; fstat('gullDown'); } return; }
       if (o.z < 2) {
         p.stock.bread--; o.bread = true; fstat('gullBread');
         floater(p.x + 0.5, p.y - 0.5, 'Хлеб утащила!', '#ffe0a0'); faunaSfx('gull', o.x, o.y, 1);
@@ -271,7 +281,7 @@ const SL_TICK = {
     if (o.st === 'idle') { if ((o.t -= dt) <= 0) { const w = slNearPick(o.hx, o.hy, 5, (x, y) => slSea(x, y) && slDep(x, y) >= 2); if (w) { o.st = 'fly'; o.tx = w[0]; o.ty = w[1]; } else o.t = 10; } return; }
     if (o.st === 'fly') { o.face = o.tx > o.x ? 1 : -1; o.z = Math.min(26, o.z + 30 * dt); if (slWalk(o, o.tx, o.ty, 3, dt)) { o.st = 'dive'; o.ph = 0; o.t = 0.8; } return; }
     if (o.st === 'dive') { o.z = Math.max(0, o.z - 40 * dt); if ((o.t -= dt) <= 0) { slSplash(o.x, o.y, 0.6); o.st = 'under'; o.t = slR(2, 4); } return; }
-    if (o.st === 'under') { if ((o.t -= dt) <= 0) { o.st = 'home'; slSplash(o.x, o.y, 0.4); o.fish = Math.random() < 0.6; if (o.fish) fstat('cormFish'); } return; }
+    if (o.st === 'under') { if ((o.t -= dt) <= 0) { o.st = 'home'; slSplash(o.x, o.y, 0.4); o.fish = slRand() < 0.6; if (o.fish) fstat('cormFish'); } return; }
     if (o.st === 'home') { o.face = o.hx > o.x ? 1 : -1; o.z = Math.min(20, o.z + 30 * dt); if (slWalk(o, o.hx, o.hy, 3, dt)) { o.z = 0; o.fish = false; o.st = 'idle'; o.t = slR(15, 35); } }
   },
   dolphin(o, dt) {
@@ -282,16 +292,16 @@ const SL_TICK = {
   whale(o, dt) {
     slSwim(o, 0.28, dt, (x, y) => slSea(x, y) && slDep(x, y) >= 5);
     if ((o.t -= dt) <= 0) {
-      if (o.st === 'swim') { o.st = 'spout'; o.t = 1.4; o.ph = 0; faunaSfx('spout', o.x, o.y); if (Math.random() < 0.5) faunaSfx('whaleSong', o.x, o.y, 0.9, 0.5); }
+      if (o.st === 'swim') { o.st = 'spout'; o.t = 1.4; o.ph = 0; faunaSfx('spout', o.x, o.y); if (slRand() < 0.5) faunaSfx('whaleSong', o.x, o.y, 0.9, 0.5); }
       else { o.st = 'swim'; o.t = slR(9, 14); }
     }
   },
   octo(o, dt, hero) {
     if (o.st === 'die') { if (o.ph > 1) return false; return; }
-    if (hero && Math.hypot(hero.x - o.x, hero.y - o.y) < 2.6) { o.st = 'die'; o.ph = 0; floater(o.x, o.y - 1, 'Пшш! (чернила)', '#c8c0e0'); slSplash(o.x, o.y, 0.6); fstat('octoInk'); if (Math.random() < 0.3) slLootShore(o.x, o.y, 'pearl', 1); return; }
+    if (hero && Math.hypot(hero.x - o.x, hero.y - o.y) < 2.6) { o.st = 'die'; o.ph = 0; floater(o.x, o.y - 1, 'Пшш! (чернила)', '#c8c0e0'); slSplash(o.x, o.y, 0.6); fstat('octoInk'); if (slRand() < 0.3) slLootShore(o.x, o.y, 'pearl', 1); return; }
     if (o.st === 'atk') { if ((o.t -= dt) <= 0) { o.st = 'idle'; o.t = slR(4, 8); } return; }
     if (o.st === 'swim') { slSwim(o, 0.7, dt, (x, y) => slSea(x, y) && slDep(x, y) >= 2); if ((o.t -= dt) <= 0) { o.st = 'idle'; o.t = slR(4, 8); } return; }
-    if ((o.t -= dt) <= 0) { o.st = Math.random() < 0.3 ? 'atk' : 'swim'; o.t = o.st === 'atk' ? 0.75 : slR(3, 6); o.ph = 0; }
+    if ((o.t -= dt) <= 0) { o.st = slRand() < 0.3 ? 'atk' : 'swim'; o.t = o.st === 'atk' ? 0.75 : slR(3, 6); o.ph = 0; }
   },
   serpent(o, dt, hero) {
     if (o.st === 'die') { if (o.ph > 1.2) return false; return; }
@@ -366,11 +376,11 @@ function slNestsTick() {
 function slTameTry(kind, o) {
   const S = SL();
   if (S.tame[kind]) {   // уже ручной: дельфин приносит со дна жемчужину ребёнку на берегу
-    if (kind === 'dolphin' && Math.random() < 0.05) { const k = slPeopleNear(o.x, o.y, 7, u => u.type === 'kid')[0]; if (k) { slLootShore(k.x, k.y, 'pearl', 1); floater(k.x, k.y - 1.4, 'Подарок от дельфина!', '#c8f0ff'); fstat('dolphinGift'); } }
+    if (kind === 'dolphin' && slRand() < 0.05) { const k = slPeopleNear(o.x, o.y, 7, u => u.type === 'kid')[0]; if (k) { slLootShore(k.x, k.y, 'pearl', 1); floater(k.x, k.y - 1.4, 'Подарок от дельфина!', '#c8f0ff'); fstat('dolphinGift'); } }
     return;
   }
   const kid = slPeopleNear(o.x, o.y, 6, u => u.type === 'kid')[0];
-  if (!kid || (kind === 'dolphin' && Math.random() > 0.25)) return;
+  if (!kid || (kind === 'dolphin' && slRand() > 0.25)) return;
   S.tame[kind] = kid.fam ? kid.fam.n : 'гномёнок';
   floater(kid.x, kid.y - 1.4, kind === 'dolphin' ? 'Он мне помахал!' : 'Моя чайка!', '#d0f0ff');
   logEvent('people', `${S.tame[kind]} подружился с ${kind === 'dolphin' ? 'дельфином: тот теперь приплывает к нему' : 'чайкой: она больше не ворует хлеб'}`, kid.x, kid.y);
@@ -383,7 +393,7 @@ function slKidsTick() {
   if (S.tame.gull) return;
   for (const o of S.list) if (o.k === 'gull' && o.st === 'stand') {
     const k = slPeopleNear(o.x, o.y, 3, u => u.type === 'kid')[0];
-    if (k && Math.random() < 0.3) { floater(k.x, k.y - 1.4, 'На, крошки!', '#fff0c0'); slTameTry('gull', o); }
+    if (k && slRand() < 0.3) { floater(k.x, k.y - 1.4, 'На, крошки!', '#fff0c0'); slTameTry('gull', o); }
     return;
   }
 }
@@ -392,12 +402,12 @@ function slKidsTick() {
 function slKrakenTry() {
   const S = SL();
   if (S.kr || Game.time - S.krT < SL_KRAKEN_GAP || cycleAt(Game.time).k < SL_KRAKEN_MIN_DAY || !startOpen('raid')) return;
-  if (Math.random() > 0.04) return;
+  if (slRand() > 0.04) return;
   // глубокая вода у населённого пляжа
   const homes = Game.buildings.filter(b => b.state === 'done' && !b.removed);
   let spot = null;
   for (let t = 0; t < 80 && !spot; t++) {
-    const b = homes.length && Math.random() < 0.7 ? homes[(Math.random() * homes.length) | 0] : null;
+    const b = homes.length && slRand() < 0.7 ? homes[(slRand() * homes.length) | 0] : null;
     const p = b ? slNearPick(b.x + b.w / 2, b.y + b.h / 2, 12, (x, y) => slSea(x, y) && slDep(x, y) >= 3 && slDep(x, y) <= 5, 20) : slPick((x, y) => slSea(x, y) && slDep(x, y) === 3, 20);
     if (p) spot = p;
   }
@@ -446,7 +456,7 @@ function slKrakenTick(dt) {
   }
   if (!alive && !K.loot) {   // побеждён
     K.loot = true; K.st = 'die'; K.ph = 0; K.life = 3; S.krWon++;
-    slLootShore(K.x, K.y, 'pearl', 3 + ((Math.random() * 3) | 0)); slLootShore(K.x, K.y, 'gold', 6 + ((Math.random() * 5) | 0));
+    slLootShore(K.x, K.y, 'pearl', 3 + ((slRand() * 3) | 0)); slLootShore(K.x, K.y, 'gold', 6 + ((slRand() * 5) | 0));
     logEvent('gold', 'Кракен повержен! На берег вынесло жемчуг и золото', K.x, K.y);
     toast('🦑 Кракен повержен! На берег вынесло жемчуг и золото.', null, 'imp');
     faunaSfx('krakenRoar', K.x, K.y, 0.8); fstat('krakenWon');
@@ -463,14 +473,19 @@ function slTentSlam(t, hero) {
   if (typeof shake === 'function') shake(3);
   for (const u of slPeopleNear(fx, fy, 1.8)) {
     if (u.type === 'hero') { hlHurt(u, 7, true); continue; }
-    scare(u, t);
-    if (!u.injury && Math.random() < 0.3) { injure(u, Math.random() < 0.5 ? 'arm' : 'leg'); u.injuryUntil = Game.time + 45; floater(u.x, u.y - 1.4, 'Ох!', '#ffb0a0'); }
+    if (!u.injury) scare(u, t);
+    if (!u.injury && slRand() < 0.3) { injure(u, slRand() < 0.5 ? 'arm' : 'leg'); u.injuryUntil = Game.time + 45; floater(u.x, u.y - 1.4, 'Ох!', '#ffb0a0'); }
   }
   for (const p of Game.piles.values()) {
     if (p.removed || Math.hypot(p.x + 0.5 - fx, p.y + 0.5 - fy) > 1.8) continue;
     let lost = 0;
     for (const g of GOOD_KEYS) { const free = p.stock[g] - p.reserved[g]; if (free > 0) { const n = Math.min(free, 2); p.stock[g] -= n; lost += n; } if (lost >= 3) break; }
     if (lost) { floater(p.x + 0.5, p.y - 0.5, 'Смыло в море!', '#a8d8ff'); fstat('krakenWashed', lost); }
+  }
+  if (typeof buildingHit === 'function') for (const b of Game.buildings) {   // постройки у самой воды трещат (чинят, как после нечисти)
+    if (b.removed || b.state !== 'done') continue;
+    const nx = Math.max(b.x, Math.min(b.x + b.w, fx)), ny = Math.max(b.y, Math.min(b.y + b.h, fy));
+    if (Math.hypot(nx - fx, ny - fy) < 1.6) buildingHit({ water: true }, b);
   }
   if (typeof seaWorkSlam === 'function') seaWorkSlam(fx, fy);   // лодки и пристани (seawork.js)
 }

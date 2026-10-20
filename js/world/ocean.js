@@ -116,7 +116,7 @@ function oceanPrep(force) {
     }
     cdep[y * CW + x] = s / 4;
   }
-  Object.assign(OCN, { kind, dep, near, m9, cdep, waterN, on: waterN > 0 });
+  Object.assign(OCN, { kind, dep, near, m9, cdep, waterN, on: waterN > 0, ver: (OCN.ver || 0) + 1 });
   return OCN.on ? OCN : null;
 }
 
@@ -274,37 +274,87 @@ function ocMemMB() {
 const oceanStorm = () => (typeof WX !== 'undefined' ? Math.max(0, (WX.k - 0.55) / 0.45) : 0);
 
 // ---------- Слой воды за кадр (до льда и снега) ----------
+// Волны и прибой меняют кадр 5 раз в секунду, поэтому они рисуются не каждый кадр, а в два холста-кэша (кадр f0 и f1)
+// на окно клеток вокруг камеры; каждый кадр — два больших блита со смешением по альфе. Окно перерисовывается при
+// смене кадра (один холст) или когда камера ушла за его край (оба). Совсем отдалённая камера (огромное окно) — по клеткам.
+const OC_WIN_STEP = 4, OC_WIN_MAXPX = 2600000;
+function ocPaintTiles(c, O, f, wx0, wy0, wx1, wy1, eco, ox, oy) {
+  const W = MAP_W, kind = O.kind, dep = O.dep, m9 = O.m9;
+  for (let y = wy0; y <= wy1; y++) for (let x = wx0; x <= wx1; x++) {
+    const i = y * W + x, k = kind[i], m = m9[i];
+    if (k && dep[i] >= 2) {
+      const layer = dep[i] >= 4 && k !== OC_RIVER && k !== OC_POND ? 2 : 1;
+      c.globalAlpha = k === OC_SWAMP ? 0.6 : 0.9;
+      c.drawImage(ocWaveStrip(k, layer, (x * 7 + y * 13) & 3), f * TILE, 0, TILE, TILE, x * TILE - ox, y * TILE - oy, TILE, TILE);
+    }
+    if (m && !(eco && ((x + y) & 1) && !k)) { c.globalAlpha = 1; c.drawImage(ocShoreStrip(k || O.near[i] || OC_LAKE, m), f * TILE, 0, TILE, TILE, x * TILE - ox, y * TILE - oy, TILE, TILE); }
+  }
+  c.globalAlpha = 1;
+}
+function ocPaintTilesDirect(c, O, f, x0, y0, x1, y1, eco) {
+  const base = c.globalAlpha;
+  const W = MAP_W, kind = O.kind, dep = O.dep, m9 = O.m9;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const i = y * W + x, k = kind[i], m = m9[i];
+    if (k && dep[i] >= 2) { c.globalAlpha = base * (k === OC_SWAMP ? 0.6 : 0.9); c.drawImage(ocWaveStrip(k, dep[i] >= 4 && k !== OC_RIVER && k !== OC_POND ? 2 : 1, (x * 7 + y * 13) & 3), f * TILE, 0, TILE, TILE, x * TILE, y * TILE, TILE, TILE); }
+    if (m && !(eco && ((x + y) & 1) && !k)) { c.globalAlpha = base; c.drawImage(ocShoreStrip(k || O.near[i] || OC_LAKE, m), f * TILE, 0, TILE, TILE, x * TILE, y * TILE, TILE, TILE); }
+  }
+  c.globalAlpha = base;
+}
+function ocCacheCv(n, w, h) {
+  const C = OCN.cache || (OCN.cache = { cv: [null, null], key: '', f: [-1, -1] });
+  let cv = C.cv[n];
+  if (!cv || cv.width !== w || cv.height !== h) { if (cv) { cv.width = cv.height = 0; } cv = C.cv[n] = mkCanvas(w, h); C.f[n] = -1; }
+  return cv;
+}
+function ocCacheFree() { const C = OCN.cache; if (C) { for (const cv of C.cv) if (cv) cv.width = cv.height = 0; OCN.cache = null; } }
+
 function oceanDraw(c, x0, y0, x1, y1) {
   const O = oceanPrep();
   if (!O) return;
   const ice = typeof SEA === 'function' ? Math.min(1, SEA().ice || 0) : 0;
   const vis = 1 - ice;
-  if (vis < 0.03) return;
+  if (vis < 0.03) { ocCacheFree(); return; }
   const eco = ocEco(), storm = oceanStorm();
   const ft = Game.time * OC_FPS * (1 + storm * 0.9);
   const nF = eco ? 4 : OC_FR, step = OC_FR / nF;
   const fi = Math.floor(ft / step), a = eco ? 0 : ft / step - fi;
   const f0 = (fi % nF) * step, f1 = ((fi + 1) % nF) * step;
-  const W = MAP_W, kind = O.kind, dep = O.dep, m9 = O.m9;
   const night = typeof nightAmt === 'function' ? nightAmt() : 0;
   const ga = c.globalAlpha;
-  const blit = (cv, x, y, wA) => {
-    if (a < 0.08 || eco) { c.globalAlpha = wA; c.drawImage(cv, f0 * TILE, 0, TILE, TILE, x, y, TILE, TILE); return; }
-    if (a > 0.92) { c.globalAlpha = wA; c.drawImage(cv, f1 * TILE, 0, TILE, TILE, x, y, TILE, TILE); return; }
-    c.globalAlpha = wA * (1 - a); c.drawImage(cv, f0 * TILE, 0, TILE, TILE, x, y, TILE, TILE);
-    c.globalAlpha = wA * a; c.drawImage(cv, f1 * TILE, 0, TILE, TILE, x, y, TILE, TILE);
-  };
-  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-    const i = y * W + x, k = kind[i], m = m9[i];
-    if (k && dep[i] >= 2) {
-      const layer = dep[i] >= 4 && k !== OC_RIVER && k !== OC_POND ? 2 : 1;
-      blit(ocWaveStrip(k, layer, (x * 7 + y * 13) & 3), x * TILE, y * TILE, vis * (k === OC_SWAMP ? 0.6 : 0.9));
+  // окно кэша: клетки камеры с запасом, выровнено по OC_WIN_STEP — при прокрутке перерисовка редкая
+  const S = OC_WIN_STEP;
+  const wx0 = Math.max(0, Math.floor((x0 - 2) / S) * S), wy0 = Math.max(0, Math.floor((y0 - 2) / S) * S);
+  const wx1 = Math.min(MAP_W - 1, Math.ceil((x1 + 3) / S) * S), wy1 = Math.min(MAP_H - 1, Math.ceil((y1 + 3) / S) * S);
+  const pw = (wx1 - wx0 + 1) * TILE, ph = (wy1 - wy0 + 1) * TILE;
+  if (pw * ph > OC_WIN_MAXPX) {   // камера очень высоко — рисуем по клеткам, без кэша
+    ocCacheFree();
+    c.globalAlpha = ga * vis * (1 - a); ocPaintTilesDirect(c, O, f0, x0, y0, x1, y1, eco);
+    if (a > 0.02) { c.globalAlpha = ga * vis * a; ocPaintTilesDirect(c, O, f1, x0, y0, x1, y1, eco); }
+  } else {
+    const key = wx0 + ',' + wy0 + ',' + wx1 + ',' + wy1 + ',' + (eco ? 1 : 0) + ',' + O.ver;
+    const C = OCN.cache || (OCN.cache = { cv: [null, null], key: '', f: [-1, -1] });
+    if (C.key !== key) { C.key = key; C.f[0] = C.f[1] = -1; }
+    const ox = wx0 * TILE, oy = wy0 * TILE;
+    const need = eco ? [f0] : [f0, f1];
+    for (const f of need) {
+      if (C.f[0] === f || C.f[1] === f) continue;
+      const slot = C.f[0] !== f0 && C.f[0] !== f1 ? 0 : 1;   // занимаем холст с ненужным кадром
+      const cv = ocCacheCv(slot, pw, ph), g = cv.getContext('2d');
+      g.clearRect(0, 0, pw, ph);
+      ocPaintTiles(g, O, f, wx0, wy0, wx1, wy1, eco, ox, oy);
+      C.f[slot] = f;
     }
-    if (m && !(eco && ((x + y) & 1) && !k)) blit(ocShoreStrip(k || O.near[i] || OC_LAKE, m), x * TILE, y * TILE, vis);
+    const cvOf = f => C.cv[C.f[0] === f ? 0 : 1];
+    c.imageSmoothingEnabled = false;
+    if (eco || a < 0.04) { c.globalAlpha = ga * vis; c.drawImage(cvOf(f0), ox, oy); }
+    else if (a > 0.96) { c.globalAlpha = ga * vis; c.drawImage(cvOf(f1), ox, oy); }
+    else { c.globalAlpha = ga * vis * (1 - a); c.drawImage(cvOf(f0), ox, oy); c.globalAlpha = ga * vis * a; c.drawImage(cvOf(f1), ox, oy); }
+    c.imageSmoothingEnabled = R.smooth;
   }
   c.globalAlpha = ga;
+  const t = Game.time, day = 1 - night, W = MAP_W, kind = O.kind, dep = O.dep;
   // блики солнца (днём), барашки (в шторм)
-  const t = Game.time, day = 1 - night;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const i = y * W + x;
     if (!kind[i] || dep[i] < 2 || kind[i] === OC_SWAMP) continue;
