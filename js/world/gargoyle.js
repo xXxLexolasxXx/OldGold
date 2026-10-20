@@ -5,7 +5,7 @@
 // C — сидит на крыше фонаря с распахнутыми крыльями). GARG_STYLE — какой рисуется на улицах.
 // Рисуется процедурно (формулы по времени), поэтому число кадров непрерывное; взмах крыла — цикл из 8 фаз (КАДРЫ.md).
 
-let GARG_STYLE = 'A';
+let GARG_STYLE = 'AC';   // A и C вперемешку; можно задать 'A', 'B' или 'C'
 const GST = ['#1e1b19', '#3a3632', '#5c564f', '#867e74', '#b6ada0'];   // камень: тень → свет, свет сверху-слева
 
 function garPoly(c, pts, col) {
@@ -115,7 +115,8 @@ function garC(c, bx, by, lit, ph) {
 
 // Только горгулья с фонарём (цоколь и тень рисует drawGothicLamp)
 function garDraw(c, bx, by, lit, ph, style) {
-  const st = style || GARG_STYLE;
+  let st = style || GARG_STYLE;
+  if (st === 'AC') st = (Math.floor(ph * 7) & 1) ? 'C' : 'A';   // у каждого фонаря свой облик по его месту
   if (st === 'B') garB(c, bx, by, lit, ph); else if (st === 'C') garC(c, bx, by, lit, ph); else garA(c, bx, by, lit, ph);
 }
 // Целиком, с цоколем (для листа вариантов)
