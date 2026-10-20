@@ -965,6 +965,8 @@ function drawOverlay(c) {
     }
   }
   if (!tool || !h) return;
+  // зелёная/красная примерка здания, дороги и поля — только пока открыта панель инструмента (на телефоне ✓ ↻ ✕); иначе забытый hover рисует «квадраты» на карте
+  if (typeof Mobile !== 'undefined' && Mobile.on) { const mt = document.getElementById('mtool'); if (!mt || mt.classList.contains('hidden')) return; }
   if (tool.kind === 'build') {
     const d = bDims(tool.type, tool.rot || 0);
     const bx = h[0] - Math.floor(d.w / 2), by = h[1] - d.h + 1;

@@ -48,6 +48,8 @@ I18N.add('en', {
   "Удар ладонью": "Open palm", "Ближайший враг получает удар и 2,5 с не может прийти в себя": "The nearest foe takes a hit and is dazed for 2.5 s",
   "Терпеливая оборона": "Patient defense", "10 с: уходит от 40% ударов, остальные слабее на 20%": "10 s: dodges 40% of blows, the rest are 20% weaker",
   "Внутренний покой": "Inner calm", "Пассивно: энергия копится в 1,5 раза быстрее, уворот +5%": "Passive: energy refills 1.5 times faster, +5% dodge",
+  "Маг больше не учит «второй огненный шар» без картинки: базовая атака гильдии магов теперь «магический снаряд», у каждой способности есть значок, а в окне гильдии видно, чему научат": "The mage no longer learns a \"second fireball\" without a picture: the mages' guild basic attack is now \"magic bolt\", every ability has an icon, and the guild window shows what you will learn",
+  "Магический снаряд": "Magic bolt", "Удар клинком": "Blade strike", "Колючка": "Thorn dart",
   // ---------- Ресурсы, панель, лечение ----------
   "Мана": "Mana", "Ярость": "Rage", "Энергия": "Energy", "Вера": "Faith",
   "Атака": "Attack", "Еда": "Food", "Привал": "Rest", "Домой": "Home",

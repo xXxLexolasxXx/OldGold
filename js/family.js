@@ -196,7 +196,7 @@ function* kidGen(u) {
 
 // обед гномёнка: как у взрослых, только без кружки пива
 function* kidEatGen(u, inn) {
-  const food = innFood(inn);
+  const food = isStoreB(inn) ? storeMeal(inn) : innFood(inn);
   if (!food) return;
   inn.reserved[food]++;
   u.eat = { inn, food, gen: u.proc };
