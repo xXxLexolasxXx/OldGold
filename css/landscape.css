@@ -63,7 +63,7 @@ body.mobile.land.show-mm.mm-big .mm-wrap { left: auto; transform: none; width: m
 /* ---- общее: карточка героя и скиллы — компактно справа, карту не закрывают ---- */
 body.mobile.land #hero-card {
   top: var(--top); bottom: auto; left: auto; right: calc(var(--sr) + 6px);
-  width: clamp(196px, 27vw, 232px); max-height: 44vh; overflow-y: auto; font-size: 10.5px; padding: 4px 6px 6px;
+  width: clamp(196px, 27vw, 232px); max-height: max(90px, min(44vh, calc(100dvh - var(--top) - var(--sb) - var(--mmw) * 0.75 - 112px))); overflow-y: auto; font-size: 10.5px; padding: 4px 6px 6px;
 }
 body.mobile.land #hero-card .hs { width: 34px; height: 34px; }
 body.mobile.land #hero-card .hs img { width: 26px; height: 26px; margin-top: 3px; }
@@ -214,3 +214,12 @@ body.mobile.land.sheet-tab #daily-hud, body.mobile.land.sheet-info #daily-hud { 
 body.mobile.land.sheet-tab #tut, body.mobile.land.sheet-info #tut {
   left: calc(var(--sheet-left) + var(--sheet-w) + 54px); right: calc(var(--sr) + 6px); width: auto; z-index: 8;
 }
+
+/* ---- аудит перекрытий ---- */
+/* «Снежок» — слева от кнопки героя, у миникарты; не посреди карты и не на нижней полосе */
+body.mobile.land #snow-btn { left: auto; right: calc(var(--sr) + 56px); bottom: calc(var(--sb) + var(--mmw) * 0.75 + 16px); min-height: 44px; padding: 0 10px; font-size: 13px; }
+body.mobile.land.sheet-tab #snow-btn, body.mobile.land.sheet-info #snow-btn { display: none; }
+/* панель инструмента внизу справа — подсказка и баннер паузы встают над ней */
+body.mobile.land:has(#mtool:not(.hidden)) :is(#hint, #pause-banner) { bottom: calc(var(--sb) + 66px); }
+/* шторка + обучение занимают верх справа: карточка героя (она справа сверху) на это время прячется */
+body.mobile.land.sheet-tab:has(#tut:not(.hidden)) #hero-card, body.mobile.land.sheet-info:has(#tut:not(.hidden)) #hero-card { display: none !important; }

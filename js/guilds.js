@@ -11,12 +11,12 @@ const GCLS = {
   warrior: { name: 'Воин', gm: 'gm_warrior', weapon: 'sword', armor: 'ironArmor', bonus: { str: 6, end: 6 }, stat: 'str', range: 1.5, col: '#e0704a', verb: 'Удар мечом' },
   archer:  { name: 'Лучник', gm: 'gm_archer', weapon: 'bow', armor: 'leatherArmor', bonus: { agi: 7, str: 2 }, stat: 'agi', range: 7, shot: 'arrow', col: '#7ac85a', verb: 'Выстрел' },
   rogue:   { name: 'Разбойник', gm: 'gm_rogue', weapon: 'dagger', armor: 'leatherArmor', bonus: { agi: 6, int: 3 }, stat: 'agi', range: 1.4, col: '#a88ad0', verb: 'Удар в спину' },
-  mage:    { name: 'Маг', gm: 'gm_mage', weapon: 'staff', armor: 'mageArmor', bonus: { int: 8 }, stat: 'int', range: 6, shot: 'bolt', col: '#7aa0ff', verb: 'Огненный шар' },
+  mage:    { name: 'Маг', gm: 'gm_mage', weapon: 'staff', armor: 'mageArmor', bonus: { int: 8 }, stat: 'int', range: 6, shot: 'bolt', col: '#7aa0ff', verb: 'Магический снаряд' },
   // второй класс гильдии (guild — чья): учит тот же глава, рекрутов таких не бывает
   barbarian: { name: 'Варвар', gm: 'gm_warrior', guild: 'warrior', weapon: 'sword', armor: 'leatherArmor', bonus: { str: 8, end: 4 }, stat: 'str', range: 1.5, col: '#d08a3a', verb: 'Удар секирой' },
-  druid:     { name: 'Друид', gm: 'gm_mage', guild: 'mage', weapon: 'staff', armor: 'leatherArmor', bonus: { int: 5, end: 4 }, stat: 'int', range: 5, shot: 'thorn', col: '#5ab07a', verb: 'Шип' },
+  druid:     { name: 'Друид', gm: 'gm_mage', guild: 'mage', weapon: 'staff', armor: 'leatherArmor', bonus: { int: 5, end: 4 }, stat: 'int', range: 5, shot: 'thorn', col: '#5ab07a', verb: 'Колючка' },
   // Клятвы предков (КЛАССЫ.md): монах и жрец — бывшие классы только общей деревни, бард и паладин — новые
-  paladin:   { name: 'Паладин', gm: 'gm_warrior', guild: 'warrior', weapon: 'sword', armor: 'ironArmor', bonus: { str: 5, end: 5 }, stat: 'str', range: 1.5, col: '#f0c860', verb: 'Святой удар' },
+  paladin:   { name: 'Паладин', gm: 'gm_warrior', guild: 'warrior', weapon: 'sword', armor: 'ironArmor', bonus: { str: 5, end: 5 }, stat: 'str', range: 1.5, col: '#f0c860', verb: 'Удар клинком' },
   monk:      { name: 'Монах', gm: 'gm_archer', guild: 'archer', weapon: 'staff', armor: 'leatherArmor', bonus: { agi: 5, end: 4 }, stat: 'agi', range: 1.4, col: '#d8b84a', verb: 'Удар кулаком' },
   bard:      { name: 'Бард', gm: 'gm_rogue', guild: 'rogue', weapon: 'dagger', armor: 'leatherArmor', bonus: { int: 5, agi: 4 }, stat: 'int', range: 1.5, col: '#e07ab0', verb: 'Укол шпагой' },
   priest:    { name: 'Жрец', gm: 'gm_mage', guild: 'mage', weapon: 'staff', armor: 'mageArmor', bonus: { int: 5, end: 4 }, stat: 'int', range: 1.5, col: '#e8e0c8', verb: 'Удар булавой' },
@@ -881,7 +881,7 @@ function guildHTML(b) {
       const K = GCLS[k], mine = H.clsKey === k && ms != null, price = typeof gpLessonPrice === 'function' ? gpLessonPrice(b, ms, mine) : mine ? 2 + ms : 3;
       if (mine && ms >= (typeof gpMasteryCap === 'function' ? gpMasteryCap(b) : MASTERY_MAX)) continue;
       const kit = typeof heroKitText === 'function' ? heroKitText(k) : '';
-      x += `<button class="g-wide" data-coop="1" data-gd="hero:${b.id}:${k}" ${gm ? '' : 'disabled'}><b>${mine ? `Урок мастерства — ${price} золота` : `${ms != null ? 'Переучиться' : 'Обучиться'}: ${K.name.toLowerCase()} — ${price} золота`}</b><small>${mine ? `нужен ${(ms + 1) * 2} уровень героя` : `+${Object.entries(K.bonus).map(([q, v]) => ({ str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' })[q] + ' ' + v).join(', ')}; ${K.verb.toLowerCase()} (Q)${kit ? '; ' + kit : ''}`}</small></button>`;
+      x += `<button class="g-wide" data-coop="1" data-gd="hero:${b.id}:${k}" ${gm ? '' : 'disabled'}><b>${mine ? `Урок мастерства — ${price} золота` : `${ms != null ? 'Переучиться' : 'Обучиться'}: ${K.name.toLowerCase()} — ${price} золота`}</b><small>${mine ? `нужен ${(ms + 1) * 2} уровень героя` : `+${Object.entries(K.bonus).map(([q, v]) => ({ str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' })[q] + ' ' + v).join(', ')}; ${K.verb.toLowerCase()} (Q)${kit ? '; ' + kit : ''}`}</small>${typeof abilRowHTML === 'function' ? abilRowHTML(k, H) : ''}</button>`;
     }
   }
   const rs = recruitsOf(b), bad = hireCheck(b);

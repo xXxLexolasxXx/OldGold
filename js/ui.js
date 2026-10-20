@@ -223,7 +223,7 @@ function setTool(tool) {
   document.querySelectorAll('.bbtn, .tools button').forEach(b => b.classList.remove('active'));
   mobileTool(tool);
   toolHint(tool);
-  if (!tool) return;
+  if (!tool) { R.hover = null; return; }
   if (tool.kind === 'build') document.querySelector(`.bbtn[data-type="${tool.type}"]`)?.classList.add('active');
   if (tool.kind === 'road') document.getElementById('tool-road').classList.add('active');
   if (tool.kind === 'erase') document.getElementById('tool-erase').classList.add('active');
@@ -289,7 +289,7 @@ function queueTraining(type) {
 
 // ---------- Постепенное открытие меню ----------
 
-const UNLOCK_NAMES = { res: 'Ресурсы', grain: 'Зерно и хлеб', hops: 'Хмель и пиво', pigs: 'Свиньи и мясо', base: 'Хозяйство', craft: 'Ремесло', metal: 'Плавка золота', magic: 'Магия' };
+const UNLOCK_NAMES = { res: 'Ресурсы', grain: 'Зерно и хлеб', hops: 'Хмель и пиво', inn2: 'Второй трактир', pigs: 'Свиньи и мясо', base: 'Хозяйство', craft: 'Ремесло', metal: 'Плавка золота', magic: 'Магия' };
 
 function allUnlocked() { return Object.fromEntries(UNLOCKS.map(u => [u.id, true])); }
 
@@ -755,6 +755,13 @@ function infoBuilding(b) {
   if (b.type === 'inn') {
     const hungry = Game.units.filter(u => u.food < HUNGRY).length;
     h += `<div class="irow ${hungry ? 'warn' : 'muted'}">Голодных: ${hungry}</div>`;
+    if (b.state === 'done') {
+      // что гномы реально съедят: курица разделывается на куски, так что считаем и целые тушки
+      const have = FOODS.map(g => [g, Math.max(0, b.stock[g] - b.reserved[g]) + (g === 'chickenleg' ? Math.max(0, b.stock.chicken) * 4 : 0)]).filter(x => x[1] > 0);
+      h += have.length
+        ? `<div class="irow muted">Еда в запасе: ${have.map(([g, n]) => `${GOODS[g].name.toLowerCase()} ${n}`).join(', ')}</div>`
+        : '<div class="irow warn">Еды нет — голодные идут на склад всухомятку</div>';
+    }
   }
   if (b.type === 'quarry') {
     let n = 0;

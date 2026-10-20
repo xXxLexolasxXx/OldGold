@@ -100,7 +100,7 @@ if (typeof ICON_GRIDS !== 'undefined') {
 const skServer = () => typeof coop !== 'undefined' && !!coop && !!coop.out && !!coop.players;
 const skMirror = () => typeof Coop !== 'undefined' && !!Coop.mirror;
 function skSay(text) { if (skServer()) coop.out.push({ msg: { t: 'toast', text } }); else if (typeof toast === 'function') toast(text); }
-function medEnsure() { return Game.med || (Game.med = { st: { sick: 0, cured: 0, died: 0, potions: 0, epi: 0 }, epi: false, poxDay: 4 }); }
+function medEnsure() { return Game.med || (Game.med = { st: { sick: 0, cured: 0, died: 0, potions: 0, epi: 0, healed: 0, bandages: 0 }, epi: false, poxDay: 4 }); }
 const skOn = u => typeof mdOn === 'function' ? mdOn(u) : (!u.dead && isPerson(u) && u.type !== 'hero' && u.type !== 'carter');
 const skCalm = () => !!dif().noLoss;
 const skDay = () => cycleAt(Game.time).k;
@@ -277,16 +277,13 @@ function* sickWardGen(u, b) {
     yield { wait: 2 };
     if (b.removed) break;
     const doc = b.worker && !b.worker.dead && b.worker.inside === b;
-    // зелье: больному — всегда, травмированному — если лекаря нет на месте (лекарь перевяжет и без зелья)
-    if (!potion && (u.ill || !doc)) {
+    // зелье — больному; рану без лекаря закрывает перевязка (или зелье, если перевязок нет)
+    if (!potion && u.ill) {
       if (b.stock.potion - (b.reserved.potion || 0) > 0) { b.stock.potion--; potion = true; }
       else if (skStoreHave('potion') > 0 && skStoreTake('potion')) potion = true;
-      if (potion) {
-        if (u.ill) u.ill.s -= 0.4;
-        if (u.injury) injHeal(u, 'ward');
-        medEnsure().st.potions++;
-      }
+      if (potion) { u.ill.s -= 0.4; medEnsure().st.potions++; }
     }
+    if (u.injury && !doc && injTakeAid(b)) injHeal(u, 'ward');
     if (u.injury) {
       u.injuryUntil = Math.min(u.injuryUntil, Game.time + (doc ? INJ.WARD_DOC : INJ.WARD_BED));
       if (Game.time >= u.injuryUntil) injHeal(u, 'ward');
@@ -327,6 +324,18 @@ function injWants(u) {
   if (Game.time < (u.injTry || 0)) return false;
   return !!sickWardFor(u);
 }
+// средство для раны: перевязка (лазарет шьёт их из кожи, heroabil.js), без неё — зелье (оно в первую очередь для хворей)
+function injTakeAid(b) {
+  for (const g of ['bandage', 'potion']) {
+    if (!GOODS[g]) continue;
+    if (b && !b.removed && (b.stock[g] || 0) - (b.reserved[g] || 0) > 0) b.stock[g]--;
+    else if (!(skStoreHave(g) > 0 && skStoreTake(g))) continue;
+    const st = medEnsure().st;
+    if (g === 'potion') st.potions++; else st.bandages = (st.bandages || 0) + 1;
+    return g;
+  }
+  return null;
+}
 // лекарю пора выйти к раненому
 function injCalled(h) { return h.type === 'healer' && !!h.injPat && !h.injPat.dead && !!h.injPat.injury; }
 
@@ -355,12 +364,9 @@ function* injVisitGen(h, p) {
     injCareStart(p, 'doc');
     yield { wait: 3, anim: 'work' };
     if (p.injury) {
-      // зелье из лазарета или со склада — сразу на ноги, иначе повязка и чуть-чуть подождать
+      // перевязка (или зелье) из лазарета или со склада — сразу на ноги, иначе тряпица и чуть-чуть подождать
       const b = h.home && h.home.type === 'infirmary' && !h.home.removed ? h.home : null;
-      let potion = false;
-      if (b && b.stock.potion - (b.reserved.potion || 0) > 0) { b.stock.potion--; potion = true; }
-      else if (skStoreHave('potion') > 0 && skStoreTake('potion')) potion = true;
-      if (potion) { medEnsure().st.potions++; injHeal(p, 'doc'); }
+      if (injTakeAid(b)) injHeal(p, 'doc');
       else p.injuryUntil = Math.min(p.injuryUntil, Game.time + INJ.BANDAGE);
     }
   }
@@ -425,9 +431,9 @@ function injReason() {
   const N = Game.med && Game.med.inj;
   if (!ready.length) return wards.length ? 'лазарет ещё строится, пока заживает само' : 'заживёт само, но в лазарете лечат быстрее';
   const doc = ready.some(b => b.worker && !b.worker.dead);
-  let pot = skStoreHave('potion');
-  for (const b of ready) pot += Math.max(0, b.stock.potion || 0);
-  if (!doc) return pot ? 'в лазарете нет лекаря — лечатся дольше' : 'в лазарете нет ни лекаря, ни зелий — обучите лекаря в школе';
+  let pot = skStoreHave('potion') + (GOODS.bandage ? skStoreHave('bandage') : 0);
+  for (const b of ready) pot += Math.max(0, b.stock.potion || 0) + Math.max(0, b.stock.bandage || 0);
+  if (!doc) return pot ? 'в лазарете нет лекаря — лечатся дольше' : 'в лазарете нет ни лекаря, ни перевязок — обучите лекаря в школе';
   if (N && N.why.road) return 'раненые не могут дойти до лазарета — проведите туда дорогу';
   if (ready.every(b => sickBeds(b) >= SICK.BEDS)) return 'все койки лазарета заняты';
   return '';
@@ -566,7 +572,12 @@ if (typeof step === 'function') {
   const _sg = serializeGame;
   serializeGame = function () {
     const s = _sg();
-    Game.units.forEach((u, k) => { const d = s.units && s.units[k]; if (d && u.ill) d.ill = [u.ill.k, u.ill.s]; });
+    Game.units.forEach((u, k) => {
+      const d = s.units && s.units[k];
+      if (!d) return;
+      if (u.ill) d.ill = [u.ill.k, u.ill.s];
+      if (u.injury) d.inj = [u.injury, Math.max(1, Math.round(u.injuryUntil - Game.time))];   // травма и сколько ей заживать
+    });
     const M = Game.med;
     if (M) s.med = { st: M.st, epi: M.epi, pd: M.poxDay };
     return s;
@@ -577,6 +588,9 @@ if (typeof step === 'function') {
     (s.units || []).forEach((d, k) => {
       const u = Game.units[k];
       if (u && Array.isArray(d.ill) && Object.prototype.hasOwnProperty.call(SICK_KINDS, d.ill[0]) && Number.isFinite(+d.ill[1])) u.ill = { k: d.ill[0], s: Math.max(0.01, Math.min(1, +d.ill[1])) };
+      if (u && Array.isArray(d.inj) && (d.inj[0] === 'leg' || d.inj[0] === 'arm') && Number.isFinite(+d.inj[1]) && isPerson(u)) {
+        u.injury = d.inj[0]; u.injuryUntil = Game.time + Math.max(1, Math.min(INJURY_TIME, +d.inj[1])); u.injAt = Game.time; u.injCare = null; u.healedBy = null;
+      }
     });
     Game.med = null;
     const m = s.med;
@@ -597,7 +611,10 @@ function medHTML() {
   const potions = skStoreHave('potion') + inf.reduce((n, b) => n + (b.stock.potion || 0), 0);
   let h = '';
   if (M.epi) h += '<div class="md-epi">Эпидемия чумной хвори! Чумные заражают соседей, вся деревня в тоске. Лазарет и зелья — первое дело.</div>';
+  const hurt = Game.units.filter(u => u.injury && !u.dead && isPerson(u)).sort((a, b) => a.id - b.id);
+  const bands = GOODS.bandage ? skStoreHave('bandage') + inf.reduce((n, b) => n + (b.stock.bandage || 0), 0) : 0;
   h += `<div class="lw-top"><span>Больных: <b>${sick.length}</b></span><span>Зелий: <b>${potions}</b></span><span class="muted small">вылечено ${M.st.cured} · умерло ${M.st.died}</span></div>`;
+  h += `<div class="lw-top"><span>Раненых: <b>${hurt.length}</b></span>${GOODS.bandage ? `<span>Перевязок: <b>${bands}</b></span>` : ''}<span class="muted small">ран вылечено ${M.st.healed || 0}</span></div>`;
   if (!inf.length) h += `<div class="muted small lw-note">${isUnlocked('infirmary') ? 'Лазарета нет: тяжёлые больные отлёживаются на лавочках, а чумная хворь может унести гнома.' : 'Лазарет откроется после пивоварни. Пока лечат лавочки и терпение.'}</div>`;
   else for (const b of inf) {
     const doc = b.worker && !b.worker.dead;
@@ -610,6 +627,15 @@ function medHTML() {
       h += `<div class="md-row" data-cn="med:go:${u.id}"><span class="md-dot" style="background:${K.col}"></span><span class="md-n">${UNIT_TYPES[u.type].name}</span><span class="md-k">${K.t}${u.ward ? ' · в лазарете' : ''}</span><span class="md-bar"><i style="width:${p}%;background:${p >= SICK.BED * 100 ? '#e06a4a' : K.col}"></i></span></div>`;
     }
     if (sick.length > 12) h += `<div class="muted small">и ещё ${sick.length - 12}…</div>`;
+    h += '</div>';
+  }
+  if (hurt.length) {
+    h += '<div class="md-list">';
+    for (const u of hurt.slice(0, 8)) {
+      const where = u.ward ? 'в лазарете' : u.injDoc ? 'лекарь идёт' : 'заживает';
+      h += `<div class="md-row" data-cn="med:go:${u.id}"><span class="md-dot" style="background:#e8e2d0"></span><span class="md-n">${UNIT_TYPES[u.type].name}</span><span class="md-k">${u.injury === 'leg' ? 'Нога' : 'Рука'} · ${where}</span></div>`;
+    }
+    if (hurt.length > 8) h += `<div class="muted small">и ещё ${hurt.length - 8}…</div>`;
     h += '</div>';
   }
   h += '<div class="muted small md-tips">Простуда — от холода и дождя, хворь живота — от голода, чумная хворь приходит с караванами и бродягами. Тепло, сытость и отдых лечат сами; лазарет — быстрее.</div>';

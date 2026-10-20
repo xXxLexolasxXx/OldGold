@@ -8,7 +8,7 @@ const vm = require('vm');
 const ROOT = path.join(__dirname, '..');
 // порядок как в index.html — список берём оттуда же, чтобы новые файлы игры не забывались
 // (без них сервер падал на первом же вызове). Интерфейс меню, заставка, профиль и сетевой клиент не нужны.
-const SKIP = new Set(['crashlog', 'loading', 'startmenu', 'perf', 'profile', 'coopclient', 'mapeditui', 'reveal']);
+const SKIP = new Set(['crashlog', 'loading', 'startmenu', 'perf', 'profile', 'coopclient', 'mapeditui', 'pins', 'reveal']);
 function gameFiles() {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const list = [...html.matchAll(/<script[^>]*\ssrc="js\/((?:[\w-]+\/)?[\w-]+)\.js"/g)].map(m => m[1]).filter(f => !SKIP.has(f.split("/").pop()));
