@@ -73,3 +73,5 @@ body.mobile #tab-area .xpbar b { font-size: 12px; }
 body.mobile :is(#goal-hud .gh-sub, #goal-hud span, #goal-hud i, #tut .tut-n, #hero-card small, #hero-card .hs-det, #ab-bar .ab-none, #help kbd) { font-size: 13px; }
 body.mobile #help { font-size: 14.5px; }
 body.mobile #tab-area .log-t { width: 44px; }
+#info .deliv small { font-size: 12px; opacity: 1; }
+body.mobile #info .deliv small { font-size: 13px; }
