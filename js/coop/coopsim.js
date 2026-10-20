@@ -253,6 +253,7 @@ function coopCmd(name, msgJson, admin) {
       coopSay(name, tradeDo(m.side, m.g, Math.min(m.n, 999)).text);
       break;
     }
+    case 'trav': if (typeof travCmd === 'function') travCmd(name, m); break;
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
     case 'rsc': if (typeof rscCmd === 'function' && can('council')) rscCmd(name, m); break;
     case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
@@ -579,6 +580,7 @@ function coopMirror() {
     goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
     dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
+    trav: typeof travMirrorOut === 'function' ? travMirrorOut() : null,
     law: typeof lawMirrorOut === 'function' ? lawMirrorOut() : null,
     med: typeof medMirrorOut === 'function' ? medMirrorOut() : null,
     rsc: typeof rscMirrorOut === 'function' ? rscMirrorOut() : null,

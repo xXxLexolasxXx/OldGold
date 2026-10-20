@@ -59,3 +59,13 @@ body.mobile #goal-hud { top: calc(48px + env(safe-area-inset-top)); width: 200px
 .gm-modes { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .gm-modes .sm-btn { align-items: center; }
 @media (max-width: 520px) { .gm-stats { grid-template-columns: 1fr; } .gm-face { width: 46px; height: 46px; font-size: 24px; } .gm-text { font-size: 15px; } }
+
+/* поход к Чёрному шпилю (js/world/spire.js) */
+#goal-hud li.bad { color: #f09070; }
+#goal-hud .sp-btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+#goal-hud .sp-btns button { flex: 1 1 auto; padding: 4px 6px; font-size: 11px; cursor: pointer; border-radius: 4px; border: 1px solid #6a4e9a; background: #241838; color: #e0d0ff; }
+#goal-hud .sp-btns button.primary { background: #3a2468; border-color: #b07cff; color: #f0e4ff; font-weight: bold; }
+#goal-hud .sp-btns button:disabled { opacity: 0.45; cursor: default; }
+#goal-hud .sp-boss { margin-top: 4px; font-size: 11px; color: #d8c0ff; }
+#goal-hud .sp-bar { height: 6px; background: #1a1030; border: 1px solid #6a4e9a; border-radius: 3px; overflow: hidden; margin-bottom: 2px; }
+#goal-hud .sp-bar i { display: block; height: 100%; background: linear-gradient(90deg, #6ae04a, #b07cff); }
