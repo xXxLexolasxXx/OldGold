@@ -51,6 +51,7 @@ const scriptTest = (name, file) => test(name, r => {
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
 scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
+scriptTest('neutrals2: ранги и новые народы леса, сейв', 'neutrals2-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
