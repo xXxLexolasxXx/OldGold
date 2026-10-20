@@ -241,7 +241,7 @@ function coopDropBuilding(b) {
   if (k >= 0) Game.buildings.splice(k, 1);
 }
 
-const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lairs', 'raiders', 'foeShots', 'games', 'dshots', 'dtowers', 'wfx'];
+const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'games', 'dshots', 'dtowers', 'wfx'];
 const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
@@ -1014,6 +1014,7 @@ function coopInitControls() {
   const _click = onLeftClickTile;
   onLeftClickTile = function (t) {
     const h = Game.hero;
+    if (Coop.on && typeof wkTapUnit === 'function' && wkTapUnit(t)) return;   // тап по гному — карточка рабочего (workers.js)
     if (Coop.on && h && !Game.tool && inb(t[0], t[1])) {
       const b = buildingAt(t);
       const inn = b && !b.isRoad && b.type === 'inn' && b.state === 'done' && !b.upg;
@@ -1179,6 +1180,7 @@ function coopAdminOpen() {
     if (m.t === 'stats') { coopStatsShow(m.s, m.server); return; }
     if (m.t === 'tempo') { Coop.tempo = { speed: m.speed, paused: m.paused, votes: m.votes, need: m.need }; tempoShow(); return; }
     if (m.t === 'prio') { prioApply(m.p); updateUI(true); return; }
+    if (m.t === 'wk') { wkApply(m); updateUI(true); return; }
     if (m.t === 'diff') {
       Game.diff = diffKey(m.k);
       toast('Сложность деревни: ' + dif().name);

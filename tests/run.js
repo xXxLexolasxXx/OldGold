@@ -53,6 +53,7 @@ scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
+scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
@@ -68,6 +69,7 @@ scriptTest('photo: фото-режим, рамки и фильтры', 'photo-te
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
+scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
 
 // ---------- 2. Симуляция: инварианты

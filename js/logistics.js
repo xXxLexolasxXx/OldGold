@@ -90,7 +90,9 @@ const FOOD_CHAIN = new Set(['wheat', 'flour', 'bread', 'sausage', 'pig', 'hay', 
 
 function dispatchSerfs() {
   updateRoadComps();
-  const idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk && prioJobLv(u) !== 0);
+  let idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk && (prioJobLv(u) !== 0 || wkBoosted(u)) && wkMay(u));
+  wkPinnedCouriers(idleAll);          // курьеры с маршрутом «откуда → куда» (workers.js) — только своё
+  idleAll = wkTrim(idleAll);           // лимит «на работе» во вкладке «Рабочие»
   if (!idleAll.length) return;
   // свободные перевозчики по сетям
   const idleBy = new Map();
@@ -118,6 +120,10 @@ function dispatchSerfs() {
   let nfDone = false;
   const collectNearlyFull = () => { if (nfDone) return; nfDone = true; collectOutputs(b => !b.isPile && b.state === 'done' && isFoodProducer(b) && !!b.def.outputs && nearlyFull(b)); };
 
+  // «Перенос ресурсов» (вкладка «Приоритеты»): Выкл — не свозить на склад (кроме еды), Низкий — по 1 перевозчику
+  // на здание, Высокий — рассыпанное с земли раньше заявок и по 5 перевозчиков на здание
+  const haul = prioLv('tasks', 'haul'), haulPer = [0, 1, 3, 5][haul];
+  if (haul === 3) collectOutputs(b => b.isPile);     // рассыпанное с земли — раньше заявок
   const reqs = [];
   for (const [d, comp] of compOf) {
     if (!comp || !idleBy.has(comp)) continue;
@@ -160,8 +166,10 @@ function dispatchSerfs() {
   collectNearlyFull();
   if (!foodOut) collectOutputs(b => !b.isPile && isFoodProducer(b));
   // рассыпанное по земле (в том числе зерно и хлеб) — раньше, чем продукция неспешных мастерских
-  collectOutputs(b => b.isPile);
-  collectOutputs(b => !b.isPile && !isFoodProducer(b));
+  if (haul > 0) {
+    collectOutputs(b => b.isPile);
+    collectOutputs(b => !b.isPile && !isFoodProducer(b));
+  }
 
   // Готовую продукцию и рассыпанное — на ближайший склад той же сети
   function collectOutputs(pred) {
@@ -173,9 +181,10 @@ function dispatchSerfs() {
       if (!idle || !idle.length) continue;
       const goods = isP ? GOOD_KEYS : Object.keys(b.def.outputs);
       let taken = 0;                                           // на одно здание — не больше 3 перевозчиков за раз (диспетчер идёт каждые 0.4 с)
+      const per = isFoodProducer(b) ? 3 : haulPer || 3;       // еду вывозим всегда; прочее — по «Переносу ресурсов»
       for (const g of goods) {
         let left = b.offer(g);
-        while (left > 0 && idle.length && taken < 3) {
+        while (left > 0 && idle.length && taken < per) {
           const st = nearestStore(b.doorX, b.doorY, g, comp);
           if (!st) break;
           const u = pickCarrier(idle, b.doorX, b.doorY, g, left);
@@ -201,7 +210,9 @@ function dispatchBuilders() {
   // на перерыве (перекур, сон, испуг) не трогаем: иначе proc обнуляется, а brk остаётся — гном до конца стройки
   // «непрерываем» (не ест, не пугается, не ходит на праздник), клетка перекура занята, а после стройки он
   // продолжает прерванное перекуром дело, как будто ничего не было
-  const idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead && !u.brk && prioJobLv(u) !== 0);
+  let idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead && !u.brk && (prioJobLv(u) !== 0 || wkBoosted(u)) && wkMay(u));
+  wkPinnedBuilders(idle);              // закреплённые за зданием (workers.js) — только его стройка, достройка, ремонт
+  idle = wkTrim(idle);                 // лимит «на работе»
   dispatchRepairs(idle);
   if (!idle.length) return;
   const sites = [
