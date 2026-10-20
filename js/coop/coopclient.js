@@ -225,6 +225,7 @@ function coopApplyBuilding(d, byId) {
   b.paused = !!d.paused; b.hold = !!d.hold; b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
   if (d.recipeOn && d.recipeOn.length === b.recipeOn.length) b.recipeOn = d.recipeOn;
   b.recipeIdx = d.recipeIdx || 0;
+  b.orders = Array.isArray(d.orders) ? d.orders : [];
   if (d.pigs) b.pigs = d.pigs;
   if (d.crops) b.crops = d.crops;
   if (d.upg && b.upg) { Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }

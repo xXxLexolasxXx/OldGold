@@ -57,6 +57,7 @@ scriptTest('law: указы деревни, сохранение', 'law-test.js'
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
+scriptTest('durability: прочность снаряжения, ремонт, очередь доспехов, сейв', 'durability-test.js');
 scriptTest('oath: Клятвы предков — 10 классов героя, задания по ролям, сохранение', 'oath-test.js');
 scriptTest('oathbal: баланс классов героя', 'oath-balance.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
