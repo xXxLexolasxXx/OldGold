@@ -529,15 +529,19 @@ function findInn(u) {
     if (d < bd) { bd = d; best = b; }
   }
   if (best) return best;
-  // в трактире пусто — перекусить всухомятку на складе (не досыта, зато не упадёт)
+  // в трактире пусто — перекусить всухомятку на складе (не досыта, зато не упадёт); нет и хлеба — каша из зерна
   for (const b of Game.buildings) {
-    if (!b.isStore() || b.isPile || b.state !== 'done' || !innFood(b)) continue;
+    if (!b.isStore() || b.isPile || b.state !== 'done' || !storeMeal(b)) continue;
     const d = Math.abs(b.doorX - u.x) + Math.abs(b.doorY - u.y);
     if (d < bd) { bd = d; best = b; }
   }
   return best;
 }
 
+// Склад кормит всухомятку: готовой едой, а если её нет — кашей из зерна. Раньше в первые сутки, пока нет мельницы
+// и пекарни, деревня падала от голода при полном амбаре зерна (и ослабевших ночью утаскивала нечисть).
+// Зерно в кашу — втрое хуже, чем через мельницу и пекарню (1 зерно → 3 хлеба), так что цепочка хлеба по-прежнему нужна.
+function storeMeal(b) { return innFood(b) || (b.stock.wheat - b.reserved.wheat > 0 ? 'wheat' : null); }
 function innFood(b) {
   // трактирщик разделывает тушку курицы на 4 куска, когда кончились готовые
   if (b.type === 'inn' && b.stock.chickenleg - b.reserved.chickenleg <= 0 && b.stock.chicken > 0) { b.stock.chicken--; b.stock.chickenleg += 4; }
@@ -747,6 +751,7 @@ class Unit {
       if (this.food <= 0 && !this.noFood) speed *= 0.5;
       if (this.injury === 'leg') speed *= 0.55;
       if (this.hangUntil > Game.time) speed *= 0.75;     // похмелье после праздника
+      if (this.pzUntil > Game.time || this.fgUntil > Game.time) speed *= 0.65;     // яд квакунов и их болотный туман (frogs.js)
       if (this.fleeUntil > Game.time) speed *= 1.7;     // удирает от гусей
       speed *= daySpeedMul();                            // днём бодрее, ночью медленнее
       if (WX.k > 0 && !this.isCourier) speed *= 1 + 0.3 * WX.k;   // под дождём спешат
