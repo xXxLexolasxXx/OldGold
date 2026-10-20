@@ -58,6 +58,21 @@ console.log(`не дошедший ${h.run('__a.type')}: лекарь ${doc ? '�
 ok(doc, 'лекарь не вышел к раненому, который не может дойти');
 ok(!h.run('__a.injury') && h.run('__a.healedBy') === 'doc', 'лекарь не вылечил раненого на месте');
 
+// 3б. Средство для раны: перевязка раньше зелья (зелья — для хворей); «Совет» показывает раненых
+if (h.run('!!GOODS.bandage')) {
+  h.run('__ward.stock.bandage = 1; __ward.stock.potion = 1;');
+  ok(h.run('injTakeAid(__ward)') === 'bandage' && h.run('__ward.stock.potion') === 1, 'на рану ушло зелье, хотя есть перевязка');
+}
+h.run('__a.injury = null; injure(__a, "leg");');
+ok(/Раненых: <b>[1-9]/.test(h.run('medHTML()')), 'в «Совете» не видно раненых');
+
+// 3в. Травма переживает сохранение
+h.run('__a.injuryUntil = Game.time + 77; globalThis.__k = Game.units.indexOf(__a); globalThis.__sv = JSON.parse(JSON.stringify(serializeGame())); applySave(__sv);');
+const inj = JSON.parse(h.run('JSON.stringify([Game.units[__k].injury, Math.round(Game.units[__k].injuryUntil - Game.time)])'));
+ok(inj[0] === 'leg' && inj[1] >= 70 && inj[1] <= 77, 'травма не восстановилась из сохранения: ' + inj);
+h.run(`globalThis.__a = Game.units[__k]; globalThis.__ward = Game.buildings.find(b => b.type === 'infirmary'); globalThis.__doc = Game.units.find(u => u.type === 'healer'); skSay = t => __says.push(t);
+  for (const u of Game.units) if (u.injury) { u.injury = null; u.injuryUntil = 0; }`);
+
 // 4. Сводка: десять травм за минуту — не больше одной всплывашки, с причиной
 h.run(`__says.length = 0; for (const b of Game.buildings) if (b.type === 'infirmary') b.worker = null;
   __doc.dead = true; for (const u of Game.units.filter(u => isPerson(u) && u.type !== 'hero' && !u.dead).slice(0, 10)) { u.injury = null; injure(u, 'leg'); }`);

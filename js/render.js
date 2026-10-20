@@ -168,7 +168,7 @@ function drawUnit(c, u) {
     return;
   }
   let pose = 'idle', frame = 0, view = u.vdir || 'S', face = u.face;
-  if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / 1.1) & 7; }
+  if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / (u.type === 'kid' ? 0.75 : 1.1)) & 7; }   // гномята семенят быстрее
   else if (u.anim === 'duck' || u.anim === 'forage') pose = 'duck';
   else if (u.anim === 'smoke') { pose = 'smoke'; view = smokeViewOf(u); }   // кто в анфас (с коротким куревом), кто боком
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
@@ -970,6 +970,8 @@ function drawOverlay(c) {
     }
   }
   if (!tool || !h) return;
+  // зелёная/красная примерка здания, дороги и поля — только пока открыта панель инструмента (на телефоне ✓ ↻ ✕); иначе забытый hover рисует «квадраты» на карте
+  if (typeof Mobile !== 'undefined' && Mobile.on) { const mt = document.getElementById('mtool'); if (!mt || mt.classList.contains('hidden')) return; }
   if (tool.kind === 'build') {
     const d = bDims(tool.type, tool.rot || 0);
     const bx = h[0] - Math.floor(d.w / 2), by = h[1] - d.h + 1;

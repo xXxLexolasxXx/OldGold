@@ -11,7 +11,7 @@ function grabIdx(t, T = GRAB_T) { for (let i = 0; i < T.length; i++) if (t < T[i
 const smooth01 = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
 
 // снимок гнома для рисования, пока самого гнома уже нет в Game.units (и для зеркала кооператива)
-function snapVictim(u) { return { id: u.id, type: u.type, look: u.look, xp: u.xp }; }
+function snapVictim(u) { return { id: u.id, type: u.type, look: u.look, xp: u.xp, sx: typeof personSex === 'function' ? personSex(u) : '' }; }
 
 // линия по целым пикселям (пиксель-арт без сглаживания)
 function pxLine(c, x0, y0, x1, y1, w) {

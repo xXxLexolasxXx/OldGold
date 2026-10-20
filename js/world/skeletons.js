@@ -114,7 +114,7 @@ function skeletonsTick(dt) {
         if (u.inside || u.dead || !isPerson(u) || u.type === 'carter' || s.seen.has(u.id) || !interruptible(u)) continue;
         if (Math.hypot(u.x - s.x, u.y - s.y) > 4) continue;
         s.seen.add(u.id);
-        if (Math.random() < 0.7) { s.fighters.push(u); startBreak(u, 'fight', null); u.proc = skelFightGen(u, s); }
+        if (Math.random() < 0.7 && !(typeof folkNoFight === 'function' && folkNoFight(u))) { s.fighters.push(u); startBreak(u, 'fight', null); u.proc = skelFightGen(u, s); }
         else { startBreak(u, 'flee', null); u.proc = fleeGen(u); }
         break;
       }

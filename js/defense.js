@@ -84,7 +84,7 @@ BUILDINGS.watchtower.desc = WT_DESCS[0]; BUILDINGS.watchtower.desc2 = WT_DESCS[1
 BUILDINGS.watchtower.up = { cost: { trunk: 3, stone: 6 } };
 BUILD_ORDER.push('watchtower');
 if (!BUILD_CATS.includes('Оборона')) BUILD_CATS.push('Оборона');
-UNLOCKS.push({ id: 'def', items: ['watchtower', ...FORT_ORDER.map(k => 'fort:' + k)], after: ['woodcutter', 'quarry'] });
+UNLOCKS.push({ id: 'def', items: ['watchtower', ...FORT_ORDER.map(k => 'fort:' + k)], after: ['woodcutter', 'quarry', 'sawmill'], night: 1 });   // после первой ночи
 if (typeof UNLOCK_NAMES !== 'undefined') UNLOCK_NAMES.def = 'Оборона';
 UNIT_TYPES.sentry = { name: 'Дозорный башни', shirt: '#7a3a2a', noTrain: true, animal: true };   // только для подписей в журнале
 
