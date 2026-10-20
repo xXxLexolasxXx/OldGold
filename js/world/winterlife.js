@@ -181,8 +181,8 @@ function wfxUiTick() {
     const host = document.getElementById('view');
     if (!host) return;
     wfxBtn = document.createElement('button');
-    wfxBtn.id = 'snow-btn'; wfxBtn.textContent = '❄ Снежок [B]'; wfxBtn.title = 'Герой кидает снежок в ближайшего гнома';
-    wfxBtn.style.cssText = 'position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;padding:7px 14px;background:#3a2a18;color:#e8f4ff;border:2px solid #0a0705;box-shadow:inset 0 0 0 1px #9a6c3c,0 2px 0 rgba(0,0,0,.5);font:14px Kurale,Georgia,serif;cursor:pointer;display:none;text-shadow:0 0 3px #000';
+    wfxBtn.id = 'snow-btn'; wfxBtn.innerHTML = '❄ Снежок<span class="kb"> [B]</span>'; wfxBtn.title = 'Герой кидает снежок в ближайшего гнома';
+    wfxBtn.style.display = 'none';   // положение и вид — в css/style.css (#snow-btn), чтобы не наезжать на нижнюю панель
     wfxBtn.addEventListener('click', e => { e.stopPropagation(); wfxHeroThrow(); });
     host.appendChild(wfxBtn);
   }
