@@ -1,4 +1,4 @@
-// Переводы способностей классов и лечения героя (heroabil.js, HERO_ABIL в herokit.js, 0.10.66).
+// Переводы способностей классов и лечения героя (heroabil.js, HERO_ABIL в herokit.js, 0.10.69).
 // Пишется вручную — tools/i18n/build.js этот файл не трогает.
 I18N.add('en', {
   // ---------- Способности ----------
@@ -71,7 +71,8 @@ I18N.add('en', {
   "Огненный шар, ледяная стрела, щит": "Fireball, ice bolt, shield",
   "Исцеление, снятие болезней, благословение": "Heal, cure disease, blessing",
   "Наложение рук, святой удар, освящение": "Lay on hands, holy strike, consecration",
-  // ---------- Что нового 0.10.66 ----------
+  "Клик героем по гильдии — учит классу; у каждого класса до пяти своих способностей — панель в углу, клавиши 1–5. Атака — Q. Клик по рекруту — выбор, по земле — пост, по врагу — атака. Лечится герой привалом, у костра, в трактире и лазарете. Погиб — очнётся у большого костра со «Слабостью».": "Click a guild with the hero to learn a class; every class has up to five abilities of its own — the bar in the corner, keys 1–5. Attack — Q. Click a recruit to select, the ground to post, a foe to attack. The hero heals by resting, at the bonfire, in the tavern and the infirmary. Fallen — wakes up by the big bonfire with \"Weakness\".",
+  // ---------- Что нового 0.10.69 ----------
   "У каждого класса — свои приёмы": "Every class has its own moves",
   "Общих скиллов больше нет: зелье лечения и огненный шар «для всех» ушли. Теперь у каждого класса свои 4–5 способностей, они открываются по уровням до 15-го: воин бьёт щитом и зовёт кличем, лучник ставит капканы, плут ставит подножки, ворует и исчезает, маг мечет огненные шары и ледяные стрелы, друид выращивает шипы и зовёт духа-волка, жрец исцеляет и снимает хвори, паладин освящает землю, бард оглушает аккордом.": "No more shared skills: the healing potion and the fireball \"for everyone\" are gone. Every class now has its own 4–5 abilities that unlock by level up to 15: the warrior bashes with a shield and rallies with a battle cry, the ranger sets traps, the rogue trips, pickpockets and vanishes, the mage hurls fireballs and ice bolts, the druid grows thorns and calls a spirit wolf, the cleric heals and cures sickness, the paladin consecrates the ground, the bard stuns with a chord.",
   "У каждого класса свой запас сил: мана у магов, друидов, жрецов и бардов, ярость у воинов и варваров (копится в драке), энергия у лучников, плутов и монахов, вера у паладинов.": "Every class has its own pool of strength: mana for mages, druids, clerics and bards, rage for warriors and barbarians (it builds up in a fight), energy for rangers, rogues and monks, faith for paladins.",

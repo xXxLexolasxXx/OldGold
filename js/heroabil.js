@@ -1,5 +1,5 @@
 'use strict';
-// Способности классов, ресурсы и лечение героя (0.10.66). Подключается после durability.js — почти последним.
+// Способности классов, ресурсы и лечение героя (0.10.69). Подключается после durability.js — почти последним.
 // Решение: общих скиллов больше нет (зелье лечения [E], банки маны [G] и огненный шар [F] для всех убраны).
 // · Данные способностей — HERO_ABIL в herokit.js (до 5 на класс, открываются по уровням до 15, часть пассивные).
 //   Здесь — особые действия ABIL_FX: оглушение, ловушки, дух-волк, освящение, воровство, рост полей…
@@ -77,7 +77,9 @@ const abAlive = f => f && (f.kind === 'neu' ? typeof neuAlive === 'function' && 
 // враги рядом: нечисть, звери и лесные нейтралы, которые уже дерутся; первым — тот, кого герой бьёт сейчас
 function abFoes(h, r) {
   const x = h.x, y = h.y, out = foesNear(x, y, r);
-  if (typeof neuAlive === 'function') for (const N of Game.neutrals || []) if (neuAlive(N) && N.tg && Math.hypot(N.x - x, N.y - y) < r) out.push({ kind: 'neu', o: N });
+  // лесные жители — если уже дерутся; гоблины и тролли (neutrals2.js) — всегда враги
+  const n2bad = N => typeof N2_TROLLS !== 'undefined' && (N.k === 'goblin' || N2_TROLLS[N.k]);
+  if (typeof neuAlive === 'function') for (const N of Game.neutrals || []) if (neuAlive(N) && (N.tg || n2bad(N)) && Math.hypot(N.x - x, N.y - y) < r) out.push({ kind: 'neu', o: N });
   out.sort((p, q) => Math.hypot(p.o.x - x, p.o.y - y) - Math.hypot(q.o.x - x, q.o.y - y));
   const cur = h.cmd && h.cmd.kind === 'attack' && h.cmd.f;
   if (cur && abAlive(cur) && Math.hypot(cur.o.x - x, cur.o.y - y) < r) { const i = out.findIndex(f => f.o === cur.o); if (i > 0) out.unshift(out.splice(i, 1)[0]); }
@@ -181,6 +183,7 @@ const ABIL_FX = {
       if (f.kind === 'skel') { abForceKill(f, h); logEvent('tree', `${H.name} испепелил скелета огненным шаром`, o.x, o.y); }
       else if (f.kind === 'ent' && (o.rock || o.water)) { o.target = null; o.goal = null; o.state = 'ghosted'; o.t = 0; o.gFrom = [h.x, h.y]; floater(o.x, o.y - 1.8, 'Отступает!', '#ffd0a0'); }
       else if (f.kind === 'ent') { o.burnT = Game.time; floater(o.x, o.y - 3, 'Горит!', '#ffb060'); }
+      else if (f.kind === 'neu' && typeof n2Fireball === 'function') n2Fireball(o, h, o.x, o.y);      // по лесным жителям — по площади (neutrals2.js)
       else { abHit(f, h, 2.5); if (f.kind === 'neu' && typeof cbFxSet === 'function' && abAlive(f)) cbFxSet(o, 'burn', 3, h, 'Горит!', '#ff9a40'); }
     });
   },
@@ -190,6 +193,13 @@ const ABIL_FX = {
     for (const s of Game.skels || []) if (Math.hypot(s.x - h.x, s.y - h.y) < 7 && s.state === 'roam') { s.scared = 8; s.goal = null; n++; }
     for (const e of Game.ents || []) if ((e.state === 'walk' || e.state === 'smash') && Math.hypot(e.x - h.x, e.y - h.y) < 7) {
       e.target = null; e.goal = null; e.state = 'ghosted'; e.t = 0; e.gFrom = [h.x, h.y]; n++;
+    }
+    // гоблины (neutrals2.js) боятся оберега: обожжены светом и разбегаются
+    if (typeof n2SpellHit === 'function') for (const M of (Game.neutrals || []).slice()) {
+      if (M.k !== 'goblin' || !neuAlive(M) || Math.hypot(M.x - h.x, M.y - h.y) > 7) continue;
+      n2SpellHit(M, h, 8 + (H.level || 1), 'holy');
+      if (neuAlive(M)) { M.tg = 0; M.st = 'home'; M.prov = Game.time - NEU_FORGET + 6; floater(M.x, M.y - 2.2, 'Ай, свет!', '#fff2a0'); }
+      n++;
     }
     H.wardUntil = Game.time + 20;
     abCast(h);
