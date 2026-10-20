@@ -55,6 +55,7 @@ scriptTest('season: сезоны по 8 суток, старые сейвы, с�
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
+scriptTest('injury: травмы — частота, лазарет, лекарь, сводка, груз, куры', 'injury-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
 scriptTest('oath: Клятвы предков — 10 классов героя, задания по ролям, сохранение', 'oath-test.js');

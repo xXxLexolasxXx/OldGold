@@ -212,7 +212,7 @@ function updateGoose(a, dt, def) {
 function gooseBite(a, u) {
   u.ouchUntil = Game.time + 2;
   floater(u.x, u.y - 1.4, 'Ай!', '#ffc8a0');
-  if (!u.injury && Math.random() < 0.4) { injure(u, 'leg'); u.injuryUntil = Game.time + 40; }
+  if (!u.injury && Game.time >= (Game.injGapAt || 0) && Math.random() < 0.15) { Game.injGapAt = Game.time + INJURY_GAP; injure(u, 'leg'); u.injuryUntil = Game.time + 40; }   // общий с толчками лимит: щиплют часто, ранят редко
   let stole = false;
   if (u.carry && Math.random() < 0.45) {       // гусь вырывает груз и удирает с ним
     const g = u.carry;
@@ -358,7 +358,7 @@ function* chickenGen(u, hen) {
       const st = nearestStore(u.x, u.y, 'chicken');
       const ok = st && (yield { walk: [st.doorX, st.doorY], offroad: true });
       if (u.carry) {
-        if (ok && !st.removed) { st.stock.chicken += 1; if (Math.random() < 0.35) triggerAvenge(u); }
+        if (ok && !st.removed) { st.stock.chicken += 1; if (Math.random() < 0.12) triggerAvenge(u); }
         else dropPile(Math.floor(u.x), Math.floor(u.y), 'chicken', 1);
         u.carry = null; u.carryN = 0;
       }
@@ -659,7 +659,7 @@ function drawOwls(c) {
 
 // ---------- Месть кур ----------
 // Гном, отнёсший курицу в таверну, может поплатиться: куры сбегаются стаей, окружают его,
-// заклёвывают, а потом утаскивают. Фазы: gather (сбегаются) → peck (клюют) → drag (тащат) → конец.
+// заклёвывают и оттаскивают в сторонку (не насовсем; изредка — с ушибом ноги). Фазы: gather (сбегаются) → peck (клюют) → drag (тащат) → конец.
 
 function triggerAvenge(u) {
   if (dif().noLoss) return;   // «Спокойный»: куры не мстят насмерть
@@ -733,10 +733,10 @@ function avengeTick(dt) {
       u.x = Math.max(1, Math.min(MAP_W - 2, u.x)); u.y = Math.max(1, Math.min(MAP_H - 2, u.y));
       if (ev.t > 3.6) {
         ev.phase = 'done';
+        // оттащили в сторонку и бросили: гном встаёт и, ворча, возвращается к делу (раньше куры уносили его насовсем)
         floater(u.x, u.y - 1.2, 'Куд-кудах!', '#ffffff');
-        toast(`Куры отомстили: ${UNIT_TYPES[u.type].name} утащен стаей`);
-        logEvent('animal', `Куры отомстили и утащили: ${UNIT_TYPES[u.type].name}`, u.x, u.y);
-        removeUnit(u);
+        if (!u.injury && Math.random() < 0.25) injure(u, 'leg');
+        logEvent('animal', `Куры проучили: ${UNIT_TYPES[u.type].name.toLowerCase()} оттащен в кусты${u.injury ? ' и хромает' : ''}`, u.x, u.y);
       }
     }
     if (ev.phase === 'done') { list.splice(i, 1); for (const h of ev.hens) { if (h.avenge === ev) { h.avenge = null; h.state = 'wander'; h.loot = null; h.wait = 2; } } }
