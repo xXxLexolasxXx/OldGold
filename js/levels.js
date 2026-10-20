@@ -122,6 +122,7 @@ function cancelUpgrade(b) {
 function* upgradeGen(u, b) {
   const ok = yield { walk: [b.doorX, b.doorY] };
   if (!ok) { if (b.upg && b.upg.builder === u) b.upg.builder = null; u.job = null; yield { wait: 3 }; return; }
+  let idleT = 0;
   while (!b.removed && b.upg && u.job === b) {
     if (u.wantsEat() && findInn(u)) break;
     const U = b.upg, g = ['trunk', 'timber', 'stone'].find(k => U.stock[k] > 0);
@@ -130,7 +131,14 @@ function* upgradeGen(u, b) {
       for (let k = 0; k < HITS_PER_UNIT && !b.removed && b.upg; k++) { yield { wait: HIT_TIME, anim: 'build' }; if (b.upg) { b.upg.hits++; b.lastHit = Game.time; } }
       if (b.removed || !b.upg) break;
       if (U.usedN >= U.total) { finishUpgrade(b); break; }
-    } else yield { wait: 1 };
+      idleT = 0;
+    } else {
+      // как на стройке: никто не везёт — сходить самому; совсем нечего класть — уйти, а не стоять вечно
+      const none = !['trunk', 'timber', 'stone'].some(k => b.incoming[k] > 0);
+      if (none && idleT >= 2 && (yield* fetchForSiteGen(u, b, true))) { idleT = 0; continue; }
+      if (none && (idleT += 1) > 20) break;
+      yield { wait: 1 };
+    }
   }
   if (b.upg && b.upg.builder === u) b.upg.builder = null;
   if (u.job === b) u.job = null;

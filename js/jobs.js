@@ -48,6 +48,17 @@ function* courierIdle(u) {
   }
   const comp = compAt(x, y);
   const st = nearestStore(u.x, u.y, null, comp);
+  if (!st && !Game.buildings.some(b => b.isStore() && compAt(b.doorX, b.doorY) === comp)) {
+    // кусок дороги без склада (недостроенная дорога, вход стройки, отрезанный сносом участок):
+    // работы здесь не будет никогда — сойти с дороги и вернуться в сеть склада. Раньше трудяги
+    // копились на таких обрывках и стояли до конца игры («свободно 19, а везти некому»).
+    const home = nearestStore(u.x, u.y) || Game.buildings.find(b => b.isStore());
+    if (home) {
+      const hc = compAt(home.doorX, home.doorY);
+      const spot = randomFreeNear(home.doorX, home.doorY, 1, 4, (xx, yy) => compAt(xx, yy) === hc && !World.door[idx(xx, yy)] && !World.occ[idx(xx, yy)]);
+      if (spot) { yield { walk: spot, offroad: true }; return; }
+    }
+  }
   if (st && Math.hypot(u.x - st.doorX - 0.5, u.y - st.doorY - 0.5) > 5) {
     const spot = randomFreeNear(st.doorX, st.doorY, 1, 4,
       (xx, yy) => compAt(xx, yy) === comp && !World.door[idx(xx, yy)] && !World.occ[idx(xx, yy)]);
@@ -140,7 +151,7 @@ function* deliverGen(u, from, to, g, n = 1) {
     }
     ok = yield { walk: [to.doorX, to.doorY], offroad: !!to.isRoad || !u.isCourier };   // не-курьеры (мусор в костёр, помощь) идут и без дороги
     // груз уронили при столкновении или утащил зверь
-    if (!u.carry) { if (!to.removed) to.incoming[g] -= n; return; }
+    if (!u.carry) { if (!to.removed) to.incoming[g] = Math.max(0, to.incoming[g] - n); return; }   // уже не в учёте «в пути» (auditIncoming) — не уходим в минус
     if (to.removed) continue;
     if (!ok) {
       // не дойти — несём на ближайший склад
@@ -166,7 +177,7 @@ function* deliverGen(u, from, to, g, n = 1) {
       return;
     }
     to.incoming[g] -= n;
-    (to.upg ? to.upg.stock : to.stock)[g] += Math.min(n, u.carryN || n); u.dlv = null;
+    (to.upg && to.upg.cost[g] ? to.upg.stock : to.stock)[g] += Math.min(n, u.carryN || n); u.dlv = null;
     u.carry = null; u.carryN = 0;
     gainXp(u, 1);
     yield { wait: 0.4 };
@@ -179,24 +190,26 @@ function* deliverGen(u, from, to, g, n = 1) {
 }
 
 // Работяга 2–3 уровня сам берёт со склада недостающий материал (1 или 2 единицы) и несёт на стройку.
-function* fetchForSiteGen(u, s) {
-  const want = unitLevel(u) - 1;
-  if (want <= 0 || u.carry || u.injury === 'arm') return;
-  const comp = compAt(s.doorX, s.doorY) || compNear(s.doorX, s.doorY);
+// force — стройка стоит без материала и никто его не везёт (все трудяги заняты): тогда за единицей
+// сходит и новичок, а не стоит у колышков.
+function* fetchForSiteGen(u, s, force) {
+  const want = Math.max(force ? 1 : 0, unitLevel(u) - 1);
+  if (want <= 0 || u.carry || u.injury === 'arm') return false;
+  const comp = s.isRoad ? 0 : compAt(s.doorX, s.doorY);   // камень к дороге носят и по траве (как трудяги)
   // чего не хватает: дороге — камень, зданию — доски, камень, брёвна
   let g = null, n = 0;
   for (const k of (s.isRoad ? ['stone'] : ['timber', 'stone', 'trunk'])) {
     const need = s.demand(k);
     if (need > 0) { g = k; n = Math.min(want, need); break; }
   }
-  if (!g) return;
-  const st = nearestStore(u.x, u.y, g, comp);
-  if (!st || st.offer(g) <= 0) return;
+  if (!g) return false;
+  const st = storeHaving(u.x, u.y, g, comp);
+  if (!st) return false;
   n = Math.min(n, st.offer(g));
   st.reserved[g] += n; s.incoming[g] += n;
   u.dlv = { from: st, to: s, g, n, gen: u.proc };   // чтобы учёт «в пути» видел эту ношу
   let ok = yield { walk: [st.doorX, st.doorY] };
-  if (!ok || st.removed) { if (!st.removed) st.reserved[g] -= n; if (!s.removed) s.incoming[g] -= n; u.dlv = null; return; }
+  if (!ok || st.removed) { if (!st.removed) st.reserved[g] -= n; if (!s.removed) s.incoming[g] -= n; u.dlv = null; return false; }
   yield* storeVisit(u, st, 0.7);
   st.reserved[g] -= n;
   if (u.dlv) u.dlv.picked = true;
@@ -205,17 +218,18 @@ function* fetchForSiteGen(u, s) {
   if (got < n && !s.removed) s.incoming[g] -= n - got;
   n = got;
   if (u.dlv) u.dlv.n = n;
-  if (!n) { u.dlv = null; return; }
+  if (!n) { u.dlv = null; return false; }
   u.carry = g; u.carryN = n;
   ok = yield { walk: [s.doorX, s.doorY] };
   const have = u.carry ? Math.min(n, u.carryN || n) : 0;   // по дороге могли уронить или отобрать
   if (!s.removed) s.incoming[g] -= n;
   u.dlv = null;
   u.carry = null; u.carryN = 0;
-  if (!have) return;
-  if (!ok || s.removed) { dropPile(Math.floor(u.x), Math.floor(u.y), g, have); return; }
-  s.stock[g] += have;
+  if (!have) return false;
+  if (!ok || s.removed) { dropPile(Math.floor(u.x), Math.floor(u.y), g, have); return false; }
+  (s.upg && s.state === 'done' ? s.upg.stock : s.stock)[g] += have;
   yield { wait: 0.4 };
+  return true;
 }
 
 function* buildGen(u, s) {
@@ -248,6 +262,8 @@ function* buildGen(u, s) {
         if (!s.removed) { completeRoad(s); builtIt = true; }
         break;
       }
+      // камня нет и никто не везёт (трудяги заняты) — принести самому: дорога часто держит целую стройку
+      if (s.incoming.stone <= 0 && (yield* fetchForSiteGen(u, s, true))) continue;
       // камня ещё нет — не стоим без дела, вернёмся, когда привезут
       break;
     }
@@ -266,6 +282,8 @@ function* buildGen(u, s) {
       if (s.used >= s.total) { finishBuilding(s); builtIt = true; break; }
       idleT = 0;
     } else {
+      // материала нет и никто его не везёт (трудяги заняты) — сходить на склад самому, а не стоять
+      if (!['trunk', 'timber', 'stone'].some(k => s.incoming[k] > 0) && idleT >= 2 && (yield* fetchForSiteGen(u, s, true))) { idleT = 0; continue; }
       // материал не везут (стройку отрезало от дорог, на складе пусто) — не держим её вечно:
       // отходим, и диспетчер даст работу на другой стройке, а сюда вернёт, когда будет что класть
       if (!['trunk', 'timber', 'stone'].some(k => s.incoming[k] > 0) && (idleT += 1) > 20) break;

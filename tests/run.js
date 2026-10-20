@@ -38,8 +38,8 @@ function test(name, fn) {
 
 // ---------- 1. Загрузка
 // отдельный скрипт-проверка: строки «✗ …» — провалы, «⚠ …» — замечания, остальное без отступа — сводка
-const scriptTest = (name, file) => test(name, r => {
-  const p = spawnSync(process.execPath, [path.join(__dirname, file)], { encoding: 'utf8', timeout: 180000 });
+const scriptTest = (name, file, args = []) => test(name, r => {
+  const p = spawnSync(process.execPath, [path.join(__dirname, file), ...args], { encoding: 'utf8', timeout: 180000 });
   const out = (p.stdout || '') + (p.stderr || '');
   for (const l of out.split('\n')) {
     if (/^\s*✗/.test(l)) r.fails.push(l.replace(/^\s*✗\s*/, ''));
@@ -65,6 +65,7 @@ scriptTest('photo: фото-режим, рамки и фильтры', 'photo-te
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
+scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 
 // ---------- 2. Симуляция: инварианты
 function simRun(seed, minutes, r, opts = {}) {

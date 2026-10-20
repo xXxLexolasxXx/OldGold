@@ -242,7 +242,7 @@ function coopCmd(name, msgJson, admin) {
       break;
     }
     case 'bact': {
-      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', hire: 'train' }[m.act] || 'manage';
+      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', untrainall: 'train', hire: 'train' }[m.act] || 'manage';
       if (can(need)) coopBuildingAct(name, m);
       break;
     }
@@ -305,6 +305,7 @@ function coopBuildingAct(name, m) {
     case 'demolish': removeBuilding(b); break;
     case 'train': if (UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && b.queue.length < 10) b.queue.push(m.type); break;
     case 'untrain': if (coopInt(m.i)) b.queue.splice(m.i, 1); break;
+    case 'untrainall': b.queue.length = 0; break;
     case 'hire': if (b.def.worker) queueTraining(b.def.worker); break;
     case 'recipe': if (coopInt(m.i) && m.i >= 0 && m.i < b.recipeOn.length) b.recipeOn[m.i] = !!m.on; break;
     case 'crop': if (b.crops && m.c in b.crops) b.crops[m.c] = !!m.on; break;

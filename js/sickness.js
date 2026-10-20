@@ -262,7 +262,7 @@ function* sickRestGen(u) {
 
 function* sickWardGen(u, b) {
   u.ward = b;
-  const ok = yield { walk: [b.doorX, b.doorY] };
+  const ok = yield { walk: [b.doorX, b.doorY], offroad: true };   // больной трудяга идёт к лекарю и по траве, а не только по дорогам
   if (!ok || b.removed) { u.ward = null; yield* sickRestGen(u); return; }
   yield { enter: b };
   let potion = false;

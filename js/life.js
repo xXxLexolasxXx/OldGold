@@ -32,6 +32,10 @@ function endBreak(u) {
   const s = u.brk.saved;
   dropBreak(u);
   u.proc = s.proc; u.action = s.action; u.anim = null; u.lastRes = undefined;
+  // в перерыве уронил ношу (бежал от нечисти, сбили с ног) — нести нечего: не идём пустыми через
+  // всю деревню, а берём новое дело. Учёт «в пути» поправит auditIncoming
+  const d = u.dlv;
+  if (d && d.picked && !u.carry && s.proc && d.gen === s.proc && u.isCourier) { u.dlv = null; u.proc = null; u.action = null; }
 }
 
 // Перерыв отменяется насовсем (гному дали приказ, он погиб или возродился): прерванное дело не возвращаем,
