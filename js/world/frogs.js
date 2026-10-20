@@ -243,6 +243,8 @@ function ftJumpThink(N, dt) {
     // патруль квакунов короче: к воде поближе
     if (N.pat === 1 && Math.hypot(N.wx - N.hx, N.wy - N.hy) > 7) { const a = Math.atan2(N.wy - N.hy, N.wx - N.hx); N.wx = N.hx + Math.cos(a) * 7; N.wy = N.hy + Math.sin(a) * 7; }
     ftAfter(N, tg);
+    // маги не машут посохом: любая их атака — каст с огоньком/молнией на расстоянии (кадры c0…c5, пик на 0,24 с)
+    if ((N.k === 'ftP' || N.k === 'ftR') && N.st === 'atk' && N.atkT === 0 && tg) { N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.08; N.fr = 'c0'; }
     // ближний бой дротика: охотник у цели на дистанции ≥3,5 дует из трубки (6 кадров)
     if (N.k === 'ftB' && N.st === 'atk' && N.atkT === 0 && tg) {
       if (Math.hypot(tg.x - N.x, tg.y - N.y) >= 3.5) { N.ov = NA_FRAMES.throwd; N.ovT = 0; N.ovP = 0.08; N.fr = 't0'; }
