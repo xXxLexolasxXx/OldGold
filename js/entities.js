@@ -747,6 +747,7 @@ class Unit {
       if (this.food <= 0 && !this.noFood) speed *= 0.5;
       if (this.injury === 'leg') speed *= 0.55;
       if (this.hangUntil > Game.time) speed *= 0.75;     // похмелье после праздника
+      if (this.pzUntil > Game.time || this.fgUntil > Game.time) speed *= 0.65;     // яд квакунов и их болотный туман (frogs.js)
       if (this.fleeUntil > Game.time) speed *= 1.7;     // удирает от гусей
       speed *= daySpeedMul();                            // днём бодрее, ночью медленнее
       if (WX.k > 0 && !this.isCourier) speed *= 1 + 0.3 * WX.k;   // под дождём спешат
