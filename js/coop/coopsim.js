@@ -253,6 +253,7 @@ function coopCmd(name, msgJson, admin) {
       coopSay(name, tradeDo(m.side, m.g, Math.min(m.n, 999)).text);
       break;
     }
+    case 'trav': if (typeof travCmd === 'function') travCmd(name, m); break;
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
     case 'rsc': if (typeof rscCmd === 'function' && can('council')) rscCmd(name, m); break;
     case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
@@ -563,7 +564,7 @@ function coopList(arr) {
   }
   return out;
 }
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp'];
 const COOP_WX = ['k', 'target', 'bolt', 'scorch', 'fires', 'rainEnd', 'nextRain'];
 
 // всё, что нечисть, ночь и погода держат вне жителей и клеток
@@ -571,7 +572,7 @@ function coopMirror() {
   const m = {
     ghosts: coopList(Game.ghosts), skels: coopList(Game.skels), ents: coopList(Game.ents), owls: coopList(Game.owls),
     bats: coopList(Game.bats), critters: coopList(Game.critters), falling: coopList(Game.falling), games: coopList(Game.games),
-    neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
+    lepr: typeof lepMirror === 'function' ? lepMirror() : [], neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
     raiders: typeof foeMirrorRaiders === 'function' ? foeMirrorRaiders() : [], foeShots: typeof foeMirrorShots === 'function' ? foeMirrorShots() : [],
     foe: typeof foeMirror === 'function' ? foeMirror() : null,
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
@@ -580,6 +581,7 @@ function coopMirror() {
     goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
     dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
+    trav: typeof travMirrorOut === 'function' ? travMirrorOut() : null,
     law: typeof lawMirrorOut === 'function' ? lawMirrorOut() : null,
     med: typeof medMirrorOut === 'function' ? medMirrorOut() : null,
     rsc: typeof rscMirrorOut === 'function' ? rscMirrorOut() : null,

@@ -190,6 +190,15 @@ function smAction(a) {
   }
 }
 
+function smSyncMusicBtn() {
+  const mb = document.getElementById('sm-music');
+  if (!mb) return;
+  const on = typeof Music !== 'undefined' && Music.menuOn;
+  mb.classList.toggle('off', !on);
+  mb.title = mb.ariaLabel = on ? 'Музыка меню: вкл' : 'Музыка меню: выкл';
+  mb.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
+
 function initStartMenu() {
   const box = document.getElementById('loading');
   if (!box || document.getElementById('start-menu')) return;
@@ -239,6 +248,13 @@ function initStartMenu() {
       <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
     </div>`;
   box.appendChild(root);
+  // музыка меню — отдельный выключатель в углу, вне панелей с кнопками
+  const mb = document.createElement('button');
+  mb.id = 'sm-music'; mb.type = 'button';
+  mb.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><ellipse cx="6.5" cy="18" rx="3" ry="2.4" fill="currentColor"/><ellipse cx="16.5" cy="16" rx="3" ry="2.4" fill="currentColor"/><path class="sm-music-x" d="M3 3l18 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  box.appendChild(mb);
+  mb.addEventListener('click', e => { e.stopPropagation(); setMenuMusic(!Music.menuOn); });
+  smSyncMusicBtn();
   root.addEventListener('click', e => { const b = e.target.closest('[data-sm]'); if (b && !b.disabled) smAction(b.dataset.sm); });
   window.addEventListener('keydown', e => {
     if (!StartMenu.open) return;

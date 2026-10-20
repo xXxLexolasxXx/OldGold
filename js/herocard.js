@@ -94,6 +94,7 @@ function hcHeroHTML() {
     const eq = (slot, label, un) => H.equip[slot] ? `${label}: <b>${hlName(H.equip[slot])}</b> <button data-hero="${un}" class="hp-sm">снять</button>` : '';
     const eqs = [eq('weapon', 'Оружие', 'unw'), eq('armor', 'Доспех', 'una'), eq('off', 'Левая рука', 'uno')].filter(Boolean);
     x += `<div class="irow small">${eqs.length ? eqs.join(' · ') : '<span class="muted">Без оружия и доспеха</span>'}</div>`;
+    if (typeof durHeroHTML === 'function') x += durHeroHTML(H);
     let inv = '<div class="hl-inv">';
     for (let i = 0; i < HL_INV; i++) {
       const it = H.inv[i];

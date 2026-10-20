@@ -202,6 +202,7 @@ function drawUnit(c, u) {
     opt.gest = u.gest;
     if (u.gest === 'five') { opt.gf = fiveFrameAt(FIVE_T - (u.gestUntil - Game.time)); view = 'E'; face = u.gestFace || face; }
     else if (u.gest === 'clap') { opt.gf = gestCyc(Game.time * 7 + u.id); if (pose === 'idle') view = 'S'; }
+    else if (u.gest === 'six7') { opt.gf = gestCyc(Game.time * 6 + u.id); if (pose === 'idle') view = 'S'; else opt.gest = ''; }   // мем «шесть-семь» (memes.js): только стоя, лицом к зрителю
     else if (pose === 'idle') { view = 'E'; face = u.gestFace || face; }
   } else if (pose === 'idle' && !u.anim) {
     // заскучал: чешет затылок, потягивается, зевает, оглядывается
@@ -810,6 +811,7 @@ function render() {
   const x1 = Math.min(MAP_W - 1, Math.ceil((cam.x + vw) / TILE) + 2), y1 = Math.min(MAP_H - 1, Math.ceil((cam.y + vh) / TILE) + 4);
 
   drawWaterSparkles(c, x0, y0, x1, y1);
+  if (typeof nightGroundDraw === 'function') nightGroundDraw(c, x0, y0, x1, y1);   // ночная земля: рука, цветок, плита
 
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const o = World.obj[idx(x, y)];
@@ -834,6 +836,7 @@ function render() {
     else if (isStreetObj(o)) list.push([y + 0.75, () => drawStreetObj(c, x, y, o)]);
     else if (o.t === 'stump') list.push([y + 0.7, () => drawStump(c, x, y)]);
     else if (o.t === 'fort') list.push([y + (o.f === 'pit' || o.f === 'spike' || o.f === 'fire' ? 0.3 : 0.85), () => drawFort(c, x, y, o)]);
+    else if (o.t === 'sandc') list.push([y + 0.6, () => drawSandCastle(c, x, y, o)]);        // песочные замки детей (kidsplay.js)
     else if (o.t === 'hop') list.push([y + 0.01, () => drawHopObj(c, x, y, o)]);       // классики мелом на дороге (games.js)
   }
   // горы: объёмные скальные массивы по глубине вместе с остальными объектами
@@ -892,6 +895,7 @@ function render() {
   drawClouds(c);
   drawDusk(c);
   drawNight(c, x0, y0, x1, y1);
+  if (typeof nightGroundGlow === 'function') nightGroundGlow(c, x0, y0, x1, y1);   // глаза в траве и туман
   drawNightFx(c);
   drawFireflies(c);
   drawWeather(c);
