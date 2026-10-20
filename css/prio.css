@@ -28,3 +28,37 @@ body.mobile .pr-seg button { min-height: 38px; font-size: 13px; }
 body.mobile #pause-banner { bottom: calc(74px + env(safe-area-inset-bottom)); top: auto; font-size: 12px; }   /* над нижней панелью: сверху тесно (ресурсы, цели, вызов дня) */
 /* онлайн: скорость выбирает хост, остальным — только пауза голосованием */
 body.coop:not(.coop-host) #dd-speed [data-speed]:not([data-speed="0"]) { display: none; }
+/* Рабочие (js/workers.js): вкладка «Рабочие» и карточка гнома */
+.pr-views { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 0 0 6px; }
+.pr-views button { min-height: 30px; opacity: 0.7; }
+.pr-views button.on { opacity: 1; font-weight: bold; box-shadow: inset 0 0 0 2px var(--gold, #d2a73c); }
+.wk-sum { padding: 2px 2px 6px; color: #e9dcc0; }
+.wk-bad { color: #ffb08a; }
+.wk-cap { display: flex; align-items: center; gap: 6px; margin: 2px 0 6px; color: #a99c80; font-size: 12px; }
+.wk-cap button { min-width: 28px; min-height: 26px; padding: 0 6px; }
+.wk-cap b { min-width: 26px; text-align: center; color: #f0e6c8; }
+.wk-list { display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto; }
+.wk-u { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; padding: 3px 5px; border-radius: 3px; cursor: pointer; font-size: 12px; color: #cfc4a8; }
+.wk-u:hover { background: rgba(255,220,140,.07); }
+.wk-u b { color: #f0e6c8; }
+.wk-u small { color: #a99c80; }
+.wk-u span { flex: 1 1 140px; }
+.wk-u.idle span { color: #ffc89a; }
+.wk-u i { flex-basis: 100%; color: #e4b434; font-style: normal; font-size: 11px; }
+#wk-card { position: absolute; top: 58px; right: 10px; width: 260px; z-index: 6; padding: 8px 10px 10px; background: rgba(26,19,13,.94); color: #e8dcc0;
+  border: 1px solid #a08040; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.6); font-size: 13px; display: none; }
+#wk-card .hc-x { position: absolute; top: 3px; right: 5px; padding: 0 6px; font-size: 13px; line-height: 18px; }
+body.mobile #wk-card { top: calc(92px + env(safe-area-inset-top)); right: auto; left: 6px; width: min(300px, calc(100vw - 12px)); max-height: min(45vh, calc(100dvh - 150px)); overflow-y: auto; }
+body.mobile .wk-u { padding: 6px 5px; }
+.wk-box { margin-top: 7px; padding-top: 5px; border-top: 1px solid rgba(255,230,160,.12); font-size: 12px; }
+.wk-t { margin: 0 0 3px; font-size: 10px; letter-spacing: .6px; text-transform: uppercase; color: #b8902c; }
+.wk-hint { margin-top: 2px; color: #a99c80; font-size: 11px; line-height: 1.3; }
+.wk-box .wk-st { margin: 4px 0; padding: 4px 6px; background: rgba(60,90,40,.35); border-radius: 3px; line-height: 1.35; }
+.wk-box .wk-st.idle { background: rgba(120,60,20,.4); color: #ffd8b0; }
+.wk-box .wk-kick { display: flex; flex-direction: column; align-items: flex-start; width: 100%; margin: 4px 0 6px; padding: 5px 8px; text-align: left; }
+.wk-box .wk-kick small { opacity: .75; font-size: 11px; }
+.wk-box .wk-l { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 4px 0; font-size: 12px; color: #a99c80; }
+.wk-box .wk-l select { flex: 1; max-width: 160px; min-height: 26px; background: #1a130d; color: #f0e6c8; border: 1px solid #6a5530; }
+.wk-box .wk-chk { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; }
+body.mobile .wk-box .wk-l select { min-height: 36px; }
+#mood-card, #wk-card { max-height: calc(100% - 70px); overflow-y: auto; }   /* с блоком «Работа» карточка длиннее — прокрутка */

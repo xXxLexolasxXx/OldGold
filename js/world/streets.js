@@ -275,6 +275,8 @@ function drawGothicLamp(c, bx, by, v, lit, ph) {
     }
     ellipse(c, bx, by - 21, 1.6, 1.6, IRON[0]);
     glowAt(bx, by - 30, 20);
+  } else if (typeof garDraw === 'function') {
+    garDraw(c, bx, by, lit, ph);   // горгулья из gargoyle.js: рога, клыки, каменные крылья, живёт ночью
   } else {
     // горгулья: на столбе сидит каменный зверёк с крыльями и держит фонарь на цепи в когтях
     c.fillStyle = '#6e685e'; c.fillRect(bx - 2.2, by - 22, 4.4, 17);

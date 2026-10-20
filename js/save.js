@@ -65,7 +65,7 @@ function serializeGame() {
   const obj = [];
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
-    if (o && o.t !== 'fort') obj.push([i, o.t, o.g ?? 0, o.n ?? (o.plan ? 2 : o.ash ? 1 : 0), o.farm ?? 0, o.crop || '', o.v, o.vert ? 1 : 0]);
+    if (o && o.t !== 'fort') obj.push([i, o.t, o.g ?? 0, o.n ?? (o.plan ? 2 : o.ash ? 1 : 0), o.farm ?? 0, o.crop || '', o.v, o.vert ? 1 : 0, o.b !== undefined ? Math.round(o.b * 10) / 10 : undefined, o.bd]);
   }
   const road = [];
   for (let i = 0; i < N_TILES; i++) if (World.road[i]) road.push(i);
@@ -95,7 +95,7 @@ function serializeBuilding(b) {
   return {
     id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
     used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
-    level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
+    level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, orders: b.orders && b.orders.length ? b.orders : undefined, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops,
   };
 }
 
@@ -125,12 +125,13 @@ function applySave(s) {
   for (const [i, n] of s.rockHp || []) ROCKMINE.hp.set(i, n);
   World.obj.fill(null);
   World.growing.clear();
-  for (const [i, t, g, n, farm, crop, dv, dvert] of s.obj) {
+  for (const [i, t, g, n, farm, crop, dv, dvert, db, dbd] of s.obj) {
     const o = { t };
     if (t === 'tree' || t === 'field' || t === 'stump' || t === 'bin') o.g = g;
     if (t === 'stone') o.n = n;
     if (dv !== undefined && dv !== null) o.v = dv;
     if (dvert) o.vert = true;
+    if (t === 'sandc' && Number.isFinite(db)) { o.b = db; o.bd = Number.isFinite(dbd) ? dbd : 8; }   // песочный замок: когда заложен и сколько строился
     if (t === 'field') { o.farm = farm; o.crop = !crop || crop === 'hay' ? 'wheat' : crop; o.ash = n === 1; o.plan = n === 2; if (o.plan) Game.fieldPlans.add(i); }
     World.obj[i] = o;
     if ((t === 'tree' && g < 1) || (t === 'field' && g >= 0 && g < 1) || t === 'stump') World.growing.add(i);
@@ -159,6 +160,7 @@ function applySave(s) {
     if (d.upg && canUpgrade(b)) { startUpgrade(b); Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
     if (d.recipeOn && d.recipeOn.length === b.recipeOn.length) b.recipeOn = d.recipeOn;
     b.recipeIdx = d.recipeIdx || 0;
+    if (Array.isArray(d.orders)) b.orders = d.orders.filter(o => o && Number.isInteger(o.i) && o.n > 0);
     if (d.pigs) b.pigs = d.pigs;
     if (d.crops) b.crops = d.crops;
     for (let yy = b.y; yy < b.y + b.h; yy++) for (let xx = b.x; xx < b.x + b.w; xx++) World.bmap[idx(xx, yy)] = b.id;
