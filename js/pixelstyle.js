@@ -101,6 +101,69 @@ ROOF.thatch = function (c, Lu, Lv, col) {
   c.fillStyle = R[3]; for (let v = 0; v < Lv; v += 2) c.fillRect(0.2, v, 1, 1);
 };
 
+// Соломенная кровля (многоразовая: mat 'straw'). Длинные пряди вдоль ската, сбитые в пучки,
+// стянутые жгутами; светлые срезы у свеса, выцветшие и тёмные пятна, редкие просветы.
+ROOF.straw = function (c, Lu, Lv, col) {
+  const R = rampOf(col);
+  c.fillStyle = R[2]; c.fillRect(-2, -2, Lu + 4, Lv + 4);
+  // пучки: полосы 3–5 px шириной, у каждого свой оттенок; внутри — пряди разной длины внахлёст
+  let v0 = -1;
+  for (let b = 0; v0 < Lv + 1; b++) {
+    const bw = 3.2 + hsh(b, 1, 21) * 2, t = hsh(b, 2, 21), bt = t < 0.28 ? 1 : t > 0.72 ? -1 : 0;
+    for (let i = 0; i < bw; i++) {
+      const v = v0 + i;
+      let u = -hsh(b, i, 22) * 9, k = 0;
+      while (u < Lu + 2) {
+        const len = 6 + hsh(b * 7 + i, k, 23) * 9, n = hsh(b * 5 + i, k, 24);
+        const tone = clampI(2 + rowShade(u + len / 2, Lu) + bt + (n < 0.2 ? 1 : n > 0.8 ? -1 : 0), 0, 5);
+        c.fillStyle = R[tone]; c.fillRect(u, v, len, 1);
+        c.fillStyle = R[clampI(tone + 1, 0, 5)]; c.fillRect(u + len - 0.6, v, 0.6, 1);   // тень под концом пряди, лежащей выше
+        if (n > 0.55) { c.fillStyle = R[clampI(tone - 1, 0, 5)]; c.fillRect(u + 0.4, v, Math.min(2.4, len - 1), PXU * 2); }
+        u += len; k++;
+      }
+    }
+    // шов между пучками: прерывистая тёмная ложбинка и светлая кромка рядом
+    for (let u = -hsh(b, 3, 25) * 6, k = 0; u < Lu; k++) {
+      const len = 3 + hsh(b, k, 26) * 8;
+      if (hsh(b, k, 27) < 0.78) { c.fillStyle = R[4]; c.fillRect(u, v0, len, PXU * 2); c.fillStyle = R[1]; c.fillRect(u, v0 + PXU * 2, len, PXU); }
+      u += len + 1 + hsh(b, k, 28) * 3;
+    }
+    v0 += bw;
+  }
+  // выцветшие и потемневшие пятна: короткие пряди кучкой
+  const np = Math.round(Lu * Lv / 180);
+  for (let k = 0; k < np; k++) {
+    const u = hsh(k, 1, 29) * Lu, v = hsh(k, 2, 29) * Lv, dark = hsh(k, 3, 29) < 0.3, w = 2 + ((hsh(k, 4, 29) * 3) | 0), l = 3 + hsh(k, 5, 29) * 5;
+    for (let i = 0; i < w; i++) {
+      const ll = l * (0.5 + hsh(k, i, 30) * 0.7);
+      c.fillStyle = dark ? R[3] : R[i % 2 ? 0 : 1];
+      c.fillRect(u + (l - ll) * 0.5, v + i, ll, 1);
+    }
+  }
+  // редкие просветы: тёмные щели между прядями
+  for (let k = 0; k < Lu * Lv / 110; k++) {
+    c.fillStyle = R[5]; c.fillRect(hsh(k, 1, 31) * Lu, hsh(k, 2, 31) * Lv, 1 + hsh(k, 3, 31) * 2, PXU * 2);
+  }
+  // жгуты: волнистые перевязи из скрученной соломы поперёк прядей
+  const ropes = Lu > 30 ? [0.33, 0.68] : Lu > 14 ? [0.5] : [];
+  for (let q = 0; q < ropes.length; q++) {
+    const ub = Lu * ropes[q];
+    for (let v = -1, k = 0; v < Lv + 1; v += 1.3, k++) {
+      const u = ub + (hsh(k, q, 32) - 0.5) * 0.8;
+      c.fillStyle = R[5]; c.fillRect(u - 1.2, v, 0.7, 1.3);
+      c.fillStyle = R[4]; c.fillRect(u - 0.5, v, 1.4, 1.3);
+      c.fillStyle = k % 2 ? R[1] : R[3]; c.fillRect(u - 0.2, v + (k % 2 ? 0 : 0.5), 0.8, 0.8);
+    }
+  }
+  // свес: толстый косой срез пучков — тёмный низ, светлые торцы разной длины
+  for (let v = -1, k = 0; v < Lv + 1; v += 1, k++) {
+    const e = 1.6 + hsh(k, 1, 33) * 2.2;
+    c.fillStyle = R[3]; c.fillRect(-2, v, e + 2, 1);
+    c.fillStyle = R[4]; c.fillRect(-2, v, 1.6, 1);
+    if (hsh(k, 2, 33) < 0.6) { c.fillStyle = R[0]; c.fillRect(e - 0.2, v, 0.9, 1); }
+  }
+};
+
 ROOF.moss = function (c, Lu, Lv, col) {
   ROOF.shingle(c, Lu, Lv, col);
   // мох аккуратными кочками, гуще у свеса; каждая — тень, тело, блик
@@ -385,6 +448,19 @@ ridgeCap = function (c, x0, y0, x1, y1, mat, col) {
     for (let k = 0; k <= n; k++) {
       const t = k / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
       line(c, x - 1, y - 1.4, x + 1, y + 1.2, R[4], 0.5);
+    }
+  } else if (mat === 'straw') {
+    // конёк из связанных снопов: плотный валик, поперечные перевязи, торчащие пучки поверху
+    line(c, x0, y0, x1, y1, R[5], 4.8);
+    line(c, x0, y0 - 0.6, x1, y1 - 0.6, R[3], 3.8);
+    line(c, x0, y0 - 1.3, x1, y1 - 1.3, R[2], 2.4);
+    line(c, x0, y0 - 1.9, x1, y1 - 1.9, R[0], 0.8);
+    const n = Math.hypot(x1 - x0, y1 - y0) / 3.4;
+    for (let k = 0; k <= n; k++) {
+      const t = k / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
+      line(c, x - 0.8, y - 2.4, x + 0.8, y + 1.8, R[5], 0.7);          // жгут-перевязь
+      const h = 0.8 + hsh(k, 1, 34) * 1.4;
+      line(c, x + 0.6, y - 2.2, x + 0.9, y - 2.2 - h, R[1], 0.6);       // торчащий пучок
     }
   } else if (mat === 'moss' || mat === 'turf') {
     line(c, x0, y0, x1, y1, '#2f4a26', 4.4);

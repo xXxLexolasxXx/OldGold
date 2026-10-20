@@ -115,7 +115,7 @@ const GOAL_CHAPTERS = [
       ['grum', 'Он серьёзно. Я бы испугался, но я старый, и мне лень.'],
       ['grum', 'Герой, гильдии, костры и хлеб. Всё, что у нас есть. Разберёмся.'],
     ],
-    goals: [{ k: 'enemy', id: 'darkMage' }],
+    goals: [{ k: 'guards' }, { k: 'enemy', id: 'darkMage' }],
     hint: 'Чёрный шпиль — фиолетовая башня на краю карты: к ней ведёт стрелка у края экрана, на миникарте — мигающее кольцо. Соберите героя, отряд и провиант, жмите «Выступить в поход» или просто тапните по башне.',
     chapter: 6,
     final: true,
@@ -180,6 +180,7 @@ function goalObjective(o, S) {
   if (o.k === 'nights') return { t: 'Пережить ночей', cur: Math.min(o.n, S.nights), need: o.n };
   if (o.k === 'prod') return { t: 'Произвести: ' + GOODS[o.g].name.toLowerCase(), cur: Math.min(o.n, Math.floor((Game.produced || {})[o.g] || 0)), need: o.n };
   if (o.k === 'rank') return { t: 'Звание «' + GOAL_RANKS[o.n].name + '»', cur: Math.min(o.n, S.rank), need: o.n };
+  if (o.k === 'guards') return typeof guardsGoal === 'function' ? guardsGoal() : { t: 'Победить стражей Чёрного шпиля', cur: 1, need: 1 };
   if (o.k === 'enemy') {
     const g = Game.goal;
     if (goalEnemyReady()) return { t: 'Победить тёмного мага Малгора', cur: goalEnemyDead() ? 1 : 0, need: 1 };

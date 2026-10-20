@@ -33,7 +33,7 @@ BUILDINGS.herohall = {
   up: { cost: { timber: 12, stone: 14 } },
 };
 BUILD_ORDER.push('herohall');
-UNLOCKS[0].items.push('herohall');
+UNLOCKS.find(u => u.id === 'grain').items.push('herohall');   // не на старте: вместе с хлебом
 if (typeof SIGN_OF !== 'undefined') SIGN_OF.herohall = 'swords';
 
 {

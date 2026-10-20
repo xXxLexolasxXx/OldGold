@@ -574,6 +574,7 @@ function coopMirror() {
     bats: coopList(Game.bats), critters: coopList(Game.critters), falling: coopList(Game.falling), games: coopList(Game.games),
     lepr: typeof lepMirror === 'function' ? lepMirror() : [], neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
     raiders: typeof foeMirrorRaiders === 'function' ? foeMirrorRaiders() : [], foeShots: typeof foeMirrorShots === 'function' ? foeMirrorShots() : [],
+    foeZones: typeof foeMirrorZones === 'function' ? foeMirrorZones() : [],
     foe: typeof foeMirror === 'function' ? foeMirror() : null,
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
