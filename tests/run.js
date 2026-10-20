@@ -53,6 +53,7 @@ scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
+scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
