@@ -50,9 +50,29 @@ const ANIM_TOOL = { chop: 'axe', mine: 'pick', build: 'hammer', reap: 'sickle', 
 // Внешность гнома целиком выводится из числа look: один и тот же гном всегда выглядит одинаково.
 // Чтобы признаки не зависели друг от друга (как было с битовыми сдвигами), берём их из
 // детерминированного генератора.
+// u.sx — 'f' у гномок (folk.js), тип kid — гномёнок: без бороды, вязаная шапочка с помпоном.
 function lookOf(u) {
   const l = u.look;
   if (u.type === 'waitress') return { ...GIRL_LOOK, skin: l % 2 };
+  const L = lookBase(u);
+  const kid = u.type === 'kid';
+  if (u.sx === 'f' || kid) {
+    const r = mulberry32(Math.imul(l + 57, 0x2c1b3c6d) ^ 0x9e37);
+    const pick = n => Math.floor(r() * n);
+    L.noBeard = true; L.nose = 3; L.brow = 0; L.braid = false;
+    L.hair = FEM_HAIR[pick(FEM_HAIR.length)];
+    if (u.sx === 'f') { L.fem = true; L.hs = pick(6); L.earring = pick(3) === 0; L.freckles = pick(5) === 0; }
+    if (L.fem && /^hero/.test(u.type) && (L.hs === 2 || L.hs === 3)) L.hs = L.hs === 2 ? 0 : 4;   // героиня — косы и пучок под шлемом
+    if (kid) { L.kid = true; L.capStyle = 8; L.deco = 5 + pick(3); L.freckles = pick(2) === 0; L.hair = KID_HAIR[pick(KID_HAIR.length)]; if (L.fem) L.hs = 0; }   // гномочки — с косичками
+  }
+  return L;
+}
+const KID_HAIR = ['#c9501c', '#e0b050', '#d08a40', '#a83a1c', '#8a4a1c'];   // у гномят светлее: тёмные пряди у лица читались как очки
+const FEM_HAIR = ['#c9501c', '#8a4a1c', '#e0b050', '#5a3a22', '#2e2018', '#d08a40', '#a83a1c', '#7a5a3a'];
+// причёски гномок: 0 две косы, 1 коса за спиной, 2 платок, 3 чепец, 4 пучок, 5 кудри
+const FEM_HS_NAMES = ['Две косы', 'Коса', 'Платок', 'Чепец', 'Пучок', 'Кудри'];
+function lookBase(u) {
+  const l = u.look;
   const r = mulberry32(Math.imul(l + 101, 0x45d9f3b) ^ 0x2545);
   const pick = n => Math.floor(r() * n);
   const ench = u.type === 'enchanter';
@@ -453,6 +473,8 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r, lvl = 1) {
   }
   const wizard = O.cap === 'wizard';
   const col = wizard ? '#4c3080' : O.cap === 'serf' ? L.serfCap : O.cap;
+  // гномка в платке или чепце: цвет профессии остаётся на ткани / ленте
+  if (L.fem && (L.hs === 2 || L.hs === 3) && !wizard && typeof col === 'string' && col[0] === '#') { drawKerchief(c, view, hx, hy, col, L.hs === 3); return; }
   const style = wizard ? 1 : L.capStyle;
   const tall = wizard ? 13 : CAP_TALL[style];
   const s = e ? -1 : L.capTip;               // боком кончик свисает назад
@@ -464,8 +486,9 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r, lvl = 1) {
   c.fill();
   c.clip();
   // у трудяг колпак весь во мху, у остальных мох лишь налётом — цвет профессии читается
-  const mossy = O.cap === 'serf';
-  if (!wizard) mossSpeckle(c, hx - 8, b - tall * 1.2, 16, tall * 1.2 + 7, mossy ? 0.55 : 0.14, r);
+  const mossy = O.cap === 'serf' && !L.kid;
+  if (!wizard && !L.kid) mossSpeckle(c, hx - 8, b - tall * 1.2, 16, tall * 1.2 + 7, mossy ? 0.55 : 0.14, r);
+  if (L.kid) { c.fillStyle = shade(col, 0.4); for (let k = 0; k < 3; k++) c.fillRect(hx - 6, b - 2.6 - k * 2.2, 12, 0.8); }   // вязаная шапочка в полоску
   // складки
   c.strokeStyle = shade(col, -0.35); c.lineWidth = 0.35;
   c.beginPath(); c.moveTo(hx - 1.4 * s, b); c.quadraticCurveTo(hx - 1 * s, b - tall * 0.5, hx + 0.6 * s, b - tall * 0.8); c.stroke();
@@ -483,7 +506,7 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r, lvl = 1) {
   c.fillStyle = lingrad(c, 0, b - 1.4, 0, b + 1.6, [[0, shade(col, 0.15)], [1, shade(col, -0.35)]]);
   c.fill();
   c.clip();
-  if (!wizard) mossSpeckle(c, hx - 5, b - 1.6, 10, 3.4, mossy ? 1.4 : 0.45, r);
+  if (!wizard && !L.kid) mossSpeckle(c, hx - 5, b - 1.6, 10, 3.4, mossy ? 1.4 : 0.45, r);
   c.restore();
   if (wizard) {
     c.fillStyle = '#f6d458'; c.fillRect(hx - 1, b - 6, 0.7, 0.7); c.fillRect(hx + 1.2, b - 10, 0.6, 0.6); c.fillRect(hx - 0.2, b - 3, 0.5, 0.5);
@@ -504,6 +527,27 @@ function drawCap(c, O, view, hx, hy, tipSway, L, r, lvl = 1) {
     drawFire(c, cx, b - 3.4, 'tiny', Game.time, cx * 3, { glow: 0 });
   }
   if (O.dusty) { c.fillStyle = 'rgba(255,255,255,0.8)'; for (let k = 0; k < 5; k++) c.fillRect(hx - 2 + k * 1.1, b - 3 - k * 1.3, 0.45, 0.45); }
+}
+
+// Платок (узелок под подбородком, белый горошек) или чепец (белый с оборкой, лента цвета профессии)
+function drawKerchief(c, view, hx, hy, col, bonnet) {
+  const e = view === 'E', cloth = bonnet ? '#f4efe2' : col, dk = shade(cloth, -0.32);
+  c.fillStyle = lingrad(c, hx - 5, 0, hx + 5, 0, [[0, shade(cloth, 0.2)], [0.55, cloth], [1, dk]]);
+  c.beginPath();
+  if (view === 'S') { c.moveTo(hx - 4.5, hy + 1.6); c.quadraticCurveTo(hx - 5.2, hy - 5.6, hx, hy - 5.9); c.quadraticCurveTo(hx + 5.2, hy - 5.6, hx + 4.5, hy + 1.6); c.quadraticCurveTo(hx + 3.6, hy - 1.6, hx, hy - 1.6); c.quadraticCurveTo(hx - 3.6, hy - 1.6, hx - 4.5, hy + 1.6); }
+  else if (e) { c.moveTo(hx + 3.4, hy - 1.2); c.quadraticCurveTo(hx + 3, hy - 5.8, hx - 1.4, hy - 5.6); c.quadraticCurveTo(hx - 4.8, hy - 4.6, hx - 4.6, hy + 0.8); c.lineTo(hx - 2.4, hy + 2.2); c.quadraticCurveTo(hx - 1, hy - 1.4, hx + 3.4, hy - 1.2); }
+  else { c.moveTo(hx - 4.6, hy + 1); c.quadraticCurveTo(hx - 5.2, hy - 5.6, hx, hy - 5.9); c.quadraticCurveTo(hx + 5.2, hy - 5.6, hx + 4.6, hy + 1); c.lineTo(hx, hy + (bonnet ? 2 : 5)); c.closePath(); }
+  c.fill();
+  if (bonnet) {
+    // оборка по краю и лента
+    for (let k = 0; k < 7; k++) { const a = Math.PI * (0.05 + k * 0.15); ellipse(c, hx - Math.cos(a) * (e ? 3.6 : 4.6) + (e ? 0.4 : 0), hy - 1.2 - Math.sin(a) * 4.4, 0.9, 0.8, '#ffffff'); }
+    if (view !== 'N') { line(c, hx + (e ? 1 : -3.6), hy + 1, hx + (e ? 2.2 : 0), hy + 4.6, col, 0.7); if (!e) line(c, hx + 3.6, hy + 1, hx, hy + 4.6, col, 0.7); ellipse(c, hx + (e ? 2.2 : 0), hy + 4.8, 1.2, 0.7, col); }
+  } else {
+    c.fillStyle = 'rgba(255,255,255,0.75)';
+    for (const [dx, dy] of [[-2.6, -3.4], [0, -4.6], [2.6, -3.4], [-1.3, -2.2], [1.3, -2.2]]) c.fillRect(hx + dx * (e ? 0.8 : 1) - (e ? 0.6 : 0), hy + dy, 0.6, 0.6);
+    if (view === 'S') { poly(c, [[hx - 0.2, hy + 4], [hx - 2.2, hy + 5.4], [hx - 1.4, hy + 3.6]], dk); poly(c, [[hx + 0.2, hy + 4], [hx + 2.2, hy + 5.4], [hx + 1.4, hy + 3.6]], dk); ellipse(c, hx, hy + 4, 0.8, 0.7, cloth); }
+    if (e) poly(c, [[hx - 4.2, hy + 0.2], [hx - 6.2, hy + 3.4], [hx - 3.4, hy + 2]], dk);   // кончики узла сзади
+  }
 }
 
 // ---------- Голова ----------
@@ -615,9 +659,14 @@ function drawMoustache(c, view, hx, hy, bc, must) {
   }
 }
 
-// Нос: 0 картошка, 1 слива (большой, красноватый), 2 остренький
+// Нос: 0 картошка, 1 слива (большой, красноватый), 2 остренький, 3 кнопочка (гномки, гномята)
 function drawNose(c, view, hx, hy, sk, nose) {
   const n = nose || 0;
+  if (n === 3) {   // гномки и гномята: маленькая кнопочка
+    if (view === 'E') { ellipse(c, hx + 3.7, hy + 1.9, 1, 0.9, sk[1]); ellipse(c, hx + 3.5, hy + 1.6, 0.35, 0.3, 'rgba(255,240,220,0.75)'); }
+    else { ellipse(c, hx, hy + 2, 1.05, 0.9, sk[1]); ellipse(c, hx - 0.35, hy + 1.7, 0.35, 0.3, 'rgba(255,240,220,0.75)'); }
+    return;
+  }
   if (view === 'E') {
     if (n === 1) { ellipse(c, hx + 4.2, hy + 2.1, 2.2, 1.9, shade(sk[1], -0.04)); ellipse(c, hx + 4.4, hy + 2.6, 1.5, 1, 'rgba(200,80,70,0.35)'); ellipse(c, hx + 3.6, hy + 1.3, 0.6, 0.5, 'rgba(255,240,220,0.75)'); }
     else if (n === 2) { poly(c, [[hx + 2.4, hy + 0.8], [hx + 5.8, hy + 2.6], [hx + 2.6, hy + 3]], sk[1]); ellipse(c, hx + 3.2, hy + 1.4, 0.45, 0.4, 'rgba(255,240,220,0.75)'); }
@@ -638,56 +687,81 @@ function drawFreckles(c, hx, hy, sk, side) {
   for (const [dx, dy] of [[-1.2, 0.9], [-0.2, 1.4], [-1.6, 1.7], [0.3, 0.6]]) c.fillRect(hx + side * (2.4 + dx * 0.9) - 0.2, hy + dy, 0.45, 0.45);
 }
 
+// Волосы гномки: косы, кудри, пучок. hc — [свет, тон, тень]; n — длина косы в звеньях (у гномят короче).
+function femHairCols(O, L) { return O.fem ? [HAIR_L, HAIR, HAIR_D] : [shade(L.hair, 0.22), L.hair, shade(L.hair, -0.32)]; }
+function femBraid(c, x0, y0, dx, n, H, bow) {
+  for (let k = 0; k < n; k++) { const bx = x0 + dx * k, by = y0 + k * 1.75; ellipse(c, bx, by, 1.15, 1.05, k % 2 ? H[1] : H[0]); ellipse(c, bx + 0.1, by + 0.35, 0.7, 0.5, H[2]); }
+  ellipse(c, x0 + dx * n - dx * 0.3, y0 + n * 1.75 - 1.6, 1.1, 0.9, bow);
+  ellipse(c, x0 + dx * n, y0 + n * 1.75 - 0.6, 0.9, 0.9, H[0]);
+}
+function femHair(c, view, hx, hy, L, O) {
+  const H = femHairCols(O, L), hs = O.fem ? 0 : L.hs, n = L.kid ? 3 : 6, bow = O.fem ? '#d82e3a' : shade(L.serfCap || '#d82e3a', 0.15);
+  if (view === 'S') {
+    if (hs === 0) for (const sd of [-1, 1]) femBraid(c, hx + sd * 4.5, hy + (L.kid ? 2.4 : 1.2), -sd * 0.12, n, H, bow);
+    else if (hs === 5) for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) ellipse(c, hx + sd * (4 - k * 0.3), hy + 0.4 + k * 1.5, 1.4, 1.2, k % 2 ? H[1] : H[0]);
+    else if (hs !== 2) for (const sd of [-1, 1]) { ellipse(c, hx + sd * 4.5, hy + 1.8, 0.8, 1.7, H[1]); ellipse(c, hx + sd * 4.4, hy + 1.2, 0.45, 0.8, H[0]); }   // пряди у висков — за краем лица, не на глазах
+  } else if (view === 'E') {
+    if (hs === 0 || hs === 1) for (let k = 0; k < n; k++) ellipse(c, hx - 3 - k * 0.1, hy + 1.2 + k * 1.75, 1.1, 1, k % 2 ? H[1] : H[0]);
+    if (hs === 0 || hs === 1) ellipse(c, hx - 3.5, hy + 1.2 + n * 1.75 - 1, 1, 0.9, bow);
+    if (hs === 4) { ellipse(c, hx - 3.6, hy - 1.6, 2, 1.9, H[1]); ellipse(c, hx - 4, hy - 2.1, 0.8, 0.7, H[0]); }
+    if (hs === 5) for (let k = 0; k < 3; k++) ellipse(c, hx - 3.2, hy - 0.6 + k * 1.6, 1.5, 1.3, k % 2 ? H[1] : H[0]);
+  } else {
+    if (hs === 0) for (const sd of [-1, 1]) { for (let k = 0; k < n; k++) ellipse(c, hx + sd * (1.4 + 0.1 * k), hy + 3 + k * 1.75, 1.1, 1.05, k % 2 ? H[1] : H[0]); ellipse(c, hx + sd * 2, hy + 3 + n * 1.75 - 0.2, 1, 0.9, bow); }
+    else if (hs === 1) { for (let k = 0; k < n + 1; k++) ellipse(c, hx, hy + 3 + k * 1.75, 1.2, 1.05, k % 2 ? H[1] : H[0]); ellipse(c, hx, hy + 3 + (n + 1) * 1.75 - 0.2, 1, 0.9, bow); }
+    else if (hs === 4) { ellipse(c, hx, hy - 1.4, 2.2, 2, H[1]); ellipse(c, hx - 0.6, hy - 2, 0.8, 0.7, H[0]); }
+    else if (hs === 5) for (const sd of [-1, 0, 1]) ellipse(c, hx + sd * 2.6, hy + 3.4, 1.6, 1.4, sd ? H[1] : H[0]);
+  }
+}
+
 function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
   const sk = SKINS[L.skin];
   const R = 3.8;
+  const fem = O.fem || L.fem, nob = fem || L.noBeard;
+  const hc = O.fem ? HAIR : L.hair;
+  const nose = O.fem ? 3 : L.nose;
   if (view === 'S') {
     drawEar(c, hx - 3.4, hy + 0.2, -1, sk); drawEar(c, hx + 3.4, hy + 0.2, 1, sk);
     c.fillStyle = radgrad(c, hx - 1, hy - 1, 0.4, R * 1.5, [[0, sk[0]], [0.7, sk[1]], [1, sk[2]]]);
     c.beginPath(); c.ellipse(hx, hy, R, R * 1.02, 0, 0, Math.PI * 2); c.fill();
-    const bc = O.fem ? HAIR : drawBeard(c, 'S', hx, hy, L, type, bottom, r);
+    const bc = nob ? hc : drawBeard(c, 'S', hx, hy, L, type, bottom, r);
     // пухлые румяные щёки
     ellipse(c, hx - 2.4, hy + 1.1, 1.5, 1.2, sk[0]); ellipse(c, hx + 2.4, hy + 1.1, 1.5, 1.2, sk[0]);
     ellipse(c, hx - 2.4, hy + 1.3, 1.1, 0.8, 'rgba(225,100,80,0.55)'); ellipse(c, hx + 2.4, hy + 1.3, 1.1, 0.8, 'rgba(225,100,80,0.55)');
     if (L.freckles && !O.fem) { drawFreckles(c, hx, hy, sk, -1); drawFreckles(c, hx, hy, sk, 1); }
     // глаз не видно: густая тень под колпаком и торчащие из-под края брови
     ellipse(c, hx, hy + 0.8, 3.3, 0.75, 'rgba(48,22,8,0.55)');
-    c.fillStyle = shade(bc, -0.12); rrect(c, hx - 3.1, hy + 0.3, 2.7, 0.9, 0.4); c.fill(); rrect(c, hx + 0.4, hy + 0.3, 2.7, 0.9, 0.4); c.fill();
-    if (L.brow && !O.fem) {   // кустистые брови: лохматые и торчат за край лица
+    if (nob) { c.fillStyle = shade(bc, 0.1); c.fillRect(hx - 2.8, hy + 0.3, 2, 0.45); c.fillRect(hx + 0.8, hy + 0.3, 2, 0.45); }   // тонкие брови: тёмные широкие читались как очки
+    else { c.fillStyle = shade(bc, -0.12); rrect(c, hx - 3.1, hy + 0.3, 2.7, 0.9, 0.4); c.fill(); rrect(c, hx + 0.4, hy + 0.3, 2.7, 0.9, 0.4); c.fill(); }
+    if (L.brow && !nob) {   // кустистые брови: лохматые и торчат за край лица
       c.fillStyle = shade(bc, -0.05); rrect(c, hx - 3.9, hy + 0.1, 3.3, 1.3, 0.5); c.fill(); rrect(c, hx + 0.6, hy + 0.1, 3.3, 1.3, 0.5); c.fill();
       for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) line(c, hx + sd * (1 + k * 1.1), hy + 0.5, hx + sd * (1.3 + k * 1.1), hy - 0.6 - (k % 2) * 0.4, shade(bc, -0.05), 0.4);
     }
-    drawNose(c, 'S', hx, hy, sk, O.fem ? 0 : L.nose);
+    drawNose(c, 'S', hx, hy, sk, nose);
     if (L.earring && !O.fem) drawEarring(c, hx + 5.6, hy - 0.4);
-    if (O.fem) {
+    if (fem) {
+      if (!L.kid) for (const sd of [-1, 1]) { c.fillStyle = '#24140c'; c.fillRect(hx + sd * 1.7 - 0.8, hy + 1.2, 1.6, 0.5); c.fillRect(hx + sd * 2.6 - 0.25, hy + 0.8, 0.5, 0.5); }   // ресницы (у гномят глаз не видно, как у всех)
       ellipse(c, hx, hy + 3.6, 1.1, 0.55, '#c8402e'); ellipse(c, hx, hy + 3.4, 0.7, 0.2, '#e8705a');   // губы
-      // две рыжие косы свисают на грудь, перевязаны лентами
-      for (const sd of [-1, 1]) {
-        for (let k = 0; k < 6; k++) {
-          const bx = hx + sd * (4.5 - k * 0.12), by = hy + 1.2 + k * 1.75;
-          ellipse(c, bx, by, 1.15, 1.05, k % 2 ? HAIR : HAIR_L); ellipse(c, bx + sd * 0.1, by + 0.35, 0.7, 0.5, HAIR_D);
-        }
-        ellipse(c, hx + sd * 4.2, hy + 11.4, 1.1, 0.9, '#d82e3a');
-        ellipse(c, hx + sd * 4.1, hy + 12.4, 0.9, 0.9, HAIR_L);
-      }
-    } else drawMoustache(c, 'S', hx, hy, bc, L.must);
+      femHair(c, 'S', hx, hy, L, O);
+    } else if (L.noBeard) ellipse(c, hx, hy + 3.5, 0.9, 0.4, '#b8503e');   // гномёнок: улыбка, бороды ещё нет
+    else drawMoustache(c, 'S', hx, hy, bc, L.must);
   } else if (view === 'E') {
     drawEar(c, hx - 2.6, hy + 0.2, -1, sk);
     c.fillStyle = radgrad(c, hx, hy - 1, 0.4, R * 1.5, [[0, sk[0]], [0.7, sk[1]], [1, sk[2]]]);
     c.beginPath(); c.ellipse(hx, hy, R * 0.92, R, 0, 0, Math.PI * 2); c.fill();
-    const bc = O.fem ? HAIR : drawBeard(c, 'E', hx, hy, L, type, bottom, r);
+    const bc = nob ? hc : drawBeard(c, 'E', hx, hy, L, type, bottom, r);
     ellipse(c, hx + 1.9, hy + 1.1, 1.3, 1.1, sk[0]); ellipse(c, hx + 1.9, hy + 1.3, 1, 0.7, 'rgba(225,100,80,0.55)');
     if (L.freckles && !O.fem) drawFreckles(c, hx - 0.4, hy, sk, 1);
     ellipse(c, hx + 1.6, hy + 0.8, 2.2, 0.7, 'rgba(48,22,8,0.55)');
-    c.fillStyle = shade(bc, -0.12); rrect(c, hx + 1, hy + 0.3, 2.8, 0.9, 0.4); c.fill();
-    if (L.brow && !O.fem) { c.fillStyle = shade(bc, -0.05); rrect(c, hx + 0.8, hy + 0.1, 3.6, 1.3, 0.5); c.fill(); for (let k = 0; k < 3; k++) line(c, hx + 1.4 + k * 1.1, hy + 0.5, hx + 1.8 + k * 1.1, hy - 0.6 - (k % 2) * 0.4, shade(bc, -0.05), 0.4); }
-    drawNose(c, 'E', hx, hy, sk, O.fem ? 0 : L.nose);
+    if (nob) { c.fillStyle = shade(bc, 0.1); c.fillRect(hx + 1.3, hy + 0.3, 2.2, 0.45); }
+    else { c.fillStyle = shade(bc, -0.12); rrect(c, hx + 1, hy + 0.3, 2.8, 0.9, 0.4); c.fill(); }
+    if (L.brow && !nob) { c.fillStyle = shade(bc, -0.05); rrect(c, hx + 0.8, hy + 0.1, 3.6, 1.3, 0.5); c.fill(); for (let k = 0; k < 3; k++) line(c, hx + 1.4 + k * 1.1, hy + 0.5, hx + 1.8 + k * 1.1, hy - 0.6 - (k % 2) * 0.4, shade(bc, -0.05), 0.4); }
+    drawNose(c, 'E', hx, hy, sk, nose);
     if (L.earring && !O.fem) drawEarring(c, hx - 4.6, hy - 0.6);
-    if (O.fem) {
+    if (fem) {
+      if (!L.kid) { c.fillStyle = '#24140c'; c.fillRect(hx + 1.6, hy + 1.2, 1.6, 0.5); c.fillRect(hx + 3, hy + 0.8, 0.5, 0.5); }   // ресницы
       ellipse(c, hx + 3.3, hy + 3.5, 0.9, 0.5, '#c8402e');
-      for (let k = 0; k < 6; k++) { ellipse(c, hx - 3 - k * 0.1, hy + 1.2 + k * 1.75, 1.1, 1, k % 2 ? HAIR : HAIR_L); }   // коса за спиной
-      ellipse(c, hx - 3.5, hy + 11.5, 1, 0.9, '#d82e3a');
-    } else drawMoustache(c, 'E', hx, hy, bc, L.must);
+      femHair(c, 'E', hx, hy, L, O);
+    } else if (!L.noBeard) drawMoustache(c, 'E', hx, hy, bc, L.must);
     if (pipe) {
       line(c, hx + 3, hy + 2.4, hx + 6, hy + 3.2, '#4a2c14', 0.6);
       c.fillStyle = '#6a3c1c'; rrect(c, hx + 5.4, hy + 1.4, 1.7, 2.3, 0.4); c.fill();
@@ -695,16 +769,12 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
     }
   } else {
     drawEar(c, hx - 3.4, hy + 0.2, -1, sk); drawEar(c, hx + 3.4, hy + 0.2, 1, sk);
-    const bc = O.fem ? HAIR : type === 'enchanter' ? '#f0ece4' : (L.bcol || BEARDS[L.beard]);
+    const bc = nob ? hc : type === 'enchanter' ? '#f0ece4' : (L.bcol || BEARDS[L.beard]);
     c.fillStyle = bc; c.beginPath(); c.ellipse(hx, hy + 0.4, R, R * 0.95, 0, 0, Math.PI * 2); c.fill();
     c.strokeStyle = shade(bc, -0.25); c.lineWidth = 0.3;
     for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(hx + k * 1.2, hy - 1); c.lineTo(hx + k * 1.3, hy + 3.6); c.stroke(); }
-    if (O.fem) {
-      for (const sd of [-1, 1]) {
-        for (let k = 0; k < 6; k++) { ellipse(c, hx + sd * (1.4 + 0.1 * k), hy + 3 + k * 1.75, 1.1, 1.05, k % 2 ? HAIR : HAIR_L); }
-        ellipse(c, hx + sd * 2, hy + 14.3, 1, 0.9, '#d82e3a');
-      }
-    } else { ellipse(c, hx - 3.6, hy + 3, 1, 2, bc); ellipse(c, hx + 3.6, hy + 3, 1, 2, bc); }
+    if (fem) femHair(c, 'N', hx, hy, L, O);
+    else if (!L.noBeard) { ellipse(c, hx - 3.6, hy + 3, 1, 2, bc); ellipse(c, hx + 3.6, hy + 3, 1, 2, bc); }
   }
 }
 
@@ -1042,7 +1112,7 @@ function drawOnBack(c, k, x, y, view) {
 // opt.gest: wave | fist | scratch | stretch | yawn | clap | point | six7, opt.gf — кадр жеста: 0/1 (опорные позы) или gestCyc() — 4 такта (3 позы).
 
 // Юбка официантки: колоколом до колен, красная с подолом-фестоном и белым фартуком (вид спереди/сзади)
-function femSkirt(c, hipY, front, sw) {
+function femSkirt(c, hipY, front, sw, col = '#8e3a2c', apron = '#fbf7ec', gold = true) {
   const top = hipY - 0.2, hem = -1.6, w = 7.4 + Math.abs(sw) * 0.5;
   c.beginPath();
   c.moveTo(-4.7, top); c.lineTo(4.7, top);
@@ -1050,16 +1120,17 @@ function femSkirt(c, hipY, front, sw) {
   for (let k = 0; k < 6; k++) c.quadraticCurveTo(w - (k + 0.5) * w / 3, hem + 1.1, w - (k + 1) * w / 3, hem);
   c.quadraticCurveTo(-w + 0.4, (top + hem) / 2, -4.7, top);
   c.closePath();
-  c.fillStyle = lingrad(c, -w, 0, w, 0, [[0, shade('#8e3a2c', 0.25)], [0.5, '#8e3a2c'], [1, shade('#8e3a2c', -0.4)]]);
+  c.fillStyle = lingrad(c, -w, 0, w, 0, [[0, shade(col, 0.25)], [0.5, col], [1, shade(col, -0.4)]]);
   c.fill();
-  c.strokeStyle = shade('#8e3a2c', -0.35); c.lineWidth = 0.35;
+  c.strokeStyle = shade(col, -0.35); c.lineWidth = 0.35;
   for (const x of [-4.2, -1.4, 1.4, 4.2]) { c.beginPath(); c.moveTo(x * 0.55, top + 0.6); c.lineTo(x * 1.55, hem); c.stroke(); }
-  c.fillStyle = '#e8c860'; c.fillRect(-w + 0.6, hem - 0.3, 2 * w - 1.2, 0.5);        // золотая тесьма по подолу
+  c.fillStyle = gold ? '#e8c860' : shade(col, 0.35); c.fillRect(-w + 0.6, hem - 0.3, 2 * w - 1.2, 0.5);        // тесьма по подолу
+  if (!apron) return;
   if (front) {
-    c.fillStyle = lingrad(c, 0, top, 0, hem, [[0, '#fbf7ec'], [1, '#d8d0c0']]);
+    c.fillStyle = lingrad(c, 0, top, 0, hem, [[0, apron], [1, shade(apron, -0.15)]]);
     c.beginPath(); c.moveTo(-2.7, top + 0.4); c.lineTo(2.7, top + 0.4); c.lineTo(3.6, hem - 0.5); c.lineTo(-3.6, hem - 0.5); c.closePath(); c.fill();
     c.fillStyle = 'rgba(120,100,80,0.35)'; c.fillRect(-1.6, top + 2.2, 3.2, 0.4);
-  } else { ellipse(c, 0, top + 0.6, 1.3, 0.8, '#fbf7ec'); poly(c, [[-0.3, top + 0.8], [-1.8, top + 3], [-0.8, top + 3.2]], '#fbf7ec'); poly(c, [[0.3, top + 0.8], [1.8, top + 3], [0.8, top + 3.2]], '#efe8d8'); }   // бант фартука
+  } else { ellipse(c, 0, top + 0.6, 1.3, 0.8, apron); poly(c, [[-0.3, top + 0.8], [-1.8, top + 3], [-0.8, top + 3.2]], apron); poly(c, [[0.3, top + 0.8], [1.8, top + 3], [0.8, top + 3.2]], shade(apron, -0.06)); }   // бант фартука
 }
 
 // Грудь и декольте под зелёным лифом (вид спереди)
@@ -1136,6 +1207,11 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const carryN = carry ? Math.max(1, opt.carryN || 1) : 0;
   const upper = fn => { c.save(); c.translate(0, hipY); c.rotate(lean); c.translate(0, -hipY); fn(); c.restore(); };
   const skin = SKINS[L.skin];
+  // гномка: юбка цвета куртки профессии, фартук — если он у профессии есть; у официантки свой наряд
+  const capCol = O.cap === 'serf' ? L.serfCap : typeof O.cap === 'string' && O.cap[0] === '#' ? O.cap : null;
+  const fem = O.fem || L.fem, skirtCol = O.fem ? '#8e3a2c' : capCol ? shade(capCol, -0.28) : shade(shirt, -0.12), skirtApron = O.fem ? '#fbf7ec' : O.apron || null;
+  // гномёнок: голова крупнее тела (сам спрайт уменьшен в family.js)
+  const head = (hx, fn) => { if (!L.kid) { fn(); return; } c.save(); c.translate(hx, headY + 3); c.scale(1.2, 1.2); c.translate(-hx, -(headY + 3)); fn(); c.restore(); };
 
   // зелёная туника: широкая, с животиком и «лиственным» подолом
   const tunicFront = () => {
@@ -1242,18 +1318,20 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       c.fill(); c.clip();
       mossSpeckle(c, -4, shY - 1, 9, 3, 0.9, r);
       c.restore();
-      if (O.fem) {
+      if (fem) {
         c.beginPath(); c.moveTo(-3.2, hipY - 0.2); c.lineTo(3.8, hipY - 0.2); c.quadraticCurveTo(5.6, -3.6, 6.4, -1.6);
         for (let k = 0; k < 5; k++) c.quadraticCurveTo(6.4 - (k + 0.5) * 2.4, -0.5, 6.4 - (k + 1) * 2.4, -1.6);
         c.quadraticCurveTo(-4.6, -4, -3.2, hipY - 0.2); c.closePath();
-        c.fillStyle = lingrad(c, -5, 0, 6, 0, [[0, shade('#8e3a2c', 0.2)], [0.6, '#8e3a2c'], [1, shade('#8e3a2c', -0.4)]]); c.fill();
-        c.fillStyle = '#e8c860'; c.fillRect(-5.2, -1.9, 11.4, 0.5);
-        c.fillStyle = '#f6f1e4'; c.beginPath(); c.moveTo(1.4, hipY); c.lineTo(4, hipY); c.lineTo(5.4, -2); c.lineTo(1.8, -2); c.closePath(); c.fill();
+        c.fillStyle = lingrad(c, -5, 0, 6, 0, [[0, shade(skirtCol, 0.2)], [0.6, skirtCol], [1, shade(skirtCol, -0.4)]]); c.fill();
+        c.fillStyle = O.fem ? '#e8c860' : shade(skirtCol, 0.35); c.fillRect(-5.2, -1.9, 11.4, 0.5);
+        if (skirtApron) { c.fillStyle = skirtApron; c.beginPath(); c.moveTo(1.4, hipY); c.lineTo(4, hipY); c.lineTo(5.4, -2); c.lineTo(1.8, -2); c.closePath(); c.fill(); }
+      }
+      if (O.fem) {
         ellipse(c, 2.9, shY + 3.1, 2.3, 2.4, skin[0]); c.fillStyle = '#3f7a46'; c.beginPath(); c.ellipse(2.9, shY + 4.3, 2.4, 1.5, 0, 0, Math.PI); c.fill();    // грудь в профиль
         ellipse(c, 2.5, shY + 2.2, 0.8, 0.6, 'rgba(255,240,225,0.7)'); ellipse(c, 1.6, shY + 0.4, 2.2, 1, skin[0]);
       }
       if (O.vest) { c.fillStyle = O.vest; c.beginPath(); c.moveTo(-2, shY); c.lineTo(1.8, shY); c.quadraticCurveTo(4.4, shY + 3, 3, hipY + 0.6); c.lineTo(-2.4, hipY + 0.6); c.fill(); }
-      if (O.apron && !O.fem) { c.fillStyle = lingrad(c, 0, shY + 1, 0, -2.4, [[0, O.apron], [1, shade(O.apron, -0.25)]]); c.beginPath(); c.moveTo(1.2, shY + 2); c.lineTo(3.8, shY + 2.4); c.quadraticCurveTo(5, -5, 3.8 + sw * 0.4, -2.4); c.lineTo(1.4, -2.4); c.closePath(); c.fill(); if (O.blood) { ellipse(c, 3, -7.4, 0.6, 0.8, '#9c2c20'); ellipse(c, 3.3, -4.8, 0.5, 0.6, '#ac3e2a'); } }
+      if (O.apron && !fem) { c.fillStyle = lingrad(c, 0, shY + 1, 0, -2.4, [[0, O.apron], [1, shade(O.apron, -0.25)]]); c.beginPath(); c.moveTo(1.2, shY + 2); c.lineTo(3.8, shY + 2.4); c.quadraticCurveTo(5, -5, 3.8 + sw * 0.4, -2.4); c.lineTo(1.4, -2.4); c.closePath(); c.fill(); if (O.blood) { ellipse(c, 3, -7.4, 0.6, 0.8, '#9c2c20'); ellipse(c, 3.3, -4.8, 0.5, 0.6, '#ac3e2a'); } }
       if (!O.robe) {
         c.fillStyle = '#5a3a1e'; c.fillRect(-3, hipY - 0.3, 6.8, 1.5);
         c.fillStyle = '#c8a050'; c.fillRect(2.4, hipY - 0.3, 1.1, 1.5);
@@ -1272,8 +1350,10 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -3.6, hipY + 0.7, -0.5, 0.86, !armed);
       }
       if (courier) line(c, -2, shY + 0.2, 2.4, hipY, '#4a2c14', 0.6);
-      drawHead(c, 'E', 0.6, headY, L, O, type, false, beardBottom, r);   // курево рисует drawSmoking (smoking.js)
-      if (!opt.nohat) drawCap(c, O, 'E', 0.6, headY, tipSway, L, r, lvl);
+      head(0.6, () => {
+        drawHead(c, 'E', 0.6, headY, L, O, type, false, beardBottom, r);   // курево рисует drawSmoking (smoking.js)
+        if (!opt.nohat) drawCap(c, O, 'E', 0.6, headY, tipSway, L, r, lvl);
+      });
       if (sling) {
         poly(c, [[-0.4, shY + 0.6], [3.4, shY + 3.2], [-0.8, shY + 4.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
         smoothLimb(c, [0.4, shY + 0.4], [0.6, shY + 3], [2.8, shY + 3], 2, shirt);
@@ -1413,10 +1493,10 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     else {
       if (front) {
         if (O.vest) { c.fillStyle = O.vest; c.fillRect(-3.8, shY + 0.4, 2.4, 5.4); c.fillRect(1.4, shY + 0.4, 2.4, 5.4); if (O.rivets) { c.fillStyle = '#cec6ba'; for (let k = 0; k < 3; k++) { c.fillRect(-2.8, shY + 1.4 + k * 1.6, 0.4, 0.4); c.fillRect(2.4, shY + 1.4 + k * 1.6, 0.4, 0.4); } } }
-        if (O.apron && !O.fem) { c.fillStyle = lingrad(c, 0, shY + 1.6, 0, -1.6, [[0, O.apron], [1, shade(O.apron, -0.25)]]); c.beginPath(); c.moveTo(-2.8, shY + 2); c.lineTo(2.8, shY + 2); c.lineTo(3.4, -1.6); c.lineTo(-3.4, -1.6); c.closePath(); c.fill(); if (O.blood) { ellipse(c, -1, -6.4, 0.7, 0.9, '#9c2c20'); ellipse(c, 1.4, -4, 0.6, 0.7, '#ac3e2a'); } }
+        if (O.apron && !fem) { c.fillStyle = lingrad(c, 0, shY + 1.6, 0, -1.6, [[0, O.apron], [1, shade(O.apron, -0.25)]]); c.beginPath(); c.moveTo(-2.8, shY + 2); c.lineTo(2.8, shY + 2); c.lineTo(3.4, -1.6); c.lineTo(-3.4, -1.6); c.closePath(); c.fill(); if (O.blood) { ellipse(c, -1, -6.4, 0.7, 0.9, '#9c2c20'); ellipse(c, 1.4, -4, 0.6, 0.7, '#ac3e2a'); } }
         if (courier) { line(c, -2.8, shY, -2.6, hipY, '#4a2c14', 0.8); line(c, 2.8, shY, 2.6, hipY, '#4a2c14', 0.8); }
       }
-      if (O.fem) femSkirt(c, hipY, front, sw);
+      if (fem) femSkirt(c, hipY, front, sw, skirtCol, skirtApron, !!O.fem);
       // широкий кожаный ремень с пряжкой и сумочкой
       c.fillStyle = '#5a3a1e'; c.fillRect(-4.9, hipY - 0.4, 9.8, 1.6);
       c.fillStyle = 'rgba(255,220,170,0.25)'; c.fillRect(-4.9, hipY - 0.4, 9.8, 0.35);
@@ -1436,8 +1516,10 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -sx, hipY + 0.4, -sd, 0.9, !armed);
     }
     if (front) { arm(-1); arm(1); }
-    drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);
-    if (!opt.nohat) drawCap(c, O, view, 0, headY, tipSway, L, r, lvl);
+    head(0, () => {
+      drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);
+      if (!opt.nohat) drawCap(c, O, view, 0, headY, tipSway, L, r, lvl);
+    });
     // поднятая рука жеста — поверх головы и бороды
     if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic' || gest === 'six7') arm(-1); }
     if (pose === 'smoke' && front) {
@@ -1477,13 +1559,21 @@ function spriteBudgetOk(hasFallback) {
 }
 function spriteSpent(t0) { R.sprMs = (R.sprMs || 0) + performance.now() - t0; }
 
+// пол для рисования: семья (family.js), героиня (u.hero.sx), снимок жертвы нечисти или кооп-пакет (u.sx)
+function personSex(u) {
+  if (!u) return '';
+  if (u.sx === 'f' || (u.fam && u.fam.sx === 'f')) return 'f';
+  const ap = u.type === 'hero' && typeof haOf === 'function' ? haOf(u) : null;   // героиня: облик ap[10] (heroapp.js)
+  return ap && ap[10] === 1 ? 'f' : '';
+}
 function personSprite(u, view, pose, frame, opt = {}) {
+  const sx = u.type === 'waitress' ? '' : personSex(u);
   const look = (u.look >>> 0) >= 0x20000 ? u.look : LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length];   // 0x20000+ — особые гномы наследия (legacy.js)
   const fkey = pose === 'work' ? `${frame.anim}${frame.f}` : frame;
   const lvl = (u.type === 'serf' || u.type === 'builder') ? unitLevel(u) : 1;
   const carryN = u.carry ? Math.min(3, Math.max(1, u.carryN || 1)) : 0;
   const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gest === 'five' ? (opt.gf || 0) : gestK(opt.gf || 0)) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}${opt.wpn ? 'W' + opt.wpn : ''}${opt.nohat ? 'H0' : ''}`;
-  const key = `${u.type}|${look}|${view}${pose}${fkey}|${u.carry || ''}|${u.injury || ''}|${okey}`;
+  const key = `${u.type}|${look}${sx}|${view}${pose}${fkey}|${u.carry || ''}|${u.injury || ''}|${okey}`;
   let cv = PEOPLE_CACHE.get(key);
   if (cv) {
     // недавно нужные кадры — в конец очереди, вытесняются самые давние
@@ -1500,7 +1590,7 @@ function personSprite(u, view, pose, frame, opt = {}) {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c2.width, c2.height);
   ctx.setTransform(PS, 0, 0, PS, 0, 0); ctx.globalAlpha = 1;
   // мох и крапинки одинаковые у одного гнома во всех кадрах
-  drawPerson(ctx, u.type, lookOf({ type: u.type, look }), view, pose, frame, u.carry, u.injury, mulberry32(look * 977 + 13), { ...opt, lvl, carryN });
+  drawPerson(ctx, u.type, lookOf({ type: u.type, look, sx }), view, pose, frame, u.carry, u.injury, mulberry32(look * 977 + 13), { ...opt, lvl, carryN });
   cv = toPixelArt(c2, PS / PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
   if (PEOPLE_CACHE.size >= PEOPLE_CACHE_MAX) PEOPLE_CACHE.delete(PEOPLE_CACHE.keys().next().value);
   PEOPLE_CACHE.set(key, cv);
@@ -1511,8 +1601,8 @@ function personSprite(u, view, pose, frame, opt = {}) {
 
 // Портрет для интерфейса: голова, уши и колпак крупно.
 const PORTRAIT_CACHE = new Map();
-function portraitURL(type, look = 3) {
-  const key = type + look;
+function portraitURL(type, look = 3, sx = '') {
+  const key = type + look + sx;
   if (PORTRAIT_CACHE.has(key)) return PORTRAIT_CACHE.get(key);
   const cv = mkCanvas(48, 48);
   const c = cv.getContext('2d');
@@ -1522,7 +1612,7 @@ function portraitURL(type, look = 3) {
     c.imageSmoothingEnabled = true;
     c.drawImage(creatureSprite('packgoat', 0, null), 0, 0, 48, 48);
   } else {
-    const spr = personSprite({ type, look, carry: null }, 'S', 'idle', 0);
+    const spr = personSprite({ type, look, sx, carry: null }, 'S', 'idle', 0);
     // область головы: x 1..25, y 0..24 мировых пикселей
     c.drawImage(spr, 1 * PART, 0, 24 * PART, 24 * PART, 0, 0, 48, 48);
   }

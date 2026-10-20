@@ -544,14 +544,15 @@ function entReact(u) {
     for (const o of Game.units) if (o !== u && !o.dead && !o.inside && isPerson(o) && Math.hypot(o.x - u.x, o.y - u.y) < 5) friends++;
     if (e.state === 'fight') {
       // идёт драка: присоединиться, если ещё не поздно
-      if (!e.resolved && e.fighters.length < 6 && Math.random() < (friends ? 0.75 : 0.5)) { e.fighters.push(u); startBreak(u, 'fight', null); u.proc = entFightGen(u, e); }
+      if (!e.resolved && e.fighters.length < 6 && Math.random() < (friends ? 0.75 : 0.5) && !(typeof folkNoFight === 'function' && folkNoFight(u))) { e.fighters.push(u); startBreak(u, 'fight', null); u.proc = entFightGen(u, e); }
       else { startBreak(u, 'flee', null); u.proc = fleeGen(u); }
       return;
     }
     const r = Math.random();
     const canFight = e.state === 'walk' || e.state === 'smash';
     const pFreeze = friends ? 0.12 : 0.4, pFlee = friends ? 0.28 : 0.75;     // накопительные пороги: застыть / бежать / драться
-    if (r < pFreeze) { startBreak(u, 'freeze', null); u.proc = freezeGen(u); }
+    if (typeof folkNoFight === 'function' && folkNoFight(u)) folkHide(u);   // гномята и гномки с нечистью не дерутся (folk.js)
+    else if (r < pFreeze) { startBreak(u, 'freeze', null); u.proc = freezeGen(u); }
     else if (r < pFlee || !canFight) { startBreak(u, 'flee', null); u.proc = fleeGen(u); }
     else {
       e.target = null; e.state = 'fight'; e.foe = u; e.t = 0; e.goal = null; e.fighters = [u]; e.fightT = undefined; e.resolved = false;

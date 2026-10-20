@@ -14,7 +14,8 @@ const HA_LEN_NAMES = ['До груди', 'До ремня'];
 const HA_MUST_NAMES = ['Пышные', 'Закрученные', 'Моржовые'];
 const HA_DECO_NAMES = ['Веточка', 'Листья', 'Грибок', 'Перо', 'Жёлудь', 'Без украшений'];
 // индексы массива: 0 колпак (-1 — шлем или шапка класса), 1 цвет колпака (у шлема класса — перекраска), 9 жилет/доспех, 2 цвет бороды, 3 форма бороды, 4 длина, 5 усы, 6 кожа, 7 куртка, 8 украшение
-const HA_MAX = [9, 11, 11, 4, 1, 2, 2, 11, 5, 11];   // 9 — цвет жилета/доспеха
+const HA_MAX = [9, 11, 11, 4, 1, 2, 2, 11, 5, 11, 1, 5];   // 9 — цвет жилета/доспеха, 10 — гном/гномка, 11 — причёска гномки
+const HA_SEX_NAMES = ['Гном', 'Гномка'];
 const HA_CLS_CAP = { warrior: '#9aa0aa', barbarian: '#8a6a4a', mage: '#2c4a9a', archer: '#3a7a2a', druid: '#6a5230', rogue: '#2a2a34', monk: '#d8501a', priest: '#e4e0d2', bard: '#b03a7a', paladin: '#d8d8e0' };
 const HA = { last: null, hooked: false, types: new Map(), look: {} };
 
@@ -49,6 +50,7 @@ function haType(base, ap) {
   if (ap[5] >= 0) L.must = ap[5];
   if (ap[6] >= 0) L.skin = ap[6];
   if (ap[8] >= 0) L.deco = ap[8];
+  if (ap[10] === 1) { if (ap[11] >= 0) L.hs = ap[11]; if (ap[2] >= 0) L.hair = HA_BEARD_COLS[ap[2]]; }   // героиня: причёска, цвет волос
   HA.look[key] = L;
   HA.types.set(key, true);
   return key;
@@ -104,30 +106,30 @@ function haTintCtx(c, hex) {
   personSprite = function (u, view, pose, frame, opt) {
     const ap = haOf(u);
     if (!ap) return _ps(u, view, pose, frame, opt);
-    const sh = { type: haType(haBase(u), ap), look: u.look, carry: u.carry, carryN: u.carryN, injury: u.injury, _spr: u._spr };
+    const sh = { type: haType(haBase(u), ap), look: u.look, sx: personSex(u), carry: u.carry, carryN: u.carryN, injury: u.injury, _spr: u._spr };
     const cv = _ps(sh, view, pose, frame, opt);
     u._spr = cv;
     return cv;
   };
 
   const _pu = portraitURL;
-  portraitURL = function (type, look) {
+  portraitURL = function (type, look, sx) {
     if (type === 'hero' && typeof Game !== 'undefined') {
-      const me = Game.hero && Game.hero.look === look && haOf(Game.hero) ? Game.hero : Game.units.find(x => x.type === 'hero' && x.look === look && haOf(x));
-      if (me) return _pu(haType(haBase(me), haOf(me)), look);
+      const me = Game.hero && Game.hero.look === look ? Game.hero : Game.units.find(x => x.type === 'hero' && x.look === look);
+      if (me) { sx = sx || personSex(me); if (haOf(me)) return _pu(haType(haBase(me), haOf(me)), look, sx); }
     }
-    return _pu(type, look);
+    return _pu(type, look, sx);
   };
 }
 
 // портрет и фигура по облику — для окна редактора
 function haPortraitFor(ap, clsKey, look) {
   const base = clsKey && OUTFIT['hero_' + clsKey] ? 'hero_' + clsKey : 'hero';
-  return portraitURL(ap ? haType(base, ap) : base, look);
+  return portraitURL(ap ? haType(base, ap) : base, look, ap && ap[10] === 1 ? 'f' : '');
 }
 function haBodyFor(ap, clsKey, look) {
   const base = clsKey && OUTFIT['hero_' + clsKey] ? 'hero_' + clsKey : 'hero';
-  return personSprite({ type: ap ? haType(base, ap) : base, look, carry: null }, 'S', 'idle', 0);
+  return personSprite({ type: ap ? haType(base, ap) : base, look, sx: ap && ap[10] === 1 ? 'f' : '', carry: null }, 'S', 'idle', 0);
 }
 
 // ---------- Окно редактора ----------
@@ -173,10 +175,11 @@ function haOpenEditor(opts) {
     <div class="ha-body"><div class="ha-pv"><canvas id="ha-body" width="120" height="132"></canvas>
       ${opts.name != null ? `<input id="ha-name" maxlength="16" value="${String(opts.name).replace(/"/g, '&quot;')}" autocomplete="off" placeholder="Имя героя">` : `<div class="ha-nm">${opts.nick || ''}</div>`}</div>
     <div class="ha-rows">
+      ${step(10, 'Облик')}${step(11, 'Причёска')}
       ${step(0, 'Колпак')}<div class="ha-row"><span>Цвет колпака / шлема</span>${sw(1, HA_CAP_COLS)}</div>
       ${step(8, 'Украшение')}
       <div class="ha-row"><span>Жилет, доспех</span>${sw(9, HA_COAT_COLS)}</div>
-      ${step(3, 'Борода')}${step(4, 'Длина')}<div class="ha-row"><span>Цвет бороды</span>${sw(2, HA_BEARD_COLS)}</div>
+      ${step(3, 'Борода')}${step(4, 'Длина')}<div class="ha-row"><span>Цвет бороды, волос</span>${sw(2, HA_BEARD_COLS)}</div>
       ${step(5, 'Усы')}
       <div class="ha-row"><span>Кожа</span>${sw(6, HA_SKIN_COLS)}</div>
       <div class="ha-row"><span>Куртка</span>${sw(7, HA_COAT_COLS)}</div>
@@ -184,7 +187,7 @@ function haOpenEditor(opts) {
     ${opts.note ? `<div class="ha-note">${opts.note}</div>` : ''}
     <div class="ha-btns"><button class="sec" data-ha="rnd">Случайно</button><button class="sec" data-ha="def">Сбросить</button>${opts.cancelText ? `<button class="sec" data-ha="no">${opts.cancelText}</button>` : ''}<button data-ha="ok">${opts.okText || 'Готово'}</button></div></div>`;
   document.body.appendChild(box);
-  const NAMES = { 0: HA_CAP_NAMES, 3: HA_BEARD_NAMES, 4: HA_LEN_NAMES, 5: HA_MUST_NAMES, 8: HA_DECO_NAMES };
+  const NAMES = { 0: HA_CAP_NAMES, 3: HA_BEARD_NAMES, 4: HA_LEN_NAMES, 5: HA_MUST_NAMES, 8: HA_DECO_NAMES, 10: HA_SEX_NAMES, 11: FEM_HS_NAMES };
   const cv = box.querySelector('#ha-body');
   const draw = () => {
     for (const el of box.querySelectorAll('[data-nm]')) { const i = +el.dataset.nm; el.textContent = ap[i] < 0 ? 'По умолчанию' : NAMES[i][ap[i]]; }

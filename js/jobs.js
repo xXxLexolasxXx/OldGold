@@ -90,14 +90,15 @@ function* eatGen(u, inn) {
     if (dry) { yield { leave: true }; return; }
     // к еде — кружка пива (тёмное насыщает вдвое, зато и пьянит вдвое), если есть
     const mug = (inn.stock.darkbeer - inn.reserved.darkbeer > 0 && (inn.stock.beer - inn.reserved.beer <= 0 || Math.random() < 0.5)) ? 'darkbeer' : 'beer';
-    if (inn.stock[mug] - inn.reserved[mug] > 0 && Math.random() < 0.85) {
+    const fk = typeof folkBeerK === 'function' ? folkBeerK(u) : 1;   // гномки пьют втрое реже (folk.js)
+    if (inn.stock[mug] - inn.reserved[mug] > 0 && Math.random() < 0.85 * fk) {
       yield { wait: 3 };
       if (!inn.removed && inn.stock[mug] > 0) {
         inn.stock[mug]--;
         const dark = mug === 'darkbeer';
         u.food = Math.min(dark ? 1.4 : 1.2, u.food + (dark ? 0.4 : 0.2));
         // захмелел: через несколько секунд пути свалится спать
-        if (Math.random() < Math.min(0.95, DRUNK_CHANCE * (dark ? 2 : 1))) u.drunkAt = Game.time + 3 + Math.random() * 9;
+        if (Math.random() < Math.min(0.95, DRUNK_CHANCE * (dark ? 2 : 1) * fk)) u.drunkAt = Game.time + 3 + Math.random() * 9;
       }
     }
   }

@@ -313,7 +313,7 @@ function mdBreak(u, M, now, G) {
   const foes = now >= G.fightAt ? mdPeopleFor(u) : [];
   // что сильнее давит — то и толкает на срыв: голод и скука — драться, одиночество — пить, усталость — бросить работу
   const top = (M.r.find(r => r[1] < 0) || ['x'])[0];
-  const w = { drink: inn ? 4 + (top === 'soc' ? 3 : 0) : 0, fight: foes.length ? 2.5 + (top === 'food' || top === 'fun' ? 2 : 0) : 0, sulk: 3 + (top === 'rest' ? 3 : 0) };
+  const w = { drink: inn ? (4 + (top === 'soc' ? 3 : 0)) * (typeof folkBeerK === 'function' ? folkBeerK(u) : 1) : 0, fight: foes.length ? 2.5 + (top === 'food' || top === 'fun' ? 2 : 0) : 0, sulk: 3 + (top === 'rest' ? 3 : 0) };
   const sum = w.drink + w.fight + w.sulk;
   let r = Math.random() * sum, pick = 'sulk';
   for (const k of ['drink', 'fight', 'sulk']) { if ((r -= w[k]) < 0) { pick = k; break; } }
