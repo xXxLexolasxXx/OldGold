@@ -11,8 +11,19 @@
 const AudioCore = { ctx: null, master: null, limiter: null, music: null, musicDuck: null, sfx: null, amb: null, ui: null, noise: null, air: null,
   an: null, srcs: new Set(), keep: false, hiddenAt: 0, rebuilds: 0, kills: 0, dog: null, wd: { wall: 0, ct: 0, stall: 0, hot: 0, killT: [] } };
 
+// приложение на телефоне (Capacitor или установленный PWA на сенсорном экране)
+function audioPhoneApp() {
+  try {
+    const C = window.Capacitor;
+    if (C && C.isNativePlatform && C.isNativePlatform()) return true;
+    return !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches && matchMedia('(pointer: coarse)').matches);
+  } catch (e) { return false; }
+}
+
 function audioCoreInit() {
   if (AudioCore.ctx) return AudioCore.ctx;
+  // iOS/Safari: «ambient» — звук игры смешивается с чужим плеером и не прерывает его (на Android Web Audio аудиофокус и так не берёт)
+  try { if (navigator.audioSession && audioPhoneApp()) navigator.audioSession.type = 'ambient'; } catch (e) { /* нет API */ }
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return null;
   let ctx;
@@ -1027,11 +1038,23 @@ function setMusic(on) {
 function initMusic() {
   // на локальном сервере (вкладки разработки и тестов) музыка по умолчанию выключена — не жужжит фоном из всех вкладок
   const dev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-  try { const v = localStorage.getItem('feod.music'); Music.on = v === null ? !dev : v !== '0'; } catch (e) { Music.on = !dev; }
+  // в приложении на телефоне игра не перебивает чужую музыку (плеер в наушниках): пока игрок сам не включил — музыка выключена
+  const quiet = dev || audioPhoneApp();
+  try { const v = localStorage.getItem('feod.music'); Music.on = v === null ? !quiet : v !== '0'; } catch (e) { Music.on = !quiet; }
   audioKickOnGesture(startMusic);
+  try {
+    if (audioPhoneApp() && !Music.on && localStorage.getItem('feod.music') === null && !localStorage.getItem('feod.musicHint')) {
+      localStorage.setItem('feod.musicHint', '1');
+      setTimeout(() => toast('Музыка выключена, чтобы не перебивать ваш плеер. Включить: ♪ вверху'), 25000);
+    }
+  } catch (e) { /* нет хранилища */ }
   const btn = document.getElementById('music-btn');
   if (btn) {
-    const sync = syncMusicBtn = () => { btn.classList.toggle('active', Music.on); btn.title = Music.on ? 'Музыка: вкл' : 'Музыка: выкл'; };
+    const sync = syncMusicBtn = () => {
+      btn.classList.toggle('active', Music.on); btn.classList.toggle('off', !Music.on);
+      btn.textContent = Music.on ? '♪ Музыка' : '♪ Музыка: выкл'; btn.title = Music.on ? 'Музыка: вкл — нажмите, чтобы выключить' : 'Музыка: выкл — нажмите, чтобы включить';
+      const dd = document.getElementById('dd-snd'); if (dd) dd.classList.toggle('mute', !Music.on);
+    };
     btn.onclick = (e) => { e.stopPropagation(); startMusic(); setMusic(!Music.on); sync(); };
     sync();
   }
