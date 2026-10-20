@@ -10,7 +10,7 @@ const sim = L.newSim(+(process.argv[2] || 7)), h = sim.h, J = c => JSON.parse(h.
 let st = J(`const ls = Game.lairs.filter(l => l.k === 'ftvil');
   return { n: ls.length, quota: ftQuota(), want: ftWant(0), dist: ls.map(l => Math.round(Math.hypot(l.x - (MAP_W >> 1), l.y - (MAP_H >> 1)))),
     mem: ls.map(l => Game.neutrals.filter(N => N.lair === l.id).map(N => N.k)), ft: Game.ft };`);
-ok(st.n >= 1 && st.n <= st.quota, 'нет поселений квакунов на старте: ' + JSON.stringify(st));
+ok(st.n >= 1 && st.n <= st.quota, 'нет поселений жаболюдов на старте: ' + JSON.stringify(st));
 ok(st.dist.every(d => d >= 20), 'поселение слишком близко к деревне: ' + st.dist);
 ok(st.mem.every(m => m.length >= 5 && m.length <= 8), 'в поселении должно быть 5–8 жителей: ' + JSON.stringify(st.mem));
 ok(st.mem.every(m => m.includes('ftG') && m.includes('ftB') && m.includes('ftP')), 'нет каст в поселении: ' + JSON.stringify(st.mem));
@@ -57,7 +57,7 @@ const jp = J(`
 if (jp.skip) console.log('  · прыжок: пропуск');
 else { ok(jp.okj && jp.ph.includes('crouch') && jp.ph.includes('air'), 'нет фаз прыжка: ' + JSON.stringify(jp)); ok(jp.moved > 2 && jp.land, 'прыжок не долетел: ' + JSON.stringify(jp)); }
 
-// 5. Яд: ближний удар по квакуну может отравить героя; дети — никогда; вода смывает; не убивает
+// 5. Яд: ближний удар по жаболюду может отравить героя; дети — никогда; вода смывает; не убивает
 const pz = J(`
   const N = Game.neutrals.find(N => ftIs(N) && N.st !== 'die'), u = Game.hero;
   if (!N || !u) return { skip: 1 };
@@ -90,7 +90,7 @@ const terr = J(`
   let fought = 0;
   for (let i = 0; i < 160; i++) { u.x = L0.x + 3.5; u.y = L0.y + 0.5; ftLairTick(L0, Game.time); Game.time += 1; if (Game.neutrals.some(N => N.lair === L0.id && N.tg === u.id)) { fought = 1; break; } }
   return { fought, winter: ftWinter() };`);
-if (terr.skip) console.log('  · территория: пропуск'); else ok(terr.fought === 1 || terr.winter, 'квакуны не напали на чужака у поселения');
+if (terr.skip) console.log('  · территория: пропуск'); else ok(terr.fought === 1 || terr.winter, 'жаболюды не напали на чужака у поселения');
 
 // 8. Зима: спячка у воды; тронутые просыпаются вялыми
 const win = J(`
@@ -100,7 +100,7 @@ const win = J(`
   for (let i = 0; i < 400; i++) step(0.05);
   const sleeping = Game.neutrals.filter(ftIs).filter(M => M.st !== 'die' && M.tor).length, total = Game.neutrals.filter(ftIs).length;
   return { sleeping, total, fr: N.fr };`);
-ok(win.sleeping >= Math.floor(win.total * 0.5), 'зимой квакуны не ушли в спячку: ' + JSON.stringify(win));
+ok(win.sleeping >= Math.floor(win.total * 0.5), 'зимой жаболюды не ушли в спячку: ' + JSON.stringify(win));
 h.run('seaSet(0); SEA().snow = 0; SEA().ice = 0;');
 
 // 9. Лечение у воды
@@ -109,7 +109,7 @@ const heal = J(`
   N.x = L1.x + 0.5; N.y = L1.y + 0.9; N.hp = N.mhp * 0.3; N.wdT = 0; N.tor = 0;
   for (let i = 0; i < 40; i++) ftLife(N, 0.25);
   return { r: N.hp / N.mhp };`);
-ok(heal.r > 0.4, 'у воды квакун не лечится: ' + heal.r);
+ok(heal.r > 0.4, 'у воды жаболюд не лечится: ' + heal.r);
 
 // 10. Шаманы: лечение, молния, огнемаг — не падают
 const mg = J(`
@@ -138,8 +138,8 @@ const before = J('return { lairs: Game.lairs.filter(l => l.k === "ftvil").length
 h.run('__s = JSON.parse(JSON.stringify(serializeGame())); applySave(__s)');
 const after = J('return { lairs: Game.lairs.filter(l => l.k === "ftvil").length, ft: Game.ft, mem: Game.neutrals.filter(ftIs).length, wet: Game.neutrals.filter(ftIs).every(N => N.wet === 1) }');
 ok(before.lairs === after.lairs && JSON.stringify(before.ft) === JSON.stringify(after.ft), 'сейв не сохранил поселения/Game.ft: ' + JSON.stringify([before, after]));
-ok(after.mem === before.mem, 'число квакунов изменилось после загрузки');
-ok(J('return neuMirror().filter(d => d.k === "ftG").length > 0'), 'квакуны не в зеркале');
+ok(after.mem === before.mem, 'число жаболюдов изменилось после загрузки');
+ok(J('return neuMirror().filter(d => d.k === "ftG").length > 0'), 'жаболюды не в зеркале');
 h.run('__s.nt.ft = undefined; applySave(__s)');
 ok(J('return Game.ft && typeof Game.ft.nt === "number"'), 'старый сейв без ft сломал Game.ft');
 

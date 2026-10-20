@@ -1,5 +1,5 @@
 'use strict';
-// Жаболюды / квакуны (ЖАБОЛЮДЫ.md): нейтральный народ у воды, четыре касты — зелёные копейщики (ftG), синие охотники (ftB),
+// Жаболюды / жаболюды (ЖАБОЛЮДЫ.md): нейтральный народ у воды, четыре касты — зелёные копейщики (ftG), синие охотники (ftB),
 // фиолетовые шаманы (ftP), золотой вождь (ftK). Лор D&D (грунги) взят как вдохновение механик:
 //   земноводные — влажность и лечение водой, ядовитая кожа и дротики, прыжок с места через стены, лазанье по деревьям,
 //   стая зовёт своих, шаманы лечат и напускают туман, зимой — спячка, огонь и сухость — слабость; дети не страдают.
@@ -22,19 +22,19 @@ const FT_TERR_R = 4.5;           // территория поселения
 // ---------- Виды, логово, товары ----------
 if (typeof NSPEC !== 'undefined') {
   Object.assign(NSPEC, {
-    ftG: { name: 'Квакун-копейщик', mhp: 34, dmg: [4, 6], cd: 1.4, rng: 1.6, spd: 2.6, parry: 0.18, xp: 30, roam: 3, sz: 9,
+    ftG: { name: 'Жаболюд-копейщик', mhp: 34, dmg: [4, 6], cd: 1.4, rng: 1.6, spd: 2.6, parry: 0.18, xp: 30, roam: 3, sz: 9,
       drop: [['hide', 1, 0.6], ['venom', 1, 0.5], ['slime', 1, 0.5]], msg: ['Ква! Прочь с болота!', 'Ква-ква-ква!', 'Чужак! Квак!'] },
-    ftB: { name: 'Квакун-охотник', mhp: 26, dmg: [3, 5], cd: 1.8, rng: 5, spd: 2.5, parry: 0.2, xp: 36, roam: 3.4, sz: 8, ranged: true,
+    ftB: { name: 'Жаболюд-охотник', mhp: 26, dmg: [3, 5], cd: 1.8, rng: 5, spd: 2.5, parry: 0.2, xp: 36, roam: 3.4, sz: 8, ranged: true,
       drop: [['hide', 1, 0.5], ['venom', 2, 0.8], ['slime', 1, 0.3]], msg: ['Дротик — в цель!', 'Тсс… ква.', 'Мои дротики голодны!'] },
-    ftP: { name: 'Квакун-громовик', mhp: 32, dmg: [3, 5], cd: 2.0, rng: 4, spd: 2.0, parry: 0.22, xp: 60, roam: 2.6, sz: 9, ranged: true,
+    ftP: { name: 'Жаболюд-громовик', mhp: 32, dmg: [3, 5], cd: 2.0, rng: 4, spd: 2.0, parry: 0.22, xp: 60, roam: 2.6, sz: 9, ranged: true,
       drop: [['venom', 2, 0.8], ['slime', 2, 0.7], ['magicstone', 1, 0.5], ['mana', 1, 0.3]], msg: ['Гром над болотом!', 'Ква-а-а… молния, приди!', 'Вода и гроза — наши сёстры!'] },
-    ftR: { name: 'Квакун-огнемаг', mhp: 30, dmg: [4, 7], cd: 2.1, rng: 4.5, spd: 2.0, parry: 0.15, xp: 55, roam: 2.6, sz: 9, ranged: true,
+    ftR: { name: 'Жаболюд-огнемаг', mhp: 30, dmg: [4, 7], cd: 2.1, rng: 4.5, spd: 2.0, parry: 0.15, xp: 55, roam: 2.6, sz: 9, ranged: true,
       drop: [['ash', 1, 0.6], ['slime', 1, 0.5], ['magicstone', 1, 0.5], ['venom', 1, 0.5]], msg: ['Гори, гори ясно!', 'Ква-а-а… пламя, явись!', 'Болотные огни — со мной!'] },
-    ftK: { name: 'Вождь квакунов', mhp: 105, dmg: [7, 10], cd: 1.9, rng: 1.9, spd: 2.3, parry: 0.12, xp: 140, roam: 2.4, sz: 13,
+    ftK: { name: 'Вождь жаболюдов', mhp: 105, dmg: [7, 10], cd: 1.9, rng: 1.9, spd: 2.3, parry: 0.12, xp: 140, roam: 2.4, sz: 13,
       drop: [['venom', 3, 1], ['gold', 3, 0.9], ['slime', 2, 0.8], ['hide', 2, 0.6]], msg: ['КВАААК! Вся деревня — на чужака!', 'Я — вождь болота!', 'Ква-ква-КВА!'] },
   });
   NLAIR[FT_LAIR] = ['ftG', 'ftG', 'ftG', 'ftB', 'ftB', 'ftP'];
-  NEU_LAIR_NAME[FT_LAIR] = 'Свайная деревня квакунов';
+  NEU_LAIR_NAME[FT_LAIR] = 'Свайная деревня жаболюдов';
 }
 if (typeof CB_WEAK !== 'undefined') Object.assign(CB_WEAK, {
   ftG: { fire: 1.8, steel: 1.1, pierce: 1.1, nature: 0.7 },
@@ -46,7 +46,7 @@ if (typeof CB_WEAK !== 'undefined') Object.assign(CB_WEAK, {
 if (typeof N2_TOP !== 'undefined') Object.assign(N2_TOP, { ftG: 40, ftB: 40, ftP: 50, ftR: 50, ftK: 58 });
 
 // новые товары: яд и слизь (аптека варит из яда зелья, торговцы берут)
-GOODS.venom = { name: 'Яд квакунов', color: '#7ad030', group: 'Магия' };
+GOODS.venom = { name: 'Яд жаболюдов', color: '#7ad030', group: 'Магия' };
 GOODS.slime = { name: 'Болотная слизь', color: '#8ad0a8', group: 'Ремесло' };
 for (const g of ['venom', 'slime']) if (!GOOD_KEYS.includes(g)) GOOD_KEYS.push(g);
 if (typeof TR_BASE !== 'undefined') {
@@ -168,7 +168,7 @@ function ftJumpThink(N, dt) {
   }
 }
 
-// ---------- Мысль квакуна ----------
+// ---------- Мысль жаболюда ----------
 {
   const _th = neuThink;
   neuThink = function (N, dt) {
@@ -240,7 +240,7 @@ function ftJumpThink(N, dt) {
     const dtT = N.cold ? dt * 0.5 : dt;
     _th(N, dtT);
     if (N.st === 'die') return;
-    // патруль квакунов короче: к воде поближе
+    // патруль жаболюдов короче: к воде поближе
     if (N.pat === 1 && Math.hypot(N.wx - N.hx, N.wy - N.hy) > 7) { const a = Math.atan2(N.wy - N.hy, N.wx - N.hx); N.wx = N.hx + Math.cos(a) * 7; N.wy = N.hy + Math.sin(a) * 7; }
     ftAfter(N, tg);
     // маги не машут посохом: любая их атака — каст с огоньком/молнией на расстоянии (кадры c0…c5, пик на 0,24 с)
@@ -286,7 +286,7 @@ function ftAfter(N, tg) {
       sfxAt('ftHeal', low.x * TILE, low.y * TILE, 0.8);
       return;
     }
-    // 2) зов: всех свободных квакунов в 18 клетках — в бой
+    // 2) зов: всех свободных жаболюдов в 18 клетках — в бой
     if (!(N.callT > now)) {
       let n = 0;
       for (const M of Game.neutrals) if (M !== N && neuAlive(M) && ftIs(M) && !M.tg && !M.tor && Math.hypot(M.x - N.x, M.y - N.y) < FT_CALL_R) { M.tg = tg.id; M.prov = now; M.cdA = 0.4 + ftRand() * 0.8; M.pat = 0; n++; }
@@ -294,7 +294,7 @@ function ftAfter(N, tg) {
         N.callT = now + 30;
         N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13;
         floater(N.x, N.y - 2.5, 'Ква-а-а-а-а!', '#c8a0ff'); sfxAt('ftCroak', N.x * TILE, N.y * TILE, 1);
-        logEvent('animal', `Шаман квакунов созвал соседей на помощь (${n})`, N.x, N.y);
+        logEvent('animal', `Шаман жаболюдов созвал соседей на помощь (${n})`, N.x, N.y);
         return;
       }
     }
@@ -337,7 +337,7 @@ function ftAfter(N, tg) {
     for (const M of Game.neutrals) if (neuAlive(M) && ftIs(M) && Math.hypot(M.x - N.x, M.y - N.y) < 8) { M.rage = now + 10; n++; }
     floater(N.x, N.y - 3, 'Боевой клич!', '#ffd040'); sfxAt('ftCroakLow', N.x * TILE, N.y * TILE, 1);
     fxBurst(N.x * TILE, N.y * TILE - 20, 16, ['#ffd040', '#fff0a0', '#e84a38'], 70, 60, 0.9, 1.8, -20);
-    if (n > 1) logEvent('animal', 'Вождь квакунов издал боевой клич', N.x, N.y);
+    if (n > 1) logEvent('animal', 'Вождь жаболюдов издал боевой клич', N.x, N.y);
   }
   if (N.k === 'ftK' && N.cried && now - N.cried > 40 && !tg) N.cried = 0;
 }
@@ -351,7 +351,7 @@ function ftPoison(u, N, dur, label) {
   if (!had) {
     floater(u.x, u.y - 2.1, label || 'Яд!', '#9ae040');
     fxBurst(u.x * TILE, u.y * TILE - 10, 8, ['#9ae040', '#5aa020', '#d8ff90'], 45, 40, 0.6, 1.4, -10);
-    if (!(u.pzLog > now - 40)) { u.pzLog = now; logEvent('animal', `${neuName(u)} отравлен ядом квакунов`, u.x, u.y); }
+    if (!(u.pzLog > now - 40)) { u.pzLog = now; logEvent('animal', `${neuName(u)} отравлен ядом жаболюдов`, u.x, u.y); }
   }
 }
 const FT_TOUCH = { ftG: 0.15, ftB: 0.18, ftP: 0.28, ftR: 0.2, ftK: 0.4 };
@@ -368,7 +368,7 @@ const FT_TOUCH = { ftG: 0.15, ftB: 0.18, ftP: 0.28, ftR: 0.2, ftK: 0.4 };
     let n = 0;
     for (const M of Game.neutrals) if (M !== N && neuAlive(M) && ftIs(M) && M.lair === N.lair && !M.tg) { M.tg = u.id; M.prov = ftNow(); M.tor = 0; M.cdA = 0.2 + ftRand() * 0.8; M.pat = 0; n++; }
     sfxAt('ftCroak', N.x * TILE, N.y * TILE, 0.9);
-    if (n) logEvent('animal', 'Квакуны всей деревней бросились в драку: «Ква-ква-ква!»', N.x, N.y);
+    if (n) logEvent('animal', 'Жаболюды всей деревней бросились в драку: «Ква-ква-ква!»', N.x, N.y);
   };
 
   // ядовитая кожа при ближнем ударе; в тумане и на дереве достают хуже
@@ -415,7 +415,7 @@ const FT_TOUCH = { ftG: 0.15, ftB: 0.18, ftP: 0.28, ftR: 0.2, ftK: 0.4 };
     N.jp = null; N.pch = null; N.fg = null;
     sfxAt('ftDie', N.x * TILE, N.y * TILE, 0.7);
     if (L && L.k === FT_LAIR && !L.alive) dropPile(Math.floor(N.x), Math.floor(N.y), 'gold', 1);
-    if (N.k === 'ftK') logEvent('animal', 'Вождь квакунов повержен — болото притихло', N.x, N.y);
+    if (N.k === 'ftK') logEvent('animal', 'Вождь жаболюдов повержен — болото притихло', N.x, N.y);
   };
 }
 function ftLeapDown(N, u, sp) {
@@ -486,7 +486,7 @@ function ftSite(stamp, relax) {
   }
   return null;
 }
-// спавн идёт на своём генераторе: общий Math.random не сдвигается (детерминизм и чужие тесты по сиду не зависят от квакунов)
+// спавн идёт на своём генераторе: общий Math.random не сдвигается (детерминизм и чужие тесты по сиду не зависят от жаболюдов)
 function ftSpawnLair(announce) {
   const mr = Math.random; Math.random = ftRand;
   try { return ftSpawnLair0(announce); } finally { Math.random = mr; }
@@ -502,7 +502,7 @@ function ftSpawnLair0(announce) {
   if (typeof N2 !== 'undefined') N2.rk0 = 0;
   L.rk0 = Game.ft.nt >= 1 && typeof n2Cap === 'function' ? Math.max(1, cap - 2) : 0;
   Game.ft.sp++;
-  if (announce) logEvent('animal', 'У воды на болоте поселились квакуны — Свайная деревня', L.x + 0.5, L.y + 0.5);
+  if (announce) logEvent('animal', 'У воды на болоте поселились жаболюды — Свайная деревня', L.x + 0.5, L.y + 0.5);
   return L;
 }
 
@@ -558,8 +558,8 @@ function ftLairTick(L, now) {
   // подсказка при первой встрече
   if (!FT.hinted && hero && !hero.dead && Math.hypot(hero.x - cx, hero.y - cy) < 9 && !isServerSim()) {
     FT.hinted = true;
-    toast('Квакуны недоверчивы: чужаков гонят, но их можно задобрить. Shift + клик по квакуну — одарить (хмель, пиво, золото). Вдали от воды они сохнут!');
-    logEvent('animal', 'Герой впервые встретил квакунов — болотный народ', cx, cy);
+    toast('Жаболюды недоверчивы: чужаков гонят, но их можно задобрить. Shift + клик по жаболюду — одарить (хмель, пиво, золото). Вдали от воды они сохнут!');
+    logEvent('animal', 'Герой впервые встретил жаболюдов — болотный народ', cx, cy);
   }
   if (L.friend) { ftFriend(L, mem, now); return; }
   if (winter) return;
@@ -585,7 +585,7 @@ function ftFriend(L, mem, now) {
   if (!(L.tribT > now)) {
     if (L.tribT !== undefined) {
       const o = randomFreeNear(L.x + 2, L.y + 3, 0, 2, (x, y) => isWalkable(x, y));
-      if (o) { dropPile(o[0], o[1], 'venom', 1); dropPile(o[0], o[1], 'slime', 1); floater(o[0] + 0.5, o[1] - 0.6, 'Дань квакунов', '#9ae040'); }
+      if (o) { dropPile(o[0], o[1], 'venom', 1); dropPile(o[0], o[1], 'slime', 1); floater(o[0] + 0.5, o[1] - 0.6, 'Дань жаболюдов', '#9ae040'); }
     }
     L.tribT = now + 240;
   }
@@ -593,7 +593,7 @@ function ftFriend(L, mem, now) {
     L.fest = now;
     for (const M of mem) if (!M.tg && !M.jp && !M.pch) { M.winT = 3 + ftRand() * 2; M.st = 'idle'; }
     sfxAt('ftCroak', L.x * TILE, L.y * TILE, 0.8);
-    if (!L.festLog) { L.festLog = 1; logEvent('animal', 'Друзья-квакуны поют на празднике хором: «Ква-ква-кваааа!»', L.x + 0.5, L.y + 0.5); }
+    if (!L.festLog) { L.festLog = 1; logEvent('animal', 'Друзья-жаболюды поют на празднике хором: «Ква-ква-кваааа!»', L.x + 0.5, L.y + 0.5); }
   } else if (!(typeof festOn === 'function' && festOn())) L.festLog = 0;
   // оборона: охотники и шаманы друзей метают дротики в грабителей и нечисть рядом
   if (!(L.defT > now) && !ftWinter()) {
@@ -607,7 +607,7 @@ function ftFriend(L, mem, now) {
       at.dart = { x: Math.round(R.x * 100) / 100, y: Math.round(R.y * 100) / 100, t: Math.round(now * 100) / 100, o: 0 };
       at.face = R.x >= at.x ? 1 : -1; at.ov = NA_FRAMES.throwd; at.ovT = 0; at.ovP = 0.08;
       sfxAt('ftDart', at.x * TILE, at.y * TILE, 0.6);
-      if (!(L.defLog > now - 90)) { L.defLog = now; logEvent('animal', 'Квакуны-друзья метнули дротики во врагов у деревни', R.x, R.y); }
+      if (!(L.defLog > now - 90)) { L.defLog = now; logEvent('animal', 'Жаболюды-друзья метнули дротики во врагов у деревни', R.x, R.y); }
       break;
     }
   }
@@ -628,7 +628,7 @@ function* ftGiftGen(u, c) {
   const slot = H.inv ? H.inv.findIndex(s => s && FT_GIFT[s.k]) : -1;
   if (slot < 0) {
     floater(N.x, N.y - 1.9, 'Ква? Пусто…', '#ffe9a0');
-    toast('Квакунам нравятся хмель, пиво, колбаса, золото, зелья и магические камни: положите дар в рюкзак героя. Клик без Shift — напасть');
+    toast('Жаболюдам нравятся хмель, пиво, колбаса, золото, зелья и магические камни: положите дар в рюкзак героя. Клик без Shift — напасть');
     return;
   }
   yield { wait: 0.8, anim: 'build' };
@@ -643,7 +643,7 @@ function* ftGiftGen(u, c) {
   if (!L.friend) {
     L.friend = true;
     for (const M of Game.neutrals) if (M.lair === L.id) { M.tg = 0; M.prov = -99; }
-    logEvent('animal', `${H.name} подружился с квакунами`, N.x, N.y);
+    logEvent('animal', `${H.name} подружился с жаболюдами`, N.x, N.y);
   }
   ftReward(u, L, N);
 }
@@ -651,18 +651,18 @@ function ftReward(u, L, N) {
   const H = u.hero, kind = (L.rw = (L.rw || 0) + 1) % 3, mate = Game.units.filter(x => x.teamOf === u.id);
   if (kind === 1) {                          // водное исцеление
     H.hp = H.maxhp; u.injury = null; u.pzUntil = 0; for (const m of mate) { m.injury = null; m.pzUntil = 0; }
-    floater(u.x, u.y - 2.1, 'Квакуны исцелили водой!', '#9af0a0');
-    logEvent('animal', `Квакуны исцелили героя ${H.name} болотной водой`, u.x, u.y);
+    floater(u.x, u.y - 2.1, 'Жаболюды исцелили водой!', '#9af0a0');
+    logEvent('animal', `Жаболюды исцелили героя ${H.name} болотной водой`, u.x, u.y);
   } else if (kind === 2) {                   // прыжок-благословение
     for (const x of [u, ...mate]) x.boostUntil = ftNow() + 90;
     u.dashUntil = ftNow() + 40;
     floater(u.x, u.y - 2.1, 'Лягушачья резвость!', '#ffe070');
-    logEvent('animal', `Квакуны благословили героя ${H.name}: бодрее на полторы минуты`, u.x, u.y);
+    logEvent('animal', `Жаболюды благословили героя ${H.name}: бодрее на полторы минуты`, u.x, u.y);
   } else {                                   // яд и слизь
     const o = randomFreeNear(Math.floor(N.x), Math.floor(N.y) + 1, 0, 2, (x, y) => isWalkable(x, y)) || [Math.floor(N.x), Math.floor(N.y)];
     dropPile(o[0], o[1], 'venom', 3); dropPile(o[0], o[1], 'slime', 3);
     floater(o[0] + 0.5, o[1] - 0.6, 'Дар: яд и слизь!', '#9ae040');
-    logEvent('animal', `Квакуны одарили ${H.name} ядом и слизью`, N.x, N.y);
+    logEvent('animal', `Жаболюды одарили ${H.name} ядом и слизью`, N.x, N.y);
   }
   if (typeof updateUI === 'function') updateUI(true);
 }
@@ -833,11 +833,11 @@ if (typeof SFX !== 'undefined' && typeof SFX_DEF !== 'undefined') {
 function ftAchInit() {
   if (typeof ACHS === 'undefined' || typeof ACH_BY === 'undefined' || ACH_BY.nfrog) return;
   const add = [
-    { id: 'nfrog', name: 'Ква-ква, прощайте', desc: 'Побеждён квакун. Остальные ква-кают в хоре, но уже без вдохновения.', ev: /победил: (Квакун|Вождь квакунов)/ },
-    { id: 'nfrogking', name: 'Корона слетела', desc: 'Повержен вождь квакунов. Золотая корона из тростника оказалась тоже ядовитой.', ev: /Вождь квакунов повержен/ },
-    { id: 'nfrogfriend', name: 'Друг болота', desc: 'Герой подружился с квакунами. Хмеля жалко, зато дань — яд и слизь — капает теперь по расписанию.', ev: /подружился с квакунами/ },
-    { id: 'nfrogpoison', name: 'Не лижи лягушку', desc: 'Кого-то отравил яд квакунов. Совет: болотная вода смывает его быстрее, чем любое оправдание.', ev: /отравлен ядом квакунов/ },
-    { id: 'nfrogcall', name: 'Хор болотных солистов', desc: 'Шаман квакунов созвал на помощь соседние деревни. Драка вышла по-настоящему общинной.', ev: /Шаман квакунов созвал/ },
+    { id: 'nfrog', name: 'Ква-ква, прощайте', desc: 'Побеждён жаболюд. Остальные ква-кают в хоре, но уже без вдохновения.', ev: /победил: (Жаболюд|Вождь жаболюдов)/ },
+    { id: 'nfrogking', name: 'Корона слетела', desc: 'Повержен вождь жаболюдов. Золотая корона из тростника оказалась тоже ядовитой.', ev: /Вождь жаболюдов повержен/ },
+    { id: 'nfrogfriend', name: 'Друг болота', desc: 'Герой подружился с жаболюдами. Хмеля жалко, зато дань — яд и слизь — капает теперь по расписанию.', ev: /подружился с жаболюдами/ },
+    { id: 'nfrogpoison', name: 'Не лижи лягушку', desc: 'Кого-то отравил яд жаболюдов. Совет: болотная вода смывает его быстрее, чем любое оправдание.', ev: /отравлен ядом жаболюдов/ },
+    { id: 'nfrogcall', name: 'Хор болотных солистов', desc: 'Шаман жаболюдов созвал на помощь соседние деревни. Драка вышла по-настоящему общинной.', ev: /Шаман жаболюдов созвал/ },
   ];
   for (const a of add) { ACHS.push(a); ACH_BY[a.id] = a; }
 }

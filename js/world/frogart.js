@@ -1,5 +1,5 @@
 'use strict';
-// Жаболюды / квакуны (ЖАБОЛЮДЫ.md): кадры четырёх каст и свайная деревня у воды.
+// Жаболюды / жаболюды (ЖАБОЛЮДЫ.md): кадры четырёх каст и свайная деревня у воды.
 // Тот же конвейер, что у neutralart.js/neutralart2.js: вектор в 3× → пиксели, кэш naCache, кадры строятся лениво.
 // Кадры по КАДРЫ.md: покой 6, ходьба 8, прыжок 8, бой 9, удар по нему 4, смерть 6, торжество 4, сон 2;
 // синие — ещё метание/трубка 6 (t0…t5), фиолетовые и вождь — колдовство 6 (c0…c5).
@@ -271,11 +271,11 @@ function drawFrogfolk(c, P, caste, fr) {
   c.restore();
 }
 
-NA_SPEC.ftG = { name: 'Квакун-копейщик', w: 116, h: 84, ax: 44, ay: 66, sc: 1.2 };
-NA_SPEC.ftB = { name: 'Квакун-охотник', w: 116, h: 84, ax: 44, ay: 66, sc: 1.2 };
-NA_SPEC.ftP = { name: 'Квакун-громовик', w: 116, h: 96, ax: 44, ay: 80, sc: 1.22 };
-NA_SPEC.ftR = { name: 'Квакун-огнемаг', w: 116, h: 96, ax: 44, ay: 80, sc: 1.22 };
-NA_SPEC.ftK = { name: 'Вождь квакунов', w: 128, h: 92, ax: 48, ay: 74, sc: 1.4 };
+NA_SPEC.ftG = { name: 'Жаболюд-копейщик', w: 116, h: 84, ax: 44, ay: 66, sc: 1.2 };
+NA_SPEC.ftB = { name: 'Жаболюд-охотник', w: 116, h: 84, ax: 44, ay: 66, sc: 1.2 };
+NA_SPEC.ftP = { name: 'Жаболюд-громовик', w: 116, h: 96, ax: 44, ay: 80, sc: 1.22 };
+NA_SPEC.ftR = { name: 'Жаболюд-огнемаг', w: 116, h: 96, ax: 44, ay: 80, sc: 1.22 };
+NA_SPEC.ftK = { name: 'Вождь жаболюдов', w: 128, h: 92, ax: 48, ay: 74, sc: 1.4 };
 NA_DRAW.ftG = (c, P, f) => drawFrogfolk(c, P, 'G', f);
 NA_DRAW.ftB = (c, P, f) => drawFrogfolk(c, P, 'B', f);
 NA_DRAW.ftP = (c, P, f) => drawFrogfolk(c, P, 'P', f);
@@ -283,7 +283,7 @@ NA_DRAW.ftR = (c, P, f) => drawFrogfolk(c, P, 'R', f);
 NA_DRAW.ftK = (c, P, f) => drawFrogfolk(c, P, 'K', f);
 
 // =============== Свайная деревня у воды ===============
-NA_LAIR.ftvil = { name: 'Свайная деревня квакунов', w: 140, h: 100, ax: 70, ay: 60 };
+NA_LAIR.ftvil = { name: 'Свайная деревня жаболюдов', w: 140, h: 100, ax: 70, ay: 60 };
 {
   const _lair = naLairDraw;
   naLairDraw = function (c, kind, v) {
