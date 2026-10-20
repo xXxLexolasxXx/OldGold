@@ -57,7 +57,7 @@ function audioCoreInit() {
 // ---------- Сон вкладки и сторож ----------
 // Вкладка скрыта → контекст замирает, ничего нового не планируется; при возврате — продолжаем с чистого листа:
 // недолгое скрытие — просто resume, долгое — звук пересоздаётся (никаких «лавин» запоздавших нот и висящих тонов).
-function audioWanted() { return (typeof Music !== 'undefined' && Music.on) || (typeof Sfx !== 'undefined' && Sfx.on); }
+function audioWanted() { return (typeof Music !== 'undefined' && musicWant()) || (typeof Sfx !== 'undefined' && Sfx.on); }
 
 function audioHide() {
   const ctx = AudioCore.ctx;
@@ -148,12 +148,12 @@ window.addEventListener('pageshow', audioShow);
 document.addEventListener('visibilitychange', () => { if (document.hidden) audioHide(); else audioShow(); });
 
 // Шину включают/выключают плавно, без щелчка
-function audioSetBus(name, on) {
+function audioSetBus(name, on, sec = 0.12) {
   const b = AudioCore[name], ctx = AudioCore.ctx;
   if (!b || !ctx) return;
   const t = ctx.currentTime, g = b.gain;
   g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
-  g.linearRampToValueAtTime(on ? 1 : 0.0001, t + 0.12);
+  g.linearRampToValueAtTime(on ? 1 : 0.0001, t + sec);
   audioMaybeSuspend();
 }
 
@@ -161,9 +161,9 @@ function audioSetBus(name, on) {
 function audioMaybeSuspend() {
   const ctx = AudioCore.ctx;
   if (!ctx || document.hidden) return;
-  const anyOn = (typeof Music !== 'undefined' && Music.on) || (typeof Sfx !== 'undefined' && Sfx.on);
+  const anyOn = (typeof Music !== 'undefined' && musicWant()) || (typeof Sfx !== 'undefined' && Sfx.on);
   if (anyOn) { if (ctx.state !== 'running') ctx.resume(); }
-  else if (ctx.state === 'running') setTimeout(() => { if (!((typeof Music !== 'undefined' && Music.on) || (typeof Sfx !== 'undefined' && Sfx.on))) ctx.suspend(); }, 200);
+  else if (ctx.state === 'running') setTimeout(() => { if (!((typeof Music !== 'undefined' && musicWant()) || (typeof Sfx !== 'undefined' && Sfx.on))) ctx.suspend(); }, 500);
 }
 
 // «Приседание» музыки: под гром, крик, аплодисменты музыка на миг отходит назад
@@ -207,7 +207,7 @@ function audioKickOnGesture(fn) {
 // Мелодии строятся из мотивов: короткие обороты повторяются и отвечают друг другу.
 
 const Music = {
-  ctx: null, master: null, bus: null, rev: null, hall: null, on: true, started: false,
+  ctx: null, master: null, bus: null, menuOn: true, applied: null, rev: null, hall: null, on: true, started: false,
   bar: 0, nextTime: 0, timer: null, buffers: new Map(), track: 0, songs: [], noise: null,
   mood: 'day', fightT: -1e9, dawnUntil: -1, waterT: -1e9, waterIn: 0, waterCool: 0, prevNight: null, moodT: 0,
   killT: -1e9, winKill: -1e9, victoryUntil: -1, graveT: -1e9, graveIn: 0, graveCool: 0,
@@ -845,7 +845,8 @@ function scheduleBar(tr, song, bar, t) {
 }
 
 function musicTick() {
-  if (!Music.on || !Music.ctx || Music.ctx !== AudioCore.ctx || Music.ctx.state !== 'running' || document.hidden) return;
+  musicApply();
+  if (!musicWant() || !Music.ctx || Music.ctx !== AudioCore.ctx || Music.ctx.state !== 'running' || document.hidden) return;
   const ctx = Music.ctx;
   // таймер отстал (вкладка была в фоне): не догоняем пропущенное, а начинаем с текущего момента
   if (Music.nextTime < ctx.currentTime - 0.3) Music.nextTime = ctx.currentTime + 0.15;
@@ -995,7 +996,7 @@ function startMusic() {
   Music.bus.gain.setValueAtTime(0.0001, ctx.currentTime);
   Music.bus.gain.linearRampToValueAtTime(0.62 * TRACKS[Music.track].level, ctx.currentTime + 2.5);
   Music.timer = setInterval(musicTick, 80);
-  audioSetBus('music', Music.on);
+  Music.applied = null; musicApply();
 }
 
 // Переключить трек: короткое затухание того, что уже запланировано, и сразу новая песня
@@ -1027,11 +1028,30 @@ function musicDayNight(night) {
 
 let syncMusicBtn = () => {};
 
+// Музыка меню — отдельный выключатель (feod.menuMusic): в меню звучит по нему, в игре — по обычному «♪».
+// Без записи берём игровое значение; ?menumusic=1 (для проверок) включает её, не запоминая.
+function musicWant() { return menuOpen() ? Music.menuOn : Music.on; }
+// Шина музыки следует за musicWant(): смена за 0,4 с без щелчка, пока выключено — контекст спит
+function musicApply() {
+  const w = musicWant();
+  if (Music.applied === w || !Music.ctx) return;
+  Music.applied = w;
+  audioSetBus('music', w, 0.4);
+  if (w) Music.nextTime = Math.max(Music.nextTime, Music.ctx.currentTime + 0.15);
+}
+function setMenuMusic(on) {
+  Music.menuOn = on;
+  try { localStorage.setItem('feod.menuMusic', on ? '1' : '0'); } catch (e) { /* нет доступа к хранилищу */ }
+  if (Music.ctx) musicApply();
+  if (on) startMusic();      // нажатие — это жест, браузер разрешит звук
+  if (typeof smSyncMusicBtn === 'function') smSyncMusicBtn();
+}
+
 function setMusic(on) {
   Music.on = on;
   try { localStorage.setItem('feod.music', on ? '1' : '0'); } catch (e) { /* нет доступа к хранилищу */ }
   if (!Music.ctx) return;
-  audioSetBus('music', on);
+  musicApply();
   if (on) Music.nextTime = Math.max(Music.nextTime, Music.ctx.currentTime + 0.15);
 }
 
@@ -1041,6 +1061,10 @@ function initMusic() {
   // в приложении на телефоне игра не перебивает чужую музыку (плеер в наушниках): пока игрок сам не включил — музыка выключена
   const quiet = dev || audioPhoneApp();
   try { const v = localStorage.getItem('feod.music'); Music.on = v === null ? !quiet : v !== '0'; } catch (e) { Music.on = !quiet; }
+  try {
+    const v = localStorage.getItem('feod.menuMusic');
+    Music.menuOn = new URLSearchParams(location.search).get('menumusic') === '1' ? true : v === null ? Music.on : v !== '0';
+  } catch (e) { Music.menuOn = Music.on; }
   audioKickOnGesture(startMusic);
   try {
     if (audioPhoneApp() && !Music.on && localStorage.getItem('feod.music') === null && !localStorage.getItem('feod.musicHint')) {

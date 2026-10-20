@@ -664,6 +664,19 @@ body.mm-folded #mm-size { display: none; }
 }
 #loading:not(.with-menu) #start-menu { display: none; }
 #loading.with-menu .load-msg { display: none; }
+#sm-music {
+  position: absolute; z-index: 6; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right));
+  width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
+  color: #f6e8c0; cursor: pointer; border-radius: 50%;
+  background: linear-gradient(#5a4220, #3a2a14); border: 1px solid #b8902c; box-shadow: 0 3px 0 #1a1008, 0 0 12px rgba(255,170,60,0.12);
+}
+@media (max-width: 700px) { #sm-music { width: 36px; height: 36px; top: calc(6px + env(safe-area-inset-top)); right: calc(6px + env(safe-area-inset-right)); } #sm-music svg { width: 18px; height: 18px; } }
+#sm-music:hover { filter: brightness(1.15); }
+#sm-music:active { transform: translateY(2px); box-shadow: 0 1px 0 #1a1008; }
+#sm-music .sm-music-x { opacity: 0; }
+#sm-music.off { color: #9a8458; background: rgba(20,14,8,0.7); border-color: #6a5430; }
+#sm-music.off .sm-music-x { opacity: 1; }
+#loading:not(.with-menu) #sm-music { display: none; }
 .sm-panel { display: flex; flex-direction: column; gap: 10px; width: min(92vw, 380px); }
 .sm-panel.hidden { display: none; }
 .sm-btn {
@@ -743,6 +756,11 @@ body.mobile #dd-zoom { display: none; }
   .sm-btn small { font-size: 11px; }
 }
 .sm-btn b, .sm-btn small { position: relative; z-index: 5; }
+/* телефон в ландшафте: название компактное — по высоте экрана (≈24%), а не по ширине; кнопки меню не сдвигаются */
+@media (orientation: landscape) and (max-height: 520px) {
+  #loading .load-title { top: 3vh; }
+  #loading h1 { font-size: min(13vw, 22vh); line-height: 1.05; }
+}
 
 /* кнопки меню выплывают вбок, лоза прорастает следом (js/startmenu.js) */
 .sm-in-l, .sm-in-r { animation: sm-slide-l 0.55s cubic-bezier(.2,.8,.3,1) var(--d, 0s) both; }
