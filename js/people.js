@@ -81,6 +81,13 @@ function lookOf(u) {
 function drawLoad(c, g) {
   const ol = 'rgba(20,10,4,0.75)';
   c.lineWidth = 0.35; c.strokeStyle = ol;
+  if (typeof g === 'string' && g.startsWith('tray:')) {   // поднос официантки: кружки и блюдо — что заказали гости
+    ellipse(c, 0, 2.2, 6.4, 1.3, '#7a5430'); ellipse(c, 0, 1.8, 6.4, 1.2, '#b88c58');
+    c.fillStyle = '#e8c050'; c.fillRect(-4.4, -2.2, 2.2, 3.4); c.fillStyle = '#fff8e0'; c.fillRect(-4.4, -2.6, 2.2, 1);
+    const fd = g.slice(5), big = fd === 'chickenleg' || fd === 'steak';   // крупная еда на подносе выглядит крупной, колбаса и круассан — мелкие
+    c.save(); c.translate(big ? 2.6 : 2.4, big ? 1.8 : 1.4); c.scale(big ? 1.6 : 0.8, big ? 1.6 : 0.8); innFoodSprite(c, fd, 0, 0); c.restore();
+    return;
+  }
   switch (g) {
     case 'trunk':
       c.fillStyle = lingrad(c, 0, -2.4, 0, 2.4, [[0, '#9a6a3a'], [1, '#4a2c14']]);

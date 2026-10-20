@@ -366,10 +366,18 @@ const ABIL_ICON = {
   smite: ['S:#c8ccd0 W:#fff6c0 Y:#ffe070 O:#ff9a30 b:#6a4a28', 'Y.........YO', '.........SWO', '..Y.....SWS.', '.......SWS..', '......SWS.Y.', '.....SWS....', '..b.SWS.....', '..bbWS......', '...bb.......', '..bb.b...Y..', '.bb.........', 'Y...........'],
   turn: ['W:#e6dfc8 k:#2a2420 Y:#fff2a0', 'Y....YY....Y', '...WWWWWW...', '..WWWWWWWW..', '.WWWWWWWWWW.', '.WWkkWWkkWW.', '.WWkkWWkkWW.', '.WWWWkkWWWW.', '..WWWWWWWW..', '...WkWkWkW..', '...WWWWWW...', 'Y..........Y', '............'],
 };
+// Единый поиск значка по ключу способности: ABIL_ICON (здесь и в heroabil.js), HC_ICON (herocard.js), синонимы;
+// нет значка — запасной (руна в круге), чтобы ячейка никогда не была пустой. Проверка: tests/icon-test.js
+const ABIL_ICON_ALIAS = { g_strike: 'strike', u_atk: 'strike', u_home: 'tp', drink: 'u_eat' };
+const ABIL_ICON_DEF = ['Y:#f6d458 o:#a87a1c W:#fff6c0', '....oooo....', '..oo....oo..', '.o...YY...o.', '.o..YWWY..o.', 'o..YWYYWY..o', 'o..YYWWYY..o', 'o...YWWY...o', 'o....YY....o', '.o........o.', '.o...YY...o.', '..oo....oo..', '....oooo....'];
+function abilIconGlyph(k) {
+  const hc = typeof HC_ICON !== 'undefined' ? HC_ICON : {}, al = ABIL_ICON_ALIAS[k];
+  return ABIL_ICON[k] || hc[k] || (al && (ABIL_ICON[al] || hc[al])) || ABIL_ICON_DEF;
+}
 const ABIL_ICON_URL = {};
 function abilIconURL(k) {
   if (ABIL_ICON_URL[k]) return ABIL_ICON_URL[k];
-  const g = ABIL_ICON[k];
+  const g = abilIconGlyph(k);
   if (!g || typeof document === 'undefined' || !document.createElement) return '';
   const pal = {};
   for (const p of g[0].split(' ')) { const [ch, col] = p.split(':'); pal[ch] = col; }
