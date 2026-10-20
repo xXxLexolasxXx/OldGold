@@ -126,7 +126,7 @@ function* deliverGen(u, from, to, g, n = 1) {
   let ok = yield { walk: [from.doorX, from.doorY], offroad: !!from.isPile };
   if (from.removed || !ok) {
     if (!from.removed) from.reserved[g] -= n;
-    if (!to.removed) to.incoming[g] -= n;
+    if (!to.removed) to.incoming[g] = Math.max(0, to.incoming[g] - n);   // груз мог побывать «уронённым» — auditIncoming его уже вычел
     return;
   }
   if (isStoreB(from)) yield* storeVisit(u, from, 0.7);
@@ -157,7 +157,7 @@ function* deliverGen(u, from, to, g, n = 1) {
       // не дойти — несём на ближайший склад
       const st = nearestStore(u.x, u.y, null, compAt(Math.floor(u.x), Math.floor(u.y)));
       if (!st || st === to) break;
-      to.incoming[g] -= n;
+      to.incoming[g] = Math.max(0, to.incoming[g] - n);   // груз мог побывать «уронённым» — auditIncoming его уже вычел
       to = st;
       if (u.dlv) u.dlv.to = to;
       to.incoming[g] += n;
@@ -168,7 +168,7 @@ function* deliverGen(u, from, to, g, n = 1) {
       while (storeInside(to) >= storeCapOf(to) && !to.removed) yield { wait: 0.4 };
       if (to.removed) continue;
       yield { enter: to };
-      to.incoming[g] -= n;
+      to.incoming[g] = Math.max(0, to.incoming[g] - n);   // груз мог побывать «уронённым» — auditIncoming его уже вычел
       to.stock[g] += Math.min(n, u.carryN || n); u.dlv = null;   // волк мог утащить часть груза
       u.carry = null; u.carryN = 0;
       gainXp(u, 1);
@@ -176,14 +176,14 @@ function* deliverGen(u, from, to, g, n = 1) {
       yield { walk: [Math.floor(u.x), Math.floor(u.y)] };
       return;
     }
-    to.incoming[g] -= n;
+    to.incoming[g] = Math.max(0, to.incoming[g] - n);   // груз мог побывать «уронённым» — auditIncoming его уже вычел
     (to.upg && to.upg.cost[g] ? to.upg.stock : to.stock)[g] += Math.min(n, u.carryN || n); u.dlv = null;
     u.carry = null; u.carryN = 0;
     gainXp(u, 1);
     yield { wait: 0.4 };
     return;
   }
-  if (to && !to.removed) to.incoming[g] -= n;
+  if (to && !to.removed) to.incoming[g] = Math.max(0, to.incoming[g] - n);   // груз мог побывать «уронённым» — auditIncoming его уже вычел
   // некуда отнести — оставляем кучкой на земле, подберут позже
   dropPile(Math.floor(u.x), Math.floor(u.y), g, n);
   u.carry = null; u.carryN = 0;

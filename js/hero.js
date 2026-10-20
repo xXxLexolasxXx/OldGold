@@ -472,14 +472,6 @@ function heroAbility(k) {
     h.dashUntil = Game.time + DASH_TIME; H.cdDash = Game.time + DASH_CD;
     floater(h.x, h.y - 1.6, 'Рывок!', '#ffe070');
   }
-  if (k === 'cry' && H.level >= 3) {
-    if ((H.cdCry || 0) > Game.time) return;
-    H.cdCry = Game.time + CRY_CD;
-    let n = 0;
-    for (const u of Game.units) if (u !== h && !u.isCourier && Math.hypot(u.x - h.x, u.y - h.y) < 9) { u.boostUntil = Game.time + CRY_TIME; n++; }
-    floater(h.x, h.y - 1.6, 'За мной!', '#ffb050');
-    toast(`${H.name}: боевой клич вдохновил ${n} гном.`);
-  }
   updateUI(true);
 }
 
@@ -510,13 +502,8 @@ function heroPanel() {
   const score = heroTownScore(), lo = H.level > 1 ? heroNeedFor(H.level - 1) : 0, hi = heroNeedFor(H.level);
   const pct = H.level >= HERO_LVL_MAX ? 100 : Math.max(0, Math.min(100, ((score - lo) / (hi - lo)) * 100));
   const mate = Game.units.find(u => u.teamOf === h.id);
-  const cd = k => Math.max(0, Math.ceil((H[k] || 0) - Game.time));
   const bar = (n, c) => `<span class="hp-bar"><i style="width:${Math.min(100, n * 2.2)}%;background:${c}"></i></span>`;
-  const abil = (k, name, lvl, cdk, desc) => {
-    if (H.level < lvl) return `<div class="hp-ab off"><b>${name}</b><small>с уровня ${lvl}</small></div>`;
-    const c = cd(cdk);
-    return `<button class="hp-ab" data-hero="${k}" ${c ? 'disabled' : ''} title="${desc}"><b>${name}</b><small>${c ? c + ' с' : desc}</small></button>`;
-  };
+
   return `<div class="ihead"><img class="bpic" src="${portraitURL('hero', h.look)}" alt=""><div><h3>${H.name}</h3>
     <span class="muted small">${H.cls ? H.cls : 'Гном-универсал'} · уровень ${H.level}</span></div></div>
     <div class="hp-xp" title="${H.level >= HERO_LVL_MAX ? 'Высший, 15-й уровень' : `Растёт вместе с городом и боями: ${Math.floor(score)} из ${Math.ceil(hi)} очков до уровня ${H.level + 1}`}"><i style="width:${pct}%"></i></div>
@@ -527,7 +514,7 @@ function heroPanel() {
       <div>Стойкость ${bar(s.end, '#d0a83a')}<b>${s.end}</b></div>
     </div>
     <div class="irow">Скорость: <b>×${teamSpeedMul(h).toFixed(2)}</b> · работа: <b>×${teamWorkMul(h).toFixed(2)}</b></div>
-    <div class="hp-abs">${abil('dash', 'Рывок', 1, 'cdDash', 'скорость ×1.4 на 8 с')}${abil('cry', 'Клич', 3, 'cdCry', 'гномы рядом бодрее')}</div>
+    <div class="irow small muted">Способности класса — на панели быстрых способностей (клавиши 1–5)</div>
     <div class="irow">Команда: ${mate ? `<b>${UNIT_TYPES[mate.type].name}</b> <button data-hero="leave" class="hp-sm">Отпустить</button>` : '<span class="muted">пусто — кликните по гному</span>'}</div>
     <div class="irow muted small">Оружие: ${H.equip.weapon || 'нет'} · Доспех: ${H.equip.armor || 'нет'}</div>
     ${typeof neuPanelRow === 'function' ? neuPanelRow() : ''}

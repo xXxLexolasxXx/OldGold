@@ -48,17 +48,17 @@ else {
 // огненный шар: летит в гоблинов, жжёт по площади
 const fb = J(`
   const G = Game.neutrals.filter(N => N.k === 'goblin' && N.st !== 'die'), u = Game.hero;
-  if (!G.length || !u || typeof hmCast !== 'function') return { skip: 1 };
+  if (!G.length || !u || typeof ABIL_FX === 'undefined') return { skip: 1 };
   for (const N of Game.neutrals) { N.prov = -99; N.tg = 0; N.rl = null; }
   for (const s of Game.skels || []) s.state = 'dead';
   Game.ents = [];
   // кучка из четырёх гоблинов вокруг того, в кого полетит шар
-  u.x = G[0].x - 4; u.y = G[0].y; u.inside = null; u.hero.hp = u.hero.maxhp; u.hero.mana = 99; u.hero.cdFire = 0; u.hero.level = Math.max(u.hero.level || 1, 3);
-  N2.cast = 'fire'; const t = hmFoe(u, 9); N2.cast = null; N2.fireN = null;
+  u.x = G[0].x - 4; u.y = G[0].y; u.inside = null; u.hero.hp = u.hero.maxhp; u.hero.clsKey = 'mage'; u.hero.mastery = 1; u.hero.abCd = {}; u.hero.level = Math.max(u.hero.level || 1, 3); u.hero.mana = 99;   // огненный шар — способность мага (0.10.69)
+  const t = abFoes(u, 9)[0];
   if (!t || t.o.k !== 'goblin') return { skip: 1 };
   const c = t.o; for (const g of G.filter(g => g !== c).slice(0, 3)) { g.x = c.x + (Math.random() - 0.5); g.y = c.y + (Math.random() - 0.5) * 0.6; }
   const before = Game.neutrals.filter(N => N.k === 'goblin' && N.st !== 'die').length;
-  hmCast('fire');
+  heroAbilityFor(u, 0);
   for (let i = 0; i < 30; i++) step(0.05);
   return { hl: typeof hlOn === "function" && hlOn(), lvl: u.hero.level, before, after: Game.neutrals.filter(N => N.k === 'goblin' && N.st !== 'die').length, mana: u.hero.mana };`);
 if (fb.skip) console.log('  · огненный шар: пропуск');

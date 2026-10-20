@@ -66,6 +66,7 @@ scriptTest('durability: прочность снаряжения, ремонт, �
 scriptTest('oath: Клятвы предков — 10 классов героя, задания по ролям, сохранение', 'oath-test.js');
 scriptTest('spire: глава 6 — поход к Чёрному шпилю, тропа, бой с Малгором, победа', 'spire-test.js');
 scriptTest('oathbal: баланс классов героя', 'oath-balance.js');
+scriptTest('abil: способности классов, ресурс, лечение отдыхом, панель, миграция, кооп, баланс', 'abil-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');

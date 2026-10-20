@@ -37,97 +37,129 @@ for (let k = 0; k < 8; k++) NA2_POSE['ro' + k] = { curl: 1, spin: k / 8 * 6.2832
 
 // =============== Тролли ===============
 const NA2_TROLL = {
-  troll:  { skin: '#6c9a56', skin2: '#4a7038', belly: '#a2bc80', hair: '#3e5a2c', cloth: '#6a4a2c', wpn: 'club', moss: '#5a8a38' },
-  trollS: { skin: '#8c8c88', skin2: '#62625e', belly: '#acaaa0', hair: '#4a4a46', cloth: '#5a4a3a', wpn: 'rock', moss: '#7a9a5a', gem: '#8ae0ff' },
-  trollB: { skin: '#5a8a80', skin2: '#3e6258', belly: '#86aa92', hair: '#2e4a3a', cloth: '#4a5a3a', wpn: 'snag', moss: '#6a9a3a', slime: '#9ad060' },
+  troll:  { skin: '#6c9a56', skin2: '#4a7038', belly: '#a2bc80', hair: '#3e5a2c', cloth: '#6a4a2c', wpn: 'club', moss: '#5a8a38', nail: '#d8d0a0' },
+  trollS: { skin: '#8c8c88', skin2: '#62625e', belly: '#acaaa0', hair: '#4a4a46', cloth: '#5a4a3a', wpn: 'rock', moss: '#7a9a5a', rock: '#8a7656', nail: '#c8c0a8' },
+  trollB: { skin: '#5a8a80', skin2: '#3e6258', belly: '#86aa92', hair: '#2e4a3a', cloth: '#4a5a3a', wpn: 'snag', moss: '#6a9a3a', slime: '#9ad060', nail: '#c8d0a8' },
 };
 
+// Тролль: сгорбленная спина с горбом, бочкообразное тело, короткие кривые ноги и огромные ступни,
+// длинные руки почти до земли, маленькая голова выдвинута вперёд — длинный нос-картошка, тяжёлая бровь, клыки снизу, уши.
+// Облик: лесной — мох на горбу; каменный — каменные наросты и лишайник на спине; болотный — тина и водоросли.
 function drawTroll(c, P, kind) {
   const T = NA2_TROLL[kind], k = col => naK(P, col);
-  naShadow(c, 16);
+  naShadow(c, 17);
   c.save();
-  c.translate(P.x, P.y);
+  // лёжа (смерть) — приподнят, чтобы пузо и голова не уходили под землю
+  c.translate(P.x, P.y - (P.rot < -0.5 ? 9 * Math.min(1, (-P.rot - 0.5) / 1) : 0));
   c.rotate(P.rot);
   c.scale(1, P.sq);
-  const SK = k(T.skin), SK2 = k(T.skin2), BL = k(T.belly), sw = P.leg;
-  // короткие толстые ноги и широкие ступни
-  naLimb(c, -6, -13, -7 - sw * 3.4, -1.6, 6.4, SK2); naLimb(c, 6, -13, 7 + sw * 3.4, -1.6, 6.8, SK);
-  ellipse(c, -6 - sw * 3.4, -1.2, 4.4, 1.9, SK2); ellipse(c, 8.4 + sw * 3.4, -1.2, 4.6, 2, SK);
-  // дальняя длинная рука (тролли — руки до колен)
-  const th2 = P.b > 0.5 ? -1.2 : P.up > 0.5 ? -2.7 : 0.12 - P.a * 0.3;
-  const [fx, fy] = naArm(c, -13, -30, 10, 10, th2, P.b > 0.5 ? 1.6 : 0.3, 5.2, SK2);
-  ellipse(c, fx, fy, 3.4, 3, SK2);
-  // туловище: пузо-груша и сгорбленные плечи
-  ellipse(c, 0, -20, 15.5, 12.5, SK);
-  ellipse(c, -4, -18, 10, 10, SK2);
-  ellipse(c, 3, -17, 9, 8.5, BL);
-  ellipse(c, -2, -30, 14, 8, SK);
-  ellipse(c, -7, -32, 8, 4.6, SK2);
-  // набедренная повязка из шкуры
-  poly(c, [[-12, -12], [12, -12], [11, -6], [5, -8], [1, -4], [-4, -8], [-9, -5]], k(T.cloth));
-  c.fillStyle = k(shade(T.cloth, -0.25)); c.fillRect(-12, -12.6, 24, 1.4);
-  // облик: мох на плечах / лишайник и кристаллы / тина и капли
+  const SK = k(T.skin), SK2 = k(T.skin2), SK3 = k(shade(T.skin, 0.16)), BL = k(T.belly), sw = P.leg, crouch = P.a < 0 ? -P.a * 2 : 0;
+  // ноги: короткие, кривые (колено наружу), огромные ступни с когтями
+  const leg = (hx, ph, col, near) => {
+    const kx = hx + 2.4 + ph * 2.2, ky = -12 - Math.max(0, ph) * 1.2, fx = hx + 1 + ph * 4.4, fy = -1.6 - Math.max(0, ph) * 1.6;
+    naLimb(c, hx, -24 + crouch, kx, ky, near ? 7.4 : 6.8, col);
+    naLimb(c, kx, ky, fx, fy, near ? 6 : 5.4, col);
+    ellipse(c, fx + 2.2, fy + 0.4, 5.6, 2.4, col);
+    for (let n = 0; n < 3; n++) { c.fillStyle = k(T.nail); c.fillRect(fx + 5 + n * 0.2, fy - 1 + n * 1.1, 1.4, 0.9); }
+  };
+  leg(-5, -sw, SK2, false);
+  // дальняя рука: висит почти до земли, кулак-кувалда
+  const th2 = P.b > 0.5 ? -1.4 : P.up > 0.5 ? -2.7 : 0.18 - P.a * 0.25 + sw * 0.15;
+  const [fx, fy] = naArm(c, -5, -47 + crouch, 14, 13, th2, P.b > 0.5 ? 1.7 : 0.25, 6.4, SK2);
+  ellipse(c, fx, fy + 1, 4.4, 3.8, SK2);
+  // туловище: широкие плечи, ровная чуть сутулая спина, бочка-пузо
+  ellipse(c, 1, -45 + crouch, 13.5, 8.5, SK);
+  ellipse(c, 2, -33 + crouch, 15, 15.5, SK);
+  ellipse(c, -10.5, -36 + crouch, 4, 11, k(shade(T.skin, -0.12)));
+  ellipse(c, 9, -26 + crouch, 8.4, 9.4, BL);
+  ellipse(c, 8, -47 + crouch, 7, 4, SK3);
+  c.strokeStyle = k(shade(T.belly, -0.25)); c.lineWidth = 0.7;
+  for (const y of [-29, -24, -19.5]) { c.beginPath(); c.arc(9.5, y + crouch, 5.4, 0.5, 2.3); c.stroke(); }
+  // набедренная повязка из шкуры, рваный край
+  poly(c, [[-12, -22], [14, -21], [13, -14], [9, -11], [5, -14], [1, -10], [-3, -14], [-8, -11], [-12, -15]], k(T.cloth));
+  c.fillStyle = k(shade(T.cloth, -0.3)); c.fillRect(-12, -22.6, 26, 1.6);
+  leg(5, sw, SK, true);
+  // облик: мох / каменные наросты / тина — на плечах и спине
+  c.save(); c.translate(3, -3 + crouch); c.scale(0.78, 0.9);
   if (kind === 'troll') {
-    poly(c, [[-16, -32], [-8, -38], [2, -38], [10, -35], [4, -33], [-4, -34], [-10, -31]], k(T.moss));
-    for (const [x, y] of [[-12, -34], [-4, -36.5], [5, -35.6]]) { c.fillStyle = k(shade(T.moss, -0.3)); c.fillRect(x, y, 2, 1.2); }
+    poly(c, [[-19, -38], [-14, -48], [-4, -51], [6, -47], [12, -42], [6, -41], [0, -44], [-8, -43], [-14, -37]], k(T.moss));
+    for (const [x, y, w] of [[-15, -42, 3], [-6, -48, 3.4], [4, -46, 2.6], [-10, -38, 2]]) { c.fillStyle = k(shade(T.moss, -0.3)); c.fillRect(x, y, w, 1.3); }
+    for (const [x, y] of [[-12, -46], [0, -49]]) { ellipse(c, x, y, 1.4, 1, k('#c8483a')); c.fillStyle = '#f6ece0'; c.fillRect(x - 0.6, y - 0.6, 0.7, 0.6); }
   } else if (kind === 'trollS') {
-    for (const [x, y, s] of [[-12, -36, 1.2], [-5, -39, 1.6], [3, -37.5, 1.1]]) { poly(c, [[x - 2 * s, y + 2], [x, y - 4 * s], [x + 2 * s, y + 2]], k(T.gem)); poly(c, [[x - 2 * s, y + 2], [x, y - 4 * s], [x - 0.3, y + 2]], k('#d8f6ff')); }
-    c.strokeStyle = k('#4a4a46'); c.lineWidth = 0.8;
-    for (const [x0, y0, x1, y1] of [[-8, -26, -4, -20], [-4, -20, -6, -14], [6, -28, 9, -22]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
-    for (const [x, y] of [[-14, -28], [9, -24], [-2, -14]]) ellipse(c, x, y, 2.2, 1.4, k(T.moss));
+    // каменные наросты: плоские валуны на горбу, трещины и рыжий лишайник
+    for (const [x, y, r] of [[-14, -42, 4.4], [-6, -48, 5.2], [3, -46, 3.8], [-17, -33, 3.2]])
+      naBlob(c, [[x - r, y + r * 0.5], [x - r * 0.7, y - r * 0.6], [x + r * 0.2, y - r], [x + r, y - r * 0.2], [x + r * 0.8, y + r * 0.6]], k(T.rock), 0.3, -0.34);
+    c.strokeStyle = k('#4a4640'); c.lineWidth = 0.7;
+    for (const [x0, y0, x1, y1] of [[-2, -32, 2, -26], [2, -26, 0, -21], [10, -36, 13, -31]]) { c.beginPath(); c.moveTo(x0, y0 + crouch); c.lineTo(x1, y1 + crouch); c.stroke(); }
+    for (const [x, y] of [[-12, -45], [-4, -51], [5, -44], [-15, -30]]) ellipse(c, x, y, 1.6, 1, k('#c8a040'));
+    for (const [x, y] of [[-8, -26], [12, -33]]) ellipse(c, x, y + crouch, 2, 1.2, k(T.moss));
   } else {
-    poly(c, [[-17, -31], [-9, -37], [3, -37], [11, -33], [6, -30], [-2, -32], [-11, -29]], k(T.moss));
-    for (const [x, l] of [[-14, 7], [-6, 10], [4, 8], [9, 6]]) { c.strokeStyle = k('#4a7a2a'); c.lineWidth = 1; c.beginPath(); c.moveTo(x, -32); c.quadraticCurveTo(x + 1.4 * (P.leg || 0.5), -32 + l * 0.5, x + 0.6, -32 + l); c.stroke(); }
-    for (const [x, y] of [[-10, -22], [7, -18], [12, -26]]) { c.fillStyle = k(T.slime); c.fillRect(x, y, 1.2, 2.4); }
+    poly(c, [[-19, -37], [-13, -47], [-3, -50], [7, -46], [12, -41], [5, -40], [-2, -43], [-10, -41], [-15, -36]], k(T.moss));
+    for (const [x, l] of [[-16, 9], [-9, 13], [-1, 11], [6, 8]]) { c.strokeStyle = k('#4a7a2a'); c.lineWidth = 1; c.beginPath(); c.moveTo(x, -42); c.quadraticCurveTo(x + 1.4, -42 + l * 0.5, x + 0.4 + sw, -42 + l); c.stroke(); }
+    for (const [x, y] of [[-10, -28], [9, -20], [14, -32]]) { c.fillStyle = k(T.slime); c.fillRect(x, y, 1.2, 2.6); }
   }
-  // голова: маленькая, низко посажена вперёд; большой нос, нижние клыки, уши-лопухи
-  const hx = 14 + (P.a > 0.5 ? 2 : 0) - (P.hurt > 0.5 ? 1.5 : 0), hy = -35 + (P.hurt > 0.5 ? 1 : 0) - (P.mouth > 0.9 ? 1 : 0);
-  poly(c, [[hx - 5, hy - 2], [hx - 9.4, hy - 6], [hx - 5.6, hy + 1]], SK2);                     // ухо
-  ellipse(c, hx, hy, 6.6, 5.6, SK);
-  ellipse(c, hx - 2, hy + 0.5, 4, 4.6, SK2);
-  ellipse(c, hx + 6, hy + 1, 3.4, 2.8, k(shade(T.skin, -0.1)));                                  // нос-картошка
-  c.fillStyle = k(T.hair); c.fillRect(hx - 5, hy - 6, 7, 1.6); c.fillRect(hx - 3, hy - 7.4, 3, 1.6); // чубчик
-  const jaw = P.mouth > 0.4 ? 1.6 * P.mouth : 0;
-  ellipse(c, hx + 2.4, hy + 3.4 + jaw * 0.5, 4.2, 2 + jaw * 0.5, SK);
-  if (jaw) { c.fillStyle = '#3a1a14'; c.fillRect(hx + 0.4, hy + 2.6, 4.4, jaw); }
-  poly(c, [[hx + 0.6, hy + 3], [hx + 1.4, hy + 0.6 - jaw], [hx + 2.2, hy + 3]], '#f2ead0');          // клыки снизу
-  poly(c, [[hx + 3.6, hy + 3], [hx + 4.4, hy + 0.8 - jaw], [hx + 5.2, hy + 3]], '#f2ead0');
-  // глаза: маленькие, под нависшей бровью
-  c.fillStyle = SK2; c.fillRect(hx - 0.4, hy - 3.6, 6.4, 1.6);
-  naEye(c, hx + 1.6, hy - 1.4, P, kind === 'trollS' ? '#3a6a8a' : '#e8d040', 0.9);
-  if (P.eye === 0 || P.eye === 1) { c.fillStyle = '#1a0f0a'; c.fillRect(hx + 1.4, hy - 1.8, 0.8, 0.8); }
-  // ближняя рука с оружием
+  // грива по загривку
+  for (let n = 0; n < 4; n++) poly(c, [[2 + n * 2, -48], [-2 + n * 1.6, -54 - (n % 2) * 2], [5 + n * 2, -49]], k(T.hair));
+  c.restore();
+  // голова: маленькая, низко, вперёд
+  const hx = 21 + (P.a > 0.5 ? 3 : 0) - (P.hurt > 0.5 ? 2.5 : 0), hy = -45 + crouch * 1.3 + (P.hurt > 0.5 ? 1.5 : 0) - (P.mouth > 0.9 ? 2 : 0);
+  // толстая короткая шея уходит вперёд из плеч
+  poly(c, [[7, -52 + crouch], [hx - 3, hy - 6], [hx - 2, hy + 5], [10, -38 + crouch]], SK);
+  poly(c, [[7, -52 + crouch], [hx - 3, hy - 6], [hx - 4, hy - 3], [8, -48 + crouch]], SK3);
+  // большое ухо-лопух
+  poly(c, [[hx - 3, hy - 3], [hx - 11, hy - 9], [hx - 9, hy - 1], [hx - 4, hy + 2.4]], SK2);
+  poly(c, [[hx - 4.4, hy - 2], [hx - 9.4, hy - 6.6], [hx - 7.8, hy - 1]], k(shade(T.skin, -0.22)));
+  ellipse(c, hx, hy, 7.6, 6.8, SK);
+  ellipse(c, hx - 2.6, hy + 0.8, 3.6, 5, SK2);
+  // широкая челюсть с нижними клыками
+  const jaw = P.mouth > 0.4 ? 2.4 * P.mouth : 0;
+  poly(c, [[hx - 3, hy + 2], [hx + 7.4, hy + 2.6], [hx + 8.4, hy + 6 + jaw], [hx + 1, hy + 7.6 + jaw], [hx - 3.6, hy + 5]], SK);
+  poly(c, [[hx - 3.6, hy + 5], [hx + 1, hy + 7.6 + jaw], [hx + 8.4, hy + 6 + jaw], [hx + 7.6, hy + 7.4 + jaw], [hx, hy + 8.6 + jaw]], SK2);
+  c.fillStyle = '#3a1410'; c.fillRect(hx + 0.6, hy + 3.2, 7.4, 0.9 + jaw);
+  poly(c, [[hx + 1.2, hy + 4 + jaw], [hx + 2.2, hy - 0.6], [hx + 3.2, hy + 4 + jaw]], '#f2ead0');
+  poly(c, [[hx + 5.4, hy + 4 + jaw], [hx + 6.4, hy - 0.2], [hx + 7.4, hy + 4 + jaw]], '#f2ead0');
+  // нос — длинный, свисающий картошкой
+  poly(c, [[hx + 2.6, hy - 3.2], [hx + 8.4, hy - 2.2], [hx + 12.6, hy + 1.6], [hx + 12, hy + 4.2], [hx + 8, hy + 3], [hx + 4, hy + 0.8]], k(shade(T.skin, -0.06)));
+  ellipse(c, hx + 11.6, hy + 2.8, 2.4, 2, k(shade(T.skin, -0.12)));
+  poly(c, [[hx + 3, hy - 3], [hx + 8.4, hy - 2], [hx + 10, hy - 0.6], [hx + 5, hy - 1.4]], SK3);
+  c.fillStyle = k(shade(T.skin, -0.45)); c.fillRect(hx + 10.8, hy + 4, 1.4, 0.9);
+  // тяжёлая бровь и глазки-бусинки с белком
+  ellipse(c, hx + 3.6, hy - 1.6, 1.6, 1.3, P.eye >= 2 ? SK2 : '#f0e8c0');
+  naEye(c, hx + 4, hy - 1.6, P, kind === 'trollS' ? '#2a4a6a' : '#3a2a10', 0.8);
+  poly(c, [[hx - 1.4, hy - 5.4], [hx + 6.6, hy - 4.2], [hx + 6.2, hy - 2.6], [hx - 1, hy - 3.4]], SK2);
+  c.fillStyle = k(T.hair); c.fillRect(hx - 4.4, hy - 7, 5.4, 1.8); c.fillRect(hx - 2.4, hy - 8.4, 2.4, 1.6);
+  // ближняя рука и оружие
   const th = naTheta(P);
-  const [ax, ay, ang] = naArm(c, 9, -29, 8, 7.5, th, P.up > 0.5 ? 0.2 : -0.7, 5.8, SK);
-  ellipse(c, ax, ay, 3.6, 3.2, SK);
-  const [dx, dy] = naDir(ang + 0.1 + (P.up > 0.5 ? 0 : (1 - Math.max(0, P.a)) * 2.3));
+  const [ax, ay, ang] = naArm(c, 8, -46 + crouch, 14, 13, th, P.up > 0.5 ? 0.2 : -0.35, 7, SK);
+  ellipse(c, ax, ay, 4.6, 4, SK);
+  for (let n = 0; n < 3; n++) { c.fillStyle = SK2; c.fillRect(ax - 1.6 + n * 1.6, ay - 3.4, 0.7, 2); }
+  const [dx, dy] = naDir(ang + 0.15 + (P.up > 0.5 ? 0 : Math.max(0, 1 - Math.abs(P.a) * 1.4) * 0.15));
   if (T.wpn === 'club') {
-    // бревно-дубина с сучками
-    const L = 17;
-    c.strokeStyle = k('#6a4a28'); c.lineWidth = 4.2; c.beginPath(); c.moveTo(ax - dx * 3, ay - dy * 3); c.lineTo(ax + dx * L, ay + dy * L); c.stroke();
+    const L = 21;
+    c.strokeStyle = k('#6a4a28'); c.lineWidth = 4.6; c.beginPath(); c.moveTo(ax - dx * 3, ay - dy * 3); c.lineTo(ax + dx * L, ay + dy * L); c.stroke();
     c.strokeStyle = k('#94703e'); c.lineWidth = 1.2; c.beginPath(); c.moveTo(ax - dx * 3 - 0.8, ay - dy * 3); c.lineTo(ax + dx * L - 0.8, ay + dy * L); c.stroke();
-    ellipse(c, ax + dx * L, ay + dy * L, 4.8, 4.6, k('#6a4a28'));
-    c.fillStyle = k('#94703e'); c.fillRect(ax + dx * L - 2.6, ay + dy * L - 2.6, 2, 1.6);
-    naLimb(c, ax + dx * 12, ay + dy * 12, ax + dx * 12 + dy * 3, ay + dy * 12 - dx * 3, 1.4, k('#5a3c20'));
+    ellipse(c, ax + dx * L, ay + dy * L, 5.2, 5, k('#6a4a28'));
+    c.fillStyle = k('#94703e'); c.fillRect(ax + dx * L - 2.8, ay + dy * L - 2.8, 2.2, 1.6);
+    naLimb(c, ax + dx * 13, ay + dy * 13, ax + dx * 13 + dy * 3.4, ay + dy * 13 - dx * 3.4, 1.4, k('#5a3c20'));
   } else if (T.wpn === 'rock') {
-    // валун в кулаке
-    const L = P.a > 0.5 ? 4 : 3;
-    naBlob(c, [[ax + dx * L - 6, ay + dy * L - 2], [ax + dx * L - 3, ay + dy * L - 7], [ax + dx * L + 4, ay + dy * L - 6], [ax + dx * L + 7, ay + dy * L], [ax + dx * L + 3, ay + dy * L + 5], [ax + dx * L - 4, ay + dy * L + 4]], k('#8a8478'), 0.28, -0.32);
-    c.fillStyle = k(T.moss); c.fillRect(ax + dx * L - 2, ay + dy * L - 5, 3, 1.4);
+    const L = P.a > 0.5 ? 5 : 3.6, bx = ax + dx * L, by = ay + dy * L;
+    naBlob(c, [[bx - 7, by - 1], [bx - 4, by - 7], [bx + 4, by - 7], [bx + 8, by], [bx + 4, by + 6], [bx - 5, by + 5]], k('#8a8478'), 0.28, -0.34);
+    c.strokeStyle = k('#5a564e'); c.lineWidth = 0.6; c.beginPath(); c.moveTo(bx - 2, by - 5); c.lineTo(bx + 1, by + 1); c.stroke();
+    ellipse(c, bx - 2.4, by - 4, 1.8, 1, k('#c8a040'));
   } else {
-    // кривая коряга с тиной
-    const L = 16;
-    c.strokeStyle = k('#4a3a26'); c.lineWidth = 3.4; c.beginPath(); c.moveTo(ax - dx * 2, ay - dy * 2);
+    const L = 19;
+    c.strokeStyle = k('#4a3a26'); c.lineWidth = 3.8; c.beginPath(); c.moveTo(ax - dx * 2, ay - dy * 2);
     c.quadraticCurveTo(ax + dx * L * 0.5 + dy * 3, ay + dy * L * 0.5 - dx * 3, ax + dx * L, ay + dy * L); c.stroke();
-    naLimb(c, ax + dx * L, ay + dy * L, ax + dx * (L + 3) - dy * 4, ay + dy * (L + 3) + dx * 4, 2, k('#4a3a26'));
-    naLimb(c, ax + dx * L, ay + dy * L, ax + dx * (L + 4) + dy * 3, ay + dy * (L + 4) - dx * 3, 1.8, k('#4a3a26'));
-    c.strokeStyle = k(T.slime); c.lineWidth = 0.9; c.beginPath(); c.moveTo(ax + dx * 10, ay + dy * 10); c.lineTo(ax + dx * 10 + 0.6, ay + dy * 10 + 4); c.stroke();
+    naLimb(c, ax + dx * L, ay + dy * L, ax + dx * (L + 3) - dy * 4, ay + dy * (L + 3) + dx * 4, 2.2, k('#4a3a26'));
+    naLimb(c, ax + dx * L, ay + dy * L, ax + dx * (L + 4) + dy * 3, ay + dy * (L + 4) - dx * 3, 2, k('#4a3a26'));
+    c.strokeStyle = k(T.slime); c.lineWidth = 0.9; c.beginPath(); c.moveTo(ax + dx * 11, ay + dy * 11); c.lineTo(ax + dx * 11 + 0.6, ay + dy * 11 + 4.4); c.stroke();
   }
-  if (P.a > 0.6) { c.strokeStyle = 'rgba(255,255,230,0.75)'; c.lineWidth = 0.8; c.beginPath(); c.arc(ax, ay, 22, ang - 1.3, ang - 0.2); c.stroke(); }
-  if (P.b > 0.5) { c.strokeStyle = 'rgba(220,230,200,0.85)'; c.lineWidth = 1; c.beginPath(); c.arc(14, -24, 9, -1.2, 1.2); c.stroke(); }
-  if (P.mouth > 0.9) for (const [x, y] of [[hx + 9, hy - 2], [hx + 11, hy + 1.6], [hx + 10, hy + 4.4]]) { c.fillStyle = 'rgba(255,255,255,0.8)'; c.fillRect(x, y, 2.4, 0.8); }   // рёв — брызги
+  if (P.a > 0.6) { c.strokeStyle = 'rgba(255,255,230,0.75)'; c.lineWidth = 0.9; c.beginPath(); c.arc(ax, ay, 24, ang - 1.3, ang - 0.2); c.stroke(); }
+  if (P.b > 0.5) { c.strokeStyle = 'rgba(220,230,200,0.85)'; c.lineWidth = 1; c.beginPath(); c.arc(16, -34, 10, -1.2, 1.2); c.stroke(); }
+  if (P.mouth > 0.9) for (const [x, y] of [[hx + 13, hy - 1], [hx + 15, hy + 2.6], [hx + 14, hy + 5.4]]) { c.fillStyle = 'rgba(255,255,255,0.8)'; c.fillRect(x, y, 2.6, 0.9); }
   c.restore();
 }
+
 
 // =============== Броненосец ===============
 function drawArmad(c, P) {
@@ -316,9 +348,9 @@ function drawGnomtaur(c, P, bow) {
   c.restore();
 }
 
-NA_SPEC.troll = { name: 'Лесной тролль', w: 124, h: 96, ax: 58, ay: 86, sc: 1.05 };
-NA_SPEC.trollS = { name: 'Каменный тролль', w: 124, h: 96, ax: 58, ay: 86, sc: 1.1 };
-NA_SPEC.trollB = { name: 'Болотный тролль', w: 124, h: 96, ax: 58, ay: 86, sc: 1.0 };
+NA_SPEC.troll = { name: 'Лесной тролль', w: 200, h: 144, ax: 100, ay: 132, sc: 1.28 };
+NA_SPEC.trollS = { name: 'Каменный тролль', w: 200, h: 144, ax: 100, ay: 132, sc: 1.32 };
+NA_SPEC.trollB = { name: 'Болотный тролль', w: 200, h: 144, ax: 100, ay: 132, sc: 1.24 };
 NA_SPEC.armad = { name: 'Броненосец', w: 100, h: 64, ax: 48, ay: 54, sc: 1.2 };
 NA_SPEC.goblin = { name: 'Гоблин', w: 60, h: 56, ax: 28, ay: 48, sc: 1.15 };
 NA_SPEC.goblinB = { name: 'Гоблин с копьецом', w: 60, h: 56, ax: 28, ay: 48, sc: 1.15 };
@@ -362,8 +394,11 @@ function na2TrollLair(c, dead, f, kind) {
     ellipse(c, -3, -13, 1.6, 1.1, ec); ellipse(c, 4, -13, 1.6, 1.1, ec);       // глаза из темноты
     c.save(); c.globalCompositeOperation = 'lighter'; ellipse(c, 0.5, -13, 9, 4, `rgba(240,200,80,${f ? 0.16 : 0.1})`); c.restore();
   }
-  // мох / кристаллы / тина на холме
-  if (kind === 'trollS') for (const [x, y, s] of [[-24, -26, 1.4], [20, -30, 1.8], [30, -14, 1.1]]) { poly(c, [[x - 2.4 * s, y + 3], [x, y - 5 * s], [x + 2.4 * s, y + 3]], dead ? '#8aa0aa' : T.gem); poly(c, [[x - 2.4 * s, y + 3], [x, y - 5 * s], [x - 0.3, y + 3]], dead ? '#b0c0c8' : '#e0faff'); }
+  // мох / каменные глыбы с лишайником / тина на холме
+  if (kind === 'trollS') for (const [x, y, s] of [[-24, -26, 1.4], [18, -34, 1.8], [30, -14, 1.1]]) {
+    naBlob(c, [[x - 4 * s, y + 2], [x - 3 * s, y - 2.6 * s], [x + 0.6 * s, y - 4 * s], [x + 4 * s, y - 1.6 * s], [x + 3.4 * s, y + 2]], dead ? '#6a6660' : T.rock, 0.3, -0.34);
+    if (!dead) ellipse(c, x - s, y - 2 * s, 1.6 * s, 0.9 * s, '#c8a040');
+  }
   else naBlob(c, [[-30, -20], [-18, -36], [-2, -44], [14, -40], [26, -28], [10, -32], [-6, -36], [-20, -28]], dead ? '#6a6a3a' : T.moss, 0.28, -0.3);
   // кости и черепа у входа, дубина у стены
   for (const [x, y, a] of [[-24, 4, 0.2], [18, 5, -0.4], [26, 2, 0.6]]) { naLimb(c, x - Math.cos(a) * 4, y - Math.sin(a) * 1.4, x + Math.cos(a) * 4, y + Math.sin(a) * 1.4, 1.6, '#e8e0c8'); ellipse(c, x - Math.cos(a) * 4, y - Math.sin(a) * 1.4, 1.3, 1.3, '#e8e0c8'); ellipse(c, x + Math.cos(a) * 4, y + Math.sin(a) * 1.4, 1.3, 1.3, '#e8e0c8'); }

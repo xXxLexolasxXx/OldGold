@@ -16,7 +16,9 @@ const N2_RK_SZ = [1, 1, 1.12, 1.22, 1.3, 1.38];
 const N2_TROLLS = { troll: 1, trollS: 1, trollB: 1 };
 const N2_KINDS = { troll: 1, trollS: 1, trollB: 1, armad: 1, goblin: 1, gtSpear: 1, gtBow: 1 };
 const N2_LAIRS = { troll: 1, trollS: 1, trollB: 1, armad: 1, goblin: 1, gnomtaur: 1 };
-const N2_TOP = { troll: 58, trollS: 60, trollB: 56, armad: 34, goblin: 30, gtSpear: 58, gtBow: 58, leshy: 54, fairy: 46, pixie: 46, boar: 38, frost: 50 };
+const N2_TOP = { troll: 84, trollS: 86, trollB: 82, armad: 34, goblin: 30, gtSpear: 58, gtBow: 58, leshy: 54, fairy: 46, pixie: 46, boar: 38, frost: 50 };
+// рост от ранга; тролли растут сдержанно (×1,15 на 5-м ранге), чтобы не перерасти голема
+const n2Sz = N => { const s = N2_RK_SZ[n2Rk(N)]; return N2_TROLLS[N.k] ? 1 + (s - 1) * 0.4 : s; };
 const N2 = { cast: null, fireN: null, mul: 1, sec: 0, rng: null };
 // своя случайность: общий Math.random не сдвигается (детерминизм и чужие тесты по сиду не зависят от нейтралов 2)
 const n2Rand = () => (N2.rng || (N2.rng = mulberry32(0x4E2B17)))();
@@ -27,11 +29,11 @@ const n2Now = () => Game.time;
 
 if (typeof NSPEC !== 'undefined') {
   Object.assign(NSPEC, {
-    troll:  { name: 'Лесной тролль', mhp: 150, dmg: [11, 16], cd: 2.2, rng: 1.9, spd: 1.3, parry: 0.08, xp: 160, roam: 3, sz: 16, regen: 0.012,
+    troll:  { name: 'Лесной тролль', mhp: 150, dmg: [11, 16], cd: 2.2, rng: 1.9, spd: 1.3, parry: 0.08, xp: 160, roam: 3, sz: 19, regen: 0.012,
       drop: [['hide', 2, 1], ['gold', 3, 0.8], ['trunk', 2, 0.7], ['magicstone', 1, 0.25]], msg: ['Кто топчет мой мост?!', 'Тролль голоден!', 'Ррраздавлю!'] },
-    trollS: { name: 'Каменный тролль', mhp: 175, dmg: [12, 17], cd: 2.4, rng: 1.9, spd: 1.15, parry: 0.12, xp: 180, roam: 2.6, sz: 16, regen: 0.01,
+    trollS: { name: 'Каменный тролль', mhp: 175, dmg: [12, 17], cd: 2.4, rng: 1.9, spd: 1.15, parry: 0.12, xp: 180, roam: 2.6, sz: 19, regen: 0.01,
       drop: [['stone', 3, 1], ['ironore', 1, 0.7], ['gold', 3, 0.7], ['magicstone', 1, 0.35]], msg: ['Камень не боится!', 'Гр-р-рохот!', 'Вы — песок!'] },
-    trollB: { name: 'Болотный тролль', mhp: 135, dmg: [10, 14], cd: 2.0, rng: 1.9, spd: 1.4, parry: 0.06, xp: 150, roam: 3.2, sz: 15, regen: 0.016,
+    trollB: { name: 'Болотный тролль', mhp: 135, dmg: [10, 14], cd: 2.0, rng: 1.9, spd: 1.4, parry: 0.06, xp: 150, roam: 3.2, sz: 18, regen: 0.016,
       drop: [['hide', 2, 1], ['hops', 2, 0.8], ['mana', 1, 0.5], ['gold', 2, 0.6]], msg: ['Бульк… Я вас утоплю!', 'Тина помнит всё!', 'Чвяк-чвяк!'] },
     armad:  { name: 'Броненосец', mhp: 95, dmg: [6, 9], cd: 1.6, rng: 1.5, spd: 1.7, parry: 0.2, xp: 120, roam: 3, sz: 13,
       drop: [['hide', 3, 1], ['gold', 1, 0.6], ['magicstone', 1, 0.4]], msg: ['Пф-ф! (сворачивается)', 'Хрусь-хрусь!', 'Не тронь панцирь!'] },
@@ -450,7 +452,7 @@ function n2RollThink(N, dt) {
       } else N.tel = null;
     };
   }
-  if (typeof cbTop === 'function') { const _ct = cbTop; cbTop = function (N) { return (N2_TOP[N.k] || _ct(N)) * N2_RK_SZ[n2Rk(N)]; }; }
+  if (typeof cbTop === 'function') { const _ct = cbTop; cbTop = function (N) { return (N2_TOP[N.k] || _ct(N)) * n2Sz(N); }; }
 }
 
 // ---------- Огненный шар и Оберег героя по нейтралам ----------
@@ -584,7 +586,7 @@ if (typeof hmCast === 'function') {
   neuDraw = function (c, N) {
     const rk = n2Rk(N);
     if (!N2_KINDS[N.k] && rk <= 1) return _nd(c, N);
-    const S = NSPEC[N.k], art = N.k === 'goblin' && N.id % 2 ? 'goblinB' : N.k, sp = naFrame(art, N.fr || 'i0'), sc = N2_RK_SZ[rk];
+    const S = NSPEC[N.k], art = N.k === 'goblin' && N.id % 2 ? 'goblinB' : N.k, sp = naFrame(art, N.fr || 'i0'), sc = n2Sz(N);
     const px = Math.round(N.x * TILE), py = Math.round(N.y * TILE + 6), dead = N.st === 'die';
     const al = dead ? Math.max(0, Math.min(1, 1 - (N.dt - 0.9) / 2.3)) : 1;
     if (al <= 0) return;
