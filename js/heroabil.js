@@ -317,7 +317,7 @@ function abRage(h, n) {
 
 function abZoneTick(dt) {
   const L = Game.abz, now = Game.time;
-  if (!L || !L.length) return;
+  if (!L || !L.length || kitMirror()) return;          // игрок общей деревни только рисует: считает сервер
   for (let i = L.length - 1; i >= 0; i--) {
     const z = L[i], own = Game.unitMap && Game.unitMap.get(z.own);
     if (now > z.until || !own || own.dead) { L.splice(i, 1); continue; }
@@ -364,6 +364,15 @@ function abTick(dt) {
       if (m && m.t === 'camp') { const u = coop.players.get(name); if (u && !u.dead) abCampStart(u); return; }
       return _cc(name, json, admin);
     };
+    // ловушки, освящённая земля и дух-волк — игрокам в зеркале мира
+    if (typeof coopMirror === 'function') {
+      const _cm = coopMirror;
+      coopMirror = function () {
+        const m = _cm();
+        if (m) m.abz = (Game.abz || []).map(z => ({ k: z.k, x: Math.round(z.x * 100) / 100, y: Math.round(z.y * 100) / 100, until: z.until, r: z.r, face: z.face, run: z.run, bt: z.bt }));
+        return m;
+      };
+    }
     if (typeof coopUseItem === 'function') {
       const _cu = coopUseItem;
       coopUseItem = function (u, slot) { const s = u.hero && u.hero.inv[slot]; if (s && s.k === 'bandage') { abBandage(u, slot); return; } _cu(u, slot); };
@@ -471,6 +480,11 @@ function abMigrate(h) {
 }
 
 // ---------- Подключение к симуляции ----------
+// игрок общей деревни: зоны способностей приходят с зеркалом мира (сервер добавляет m.abz)
+if (typeof coopMirror === 'function' && coopMirror.length === 1) {
+  const _cm = coopMirror;
+  coopMirror = function (m) { _cm(m); if (m && Array.isArray(m.abz)) Game.abz = m.abz; };
+}
 {
   const _step = step;
   step = function (dt) {
