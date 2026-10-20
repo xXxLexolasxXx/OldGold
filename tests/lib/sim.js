@@ -90,6 +90,11 @@ const BOT = `(function () {
   return 'построил ' + type;
 })()`;
 function botTurn(sim) { return sim.h.run(BOT.replace('__PLAN__', JSON.stringify(PLAN))); }
+// Заложить одно здание с дорогой до сети склада, не дожидаясь других строек (для сценарных тестов)
+function botPlace(sim, type) {
+  sim.h.run('Game.__bot = { i: 0, fails: 0 }');
+  return sim.h.run(BOT.replace('__PLAN__', JSON.stringify([type])).replace(/if \(Game\.buildings\.some[^\n]*ждём стройку';/, ''));
+}
 
 // ---- Инварианты
 const INV = `(function () {
@@ -144,4 +149,4 @@ function fingerprint(sim) {
   return { hash: hsh.toString(16), size: s.length, text: s };
 }
 
-module.exports = { newSim, stepN, runFor, botTurn, inspect, checkInvariants, fingerprint, mulberry, MIN };
+module.exports = { newSim, stepN, runFor, botTurn, botPlace, inspect, checkInvariants, fingerprint, mulberry, MIN };

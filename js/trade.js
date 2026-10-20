@@ -12,7 +12,7 @@
 
 const TR_BASE = {                // базовая цена, золота за штуку (≈ 1 золото на 20–30 с труда по цепочке)
   trunk: 0.5, timber: 1, stone: 1, wheat: 0.6, hay: 0.4, hops: 0.9, flour: 1.2, bread: 1.6, beer: 2.2, pig: 3, sausage: 3.2,
-  hide: 1.6, leather: 2.6, leatherArmor: 6, goldore: 2.6, ironore: 2.2, iron: 4.2, sword: 12, bow: 9, dagger: 8, ironArmor: 16,
+  hide: 1.6, leather: 2.6, leatherArmor: 11, goldore: 2.6, ironore: 2.2, iron: 4.2, sword: 12, bow: 9, dagger: 8, ironArmor: 46,
   mana: 5, staff: 14, mageArmor: 18, darkbeer: 3.6, steak: 4, croissant: 3, chicken: 2.2,
 };
 const TR_RARE = ['ironArmor', 'sword', 'staff', 'mageArmor', 'mana', 'darkbeer', 'steak'];

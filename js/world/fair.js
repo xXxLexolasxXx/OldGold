@@ -22,7 +22,7 @@ const FAIR_OFFERS = [
   { give: { hide: 3 }, get: { gold: 1 } }, { give: { bread: 4 }, get: { gold: 1 } }, { give: { beer: 3 }, get: { gold: 1 } },
   { give: { sausage: 3 }, get: { gold: 1 } }, { give: { gold: 2 }, get: { sword: 1 } }, { give: { gold: 2 }, get: { bow: 1 } },
   { give: { gold: 1 }, get: { mana: 1 } }, { give: { stone: 5 }, get: { iron: 1 } }, { give: { trunk: 4 }, get: { timber: 3 } },
-  { give: { gold: 3 }, get: { magicstone: 2 } }, { give: { wheat: 5 }, get: { croissant: 2 } }, { give: { leather: 2 }, get: { leatherArmor: 1 } },
+  { give: { gold: 3 }, get: { magicstone: 2 } }, { give: { wheat: 5 }, get: { croissant: 2 } }, { give: { leather: 4 }, get: { leatherArmor: 1 } },
   { give: { magicstone: 2 }, get: { gold: 2 } }, { give: { hops: 4 }, get: { darkbeer: 2 } },
 ];
 const FAIR_WANT = ['bread', 'sausage', 'chickenleg', 'steak', 'croissant'];

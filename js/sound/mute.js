@@ -7,6 +7,6 @@
     const q = new URLSearchParams(location.search);
     const dev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) || navigator.webdriver === true || q.get('mute') === '1';
     if (!dev) return;
-    for (const k of ['feod.music', 'feod.sfx']) if (localStorage.getItem(k) === null) localStorage.setItem(k, '0');
+    for (const k of ['feod.music', 'feod.sfx', 'feod.menuMusic']) if (localStorage.getItem(k) === null) localStorage.setItem(k, '0');
   } catch (e) { /* нет доступа к хранилищу */ }
 })();
