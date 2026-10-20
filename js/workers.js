@@ -139,7 +139,7 @@ function wkWhy(u) {
     const p = u.home.problem();
     if (!p) return '';
     if (p.startsWith('need:')) return 'нет сырья: ' + wkGN(p.slice(5)) + ' — ждёт подвоза';
-    return { full: 'склад здания полон — ждёт, пока вывезут', paused: 'здание на паузе', noroad: 'к зданию нет дороги', damaged: 'здание повреждено — ждёт ремонта', noworker: 'идёт на работу' }[p] || '';
+    return { enough: 'еды на складе вдоволь — отдыхает', full: 'склад здания полон — ждёт, пока вывезут', paused: 'здание на паузе', noroad: 'к зданию нет дороги', damaged: 'здание повреждено — ждёт ремонта', noworker: 'идёт на работу' }[p] || '';
   }
   if (!u.idleFlag) return '';
   if (wkManaged(u) && wkCap(job) < Infinity) {

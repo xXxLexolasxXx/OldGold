@@ -582,7 +582,7 @@ function collectAlerts() {
       continue;
     }
     const p = b.problem();
-    if (!p || p === 'paused') continue;
+    if (!p || p === 'paused' || p === 'enough') continue;
     if (p === 'noroad') { out.push({ b, icon: ['ui', 'road'], text: `${b.def.name}: нет дороги к складу` }); continue; }
     if (p === 'damaged') { out.push({ b, icon: ['ui', 'warn'], text: `${b.def.name}: повреждено нечистью, ждёт ремонта` }); continue; }
     if (p === 'noworker') out.push({ b, icon: ['ui', 'noworker'], text: `${b.def.name}: нужен ${UNIT_TYPES[b.def.worker].name.toLowerCase()}` });
@@ -635,6 +635,7 @@ function statusChip(b) {
   if (p === 'noworker') return '<span class="chip bad">Нет рабочего</span>';
   if (p === 'damaged') return '<span class="chip bad">Повреждено — ждёт ремонта</span>';
   if (p === 'full') return '<span class="chip wait">Всё заполнено</span>';
+  if (p === 'enough') return '<span class="chip off">Отдыхает: еды на складе вдоволь</span>';
   return `<span class="chip bad">Нет: ${GOODS[p.slice(5)].name}</span>`;
 }
 
