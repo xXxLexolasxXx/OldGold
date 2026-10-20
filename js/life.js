@@ -125,7 +125,7 @@ function lifeTick(u, dt) {
     u.x = f.x0 + (f.x1 - f.x0) * e; u.y = f.y0 + (f.y1 - f.y0) * e;
     if (k >= 1) u.fiveSlide = null;
   }
-  if (u.injury && Game.time >= u.injuryUntil) { u.injury = null; }
+  if (u.injury && Game.time >= u.injuryUntil) { if (u.injCare && typeof injHeal === 'function') injHeal(u, u.injCare); else u.injury = null; }   // вылечили — с отметкой (sickness.js)
   // долго без еды — копит слабость
   if (u.food <= 0 && !u.noFood && !u.inside && isPerson(u) && !dif().noStarve) u.starveT = (u.starveT || 0) + dt * dif().starve;
   else if (u.food > 0) u.starveT = 0;
@@ -264,17 +264,30 @@ function injure(u, part) {
   if (u.injury || !isPerson(u)) return;
   u.injury = part;
   u.injuryUntil = Game.time + INJURY_TIME;
+  u.injAt = Game.time; u.injCare = null; u.healedBy = null; u.healedAt = 0;
+  if (typeof injNote === 'function') injNote(u);        // лечение и сводка (sickness.js)
 }
 
+// уронить груз на землю: кучку подберут курьеры. Некуда положить (вокруг вода, стены) — груз остаётся в руках
 function dropLoad(u) {
   if (!u.carry) return null;
   const g = u.carry, n = u.carryN || 1;
-  dropPile(Math.floor(u.x), Math.floor(u.y), g, n);
+  if (!dropPile(Math.floor(u.x), Math.floor(u.y), g, n)) return null;
   u.carry = null; u.carryN = 0;
   return g;
 }
 
-let lastBumpToast = -99;
+// шанс, что встречный при столкновении ещё и травмируется (груз уронили уже)
+function bumpInjuryChance(victim, carrier) {
+  let p = INJURY_CHANCE;
+  if (typeof isNightNow === 'function' && isNightNow()) p *= 1.6;                 // в темноте не видно, куда падать
+  if (victim.md && victim.md.rest < 0.25) p *= 1.5;                             // с недосыпа
+  if (victim.drunkAt || carrier.drunkAt) p *= 2;                                // хмельные толкаются от души
+  if (HEAVY.has(carrier.carry)) p *= 1.4;                                       // бревном — больнее
+  if (victim.type === 'kid') p *= 0.4;                                          // гномята отскакивают, как мячики
+  else if (victim.isCourier) p *= 0.7;                                          // носильщики привыкли уворачиваться
+  return Math.min(0.9, p);
+}
 
 function checkCollisions() {
   // клетка -> первый гном в ней, дальше цепочкой через _cn (без массивов на каждую клетку четыре раза в секунду)
@@ -304,23 +317,22 @@ function checkCollisions() {
         const victim = carrier === u ? o : u;
         if (!isPerson(victim)) continue;
         let p = COLLIDE_CHANCE * (1 + 0.2 * rainAmt()) * (dif().amb || 1) * startBump();   // под дождём толкаются чаще
-        if (u.action?.squeeze || o.action?.squeeze) p += 0.06;
-        if (o.brk && o.brk.kind === 'sleep') p += 0.18;
-        if (u.drunkAt || o.drunkAt) p += 0.06;
-        if (HEAVY.has(carrier.carry)) p += 0.02;
+        if (u.action?.squeeze || o.action?.squeeze) p += 0.03;
+        if (o.brk && o.brk.kind === 'sleep') p += 0.08;
+        if (u.drunkAt || o.drunkAt) p += 0.04;
+        if (HEAVY.has(carrier.carry)) p += 0.01;
         if (Math.random() > p) continue;
+        const hurt = !victim.injury && Game.time >= (Game.injGapAt || 0) && Math.random() < bumpInjuryChance(victim, carrier);
         const g = dropLoad(carrier);
+        if (!g) continue;                                      // уронить некуда — удержал
         const part = Math.random() < 0.5 ? 'leg' : 'arm';
-        injure(victim, part);
+        if (hurt) { Game.injGapAt = Game.time + INJURY_GAP; injure(victim, part); }
         victim.ouchUntil = Game.time + 2.5;                    // искры из глаз
         sfxUnit(victim, 'ouch');
         // оба отлетают назад друг от друга и падают
         knockBack(victim, carrier); knockBack(carrier, victim);
-        logEvent('bump', `Столкновение: ${UNIT_TYPES[carrier.type].name.toLowerCase()} уронил «${GOODS[g].name}», ${UNIT_TYPES[victim.type].name.toLowerCase()} ${part === 'leg' ? 'хромает' : 'повредил руку'}`, victim.x, victim.y);
-        if (Game.time - lastBumpToast > 8) {
-          lastBumpToast = Game.time;
-          toast(`Столкновение: ${UNIT_TYPES[carrier.type].name.toLowerCase()} уронил «${GOODS[g].name}», ${UNIT_TYPES[victim.type].name.toLowerCase()} ${part === 'leg' ? 'теперь хромает' : 'повредил руку'}`);
-        }
+        // в журнал; всплывающая сводка о травмах — раз в минуту (injNote в sickness.js), без спама на каждый толчок
+        logEvent('bump', `Столкновение: ${UNIT_TYPES[carrier.type].name.toLowerCase()} уронил «${GOODS[g].name}»` + (hurt ? `, ${UNIT_TYPES[victim.type].name.toLowerCase()} ${part === 'leg' ? 'хромает' : 'повредил руку'}` : ' — подберут'), victim.x, victim.y);
       }
     }
   }

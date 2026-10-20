@@ -58,6 +58,7 @@ scriptTest('prio: приоритеты работ, сохранение', 'prio-
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
+scriptTest('injury: травмы — частота, лазарет, лекарь, сводка, груз, куры', 'injury-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
 scriptTest('kids: детские игры, замки, приручение, трубка, взросление', 'kids-test.js');

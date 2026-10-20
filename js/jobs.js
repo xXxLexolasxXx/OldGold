@@ -314,6 +314,7 @@ function* workerGen(u, b) {
       if (findInn(u)) { yield { leave: true }; return; }
       u.nextEatTry = Game.time + 15;
     }
+    if (typeof injWants === 'function' && (injWants(u) || injCalled(u))) { yield { leave: true }; return; }   // травма или вызов к раненому (sickness.js)
     if (b.paused || prioOff(b) || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
     const work = WORK[b.type] || recipeWork;
     yield* work(u, b);
