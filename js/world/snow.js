@@ -77,15 +77,12 @@ function snowDrawGround(c, x0, y0, x1, y1) {
       const nw = j => T[j] !== T_WATER;
       const e = (y > 0 && nw(i - W) ? 1 : 0) | (x < W - 1 && nw(i + 1) ? 2 : 0) | (y < H - 1 && nw(i + W) ? 4 : 0) | (x > 0 && nw(i - 1) ? 8 : 0);
       c.globalAlpha = Math.min(1, S.ice) * 0.94;
-      const m = typeof OCN !== 'undefined' && OCN.on && OCN.m9 ? OCN.m9[i] : 0;   // у берега — по скруглённой линии (ocean.js)
-      const sn = S.snow > 0.5;   // сухой угол клетки воды — под снегом
-      c.drawImage(m ? oceanIceTile(snowTile(0, v, true), sn ? snowTile(0, v, false) : null, m, true, 'w' + v + ':' + m + (sn ? 's' : '')) : snowTile(e << 4, v, true), x * TILE, y * TILE);
+      c.drawImage(snowTile(e << 4, v, true), x * TILE, y * TILE);
     } else if ((t === T_GRASS || t === T_SAND) && S.snow >= 0.02) {
       const ns = (j, bit) => (T[j] === T_WATER ? bit << 4 : !snowable(j) || World.bmap[j] !== 0 ? bit : 0);
       const e = (y > 0 ? ns(i - W, 1) : 0) | (x < W - 1 ? ns(i + 1, 2) : 0) | (y < H - 1 ? ns(i + W, 4) : 0) | (x > 0 ? ns(i - 1, 8) : 0);
       c.globalAlpha = Math.min(1, S.snow) * (World.road[i] ? 0.42 : 0.93);
-      const m = typeof OCN !== 'undefined' && OCN.on && OCN.m9 && S.ice > 0.5 ? OCN.m9[i] : 0;
-      c.drawImage(m ? oceanIceTile(snowTile(e & 15, v, false), snowTile(0, v, true), m, false, 'l' + (e & 15) + ':' + v + ':' + m) : snowTile(e, v, false), x * TILE, y * TILE);
+      c.drawImage(snowTile(e, v, false), x * TILE, y * TILE);
     }
   }
   c.globalAlpha = 1;

@@ -714,13 +714,10 @@ function drawSmoke(c, x, y, seed, amount) {
 
 function drawWaterSparkles(c, x0, y0, x1, y1) {
   const t = Game.time;
-  const live = typeof oceanDraw === 'function' && !!oceanPrep();   // живая вода (ocean.js) рисует волны, прибой и блики сама
-  if (live) oceanDraw(c, x0, y0, x1, y1);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const i = idx(x, y);
     const ter = World.terrain[i];
     if (ter === T_WATER) {
-      if (live) continue;
       const h = hash(i + 99);
       for (let k = 0; k < 2; k++) {
         const hh = h >>> (k * 8);
@@ -873,7 +870,6 @@ function render() {
   faunaDrawList(list, c, x0, y0, x1, y1);
   fauna2DrawList(list, c, x0, y0, x1, y1);
   beastsDrawList(list, c, x0, y0, x1, y1);
-  if (typeof seaLifeDrawList === 'function') seaLifeDrawList(list, c, x0, y0, x1, y1);
   chestsDrawList(list, c, x0, y0, x1, y1);
   fairyDrawList(list, c, x0, y0, x1, y1);
   fairy2DrawList(list, c, x0, y0, x1, y1);
@@ -900,7 +896,6 @@ function render() {
   drawDusk(c);
   drawNight(c, x0, y0, x1, y1);
   if (typeof nightGroundGlow === 'function') nightGroundGlow(c, x0, y0, x1, y1);   // глаза в траве и туман
-  if (typeof oceanGlow === 'function') oceanGlow(c, x0, y0, x1, y1);              // лунная дорожка и планктон
   drawNightFx(c);
   drawFireflies(c);
   drawWeather(c);

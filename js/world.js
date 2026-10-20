@@ -181,7 +181,6 @@ function genWorld(seed) {
     if (nearWater) sand.push(idx(x, y));
   }
   for (const i of sand) World.terrain[i] = T_SAND;
-  if (bio && bio.sea) mgBeach(seed);   // широкие пляжи у моря (mapgen.js)
 
   // Леса и камни
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {

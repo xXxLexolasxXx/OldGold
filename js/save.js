@@ -17,7 +17,6 @@ function resetGameState() {
   Game.bats = [];
   Game.crows = []; Game.frogs = []; Game.worms = []; Game.chests = null; Game.fairy = null; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1; resetFairy();
   beastsReset();
-  if (typeof seaLifeReset === 'function') seaLifeReset();
   Game.fieldPlans = new Set(); Game.avenge = [];
   World.occ.fill(0);
   World.roadDirty = true;
@@ -73,7 +72,7 @@ function serializeGame() {
   const nz = o => { const r = {}; for (const k in o) if (o[k]) r[k] = o[k]; return r; };
   return {
     v: 2, df: Game.diff, mw: MAP_W, mh: MAP_H, bi: MapOpt.biome || undefined, seed: Game.seed, time: Game.time, nextId: Game.nextId, speed: Game.speed,
-    storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, ch: serializeChests(), fy: serializeFairy1(), f2: serializeFairy(), fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, be: serializeBeasts(), sl: typeof serializeSeaLife === 'function' ? serializeSeaLife() : undefined, produced: nz(Game.produced),
+    storeBlock: Game.storeBlock, unlocked: Object.keys(Game.unlocked), lost: Game.lostGnomes || 0, ch: serializeChests(), fy: serializeFairy1(), f2: serializeFairy(), fs: Game.faunaStat && Object.keys(Game.faunaStat).length ? Game.faunaStat : undefined, be: serializeBeasts(), produced: nz(Game.produced),
     cam: { x: R.cam.x, y: R.cam.y, z: R.cam.z },
     obj, road, dfn: defSave(),
     mined: [...ROCKMINE.mined], rockHp: [...ROCKMINE.hp],
@@ -219,7 +218,6 @@ function applySave(s) {
   }
   for (const [x, y, st] of s.piles || []) if (inb(x, y)) for (const g in st) if (GOODS[g] && st[g] > 0) dropPile(x, y, g, st[g]);
   applyBeasts(s.be);
-  if (typeof applySeaLife === 'function') applySeaLife(s.sl);
   applyNight(s.night);
   applyFestival(s.fest);
   applyBrawl(s.brawl);

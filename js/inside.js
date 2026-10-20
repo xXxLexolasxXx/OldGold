@@ -74,7 +74,6 @@ function drawInsideLife(c, b, spr, ox, oy) {
 function innFoodSprite(c, food, x, y) {
   switch (food) {
     case 'chickenleg': ellipse(c, x, y - 1, 2.2, 1.5, '#c8803a'); c.fillStyle = '#f6f2ea'; c.fillRect(x + 1.6, y - 0.4, 2.4, 0.9); break;
-    case 'fish': ellipse(c, x, y - 0.8, 2.6, 0.9, '#8ab0c4'); c.fillStyle = '#4a5e74'; c.fillRect(x + 2.2, y - 1.4, 0.8, 1.2); break;
     case 'steak': ellipse(c, x, y - 0.8, 2.6, 1.4, '#8a3a24'); ellipse(c, x - 0.4, y - 1, 1.2, 0.5, '#b8583a'); break;
     case 'croissant': c.fillStyle = '#e0a03c'; c.beginPath(); c.arc(x, y - 0.4, 2, Math.PI, 0); c.fill(); c.fillStyle = '#b8742c'; c.fillRect(x - 1.8, y - 0.6, 3.6, 0.5); break;
     case 'sausage': c.fillStyle = '#b8503a'; c.fillRect(x - 2.4, y - 1.4, 4.8, 1.3); c.fillStyle = '#d87a5a'; c.fillRect(x - 2.4, y - 1.4, 4.8, 0.4); break;

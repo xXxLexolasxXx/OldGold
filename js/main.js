@@ -226,7 +226,6 @@ function step(dt) {
   faunaTick(dt);
   fauna2Tick(dt);
   beastsTick(dt);
-  if (typeof seaLifeTick === 'function') seaLifeTick(dt);   // морские обитатели (seafauna.js)
   chestsTick(dt);
   fairyTick(dt);
   fairy2Tick(dt);
