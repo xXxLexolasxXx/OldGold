@@ -99,7 +99,7 @@ function seaHoldHay() {
   const S = SEA(), i = seaIdx();
   if (S.fixed != null || !(i === 1 || i === 2 || (i === 0 && seaDaysToWinter() <= 2))) return false;
   if (S.holdT != null && Math.abs(Game.time - S.holdT) < 3) return S.hold;
-  const h = seaHayInfo(), need = i === 2 ? h.need * (1 - seaProgress()) : h.need;
+  const h = seaHayInfo(), need = i === 2 ? h.pigs * (1 - seaProgress()) : h.pigs;   // дикие звери подождут — свиней кормим первыми
   S.holdT = Game.time; S.hold = h.have < need;
   return S.hold;
 }
@@ -135,9 +135,9 @@ function seaAutumnWarn(first) {
   if (first) {
     toast(`Осень! Пора делать заготовки: зимой ничего не растёт. Сено ${h.have}/${h.need || '—'}, еда ${f.have}/${f.need} обедов.` + (farms ? '' : ' Построй ферму и заложи поля пшеницы!'), seaHayPlace());
     logEvent('weather', 'Наступила осень: пора заготавливать сено и зерно на зиму');
-  } else if (d <= 2 && (h.need > h.have || f.need > f.have)) {
+  } else if (d <= 2 && (h.pigs > h.have || f.need > f.have)) {
     // каждый день не напоминаем — висит закреплённая подсказка вверху (pins.js); тост — за двое и за сутки до зимы
-    const miss = [h.need > h.have ? `сена ${h.have} из ${h.need}` : '', f.need > f.have ? `еды ${f.have} из ${f.need} обедов` : ''].filter(Boolean).join(', ');
+    const miss = [h.pigs > h.have ? `сена ${h.have} из ${h.pigs}` : '', f.need > f.have ? `еды ${f.have} из ${f.need} обедов` : ''].filter(Boolean).join(', ');
     toast(`${when}: ${miss}. Больше полей пшеницы у ферм — и зерно, и солома на сено`, seaHayPlace());
   } else if (d <= 1 && h.need) toast(`${when}. Запасов хватает — можно зимовать.`);
 }

@@ -475,15 +475,19 @@ function findInn(u) {
     if (d < bd) { bd = d; best = b; }
   }
   if (best) return best;
-  // в трактире пусто — перекусить всухомятку на складе (не досыта, зато не упадёт)
+  // в трактире пусто — перекусить всухомятку на складе (не досыта, зато не упадёт); нет и хлеба — каша из зерна
   for (const b of Game.buildings) {
-    if (!b.isStore() || b.isPile || b.state !== 'done' || !innFood(b)) continue;
+    if (!b.isStore() || b.isPile || b.state !== 'done' || !storeMeal(b)) continue;
     const d = Math.abs(b.doorX - u.x) + Math.abs(b.doorY - u.y);
     if (d < bd) { bd = d; best = b; }
   }
   return best;
 }
 
+// Склад кормит всухомятку: готовой едой, а если её нет — кашей из зерна. Раньше в первые сутки, пока нет мельницы
+// и пекарни, деревня падала от голода при полном амбаре зерна (и ослабевших ночью утаскивала нечисть).
+// Зерно в кашу — втрое хуже, чем через мельницу и пекарню (1 зерно → 3 хлеба), так что цепочка хлеба по-прежнему нужна.
+function storeMeal(b) { return innFood(b) || (b.stock.wheat - b.reserved.wheat > 0 ? 'wheat' : null); }
 function innFood(b) {
   // трактирщик разделывает тушку курицы на 4 куска, когда кончились готовые
   if (b.type === 'inn' && b.stock.chickenleg - b.reserved.chickenleg <= 0 && b.stock.chicken > 0) { b.stock.chicken--; b.stock.chickenleg += 4; }

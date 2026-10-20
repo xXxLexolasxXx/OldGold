@@ -57,7 +57,7 @@ function* courierIdle(u) {
 }
 
 function* eatGen(u, inn) {
-  const food = innFood(inn);
+  const food = isStoreB(inn) ? storeMeal(inn) : innFood(inn);
   if (!food) return;
   inn.reserved[food]++;
   u.eat = { inn, food, gen: u.proc };   // бронь видна аудиту (auditIncoming): брошенный обед не держит еду вечно
@@ -74,7 +74,8 @@ function* eatGen(u, inn) {
   if (!inn.removed) {
     inn.reserved[food]--;
     inn.stock[food]--;
-    u.food = dry ? 0.7 : food === 'chickenleg' ? 1.25 : food === 'steak' ? 1.3 : food === 'croissant' ? 1.1 : 1;     // курица и стейк сытнее всего
+    if (food === 'wheat') floater(inn.doorX + 0.5, inn.doorY - 0.5, 'Каша из зерна…', '#e6c24a');
+    u.food = food === 'wheat' ? 0.5 : dry ? 0.7 : food === 'chickenleg' ? 1.25 : food === 'steak' ? 1.3 : food === 'croissant' ? 1.1 : 1;     // курица и стейк сытнее всего
     if (!dry && inn.def.cozy) u.food += 0.08;                  // в трактире уровня 2 уютнее
     if (dry) { yield { leave: true }; return; }
     // к еде — кружка пива (тёмное насыщает вдвое, зато и пьянит вдвое), если есть

@@ -21,6 +21,11 @@ function pinNeed(g) {
   for (const b of Game.buildings) { if (!pinDone(b) || typeof b.problem !== 'function') continue; try { if (b.problem() === 'need:' + g) out.push(b); } catch (e) { /* зеркало без методов */ } }
   return out;
 }
+// значок: товар — игровой иконкой (эмодзи вроде монеты в Windows 10 нет), иначе символ
+function pinIco(k) {
+  if (typeof GOODS !== 'undefined' && GOODS[k] && typeof iconURL === 'function') { try { return `<img src="${iconURL('good', k, 2)}" alt="">`; } catch (e) { /* без картинки */ } }
+  return `<i>${k}</i>`;
+}
 const pinDays = n => n + ' ' + (n % 10 === 1 && n % 100 !== 11 ? 'сутки' : 'суток');
 
 // Каждое правило — { id, sev (0 инфо, 1 важно, 2 срочно), ico, text, tip, target }
@@ -39,13 +44,13 @@ function pinRules() {
   while (Pins.food.length > 2 && Game.time - Pins.food[0][0] > 180) Pins.food.shift();
   const hungry = ppl.filter(u => u.food < (typeof HUNGRY !== 'undefined' ? HUNGRY : 0.3)).length;
   if (ppl.length && hungry >= Math.max(2, ppl.length * 0.2) && meals === 0) {
-    add('famine', 2, '🍞', `Голод: еды нет — голодных ${hungry}`, 'Ни в трактире, ни на складе нет хлеба и колбасы. Нужны ферма → мельница → пекарня или свинарник → бойня, и трактир рядом с дорогой.', inns[0] || pinAll('bakery')[0]);
+    add('famine', 2, 'bread', `Голод: еды нет — голодных ${hungry}`, 'Ни в трактире, ни на складе нет хлеба и колбасы. Нужны ферма → мельница → пекарня или свинарник → бойня, и трактир рядом с дорогой.', inns[0] || pinAll('bakery')[0]);
   } else if (ppl.length > 4 && Pins.food.length > 2) {
     const [t0, m0] = Pins.food[0], dt = Game.time - t0;
     const rate = dt > 60 ? (m0 - meals) / dt : 0;                           // обедов в секунду (убыль)
     if (rate > 0) {
       const mins = Math.round(meals / rate / 60);
-      if (mins <= 6) add('hunger', mins <= 2 ? 2 : 1, '🍞', `Голод через ~${Math.max(1, mins)} мин: еды ${meals}`, 'Едят быстрее, чем пекут и коптят. Заложи ещё полей у ферм, поставь вторую пекарню или бойню.', inns[0]);
+      if (mins <= 6) add('hunger', mins <= 2 ? 2 : 1, 'bread', `Голод через ~${Math.max(1, mins)} мин: еды ${meals}`, 'Едят быстрее, чем пекут и коптят. Заложи ещё полей у ферм, поставь вторую пекарню или бойню.', inns[0]);
     }
   }
 
@@ -55,19 +60,19 @@ function pinRules() {
   if (stuck && pinStore('gold') < 1) {
     const mines = pinAll('goldmine').length, smelt = pinAll('metallurgist');
     const why = !mines ? 'построй золотой рудник у скал' : !smelt.length ? 'нужна плавильня золота' : pinNeed('trunk').some(b => b.type === 'metallurgist') ? 'плавильне не хватает брёвен' : pinNeed('goldore').length ? 'руднику не хватает руды' : 'золото ещё плавится';
-    add('gold', 2, '🪙', `Нет золота для школы — ${why}`, `Учёба стоит: каждому ученику нужен 1 слиток. В очереди: ${stuck.queue.length}.`, stuck);
+    add('gold', 2, 'gold', `Нет золота для школы — ${why}`, `Учёба стоит: каждому ученику нужен 1 слиток. В очереди: ${stuck.queue.length}.`, stuck);
   }
 
   // ---- Брёвна (дрова для плавилен)
   const cold = pinNeed('trunk');
-  if (cold.length && pinStore('trunk') < 1) add('trunk', 1, '🪵', `Мало брёвен: стоят ${cold.length} ${cold.length === 1 ? 'плавильня' : 'плавильни'}`, 'Брёвна — дрова для плавилен и сырьё лесопилки. Поставь ещё дом лесоруба у леса.', cold[0]);
+  if (cold.length && pinStore('trunk') < 1) add('trunk', 1, 'trunk', `Мало дров (брёвен): стоят ${cold.length} ${cold.length === 1 ? 'плавильня' : 'плавильни'}`, 'Брёвна — дрова для плавилен и сырьё лесопилки. Поставь ещё дом лесоруба у леса.', cold[0]);
 
   // ---- Стройка без досок или камня
   for (const g of ['timber', 'stone']) {
     const sites = Game.buildings.filter(b => b.state !== 'done' && !b.removed && typeof b.demand === 'function' && b.demand(g) > 0 && !(b.incoming[g] > 0));
     if (sites.length && pinStore(g) < 1) {
       const src = g === 'timber' ? 'лесопилку и лесоруба' : 'каменоломню у камней';
-      add('build-' + g, 1, g === 'timber' ? '🪚' : '🪨', `Стройка ждёт: нет ${g === 'timber' ? 'досок' : 'камня'} (${sites.length})`, `Склад пуст — нужна ${src}.`, sites[0]);
+      add('build-' + g, 1, g, `Стройка ждёт: нет ${g === 'timber' ? 'досок' : 'камня'} (${sites.length})`, `Склад пуст — нужна ${src}.`, sites[0]);
     }
   }
 
@@ -79,16 +84,27 @@ function pinRules() {
     const f = typeof seaFoodInfo === 'function' ? seaFoodInfo() : null;
     const farm = pinAll('farm')[0];
     if (i === 1 || (i === 0 && d <= 2)) {
-      const lackH = h && h.need > h.have, lackF = f && f.need > f.have;
+      const lackH = h && h.pigs > h.have, lackF = f && f.need > f.have;   // сено считаем для свиней: дикие звери — не беда деревни
       if (lackH || lackF) {
-        const parts = [lackH ? `сено ${h.have}/${h.need}` : '', lackF ? `еда ${f.have}/${f.need}` : ''].filter(Boolean).join(' · ');
+        const parts = [lackH ? `сено ${h.have}/${h.pigs}` : '', lackF ? `еда ${f.have}/${f.need}` : ''].filter(Boolean).join(' · ');
         const hint = !farm ? 'Построй ферму и заложи вокруг поля пшеницы.' : lackH && !pinAll('swine').length && !pinAll('storehouse').length ? 'Построй сеновал-склад.' : 'Больше полей пшеницы у ферм: зерно — на хлеб, солома — на сено. Свиньи осенью не плодятся, пока сена мало.';
         add('winter', d <= 2 ? 2 : 1, '❄', `Зима через ${pinDays(d)}: ${parts}`, `Зимой ничего не растёт. ${hint} Еда считается в обедах: хлеб, колбаса, а также зерно и мука (×3) и свиньи (×3).`, lackH ? (typeof seaHayPlace === 'function' ? seaHayPlace() : farm) : farm || inns[0]);
       }
     }
     if (i === 2) {
-      if (h && h.need && h.have < h.need * 0.25 && pinAll('swine').some(b => (b.pigs && b.pigs.length) || b.stock.pig)) add('hay', 2, '🌾', `Скоту не хватит сена: ${h.have} из ${h.need}`, 'Свиньи без сена гибнут по одной за кормёжку. Продай часть свиней на бойню или купи сено у обоза.', pinAll('swine')[0]);
-      if (f && f.need > f.have * 1.2) add('wfood', 1, '🍞', `Еды до весны мало: ${f.have} из ${f.need}`, 'Зимой поля стоят — хлеб пекут только из запаса зерна. Береги зерно: выключи пивоварню, купи еду у обоза.', inns[0]);
+      if (h && h.pigs && h.have < h.pigs * 0.25 && pinAll('swine').some(b => (b.pigs && b.pigs.length) || b.stock.pig)) add('hay', 2, 'hay', `Скоту не хватит сена: ${h.have} из ${h.pigs}`, 'Свиньи без сена гибнут по одной за кормёжку. Продай часть свиней на бойню или купи сено у обоза.', pinAll('swine')[0]);
+      if (f && f.need > f.have * 1.2) add('wfood', 1, 'bread', `Еды до весны мало: ${f.have} из ${f.need}`, 'Зимой поля стоят — хлеб пекут только из запаса зерна. Береги зерно: выключи пивоварню, купи еду у обоза.', inns[0]);
+    }
+  }
+
+  // ---- Гномы на грани ухода: скрытая причина убыли жителей (mood.js — на самом дне собирают узелок)
+  if (typeof MD !== 'undefined' && typeof MD_SIGN === 'function' && !(typeof isMirror === 'function' && isMirror())) {
+    const low = ppl.filter(u => u.md && u.md.m < MD.CRIT);
+    if (low.length >= 2) {
+      const why = {};
+      for (const u of low) for (const r of u.md.r || []) if (r[1] < 0) why[r[0]] = (why[r[0]] || 0) - r[1];
+      const top = Object.keys(why).sort((a, b) => why[b] - why[a]).slice(0, 2).map(c => String((MD_SIGN(c) || [c, c])[1]).toLowerCase());
+      add('mood', low.length >= 4 ? 2 : 1, '☹', `На грани ухода: ${low.length} ${low.length < 5 ? 'гнома' : 'гномов'}${top.length ? ' — ' + top.join(', ') : ''}`, 'Гном, который долго на дне настроения, собирает узелок и уходит из деревни. Клик по гному — причины в карточке.', null);
     }
   }
 
@@ -139,7 +155,7 @@ function pinsDraw() {
   if (key !== Pins.key) {
     Pins.key = key;
     const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-    el.innerHTML = shown.map(p => `<button data-pin="${p.id}" class="s${p.sev}" title="${esc(p.tip)}"><i>${p.ico}</i>${esc(p.text)}${p.target ? '<u>▸</u>' : ''}</button>`).join('') +
+    el.innerHTML = shown.map(p => `<button data-pin="${p.id}" class="s${p.sev}" title="${esc(p.tip)}">${pinIco(p.ico)}${esc(p.text)}${p.target ? '<u>▸</u>' : ''}</button>`).join('') +
       (list.length > max ? `<button data-pin="more" class="s0" title="Журнал оповещений">+${list.length - max}</button>` : '');
   }
   // встаём туда, где начинаются тосты, а их сдвигаем ниже
@@ -158,7 +174,7 @@ function pinsDraw() {
   #nq-pins button{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:3px 10px 3px 6px;min-height:28px;max-width:100%;cursor:pointer;
     font:13px/1.2 Kurale,Georgia,serif;color:#2a1608;text-align:left;background:linear-gradient(#f1dfb2,#d9bd84);border:1px solid #6a3c12;border-radius:3px;
     box-shadow:0 2px 6px rgba(0,0,0,.5)}
-  #nq-pins button i{font-style:normal;font-size:15px;line-height:1}
+  #nq-pins button i{font-style:normal;font-size:15px;line-height:1}#nq-pins button img{width:20px;height:20px;flex:none}
   #nq-pins button u{text-decoration:none;opacity:.6}
   #nq-pins button.s2{background:linear-gradient(#ffd0b0,#e89a74);border-color:#8a1c12;animation:pinPulse 2.4s ease-in-out infinite}
   #nq-pins button.s0{background:linear-gradient(#d8d4e8,#a8a2c4);border-color:#3a3460}

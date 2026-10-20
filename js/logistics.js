@@ -125,7 +125,10 @@ function dispatchSerfs() {
     for (const g of GOOD_KEYS) {
       const n = d.demand(g);
       // еда — в первую очередь: голодная деревня встаёт целиком
-      if (n > 0) reqs.push({ d, g, n, comp, pri: (d.upg ? 0 : FOOD_CHAIN.has(g) && FOOD_DEST.has(d.type) && d.state === 'done' ? (d.type === 'inn' ? -2 : -1) : d.isRoad ? 2 : (d.state !== 'done' ? 0 : 1)) - prioScore(d), r: Math.random() });
+      // золото в школу, где ждут ученики, — тоже вне очереди: иначе курьеры заняты едой, золото лежит на складе,
+      // учёба стоит, и деревня не восполняет потери (замер tools/soak/deficit.js: школа стояла ~95 % игры)
+      const school = g === 'gold' && d.type === 'school' && d.state === 'done' && (d.queue.length || d.training);
+      if (n > 0) reqs.push({ d, g, n, comp, pri: (d.upg ? 0 : school ? -1 : FOOD_CHAIN.has(g) && FOOD_DEST.has(d.type) && d.state === 'done' ? (d.type === 'inn' ? -2 : -1) : d.isRoad ? 2 : (d.state !== 'done' ? 0 : 1)) - prioScore(d), r: Math.random() });
     }
   }
   reqs.sort((a, b) => a.pri - b.pri || a.r - b.r);
