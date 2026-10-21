@@ -54,6 +54,7 @@ scriptTest('crashlog: причины вылетов, отчёты, лимиты'
 scriptTest('neutrals2: ранги и новые народы леса, сейв', 'neutrals2-test.js');
 scriptTest('frogfolk: жаболюды — поселения у воды, касты, прыжок, влажность, яд, зима, сейв', 'frogfolk-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
+scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
