@@ -2,7 +2,7 @@
 // Проверка кооп-сервера: запускается на временной папке данных и свободном порту, затем
 //  · раздаёт index.html и КАЖДЫЙ подключённый в нём файл (нет 404 после переездов по папкам),
 //  · не раздаёт server/ и coopsim.js,
-//  · принимает отчёт об ошибке POST /err и событие POST /e,
+//  · принимает отчёт об ошибке POST /err и событие POST /e, отчёт POST /report, удаление POST /t/forget,
 //  · /stats без ключа — 403, с ключом — сводка с разделом ошибок.
 // Запуск: node tests/server-test.js   (печатает ✗/⚠ строки, код выхода 1 при провале)
 const fs = require('fs');
@@ -59,6 +59,12 @@ function req(port, method, p, body) {
     if (big.status !== 413) fails.push('большой POST /err должен быть 413, а не ' + big.status);
     const ev = await req(port, 'POST', '/e', JSON.stringify({ c: 'abcdefgh12', e: ['start-desktop'] }));
     if (ev.status !== 204) fails.push('POST /e не принят: ' + ev.status);
+    const rp = await req(port, 'POST', '/report', JSON.stringify({ id: 'abcdefgh12345678', v: 'test', text: 'проверка отчёта', log: ['x'] }));
+    let rn = ''; try { rn = JSON.parse(rp.body).n; } catch (e) { /* ниже */ }
+    if (rp.status !== 200 || !rn || !fs.existsSync(path.join(data, 'reports', rn, 'report.json'))) fails.push('POST /report не сохранил отчёт: ' + rp.status + ' ' + rp.body);
+    const fg = await req(port, 'POST', '/t/forget', JSON.stringify({ id: 'abcdefgh12345678', cid: 'abcdefgh12' }));
+    let fj = {}; try { fj = JSON.parse(fg.body); } catch (e) { /* ниже */ }
+    if (fg.status !== 200 || fj.reports !== 1 || !fj.funnel) fails.push('POST /t/forget удалил не всё: ' + fg.status + ' ' + fg.body);
     const s0 = await req(port, 'GET', '/stats');
     if (s0.status !== 403) fails.push('/stats без ключа должен быть 403, а не ' + s0.status);
     const s1 = await req(port, 'GET', '/stats?key=testkey');
