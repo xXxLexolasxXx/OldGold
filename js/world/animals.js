@@ -58,8 +58,8 @@ function spawnAnimals() {
   add('deer', 7, 14);
   add('rabbit', 9, 10);
   add('goat', 6, 12);
-  add('wolf', 5, 17);
-  add('fox', 6, 14);
+  add('wolf', 4, 17);       // воры грузов: на большой карте их было 24 — злых не должно быть больше мирных стад
+  add('fox', 4, 14);
   add('elk', 3, 16);
   spawnFarmyard();
   spawnPets();
@@ -209,7 +209,7 @@ function updateAnimals(dt) {
     if (cnt('deer') < 5) add('deer', 14);
     if (cnt('rabbit') < 6) add('rabbit', 10);
     if (cnt('wolf') < 5 && Math.random() < 0.5) add('wolf', 24);
-    if (cnt('fox') < 6 && Math.random() < 0.6) add('fox', 20);
+    if (cnt('fox') < 5 && Math.random() < 0.6) add('fox', 20);
     petsRespawn(cnt);
     if (cnt('elk') < 2 && Math.random() < 0.4) add('elk', 20);
     if (cnt('goose') < 4) spawnGeeseFlock();

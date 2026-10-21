@@ -1185,6 +1185,7 @@ function coopAdminOpen() {
     if (m.t === 'tempo') { Coop.tempo = { speed: m.speed, paused: m.paused, votes: m.votes, need: m.need }; tempoShow(); return; }
     if (m.t === 'prio') { prioApply(m.p); updateUI(true); return; }
     if (m.t === 'wk') { wkApply(m); updateUI(true); return; }
+    if (m.t === 'un') { if (typeof unApply === 'function') unApply(m); return; }
     if (m.t === 'diff') {
       Game.diff = diffKey(m.k);
       toast('Сложность деревни: ' + dif().name);

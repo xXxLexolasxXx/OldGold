@@ -57,7 +57,7 @@ const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
 const stats = createStats(DATA, log);
 const events = require('./events').createEvents(DATA, log);
 const errReports = require('./errors').createErrors(DATA, log);   // анонимные отчёты об ошибках у игроков (POST /err)
-const tele = require('./telemetry').createTelemetry(DATA, log, events);   // «Сообщить о проблеме» (POST /report), удаление по id (POST /t/forget)
+const tele = require('./telemetry').createTelemetry(DATA, log, events);   // статистика по согласию (POST /t), «Сообщить о проблеме» (POST /report), удаление по id (POST /t/forget)
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {

@@ -230,7 +230,7 @@ function nqPump() {
     const x = Notify.q[0];
     if (!x.urgent && (!nqRateOk() || t < Notify.quietUntil || nqBusy() || nqEntering(t))) break;   // под открытым окном тосты не видны — ждут
     Notify.q.shift();
-    const el = nqShow(x.n > 1 ? x.text + ' ×' + x.n : x.text, x.kind, null, x.target);
+    const el = nqShow(x.n > 1 ? x.text + ' ×' + x.n : x.text, x.kind, x.onClick || null, x.target);
     if (el) { el.dataset.nq = x.text; el.dataset.n = x.n; }
     nqJournal(x.text, x.kind, x.n, true, x.target);
     live++;
@@ -275,6 +275,13 @@ Notify.busy = nqBusy;
 Notify.toast = (text, kind) => toast(text, null, kind);
 Notify.journal = nqJournalOpen;
 Notify.note = (text, kind, target) => nqJournal(text, kind, 1, false, target);
+// совет с действием по нажатию (профсоюзы, unions.js): ждёт в общей очереди, как обычный тост, но мимо фильтров мелочи
+Notify.offer = function (text, onClick, kind) {
+  text = String(text || '');
+  if (!text || Notify.q.some(x => x.text === text)) return;
+  Notify.q.push({ text, target: null, kind: kind || 'imp', at: nqNow(), n: 1, urgent: false, onClick });
+  nqPump();
+};
 
 function nqModalPump() {
   if (!Notify.modals.length || nqBusy()) return;
