@@ -38,8 +38,8 @@ function test(name, fn) {
 
 // ---------- 1. Загрузка
 // отдельный скрипт-проверка: строки «✗ …» — провалы, «⚠ …» — замечания, остальное без отступа — сводка
-const scriptTest = (name, file, args = []) => test(name, r => {
-  const p = spawnSync(process.execPath, [path.join(__dirname, file), ...args], { encoding: 'utf8', timeout: 180000 });
+const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
+  const p = spawnSync(process.execPath, [path.join(__dirname, file), ...args], { encoding: 'utf8', timeout: ms });
   const out = (p.stdout || '') + (p.stderr || '');
   for (const l of out.split('\n')) {
     if (/^\s*✗/.test(l)) r.fails.push(l.replace(/^\s*✗\s*/, ''));
@@ -56,24 +56,30 @@ scriptTest('frogfolk: жаболюды — поселения у воды, ка�
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
+scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
 scriptTest('injury: травмы — частота, лазарет, лекарь, сводка, груз, куры', 'injury-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
+scriptTest('zemelka: ножички — партия гномов, болельщики, партия героя, сохранение', 'zemelka-test.js');
 scriptTest('kids: детские игры, замки, приручение, трубка, взросление', 'kids-test.js');
+scriptTest('folk: гномки и гномята — облик, пиво, «Бах!», не дерутся, сейв', 'folk-test.js');
 scriptTest('durability: прочность снаряжения, ремонт, очередь доспехов, сейв', 'durability-test.js');
+scriptTest('arms: оружейная рано, особое оружие гильдий, заточка, свойства 3 уровня, сейв', 'arms-test.js');
 scriptTest('oath: Клятвы предков — 10 классов героя, задания по ролям, сохранение', 'oath-test.js');
-scriptTest('spire: глава 6 — поход к Чёрному шпилю, тропа, бой с Малгором, победа', 'spire-test.js');
+scriptTest('spire: глава 6 — подъём к Чёрному шпилю: стражи, врата, башни, затмение, Малгор, победа', 'spire-test.js', [], 420000);
 scriptTest('oathbal: баланс классов героя', 'oath-balance.js');
 scriptTest('abil: способности классов, ресурс, лечение отдыхом, панель, миграция, кооп, баланс', 'abil-test.js');
 scriptTest('icon: значки, названия и описания всех способностей, окно гильдии', 'icon-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
+scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
+scriptTest('piles: мусор не копится, потолок кучек, подпись подбора', 'piles-test.js');
 scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
@@ -99,6 +105,7 @@ function simRun(seed, minutes, r, opts = {}) {
   const end = L.inspect(sim), mid = hist[Math.floor(hist.length / 2)] || end.n;
   for (const k of Object.keys(LIMITS)) {
     const a = mid[k] || 0, b = end.n[k] || 0, q = hist[Math.floor(hist.length * 3 / 4)] ? hist[Math.floor(hist.length * 3 / 4)][k] : b;
+    if (k === 'log') continue;      // журнал ограничен LOG_MAX (events.js) и на время прогона просто копится; предел проверяет LIMITS
     if (b > 60 && b > a * 2 && q > a && b > q) r.warns.push(`сид ${seed}: ${k} растёт: ${a} → ${q} → ${b}`);
   }
   // товары: в деревне не может оказаться больше, чем было + произведено (запас на подарки, сундуки и находки)

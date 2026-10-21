@@ -29,6 +29,19 @@ function toast(text, target, kind) {
   setTimeout(() => toastClose(el), keep * Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70)));
 }
 
+// Шутка при самой первой стройке (один раз на устройство, только на экране — на игру не влияет, кооп не трогает)
+function waitJoke(type) {
+  try { if (localStorage.getItem('og_wait_joke')) return; localStorage.setItem('og_wait_joke', '1'); } catch (e) { return; }
+  const name = BUILDINGS[type] ? BUILDINGS[type].name : '';
+  const el = document.createElement('div');
+  el.id = 'wait-joke';
+  el.textContent = t('Чтобы построить «{0}», подождите 40 часов…', name);
+  document.body.appendChild(el);
+  setTimeout(() => { el.innerHTML = '<s></s><b></b>'; el.firstChild.textContent = t('Чтобы построить «{0}», подождите 40 часов…', name); el.lastChild.textContent = ' ' + t('Шутка. Мы ненавидим ждать — строим прямо сейчас!'); }, 2200);
+  setTimeout(() => el.classList.add('out'), 5200);
+  setTimeout(() => el.remove(), 5800);
+}
+
 function focusBuilding(b) {
   if (!b || b.removed) return;
   selectBuilding(b);
@@ -462,6 +475,7 @@ function initUI() {
     else if (act === 'deliver') toggleDeliver(b);
     else if (act === 'festival') { if (!festOn()) { const bad = festivalStart('manual'); if (bad) toast(bad); } }
     else if (act === 'goto') focusBuilding(b);
+    else if (act === 'herobuild') heroHelpBuild(b);
     else if (act === 'prev') cycleBuilding(-1);
     else if (act === 'next') cycleBuilding(1);
     else if (act === 'hire') queueTraining(b.def.worker);
@@ -503,13 +517,20 @@ function totals() {
   return t;
 }
 
+// «Запасы и запреты»: числа — в строке ресурсов сверху, здесь только что склады принимают и куда идёт запас.
+// Показываем товары, которые деревня уже видела (есть, производились или запрещены) — без пустых клеток «на вырост».
 function storeHTML() {
-  const t = totals();
-  let h = '<div class="muted small">Клик по товару — запретить складам его принимать. Кладовщик и так считает, что ему всё несут зря.</div>';
+  const t = totals(), r = typeof rates === 'function' ? rates() : null, P = Game.produced || {};
+  let h = '<div class="muted small">Касание по товару — запретить складам его принимать (или снова разрешить). Стрелка — запас растёт или тает. Сколько чего — в строке ресурсов сверху.</div>';
   for (const grp of GOOD_GROUPS) {
+    const gs = GOOD_KEYS.filter(g => GOODS[g].group === grp && !GOODS[g].noStore && (t[g] || P[g] || Game.storeBlock[g]));
+    if (!gs.length) continue;
     h += `<div class="group-title">${grp}</div><div class="slots">`;
-    for (const g of GOOD_KEYS) if (GOODS[g].group === grp)
-      h += `<div class="slot click${t[g] ? '' : ' zero'}${Game.storeBlock[g] ? ' blocked' : ''}" data-block="${g}" title="${GOODS[g].name}">${gi(g)}<span class="n">${t[g]}</span></div>`;
+    for (const g of gs) {
+      const x = r && r[g], net = x ? x.prod - x.cons : 0;
+      const fl = net > 0.3 ? '<span class="fl up">▲</span>' : net < -0.3 ? '<span class="fl dn">▼</span>' : '';
+      h += `<div class="slot click${t[g] ? '' : ' zero'}${Game.storeBlock[g] ? ' blocked' : ''}" data-block="${g}" title="${GOODS[g].name}: ${t[g]}${Game.storeBlock[g] ? ' — склады не принимают' : ''}">${gi(g)}${fl}</div>`;
+    }
     h += '</div>';
   }
   return h;
@@ -541,7 +562,7 @@ function peopleHTML() {
     if (T.noTrain && !c) continue;
     h += `<div class="prow"><img class="portrait" src="${portraitURL(k)}" alt="">
       <div><div class="pn">${T.name}</div><div class="muted small">${idle[k] ? `свободно: ${idle[k]}` : c ? 'все заняты' : 'нет'}${queued[k] ? ` · учится: ${queued[k]}` : ''}</div></div>
-      <span class="pc">${c}</span>${T.noTrain ? '<span></span>' : `<button data-train="${k}" title="Обучить в школе (1 золото). Дорого? Зато без вступительных">+</button>`}</div>`;
+      <span class="pc">${c}</span><span></span></div>`;   // учить — кнопками в окне школы, без дубля здесь
     if (c && LEVEL_XP[k]) h += levelsHTML(k);
   }
   return h;
@@ -575,7 +596,7 @@ function collectAlerts() {
       continue;
     }
     const p = b.problem();
-    if (!p || p === 'paused') continue;
+    if (!p || p === 'paused' || p === 'enough') continue;
     if (p === 'noroad') { out.push({ b, icon: ['ui', 'road'], text: `${b.def.name}: нет дороги к складу` }); continue; }
     if (p === 'damaged') { out.push({ b, icon: ['ui', 'warn'], text: `${b.def.name}: повреждено нечистью, ждёт ремонта` }); continue; }
     if (p === 'noworker') out.push({ b, icon: ['ui', 'noworker'], text: `${b.def.name}: нужен ${UNIT_TYPES[b.def.worker].name.toLowerCase()}` });
@@ -628,6 +649,7 @@ function statusChip(b) {
   if (p === 'noworker') return '<span class="chip bad">Нет рабочего</span>';
   if (p === 'damaged') return '<span class="chip bad">Повреждено — ждёт ремонта</span>';
   if (p === 'full') return '<span class="chip wait">Всё заполнено</span>';
+  if (p === 'enough') return '<span class="chip off">Отдыхает: еды на складе вдоволь</span>';
   return `<span class="chip bad">Нет: ${GOODS[p.slice(5)].name}</span>`;
 }
 
@@ -652,17 +674,32 @@ function workerHTML(b) {
     ${w ? '' : '<button data-act="hire" style="margin-left:auto">Обучить</button>'}</div>`;
 }
 
+// «Не жди — помоги»: на стройке без свободного работяги герой может взяться за молоток сам
+function heroBuildBtn(b) {
+  if (typeof Coop !== 'undefined' && Coop.mirror) return '';
+  const h = Game.units.find(u => u.type === 'hero' && !u.dead);
+  if (!h || b.builder) return '';
+  return `<button class="upg" data-act="herobuild" title="Свободного работяги нет, а ждать скучно: герой возьмёт молоток сам"><span><b>Строить героем</b><small>не ждать работягу</small></span></button>`;
+}
+function heroHelpBuild(b) {
+  const h = Game.units.find(u => u.type === 'hero' && !u.dead);
+  if (!h || b.removed) return;
+  const road = b.isRoad;
+  issueCmd(h, { kind: 'build', b, tx: road ? b.x : b.doorX, ty: road ? b.y : b.doorY, label: road ? 'Строить дорогу' : 'Строить' });
+  toast('Герой идёт строить');
+}
+
 function infoBuilding(b) {
   if (b.isRoad) {
     return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'road', 2)}" alt=""><div><h3>Дорога</h3>${statusChip(b)}</div></div>
       <div class="slots">${slotHTML('stone', b.stock.stone, ROAD_STONE)}</div>
       <div class="irow">Работяга: ${b.builder ? (b.dug < 1 ? 'копает' : 'кладёт камень') : `<span class="muted">${b.dug < 1 ? 'ждёт свободного работягу' : 'ждёт камень'}</span>`}</div>
       <div class="tip">Сначала работяга бесплатно копает корыто — это он умеет лучше всего. Потом за 1 камень выкладывает мостовую, если камень вообще кто-нибудь привезёт.</div>
-      <div class="iactions"><button data-act="demolish">${ui('trash')}Отменить</button></div>`;
+      <div class="iactions">${heroBuildBtn(b)}<button data-act="demolish">${ui('trash')}Отменить</button></div>`;
   }
   const def = b.def;
   const same = Game.buildings.filter(x => x.type === b.type).length;
-  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type)}" alt=""><div><h3>${def.name}${b.level === 2 ? ' <span class="lvl">ур. 2</span>' : ''}</h3>${statusChip(b)}</div></div>`;
+  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type)}" alt=""><div><h3>${def.name}${b.level >= 2 ? ` <span class="lvl">ур. ${b.level}</span>` : ''}</h3>${statusChip(b)}</div></div>`;
   h += Guide.whyHTML(b);
   h += '<div class="iactions">';
   if (same > 1) h += `<button data-act="prev" title="Предыдущее такое же ([)">${ui('prev')}</button><button data-act="next" title="Следующее такое же (])">${ui('next')}</button>`;
@@ -683,14 +720,14 @@ function infoBuilding(b) {
 
   if (b.upg) {
     const U = b.upg;
-    h += `<div class="isec">Достройка до уровня 2</div><div class="bar"><div style="width:${Math.round(U.hits / U.maxHits * 100)}%"></div></div><div class="slots">`;
+    h += `<div class="isec">Достройка до уровня ${U.to || 2}</div><div class="bar"><div style="width:${Math.round(U.hits / U.maxHits * 100)}%"></div></div><div class="slots">`;
     for (const g in U.cost) if (U.cost[g]) h += slotHTML(g, U.used[g] + U.stock[g], U.cost[g]);
     h += `</div><div class="irow">Работяга: ${U.builder ? '<span class="good">строит</span>' : '<span class="warn">нет свободного</span>'}</div>`;
     h += `<button class="upg no" data-act="upgcancel" title="Отменить достройку: материалы пропадут, работяги вздохнут с облегчением"><span><b>Отменить достройку</b><small>уже внесённые материалы пропадут</small></span></button>`;
   } else if (canUpgrade(b)) {
-    const up = b.def.up;
+    const nl = nextLevelOf(b), up = nl === 3 ? b.def.up3 : b.def.up;
     const cost = Object.keys(up.cost).map(g => `${gi(g)}${up.cost[g]}`).join(' ');
-    h += `<button class="upg" data-act="upgrade" title="Работяги надстроят здание: материалы привезут трудяги. Когда-нибудь. Если дорога есть"><span><b>Достроить до уровня 2: ${cost}</b><small>${BUILDINGS[b.type].desc2}</small></span></button>`;
+    h += `<button class="upg" data-act="upgrade" title="Работяги надстроят здание: материалы привезут трудяги. Когда-нибудь. Если дорога есть"><span><b>Достроить до уровня ${nl}: ${cost}</b><small>${nl === 3 && BUILDINGS[b.type].desc3 || BUILDINGS[b.type].desc2}</small></span></button>`;
   }
   if (b.state !== 'done') {
     h += `<div class="bar"><div style="width:${Math.round(b.progress * 100)}%"></div></div>`;
@@ -698,6 +735,7 @@ function infoBuilding(b) {
     for (const g in def.cost) if (def.cost[g]) h += slotHTML(g, b.usedOf[g] + b.stock[g], def.cost[g]);
     h += '</div>';
     h += `<div class="irow">Работяга: ${b.builder ? '<span class="good">работает</span>' : '<span class="warn">нет свободного</span>'}</div>`;
+    h += `<div class="iactions">${heroBuildBtn(b)}</div>`;
     return h + `<div class="idesc">${def.desc}</div>`;
   }
 
@@ -788,7 +826,7 @@ function infoBuilding(b) {
     const CROP_NAMES = { wheat: 'Пшеница → зерно', hay: 'Травы → сено', hops: 'Хмель на шестах' };
     for (const crop of def.crops)
       h += `<div class="recipe${b.crops[crop] ? '' : ' off'}">${gi(crop)} ${CROP_NAMES[crop]}<span class="t">полей: ${cnt[crop] || 0}</span>${def.crops.length > 1 ? `<input type="checkbox" data-crop="${crop}" ${b.crops[crop] ? 'checked' : ''}>` : ''}</div>`;
-    h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div><div class="small muted">Поля закладывайте сами инструментами «Пшеница» и «Хмель» рядом с фермой (до ${FARM_R} клеток) — работяга вскопает их бесплатно, хмель стоит доску за подвесы. Сено — побочный продукт жатвы.</div>`;
+    h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div><div class="small muted">${def.crops.includes('hops') ? `Поля хмеля закладывайте инструментом «Хмель» рядом (до ${FARM_R} клеток): доска за подвесы.` : `Поля закладывайте инструментом «Пшеница» рядом с фермой (до ${FARM_R} клеток) — работяга вскопает их бесплатно.`} Сено — побочный продукт жатвы.</div>`;
   }
   if (b.type === 'bonfire') h += `<div class="small muted">Кольца на карте: свет и защита от нечисти — ${BONFIRE_SAFE} клеток, у костра возрождаются герои — ${BONFIRE_HERO}, вне ${BONFIRE_NOSPAWN} нечисть и не появляется.</div>`;
   if (b.type === 'swine') {
@@ -813,10 +851,7 @@ function infoPreview(type) {
 }
 
 function infoTips() {
-  return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'scroll', 2)}" alt=""><div><h3>Окно здания</h3><span class="chip off">ничего не выбрано</span></div></div>
-    <div class="tip">Кликните по зданию на карте — здесь появятся его запасы, рабочий и производство. Да, кликать надо по зданию, а не куда-нибудь рядом.<br><br>
-    Наведите на кнопку здания слева — увидите, что оно производит и сколько стоит. Цены не торгуются, гномы не уступают.<br><br>
-    <b>Значки над домами</b> подсказывают, чего не хватает: рабочего, сырья или места. Чаще всего — всего сразу.</div>`;
+  return `<div class="tip muted">Ничего не выбрано. ${typeof Mobile !== 'undefined' && Mobile.on ? 'Коснитесь здания' : 'Кликните по зданию'} на карте — здесь появятся его запасы, рабочий и производство.</div>`;
 }
 
 // ---------- Обновление ----------
@@ -861,11 +896,19 @@ function updateUI(force) {
   setHTML('res-sum', [rows[0], rows[1], rows[2]].map(([g, n]) => `<span>${gi(g)}${n}</span>`).join(''));
   setHTML('res-bar', rows
     .map(([g, n]) => `<div class="res-row" title="${g === 'bread' ? 'Еда (хлеб + колбаса)' : GOODS[g].name}">${gi(g)}<span class="rn">${g === 'bread' ? 'Еда' : GOODS[g].name}</span><b>${n}</b></div>`).join('')
-    + `<div class="res-row" title="Жители">${ui('people')}<span class="rn">Жители</span><b>${Game.units.length}</b></div>`);
+    + `<div class="res-row" title="Жители">${ui('people')}<span class="rn">Жители</span><b>${Game.units.length}</b></div>`
+    + resMoreHTML(t, rows));
 
   const sec = Math.floor(Game.time);
   document.getElementById('clock').textContent =
     `${isNightNow() ? '☾' : isEveningNow() ? '◐' : '☀'} ${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+}
+
+// Остальные товары на складах — компактной сеткой под главными (только то, что есть)
+function resMoreHTML(t, rows) {
+  const main = new Set(rows.map(r => r[0]).concat('sausage'));
+  const gs = GOOD_KEYS.filter(g => t[g] > 0 && !main.has(g));
+  return gs.length ? `<div class="res-more">${gs.map(g => `<span title="${GOODS[g].name}">${gi(g)}<b>${t[g]}</b></span>`).join('')}</div>` : '';
 }
 
 // Закрыть / открыть здание для доставок

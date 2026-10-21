@@ -102,18 +102,21 @@ const HERO_ABIL = {
     { k: 'stand', name: 'Непоколебимость', lvl: 6, passive: { red: 0.15 }, desc: 'Пассивно: урон по воину меньше на 15%' },
     { k: 'surge', name: 'Всплеск действий', lvl: 9, cost: 30, cd: 60, dur: 8, buf: { spd: 0.5, atk: 0.25 }, desc: '8 с: бьёт вдвое чаще и на четверть точнее' },
     { k: 'wall', name: 'Стена щитов', lvl: 12, cost: 40, cd: 90, dur: 8, buf: { red: 0.6 }, fx: 'wall', desc: '8 с: урон по нему −60%, враги в 3 клетках сбиты с ног' },
+    { k: 'ult_warrior', name: 'Несокрушимый строй', lvl: 13, ult: true, cost: 80, cd: 240, dur: 12, buf: { red: 0.8, atk: 0.2 }, fx: 'ult_warrior', desc: 'Ульта. 12 с: урон по воину −80%, враги в 5 клетках сбиты с ног, гномы и отряд в 9 клетках под щитом' },
   ],
   barbarian: [
     { k: 'rage', name: 'Ярость', cost: 30, cd: 60, dur: 15, buf: { dmg: 0.5, red: 0.4 }, desc: '15 с: урон +50%, а по нему — на 40% слабее' },
     { k: 'reckless', name: 'Безрассудная атака', lvl: 3, cost: 15, cd: 30, dur: 8, buf: { atk: 0.35, red: -0.25 }, desc: '8 с: попадает на 35% чаще, но и сам открыт: урон по нему +25%' },
     { k: 'stomp', name: 'Топот', lvl: 6, cost: 25, cd: 25, fx: 'stomp', desc: 'Топает так, что враги в 3 клетках падают на 2,5 с и получают удар' },
     { k: 'hide', name: 'Толстая шкура', lvl: 9, passive: { red: 0.12, hpr: 0.3 }, desc: 'Пассивно: урон по нему −12%, ссадины затягиваются сами' },
+    { k: 'ult_barbarian', name: 'Гнев предков', lvl: 13, ult: true, cost: 80, cd: 240, dur: 15, buf: { dmg: 1, red: 0.5, spd: 0.5 }, fx: 'ult_barbarian', desc: 'Ульта. 15 с: урон вдвое выше, по нему −50%, бьёт чаще; враги в 4 клетках падают и получают удар' },
   ],
   archer: [
     { k: 'aimed', name: 'Меткий выстрел', cost: 25, cd: 12, next: 2.5, desc: 'Следующий выстрел — без промаха и в 2,5 раза сильнее' },
     { k: 'volley', name: 'Залп', lvl: 3, cost: 40, cd: 40, shots: { n: 5, kind: 'arrow', r: 8, mul: 0.8 }, desc: 'Пять стрел без промаха по всем врагам в 8 клетках' },
     { k: 'trap', name: 'Ловушка', lvl: 6, cost: 30, cd: 30, fx: 'trap', desc: 'Ставит капкан под ноги (до двух): враг, наступивший на него, застревает на 5 с' },
     { k: 'eagle', name: 'Орлиный глаз', lvl: 9, passive: { atk: 0.1 }, desc: 'Пассивно: стреляет на 10% точнее' },
+    { k: 'ult_archer', name: 'Дождь стрел', lvl: 13, ult: true, cost: 80, cd: 200, shots: { n: 14, kind: 'arrow', r: 10, mul: 1.2 }, fx: 'ult_archer', desc: 'Ульта. С неба падают четырнадцать стрел без промаха по врагам в 10 клетках' },
   ],
   rogue: [
     { k: 'sneak', name: 'Скрытая атака', cost: 25, cd: 15, next: 3, desc: 'Следующий удар — без промаха и втрое сильнее; скелета или дерево — с одного удара' },
@@ -121,6 +124,7 @@ const HERO_ABIL = {
     { k: 'steal', name: 'Воровство', lvl: 6, cost: 30, cd: 90, fx: 'steal', desc: 'Обчищает ближайшего врага в 3 клетках: золото на склад или еда в рюкзак' },
     { k: 'vanish', name: 'Исчезновение', lvl: 9, cost: 40, cd: 60, dur: 6, buf: { dodge: 0.9 }, next: 3, fx: 'vanish', desc: '6 с: враги теряют плута из виду, следующий удар — втрое сильнее' },
     { k: 'nimble', name: 'Увёртливость', lvl: 12, passive: { dodge: 0.15 }, desc: 'Пассивно: уходит от 15% ударов' },
+    { k: 'ult_rogue', name: 'Танец теней', lvl: 13, ult: true, cost: 80, cd: 200, dur: 6, buf: { dodge: 0.9 }, next: 3, fx: 'ult_rogue', desc: 'Ульта. Мелькает между шестью врагами в 8 клетках и бьёт каждого втрое сильнее; 6 с почти неуязвим' },
   ],
   mage: [
     { k: 'fire', name: 'Огненный шар', cost: 10, cd: 6, fx: 'fire', desc: 'Летит в ближайшего врага в 9 клетках: скелет рассыпается, дерево загорается' },
@@ -128,6 +132,7 @@ const HERO_ABIL = {
     { k: 'frost', name: 'Ледяная стрела', lvl: 5, cost: 14, cd: 12, fx: 'frost', desc: 'Удар льдом по ближайшему врагу: он замерзает на 4 с' },
     { k: 'shield', name: 'Щит', lvl: 8, cost: 16, cd: 40, dur: 6, buf: { red: 0.7 }, desc: '6 с: невидимая преграда — урон по магу меньше на 70%' },
     { k: 'spring', name: 'Источник', lvl: 11, passive: { res: 1.6 }, desc: 'Пассивно: мана копится в 1,6 раза быстрее' },
+    { k: 'ult_mage', name: 'Метеоритный дождь', lvl: 13, ult: true, cost: 60, cd: 240, fx: 'ult_mage', desc: 'Ульта. 6 с с неба падают метеориты на 4 клетки вокруг врагов: скелеты рассыпаются, нечисть горит' },
   ],
   druid: [
     { k: 'thorns', name: 'Шипы', cost: 10, cd: 14, fx: 'thorns', desc: 'Из земли под тремя ближайшими врагами (до 5 клеток) лезут шипы: удар и 2 с в путах' },
@@ -135,6 +140,7 @@ const HERO_ABIL = {
     { k: 'mend', name: 'Целебное слово', lvl: 5, cost: 20, cd: 35, heal: 0.2, team: true, desc: 'Слово леса: +20% здоровья себе и команде рядом, снимает раны' },
     { k: 'beast', name: 'Призыв зверя', lvl: 8, cost: 25, cd: 90, dur: 25, fx: 'beast', desc: '25 с рядом бегает дух-волк и кусает ближайших врагов' },
     { k: 'wild', name: 'Дикий облик', lvl: 12, cost: 30, cd: 90, dur: 20, buf: { dmg: 0.4, red: 0.3, regen: 1.5 }, desc: '20 с: медвежья сила — урон +40%, урон по нему −30%, раны затягиваются' },
+    { k: 'ult_druid', name: 'Гнев природы', lvl: 13, ult: true, cost: 55, cd: 240, fx: 'ult_druid', desc: 'Ульта. 12 с лес встаёт стеной в 5 клетках: враги в путах, команда и гномы выздоравливают, поля подрастают' },
   ],
   priest: [
     { k: 'heal', name: 'Исцеление', cost: 18, cd: 30, heal: 0.22, team: true, desc: '+22% здоровья себе и команде в 8 клетках, снимает раны' },
@@ -142,6 +148,7 @@ const HERO_ABIL = {
     { k: 'bless', name: 'Благословение', lvl: 5, cost: 20, cd: 40, dur: 12, buf: { atk: 0.2, red: 0.1 }, fx: 'bless', desc: '12 с: жрец и команда рядом точнее на 20% и крепче' },
     { k: 'turn', name: 'Изгнание нежити', lvl: 8, cost: 25, cd: 50, turn: true, desc: 'Скелеты в 6 клетках рассыпаются (шанс растёт с уровнем), нечисть пятится' },
     { k: 'mercy', name: 'Милосердие', lvl: 11, passive: { heal: 1.25, hpr: 0.3 }, desc: 'Пассивно: лечит на четверть сильнее, сам понемногу выздоравливает' },
+    { k: 'ult_priest', name: 'Чудо', lvl: 13, ult: true, cost: 60, cd: 300, fx: 'ult_priest', desc: 'Ульта. Столб света: все рядом (10 клеток) исцелены полностью, хворь и раны сняты, нежить рассыпается' },
   ],
   paladin: [
     { k: 'hands', name: 'Наложение рук', cost: 25, cd: 45, heal: 0.25, team: true, desc: '+25% здоровья себе и команде рядом, снимает раны' },
@@ -149,6 +156,7 @@ const HERO_ABIL = {
     { k: 'consecrate', name: 'Освящение', lvl: 6, cost: 30, cd: 40, fx: 'consecrate', desc: '10 с земля в 3 клетках светится: нечисть горит, команда в круге выздоравливает' },
     { k: 'faith', name: 'Щит веры', lvl: 9, cost: 25, cd: 50, dur: 8, buf: { red: 0.4 }, fx: 'faith', desc: '8 с: урон по паладину и команде рядом −40%' },
     { k: 'aura', name: 'Аура мужества', lvl: 12, passive: { atk: 0.08, red: 0.08 }, desc: 'Пассивно: точнее на 8%, урон по нему −8%' },
+    { k: 'ult_paladin', name: 'Кара Костра', lvl: 13, ult: true, cost: 60, cd: 300, dur: 12, buf: { red: 0.5 }, fx: 'ult_paladin', desc: 'Ульта. 12 с над героем встаёт солнце: нечисть в 5 клетках горит, команда в круге выздоравливает, по паладину −50%' },
   ],
   // бард и паладин — Клятвы Песни и Костра (oaths.js добавляет им действие на гномов: oath)
   bard: [
@@ -156,17 +164,29 @@ const HERO_ABIL = {
     { k: 'chord', name: 'Оглушающий аккорд', lvl: 3, cost: 18, cd: 30, fx: 'chord', desc: 'Враги в 4 клетках оглушены на 2,5 с' },
     { k: 'five', name: 'Дай пять!', lvl: 5, cost: 10, cd: 60, oath: 'five', desc: 'До шести гномов рядом получают «Дали пять»: настроение вверх на полторы минуты' },
     { k: 'voice', name: 'Звонкий голос', lvl: 9, passive: { cd: 0.85, res: 1.3 }, desc: 'Пассивно: перезарядка короче на 15%, мана копится быстрее' },
+    { k: 'ult_bard', name: 'Эпическая баллада', lvl: 13, ult: true, cost: 55, cd: 240, dur: 15, buf: { atk: 0.3, spd: 0.25 }, fx: 'ult_bard', desc: 'Ульта. 15 с поёт так, что враги в 6 клетках пляшут (оглушены), команда точнее и крепче, а гномы в 12 клетках веселеют' },
   ],
   monk: [
     { k: 'flurry', name: 'Шквал ударов', cost: 30, cd: 40, dur: 8, buf: { spd: 0.5 }, desc: '8 с: бьёт вдвое чаще' },
     { k: 'palm', name: 'Удар ладонью', lvl: 3, cost: 20, cd: 12, fx: 'palm', desc: 'Ближайший враг получает удар и 2,5 с не может прийти в себя' },
     { k: 'patience', name: 'Терпеливая оборона', lvl: 6, cost: 25, cd: 40, dur: 10, buf: { dodge: 0.4, red: 0.2 }, desc: '10 с: уходит от 40% ударов, остальные слабее на 20%' },
     { k: 'calm', name: 'Внутренний покой', lvl: 9, passive: { res: 1.5, dodge: 0.05 }, desc: 'Пассивно: энергия копится в 1,5 раза быстрее, уворот +5%' },
+    { k: 'ult_monk', name: 'Тысяча ударов', lvl: 13, ult: true, cost: 80, cd: 220, dur: 7, buf: { spd: 0.6, dodge: 0.6, dmg: 0.5 }, fx: 'ult_monk', desc: 'Ульта. 7 с: бьёт втрое чаще, уходит от 60% ударов, урон +50%; в начале сносит врагов в 3 клетках' },
   ],
 };
-const ABIL_MAX = 5;
-const ABIL_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'];
-const ABIL_KEYN = ['1', '2', '3', '4', '5'];
+// до пяти обычных способностей + ульта (шестая кнопка, клавиша 6; a.ult)
+const ABIL_MAX = 6;
+const ABIL_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'];
+const ABIL_KEYN = ['1', '2', '3', '4', '5', '6'];
+const abKeyN = (a, i) => a && a.ult ? '6' : ABIL_KEYN[i];
+// клавиша цифры → номер способности в списке класса (ульта всегда на 6)
+function abIdxByKey(H, n) {
+  const as = heroAbils(H);
+  if (!as) return -1;
+  const u = as.findIndex(a => a.ult);
+  if (n === 5) return u;
+  return n < as.length && !as[n].ult ? n : -1;
+}
 const ABIL_KEYS_OLD = ['KeyZ', 'KeyX'];                    // прежние клавиши первых двух способностей тоже работают
 const kitOn = () => typeof hlOn === 'function' && hlOn();
 
@@ -663,7 +683,8 @@ function heroParry(u) {
         if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
         if (e.ctrlKey || e.altKey || e.metaKey) return;
         let i = ABIL_KEYS.indexOf(e.code);
-        if (i < 0) i = ABIL_KEYS_OLD.indexOf(e.code);
+        if (i >= 0) i = Game.hero ? abIdxByKey(Game.hero.hero, i) : -1;
+        else i = ABIL_KEYS_OLD.indexOf(e.code);
         if (i >= 0 && Game.hero) heroUseAbility(i);
       });
     }
@@ -836,10 +857,10 @@ function kitAbilButtons(H, mini) {
   return as.map((a, i) => {
     const lock = (H.level || 1) < (a.lvl || 1), cd = Math.max(0, Math.ceil(((H.abCd || {})[a.k] || 0) - Game.time));
     const on = (H.abT || {})[a.k] > Game.time;
-    const tip = `${a.name} (${ABIL_KEYN[i]}): ${a.desc}${a.passive ? '' : `. Перезарядка ${a.cd} с`}${a.lvl > 1 ? `, с ${a.lvl} уровня` : ''}`;
+    const tip = `${a.name} (${abKeyN(a, i)}): ${a.desc}${a.passive ? '' : `. Перезарядка ${a.cd} с`}${a.lvl > 1 ? `, с ${a.lvl} уровня` : ''}`;
     const img = `<img src="${abilIconURL(a.k)}" alt="">`;
     if (mini) return `<button class="hp-ab hk-ab${on ? ' on' : ''}" data-hero="ab${i}" ${lock || cd ? 'disabled' : ''} title="${tip}">${img}<span>${lock ? `с ${a.lvl} ур.` : cd ? cd + ' с' : a.name}</span></button>`;
-    return `<button class="hk-big${on ? ' on' : ''}" data-hero="ab${i}" ${lock || cd ? 'disabled' : ''} title="${tip}">${img}<span><b>${a.name}</b><small>${lock ? `с ${a.lvl} уровня` : cd ? `перезарядка ${cd} с` : on ? 'действует' : `${a.passive ? 'пассивно' : ABIL_KEYN[i]} · ${a.desc}`}</small></span></button>`;
+    return `<button class="hk-big${on ? ' on' : ''}" data-hero="ab${i}" ${lock || cd ? 'disabled' : ''} title="${tip}">${img}<span><b>${a.name}</b><small>${lock ? `с ${a.lvl} уровня` : cd ? `перезарядка ${cd} с` : on ? 'действует' : `${a.passive ? 'пассивно' : abKeyN(a, i)} · ${a.desc}`}</small></span></button>`;
   }).join('');
 }
 

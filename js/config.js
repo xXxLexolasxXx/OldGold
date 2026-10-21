@@ -279,8 +279,9 @@ const BUILD_ORDER = Object.keys(BUILDINGS);
 const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия', 'Гильдии'];
 
 // Постепенно открывающееся меню строительства. Стадия открывается, когда готово
-// всё из `after` (типы зданий) и достигнута веха `rank` цели (1 — «Деревня», 2 — «Город»), либо её открывает обучение. Школы в меню нет:
-// она появляется в обучении (noMenu).
+// всё из `after` (типы зданий), достигнута веха `rank` цели (1 — «Деревня», 2 — «Город») и пережито `night` ночей,
+// либо её открывает обучение. Школы в меню нет: она появляется в обучении (noMenu).
+// На старте — только дорога и «Ресурсы»: лесоруб, каменоломня, лесопилка, большой костёр. Хмель — только вместе с пивоварней.
 const UNLOCKS = [
   { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire'] },
   { id: 'grain', items: ['farm', 'mill', 'bakery', 'storehouse', 'tool:wheat'], after: ['woodcutter', 'quarry', 'sawmill'] },
@@ -289,9 +290,10 @@ const UNLOCKS = [
   { id: 'pigs',  items: ['swine', 'butchery'], after: ['brewery'] },
   { id: 'base',  items: ['goatpen', 'stable'], after: ['swine'] },
   { id: 'craft', items: ['tannery', 'armory'], after: ['butchery'] },
+  { id: 'arms',  items: ['weaponsmith'], after: ['armory'] },   // оружейная — следом за доспехами: лук без железа делается и так
   { id: 'metal', items: ['goldmine', 'metallurgist'], after: ['armory'], rank: 1 },
   { id: 'magic', items: ['crystalmine', 'magiccircle', 'magicworkshop'], after: ['goldmine', 'metallurgist'], rank: 1 },
-  { id: 'iron',  items: ['ironmine', 'smeltery', 'weaponsmith'], after: ['metallurgist'], rank: 1 },
+  { id: 'iron',  items: ['ironmine', 'smeltery'], after: ['metallurgist'], rank: 1 },
   { id: 'guilds', items: ['guild_warrior', 'guild_archer', 'guild_rogue', 'guild_mage'], after: ['weaponsmith'], rank: 1 },
 ];
 
@@ -360,7 +362,7 @@ const START_GRACE = {
     bear:     { day: 3 },                     // медведь, кабаны, ульи
     critters: { day: 2 },                     // мыши, кроты, барсуки, дятлы, белки, вороны
   },
-  firstGhosts: 1,       // сколько призраков выходит в самую первую ночь (дальше — как раньше)
+  firstGhosts: 2,       // сколько призраков выходит в самую первую ночь (дальше — как раньше)
   bump: 0.35,           // шанс столкновений с грузом в первые двое суток (доля обычного)
 };
 
@@ -387,7 +389,7 @@ function startOpen(id) {
 
 // стадия меню готова к открытию: достроено всё из after и достигнута веха
 function unlockReady(st) {
-  return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
+  return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && (!st.night || startNights() >= st.night) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
 }
 
 // ---------- Запас прочности снаряжения (js/durability.js) ----------

@@ -168,7 +168,7 @@ function drawUnit(c, u) {
     return;
   }
   let pose = 'idle', frame = 0, view = u.vdir || 'S', face = u.face;
-  if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / 1.1) & 7; }
+  if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / (u.type === 'kid' ? 0.75 : 1.1)) & 7; }   // гномята семенят быстрее
   else if (u.anim === 'duck' || u.anim === 'forage') pose = 'duck';
   else if (u.anim === 'smoke') { pose = 'smoke'; view = smokeViewOf(u); }   // кто в анфас (с коротким куревом), кто боком
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
@@ -408,6 +408,16 @@ function drawPile(c, p) {
     c.restore();
   }
   c.imageSmoothingEnabled = R.smooth;
+  // подпись: что лежит (раньше кучки были безымянными, и новичок не понимал, что за «штуки» валяются)
+  let top = null, tn = 0, kinds = 0;
+  for (const g of GOOD_KEYS) if (p.stock[g] > 0) { kinds++; if (p.stock[g] > tn) { top = g; tn = p.stock[g]; } }
+  if (top) {
+    const t = GOODS[top].name + (tn > 1 ? ' ×' + tn : '') + (kinds > 1 ? ' …' : '');
+    c.font = 'bold 6px serif'; c.textAlign = 'center';
+    c.fillStyle = 'rgba(20,12,6,0.85)'; c.fillText(t, x + 0.5, y - 9.5);
+    c.fillStyle = '#f4ecd0'; c.fillText(t, x, y - 10);
+    c.textAlign = 'start';
+  }
 }
 
 // ---------- Животные ----------
