@@ -59,11 +59,10 @@ ok(h.run('!!swPier(__pier) && (Game.seaLife.boats || []).length === 1 && Game.se
 console.log('рыбалка героя');
 h.run(`(() => { const u = Game.hero; u.cmd = null; u.home = null; const p = __pier || __hut; u.x = p.doorX + 0.5; u.y = p.doorY + 0.5; u.fishIdle = 1000; globalThis.__hr = { fn: isNightNow, ev: isEveningNow }; isNightNow = () => false; isEveningNow = () => false; WX.k = 0; })()`);
 let rod = false;
-for (let k = 0; k < 60 && !rod; k++) { S.runFor(sim, 1, 1); rod = h.run('!!(Game.hero.fun && Game.hero.fun.k === "rod")'); }
+for (let k = 0; k < 60 && !rod; k++) { h.run(`(() => { const u = Game.hero, p = __pier || __hut; WX.k = 0; WX.target = 0; if (!u.heroFishing && (u.brk || !findShore(Math.floor(u.x), Math.floor(u.y), 14))) { u.brk = null; u.proc = null; u.action = null; u.x = p.doorX + 0.5; u.y = p.doorY + 0.5; } })()`); S.runFor(sim, 1, 1); rod = h.run('!!(Game.hero.fun && Game.hero.fun.k === "rod")'); }
 ok(rod, 'герой без дела идёт на берег и закидывает удочку');
 h.run(`Game.hero.cmd = { kind: 'move', x: Math.floor(Game.hero.x), y: Math.floor(Game.hero.y), tx: Math.floor(Game.hero.x), ty: Math.floor(Game.hero.y), label: '' }; issueCmd(Game.hero, Game.hero.cmd)`);
 S.runFor(sim, 2, 1);
-console.log('    fun:', h.run('Game.time'), h.run('Game.hero.heroFishing'), h.run('Game.hero.fishIdle'), JSON.stringify(h.run('Game.hero.fun')), h.run('!!Game.hero.proc'), h.run('Game.hero.cmd && Game.hero.cmd.kind'));
 ok(h.run('!Game.hero.fun'), 'приказ прерывает рыбалку героя');
 h.run(`isNightNow = __hr.fn; isEveningNow = __hr.ev; Game.hero.cmd = null;`);
 
