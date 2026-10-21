@@ -5,7 +5,7 @@ const S = require('./lib/sim');
 const fails = [];
 const ok = (c, m) => { if (!c) { fails.push(m); console.log('  ✗ ' + m); } };
 
-const sim = S.newSim(7);
+const sim = S.newSim(9);
 const h = sim.h;
 const DAY = 'Game.time = 30; WX.k = 0; WX.target = 0; WX.nextRain = 1e12; Game.noGrace = true; gameNext = 0; for (const g of GROUPS.slice()) endGroup(g, "test"); GROUPS.length = 0; Game.games = [];';
 h.run(DAY);
