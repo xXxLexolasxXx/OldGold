@@ -151,6 +151,7 @@ function haCss() {
   .ha-row{display:flex;align-items:center;gap:6px;font-size:12px}.ha-row>span{flex:0 0 92px;opacity:.8}
   .ha-row b{flex:1;text-align:center;font-weight:normal;font-size:12px;color:#f6e8c0}
   .ha-row button,.ha-sw{cursor:pointer}
+  .ha-sexb{min-width:64px;height:24px;background:#3a2c14;color:#f6d458;border:1px solid #8a6a28;border-radius:4px;font-size:12px;padding:0 8px}.ha-sexb.on{background:#8a6a28;color:#fff}
   .ha-arr{width:24px;height:24px;background:#3a2c14;color:#f6d458;border:1px solid #8a6a28;border-radius:4px;font-size:13px;line-height:1;padding:0}
   .ha-sws{display:flex;flex-wrap:wrap;gap:3px;flex:1}
   .ha-sw{width:18px;height:18px;border:2px solid #2a2014;border-radius:4px;padding:0}.ha-sw.on{border-color:#fff4d0;box-shadow:0 0 0 1px #000}
@@ -162,7 +163,7 @@ function haCss() {
   document.head.appendChild(st);
 }
 
-// opts: { title, intro, app, clsKey, look, name (строка — показать поле имени; null — не показывать), nick, okText, cancelText, onOk(app, name), onCancel() }
+// opts: { autoName (имя случайное — менять при смене пола), title, intro, app, clsKey, look, name (строка — показать поле имени; null — не показывать), nick, okText, cancelText, onOk(app, name), onCancel() }
 function haOpenEditor(opts) {
   haCss();
   document.getElementById('ha-editor')?.remove();
@@ -175,7 +176,7 @@ function haOpenEditor(opts) {
     <div class="ha-body"><div class="ha-pv"><canvas id="ha-body" width="120" height="132"></canvas>
       ${opts.name != null ? `<input id="ha-name" maxlength="16" value="${String(opts.name).replace(/"/g, '&quot;')}" autocomplete="off" placeholder="Имя героя">` : `<div class="ha-nm">${opts.nick || ''}</div>`}</div>
     <div class="ha-rows">
-      ${step(10, 'Облик')}${step(11, 'Причёска')}
+      <div class="ha-row"><span>Облик</span><button class="ha-sexb" data-sex="0">Гном</button><button class="ha-sexb" data-sex="1">Гномка</button></div><div data-fem-row>${step(11, 'Причёска')}</div>
       ${step(0, 'Колпак')}<div class="ha-row"><span>Цвет колпака / шлема</span>${sw(1, HA_CAP_COLS)}</div>
       ${step(8, 'Украшение')}
       <div class="ha-row"><span>Жилет, доспех</span>${sw(9, HA_COAT_COLS)}</div>
@@ -191,20 +192,34 @@ function haOpenEditor(opts) {
   const cv = box.querySelector('#ha-body');
   const draw = () => {
     for (const el of box.querySelectorAll('[data-nm]')) { const i = +el.dataset.nm; el.textContent = ap[i] < 0 ? 'По умолчанию' : NAMES[i][ap[i]]; }
+    for (const el of box.querySelectorAll('[data-sex]')) el.classList.toggle('on', (ap[10] === 1 ? 1 : 0) === +el.dataset.sex);
+    const fr = box.querySelector('[data-fem-row]'); if (fr) fr.style.display = ap[10] === 1 ? '' : 'none';
     for (const el of box.querySelectorAll('.ha-sw')) el.classList.toggle('on', ap[+el.dataset.i] === +el.dataset.v);
     const spr = haBodyFor(haClean(ap), opts.clsKey, opts.look), c = cv.getContext('2d');
     c.clearRect(0, 0, cv.width, cv.height); c.imageSmoothingEnabled = false;
     if (spr && spr.width) { const k = Math.min(cv.width / spr.width, cv.height / spr.height); c.drawImage(spr, (cv.width - spr.width * k) / 2, cv.height - spr.height * k, spr.width * k, spr.height * k); }
   };
   const close = () => box.remove();
+  // имя из пула своего пола, пока игрок не вписал своё
+  const nameEl = box.querySelector('#ha-name');
+  let typed = !opts.autoName, autoName = nameEl ? nameEl.value : '';
+  if (nameEl) nameEl.addEventListener('input', () => { typed = nameEl.value !== autoName; });
+  const setSex = v => {
+    if (ap[10] === v) return;
+    ap[10] = v;
+    if (nameEl && !typed) { const f = v === 1; let n; do n = heroNameFor(f); while (n === nameEl.value && (f ? HERO_NAMES_F : HERO_NAMES_M).length > 1); nameEl.value = autoName = n; }
+    draw();
+  };
   box.addEventListener('click', e => {
     const a = e.target.closest('.ha-arr'), s = e.target.closest('.ha-sw'), b = e.target.closest('[data-ha]');
-    if (a) { const i = +a.dataset.i, n = HA_MAX[i] + 2; ap[i] = ((ap[i] + 1 + +a.dataset.d + n) % n) - 1; draw(); }
+    const sx = e.target.closest('[data-sex]');
+    if (sx) setSex(+sx.dataset.sex);
+    else if (a) { const i = +a.dataset.i, n = HA_MAX[i] + 2; ap[i] = ((ap[i] + 1 + +a.dataset.d + n) % n) - 1; draw(); }
     else if (s) { ap[+s.dataset.i] = +s.dataset.v; draw(); }
     else if (b) {
       const k = b.dataset.ha;
-      if (k === 'rnd') { for (let i = 0; i < HA_MAX.length; i++) ap[i] = Math.floor(Math.random() * (HA_MAX[i] + 1)); draw(); }
-      else if (k === 'def') { ap.fill(-1); draw(); }
+      if (k === 'rnd') { const sx = ap[10]; for (let i = 0; i < HA_MAX.length; i++) ap[i] = Math.floor(Math.random() * (HA_MAX[i] + 1)); ap[10] = sx; draw(); }
+      else if (k === 'def') { const sx = ap[10]; ap.fill(-1); ap[10] = sx; draw(); }
       else if (k === 'no') { close(); if (opts.onCancel) opts.onCancel(); }
       else if (k === 'ok') { const nm = box.querySelector('#ha-name'); close(); opts.onOk(haClean(ap), nm ? nm.value.trim().slice(0, 16) : null); }
     }
@@ -225,9 +240,9 @@ if (typeof askHeroName === 'function') {
     Game.paused = true;
     haOpenEditor({
       title: 'Как зовут героя?', intro: 'Он поведёт ваш город. Имя и облик можно поменять потом: карточка героя → «Облик».',
-      app: h.hero.app, clsKey: h.hero.clsKey, look: h.look, name: HERO_NAMES[(Math.random() * HERO_NAMES.length) | 0], okText: 'В путь',
+      app: h.hero.app, clsKey: h.hero.clsKey, look: h.look, name: heroNameFor(h.hero.app && h.hero.app[10] === 1), okText: 'В путь', autoName: true,
       onOk(app, nm) {
-        h.hero.name = nm || 'Герой'; h.hero.app = app || undefined; h._spr = null; HA.last = app;
+        h.hero.name = nm || (app && app[10] === 1 ? 'Героиня' : 'Герой'); h.hero.app = app || undefined; h._spr = null; HA.last = app;
         Game.paused = wasPaused; Game.speed = wasSpeed;
         selectHero(true); updateUI(true);
       },
