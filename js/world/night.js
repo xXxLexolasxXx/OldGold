@@ -716,6 +716,27 @@ function nightLights(x0, y0, x1, y1) {
   return L;
 }
 
+// Насколько точка мира застроена (здания и дороги в радиусе ~4 клеток): 0 — лес и поле, 1 — деревня
+function fogSettleAt(wx, wy) {
+  const cx = Math.floor(wx / TILE), cy = Math.floor(wy / TILE);
+  let n = 0, k = 0;
+  for (let dy = -4; dy <= 4; dy += 2) for (let dx = -4; dx <= 4; dx += 2) {
+    const x = cx + dx, y = cy + dy;
+    k++;
+    if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) continue;
+    const i = y * MAP_W + x;
+    if (World.bmap[i] || World.road[i]) n++;
+  }
+  return Math.min(1, n / k * 4);
+}
+// Плотность клуба тумана. Раньше клуб доходил до полной непрозрачности и одинаково ложился на деревню,
+// и ночью весь город тонул в светло-серой пелене (жалоба тестера, 0.10.90). Теперь потолок FOG_MAX,
+// а над жильём туман вчетверо реже: густые клубы остаются в лесу и полях.
+const FOG_MAX = 0.6;
+function fogPuffAlpha(k, hh, wx, wy) {
+  return Math.min(FOG_MAX, k * (0.45 + ((hh >>> 12) % 100) / 220)) * (1 - 0.75 * fogSettleAt(wx, wy));
+}
+
 function drawNight(c, x0, y0, x1, y1) {
   const n = nightAmt();
   if (n <= 0.001) return;
@@ -748,7 +769,7 @@ function drawNight(c, x0, y0, x1, y1) {
         const r = G * size * (0.8 + ((hh >>> 3) % 100) / 140);
         const fx = gx * G + drift + ((hh >>> 8) % 50) - 25 + Math.sin(Game.time * 0.11 + gy) * 18;
         const fy = gy * G + ((hh >>> 16) % 50) - 25;
-        l.globalAlpha = Math.min(1, fog * mul * (0.45 + ((hh >>> 12) % 100) / 220));
+        l.globalAlpha = fogPuffAlpha(fog * mul, hh, fx, fy);
         l.drawImage(NIGHT.puff, fx - r, fy - r * 0.7, r * 2, r * 1.4);
       }
     }
