@@ -44,7 +44,7 @@ function asSetup(T) {
   const A = T.as;
   T.pw = A.pw = +asPow().toFixed(3);
   // пост фонарщика: снаружи внешних врат, со стороны деревни, подальше от первого стража
-  const post = gdSpot(T.cx + Math.cos(T.a0) * (T.r[0] + 12), T.cy + Math.sin(T.a0) * (T.r[0] + 12), 4);
+  const post = gdSpot(T.cx + Math.cos(T.a0) * (T.r[0] + 15), T.cy + Math.sin(T.a0) * (T.r[0] + 15), 4);   // страж просыпается в 10 кл. от дома (r0+4)
   if (post) {
     const u = spawnUnit('lamplighter', post[0], post[1]);
     asMakeLamp(u, AS_LAMP.hp);
@@ -488,6 +488,17 @@ function asTick(dt) {
     add('risk', 'Малгор окрепнет · концовка запомнит');
     return h;
   };
+  // под недоступной сделкой — не «не хватает припасов», а чего именно не хватает
+  const _us = dilUiSync;
+  dilUiSync = function () {
+    _us();
+    if (!asDealOpen() || !DilUI.el) return;
+    const e = DIL_BY_ID[Game.dil.cur.id];
+    DilUI.el.querySelectorAll('.dl-opt').forEach((b, k) => {
+      const o = e.o[k], no = b.querySelector('.dl-no');
+      if (o && no && !asReqOk(o)) no.textContent = o.req === 'lvl' ? 'герою нечего отдать' : 'освобождённых пленных нет';
+    });
+  };
   // эпилог: чем кончился подъём
   const _gf = goalFinish;
   goalFinish = function (res, why, lines) {
@@ -615,22 +626,28 @@ function asDrawFlare(c, f) {                                    // вспышк�
 function asDrawCage(c, cg) {
   const t = Game.time, px = Math.round(cg.p[0] * TILE), py = Math.round(cg.p[1] * TILE + 6);
   const of = cg.open ? Math.min(3, Math.floor((t - (cg.openT || -9)) / 0.1)) : 0;     // дверь: 4 кадра
+  const W = 12;
   c.save(); c.translate(px, py);
-  asFp(c, -9, -1, 18, 3, '#2a2224');                             // дно
-  if (!cg.open) for (let k = 0; k < Math.min(cg.n, 3); k++) {   // пленники: покой 6 (качаются, держатся за прутья)
-    const f = Math.floor(t / 0.2 + k * 2) % 6, b = [0, 0, -1, -1, 0, 0][f], x = -6 + k * 5;
-    asFp(c, x, -8 + b, 4, 7, ['#8a5a3a', '#6a6a76', '#3a7a2a'][k]);
-    asFp(c, x, -12 + b, 4, 4, '#e8c09a'); asFp(c, x, -12 + b + 3, 4, 2, '#d8d0c0');
-    asFp(c, x, -15 + b, 4, 3, '#a83a2a'); asFp(c, x + 1, -17 + b, 2, 2, '#a83a2a');
+  asFp(c, -W - 1, -2, W * 2 + 2, 4, '#2a2224'); asFp(c, -W - 1, -2, W * 2 + 2, 1, '#4a4248');   // дно
+  if (!cg.open) for (let k = 0; k < Math.min(cg.n, 3); k++) {   // пленники: покой 6 (переминаются, вцепились в прутья)
+    const f = Math.floor(t / 0.2 + k * 2) % 6, b = [0, 0, -1, -1, 0, 0][f], x = -10 + k * 7, sh = ['#8a5a3a', '#6a6a76', '#4a6e33'][k];
+    asFp(c, x + 1, -2, 2, 2, '#3a2a20'); asFp(c, x + 4, -2, 2, 2, '#3a2a20');                 // ноги
+    asFp(c, x, -9 + b, 7, 7, sh); asFp(c, x, -9 + b, 7, 1, 'rgba(255,255,255,0.15)');       // рубаха
+    asFp(c, x + 1, -14 + b, 5, 5, '#e8c09a');                                                   // лицо
+    asFp(c, x + 2, -12 + b, 1, 1, '#2a1a10'); asFp(c, x + 4, -12 + b, 1, 1, '#2a1a10');       // глаза
+    asFp(c, x, -11 + b, 7, 4, '#e0dcd0'); asFp(c, x + 1, -8 + b, 5, 2, '#e0dcd0');            // борода
+    asFp(c, x, -16 + b, 7, 2, '#b03a2a'); asFp(c, x + 1, -18 + b, 5, 2, '#b03a2a'); asFp(c, x + 2, -20 + b, 3, 2, '#b03a2a'); asFp(c, x + 3, -21 + b, 1, 1, '#b03a2a');   // колпак
+    if (f >= 2 && f <= 3) { asFp(c, x - 1, -8 + b, 1, 3, '#e8c09a'); asFp(c, x + 7, -8 + b, 1, 3, '#e8c09a'); }     // руки на прутьях
   }
-  for (let x = -8; x <= 8; x += 3) {                             // прутья
-    if (cg.open && x > 2) continue;
-    asFp(c, x, -20, 1, 19, '#4a4248');
+  for (let x = -W; x <= W; x += 4) {                             // прутья
+    if (cg.open && x > 3) continue;
+    asFp(c, x, -24, 1, 22, '#3a343c'); asFp(c, x + 1, -24, 1, 22, '#6a626e');
   }
-  asFp(c, -9, -21, 18, 2, '#5a525a');
+  asFp(c, -W - 1, -26, W * 2 + 3, 3, '#4a4248'); asFp(c, -W - 1, -26, W * 2 + 3, 1, '#7a727e');   // верх
+  asFp(c, -2, -29, 5, 3, '#4a4248');                                                                 // кольцо
   if (cg.open) {                                                 // открытая дверь отходит в сторону
-    const dx = [0, 2, 4, 6][of];
-    for (let x = 5; x <= 8; x += 3) asFp(c, x + dx, -20, 1, 19, '#4a4248');
-  }
+    const dx = [0, 3, 6, 9][of];
+    for (let x = 7; x <= W; x += 4) { asFp(c, x + dx, -24, 1, 22, '#3a343c'); asFp(c, x + 1 + dx, -24, 1, 22, '#6a626e'); }
+  } else asFp(c, 6, -13, 3, 3, '#a88a3a');                       // замок
   c.restore();
 }
