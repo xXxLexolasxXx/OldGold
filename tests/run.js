@@ -51,7 +51,7 @@ const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
 scriptTest('server: раздача файлов, /err, /e, /t, /report, /stats', 'server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
-scriptTest('telemetry: анонимная статистика (вкл. по умолчанию), отчёты о проблемах, удаление по id', 'telemetry-test.js');
+scriptTest('telemetry: статистика по согласию, отчёты о проблемах, удаление по id', 'telemetry-test.js');
 scriptTest('neutrals2: ранги и новые народы леса, сейв', 'neutrals2-test.js');
 scriptTest('wildlife: живность по биомам и дням, меньше фей, потолки на экран, сейв', 'wildlife-test.js');
 scriptTest('frogfolk: жаболюды — поселения у воды, касты, прыжок, влажность, яд, зима, сейв', 'frogfolk-test.js');
