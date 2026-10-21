@@ -1064,4 +1064,22 @@ function whatsNewShow(force) {
   document.body.appendChild(el);
 }
 
+// Номер версии мелко внизу экрана (меню и игра): тестеры называют его в отзывах. Тап открывает «Что нового».
+// Берётся из GAME_VERSION; пустая зона касаний вокруг не нужна, клик ловит только сама надпись.
+function versionBadgeInit() {
+  if (document.getElementById('ver-badge')) return;
+  const st = document.createElement('style'); st.id = 'ver-badge-css';
+  st.textContent = `#ver-badge{position:fixed;z-index:3;right:calc(env(safe-area-inset-right,0px) + 6px);bottom:calc(env(safe-area-inset-bottom,0px) + 2px);padding:1px 4px;font:10px/1.2 Kurale,Georgia,serif;color:#e9dcc0;opacity:.45;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#ver-badge:hover{opacity:.9}
+body.mobile:not(.land) #ver-badge{bottom:calc(env(safe-area-inset-bottom,0px) + 62px)}
+body.mobile.land #ver-badge{right:auto;left:50%;transform:translateX(-50%)}
+body:has(#loading:not(.hidden)) #ver-badge{z-index:600;bottom:auto;top:calc(env(safe-area-inset-top,0px) + 2px);right:auto;left:calc(env(safe-area-inset-left,0px) + 6px);transform:none}`;
+  document.head.appendChild(st);
+  const b = document.createElement('button'); b.id = 'ver-badge'; b.type = 'button';
+  b.textContent = 'v' + GAME_VERSION; b.title = 'Что нового';
+  b.onclick = () => whatsNewShow(true);
+  document.body.appendChild(b);
+}
+window.addEventListener('DOMContentLoaded', versionBadgeInit);
+
 window.addEventListener('load', () => setTimeout(() => whatsNewShow(/[?&]whatsnew=1/.test(location.search)), 400));
