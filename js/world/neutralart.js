@@ -79,7 +79,7 @@ function naPose(n) {
 const NA_SPEC = {
   pixie:   { name: 'Цветочная фея', w: 104, h: 104, ax: 62, ay: 82, sc: 1.45, pal: { dr: '#7ad068', dr2: '#3f9a4a', hr: '#a8f0a0', hr2: '#5ab868', wing: '#a6e87a', wing2: '#3a9a4a', wing3: '#f2ffc0', wingBack: '#6cc858', tip: '#ffe0f4', crown: true } },
   fairy:   { name: 'Лесная фея',    w: 104, h: 104, ax: 62, ay: 82, sc: 1.45 },
-  leshy:   { name: 'Леший',         w: 108, h: 72, ax: 68, ay: 66 },
+  leshy:   { name: 'Леший',         w: 128, h: 88, ax: 58, ay: 80 },
   boar:    { name: 'Кабан-страж',   w: 84, h: 60, ax: 42, ay: 50, sc: 1.25 },
   spore:   { name: 'Чумной моховик', w: 90, h: 64, ax: 54, ay: 54, sc: 1.2 },
 };
@@ -249,56 +249,99 @@ function drawFairy(c, P) {
 }
 
 // =============== Леший ===============
+// Хозяин леса: сгорбленный дед ростом с молодую ель. Плащ из мха и листьев до земли (из-под подола — корни-ступни),
+// берестяное лицо с сучком-носом, светящиеся зелёные глаза под лиственными бровями, борода-лишайник до пояса,
+// ветвистые рога с листвой и узловатый посох с живым огоньком-лишайником. Длинные руки-сучья.
 function drawLeshy(c, P) {
-  naShadow(c, 12);
+  naShadow(c, 13);
   c.save();
   c.translate(P.x, P.y);
   c.rotate(P.rot);
   c.scale(1, P.sq);
-  const BK = naK(P, '#8c6438'), BK2 = naK(P, '#62442a'), BK3 = naK(P, '#b08048'), MS = naK(P, '#62943a'), MS2 = naK(P, '#456f2a'), BD = naK(P, '#7eac4a');
-  const sw = P.leg;
-  // корневые ноги
-  naLimb(c, -3.5, -14, -4 - sw * 3, -0.5, 4.2, BK2); naLimb(c, 3.5, -14, 4.5 + sw * 3, -0.5, 4.2, BK);
-  poly(c, [[-7 - sw * 3, 0], [-3 - sw * 3, -2.4], [-1 - sw * 3, 0]], BK2); poly(c, [[2 + sw * 3, 0], [6 + sw * 3, -2.6], [9 + sw * 3, 0]], BK);
-  // дальняя рука
-  const th2 = P.b > 0.5 ? -1.1 : P.up > 0.5 ? -2.7 : 0.15 - P.a * 0.4;
-  naArm(c, -4, -30, 8, 8, th2, P.b > 0.5 ? 1.7 : 0.35, 2.4, BK2);
-  // ствол-туловище
-  poly(c, [[-6.8, -14], [6.8, -14], [8, -32], [5, -37], [-5, -37], [-8, -32]], BK);
-  poly(c, [[-6.8, -14], [-2.4, -14], [-3, -37], [-5, -37], [-8, -32]], BK2);
-  c.strokeStyle = BK3; c.lineWidth = 0.7; for (const [x0, y0, x1, y1] of [[3, -16, 2.4, -26], [5.4, -20, 5, -31], [-0.5, -22, -1, -33]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
-  ellipse(c, 1.5, -20, 1.6, 1.1, BK2);                                       // сучок
-  // мох-накидка на плечах
-  poly(c, [[-8, -33], [8.4, -33], [7, -28], [4, -30], [1, -26.6], [-3, -30], [-6.6, -27.4]], MS);
-  c.fillStyle = MS2; c.fillRect(-4, -31, 2, 1.2); c.fillRect(2.4, -30.4, 2, 1.2);
-  // голова: узловатая, борода-мох, рога-ветви
-  const hy = -42 + (P.hurt > 0.5 ? 1 : 0), hx = 1 + (P.a > 0.5 ? 1.5 : 0);
-  poly(c, [[hx - 4, hy - 7], [hx - 7, hy - 14], [hx - 5.4, hy - 14.4], [hx - 3, hy - 9]], BK2);                         // ветви-рога
-  poly(c, [[hx + 3, hy - 7], [hx + 6, hy - 15], [hx + 7.4, hy - 13], [hx + 5.4, hy - 6]], BK);
-  poly(c, [[hx + 5.6, hy - 12.4], [hx + 9, hy - 14], [hx + 8, hy - 12]], BK);
-  c.fillStyle = MS; c.fillRect(hx - 8, hy - 14.6, 1.6, 1.4); c.fillRect(hx + 7, hy - 15.4, 1.6, 1.4);
-  ellipse(c, hx, hy, 6.4, 6.6, BK);
-  ellipse(c, hx - 2.2, hy, 4, 6, BK2);
-  poly(c, [[hx - 6, hy + 1], [hx + 6, hy + 1], [hx + 4, hy + 9], [hx + 1, hy + 11 + (P.mouth > 0.5 ? 2 : 0)], [hx - 3, hy + 8]], BD);   // борода
-  c.fillStyle = MS2; c.fillRect(hx - 2, hy + 4, 1.4, 4); c.fillRect(hx + 1.4, hy + 3, 1.4, 4.4);
-  ellipse(c, hx + 3.6, hy + 0.2, 1.6, 1.4, '#e6f060');                                                                        // глаза светятся
-  ellipse(c, hx - 1.2, hy + 0.2, 1.4, 1.2, '#e6f060');
-  if (P.eye === 2) { c.fillStyle = BK2; c.fillRect(hx - 3, hy - 1.4, 8, 2.6); naEye(c, hx + 3.6, hy + 0.2, P); naEye(c, hx - 1.2, hy + 0.2, P); }
-  else if (P.eye === 3) { naEye(c, hx + 3.6, hy + 0.2, P); naEye(c, hx - 1.2, hy + 0.2, P); }
-  else { c.fillStyle = '#1a2a08'; c.fillRect(hx + 3.2, hy - 0.4, 0.9, 1.3); c.fillRect(hx - 1.6, hy - 0.4, 0.9, 1.3); if (P.eye === 1) { c.strokeStyle = BK2; c.lineWidth = 0.9; c.beginPath(); c.moveTo(hx - 3, hy - 2.4); c.lineTo(hx + 0.6, hy - 0.8); c.moveTo(hx + 2, hy - 0.8); c.lineTo(hx + 6, hy - 2.6); c.stroke(); } }
-  ellipse(c, hx + 6.2, hy + 3, 1.4, 1.2, BK2);                                                                               // нос-сучок
-  // ближняя рука с дубиной
-  const th = naTheta(P);
-  const [hx2, hy2, ang] = naArm(c, 5, -31, 8.4, 8.6, th, P.up > 0.5 ? 0.2 : -0.5, 3, BK);
-  ellipse(c, hx2, hy2, 2.3, 2.3, BK3);
-  const [cx, cy] = naDir(ang + 0.15);
-  const cl = 15;
-  c.strokeStyle = naK(P, '#74502a'); c.lineWidth = 3.4; c.beginPath(); c.moveTo(hx2 - cx * 3, hy2 - cy * 3); c.lineTo(hx2 + cx * cl, hy2 + cy * cl); c.stroke();
-  c.strokeStyle = naK(P, '#a67840'); c.lineWidth = 1; c.beginPath(); c.moveTo(hx2 - cx * 3 - 0.7, hy2 - cy * 3); c.lineTo(hx2 + cx * cl - 0.7, hy2 + cy * cl); c.stroke();
-  ellipse(c, hx2 + cx * cl, hy2 + cy * cl, 3.6, 3.4, naK(P, '#74502a'));   // набалдашник
-  c.fillStyle = naK(P, '#a67840'); c.fillRect(hx2 + cx * cl - 2.4, hy2 + cy * cl - 2.2, 1.4, 1.2);
-  if (P.a > 0.6) { c.strokeStyle = 'rgba(255,255,230,0.75)'; c.lineWidth = 0.7; c.beginPath(); c.arc(hx2, hy2, cl + 3, ang - 1.3, ang - 0.2); c.stroke(); }   // дуга замаха
-  if (P.mouth > 0.7) for (const [dx, dy] of [[9, -2], [11, 1], [10.4, -5]]) { c.fillStyle = '#c8e878'; c.fillRect(hx + dx, hy + dy, 0.9, 0.9); }   // рёв — летят листья
+  const CL = naK(P, '#4a7a32'), CL2 = naK(P, '#2f5424'), CL3 = naK(P, '#6e9c44'), LF = naK(P, '#8cc24e'), AU = naK(P, '#d89a3a');
+  const BR = naK(P, '#b39a72'), BR2 = naK(P, '#86704e'), BR3 = naK(P, '#5c4c38'), AR = naK(P, '#7c5c38'), TW = naK(P, '#6a4a2c'), TW2 = naK(P, '#4a321e');
+  const LI = naK(P, '#d2d8c0'), LI2 = naK(P, '#99a888'), EY = '#d8ff6a';
+  const sw = P.leg, hunch = P.up > 0.5 ? -0.5 : 1;
+  // корни-ступни из-под плаща
+  naLimb(c, -4, -6, -6 - sw * 3, -0.6, 3.2, TW2); naLimb(c, 4, -6, 5.5 + sw * 3, -0.6, 3.4, TW);
+  poly(c, [[-10 - sw * 3, 0], [-6 - sw * 3, -2.2], [-3 - sw * 3, 0]], TW2); poly(c, [[3 + sw * 3, 0], [7 + sw * 3, -2.4], [11 + sw * 3, 0]], TW);
+  c.strokeStyle = TW2; c.lineWidth = 0.8; c.beginPath(); c.moveTo(10 + sw * 3, -0.4); c.lineTo(12.6 + sw * 3, 0.2); c.moveTo(-9.6 - sw * 3, -0.4); c.lineTo(-12 - sw * 3, 0.3); c.stroke();
+  // дальняя рука в рукаве
+  const th2 = P.b > 0.5 ? -1.0 : P.up > 0.5 ? -2.8 : 0.25 - P.a * 0.5;
+  const [fx, fy] = naArm(c, -3 + hunch, -37, 9, 8, th2, P.b > 0.5 ? 1.6 : 0.3, 3.6, CL2);
+  ellipse(c, fx, fy, 1.9, 1.8, BR3);
+  // плащ: от плеч до земли, подол рваный, листьями; качается в такт шагу
+  const hem = [];
+  for (let k = 0; k <= 8; k++) hem.push([-13 + k * 3.3 + sw * 1.2 * (k / 8 - 0.5), k % 2 ? -2 : -4.6]);
+  poly(c, [[-6 + hunch, -40], [9 + hunch, -40], [12.6, -20], [14, -4], ...hem.slice().reverse(), [-13.6, -4], [-11, -22]], CL);
+  poly(c, [[-6 + hunch, -40], [-1 + hunch, -40], [-3, -20], [-4, -3], [-13, -4], [-13.6, -4], [-11, -22]], CL2);
+  c.fillStyle = CL3;
+  for (const [x, y] of [[4, -34], [7, -27], [2, -22], [9, -14], [-2, -12], [5, -8], [-8, -17], [10.5, -6]]) { c.fillRect(x, y, 2, 1.2); c.fillRect(x + 0.6, y - 0.8, 0.9, 0.8); }
+  for (const [x, y] of hem) { c.fillStyle = LF; c.fillRect(x - 0.6, y + 0.4, 1.6, 1.6); }
+  c.fillStyle = AU; c.fillRect(6.4, -18, 1.4, 1.4); c.fillRect(-6, -9, 1.4, 1.4); c.fillRect(11, -28, 1.4, 1.2);
+  // грибы на подоле
+  naLimb(c, -9, -6, -9, -3.6, 1.1, '#e8e0c8'); ellipse(c, -9, -6.4, 2.2, 1.3, naK(P, '#c8483a'));
+  ellipse(c, -6.4, -5, 1.5, 1, naK(P, '#c8483a')); c.fillStyle = '#f6ece0'; c.fillRect(-9.6, -7.2, 0.8, 0.7); c.fillRect(-8.2, -6.8, 0.7, 0.6);
+  // голова: вынесена вперёд (горбится), берестяная
+  const hy = -46 + (P.hurt > 0.5 ? 1.2 : 0) + (P.up > 0.5 ? -2 : 0), hx = 5 * hunch + 1 + (P.a > 0.5 ? 1.4 : 0);
+  // рога-ветви с листвой
+  const antler = (bx, side, col) => {
+    const tx = bx + side * 6, ty = hy - 15;
+    naLimb(c, bx, hy - 5, bx + side * 2, hy - 10, 1.6, col); naLimb(c, bx + side * 2, hy - 10, tx, ty, 1.3, col);
+    naLimb(c, bx + side * 2, hy - 10, bx + side * 1, hy - 16, 1.1, col);
+    naLimb(c, tx - side * 1.6, ty + 2.4, tx + side * 3, ty + 1, 1, col);
+    naLimb(c, tx, ty, tx + side * 1.2, ty - 3.4, 1, col);
+    for (const [lx, ly, cc] of [[tx + side * 3, ty + 0.4, LF], [tx + side * 1.2, ty - 4, LF], [bx + side * 1, hy - 17, CL3], [tx - side * 0.6, ty - 1, AU]]) ellipse(c, lx, ly, 1.5, 1.1, cc);
+  };
+  antler(hx - 3, -1, TW2); antler(hx + 3, 1, TW);
+  ellipse(c, hx - 1.2, hy + 0.6, 6.8, 7.6, CL2);   // моховой капюшон обрамляет лицо
+  ellipse(c, hx, hy, 5.2, 6.4, BR);
+  ellipse(c, hx - 2, hy + 0.4, 3.2, 5.8, BR2);
+  c.fillStyle = BR3; c.fillRect(hx - 3.6, hy - 4, 2, 0.7); c.fillRect(hx + 1.6, hy - 5, 1.8, 0.7); c.fillRect(hx - 0.6, hy + 2.6, 1.6, 0.6);   // чёрточки бересты
+  // лиственные брови
+  poly(c, [[hx - 5, hy - 2.6], [hx + 0.4, hy - 1.6], [hx - 1, hy - 3.6], [hx - 4.4, hy - 4]], CL3);
+  poly(c, [[hx + 1.2, hy - 1.6], [hx + 6.6, hy - 3], [hx + 5.4, hy - 4.4], [hx + 2, hy - 3.6]], LF);
+  // глаза светятся; злой — щурится под бровями
+  if (P.eye === 2 || P.eye === 3) { naEye(c, hx + 3.4, hy - 0.4, P); naEye(c, hx - 1.4, hy - 0.4, P); }
+  else {
+    const eh = P.eye === 1 ? 0.8 : 1.3;
+    ellipse(c, hx + 3.4, hy - 0.4, 1.7, eh, EY); ellipse(c, hx - 1.4, hy - 0.4, 1.5, eh, EY);
+    c.fillStyle = '#1a2a08'; c.fillRect(hx + 3.4, hy - 0.8, 0.8, 0.9); c.fillRect(hx - 1.2, hy - 0.8, 0.8, 0.9);
+  }
+  // нос — шишковатый нарост
+  ellipse(c, hx + 4.4, hy + 1.6, 1.5, 1.2, BR2); ellipse(c, hx + 4.8, hy + 1.2, 0.6, 0.5, BR);
+  // борода-лишайник до пояса, колышется; тень с дальней стороны
+  const bs = sw * 1.4, bl = P.mouth > 0.5 ? 2 : 0;
+  poly(c, [[hx - 4.4, hy + 2.4], [hx + 5.6, hy + 2.4], [hx + 5 + bs, hy + 10], [hx + 3.4 + bs, hy + 18 + bl], [hx + 1 + bs * 1.3, hy + 23 + bl], [hx - 0.6 + bs, hy + 17], [hx - 3 + bs * 0.6, hy + 12]], LI);
+  poly(c, [[hx - 4.4, hy + 2.4], [hx - 1, hy + 2.6], [hx + 0.4 + bs, hy + 16], [hx + 1 + bs * 1.3, hy + 23 + bl], [hx - 0.6 + bs, hy + 17], [hx - 3 + bs * 0.6, hy + 12]], LI2);
+  if (P.mouth > 0.4) { c.fillStyle = '#20180e'; c.fillRect(hx + 0.4, hy + 3.6, 3.6, 1.4 * P.mouth + 0.6); }
+  // ближняя рука: моховой рукав, кора-предплечье, кисть с пальцами. Посох — сбоку от бороды:
+  // в покое и на ходу стоит на земле, в бою леший бьёт набалдашником с размаху
+  const fighting = Math.abs(P.a) > 0.25 || P.up > 0.5 || P.b > 0.5;
+  const shx = 9 + hunch * 0.6, shy = -36;
+  const th = fighting ? naTheta(P) : 0.75, bend = P.up > 0.5 ? 0.2 : fighting ? -0.5 : -1.0;
+  const [d1x, d1y] = naDir(th), [d2x, d2y] = naDir(th + bend);
+  const ex = shx + d1x * 8.6, ey = shy + d1y * 8.6, hx2 = ex + d2x * 7.6, hy2 = ey + d2y * 7.6, ang = th + bend;
+  let top, bot;
+  if (fighting) { const [dx, dy] = naDir(ang + 0.15); bot = [hx2 - dx * 6, hy2 - dy * 6]; top = [hx2 + dx * 20, hy2 + dy * 20]; }
+  else { top = [hx2 + 0.4, hy2 - 13]; bot = [hx2 + 1.4 + sw, -0.4]; }
+  const mid = [(bot[0] + top[0]) / 2 + 1.2, (bot[1] + top[1]) / 2];
+  c.strokeStyle = TW2; c.lineWidth = 2.4; c.beginPath(); c.moveTo(bot[0], bot[1]); c.quadraticCurveTo(mid[0], mid[1], top[0], top[1]); c.stroke();
+  c.strokeStyle = TW; c.lineWidth = 0.9; c.beginPath(); c.moveTo(bot[0] - 0.6, bot[1]); c.quadraticCurveTo(mid[0] - 0.6, mid[1], top[0] - 0.6, top[1]); c.stroke();
+  // набалдашник: завиток ветки и огонёк-лишайник
+  c.strokeStyle = TW2; c.lineWidth = 1.6; c.beginPath(); c.arc(top[0] + 1.6, top[1] - 0.6, 2.2, 3.4, 6.48); c.stroke();
+  ellipse(c, top[0] + 1.6, top[1] - 0.8, 1.6, 1.6, EY); ellipse(c, top[0] + 1.6, top[1] - 0.8, 0.7, 0.7, '#ffffe0');
+  ellipse(c, top[0] - 1.6, top[1] + 2.4, 1.4, 1, LF);
+  // рука поверх посоха — кисть его обхватывает
+  naLimb(c, shx, shy, ex, ey, 4.6, CL2); naLimb(c, shx, shy, ex, ey, 3.2, CL);           // рукав
+  ellipse(c, shx, shy, 3, 2.6, CL3);                                                      // моховой наплечник
+  naLimb(c, ex, ey, hx2, hy2, 2.8, AR);                                                   // предплечье
+  ellipse(c, ex, ey, 2.2, 2, CL3);                                                        // край рукава
+  ellipse(c, hx2, hy2, 2.1, 2, AR);                                                       // кисть
+  c.fillStyle = BR3; for (const k of [-1, 0, 1]) c.fillRect(hx2 + 0.6 + k * 0.2, hy2 - 1.4 + k * 1.1, 1.6, 0.7);   // пальцы
+  if (P.a > 0.6) { c.strokeStyle = 'rgba(220,255,170,0.75)'; c.lineWidth = 0.7; c.beginPath(); c.arc(hx2, hy2, 22, ang - 1.3, ang - 0.2); c.stroke(); }   // дуга замаха
+  if (P.mouth > 0.7) for (const [dx, dy, cc] of [[10, -3, LF], [12, 1, AU], [11, -6, CL3], [14, -2, LF]]) { c.fillStyle = cc; c.fillRect(hx + dx, hy + dy, 1.2, 1); }   // рёв — летят листья
+  if (P.up > 0.5) for (const [dx, dy] of [[-8, -58], [10, -60], [2, -64]]) { c.fillStyle = EY; c.fillRect(dx, dy, 1, 1); }       // торжество — светлячки
   c.restore();
 }
 
