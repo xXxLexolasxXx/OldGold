@@ -146,6 +146,7 @@ function tvChooseKind() {
   let tot = 0;
   for (const k in TV_KINDS) {
     const K = TV_KINDS[k];
+    if (!K.w) continue;                                            // купцы диких гномов приходят только от своих поселений
     if (K.day && day < K.day && !Game.noGrace) continue;
     if (k === 'brigand' && !hasGuard) continue;                    // без героя и рекрутов разбойник — нечестно
     if (eve && !K.evil && k !== 'wanderer') continue;              // вечером ходят бродяги и злые
@@ -648,25 +649,40 @@ if (typeof window !== 'undefined' && window.addEventListener && typeof onLeftCli
 
 // ---------- Рисунок ----------
 
-// пиксельные смайлики 9×9: o — контур, y — лицо, k — глаза/рот, w — светлое
+// пиксельные лица гномов 13×13 вместо жёлтых рожиц: колпак, глаза, борода и рот говорят о намерении.
+// o — контур, h — колпак, w — блик, s — кожа, k — глаза, r — злые глаза, b — борода, m — рот, q — знак «?»
+const TV_FACE = {
+  hat: ['....ooo....', '...ohhho...', '..ohhwhho..', '.ooooooooo.'],
+  horn: ['.o.......o.', '.oo.ooo.oo.', '.ohhhhhhho.', '.ooooooooo.'],
+  beard: ['..obbbbbo..', '...obbbo...', '....obo....', '.....o.....'],
+};
+function tvFace(hat, face, q) {
+  const rows = hat.concat(face, TV_FACE.beard).map(r => r + '..');
+  if (q) ['qqq', '..q', '.q.', '...', '.q.'].forEach((p, y) => { rows[y] = rows[y].slice(0, 10) + p; });
+  return rows;
+}
 const TV_EMO = {
-  good: { pal: { o: '#4a3010', y: '#ffd84a', k: '#3a2408', w: '#fff4b0' }, rows: ['..ooooo..', '.oywyyyo.', 'oyykykyyo', 'oyyyyyyyo', 'oykyyykyo', 'oyykkkyyo', 'oyyyyyyyo', '.oyyyyyo.', '..ooooo..'] },
-  neu:  { pal: { o: '#3a3020', y: '#e8d8a8', k: '#3a2c18', w: '#fff8e0' }, rows: ['..ooooo..', '.oywyyyo.', 'oyykykyyo', 'oyyyyyyyo', 'oyyyyyyyo', 'oykkkkkyo', 'oyyyyyyyo', '.oyyyyyo.', '..ooooo..'] },
-  evil: { pal: { o: '#2a0808', r: '#d83a3a', k: '#1a0404', y: '#ffd040', h: '#7a1a1a' }, rows: ['h.......h', '.h.ooo.h.', '.orrrrro.', 'orkrrrkro', 'orrkrkrro', 'orrrrrrro', 'orkyyykro', '.orkkkro.', '..ooooo..'] },
-  seek: { pal: { o: '#102a4a', w: '#bfe8ff', b: '#4aa8f0' }, rows: ['..oooo...', '.owwwwo..', 'owwoowwo.', '.oo.owbo.', '...owbo..', '...owo...', '...oo....', '...owo...', '...oo....'] },
+  good: { pal: { o: '#3a2410', h: '#d0382a', w: '#ff9a80', s: '#f0c090', k: '#2a1808', b: '#f4f0e6', m: '#9a3a2a' },
+    rows: tvFace(TV_FACE.hat, ['.ossssssso.', '.oskssskso.', '.obbsssbbo.', '.obmbbbmbo.', '..obmmmbo..']) },
+  neu: { pal: { o: '#2a2a2a', h: '#6a7a8a', w: '#a8b8c8', s: '#e0b890', k: '#2a1c10', b: '#b8b0a0', m: '#5a4a3a' },
+    rows: tvFace(TV_FACE.hat, ['.ossssssso.', '.oskssskso.', '.obbsssbbo.', '.obbbbbbbo.', '..obmmmbo..']) },
+  evil: { pal: { o: '#1a0606', h: '#3a1a22', s: '#d8a080', k: '#1a0404', r: '#ff3a2a', b: '#5a2a1a', m: '#1a0404' },
+    rows: tvFace(TV_FACE.horn, ['.oksssssko.', '.osrsssrso.', '.obbsssbbo.', '.obbmmmbbo.', '..ombbbmo..']) },
+  seek: { pal: { o: '#102a4a', h: '#3a6ac8', w: '#8ab8ff', s: '#f0c090', k: '#1a1a2a', b: '#e8d8b8', m: '#6a3a2a', q: '#bfe8ff' },
+    rows: tvFace(TV_FACE.hat, ['.oskssskso.', '.ossssssso.', '.obbsssbbo.', '.obbbmbbbo.', '..obbbbbo..'], true) },    // глаза вверх: высматривает товар
 };
 const TV_EMO_CV = {};
 const TV_SC = 1.5;              // путник крупнее старой фигурки каравана — как обычный гном
 function tvEmoCanvas(k) {
   if (TV_EMO_CV[k]) return TV_EMO_CV[k];
-  const E = TV_EMO[k], cv = document.createElement('canvas');
-  cv.width = 9; cv.height = 9;
+  const E = TV_EMO[k], cv = document.createElement('canvas'), W = E.rows[0].length, H = E.rows.length;
+  cv.width = W; cv.height = H;
   const c = cv.getContext('2d');
-  E.rows.forEach((row, y) => { for (let x = 0; x < 9; x++) { const ch = row[x]; if (ch !== '.' && E.pal[ch]) { c.fillStyle = E.pal[ch]; c.fillRect(x, y, 1, 1); } } });
+  E.rows.forEach((row, y) => { for (let x = 0; x < W; x++) { const ch = row[x]; if (ch !== '.' && E.pal[ch]) { c.fillStyle = E.pal[ch]; c.fillRect(x, y, 1, 1); } } });
   return (TV_EMO_CV[k] = cv);
 }
 function tvDrawEmo(c, k, X, Y, big) {
-  const s = big ? 2 : 1.6, w = Math.round(9 * s);
+  const s = big ? 1.5 : 1.2, w = Math.round(13 * s);
   const bob = Math.round(Math.sin(Game.time * 3 + X * 0.1) * 1.5);
   c.save();
   c.imageSmoothingEnabled = false;

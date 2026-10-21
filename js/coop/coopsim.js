@@ -254,6 +254,7 @@ function coopCmd(name, msgJson, admin) {
       break;
     }
     case 'trav': if (typeof travCmd === 'function') travCmd(name, m); break;
+    case 'wild': if (typeof wildCmd === 'function') wildCmd(name, m); break;
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
     case 'rsc': if (typeof rscCmd === 'function' && can('council')) rscCmd(name, m); break;
     case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
@@ -584,6 +585,7 @@ function coopMirror() {
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
     dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
     trav: typeof travMirrorOut === 'function' ? travMirrorOut() : null,
+    wild: typeof wildMirrorOut === 'function' ? wildMirrorOut() : null,
     law: typeof lawMirrorOut === 'function' ? lawMirrorOut() : null,
     med: typeof medMirrorOut === 'function' ? medMirrorOut() : null,
     rsc: typeof rscMirrorOut === 'function' ? rscMirrorOut() : null,
