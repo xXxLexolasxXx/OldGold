@@ -589,7 +589,7 @@ function coopMirror() {
     rsc: typeof rscMirrorOut === 'function' ? rscMirrorOut() : null,
     fam: typeof famMirrorOut === 'function' ? famMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
-    sea: typeof seaMirrorOut === 'function' ? seaMirrorOut() : null, wfx: coopList(Game.wfx), wild: coopList(Game.wild),
+    sea: typeof seaMirrorOut === 'function' ? seaMirrorOut() : null, wfx: coopList(Game.wfx), wild: coopList(Game.wild), fy: typeof fyMirrorOut === 'function' ? fyMirrorOut() : null,
     wx: {},
   };
   for (const k of COOP_WX) m.wx[k] = coopPlain(WX[k]);

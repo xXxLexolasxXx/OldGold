@@ -290,6 +290,7 @@ function coopMirror(m) {
   if (!festWas && festOn()) festCheers();       // праздник начался — аплодисменты и у клиентов
   Object.assign(WX, m.wx, { ready: true });
   if (typeof seaMirrorIn === 'function') seaMirrorIn(m.sea);
+  if (typeof fyMirrorIn === 'function') fyMirrorIn(m.fy);      // единорог, дракон, грифон, саламандры (fairy1.js)
 }
 
 function coopWorld(m) {
@@ -332,6 +333,7 @@ function coopStep(dt) {
     const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
     if (d > 3) { a.x = a.tx; a.y = a.ty; } else { a.x += dx * k; a.y += dy * k; a.phase += Math.hypot(dx * k, dy * k) * 3; }
   }
+  if (typeof fyMirrorStep === 'function') fyMirrorStep(k2);
   for (const k of COOP_LISTS) for (const o of Game[k]) {
     if (o.tx === undefined || typeof o.x !== 'number') continue;
     const dx = o.tx - o.x, dy = o.ty - o.y;

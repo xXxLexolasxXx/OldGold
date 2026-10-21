@@ -34,6 +34,26 @@ for (const seed of SEEDS) {
     }
     return { n: Game.wlN, maxAll, maxBox, open: wlOpenKinds().map(x => x[0]) };`);
   const p1 = phase(1, false), p3 = phase(3, true), p10 = phase(10, false), p10n = phase(10, true);
+  // магические существа: дракон и грифон гнездятся на любой карте, единорог выходит у родника недалеко от взгляда игрока,
+  // первые логова гоблинов, троллей, броненосца и гномтавров — не на краю карты
+  const mg = J(`
+    const F = fyState(); fyNests(F);
+    let uni = 0, uniD = [];
+    for (let d = 3; d <= 6; d++) {
+      while (!(startDay() >= d && isEveningNow() && !isDawnNow() && nightAmt() > 0.05 && nightAmt() < 0.3)) Game.time += 2;
+      F.uni = null; F.uT = 0;
+      unicornTick(0.1, F);
+      if (F.uni) { uni++; uniD.push(Math.round(Math.hypot(F.uni.x - (MAP_W >> 1), F.uni.y - (MAP_H >> 1)))); fstat('uniSeen'); }
+      F.uni = null; Game.time += 300;
+    }
+    for (let n = 1; n <= 4; n++) n2Night(n);
+    const far = {}, cx = MAP_W >> 1, cy = MAP_H >> 1;
+    for (const l of Game.lairs) if (/^(goblin|troll|armad|gnomtaur)/.test(l.k)) { const d = Math.round(Math.hypot(l.x - cx, l.y - cy)); far[l.k] = Math.min(far[l.k] || 999, d); }
+    const fy = fyMirrorOut ? JSON.stringify(Object.keys(fyMirrorOut() || {})) : '';
+    return { dr: !!F.dr, gr: !!F.gr, uni, uniD, far, fy, minStart: mapIsLegacy() ? 20 : 24 };`);
+  ok(mg.dr && mg.gr, `сид ${seed}: нет гнезда дракона или грифона ${JSON.stringify(mg)}`);
+  ok(mg.uni >= 2, `сид ${seed}: единорог вышел лишь в ${mg.uni} из 4 вечеров`);
+  for (const k in mg.far) ok(mg.far[k] <= mg.minStart + 24, `сид ${seed}: первое логово ${k} слишком далеко (${mg.far[k]})`);
   const kinds1 = Object.keys(p1.n);
   ok(kinds1.every(k => J(`return WL_SPEC['${k}'].day`) <= 1), `сид ${seed}: в 1-й день вышли поздние виды ${kinds1}`);
   ok(kinds1.length >= 1, `сид ${seed}: в 1-й день никого (${JSON.stringify(p1)})`);
@@ -45,7 +65,7 @@ for (const seed of SEEDS) {
   const all = Object.assign({}, p1.n);
   for (const p of [p3, p10, p10n]) for (const k in p.n) all[k] = (all[k] || 0) + p.n[k];
   for (const k in all) tot[k] = (tot[k] || 0) + 1;
-  table.push(`сид ${seed}: ` + Object.entries(all).map(([k, v]) => `${k} ${v}`).join(', ') + ` | феи ${lz.fairies}/${lz.all}`);
+  table.push(`сид ${seed}: ` + Object.entries(all).map(([k, v]) => `${k} ${v}`).join(', ') + ` | феи ${lz.fairies}/${lz.all} | единорог ${mg.uni}/4, логова ${JSON.stringify(mg.far)}`);
 
   if (seed === SEEDS[0]) {
     // обычный шаг игры с живностью не падает
@@ -60,10 +80,10 @@ for (const seed of SEEDS) {
       return n;`);
     ok(dr > 100, 'рисование кадров: ' + dr);
     // сохранение: увиденные виды переживают сейв, сама живность — нет
-    const sv = J(`Game.wlSeen = { owl: 1, stag: 1 }; Game.wild = [wlMake('hare', [10.5, 10.5])];
+    const sv = J(`Game.wlSeen = { starfox: 1, stag: 1 }; Game.wild = [wlMake('hare', [10.5, 10.5])];
       const s = JSON.parse(JSON.stringify(serializeGame())); applySave(s);
       return { seen: Object.keys(Game.wlSeen).sort(), wild: Game.wild.length };`);
-    ok(sv.seen.join() === 'owl,stag' && sv.wild === 0, 'сейв живности: ' + JSON.stringify(sv));
+    ok(sv.seen.join() === 'stag,starfox' && sv.wild === 0, 'сейв живности: ' + JSON.stringify(sv));
     // зеркало кооператива
     const cm = J(`Game.wild = [wlMake('stag', [10.5, 10.5])];
       if (typeof coopMirror !== 'function') return { skip: 1 };

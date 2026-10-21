@@ -3,10 +3,10 @@
 // Отзыв игрока: «на карте одни феи». Здесь — мирные и редкие звери, которые показываются рядом с тем местом,
 // куда смотрит игрок (в кооперативе — рядом с героями), не больше WL_SCREEN на экран и WL_MAX на всю карту:
 //  • днём: заяц (зимой — беляк), стайка пичуг (зимой — снегири), фазан в лугах и степи, сурок у скал, выдра у воды;
-//  • ночью: мотыльки у огней деревни, гномья сова в колпачке; редкие — мшистый олень (днём) и звёздный лис (ночью).
+//  • ночью: мотыльки у огней деревни; редкие — мшистый олень (днём) и звёздный лис (ночью).
 // Виды открываются с днями (WL_SPEC.day), в первый день — только заяц и пичуги, чтобы не перегружать новичка.
 // Все безобидны: пасутся, замечают гнома (реакция — 4 кадра), убегают или улетают. Кадры: покой 6, ходьба 6
-// (крупные — 8), реакция 4, полёт 8 (КАДРЫ.md). Свой генератор случайных чисел — чужие события не сдвигаются.
+// (крупные — 8), реакция 4, полёт 8 (пичуги) (КАДРЫ.md). Свой генератор случайных чисел — чужие события не сдвигаются.
 // Список Game.wild в сейв не пишется (живность временная), в сейв идёт только Game.wlSeen — кого уже видели.
 // В кооперативе считает сервер, клиенты получают список 'wild' зеркалом и только рисуют.
 
@@ -24,14 +24,12 @@ const WL_SPEC = {
   marmot:   { name: 'Сурок',         day: 2, t: 'day',   at: 'rock',   w: 0.8, life: [60, 120], spd: 0.9, run: 2.6, noWinter: 1, bio: { mountain: 1.7, steppe: 1.1, meadow: 0.5, forest: 0.3, swamp: 0.2 } },
   otter:    { name: 'Выдра',         day: 3, t: 'day',   at: 'shore',  w: 0.7, life: [60, 120], spd: 1.0, run: 2.8, noWinter: 1, bio: { swamp: 1.6, meadow: 0.9, forest: 0.9, steppe: 0.4, mountain: 0.5 } },
   moth:     { name: 'Мотыльки',      day: 2, t: 'night', at: 'light',  w: 0.9, life: [50, 90],  spd: 0.6, run: 2.0, fly: 1, noWinter: 1, bio: {} },
-  owl:      { name: 'Гномья сова',   day: 4, t: 'night', at: 'forest', w: 0.4, life: [70, 130], spd: 0.6, run: 3.4, fly: 1, rare: 1, bio: { forest: 1.5, swamp: 1.1 } },
   stag:     { name: 'Мшистый олень', day: 6, t: 'day',   at: 'forest', w: 0.22, life: [60, 100], spd: 0.9, run: 4.2, rare: 1, bio: { forest: 1.6, swamp: 1.1, steppe: 0.3 } },
   starfox:  { name: 'Звёздный лис',  day: 9, t: 'night', at: 'edge',   w: 0.2, life: [50, 90],  spd: 1.3, run: 4.0, rare: 1, bio: { winter: 1.8 } },
 };
 const WL_KINDS = Object.keys(WL_SPEC);
 // что говорит редкий зверь, если подойти (первая встреча ещё и пишется в журнал)
 const WL_SAY = {
-  owl: ['Угу!', 'Угу-угу. Колпак не трогать.', 'Ночь длинная, гном короче', 'Угу… кто идёт без фонаря?'],
   stag: ['*шорох мха*', '*цветы на рогах качаются*'],
   starfox: ['*звёздный хвост искрит*', '*тихое «тяф»*'],
 };
@@ -97,7 +95,7 @@ function wlLight(A) {
 function wlSpot(at, A) {
   if (at === 'light') return wlLight(A);
   for (let k = 0; k < 40; k++) {
-    const x = Math.floor(A[0] + wlRnd(-A[2] - 3, A[2] + 3)), y = Math.floor(A[1] + wlRnd(-A[3] - 2, A[3] + 2));
+    const x = Math.floor(A[0] + wlRnd(-A[2] + 1, A[2] - 1)), y = Math.floor(A[1] + wlRnd(-A[3] + 1, A[3] - 1));   // в кадре: появляется с проявлением
     if (!inb(x, y) || !isWalkable(x, y)) continue;
     const i = idx(x, y);
     if (World.terrain[i] !== T_GRASS || World.road[i] || World.bmap[i]) continue;
@@ -148,7 +146,7 @@ function wlTrySpawn() {
 
 // ---------- Поведение ----------
 
-// шаг к точке; выдра плавает, птицы и сова летят над чем угодно
+// шаг к точке; выдра плавает, птицы летят над чем угодно
 function wlMove(o, tx, ty, speed, dt) {
   const dx = tx - o.x, dy = ty - o.y, d = Math.hypot(dx, dy);
   if (d < 0.08) { o.mv = 0; return true; }
@@ -168,7 +166,7 @@ function wlMove(o, tx, ty, speed, dt) {
 
 function wlScare(o, p) {
   const S = WL_SPEC[o.k];
-  o.st = 'react'; o.rt = 0; o.t = o.k === 'owl' ? 1.2 : 0.7; o.mv = 0;
+  o.st = 'react'; o.rt = 0; o.t = 0.7; o.mv = 0;
   o.face = p.x > o.x ? 1 : -1;
   const a = Math.atan2(o.y - p.y, o.x - p.x) + wlRnd(-0.5, 0.5), dist = S.fly ? 14 : 8;
   o.fx = o.x + Math.cos(a) * dist; o.fy = o.y + Math.sin(a) * dist;
@@ -177,7 +175,7 @@ function wlScare(o, p) {
     const say = WL_SAY[o.k];
     floater(o.x, o.y - 1.6, say[Math.floor(WL.rng() * say.length)], o.k === 'starfox' ? '#e8e0ff' : '#f0e0b0');
   }
-  if (typeof faunaSfx === 'function') faunaSfx(o.k === 'bird' || o.k === 'owl' || o.k === 'pheasant' ? 'wingFlap' : o.k === 'marmot' ? 'peckWhistle' : o.k === 'otter' ? 'splash' : 'barkRustle', o.x, o.y, 0.7);
+  if (typeof faunaSfx === 'function') faunaSfx(o.k === 'bird' || o.k === 'pheasant' ? 'wingFlap' : o.k === 'marmot' ? 'peckWhistle' : o.k === 'otter' ? 'splash' : 'barkRustle', o.x, o.y, 0.7);
 }
 function wlWaterNear(o) {
   for (let r = 1; r <= 3; r++) for (let k = 0; k < 8; k++) {
@@ -191,7 +189,7 @@ function wlWaterNear(o) {
 function wlSeen(o) {
   if (Game.wlSeen[o.k]) return;
   Game.wlSeen[o.k] = 1;
-  if (WL_SPEC[o.k].rare) logEvent('animal', `Впервые замечен${o.k === 'owl' ? 'а' : ''}: ${WL_SPEC[o.k].name}`, o.x, o.y);
+  if (WL_SPEC[o.k].rare) logEvent('animal', `Впервые замечен: ${WL_SPEC[o.k].name}`, o.x, o.y);
 }
 
 function wlThink(o, dt) {
@@ -261,7 +259,6 @@ const WL_PAL = {
   pheasant: { k: '#2a5a3a', g: '#2f7a4a', r: '#d8382a', o: '#e0c070', c: '#f0ece0', b: '#b0602a', B: '#d88a40', t: '#7a4a24', l: '#6a5236', y: '#14100c' },
   marmot: { m: '#a07a48', M: '#d0b080', k: '#16120e', n: '#4a3420', d: '#6a4a2a', i: '#f2eee6' },
   otter:  { o: '#6a4a30', O: '#b0906a', k: '#100c08', n: '#2a1a10', w: '#e0ecf4' },
-  owl:    { r: '#c8382a', R: '#902620', f: '#7a5a3a', F: '#b08a5a', y: '#f0d040', k: '#14100c', w: '#ece4d4', o: '#e0a030', l: '#c0a060' },
   stag:   { a: '#e0d0a8', p: '#f0a0c8', P: '#f8e070', m: '#5a8a3a', M: '#86b85a', s: '#8a6a44', S: '#c4a476', k: '#14100c', n: '#2a1a10', d: '#4a3622' },
   starfox:{ x: '#3a4a8a', X: '#9ab0ec', K: '#20284a', k: '#f8f0c0', n: '#10142a', '*': '#f8eca0', '+': '#ffffff' },
 };
@@ -332,19 +329,6 @@ const WL_ROWS = {
     '..oo.....oo...',
   ],
   otterSwim: ['..ooo.', '.ookon', 'wwOOww'],
-  owl: [
-    '....rr....',
-    '...rrrR...',
-    '..rrrrRR..',
-    '.ffffffff.',
-    'fyykffkyyf',
-    'fyyyffyyyf',
-    '.ffwoowff.',
-    '.fFwwwwFf.',
-    '.fFFwwFFf.',
-    '..fFFFFf..',
-    '...l..l...',
-  ],
   stag: [
     '.............a..a.......',
     '............ap.aaP......',
@@ -386,7 +370,7 @@ function wlShift(rows, r0, r1, c0, c1, dy) {
   block.forEach((b, i) => b.forEach((ch, j) => { if (ch !== '.') out[r0 + i + dy][c0 + j] = ch; }));
   return out.map(r => r.join(''));
 }
-// крылья поверх сидящей птицы/совы: off — смещение кончиков крыла (-2 вверх … +2 вниз)
+// крылья поверх сидящей птицы: off — смещение кончиков крыла (-2 вверх … +2 вниз)
 function wlWings(rows, cx, cy, span, off, ch) {
   const out = rows.map(r => r.split(''));
   for (let s = 1; s <= span; s++) {
@@ -427,14 +411,13 @@ function wlFrame(o) {
     const i = wlFr(o, 3, 6);                                                        // покой 6: уши и нос шевелятся
     return ['i' + i, () => (i === 2 || i === 3) ? wlShift(R0.hare, 0, 1, 9, 10, 1) : i === 5 ? wlShift(R0.hare, 2, 3, 8, 12, 1) : R0.hare, 0];
   }
-  if (k === 'bird' || k === 'owl') {
-    const base = k === 'bird' ? R0.bird : R0.owl, cx = k === 'bird' ? 3 : 5, cy = k === 'bird' ? 2 : 6, span = k === 'bird' ? 3 : 5, wc = k === 'bird' ? 'W' : 'F';
+  if (k === 'bird') {
+    const base = R0.bird, cx = 3, cy = 2, span = 3, wc = 'W';
     if (st === 'flee' || (st === 'react' && o.rt > 0.5)) { const i = wlFr(o, 16, 8); return ['f' + i, () => wlWings(base, cx, cy, span, WL_FLAP8[i], wc), 4 + (i % 4 > 1 ? 1 : 0)]; }   // полёт 8
     if (st === 'react') { const i = Math.min(3, Math.floor(o.rt / 0.14)); return ['r' + i, () => wlWings(base, cx, cy, Math.min(span, i + 1), -1, wc), 0]; }    // 4: крылья раскрываются
     if (o.mv) { const i = wlFr(o, 10, 6); return ['w' + i, () => base, WL_HOP[i] > 1 ? 1 : 0]; }
-    const i = wlFr(o, k === 'bird' ? 4 : 2, 6);
-    if (k === 'bird') return ['i' + i, () => (i === 1 || i === 4) ? R0.birdPeck : base, 0];        // покой: клюёт зёрна
-    return ['i' + i, () => i === 3 ? base.map(r => r.replace(/y/g, 'f').replace(/k/g, 'f')) : i === 4 ? base.map(r => r.replace(/yyk/, 'fyk').replace(/kyy/, 'kyf')) : base, 0];   // моргает
+    const i = wlFr(o, 4, 6);
+    return ['i' + i, () => (i === 1 || i === 4) ? R0.birdPeck : base, 0];        // покой: клюёт зёрна
   }
   if (k === 'pheasant') {
     if (st === 'react') { const i = Math.min(3, Math.floor(o.rt / 0.18)); return ['r' + i, () => wlWings(R0.pheasant, 8, 5, 2 + i, -1, 'B'), i]; }
