@@ -66,7 +66,7 @@ function createEvents(dir, log) {
     if (req.method !== 'POST') { res.writeHead(405, cors); res.end(); return true; }
     if (limited(ip)) { res.writeHead(429, cors); res.end(); return true; }
     let body = '', big = false;
-    req.on('data', ch => { if (big) return; body += ch; if (body.length > MAX_BODY) { big = true; res.writeHead(413, cors); res.end(); } });
+    req.on('data', ch => { if (big) return; body += ch; if (body.length > MAX_BODY) { big = true; res.writeHead(413, { ...cors, Connection: 'close' }); res.end(); } });
     req.on('end', () => { if (big) return; res.writeHead(add(body) ? 204 : 400, cors); res.end(); });
     return true;
   }
