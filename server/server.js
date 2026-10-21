@@ -57,6 +57,7 @@ const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
 const stats = createStats(DATA, log);
 const events = require('./events').createEvents(DATA, log);
 const errReports = require('./errors').createErrors(DATA, log);   // анонимные отчёты об ошибках у игроков (POST /err)
+const tele = require('./telemetry').createTelemetry(DATA, log, events);   // «Сообщить о проблеме» (POST /report), удаление по id (POST /t/forget)
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {
@@ -185,6 +186,7 @@ const server = http.createServer((req, res) => {
   if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
   if (events.handle(req, res, req.socket.remoteAddress || '')) return;
   if (errReports.handle(req, res, req.socket.remoteAddress || '')) return;
+  if (tele.handle(req, res, String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim())) return;
   if (p === '/stats') {
     const q = new URL(req.url, 'http://x').searchParams;
     if (!keyOk(q.get('key'))) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('нужен ключ: /stats?key=… (он в файле stats.key в папке данных сервера)'); return; }

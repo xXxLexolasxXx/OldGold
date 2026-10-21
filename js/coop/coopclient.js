@@ -241,7 +241,7 @@ function coopDropBuilding(b) {
   if (k >= 0) Game.buildings.splice(k, 1);
 }
 
-const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx'];
+const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx', 'wild'];
 const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp', 'bah'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
@@ -291,6 +291,7 @@ function coopMirror(m) {
   Object.assign(WX, m.wx, { ready: true });
   if (typeof seaMirrorIn === 'function') seaMirrorIn(m.sea);
   if (typeof seaLifeMirrorIn === 'function') seaLifeMirrorIn(m.sl);
+  if (typeof fyMirrorIn === 'function') fyMirrorIn(m.fy);      // единорог, дракон, грифон, саламандры (fairy1.js)
 }
 
 function coopWorld(m) {
@@ -333,6 +334,7 @@ function coopStep(dt) {
     const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
     if (d > 3) { a.x = a.tx; a.y = a.ty; } else { a.x += dx * k; a.y += dy * k; a.phase += Math.hypot(dx * k, dy * k) * 3; }
   }
+  if (typeof fyMirrorStep === 'function') fyMirrorStep(k2);
   for (const k of COOP_LISTS) for (const o of Game[k]) {
     if (o.tx === undefined || typeof o.x !== 'number') continue;
     const dx = o.tx - o.x, dy = o.ty - o.y;
