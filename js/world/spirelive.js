@@ -153,15 +153,32 @@ function lvShortcut(T, st) {
     if (Game.raiders.some(N => foeLive(N) && N.woke && Math.hypot(N.x - u.x, N.y - u.y) < 12)) continue;
     u._lvSc = 0;
     const team = Game.units.filter(m => m !== u && !m.dead && !m.inside && (m.rec || m.lamp) && Math.hypot(m.x - u.x, m.y - u.y) < 5);
+    const q = lvCampSpot(T, deep);
+    if (!q) continue;
     const go = m => {
-      const q = randomFreeNear(Math.floor(deep.p[0]), Math.floor(deep.p[1]), 1, 2, (x, y) => isWalkable(x, y)) || [Math.floor(deep.p[0]), Math.floor(deep.p[1])];
       fxBurst(m.x * TILE, m.y * TILE - 8, 10, ['#ffd070', '#8a6a3a'], 50, 40, 0.6, 1.6, 100);
-      m.x = q[0] + 0.5; m.y = q[1] + 0.5; m.path = null;
+      m.x = q[0]; m.y = q[1]; m.path = null;
     };
     go(u); team.forEach(go);
     floater(u.x, u.y - 2.4, 'Тайная тропа гномов!', '#ffd070');
     toast(`Тайная тропа гномов: отряд у костра яруса ${deep.i + 1}.`);
   }
+}
+// клетка у костра, откуда есть путь наружу (к старой точке у врат): костёр стража может стоять среди валунов,
+// и очнуться в «кармане» значит застрять до конца боя
+let LV_CP0 = null;
+function lvCampSpot(T, cp) {
+  if (cp.sp && isWalkable(Math.floor(cp.sp[0]), Math.floor(cp.sp[1]))) return cp.sp;
+  const ref = LV_CP0 && LV_CP0(T);
+  if (!ref) return null;
+  const cx = Math.floor(cp.p[0]), cy = Math.floor(cp.p[1]), rx = Math.floor(ref[0]), ry = Math.floor(ref[1]);
+  for (let r = 0; r <= 3; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+    const x = cx + dx, y = cy + dy;
+    if (!isWalkable(x, y) || !(x === rx && y === ry || findPath(x, y, rx, ry))) continue;
+    return (cp.sp = [x + 0.5, y + 0.5]);
+  }
+  return null;
 }
 function lvTick(dt) {
   const T = gdT();
@@ -202,10 +219,10 @@ function lvTick(dt) {
     if (T && !T.none && N.gi != null) { if (!T.lv) lvSetup(T); lvCamp(T, N); }
   };
   // очнуться — у самого глубокого костра (короткий путь назад к бою)
-  const _cp = asCheckpoint;
+  const _cp = LV_CP0 = asCheckpoint;
   asCheckpoint = function (T) {
     const deep = T.lv && lvDeep(T);
-    return deep && gdSpot(deep.p[0], deep.p[1] + 1, 2) || _cp(T);
+    return deep && lvCampSpot(T, deep) || _cp(T);
   };
   // безопасная зона: у костра нечисть не выбирает целей (как у большого костра)
   const _nb = nearBonfire;
