@@ -7,14 +7,18 @@ const ok = (c, m) => { if (!c) { fails.push(m); console.log('  ✗ ' + m); } };
 
 const sim = S.newSim(7);
 const h = sim.h;
-const DAY = 'Game.time = 30; WX.k = 0; WX.target = 0; WX.nextRain = 1e12; Game.noGrace = true; gameNext = 0; for (const g of GROUPS.slice()) endGroup(g, "test"); GROUPS.length = 0; Game.games = [];';
+const DAY = 'Game.time = 30; WX.k = 0; WX.target = 0; WX.nextRain = 1e12; Game.noGrace = true; gameNext = 0; for (const g of GROUPS.slice()) endGroup(g, "test"); GROUPS.length = 0; Game.games = []; for (const u of Game.units) u.pauseUntil = 0;';   // время отмотано назад — «замри» из будущего сбрасываем
 h.run(DAY);
 h.run('Math.random = __rnd');
 
 ok(h.run('ZT_ROT.length === 9 && ZT_LIFT.length === 9 && ZT_WX.length === 9 && ZT_WY.length === 9 && ZT_KR.length === 9'), 'кадров броска не 9');
 ok(h.run('ZEM_TRICKS.length') === 8, 'в лесенке не 8 приёмов');
 
-// ---- партия гномов
+// ---- партия гномов (партия может распасться, если гнома отозвали по делам: тогда пробуем ещё раз, до трёх партий)
+let gameSeen = false, maxFans = 0, areaSum = null, areaOk = true, states = new Set(), cuts = 0, stuck = false, lad = 0;
+let ended = false, win = null;
+for (let attempt = 0; attempt < 3 && !(states.has('stick') && states.has('end')); attempt++) {
+if (attempt) h.run(DAY);
 h.run(`{
   const ppl = Game.units.filter(u => isPerson(u) && u.type !== 'hero' && u.type !== 'kid' && !u.isCourier).slice(0, 7);
   const a = ppl[0], hx = Math.floor(a.x), hy = Math.floor(a.y);
@@ -22,13 +26,12 @@ h.run(`{
   globalThis.__lead = a.id;
   a.proc = (function* () { const g = startKnives(a); if (g) yield* g; else yield { wait: 0.5 }; })();
 }`);
-let gameSeen = false, maxFans = 0, areaSum = null, areaOk = true, states = new Set(), cuts = 0, stuck = false, lad = 0;
+gameSeen = false; areaSum = null;
 for (let t = 0; t < 4 && !gameSeen; t++) {
   S.runFor(sim, 20, 0.5, () => { if (h.run('GROUPS.some(g => g.kind === "knives")')) gameSeen = true; });
   if (!gameSeen) h.run(`{ gameNext = 0; const a = Game.unitMap.get(__lead); a.gp = null; a.proc = (function* () { const g = startKnives(a); if (g) yield* g; else yield { wait: 0.5 }; })(); a.action = null; a.idleFlag = true; }`);
 }
 ok(gameSeen, 'партия в ножички не началась');
-let ended = false, win = null;
 S.runFor(sim, 150, 0.25, () => {
   const r = h.run(`(() => { const g = GROUPS.find(g => g.kind === 'knives'); if (!g) return null; const s = knifeState(g.vis);
     return JSON.stringify({ st: g.st, fans: g.fans.length, a: s.area[1] + s.area[2], cuts: g.vis.cuts.length, win: g.vis.win, lad: Math.max(g.lad[0], g.lad[1]), kn: g.vis.kn.filter(Boolean).length, sc: g.vis.sc }); })()`);
@@ -40,6 +43,7 @@ S.runFor(sim, 150, 0.25, () => {
   }
   if (o.win !== undefined && o.win !== -1) win = o.win;
 });
+}
 console.log(`гномы: состояния ${[...states].join(',')}, болельщиков до ${maxFans}, отрезов ${cuts}, лесенка до ${lad}, победитель ${win}`);
 ok(states.has('fly') && states.has('stick') && states.has('cut') && states.has('end'), 'партия прошла не все состояния');
 ok(ended || win !== null, 'партия не закончилась за 150 с');

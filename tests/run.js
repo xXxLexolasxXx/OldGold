@@ -51,7 +51,7 @@ const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
 scriptTest('server: раздача файлов, /err, /e, /t, /report, /stats', 'server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
-scriptTest('telemetry: анонимная статистика (вкл. по умолчанию), отчёты о проблемах, удаление по id', 'telemetry-test.js');
+scriptTest('telemetry: статистика по согласию, отчёты о проблемах, удаление по id', 'telemetry-test.js');
 scriptTest('neutrals2: ранги и новые народы леса, сейв', 'neutrals2-test.js');
 scriptTest('wildlife: живность по биомам и дням, меньше фей, потолки на экран, сейв', 'wildlife-test.js');
 scriptTest('frogfolk: жаболюды — поселения у воды, касты, прыжок, влажность, яд, зима, сейв', 'frogfolk-test.js');
@@ -89,6 +89,7 @@ scriptTest('newworld: хост начинает мир на своей карт�
 scriptTest('piles: мусор не копится, потолок кучек, подпись подбора', 'piles-test.js');
 scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
+scriptTest('wild: поселения диких гномов — число на картах, обмен, караван, купец, поединок, бунт, сейв', 'wild-test.js', [], 600000);
 scriptTest('whatsnew: пропущенные обновления в окне «Что нового»', 'whatsnew-test.js');
 scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js');
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
