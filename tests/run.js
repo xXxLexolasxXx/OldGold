@@ -56,6 +56,7 @@ scriptTest('frogfolk: жаболюды — поселения у воды, ка�
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
+scriptTest('unions: профсоюзы — советы по стройке и ремеслу, редкий показ, выключатель, сейв, кооп', 'unions-test.js');
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');

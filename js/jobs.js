@@ -151,7 +151,7 @@ function* deliverGen(u, from, to, g, n = 1) {
       if (!to) break;
       to.incoming[g] += n;
     }
-    ok = yield { walk: [to.doorX, to.doorY], offroad: !!to.isRoad || !u.isCourier };   // не-курьеры (мусор в костёр, помощь) идут и без дороги
+    ok = yield { walk: [to.doorX, to.doorY], offroad: !!to.isRoad || !u.isCourier || siteOffNet(to) };   // не-курьеры (мусор в костёр, помощь) идут и без дороги
     // груз уронили при столкновении или утащил зверь
     if (!u.carry) { if (!to.removed) to.incoming[g] = Math.max(0, to.incoming[g] - n); return; }   // уже не в учёте «в пути» (auditIncoming) — не уходим в минус
     if (to.removed) continue;
