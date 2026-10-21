@@ -1,6 +1,10 @@
 'use strict';
 // «Что нового» (js/changelog.js): записи 0.10.x
 I18N.add('en', {
+  "Ненавижу ждать": "I Hate Waiting",
+  "Манифест разработчика: в главном меню → «Ещё» → «Манифест» (по-русски и по-английски). Коротко: ожидание обязано объяснить причину и дать, чем заняться.": "The developer’s manifesto: main menu → “More” → “Manifesto” (in Russian and English). In short: waiting must explain its reason and give you something to do.",
+  "Стройка без свободного работяги больше не заставляет смотреть на надпись «нет свободного»: в окне здания, достройки и дороги есть кнопка «Строить героем», герой идёт и берёт молоток сам.": "A construction site with no free toiler no longer makes you stare at a “none free” label: the building, upgrade and road windows have a “Build with the hero” button, and the hero walks over and picks up the hammer himself.",
+  "Аудит ожиданий записан в файле ОЖИДАНИЯ.md: что уже не заставляет ждать и что ускорим дальше.": "The waiting audit is written up in ОЖИДАНИЯ.md: what no longer makes you wait and what we’ll speed up next.",
   "Герой не теряет класс": "The Hero Keeps His Class",
   "Клик по гильдии другого класса больше не переучивает героя молча. Раньше маг с набранным рангом мастерства мог тапнуть по новой гильдии и вмиг стать лучником с нулевым рангом. Теперь герой остаётся при своём классе и рангах, а гильдия открывает окно: переучиться можно только кнопкой, с вопросом.": "Clicking a guild of another class no longer retrains the hero silently. Before, a mage with a hard-earned mastery rank could tap a new guild and instantly become an archer at rank zero. Now the hero keeps his class and ranks, and the guild opens a window: retraining only happens via a button, with a confirmation.",
   "Ранг прежнего класса запоминается: переучились и вернулись, и мастерство снова на месте. Старые сохранения подходят без изменений.": "The rank of the previous class is remembered: retrain and come back, and the mastery is back in place. Old saves work unchanged.",

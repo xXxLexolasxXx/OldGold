@@ -10,7 +10,7 @@
 (function (g) {
   const LS = 'og_lang';
   const CYR = /[А-Яа-яЁё]/;
-  const EN_FILES = ['en-ui', 'en-world', 'en-hero', 'en-misc', 'en-manual', 'en-systems', 'en-oaths', 'en-abil', 'en-lore', 'en-n1', 'en-n2', 'en-n3', 'en-n4', 'en-n5', 'en-n6', 'en-n7', 'en-n8', 'en-n9', 'en-n10'];   // js/i18n/<имя>.js (отсутствующие молча пропускаются)
+  const EN_FILES = ['en-ui', 'en-world', 'en-hero', 'en-misc', 'en-manual', 'en-systems', 'en-oaths', 'en-abil', 'en-lore', 'en-manifest', 'en-n1', 'en-n2', 'en-n3', 'en-n4', 'en-n5', 'en-n6', 'en-n7', 'en-n8', 'en-n9', 'en-n10'];   // js/i18n/<имя>.js (отсутствующие молча пропускаются)
   const LANGS = { ru: 'Русский', en: 'English' };
 
   function pick() {
