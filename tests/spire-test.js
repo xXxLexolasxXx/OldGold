@@ -71,6 +71,7 @@ for (const seed of SEEDS) {
     }
     won = s.dead && s.over === 'win';
   }
+  ok(!J('return !!Game.hero.dead'), `сид ${seed}: герой пропал на подъёме (утащила нечисть?)`);
   ok(camp, `сид ${seed}: привал у подножия не случился`);
   ok(gmax === (tiers && tiers.n), `сид ${seed}: побеждено стражей ${gmax}/${tiers && tiers.n}`);
   ok(won, `сид ${seed}: Малгор не побеждён за ${t} с (фазы ${[...phases]})`);

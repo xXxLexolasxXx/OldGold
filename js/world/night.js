@@ -196,6 +196,8 @@ function resolveFight(e) {
   if (dif().noLoss && (outcome === 'lose' || outcome === 'wipe')) outcome = n === 1 ? 'escape' : 'win';   // «Спокойный»: гномы не гибнут
   // потолок потерь за ночь (grab.js nightTakeOk): сверх него нечисть не уносит, а расшвыривает — деревня не вымирает за ночь
   if ((outcome === 'lose' || outcome === 'wipe') && !nightTakeOk()) outcome = 'escape';
+  // героя нечисть не уносит: он отлетает и встаёт (иначе игрок теряет своего героя, например посреди подъёма к шпилю)
+  if ((outcome === 'lose' || outcome === 'wipe') && fs[0].hero) outcome = 'escape';
   e.foe = null;
   if (outcome === 'win') {
     entFell(e, fs[0]);
@@ -209,7 +211,7 @@ function resolveFight(e) {
     // нечисть берёт одного; остальных, если они выжили, расшвыривает
     entTakes(e, fs[0]);
     for (const o of fs.slice(1)) {
-      if (outcome === 'wipe') { floater(o.x, o.y - 1, '!', '#ff6040'); fxBurst(o.x * TILE, o.y * TILE - 6, 8, ['#ffc0c0', '#a02818'], 40, 30, 0.7, 1.8, 160); removeUnit(o); }
+      if (outcome === 'wipe' && !o.hero) { floater(o.x, o.y - 1, '!', '#ff6040'); fxBurst(o.x * TILE, o.y * TILE - 6, 8, ['#ffc0c0', '#a02818'], 40, 30, 0.7, 1.8, 160); removeUnit(o); }
       else { e.escaped = o; knockBack(o, e); injure(o, Math.random() < 0.5 ? 'leg' : 'arm'); }
     }
     if (outcome === 'wipe') { toast(`${entName(e)} расправилась со всеми, кто осмелился напасть!`); logEvent('tree', `Нечисть перебила всех нападавших: ${n}`, e.x, e.y); }
@@ -537,6 +539,7 @@ function entReact(u) {
     if (!open || e.seen.has(u.id) || Math.hypot(e.x - u.x, e.y - u.y) > ENT_SEE) continue;
     const lost = u.brk && u.brk.kind === 'lost';
     if (!lost && !interruptible(u)) continue;
+    if (u.hero && u.cmd && !lost) continue;                    // герой с приказом игрока не отвлекается
     e.seen.add(u.id);
     if (lost) endBreak(u);
     // друзья рядом придают храбрости: в компании чаще бросаются в драку, в одиночку — застывают или бегут
