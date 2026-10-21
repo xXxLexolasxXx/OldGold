@@ -4,8 +4,9 @@
 //   клык разбойников, посох магов. Куёт его оружейная для героя (железо и доски из её запасов + золото казны) —
 //   сразу, без ожидания. Силой оно выше обычного, а классам своей гильдии подходит целиком.
 // · Заточка (в духе Lineage 2, своя реализация): герой точит надетое оружие в оружейной за железо.
-//   До +3 — всегда удачно, +4 — 80%, +5 — 60%, +6 — 40%, +7 и дальше — 20%, потолок +12. Неудача уровень НЕ снижает,
-//   пропадает только железо. После +5 бонусы заметно растут, но удар по здоровой цели не добивает её с одного раза.
+//   До +3 — всегда удачно, +4 — 80%, +5 — 60%, +6 — 40%, +7 и дальше — 20%, потолок +12. Неудача выше +3 РАЗБИВАЕТ
+//   оружие (от него остаётся слиток железа в оружейной). «Бережная» заточка (+магический камень и золото) при неудаче
+//   оружие не бьёт, но сбрасывает его до +0. После +5 бонусы заметно растут, но удар по здоровой цели не добивает её с одного раза.
 // · Уровень 3 гильдии открывает свойство оружия (вампиризм, паралич, яд, звёздный огонь, тишина монаха). Свойство
 //   действует у героя с особым оружием своей гильдии и у рекрутов этой гильдии (в общей деревне — рекруты на сервере).
 // Заточка хранится в hero.hero.enh = { k: вид оружия, lv }: если надето другое оружие, уровень не действует.
@@ -18,6 +19,7 @@ const ENH_ATK = L => L <= 5 ? 0.01 * L : 0.05 + 0.015 * (L - 5);        // пр�
 const ENH_CAP = 0.4;          // усиленный удар по здоровой (>50%) цели не снимает больше этой доли её здоровья
 const enhCost = L => ({ iron: 1 + Math.floor(L / 3) });
 const FORGE_COST = { iron: 6, timber: 2 }, FORGE_GOLD = 6;
+const BLESS_COST = { magicstone: 1 }, BLESS_GOLD = 2;      // бережная заточка: сверх железа, со складов
 
 // особое оружие гильдий: guild — чья, cls — кто носит с полной силой, look — облик в руке (people.js), base — значок-основа
 const GW = {
@@ -162,8 +164,10 @@ function arEnhPanel(b) {
   if (L >= ENH_MAX) return x + '<div class="irow small">Предел заточки. Дальше только слава.</div>';
   const cost = enhCost(L), have = durHas(b, cost), pc = Math.round(ENH_CHANCE[L] * 100);
   x += `<div class="irow small">Дальше: <b>+${L + 1}</b> (${enhText(L + 1)}), шанс <b>${pc}%</b>, цена ${arCostText(cost)}</div>`;
-  x += `<button class="hp-sm" data-ar="enh:${b.id}" ${have ? '' : 'disabled'} title="${have ? 'Железо берётся из запасов оружейной' : 'В оружейной не хватает: ' + arCostText(cost)}">Заточить</button>`;
-  x += `<div class="irow small muted">До +${ENH_SAFE} без риска: +4 — 80%, +5 — 60%, +6 — 40%, +7 и выше — 20%. Неудача уровень не снижает — пропадает только железо. Заточка относится к надетому оружию.</div>`;
+  const risky = L >= ENH_SAFE, blessOk = risky && have && arStoreHas(BLESS_COST) && arGoldHas(b, BLESS_GOLD);
+  x += `<button class="hp-sm" data-ar="enh:${b.id}" ${have ? '' : 'disabled'} title="${have ? 'Железо берётся из запасов оружейной' : 'В оружейной не хватает: ' + arCostText(cost)}">Заточить${risky ? ` (риск разбить ${100 - pc}%)` : ''}</button>`;
+  if (risky) x += ` <button class="hp-sm" data-ar="bless:${b.id}" ${blessOk ? '' : 'disabled'} title="При неудаче оружие цело, но заточка падает до +0. Сверх железа: ${arCostText(BLESS_COST)} со склада и ${BLESS_GOLD} золота">Бережно</button>`;
+  x += `<div class="irow small muted">До +${ENH_SAFE} без риска. Дальше +4 — 80%, +5 — 60%, +6 — 40%, +7 и выше — 20%, и <b>неудача разбивает оружие</b> — от него остаётся слиток железа. «Бережно» (ещё ${arCostText(BLESS_COST)} и ${BLESS_GOLD} золота): при неудаче оружие цело, но заточка слетает до +0.</div>`;
   return x;
 }
 
@@ -197,9 +201,19 @@ function arForgePanel(b) {
   };
 }
 
+// магический камень и золото — со складов (золото — ещё и из запасов самой оружейной)
+const arStoreHas = c => Object.keys(c).every(g => Game.buildings.reduce((n, s) => n + (s.isStore() ? s.offer(g) : 0), 0) >= c[g]);
+const arGoldHas = (b, n) => (b.stock.gold || 0) + Game.buildings.reduce((m, s) => m + (s.isStore() ? s.offer('gold') : 0), 0) >= n;
+function arStoreTake(c) {
+  for (const g in c) {
+    let n = c[g];
+    for (const s of Game.buildings) { if (!n) break; if (!s.isStore()) continue; const t = Math.min(n, s.offer(g)); s.stock[g] -= t; n -= t; }
+  }
+}
+
 function arSay(h, text, col) { floater(h.x, h.y - 2, text, col || '#ffe9a0'); toast(text); }
 
-function arEnhance(b) {
+function arEnhance(b, careful) {
   const h = arHero();
   if (!h || !b || b.removed || b.type !== 'weaponsmith' || b.state !== 'done') return;
   const H = h.hero, w = H.equip.weapon;
@@ -208,6 +222,9 @@ function arEnhance(b) {
   if (L >= ENH_MAX) return;
   const cost = enhCost(L);
   if (!durHas(b, cost)) { arSay(h, 'В оружейной не хватает: ' + arCostText(cost), '#e8a070'); return; }
+  careful = !!careful && L >= ENH_SAFE;
+  if (careful && !(arStoreHas(BLESS_COST) && payGold(b, BLESS_GOLD))) { arSay(h, `Для бережной заточки нужно: ${arCostText(BLESS_COST)} и ${BLESS_GOLD} золота`, '#e8a070'); return; }
+  if (careful) arStoreTake(BLESS_COST);
   for (const g in cost) b.stock[g] -= cost[g];
   const win = Math.random() < ENH_CHANCE[L];
   if (win) {
@@ -216,11 +233,21 @@ function arEnhance(b) {
     sfxAt('chime', h.x * TILE, h.y * TILE);
     arSay(h, `${hlName(w)} +${L + 1}!`, '#ffe070');
     if (L + 1 >= 7) logEvent('people', `${H.name}: ${hlName(w)} заточено до +${L + 1}`, h.x, h.y);
-  } else {
-    if (!H.enh || H.enh.k !== w) H.enh = { k: w, lv: L };
-    fxBurst(h.x * TILE, h.y * TILE - 8, 8, ['#8a8a8a', '#c8c0b0'], 50, 30, 0.6, 1.4, 200);
+  } else if (careful) {
+    H.enh = { k: w, lv: 0 };
+    fxBurst(h.x * TILE, h.y * TILE - 8, 10, ['#a060f0', '#c8c0b0'], 50, 30, 0.6, 1.4, 200);
     sfxAt('thud', h.x * TILE, h.y * TILE, 0.6);
-    arSay(h, `Не вышло: ${hlName(w)} остаётся +${L}`, '#ff9a80');
+    arSay(h, `Не вышло: камень уберёг ${hlName(w).toLowerCase()}, но заточка слетела до +0`, '#ffb070');
+  } else {
+    // разбито: оружие пропадает, от него — слиток железа в оружейной
+    H.equip.weapon = null; H.enh = null;
+    if (H.dur) delete H.dur[w];
+    b.stock.iron = (b.stock.iron || 0) + 1;
+    fxBurst(h.x * TILE, h.y * TILE - 10, 22, ['#c8ccd4', '#8a909c', '#ff7a50', GW[w] ? GW[w].hex : '#ffffff'], 90, 50, 0.8, 1.8, 220);
+    sfxAt('rattle', h.x * TILE, h.y * TILE, 1);
+    h.ouchUntil = Game.time + 2;
+    arSay(h, `Разбито! ${hlName(w)} +${L} разлетелось на куски`, '#ff6a50');
+    logEvent('people', `${H.name}: ${hlName(w)} +${L} разбито при заточке`, h.x, h.y);
   }
   updateUI(true);
 }
@@ -266,7 +293,12 @@ if (typeof document !== 'undefined') {
     if (!t || t.disabled) return;
     e.stopPropagation();
     const [a, id, k] = t.dataset.ar.split(':'), b = Game.buildings.find(x => x.id === +id);
-    if (a === 'enh') arEnhance(b); else if (a === 'forge') arForge(b, k);
+    if (a === 'enh' || a === 'bless') {
+      const H = Game.hero && Game.hero.hero, L = H ? enhLv(H) : 0;
+      if (a === 'enh' && H && H.equip.weapon && L >= ENH_SAFE && L < ENH_MAX
+        && !confirm(`Заточить ${hlName(H.equip.weapon)} +${L} → +${L + 1}? Шанс ${Math.round(ENH_CHANCE[L] * 100)}%. При неудаче оружие РАЗОБЬЁТСЯ.`)) return;
+      arEnhance(b, a === 'bless');
+    } else if (a === 'forge') arForge(b, k);
   }, true);
 }
 

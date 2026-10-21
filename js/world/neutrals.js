@@ -632,7 +632,7 @@ function neuDraw(c, N) {
   c.drawImage(sp.cv, -sp.ax, -sp.ay);
   c.restore();
   if (!dead && N.hp < N.mhp - 0.5) {
-    const w = 18, hy = py - (N.k === 'leshy' ? 54 : (N.k === 'fairy' || N.k === 'pixie') ? 46 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);
+    const w = 18, hy = py - (N.k === 'leshy' ? 64 : (N.k === 'fairy' || N.k === 'pixie') ? 46 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);
     c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(px - w / 2 - 1, hy - 1, w + 2, 4);
     c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(px - w / 2, hy, Math.round(w * r), 2);
   }

@@ -320,7 +320,7 @@ function cbTick(dt) {
 }
 
 // ---------- Рисование: красный круг удара, значки эффектов ----------
-function cbTop(N) { return N.k === 'leshy' ? 62 : (N.k === 'fairy' || N.k === 'pixie') ? 54 : N.k === 'boar' ? 46 : 48; }
+function cbTop(N) { return N.k === 'leshy' ? 72 : (N.k === 'fairy' || N.k === 'pixie') ? 54 : N.k === 'boar' ? 46 : 48; }
 
 function cbRing(c, x, y, r, p, col, from) {
   const px = x * TILE, py = y * TILE + 4, rr = r * TILE;
