@@ -49,6 +49,7 @@ const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
   if (p.status !== 0 && !r.fails.length) r.fails.push(out.trim().slice(0, 500) || 'код выхода ' + p.status);
 });
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
+scriptTest('savefile: золотые сейвы всех версий, битые и огромные файлы, копии, импорт/экспорт, мир коопа и откат', 'save-test.js', ['3'], 480000);
 scriptTest('server: раздача файлов, /err, /e, /t, /report, /stats', 'server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 scriptTest('telemetry: статистика по согласию, отчёты о проблемах, удаление по id', 'telemetry-test.js');

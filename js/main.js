@@ -613,8 +613,12 @@ function startGame() {
   const saveOnLeave = () => {
     if (Game.stress || !Game.units || !Game.units.length) return;
     if (typeof StartMenu !== 'undefined' && StartMenu.open) return;       // не затираем автосохранение, пока на заставке
+    if (Game.goal && Game.goal.over && Game.goal.over.res === 'lose') return;   // проигранную деревню (goal.js стёр её автосейв) не воскрешаем
+    if (saveOnLeave.t && Date.now() - saveOnLeave.t < 1500) return;       // события закрытия приходят пачкой (скрытие, pagehide, freeze) — пишем один раз
+    saveOnLeave.t = Date.now();
     saveGame('auto');
   };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnLeave(); });
   window.addEventListener('pagehide', saveOnLeave);
+  document.addEventListener('freeze', saveOnLeave);   // Chrome на Android замораживает фоновую вкладку без pagehide
 }
