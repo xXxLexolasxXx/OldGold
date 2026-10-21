@@ -71,7 +71,7 @@ function coopConnect(opts) {
     if (location.protocol === 'https:' && opts.server.startsWith('ws://')) { reject(new Error('Страница открыта по https, а сервер без шифрования (ws://). Откройте игру с адреса сервера: ' + coopHttpUrl(opts.server) + '/ — или настройте wss (server/DEPLOY.md)')); return; }
     try { ws = new WebSocket(opts.server); } catch (e) { reject(new Error('Неверный адрес сервера')); return; }
     Coop.ws = ws; Coop.creds = opts;
-    const fail = msg => { if (settled) return; settled = true; reject(new Error(msg)); try { ws.close(); } catch (e) { /* ничего */ } };
+    const fail = (msg, wait) => { if (settled) return; settled = true; reject(Object.assign(new Error(msg), { wait }));  try { ws.close(); } catch (e) { /* ничего */ } };
     ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token, ver: coopVer(), z: COOP_ZIP ? 1 : 0 }));
     ws.binaryType = 'arraybuffer';
     ws.onerror = () => fail('Сервер не отвечает. Он запущен? Адрес верный?');
@@ -86,7 +86,7 @@ function coopConnect(opts) {
     };
     const handleText = data => {
       let m; try { m = JSON.parse(data); } catch (e) { return; }
-      if (m.t === 'err') { if (m.stale) coopSaved(null); return fail(m.msg); }
+      if (m.t === 'err') { if (m.stale) coopSaved(null); return fail(m.msg, m.wait); }
       if (m.t === 'welcome') {
         if (m.token) coopSaved({ server: opts.server, nick: m.nick, token: m.token });
         Coop.perms = m.perms; Coop.permLabels = m.permLabels;
@@ -743,8 +743,8 @@ function coopLost() {
     if (!opts) { busy = false; stop = true; msg.textContent = 'Войдите заново через меню (Выйти → Общая деревня).'; return; }
     coopConnect(opts).then(() => { stop = true; Coop.reconnecting = false; box.remove(); }).catch(e => {
       busy = false;
-      msg.textContent = e.message;
-      if (!stop && !Coop.kicked) setTimeout(tryAgain, 3000);
+      msg.textContent = e.message + (e.wait ? ` (следующая попытка через ${e.wait} с)` : '');
+      if (!stop && !Coop.kicked) setTimeout(tryAgain, e.wait ? e.wait * 1000 : 3000);
     });
   };
   box.addEventListener('click', e => {

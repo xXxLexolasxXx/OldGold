@@ -65,6 +65,27 @@ function req(port, method, p, body) {
     if (s1.status !== 200 || !/Ошибки у игроков/.test(s1.body) || !/x is undefined/.test(s1.body)) fails.push('/stats не показывает ошибку из отчёта:\n' + s1.body.slice(-600));
     const s2 = await req(port, 'GET', '/stats?key=testkey&json=1');
     try { const j = JSON.parse(s2.body); if (!j.errors || j.errors.reports < 1) fails.push('/stats?json без errors'); } catch (e) { fails.push('/stats?json не JSON'); }
+    // соединение, закрытое клиентом без прощального кадра, не должно висеть в списке (http-сервер держит сокеты полуоткрытыми)
+    {
+      const net = require('net');
+      const sk = net.connect(port, '127.0.0.1');
+      await new Promise(r => sk.once('connect', r));
+      sk.write(`GET / HTTP/1.1
+Host: x
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+
+`);
+      await new Promise(r => sk.once('data', r));
+      const n1 = JSON.parse((await req(port, 'GET', '/coop-info?metrics=1')).body).conns;
+      sk.destroy();
+      await new Promise(r => setTimeout(r, 600));
+      const n2 = JSON.parse((await req(port, 'GET', '/coop-info?metrics=1')).body).conns;
+      if (n1 !== 1 || n2 !== 0) fails.push(`оборванное соединение осталось в списке (было ${n1}, стало ${n2})`);
+      else info.push('оборванное соединение убирается сразу');
+    }
     if (/ошибка шага/.test(out)) fails.push('в логе сервера ошибки шага:\n' + out.split('\n').filter(l => /ошибка шага/.test(l)).slice(0, 3).join('\n'));
   } finally {
     ch.kill();
