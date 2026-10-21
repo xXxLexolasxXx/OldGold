@@ -17,7 +17,10 @@
 
 const SL_CAP = { shoal: 4, salmon: 3, crab: 5, star: 6, urchin: 3, jelly: 4, turtle: 2, gull: 3, corm: 2, shell: 8 };
 const SL_KRAKEN_MIN_DAY = 6;           // кракен не раньше 6-х суток
-const SL_KRAKEN_GAP = 900;             // и не чаще раза в 15 минут игры
+const SL_KRAKEN_GAP = CYCLE * 4;       // и не чаще раза в 4 суток (≈38 мин игры): появляется в среднем раз в 4–5 суток
+const SL_KRAKEN_P = 0.02;              // шанс на каждой проверке появления (≈ раз в 5,5 с) после паузы
+// паузы редких гостей моря, с (баланс прогона --long): дельфины ≈ раз в сутки, змей и кит — раз в несколько суток
+const SL_GAP = { dolphin: 400, whale: 1500, serpent: 1500, octo: 280 };
 const SL_TENT_HP = 26;
 
 const SL = () => Game.seaLife || (Game.seaLife = slNew());
@@ -89,13 +92,15 @@ function slWalk(o, tx, ty, sp, dt) {
   o.x += dx / d * s; o.y += dy / d * s;
   return false;
 }
-function slAdd(o) { o.ph = slRand() * 10; o.face = o.face || 1; SL().list.push(o); return o; }
+function slAdd(o) { if (SL_GAP[o.k]) SL().seen['gap' + o.k] = Game.time; o.ph = slRand() * 10; o.face = o.face || 1; SL().list.push(o); return o; }
 
 // ---------- Появление ----------
 function slSpawnTick() {
   const S = SL(), O = OCN, ice = slIce(), night = slNight(), sum = seaIdx() === 0;
   const cap = k => SL_CAP[k] * (k === 'crab' && night > 0.5 ? 1.4 : 1);
   if (ice > 0.5) return;   // под льдом никто не появляется
+  // пауза после появления редкого гостя считается от появления (в памяти, в сейв не идёт)
+  const gap = k => { if (Game.time - (S.seen['gap' + k] ?? -1e9) < SL_GAP[k]) return false; return true; };
   const want = (k, test) => { if (slHas(k) >= cap(k)) return null; return slPick(test); };
   let p;
   if ((p = want('shoal', (x, y) => (slKind(x, y) === OC_SEA || slKind(x, y) === OC_LAKE) && slDep(x, y) >= 2))) slAdd({ k: 'shoal', x: p[0], y: p[1], a: slRand() * 6.28, n: 6 + ((slRand() * 4) | 0), seed: slRand() * 99, scat: 0 });
@@ -108,19 +113,19 @@ function slSpawnTick() {
   if ((p = want('corm', (x, y) => World.terrain[idx(x, y)] === T_ROCK && (slSea(x + 1, y) || slSea(x - 1, y) || slSea(x, y + 1) || slSea(x, y - 1))))) slAdd({ k: 'corm', x: p[0], y: p[1] + 0.2, hx: p[0], hy: p[1] + 0.2, z: 0, st: 'idle', t: slR(12, 30) });
   if (sum && slHas('turtle') < 1 && slRand() < 0.25 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) === 1))) slAdd({ k: 'turtle', x: p[0], y: p[1], st: 'swim', a: slRand() * 6.28, t: slR(20, 40), lay: S.nests.length < 3 });
   // редкие: дельфины, кит, осьминог, змей
-  if (night < 0.6 && !slHas('dolphin') && slRand() < 0.06 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 4))) {
+  if (night < 0.6 && !slHas('dolphin') && gap('dolphin') && slRand() < 0.05 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 4))) {
     const n = 2 + ((slRand() * 2) | 0), a = slRand() * 6.28;
     for (let k = 0; k < n; k++) slAdd({ k: 'dolphin', x: p[0] + k * 0.9, y: p[1] + k * 0.6, a, st: 'swim', t: slR(1, 4), life: 75 });
     if (slOnce('dolphLog', 300)) logEvent('animal', 'В море резвятся дельфины', p[0], p[1]);
   }
-  if (!slHas('whale') && slRand() < 0.012 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 6, 120))) {
+  if (!slHas('whale') && gap('whale') && slRand() < 0.012 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 6, 120))) {
     slAdd({ k: 'whale', x: p[0], y: p[1], a: slRand() * 6.28, st: 'swim', t: 6, life: 110 });
     logEvent('animal', 'У горизонта всплыл кит — видите фонтан?', p[0], p[1]);
     if (slOnce('whaleToast', 900)) toast('🐋 В море кит! Над водой бьёт фонтан, слышна песня.');
     fstat('whale');
   }
-  if (!slHas('octo') && slRand() < 0.02 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 3))) slAdd({ k: 'octo', x: p[0], y: p[1], a: slRand() * 6.28, st: 'idle', t: slR(5, 10), life: 50, hp: 8 });
-  if (!slHas('serpent') && cycleAt(Game.time).k >= 3 && slRand() < 0.01 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 4))) {
+  if (!slHas('octo') && gap('octo') && slRand() < 0.02 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 3))) slAdd({ k: 'octo', x: p[0], y: p[1], a: slRand() * 6.28, st: 'idle', t: slR(5, 10), life: 50, hp: 8 });
+  if (!slHas('serpent') && cycleAt(Game.time).k >= 3 && gap('serpent') && slRand() < 0.01 && (p = slPick((x, y) => slSea(x, y) && slDep(x, y) >= 4))) {
     slAdd({ k: 'serpent', x: p[0], y: p[1], a: slRand() * 6.28, st: 'swim', t: 4, life: 140, hp: 40 });
     logEvent('animal', 'В море мелькнули зелёные горбы — морской змей', p[0], p[1]);
     if (slOnce('serpToast', 900)) toast('🐍 В море плавает морской змей. Герой на берегу может с ним сразиться.');
@@ -383,7 +388,7 @@ function slTameTry(kind, o) {
   if (!kid || (kind === 'dolphin' && slRand() > 0.25)) return;
   S.tame[kind] = kid.fam ? kid.fam.n : 'гномёнок';
   floater(kid.x, kid.y - 1.4, kind === 'dolphin' ? 'Он мне помахал!' : 'Моя чайка!', '#d0f0ff');
-  logEvent('people', `${S.tame[kind]} подружился с ${kind === 'dolphin' ? 'дельфином: тот теперь приплывает к нему' : 'чайкой: она больше не ворует хлеб'}`, kid.x, kid.y);
+  logEvent('people', kind === 'dolphin' ? `${S.tame[kind]} подружился с дельфином: тот теперь приплывает к нему` : `${S.tame[kind]} подружился с чайкой: она больше не ворует хлеб`, kid.x, kid.y);
   toast(kind === 'dolphin' ? '🐬 Гномёнок подружился с дельфином!' : '🕊 Гномёнок приручил чайку — она больше не ворует хлеб.');
   fstat(kind + 'Tame');
 }
@@ -402,7 +407,7 @@ function slKidsTick() {
 function slKrakenTry() {
   const S = SL();
   if (S.kr || Game.time - S.krT < SL_KRAKEN_GAP || cycleAt(Game.time).k < SL_KRAKEN_MIN_DAY || !startOpen('raid')) return;
-  if (slRand() > 0.04) return;
+  if (slRand() > SL_KRAKEN_P) return;
   // глубокая вода у населённого пляжа
   const homes = Game.buildings.filter(b => b.state === 'done' && !b.removed);
   let spot = null;

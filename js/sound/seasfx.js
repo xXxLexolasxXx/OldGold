@@ -4,6 +4,8 @@
 //    oceanShoreView), у озёр и рек — тихий плеск; ночью мягче, в шторм гуще и выше, подо льдом молчит;
 //  • события: чайка, щелчок клешни, ожог медузы, щебет дельфина, фонтан и песня кита, шип морского змея,
 //    рёв кракена и удар щупальца, треск льда зимой; всплеск — общий splash из sfx3.js.
+//  • ночью прибой другой по характеру — ниже, медленнее и глуше (свой темп волны и среза), изредка тихий плеск;
+//    в шторм к нему добавляется свой слой — рёв и вой ветра, и через несколько секунд бьёт вал о берег (waveCrash).
 
 Object.assign(SFX_DEF, {
   gull:       { pri: 1, gain: 0.5,  poly: 2, cd: 0.6,  len: 0.7 },
@@ -17,9 +19,11 @@ Object.assign(SFX_DEF, {
   tentSlam:   { pri: 3, gain: 0.75, poly: 2, cd: 0.25, len: 0.7 },
   iceCrack:   { pri: 0, gain: 0.4,  poly: 1, cd: 2,    len: 0.5, wet: 0.3 },
   oar:        { pri: 0, gain: 0.3,  poly: 2, cd: 0.5,  len: 0.35 },
+  waveCrash:  { pri: 1, gain: 0.55, poly: 2, cd: 2,    len: 1.6, wet: 0.3 },
+  tideLap:    { pri: 0, gain: 0.25, poly: 1, cd: 3,    len: 1.4 },
   reel:       { pri: 0, gain: 0.3,  poly: 1, cd: 1,    len: 0.5 },
 });
-if (typeof FAUNA_TIER !== 'undefined') Object.assign(FAUNA_TIER, { gull: 1, crabSnap: 1, jellyZap: 1, dolphin: 1, spout: 1, whaleSong: 1, serpHiss: 1, iceCrack: 0, oar: 0, reel: 0 });
+if (typeof FAUNA_TIER !== 'undefined') Object.assign(FAUNA_TIER, { gull: 1, crabSnap: 1, jellyZap: 1, dolphin: 1, spout: 1, whaleSong: 1, serpHiss: 1, iceCrack: 0, oar: 0, reel: 0, waveCrash: 0, tideLap: 0 });
 
 Object.assign(SFX, {
   // чайка: «кьяа-кья» — два-три визгливых нисходящих крика с хрипотцой
@@ -92,12 +96,23 @@ Object.assign(SFX, {
     noiseHit(d, 'bandpass', 1300, 600, 1, t, 0.18, 0.25, 0.02);
     tone(d, 'triangle', 520 + v * 80, 460, t + 0.1, 0.12, 0.05, 0.02);
   },
+  // вал о берег в шторм: глухой удар, длинный шипящий откат
+  waveCrash: (d, t, v) => {
+    noiseHit(d, 'lowpass', 700 + v * 300, 150, 0.8, t, 0.35, 0.7, 0.04);
+    tone(d, 'sine', 70 + v * 15, 38, t, 0.4, 0.5, 0.02);
+    noiseHit(d, 'highpass', 2400, 1200, 0.7, t + 0.12, 1.3, 0.3, 0.15);
+  },
+  // тихий ночной плеск: мягкий накат без пены
+  tideLap: (d, t, v) => {
+    noiseHit(d, 'bandpass', 600 + v * 150, 350, 1, t, 1.1, 0.2, 0.5);
+    noiseHit(d, 'lowpass', 350, 200, 0.6, t + 0.3, 0.9, 0.12, 0.4);
+  },
   // катушка лески: стрекот
   reel: (d, t) => { for (let k = 0; k < 6; k++) noiseHit(d, 'highpass', 4500, 4000, 2, t + k * 0.05, 0.012, 0.14, 0.001); },
 });
 
 // ---------- Прибой: фон по видимому берегу ----------
-const SeaAmb = { a: null, t: 0, view: null, gullT: 8, iceT: 5 };
+const SeaAmb = { a: null, t: 0, view: null, gullT: 8, iceT: 5, crashT: 6, lapT: 7 };
 function seaAmbBuild() {
   const ctx = Sfx.ctx, A = SeaAmb.a = {};
   const mkGain = () => { const g = ctx.createGain(); g.gain.value = 0; g.connect(AudioCore.amb); return g; };
@@ -109,11 +124,24 @@ function seaAmbBuild() {
     const am = ctx.createGain(); am.gain.value = 0.55; sg.connect(am.gain);
     const lfoF = ctx.createOscillator(), fg = ctx.createGain(); lfoF.frequency.value = 0.12; fg.gain.value = 380; lfoF.connect(fg); fg.connect(lp.frequency);
     src.connect(lp); lp.connect(am); am.connect(A.sea);
-    A.seaLp = lp;
+    A.seaLp = lp; A.seaSrc = src; A.swell = swell; A.lfoF = lfoF;
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3200;
     const fam = ctx.createGain(); fam.gain.value = 0.0; const fs = ctx.createGain(); fs.gain.value = 0.18; swell.connect(fs); fs.connect(fam.gain);
     src.connect(hp); hp.connect(fam); fam.connect(A.sea);
     src.start(); swell.start(); lfoF.start(); }
+  // шторм: рёв прибоя (полоса 150–900 Гц, волна и дрожь вразнобой) и вой ветра (полоса плывёт)
+  A.storm = mkGain();
+  { const src = ctx.createBufferSource(); src.buffer = Sfx.noise; src.loop = true; src.playbackRate.value = 0.8;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 0.6;
+    const l1 = ctx.createOscillator(), g1 = ctx.createGain(); l1.frequency.value = 0.27; g1.gain.value = 0.35; l1.connect(g1);
+    const am = ctx.createGain(); am.gain.value = 0.6; g1.connect(am.gain);
+    src.connect(bp); bp.connect(am); am.connect(A.storm);
+    const w = ctx.createBufferSource(); w.buffer = Sfx.noise; w.loop = true; w.playbackRate.value = 1.3;
+    const wb = ctx.createBiquadFilter(); wb.type = 'bandpass'; wb.frequency.value = 900; wb.Q.value = 4;
+    const l2 = ctx.createOscillator(), g2 = ctx.createGain(); l2.frequency.value = 0.17; g2.gain.value = 500; l2.connect(g2); g2.connect(wb.frequency);
+    const wa = ctx.createGain(); wa.gain.value = 0.25; const l3 = ctx.createOscillator(), g3 = ctx.createGain(); l3.frequency.value = 0.09; g3.gain.value = 0.2; l3.connect(g3); g3.connect(wa.gain);
+    w.connect(wb); wb.connect(wa); wa.connect(A.storm);
+    src.start(); w.start(); l1.start(); l2.start(); l3.start(); }
   // озеро и река: тихий плеск с быстрым «журчанием»
   A.calm = mkGain();
   { const src = ctx.createBufferSource(); src.buffer = Sfx.noise; src.loop = true; src.playbackRate.value = 1;
@@ -137,11 +165,18 @@ function seaAmbTick(dt) {
   const sea = v ? Math.min(1, v.sea * 9 + v.water * 0.6 * (v.sea > 0 ? 1 : 0)) : 0;
   const calm = v ? Math.min(1, v.calm * 8) : 0;
   const k = (1 - ice) * zoom;
-  A.sea.gain.setTargetAtTime(0.13 * sea * k * (1 - 0.3 * night) * (1 + storm * 1.2), t, 1.5);
-  A.seaLp.frequency.setTargetAtTime(700 + storm * 900, t, 2);
+  A.sea.gain.setTargetAtTime(0.13 * sea * k * (1 - 0.3 * night) * (1 + storm * 0.6), t, 1.5);
+  // ночь: ниже и медленнее; шторм: выше срез, чаще волна
+  A.seaLp.frequency.setTargetAtTime(700 - night * 220 + storm * 700, t, 2);
+  A.seaSrc.playbackRate.setTargetAtTime(0.6 - night * 0.16 + storm * 0.2, t, 3);
+  A.swell.frequency.setTargetAtTime(0.12 - night * 0.04 + storm * 0.1, t, 3);
+  A.lfoF.frequency.setTargetAtTime(0.12 - night * 0.04 + storm * 0.1, t, 3);
+  A.storm.gain.setTargetAtTime(0.16 * Math.min(1, sea * 1.3) * k * Math.max(0, storm - 0.15) / 0.85, t, 2);
   A.calm.gain.setTargetAtTime(0.035 * calm * k * (1 - 0.3 * night), t, 1.5);
   // чайки днём, если море на виду; зимой — треск льда
   if (v && sea > 0.15 && night < 0.4 && ice < 0.5 && (SeaAmb.gullT -= dt) <= 0) { SeaAmb.gullT = 9 + Math.random() * 14; sfxAt('gull', v.cx, v.cy, 0.45); }
+  if (v && sea > 0.15 && storm > 0.35 && ice < 0.5 && (SeaAmb.crashT -= dt) <= 0) { SeaAmb.crashT = 3.5 + Math.random() * 5 * (1.3 - storm); sfxAt('waveCrash', v.cx, v.cy, 0.5 + storm * 0.5); }
+  if (v && sea > 0.15 && night > 0.5 && storm < 0.2 && ice < 0.5 && (SeaAmb.lapT -= dt) <= 0) { SeaAmb.lapT = 8 + Math.random() * 12; sfxAt('tideLap', v.cx, v.cy, 0.4); }
   if (v && ice > 0.8 && v.water > 0.05 && (SeaAmb.iceT -= dt) <= 0) { SeaAmb.iceT = 12 + Math.random() * 20; sfxAt('iceCrack', v.cx, v.cy, 0.6); }
 }
 {

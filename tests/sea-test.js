@@ -40,11 +40,32 @@ const hut = h.run(`(() => {
 })()`);
 console.log('    далеко от воды: ' + hut.far);
 ok(/у воды/.test(hut.far || ''), 'вдали от воды хижину не поставить');
+const pier = h.run(`(() => {
+  const inland = checkPlacement('pier', (MAP_W >> 1), (MAP_H >> 1), 0);
+  const hb = __hut; let pb = null;
+  for (let r = 1; r < 16 && !pb; r++) for (let dy = -r; dy <= r && !pb; dy++) for (let dx = -r; dx <= r && !pb; dx++) for (let rot = 0; rot < 4 && !pb; rot++)
+    if (inb(hb.doorX + dx, hb.doorY + dy) && !checkPlacement('pier', hb.doorX + dx, hb.doorY + dy, rot)) { pb = placeBuilding('pier', hb.doorX + dx, hb.doorY + dy, true, rot); pb.state = 'done'; }
+  globalThis.__pier = pb;
+  return { inland, ok: !!pb };
+})()`);
+ok(!!pier.inland, 'вдали от воды пристань не поставить');
+ok(pier.ok, 'пристань ставится на берегу');
 S.runFor(sim, 600, 10);
 const fish = h.run('__hut.stock.fish + Game.produced.fish');
 console.log(`    рыбы в хижине и сделано: ${h.run('__hut.stock.fish')} / ${h.run('Game.produced.fish')}, рыбак в хижине: ${h.run('__hut.worker === __fisher')}`);
 ok(fish > 0, 'рыбак наловил рыбы');
-ok(h.run('!!swPier(__hut) && (Game.seaLife.boats || []).length === 1'), 'у хижины пристань и лодка');
+ok(h.run('!!swPier(__pier) && (Game.seaLife.boats || []).length === 1 && Game.seaLife.boats[0].pid === __pier.id'), 'у пристани стоит лодка');
+
+console.log('рыбалка героя');
+h.run(`(() => { const u = Game.hero; u.cmd = null; u.home = null; const p = __pier || __hut; u.x = p.doorX + 0.5; u.y = p.doorY + 0.5; u.fishIdle = 100; globalThis.__hr = { fn: isNightNow, ev: isEveningNow }; isNightNow = () => false; isEveningNow = () => false; WX.k = 0; })()`);
+let rod = false;
+for (let k = 0; k < 60 && !rod; k++) { S.runFor(sim, 1, 1); rod = h.run('!!(Game.hero.fun && Game.hero.fun.k === "rod")'); }
+ok(rod, 'герой без дела идёт на берег и закидывает удочку');
+h.run(`Game.hero.cmd = { kind: 'move', x: Math.floor(Game.hero.x), y: Math.floor(Game.hero.y), tx: Math.floor(Game.hero.x), ty: Math.floor(Game.hero.y), label: '' }; issueCmd(Game.hero, Game.hero.cmd)`);
+S.runFor(sim, 2, 1);
+console.log('    fun:', h.run('Game.time'), h.run('Game.hero.heroFishing'), h.run('Game.hero.fishIdle'), JSON.stringify(h.run('Game.hero.fun')), h.run('!!Game.hero.proc'), h.run('Game.hero.cmd && Game.hero.cmd.kind'));
+ok(h.run('!Game.hero.fun'), 'приказ прерывает рыбалку героя');
+h.run(`isNightNow = __hr.fn; isEveningNow = __hr.ev; Game.hero.cmd = null;`);
 
 console.log('кракен');
 h.run(`(() => { const S = Game.seaLife; S.krT = -1e9; const ck = cycleAt; const st = startOpen; startOpen = () => true; cycleAt = t => Object.assign(ck(t), { k: 9 });
@@ -52,6 +73,7 @@ h.run(`(() => { const S = Game.seaLife; S.krT = -1e9; const ck = cycleAt; const 
 ok(h.run('!!Game.seaLife.kr'), 'кракен поднялся');
 const tents = h.run('Game.seaLife.kr ? Game.seaLife.kr.tents.length : 0');
 h.run(`(() => { const K = Game.seaLife.kr; const hero = Game.hero; if (!K || !hero) return; hero.hero.hp = hero.hero.maxhp = 9999; globalThis.__kt = 0; })()`);
+h.run(`globalThis.__pd = 0; const dp0 = dropPile; dropPile = (x, y, g, n) => { if (g === 'pearl') __pd += n; return dp0(x, y, g, n); };`);
 let won = false;
 for (let k = 0; k < 120 && !won; k++) {
   h.run(`(() => { const K = Game.seaLife.kr, hero = Game.hero; if (!K || !hero) return; const t = K.tents.find(q => q.st !== 'dead' && q.st !== 'die'); if (t) { hero.x = t.x - 0.8; hero.y = t.y; } hero.hero.hp = 9999; })()`);
@@ -60,8 +82,13 @@ for (let k = 0; k < 120 && !won; k++) {
 }
 console.log(`    щупалец ${tents}, побеждён: ${won}`);
 ok(won, 'герой одолел кракена');
-ok(h.run('[...Game.piles.values()].some(p => p.stock.pearl > 0)') || h.run('(() => { let n = 0; for (const b of Game.buildings) if (b.isStore && b.isStore()) n += b.stock.pearl; return n; })()') > 0, 'с кракена выпал жемчуг');
+ok(h.run('__pd') > 0, 'с кракена выпал жемчуг');
 
+console.log('русалка и водяной');
+h.run(`(() => { const S = Game.seaLife; const nt = nightAmt; nightAmt = () => 0.9; WX.k = 0; WX.target = 0; for (let i = 0; i < 400 && !S.list.some(o => o.k === 'mermaid'); i++) { S.seen.mermaidT = -1e9; slSpawnTick(); } nightAmt = nt; })()`);
+ok(h.run("Game.seaLife.list.some(o => o.k === 'mermaid')"), 'ясной ночью у берега появляется русалка');
+h.run(`(() => { const m = Game.seaLife.list.find(o => o.k === 'mermaid'); const u = Game.hero; u.x = m.x + 1; u.y = m.y; const nt = nightAmt; nightAmt = () => 0.9; SL_TICK.mermaid(m, 0.1, u); nightAmt = nt; })()`);
+ok(h.run("Game.seaLife.list.find(o => o.k === 'mermaid').st") === 'dive', 'русалка ныряет, если подойти');
 console.log('шторм и кораблекрушение');
 h.run(`(() => { const w = swState(); w.stormT = 30; w.wreckDay = -99; WX.k = 0.1; WX.target = 0; const mr = slRand; let first = true; slRand = () => (first ? (first = false, 0.1) : mr()); try { swStormTick(0.1); } finally { slRand = mr; } })()`);
 ok(h.run('swState().wreckDay >= 0'), 'после шторма — кораблекрушение');

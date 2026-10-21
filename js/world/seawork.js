@@ -13,6 +13,7 @@
 const SW_BOAT_OUT = [40, 80];        // как часто лодка выходит в море, с
 const SW_BOAT_FISH = 22;             // сколько удит на глубине
 const SW_WRECK_GAP = 3;              // крушение не чаще раза в столько суток
+const SW_PIER_R = 16;                // лодка пристани работает на хижину не дальше стольких клеток
 const SW_SHIP_P = 0.4;               // доля караванов, что приходят морем (если есть пристань у моря)
 
 // ---------- Рыбак и хижина ----------
@@ -26,13 +27,17 @@ if (typeof OUTFIT !== 'undefined') OUTFIT.fisher = { cap: '#2e5470', pants: '#4a
 BUILDINGS.fisherhut = {
   name: 'Рыбацкая хижина', cat: 'Еда', w: 2, h: 2, top: 58, cost: { trunk: 3, timber: 2 }, worker: 'fisher', need: 'water',
   outputs: { fish: 8, hide: 2, pearl: 2 },
-  desc: 'Ставят у воды. Рыбак удит с берега, а с пристани уходит лодка: рыба — еда для трактира, бывает шкура морского котика и жемчуг. В шторм лодка у причала. С пристанью у моря сюда заходят торговые корабли.',
+  desc: 'Ставят у воды. Рыбак удит с берега, а от пристани рядом (отдельная постройка, до 16 клеток) уходит лодка: рыба — еда для трактира, бывает шкура морского котика и жемчуг. В шторм лодка у причала.',
 };
-BUILD_ORDER.push('fisherhut');
-UNLOCKS.push({ id: 'fish', items: ['fisherhut'], after: ['sawmill'] });
+BUILDINGS.pier = {
+  name: 'Пристань', cat: 'Еда', w: 1, h: 1, top: 22, cost: { trunk: 2, timber: 2 },
+  desc: 'Мостки в воду на берегу: вход со стороны суши, мостки уходят в воду напротив. От пристани выходит лодка ближайшей рыбацкой хижины (до 16 клеток), а на пристани у моря пристают торговые корабли.',
+};
+BUILD_ORDER.push('fisherhut', 'pier');
+UNLOCKS.push({ id: 'fish', items: ['fisherhut', 'pier'], after: ['sawmill'] });
 if (typeof UNLOCK_NAMES !== 'undefined') UNLOCK_NAMES.fish = 'Рыбалка';
 if (typeof SIGN_OF !== 'undefined') SIGN_OF.fisherhut = 'fish';
-if (typeof DESCS !== 'undefined') DESCS.fisherhut = [BUILDINGS.fisherhut.desc, BUILDINGS.fisherhut.desc];
+if (typeof DESCS !== 'undefined') DESCS.fisherhut = [BUILDINGS.fisherhut.desc, BUILDINGS.fisherhut.desc]; if (typeof DESCS !== 'undefined') DESCS.pier = [BUILDINGS.pier.desc, BUILDINGS.pier.desc];
 if (typeof TR_BASE !== 'undefined') { TR_BASE.fish = TR_BASE.fish || 1.8; TR_BASE.pearl = TR_BASE.pearl || 9; TR_GROUPS.farm.wants.push('fish'); TR_GROUPS.mage.wants.push('pearl'); }
 if (typeof TR_GROUPS !== 'undefined') TR_GROUPS.sea = { name: 'Торговый корабль', sells: ['iron', 'croissant', 'darkbeer', 'leather', 'mana', 'sword', 'steak'], wants: ['fish', 'pearl', 'timber', 'bread', 'beer', 'hide'], lvl: 99 };
 
@@ -44,36 +49,68 @@ function swWaterNear(x, y, r) {
 {
   const _cp = checkPlacement;
   checkPlacement = function (type, x, y, rot = 0, quick = false) {
+    if (type === 'pier') return swPierPlacement(x, y, rot);
     const r = _cp(type, x, y, rot, quick);
     if (r || type !== 'fisherhut') return r;
     const d = bDims(type, rot);
     return swWaterNear(x + d.dx, y + d.dy, 5) ? null : 'Рыбацкую хижину ставят у воды (до 5 клеток от входа)';
   };
 }
+// Пристань: клетка на берегу (песок или трава), вход со стороны суши, напротив — вода: мостки на 2–3 клетки
+function swPierDir(x, y, rot) {
+  const r = BUILDINGS.pier.noRotate ? 0 : rot;
+  return r === 0 ? [0, -1] : r === 1 ? [-1, 0] : r === 2 ? [1, 0] : [0, 1];
+}
+function swPierTiles(x, y, dir) {
+  const tiles = [];
+  for (let k = 1; k <= 3 && inb(x + dir[0] * k, y + dir[1] * k) && World.terrain[idx(x + dir[0] * k, y + dir[1] * k)] === T_WATER; k++) tiles.push([x + dir[0] * k, y + dir[1] * k]);
+  return tiles;
+}
+function swPierPlacement(x, y, rot) {
+  if (!inb(x, y)) return 'За краем карты';
+  const i = idx(x, y), t = World.terrain[i];
+  if (t !== T_GRASS && t !== T_SAND) return 'Пристань ставят на берегу';
+  if (World.bmap[i] || World.door[i]) return 'Место занято';
+  if (World.road[i] || Game.roadSites.has(i)) return 'Мешает дорога';
+  if (World.obj[i] && !isStreetObj(World.obj[i])) return 'Мешают деревья, камни или поля';
+  const d = bDims('pier', rot), dx = x + d.dx, dy = y + d.dy;
+  if (!inb(dx, dy)) return 'Вход за краем карты';
+  const dt = World.terrain[idx(dx, dy)];
+  if ((dt !== T_GRASS && dt !== T_SAND) || World.bmap[idx(dx, dy)] || World.door[idx(dx, dy)]) return 'Перед входом нужна свободная земля';
+  if (swPierTiles(x, y, swPierDir(x, y, d.rot)).length < 2) return 'Мостки уходят в воду напротив входа: нужно 2–3 клетки воды';
+  return null;
+}
 
-function* fisherWork(u, b) {
-  if (outFull(b, 'fish')) { yield { wait: 3 }; return; }
-  const sh = findShore(b.doorX, b.doorY, 7);
-  if (!sh) { yield { wait: 4 }; return; }
-  const ok = yield { walk: sh.stand };
-  if (!ok) { yield { wait: 2 }; return; }
+// Заброс удочки у берега: общий для рыбака и героя. Возвращает 'fish' | 'pearl' | 'hide' | null (сорвалась) | undefined (прервали)
+function* swCast(u, sh, until) {
   const [sx, sy] = sh.stand, [dx, dy] = sh.dir, n = Math.min(sh.water, 3);
   const wx = sx + 0.5 + dx * (n - 0.3), wy = sy + 0.5 + dy * (n - 0.3);
   const total = 8 + slRand() * 5, bite = total * (0.55 + slRand() * 0.3), t0 = Game.time;
   u.face = dx || u.face;
   u.fun = { k: 'rod', t0, until: t0 + total + 1, wx, wy, bite: 0 };
   while (Game.time - t0 < total) {
-    if (!u.fun || b.removed) return;
+    if (!u.fun || (until && until())) return undefined;
     if (!u.fun.bite && Game.time - t0 > bite) { u.fun.bite = Game.time + 1.4; floater(u.x, u.y - 1.3, '!', '#ffe060'); sfxAt('reel', u.x * TILE, u.y * TILE, 0.6); }
     yield { wait: 0.5 };
   }
   const stolen = u.fun && u.fun.stolen;          // цапля (beasts.js)
   u.fun = null;
-  if (stolen) { yield { wait: 1 }; return; }
+  if (stolen) { yield { wait: 1 }; return undefined; }
   const sea = typeof OCN !== 'undefined' && OCN.on && OCN.kind[idx(Math.min(MAP_W - 1, Math.max(0, wx | 0)), Math.min(MAP_H - 1, Math.max(0, wy | 0)))] === OC_SEA;
   const r = slRand();
-  const got = r < 0.8 ? 'fish' : sea && r < 0.84 && !outFull(b, 'pearl') ? 'pearl' : sea && r < 0.9 && !outFull(b, 'hide') ? 'hide' : null;
+  const got = r < 0.8 ? 'fish' : sea && r < 0.84 ? 'pearl' : sea && r < 0.9 ? 'hide' : null;
   fxBurst(wx * TILE, wy * TILE, 8, ['#ffffff', '#c8e4f8', '#8ac0e8'], 30, 38, 0.5, 1.4, 150);
+  return got;
+}
+function* fisherWork(u, b) {
+  if (outFull(b, 'fish')) { yield { wait: 3 }; return; }
+  const sh = findShore(b.doorX, b.doorY, 7);
+  if (!sh) { yield { wait: 4 }; return; }
+  const ok = yield { walk: sh.stand };
+  if (!ok) { yield { wait: 2 }; return; }
+  let got = yield* swCast(u, sh, () => b.removed);
+  if (got === undefined) return;
+  if ((got === 'pearl' && outFull(b, 'pearl')) || (got === 'hide' && outFull(b, 'hide'))) got = null;
   if (!got) { floater(u.x, u.y - 1.3, 'Сорвалась…', '#e8e0c0'); yield { wait: 1.2 }; return; }
   floater(u.x, u.y - 1.3, got === 'fish' ? 'Есть!' : got === 'pearl' ? 'Жемчужина!' : 'Шкура котика!', got === 'fish' ? '#c8f0ff' : '#fff0c8');
   if (got !== 'fish') logEvent('gold', got === 'pearl' ? 'Рыбак выудил раковину с жемчужиной' : 'Рыбак вытащил шкуру морского котика', u.x, u.y);
@@ -81,31 +118,58 @@ function* fisherWork(u, b) {
   if (!(yield* goHome(u, b))) return;
   if (u.carry) { gather(b, u.carry); u.carry = null; }
 }
+// Герой на досуге: без приказа долго стоит днём в ясную погоду — идёт к воде и удит; улов уносит на склад,
+// а жемчужину и шкуру котика приносит, только если выловил в море
+const SW_HERO_IDLE = 30;      // сколько стоит без дела до рыбалки, с
+function* heroFishGen(u, sh) {
+  u.heroFishing = true;
+  try {
+    if (!(yield { walk: sh.stand })) return;
+    const got = yield* swCast(u, sh, () => !!u.cmd || u.dead);
+    if (got === undefined) return;
+    if (!got) { floater(u.x, u.y - 1.3, 'Сорвалась…', '#e8e0c0'); u.gest = 'scratch'; u.gestUntil = Game.time + 1.6; yield { wait: 1.2 }; return; }
+    floater(u.x, u.y - 1.3, got === 'fish' ? 'Есть!' : got === 'pearl' ? 'Жемчужина!' : 'Шкура котика!', got === 'fish' ? '#c8f0ff' : '#fff0c8');
+    u.gest = 'fist'; u.gestUntil = Game.time + 1.8; fstat('heroFish');
+    if (got !== 'fish') logEvent('gold', got === 'pearl' ? 'Герой выудил раковину с жемчужиной' : 'Герой вытащил шкуру морского котика', u.x, u.y);
+    u.carry = got; u.carryN = 1;
+    yield* heroStash(u);
+  } finally { u.heroFishing = false; u.fun = null; }
+}
+{
+  const _ht = heroThink;
+  heroThink = function (u) {
+    const g = _ht(u);
+    if (u.cmd || u.home || u.dead || u.inside) { u.fishIdle = 0; return g; }
+    if ((u.fishIdle = (u.fishIdle || 0) + 0.8) < SW_HERO_IDLE) return g;
+    if (isNightNow() || isEveningNow() || (typeof WX !== 'undefined' && WX.k > 0.3) || (u.hero && u.hero.hp < u.hero.maxhp * 0.5)) return g;
+    const sh = findShore(Math.floor(u.x), Math.floor(u.y), 14);
+    if (!sh) return g;
+    u.fishIdle = 0;
+    return heroFishGen(u, sh);
+  };
+}
 if (typeof WORK !== 'undefined') WORK.fisherhut = fisherWork;
 
 // ---------- Пристань и лодка ----------
-// Пристань: от ближнего к входу берега мостки на 2–3 клетки в воду; конец — причал лодки
-const SW_PIER = new Map();   // id хижины → { tiles: [[x,y]…], moor: [x,y], dir, key }
-function swPier(b) {
-  const key = b.x + ':' + b.y + ':' + (typeof OCN !== 'undefined' ? OCN.key : '');
-  const c = SW_PIER.get(b.id);
+// Пристань — отдельная постройка на берегу: мостки идут в воду напротив входа, конец — причал. Лодка стоит у каждой
+// пристани и работает на ближайшую рыбацкую хижину (до SW_PIER_R клеток); без хижины рядом лодка так и стоит.
+const SW_PIER = new Map();   // id пристани → { tiles, moor, root, dir, key }
+function swPier(pb) {
+  const key = pb.x + ':' + pb.y + ':' + (pb.rot || 0) + ':' + (typeof OCN !== 'undefined' ? OCN.key : '');
+  const c = SW_PIER.get(pb.id);
   if (c && c.key === key) return c.p;
-  let best = null;
-  for (let yy = b.doorY - 5; yy <= b.doorY + 5; yy++) for (let xx = b.doorX - 5; xx <= b.doorX + 5; xx++) {
-    if (!inb(xx, yy) || World.terrain[idx(xx, yy)] === T_WATER || World.bmap[idx(xx, yy)]) continue;
-    for (const [dx, dy] of [[0, 1], [1, 0], [-1, 0], [0, -1]]) {
-      const tiles = [];
-      for (let k = 1; k <= 3 && inb(xx + dx * k, yy + dy * k) && World.terrain[idx(xx + dx * k, yy + dy * k)] === T_WATER; k++) tiles.push([xx + dx * k, yy + dy * k]);
-      if (tiles.length < 2) continue;
-      const d = Math.hypot(xx - b.doorX, yy - b.doorY) - tiles.length * 0.4;
-      if (!best || d < best.d) best = { d, tiles, root: [xx, yy], dir: [dx, dy] };
-    }
-  }
-  const p = best ? { tiles: best.tiles, root: best.root, dir: best.dir, moor: best.tiles[best.tiles.length - 1] } : null;
-  SW_PIER.set(b.id, { key, p });
+  const dir = swPierDir(pb.x, pb.y, pb.rot || 0), tiles = swPierTiles(pb.x, pb.y, dir);
+  const p = tiles.length >= 1 ? { tiles, root: [pb.x, pb.y], dir, moor: tiles[tiles.length - 1] } : null;
+  SW_PIER.set(pb.id, { key, p });
   return p;
 }
 const swHuts = () => Game.buildings.filter(b => b.type === 'fisherhut' && b.state === 'done' && !b.removed);
+const swPiers = () => Game.buildings.filter(b => b.type === 'pier' && b.state === 'done' && !b.removed);
+function swHutOf(pb) {
+  let best = null, bd = SW_PIER_R;
+  for (const h of swHuts()) { const d = Math.hypot(h.doorX - pb.x, h.doorY - pb.y); if (d <= bd) { bd = d; best = h; } }
+  return best;
+}
 const swSL = () => (typeof SL === 'function' ? SL() : null);
 function swWaterLine(x0, y0, x1, y1) {
   const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2);
@@ -115,20 +179,21 @@ function swWaterLine(x0, y0, x1, y1) {
 function swBoatsTick(dt) {
   const S = swSL(); if (!S) return;
   const B = S.boats || (S.boats = []);
-  const huts = swHuts(), storm = typeof oceanStorm === 'function' ? oceanStorm() : 0, ice = typeof SEA === 'function' ? SEA().ice || 0 : 0;
-  for (let i = B.length - 1; i >= 0; i--) if (!huts.some(h => h.id === B[i].hid)) B.splice(i, 1);
-  for (const h of huts) {
-    const p = swPier(h);
+  const piers = swPiers(), storm = typeof oceanStorm === 'function' ? oceanStorm() : 0, ice = typeof SEA === 'function' ? SEA().ice || 0 : 0;
+  for (let i = B.length - 1; i >= 0; i--) if (!piers.some(h => h.id === B[i].pid)) B.splice(i, 1);
+  for (const pb of piers) {
+    const p = swPier(pb);
     if (!p) continue;
-    let bt = B.find(q => q.hid === h.id);
-    if (!bt) { bt = { hid: h.id, x: p.moor[0] + 0.5, y: p.moor[1] + 0.5, st: 'moor', t: 10 + slRand() * 20, ph: 0, face: p.dir[0] || 1 }; B.push(bt); }
+    const h = swHutOf(pb);
+    let bt = B.find(q => q.pid === pb.id);
+    if (!bt) { bt = { pid: pb.id, x: p.moor[0] + 0.5, y: p.moor[1] + 0.5, st: 'moor', t: 10 + slRand() * 20, ph: 0, face: p.dir[0] || 1 }; B.push(bt); }
     bt.ph += dt;
     const mx = p.moor[0] + 0.5, my = p.moor[1] + 0.5;
     if (bt.st === 'sunk') { if ((bt.t -= dt) <= 0) { bt.st = 'moor'; bt.x = mx; bt.y = my; bt.t = 30; logEvent('people', 'Рыбаки починили перевёрнутую лодку', mx, my); } continue; }
     if ((storm > 0.3 || ice > 0.5) && bt.st !== 'moor') bt.st = 'back';   // в шторм и подо льдом — к причалу
     if (bt.st === 'moor') {
       bt.x = mx; bt.y = my;
-      if (storm > 0.3 || ice > 0.5 || h.paused) continue;
+      if (storm > 0.3 || ice > 0.5 || !h || h.paused) continue;
       if ((bt.t -= dt) <= 0) {
         for (let k = 0; k < 12; k++) {
           const tx = mx + (slRand() - 0.5) * 14, ty = my + (slRand() - 0.5) * 14;
@@ -144,7 +209,7 @@ function swBoatsTick(dt) {
       const dx = tx - bt.x, dy = ty - bt.y, d = Math.hypot(dx, dy), sp = 0.9 * dt;
       if (Math.abs(dx) > 0.05) bt.face = dx > 0 ? 1 : -1;
       if (Math.floor(bt.ph * 1.6) !== Math.floor((bt.ph - dt) * 1.6)) sfxAt('oar', bt.x * TILE, bt.y * TILE, 0.4);
-      if (d <= sp) { bt.x = tx; bt.y = ty; if (bt.st === 'out') { bt.st = 'fish'; bt.t = SW_BOAT_FISH; } else { bt.st = 'moor'; bt.t = SW_BOAT_OUT[0] + slRand() * (SW_BOAT_OUT[1] - SW_BOAT_OUT[0]); if (bt.catch) { swLand(h, bt.catch); bt.catch = null; } } }
+      if (d <= sp) { bt.x = tx; bt.y = ty; if (bt.st === 'out') { bt.st = 'fish'; bt.t = SW_BOAT_FISH; } else { bt.st = 'moor'; bt.t = SW_BOAT_OUT[0] + slRand() * (SW_BOAT_OUT[1] - SW_BOAT_OUT[0]); if (bt.catch) { if (h) swLand(h, bt.catch); bt.catch = null; } } }
       else { bt.x += dx / d * sp; bt.y += dy / d * sp; }
       continue;
     }
@@ -175,7 +240,7 @@ function seaWorkSlam(x, y) {
 
 // ---------- Торговый корабль ----------
 function swShipPier() {
-  for (const h of swHuts()) { const p = swPier(h); if (p && OCN.on && OCN.kind[idx(p.moor[0], p.moor[1])] === OC_SEA) return { h, p }; }
+  for (const pb of swPiers()) { const p = swPier(pb); if (p && OCN.on && OCN.kind[idx(p.moor[0], p.moor[1])] === OC_SEA) return { pb, p }; }
   return null;
 }
 if (typeof trSpawnCaravan === 'function') {
@@ -307,7 +372,7 @@ function swDrawPier(c, p) {
 function seaWorkDrawList(list, c, x0, y0, x1, y1) {
   const S = Game.seaLife;
   const vis = (x, y) => x >= x0 - 3 && x <= x1 + 3 && y >= y0 - 3 && y <= y1 + 4;
-  for (const h of swHuts()) { const p = swPier(h); if (p && vis(p.moor[0], p.moor[1])) list.push([p.tiles[0][1] - 0.45, () => swDrawPier(c, p)]); }
+  for (const pb of swPiers()) { const p = swPier(pb); if (p && vis(p.moor[0], p.moor[1])) list.push([p.tiles[0][1] - 0.45, () => swDrawPier(c, p)]); }
   if (!S) return;
   for (const bt of S.boats || []) {
     if (!vis(bt.x, bt.y)) continue;
@@ -357,6 +422,15 @@ function seaWorkTick(dt) {
 
 // ---------- Модель хижины и вывеска ----------
 if (typeof MODELS !== 'undefined') {
+  MODELS.pier = function (m) {   // клетка на берегу: настил, кнехт, бухта каната, ящик; мостки в воду рисует swDrawPier
+    m.prop((c, x, y) => {
+      c.fillStyle = '#5a3a1e'; c.fillRect(x - 15, y - 14, 30, 14);
+      for (let k = 0; k < 7; k++) { c.fillStyle = k % 2 ? '#a8784a' : '#b88a58'; c.fillRect(x - 15 + k * 4.4, y - 14, 3.6, 13); }
+      c.fillStyle = '#3a2410'; c.fillRect(x - 7, y - 20, 3, 8); c.fillStyle = '#6a4a2a'; c.fillRect(x - 8, y - 21, 5, 2);   // кнехт
+      c.strokeStyle = '#d8c690'; c.lineWidth = 1.2; c.beginPath(); c.ellipse(x + 8, y - 8, 4, 2, 0, 0, 7); c.stroke();      // бухта каната
+      c.fillStyle = '#8a5a30'; c.fillRect(x + 1, y - 22, 8, 6); c.fillStyle = '#5a3418'; c.fillRect(x + 1, y - 19, 8, 1);   // ящик
+    }, 16, 30);
+  };
   MODELS.fisherhut = function (m) {
     m.box({
       x0: 8, x1: 52, y0: 12, y1: 48, h: 20, wall: 'plank', col: '#7a6a5a', beam: '#3a2a1a',
