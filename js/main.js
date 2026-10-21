@@ -479,7 +479,7 @@ function initInput() {
     Input.keys.add(e.key === 'Shift' ? 'Shift' : e.code);
     if (e.code === 'Escape') { setTool(null); selectBuilding(null); }
     if (e.code === 'Space') { e.preventDefault(); togglePause(); }
-    const spd = (e.shiftKey && e.code.match(/^Digit([1-4])$/)) || e.code.match(/^Numpad([1-4])$/);   // Shift+1…4 и цифры справа: ×0,5 / ×1 / ×2 / ×3
+    const spd = (e.shiftKey && e.code.match(/^Digit([1-3])$/)) || e.code.match(/^Numpad([1-3])$/);   // Shift+1…3 и цифры справа: ×1 / ×2 / ×3
     if (spd) { e.preventDefault(); pickSpeed(+spd[1] - 1); }
     if (e.code === 'KeyR') setTool(Game.tool && Game.tool.kind === 'road' ? null : { kind: 'road' });
     if (e.code === 'KeyT') rotateTool();
