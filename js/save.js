@@ -156,7 +156,7 @@ function applySave(s) {
     if (d.hold) b.hold = true;
     b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
     if (b.type === 'graveyard' && b.state !== 'done') { b.selfBuild = true; b.maxHits = SITE_HITS + GY_BUILD_HITS; b.total = 1; }
-    if (d.level === 2 && b.def.up) upgradeBuilding(b, true);
+    if (d.level >= 2 && b.def.up) { upgradeBuilding(b, true); if (d.level >= 3 && b.def.up3) upgradeBuilding(b, true); }
     if (d.upg && canUpgrade(b)) { startUpgrade(b); Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
     if (d.recipeOn && d.recipeOn.length === b.recipeOn.length) b.recipeOn = d.recipeOn;
     b.recipeIdx = d.recipeIdx || 0;

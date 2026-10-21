@@ -60,6 +60,7 @@ function streetTick(dt) {
     else if (!o.res) callCleaner(i, o);
   }
   dispatchTrash();
+  pileSweep();
   decorPlanTick(step);
   if (typeof subTick === 'function') subTick(step);
 }
@@ -82,9 +83,49 @@ function dispatchTrash() {
   }
 }
 
+// Мусор и куски курицы склад не принимает, нести их могут только в костёр: без уборки они копились бы на полях и лугах вечно.
+const TRASH_CAP = 24;           // больше стольких кучек мусора на земле не бывает: новый мусор просто не появляется
+const TRASH_TTL = 240;          // столько секунд кучка лежит, потом её растаскивают ветер и птицы
+const PILE_CAP = 160;           // всего кучек на земле; лишний «неходовой» груз убирается, самый старый первым
+
+function trashPileCount() {
+  let n = 0;
+  for (const p of Game.piles.values()) if (!p.removed && p.stock.trash > 0) n++;
+  return n;
+}
+
+function pileSweep() {
+  const old = [];
+  for (const p of [...Game.piles.values()]) {
+    if (p.removed) continue;
+    for (const g of GOOD_KEYS) {
+      if (!GOODS[g].noStore) continue;
+      if (!(p.stock[g] > 0)) { delete p.ageAt[g]; continue; }
+      if (p.ageAt[g] === undefined) p.ageAt[g] = Game.time;      // кучка из старого сохранения
+      if (p.stock[g] - p.reserved[g] <= 0) continue;
+      if (Game.time - p.ageAt[g] > TRASH_TTL) { p.stock[g] = Math.max(0, p.reserved[g]); delete p.ageAt[g]; fxBurst(p.x * TILE + 16, p.y * TILE + 14, 5, ['#b6ada0', '#8a7a5a'], 20, 20, 0.6, 1.4, -10); }
+      else old.push([p.ageAt[g], p, g]);
+    }
+    cleanupPile(p);
+  }
+  let over = Game.piles.size - PILE_CAP;
+  if (over > 0) {
+    old.sort((a, b) => a[0] - b[0]);
+    for (const [, p, g] of old) {
+      if (over <= 0) break;
+      if (p.removed || p.stock[g] - p.reserved[g] <= 0) continue;
+      p.stock[g] = Math.max(0, p.reserved[g]); delete p.ageAt[g];
+      if (!GOOD_KEYS.some(k => p.stock[k] > 0 || p.reserved[k] > 0)) over--;
+      cleanupPile(p);
+    }
+  }
+}
+
 // Мусорит каждый: огрызки и окурки остаются там, где стоит гном
 function litter(u, n = 1) {
   if (u.inside || u.dead) return;
+  if (!Game.buildings.some(b => b.type === 'bonfire' && b.state === 'done' && !b.removed)) return;   // без костра мусор некуда нести: не сорим
+  if (trashPileCount() >= TRASH_CAP) return;
   dropPile(Math.floor(u.x), Math.floor(u.y), 'trash', n);
 }
 
