@@ -91,6 +91,71 @@ for (const seed of SEEDS) {
   console.log(`сид ${seed}: ярусов ${tiers && tiers.n}, стражей ${gmax}, тропа ${carve.carved} кл., привал ${camp}, фазы ${[...phases]}, победа ${won} за ${t} с`);
 }
 
+// ---------- Этап 2: Фонарщик, пленные, сделки с Малгором (js/world/ascent.js) ----------
+{
+  const sim = S.newSim(11);
+  const J = code => JSON.parse(sim.h.run(`JSON.stringify((() => { ${code} })())`));
+  S.runFor(sim, 20, 10, () => {});
+  J(`goalNew('scenario'); for (const b of Game.buildings) if (b.isStore()) { b.stock.bread = 40; b.stock.sausage = 10; }
+     Game.goal.cuts = []; Game.goal.cut = null; goalStartChapter(GOAL_CHAPTERS.length - 1);
+     const H = Game.hero.hero; H.level = 12; H.maxhp = hlMaxHp(H) * 3; H.hp = H.maxhp; spireGo(); return 1;`);
+  const a0 = J(`const T = Game.foe.tiers, L = Game.units.find(u => u.lamp); return { as: !!T.as, lamp: !!L, r: L && L.lampR, cages: T.as ? T.as.cages.length : 0, n: T.n };`);
+  ok(a0.as && a0.lamp && a0.r > 5 && a0.cages >= a0.n - 2, 'этап 2: нет фонарщика или клеток ' + JSON.stringify(a0));
+  // фонарщик примыкает к герою и светит
+  J(`const L = Game.units.find(u => u.lamp), h = Game.hero; h.x = L.x + 1; h.y = L.y; h.path = null; heroStopUnit(h); return 1;`);
+  S.runFor(sim, 4, 4, () => {});
+  const a1 = J(`const T = Game.foe.tiers, L = Game.units.find(u => u.lamp); return { st: T.as.lamp, lit: gdLights().some(l => l[2] >= 5.5), tg: gdTargetNear(null, L.x, L.y, 5) === L,
+    draw: (() => { try { const c = document.createElement('canvas').getContext('2d'); asDrawLamp(c, L); return 1; } catch (e) { return String(e).slice(0, 200); } })() };`);
+  ok(a1.st === 'go' && a1.lit && a1.tg && a1.draw === 1, 'этап 2: фонарщик не примкнул/не светит/не цель ' + JSON.stringify(a1));
+  // страж 1 пал — Малгор предлагает сделку; ослабляем стража 2 за золото
+  const a2 = J(`const T = Game.foe.tiers, G = Game.raiders.find(N => N.gi === 0 && foeLive(N)); foeKill(G, Game.hero);
+    const cur = Game.dil && Game.dil.cur, G1 = Game.raiders.find(N => N.gi === 1 && foeLive(N)), m0 = G1.mhp;
+    dilGive('gold', 30); const r = dilResolve(0, null);
+    return { id: cur && cur.id, ok: r.ok, wk: T.as.wk[1], m0, m1: G1.mhp, deals: T.as.deals.length };`);
+  ok(/^malgor_deal/.test(a2.id) && a2.ok && a2.wk === 0.6 && a2.m1 < a2.m0 * 0.7 && a2.deals === 1, 'этап 2: сделка «ослабить» ' + JSON.stringify(a2));
+  // клетка на ярусе 2: герой подошёл — пленные свободны, тревога
+  const a3 = J(`const T = Game.foe.tiers, cg = T.as.cages.find(c => c.i === 1), h = Game.hero, r0 = Game.raiders.filter(foeLive).length;
+    const p = randomFreeNear(Math.floor(cg.p[0]), Math.floor(cg.p[1]), 0, 1, (x, y) => isWalkable(x, y)); h.x = p[0] + 0.5; h.y = p[1] + 0.5; heroStopUnit(h);
+    for (let k = 0; k < 10; k++) step(0.05);
+    const fr = Game.units.filter(u => u.freed && !u.dead);
+    return { open: cg.open, n: fr.length, rec: fr.every(u => u.rec && u.rec.order === 'follow'), alarm: Game.raiders.filter(foeLive).length > r0 };`);
+  ok(a3.open && a3.n >= 2 && a3.rec && a3.alarm, 'этап 2: клетка не открылась или нет тревоги ' + JSON.stringify(a3));
+  // павший освобождённый — в эхо
+  const a4 = J(`const T = Game.foe.tiers, u = Game.units.find(u => u.freed && !u.dead), nm = u.rec.name; neuHurtUnit(u, 999);
+    return { gone: !!u.dead, fallen: T.fallen.some(f => f.n === nm) };`);
+  ok(a4.gone && a4.fallen, 'этап 2: павший пленник не ушёл в эхо ' + JSON.stringify(a4));
+  // страж 2 пал — сделка: отдать пленных, врата 3 открыты без боя
+  const a5 = J(`const T = Game.foe.tiers, G = Game.raiders.find(N => N.gi === 1 && foeLive(N)); foeKill(G, Game.hero);
+    const av = dilAvail(Game.dil.cur), r = dilResolve(3, null);
+    return { av, ok: r.ok, open: T.open, freed: Game.units.filter(u => u.freed && !u.dead).length, g2: Game.raiders.some(N => N.gi === 2 && foeLive(N)), dq: T.as.dq };`);
+  ok(a5.ok && a5.open === 3 && !a5.freed && !a5.g2 && a5.dq === 3, 'этап 2: сделка «отдать пленных» ' + JSON.stringify(a5));
+  // сохранение посреди сделок
+  const a6 = J(`const s = JSON.parse(JSON.stringify(serializeGame())); applySave(s); const T = Game.foe.tiers;
+    return { deals: T.as.deals.length, wk: T.as.wk[1], lamp: Game.units.filter(u => u.lamp).length, open: T.open };`);
+  ok(a6.deals === 2 && a6.wk === 0.6 && a6.lamp === 1 && a6.open === 3, 'этап 2: сейв потерял сделки/фонарщика ' + JSON.stringify(a6));
+  // следующая сделка приходит сама (очередь); отдаём уровень героя
+  S.runFor(sim, 2, 2, () => {});
+  const a7 = J(`const T = Game.foe.tiers, H = Game.hero.hero, l0 = H.level, id = Game.dil.cur && Game.dil.cur.id; const r = dilResolve(1, null); return { id, ok: r.ok, l0, l1: H.level, open: T.open };`);
+  S.runFor(sim, 3, 3, () => {});
+  const lv = J('return Game.hero.hero.level');
+  ok(/^malgor_deal/.test(a7.id) && a7.ok && a7.l1 === a7.l0 - 1 && lv === a7.l1 && a7.open === 4, `этап 2: сделка «уровень героя» ${JSON.stringify(a7)} → ${lv}`);
+  // гибель фонарщика: тьма гуще, двое в эхо
+  const a8 = J(`const T = Game.foe.tiers, L = Game.units.find(u => u.lamp), f0 = T.fallen.length; neuHurtUnit(L, 999);
+    return { st: T.as.lamp, dark: T.dark, add: T.fallen.length - f0, gone: !Game.units.some(u => u.lamp && !u.dead) };`);
+  ok(a8.st === 'dead' && a8.dark >= 0.15 && a8.add === 2 && a8.gone, 'этап 2: гибель фонарщика ' + JSON.stringify(a8));
+  // последний страж, Малгор крепче на сделки; победа и эпилог
+  S.runFor(sim, 1, 1, () => {});
+  const a9 = J(`if (Game.dil.cur) dilFinish(true); const G = Game.raiders.find(N => N.gi != null && foeLive(N)); if (G) foeKill(G, Game.hero); if (Game.dil.cur) dilFinish(true);
+    const B = spireBoss(); const m = B ? B.mhp : 0; if (B) foeKill(B, Game.hero); return { m, def: !!Game.foe.defeated };`);
+  S.runFor(sim, 3, 3, () => {});
+  const fin = J(`const c = (Game.goal.cuts || []).find(c => c.kind === 'over'); return { res: c && c.res, ep: c ? c.lines.filter(l => l[0] === 'mrak' || /Лампу предков|клеток/.test(l[1])).map(l => l[1].slice(0, 40)) : [], why: c && c.why,
+    draw: (() => { try { const c = document.createElement('canvas').getContext('2d'), F = Game.foe, list = []; drawSkeletons(list, c, F.tx - 40, F.ty - 40, F.tx + 40, F.ty + 40); for (const [, fn] of list) fn(); return 1; } catch (e) { return String(e).slice(0, 200); } })() };`);
+  ok(a9.m > 520 * 1.2 && a9.def, 'этап 2: Малгор не окреп от сделок ' + JSON.stringify(a9));
+  ok(fin.res === 'win' && fin.ep.length >= 3 && /сделок/.test(fin.why) && fin.draw === 1, 'этап 2: эпилог без итогов подъёма ' + JSON.stringify(fin));
+  ok(!sim.errors.length, 'этап 2: исключения: ' + sim.errors.slice(0, 3).join(' | '));
+  console.log(`этап 2: фонарщик ${a1.st}, клетка ${a3.n} пленных, сделки ${a6.deals + 1}, Малгор ${a9.m} HP, эпилог ${fin.ep.length} строк`);
+}
+
 // ---------- Кооп: тап по башне на сервере — бой с Малгором ----------
 const srv = S.newSim(11, { coop: true });
 const R = code => JSON.parse(srv.h.run(`JSON.stringify((() => { ${code} })())`));
