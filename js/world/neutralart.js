@@ -282,6 +282,30 @@ function drawLeshy(c, P) {
   // грибы на подоле
   naLimb(c, -9, -6, -9, -3.6, 1.1, '#e8e0c8'); ellipse(c, -9, -6.4, 2.2, 1.3, naK(P, '#c8483a'));
   ellipse(c, -6.4, -5, 1.5, 1, naK(P, '#c8483a')); c.fillStyle = '#f6ece0'; c.fillRect(-9.6, -7.2, 0.8, 0.7); c.fillRect(-8.2, -6.8, 0.7, 0.6);
+  // ближняя рука: моховой рукав, кора-предплечье, кисть с пальцами; рисуется до головы — плечо уходит за бороду. Посох — сбоку:
+  // в покое и на ходу стоит на земле, в бою леший бьёт набалдашником с размаху
+  const fighting = Math.abs(P.a) > 0.25 || P.up > 0.5 || P.b > 0.5;
+  const shx = 9 + hunch * 0.6, shy = -36;
+  const th = fighting ? naTheta(P) : 0.75, bend = P.up > 0.5 ? 0.2 : fighting ? -0.5 : -1.0;
+  const [d1x, d1y] = naDir(th), [d2x, d2y] = naDir(th + bend);
+  const ex = shx + d1x * 8.6, ey = shy + d1y * 8.6, hx2 = ex + d2x * 7.6, hy2 = ey + d2y * 7.6, ang = th + bend;
+  let top, bot;
+  if (fighting) { const [dx, dy] = naDir(ang + 0.15); bot = [hx2 - dx * 6, hy2 - dy * 6]; top = [hx2 + dx * 20, hy2 + dy * 20]; }
+  else { top = [hx2 + 0.4, hy2 - 13]; bot = [hx2 + 1.4 + sw, -0.4]; }
+  const mid = [(bot[0] + top[0]) / 2 + 1.2, (bot[1] + top[1]) / 2];
+  c.strokeStyle = TW2; c.lineWidth = 2.4; c.beginPath(); c.moveTo(bot[0], bot[1]); c.quadraticCurveTo(mid[0], mid[1], top[0], top[1]); c.stroke();
+  c.strokeStyle = TW; c.lineWidth = 0.9; c.beginPath(); c.moveTo(bot[0] - 0.6, bot[1]); c.quadraticCurveTo(mid[0] - 0.6, mid[1], top[0] - 0.6, top[1]); c.stroke();
+  // набалдашник: завиток ветки и огонёк-лишайник
+  c.strokeStyle = TW2; c.lineWidth = 1.6; c.beginPath(); c.arc(top[0] + 1.6, top[1] - 0.6, 2.2, 3.4, 6.48); c.stroke();
+  ellipse(c, top[0] + 1.6, top[1] - 0.8, 1.6, 1.6, EY); ellipse(c, top[0] + 1.6, top[1] - 0.8, 0.7, 0.7, '#ffffe0');
+  ellipse(c, top[0] - 1.6, top[1] + 2.4, 1.4, 1, LF);
+  // рука поверх посоха — кисть его обхватывает
+  naLimb(c, shx, shy, ex, ey, 4.6, CL2); naLimb(c, shx, shy, ex, ey, 3.2, CL);           // рукав
+  ellipse(c, shx, shy, 3, 2.6, CL3);                                                      // моховой наплечник
+  naLimb(c, ex, ey, hx2, hy2, 2.8, AR);                                                   // предплечье
+  ellipse(c, ex, ey, 2.2, 2, CL3);                                                        // край рукава
+  ellipse(c, hx2, hy2, 2.1, 2, AR);                                                       // кисть
+  c.fillStyle = BR3; for (const k of [-1, 0, 1]) c.fillRect(hx2 + 0.6 + k * 0.2, hy2 - 1.4 + k * 1.1, 1.6, 0.7);   // пальцы
   // голова: вынесена вперёд (горбится), берестяная
   const hy = -46 + (P.hurt > 0.5 ? 1.2 : 0) + (P.up > 0.5 ? -2 : 0), hx = 5 * hunch + 1 + (P.a > 0.5 ? 1.4 : 0);
   // рога-ветви с листвой
@@ -315,30 +339,6 @@ function drawLeshy(c, P) {
   poly(c, [[hx - 4.4, hy + 2.4], [hx + 5.6, hy + 2.4], [hx + 5 + bs, hy + 10], [hx + 3.4 + bs, hy + 18 + bl], [hx + 1 + bs * 1.3, hy + 23 + bl], [hx - 0.6 + bs, hy + 17], [hx - 3 + bs * 0.6, hy + 12]], LI);
   poly(c, [[hx - 4.4, hy + 2.4], [hx - 1, hy + 2.6], [hx + 0.4 + bs, hy + 16], [hx + 1 + bs * 1.3, hy + 23 + bl], [hx - 0.6 + bs, hy + 17], [hx - 3 + bs * 0.6, hy + 12]], LI2);
   if (P.mouth > 0.4) { c.fillStyle = '#20180e'; c.fillRect(hx + 0.4, hy + 3.6, 3.6, 1.4 * P.mouth + 0.6); }
-  // ближняя рука: моховой рукав, кора-предплечье, кисть с пальцами. Посох — сбоку от бороды:
-  // в покое и на ходу стоит на земле, в бою леший бьёт набалдашником с размаху
-  const fighting = Math.abs(P.a) > 0.25 || P.up > 0.5 || P.b > 0.5;
-  const shx = 9 + hunch * 0.6, shy = -36;
-  const th = fighting ? naTheta(P) : 0.75, bend = P.up > 0.5 ? 0.2 : fighting ? -0.5 : -1.0;
-  const [d1x, d1y] = naDir(th), [d2x, d2y] = naDir(th + bend);
-  const ex = shx + d1x * 8.6, ey = shy + d1y * 8.6, hx2 = ex + d2x * 7.6, hy2 = ey + d2y * 7.6, ang = th + bend;
-  let top, bot;
-  if (fighting) { const [dx, dy] = naDir(ang + 0.15); bot = [hx2 - dx * 6, hy2 - dy * 6]; top = [hx2 + dx * 20, hy2 + dy * 20]; }
-  else { top = [hx2 + 0.4, hy2 - 13]; bot = [hx2 + 1.4 + sw, -0.4]; }
-  const mid = [(bot[0] + top[0]) / 2 + 1.2, (bot[1] + top[1]) / 2];
-  c.strokeStyle = TW2; c.lineWidth = 2.4; c.beginPath(); c.moveTo(bot[0], bot[1]); c.quadraticCurveTo(mid[0], mid[1], top[0], top[1]); c.stroke();
-  c.strokeStyle = TW; c.lineWidth = 0.9; c.beginPath(); c.moveTo(bot[0] - 0.6, bot[1]); c.quadraticCurveTo(mid[0] - 0.6, mid[1], top[0] - 0.6, top[1]); c.stroke();
-  // набалдашник: завиток ветки и огонёк-лишайник
-  c.strokeStyle = TW2; c.lineWidth = 1.6; c.beginPath(); c.arc(top[0] + 1.6, top[1] - 0.6, 2.2, 3.4, 6.48); c.stroke();
-  ellipse(c, top[0] + 1.6, top[1] - 0.8, 1.6, 1.6, EY); ellipse(c, top[0] + 1.6, top[1] - 0.8, 0.7, 0.7, '#ffffe0');
-  ellipse(c, top[0] - 1.6, top[1] + 2.4, 1.4, 1, LF);
-  // рука поверх посоха — кисть его обхватывает
-  naLimb(c, shx, shy, ex, ey, 4.6, CL2); naLimb(c, shx, shy, ex, ey, 3.2, CL);           // рукав
-  ellipse(c, shx, shy, 3, 2.6, CL3);                                                      // моховой наплечник
-  naLimb(c, ex, ey, hx2, hy2, 2.8, AR);                                                   // предплечье
-  ellipse(c, ex, ey, 2.2, 2, CL3);                                                        // край рукава
-  ellipse(c, hx2, hy2, 2.1, 2, AR);                                                       // кисть
-  c.fillStyle = BR3; for (const k of [-1, 0, 1]) c.fillRect(hx2 + 0.6 + k * 0.2, hy2 - 1.4 + k * 1.1, 1.6, 0.7);   // пальцы
   if (P.a > 0.6) { c.strokeStyle = 'rgba(220,255,170,0.75)'; c.lineWidth = 0.7; c.beginPath(); c.arc(hx2, hy2, 22, ang - 1.3, ang - 0.2); c.stroke(); }   // дуга замаха
   if (P.mouth > 0.7) for (const [dx, dy, cc] of [[10, -3, LF], [12, 1, AU], [11, -6, CL3], [14, -2, LF]]) { c.fillStyle = cc; c.fillRect(hx + dx, hy + dy, 1.2, 1); }   // рёв — летят листья
   if (P.up > 0.5) for (const [dx, dy] of [[-8, -58], [10, -60], [2, -64]]) { c.fillStyle = EY; c.fillRect(dx, dy, 1, 1); }       // торжество — светлячки
