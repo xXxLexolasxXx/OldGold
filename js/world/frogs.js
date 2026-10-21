@@ -7,7 +7,7 @@
 // Всё считает симуляция (в кооперативе — сервер); клиенту в зеркало идут wet, pch, dart, fg, tor.
 // Подключается после neutrals2.js; чужие файлы не правятся — только обёртки (neuThink, neuHit, neuStrike, neuDraw…).
 
-const FT_KINDS = { ftG: 1, ftB: 1, ftP: 1, ftR: 1, ftK: 1 };
+const FT_KINDS = { ftG: 1, ftB: 1, ftP: 1, ftR: 1, ftK: 1, ftQ: 1 };
 const FT = { rng: null, sec: 0, q: 0, t5: 0, mul: 1, src: null, hinted: false, hint0: 0 };
 const ftRand = () => (FT.rng || (FT.rng = mulberry32(0x7F0A91)))();
 const ftIs = N => !!(N && FT_KINDS[N.k]);
@@ -33,6 +33,9 @@ if (typeof NSPEC !== 'undefined') {
     ftK: { name: 'Вождь жаболюдов', mhp: 105, dmg: [7, 10], cd: 1.9, rng: 1.9, spd: 2.3, parry: 0.12, xp: 140, roam: 2.4, sz: 13,
       drop: [['venom', 3, 1], ['gold', 3, 0.9], ['slime', 2, 0.8], ['hide', 2, 0.6]], msg: ['КВАААК! Вся деревня — на чужака!', 'Я — вождь болота!', 'Ква-ква-КВА!'] },
   });
+  NSPEC.ftQ = { name: 'Король жаболюдов', mhp: 260, dmg: [12, 18], cd: 2.2, rng: 2.7, spd: 2.0, parry: 0.15, xp: 320, roam: 2.2, sz: 20,
+    drop: [['venom', 4, 1], ['gold', 6, 1], ['magicstone', 2, 0.8], ['slime', 3, 0.9], ['staff', 1, 0.35]],
+    msg: ['Преклонитесь перед королём болота!', 'Мои подданные — на чужака!', 'Ква-а-а-алево! (по-королевски)'] };
   NLAIR[FT_LAIR] = ['ftG', 'ftG', 'ftG', 'ftB', 'ftB', 'ftP'];
   NEU_LAIR_NAME[FT_LAIR] = 'Свайная деревня жаболюдов';
 }
@@ -42,8 +45,9 @@ if (typeof CB_WEAK !== 'undefined') Object.assign(CB_WEAK, {
   ftP: { fire: 1.8, holy: 1.2, steel: 1.2, nature: 0.6 },
   ftR: { fire: 0.4, holy: 1.2, steel: 1.2, pierce: 1.2, nature: 0.8 },
   ftK: { fire: 1.5, holy: 1.1, nature: 0.7, steel: 0.9 },
+  ftQ: { fire: 1.3, holy: 1.1, nature: 0.7, steel: 0.85, blunt: 0.9 },
 });
-if (typeof N2_TOP !== 'undefined') Object.assign(N2_TOP, { ftG: 40, ftB: 40, ftP: 50, ftR: 50, ftK: 58 });
+if (typeof N2_TOP !== 'undefined') Object.assign(N2_TOP, { ftG: 40, ftB: 40, ftP: 50, ftR: 50, ftK: 58, ftQ: 84 });
 
 // новые товары: яд и слизь (аптека варит из яда зелья, торговцы берут)
 GOODS.venom = { name: 'Яд жаболюдов', color: '#7ad030', group: 'Магия' };
@@ -191,6 +195,11 @@ function ftJumpThink(N, dt) {
       return;
     }
     if (N.tor) { N.tor = 0; N.st = 'idle'; if (N.cold) floater(N.x, N.y - 2, 'Замёрз…', '#bfe0ff'); }
+    // ---- задание: поймать малыша / гоблина, пугнуть гномёнка, убежать домой ----
+    if (N.job) {
+      if (tg && N.job.ph !== 'flee') { if (typeof fwAbort === 'function') fwAbort(N); else N.job = null; }
+      else if (typeof ftJobThink === 'function' && ftJobThink(N, dt)) return;
+    }
     // ---- на дереве: стреляют сверху, подальше достают ----
     if (N.pch) {
       N.x = N.pch.x; N.y = N.pch.y;
@@ -264,9 +273,9 @@ function ftTreeNear(x, y, r) {
 }
 
 // шаманы и вождь: умения в бою
-function ftShock(N, u) {
+function ftShock(N, u, k) {
   const m = FT.mul, s0 = FT.src; FT.mul = 1; FT.src = null;
-  try { neuHurtUnit(u, neuR(5, 8) * (1 + 0.25 * ((N.rk || 1) - 1)) * dif().neuDmg); } finally { FT.mul = m; FT.src = s0; }
+  try { neuHurtUnit(u, neuR(5, 8) * (k || 1) * (1 + 0.25 * ((N.rk || 1) - 1)) * dif().neuDmg); } finally { FT.mul = m; FT.src = s0; }
   u.fgUntil = ftNow() + 2.2; u.ouchUntil = ftNow() + 0.5;
   if (u.hero && u.hero.hp <= 0) neuHeroDown(N, u);
 }
@@ -330,6 +339,43 @@ function ftAfter(N, tg) {
     fxBurst(tg.x * TILE, tg.y * TILE - 8, 26, ['#fff0a0', '#ff9a30', '#e04a18'], 100, 70, 0.8, 2.2, 140);
     floater(tg.x, tg.y - 2, 'Горит!', '#ff9a40');
   }
+  if (N.k === 'ftQ' && N.st !== 'atk') {
+    // королевские заклинания: исцеление подданных, гроза и огонь, указ «все ко мне»
+    if (!(N.abT > now)) {
+      N.abT = now + 4 + ftRand() * 2;
+      const hurt = Game.neutrals.filter(M => M !== N && neuAlive(M) && ftIs(M) && M.hp < M.mhp * 0.75 && Math.hypot(M.x - N.x, M.y - N.y) < 10);
+      if (hurt.length && !(N.healT > now)) {
+        N.healT = now + 9;
+        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13;
+        for (const M of hurt.slice(0, 6)) { const h = Math.round(M.mhp * 0.2); M.hp = Math.min(M.mhp, M.hp + h); floater(M.x, M.y - 2, '+' + h, '#8af070'); fxBurst(M.x * TILE, M.y * TILE - 14, 10, ['#9af0a0', '#d8ffd8', '#ffe070'], 60, 60, 0.9, 1.6, -30); }
+        floater(N.x, N.y - 3.4, 'Королевское исцеление!', '#9af0a0'); sfxAt('ftHeal', N.x * TILE, N.y * TILE, 1);
+        return;
+      }
+      if (!(N.decT > now) && Game.neutrals.some(M => M !== N && neuAlive(M) && ftIs(M) && !M.tg && Math.hypot(M.x - N.x, M.y - N.y) < 20)) {
+        N.decT = now + 45;
+        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13;
+        let n = 0;
+        for (const M of Game.neutrals) if (M !== N && neuAlive(M) && ftIs(M) && !M.tor && Math.hypot(M.x - N.x, M.y - N.y) < 20) { if (!M.tg) M.tg = tg.id; M.prov = now; M.rage = now + 12; M.cdA = 0.3 + ftRand() * 0.6; M.job = null; M.pat = 0; n++; }
+        floater(N.x, N.y - 3.4, 'Подданные — ко мне!', '#ffd040'); sfxAt('ftCroakLow', N.x * TILE, N.y * TILE, 1);
+        logEvent('animal', `Король жаболюдов созвал подданных (${n})`, N.x, N.y);
+        return;
+      }
+      if (!(N.stormT > now)) {
+        N.stormT = now + 10;
+        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13; N.face = tg.x >= N.x ? 1 : -1;
+        const pts = [[tg.x, tg.y]]; let n = 0;
+        for (const u of Game.units) {
+          if (u === tg || u.dead || u.inside || ftKid(u) || !(u.hero || u.rec || isPerson(u)) || Math.hypot(u.x - tg.x, u.y - tg.y) > 3) continue;
+          if (n++ >= 3) break; pts.push([u.x, u.y]); ftShock(N, u, 1.5);
+        }
+        ftShock(N, tg, 1.5);
+        N.zap = { t: Math.round(now * 100) / 100, p: pts.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]) };
+        for (const u of [tg]) { u.brnUntil = now + 4; }
+        floater(N.x, N.y - 3.4, 'Королевская гроза!', '#bfe8ff'); sfxAt('ftZap', tg.x * TILE, tg.y * TILE, 1);
+        fxBurst(tg.x * TILE, tg.y * TILE - 12, 22, ['#ffffff', '#9ae0ff', '#ff9a30'], 90, 70, 0.6, 1.8, 100);
+      }
+    }
+  }
   if (N.k === 'ftK' && !N.cried && N.st !== 'atk' && (N.hp < N.mhp * 0.9 || Math.hypot(tg.x - N.x, tg.y - N.y) < 6)) {
     N.cried = now;
     N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13;
@@ -354,7 +400,7 @@ function ftPoison(u, N, dur, label) {
     if (!(u.pzLog > now - 40)) { u.pzLog = now; logEvent('animal', `${neuName(u)} отравлен ядом жаболюдов`, u.x, u.y); }
   }
 }
-const FT_TOUCH = { ftG: 0.15, ftB: 0.18, ftP: 0.28, ftR: 0.2, ftK: 0.4 };
+const FT_TOUCH = { ftG: 0.15, ftB: 0.18, ftP: 0.28, ftR: 0.2, ftK: 0.4, ftQ: 0.5 };
 {
   const _pv = neuProvoke;
   neuProvoke = function (N, u) {
@@ -413,6 +459,8 @@ const FT_TOUCH = { ftG: 0.15, ftB: 0.18, ftP: 0.28, ftR: 0.2, ftK: 0.4 };
     _kl(N, killer);
     if (!isFt) return;
     N.jp = null; N.pch = null; N.fg = null;
+    if (N.job && typeof fwAbort === 'function') fwAbort(N);
+    if (N.k === 'ftQ' && Game.ft) { Game.ft.king = 0; Game.ft.kd = Game.ft.nt; logEvent('animal', 'Король жаболюдов пал — болото осталось без короны', N.x, N.y); }
     sfxAt('ftDie', N.x * TILE, N.y * TILE, 0.7);
     if (L && L.k === FT_LAIR && !L.alive) dropPile(Math.floor(N.x), Math.floor(N.y), 'gold', 1);
     if (N.k === 'ftK') logEvent('animal', 'Вождь жаболюдов повержен — болото притихло', N.x, N.y);
@@ -433,6 +481,19 @@ function ftInFog(x, y, except) {
   return false;
 }
 
+// тяжёлый удар алебарды короля — каждый третий, с красным кругом (телеграф combat.js)
+if (typeof cbPlan === 'function') {
+  const _cp = cbPlan;
+  cbPlan = function (N) {
+    if (N.k !== 'ftQ') return _cp(N);
+    N.atkN = (N.atkN || 0) + 1;
+    const heavy = N.atkN % 3 === 0, tg = neuUnit(N.tg);
+    N.atkK = heavy ? 'heavy' : 'light';
+    if (heavy && tg) { N.tel = { k: 'heavy', x: cbR2(tg.x), y: cbR2(tg.y), r: 1.8, p: 0 }; N.telAt = ftNow(); floater(N.x, N.y - 3, '!', '#ff5a3a'); sfxAt('ftCroakLow', N.x * TILE, N.y * TILE, 0.5); }
+    else N.tel = null;
+  };
+}
+
 // ---------- Наполнение логова и создание существ ----------
 {
   const _fl = neuFillLair;
@@ -444,6 +505,7 @@ function ftInFog(x, y, except) {
     for (let i = 0; i < extra; i++) ks.push(i === 0 && (lair.lv > 1.25 || nights >= 4) ? 'ftK' : i === 1 ? 'ftB' : 'ftG');
     if (ks.length < 8 && !ks.includes('ftK') && (lair.lv > 1.25 || nights >= 4) && ks.length >= 6) ks[ks.length - 1] = 'ftK';
     if (ks.length >= 6 && (nights >= 2 || lair.lv > 1.15)) ks[ks.indexOf('ftG')] = 'ftR';       // огнемаг приходит со 2-й ночи
+    if (Game.ft && !Game.ft.king && nights >= 3 && nights >= (Game.ft.kd === undefined ? 0 : Game.ft.kd + 3)) { ks.push('ftQ'); Game.ft.king = 1; }       // король — один на карту, с 3-й ночи
     ks.forEach((k, i) => Game.neutrals.push(neuMake(k, lair, i)));
     lair.respawn = 0; lair.alive = ks.length;
   };
@@ -561,6 +623,8 @@ function ftLairTick(L, now) {
     toast('Жаболюды недоверчивы: чужаков гонят, но их можно задобрить. Shift + клик по жаболюду — одарить (хмель, пиво, золото). Вдали от воды они сохнут!');
     logEvent('animal', 'Герой впервые встретил жаболюдов — болотный народ', cx, cy);
   }
+  if (typeof fwVillageTick === 'function') fwVillageTick(L, mem, now);
+  if (typeof ftKingEnsure === 'function') ftKingEnsure(L, mem);
   if (L.friend) { ftFriend(L, mem, now); return; }
   if (winter) return;
   const fighters = near.filter(u => (u.hero && u.hero.hp > 0) || (u.rec && !neuUnitOut(u)));
@@ -578,6 +642,17 @@ function ftLairTick(L, now) {
     }
     if (!(L.shoo > now - 20)) { L.shoo = now; u.fleeUntil = now + 5; floater(u.x, u.y - 1.8, 'Ква! Брысь!', '#ffe9a0'); }
   }
+}
+
+// король — один на карту, с 3-й ночи: подсаживаем в самую большую живую деревню (старые сейвы, повторное «коронование»)
+function ftKingEnsure(L, mem) {
+  const G = Game.ft;
+  if (!G || G.king || G.nt < 3 || (G.kd !== undefined && G.nt < G.kd + 3)) return;
+  const best = Game.lairs.filter(l => l.k === FT_LAIR && l.alive).sort((a, b) => b.lv - a.lv)[0];
+  if (best !== L) return;
+  G.king = 1;
+  Game.neutrals.push(neuMake('ftQ', L, 7)); L.alive++;
+  logEvent('animal', 'В свайной деревне жаболюдов объявился король — Король жаболюдов', L.x + 0.5, L.y + 0.5);
 }
 
 // друзья: дань, праздник, оборона
@@ -697,7 +772,7 @@ function ftReward(u, L, N) {
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser();
-    if (s.nt && Game.ft) s.nt.ft = { nt: Game.ft.nt, sp: Game.ft.sp };
+    if (s.nt && Game.ft) s.nt.ft = { nt: Game.ft.nt, sp: Game.ft.sp, k: Game.ft.king ? 1 : 0, kd: Game.ft.kd };
     return s;
   };
   const _apply = applySave;
@@ -706,7 +781,7 @@ function ftReward(u, L, N) {
     Game.ftw = null; FT.stamp = null;
     const nt = s && s.nt;
     if (isMirror()) { Game.ft = null; return; }
-    if (nt && nt.ft) Game.ft = { nt: nt.ft.nt | 0, sp: nt.ft.sp | 0 };
+    if (nt && nt.ft) Game.ft = { nt: nt.ft.nt | 0, sp: nt.ft.sp | 0, king: nt.ft.k ? 1 : 0, kd: nt.ft.kd };
     else Game.ft = { nt: startNights(), sp: Game.lairs.filter(l => l.k === FT_LAIR).length };       // старый сейв: колонии придут на ближайших ночах
     for (const N of Game.neutrals) if (ftIs(N)) N.wet = 1;
   };

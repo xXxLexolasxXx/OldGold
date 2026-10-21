@@ -146,6 +146,68 @@ ok(J('return Game.ft && typeof Game.ft.nt === "number"'), 'старый сейв
 // 13. Товары и аптека
 ok(J('return !!GOODS.venom && !!GOODS.slime && GOOD_KEYS.includes("venom") && TR_BASE.venom > 0 && BUILDINGS.infirmary.recipes.some(r => r.in.venom)'), 'яд/слизь/рецепт зелья не подключены');
 
+
+// 14. Король жаболюдов: один на карту, с 3-й ночи, лечит подданных
+const king = J(`
+  const Q = Game.neutrals.filter(N => N.k === 'ftQ' && N.st !== 'die');
+  const q = Q[0];
+  if (!q) return { n: Q.length, flag: Game.ft.king, nt: Game.ft.nt };
+  const sub = Game.neutrals.find(N => N.k === 'ftG' && N.st !== 'die' && Math.hypot(N.x - q.x, N.y - q.y) < 9) || Game.neutrals.find(N => ftIs(N) && N !== q && N.st !== 'die');
+  sub.x = q.x + 2; sub.y = q.y; sub.hp = sub.mhp * 0.3; q.abT = 0; q.healT = 0; q.tor = 0;
+  const u = Game.hero; u.inside = null; u.x = q.x + 3; u.y = q.y;
+  ftAfter(q, u);
+  return { n: Q.length, mhp: q.mhp, healed: sub.hp > sub.mhp * 0.45 };`);
+ok(king.n === 1, 'король должен быть один на карту: ' + JSON.stringify(king));
+if (king.n === 1) ok(king.mhp >= 260 && king.healed, 'король не лечит подданных: ' + JSON.stringify(king));
+
+// 15. Дикие малыши и рабство
+const wl = J(`return { snail: Game.wild.filter(W => W.k === 'snail').length, newt: Game.wild.filter(W => W.k === 'newt').length, moth: Game.wild.filter(W => W.k === 'moth').length, q: fwQuota('snail') }`);
+ok(wl.snail >= 1 && wl.newt >= 1 && wl.moth >= 1, 'нет диких малышей на карте: ' + JSON.stringify(wl));
+const cap = J(`
+  const N = Game.neutrals.find(N => N.k === 'ftG' && N.st !== 'die'), L2 = Game.lairs.find(l => l.id === N.lair);
+  for (const M of Game.neutrals) { M.tg = 0; M.prov = -99; M.tor = 0; M.jp = null; M.pch = null; }
+  seaSet(0); SEA().snow = 0; SEA().ice = 0;
+  const W = Game.wild.find(w => w.k === 'snail' && !w.own);
+  W.x = N.x + 3; W.y = N.y; W.hx = W.x; W.hy = W.y; W.cap = 0; W.st = 'idle';
+  if (!isWalkable(Math.floor(W.x), Math.floor(W.y))) { W.x = N.x + 1.5; W.y = N.y + 1; }
+  N.job = { t: 'cap', id: W.id, ph: 'go', exp: Game.time + 120 };
+  let ph = {};
+  for (let i = 0; i < 1600 && !W.own; i++) { step(0.05); if (N.job) ph[N.job.ph] = 1; }
+  return { own: W.own === L2.id, ph: Object.keys(ph), job: !!N.job, dist: Math.round(Math.hypot(W.x - (L2.x + 0.5), W.y - L2.y)) };`);
+ok(cap.own, 'жаболюд не увёл улитку в кабалу: ' + JSON.stringify(cap));
+
+
+// гоблин из лагеря уводится в кабалу
+const gb = J(`
+  const M = Game.neutrals.find(N => N.k === 'goblin' && N.st !== 'die'), N = Game.neutrals.find(N => N.k === 'ftG' && N.st !== 'die');
+  if (!M || !N) return { skip: 1 };
+  for (const X of Game.neutrals) { X.tg = 0; X.prov = -99; X.tor = 0; X.jp = null; X.pch = null; }
+  const L2 = Game.lairs.find(l => l.id === N.lair), n0 = Game.neutrals.length;
+  N.x = M.x - 2; N.y = M.y; N.wet = 1; N.job = { t: 'gob', id: M.id, ph: 'go', exp: Game.time + 120 };
+  const before = Game.wild.filter(W => W.k === 'goblin').length;
+  for (let i = 0; i < 80; i++) step(0.05);
+  const W = Game.wild.find(w => w.k === 'goblin' && w.cap === N.id);
+  return { led: !!W, gone: !Game.neutrals.includes(M), phase: N.job && N.job.ph };`);
+if (gb.skip) console.log('  · гоблины: пропуск (нет лагеря)'); else ok(gb.led && gb.gone, 'гоблин не уведён в кабалу: ' + JSON.stringify(gb));
+
+// сейв: рабы и вольные малыши
+const wb = J('return { n: Game.wild.length, own: Game.wild.filter(W => W.own).length }');
+h.run('__s = JSON.parse(JSON.stringify(serializeGame())); applySave(__s)');
+const wa = J('return { n: Game.wild.length, own: Game.wild.filter(W => W.own).length }');
+ok(wb.n === wa.n && wb.own === wa.own, 'сейв потерял малышей/рабов: ' + JSON.stringify([wb, wa]));
+ok(J('return fwMirror().length === Game.wild.length'), 'зеркало диких не совпало');
+// освобождение
+const fr = J(`const W = Game.wild.find(w => w.own); if (!W) return { skip: 1 }; fwRelease(W, '', true); return { own: W.own };`);
+if (!fr.skip) ok(fr.own === 0, 'раб не освободился');
+
+// «Бах!»: жаболюд убегает от гномёнка с пистолетом
+const bah = J(`
+  const N = Game.neutrals.find(N => ftIs(N) && N.st !== 'die'), u = Game.hero;
+  if (typeof folkScare !== 'function') return { skip: 1 };
+  N.tg = u.id; folkScare(N, 'frog', u);
+  return { flee: !!N.job && N.job.ph === 'flee', tg: N.tg };`);
+if (!bah.skip) ok(bah.flee && bah.tg === 0, '«Бах!» не заставил жаболюда удрать: ' + JSON.stringify(bah));
+
 L.stepN(sim, 1200);
 ok(!sim.errors.length, 'исключения: ' + sim.errors.join('\n'));
 

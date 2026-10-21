@@ -13,6 +13,7 @@ NA_EXTRA.ftB = ['jump', 'throwd', 'sleep'];
 NA_EXTRA.ftP = ['jump', 'cast', 'sleep'];
 NA_EXTRA.ftK = ['jump', 'cast', 'sleep'];
 NA_EXTRA.ftR = ['jump', 'cast', 'sleep'];
+NA_EXTRA.ftQ = ['jump', 'cast', 'sleep'];
 
 // новые позы: присед (crouch), растяжение в воздухе (air), трубка у рта (pipe), горловой мешок (sac)
 const FT_POSE = {
@@ -45,6 +46,7 @@ const FT_PAL = {
   B: { skin: '#4f9aa6', skin2: '#33707e', belly: '#d6ecd8', belly2: '#a8cdb4', cloak: '#3a5a78', cloak2: '#28405a', eye: '#ffd848', mark: '#e8fbff', fe: ['#38c8e8', '#2a78d8', '#a0f0e0'] },
   P: { skin: '#8a68b0', skin2: '#664890', belly: '#e8d4ee', belly2: '#c4a8d0', cloak: '#4e2e62', cloak2: '#341e44', eye: '#f6d040', mark: '#f4ecff', fe: ['#f070d0', '#a050e8', '#58b8f0'] },
   R: { skin: '#c4573a', skin2: '#8a3424', belly: '#f2d4a4', belly2: '#d4a878', cloak: '#6a2a1a', cloak2: '#42180e', eye: '#ffe040', mark: '#ffd88a', fe: ['#ff5a2a', '#ffa030', '#ffe060'] },
+  Q: { skin: '#2f8a52', skin2: '#1f6038', belly: '#eaf2b8', belly2: '#c0d088', cloak: '#5a2a8a', cloak2: '#3a1a5a', eye: '#ff5a3a', mark: '#fff6c0', fe: ['#ffd040', '#c04aa0', '#38c8e8'] },
   K: { skin: '#c4aa3a', skin2: '#8e7a22', belly: '#f6ebb2', belly2: '#d8c680', cloak: '#9a2e22', cloak2: '#6a1e18', eye: '#ff8a28', mark: '#fffbe0', fe: ['#ffd040', '#e84a38', '#fff0a0'] },
 };
 
@@ -100,13 +102,13 @@ function drawFrogfolk(c, P, caste, fr) {
   // ---------- плащ-хвост позади ----------
   if (caste !== 'B' && !P.dead) {
     const wv = P.wing * 0.8;
-    const tail = caste === 'K'
+    const tail = (caste === 'K' || caste === 'Q')
       ? [[-1, -24 + dy], [-8, -23 + dy], [-17, -15 + dy + wv], [-19, -7 + wv], [-14, -3], [-11, -8], [-6, -4], [-3, -12]]
       : [[-2, -25 + dy], [-9, -24 + dy], [-18, -17 + dy + wv], [-21, -9 + wv], [-16, -5], [-13, -9], [-9, -2], [-6, -9], [-3, -12]];
     naBlob(c, tail, CL, 0.2, -0.3);
     c.strokeStyle = CL2; c.lineWidth = 0.9;
     for (const [x0, y0, x1, y1] of [[-8, -20, -14, -9], [-11, -18, -17, -8]]) { c.beginPath(); c.moveTo(x0, y0 + dy * 0.5); c.lineTo(x1, y1); c.stroke(); }
-    if (caste === 'K') { c.fillStyle = k('#ffd040'); c.fillRect(-19, -8.4 + P.wing * 0.8, 5, 1.2); }
+    if (caste === 'K' || caste === 'Q') { c.fillStyle = k('#ffd040'); c.fillRect(-19, -8.4 + P.wing * 0.8, 5, 1.2); }
   }
   // ---------- торс ----------
   const tl = 0.12 + cr * 0.12;
@@ -172,9 +174,11 @@ function drawFrogfolk(c, P, caste, fr) {
       c.strokeStyle = k(col); c.lineWidth = 1.3; c.beginPath(); c.moveTo(hx - 3.6 + i * 0.6, hy - 5.4); c.quadraticCurveTo(hx - 7 + Math.cos(a) * 4, hy - 9 + i, hx - 8 + Math.cos(a) * 7, hy - 8.4 + i * 2.2); c.stroke();
     }
   } else {
+    const kingC = caste === 'Q';
     for (let i = 0; i < 5; i++) {
       const x = hx - 5.4 + i * 2.7;
-      poly(c, [[x - 1.2, hy - 5.2], [x, hy - 9.4 - (i % 2) * 1.6], [x + 1.2, hy - 5.2]], k('#ffd040'));
+      poly(c, [[x - 1.2, hy - 5.2], [x, hy - 9.4 - (i % 2) * 1.6 - (kingC ? 3 + (i === 2 ? 2 : 0) : 0)], [x + 1.2, hy - 5.2]], k('#ffd040'));
+      if (kingC) ellipse(c, x, hy - 9.6 - (i % 2) * 1.6 - (i === 2 ? 2 : 0) , 0.8, 0.8, k(['#e84a38', '#38c8e8', '#7ad830', '#38c8e8', '#e84a38'][i]));
     }
     c.fillStyle = k('#c8901a'); c.fillRect(hx - 6, hy - 5.6, 12.4, 1.4);
     ellipse(c, hx + 1, hy - 5.6, 0.9, 0.9, '#e84a38');
@@ -185,7 +189,7 @@ function drawFrogfolk(c, P, caste, fr) {
   if (air > 0.3) H = [sx + 6, sy - 2 - air * 4];
   else if (P.up > 0.5) H = [sx + 4, sy - 14 + (1 - P.up) * 6];
   else if (P.b > 0.5) H = [sx + 8, sy - 2.5];
-  else if (P.cast > 0 && (caste === 'P' || caste === 'K' || caste === 'R')) H = [sx + 8 + P.cast * 2, sy - 7 - P.cast * 5];
+  else if (P.cast > 0 && (caste === 'P' || caste === 'K' || caste === 'R' || caste === 'Q')) H = [sx + 8 + P.cast * 2, sy - 7 - P.cast * 5];
   else if (pipe > 0) H = [hx + 5 - pipe * 1, hy + 4 + (1 - pipe) * 4];
   else if (P.a < 0) H = [ftLerp(r0[0], wnd[0], -P.a), ftLerp(r0[1], wnd[1], -P.a)];
   else H = [ftLerp(r0[0], str[0], Math.min(1, P.a)), ftLerp(r0[1], str[1], Math.min(1, P.a))];
@@ -201,15 +205,25 @@ function drawFrogfolk(c, P, caste, fr) {
   else phi = ftLerp(-1.25, (caste === 'P' || caste === 'R') ? 0.25 : 0.06, Math.min(1, P.a));
   const dx = Math.cos(phi), dyv = Math.sin(phi), px = -dyv, py = dx;
   const W = (a, b2) => [H[0] + dx * a, H[1] + dyv * a];
-  if (caste === 'G' || caste === 'K') {
-    const L0 = caste === 'K' ? -10 : -9, L1 = caste === 'K' ? 17 : 14;
+  if (caste === 'G' || caste === 'K' || caste === 'Q') {
+    const L0 = caste === 'Q' ? -14 : caste === 'K' ? -10 : -9, L1 = caste === 'Q' ? 22 : caste === 'K' ? 17 : 14;
     const b0 = W(L0), b1 = W(L1);
-    naLimb(c, b0[0], b0[1], b1[0], b1[1], caste === 'K' ? 1.5 : 1.3, k('#7a5632'));
+    naLimb(c, b0[0], b0[1], b1[0], b1[1], caste === 'Q' ? 1.9 : caste === 'K' ? 1.5 : 1.3, k(caste === 'Q' ? '#4a3220' : '#7a5632'));
     if (caste === 'G') {
       const t = W(L1 + 6);
       poly(c, [[b1[0] + px * 1.5, b1[1] + py * 1.5], [t[0], t[1]], [b1[0] - px * 1.5, b1[1] - py * 1.5], [b1[0] - dx * 1.4, b1[1] - dyv * 1.4]], k('#b8b4a0'));
       c.fillStyle = k('#7ad830'); const dr = P.a > 0.5 ? 1.8 : 0.9; c.fillRect(t[0] - 0.5, t[1] + dr, 1, 1.4);
       for (const o of [-3, 0]) { const q = W(L1 - 3 + o); c.strokeStyle = k('#c04aa0'); c.lineWidth = 0.9; c.beginPath(); c.moveTo(q[0], q[1]); c.lineTo(q[0] + px * 2 - dx, q[1] + py * 2 - dyv); c.stroke(); }
+    } else if (caste === 'Q') {      // королевская алебарда: серп-лезвие, зубцы, светящийся самоцвет
+      const t = W(L1 + 9), m1 = W(L1 + 2), m2 = W(L1 - 3);
+      poly(c, [[m2[0] + px * 1.4, m2[1] + py * 1.4], [m1[0] + px * 6, m1[1] + py * 6], [t[0] + px * 3.4, t[1] + py * 3.4], [t[0], t[1]], [m1[0] + px * 1.2, m1[1] + py * 1.2]], k('#d8dce8'));
+      poly(c, [[m2[0] - px * 1.4, m2[1] - py * 1.4], [m1[0] - px * 4.4, m1[1] - py * 4.4], [m1[0] - px * 1.2, m1[1] - py * 1.2]], k('#aab0c4'));
+      naLimb(c, t[0], t[1], W(L1 + 14)[0], W(L1 + 14)[1], 1.3, k('#ffd040'));
+      naLimb(c, b1[0] + px * 3, b1[1] + py * 3, b1[0] - px * 3, b1[1] - py * 3, 1.2, k('#ffd040'));
+      const gem = W(L1 - 4), gl = P.cast > 0 ? P.cast : 0.3;
+      ellipse(c, gem[0], gem[1], 1.6, 1.6, k('#7ae8a0'));
+      c.save(); c.globalCompositeOperation = 'lighter'; ellipse(c, gem[0], gem[1], 3 + gl * 5, 3 + gl * 5, `rgba(120,255,170,${0.15 + gl * 0.4})`); c.restore();
+      const q = W(L1 - 8); for (const [i, col] of T.fe.entries()) { c.strokeStyle = k(col); c.lineWidth = 1.1; c.beginPath(); c.moveTo(q[0], q[1]); c.lineTo(q[0] + px * (i - 1) * 2.4 - dx * 2, q[1] + py * (i - 1) * 2.4 - dyv * 2 + 3); c.stroke(); }
     } else {      // тройной наконечник с золотом
       const t = W(L1 + 7), tl2 = W(L1 + 3.6);
       for (const o of [-2.2, 0, 2.2]) naLimb(c, b1[0] + px * o * 0.6, b1[1] + py * o * 0.6, (o ? tl2[0] : t[0]) + px * o, (o ? tl2[1] : t[1]) + py * o, 1, k('#ffd040'));
@@ -253,6 +267,11 @@ function drawFrogfolk(c, P, caste, fr) {
     if (P.a > 0.5 && !P.cast) { c.strokeStyle = 'rgba(255,255,230,0.75)'; c.lineWidth = 0.8; c.beginPath(); c.arc(H[0], H[1], 20, phi - 1.3, phi - 0.2); c.stroke(); }
   }
   leg(2, true, sw);
+  if (caste === 'Q' && P.cast > 0) {
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (let r = 0; r < 3; r++) { c.strokeStyle = `rgba(140,255,170,${0.5 * P.cast * (1 - r * 0.25)})`; c.lineWidth = 1; c.beginPath(); c.ellipse(2, -10, 14 + r * 6 + P.cast * 6, 6 + r * 2.4 + P.cast * 2, 0, 0, 7); c.stroke(); }
+    c.restore();
+  }
   // яд-капли и знаки поверх кожи у шаманов светятся
   if ((caste === 'P' || caste === 'R') && !P.dead) {
     c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(${caste === 'R' ? '255,190,90' : '150,220,255'},${0.25 + (P.cast || 0) * 0.5})`;
@@ -275,11 +294,13 @@ NA_SPEC.ftG = { name: 'Жаболюд-копейщик', w: 116, h: 84, ax: 44, 
 NA_SPEC.ftB = { name: 'Жаболюд-охотник', w: 116, h: 84, ax: 44, ay: 66, sc: 1.2 };
 NA_SPEC.ftP = { name: 'Жаболюд-громовик', w: 116, h: 96, ax: 44, ay: 80, sc: 1.22 };
 NA_SPEC.ftR = { name: 'Жаболюд-огнемаг', w: 116, h: 96, ax: 44, ay: 80, sc: 1.22 };
+NA_SPEC.ftQ = { name: 'Король жаболюдов', w: 190, h: 150, ax: 74, ay: 128, sc: 1.85 };
 NA_SPEC.ftK = { name: 'Вождь жаболюдов', w: 128, h: 92, ax: 48, ay: 74, sc: 1.4 };
 NA_DRAW.ftG = (c, P, f) => drawFrogfolk(c, P, 'G', f);
 NA_DRAW.ftB = (c, P, f) => drawFrogfolk(c, P, 'B', f);
 NA_DRAW.ftP = (c, P, f) => drawFrogfolk(c, P, 'P', f);
 NA_DRAW.ftR = (c, P, f) => drawFrogfolk(c, P, 'R', f);
+NA_DRAW.ftQ = (c, P, f) => drawFrogfolk(c, P, 'Q', f);
 NA_DRAW.ftK = (c, P, f) => drawFrogfolk(c, P, 'K', f);
 
 // =============== Свайная деревня у воды ===============
