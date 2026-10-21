@@ -258,21 +258,21 @@ function eraEvict(keep) {
   for (const k in SPR.buildings) { const e = +k.split('#e')[1]; if (e && !keep.includes(e)) delete SPR.buildings[k]; }
 }
 
-function buildingSprite(type, rot = 0, level = 1, settle) {
+function buildingSprite(type, rot = 0, level = 1, settle, vr = 0) {
   const lv = level >= 3 && (BUILDINGS[type].up3 || type.startsWith('guild_')) ? 3 : level >= 2 && BUILDINGS[type].up ? 2 : 1;
   const era = buildingEra(type, lv, settle);
-  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot, 1, era);
+  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot, 1, era, vr);
   const d = bDims(type, rot);
-  const key = type + ':' + d.rot + (lv === 3 ? ':L3' : lv === 2 ? ':L2' : ':G') + '#e' + era;
+  const key = type + ':' + d.rot + (lv === 3 ? ':L3' : lv === 2 ? ':L2' : ':G') + (vr ? '~v' + vr : '') + '#e' + era;
   if (SPR.buildings[key]) return SPR.buildings[key];
-  const base = buildingSpriteBase(type, rot, lv, era);
+  const base = buildingSpriteBase(type, rot, lv, era, vr);
   const cv = mkCanvas(base.canvas.width, base.canvas.height), c = cv.getContext('2d');
   c.drawImage(base.canvas, 0, 0);
   c.imageSmoothingEnabled = false;
   // Рисуем в пикселях готового арта (их втрое больше мировых): все детали — тем же пикселем,
   // что и само здание, с 1-px тёмным контуром.
   const k = base.canvas.width / base.w;
-  const rnd = mulberry32(hashStr(type + 'L2'));
+  const rnd = mulberry32(hashStr(type + 'L2' + (vr || '')));
   const px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
   const OUT = '#1a100a';
   if (lv >= 2) {
@@ -423,7 +423,7 @@ function upgradeModel(m) {
 // Поверх старого здания по кирпичику проявляется новое (второй этаж, новая крыша),
 // вокруг стоят леса до достигнутой высоты, на месте удара — вспышка и пыль.
 function drawUpgradeLayer(c, b) {
-  const spr = buildingSprite(b.type, b.rot || 0, (b.upg && b.upg.to) || nextLevelOf(b));
+  const spr = buildingSprite(b.type, b.rot || 0, (b.upg && b.upg.to) || nextLevelOf(b), undefined, b.hv || 0);
   const fb = { buildFrac: b.upg.hits / b.upg.maxHits, _site: b._usite };
   const S = siteState(fb, spr);
   b._usite = fb._site;

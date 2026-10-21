@@ -81,6 +81,7 @@ scriptTest('maps: свои карты — формат, проверка, мир
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
 scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
+scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js');
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 
 // ---------- 2. Симуляция: инварианты
