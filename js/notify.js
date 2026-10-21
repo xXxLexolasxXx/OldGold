@@ -328,7 +328,7 @@ const nqNewsRaw = typeof whatsNewShow === 'function' ? whatsNewShow : null;
 const nqSeenVersion = () => { try { return localStorage.getItem('oldgold.seenVersion'); } catch (e) { return null; } };
 if (nqNewsRaw) {
   // автопоказ при загрузке отменяем — он станет шагом 3 входа; ?whatsnew=1 и пункт меню показывают сразу и целиком
-  whatsNewShow = function (force) { if (force) nqNewsRaw(true); else Notify.want.news = true; };
+  whatsNewShow = function (force) { if (force) nqNewsRaw(force); else Notify.want.news = true; };
 }
 
 function nqNewsShort() {
@@ -344,15 +344,17 @@ function nqNewsShort() {
   if (!el) return false;
   el.classList.add('nq-short');
   const box = el.querySelector('.wn-box');
-  const lis = [...box.querySelectorAll('li')];
+  const cur = box.querySelector('.wn-cur');
+  const lis = [...cur.querySelectorAll('li')];
   lis.forEach((li, i) => { if (i >= 3) li.classList.add('nq-more'); });
-  box.querySelectorAll('.wn-v').forEach((v, i) => { if (i) v.classList.add('nq-more'); });
-  box.querySelectorAll('ul').forEach(ul => { if (!ul.querySelector('li:not(.nq-more)')) { ul.classList.add('nq-more'); const h = ul.previousElementSibling; if (h && h.tagName === 'H3') h.classList.add('nq-more'); } });
-  const btn = box.querySelector('button');
+  cur.querySelectorAll('ul').forEach(ul => { if (!ul.querySelector('li:not(.nq-more)')) { ul.classList.add('nq-more'); const h = ul.previousElementSibling; if (h && h.tagName === 'H3') h.classList.add('nq-more'); } });
+  const btn = box.querySelector('.wn-ok');
   btn.textContent = 'Дальше';
-  if (lis.length > 3) {
+  // «Подробнее»: раскрывает всю запись и пропущенные версии (свёрнутые по одной), внизу — «Все обновления»
+  const miss = box.querySelectorAll('.wn-miss details').length;
+  if (lis.length > 3 || miss) {
     const more = document.createElement('a');
-    more.className = 'nq-all'; more.href = '#'; more.textContent = `Весь журнал изменений (${lis.length}) ▸`;
+    more.className = 'nq-all'; more.href = '#'; more.textContent = t(miss ? 'Подробнее и пропущенные версии ({0}) ▸' : 'Подробнее ▸', miss);
     more.onclick = e => { e.preventDefault(); el.classList.remove('nq-short'); more.remove(); };
     btn.before(more);
   }
@@ -490,7 +492,7 @@ function nqMenu() {
     const k = b.dataset.nq;
     if (k === 'mode') { nqSetMode(nqFull() ? 'calm' : 'full'); nqShow(nqFull() ? 'Оповещения: подробно — показываем всё' : 'Оповещения: спокойно — мелочи уходят в журнал', '', null); }
     if (k === 'log') nqJournalOpen();
-    if (k === 'news' && nqNewsRaw) { if (typeof Mobile !== 'undefined' && Mobile.on && typeof mobileSheet === 'function') mobileSheet(null); nqNewsRaw(true); }
+    if (k === 'news' && nqNewsRaw) { if (typeof Mobile !== 'undefined' && Mobile.on && typeof mobileSheet === 'function') mobileSheet(null); nqNewsRaw('all'); }
   });
 }
 
@@ -520,7 +522,7 @@ function nqMenu() {
   #nq-journal li u{text-decoration:none;color:#ffd877;font-size:12px;white-space:nowrap}
   #whatsnew.nq-short{background:rgba(0,0,0,.35)}
   #whatsnew.nq-short .wn-box{max-height:62vh}
-  #whatsnew.nq-short .nq-more{display:none}
+  #whatsnew.nq-short .nq-more,#whatsnew.nq-short .wn-rest{display:none}
   #whatsnew.nq-short li{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   #whatsnew.nq-short ul{padding-left:4px}#whatsnew.nq-short li::before{content:'✦ ';color:#c9a24a}
   #whatsnew .nq-all{display:block;text-align:center;margin:12px 0 0;color:#ffd877;font-size:13px}

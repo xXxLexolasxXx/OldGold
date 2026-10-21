@@ -1,6 +1,15 @@
 'use strict';
 // «Что нового» (js/changelog.js): записи 0.10.x
 I18N.add('en', {
+  "Что вы пропустили": "What you missed",
+  "Окно «Что нового» теперь напоминает о пропущенных обновлениях: если вы давно не заходили, под свежей записью по нажатию «Подробнее» лежат прошлые версии (до десяти), свёрнутые по одной — раскрываются нажатием": "The “What’s new” window now reminds you of the updates you missed: if you haven’t been around for a while, tapping “More” under the latest entry shows earlier versions (up to ten), each folded up and opening with a tap",
+  "Кнопка «Все обновления» открывает всю историю; из меню «Что нового» она открывается сразу. Повторы и «мелкие правки» в списке не дублируются": "The “All updates” button opens the whole history, and from the menu’s “What’s new” it opens straight away. Repeats and “minor fixes” aren’t listed twice",
+  "Подробнее ▸": "More ▸",
+  "Подробнее и пропущенные версии ({0}) ▸": "More and missed versions ({0}) ▸",
+  "Пока вас не было": "While you were away",
+  "Все обновления": "All updates",
+  "Скрыть список": "Hide the list",
+  "и ещё версий: {0} — в «Все обновления»": "and {0} more versions — in “All updates”",
   "Ненавижу ждать": "I Hate Waiting",
   "Манифест разработчика: в главном меню → «Ещё» → «Манифест» (по-русски и по-английски). Коротко: ожидание обязано объяснить причину и дать, чем заняться.": "The developer’s manifesto: main menu → “More” → “Manifesto” (in Russian and English). In short: waiting must explain its reason and give you something to do.",
   "Стройка без свободного работяги больше не заставляет смотреть на надпись «нет свободного»: в окне здания, достройки и дороги есть кнопка «Строить героем», герой идёт и берёт молоток сам.": "A construction site with no free toiler no longer makes you stare at a “none free” label: the building, upgrade and road windows have a “Build with the hero” button, and the hero walks over and picks up the hammer himself.",

@@ -89,6 +89,7 @@ scriptTest('newworld: хост начинает мир на своей карт�
 scriptTest('piles: мусор не копится, потолок кучек, подпись подбора', 'piles-test.js');
 scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
+scriptTest('whatsnew: пропущенные обновления в окне «Что нового»', 'whatsnew-test.js');
 scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js');
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 
