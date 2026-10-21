@@ -272,6 +272,7 @@ function coopSyncList(name, arr) {
 function coopMirror(m) {
   for (const k of COOP_LISTS) coopSyncList(k, m[k] || []);
   if (m.foe !== undefined) Game.foe = m.foe ? Object.assign(Game.foe || {}, m.foe) : null;     // шпиль Малгора (enemy.js)
+  if (typeof spireMirrorIn === 'function') spireMirrorIn(m.sp);     // тропа к шпилю: рубит сервер (spire.js)
   Game.golem = m.golem ? Object.assign(Game.golem || {}, coopResolve(m.golem)) : null;
   Game.sub = m.sub ? coopResolve(m.sub) : null;
   Game.lostGnomes = m.lost || 0;

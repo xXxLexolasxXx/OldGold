@@ -29,6 +29,19 @@ function toast(text, target, kind) {
   setTimeout(() => toastClose(el), keep * Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70)));
 }
 
+// Шутка при самой первой стройке (один раз на устройство, только на экране — на игру не влияет, кооп не трогает)
+function waitJoke(type) {
+  try { if (localStorage.getItem('og_wait_joke')) return; localStorage.setItem('og_wait_joke', '1'); } catch (e) { return; }
+  const name = BUILDINGS[type] ? BUILDINGS[type].name : '';
+  const el = document.createElement('div');
+  el.id = 'wait-joke';
+  el.textContent = t('Чтобы построить «{0}», подождите 40 часов…', name);
+  document.body.appendChild(el);
+  setTimeout(() => { el.innerHTML = '<s></s><b></b>'; el.firstChild.textContent = t('Чтобы построить «{0}», подождите 40 часов…', name); el.lastChild.textContent = ' ' + t('Шутка. Мы ненавидим ждать — строим прямо сейчас!'); }, 2200);
+  setTimeout(() => el.classList.add('out'), 5200);
+  setTimeout(() => el.remove(), 5800);
+}
+
 function focusBuilding(b) {
   if (!b || b.removed) return;
   selectBuilding(b);
