@@ -195,4 +195,18 @@ I18N.add('en', {
   'Присматриваемся к настроению…': 'Reading the mood…', 'работает бодрее: +{0}%': 'works harder: +{0}%', 'ленится: {0}%': 'slacking: {0}%', 'работает в обычном темпе': 'works at the usual pace',
   'Потребности': 'Needs', 'Почему так': 'Why', 'Ничего особенного.': 'Nothing special.', 'Настроение': 'Mood',
   'Бодры и шутят: {0}': 'Cheerful and joking: {0}', 'Ворчат и ленятся: {0}': 'Grumbling and slacking: {0}',
+  // курган Курганного князя: вход по клику и подпись над курганом (raid.js)
+  'Войти в курган': 'Enter the barrow', 'Вход открыт!': 'Entrance open!', 'Закрыто': 'Closed',
+  'Курган · запечатан': 'Barrow · sealed', 'Курган · князь отдыхает': 'Barrow · the Prince is resting', 'Вход в курган — ночью': 'Barrow entrance — at night',
+  'Вход в курган — вдвоём, герои от 3 ур.': 'Barrow entrance — two heroes, level 3+', '▼ Вход в курган ▼': '▼ Barrow entrance ▼',
+  'Курганный князь уже встал — в бой!': 'The Barrow Prince has risen — to battle!', 'Курганный князь пробуждается!': 'The Barrow Prince awakens!',
+  'Курган запечатан: князь проснётся после {0}-й ночи': 'The barrow is sealed: the Prince wakes after night {0}',
+  'Курган запечатан: князь ждёт, пока деревня окрепнет': 'The barrow is sealed: the Prince waits until the village grows stronger',
+  'Князь отдыхает после битвы — курган откроется через несколько ночей': 'The Prince is resting after the battle — the barrow reopens in a few nights',
+  'Вход в курган открывается ночью, когда над ним загорятся синие огни': 'The barrow opens at night, when blue lights flare above it',
+  'Князь не встанет перед героем ниже {0} уровня': 'The Prince will not rise for a hero below level {0}',
+  'Одному не войти: нужен второй герой от {0} уровня у входа': "You can't go in alone: a second hero of level {0}+ must be at the entrance",
+  'Одному не войти: возьмите двух рекрутов «За героем»': "You can't go in alone: bring two recruits on «Follow the hero»",
+  'Вход в курган': 'The barrow entrance',
+  'Над курганом Курганного князя теперь написано, когда в него можно войти: днём — «вход ночью», ночью — «вдвоём, герои от 3 уровня», а когда горят синие огни — «Вход в курган». Нажмите на курган — герой подойдёт ко входу и либо разбудит князя, либо скажет, чего не хватает. В общей деревне работает так же: считает сервер, все видят одно и то же.': 'The Barrow Prince’s barrow now shows when you can enter: by day — "entrance at night", at night — "two heroes, level 3+", and when the blue lights burn — "Barrow entrance". Tap the barrow and your hero walks to the entrance and either wakes the Prince or tells you what is missing. Works the same in the shared village: the server decides, everyone sees the same thing.',
 });
