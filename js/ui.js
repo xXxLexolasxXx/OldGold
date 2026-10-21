@@ -686,7 +686,7 @@ function infoBuilding(b) {
   }
   const def = b.def;
   const same = Game.buildings.filter(x => x.type === b.type).length;
-  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type)}" alt=""><div><h3>${def.name}${b.level === 2 ? ' <span class="lvl">ур. 2</span>' : ''}</h3>${statusChip(b)}</div></div>`;
+  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type)}" alt=""><div><h3>${def.name}${b.level >= 2 ? ` <span class="lvl">ур. ${b.level}</span>` : ''}</h3>${statusChip(b)}</div></div>`;
   h += Guide.whyHTML(b);
   h += '<div class="iactions">';
   if (same > 1) h += `<button data-act="prev" title="Предыдущее такое же ([)">${ui('prev')}</button><button data-act="next" title="Следующее такое же (])">${ui('next')}</button>`;
@@ -707,14 +707,14 @@ function infoBuilding(b) {
 
   if (b.upg) {
     const U = b.upg;
-    h += `<div class="isec">Достройка до уровня 2</div><div class="bar"><div style="width:${Math.round(U.hits / U.maxHits * 100)}%"></div></div><div class="slots">`;
+    h += `<div class="isec">Достройка до уровня ${U.to || 2}</div><div class="bar"><div style="width:${Math.round(U.hits / U.maxHits * 100)}%"></div></div><div class="slots">`;
     for (const g in U.cost) if (U.cost[g]) h += slotHTML(g, U.used[g] + U.stock[g], U.cost[g]);
     h += `</div><div class="irow">Работяга: ${U.builder ? '<span class="good">строит</span>' : '<span class="warn">нет свободного</span>'}</div>`;
     h += `<button class="upg no" data-act="upgcancel" title="Отменить достройку: материалы пропадут, работяги вздохнут с облегчением"><span><b>Отменить достройку</b><small>уже внесённые материалы пропадут</small></span></button>`;
   } else if (canUpgrade(b)) {
-    const up = b.def.up;
+    const nl = nextLevelOf(b), up = nl === 3 ? b.def.up3 : b.def.up;
     const cost = Object.keys(up.cost).map(g => `${gi(g)}${up.cost[g]}`).join(' ');
-    h += `<button class="upg" data-act="upgrade" title="Работяги надстроят здание: материалы привезут трудяги. Когда-нибудь. Если дорога есть"><span><b>Достроить до уровня 2: ${cost}</b><small>${BUILDINGS[b.type].desc2}</small></span></button>`;
+    h += `<button class="upg" data-act="upgrade" title="Работяги надстроят здание: материалы привезут трудяги. Когда-нибудь. Если дорога есть"><span><b>Достроить до уровня ${nl}: ${cost}</b><small>${nl === 3 && BUILDINGS[b.type].desc3 || BUILDINGS[b.type].desc2}</small></span></button>`;
   }
   if (b.state !== 'done') {
     h += `<div class="bar"><div style="width:${Math.round(b.progress * 100)}%"></div></div>`;
