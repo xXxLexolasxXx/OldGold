@@ -639,6 +639,7 @@ function nightTick(dt) {
     if (u.lantern && night && !u.brk && Math.random() < 0.003) lanternFall(u);
     // без фонаря в тумане — теряется
     if (!u.lantern && !u.rescued && interruptible(u)) {
+      if (nearLamp(u.x, u.y, 2.5)) { u.rescued = true; continue; }   // стоит под фонарём — не теряется (иначе «заблудился» и «вышел к фонарю» в один шаг, журнал пухнет)
       startBreak(u, 'lost', null); u.proc = lostGen(u);
     }
   }
