@@ -353,7 +353,7 @@ function fwTick(dt) {
         const W = fwMake(d.k, d.x, d.y); W.id = d.id; W.alt = d.alt || 0;
         Game.swp.push(W);
         const L = d.own && Game.lairs.find(l => l.id === d.own);
-        if (L) fwEnslave(W, L);
+        if (L) { fwEnslave(W, L); W.x = d.x; W.y = d.y; }
       }
       Game.nextId = Math.max(Game.nextId, ...Game.swp.map(W => W.id + 1));
     } else if (!Game.stress) { const mr = Math.random; Math.random = ftRand; try { fwSpawnInitial(); } finally { Math.random = mr; } }       // старый сейв: малыши расселяются
