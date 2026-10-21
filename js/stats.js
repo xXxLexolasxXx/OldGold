@@ -52,6 +52,7 @@ function statsUrl() {
 
 function statsSend(last) {
   if (statsLocal() || Stats.busy || Date.now() < Stats.next) return;
+  if (typeof teleDeclined === 'function' && teleDeclined()) return;   // игрок отказался от статистики (js/telemetry.js)
   const q = lsGet('oldgold-pending', []), url = statsUrl();
   if (!q.length || !url) return;
   const body = JSON.stringify({ c: statsCid(), e: q.slice(0, 60) });

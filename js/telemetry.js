@@ -1,13 +1,17 @@
 'use strict';
-// Кнопка «Сообщить о проблеме» и «Удалить мои данные» (боковое меню).
+// Анонимная статистика «Помочь улучшить игру» и кнопка «Сообщить о проблеме».
 // Подключается сразу после js/crashlog.js (чтобы журнал консоли копился с первых строк).
+//  · Статистика ВКЛЮЧАЕТСЯ ТОЛЬКО С СОГЛАСИЯ: при первом запуске игра спрашивает, по умолчанию выключено,
+//    переключатель — в боковом меню. Раз в минуту и на ключевых событиях уходит короткая запись (POST /t):
+//    версия, телефон/ПК, экран, FPS, игровые сутки, жители, класс героя, одиночка/кооп, отчего погибла деревня/герой,
+//    что строят, на каком экране закончили, ошибки. Id установки — случайный (feod.tid), с человеком не связан.
+//    На localhost / file: / локальной сети ничего не отправляется.
 //  · «Сообщить о проблеме»: строка от игрока + снимок экрана + последние 200 строк консоли и журнал сбоев,
-//    версия, устройство, случайный id установки (feod.tid, с человеком не связан) и (по галочке) сохранение → POST /report.
-//    Только по нажатию игрока; сам по себе журнал никуда не уходит.
-//  · «Удалить мои данные»: POST /t/forget — сервер стирает отчёты с этим id и запись воронки /e, у игрока id меняется.
+//    версия, устройство, id и (по галочке) сохранение → POST /report. Это не статистика, а явное действие игрока.
+//  · «Удалить мои данные»: POST /t/forget — сервер стирает записи и отчёты с этим id, у игрока id меняется.
 
-const TELE_ID = 'feod.tid';
-const Tele = { lines: [], lastEv: '' };
+const TELE_KEY = 'feod.tele', TELE_ID = 'feod.tid', TELE_Q = 'feod.telq';
+const Tele = { lines: [], sid: '', t0: Date.now(), q: [], built: {}, errs: 0, errSent: 0, lastEv: '', hurt: '', deaths: {}, vdead: false, busy: false, next: 0, fails: 0 };
 
 // ---- журнал консоли: последние 200 строк (для отчёта о проблеме; сам по себе никуда не уходит)
 (function () {
@@ -22,11 +26,13 @@ const Tele = { lines: [], lastEv: '' };
     if (typeof orig !== 'function') continue;
     console[lv] = function () { keep(lv, arguments); return orig.apply(console, arguments); };
   }
-  // ошибки из журнала сбоев — тоже в консольный журнал
+  // ошибки из журнала сбоев — тоже в консольный журнал и в счётчик статистики
   if (typeof crashNote === 'function') {
     const _cn = crashNote;
     crashNote = function (kind, msg, src, stack) {
       keep('ERR', [`[${kind}] ${msg} ${src || ''}`]);
+      Tele.errs++;
+      if (Tele.errSent < 3 && kind !== 'save') { Tele.errSent++; teleEvent('err', { ek: String(kind).slice(0, 10), m: typeof crashScrub === 'function' ? crashScrub(msg).slice(0, 160) : '', f: typeof crashScrub === 'function' ? crashScrub(src).slice(0, 80) : '' }); }
       return _cn(kind, msg, src, stack);
     };
   }
@@ -40,7 +46,23 @@ function teleRand(n) {
   for (const x of a) s += (x % 36).toString(36);
   return s;
 }
+Tele.sid = teleRand(8);
 
+// своя машина, локальная сеть или файл — разработка: статистику не шлём и не спрашиваем
+function teleLocal() {
+  const h = (typeof location !== 'undefined' && location.hostname) || '';
+  return location.protocol === 'file:' || /^(localhost|127\.\d+\.\d+\.\d+|\[::1\]|0\.0\.0\.0|)$/.test(h) || /\.(localhost|local|test)$/.test(h)
+    || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
+}
+function teleState() { const s = teleGet(TELE_KEY, null); return s && typeof s === 'object' ? s : { on: false, asked: 0 }; }
+function teleOn() { return !teleLocal() && teleState().on === true; }
+// игрок сам сказал «нет» — тогда и воронка с id (stats.js, POST /e) не отправляется
+function teleDeclined() { const s = teleState(); return !!s.asked && s.on === false; }
+function teleSetOn(on) {
+  teleSet(TELE_KEY, { on: !!on, asked: Date.now() });
+  if (on) teleEvent('start', teleSnap());
+  teleMenuSync();
+}
 function teleId() {
   let id = teleGet(TELE_ID, '');
   if (!/^[a-z0-9]{12,32}$/.test(id)) { id = teleRand(16); teleSet(TELE_ID, id); }
@@ -68,6 +90,134 @@ function teleSnap() {
     fps: typeof Fps !== 'undefined' && Fps.fps ? Math.round(Fps.fps) : 0, day: teleDay(), pop, gt: G ? Math.round(G.time || 0) : 0,
     cls: h ? String(h.cls || 'none').slice(0, 20) : '', ph: typeof crashPhase === 'function' ? crashPhase() : '',
   };
+}
+
+function teleEvent(k, data) {
+  if (!teleOn()) return;
+  Tele.q.push({ k, t: Math.round((Date.now() - Tele.t0) / 1000), mode: teleMode(), ...data });
+  if (Tele.q.length > 60) Tele.q.splice(0, Tele.q.length - 60);
+}
+
+function teleBody(evs) {
+  const d = teleDev();
+  return JSON.stringify({ id: teleId(), s: Tele.sid, v: typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : '?', dev: d.dev, scr: d.scr, ev: evs });
+}
+
+// last — закрытие вкладки: уходит маяком вместе с отложенным
+function teleFlush(last) {
+  if (!teleOn()) { Tele.q.length = 0; return; }
+  const url = teleUrl('/t');
+  if (!url) return;
+  const pend = teleGet(TELE_Q, []);
+  const evs = (Array.isArray(pend) ? pend : []).concat(Tele.q).slice(-60);
+  Tele.q.length = 0;
+  if (!evs.length) return;
+  const body = teleBody(evs);
+  if (last === true) {
+    let ok = false;
+    try { ok = navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' })); } catch (e) { ok = false; }
+    teleSet(TELE_Q, ok ? [] : evs.slice(-30));
+    return;
+  }
+  if (Tele.busy || Date.now() < Tele.next) { teleSet(TELE_Q, evs.slice(-30)); return; }
+  Tele.busy = true;
+  teleSet(TELE_Q, []);
+  const ac = typeof AbortController === 'function' ? new AbortController() : null;
+  const to = setTimeout(() => ac && ac.abort(), 8000);
+  fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'text/plain' }, keepalive: body.length < 60000, signal: ac ? ac.signal : undefined })
+    .then(r => { if (!r.ok) throw new Error(r.status); Tele.fails = 0; })
+    .catch(() => { Tele.fails++; Tele.next = Date.now() + Math.min(600000, 60000 * Tele.fails); teleSet(TELE_Q, evs.slice(-30)); })
+    .finally(() => { clearTimeout(to); Tele.busy = false; });
+}
+
+// раз в минуту: короткий снимок (только когда идёт игра и вкладка на экране)
+function teleBeat() {
+  if (!teleOn() || document.hidden) return;
+  const s = teleSnap();
+  if (s.ph === 'game' || s.ph === 'coop') {
+    teleEvent('beat', { ...s, b: Tele.built, e: Tele.errs });
+    Tele.built = {}; Tele.errs = 0;
+  }
+  teleFlush();
+}
+
+// ---- игровые события: стройка, гибель жителей, деревни и героя, последнее действие игрока
+function teleHooks() {
+  if (typeof track === 'function') {
+    const _t = track;
+    track = function (name, title) { Tele.lastEv = String(name).slice(0, 40); return _t(name, title); };
+  }
+  if (typeof placeBuilding === 'function') {
+    const _pb = placeBuilding;
+    placeBuilding = function (type, x, y, done, rot) {
+      const b = _pb.apply(this, arguments);
+      if (!done && typeof Game !== 'undefined' && Game.time > 0 && b) {
+        const k = String(type).slice(0, 24);
+        if (Object.keys(Tele.built).length < 30 || Tele.built[k]) Tele.built[k] = (Tele.built[k] || 0) + 1;
+      }
+      return b;
+    };
+  }
+  if (typeof logEvent === 'function') {
+    const _le = logEvent;
+    logEvent = function (kind, text) { if (/утащил|погиб|умер|убит|замёрз|отомстили/i.test(String(text))) Tele.lastDeath = { text: String(text), t: Game.time }; return _le.apply(this, arguments); };
+  }
+  if (typeof removeUnit === 'function') {
+    const _rm = removeUnit;
+    removeUnit = function (u) {
+      const was = u && u.dead;
+      _rm.apply(this, arguments);
+      try {
+        if (u && !was && u.dead && typeof isPerson === 'function' && isPerson(u) && u.type !== 'carter' && u.type !== 'hero') {
+          const d = Tele.lastDeath && Math.abs(Game.time - Tele.lastDeath.t) < 2 ? Tele.lastDeath.text : '';
+          const c = u.food <= 0 && !u.noFood ? 'starve' : /скелет/i.test(d) ? 'skeleton' : /туман/i.test(d) ? 'fog' : /кур/i.test(d) ? 'chickens'
+            : /мороз|замёрз/i.test(d) ? 'cold' : (typeof isNightNow === 'function' && isNightNow()) ? 'night' : 'other';
+          Tele.deaths[c] = (Tele.deaths[c] || 0) + 1;
+        }
+      } catch (e) { /* статистика не должна ломать игру */ }
+    };
+  }
+  if (typeof hlHurt === 'function') {
+    const _h = hlHurt;
+    hlHurt = function (u, n, why) { if (why) Tele.hurt = String(why === true ? 'event' : why).slice(0, 30); return _h.apply(this, arguments); };
+  }
+  if (typeof hlDown === 'function') {
+    const _d = hlDown;
+    hlDown = function (u) {
+      try { const H = u && u.hero; teleEvent('hdeath', { why: Tele.hurt || 'unknown', day: teleDay(), lvl: H ? H.level || 0 : 0, cls: H ? String(H.cls || 'none') : '' }); } catch (e) { /* ничего */ }
+      return _d.apply(this, arguments);
+    };
+  }
+  if (typeof goalFinish === 'function') {
+    const _gf = goalFinish;
+    goalFinish = function (res) {
+      try {
+        const S = typeof goalStats === 'function' ? goalStats() : {};
+        teleEvent(res === 'win' ? 'win' : 'vdeath', { day: teleDay(), nights: S.nights || 0, maxPop: S.maxPop || 0, blds: S.blds || 0, causes: Tele.deaths, gt: Math.round(Game.time || 0) });
+        teleFlush();
+      } catch (e) { /* ничего */ }
+      return _gf.apply(this, arguments);
+    };
+  }
+}
+
+// ---- согласие: маленькая карточка при первом запуске (один раз)
+function teleAsk() {
+  if (teleLocal() || teleState().asked || document.getElementById('tele-ask')) return;
+  const box = document.createElement('div');
+  box.id = 'tele-ask';
+  box.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:100000;max-width:min(440px,calc(100vw - 32px));padding:12px 14px;background:#2a1e14;color:#f3e6c8;border:2px solid #a8743a;border-radius:8px;font:14px/1.4 sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.5)';
+  box.innerHTML = '<b>Помочь улучшить игру?</b><div style="margin:6px 0 10px">Игра будет раз в минуту отправлять короткую анонимную сводку: версия, телефон или компьютер, кадры в секунду, сутки, жители, ошибки. '
+    + 'Без ника, имени и сохранений. Выключить можно в меню в любой момент.</div>'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-a="no" style="padding:6px 12px">Нет, спасибо</button><button data-a="yes" style="padding:6px 12px;font-weight:bold">Да, помогу</button></div>';
+  box.onclick = e => {
+    const a = e.target && e.target.getAttribute && e.target.getAttribute('data-a');
+    if (!a) return;
+    teleSetOn(a === 'yes');
+    box.remove();
+    if (typeof toast === 'function') toast(a === 'yes' ? 'Спасибо! Статистику можно выключить в меню' : 'Хорошо, ничего не отправляем');
+  };
+  document.body.appendChild(box);
 }
 
 // ---- «Сообщить о проблеме»
@@ -136,38 +286,56 @@ function teleSendReport(text, withSave, shot) {
 
 // ---- «Удалить мои данные»
 function teleForget() {
-  if (!confirm('Удалить на сервере отчёты и счётчик этапов с этого устройства? Id установки сменится.')) return;
+  if (!confirm('Удалить со стороны сервера всю статистику и отчёты с этого устройства? Статистика выключится, id установки сменится.')) return;
   const url = teleUrl('/t/forget'), id = teleId();
   let cid = '';
   try { cid = JSON.parse(localStorage.getItem('oldgold-cid') || '""'); } catch (e) { /* нет */ }
   const done = ok => {
     if (!ok) { if (typeof toast === 'function') toast('Не удалось связаться с сервером — попробуйте позже'); return; }
-    try { localStorage.removeItem(TELE_ID); localStorage.removeItem('oldgold-cid'); localStorage.removeItem('oldgold-pending'); } catch (e) { /* ничего */ }
-    if (typeof toast === 'function') toast('Готово: данные с этого устройства удалены');
+    try { localStorage.removeItem(TELE_ID); localStorage.removeItem(TELE_Q); localStorage.removeItem('oldgold-cid'); localStorage.removeItem('oldgold-pending'); } catch (e) { /* ничего */ }
+    teleSet(TELE_KEY, { on: false, asked: Date.now() });
+    teleMenuSync();
+    if (typeof toast === 'function') toast('Готово: данные с этого устройства удалены, статистика выключена');
   };
   if (!url) return done(true);
   fetch(url, { method: 'POST', body: JSON.stringify({ id, cid }), headers: { 'Content-Type': 'text/plain' } }).then(r => done(r.ok)).catch(() => done(false));
 }
 
 // ---- кнопки в боковом меню
+function teleMenuSync() {
+  const b = document.getElementById('tele-btn');
+  if (b) b.querySelector('span').textContent = teleLocal() ? 'Статистика: не на локальной' : teleOn() ? 'Помогать статистикой: да' : 'Помогать статистикой: нет';
+}
 function teleMenu() {
   const list = document.querySelector('#tab-menu .menu-list');
   if (!list || document.getElementById('tele-rep-btn')) return;
   const mk = (id, text, title, fn) => { const b = document.createElement('button'); b.id = id; b.title = title; b.innerHTML = '<span></span>'; b.querySelector('span').textContent = text; b.onclick = fn; return b; };
   const after = document.getElementById('crashlog-btn') || list.lastElementChild;
   const rep = mk('tele-rep-btn', 'Сообщить о проблеме', 'Отправить автору описание, снимок экрана и журнал (по желанию — сохранение)', teleReport);
-  const del = mk('tele-del-btn', 'Удалить мои данные', 'Стереть на сервере отчёты с этого устройства', teleForget);
-  if (after && after.parentElement === list) { after.insertAdjacentElement('afterend', rep); rep.insertAdjacentElement('afterend', del); }
-  else { list.appendChild(rep); list.appendChild(del); }
+  const tog = mk('tele-btn', '', 'Анонимная статистика для улучшения игры (без ника и сохранений)', () => { if (!teleLocal()) teleSetOn(!teleOn()); });
+  const del = mk('tele-del-btn', 'Удалить мои данные', 'Стереть на сервере статистику и отчёты с этого устройства', teleForget);
+  if (after && after.parentElement === list) { after.insertAdjacentElement('afterend', rep); rep.insertAdjacentElement('afterend', tog); tog.insertAdjacentElement('afterend', del); }
+  else { list.appendChild(rep); list.appendChild(tog); list.appendChild(del); }
+  teleMenuSync();
 }
 
 window.addEventListener('load', () => {
-  if (typeof track === 'function') {   // последнее действие игрока — в отчёт
-    const _t = track;
-    track = function (name, title) { Tele.lastEv = String(name).slice(0, 40); return _t(name, title); };
-  }
+  teleHooks();
   if (typeof startGame === 'function') {
     const _s = startGame;
-    startGame = function () { const r = _s.apply(this, arguments); teleMenu(); return r; };
+    startGame = function () {
+      const r = _s.apply(this, arguments);
+      teleMenu();
+      setTimeout(teleAsk, 4000);
+      if (teleOn() && !Tele.started) { Tele.started = true; teleEvent('start', teleSnap()); }
+      return r;
+    };
   }
+  setInterval(teleBeat, 60000);
+});
+window.addEventListener('pagehide', () => {
+  if (!teleOn()) return;
+  const s = teleSnap();
+  teleEvent('end', { ph: s.ph, day: s.day, pop: s.pop, gt: s.gt, last: Tele.lastEv, play: Math.round((Date.now() - Tele.t0) / 1000) });
+  teleFlush(true);
 });
