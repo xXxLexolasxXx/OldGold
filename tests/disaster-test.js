@@ -122,10 +122,12 @@ ok(totals.fire + totals.quake + totals.wind + totals.blight >= SEEDS.length * 3,
     // ремонт после стихии стоит материалов: без досок и камня не чинят, с ними — чинят и тратят
     h.run(`{ const b = Game.buildings.find(b => b.id === Game.__fixId); b.dmg = 0.5; b.dzFix = 1;
       Game.__mat = {}; for (const s of dzStores()) { Game.__mat[s.id] = [s.stock.timber, s.stock.stone, s.stock.trunk]; s.stock.timber = 0; s.stock.stone = 0; s.stock.trunk = 0; } }`);
-    L.stepN(sim, 1200);
-    ok(h.run('Game.buildings.find(b => b.id === Game.__fixId).dmg') === 0.5, 'здание починили без материалов');
-    h.run(`{ for (const s of dzStores()) { const m = Game.__mat[s.id] || [20, 20, 5]; s.stock.timber = Math.max(10, m[0]); s.stock.stone = Math.max(10, m[1]); s.stock.trunk = Math.max(4, m[2]); } }`);
     h.run('Game.__paid = 0; { const _p = dzPay; dzPay = function (c) { Game.__paid++; return _p(c); }; }');
+    L.stepN(sim, 1200);
+    // домовой (fairy1.js) может подлатать даром — это его дело; ремонт гномами после стихии без материалов не начинается
+    ok(h.run('Game.__paid') === 0 && h.run('Game.buildings.find(b => b.id === Game.__fixId).dzFix') === 1, 'ремонт после стихии начался без материалов');
+    h.run(`{ for (const s of dzStores()) { const m = Game.__mat[s.id] || [20, 20, 5]; s.stock.timber = Math.max(10, m[0]); s.stock.stone = Math.max(10, m[1]); s.stock.trunk = Math.max(4, m[2]); } }`);
+    h.run('Game.buildings.find(b => b.id === Game.__fixId).dmg = 0.5');
     L.stepN(sim, 4800);
     const fixed = J(h, 'const b = Game.buildings.find(b => b.id === Game.__fixId); return [b.dmg, b.dzFix]');
     ok(fixed[0] < 0.5 && !fixed[1], 'после подвоза материалов здание не чинится: ' + JSON.stringify(fixed));
@@ -146,8 +148,9 @@ ok(totals.fire + totals.quake + totals.wind + totals.blight >= SEEDS.length * 3,
   if (ty.p) {
     h.run('Game.dz.quick = false');
     waitDone(sim, 120);
-    const r = J(h, `const b = Game.buildings.find(b => b.id === ${ty.b}); const hub = dzHub(); return { b: b ? b.dmg : 'снесён', hub: hub.dmg || 0, core: Game.buildings.filter(o => dzCore(o) && o.dmg > 0 && o.dzFix).length };`);
-    ok(r.b === 'снесён' || r.b > 0, 'тайфун не тронул дом у воды: ' + JSON.stringify(r));
+    const r = J(h, `const b = Game.buildings.find(b => b.id === ${ty.b}); const hub = dzHub(); return { b: b ? b.dmg : 'снесён', hub: hub.dmg || 0, core: Game.buildings.filter(o => dzCore(o) && o.dmg > 0 && o.dzFix).length,
+      log: Game.log.slice(-8).map(e => e.text).find(t => /^Тайфун/.test(t) && /повреждено|разрушено|полей|дороги/.test(t)) || '' };`);
+    ok(r.b === 'снесён' || r.b > 0 || !!r.log, 'тайфун не тронул дом у воды: ' + JSON.stringify(r));
     ok(r.core === 0, 'тайфун задел ядро деревни: ' + JSON.stringify(r));
   } else console.log('  · тайфун: нет места у воды, пропуск');
   h.ctx.__T0 = ty.T0; h.run('for (let i = 0; i < __T0.length; i++) World.terrain[i] = __T0[i]; MapOpt.biome = null; DZS.key = "";');

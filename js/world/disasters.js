@@ -51,7 +51,8 @@ function dzLoadFreq() {
   return n >= 0 && n <= 3 ? n : 2;
 }
 function dzNew() {
-  return { v: 1, next: Game.time + CYCLE * (0.5 + Math.random()), freq: dzLoadFreq(), last: '', n: 0, yb: -1, pend: null, cur: null, bl: [], hist: {} };
+  return { v: 1, next: Game.time + CYCLE * (0.5 + (((Game.seed || 0) * 0.6180339) % 1)),   // без Math.random: старт не сдвигает случайность сида
+    freq: dzLoadFreq(), last: '', n: 0, yb: -1, pend: null, cur: null, bl: [], hist: {} };
 }
 Game.dz = dzNew();
 const DZ = () => Game.dz || (Game.dz = dzNew());
@@ -705,7 +706,7 @@ if (typeof MODELS !== 'undefined') {
     const D = Game.dz = dzNew();
     DZS.key = '';
     const q = s.dz;
-    if (!q) { D.next = Game.time + CYCLE * dzR(0.8, 1.5); return; }   // старое сохранение: первое бедствие не сразу
+    if (!q) { D.next = Game.time + CYCLE * 1.2; return; }   // старое сохранение: первое бедствие не сразу
     D.next = Game.time + (q.nx || 0); D.freq = q.f != null ? q.f : D.freq; D.last = q.l || ''; D.n = q.n || 0; D.yb = q.yb != null ? q.yb : -1; D.hist = q.h || {};
     if (q.p && DZ_RUN[q.p.k]) D.pend = Object.assign({}, q.p, { at: Game.time + q.p.at, t0: Game.time });
     for (const [i, left, k] of q.bl || []) { const o = World.obj[i]; if (o && o.t === 'field') { o.bl = Game.time + left; o.bk = k; o.g = 0; D.bl.push(i); } }
