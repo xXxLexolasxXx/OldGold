@@ -37,7 +37,7 @@ if (typeof NSPEC !== 'undefined') {
       drop: [['hide', 2, 1], ['hops', 2, 0.8], ['mana', 1, 0.5], ['gold', 2, 0.6]], msg: ['Бульк… Я вас утоплю!', 'Тина помнит всё!', 'Чвяк-чвяк!'] },
     armad:  { name: 'Броненосец', mhp: 95, dmg: [6, 9], cd: 1.6, rng: 1.5, spd: 1.7, parry: 0.2, xp: 120, roam: 3, sz: 13,
       drop: [['hide', 3, 1], ['gold', 1, 0.6], ['magicstone', 1, 0.4]], msg: ['Пф-ф! (сворачивается)', 'Хрусь-хрусь!', 'Не тронь панцирь!'] },
-    goblin: { name: 'Гоблин', mhp: 14, dmg: [2, 3], cd: 1.1, rng: 1.2, spd: 2.6, parry: 0.05, xp: 10, roam: 3.4, sz: 6,
+    goblin: { name: 'Гоблин', mhp: 18, dmg: [2, 4], cd: 1.1, rng: 1.2, spd: 2.6, parry: 0.05, xp: 14, roam: 3.4, sz: 6,
       drop: [['gold', 1, 0.5], ['sausage', 1, 0.3], ['ironore', 1, 0.2]], msg: ['Йа-а-а! Все на него!', 'Блестяшки наши!', 'Хи-хи, окружай!'] },
     gtSpear:{ name: 'Гномтавр-копейщик', mhp: 62, dmg: [6, 9], cd: 1.7, rng: 1.8, spd: 3.6, parry: 0.15, xp: 75, roam: 4.5, sz: 12,
       drop: [['hide', 1, 0.8], ['gold', 2, 0.8], ['bread', 2, 0.5]], msg: ['За степь и бороду!', 'Копьё не шутит!', 'И-го-го… то есть, к бою!'] },
@@ -84,7 +84,7 @@ const N2_BIOME = {
   goblin: { forest: 1.3, swamp: 1.3 }, troll: { steppe: 0.8, meadow: 0.9, mountain: 1.2 },
   armad: { steppe: 1.5, mountain: 1, forest: 0.5, swamp: 0.5, winter: 0 }, gnomtaur: { steppe: 1.5, forest: 0.5, swamp: 0.5, mountain: 0.5, winter: 0.5 },
 };
-const N2_BASE = { goblin: 3, troll: 2, armad: 2, gnomtaur: 2 };
+const N2_BASE = { goblin: 2, troll: 2, armad: 2, gnomtaur: 2 };   // гоблинов было три лагеря на большой карте — четверть всех нейтралов (СУЩЕСТВА_БАЛАНС.md)
 
 function n2Biome() { return typeof biomeId === 'function' ? biomeId() : 'meadow'; }
 function n2Quota(k) {

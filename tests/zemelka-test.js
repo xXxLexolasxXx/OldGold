@@ -56,6 +56,7 @@ h.run(`{
   const hr = Game.hero, ppl = Game.units.filter(u => isPerson(u) && u.type !== 'hero' && u.type !== 'kid' && !u.isCourier).slice(0, 6);
   for (const u of ppl) { u.x = hr.x + 2; u.y = hr.y + 1; u.food = 1; u.idleFlag = true; u.proc = null; u.action = null; u.cmd = null; u.gp = null; u.brk = null; u.inside = null; }
   hr.gp = null; hr.cmd = null; hr.food = 1; hr.hero.hp = hr.hero.maxhp;
+  for (const u of [hr, ...ppl]) u.pauseUntil = 0;   // DAY отматывает Game.time назад: «дал пять» до отмотки иначе держит героя минуту
 }`);
 let started = false;
 for (let t = 0; t < 5 && !started; t++) {

@@ -101,7 +101,30 @@ for (const seed of SEEDS) {
     ok((tr.o.pixie || 0) <= 2 && (tr.o.fairy || 0) <= 1, 'старый сейв: лишние логова фей не обрезаны ' + JSON.stringify(tr));
   }
 }
-function NEU_CAP(k) { return k === 'pixie' ? 2 : 1; }
+function NEU_CAP(k) { return 1; }
+// доли фей и кабанов на картах всех размеров: на старте и к 4-й ночи — не больше 15 % нейтралов и 5 % всех существ
+const C = require('./lib/census');
+for (const size of ['small', 'medium', 'large']) for (const seed of SEEDS.slice(0, 3)) {
+  const sim = L.newSim(seed), h = sim.h;
+  if (size !== 'large') h.run(`setupStart(${seed}, { size: '${size}' }); Game.heroAsk = false;`);
+  const at = when => {
+    const s = C.shares(C.census(h));
+    ok(s.fairyNeu <= 0.15 && s.fairyAll <= 0.05, `${size} сид ${seed} ${when}: фей ${s.fairies} из ${s.neu} нейтралов (${Math.round(s.fairyNeu * 100)} %)`);
+    ok(s.boarNeu <= 0.15 && s.boarAll <= 0.05, `${size} сид ${seed} ${when}: кабанов ${s.boars} из ${s.neu} нейтралов (${Math.round(s.boarNeu * 100)} %)`);
+    return s;
+  };
+  const s0 = at('старт');
+  h.run(`(function(){ for (let n = 1; n <= 4; n++) { while (startNights() < n) Game.time += 5; n2Night(n); } })()`);
+  const s4 = at('4-я ночь');
+  ok(s4.neu > s0.neu, `${size} сид ${seed}: к 4-й ночи лес не пополнился новыми народами`);
+  // старый сейв с лёжками кабанов на каждом шагу: лишние заселяют лешие
+  if (size === 'large' && seed === SEEDS[0]) {
+    const tr = JSON.parse(h.run(`JSON.stringify((function(){ const s = JSON.parse(JSON.stringify(serializeGame()));
+      for (let i = 0; i < 6; i++) s.nt.lairs.push({ id: 920000 + i, k: 'boar', x: 5 + i, y: 7, lv: 1, fr: 0, fd: 0, rs: 0 });
+      applySave(s); return Game.lairs.filter(l => l.k === 'boar').length; })())`));
+    ok(tr <= 2, 'старый сейв: лишние лёжки кабанов не обрезаны (' + tr + ')');
+  }
+}
 for (const l of table) console.log('  ' + l);
 // каждый обычный открытый вид встречается хотя бы в половине сидов (кроме зависящих от рельефа: сурок у скал, выдра у воды)
 for (const k of ['hare', 'bird', 'pheasant', 'moth']) ok((tot[k] || 0) >= Math.ceil(SEEDS.length / 2), `вид ${k} редко выходит: в ${tot[k] || 0} из ${SEEDS.length} сидов`);
