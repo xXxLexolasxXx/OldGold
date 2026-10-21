@@ -94,7 +94,7 @@ const post = (m, p) => new Promise((res, rej) => sess.post(m, p || {}, (e, r) =>
     for (const [k, v] of Object.entries(T.tot).sort((a, b) => b[1] - a[1]).slice(0, 30)) console.log(`${(v / n).toFixed(3).padStart(7)} мс/шаг  макс ${T.max[k].toFixed(1).padStart(6)}  ${k}`);
     console.log('рывки > 40 мс по виновнику:', JSON.stringify(T.spikes));
   }
-  if (!PROF) return;
+  if (!PROF) process.exit(0);
   const { profile } = await post('Profiler.stop');
   const self = new Map(), dt = new Map();
   for (let i = 0; i < profile.samples.length; i++) dt.set(profile.samples[i], (dt.get(profile.samples[i]) || 0) + profile.timeDeltas[i]);
@@ -120,4 +120,5 @@ const post = (m, p) => new Promise((res, rej) => sess.post(m, p || {}, (e, r) =>
   walk(profile.nodes[0], new Set());
   console.log('--- включительно ---');
   for (const [k, t] of [...incl.entries()].sort((a, b) => b[1] - a[1]).slice(0, +arg('itop', 60))) console.log(`${(100 * t / tot).toFixed(1).padStart(5)}%  ${k}`);
+  process.exit(0);   // таймеры игры в vm держат процесс живым
 })();
