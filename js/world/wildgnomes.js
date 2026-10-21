@@ -8,7 +8,7 @@
 // Поединок: мир замирает, идут только герой и вождь; вождь — сложный бот со стилем фракции (тяжёлые удары, уклоны и яд, щит
 // и контрудар, песок в глаза), читает удары героя и уходит перекатом. Победа — деревня наша на WG_OWN_DAYS суток (дань, жители),
 // потом бунт, и она снова нейтральна. В коопе поединок пока недоступен (окно его не предлагает).
-// Состояние — Game.wild (в сохранение), клиентам коопа — зеркало mir.wild, клик — сообщение {t:'wild', a:'gate', id}.
+// Состояние — Game.wgs (в сохранение), клиентам коопа — зеркало mir.wgs, клик — сообщение {t:'wgs', a:'gate', id}.
 // Подключается после travelers.js: всё через обёртки.
 
 const WG_W = 13, WG_H = 10;      // участок поселения в клетках; ворота — середина нижнего края
@@ -91,11 +91,11 @@ const wgServer = () => typeof coop !== 'undefined' && !!coop && !!coop.out && !!
 const wgMirror = () => typeof Coop !== 'undefined' && !!Coop.on;
 const wgCoopOn = () => wgServer() && coop.players.size > 0;      // сервер с игроками (без них — одиночная симуляция)
 const wgHero = () => (typeof tvHero === 'function' && tvHero()) || Game.units.find(u => u.type === 'hero' && !u.dead && u.hero && u.hero.hp > 0) || null;
-function wgEnsure() { return Game.wild || (Game.wild = { list: [], cars: [], duel: null, day: -1, acc: 0 }); }
+function wgEnsure() { return Game.wgs || (Game.wgs = { list: [], cars: [], duel: null, day: -1, acc: 0 }); }
 const wgDay = () => cycleAt(Game.time).k;
 const wgGate = S => [S.x + 6, S.y + WG_H];                     // клетка перед воротами
-const wgBy = id => (Game.wild ? Game.wild.list.find(S => S.id === id) : null) || null;
-const wgByFac = f => (Game.wild ? Game.wild.list.find(S => S.fac === f) : null) || null;
+const wgBy = id => (Game.wgs ? Game.wgs.list.find(S => S.id === id) : null) || null;
+const wgByFac = f => (Game.wgs ? Game.wgs.list.find(S => S.fac === f) : null) || null;
 const wgName = S => `${WG_KIND[S.kind].name} «${S.name}»`;
 function wgTier(S) { return S.evil ? 'evil' : S.rel < -20 ? 'cold' : S.rel >= 50 ? 'ally' : 'ok'; }
 function wgLog(text, S) { if (typeof logEvent === 'function') logEvent('trade', text, S ? S.x + 6.5 : undefined, S ? S.y + 5 : undefined); }
@@ -132,7 +132,7 @@ function wgTrySite(rng, stamp, home, minD, townR) {
   const F = Game.foe;
   if (F && Math.hypot(F.tx + 1.5 - (x + 6), F.ty + 2 - (y + 6)) < Math.min(20, townR)) return null;          // от Чёрного шпиля подальше
   if ((Game.lairs || []).some(l => Math.hypot(l.x - (x + 6), l.y - (y + 5)) < 9)) return null;
-  if (Game.wild.list.some(S => Math.hypot(S.x - x, S.y - y) < 18)) return null;
+  if (Game.wgs.list.some(S => Math.hypot(S.x - x, S.y - y) < 18)) return null;
   return { x, y };
 }
 // участок поселения и арена перед воротами; cb вернул true — дальше не смотрим
@@ -146,19 +146,19 @@ function wgArea(x, y, cb) {
 
 function wgAdd(site, fac, kind, evil, rng) {
   const F = WG_FAC[fac], rep = (Game.dil && Game.dil.rel && Game.dil.rel.road) || 0;
-  const S = { id: 9e8 + Game.wild.list.length, fac, kind, x: site.x, y: site.y, name: F.names[(rng() * F.names.length) | 0], evil: evil ? 1 : 0,
+  const S = { id: 9e8 + Game.wgs.list.length, fac, kind, x: site.x, y: site.y, name: F.names[(rng() * F.names.length) | 0], evil: evil ? 1 : 0,
     rel: evil ? -60 : F.rel + rep * 8, own: 0, up: 0, calm: 0, deals: 0, nextTr: 3, nextRaid: 4 };
   wgArea(S.x, S.y, (xx, yy) => {                                 // вырубка под поселение и арену
     const i = idx(xx, yy), o = World.obj[i];
     if (o && WG_CLEAR.has(o.t)) { World.obj[i] = null; World.growing.delete(i); }
   });
-  Game.wild.list.push(S);
+  Game.wgs.list.push(S);
   wgMark(S);
   return S;
 }
 
 function wgSpawnAll(seed) {
-  Game.wild = null;
+  Game.wgs = null;
   const W = wgEnsure();
   if (Game.stress || (typeof MapOpt !== 'undefined' && MapOpt.custom && MapOpt.custom.nm !== 'auto')) return;
   const rng = mulberry32(((seed | 0) ^ 0x6A0E5) >>> 0);
@@ -185,7 +185,7 @@ function wgSpawnAll(seed) {
 // ---------- Ход: купцы, набеги, дань, бунт, караваны ----------
 
 function wgDaily(day) {
-  const W = Game.wild;
+  const W = Game.wgs;
   for (const S of W.list) {
     const F = WG_FAC[S.fac];
     if (S.own) {
@@ -239,7 +239,7 @@ function wgCaravan(S) {
   const p = findPath(a[0], a[1], gx, gy, false, 0, 40000, 0.9);
   if (!p || !p.length) return null;
   const C = { id: Game.nextId++, s: S.id, route: [a, ...p], pi: 0, dir: 1, x: a[0] + 0.5, y: a[1] + 0.5, f: 1, wait: 0, load: wgScale(WG_FAC[S.fac].car[1], wgMul(wgTier(S))) };
-  Game.wild.cars.push(C);
+  Game.wgs.cars.push(C);
   return C;
 }
 function wgCarTick(C, dt) {
@@ -269,7 +269,7 @@ function wgRel(S, n, chips) {
 }
 
 function wgTick(dt) {
-  const W = Game.wild;
+  const W = Game.wgs;
   if (!W || !W.list.length) return;
   for (let i = W.cars.length - 1; i >= 0; i--) if (wgCarTick(W.cars[i], dt)) W.cars.splice(i, 1);
   W.acc += dt;
@@ -285,7 +285,7 @@ function wgTick(dt) {
 function wgTalk(id) {
   const S = wgBy(id);
   if (!S || typeof dilOpen !== 'function') return { ok: false, text: '' };
-  if (Game.wild.duel) return { ok: false, text: 'Идёт поединок' };
+  if (Game.wgs.duel) return { ok: false, text: 'Идёт поединок' };
   if (S.own) return { ok: false, text: `«${S.name}» под нашей рукой ещё ${Math.max(1, S.own - wgDay())} сут. — дань приходит каждое утро` };
   const d = dilEnsure();
   if (d.cur) return { ok: false, text: 'Сначала решите текущее событие' };
@@ -343,7 +343,7 @@ if (typeof dilApply === 'function') {
   };
 }
 
-function wildCmd(name, m) {
+function wgsCmd(name, m) {
   if (!m || m.a !== 'gate' || !Number.isInteger(m.id)) return;
   const r = wgTalk(m.id);
   if (!r.ok && r.text && typeof coopSay === 'function') coopSay(name, r.text);
@@ -360,7 +360,7 @@ const WG_SEQ = { heavy: ['light', 'heavy', 'light', 'heavy', 'heavy'], dodge: ['
 
 function wgDuelStart(S) {
   const h = wgHero();
-  if (!h || wgCoopOn() || Game.wild.duel) return false;
+  if (!h || wgCoopOn() || Game.wgs.duel) return false;
   const [gx, gy] = wgGate(S), ax = gx + 0.5, ay = gy + 2.5, K = WG_KIND[S.kind];
   heroStopUnit(h);
   h.x = ax - 2.5; h.y = ay; h.roll = null;
@@ -368,7 +368,7 @@ function wgDuelStart(S) {
   const N = { id: Game.nextId++, k: 'wgchief', lair: 0, wgc: S.id, fac: S.fac, x: ax + 2.5, y: ay, hx: ax, hy: ay, mhp, hp: mhp, lv: K.lv + (S.up || 0), face: -1,
     st: 'chase', t: 1, fr: 'i0', ph: 0, tg: h.id, prov: Game.time, cdA: 1.2, atkT: 9, hit: 1, ov: null, ovT: 0, winT: 0, dt: 0, wx: 0, wy: 0, say: 0, seq: 0, combo: 0 };
   Game.neutrals.push(N);
-  Game.wild.duel = { s: S.id, n: N.id, h: h.id, t: 0, ax, ay };
+  Game.wgs.duel = { s: S.id, n: N.id, h: h.id, t: 0, ax, ay };
   issueCmd(h, { kind: 'attack', f: { kind: 'neu', o: N }, tx: Math.floor(N.x), ty: Math.floor(N.y), label: 'Поединок' });
   floater(N.x, N.y - 2.4, 'За клан!', '#ffb0a0');
   if (typeof centerOn === 'function' && typeof R !== 'undefined' && R.canvas) centerOn(ax * TILE, ay * TILE);
@@ -401,7 +401,7 @@ if (typeof neuThink === 'function') {
   const _th = neuThink;
   neuThink = function (N, dt) {
     if (!N.wgc || N.st === 'die') return _th(N, dt);
-    const D = Game.wild && Game.wild.duel;
+    const D = Game.wgs && Game.wgs.duel;
     if (D) { N.hx = D.ax; N.hy = D.ay; }
     N.prov = Game.time;
     if (N.rollT > 0) {                                             // перекат прочь от героя
@@ -471,7 +471,7 @@ function wgDuelStep(D, dt) {
 }
 
 function wgDuelEnd(D, res) {
-  const W = Game.wild, S = wgBy(D.s), h = Game.unitMap.get(D.h);
+  const W = Game.wgs, S = wgBy(D.s), h = Game.unitMap.get(D.h);
   W.duel = null;
   const i = Game.neutrals.findIndex(q => q.id === D.n), N = i >= 0 ? Game.neutrals[i] : null;
   if (i >= 0) Game.neutrals.splice(i, 1);
@@ -505,7 +505,7 @@ function wgDuelEnd(D, res) {
   const wrapStep = () => {
     const _s = step;
     step = function (dt) {
-      const D = Game.wild && Game.wild.duel;
+      const D = Game.wgs && Game.wgs.duel;
       if (D && !wgMirror()) return wgDuelStep(D, dt);
       _s(dt);
       if (!wgMirror()) wgTick(dt);
@@ -514,30 +514,30 @@ function wgDuelEnd(D, res) {
   };
   wrapStep();
   // пауза мира должна быть снаружи всех обёрток шага: если после нас кто-то обернул step, оборачиваем ещё раз
-  if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('load', () => { if (!step.wg) { const _s = step; step = function (dt) { if (Game.wild && Game.wild.duel && !wgMirror()) return wgDuelStep(Game.wild.duel, dt); _s(dt); }; step.wg = 1; } });
+  if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('load', () => { if (!step.wg) { const _s = step; step = function (dt) { if (Game.wgs && Game.wgs.duel && !wgMirror()) return wgDuelStep(Game.wgs.duel, dt); _s(dt); }; step.wg = 1; } });
 }
 
 // ---------- Сохранение, создание карты, кооп ----------
 
 {
   const _rgs = resetGameState;
-  resetGameState = function () { _rgs(); Game.wild = null; };
+  resetGameState = function () { _rgs(); Game.wgs = null; };
   const _ss = setupStart;                                         // после логов нейтралов и шпиля Малгора
   setupStart = function (seed, ...o) { _ss(seed, ...o); wgSpawnAll(seed); };
   const _sg = serializeGame;
   serializeGame = function () {
     const s = _sg();
     if (Array.isArray(s.obj)) s.obj = s.obj.filter(e => e[1] !== 'wgb');                   // клетки поселений восстанавливаются из s.wild
-    const W = Game.wild;
-    if (W) s.wild = { day: W.day, list: W.list.map(S => Object.assign({}, S, { g: undefined, lt: undefined, own: S.own ? S.own - wgDay() : 0 })),
+    const W = Game.wgs;
+    if (W) s.wgs = { day: W.day, list: W.list.map(S => Object.assign({}, S, { g: undefined, lt: undefined, own: S.own ? S.own - wgDay() : 0 })),
       cars: W.cars.map(C => Object.assign({}, C, { x: +C.x.toFixed(2), y: +C.y.toFixed(2) })) };
     return s;
   };
   const _as = applySave;
   applySave = function (s) {
     _as(s);
-    Game.wild = null;
-    const v = s.wild;
+    Game.wgs = null;
+    const v = s.wgs;
     if (!v) { if (!(typeof isMirror === 'function' && isMirror()) && s.seed != null) wgSpawnAll(s.seed); return; }      // старое сохранение — поселения появятся сейчас
     const W = wgEnsure();
     W.day = wgDay();
@@ -547,15 +547,15 @@ function wgDuelEnd(D, res) {
   };
 }
 
-function wildMirrorOut() {
-  const W = Game.wild;
+function wgsMirrorOut() {
+  const W = Game.wgs;
   if (!W) return null;
   const r = v => Math.round(v * 100) / 100;
   return { list: W.list.map(S => ({ id: S.id, fac: S.fac, kind: S.kind, x: S.x, y: S.y, name: S.name, rel: S.rel, evil: S.evil, own: S.own ? 1 : 0 })),
     cars: W.cars.map(C => ({ id: C.id, x: r(C.x), y: r(C.y), f: C.f, dir: C.dir })) };
 }
-function wildMirrorIn(m) {
-  if (!m) { Game.wild = null; return; }
+function wgsMirrorIn(m) {
+  if (!m) { Game.wgs = null; return; }
   const W = wgEnsure(), old = new Map(W.list.map(S => [S.id, S]));
   W.list = m.list.map(S => Object.assign(old.get(S.id) || {}, S));
   W.cars = m.cars;
@@ -563,7 +563,7 @@ function wildMirrorIn(m) {
 
 // клик по поселению — окно у ворот (обёртка ставится после всех скриптов, снаружи путников)
 function wgAt(t) {
-  const W = Game.wild;
+  const W = Game.wgs;
   if (!W) return null;
   return W.list.find(S => t[0] >= S.x - 1 && t[0] <= S.x + WG_W && t[1] >= S.y - 2 && t[1] <= S.y + WG_H + 1) || null;
 }
@@ -571,10 +571,10 @@ if (typeof window !== 'undefined' && window.addEventListener && typeof onLeftCli
   window.addEventListener('load', () => {
     const _click = onLeftClickTile;
     onLeftClickTile = function (t) {
-      if (!Game.tool && !(Game.wild && Game.wild.duel)) {
+      if (!Game.tool && !(Game.wgs && Game.wgs.duel)) {
         const S = wgAt(t);
         if (S) {
-          if (wgMirror()) { if (typeof tvForceModal === 'function') tvForceModal(); coopSend({ t: 'wild', a: 'gate', id: S.id }); return; }
+          if (wgMirror()) { if (typeof tvForceModal === 'function') tvForceModal(); coopSend({ t: 'wgs', a: 'gate', id: S.id }); return; }
           const r = wgTalk(S.id);
           if (!r.ok && r.text) toast(r.text);
           if (r.ok || r.text) return;
@@ -652,7 +652,7 @@ function wgDrawFlag(c, S) {
 
 function wgDrawChief(c, S) {
   const [gx, gy] = wgGate(S), X = Math.round((gx + 0.5) * TILE), Y = Math.round((gy + 0.2) * TILE + 6);
-  if (!(Game.wild.duel && Game.wild.duel.s === S.id)) {
+  if (!(Game.wgs.duel && Game.wgs.duel.s === S.id)) {
     c.save(); c.translate(X, Y); c.scale(1.8, 1.8);
     tvDrawGnome(c, 0, 0, { k: 'wt_' + S.fac, f: 1 }, 0, false);
     c.fillStyle = '#ffd700'; c.fillRect(-3, -21, 6, 2); c.fillRect(-3, -23, 1, 2); c.fillRect(0, -23, 1, 2); c.fillRect(2, -23, 1, 2);   // корона вождя
@@ -710,7 +710,7 @@ function wgDrawChiefNeu(c, N) {
 }
 
 function wgDrawList(list, c, x0, y0, x1, y1) {
-  const W = Game.wild;
+  const W = Game.wgs;
   if (!W) return;
   for (const S of W.list) {
     if (S.x + WG_W < x0 - 3 || S.x > x1 + 3 || S.y + WG_H < y0 - 4 || S.y > y1 + 4) continue;

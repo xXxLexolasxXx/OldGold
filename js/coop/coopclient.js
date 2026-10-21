@@ -280,7 +280,7 @@ function coopMirror(m) {
   if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
   if (typeof dilMirrorIn === 'function') dilMirrorIn(m.dil);
   if (typeof travMirrorIn === 'function') travMirrorIn(m.trav);
-  if (typeof wildMirrorIn === 'function') wildMirrorIn(m.wild);
+  if (typeof wgsMirrorIn === 'function') wgsMirrorIn(m.wgs);
   if (typeof lawMirrorIn === 'function') lawMirrorIn(m.law);
   if (typeof medMirrorIn === 'function') medMirrorIn(m.med);
   if (typeof rscMirrorIn === 'function') rscMirrorIn(m.rsc);
