@@ -71,8 +71,8 @@ function coopConnect(opts) {
     if (location.protocol === 'https:' && opts.server.startsWith('ws://')) { reject(new Error('Страница открыта по https, а сервер без шифрования (ws://). Откройте игру с адреса сервера: ' + coopHttpUrl(opts.server) + '/ — или настройте wss (server/DEPLOY.md)')); return; }
     try { ws = new WebSocket(opts.server); } catch (e) { reject(new Error('Неверный адрес сервера')); return; }
     Coop.ws = ws; Coop.creds = opts;
-    const fail = msg => { if (settled) return; settled = true; reject(new Error(msg)); try { ws.close(); } catch (e) { /* ничего */ } };
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token, ver: coopVer(), z: COOP_ZIP ? 1 : 0 }));
+    const fail = (msg, wait) => { if (settled) return; settled = true; reject(Object.assign(new Error(msg), { wait }));  try { ws.close(); } catch (e) { /* ничего */ } };
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token, ver: coopVer(), z: COOP_ZIP ? 1 : 0, d: 1 }));
     ws.binaryType = 'arraybuffer';
     ws.onerror = () => fail('Сервер не отвечает. Он запущен? Адрес верный?');
     ws.onclose = () => { if (!settled) fail('Связь оборвана'); else if (Coop.ws === ws) coopLost(); };
@@ -86,7 +86,7 @@ function coopConnect(opts) {
     };
     const handleText = data => {
       let m; try { m = JSON.parse(data); } catch (e) { return; }
-      if (m.t === 'err') { if (m.stale) coopSaved(null); return fail(m.msg); }
+      if (m.t === 'err') { if (m.stale) coopSaved(null); return fail(m.msg, m.wait); }
       if (m.t === 'welcome') {
         if (m.token) coopSaved({ server: opts.server, nick: m.nick, token: m.token });
         Coop.perms = m.perms; Coop.permLabels = m.permLabels;
@@ -115,7 +115,7 @@ function coopApplyInit(m) {
   Game.nextId = Math.max(Game.nextId, m.nextId || 0);
   Game.time = m.time;
   Game.paused = false; Game.speed = 1;
-  Coop.uid = m.uid; Coop.anim.clear(); Coop.bubbles.clear(); Coop.roadBatch = [];
+  Coop.uid = m.uid; Coop.view = null; Coop.mir = null; Coop.anim.clear(); Coop.bubbles.clear(); Coop.roadBatch = [];
   Coop.saveT = 0;
   if (Coop.host) unlockAll();       // хосту доступно всё, остальным меню открывается по мере развития деревни
   else renderBuildMenu();
@@ -152,20 +152,29 @@ function coopChat(m) {
 function coopUnits(m) {
   if (Math.abs(Game.time - m.time) > 1) Game.time = m.time; else Game.time += (m.time - Game.time) * 0.3;
   const byId = new Map(Game.buildings.map(b => [b.id, b]));
-  const seen = new Set();
+  // d:1 — дельта: пришли только изменившиеся (тип и внешность — лишь при первом показе), ушедшие — в ug,
+  // раз в секунду ids — весь состав. Без d — старый полный пакет: кого нет в списке, того нет и в деревне.
+  const seen = m.d ? (m.ids ? new Set(m.ids) : null) : new Set();
+  if (m.ug) for (const id of m.ug) coopDropUnit(id);
   for (const d of m.units) {
-    seen.add(d.i);
+    if (seen && !m.d) seen.add(d.i);
     let u = Game.unitMap.get(d.i);
     if (!u) {
+      if (!d.t) continue;
       u = new Unit(d.t, 0, 0);
       u.id = d.i; u.x = d.x; u.y = d.y; u.smoker = false;
       Game.units.push(u); Game.unitMap.set(u.id, u);
     }
-    u.tx = d.x; u.ty = d.y; u.face = d.f; u.vdir = d.v || 'S'; u.look = d.lk; u.food = d.fd;
+    u.tx = d.x; u.ty = d.y; u.face = d.f; u.vdir = d.v || 'S'; u.food = d.fd;
+    if (d.lk !== undefined) u.look = d.lk;
     u.anim = d.a || null; u.carry = d.c || null; u.carryN = d.n || 0;
     u.inside = d.in ? byId.get(d.in) || null : null;
     u.injury = d.inj || null; u.drunkAt = d.dr ? 1e9 : 0; u.ouchUntil = d.ou ? Game.time + 0.7 : 0;
-    for (const k of COOP_UNIT_EX) u[k] = d.ex && d.ex[k] !== undefined ? d.ex[k] : undefined;
+    for (const k of COOP_UNIT_EX) {
+      // семья и облик в дельте приходят только вместе с типом (sx), в старом пакете — в ex
+      if (COOP_UNIT_STATIC.includes(k)) { if (!m.d || d.t !== undefined) u[k] = (d.sx && d.sx[k]) ?? (d.ex && d.ex[k]); continue; }
+      u[k] = d.ex && d.ex[k] !== undefined ? d.ex[k] : undefined;
+    }
     if (d.m) { if (!(u.action && u.action.walk)) u.action = { walk: [0, 0], path: [1], i: 0, block: 0 }; }
     else if (d.at !== undefined) { if (!u.action || u.action.walk) u.action = { wait: 1, T: d.aT, anim: d.a }; u.action.t = d.at; }
     else u.action = null;
@@ -178,21 +187,40 @@ function coopUnits(m) {
       }
     }
   }
-  for (let i = Game.units.length - 1; i >= 0; i--) {
-    const u = Game.units[i];
-    if (!seen.has(u.id)) { Game.units.splice(i, 1); Game.unitMap.delete(u.id); if (Game.hero === u) Game.hero = null; }
-  }
+  if (seen) for (let i = Game.units.length - 1; i >= 0; i--) if (!seen.has(Game.units[i].id)) coopDropUnit(Game.units[i].id);
   // звери
-  const next = [];
+  const aSeen = m.d ? (m.aids ? new Set(m.aids) : null) : new Set();
+  if (m.ag) for (const id of m.ag) Coop.anim.delete(id);
   for (const d of m.animals) {
+    if (aSeen && !m.d) aSeen.add(d.i);
     let a = Coop.anim.get(d.i);
     if (!a) { a = makeAnimal(d.k, 0, 0); a.id = d.i; a.x = d.x; a.y = d.y; Coop.anim.set(d.i, a); }
     a.tx = d.x; a.ty = d.y; a.face = d.f; a.moving = !!d.m; a.loot = d.l || null; a.state = d.s; a.phase = d.p;
-    next.push(a);
   }
-  for (const id of [...Coop.anim.keys()]) if (!next.includes(Coop.anim.get(id))) Coop.anim.delete(id);
-  Game.animals = next;
+  if (aSeen) for (const id of [...Coop.anim.keys()]) if (!aSeen.has(id)) Coop.anim.delete(id);
+  Game.animals = [...Coop.anim.values()];
   if (m.mir) coopMirror(m.mir);
+  if (m.d) coopMirrorDelta(m);
+}
+
+function coopDropUnit(id) {
+  const u = Game.unitMap.get(id);
+  if (!u) return;
+  const i = Game.units.indexOf(u);
+  if (i >= 0) Game.units.splice(i, 1);
+  Game.unitMap.delete(id);
+  if (Game.hero === u) Game.hero = null;
+}
+
+// Какие клетки видит камера: сервер шлёт жителей вне них реже (интерес-менеджмент). Шлём, только когда окно сдвинулось.
+function coopSendView() {
+  if (!R.canvas || !R.cam) return;
+  const z = devScale(), x0 = Math.floor(R.cam.x / TILE), y0 = Math.floor(R.cam.y / TILE);
+  const x1 = Math.ceil((R.cam.x + R.canvas.width / z) / TILE), y1 = Math.ceil((R.cam.y + R.canvas.height / z) / TILE);
+  const v = [x0, y0, x1, y1], o = Coop.view;
+  if (o && v.every((k, i) => Math.abs(k - o[i]) < 2)) return;
+  Coop.view = v;
+  coopSend({ t: 'view', x0, y0, x1, y1 });
 }
 
 function coopApplyBuilding(d, byId) {
@@ -241,7 +269,8 @@ function coopDropBuilding(b) {
   if (k >= 0) Game.buildings.splice(k, 1);
 }
 
-const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx'];
+const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx', 'wild'];
+const COOP_UNIT_STATIC = ['fam', 'ap'];   // как на сервере (coopsim.js)
 const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp', 'bah'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
@@ -280,6 +309,7 @@ function coopMirror(m) {
   if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
   if (typeof dilMirrorIn === 'function') dilMirrorIn(m.dil);
   if (typeof travMirrorIn === 'function') travMirrorIn(m.trav);
+  if (typeof wgsMirrorIn === 'function') wgsMirrorIn(m.wgs);
   if (typeof lawMirrorIn === 'function') lawMirrorIn(m.law);
   if (typeof medMirrorIn === 'function') medMirrorIn(m.med);
   if (typeof rscMirrorIn === 'function') rscMirrorIn(m.rsc);
@@ -290,6 +320,28 @@ function coopMirror(m) {
   if (!festWas && festOn()) festCheers();       // праздник начался — аплодисменты и у клиентов
   Object.assign(WX, m.wx, { ready: true });
   if (typeof seaMirrorIn === 'function') seaMirrorIn(m.sea);
+  if (typeof seaLifeMirrorIn === 'function') seaLifeMirrorIn(m.sl);
+  if (typeof fyMirrorIn === 'function') fyMirrorIn(m.fy);      // единорог, дракон, грифон, саламандры (fairy1.js)
+}
+
+// Дельта зеркала (d:1): последнее состояние держим у себя и собираем из него полный снимок для coopMirror —
+// так обёртки coopMirror из других модулей (гильдии, умения, оборона…) получают то же, что и раньше.
+// ml — изменившиеся записи списков, mg — ушедшие, mids — весь состав (раз в секунду), mo — прочие ключи, когда поменялись.
+function coopMirrorDelta(m) {
+  const C = Coop.mir || (Coop.mir = { lists: {}, mo: {} });
+  if (!m.ml && !m.mg && !m.mids && !m.mo && !C.ready) return;
+  if (m.mo) Object.assign(C.mo, m.mo);
+  for (const k in m.ml || {}) { const L = C.lists[k] || (C.lists[k] = new Map()); for (const d of m.ml[k]) L.set(d.__id, d); }
+  for (const k in m.mg || {}) { const L = C.lists[k]; if (L) for (const id of m.mg[k]) L.delete(id); }
+  for (const k in m.mids || {}) {
+    const L = C.lists[k] || (C.lists[k] = new Map()), keep = new Set(m.mids[k]);
+    for (const id of L.keys()) if (!keep.has(id)) L.delete(id);
+  }
+  C.ready = true;
+  // копия: coopSyncList и coopResolve меняют записи на месте (новые записи становятся объектами игры)
+  const full = JSON.parse(JSON.stringify(C.mo));
+  for (const k in C.lists) full[k] = JSON.parse(JSON.stringify([...C.lists[k].values()]));
+  coopMirror(full);
 }
 
 function coopWorld(m) {
@@ -332,6 +384,7 @@ function coopStep(dt) {
     const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
     if (d > 3) { a.x = a.tx; a.y = a.ty; } else { a.x += dx * k; a.y += dy * k; a.phase += Math.hypot(dx * k, dy * k) * 3; }
   }
+  if (typeof fyMirrorStep === 'function') fyMirrorStep(k2);
   for (const k of COOP_LISTS) for (const o of Game[k]) {
     if (o.tx === undefined || typeof o.x !== 'number') continue;
     const dx = o.tx - o.x, dy = o.ty - o.y;
@@ -346,6 +399,8 @@ function coopStep(dt) {
   if (h && h.cmd && Game.time - Coop.heroCmdAt > 1.2 && !(h.action && h.action.walk)) h.cmd = null;
   Coop.saveT += dt;
   if (Coop.saveT >= 30) { Coop.saveT = 0; coopSaveCopy(); }
+  Coop.viewT = (Coop.viewT || 0) + dt;
+  if (Coop.viewT >= 0.25) { Coop.viewT = 0; coopSendView(); }
 }
 
 // Копия общего мира на случай, когда сервер выключен: свой слот, личные сохранения не трогаем
@@ -743,8 +798,8 @@ function coopLost() {
     if (!opts) { busy = false; stop = true; msg.textContent = 'Войдите заново через меню (Выйти → Общая деревня).'; return; }
     coopConnect(opts).then(() => { stop = true; Coop.reconnecting = false; box.remove(); }).catch(e => {
       busy = false;
-      msg.textContent = e.message;
-      if (!stop && !Coop.kicked) setTimeout(tryAgain, 3000);
+      msg.textContent = e.message + (e.wait ? ` (следующая попытка через ${e.wait} с)` : '');
+      if (!stop && !Coop.kicked) setTimeout(tryAgain, e.wait ? e.wait * 1000 : 3000);
     });
   };
   box.addEventListener('click', e => {
@@ -1182,6 +1237,7 @@ function coopAdminOpen() {
     if (m.t === 'tempo') { Coop.tempo = { speed: m.speed, paused: m.paused, votes: m.votes, need: m.need }; tempoShow(); return; }
     if (m.t === 'prio') { prioApply(m.p); updateUI(true); return; }
     if (m.t === 'wk') { wkApply(m); updateUI(true); return; }
+    if (m.t === 'un') { if (typeof unApply === 'function') unApply(m); return; }
     if (m.t === 'diff') {
       Game.diff = diffKey(m.k);
       toast('Сложность деревни: ' + dif().name);

@@ -26,8 +26,11 @@ const mine = J(`
 ok(mine && mine.st === 'done', 'не удалось поставить рудник');
 if (!mine) { console.log('нет рудника — дальше нечего проверять'); process.exit(1); }
 ok(h.run('Game.lepr.length') === 0, 'лепрекон не должен быть до постройки рудника');
-run(110);
-ok(h.run('Game.lepr.length') === 1, 'у рудника через ~2 мин нет лепрекона: ' + h.run('Game.lepr.length'));
+// лепрекон мог появиться и уже раствориться в радуге (застрял, ушёл после спора) — считаем, что он был, и зовём снова
+let lepSeen = 0;
+L.runFor(sim, 110, 5, () => { lepSeen = Math.max(lepSeen, h.run('Game.lepr.length')); });
+ok(lepSeen === 1, 'у рудника через ~2 мин нет лепрекона: ' + lepSeen);
+if (!h.run('Game.lepr.some(L => !L.dead && L.st !== "gone")')) { h.run(`Game.lepr = []; Game.lepMine[${mine.id}] = Game.time;`); run(5); }
 ok(h.run('Game.log.some(e => /завёлся лепрекон/.test(e.text))'), 'в журнале нет записи о появлении');
 const mkLepReady = () => J(`
   const Lp = Game.lepr[0];

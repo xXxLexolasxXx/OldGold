@@ -16,6 +16,11 @@ const PORT = +process.env.PORT || 8787;
 const SAVE_EVERY = 30000;        // общий мир сохраняется раз в 30 секунд
 const PAUSE_EMPTY = true;
 const MAX_CONNS = +process.env.OLDGOLD_MAX_CONNS || 80, MAX_PER_IP = +process.env.OLDGOLD_MAX_PER_IP || 12;
+// Пределы деревни (замеры — НАГРУЗКА_СЕРВЕРА.md): игроков в мире одновременно; сверх лимита пускаем только вернувшихся после обрыва
+const MAX_PLAYERS = +process.env.OLDGOLD_MAX_PLAYERS || 40, RESERVE_SLOTS = 6, RETURN_WINDOW = 120000;
+const AUTH_TIMEOUT = 20000;           // соединение без входа дольше этого закрываем
+const AUTH_FAILS = 8;                 // неудачных входов с одного адреса за минуту — потом пауза
+const TEST_SPEED = +process.env.OLDGOLD_SPEED || 1;   // только для нагрузочных тестов (tools/loadtest): ускорение хода времени
 // Хост (права игроков, перезапуск) — подключение с этого же компьютера; на VPS за прокси такого нет,
 // поэтому хостами можно назначить ники: OLDGOLD_ADMIN="Торин,Аня"
 const ADMINS = new Set(String(process.env.OLDGOLD_ADMIN || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean));        // пока на сервере никого нет, деревня стоит (чтобы не пропасть без хозяев)
@@ -57,6 +62,7 @@ const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
 const stats = createStats(DATA, log);
 const events = require('./events').createEvents(DATA, log);
 const errReports = require('./errors').createErrors(DATA, log);   // анонимные отчёты об ошибках у игроков (POST /err)
+const tele = require('./telemetry').createTelemetry(DATA, log, events);   // статистика по согласию (POST /t), «Сообщить о проблеме» (POST /report), удаление по id (POST /t/forget)
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {
@@ -86,7 +92,16 @@ function saveUsers() {
   fs.writeFileSync(tmp, JSON.stringify(users));
   fs.renameSync(tmp, USERS_FILE);
 }
-const hashPass = (pass, salt) => crypto.scryptSync(pass, salt, 32).toString('hex');
+// scrypt считаем в пуле потоков, а не в главном: 100 входов подряд не должны замораживать мир (scryptSync держал цикл ~60 мс на вход)
+let scryptBusy = 0;
+const scryptQ = [];
+const hashPass = (pass, salt) => new Promise((resolve, reject) => {
+  const go = () => {
+    scryptBusy++;
+    crypto.scrypt(pass, salt, 32, (e, k) => { scryptBusy--; if (scryptQ.length) scryptQ.shift()(); if (e) reject(e); else resolve(k.toString('hex')); });
+  };
+  if (scryptBusy < 2) go(); else scryptQ.push(go);
+});
 const sha = s => crypto.createHash('sha256').update(s).digest('hex');
 const nickOk = n => typeof n === 'string' && /^[\p{L}\p{N}_\- ]{2,16}$/u.test(n) && n.trim() === n;
 
@@ -98,7 +113,7 @@ const call = (fn, ...args) => host.ctx[fn](...args);
 try { host.ctx.coopStateSet(fs.readFileSync(VIL_FILE, 'utf8')); } catch (e) { /* серий и рекордов ещё нет */ }
 const run = code => host.run(code);
 const SIM_DT = run('SIM_DT');
-const COOP_SPEED = 1.2;
+const COOP_SPEED = 1.2 * TEST_SPEED;
 // Время общей деревни: скорость ×0,5/×1/×2/×3 выбирает хост (запоминается в settings.json), пауза — хост сразу или голосованием
 const SPEEDS_OK = [0.5, 1, 2, 3];
 const tempo = { speed: 1, paused: false };
@@ -178,6 +193,7 @@ const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
   if (p === '/coop-info' && /metrics|digest/.test(req.url) && /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '') && !req.headers['x-forwarded-for']) {
     const q = new URL(req.url, 'http://x').searchParams;
+    if (q.has('gc') && global.gc) global.gc();   // для замеров утечек: сервер запущен с --expose-gc
     const out = q.has('metrics') ? metricsSnap() : digest();
     if (q.has('reset')) metricsReset();
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(out)); return;
@@ -185,6 +201,7 @@ const server = http.createServer((req, res) => {
   if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
   if (events.handle(req, res, req.socket.remoteAddress || '')) return;
   if (errReports.handle(req, res, req.socket.remoteAddress || '')) return;
+  if (tele.handle(req, res, String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim())) return;
   if (p === '/stats') {
     const q = new URL(req.url, 'http://x').searchParams;
     if (!keyOk(q.get('key'))) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('нужен ключ: /stats?key=… (он в файле stats.key в папке данных сервера)'); return; }
@@ -240,8 +257,10 @@ function frame(op, payload) {
 class Conn {
   constructor(sock, isHost, ip, origin) {
     this.sock = sock; this.isHost = isHost; this.ip = ip; this.origin = origin; this.buf = Buffer.alloc(0); this.frag = []; this.fragOp = 0;
-    this.z = false; this.nick = null; this.key = null; this.inGame = false; this.alive = true; this.seen = Date.now();
+    this.z = false; this.nick = null; this.key = null; this.inGame = false; this.alive = true; this.seen = this.born = Date.now();
     sock.on('data', d => this.onData(d));
+    // http-сервер держит сокеты в режиме allowHalfOpen: без этого клиент, закрывший соединение без прощального кадра (смена сети, убитая вкладка), висел в деревне до минуты
+    sock.on('end', () => { try { sock.end(); } catch (e) { /* ничего */ } });
     sock.on('close', () => this.onClose());
     sock.on('error', () => { try { sock.destroy(); } catch (e) { /* ничего */ } });
   }
@@ -249,9 +268,9 @@ class Conn {
   sendText(s) { this.sendFrame(typeof s === 'string' ? pack(s, this.z) : s); }
   sendFrame(f) {
     if (!this.alive || this.sock.destroyed) return;
-    // клиент не успевает читать (в буфере больше 4 МБ) — отключаем, иначе память сервера растёт без предела
-    if (this.sock.writableLength > 4 << 20) { this.sock.destroy(); return; }
-    M.bytesOut += f.length; M.msgsOut++;
+    // клиент не успевает читать (в буфере больше 2 МБ) — отключаем, иначе память сервера растёт без предела
+    if (this.sock.writableLength > 2 << 20) { M.slowKicked++; this.sock.destroy(); return; }
+    M.bytesOut += f.length; M.msgsOut++; ML.bytes += f.length;
     this.sock.write(f);
   }
   onData(d) {
@@ -290,8 +309,10 @@ class Conn {
     this.alive = false;
     conns.delete(this);
     if (this.inGame) {
+      left.set(this.key, Date.now());
       stats.leave(this.key);
       const d = call('coopLeave', this.nick);
+      call('coopViewDrop', this.nick);
       if (d) users[this.key].hero = JSON.parse(d);
       saveUsers();
       broadcast({ t: 'toast', text: `${this.nick} покидает деревню` });
@@ -299,6 +320,17 @@ class Conn {
     }
   }
 }
+
+// Отказ с понятным текстом: клиент получает сообщение (а не немую обрубку связи) и знает, сколько ждать до новой попытки
+function refuseSock(sock, msg, wait) {
+  M.refused++;
+  try { sock.end(Buffer.concat([frame(1, Buffer.from(JSON.stringify({ t: 'err', msg, full: true, wait }))), frame(8, Buffer.from([0x03, 0xf5]))])); } catch (e) { /* ничего */ }
+}
+const left = new Map();   // ключ игрока -> когда ушёл: вернувшимся после обрыва место в деревне держим 2 минуты
+const online = () => { let n = 0; for (const c of conns) if (c.inGame) n++; return n; };
+const returning = (key, self) => { for (const o of conns) if (o !== self && o.key === key && o.inGame) return true; const t = left.get(key); return !!t && Date.now() - t < RETURN_WINDOW; };
+const authFails = new Map();   // адрес -> { n, t }
+const THROTTLE_LOOP = process.env.OLDGOLD_THROTTLE_LOOPBACK === '1';
 
 server.on('upgrade', (req, sock) => {
   const key = req.headers['sec-websocket-key'];
@@ -311,26 +343,50 @@ server.on('upgrade', (req, sock) => {
   // настоящий адрес игрока за прокси — только для хэша в статистике, в открытом виде не хранится
   const ip = String(req.headers['x-forwarded-for'] || addr).split(',')[0].trim();
   // потолок соединений: лишних отсекаем сразу, чтобы не съесть память
-  if (conns.size >= MAX_CONNS || (!isHost && [...conns].filter(o => o.ip === ip).length >= MAX_PER_IP)) { sock.end(frame(8, Buffer.from([0x03, 0xf3]))); return; }
-  conns.add(new Conn(sock, isHost, ip, req.headers.origin || ''));
+  if (conns.size >= MAX_CONNS) return refuseSock(sock, 'Сервер переполнен подключениями. Подождите минуту и зайдите снова.', 30);
+  if (!isHost && [...conns].filter(o => o.ip === ip).length >= MAX_PER_IP) return refuseSock(sock, 'С вашего адреса открыто слишком много окон игры. Закройте лишние и зайдите снова.', 30);
+  const c = new Conn(sock, isHost, ip, req.headers.origin || '');
+  c.thr = !isHost || THROTTLE_LOOP;   // loopback (хост) от перебора паролей не ограничиваем, кроме тестов
+  conns.add(c);
 });
 
 // Метрики нагрузки: время шага и сборки пакетов, исходящий трафик (отдаются на /coop-info?metrics=1 только с loopback)
-const M = { ticks: 0, stepMs: 0, stepMax: 0, uMs: 0, uMax: 0, wMs: 0, wMax: 0, loopMax: 0, bytesOut: 0, msgsOut: 0, zMs: 0, zIn: 0, zOut: 0, lag: 0, since: Date.now() };
-function metricsReset() { Object.assign(M, { ticks: 0, stepMs: 0, stepMax: 0, uMs: 0, uMax: 0, wMs: 0, wMax: 0, loopMax: 0, bytesOut: 0, msgsOut: 0, lag: 0, uN: 0, wN: 0, since: Date.now() }); }
+const M = { ticks: 0, stepMs: 0, stepMax: 0, uMs: 0, uMax: 0, wMs: 0, wMax: 0, loopMax: 0, bytesOut: 0, msgsOut: 0, zMs: 0, zIn: 0, zOut: 0, lag: 0, since: Date.now(), refused: 0, slowKicked: 0, saveMs: 0, saveMax: 0, saveN: 0, busy: 0, cpu0: process.cpuUsage(), degraded: 0 };
+function metricsReset() { Object.assign(M, { ticks: 0, stepMs: 0, stepMax: 0, uMs: 0, uMax: 0, wMs: 0, wMax: 0, loopMax: 0, bytesOut: 0, msgsOut: 0, lag: 0, uN: 0, wN: 0, since: Date.now(), refused: 0, slowKicked: 0, saveMs: 0, saveMax: 0, saveN: 0, cpu0: process.cpuUsage() }); }
 function metricsSnap() {
-  const sec = Math.max(0.001, (Date.now() - M.since) / 1000), mu = process.memoryUsage();
+  const sec = Math.max(0.001, (Date.now() - M.since) / 1000), mu = process.memoryUsage(), cpu = process.cpuUsage(M.cpu0);
   return {
     sec: +sec.toFixed(1), online: [...conns].filter(c => c.inGame).length, conns: conns.size,
     stepAvgMs: +(M.stepMs / Math.max(1, M.ticks)).toFixed(2), stepMaxMs: +M.stepMax.toFixed(1),
     unitsPktAvgMs: +(M.uMs / Math.max(1, M.uN || 1)).toFixed(2), unitsPktMaxMs: +M.uMax.toFixed(1),
     worldPktAvgMs: +(M.wMs / Math.max(1, M.wN || 1)).toFixed(2), worldPktMaxMs: +M.wMax.toFixed(1),
     zipMs: +M.zMs.toFixed(0), zipRatio: M.zOut ? +(M.zIn / M.zOut).toFixed(1) : 0, loopLagMaxMs: +M.loopMax.toFixed(1), outKBps: +(M.bytesOut / 1024 / sec).toFixed(1), outMsgsPerSec: +(M.msgsOut / sec).toFixed(1),
-    rssMB: +(mu.rss / 1048576).toFixed(1), heapMB: +(mu.heapUsed / 1048576).toFixed(1),
+    outBytes: M.bytesOut, rssMB: +(mu.rss / 1048576).toFixed(1), heapMB: +(mu.heapUsed / 1048576).toFixed(1),
     units: run('Game.units.length'), buildings: run('Game.buildings.length'),
+    cpuPct: +(((cpu.user + cpu.system) / 1000) / (sec * 10)).toFixed(1), busyPct: +(M.busy * 100).toFixed(1), degraded: M.degraded, refused: M.refused, slowKicked: M.slowKicked,
+    saveAvgMs: +(M.saveMs / Math.max(1, M.saveN)).toFixed(1), saveMaxMs: +M.saveMax.toFixed(1), maxQueuedKB: Math.round(Math.max(0, ...[...conns].map(c => c.sock.writableLength)) / 1024),
+    ext: +(mu.external / 1048576).toFixed(1), arrays: run('Object.entries(Game).filter(([k, v]) => Array.isArray(v) && v.length > 50).map(([k, v]) => k + ":" + v.length).join(" ")'),
+    usersFileKB: Math.round(JSON.stringify(users).length / 1024),
   };
 }
-function digest() { return JSON.parse(run('JSON.stringify({ roads: World.road.reduce((a, v) => a + v, 0), buildings: Game.buildings.length, bids: Game.buildings.map(b => b.id).sort((a, b) => a - b).join(","), objs: World.obj.filter(Boolean).length })')); }
+function digest() { return JSON.parse(run('JSON.stringify({ roads: World.road.reduce((a, v) => a + v, 0), buildings: Game.buildings.length, bids: Game.buildings.map(b => b.id).sort((a, b) => a - b).join(","), objs: World.obj.filter(Boolean).length, units: Game.units.filter(u => !u.dead).map(u => [u.id, Math.round(u.x * 10) / 10, Math.round(u.y * 10) / 10]) })')); }
+
+// Постоянный журнал нагрузки: раз в минуту строка JSON в metrics.log в папке данных (тик, память, трафик, онлайн)
+const METRICS_LOG = path.join(DATA, 'metrics.log');
+const ML = { bytes: 0, ticks: 0, stepMs: 0, stepMax: 0, loopMax: 0, at: Date.now() };
+setInterval(() => {
+  const now = Date.now(), sec = Math.max(1, (now - ML.at) / 1000), mu = process.memoryUsage();
+  const rec = {
+    at: new Date(now).toISOString(), online: [...conns].filter(c => c.inGame).length, units: run('Game.units.length'),
+    stepAvgMs: +(ML.stepMs / Math.max(1, ML.ticks)).toFixed(2), stepMaxMs: +ML.stepMax.toFixed(1), loopLagMaxMs: +ML.loopMax.toFixed(0),
+    outKBps: +(ML.bytes / 1024 / sec).toFixed(1), rssMB: +(mu.rss / 1048576).toFixed(1), heapMB: +(mu.heapUsed / 1048576).toFixed(1),
+  };
+  Object.assign(ML, { bytes: 0, ticks: 0, stepMs: 0, stepMax: 0, loopMax: 0, at: now });
+  try {
+    if (fs.existsSync(METRICS_LOG) && fs.statSync(METRICS_LOG).size > 5 << 20) fs.renameSync(METRICS_LOG, METRICS_LOG + '.1');   // не больше ~10 МБ на два файла
+    fs.appendFileSync(METRICS_LOG, JSON.stringify(rec) + '\n');
+  } catch (e) { /* журнал необязателен */ }
+}, 60000).unref();
 
 function broadcast(obj, to) {
   const s = typeof obj === 'string' ? obj : JSON.stringify(obj);
@@ -341,10 +397,23 @@ function broadcast(obj, to) {
   }
 }
 
+// Пакет жителей: новым клиентам — своя дельта с учётом их камеры, старым — общий полный пакет
+function sendUnits() {
+  call('coopUnitsBuild');
+  let full = null, fz = null, fp = null;
+  for (const c of conns) {
+    if (!c.inGame) continue;
+    if (c.d) { const v = c.view || [NaN, NaN, NaN, NaN]; c.sendText(call('coopUnitsFor', c.nick, v[0], v[1], v[2], v[3])); continue; }
+    if (!full) full = call('coopUnitsPacket');
+    c.sendFrame(c.z ? fz || (fz = pack(full, true)) : fp || (fp = pack(full, false)));
+  }
+}
+
 // ---------- Сообщения игроков ----------
 function joinWorld(c) {
   const rec = users[c.key];
   const uid = call('coopJoin', c.nick, JSON.stringify(rec.hero));
+  call('coopViewDrop', c.nick);   // дельта жителей для него начинается заново
   c.inGame = true;
   stats.join(c.key, c.nick, { cls: rec.hero && rec.hero.cls, ip: c.ip, ver: c.ver, from: c.origin });
   c.sendText(call('coopInitPacket', uid));
@@ -354,40 +423,71 @@ function joinWorld(c) {
   log('вошёл', c.nick, c.isHost ? '(хост)' : '');
 }
 
+// Вход: пароль считается в пуле потоков (await), поэтому после каждого ожидания проверяем, что соединение ещё живо
+async function auth(c, m) {
+  const now = Date.now();
+  if (c.thr) {
+    const f = authFails.get(c.ip);
+    if (f && f.n >= AUTH_FAILS && now - f.t < 60000) return c.send({ t: 'err', msg: 'Слишком много неудачных попыток входа. Подождите минуту.', wait: 60 });
+  }
+  const bad = msg => { if (c.thr) { const f = authFails.get(c.ip); if (f && now - f.t < 60000) f.n++; else authFails.set(c.ip, { n: 1, t: now }); } return c.send({ t: 'err', msg }); };
+  const nick = String(m.nick || '').trim(), pass = String(m.pass || '');
+  if (!nickOk(nick)) return c.send({ t: 'err', msg: 'Ник: 2–16 символов, буквы, цифры, пробел, _ и -' });
+  if (m.mode !== 'token' && (pass.length < 3 || pass.length > 64)) return c.send({ t: 'err', msg: 'Пароль: от 3 символов' });
+  const key = nick.toLowerCase();
+  let rec = users[key];
+  if (m.mode === 'register') {
+    if (rec) return c.send({ t: 'err', msg: 'Такой ник уже занят' });
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = await hashPass(pass, salt);
+    if (!c.alive) return;
+    if (users[key]) return c.send({ t: 'err', msg: 'Такой ник уже занят' });
+    const full = admitMsg(c, key);
+    if (full) return refuse(c, full);
+    rec = users[key] = { nick, salt, hash, hero: null, created: Date.now() };
+    saveUsers();
+  } else if (m.mode === 'token') {
+    if (!rec || !(rec.toks || []).includes(sha(String(m.token || '')))) return c.send({ t: 'err', msg: 'Сессия устарела — войдите по паролю', stale: true });
+  } else {
+    if (!rec) return bad('Такого игрока нет — сначала зарегистрируйтесь');
+    const h = await hashPass(pass, rec.salt);
+    if (!c.alive) return;
+    if (h !== rec.hash) return bad('Неверный пароль');
+  }
+  const full = admitMsg(c, key);
+  if (full) return refuse(c, full);
+  // тот же игрок с другой вкладки или после обрыва связи: старое соединение уступает новому
+  for (const o of conns) if (o !== c && o.key === key) {
+    o.send({ t: 'kicked', msg: 'Вы вошли в деревню с другого окна или устройства' });
+    try { o.sock.end(); } catch (e) { /* ничего */ }
+    o.onClose();
+  }
+  c.nick = rec.nick; c.key = key; c.ver = typeof m.ver === 'string' ? m.ver.slice(0, 40) : ''; c.z = m.z === 1; c.d = m.d === 1; c.view = null;
+  if (ADMINS.has(key)) c.isHost = true;
+  let token;
+  if (m.mode !== 'token') { token = crypto.randomBytes(24).toString('hex'); rec.toks = [...(rec.toks || []).slice(-4), sha(token)]; saveUsers(); }   // запомнить вход на этом устройстве
+  const meta = JSON.parse(call('coopMeta'));
+  c.send({ t: 'welcome', token, nick: c.nick, host: c.isHost, perms: meta.perms, permLabels: meta.permLabels, needClass: !rec.hero, classes: meta.classes, chat: meta.chat, sv: SERVER_VER });
+  if (rec.hero) joinWorld(c);
+}
+
+// Пускать ли ещё одного игрока: лимит игроков (вернувшимся после обрыва — с запасом) и перегрузка сервера
+function admitMsg(c, key) {
+  if (c.isHost) return null;
+  const back = returning(key, c), n = online() - ([...conns].some(o => o !== c && o.key === key && o.inGame) ? 1 : 0);
+  if (n >= MAX_PLAYERS + (back ? RESERVE_SLOTS : 0)) return { msg: `В деревне сейчас ${n} игроков из ${MAX_PLAYERS} возможных — мест нет. Попробуйте через несколько минут.`, wait: 30 };
+  if (M.degraded >= 2 && !back) return { msg: 'Сервер сейчас сильно загружен, новых игроков пока не пускаем. Попробуйте через минуту.', wait: 30 };
+  return null;
+}
+function refuse(c, x) { M.refused++; c.send({ t: 'err', msg: x.msg, full: true, wait: x.wait }); setTimeout(() => { try { c.sock.end(frame(8, Buffer.from([0x03, 0xf5]))); } catch (e) { /* ничего */ } }, 200); }
+
 function onMessage(c, text) {
   let m;
   try { m = JSON.parse(text); } catch (e) { return; }
   if (!c.nick) {
-    if (m.t !== 'auth') return;
-    const nick = String(m.nick || '').trim(), pass = String(m.pass || '');
-    if (!nickOk(nick)) return c.send({ t: 'err', msg: 'Ник: 2–16 символов, буквы, цифры, пробел, _ и -' });
-    if (m.mode !== 'token' && (pass.length < 3 || pass.length > 64)) return c.send({ t: 'err', msg: 'Пароль: от 3 символов' });
-    const key = nick.toLowerCase();
-    let rec = users[key];
-    if (m.mode === 'register') {
-      if (rec) return c.send({ t: 'err', msg: 'Такой ник уже занят' });
-      const salt = crypto.randomBytes(16).toString('hex');
-      rec = users[key] = { nick, salt, hash: hashPass(pass, salt), hero: null, created: Date.now() };
-      saveUsers();
-    } else if (m.mode === 'token') {
-      if (!rec || !(rec.toks || []).includes(sha(String(m.token || '')))) return c.send({ t: 'err', msg: 'Сессия устарела — войдите по паролю', stale: true });
-    } else {
-      if (!rec) return c.send({ t: 'err', msg: 'Такого игрока нет — сначала зарегистрируйтесь' });
-      if (hashPass(pass, rec.salt) !== rec.hash) return c.send({ t: 'err', msg: 'Неверный пароль' });
-    }
-    // тот же игрок с другой вкладки или после обрыва связи: старое соединение уступает новому
-    for (const o of conns) if (o !== c && o.key === key) {
-      o.send({ t: 'kicked', msg: 'Вы вошли в деревню с другого окна или устройства' });
-      try { o.sock.end(); } catch (e) { /* ничего */ }
-      o.onClose();
-    }
-    c.nick = rec.nick; c.key = key; c.ver = typeof m.ver === 'string' ? m.ver.slice(0, 40) : ''; c.z = m.z === 1;
-    if (ADMINS.has(key)) c.isHost = true;
-    let token;
-    if (m.mode !== 'token') { token = crypto.randomBytes(24).toString('hex'); rec.toks = [...(rec.toks || []).slice(-4), sha(token)]; saveUsers(); }   // запомнить вход на этом устройстве
-    const meta = JSON.parse(call('coopMeta'));
-    c.send({ t: 'welcome', token, nick: c.nick, host: c.isHost, perms: meta.perms, permLabels: meta.permLabels, needClass: !rec.hero, classes: meta.classes, chat: meta.chat });
-    if (rec.hero) joinWorld(c);
+    if (m.t !== 'auth' || c.authing) return;
+    c.authing = true;
+    auth(c, m).catch(e => { log('ошибка входа:', e.message); c.send({ t: 'err', msg: 'Сервер не смог обработать вход, попробуйте ещё раз' }); }).finally(() => { c.authing = false; });
     return;
   }
   if (m.t === 'class') {
@@ -395,6 +495,8 @@ function onMessage(c, text) {
     if (rec.hero || c.inGame) return;
     const meta = JSON.parse(call('coopMeta'));
     if (!meta.classes[m.cls]) return;
+    const full = admitMsg(c, c.key);
+    if (full) return refuse(c, full);
     rec.hero = { cls: m.cls, level: 1, hp: meta.classes[m.cls].hp, inv: [{ k: 'bread', n: 2 }], look: (Math.random() * 1000) | 0 };
     if (Array.isArray(m.ap) && m.ap.length <= 12) rec.hero.ap = m.ap.map(v => (Number.isInteger(v) ? v : -1));   // облик героя (heroapp.js чистит значения при входе)
     saveUsers();
@@ -497,6 +599,27 @@ function onMessage(c, text) {
     log('права:', m.key, m.on ? 'вкл' : 'выкл');
     return;
   }
+  // стресс-тест: вырастить деревню сразу (только с OLDGOLD_STRESS=1 и только хосту с этого компьютера)
+  if (m.t === 'xgrow') {
+    if (process.env.OLDGOLD_STRESS !== '1' || !c.isHost) return;
+    const n = Math.max(0, Math.min(400, m.n | 0));
+    run(`(function (n) {
+      const st = Game.buildings.find(b => b.type === 'storehouse') || { doorX: MAP_W >> 1, doorY: MAP_H >> 1 };
+      const T = ['serf', 'serf', 'serf', 'builder', 'woodcutter', 'farmer', 'stonemason', 'carpenter'];
+      for (let k = 0, tries = 0; k < n && tries < n * 50; tries++) {
+        const x = st.doorX + Math.floor(Math.random() * 31) - 15, y = st.doorY + Math.floor(Math.random() * 31) - 15;
+        if (!inb(x, y) || !isWalkable(x, y)) continue;
+        spawnUnit(T[k % T.length], x + 0.5, y + 0.5); k++;
+      }
+    })(${n})`);
+    return;
+  }
+  // камера клиента: какие клетки он видит — жителей за пределами шлём реже (интерес-менеджмент)
+  if (m.t === 'view') {
+    const v = [m.x0, m.y0, m.x1, m.y1];
+    if (v.every(Number.isFinite)) c.view = v.map(Math.round);
+    return;
+  }
   // защита от заливания командами (залипшая мышь, кривой клиент): ведро на 60 сообщений, 30 в секунду
   const nowMs = Date.now();
   c.bucket = Math.min(60, (c.bucket ?? 60) + (nowMs - (c.bucketAt || nowMs)) / 1000 * 30);
@@ -508,12 +631,16 @@ function onMessage(c, text) {
 
 // ---------- Главный цикл ----------
 let last = Date.now(), acc = 0, tU = 0, tW = 0, tMe = 0, tSave = Date.now();
+let toldOverload = 0;
 setInterval(() => {
-  const now = Date.now();
-  M.loopMax = Math.max(M.loopMax, now - last - 50);
+  const now = Date.now(), tLoop = performance.now();
+  const gapMs = Math.max(50, now - last);   // сколько прошло с прошлого тика (при перегрузе тик опаздывает)
+  M.loopMax = Math.max(M.loopMax, now - last - 50); ML.loopMax = Math.max(ML.loopMax, now - last - 50);
   const dt = Math.min(0.5, (now - last) / 1000);
   last = now;
-  const online = [...conns].some(c => c.inGame);
+  let inGame = 0;
+  for (const c of conns) if (c.inGame) inGame++;
+  const online = inGame > 0;
   if (online || !PAUSE_EMPTY) {
     if (tempo.paused) acc = 0; else acc += dt * COOP_SPEED * tempo.speed;   // в общей деревне время идёт чуть быстрее обычного
     let n = 0;
@@ -522,20 +649,30 @@ setInterval(() => {
       try { host.ctx.step(SIM_DT); } catch (e) { log('ошибка шага:', e.stack); }
       acc -= SIM_DT; n++;
     }
-    if (n) { const ms = (performance.now() - t0) / n; M.ticks += n; M.stepMs += ms * n; M.stepMax = Math.max(M.stepMax, ms); }
+    if (n) { const ms = (performance.now() - t0) / n; M.ticks += n; M.stepMs += ms * n; M.stepMax = Math.max(M.stepMax, ms); ML.ticks += n; ML.stepMs += ms * n; ML.stepMax = Math.max(ML.stepMax, ms); }
     if (n >= 20) acc = 0;
   } else { acc = 0; if (tempo.paused) setPaused(false); }
   if (online) {
     tU += dt; tW += dt; tMe += dt;
-    if (tU >= 0.2) { tU = 0; const t1 = performance.now(); const p = call('coopUnitsPacket'); const ms = performance.now() - t1; M.uN = (M.uN || 0) + 1; M.uMs += ms; M.uMax = Math.max(M.uMax, ms); broadcast(p); }
-    if (tW >= 0.5) { tW = 0; const t1 = performance.now(); const w = call('coopWorldPacket'); const ms = performance.now() - t1; M.wN = (M.wN || 0) + 1; M.wMs += ms; M.wMax = Math.max(M.wMax, ms); if (w) broadcast(w); }
+    // деградация: сервер не успевает — снимки жителей и мира реже (меньше работы и трафика), игра при этом идёт
+    const slow = M.degraded >= 1;
+    if (tU >= (slow ? 0.4 : inGame >= 16 ? 0.3 : 0.2)) { tU = 0; const t1 = performance.now(); sendUnits(); const ms = performance.now() - t1; M.uN = (M.uN || 0) + 1; M.uMs += ms; M.uMax = Math.max(M.uMax, ms); }
+    if (tW >= (slow ? 1 : 0.5)) { tW = 0; const t1 = performance.now(); const w = call('coopWorldPacket'); const ms = performance.now() - t1; M.wN = (M.wN || 0) + 1; M.wMs += ms; M.wMax = Math.max(M.wMax, ms); if (w) broadcast(w); }
     if (tMe >= 1) { tMe = 0; for (const c of conns) if (c.inGame) { const me = call('coopMeData', c.nick); if (me) c.sendText(me); } }
     const ev = JSON.parse(call('coopDrain'));
     for (const e of ev) {
       broadcast(e.msg, e.to);
     }
   } else call('coopDrain');
-  if (now - tSave >= SAVE_EVERY) { tSave = now; if (saveWorld() && online) broadcast({ t: 'saved' }); }
+  if (now - tSave >= SAVE_EVERY) { tSave = now; const t2 = performance.now(); const ok = saveWorld(); const ms = performance.now() - t2; M.saveN++; M.saveMs += ms; M.saveMax = Math.max(M.saveMax, ms); if (ok && online) broadcast({ t: 'saved' }); }
+  // загрузка цикла: доля времени, занятая работой между тиками (скользящее среднее). >60% — реже снимки, >85% — новых игроков не пускаем
+  M.busy = M.busy * 0.97 + Math.min(1.5, (performance.now() - tLoop) / gapMs) * 0.03;
+  const lvl = M.busy > 0.85 ? 2 : M.busy > 0.6 ? 1 : M.busy < 0.4 ? 0 : M.degraded;
+  if (lvl !== M.degraded) {
+    M.degraded = lvl;
+    log('нагрузка:', ['норма', 'тяжело — снимки реже', 'перегруз — новых игроков не пускаем'][lvl], `(цикл занят на ${Math.round(M.busy * 100)}%)`);
+    if (lvl === 2 && now - toldOverload > 60000) { toldOverload = now; broadcast({ t: 'toast', text: 'Сервер перегружен: игра может замедлиться, новых игроков пока не пускаем' }); }
+  }
 }, 50);
 
 // Пинг: браузер сам отвечает на него, а молчащее больше минуты соединение (сон ноутбука, обрыв Wi-Fi) закрываем —
@@ -543,10 +680,13 @@ setInterval(() => {
 setInterval(() => {
   const now = Date.now();
   for (const c of conns) {
-    if (now - c.seen > 60000) { try { c.sock.destroy(); } catch (e) { /* ничего */ } c.onClose(); }
-    else if (!c.sock.destroyed) c.sock.write(frame(9, Buffer.alloc(0)));
+    if (!c.nick && now - c.born > AUTH_TIMEOUT) { try { c.sock.end(Buffer.concat([frame(1, Buffer.from(JSON.stringify({ t: 'err', msg: 'Время на вход вышло — зайдите снова' }))), frame(8, Buffer.from([0x03, 0xe8]))])); } catch (e) { /* ничего */ } }
+    else if (now - c.seen > 60000) { try { c.sock.destroy(); } catch (e) { /* ничего */ } c.onClose(); }
+    else if (!c.sock.destroyed && now - (c.pinged || 0) >= 20000) { c.pinged = now; c.sock.write(frame(9, Buffer.alloc(0))); }
   }
-}, 20000);
+  for (const [k, t] of left) if (now - t > RETURN_WINDOW) left.delete(k);
+  for (const [k, f] of authFails) if (now - f.t > 60000) authFails.delete(k);
+}, 5000);
 
 function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); process.exit(0); }
 process.on('SIGINT', shutdown);

@@ -41,7 +41,7 @@ function eraDrawFx(c, b, spr, ox, oy) {
   const fx = b.eraFx, t = Game.time - fx.t0;
   if (t < 0) return false;
   if (t > ERA_FX.dur) { b.eraFx = null; eraFinish(b); return false; }
-  const cur = buildingSprite(b.type, b.rot || 0, b.level);
+  const cur = buildingSprite(b.type, b.rot || 0, b.level, undefined, b.hv || 0);
   const p = t / ERA_FX.dur, e = p * p * (3 - 2 * p);
   const line = Math.round(spr.h * (1 - e));
   if (!fx.began) {

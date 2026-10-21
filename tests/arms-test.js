@@ -35,27 +35,36 @@ ok(t.max === 12 && t.dmg.length === 13, 'потолок +12');
 ok(t.dmg.every((v, i) => !i || v > t.dmg[i - 1]), 'бонус урона должен расти с уровнем');
 ok(t.dmg[5] - t.dmg[0] <= 0.16 && t.dmg[6] - t.dmg[5] >= 0.09 && t.dmg[12] >= 2 && t.dmg[12] <= 2.5, 'после +5 бонусы растут заметно, но без перекоса: ' + t.dmg);
 
-// 3. Точим: до +3 всегда, дальше по шансу, неудача уровень не снижает, железо тратится, потолок
+// 3. Точим: до +3 всегда; дальше по шансу, неудача РАЗБИВАЕТ оружие (слиток железа остаётся); «бережно» — цело, но +0; потолок
 const e = J(`${PLACE} const h = Game.hero, H = h.hero; H.equip.weapon = 'sword'; H.enh = null;
   const ws = place('weaponsmith');
-  ws.stock.iron = 99; const rnd = Math.random, log = [];
+  ws.stock.iron = 99; ws.stock.gold = 20; const rnd = Math.random, log = [];
+  for (const s of Game.buildings) if (s.isStore()) s.stock.magicstone = 0;
   Math.random = () => 0.999;                   // «всегда неудача» — на безопасных уровнях всё равно успех
-  for (let i = 0; i < 4; i++) { arEnhance(ws); log.push(enhLv(H)); }
+  for (let i = 0; i < 3; i++) { arEnhance(ws); log.push(enhLv(H)); }
   const ironAfter = ws.stock.iron;
   Math.random = () => 0.7; arEnhance(ws); log.push(enhLv(H));      // +4 при 70% < 80% — успех
-  Math.random = () => 0.7; arEnhance(ws); log.push(enhLv(H));      // +5 нужно <60%: неудача
   Math.random = () => 0.5; arEnhance(ws); log.push(enhLv(H));      // +5 успех
-  Math.random = () => 0.3; arEnhance(ws); log.push(enhLv(H));      // +6 нужно <40%: успех
-  Math.random = () => 0.25; arEnhance(ws); log.push(enhLv(H));     // +7 нужно <20%: неудача
-  Math.random = () => 0.1; for (let i = 0; i < 12; i++) arEnhance(ws); log.push(enhLv(H));
+  arEnhance(ws, true); const noStone = enhLv(H);                   // бережно без камня — отказ, ничего не меняется
+  const hub = Game.buildings.find(s => s.isStore()); hub.stock.magicstone = 2;
+  Math.random = () => 0.9; arEnhance(ws, true);                    // бережно, неудача: оружие цело, +0
+  const careful = { w: H.equip.weapon, lv: enhLv(H), stone: hub.stock.magicstone };
+  Math.random = () => 0.1; for (let i = 0; i < 12; i++) arEnhance(ws); log.push(enhLv(H));   // до потолка
   H.equip.weapon = 'bow'; const other = enhLv(H); H.equip.weapon = 'sword';
-  const html = arEnhPanel(ws) + arForgePanel(ws);
+  H.enh = { k: 'sword', lv: 4 }; const html = arEnhPanel(ws) + arForgePanel(ws);
+  H.enh = { k: 'sword', lv: 6 }; H.dur = { sword: 50 }; const ir0 = ws.stock.iron;
+  Math.random = () => 0.5; arEnhance(ws);                         // +7 нужно <20%: разбито
+  const broke = { w: H.equip.weapon, enh: H.enh, dur: H.dur.sword, iron: ws.stock.iron - ir0 };
   Math.random = rnd;
-  return { log, ironAfter, other, html: /Заточка оружия/.test(html) };`);
-ok(JSON.stringify(e.log) === JSON.stringify([1, 2, 3, 3, 4, 4, 5, 6, 6, 12]), 'заточка по шансам: ' + e.log);
+  return { log, ironAfter, other, html: /Заточка оружия/.test(html) && /разбивает/.test(html), noStone, careful, broke };`);
+ok(JSON.stringify(e.log) === JSON.stringify([1, 2, 3, 4, 5, 12]), 'заточка по шансам: ' + e.log);
 ok(e.ironAfter < 99, 'железо должно тратиться на заточку');
+ok(e.noStone === 5, 'бережная заточка без магического камня должна отказать: ' + e.noStone);
+ok(e.careful.w === 'sword' && e.careful.lv === 0 && e.careful.stone === 1, 'бережная неудача: оружие цело, заточка +0, камень потрачен: ' + JSON.stringify(e.careful));
+ok(e.broke.w === null && !e.broke.enh && e.broke.dur === undefined, 'неудача выше +3 должна разбить оружие: ' + JSON.stringify(e.broke));
+ok(e.broke.iron === 1 - 3, 'от разбитого оружия остаётся слиток (цена +7 — 3 железа): ' + e.broke.iron);
 ok(e.other === 0, 'заточка относится к надетому оружию (у лука должно быть +0): ' + e.other);
-ok(e.html, 'в окне оружейной нет раздела заточки');
+ok(e.html, 'в окне оружейной нет раздела заточки с предупреждением');
 
 // 4. Бонусы заточки в бою: меткость и урон растут; удар по здоровой цели не добивает её (по слабой — как обычно)
 const b = J(`const h = Game.hero, H = h.hero; H.equip.weapon = 'sword';
