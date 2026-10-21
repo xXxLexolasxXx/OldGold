@@ -183,6 +183,30 @@ h.ctx.__s = s0; h.run('applySave(__s)');
 const mir2 = J('return lepMirror()');
 ok(mir2.length === 1 && mir2[0].__id && typeof mir2[0].fr === 'string' && mir2[0].x > 0, 'зеркало: ' + JSON.stringify(mir2[0]));
 
+// страховка от застревания: «ушёл», а горшок не тает → через LEP_GONE_MAX исчезает сам; зависший спор тоже
+J(`const Lp = Game.lepr[0]; Lp.st = 'gone'; Lp.hide = true; Lp.potA = 1; Lp.potFade = false; Lp.rbA = 1; return 1;`);
+run(12);
+ok(h.run('Game.lepr.length') === 0, 'лепрекон с нерастаявшим горшком не исчез за 12 с (застрял «в бегстве»)');
+ok(h.run('Game.lepMine[' + mine.id + '] > Game.time'), 'после исчезновения у рудника нет отдыха');
+h.run('Game.lepMine[' + mine.id + '] = 0'); run(10);
+ok(h.run('Game.lepr.length') === 1, 'лепрекон не вернулся к руднику после отдыха');
+J(`const Lp = Game.lepr[0]; Lp.st = 'duel'; Lp.d = { u: -5, slap: false, stake: 1, got: 0 }; Lp.seq = LEP_SEQ_STEAL; Lp.si = 2; Lp.sT = 0; return 1;`);
+run(3);
+ok(h.run('Game.lepr.length') === 0 || h.run('Game.lepr[0].st') !== 'duel', 'спор без свидетеля не прерван');
+// в непроходимой клетке (на лепрекона встал дом) — переносится к руднику, а не застывает в стене
+h.run('Game.lepMine[' + mine.id + '] = 0'); run(10);
+const wall = J(`
+  const Lp = Game.lepr[0]; if (!Lp) return null;
+  let bad = null;
+  for (let y = 1; y < MAP_H - 1 && !bad; y++) for (let x = 1; x < MAP_W - 1 && !bad; x++) if (!isWalkable(x, y) && Math.hypot(x - Lp.hx, y - Lp.hy) < 12 && Math.hypot(x - Lp.hx, y - Lp.hy) > 4) bad = [x, y];
+  if (!bad) return { skip: true };
+  Lp.st = 'idle'; Lp.x = bad[0] + 0.5; Lp.y = bad[1] + 0.5; Lp.hide = false;
+  return { x: bad[0], y: bad[1] };
+`);
+if (wall && !wall.skip) { run(3); ok(h.run('Game.lepr.length === 0 || isWalkable(Math.floor(Game.lepr[0].x), Math.floor(Game.lepr[0].y))'), 'лепрекон остался в непроходимой клетке'); }
+h.run('Game.lepMine[' + mine.id + '] = 0'); run(10);
+// сейв выше мог потерять лепрекона — тест ниже не зависит от него
+
 // пара минут без ошибок и лишних лепреконов
 run(120);
 ok(h.run('Game.lepr.length') <= 1, 'лепреконов больше, чем рудников: ' + h.run('Game.lepr.length'));
