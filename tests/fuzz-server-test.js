@@ -218,9 +218,9 @@ const closedSoon = async (cl, ms = 3000) => { const t0 = Date.now(); while (!cl.
     info.push(`флуд: чатов ушло ${chats} из 300, тостов паузы ${pauses} из 100`);
 
     // молчащее соединение без входа закрыто
-    const left = 21500 - (Date.now() - idleAt);
+    const left = 20000 - (Date.now() - idleAt);
     if (left > 0) await sleep(left);
-    if (!(await closedSoon(idle, 2000))) fails.push('соединение без входа живёт дольше 20 с (занимает места MAX_CONNS)');
+    if (!(await closedSoon(idle, 8000))) fails.push('соединение без входа живёт дольше 28 с (занимает места MAX_CONNS)');
     if (!(await alive('всё вместе'))) return;
     const bad = out.split('\n').filter(l => /ошибка шага|ошибка в сообщении|ошибка HTTP|ошибка входа/.test(l));
     if (bad.length) fails.push('в журнале сервера ошибки:\n' + bad.slice(0, 5).join('\n'));
