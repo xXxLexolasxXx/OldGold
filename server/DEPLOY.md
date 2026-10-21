@@ -101,6 +101,18 @@ node /opt/oldgold/server/events.js /var/lib/oldgold          # текстом (-
 Или в браузере: `https://151-252-107-75.sslip.io/stats?key=КЛЮЧ` — внизу блок «Воронка одиночной игры» (в `&json` — поле `solo`).
 Список событий — в `СТАТИСТИКА.md`. После обновления сервера: `systemctl restart oldgold`.
 
+## Отчёты игроков «Сообщить о проблеме»
+
+`POST /report` кладёт отчёт в `/var/lib/oldgold/reports/<номер>/` (report.json, shot.jpg, save.json) — папку сервер создаёт сам
+от своего пользователя, ничего настраивать не нужно. «Удалить мои данные» — `POST /t/forget`.
+Лимиты: 5 отчётов за 10 мин с адреса, до 10 МБ, всего не больше 3000. Caddy пропускает большие тела сам; для nginx нужен `client_max_body_size 12m`.
+
+```bash
+cd /opt/oldgold && node tools/reports.js /var/lib/oldgold          # список отчётов
+node tools/reports.js /var/lib/oldgold 1a2b --log                  # отчёт целиком (номер можно частично)
+scp root@151.252.107.75:/var/lib/oldgold/reports/<номер>/shot.jpg .   # снимок к себе
+```
+
 Резервная копия мира и аккаунтов:
 
 ```bash
@@ -185,6 +197,7 @@ server {
         proxy_set_header Connection "upgrade";
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_read_timeout 120s;
+        client_max_body_size 12m;   # «Сообщить о проблеме» со снимком и сохранением
     }
 }
 ```

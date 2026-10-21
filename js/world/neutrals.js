@@ -27,8 +27,8 @@ const NSPEC = {
 };
 // из чего состоит логово
 const NLAIR = {
-  pixie: ['pixie', 'pixie', 'pixie'],
-  fairy: ['fairy', 'fairy', 'fairy'],
+  pixie: ['pixie', 'pixie'],
+  fairy: ['fairy', 'fairy'],
   leshy: ['leshy'],
   boar:  ['boar', 'boar'],
   spore: ['spore', 'spore', 'spore'],
@@ -103,7 +103,18 @@ function neuAddLair(k, site, minStart) {
   return lair;
 }
 
-const NEU_MIN_PIXIE = 3;   // на каждой карте — не меньше трёх селений цветочных фей
+const NEU_MIN_PIXIE = 1;   // на каждой карте есть хотя бы одно селение цветочных фей
+// потолок логов фей на карту: раньше феи занимали почти половину лесов (отзыв «одни феи»)
+const NEU_FAIRY_CAP = { pixie: 2, fairy: 1 };
+// какие логова идут в лес по очереди: чаще звери и лешие, феи — редкость
+const NEU_KIND_BAG = ['boar', 'leshy', 'spore', 'boar', 'leshy', 'fairy', 'boar', 'spore', 'leshy', 'pixie'];
+function neuPickKind(rng, n) {
+  for (let k = 0; k < NEU_KIND_BAG.length; k++) {
+    const kind = NEU_KIND_BAG[(n + (rng() * 3 | 0) + k) % NEU_KIND_BAG.length];
+    if (!NEU_FAIRY_CAP[kind] || Game.lairs.filter(l => l.k === kind).length < NEU_FAIRY_CAP[kind]) return kind;
+  }
+  return 'boar';
+}
 
 function neuSpawnAll(seed) {
   if (MapOpt.custom && MapOpt.custom.nm !== 'auto') { meSpawnLairs(); return; }   // карта игрока: логова расставил автор
@@ -114,15 +125,14 @@ function neuSpawnAll(seed) {
   const want = Math.max(Math.round(7 * (N_TILES / 6912) * 1.1), NEU_MIN_PIXIE + 3);
   const minStart = mapIsLegacy() ? 20 : 24;
   const stamp = floodFrom(cx, cy);
-  const kinds = ['fairy', 'boar', 'leshy', 'spore', 'pixie'];
   let tries = 0;
   while (Game.lairs.length < want && tries++ < 6000) {
     const pix = Game.lairs.filter(l => l.k === 'pixie').length;
     const needPix = pix < NEU_MIN_PIXIE;
-    // феи — первыми тремя: добрые селения не должны остаться без места; им можно ближе к деревне
+    // цветочные феи — первыми: доброе селение не должно остаться без места; ему можно ближе к деревне
     const site = neuTrySite(rng, stamp, needPix ? minStart - 6 : minStart);
     if (!site) continue;
-    const k = needPix ? 'pixie' : kinds[(Game.lairs.length + (rng() * 2 | 0)) % kinds.length];
+    const k = needPix ? 'pixie' : neuPickKind(rng, Game.lairs.length);
     neuAddLair(k, site, minStart);
   }
   neuEnsurePixies(seed);
@@ -137,6 +147,22 @@ function neuEnsurePixies(seed) {
   for (let tries = 0; have() < NEU_MIN_PIXIE && tries < 8000; tries++) {
     const site = neuTrySite(rng, stamp, minStart);
     if (site) neuAddLair('pixie', site, minStart);
+  }
+}
+
+// Старые сохранения и миры кооператива: лишние логова фей сверх потолка заселяют звери и лешие.
+// Дружное селение (fd) и селение с заданием (fr) не трогаем; жильцы прежнего вида уходят, логово заселяется заново.
+function neuTrimFairies() {
+  if (MapOpt.custom && MapOpt.custom.nm !== 'auto') return;
+  const swap = ['boar', 'leshy', 'spore'];
+  for (const kind of Object.keys(NEU_FAIRY_CAP)) {
+    const extra = Game.lairs.filter(l => l.k === kind && !l.friend && !l.fr).sort((a, b) => a.id - b.id);
+    let keep = NEU_FAIRY_CAP[kind] - Game.lairs.filter(l => l.k === kind && (l.friend || l.fr)).length;
+    for (const L of extra) {
+      if (keep-- > 0) continue;
+      Game.neutrals = Game.neutrals.filter(N => N.lair !== L.id);
+      L.k = swap[L.id % swap.length]; L.alive = 0; L.respawn = Game.time + 30;
+    }
   }
 }
 
@@ -536,7 +562,7 @@ function neuTick(dt) {
       Game.neutrals.push(N); lair.alive++;
     }
     for (const l of Game.lairs) if (!l.alive && !l.respawn) l.respawn = Game.time + 30;
-    if (!isMirror()) neuEnsurePixies(s.seed);
+    if (!isMirror()) { neuTrimFairies(); neuEnsurePixies(s.seed); }
   };
   const _step = step;
   step = function (dt) { _step(dt); if (!isMirror()) neuTick(dt); };

@@ -204,7 +204,7 @@ function coopApplyBuilding(d, byId) {
     b = new Building(d.type, d.x, d.y, d.state === 'done', d.rot || 0);
     b.id = d.id;
     if (b.type === 'graveyard' && d.state !== 'done') { b.selfBuild = true; b.maxHits = SITE_HITS + GY_BUILD_HITS; b.total = 1; }
-    if (d.level === 2 && b.def.up) upgradeBuilding(b, true);
+    if (d.level >= 2 && b.def.up) { upgradeBuilding(b, true); if (d.level >= 3 && b.def.up3) upgradeBuilding(b, true); }
     if (d.upg && canUpgrade(b)) startUpgrade(b);
     for (let yy = b.y; yy < b.y + b.h; yy++) for (let xx = b.x; xx < b.x + b.w; xx++) World.bmap[idx(xx, yy)] = b.id;
     World.door[idx(b.doorX, b.doorY)] = 1;
@@ -241,7 +241,7 @@ function coopDropBuilding(b) {
   if (k >= 0) Game.buildings.splice(k, 1);
 }
 
-const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx'];
+const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx', 'wild'];
 const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp', 'bah'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
@@ -291,6 +291,7 @@ function coopMirror(m) {
   if (!festWas && festOn()) festCheers();       // праздник начался — аплодисменты и у клиентов
   Object.assign(WX, m.wx, { ready: true });
   if (typeof seaMirrorIn === 'function') seaMirrorIn(m.sea);
+  if (typeof fyMirrorIn === 'function') fyMirrorIn(m.fy);      // единорог, дракон, грифон, саламандры (fairy1.js)
 }
 
 function coopWorld(m) {
@@ -333,6 +334,7 @@ function coopStep(dt) {
     const dx = a.tx - a.x, dy = a.ty - a.y, d = Math.hypot(dx, dy);
     if (d > 3) { a.x = a.tx; a.y = a.ty; } else { a.x += dx * k; a.y += dy * k; a.phase += Math.hypot(dx * k, dy * k) * 3; }
   }
+  if (typeof fyMirrorStep === 'function') fyMirrorStep(k2);
   for (const k of COOP_LISTS) for (const o of Game[k]) {
     if (o.tx === undefined || typeof o.x !== 'number') continue;
     const dx = o.tx - o.x, dy = o.ty - o.y;

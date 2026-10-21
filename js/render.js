@@ -408,6 +408,16 @@ function drawPile(c, p) {
     c.restore();
   }
   c.imageSmoothingEnabled = R.smooth;
+  // подпись: что лежит (раньше кучки были безымянными, и новичок не понимал, что за «штуки» валяются)
+  let top = null, tn = 0, kinds = 0;
+  for (const g of GOOD_KEYS) if (p.stock[g] > 0) { kinds++; if (p.stock[g] > tn) { top = g; tn = p.stock[g]; } }
+  if (top) {
+    const t = GOODS[top].name + (tn > 1 ? ' ×' + tn : '') + (kinds > 1 ? ' …' : '');
+    c.font = 'bold 6px serif'; c.textAlign = 'center';
+    c.fillStyle = 'rgba(20,12,6,0.85)'; c.fillText(t, x + 0.5, y - 9.5);
+    c.fillStyle = '#f4ecd0'; c.fillText(t, x, y - 10);
+    c.textAlign = 'start';
+  }
 }
 
 // ---------- Животные ----------
@@ -476,7 +486,7 @@ function drawPigs(c, b, spr, ox, oy) {
 function drawBuilding(c, b, ghost) {
   if (b.eraFx && Game.time - b.eraFx.t0 > ERA_FX.dur) b.eraFx = null;   // перестройка кончилась, пока здание было за кадром
   const eraFx = !ghost && b.eraFx && !b.upg && b.state === 'done';
-  const spr = buildingSprite(b.type, b.rot || 0, b.level, eraFx ? b.eraFx.from : undefined);
+  const spr = buildingSprite(b.type, b.rot || 0, b.level, eraFx ? b.eraFx.from : undefined, b.hv || 0);
   const ox = b.x * TILE - spr.padx, oy = b.y * TILE - spr.top;
   const fx = b.x * TILE, fy = b.y * TILE, fw = b.w * TILE, fh = b.h * TILE;
   c.imageSmoothingEnabled = true;

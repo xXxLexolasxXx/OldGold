@@ -266,13 +266,17 @@ function drawNightFx(c) {
 
 // ---------- Ходячие деревья ----------
 
+// Нечисть первых четырёх ночей [от, до] на «Обычном» (Спокойный ×0,3, Выживание ×1,5). Было 1–3, 3–5, 5–7, 7–9:
+// первая ночь с одним деревом не пугала. Закрытые мягким стартом виды (камни, водяные) уходят в деревья.
+const NIGHT_EARLY = [[3, 4], [4, 6], [5, 7], [7, 9]];
+
 // Сколько нечисти выходит за ночь: сначала по нарастающей, в долгую пятую ночь — до 25.
 // Виды делят это число случайно: деревья, камни, водяные.
 function nightTotal() {
   const n = nightIndex() + 1;
-  // до первой долгой ночи нечисти прибывает с каждой ночью: 1–3, 3–5, 5–7, 7–9
+  // до первой долгой ночи нечисти прибывает с каждой ночью (NIGHT_EARLY, «Обычный»)
   const mul = dif().nightN, cnt = k => Math.max(1, Math.round(k * mul));
-  if (n < LONG_EVERY) return cnt(Math.max(1, 2 * n - 1 + Math.floor(Math.random() * 3)));
+  if (n < LONG_EVERY) { const [lo, hi] = NIGHT_EARLY[n - 1]; return cnt(lo + Math.floor(Math.random() * (hi - lo + 1))); }
   // дальше — больше с каждой ночью: к 10-й (долгой) — 23–39, к 9-й обычной — 9–15
   const more = 0.7 + 0.3 * nightDiff(n);
   if (n % LONG_EVERY === 0) return cnt((15 + Math.floor(Math.random() * 11)) * more);   // долгая ночь
@@ -298,8 +302,8 @@ function spawnEnts() {
   let nT = Math.round(total * w[0] / sw), nR = Math.round(total * w[1] / sw), nW = total - nT - nR;
   nW = Math.max(0, nW);
   // мягкий старт: в первые ночи — деревья (хотя бы одно); камни и водяные подключаются позже (START_GRACE)
-  if (!startOpen('rockEnts')) nR = 0;
-  if (!startOpen('waterEnts')) nW = 0;
+  if (!startOpen('rockEnts')) { nT += nR; nR = 0; }
+  if (!startOpen('waterEnts')) { nT += nW; nW = 0; }
   if (nT + nR + nW === 0) nT = 1;
   spawnTreeEnts(people, nT);
   spawnRockEnts(nR);
@@ -716,6 +720,27 @@ function nightLights(x0, y0, x1, y1) {
   return L;
 }
 
+// Насколько точка мира застроена (здания и дороги в радиусе ~4 клеток): 0 — лес и поле, 1 — деревня
+function fogSettleAt(wx, wy) {
+  const cx = Math.floor(wx / TILE), cy = Math.floor(wy / TILE);
+  let n = 0, k = 0;
+  for (let dy = -4; dy <= 4; dy += 2) for (let dx = -4; dx <= 4; dx += 2) {
+    const x = cx + dx, y = cy + dy;
+    k++;
+    if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) continue;
+    const i = y * MAP_W + x;
+    if (World.bmap[i] || World.road[i]) n++;
+  }
+  return Math.min(1, n / k * 4);
+}
+// Плотность клуба тумана. Раньше клуб доходил до полной непрозрачности и одинаково ложился на деревню,
+// и ночью весь город тонул в светло-серой пелене (жалоба тестера, 0.10.90). Теперь потолок FOG_MAX,
+// а над жильём туман вчетверо реже: густые клубы остаются в лесу и полях.
+const FOG_MAX = 0.6;
+function fogPuffAlpha(k, hh, wx, wy) {
+  return Math.min(FOG_MAX, k * (0.45 + ((hh >>> 12) % 100) / 220)) * (1 - 0.75 * fogSettleAt(wx, wy));
+}
+
 function drawNight(c, x0, y0, x1, y1) {
   const n = nightAmt();
   if (n <= 0.001) return;
@@ -748,7 +773,7 @@ function drawNight(c, x0, y0, x1, y1) {
         const r = G * size * (0.8 + ((hh >>> 3) % 100) / 140);
         const fx = gx * G + drift + ((hh >>> 8) % 50) - 25 + Math.sin(Game.time * 0.11 + gy) * 18;
         const fy = gy * G + ((hh >>> 16) % 50) - 25;
-        l.globalAlpha = Math.min(1, fog * mul * (0.45 + ((hh >>> 12) % 100) / 220));
+        l.globalAlpha = fogPuffAlpha(fog * mul, hh, fx, fy);
         l.drawImage(NIGHT.puff, fx - r, fy - r * 0.7, r * 2, r * 1.4);
       }
     }
@@ -1078,6 +1103,10 @@ function treeEyePos(e) {
   return { x: bx, y: by - (kind === 'oak' || kind === 'birch' ? 26 : 11) };
 }
 
+// цвет глаз по виду нечисти: дерево — жёлтый, камень — красный, водяной — зелёный (rgb-строка; fl — мерцание 130..210)
+const EYE_RGB = { tree: '255,214,80', rock: '255,84,64', water: '120,255,150' };
+const eyeFlick = (fl, kind) => { const k = (fl + 40) / 250, [r, g, b] = EYE_RGB[kind].split(',').map(Number); return `rgb(${Math.min(255, Math.round(r * k))},${Math.min(255, Math.round(g * k))},${Math.min(255, Math.round(b * k))})`; };
+
 function drawTreeEyes(c, e, a) {
   if (e.water) return drawWaterEyes(c, e, a);
   if (e.rock) return drawRockEyes(c, e, a);
@@ -1093,7 +1122,7 @@ function drawTreeEyes(c, e, a) {
   c.fillStyle = '#140a05';
   c.fillRect(p.x - 4, p.y - 1, 3, 2); c.fillRect(p.x + 1, p.y - 1, 3, 2);
   if (!blink) {
-    c.fillStyle = `rgb(${fl - 40},255,${fl + 30})`;
+    c.fillStyle = eyeFlick(fl, 'tree');
     c.fillRect(p.x - 3.5, p.y - 0.5, 2, 1); c.fillRect(p.x + 1.5, p.y - 0.5, 2, 1);
   }
   c.restore();
@@ -1147,7 +1176,7 @@ function drawEnt(c, e) {
     const look = Math.sin(Game.time * 0.7 + e.i) > 0.3 ? 1 : 0;
     const fl = 170 + Math.round(Math.sin(Game.time * 8 + e.i) * 40);
     if (e.state !== 'dying' || e.t < 0.5) for (const [ex, ey] of f.eyes) {   // после смертельного удара глаза гаснут
-      c.fillStyle = `rgb(${fl - 40},255,${fl + 30})`; c.fillRect(ex - ENT_CX + look, ey - ENT_BASE, 2, 2);
+      c.fillStyle = eyeFlick(fl, 'tree'); c.fillRect(ex - ENT_CX + look, ey - ENT_BASE, 2, 2);
       c.fillStyle = '#eafff4'; c.fillRect(ex - ENT_CX + look, ey - ENT_BASE, 1, 1);
     }
     c.restore();

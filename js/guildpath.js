@@ -349,9 +349,9 @@ function gpInitUI() {
     return _ub(b, silent);
   };
   const _bs = buildingSprite;
-  buildingSprite = function (type, rot = 0, level = 1) {
-    if (level >= 3 && gpIsGuildType(type)) return gpSprite3(type, rot, _bs(type, rot, 2));
-    return _bs(type, rot, level);
+  buildingSprite = function (type, rot = 0, level = 1, ...rest) {
+    if (level >= 3 && gpIsGuildType(type)) return gpSprite3(type, rot, _bs(type, rot, 3));
+    return _bs(type, rot, level, ...rest);
   };
 
   // мастерство до 6-го ранга в гильдии уровня 3

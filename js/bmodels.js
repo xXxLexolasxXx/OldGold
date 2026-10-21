@@ -66,6 +66,15 @@ function strawRoof(r, r0, h) {
   r.rise = (r0.rise ?? 18) * 1.22;
   r.ov = (r0.ov ?? 4) + 2.6;
 }
+// Кровля читается по уровню здания: 1 — солома, 2 — дерево (дранка), 3 — черепица. Верно для всех зданий с достройкой,
+// у которых есть обычная скатная крыша (колокольни, шпили и пирамиды остаются прежними); эпоха на кровлю не влияет.
+function levelRoofOk(q, r) { const d = typeof BUILDINGS !== 'undefined' && BUILDINGS[BUILD_TYPE]; return !!(d && d.up) && r.type !== 'pyramid' && !r.h && !q.finial; }
+const WOOD_ROOF = ['#8a6238', '#7e5a34', '#946a3e'], LEVEL_TILES = ['#b04a2c', '#a8432a', '#ba5532'];
+function levelRoof(r, r0, h) {
+  if (BUILD_LEVEL >= 3) { r.mat = 'tiles'; r.col = LEVEL_TILES[h % 3]; r.rise = (r0.rise ?? 18) * 1.2; r.ov = (r0.ov ?? 4) + 1.8; }
+  else if (BUILD_LEVEL === 2) { r.mat = 'shingle'; r.col = WOOD_ROOF[h % 3]; r.rise = (r0.rise ?? 18) * 1.14; r.ov = (r0.ov ?? 4) + 2; }
+  else strawRoof(r, r0, h);
+}
 const RED_TILES = ['#b04a2c', '#a8432a', '#ba5532'];
 const RED_WALLS = ['#e6d4b0', '#ead9b8', '#dfcca6'];
 function styleOf(type) { return DWARF_TYPES.has(type) ? 'dwarf' : COTTAGE_TYPES.has(type) ? 'cottage' : REDROOF_TYPES.has(type) ? 'red' : 'logs'; }
@@ -91,6 +100,8 @@ function gnomePart(p) {
     }
     q.stoneCol = '#8a806a';
     q.cottage = false;
+  } else if (BUILD_TYPE === 'house') {
+    // жилой дом: стены и ставни задаёт вариант (house.js) — не переодеваем, чтобы восемь видов не слились в один
   } else if ((q.wall === 'plaster' || q.wall === 'brick' || q.wall === 'plank' || q.wall === 'logs') && red) {
     // светлая штукатурка, тёмный фахверк, каменный цоколь
     q.wall = 'plaster'; q.col = RED_WALLS[h % 3];
@@ -140,6 +151,7 @@ function gnomePart(p) {
   }
   if (BUILD_ERA !== 2) eraPart(q, p, h);
   else eraStonePlinth(q);
+  if (q.roof && levelRoofOk(q, q.roof)) levelRoof(q.roof = { ...q.roof }, p.roof, h);
   return q;
 }
 
@@ -162,7 +174,7 @@ function eraStonePlinth(q) {
 function eraPart(q, p, h) {
   const r0 = p.roof;
   if (BUILD_ERA === 1) {
-    if (!q.open && q.wall) {
+    if (!q.open && q.wall && BUILD_TYPE !== 'house') {
       const tall = (q.h || 0) >= 34 && h % 2 === 0;
       q.wall = tall ? 'plank' : 'logs'; q.col = tall ? '#7a5030' : LOG_COLS[h % LOG_COLS.length];
       q.frame = false; q.lowerStone = 0; q.beam = '#3a2414'; q.cottage = false;
@@ -174,7 +186,7 @@ function eraPart(q, p, h) {
       else { r.mat = 'thatch'; r.col = STRAW[h % 3]; r.rise = (r0.rise ?? 18) * 1.2; r.ov = (r0.ov ?? 4) + 2.4; }
     }
   } else if (BUILD_ERA === 3) {
-    if (!q.open && q.wall) {
+    if (!q.open && q.wall && BUILD_TYPE !== 'house') {
       q.wall = 'stone'; q.col = PALACE_WALLS[h % 3]; q.frame = false; q.moss = false;
       q.lowerStone = 0; q.cottage = false; q.gableWall = 'stone'; q.gableCol = q.col; q.gableFrame = false;
     }
@@ -1521,18 +1533,19 @@ function eraExtras(m, era) {
   m.custom((c, mm) => { const [sx, sy] = P(mm.g, X, Y, roofZ(mm, p, w, H, X, Y) - 1); palaceFlag(c, sx, sy, PALACE_FLAGS[(hs >> 3) % 4], Math.max(10, Math.min(28, sy - 4))); }, cx, p.y0 - 0.2);
 }
 
-function buildingSpriteBase(type, rot = 0, level = 1, era = buildingEra(type, level)) {
+// vr — вариант облика (жилые дома: 8 видов, см. house.js); у остальных зданий 0
+function buildingSpriteBase(type, rot = 0, level = 1, era = buildingEra(type, level), vr = 0) {
   const d = bDims(type, rot);
-  if (d.rot === 3) return buildingSpriteBase(type, 0, level, era);   // костёр симметричен — тот же спрайт
-  const key = type + ':' + d.rot + (level === 2 ? ':U' : '') + '#e' + era;
+  if (d.rot === 3) return buildingSpriteBase(type, 0, level, era, vr);   // костёр симметричен — тот же спрайт
+  const key = type + ':' + d.rot + (level >= 3 ? ':U3' : level === 2 ? ':U' : '') + (vr ? '~v' + vr : '') + '#e' + era;
   if (SPR.buildings[key]) return SPR.buildings[key];
   if (d.rot === 2) {
-    SPR.buildings[key] = mirrorSprite(buildingSpriteBase(type, 1, level, era), d.w * TILE);
+    SPR.buildings[key] = mirrorSprite(buildingSpriteBase(type, 1, level, era, vr), d.w * TILE);
     return SPR.buildings[key];
   }
   srand = mulberry32(hashStr(type));
   const def = BUILDINGS[type];
-  const FW = d.w * TILE, FD = d.h * TILE, top = (def.top || 60) + (level === 2 ? UP_EXTRA : 0);
+  const FW = d.w * TILE, FD = d.h * TILE, top = (def.top || 60) + (level >= 2 ? UP_EXTRA : 0);
   SK = type === 'swine' && d.rot ? 0 : 0.5;
   const W = Math.ceil(FW + BPADX * 2 + FD * SK), H = FD + top + BBOTTOM;
   const [cv, c] = mkSprite(W, H, BS);
@@ -1550,9 +1563,9 @@ function buildingSpriteBase(type, rot = 0, level = 1, era = buildingEra(type, le
     sc.fillRect(0, top - 10, W, FD + BBOTTOM + 10);
   }
   const m = newModel(g);
-  m.lv = level;
+  m.lv = level; m.vr = vr;
   (MODELS[type] || modelPlaceholder)(m);
-  if (level === 2) spr.tall = upgradeModel(m);
+  if (level >= 2) spr.tall = upgradeModel(m);
   BUILD_ERA = era;
   eraExtras(m, era);
   SIGN_QUEUE.list = [];
