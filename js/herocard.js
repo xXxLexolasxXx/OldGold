@@ -38,7 +38,7 @@ function heroSkills() {
   const as = typeof heroAbils === 'function' ? heroAbils(H) : null;
   const rk = typeof abResKind === 'function' ? abResKind(H) : null;
   if (as) as.forEach((a, i) => L.push({
-    k: a.k, run: 'ab' + i, name: a.name, key: a.passive ? '' : ABIL_KEYN[i], lvl: a.lvl || 1, cd: a.passive ? 0 : a.cd, passive: !!a.passive,
+    k: a.k, run: 'ab' + i, name: a.name, key: a.passive ? '' : abKeyN(a, i), ult: !!a.ult, lvl: a.lvl || 1, cd: a.passive ? 0 : a.cd, passive: !!a.passive,
     cost: a.cost || 0, res: rk, left: Math.max(0, ((H.abCd || {})[a.k] || 0) - now), on: ((H.abT || {})[a.k] || 0) > now, desc: a.desc,
   }));
   return L;
@@ -48,7 +48,7 @@ const hcLack = (s, H) => s.cost > 0 && typeof abResGet === 'function' && abResGe
 
 function hcTile(s, H) {
   const lock = (H.level || 1) < s.lvl, lack = !lock && hcLack(s, H);
-  const cl = ['hs']; if (lock) cl.push('lock'); else if (s.left > 0) cl.push('cd'); else if (lack) cl.push('lack'); if (s.on) cl.push('on'); if (s.passive) cl.push('pas'); if (heroCardSel === s.k) cl.push('sel');
+  const cl = ['hs']; if (lock) cl.push('lock'); else if (s.left > 0) cl.push('cd'); else if (lack) cl.push('lack'); if (s.on) cl.push('on'); if (s.passive) cl.push('pas'); if (s.ult) cl.push('ult'); if (heroCardSel === s.k) cl.push('sel');
   const pct = s.cd ? Math.min(100, Math.round(100 * s.left / s.cd)) : 0;
   const rc = s.res && typeof ABIL_RES !== 'undefined' ? ABIL_RES[s.res].col : '#8ab8ff';
   return `<button class="${cl.join(' ')}" data-sk="${s.k}" aria-label="${s.name}"><img src="${abilIcon16(s.k)}" alt="">`

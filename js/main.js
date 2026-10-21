@@ -358,6 +358,7 @@ function onLeftClickTile(t) {
     const err = checkPlacement(tool.type, bx, by, d.rot);
     if (err) { toast(/скал|кристалл/.test(err) ? err + '.' + mineSpotHint(tool.type, bx, by) : err); return; }
     placeBuilding(tool.type, bx, by, false, d.rot);
+    waitJoke(tool.type);
     track('place-1', 'Заложил первое здание');
     if (!Input.keys.has('Shift')) setTool(null);
     return;

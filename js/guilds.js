@@ -612,7 +612,13 @@ function* heroGuildGen(u, c) {
   // клик по гильдии без выбора: варвар у воинов продолжает учиться на варвара, а не переучивается
   const cl = c.cls || u.hero.clsKey, b = c.b, H = u.hero, cls = cl && guildClasses(b.def.guild).includes(cl) ? cl : b.def.guild, C = GCLS[cls];
   const ok = yield { walk: [b.doorX, b.doorY] };
-  if (!ok || b.removed) return;
+  if (!ok || b.removed || !isGuild(b)) return;
+  // клик по чужой гильдии НЕ переучивает героя: класс и ранги меняются только кнопкой «Переучиться» в окне гильдии
+  if (H.clsKey && GCLS[H.clsKey] && H.clsKey !== cls && !c.reclass) {
+    floater(u.x, u.y - 1.9, `Остаюсь: ${GCLS[H.clsKey].name.toLowerCase()}`, '#f6e8b0');
+    if (u === Game.hero) { gsay(u, `${H.name}: класс «${GCLS[H.clsKey].name}» (ранг ${H.mastery || 0}) не тронут. Переучиться можно кнопкой в окне гильдии`); Game.selected = b; Game.selUnit = null; updateUI(true); }
+    return;
+  }
   const gm = masterOf(b);
   if (!gm) { floater(u.x, u.y - 1.6, 'Главы гильдии нет', '#e8a070'); return; }
   if (H.clsKey === cls && (H.mastery || 0) >= MASTERY_MAX) { floater(gm.x, gm.y - 1.7, 'Мне больше нечему тебя учить!', '#f6e8b0'); return; }
@@ -633,8 +639,11 @@ function* heroGuildGen(u, c) {
   if (b.removed) return;
   if (H.clsKey !== cls) {
     const was = H.clsKey && GCLS[H.clsKey];
-    H.clsKey = cls; H.cls = C.name; H.mastery = 0;
-    gsay(u, `${H.name} теперь ${C.name.toLowerCase()}${was ? ` (был ${was.name.toLowerCase()})` : ''}! Атака — клавиша Q или клик по врагу`);
+    // ранг прежнего класса запоминается: вернёшься к нему — ранг на месте
+    const kept = H.msKept || (H.msKept = {});
+    if (was && H.mastery != null) kept[H.clsKey] = Math.max(kept[H.clsKey] || 0, H.mastery);
+    H.clsKey = cls; H.cls = C.name; H.mastery = kept[cls] || 0;
+    gsay(u, `${H.name} теперь ${C.name.toLowerCase()}${was ? ` (был ${was.name.toLowerCase()})` : ''}${H.mastery ? `, ранг ${H.mastery} вернулся` : ''}! Атака — клавиша Q или клик по врагу`);
     logEvent('people', `${H.name} обучился в гильдии: ${C.name}`, u.x, u.y);
     floater(u.x, u.y - 1.9, C.name + '!', '#ffe070');
   } else {
@@ -973,7 +982,10 @@ function initGuildUI() {
     if (isMirror() && k !== 'sel') { if (b || u) coopSend({ t: 'guild', a: k === 'hero' ? 'learn' : k, id: +v }); updateUI(true); return; }
     if (k === 'hire' && b) hireRecruit(b);
     else if (k === 'hero' && b && Game.hero) {
-      const c = { kind: 'guild', b, cls: cl, tx: b.doorX, ty: b.doorY, label: 'Учиться' };
+      const H0 = Game.hero.hero;
+      if (H0.clsKey && GCLS[H0.clsKey] && H0.clsKey !== cl && (H0.mastery || 0) > 0
+        && !confirm(`Переучиться: ${GCLS[cl].name}? Сейчас «${GCLS[H0.clsKey].name}», ранг ${H0.mastery}. Ранг запомнится — вернётесь к классу, и он на месте.`)) return;
+      const c = { kind: 'guild', b, cls: cl, reclass: true, tx: b.doorX, ty: b.doorY, label: 'Учиться' };
       issueCmd(Game.hero, c);
       floater(b.doorX + 0.5, b.doorY - 0.4, 'Учиться', '#f6d458');
     } else if (k === 'drill' && u) setOrder(u, 'drill');
@@ -1157,7 +1169,7 @@ function guildAnnounceHTML() {
     else if (c.kind === 'guild') { if (u.type === 'hero') yield* heroGuildGen(u, c); }
     else if (c.kind === 'equip' && u.hero && u.hero.clsKey && u.hero.inv && u.hero.inv[c.slot] && typeof HL_GEAR !== 'undefined') {
       const k = u.hero.inv[c.slot].k, C = GCLS[u.hero.clsKey];
-      if (C && HL_GEAR[k] && (k === C.weapon || k === C.armor)) yield* quickEquipGen(u, c);
+      if (C && HL_GEAR[k] && (k === C.weapon || k === C.armor || (typeof arFits === 'function' && arFits(k, u.hero.clsKey)))) yield* quickEquipGen(u, c);
       else yield* _run(u, c);
     } else yield* _run(u, c);
   };

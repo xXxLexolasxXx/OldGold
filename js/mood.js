@@ -539,7 +539,8 @@ function mdPackUnit(u) {
   return [t(M.m), t(M.rest), t(M.fun), t(M.soc), t(M.sm), M.ev.map(e => [e[0], e[1], e[2]])];
 }
 function mdApplyUnit(u, a) {
-  if (!Array.isArray(a) || a.length < 5 || !mdOn(u)) return;
+  // не по mdOn: отряд героя, гильдия, владелец — временные состояния, после них настроение нужно прежнее, а не случайное
+  if (!Array.isArray(a) || a.length < 5 || u.dead || !isPerson(u) || u.hero || u.rec || u.type === 'hero' || u.type === 'carter' || u.type === 'goat') return;
   const M = mdNew(u);
   M.m = +a[0] || 50; M.rest = +a[1]; M.fun = +a[2]; M.soc = +a[3]; M.sm = +a[4];
   M.ev = Array.isArray(a[5]) ? a[5].filter(e => Array.isArray(e) && typeof e[0] === 'string' && MD_WHY[e[0]]).map(e => [e[0], e[1] | 0, +e[2] || 0]) : [];

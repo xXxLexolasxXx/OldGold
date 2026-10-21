@@ -1011,3 +1011,8 @@ body.mobile #clock, body.mobile .speed, body.mobile .dd-t, body.mobile .dd-menu 
 body.mobile #view #hero-card:not(.mini) {
   background: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, rgba(0,0,0,0.06) 1px 3px), linear-gradient(180deg, #3a3e47 0%, #23262d 40%, #181a1f 100%);
 }
+
+#wait-joke { position: fixed; left: 50%; top: 14%; transform: translateX(-50%); z-index: 19; max-width: min(92vw, 460px); padding: 10px 16px; text-align: center; font-size: 15px; color: #f3e6c4; background: rgba(20,12,4,0.88); border: 1px solid #8e6a28; border-radius: 6px; pointer-events: none; transition: opacity .5s; }
+#wait-joke s { color: #9a8a68; text-decoration-thickness: 2px; }
+#wait-joke b { color: #f0cf6a; }
+#wait-joke.out { opacity: 0; }

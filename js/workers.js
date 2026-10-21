@@ -11,7 +11,7 @@ const WK_JOBS = ['builder', 'serf', 'carter'];          // кого можно �
 const WK_KICK_CD = 25, WK_HERO_CD = 3, WK_KICK_NEAR = 3.5, WK_KICK_BOOST = 30;
 const WK_SYL1 = ['Бо', 'Гру', 'Дор', 'Ту', 'Хар', 'Ми', 'Ско', 'Фли', 'Бра', 'Ку', 'Гло', 'Ну'];
 const WK_SYL2 = ['рин', 'мли', 'нок', 'бур', 'фин', 'док', 'ган', 'ли', 'рт', 'мбо', 'зя', 'дрик'];
-const wkName = u => WK_SYL1[(u.look | 0) % WK_SYL1.length] + WK_SYL2[((u.look | 0) * 7 + u.id) % WK_SYL2.length];
+const wkName = u => t(WK_SYL1[(u.look | 0) % WK_SYL1.length]) + t(WK_SYL2[((u.look | 0) * 7 + u.id) % WK_SYL2.length]);   // t() — слоги склеиваются в имя, переводим по частям
 const wkJob = u => prioJobKey(u);
 const wkManaged = u => !!u && WK_JOBS.includes(wkJob(u));
 // кого показываем в карточке: рабочие профессии, без героя, напарников, рекрутов, глав гильдий
