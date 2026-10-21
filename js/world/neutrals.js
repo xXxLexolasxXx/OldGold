@@ -27,11 +27,11 @@ const NSPEC = {
 };
 // из чего состоит логово
 const NLAIR = {
-  pixie: ['pixie', 'pixie', 'pixie'],
-  fairy: ['fairy', 'fairy', 'fairy'],
+  pixie: ['pixie', 'pixie'],
+  fairy: ['fairy', 'fairy'],
   leshy: ['leshy'],
   boar:  ['boar', 'boar'],
-  spore: ['spore', 'spore', 'spore'],
+  spore: ['spore', 'spore'],
 };
 const NEU_LAIR_NAME = { pixie: 'Домик фей на дереве', fairy: 'Поляна лесных фей', leshy: 'Дупло лешего', boar: 'Лёжка кабанов', spore: 'Пятно чумных грибов' };
 
@@ -61,7 +61,7 @@ function neuMake(k, lair, i) {
 
 function neuFillLair(lair) {
   const kinds = NLAIR[lair.k].slice();
-  if (lair.lv > 1.25 && lair.k !== 'leshy') kinds.push(lair.k);          // дальние логова населены гуще
+  if (lair.lv > 1.25 && !NEU_NO_EXTRA[lair.k]) kinds.push(lair.k);          // дальние логова населены гуще (кроме одиночек, фей и кабанов — их и так не должно быть много)
   kinds.forEach((k, i) => Game.neutrals.push(neuMake(k, lair, i)));
   lair.respawn = 0; lair.alive = kinds.length;
 }
@@ -103,7 +103,27 @@ function neuAddLair(k, site, minStart) {
   return lair;
 }
 
-const NEU_MIN_PIXIE = 3;   // на каждой карте — не меньше трёх селений цветочных фей
+const NEU_MIN_PIXIE = 1;   // на каждой карте есть хотя бы одно селение цветочных фей
+const NEU_NO_EXTRA = { leshy: 1, pixie: 1, fairy: 1, boar: 1 };
+// Потолки логов на карту (отзыв «одни феи и кабаны»; СУЩЕСТВА_БАЛАНС.md): феи и кабаны — не больше ~10–15 % нейтралов,
+// грибы — не больше четверти логов; остальное — лешие. С ночами лес пополняют тролли, гоблины, броненосцы, гномтавры (neutrals2.js).
+function neuCap(kind, want) {
+  if (kind === 'pixie') return 1;
+  if (kind === 'fairy') return N_TILES >= 15000 ? 1 : 0;          // поляна лесных фей — только на большой карте
+  if (kind === 'boar') return N_TILES >= 15000 ? 2 : 1;
+  if (kind === 'spore') return Math.max(1, Math.round(want * 0.25));
+  return 99;
+}
+// какие логова идут в лес по очереди; сверх потолка вид пропускается
+const NEU_KIND_BAG = ['leshy', 'spore', 'boar', 'leshy', 'fairy', 'spore', 'leshy', 'boar', 'spore'];
+function neuPickKind(rng, n, want) {
+  for (let k = 0; k < NEU_KIND_BAG.length; k++) {
+    const kind = NEU_KIND_BAG[(n + (rng() * 3 | 0) + k) % NEU_KIND_BAG.length];
+    if (Game.lairs.filter(l => l.k === kind).length < neuCap(kind, want)) return kind;
+  }
+  return 'leshy';
+}
+const neuWant = () => Math.max(Math.round(5.5 * (N_TILES / 6912) * 1.1), NEU_MIN_PIXIE + 3);
 
 function neuSpawnAll(seed) {
   if (MapOpt.custom && MapOpt.custom.nm !== 'auto') { meSpawnLairs(); return; }   // карта игрока: логова расставил автор
@@ -111,18 +131,17 @@ function neuSpawnAll(seed) {
   Game.nstat = { kills: {}, lost: 0, lairs: 0, xp: 0 };
   const rng = mulberry32(((seed | 0) ^ 0xFA17E) >>> 0);
   const cx = MAP_W >> 1, cy = MAP_H >> 1;
-  const want = Math.max(Math.round(7 * (N_TILES / 6912) * 1.1), NEU_MIN_PIXIE + 3);
+  const want = neuWant();
   const minStart = mapIsLegacy() ? 20 : 24;
   const stamp = floodFrom(cx, cy);
-  const kinds = ['fairy', 'boar', 'leshy', 'spore', 'pixie'];
   let tries = 0;
   while (Game.lairs.length < want && tries++ < 6000) {
     const pix = Game.lairs.filter(l => l.k === 'pixie').length;
     const needPix = pix < NEU_MIN_PIXIE;
-    // феи — первыми тремя: добрые селения не должны остаться без места; им можно ближе к деревне
+    // цветочные феи — первыми: доброе селение не должно остаться без места; ему можно ближе к деревне
     const site = neuTrySite(rng, stamp, needPix ? minStart - 6 : minStart);
     if (!site) continue;
-    const k = needPix ? 'pixie' : kinds[(Game.lairs.length + (rng() * 2 | 0)) % kinds.length];
+    const k = needPix ? 'pixie' : neuPickKind(rng, Game.lairs.length, want);
     neuAddLair(k, site, minStart);
   }
   neuEnsurePixies(seed);
@@ -137,6 +156,22 @@ function neuEnsurePixies(seed) {
   for (let tries = 0; have() < NEU_MIN_PIXIE && tries < 8000; tries++) {
     const site = neuTrySite(rng, stamp, minStart);
     if (site) neuAddLair('pixie', site, minStart);
+  }
+}
+
+// Старые сохранения и миры кооператива: логова фей, кабанов и грибов сверх потолка заселяют лешие.
+// Дружное селение (fd) и селение с заданием (fr) не трогаем; жильцы прежнего вида уходят, логово заселяется заново.
+function neuTrimFairies() {
+  if (MapOpt.custom && MapOpt.custom.nm !== 'auto') return;
+  const want = neuWant();
+  for (const kind of ['pixie', 'fairy', 'boar', 'spore']) {
+    const extra = Game.lairs.filter(l => l.k === kind && !l.friend && !l.fr).sort((a, b) => a.id - b.id);
+    let keep = neuCap(kind, want) - Game.lairs.filter(l => l.k === kind && (l.friend || l.fr)).length;
+    for (const L of extra) {
+      if (keep-- > 0) continue;
+      Game.neutrals = Game.neutrals.filter(N => N.lair !== L.id);
+      L.k = 'leshy'; L.alive = 0; L.respawn = Game.time + 30;
+    }
   }
 }
 
@@ -536,7 +571,7 @@ function neuTick(dt) {
       Game.neutrals.push(N); lair.alive++;
     }
     for (const l of Game.lairs) if (!l.alive && !l.respawn) l.respawn = Game.time + 30;
-    if (!isMirror()) neuEnsurePixies(s.seed);
+    if (!isMirror()) { neuTrimFairies(); neuEnsurePixies(s.seed); }
   };
   const _step = step;
   step = function (dt) { _step(dt); if (!isMirror()) neuTick(dt); };
@@ -597,7 +632,7 @@ function neuDraw(c, N) {
   c.drawImage(sp.cv, -sp.ax, -sp.ay);
   c.restore();
   if (!dead && N.hp < N.mhp - 0.5) {
-    const w = 18, hy = py - (N.k === 'leshy' ? 54 : (N.k === 'fairy' || N.k === 'pixie') ? 46 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);
+    const w = 18, hy = py - (N.k === 'leshy' ? 64 : (N.k === 'fairy' || N.k === 'pixie') ? 46 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);
     c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(px - w / 2 - 1, hy - 1, w + 2, 4);
     c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(px - w / 2, hy, Math.round(w * r), 2);
   }

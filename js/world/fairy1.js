@@ -557,10 +557,12 @@ function brownieDraw(list, c, F, x0, y0, x1, y1) {
 }
 
 // ---------- Единорог ----------
+// родник ищем сперва там, куда смотрит игрок (в кооперативе — у героев): единорога на краю огромной карты никто не видел
 function uniFindSpot() {
-  const cx = MAP_W >> 1, cy = MAP_H >> 1;
-  for (let t = 0; t < 300; t++) {
-    const x = (Math.random() * MAP_W) | 0, y = (Math.random() * MAP_H) | 0;
+  const cx = MAP_W >> 1, cy = MAP_H >> 1, A = typeof wlAnchors === 'function' ? wlAnchors()[0] : [cx, cy, 13, 8];
+  for (let t = 0; t < 500; t++) {
+    const near = t < 300, r = near ? 6 + Math.random() * 18 : 0, a = Math.random() * Math.PI * 2;
+    const x = near ? Math.round(A[0] + Math.cos(a) * r) : (Math.random() * MAP_W) | 0, y = near ? Math.round(A[1] + Math.sin(a) * r * 0.75) : (Math.random() * MAP_H) | 0;
     if (!fyIsWater(x, y) || Math.hypot(x - cx, y - cy) < 7) continue;
     for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const lx = x + ax * 2, ly = y + ay * 2;
@@ -580,11 +582,11 @@ function unicornTick(dt, F) {
     const k = nightIndex(), nt = nightAmt();
     if (k < 1 || F.uniRoll === k || !isEveningNow() || nt < 0.03 || nt > 0.32 || isRaining() || isDawnNow()) return;
     F.uniRoll = k;
-    const hurt = Game.units.some(x => x.injury && isPerson(x));
-    if (Math.random() > (hurt ? 0.5 : 0.22)) return;
+    const hurt = Game.units.some(x => x.injury && isPerson(x)), first = !(Game.faunaStat && Game.faunaStat.uniSeen);
+    if (!first && Math.random() > (hurt ? 0.8 : 0.55)) return;      // первый вечер с единорогом — наверняка, дальше — в половине вечеров
     const s = uniFindSpot();
     if (!s) return;
-    F.uni = u = { x: s[0] + 0.5, y: s[1] + 0.5, face: 1, st: 'graze', t: 0, life: 75, ph: 0, heal: 0, mv: false, tg: null };
+    F.uni = u = { x: s[0] + 0.5, y: s[1] + 0.5, face: 1, st: 'graze', t: 0, life: 110, ph: 0, heal: 0, mv: false, tg: null };
     fstat('uniSeen');
     logEvent('animal', 'У родника на вечерней поляне появился единорог', u.x, u.y);
     if (Game.time - lastUniToast > 120) { lastUniToast = Game.time; toast('На поляне у родника показался единорог — не пугайте его, он лечит раненых'); }
@@ -664,6 +666,17 @@ function fyNests(F) {
     let d = 0;
     for (let yy = -2; yy <= 2; yy++) for (let xx = -2; xx <= 2; xx++) if (fyIsRock(x + xx, y + yy)) d++;
     if (d >= 14) cands.push([x, y]);
+  }
+  // мало скал (луга, болота): гнездо на любом каменистом пятачке, а нет и его — на дальней поляне
+  if (!cands.length) for (let y = 2; y < MAP_H - 2; y++) for (let x = 2; x < MAP_W - 2; x++) {
+    if (Math.hypot(x - cx, y - cy) < 14) continue;
+    let d = 0;
+    for (let yy = -2; yy <= 2; yy++) for (let xx = -2; xx <= 2; xx++) if (fyIsRock(x + xx, y + yy)) d++;
+    if (d >= 6 && fyIsRock(x, y)) cands.push([x, y]);
+  }
+  if (!cands.length) for (let t = 0; t < 400 && cands.length < 6; t++) {
+    const x = 3 + ((Math.random() * (MAP_W - 6)) | 0), y = 3 + ((Math.random() * (MAP_H - 6)) | 0);
+    if (Math.hypot(x - cx, y - cy) >= 18 && fyFree(x, y)) cands.push([x, y]);
   }
   F.rocks = cands;
   const pick = (far) => { for (let t = 0; t < 40 && cands.length; t++) { const q = cands[(Math.random() * cands.length) | 0]; if (!far || Math.hypot(q[0] - far[0], q[1] - far[1]) > 8) return q; } return cands[0] || null; };
@@ -1267,7 +1280,7 @@ function fairyTick(dt) {
 }
 
 function fairyDrawList(list, c, x0, y0, x1, y1) {
-  if (!FAUNA_ON() || !Game.fairy) return;
+  if (!Game.fairy) return;            // у клиента кооператива Game.fairy — зеркало с сервера (fyMirrorIn)
   const F = Game.fairy;
   brownieDraw(list, c, F, x0, y0, x1, y1);
   unicornDraw(list, c, F, x0, y0, x1, y1);
@@ -1278,6 +1291,37 @@ function fairyDrawList(list, c, x0, y0, x1, y1) {
   fishyDraw(list, c, F, x0, y0, x1, y1);
   goldGooseDraw(list, c, F, x0, y0, x1, y1);
   endermanDraw(list, c, F, x0, y0, x1, y1);
+}
+
+// ---------- Кооператив: сказочных зверей считает сервер, клиенты их только рисуют ----------
+const FY_MIRROR = ['bw', 'sal', 'uni', 'dr', 'gr', 'fish', 'gg', 'end'];
+function fyMirrorOut() {
+  const F = Game.fairy;
+  if (!F || typeof coopPlain !== 'function') return null;
+  const o = {};
+  for (const k of FY_MIRROR) if (F[k] != null) o[k] = coopPlain(F[k], 0, true);
+  return o;
+}
+function fyMirrorIn(m) {
+  if (m === undefined) return;
+  if (!m) { Game.fairy = null; return; }
+  const F = Game.fairy || (Game.fairy = {});
+  for (const k of FY_MIRROR) {
+    const d = m[k] != null ? coopResolve(m[k]) : null, o = F[k];
+    // бегущих зверей ведём плавно между снимками, как остальную живность
+    if (d && o && !Array.isArray(d) && typeof d.x === 'number' && typeof o.x === 'number' && Math.abs(d.x - o.x) + Math.abs(d.y - o.y) < 4) {
+      for (const f in d) if (f !== 'x' && f !== 'y') o[f] = d[f];
+      o.tx = d.x; o.ty = d.y;
+    } else F[k] = d;
+  }
+}
+function fyMirrorStep(k) {
+  const F = Game.fairy;
+  if (!F) return;
+  for (const n of ['uni', 'dr', 'gr']) {
+    const o = F[n];
+    if (o && o.tx !== undefined) { o.x += (o.tx - o.x) * k; o.y += (o.ty - o.y) * k; }
+  }
 }
 
 // ---------- Сохранение ----------

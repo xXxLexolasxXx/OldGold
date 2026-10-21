@@ -137,16 +137,59 @@ function raidTick(dt) {
   RD.t = 0;
   const K = RAID_KINDS.kurgan;
   if (!S.site) { const s = K.site(); if (!s) return; S.site = { x: s[0] + 0.5, y: s[1] + 0.5 }; }
+  S.st = raidSt(S);
   if (F) { if (!isNightNow() && !isEveningNow()) raidEnd('dawn'); return; }
   const night = isNightNow();
   if (!night) { S.omen = false; return; }
   if (!startOpen('raid')) return;
   if (rdNight() - (S.last || -9) < RAID_COOLDOWN || S.tried === rdNight()) return;
   if (!S.omen) {
-    if (raidParty() >= 2) { S.omen = true; rdSay(`Над курганом загорелись синие огни… ${K.name} ждёт гостей. Подойдите туда вдвоём или больше (герои от ${RAID_MIN_LVL} уровня)`); }
+    if (raidParty() >= 2) { S.omen = true; S.st = 'omen'; rdSay(`Над курганом загорелись синие огни… ${K.name} ждёт гостей. Подойдите туда вдвоём или больше (герои от ${RAID_MIN_LVL} уровня)`); }
     return;
   }
-  if (raidParty(S.site.x, S.site.y, RAID_RISE_R) >= 2) { S.tried = rdNight(); raidStart('kurgan', S.site.x, S.site.y + 1.2); }
+  if (raidParty(S.site.x, S.site.y, RAID_RISE_R) >= 2) { S.tried = rdNight(); raidStart('kurgan', S.site.x, S.site.y + 1.2); S.st = raidSt(S); }
+}
+
+// ================= Вход в курган =================
+// Курган стоит на карте с первого дня, а князь встаёт только ночью, с 4-й ночи и перед двумя героями.
+// Состояние кургана считает тот, кто считает игру (в общей деревне — сервер), клиенты получают его в зеркале (S.st):
+// shut — запечатан (рано), rest — князь отдыхает после битвы, day — вход ночью, wait — ночь, но героев мало, omen — синие огни, fight — бой.
+
+function raidSt(S) {
+  if (S.f) return 'fight';
+  if (!startOpen('raid')) return 'shut';
+  if (rdNight() - (S.last || -9) < RAID_COOLDOWN || S.tried === rdNight()) return 'rest';
+  if (!isNightNow()) return 'day';
+  return S.omen ? 'omen' : 'wait';
+}
+
+// клетка у проёма и сам холм (вместе с кольцом камней)
+function raidDoor(S) { return [Math.floor(S.site.x), Math.floor(S.site.y) + 1]; }
+function raidOnMound(S, x, y) { return !!(S && S.site) && Math.abs(x + 0.5 - S.site.x) <= 1.8 && y + 0.5 - S.site.y >= -1.6 && y + 0.5 - S.site.y <= 1.6; }
+
+// почему князь не встаёт перед этим героем (или что он встаёт): { m — текст, ok — встаёт }
+function raidWhy(u) {
+  const S = raidState(), st = raidSt(S);
+  if (st === 'fight') return { ok: 1, m: 'Курганный князь уже встал — в бой!' };
+  if (st === 'shut') {
+    const n = Math.ceil(START_GRACE.sys.raid.night * startGraceMul());
+    return { m: startNights() < n ? `Курган запечатан: князь проснётся после ${n}-й ночи` : 'Курган запечатан: князь ждёт, пока деревня окрепнет' };
+  }
+  if (st === 'rest') return { m: 'Князь отдыхает после битвы — курган откроется через несколько ночей' };
+  if (st === 'day') return { m: 'Вход в курган открывается ночью, когда над ним загорятся синие огни' };
+  if (u && u.hero && (u.hero.level || 1) < RAID_MIN_LVL) return { m: `Князь не встанет перед героем ниже ${RAID_MIN_LVL} уровня` };
+  if (raidParty(S.site.x, S.site.y, RAID_RISE_R) < 2)
+    return { m: rdServer() ? `Одному не войти: нужен второй герой от ${RAID_MIN_LVL} уровня у входа` : 'Одному не войти: возьмите двух рекрутов «За героем»' };
+  return { ok: 1, m: 'Курганный князь пробуждается!' };
+}
+
+// герой дошёл до входа: князь встанет на ближайшем тике (raidTick), если всё сошлось, иначе — объясняем почему
+function raidKnock(u) {
+  const S = raidState();
+  if (!S.site) return;
+  const w = raidWhy(u);
+  if (rdServer()) { if (u.hero && u.hero.owner) coopSay(u.hero.owner, w.m); } else toast(w.m);
+  floater(S.site.x, S.site.y - 2.2, w.ok ? 'Вход открыт!' : 'Закрыто', w.ok ? '#9ae0ff' : '#c8c0b0');
 }
 
 function raidFightTick(dt, S, F) {
@@ -287,6 +330,20 @@ raidRegister('kurgan', KURGAN);
       if (F.ph === 3 && lost > 0) { N.hp = Math.min(N.mhp, N.hp + lost * 0.35); floater(N.x, N.y - 2.2, '+' + Math.round(lost * 0.35), '#9ae0ff'); }
     }
   };
+  // клик по кургану — «Войти в курган»: герой идёт к проёму, там князь встаёт или герой узнаёт, чего не хватает.
+  // В общей деревне клиент шлёт обычный 'go' на клетку у входа, а сервер по ней же разбирает приказ (coopGo → resolveCmd).
+  const _rc = resolveCmd;
+  resolveCmd = function (t) {
+    const S = Game.raid;
+    if (S && S.site && !S.f && raidOnMound(S, t[0], t[1])) { const [tx, ty] = raidDoor(S); return { kind: 'kurgan', tx, ty, label: 'Войти в курган' }; }
+    return _rc(t);
+  };
+  const _run = runCmd;
+  runCmd = function* (u, c) {
+    if (c.kind !== 'kurgan') { yield* _run(u, c); return; }
+    const ok = yield { walk: [c.tx, c.ty] };
+    if (ok) raidKnock(u);
+  };
   const _nd = neuDraw;
   neuDraw = function (c, N) {
     if (N.k === 'kurgan') return raidDrawKurgan(c, N);
@@ -327,12 +384,17 @@ raidRegister('kurgan', KURGAN);
   const _start = startGame;
   startGame = function () {
     _start();
-    if (RD.cHooked || typeof coopApplyInit !== 'function') return;
-    RD.cHooked = true;
-    const _cm = coopMirror;
-    coopMirror = function (m) { _cm(m); Game.raid = m.raid || null; };
+    raidClientHook();
   };
   if (typeof setInterval === 'function' && typeof document !== 'undefined' && document.getElementById) setInterval(() => { if (typeof coop === 'undefined') raidHud(); }, 500);
+}
+
+// клиент общей деревни: курган, огни, состояние входа и бой приходят в зеркале сервера
+function raidClientHook() {
+  if (RD.cHooked || typeof coopApplyInit !== 'function') return;
+  RD.cHooked = true;
+  const _cm = coopMirror;
+  coopMirror = function (m) { _cm(m); Game.raid = m.raid || null; };
 }
 
 function rdServerHook() {
@@ -342,7 +404,7 @@ function rdServerHook() {
     const m = _mir(), S = Game.raid;
     if (S) {
       const F = S.f;
-      m.raid = { site: S.site, omen: S.omen ? 1 : 0, f: F ? { k: F.k, nid: F.nid, ph: F.ph, sh: F.sh || 0, hint: F.hint, marks: F.marks } : null };
+      m.raid = { site: S.site, omen: S.omen ? 1 : 0, st: S.st || null, f: F ? { k: F.k, nid: F.nid, ph: F.ph, sh: F.sh || 0, hint: F.hint, marks: F.marks } : null };
     }
     return m;
   };
@@ -375,6 +437,24 @@ function raidDrawMound(c, S) {
       c.restore();
     }
   }
+  raidDrawSign(c, x, y - 32, S.st, t);
+}
+
+// подпись над курганом: где вход и что нужно, чтобы князь встал (в бою не нужна — над князем своя шкала)
+const RAID_SIGN = {
+  shut: ['Курган · запечатан', '#c8c0b0'], rest: ['Курган · князь отдыхает', '#c8c0b0'], day: ['Вход в курган — ночью', '#e8dcb8'],
+  wait: ['Вход в курган — вдвоём, герои от 3 ур.', '#e8dcb8'], omen: ['▼ Вход в курган ▼', '#bff0ff'],
+};
+function raidDrawSign(c, x, y, st, t) {
+  const S = RAID_SIGN[st];
+  if (!S) return;
+  c.save();
+  c.font = 'bold 7px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+  const w = Math.ceil(c.measureText(S[0]).width) + 8, by = st === 'omen' ? Math.round(y + Math.sin(t * 3) * 1.5) : y;
+  c.fillStyle = 'rgba(12,10,8,0.72)'; c.fillRect(Math.round(x - w / 2), by - 8, w, 11);
+  c.fillStyle = st === 'omen' ? 'rgba(106,208,255,0.9)' : 'rgba(150,140,120,0.7)'; c.fillRect(Math.round(x - w / 2), by + 3, w, 1);
+  c.fillStyle = S[1]; c.fillText(S[0], x, by);
+  c.restore();
 }
 
 function raidDrawMarks(c, F) {
