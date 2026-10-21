@@ -374,12 +374,16 @@ function auditReserved() {
     if (u.fieldJob >= 0) claim.add(u.fieldJob);
     if (u.helpField >= 0) claim.add(u.helpField);
   }
-  const stale = i => { if (claim.has(i)) { resStale.delete(i); return false; } const n = (resStale.get(i) || 0) + 1; if (n >= 3) { resStale.delete(i); return true; } resStale.set(i, n); return false; };
+  const stale = (i, has = claim.has(i)) => { if (has) { resStale.delete(i); return false; } const n = (resStale.get(i) || 0) + 1; if (n >= 3) { resStale.delete(i); return true; } resStale.set(i, n); return false; };
+  // урну (streets.js) бронирует конкретный работяга (o.res = id): претендент — только он сам, иначе урна у людной
+  // дороги считалась «занятой» вечно (рядом всегда кто-то стоит) и больше никогда не вытряхивалась
+  const binClaim = (o, i) => { const u = Game.unitMap.get(o.res), x = i % MAP_W, y = (i / MAP_W) | 0;
+    return !!u && !u.dead && !u.inside && (Math.max(Math.abs(u.x - x - 0.5), Math.abs(u.y - y - 0.5)) <= 1.5 || !!(u.action && u.action.walk && u.action.walk[0] === x && u.action.walk[1] === y)); };
   for (const i of [...resStale.keys()]) { const o = World.obj[i]; if (!(o && o.res) && !ROCKMINE.res.has(i)) resStale.delete(i); }
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
     if (!o || !o.res || o.awake) continue;          // awake — ожившее дерево ночи, его бронь снимает nightTick
-    if (stale(i)) o.res = false;
+    if (o.t === 'bin' && typeof o.res === 'number' ? stale(i, binClaim(o, i)) : stale(i)) o.res = false;
   }
   for (const i of [...ROCKMINE.res]) if (stale(i)) ROCKMINE.res.delete(i);
 }
