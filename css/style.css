@@ -550,12 +550,13 @@ body.mobile #mtool:not(.hidden) {
   position: absolute; left: auto; right: 8px; transform: none;
   bottom: calc(86px + env(safe-area-inset-bottom));
   width: 132px;
-  padding: 6px; z-index: 3;
+  padding: 6px; z-index: 12;   /* выше карточки героя (6), иконки героя (5) и шторки (4): ✓ ↻ ✕ всегда под пальцем */
   background: var(--planks);
   border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line-hi), 0 3px 8px rgba(0,0,0,0.6);
 }
 #mtool-text { font-size: 12px; line-height: 1.2; white-space: normal; overflow-wrap: anywhere; }
 #mtool button { min-width: 40px; min-height: 36px; font-size: 18px; padding: 0 8px; }
+#mtool #mtool-rot { font-size: 15px; font-weight: bold; color: #ffe9a8; border-color: #d8b04a; }   /* поворот входа заметнее */
 
 /* телефон боком: панель слева узкой колонкой, карта справа */
 @media (orientation: landscape) {
