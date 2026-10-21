@@ -18,6 +18,9 @@ const LEP_SENSE = 11;           // с какого расстояния види
 const LEP_HOME_R = 4.5;         // как далеко отходит от рудника
 const LEP_CD = [160, 300];      // отдых рудника без лепрекона после ухода
 const LEP_SPEED = 2.7;
+const LEP_DUEL_MAX = 25;        // спор длится ~6 с; дольше — застрял, исчезает в радуге
+const LEP_GONE_MAX = 8;         // «ушёл», а горшок не растаял
+const LEP_STUCK_MAX = 12;       // идёт к цели или бродит, а с места не сдвинулся
 const LEP_GOLD_LOAD = new Set(['gold', 'goldore']);
 
 Game.lepr = [];
@@ -135,6 +138,44 @@ function lepFindTarget(L) {
 
 // ---------- Движение ----------
 
+// препятствие на пути: пробуем шаг под углом 45° и 90° в обе стороны (простой обход стены и забора без поиска пути)
+function lepSidestep(L, ux, uy, st, ok) {
+  const side = L.sideDir || (L.sideDir = Math.random() < 0.5 ? 1 : -1);
+  for (const a of [0.8, 1.57, 2.4]) for (const sg of [side, -side]) {
+    const c = Math.cos(a * sg), s = Math.sin(a * sg);
+    const nx = L.x + (ux * c - uy * s) * st * 1.5, ny = L.y + (ux * s + uy * c) * st * 1.5;
+    if (ok(nx, ny)) { L.x = nx; L.y = ny; L.sideDir = sg; L.ph += st * 3.4; return true; }
+  }
+  return false;
+}
+
+// Страховка: лепрекон не должен застревать ни в споре, ни в уходе, ни внутри стены. Не вышло по-хорошему — растворяется в радуге.
+function lepVanish(L, why) {
+  fxBurst(L.x * TILE, L.y * TILE - 10, 16, ['#7ae070', '#fff6b0', '#ffffff', '#4ab4ff'], 60, 60, 0.8, 1.6, 20);
+  sfxAt('chime', L.x * TILE, L.y * TILE, 0.5);
+  L.st = 'gone'; L.hide = true; L.d = null; L.seq = null; L.tug = 0; L.potOn = false; L.potFade = false; L.potA = 0; L.rbA = 0; L.dead = true;
+  Game.lepMine[L.mine] = Game.time + lepRand(LEP_CD[0], LEP_CD[1]) * (dif().neuResp || 1);
+  Game.lepStat.vanished = (Game.lepStat.vanished || 0) + 1;
+  if (Game.lepStat.vanished <= 3) logEvent('gold', 'Лепрекон растворился в радуге — видимо, надоело', L.x, L.y);
+  void why;
+}
+
+function lepWatchdog(L, dt) {
+  if (L.wdSt !== L.st) { L.wdSt = L.st; L.wdT = 0; L.wdX = L.x; L.wdY = L.y; return false; }
+  const moving = L.st === 'go' || L.st === 'roam';
+  if (moving && Math.hypot(L.x - L.wdX, L.y - L.wdY) > 0.5) { L.wdT = 0; L.wdX = L.x; L.wdY = L.y; return false; }
+  L.wdT += dt;
+  const lim = L.st === 'duel' ? LEP_DUEL_MAX : L.st === 'gone' ? LEP_GONE_MAX : moving ? LEP_STUCK_MAX : 1e9;
+  if (L.wdT > lim) { lepVanish(L, L.st); return true; }
+  // оказался в непроходимой клетке (на него поставили дом, сдвинулось препятствие) — на место, у рудника
+  if (!L.hide && L.st !== 'duel' && !isWalkable(Math.floor(L.x), Math.floor(L.y))) {
+    const near = randomFreeNear(Math.floor(L.hx), Math.floor(L.hy), 0, 3, (x, y) => isWalkable(x, y));
+    if (near) { L.x = near[0] + 0.5; L.y = near[1] + 0.5; L.st = 'idle'; L.t = 2; }
+    else { lepVanish(L, 'wall'); return true; }
+  }
+  return false;
+}
+
 function lepMove(L, tx, ty, spd, dt) {
   const dx = tx - L.x, dy = ty - L.y, d = Math.hypot(dx, dy);
   if (d < 0.06) return true;
@@ -143,6 +184,7 @@ function lepMove(L, tx, ty, spd, dt) {
   if (ok(nx, ny)) { L.x = nx; L.y = ny; }
   else if (ok(nx, L.y)) L.x = nx;
   else if (ok(L.x, ny)) L.y = ny;
+  else if (lepSidestep(L, dx / d, dy / d, st, ok)) { /* обошёл препятствие боком */ }
   else { L.stuck = (L.stuck || 0) + dt; if (L.stuck > 0.8) { L.stuck = 0; return true; } return false; }
   if (Math.abs(dx) > 0.05) L.face = dx > 0 ? 1 : -1;
   L.ph += st * 3.4;
@@ -297,6 +339,7 @@ function lepFrameIdle(L) { return 'i' + (Math.floor(Game.time * 5 + L.id) % 6); 
 
 function lepThink(L, dt) {
   const now = Game.time;
+  if (!L.dead && lepWatchdog(L, dt)) return;
   if (L.st === 'gone') {
     // сценарий кончился: убираем лепрекона, пока горшок ещё тает — он остаётся «призраком» до конца затухания
     if (L.potA > 0 || L.rbA > 0) {
@@ -321,7 +364,8 @@ function lepThink(L, dt) {
     const u = Game.unitMap.get(L.tg);
     if (!u || !lepTargetOk(u) || now - L.goT > 16 || Math.hypot(u.x - L.hx, u.y - L.hy) > LEP_SENSE + 6) { L.st = 'idle'; L.t = 2; L.cd = now + 25; L.fr = lepFrameIdle(L); return; }
     const near = lepMove(L, u.x, u.y, LEP_SPEED, dt);
-    if (Math.hypot(u.x - L.x, u.y - L.y) < 1.2 || near) lepStartDuel(L, u);
+    if (Math.hypot(u.x - L.x, u.y - L.y) < 1.2) lepStartDuel(L, u);
+    else if (near) { L.st = 'idle'; L.t = 2; L.cd = now + 20; L.fr = lepFrameIdle(L); return; }     // упёрся в препятствие и не дошёл — бросает затею
     L.fr = 'w' + (Math.floor(L.ph) % 8);
     return;
   }

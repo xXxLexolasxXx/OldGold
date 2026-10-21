@@ -204,7 +204,7 @@ function coopApplyBuilding(d, byId) {
     b = new Building(d.type, d.x, d.y, d.state === 'done', d.rot || 0);
     b.id = d.id;
     if (b.type === 'graveyard' && d.state !== 'done') { b.selfBuild = true; b.maxHits = SITE_HITS + GY_BUILD_HITS; b.total = 1; }
-    if (d.level === 2 && b.def.up) upgradeBuilding(b, true);
+    if (d.level >= 2 && b.def.up) { upgradeBuilding(b, true); if (d.level >= 3 && b.def.up3) upgradeBuilding(b, true); }
     if (d.upg && canUpgrade(b)) startUpgrade(b);
     for (let yy = b.y; yy < b.y + b.h; yy++) for (let xx = b.x; xx < b.x + b.w; xx++) World.bmap[idx(xx, yy)] = b.id;
     World.door[idx(b.doorX, b.doorY)] = 1;
