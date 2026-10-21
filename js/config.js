@@ -55,10 +55,12 @@ const GOODS = {
   croissant:  { name: 'Круассаны',      color: '#d89a3c', group: 'Еда' },
   steak:      { name: 'Стейки',         color: '#a84a32', group: 'Еда' },
   darkbeer:   { name: 'Тёмное пиво',    color: '#5a3418', group: 'Еда' },
+  fish:       { name: 'Рыба',           color: '#8ab0c4', group: 'Еда' },              // рыбацкая хижина, крабы (МОРЕ.md)
+  pearl:      { name: 'Жемчуг',         color: '#e8e4f0', group: 'Ценности' },         // ракушки, кракен, рыбаки
 };
 const GOOD_KEYS = Object.keys(GOODS);
 const GOOD_GROUPS = ['Стройка', 'Еда', 'Ценности', 'Ремесло', 'Металл', 'Магия', 'Снаряжение', 'Хозяйство'];
-const FOODS = ['chickenleg', 'steak', 'croissant', 'sausage', 'bread'];   // что едят в трактире (по порядку предпочтения)
+const FOODS = ['chickenleg', 'steak', 'croissant', 'sausage', 'fish', 'bread'];   // что едят в трактире (по порядку предпочтения)
 
 const UNIT_TYPES = {
   serf:       { name: 'Трудяга',   shirt: '#8a5a3a' },
@@ -111,7 +113,7 @@ const BUILDINGS = {
     desc: 'Двухэтажная школа с колокольней. Обучает жителей за 1 золото.',
   },
   inn: {
-    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, wideDoor: true, inputs: { bread: 16, sausage: 16, beer: 10, chicken: 4, croissant: 12, steak: 12, darkbeer: 8 },
+    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, wideDoor: true, inputs: { bread: 16, sausage: 16, beer: 10, chicken: 4, croissant: 12, steak: 12, darkbeer: 8, fish: 12 },
     desc: 'Голодные жители едят здесь всё, что есть в запасе — курицу, стейк, колбасу, круассаны, хлеб — и запивают пивом. Тушку курицы разделывают на 4 куска. Пьяный может уснуть прямо на дороге.',
   },
   bonfire: {

@@ -289,6 +289,7 @@ function coopMirror(m) {
   if (!festWas && festOn()) festCheers();       // праздник начался — аплодисменты и у клиентов
   Object.assign(WX, m.wx, { ready: true });
   if (typeof seaMirrorIn === 'function') seaMirrorIn(m.sea);
+  if (typeof seaLifeMirrorIn === 'function') seaLifeMirrorIn(m.sl);
 }
 
 function coopWorld(m) {

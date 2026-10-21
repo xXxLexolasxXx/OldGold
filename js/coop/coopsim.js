@@ -125,7 +125,7 @@ function coopAddItem(H, key, n = 1) {
 function coopUseItem(u, slot) {
   const H = u.hero, s = H.inv[slot];
   if (!s) return;
-  const fv = { bread: 0.45, sausage: 0.55, chickenleg: 0.6, steak: 0.65, croissant: 0.5 }[s.k];
+  const fv = { bread: 0.45, sausage: 0.55, chickenleg: 0.6, steak: 0.65, croissant: 0.5, fish: 0.5 }[s.k];
   if (!fv) { coopSay(H.owner, 'Это не съесть'); return; }
   s.n--; if (s.n <= 0) H.inv[slot] = null;
   u.food = Math.min(1.3, u.food + fv);
@@ -589,6 +589,7 @@ function coopMirror() {
     fam: typeof famMirrorOut === 'function' ? famMirrorOut() : null,
     fest: festOn() ? { on: true, until: Game.festival.until } : null,
     sea: typeof seaMirrorOut === 'function' ? seaMirrorOut() : null, wfx: coopList(Game.wfx),
+    sl: typeof seaLifeMirrorOut === 'function' ? seaLifeMirrorOut() : null,
     wx: {},
   };
   for (const k of COOP_WX) m.wx[k] = coopPlain(WX[k]);
