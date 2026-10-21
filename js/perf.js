@@ -27,7 +27,8 @@ function perfTrim(hard) {
   try {
     if (typeof NIGHT !== 'undefined' && NIGHT.cv) { NIGHT.cv.width = NIGHT.cv.height = 1; }
     if (typeof RAMP_CACHE !== 'undefined') RAMP_CACHE.clear();
-    for (const b of Game.buildings || []) if (b._site) { b._site.cv.width = b._site.cv.height = 1; b._site = null; }
+    if (window.LOAD_SPR) LOAD_SPR.clear();
+    for (const b of Game.buildings || []) { if (b._site) { b._site.cv.width = b._site.cv.height = 1; b._site = null; } b._gnd = null; }
     if (Game.floaters && Game.floaters.length > 20) Game.floaters.length = 0;
     if (Game.log && Game.log.length > 80) Game.log.splice(0, Game.log.length - 80);
     if (hard) { if (!Fps.eco) perfSetEco(true, true); if (typeof resize === 'function') resize(); }
@@ -80,6 +81,33 @@ function perfSetEco(on, silent) {
 function perfMenuSync() {
   const b = document.getElementById('eco-btn');
   if (b) b.querySelector('span').textContent = Fps.eco ? 'Графика: экономная' : 'Графика: обычная';
+}
+
+// Ноша и кучки: векторная отрисовка с градиентами дорога, когда их сотни в кадре. Каждое благо рисуем один раз
+// в холст под нужную плотность (1…8 пикселей экрана на пиксель мира) и дальше кладём картинкой.
+// Стоит здесь, после всех файлов, которые дополняют drawLoad (guilds.js), — кэшируется уже итоговый рисунок.
+{
+  const BOX = [-9, -8, 18, 15];   // с запасом: все блага укладываются в −7,3…7,3 × −6,3…4,8
+  const cache = window.LOAD_SPR = new Map();
+  const raw = drawLoad;
+  drawLoad = function (c, g) {
+    if (!c.getTransform) { raw(c, g); return; }
+    const m = c.getTransform();
+    const s = Math.min(8, Math.max(1, Math.ceil(Math.hypot(m.a, m.b) - 0.01)));
+    const key = g + '|' + s;
+    let cv = cache.get(key);
+    if (!cv) {
+      cv = mkCanvas(BOX[2] * s, BOX[3] * s);
+      const x = cv.getContext('2d');
+      x.setTransform(s, 0, 0, s, -BOX[0] * s, -BOX[1] * s);
+      raw(x, g);
+      cache.set(key, cv);
+    }
+    const sm = c.imageSmoothingEnabled;
+    c.imageSmoothingEnabled = true;
+    c.drawImage(cv, BOX[0], BOX[1], BOX[2], BOX[3]);
+    c.imageSmoothingEnabled = sm;
+  };
 }
 
 {
