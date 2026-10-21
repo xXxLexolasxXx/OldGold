@@ -43,18 +43,18 @@ const BOT2 = `(function () {
   if (builders + (q.builder || 0) < 2 + Game.buildings.length * 0.12) push('builder');
 })()`;
 
-// Рудники ставятся только у скал, а скалы бывают далеко от склада — общий бот (tests/lib/sim.js) ищет место лишь рядом
+// Рудники ставятся только у скал, а скалы бывают далеко от склада — общий бот (tests/lib/sim.js) ищет место лишь рядом (то же с каменоломней: у валунов, иначе камня нет и стройки встают)
 // и пропускает рудник. Здесь: ближайшее к складу допустимое место на всей карте + дорога до сети (как поставил бы игрок).
 const MINE = `(function () {
   const bot = Game.__bot, plan = __PLAN__;
   if (!bot || bot.i >= plan.length) return;
   const type = plan[bot.i];
-  if (!BUILDINGS[type] || !BUILDINGS[type].need || Game.buildings.some(b => b.state !== 'done' && b.type !== 'graveyard') || Game.roadSites.size) return;
+  if (!BUILDINGS[type] || !(BUILDINGS[type].need || type === 'quarry') || Game.buildings.some(b => b.state !== 'done' && b.type !== 'graveyard') || Game.roadSites.size) return;
   const hub = Game.buildings.find(b => b.type === 'storehouse');
   const net = new Set(); const q = [idx(hub.doorX, hub.doorY)]; net.add(q[0]);
   while (q.length) { const i = q.pop(), x = i % MAP_W, y = (i / MAP_W) | 0; for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) { const nx = x + dx, ny = y + dy; if (!inb(nx, ny)) continue; const j = idx(nx, ny); if (!net.has(j) && (World.road[j] || Game.roadSites.has(j))) { net.add(j); q.push(j); } } }
   const spots = [];
-  for (let y = 2; y < MAP_H - 4; y++) for (let x = 2; x < MAP_W - 4; x++) { const d = Math.abs(x - hub.doorX) + Math.abs(y - hub.doorY); if (d < 60 && !checkPlacement(type, x, y, 0)) spots.push([d, x, y]); }
+  for (let y = 2; y < MAP_H - 4; y++) for (let x = 2; x < MAP_W - 4; x++) { const d = Math.abs(x - hub.doorX) + Math.abs(y - hub.doorY); if (d < 60 && !checkPlacement(type, x, y, 0) && (type !== 'quarry' || findObjNear(x + 1, y + 2, 8, o => o.t === 'stone' && o.n > 0))) spots.push([d, x, y]); }
   spots.sort((a, b) => a[0] - b[0]);
   for (const [, x, y] of spots.slice(0, 12)) {
     const dd = bDims(type, 0), sx = x + dd.dx, sy = y + dd.dy;

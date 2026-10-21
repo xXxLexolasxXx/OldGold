@@ -101,6 +101,7 @@ function simRun(seed, minutes, r, opts = {}) {
   const end = L.inspect(sim), mid = hist[Math.floor(hist.length / 2)] || end.n;
   for (const k of Object.keys(LIMITS)) {
     const a = mid[k] || 0, b = end.n[k] || 0, q = hist[Math.floor(hist.length * 3 / 4)] ? hist[Math.floor(hist.length * 3 / 4)][k] : b;
+    if (k === 'log') continue;      // журнал ограничен LOG_MAX (events.js) и на время прогона просто копится; предел проверяет LIMITS
     if (b > 60 && b > a * 2 && q > a && b > q) r.warns.push(`сид ${seed}: ${k} растёт: ${a} → ${q} → ${b}`);
   }
   // товары: в деревне не может оказаться больше, чем было + произведено (запас на подарки, сундуки и находки)
