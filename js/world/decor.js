@@ -251,7 +251,7 @@ function drawFenceObj(c, px, py, o) {
 }
 
 // ---------- Ночные преображения ----------
-// 15 вариантов; каждую ночь для каждого предмета с вероятностью ~30% выбирается один из подходящих.
+// 15 вариантов; каждую ночь для каждого предмета с вероятностью MORPH_CHANCE (12%) выбирается один из подходящих.
 const MORPH_NAMES = ['', 'Глаза на спинке', 'Скалящаяся урна', 'Кровавые цветы', 'Светящиеся цветы', 'Дребезжащий ящик', 'Зелёная жижа', 'Призрачное пламя', 'Красные руны', 'Шёпот колодца', 'Поворот головы', 'Споры', 'Плачущий гном', 'Лицо в дыму', 'Молнии кристаллов', 'Рука из земли'];
 
 function morphList(o) {
@@ -267,12 +267,17 @@ function morphList(o) {
   return null;
 }
 
+// доля предметов, что ночью оживают (была 30%: всё светилось одинаковыми глазами) и цвета глаз: жёлтые — любопытные, зелёные — призрачные, красные — злые
+const MORPH_CHANCE = 12;
+const MORPH_EYE = { 1: 'y', 2: 'r', 7: 'g', 10: 'r', 12: 'g' };
+const EYE_TINT = { y: ['#ffd84a', '255,210,70'], r: ['#ff3a30', '255,60,48'], g: ['#8fffb0', '140,255,170'] };
+
 function decorMorph(o, x, y) {
   if (nightAmt() < 0.35) return 0;
   const l = morphList(o);
   if (!l) return 0;
   const h = hash(nightIndex() * 7919 + idx(x, y) * 31 + 3);
-  if ((h >>> 8) % 100 >= 30) return 0;
+  if ((h >>> 8) % 100 >= MORPH_CHANCE) return 0;
   return l[(h >>> 16) % l.length];
 }
 
@@ -281,20 +286,21 @@ function drawMorph(c, id, px, py, o, k) {
   const t = Game.time, cx = px + 16, by = py + 25, pulse = 0.6 + 0.4 * Math.sin(t * 3 + px);
   c.save();
   c.globalAlpha = k;
-  const eye = (x, y, r, col) => { glow(c, x, y, r * 3.4, col === '#ff3a30' ? '255,60,48' : '140,255,170', 0.3 * k); ellipse(c, x, y, r, r * 0.8, col); c.fillStyle = '#05100a'; c.fillRect(x - 0.25, y - r * 0.8, 0.6, r * 1.6); };
+  const tint = EYE_TINT[MORPH_EYE[id]] || EYE_TINT.g, blinkOn = Math.sin(t * 1.7 + px * 0.9) > 0.93;     // изредка моргают
+  const eye = (x, y, r) => { if (blinkOn) { c.fillStyle = tint[0]; c.fillRect(x - r, y, r * 2, 0.6); return; } glow(c, x, y, r * 3.4, tint[1], 0.3 * k); ellipse(c, x, y, r, r * 0.8, tint[0]); c.fillStyle = '#05100a'; c.fillRect(x - 0.25, y - r * 0.8, 0.6, r * 1.6); };
   switch (id) {
-    case 1: for (let i = 0; i < 5; i++) if (Math.sin(t * 2.3 + i * 1.9 + px) > -0.7) eye(px + 7 + i * 4.4, py + 14 + (i % 2), 1.3, '#d8ff70'); break;
-    case 2: eye(cx - 3, by - 8, 1.8, '#ff3a30'); eye(cx + 3, by - 8, 1.8, '#ff3a30'); c.fillStyle = '#12060a'; c.beginPath(); c.moveTo(cx - 5, by - 4.6); for (let i = 0; i <= 5; i++) c.lineTo(cx - 5 + i * 2, by - 4.6 + (i % 2 ? 2.4 : 0.4)); c.lineTo(cx + 5, by - 2); c.lineTo(cx - 5, by - 2); c.fill(); c.fillStyle = '#f0f0e0'; for (let i = 0; i < 5; i++) c.fillRect(cx - 4.6 + i * 2, by - 4.4, 1, 1.6); break;
+    case 1: for (let i = 0; i < 5; i++) if (Math.sin(t * 2.3 + i * 1.9 + px) > -0.7) eye(px + 7 + i * 4.4, py + 14 + (i % 2), 1.3); break;
+    case 2: eye(cx - 3, by - 8, 1.8); eye(cx + 3, by - 8, 1.8); c.fillStyle = '#12060a'; c.beginPath(); c.moveTo(cx - 5, by - 4.6); for (let i = 0; i <= 5; i++) c.lineTo(cx - 5 + i * 2, by - 4.6 + (i % 2 ? 2.4 : 0.4)); c.lineTo(cx + 5, by - 2); c.lineTo(cx - 5, by - 2); c.fill(); c.fillStyle = '#f0f0e0'; for (let i = 0; i < 5; i++) c.fillRect(cx - 4.6 + i * 2, by - 4.4, 1, 1.6); break;
     case 3: for (let i = 0; i < 6; i++) { const x = px + 6 + i * 4, lean = Math.sin(t + i) * 1.4 + 2; ellipse(c, x + lean, by - 10 - (i % 3) * 2, 2, 1.8, '#d01830'); glow(c, x + lean, by - 10, 8, '255,40,60', 0.22 * k); const q = (t * 0.8 + i * 0.3) % 1; c.fillStyle = `rgba(200,20,40,${1 - q})`; c.fillRect(x + lean, by - 8 + q * 7, 0.9, 1.5); } break;
     case 4: for (let i = 0; i < 7; i++) { const x = px + 5 + i * 3.6, y = by - 7 - (i % 3) * 3; glow(c, x, y, 7, i % 2 ? '120,220,255' : '200,120,255', (0.22 + 0.14 * Math.sin(t * 2 + i)) * k); ellipse(c, x, y, 1.4, 1.4, i % 2 ? '#a8f0ff' : '#e0b0ff'); } break;
     case 5: { const j = Math.sin(t * 40) * 0.8; c.fillStyle = '#6aff7a'; c.fillRect(px + 8 + j, by - 12, 16, 1.2); glow(c, cx, by - 10, 12, '120,255,120', 0.2 * k); line(c, cx - 8 + j, by - 14, cx + 6 + j, by - 14, 'rgba(60,40,20,0.8)', 1.4); break; }
     case 6: for (let i = 0; i < 4; i++) { const q = (t * 0.6 + i * 0.27) % 1; c.fillStyle = `rgba(110,255,90,${0.9 * (1 - q * 0.5)})`; c.fillRect(cx - 7 + i * 4.6, by - 12 + q * 12, 1.6, 2 + q * 3); } ellipse(c, cx, by + 0.4, 9, 2.2, 'rgba(100,255,90,0.55)'); glow(c, cx, by - 2, 14, '110,255,90', 0.22 * k); break;
-    case 7: glow(c, px + 22, py - 6, 22, '110,255,200', 0.34 * k); eye(px + 20.4, py - 7, 1.1, '#e8fff0'); eye(px + 23.6, py - 7, 1.1, '#e8fff0'); c.fillStyle = 'rgba(190,255,230,0.8)'; c.beginPath(); c.ellipse(px + 22, py - 3.6, 1.2, 1.8 + Math.sin(t * 6) * 0.6, 0, 0, 7); c.fill(); break;
+    case 7: glow(c, px + 22, py - 6, 22, '110,255,200', 0.34 * k); eye(px + 20.4, py - 7, 1.1); eye(px + 23.6, py - 7, 1.1); c.fillStyle = 'rgba(190,255,230,0.8)'; c.beginPath(); c.ellipse(px + 22, py - 3.6, 1.2, 1.8 + Math.sin(t * 6) * 0.6, 0, 0, 7); c.fill(); break;
     case 8: c.strokeStyle = `rgba(255,50,40,${0.7 + 0.3 * pulse})`; c.lineWidth = 1.2; c.beginPath(); c.moveTo(cx - 2, by - 8); c.lineTo(cx + 2, by - 12); c.lineTo(cx - 2, by - 16); c.moveTo(cx + 2, by - 18); c.lineTo(cx - 1, by - 21); c.stroke(); glow(c, cx, by - 14, 20, '255,50,40', 0.26 * pulse * k); break;
     case 9: for (let i = 0; i < 3; i++) { const q = (t * 0.45 + i * 0.33) % 1; c.strokeStyle = `rgba(150,200,255,${0.7 * (1 - q)})`; c.lineWidth = 1; c.beginPath(); c.ellipse(cx, by - 11 - q * 22, 8 - q * 3, 3 - q, 0, 0, 7); c.stroke(); } glow(c, cx, by - 14, 22, '110,170,255', 0.28 * k); break;
-    case 10: eye(cx - 1.4, by - 23, 1.3, '#ff3a30'); eye(cx + 2, by - 23, 1.3, '#ff3a30'); line(c, cx - 3, by - 20, cx + 3.6, by - 20.6, '#ff3a30', 0.8); break;
+    case 10: eye(cx - 1.4, by - 23, 1.3); eye(cx + 2, by - 23, 1.3); line(c, cx - 3, by - 20, cx + 3.6, by - 20.6, '#ff3a30', 0.8); break;
     case 11: for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28, x = cx + Math.cos(a) * 11, y = by - 3 + Math.sin(a) * 4.6; glow(c, x, y - 3, 8, i % 2 ? '120,255,220' : '255,140,220', 0.3 * k); const q = (t * 0.5 + i * 0.13) % 1; c.fillStyle = `rgba(200,255,230,${1 - q})`; c.fillRect(x + Math.sin(q * 8 + i) * 2, y - 5 - q * 18, 1, 1); } break;
-    case 12: eye(cx - 1.4, by - 17.6, 1, '#ff3a30'); eye(cx + 1.6, by - 17.6, 1, '#ff3a30'); for (const dx of [-1.4, 1.6]) { const q = (t * 0.7 + dx) % 1; c.fillStyle = 'rgba(10,5,8,0.9)'; c.fillRect(cx + dx - 0.3, by - 16.6 + q * 9, 0.8, 2.4); } break;
+    case 12: eye(cx - 1.4, by - 17.6, 1); eye(cx + 1.6, by - 17.6, 1); for (const dx of [-1.4, 1.6]) { const q = (t * 0.7 + dx) % 1; c.fillStyle = 'rgba(10,5,8,0.9)'; c.fillRect(cx + dx - 0.3, by - 16.6 + q * 9, 0.8, 2.4); } break;
     case 13: { const q = (t * 0.5) % 1, fy = by - 30 - q * 6; c.fillStyle = `rgba(215,255,225,${0.5 * (1 - q * 0.6)})`; ellipse(c, cx, fy, 6, 7, c.fillStyle); c.fillStyle = '#0a1a10'; ellipse(c, cx - 2.2, fy - 1, 1.2, 1.8, '#0a1a10'); ellipse(c, cx + 2.2, fy - 1, 1.2, 1.8, '#0a1a10'); ellipse(c, cx, fy + 3, 1.6, 2.4 + Math.sin(t * 5), '#0a1a10'); glow(c, cx, by - 16, 16, '110,255,150', 0.26 * k); break; }
     case 14: { const a = [[cx - 4, by - 14], [cx, by - 20], [cx + 4, by - 12]]; if (Math.sin(t * 9) > 0.3) { c.strokeStyle = 'rgba(230,200,255,0.95)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(a[0][0], a[0][1]); c.lineTo(cx - 1, by - 17); c.lineTo(a[1][0], a[1][1]); c.lineTo(cx + 2, by - 14); c.lineTo(a[2][0], a[2][1]); c.stroke(); } glow(c, cx, by - 16, 22, '190,120,255', (0.26 + 0.14 * Math.sin(t * 7)) * k); break; }
     case 15: { // костлявая рука тянется из земли рядом
