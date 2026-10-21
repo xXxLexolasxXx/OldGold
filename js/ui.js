@@ -462,6 +462,7 @@ function initUI() {
     else if (act === 'deliver') toggleDeliver(b);
     else if (act === 'festival') { if (!festOn()) { const bad = festivalStart('manual'); if (bad) toast(bad); } }
     else if (act === 'goto') focusBuilding(b);
+    else if (act === 'herobuild') heroHelpBuild(b);
     else if (act === 'prev') cycleBuilding(-1);
     else if (act === 'next') cycleBuilding(1);
     else if (act === 'hire') queueTraining(b.def.worker);
@@ -660,13 +661,28 @@ function workerHTML(b) {
     ${w ? '' : '<button data-act="hire" style="margin-left:auto">Обучить</button>'}</div>`;
 }
 
+// «Не жди — помоги»: на стройке без свободного работяги герой может взяться за молоток сам
+function heroBuildBtn(b) {
+  if (typeof Coop !== 'undefined' && Coop.mirror) return '';
+  const h = Game.units.find(u => u.type === 'hero' && !u.dead);
+  if (!h || b.builder) return '';
+  return `<button class="upg" data-act="herobuild" title="Свободного работяги нет, а ждать скучно: герой возьмёт молоток сам"><span><b>Строить героем</b><small>не ждать работягу</small></span></button>`;
+}
+function heroHelpBuild(b) {
+  const h = Game.units.find(u => u.type === 'hero' && !u.dead);
+  if (!h || b.removed) return;
+  const road = b.isRoad;
+  issueCmd(h, { kind: 'build', b, tx: road ? b.x : b.doorX, ty: road ? b.y : b.doorY, label: road ? 'Строить дорогу' : 'Строить' });
+  toast('Герой идёт строить');
+}
+
 function infoBuilding(b) {
   if (b.isRoad) {
     return `<div class="ihead"><img class="bpic" src="${iconURL('ui', 'road', 2)}" alt=""><div><h3>Дорога</h3>${statusChip(b)}</div></div>
       <div class="slots">${slotHTML('stone', b.stock.stone, ROAD_STONE)}</div>
       <div class="irow">Работяга: ${b.builder ? (b.dug < 1 ? 'копает' : 'кладёт камень') : `<span class="muted">${b.dug < 1 ? 'ждёт свободного работягу' : 'ждёт камень'}</span>`}</div>
       <div class="tip">Сначала работяга бесплатно копает корыто — это он умеет лучше всего. Потом за 1 камень выкладывает мостовую, если камень вообще кто-нибудь привезёт.</div>
-      <div class="iactions"><button data-act="demolish">${ui('trash')}Отменить</button></div>`;
+      <div class="iactions">${heroBuildBtn(b)}<button data-act="demolish">${ui('trash')}Отменить</button></div>`;
   }
   const def = b.def;
   const same = Game.buildings.filter(x => x.type === b.type).length;
@@ -706,6 +722,7 @@ function infoBuilding(b) {
     for (const g in def.cost) if (def.cost[g]) h += slotHTML(g, b.usedOf[g] + b.stock[g], def.cost[g]);
     h += '</div>';
     h += `<div class="irow">Работяга: ${b.builder ? '<span class="good">работает</span>' : '<span class="warn">нет свободного</span>'}</div>`;
+    h += `<div class="iactions">${heroBuildBtn(b)}</div>`;
     return h + `<div class="idesc">${def.desc}</div>`;
   }
 

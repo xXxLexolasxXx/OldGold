@@ -169,6 +169,8 @@ function smAction(a) {
     smClose(() => { if (Game.heroAsk) { Game.heroAsk = false; askHeroName(); } });
   } else if (a === 'mp') {
     smRender(); smShow('mp');
+  } else if (a === 'about') {
+    smShow('about');
   } else if (a === 'help') {
     smShow('help');
   } else if (a === 'mode-back') {
@@ -210,6 +212,7 @@ function initStartMenu() {
       <button class="sm-btn" data-sm="new"><b>Новая игра</b><small>новый мир, назвать героя</small></button>
       <button class="sm-btn" data-sm="mp"><b>Мультиплеер</b><small>играть с друзьями</small></button>
       <button class="sm-btn ghost" data-sm="help"><b>Как играть</b></button>
+      <button class="sm-btn ghost" data-sm="about"><b>Манифест</b><small>почему здесь не заставляют ждать</small></button>
       <button class="sm-btn ghost" data-sm="lang"><b class="lang-name">${I18N.other}</b></button>
       <button class="sm-btn ghost" data-sm="more"><b>Ещё</b><small>вызов дня, редактор, ачивки</small></button>
     </div>
@@ -236,6 +239,15 @@ function initStartMenu() {
       <label>Адрес сервера<input id="sm-server" autocomplete="off" spellcheck="false"></label>
       <div id="sm-mp-msg" class="sm-msg"></div>
       <button class="sm-btn primary" data-sm="connect"><b>Подключиться</b></button>
+      <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
+    </div>
+    <div class="sm-panel hidden" data-panel="about">
+      <div class="sm-manifest">
+        <h3>Манифест разработчика</h3>
+        <p>Я, как разработчик, очень ненавижу игры, где нужно ждать. Стройку, которая тянется, пока вы заваривали чай. Караван, который «скоро будет». Кнопку «Ускорить» за деньги.</p>
+        <p>Поэтому в OldGold любое ожидание обязано объяснить, чего ему не хватает, и дать вам чем заняться: поторопить время, взять молоток в руки героя или сменить приоритет.</p>
+        <p>Нашли место, где вы просто стоите и ждёте? Это не задумка, а баг. Напишите мне.</p>
+      </div>
       <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
     </div>
     <div class="sm-panel hidden" data-panel="help">
