@@ -677,25 +677,7 @@ function gdDrawBone(c, N) {
   c.save(); c.translate(3, -11); c.rotate(arm); gdFp(c, 0, 0, 1, 5, '#d8d0b8'); gdFp(c, 0, 4, 1, 6, '#b8b4a0'); c.restore();
 }
 
-function gdDrawEcho(c, N) {
-  const [an, f] = gdFrame(N), t = Game.time, L = N.look || {}, hov = Math.sin(t * 2.4 + N.id) * 2;
-  c.save(); c.translate(0, -4 + hov);
-  c.globalAlpha *= (an === 'die' ? Math.max(0, 1 - f / 9) : 0.75) * (N.st === 'emerge' ? Math.min(1, 1 + N.t) : 1);
-  c.globalCompositeOperation = 'lighter';
-  const col = L.k === 'hero' ? '150,255,170' : '190,140,255';
-  const g = c.createRadialGradient(0, -12, 0, 0, -12, 16); g.addColorStop(0, `rgba(${col},0.5)`); g.addColorStop(1, `rgba(${col},0)`);
-  c.fillStyle = g; c.fillRect(-16, -28, 32, 32);
-  c.globalCompositeOperation = 'source-over';
-  gdFp(c, -4, -14, 8, 10, `rgba(${col},0.55)`);
-  for (let i = -2; i <= 1; i++) gdFp(c, i * 2, -4 + ((Math.floor(t * 6) + i) & 1), 2, 3, `rgba(${col},0.35)`);
-  gdFp(c, -3, -20, 6, 6, `rgba(${col},0.7)`);
-  if (L.k !== 'hero') { gdFp(c, -3, -24, 6, 2, 'rgba(200,120,120,0.6)'); gdFp(c, -1, -27, 2, 3, 'rgba(200,120,120,0.6)'); }   // колпак гнома
-  gdFp(c, -2, -18, 1, 1, '#ffffff'); gdFp(c, 1, -18, 1, 1, '#ffffff');
-  const arm = an === 'atk' ? [-0.6, -1.4, -2.2, -0.4, 0.9, 1.3, 0.9, 0.4, 0][f] : -0.4;
-  c.save(); c.translate(4, -12); c.rotate(arm); gdFp(c, 0, 0, 2, 8, `rgba(${col},0.6)`); c.restore();
-  c.restore();
-  if (N.ename && N.st !== 'die') { c.save(); c.font = '8px sans-serif'; c.textAlign = 'center'; c.fillStyle = 'rgba(220,200,255,0.9)'; c.fillText(N.ename, 0, -34); c.restore(); }
-}
+// эхо павших рисуется в echoart.js (уникальные призраки, кэш кадров)
 
 function gdDrawTower(c, N) {
   const t = Game.time, dead = N.st === 'die';
