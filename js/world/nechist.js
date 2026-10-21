@@ -68,7 +68,7 @@ function drawWaterEyes(c, e, a) {
   const rr = 4 + (t * 3 + e.i) % 5;
   c.beginPath(); c.ellipse(px, py + 2, rr * 1.4, rr * 0.5, 0, 0, 7); c.stroke();
   c.fillStyle = '#0a2a40'; c.beginPath(); c.arc(px - 3, py, 2.2, 0, 7); c.arc(px + 3, py, 2.2, 0, 7); c.fill();
-  if (!blink) { c.fillStyle = '#b8f4ff'; c.fillRect(px - 4, py - 0.8, 2, 1.8); c.fillRect(px + 2, py - 0.8, 2, 1.8); c.fillStyle = '#ffffff'; c.fillRect(px - 3.6, py - 0.6, 0.8, 0.8); c.fillRect(px + 2.4, py - 0.6, 0.8, 0.8); }
+  if (!blink) { c.fillStyle = '#b8ffc8'; c.fillRect(px - 4, py - 0.8, 2, 1.8); c.fillRect(px + 2, py - 0.8, 2, 1.8); c.fillStyle = '#ffffff'; c.fillRect(px - 3.6, py - 0.6, 0.8, 0.8); c.fillRect(px + 2.4, py - 0.6, 0.8, 0.8); }
   c.restore();
 }
 
@@ -161,12 +161,12 @@ function drawWaterEnt(c, e) {
     // лицо: злые светящиеся глаза и клыкастая пасть
     const eyes = [[-3.4, -35], [5.4, -35.6]];
     c.globalCompositeOperation = 'lighter';
-    for (const [ex, ey] of eyes) { const gl = c.createRadialGradient(ex, ey, 0, ex, ey, 7); gl.addColorStop(0, 'rgba(180,250,255,0.55)'); gl.addColorStop(1, 'rgba(180,250,255,0)'); c.fillStyle = gl; c.beginPath(); c.arc(ex, ey, 7, 0, 7); c.fill(); }
+    for (const [ex, ey] of eyes) { const gl = c.createRadialGradient(ex, ey, 0, ex, ey, 7); gl.addColorStop(0, 'rgba(150,255,170,0.55)'); gl.addColorStop(1, 'rgba(150,255,170,0)'); c.fillStyle = gl; c.beginPath(); c.arc(ex, ey, 7, 0, 7); c.fill(); }
     c.globalCompositeOperation = 'source-over';
     eyes.forEach(([ex, ey], ei) => {
       const sl = ei ? 1 : -1;
       c.fillStyle = OUT; c.beginPath(); c.moveTo(ex - 3.6, ey - 0.4 + sl * 1.6); c.lineTo(ex + 3.6, ey - 0.4 - sl * 1.6); c.lineTo(ex + 3.2, ey + 2.4); c.lineTo(ex - 3.2, ey + 2.4); c.closePath(); c.fill();   // сердитая бровь
-      c.fillStyle = rage ? '#ffffff' : '#bff6ff'; c.beginPath(); c.moveTo(ex - 3, ey + 0.6 + sl * 0.8); c.lineTo(ex + 3, ey + 0.6 - sl * 0.8); c.lineTo(ex + 2.4, ey + 2); c.lineTo(ex - 2.4, ey + 2); c.closePath(); c.fill();
+      c.fillStyle = rage ? '#ffffff' : '#c4ffd0'; c.beginPath(); c.moveTo(ex - 3, ey + 0.6 + sl * 0.8); c.lineTo(ex + 3, ey + 0.6 - sl * 0.8); c.lineTo(ex + 2.4, ey + 2); c.lineTo(ex - 2.4, ey + 2); c.closePath(); c.fill();
       c.fillStyle = '#05182c'; c.fillRect(ex - 0.4, ey + 0.6, 0.9, 1.4);                          // щель зрачка
     });
     const open = rage ? 7 : 3.4 + Math.sin(t * 2.4 + e.i) * 0.8, my = -28.5, mw = rage ? 9 : 7.5;
