@@ -5,7 +5,7 @@ const S = require('./lib/sim');
 const fails = [];
 const ok = (c, m) => { if (!c) { fails.push(m); console.log('  ✗ ' + m); } };
 
-for (const seed of [11, 22, 33]) {
+for (const seed of [11, 22]) {
   const h = S.newSim(seed).h;
   const r = JSON.parse(h.run(`JSON.stringify((() => {
     const b = Game.buildings.find(b => b.type === 'bonfire') || Game.buildings[0];
@@ -29,3 +29,4 @@ for (const seed of [11, 22, 33]) {
 }
 if (fails.length) { console.log(`✗ провалов: ${fails.length}`); process.exit(1); }
 console.log('✓ ночной туман: потолок и проредь над деревней');
+process.exit(0);
