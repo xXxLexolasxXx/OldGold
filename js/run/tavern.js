@@ -276,18 +276,20 @@ function tavernShop() {
     const m = runMeta(), U = m.ups || {}, W = m.weapons || {};
     const row = it => {
       let state, can = false, act;
-      if (it.kind === 'up') { const l = U[it.id] | 0; state = l >= it.max ? 'макс.' : `${it.cost(l)} 💎`; can = l < it.max && m.stones >= it.cost(l); act = `ur('${it.id}')`; return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0"><span><b>${it.name}</b> ${l}/${it.max}<br><small>${it.desc}</small></span><button ${can ? '' : 'disabled'} onclick="${act}" style="padding:5px 10px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;${can ? 'cursor:pointer' : 'opacity:.5'}">${state}</button></div>`; }
+      if (it.kind === 'up') { const l = U[it.id] | 0; state = l >= it.max ? 'макс.' : `${it.cost(l)} 💎`; can = l < it.max && m.stones >= it.cost(l); act = `ur:${it.id}`; return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0"><span><b>${it.name}</b> ${l}/${it.max}<br><small>${it.desc}</small></span><button ${can ? '' : 'disabled'} data-tv="${act}" style="padding:5px 10px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;${can ? 'cursor:pointer' : 'opacity:.5'}">${state}</button></div>`; }
       const own = W[it.id], cur = m.weapon === it.id;
       state = cur ? 'в руках' : own ? 'взять' : `${it.cost()} 💎`; can = !cur && (own || m.stones >= it.cost());
-      return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0"><span><b>${it.name}</b><br><small>${it.desc}</small></span><button ${can ? '' : 'disabled'} onclick="uw('${it.id}')" style="padding:5px 10px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;${can ? 'cursor:pointer' : 'opacity:.5'}">${state}</button></div>`;
+      return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0"><span><b>${it.name}</b><br><small>${it.desc}</small></span><button ${can ? '' : 'disabled'} data-tv="uw:${it.id}" style="padding:5px 10px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;${can ? 'cursor:pointer' : 'opacity:.5'}">${state}</button></div>`;
     };
     box.innerHTML = `<div style="background:#2a1a0e;border:2px solid #b8902c;border-radius:8px;padding:14px;max-width:420px;width:100%;color:#f1dfb0">
       <div style="font-size:18px;font-weight:700;margin-bottom:4px">Мастерская деда <span style="float:right;font-size:14px">💎 ${m.stones}</span></div>
       ${RUN_SHOP.map(row).join('')}
-      <div style="margin:6px 0"><button onclick="uw('pick')" ${m.weapon === 'pick' || !m.weapon ? 'disabled' : ''} style="padding:5px 10px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px">Вернуть кирку</button></div>
+      <div style="margin:6px 0"><button data-tv="uw:pick"${m.weapon === 'pick' || !m.weapon ? 'disabled' : ''} style="padding:5px 10px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px">Вернуть кирку</button></div>
       <div style="text-align:right"><button id="shop-x" style="padding:6px 14px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;cursor:pointer">Закрыть</button></div></div>`;
     box.querySelector('#shop-x').onclick = () => { box.remove(); tavernRender(); };
   };
+  // кнопки через data-tv, а не onclick="…" в разметке: такие обработчики запрещает политика CSP сервера
+  box.onclick = e => { const b = e.target.closest('[data-tv]'); if (!b || b.disabled) return; const [f, id] = b.dataset.tv.split(':'); if (f === 'ur') window.ur(id); else if (f === 'uw') window.uw(id); };
   window.ur = id => { const m = runMeta(), it = RUN_SHOP.find(x => x.id === id), U = m.ups = m.ups || {}, l = U[id] | 0; if (l >= it.max || m.stones < it.cost(l)) return; m.stones -= it.cost(l); U[id] = l + 1; runMetaSave(m); RSfx.play('pick'); draw(); };
   window.uw = id => { const m = runMeta(), W = m.weapons = m.weapons || {}; const it = RUN_SHOP.find(x => x.id === id); if (id !== 'pick' && !W[id]) { if (m.stones < it.cost()) return; m.stones -= it.cost(); W[id] = true; } m.weapon = id; runMetaSave(m); RSfx.play('pick'); draw(); };
   draw();
@@ -299,10 +301,12 @@ function tavernShop() {
   infoBuilding = function (b) {
     let h = _ib(b);
     if (b.type === 'squadtavern' && b.state === 'done') {
-      const btn = `<button class="sq-open" onclick="tavernOpen()" style="margin:6px 0;padding:6px 12px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;cursor:pointer">Войти в таверну</button>`;
+      const btn = `<button class="sq-open" style="margin:6px 0;padding:6px 12px;background:#3a2410;color:#f1dfb0;border:1px solid #b8902c;border-radius:6px;cursor:pointer">Войти в таверну</button>`;
       const i = h.lastIndexOf('<div class="idesc">');
       h = i >= 0 ? h.slice(0, i) + btn + h.slice(i) : h + btn;
     }
     return h;
   };
+  // кнопка «Войти в таверну» без onclick в разметке (CSP); перехват на погружении — панель здания может гасить всплытие
+  if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('click', e => { if (e.target && e.target.closest && e.target.closest('.sq-open')) tavernOpen(); }, true);
 }

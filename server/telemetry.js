@@ -9,9 +9,13 @@ const path = require('path');
 const crypto = require('crypto');
 
 const MAX_T = 32 * 1024, MAX_REPORT = 10 * 1024 * 1024, MAX_DAY_FILE = 200 * 1024 * 1024, MAX_REPORTS = 3000;
+// потолки на диск: без них 3000 отчётов по 10 МБ (30 ГБ) или год статистики по 200 МБ в день забивали бы VPS
+const MAX_REPORTS_BYTES = (+process.env.OLDGOLD_REPORTS_MB || 1024) * 1048576, MAX_T_BYTES = (+process.env.OLDGOLD_TELEMETRY_MB || 4096) * 1048576, REPORTS_PER_HOUR = 60;
 const ID_RE = /^[a-z0-9]{12,32}$/, SID_RE = /^[a-z0-9]{6,16}$/, KEY_RE = /^[\w-]{1,24}$/;
 const KINDS = new Set(['start', 'beat', 'build', 'vdeath', 'win', 'hdeath', 'end', 'err']);
-const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').slice(0, n);
+const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').slice(0, n);
+// многострочный текст игрока: переводы строк и табуляция остаются, ESC и прочие управляющие (подмена вывода терминала в tools/reports.js) — нет
+const text = (v, n) => String(v == null ? '' : v).slice(0, n).replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g, ' ');
 const num = (v, max) => { const x = Math.round(+v); return Number.isFinite(x) ? Math.max(0, Math.min(max, x)) : 0; };
 const counts = (o, max = 30) => {
   const out = {};
@@ -35,6 +39,10 @@ function createTelemetry(dir, log = () => {}, events = null) {
   const tdir = path.join(dir, 'telemetry'), rdir = path.join(dir, 'reports');
   const hits = new Map();
   const day = () => new Date().toISOString().slice(0, 10);
+  // сколько уже занято на диске (считаем один раз при запуске, дальше прибавляем записанное)
+  const du = d => { let n = 0; try { for (const f of fs.readdirSync(d, { withFileTypes: true })) n += f.isDirectory() ? du(path.join(d, f.name)) : fs.statSync(path.join(d, f.name)).size; } catch (e) { /* папки ещё нет */ } return n; };
+  const used = { t: du(tdir), r: du(rdir) };
+  const repHour = [];   // время приёма отчётов за последний час — общий потолок на всех адресов
 
   // статистика хранится не дольше 12 месяцев (см. PRIVACY.md)
   function prune() {
@@ -61,7 +69,10 @@ function createTelemetry(dir, log = () => {}, events = null) {
     fs.mkdirSync(tdir, { recursive: true });
     const f = path.join(tdir, day() + '.jsonl');
     try { if (fs.statSync(f).size > MAX_DAY_FILE) return true; } catch (e) { /* файла ещё нет */ }
-    fs.appendFileSync(f, lines.join('\n') + '\n');
+    if (used.t > MAX_T_BYTES) return true;
+    const out = lines.join('\n') + '\n';
+    fs.appendFileSync(f, out);
+    used.t += Buffer.byteLength(out);
     return true;
   }
 
@@ -69,22 +80,29 @@ function createTelemetry(dir, log = () => {}, events = null) {
     let m; try { m = JSON.parse(body); } catch (e) { return null; }
     if (!m || typeof m !== 'object' || typeof m.text !== 'string' || !m.text.trim()) return null;
     fs.mkdirSync(rdir, { recursive: true });
-    if (fs.readdirSync(rdir).length >= MAX_REPORTS) { log('отчётов слишком много, новый не принят'); return null; }
+    if (fs.readdirSync(rdir).length >= MAX_REPORTS || used.r + body.length > MAX_REPORTS_BYTES) { log('отчётов слишком много, новый не принят'); return null; }
+    const now = Date.now();
+    while (repHour.length && now - repHour[0] > 3600000) repHour.shift();
+    if (repHour.length >= REPORTS_PER_HOUR) { log('больше ' + REPORTS_PER_HOUR + ' отчётов за час, новый не принят'); return null; }
+    repHour.push(now);
     const d = new Date(), n = d.toISOString().slice(2, 16).replace(/[-:T]/g, '').replace(/^(\d{6})/, '$1-') + '-' + crypto.randomBytes(2).toString('hex');
     const out = path.join(rdir, n);
     fs.mkdirSync(out);
     const snap = m.snap && typeof m.snap === 'object' ? cleanEvent({ ...m.snap, k: 'beat' }) : null;
     const rep = {
       n, ts: d.toISOString(), id: ID_RE.test(String(m.id)) ? m.id : '', v: str(m.v, 20), dev: m.dev === 'phone' ? 'phone' : 'pc', scr: str(m.scr, 12),
-      br: str(m.br, 30), os: str(m.os, 20), mode: m.mode === 'coop' ? 'coop' : 'solo', text: String(m.text).slice(0, 1000), snap, last: str(m.last, 40),
-      log: Array.isArray(m.log) ? m.log.slice(-200).map(l => String(l).slice(0, 500)) : [], crash: String(m.crash || '').slice(0, 20000),
+      br: str(m.br, 30), os: str(m.os, 20), mode: m.mode === 'coop' ? 'coop' : 'solo', text: text(m.text, 1000), snap, last: str(m.last, 40),
+      log: Array.isArray(m.log) ? m.log.slice(-200).map(l => text(l, 500)) : [], crash: text(m.crash || '', 20000),
     };
     const shot = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(m.shot || ''));
-    if (shot) { fs.writeFileSync(path.join(out, 'shot.jpg'), Buffer.from(shot[1], 'base64')); rep.shot = true; }
+    const jpg = shot && Buffer.from(shot[1], 'base64');
+    if (jpg && jpg[0] === 0xff && jpg[1] === 0xd8) { fs.writeFileSync(path.join(out, 'shot.jpg'), jpg); rep.shot = true; used.r += jpg.length; }   // только настоящий JPEG
     if (typeof m.save === 'string' && m.save.length > 2 && m.save.length < 8e6) {
-      try { JSON.parse(m.save); fs.writeFileSync(path.join(out, 'save.json'), m.save); rep.save = true; } catch (e) { /* не сейв */ }
+      try { JSON.parse(m.save); fs.writeFileSync(path.join(out, 'save.json'), m.save); rep.save = true; used.r += m.save.length; } catch (e) { /* не сейв */ }
     }
-    fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(rep, null, 1));
+    const rj = JSON.stringify(rep, null, 1);
+    fs.writeFileSync(path.join(out, 'report.json'), rj);
+    used.r += rj.length;
     log('новый отчёт о проблеме', n);
     return n;
   }
@@ -133,7 +151,7 @@ function createTelemetry(dir, log = () => {}, events = null) {
           res.writeHead(200, { ...cors, 'Content-Type': 'application/json' }); res.end(JSON.stringify({ n })); return;
         }
         let m; try { m = JSON.parse(body); } catch (e) { m = null; }
-        if (!m || (!ID_RE.test(String(m.id)) && !m.cid)) { res.writeHead(400, cors); res.end(); return; }
+        if (!m || (!ID_RE.test(String(m.id)) && typeof m.cid !== 'string')) { res.writeHead(400, cors); res.end(); return; }
         res.writeHead(200, { ...cors, 'Content-Type': 'application/json' }); res.end(JSON.stringify(forget(m.id, m.cid)));
       } catch (e) { log('статистика/отчёт:', e.message); res.writeHead(500, cors); res.end(); }
     });

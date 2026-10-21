@@ -25,6 +25,10 @@ function coopSaved(set) {
 // Можно подменить ссылкой: ...?server=wss://адрес
 const COOP_SERVER = 'wss://151-252-107-75.sslip.io';
 
+// Строки от сервера в разметку — только через это: ссылку ?server= может подсунуть кто угодно, и чужой сервер
+// прислал бы в чат или подписи <img onerror=…> (XSS на странице игры, доступ к сохранениям и входу)
+const coopEsc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 // адрес сервера, если страница открыта с него же
 function coopOrigin() { return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host; }
 
@@ -601,7 +605,7 @@ function coopPickClass(classes) {
   const box = document.createElement('div');
   box.id = 'cp-class'; box.className = 'cp-modal';
   box.innerHTML = `<div class="cp-card"><h2>Кто ты, гном?</h2><p>Первый заход в деревню: выбери класс. Он останется с героем.</p>
-    <div class="cp-cls">${Object.entries(classes).map(([k, c]) => `<button class="cp-c" style="--c:${c.col}" data-cls="${k}"><img src="${portraitURL('hero_' + k, 7)}" alt="" style="width:48px;height:48px;image-rendering:pixelated;display:block;margin:0 auto 4px"><b>${c.name}</b>${c.info}<small>здоровье ${c.hp}</small></button>`).join('')}</div></div>`;
+    <div class="cp-cls">${Object.entries(classes).map(([k, c]) => `<button class="cp-c" style="--c:${coopEsc(c.col)}" data-cls="${coopEsc(k)}"><img src="${coopEsc(portraitURL('hero_' + k, 7))}" alt="" style="width:48px;height:48px;image-rendering:pixelated;display:block;margin:0 auto 4px"><b>${coopEsc(c.name)}</b>${coopEsc(c.info)}<small>здоровье ${coopEsc(c.hp)}</small></button>`).join('')}</div></div>`;
   document.body.appendChild(box);
   box.addEventListener('click', e => {
     const b = e.target.closest('[data-cls]');
@@ -617,7 +621,7 @@ function coopInvHtml() {
   const me = Coop.me;
   const inv = me ? me.inv : Array(10).fill(null);
   return `<div class="cp-inv">${inv.map((s, i) => s
-    ? `<div class="cp-slot has" data-coop="use" data-slot="${i}" title="${ITEM_NAME(s.k)} — клик: съесть, Shift+клик: выбросить">${ITEM_NAME(s.k).slice(0, 5)}<i>${s.n}</i></div>`
+    ? `<div class="cp-slot has" data-coop="use" data-slot="${i}" title="${coopEsc(ITEM_NAME(s.k))} — клик: съесть, Shift+клик: выбросить">${coopEsc(String(ITEM_NAME(s.k)).slice(0, 5))}<i>${coopEsc(s.n)}</i></div>`
     : '<div class="cp-slot"></div>').join('')}</div>`;
 }
 
@@ -650,7 +654,7 @@ function coopInitHud() {
     if (b) {
       const k = b.dataset.cp, pop = document.getElementById('cp-pop');
       if (k === 'chat') {
-        pop.innerHTML = Coop.meta.chat.map((t, i) => `<button data-cpchat="${i}">${t}</button>`).join('');
+        pop.innerHTML = Coop.meta.chat.map((t, i) => `<button data-cpchat="${i}">${coopEsc(t)}</button>`).join('');
         pop.classList.toggle('open', !(pop.classList.contains('open') && pop.dataset.k === 'chat')); pop.dataset.k = 'chat';
       } else if (k === 'inv') {
         pop.innerHTML = coopInvHtml();
@@ -710,9 +714,9 @@ function coopQuestHud(x, title) {
 function coopVilHud(v) {
   const el = document.getElementById('cp-vil');
   if (!el || !v) return;
-  const q = v.q, tm = q ? `${Math.floor(q.left / 60)}:${String(q.left % 60).padStart(2, '0')}` : '';
-  el.innerHTML = (q ? `<div>${q.done ? '<span class="ok">Заказ выполнен</span>' : 'Заказ деревни'}: ${q.w.toLowerCase()} «${q.g}» <b>${q.have}/${q.need}</b>${q.done ? '' : ` <span class="lo">· до вечера ${tm} · +${q.rw} зол.</span>`}</div>` : '')
-    + `<div class="lo">Ночей без потерь подряд: <b>${v.st}</b> · рекорд ${v.best}${v.hero && v.hero.length ? ' · герои ночи: ' + v.hero.map(h => h[0] + ' ×' + h[1]).join(', ') : ''}</div>`;
+  const q = v.q, e = coopEsc, tm = q ? `${Math.floor(q.left / 60)}:${String(q.left % 60).padStart(2, '0')}` : '';
+  el.innerHTML = (q ? `<div>${q.done ? '<span class="ok">Заказ выполнен</span>' : 'Заказ деревни'}: ${e(String(q.w).toLowerCase())} «${e(q.g)}» <b>${e(q.have)}/${e(q.need)}</b>${q.done ? '' : ` <span class="lo">· до вечера ${e(tm)} · +${e(q.rw)} зол.</span>`}</div>` : '')
+    + `<div class="lo">Ночей без потерь подряд: <b>${e(v.st)}</b> · рекорд ${e(v.best)}${Array.isArray(v.hero) && v.hero.length ? ' · герои ночи: ' + v.hero.map(h => e(h[0]) + ' ×' + e(h[1])).join(', ') : ''}</div>`;
 }
 
 function coopRefreshHud() {
@@ -724,7 +728,7 @@ function coopRefreshHud() {
   const lg = document.getElementById('cp-log');
   if (lg) {
     const now = Date.now();
-    lg.innerHTML = Coop.chatLog.filter(m => now - m.at < 12000).slice(-5).map(m => `<div><b>${m.from}:</b> ${m.text}</div>`).join('');
+    lg.innerHTML = Coop.chatLog.filter(m => now - m.at < 12000).slice(-5).map(m => `<div><b>${coopEsc(m.from)}:</b> ${coopEsc(m.text)}</div>`).join('');
   }
   if (Game.selUnit && Game.selUnit === Game.hero) updateUI(true);
 }
@@ -1143,7 +1147,7 @@ function coopHint() {
       const saved = coopSaved();
       const b = document.createElement('button');
       b.className = 'sm-btn primary'; b.dataset.smJoin = '1';
-      b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${j.online}${saved ? ' · войти как ' + saved.nick : ' · вход и регистрация'}</small>`;
+      b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${coopEsc(j.online)}${saved ? ' · войти как ' + coopEsc(saved.nick) : ' · вход и регистрация'}</small>`;
       smSubAdd(b, true);
       b.addEventListener('click', () => {
         const sv = coopSaved();
@@ -1191,7 +1195,7 @@ function coopAdminRender(box) {
   const labels = Coop.permLabels || {}, perms = Coop.perms || {};
   const list = box.querySelector('.cp-adm');
   list.innerHTML = Object.keys(labels).map(k =>
-    `<button class="cp-tg${perms[k] ? ' on' : ''}" data-perm="${k}"><span class="cp-nm">${labels[k]}</span><span class="cp-st">${perms[k] ? 'можно' : 'нельзя'}</span></button>`).join('');
+    `<button class="cp-tg${perms[k] ? ' on' : ''}" data-perm="${coopEsc(k)}"><span class="cp-nm">${coopEsc(labels[k])}</span><span class="cp-st">${perms[k] ? 'можно' : 'нельзя'}</span></button>`).join('');
   list.querySelectorAll('.cp-tg.on').forEach((b, i) => {
     if (typeof vineSVG === 'function') b.insertAdjacentHTML('beforeend', vineSVG(b.offsetWidth || 300, b.offsetHeight || 46, ['hops', 'grape', 'wheat'][i % 3], 11 + i * 7));
   });
@@ -1270,17 +1274,17 @@ function coopAdminOpen() {
 function coopStatsShow(x, server) {
   coopCss();
   document.getElementById('cp-stats')?.remove();
-  const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = coopEsc;
   const dt = t => (t ? new Date(t).toLocaleString(I18N.locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
   const cls = (Coop.meta && Coop.meta.classes) || {};
   const box = document.createElement('div');
   box.id = 'cp-stats'; box.className = 'cp-modal';
   box.innerHTML = `<div class="cp-card" style="text-align:left;width:min(640px,94vw)"><h2 style="text-align:center">Статистика деревни</h2>
-    <p>Игроков всего: <b>${x.players}</b> · за неделю: <b>${x.activeWeek}</b> · сегодня: <b>${x.today.players}</b> (входов ${x.today.logins}) · сейчас: <b>${x.onlineNow}</b><br>
-    Пик онлайна: <b>${x.peak.n}</b> (${dt(x.peak.at)}) · наиграно всего: <b>${x.totalHours} ч</b> · ведётся с ${dt(x.since)} · сервер ${esc(server)}</p>
+    <p>Игроков всего: <b>${esc(x.players)}</b> · за неделю: <b>${esc(x.activeWeek)}</b> · сегодня: <b>${esc(x.today.players)}</b> (входов ${esc(x.today.logins)}) · сейчас: <b>${esc(x.onlineNow)}</b><br>
+    Пик онлайна: <b>${esc(x.peak.n)}</b> (${esc(dt(x.peak.at))}) · наиграно всего: <b>${esc(x.totalHours)} ч</b> · ведётся с ${dt(x.since)} · сервер ${esc(server)}</p>
     <table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="color:#f6d458"><th align="left">Игрок</th><th>Класс</th><th>Входов</th><th>Часов</th><th>Последний вход</th></tr>
-    ${x.list.map(p => `<tr><td>${p.online ? '● ' : ''}${esc(p.nick)}</td><td align="center">${esc((cls[p.cls] || {}).name || p.cls || '')}</td><td align="center">${p.logins}</td><td align="center">${p.hours}</td><td align="center">${dt(p.last)}</td></tr>`).join('')}</table>
-    <p style="margin-top:10px">По дням: ${x.days.slice(0, 7).map(d => `${d.day.slice(5)} — ${d.players} игр., ${d.logins} вх., пик ${d.peak}`).join(' · ') || '—'}</p>
+    ${x.list.map(p => `<tr><td>${p.online ? '● ' : ''}${esc(p.nick)}</td><td align="center">${esc((cls[p.cls] || {}).name || p.cls || '')}</td><td align="center">${esc(p.logins)}</td><td align="center">${esc(p.hours)}</td><td align="center">${esc(dt(p.last))}</td></tr>`).join('')}</table>
+    <p style="margin-top:10px">По дням: ${esc(x.days.slice(0, 7).map(d => `${String(d.day).slice(5)} — ${d.players} игр., ${d.logins} вх., пик ${d.peak}`).join(' · ') || '—')}</p>
     <div style="text-align:center"><button class="cp-btn" data-close>Закрыть</button></div></div>`;
   document.body.appendChild(box);
   box.addEventListener('click', e => { if (e.target.closest('[data-close]') || e.target === box) box.remove(); });
