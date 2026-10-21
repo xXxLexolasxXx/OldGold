@@ -57,7 +57,7 @@ ok(fish > 0, 'рыбак наловил рыбы');
 ok(h.run('!!swPier(__pier) && (Game.seaLife.boats || []).length === 1 && Game.seaLife.boats[0].pid === __pier.id'), 'у пристани стоит лодка');
 
 console.log('рыбалка героя');
-h.run(`(() => { const u = Game.hero; u.cmd = null; u.home = null; const p = __pier || __hut; u.x = p.doorX + 0.5; u.y = p.doorY + 0.5; u.fishIdle = 100; globalThis.__hr = { fn: isNightNow, ev: isEveningNow }; isNightNow = () => false; isEveningNow = () => false; WX.k = 0; })()`);
+h.run(`(() => { const u = Game.hero; u.cmd = null; u.home = null; const p = __pier || __hut; u.x = p.doorX + 0.5; u.y = p.doorY + 0.5; u.fishIdle = 1000; globalThis.__hr = { fn: isNightNow, ev: isEveningNow }; isNightNow = () => false; isEveningNow = () => false; WX.k = 0; })()`);
 let rod = false;
 for (let k = 0; k < 60 && !rod; k++) { S.runFor(sim, 1, 1); rod = h.run('!!(Game.hero.fun && Game.hero.fun.k === "rod")'); }
 ok(rod, 'герой без дела идёт на берег и закидывает удочку');

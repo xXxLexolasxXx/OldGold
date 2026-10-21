@@ -120,7 +120,7 @@ function* fisherWork(u, b) {
 }
 // Герой на досуге: без приказа долго стоит днём в ясную погоду — идёт к воде и удит; улов уносит на склад,
 // а жемчужину и шкуру котика приносит, только если выловил в море
-const SW_HERO_IDLE = 30;      // сколько стоит без дела до рыбалки, с
+const SW_HERO_IDLE = 120;     // сколько стоит без дела до рыбалки, с
 function* heroFishGen(u, sh) {
   u.heroFishing = true;
   try {
@@ -139,7 +139,7 @@ function* heroFishGen(u, sh) {
   const _ht = heroThink;
   heroThink = function (u) {
     const g = _ht(u);
-    if (u.cmd || u.home || u.dead || u.inside) { u.fishIdle = 0; return g; }
+    if (u.cmd || u.home || u.dead || u.inside || u.gp || u.proc) { u.fishIdle = 0; return g; }
     if ((u.fishIdle = (u.fishIdle || 0) + 0.8) < SW_HERO_IDLE) return g;
     if (isNightNow() || isEveningNow() || (typeof WX !== 'undefined' && WX.k > 0.3) || (u.hero && u.hero.hp < u.hero.maxhp * 0.5)) return g;
     const sh = findShore(Math.floor(u.x), Math.floor(u.y), 14);
