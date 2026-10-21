@@ -9,7 +9,7 @@
 //   (редкий расходник из кожи, варит лекарь в лазарете), классовое лечение только у жреца, друида и паладина.
 //   Падение героя: очнётся у костра со «Слабостью» на 45 с (бьёт слабее), ярость сгорает — чувствительно, но без потерь.
 // · Панель быстрых способностей (#ab-bar): крупные кнопки под большой палец в углу экрана, ровно по числу
-//   способностей класса; касание — применить (цель выбирается сама: враг, которого бьёт герой, иначе ближайший;
+//   способностей класса (до пяти обычных и ульта справа — шестая кнопка, фиолетовая, клавиша 6); касание — применить (цель выбирается сама: враг, которого бьёт герой, иначе ближайший;
 //   лечение — себе, команде и выбранному гному), удержание — подсказка; перезарядка и ресурс видны на кнопках.
 //   Ниже — малые кнопки: атака, еда/перевязка, привал, домой. На компьютере — клавиши 1–5 и Q.
 // · Старые герои: банки маны превращаются в золото на складе (по 2 за банку), перезарядки сброшены.
@@ -369,7 +369,7 @@ function abTick(dt) {
       const _cm = coopMirror;
       coopMirror = function () {
         const m = _cm();
-        if (m) m.abz = (Game.abz || []).map(z => ({ k: z.k, x: Math.round(z.x * 100) / 100, y: Math.round(z.y * 100) / 100, until: z.until, r: z.r, face: z.face, run: z.run, bt: z.bt }));
+        if (m) m.abz = (Game.abz || []).map(z => ({ k: z.k, x: Math.round(z.x * 100) / 100, y: Math.round(z.y * 100) / 100, until: z.until, r: z.r, face: z.face, run: z.run, bt: z.bt, s: z.s }));
         return m;
       };
     }
@@ -465,18 +465,24 @@ function* abWardGen(u, c) {
 // ---------- Миграция старых героев ----------
 function abMigrate(h) {
   const H = h.hero;
-  if (H.abV === 2) return;
-  H.abV = 2;
-  const jars = H.jars | 0;
-  let gold = 0;
-  if (jars > 0) { gold = jars * 2; if (!abStore('gold', gold)) gold = 0; }
-  for (const k of ['jars', 'cdHeal', 'cdFire', 'cdWard', 'cdCry']) delete H[k];
-  H.abCd = {}; H.abT = {}; H.abNext = 0;
-  if (abResKind(H) === 'rage') H.rs = 20;
-  else if (abResKind(H) && abResKind(H) !== 'mana') H.rs = abResMax(H);
-  if (!H.owner && Game.time > 1 && (H.level > 1 || jars)) {
-    toast(`Обновление: у каждого класса теперь свои способности — до пяти, на панели в углу. Зелье лечения и общий огненный шар ушли: лечение — привалом, у костра, в трактире и лазарете.${gold ? ` За ${jars} банок маны — ${gold} золота на склад.` : ''}`);
+  if (H.abV >= 3) return;
+  if (H.abV !== 2) {
+    H.abV = 2;
+    const jars = H.jars | 0;
+    let gold = 0;
+    if (jars > 0) { gold = jars * 2; if (!abStore('gold', gold)) gold = 0; }
+    for (const k of ['jars', 'cdHeal', 'cdFire', 'cdWard', 'cdCry']) delete H[k];
+    H.abCd = {}; H.abT = {}; H.abNext = 0;
+    if (abResKind(H) === 'rage') H.rs = 20;
+    else if (abResKind(H) && abResKind(H) !== 'mana') H.rs = abResMax(H);
+    if (!H.owner && Game.time > 1 && (H.level > 1 || jars)) {
+      toast(`Обновление: у каждого класса теперь свои способности — до пяти, на панели в углу. Зелье лечения и общий огненный шар ушли: лечение — привалом, у костра, в трактире и лазарете.${gold ? ` За ${jars} банок маны — ${gold} золота на склад.` : ''}`);
+    }
   }
+  // версия 3: у каждого класса появилась ульта (шестая кнопка); сохранение ничего не хранит заранее — перезарядка пуста, значит готова
+  H.abV = 3;
+  const u = (heroAbils(H) || []).find(a => a.ult);
+  if (u && !H.owner && Game.time > 1 && (H.level || 1) >= 3) toast(`Новая шестая кнопка — ульта класса. Откроется на ${u.lvl} уровне героя, перезарядка ${u.cd} с.`);
 }
 
 // ---------- Подключение к симуляции ----------
@@ -721,13 +727,13 @@ function abBarHTML(S) {
   const R = S.rk ? ABIL_RES[S.rk] : null;
   const res = R ? `<div class="ab-res" title="${R.name}: ${Math.round(S.rv)} из ${S.rm}"><i style="width:${Math.round(100 * S.rv / Math.max(1, S.rm))}%;background:${R.col}"></i><span>${R.name} ${Math.round(S.rv)}/${S.rm}</span></div>` : '';
   const slots = S.slots.map(s => {
-    const cl = ['ab-s']; if (s.lock) cl.push('lock'); else if (s.a.passive) cl.push('pas'); else if (s.left > 0) cl.push('cd'); else if (s.lack) cl.push('lack'); if (s.on) cl.push('on');
+    const cl = ['ab-s']; if (s.a.ult) cl.push('ult'); if (s.lock) cl.push('lock'); else if (s.a.passive) cl.push('pas'); else if (s.left > 0) cl.push('cd'); else if (s.lack) cl.push('lack'); if (s.on) cl.push('on');
     const ring = s.left > 0 ? `<b class="ab-cd" style="--p:${Math.round(s.pct * 360)}deg"></b><em>${Math.ceil(s.left)}</em>` : '';
     return `<button class="${cl.join(' ')}" data-ab="${s.i}" aria-label="${s.a.name}"><img src="${abilIcon16(s.a.k)}" alt="">${ring}`
       + (s.lock ? `<em class="ab-lk">ур.${s.a.lvl}</em>` : '')
       + (!s.lock && !s.a.passive && s.a.cost ? `<i class="ab-cost" style="color:${R ? R.col : '#fff'}">${s.a.cost}</i>` : '')
       + (s.a.passive && !s.lock ? '<i class="ab-cost ab-inf">∞</i>' : '')
-      + `<i class="ab-key">${ABIL_KEYN[s.i]}</i></button>`;
+      + `<i class="ab-key">${abKeyN(s.a, s.i)}</i></button>`;
   }).join('');
   const util = AB_UTIL.filter(u => !(u.solo && S.mir)).map(u => {
     const dis = (u.k === 'u_eat' && !S.eat) || (u.k === 'u_camp' && S.camp > 0) || (u.k === 'u_home' && (S.H.cdTp || 0) > Game.time);
@@ -745,7 +751,7 @@ function abTipFor(el) {
     const s = S.slots[+el.dataset.ab];
     if (!s) return '';
     const a = s.a, R = S.rk ? ABIL_RES[S.rk].name.toLowerCase() : '';
-    const meta = a.passive ? 'пассивно, действует всегда' : [a.cost ? `${R} ${a.cost}` : '', `перезарядка ${a.cd} с`, `клавиша ${ABIL_KEYN[s.i]}`].filter(Boolean).join(' · ');
+    const meta = a.passive ? 'пассивно, действует всегда' : a.ult ? ['ульта', a.cost ? `${R} ${a.cost}` : '', `перезарядка ${a.cd} с`, `клавиша ${abKeyN(a, s.i)}`].filter(Boolean).join(' · ') : [a.cost ? `${R} ${a.cost}` : '', `перезарядка ${a.cd} с`, `клавиша ${abKeyN(a, s.i)}`].filter(Boolean).join(' · ');
     const st = s.lock ? `откроется на ${a.lvl} уровне` : s.left > 0 ? `готово через ${Math.ceil(s.left)} с` : s.lack ? `не хватает: ${R}` : '';
     return `<b>${a.name}</b>${st ? ` <small>${st}</small>` : ''}<br>${a.desc}<br><small>${meta}</small>`;
   }
@@ -830,6 +836,11 @@ function initAbBar() {
   #ab-bar i{position:absolute;font-style:normal;font-size:11px;line-height:12px;font-weight:bold;text-shadow:0 1px 0 #000,0 0 2px #000;pointer-events:none}
   #ab-bar .ab-key{left:4px;top:2px;color:#ffe9a8}#ab-bar .ab-cost{right:4px;bottom:2px}#ab-bar .ab-inf{color:#f0d880;font-size:13px}
   body.mobile #ab-bar .ab-key{display:none}
+  #ab-bar .ab-s.ult{width:calc(var(--abs) + 6px);height:calc(var(--abs) + 6px);margin-left:4px;border-color:#b070ff;background:radial-gradient(circle at 50% 35%,#4a2a78,#1a0e2c 78%);box-shadow:0 2px 0 #000,0 0 8px rgba(176,112,255,.5),inset 0 0 0 1px rgba(230,200,255,.25)}
+  #ab-bar .ab-s.ult img{width:calc(var(--abs) - 8px);height:calc(var(--abs) - 8px)}
+  #ab-bar .ab-s.ult:not(.cd):not(.lock):not(.lack){animation:abUlt 1.6s ease-in-out infinite}
+  #ab-bar .ab-s.ult.lack{border-color:#6a4a98}#ab-bar .ab-s.ult.on{border-color:#7fe0ff}#ab-bar .ab-s.ult .ab-key{color:#e8c8ff}
+  @keyframes abUlt{50%{box-shadow:0 2px 0 #000,0 0 16px rgba(200,140,255,.95),inset 0 0 0 1px rgba(230,200,255,.4)}}
   #ab-bar .ab-u{width:40px;height:40px;background:#241a0e;border:1px solid #8a6a28;box-shadow:0 2px 0 #000}
   #ab-bar .ab-u img{width:26px;height:26px;image-rendering:pixelated;display:block;margin:auto}
   #ab-bar .ab-u.dim img{filter:grayscale(1) brightness(.5)}#ab-bar .ab-u em{font-size:12px}
@@ -840,11 +851,11 @@ function initAbBar() {
   #ab-bar .ab-tip{position:absolute;right:0;bottom:calc(100% + 6px);width:min(260px,calc(100vw - 24px));padding:7px 9px;background:rgba(20,14,8,.96);color:#e8dcc0;border:1px solid #b8902c;border-radius:6px;font-size:12px;line-height:1.35;pointer-events:none}
   #ab-bar .ab-tip b{color:#f6d458}#ab-bar .ab-tip small{color:#9ec8ff;font-size:10.5px}
   body:not(.mobile):has(#tut-list:not(.hidden)) #ab-bar{right:216px}
-  body.mobile #ab-bar{--abs:58px;right:calc(8px + env(safe-area-inset-right));bottom:calc(122px + env(safe-area-inset-bottom))}
+  body.mobile #ab-bar{--abs:min(58px,calc((100vw - 56px) / 6));right:calc(8px + env(safe-area-inset-right));bottom:calc(122px + env(safe-area-inset-bottom))}
   body.mobile.sheet-tab #ab-bar,body.mobile.sheet-info #ab-bar{display:none}
   body.mobile:not(.land):has(#tut-list:not(.hidden)) #ab-bar{bottom:calc(158px + env(safe-area-inset-bottom))}
   body.mobile:not(.land):has(#hero-card[style*="block"]) #ab-bar{display:none}
-  body.mobile.land #ab-bar{--abs:54px;bottom:calc(var(--sb) + 8px);right:calc(var(--sr) + var(--mmw) + 16px);display:grid;grid-template-areas:"res res" "util slots";gap:5px 8px;align-items:end;justify-items:end}
+  body.mobile.land #ab-bar{--abs:48px;bottom:calc(var(--sb) + 8px);right:calc(var(--sr) + var(--mmw) + 16px);display:grid;grid-template-areas:"res res" "util slots";gap:5px 8px;align-items:end;justify-items:end}
   body.mobile.land #ab-bar .ab-res{grid-area:res}body.mobile.land #ab-bar .ab-slots{grid-area:slots}
   body.mobile.land #ab-bar .ab-util{grid-area:util;gap:4px}
   body.mobile.land #ab-bar .ab-u{width:40px;height:40px}

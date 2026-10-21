@@ -292,9 +292,10 @@ const UNLOCKS = [
   { id: 'pigs',  items: ['swine', 'butchery'], after: ['brewery'] },
   { id: 'base',  items: ['goatpen', 'stable'], after: ['swine'] },
   { id: 'craft', items: ['tannery', 'armory'], after: ['butchery'] },
+  { id: 'arms',  items: ['weaponsmith'], after: ['armory'] },   // оружейная — следом за доспехами: лук без железа делается и так
   { id: 'metal', items: ['goldmine', 'metallurgist'], after: ['armory'], rank: 1 },
   { id: 'magic', items: ['crystalmine', 'magiccircle', 'magicworkshop'], after: ['goldmine', 'metallurgist'], rank: 1 },
-  { id: 'iron',  items: ['ironmine', 'smeltery', 'weaponsmith'], after: ['metallurgist'], rank: 1 },
+  { id: 'iron',  items: ['ironmine', 'smeltery'], after: ['metallurgist'], rank: 1 },
   { id: 'guilds', items: ['guild_warrior', 'guild_archer', 'guild_rogue', 'guild_mage'], after: ['weaponsmith'], rank: 1 },
 ];
 
