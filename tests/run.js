@@ -65,6 +65,7 @@ scriptTest('fam: семьи и поколения, сохранение', 'fam-t
 scriptTest('kids: детские игры, замки, приручение, трубка, взросление', 'kids-test.js');
 scriptTest('folk: гномки и гномята — облик, пиво, «Бах!», не дерутся, сейв', 'folk-test.js');
 scriptTest('durability: прочность снаряжения, ремонт, очередь доспехов, сейв', 'durability-test.js');
+scriptTest('arms: оружейная рано, особое оружие гильдий, заточка, свойства 3 уровня, сейв', 'arms-test.js');
 scriptTest('oath: Клятвы предков — 10 классов героя, задания по ролям, сохранение', 'oath-test.js');
 scriptTest('spire: глава 6 — подъём к Чёрному шпилю: стражи, врата, башни, затмение, Малгор, победа', 'spire-test.js', [], 420000);
 scriptTest('oathbal: баланс классов героя', 'oath-balance.js');
