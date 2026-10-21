@@ -110,8 +110,36 @@ function spireEnsureRoute(sx, sy) {
   }
   if (rock && typeof buildMountains === 'function') buildMountains(Game.seed);
   PF.regT = -1e9;
+  if (rock) spireCvNote(cells.filter(i => ROCKMINE.mined.has(i)));
   if (n) logEvent('night', `К Чёрному шпилю прорублена тропа (${n} кл. завалов)`, F.tx + 1.5, F.ty + 3);
   return { ok: !!findPath(st[0], st[1], h[0], h[1]), carved: n };
+}
+// Кооп: тропу прорубает сервер, а карту рельефа клиенты строят по сиду — клетки и причину отказа шлём в зеркале ('sp').
+// Клетки висят в пакете 20 с после рубки (дольше не нужно: поздно зашедший получает их в сохранении через ROCKMINE.mined)
+function spireCvNote(cells) {
+  Game.spireCv = (Game.spireCv || []).concat(cells);
+  Game.spireCvRev = (Game.spireCvRev || 0) + 1;
+  Game.spireCvT = Game.time;
+}
+function spireMirrorOut() {
+  if (!Game.foe) return null;
+  const m = { why: Game.spireWhy || '', rv: Game.spireCvRev || 0 };
+  if (Game.spireCv && Game.time - Game.spireCvT < 20) m.cv = Game.spireCv;
+  return m;
+}
+function spireMirrorIn(m) {
+  if (!m) return;
+  Game.spireWhy = m.why || '';
+  if (m.rv === Spire.rvIn) return;
+  Spire.rvIn = m.rv;
+  if (!m.cv) return;
+  for (const i of m.cv) {
+    if (World.terrain[i] === T_ROCK) World.terrain[i] = T_GRASS;
+    World.crystal[i] = 0; ROCKMINE.mined.add(i);
+  }
+  if (typeof buildMountains === 'function') buildMountains(Game.seed);
+  PF.regT = -1e9;
+  Spire.path = null; Spire.pathT = -99;
 }
 // для объяснения причины: путь существует, если не считать зданий и стен (только вода — тупик)
 function spireCarvePathLoose(sx, sy, tx, ty) {
@@ -295,7 +323,7 @@ function spireCampTick() {
     spireCampTick();
   };
   const _reset = resetGameState;
-  resetGameState = function () { _reset(); Game.spireGo = null; Game.spireWhy = ''; Spire.path = null; Spire.pathT = -99; };
+  resetGameState = function () { _reset(); Game.spireGo = null; Game.spireWhy = ''; Game.spireCv = null; Game.spireCvRev = 0; Spire.path = null; Spire.pathT = -99; Spire.rvIn = undefined; };
 }
 
 // ---------- Панель целей: чек-лист главы 6 ----------

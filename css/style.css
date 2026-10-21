@@ -1012,7 +1012,7 @@ body.mobile #view #hero-card:not(.mini) {
   background: repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, rgba(0,0,0,0.06) 1px 3px), linear-gradient(180deg, #3a3e47 0%, #23262d 40%, #181a1f 100%);
 }
 
-.sm-manifest { padding: 12px 16px; color: #e8dcc0; font-size: 14px; line-height: 1.45; background: rgba(12,8,4,0.7); border: 1px solid #5a4620; border-radius: 6px; }
-.sm-manifest h3 { margin: 0 0 6px; color: #f0cf6a; font-size: 16px; }
-.sm-manifest p { margin: 0 0 8px; }
-.sm-manifest p:last-child { margin: 0; font-style: italic; }
+#wait-joke { position: fixed; left: 50%; top: 14%; transform: translateX(-50%); z-index: 19; max-width: min(92vw, 460px); padding: 10px 16px; text-align: center; font-size: 15px; color: #f3e6c4; background: rgba(20,12,4,0.88); border: 1px solid #8e6a28; border-radius: 6px; pointer-events: none; transition: opacity .5s; }
+#wait-joke s { color: #9a8a68; text-decoration-thickness: 2px; }
+#wait-joke b { color: #f0cf6a; }
+#wait-joke.out { opacity: 0; }
