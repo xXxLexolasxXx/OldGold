@@ -101,6 +101,21 @@ node /opt/oldgold/server/events.js /var/lib/oldgold          # текстом (-
 Или в браузере: `https://151-252-107-75.sslip.io/stats?key=КЛЮЧ` — внизу блок «Воронка одиночной игры» (в `&json` — поле `solo`).
 Список событий — в `СТАТИСТИКА.md`. После обновления сервера: `systemctl restart oldgold`.
 
+## Статистика по согласию и отчёты игроков
+
+Игроки, нажавшие «Да, помогу», раз в минуту шлют `POST /t` (версия, телефон/ПК, FPS, сутки, жители, класс, гибель деревни/героя,
+стройка, последний экран, ошибки; случайный id установки). Пишется в `/var/lib/oldgold/telemetry/ГГГГ-ММ-ДД.jsonl`,
+файлы старше 12 месяцев сервер удаляет сам. «Сообщить о проблеме» (`POST /report`) кладёт отчёт в
+`/var/lib/oldgold/reports/<номер>/` (report.json, shot.jpg, save.json). «Удалить мои данные» — `POST /t/forget`.
+Лимиты: /t — 30 запросов/мин с адреса, /report — 5 за 10 мин (до 10 МБ), всего отчётов не больше 3000.
+
+```bash
+cd /opt/oldgold && node tools/stats-report.js /var/lib/oldgold --days=14   # игроки, медиана партии, где умирают деревни, ошибки по версиям
+node tools/reports.js /var/lib/oldgold                                      # список отчётов
+node tools/reports.js /var/lib/oldgold 1a2b --log                           # отчёт целиком
+scp root@151.252.107.75:/var/lib/oldgold/reports/<номер>/shot.jpg .         # снимок к себе
+```
+
 Резервная копия мира и аккаунтов:
 
 ```bash
@@ -185,6 +200,7 @@ server {
         proxy_set_header Connection "upgrade";
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_read_timeout 120s;
+        client_max_body_size 12m;   # «Сообщить о проблеме» со снимком и сохранением
     }
 }
 ```

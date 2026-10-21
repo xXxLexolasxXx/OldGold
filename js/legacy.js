@@ -287,8 +287,8 @@ function lgTintCanvas(src, T) {
 }
 {
   const _bs = buildingSprite;
-  buildingSprite = function (type, rot, level) {
-    const spr = _bs(type, rot, level), T = lgPicked('tint');
+  buildingSprite = function (type, rot, level, ...rest) {
+    const spr = _bs(type, rot, level, ...rest), T = lgPicked('tint');
     if (!T || !spr || !spr.canvas || !spr.canvas.width) return spr;
     let m = LG_TINTED.get(spr);
     if (!m) LG_TINTED.set(spr, m = {});

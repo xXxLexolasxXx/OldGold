@@ -16,7 +16,7 @@ const N2_RK_SZ = [1, 1, 1.12, 1.22, 1.3, 1.38];
 const N2_TROLLS = { troll: 1, trollS: 1, trollB: 1 };
 const N2_KINDS = { troll: 1, trollS: 1, trollB: 1, armad: 1, goblin: 1, gtSpear: 1, gtBow: 1 };
 const N2_LAIRS = { troll: 1, trollS: 1, trollB: 1, armad: 1, goblin: 1, gnomtaur: 1 };
-const N2_TOP = { troll: 84, trollS: 86, trollB: 82, armad: 34, goblin: 30, gtSpear: 58, gtBow: 58, leshy: 54, fairy: 46, pixie: 46, boar: 38, frost: 50 };
+const N2_TOP = { troll: 84, trollS: 86, trollB: 82, armad: 34, goblin: 30, gtSpear: 58, gtBow: 58, leshy: 64, fairy: 46, pixie: 46, boar: 38, frost: 50 };
 // рост от ранга; тролли растут сдержанно (×1,15 на 5-м ранге), чтобы не перерасти голема
 const n2Sz = N => { const s = N2_RK_SZ[n2Rk(N)]; return N2_TROLLS[N.k] ? 1 + (s - 1) * 0.4 : s; };
 const N2 = { cast: null, fireN: null, mul: 1, sec: 0, rng: null };
@@ -37,7 +37,7 @@ if (typeof NSPEC !== 'undefined') {
       drop: [['hide', 2, 1], ['hops', 2, 0.8], ['mana', 1, 0.5], ['gold', 2, 0.6]], msg: ['Бульк… Я вас утоплю!', 'Тина помнит всё!', 'Чвяк-чвяк!'] },
     armad:  { name: 'Броненосец', mhp: 95, dmg: [6, 9], cd: 1.6, rng: 1.5, spd: 1.7, parry: 0.2, xp: 120, roam: 3, sz: 13,
       drop: [['hide', 3, 1], ['gold', 1, 0.6], ['magicstone', 1, 0.4]], msg: ['Пф-ф! (сворачивается)', 'Хрусь-хрусь!', 'Не тронь панцирь!'] },
-    goblin: { name: 'Гоблин', mhp: 14, dmg: [2, 3], cd: 1.1, rng: 1.2, spd: 2.6, parry: 0.05, xp: 10, roam: 3.4, sz: 6,
+    goblin: { name: 'Гоблин', mhp: 18, dmg: [2, 4], cd: 1.1, rng: 1.2, spd: 2.6, parry: 0.05, xp: 14, roam: 3.4, sz: 6,
       drop: [['gold', 1, 0.5], ['sausage', 1, 0.3], ['ironore', 1, 0.2]], msg: ['Йа-а-а! Все на него!', 'Блестяшки наши!', 'Хи-хи, окружай!'] },
     gtSpear:{ name: 'Гномтавр-копейщик', mhp: 62, dmg: [6, 9], cd: 1.7, rng: 1.8, spd: 3.6, parry: 0.15, xp: 75, roam: 4.5, sz: 12,
       drop: [['hide', 1, 0.8], ['gold', 2, 0.8], ['bread', 2, 0.5]], msg: ['За степь и бороду!', 'Копьё не шутит!', 'И-го-го… то есть, к бою!'] },
@@ -84,7 +84,7 @@ const N2_BIOME = {
   goblin: { forest: 1.3, swamp: 1.3 }, troll: { steppe: 0.8, meadow: 0.9, mountain: 1.2 },
   armad: { steppe: 1.5, mountain: 1, forest: 0.5, swamp: 0.5, winter: 0 }, gnomtaur: { steppe: 1.5, forest: 0.5, swamp: 0.5, mountain: 0.5, winter: 0.5 },
 };
-const N2_BASE = { goblin: 3, troll: 2, armad: 2, gnomtaur: 2 };
+const N2_BASE = { goblin: 2, troll: 2, armad: 2, gnomtaur: 2 };   // гоблинов было три лагеря на большой карте — четверть всех нейтралов (СУЩЕСТВА_БАЛАНС.md)
 
 function n2Biome() { return typeof biomeId === 'function' ? biomeId() : 'meadow'; }
 function n2Quota(k) {
@@ -94,13 +94,14 @@ function n2Quota(k) {
 }
 function n2TrollKind() { const b = n2Biome(); return b === 'swamp' ? 'trollB' : (b === 'mountain' || b === 'winter' || b === 'steppe') ? 'trollS' : 'troll'; }
 
-function n2Site(k, stamp) {
+function n2Site(k, stamp, near) {
   const cx = MAP_W >> 1, cy = MAP_H >> 1, minStart = mapIsLegacy() ? 20 : 24, open = k === 'armad' || k === 'gnomtaur';
   for (let t = 0; t < 3000; t++) {
     const x = 5 + ((n2Rand() * (MAP_W - 10)) | 0), y = 5 + ((n2Rand() * (MAP_H - 10)) | 0), i = idx(x, y);
     if (World.terrain[i] !== T_GRASS || World.bmap[i] || World.road[i] || !reachedIn(stamp, x, y)) continue;
     const ds = Math.hypot(x - cx, y - cy);
-    if (ds < minStart + (t < 1500 ? 4 : 0)) continue;
+    if (ds < minStart + (t < 1500 ? 4 : 0) - (near ? 6 : 0)) continue;
+    if (near && t < 2700 && ds > minStart + 20) continue;    // первое логово народа — там, где его встретят, а не на краю карты
     let trees = 0, bad = false;
     for (let yy = y - 4; yy <= y + 4 && !bad; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
       if (!inb(xx, yy)) { bad = true; break; }
@@ -108,7 +109,7 @@ function n2Site(k, stamp) {
       if (World.bmap[j] || (World.terrain[j] === T_WATER && Math.abs(xx - x) < 4 && Math.abs(yy - y) < 4)) { bad = true; break; }
       if (o && o.t === 'tree') trees++;
     }
-    if (bad || (open ? trees > 14 : trees < (t < 2000 ? 8 : 3))) continue;
+    if (bad || (open ? trees > (near && t >= 2000 ? 24 : 14) : trees < (t < 2000 ? 8 : 3))) continue;
     if (Game.buildings.some(b => Math.hypot(b.x - x, b.y - y) < 12)) continue;
     if (Game.lairs.some(l => Math.hypot(l.x - x, l.y - y) < 13)) continue;
     return { x, y, ds, minStart };
@@ -120,7 +121,8 @@ function n2SpawnLair(k, cap) {
   const S = Game.n2;
   if ((S.sp[k] || 0) >= n2Quota(k)) return null;
   const kind = k === 'troll' ? n2TrollKind() : k;
-  const site = n2Site(k, N2.stamp || (N2.stamp = floodFrom(MAP_W >> 1, MAP_H >> 1)));
+  const near = !(S.sp[k] || 0);
+  const site = n2Site(k, N2.stamp || (N2.stamp = floodFrom(MAP_W >> 1, MAP_H >> 1)), near);
   if (!site) return null;
   N2.rk0 = Math.max(1, cap - 2);
   const L = neuAddLair(kind, site, site.minStart);
@@ -128,7 +130,7 @@ function n2SpawnLair(k, cap) {
   L.rk0 = Math.max(1, cap - 2);
   S.sp[k] = (S.sp[k] || 0) + 1;
   const what = { goblin: 'разбили лагерь гоблины', troll: 'поселился тролль', armad: 'вырыл нору броненосец', gnomtaur: 'встали стойбищем гномтавры' }[k];
-  logEvent('animal', `В дальнем лесу ${what} — ${NEU_LAIR_NAME[kind]}`, L.x + 0.5, L.y + 0.5);
+  logEvent('animal', `${near ? 'Недалеко от деревни' : 'В дальнем лесу'} ${what} — ${NEU_LAIR_NAME[kind]}`, L.x + 0.5, L.y + 0.5);
   return L;
 }
 

@@ -5,10 +5,10 @@
 // волокушу в загоне, тритоны плавают в пруду, мотыльки светят над мостками); гоблинов уводят из гоблинских лагерей.
 // Игрок может освободить раба (клик по нему): жаболюды разозлятся. Гномёнка жаболюд тоже может попытаться схватить —
 // но гномёнок выхватывает игрушечный пистолет («Бах!», folk.js) — и жаболюд удирает к себе в деревню.
-// Всё считает симуляция (в кооперативе — сервер); клиент получает список Game.wild зеркалом (fwMirror).
+// Всё считает симуляция (в кооперативе — сервер); клиент получает список Game.swp зеркалом (fwMirror).
 // Подключается после frogs.js; чужие файлы не правятся — обёртки (resolveCmd, runCmd, folkScare, neuDrawList, сохранение).
 
-Game.wild = [];
+Game.swp = [];
 const FW = { sec: 0, spawnT: 0, hint: false };
 const FW_SPEC = {
   snail: { name: 'Болотная улитка-тяжеловоз', spd: 0.4, led: 1.5, cap: 3, quota: 7, roam: 5 },
@@ -43,16 +43,16 @@ function fwSite(k) {
   }
   return null;
 }
-function fwFree(k) { return Game.wild.filter(W => W.k === k && !W.own && !W.cap); }
+function fwFree(k) { return Game.swp.filter(W => W.k === k && !W.own && !W.cap); }
 function fwSpawnTo(k) {
   const s = fwSite(k);
   if (!s || Game.units.some(u => !u.dead && Math.hypot(u.x - s[0], u.y - s[1]) < 9)) return false;
-  Game.wild.push(fwMake(k, s[0], s[1]));
+  Game.swp.push(fwMake(k, s[0], s[1]));
   return true;
 }
 function fwSpawnInitial() {
-  Game.wild = Game.wild.filter(W => W.k === 'goblin');
-  for (const k of ['snail', 'newt', 'moth']) for (let i = 0, n = fwQuota(k); i < n; i++) { const s = fwSite(k); if (s) Game.wild.push(fwMake(k, s[0], s[1])); }
+  Game.swp = Game.swp.filter(W => W.k === 'goblin');
+  for (const k of ['snail', 'newt', 'moth']) for (let i = 0, n = fwQuota(k); i < n; i++) { const s = fwSite(k); if (s) Game.swp.push(fwMake(k, s[0], s[1])); }
 }
 
 // ---------- Поведение ----------
@@ -169,11 +169,11 @@ function fwVillageTick(L, mem, now) {
     }
   }
   if (L.capT > now) return;
-  const mine = Game.wild.filter(W => W.own === L.id), cnt = k => mine.filter(W => W.k === k).length;
+  const mine = Game.swp.filter(W => W.own === L.id), cnt = k => mine.filter(W => W.k === k).length;
   let best = null, bd = 99;
   for (const k of ['snail', 'newt', 'moth']) {
     if (cnt(k) >= FW_SPEC[k].cap) continue;
-    for (const W of Game.wild) { if (W.k !== k || W.own || W.cap || W.st === 'flee') continue; const d = Math.hypot(W.x - bx, W.y - by); if (d < 20 && d < bd) { bd = d; best = { t: 'cap', id: W.id, x: W.x, y: W.y }; } }
+    for (const W of Game.swp) { if (W.k !== k || W.own || W.cap || W.st === 'flee') continue; const d = Math.hypot(W.x - bx, W.y - by); if (d < 20 && d < bd) { bd = d; best = { t: 'cap', id: W.id, x: W.x, y: W.y }; } }
   }
   if (!best && Game.ft.nt >= 1 && cnt('goblin') < FW_SPEC.goblin.cap) {
     for (const M of Game.neutrals) {
@@ -201,12 +201,12 @@ function ftJobThink(N, dt) {
   if (now > J.exp || ftWinter()) { fwAbort(N); return false; }
   let tx, ty;
   if (J.ph === 'flee' || J.ph === 'back') { tx = N.hx + (N.id % 5 - 2) * 0.5; ty = N.hy + 1.6; }
-  else if (J.t === 'cap') { const W = Game.wild.find(w => w.id === J.id); if (!W || W.own || W.cap) { fwAbort(N); return false; } tx = W.x; ty = W.y; }
+  else if (J.t === 'cap') { const W = Game.swp.find(w => w.id === J.id); if (!W || W.own || W.cap) { fwAbort(N); return false; } tx = W.x; ty = W.y; }
   else if (J.t === 'gob') { const M = Game.neutrals.find(m => m.id === J.id); if (!M || !neuAlive(M) || M.tg) { fwAbort(N); return false; } tx = M.x; ty = M.y; }
   else { const u = Game.unitMap.get(J.id); if (!u || u.dead || u.inside) { fwAbort(N); return false; } tx = u.x; ty = u.y; }
   const d = Math.hypot(tx - N.x, ty - N.y), sp = S.spd * (J.ph === 'flee' ? 1.5 : 0.95);
   if (J.ph === 'back') {
-    const W = Game.wild.find(w => w.id === J.id);
+    const W = Game.swp.find(w => w.id === J.id);
     if (W && W.cap === N.id && Math.hypot(W.x - N.x, W.y - N.y) > 3.6) { N.st = 'idle'; N.fr = 'i' + (Math.floor(now * 5 + N.id) % 6); return true; }       // ждёт ведомого
     if (d < 1.9) {
       const L = Game.lairs.find(l => l.id === N.lair);
@@ -221,13 +221,13 @@ function ftJobThink(N, dt) {
     if (d < 1.9) { N.job = null; N.st = 'home'; N.cdA = 1; return false; }
   } else if (d < 1.5) {
     if (J.t === 'cap') {
-      const W = Game.wild.find(w => w.id === J.id);
+      const W = Game.swp.find(w => w.id === J.id);
       W.cap = N.id; W.st = 'led'; J.ph = 'back'; N.face = W.x >= N.x ? 1 : -1;
       floater(N.x, N.y - 2, 'Хвать!', '#c0e080'); sfxAt('ftCroak', N.x * TILE, N.y * TILE, 0.5);
     } else if (J.t === 'gob') {
       const M = Game.neutrals.find(m => m.id === J.id), lair = Game.lairs.find(l => l.id === M.lair);
       const W = fwMake('goblin', M.x, M.y); W.alt = M.id % 2; W.cap = N.id; W.st = 'led'; W.face = M.face;
-      Game.wild.push(W);
+      Game.swp.push(W);
       Game.neutrals.splice(Game.neutrals.indexOf(M), 1);
       if (lair) { lair.alive = Math.max(0, (lair.alive || 1) - 1); if (!lair.alive) lair.respawn = now + NEU_RESPAWN * dif().neuResp; }
       J.ph = 'back'; J.id = W.id;
@@ -251,7 +251,7 @@ function ftJobThink(N, dt) {
 }
 function fwAbort(N) {
   const J = N.job; N.job = null;
-  if (J && J.id) { const W = Game.wild.find(w => w.id === J.id); if (W && W.cap === N.id) { W.cap = 0; W.st = 'idle'; } }
+  if (J && J.id) { const W = Game.swp.find(w => w.id === J.id); if (W && W.cap === N.id) { W.cap = 0; W.st = 'idle'; } }
 }
 
 // «Бах!»: страх перед игрушечным пистолетом
@@ -275,7 +275,7 @@ if (typeof folkScare === 'function') {
   const _rc = resolveCmd;
   resolveCmd = function (t) {
     if (inb(t[0], t[1])) {
-      const W = Game.wild.find(w => w.own && !w.dead && Math.hypot(w.x - (t[0] + 0.5), w.y - (t[1] + 0.5)) < 1);
+      const W = Game.swp.find(w => w.own && !w.dead && Math.hypot(w.x - (t[0] + 0.5), w.y - (t[1] + 0.5)) < 1);
       if (W) return { kind: 'wfree', w: W, tx: Math.floor(W.x), ty: Math.floor(W.y), label: 'Освободить: ' + FW_SPEC[W.k].name + ' (жаболюды разозлятся)' };
     }
     return _rc(t);
@@ -309,16 +309,16 @@ function* fwFreeGen(u, c) {
 
 // ---------- Тик ----------
 function fwTick(dt) {
-  if (Game.stress || !Game.wild) return;
-  for (let i = Game.wild.length - 1; i >= 0; i--) { const W = Game.wild[i]; fwThink(W, dt); if (W.dead) Game.wild.splice(i, 1); }
+  if (Game.stress || !Game.swp) return;
+  for (let i = Game.swp.length - 1; i >= 0; i--) { const W = Game.swp[i]; fwThink(W, dt); if (W.dead) Game.swp.splice(i, 1); }
   FW.spawnT += dt;
   if (FW.spawnT < 8) return;
   FW.spawnT = 0;
   const custom = typeof MapOpt !== 'undefined' && MapOpt.custom && MapOpt.custom.nm !== 'auto';
   if (custom) return;
-  for (const k of ['snail', 'newt', 'moth']) if (Game.wild.filter(W => W.k === k && !W.own).length < fwQuota(k) && ftRand() < 0.4) { fwSpawnTo(k); break; }
+  for (const k of ['snail', 'newt', 'moth']) if (Game.swp.filter(W => W.k === k && !W.own).length < fwQuota(k) && ftRand() < 0.4) { fwSpawnTo(k); break; }
   // старые гоблины-«вольные» не копятся
-  const fg = Game.wild.filter(W => W.k === 'goblin' && !W.own && !W.cap);
+  const fg = Game.swp.filter(W => W.k === 'goblin' && !W.own && !W.cap);
   if (fg.length > 6) fg[0].dead = true;
 }
 {
@@ -327,42 +327,42 @@ function fwTick(dt) {
   const _setup = setupStart;
   setupStart = function (...a) {
     _setup(...a);
-    Game.wild = [];
+    Game.swp = [];
     const custom = typeof MapOpt !== 'undefined' && MapOpt.custom && MapOpt.custom.nm !== 'auto';
     if (Game.stress || custom || isMirror()) return;
     const mr = Math.random; Math.random = ftRand;
     try { fwSpawnInitial(); } finally { Math.random = mr; }
   };
   const _reset = resetGameState;
-  resetGameState = function () { _reset(); Game.wild = []; };
+  resetGameState = function () { _reset(); Game.swp = []; };
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser();
-    if (s.nt) s.nt.wl = Game.wild.filter(W => !W.dead).map(W => ({ id: W.id, k: W.k, x: +W.x.toFixed(2), y: +W.y.toFixed(2), own: W.own || 0, alt: W.alt || 0 }));
+    if (s.nt) s.nt.wl = Game.swp.filter(W => !W.dead).map(W => ({ id: W.id, k: W.k, x: +W.x.toFixed(2), y: +W.y.toFixed(2), own: W.own || 0, alt: W.alt || 0 }));
     return s;
   };
   const _apply = applySave;
   applySave = function (s) {
     _apply(s);
-    Game.wild = [];
+    Game.swp = [];
     if (isMirror()) return;
     const nt = s && s.nt;
     if (nt && nt.wl) {
       for (const d of nt.wl) {
         if (!FW_SPEC[d.k]) continue;
         const W = fwMake(d.k, d.x, d.y); W.id = d.id; W.alt = d.alt || 0;
-        Game.wild.push(W);
+        Game.swp.push(W);
         const L = d.own && Game.lairs.find(l => l.id === d.own);
         if (L) fwEnslave(W, L);
       }
-      Game.nextId = Math.max(Game.nextId, ...Game.wild.map(W => W.id + 1));
+      Game.nextId = Math.max(Game.nextId, ...Game.swp.map(W => W.id + 1));
     } else if (!Game.stress) { const mr = Math.random; Math.random = ftRand; try { fwSpawnInitial(); } finally { Math.random = mr; } }       // старый сейв: малыши расселяются
     for (const N of Game.neutrals) N.job = null;
   };
 }
 function fwMirror() {
   const r = v => Math.round(v * 100) / 100;
-  return Game.wild.filter(W => !W.dead).map(W => ({ __id: W.id, id: W.id, k: W.k, x: r(W.x), y: r(W.y), face: W.face, fr: W.fr, own: W.own || 0, cap: W.cap || 0, alt: W.alt || 0, post: W.post ? [r(W.post[0]), r(W.post[1])] : null }));
+  return Game.swp.filter(W => !W.dead).map(W => ({ __id: W.id, id: W.id, k: W.k, x: r(W.x), y: r(W.y), face: W.face, fr: W.fr, own: W.own || 0, cap: W.cap || 0, alt: W.alt || 0, post: W.post ? [r(W.post[0]), r(W.post[1])] : null }));
 }
 
 // ---------- Рисование ----------
@@ -370,7 +370,7 @@ function fwMirror() {
   const _dl = neuDrawList;
   neuDrawList = function (list, c, x0, y0, x1, y1) {
     _dl(list, c, x0, y0, x1, y1);
-    for (const W of Game.wild || []) {
+    for (const W of Game.swp || []) {
       if (W.x < x0 - 3 || W.x > x1 + 3 || W.y < y0 - 3 || W.y > y1 + 4) continue;
       list.push([W.y + 0.15, () => fwDraw(c, W)]);
     }
