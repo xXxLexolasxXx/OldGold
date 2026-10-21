@@ -688,11 +688,13 @@ function coopUnitsBuild() {
       if (coopU.mo[k] !== v) { coopU.mo[k] = v; coopU.moV[k] = (coopU.moV[k] || 0) + 1; }
     }
   }
-  Object.assign(coopU, { units, animals, live, aLive, time: now, uIds: JSON.stringify([...live]), aIds: JSON.stringify([...aLive]), mirObj: mo, ml, mlIds });
+  Object.assign(coopU, { units, animals, live, aLive, time: now, builtAt: now, uIds: JSON.stringify([...live]), aIds: JSON.stringify([...aLive]), mirObj: mo, ml, mlIds });
 }
 
-// Полный пакет — для старых клиентов (без d:1 в auth); перед ним в этой же рассылке должен быть coopUnitsBuild
+// Полный пакет — для старых клиентов (без d:1 в auth). Сам пересобирает записи, если мир с прошлой сборки шагнул
+// (сервер зовёт coopUnitsBuild перед рассылкой, тесты и прочие вызовы — сразу coopUnitsPacket)
 function coopUnitsPacket() {
+  if (coopU.builtAt !== Game.time) coopUnitsBuild();
   const us = coopU.units.map(r => JSON.stringify(Object.assign({ i: r.id, t: r.type, lk: r.look }, r.o, r.at !== undefined ? { at: r.at } : null)));
   return '{"t":"u","time":' + r2(coopU.time) + ',"units":[' + us.join(',') + '],"animals":[' + coopU.animals.map(r => r.s).join(',') + '],"mir":' + JSON.stringify(coopU.mirObj) + '}';
 }
@@ -701,6 +703,7 @@ function coopViewDrop(name) { coopViews.delete(name); }
 
 // Дельта для одного клиента; x0..y1 — клетки, которые он видит (NaN — камеры ещё нет, тогда всё «рядом»)
 function coopUnitsFor(name, x0, y0, x1, y1) {
+  if (coopU.builtAt !== Game.time) coopUnitsBuild();
   const now = coopU.time, P = COOP_VIEW_PAD, all = !(x1 >= x0 && y1 >= y0);
   let st = coopViews.get(name);
   if (!st) coopViews.set(name, st = { u: new Map(), a: new Map(), ml: {}, moV: {}, idsAt: -1e9 });
