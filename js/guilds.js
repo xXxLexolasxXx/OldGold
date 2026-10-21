@@ -1169,7 +1169,7 @@ function guildAnnounceHTML() {
     else if (c.kind === 'guild') { if (u.type === 'hero') yield* heroGuildGen(u, c); }
     else if (c.kind === 'equip' && u.hero && u.hero.clsKey && u.hero.inv && u.hero.inv[c.slot] && typeof HL_GEAR !== 'undefined') {
       const k = u.hero.inv[c.slot].k, C = GCLS[u.hero.clsKey];
-      if (C && HL_GEAR[k] && (k === C.weapon || k === C.armor)) yield* quickEquipGen(u, c);
+      if (C && HL_GEAR[k] && (k === C.weapon || k === C.armor || (typeof arFits === 'function' && arFits(k, u.hero.clsKey)))) yield* quickEquipGen(u, c);
       else yield* _run(u, c);
     } else yield* _run(u, c);
   };

@@ -50,9 +50,12 @@ function logEvent(kind, text, x, y) {
   const log = Game.log || (Game.log = []);
   const last = log[log.length - 1];
   // одинаковое подряд за короткое время — одной строкой «×N»
-  if (last && last.text === text && Game.time - last.t < 20) {
-    last.n++; last.t = Game.time;
-    if (x !== undefined) { last.x = x; last.y = y; }
+  // и то же самое, что было среди последних записей полминуты-минуту назад (фонари и туман ночью, лисы с кроликами)
+  let same = last && last.text === text && Game.time - last.t < 20 ? last : null;
+  if (!same) for (let i = log.length - 1; i >= 0 && i >= log.length - 6; i--) if (log[i].text === text && Game.time - log[i].t < 90) { same = log[i]; break; }
+  if (same) {
+    same.n++; same.t = Game.time;
+    if (x !== undefined) { same.x = x; same.y = y; }
   } else {
     log.push({ id: (Game.logId = (Game.logId || 0) + 1), t: Game.time, kind, text, x, y, n: 1 });
     if (log.length > LOG_MAX) log.shift();

@@ -62,9 +62,11 @@ scriptTest('sick: болезни и лазарет, сохранение', 'sick
 scriptTest('injury: травмы — частота, лазарет, лекарь, сводка, груз, куры', 'injury-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
+scriptTest('zemelka: ножички — партия гномов, болельщики, партия героя, сохранение', 'zemelka-test.js');
 scriptTest('kids: детские игры, замки, приручение, трубка, взросление', 'kids-test.js');
 scriptTest('folk: гномки и гномята — облик, пиво, «Бах!», не дерутся, сейв', 'folk-test.js');
 scriptTest('durability: прочность снаряжения, ремонт, очередь доспехов, сейв', 'durability-test.js');
+scriptTest('arms: оружейная рано, особое оружие гильдий, заточка, свойства 3 уровня, сейв', 'arms-test.js');
 scriptTest('oath: Клятвы предков — 10 классов героя, задания по ролям, сохранение', 'oath-test.js');
 scriptTest('spire: глава 6 — подъём к Чёрному шпилю: стражи, врата, башни, затмение, Малгор, победа', 'spire-test.js', [], 420000);
 scriptTest('oathbal: баланс классов героя', 'oath-balance.js');
@@ -102,6 +104,7 @@ function simRun(seed, minutes, r, opts = {}) {
   const end = L.inspect(sim), mid = hist[Math.floor(hist.length / 2)] || end.n;
   for (const k of Object.keys(LIMITS)) {
     const a = mid[k] || 0, b = end.n[k] || 0, q = hist[Math.floor(hist.length * 3 / 4)] ? hist[Math.floor(hist.length * 3 / 4)][k] : b;
+    if (k === 'log') continue;      // журнал ограничен LOG_MAX (events.js) и на время прогона просто копится; предел проверяет LIMITS
     if (b > 60 && b > a * 2 && q > a && b > q) r.warns.push(`сид ${seed}: ${k} растёт: ${a} → ${q} → ${b}`);
   }
   // товары: в деревне не может оказаться больше, чем было + произведено (запас на подарки, сундуки и находки)
