@@ -100,5 +100,33 @@ ok(cg === 'attack' || cg === 'foe', 'кооп: тап по башне не да�
 S.runFor(srv, 20, 5, () => {});
 ok(!srv.errors.length, 'кооп: исключения: ' + srv.errors.slice(0, 3).join(' | '));
 
+// ---------- Кооп: тропа, прорубленная сервером, доходит до клиента ----------
+{
+  const fs = require('fs'), path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const files = [...html.matchAll(/<script[^>]*\ssrc="js\/([\w\/-]+)\.js"/g)].map(m => m[1]).filter(f => !['loading', 'perf'].includes(f));
+  const sv = S.newSim(11, { coop: true });
+  const RS = code => JSON.parse(sv.h.run(`JSON.stringify((() => { ${code} })())`));
+  sv.h.run(`coopJoin('гном', JSON.stringify({ cls: 'warrior' }))`);
+  S.runFor(sv, 10, 5, () => {});
+  const cl = S.newSim(1011, { files });
+  cl.h.run('unlockAll = typeof unlockAll === "function" ? unlockAll : function () {}; coopInitHud = function () {}; coopInitControls = function () {}; coopRefreshHud = function () {}; coopVilHud = function () {}; coopQuestHud = function () {}; coopSaveCopy = function () {};');
+  const uid = sv.h.run("coop.players.get('гном').id");
+  cl.h.ctx.__m = sv.h.run(`coopInitPacket(${uid})`);
+  cl.h.run('coopApplyInit(JSON.parse(__m))');
+  const ring = RS(`const F = Game.foe, fr = spireFront(F), cx = fr[0] + 0.5, cy = fr[1] + 0.5, cells = [];
+    for (let y = Math.floor(cy) - 12; y <= cy + 12; y++) for (let x = Math.floor(cx) - 12; x <= cx + 12; x++) {
+      if (!inb(x, y)) continue; const d = Math.hypot(x - cx, y - cy); if (d >= 8 && d < 10 && !World.bmap[idx(x, y)]) World.terrain[idx(x, y)] = T_ROCK; }
+    PF.regT = -1e9; const v = spireVillage(); const r = spireEnsureRoute(v[0], v[1]); return { r, cv: Game.spireCv || [] };`);
+  // клиент до пакета рельеф сервера до рубки не знает: возвращаем скалы и на его карте, как будто строил по сиду
+  cl.h.ctx.__cv = JSON.stringify(ring.cv);
+  cl.h.run('for (const i of JSON.parse(__cv)) { World.terrain[i] = T_ROCK; ROCKMINE.mined.delete(i); } Game.spireWhy = "стар";');
+  cl.h.ctx.__m = sv.h.run('coopUnitsPacket()'); cl.h.run('coopHandle(JSON.parse(__m))');
+  const got = JSON.parse(cl.h.run('JSON.stringify({ g: JSON.parse(__cv).filter(i => World.terrain[i] !== T_ROCK).length, why: Game.spireWhy })'));
+  ok(ring.r.ok && ring.cv.length > 0, 'кооп: сервер не прорубил тропу ' + JSON.stringify(ring.r));
+  ok(got.g === ring.cv.length && got.why === '', `кооп: клиент не получил тропу: ${got.g}/${ring.cv.length}, причина «${got.why}»`);
+  ok(!cl.errors.length, 'кооп-клиент: исключения: ' + cl.errors.slice(0, 3).join(' | '));
+}
+
 console.log(fails.length ? `Проверка шпиля: провалов ${fails.length}` : 'Проверка шпиля: всё в порядке');
 process.exit(fails.length ? 1 : 0);
