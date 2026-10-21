@@ -1,6 +1,6 @@
 'use strict';
-// Проверка статистики по согласию и отчётов о проблемах без браузера:
-//  · клиент js/telemetry.js: по умолчанию выключено, на localhost не шлёт даже с согласием, с согласием — минутный снимок,
+// Проверка анонимной статистики и отчётов о проблемах без браузера:
+//  · клиент js/telemetry.js: по умолчанию включено (минутный снимок), на localhost не шлёт никогда, выключенная — молчит,
 //    отказ останавливает и воронку /e, журнал консоли (200 строк), тело отчёта;
 //  · сервер server/telemetry.js: валидация, хранение jsonl, отчёты в reports/, удаление по id;
 //  · tools/stats-report.js и tools/reports.js на этих данных.
@@ -45,28 +45,31 @@ const beat = p => { for (const [f, ms] of p.intervals) if (ms === 60000) f(); };
 const { createTelemetry, cleanEvent } = require('../server/telemetry');
 
 (async () => {
-  // ---- 1. Клиент: по умолчанию выключено
+  // ---- 1. Клиент: по умолчанию включено, выключенная — молчит
   {
     const p = page({}, 'xxxlexolasxxx.github.io');
-    check(p.ctx.teleOn() === false, 'статистика должна быть выключена по умолчанию');
+    check(p.ctx.teleOn() === true, 'статистика должна быть включена по умолчанию');
     beat(p);
-    check(!p.sent.some(s => /\/t$/.test(s.url)), 'без согласия ушёл запрос на /t');
+    check(p.sent.some(s => /\/t$/.test(s.url)), 'по умолчанию снимок не ушёл на /t');
     check(p.ctx.teleDeclined() === false, 'без ответа — не «отказ» (воронка /e работает как раньше)');
+    const q = page({ 'feod.tele': JSON.stringify({ on: false, asked: 1 }) }, 'xxxlexolasxxx.github.io');
+    beat(q);
+    check(!q.sent.some(s => /\/t$/.test(s.url)), 'выключенная статистика всё равно ушла на /t');
   }
-  // ---- 2. Локальная разработка: даже с согласием не шлём
+  // ---- 2. Локальная разработка: не шлём никогда
   for (const host of ['localhost', '127.0.0.1', '192.168.1.5', 'game.test']) {
     const p = page({ 'feod.tele': JSON.stringify({ on: true, asked: 1 }) }, host);
     check(p.ctx.teleOn() === false, 'на ' + host + ' статистика не должна включаться');
     beat(p);
     check(!p.sent.length, 'на ' + host + ' ушёл запрос');
   }
-  // ---- 3. С согласием: снимок раз в минуту, тело проходит серверную проверку
+  // ---- 3. Включено: снимок раз в минуту, тело проходит серверную проверку
   {
     const p = page({ 'feod.tele': JSON.stringify({ on: true, asked: 1 }) }, 'xxxlexolasxxx.github.io');
     p.ctx.console.warn('проверка журнала', { a: 1 });
     beat(p);
     const t = p.sent.find(s => /\/t$/.test(s.url));
-    check(!!t, 'с согласием снимок не ушёл на /t');
+    check(!!t, 'включённая статистика не ушла на /t');
     if (t) {
       const b = t.body, e = b.ev.find(x => x.k === 'beat');
       check(/^[a-z0-9]{16}$/.test(b.id) && b.v === '9.9.9' && b.dev === 'phone' && b.scr === '400x900', 'шапка снимка неверна: ' + JSON.stringify({ ...b, ev: 0 }));
@@ -81,7 +84,7 @@ const { createTelemetry, cleanEvent } = require('../server/telemetry');
     for (let i = 0; i < 300; i++) p.ctx.console.log('строка ' + i);
     check(JSON.parse(p.ctx.teleReportBody('x', false, '')).log.length === 200, 'журнал консоли должен держать 200 строк');
   }
-  // ---- 4. Отказ: воронка /e тоже молчит
+  // ---- 4. Выключил: воронка /e тоже молчит
   {
     const p = page({ 'feod.tele': JSON.stringify({ on: false, asked: 1 }), 'oldgold-pending': '["start-mobile"]' }, 'xxxlexolasxxx.github.io');
     check(p.ctx.teleDeclined() === true, 'отказ не распознан');

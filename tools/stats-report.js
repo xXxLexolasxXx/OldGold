@@ -61,7 +61,7 @@ function summarize(rows, dir) {
 const CAUSE = { starve: 'голод', skeleton: 'скелеты', fog: 'туман', chickens: 'куры', cold: 'холод', night: 'ночью (прочее)', other: 'днём (прочее)' };
 function print(x, days) {
   const kv = o => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(', ') || '—';
-  const L = [`=== Статистика по согласию за ${days} дн. ===`,
+  const L = [`=== Анонимная статистика за ${days} дн. ===`,
     `Установок (случайных id): ${x.installs}, партий (запусков): ${x.sessions}`,
     `Медианное время партии: ${x.medianPlayMin} мин, игровых суток: ${x.medianGameDays}`,
     `Устройства: ${kv(x.devices)} · режим: ${kv(x.modes)} · версии: ${kv(x.versions)}`,

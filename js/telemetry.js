@@ -1,8 +1,8 @@
 'use strict';
 // Анонимная статистика «Помочь улучшить игру» и кнопка «Сообщить о проблеме».
 // Подключается сразу после js/crashlog.js (чтобы журнал консоли копился с первых строк).
-//  · Статистика ВКЛЮЧАЕТСЯ ТОЛЬКО С СОГЛАСИЯ: при первом запуске игра спрашивает, по умолчанию выключено,
-//    переключатель — в боковом меню. Раз в минуту и на ключевых событиях уходит короткая запись (POST /t):
+//  · Статистика включена по умолчанию: при первом запуске игра один раз сообщает о ней и предлагает выключить,
+//    переключатель — в боковом меню; «выключить» глушит и воронку /e (stats.js). Раз в минуту и на ключевых событиях уходит короткая запись (POST /t):
 //    версия, телефон/ПК, экран, FPS, игровые сутки, жители, класс героя, одиночка/кооп, отчего погибла деревня/герой,
 //    что строят, на каком экране закончили, ошибки. Id установки — случайный (feod.tid), с человеком не связан.
 //    На localhost / file: / локальной сети ничего не отправляется.
@@ -54,10 +54,10 @@ function teleLocal() {
   return location.protocol === 'file:' || /^(localhost|127\.\d+\.\d+\.\d+|\[::1\]|0\.0\.0\.0|)$/.test(h) || /\.(localhost|local|test)$/.test(h)
     || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
 }
-function teleState() { const s = teleGet(TELE_KEY, null); return s && typeof s === 'object' ? s : { on: false, asked: 0 }; }
-function teleOn() { return !teleLocal() && teleState().on === true; }
-// игрок сам сказал «нет» — тогда и воронка с id (stats.js, POST /e) не отправляется
-function teleDeclined() { const s = teleState(); return !!s.asked && s.on === false; }
+function teleState() { const s = teleGet(TELE_KEY, null); return s && typeof s === 'object' ? s : { on: true, asked: 0 }; }
+function teleOn() { return !teleLocal() && teleState().on !== false; }
+// игрок сам выключил — тогда и воронка с id (stats.js, POST /e) не отправляется
+function teleDeclined() { return teleState().on === false; }
 function teleSetOn(on) {
   teleSet(TELE_KEY, { on: !!on, asked: Date.now() });
   if (on) teleEvent('start', teleSnap());
@@ -201,21 +201,21 @@ function teleHooks() {
   }
 }
 
-// ---- согласие: маленькая карточка при первом запуске (один раз)
+// ---- уведомление о статистике: маленькая карточка при первом запуске (один раз), можно сразу выключить
 function teleAsk() {
   if (teleLocal() || teleState().asked || document.getElementById('tele-ask')) return;
   const box = document.createElement('div');
   box.id = 'tele-ask';
   box.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:100000;max-width:min(440px,calc(100vw - 32px));padding:12px 14px;background:#2a1e14;color:#f3e6c8;border:2px solid #a8743a;border-radius:8px;font:14px/1.4 sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.5)';
-  box.innerHTML = '<b>Помочь улучшить игру?</b><div style="margin:6px 0 10px">Игра будет раз в минуту отправлять короткую анонимную сводку: версия, телефон или компьютер, кадры в секунду, сутки, жители, ошибки. '
-    + 'Без ника, имени и сохранений. Выключить можно в меню в любой момент.</div>'
-    + '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-a="no" style="padding:6px 12px">Нет, спасибо</button><button data-a="yes" style="padding:6px 12px;font-weight:bold">Да, помогу</button></div>';
+  box.innerHTML = '<b>Игра помогает себя улучшать</b><div style="margin:6px 0 10px">Раз в минуту уходит короткая анонимная сводка: версия, телефон или компьютер, кадры в секунду, сутки, жители, ошибки. '
+    + 'Без ника, имени и сохранений. Выключить можно здесь или в меню в любой момент.</div>'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end"><button data-a="no" style="padding:6px 12px">Выключить</button><button data-a="yes" style="padding:6px 12px;font-weight:bold">Хорошо</button></div>';
   box.onclick = e => {
     const a = e.target && e.target.getAttribute && e.target.getAttribute('data-a');
     if (!a) return;
     teleSetOn(a === 'yes');
     box.remove();
-    if (typeof toast === 'function') toast(a === 'yes' ? 'Спасибо! Статистику можно выключить в меню' : 'Хорошо, ничего не отправляем');
+    if (typeof toast === 'function') toast(a === 'yes' ? 'Спасибо! Статистику можно выключить в меню' : 'Статистика выключена, ничего не отправляем');
   };
   document.body.appendChild(box);
 }

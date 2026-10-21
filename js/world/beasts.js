@@ -288,7 +288,7 @@ function beBoarsTick(dt) {
   Game.boarT = (Game.boarT ?? 30) - dt;
   if (Game.boarT <= 0) {
     Game.boarT = 45 + Math.random() * 60;
-    if (bo.length < (N_TILES > 9000 ? 3 : 2) && beDone() >= 2) {
+    if (bo.length < (N_TILES > 9000 ? 2 : 1) && beDone() >= 2) {     // кабанов и так хватает в лёжках (СУЩЕСТВА_БАЛАНС.md)
       const s = wildSpot(18);
       if (s) bo.push({ x: s[0] + 0.5, y: s[1] + 0.5, home: s, state: 'forage', t: 1, face: 1, ph: 0, moving: false, hp: 3, cd: 0, go: null, root: 0, sc: 0 });
     }
