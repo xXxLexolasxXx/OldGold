@@ -281,6 +281,7 @@ class Pile {
     this.reserved = emptyGoods();
     this.incoming = emptyGoods();
     this.removed = false;
+    this.ageAt = {};       // когда лёг «неходовой» груз (мусор, куски курицы): склад его не берёт, такие кучки со временем убираются
   }
   offer(g) { return this.stock[g] - this.reserved[g]; }
   demand() { return 0; }
@@ -298,6 +299,7 @@ function dropPile(x, y, g, n) {
   let p = Game.piles.get(i);
   if (!p || p.removed) { p = new Pile(x, y); Game.piles.set(i, p); }
   p.stock[g] += n;
+  if (GOODS[g].noStore && !p.ageAt[g]) p.ageAt[g] = Game.time;
   return p;
 }
 
