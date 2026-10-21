@@ -51,6 +51,7 @@ const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
 scriptTest('savefile: золотые сейвы всех версий, битые и огромные файлы, копии, импорт/экспорт, мир коопа и откат', 'save-test.js', ['3'], 480000);
 scriptTest('server: раздача файлов, /err, /e, /t, /report, /stats', 'server-test.js');
+scriptTest('fuzz-server: злонамеренные запросы и сообщения не роняют и не портят сервер', 'fuzz-server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 scriptTest('telemetry: статистика по согласию, отчёты о проблемах, удаление по id', 'telemetry-test.js');
 scriptTest('neutrals2: ранги и новые народы леса, сейв', 'neutrals2-test.js');

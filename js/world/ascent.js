@@ -165,7 +165,7 @@ function asLampDown(u) {
     if (T.fallen.length < 16) T.fallen.push({ n: 'Огонёк Лампы', k: 'gnome', c: 'lamp' });
     T.clean = 0;
   }
-  toast(`Фонарщик ${AS_LAMP.name} пал. Лампа предков погасла — затмение над шпилем стало гуще. Малгор запомнил его имя…`);
+  toast(`Фонарщик ${AS_LAMP.name} пал. Лампа предков погасла — затмение над шпилем стало гуще. В последнем бою Малгор поднимет его призраком.`);
   logEvent('night', `Пал фонарщик ${AS_LAMP.name}, Лампа предков погасла`, u.x, u.y);
   u._ecDn = true;
   removeUnit(u);
@@ -210,7 +210,7 @@ function asFree(cg, by) {
 function asFreedFall(u) {
   const T = asT();
   if (T && T.fallen.length < 16) { T.fallen.push({ n: u.rec.name, k: 'rec', c: u.rec.cls }); T.clean = 0; }
-  floater(u.x, u.y - 2.4, 'Тьма запомнила…', '#c8a8ff');
+  floater(u.x, u.y - 2.4, 'Вернётся призраком…', '#c8a8ff');
   u._ecDn = true;
   logEvent('night', `Пал освобождённый пленник ${u.rec.name}`, u.x, u.y);
   removeUnit(u);
