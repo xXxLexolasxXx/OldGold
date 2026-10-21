@@ -5,6 +5,71 @@
 
 const CHANGELOG = [
   {
+    v: '0.10.110', date: '2026-10-21', title: 'Море ожило',
+    news: [
+      'Новая карта «Побережье»: море у края земли, бухты, острова, широкие пляжи с галькой и скалы-кекуры',
+      'Вода живая: волны катятся, у берега бьёт прибой и мокнет песок, днём блестит солнце, ночью — лунная дорожка и светящийся планктон, в дождь — круги от капель, в шторм — барашки. У моря, озёр, рек, прудов и болот свои цвета. Зимой лёд ложится по линии берега, а не квадратами',
+      'В воде и у воды поселились 13 видов: косяки кильки, лосось, крабы (щиплются и прячутся в песок), морские звёзды и ежи, медузы (ночью светятся, жалят), черепахи (летом откладывают яйца на пляже — через сутки черепашата бегут к морю), чайки (тащат хлеб из куч у берега), бакланы, дельфины, кит с фонтаном и песней, осьминог и морской змей',
+      'КРАКЕН — редкий морской босс: щупальца бьют по берегу, калечат гномов, смывают товары в воду и ломают лодки. Герой рубит щупальца, гномы втроём помогают. Добыча — жемчуг и золото',
+      'Рыбацкая хижина: рыбак удит с берега. Новые товары — рыба (едят в трактире) и жемчуг. Пристань теперь строится отдельно: от неё выходит лодка ближайшей хижины',
+      'К пристани у моря часть караванов приходит торговым кораблём. После шторма к берегу прибивает обломки с грузом, а на пляже — выжившие моряки и выбор, что с ними делать',
+      'Гномята могут приручить чайку или подружиться с дельфином. По ясным ночам у берега поёт русалка, а у озёр и рек выглядывает водяной. Герой на досуге сам берёт удочку',
+      'Прибой звучит по-разному: ночью глуше и медленнее, в шторм — рёв, вой ветра и удары валов о берег. Редкие гости моря (кракен, змей, кит) теперь заходят реже',
+    ],
+    fixes: ['И ещё несколько мелких правок.'],
+  },
+  {
+    v: '0.10.109', date: '2026-10-21', title: 'Что вы пропустили',
+    news: [
+      'Окно «Что нового» теперь напоминает о пропущенных обновлениях: если вы давно не заходили, под свежей записью по нажатию «Подробнее» лежат прошлые версии (до десяти), свёрнутые по одной — раскрываются нажатием',
+      'Кнопка «Все обновления» открывает всю историю; из меню «Что нового» она открывается сразу. Повторы и «мелкие правки» в списке не дублируются',
+    ],
+    fixes: [],
+  },
+  {
+    v: '0.10.108', date: '2026-10-21', title: 'Дикие гномы: поселения, торговля и поединок вождей',
+    news: [
+      'Вдали от деревни стоят поселения диких гномов: лагеря, деревни за частоколом и крепости за каменной стеной. Четыре клана — Медноборы, Мхиные, Сизые кланы и Песочники — со своими флагами и цветом колпаков. На малой карте их два, на средней три, на большой четыре, и одно-два из них злые',
+      'Щёлкните по поселению — у ворот можно меняться товаром по курсу клана, снарядить караван или задобрить подарком. Сделки поднимают отношение, а союзники в голод присылают хлеб. Дружеские кланы сами шлют купцов, злые — воров и разбойников',
+      'Вождя можно вызвать на поединок. Пока он идёт, мир замирает. Вождь бьёт сериями, финтит, уходит перекатом и дерётся по-своему: тяжёлым топором, ядом, щитом или песком в глаза. Победа — деревня ваша на трое суток и платит дань, а потом бунтует',
+      'Над путниками теперь не жёлтые рожицы, а гномьи лица с бородой: по колпаку и глазам видно, кто идёт с добром, а кто нет',
+    ],
+    fixes: ['И ещё несколько мелких правок.'],
+  },
+  {
+    v: '0.10.107', date: '2026-10-21', title: 'Статистика — только с вашего согласия',
+    news: [
+      'Анонимная статистика теперь отправляется, только если вы сами согласились: игра один раз спросит «Помочь улучшить игру?», пока вы не ответите — ничего не уходит. Спросим заново и тех, кто уже видел прошлую заметку. Передумать можно кнопкой «Помогать статистикой» в меню, там же «Удалить мои данные».',
+    ],
+  },
+  {
+    v: '0.10.106', date: '2026-10-21', title: 'Не разбей!',
+    news: [
+      'Заточка стала по-настоящему рискованной: до +3 по-прежнему без риска, а дальше неудача РАЗБИВАЕТ оружие — от него остаётся только слиток железа. Перед рискованной попыткой игра переспросит.',
+      'Кнопка «Бережно»: за магический камень и 2 золота сверху неудача оружие не бьёт, но заточка слетает до +0. Особое оружие гильдий тоже бьётся — выковать заново можно, но дорого.',
+    ],
+    fixes: [],
+  },
+  {
+    v: '0.10.105', date: '2026-10-21', title: 'Новый леший',
+    news: [
+      'Леший перерисован: сгорбленный лесной дед в плаще из мха и листьев, с берестяным лицом, бородой-лишайником, ветвистыми рогами в листве и посохом с живым огоньком. Посох держит рукой и бьёт им с размаху.',
+    ],
+    fixes: [],
+  },
+  {
+    v: '0.10.104', date: '2026-10-21', title: 'Профсоюзы',
+    news: [
+      'Трудяги и работяги собрались в профсоюз: когда в деревне появляются бывалые носильщики, они подсказывают, что строить сейчас — чего не хватает стройкам, кому из мастеров нужна мастерская, где затор и куда не подходит дорога. Одно касание по совету — и здание уже выбрано для постройки',
+      'У мастеров свой цех: советует, что делать сейчас — оружие и доспехи для гильдий, перевязки раненым, зелья больным, а осенью — печь и коптить впрок к зиме. Может сам отдать заказ мастерской или попросить её делать только нужное',
+      'Советы приходят редко — не чаще раза в пять минут и не в первые минуты новой игры. Все текущие пожелания и выключатель — в «Совете деревни», раздел «Профсоюзы»',
+    ],
+    fixes: [
+      'Стройка, к которой ещё не дотянули дорогу до склада, больше не ждёт материал по минуте при свободных трудягах',
+      'И ещё несколько мелких правок.',
+    ],
+  },
+  {
     v: '0.10.103', date: '2026-10-21', title: 'Меньше кабанов, гоблины крепче',
     news: [
       'В лесу больше не толпятся кабаны: одна-две лёжки на карту, а кабанов-бродяг не больше двух. Феи и кабаны теперь — не больше седьмой части лесных жителей; остальные логова — лешие и грибы, а с ночами приходят тролли, броненосцы и гномтавры. В старых сохранениях лишние лёжки заселят лешие.',
@@ -157,7 +222,7 @@ const CHANGELOG = [
     news: [
       'Оружейная открывается сразу после мастерской доспехов: раньше доспехи были, а бить было нечем. Луки делаются и без железа. Гильдии, как и прежде, — после оружейной.',
       'У каждой гильдии своё светящееся оружие: Клинок Железнобокого, Лунный лук, Теневой клык, Звёздный посох и Обмотки Тишины для монаха. Куёт оружейная, сразу и без очереди.',
-      'Заточка в оружейной: до +3 без риска, дальше +4 — 80%, +5 — 60%, +6 — 40%, +7 и выше — 20%, потолок +12. Неудача уровень не снижает — пропадает только железо. После +5 оружие растёт заметно, но здорового врага с одного удара всё равно не уложить.',
+      'Заточка в оружейной: до +3 без риска, дальше +4 — 80%, +5 — 60%, +6 — 40%, +7 и выше — 20%, потолок +12. После +5 оружие растёт заметно, но здорового врага с одного удара всё равно не уложить.',
       'Гильдия 3-го уровня будит свойство своего оружия: вампиризм у воинов, паралич у лучников, тишина у монаха, яд у разбойников, звёздный огонь у магов. Рекрутам такой гильдии оно тоже достаётся.',
     ],
     fixes: ['И ещё несколько мелких правок.'],
@@ -1199,34 +1264,87 @@ const CHANGELOG = [
 ];
 const GAME_VERSION = CHANGELOG[0].v;
 
+// Что пропустил игрок: записи новее той версии, которую он видел в последний раз (без самой свежей — она показана сверху).
+// Новичку и тому, кто не помнит версию (или её уже нет в журнале), показывать нечего.
+const WN_MAX_MISSED = 10;
+const wnT = (k, ...a) => (typeof t === 'function' ? t(k, ...a) : k.replace(/\{(\d+)\}/g, (m, i) => a[i]));
+const wnEsc = s => String(s).replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+const wnKey = s => String(s).toLowerCase().replace(/[\s.,;:!…—-]+/g, ' ').trim();
+const wnMinor = s => /^и ещё .*мелк/i.test(String(s).trim());
+
+function whatsNewMissed(seen) {
+  const at = seen ? CHANGELOG.findIndex(e => e.v === seen) : -1;
+  return at > 1 ? CHANGELOG.slice(1, at) : [];
+}
+
+// Записи от новых к старым: «и ещё несколько мелких правок» не повторяем, а пункт, уже названный в более новой версии, оставляем только там.
+function whatsNewGroups(entries, seenKeys) {
+  const seen = new Set(seenKeys || []);
+  const keep = list => (list || []).filter(s => {
+    if (wnMinor(s)) return false;
+    const k = wnKey(s);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  return entries.map(e => ({ e, news: keep(e.news), fixes: keep(e.fixes) })).filter(g => g.news.length || g.fixes.length);
+}
+
+function whatsNewSections(news, fixes) {
+  return (news && news.length ? `<h3>Новое</h3><ul>${news.map(t => `<li>${wnEsc(t)}</li>`).join('')}</ul>` : '') +
+    (fixes && fixes.length ? `<h3>Исправлено</h3><ul>${fixes.map(t => `<li>${wnEsc(t)}</li>`).join('')}</ul>` : '');
+}
+
+const whatsNewHead = e => `${wnEsc(e.v)} · ${wnEsc(e.date)} — ${wnEsc(e.title)}`;
+const whatsNewFold = gs => gs.map(g => `<details><summary>${whatsNewHead(g.e)}</summary>${whatsNewSections(g.news, g.fixes)}</details>`).join('');
+
 function whatsNewShow(force) {
   let seen = null;
   try { seen = localStorage.getItem('oldgold.seenVersion'); } catch (e) { /* приватный режим */ }
   if (!force && seen === GAME_VERSION) return;
-  // что пропустил игрок: записи новее виденной (не больше трёх); новичку и при ?whatsnew=1 — только последняя
-  const at = force || !seen ? -1 : CHANGELOG.findIndex(e => e.v === seen);
-  const list = CHANGELOG.slice(0, at > 0 ? Math.min(3, at) : 1);
+  const cur = CHANGELOG[0];
+  const curKeys = [...(cur.news || []), ...(cur.fixes || [])].map(wnKey);
+  const missed = whatsNewMissed(seen);
+  const shown = whatsNewGroups(missed.slice(0, WN_MAX_MISSED), curKeys);
+  const hidden = missed.length - Math.min(missed.length, WN_MAX_MISSED);
   if (!document.getElementById('whatsnew-css')) {
     const st = document.createElement('style'); st.id = 'whatsnew-css';
-    st.textContent = `#whatsnew{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:12px;font-family:Kurale,Georgia,serif}
-#whatsnew .wn-box{max-width:520px;width:100%;max-height:86vh;overflow:auto;padding:16px 20px;color:#e9dcc0;background:linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.5)),var(--wood-tex,none),#2a1e14;border:2px solid #0a0705;box-shadow:inset 0 0 0 1px var(--gold,#c9a24a),0 6px 24px rgba(0,0,0,.8)}
+    st.textContent = `#whatsnew{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));font-family:Kurale,Georgia,serif}
+#whatsnew .wn-box{box-sizing:border-box;max-width:520px;width:100%;max-height:86vh;max-height:86dvh;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;overflow-wrap:anywhere;padding:16px 20px;color:#e9dcc0;background:linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.5)),var(--wood-tex,none),#2a1e14;border:2px solid #0a0705;box-shadow:inset 0 0 0 1px var(--gold,#c9a24a),0 6px 24px rgba(0,0,0,.8)}
 #whatsnew h2{margin:0 0 2px;color:var(--gold-hi,#ffd877);font-size:22px}#whatsnew h3{margin:12px 0 4px;font-size:14px;color:var(--gold,#c9a24a);text-transform:uppercase;letter-spacing:.06em}
 #whatsnew .wn-v{font-size:12px;opacity:.7;margin-bottom:6px}#whatsnew ul{margin:0;padding-left:20px;font-size:14px;line-height:1.4}#whatsnew li{margin:3px 0}
-#whatsnew button{display:block;margin:16px auto 2px;padding:7px 28px;font:inherit;font-size:15px;color:#2a1e14;background:linear-gradient(#ffd877,#c9a24a);border:2px solid #0a0705;cursor:pointer}`;
+#whatsnew .wn-gap{margin:16px 0 4px;padding-top:8px;border-top:1px solid rgba(201,162,74,.4);font-size:13px;color:var(--gold,#c9a24a);text-transform:uppercase;letter-spacing:.06em}
+#whatsnew details{margin:4px 0;border:1px solid rgba(201,162,74,.3);background:rgba(0,0,0,.22)}
+#whatsnew summary{cursor:pointer;padding:8px 10px;min-height:20px;font-size:13px;line-height:1.3;color:var(--gold-hi,#ffd877);-webkit-tap-highlight-color:transparent}
+#whatsnew details[open] summary{border-bottom:1px solid rgba(201,162,74,.25)}#whatsnew details>h3:first-of-type{margin-top:6px}#whatsnew details ul{padding-bottom:8px;padding-right:8px}#whatsnew details>h3{padding-left:10px}
+#whatsnew .wn-more{margin:6px 2px;font-size:12px;opacity:.7}
+#whatsnew .wn-allb{display:block;margin:12px auto 0;padding:8px 6px;min-height:36px;color:var(--gold-hi,#ffd877);font-size:14px;text-align:center;text-decoration:underline;cursor:pointer}
+#whatsnew .wn-ok{display:block;margin:16px auto 2px;padding:7px 28px;font:inherit;font-size:15px;color:#2a1e14;background:linear-gradient(#ffd877,#c9a24a);border:2px solid #0a0705;cursor:pointer}`;
     document.head.appendChild(st);
   }
   const old = document.getElementById('whatsnew'); if (old) old.remove();
   const el = document.createElement('div'); el.id = 'whatsnew';
-  const esc = s => String(s).replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
-  el.innerHTML = `<div class="wn-box"><h2>Что нового</h2>` + list.map((e, n) =>
-    `<div class="wn-v">${n ? '' : 'Версия '}${esc(e.v)} · ${esc(e.date)} — ${esc(e.title)}</div>` +
-    (e.news && e.news.length ? `<h3>Новое</h3><ul>${e.news.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '') +
-    (e.fixes && e.fixes.length ? `<h3>Исправлено</h3><ul>${e.fixes.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '')).join('') +
-    `<button type="button">Понятно</button></div>`;
+  el.innerHTML = `<div class="wn-box"><h2>Что нового</h2>` +
+    `<div class="wn-cur"><div class="wn-v">Версия ${whatsNewHead(cur)}</div>${whatsNewSections(cur.news, cur.fixes)}</div>` +
+    (shown.length ? `<div class="wn-rest wn-miss"><div class="wn-gap">Пока вас не было</div>${whatsNewFold(shown)}` +
+      (hidden > 0 ? `<div class="wn-more">${wnEsc(wnT('и ещё версий: {0} — в «Все обновления»', hidden))}</div>` : '') + `</div>` : '') +
+    `<div class="wn-rest wn-hist" hidden></div>` +
+    `<a class="wn-rest wn-allb" href="#">Все обновления</a>` +
+    `<button type="button" class="wn-ok">Понятно</button></div>`;
   const close = () => { el.remove(); try { localStorage.setItem('oldgold.seenVersion', GAME_VERSION); } catch (e) { /* ничего */ } };
-  el.querySelector('button').onclick = close;
+  const hist = el.querySelector('.wn-hist'), miss = el.querySelector('.wn-miss'), allb = el.querySelector('.wn-allb');
+  // полный список строим по требованию: в нём вся история, свёрнутая по версиям
+  const toggleAll = open => {
+    if (open && !hist.firstChild) hist.innerHTML = whatsNewFold(whatsNewGroups(CHANGELOG.slice(1), curKeys));
+    hist.hidden = !open; if (miss) miss.hidden = open;
+    allb.textContent = wnT(open ? 'Скрыть список' : 'Все обновления');
+    el.classList.remove('nq-short');
+  };
+  allb.onclick = ev => { ev.preventDefault(); toggleAll(hist.hidden); };
+  el.querySelector('.wn-ok').onclick = close;
   el.addEventListener('click', ev => { if (ev.target === el) close(); });
   document.body.appendChild(el);
+  if (force === 'all') toggleAll(true);
 }
 
 // Номер версии мелко внизу экрана (меню и игра): тестеры называют его в отзывах. Тап открывает «Что нового».

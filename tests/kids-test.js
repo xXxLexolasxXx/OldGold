@@ -62,7 +62,7 @@ if (spot >= 0) {
   h.run(`{ const u = Game.unitMap.get(__kids[${spot}]); const s = sandSpot(u); u.x = s.sx + 0.5; u.y = s.sy + 0.5; globalThis.__sc = s; globalThis.__si = ${spot}; }`);
   // игра в снежки или новая общая игра могла увести гномёнка — на время проверки замка игр нет
   h.run(`for (const g of GROUPS.slice()) endGroup(g, 'test'); GROUPS.length = 0; Game.games.length = 0; gameNext = Game.time + 999; for (const k of __kids) Game.unitMap.get(k).gp = null;`);
-  h.run(`{ const k = ${kid('__si')}; k.proc = (function* () { yield* sandGen(k, __sc); })(); k.action = null; k.anim = null; k.kpAt = Game.time + 999; }`);
+  h.run(`{ const k = ${kid('__si')}; k.proc = (function* () { yield* sandGen(k, __sc); })(); k.action = null; k.anim = null; k.kpAt = Game.time + 999; k.inside = null; k.brk = null; k.pauseUntil = 0; }`);   // гномёнок мог сидеть дома или на перерыве
   S.runFor(sim, 30, 0.5, () => {});
   ok(h.run('World.obj[idx(__sc.cx, __sc.cy)]?.t') === 'sandc', 'замок не заложен');
   // другие гномята за эти полминуты могли заложить свои замки — для проверок сохранения и смыва оставляем только наш
@@ -92,9 +92,9 @@ h.run(`Math.random = __rnd; Game.time = Math.ceil(Game.time / CYCLE) * CYCLE + 4
   Game.animals = Game.animals.filter(a => !a.owner);`);
 const tame = (kind, rnd) => {
   h.run(`{ const k = ${kid(2)}; const [x, y] = randomFreeNear(Math.floor(k.x), Math.floor(k.y), 3, 6, isWalkable) || [Math.floor(k.x) + 2, Math.floor(k.y)];
-    const a = makeAnimal('${kind}', x, y); Game.animals.push(a); globalThis.__pet = a; k.injury = null; k.proc = tameGen(k, a); k.action = null; Math.random = ${rnd};
+    const a = makeAnimal('${kind}', x, y); Game.animals.push(a); globalThis.__pet = a; k.injury = null; k.inside = null; k.brk = null; k.pauseUntil = 0; k.proc = tameGen(k, a); k.action = null; Math.random = ${rnd};
     for (const t of ['ents', 'ghosts', 'skels', 'raiders']) if (Array.isArray(Game[t])) Game[t].length = 0;
-    Game.animals = Game.animals.filter(x => x.kind !== 'goose'); }`);   // гусь или нечисть рядом спугнут гномёнка — проверка не о том
+    Game.animals = Game.animals.filter(x => x === a || (x.kind !== 'goose' && x.kind !== 'fox' && x.kind !== 'wolf')); if (Array.isArray(Game.wild)) Game.wild.length = 0; }`);   // гусь, хищник или нечисть рядом спугнут гномёнка или съедят зверька — проверка не о том
   S.runFor(sim, 14, 0.25, () => {});
   h.run('Math.random = __rnd');
   return { owner: h.run('__pet.owner'), inj: h.run(`${kid(2)}.injury`), id: h.run(`${kid(2)}.id`) };

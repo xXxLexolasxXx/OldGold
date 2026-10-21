@@ -1,7 +1,9 @@
 'use strict';
 // Стресс-тест кооп-сервера: N ботов (WebSocket без зависимостей) входят, строят, ходят, болтают, выходят и перезаходят.
-// Запуск:  node server/stress.js [--bots 10] [--secs 60] [--url ws://localhost:8787] [--churn 0.1]
+// Запуск:  node server/stress.js [--bots 10] [--secs 60] [--url ws://localhost:8787] [--churn 0.1] [--grow 300] [--delta 1]
 // Сервер должен быть запущен отдельно (лучше с чистой папкой данных: OLDGOLD_DATA=… PORT=8787 node server/server.js).
+// --grow N: деревня выращивается до N жителей (обучение в школе, цепочки зданий, а недостающих добавляет сервер —
+// для этого он должен быть запущен с OLDGOLD_STRESS=1). --delta 0 — боты как старые клиенты (полный пакет жителей).
 // Метрики сервера (тик, пакеты, память, трафик) берутся с /coop-info?metrics=1 — доступно только с loopback.
 const net = require('net');
 const http = require('http');
@@ -11,9 +13,13 @@ const { URL } = require('url');
 
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
 const N = +arg('bots', 10), SECS = +arg('secs', 60), BASE = arg('url', 'ws://localhost:8787'), CHURN = +arg('churn', 0.1), ZIP = arg('zip', '1') === '1';
+const GROW = +arg('grow', 0), DELTA = arg('delta', '1') === '1';
 const U = new URL(BASE), HOST = U.hostname, PORT = +U.port || 80;
 const MAP_W = 96;
 const TYPES = ['woodcutter', 'quarry', 'farm', 'sawmill', 'mill', 'bakery', 'swine', 'goatpen', 'brewery', 'hopfarm'];
+// производственные цепочки: здания ставятся рядом и соединяются дорогой со складом
+const CHAINS = [['woodcutter', 'sawmill'], ['farm', 'mill', 'bakery'], ['swine', 'butcher'], ['hopfarm', 'brewery'], ['quarry'], ['school'], ['house', 'house']];
+const TRAIN = ['serf', 'serf', 'builder', 'woodcutter', 'farmer', 'carpenter', 'stonemason', 'baker'];
 const CLASSES = ['warrior', 'barbarian', 'mage', 'archer', 'druid', 'rogue', 'monk', 'priest', 'paladin', 'bard'];
 const RUN = crypto.randomBytes(3).toString('hex');
 
@@ -31,6 +37,7 @@ class Bot {
     this.home = [40, 30]; this.inGame = false;
     this.bytesIn = 0; this.msgs = 0; this.uAt = 0; this.gaps = []; this.parseMs = 0; this.joins = 0; this.errors = 0; this.toasts = 0;
     this.byT = {}; this.deltaB = 0; this.deltaW = 0; this.initBytes = 0; this.initMs = 0;
+    this.units = new Map(); this.view = null;
   }
   connect() {
     return new Promise((resolve, reject) => {
@@ -100,13 +107,19 @@ class Bot {
         this.roads = new Set(m.world.road); this.bids = new Set(m.world.buildings.map(b => b.id)); this.objs = m.ob.length;
         const st = m.world.buildings.find(b => b.type === 'storehouse');
         if (st) this.home = [st.x + 2, st.y + 5];
-        this.inGame = true; this.joins++; this.uAt = 0;
+        this.inGame = true; this.joins++; this.uAt = 0; this.units.clear();
+        this.sendView();
         break;
       }
       case 'u': {
         const now = Date.now();
         if (this.uAt) this.gaps.push(now - this.uAt);
         this.uAt = now;
+        // старый формат — полный список; новый (d:1) — изменившиеся, ушедшие (ug) и раз в секунду весь список id
+        if (!m.d) this.units.clear();
+        for (const d of m.units) this.units.set(d.i, [d.x, d.y]);
+        if (m.ug) for (const id of m.ug) this.units.delete(id);
+        if (m.ids) { const keep = new Set(m.ids); for (const id of this.units.keys()) if (!keep.has(id)) this.units.delete(id); }
         break;
       }
       case 'w':
@@ -122,16 +135,34 @@ class Bot {
   }
   async login() {
     await this.connect();
-    this.send({ t: 'auth', nick: this.nick, pass: this.pass, mode: this.registered ? 'login' : 'register', z: ZIP ? 1 : 0 });
+    this.send({ t: 'auth', nick: this.nick, pass: this.pass, mode: this.registered ? 'login' : 'register', z: ZIP ? 1 : 0, d: DELTA ? 1 : 0 });
     this.registered = true;
     for (let k = 0; k < 100 && !this.inGame; k++) await sleep(50);
     return this.inGame;
   }
   rnd(n) { return Math.floor(Math.random() * n); }
+  // камера как у браузера: окно ~30×17 клеток где-то около склада
+  sendView() {
+    const [hx, hy] = this.home, cx = hx + this.rnd(31) - 15, cy = hy + this.rnd(21) - 10;
+    this.view = [cx - 15, cy - 9, cx + 15, cy + 9];
+    this.send({ t: 'view', x0: this.view[0], y0: this.view[1], x1: this.view[2], y1: this.view[3] });
+  }
+  chain() {
+    const [hx, hy] = this.home, ch = CHAINS[this.rnd(CHAINS.length)];
+    let x = hx + this.rnd(37) - 18;
+    const y = hy + this.rnd(29) - 14;
+    for (const type of ch) { this.send({ t: 'build', type, x, y, rot: 0 }); x += 4; }
+    const cells = [];
+    for (let xx = Math.min(x, hx); xx <= Math.max(x, hx); xx++) cells.push([xx, y + 3]);
+    for (let yy = Math.min(y + 3, hy); yy <= Math.max(y + 3, hy); yy++) cells.push([hx, yy]);
+    this.send({ t: 'road', cells });
+  }
   act() {
     if (!this.inGame) return;
     const [hx, hy] = this.home, r = Math.random();
     const near = R => [hx + this.rnd(2 * R + 1) - R, hy + this.rnd(2 * R + 1) - R];
+    if (GROW && r < 0.12) { if (Math.random() < 0.5) this.chain(); else this.send({ t: 'qt', type: TRAIN[this.rnd(TRAIN.length)] }); return; }
+    if (r > 0.97) { this.sendView(); return; }
     if (r < 0.35) { const [x, y] = near(12); this.send({ t: 'go', x, y }); }
     else if (r < 0.55) this.send({ t: 'chat', i: this.rnd(6) });
     else if (r < 0.75) { const [x, y] = near(14); this.send({ t: 'build', type: TYPES[this.rnd(TYPES.length)], x, y, rot: 0 }); }
@@ -166,8 +197,13 @@ const pct = (a, p) => { if (!a.length) return 0; const s = [...a].sort((x, y) =>
     }
   }, 1000);
   const sampT = setInterval(async () => { try { samples.push(await getJson('/coop-info?metrics=1')); } catch (e) { /* ничего */ } }, 5000);
+  // рост деревни: чего не дообучили — досыпает сервер (см. xgrow в server.js), смерти тоже восполняются
+  const growT = GROW && setInterval(() => {
+    const s = samples[samples.length - 1], host = bots.find(b => b.inGame);
+    if (s && host && s.units < GROW) host.send({ t: 'xgrow', n: Math.min(60, GROW - s.units) });
+  }, 5000);
   while (Date.now() < endAt) await sleep(500);
-  clearInterval(actT); clearInterval(churnT); clearInterval(sampT);
+  clearInterval(actT); clearInterval(churnT); clearInterval(sampT); if (growT) clearInterval(growT);
   await sleep(1200);   // доезжают последние перезаходы
   for (const b of bots) if (!b.inGame) { try { await b.login(); } catch (e) { b.errors++; } }
   await sleep(4000);   // тишина: все дельты разошлись, сравниваем состояния
@@ -183,6 +219,20 @@ const pct = (a, p) => { if (!a.length) return 0; const s = [...a].sort((x, y) =>
     const rd = b.roads.size !== dg.roads, bd = myIds !== dg.bids;
     if (rd || bd) { bad++; details.push(`${b.nick}: дороги ${b.roads.size}/${dg.roads}, здания ${b.bids.size}/${dg.buildings}`); }
   }
+  // жители: тот же состав, а положение — не дальше нескольких клеток (дальних сервер шлёт реже, они могут чуть отставать)
+  let badU = 0, farU = 0;
+  const uDetails = [];
+  if (dg && dg.units) {
+    const sv = new Map(dg.units.map(u => [u[0], u]));
+    for (const b of bots) {
+      if (!b.inGame) continue;
+      const miss = [...sv.keys()].filter(id => !b.units.has(id)).length, extra = [...b.units.keys()].filter(id => !sv.has(id)).length;
+      let off = 0;
+      for (const [id, p] of b.units) { const q = sv.get(id); if (q && Math.hypot(q[1] - p[0], q[2] - p[1]) > 6) off++; }
+      farU += off;
+      if (miss || extra) { badU++; uDetails.push(`${b.nick}: жителей ${b.units.size}/${sv.size}, нет ${miss}, лишних ${extra}`); }
+    }
+  }
   const agg = {}; for (const b of bots) for (const k in b.byT) { agg[k] = agg[k] || [0, 0]; agg[k][0] += b.byT[k][0]; agg[k][1] += b.byT[k][1]; }
   console.log('по типам пакетов (на бота/с):', Object.entries(agg).map(([k, v]) => `${k}: ${(v[0] / secs / N).toFixed(1)} шт, ${(v[1] / 1024 / secs / N).toFixed(1)} КБ`).join(' | '));
   const gaps = bots.flatMap(b => b.gaps);
@@ -197,6 +247,19 @@ const pct = (a, p) => { if (!a.length) return 0; const s = [...a].sort((x, y) =>
   console.log(`пики по выборкам: RSS ${peak.rss} МБ, шаг ${peak.step} мс, лаг цикла ${peak.lag} мс, исх. трафик ${peak.kb} КБ/с`);
   console.log(dg ? `состояние сервера: дорог ${dg.roads}, зданий ${dg.buildings}` : 'digest недоступен');
   console.log(bad ? `РАСХОЖДЕНИЕ у ${bad} ботов:\n  ` + details.slice(0, 10).join('\n  ') : 'расхождений нет: дороги и здания у всех ботов совпали с сервером');
+  if (dg && dg.units) console.log(badU ? `РАСХОЖДЕНИЕ жителей у ${badU} ботов:\n  ` + uDetails.slice(0, 10).join('\n  ') : `жители совпали у всех ботов (${dg.units.length}), отстающих дальше 6 клеток: ${farU} на всех`);
+  // утечки: наклон RSS и кучи по второй половине прогона (первая — прогрев и рост деревни)
+  const tail = samples.slice(samples.length >> 1);
+  const slope = k => {
+    if (tail.length < 4) return 0;
+    const n = tail.length, xs = tail.map(s => s.sec / 60), ys = tail.map(s => s[k]);
+    const mx = xs.reduce((a, v) => a + v, 0) / n, my = ys.reduce((a, v) => a + v, 0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) { num += (xs[i] - mx) * (ys[i] - my); den += (xs[i] - mx) ** 2; }
+    return den ? num / den : 0;
+  };
+  const avgKb = tail.length > 1 && tail[0].outBytes !== undefined ? (tail[tail.length - 1].outBytes - tail[0].outBytes) / 1024 / Math.max(1, tail[tail.length - 1].sec - tail[0].sec) : 0;
+  console.log(`вторая половина: исх. трафик в среднем ${avgKb.toFixed(0)} КБ/с, жителей ${tail.length ? tail[tail.length - 1].units : '?'}; память RSS ${slope('rssMB').toFixed(2)} МБ/мин, куча ${slope('heapMB').toFixed(2)} МБ/мин (${tail.length} выборок)`);
   for (const b of bots) b.close();
-  process.exit(bad ? 1 : 0);
+  process.exit(bad || badU ? 1 : 0);
 })();

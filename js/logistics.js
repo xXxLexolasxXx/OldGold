@@ -136,7 +136,9 @@ function dispatchSerfs() {
   const servedComp = (x, y) => { const c = compNear(x, y); return c && withStore.has(c) ? c : storeComp(x, y); };
   const depots = [...Game.buildings, ...Game.piles.values()];
   const compOf = new Map();
-  for (const b of Game.buildings) compOf.set(b, compAt(b.doorX, b.doorY));
+  // стройка, чей вход на обрывке дороги без склада (соединяющая дорога ещё строится), — тоже за ближайшим складом:
+  // раньше она ждала материал по минуте при свободных трудягах (аудит «тупления», сиды 3 и 22)
+  for (const b of Game.buildings) { const c = compAt(b.doorX, b.doorY); compOf.set(b, c && b.state !== 'done' && !withStore.has(c) ? servedComp(b.doorX, b.doorY) : c); }
   // кучки и стройки дорог могут лежать в стороне или примыкать к оторванному куску
   // дороги без склада — тогда их обслуживает сеть ближайшего склада (носят по бездорожью)
   for (const p of Game.piles.values()) compOf.set(p, servedComp(p.x, p.y));
@@ -235,6 +237,13 @@ function dispatchSerfs() {
       }
     }
   }
+}
+
+// стройка на обрывке дороги без склада: материал к ней несут и по траве (как к стройке дороги)
+function siteOffNet(b) {
+  if (!b || b.isPile || b.isRoad || b.state === 'done' || typeof b.isStore !== 'function') return false;
+  const c = compAt(b.doorX, b.doorY);
+  return !!c && !Game.buildings.some(s => s.isStore() && compAt(s.doorX, s.doorY) === c);
 }
 
 // Ближайший склад, где товар g есть в наличии (откуда взять). В отличие от nearestStore, не смотрит на запрет
@@ -348,7 +357,7 @@ function dispatchWorkers() {
     // у здания «потерялась» запись о работнике, а сам гном за ним числится — возвращаем запись, а не ищем замену
     const mine = Game.units.find(u => u.home === b && !u.dead && !u.teamOf && u.type !== 'hero');
     if (mine) { b.worker = mine; continue; }
-    const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf && !u.brk);   // не с перерыва (см. dispatchBuilders)
+    const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf && !u.brk && !u.dead);   // не с перерыва (см. dispatchBuilders)
     const u = takeNearest(idle, b.doorX, b.doorY);
     if (!u) continue;
     u.home = b;
