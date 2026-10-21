@@ -74,7 +74,7 @@ ok(capS.sim.h.run('Game.__mx') <= 1, 'лимит трудяг 1 нарушен: 
     h.run('Game.hero.kickCD = 0');
     ok(/не отошёл/.test(h.run(`wkKick(Game.hero, Game.unitMap.get(${idle}))`)), 'нет кулдауна пинка того же гнома');
   } else console.log('  ⚠ праздных нет — пинок не проверен');
-  const busy = h.run('(Game.units.find(u => u.dlv && !u.brk && wkSelectable(u)) || {}).id');
+  const busy = h.run('(Game.units.find(u => u.dlv && !u.brk && !u.idleFlag && !u.why && wkSelectable(u)) || {}).id');   // везёт и без причины простоя
   if (busy) ok(/при деле/.test(h.run(`wkKick(Game.hero, Game.unitMap.get(${busy}))`)), 'пинок занятого должен отказать');
   // почему стоит: у всех праздных рабочих есть причина
   h.run('wkWhyAll()');

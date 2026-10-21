@@ -254,6 +254,7 @@ function coopCmd(name, msgJson, admin) {
       break;
     }
     case 'trav': if (typeof travCmd === 'function') travCmd(name, m); break;
+    case 'wgs': if (typeof wgsCmd === 'function') wgsCmd(name, m); break;
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
     case 'rsc': if (typeof rscCmd === 'function' && can('council')) rscCmd(name, m); break;
     case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
@@ -584,6 +585,7 @@ function coopMirror() {
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
     dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
     trav: typeof travMirrorOut === 'function' ? travMirrorOut() : null,
+    wgs: typeof wgsMirrorOut === 'function' ? wgsMirrorOut() : null,
     law: typeof lawMirrorOut === 'function' ? lawMirrorOut() : null,
     med: typeof medMirrorOut === 'function' ? medMirrorOut() : null,
     rsc: typeof rscMirrorOut === 'function' ? rscMirrorOut() : null,
@@ -613,30 +615,142 @@ function coopAllObjs() {
 
 const r2 = v => Math.round(v * 100) / 100;
 
-function coopUnitsPacket() {
-  const us = [], now = Game.time;
+// ---------- Пакет жителей: дельта и интерес по камере ----------
+// Раз в рассылку (coopUnitsBuild) все жители и звери сериализуются один раз: готовая строка JSON и подпись
+// (без бегущего таймера действия — вместо него его конец). Новым клиентам (d:1) coopUnitsFor шлёт только записи,
+// чья подпись изменилась с прошлой отправки этому клиенту: у камеры (+COOP_VIEW_PAD клеток) — сразу, дальних —
+// не чаще раза в COOP_FAR с. Ушедших перечисляет ug/ag, а раз в COOP_IDS_EVERY с идёт полный список id (сверка).
+// Тип, внешность и редко меняющееся из ex (семья, облик — COOP_UNIT_STATIC, в sx) шлются, только когда клиент видит
+// жителя впервые или они поменялись (возраст в семье и прочие дробные числа сравниваются с точностью до целого).
+// Зеркало (нечисть, погода…) — так же: списки по записям (ml — изменившиеся, mg — ушедшие, mids — состав;
+// список — любой массив, где у всех записей есть __id, как от coopList),
+// остальное (mo) — по ключам, когда поменялось. Лесных жителей вдали от камеры — реже, как и жителей;
+// птиц, зверушек и прочие украшения — не чаще раза в COOP_DECOR_EVERY с (клиент всё равно доводит их плавно).
+// Старые клиенты получают прежний полный пакет (coopUnitsPacket).
+const COOP_FAR = 2, COOP_IDS_EVERY = 1, COOP_VIEW_PAD = 6, COOP_DECOR_EVERY = 0.4;
+const COOP_MFAR = new Set(['neutrals', 'lairs']), COOP_MDECOR = new Set(['owls', 'bats', 'critters', 'falling', 'wfx']);
+const COOP_UNIT_STATIC = ['fam', 'ap'];
+const coopViews = new Map();      // ник → что этому клиенту уже отправлено
+const coopU = { units: [], animals: [], live: new Set(), aLive: new Set(), uIds: '[]', aIds: '[]', mirObj: {}, ml: {}, mlIds: {}, mo: {}, moV: {}, moOnly: new Set(), time: 0 };
+
+function coopUnitRec(u, now) {
+  const a = u.action;
+  const o = { i: u.id, x: r2(u.x), y: r2(u.y), f: u.face, v: u.vdir, fd: r2(u.food) };
+  if (u.anim) o.a = u.anim;
+  if (a && a.walk && a.path && !(a.block > 0 && !a.squeeze)) o.m = 1;
+  if (a && a.T) o.aT = r2(a.T);
+  if (u.carry) { o.c = u.carry; o.n = u.carryN || 1; }
+  if (u.inside) o.in = u.inside.id;
+  if (u.injury) o.inj = u.injury;
+  if (u.drunkAt || (u.hero && u.hero.drunkUntil > now)) o.dr = 1;
+  if (u.ouchUntil > now) o.ou = 1;
+  let ex = null;
+  for (const k of COOP_UNIT_EX) { const v = u[k]; if (v) (ex || (ex = {}))[k] = coopPlain(v, 1); }
+  if (ex) o.ex = ex;
+  if (u.owner) o.ow = u.owner;
+  if (u.hero && u.owner) { o.hp = Math.round(u.hero.hp); o.mhp = u.hero.maxhp; o.cl = u.hero.clsKey; o.lv = u.hero.level; if (u.hero.title) o.tt = u.hero.title; }
+  return o;
+}
+
+function coopUnitsBuild() {
+  const now = Game.time, units = [], animals = [], live = new Set(), aLive = new Set();
   for (const u of Game.units) {
     if (u.dead) continue;
-    const a = u.action;
-    const o = { i: u.id, t: u.type, x: r2(u.x), y: r2(u.y), f: u.face, v: u.vdir, lk: u.look, fd: r2(u.food) };
-    if (u.anim) o.a = u.anim;
-    if (a && a.walk && a.path && !(a.block > 0 && !a.squeeze)) o.m = 1;
-    if (a && a.T) { o.at = r2(a.t); o.aT = r2(a.T); }
-    if (u.carry) { o.c = u.carry; o.n = u.carryN || 1; }
-    if (u.inside) o.in = u.inside.id;
-    if (u.injury) o.inj = u.injury;
-    if (u.drunkAt || (u.hero && u.hero.drunkUntil > now)) o.dr = 1;
-    if (u.ouchUntil > now) o.ou = 1;
-    let ex = null;
-    for (const k of COOP_UNIT_EX) { const v = u[k]; if (v) (ex || (ex = {}))[k] = coopPlain(v, 1); }
-    if (ex) o.ex = ex;
-    if (u.owner) o.ow = u.owner;
-    if (u.hero && u.owner) { o.hp = Math.round(u.hero.hp); o.mhp = u.hero.maxhp; o.cl = u.hero.clsKey; o.lv = u.hero.level; if (u.hero.title) o.tt = u.hero.title; }
-    us.push(o);
+    const o = coopUnitRec(u, now), a = u.action, at = o.aT !== undefined ? r2(a.t) : undefined;
+    let sx = null, d = o;
+    if (o.ex) for (const k of COOP_UNIT_STATIC) if (o.ex[k] !== undefined) (sx || (sx = {}))[k] = o.ex[k];
+    if (sx) { d = { ...o, ex: { ...o.ex } }; for (const k in sx) delete d.ex[k]; if (!Object.keys(d.ex).length) delete d.ex; }
+    let dyn = JSON.stringify(d), sig = dyn;
+    if (at !== undefined) { sig += '|' + Math.round((now + at) * 10); dyn = dyn.slice(0, -1) + ',"at":' + at + '}'; }
+    const head = '"t":' + JSON.stringify(u.type) + ',"lk":' + JSON.stringify(u.look ?? null);
+    const stat = sx ? head + ',"sx":' + JSON.stringify(sx) : head, statSig = sx ? head + JSON.stringify(sx, (k, v) => typeof v === 'number' ? Math.round(v) : v) : head;
+    units.push({ id: u.id, x: u.x, y: u.y, hero: !!u.owner, o, at, type: u.type, look: u.look, statSig, sig, dyn, full: '{' + stat + ',' + dyn.slice(1) });
+    live.add(u.id);
   }
-  const an = [];
-  for (const a of Game.animals) if (!a.dead) an.push({ i: a.id, k: a.kind, x: r2(a.x), y: r2(a.y), f: a.face, m: a.moving ? 1 : 0, p: r2(a.phase), l: a.loot || undefined, s: a.state });
-  return JSON.stringify({ t: 'u', time: r2(now), units: us, animals: an, mir: coopMirror() });
+  for (const a of Game.animals) {
+    if (a.dead) continue;
+    const s = JSON.stringify({ i: a.id, k: a.kind, x: r2(a.x), y: r2(a.y), f: a.face, m: a.moving ? 1 : 0, p: r2(a.phase), l: a.loot || undefined, s: a.state });
+    animals.push({ id: a.id, x: a.x, y: a.y, s });
+    aLive.add(a.id);
+  }
+  const mo = coopMirror(), ml = {}, mlIds = {};
+  for (const k in mo) {
+    // ключ, хоть раз пришедший не списком, так и шлём целиком — чтобы клиент не путался, откуда его обновлять
+    const list = !coopU.moOnly.has(k) && Array.isArray(mo[k]) && mo[k].every(e => e && e.__id !== undefined);
+    if (!list && Array.isArray(mo[k])) coopU.moOnly.add(k);
+    if (list) {
+      const ids = [];
+      ml[k] = (mo[k] || []).map(e => { ids.push(e.__id); return { id: e.__id, x: e.x, y: e.y, s: JSON.stringify(e), live: null }; });
+      ml[k].live = new Set(ids); mlIds[k] = JSON.stringify(ids);
+    } else {
+      if (mo[k] === undefined && !(k in coopU.mo)) continue;
+      const v = JSON.stringify(mo[k] === undefined ? null : mo[k]);
+      if (coopU.mo[k] !== v) { coopU.mo[k] = v; coopU.moV[k] = (coopU.moV[k] || 0) + 1; }
+    }
+  }
+  Object.assign(coopU, { units, animals, live, aLive, time: now, uIds: JSON.stringify([...live]), aIds: JSON.stringify([...aLive]), mirObj: mo, ml, mlIds });
+}
+
+// Полный пакет — для старых клиентов (без d:1 в auth); перед ним в этой же рассылке должен быть coopUnitsBuild
+function coopUnitsPacket() {
+  const us = coopU.units.map(r => JSON.stringify(Object.assign({ i: r.id, t: r.type, lk: r.look }, r.o, r.at !== undefined ? { at: r.at } : null)));
+  return '{"t":"u","time":' + r2(coopU.time) + ',"units":[' + us.join(',') + '],"animals":[' + coopU.animals.map(r => r.s).join(',') + '],"mir":' + JSON.stringify(coopU.mirObj) + '}';
+}
+
+function coopViewDrop(name) { coopViews.delete(name); }
+
+// Дельта для одного клиента; x0..y1 — клетки, которые он видит (NaN — камеры ещё нет, тогда всё «рядом»)
+function coopUnitsFor(name, x0, y0, x1, y1) {
+  const now = coopU.time, P = COOP_VIEW_PAD, all = !(x1 >= x0 && y1 >= y0);
+  let st = coopViews.get(name);
+  if (!st) coopViews.set(name, st = { u: new Map(), a: new Map(), ml: {}, moV: {}, idsAt: -1e9 });
+  const near = r => all || (r.x >= x0 - P && r.x <= x1 + P && r.y >= y0 - P && r.y <= y1 + P);
+  const us = [], ug = [], an = [], ag = [];
+  for (const r of coopU.units) {
+    const prev = st.u.get(r.id);
+    if (prev && prev.sig === r.sig && prev.stat === r.statSig) continue;
+    if (prev && !r.hero && now - prev.at < COOP_FAR && !near(r)) continue;
+    us.push(prev && prev.stat === r.statSig ? r.dyn : r.full);
+    if (prev) { prev.sig = r.sig; prev.stat = r.statSig; prev.at = now; } else st.u.set(r.id, { sig: r.sig, stat: r.statSig, at: now });
+  }
+  for (const id of st.u.keys()) if (!coopU.live.has(id)) { st.u.delete(id); ug.push(id); }
+  for (const r of coopU.animals) {
+    const prev = st.a.get(r.id);
+    if (prev && prev.s === r.s) continue;
+    if (prev && now - prev.at < COOP_FAR && !near(r)) continue;
+    an.push(r.s);
+    if (prev) { prev.s = r.s; prev.at = now; } else st.a.set(r.id, { s: r.s, at: now });
+  }
+  for (const id of st.a.keys()) if (!coopU.aLive.has(id)) { st.a.delete(id); ag.push(id); }
+  let out = '{"t":"u","d":1,"time":' + r2(now) + ',"units":[' + us.join(',') + '],"animals":[' + an.join(',') + ']';
+  if (ug.length) out += ',"ug":' + JSON.stringify(ug);
+  if (ag.length) out += ',"ag":' + JSON.stringify(ag);
+  const ids = now - st.idsAt >= COOP_IDS_EVERY;
+  if (ids) { st.idsAt = now; out += ',"ids":' + coopU.uIds + ',"aids":' + coopU.aIds; }
+  // зеркало
+  const ml = [], mg = [], mids = [], mo = [];
+  for (const k in coopU.ml) {
+    const L = coopU.ml[k];
+    const seen = st.ml[k] || (st.ml[k] = new Map()), far = COOP_MFAR.has(k), decor = COOP_MDECOR.has(k), ups = [], gone = [];
+    for (const r of L) {
+      const prev = seen.get(r.id);
+      if (prev && prev.s === r.s) continue;
+      if (prev && far && now - prev.at < COOP_FAR && !near(r)) continue;
+      if (prev && decor && now - prev.at < COOP_DECOR_EVERY) continue;
+      ups.push(r.s);
+      if (prev) { prev.s = r.s; prev.at = now; } else seen.set(r.id, { s: r.s, at: now });
+    }
+    for (const id of seen.keys()) if (!L.live.has(id)) { seen.delete(id); gone.push(id); }
+    if (ups.length) ml.push('"' + k + '":[' + ups.join(',') + ']');
+    if (gone.length) mg.push('"' + k + '":' + JSON.stringify(gone));
+    if (ids) mids.push('"' + k + '":' + coopU.mlIds[k]);
+  }
+  for (const k in coopU.mo) if (st.moV[k] !== coopU.moV[k]) { st.moV[k] = coopU.moV[k]; mo.push('"' + k + '":' + coopU.mo[k]); }
+  if (ml.length) out += ',"ml":{' + ml.join(',') + '}';
+  if (mg.length) out += ',"mg":{' + mg.join(',') + '}';
+  if (mids.length) out += ',"mids":{' + mids.join(',') + '}';
+  if (mo.length) out += ',"mo":{' + mo.join(',') + '}';
+  return out + '}';
 }
 
 function coopInitPacket(uid) {

@@ -16,7 +16,7 @@ const N2_RK_SZ = [1, 1, 1.12, 1.22, 1.3, 1.38];
 const N2_TROLLS = { troll: 1, trollS: 1, trollB: 1 };
 const N2_KINDS = { troll: 1, trollS: 1, trollB: 1, armad: 1, goblin: 1, gtSpear: 1, gtBow: 1 };
 const N2_LAIRS = { troll: 1, trollS: 1, trollB: 1, armad: 1, goblin: 1, gnomtaur: 1 };
-const N2_TOP = { troll: 84, trollS: 86, trollB: 82, armad: 34, goblin: 30, gtSpear: 58, gtBow: 58, leshy: 54, fairy: 46, pixie: 46, boar: 38, frost: 50 };
+const N2_TOP = { troll: 84, trollS: 86, trollB: 82, armad: 34, goblin: 30, gtSpear: 58, gtBow: 58, leshy: 64, fairy: 46, pixie: 46, boar: 38, frost: 50 };
 // рост от ранга; тролли растут сдержанно (×1,15 на 5-м ранге), чтобы не перерасти голема
 const n2Sz = N => { const s = N2_RK_SZ[n2Rk(N)]; return N2_TROLLS[N.k] ? 1 + (s - 1) * 0.4 : s; };
 const N2 = { cast: null, fireN: null, mul: 1, sec: 0, rng: null };

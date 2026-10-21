@@ -253,7 +253,7 @@ class Conn {
     if (!this.alive || this.sock.destroyed) return;
     // клиент не успевает читать (в буфере больше 4 МБ) — отключаем, иначе память сервера растёт без предела
     if (this.sock.writableLength > 4 << 20) { this.sock.destroy(); return; }
-    M.bytesOut += f.length; M.msgsOut++;
+    M.bytesOut += f.length; M.msgsOut++; ML.bytes += f.length;
     this.sock.write(f);
   }
   onData(d) {
@@ -294,6 +294,7 @@ class Conn {
     if (this.inGame) {
       stats.leave(this.key);
       const d = call('coopLeave', this.nick);
+      call('coopViewDrop', this.nick);
       if (d) users[this.key].hero = JSON.parse(d);
       saveUsers();
       broadcast({ t: 'toast', text: `${this.nick} покидает деревню` });
@@ -328,11 +329,28 @@ function metricsSnap() {
     unitsPktAvgMs: +(M.uMs / Math.max(1, M.uN || 1)).toFixed(2), unitsPktMaxMs: +M.uMax.toFixed(1),
     worldPktAvgMs: +(M.wMs / Math.max(1, M.wN || 1)).toFixed(2), worldPktMaxMs: +M.wMax.toFixed(1),
     zipMs: +M.zMs.toFixed(0), zipRatio: M.zOut ? +(M.zIn / M.zOut).toFixed(1) : 0, loopLagMaxMs: +M.loopMax.toFixed(1), outKBps: +(M.bytesOut / 1024 / sec).toFixed(1), outMsgsPerSec: +(M.msgsOut / sec).toFixed(1),
-    rssMB: +(mu.rss / 1048576).toFixed(1), heapMB: +(mu.heapUsed / 1048576).toFixed(1),
+    outBytes: M.bytesOut, rssMB: +(mu.rss / 1048576).toFixed(1), heapMB: +(mu.heapUsed / 1048576).toFixed(1),
     units: run('Game.units.length'), buildings: run('Game.buildings.length'),
   };
 }
-function digest() { return JSON.parse(run('JSON.stringify({ roads: World.road.reduce((a, v) => a + v, 0), buildings: Game.buildings.length, bids: Game.buildings.map(b => b.id).sort((a, b) => a - b).join(","), objs: World.obj.filter(Boolean).length })')); }
+function digest() { return JSON.parse(run('JSON.stringify({ roads: World.road.reduce((a, v) => a + v, 0), buildings: Game.buildings.length, bids: Game.buildings.map(b => b.id).sort((a, b) => a - b).join(","), objs: World.obj.filter(Boolean).length, units: Game.units.filter(u => !u.dead).map(u => [u.id, Math.round(u.x * 10) / 10, Math.round(u.y * 10) / 10]) })')); }
+
+// Постоянный журнал нагрузки: раз в минуту строка JSON в metrics.log в папке данных (тик, память, трафик, онлайн)
+const METRICS_LOG = path.join(DATA, 'metrics.log');
+const ML = { bytes: 0, ticks: 0, stepMs: 0, stepMax: 0, loopMax: 0, at: Date.now() };
+setInterval(() => {
+  const now = Date.now(), sec = Math.max(1, (now - ML.at) / 1000), mu = process.memoryUsage();
+  const rec = {
+    at: new Date(now).toISOString(), online: [...conns].filter(c => c.inGame).length, units: run('Game.units.length'),
+    stepAvgMs: +(ML.stepMs / Math.max(1, ML.ticks)).toFixed(2), stepMaxMs: +ML.stepMax.toFixed(1), loopLagMaxMs: +ML.loopMax.toFixed(0),
+    outKBps: +(ML.bytes / 1024 / sec).toFixed(1), rssMB: +(mu.rss / 1048576).toFixed(1), heapMB: +(mu.heapUsed / 1048576).toFixed(1),
+  };
+  Object.assign(ML, { bytes: 0, ticks: 0, stepMs: 0, stepMax: 0, loopMax: 0, at: now });
+  try {
+    if (fs.existsSync(METRICS_LOG) && fs.statSync(METRICS_LOG).size > 5 << 20) fs.renameSync(METRICS_LOG, METRICS_LOG + '.1');   // не больше ~10 МБ на два файла
+    fs.appendFileSync(METRICS_LOG, JSON.stringify(rec) + '\n');
+  } catch (e) { /* журнал необязателен */ }
+}, 60000).unref();
 
 function broadcast(obj, to) {
   const s = typeof obj === 'string' ? obj : JSON.stringify(obj);
@@ -343,10 +361,23 @@ function broadcast(obj, to) {
   }
 }
 
+// Пакет жителей: новым клиентам — своя дельта с учётом их камеры, старым — общий полный пакет
+function sendUnits() {
+  call('coopUnitsBuild');
+  let full = null, fz = null, fp = null;
+  for (const c of conns) {
+    if (!c.inGame) continue;
+    if (c.d) { const v = c.view || [NaN, NaN, NaN, NaN]; c.sendText(call('coopUnitsFor', c.nick, v[0], v[1], v[2], v[3])); continue; }
+    if (!full) full = call('coopUnitsPacket');
+    c.sendFrame(c.z ? fz || (fz = pack(full, true)) : fp || (fp = pack(full, false)));
+  }
+}
+
 // ---------- Сообщения игроков ----------
 function joinWorld(c) {
   const rec = users[c.key];
   const uid = call('coopJoin', c.nick, JSON.stringify(rec.hero));
+  call('coopViewDrop', c.nick);   // дельта жителей для него начинается заново
   c.inGame = true;
   stats.join(c.key, c.nick, { cls: rec.hero && rec.hero.cls, ip: c.ip, ver: c.ver, from: c.origin });
   c.sendText(call('coopInitPacket', uid));
@@ -383,7 +414,7 @@ function onMessage(c, text) {
       try { o.sock.end(); } catch (e) { /* ничего */ }
       o.onClose();
     }
-    c.nick = rec.nick; c.key = key; c.ver = typeof m.ver === 'string' ? m.ver.slice(0, 40) : ''; c.z = m.z === 1;
+    c.nick = rec.nick; c.key = key; c.ver = typeof m.ver === 'string' ? m.ver.slice(0, 40) : ''; c.z = m.z === 1; c.d = m.d === 1; c.view = null;
     if (ADMINS.has(key)) c.isHost = true;
     let token;
     if (m.mode !== 'token') { token = crypto.randomBytes(24).toString('hex'); rec.toks = [...(rec.toks || []).slice(-4), sha(token)]; saveUsers(); }   // запомнить вход на этом устройстве
@@ -499,6 +530,27 @@ function onMessage(c, text) {
     log('права:', m.key, m.on ? 'вкл' : 'выкл');
     return;
   }
+  // стресс-тест: вырастить деревню сразу (только с OLDGOLD_STRESS=1 и только хосту с этого компьютера)
+  if (m.t === 'xgrow') {
+    if (process.env.OLDGOLD_STRESS !== '1' || !c.isHost) return;
+    const n = Math.max(0, Math.min(400, m.n | 0));
+    run(`(function (n) {
+      const st = Game.buildings.find(b => b.type === 'storehouse') || { doorX: MAP_W >> 1, doorY: MAP_H >> 1 };
+      const T = ['serf', 'serf', 'serf', 'builder', 'woodcutter', 'farmer', 'stonemason', 'carpenter'];
+      for (let k = 0, tries = 0; k < n && tries < n * 50; tries++) {
+        const x = st.doorX + Math.floor(Math.random() * 31) - 15, y = st.doorY + Math.floor(Math.random() * 31) - 15;
+        if (!inb(x, y) || !isWalkable(x, y)) continue;
+        spawnUnit(T[k % T.length], x + 0.5, y + 0.5); k++;
+      }
+    })(${n})`);
+    return;
+  }
+  // камера клиента: какие клетки он видит — жителей за пределами шлём реже (интерес-менеджмент)
+  if (m.t === 'view') {
+    const v = [m.x0, m.y0, m.x1, m.y1];
+    if (v.every(Number.isFinite)) c.view = v.map(Math.round);
+    return;
+  }
   // защита от заливания командами (залипшая мышь, кривой клиент): ведро на 60 сообщений, 30 в секунду
   const nowMs = Date.now();
   c.bucket = Math.min(60, (c.bucket ?? 60) + (nowMs - (c.bucketAt || nowMs)) / 1000 * 30);
@@ -512,10 +564,12 @@ function onMessage(c, text) {
 let last = Date.now(), acc = 0, tU = 0, tW = 0, tMe = 0, tSave = Date.now();
 setInterval(() => {
   const now = Date.now();
-  M.loopMax = Math.max(M.loopMax, now - last - 50);
+  M.loopMax = Math.max(M.loopMax, now - last - 50); ML.loopMax = Math.max(ML.loopMax, now - last - 50);
   const dt = Math.min(0.5, (now - last) / 1000);
   last = now;
-  const online = [...conns].some(c => c.inGame);
+  let inGame = 0;
+  for (const c of conns) if (c.inGame) inGame++;
+  const online = inGame > 0;
   if (online || !PAUSE_EMPTY) {
     if (tempo.paused) acc = 0; else acc += dt * COOP_SPEED * tempo.speed;   // в общей деревне время идёт чуть быстрее обычного
     let n = 0;
@@ -524,12 +578,13 @@ setInterval(() => {
       try { host.ctx.step(SIM_DT); } catch (e) { log('ошибка шага:', e.stack); }
       acc -= SIM_DT; n++;
     }
-    if (n) { const ms = (performance.now() - t0) / n; M.ticks += n; M.stepMs += ms * n; M.stepMax = Math.max(M.stepMax, ms); }
+    if (n) { const ms = (performance.now() - t0) / n; M.ticks += n; M.stepMs += ms * n; M.stepMax = Math.max(M.stepMax, ms); ML.ticks += n; ML.stepMs += ms * n; ML.stepMax = Math.max(ML.stepMax, ms); }
     if (n >= 20) acc = 0;
   } else { acc = 0; if (tempo.paused) setPaused(false); }
   if (online) {
     tU += dt; tW += dt; tMe += dt;
-    if (tU >= 0.2) { tU = 0; const t1 = performance.now(); const p = call('coopUnitsPacket'); const ms = performance.now() - t1; M.uN = (M.uN || 0) + 1; M.uMs += ms; M.uMax = Math.max(M.uMax, ms); broadcast(p); }
+    // жители: при большом онлайне чуть реже (клиент всё равно плавно доводит их до последнего снимка)
+    if (tU >= (inGame >= 16 ? 0.3 : 0.2)) { tU = 0; const t1 = performance.now(); sendUnits(); const ms = performance.now() - t1; M.uN = (M.uN || 0) + 1; M.uMs += ms; M.uMax = Math.max(M.uMax, ms); }
     if (tW >= 0.5) { tW = 0; const t1 = performance.now(); const w = call('coopWorldPacket'); const ms = performance.now() - t1; M.wN = (M.wN || 0) + 1; M.wMs += ms; M.wMax = Math.max(M.wMax, ms); if (w) broadcast(w); }
     if (tMe >= 1) { tMe = 0; for (const c of conns) if (c.inGame) { const me = call('coopMeData', c.nick); if (me) c.sendText(me); } }
     const ev = JSON.parse(call('coopDrain'));
