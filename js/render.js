@@ -497,6 +497,7 @@ function drawBuilding(c, b, ghost) {
     c.imageSmoothingEnabled = R.smooth;
     return;
   }
+  if (b._gnd) b._gnd = null;     // достроено — холст земли больше не нужен
   c.drawImage(spr.shadow, ox, oy, spr.w, spr.h);
   c.drawImage(spr.canvas, ox, oy, spr.w, spr.h);
   if (eraFx) eraDrawFx(c, b, spr, ox, oy);
@@ -604,14 +605,26 @@ function siteState(b, spr) {
   return S;
 }
 
-function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
-  c.fillStyle = '#45291a'; c.fillRect(fx + 1, fy + 1, fw - 2, fh - 2);
-  c.fillStyle = '#875434'; c.fillRect(fx + 2, fy + 2, fw - 4, fh - 4);
+// Вскопанная земля под стройкой: сотни крапинок — рисуем один раз в холст здания и дальше кладём картинкой
+function siteGround(b, fw, fh) {
+  const G = b._gnd;
+  if (G && G.width === fw && G.height === fh) return G;
+  const cv = b._gnd = mkCanvas(fw, fh);
+  const g = cv.getContext('2d');
+  g.fillStyle = '#45291a'; g.fillRect(1, 1, fw - 2, fh - 2);
+  g.fillStyle = '#875434'; g.fillRect(2, 2, fw - 4, fh - 4);
   const r = mulberry32(b.id);
   for (let k = 0; k < fw * fh / 30; k++) {
-    c.fillStyle = r() < 0.5 ? '#6e432a' : '#a06840';
-    c.fillRect(fx + 2 + ((r() * (fw - 6)) | 0), fy + 2 + ((r() * (fh - 6)) | 0), 2, 1);
+    g.fillStyle = r() < 0.5 ? '#6e432a' : '#a06840';
+    g.fillRect(2 + ((r() * (fw - 6)) | 0), 2 + ((r() * (fh - 6)) | 0), 2, 1);
   }
+  return cv;
+}
+
+function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
+  c.imageSmoothingEnabled = R.smooth;
+  c.drawImage(siteGround(b, fw, fh), fx, fy);
+  c.imageSmoothingEnabled = true;
   // колышки забиваются по одному на каждый удар разметки
   const stakes = [[fx + 3, fy + 3], [fx + fw - 5, fy + 3], [fx + 3, fy + fh - 5], [fx + fw - 5, fy + fh - 5]];
   const nStakes = b.state === 'site' ? Math.min(4, 1 + b.hits) : 4;
@@ -833,7 +846,7 @@ function render() {
       }
     }
   }
-  for (const s of Game.roadSites.values()) drawRoadSite(c, s);
+  for (const s of Game.roadSites.values()) if (s.x >= x0 - 1 && s.x <= x1 + 1 && s.y >= y0 - 1 && s.y <= y1 + 1) drawRoadSite(c, s);
   drawGamesGround(c, x0, y0, x1, y1);      // чертёж, карты и круг ножичков на земле (games.js)
 
   const list = [];
@@ -892,6 +905,7 @@ function render() {
     list.push([(e.state === 'sleep' || e.k < 0.3) ? Math.floor(e.y) + 0.95 : e.y + 0.05, () => drawEnt(c, e)]);   // спящее — поверх своего ствола, под кронами впереди; гном рядом на той же линии — перед деревом
   }
   for (const p of Game.piles.values()) {
+    if (p.x < x0 - 1 || p.x > x1 + 1 || p.y < y0 - 1 || p.y > y1 + 1) continue;
     list.push([p.y + 0.5, () => drawPile(c, p)]);
   }
   list.sort((a, b) => a[0] - b[0]);
