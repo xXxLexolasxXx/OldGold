@@ -1,7 +1,7 @@
 'use strict';
 // Шпион Малгора — летописец Пим Чернилкин на подъёме к шпилю (js/world/traitor.js)
 I18N.add('en', {
-  // «Что нового» 0.10.99
+  // «Что нового» 0.10.100
   'Предатель в своих': 'A Traitor Among Us',
   'Летописец деревни Пим Чернилкин с первых дней пишет летопись в двух экземплярах. Зачем ему вторая копия, почему вороны Шпиля на него не каркают и почему у него зелёные чернила — ищите намёки в журнале «Лор»': "From day one the village chronicler Pim Inkwell keeps the chronicle in two copies. Why he needs the second copy, why the Spire's ravens never caw at him and why his ink is green — look for hints in the Lore journal",
   'На подъёме к шпилю Пим догоняет отряд, а после второго стража ворон Малгора путает адресата и роняет герою письмо «Агенту П. Ч.». Решать вам: простить или нет (в коопе — голосованием или хостом)': 'On the ascent Pim catches up with the squad, and after the second guardian a raven of Malgor\'s gets the address wrong and drops the hero a letter "To Agent P. I.". It\'s your call: forgive him or not (in co-op — by vote or by the host)',
