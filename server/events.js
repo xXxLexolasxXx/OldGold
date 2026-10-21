@@ -49,6 +49,15 @@ function createEvents(dir, log) {
     return true;
   }
 
+  // удалить клиента по просьбе игрока («Удалить мои данные»), счётчики событий уменьшаются
+  function forget(cid) {
+    const c = CID_RE.test(cid) && db.clients[cid];
+    if (!c) return false;
+    for (const n of Object.keys(c.ev)) if (db.names[n] > 0) db.names[n]--;
+    delete db.clients[cid]; nClients--; dirty = true; save();
+    return true;
+  }
+
   // обработчик HTTP; возвращает true, если запрос его
   function handle(req, res, ip) {
     if (!/^\/e(\?|$)/.test(req.url || '')) return false;
@@ -85,7 +94,7 @@ function createEvents(dir, log) {
     return L.join('\n');
   }
 
-  return { handle, summary, printSummary, save };
+  return { handle, summary, printSummary, save, forget };
 }
 
 module.exports = { createEvents };

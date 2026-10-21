@@ -49,8 +49,9 @@ const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
   if (p.status !== 0 && !r.fails.length) r.fails.push(out.trim().slice(0, 500) || 'код выхода ' + p.status);
 });
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
-scriptTest('server: раздача файлов, /err, /e, /stats', 'server-test.js');
+scriptTest('server: раздача файлов, /err, /e, /report, /stats', 'server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
+scriptTest('telemetry: «Сообщить о проблеме», удаление по id', 'telemetry-test.js');
 scriptTest('neutrals2: ранги и новые народы леса, сейв', 'neutrals2-test.js');
 scriptTest('wildlife: живность по биомам и дням, меньше фей, потолки на экран, сейв', 'wildlife-test.js');
 scriptTest('frogfolk: жаболюды — поселения у воды, касты, прыжок, влажность, яд, зима, сейв', 'frogfolk-test.js');
