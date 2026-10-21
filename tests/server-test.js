@@ -80,21 +80,7 @@ function req(port, method, p, body) {
       const net = require('net');
       const sk = net.connect(port, '127.0.0.1');
       await new Promise(r => sk.once('connect', r));
-      sk.write(`GET / HTTP/1.1
-
-Host: x
-
-Upgrade: websocket
-
-Connection: Upgrade
-
-Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
-
-Sec-WebSocket-Version: 13
-
-
-
-`);
+      sk.write(['GET / HTTP/1.1', 'Host: x', 'Upgrade: websocket', 'Connection: Upgrade', 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==', 'Sec-WebSocket-Version: 13', '', ''].join(String.fromCharCode(13, 10)));
       await new Promise(r => sk.once('data', r));
       const n1 = JSON.parse((await req(port, 'GET', '/coop-info?metrics=1')).body).conns;
       sk.destroy();
