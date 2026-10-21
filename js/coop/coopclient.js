@@ -269,7 +269,7 @@ function coopDropBuilding(b) {
   if (k >= 0) Game.buildings.splice(k, 1);
 }
 
-const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx', 'wild', 'swp'];
+const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx', 'swp', 'wild'];
 const COOP_UNIT_STATIC = ['fam', 'ap'];   // как на сервере (coopsim.js)
 const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp', 'bah'];
 
