@@ -141,6 +141,7 @@ function* deliverGen(u, from, to, g, n = 1) {
   if (u.dlv) u.dlv.n = n;
   if (from.isPile) cleanupPile(from);
   if (!n) return;
+  if (from.isPile) floater(u.x, u.y - 1.6, `Подобрано: ${GOODS[g].name.toLowerCase()}${n > 1 ? ' ×' + n : ''}`, '#d8f0a8', g);   // новичок видит, что это за вещь на земле
   if (!isStoreB(from)) yield { wait: 0.5 };
   u.carry = g; u.carryN = n;
   for (let tries = 0; tries < 3; tries++) {
