@@ -12,7 +12,7 @@
 UNIT_TYPES.lamplighter = { name: 'Фонарщик', shirt: '#3a4466', noTrain: true };
 
 const AS_LAMP = {
-  name: 'Ойвин Фитиль', r: 5.5, hp: 70,
+  name: 'Ойвин Фитиль', r: 5.5, hp: 120,
   story: 'Последний из рода фонарщиков подгорья. Его прадед зажёг Лампу предков в ту ночь, когда Малгор впервые погасил звёзды. Лампа горит без масла, пока помнят имена павших, — и Малгор очень хочет, чтобы их забыли.',
   hello: 'Ты к шпилю? Без света там пропадёшь. Я — Ойвин Фитиль, и Лампа предков со мной.',
   dark: ['Тьма густеет! Держитесь ближе к лампе!', 'Не отходи от света, там тебя не видно даже мне.', 'Прадед говорил: тьма боится тех, кто поёт. Пой!'],
@@ -27,6 +27,7 @@ const AS_PRIS_CLS = ['warrior', 'archer', 'warrior', 'rogue'];
 
 const asT = () => { const T = gdT(); return T && !T.none ? T : null; };
 const asLamp = () => Game.units.find(u => u.lamp && !u.dead) || null;
+const asLampOn = () => { const T = asT(); return T && T.as && T.as.lamp === 'go' ? asLamp() : null; };     // в отряде: нечисть его видит
 const asFreed = () => Game.units.filter(u => u.freed && !u.dead);
 const asSay = (u, text, col) => floater(u.x, u.y - 2.3, text, col || '#ffe8b0');
 function asLeader(x, y, r) {
@@ -41,8 +42,9 @@ function asSetup(T) {
   if (T.as) return;
   T.as = { lamp: 'wait', dark: 0, cages: [], deals: [], wk: {}, proud: 0, dq: -1, saved: 0 };
   const A = T.as;
-  // пост фонарщика: снаружи внешних врат, со стороны деревни
-  const post = gdSpot(T.cx + Math.cos(T.a0) * (T.r[0] + 6), T.cy + Math.sin(T.a0) * (T.r[0] + 6), 4);
+  T.pw = A.pw = +asPow().toFixed(3);
+  // пост фонарщика: снаружи внешних врат, со стороны деревни, подальше от первого стража
+  const post = gdSpot(T.cx + Math.cos(T.a0) * (T.r[0] + 12), T.cy + Math.sin(T.a0) * (T.r[0] + 12), 4);
   if (post) {
     const u = spawnUnit('lamplighter', post[0], post[1]);
     asMakeLamp(u, AS_LAMP.hp);
@@ -54,6 +56,21 @@ function asSetup(T) {
     const p = gdSpot(T.cx + Math.cos(a) * rad, T.cy + Math.sin(a) * rad, 3);
     if (p) A.cages.push({ i, p, n: i >= 3 ? 3 : 2, open: 0 });
   }
+}
+// Баланс (tests/spire-balance.js): сила подъёма по уровню героев у шпиля. Герой 5 ур. — ×0,87, герой 12 ур. — ×1,08,
+// потолок ×1,1. Множит урон нечисти на ярусах; здоровье стражей и Малгора не трогает (их держит отряд).
+function asPow() {
+  const T = gdT();
+  if (T && T.pw) return T.pw;
+  let L = 0;
+  for (const u of Game.units) if (u.hero && !u.dead) L = Math.max(L, u.hero.level || 1);
+  return Math.max(0.75, Math.min(1.1, 0.72 + 0.03 * (L || 5)));
+}
+// где очнётся павший герой: у последних открытых врат, а не в деревне (контрольная точка подъёма)
+function asCheckpoint(T) {
+  const i = Math.min(T.open, T.n - 1), h = T.homes[i];
+  const rad = Math.min(T.r[0] + 6, (h ? Math.hypot(h[0] - T.cx, h[1] - T.cy) : 6) + 7);
+  return gdSpot(T.cx + Math.cos(T.a0) * rad, T.cy + Math.sin(T.a0) * rad, 4);
 }
 function asMakeLamp(u, hp) {
   u.lamp = 1; u.lampR = AS_LAMP.r; u.lampHp = hp; u.lampMax = Math.round(AS_LAMP.hp * (0.7 + 0.3 * gdDiff()));
@@ -67,7 +84,9 @@ function* asLampGen(u) {
   const T = asT(), F = Game.foe;
   if (!T || !F || F.defeated) {                                  // шпиль погас: прощается и уходит домой
     if (!u._bye) { u._bye = 1; asSay(u, AS_LAMP.win); }
-    yield { wait: 1 };
+    yield { wait: 4 };
+    if (T && T.as.lamp === 'go') T.as.lamp = 'home';
+    const lost = Game.lostGnomes; removeUnit(u); Game.lostGnomes = lost;     // ушёл домой, а не погиб
     return;
   }
   const A = T.as, h = asLeader(u.x, u.y, A.lamp === 'go' ? 40 : 9);
@@ -85,10 +104,21 @@ function* asLampGen(u) {
     yield { wait: 1.5 };
   }
   if (T.ecl > 0.55 && Game.time - (u._sayT || -99) > 30) { u._sayT = Game.time; asSay(u, AS_LAMP.dark[(Math.random() * AS_LAMP.dark.length) | 0]); }
+  // враг вплотную — отступает от него, но так, чтобы свет доставал до героя
+  let fo = null, fd = 3.2;
+  for (const N of Game.raiders) if (foeLive(N) && N.k !== 'ftower') { const dd = Math.hypot(N.x - u.x, N.y - u.y); if (dd < fd) { fd = dd; fo = N; } }
+  if (fo && fd < 2.6 && Game.time > (u.flareT || 0)) { asFlare(u); yield { wait: 0.6, anim: 'build' }; return; }
+  if (fo) {
+    const k = 3.4 / (fd || 1), bx = u.x + (u.x - fo.x) * k, by = u.y + (u.y - fo.y) * k;
+    if (Math.hypot(bx - h.x, by - h.y) < AS_LAMP.r + 1.5) {
+      const s = randomFreeNear(Math.floor(bx), Math.floor(by), 0, 1, (x, y) => isWalkable(x, y) && !World.door[idx(x, y)]);
+      if (s) { yield { walk: s, offroad: true }; return; }
+    }
+  }
   const d = Math.hypot(u.x - h.x, u.y - h.y);
-  if (d > 3) {
+  if (d > 3.5) {
     // встаёт чуть позади героя (со стороны деревни), чтобы светить и не лезть под удар
-    const bx = h.x + Math.cos(T.a0) * 1.6, by = h.y + Math.sin(T.a0) * 1.6;
+    const bx = h.x + Math.cos(T.a0) * 2.4, by = h.y + Math.sin(T.a0) * 2.4;
     const s = randomFreeNear(Math.floor(bx), Math.floor(by), 0, 2, (x, y) => isWalkable(x, y) && !World.door[idx(x, y)]);
     if (s) { const ok = yield { walk: s, offroad: true }; if (!ok) yield { wait: 0.6 }; return; }
   }
@@ -96,7 +126,26 @@ function* asLampGen(u) {
   yield { wait: 0.6 };
 }
 
+// «Вспышка лампы»: раз в 8 с, когда враг вплотную — слепит и отбрасывает всех рядом (кроме самого Малгора)
+function asFlare(u) {
+  u.flareT = Game.time + 8;
+  asSay(u, 'Вспышка лампы!', '#fff2a0');
+  (Game.asFx = Game.asFx || []).push({ k: 'flare', x: u.x, y: u.y, t0: Game.time });
+  sfxAt('chime', u.x * TILE, u.y * TILE, 0.9);
+  for (const N of Game.raiders) {
+    if (!foeLive(N) || N.k === 'ftower' || N.k === 'malgor' || N.inv) continue;
+    const d = Math.hypot(N.x - u.x, N.y - u.y);
+    if (d > 3.2) continue;
+    foeHit(N, null, 6);
+    if (!foeLive(N)) continue;
+    N.tg = 0; N.prov = -99; N.cdA = Math.max(N.cdA, 1.6); N.scan = 1.6;
+    if (N.gi == null) { const k = 1.6 / (d || 1), nx = N.x + (N.x - u.x) * k, ny = N.y + (N.y - u.y) * k; if (rdOk(N, nx, ny)) { N.x = nx; N.y = ny; } }
+  }
+}
+
 function asLampHurt(u, n) {
+  if (!Game.foe || Game.foe.defeated) return;
+  n *= 0.5;                                                       // Лампа предков бережёт хозяина: половина удара уходит в свет
   u.lampHp -= n;
   u.ouchUntil = Game.time + 0.5; u.lampHurtT = Game.time;
   floater(u.x, u.y - 1.8, '−' + Math.max(1, Math.round(n)), '#ff8a70');
@@ -276,7 +325,7 @@ function asEpilogue() {
     if (A.deals.some(d => d.w === 'pris')) out.push(['grum', 'Пленных мы спасли, а потом отдали. Это как построить мост и продать его на дрова. Не повторять.']);
   }
   if (A.lamp === 'dead') out.push(['note', `Лампу предков нашли у врат, холодную. ${AS_LAMP.name} не вернулся, но каждый вечер кто-нибудь ставит у ворот свечу — в его честь.`]);
-  else if (A.lamp === 'go') out.push(['note', `${AS_LAMP.name} повесил Лампу предков над воротами деревни. С тех пор там никогда не бывает совсем темно.`]);
+  else if (A.lamp === 'go' || A.lamp === 'home') out.push(['note', `${AS_LAMP.name} повесил Лампу предков над воротами деревни. С тех пор там никогда не бывает совсем темно.`]);
   if (A.saved) {
     const alive = asFreed().length;
     out.push(['note', alive ? `Из клеток шпиля спасено гномов: ${A.saved}. Домой вернулись ${alive} — и первым делом потребовали пива.` : `Из клеток шпиля спасено гномов: ${A.saved}, но домой не вернулся никто. Их имена вырезали на воротах.`]);
@@ -298,8 +347,16 @@ function asTick(dt) {
     return;
   }
   const L = asLamp();
-  if (L && L.lampHp < L.lampMax && Game.time - (L.lampHurtT || -99) > 6) L.lampHp = Math.min(L.lampMax, L.lampHp + 0.5);
+  if (L && L.lampHp < L.lampMax && Game.time - (L.lampHurtT || -99) > 5) L.lampHp = Math.min(L.lampMax, L.lampHp + 0.5);       // 2 HP/с
   if (L && Game.raiders.some(N => N.k === 'malgor' && N.woke && foeLive(N)) && !A.bossSaid) { A.bossSaid = 1; asSay(L, AS_LAMP.boss); }
+  // большой отряд — страж и Малгор крепче: +35% здоровья за каждого бойца сверх трёх, не больше ×2 (один раз, когда проснулся)
+  for (const N of Game.raiders) {
+    if (N._ps || !N.woke || !foeLive(N) || (N.gi == null && N.k !== 'malgor')) continue;
+    let n = 0;
+    for (const u of Game.units) if (!u.dead && !u.inside && (u.hero || u.rec) && Math.hypot(u.x - N.x, u.y - N.y) < 18) n++;
+    N._ps = Math.min(2, 1 + 0.35 * Math.max(0, n - 3));
+    if (N._ps > 1) { N.mhp = Math.round(N.mhp * N._ps); N.hp = Math.round(N.hp * N._ps); if (N.k === 'malgor') Game.foe.bossHp = N.hp; }
+  }
   // клетки: открываются, когда рядом герой, а ярус уже открыт
   for (const cg of A.cages) {
     if (cg.open || T.open < cg.i) continue;
@@ -307,18 +364,47 @@ function asTick(dt) {
     if (h) asFree(cg, h);
   }
   if (A.dq >= 0 && !(Game.dil && Game.dil.cur)) asDealTry(A.dq);
+  // эхо помнит каждого павшего один раз: герой, упавший пять раз, — одна тень, а не пять
+  if (T.fallen.length > 1) { const seen = new Set(); T.fallen = T.fallen.filter(f => { const k = f.k + '|' + f.n; if (seen.has(k)) return false; seen.add(k); return true; }); }
 }
 
 // ---------- Подключение ----------
 
 {
   const _gb = gdBuild;
-  gdBuild = function (F) { const had = F.tiers; const T = _gb(F); if (!had && T && !T.none) asSetup(T); return T; };
+  gdBuild = function (F) {
+    const had = F.tiers;
+    if (had) return _gb(F);
+    Game._asLoad = { pw: +asPow().toFixed(3), wk: {} };          // стражи появляются внутри gdBuild — сила подъёма нужна уже там
+    let T;
+    try { T = _gb(F); } finally { Game._asLoad = null; }
+    if (T && !T.none) asSetup(T);
+    return T;
+  };
   const _sg = gdSpawnGuard;
   gdSpawnGuard = function (F, i, hp) {
-    const N = _sg(F, i, hp), w = F.tiers.as && F.tiers.as.wk[i];
+    const A = F.tiers.as || Game._asLoad, N = _sg(F, i, hp), w = A && A.wk[i];      // при загрузке T.as ещё не восстановлен
     if (w) { N.mhp = Math.round(N.mhp * w); N.hp = Math.min(N.hp, N.mhp); }
     return N;
+  };
+  // страж без противника лечится вчетверо медленнее (5 HP/с): павший герой успевает вернуться от врат
+  for (const k of GD_ORDER) {
+    const S = FSPEC['g_' + k], ai = S.ai;
+    S.ai = function (N, dt) { const h0 = N.hp; ai(N, dt); if (N.hp > h0 && !N.tg) N.hp = h0 + (N.hp - h0) * 0.25; };
+  }
+  const _sm = foeStrikeMul;
+  foeStrikeMul = function (N, tg) { const m = _sm(N, tg), T = asT(); return m !== 1 && T && T.pw ? m * T.pw : m; };
+  const _hr = hlRespawn;
+  hlRespawn = function (u, why) {
+    const T = asT(), inA = T && !Game.foe.defeated && Math.hypot(u.x - T.cx, u.y - T.cy) < T.r[0] + 8;
+    _hr(u, why);
+    if (!inA) return;
+    const p = asCheckpoint(T);
+    if (!p) return;
+    u.x = p[0]; u.y = p[1]; u.path = null;
+    const L = asLamp();
+    floater(u.x, u.y - 2, L ? 'Ойвин вытащил меня к вратам…' : 'Очнулся у врат…', '#ffe0b0');
+    toast(L ? `${AS_LAMP.name} вытащил героя к последним открытым вратам. Ещё попытка!` : 'Герой очнулся у последних открытых врат. Ещё попытка!');
   };
   const _gd = gdGuardDown;
   gdGuardDown = function (N, killer) {
@@ -333,27 +419,30 @@ function asTick(dt) {
   foeSpawnBoss = function (F) {
     const had = F.boss;
     _sb(F);
-    const T = F.tiers, n = T && T.as ? T.as.deals.length : 0;
-    if (F.boss && F.boss !== had && n) { const m = 1 + 0.1 * n; F.boss.mhp = Math.round(F.boss.mhp * m); F.boss.hp = Math.min(F.boss.mhp, Math.round(F.boss.hp * m)); }
+    const A = F.tiers && F.tiers.as, B = F.boss;
+    if (!A || !B || B === had) return;
+    if (!A.bm) { A.bm = +(1 + 0.1 * A.deals.length).toFixed(3); B.hp = Math.round(B.hp * A.bm); }   // первый выход: здоровье по силе и сделкам
+    B.mhp = Math.round(FSPEC.malgor.mhp * A.bm); B.hp = Math.min(B.hp, B.mhp); F.bossHp = B.hp;
   };
-  // нечисть выбирает фонарщика целью первым
+  // стражи видят фонарщика, только когда он в отряде; прислужники и эхо выбирают его целью первым
   gdTargetNear = function (N, x, y, r) {
     let best = null, bd = r;
+    const L = asLampOn();
     for (const u of Game.units) {
-      if (u.dead || u.inside || !isPerson(u) || neuUnitOut(u) || !(u.hero || u.rec || u.freed || u.lamp)) continue;
-      const d = Math.hypot(u.x - x, u.y - y) * (u.lamp ? 0.6 : 1);
+      if (u.dead || u.inside || !isPerson(u) || neuUnitOut(u) || !(u.hero || u.rec || u.freed || u.lamp && u === L)) continue;
+      const d = Math.hypot(u.x - x, u.y - y);
       if (d < bd) { bd = d; best = u; }
     }
     return best;
   };
   const _ft = foeTargetNear;
   foeTargetNear = function (N, r) {
-    const b = _ft(N, r), L = asLamp();
-    if (!L || L.inside) return b;
+    const b = _ft(N, r), L = asLampOn();
+    if (!L || L.inside || N.k === 'malgor') return b;
     const dl = Math.hypot(L.x - N.x, L.y - N.y);
     if (dl > r * 0.9) return b;
     const db = b ? Math.hypot(b.x - N.x, b.y - N.y) * (b.hero || b.rec ? 0.75 : 1) : 1e9;
-    return dl * 0.55 < db ? L : b;
+    return dl * 0.7 < db ? L : b;
   };
   const _fs = foeStrike;
   foeStrike = function (N, tg) {
@@ -367,7 +456,7 @@ function asTick(dt) {
   };
   const _hu = neuHurtUnit;
   neuHurtUnit = function (u, n) {
-    if (u && u.lamp && !u.dead) { asLampHurt(u, n); return; }
+    if (u && u.lamp && !u.dead) { asLampHurt(u, n * 0.6); return; }            // от кругов на земле фонарщик успевает отпрыгнуть
     _hu(u, n);
     if (u && u.freed && u.rec && u.rec.hp <= 0 && !u.dead && asT()) asFreedFall(u);
   };
@@ -446,9 +535,10 @@ function asTick(dt) {
   };
   const _apply = applySave;
   applySave = function (s) {
-    _apply(s);
+    Game._asLoad = s.fo && s.fo.tr && s.fo.tr.as || null;
+    try { _apply(s); } finally { Game._asLoad = null; }
     const T = asT(), o = s.fo && s.fo.tr && s.fo.tr.as;
-    if (T && o) { T.as = Object.assign({ lamp: 'none', dark: 0, cages: [], deals: [], wk: {}, proud: 0, dq: -1, saved: 0 }, JSON.parse(JSON.stringify(o))); T.dark = T.as.dark || 0; }
+    if (T && o) { T.as = Object.assign({ lamp: 'none', dark: 0, cages: [], deals: [], wk: {}, proud: 0, dq: -1, saved: 0 }, JSON.parse(JSON.stringify(o))); T.dark = T.as.dark || 0; T.pw = T.as.pw || 0; }
     (s.units || []).forEach((d, k) => {
       const u = Game.units[k];
       if (!u) return;
@@ -470,7 +560,7 @@ function asTick(dt) {
     }
     const fx = Game.asFx || [];
     for (let i = fx.length - 1; i >= 0; i--) if (Game.time - fx[i].t0 > 1.6) fx.splice(i, 1);
-    for (const f of fx) list.push([f.y, () => asDrawLampFall(c, f)]);
+    for (const f of fx) list.push([f.y, () => f.k === 'flare' ? asDrawFlare(c, f) : asDrawLampFall(c, f)]);
   };
 }
 
@@ -511,6 +601,15 @@ function asDrawLampFall(c, f) {
   const fl = [4, 3, 3, 2, 1, 0][k];
   if (fl) asFp(c, -1, 3 - fl, 3, fl, '#ffd070');
   if (k >= 3) { c.globalAlpha *= 0.5; asFp(c, -1 + k - 3, -8 - (k - 3) * 3, 2, 2, '#8a8090'); asFp(c, -2, -12 - (k - 3) * 3, 2, 2, '#6a6070'); }
+  c.restore();
+}
+function asDrawFlare(c, f) {                                    // вспышка: 6 кадров, кольцо света расходится и гаснет
+  const k = Math.min(5, Math.floor((Game.time - f.t0) / 0.08)), px = f.x * TILE, py = f.y * TILE - 16, r = 8 + k * 9;
+  c.save(); c.globalCompositeOperation = 'lighter';
+  c.strokeStyle = `rgba(255,236,160,${0.8 - k * 0.13})`; c.lineWidth = 3 - k * 0.4;
+  c.beginPath(); c.ellipse(px, py + 14, r, r * 0.6, 0, 0, 7); c.stroke();
+  const g = c.createRadialGradient(px, py, 0, px, py, r); g.addColorStop(0, `rgba(255,240,190,${0.6 - k * 0.1})`); g.addColorStop(1, 'rgba(255,220,140,0)');
+  c.fillStyle = g; c.fillRect(px - r, py - r, r * 2, r * 2);
   c.restore();
 }
 function asDrawCage(c, cg) {

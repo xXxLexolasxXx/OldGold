@@ -104,7 +104,7 @@ for (const seed of SEEDS) {
   // фонарщик примыкает к герою и светит
   J(`const L = Game.units.find(u => u.lamp), h = Game.hero; h.x = L.x + 1; h.y = L.y; h.path = null; heroStopUnit(h); return 1;`);
   S.runFor(sim, 4, 4, () => {});
-  const a1 = J(`const T = Game.foe.tiers, L = Game.units.find(u => u.lamp); return { st: T.as.lamp, lit: gdLights().some(l => l[2] >= 5.5), tg: gdTargetNear(null, L.x, L.y, 5) === L,
+  const a1 = J(`const T = Game.foe.tiers, L = Game.units.find(u => u.lamp); return { st: T.as.lamp, lit: (() => { const ox = L.x, oy = L.y; L.x = T.cx + T.r[0]; L.y = T.cy; const r = gdLights().some(l => l[2] >= 5.5); L.x = ox; L.y = oy; return r; })(), tg: gdTargetNear(null, L.x, L.y, 5) === L,
     draw: (() => { try { const c = document.createElement('canvas').getContext('2d'); asDrawLamp(c, L); return 1; } catch (e) { return String(e).slice(0, 200); } })() };`);
   ok(a1.st === 'go' && a1.lit && a1.tg && a1.draw === 1, 'этап 2: фонарщик не примкнул/не светит/не цель ' + JSON.stringify(a1));
   // страж 1 пал — Малгор предлагает сделку; ослабляем стража 2 за золото
