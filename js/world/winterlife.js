@@ -106,10 +106,61 @@ function* snowmanGen(u) {
   yield { wait: 1.4 };
 }
 
+
+// ---------- Берег и страховка от застревания ----------
+
+// Ближайшая проходимая клетка суши; reg — нужная связная область (0 — любая)
+function wfxLandNear(cx, cy, reg) {
+  pfRegions();
+  for (let r = 0; r <= 26; r++) {
+    let best = null, bd = 1e9;
+    for (let y = cy - r; y <= cy + r; y++) for (let x = cx - r; x <= cx + r; x++) {
+      if (Math.max(Math.abs(x - cx), Math.abs(y - cy)) !== r) continue;
+      if (!inb(x, y) || !isWalkable(x, y) || World.door[idx(x, y)] || World.road[idx(x, y)] === 2) continue;
+      if (reg && PF.reg[idx(x, y)] !== reg) continue;
+      const d = Math.hypot(x - cx, y - cy);
+      if (d < bd) { bd = d; best = [x, y]; }
+    }
+    if (best) return best;
+  }
+  return null;
+}
+function wfxRegOf(p) { pfRegions(); const t = p && inb(p[0], p[1]) ? wfxLandNear(p[0], p[1], 0) : null; return t ? PF.reg[idx(t[0], t[1])] : 0; }
+function wfxPlace(u, s) { u.x = s[0] + 0.5; u.y = s[1] + 0.5; u.fun = null; if (u.proc) { u.proc = null; u.action = null; } }
+
+function wfxStrandCheck(S, step) {
+  for (const u of Game.units) {
+    if (u.dead || u.inside || !isPerson(u)) continue;
+    const x = Math.floor(u.x), y = Math.floor(u.y);
+    if (!inb(x, y)) continue;
+    const hb = u.home && !u.home.removed ? u.home : null;
+    const ref = u.skateHome || (hb && hb.doorX != null ? [hb.doorX, hb.doorY] : null);
+    if (World.terrain[idx(x, y)] === T_WATER) {
+      if (u.fun && u.fun.k === 'skate' && u.fun.until > Game.time) continue;
+      if (u.type === 'hero' && S.ice > 0.5) continue;      // герой может стоять на толстом льду
+      const reg = ref ? wfxRegOf(ref) : 0;
+      const s = wfxLandNear(x, y, reg) || wfxLandNear(x, y, 0);
+      if (s) wfxPlace(u, s);
+      continue;
+    }
+    // уже на суше, но не там: берег за рекой без пути назад — домой, не ждать весны
+    if (!ref || u.type === 'hero' || (u.fun && u.fun.k === 'skate' && u.fun.until > Game.time)) { u.strandT = 0; continue; }
+    const reg = wfxRegOf(ref), here = PF.reg[idx(x, y)];
+    if (!reg || !here || here === reg) { u.strandT = 0; if (here === reg) u.skateHome = null; continue; }
+    u.strandT = (u.strandT || 0) + step;
+    if (u.strandT > (u.skateHome ? 3 : 12)) {
+      const s = wfxLandNear(ref[0], ref[1], reg);
+      u.strandT = 0; u.skateHome = null;
+      if (s) { wfxPlace(u, s); fxBurst(u.x * TILE, u.y * TILE, 6, ['#ffffff', '#cfe8ff'], 20, 10, 0.4, 1, 60); }
+    }
+  }
+}
+
 function* skateGen(u, shore) {
   if (!(yield* toShore(u, shore))) return;
   const [sx, sy] = shore.stand, [dx, dy] = shore.dir, n = Math.min(shore.water, 7) - 0.6;
   const px = -dy, py = dx;           // поперёк движения
+  u.skateHome = [sx, sy];            // свой берег: если катание оборвут, вернём именно сюда, а не на чужой
   floater(u.x, u.y - 1.4, 'На каток!', '#cfeaff');
   yield { wait: 0.5, anim: 'duck' };
   for (let lap = 0; lap < 2 + ((Math.random() * 2) | 0); lap++) {
@@ -128,8 +179,127 @@ function* skateGen(u, shore) {
     }
     if (Math.random() < 0.3) { floater(u.x, u.y - 1.4, 'Ух ты!', '#cfeaff'); u.gest = 'fist'; u.gestUntil = Game.time + 1; }
   }
-  u.x = sx + 0.5; u.y = sy + 0.5; u.fun = null;
+  u.x = sx + 0.5; u.y = sy + 0.5; u.fun = null; u.skateHome = null;
   yield { wait: 0.6 };
+}
+
+
+// ---------- Герой на коньках ----------
+// Лёд (S.ice > 0.8) держит героя: клик по замёрзшей воде или за рекой — он катится напрямик, втрое быстрее шага.
+// Остальные гномы по воде сами не ходят (isWalkable не меняем), поэтому путь героя считаем отдельной заливкой.
+
+const HERO_SKATE_SPEED = 3.6, HERO_SKATE_FRAMES = 5;
+Object.assign(SFX_DEF, { iceglide: { pri: 0, gain: 0.32, poly: 2, cd: 0.28, len: 0.5 } });
+Object.assign(SFX, {
+  // шшшик: лезвие по льду — полоса шума с уходящей вниз частотой и тонкий звон
+  iceglide: (d, t, v) => {
+    noiseHit(d, 'bandpass', 3400 + v * 900, 1500, 2.2, t, 0.36, 0.2, 0.03);
+    tone(d, 'triangle', 2100 + v * 400, 1500, t, 0.18, 0.04, 0.01);
+  },
+});
+
+function wfxIceOk() { const S = SEA(); return S.ice > 0.8 && !isMirror(); }
+function wfxIceTile(x, y) { return inb(x, y) && World.terrain[idx(x, y)] === T_WATER && !World.bmap[idx(x, y)]; }
+function wfxSkatable(x, y) { return inb(x, y) && (wfxIceTile(x, y) || isWalkable(x, y)); }
+
+// Путь по суше и льду (8 направлений без срезания углов); null — не добраться
+function wfxIcePath(sx, sy, tx, ty, cap) {
+  if (!wfxSkatable(tx, ty) || !wfxSkatable(sx, sy)) return null;
+  const from = new Map(), q = [idx(sx, sy)];
+  from.set(q[0], -1);
+  const goal = idx(tx, ty);
+  for (let h = 0; h < q.length && h < cap; h++) {
+    const c = q[h];
+    if (c === goal) break;
+    const cx = c % MAP_W, cy = (c / MAP_W) | 0;
+    for (let k = 0; k < 8; k++) {
+      const nx = cx + DX8[k], ny = cy + DY8[k];
+      if (!wfxSkatable(nx, ny) || from.has(idx(nx, ny))) continue;
+      if (k > 3 && (!wfxSkatable(cx + DX8[k], cy) || !wfxSkatable(cx, cy + DY8[k]))) continue;
+      from.set(idx(nx, ny), c); q.push(idx(nx, ny));
+    }
+  }
+  if (!from.has(goal)) return null;
+  const path = [];
+  for (let c = goal; c !== q[0]; c = from.get(c)) path.push([c % MAP_W, (c / MAP_W) | 0]);
+  return path.reverse();
+}
+
+function* heroSkateGen(u, tx, ty) {
+  const path = wfxIcePath(Math.floor(u.x), Math.floor(u.y), tx, ty, 6000);
+  if (!path || !path.length) return false;
+  const t0 = Game.time;
+  let last = Game.time, snd = 0, ph = 0;
+  for (const [px, py] of path) {
+    const gx = px + 0.5, gy = py + 0.5;
+    for (;;) {
+      if (!wfxIceOk() && wfxIceTile(Math.floor(u.x), Math.floor(u.y))) { u.fun = null; return false; }   // лёд растаял — страховка вернёт на берег
+      const now = Game.time, dt = Math.max(0, now - last); last = now;
+      const dx = gx - u.x, dy = gy - u.y, d = Math.hypot(dx, dy), st = HERO_SKATE_SPEED * dt;
+      ph += st;
+      if (Math.abs(dx) > 0.02) u.face = dx > 0 ? 1 : -1;
+      u.vdir = Math.abs(dy) > Math.abs(dx) * 1.2 ? (dy > 0 ? 'S' : 'N') : 'E';
+      u.fun = { k: 'skate', hero: true, t0, ph, until: now + 0.25 };
+      if (st >= d) { u.x = gx; u.y = gy; break; }
+      u.x += dx / d * st; u.y += dy / d * st;
+      snd -= dt;
+      if (snd <= 0) { snd = 0.42; sfxAt('iceglide', u.x * TILE, u.y * TILE, 0.9); }
+      if (Math.random() < dt * 9) fxBurst(u.x * TILE - u.face * 4, u.y * TILE + 6, 2, ['#ffffff', '#cfe8ff'], 14, 5, 0.3, 1, 40);
+      yield { wait: 0.04 };
+    }
+  }
+  u.fun = { k: 'skate', hero: true, t0, ph, until: Game.time + 0.1 };
+  return true;
+}
+
+{
+  const _rs = resolveCmd;
+  resolveCmd = function (t) {
+    const c = _rs(t);
+    if (c || !wfxIceOk()) return c;
+    const [x, y] = t;
+    if (!wfxIceTile(x, y) || buildingAt(t)) return c;
+    return { kind: 'move', x, y, tx: x, ty: y, label: 'Кататься' };
+  };
+  const _rc = runCmd;
+  runCmd = function* (u, c) {
+    if (c.kind === 'move' && u.type === 'hero' && wfxIceOk()) {
+      const sx = Math.floor(u.x), sy = Math.floor(u.y);
+      pfRegions();
+      const water = wfxIceTile(c.x, c.y), apart = !water && PF.reg[idx(sx, sy)] && PF.reg[idx(c.x, c.y)] && PF.reg[idx(sx, sy)] !== PF.reg[idx(c.x, c.y)];
+      const onIce = wfxIceTile(sx, sy);
+      if (water || apart || onIce) {
+        // подойти по суше к ближайшему берегу, потом — по льду
+        if (!(yield* heroSkateGen(u, c.x, c.y))) {
+          const s = wfxLandNear(c.x, c.y, 0);
+          if (s && !water) yield { walk: s };
+        }
+        return;
+      }
+    }
+    yield* _rc(u, c);
+  };
+}
+
+// 5 кадров катания героя: толчок левой, скольжение, толчок правой, скольжение, подсед; рисуем поверх обычного спрайта
+const SKATE_FR = [
+  { lift: 0, rot: 0.10, ox: -0.5, leg: [-3, 2] },     // толчок: задняя нога назад
+  { lift: 0.6, rot: 0.18, ox: 0, leg: [-1, 3] },      // вынос вперёд
+  { lift: 1.0, rot: 0.14, ox: 0.5, leg: [1.5, 2] },   // скольжение на одной ноге
+  { lift: 0.4, rot: 0.08, ox: 0, leg: [2, -2] },      // смена ноги
+  { lift: 0, rot: 0.16, ox: -0.5, leg: [0, 0] },      // подсед, руки вперёд
+];
+function drawHeroSkates(c, u, fr) {
+  const px = Math.round(u.x * TILE), py = Math.round(u.y * TILE + 6), f = u.face || 1;
+  c.save();
+  for (let k = 0; k < 2; k++) {
+    const bx = px + (k ? 2.5 : -2.5) * f + SKATE_FR[fr].leg[k] * f * 0.6, by = py - 0.5 - (k && fr === 2 ? 2.5 : 0);
+    c.fillStyle = '#3a2a1a'; c.fillRect(Math.round(bx - 2), Math.round(by - 3), 4, 2);              // башмак
+    c.fillStyle = '#cfd8e4'; c.fillRect(Math.round(bx - 3.5), Math.round(by - 1), 7, 1);            // лезвие
+    c.fillStyle = '#8a96a8'; c.fillRect(Math.round(bx - 3.5 + (f > 0 ? 6 : 0)), Math.round(by - 2), 1, 1);   // завиток
+    c.fillStyle = '#6a7482'; c.fillRect(Math.round(bx - 2), Math.round(by - 2), 1, 1); c.fillRect(Math.round(bx + 1), Math.round(by - 2), 1, 1);
+  }
+  c.restore();
 }
 
 {
@@ -281,15 +451,8 @@ function wfxTick(dt) {
       Game.wfx.splice(i, 1);
     }
   }
-  // страховка: гном на воде вне катания — на берег
-  if (S.ice > 0.1) for (const u of Game.units) {
-    if (u.dead || u.inside || !isPerson(u)) continue;
-    const x = Math.floor(u.x), y = Math.floor(u.y);
-    if (!inb(x, y) || World.terrain[idx(x, y)] !== T_WATER) continue;
-    if (u.fun && u.fun.k === 'skate' && u.fun.until > Game.time) continue;
-    const s = randomFreeNear(x, y, 0, 12, (xx, yy) => isWalkable(xx, yy) && !World.bmap[idx(xx, yy)]);
-    if (s) { u.x = s[0] + 0.5; u.y = s[1] + 0.5; u.fun = null; if (u.proc) { u.proc = null; u.action = null; } }
-  }
+  // страховка: гном на воде вне катания — на ТОТ ЖЕ берег, откуда выехал (иначе застрянет за рекой до весны)
+  if (S.ice > 0.1) wfxStrandCheck(S, step);
 }
 {
   const _step = step;
@@ -443,6 +606,12 @@ function wfxDrawList(list, c, x0, y0, x1, y1) {
   const _du = drawUnit;
   drawUnit = function (c, u) {
     const f = u.fun;
+    if (f && f.k === 'skate' && f.hero && f.until > Game.time) {
+      const fr = Math.floor(f.ph * 1.1) % HERO_SKATE_FRAMES, F = SKATE_FR[fr];
+      drawUnitXform(c, u, F.lift, F.rot * (u.face || 1), F.ox * (u.face || 1), 1 - F.lift / 14);
+      drawHeroSkates(c, u, fr);
+      return;
+    }
     if (f && f.k === 'skate' && f.until > Game.time) {
       const t = Game.time - f.t0;
       drawUnitXform(c, u, Math.abs(Math.sin(t * 5)) * 0.8, 0.14 * (f.lean || 1) + Math.sin(t * 3) * 0.05, 0, 1);
