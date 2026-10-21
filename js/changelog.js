@@ -5,6 +5,16 @@
 
 const CHANGELOG = [
   {
+    v: '0.10.86', date: '2026-10-21', title: 'Оружие и заточка',
+    news: [
+      'Оружейная открывается сразу после мастерской доспехов: раньше доспехи были, а бить было нечем. Луки делаются и без железа. Гильдии, как и прежде, — после оружейной.',
+      'У каждой гильдии своё светящееся оружие: Клинок Железнобокого, Лунный лук, Теневой клык, Звёздный посох и Обмотки Тишины для монаха. Куёт оружейная, сразу и без очереди.',
+      'Заточка в оружейной: до +3 без риска, дальше +4 — 80%, +5 — 60%, +6 — 40%, +7 и выше — 20%, потолок +12. Неудача уровень не снижает — пропадает только железо. После +5 оружие растёт заметно, но здорового врага с одного удара всё равно не уложить.',
+      'Гильдия 3-го уровня будит свойство своего оружия: вампиризм у воинов, паралич у лучников, тишина у монаха, яд у разбойников, звёздный огонь у магов. Рекрутам такой гильдии оно тоже достаётся.',
+    ],
+    fixes: ['И ещё несколько мелких правок.'],
+  },
+  {
     v: '0.10.85', date: '2026-10-21', title: 'Английский догнал русский',
     news: [
       'Английская версия переведена почти целиком: лепрекон, Чёрный шпиль и Малгор со стражами, рабочие и приоритеты, гномки и гномята, путники, квакуны, зал героев, оборона, события-дилеммы, редактор карт и даже сам журнал «Что нового». С шутками, как в русском.',
@@ -1070,5 +1080,23 @@ function whatsNewShow(force) {
   el.addEventListener('click', ev => { if (ev.target === el) close(); });
   document.body.appendChild(el);
 }
+
+// Номер версии мелко внизу экрана (меню и игра): тестеры называют его в отзывах. Тап открывает «Что нового».
+// Берётся из GAME_VERSION; пустая зона касаний вокруг не нужна, клик ловит только сама надпись.
+function versionBadgeInit() {
+  if (document.getElementById('ver-badge')) return;
+  const st = document.createElement('style'); st.id = 'ver-badge-css';
+  st.textContent = `#ver-badge{position:fixed;z-index:3;right:calc(env(safe-area-inset-right,0px) + 6px);bottom:calc(env(safe-area-inset-bottom,0px) + 2px);padding:1px 4px;font:10px/1.2 Kurale,Georgia,serif;color:#e9dcc0;opacity:.45;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#ver-badge:hover{opacity:.9}
+body.mobile:not(.land) #ver-badge{bottom:calc(env(safe-area-inset-bottom,0px) + 62px)}
+body.mobile.land #ver-badge{right:auto;left:50%;transform:translateX(-50%)}
+body:has(#loading:not(.hidden)) #ver-badge{z-index:600;bottom:auto;top:calc(env(safe-area-inset-top,0px) + 2px);right:auto;left:calc(env(safe-area-inset-left,0px) + 6px);transform:none}`;
+  document.head.appendChild(st);
+  const b = document.createElement('button'); b.id = 'ver-badge'; b.type = 'button';
+  b.textContent = 'v' + GAME_VERSION; b.title = 'Что нового';
+  b.onclick = () => whatsNewShow(true);
+  document.body.appendChild(b);
+}
+window.addEventListener('DOMContentLoaded', versionBadgeInit);
 
 window.addEventListener('load', () => setTimeout(() => whatsNewShow(/[?&]whatsnew=1/.test(location.search)), 400));
