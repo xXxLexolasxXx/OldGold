@@ -1496,7 +1496,10 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     if (W && front && !armed && WPN_BACK[W.m]) drawOnBack(c, W.m, 3.6, shY + 2.6, 'S');
     if (!front) { arm(-1); arm(1); }
     tunicFront();
-    if (O.robe) { c.fillStyle = '#c89226'; c.fillRect(-5, -1.4, 10, 0.5); if (front) c.fillRect(-0.3, shY, 0.6, 12); }
+    if (O.robe) {
+      if (front && O.vest) { c.fillStyle = O.vest; c.fillRect(-3.8, shY + 0.4, 2.4, 5.4); c.fillRect(1.4, shY + 0.4, 2.4, 5.4); }
+      c.fillStyle = '#c89226'; c.fillRect(-5, -1.4, 10, 0.5); if (front) c.fillRect(-0.3, shY, 0.6, 12);
+    }
     else {
       if (front) {
         if (O.vest) { c.fillStyle = O.vest; c.fillRect(-3.8, shY + 0.4, 2.4, 5.4); c.fillRect(1.4, shY + 0.4, 2.4, 5.4); if (O.rivets) { c.fillStyle = '#cec6ba'; for (let k = 0; k < 3; k++) { c.fillRect(-2.8, shY + 1.4 + k * 1.6, 0.4, 0.4); c.fillRect(2.4, shY + 1.4 + k * 1.6, 0.4, 0.4); } } }
