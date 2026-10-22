@@ -615,6 +615,9 @@ body.mobile #mtool:not(.hidden) {
 .upg small { font-size: 11px; opacity: 0.8; font-style: italic; }
 .upg:hover { filter: brightness(1.15); }
 .upg.no { border-color: #6a5a3a; color: #b4a37a; filter: grayscale(0.5); }
+.upg:disabled { cursor: default; }
+.hire-c button { margin-left: auto; min-width: 54px; }
+.hire-more summary { cursor: pointer; margin: 4px 0; }
 .lvl { font-size: 11px; background: #c89226; color: #2a1c08; border-radius: 3px; padding: 1px 5px; vertical-align: middle; }
 
 /* журнал: пиксельные иконки вместо эмодзи */

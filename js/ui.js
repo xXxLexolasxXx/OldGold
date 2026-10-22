@@ -478,7 +478,8 @@ function initUI() {
     else if (act === 'herobuild') heroHelpBuild(b);
     else if (act === 'prev') cycleBuilding(-1);
     else if (act === 'next') cycleBuilding(1);
-    else if (act === 'hire') queueTraining(b.def.worker);
+    else if (act === 'hire') { const bad = hireTrain(b); if (bad) toast(bad); }
+    else if (act === 'assign') { const bad = hireAssign(b, Game.unitMap.get(+t.dataset.u)); if (bad) toast(bad); }
     else if (t.dataset.block) Game.storeBlock[t.dataset.block] = !Game.storeBlock[t.dataset.block];
     updateUI(true);
   });
@@ -740,7 +741,7 @@ function infoBuilding(b) {
   }
 
   if (b.autoJob) h += `<div class="bar mana"><div style="width:${Math.round((1 - b.autoJob.t / b.autoJob.r.time) * 100)}%"></div></div>`;
-  if (def.worker) h += workerHTML(b);
+  if (def.worker) h += typeof hireHTML === 'function' ? hireHTML(b) : workerHTML(b);
 
   if (def.recipes) {
     h += `<div class="isec">Производство${def.recipes.length > 1 ? ' (галочки — что делать)' : ''}</div>`;
