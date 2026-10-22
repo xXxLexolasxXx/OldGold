@@ -56,6 +56,8 @@ const MAP_FILE = path.join(DATA, 'custom-map.json');   // карта, котор
 let noSave = false;                                       // мир отложен в архив, идёт перезапуск — старый мир не сохранять
 const USERS_FILE = path.join(DATA, 'players.json');
 const VIL_FILE = path.join(DATA, 'village.json');
+const CAMP_FILE = path.join(DATA, 'campaign.json');    // прогресс и наследие кампании этого сервера (КАМПАНИЯ_КООП.md)
+const CAMP_CP_FILE = path.join(DATA, 'camp-cp.json');  // последняя контрольная точка акта
 const log = (...a) => console.log(new Date().toLocaleTimeString('ru-RU'), ...a);
 
 // ---------- Статистика игроков ----------
@@ -148,8 +150,24 @@ const host = createHost(log);
 // права игроков (админ-панель хоста) хранятся отдельно от мира
 try { host.ctx.coopSetPerms(JSON.stringify(JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')).perms || {})); } catch (e) { /* прав ещё нет — всё разрешено */ }
 const call = (fn, ...args) => host.ctx[fn](...args);
-try { host.ctx.coopStateSet(fs.readFileSync(VIL_FILE, 'utf8')); } catch (e) { /* серий и рекордов ещё нет */ }
 const run = code => host.run(code);
+try { host.ctx.coopStateSet(fs.readFileSync(VIL_FILE, 'utf8')); } catch (e) { /* серий и рекордов ещё нет */ }
+// кампания: прогресс живёт в localStorage песочницы (campaign.js), контрольная точка — в CampSrv
+let campSaved = '', campCpN = 0;
+try { campSaved = fs.readFileSync(CAMP_FILE, 'utf8'); host.ctx.localStorage.setItem('oldgold.campaign', campSaved); } catch (e) { /* кампанию на сервере ещё не играли */ }
+// CampSrv — const скрипта campaign.js: не свойство глобального объекта песочницы, достаём через run
+const campSrvObj = () => run('typeof CampSrv === "undefined" ? null : CampSrv');
+try { const S = campSrvObj(); if (S && fs.existsSync(CAMP_CP_FILE)) { S.cp = fs.readFileSync(CAMP_CP_FILE, 'utf8'); campCpN = S.cpN = 1; } } catch (e) { log('контрольная точка кампании не прочитана:', e.message); }
+function saveCampaign() {
+  const S = campSrvObj();
+  if (!S) return;
+  const p = host.ctx.localStorage.getItem('oldgold.campaign') || '';
+  if (p && p !== campSaved) { fs.writeFileSync(CAMP_FILE, p); campSaved = p; }
+  if (S.cpN !== campCpN) {
+    campCpN = S.cpN;
+    if (S.cp) fs.writeFileSync(CAMP_CP_FILE, S.cp); else if (fs.existsSync(CAMP_CP_FILE)) fs.unlinkSync(CAMP_CP_FILE);
+  }
+}
 const SIM_DT = run('SIM_DT');
 const COOP_SPEED = 1.2 * TEST_SPEED;
 // Время общей деревни: скорость ×0,5/×1/×2/×3 выбирает хост (запоминается в settings.json), пауза — хост сразу или голосованием
@@ -205,6 +223,7 @@ function saveWorld() {
     worldIO.write(text);   // .tmp → переименование, .bak, снимки раз в полчаса (server/worldio.js)
     flushHeroes();
     try { fs.writeFileSync(VIL_FILE, call('coopStateGet')); } catch (e) { log('серии ночей не сохранились:', e.message); }
+    try { saveCampaign(); } catch (e) { log('кампания не сохранилась:', e.message); }
     stats.save();
     return true;
   } catch (e) { log('сохранение мира не удалось:', e.message); return false; }
@@ -722,7 +741,26 @@ function onGameMessage(c, m, text) {
   }
   // чат рассылается всем — не чаще раза в 1,5 секунды с игрока
   if (m.t === 'chat') { if (nowMs - (c.chatAt || 0) < 1500) return; c.chatAt = nowMs; }
+  // кампания: хост переводит деревню в мир акта — прежний (не кампанийный) мир сначала уходит в архив
+  if (m.t === 'campaign' && c.isHost && m.a === 'start' && !run('!!Game.camp') && saveWorld() && fs.existsSync(WORLD_FILE)) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    try { fs.copyFileSync(WORLD_FILE, path.join(DATA, 'world-' + stamp + '-before-camp.json')); log('мир до кампании сохранён в архив', stamp); } catch (e) { log('архив мира перед кампанией не записан:', e.message); }
+  }
   call('coopCmd', c.nick, text, c.isHost);
+  if (m.t === 'campaign' && call('coopCampTakeReinit')) campReinit(c);
+}
+
+// мир сменился на ходу (акт кампании, контрольная точка): всем — новый мир целиком, дельты начинаются заново
+function campReinit(by) {
+  call('coopWorldPacket');   // базовая точка дельты мира — уже новый мир
+  for (const o of conns) {
+    if (!o.inGame) continue;
+    call('coopViewDrop', o.nick);
+    o.sendText(call('coopInitPacket', call('coopUidOf', o.nick)));
+    o.send(tempoMsg());
+  }
+  saveWorld();
+  log('кампания:', by.nick, 'сменил мир — акт', run('Game.camp ? Game.camp.act : "сценарий"'));
 }
 
 // ---------- Главный цикл ----------
