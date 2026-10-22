@@ -63,8 +63,11 @@ function auditIncoming() {
 // Тяжёлое не унести с травмой руки
 const HEAVY = new Set(['trunk', 'stone', 'timber', 'pig', 'goldore', 'leatherArmor']);
 
-// трудяга с выслугой носит 2 и 3 предмета (уровни 2 и 3)
-function carryCap(u) { return u.type === 'serf' ? unitLevel(u) : (CARRY_CAP[u.type] || 1); }
+// трудяга с выслугой носит 2 и 3 предмета (уровни 2 и 3); лёгкого — на одну штуку больше.
+// Каждый обед — хотя бы одна ходка трудяги с буханкой в трактир: в деревне на 50 жителей так была занята почти половина
+// курьеров, а мельница при 700 зерна на складе и плавильня без брёвен ждали подвоза (замер tools/soak/deficit.js, ДЕФИЦИТЫ.md)
+const LIGHT = new Set(['bread', 'croissant', 'sausage', 'chickenleg', 'fish', 'flour', 'hay', 'hops']);
+function carryCap(u, g) { return u.type === 'serf' ? unitLevel(u) + (g && LIGHT.has(g) ? 1 : 0) : (CARRY_CAP[u.type] || 1); }
 function canCarry(u, g) { return !(u.injury === 'arm' && HEAVY.has(g)); }
 
 // Подобрать перевозчика под партию: большой партии — телегу, средней — козу, иначе курьера.
@@ -77,7 +80,7 @@ function pickCarrier(idle, x, y, g, amount) {
     let list = ok.filter(u => u.type === t);
     if (!list.length) continue;
     // на большую партию — сперва трудяги с выслугой, которые унесут больше за раз
-    if (t === 'serf' && amount >= 2) { const big = list.filter(u => carryCap(u) >= Math.min(3, amount)); if (big.length) list = big; }
+    if (t === 'serf' && amount >= 2) { const big = list.filter(u => carryCap(u, g) >= Math.min(3, amount)); if (big.length) list = big; }
     const u = takeNearest(list, x, y);
     idle.splice(idle.indexOf(u), 1);
     return u;
@@ -117,9 +120,29 @@ function reqPri(d, g) {
 }
 const INN_LOW = 12;      // столько порций в трактире (с тем, что везут) — ещё не тревога
 
+// Зерна вдоволь: на складах 1–2 тысячи зерна и сотни охапок сена, а курьеры всё возят и возят урожай с ферм — при том что
+// мельница рядом ждёт подвоза (замер tools/soak/deficit.js). Когда на складах запас (зерна — ~6 на жителя, это 18 обедов хлебом;
+// сена — полторы зимы свиньям), урожай остаётся на ферме: ферма заполнится и подождёт, а мельница и свинарник берут прямо с неё.
+// Зерно придерживаем, только если и сена хватает: сено вяжут с тех же полей пшеницы, полная ферма перестала бы жать.
+const CROP_WHEAT_PER = 6, CROP_WHEAT_MIN = 100, CROP_HAY_MIN = 40;
+let cropPlT = -1, cropPlC = null;
+function cropPlenty(g) {
+  if (g !== 'wheat' && g !== 'hay') return false;
+  if (!cropPlC || Math.abs(Game.time - cropPlT) >= 2) {
+    let w = 0, h = 0, ppl = 0;
+    for (const s of Game.buildings) if (s.isStore()) { w += s.stock.wheat - s.reserved.wheat; h += s.stock.hay - s.reserved.hay; }
+    for (const u of Game.units) if (!u.dead && !u.noFood && isPerson(u)) ppl++;
+    const hayOk = h >= Math.max(CROP_HAY_MIN, (typeof seaHayInfo === 'function' ? seaHayInfo().need : 0) * 1.5);
+    cropPlC = { wheat: hayOk && w >= Math.max(CROP_WHEAT_MIN, ppl * CROP_WHEAT_PER), hay: hayOk };
+    cropPlT = Game.time;
+  }
+  return cropPlC[g];
+}
+
 function dispatchSerfs() {
   updateRoadComps();
-  let idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk && (prioJobLv(u) !== 0 || wkBoosted(u)) && wkMay(u));
+  // проголодавшийся без дела сначала поест (think() отправит его в трактир) — иначе диспетчер успевал дать ему заказ раньше
+  let idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk && !u.wantsEat() && (prioJobLv(u) !== 0 || wkBoosted(u)) && wkMay(u));
   wkPinnedCouriers(idleAll);          // курьеры с маршрутом «откуда → куда» (workers.js) — только своё
   idleAll = wkTrim(idleAll);           // лимит «на работе» во вкладке «Рабочие»
   if (!idleAll.length) return;
@@ -151,8 +174,7 @@ function dispatchSerfs() {
   let nfDone = false;
   // рудники тоже: золотой рудник в 60 клетках от склада стоял «полным» (5/5 руды), пока курьеры возили зерно, —
   // руда ехала к плавильне по две штуки, золота для школы 26 за 47 суток (ДЕФИЦИТЫ.md, сид 4)
-  // (не в кампании: там темп бегства из акта 2 задан сценарием и чувствителен к тому, куда ушли курьеры)
-  const isMine = b => !Game.camp && b.def && (b.def.need === 'rock' || b.def.need === 'crystal');
+  const isMine = b => b.def && (b.def.need === 'rock' || b.def.need === 'crystal');
   const collectNearlyFull = () => { if (nfDone) return; nfDone = true; collectOutputs(b => !b.isPile && b.state === 'done' && (isFoodProducer(b) || isMine(b)) && !!b.def.outputs && nearlyFull(b)); };
 
   // «Перенос ресурсов» (вкладка «Приоритеты»): Выкл — не свозить на склад (кроме еды), Низкий — по 1 перевозчику
@@ -204,7 +226,7 @@ function dispatchSerfs() {
       const avail = src.offer(r.g);
       const u = pickCarrier(idle, src.doorX, src.doorY, r.g, Math.min(need, avail));
       if (!u) break;
-      const n = Math.min(need, avail, carryCap(u));
+      const n = Math.min(need, avail, carryCap(u, r.g));
       assignDelivery(u, src, r.d, r.g, n);
       need -= n;
     }
@@ -230,13 +252,14 @@ function dispatchSerfs() {
       let taken = 0;                                           // на одно здание — не больше 3 перевозчиков за раз (диспетчер идёт каждые 0.4 с)
       const per = isFoodProducer(b) ? 3 : haulPer || 3;       // еду вывозим всегда; прочее — по «Переносу ресурсов»
       for (const g of goods) {
+        if (!isP && b.def.crops && cropPlenty(g)) continue;    // зерна и сена на складах вдоволь — пусть лежит на ферме, мельница и свинарник возьмут оттуда
         let left = b.offer(g);
         while (left > 0 && idle.length && taken < per) {
           const st = nearestStore(b.doorX, b.doorY, g, comp);
           if (!st) break;
           const u = pickCarrier(idle, b.doorX, b.doorY, g, left);
           if (!u) break;
-          const n = Math.min(left, carryCap(u));
+          const n = Math.min(left, carryCap(u, g));
           assignDelivery(u, b, st, g, n);
           left -= n; taken++;
         }

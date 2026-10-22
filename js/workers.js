@@ -79,7 +79,7 @@ function wkRoute(u, p) {
   const done = b => b.state === 'done' && !b.removed;
   const srcs = p.from === 'store' ? Game.buildings.filter(b => b.isStore()) : typeof p.from === 'number' ? [wkB(p.from)] :
     [...Game.buildings.filter(done), ...Game.piles.values()];
-  const go = (src, dst, g, n) => { n = Math.min(n, src.offer(g), carryCap(u)); if (n > 0) { assignDelivery(u, src, dst, g, n); return true; } return false; };
+  const go = (src, dst, g, n) => { n = Math.min(n, src.offer(g), carryCap(u, g)); if (n > 0) { assignDelivery(u, src, dst, g, n); return true; } return false; };
   // 1) заявки адресата: материалы на стройку, сырьё в цех
   if (p.to !== 'store') {
     const dsts = typeof p.to === 'number' ? [wkB(p.to)] : [...Game.buildings, ...Game.roadSites.values()];

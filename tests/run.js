@@ -38,9 +38,13 @@ function test(name, fn) {
 
 // ---------- 1. Загрузка
 // отдельный скрипт-проверка: строки «✗ …» — провалы, «⚠ …» — замечания, остальное без отступа — сводка
+// --slow K (или TEST_SLOW=K) — растянуть лимиты времени в K раз, когда машина занята другими прогонами
+const SLOW = Math.max(1, +arg('slow', process.env.TEST_SLOW || 1) || 1);
 const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
-  const p = spawnSync(process.execPath, [path.join(__dirname, file), ...args], { encoding: 'utf8', timeout: ms });
+  const p = spawnSync(process.execPath, [path.join(__dirname, file), ...args], { encoding: 'utf8', timeout: ms * SLOW });
   const out = (p.stdout || '') + (p.stderr || '');
+  // убит по лимиту времени — это не провал проверки: под нагрузкой house и campaign шли по 7 минут и падали «красными» без единого ✗
+  if (p.error && p.error.code === 'ETIMEDOUT') { r.fails.push(`не успел за ${Math.round(ms * SLOW / 1000)} с (машина занята? повторите с --slow 2)`); return; }
   for (const l of out.split('\n')) {
     if (/^\s*✗/.test(l)) r.fails.push(l.replace(/^\s*✗\s*/, ''));
     else if (/^\s*⚠/.test(l)) r.warns.push(l.replace(/^\s*⚠\s*/, ''));
@@ -99,7 +103,7 @@ scriptTest('icon: значки, названия и описания всех с
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
-scriptTest('campaign: акты 1–5 — праздник и взрыв, обвал, Кремнёвка, дорога к межевому камню, сценарий с наследием, сейв, поражение, перевод', 'campaign-test.js', [], 420000);
+scriptTest('campaign: акты 1–5 — праздник и взрыв, обвал, Кремнёвка, дорога к межевому камню, сценарий с наследием, сейв, поражение, перевод', 'campaign-test.js', [], 900000);
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
@@ -111,7 +115,7 @@ scriptTest('trav: одинокие путники — смайлики, разг
 scriptTest('wild: поселения диких гномов — число на картах, обмен, караван, купец, поединок, бунт, сейв', 'wild-test.js', [], 600000);
 scriptTest('whatsnew: пропущенные обновления в окне «Что нового»', 'whatsnew-test.js');
 scriptTest('uilayers: слои интерфейса — загрузка без скорости, стройка поверх способностей', 'uilayers-test.js');
-scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js', [], 420000);
+scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js', [], 900000);
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 
 // ---------- 2. Симуляция: инварианты

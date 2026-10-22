@@ -110,6 +110,7 @@ function* sleepGen(u) {
 function isPerson(u) { return !UNIT_TYPES[u.type].animal; }
 
 // Можно ли сейчас прервать жителя: он снаружи и просто идёт или ждёт без работы.
+const STARVE_DROP = 0.15;     // сытость, ниже которой курьер бросает ещё не взятый заказ ради обеда
 function interruptible(u) {
   if (u.brk || u.glide || u.inside || !isPerson(u)) return false;
   const a = u.action;
@@ -134,6 +135,15 @@ function lifeTick(u, dt) {
   u.lifeT = 0;
   socialTick(u);
   if (!interruptible(u)) return;
+  // трудяга идёт за грузом, а сам уже на последнем издыхании: груз ещё не в руках — бросаем заказ и идём есть
+  // (think() отправит в трактир). Раньше он доносил, падал в обморок и после обморока шёл дальше по тому же
+  // заказу — зимой по 10–15 трудяг «на нуле» при полных складах (замер tools/soak/deficit.js, сид 4, 54-е сутки)
+  if (u.isCourier && u.dlv && !u.dlv.picked && u.food < STARVE_DROP && u.wantsEat() && findInn(u)) {
+    const g = u.proc;
+    u.proc = null; u.action = null; u.dlv = null;      // бронь и «в пути» пересчитает auditIncoming
+    try { if (g && g.return) g.return(); } catch (e) { /* уже завершён */ }
+    return;
+  }
   // совсем оголодал — падает без сил и лежит, потом встаёт и плетётся дальше
   if (u.starveT > STARVE_FAINT) {
     u.starveT = -STARVE_FAINT;                      // следующий обморок нескоро
