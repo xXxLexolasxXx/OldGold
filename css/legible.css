@@ -1,0 +1,77 @@
+/* Читаемый текст на деревянных досках HUD. Грузится последним.
+   Доски (--plank-tex) светлые и пёстрые: швы, гвозди, прожилки. Любой текст на них должен лежать
+   на тёмной «табличке» (--plaque), а не прямо на досках. Правило для новых окон: ставишь класс
+   .legible (или .plaque для вставки внутри окна) — и контраст ≥ 4.5:1 уже есть.
+   Пергаментные тосты (.toast, .ach-toast) и воронёная сталь (кнопки, шапка) не трогаем. */
+
+:root {
+  --ink: #f2e7cc;                 /* основной текст на табличке: контраст ≈ 14:1 */
+  --ink-dim: #cdbb98;             /* второстепенный: ≈ 9:1 */
+  --ink-gold: #f6d458;            /* заголовки: ≈ 12:1 */
+  --plaque: rgba(13, 9, 6, 0.9);  /* подложка под текстом поверх досок */
+  --plaque-line: rgba(138, 106, 66, 0.55);
+  --ink-shadow: 0 1px 0 #000, 0 0 3px rgba(0, 0, 0, 0.85);   /* обводка шрифта */
+  --read-min: 13px;               /* минимальный кегль на десктопе */
+  --read-min-m: 14.5px;           /* на телефоне */
+  --text: #f0e4c8;
+  --text-dim: #c4b190;
+}
+
+/* табличка: окно целиком или вставка внутри окна */
+.legible, .plaque {
+  color: var(--ink); text-shadow: var(--ink-shadow);
+  background: var(--plaque);
+  border: 1px solid var(--plaque-line);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+.legible .muted, .plaque .muted, .legible .dim, .plaque .dim { color: var(--ink-dim); }
+.legible a, .plaque a { color: var(--ink-gold); }
+.plaque { padding: 6px 8px; border-radius: 2px; line-height: 1.45; font-size: var(--read-min); }
+
+/* ---------- Окно здания и вкладки на досках ---------- */
+#info-wrap #info, #info-wrap #info-bar { color: var(--ink); text-shadow: var(--ink-shadow); }
+#info-wrap #info { background: var(--plaque); margin: 3px 4px 4px; border: 1px solid var(--plaque-line); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6); }
+#info-wrap #info-bar { background: rgba(10, 7, 5, 0.82); color: var(--ink-dim); border-bottom: 1px solid var(--plaque-line); font-weight: bold; }
+#tab-area { background: var(--plaque); color: var(--ink); text-shadow: var(--ink-shadow); }
+#tab-area .muted, #info .muted, #tab-area .tip, #info .tip, #tab-area .idesc, #info .idesc { color: var(--ink-dim); }
+#info .tip b, #tab-area .tip b { color: var(--ink); }
+#info .ihead h3, #tab-area .ihead h3 { color: var(--ink-gold); }
+.tip { font-size: var(--read-min); }
+.irow, .recipe, .idesc { font-size: var(--read-min); }
+.isec { font-size: 12.5px; font-weight: bold; }
+.alert-a, .log-s, .hotkeys { color: var(--ink-dim); }
+#info :is(.deliv, button, .small) { font-size: 12px; }
+
+/* плавающие плашки на досках (инструмент на телефоне, подтверждение «Взять в команду?») */
+body.mobile #mtool:not(.hidden), .team-ask {
+  background: linear-gradient(var(--plaque), var(--plaque)), var(--planks);
+  color: var(--ink); text-shadow: var(--ink-shadow); font-weight: bold;
+}
+body.mobile.land-b #tabs, body.mobile.land-b #land-fab, body.mobile.land-b #land-build { background: linear-gradient(rgba(13, 9, 6, 0.55), rgba(13, 9, 6, 0.55)), var(--planks); }
+
+/* мелкие подписи: пол 12px на десктопе (9–11px на досках не читаются) */
+#tab-area :is(.log-t, .ch-day, .fm-d, .dl-chip, .lw-why, .pr-hint, .mg-n, kbd, .alert-a, .log-s, .diff-chip, .rs-bn), #tab-log button { font-size: 12px; }
+#tab-area .xpbar b { font-size: 11px; }
+
+/* окна поверх карты: цели, обучение, справка, карточка героя */
+:is(#goal-hud, #tut, #help, #hero-card, #ab-bar) { text-shadow: var(--ink-shadow); }
+:is(#goal-hud .gh-sub, #goal-hud span, #goal-hud i, #tut .tut-n, #hero-card small, #hero-card .hs-det, #ab-bar .ab-none, #help kbd) { font-size: 12px; }
+body #hero-card .hc-bar { height: 13px; }
+body #hero-card .hc-bar.xp { height: 4px; }
+body #hero-card .hc-bar span { font-size: 11px; line-height: 13px; font-weight: bold; text-shadow: 0 0 2px #000, 0 1px 0 #000, 0 0 4px #000; }
+#help, #help li { color: var(--ink); }
+
+/* ---------- Телефон: крупнее и плотнее ---------- */
+body.mobile :is(#info, #tab-area) { font-size: var(--read-min-m); line-height: 1.4; }
+body.mobile :is(#info, #tab-area) :is(.tip, .idesc, .irow, .recipe, .alert-a, .log-s, .why-a, .g-b, .bal-row, .small, .hotkeys) { font-size: var(--read-min-m); line-height: 1.4; }
+body.mobile :is(#info, #tab-area) :is(.isec, .chip, .log-t, .g-t i, .bal-row .bs) { font-size: 13px; }
+body.mobile :is(#info, #tab-area) .tip b, body.mobile :is(#info, #tab-area) .irow b { font-weight: bold; }
+body.mobile #info-bar { font-size: 13px; }
+body.mobile #mtool-text { font-size: 14px; }
+body.mobile #tab-area :is(.log-t, .ch-day, .fm-d, .dl-chip, .lw-why, .pr-hint, .mg-n, kbd, .diff-chip, .rs-bn, .lw-d, .group-title, .n, .pr-n), body.mobile #tab-log button { font-size: 13px; }
+body.mobile #tab-area .xpbar b { font-size: 12px; }
+body.mobile :is(#goal-hud .gh-sub, #goal-hud span, #goal-hud i, #tut .tut-n, #hero-card small, #hero-card .hs-det, #ab-bar .ab-none, #help kbd) { font-size: 13px; }
+body.mobile #help { font-size: 14.5px; }
+body.mobile #tab-area .log-t { width: 44px; }
+#info .deliv small { font-size: 12px; opacity: 1; }
+body.mobile #info .deliv small { font-size: 13px; }
