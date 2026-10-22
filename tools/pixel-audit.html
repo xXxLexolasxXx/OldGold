@@ -11,7 +11,7 @@ canvas{image-rendering:pixelated;background:#4f7a30}
 const q=new URLSearchParams(location.search), Z=+(q.get('z')||4);
 window.onerror=(m,s,l)=>{document.getElementById('err').textContent+=` ${m} @${(s||'').split('/').pop()}:${l};`;};
 window.ENT_LOOK={};window.MT_PAL_BIOME={};window.MapOpt={};window.GMOSS=['#3a5a2a','#4a6e30','#5c8236','#73963e'];
-const files=['js/world/fire.js','js/config.js','js/world.js','js/path.js','js/entities.js','js/levels.js','js/events.js','js/sprites.js','js/world/rocks.js','js/world/mountains.js','js/pixel.js','js/world/seaart.js'];
+const files=['js/world/fire.js','js/config.js','js/world.js','js/path.js','js/entities.js','js/levels.js','js/events.js','js/sprites.js','js/world/night.js','js/world/rocks.js','js/world/mountains.js','js/pixel.js','js/world/seaart.js'];
 (async()=>{
  for(const f of files){await new Promise(ok=>{const s=document.createElement('script');s.src='../'+(q.get('base')||'')+f+'?v='+Date.now();s.onload=ok;s.onerror=()=>{document.getElementById('err').textContent+=' не загрузился '+f;ok();};document.head.appendChild(s);});}
  if(typeof R==='undefined')window.R={smooth:false};
@@ -38,6 +38,16 @@ function run(){
  for(const s of ['L','M','S'])for(let v=0;v<ROCK_VARIANTS;v++){if(q.get('rv')&&!q.get('rv').split(',').includes(s+v))continue;cell(r,rockAsDrawn(s,v,1),s+v,+(q.get('zr')||4));}}
  if(only.includes('jaw')){r=sec('Челюсти клешней камня-краба');
  for(const s of ['L','M'])for(let k=1;k<=2;k++)for(const up of[false,true]){const j=clawJaw(s,0,k,up);cell(r,j.cv,s+k+(up?'u':'l'),3);}}
+ if(only.includes('claw')){r=sec('Клешня камня в сборе (пасть закрыта/приоткрыта/раскрыта), как в игре');
+ for(const sz of['L','M'])for(const open of[0.05,0.3,0.8]){const lo=clawJaw(sz,0,1,false),up=clawJaw(sz,0,1,true);const cv=mkCanvas(60,50),g=cv.getContext('2d');g.imageSmoothingEnabled=true;g.translate(30,28);g.drawImage(lo.cv,-lo.W/2,-lo.H/2,lo.W,lo.H);g.translate(up.hx-up.W/2,up.hy-up.H/2);g.rotate(-open);g.drawImage(up.cv,-up.hx,-up.hy,up.W,up.H);cell(r,cv,sz+' open '+open,+(q.get('zj')||8));}}
+ if(only.includes('leg')){r=sec('Нога камня');const cv=mkCanvas(60,40),g=cv.getContext('2d');rockLeg(g,30,8,18,2,10,30);rockLeg(g,30,8,42,2,50,30);cell(r,cv,'ноги',8);}
+ if(only.includes('ent')){r=sec('Ходячий камень целиком: стоит, идёт, бьёт, держит');
+ window.Game=window.Game||{time:0};window.nightAmt=()=>1;window.hash=i=>(Math.imul(i,2654435761)>>>0);window.GRAB_REACH=0.9;window.entBase=e=>({bx:e.px,by:e.py});
+ for(const [lbl,st] of [['стоит',{state:'idle',k:1}],['идёт',{state:'walk',moving:true,k:1,phase:1.3}],['бьёт',{state:'fight',k:1,atk:Game.time-0.2,t:0.1}],['лежит',{state:'idle',k:0.02}]]){
+  const cv=mkCanvas(100,80),g=cv.getContext('2d');g.fillStyle='#4f7a30';g.fillRect(0,0,100,80);
+  const e=Object.assign({i:7,o:{n:5},face:1,alpha:1,x:0,y:0,phase:0,t:0,moving:false,px:50,py:62},st);
+  try{drawRockEnt(g,e);}catch(x){document.getElementById('err').textContent+=' ent '+x.message;}
+  cell(r,cv,lbl,+(q.get('ze')||6));}}
  if(only.includes('mount')){r=sec('Горы (пиксель-арт)');
  for(const s of['S','M'])for(let v=0;v<MT_VARIANTS;v++)cell(r,mtSprite(s,v),s+v,3);}
  if(only.includes('boulder')){r=sec('Валуны SPR.boulders'); try{makeBoulders();SPR.boulders.forEach((b,i)=>cell(r,b,'b'+i,8));}catch(e){}}
