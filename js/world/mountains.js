@@ -43,7 +43,7 @@ function mtSprite(size, v) {
   // осыпь, валуны и трава у подножия
   for (let k = 0; k < S.w / 7; k++) {
     const x = cx + rnd(-S.w * 0.42, S.w * 0.42), y = base + rnd(-1, 4.5), r = rnd(0.8, 2.2);
-    ellipse(c, x + 0.4, y + 0.5, r, r * 0.6, '#2c241a');
+    ellipse(c, x + 0.4, y + 0.5, r, r * 0.6, 'rgba(44,36,26,0.5)');
     ellipse(c, x, y, r, r * 0.62, srand() < 0.5 ? P.lit[1] : P.shade[0]);
     ellipse(c, x - r * 0.3, y - r * 0.25, r * 0.5, r * 0.3, P.lit[0]);
   }
@@ -54,7 +54,7 @@ function mtSprite(size, v) {
   }
   for (let k = 0; k < S.w / 8; k++) tuftPebbles(c, rnd(cx - S.w * 0.46, cx + S.w * 0.46), base + rnd(0, 5), rnd(3, 6));
   grain(cv, 0.08, seed);
-  const out = toPixelArt(cv, SS, { outline: true, outlineDark: 0.12, alphaCut: 100 });
+  const out = toPixelArt(cv, SS, { outline: true, outlineDark: 0.12, alphaCut: 100, specks: 84 });
   MT_SPR[key] = out;
   return out;
 }
