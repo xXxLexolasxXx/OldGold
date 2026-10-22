@@ -278,11 +278,24 @@ function handleHttp(req, res) {
     const h = { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': /^\.(ttf|woff2|png)$/.test(ext) ? 'public, max-age=604800' : 'no-cache', Vary: 'Accept-Encoding' };
     if (/^\.(html|js|css|svg|json|webmanifest|ttf)$/.test(ext) && buf.length > 1024 && /gzip/.test(req.headers['accept-encoding'] || '')) {
       h['Content-Encoding'] = 'gzip';
-      res.writeHead(200, h); res.end(zlib.gzipSync(buf, { level: 6 })); return;
+      res.writeHead(200, h); res.end(gzipCached(file, buf)); return;
     }
     res.writeHead(200, h);
     res.end(buf);
   });
+}
+// Сжатые копии статики. Раньше каждый запрос сжимал файл заново в главном потоке (changelog.js 209 КБ ≈ 8 мс, все скрипты
+// страницы ≈ 130 мс): поток запросов крупных файлов из интернета тормозил шаг мира для всех. Ключ — содержимое файла,
+// после git pull файл пересжимается сам.
+const GZ_CACHE = new Map();
+function gzipCached(file, buf) {
+  const key = buf.length + ':' + crypto.createHash('sha1').update(buf).digest('base64');
+  const c = GZ_CACHE.get(file);
+  if (c && c.key === key) return c.gz;
+  const gz = zlib.gzipSync(buf, { level: 6 });
+  if (GZ_CACHE.size >= 400) GZ_CACHE.clear();
+  GZ_CACHE.set(file, { key, gz });
+  return gz;
 }
 
 // ---------- Мини-WebSocket ----------

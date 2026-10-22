@@ -893,7 +893,7 @@ function coopLost() {
   const kicked = Coop.kicked;
   Coop.kicked = null;
   box.innerHTML = `<div class="cp-card"><h2>${kicked ? 'Герой ушёл в другое окно' : Coop.reconnecting ? 'Сервер перезапускается' : 'Связь потерялась'}</h2>
-    <p id="cp-lost-msg">${kicked ? kicked + '. Нажмите «Попробовать сейчас», чтобы играть здесь.' : 'Переподключаемся сами… Копия общего мира лежит у вас в браузере: пока сервер молчит, можно поиграть с ней в одиночку.'}</p>
+    <p id="cp-lost-msg">${kicked ? coopEsc(kicked) + '. Нажмите «Попробовать сейчас», чтобы играть здесь.' : 'Переподключаемся сами… Копия общего мира лежит у вас в браузере: пока сервер молчит, можно поиграть с ней в одиночку.'}</p>
     <button class="cp-btn" data-re>Попробовать сейчас</button><button class="cp-btn sec" data-solo>Играть с копией одиночно</button></div>`;
   document.body.appendChild(box);
   const msg = box.querySelector('#cp-lost-msg');
@@ -905,7 +905,7 @@ function coopLost() {
     msg.textContent = 'Подключаемся…';
     // токен в браузере один на всех: годится, только если он от этого же героя (в соседней вкладке мог войти другой)
     const sv = coopSaved(), cr = Coop.creds, nick = Coop.nick || cr.nick;
-    const opts = sv && sv.token && sv.nick === nick ? { server: cr.server, nick, token: sv.token, mode: 'token' }
+    const opts = sv && sv.token && sv.nick === nick && sv.server === cr.server ? { server: cr.server, nick, token: sv.token, mode: 'token' }
       : cr.pass ? { server: cr.server, nick, pass: cr.pass, mode: 'login' } : null;
     if (!opts) { busy = false; stop = true; msg.textContent = 'Войдите заново через меню (Выйти → Общая деревня).'; return; }
     coopConnect(opts).then(() => { stop = true; Coop.reconnecting = false; box.remove(); }).catch(e => {
@@ -1279,14 +1279,15 @@ function coopHint() {
       const root = document.getElementById('start-menu');
       if (!j || !root || root.querySelector('[data-sm-join]')) return;
       const main = root.querySelector('[data-panel="main"]');
-      const saved = coopSaved();
+      // токен входа годится только для сервера, который его выдал: по ссылке ?server=чужой токен боевого сервера уходить не должен
+      const saved = coopSaved(), savedHere = !!(saved && saved.token && saved.server === Coop.target);
       const b = document.createElement('button');
       b.className = 'sm-btn primary'; b.dataset.smJoin = '1';
-      b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${coopEsc(j.online)}${saved ? ' · войти как ' + coopEsc(saved.nick) : ' · вход и регистрация'}</small>`;
+      b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${coopEsc(j.online)}${savedHere ? ' · войти как ' + coopEsc(saved.nick) : ' · вход и регистрация'}</small>`;
       smSubAdd(b, true);
       b.addEventListener('click', () => {
         const sv = coopSaved();
-        if (!sv || !sv.token) { smRender(); smShow('mp'); return; }
+        if (!sv || !sv.token || sv.server !== Coop.target) { smRender(); smShow('mp'); return; }
         const small = b.querySelector('small'); small.textContent = 'подключаемся…';
         coopConnect({ server: Coop.target, nick: sv.nick, token: sv.token, mode: 'token' })
           .then(() => smClose())
