@@ -83,6 +83,9 @@ const iApp = html.indexOf('<div id="app">'), iSpeed = html.indexOf('id="speed-cu
 check(iApp >= 0 && iApp < iSpeed && iSpeed < iLoad, 'кнопка скорости вне #app — заставка её не спрячет');
 check(html.includes('href="css/uilayers.css"') && html.includes('src="js/uilayers.js"'), 'index.html: слои не подключены');
 
+// ---- окно босса (Курганный князь) не под панелью способностей
+check(/body\.mobile\.ui-ab #raid-hud \{ bottom: calc\(var\(--ui-ab-top/.test(css) && /body\.ui-ab:not\(\.mobile\) #raid-hud/.test(css), 'окно Курганного князя не отодвигается от панели способностей');
+
 // ---- раскрытое меню верхней полосы выше окна обучения (шаг «Первая ночь»: «Ускорьте время»)
 const tutZ = +(read('css/tutorial.css').match(/#tut \{[^}]*z-index: (\d+)/) || [])[1];
 const ddZ = +(css.match(/#topbar:has\(\.dd\.open\)\s*\{\s*z-index:\s*(\d+)/) || [])[1];
