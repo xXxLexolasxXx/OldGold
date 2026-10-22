@@ -3,6 +3,7 @@
 //  · режимы: загрузка/меню — ui-loading; телефон со зданием в руке — ui-place; окно поверх игры — ui-modal;
 //  · при открытой панели размещения панель способностей, карточка героя и значок версии скрыты, панель ✓ ↻ ✕ выше всех игровых;
 //  · на загрузке кнопки скорости нет: она внутри #app, а #app скрыт с самого первого кадра (класс в index.html).
+//  · музыка на заставке: один выключатель (кнопка-нота) с первого кадра, не на логотипе; «♪» игры — только в игре.
 // Запуск: node tests/uilayers-test.js
 const fs = require('fs');
 const path = require('path');
@@ -81,6 +82,16 @@ check(/<body class="[^"]*\bui-loading\b/.test(html), 'index.html: <body> без 
 const iApp = html.indexOf('<div id="app">'), iSpeed = html.indexOf('id="speed-cur"'), iLoad = html.indexOf('<div id="loading"');
 check(iApp >= 0 && iApp < iSpeed && iSpeed < iLoad, 'кнопка скорости вне #app — заставка её не спрячет');
 check(html.includes('href="css/uilayers.css"') && html.includes('src="js/uilayers.js"'), 'index.html: слои не подключены');
+
+// ---- музыка на заставке: один выключатель с первого кадра, «♪» игры внутри скрытого #app, логотип ниже кнопки на телефоне
+const iSnd = html.indexOf('id="dd-snd"');
+check(iApp < iSnd && iSnd < iLoad, '«♪» верхней полосы вне #app — на заставке будет второй выключатель музыки');
+const sm = read('js/startmenu.js'), st = read('css/style.css');
+check((sm.match(/mb\.id = 'sm-music'/g) || []).length === 1, 'кнопка-нота меню создаётся не в одном месте — дубль');
+check(/^if \([^\n]*\) try \{ smMusicBtnInit\(\); \}/m.test(sm), 'кнопка-нота создаётся только после постройки мира — выскакивает вспышкой');
+check(!/#loading:not\(\.with-menu\) #sm-music \{ display: none/.test(st), 'кнопка-нота спрятана на заставке и выскакивает при открытии меню');
+check(/@media \(max-width: 700px\) \{ #loading \.load-title \{ top: max\(5vh, calc\(48px/.test(st), 'телефон: логотип не опущен под кнопку-ноту — перекрываются');
+check(/function musicLoadPrefs[\s\S]*feod\.menuMusic/.test(read('js/sound/music.js')), 'выключенная музыка меню не запоминается (feod.menuMusic)');
 
 if (fails.length) { for (const f of fails) console.log('✗ ' + f); process.exit(1); }
 console.log('Проверка слоёв интерфейса: режимы, CSS и index.html в порядке.');

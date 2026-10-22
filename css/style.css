@@ -677,7 +677,10 @@ body.mm-folded #mm-size { display: none; }
 #sm-music .sm-music-x { opacity: 0; }
 #sm-music.off { color: #9a8458; background: rgba(20,14,8,0.7); border-color: #6a5430; }
 #sm-music.off .sm-music-x { opacity: 1; }
-#loading:not(.with-menu) #sm-music { display: none; }
+#sm-music { animation: sm-music-in .5s ease-out both; }   /* одна кнопка с первого кадра заставки, мягко, без вспышки */
+@keyframes sm-music-in { from { opacity: 0; } }
+/* телефон: логотип ниже кнопки-ноты в углу — не перекрываются */
+@media (max-width: 700px) { #loading .load-title { top: max(5vh, calc(48px + env(safe-area-inset-top))); } }
 .sm-panel { display: flex; flex-direction: column; gap: 10px; width: min(92vw, 380px); }
 .sm-panel.hidden { display: none; }
 .sm-btn {
