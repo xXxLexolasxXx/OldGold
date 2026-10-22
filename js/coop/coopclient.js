@@ -330,6 +330,7 @@ function coopMirror(m) {
   if (typeof travMirrorIn === 'function') travMirrorIn(m.trav);
   if (typeof wgsMirrorIn === 'function') wgsMirrorIn(m.wgs);
   if (typeof lawMirrorIn === 'function') lawMirrorIn(m.law);
+  if (typeof distMirrorIn === 'function') distMirrorIn(m.dist);
   if (typeof medMirrorIn === 'function') medMirrorIn(m.med);
   if (typeof rscMirrorIn === 'function') rscMirrorIn(m.rsc);
   if (typeof famMirrorIn === 'function') famMirrorIn(m.fam);
@@ -516,15 +517,45 @@ function coopSaveCopy() {
   const _hb = heroBtnUpdate;
   heroBtnUpdate = function () { if (!Coop.on) _hb(); else { const b = document.getElementById('hero-btn'); if (b) b.style.display = Game.hero ? '' : 'none'; if (Game.hero) _hb(); } };
 
+  const _lc = onLeftClickTile;
+  onLeftClickTile = function (t) {
+    const tool = Game.tool;
+    if (!Coop.on || !tool || (tool.kind !== 'decor' && tool.kind !== 'undecor')) return _lc(t);
+    if (!inb(t[0], t[1])) return;
+    if (tool.d === 'undecor') coopSend({ t: 'undecor', x: t[0], y: t[1] });
+    else coopSend({ t: 'decor', k: tool.d, x: t[0], y: t[1] });
+  };
+
   const _ov = drawOverlay;
   drawOverlay = function (c) {
     if (!Coop.on) return _ov(c);
+    coopDecorOverlay(c);
     const h = Game.hero, nm = h && h.hero ? h.hero.name : null;
     if (nm !== null) h.hero.name = '';          // свой ник рисуем сами, вместе с остальными
     _ov(c);
     if (nm !== null) h.hero.name = nm;
     coopPlates(c);
   };
+}
+
+// Декор: примерка под курсором и подпись автора у поставленного игроком украшения
+function coopDecorOverlay(c) {
+  const h = R.hover, tool = Game.tool;
+  if (!h || !inb(h[0], h[1])) return;
+  const o = World.obj[idx(h[0], h[1])], px = h[0] * TILE, py = h[1] * TILE;
+  if (tool && tool.kind === 'decor') {
+    const ok = tool.d === 'undecor' ? !!(o && o.by && (o.by === Coop.nick || Coop.host)) : isFreeGrass(h[0], h[1]);
+    c.fillStyle = ok ? 'rgba(60,220,80,0.3)' : 'rgba(220,40,30,0.35)';
+    c.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+    if (ok && tool.d !== 'undecor' && typeof drawStreetObj === 'function') { c.globalAlpha = 0.6; drawStreetObj(c, h[0], h[1], { t: tool.d, v: 0 }); c.globalAlpha = 1; }
+  }
+  if (o && o.by) {
+    c.font = 'bold 8px sans-serif'; c.textAlign = 'center';
+    const txt = `${(VD_CAT[o.t] || {}).n || ''} · ${o.by}`;
+    c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; c.strokeText(txt, px + 16, py - 4);
+    c.fillStyle = '#f0e4c0'; c.fillText(txt, px + 16, py - 4);
+    c.textAlign = 'start';
+  }
 }
 
 // Ник, полоска здоровья и реплика над головой каждого героя
@@ -541,6 +572,7 @@ function coopPlates(c) {
     const marks = [];
     for (const q of qx.q) if (q.x != null) marks.push([q.x, q.y, '#9fe070']);
     if (qx.p && qx.p.pts) for (const p of qx.p.pts) marks.push([p[0], p[1], '#e8a0f0']);
+    if (qx.r && qx.r.pts) for (const p of qx.r.pts) marks.push([p[0], p[1], '#70d0ff']);
     for (const [mx, my, col] of marks) {
       const p = (Game.time * 1.1) % 1, fx = (mx + 0.5) * TILE, fy = (my + 0.5) * TILE;
       c.strokeStyle = col; c.globalAlpha = 0.9 - p * 0.7; c.lineWidth = 2;
@@ -610,6 +642,8 @@ function coopCss() {
   .cp-slot{width:34px;height:34px;background:#120d08;border:1px solid #5a4620;border-radius:4px;position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;color:#f6e8c0;text-align:center;line-height:1}
   .cp-slot.has:hover{border-color:#f6d458}.cp-slot i{position:absolute;right:2px;bottom:1px;font-style:normal;font-size:9px;color:#ffd45a}
   .cp-bar{height:8px;background:#2a1410;border-radius:3px;overflow:hidden;border:1px solid #000}.cp-bar i{display:block;height:100%}
+  .cp-give{font-size:11px;margin:2px 0;text-align:left}.cp-give.lo,.cp-give .lo{opacity:.7}.cp-decor{display:flex;flex-wrap:wrap;gap:2px}
+  .cp-sm.on{border-color:#9fe070;color:#cfffa0}
   .cp-sm{font-size:11px;padding:2px 8px;margin:2px 3px 0 0;background:#3a2c14;color:#f6e8c0;border:1px solid #8a6a28;border-radius:4px;cursor:pointer;font-family:inherit}
   `;
   document.head.appendChild(st);
@@ -631,7 +665,19 @@ function coopPickClass(classes) {
   });
 }
 
-const ITEM_NAME = k => (typeof GOODS !== 'undefined' && GOODS[k] ? GOODS[k].name : k);
+const COOP_ITEM_RU = { baton: 'Эстафетная палочка', cargo: 'Груз хлеба' };
+const ITEM_NAME = k => COOP_ITEM_RU[k] || (typeof GOODS !== 'undefined' && GOODS[k] ? GOODS[k].name : k);
+
+// Передать предмет: выбрать, кому (рядом, не дальше 4 клеток), потом клик по слоту
+function coopGiveBar() {
+  const h = Game.hero;
+  if (!h) return '';
+  const near = Game.units.filter(u => u.owner && u !== h && !u.dead).map(u => [u.owner, Math.hypot(u.x - h.x, u.y - h.y)]).sort((a, b) => a[1] - b[1]);
+  if (Coop.giveTo && !near.some(n => n[0] === Coop.giveTo)) Coop.giveTo = null;
+  if (!near.length) return '<div class="cp-give lo">Передать некому: других героев в деревне нет</div>';
+  return `<div class="cp-give">Передать: ${near.map(([n, d]) => `<button class="cp-sm${Coop.giveTo === n ? ' on' : ''}" data-cpgive="${coopEsc(n)}"${d > 4.5 ? ' title="Подойди поближе (не дальше 4 клеток)"' : ''}>${coopEsc(n)} <span class="lo">${Math.round(d)} кл.</span></button>`).join('')}</div>`
+    + (Coop.giveTo ? `<div class="cp-give lo">Клик по предмету — отдать ${coopEsc(Coop.giveTo)}</div>` : '');
+}
 
 function coopInvHtml() {
   const me = Coop.me;
@@ -662,7 +708,7 @@ function coopInitHud() {
   hud.id = 'coop-hud';
   hud.innerHTML = `<div id="cp-vil"></div><div id="cp-qs"></div><div id="cp-log"></div><div id="cp-pop"></div>
     <div class="cp-row"><span id="cp-online" style="align-self:center;background:rgba(26,19,13,.85);padding:3px 7px;border-radius:4px"></span>
-    <button data-cp="chat" title="Сказать что-нибудь">Чат</button><button data-cp="inv" title="Инвентарь героя">Рюкзак</button>
+    <button data-cp="chat" title="Сказать что-нибудь">Чат</button><button data-cp="inv" title="Инвентарь героя и передача предметов">Рюкзак</button><button data-cp="decor" title="Украсить деревню">Декор</button>
     ${Coop.host ? '<button data-cp="restart" title="Только хост">Сервер ⟳</button>' : ''}<button data-cp="leave" title="Выйти из общей деревни">Выйти</button></div>`;
   document.getElementById('view').appendChild(hud);
   hud.addEventListener('click', e => {
@@ -673,14 +719,27 @@ function coopInitHud() {
         pop.innerHTML = Coop.meta.chat.map((t, i) => `<button data-cpchat="${i}">${coopEsc(t)}</button>`).join('');
         pop.classList.toggle('open', !(pop.classList.contains('open') && pop.dataset.k === 'chat')); pop.dataset.k = 'chat';
       } else if (k === 'inv') {
-        pop.innerHTML = coopInvHtml();
+        Coop.giveTo = null;
+        pop.innerHTML = coopGiveBar() + coopInvHtml();
         pop.classList.toggle('open', !(pop.classList.contains('open') && pop.dataset.k === 'inv')); pop.dataset.k = 'inv';
+      } else if (k === 'decor') {
+        pop.innerHTML = coopDecorHtml();
+        pop.classList.toggle('open', !(pop.classList.contains('open') && pop.dataset.k === 'decor')); pop.dataset.k = 'decor';
       } else if (k === 'restart') coopRestartDialog();
       else if (k === 'leave') { if (confirm('Выйти из общей деревни? Герой и рюкзак сохранятся.')) coopLeaveGame(); }
       return;
     }
     const v = e.target.closest('[data-vote]');
     if (v) { coopSend({ t: 'vote', i: +v.dataset.vote }); return; }
+    const gv = e.target.closest('[data-cpgive]');
+    if (gv) { Coop.giveTo = Coop.giveTo === gv.dataset.cpgive ? null : gv.dataset.cpgive; document.getElementById('cp-pop').innerHTML = coopGiveBar() + coopInvHtml(); return; }
+    const dc = e.target.closest('[data-cpdecor]');
+    if (dc) {
+      const k = dc.dataset.cpdecor;
+      setTool(k === 'off' ? null : { kind: 'decor', d: k });
+      document.getElementById('cp-pop').innerHTML = coopDecorHtml();
+      return;
+    }
     const c = e.target.closest('[data-cpchat]');
     if (c) { coopSend({ t: 'chat', i: +c.dataset.cpchat }); document.getElementById('cp-pop').classList.remove('open'); return; }
     const s = e.target.closest('[data-coop]');
@@ -698,7 +757,21 @@ function coopInitHud() {
 
 function coopSlotClick(el, e) {
   const slot = +el.dataset.slot;
+  if (Coop.giveTo && el.closest('#cp-pop')) { coopSend({ t: 'give', to: Coop.giveTo, slot }); return; }
   coopSend({ t: e.shiftKey ? 'drop' : 'use', slot });
+}
+
+// Декор: каталог (villdecor.js), выбор вида — инструмент в руке, клик по траве ставит, «Убрать своё» — снимает
+function coopDecorHtml() {
+  const tool = Game.tool && Game.tool.kind === 'decor' ? Game.tool : null;
+  let mine = 0, all = 0;
+  for (let i = 0; i < N_TILES; i++) { const o = World.obj[i]; if (o && o.by) { all++; if (o.by === Coop.nick) mine++; } }
+  const off = Coop.perms && Coop.perms.decor === false && !Coop.host;
+  return `<div class="cp-give"><b>Украсить деревню</b> <span class="lo">· твоих ${mine}/${VD_PER} · всего ${all}/${VD_MAX} · красота ${vdVillage()}</span></div>`
+    + (off ? '<div class="cp-give lo">Хост запретил декор</div>' : '')
+    + `<div class="cp-decor">${Object.entries(VD_CAT).map(([k, d]) => `<button class="cp-sm${tool && tool.d === k ? ' on' : ''}" data-cpdecor="${k}">${coopEsc(d.n)}</button>`).join('')}`
+    + `<button class="cp-sm${tool && tool.d === 'undecor' ? ' on' : ''}" data-cpdecor="undecor">Убрать своё</button>${tool ? '<button class="cp-sm" data-cpdecor="off">Готово</button>' : ''}</div>`
+    + '<div class="cp-give lo">Клик по свободной траве — поставить. Рядом с красивым гномы веселее.</div>';
 }
 
 // Личные и парные задания, Совет деревни (считает сервер, приходит вместе с 'me')
@@ -718,6 +791,9 @@ function coopQuestHud(x, title) {
   if (x.q.length) {
     h += '<h4>Задания дня' + (title ? ` · «${esc(title)}»` : '') + '</h4>'
       + x.q.map(q => `<div class="${q.d ? 'ok' : ''}">${q.d ? '✔' : '•'} ${esc(q.t)}${q.need > 1 && !q.d ? ` <b>${q.n}/${q.need}</b>` : ''}${q.h ? ` <span class="lo">· ${esc(q.h)}</span>` : ''}</div>`).join('');
+  }
+  if (x.r) {
+    h += `<h4>${esc(x.r.t)} · ${Math.floor(x.r.left / 60)}:${String(x.r.left % 60).padStart(2, '0')}</h4><div class="${x.r.me ? 'ok' : ''}">${esc(x.r.x)}</div>`;
   }
   if (x.p) {
     h += `<h4>Вдвоём с ${esc(x.p.w)}${x.p.on ? '' : ' (не в сети)'}</h4><div class="${x.p.d ? 'ok' : ''}">${x.p.d ? '✔ ' : ''}${esc(x.p.t)}${x.p.prog != null ? ` <b>${x.p.prog}%</b>` : ''}</div>`
@@ -740,7 +816,8 @@ function coopRefreshHud() {
   const on = document.getElementById('cp-online');
   if (on) on.textContent = 'В деревне: ' + Game.units.filter(u => u.owner).map(u => u.owner).join(', ');
   const pop = document.getElementById('cp-pop');
-  if (pop && pop.classList.contains('open') && pop.dataset.k === 'inv') pop.innerHTML = coopInvHtml();
+  if (pop && pop.classList.contains('open') && pop.dataset.k === 'inv') pop.innerHTML = coopGiveBar() + coopInvHtml();
+  if (pop && pop.classList.contains('open') && pop.dataset.k === 'decor') pop.innerHTML = coopDecorHtml();
   const lg = document.getElementById('cp-log');
   if (lg) {
     const now = Date.now();

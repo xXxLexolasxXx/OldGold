@@ -55,6 +55,7 @@ function mobileTool(tool) {
   }
   else if (tool.kind === 'road') text.textContent = 'Дорога: ведите пальцем, касание по дороге — убрать';
   else if (tool.kind === 'field') text.textContent = `${FIELD_NAMES[tool.crop]}: касайтесь клеток (повторное касание — убрать)`;
+  else if (tool.kind === 'decor') text.textContent = tool.d === 'undecor' ? 'Убрать своё украшение: коснитесь его' : `${(VD_CAT[tool.d] || {}).n || 'Декор'}: коснитесь свободной травы`;
   else text.textContent = 'Снос: коснитесь';
   document.getElementById('mtool-ok').style.display = build ? '' : 'none';
   document.getElementById('mtool-rot').style.display = build && !BUILDINGS[tool.type].noRotate ? '' : 'none';

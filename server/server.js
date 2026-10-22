@@ -722,6 +722,9 @@ function onGameMessage(c, m, text) {
   }
   // чат рассылается всем — не чаще раза в 1,5 секунды с игрока
   if (m.t === 'chat') { if (nowMs - (c.chatAt || 0) < 1500) return; c.chatAt = nowMs; }
+  // передача предметов и декор — не чаще 4 и 8 раз в секунду (сверх этого симуляция сама режет по игровому времени)
+  if (m.t === 'give') { if (nowMs - (c.giveAt || 0) < 250) return; c.giveAt = nowMs; }
+  if (m.t === 'decor' || m.t === 'undecor') { if (nowMs - (c.decorAt || 0) < 120) return; c.decorAt = nowMs; }
   call('coopCmd', c.nick, text, c.isHost);
 }
 
