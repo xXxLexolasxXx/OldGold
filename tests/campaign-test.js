@@ -23,7 +23,7 @@ const BOT = `(function () {
   const C = Game.camp; if (!C || C.over) return;
   const hero = campHero();
   // герой — в зону невыполненной цели (как клик игрока по карте: идёт сам, если путь есть; застрял — переносим)
-  const z = C.objs && C.objs.find(o => o.z && o.cur < o.need && o.t.startsWith('Герой'));
+  const z = C.objs && C.objs.find(o => o.z && o.cur < o.need);
   if (hero && z) {
     Game.__botZ = Game.__botZ || { key: '', t: 0 };
     const key = z.z.join(',');
@@ -37,6 +37,13 @@ const BOT = `(function () {
       const x = Math.round(CAMP1.mine[0] + Math.cos(a * 0.39) * r), y = Math.round(CAMP1.mine[1] + 6 + Math.abs(Math.sin(a * 0.39)) * r * 0.6);
       if (inb(x, y) && !checkPlacement('watchtower', x, y, 0)) { Game.__botTower = placeBuilding('watchtower', x, y, false, 0); }
     }
+  }
+  // завал у школы (акт 2): игрок разбивает валуны героем — бот убирает по валуну раз в 4 с
+  const rb = C.objs && C.objs.find(o => o.t.includes('завал') && o.cur < o.need);
+  if (rb && C.flags.school && Game.time - (Game.__botRb || 0) > 4) {
+    Game.__botRb = Game.time;
+    const [sx, sy] = C.flags.school;
+    for (let y = sy - 5; y <= sy + 5; y++) for (let x = sx - 5; x <= sx + 5; x++) { const o = inb(x, y) && World.obj[idx(x, y)]; if (o && o.t === 'stone' && Math.hypot(x - sx, y - sy) <= 4.5) { World.obj[idx(x, y)] = null; y = 1e9; break; } }
   }
   // гоблины: дерущихся дольше 25 с бот «добивает» героем (иначе прогон слишком зависит от случайных стычек)
   for (const N of Game.raiders) {
@@ -99,6 +106,44 @@ const BOT = `(function () {
   console.log(`Проверка: прогон акта 1 — ${((Date.now() - t0) / 1000).toFixed(0)} с`);
 }
 
+// ---------- 1б. Акт 2 «Гора ложится» целиком (наследие акта 1: 36 гномов) ----------
+{
+  const { h, errors } = host(777);
+  const t0 = Date.now();
+  h.run(`localStorage.setItem('oldgold.campaign', JSON.stringify({ v: 1, done: { 1: { t: 1, stars: 2, alive: 36 } }, legacy: { a1: { alive: 36, key: 1, caches: 1 } }, last: 1 }))`);
+  h.run('campStart(2); Game.heroAsk = false;');
+  const info = JSON.parse(h.run('JSON.stringify({ p: campPeople(), rubble: Game.camp.flags.rubble0, rocks: campFoes("rock").length, open: campIsOpen(2), b: Game.buildings.length })'));
+  console.log(`Проверка: акт 2 — жителей ${info.p}, зданий ${info.b}, валунов у школы ${info.rubble}, глыб ${info.rocks}`);
+  if (info.p > 38 || info.p < 30) fail(`в акт 2 пришло не столько гномов, сколько спаслось в акте 1 (36): ${info.p}`);
+  if (!info.rubble || info.rocks !== 3) fail('нет завала у школы или глыб у кузнеца');
+  const seen = [];
+  let lastI = -1, waveMax = 0, over = null;
+  for (let sec = 0; sec < 40 * 60; sec++) {
+    try { h.run('for (let k = 0; k < 20; k++) step(0.05);'); h.run(BOT); } catch (e) { fail('акт 2, исключение на ' + sec + ' с: ' + String(e.stack || e).split('\n').slice(0, 3).join(' | ')); break; }
+    if (sec % 2) continue;
+    const s = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, k: (campStepNow(Game.camp) || {}).k, over: Game.camp.over, wave: Game.camp.flags.wave ? Game.camp.flags.wave.y : 0 })'));
+    if (s.i !== lastI) { seen.push(`${s.i}:${s.k}@${sec}`); lastI = s.i; }
+    waveMax = Math.max(waveMax, s.wave);
+    if (s.over) { over = s.over; break; }
+  }
+  const end = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, n: CAMP_ACTS[2].steps.length, f: { vaska: Game.camp.flags.vaska, saved: Game.camp.flags.saved, buried: Game.camp.flags.buried || 0, missed: Game.camp.flags.missed || [] }, prog: campProg(), open3: campIsOpen(3), objs: Game.camp.objs })'));
+  console.log('Проверка: акт 2, шаги ' + seen.join(' '));
+  if (!over) fail(`акт 2 не закончился за 40 минут: шаг ${end.i} из ${end.n}; цели ${JSON.stringify(end.objs)}`);
+  else {
+    console.log(`Проверка: акт 2 — итог «${over.res}» на ${Math.round(over.stats.t / 60)} мин, дошли ${end.f.saved}, засыпало ${end.f.buried}, Васька ${end.f.vaska ? 'спасён' : 'нет'}, не успели: ${end.f.missed.join(', ') || '—'}`);
+    if (over.res !== 'win') fail('акт 2 не пройден: ' + over.why);
+    else {
+      if (!end.prog.legacy.a2) fail('наследие акта 2 не записано');
+      if (!end.open3) fail('после акта 2 не открылся акт 3');
+    }
+  }
+  if (waveMax < 80) fail('волна обвала не прошла город (y ' + waveMax.toFixed(0) + ')');
+  if (!end.f.vaska) warn('кузнеца Ваську не откопали');
+  const errs = errors.filter(e => !/предупрежд/i.test(e));
+  if (errs.length) fail('акт 2, ошибки в логе: ' + errs.slice(0, 3).join(' | '));
+  console.log(`Проверка: прогон акта 2 — ${((Date.now() - t0) / 1000).toFixed(0)} с`);
+}
+
 // ---------- 2. Поражение: жители гибнут ----------
 {
   const { h } = host(7);
@@ -127,19 +172,21 @@ const BOT = `(function () {
   h.ctx.__en = dict;
   require('vm').runInContext(require('fs').readFileSync(require('path').join(__dirname, '../js/i18n/en-campaign.js'), 'utf8').replace("I18N.add('en',", '__enAdd('), Object.assign(h.ctx, { __enAdd: o => Object.assign(dict, o) }));
   const texts = JSON.parse(h.run(`JSON.stringify((function () {
-    const out = new Set(), A = CAMP_ACTS[1];
+    const out = new Set();
+    for (const A of Object.values(CAMP_ACTS)) {
     out.add(A.name); out.add(A.outro);
     for (const S of A.steps) {
       for (const l of S.lines || []) out.add(l[1]);
       for (const o of S.objs || []) out.add(o.t);
       if (S.hint) out.add(S.hint); if (S.label) out.add(S.label);
     }
+    }
     for (const k in CAMP_WHO) if (CAMP_WHO[k].name) out.add(CAMP_WHO[k].name);
     return [...out];
   })())`));
   const miss = texts.filter(t => !dict[t] && !['Грум Ворчун', 'Бабушка Ягла', 'Пим Чернилкин', 'Малгор', 'Герой'].includes(t));
   if (miss.length) fail(`нет английского перевода (${miss.length}): ` + miss.slice(0, 4).join(' | '));
-  else console.log(`Проверка: перевод акта 1 — ${texts.length} строк`);
+  else console.log(`Проверка: перевод актов — ${texts.length} строк`);
 }
 
 console.log(`Сводка: ${fails.length ? 'провалов ' + fails.length : 'OK'}${warns.length ? ', замечаний ' + warns.length : ''}`);
