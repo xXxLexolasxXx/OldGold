@@ -75,7 +75,7 @@ function camp4Chase(C, n, champs, king) {
     const N = campFoe('shnyr', x + 3, y, 'chase', { delay: 3, hunt: true });
     N.boss = 1;
   }
-  if (typeof sfxAt === 'function') sfxAt('goblinCry', x * TILE, y * TILE, 1);
+  if (typeof campSnd === 'function') campSnd('gobHorn', x, y, 1.2);
 }
 
 // король Шнырь в бою: крепок, но, получив своё, удирает (до межевого камня он ещё нужен)
@@ -108,6 +108,30 @@ function camp4DrawSpire(c) {
   c.save(); c.globalCompositeOperation = 'lighter';
   (spr.wins || []).forEach(([wx, wy, w, h], i) => { c.fillStyle = `rgba(150,255,100,${0.5 + 0.3 * Math.sin(t * 1.7 + i)})`; c.fillRect(ox + wx - w / 2, oy + wy - h / 2, w, h); });
   c.restore();
+}
+
+// телеги обоза (только вид): катятся в хвосте колонны, плавно догоняя её; с даром Кремнёвки — на одну больше
+const CAMP4_CART = { C: null, t: 0, list: [] };
+function camp4Carts() {
+  const C = Game.camp, ppl = camp4Ppl();
+  if (!ppl.length) return CAMP4_CART.list;
+  let rear = -1e9, sy = 0;
+  for (const u of ppl) { rear = Math.max(rear, u.x); sy += u.y; }
+  sy /= ppl.length;
+  const n = ((camp4Leg().a3 || {}).gift || {}).bread ? 3 : 2;
+  if (CAMP4_CART.C !== C || CAMP4_CART.list.length !== n) {
+    CAMP4_CART.C = C; CAMP4_CART.t = Game.time;
+    CAMP4_CART.list = Array.from({ length: n }, (_, i) => ({ x: rear + 2 + i * 3.2, y: sy + [0.8, -0.8, 1.6][i], ph: i, flip: true }));
+  }
+  const dt = Math.min(0.5, Math.max(0, Game.time - CAMP4_CART.t));
+  CAMP4_CART.t = Game.time;
+  CAMP4_CART.list.forEach((k, i) => {
+    const tx = rear + 2 + i * 3.2, ty = sy + [0.8, -0.8, 1.6][i], a = Math.min(1, dt * 0.8);
+    const dx = (tx - k.x) * a, dy = (ty - k.y) * a;
+    k.x += dx; k.y += dy; k.ph += Math.hypot(dx, dy);
+    if (Math.abs(dx) > 0.002) k.flip = dx < 0;
+  });
+  return CAMP4_CART.list;
 }
 
 // ---------- Сценарий ----------
@@ -145,6 +169,7 @@ CAMP_ACTS[4] = {
     const [sx, sy] = CAMP4.stone, [px, py] = CAMP4.spire;
     if (sx > x0 - 3 && sx < x1 + 3 && sy > y0 - 3 && sy < y1 + 4) list.push([sy + 0.9, () => camp4DrawStone(c)]);
     if (px > x0 - 6 && px < x1 + 6 && py > y0 - 12 && py < y1 + 4) list.push([py + 0.5, () => camp4DrawSpire(c)]);
+    if (typeof campDrawCartAt === 'function') for (const k of camp4Carts()) if (k.x > x0 - 3 && k.x < x1 + 3 && k.y > y0 - 2 && k.y < y1 + 3) list.push([k.y + 0.9, () => campDrawCartAt(c, k.x, k.y, k.ph, k.flip)]);
   },
   steps: [
     { k: 'cut', pause: true, cam: [140, 36], label: 'Дорога на запад', lines: [
