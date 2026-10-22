@@ -1,7 +1,7 @@
 'use strict';
 // Пиксель-арт скелетов: те же 4 вида (юг, восток, север; запад — зеркало), та же сверхвыборка и конвейер toPixelArt, что у гномов.
 // Кадры: покой 6, ходьба 8, атака 9, удар по нему 4, смерть 9, захват 9 + шаг с ношей 4 (КАДРЫ.md).
-// Кадры строятся лениво и лежат в кэше с вытеснением; внешность — 2 бита (цвет колпака, щит), считаются из дома скелета (ключи, не в сейве).
+// Кадры строятся лениво и лежат в кэше с вытеснением; внешность — 2 бита (цвет колпака (рыжий, охра), щит), считаются из дома скелета (ключи, не в сейве).
 // Рисует drawSkeleton (skeletons.js вызывает skelDraw отсюда); без этого файла остаётся старое векторное рисование.
 
 const SKA = { PS: 6, PART: 2, W: 52, H: 56, AX: 22, AY: 50, FR: { idle: 6, walk: 8, atk: 9, hit: 4, die: 9, grab: 13 }, ATK_DUR: 0.72, HIT_DUR: 0.2, DIE_DUR: 0.9, MAX: 700 };
@@ -9,7 +9,7 @@ const SKA = { PS: 6, PART: 2, W: 52, H: 56, AX: 22, AY: 50, FR: { idle: 6, walk:
 const SKA_C = {
   bone: '#e4ddd2', bone2: '#b6ada0', bone3: '#867e74', ink: '#1e1b19', flash: '#f6f2ea',
   rust: ['#c8946a', '#a06840', '#6e432a'], iron: ['#9e958a', '#706960', '#4a4540'], wood: ['#875434', '#6e432a', '#45291a'],
-  hat: [['#6c7a54', '#4a6e30', '#2f4a26'], ['#7a6a5a', '#583522', '#341f14']], eye: '#6fe0b4', eyeDim: '#2f8a6a',
+  hat: ['#b0463a', '#a08a3c'],             // выцветшие колпаки того же кроя, что у живых гномов: рыжий кирпич и охра eye: '#6fe0b4', eyeDim: '#2f8a6a',
 };
 const SKA_CACHE = new Map();
 let SKA_SCRATCH = null;
@@ -169,18 +169,64 @@ function skelPaint(c, look, view, pose, frame) {
   return eyes;
 }
 
+// колпак того же кроя, что у гномов (capShape в people.js): мягкий конус с кончиком набок, толстый подвёрнутый край, складки;
+// у скелета выцвел, с дырой и обтрёпанным краем
+function skelCapPath(c, hx, b, s, tall, alt) {
+  const X = k => hx + k * s;
+  c.beginPath(); c.moveTo(X(-4.3), b);
+  if (alt) {
+    c.quadraticCurveTo(X(-4.4), b - tall * 0.95, X(0.6), b - tall);
+    c.quadraticCurveTo(X(3.8), b - tall * 1.05, X(4.4), b - tall * 0.62);
+    c.quadraticCurveTo(X(3.2), b - tall * 0.7, X(3.3), b - tall * 0.45);
+    c.quadraticCurveTo(X(4.5), b - tall * 0.25, X(4.3), b);
+  } else {
+    c.quadraticCurveTo(X(-4.4), b - tall * 0.62, X(-0.8), b - tall * 0.88);
+    c.quadraticCurveTo(X(2.4), b - tall * 1.12, X(5.8), b - tall * 0.86);
+    c.quadraticCurveTo(X(7.4), b - tall * 0.72, X(7.4), b - tall * 0.42);
+    c.quadraticCurveTo(X(6.2), b - tall * 0.66, X(3.8), b - tall * 0.7);
+    c.quadraticCurveTo(X(4.6), b - tall * 0.34, X(4.3), b);
+  }
+  c.closePath();
+}
+function skelHat(c, view, hx, b, col, look, P) {
+  const e = view === 'E', s = e ? -1 : 1, tall = 10.8, alt = false, INK = SKA_C.ink;
+  const tip = P.hdx * 0.3;
+  c.save();
+  skelCapPath(c, hx + tip, b, s, tall, alt);
+  c.fillStyle = INK; c.lineWidth = 1.2; c.strokeStyle = INK; c.stroke();
+  const g = c.createLinearGradient(hx - 4.5, 0, hx + 5, 0); g.addColorStop(0, shade(col, 0.2)); g.addColorStop(0.5, col); g.addColorStop(1, shade(col, -0.4));
+  c.fillStyle = g; c.fill(); c.clip();
+  c.strokeStyle = shade(col, -0.35); c.lineWidth = 0.4;                                    // складки
+  c.beginPath(); c.moveTo(hx - 1.4 * s, b); c.quadraticCurveTo(hx - 1 * s, b - tall * 0.5, hx + 0.6 * s, b - tall * 0.8); c.stroke();
+  c.beginPath(); c.moveTo(hx + 2 * s, b); c.quadraticCurveTo(hx + 2.4 * s, b - tall * 0.3, hx + 3.2 * s, b - tall * 0.62); c.stroke();
+  c.fillStyle = INK; c.beginPath(); c.ellipse(hx + 0.8 * s, b - tall * 0.5, 0.9, 1.3, 0.4, 0, 7); c.fill();   // дыра
+  c.fillStyle = shade(col, -0.5); c.fillRect(hx + 2.4 * s - 0.5, b - tall * 0.3, 1.2, 0.8);                // заплата-пятно
+  c.restore();
+  // толстый подвёрнутый край, обтрёпанный
+  c.fillStyle = INK; c.beginPath(); c.rect(hx - 5.5, b - 1.9, 11, 3.8); c.fill();
+  const bg = c.createLinearGradient(0, b - 1.4, 0, b + 1.6); bg.addColorStop(0, shade(col, 0.15)); bg.addColorStop(1, shade(col, -0.35));
+  c.fillStyle = bg; c.beginPath(); c.moveTo(hx - 4.9, b - 1.4); c.lineTo(hx + 4.9, b - 1.4); c.lineTo(hx + 4.9, b + 1.2); for (let k = 0; k < 5; k++) { c.lineTo(hx + 4.9 - (k + 0.5) * 1.96, b + 1.9); c.lineTo(hx + 4.9 - (k + 1) * 1.96, b + 1.0); } c.closePath(); c.fill();
+}
+
 function skelSword(c, hx, hy, ang, look, view) {
-  const C = SKA_C, INK = C.ink;
-  c.save(); c.translate(hx, hy); c.rotate(ang);
+  const C = SKA_C, INK = C.ink, ca = Math.cos(ang), sa = Math.sin(ang);
+  c.save(); c.translate(hx + ca * 2.2, hy + sa * 2.2); c.rotate(ang);              // рукоять — в ладони: середина хвата ровно в кисти
   // клинок: ржавый, щербатый, в тёмной обводке
   c.fillStyle = INK; c.beginPath(); c.moveTo(-1.4, -1.7); c.lineTo(15.5, -1.9); c.lineTo(17.4, 0); c.lineTo(15.5, 1.9); c.lineTo(-1.4, 1.7); c.closePath(); c.fill();
   const rg = c.createLinearGradient(0, -1.4, 0, 1.4); rg.addColorStop(0, C.rust[0]); rg.addColorStop(0.5, C.rust[1]); rg.addColorStop(1, C.rust[2]);
   c.fillStyle = rg; c.beginPath(); c.moveTo(0, -1.1); c.lineTo(15, -1.2); c.lineTo(16.4, 0); c.lineTo(15, 1.2); c.lineTo(0, 1.1); c.closePath(); c.fill();
   c.fillStyle = INK; for (const x of [4, 8.4, 12]) { c.beginPath(); c.moveTo(x, -1.2); c.lineTo(x + 0.9, -0.2); c.lineTo(x + 1.8, -1.2); c.fill(); }
   c.fillStyle = '#c0501a'; for (const x of [3, 7, 11.5]) c.fillRect(x, 0.2, 1.3, 0.7);
-  c.fillStyle = INK; c.fillRect(-2.6, -3, 2.4, 6); c.fillStyle = C.wood[1]; c.fillRect(-2.2, -2.6, 1.6, 5.2);
+  c.fillStyle = INK; c.fillRect(-2.6, -3, 2.4, 6); c.fillStyle = C.iron[1]; c.fillRect(-2.2, -2.6, 1.6, 5.2);     // гарда
+  c.fillStyle = INK; c.fillRect(-5.4, -1.3, 3.4, 2.6); c.fillStyle = C.wood[1]; c.fillRect(-5, -0.9, 2.6, 1.8);   // рукоять
+  c.fillStyle = INK; c.beginPath(); c.arc(-5.6, 0, 1.6, 0, 7); c.fill(); c.fillStyle = C.iron[0]; c.beginPath(); c.arc(-5.6, 0, 1, 0, 7); c.fill();   // навершие
   c.restore();
+  // костяная ладонь поверх рукояти: пальцы обхватывают хват
+  c.fillStyle = INK; c.beginPath(); c.arc(hx, hy, 1.9, 0, 7); c.fill();
+  c.fillStyle = P_BONE; c.beginPath(); c.arc(hx, hy, 1.3, 0, 7); c.fill();
+  c.strokeStyle = INK; c.lineWidth = 0.5; c.beginPath(); c.moveTo(hx - sa * 1.2 - ca * 0.5, hy + ca * 1.2 - sa * 0.5); c.lineTo(hx + sa * 1.2 - ca * 0.5, hy - ca * 1.2 - sa * 0.5); c.stroke();
 }
+const P_BONE = SKA_C.bone;
 
 // круглый щит: wood + ржавый железный обод; edge — вид с ребра (E), иначе анфас с умбоном
 function skelShield(c, x, y, r, back) {
@@ -222,12 +268,7 @@ function skelHead(c, view, hx2, hy2, P, look, hatC) {
     c.strokeStyle = BONE2; c.lineWidth = 0.6; c.beginPath(); c.moveTo(hx2, hy2 - 3.4); c.lineTo(hx2 + 0.8, hy2 + 0.4); c.lineTo(hx2 - 0.4, hy2 + 3.4); c.stroke();
     c.fillStyle = BONE2; c.fillRect(hx2 - 2.6, hy2 + 3.2, 5.4, 1.2);
   }
-  // рваный гномий колпак, свисающий кончик с дырой
-  c.fillStyle = INK; c.beginPath(); c.moveTo(hx2 - 6.4, hy2 - 2.4); c.quadraticCurveTo(hx2 - 3, hy2 - 11, hx2 + 2, hy2 - 17); c.quadraticCurveTo(hx2 + 6.2, hy2 - 15, hx2 + 8, hy2 - 11); c.lineTo(hx2 + 6.2, hy2 - 3); c.lineTo(hx2 + 3, hy2 - 4.4); c.lineTo(hx2, hy2 - 2.8); c.lineTo(hx2 - 3, hy2 - 4.2); c.closePath(); c.fill();
-  const hg = c.createLinearGradient(hx2 - 6, 0, hx2 + 6, 0); hg.addColorStop(0, hatC[0]); hg.addColorStop(1, hatC[1]);
-  c.fillStyle = hg; c.beginPath(); c.moveTo(hx2 - 5.4, hy2 - 3); c.quadraticCurveTo(hx2 - 2.4, hy2 - 10.4, hx2 + 2.2, hy2 - 15.6); c.quadraticCurveTo(hx2 + 5.2, hy2 - 14, hx2 + 6.8, hy2 - 10.6); c.lineTo(hx2 + 5.4, hy2 - 3.8); c.lineTo(hx2 + 3, hy2 - 5); c.lineTo(hx2, hy2 - 3.6); c.lineTo(hx2 - 3, hy2 - 4.8); c.closePath(); c.fill();
-  c.fillStyle = INK; c.beginPath(); c.ellipse(hx2 + 0.6, hy2 - 9, 1.1, 1.6, 0.4, 0, 7); c.fill();                 // дыра в колпаке
-  c.fillStyle = hatC[2]; c.fillRect(hx2 - 6, hy2 - 3.6, 12.2, 1.6);                                              // обтрёпанный край
+  skelHat(c, view, hx2, hy2 - 2.3, hatC, look, P);
   // клочья бороды-паутины
   if (!back) {
     c.strokeStyle = 'rgba(206,198,186,0.8)'; c.lineWidth = 0.7;
@@ -247,7 +288,8 @@ function skelPile(c, look, p) {
   c.fillStyle = INK; c.beginPath(); c.arc(sx, sy, 5, 0, 7); c.fill();
   c.fillStyle = BONE; c.beginPath(); c.arc(sx, sy, 4.2, 0, 7); c.fill();
   c.fillStyle = INK; c.fillRect(sx - 1.6, sy - 1.4, 1.6, 1.8); c.fillRect(sx + 1, sy - 1.4, 1.6, 1.8);
-  c.fillStyle = C.hat[look & 1][1]; c.beginPath(); c.moveTo(-12, -1); c.lineTo(-7, -5 * q); c.lineTo(-5, 0); c.fill();
+  c.fillStyle = C.hat[look & 1]; c.beginPath(); c.moveTo(-12, -1); c.lineTo(-7, -5 * q); c.lineTo(-5, 0); c.fill();
+  c.fillStyle = shade(C.hat[look & 1], -0.4); c.fillRect(-11.5, -1.4, 6, 1.2);
   c.fillStyle = INK; c.fillRect(-4.6, -9.6 * q - 0.3, 2.6, 9.6 * q + 0.6); c.fillRect(-6.6, -9.6 * q - 0.3, 6.6, 2);
   c.fillStyle = C.rust[1]; c.fillRect(-4.2, -9.3 * q, 1.8, 9.3 * q); c.fillStyle = C.wood[1]; c.fillRect(-6.2, -9.3 * q, 5.8, 1.4);
 }
