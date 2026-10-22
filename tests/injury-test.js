@@ -47,7 +47,8 @@ let t = 0;
 while (t < 60 && h.run('!!__b.injury')) { S.runFor(sim, 5, 5); t += 5; }
 console.log(`раненый ${h.run('__b.type')}: вылечен за ${t} с (${h.run('__b.healedBy')})`);
 ok(!h.run('__b.injury'), 'раненый не вылечился у лекаря за 60 с (сам заживает за 150)');
-ok(h.run('__b.healedBy') === 'ward', 'вылечился не в лазарете: ' + h.run('__b.healedBy'));
+// занятого нельзя оторвать от дела: к нему через CALL с выходит лекарь (injTick) — тоже верный исход, зависит от того, чем занят житель
+ok(['ward', 'doc'].includes(h.run('__b.healedBy')), 'вылечился не у лекаря и не в лазарете: ' + h.run('__b.healedBy'));
 
 // 3. Не может дойти — лекарь выходит к нему сам
 h.run(`__a.carry = null; injure(__a, 'arm'); __a.injTry = Game.time + 1e6;`);

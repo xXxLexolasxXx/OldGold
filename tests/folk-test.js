@@ -31,11 +31,11 @@ ok(h.run('!!__kid && !__kid.smoker'), 'гномёнок не родился ил
 ok(h.run('lookOf({ type: "kid", look: __kid.look, sx: __kid.fam.sx }).noBeard'), 'гномёнок с бородой');
 
 // «Бах!»: призрак пытается схватить — гномёнок стреляет, призрак удирает, гномёнок цел
-h.run(`Game.time = Math.max(Game.time, 40); { const k = __kid; k.proc = null; k.action = null; k.brk = null; k.inside = null;
+h.run(`Game.time = Math.max(Game.time, 40); { const k = __kid; k.proc = null; k.action = null; k.brk = null; k.inside = null; k.bahAt = 0;   // гномёнок мог уже стрелять раньше — откат сбрасываем
   globalThis.__g = { kind: 'ghost', x: k.x + 1.2, y: k.y, hx: k.x, hy: k.y, tx: k.x, ty: k.y, ph: 0, mode: 'drift', modeT: 9, retarget: 9, alpha: 1, rev: true, scan: 9, face: 1 };
   Game.ghosts = Game.ghosts || []; Game.ghosts.push(__g); }`);
 ok(h.run('ghCanTake(__g, __kid)') === false, 'призрак может утащить гномёнка');
-ok(h.run('folkBah(__kid, __g, "ghost")') === true, 'гномёнок не выхватил пистолет');
+ok(h.run('__kid.bahAt > Game.time || folkBah(__kid, __g, "ghost")') === true, 'гномёнок не выхватил пистолет');   // мог выхватить уже в ghCanTake
 S.runFor(sim, 0.4, 0.1);
 ok(h.run('!!(__kid.bah && __kid.brk && __kid.brk.kind === "bah")'), 'нет состояния «Бах!»');
 S.runFor(sim, 4, 0.5);

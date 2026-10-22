@@ -292,7 +292,7 @@ function petsTick(dt) {
   const night = isNightNow();
   // волки и лисы выбирают кролика или утку
   for (const a of Game.animals) {
-    if (a.dead || a.owner || (a.kind !== 'wolf' && a.kind !== 'fox') || a.state === 'petchase' || a.state === 'flee' || a.state === 'chase' || a.loot) continue;
+    if (a.dead || a.owner || (a.kind !== 'wolf' && a.kind !== 'fox') || a.state === 'petchase' || a.state === 'flee' || a.state === 'chase' || a.loot || a.calm > Game.time) continue;   // calm: его приручают — замер и смотрит
     if (Game.time < (a.petCD || 0)) continue;
     const prey = nearestAnimal(a.x, a.y, a.kind === 'wolf' ? 7 : 8, p => (p.kind === 'rabbit' || p.kind === 'duck') && !p.dead && !p.hunted && !isWaterAt(Math.floor(p.x), Math.floor(p.y)));
     if (!prey) continue;
