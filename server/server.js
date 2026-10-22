@@ -809,7 +809,10 @@ process.on('SIGTERM', shutdown);
 server.listen(PORT, process.env.HOST || '0.0.0.0', () => {
   log(`Сервер OldGold запущен на порту ${PORT}`);
   log(`Хост играет здесь:  http://localhost:${PORT}/`);
-  for (const list of Object.values(os.networkInterfaces()))
+  // список адресов — только подсказка для LAN; под песочницей systemd без AF_NETLINK вызов бросает EAFNOSUPPORT и ронял сервер на старте
+  let ifaces = {};
+  try { ifaces = os.networkInterfaces(); } catch (e) { log('адреса сети не прочитались (песочница?):', e.code || e.message); }
+  for (const list of Object.values(ifaces))
     for (const a of list || []) if (a.family === 'IPv4' && !a.internal) log(`Друзьям в сети:     http://${a.address}:${PORT}/`);
   log(`Данные: ${DATA}`);
 });
