@@ -43,7 +43,7 @@ function run(){
  if(only.includes('leg')){r=sec('Нога камня');const cv=mkCanvas(60,40),g=cv.getContext('2d');rockLeg(g,30,8,18,2,10,30);rockLeg(g,30,8,42,2,50,30);cell(r,cv,'ноги',8);}
  if(only.includes('ent')){r=sec('Ходячий камень целиком: стоит, идёт, бьёт, держит');
  window.Game=window.Game||{time:0};window.nightAmt=()=>1;window.hash=i=>(Math.imul(i,2654435761)>>>0);window.GRAB_REACH=0.9;window.entBase=e=>({bx:e.px,by:e.py});
- for(const [lbl,st] of [['стоит',{state:'idle',k:1}],['идёт',{state:'walk',moving:true,k:1,phase:1.3}],['бьёт',{state:'fight',k:1,atk:Game.time-0.2,t:0.1}],['лежит',{state:'idle',k:0.02}]]){
+ for(const [lbl,st] of [['стоит',{state:'idle',k:1}],['удар×3',{state:'fight',k:1,atk:Game.time-0.2,t:0.1,crack:0.6}],['умирает 0.5',{state:'dying',k:1,t:0.5,rock:1}],['раскол 1.4',{state:'dying',k:1,t:1.4,rock:1}],['раскол 2.0',{state:'dying',k:1,t:2.0,rock:1}]]){
   const cv=mkCanvas(100,80),g=cv.getContext('2d');g.fillStyle='#4f7a30';g.fillRect(0,0,100,80);
   const e=Object.assign({i:7,o:{n:5},face:1,alpha:1,x:0,y:0,phase:0,t:0,moving:false,px:50,py:62},st);
   try{drawRockEnt(g,e);}catch(x){document.getElementById('err').textContent+=' ent '+x.message;}

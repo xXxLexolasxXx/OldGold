@@ -33,6 +33,12 @@ body.ui-ab:not(.mobile):has(#tool-hint:not(.hidden)) #pause-banner { bottom: 84p
 /* телефон (портрет и боком): над панелью */
 body.mobile.ui-ab #pause-banner { bottom: calc(var(--ui-ab-top, 0px) + 6px); }
 body.mobile.ui-ab #hint { bottom: calc(var(--ui-ab-top, 0px) + 50px); }
+/* окно рейда и босса (Курганный князь, #raid-hud из js/world/raid.js) — так же: телефон — над панелью, ПК — левее неё;
+   баннер паузы и подсказка при нём поднимаются ещё выше */
+body.mobile.ui-ab #raid-hud { bottom: calc(var(--ui-ab-top, 0px) + 6px) !important; z-index: 8; }
+body.ui-ab:not(.mobile) #raid-hud { left: calc((100% - var(--ui-ab-w, 0px) + 130px) / 2); max-width: calc(100% - var(--ui-ab-w, 0px) - 160px); box-sizing: border-box; }
+body.mobile.ui-ab:has(#raid-hud[style*="block"]) #pause-banner { bottom: calc(var(--ui-ab-top, 0px) + 96px); }
+body.mobile.ui-ab:has(#raid-hud[style*="block"]) #hint { bottom: calc(var(--ui-ab-top, 0px) + 140px); }
 
 /* ---------- Значок версии: мелко внизу в безопасной зоне, ничего не накрывает ---------- */
 #ver-badge {
