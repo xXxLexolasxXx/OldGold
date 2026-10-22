@@ -13,10 +13,11 @@ const COOP_SLOT = 'coop';
 
 const COOP_TOK = 'feod.coop';
 function coopSaved(set) {
+  const k = COOP_TOK + (coopStand() === 'test' ? ':test' : '');   // вход на тестовом стенде не затирает боевой
   try {
-    if (set === null) { localStorage.removeItem(COOP_TOK); return null; }
-    if (set) localStorage.setItem(COOP_TOK, JSON.stringify(set));
-    return JSON.parse(localStorage.getItem(COOP_TOK));
+    if (set === null) { localStorage.removeItem(k); return null; }
+    if (set) localStorage.setItem(k, JSON.stringify(set));
+    return JSON.parse(localStorage.getItem(k));
   } catch (e) { return null; }
 }
 
@@ -24,6 +25,18 @@ function coopSaved(set) {
 // Страница по https (GitHub Pages) может подключиться только к wss:// — см. server/DEPLOY.md.
 // Можно подменить ссылкой: ...?server=wss://адрес
 const COOP_SERVER = 'wss://151-252-107-75.sslip.io';
+// Тестовый стенд (СТЕНД.md) — для тестеров и разработчиков: ?stand=test / ?stand=prod
+// или 7 быстрых нажатий по надписи «Адрес сервера» в мультиплеере. Выбор запоминается на устройстве.
+const COOP_TEST_SERVER = 'wss://test-151-252-107-75.sslip.io';
+const COOP_STAND_KEY = 'oldgold-stand';
+try {   // ссылка ?stand= запоминается один раз при загрузке, дальше переключают нажатия
+  const q = new URLSearchParams(location.search).get('stand');
+  if (q === 'test') localStorage.setItem(COOP_STAND_KEY, 'test');
+  else if (q === 'prod') localStorage.removeItem(COOP_STAND_KEY);
+} catch (e) { /* нет хранилища */ }
+function coopStand() {
+  try { return localStorage.getItem(COOP_STAND_KEY) === 'test' ? 'test' : 'prod'; } catch (e) { return 'prod'; }
+}
 
 // Строки от сервера в разметку — только через это: ссылку ?server= может подсунуть кто угодно, и чужой сервер
 // прислал бы в чат или подписи <img onerror=…> (XSS на странице игры, доступ к сохранениям и входу)
@@ -44,7 +57,7 @@ function coopWsUrl(a) {
 function coopDefaultServer() {
   let q = '';
   try { q = new URLSearchParams(location.search).get('server') || ''; } catch (e) { /* старый браузер */ }
-  return coopWsUrl(q || COOP_SERVER);
+  return coopWsUrl(q || (coopStand() === 'test' ? COOP_TEST_SERVER : COOP_SERVER));
 }
 // адрес для запросов по HTTP к тому же серверу (coop-info)
 const coopHttpUrl = ws => ws.replace(/^ws/i, 'http');
@@ -941,17 +954,48 @@ function coopPlayCopy() {
     const mode = Coop.regMode ? 'register' : 'login';
     Coop.regMode = false;
     if (!pass) return Promise.reject(new Error('Введите пароль'));
-    return coopConnect({ nick, server: Coop.served ? coopOrigin() : server, pass, mode });
+    return coopConnect({ nick, server: Coop.served && coopStand() !== 'test' ? coopOrigin() : server, pass, mode });
   };
 
   // адрес по умолчанию: общий сервер игры (COOP_SERVER / ?server=), иначе тот, с которого открыта страница
   let srv0 = null;
   const coopFillServer = () => {
     const srv = document.getElementById('sm-server');
-    if (!srv || (srv.value && srv.value !== 'ws://localhost:8787')) return;
-    const def = coopDefaultServer();
+    if (!srv) return;
+    coopStandMark();
+    // свой адрес игрока не трогаем; общий боевой/тестовый меняется вместе с переключателем стенда
+    if (srv.value && ![ 'ws://localhost:8787', COOP_SERVER, COOP_TEST_SERVER ].includes(srv.value)) return;
+    const def = coopStand() === 'test' ? COOP_TEST_SERVER : Coop.served ? '' : coopDefaultServer();
     if (def) srv.value = def;
     else if (location.protocol.startsWith('http') && location.host) srv.value = coopOrigin();
+  };
+  // метка «тестовый сервер» и скрытый переключатель (7 нажатий по надписи «Адрес сервера» за 3 с)
+  const coopStandMark = () => {
+    const srv = document.getElementById('sm-server'), lab = srv && srv.closest('label');
+    if (!lab) return;
+    let tag = document.getElementById('sm-stand');
+    if (!tag) {
+      tag = document.createElement('div');
+      tag.id = 'sm-stand'; tag.className = 'sm-msg';
+      tag.style.cssText = 'color:#ffb02e;font-weight:700';
+      lab.insertAdjacentElement('beforebegin', tag);
+      let taps = [];
+      lab.addEventListener('click', e => {
+        if (e.target === srv) return;
+        const now = Date.now();
+        taps = taps.filter(t => now - t < 3000).concat(now);
+        if (taps.length < 7) return;
+        taps = [];
+        try {
+          if (coopStand() === 'test') localStorage.removeItem(COOP_STAND_KEY); else localStorage.setItem(COOP_STAND_KEY, 'test');
+        } catch (err) { /* нет хранилища */ }
+        if (srv.value === COOP_SERVER || srv.value === COOP_TEST_SERVER) srv.value = '';
+        coopFillServer();
+        if (typeof toast === 'function') toast(coopStand() === 'test' ? 'Тестовый сервер' : 'Боевой сервер');
+      });
+    }
+    tag.textContent = coopStand() === 'test' ? '🧪 ТЕСТОВЫЙ СЕРВЕР: мир и аккаунты не боевые, сбрасываются' : '';
+    tag.hidden = coopStand() !== 'test';
   };
   const _smr = smRender;
   smRender = function () { _smr(); coopFillServer(); };
@@ -1227,7 +1271,7 @@ function coopHint() {
     const info = url => fetch(url, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => (j && j.coop ? j : null)).catch(() => null);
     const remote = coopDefaultServer();
     const canRemote = remote && !(location.protocol === 'https:' && remote.startsWith('ws://'));
-    info('coop-info').then(j => {
+    (coopStand() === 'test' && location.host !== COOP_TEST_SERVER.slice(6) ? Promise.resolve(null) : info('coop-info')).then(j => {
       if (j) { Coop.served = true; Coop.target = coopOrigin(); return j; }
       if (!canRemote) return null;
       return info(coopHttpUrl(remote) + '/coop-info').then(r => { if (r) Coop.target = remote; return r; });
