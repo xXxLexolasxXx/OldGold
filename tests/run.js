@@ -59,6 +59,7 @@ scriptTest('wildlife: живность по биомам и дням, меньш
 scriptTest('frogfolk: жаболюды — поселения у воды, касты, прыжок, влажность, яд, зима, сейв', 'frogfolk-test.js');
 scriptTest('raid: курган Курганного князя — вход по клику в одиночке и в коопе, подпись, причины, сейв', 'raid-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
+scriptTest('wildfire: горящие куры и деревья, фонари, печи, молния, колодец и крыши, огонь всегда гаснет', 'wildfire-test.js', [], 420000);
 scriptTest('disaster: стихийные бедствия — знамения, виды на сидах, колодец, ремонт, море, сейв, кооп', 'disaster-test.js', [], 420000);
 scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
 scriptTest('heroapp: цвет жилета героя — наряд, фигура, сейв', 'heroapp-test.js');
@@ -75,6 +76,7 @@ scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
 scriptTest('zemelka: ножички — партия гномов, болельщики, партия героя, сохранение', 'zemelka-test.js');
 scriptTest('kids: детские игры, замки, приручение, трубка, взросление', 'kids-test.js');
+scriptTest('pixel: чистка пикселей — камни, скалы, краб без одиночных чёрных точек', 'pixel-clean-test.js');
 scriptTest('sea: море, обитатели, рыбацкая хижина, кракен, шторм, сейв', 'sea-test.js');
 scriptTest('folk: гномки и гномята — облик, пиво, «Бах!», не дерутся, сейв', 'folk-test.js');
 scriptTest('durability: прочность снаряжения, ремонт, очередь доспехов, сейв', 'durability-test.js');
@@ -98,6 +100,7 @@ scriptTest('leprechaun: лепреконы у рудников, споры за 
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
 scriptTest('wild: поселения диких гномов — число на картах, обмен, караван, купец, поединок, бунт, сейв', 'wild-test.js', [], 600000);
 scriptTest('whatsnew: пропущенные обновления в окне «Что нового»', 'whatsnew-test.js');
+scriptTest('uilayers: слои интерфейса — загрузка без скорости, стройка поверх способностей', 'uilayers-test.js');
 scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js');
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 

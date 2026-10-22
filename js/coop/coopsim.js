@@ -671,7 +671,7 @@ function coopUnitsBuild() {
   }
   for (const a of Game.animals) {
     if (a.dead) continue;
-    const s = JSON.stringify({ i: a.id, k: a.kind, x: r2(a.x), y: r2(a.y), f: a.face, m: a.moving ? 1 : 0, p: r2(a.phase), l: a.loot || undefined, s: a.state });
+    const s = JSON.stringify({ i: a.id, k: a.kind, x: r2(a.x), y: r2(a.y), f: a.face, m: a.moving ? 1 : 0, p: r2(a.phase), l: a.loot || undefined, s: a.state, b: a.burn ? 1 : undefined });
     animals.push({ id: a.id, x: a.x, y: a.y, s });
     aLive.add(a.id);
   }

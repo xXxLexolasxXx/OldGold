@@ -46,7 +46,13 @@ function mobileTool(tool) {
   mobileSheet(null);
   const text = document.getElementById('mtool-text');
   const build = tool.kind === 'build';
-  if (build) text.textContent = `${BUILDINGS[tool.type].name}: коснитесь места или тяните здание${BUILDINGS[tool.type].noRotate ? '' : ' · ↻ — повернуть вход'}`;
+  if (build) {
+    text.textContent = `${BUILDINGS[tool.type].name}: коснитесь места или тяните здание`;
+    mobileEntrance(tool);
+    let seen = false;
+    try { seen = !!localStorage.getItem('og_rotHint'); if (!seen && !BUILDINGS[tool.type].noRotate) localStorage.setItem('og_rotHint', '1'); } catch (e) { seen = true; }
+    if (!seen && !BUILDINGS[tool.type].noRotate) toast('Вход здания меняется кнопкой «↻ Вход» — стрелка показывает, куда он смотрит');
+  }
   else if (tool.kind === 'road') text.textContent = 'Дорога: ведите пальцем, касание по дороге — убрать';
   else if (tool.kind === 'field') text.textContent = `${FIELD_NAMES[tool.crop]}: касайтесь клеток (повторное касание — убрать)`;
   else text.textContent = 'Снос: коснитесь';
@@ -54,6 +60,14 @@ function mobileTool(tool) {
   document.getElementById('mtool-rot').style.display = build && !BUILDINGS[tool.type].noRotate ? '' : 'none';
   bar.classList.remove('hidden');
   if (build) R.hover = null;
+}
+
+// кнопка поворота: подпись и стрелка — куда сейчас смотрит вход
+const ENTRANCE_ARROW = ['↓', '→', '←'];
+function mobileEntrance(tool) {
+  const b = document.getElementById('mtool-rot');
+  if (!b || !tool || tool.kind !== 'build') return;
+  b.textContent = `↻ Вход ${tool.rot === 3 ? '↑' : ENTRANCE_ARROW[tool.rot || 0]}`;
 }
 
 function initMobile() {
@@ -65,7 +79,7 @@ function initMobile() {
     if (document.body.classList.contains('show-mm')) mobileSheet(null);
   };
   document.getElementById('mtool-x').onclick = () => setTool(null);
-  document.getElementById('mtool-rot').onclick = () => rotateTool();
+  document.getElementById('mtool-rot').onclick = () => { rotateTool(); mobileEntrance(Game.tool); };
   document.getElementById('mtool-ok').onclick = () => {
     if (R.hover) onLeftClickTile(R.hover);
     else toast('Сначала коснитесь места на карте');
