@@ -960,95 +960,157 @@ function fzCanvas(key, w, h, ox, oy, draw) {
   draw(c);
   return cv;
 }
-// Банши: бледная плакальщица в саване. Низ — как у призраков: хвост-саван сужается и рассыпается зернистой дымкой, без ног.
-// Длинные седые волосы мягкой пеленой по бокам, пустые глазницы с тлеющими зрачками, бестелесные руки с мелкими когтями.
-// wail — рот раскрыт, руки воздеты. p — фаза (0..5)
+// Банши: жуткая плакальщица в рваном саване. Низ — как у призраков: хвост-саван сужается, распадается лохмотьями и зернистой дымкой, без ног.
+// Капюшон-лохмотья, седые космы, лицо-череп с провалами щёк, чёрными глазницами с холодным огнём и пастью с зубами; руки костлявые, когти загнуты внутрь.
+// Всё строго симметрично относительно оси. wail — пасть раскрыта, руки воздеты. p — фаза (0..5)
+function fzBansheeHand(c, ang, wail) {
+  // правая кисть в локальных координатах (пальцы вдоль +x), левую даёт зеркало вызывающего: малая ладонь, 4 пальца из двух фаланг, когти-иглы
+  c.save(); c.rotate(ang); c.lineCap = 'round'; c.lineJoin = 'round';
+  c.fillStyle = 'rgba(150,215,225,0.22)'; c.strokeStyle = 'rgba(225,250,255,0.75)'; c.lineWidth = 0.5;
+  c.beginPath(); c.ellipse(0.8, 0, 2.1, 1.9, 0, 0, 7); c.fill(); c.stroke();
+  const curl = wail ? 0.55 : 0.46;
+  for (const [j, fl] of [[-1.5, 0.82], [-0.5, 1], [0.5, 1], [1.5, 0.82]]) {
+    const x0 = 2.4, y0 = j * 0.85, l1 = 2.8 * fl, l2 = 2.5 * fl, a0 = j * 0.4, a1 = a0 - j * curl * 0.7, a2 = a1 - j * curl * 0.8;
+    const x1 = x0 + Math.cos(a0) * l1, y1 = y0 + Math.sin(a0) * l1, x2 = x1 + Math.cos(a1) * l2, y2 = y1 + Math.sin(a1) * l2;
+    c.strokeStyle = 'rgba(130,210,225,0.2)'; c.lineWidth = 1.7;
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    c.strokeStyle = 'rgba(235,252,255,0.92)'; c.lineWidth = 0.7;
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    const cl = 4.2 * (0.8 + fl * 0.2), dx = Math.cos(a2), dy = Math.sin(a2), nx = -dy * 0.55, ny = dx * 0.55;
+    c.fillStyle = 'rgba(248,255,255,0.98)'; c.beginPath();
+    c.moveTo(x2 + nx, y2 + ny); c.quadraticCurveTo(x2 + dx * cl * 0.6 + nx * 0.4, y2 + dy * cl * 0.6 + ny * 0.4 - j * 0.15, x2 + dx * cl - j * 0.25, y2 + dy * cl - j * 0.35); c.quadraticCurveTo(x2 + dx * cl * 0.5 - nx * 0.2, y2 + dy * cl * 0.5 - ny * 0.2, x2 - nx, y2 - ny); c.closePath(); c.fill();
+  }
+  c.restore();
+}
 function fzBansheeSprite(wail, p) {
   return fzCanvas('ban' + wail + p, 64, 84, 32, 30, c => {
     const TAU = Math.PI * 2, ph = p / 6 * TAU, sn = (m, o = 0) => Math.sin(ph * m + o);
     let sd = (p * 131 + wail * 17 + 7) % 2147483647;
     const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-    const tailLen = 46, N = 22, L = [], R = [];
+    const tailLen = 46, N = 24, L = [], R = [];
     for (let n = 0; n <= N; n++) {
-      const t = n / N, y = 2 + t * tailLen;
-      const hw = 7.2 * Math.pow(1 - t, 0.7) + 0.6 + (t > 0.3 ? Math.sin(t * 41 + (n % 3) * 1.7 + ph) * 1.2 * t : 0);
+      const t = n / N, y = -5 + t * (tailLen + 7), zig = t > 0.35 ? (n % 2 ? 1.5 : -0.6) * (t - 0.2) : 0;
+      const hw = (7.2 * Math.pow(1 - t, 0.7) + 0.6) * Math.min(1, 0.45 + (y + 5) / 9) + (t > 0.3 ? Math.sin(t * 41 + (n % 3) * 1.7 + ph) * 1.1 * t : 0) + zig;
       const cx = sn(1, -t * 5.2) * (0.8 + t * 6);
       L.push([cx - hw, y]); R.push([cx + hw, y]);
     }
     const body = () => { c.beginPath(); c.moveTo(L[0][0], L[0][1]); for (const q of L) c.lineTo(q[0], q[1]); for (let n = R.length - 1; n >= 0; n--) c.lineTo(R[n][0], R[n][1]); c.closePath(); };
-    // внешняя дымка
+    // внешняя холодная дымка
     let g = c.createLinearGradient(0, -8, 0, 44);
-    g.addColorStop(0, 'rgba(170,215,240,0.38)'); g.addColorStop(1, 'rgba(90,150,210,0)');
-    c.fillStyle = g; c.save(); c.scale(1.5, 1); body(); c.fill(); c.restore();
-    // волосы позади: мягкая пелена, тающая к концам (без отдельных прядей)
+    g.addColorStop(0, 'rgba(120,225,235,0)'); g.addColorStop(0.3, 'rgba(120,225,235,0.3)'); g.addColorStop(1, 'rgba(60,130,200,0)');
+    c.fillStyle = g; c.save(); c.scale(1.55, 1); body(); c.fill(); c.restore();
+    // космы позади: мягкая пелена, тающая к концам
     const lock = (s, alpha) => {
       const gr = c.createLinearGradient(0, -12, 0, 40);
-      gr.addColorStop(0, `rgba(240,250,255,${alpha})`); gr.addColorStop(0.55, `rgba(205,228,248,${alpha * 0.6})`); gr.addColorStop(1, 'rgba(150,190,235,0)');
+      gr.addColorStop(0, `rgba(226,244,252,${alpha})`); gr.addColorStop(0.55, `rgba(170,200,226,${alpha * 0.6})`); gr.addColorStop(1, 'rgba(110,150,205,0)');
       c.fillStyle = gr; c.beginPath();
       c.moveTo(s * 3, -13);
-      c.bezierCurveTo(s * 11, -12, s * 13 + sn(1, s) * 1.6, 8, s * 10 + sn(1, 1 + s) * 3, 34 + (wail ? 4 : 0));
+      c.bezierCurveTo(s * 11, -12, s * 13 + sn(1, 0) * 1.6, 8, s * 10 + sn(1, 1) * 3, 34 + (wail ? 4 : 0));
       c.quadraticCurveTo(s * 7, 28, s * 5.2, 12);
       c.quadraticCurveTo(s * 4, 2, s * 3, -2);
       c.closePath(); c.fill();
     };
     lock(-1, 0.8); lock(1, 0.8);
+    // рваные лоскуты по бокам хвоста: тянутся вниз и в стороны, тают
+    for (const s of [-1, 1]) for (const [t, len, w, sw] of [[0.42, 15, 4.2, 6], [0.58, 17, 3.6, 8], [0.74, 13, 3, 6]]) {
+      const i = Math.round(t * N), q = s < 0 ? L[i] : R[i], x0 = q[0] + s * 0.6, y0 = q[1], sway = s * sw + sn(1, t * 9) * 2;
+      const gr = c.createLinearGradient(0, y0, 0, y0 + len); gr.addColorStop(0, 'rgba(120,175,215,0.55)'); gr.addColorStop(1, 'rgba(70,120,190,0)');
+      c.fillStyle = gr; c.beginPath(); c.moveTo(x0 - w / 2, y0); c.quadraticCurveTo(x0 + sway * 0.4, y0 + len * 0.5, x0 + sway, y0 + len); c.quadraticCurveTo(x0 + sway * 0.7 + w * 0.3, y0 + len * 0.45, x0 + w / 2, y0 + w * 0.3); c.closePath(); c.fill();
+    }
     // сам саван: бледный сверху, прозрачный снизу
     g = c.createLinearGradient(0, -2, 0, 48);
-    g.addColorStop(0, 'rgba(228,246,252,0.96)'); g.addColorStop(0.35, 'rgba(160,200,232,0.8)'); g.addColorStop(0.7, 'rgba(90,135,190,0.42)'); g.addColorStop(1, 'rgba(60,100,170,0)');
+    g.addColorStop(0, 'rgba(214,236,246,0.96)'); g.addColorStop(0.35, 'rgba(140,185,222,0.8)'); g.addColorStop(0.7, 'rgba(80,125,185,0.42)'); g.addColorStop(1, 'rgba(50,90,165,0)');
     c.fillStyle = g; body(); c.fill();
     c.save(); body(); c.clip();
-    // тёмная пустота под грудью
-    g = c.createRadialGradient(0, 8, 1, 0, 10, 9); g.addColorStop(0, 'rgba(8,24,40,0.55)'); g.addColorStop(1, 'rgba(8,24,40,0)');
-    c.fillStyle = g; c.fillRect(-12, 0, 24, 20);
-    // зернистое растворение: чем ниже, тем больше «выеденных» крупинок
+    // тёмная пустота под грудью и холодный отсвет
+    g = c.createRadialGradient(0, 9, 1, 0, 11, 10); g.addColorStop(0, 'rgba(4,16,30,0.7)'); g.addColorStop(1, 'rgba(4,16,30,0)');
+    c.fillStyle = g; c.fillRect(-12, 0, 24, 22);
+    g = c.createRadialGradient(0, 11, 0, 0, 11, 4.5); g.addColorStop(0, 'rgba(130,255,235,0.35)'); g.addColorStop(1, 'rgba(130,255,235,0)');
+    c.fillStyle = g; c.fillRect(-6, 5, 12, 12);
+    // тёмные прорехи савана (парные, симметричные)
+    c.fillStyle = 'rgba(6,20,36,0.5)';
+    for (const s of [-1, 1]) for (const [x, y, w, h] of [[3.4, 18, 1.1, 8], [5.2, 26, 0.9, 7], [1.8, 28, 0.9, 6]]) {
+      c.beginPath(); c.moveTo(s * x, y); c.lineTo(s * (x + w * 0.6), y + h * 0.5); c.lineTo(s * x, y + h); c.lineTo(s * (x - w), y + h * 0.45); c.closePath(); c.fill();
+    }
+    // зернистое растворение
     c.globalCompositeOperation = 'destination-out';
-    for (let n = 0; n < 460; n++) {
-      const t = 0.22 + rnd() * 0.78, i = Math.min(N, Math.floor(t * N)), y = 2 + t * tailLen;
+    for (let n = 0; n < 400; n++) {
+      const t = 0.22 + rnd() * 0.78, i = Math.min(N, Math.floor(t * N)), y = -5 + t * (tailLen + 7);
       if (rnd() > Math.pow(t, 1.4) * 1.1) continue;
       const x = L[i][0] + rnd() * (R[i][0] - L[i][0]) * 1.3 - 1, z = 0.5 + rnd() * 1.4;
       c.fillStyle = `rgba(0,0,0,${0.55 + rnd() * 0.45})`; c.fillRect(x, y, z, z);
     }
     c.globalCompositeOperation = 'source-over';
     c.restore();
-    // крупинки ушедшей дымки под и рядом с хвостом
+    // крупинки ушедшей дымки
     for (let n = 0; n < 30; n++) {
-      const t = 0.35 + rnd() * 0.75, i = Math.min(N, Math.floor(t * N)), y = 2 + t * tailLen + rnd() * 4;
+      const t = 0.35 + rnd() * 0.75, i = Math.min(N, Math.floor(t * N)), y = -5 + t * (tailLen + 7) + rnd() * 4;
       const x = L[i][0] + (rnd() * 1.6 - 0.3) * (R[i][0] - L[i][0]) + sn(1, n) * 1.5, z = 0.5 + rnd() * 0.9;
-      c.fillStyle = `rgba(${190 + rnd() * 40 | 0},${225 + rnd() * 25 | 0},255,${(0.55 - (t - 0.35) * 0.4) * (0.4 + rnd() * 0.6)})`; c.fillRect(x, y, z, z);
+      c.fillStyle = `rgba(${150 + rnd() * 40 | 0},${225 + rnd() * 25 | 0},255,${(0.55 - (t - 0.35) * 0.4) * (0.4 + rnd() * 0.6)})`; c.fillRect(x, y, z, z);
     }
-    // шея и голова
-    c.fillStyle = 'rgba(226,244,252,0.95)'; c.fillRect(-1.7, -3, 3.4, 6);
-    c.fillStyle = 'rgba(236,250,255,0.97)'; c.beginPath(); c.ellipse(0, -9, 6.1, 6.6, 0, Math.PI, 0); c.fill();         // макушка и волосы над лицом
-    c.fillStyle = 'rgba(226,244,252,1)'; c.beginPath(); c.ellipse(0, -7, 4.2, 5.8, 0, 0, 7); c.fill();                   // лицо
-    // боковые пряди волос впереди — мягкие, как пелена
+    // капюшон-лохмотья: острая макушка и рваная кромка по плечам
+    c.fillStyle = 'rgba(40,62,86,0.95)'; c.beginPath();
+    c.moveTo(0, -20.5); c.quadraticCurveTo(7.4, -17, 8.4, -6); c.lineTo(9.6, 1); c.lineTo(7.2, -1.2); c.lineTo(6.2, 3); c.lineTo(4.2, -0.6); c.lineTo(3.4, 2.4);
+    c.lineTo(-3.4, 2.4); c.lineTo(-4.2, -0.6); c.lineTo(-6.2, 3); c.lineTo(-7.2, -1.2); c.lineTo(-9.6, 1); c.lineTo(-8.4, -6); c.quadraticCurveTo(-7.4, -17, 0, -20.5); c.closePath(); c.fill();
+    g = c.createLinearGradient(0, -20, 0, 2); g.addColorStop(0, 'rgba(120,200,225,0.35)'); g.addColorStop(1, 'rgba(120,200,225,0)');
+    c.fillStyle = g; c.fill();
+    // шея
+    c.fillStyle = 'rgba(200,228,240,0.95)'; c.fillRect(-1.5, -2.6, 3, 5.4);
+    // лицо-череп
+    c.fillStyle = 'rgba(222,242,250,1)'; c.beginPath();
+    c.moveTo(-4.1, -9); c.quadraticCurveTo(-4.3, -14.2, 0, -14.4); c.quadraticCurveTo(4.3, -14.2, 4.1, -9);
+    c.quadraticCurveTo(3.9, -5.6, 2.5, -3.6); c.quadraticCurveTo(1.6, -1.2, 0, -0.6); c.quadraticCurveTo(-1.6, -1.2, -2.5, -3.6); c.quadraticCurveTo(-3.9, -5.6, -4.1, -9); c.closePath(); c.fill();
+    // провалы щёк и висков
     for (const s of [-1, 1]) {
-      const gr = c.createLinearGradient(0, -12, 0, 22);
-      gr.addColorStop(0, 'rgba(244,252,255,0.96)'); gr.addColorStop(1, 'rgba(190,220,245,0)');
-      c.fillStyle = gr; c.beginPath(); c.moveTo(s * 3.6, -13); c.bezierCurveTo(s * 7.6, -12, s * 8.4, -2, s * 7.4 + sn(1, s) * 1.2, 20); c.quadraticCurveTo(s * 5.2, 8, s * 4.2, -3); c.closePath(); c.fill();
+      g = c.createRadialGradient(s * 2.9, -4.2, 0.2, s * 2.9, -4.2, 2.5); g.addColorStop(0, 'rgba(30,60,86,0.8)'); g.addColorStop(1, 'rgba(30,60,86,0)');
+      c.fillStyle = g; c.fillRect(s * 2.9 - 3, -7, 6, 6);
     }
-    // пустые глазницы + тлеющие зрачки, ресницы
-    c.fillStyle = '#0a1620'; c.beginPath(); c.ellipse(-1.9, -7.4, 1.3, 1.9, 0.15, 0, 7); c.ellipse(1.9, -7.4, 1.3, 1.9, -0.15, 0, 7); c.fill();
-    c.fillStyle = '#9affea'; c.fillRect(-2.2, -7.1, 0.8, 1); c.fillRect(1.5, -7.1, 0.8, 1);
-    c.strokeStyle = '#0a1620'; c.lineWidth = 0.5;
-    c.beginPath(); c.moveTo(-3.5, -8.7); c.lineTo(-4.4, -9.5); c.moveTo(3.5, -8.7); c.lineTo(4.4, -9.5); c.stroke();
-    c.fillStyle = wail ? '#0a1620' : '#7a8aaa';
-    c.beginPath(); c.ellipse(0, wail ? -2.8 : -3.2, wail ? 1.6 : 1.1, wail ? 2.9 : 0.45, 0, 0, 7); c.fill();
-    // бестелесные руки: от плеча тают в дымку, к кисти проступают; когти мелкие
+    // космы по бокам лица
     for (const s of [-1, 1]) {
-      const shx = s * 4.4, shy = 3;
-      const hx = s * (wail ? 13 : 12) + sn(1, s) * 1.4, hy = wail ? -18 + sn(2, s) * 1.6 : 9 + sn(2, s * 1.3) * 2;
-      const mx = (shx + hx) / 2 + s * 3, my = (shy + hy) / 2 + (wail ? 0 : 3) + sn(1, s * 2) * 1.2;
+      const gr = c.createLinearGradient(0, -14, 0, 24);
+      gr.addColorStop(0, 'rgba(236,248,255,0.97)'); gr.addColorStop(1, 'rgba(170,200,230,0)');
+      c.fillStyle = gr; c.beginPath(); c.moveTo(s * 3.8, -14); c.bezierCurveTo(s * 7.8, -12, s * 8.6, -2, s * 7.6 + sn(1, 0) * 1.2, 22); c.quadraticCurveTo(s * 5.4, 9, s * 4.4, -3); c.closePath(); c.fill();
+    }
+    // глазницы: большие, косые, чёрные; в глубине — холодный огонь
+    for (const s of [-1, 1]) {
+      c.fillStyle = '#050d16'; c.beginPath(); c.ellipse(s * 2, -8.4, 1.5, 2.6, -s * 0.34, 0, 7); c.fill();
+      g = c.createRadialGradient(s * 1.9, -7.4, 0, s * 1.9, -7.4, 0.95); g.addColorStop(0, 'rgba(200,255,245,1)'); g.addColorStop(0.5, 'rgba(110,245,220,0.8)'); g.addColorStop(1, 'rgba(60,220,200,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(s * 1.9, -7.4, 0.95, 0, 7); c.fill();
+      c.strokeStyle = '#050d16'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(s * 0.5, -10.6); c.lineTo(s * 4.1, -11.6); c.stroke();     // нависшая бровь
+    }
+    // нос — тёмная щель-треугольник
+    c.fillStyle = '#0a1a28'; c.beginPath(); c.moveTo(0, -6.2); c.lineTo(0.9, -3.9); c.lineTo(0, -4.3); c.lineTo(-0.9, -3.9); c.closePath(); c.fill();
+    // пасть: в крике — провал до подбородка с рядами зубов; в покое — оскал-прорезь
+    const mw = wail ? 2.3 : 2.6, my = wail ? -3.2 : -2.5, mh = wail ? 6.4 : 1.7;
+    c.fillStyle = '#050d16'; c.beginPath();
+    c.moveTo(-mw, my); c.quadraticCurveTo(0, my - 0.8, mw, my); c.quadraticCurveTo(mw * 0.9, my + mh * 0.8, 0, my + mh); c.quadraticCurveTo(-mw * 0.9, my + mh * 0.8, -mw, my); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(238,250,255,0.98)';
+    const nt = wail ? 5 : 4;
+    for (let k = 0; k < nt; k++) { const x = -mw + 0.45 + k * (2 * mw - 0.9) / (nt - 1), tl = (wail ? 1.5 : 1.0) * (1 - Math.abs(x) / (mw * 1.6)); c.beginPath(); c.moveTo(x - 0.4, my - 0.15); c.lineTo(x + 0.4, my - 0.15); c.lineTo(x, my + tl); c.closePath(); c.fill(); }
+    if (wail) for (let k = 0; k < 4; k++) { const x = -1.4 + k * 0.93, by = my + mh - 0.5 - 0.2 * Math.abs(x); c.beginPath(); c.moveTo(x - 0.35, by + 0.2); c.lineTo(x + 0.35, by + 0.2); c.lineTo(x, by - 1.1); c.closePath(); c.fill(); }
+    else for (let k = 0; k < 3; k++) { const x = -1.2 + k * 1.2, by = my + mh - 0.1; c.beginPath(); c.moveTo(x - 0.35, by); c.lineTo(x + 0.35, by); c.lineTo(x, by - 0.9); c.closePath(); c.fill(); }
+    // костлявые руки: рваные рукава тают в дымку, предплечье тощее, кисть с когтями (парные, зеркальные)
+    for (const s of [-1, 1]) {
+      c.save(); c.scale(s, 1);
+      const shx = 4.6, shy = 3.2;
+      const hx = (wail ? 13.4 : 12.4) + sn(1, 0) * 1.2, hy = wail ? -17 + sn(2, 0) * 1.4 : 10 + sn(2, 0) * 1.6;
+      const mx = (shx + hx) / 2 + 3.2, my2 = (shy + hy) / 2 + (wail ? 0.6 : 3);
+      const pt = t => { const u = 1 - t; return [u * u * shx + 2 * u * t * mx + t * t * hx, u * u * shy + 2 * u * t * my2 + t * t * hy]; };
+      const M = 14, A = [], B = [];
+      for (let m = 0; m <= M; m++) {
+        const t = m / M, [x, y] = pt(t), [x2, y2] = pt(Math.min(1, t + 0.04)), [x1, y1] = pt(Math.max(0, t - 0.04)), dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy) || 1;
+        const w = t < 0.45 ? 2.1 - t * 2.2 : 1.1 - (t - 0.45) * 0.2;                // широкий рукав сужается в тощее предплечье
+        A.push([x - dy / d * w, y + dx / d * w]); B.push([x + dy / d * w, y - dx / d * w]);
+      }
       const ag = c.createLinearGradient(shx, shy, hx, hy);
-      ag.addColorStop(0, 'rgba(210,235,250,0.55)'); ag.addColorStop(0.5, 'rgba(170,210,240,0.12)'); ag.addColorStop(1, 'rgba(230,248,255,0.75)');
-      c.strokeStyle = 'rgba(150,200,240,0.12)'; c.lineWidth = 4.2;
-      c.beginPath(); c.moveTo(shx, shy); c.quadraticCurveTo(mx, my, hx, hy); c.stroke();
-      c.strokeStyle = ag; c.lineWidth = 0.7;
-      for (const o of [-1, 1]) { c.beginPath(); c.moveTo(shx, shy + o); c.quadraticCurveTo(mx, my + o * 1.3, hx, hy + o * 0.6); c.stroke(); }
-      // кисть и мелкие когти
-      c.fillStyle = 'rgba(232,248,255,0.8)'; c.beginPath(); c.ellipse(hx, hy, 1.7, 2.1, 0, 0, 7); c.fill();
-      c.strokeStyle = 'rgba(244,252,255,0.95)'; c.lineWidth = 0.55;
-      const dir = wail ? -1 : 1;
-      for (let f = -1; f <= 1; f++) { c.beginPath(); c.moveTo(hx + f * 0.9, hy + dir * 1.6); c.lineTo(hx + f * 1.7 + s * 0.4, hy + dir * 4.4); c.stroke(); }
+      ag.addColorStop(0, 'rgba(200,228,246,0.62)'); ag.addColorStop(0.45, 'rgba(150,200,232,0.4)'); ag.addColorStop(1, 'rgba(230,250,255,0.88)');
+      c.fillStyle = ag; c.beginPath(); c.moveTo(A[0][0], A[0][1]); for (const q of A) c.lineTo(q[0], q[1]); for (let m = M; m >= 0; m--) c.lineTo(B[m][0], B[m][1]); c.closePath(); c.fill();
+      // лохмотья рукава у плеча
+      c.fillStyle = 'rgba(120,175,215,0.5)';
+      for (const [t, l] of [[0.12, 4.5], [0.26, 5.5], [0.38, 4]]) { const [x, y] = pt(t); c.beginPath(); c.moveTo(x - 0.9, y + 0.6); c.lineTo(x + 0.2 + (wail ? -0.3 : 0.2), y + l); c.lineTo(x + 1.3, y + 0.2); c.closePath(); c.fill(); }
+      c.translate(hx, hy);
+      fzBansheeHand(c, wail ? -Math.PI / 2 + 0.28 : Math.PI / 2 - 0.3, wail);
+      c.restore();
     }
   });
 }
