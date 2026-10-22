@@ -191,19 +191,12 @@ button img { width: 18px; height: 18px; }
 .slot.click { cursor: pointer; }
 .slot.click:hover { box-shadow: inset 0 0 0 1px var(--gold); }
 
-/* ---------- Жители ---------- */
+/* ---------- Портреты ---------- */
 
-.prow {
-  display: grid; grid-template-columns: 40px 1fr auto auto; gap: 6px; align-items: center;
-  padding: 3px; border-bottom: 1px solid rgba(90,65,40,0.5);
-}
 .portrait {
   width: 40px; height: 40px; background: #120c08; border: 2px solid #0a0705;
   box-shadow: inset 0 0 0 1px #4a3524; image-rendering: pixelated;
 }
-.prow .pn { font-size: 13px; }
-.prow .pc { font-family: 'PT Serif', Georgia, serif; font-size: 13px; color: var(--gold); text-align: right; }
-.prow button { padding: 1px 7px; }
 
 /* ---------- Хозяйство ---------- */
 
@@ -615,6 +608,9 @@ body.mobile #mtool:not(.hidden) {
 .upg small { font-size: 11px; opacity: 0.8; font-style: italic; }
 .upg:hover { filter: brightness(1.15); }
 .upg.no { border-color: #6a5a3a; color: #b4a37a; filter: grayscale(0.5); }
+.upg:disabled { cursor: default; }
+.hire-c button { margin-left: auto; min-width: 54px; }
+.hire-more summary { cursor: pointer; margin: 4px 0; }
 .lvl { font-size: 11px; background: #c89226; color: #2a1c08; border-radius: 3px; padding: 1px 5px; vertical-align: middle; }
 
 /* журнал: пиксельные иконки вместо эмодзи */
@@ -740,15 +736,6 @@ body.mobile #dd-zoom { display: none; }
 @keyframes sm-stem { to { stroke-dashoffset: 0; } }
 @keyframes sm-pop { 0% { opacity: 0; transform: scale(0.1); } 70% { opacity: 1; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1); } }
 @keyframes sm-spark { 0% { opacity: 0; transform: translate(0,0) scale(1); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3); } }
-
-/* ---------- Выслуга трудяг и работяг (вкладка «Жители») ---------- */
-.lvls { padding: 2px 4px 5px 46px; border-bottom: 1px solid rgba(90,65,40,0.5); }
-.xpbars { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; align-items: center; }
-.xpbar { position: relative; display: inline-block; width: 34px; height: 10px; background: #1a120a; border: 1px solid #4a3524; box-shadow: inset 0 0 0 1px #0a0705; overflow: hidden; }
-.xpbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#8ab048, #4e8a2a); }
-.xpbar.l2 i { background: linear-gradient(#e8c860, #b08a2a); }
-.xpbar.l3 i { background: linear-gradient(#ffe070, #d8a020); }
-.xpbar b { position: absolute; right: 2px; top: -1px; font-size: 9px; line-height: 10px; color: #f6eccc; text-shadow: 0 0 2px #000, 0 0 2px #000; font-family: 'PT Serif', Georgia, serif; }
 
 /* телефон в портрете: название не шире экрана, меню ниже — больше места костру */
 @media (max-width: 600px) {

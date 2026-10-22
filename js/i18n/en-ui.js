@@ -67,7 +67,7 @@ I18N.add('en', {
   "школе": "school",
   "за золото. Кнопка «Обучить» в окне здания ставит нужного в очередь. Трудяги и работяги со временем": "for gold. The \"Train\" button in the building window queues the right one. Haulers and builders eventually",
   "дорастают до 2-го и 3-го уровня": "level up to tier 2 and 3",
-  ": носят по 2–3 предмета и сами берут материалы на стройку — следите за нашивками на колпаках и шкалами во вкладке «Жители».": ": they carry 2–3 items and fetch building materials themselves. Watch the patches on their caps and the bars in the \"Gnomes\" tab.",
+  ": носят по 2–3 предмета и сами берут материалы на стройку — следите за нашивками на колпаках.": ": they carry 2–3 items and fetch building materials themselves. Watch the patches on their caps.",
   "Еда:": "Food:",
   "ферма (пшеница) → мельница → пекарня": "farm (wheat) → mill → bakery",
   "или": "or",

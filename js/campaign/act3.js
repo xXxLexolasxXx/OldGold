@@ -82,6 +82,49 @@ function camp3Krem(C) {
   C.flags.kremN = out.length;
 }
 
+// кремнёвцы ходят от дома к дому (только вид): маршруты строятся один раз по поиску пути и в сейв не идут
+const CAMP3_KV = { C: null, n: -1, list: [] };
+const CAMP3_KV_SPD = 1.1, CAMP3_KV_STAY = 4;   // клеток в секунду; секунд у двери
+function camp3KvRoutes(C) {
+  const homes = Game.buildings.filter(b => b.foreign && !b.removed && b.state === 'done');
+  if (CAMP3_KV.C === C && CAMP3_KV.n === homes.length) return CAMP3_KV.list;
+  const rnd = mulberry32(CAMP3.seed ^ 0x5EED), list = [];
+  const stop = b => randomFreeNear(b.doorX, b.doorY + 1, 0, 3) || null;
+  for (let v = 0; v < 6 && homes.length >= 3; v++) {
+    const pick = [];
+    while (pick.length < 3) { const b = homes[rnd() * homes.length | 0]; if (!pick.includes(b)) pick.push(b); }
+    const stops = pick.map(stop);
+    if (stops.some(s => !s)) continue;
+    const segs = [];
+    for (let k = 0; k < stops.length; k++) {
+      const a = stops[k], b = stops[(k + 1) % stops.length], p = findPath(a[0], a[1], b[0], b[1]);
+      if (!p || !p.length) { segs.length = 0; break; }
+      segs.push([a].concat(p));
+    }
+    if (!segs.length) continue;
+    const T = segs.reduce((s, p) => s + (p.length - 1) / CAMP3_KV_SPD + CAMP3_KV_STAY, 0);
+    list.push({ v, segs, T, off: rnd() * T });
+  }
+  Object.assign(CAMP3_KV, { C, n: homes.length, list });
+  return list;
+}
+// где кремнёвец сейчас: [x, y, фаза шага, идёт влево] — время раскладывается на стоянку и ходьбу по отрезкам пути
+function camp3KvAt(r) {
+  let t = (Game.time + r.off) % r.T;
+  for (const p of r.segs) {
+    if (t < CAMP3_KV_STAY) return [p[0][0], p[0][1], 0, r.v % 2 === 1];
+    t -= CAMP3_KV_STAY;
+    const len = (p.length - 1) / CAMP3_KV_SPD;
+    if (t < len) {
+      const q = t * CAMP3_KV_SPD, i = Math.min(p.length - 2, q | 0), f = q - i, a = p[i], b = p[i + 1];
+      return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, (q * 4 | 0) & 3, b[0] < a[0] || (b[0] === a[0] && r.v % 2 === 1)];
+    }
+    t -= len;
+  }
+  const e = r.segs[0][0];
+  return [e[0], e[1], 0, false];
+}
+
 // беглецы: сколько дошло до перевала в акте 2 (наследие), кузнец Васька — если спасли
 function camp3People(C) {
   const leg = (campProg().legacy || {}).a2 || {}, want = Math.max(8, Math.min(50, leg.saved || 20));
@@ -158,6 +201,12 @@ CAMP_ACTS[3] = {
     const npc = (k, p) => { if (p && p[0] > x0 - 2 && p[0] < x1 + 2 && p[1] > y0 - 2 && p[1] < y1 + 3) list.push([p[1] + 0.95, () => campDrawNpc(c, k, p[0], p[1])]); };
     npc('zhmykha', F.zh);
     if (!F.duelOn || F.duelWon) npc('kremen', F.kr);
+    // хозяева ходят по деревне днём; вечером и ночью сидят по домам
+    if (typeof campDrawKvAt === 'function' && !camp3Night() && Math.abs(CAMP3.krem[0] - (x0 + x1) / 2) < (x1 - x0) / 2 + 20)
+      for (const r of camp3KvRoutes(C)) {
+        const [x, y, ph, flip] = camp3KvAt(r);
+        if (x > x0 - 2 && x < x1 + 2 && y > y0 - 2 && y < y1 + 3) list.push([y + 0.9, () => campDrawKvAt(c, r.v, ph, x, y, flip)]);
+      }
   },
   steps: [
     { k: 'cut', pause: true, cam: [90, 50], label: 'Приют', lines: [
@@ -226,7 +275,7 @@ CAMP_ACTS[3] = {
       const [rx, ry] = CAMP3.raid;
       for (let k = 0; k < 6; k++) campFoe('goblin', rx + (k % 3) - 1, ry + (k / 3 | 0), 'kraid', { delay: k * 0.7, hunt: true });
       campFoe('goblinChamp', rx, ry + 2, 'kraid', { delay: 3, hunt: true });
-      if (typeof sfxAt === 'function') sfxAt('goblinCry', rx * TILE, ry * TILE, 1);
+      if (typeof campSnd === 'function') campSnd('gobHorn', rx, ry, 1.2);
     } },
     { k: 'cut', cam: [100, 40], label: 'Набег на Кремнёвку', lines: [
       ['zhmykha', 'Гоблины! К нам?! Мы сто лет никого не трогали — даже соседей, хотя очень хотелось!'],

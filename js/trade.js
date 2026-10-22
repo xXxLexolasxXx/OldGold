@@ -67,6 +67,9 @@ function trMult(g) {
   if (e && Game.time < e.until && e.goods.includes(g)) m *= e.f;
   return m;
 }
+// Торговый союз с Кремнёвкой (наследие кампании, js/campaign/act5.js): купцы продают нам на 10% дешевле
+const TR_UNION = 0.9;
+const trUnionMul = () => (Game.campLeg && Game.campLeg.trade ? TR_UNION : 1);
 // Цена за штуку. sell — сколько заплатят нам, buy — сколько просят с нас. k — наценка именно этого товара у купца.
 function tradeQuote(g, side, k = 1) {
   const b = TR_BASE[g];
@@ -74,7 +77,7 @@ function tradeQuote(g, side, k = 1) {
   const car = Game.trade && Game.trade.car;
   const fair = car && car.fair ? 0.92 : 1;
   const m = trMult(g);
-  return side === 'sell' ? b * m * TR_SELL * k / fair : b * m * TR_BUY * k * fair;
+  return side === 'sell' ? b * m * TR_SELL * k / fair : b * m * TR_BUY * k * fair * trUnionMul();
 }
 const trFmt = v => (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10);
 
@@ -517,7 +520,7 @@ function tradeHTML() {
     return h + trMarketHTML();
   }
   const where = car.st === 'in' ? 'идёт к посту' : car.st === 'out' ? 'уезжает' : car.st === 'ambush' ? 'ЗАСАДА!' : `стоит ещё ${Math.max(1, Math.round(car.stay))} с`;
-  h += `<div class="tr-card tr-car ${car.st}"><div class="tr-ct"><b>${trEsc(car.name)}</b>${car.fair ? ' <span class="tr-fair">ярмарка</span>' : ''}<span class="tr-where">${where}</span></div>
+  h += `<div class="tr-card tr-car ${car.st}"><div class="tr-ct"><b>${trEsc(car.name)}</b>${car.fair ? ' <span class="tr-fair">ярмарка</span>' : ''}${trUnionMul() < 1 ? ' <span class="tr-fair" title="Торговый союз с Кремнёвкой: купцы продают на 10% дешевле">союз −10%</span>' : ''}<span class="tr-where">${where}</span></div>
     <div class="muted small">Кошель купца: <b>${Math.round(car.purse)}</b> зол.${car.robbed ? ' · его ограбили' : ''}</div>
     ${car.st === 'ambush' ? `<div class="tr-warn">На караван напали грабители! Отправьте героя или бойцов гильдии к повозке — у них ~${Math.max(1, Math.round(car.amb ? car.amb.t : 0))} с. <button data-tr="focus">Показать на карте</button></div>` : ''}
     ${car.st === 'in' || car.st === 'out' ? '<button data-tr="focus">Показать на карте</button>' : ''}</div>`;

@@ -137,6 +137,34 @@ function paintGhostPaw(c, hx, hy, ang, len0, boo, pk = 1, fingers = null) {
 }
 
 
+// Кисть призрака 1 ур.: четыре растопыренных пальца (узкие основания, разведённые кончики), одинаковый изгиб и когти
+function paintGhostHand(c, hx, hy, ang, len0, boo, pk = 1) {
+  // Костлявая бестелесная лапа: малая ладонь с сухожилиями, пальцы из двух фаланг с суставами, на концах — когти-серпы
+  c.save(); c.translate(hx, hy); c.rotate(ang); c.scale(pk, pk);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.fillStyle = 'rgba(185,238,228,0.2)'; c.strokeStyle = 'rgba(235,255,250,0.8)'; c.lineWidth = 0.6;
+  c.beginPath(); c.ellipse(0.9, 0, 2.3, 1.9, 0, 0, 7); c.fill(); c.stroke();
+  // четыре растопыренных пальца: основания сближены, кончики разведены равномерно; изгиб и когти у всех одинаковые
+  const curl = boo ? 0.5 : 0.38;
+  for (const [j, fl] of [[-1.5, 0.9], [-0.5, 1], [0.5, 1], [1.5, 0.9]]) {                           // [номер от оси, длина]
+    const x0 = 2.4, y0 = j * 0.8, l1 = 2.6 * fl, l2 = 2.3 * fl, a0 = j * 0.3;
+    const x1 = x0 + Math.cos(a0) * l1, y1 = y0 + Math.sin(a0) * l1, a1 = a0 + curl * 0.5;
+    const x2 = x1 + Math.cos(a1) * l2, y2 = y1 + Math.sin(a1) * l2, a2 = a1 + curl * 0.5;
+    c.strokeStyle = 'rgba(160,235,215,0.16)'; c.lineWidth = 1.7;
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    c.strokeStyle = 'rgba(232,255,248,0.9)'; c.lineWidth = 0.65;
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    // коготь-серп: полумесяц, сужающийся в иглу
+    const cl = len0 * 0.36 * (0.8 + fl * 0.2), sweep = 1.3 + (boo ? 0.2 : 0), r = cl / sweep, th0 = a2 - Math.PI / 2;
+    const cx = x2 - r * Math.cos(th0), cy = y2 - r * Math.sin(th0), M = 9;
+    c.fillStyle = 'rgba(247,255,252,0.97)'; c.beginPath();
+    for (let m = 0; m <= M; m++) { const t = m / M, th = th0 + t * sweep, rr = r + 0.62 * Math.pow(1 - t, 0.7); c[m ? 'lineTo' : 'moveTo'](cx + Math.cos(th) * rr, cy + Math.sin(th) * rr); }
+    for (let m = M; m >= 0; m--) { const t = m / M, th = th0 + t * sweep, rr = r - 0.62 * Math.pow(1 - t, 0.7); c.lineTo(cx + Math.cos(th) * rr, cy + Math.sin(th) * rr); }
+    c.closePath(); c.fill();
+  }
+  c.restore();
+}
+
 // Демонический рог: изогнутый конус с рёбрами, чёрно-багровый у основания, раскалённый к кончику.
 // pts — три точки кривой [основание, изгиб, кончик], w — толщина у основания; s = ±1 — сторона
 function reaperHorn(c, pts, w, s, boo) {

@@ -54,6 +54,14 @@ function festivalStart(why, days) {
   return '';
 }
 
+// сценарный праздник (кампания, js/campaign/act1.js): без условий, и ночью тоже — до f.until или festEnd
+function festivalForce(why, sec, text) {
+  Game.festival = { on: true, until: Game.time + sec, left: 0, why, t0: Game.time, night: 1 };
+  Game.festWish = false;
+  if (text) { toast(text); logEvent('festival', text, ...festPoint()); }
+  festCheers();
+}
+
 function festPoint() {
   const b = festInns()[0] || festSpots()[0];
   return b ? [b.doorX + 0.5, b.doorY] : [undefined, undefined];
@@ -75,7 +83,7 @@ function festEnd(why) {
   }
   Game.festival = null;
   Game.festNext = Game.time + FEST_GAP[0] + Math.random() * (FEST_GAP[1] - FEST_GAP[0]);
-  const txt = why === 'evil' ? 'Нечисть испортила праздник! Гуляки разбежались по делам' : why === 'night' ? 'Стемнело — праздник окончен, гномы разбредаются' : 'Праздник кончился. Голова гудит, работа ждёт';
+  const txt = why === 'evil' ? 'Нечисть испортила праздник! Гуляки разбежались по делам' : why === 'raid' ? 'Гоблины испортили праздник! Все — к большому костру' : why === 'night' ? 'Стемнело — праздник окончен, гномы разбредаются' : 'Праздник кончился. Голова гудит, работа ждёт';
   toast(txt + (drank.length && why !== 'evil' ? ' (похмелье)' : ''));
   logEvent('festival', txt, ...festPoint());
   for (const u of drank.slice(0, 6)) floater(u.x, u.y - 1.3, 'Голова…', '#d8c8a0');
@@ -122,7 +130,7 @@ function festivalTick(dt) {
     } else if (festDayLeft() > 0 && festDayLeft() < FEST_MIN_LEFT) festEnd('night');
     return;
   }
-  if (Game.time >= f.until || !festIsDay()) {
+  if (Game.time >= f.until || (!festIsDay() && !f.night)) {
     if (f.left > 0) { Game.festival = { on: false, wait: true, left: f.left - 1, why: f.why }; toast('Вечереет: гулянка стихает, продолжим завтра'); }
     else festEnd('night');
     festRelease();
@@ -316,7 +324,7 @@ if (typeof SFX !== 'undefined' && typeof SFX_DEF !== 'undefined') {
 function serializeFestival() {
   const f = Game.festival;
   if (!f && Game.festNext === undefined && !Game.festWish) return undefined;
-  return { f: f ? { on: !!f.on, wait: !!f.wait, until: f.until || 0, left: f.left || 0, why: f.why || '' } : null, nx: Game.festNext, wish: Game.festWish ? 1 : 0 };
+  return { f: f ? { on: !!f.on, wait: !!f.wait, until: f.until || 0, left: f.left || 0, why: f.why || '', night: f.night ? 1 : 0 } : null, nx: Game.festNext, wish: Game.festWish ? 1 : 0 };
 }
 
 function applyFestival(s) {
@@ -324,7 +332,7 @@ function applyFestival(s) {
   if (!s) return;
   Game.festNext = s.nx;
   Game.festWish = !!s.wish;
-  if (s.f && (s.f.on || s.f.wait)) Game.festival = { on: !!s.f.on, wait: !!s.f.wait, until: s.f.until, left: s.f.left || 0, why: s.f.why, t0: Game.time };
+  if (s.f && (s.f.on || s.f.wait)) Game.festival = { on: !!s.f.on, wait: !!s.f.wait, until: s.f.until, left: s.f.left || 0, why: s.f.why, t0: Game.time, night: s.f.night ? 1 : 0 };
 }
 
 // ---------- Украшения ----------

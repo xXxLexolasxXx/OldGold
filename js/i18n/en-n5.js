@@ -163,7 +163,7 @@ I18N.add('en', {
   "«{0}» лежит на складе, не связанном дорогой с этой стройкой — протяните дорогу.": "“{0}” lies in a store not linked by road to this site — lay a road.",
   "Это делает: {0} — проверьте, работает ли.": "Made by: {0} — check that it works.",
   "В деревне нет ни одного работяги.": "There isn’t a single toiler in the village.",
-  "Обучите работягу в школе (вкладка «Жители»), 1 золото — или выберите героя (H) и кликните по стройке: он достроит сам.": "Train a toiler at the school (“Residents” tab), 1 gold — or select the hero (H) and click the site: he will finish it himself.",
+  "Обучите работягу в окне школы, 1 золото — или выберите героя (H) и кликните по стройке: он достроит сам.": "Train a toiler in the school window, 1 gold — or select the hero (H) and click the site: he will finish it himself.",
   "Все работяги заняты ({0}). Закончат — придут.": "All toilers are busy ({0}). They’ll come when done.",
   "Быстрее: обучите ещё работяг в школе, поставьте «Стройка» на «Высокий» во вкладке «Приоритеты» или пошлите героя (H) на стройку.": "Faster: train more toilers at the school, set “Construction” to “High” in the “Priorities” tab, or send the hero (H) to the site.",
   "Материал на складе есть, но все трудяги заняты (свободно 0 из {0}).": "The material is in store, but all haulers are busy (0 of {0} free).",

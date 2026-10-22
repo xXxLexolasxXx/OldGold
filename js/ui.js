@@ -277,11 +277,51 @@ function exitToMainMenu() {
   location.reload();
 }
 
+// Содержимое вкладок, которое строится заново при каждом открытии: при уходе со вкладки очищаем его, чтобы
+// скрытые списки (журнал, хозяйство, совет…) не висели в DOM и не утяжеляли стили и раскладку панели
+const TAB_LISTS = { store: 'store-list', overview: 'overview', log: 'log-list', trade: 'trade-list', prio: 'prio-list', council: 'council-list' };
 function openTab(name) {
+  const was = UI.tab, el = was !== name && TAB_LISTS[was] && document.getElementById(TAB_LISTS[was]);
+  if (el) { el.textContent = ''; delete UI.last[TAB_LISTS[was]]; }
   UI.tab = name;
   document.querySelectorAll('#tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + name));
   updateUI(true);
+}
+
+// Подписи вкладок на телефоне: долгое нажатие показывает название (из title кнопки: до двоеточия — имя, после — пояснение),
+// отпускание после подписи вкладку не переключает. На ПК — обычная подсказка title при наведении.
+function tabTipsInit() {
+  const tabs = document.getElementById('tabs');
+  if (!tabs) return;
+  let tip = null, timer = 0, hideT = 0, held = false;
+  const hide = () => { clearTimeout(timer); clearTimeout(hideT); if (tip) tip.classList.remove('on'); };
+  const show = btn => {
+    if (!tip) { tip = document.createElement('div'); tip.id = 'tab-tip'; document.body.appendChild(tip); }
+    const s = btn.title || '', i = s.indexOf(':');
+    tip.textContent = '';
+    const b = document.createElement('b'); b.textContent = i > 0 ? s.slice(0, i) : s; tip.appendChild(b);
+    if (i > 0) { const m = document.createElement('span'); m.textContent = s.slice(i + 1).trim(); tip.appendChild(m); }
+    tip.classList.add('on');
+    const r = btn.getBoundingClientRect(), t = tip.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
+    const col = getComputedStyle(tabs).flexDirection === 'column';   // горизонтальный телефон: вкладки столбиком слева
+    const x = col ? r.right + 8 : Math.min(Math.max(6, r.left + r.width / 2 - t.width / 2), W - t.width - 6);
+    const y = col ? Math.min(Math.max(6, r.top + r.height / 2 - t.height / 2), H - t.height - 6) : r.top - t.height - 8 >= 6 ? r.top - t.height - 8 : r.bottom + 8;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  };
+  tabs.addEventListener('pointerdown', e => {
+    const btn = e.target.closest('.tab-btn');
+    held = false; hide();
+    if (!btn || e.pointerType === 'mouse') return;
+    timer = setTimeout(() => { held = true; show(btn); }, 420);
+  });
+  const up = () => { clearTimeout(timer); if (held) hideT = setTimeout(hide, 1600); };
+  tabs.addEventListener('pointerup', up);
+  tabs.addEventListener('pointercancel', up);
+  tabs.addEventListener('contextmenu', e => { if (e.target.closest('.tab-btn')) e.preventDefault(); });
+  // клик после долгого нажатия — только подпись, вкладку не открываем
+  tabs.addEventListener('click', e => { if (held) { held = false; e.stopPropagation(); e.preventDefault(); } }, true);
+  window.addEventListener('scroll', hide, true);
 }
 
 function openBuildCat(k) {
@@ -387,6 +427,7 @@ function initUI() {
   document.querySelectorAll('img[data-icon]').forEach(im => { im.src = iconURL('ui', im.dataset.icon, 2); });
 
   document.querySelectorAll('#tabs .tab-btn').forEach(btn => { btn.onclick = () => Mobile.on ? mobileTab(btn.dataset.tab) : openTab(btn.dataset.tab); });
+  tabTipsInit();
 
   renderBuildMenu();
   setInterval(checkUnlocks, 500);
@@ -431,11 +472,6 @@ function initUI() {
     updateUI(true);
   });
 
-  document.getElementById('people-list').addEventListener('click', e => {
-    const t = e.target.closest('[data-train]');
-    if (t) { queueTraining(t.dataset.train); updateUI(true); }
-  });
-
   document.getElementById('overview').addEventListener('click', e => {
     const a = e.target.closest('[data-goto]');
     if (!a) return;
@@ -478,7 +514,8 @@ function initUI() {
     else if (act === 'herobuild') heroHelpBuild(b);
     else if (act === 'prev') cycleBuilding(-1);
     else if (act === 'next') cycleBuilding(1);
-    else if (act === 'hire') queueTraining(b.def.worker);
+    else if (act === 'hire') { const bad = hireTrain(b); if (bad) toast(bad); }
+    else if (act === 'assign') { const bad = hireAssign(b, Game.unitMap.get(+t.dataset.u)); if (bad) toast(bad); }
     else if (t.dataset.block) Game.storeBlock[t.dataset.block] = !Game.storeBlock[t.dataset.block];
     updateUI(true);
   });
@@ -534,56 +571,6 @@ function storeHTML() {
     h += '</div>';
   }
   return h;
-}
-
-function peopleHTML() {
-  const cnt = {}, idle = {}, queued = {};
-  let hungry = 0, smoking = 0, sleeping = 0, hurt = 0;
-  for (const u of Game.units) {
-    cnt[u.type] = (cnt[u.type] || 0) + 1;
-    if (u.idleFlag || (!u.home && !u.isCourier && u.type !== 'builder')) idle[u.type] = (idle[u.type] || 0) + 1;
-    if (!u.noFood && u.food < HUNGRY) hungry++;
-    if (u.brk && u.brk.kind === 'sleep') sleeping++;
-    else if (u.brk) smoking++;
-    if (u.injury) hurt++;
-  }
-  for (const b of Game.buildings) if (b.type === 'school') {
-    for (const q of b.queue) queued[q] = (queued[q] || 0) + 1;
-    if (b.training) queued[b.training.type] = (queued[b.training.type] || 0) + 1;
-  }
-  let h = `<div class="stat-row"><b>Всего жителей</b><span class="v">${Game.units.length}</span></div>`;
-  if (hungry) h += `<div class="stat-row warn">Голодных: ${hungry}</div>`;
-  if (smoking) h += `<div class="stat-row muted">На перекуре: ${smoking}</div>`;
-  if (sleeping) h += `<div class="stat-row warn">Спят пьяные: ${sleeping}</div>`;
-  if (hurt) h += `<div class="stat-row warn">Травмированы: ${hurt}</div>`;
-  for (const k of ALL_UNIT_KEYS) {
-    const c = cnt[k] || 0;
-    const T = UNIT_TYPES[k];
-    if (T.noTrain && !c) continue;
-    h += `<div class="prow"><img class="portrait" src="${portraitURL(k)}" alt="">
-      <div><div class="pn">${T.name}</div><div class="muted small">${idle[k] ? `свободно: ${idle[k]}` : c ? 'все заняты' : 'нет'}${queued[k] ? ` · учится: ${queued[k]}` : ''}</div></div>
-      <span class="pc">${c}</span><span></span></div>`;   // учить — кнопками в окне школы, без дубля здесь
-    if (c && LEVEL_XP[k]) h += levelsHTML(k);
-  }
-  return h;
-}
-
-// Выслуга трудяг и работяг: сколько на каком уровне и шкала до следующего у каждого
-function levelsHTML(type) {
-  const list = Game.units.filter(u => u.type === type).sort((a, b) => (b.xp || 0) - (a.xp || 0));
-  const by = [0, 0, 0, 0];
-  for (const u of list) by[unitLevel(u)]++;
-  const what = type === 'serf' ? ['', 'носит по 1', 'по 2 за раз', 'по 3 за раз'] : ['', 'ждёт подвоза', 'берёт 1 материал', 'берёт 2 материала'];
-  const need = type === 'serf' ? 'доставок' : 'очков (здание 3, дорога 1)';
-  let h = `<div class="lvls"><div class="muted small">${[1, 2, 3].filter(l => by[l]).map(l => `ур.${l}: <b>${by[l]}</b> (${what[l]})`).join(' · ')}</div><div class="xpbars">`;
-  const shown = list.slice(0, 12);
-  for (const u of shown) {
-    const L = unitLevel(u), p = levelProgress(u), xp = u.xp || 0, t = LEVEL_XP[type];
-    const tip = L >= 3 ? `Уровень 3, выслуга ${xp}. Выше некуда, только в начальство` : `Уровень ${L}: ${xp} из ${t[L]} ${need} до следующего`;
-    h += `<span class="xpbar l${L}" title="${tip}"><i style="width:${Math.round(p * 100)}%"></i><b>${L}</b></span>`;
-  }
-  if (list.length > shown.length) h += `<span class="muted small">+${list.length - shown.length}</span>`;
-  return h + '</div></div>';
 }
 
 function collectAlerts() {
@@ -740,7 +727,7 @@ function infoBuilding(b) {
   }
 
   if (b.autoJob) h += `<div class="bar mana"><div style="width:${Math.round((1 - b.autoJob.t / b.autoJob.r.time) * 100)}%"></div></div>`;
-  if (def.worker) h += workerHTML(b);
+  if (def.worker) h += typeof hireHTML === 'function' ? hireHTML(b) : workerHTML(b);
 
   if (def.recipes) {
     h += `<div class="isec">Производство${def.recipes.length > 1 ? ' (галочки — что делать)' : ''}</div>`;
@@ -875,7 +862,6 @@ function updateUI(force) {
   setHTML('info', info);
 
   if (UI.tab === 'store') setHTML('store-list', storeHTML());
-  if (UI.tab === 'people') setHTML('people-list', peopleHTML());
   const alerts = collectAlerts();
   if (UI.tab === 'overview') setHTML('overview', overviewHTML(alerts));
   if (UI.tab === 'menu') {
@@ -887,7 +873,7 @@ function updateUI(force) {
   lb.textContent = UI.logUnread > 99 ? '99+' : UI.logUnread || 0;
   lb.classList.toggle('hidden', !UI.logUnread);
   const badge = document.getElementById('alert-badge');
-  badge.textContent = alerts.length;
+  badge.textContent = alerts.length > 99 ? '99+' : alerts.length;
   badge.classList.toggle('hidden', !alerts.length);
 
   const t = totals();
