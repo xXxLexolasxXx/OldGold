@@ -16,6 +16,12 @@ const T_GRASS = 0, T_WATER = 1, T_ROCK = 2, T_SAND = 3;
 
 // Длина каждого сезона (лето, осень, зима, весна) в игровых сутках — единственный источник: сезоны (world/season.js), события-дилеммы, подписи.
 const SEASON_DAYS = 8;
+// Дрова зимой (season.js): здание с печью раз в WINTER_BURN_EVERY секунд берёт бревно с ближайшего склада; нет дров — здание мёрзнет
+const WINTER_BURN_EVERY = 420;
+const WINTER_HEATED = ['house', 'inn', 'bakery', 'weaponsmith', 'armory', 'infirmary', 'school'];
+const WINTER_INSULATION = [1, 1.5, 2];   // дом уровня 1/2/3 держит тепло дольше — топится реже
+const WINTER_COLD_WORK = 1.3;            // в нетопленой мастерской работа идёт на треть дольше
+const WINTER_COLD_SLEEP = 0.4;           // в нетопленом доме сон восстанавливает 0,4 от нормы
 
 const FOOD_TIME = 720;    // за сколько секунд житель проголодается полностью (12 минут)
 const HUNGRY = 0.3;       // ниже этого уровня сытости идёт в трактир

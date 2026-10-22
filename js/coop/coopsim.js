@@ -793,6 +793,7 @@ function coopWorldPacket() {
   for (const b of Game.buildings) {
     const d = serializeBuilding(b);
     d.wk = b.working ? 1 : 0;
+    d.cd = b.cold ? 1 : 0;
     const sig = JSON.stringify(d);
     d.an = r2(b.anim || 0);
     nb.set(d.id, sig);

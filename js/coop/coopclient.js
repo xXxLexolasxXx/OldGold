@@ -261,7 +261,7 @@ function coopApplyBuilding(d, byId) {
   if (d.pigs) b.pigs = d.pigs;
   if (d.crops) b.crops = d.crops;
   if (d.upg && b.upg) { Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
-  b.working = !!d.wk; if (d.an) b.anim = d.an;
+  b.working = !!d.wk; b.cold = !!d.cd; if (d.an) b.anim = d.an;
 }
 
 function coopDropBuilding(b) {
