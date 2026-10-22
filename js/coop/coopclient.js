@@ -264,6 +264,7 @@ function coopApplyBuilding(d, byId) {
   if (d.upg && b.upg) { Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
   b.working = !!d.wk; b.cold = !!d.cd; if (d.an) b.anim = d.an;
   b.wid = d.wr || 0;
+  b.hireReq = d.hireReq ? 1 : 0;
 }
 
 // Рабочие места: сервер шлёт у здания id работника (wr), а житель home не получает — без этого здания, построенные
@@ -1124,7 +1125,7 @@ function coopInitControls() {
       if (b.isRoad) coopSend({ t: 'erase', cells: [[b.x, b.y]] });
       else if (b.state !== 'done' || confirm('Снести «' + b.def.name + '»? Деревня общая — другие игроки это увидят.')) act(b, 'demolish');
       Game.selected = null;
-    } else if (a) act(b, a);
+    } else if (a) act(b, a, t.dataset.u ? { u: +t.dataset.u } : undefined);
     else if (t.dataset.block) act(b, 'block', { g: t.dataset.block });
     updateUI(true);
   }, true);

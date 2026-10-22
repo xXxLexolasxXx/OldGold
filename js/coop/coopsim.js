@@ -261,7 +261,7 @@ function coopCmd(name, msgJson, admin) {
       break;
     }
     case 'bact': {
-      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', untrainall: 'train', hire: 'train' }[m.act] || 'manage';
+      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', untrainall: 'train', hire: 'train', assign: 'manage' }[m.act] || 'manage';
       if (can(need)) coopBuildingAct(name, m);
       break;
     }
@@ -331,7 +331,8 @@ function coopBuildingAct(name, m) {
     case 'train': if (coopOwn(UNIT_TYPES, m.type) && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy && b.queue && b.queue.length < 10) b.queue.push(m.type); break;
     case 'untrain': if (coopInt(m.i)) b.queue.splice(m.i, 1); break;
     case 'untrainall': b.queue.length = 0; break;
-    case 'hire': if (b.def.worker) queueTraining(b.def.worker); break;
+    case 'hire': if (b.def.worker) { const bad = hireTrain(b); if (bad) coopSay(name, bad); } break;
+    case 'assign': if (b.def.worker && coopInt(m.u)) { const bad = hireAssign(b, Game.unitMap.get(m.u)); if (bad) coopSay(name, bad); } break;
     case 'recipe': if (b.recipeOn && coopInt(m.i) && m.i >= 0 && m.i < b.recipeOn.length) b.recipeOn[m.i] = !!m.on; break;
     case 'crop': if (b.crops && coopOwn(b.crops, m.c)) b.crops[m.c] = !!m.on; break;
     case 'block': if (coopOwn(GOODS, m.g)) Game.storeBlock[m.g] = !Game.storeBlock[m.g]; break;
