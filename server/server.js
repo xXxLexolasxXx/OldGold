@@ -169,18 +169,16 @@ function setPaused(on, who) {
   if (who) broadcast({ t: 'toast', text: who + (on ? ': пауза — можно планировать' : ': игра продолжается') });
 }
 
+const worldIO = require('./worldio').createWorldIO({ host, dir: DATA, file: WORLD_FILE, log });
 function loadWorld() {
-  for (const f of [WORLD_FILE, WORLD_FILE + '.bak']) {
-    if (!fs.existsSync(f)) continue;
-    try {
-      host.ctx.__saveText = fs.readFileSync(f, 'utf8');
-      run('(function(){ const s = JSON.parse(__saveText); __saveText = null; if (s.v !== 2) throw new Error("версия"); applySave(s); })()');
-      run('coopDropHeroes(); coopInitUnlocks();');
-      log('мир загружен из', path.basename(f), '— жителей', run('Game.units.length'), 'зданий', run('Game.buildings.length'));
-      return true;
-    } catch (e) { log('не вышло прочитать', path.basename(f), e.message); }
+  const r = worldIO.load();
+  if (r.fatal === 'newer') {
+    log('ОСТАНОВКА: мир записан более новой версией игры, чем этот сервер. Обновите сервер или положите мир нужной версии (world-pre-*.json, world-snap-*.json). Файлы не тронуты.');
+    process.exit(3);
   }
-  return false;
+  if (r.ok) log('мир загружен из', r.from, r.migratedFrom ? '(записан версией ' + r.migratedFrom + ')' : '', '— жителей', run('Game.units.length'), 'зданий', run('Game.buildings.length'));
+  else if (r.tried.length) log('мир не поднялся ни из одного файла — создаю новый; нечитаемые файлы сохранены как world-broken-*.json');
+  return r.ok;
 }
 if (!loadWorld()) {
   // карту выбирает хост: OLDGOLD_BIOME (meadow, forest, steppe, mountain, swamp, winter), OLDGOLD_SIZE (small, medium, large), OLDGOLD_SEED
@@ -204,10 +202,7 @@ function saveWorld() {
   if (noSave) return false;
   try {
     const text = run('JSON.stringify(serializeGame())');
-    const tmp = WORLD_FILE + '.tmp';
-    fs.writeFileSync(tmp, text);
-    if (fs.existsSync(WORLD_FILE)) fs.copyFileSync(WORLD_FILE, WORLD_FILE + '.bak');
-    fs.renameSync(tmp, WORLD_FILE);
+    worldIO.write(text);   // .tmp → переименование, .bak, снимки раз в полчаса (server/worldio.js)
     flushHeroes();
     try { fs.writeFileSync(VIL_FILE, call('coopStateGet')); } catch (e) { log('серии ночей не сохранились:', e.message); }
     stats.save();
@@ -635,6 +630,8 @@ function onGameMessage(c, m, text) {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     try {
       for (const f of [WORLD_FILE, WORLD_FILE + '.bak']) if (fs.existsSync(f)) fs.renameSync(f, f.replace(/\.json(\.bak)?$/, '-' + stamp + '.json$1'));
+      // снимки и копии «до обновления» старого мира тоже в архив, иначе после перезапуска сервер поднял бы из них прежний мир
+      for (const f of fs.readdirSync(DATA)) if (/^world-(snap|pre)-.*\.json$/.test(f)) fs.renameSync(path.join(DATA, f), path.join(DATA, 'old-' + stamp + '-' + f));
       if (text) fs.writeFileSync(MAP_FILE, text); else if (fs.existsSync(MAP_FILE)) fs.unlinkSync(MAP_FILE);
     } catch (e) { log('новый мир не начат:', e.message); return c.send({ t: 'toast', text: 'Сервер не смог начать новый мир' }); }
     noSave = true;

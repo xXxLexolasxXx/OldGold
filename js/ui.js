@@ -245,7 +245,7 @@ function setTool(tool) {
 
 function setSpeed(s) {
   Game.paused = s === 0;
-  if (s) Game.speed = SPEEDS.includes(s) ? s : 1;      // 0,5 / 1 / 2 / 3 (старое ×4 из сохранений и скриптов — обычная скорость)
+  if (s) Game.speed = SPEEDS.includes(s) ? s : 1;      // 1 / 2 / 3 (старые ×0,5 и ×4 из сохранений и скриптов — обычная скорость)
   tempoShow();
 }
 

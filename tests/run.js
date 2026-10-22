@@ -49,6 +49,7 @@ const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
   if (p.status !== 0 && !r.fails.length) r.fails.push(out.trim().slice(0, 500) || 'код выхода ' + p.status);
 });
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
+scriptTest('savefile: золотые сейвы всех версий, битые и огромные файлы, копии, импорт/экспорт, мир коопа и откат', 'save-test.js', ['3'], 480000);
 scriptTest('server: раздача файлов, /err, /e, /t, /report, /stats', 'server-test.js');
 scriptTest('fuzz-server: злонамеренные запросы и сообщения не роняют и не портят сервер', 'fuzz-server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
@@ -60,12 +61,14 @@ scriptTest('raid: курган Курганного князя — вход по
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
 scriptTest('disaster: стихийные бедствия — знамения, виды на сидах, колодец, ремонт, море, сейв, кооп', 'disaster-test.js', [], 420000);
 scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
+scriptTest('heroapp: цвет жилета героя — наряд, фигура, сейв', 'heroapp-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('unions: профсоюзы — советы по стройке и ремеслу, редкий показ, выключатель, сейв, кооп', 'unions-test.js');
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('nightfog: ночной туман не гуще потолка и редеет над деревней', 'nightfog-test.js');
+scriptTest('lantern: днём фонари выключены, вечером горят, на рассвете гаснут', 'lantern-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
 scriptTest('injury: травмы — частота, лазарет, лекарь, сводка, груз, куры', 'injury-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');

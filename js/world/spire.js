@@ -363,7 +363,7 @@ if (typeof document !== 'undefined' && document.addEventListener) {
 // ---------- Компас: указатель на шпиль (DOM-значок, а не рисунок на карте) ----------
 // Три вида: «крупно» (у края экрана по направлению к шпилю — первые секунды главы и по запросу), «компакт» (маленький
 // полупрозрачный значок в свободном углу, по умолчанию) и «свёрнут» (крошечный компас; тап по значку сворачивает и разворачивает).
-// Совсем скрыт: настройка «Указатель шпиля» (меню), шпиль в кадре, герой рядом с ним или идёт к нему, Малгор побеждён.
+// Показывается только в последней главе сценария. Совсем скрыт: настройка «Указатель шпиля» (меню), шпиль в кадре, герой рядом с ним или идёт к нему, Малгор побеждён.
 
 const SPTR_NEAR = 34;         // герой ближе этого (кл.) к шпилю — указатель не нужен
 const SPTR_FULL = 9;          // сколько секунд показывать крупно
@@ -403,7 +403,12 @@ function spireHeroNear() {
   if (c.kind === 'attack' && c.f && c.f.kind === 'foe') return true;
   return c.tx != null && Math.hypot(c.tx - cx, c.ty - cy) < SPTR_NEAR;
 }
-const spirePtrShow = () => spireActive() && spireSetting() && !spireHeroNear();
+// только в финале сценария (последняя глава — «идти бить Малгора»): в начале и середине игры указатель не нужен
+function spirePtrChapter() {
+  const g = Game.goal;
+  return !!g && g.mode === 'scenario' && typeof GOAL_CHAPTERS !== 'undefined' && g.ch === GOAL_CHAPTERS.length - 1;
+}
+const spirePtrShow = () => spireOn() && spirePtrChapter() && spireSetting() && !spireHeroNear();
 
 const SPTR_SVG = '<svg viewBox="-12 -12 24 24" aria-hidden="true"><g class="sp-rot"><path d="M10 0 L-6 -7 L-2.5 0 L-6 7 Z" fill="#9cff66"/></g></svg>';
 function spirePtrEl() {

@@ -138,7 +138,7 @@ function prioHTML() {
     const n = Game.units.filter(u => !u.dead && prioJobKey(u) === k).length;
     h += `<div class="pr-row pr-job"><div class="pr-name"><b>${PRIO_JOB_NAME[k] || UNIT_TYPES[k].name}</b><span class="pr-n">${n} гн.</span></div>${prioSeg('jobs', k, prioLv('jobs', k))}${PRIO_JOB_HINT[k] ? `<div class="pr-hint">${PRIO_JOB_HINT[k]}</div>` : ''}</div>`;
   }
-  h += `<div class="pr-foot"><button data-pr="reset" ${prioAny() ? '' : 'disabled'}>Всё на «Авто»</button><span>Пауза — <kbd>Пробел</kbd>, скорость — <kbd>Shift+1…4</kbd>. На паузе можно ставить дороги, здания, поля и сносить.</span></div>`;
+  h += `<div class="pr-foot"><button data-pr="reset" ${prioAny() ? '' : 'disabled'}>Всё на «Авто»</button><span>Пауза — <kbd>Пробел</kbd>, скорость — <kbd>Shift+1…3</kbd>. На паузе можно ставить дороги, здания, поля и сносить.</span></div>`;
   return h;
 }
 
@@ -167,7 +167,7 @@ function prioApply(p) {
 }
 
 // ---------- Скорость и пауза ----------
-const SPEEDS = [0.5, 1, 2, 3];
+const SPEEDS = [1, 2, 3];
 const speedLabel = s => '×' + String(s).replace('.', ',');
 // в коопе время решает сервер: Coop.tempo = { speed, paused, votes, need }
 function tempoNow() { return Game.coop && typeof Coop !== 'undefined' && Coop.tempo ? Coop.tempo : { speed: Game.speed, paused: Game.paused }; }
