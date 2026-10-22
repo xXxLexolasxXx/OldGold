@@ -88,11 +88,12 @@ scriptTest('spire: глава 6 — подъём к Чёрному шпилю: �
 scriptTest('traitor: шпион Малгора — летописец Пим, письмо, простить/не прощать, удар в спину, падение, сейв, эпилог', 'traitor-test.js', [], 420000);
 scriptTest('oathbal: баланс классов героя', 'oath-balance.js');
 scriptTest('abil: способности классов, ресурс, лечение отдыхом, панель, миграция, кооп, баланс', 'abil-test.js');
+scriptTest('skelart: скелеты в пиксель-арте — кадры 6/8/9/4/9/13, виды, кэш, облик в сейве, рисование без падений', 'skelart-test.js');
 scriptTest('icon: значки, названия и описания всех способностей, окно гильдии', 'icon-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
-scriptTest('campaign: акт 1 «Праздник Первого Камня» — город, штрек, волны гоблинов, взрыв и крен, сейв, итог, поражение, перевод', 'campaign-test.js', [], 420000);
+scriptTest('campaign: акты 1–2 — праздник, волны гоблинов, взрыв, обвал и бегство, сейв, итог, наследие, поражение, перевод', 'campaign-test.js', [], 420000);
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');

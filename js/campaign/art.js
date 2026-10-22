@@ -63,7 +63,7 @@ function campNpcSprite(kind, f) {
   const [cv, c] = mkSprite(40, 48, 3);
   c.translate(20, 44);
   c.scale(1, 1 - f * 0.02);
-  if (kind === 'tan') campDrawTan(c, f); else campDrawPim(c, f);
+  if (kind === 'tan') campDrawTan(c, f); else if (kind === 'vaska') campDrawVaska(c, f); else campDrawPim(c, f);
   return (CAMP_NPC_SPR[key] = toPixelArt(cv, 3, { outline: true, outlineDark: 0.3, alphaCut: 100 }));
 }
 function campDrawTan(c, f) {
@@ -95,6 +95,20 @@ function campDrawPim(c, f) {
   ellipse(c, -1.8, -26.6, 0.8, f === 1 ? 0.2 : 0.75, '#1a0f0a'); ellipse(c, 2, -26.6, 0.8, f === 1 ? 0.2 : 0.75, '#1a0f0a');
   naLimb(c, 4.6, -30, 8, -36, 0.7, '#f2eee4');                                         // перо за ухом
   c.fillStyle = '#3ac87a'; c.fillRect(-7.4, -12, 2, 2); c.fillRect(6.8, -12.6, 1.6, 1.6);   // зелёные пальцы
+}
+// кузнец Васька под завалом: кожаный фартук, молот, борода в саже; машет рукой «я тут!»
+function campDrawVaska(c, f) {
+  c.fillStyle = 'rgba(10,8,4,0.32)'; c.beginPath(); c.ellipse(0, 0, 8, 2.2, 0, 0, 7); c.fill();
+  naLimb(c, -2.4, -8, -3, 0, 2.4, '#3a3028'); naLimb(c, 2.4, -8, 3, 0, 2.4, '#3a3028');
+  poly(c, [[-7, -22], [7, -22], [8, -7], [-8, -7]], '#a04a2a');                     // рубаха
+  poly(c, [[-5, -18], [5, -18], [6, -5], [-6, -5]], '#6a4424');                     // фартук
+  ellipse(c, 0, -26, 5.6, 5.2, '#d8a880');
+  poly(c, [[-5.4, -24.4], [5.4, -24.4], [4, -15], [0, -13], [-4, -15]], '#3a2a20');   // борода в саже
+  ellipse(c, -2, -27, 0.8, f === 1 ? 0.2 : 0.75, '#1a0f0a'); ellipse(c, 2, -27, 0.8, f === 1 ? 0.2 : 0.75, '#1a0f0a');
+  poly(c, [[-5.4, -28.4], [-4, -32], [4, -32], [5.4, -28.4]], '#5a3a24');
+  naLimb(c, 6, -20, 10, -30 - f * 2, 2.2, '#d8a880');                                // машет
+  naLimb(c, -6, -18, -9, -10, 2.2, '#d8a880');
+  c.fillStyle = '#5a5a62'; c.fillRect(-12, -12, 5, 4); naLimb(c, -9, -8, -9, -2, 1, '#6a4a2a');   // молот
 }
 function campDrawNpc(c, kind, x, y) {
   const t = Game.time, f = (t * 0.5 + x) % 6 < 0.15 ? 1 : 0;

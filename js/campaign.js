@@ -86,6 +86,34 @@ function campGoblinAi(N, dt) {
   rdMelee(N, dt);
 }
 
+// Марш: жители бросают дела и идут к точке (бегство, сбор); flags.march — пока он идёт. Дошедшие ждут на месте
+function campMarch(units, x, y, spread = 3) {
+  const C = Game.camp;
+  C.flags.march = [x, y, spread];
+  units.forEach((u, k) => { if (!u.dead && u.type !== 'hero') { u.march = 1; u.marchK = k; campMarchGo(u); } });
+}
+function campMarchGo(u) {
+  const [x, y, spread] = Game.camp.flags.march, k = u.marchK || 0;
+  const tx = Math.round(x + ((k * 7) % (spread * 2 + 1)) - spread), ty = Math.round(y + ((k * 3) % 3) - 1);
+  u.action = null; u.brk = null;
+  u.proc = u.marchProc = (function* () {
+    while (Game.camp && Game.camp.flags.march) {
+      const ok = yield { walk: [tx, ty], offroad: true };
+      yield { wait: ok ? 2 : 1 };
+    }
+    u.march = 0;
+  })();
+}
+// голод, лечение, сон и досуг перехватывают поведение — идущих в колонне возвращаем на дорогу
+function campMarchTick() {
+  for (const u of Game.units) {
+    if (!u.march || u.dead) continue;
+    u.food = Math.max(u.food, 0.9);
+    if (u.proc !== u.marchProc) campMarchGo(u);
+  }
+}
+function campMarchStop() { const C = Game.camp; if (C) C.flags.march = null; for (const u of Game.units) if (u.march) { u.march = 0; u.proc = null; u.action = null; } }
+
 // ---------- Шаги ----------
 // s — состояние шага (не сохраняется: после загрузки шаг начинается заново), S — описание шага из сценария
 
@@ -105,7 +133,10 @@ const CAMP_STEP = {
       s.tk += dt;
       if (s.tk < 0.5) return false;
       s.tk = 0;
-      return campGoalEval(C, s, S);
+      const all = campGoalEval(C, s, S);
+      // or — шаг кончается и без всех целей (например, вышло время); невыполненное запоминается в flags.missed
+      if (!all && S.or && S.or(C, s)) { C.flags.missed = (C.flags.missed || []).concat(C.objs.filter(o => o.cur < o.need).map(o => o.t)); return true; }
+      return all;
     },
   },
   wait: {
@@ -162,6 +193,7 @@ function campTick(dt) {
   C.t += dt;
   if (!C.st) campEnter(C, C.i < 0 ? 0 : C.i);
   if (A.tick) A.tick(C, dt);
+  if (C.flags.march && (C.mt = (C.mt || 0) + dt) >= 0.5) { C.mt = 0; campMarchTick(); }
   C.ft = (C.ft || 0) + dt;
   if (C.ft >= 1 && A.fail) {
     C.ft = 0;
@@ -229,7 +261,7 @@ function campStart(n, opts = {}) {
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser(), C = Game.camp;
-    if (C) s.camp = { v: 1, act: C.act, i: C.i, t: Math.round(C.t), cp: C.cp, cpN: C.cpN, flags: C.flags, tilt: C.tilt, lost: C.lost, over: C.over, label: C.label };
+    if (C) s.camp = { v: 1, act: C.act, i: C.i, t: Math.round(C.t), cp: C.cp, cpN: C.cpN, flags: C.flags, tilt: C.tilt, lost: C.lost, over: C.over, label: C.label, timer: C.timer || null };
     return s;
   };
   const _apply = applySave;
@@ -239,7 +271,7 @@ function campStart(n, opts = {}) {
     Game.camp = null;
     const o = s && s.camp;
     if (!o || !CAMP_ACTS[o.act]) return;
-    const C = Game.camp = { v: 1, act: o.act, i: Math.max(0, o.i | 0), st: null, seq: 0, t: o.t || 0, cp: o.cp ?? -1, cpN: o.cpN || 0, flags: o.flags || {}, tilt: o.tilt || 0, lost: o.lost || 0, over: o.over || null, objs: null, mark: null, label: o.label || '' };
+    const C = Game.camp = { v: 1, act: o.act, i: Math.max(0, o.i | 0), st: null, seq: 0, t: o.t || 0, cp: o.cp ?? -1, cpN: o.cpN || 0, flags: o.flags || {}, tilt: o.tilt || 0, lost: o.lost || 0, over: o.over || null, objs: null, mark: null, label: o.label || '', timer: o.timer || null };
     const A = CAMP_ACTS[o.act];
     if (A.onLoad) A.onLoad(C);
     if (Game.dz) Game.dz.freq = 0;
@@ -373,7 +405,7 @@ function campBlocked() {
 function campHudRender(C) {
   const E = campEls(), A = CAMP_ACTS[C.act];
   if (!C.objs || C.over) { E.hud.classList.add('hidden'); CampUI.sig = ''; return; }
-  const sig = C.seq + '|' + C.objs.map(o => o.cur + '/' + o.need).join(',') + '|' + C.label;
+  const sig = C.seq + '|' + C.objs.map(o => o.cur + '/' + o.need).join(',') + '|' + C.label + '|' + (C.timer ? Math.floor(C.timer.t - Game.time) : '');
   if (sig === CampUI.sig) return;
   CampUI.sig = sig;
   let h = `<div class="cmh-act">Акт ${C.act}. ${campEsc(A.name)}</div>`;
@@ -387,6 +419,7 @@ function campHudRender(C) {
     h += '</li>';
   }
   h += '</ul>';
+  if (C.timer) { const left = Math.max(0, C.timer.t - Game.time); h += `<div class="cmh-timer">${campEsc(C.timer.label)}: ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}</div>`; }
   if (C.hint) h += `<div class="cmh-hint">${campEsc(C.hint)}</div>`;
   E.hud.innerHTML = h;
   E.hud.classList.remove('hidden');
