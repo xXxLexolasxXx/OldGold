@@ -36,6 +36,7 @@ function gsMk(id, set, name, sub, o) {
   return V;
 }
 const D = (f, ...a) => ({ f, a });
+globalThis.gsMk = gsMk; globalThis.gsDec = D;   // виды земли из других файлов (подземелье кампании — js/campaign/cavern.js)
 
 // ---------- Лес ----------
 gsMk('f_litter', 'forest', 'Л1. Хвойная подстилка', 'Тёмная зелень с бурыми пятнами опавшей хвои и мшистыми кочками; папоротник, грибы, прутики.', {

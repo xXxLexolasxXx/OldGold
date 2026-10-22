@@ -205,6 +205,7 @@ function coopUnits(m) {
   Game.animals = [...Coop.anim.values()];
   if (m.mir) coopMirror(m.mir);
   if (m.d) coopMirrorDelta(m);
+  coopLinkWorkers();
 }
 
 function coopDropUnit(id) {
@@ -262,6 +263,20 @@ function coopApplyBuilding(d, byId) {
   if (d.crops) b.crops = d.crops;
   if (d.upg && b.upg) { Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
   b.working = !!d.wk; if (d.an) b.anim = d.an;
+  b.wid = d.wr || 0;
+}
+
+// Рабочие места: сервер шлёт у здания id работника (wr), а житель home не получает — без этого здания, построенные
+// или обученные после входа, у клиента навсегда «без работника» (значок, окно, «Обучить»). Зовём после пакетов жителей и мира.
+function coopLinkWorkers() {
+  const want = new Map();
+  for (const b of Game.buildings) {
+    if (b.wid === undefined) continue;
+    const u = b.wid ? Game.unitMap.get(b.wid) : null;
+    b.worker = u || null;
+    if (u) want.set(u, b);
+  }
+  for (const u of Game.units) { const b = want.get(u); if (b) u.home = b; else if (u.home && u.home.wid !== undefined) u.home = null; }
 }
 
 function coopDropBuilding(b) {
@@ -368,6 +383,7 @@ function coopWorld(m) {
     Game.piles.clear();
     for (const q of m.pl) { const p = new Pile(q.x, q.y); Object.assign(p.stock, q.st); Game.piles.set(idx(q.x, q.y), p); }
   }
+  coopLinkWorkers();
 }
 
 // Вместо step(): время идёт, всё плавно доезжает до последнего снимка
