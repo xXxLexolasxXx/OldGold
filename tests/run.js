@@ -59,7 +59,9 @@ scriptTest('wildlife: живность по биомам и дням, меньш
 scriptTest('frogfolk: жаболюды — поселения у воды, касты, прыжок, влажность, яд, зима, сейв', 'frogfolk-test.js');
 scriptTest('raid: курган Курганного князя — вход по клику в одиночке и в коопе, подпись, причины, сейв', 'raid-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
+scriptTest('disaster: стихийные бедствия — знамения, виды на сидах, колодец, ремонт, море, сейв, кооп', 'disaster-test.js', [], 420000);
 scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
+scriptTest('heroapp: цвет жилета героя — наряд, фигура, сейв', 'heroapp-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('unions: профсоюзы — советы по стройке и ремеслу, редкий показ, выключатель, сейв, кооп', 'unions-test.js');

@@ -39,7 +39,7 @@ function haType(base, ap) {
     o.cap = ap[1] >= 0 ? HA_CAP_COLS[ap[1]] : cls ? HA_CLS_CAP[O.cap.slice(4)] || '#8a6a4a' : O.cap;
   }
   if (cls && ap[0] < 0 && ap[1] >= 0) o.tint = HA_CAP_COLS[ap[1]];   // шлем класса остаётся, но перекрашивается
-  if (ap[9] >= 0 && O.vest) o.vest = HA_COAT_COLS[ap[9]];
+  if (ap[9] >= 0) o.vest = HA_COAT_COLS[ap[9]];
   if (ap[7] >= 0) { if (O.robe) o.robeCol = HA_COAT_COLS[ap[7]]; else o.coat = HA_COAT_COLS[ap[7]]; }
   OUTFIT[key] = o;
   const L = {};
