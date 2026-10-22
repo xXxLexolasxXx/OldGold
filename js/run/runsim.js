@@ -31,6 +31,15 @@ function rsRand(S, k) { let a = S[k] = (S[k] + 0x6D2B79F5) >>> 0; let t = Math.i
 const rsLen = (x, y) => Math.sqrt(x * x + y * y);
 function rsSeedOfDay(key) { let h = 2166136261; for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619); return (h >>> 0) % 1000000000 + 1; }   // 'YYYY-MM-DD' → сид
 
+function rsWeekOf(dayKey) { return Math.floor((Date.parse(dayKey + 'T00:00:00Z') / 86400000 + 3) / 7); }   // неделя с понедельника, по UTC
+// Рекордные забеги (ежедневный и недельный): условия у всех одинаковые и считаются только от даты —
+// сервер строит их сам этой же функцией, а от игрока берёт лишь запись ввода.
+const RS_FAIR_HERO = { hp: 100, dmg: 12, weapon: 'pick', choices: 3, pal: 'warrior' };
+function rsRankedOpts(kind, key) {
+  if (kind === 'day') return { seed: rsSeedOfDay(String(key)), diff: { id: 'daily', name: 'Ежедневный', floors: 5, mult: 1.1 }, heroes: [Object.assign({}, RS_FAIR_HERO)] };
+  return { seed: ((key | 0) * 7919 + 13) >>> 0, diff: { id: 'week', name: 'Недельный', floors: 5, mult: 1.2 }, heroes: [Object.assign({}, RS_FAIR_HERO)] };
+}
+
 // opts: { seed, diff: {id, name, floors, mult, lvl}, heroes: [{ id, hp, dmg, weapon, choices, pal, cloak, ap }], pals: bool }
 function rsNew(opts) {
   const diff = Object.assign({ id: 'dive', name: 'Спуск', floors: 5, mult: 1 }, opts.diff);
@@ -367,4 +376,4 @@ function rsReplay(opts, rec) {
   return { S, err: null, score: rsScore(S) };
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { RS_DT, RS_T, RS_W, RS_H, RS_UPS, RS_PAL_KINDS, rsNew, rsStep, rsChoose, rsEnd, rsScore, rsRewards, rsReplay, rsSeedOfDay, rsRand, rsActive };
+if (typeof module !== 'undefined' && module.exports) module.exports = { RS_DT, RS_T, RS_W, RS_H, RS_UPS, RS_PAL_KINDS, rsNew, rsStep, rsChoose, rsEnd, rsScore, rsRewards, rsReplay, rsSeedOfDay, rsRand, rsActive, rsWeekOf, rsRankedOpts, RS_FAIR_HERO };

@@ -16,11 +16,13 @@ function runStart(diff, o) {
   const hero = fair ? { hp: 100, dmg: 12, weapon: 'pick', choices: 3, pal: 'warrior' }
     : { hp: 100 + 10 * (U.hp | 0), dmg: 12 * (1 + 0.08 * (U.dmg | 0)), weapon: meta.weapon || 'pick', choices: 3 + ((U.choice | 0) ? 1 : 0), pal: meta.pal };
   hero.cloak = meta.cloak | 0;
-  const seed = o.seed != null ? o.seed : diff.daily ? rsSeedOfDay(runDayKey()) : diff.weekly ? runWeekSeed() * 7919 + 13 : (Math.random() * 1e9) | 0;
-  const opts = { seed, diff: { id: d.id, name: d.name, floors: d.floors, mult: d.mult, lvl: d.lvl }, heroes: [hero] };
+  // ежедневный и недельный строятся ядром от даты начала — сервер переиграет их этими же условиями
+  const rkind = diff.daily ? 'day' : diff.weekly ? 'week' : null, rkey = rkind === 'day' ? runDayKey() : rkind ? rsWeekOf(runDayKey()) : null;
+  const opts = rkind ? rsRankedOpts(rkind, rkey) : { seed: o.seed != null ? o.seed : (Math.random() * 1e9) | 0, diff: { id: d.id, name: d.name, floors: d.floors, mult: d.mult, lvl: d.lvl }, heroes: [hero] };
+  opts.heroes[0].cloak = meta.cloak | 0;   // плащ только для вида, на ход забега не влияет
   Object.assign(Run, {
     on: true, diff: d, meta, opts, S: rsNew(opts), me: 0, keys: {}, joy: null, prevSpeed: Game.speed || 1, flash: 0, pops: [], acc: 0,
-    rec: [], lastMx: 0, lastMy: 0, press: { dash: false, slam: false }, ranked: !!o.ranked, shown: false,
+    rec: [], lastMx: 0, lastMy: 0, press: { dash: false, slam: false }, ranked: !!(o.ranked && rkind), rkind, rkey, shown: false,
   });
   try { setSpeed(0); } catch (e) { /* без паузы */ }
   const el = document.createElement('div');
@@ -145,14 +147,15 @@ function runEnd() {
   meta.runs++; meta.stones += rw.stones; meta.shards += rw.shards;
   if (win) meta.wins++;
   meta.best = Math.max(meta.best, rw.floors);
-  if (Run.diff.weekly) { const wk = runWeekSeed(); meta.weekBest[wk] = Math.max(meta.weekBest[wk] || 0, score); }
-  if (Run.diff.daily) { const dk = runDayKey(); meta.dayBest = meta.dayBest || {}; meta.dayBest[dk] = Math.max(meta.dayBest[dk] || 0, score); }
+  if (Run.rkind === 'week') meta.weekBest[Run.rkey] = Math.max(meta.weekBest[Run.rkey] || 0, score);
+  if (Run.rkind === 'day') { meta.dayBest = meta.dayBest || {}; meta.dayBest[Run.rkey] = Math.max(meta.dayBest[Run.rkey] || 0, score); const ks = Object.keys(meta.dayBest).sort(); while (ks.length > 30) delete meta.dayBest[ks.shift()]; }
   if (!win) meta.hurtUntil = Date.now() + 60000;   // герой в таверне «отлёживается»
   runMetaSave(meta);
-  Run.result = { opts: Run.opts, rec: Run.rec, score, ranked: Run.ranked, day: Run.diff.daily ? runDayKey() : null, week: Run.diff.weekly ? runWeekSeed() : null };
+  Run.result = { opts: Run.opts, rec: Run.rec, score, ranked: Run.ranked, day: Run.rkind === 'day' ? Run.rkey : null, week: Run.rkind === 'week' ? Run.rkey : null };
+  if (typeof rbAfterRun === 'function') rbAfterRun(Run.result);
   const box = Run.el.querySelector('#run-pick'); box.style.display = 'flex';
   box.innerHTML = `<div style="text-align:center;color:#f1dfb0;font-family:sans-serif"><div style="font-size:30px;font-weight:700">${win ? 'Малгор повержен!' : quit ? 'Вы вернулись в таверну' : 'Герой пал'}</div>
-    <p style="font-size:15px">Этажей: ${rw.floors} · Убито: ${S.kills} · Золото: ${h.gold}${Run.diff.weekly || Run.diff.daily ? ` · Очки: ${score}` : ''}<br>Награда: 💎 ${rw.stones}${rw.shards ? ` ◆ ${rw.shards}` : ''}${win ? '' : '<br>Хозяин вернул вас в таверну с половиной здоровья'}</p>
+    <p style="font-size:15px">Этажей: ${rw.floors} · Убито: ${S.kills} · Золото: ${h.gold}${Run.rkind ? ` · Очки: ${score}${Run.ranked ? ' (попытка дня)' : ' (тренировка)'}` : ''}<br>Награда: 💎 ${rw.stones}${rw.shards ? ` ◆ ${rw.shards}` : ''}${win ? '' : '<br>Хозяин вернул вас в таверну с половиной здоровья'}</p>
     <button id="run-back" style="padding:10px 22px;background:#3a2410;color:#f1dfb0;border:2px solid #b8902c;border-radius:8px;cursor:pointer;font-size:16px">В таверну</button></div>`;
   box.querySelector('#run-back').onclick = () => {
     runClose();

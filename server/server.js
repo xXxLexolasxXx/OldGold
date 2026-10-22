@@ -63,6 +63,7 @@ const stats = createStats(DATA, log);
 const events = require('./events').createEvents(DATA, log);
 const errReports = require('./errors').createErrors(DATA, log);   // анонимные отчёты об ошибках у игроков (POST /err)
 const tele = require('./telemetry').createTelemetry(DATA, log, events);   // статистика по согласию (POST /t), «Сообщить о проблеме» (POST /report), удаление по id (POST /t/forget)
+const runboard = require('./runboard').createRunboard(DATA, log);   // таблица рекордов забегов: POST /runs/submit|board|forget (переигровка записи ядром забега)
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {
@@ -258,6 +259,7 @@ function handleHttp(req, res) {
   if (events.handle(req, res, ip)) return;
   if (errReports.handle(req, res, ip)) return;
   if (tele.handle(req, res, ip)) return;
+  if (runboard.handle(req, res, ip)) return;
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405); res.end(); return; }
   if (p === '/stats') {
     const q = new URL(req.url, 'http://x').searchParams;
@@ -789,7 +791,7 @@ setInterval(() => {
   for (const [k, f] of authFails) if (now - f.t > 60000) authFails.delete(k);
 }, 5000);
 
-function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); process.exit(0); }
+function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); runboard.save(); process.exit(0); }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 

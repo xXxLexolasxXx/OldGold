@@ -16,7 +16,8 @@ const RUN_DIFFS = [
   { id: 'walk', name: 'Прогулка', floors: 3, mult: 0.8, desc: 'Этажи 1–3, без босса. Для разминки.', say: 'Сначала разомнёшься. Вниз, потом обратно. Без героизма.' },
   { id: 'dive', name: 'Спуск', floors: 5, mult: 1, desc: '5 этажей и Малгор на дне.', say: 'До самого дна. Малгор давно не принимал гостей.' },
   { id: 'curse', name: 'Проклятие', floors: 5, mult: 1.5, need: 'win', desc: 'Враги злее, награда щедрее.', say: 'Он осерчал. Плати вдвое — получишь вдвое.' },
-  { id: 'week', name: 'Недельный', floors: 5, mult: 1.2, weekly: true, desc: 'Один сид на всю неделю. Побей чужой рекорд.', say: 'Нынешняя неделя — одна на всех. Соревнуйся, а не ной.' },
+  { id: 'daily', name: 'Ежедневный', floors: 5, mult: 1.1, daily: true, desc: 'Сегодня подземелье одно на всех. Таблица рекордов дня.', say: 'Сегодня все спускаются по одной лестнице. Посмотрим, кто вылезет с добычей.' },
+  { id: 'week', name: 'Недельный', floors: 5, mult: 1.2, weekly: true, desc: 'Одно подземелье на всю неделю. Побей чужой рекорд.', say: 'Нынешняя неделя — одна на всех. Соревнуйся, а не ной.' },
 ];
 
 function runMeta() {
@@ -26,7 +27,7 @@ function runMeta() {
   return Object.assign({ ups: {}, weapons: {}, weapon: 'pick', stones: 0, shards: 0, runs: 0, wins: 0, best: 0, cloak: 0, pal: 'warrior', weekBest: {}, hurtUntil: 0 }, m);
 }
 function runMetaSave(m) { try { localStorage.setItem(RUN_META_KEY, JSON.stringify(m)); } catch (e) { /* нет хранилища */ } }
-function runWeekSeed() { const d = new Date(); const t = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); return Math.floor((t / 86400000 + 3) / 7); }  // неделя с понедельника
+function runWeekSeed() { return rsWeekOf(new Date().toISOString().slice(0, 10)); }  // неделя с понедельника, по UTC — как у сервера
 
 // ---------- здание ----------
 BUILDINGS.squadtavern = {
@@ -153,25 +154,31 @@ function tavernRender() {
   cards.innerHTML = RUN_DIFFS.map(d => {
     const locked = d.need === 'win' && !m.wins;
     const lvl = d.id === 'curse' ? Math.max(1, Math.min(5, m.wins)) : 0;
-    const best = d.weekly ? (m.weekBest[wk] || 0) : 0;
+    const best = d.weekly ? (m.weekBest[wk] || 0) : d.daily ? ((m.dayBest || {})[runDayKey()] || 0) : 0;
     return `<button data-d="${d.id}" ${locked ? 'disabled' : ''} style="${btn};width:218px;text-align:left;${locked ? 'opacity:.45;cursor:default' : ''}">
-      <span style="display:block;width:100%;text-align:left"><b style="font-size:16px;display:block">${d.name}${lvl ? ' ' + lvl : ''}${locked ? ' 🔒' : ''}</b><small style="display:block">${locked ? 'Победите Малгора, чтобы открыть' : d.desc}</small>${best ? `<small style="display:block">Рекорд недели: ${best}</small>` : ''}</span></button>`;
+      <span style="display:block;width:100%;text-align:left"><b style="font-size:16px;display:block">${d.name}${lvl ? ' ' + lvl : ''}${locked ? ' 🔒' : ''}</b><small style="display:block">${locked ? 'Победите Малгора, чтобы открыть' : d.desc}</small>${best ? `<small style="display:block">${d.daily ? 'Ваш результат сегодня' : 'Рекорд недели'}: ${best}</small>` : ''}</span></button>`;
   }).join('');
   cards.querySelectorAll('button[data-d]').forEach(b => {
     b.onmouseenter = () => { const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (d && !b.disabled) { tavernSay(d.say); Tav.hover = true; } };
     b.onmouseleave = () => { Tav.hover = false; };
-    b.onclick = () => { const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (d && !b.disabled) { RSfx.play('ui'); tavernClose(); runStart(d); } };
+    b.onclick = () => {
+      const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (!d || b.disabled) return;
+      if (d.daily || d.weekly) { rbChoose(d); return; }   // попытка дня или тренировка — игрок решает сам
+      RSfx.play('ui'); tavernClose(); runStart(d);
+    };
   });
   const pal = RUN_PALS[m.pal];
   Tav.el.querySelector('#tav-bar').innerHTML =
     `<button id="tb-cloak" style="${btn}">Переодеться: плащ «${RUN_CLOAKS[m.cloak % RUN_CLOAKS.length][0]}»</button>
      <button id="tb-pal" style="${btn}">Напарник: ${pal[0]}</button>
      <button id="tb-shop" style="${btn}">Мастерская деда</button>
+     <button id="tb-board" style="${btn}">Рекорды</button>
      <button id="tb-arena" style="${btn};opacity:.6">Арена (скоро)</button>
      <span style="align-self:center;font-size:13px;opacity:.85">💎 ${m.stones} &nbsp; ◆ ${m.shards} &nbsp; Забегов: ${m.runs} · Побед: ${m.wins}${hurt ? ' · герой отлёживается' : ''}</span>`;
   Tav.el.querySelector('#tb-cloak').onclick = () => { const mm = runMeta(); mm.cloak = (mm.cloak + 1) % RUN_CLOAKS.length; runMetaSave(mm); tavernRender(); tavernSay('Красный тебе шёл, но вкус — дело хозяйское.'); };
   Tav.el.querySelector('#tb-pal').onclick = () => { const ks = Object.keys(RUN_PALS), mm = runMeta(); mm.pal = ks[(ks.indexOf(mm.pal) + 1) % ks.length]; runMetaSave(mm); tavernRender(); tavernSay(RUN_PALS[mm.pal][1] + '.'); };
   Tav.el.querySelector('#tb-shop').onclick = tavernShop;
+  Tav.el.querySelector('#tb-board').onclick = rbOpen;
   Tav.el.querySelector('#tb-arena').onclick = () => tavernSay('Арена? Там пока делают трибуны. Приходи позже.');
 }
 
