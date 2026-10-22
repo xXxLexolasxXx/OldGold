@@ -210,7 +210,7 @@ function skelHat(c, view, hx, b, col, look, P) {
 
 function skelSword(c, hx, hy, ang, look, view) {
   const C = SKA_C, INK = C.ink, ca = Math.cos(ang), sa = Math.sin(ang);
-  c.save(); c.translate(hx + ca * 2.2, hy + sa * 2.2); c.rotate(ang);              // рукоять — в ладони: середина хвата ровно в кисти
+  c.save(); c.translate(hx + ca * 3.7, hy + sa * 3.7); c.rotate(ang);              // рукоять — в ладони: середина хвата ровно в кисти
   // клинок: ржавый, щербатый, в тёмной обводке
   c.fillStyle = INK; c.beginPath(); c.moveTo(-1.4, -1.7); c.lineTo(15.5, -1.9); c.lineTo(17.4, 0); c.lineTo(15.5, 1.9); c.lineTo(-1.4, 1.7); c.closePath(); c.fill();
   const rg = c.createLinearGradient(0, -1.4, 0, 1.4); rg.addColorStop(0, C.rust[0]); rg.addColorStop(0.5, C.rust[1]); rg.addColorStop(1, C.rust[2]);
