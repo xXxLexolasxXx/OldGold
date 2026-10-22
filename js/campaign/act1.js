@@ -8,13 +8,16 @@
 const CAMP1 = {
   W: 128, H: 96, seed: 100100,
   start: [64, 52],             // площадь у склада
-  mine: [64, 29],              // Старый штрек: вход в нишу под скалой (зона осмотра)
-  deep: [64, 24],              // ниша штрека: бочки и разведчики
-  gate: [64, 90],              // Южные ворота (дорога из долины)
-  ledge: [68, 23],             // край ниши штрека, где кричит Шнырь
-  caches: [[24, 64], [104, 46], [44, 82]],   // три тайника Тана (★★★)
-  tiltY: 34,                   // массивы гор севернее — кренятся после взрыва
-  stock: { wheat: 70, hops: 30, flour: 10, timber: 40, stone: 40, trunk: 30, bread: 14, sausage: 10, beer: 4, gold: 30, iron: 6 },
+  mine: [64, 21],              // Старый штрек: вход в нишу в северной стене пещеры (зона осмотра)
+  deep: [64, 15],              // ниша штрека: бочки и разведчики
+  gate: [64, 90],              // Южные ворота: тоннель наружу
+  ledge: [68, 14],             // край ниши штрека, где кричит Шнырь
+  caches: [[24, 64], [104, 48], [46, 78]],   // три тайника Тана (★★★)
+  tiltY: 26,                   // стены пещеры севернее — кренятся после взрыва
+  // дыры в своде [x, y, радиус]: днём столбы солнца, под ними поля и деревья; последняя — выход тоннеля к Южным воротам
+  shafts: [[38, 40, 4], [88, 40, 3.6], [56, 68, 4.2], [96, 62, 3], [28, 62, 3.2], [74, 52, 2.6], [64, 92, 5]],
+  cracks: [[60, 26, 2.4], [70, 30, 2], [50, 32, 1.8]],   // после взрыва свод трескается
+  stock: { wheat: 70, hops: 30, flour: 10, timber: 40, stone: 40, trunk: 40, bread: 14, sausage: 10, beer: 4, gold: 30, iron: 6 },
 };
 
 // ---------- Карта ----------
@@ -30,52 +33,49 @@ function camp1Noise(seed, cell) {
   };
 }
 
-// Север — массив Брюзги с рудой и штреком; по бокам — отроги; посередине — долина города; юг — лес и ворота; восток — озеро
+// Подгорье — огромная пещера внутри горы Брюзги: вокруг скала (стены), в северной стене — ниша Старого штрека,
+// на юге — тоннель к Южным воротам, на востоке — подземное озеро. Деревья — только в столбах солнца
 function camp1Map() {
-  const { W, H } = CAMP1, m = meNew(W, H, 'mountain', 'Подгорье');
-  m.seed = CAMP1.seed; m.nm = 'manual'; m.desc = 'Кампания, акт 1: город под горой Брюзгой';
-  const n1 = camp1Noise(11, 9), n2 = camp1Noise(22, 5), nf = camp1Noise(33, 7);
+  const { W, H } = CAMP1, m = meNew(W, H, 'cavern', 'Подгорье');
+  m.seed = CAMP1.seed; m.nm = 'manual'; m.desc = 'Кампания, акт 1: город внутри горы Брюзги';
+  const n1 = camp1Noise(11, 9), n2 = camp1Noise(22, 5);
   const rnd = mulberry32(CAMP1.seed);
   const at = (x, y) => y * W + x;
+  const sunAt = (x, y, k = 1) => CAMP1.shafts.some(([sx, sy, r]) => Math.hypot(x - sx, (y - sy) * 1.2) <= r * k);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = at(x, y);
-    const edge = 27 + Math.sin(x * 0.09) * 3 + Math.sin(x * 0.23 + 1) * 2 + (n1(x, y) - 0.5) * 5;
-    const west = 9 + Math.sin(y * 0.15) * 3 + (n2(x, y) - 0.5) * 4 - Math.max(0, y - 60) * 0.4;
-    const east = W - 10 - Math.sin(y * 0.13 + 2) * 3 - (n2(x, y) - 0.5) * 4 + Math.max(0, y - 60) * 0.4;
-    if (y < edge || x < west || x > east) m.t[i] = 2;
-    // озеро и ручей на востоке
-    const lx = (x - 101) / 6.5, ly = (y - 64) / 4.5;
-    if (lx * lx + ly * ly < 1 + (n2(x, y) - 0.5) * 0.5) m.t[i] = 1;
-    if (y > 67 && Math.abs(x - (101 + (y - 67) * 0.35 + Math.sin(y * 0.4) * 1.2)) < 1.1) m.t[i] = 1;
+    const ex = (x - 64) / 54, ey = (y - 52) / 32, e = ex * ex + ey * ey + (n1(x, y) - 0.5) * 0.22 + (n2(x, y) - 0.5) * 0.1;
+    m.t[i] = e < 1 ? 0 : 2;
+    if (y > 80 && Math.abs(x - CAMP1.gate[0]) <= 2.5 + (n2(x, y) - 0.5)) m.t[i] = 0;          // тоннель к воротам
+    const lx = (x - 100) / 6, ly = (y - 66) / 3.8;
+    if (lx * lx + ly * ly < 1 + (n2(x, y) - 0.5) * 0.5) m.t[i] = 1;                               // подземное озеро
   }
-  // штрек: широкая ниша в скале у подножия (бочки и разведчики видны, горы её не заслоняют) и проход к площади
+  // ниша Старого штрека в северной стене
   const [mx, my] = CAMP1.deep;
-  for (let y = my - 5; y <= my + 8; y++) for (let x = mx - 8; x <= mx + 8; x++) {
+  for (let y = my - 5; y <= my + 9; y++) for (let x = mx - 8; x <= mx + 8; x++) {
     const ex = (x - mx) / 6.5, ey = (y - my) / (y < my ? 3.6 : 5);
     if (ex * ex + ey * ey < 1 || y > my && Math.abs(x - mx) <= 2) m.t[at(x, y)] = 0;
   }
-  // руда: в скале у кромки (по ней строят рудники) и в стенах штрека
+  // руда в стенах: у кромки пещеры и густо — у штрека
   for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
     const i = at(x, y);
     if (m.t[i] !== 2) continue;
     let near = 0;
     for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H && m.t[at(xx, yy)] === 0) near++; }
-    if (near && rnd() < (Math.abs(x - mx) < 10 && y < 30 ? 0.35 : 0.12)) m.c[i] = 1;
+    if (near && rnd() < (Math.abs(x - mx) < 10 && y < 24 ? 0.35 : 0.1)) m.c[i] = 1;
   }
-  // лес: юг, отроги, редкие деревья; город и дороги — без деревьев
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = at(x, y);
-    if (m.t[i] !== 0) continue;
-    const town = x > 24 && x < 104 && y > 31 && y < 76 || Math.abs(x - mx) < 9 && y < 34;
-    const f = nf(x, y);
-    if (!town && (y > 76 ? f > 0.32 : f > 0.55) && rnd() < 0.72 && Math.abs(x - CAMP1.gate[0]) > 2) m.o[i] = rnd() < 0.2 ? 2 : 1;
-    else if (!town && rnd() < 0.02) m.o[i] = 2;
+  // деревья растут только в столбах солнца у западной и восточной стен (там нет полей)
+  for (const [sx, sy, r] of [CAMP1.shafts[4], CAMP1.shafts[3]]) {
+    for (let y = Math.floor(sy - r - 1); y <= sy + r + 1; y++) for (let x = Math.floor(sx - r - 1); x <= sx + r + 1; x++) {
+      const i = at(x, y);
+      if (m.t[i] === 0 && Math.hypot(x - sx, (y - sy) * 1.2) <= r + 0.5 && rnd() < 0.5) m.o[i] = rnd() < 0.3 ? 2 : 1;
+    }
   }
-  // камни у подножия: для каменоломен
-  for (const [cx, cy, r] of [[30, 37, 3], [97, 37, 3], [22, 58, 2.5], [86, 74, 2]]) {
+  // валуны у стен: для каменоломен
+  for (const [cx, cy, r] of [[24, 42, 2.5], [102, 40, 2.5], [20, 56, 2.5], [88, 77, 2]]) {
     for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) {
       const i = at(x, y);
-      if (m.t[i] === 0 && Math.hypot(x - cx, y - cy) <= r && rnd() < 0.8) m.o[i] = 3;
+      if (m.t[i] === 0 && !sunAt(x, y) && Math.hypot(x - cx, y - cy) <= r && rnd() < 0.8) m.o[i] = 3;
     }
   }
   m.start = CAMP1.start.slice();
@@ -86,12 +86,12 @@ function camp1Map() {
 // [тип, якорь x, якорь y] — ищем ближайшее к якорю место, ставим готовым и тянем дорогу к сети
 
 const CAMP1_TOWN = [
-  ['library', 64, 44], ['well', 56, 58], ['house', 52, 48], ['house', 76, 48], ['house', 48, 56], ['house', 80, 56],
-  ['house', 56, 64], ['house', 72, 64], ['bakery', 70, 58], ['mill', 74, 60], ['brewery', 52, 44], ['hopfarm', 44, 46],
-  ['farm', 36, 54], ['farm', 92, 56], ['woodcutter', 40, 72], ['woodcutter', 86, 72], ['sawmill', 46, 66], ['quarry', 31, 41],
-  ['quarry', 96, 41], ['infirmary', 84, 48], ['watchtower', 96, 62], ['watchtower', 34, 64], ['watchtower', 64, 80], ['swine', 86, 64],
-  ['butchery', 80, 62], ['ironmine', 46, 33], ['smeltery', 44, 40], ['weaponsmith', 84, 42], ['tannery', 92, 48], ['guild_warrior', 74, 40],
-  ['house', 44, 60], ['house', 88, 52], ['house', 60, 70], ['house', 68, 72], ['well', 80, 68], ['goatpen', 54, 74],
+  ['library', 64, 44], ['well', 60, 58], ['house', 52, 48], ['house', 76, 48], ['house', 48, 56], ['house', 80, 56],
+  ['house', 62, 62], ['house', 72, 64], ['bakery', 70, 58], ['mill', 76, 60], ['brewery', 52, 44], ['hopfarm', 56, 68],
+  ['farm', 38, 40], ['farm', 88, 40], ['woodcutter', 30, 66], ['sawmill', 40, 62], ['quarry', 26, 44],
+  ['quarry', 100, 43], ['infirmary', 84, 50], ['watchtower', 96, 56], ['watchtower', 34, 66], ['watchtower', 64, 80], ['swine', 86, 66],
+  ['butchery', 80, 64], ['ironmine', 46, 26], ['smeltery', 48, 34], ['weaponsmith', 82, 34], ['tannery', 92, 50], ['guild_warrior', 74, 38],
+  ['house', 44, 70], ['house', 90, 72], ['house', 54, 76], ['house', 70, 74], ['well', 80, 70], ['goatpen', 46, 50],
 ];
 
 function camp1Net() {
@@ -130,7 +130,7 @@ function camp1Road(b, net) {
       prev.set(j, p); queue.push(j);
     }
   }
-  if (goal < 0 && !canPlaceRoad(sx, sy)) return false;
+  if (goal < 0) return false;
   for (let j = goal >= 0 ? prev.get(goal) : s0; j >= 0; j = prev.get(j)) {
     const x = j % MAP_W, y = (j / MAP_W) | 0;
     if (!World.road[j]) setRoad(x, y, true);
@@ -172,7 +172,7 @@ function camp1Town(C) {
     spawnUnit(w, s[0], s[1]);
   }
   const [sx, sy] = CAMP1.start;
-  for (const [t, n] of [['serf', 6], ['builder', 2]]) for (let k = 0; k < n; k++) {
+  for (const [t, n] of [['serf', 12], ['builder', 2]]) for (let k = 0; k < n; k++) {
     const s = randomFreeNear(sx, sy + 2, 1, 8);
     if (s) spawnUnit(t, s[0], s[1]);
   }
@@ -180,6 +180,32 @@ function camp1Town(C) {
   const store = Game.buildings.find(b => b.type === 'storehouse');
   Object.assign(store.stock, CAMP1.stock);
   if (typeof decorateAllRoads === 'function') decorateAllRoads();
+  // пивовар и пекарь уже взялись за праздник: в мастерских — первая закладка
+  for (const b of placed) if (b.type === 'brewery') Object.assign(b.stock, { wheat: 5, hops: 5 }); else if (b.type === 'bakery') b.stock.flour = 6;
+  // поля в столбах солнца у ферм и хмельника — уже зеленеют и зреют
+  const rnd = mulberry32(CAMP1.seed ^ 0xF1E1D);
+  for (const b of placed) {
+    if (!b.def.crops) continue;
+    const crop = b.def.crops[0];
+    const sh = CAMP1.shafts.reduce((p, q) => Math.hypot(q[0] - b.x, q[1] - b.y) < Math.hypot(p[0] - b.x, p[1] - b.y) ? q : p);
+    let n = 0;
+    for (let y = Math.floor(sh[1] - sh[2]); y <= sh[1] + sh[2] && n < 6; y++) for (let x = Math.floor(sh[0] - sh[2]); x <= sh[0] + sh[2] && n < 6; x++) {
+      if (Math.hypot(x - sh[0], (y - sh[1]) * 1.2) > sh[2] || Math.abs(x - b.doorX) > 6 || Math.abs(y - b.doorY) > 6 || !isFreeGrass(x, y)) continue;
+      World.obj[idx(x, y)] = { t: 'field', g: 0.35 + rnd() * 0.6, crop, farm: b.id };
+      n++;
+    }
+  }
+  // светящиеся грибы: в тёмных углах пещеры, подальше от дорог и солнца
+  C.flags.shrooms = [];
+  for (let tries = 0; tries < 2000 && C.flags.shrooms.length < 46; tries++) {
+    const x = 12 + (rnd() * (MAP_W - 24) | 0), y = 18 + (rnd() * (MAP_H - 30) | 0), i = idx(x, y);
+    if (World.terrain[i] !== T_GRASS || World.obj[i] || World.road[i] || World.bmap[i]) continue;
+    if (CAMP1.shafts.some(([sx, sy, r]) => Math.hypot(x - sx, y - sy) < r + 3)) continue;
+    let wall = false;
+    for (let dy = -2; dy <= 2 && !wall; dy++) for (let dx = -2; dx <= 2; dx++) if (inb(x + dx, y + dy) && World.terrain[idx(x + dx, y + dy)] === T_ROCK) { wall = true; break; }
+    if (!wall && rnd() < 0.8) continue;   // больше всего — у стен
+    C.flags.shrooms.push([x + 0.5, y + 0.8, (rnd() * 3) | 0]);
+  }
   C.flags.town = placed.length;
   const hall = placed.find(b => b.type === 'library');
   C.flags.hall = hall ? [hall.doorX, hall.doorY + 1] : [sx, sy - 2];
@@ -209,16 +235,14 @@ function camp1DrawKeg(c, k, t, lit) {
 }
 
 function camp1DrawShnyr(c, p) {
+  if (typeof naFrame !== 'function') return;
   const t = Game.time, x = Math.round(p[0] * TILE + 16), y = Math.round(p[1] * TILE + 26);
-  c.save();
-  c.translate(x, y);
-  const N = { id: 1, st: Math.sin(t * 2) > 0.6 ? 'atk' : 'idle', atkT: (t * 1.4) % 0.56, hurtT: -9 };
-  campDrawGoblin(c, N, true);
-  // бочка под мышкой и факел
-  c.fillStyle = '#6a4424'; c.fillRect(8, -30, 10, 12); c.fillStyle = '#3a2a1a'; c.fillRect(8, -27, 10, 1); c.fillRect(8, -22, 10, 1);
-  c.fillStyle = '#ffb040'; c.globalAlpha = 0.7 + Math.sin(t * 13) * 0.3; c.fillRect(-14, -46, 4, 5); c.globalAlpha = 1;
-  c.fillStyle = '#5a3a1a'; c.fillRect(-13, -41, 2, 10);
-  c.restore();
+  const ph = t % 3.2, fr = ph < 0.3 ? 'windup' : ph < 0.5 ? 'strike' : ph < 0.8 ? 'recover' : 'i' + ((t * 5) % 6 | 0);
+  const sp = naFrame('shnyrKing', fr);
+  c.save(); c.translate(x, y); c.scale(-1, 1); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.restore();
+  // искры фитиля на скипетре
+  c.fillStyle = (t * 9 | 0) % 2 ? '#fff2a0' : '#ff9030';
+  c.fillRect(x - 22 + Math.round(Math.sin(t * 17) * 2), y - 52 + Math.round(Math.cos(t * 13) * 2), 2, 2);
 }
 
 function camp1Draw(list, c, x0, y0, x1, y1) {
@@ -226,6 +250,12 @@ function camp1Draw(list, c, x0, y0, x1, y1) {
   for (const k of C.flags.kegs || []) if (k[0] > x0 - 2 && k[0] < x1 + 2 && k[1] > y0 - 2 && k[1] < y1 + 2) list.push([k[1] + 0.7, () => camp1DrawKeg(c, k, t, !!C.flags.lit)]);
   const s = C.flags.shnyr;
   if (s && s[0] > x0 - 3 && s[0] < x1 + 3 && s[1] > y0 - 3 && s[1] < y1 + 3) list.push([s[1] + 0.9, () => camp1DrawShnyr(c, s)]);
+  for (const m of C.flags.shrooms || []) if (m[0] > x0 - 1 && m[0] < x1 + 1 && m[1] > y0 - 1 && m[1] < y1 + 2) list.push([m[1], () => caveDrawShroom(c, m)]);
+  // Тан у своего чертога (пока Подгорье не ушло), Пим — у склада после прихода
+  const hall = C.flags.hall;
+  if (hall && hall[0] > x0 - 2 && hall[0] < x1 + 2 && hall[1] > y0 - 2 && hall[1] < y1 + 3) list.push([hall[1] + 0.95, () => campDrawNpc(c, 'tan', hall[0] + 1.6, hall[1] + 0.2)]);
+  const pim = C.flags.pim;
+  if (pim && pim[0] > x0 - 2 && pim[0] < x1 + 2 && pim[1] > y0 - 2 && pim[1] < y1 + 3) list.push([pim[1] + 0.95, () => campDrawNpc(c, 'pim', pim[0], pim[1])]);
 }
 
 // ---------- Взрыв ----------
@@ -270,7 +300,7 @@ function camp1Boom(C) {
 
 const CAMP1_TILT = 0.12;        // крен горы после взрыва, радианы
 
-const camp1Wave = (C, n, fromGate) => {
+const camp1Wave = (C, n, fromGate, champs = 0) => {
   const [mx, my] = CAMP1.mine, [gx, gy] = CAMP1.gate;
   C.flags.wave = (C.flags.wave || 0) + 1;
   C.flags.waveT = Game.time;
@@ -279,18 +309,21 @@ const camp1Wave = (C, n, fromGate) => {
     const x = (g ? gx : mx) + (Math.random() - 0.5) * 3, y = (g ? gy - 2 : my + 2) + (Math.random() - 0.5) * 2;
     campFoe('goblin', x, y, 'w', { delay: k * 0.8, hunt: true });
   }
+  for (let k = 0; k < champs; k++) campFoe('goblinChamp', mx + (k ? 2 : -2), my + 3, 'w', { delay: 2 + k, hunt: true });
   if (typeof sfxAt === 'function') sfxAt('goblinCry', mx * TILE, my * TILE, 1);
 };
 const camp1WaveLeft = () => campFoes('w').length;
 const camp1Night = () => isNightNow() || isEveningNow();
 
 CAMP_ACTS[1] = {
-  id: 1, name: 'Праздник Первого Камня', seed: CAMP1.seed, stock: CAMP1.stock, map: camp1Map, tiltY: CAMP1.tiltY, tiltX: CAMP1.mine[0],
+  id: 1, name: 'Праздник Первого Камня', seed: CAMP1.seed, stock: CAMP1.stock,
+  cave: { shafts: C => (C.flags.boom ? CAMP1.shafts.concat(CAMP1.cracks) : CAMP1.shafts) }, map: camp1Map, tiltY: CAMP1.tiltY, tiltX: CAMP1.mine[0],
   outro: 'Гора стоит — пока. Завтра Подгорье уходит. Тан уйдёт последним.',
   setup(C) {
     camp1Town(C);
     camp1Kegs(C);
     C.flags.lost0 = Game.lostGnomes || 0;
+    C.flags.b0 = campProduced('beer'); C.flags.h0 = campProduced('bread');   // пиво и хлеб к празднику считаются с начала акта
     C.flags.pop0 = campPeople();
     const h = campHero();
     if (h) { const s = randomFreeNear(CAMP1.start[0] + 2, CAMP1.start[1] + 2, 0, 5) || CAMP1.start; h.x = s[0] + 0.5; h.y = s[1] + 0.5; }
@@ -327,7 +360,8 @@ CAMP_ACTS[1] = {
   draw: camp1Draw,
   steps: [
     { k: 'cut', pause: true, cam: [64, 40], label: 'Канун праздника', lines: [
-      ['note', 'Подгорье. Сто лет под горой Брюзгой. Завтра — праздник Первого Камня.'],
+      ['note', 'Подгорье. Сто лет внутри горы Брюзги. Завтра — праздник Первого Камня.'],
+      ['note', 'Солнце сюда заглядывает только через продухи в своде. Под ними и растёт всё, что растёт: хлеб, хмель и пара упрямых ёлок.'],
       ['tan', 'Сто лет Подгорью! Сто лет под одной горой, и ни разу она на нас не упала.'],
       ['grum', 'Сто лет — не повод. Горы не умеют считать.'],
       ['yagla', 'Грум, сегодня праздник. Ворчать будешь завтра.'],
@@ -342,7 +376,7 @@ CAMP_ACTS[1] = {
     ] },
     { k: 'check' },
     { k: 'do', fn(C) { if (C.flags.b0 == null) { C.flags.b0 = campProduced('beer'); C.flags.h0 = campProduced('bread'); } } },
-    { k: 'goal', label: 'Шорох в штреке', hint: 'Штрек — проход в скале к северу от площади (кнопка ◎ покажет).',
+    { k: 'goal', label: 'Шорох в штреке', hint: 'Штрек — ниша в северной стене пещеры (кнопка ◎ покажет).',
       objs: [{ id: 'mine', t: 'Герой: осмотреть Старый штрек', zone: CAMP1.mine.concat(2.6) }] },
     // разведчики сидят в глубине штрека над бочками; после реплик бросаются в драку
     { k: 'do', fn(C) {
@@ -359,7 +393,7 @@ CAMP_ACTS[1] = {
       init(C) { if (!campFoes('scout').length && !C.flags.scoutsDone) { const [dx, dy] = CAMP1.deep; for (let k = 0; k < 3; k++) campFoe('goblin', dx - 1.5 + k * 1.5, dy + 0.5, 'scout', { hold: true }); } },
       objs: [
         { id: 'scouts', t: 'Победить гоблинов-разведчиков', need: 3, cur: C => (C.flags.scoutsDone ? 3 : 3 - campFoes('scout').length) },
-        { id: 'beer', t: 'Сварить пива к празднику', need: 10, cur: C => campProduced('beer') - C.flags.b0 },
+        { id: 'beer', t: 'Сварить пива к празднику', need: 6, cur: C => campProduced('beer') - C.flags.b0 },
         { id: 'bread', t: 'Испечь хлеба', need: 10, cur: C => campProduced('bread') - C.flags.h0 },
       ],
       during(C) {
@@ -374,7 +408,13 @@ CAMP_ACTS[1] = {
     { k: 'goal', label: 'Тревога', hint: 'Башня — меню «Оборона». Стройматериалы на складе есть.',
       objs: [{ id: 'tower', t: 'Поставить сторожевую башню у штрека', at: CAMP1.mine,
         cur: () => Game.buildings.some(b => b.type === 'watchtower' && b.state === 'done' && !b.removed && Math.hypot(b.x - CAMP1.mine[0], b.y - CAMP1.mine[1]) < 14 && b.y > CAMP1.mine[1]) ? 1 : 0 }] },
-    { k: 'wait', label: 'Ждём вечера', until: () => camp1Night() },
+    { k: 'wait', label: 'Канун праздника', until: () => camp1Night() },
+    { k: 'say', lines: [
+      ['yagla', 'Спать, спать! Завтра праздник, а у кого борода не расчёсана — тот моет посуду.'],
+      ['grum', 'Я свою расчёсывал в прошлом году. Хватит.'],
+    ] },
+    { k: 'wait', label: 'Ночь перед праздником', until: () => !camp1Night() },
+    { k: 'wait', label: 'День праздника: ждём вечера', until: () => camp1Night() },
     { k: 'say', fx(C) { if (typeof festCanStart === 'function' && typeof festivalStart === 'function' && festCanStart()) festivalStart('Праздник Первого Камня', 1); }, lines: [
       ['yagla', 'Сто лет назад наши прадеды положили первый камень. Сегодня — споём!'],
       ['tan', 'За гору! Чтоб стояла ещё сто!'],
@@ -382,23 +422,23 @@ CAMP_ACTS[1] = {
     ] },
     { k: 'check' },
     { k: 'do', fn(C) { C.flags.shnyr = CAMP1.ledge.slice(); C.flags.lit = 1; camp1Wave(C, 4, false); } },
-    { k: 'cut', cam: [66, 28], label: 'Нападение', lines: [
+    { k: 'cut', cam: [66, 22], label: 'Нападение', lines: [
       ['shnyr', 'Эй, бородатые! С праздником! Подарок уже под горой — осталось развернуть!'],
       ['grum', 'Гоблины! Все к большому костру, у огня они не держатся! Герой — к штреку!'],
     ] },
     { k: 'goal', label: 'Нападение', hint: 'Жители прячутся у большого костра и в домах. Башни стреляют сами.',
       objs: [{ id: 'w1', t: 'Отбить первую волну гоблинов', need: 1, cur: () => camp1WaveLeft() ? 0 : 1 }] },
-    { k: 'do', fn(C) { camp1Wave(C, 6, true); } },
+    { k: 'do', fn(C) { camp1Wave(C, 6, true, 1); } },
     { k: 'say', lines: [['grum', 'Ещё лезут! И с юга тоже — от ворот! Они нас окружают. Вежливо, по-гоблински.']] },
     { k: 'goal', label: 'Нападение', objs: [{ id: 'w2', t: 'Отбить вторую волну (штрек и Южные ворота)', need: 1, cur: () => camp1WaveLeft() ? 0 : 1 }] },
-    { k: 'do', fn(C) { camp1Wave(C, 8, true); } },
+    { k: 'do', fn(C) { camp1Wave(C, 8, true, 2); } },
     { k: 'say', lines: [['shnyr', 'Не нравится наш праздник? А у нас ещё фейерверк есть!']] },
     { k: 'goal', label: 'Нападение', objs: [{ id: 'w3', t: 'Отбить третью волну', need: 1, cur: () => camp1WaveLeft() ? 0 : 1 }] },
-    { k: 'cut', cam: [66, 28], lines: [
+    { k: 'cut', cam: [66, 22], lines: [
       ['shnyr', 'Ладно, по-хорошему не хотите. БАБАХ!'],
       ['grum', 'Он сказал «бабах»? Все от горы! БЫСТРО!'],
     ] },
-    { k: 'cut', cam: [64, 26], min: 6, label: 'Бабах', fx: camp1Boom,
+    { k: 'cut', cam: [64, 24], min: 6, label: 'Бабах', fx: camp1Boom,
       during(C, s) { C.tilt = Math.min(CAMP1_TILT, s.t / 5 * CAMP1_TILT); },
       lines: [
         ['note', 'Гора вздрогнула, охнула и… накренилась.'],
@@ -412,7 +452,7 @@ CAMP_ACTS[1] = {
         { id: 'dawn', t: 'Дожить до рассвета', cur: () => camp1Night() ? 0 : 1 },
         { id: 'store', t: 'Герой: прийти к складу', zone: () => { const s = Game.buildings.find(b => b.type === 'storehouse' && !b.removed); return s ? [s.doorX, s.doorY + 1, 2.4] : CAMP1.start.concat(3); } },
       ] },
-    { k: 'say', lines: [
+    { k: 'say', fx(C) { const st = Game.buildings.find(b => b.type === 'storehouse' && !b.removed); C.flags.pim = st ? [st.doorX + 2.5, st.doorY + 1.4] : CAMP1.start.slice(); }, lines: [
       ['pim', 'Пим Чернилкин, летописец! Шёл мимо, с чернилами. Совпадение. Уже записал ваш праздник — по слухам.'],
       ['grum', 'Праздник был вчера. Слухи у тебя быстрые.'],
       ['pim', 'Профессия такая! Можно я с вами? Летописи нужна история, а у вас её сейчас — хоть отбавляй.'],

@@ -19,7 +19,7 @@ const CAMP_WHO = {
   yagla: { name: 'Бабушка Ягла', ch: 'Я', col: '#e8b4d4', bg: '#3a1e30' },
   pim: { name: 'Пим Чернилкин', ch: 'П', col: '#8ad8a8', bg: '#16302a' },
   tan: { name: 'Тан Борода Старший', ch: 'Т', col: '#f0d070', bg: '#3a3010' },
-  shnyr: { name: 'Шнырь Пороховой', ch: 'Ш', col: '#a8d060', bg: '#24300e' },
+  shnyr: { name: 'Король Шнырь Пороховой', ch: 'Ш', col: '#a8d060', bg: '#24300e' },
   gob: { name: 'Гоблин', ch: 'г', col: '#8ab850', bg: '#1e2a10' },
   zhmykha: { name: 'Жмыха Кремнёвая', ch: 'Ж', col: '#b0c4e0', bg: '#1e2838' },
   mrak: { name: 'Малгор', ch: 'М', col: '#9cf06a', bg: '#2a1840' },
@@ -66,7 +66,10 @@ function campFoe(k, x, y, tag, opts = {}) {
 // hold — сторожат место (штрек), пока рядом не появится житель или герой
 if (typeof FSPEC !== 'undefined') {
   FSPEC.goblin = { name: 'Гоблин-подрывник', mhp: 26, dmg: [2, 5], cd: 1.4, rng: 1.4, spd: 2.3, parry: 0.08, xp: 26, sz: 7,
-    drop: [['gold', 1, 0.45], ['trunk', 1, 0.3]], draw: (c, N) => campDrawGoblin(c, N, false), ai: campGoblinAi };
+    drop: [['gold', 1, 0.45], ['trunk', 1, 0.3]], draw: (c, N) => campDrawGoblin(c, N), ai: campGoblinAi };
+  // чемпион: почти с тролля, щит отводит удары, ржавый меч бьёт тяжело
+  FSPEC.goblinChamp = { name: 'Чемпион гоблинов', mhp: 130, dmg: [6, 10], cd: 1.9, rng: 1.9, spd: 1.8, parry: 0.3, xp: 130, sz: 13,
+    drop: [['gold', 3, 1], ['iron', 1, 0.5]], draw: (c, N) => campDrawGoblin(c, N), ai: campGoblinAi, bar: (c, N, px, py) => { if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - 70, false); } };
 }
 function campGoblinAi(N, dt) {
   if (N.hold && !N.tg) {
@@ -519,8 +522,8 @@ function campDrawZone(c, z) {
   c.restore();
 }
 
-// гоблин кампании рисуется кадрами гоблинов леса (neutralart2.js)
-function campDrawGoblin(c, N, big) {
+// гоблины кампании рисуются кадрами гоблинов леса (neutralart2.js) и знати гоблинов (goblinart.js, campaign/art.js)
+function campDrawGoblin(c, N, art) {
   if (typeof naFrame !== 'function') return;
   let fr;
   if (N.st === 'die') fr = 'd0';
@@ -528,7 +531,8 @@ function campDrawGoblin(c, N, big) {
   else if (N.st === 'chase') fr = 'w' + ((Game.time * 11 + N.id) % 8 | 0);
   else fr = 'i' + ((Game.time * 5 + N.id) % 6 | 0);
   if (Game.time - (N.hurtT || -9) < 0.2 && N.st !== 'die') fr = 'hurt';
-  const sp = naFrame(N.id % 2 ? 'goblinB' : 'goblin', fr), sc = big ? 1.5 : 1.1;
+  const kind = art || (N.k === 'goblinChamp' ? 'goblinChamp' : N.id % 2 ? 'goblinB' : 'goblin');
+  const sp = naFrame(kind, fr), sc = kind === 'goblin' || kind === 'goblinB' ? 1.1 : 1;
   c.save(); c.scale(sc, sc); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.restore();
 }
 
