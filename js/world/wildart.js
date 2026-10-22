@@ -20,7 +20,10 @@ const WILD_FAC = {
   grey:   { skin: 5, bcol: '#c8ccd4', bs: 2, bstyle: 'plait', coat: '#4a5a6a', pants: '#3a3e46', head: 'fur', capc: '#8a929c', acc: '#e8ecf0', acc2: '#ffffff', paint: 'scar', pcol: '#f0d0c0', mantle: '#9aa2ac', patch: '#6a7a8c', strap: '#2e2e36', wpn: 'whatchet|wshield|1', hair: '#6a707a' },
   sand:   { skin: 3, bcol: '#e8d8a8', bs: 0, bstyle: 'braids', coat: '#a8803a', pants: '#6a4a28', head: 'turban', capc: '#d89a20', acc: '#a83a1a', acc2: '#f0c030', paint: 'tear', pcol: '#e8b020', patch: '#d8b050', strap: '#7a3a12', wpn: 'wbone||1', hair: '#7a5a2a', prop: 'scales' },
 };
-const WILD_FOLK_HEAD = { copper: ['helm', 'wrap', 'helm'], moss: ['antler', 'hood', 'feather'], grey: ['fur', 'hood', 'fur'], sand: ['turban', 'wrap', 'turban'] };
+const WILD_FOLK_HEAD = {
+  copper: ['helm', 'wrap', 'pot', 'mohawk', 'beanie'], moss: ['antler', 'wrap', 'mushroom', 'feather', 'straw'],
+  grey: ['fur', 'mohawk', 'skull', 'beanie', 'pot'], sand: ['turban', 'wrap', 'straw', 'mohawk', 'skull'],
+};
 const WILD_FOLK_BEARD = ['', 'dreads', 'dry'];
 
 const WILD_KIND = {
@@ -30,6 +33,7 @@ const WILD_KIND = {
   wanderer:  { skin: 4, bcol: '#9a9a90', bs: 1, bstyle: 'dry', coat: '#7a6a5a', pants: '#4a4034', head: 'patchcap', capc: '#6a5a46', capStyle: 3, acc: '#a87a3a', acc2: '#c8a060', strap: '#4a3a24', prop: 'bundle', wpn: 'wstick||1', hair: '#6a6a60' },
   seeker:    { skin: 3, bcol: '#d8c8b0', bs: 2, bstyle: 'dreads', coat: '#6e4a70', pants: '#3a3040', head: 'wrap', capc: '#7a4aa0', acc: '#7a4aa0', acc2: '#bfe8ff', paint: 'band', pcol: '#2a1c30', strap: '#3a2a3a', prop: 'pick', hair: '#4a3a50' },
   thief:     { skin: 5, bcol: '#3a2a20', bs: 4, bstyle: 'tuft', coat: '#2a2a34', pants: '#1c1c24', head: 'hood', capc: '#1e1e28', acc: '#5a1a1a', acc2: '#8a2a2a', paint: 'band', pcol: '#0e0e14', strap: '#5a1a1a', wpn: 'wbone|', hair: '#1e1e28', evil: 1 },
+  mason:     { skin: 5, bcol: '#b8b0a0', bs: 3, bstyle: 'plait', coat: '#8a6e4c', pants: '#4a4238', head: 'fur', capc: '#8a929c', acc: '#c8a050', acc2: '#e8d8a0', paint: 'scar', pcol: '#f0d0c0', mantle: '#7a6a58', patch: '#6a7a8c', strap: '#4a3a24', prop: 'pick', wpn: 'whatchet||1', hair: '#6a707a' },
   brigand:   { skin: 4, bcol: '#2a1a10', bs: 3, bstyle: 'dreads', coat: '#6a2a22', pants: '#3a2418', head: 'horns', capc: '#4a3828', acc: '#c8b890', acc2: '#e8dcc0', paint: 'stripe', pcol: '#e8dcc0', mantle: '#3a2a22', strap: '#2a1a10', wpn: 'wclub||1', hair: '#2a1a10', evil: 1, spikes: 1, bl: 2 },
 };
 
@@ -44,10 +48,10 @@ function wildDesc(key) {
   const [t, fac, n] = k.split(':');
   if (WILD_KIND[t]) D = { ...WILD_KIND[t] };
   else {
-    const F = WILD_FAC[fac] || WILD_FAC.copper, v = (+n || 0) % 3;
+    const F = WILD_FAC[fac] || WILD_FAC.copper, nn = +n || 0, v = nn % 3;
     D = { ...F };
     if (t === 'folk') {
-      D.head = WILD_FOLK_HEAD[fac][v];
+      D.head = WILD_FOLK_HEAD[fac][nn % 5];
       if (WILD_FOLK_BEARD[v]) D.bstyle = WILD_FOLK_BEARD[v];
       if (v === 1) D.wpn = 'wstick||1'; else if (v === 2) { D.wpn = ''; D.paint = ''; }
       if (v === 2) D.bcol = shade(F.bcol, -0.18);
@@ -216,6 +220,56 @@ function wildHead(c, view, hx, hy, tipSway, L, r) {
           for (let k = -2; k <= 2; k++) wTri(c, [hx + k * 1.8 - 0.8, b - 2.2], [hx + k * 1.8 + 0.1 * (k > 0 ? 1 : -1), b - 5.2 - (2 - Math.abs(k)) * 1.0], [hx + k * 1.8 + 0.8, b - 2.2], k % 2 ? bone : shade(bone, -0.12));
         }
       }
+      break;
+    }
+    case 'pot': {   // котелок-шлем с ручкой
+      c.save(); c.beginPath(); c.ellipse(hx, b - 0.6, 5.1, 4.3, 0, Math.PI, 0); c.closePath();
+      c.fillStyle = lingrad(c, hx - 5, 0, hx + 5, 0, [[0, '#9aa0a8'], [0.45, '#6a6e76'], [1, '#34363c']]); c.fill(); c.clip();
+      c.fillStyle = 'rgba(255,255,255,0.25)'; c.fillRect(hx - 3.6, b - 4, 1.2, 3); c.restore();
+      wBand(c, hx - 5.5, b - 1.2, 11, 2, '#5a5e66', '#c8ccd0');
+      c.strokeStyle = '#3a3c42'; c.lineWidth = 0.6; c.beginPath(); c.arc(hx, b - 5, 1.4, Math.PI, 0); c.stroke();
+      break;
+    }
+    case 'straw': {   // соломенная шляпа с широкими полями
+      const sc = W.capc && W.head === 'straw' ? '#d8b860' : col;
+      ellipse(c, hx, b - 0.2, 7.4, 2, shade(sc, -0.2)); ellipse(c, hx, b - 0.7, 7.2, 1.6, sc);
+      c.save(); c.beginPath(); c.ellipse(hx, b - 1.4, 4.2, 3.6, 0, Math.PI, 0); c.closePath(); c.fillStyle = lingrad(c, hx - 4, 0, hx + 4, 0, [[0, shade(sc, 0.2)], [0.5, sc], [1, shade(sc, -0.35)]]); c.fill(); c.clip();
+      c.strokeStyle = shade(sc, -0.3); c.lineWidth = 0.3; for (let k = 0; k < 4; k++) { c.beginPath(); c.moveTo(hx - 5, b - 1 - k); c.lineTo(hx + 5, b - 1 - k); c.stroke(); } c.restore();
+      wBand(c, hx - 4.3, b - 2.2, 8.6, 1.3, acc, acc2);
+      break;
+    }
+    case 'mushroom': {   // шляпка гриба
+      const mc = '#a8482a';
+      c.save(); c.beginPath(); c.ellipse(hx, b - 1.2, 6.4, 4.2, 0, Math.PI, 0); c.closePath();
+      c.fillStyle = lingrad(c, hx - 6, 0, hx + 6, 0, [[0, shade(mc, 0.3)], [0.5, mc], [1, shade(mc, -0.4)]]); c.fill(); c.clip();
+      c.fillStyle = '#f0e8d0'; for (const [dx, dy, rr] of [[-3.2, -2, 0.9], [0.4, -3.3, 1], [3.2, -1.8, 0.8], [-1, -1.2, 0.6], [1.9, -0.6, 0.5]]) { c.beginPath(); c.arc(hx + dx * (e ? 0.8 : 1), b + dy, rr, 0, 7); c.fill(); }
+      c.restore();
+      ellipse(c, hx, b - 0.3, 6.2, 1.1, '#d8c8a0');
+      break;
+    }
+    case 'skull': {   // череп зверя
+      const bn = '#e8dcc0';
+      c.save(); c.beginPath(); c.ellipse(hx, b - 0.5, 4.8, 4.2, 0, Math.PI, 0); c.closePath();
+      c.fillStyle = lingrad(c, hx - 4.5, 0, hx + 4.5, 0, [[0, shade(bn, 0.15)], [0.5, bn], [1, shade(bn, -0.4)]]); c.fill(); c.clip();
+      c.strokeStyle = '#8a7e64'; c.lineWidth = 0.3; c.beginPath(); c.moveTo(hx - 1, b - 4.4); c.lineTo(hx + 0.4, b - 2.4); c.lineTo(hx - 0.4, b - 0.6); c.stroke(); c.restore();
+      if (!n) { ellipse(c, hx + (e ? 1.8 : -1.8), b - 2.2, 0.9, 1, '#2a2018'); if (!e) ellipse(c, hx + 1.8, b - 2.2, 0.9, 1, '#2a2018'); }
+      wBand(c, hx - 5, b - 1, 10, 1.8, '#5a4a38', acc2);
+      if (e) wTri(c, [hx + 3.2, b - 0.6], [hx + 6.2, b - 0.2], [hx + 3.4, b + 1.8], bn); else for (const sd of [-1, 1]) wTri(c, [hx + sd * 4.3, b - 1.6], [hx + sd * 6.8, b - 0.4], [hx + sd * 4.4, b + 0.6], sd < 0 ? bn : shade(bn, -0.15));
+      break;
+    }
+    case 'beanie': {   // вязаная шапка с помпоном и ушками
+      c.save(); c.beginPath(); c.ellipse(hx, b - 0.5, 4.9, 4.1, 0, Math.PI, 0); c.closePath(); c.fillStyle = shade(col, 0.05); c.fill(); c.clip();
+      for (let k = 0; k < 5; k++) { c.fillStyle = k % 2 ? acc : shade(col, -0.1); c.fillRect(hx - 6, b - 4.4 + k * 1.1, 12, 0.65); } c.restore();
+      wBand(c, hx - 5, b - 1, 10, 1.7, shade(col, -0.25), acc2);
+      ellipse(c, hx + (e ? -0.8 : 0.6), b - 4.7, 1.6, 1.5, acc2); ellipse(c, hx + (e ? -1.1 : 0.3), b - 5, 0.6, 0.5, '#fff');
+      if (view === 'S') for (const sd of [-1, 1]) { ellipse(c, hx + sd * 4.9, hy + 1.3, 1.1, 2.1, shade(col, -0.12)); line(c, hx + sd * 4.9, hy + 3, hx + sd * 5, hy + 4.8, acc, 0.5); }
+      break;
+    }
+    case 'mohawk': {   // бритая голова с гребнем из волос и перьев
+      c.save(); c.beginPath(); c.ellipse(hx, b - 0.3, 4.4, 3.5, 0, Math.PI, 0); c.closePath(); c.fillStyle = shade(SKINS[W.skin][1], -0.05); c.fill(); c.restore();
+      const hc = W.hair || '#4a3020';
+      for (let k = -3; k <= 3; k++) { const x = e ? hx + k * 0.9 : hx + k * 0.35, hgt = 4.2 - Math.abs(k) * 0.35 + (k & 1) * 0.5; poly(c, [[x - 0.7, b - 1.4], [x + 0.2 * (k > 0 ? 1 : -1), b - 2.6 - hgt], [x + 0.7, b - 1.4]], k % 2 ? hc : acc); }
+      wBand(c, hx - 4.8, b - 1.5, 9.6, 1.6, acc, acc2);
       break;
     }
     case 'helm': {
