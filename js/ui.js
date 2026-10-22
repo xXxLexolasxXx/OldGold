@@ -541,7 +541,7 @@ function peopleHTML() {
   let hungry = 0, smoking = 0, sleeping = 0, hurt = 0;
   for (const u of Game.units) {
     cnt[u.type] = (cnt[u.type] || 0) + 1;
-    if (u.idleFlag || (!u.home && !u.isCourier && u.type !== 'builder')) idle[u.type] = (idle[u.type] || 0) + 1;
+    if (u.idleFlag || (!u.home && !u.isCourier && u.type !== 'builder' && !u.rec && !u.gm && !(UNIT_TYPES[u.type] || {}).recruit)) idle[u.type] = (idle[u.type] || 0) + 1;   // рекруты и главы гильдий при деле, хоть и без дома
     if (!u.noFood && u.food < HUNGRY) hungry++;
     if (u.brk && u.brk.kind === 'sleep') sleeping++;
     else if (u.brk) smoking++;
