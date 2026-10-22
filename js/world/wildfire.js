@@ -78,8 +78,8 @@ function wfIgniteB(b, p = 1, w0) {
   const dur = wfRnd(11, 17) * WF_BURN[Math.max(1, Math.min(3, b.level || 1))] * (w ? 0.5 : 1);
   W.bld.push({ id: b.id, t0: Game.time, dur, w: !!w });
   const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-  WX.fires.push({ x: cx, y: cy + 0.2, t0: Game.time, life: dur, wf: 1 });
-  WX.fires.push({ x: cx + (b.w > 2 ? 0.8 : 0.3), y: cy - 0.1, t0: Game.time, life: dur * 0.8, wf: 1 });
+  WX.fires.push({ x: cx, y: cy + 0.2, t0: Game.time, life: dur, wf: 1, sy: b.y + b.h - 0.04 });
+  WX.fires.push({ x: cx + (b.w > 2 ? 0.8 : 0.3), y: cy - 0.1, t0: Game.time, life: dur * 0.8, wf: 1, sy: b.y + b.h - 0.05 });
   if (typeof dzSpoil === 'function') dzSpoil(b, w ? 0.08 : 0.2);
   if (typeof floater === 'function') floater(cx, b.y, 'Пожар!', '#ff9040');
   if (typeof logEvent === 'function') logEvent('weather', `Загорелось здание «${b.def.name}»`, b.doorX + 0.5, b.doorY);
