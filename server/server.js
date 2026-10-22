@@ -104,6 +104,44 @@ const hashPass = (pass, salt) => new Promise((resolve, reject) => {
 });
 const sha = s => crypto.createHash('sha256').update(s).digest('hex');
 const nickOk = n => typeof n === 'string' && /^[\p{L}\p{N}_\- ]{2,16}$/u.test(n) && n.trim() === n;
+const userRec = key => (Object.prototype.hasOwnProperty.call(users, key) ? users[key] : undefined);   // ник «constructor» не находит Object.prototype
+const MAX_USERS = +process.env.OLDGOLD_MAX_USERS || 3000;
+// попытки входа и регистрации: ведро на адрес (и на аккаунт — от подбора пароля с многих адресов); только в памяти
+const authHits = new Map();
+function authLimited(key, n, ms) {
+  const now = Date.now(), h = authHits.get(key);
+  if (!h || now - h[0] > ms) { authHits.set(key, [now, 1]); if (authHits.size > 20000) authHits.clear(); return false; }
+  return ++h[1] > n;
+}
+// строки от клиента, которые попадают в журналы и сводки в терминале: без управляющих символов (ESC-последовательностей)
+const clean = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').slice(0, n);
+// Адрес игрока. За Caddy/nginx на этом же компьютере — последний адрес из X-Forwarded-For (его дописал наш прокси;
+// первые игрок мог прислать сам). При прямом подключении заголовок игнорируется — его подделывает кто угодно.
+const LOOPBACK = /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/;
+function clientIp(req, sock = req.socket) {
+  const addr = (sock && sock.remoteAddress) || '';
+  const xff = req.headers['x-forwarded-for'];
+  if (!xff || !LOOPBACK.test(addr)) return addr;
+  const list = String(xff).split(',').map(s => s.trim()).filter(Boolean);
+  return list.length ? list[list.length - 1] : addr;
+}
+// Команды игроков: имена из Object.prototype («constructor», «__proto__», «toString»…) как ключи или значения
+// превращали проверки вида BUILDINGS[m.type] в «да» и ломали шаг мира; Infinity (1e999) и огромная вложенность — туда же
+const PROTO_NAMES = new Set([...Object.getOwnPropertyNames(Object.prototype), 'prototype']);
+function msgSafe(m, keysOnly) {
+  const stack = [m];
+  let nodes = 0;
+  while (stack.length) {
+    const v = stack.pop();
+    if (++nodes > 20000) return false;
+    if (typeof v === 'number') { if (!Number.isFinite(v)) return false; continue; }
+    if (typeof v === 'string') { if (!keysOnly && PROTO_NAMES.has(v)) return false; continue; }
+    if (!v || typeof v !== 'object') continue;
+    if (Array.isArray(v)) { for (const x of v) stack.push(x); continue; }
+    for (const k of Object.keys(v)) { if (PROTO_NAMES.has(k)) return false; stack.push(v[k]); }
+  }
+  return true;
+}
 
 // ---------- Мир ----------
 const host = createHost(log);
@@ -189,9 +227,31 @@ function flushHeroes() {
 
 // ---------- HTTP ----------
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.woff2': 'font/woff2' };
+// Заголовки безопасности для всего, что раздаёт сервер. Скрипты только свои (+ счётчик GoatCounter), без встроенных
+// обработчиков: даже если в разметку попадёт чужая строка, <img onerror> не выполнится. Встраивать игру в чужие фреймы нельзя.
+const SEC_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+  'X-Frame-Options': 'DENY',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.goatcounter.com; " +
+    "font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' ws: wss: https:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+};
 const server = http.createServer((req, res) => {
-  let p = decodeURIComponent((req.url || '/').split('?')[0]);
-  if (p === '/coop-info' && /metrics|digest/.test(req.url) && /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '') && !req.headers['x-forwarded-for']) {
+  try { handleHttp(req, res); } catch (e) {
+    log('ошибка HTTP:', e.message);
+    try { if (!res.headersSent) res.writeHead(500, SEC_HEADERS); res.end(); } catch (e2) { /* соединение уже закрыто */ }
+  }
+});
+server.requestTimeout = 60000; server.headersTimeout = 20000;   // медленные «висящие» запросы не держат сокеты минутами
+function handleHttp(req, res) {
+  for (const k in SEC_HEADERS) res.setHeader(k, SEC_HEADERS[k]);
+  let p;
+  // кривой %-код (/%E0%A4%A) раньше бросал исключение прямо в обработчике и ронял весь процесс
+  try { p = decodeURIComponent((req.url || '/').split('?')[0]); } catch (e) { res.writeHead(400); res.end(); return; }
+  if (p.includes('\0')) { res.writeHead(400); res.end(); return; }
+  const ip = clientIp(req);
+  if (p === '/coop-info' && /metrics|digest/.test(req.url) && LOOPBACK.test(req.socket.remoteAddress || '') && !req.headers['x-forwarded-for']) {
     const q = new URL(req.url, 'http://x').searchParams;
     if (q.has('gc') && global.gc) global.gc();   // для замеров утечек: сервер запущен с --expose-gc
     const out = q.has('metrics') ? metricsSnap() : digest();
@@ -199,9 +259,11 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(out)); return;
   }
   if (p === '/coop-info') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ coop: true, online: [...conns].filter(c => c.inGame).length })); return; }
-  if (events.handle(req, res, req.socket.remoteAddress || '')) return;
-  if (errReports.handle(req, res, req.socket.remoteAddress || '')) return;
-  if (tele.handle(req, res, String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim())) return;
+  // за прокси remoteAddress у всех 127.0.0.1 — лимиты /e и /err были общими на весь интернет
+  if (events.handle(req, res, ip)) return;
+  if (errReports.handle(req, res, ip)) return;
+  if (tele.handle(req, res, ip)) return;
+  if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405); res.end(); return; }
   if (p === '/stats') {
     const q = new URL(req.url, 'http://x').searchParams;
     if (!keyOk(q.get('key'))) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('нужен ключ: /stats?key=… (он в файле stats.key в папке данных сервера)'); return; }
@@ -226,7 +288,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, h);
     res.end(buf);
   });
-});
+}
 
 // ---------- Мини-WebSocket ----------
 const conns = new Set();
@@ -283,8 +345,10 @@ class Conn {
       let len = b[1] & 0x7f, off = 2;
       if (len === 126) { if (b.length < 4) return; len = b.readUInt16BE(2); off = 4; }
       else if (len === 127) { if (b.length < 10) return; len = Number(b.readBigUInt64BE(2)); off = 10; }
-      if (len > 1 << 20) { this.sock.destroy(); return; }
-      if (b.length < off + (masked ? 4 : 0) + len) return;
+      // до входа хватит 8 КБ (вход — пара строк), после — 1 МБ (карта нового мира у хоста); кадры клиента обязаны быть в маске (RFC 6455)
+      const maxLen = this.nick ? 1 << 20 : 8192;
+      if (len > maxLen || !masked || (op >= 8 && len > 125)) { this.sock.destroy(); return; }
+      if (b.length < off + 4 + len) return;
       let payload;
       if (masked) {
         const mask = b.subarray(off, off + 4);
@@ -296,7 +360,13 @@ class Conn {
       if (op === 8) { this.sock.end(frame(8, Buffer.alloc(0))); return; }
       if (op === 9) { this.sock.write(frame(10, payload)); continue; }
       if (op === 10) continue;
-      if (op === 1 || op === 2) { this.frag = [payload]; this.fragOp = op; } else if (op === 0) this.frag.push(payload);
+      if (op === 1 || op === 2) { this.frag = [payload]; this.fragOp = op; this.fragLen = len; }
+      else if (op === 0) {
+        // продолжения без начала или склейка больше лимита: раньше куски копились без предела — память сервера
+        this.fragLen = (this.fragLen || 0) + len;
+        if (!this.frag.length || this.fragLen > maxLen) { this.sock.destroy(); return; }
+        this.frag.push(payload);
+      } else { this.sock.destroy(); return; }   // неизвестный код кадра
       if (fin && this.frag.length) {
         const text = Buffer.concat(this.frag).toString('utf8');
         this.frag = [];
@@ -339,13 +409,13 @@ server.on('upgrade', (req, sock) => {
   sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
   sock.setNoDelay(true);
   const addr = sock.remoteAddress || '';
-  const isHost = /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(addr) && !req.headers['x-forwarded-for'];
-  // настоящий адрес игрока за прокси — только для хэша в статистике, в открытом виде не хранится
-  const ip = String(req.headers['x-forwarded-for'] || addr).split(',')[0].trim();
+  const isHost = LOOPBACK.test(addr) && !req.headers['x-forwarded-for'];
+  // настоящий адрес игрока за прокси — для лимитов и хэша в статистике, в открытом виде не хранится
+  const ip = clientIp(req, sock);
   // потолок соединений: лишних отсекаем сразу, чтобы не съесть память
   if (conns.size >= MAX_CONNS) return refuseSock(sock, 'Сервер переполнен подключениями. Подождите минуту и зайдите снова.', 30);
   if (!isHost && [...conns].filter(o => o.ip === ip).length >= MAX_PER_IP) return refuseSock(sock, 'С вашего адреса открыто слишком много окон игры. Закройте лишние и зайдите снова.', 30);
-  const c = new Conn(sock, isHost, ip, req.headers.origin || '');
+  const c = new Conn(sock, isHost, ip, clean(req.headers.origin, 80));
   c.thr = !isHost || THROTTLE_LOOP;   // loopback (хост) от перебора паролей не ограничиваем, кроме тестов
   conns.add(c);
 });
@@ -430,29 +500,40 @@ async function auth(c, m) {
     const f = authFails.get(c.ip);
     if (f && f.n >= AUTH_FAILS && now - f.t < 60000) return c.send({ t: 'err', msg: 'Слишком много неудачных попыток входа. Подождите минуту.', wait: 60 });
   }
-  const bad = msg => { if (c.thr) { const f = authFails.get(c.ip); if (f && now - f.t < 60000) f.n++; else authFails.set(c.ip, { n: 1, t: now }); } return c.send({ t: 'err', msg }); };
+  const bad = (msg, extra) => { if (c.thr) { const f = authFails.get(c.ip); if (f && now - f.t < 60000) f.n++; else authFails.set(c.ip, { n: 1, t: now }); } return c.send({ t: 'err', msg, ...extra }); };
   const nick = String(m.nick || '').trim(), pass = String(m.pass || '');
   if (!nickOk(nick)) return c.send({ t: 'err', msg: 'Ник: 2–16 символов, буквы, цифры, пробел, _ и -' });
   if (m.mode !== 'token' && (pass.length < 3 || pass.length > 64)) return c.send({ t: 'err', msg: 'Пароль: от 3 символов' });
   const key = nick.toLowerCase();
-  let rec = users[key];
+  // «__PROTO__» → ключ «__proto__»: users[key] = … подменил бы прототип таблицы игроков
+  if (PROTO_NAMES.has(key)) return c.send({ t: 'err', msg: 'Такой ник нельзя' });
+  let rec = userRec(key);
   if (m.mode === 'register') {
     if (rec) return c.send({ t: 'err', msg: 'Такой ник уже занят' });
+    // ботоферма: не больше 5 новых героев в час с адреса и потолок аккаунтов (players.json пишется целиком при каждом входе)
+    if (c.thr && authLimited('reg|' + c.ip, 5, 3600000)) return c.send({ t: 'err', msg: 'Слишком много новых героев с этого адреса — попробуйте через час', wait: 3600 });
+    if (Object.keys(users).length >= MAX_USERS) return c.send({ t: 'err', msg: 'На сервере больше нет мест для новых игроков' });
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = await hashPass(pass, salt);
     if (!c.alive) return;
-    if (users[key]) return c.send({ t: 'err', msg: 'Такой ник уже занят' });
+    if (userRec(key)) return c.send({ t: 'err', msg: 'Такой ник уже занят' });
     const full = admitMsg(c, key);
     if (full) return refuse(c, full);
     rec = users[key] = { nick, salt, hash, hero: null, created: Date.now() };
     saveUsers();
   } else if (m.mode === 'token') {
-    if (!rec || !(rec.toks || []).includes(sha(String(m.token || '')))) return c.send({ t: 'err', msg: 'Сессия устарела — войдите по паролю', stale: true });
+    if (!rec || !(rec.toks || []).includes(sha(String(m.token || '')))) return bad('Сессия устарела — войдите по паролю', { stale: true });
   } else {
     if (!rec) return bad('Такого игрока нет — сначала зарегистрируйтесь');
+    // подбор пароля одного героя с многих адресов: 30 неудач за 10 минут — вход по паролю для этого ника на паузе
+    const nf = nickFails.get(key);
+    if (c.thr && nf && nf.n >= 30 && now - nf.t < 600000) return c.send({ t: 'err', msg: 'Слишком много неудачных попыток входа в этого героя. Подождите 10 минут.', wait: 600 });
     const h = await hashPass(pass, rec.salt);
     if (!c.alive) return;
-    if (h !== rec.hash) return bad('Неверный пароль');
+    if (h !== rec.hash) {
+      if (c.thr) { if (nf && now - nf.t < 600000) nf.n++; else nickFails.set(key, { n: 1, t: now }); if (nickFails.size > 20000) nickFails.clear(); }
+      return bad('Неверный пароль');
+    }
   }
   const full = admitMsg(c, key);
   if (full) return refuse(c, full);
@@ -462,7 +543,7 @@ async function auth(c, m) {
     try { o.sock.end(); } catch (e) { /* ничего */ }
     o.onClose();
   }
-  c.nick = rec.nick; c.key = key; c.ver = typeof m.ver === 'string' ? m.ver.slice(0, 40) : ''; c.z = m.z === 1; c.d = m.d === 1; c.view = null;
+  c.nick = rec.nick; c.key = key; c.ver = typeof m.ver === 'string' ? clean(m.ver, 40) : ''; c.z = m.z === 1; c.d = m.d === 1; c.view = null;
   if (ADMINS.has(key)) c.isHost = true;
   let token;
   if (m.mode !== 'token') { token = crypto.randomBytes(24).toString('hex'); rec.toks = [...(rec.toks || []).slice(-4), sha(token)]; saveUsers(); }   // запомнить вход на этом устройстве
@@ -470,6 +551,7 @@ async function auth(c, m) {
   c.send({ t: 'welcome', token, nick: c.nick, host: c.isHost, perms: meta.perms, permLabels: meta.permLabels, needClass: !rec.hero, classes: meta.classes, chat: meta.chat, sv: SERVER_VER });
   if (rec.hero) joinWorld(c);
 }
+const nickFails = new Map();   // ключ ника -> { n, t }: неудачные пароли с любых адресов
 
 // Пускать ли ещё одного игрока: лимит игроков (вернувшимся после обрыва — с запасом) и перегрузка сервера
 function admitMsg(c, key) {
@@ -484,17 +566,43 @@ function refuse(c, x) { M.refused++; c.send({ t: 'err', msg: x.msg, full: true, 
 function onMessage(c, text) {
   let m;
   try { m = JSON.parse(text); } catch (e) { return; }
+  if (!m || typeof m !== 'object' || Array.isArray(m) || typeof m.t !== 'string') return;
+  if (!msgSafe(m, m.t === 'newworld')) { c.bad = (c.bad || 0) + 1; if (c.bad > 20) c.sock.destroy(); return; }
   if (!c.nick) {
     if (m.t !== 'auth' || c.authing) return;
+    // до входа — не больше 10 попыток с соединения, дальше обрыв
+    if ((c.tries = (c.tries || 0) + 1) > 10) { c.sock.destroy(); return; }
     c.authing = true;
     auth(c, m).catch(e => { log('ошибка входа:', e.message); c.send({ t: 'err', msg: 'Сервер не смог обработать вход, попробуйте ещё раз' }); }).finally(() => { c.authing = false; });
     return;
   }
+  return onGameMessage(c, m, text);
+}
+
+function onGameMessage(c, m, text) {
+  // камера клиента: какие клетки он видит — жителей за пределами шлём реже (интерес-менеджмент).
+  // Шлётся при прокрутке часто, поэтому мимо общего ведра (дёшево: четыре числа)
+  if (m.t === 'view') {
+    const v = [m.x0, m.y0, m.x1, m.y1];
+    if (v.every(Number.isFinite)) c.view = v.map(x => Math.max(-1e4, Math.min(1e4, Math.round(x))));
+    return;
+  }
+  // защита от заливания (залипшая мышь, кривой клиент, бот): ведро на 60 сообщений, 30 в секунду — на ВСЕ сообщения
+  // после входа (раньше пауза, доска почёта и прочие служебные шли мимо и рассылали тосты всем без предела)
+  const nowMs = Date.now();
+  c.bucket = Math.min(60, (c.bucket ?? 60) + (nowMs - (c.bucketAt || nowMs)) / 1000 * 30);
+  c.bucketAt = nowMs;
+  if (c.bucket < 1) {
+    if (!c.warned || nowMs - c.warned > 5000) { c.warned = nowMs; c.send({ t: 'toast', text: 'Слишком много команд подряд — чуть помедленнее' }); }
+    if ((c.floods = (c.floods || 0) + 1) > 3000) c.sock.destroy();   // минуты непрерывного залива — обрыв
+    return;
+  }
+  c.bucket--;
   if (m.t === 'class') {
     const rec = users[c.key];
     if (rec.hero || c.inGame) return;
     const meta = JSON.parse(call('coopMeta'));
-    if (!meta.classes[m.cls]) return;
+    if (typeof m.cls !== 'string' || !Object.prototype.hasOwnProperty.call(meta.classes, m.cls)) return;
     const full = admitMsg(c, c.key);
     if (full) return refuse(c, full);
     rec.hero = { cls: m.cls, level: 1, hp: meta.classes[m.cls].hp, inv: [{ k: 'bread', n: 2 }], look: (Math.random() * 1000) | 0 };
@@ -582,7 +690,8 @@ function onMessage(c, text) {
     const on = m.on === true;
     if (on === tempo.paused) { c.vote = false; return; }
     if (c.isHost) return setPaused(on, 'Хост ' + c.nick);
-    c.vote = true;
+    if (c.vote && nowMs - (c.voteAt || 0) < 3000) return;   // повтор голоса не рассылает тост всем снова и снова
+    c.vote = true; c.voteAt = nowMs;
     const t = tempoMsg();
     if (t.votes >= t.need) return setPaused(on, 'Голосование');
     broadcast(t);
@@ -592,7 +701,7 @@ function onMessage(c, text) {
   if (m.t === 'setperm') {
     if (!c.isHost) return c.send({ t: 'toast', text: 'Права меняет только хост' });
     const cur = JSON.parse(call('coopMeta')).perms;
-    if (!(m.key in cur) || typeof m.on !== 'boolean') return;
+    if (typeof m.key !== 'string' || !Object.prototype.hasOwnProperty.call(cur, m.key) || typeof m.on !== 'boolean') return;
     const now = JSON.parse(call('coopSetPerms', JSON.stringify({ [m.key]: m.on })));
     try { writeSettings({ perms: now }); } catch (e) { log('права не сохранились:', e.message); }
     broadcast({ t: 'perms', perms: now });
@@ -614,18 +723,8 @@ function onMessage(c, text) {
     })(${n})`);
     return;
   }
-  // камера клиента: какие клетки он видит — жителей за пределами шлём реже (интерес-менеджмент)
-  if (m.t === 'view') {
-    const v = [m.x0, m.y0, m.x1, m.y1];
-    if (v.every(Number.isFinite)) c.view = v.map(Math.round);
-    return;
-  }
-  // защита от заливания командами (залипшая мышь, кривой клиент): ведро на 60 сообщений, 30 в секунду
-  const nowMs = Date.now();
-  c.bucket = Math.min(60, (c.bucket ?? 60) + (nowMs - (c.bucketAt || nowMs)) / 1000 * 30);
-  c.bucketAt = nowMs;
-  if (c.bucket < 1) { if (!c.warned || nowMs - c.warned > 5000) { c.warned = nowMs; c.send({ t: 'toast', text: 'Слишком много команд подряд — чуть помедленнее' }); } return; }
-  c.bucket--;
+  // чат рассылается всем — не чаще раза в 1,5 секунды с игрока
+  if (m.t === 'chat') { if (nowMs - (c.chatAt || 0) < 1500) return; c.chatAt = nowMs; }
   call('coopCmd', c.nick, text, c.isHost);
 }
 
@@ -680,7 +779,9 @@ setInterval(() => {
 setInterval(() => {
   const now = Date.now();
   for (const c of conns) {
-    if (!c.nick && now - c.born > AUTH_TIMEOUT) { try { c.sock.end(Buffer.concat([frame(1, Buffer.from(JSON.stringify({ t: 'err', msg: 'Время на вход вышло — зайдите снова' }))), frame(8, Buffer.from([0x03, 0xe8]))])); } catch (e) { /* ничего */ } }
+    // не ответил на вежливое закрытие (держит соединение полуоткрытым) — рвём, иначе занимает место в MAX_CONNS навсегда
+    if (!c.nick && now - c.born > AUTH_TIMEOUT + 10000) { try { c.sock.destroy(); } catch (e) { /* ничего */ } c.onClose(); }
+    else if (!c.nick && now - c.born > AUTH_TIMEOUT) { try { c.sock.end(Buffer.concat([frame(1, Buffer.from(JSON.stringify({ t: 'err', msg: 'Время на вход вышло — зайдите снова' }))), frame(8, Buffer.from([0x03, 0xe8]))])); } catch (e) { /* ничего */ } }
     else if (now - c.seen > 60000) { try { c.sock.destroy(); } catch (e) { /* ничего */ } c.onClose(); }
     else if (!c.sock.destroyed && now - (c.pinged || 0) >= 20000) { c.pinged = now; c.sock.write(frame(9, Buffer.alloc(0))); }
   }

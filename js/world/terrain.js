@@ -649,18 +649,11 @@ function roadMaskBits(x, y, grow) {
   return bits;
 }
 
-// Тёмный бордюр: 1 пиксель вокруг булыжника, а на прямых отрезках (ровный край от 5 пикселей) — 2.
-// На скосах и диагоналях второй ряд не нужен: лесенка даёт там лишние чёрные пиксели-утолщения.
+// Тёмный бордюр: 1 пиксель вокруг булыжника везде — и на прямых, и на поворотах и скосах.
+// Второй ряд на прямых давал жирную чёрную кромку (на скосах — лесенку-утолщения).
 function roadBorderPx(inner, S, px, py) {
   const at = (x, y) => x >= 0 && y >= 0 && x < S && y < S && inner[y * S + x] === 1;
-  if (at(px + 1, py) || at(px - 1, py) || at(px, py + 1) || at(px, py - 1)) return true;
-  for (const [dx, dy] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) {
-    const qx = px + dx, qy = py + dy;
-    if (!at(qx, qy)) continue;
-    const ex = dy ? 1 : 0, ey = dy ? 0 : 1;   // вдоль края
-    if (at(qx + ex, qy + ey) && at(qx - ex, qy - ey) && at(qx + 2 * ex, qy + 2 * ey) && at(qx - 2 * ex, qy - 2 * ey)) return true;
-  }
-  return false;
+  return at(px + 1, py) || at(px - 1, py) || at(px, py + 1) || at(px, py - 1);
 }
 
 function roadMaskCanvas(x, y, grow, cobbles) {

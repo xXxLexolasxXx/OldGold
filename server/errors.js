@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const MAX_KEYS = 500, MAX_BODY = 4096, PER_MIN = 20;
-const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').slice(0, n);
+const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').slice(0, n);   // без ESC/CSI: сводку читают в терминале
 
 function createErrors(dir, log = () => {}) {
   const file = path.join(dir, 'errors.json');
@@ -30,7 +30,7 @@ function createErrors(dir, log = () => {}) {
     return ++h[1] > PER_MIN;
   }
 
-  const bump = (o, k, max = 30) => { k = str(k, 40) || '?'; if (o[k] || Object.keys(o).length < max) o[k] = (o[k] || 0) + 1; };
+  const bump = (o, k, max = 30) => { k = str(k, 40) || '?'; const has = Object.prototype.hasOwnProperty.call(o, k); if (k !== '__proto__' && (has || Object.keys(o).length < max)) o[k] = (has ? o[k] : 0) + 1; };
 
   function add(body) {
     let m; try { m = JSON.parse(body); } catch (e) { return false; }
@@ -62,7 +62,7 @@ function createErrors(dir, log = () => {}) {
     if (req.method !== 'POST') { res.writeHead(405, cors); res.end(); return true; }
     if (limited(ip)) { res.writeHead(429, cors); res.end(); return true; }
     let body = '', big = false;
-    req.on('data', ch => { if (big) return; body += ch; if (body.length > MAX_BODY) { big = true; res.writeHead(413, cors); res.end(); } });
+    req.on('data', ch => { if (big) return; body += ch; if (body.length > MAX_BODY) { big = true; res.writeHead(413, { ...cors, Connection: 'close' }); res.end(); } });
     req.on('end', () => { if (big) return; res.writeHead(add(body) ? 204 : 400, cors); res.end(); });
     return true;
   }

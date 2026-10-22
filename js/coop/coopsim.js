@@ -59,7 +59,7 @@ function coopSay(to, text) { coop.out.push({ to, msg: { t: 'toast', text } }); }
 function coopJoin(name, dataJson) {
   const d = JSON.parse(dataJson);
   coopLeave(name);
-  const cls = COOP_CLASSES[d.cls] ? d.cls : 'warrior';
+  const cls = coopOwn(COOP_CLASSES, d.cls) ? d.cls : 'warrior';
   let x, y;
   if (d.x != null && isWalkable(Math.floor(d.x), Math.floor(d.y))) { x = Math.floor(d.x); y = Math.floor(d.y); }
   else [x, y] = coopHome();
@@ -205,6 +205,8 @@ function coopGo(u, x, y) {
 }
 
 const coopInt = v => Number.isInteger(v);
+// ключ из команды игрока есть в справочнике своим полем: BUILDINGS['constructor'] — это функция Object, а не «да»
+const coopOwn = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
 
 function coopSetPerms(json) {
   const p = JSON.parse(json);
@@ -225,14 +227,14 @@ function coopCmd(name, msgJson, admin) {
     case 'vote': if (u && coopInt(m.i) && can('upgrade')) coopVote(name, m.i); break;
     case 'chat': {
       if (!can('chat')) break;
-      const text = COOP_CHAT[m.i];
+      const text = coopInt(m.i) ? COOP_CHAT[m.i] : null;
       if (!text) break;
       coop.out.push({ msg: { t: 'chat', from: name, text, uid: u ? u.id : 0 } });
       break;
     }
     case 'build': {
       if (!can('build')) break;
-      if (!BUILDINGS[m.type] || !coopInt(m.x) || !coopInt(m.y)) break;
+      if (!coopOwn(BUILDINGS, m.type) || !coopInt(m.x) || !coopInt(m.y)) break;
       if (!admin && !isUnlocked(m.type)) { coopSay(name, 'Это здание ещё не открыто для деревни'); break; }
       const rot = m.rot === 1 || m.rot === 2 ? m.rot : 0;
       const err = checkPlacement(m.type, m.x, m.y, rot);
@@ -260,7 +262,7 @@ function coopCmd(name, msgJson, admin) {
     case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
     case 'dilmode': if (admin && typeof dilSetMode === 'function') dilSetMode(m.mode); else if (!admin) coopSay(name, 'Режим событий меняет только хост'); break;
     case 'qt': {
-      if (can('train') && UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy) queueTraining(m.type);
+      if (can('train') && coopOwn(UNIT_TYPES, m.type) && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy) queueTraining(m.type);
       break;
     }
     case 'field': {
@@ -305,13 +307,13 @@ function coopBuildingAct(name, m) {
     case 'upgrade': if (canUpgrade(b)) startUpgrade(b); break;
     case 'upgcancel': if (b.upg) cancelUpgrade(b); break;
     case 'demolish': removeBuilding(b); break;
-    case 'train': if (UNIT_TYPES[m.type] && !UNIT_TYPES[m.type].animal && b.queue.length < 10) b.queue.push(m.type); break;
+    case 'train': if (coopOwn(UNIT_TYPES, m.type) && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy && b.queue && b.queue.length < 10) b.queue.push(m.type); break;
     case 'untrain': if (coopInt(m.i)) b.queue.splice(m.i, 1); break;
     case 'untrainall': b.queue.length = 0; break;
     case 'hire': if (b.def.worker) queueTraining(b.def.worker); break;
-    case 'recipe': if (coopInt(m.i) && m.i >= 0 && m.i < b.recipeOn.length) b.recipeOn[m.i] = !!m.on; break;
-    case 'crop': if (b.crops && m.c in b.crops) b.crops[m.c] = !!m.on; break;
-    case 'block': if (GOODS[m.g]) Game.storeBlock[m.g] = !Game.storeBlock[m.g]; break;
+    case 'recipe': if (b.recipeOn && coopInt(m.i) && m.i >= 0 && m.i < b.recipeOn.length) b.recipeOn[m.i] = !!m.on; break;
+    case 'crop': if (b.crops && coopOwn(b.crops, m.c)) b.crops[m.c] = !!m.on; break;
+    case 'block': if (coopOwn(GOODS, m.g)) Game.storeBlock[m.g] = !Game.storeBlock[m.g]; break;
   }
 }
 
@@ -573,7 +575,7 @@ function coopMirror() {
   const m = {
     ghosts: coopList(Game.ghosts), skels: coopList(Game.skels), ents: coopList(Game.ents), owls: coopList(Game.owls),
     bats: coopList(Game.bats), critters: coopList(Game.critters), falling: coopList(Game.falling), games: coopList(Game.games),
-    lepr: typeof lepMirror === 'function' ? lepMirror() : [], neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
+    lepr: typeof lepMirror === 'function' ? lepMirror() : [], swp: typeof fwMirror === 'function' ? fwMirror() : [], neutrals: typeof neuMirror === 'function' ? neuMirror() : [], lairs: typeof neuMirrorLairs === 'function' ? neuMirrorLairs() : [],
     raiders: typeof foeMirrorRaiders === 'function' ? foeMirrorRaiders() : [], foeShots: typeof foeMirrorShots === 'function' ? foeMirrorShots() : [],
     foeZones: typeof foeMirrorZones === 'function' ? foeMirrorZones() : [],
     foe: typeof foeMirror === 'function' ? foeMirror() : null,
