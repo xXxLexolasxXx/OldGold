@@ -16,9 +16,9 @@
 .cd-text.in { animation: cd-text 0.35s ease-out both; }
 @keyframes cd-text { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .cd-btns { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
-.cd-btns button, .ce-btns button, .ch-show { font: inherit; font-size: 13px; min-height: 34px; padding: 3px 12px; cursor: pointer;
+.cd-btns button, .ce-btns button, .cmh-show { font: inherit; font-size: 13px; min-height: 34px; padding: 3px 12px; cursor: pointer;
   color: #2a1608; background: linear-gradient(#f1dfb2, #d9bd84); border: 1px solid #6a3c12; }
-.cd-btns button.ghost, .ce-btns button.ghost, .ch-show { color: #f0dca0; background: rgba(0,0,0,0.25); border-color: #6a5028; }
+.cd-btns button.ghost, .ce-btns button.ghost, .cmh-show { color: #f0dca0; background: rgba(0,0,0,0.25); border-color: #6a5028; }
 .ce-btns button:disabled { opacity: 0.5; cursor: default; }
 
 /* полосы катсцены сверху и снизу */
@@ -35,17 +35,17 @@
 #camp-hud { position: absolute; left: 8px; top: 46px; z-index: 20; width: min(270px, 46vw); padding: 7px 10px 8px;
   color: #f0e2c0; font-family: Kurale, Georgia, serif; font-size: 13px;
   background: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.6)), #241a12; border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--gold, #c9a24a); }
-.ch-act { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #e0b070; }
-.ch-step { font-size: 15px; font-weight: bold; color: var(--gold-hi, #f6d458); margin: 1px 0 4px; }
+.cmh-act { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #e0b070; }
+.cmh-step { font-size: 15px; font-weight: bold; color: var(--gold-hi, #f6d458); margin: 1px 0 4px; }
 #camp-hud ul { list-style: none; margin: 0; padding: 0; }
 #camp-hud li { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
-#camp-hud li.ok .ch-t { color: #a8c890; text-decoration: line-through; }
-#camp-hud li.opt .ch-t { font-style: italic; opacity: 0.85; }
-.ch-box { flex: none; width: 14px; height: 14px; border: 1px solid #c9a24a; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: #a8e080; }
-.ch-t { flex: 1; }
-.ch-n { color: #f6d458; font-variant-numeric: tabular-nums; }
-.ch-show { min-height: 24px; padding: 0 7px; }
-.ch-hint { margin-top: 4px; font-size: 12px; color: #c8b088; font-style: italic; }
+#camp-hud li.ok .cmh-t { color: #a8c890; text-decoration: line-through; }
+#camp-hud li.opt .cmh-t { font-style: italic; opacity: 0.85; }
+.cmh-box { flex: none; width: 14px; height: 14px; border: 1px solid #c9a24a; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: #a8e080; }
+.cmh-t { flex: 1; }
+.cmh-n { color: #f6d458; font-variant-numeric: tabular-nums; }
+.cmh-show { min-height: 24px; padding: 0 7px; }
+.cmh-hint { margin-top: 4px; font-size: 12px; color: #c8b088; font-style: italic; }
 
 /* итог акта */
 #camp-end { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); }

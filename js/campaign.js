@@ -373,18 +373,18 @@ function campHudRender(C) {
   const sig = C.seq + '|' + C.objs.map(o => o.cur + '/' + o.need).join(',') + '|' + C.label;
   if (sig === CampUI.sig) return;
   CampUI.sig = sig;
-  let h = `<div class="ch-act">Акт ${C.act}. ${campEsc(A.name)}</div>`;
-  if (C.label) h += `<div class="ch-step">${campEsc(C.label)}</div>`;
+  let h = `<div class="cmh-act">Акт ${C.act}. ${campEsc(A.name)}</div>`;
+  if (C.label) h += `<div class="cmh-step">${campEsc(C.label)}</div>`;
   h += '<ul>';
   for (const o of C.objs) {
     const ok = o.cur >= o.need;
-    h += `<li class="${ok ? 'ok' : ''}${o.opt ? ' opt' : ''}"><span class="ch-box">${ok ? '✔' : ''}</span><span class="ch-t">${campEsc(o.t)}</span>`;
-    if (o.need > 1) h += `<span class="ch-n">${o.cur}/${o.need}</span>`;
-    if (o.z && !ok) h += `<button class="ghost ch-show" data-camp="show" data-z="${o.z[0]},${o.z[1]}" title="Показать на карте">◎</button>`;
+    h += `<li class="${ok ? 'ok' : ''}${o.opt ? ' opt' : ''}"><span class="cmh-box">${ok ? '✔' : ''}</span><span class="cmh-t">${campEsc(o.t)}</span>`;
+    if (o.need > 1) h += `<span class="cmh-n">${o.cur}/${o.need}</span>`;
+    if (o.z && !ok) h += `<button class="ghost cmh-show" data-camp="show" data-z="${o.z[0]},${o.z[1]}" title="Показать на карте">◎</button>`;
     h += '</li>';
   }
   h += '</ul>';
-  if (C.hint) h += `<div class="ch-hint">${campEsc(C.hint)}</div>`;
+  if (C.hint) h += `<div class="cmh-hint">${campEsc(C.hint)}</div>`;
   E.hud.innerHTML = h;
   E.hud.classList.remove('hidden');
 }
