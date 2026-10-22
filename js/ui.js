@@ -277,7 +277,12 @@ function exitToMainMenu() {
   location.reload();
 }
 
+// Содержимое вкладок, которое строится заново при каждом открытии: при уходе со вкладки очищаем его, чтобы
+// скрытые списки (журнал, хозяйство, совет…) не висели в DOM и не утяжеляли стили и раскладку панели
+const TAB_LISTS = { store: 'store-list', overview: 'overview', log: 'log-list', trade: 'trade-list', prio: 'prio-list', council: 'council-list' };
 function openTab(name) {
+  const was = UI.tab, el = was !== name && TAB_LISTS[was] && document.getElementById(TAB_LISTS[was]);
+  if (el) { el.textContent = ''; delete UI.last[TAB_LISTS[was]]; }
   UI.tab = name;
   document.querySelectorAll('#tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + name));
