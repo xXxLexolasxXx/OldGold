@@ -64,7 +64,9 @@ scriptTest('disaster: стихийные бедствия — знамения, 
 scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
 scriptTest('heroapp: цвет жилета героя — наряд, фигура, сейв', 'heroapp-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
+scriptTest('pc: управление для ПК — переназначение клавиш, обмен, запреты, сохранение, способности героя', 'pc-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
+scriptTest('coop-hire: кооп — обученный специалист занимает здание, клиент видит работника', 'coop-hire-test.js');
 scriptTest('unions: профсоюзы — советы по стройке и ремеслу, редкий показ, выключатель, сейв, кооп', 'unions-test.js');
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
@@ -86,6 +88,7 @@ scriptTest('spire: глава 6 — подъём к Чёрному шпилю: �
 scriptTest('traitor: шпион Малгора — летописец Пим, письмо, простить/не прощать, удар в спину, падение, сейв, эпилог', 'traitor-test.js', [], 420000);
 scriptTest('oathbal: баланс классов героя', 'oath-balance.js');
 scriptTest('abil: способности классов, ресурс, лечение отдыхом, панель, миграция, кооп, баланс', 'abil-test.js');
+scriptTest('skelart: скелеты в пиксель-арте — кадры 6/8/9/4/9/13, виды, кэш, облик в сейве, рисование без падений', 'skelart-test.js');
 scriptTest('icon: значки, названия и описания всех способностей, окно гильдии', 'icon-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');

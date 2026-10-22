@@ -261,7 +261,7 @@ function defenseTick(dt) {
       if (q >= 1) {
         // не замуровывать жителя: пока кто-то стоит на клетке, стройка ждёт
         let busy = false;
-        if (F.blk) for (const u of Game.units) if (!u.dead && !u.inside && Math.floor(u.x) === i % MAP_W && Math.floor(u.y) === ((i / MAP_W) | 0)) { busy = true; break; }
+        if (F.blk && !(fortIsFence(o.f) && World.road[i])) for (const u of Game.units) if (!u.dead && !u.inside && Math.floor(u.x) === i % MAP_W && Math.floor(u.y) === ((i / MAP_W) | 0)) { busy = true; break; }
         if (busy) { DEF.prog.set(i, F.time[0] * 0.98); o.bt = 0.98; continue; }
         defFinish(i);
       } else if (Math.abs(q - o.bt) >= 0.07) o.bt = Math.round(q * 20) / 20;
@@ -365,7 +365,7 @@ function defBump(N, tx, ty, dt) {
   for (const k of [0.62, 0.95]) {
     const x = Math.floor(N.x + ux * k), y = Math.floor(N.y + uy * k);
     const f = fortAt(x, y);
-    if (f && fortDone(f) && (f.blk || (f.f === 'gate' && !f.open))) { o = f; ci = idx(x, y); break; }
+    if (f && fortDone(f) && (f.blk || f.fence || (f.f === 'gate' && !f.open))) { o = f; ci = idx(x, y); break; }
   }
   if (!o) return;
   const dps = N.k === 'malgor' ? 40 : N.k === 'knight' ? 9 : 5;
