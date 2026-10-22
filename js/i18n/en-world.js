@@ -13,7 +13,7 @@ I18N.add('en', {
   "Нечисть повредила здание: пока не починят, оно не работает.": "Fiends damaged the building: until it's repaired, it doesn't work.",
   "Нужен свободный работяга — он починит сам. Лучше — ещё один в школе.": "A free builder is needed — they'll fix it themselves. Better yet, another one from the school.",
   "Нет рабочего: нужен {0}.": "No worker: a {0} is needed.",
-  "Откройте вкладку «Жители» или школу и нажмите «Обучить». Обучение стоит 1 золото.": "Open the \"Gnomes\" tab or the school and press \"Train\". Training costs 1 gold.",
+  "Ниже в окне этого здания: «Сюда» — перевести такого мастера из другого здания, или «Обучить» — школа выучит его за 1 золото, и он придёт прямо сюда.": "Below in this building's window: \"Here\" moves such a master from another building, or \"Train\" — the school teaches one for 1 gold and he comes straight here.",
   "Готовое некуда девать: выход забит, цех встал.": "Nowhere to put the finished goods: the output is jammed, the workshop stopped.",
   "Проверьте дорогу до склада, не закрыт ли склад для этого товара (вкладка «Склад»), и постройте потребителя или второй склад.": "Check the road to the storehouse, whether the storehouse is closed to this good (\"Storehouse\" tab), and build a consumer or a second storehouse.",
   "Постройте склад.": "Build a storehouse.",
