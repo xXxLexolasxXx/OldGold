@@ -305,13 +305,13 @@ function rockEntHand(e) {
 
 function rockLeg(c, ax, ay, kx, ky, fx, fy) {
   c.lineCap = 'round'; c.lineJoin = 'round';
-  for (const [col, w, o] of [[ROCK_COL.deep, 3.4, 0], [ROCK_COL.mid, 1.8, -0.4], [ROCK_COL.light, 0.6, -0.8]]) {
+  for (const [col, w, o] of [[ROCK_COL.dark, 3.4, 0], [ROCK_COL.mid, 1.8, -0.4], [ROCK_COL.light, 0.6, -0.8]]) {
     c.strokeStyle = col; c.lineWidth = w;
     c.beginPath(); c.moveTo(ax + o, ay + o); c.lineTo(kx + o, ky + o); c.lineTo(fx + o * 0.5, fy); c.stroke();
   }
   // сустав и коготь
-  ellipse(c, kx, ky, 2, 1.7, ROCK_COL.deep); ellipse(c, kx - 0.4, ky - 0.4, 1.3, 1.1, ROCK_COL.base);
-  c.strokeStyle = ROCK_COL.deep; c.lineWidth = 1;
+  ellipse(c, kx, ky, 2, 1.7, ROCK_COL.dark); ellipse(c, kx - 0.4, ky - 0.4, 1.3, 1.1, ROCK_COL.base);
+  c.strokeStyle = ROCK_COL.dark; c.lineWidth = 1;
   c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + (fx > ax ? 1.6 : -1.6), fy + 1.2); c.stroke();
 }
 
@@ -401,8 +401,11 @@ function clawJaw(size, variant, k, up) {
   srand = mulberry32(5300 + variant * 31 + k * 7 + size.charCodeAt(0));
   clipPoly(c, clip, () => drawBoulder(c, cx, cy, rx, ry, false));
   // тёмная пасть по линии прикуса
-  c.strokeStyle = ROCK_COL.deep; c.lineWidth = 0.9;
+  // только поверх самой челюсти (source-atop): иначе линия торчит чёрными полосками за её края
+  c.globalCompositeOperation = 'source-atop';
+  c.strokeStyle = 'rgba(35,28,21,0.85)'; c.lineWidth = 0.7;
   c.beginPath(); bite.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+  c.globalCompositeOperation = 'source-over';
   cv = rockPixels(cv, null, null);
   CLAW_SPR[key] = { cv, W, H, hx: cx - rx * 0.7, hy: cy };   // шарнир — у заднего края
   return CLAW_SPR[key];
@@ -421,7 +424,7 @@ function drawRockClaws(c, e, g) {
     if (holding) { const h = rockEntHand(e); cx = h.x; cy = h.y; open = e.t < GRAB_REACH ? 0.85 : 0.1; }
     const lo = clawJaw(g.size, v, k, false), up = clawJaw(g.size, v, k, true);
     // короткий каменный сустав к телу
-    ellipse(c, (cx + bx + side * S.w * 0.18) / 2, cy + 1, 3, 2.4, ROCK_COL.deep);
+    ellipse(c, (cx + bx + side * S.w * 0.18) / 2, cy + 1, 3, 2.4, ROCK_COL.dark);
     ellipse(c, (cx + bx + side * S.w * 0.18) / 2 - 0.4, cy + 0.6, 2.2, 1.7, ROCK_COL.mid);
     c.save();
     c.imageSmoothingEnabled = true;
