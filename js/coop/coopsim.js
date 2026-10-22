@@ -275,6 +275,7 @@ function coopCmd(name, msgJson, admin) {
     case 'trav': if (typeof travCmd === 'function') travCmd(name, m); break;
     case 'wgs': if (typeof wgsCmd === 'function') wgsCmd(name, m); break;
     case 'dp': if (typeof dpDo === 'function') { const r = dpDo(coop.players.get(name), String(m.a || ''), +m.x || 0, typeof m.g === 'string' ? m.g : null); if (r && r.text) coopSay(name, r.text); } break;
+    case 'glq': if (m.a === 'wake' && typeof glWake === 'function') glWake(); break;
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
     case 'rsc': if (typeof rscCmd === 'function' && can('council')) rscCmd(name, m); break;
     case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
@@ -553,7 +554,7 @@ function coopTick(dt) {
 // ---------- Снимки ----------
 
 // Плоская копия состояния для клиентов: числа, строки, массивы и простые объекты; жители и здания — ссылкой по id
-const COOP_SKIP = new Set(['path', 'proc', 'action', 'ref']);
+const COOP_SKIP = new Set(['path', 'proc', 'action', 'ref', 'job']);
 const COOP_OP = Object.getPrototypeOf({});   // свой Object.prototype контекста (vm), а не хозяйский
 const coopIds = new WeakMap();
 let coopIdN = 1;
@@ -601,6 +602,7 @@ function coopMirror() {
     foeZones: typeof foeMirrorZones === 'function' ? foeMirrorZones() : [],
     foe: typeof foeMirror === 'function' ? foeMirror() : null,
     sp: typeof spireMirrorOut === 'function' ? spireMirrorOut() : null,
+    glq: Game.glq ? coopPlain(Game.glq, 0, true) : null,
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
     lost: Game.lostGnomes || 0, df: Game.diff,
