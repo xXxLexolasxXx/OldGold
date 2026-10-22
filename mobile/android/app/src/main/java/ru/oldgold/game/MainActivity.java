@@ -30,6 +30,10 @@ public class MainActivity extends BridgeActivity {
         getWindow().setNavigationBarColor(bg);
         WebView web = getBridge().getWebView();
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        // Capacitor 8 (targetSdk 35+) может отодвинуть WebView полями от строки состояния и выреза — в поле виден фон
+        // родителей WebView, а не окна: красим и их, чтобы полоса сверху была цвета игры, а не белой
+        web.setBackgroundColor(bg);
+        for (View v = web; v != null; v = v.getParent() instanceof View ? (View) v.getParent() : null) v.setBackgroundColor(bg);
         WebSettings s = web.getSettings();
         s.setMediaPlaybackRequiresUserGesture(false); // звук играет сразу после первого тапа
         s.setCacheMode(WebSettings.LOAD_DEFAULT);     // свежесть обеспечивает сервер/service worker (сеть в приоритете)
