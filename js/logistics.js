@@ -111,6 +111,8 @@ function reqPri(d, g) {
     if (d.type === 'inn') return innFoodLeft(d) < Math.max(INN_LOW, Game.units.length * 0.1) ? -2 : 1;
     return d.stock[g] + d.incoming[g] < 2 ? -1 : 1;
   }
+  // плавильня на исходе руды или брёвен — как пищевой цех: без неё нет золота для школы, а с ним и замены потерям
+  if (d.type === 'metallurgist' && (g === 'goldore' || g === 'trunk')) return d.stock[g] + d.incoming[g] < 2 ? -1 : 1;
   return 1;
 }
 const INN_LOW = 12;      // столько порций в трактире (с тем, что везут) — ещё не тревога
@@ -147,7 +149,10 @@ function dispatchSerfs() {
   // пищевой цех, у которого склад почти полон, разгружаем раньше всего — иначе он встанет
   const nearlyFull = b => Object.entries(b.def.outputs).some(([g, cap]) => b.offer(g) >= cap * 0.7);
   let nfDone = false;
-  const collectNearlyFull = () => { if (nfDone) return; nfDone = true; collectOutputs(b => !b.isPile && b.state === 'done' && isFoodProducer(b) && !!b.def.outputs && nearlyFull(b)); };
+  // рудники тоже: золотой рудник в 60 клетках от склада стоял «полным» (5/5 руды), пока курьеры возили зерно, —
+  // руда ехала к плавильне по две штуки, золота для школы 26 за 47 суток (ДЕФИЦИТЫ.md, сид 4)
+  const isMine = b => b.def && (b.def.need === 'rock' || b.def.need === 'crystal');
+  const collectNearlyFull = () => { if (nfDone) return; nfDone = true; collectOutputs(b => !b.isPile && b.state === 'done' && (isFoodProducer(b) || isMine(b)) && !!b.def.outputs && nearlyFull(b)); };
 
   // «Перенос ресурсов» (вкладка «Приоритеты»): Выкл — не свозить на склад (кроме еды), Низкий — по 1 перевозчику
   // на здание, Высокий — рассыпанное с земли раньше заявок и по 5 перевозчиков на здание
