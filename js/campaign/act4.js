@@ -115,9 +115,9 @@ const CAMP4_CART = { C: null, t: 0, list: [] };
 function camp4Carts() {
   const C = Game.camp, ppl = camp4Ppl();
   if (!ppl.length) return CAMP4_CART.list;
-  let rear = -1e9, sy = 0;
-  for (const u of ppl) { rear = Math.max(rear, u.x); sy += u.y; }
-  sy /= ppl.length;
+  let rear = 0, sy = 0;                                     // за серединой колонны (дальний отставший тянул бы обоз за край)
+  for (const u of ppl) { rear += u.x; sy += u.y; }
+  rear = Math.min(MAP_W - 12, rear / ppl.length + 3); sy /= ppl.length;
   const n = ((camp4Leg().a3 || {}).gift || {}).bread ? 3 : 2;
   if (CAMP4_CART.C !== C || CAMP4_CART.list.length !== n) {
     CAMP4_CART.C = C; CAMP4_CART.t = Game.time;
