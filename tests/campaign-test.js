@@ -190,6 +190,51 @@ const BOT = `(function () {
   console.log(`Проверка: прогон акта 3 — ${((Date.now() - t0) / 1000).toFixed(0)} с`);
 }
 
+// ---------- 1г. Акт 4 «Игра не стоит свеч» и переход в сценарий (акт 5) с наследием ----------
+{
+  const { h, errors } = host(404);
+  const t0 = Date.now();
+  h.run(`localStorage.setItem('oldgold.campaign', JSON.stringify({ v: 1, done: { 1: { stars: 2 }, 2: { stars: 2 }, 3: { stars: 2 } }, legacy: { a1: { alive: 36 }, a2: { saved: 24, bread: 30, vaska: true }, a3: { resp: 4, gift: { bread: 20, stone: 20, trade: 1 } } }, last: 3 }))`);
+  h.run('campStart(4); Game.heroAsk = false;');
+  const info = JSON.parse(h.run('JSON.stringify({ p: campPeople(), bread: campStock("bread"), vaska: Game.units.some(u => u.cname === "Васька"), w: MAP_W })'));
+  console.log(`Проверка: акт 4 — в колонне ${info.p}, хлеба ${info.bread}, Васька ${info.vaska ? 'с нами' : 'нет'}, карта ${info.w} в ширину`);
+  if (info.p < 23 || info.p > 27) fail(`в акт 4 пришло не столько гномов, сколько в наследии (24+Васька): ${info.p}`);
+  if (info.bread < 40) fail('дар Кремнёвки (хлеб) не попал в обоз');
+  const seen = [];
+  let lastI = -1, over = null, minX = 999, king = false, haltedAtBorder = 0;
+  for (let sec = 0; sec < 60 * 60; sec++) {
+    try { h.run('for (let k = 0; k < 20; k++) step(0.05);'); h.run(BOT); } catch (e) { fail('акт 4, исключение на ' + sec + ' с: ' + String(e.stack || e).split('\n').slice(0, 3).join(' | ')); break; }
+    if (sec % 2) continue;
+    const s = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, k: (campStepNow(Game.camp) || {}).k, over: Game.camp.over, x: Math.min(...camp4Ppl().map(u => u.x)), king: campFoes("chase").some(N => N.k === "shnyr"), halt: campFoes("chase").filter(N => N.halt).length })'));
+    if (s.i !== lastI) { seen.push(`${s.i}:${s.k}@${sec}`); lastI = s.i; }
+    minX = Math.min(minX, s.x); king = king || s.king; haltedAtBorder = Math.max(haltedAtBorder, s.halt);
+    if (s.over) { over = s.over; break; }
+  }
+  const end = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, n: CAMP_ACTS[4].steps.length, f: { fires: Game.camp.flags.fires, found: Game.camp.flags.found, fled: Game.camp.flags.kingFled }, prog: campProg(), open5: campIsOpen(5), objs: Game.camp.objs })'));
+  console.log('Проверка: акт 4, шаги ' + seen.join(' '));
+  if (!over) fail(`акт 4 не закончился за 60 минут: шаг ${end.i} из ${end.n}; цели ${JSON.stringify(end.objs)}`);
+  else {
+    console.log(`Проверка: акт 4 — итог «${over.res}» на ${Math.round(over.stats.t / 60)} мин, дошли ${over.stats.alive}, костров ${(end.f.fires || []).length}, находок ${end.f.found}, король ${king ? 'приходил' : 'не приходил'}, у черты встали ${haltedAtBorder}`);
+    if (over.res !== 'win') fail('акт 4 не пройден: ' + over.why);
+    else if (!end.prog.legacy.a4 || !end.open5) fail('наследие акта 4 не записано или сценарий не открылся');
+  }
+  if (minX > h.run('CAMP4.border')) fail('колонна не дошла до межевого камня');
+  if (!king) fail('король Шнырь так и не вышел на бой');
+  if (!haltedAtBorder) fail('погоня не остановилась у межевого камня');
+  // акт 5: сценарий на новой карте, наследие кампании
+  h.run('campStart(5); Game.heroAsk = false;');
+  const sc = JSON.parse(h.run('JSON.stringify({ camp: !!Game.camp, mode: Game.goal && Game.goal.mode, foe: !!(Game.foe && !Game.foe.camp), leg: Game.campLeg, vaska: Game.units.some(u => u.cname === "Васька"), iron: Game.buildings.find(b => b.type === "storehouse").stock.iron, custom: !!MapOpt.custom })'));
+  console.log(`Проверка: акт 5 — сценарий «${sc.mode}», Малгор ${sc.foe ? 'настоящий' : 'нет'}, наследие ${JSON.stringify(sc.leg)}`);
+  if (sc.camp || sc.custom) fail('сценарий запустился как акт кампании');
+  if (sc.mode !== 'scenario') fail('акт 5 — не сценарий «Тишина дороже золота»');
+  if (!sc.foe) fail('в сценарии нет настоящего Малгора');
+  if (!sc.leg || !sc.vaska || !(sc.iron >= 6)) fail('наследие кампании не перешло в сценарий (Васька, железо)');
+  h.run('for (let k = 0; k < 400; k++) step(0.05);');
+  const errs = errors.filter(e => !/предупрежд/i.test(e));
+  if (errs.length) fail('акты 4–5, ошибки в логе: ' + errs.slice(0, 3).join(' | '));
+  console.log(`Проверка: прогон акта 4 — ${((Date.now() - t0) / 1000).toFixed(0)} с`);
+}
+
 // ---------- 2. Поражение: жители гибнут ----------
 {
   const { h } = host(7);
@@ -231,7 +276,7 @@ const BOT = `(function () {
     for (const k in CAMP_WHO) if (CAMP_WHO[k].name) out.add(CAMP_WHO[k].name);
     return [...out];
   })())`));
-  const miss = texts.filter(t => !dict[t] && !['Грум Ворчун', 'Бабушка Ягла', 'Пим Чернилкин', 'Малгор', 'Герой'].includes(t));
+  const miss = texts.filter(t => t && !dict[t] && !['Грум Ворчун', 'Бабушка Ягла', 'Пим Чернилкин', 'Малгор', 'Герой'].includes(t));
   if (miss.length) fail(`нет английского перевода (${miss.length}): ` + miss.slice(0, 4).join(' | '));
   else console.log(`Проверка: перевод актов — ${texts.length} строк`);
 }

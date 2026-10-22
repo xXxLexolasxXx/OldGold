@@ -73,6 +73,7 @@ if (typeof FSPEC !== 'undefined') {
     drop: [['gold', 3, 1], ['iron', 1, 0.5]], draw: (c, N) => campDrawGoblin(c, N), ai: campGoblinAi, bar: (c, N, px, py) => { if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - 70, false); } };
 }
 function campGoblinAi(N, dt) {
+  if (N.halt) { N.st = 'idle'; N.tg = 0; N.cdA -= dt; return; }   // встали как вкопанные (граница владений)
   if (N.hold && !N.tg) {
     N.cdA -= dt;
     if (N.st === 'emerge') { N.t += dt; if (N.t >= 0) N.st = 'idle'; return; }
@@ -257,6 +258,7 @@ function campFinish(C, res, why) {
 function campStart(n, opts = {}) {
   const A = CAMP_ACTS[n];
   if (!A) return false;
+  if (A.scenario) return A.start(opts);       // акт 5 — обычный сценарий с наследием (act5.js)
   const map = A.map();
   CampBoot.on = true;
   try { setupStart(A.seed, { custom: map }); } finally { CampBoot.on = false; }
@@ -389,7 +391,7 @@ function campUiAct(a, btn) {
     campHideEnd(); campRestart();
   } else if (a === 'next-act') {
     campHideEnd(); const n = C ? C.act + 1 : 1;
-    if (CAMP_ACTS[n]) { campStart(n); updateUI(true); }
+    if (CAMP_ACTS[n]) { campStart(n); Game.paused = false; updateUI(true); }
   } else if (a === 'menu') {
     campHideEnd(); Game.paused = false;
     if (typeof campToMenu === 'function') campToMenu();
@@ -506,6 +508,7 @@ function campShowEnd(C) {
   h += '<div class="ce-btns">';
   if (win) {
     h += nextOk ? `<button data-camp="next-act">Акт ${C.act + 1}: ${campEsc(CAMP_ACTS[C.act + 1].name)} ▸</button>` : `<button disabled>Акт ${C.act + 1} — скоро</button>`;
+    if (nextOk && CAMP_ACTS[C.act + 1].scenario) h += '<p class="ce-leg">Дальше — сценарий на новой карте Долины: главы 1–6, Чёрный шпиль. Наследие кампании переходит с вами.</p>';
     h += '<button class="ghost" data-camp="stay">Остаться в мире</button>';
   } else {
     if (C.cpN) h += '<button data-camp="retry-cp">С контрольной точки</button>';
@@ -668,8 +671,8 @@ function campMenuHTML() {
   const p = campProg(), meta = typeof saveMeta === 'function' ? saveMeta(CAMP_SLOT) : null;
   let h = '<div class="sm-title">Кампания «Исход из Подгорья»</div>';
   if (meta) h += `<button class="sm-btn primary" data-sm="camp-cont"><b>Продолжить кампанию</b><small>${new Date(meta.at).toLocaleString().slice(0, 17)}</small></button>`;
-  const names = { 1: 'Праздник Первого Камня', 2: 'Гора ложится', 3: 'Гости и рыба', 4: 'Игра не стоит свеч' };
-  for (let n = 1; n <= 4; n++) {
+  const names = { 1: 'Праздник Первого Камня', 2: 'Гора ложится', 3: 'Гости и рыба', 4: 'Игра не стоит свеч', 5: 'Тишина дороже золота' };
+  for (let n = 1; n <= 5; n++) {
     const A = CAMP_ACTS[n], d = p.done[n], open = campIsOpen(n);
     const stars = d ? ' ' + '★'.repeat(d.stars) + '☆'.repeat(3 - d.stars) : '';
     if (!A) h += `<button class="sm-btn camp-act" disabled><b>Акт ${n}. ${open ? names[n] : '???'}</b><small>${open ? 'скоро' : 'закрыт'}</small></button>`;
@@ -687,7 +690,7 @@ function campMenuPlay(n) {
   StartMenu.busy = true;
   setTimeout(() => {
     try {
-      StartMenu.goalMode = 'free';
+      StartMenu.goalMode = CAMP_ACTS[n].goalMode || 'free';
       campStart(n);
       StartMenu.dirty = true;
       if (msg) msg.textContent = '';
