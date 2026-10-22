@@ -2,8 +2,8 @@
 // Скелеты: по ночам из кладбища поднимаются гномьи скелеты в рваных колпаках и с ржавыми мечами.
 // Они бродят у своей могилы (в пределах клетки), а кто подойдёт близко — того рубят.
 // Гном, павший от скелета, нередко встаёт скелетом сам. Призраки пугают и скелетов тоже.
-
 const SKEL_SEE = 3.2, SKEL_LEASH = 5;
+const SKA_REPLY = 0.2;     // пауза между ударом по скелету и его ответным замахом
 
 // с каждой ночью из могил встаёт больше (nightDiff в night.js): к 7-й — на 1–2, к 10-й — на 3 больше, до 12
 function skelCount() { return Math.min(12, 2 + Math.floor((Game.lostGnomes || 0) / 2) + Math.floor((nightDiff() - 1) * 1.8)); }
@@ -152,7 +152,7 @@ function* skelFightGen(u, s) {
     if (s.state !== 'fight') { u.fighting = null; return; }
     sfxAt('rattle', s.x * TILE, s.y * TILE, 0.9);
     fxBurst(s.x * TILE, s.y * TILE - 14, 6, ['#e6dfc8', '#c8c0a4', '#8a6a3a'], 55, 40, 0.5, 1.4, 240);
-    s.atk = Game.time;
+    s.hitT = Game.time; s.atk = Game.time + SKA_REPLY;                      // кость получила — кадры удара, затем ответный замах
     yield { wait: 0.35 };
     yield { wait: 0.45, anim: 'duck' };
   }
@@ -226,7 +226,13 @@ function drawSkeletons(list, c, x0, y0, x1, y1) {
   }
 }
 
+// пиксель-арт кадры — skelart.js (грузится после people.js); векторное рисование ниже осталось запасным и для листа сравнения
 function drawSkeleton(c, s) {
+  if (typeof skelDraw === 'function') return skelDraw(c, s);
+  drawSkeletonVector(c, s);
+}
+
+function drawSkeletonVector(c, s) {
   const t = Game.time, f = s.face < 0 ? -1 : 1;
   const px = Math.round(s.x * TILE), py = Math.round(s.y * TILE + 6);
   const BONE = '#e4ddc6', BONE2 = '#b8b096', INK = '#17120c';

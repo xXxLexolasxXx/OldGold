@@ -45,6 +45,11 @@
 .cmh-t { flex: 1; }
 .cmh-n { color: #f6d458; font-variant-numeric: tabular-nums; }
 .cmh-show { min-height: 24px; padding: 0 7px; }
+.cmh-meter { margin-top: 4px; font-size: 13px; color: #d8c8a0; }
+.cmh-meter b { color: #f6d458; } .cmh-meter b.up { color: #a8e080; } .cmh-meter b.down { color: #f08a6a; }
+.cd-btns.choice { flex-direction: column; align-items: stretch; }
+.cd-btns.choice button { text-align: left; }
+.cmh-timer { margin-top: 4px; font-size: 15px; font-weight: bold; color: #f08a6a; font-variant-numeric: tabular-nums; }
 .cmh-hint { margin-top: 4px; font-size: 12px; color: #c8b088; font-style: italic; }
 
 /* итог акта */

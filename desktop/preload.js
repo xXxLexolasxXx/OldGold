@@ -1,6 +1,6 @@
 'use strict';
 // Мост «игра ↔ Electron». Перед запуском игры подтягивает «облачные» сохранения в localStorage, если там их нет или они старше.
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 try {
   const cloud = ipcRenderer.sendSync('og:cloudAll') || {};
@@ -19,4 +19,6 @@ contextBridge.exposeInMainWorld('OldGoldNative', {
   platform: 'desktop',
   achievement: id => ipcRenderer.send('og:achievement', String(id)),
   cloudPut: (k, d) => ipcRenderer.sendSync('og:cloudPut', String(k), String(d)),
+  setZoom: f => { const z = Math.max(0.8, Math.min(1.5, +f || 1)); webFrame.setZoomFactor(z); return z; },   // масштаб интерфейса 80–150%
+  fullscreen: () => ipcRenderer.sendSync('og:fullscreen'),                                                // полный экран / окно, вернёт новое состояние
 });

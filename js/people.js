@@ -45,7 +45,7 @@ const HAIR = '#c9501c', HAIR_D = '#8e3412', HAIR_L = '#e8742c';   // рыжие 
 const SERF_CAPS = ['#3e7426', '#4e8a2a', '#5c9a34', '#2e5a22', '#6aa83e', '#46743a'];
 
 const GIRL_LOOK = { skin: 0, beard: 0, beardLen: 0, beardStyle: 0, must: 0, nose: 0, brow: 0, earring: false, freckles: false, braid: false, capTip: 1, green: '#3f7a46', deco: 5, serfCap: '#fff', capStyle: 0 };
-const ANIM_TOOL = { chop: 'axe', mine: 'pick', build: 'hammer', reap: 'sickle', dig: 'spade', hoppick: 'hook', toss: 'toss', pat: 'pat' };   // toss — бросок без инструмента (снежок, бита: 9 кадров), pat — хлопает песок (8)
+const ANIM_TOOL = { chop: 'axe', mine: 'pick', build: 'hammer', reap: 'sickle', dig: 'spade', hoppick: 'hook', toss: 'toss', pat: 'pat', douse: 'bucket' };   // toss — бросок без инструмента (снежок, бита: 9 кадров), pat — хлопает песок (8)
 
 // Внешность гнома целиком выводится из числа look: один и тот же гном всегда выглядит одинаково.
 // Чтобы признаки не зависели друг от друга (как было с битовыми сдвигами), берём их из
@@ -1396,9 +1396,16 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         const hx = 0.4 + Math.sin(ang) * 3.8, hy = shY - Math.cos(ang) * 3.8;
         const tx = hx + Math.sin(ang) * 6.5, ty = hy - Math.cos(ang) * 6.5;
         smoothLimb(c, [0.4, shY + 0.4], [(0.4 + hx) / 2 + 0.6, (shY + hy) / 2 + 0.5], [hx, hy], 2.1, shirt);
-        if (tool !== 'toss' && tool !== 'pat') line(c, hx - (tx - hx) * 0.25, hy - (ty - hy) * 0.25, tx, ty, '#6e4428', 0.9);
+        if (tool !== 'toss' && tool !== 'pat' && tool !== 'bucket') line(c, hx - (tx - hx) * 0.25, hy - (ty - hy) * 0.25, tx, ty, '#6e4428', 0.9);
         const nx = -(ty - hy) / 6.5, ny = (tx - hx) / 6.5;
         if (tool === 'toss' || tool === 'pat') { /* пустая рука */ }
+        else if (tool === 'bucket') {   // ведро с водой: после броска (кадры 5–7) пустое
+          const bx = hx + Math.sin(ang) * 2.2, by = hy - Math.cos(ang) * 2.2, full = frame.f < 5;
+          c.fillStyle = '#5a3a1e'; c.fillRect(Math.round(bx - 2), Math.round(by - 1), 4, 3);
+          c.fillStyle = '#9a6a3a'; c.fillRect(Math.round(bx - 2), Math.round(by - 1), 4, 1);
+          c.fillStyle = '#3a3a3e'; c.fillRect(Math.round(bx - 2), Math.round(by), 4, 1);
+          if (full) { c.fillStyle = '#6ab8ff'; c.fillRect(Math.round(bx - 1), Math.round(by - 2), 2, 1); }
+        }
         else if (tool === 'axe') poly(c, [[tx, ty], [tx + nx * 2.4, ty + ny * 2.4], [tx + nx * 2.2 - (tx - hx) * 0.22, ty + ny * 2.2 - (ty - hy) * 0.22], [tx - (tx - hx) * 0.15, ty - (ty - hy) * 0.15]], '#b8bcc0', '#3a3a3e', 0.3);
         else if (tool === 'pick') { c.strokeStyle = '#8a8e92'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(tx - nx * 3.2, ty - ny * 3.2); c.quadraticCurveTo(tx + (tx - hx) * 0.08, ty + (ty - hy) * 0.08, tx + nx * 3.2, ty + ny * 3.2); c.stroke(); }
         else if (tool === 'hammer') { c.save(); c.translate(tx, ty); c.rotate(Math.atan2(ty - hy, tx - hx)); c.fillStyle = '#5c564f'; c.fillRect(-0.8, -1.7, 2, 3.4); c.fillStyle = '#9e958a'; c.fillRect(-0.8, -1.7, 2, 0.6); c.restore(); }

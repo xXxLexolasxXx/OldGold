@@ -47,5 +47,3 @@ body.mobile.land .rv-note { top: calc(var(--st, 0px) + 50px); left: 55%; max-wid
 .res-more span { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; text-shadow: 0 0 3px #000, 0 1px 0 #000; }
 .res-more img { width: 18px; height: 18px; }
 .res-more b { color: var(--gold-hi); }
-/* раскрытый список верхней полосы — поверх целей деревни */
-#topbar:has(.dd.open) { z-index: 21; }

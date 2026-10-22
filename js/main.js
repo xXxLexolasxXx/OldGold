@@ -541,7 +541,7 @@ function cycleBuilding(dir) {
 }
 
 function scrollByKeys(dt) {
-  const k = Input.keys, sp = 700 * dt / camScale();
+  const k = Input.keys, sp = 700 * dt / camScale() * (k.has('Shift') ? 2 : 1);   // Shift — камера вдвое быстрее
   if (k.has('KeyA') || k.has('ArrowLeft')) R.cam.x -= sp;
   if (k.has('KeyD') || k.has('ArrowRight')) R.cam.x += sp;
   if (k.has('KeyW') || k.has('ArrowUp')) R.cam.y -= sp;
