@@ -24,3 +24,6 @@ mobile/android/local.properties
 mobile/android/app/build/
 mobile/android/build/
 mobile/android/.gradle/
+
+# Визуальные тесты: снимки текущего прогона и различия (эталоны в tests/visual/ref коммитим)
+tests/visual/out/
