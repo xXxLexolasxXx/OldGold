@@ -323,9 +323,11 @@ function bandage(c, x0, y0, x1, y1) {
 // ---------- Лесные мотивы ----------
 
 const MOSS = ['#5a8a2a', '#6e9e34', '#88b444', '#a4c85a', '#3e6a22'];
+let MOSS_OFF = false;   // дикие гномы (wildart.js): мох только у лесной фракции
 
 // Мох крапинками внутри текущего контура (вызывать после clip)
 function mossSpeckle(c, x0, y0, w, h, density, r) {
+  if (MOSS_OFF) return;
   for (let k = 0; k < w * h * density; k++) {
     const x = x0 + r() * w, y = y0 + r() * h;
     c.fillStyle = MOSS[(r() * MOSS.length) | 0];
@@ -627,7 +629,7 @@ function drawBeard(c, view, hx, hy, L, type, bottom, r) {
   c.strokeStyle = shade(bc, -0.28); c.lineWidth = 0.32;
   for (let k = -3; k <= 3; k++) { c.beginPath(); c.moveTo(hx + k * 1.1, hy + 1.6); c.quadraticCurveTo(hx + k * 1.4, (hy + bottom) / 2, hx + k * 0.8, bottom); c.stroke(); }
   // мох в бороде у краёв и внизу
-  for (let k = 0; k < 26; k++) {
+  for (let k = 0; k < (MOSS_OFF ? 0 : 26); k++) {
     const t = r(), side = r() < 0.5 ? -1 : 1;
     const x = view === 'S' ? hx + side * (2.4 + r() * 2.2) : hx + r() * 4, y = hy + 1 + t * (bottom - hy);
     c.fillStyle = MOSS[(r() * 4) | 0]; c.globalAlpha = 0.45 + r() * 0.4;
@@ -1357,6 +1359,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -3.6, hipY + 0.7, -0.5, 0.86, !armed);
       }
       if (courier) line(c, -2, shY + 0.2, 2.4, hipY, '#4a2c14', 0.6);
+      if (L.wild) wildBody(c, 'E', L, shY, hipY, headY, sw);
       head(0.6, () => {
         drawHead(c, 'E', 0.6, headY, L, O, type, false, beardBottom, r);   // курево рисует drawSmoking (smoking.js)
         if (!opt.nohat) drawCap(c, O, 'E', 0.6, headY, tipSway, L, r, lvl);
@@ -1525,6 +1528,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       else if (st === 'blade' || st === 'stab') drawSheath(c, W.m, sx, hipY + 0.3, sd, 0.9, !armed);
       if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -sx, hipY + 0.4, -sd, 0.9, !armed);
     }
+    if (L.wild) wildBody(c, view, L, shY, hipY, headY, sw);
     if (front) { arm(-1); arm(1); }
     head(0, () => {
       drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);

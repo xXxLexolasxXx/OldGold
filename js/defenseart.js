@@ -2,7 +2,7 @@
 // Оборона: рисование. Стены, ворота, баррикады, ловушки и факелы — пиксель-арт в тройном разрешении
 // (как здания), кэшируются по виду; башня — модель в bmodels-стиле; дозорный и стражи — маленькие гномы на площадке.
 
-const DFA = { cache: new Map(), M: 64, W: 96 };          // M — запас над клеткой в «пикселях арта» (их втрое больше мировых)
+const DFA = { cache: new Map(), lay: new Map(), M: 64, W: 96 };          // M — запас над клеткой в «пикселях арта» (их втрое больше мировых)
 const DFC = {
   wood: ['#8a5a30', '#b87e48', '#5a3a1c', '#2a1a0c', '#c8a070'],     // база, свет, тень, контур, торец
   stone: ['#928d82', '#bdb7a8', '#68635a', '#34302a', '#a8a296'],
@@ -19,8 +19,53 @@ function fortMask(x, y) {
   if (n(x, y - 1)) m |= 1; if (n(x + 1, y)) m |= 2; if (n(x, y + 1)) m |= 4; if (n(x - 1, y)) m |= 8;
   return m;
 }
-function dfGeom(mask) {
-  return { x0: mask & 8 ? 0 : 33, x1: mask & 2 ? 96 : 63, y0: mask & 1 ? 0 : 33, y1: mask & 4 ? 96 : 63 };
+// Стена прижата к кромке клетки, а не стоит посреди неё: вертикальный участок слева идёт по левой кромке,
+// справа — по правой; горизонтальный сверху — по верхней, снизу — по нижней (дорога и проход внутри остаются свободными).
+// Сторону выбираем по всей связной стене: клетки левее середины — влево, правее — вправо; посередине решает дорога рядом.
+// Дорога и проход остаются свободными: сторона для середины — от дороги. Результат кэшируем (стена меняется редко).
+function dfLayout(x, y) {
+  const cells = [], seen = new Set([y * MAP_W + x]), q = [[x, y]];
+  let minx = x, maxx = x, miny = y, maxy = y;
+  while (q.length && cells.length < 400) {
+    const [cx, cy] = q.pop();
+    cells.push([cx, cy]);
+    if (cx < minx) minx = cx; if (cx > maxx) maxx = cx; if (cy < miny) miny = cy; if (cy > maxy) maxy = cy;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx, ny = cy + dy, k = ny * MAP_W + nx;
+      if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H || seen.has(k)) continue;
+      const o = fortAt(nx, ny);
+      if (o && fortIsWall(o)) { seen.add(k); q.push([nx, ny]); }
+    }
+  }
+  const road = (xx, yy) => xx >= 0 && yy >= 0 && xx < MAP_W && yy < MAP_H && World.road[idx(xx, yy)] ? 1 : 0;
+  const colVote = {}, rowVote = {};
+  for (const [cx, cy] of cells) { colVote[cx] = (colVote[cx] || 0) + road(cx - 1, cy) - road(cx + 1, cy); rowVote[cy] = (rowVote[cy] || 0) + road(cx, cy - 1) - road(cx, cy + 1); }
+  const mx = (minx + maxx) / 2, my = (miny + maxy) / 2, now = performance.now(), single = cells.length === 1;
+  for (const [cx, cy] of cells) {
+    let sx = 0, sy = 0;
+    if (!single) {
+      sx = cx < mx ? 1 : cx > mx ? 2 : colVote[cx] > 0 ? 2 : 1;            // 1 — влево, 2 — вправо
+      sy = cy < my ? 1 : cy > my ? 2 : rowVote[cy] > 0 ? 2 : 1;            // 1 — вверх, 2 — вниз
+      if (miny === maxy && rowVote[cy] === 0) sy = 2;                       // одиночный ряд по умолчанию стоит у нижней кромки
+    }
+    DFA.lay.set(cy * MAP_W + cx, { mask: fortMask(cx, cy), sx, sy, t: now });
+  }
+}
+function fortShift(x, y, mask) {
+  const i = y * MAP_W + x, e = DFA.lay.get(i);
+  if (e && e.mask === mask && performance.now() - e.t < 500) return e;
+  dfLayout(x, y);
+  return DFA.lay.get(i) || { sx: 0, sy: 0 };
+}
+// Прямоугольники плеч стены (в «пикселях арта» клетки 96×96) по соседям и прижатию; рисуются от дальнего к ближнему
+function dfBoxes(mask) {
+  const m = mask & 15, sx = (mask >> 4) & 3, sy = (mask >> 6) & 3, V = m & 5, H = m & 10;
+  const xr = sx === 1 ? [0, 30] : sx === 2 ? [66, 96] : [33, 63], yr = sy === 1 ? [0, 30] : sy === 2 ? [66, 96] : [33, 63];
+  const bs = [];
+  if (!V && !H) bs.push({ x0: xr[0], x1: xr[1], y0: yr[0], y1: yr[1] });
+  if (V) bs.push({ x0: xr[0], x1: xr[1], y0: m & 1 ? 0 : H ? yr[0] : 33, y1: m & 4 ? 96 : H ? yr[1] : 63 });
+  if (H) bs.push({ x0: m & 8 ? 0 : V ? xr[0] : 33, x1: m & 2 ? 96 : V ? xr[1] : 63, y0: yr[0], y1: yr[1] });
+  return bs.sort((a, b) => a.y1 - b.y1);
 }
 const dfDmg = o => { const q = o.hp / fortMax(o); return q > 0.66 ? 0 : q > 0.33 ? 1 : 2; };
 
@@ -130,6 +175,10 @@ function dfGate(c, mask, o, M, seed) {
   const stone = o.m === 'stone', B = stone ? DFC.stone : DFC.wood, L = o.lv, open = !!o.open, dmg = dfDmg(o);
   const horiz = (mask & 10) || !(mask & 5);
   const wood = DFC.wood;
+  // прижатие к кромке клетки — как у стены рядом (см. dfBoxes): весь проём сдвигается целиком
+  const sx = (mask >> 4) & 3, sy = (mask >> 6) & 3;
+  c.save();
+  c.translate(horiz ? 0 : sx === 1 ? -33 : sx === 2 ? 33 : 0, horiz ? (sy === 1 ? -33 : sy === 2 ? 33 : 0) : 0);
   if (horiz) {
     const yb = 63 + M, Hp = 70, yt = yb - Hp;
     dfr(c, 0, yb - 3, 96, 8, 'rgba(10,8,4,0.3)');
@@ -186,6 +235,7 @@ function dfGate(c, mask, o, M, seed) {
       dfr(c, 36, yb - 78 - 2, 26, 6, B[3]);                                                          // балка поверху между столбами
     }
   }
+  c.restore();
 }
 
 // ---------- Баррикада ----------
@@ -274,10 +324,13 @@ function fortSprite(o, mask) {
   if (s) return s;
   const cv = mkCanvas(DFA.W, 96 + DFA.M), c = cv.getContext('2d');
   c.imageSmoothingEnabled = false;
-  const g = dfGeom(mask), M = DFA.M, seed = hashStr(key) >>> 0;
+  const M = DFA.M, seed = hashStr(key) >>> 0;
   switch (o.f) {
-    case 'wall_wood': dfWallWood(c, g, o.lv, dmg, M, seed); break;
-    case 'wall_stone': dfWallStone(c, g, o.lv, dmg, M, seed); break;
+    case 'wall_wood': case 'wall_stone': {
+      const bs = dfBoxes(mask);
+      bs.forEach((g, k) => (o.f === 'wall_wood' ? dfWallWood : dfWallStone)(c, g, o.lv, k === bs.length - 1 ? dmg : 0, M, seed));
+      break;
+    }
     case 'gate': dfGate(c, mask, o, M, seed); break;
     case 'barricade': dfBarricade(c, o.lv, dmg, M, seed); break;
     case 'pit': dfPit(c, o, M, seed); break;
@@ -293,7 +346,8 @@ function fortSprite(o, mask) {
 // Мировая клетка (x, y) <- спрайт: клетка в нижней части холста, запас M над ней
 function drawFort(c, x, y, o) {
   const px = x * TILE, py = y * TILE, k = TILE / DFA.W;
-  const mask = fortIsWall(o) ? fortMask(x, y) : 0;
+  let mask = fortIsWall(o) ? fortMask(x, y) : 0;
+  if (fortIsWall(o)) { const sh = fortShift(x, y, mask); mask |= sh.sx << 4 | sh.sy << 6; }
   // закрытые ворота открываются перед жителем: проходят все, кроме нечисти
   let sp = o;
   if (o.f === 'gate' && !o.open && o.bt === undefined) {

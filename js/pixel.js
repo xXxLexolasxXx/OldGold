@@ -111,6 +111,7 @@ function toPixelArt(src, scale, opts = {}) {
     quantizeData(d, W, H, opts.dither || 0);
     if (opts.clean) cleanOrphans(d, W, H);
     if (opts.ink) inkData(d, W, H, opts.ink);
+    if (opts.specks) dropSpecks(d, W, H, opts.specks === true ? 70 : opts.specks);   // только камни и скалы: чужие спрайты не трогаем
     if (opts.outline !== false) outlineData(d, W, H, opts.outlineDark ?? 0.42);
     if (opts.onData) opts.onData(d, W, H);      // пиксели уже в памяти — дёшево разобрать на месте
   }
@@ -158,6 +159,40 @@ function cleanOrphans(d, W, H) {
     else if (same(u, dn) && !same(o, u)) s = u;
     if (s >= 0) { d[o] = src[s]; d[o + 1] = src[s + 1]; d[o + 2] = src[s + 2]; }
   }
+}
+
+// Чистка «мусорных» точек в готовых пикселях (RGBA). Опирается только на соседей, поэтому годится и для
+// спрайтов, нарисованных уже в 1×, и для 2×-заготовок камней. Что делает:
+//  • пиксель без единого непрозрачного соседа (8 сторон) — висящая точка, стирается;
+//  • тёмный пиксель (яркость < thr) без тёмных соседей — «чёрная точка» на теле: красится цветом соседей.
+// Лежащие вдоль контура тёмные пиксели считаются тёмными соседями друг друга, поэтому цельная обводка не страдает.
+function pixLum(d, o) { return d[o] * 0.3 + d[o + 1] * 0.59 + d[o + 2] * 0.11; }
+function dropSpecks(d, W, H, thr = 70) {
+  const src = new Uint8ClampedArray(d), n8 = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+  let changed = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const o = (y * W + x) * 4;
+    if (!src[o + 3]) continue;
+    let solid = 0, dark = 0, r = 0, g = 0, b = 0, k = 0;
+    for (const [dx, dy] of n8) {
+      const xx = x + dx, yy = y + dy;
+      if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+      const p = (yy * W + xx) * 4;
+      if (!src[p + 3]) continue;
+      solid++;
+      if (pixLum(src, p) < thr) dark++;
+      else { r += src[p]; g += src[p + 1]; b += src[p + 2]; k++; }
+    }
+    if (!solid) { d[o + 3] = 0; changed++; continue; }
+    if (dark === 0 && k && pixLum(src, o) < thr) { d[o] = r / k; d[o + 1] = g / k; d[o + 2] = b / k; changed++; }
+  }
+  return changed;
+}
+
+// Число «мусорных» точек (то же правило, ничего не меняет) — для тестов и листа аудита
+function countSpecks(d, W, H, thr = 70) {
+  const c = new Uint8ClampedArray(d);
+  return dropSpecks(c, W, H, thr);
 }
 
 // Цветная обводка: прозрачный пиксель рядом с непрозрачным становится тёмным оттенком соседа.
