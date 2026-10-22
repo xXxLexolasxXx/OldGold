@@ -653,31 +653,29 @@ function wgDrawFlag(c, S) {
 function wgDrawChief(c, S) {
   const [gx, gy] = wgGate(S), X = Math.round((gx + 0.5) * TILE), Y = Math.round((gy + 0.2) * TILE + 6);
   if (!(Game.wgs.duel && Game.wgs.duel.s === S.id)) {
-    c.save(); c.translate(X, Y); c.scale(1.8, 1.8);
-    tvDrawGnome(c, 0, 0, { k: 'wt_' + S.fac, f: 1 }, 0, false);
-    c.fillStyle = '#ffd700'; c.fillRect(-3, -21, 6, 2); c.fillRect(-3, -23, 1, 2); c.fillRect(0, -23, 1, 2); c.fillRect(2, -23, 1, 2);   // корона вождя
-    c.restore();
-    tvDrawEmo(c, S.own ? 'good' : S.evil ? 'evil' : S.rel < -20 ? 'neu' : 'good', X, Y - 52, false);
+    const ck = 'chief:' + S.fac + (S.evil && !S.own ? '!' : '');
+    tvDrawGnome(c, X, Y, { wk: ck, f: 1, id: S.id }, 0, false);
+    tvDrawEmo(c, S.own ? 'good' : S.evil ? 'evil' : S.rel < -20 ? 'neu' : 'good', X, Y - 58, false, ck);
   }
   const tier = S.own ? 'наши' : S.evil ? 'злые' : S.rel >= 50 ? 'союзники' : S.rel < -20 ? 'в обиде' : 'нейтральны';
   c.save();
   c.font = 'bold 11px sans-serif'; c.textAlign = 'center';
   const txt = `${S.name} · ${WG_FAC[S.fac].name} · ${tier}`, w = c.measureText(txt).width + 10;
-  c.fillStyle = 'rgba(20,14,6,0.7)'; c.fillRect(X - w / 2, Y - 80, w, 15);
-  c.fillStyle = S.evil && !S.own ? '#ffb0a0' : S.own ? '#ffe070' : '#f0e6c8'; c.fillText(txt, X, Y - 69);
+  c.fillStyle = 'rgba(20,14,6,0.7)'; c.fillRect(X - w / 2, Y - 88, w, 15);
+  c.fillStyle = S.evil && !S.own ? '#ffb0a0' : S.own ? '#ffe070' : '#f0e6c8'; c.fillText(txt, X, Y - 77);
   c.restore();
 }
 
 function wgDrawCar(c, C) {
   const X = Math.round(C.x * TILE), Y = Math.round(C.y * TILE + 6), f = C.f || 1, t = Game.time;
-  c.save(); c.translate(X, Y); c.scale(1.5, 1.5);
+  c.save(); c.translate(X, Y); c.scale(1.4, 1.4);
   c.fillStyle = 'rgba(10,8,4,0.3)'; c.beginPath(); c.ellipse(-4 * f, 0, 10, 2.5, 0, 0, 7); c.fill();
   c.fillStyle = '#8a5a2a'; c.fillRect(-14 * f - (f > 0 ? 0 : -1) - (f < 0 ? 12 : 0), -9, 12, 6);
   c.fillStyle = '#d8b878'; c.fillRect(-13 * f - (f < 0 ? 10 : 0), -12, 10, 3);
   c.fillStyle = '#2a1c10'; const wx = -10 * f - (f < 0 ? 0 : 0); c.beginPath(); c.arc(wx, -2, 2.5, 0, 7); c.fill();
   c.fillStyle = '#c8a060'; c.fillRect(wx - 1 + Math.round(Math.sin(t * 6)), -3, 2, 2);
-  tvDrawGnome(c, 0, 0, { k: 'courier', f }, t * 8, true);
   c.restore();
+  tvDrawGnome(c, X, Y, { wk: 'wt:' + ((Game.wgs.list.find(q => q.id === C.s) || {}).fac || 'sand'), f, _v: 'E' }, 0, true);
 }
 
 function wgDrawArena(c, D) {
@@ -696,14 +694,11 @@ function wgDrawArena(c, D) {
 // вождь в поединке рисуется гномом своей фракции поверх бойца-нейтрала
 function wgDrawChiefNeu(c, N) {
   const X = Math.round(N.x * TILE), Y = Math.round(N.y * TILE + 6), fr = N.fr || 'i0', f = N.face || 1;
-  c.save(); c.translate(X, Y); c.scale(1.8, 1.8);
-  tvDrawGnome(c, 0, 0, { k: 'wt_' + N.fac, f }, Game.time * 10, fr[0] === 'w' || fr === 'step');
-  c.fillStyle = '#ffd700'; c.fillRect(-3, -21, 6, 2);
-  c.fillStyle = '#9aa0aa';
-  if (fr === 'windup') c.fillRect(1 * f, -26, 2, 12); else if (fr === 'strike') c.fillRect(4 * f - (f < 0 ? 10 : 0), -11, 11, 2); else c.fillRect(3 * f, -14, 2, 10);
-  if (N.rollT > 0) { c.globalAlpha = 0.4; c.fillStyle = '#cfe8ff'; c.fillRect(-4, -18, 8, 18); }
-  c.restore();
-  const w = 26, hy = Y - 50, r = Math.max(0, N.hp / N.mhp);
+  const SS = Game.wgs && Game.wgs.list.find(q => q.id === N.wgc), ck = 'chief:' + N.fac + (SS && SS.evil && !SS.own ? '!' : '');
+  const fk = fr === 'windup' ? 'windup' : fr === 'strike' ? 'strike' : (fr === 'hurt' || fr === 'stagger') ? 'hurt' : null;
+  tvDrawGnome(c, X, Y, { wk: ck, f, id: N.id, _v: 'E' }, 0, fr[0] === 'w' || fr === 'step', fk);
+  if (N.rollT > 0) { c.save(); c.globalAlpha = 0.4; c.fillStyle = '#cfe8ff'; c.fillRect(X - 8, Y - 40, 16, 40); c.restore(); }
+  const w = 26, hy = Y - 56, r = Math.max(0, N.hp / N.mhp);
   c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(X - w / 2 - 1, hy - 1, w + 2, 5);
   c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(X - w / 2, hy, Math.round(w * r), 3);
   c.fillStyle = '#ffe070'; c.fillRect(X - w / 2 + Math.round(w * 0.15), hy - 1, 1, 5);      // метка «сдастся здесь»
@@ -733,13 +728,13 @@ function wgDrawList(list, c, x0, y0, x1, y1) {
     list.push([S.y + WG_H + 0.1, () => wgDrawFlag(c, S)]);
     list.push([S.y + WG_H + 0.4, () => wgDrawChief(c, S)]);
     wgFolkTick(S);
-    for (const p of wgFolk(S)) {
+    wgFolk(S).forEach((p, gi) => {
       list.push([p.y + 0.2, () => {
-        c.save(); c.translate(Math.round(p.x * TILE), Math.round(p.y * TILE + 6)); c.scale(TV_SC, TV_SC);
-        tvDrawGnome(c, 0, 0, { k: 'wt_' + S.fac, f: p.f }, p.ph, Math.hypot(p.tx - p.x, p.ty - p.y) > 0.05);
-        c.restore();
+        const mv = Math.hypot(p.tx - p.x, p.ty - p.y) > 0.05;
+        if (mv) p._v = Math.abs(p.ty - p.y) > Math.abs(p.tx - p.x) * 1.3 ? (p.ty > p.y ? 'S' : 'N') : 'E';
+        tvDrawGnome(c, Math.round(p.x * TILE), Math.round(p.y * TILE + 6), { wk: `folk:${S.fac}:${gi}` + (S.evil && !S.own ? '!' : ''), f: p.f, id: gi + S.id, _v: p._v }, 0, mv);
       }]);
-    }
+    });
   }
   for (const C of W.cars) if (C.x >= x0 - 3 && C.x <= x1 + 3 && C.y >= y0 - 3 && C.y <= y1 + 4) list.push([C.y + 0.2, () => wgDrawCar(c, C)]);
   if (W.duel) list.push([W.duel.ay - WG_ARENA_R, () => wgDrawArena(c, W.duel)]);

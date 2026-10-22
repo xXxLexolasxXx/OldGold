@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><title>Шапки</title>
+<body style="margin:0;background:#4f7a30;color:#fff;font:14px sans-serif"><div id="o" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px"></div>
+<script>
+const files=['js/world/fire.js','js/config.js','js/world.js','js/sprites.js','js/pixel.js','js/smoking.js','js/people.js','js/world/wildart.js'];
+(async()=>{for(const f of files)await new Promise(ok=>{const s=document.createElement('script');s.src=f+'?v='+Date.now();s.onload=ok;document.head.appendChild(s);});
+window.Game={time:0};window.R={smooth:false};window.unitLevel=()=>1;spriteBudgetOk=()=>true;
+const K=3;
+for(const f of ['copper','moss','grey','sand']){const row=document.createElement('div');row.style.cssText='display:flex;width:100%;gap:4px';o.appendChild(row);
+ for(let i=0;i<5;i++){const spr=wildSprite('folk:'+f+':'+i,'S','idle',0);const d=document.createElement('div');d.style.textAlign='center';const cv=document.createElement('canvas');cv.width=spr.width*K;cv.height=spr.height*K;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(spr,0,0,cv.width,cv.height);d.appendChild(cv);d.append(f+' '+wildDesc('folk:'+f+':'+i).head);row.appendChild(d);}}
+})();
+</script>
