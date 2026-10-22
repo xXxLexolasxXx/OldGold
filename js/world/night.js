@@ -44,6 +44,10 @@ function nightAmt(t = Game.time) {
 function isNightNow() { return nightAmt() >= 0.5; }
 // вечер и ночь: горят фонари
 function isEveningNow() { return cycleAt(Game.time).p >= EVE_START && nightAmt() > 0.02; }
+// фонари (уличные и в руках) горят только когда уже темнеет: не днём и не на светлом рассвете
+const LAMP_ON = 0.05;
+function lampsOn() { return cycleAt(Game.time).p >= EVE_START && nightAmt() >= LAMP_ON; }
+function lanternLit(u) { return !!u.lantern && lampsOn(); }
 // рассвет: ночь кончилась, но ещё не совсем светло (вечер по isEveningNow тянется и сюда)
 function isDawnNow() { const c = cycleAt(Game.time); return c.p >= NIGHT_START + c.nl; }
 // номер текущих «суток тьмы»: одинаков от начала вечера до рассвета
@@ -695,11 +699,11 @@ function nightLights(x0, y0, x1, y1) {
   for (const u of Game.units) {
     if (u.inside || u.x < x0 - 4 || u.x > x1 + 4 || u.y < y0 - 4 || u.y > y1 + 4) continue;
     if (u.type === 'carter') L.push([u.x * TILE, u.y * TILE - 6, 62, 0.8]);
-    else if (u.lantern && isPerson(u)) L.push([u.x * TILE + (u.face || 1) * 6, u.y * TILE - 4, 50, 0.85]);
+    else if (lanternLit(u) && isPerson(u)) L.push([u.x * TILE + (u.face || 1) * 6, u.y * TILE - 4, 50, 0.85]);
   }
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const o = World.obj[idx(x, y)];
-    if (o && o.t === 'lamp' && !o.out) L.push([x * TILE + 27, y * TILE + 6, 46, 0.42]);   // в тумане светят слабо
+    if (o && o.t === 'lamp' && !o.out && lampsOn()) L.push([x * TILE + 27, y * TILE + 6, 46, 0.42]);   // в тумане светят слабо
     if (o && isStreetObj(o) && o.born === undefined || (o && o.born !== undefined && Game.time - o.born > GROW_T)) { const mm = o && isStreetObj(o) ? decorMorph(o, x, y) : 0; if (mm) { const ml = decorMorphLight(mm, x, y); if (ml) L.push(ml); } }
   }
   // ожившее дерево окружено мертвенным отсветом — его силуэт видно в тумане
@@ -709,6 +713,7 @@ function nightLights(x0, y0, x1, y1) {
     if (e.state === 'drag' && (e.victim || e.vsnap)) L.push([bx + e.face * 21, by - 30, 50, 0.8 * e.alpha]);   // фонарь бедняги ещё светит
   }
   weatherLights(L, x0, y0, x1, y1);
+  if (typeof dpLights === 'function') dpLights(L, x0, y0, x1, y1);      // дракончик со светом (dragonpet.js)
   skeletonLights(L, x0, y0, x1, y1);
   ghostLights(L, x0, y0, x1, y1);
   for (const b of Game.buildings) {
@@ -1267,7 +1272,7 @@ function drawLog(c, x, y) {
 // Фонарь в руке, «?» над потерявшимся, «!» у паникующего
 function drawNightUnit(c, u, px, py, face, view, lying) {
   const n = nightAmt();
-  if (u.lantern && n > 0.05 && !lying && u.anim !== 'fly') {
+  if (lanternLit(u) && !lying && u.anim !== 'fly') {
     const side = view === 'E' ? face : 1;
     const sw = Math.sin(u.walkPhase * 0.9) * 0.8;
     const lx = Math.round(px + side * 6.5 + sw), ly = py - 11;

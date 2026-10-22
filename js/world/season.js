@@ -123,22 +123,110 @@ function seaFoodInfo() {
   const have = Math.round(ready + (canBake ? grain * 3 : 0) + pigs * 3);
   return { need, have, ready, grain, ppl };
 }
+// ---------- Дрова: зимой здания с печью топятся брёвнами ----------
+// Раз в WINTER_BURN_EVERY секунд (дом выше уровнем — реже) здание берёт 1 бревно с ближайшего склада и держит тепло до следующего раза.
+// Нет бревна — b.cold: дым гаснет, на стенах иней; жильцы хуже спят и простывают (house.js, sickness.js, mood.js), мастерская работает медленнее (jobs.js).
+// Склад списывает сервер (тот, кто считает игру); клиент получает b.cold вместе со зданием, а счётчик дров — в зеркале сезона.
+
+const seaHeating = () => seaIdx() === 2 && SEA().fixed == null;     // топят только в обычную зиму
+const seaHeated = b => !!b && b.state === 'done' && !b.removed && WINTER_HEATED.includes(b.type);
+function seaHeatEvery(b) { return WINTER_BURN_EVERY * (b.type === 'house' ? WINTER_INSULATION[Math.max(1, Math.min(3, b.level || 1)) - 1] : 1); }
+function seaWoodStock() { let n = 0; for (const s of seaStoreYards()) n += Math.max(0, (s.stock.trunk || 0) - ((s.reserved && s.reserved.trunk) || 0)); return n; }
+// сколько брёвен нужно на оставшуюся зиму (или на целую, пока она не началась) и сколько лежит на складах
+function seaWoodInfo() {
+  const S = SEA(), left = seaIdx() === 2 ? 1 - seaProgress() : 1;
+  let need = 0, n = 0, cold = 0;
+  for (const b of Game.buildings) if (seaHeated(b)) { n++; if (b.cold) cold++; need += Math.ceil(S.len * CYCLE * left / seaHeatEvery(b)); }
+  return { need, have: seaWoodStock(), n, cold };
+}
+// брёвен мало, а зима близко или уже идёт: лесорубы получают рабочих первыми и рубят быстрее
+function seaWoodRush() {
+  const S = SEA(), i = seaIdx();
+  if (S.fixed != null || !(i === 1 || i === 2 || (i === 0 && seaDaysToWinter() <= 2))) return false;
+  if (S.rushT != null && Math.abs(Game.time - S.rushT) < 5) return S.rush;
+  const w = seaWoodInfo();
+  S.rushT = Game.time; S.rush = w.n > 0 && w.have < w.need * 1.3;
+  return S.rush;
+}
+// сколько брёвен на каждом складе держим про запас на печи: осенью, зимой и за двое суток до осени; берут только печи (seaTakeWood)
+function seaWoodHold() {
+  const S = SEA(), i = seaIdx();
+  if (S.fixed != null || !(i === 1 || i === 2 || (i === 0 && seaDaysToWinter() <= 2))) return 0;
+  if (S.holdWT != null && Math.abs(Game.time - S.holdWT) < 5) return S.holdW;
+  const st = seaStoreYards().length, w = seaWoodInfo();
+  S.holdWT = Game.time; S.holdW = st && w.n ? Math.ceil(w.need * 0.8 / st) : 0; S.holdLow = !!(st && w.n && w.have < w.need);
+  return S.holdW;
+}
+const seaWoodLow = () => seaWoodHold() > 0 && !!SEA().holdLow;
+const seaRush = d => (d && d.type === 'woodcutter' && seaWoodRush()) ? 1 : 0;
+function seaTakeWood(b) {
+  let best = null, bd = 1e9;
+  for (const s of seaStoreYards()) {
+    if ((s.stock.trunk || 0) - ((s.reserved && s.reserved.trunk) || 0) < 1) continue;
+    const d = Math.hypot(s.doorX - b.doorX, s.doorY - b.doorY);
+    if (d < bd) { bd = d; best = s; }
+  }
+  if (!best) {                      // склады пусты — печь берёт бревно прямо у дома лесоруба рядом
+    for (const s of Game.buildings) {
+      if (s.type !== 'woodcutter' || s.state !== 'done' || s.removed || (s.stock.trunk || 0) - ((s.reserved && s.reserved.trunk) || 0) < 1) continue;
+      const d = Math.hypot(s.doorX - b.doorX, s.doorY - b.doorY);
+      if (d < bd && d < 40) { bd = d; best = s; }
+    }
+  }
+  if (!best) return false;
+  best.stock.trunk--;
+  return true;
+}
+function seaHeatTick(now) {
+  const S = SEA();
+  let froze = 0;
+  for (const b of Game.buildings) {
+    if (!seaHeated(b)) { if (b.cold) b.cold = false; continue; }
+    if (b.burnAt == null) { b.burnAt = now + (b.id * 37) % 40; b.warmUntil = b.burnAt; }   // начало зимы: печи затапливают не все разом
+    if (now >= b.burnAt) {
+      if (seaTakeWood(b)) {
+        const e = seaHeatEvery(b);
+        b.warmUntil = now + e * 1.02; b.burnAt = now + e;
+        S.burned = (S.burned || 0) + 1;
+        if (b.cold) { b.cold = false; floater(b.doorX + 0.5, b.doorY - 1, 'Затопили!', '#ffcf8a'); }
+      } else b.burnAt = now + 15;       // на складах пусто — пробуем снова, пока не подвезут
+    }
+    const cold = now > b.warmUntil;
+    if (cold !== !!b.cold) {
+      b.cold = cold;
+      if (cold) { froze++; floater(b.doorX + 0.5, b.doorY - 1, 'Нет дров — холодно!', '#9ad4ff'); }
+    }
+  }
+  if (froze && now - (S.coldAt || -999) > 120) {
+    S.coldAt = now;
+    const w = seaWoodInfo();
+    toast(`Нет дров: мёрзнет зданий — ${w.cold}. Брёвен на складах: ${w.have}. Поставь дом лесоруба и вези брёвна на склад!`, Game.buildings.find(b => b.cold) || null);
+    logEvent('weather', `Зима: без дров мёрзнет зданий — ${w.cold}`);
+  }
+}
+function seaHeatClear() { for (const b of Game.buildings) { b.cold = false; b.burnAt = null; b.warmUntil = 0; } }
+
 // куда вести игрока по нажатию: свинарник (сено), ферма, склад
 function seaHayPlace() { return seaPigYards()[0] || Game.buildings.find(b => b.type === 'farm' && b.state === 'done') || seaStoreYards()[0] || null; }
 
 function seaAutumnWarn(first) {
-  const S = SEA(), h = seaHayInfo(), f = seaFoodInfo(), d = seaDaysToWinter();
+  const S = SEA(), h = seaHayInfo(), f = seaFoodInfo(), w = seaWoodInfo(), d = seaDaysToWinter();
   if (S.warnDay === seaDay()) return;
   S.warnDay = seaDay();
   const when = d <= 1 ? 'Зима уже на пороге' : `До зимы ${d} суток`;
   const farms = Game.buildings.some(b => b.type === 'farm' && b.state === 'done');
+  const lackW = w.n > 0 && w.have < w.need;
   if (first) {
     toast(`Осень! Пора делать заготовки: зимой ничего не растёт. Сено ${h.have}/${h.need || '—'}, еда ${f.have}/${f.need} обедов.` + (farms ? '' : ' Построй ферму и заложи поля пшеницы!'), seaHayPlace());
     logEvent('weather', 'Наступила осень: пора заготавливать сено и зерно на зиму');
-  } else if (d <= 2 && (h.pigs > h.have || f.need > f.have)) {
+    if (w.n) logEvent('weather', `Запасите дров: зимой печи съедят ≈${w.need} брёвен, на складах ${w.have}`);
+  } else if (d <= 2 && (h.pigs > h.have || f.need > f.have || lackW)) {
     // каждый день не напоминаем — висит закреплённая подсказка вверху (pins.js); тост — за двое и за сутки до зимы
-    const miss = [h.pigs > h.have ? `сена ${h.have} из ${h.pigs}` : '', f.need > f.have ? `еды ${f.have} из ${f.need} обедов` : ''].filter(Boolean).join(', ');
-    toast(`${when}: ${miss}. Больше полей пшеницы у ферм — и зерно, и солома на сено`, seaHayPlace());
+    const miss = [h.pigs > h.have ? `сена ${h.have} из ${h.pigs}` : '', f.need > f.have ? `еды ${f.have} из ${f.need} обедов` : '', lackW ? `дров ${w.have} из ${w.need}` : ''].filter(Boolean).join(', ');
+    toast(`${when}: ${miss}. Больше полей пшеницы у ферм и больше брёвен на склад — печи зимой не потушишь`, seaHayPlace());
+  } else if (d > 2 && lackW) {
+    toast(`Запасите дров: до зимы ${d} суток, брёвен на складах ${w.have} из ${w.need}. Зимой печи в домах, пекарне и кузнице топят брёвнами`, seaStoreYards()[0] || null);
+    logEvent('weather', `Запасите дров: на складах ${w.have} из ${w.need} брёвен`);
   } else if (d <= 1 && h.need) toast(`${when}. Запасов хватает — можно зимовать.`);
 }
 
@@ -160,7 +248,11 @@ function seaChange(from, to) {
     seaWildToVillage(true);
     const h = seaHayInfo();
     if (h.need > h.have) toast(`Сена маловато: ${h.have} из ${h.need}. Скот может голодать!`);
+    seaHeatClear(); S.burned = 0; S.coldAt = -999; S.rushT = null;
+    const w = seaWoodInfo();
+    if (w.n) toast(`Печи затоплены: греются здания (${w.n}). Дров на складах ${w.have}, до весны нужно ≈${w.need}`);
   }
+  if (from === 2) seaHeatClear();
   if (to === 3) { seaMelt(); seaWildToVillage(false); seaRestoreWild(); }
 }
 
@@ -321,6 +413,7 @@ function seaTick(dt) {
     }
   }
   if (idx === 2) {
+    if (S.fixed == null) seaHeatTick(Game.time);       // на картах с вечной зимой печи не считаем
     if (Game.time >= S.feedAt) { S.feedAt = Game.time + SEA_FEED_PERIOD; seaFeedRound(); }
     if (S.frostYr !== seaYear() && S.snow > 0.55 && Game.time > 60) seaSpawnFrost();
     seaFrostAggro();
@@ -380,13 +473,13 @@ function seaTick(dt) {
 function seaMirrorOut() {
   const S = SEA();
   return { off: S.off, len: S.len, snow: +S.snow.toFixed(3), ice: +S.ice.toFixed(3), fall: +S.fall.toFixed(2), fallTgt: S.fallTgt, idx: S.idx, fixed: S.fixed,
-    h: seaHayInfo() };
+    h: seaHayInfo(), w: seaWoodInfo() };
 }
 function seaMirrorIn(m) {
   if (!m) return;
   const S = SEA();
   const prev = S.idx;
   S.off = m.off; S.len = m.len; S.snow = m.snow; S.ice = m.ice; S.fall = m.fall; S.fallTgt = m.fallTgt; S.idx = m.idx; S.fixed = m.fixed;
-  S.hay = m.h;
+  S.hay = m.h; S.wood = m.w;
   if (prev !== S.idx) { S.chg = Game.time; }
 }

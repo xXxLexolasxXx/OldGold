@@ -114,8 +114,6 @@ I18N.add('en', {
   // сезоны и лёд (js/world/snow.js, frostart.js)
   "· день {0} из {1}": "· day {0} of {1}", "{0}: день {1} из {2}.{3}": "{0}: day {1} of {2}.{3}", "Смена сезона через {0} сут.": "Season changes in {0} days.",
   "Всё растёт. Осенью пора делать заготовки.": "Everything grows. Time to stock up in autumn.",
-  "Осень: заготовь сено и зерно, зимой ничего не растёт.": "Autumn: stock up on hay and grain, nothing grows in winter.",
-  "Зима: снег, лёд, ничего не растёт; свиньи и звери едят сено.": "Winter: snow, ice, nothing grows; pigs and beasts eat hay.",
   "Весна: снег тает, всё оживает.": "Spring: snow melts, everything comes alive.",
   "Сено: {0} из ~{1} нужных.": "Hay: {0} of ~{1} needed.",
   "Ледяной элементаль": "Ice Elemental", "Ледяной шпиль": "Ice Spire", "Хруст-хруст!": "Crunch-crunch!", "Зима не любит гостей!": "Winter doesn’t like guests!",

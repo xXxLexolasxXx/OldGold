@@ -31,7 +31,8 @@ const sim = S.newSim(7);
 const h = sim.h;
 h.run('Game.noGrace = true');
 S.runFor(sim, 120, 10, k => { if (k % 3 === 0) S.botTurn(sim); });
-ok(h.run("Object.values(TV_EMO).every(E => E.rows.length === 13 && E.rows.every(r => r.length === 13) && E.rows.join('').includes('b'))"), 'смайлики путников — не лица 13×13 с бородой');
+ok(h.run("Object.values(TV_EMO).every(E => E.ring && E.glyph) && typeof wildSprite === 'function'"), 'лица над путниками: портрет гнома + значок настроения');
+ok(h.run("['pilgrim','thief','brigand','mason','wt:copper','chief:moss','chief:grey!','folk:sand:4','folk:copper:2!'].every(k => { const D = wildDesc(k); return D && D.id === k && D.head && D.coat; })"), 'описания диких гномов не строятся');
 h.run('for (const s of Game.buildings) if (s.isStore()) { for (const g of ["gold","bread","beer","sausage","timber","stone","iron","hide"]) s.stock[g] = (s.stock[g]||0) + 40; break; }');
 
 // 3. Окно у ворот, обмен, отношение

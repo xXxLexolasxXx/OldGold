@@ -24,13 +24,16 @@
 <link rel="stylesheet" href="css/dilemma.css">
 <link rel="stylesheet" href="css/chronicle.css">
 <link rel="stylesheet" href="css/lore.css">
+<link rel="stylesheet" href="css/campaign.css">
 <link rel="stylesheet" href="css/daily.css">
 <link rel="stylesheet" href="css/mapedit.css">
 <link rel="stylesheet" href="css/council.css">
 <link rel="stylesheet" href="css/landscape.css">
+<link rel="stylesheet" href="css/legible.css">
 <link rel="stylesheet" href="css/reveal.css">
+<link rel="stylesheet" href="css/uilayers.css">
 </head>
-<body>
+<body class="ui-loading">
 <div id="app">
   <aside id="panel">
     <button id="sheet-close" class="m-only">▾ Свернуть</button>
@@ -70,8 +73,10 @@
           <button data-menu="save"><img data-icon="save" alt="">Сохранить <kbd>Ctrl+S</kbd></button>
           <button data-menu="load"><img data-icon="load" alt="">Загрузить <kbd>F9</kbd></button>
           <button data-menu="loadauto"><img data-icon="load" alt="">Автосохранение</button>
+          <button data-savefile="open"><img data-icon="save" alt="">Файл сохранения</button>
           <button data-menu="tutorial"><img data-icon="play" alt="">Обучение (по шагам)</button>
           <button data-menu="lang"><img data-icon="scroll" alt=""><span class="lang-name">English</span></button>
+          <button data-pc="open"><img data-icon="menu" alt="">Управление <kbd>F1</kbd></button>
           <button data-guide="open"><img data-icon="scroll" alt="">Справка <kbd>H</kbd></button>
           <button data-chron="open"><img data-icon="log" alt="">Летопись <kbd>L</kbd></button>
           <button data-photo="open"><img data-icon="scroll" alt="">Фото-режим <kbd>K</kbd></button>
@@ -85,7 +90,7 @@
           <div><kbd>P</kbd> пауза здания, <kbd>B</kbd> закрыть/открыть доставки, <kbd>[</kbd> <kbd>]</kbd> соседнее здание</div>
           <div><kbd>T</kbd> повернуть здание: вход на юг, восток или запад</div>
           <div><kbd>Shift</kbd>+клик — строить несколько</div>
-          <div><kbd>Пробел</kbd> пауза игры</div>
+          <div><kbd>Пробел</kbd> пауза игры, <kbd>F1</kbd> окно «Управление» (клавиши можно переназначить)</div>
           <div>Масштаб: колесо мыши, <kbd>+</kbd> <kbd>−</kbd> или кнопки вверху</div>
         </div>
       </section>
@@ -112,10 +117,9 @@
       <span id="clock">00:00</span>
       <span class="dd" id="dd-speed"><button class="dd-t" id="speed-cur" title="Скорость игры">×1</button><div class="dd-menu">
         <button data-speed="0" title="Пауза: можно планировать — дороги, здания, поля, снос (Пробел)">❚❚</button>
-        <button data-speed="0.5" title="Медленно (Shift+1)">×0,5</button>
-        <button data-speed="1" class="active" title="Обычная (Shift+2)">×1</button>
-        <button data-speed="2" title="Быстро (Shift+3)">×2</button>
-        <button data-speed="3" title="Очень быстро (Shift+4)">×3</button>
+        <button data-speed="1" class="active" title="Обычная (Shift+1)">×1</button>
+        <button data-speed="2" title="Быстро (Shift+2)">×2</button>
+        <button data-speed="3" title="Очень быстро (Shift+3)">×3</button>
       </div></span>
     </div>
     <div id="toasts"></div>
@@ -123,7 +127,7 @@
     <div id="mtool" class="hidden">
       <span id="mtool-text"></span>
       <button id="mtool-ok" title="Поставить">✓</button>
-      <button id="mtool-rot" title="Повернуть">↻</button>
+      <button id="mtool-rot" title="Повернуть вход здания">↻ Вход</button>
       <button id="mtool-x" title="Отмена">✕</button>
     </div>
     <div id="help" class="hidden">
@@ -142,7 +146,7 @@
         <li>Магия: <b>шахта маг. камней</b> под скалой с кристаллами → <b>магический круг</b> (камни → мана + обычный камень) → <b>магическая мастерская</b>: посохи и мантии.</li>
         <li>Железо: <b>железный рудник</b> под скалой → <b>плавильня металла</b> (руда + брёвна → слитки) → <b>оружейная</b> (мечи, луки, кинжалы) и <b>мастерская доспехов</b> (железный доспех). Герой берёт снаряжение кликом по мастерской.</li>
         <li><b>Гильдии</b> воинов, лучников, разбойников и магов: глава гильдии учит героя классу (клик героем по гильдии) и набирает рекрутов из трудяг. Клик по рекруту — выбрать, по земле — пост, по врагу — атака. Атака героя — <kbd>Q</kbd>.</li>
-        <li><b>Пауза</b> — <kbd>Пробел</kbd>; скорость ×0,5 / ×1 / ×2 / ×3 — <kbd>Shift+1…4</kbd> или кнопка времени справа сверху. На паузе можно ставить дороги, здания, поля и сносить, а гномы начнут работать, когда снимете паузу. Вкладка <b>«Приоритеты»</b> решает, чем гномы заняты в первую очередь (еда, стройка, дрова, оборона, профессии) и что отключить.</li>
+        <li><b>Пауза</b> — <kbd>Пробел</kbd>; скорость ×1 / ×2 / ×3 — <kbd>Shift+1…3</kbd> или кнопка времени справа сверху. На паузе можно ставить дороги, здания, поля и сносить, а гномы начнут работать, когда снимете паузу. Вкладка <b>«Приоритеты»</b> решает, чем гномы заняты в первую очередь (еда, стройка, дрова, оборона, профессии) и что отключить.</li>
         <li>Значки над зданиями подсказывают, чего не хватает. Вкладка «Хозяйство» собирает все проблемы в один список, чтобы вам было удобнее расстраиваться.</li>
       </ul>
       <button id="help-close">Понятно</button>
@@ -154,6 +158,7 @@
 <script src="js/telemetry.js"></script>
 <script src="js/world/fire.js"></script>
 <script src="js/loading.js"></script>
+<script src="js/uilayers.js"></script>
 <script src="js/sound/mute.js"></script>
 <script src="js/config.js"></script>
 <script src="js/difficulty.js"></script>
@@ -190,7 +195,8 @@
 <script src="js/pixelstyle.js"></script>
 <script src="js/smoking.js"></script>
 <script src="js/icons.js"></script>
-<script src="js/people.js"></script>
+<script src="js/people.js"></script><script src="js/world/skelart.js"></script>
+<script src="js/world/wildart.js"></script>
 <script src="js/world/creatures.js"></script>
 <script src="js/world/groundstyle.js"></script><script src="js/world/groundsets.js"></script><script src="js/world/nightground.js"></script><script src="js/world/gargoyle.js"></script><script src="js/world/terrain.js"></script>
 <script src="js/render.js"></script>
@@ -232,6 +238,7 @@
 <script src="js/heromana.js"></script>
 <script src="js/combat.js"></script>
 <script src="js/world/neutralart2.js"></script>
+<script src="js/world/goblinart.js"></script>
 <script src="js/world/neutrals2.js"></script>
 <script src="js/world/frogart.js"></script>
 <script src="js/world/frogart2.js"></script>
@@ -246,6 +253,7 @@
 <script src="js/workers.js"></script>
 <script src="js/dilemma.js"></script>
 <script src="js/startmenu.js"></script>
+<script src="js/savefile.js"></script>
 <script src="js/mapeditui.js"></script>
 <script src="js/perf.js"></script>
 <script src="js/profile.js"></script>
@@ -270,6 +278,7 @@
 <script src="js/council.js"></script>
 <script src="js/laws.js"></script>
 <script src="js/sickness.js"></script>
+<script src="js/world/dragonpet.js"></script>
 <script src="js/world/frogs.js"></script>
 <script src="js/research.js"></script>
 <script src="js/family.js"></script>
@@ -283,6 +292,8 @@
 <script src="js/world/spire.js"></script>
 <script src="js/world/guards.js"></script>
 <script src="js/world/ascent.js"></script>
+<script src="js/world/spirelive.js"></script>
+<script src="js/world/echoart.js"></script>
 <script src="js/world/traitor.js"></script>
 <script src="js/world/travelers.js"></script>
 <script src="js/world/wildgnomes.js"></script>
@@ -314,8 +325,19 @@
 <script src="js/unions.js"></script>
 <script src="js/lore.js"></script>
 <script src="js/menugroups.js"></script>
+<script src="js/world/disasters.js"></script>
+<script src="js/world/wildfire.js"></script>
 <script src="js/reveal.js"></script>
 <script src="js/house.js"></script>
+<script src="js/campaign.js"></script>
+<script src="js/campaign/cavern.js"></script>
+<script src="js/campaign/art.js"></script>
+<script src="js/campaign/act1.js"></script>
+<script src="js/campaign/act2.js"></script>
+<script src="js/campaign/act3.js"></script>
+<script src="js/campaign/act4.js"></script>
+<script src="js/campaign/act5.js"></script>
+<script src="js/pccontrols.js"></script>
 <script data-goatcounter="https://lexolas.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

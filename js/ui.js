@@ -245,7 +245,7 @@ function setTool(tool) {
 
 function setSpeed(s) {
   Game.paused = s === 0;
-  if (s) Game.speed = SPEEDS.includes(s) ? s : 1;      // 0,5 / 1 / 2 / 3 (старое ×4 из сохранений и скриптов — обычная скорость)
+  if (s) Game.speed = SPEEDS.includes(s) ? s : 1;      // 1 / 2 / 3 (старые ×0,5 и ×4 из сохранений и скриптов — обычная скорость)
   tempoShow();
 }
 
@@ -725,8 +725,8 @@ function infoBuilding(b) {
     h += `</div><div class="irow">Работяга: ${U.builder ? '<span class="good">строит</span>' : '<span class="warn">нет свободного</span>'}</div>`;
     h += `<button class="upg no" data-act="upgcancel" title="Отменить достройку: материалы пропадут, работяги вздохнут с облегчением"><span><b>Отменить достройку</b><small>уже внесённые материалы пропадут</small></span></button>`;
   } else if (canUpgrade(b)) {
-    const nl = nextLevelOf(b), up = nl === 3 ? b.def.up3 : b.def.up;
-    const cost = Object.keys(up.cost).map(g => `${gi(g)}${up.cost[g]}`).join(' ');
+    const nl = nextLevelOf(b), up = (nl === 3 ? b.def.up3 : b.def.up) || b.def.up || b.def.up3 || { cost: {} };
+    const cost = Object.keys(up.cost || {}).map(g => `${gi(g)}${up.cost[g]}`).join(' ');
     h += `<button class="upg" data-act="upgrade" title="Работяги надстроят здание: материалы привезут трудяги. Когда-нибудь. Если дорога есть"><span><b>Достроить до уровня ${nl}: ${cost}</b><small>${nl === 3 && BUILDINGS[b.type].desc3 || BUILDINGS[b.type].desc2}</small></span></button>`;
   }
   if (b.state !== 'done') {

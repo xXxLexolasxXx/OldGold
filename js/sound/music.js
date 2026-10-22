@@ -313,9 +313,9 @@ const TRACKS = [
     range: [62, 86],
   },
   {
-    // Три эльфийских трека — светлая деревня на опушке: воздушная флейта, арфа, женский хор, струнный пад, колокольчики.
+    // Три фентезийных трека — светлая деревня на опушке: воздушная флейта, арфа, женский хор, струнный пад, колокольчики.
     // «Лунный лес» — ми дорийский, тянущийся хор и тихая лунная флейта.
-    name: 'Лунный лес', elf: true, menu: true, eighth: 0.34, swing: 0, bars: 32, voiceFrom: 8, seed: 2101, lead: 'lowflute', level: 1.05,
+    name: 'Лунный лес', fantasy: true, menu: true, eighth: 0.34, swing: 0, bars: 32, voiceFrom: 8, seed: 2101, lead: 'lowflute', level: 1.05,
     scale: [52, 54, 55, 57, 59, 61, 62, 64, 66, 67, 69, 71, 73, 74, 76, 78],
     chords: {
       Em: { root: 40, tones: [52, 55, 59, 64, 67, 71, 76] }, D: { root: 38, tones: [50, 54, 57, 62, 66, 69, 74] },
@@ -328,7 +328,7 @@ const TRACKS = [
   },
   {
     // «Песнь листвы» — соль лидийский, лёгкий 6/8: бегущая арфа, свирель и калимба, одинокий сопрано.
-    name: 'Песнь листвы', elf: true, menu: true, eighth: 0.26, swing: 0, bars: 32, voiceFrom: 16, seed: 2202, lead: 'flute', level: 0.9,
+    name: 'Песнь листвы', fantasy: true, menu: true, eighth: 0.26, swing: 0, bars: 32, voiceFrom: 16, seed: 2202, lead: 'flute', level: 0.9,
     scale: [55, 57, 59, 61, 62, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79, 81],
     chords: {
       G: { root: 43, tones: [55, 59, 62, 67, 71, 74, 79] }, D: { root: 38, tones: [54, 57, 62, 66, 69, 74, 78] },
@@ -341,7 +341,7 @@ const TRACKS = [
   },
   {
     // «Серебряные чертоги» — ре дорийский, неспешный торжественный ход: хор в три голоса, струнный пад, далёкие колокола.
-    name: 'Серебряные чертоги', elf: true, eighth: 0.42, swing: 0, bars: 24, voiceFrom: 2, seed: 2303, lead: 'flute', level: 1.3,
+    name: 'Серебряные чертоги', fantasy: true, eighth: 0.42, swing: 0, bars: 24, voiceFrom: 2, seed: 2303, lead: 'flute', level: 1.3,
     scale: [50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77],
     chords: {
       Dm: { root: 38, tones: [50, 53, 57, 62, 65, 69, 74] }, C: { root: 36, tones: [48, 52, 55, 60, 64, 67, 72] },
@@ -919,7 +919,7 @@ function nearGraveyardView() {
 }
 function computeMood() {
   if (typeof Game === 'undefined' || !Game.units) return 'day';
-  if (menuOpen()) return 'day';                                   // на стартовом экране — эльфийская музыка, без боя и ночи
+  if (menuOpen()) return 'day';                                   // на стартовом экране — фентезийная музыка, без боя и ночи
   const now = performance.now() / 1000;                           // реальные секунды: не зависят от скорости игры
   let fight = false;
   for (const u of Game.units) if (!u.dead && (u.fighting || (u.brk && u.brk.kind === 'fight'))) { fight = true; break; }
@@ -1055,7 +1055,8 @@ function setMusic(on) {
   if (on) Music.nextTime = Math.max(Music.nextTime, Music.ctx.currentTime + 0.15);
 }
 
-function initMusic() {
+// сохранённые выключатели; читаются сразу при загрузке файла — кнопка-нота заставки с первого кадра в верном виде
+function musicLoadPrefs() {
   // на локальном сервере (вкладки разработки и тестов) музыка по умолчанию выключена — не жужжит фоном из всех вкладок
   const dev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   // в приложении на телефоне игра не перебивает чужую музыку (плеер в наушниках): пока игрок сам не включил — музыка выключена
@@ -1065,6 +1066,11 @@ function initMusic() {
     const v = localStorage.getItem('feod.menuMusic');
     Music.menuOn = new URLSearchParams(location.search).get('menumusic') === '1' ? true : v === null ? Music.on : v !== '0';
   } catch (e) { Music.menuOn = Music.on; }
+}
+if (typeof location !== 'undefined' && typeof localStorage !== 'undefined') try { musicLoadPrefs(); } catch (e) { /* без браузера */ }
+
+function initMusic() {
+  musicLoadPrefs();
   audioKickOnGesture(startMusic);
   try {
     if (audioPhoneApp() && !Music.on && localStorage.getItem('feod.music') === null && !localStorage.getItem('feod.musicHint')) {
