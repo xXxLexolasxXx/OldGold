@@ -18,4 +18,10 @@ I18N.add('en', {
   "Уровень {0} из {1}": "Level {0} of {1}",
   "выслуга {0} из {1}": "{0} of {1} served",
   "Ходит за камнем до {0} клеток от каменоломни": "Walks up to {0} tiles from the quarry for stone",
+  "(быстрее на {0}%)": "({0}% faster)",
+  "быстрее на": "faster by",
+  "(новичок)": "(novice)",
+  "Новая гильдия? Я с вами!": "A new guild? Count me in!",
+  "{0}: мест нет — заявки на наём сняты": "{0}: no free places — hiring requests withdrawn",
+  "{0}: мест нет, бывший рекрут вернулся в трудяги": "{0}: no free places, the former recruit went back to hauling",
 });
