@@ -59,6 +59,8 @@ const MD_WHY = {
   ill: 'Хворает',
   cured: 'Поправился!',
   rsc: 'Праздничный календарь',
+  decor: 'Красиво вокруг',
+  dist: ['Новый район по душе', 'Неуютно в новом районе'],
   wed: 'Свадьба!', wedg: 'Гуляли на свадьбе', baby: 'Пополнение в семье', grief: 'Горе в семье',
   base: 'Жить можно',
 };
@@ -137,17 +139,19 @@ const mdClamp = (v, a, b) => v < a ? a : v > b ? b : v;
 // Обстановка вокруг гнома одним проходом по клеткам: фонарь рядом, скамейка, костёр
 function mdSurround(u) {
   const cx = Math.floor(u.x), cy = Math.floor(u.y);
-  let lamp = false, bench = false;
+  let lamp = false, bench = false, beauty = 0;
+  const vb = typeof vdBeautyAt === 'function';
   for (let yy = cy - 5; yy <= cy + 5; yy++) for (let xx = cx - 5; xx <= cx + 5; xx++) {
     if (!inb(xx, yy)) continue;
     const o = World.obj[idx(xx, yy)];
     if (!o) continue;
     if (o.t === 'lamp' && !o.out && Math.hypot(xx - cx, yy - cy) <= 3.2) lamp = true;
     else if (o.t === 'bench') bench = true;
+    if (vb && o.by) beauty += vdBeautyAt(o);                      // декор от игроков (villdecor.js)
   }
   let fire = false;
   for (const b of Game.buildings) if (b.state === 'done' && !b.removed && (b.type === 'bonfire' || b.type === 'inn') && Math.hypot(b.x + b.w / 2 - u.x, b.y + b.h / 2 - u.y) < (b.type === 'bonfire' ? 8 : 5)) { fire = true; break; }
-  return { lamp, bench, fire };
+  return { lamp, bench, fire, beauty };
 }
 
 function mdThreat(u) {
@@ -224,6 +228,8 @@ function mdUpdate(u, now) {
   if (typeof lawMood === 'function') add('law', lawMood(night));     // указы деревни (laws.js)
   if (typeof sickMood === 'function') add('ill', sickMood(u));        // недуги и эпидемия (sickness.js)
   if (typeof resMood === 'function') add('rsc', resMood());           // открытия (research.js)
+  if (typeof vdMood === 'function' && sur.beauty) add('decor', vdMood(sur.beauty));   // красота: декор от игроков (villdecor.js)
+  if (typeof distMood === 'function') add('dist', distMood(u, night));  // новый район: свой минус (district.js)
 
   let tgt = 50;
   for (const r of R) tgt += r[1];
