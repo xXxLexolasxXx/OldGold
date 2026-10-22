@@ -41,6 +41,7 @@ app.whenReady().then(() => {
   ipcMain.on('og:cloudAll', e => { e.returnValue = steam.cloudAll(); });
   ipcMain.on('og:cloudPut', (e, k, d) => { e.returnValue = steam.cloudPut(k, d); });
   ipcMain.on('og:achievement', (e, id) => { steam.achievement(id); });
+  ipcMain.on('og:fullscreen', e => { const w = BrowserWindow.fromWebContents(e.sender); if (w) w.setFullScreen(!w.isFullScreen()); e.returnValue = w ? w.isFullScreen() : false; });
   createWindow();
   app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) createWindow(); });
 });
