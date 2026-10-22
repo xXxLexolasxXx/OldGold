@@ -1,0 +1,101 @@
+# Ночная проверка OldGold (расписание работает только для ветки по умолчанию — main).
+#   full    — полный tests/run.js (все проверки, два сида; по воскресеньям и по кнопке «long» — --long), упавшая повторяется один раз
+#   soak    — безголовая игра 1 игровой час на сиде 1 с ботом и сейв→загрузка каждые 15 минут
+#   deficit — «разумное» хозяйство 8 игровых суток на сиде 1: что заканчивается (таблица — в сводке)
+# Ничего не публикует и в репозиторий не пишет: только отчёты и артефакты.
+name: nightly
+on:
+  push:
+    branches: [ci-actions]   # ВРЕМЕННО: проверка ночного прогона до слияния; убрать перед слиянием
+  schedule:
+    - cron: '0 1 * * *'     # 04:00 МСК каждую ночь
+  workflow_dispatch:
+    inputs:
+      long:
+        description: 'Длинный прогон tests/run.js (--long, несколько игровых часов)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Полный tests/run.js
+        run: |
+          MODE=""
+          if [ "${{ inputs.long }}" = "true" ] || [ "$(date -u +%u)" = "7" ]; then MODE="--long"; fi
+          echo "Режим: ${MODE:-обычный}"
+          node tests/run.js $MODE --retry 1 --json report-full.json 2>&1 | tee log-full.txt
+      - name: Отчёт и лог
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-full
+          path: |
+            report-full.json
+            log-full.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: soak — сид 1, 1 игровой час
+        run: node tools/soak/run.js --seed 1 --secs 3600 --rt 900 --quiet 1 2>&1 | tee log-soak.txt
+      - name: Провал при ошибках шага или критичных проблемах
+        run: |
+          node -e '
+            const fs = require("fs"), r = JSON.parse(fs.readFileSync("tools/soak/out-1.json", "utf8"));
+            const crit = r.issues.filter(i => i.sev === "crit");
+            const lines = ["### soak, сид 1", "", `${r.secs} с игры за ${r.wall} с, шаг ${r.stepAvgMs} мс (max ${r.stepMaxMs}), ошибок шага ${r.stepErrors}, жителей ${r.units}, зданий ${r.buildings}, потерь ${r.lost}`, ""];
+            for (const i of r.issues.slice(0, 15)) lines.push(`- [${i.sev}] x${i.n} ${i.key}: ${String(i.text).slice(0, 200).replace(/\n/g, " ")}`);
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
+            if (r.stepErrors || crit.length) { console.error(`✗ ошибок шага ${r.stepErrors}, критичных проблем ${crit.length}`); process.exit(1); }'
+      - name: Отчёт и лог
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-soak
+          path: |
+            tools/soak/out-1.json
+            log-soak.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+  deficit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: deficit — сид 1, 8 игровых суток
+        run: node tools/soak/deficit.js --seed 1 --days 8 --tag -ci 2>&1 | tee log-deficit.txt
+      - name: Провал при ошибках симуляции
+        run: |
+          { echo "### deficit, сид 1"; echo; grep -E '^\|' log-deficit.txt || true; } >> "$GITHUB_STEP_SUMMARY"
+          node -e '
+            const r = JSON.parse(require("fs").readFileSync("tools/soak/deficit-1-ci.json", "utf8"));
+            if ((r.errors || []).length) { console.error("✗ ошибок симуляции: " + r.errors.length); process.exit(1); }'
+      - name: Отчёт и лог
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-deficit
+          path: |
+            tools/soak/deficit-1-ci.json
+            log-deficit.txt
+          if-no-files-found: ignore
+          retention-days: 30
