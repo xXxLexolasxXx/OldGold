@@ -18,7 +18,7 @@ function newSim(seed, opts = {}) {
   h.ctx.__rnd = rnd;
   h.run('Math.random = __rnd');
   // одиночная игра — с героем, как у игрока; кооп-сервер — без него (герои приходят с игроками)
-  h.run(`setupStart(${seed}); Game.heroAsk = false; if (${!!opts.coop} && typeof coopDropHeroes === "function") { coopDropHeroes(); coopInitUnlocks(); } for (const b of Game.buildings) b.hold = false; Game.unlocked = allUnlocked();`);
+  h.run(`setupStart(${seed}); Game.heroAsk = false; if (${!!opts.coop} && typeof coopDropHeroes === "function") { coopDropHeroes(); coopInitUnlocks(); } for (const b of Game.buildings) b.hold = false; Game.unlocked = allUnlocked(); if (Game.dz && !${!!opts.disasters}) Game.dz.freq = 0;`);   // стихийные бедствия (disasters.js) в сценарных тестах выключены: их проверяет disaster-test.js
   return { h, errors, seed, coop: !!opts.coop, rnd };
 }
 
@@ -89,7 +89,7 @@ const BOT = `(function () {
   bot.i++; bot.fails = 0;
   return 'построил ' + type;
 })()`;
-function botTurn(sim) { return sim.h.run(BOT.replace('__PLAN__', JSON.stringify(PLAN))); }
+function botTurn(sim, plan) { return sim.h.run(BOT.replace('__PLAN__', JSON.stringify(plan || PLAN))); }
 // Заложить одно здание с дорогой до сети склада, не дожидаясь других строек (для сценарных тестов)
 function botPlace(sim, type) {
   sim.h.run('Game.__bot = { i: 0, fails: 0 }');

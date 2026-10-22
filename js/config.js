@@ -55,10 +55,12 @@ const GOODS = {
   croissant:  { name: 'Круассаны',      color: '#d89a3c', group: 'Еда' },
   steak:      { name: 'Стейки',         color: '#a84a32', group: 'Еда' },
   darkbeer:   { name: 'Тёмное пиво',    color: '#5a3418', group: 'Еда' },
+  fish:       { name: 'Рыба',           color: '#8ab0c4', group: 'Еда' },              // рыбацкая хижина, крабы (МОРЕ.md)
+  pearl:      { name: 'Жемчуг',         color: '#e8e4f0', group: 'Ценности' },         // ракушки, кракен, рыбаки
 };
 const GOOD_KEYS = Object.keys(GOODS);
 const GOOD_GROUPS = ['Стройка', 'Еда', 'Ценности', 'Ремесло', 'Металл', 'Магия', 'Снаряжение', 'Хозяйство'];
-const FOODS = ['chickenleg', 'steak', 'croissant', 'sausage', 'bread'];   // что едят в трактире (по порядку предпочтения)
+const FOODS = ['chickenleg', 'steak', 'croissant', 'sausage', 'fish', 'bread'];   // что едят в трактире (по порядку предпочтения)
 
 const UNIT_TYPES = {
   serf:       { name: 'Трудяга',   shirt: '#8a5a3a' },
@@ -111,8 +113,8 @@ const BUILDINGS = {
     desc: 'Двухэтажная школа с колокольней. Обучает жителей за 1 золото.',
   },
   inn: {
-    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, wideDoor: true, inputs: { bread: 16, sausage: 16, beer: 10, chicken: 4, croissant: 12, steak: 12, darkbeer: 8 },
-    desc: 'Голодные жители едят здесь курицу, колбасу или хлеб и запивают пивом. Тушку курицы разделывают на 4 куска. Пьяный может уснуть прямо на дороге.',
+    name: 'Трактир', cat: 'Основа', w: 4, h: 3, top: 86, cost: { timber: 6, stone: 4 }, wideDoor: true, inputs: { bread: 16, sausage: 16, beer: 10, chicken: 4, croissant: 12, steak: 12, darkbeer: 8, fish: 12 },
+    desc: 'Голодные жители едят здесь всё, что есть в запасе — курицу, стейк, колбасу, круассаны, хлеб — и запивают пивом. Тушку курицы разделывают на 4 куска. Пьяный может уснуть прямо на дороге.',
   },
   bonfire: {
     name: 'Большой костёр', cat: 'Ресурсы', w: 3, h: 3, top: 78, rots: [0, 3], wideDoor: true, cost: { timber: 4, stone: 2 }, auto: true,
@@ -279,18 +281,21 @@ const BUILD_ORDER = Object.keys(BUILDINGS);
 const BUILD_CATS = ['Основа', 'Ресурсы', 'Еда', 'Ремесло', 'Магия', 'Гильдии'];
 
 // Постепенно открывающееся меню строительства. Стадия открывается, когда готово
-// всё из `after` (типы зданий) и достигнута веха `rank` цели (1 — «Деревня», 2 — «Город»), либо её открывает обучение. Школы в меню нет:
-// она появляется в обучении (noMenu).
+// всё из `after` (типы зданий), достигнута веха `rank` цели (1 — «Деревня», 2 — «Город») и пережито `night` ночей,
+// либо её открывает обучение. Школы в меню нет: она появляется в обучении (noMenu).
+// На старте — только дорога и «Ресурсы»: лесоруб, каменоломня, лесопилка, большой костёр. Хмель — только вместе с пивоварней.
 const UNLOCKS = [
-  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire', 'inn'] },
+  { id: 'res',   items: ['woodcutter', 'quarry', 'sawmill', 'bonfire'] },
   { id: 'grain', items: ['farm', 'mill', 'bakery', 'storehouse', 'tool:wheat'], after: ['woodcutter', 'quarry', 'sawmill'] },
   { id: 'hops',  items: ['hopfarm', 'brewery', 'tool:hops'], after: ['bakery'] },
+  { id: 'inn2',  items: ['inn'], after: ['brewery'] },   // стартовый трактир уже стоит; второй — когда пошло пиво
   { id: 'pigs',  items: ['swine', 'butchery'], after: ['brewery'] },
   { id: 'base',  items: ['goatpen', 'stable'], after: ['swine'] },
   { id: 'craft', items: ['tannery', 'armory'], after: ['butchery'] },
+  { id: 'arms',  items: ['weaponsmith'], after: ['armory'] },   // оружейная — следом за доспехами: лук без железа делается и так
   { id: 'metal', items: ['goldmine', 'metallurgist'], after: ['armory'], rank: 1 },
   { id: 'magic', items: ['crystalmine', 'magiccircle', 'magicworkshop'], after: ['goldmine', 'metallurgist'], rank: 1 },
-  { id: 'iron',  items: ['ironmine', 'smeltery', 'weaponsmith'], after: ['metallurgist'], rank: 1 },
+  { id: 'iron',  items: ['ironmine', 'smeltery'], after: ['metallurgist'], rank: 1 },
   { id: 'guilds', items: ['guild_warrior', 'guild_archer', 'guild_rogue', 'guild_mage'], after: ['weaponsmith'], rank: 1 },
 ];
 
@@ -359,7 +364,7 @@ const START_GRACE = {
     bear:     { day: 3 },                     // медведь, кабаны, ульи
     critters: { day: 2 },                     // мыши, кроты, барсуки, дятлы, белки, вороны
   },
-  firstGhosts: 1,       // сколько призраков выходит в самую первую ночь (дальше — как раньше)
+  firstGhosts: 2,       // сколько призраков выходит в самую первую ночь (дальше — как раньше)
   bump: 0.35,           // шанс столкновений с грузом в первые двое суток (доля обычного)
 };
 
@@ -386,7 +391,7 @@ function startOpen(id) {
 
 // стадия меню готова к открытию: достроено всё из after и достигнута веха
 function unlockReady(st) {
-  return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
+  return !!st.after && (!st.rank || startRank() >= st.rank || !START_GRACE.on) && (!st.night || startNights() >= st.night) && st.after.every(t => Game.buildings.some(b => b.type === t && b.state === 'done'));
 }
 
 // ---------- Запас прочности снаряжения (js/durability.js) ----------

@@ -47,7 +47,8 @@ let t = 0;
 while (t < 60 && h.run('!!__b.injury')) { S.runFor(sim, 5, 5); t += 5; }
 console.log(`раненый ${h.run('__b.type')}: вылечен за ${t} с (${h.run('__b.healedBy')})`);
 ok(!h.run('__b.injury'), 'раненый не вылечился у лекаря за 60 с (сам заживает за 150)');
-ok(h.run('__b.healedBy') === 'ward', 'вылечился не в лазарете: ' + h.run('__b.healedBy'));
+// занятого нельзя оторвать от дела: к нему через CALL с выходит лекарь (injTick) — тоже верный исход, зависит от того, чем занят житель
+ok(['ward', 'doc'].includes(h.run('__b.healedBy')), 'вылечился не у лекаря и не в лазарете: ' + h.run('__b.healedBy'));
 
 // 3. Не может дойти — лекарь выходит к нему сам
 h.run(`__a.carry = null; injure(__a, 'arm'); __a.injTry = Game.time + 1e6;`);
@@ -57,6 +58,21 @@ while (t < 75 && h.run('!!__a.injury')) { S.runFor(sim, 3, 3); t += 3; doc = doc
 console.log(`не дошедший ${h.run('__a.type')}: лекарь ${doc ? 'вышел' : 'не вышел'}, вылечен за ${t} с (${h.run('__a.healedBy')})`);
 ok(doc, 'лекарь не вышел к раненому, который не может дойти');
 ok(!h.run('__a.injury') && h.run('__a.healedBy') === 'doc', 'лекарь не вылечил раненого на месте');
+
+// 3б. Средство для раны: перевязка раньше зелья (зелья — для хворей); «Совет» показывает раненых
+if (h.run('!!GOODS.bandage')) {
+  h.run('__ward.stock.bandage = 1; __ward.stock.potion = 1;');
+  ok(h.run('injTakeAid(__ward)') === 'bandage' && h.run('__ward.stock.potion') === 1, 'на рану ушло зелье, хотя есть перевязка');
+}
+h.run('__a.injury = null; injure(__a, "leg");');
+ok(/Раненых: <b>[1-9]/.test(h.run('medHTML()')), 'в «Совете» не видно раненых');
+
+// 3в. Травма переживает сохранение
+h.run('__a.injuryUntil = Game.time + 77; globalThis.__k = Game.units.indexOf(__a); globalThis.__sv = JSON.parse(JSON.stringify(serializeGame())); applySave(__sv);');
+const inj = JSON.parse(h.run('JSON.stringify([Game.units[__k].injury, Math.round(Game.units[__k].injuryUntil - Game.time)])'));
+ok(inj[0] === 'leg' && inj[1] >= 70 && inj[1] <= 77, 'травма не восстановилась из сохранения: ' + inj);
+h.run(`globalThis.__a = Game.units[__k]; globalThis.__ward = Game.buildings.find(b => b.type === 'infirmary'); globalThis.__doc = Game.units.find(u => u.type === 'healer'); skSay = t => __says.push(t);
+  for (const u of Game.units) if (u.injury) { u.injury = null; u.injuryUntil = 0; }`);
 
 // 4. Сводка: десять травм за минуту — не больше одной всплывашки, с причиной
 h.run(`__says.length = 0; for (const b of Game.buildings) if (b.type === 'infirmary') b.worker = null;

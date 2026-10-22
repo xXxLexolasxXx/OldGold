@@ -86,6 +86,24 @@ ProtectSystem=strict
 ReadWritePaths=$DATA
 ProtectHome=true
 PrivateTmp=true
+# песочница службы (СЕРВЕР_БЕЗОПАСНОСТЬ.md): без привилегий, устройств, модулей ядра и лишних сетевых семейств
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+UMask=0077
+LimitNOFILE=4096
 
 [Install]
 WantedBy=multi-user.target

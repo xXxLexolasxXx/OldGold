@@ -83,11 +83,21 @@ function nqAlarm() { try { return typeof festThreat === 'function' && festThreat
 
 // ---------- Журнал ----------
 
-function nqJournal(text, kind, n = 1, seen = false) {
-  const last = Notify.log[Notify.log.length - 1];
-  if (last && last.text === text) { last.n += n; last.at = Date.now(); if (!seen && last.seen) { last.seen = false; Notify.unread++; } }
-  else {
-    Notify.log.push({ at: Date.now(), text, kind, n, seen });
+// важное в журнале: тревоги, ночь, исход игры, закреплённые подсказки (pins.js)
+const nqImp = (text, kind) => kind === 'imp' || kind === 'night' || kind === 'pin' || NQ_URGENT.test(text);
+// повторы склеиваются, даже если между ними были другие записи и числа в тексте другие («Пало 2» и «Пало 3»)
+const nqKey = text => String(text).replace(/\d+/g, '#');
+function nqJournal(text, kind, n = 1, seen = false, target = null) {
+  const key = nqKey(text), now = Date.now();
+  let same = -1;
+  for (let i = Notify.log.length - 1; i >= Math.max(0, Notify.log.length - 12); i--) if (Notify.log[i].key === key && now - Notify.log[i].at < 300000) { same = i; break; }
+  if (same >= 0) {
+    const last = Notify.log.splice(same, 1)[0];
+    Notify.log.push(last);
+    last.n += n; last.at = now; last.text = text; if (target) last.target = target;
+    if (!seen && last.seen) { last.seen = false; Notify.unread++; }
+  } else {
+    Notify.log.push({ at: now, text, key, kind, n, seen, target, imp: nqImp(text, kind) });
     if (!seen) Notify.unread++;
     if (Notify.log.length > 120) { const x = Notify.log.shift(); if (!x.seen) Notify.unread--; }
   }
@@ -120,14 +130,23 @@ function nqJournalOpen() {
   el = document.createElement('div');
   el.id = 'nq-journal';
   const esc = s => String(s).replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
-  const rows = Notify.log.slice().reverse().map(x =>
-    `<li class="${x.seen ? '' : 'new'} ${x.kind || ''}"><span>${esc(x.text)}${x.n > 1 ? ` <b>×${x.n}</b>` : ''}</span><i>${nqAgo(x.at)}</i></li>`).join('');
+  const f = Notify.jf || 'all', list = Notify.log.slice().reverse();
+  const shown = list.filter(x => f === 'all' || (f === 'imp') === !!x.imp);
+  const rows = shown.map(x => {
+    const go = x.target && !x.target.removed;
+    return `<li class="${x.seen ? '' : 'new'} ${x.kind || ''}${x.imp ? ' imp' : ''}${go ? ' go' : ''}" data-i="${Notify.log.indexOf(x)}"><span>${x.imp ? '❗ ' : ''}${esc(x.text)}${x.n > 1 ? ` <b>×${x.n}</b>` : ''}${go ? ' <u>▸ к месту</u>' : ''}</span><i>${nqAgo(x.at)}</i></li>`;
+  }).join('');
+  const nImp = list.filter(x => x.imp).length;
   el.innerHTML = `<div class="nq-head"><b>Журнал оповещений</b><button data-nq="close" title="Закрыть">✕</button></div>
     <div class="nq-mode">Режим: <button data-nq="mode">${nqFull() ? 'подробный' : 'спокойный'}</button></div>
-    ${rows ? `<ul>${rows}</ul>` : '<p>Пока тихо.</p>'}`;
+    <div class="nq-filt">${[['imp', `Важное (${nImp})`], ['all', 'Всё'], ['minor', 'Мелочи']].map(([k, t]) => `<button data-nq="f" data-f="${k}" class="${f === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+    ${rows ? `<ul>${rows}</ul>` : `<p>${f === 'imp' ? 'Ничего важного.' : 'Пока тихо.'}</p>`}`;
   el.addEventListener('click', e => {
+    const li = e.target.closest('li.go');
+    if (li) { const x = Notify.log[+li.dataset.i]; if (x && x.target && !x.target.removed && typeof focusBuilding === 'function') { el.remove(); focusBuilding(x.target); } return; }
     const b = e.target.closest('[data-nq]');
     if (!b) return;
+    if (b.dataset.nq === 'f') { Notify.jf = b.dataset.f; nqJournalOpen(); return; }
     if (b.dataset.nq === 'close') el.remove();
     if (b.dataset.nq === 'mode') { nqSetMode(nqFull() ? 'calm' : 'full'); b.textContent = nqFull() ? 'подробный' : 'спокойный'; }
   });
@@ -176,16 +195,16 @@ toast = function (text, target, kind) {
   const t = nqNow();
   // такой же уже висит — прибавляем счётчик
   const vis = nqLive().find(el => el.dataset.nq === text);
-  if (vis) { const n = +vis.dataset.n + 1; vis.dataset.n = n; vis.textContent = text + ' ×' + n; nqJournal(text, k, 1, true); return; }
+  if (vis) { const n = +vis.dataset.n + 1; vis.dataset.n = n; vis.textContent = text + ' ×' + n; nqJournal(text, k, 1, true, target); return; }
   const wait = Notify.q.find(x => x.text === text);
   if (wait) { wait.n++; return; }
   // ответ на действие игрока (нажал — и сразу «Сюда не пройти») показываем всегда
   const urgent = t - Notify.lastInput < 1500 || NQ_URGENT.test(text);
   if (!urgent) {
-    if (t < Notify.quietUntil || !Notify.entry || Notify.entry.step < 2) { Notify.held++; nqJournal(text, k); return; }   // вход ещё не начался (меню, мир не пришёл) — тоже ждём
-    if (!nqFull() && NQ_MINOR.test(text)) { nqJournal(text, k); return; }
-    if (!nqFull() && nqRareHold(text)) { nqJournal(text, k); return; }
-    if (nqAlarm() && k !== 'night' && k !== 'imp') { nqJournal(text, k); return; }
+    if (t < Notify.quietUntil || !Notify.entry || Notify.entry.step < 2) { Notify.held++; nqJournal(text, k, 1, false, target); return; }   // вход ещё не начался (меню, мир не пришёл) — тоже ждём
+    if (!nqFull() && NQ_MINOR.test(text)) { nqJournal(text, k, 1, false, target); return; }
+    if (!nqFull() && nqRareHold(text)) { nqJournal(text, k, 1, false, target); return; }
+    if (nqAlarm() && k !== 'night' && k !== 'imp') { nqJournal(text, k, 1, false, target); return; }
   }
   const item = { text, target, kind: k, at: t, n: 1, urgent };
   if (urgent) Notify.q.unshift(item); else Notify.q.push(item);
@@ -199,7 +218,7 @@ function nqPump() {
   const t = nqNow();
   // слишком долго ждали — в журнал, не показываем устаревшее
   Notify.q = Notify.q.filter(x => {
-    if (!x.urgent && t - x.at > 20000) { nqJournal(x.text, x.kind, x.n); return false; }
+    if (!x.urgent && t - x.at > 20000) { nqJournal(x.text, x.kind, x.n, false, x.target); return false; }
     return true;
   });
   const max = nqFull() ? 3 : 2;
@@ -211,9 +230,9 @@ function nqPump() {
     const x = Notify.q[0];
     if (!x.urgent && (!nqRateOk() || t < Notify.quietUntil || nqBusy() || nqEntering(t))) break;   // под открытым окном тосты не видны — ждут
     Notify.q.shift();
-    const el = nqShow(x.n > 1 ? x.text + ' ×' + x.n : x.text, x.kind, null, x.target);
+    const el = nqShow(x.n > 1 ? x.text + ' ×' + x.n : x.text, x.kind, x.onClick || null, x.target);
     if (el) { el.dataset.nq = x.text; el.dataset.n = x.n; }
-    nqJournal(x.text, x.kind, x.n, true);
+    nqJournal(x.text, x.kind, x.n, true, x.target);
     live++;
   }
   nqAchPump();
@@ -255,6 +274,14 @@ Notify.modal = function (id, show, prio = 5) {
 Notify.busy = nqBusy;
 Notify.toast = (text, kind) => toast(text, null, kind);
 Notify.journal = nqJournalOpen;
+Notify.note = (text, kind, target) => nqJournal(text, kind, 1, false, target);
+// совет с действием по нажатию (профсоюзы, unions.js): ждёт в общей очереди, как обычный тост, но мимо фильтров мелочи
+Notify.offer = function (text, onClick, kind) {
+  text = String(text || '');
+  if (!text || Notify.q.some(x => x.text === text)) return;
+  Notify.q.push({ text, target: null, kind: kind || 'imp', at: nqNow(), n: 1, urgent: false, onClick });
+  nqPump();
+};
 
 function nqModalPump() {
   if (!Notify.modals.length || nqBusy()) return;
@@ -301,7 +328,7 @@ const nqNewsRaw = typeof whatsNewShow === 'function' ? whatsNewShow : null;
 const nqSeenVersion = () => { try { return localStorage.getItem('oldgold.seenVersion'); } catch (e) { return null; } };
 if (nqNewsRaw) {
   // автопоказ при загрузке отменяем — он станет шагом 3 входа; ?whatsnew=1 и пункт меню показывают сразу и целиком
-  whatsNewShow = function (force) { if (force) nqNewsRaw(true); else Notify.want.news = true; };
+  whatsNewShow = function (force) { if (force) nqNewsRaw(force); else Notify.want.news = true; };
 }
 
 function nqNewsShort() {
@@ -317,15 +344,17 @@ function nqNewsShort() {
   if (!el) return false;
   el.classList.add('nq-short');
   const box = el.querySelector('.wn-box');
-  const lis = [...box.querySelectorAll('li')];
+  const cur = box.querySelector('.wn-cur');
+  const lis = [...cur.querySelectorAll('li')];
   lis.forEach((li, i) => { if (i >= 3) li.classList.add('nq-more'); });
-  box.querySelectorAll('.wn-v').forEach((v, i) => { if (i) v.classList.add('nq-more'); });
-  box.querySelectorAll('ul').forEach(ul => { if (!ul.querySelector('li:not(.nq-more)')) { ul.classList.add('nq-more'); const h = ul.previousElementSibling; if (h && h.tagName === 'H3') h.classList.add('nq-more'); } });
-  const btn = box.querySelector('button');
+  cur.querySelectorAll('ul').forEach(ul => { if (!ul.querySelector('li:not(.nq-more)')) { ul.classList.add('nq-more'); const h = ul.previousElementSibling; if (h && h.tagName === 'H3') h.classList.add('nq-more'); } });
+  const btn = box.querySelector('.wn-ok');
   btn.textContent = 'Дальше';
-  if (lis.length > 3) {
+  // «Подробнее»: раскрывает всю запись и пропущенные версии (свёрнутые по одной), внизу — «Все обновления»
+  const miss = box.querySelectorAll('.wn-miss details').length;
+  if (lis.length > 3 || miss) {
     const more = document.createElement('a');
-    more.className = 'nq-all'; more.href = '#'; more.textContent = `Весь журнал изменений (${lis.length}) ▸`;
+    more.className = 'nq-all'; more.href = '#'; more.textContent = t(miss ? 'Подробнее и пропущенные версии ({0}) ▸' : 'Подробнее ▸', miss);
     more.onclick = e => { e.preventDefault(); el.classList.remove('nq-short'); more.remove(); };
     btn.before(more);
   }
@@ -463,7 +492,7 @@ function nqMenu() {
     const k = b.dataset.nq;
     if (k === 'mode') { nqSetMode(nqFull() ? 'calm' : 'full'); nqShow(nqFull() ? 'Оповещения: подробно — показываем всё' : 'Оповещения: спокойно — мелочи уходят в журнал', '', null); }
     if (k === 'log') nqJournalOpen();
-    if (k === 'news' && nqNewsRaw) { if (typeof Mobile !== 'undefined' && Mobile.on && typeof mobileSheet === 'function') mobileSheet(null); nqNewsRaw(true); }
+    if (k === 'news' && nqNewsRaw) { if (typeof Mobile !== 'undefined' && Mobile.on && typeof mobileSheet === 'function') mobileSheet(null); nqNewsRaw('all'); }
   });
 }
 
@@ -486,9 +515,14 @@ function nqMenu() {
   #nq-journal li.new span{color:#fff2c8}#nq-journal li.coop span{color:#a8e0c0}#nq-journal li.night span{color:#c0b4ec}
   #nq-journal li i{font-style:normal;font-size:11px;opacity:.6;white-space:nowrap}
   #nq-journal p{padding:0 14px 12px;margin:0;opacity:.7}
+  #nq-journal .nq-filt{display:flex;gap:6px;padding:0 14px 8px}
+  #nq-journal .nq-filt button{font:13px Kurale,Georgia,serif;color:#f0dca0;background:rgba(0,0,0,.25);border:1px solid #6a5028;padding:3px 9px;cursor:pointer;min-height:30px}
+  #nq-journal .nq-filt button.on{background:#c9a24a;color:#2a1608;border-color:#ffd877}
+  #nq-journal li.imp span{color:#ffcf9a}#nq-journal li.go{cursor:pointer}#nq-journal li.go:hover span{text-decoration:underline}
+  #nq-journal li u{text-decoration:none;color:#ffd877;font-size:12px;white-space:nowrap}
   #whatsnew.nq-short{background:rgba(0,0,0,.35)}
   #whatsnew.nq-short .wn-box{max-height:62vh}
-  #whatsnew.nq-short .nq-more{display:none}
+  #whatsnew.nq-short .nq-more,#whatsnew.nq-short .wn-rest{display:none}
   #whatsnew.nq-short li{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   #whatsnew.nq-short ul{padding-left:4px}#whatsnew.nq-short li::before{content:'✦ ';color:#c9a24a}
   #whatsnew .nq-all{display:block;text-align:center;margin:12px 0 0;color:#ffd877;font-size:13px}

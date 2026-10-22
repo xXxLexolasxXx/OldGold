@@ -11,7 +11,7 @@ const WK_JOBS = ['builder', 'serf', 'carter'];          // кого можно �
 const WK_KICK_CD = 25, WK_HERO_CD = 3, WK_KICK_NEAR = 3.5, WK_KICK_BOOST = 30;
 const WK_SYL1 = ['Бо', 'Гру', 'Дор', 'Ту', 'Хар', 'Ми', 'Ско', 'Фли', 'Бра', 'Ку', 'Гло', 'Ну'];
 const WK_SYL2 = ['рин', 'мли', 'нок', 'бур', 'фин', 'док', 'ган', 'ли', 'рт', 'мбо', 'зя', 'дрик'];
-const wkName = u => WK_SYL1[(u.look | 0) % WK_SYL1.length] + WK_SYL2[((u.look | 0) * 7 + u.id) % WK_SYL2.length];
+const wkName = u => t(WK_SYL1[(u.look | 0) % WK_SYL1.length]) + t(WK_SYL2[((u.look | 0) * 7 + u.id) % WK_SYL2.length]);   // t() — слоги склеиваются в имя, переводим по частям
 const wkJob = u => prioJobKey(u);
 const wkManaged = u => !!u && WK_JOBS.includes(wkJob(u));
 // кого показываем в карточке: рабочие профессии, без героя, напарников, рекрутов, глав гильдий
@@ -139,7 +139,7 @@ function wkWhy(u) {
     const p = u.home.problem();
     if (!p) return '';
     if (p.startsWith('need:')) return 'нет сырья: ' + wkGN(p.slice(5)) + ' — ждёт подвоза';
-    return { full: 'склад здания полон — ждёт, пока вывезут', paused: 'здание на паузе', noroad: 'к зданию нет дороги', damaged: 'здание повреждено — ждёт ремонта', noworker: 'идёт на работу' }[p] || '';
+    return { enough: 'еды на складе вдоволь — отдыхает', full: 'склад здания полон — ждёт, пока вывезут', paused: 'здание на паузе', noroad: 'к зданию нет дороги', damaged: 'здание повреждено — ждёт ремонта', noworker: 'идёт на работу' }[p] || '';
   }
   if (!u.idleFlag) return '';
   if (wkManaged(u) && wkCap(job) < Infinity) {
@@ -430,7 +430,7 @@ function wkCardUpdate() {
   if (!u || u.dead || !wkSelectable(u) || wkMoodCard(u)) { card.style.display = 'none'; return; }
   if (wkPicking('wk-card')) return;     // открытый список не перерисовываем, пока выбирают
   const T = UNIT_TYPES[u.type];
-  const html = `<div class="ihead"><img class="bpic" src="${portraitURL(u.type, u.look)}" alt=""><div><h3>${T.name}</h3>${unitLevel(u) > 1 ? `<span class="muted small">ур. ${unitLevel(u)}</span>` : ''}</div></div>` +
+  const html = `<div class="ihead"><img class="bpic" src="${portraitURL(u.type, u.look, personSex(u))}" alt=""><div><h3>${T.name}</h3>${unitLevel(u) > 1 ? `<span class="muted small">ур. ${unitLevel(u)}</span>` : ''}</div></div>` +
     wkCardBody(u) + '<button class="hc-x" title="Закрыть (Esc)">×</button>';
   if (card.dataset.h !== html) { card.dataset.h = html; card.innerHTML = html; }
   card.style.display = 'block';

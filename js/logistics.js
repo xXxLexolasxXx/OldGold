@@ -136,7 +136,9 @@ function dispatchSerfs() {
   const servedComp = (x, y) => { const c = compNear(x, y); return c && withStore.has(c) ? c : storeComp(x, y); };
   const depots = [...Game.buildings, ...Game.piles.values()];
   const compOf = new Map();
-  for (const b of Game.buildings) compOf.set(b, compAt(b.doorX, b.doorY));
+  // стройка, чей вход на обрывке дороги без склада (соединяющая дорога ещё строится), — тоже за ближайшим складом:
+  // раньше она ждала материал по минуте при свободных трудягах (аудит «тупления», сиды 3 и 22)
+  for (const b of Game.buildings) { const c = compAt(b.doorX, b.doorY); compOf.set(b, c && b.state !== 'done' && !withStore.has(c) ? servedComp(b.doorX, b.doorY) : c); }
   // кучки и стройки дорог могут лежать в стороне или примыкать к оторванному куску
   // дороги без склада — тогда их обслуживает сеть ближайшего склада (носят по бездорожью)
   for (const p of Game.piles.values()) compOf.set(p, servedComp(p.x, p.y));
@@ -235,6 +237,13 @@ function dispatchSerfs() {
       }
     }
   }
+}
+
+// стройка на обрывке дороги без склада: материал к ней несут и по траве (как к стройке дороги)
+function siteOffNet(b) {
+  if (!b || b.isPile || b.isRoad || b.state === 'done' || typeof b.isStore !== 'function') return false;
+  const c = compAt(b.doorX, b.doorY);
+  return !!c && !Game.buildings.some(s => s.isStore() && compAt(s.doorX, s.doorY) === c);
 }
 
 // Ближайший склад, где товар g есть в наличии (откуда взять). В отличие от nearestStore, не смотрит на запрет
@@ -348,7 +357,7 @@ function dispatchWorkers() {
     // у здания «потерялась» запись о работнике, а сам гном за ним числится — возвращаем запись, а не ищем замену
     const mine = Game.units.find(u => u.home === b && !u.dead && !u.teamOf && u.type !== 'hero');
     if (mine) { b.worker = mine; continue; }
-    const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf && !u.brk);   // не с перерыва (см. dispatchBuilders)
+    const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf && !u.brk && !u.dead);   // не с перерыва (см. dispatchBuilders)
     const u = takeNearest(idle, b.doorX, b.doorY);
     if (!u) continue;
     u.home = b;
@@ -374,12 +383,16 @@ function auditReserved() {
     if (u.fieldJob >= 0) claim.add(u.fieldJob);
     if (u.helpField >= 0) claim.add(u.helpField);
   }
-  const stale = i => { if (claim.has(i)) { resStale.delete(i); return false; } const n = (resStale.get(i) || 0) + 1; if (n >= 3) { resStale.delete(i); return true; } resStale.set(i, n); return false; };
+  const stale = (i, has = claim.has(i)) => { if (has) { resStale.delete(i); return false; } const n = (resStale.get(i) || 0) + 1; if (n >= 3) { resStale.delete(i); return true; } resStale.set(i, n); return false; };
+  // урну (streets.js) бронирует конкретный работяга (o.res = id): претендент — только он сам, иначе урна у людной
+  // дороги считалась «занятой» вечно (рядом всегда кто-то стоит) и больше никогда не вытряхивалась
+  const binClaim = (o, i) => { const u = Game.unitMap.get(o.res), x = i % MAP_W, y = (i / MAP_W) | 0;
+    return !!u && !u.dead && !u.inside && (Math.max(Math.abs(u.x - x - 0.5), Math.abs(u.y - y - 0.5)) <= 1.5 || !!(u.action && u.action.walk && u.action.walk[0] === x && u.action.walk[1] === y)); };
   for (const i of [...resStale.keys()]) { const o = World.obj[i]; if (!(o && o.res) && !ROCKMINE.res.has(i)) resStale.delete(i); }
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
     if (!o || !o.res || o.awake) continue;          // awake — ожившее дерево ночи, его бронь снимает nightTick
-    if (stale(i)) o.res = false;
+    if (o.t === 'bin' && typeof o.res === 'number' ? stale(i, binClaim(o, i)) : stale(i)) o.res = false;
   }
   for (const i of [...ROCKMINE.res]) if (stale(i)) ROCKMINE.res.delete(i);
 }

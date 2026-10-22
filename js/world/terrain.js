@@ -247,6 +247,8 @@ function buildTerrain(seed) {
   const PW = MAP_W * TILE;
   const P = biomePal();   // цвета земли выбранного биома (луга — прежние)
   const iceW = !!P.ice;
+  const ocOn = !iceW && typeof oceanPrep === 'function' && !!oceanPrep(true);   // живая вода (ocean.js): рампа тона водоёма вместо общей заливки
+  const ocC = [0, 0, 0];
 
   const bil = (f, i00, fx, fy) => {
     const a = f[i00], b = f[i00 + 1], c = f[i00 + W], d = f[i00 + W + 1];
@@ -341,14 +343,15 @@ function buildTerrain(seed) {
         else { const lk = gst && grassMask > 0.5 ? 1 + (li - 1) * 0.3 : li; r *= lk; g *= lk; b *= lk; }   // траву холмы красят слабо: ступени тона чистые
 
         // вода (поверх, без рельефного света)
+        let ocPx = false;   // чистая вода рампы: мимо палитры и дизера (альфа 254 — метка до квантования)
         const waterF = bil(fWater, c00, fx, fy) + (nC - 0.5) * 0.28;
         const waterW = smoothstep(0.46, 0.56, waterF);
         if (waterW > 0) {
           grassMask *= 1 - waterW;
           const depth = smoothstep(0.45, 0.95, bil(fDeep, c00, fx, fy));
           let wr = P.w0[0] + (P.w1[0] - P.w0[0]) * depth, wg = P.w0[1] + (P.w1[1] - P.w0[1]) * depth, wb = P.w0[2] + (P.w1[2] - P.w0[2]) * depth;
-          const wave = (nB - 0.5) * 14 + (nD > 0.7 ? 10 : 0);
-          wr += wave * 0.6; wg += wave; wb += wave;
+          if (ocOn && oceanBakeColor(tx, ty, fx, fy, wx, wy, ocC)) { wr = ocC[0]; wg = ocC[1]; wb = ocC[2]; if (waterW > 0.995) ocPx = true; }
+          else { const wave = (nB - 0.5) * 14 + (nD > 0.7 ? 10 : 0); wr += wave * 0.6; wg += wave; wb += wave; }
           if (iceW) {   // лёд: светлые блики и тёмные трещины
             if (Math.abs(nD - 0.5) < 0.014 || Math.abs(nC - 0.5) < 0.008) { wr *= 0.55; wg *= 0.62; wb *= 0.75; }
             else if (nA > 0.52 && nB > 0.6) { wr += 40; wg += 36; wb += 28; }
@@ -358,14 +361,15 @@ function buildTerrain(seed) {
         // пена у берега
         const foam = smoothstep(0.42, 0.5, waterF) * (1 - smoothstep(0.5, 0.6, waterF));
         if (foam > 0) {
-          const k = foam * (0.45 + nB * 0.4);
+          const k = foam * (0.45 + nB * 0.4) * (ocOn ? 0.35 : 1);   // при живой воде пену катит прибой
           r += (P.foam[0] - r) * k * P.foamK; g += (P.foam[1] - g) * k * P.foamK; b += (P.foam[2] - b) * k * P.foamK;
         }
 
         // зерно
         const gr = gst && grassMask > 0.9 ? 1 : P.snow ? 0.97 + nB * 0.06 : 0.93 + nB * 0.14;   // зерно не лежит на траве биома
         const o = ((wy - y0px) * PW + wx) * 4;
-        D[o] = r * gr; D[o + 1] = g * gr; D[o + 2] = b * gr; D[o + 3] = 255;
+        if (ocPx) { D[o] = r; D[o + 1] = g; D[o + 2] = b; D[o + 3] = 254; }
+        else { D[o] = r * gr; D[o + 1] = g * gr; D[o + 2] = b * gr; D[o + 3] = 255; }
         GRASS[(wy - y0px) * PW + wx] = grassMask > 0.9 ? 1 : 0;
       }
     }
@@ -389,7 +393,9 @@ function buildTerrain(seed) {
   const q = ctx.getImageData(0, 0, PW, bh);
   for (let r0 = 0; r0 < bh; r0 += 4) {   // по 4 строки: рисунок дизера тот же, он считается от координат
     const rows = Math.min(4, bh - r0);
-    quantizeData(q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4), PW, rows, gst0 ? 0 : P.snow ? 3 : 9, 0, y0px + r0);   // снег — почти без дизеринга, иначе рябит
+    const qd = q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4);
+    if (ocOn) ocQuantize(qd, PW, rows, gst0 ? 0 : 9, y0px + r0);
+    else quantizeData(qd, PW, rows, gst0 ? 0 : P.snow ? 3 : 9, 0, y0px + r0);   // снег — почти без дизеринга, иначе рябит
     yield;
   }
   ctx.putImageData(q, 0, 0);
@@ -620,7 +626,8 @@ function roadShape(c, x, y, px, py, grow, bands, chamfers) {
 // cobbles=true — внутри булыжник цвета мостовой; null — тёмный бордюр.
 const ROAD_M = 10;
 let roadScratch = null;
-function roadMaskCanvas(x, y, grow, cobbles) {
+// Размытая и обрезанная по порогу маска формы дороги: Uint8Array S×S (1 — дорога). Рисует в scratch-холстах.
+function roadMaskBits(x, y, grow) {
   const S = TILE + ROAD_M * 2;
   if (!roadScratch) roadScratch = [mkCanvas(S, S), mkCanvas(S, S)];
   const [a, b] = roadScratch, ca = a.getContext('2d', { willReadFrequently: true }), cb = b.getContext('2d', { willReadFrequently: true });
@@ -637,9 +644,29 @@ function roadMaskCanvas(x, y, grow, cobbles) {
   ca.setTransform(1, 0, 0, 1, 0, 0);
   cb.setTransform(1, 0, 0, 1, 0, 0); cb.clearRect(0, 0, S, S);
   cb.filter = 'blur(3.5px)'; cb.drawImage(a, 0, 0); cb.filter = 'none';
-  const img = cb.getImageData(0, 0, S, S), d = img.data, col = cobbles ? [74, 69, 64] : [40, 34, 28];
-  for (let i = 0; i < d.length; i += 4) {
-    if (d[i + 3] >= 128) { d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = cobbles ? 255 : 140; } else d[i + 3] = 0;
+  const d = cb.getImageData(0, 0, S, S).data, bits = new Uint8Array(S * S);
+  for (let i = 0; i < bits.length; i++) bits[i] = d[i * 4 + 3] >= 128 ? 1 : 0;
+  return bits;
+}
+
+// Тёмный бордюр: 1 пиксель вокруг булыжника везде — и на прямых, и на поворотах и скосах.
+// Второй ряд на прямых давал жирную чёрную кромку (на скосах — лесенку-утолщения).
+function roadBorderPx(inner, S, px, py) {
+  const at = (x, y) => x >= 0 && y >= 0 && x < S && y < S && inner[y * S + x] === 1;
+  return at(px + 1, py) || at(px - 1, py) || at(px, py + 1) || at(px, py - 1);
+}
+
+function roadMaskCanvas(x, y, grow, cobbles) {
+  const S = TILE + ROAD_M * 2;
+  const inner = cobbles ? null : roadMaskBits(x, y, 0);
+  const bits = roadMaskBits(x, y, grow);
+  const [a, b] = roadScratch, ca = a.getContext('2d', { willReadFrequently: true }), cb = b.getContext('2d', { willReadFrequently: true });
+  const ox = x * TILE - ROAD_M, oy = y * TILE - ROAD_M;
+  const img = cb.createImageData(S, S), d = img.data, col = cobbles ? [74, 69, 64] : [40, 34, 28];
+  for (let i = 0; i < bits.length; i++) {
+    if (!bits[i]) continue;
+    if (inner && !inner[i] && !roadBorderPx(inner, S, i % S, (i / S) | 0)) continue;
+    const j = i * 4; d[j] = col[0]; d[j + 1] = col[1]; d[j + 2] = col[2]; d[j + 3] = cobbles ? 255 : 140;
   }
   cb.putImageData(img, 0, 0);
   if (cobbles) {

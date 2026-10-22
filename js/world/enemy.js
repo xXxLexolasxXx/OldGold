@@ -19,7 +19,7 @@ const FSPEC = {
     drop: [['gold', 1, 0.5], ['magicstone', 1, 0.4], ['iron', 1, 0.25]] },
   knight: { name: 'Рыцарь тьмы',       mhp: 100, dmg: [8, 13],  cd: 1.9, rng: 1.8, spd: 1.95, parry: 0.28, xp: 120, sz: 11,
     drop: [['gold', 3, 1], ['magicstone', 2, 0.8], ['ironArmor', 1, 0.2]] },
-  malgor: { name: 'Тёмный маг Малгор', mhp: 440, dmg: [9, 14],  cd: 2.1, rng: 2.2, spd: 1.7, parry: 0,    xp: 900, sz: 10 },
+  malgor: { name: 'Тёмный маг Малгор', mhp: 520, dmg: [9, 14],  cd: 2.1, rng: 2.2, spd: 1.7, parry: 0,    xp: 900, sz: 10 },
 };
 const FOE_PHASE_NAME = ['', 'Призыв', 'Зелёный огонь', 'Ярость'];
 
@@ -293,9 +293,10 @@ function foeHit(N, u, dmg) {
   const S = FSPEC[N.k];
   if (u) foeProvoke(N, u);
   const px = N.x * TILE, py = N.y * TILE - 14;
-  if (N.k === 'malgor' && N.shield) {
+  if (typeof foeDmgMod === 'function') dmg = foeDmgMod(N, u, dmg);    // стражи шпиля: уязвимости, броня (guards.js)
+  if (N.shield) {
     dmg *= 0.3;
-    if (Game.time - (N.shT || 0) > 1.5) { N.shT = Game.time; floater(N.x, N.y - 3, 'Щит тьмы!', '#b8ff90'); }
+    if (Game.time - (N.shT || 0) > 1.5) { N.shT = Game.time; floater(N.x, N.y - 3, N.k === 'malgor' ? 'Щит тьмы!' : 'Щит!', '#b8ff90'); }
     fxBurst(px, py, 6, ['#9cff66', '#b07cff'], 50, 30, 0.4, 1.4, 80);
   } else if (Math.random() < (S.parry || 0)) {
     dmg *= 0.25;
@@ -304,7 +305,7 @@ function foeHit(N, u, dmg) {
   } else {
     N.hurtT = Game.time;
     fxBurst(px, py, 7, ['#9cff66', '#4a3e88', '#b07cff'], 60, 40, 0.5, 1.6, 200);
-    if (N.k !== 'malgor' && N.k !== 'raven' && u) {
+    if (N.k !== 'malgor' && N.k !== 'raven' && !S.big && u) {
       const d = Math.hypot(N.x - u.x, N.y - u.y) || 1, kx = N.x + (N.x - u.x) / d * 0.3, ky = N.y + (N.y - u.y) / d * 0.3;
       if (rdOk(N, kx, ky)) { N.x = kx; N.y = ky; }
       N.cdA = Math.max(N.cdA, 0.35); N.atkT = 9;
@@ -365,6 +366,7 @@ function foeBossDown(N, killer) {
 function foeStrike(N, tg) {
   const S = FSPEC[N.k], F = Game.foe;
   let dmg = foeR(S.dmg[0], S.dmg[1]) * (N.lv || 1) * (N.k === 'malgor' ? 1 + 0.12 * (N.fz - 1) : 1);
+  if (typeof foeStrikeMul === 'function') dmg *= foeStrikeMul(N, tg);     // затмение и сложность (guards.js)
   if (!tg.hero && !tg.rec && Math.random() < 0.12) { floater(tg.x, tg.y - 1.8, 'Увернулся!', '#cfe8ff'); return; }
   const def = tg.hero && typeof heroDef === 'function' ? heroDef(tg) : tg.rec && tg.rec.armor ? 0.3 : 0;
   dmg *= 1 - Math.min(0.6, def);
@@ -444,6 +446,7 @@ function foeAttackCycle(N, tg, dt, strikeFn) {
 
 function rdMelee(N, dt) {
   const S = FSPEC[N.k], F = Game.foe;
+  N.cdA -= dt;                                   // раньше пауза удара у слуг не убывала — они не били вовсе
   if (N.st === 'emerge') {                       // выходят из тумана
     N.t += dt;
     if (N.t >= 0) N.st = 'idle';
@@ -475,8 +478,8 @@ function rdMelee(N, dt) {
   if (N.st === 'atk') { N.st = 'idle'; N.atkT = 9; }
   // призванные стражи шпиля в деревню не ходят: держатся хозяина, бой кончился — тают
   if (N.summoned) {
-    const B = F.boss;
-    if (!B || !B.woke) { N.st = 'vanish'; N.vt = 0; return; }
+    const B = N.owner ? Game.raiders.find(M => M.id === N.owner) : F.boss;
+    if (!B || !foeLive(B) || !B.woke) { N.st = 'vanish'; N.vt = 0; return; }
     if (Math.hypot(N.x - B.x, N.y - B.y) > 3) { N.st = 'chase'; rdGo(N, B.x, B.y + 1, S.spd, dt); } else N.st = 'idle';
     return;
   }
@@ -618,14 +621,14 @@ function foeShotsTick(dt) {
   for (let i = Game.foeShots.length - 1; i >= 0; i--) {
     const s = Game.foeShots[i], tg = foeUnit(s.tg);
     s.t += dt;
-    if (tg && s.t < s.dur * 0.7) { s.gx = tg.x; s.gy = tg.y - 0.6; }
+    if (tg && !s.fix && s.t < s.dur * 0.7) { s.gx = tg.x; s.gy = tg.y - 0.6; }
     if (s.t >= s.dur) {
       Game.foeShots.splice(i, 1);
-      fxBurst(s.gx * TILE, s.gy * TILE - 8, 22, ['#9cff66', '#b07cff', '#e8ffc8'], 90, 50, 0.7, 2, 100);
+      fxBurst(s.gx * TILE, s.gy * TILE - 8, 22, s.col || ['#9cff66', '#b07cff', '#e8ffc8'], 90, 50, 0.7, 2, 100);
       sfxAt('crackle', s.gx * TILE, s.gy * TILE, 0.8);
       for (const u of Game.units) {
-        if (u.dead || u.inside || !isPerson(u) || Math.hypot(u.x - s.gx, u.y - s.gy) > 1.3) continue;
-        neuHurtUnit(u, foeR(10, 16) * (1 + 0.12 * (s.ph - 2)));
+        if (s.vis || u.dead || u.inside || !isPerson(u) || Math.hypot(u.x - s.gx, u.y - s.gy) > (s.r || 1.3)) continue;
+        neuHurtUnit(u, s.dmg ? foeR(s.dmg[0], s.dmg[1]) : foeR(10, 16) * (1 + 0.12 * (s.ph - 2)));
         u.ouchUntil = Game.time + 0.5;
         if (u.hero && u.hero.hp <= 0 && Game.foe && Game.foe.boss) foeHeroDown(Game.foe.boss, u);
       }
@@ -644,16 +647,17 @@ function foeTick(dt) {
     const N = Game.raiders[i];
     if (N.st === 'die') { N.dt += dt; if (N.dt > (N.k === 'malgor' ? 4 : 3.4)) Game.raiders.splice(i, 1); continue; }
     if (N.st === 'vanish') { N.vt += dt; if (N.vt > 1.5) Game.raiders.splice(i, 1); continue; }
-    if (dawn && N.k !== 'malgor' && !N.summoned) {                // на рассвете расходятся; награбленное роняют
+    if (dawn && N.k !== 'malgor' && !N.summoned && !FSPEC[N.k].big) {                // на рассвете расходятся; награбленное роняют
       if (N.loot) { dropPile(Math.floor(N.x), Math.floor(N.y), N.loot.g, N.loot.n); N.loot = null; }
       N.st = 'vanish'; N.vt = 0; N.tg = 0; continue;
     }
     if (N.k === 'raven') rdRaven(N, dt);
     else if (N.k === 'malgor') rdBoss(N, dt);
+    else if (FSPEC[N.k].ai) FSPEC[N.k].ai(N, dt);
     else rdMelee(N, dt);
-    if (N.hp < N.mhp && N.k !== 'malgor' && !N.tg && N.k !== 'raven') N.hp = Math.min(N.mhp, N.hp + dt * 1.5);
+    if (N.hp < N.mhp && N.k !== 'malgor' && !N.tg && N.k !== 'raven' && !FSPEC[N.k].big) N.hp = Math.min(N.mhp, N.hp + dt * 1.5);
     // не толпятся в одной точке
-    if (N.k !== 'raven' && N.st !== 'atk') for (const M of Game.raiders) {
+    if (N.k !== 'raven' && N.st !== 'atk' && !FSPEC[N.k].still) for (const M of Game.raiders) {
       if (M === N || M.k === 'raven' || !foeLive(M)) continue;
       const dx = N.x - M.x, dy = N.y - M.y, d = Math.hypot(dx, dy);
       if (d < 0.7) { const a = d > 0.01 ? Math.atan2(dy, dx) : N.id; const nx = N.x + Math.cos(a) * dt * 0.8, ny = N.y + Math.sin(a) * dt * 0.8; if (rdOk(N, nx, ny)) { N.x = nx; N.y = ny; } }
@@ -691,7 +695,7 @@ function foeTick(dt) {
     const out = _near(x, y, r);
     for (const N of Game.raiders) {
       if (!foeLive(N) || N.k === 'raven' && N.st !== 'scout' && r > 1.45) continue;
-      if (N.k === 'malgor' && !N.tg && r > 1.45) continue;
+      if ((N.k === 'malgor' || FSPEC[N.k].big && !FSPEC[N.k].still) && !N.tg && r > 1.45) continue;
       if (Math.hypot(N.x - x, N.y - y) < r + (r <= 1.45 ? 0.6 : 0)) out.push({ kind: 'foe', o: N });
     }
     out.sort((p, q) => Math.hypot(p.o.x - x, p.o.y - y) - Math.hypot(q.o.x - x, q.o.y - y));
@@ -766,9 +770,9 @@ function foeMirror() {
 }
 function foeMirrorRaiders() {
   const r = v => Math.round(v * 100) / 100;
-  return Game.raiders.map(N => ({ __id: N.id, id: N.id, k: N.k, x: r(N.x), y: r(N.y), face: N.face, st: N.st, hp: Math.round(N.hp), mhp: N.mhp, dt: r(N.dt), vt: r(N.vt), atkT: r(N.atkT), ph: r(N.ph), castT: r(N.castT || 0), shield: !!N.shield, inv: N.inv > 0, phase: N.fz, woke: !!N.woke, t: r(N.t), loot: N.loot ? { g: N.loot.g, n: N.loot.n } : null, dist: r(N.dist || 9), hurtT: r(N.hurtT) }));
+  return Game.raiders.map(N => ({ __id: N.id, id: N.id, k: N.k, x: r(N.x), y: r(N.y), face: N.face, st: N.st, hp: Math.round(N.hp), mhp: N.mhp, dt: r(N.dt), vt: r(N.vt), atkT: r(N.atkT), ph: r(N.ph), castT: r(N.castT || 0), shield: !!N.shield, inv: N.inv > 0, phase: N.fz, woke: !!N.woke, t: r(N.t), loot: N.loot ? { g: N.loot.g, n: N.loot.n } : null, dist: r(N.dist || 9), hurtT: r(N.hurtT), sk: N.sk || '', skT: r(N.skT || 0), vul: N.vulT > Game.time, veil: !!N.veil, en: N.ename || '', tint: N.tint || '', ow: N.owner || 0, chg: r(N.chg || 0), aim: N.aim || null, look: N.look || null }));
 }
-function foeMirrorShots() { return Game.foeShots.map(s => ({ __id: s.id, id: s.id, x: +s.x.toFixed(2), y: +s.y.toFixed(2), gx: +s.gx.toFixed(2), gy: +s.gy.toFixed(2), t: +s.t.toFixed(2), dur: s.dur })); }
+function foeMirrorShots() { return Game.foeShots.map(s => ({ __id: s.id, id: s.id, x: +s.x.toFixed(2), y: +s.y.toFixed(2), gx: +s.gx.toFixed(2), gy: +s.gy.toFixed(2), t: +s.t.toFixed(2), dur: s.dur, hue: s.hue || '' })); }
 
 // ---------- Рисование ----------
 
@@ -1000,13 +1004,15 @@ function foeDrawRaider(c, N) {
   if (N.k === 'raven') foeDrawRaven(c, N);
   else if (N.k === 'thrall') foeDrawThrall(c, N, false);
   else if (N.k === 'knight') foeDrawKnight(c, N);
+  else if (S.draw) S.draw(c, N);
   else foeDrawMalgor(c, N);
   c.restore();
   if (dead || van) return;
   if (N.k === 'malgor') {
     if (nightAmt() < 0.05) foeBossBar(c, N);
     if (N.shield) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(156,255,102,0.55)'; c.lineWidth = 2; c.beginPath(); c.ellipse(px, py - 26, 17, 28, 0, 0, 7); c.stroke(); c.fillStyle = 'rgba(156,255,102,0.1)'; c.fill(); c.restore(); }
-  } else if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - (fly ? 34 : N.k === 'knight' ? 44 : 32), false);
+  } else if (S.bar) S.bar(c, N, px, py);
+  else if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - (fly ? 34 : N.k === 'knight' ? 44 : 32), false);
   if (N.loot) { c.fillStyle = GOODS[N.loot.g].color; c.fillRect(px + (N.face < 0 ? -9 : 5), py - 12, 5, 5); c.fillStyle = '#000'; c.fillRect(px + (N.face < 0 ? -9 : 5), py - 12, 5, 1); }
 }
 
@@ -1014,9 +1020,10 @@ function foeDrawShot(c, s) {
   const k = Math.min(1, s.t / s.dur), x = (s.x + (s.gx - s.x) * k) * TILE, y = (s.y + (s.gy - s.y) * k - Math.sin(k * 3.14) * 0.6) * TILE;
   c.save(); c.globalCompositeOperation = 'lighter';
   const g = c.createRadialGradient(x, y, 0, x, y, 14);
-  g.addColorStop(0, 'rgba(232,255,200,0.95)'); g.addColorStop(0.35, 'rgba(120,255,80,0.6)'); g.addColorStop(1, 'rgba(120,255,80,0)');
+  const hue = s.hue || '120,255,80';
+  g.addColorStop(0, 'rgba(232,255,200,0.95)'); g.addColorStop(0.35, `rgba(${hue},0.6)`); g.addColorStop(1, `rgba(${hue},0)`);
   c.fillStyle = g; c.fillRect(x - 14, y - 14, 28, 28);
-  for (let i = 1; i <= 3; i++) { const kk = Math.max(0, k - i * 0.04); c.fillStyle = `rgba(150,255,100,${0.4 - i * 0.1})`; c.fillRect(Math.round((s.x + (s.gx - s.x) * kk) * TILE) - 1, Math.round((s.y + (s.gy - s.y) * kk) * TILE) - 1, 3, 3); }
+  for (let i = 1; i <= 3; i++) { const kk = Math.max(0, k - i * 0.04); c.fillStyle = `rgba(${hue},${0.4 - i * 0.1})`; c.fillRect(Math.round((s.x + (s.gx - s.x) * kk) * TILE) - 1, Math.round((s.y + (s.gy - s.y) * kk) * TILE) - 1, 3, 3); }
   c.restore();
 }
 

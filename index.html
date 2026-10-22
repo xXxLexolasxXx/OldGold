@@ -6,6 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1a130d">
+<meta name="color-scheme" content="dark">
 <title>OldGold</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -22,11 +23,13 @@
 <link rel="stylesheet" href="css/prio.css">
 <link rel="stylesheet" href="css/dilemma.css">
 <link rel="stylesheet" href="css/chronicle.css">
+<link rel="stylesheet" href="css/lore.css">
 <link rel="stylesheet" href="css/daily.css">
 <link rel="stylesheet" href="css/mapedit.css">
 <link rel="stylesheet" href="css/council.css">
 <link rel="stylesheet" href="css/landscape.css">
 <link rel="stylesheet" href="css/legible.css">
+<link rel="stylesheet" href="css/reveal.css">
 </head>
 <body>
 <div id="app">
@@ -36,7 +39,7 @@
     <div class="mm-wrap"><canvas id="minimap" width="288" height="216"></canvas><button id="mm-size" title="Увеличить миникарту">⤢</button><button id="mm-fold" title="Свернуть / развернуть миникарту">▴</button></div>
     <nav id="tabs">
       <button data-tab="build" class="tab-btn active" title="Строительство"><img data-icon="build" alt=""></button>
-      <button data-tab="store" class="tab-btn" title="Склад"><img data-icon="store" alt=""></button>
+      <button data-tab="store" class="tab-btn" title="Запасы и запреты: что склады принимают"><img data-icon="store" alt=""></button>
       <button data-tab="people" class="tab-btn" title="Жители"><img data-icon="people" alt=""></button>
       <button data-tab="overview" class="tab-btn" title="Хозяйство: проблемы и статистика"><img data-icon="scroll" alt=""><span id="alert-badge" class="badge hidden">0</span></button>
       <button data-tab="log" class="tab-btn" title="Журнал событий: что случилось и где"><img data-icon="log" alt=""><span id="log-badge" class="badge hidden">0</span></button>
@@ -68,6 +71,7 @@
           <button data-menu="save"><img data-icon="save" alt="">Сохранить <kbd>Ctrl+S</kbd></button>
           <button data-menu="load"><img data-icon="load" alt="">Загрузить <kbd>F9</kbd></button>
           <button data-menu="loadauto"><img data-icon="load" alt="">Автосохранение</button>
+          <button data-savefile="open"><img data-icon="save" alt="">Файл сохранения</button>
           <button data-menu="tutorial"><img data-icon="play" alt="">Обучение (по шагам)</button>
           <button data-menu="lang"><img data-icon="scroll" alt=""><span class="lang-name">English</span></button>
           <button data-guide="open"><img data-icon="scroll" alt="">Справка <kbd>H</kbd></button>
@@ -133,7 +137,7 @@
         <li><b>Дорога</b> — протяните мышью, клетка стоит 1 камень. Новую дорогу ведите от уже готовой: дорога из ниоткуда в никуда — это не дорога, это ландшафтный дизайн.</li>
         <li>Дорога в 2 клетки шириной — две полосы: трудяги разъезжаются, не тормозя. На узкой встречные протискиваются медленно и смотрят на вас с немым укором.</li>
         <li>Рабочие обучаются в <b>школе</b> за золото. Кнопка «Обучить» в окне здания ставит нужного в очередь. Трудяги и работяги со временем <b>дорастают до 2-го и 3-го уровня</b>: носят по 2–3 предмета и сами берут материалы на стройку — следите за нашивками на колпаках и шкалами во вкладке «Жители».</li>
-        <li>Еда: <b>ферма (пшеница) → мельница → пекарня</b> или <b>сено (побочный продукт жатвы) → свинарник → бойня</b> (колбаса). Поля закладываете сами инструментами «Пшеница» и «Хмель» рядом с фермой.</li>
+        <li>Еда: <b>ферма (пшеница) → мельница → пекарня</b> или <b>сено (побочный продукт жатвы) → свинарник → бойня</b> (колбаса). Поля пшеницы закладываете сами рядом с фермой; хмель появится позже, вместе с пивоварней.</li>
         <li>Свинарник: каждая охапка сена — свиньи подрастают на треть и рождается поросёнок; взрослую везут на бойню.</li>
         <li>Кожа: бойня даёт шкуры → <b>дубильня</b> → кожа → <b>мастерская доспехов</b>.</li>
         <li>Магия: <b>шахта маг. камней</b> под скалой с кристаллами → <b>магический круг</b> (камни → мана + обычный камень) → <b>магическая мастерская</b>: посохи и мантии.</li>
@@ -148,6 +152,7 @@
 </div>
 <div id="loading"><canvas id="load-cv"></canvas><div class="load-title"><h1>OldGold</h1></div><span class="load-msg">Создаём мир…</span></div>
 <script src="js/crashlog.js"></script>
+<script src="js/telemetry.js"></script>
 <script src="js/world/fire.js"></script>
 <script src="js/loading.js"></script>
 <script src="js/sound/mute.js"></script>
@@ -207,6 +212,7 @@
 <script src="js/world/weather.js"></script>
 <script src="js/sound/sfx2.js"></script>
 <script src="js/sound/ambience.js"></script>
+<script src="js/sound/seasfx.js"></script>
 <script src="js/stress.js"></script>
 <script src="js/mobile.js"></script>
 <script src="js/stats.js"></script>
@@ -228,6 +234,8 @@
 <script src="js/combat.js"></script>
 <script src="js/world/neutralart2.js"></script>
 <script src="js/world/neutrals2.js"></script>
+<script src="js/world/frogart.js"></script>
+<script src="js/world/frogart2.js"></script>
 <script src="js/combatfield.js"></script>
 <script src="js/guildpath.js"></script>
 <script src="js/herocard.js"></script>
@@ -239,6 +247,7 @@
 <script src="js/workers.js"></script>
 <script src="js/dilemma.js"></script>
 <script src="js/startmenu.js"></script>
+<script src="js/savefile.js"></script>
 <script src="js/mapeditui.js"></script>
 <script src="js/perf.js"></script>
 <script src="js/profile.js"></script>
@@ -250,6 +259,12 @@
 <script src="js/world/snow.js"></script>
 <script src="js/world/frostart.js"></script>
 <script src="js/world/winterlife.js"></script>
+<script src="js/world/ocean.js"></script>
+<script src="js/world/seaart.js"></script>
+<script src="js/world/seafauna.js"></script>
+<script src="js/world/seawork.js"></script>
+<script src="js/world/seafolk.js"></script>
+<script src="js/world/wildlife.js"></script>
 <script src="js/world/brawl.js"></script>
 <script src="js/world/games.js"></script>
 <script src="js/world/memes.js"></script>
@@ -257,14 +272,22 @@
 <script src="js/council.js"></script>
 <script src="js/laws.js"></script>
 <script src="js/sickness.js"></script>
+<script src="js/world/frogs.js"></script>
 <script src="js/research.js"></script>
 <script src="js/family.js"></script>
 <script src="js/world/kidsplay.js"></script>
+<script src="js/world/zemelka.js"></script>
+<script src="js/folk.js"></script>
+<script src="js/world/frogwild.js"></script>
 <script src="js/world/fair.js"></script>
 <script src="js/world/raid.js"></script>
 <script src="js/world/enemy.js"></script>
 <script src="js/world/spire.js"></script>
+<script src="js/world/guards.js"></script>
+<script src="js/world/ascent.js"></script>
+<script src="js/world/traitor.js"></script>
 <script src="js/world/travelers.js"></script>
+<script src="js/world/wildgnomes.js"></script>
 <script src="js/defense.js"></script>
 <script src="js/defensewar.js"></script>
 <script src="js/defenseart.js"></script>
@@ -284,10 +307,18 @@
 <script src="js/native.js"></script>
 <script src="js/pwa.js"></script>
 <script src="js/durability.js"></script>
+<script src="js/arms.js"></script>
 <script src="js/heroabil.js"></script>
+<script src="js/heroult.js"></script>
 <script src="js/restip.js"></script>
 <script src="js/notify.js"></script>
+<script src="js/pins.js"></script>
+<script src="js/unions.js"></script>
+<script src="js/lore.js"></script>
 <script src="js/menugroups.js"></script>
+<script src="js/world/disasters.js"></script>
+<script src="js/reveal.js"></script>
+<script src="js/house.js"></script>
 <script data-goatcounter="https://lexolas.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

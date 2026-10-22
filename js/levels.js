@@ -70,10 +70,56 @@ const LEVEL2 = {
   magicworkshop: { cost: { timber: 3, stone: 4 } },
 };
 
+// Что даёт третий уровень (кроме гильдий — у них свой путь в guildpath.js): цена = полторы цены уровня 2,
+// плюс общий закон: циклы ещё на 20% быстрее, склады у здания на четверть вместительнее, особое свойство типа
+const LEVEL3 = {};
+for (const t in LEVEL2) {
+  if (t.startsWith('guild_')) continue;
+  const c = LEVEL2[t].cost, o = {};
+  for (const g in c) o[g] = Math.ceil(c[g] * (g === 'stone' ? 1.8 : 1.5));
+  LEVEL3[t] = { cost: o };
+}
+Object.assign(LEVEL3.storehouse, { cap: 4 });                    // ещё +4 места внутри
+Object.assign(LEVEL3.school, { train: 0.7 });                    // учат вдвое быстрее прежнего уровня 2
+Object.assign(LEVEL3.inn, { cozy: true });
+Object.assign(LEVEL3.woodcutter, { gather: 1 });                 // ещё +1 к охапке
+Object.assign(LEVEL3.quarry, { gather: 1 });
+Object.assign(LEVEL3.ironmine, { outMult: 1.5 });
+Object.assign(LEVEL3.goldmine, { outMult: 1.5 });
+Object.assign(LEVEL3.crystalmine, { outMult: 1.5 });
+const DESCS3 = {
+  storehouse: 'Склад под черепицей: места ещё больше, порядка — всё так же. Теперь его не только не найти, но и не обойти.',
+  school: 'Школа под черепицей и с флюгером: учат втрое быстрее, чем в первый день. Звонок слышно уже из соседнего уезда.',
+  inn: 'Трактир под черепицей: уютнее некуда, а флюгер-петух кукарекает на ветру. Пиво прежнее, гордость — на уровне крыши.',
+  bonfire: 'Костёр в каменной чаше: сжигает мусор втрое быстрее первого. Греться подходят всё равно по-прежнему мало.',
+  goatpen: 'Козий загон под черепицей: козы теперь живут лучше пастуха и знают об этом.',
+  stable: 'Конюшня под черепицей: лошади в стойлах с позолотой. Конюх уверяет, что флюгер — это не лишнее.',
+  woodcutter: 'Избушка лесоруба под черепицей: охапка вдвое больше, топор тот же, лес — всё ещё в ужасе.',
+  sawmill: 'Лесопилка под черепицей и с флюгером: пилит как зверь. Опилки теперь просеивают.',
+  quarry: 'Каменоломня с двумя журавлями: камня за заход целая гора. Гора, впрочем, теперь поменьше.',
+  goldmine: 'Рудник под черепицей: золота за заход ещё полтора раза больше, шахтёры — на полтора раза важнее.',
+  metallurgist: 'Плавильня с тремя горнами под черепицей: плавит быстрее всех, коптит — тоже.',
+  farm: 'Ферма под черепицей: амбар ещё просторнее, шутки про урожай — прежние.',
+  hopfarm: 'Хмельник под черепицей: сушильня ещё вместительнее. Для аромата, конечно, для чего же ещё.',
+  brewery: 'Пивоварня под черепицей: варит быстрее и крепче. Флюгер показывает не ветер, а где сегодня пивовар.',
+  mill: 'Мельница под черепицей: мелет так, что мука витает над деревней. Ветер уже не против.',
+  bakery: 'Пекарня под черепицей: хлеб, круассаны и ещё больше хлеба. Пекарь поправляет колпак с видом шеф-повара.',
+  swine: 'Свинарник под черепицей: свиньям живётся как господам. Они, впрочем, ничего не заметили.',
+  butchery: 'Бойня под черепицей: коптит и режет быстрее. Мясник теперь философствует в двух экземплярах.',
+  tannery: 'Дубильня под черепицей: кожа выходит быстро, запах — ещё быстрее.',
+  armory: 'Мастерская под черепицей: доспехи шьют стахановскими темпами, армия по-прежнему «в планах».',
+  crystalmine: 'Шахта с кристальной крепью под черепицей: камней в полтора раза больше, света — слепит.',
+  magiccircle: 'Круг с золотым ободом: маны из камня ещё быстрее. Алхимики подали в отставку.',
+  ironmine: 'Рудник под черепицей, рельсы стальные: руды за заход в полтора раза больше. Скала сдалась.',
+  smeltery: 'Домница под черепицей: выплавляет быстрее всех. Копоть теперь — с гордостью.',
+  weaponsmith: 'Оружейная под черепицей: мечи выходят пачками, а клиентов всё нет. Кузнец повесил вторую табличку «Скидок нет».',
+  magicworkshop: 'Мастерская под черепицей: посохи искрят даже вхолостую. Чародей называет это рекламой.',
+};
+
 // Общий закон уровня 2: циклы на четверть быстрее, склады у здания в полтора раза вместительнее
 const scaleCaps = o => { if (!o) return o; const r = {}; for (const g in o) r[g] = Math.ceil(o[g] * 1.5); return r; };
 
-for (const t in DESCS) if (BUILDINGS[t]) { BUILDINGS[t].desc = DESCS[t][0]; BUILDINGS[t].desc2 = DESCS[t][1]; BUILDINGS[t].up = LEVEL2[t]; }
+for (const t in DESCS) if (BUILDINGS[t]) { BUILDINGS[t].desc = DESCS[t][0]; BUILDINGS[t].desc2 = DESCS[t][1]; BUILDINGS[t].up = LEVEL2[t]; if (LEVEL3[t]) { BUILDINGS[t].up3 = LEVEL3[t]; BUILDINGS[t].desc3 = DESCS3[t]; } }
 
 function levelDef(type) {
   const d = BUILDINGS[type];
@@ -97,18 +143,38 @@ function levelDef(type) {
   return o;
 }
 
-function canUpgrade(b) { return b.state === 'done' && !b.removed && (b.level || 1) < 2 && !!b.def.up && !b.isRoad; }
+// Уровень 3 (кроме гильдий): ещё на 20% быстрее, склады на четверть больше, плюс особое свойство типа
+function levelDefL3(type) {
+  const d = BUILDINGS[type];
+  if (d._l3c) return d._l3c;
+  const u = d.up3, o = Object.assign({}, levelDef(type));
+  const grow = x => { if (!x) return x; const r = {}; for (const g in x) r[g] = Math.ceil(x[g] * 1.25); return r; };
+  o.inputs = grow(o.inputs); o.outputs = grow(o.outputs);
+  if (o.recipes) {
+    o.recipes = o.recipes.map(r => Object.assign({}, r, { time: Math.max(3, Math.round(r.time * 0.8)) }));
+    if (u.outMult) for (const r of o.recipes) { r.out = Object.assign({}, r.out); for (const g in r.out) if (g !== 'mana') r.out[g] = Math.max(r.out[g], Math.round(r.out[g] * u.outMult)); }
+  }
+  o.up = null; o.level3 = true; o.desc = d.desc3 || o.desc;
+  o.gatherMult = (o.gatherMult || 1) + (u.gather || 0); o.storeCap = (o.storeCap || 0) + (u.cap || 0);
+  if (u.train) o.trainMult = 0.35;
+  d._l3c = o;
+  return o;
+}
+
+function canUpgrade(b) { return b.state === 'done' && !b.removed && !b.isRoad && ((b.level || 1) < 2 ? !!b.def.up : (b.level || 1) < 3 && !!b.def.up3); }
+// следующий уровень здания и цена достройки до него
+const nextLevelOf = b => ((b.level || 1) >= 2 ? 3 : 2);
 
 // Достройка — настоящая стройка: материалы везут трудяги, работяга по кирпичику надстраивает
 // здание, пока идёт стройка, производство стоит.
 function startUpgrade(b) {
   if (!canUpgrade(b) || b.upg) return false;
-  const cost = b.def.up.cost, total = Object.values(cost).reduce((a, n) => a + n, 0);
-  b.upg = { cost, total, used: emptyGoods(), stock: emptyGoods(), usedN: 0, hits: 0, maxHits: Math.max(1, total * HITS_PER_UNIT), builder: null };
+  const nl = nextLevelOf(b), cost = (nl === 3 ? b.def.up3 : b.def.up).cost, total = Object.values(cost).reduce((a, n) => a + n, 0);
+  b.upg = { cost, total, used: emptyGoods(), stock: emptyGoods(), usedN: 0, hits: 0, maxHits: Math.max(1, total * HITS_PER_UNIT), builder: null, to: nl };
   b.builder = null;
   b._usite = null;
-  toast(`«${b.def.name}»: начата достройка до уровня 2`, b);
-  logEvent('build', `«${b.def.name}»: начата достройка до уровня 2`, b.doorX + 0.5, b.doorY);
+  toast(`«${b.def.name}»: начата достройка до уровня ${nl}`, b);
+  logEvent('build', `«${b.def.name}»: начата достройка до уровня ${nl}`, b.doorX + 0.5, b.doorY);
   return true;
 }
 
@@ -151,17 +217,18 @@ function finishUpgrade(b) {
 }
 
 function upgradeBuilding(b, silent) {
-  b.level = 2;
-  b.def = levelDef(b.type);
+  const nl = nextLevelOf(b);
+  b.level = nl;
+  b.def = nl === 3 && b.def.up3 ? levelDefL3(b.type) : levelDef(b.type);
   // новые рецепты — в конец списка, прежние галочки остаются
   while (b.recipeOn.length < (b.def.recipes || []).length) b.recipeOn.push(true);
   if (!silent) {
     b.dmg = 0;
     const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
     fxBurst(cx * TILE, cy * TILE, 30, ['#d8b070', '#a0703a', '#e8cc90', '#cfc7b4'], 90, 60, 0.9, 2.4, 240);
-    floater(cx, b.y - 1, 'Уровень 2!', '#ffe08a');
-    logEvent('build', `«${BUILDINGS[b.type].name}» достроено до уровня 2`, cx, cy);
-    toast(`«${BUILDINGS[b.type].name}» достроено до уровня 2`, b);
+    floater(cx, b.y - 1, `Уровень ${nl}!`, '#ffe08a');
+    logEvent('build', `«${BUILDINGS[b.type].name}» достроено до уровня ${nl}`, cx, cy);
+    toast(`«${BUILDINGS[b.type].name}» достроено до уровня ${nl}`, b);
     sfxAt('build', cx * TILE, cy * TILE);
   }
   return true;
@@ -191,25 +258,26 @@ function eraEvict(keep) {
   for (const k in SPR.buildings) { const e = +k.split('#e')[1]; if (e && !keep.includes(e)) delete SPR.buildings[k]; }
 }
 
-function buildingSprite(type, rot = 0, level = 1, settle) {
-  const lv = level >= 2 && BUILDINGS[type].up ? 2 : 1;
+function buildingSprite(type, rot = 0, level = 1, settle, vr = 0) {
+  const lv = level >= 3 && (BUILDINGS[type].up3 || type.startsWith('guild_')) ? 3 : level >= 2 && BUILDINGS[type].up ? 2 : 1;
   const era = buildingEra(type, lv, settle);
-  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot, 1, era);
+  if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot, 1, era, vr);
   const d = bDims(type, rot);
-  const key = type + ':' + d.rot + (lv === 2 ? ':L2' : ':G') + '#e' + era;
+  const key = type + ':' + d.rot + (lv === 3 ? ':L3' : lv === 2 ? ':L2' : ':G') + (vr ? '~v' + vr : '') + '#e' + era;
   if (SPR.buildings[key]) return SPR.buildings[key];
-  const base = buildingSpriteBase(type, rot, lv, era);
+  const base = buildingSpriteBase(type, rot, lv, era, vr);
   const cv = mkCanvas(base.canvas.width, base.canvas.height), c = cv.getContext('2d');
   c.drawImage(base.canvas, 0, 0);
   c.imageSmoothingEnabled = false;
   // Рисуем в пикселях готового арта (их втрое больше мировых): все детали — тем же пикселем,
   // что и само здание, с 1-px тёмным контуром.
   const k = base.canvas.width / base.w;
-  const rnd = mulberry32(hashStr(type + 'L2'));
+  const rnd = mulberry32(hashStr(type + 'L2' + (vr || '')));
   const px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
   const OUT = '#1a100a';
-  if (lv === 2) {
-    const roofCols = ['#8a3a28', '#5a6a8a', '#3e6a4a', '#7a5a3a'], rc = roofCols[Math.floor(rnd() * roofCols.length)];
+  if (lv >= 2) {
+    rnd();
+    const rc = lv === 3 ? '#b04a2c' : '#8a6238';   // мансарда в цвет кровли уровня: дерево / черепица
     const P = (base.perches && base.perches[0]) || [base.padx + base.fw / 2, base.top * 0.4];
     const mx = Math.round(P[0] * k), my = Math.round(P[1] * k) + 20 * k;
     if (!base.tall && type !== 'watchtower') {
@@ -237,7 +305,7 @@ function buildingSprite(type, rot = 0, level = 1, settle) {
     px(lx - 3, ly - 22, 12, 26, OUT); px(lx - 2, ly - 21, 10, 3, '#3a2a1a'); px(lx - 2, ly - 18, 10, 18, '#ffd060'); px(lx - 2, ly - 18, 10, 6, '#fff0b8');
     px(lx + 2, ly - 25, 2, 3, OUT); px(lx - 2, ly, 10, 4, '#3a2a1a');
   }
-  if (lv === 2 && type === 'ironmine') {
+  if (lv >= 2 && type === 'ironmine') {
     // копёр над штольней: две стойки, перекладина и железное колесо ворота
     const hx = Math.round((base.doorCx - 34) * k / 1), hy = Math.round((base.baseY - 14) * k);
     for (const sx of [0, 56]) { px(hx + sx - 1, hy - 100, 8, 102, OUT); px(hx + sx, hy - 99, 6, 100, '#6a4a2a'); px(hx + sx, hy - 99, 2, 100, '#a07848'); }
@@ -245,11 +313,23 @@ function buildingSprite(type, rot = 0, level = 1, settle) {
     px(hx + 22, hy - 126, 20, 22, OUT); px(hx + 24, hy - 124, 16, 18, '#8a909c'); px(hx + 28, hy - 120, 8, 10, '#2a2c34'); px(hx + 24, hy - 124, 16, 3, '#c4cad4');
     px(hx + 31, hy - 100, 2, 56, '#2a2018');
   }
-  if (lv === 2 && type.startsWith('guild_')) {
+  if (lv >= 2 && type.startsWith('guild_')) {
     // позолоченный щит над входом цвета класса
     const col = GCLS[type.slice(6)].col, gx = Math.round(base.doorCx * k), gy = Math.round((base.baseY - 60) * k);
     px(gx - 14, gy - 2, 30, 36, OUT); px(gx - 12, gy, 26, 30, '#f0c040'); px(gx - 10, gy + 2, 22, 24, col); px(gx - 8, gy + 4, 18, 4, shade(col, 0.25)); px(gx - 8, gy + 26, 18, 2, OUT);
     px(gx - 1, gy + 4, 4, 22, '#f0c040');
+  }
+  if (lv === 3 && !type.startsWith('guild_')) {
+    // флюгер на коньке: шест с золотым шаром, стрелка и петух — приметный знак «здание достроено до конца»
+    const P = (base.perches && base.perches[0]) || [base.padx + base.fw / 2, base.top * 0.4];
+    const vx = Math.round(P[0] * k) - 24 * k / 3, vy = Math.round(P[1] * k) + (base.tall || type === 'watchtower' ? 8 : -22) * k / 3;
+    const GOLD = '#f0c040', HI = '#fff0a0', SH = '#b8901e';
+    px(vx - 2, vy - 66, 6, 70, OUT); px(vx - 1, vy - 65, 4, 68, '#5a5a62'); px(vx - 1, vy - 65, 1, 68, '#9a9aa6');
+    px(vx - 5, vy - 74, 12, 10, OUT); px(vx - 4, vy - 73, 10, 8, GOLD); px(vx - 4, vy - 73, 4, 3, HI); px(vx + 2, vy - 68, 4, 2, SH);
+    px(vx - 22, vy - 51, 46, 8, OUT); px(vx - 21, vy - 50, 44, 6, GOLD); px(vx - 21, vy - 50, 44, 2, HI); px(vx - 21, vy - 46, 44, 2, SH);   // стрелка
+    px(vx + 22, vy - 54, 6, 14, OUT); px(vx + 22, vy - 53, 4, 12, GOLD); px(vx - 28, vy - 54, 8, 14, OUT); px(vx - 27, vy - 53, 6, 12, GOLD);
+    px(vx + 4, vy - 66, 14, 16, OUT); px(vx + 5, vy - 65, 12, 14, GOLD); px(vx + 5, vy - 65, 12, 3, HI);   // петух
+    px(vx + 14, vy - 72, 6, 8, OUT); px(vx + 15, vy - 71, 4, 6, GOLD); px(vx + 18, vy - 68, 6, 4, '#e04a3a'); px(vx + 9, vy - 71, 4, 5, '#e04a3a');
   }
   greenery(c, base, type, px, k);
   const spr = Object.assign({}, base, { canvas: cv });
@@ -343,7 +423,7 @@ function upgradeModel(m) {
 // Поверх старого здания по кирпичику проявляется новое (второй этаж, новая крыша),
 // вокруг стоят леса до достигнутой высоты, на месте удара — вспышка и пыль.
 function drawUpgradeLayer(c, b) {
-  const spr = buildingSprite(b.type, b.rot || 0, 2);
+  const spr = buildingSprite(b.type, b.rot || 0, (b.upg && b.upg.to) || nextLevelOf(b), undefined, b.hv || 0);
   const fb = { buildFrac: b.upg.hits / b.upg.maxHits, _site: b._usite };
   const S = siteState(fb, spr);
   b._usite = fb._site;

@@ -262,7 +262,7 @@ function drawRockEyes(c, e, a) {
     const x = p.x + dx * (e.face < 0 ? -1 : 1) + s / 2, y = p.y + dy + s / 2 - 0.5;
     const b = rockBlink(e, k, t), h = Math.max(0.15, 1 - b);               // высота открытой части глаза
     c.fillStyle = '#140a05'; c.beginPath(); c.arc(x, y, s * 0.8 + 0.5, 0, 7); c.fill();            // глазная ямка
-    c.fillStyle = '#86f0c0'; c.beginPath(); c.ellipse(x, y, s * 0.62 + 0.2, (s * 0.62 + 0.2) * h, 0, 0, 7); c.fill();   // светящийся глаз
+    c.fillStyle = '#ff6a50'; c.beginPath(); c.ellipse(x, y, s * 0.62 + 0.2, (s * 0.62 + 0.2) * h, 0, 0, 7); c.fill();   // светящийся глаз
     if (h > 0.5) { c.fillStyle = '#e6fff2'; c.fillRect(x - 0.5, y - 0.6 * h, 1, 1); }
     if (b > 0.05) { c.fillStyle = '#3a342c'; c.fillRect(x - s * 0.8 - 0.2, y - s * 0.8 - 0.4, s * 1.6 + 0.4, (s * 0.8 + 0.4) * Math.min(1, b * 1.1)); }   // каменное веко сверху
   });

@@ -2,7 +2,7 @@
 // Проверка кооп-сервера: запускается на временной папке данных и свободном порту, затем
 //  · раздаёт index.html и КАЖДЫЙ подключённый в нём файл (нет 404 после переездов по папкам),
 //  · не раздаёт server/ и coopsim.js,
-//  · принимает отчёт об ошибке POST /err и событие POST /e,
+//  · принимает отчёт об ошибке POST /err и событие POST /e, статистику по согласию POST /t, отчёт POST /report, удаление POST /t/forget,
 //  · /stats без ключа — 403, с ключом — сводка с разделом ошибок.
 // Запуск: node tests/server-test.js   (печатает ✗/⚠ строки, код выхода 1 при провале)
 const fs = require('fs');
@@ -59,12 +59,36 @@ function req(port, method, p, body) {
     if (big.status !== 413) fails.push('большой POST /err должен быть 413, а не ' + big.status);
     const ev = await req(port, 'POST', '/e', JSON.stringify({ c: 'abcdefgh12', e: ['start-desktop'] }));
     if (ev.status !== 204) fails.push('POST /e не принят: ' + ev.status);
+    const t1 = await req(port, 'POST', '/t', JSON.stringify({ id: 'abcdefgh12345678', s: 'sess0001', v: 'test', dev: 'pc', scr: '1920x1080', ev: [{ k: 'beat', t: 60, fps: 60, day: 1, pop: 5 }] }));
+    if (t1.status !== 204) fails.push('POST /t (статистика по согласию) не принят: ' + t1.status);
+    const t2 = await req(port, 'POST', '/t', 'мусор');
+    if (t2.status !== 400) fails.push('POST /t с мусором должен быть 400, а не ' + t2.status);
+    const rp = await req(port, 'POST', '/report', JSON.stringify({ id: 'abcdefgh12345678', v: 'test', text: 'проверка отчёта', log: ['x'] }));
+    let rn = ''; try { rn = JSON.parse(rp.body).n; } catch (e) { /* ниже */ }
+    if (rp.status !== 200 || !rn || !fs.existsSync(path.join(data, 'reports', rn, 'report.json'))) fails.push('POST /report не сохранил отчёт: ' + rp.status + ' ' + rp.body);
+    const fg = await req(port, 'POST', '/t/forget', JSON.stringify({ id: 'abcdefgh12345678', cid: 'abcdefgh12' }));
+    let fj = {}; try { fj = JSON.parse(fg.body); } catch (e) { /* ниже */ }
+    if (fg.status !== 200 || fj.lines !== 1 || fj.reports !== 1 || !fj.funnel) fails.push('POST /t/forget удалил не всё: ' + fg.status + ' ' + fg.body);
     const s0 = await req(port, 'GET', '/stats');
     if (s0.status !== 403) fails.push('/stats без ключа должен быть 403, а не ' + s0.status);
     const s1 = await req(port, 'GET', '/stats?key=testkey');
     if (s1.status !== 200 || !/Ошибки у игроков/.test(s1.body) || !/x is undefined/.test(s1.body)) fails.push('/stats не показывает ошибку из отчёта:\n' + s1.body.slice(-600));
     const s2 = await req(port, 'GET', '/stats?key=testkey&json=1');
     try { const j = JSON.parse(s2.body); if (!j.errors || j.errors.reports < 1) fails.push('/stats?json без errors'); } catch (e) { fails.push('/stats?json не JSON'); }
+    // соединение, закрытое клиентом без прощального кадра, не должно висеть в списке (http-сервер держит сокеты полуоткрытыми)
+    {
+      const net = require('net');
+      const sk = net.connect(port, '127.0.0.1');
+      await new Promise(r => sk.once('connect', r));
+      sk.write(['GET / HTTP/1.1', 'Host: x', 'Upgrade: websocket', 'Connection: Upgrade', 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==', 'Sec-WebSocket-Version: 13', '', ''].join(String.fromCharCode(13, 10)));
+      await new Promise(r => sk.once('data', r));
+      const n1 = JSON.parse((await req(port, 'GET', '/coop-info?metrics=1')).body).conns;
+      sk.destroy();
+      await new Promise(r => setTimeout(r, 600));
+      const n2 = JSON.parse((await req(port, 'GET', '/coop-info?metrics=1')).body).conns;
+      if (n1 !== 1 || n2 !== 0) fails.push(`оборванное соединение осталось в списке (было ${n1}, стало ${n2})`);
+      else info.push('оборванное соединение убирается сразу');
+    }
     if (/ошибка шага/.test(out)) fails.push('в логе сервера ошибки шага:\n' + out.split('\n').filter(l => /ошибка шага/.test(l)).slice(0, 3).join('\n'));
   } finally {
     ch.kill();

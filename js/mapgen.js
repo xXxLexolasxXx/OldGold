@@ -45,8 +45,13 @@ const BIOMES = {
     wT: 0.27, rT: 0.68, fT: 0.50, fP: 0.78, sT: 0.01, stT: 0.84, crys: 0.66,
     rivers: [1, 2], lakes: [2, 3], ranges: [1, 2], ponds: 0, ore: 0.14, events: ['blizzard'], evP: 0.6,
   },
+  coast: {
+    name: 'Побережье', icon: '🌊', desc: 'море у края земли: бухты, острова, пляжи с галькой, чайки и крабы',
+    wT: 0.22, rT: 0.74, fT: 0.6, fP: 0.74, sT: 0.012, stT: 0.85, crys: 0.72,
+    rivers: [1, 1], lakes: [1, 2], ranges: [0, 1], ponds: 0, ore: 0.05, sea: true, events: ['flood'], evP: 0.3,
+  },
 };
-const BIOME_ORDER = ['meadow', 'forest', 'steppe', 'mountain', 'swamp', 'winter'];
+const BIOME_ORDER = ['meadow', 'forest', 'steppe', 'mountain', 'swamp', 'winter', 'coast'];
 
 // Палитры земли для попиксельной отрисовки (meadow — прежние цвета)
 const BIOME_PAL = {
@@ -55,6 +60,7 @@ const BIOME_PAL = {
   steppe:   { g0: [150, 138, 60], g1: [196, 178, 86], dry: [176, 150, 70], dryK: 0.5, dirtT: 0.6, dirt: [128, 104, 66], sand: [214, 188, 128], rk: [1.08, 1.0, 0.9], moss: [140, 140, 70], w0: [70, 134, 140], w1: [30, 78, 112], foam: [240, 240, 232], foamK: 0.9, tuft: ['rgba(110,88,28,0.9)', 'rgba(222,200,108,0.9)'], flower: 0.035, flCols: ['#e86a4a', '#f4e46a', '#d0a0e8'] },
   mountain: { g0: [72, 98, 54], g1: [106, 128, 72], dry: [142, 138, 112], dryK: 0.5, dirtT: 0.6, dirt: [112, 104, 92], sand: [182, 166, 134], rk: [1.02, 1.0, 1.06], moss: [76, 98, 60], w0: [58, 118, 146], w1: [20, 62, 104], foam: [238, 244, 246], foamK: 1, tuft: ['rgba(48,70,34,0.9)', 'rgba(150,170,100,0.85)'], flower: 0.05, flCols: ['#f2f2f6', '#8ab4f0', '#d47cc8'] },
   swamp:    { g0: [42, 70, 30], g1: [70, 96, 40], dry: [92, 84, 40], dryK: 0.3, dirtT: 0.56, dirt: [56, 60, 34], sand: [122, 120, 78], rk: [0.9, 0.95, 0.9], moss: [66, 92, 46], w0: [64, 92, 70], w1: [30, 52, 46], foam: [128, 150, 82], foamK: 0.55, tuft: ['rgba(30,48,18,0.9)', 'rgba(110,138,58,0.85)'], flower: 0.02, flCols: ['#f2f2f6', '#f4e46a'] },
+  coast:    { g0: [60, 112, 30], g1: [104, 164, 48], dry: [158, 156, 70], dryK: 0.4, dirtT: 0.66, dirt: [112, 96, 64], sand: [204, 180, 124], rk: [1, 0.98, 0.96], moss: [84, 104, 56], w0: [70, 150, 160], w1: [24, 66, 118], foam: [240, 250, 248], foamK: 1, tuft: ['rgba(48,82,24,0.85)', 'rgba(150,180,80,0.85)'], flower: 0.08, flCols: ['#f2f2f6', '#f4e46a', '#e8a0c8'] },
   winter:   { g0: [204, 226, 240], g1: [244, 250, 254], dry: [196, 220, 238], dryK: 0.25, dirtT: 0.93, dirt: [96, 90, 86], sand: [168, 188, 212], rk: [0.95, 1.0, 1.12], moss: [196, 212, 228], w0: [200, 222, 236], w1: [150, 188, 216], foam: [248, 252, 255], foamK: 0, ice: true, snow: true, tuft: ['rgba(96,116,140,0.9)', 'rgba(250,252,255,0.95)'], flower: 0, flCols: [] },
 };
 
@@ -165,6 +171,77 @@ function mgPonds(R, thr) {
   }
 }
 
+// Море у одного края карты: извилистый берег, бухты (море вдаётся в сушу) и мысы, острова, скалы-кекуры у мысов.
+// Берег не ближе 26 клеток к старту. Сторона и форма — от сида (тот же R, что у рек)
+function mgSea(R, cx, cy) {
+  const side = (R() * 4) | 0;                    // 0 — юг, 1 — восток, 2 — север, 3 — запад
+  const horiz = side === 0 || side === 2;
+  const L = horiz ? MAP_W : MAP_H, D = horiz ? MAP_H : MAP_W;
+  const cc = horiz ? cy : cx;
+  const maxDepth = Math.max(10, D - cc - 26);    // сколько клеток от края можно отдать морю
+  const base = Math.min(maxDepth - 4, D * 0.2 + R() * 4);
+  const waves = [[0.04 + R() * 0.03, R() * 6.28, 3 + R() * 2], [0.11 + R() * 0.06, R() * 6.28, 1.4 + R()], [0.27 + R() * 0.1, R() * 6.28, 0.6]];
+  const bays = [];
+  for (let n = 2 + ((R() * 2) | 0); n > 0; n--) bays.push([R() * L, 4 + R() * 6, (R() < 0.7 ? 1 : -1) * (4 + R() * 6)]);   // центр, ширина, глубина (минус — мыс)
+  const depthAt = t => {
+    let d = base;
+    for (const [f, p, a] of waves) d += Math.sin(t * f + p) * a;
+    for (const [c0, w, a] of bays) d += a * Math.exp(-((t - c0) * (t - c0)) / (2 * w * w));
+    return Math.max(3, Math.min(maxDepth, d));
+  };
+  const at = (t, d) => {                         // t — вдоль берега, d — от края карты вглубь
+    if (side === 0) return [t, MAP_H - 1 - d];
+    if (side === 2) return [t, d];
+    if (side === 1) return [MAP_W - 1 - d, t];
+    return [d, t];
+  };
+  const shore = [];
+  for (let t = 0; t < L; t++) {
+    const dd = depthAt(t);
+    shore.push(dd);
+    for (let d = 0; d < dd; d++) { const [x, y] = at(t, d); if (inb(x, y)) World.terrain[idx(x, y)] = T_WATER; }
+  }
+  // острова: подальше от берега, неровные
+  for (let n = 1 + ((R() * 3) | 0), tries = 0; n > 0 && tries < 30; tries++) {
+    const t = 6 + R() * (L - 12), dd = shore[Math.floor(t)];
+    if (dd < 9) continue;
+    const d = 2 + R() * (dd - 7), rad = 1.6 + R() * Math.min(4, (dd - 5) / 2.5);
+    const [ox, oy] = at(t, d), p = R() * 6.28;
+    for (let yy = Math.floor(oy - rad - 1); yy <= oy + rad + 1; yy++) for (let xx = Math.floor(ox - rad - 1); xx <= ox + rad + 1; xx++) {
+      if (!inb(xx, yy)) continue;
+      const a = Math.atan2(yy - oy, xx - ox), r = rad * (1 + 0.25 * Math.sin(a * 3 + p));
+      if (Math.hypot(xx - ox, yy - oy) <= r) World.terrain[idx(xx, yy)] = R() < 0.06 && rad > 2.5 ? T_ROCK : T_GRASS;
+    }
+    n--;
+  }
+  // кекуры: одиночные скалы в воде у мысов (там сидят бакланы)
+  for (let n = 2 + ((R() * 3) | 0); n > 0; n--) {
+    const t = Math.floor(R() * L), [x, y] = at(t, Math.max(1, shore[t] - 1 - ((R() * 2) | 0)));
+    if (inb(x, y)) World.terrain[idx(x, y)] = T_ROCK;
+  }
+}
+
+// Пляж у моря шире обычного песка: 2–3 клетки, кое-где трава доходит до воды (после общего песка, genWorld)
+function mgBeach(seed) {
+  const bio = biomeDef();
+  if (!bio || !bio.sea) return;
+  const n = makeNoise(mulberry32((seed ^ 0x5EA5) >>> 0), 6);
+  const W = MAP_W, H = MAP_H, T = World.terrain;
+  const mark = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = idx(x, y);
+    if (T[i] !== T_GRASS || World.obj[i]) continue;
+    const r = n(x, y) > 0.55 ? 3 : n(x, y) > 0.3 ? 2 : 1;
+    let near = false;
+    for (let dy = -r; dy <= r && !near; dy++) for (let dx = -r; dx <= r; dx++) {
+      const xx = x + dx, yy = y + dy;
+      if (inb(xx, yy) && T[idx(xx, yy)] === T_WATER && (xx === 0 || yy === 0 || xx === W - 1 || yy === H - 1 || Math.hypot(dx, dy) <= r)) { near = true; break; }
+    }
+    if (near) mark.push(i);
+  }
+  for (const i of mark) T[i] = T_SAND;
+}
+
 // Вызывается из genWorld до стартовой поляны. R — отдельный генератор: основной поток случайных чисел не сдвигается
 function genBiomeFeatures(seed, cx, cy) {
   const bio = biomeDef();
@@ -173,6 +250,7 @@ function genBiomeFeatures(seed, cx, cy) {
   const pick = ([a, b]) => a + ((R() * (b - a + 1)) | 0);
   const k = Math.max(0.7, Math.sqrt(MAP_W * MAP_H / (160 * 120)));   // на малой карте рек и озёр меньше
   const wide = MapOpt.biome === 'swamp' || MapOpt.biome === 'steppe';
+  if (bio.sea) mgSea(R, cx, cy);
   if (bio.ponds) mgPonds(R, bio.ponds);
   for (let n = pick(bio.rivers); n > 0; n--) mgRiver(R, cx, cy, wide);
   for (let n = Math.round(pick(bio.lakes) * k); n > 0; n--) mgLake(R, cx, cy, MapOpt.biome === 'swamp');

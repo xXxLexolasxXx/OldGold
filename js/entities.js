@@ -37,10 +37,36 @@ function recipeCanRun(b, r) {
   return true;
 }
 
+// Еды вдоволь: пекарня и бойня не начинают новую партию, если этой еды на складах и в трактирах уже ~12 обедов на жителя
+// (с запасом на зиму). Иначе склад копил по 1000+ хлеба, а курьеры весь день вывозили его из цехов — и стройки
+// неделями ждали камень на последнюю клетку дороги (замер tools/soak/deficit.js, ДЕФИЦИТЫ.md). Зерно тем временем копится на складе.
+const FOOD_ENOUGH_PER = 12, FOOD_ENOUGH_MIN = 80;
+let foodEnoughT = -1, foodEnoughC = null;
+function foodStocked() {
+  if (foodEnoughC && Math.abs(Game.time - foodEnoughT) < 2) return foodEnoughC;
+  const c = {};
+  for (const x of Game.buildings) if (x.state === 'done' && !x.removed && (x.type === 'inn' || x.isStore())) for (const g of FOODS) c[g] = (c[g] || 0) + (x.stock[g] || 0);
+  let ppl = 0; for (const u of Game.units) if (!u.dead && !u.noFood && isPerson(u)) ppl++;
+  c.cap = Math.max(FOOD_ENOUGH_MIN, ppl * FOOD_ENOUGH_PER);
+  foodEnoughT = Game.time; foodEnoughC = c;
+  return c;
+}
+function foodEnough(b) {
+  const rs = b.def.recipes;
+  if (!rs || b.def.auto) return false;
+  const outs = new Set();
+  for (const r of rs) for (const g in r.out) if (FOODS.includes(g)) outs.add(g);
+  if (!outs.size) return false;
+  const c = foodStocked();
+  for (const g of outs) if ((c[g] || 0) < c.cap) return false;
+  return true;
+}
+
 // Следующий включённый рецепт, который можно выполнить (по кругу).
 function pickRecipe(b) {
   const rs = b.def.recipes;
   if (!rs) return null;
+  if (foodEnough(b)) return null;
   for (let k = 0; k < rs.length; k++) {
     const i = (b.recipeIdx + k) % rs.length;
     if (b.recipeOn[i] && recipeCanRun(b, rs[i])) { b.recipeIdx = (i + 1) % rs.length; return rs[i]; }
@@ -130,6 +156,7 @@ class Building {
       if (n < 3 && this.stock.wheat < 2) return 'need:wheat';
     }
     const rs = this.def.recipes;
+    if (rs && rs.length && foodEnough(this)) return 'enough';
     if (rs && rs.length && !rs.some((r, i) => this.recipeOn[i] && recipeCanRun(this, r))) {
       const full = rs.every(r => Object.keys(r.out).some(g => this.stock[g] + r.out[g] > this.def.outputs[g]));
       if (full) return 'full';
@@ -254,6 +281,7 @@ class Pile {
     this.reserved = emptyGoods();
     this.incoming = emptyGoods();
     this.removed = false;
+    this.ageAt = {};       // когда лёг «неходовой» груз (мусор, куски курицы): склад его не берёт, такие кучки со временем убираются
   }
   offer(g) { return this.stock[g] - this.reserved[g]; }
   demand() { return 0; }
@@ -271,6 +299,7 @@ function dropPile(x, y, g, n) {
   let p = Game.piles.get(i);
   if (!p || p.removed) { p = new Pile(x, y); Game.piles.set(i, p); }
   p.stock[g] += n;
+  if (GOODS[g].noStore && !p.ageAt[g]) p.ageAt[g] = Game.time;
   return p;
 }
 
@@ -529,15 +558,19 @@ function findInn(u) {
     if (d < bd) { bd = d; best = b; }
   }
   if (best) return best;
-  // в трактире пусто — перекусить всухомятку на складе (не досыта, зато не упадёт)
+  // в трактире пусто — перекусить всухомятку на складе (не досыта, зато не упадёт); нет и хлеба — каша из зерна
   for (const b of Game.buildings) {
-    if (!b.isStore() || b.isPile || b.state !== 'done' || !innFood(b)) continue;
+    if (!b.isStore() || b.isPile || b.state !== 'done' || !storeMeal(b)) continue;
     const d = Math.abs(b.doorX - u.x) + Math.abs(b.doorY - u.y);
     if (d < bd) { bd = d; best = b; }
   }
   return best;
 }
 
+// Склад кормит всухомятку: готовой едой, а если её нет — кашей из зерна. Раньше в первые сутки, пока нет мельницы
+// и пекарни, деревня падала от голода при полном амбаре зерна (и ослабевших ночью утаскивала нечисть).
+// Зерно в кашу — втрое хуже, чем через мельницу и пекарню (1 зерно → 3 хлеба), так что цепочка хлеба по-прежнему нужна.
+function storeMeal(b) { return innFood(b) || (b.stock.wheat - b.reserved.wheat > 0 ? 'wheat' : null); }
 function innFood(b) {
   // трактирщик разделывает тушку курицы на 4 куска, когда кончились готовые
   if (b.type === 'inn' && b.stock.chickenleg - b.reserved.chickenleg <= 0 && b.stock.chicken > 0) { b.stock.chicken--; b.stock.chickenleg += 4; }
@@ -747,6 +780,7 @@ class Unit {
       if (this.food <= 0 && !this.noFood) speed *= 0.5;
       if (this.injury === 'leg') speed *= 0.55;
       if (this.hangUntil > Game.time) speed *= 0.75;     // похмелье после праздника
+      if (this.pzUntil > Game.time || this.fgUntil > Game.time) speed *= 0.65;     // яд жаболюдов и их болотный туман (frogs.js)
       if (this.fleeUntil > Game.time) speed *= 1.7;     // удирает от гусей
       speed *= daySpeedMul();                            // днём бодрее, ночью медленнее
       if (WX.k > 0 && !this.isCourier) speed *= 1 + 0.3 * WX.k;   // под дождём спешат

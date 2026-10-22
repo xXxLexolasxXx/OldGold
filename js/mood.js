@@ -313,7 +313,7 @@ function mdBreak(u, M, now, G) {
   const foes = now >= G.fightAt ? mdPeopleFor(u) : [];
   // что сильнее давит — то и толкает на срыв: голод и скука — драться, одиночество — пить, усталость — бросить работу
   const top = (M.r.find(r => r[1] < 0) || ['x'])[0];
-  const w = { drink: inn ? 4 + (top === 'soc' ? 3 : 0) : 0, fight: foes.length ? 2.5 + (top === 'food' || top === 'fun' ? 2 : 0) : 0, sulk: 3 + (top === 'rest' ? 3 : 0) };
+  const w = { drink: inn ? (4 + (top === 'soc' ? 3 : 0)) * (typeof folkBeerK === 'function' ? folkBeerK(u) : 1) : 0, fight: foes.length ? 2.5 + (top === 'food' || top === 'fun' ? 2 : 0) : 0, sulk: 3 + (top === 'rest' ? 3 : 0) };
   const sum = w.drink + w.fight + w.sulk;
   let r = Math.random() * sum, pick = 'sulk';
   for (const k of ['drink', 'fight', 'sulk']) { if ((r -= w[k]) < 0) { pick = k; break; } }
@@ -539,7 +539,8 @@ function mdPackUnit(u) {
   return [t(M.m), t(M.rest), t(M.fun), t(M.soc), t(M.sm), M.ev.map(e => [e[0], e[1], e[2]])];
 }
 function mdApplyUnit(u, a) {
-  if (!Array.isArray(a) || a.length < 5 || !mdOn(u)) return;
+  // не по mdOn: отряд героя, гильдия, владелец — временные состояния, после них настроение нужно прежнее, а не случайное
+  if (!Array.isArray(a) || a.length < 5 || u.dead || !isPerson(u) || u.hero || u.rec || u.type === 'hero' || u.type === 'carter' || u.type === 'goat') return;
   const M = mdNew(u);
   M.m = +a[0] || 50; M.rest = +a[1]; M.fun = +a[2]; M.soc = +a[3]; M.sm = +a[4];
   M.ev = Array.isArray(a[5]) ? a[5].filter(e => Array.isArray(e) && typeof e[0] === 'string' && MD_WHY[e[0]]).map(e => [e[0], e[1] | 0, +e[2] || 0]) : [];

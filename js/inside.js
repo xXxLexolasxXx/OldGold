@@ -74,6 +74,7 @@ function drawInsideLife(c, b, spr, ox, oy) {
 function innFoodSprite(c, food, x, y) {
   switch (food) {
     case 'chickenleg': ellipse(c, x, y - 1, 2.2, 1.5, '#c8803a'); c.fillStyle = '#f6f2ea'; c.fillRect(x + 1.6, y - 0.4, 2.4, 0.9); break;
+    case 'fish': ellipse(c, x, y - 0.8, 2.6, 0.9, '#8ab0c4'); c.fillStyle = '#4a5e74'; c.fillRect(x + 2.2, y - 1.4, 0.8, 1.2); break;
     case 'steak': ellipse(c, x, y - 0.8, 2.6, 1.4, '#8a3a24'); ellipse(c, x - 0.4, y - 1, 1.2, 0.5, '#b8583a'); break;
     case 'croissant': c.fillStyle = '#e0a03c'; c.beginPath(); c.arc(x, y - 0.4, 2, Math.PI, 0); c.fill(); c.fillStyle = '#b8742c'; c.fillRect(x - 1.8, y - 0.6, 3.6, 0.5); break;
     case 'sausage': c.fillStyle = '#b8503a'; c.fillRect(x - 2.4, y - 1.4, 4.8, 1.3); c.fillStyle = '#d87a5a'; c.fillRect(x - 2.4, y - 1.4, 4.8, 0.4); break;
@@ -205,19 +206,19 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests) {
   let pose = 'walk', carry = null, vis = true, view = 'E';
   if (w.st === 'in') {
     vis = false; w.x = dx; w.y = dy;
-    if (guests > 0 && w.t <= 0) { w.st = 'out'; }
+    if (guests > 0 && w.t <= 0) { w.st = 'out'; const fl = (INS_DINE.get(b) || []).map(u => u.diningFood).filter(Boolean); w.food = fl.length ? fl[Math.floor(Math.random() * fl.length)] : 'bread'; }
     else if (w.t <= 0) w.t = 1;
   } else if (w.st === 'out') {
-    carry = 'tray';
+    carry = 'tray:' + (w.food || 'bread');
     if (walkTo(tgtX, tgtY, 15)) { w.st = 'serve'; w.t = 2.2; }
   } else if (w.st === 'serve') {
-    carry = 'tray'; pose = 'idle'; view = 'S';
+    carry = 'tray:' + (w.food || 'bread'); pose = 'idle'; view = 'S';
     if (w.t <= 0) { w.st = 'back'; }
   } else {
     if (walkTo(dx, dy, 15)) { w.st = 'in'; w.t = 3 + Math.random() * 4; vis = false; }
   }
   if (!vis) return;
-  if (w.st === 'serve') carry = w.t > 1 ? 'tray' : null;
+  if (w.st === 'serve') carry = w.t > 1 ? 'tray:' + (w.food || 'bread') : null;
   const sp = personSprite({ type: 'waitress', look: b.id * 37 + 5, carry }, view, pose, pose === 'walk' ? (Math.floor(w.f) & 7) : 0, {});
   const px = Math.round(w.x), py = Math.round(w.y);
   c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(px + 1, py, 5.5, 2, 0, 0, 7); c.fill();
