@@ -95,6 +95,8 @@ body.mobile #tut {
   max-height: 44%; overflow-y: auto; font-size: 12.5px; line-height: 1.35; padding: 6px 9px 7px;
 }
 body.mobile #tut.flip { top: auto; bottom: calc(118px + env(safe-area-inset-bottom)); }
+/* цель в верхней полосе (скорость, звук): окно ниже стрелки, его ✕ и ☰ не под ней */
+body.mobile:not(.land) #tut.top-hl:not(.flip) { top: calc(98px + env(safe-area-inset-top)); }
 body.mobile #tut h3 { font-size: 15px; margin: 3px 0; }
 body.mobile #tut .tut-text { max-height: none; overflow: visible; }
 body.mobile #tut.min .tut-bar { display: none; }
