@@ -199,12 +199,13 @@ function coopUnits(m) {
     if (aSeen && !m.d) aSeen.add(d.i);
     let a = Coop.anim.get(d.i);
     if (!a) { a = makeAnimal(d.k, 0, 0); a.id = d.i; a.x = d.x; a.y = d.y; Coop.anim.set(d.i, a); }
-    a.tx = d.x; a.ty = d.y; a.face = d.f; a.moving = !!d.m; a.loot = d.l || null; a.state = d.s; a.phase = d.p;
+    a.tx = d.x; a.ty = d.y; a.face = d.f; a.moving = !!d.m; a.loot = d.l || null; a.state = d.s; a.phase = d.p; a.burn = d.b ? (a.burn || { t: 0, mirror: 1 }) : null;
   }
   if (aSeen) for (const id of [...Coop.anim.keys()]) if (!aSeen.has(id)) Coop.anim.delete(id);
   Game.animals = [...Coop.anim.values()];
   if (m.mir) coopMirror(m.mir);
   if (m.d) coopMirrorDelta(m);
+  coopLinkWorkers();
 }
 
 function coopDropUnit(id) {
@@ -262,6 +263,20 @@ function coopApplyBuilding(d, byId) {
   if (d.crops) b.crops = d.crops;
   if (d.upg && b.upg) { Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
   b.working = !!d.wk; b.cold = !!d.cd; if (d.an) b.anim = d.an;
+  b.wid = d.wr || 0;
+}
+
+// Рабочие места: сервер шлёт у здания id работника (wr), а житель home не получает — без этого здания, построенные
+// или обученные после входа, у клиента навсегда «без работника» (значок, окно, «Обучить»). Зовём после пакетов жителей и мира.
+function coopLinkWorkers() {
+  const want = new Map();
+  for (const b of Game.buildings) {
+    if (b.wid === undefined) continue;
+    const u = b.wid ? Game.unitMap.get(b.wid) : null;
+    b.worker = u || null;
+    if (u) want.set(u, b);
+  }
+  for (const u of Game.units) { const b = want.get(u); if (b) u.home = b; else if (u.home && u.home.wid !== undefined) u.home = null; }
 }
 
 function coopDropBuilding(b) {
@@ -368,6 +383,7 @@ function coopWorld(m) {
     Game.piles.clear();
     for (const q of m.pl) { const p = new Pile(q.x, q.y); Object.assign(p.stock, q.st); Game.piles.set(idx(q.x, q.y), p); }
   }
+  coopLinkWorkers();
 }
 
 // Вместо step(): время идёт, всё плавно доезжает до последнего снимка

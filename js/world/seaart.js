@@ -40,6 +40,25 @@ function saPen(g) {
       }
     },
     a(alpha) { g.globalAlpha = alpha; },
+    // Итог рисунка: висящие точки стираются, силуэт обводится тоном корпуса (dark — рампа, 0..1 — насколько темнее)
+    fin(dark = 0.42) {
+      const W = g.canvas.width, H = g.canvas.height, img = g.getImageData(0, 0, W, H), d = img.data;
+      dropSpecks(d, W, H, 0);
+      const src = new Uint8ClampedArray(d);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const o = (y * W + x) * 4;
+        if (src[o + 3]) continue;
+        for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+          const xx = x + dx, yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+          const p = (yy * W + xx) * 4;
+          if (!src[p + 3]) continue;
+          d[o] = src[p] * dark; d[o + 1] = src[p + 1] * dark * 0.9; d[o + 2] = src[p + 2] * dark * 1.05; d[o + 3] = src[p + 3];
+          break;
+        }
+      }
+      g.putImageData(img, 0, 0);
+    },
   };
   return P;
 }
@@ -87,7 +106,7 @@ const SEA_ART = {
     if (f === 0 || f === n - 1) { P.p(3, 12, '#e8f6ff'); P.p(12, 12, '#e8f6ff'); P.p(7, 11, '#ffffff'); }   // брызги на входе и выходе
   } },
   // ---- краб: покой 6, бег боком 8, атака 9, смерть 6, нора 6
-  crab: { w: 15, h: 10, ax: 7, ay: 9, anims: { idle: 6, walk: 8, atk: 9, die: 6, hide: 6 }, draw(P, a, f, n) {
+  crab: { w: 17, h: 14, ax: 8, ay: 12, pad: [1, 3], anims: { idle: 6, walk: 8, atk: 9, die: 6, hide: 6 }, draw(P, a, f, n) {
     const C = SAC.crab;
     let sink = 0, flip = false, claw = 0, lift = 0, legPh = 0, fade = 1;
     if (a === 'idle') { claw = [0, 1, 1, 0, 0, 1][f] ; lift = [0, 0, 1, 1, 0, 0][f]; }
@@ -98,7 +117,7 @@ const SEA_ART = {
     P.a(fade);
     const by = 6 + sink;
     // ноги (по три с боков)
-    for (let k = 0; k < 3; k++) {
+    for (let k = 0; k < (sink > 1 ? 0 : 3); k++) {   // в норе ног не видно
       const up = ((legPh + k * 3) % 8) < 4 ? 0 : 1;
       if (!flip) { P.l(4 - k, by + 1, 2 - k * 1.2, by + 3 - up, C[2]); P.l(10 + k, by + 1, 12 + k * 1.2, by + 3 - (1 - up), C[2]); }
       else { P.l(4 - k, by - 1, 2 - k, by - 3 + up, C[2]); P.l(10 + k, by - 1, 12 + k, by - 3 + up, C[2]); }
@@ -106,14 +125,21 @@ const SEA_ART = {
     // панцирь
     P.e(7, by, 4, 2.2, flip ? '#e8c0a0' : C[1]); P.r(4, by - 2, 7, 1, flip ? '#f4dcc4' : C[0]);
     if (!flip) { P.r(4, by + 1, 7, 1, C[2]); P.p(6, by - 1, C[0]); }
-    // клешни
+    // клешни: плечо к телу и цельные челюсти; пасть — просвет между челюстями, его обводит контур
     if (!flip) for (const s of [-1, 1]) {
       const cx = 7 + s * 5, cy = by - 2 - lift;
       P.l(7 + s * 3, by - 1, cx, cy + 1, C[2]);
-      P.r(cx - 1, cy - 1, 2, 2, C[1]); P.p(cx + s, cy - 1 - (claw > 1 ? 1 : 0), C[0]); P.p(cx + s, cy + (claw ? 0 : -1), C[2]);
+      P.r(Math.min(cx, cx + s * 2), cy, 3, 2, C[1]);                         // кисть
+      P.p(cx - s, cy + 1, C[2]);                                              // тень под кистью
+      P.p(cx, cy - 1, C[0]);                                                  // верхняя челюсть, блик
+      if (claw > 1) { P.p(cx, cy - 2, C[0]); P.p(cx, cy - 3, C[1]); P.p(cx + s, cy - 3, C[1]); }
+      else if (claw) { P.p(cx, cy - 2, C[1]); P.p(cx + s, cy - 2, C[1]); }
+      else P.p(cx + s, cy - 1, C[1]);
+      P.p(cx + s * 2, cy + 1, C[1]);                                          // нижняя челюсть
     }
-    // глаза на стебельках
-    if (!flip && sink < 4) { P.p(6, by - 3 - (lift ? 1 : 0), '#14161a'); P.p(8, by - 3 - (lift ? 1 : 0), '#14161a'); P.p(6, by - 2, C[2]); P.p(8, by - 2, C[2]); }
+    // глаза на стебельках: светлая бусинка, а не чёрная точка
+    if (!flip && sink < 4) { const ey = by - 3 - (lift ? 1 : 0); P.p(5, ey, '#f8e8d0'); P.p(9, ey, '#f8e8d0'); P.p(5, by - 2, C[2]); P.p(9, by - 2, C[2]); }
+    P.fin();
     if (sink) { P.a(1); P.r(1, 9 - Math.max(0, sink - 4), 13, 1 + Math.min(4, sink), SAC.sand[1]); P.r(2, 9 - Math.max(0, sink - 4), 11, 1, SAC.sand[0]); }
     P.a(1);
   } },
@@ -363,6 +389,7 @@ function seaSprite(kind, anim, f) {
   let s = SA_CACHE.get(key);
   if (s) return s;
   const cv = mkCanvas(A.w, A.h), g = cv.getContext('2d');
+  if (A.pad) g.translate(A.pad[0], A.pad[1]);   // запас вокруг рисунка под обводку и поднятые клешни
   A.draw(saPen(g), anim, f, n);
   s = { cv, ax: A.ax, ay: A.ay };
   SA_CACHE.set(key, s);

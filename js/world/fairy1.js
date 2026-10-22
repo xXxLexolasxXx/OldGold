@@ -680,7 +680,7 @@ function fyNests(F) {
   }
   F.rocks = cands;
   const pick = (far) => { for (let t = 0; t < 40 && cands.length; t++) { const q = cands[(Math.random() * cands.length) | 0]; if (!far || Math.hypot(q[0] - far[0], q[1] - far[1]) > 8) return q; } return cands[0] || null; };
-  if (!F.dr) { const q = F.drSaved || pick(); if (q) F.dr = { nx: q[0], ny: q[1], x: q[0] + 0.5, y: q[1] + 0.5, z: 0, st: 'nest', t: fyR(240, 400), tamed: !!(F.drSaved && F.drSaved[2]), stage: (F.drSaved && F.drSaved[3]) || 0, raids: (F.drSaved && F.drSaved[4]) || 0, loot: 0, face: 1, ph: 0, pet: 120, tx: 0, ty: 0, src: null }; }
+  if (!F.dr) { const q = F.drSaved || pick(); if (q) F.dr = { nx: q[0], ny: q[1], x: q[0] + 0.5, y: q[1] + 0.5, z: 0, st: 'nest', t: fyR(240, 400), tamed: !!(F.drSaved && F.drSaved[2]), stage: (F.drSaved && F.drSaved[3]) || 0, raids: (F.drSaved && F.drSaved[4]) || 0, loot: 0, face: 1, ph: 0, pet: 120, tx: 0, ty: 0, src: null }; const S = F.drSaved; if (F.dr && S) { if (S[5]) { F.dr.sp = S[5]; F.dr.name = S[6]; F.dr.trait = S[7]; } if (S[8]) F.dr.away = Game.time + S[8]; if (S[9]) F.dr.st = 'gone'; } }
   if (!F.gr) { const q = F.grSaved || pick(F.dr ? [F.dr.nx, F.dr.ny] : null); if (q) F.gr = { nx: q[0], ny: q[1], x: q[0] + 0.5, y: q[1] + 0.5, z: 8, tr: q[2] != null ? q[2] : (4 + (Math.random() * 6 | 0)), hp: 70, st: 'patrol', t: 0, face: 1, ph: 0, wx: q[0], wy: q[1], duel: 0, cd: 0, resp: q[3] || 0, seen: 0 }; if (F.gr.resp > 0) { F.gr.st = 'gone'; F.gr.z = 0; } }
 }
 
@@ -721,6 +721,8 @@ function dragonTick(dt, F) {
   if (!d) return;
   d.ph += dt;
   const hero = fyHero();
+  if (d.tamed && typeof dpMigrate === 'function') { dpMigrate(F); return; }     // старый сейв: ручной дракон → питомец (dragonpet.js)
+  if (d.st === 'gone') return;          // гнездо пустует после поимки (dragonpet.js вернёт нового)
   if (d.tamed) {        // приручён: кружит у героя и носит золотишко
     d.st = 'pet'; d.z = 22 + Math.sin(d.ph * 2) * 3;
     const hx = hero ? hero.x : MAP_W / 2, hy = hero ? hero.y : MAP_H / 2;
@@ -739,9 +741,10 @@ function dragonTick(dt, F) {
   if (d.st === 'nest') {
     d.z = 0; d.x = d.nx + 0.5; d.y = d.ny + 0.5;
     d.t -= dt;
-    if (d.t > 0) return;
+    if (d.t > 0 || Game.time < (d.away || 0)) return;
     const done = Game.buildings.filter(b => b.state === 'done').length;
-    if (done < 4 || nightAmt() > 0.05 || isRaining()) { d.t = 15; return; }
+    // повадки: болотный не боится дождя, ледяной зимой прилетает чаще
+    if (done < 4 || nightAmt() > 0.05 || isRaining() && d.sp !== 'swamp') { d.t = 15; return; }
     const tg = dragonTarget();
     if (!tg) { d.t = 25; return; }
     d.tx = tg.x; d.ty = tg.y; d.src = tg; d.st = 'out'; d.z = 4; d.t = 0;
@@ -751,16 +754,18 @@ function dragonTick(dt, F) {
     d.z = Math.min(28, d.z + dt * 14);
     const rest = fyMove(d, d.tx, d.ty, 3.4, dt);
     if (nightAmt() > 0.2) { d.st = 'back'; return; }
-    if (rest < 0.25) { d.st = 'land'; d.t = 0; }
+    if (rest < 0.25) { d.st = 'land'; d.t = 0; d.lt = null; }
     return;
   }
   if (d.st === 'land') {
     d.z = Math.max(0, d.z - dt * 30);
     if (d.z > 0) return;
     d.t += dt;
-    const s = shooersNear(d.x, d.y, 3.6, 3, 3);
+    if (typeof dpWildLand === 'function' && dpWildLand(d, dt)) return;      // осторожность и разговор с героем (dragonpet.js)
+    const s0 = shooersNear(d.x, d.y, 3.6, 3, 3);
+    const s = s0 && typeof dpWildLand === 'function' && s0.who.filter(u => u.type !== 'hero').length < 3 ? null : s0;   // с героем говорит, а не убегает
     if (s) {      // прогнали или герой подошёл
-      if (s.hero && !d.triedTame && Math.random() < 0.5) {
+      if (s.hero && !d.triedTame && Math.random() < 0.5 && typeof dpWildLand !== 'function') {
         d.tamed = true; d.pet = 90; d.st = 'pet';
         floater(d.x, d.y - 1.6, 'Ур-р!', '#c8ffb0');
         logEvent('animal', `Герой приручил существо: ${dragName(d).toLowerCase()}!`, d.x, d.y); toast(`Герой приручил: ${dragName(d).toLowerCase()}! Теперь он носит золото`); fstat('dragTame');
@@ -771,7 +776,7 @@ function dragonTick(dt, F) {
       floater(d.x, d.y - 1.4, 'Хр-р!', '#ffb080'); shooWave(s, 'Брысь!'); fstat('dragShoo');
       d.st = 'back'; return;
     }
-    if (d.t > 1.4 && !d.loot) {
+    if (d.t > 1.4 && !d.loot && d.lt == null) {
       const src = d.src;
       let n = d.stage ? 3 + (Math.random() * 4 | 0) : 1 + (Math.random() * 3 | 0);
       if (src && src.pile && !src.pile.removed) { n = Math.min(n, src.pile.stock.gold - src.pile.reserved.gold); src.pile.stock.gold -= n; cleanupPile(src.pile); }
@@ -781,9 +786,14 @@ function dragonTick(dt, F) {
         d.loot = n; fstat('dragRaid'); fstat('dragGold', n); dragGrow(d);
         floater(d.x, d.y - 1.4, 'Хр-р!', '#ffb080');
         logEvent('gold', `${dragName(d)} утащил золото ×${n}`, d.x, d.y);
-        if (Game.time - lastDragToast > 90) { lastDragToast = Game.time; toast(`${dragName(d)} украл золото ×${n}! Герой может его прогнать или приручить`); }
+        if (Game.time - lastDragToast > 90) { lastDragToast = Game.time; toast(`${dragName(d)} украл золото ×${n}! Подойдите героем спокойно — может, он заговорит`); }
       }
       d.triedTame = d.triedTame || false;
+      d.lt = d.t + fyR(10, 16);       // посидит, пересчитывая добычу: у героя есть время подкрасться
+      if (!n) d.lt = d.t;
+    }
+    if (d.loot !== undefined && d.lt != null && d.t > d.lt) {
+      d.lt = null;
       d.st = Math.random() < (d.stage ? 0.4 : 0.15) ? 'fire' : 'back'; d.t = 0;
       if (d.st === 'fire') { d.fire = dragonFire(F, d); if (!d.fire) d.st = 'back'; }
     }
@@ -809,7 +819,7 @@ function dragonTick(dt, F) {
   if (d.st === 'back') {
     d.z = Math.min(30, d.z + dt * 16);
     const rest = fyMove(d, d.nx + 0.5, d.ny + 0.5, 4, dt);
-    if (rest < 0.4) { d.st = 'nest'; d.t = fyR(180, 360); d.z = 0; d.loot = 0; d.triedTame = false; }
+    if (rest < 0.4) { d.st = 'nest'; d.t = fyR(180, 360) * (d.sp === 'ice' && typeof isWinter === 'function' && isWinter() ? 0.6 : 1); d.z = 0; d.loot = 0; d.triedTame = false; d.noTalk = false; d.lt = null; }
   }
 }
 
@@ -819,12 +829,16 @@ function dragonDraw(list, c, F, x0, y0, x1, y1) {
   list.push([d.y + 0.15, () => {
     const px = d.x * TILE, py = d.y * TILE + 4, air = d.z > 1;
     fyShadow(c, px, py, air ? 7 : 9, air ? 0.16 : 0.3);
+    if (d.st === 'gone') return;
+    const own = fr => typeof dpWildSpr === 'function' ? dpWildSpr(d, fr) : null;
     if (d.st === 'nest') {      // спит свернувшись на камне, из ноздри дымок
-      fyBlit(c, d.stage ? sprDragon(1) : sprBabyDragon(1), px, py, 1, 1, d.stage ? 0.8 : 1);
+      fyBlit(c, d.stage ? sprDragon(1) : own(1) || sprBabyDragon(1), px, py, 1, 1, d.stage ? 0.8 : 1);
       if (Math.floor(d.ph * 1.5) % 4 === 0) { c.fillStyle = 'rgba(200,200,200,0.5)'; c.fillRect(Math.round(px + 11), Math.round(py - 18 - (d.ph * 6) % 6), 2, 2); }
       return;
     }
-    fyBlit(c, d.stage ? sprDragon(air ? fyCyc8(d.ph * 32) : 1) : sprBabyDragon(air ? fyCyc8(d.ph * 36) : 1), px, py - d.z, d.face || 1, 1, d.stage ? 0.85 : 1);
+    const fr0 = air ? fyCyc8(d.ph * 36) : 1;
+    fyBlit(c, d.stage ? sprDragon(air ? fyCyc8(d.ph * 32) : 1) : own(fr0) || sprBabyDragon(fr0), px, py - d.z, d.face || 1, 1, d.stage ? 0.85 : 1);
+    if (d.talk) { c.fillStyle = '#fff6d8'; c.fillRect(Math.round(px + 6), Math.round(py - d.z - 34), 9, 7); c.fillStyle = '#3a2a14'; c.fillRect(Math.round(px + 8), Math.round(py - d.z - 31), 1, 1); c.fillRect(Math.round(px + 10), Math.round(py - d.z - 31), 1, 1); c.fillRect(Math.round(px + 12), Math.round(py - d.z - 31), 1, 1); }
     if (d.loot && air) { c.save(); c.translate(px + (d.face || 1) * 6, py - d.z + 2); c.scale(0.3, 0.3); drawLoad(c, 'gold'); c.restore(); }
     if (d.st === 'fire' && d.fire) {     // струя огня
       const dir = d.face || 1;
@@ -1271,6 +1285,7 @@ function fairyTick(dt) {
   brownieTick(dt, F);
   unicornTick(dt, F);
   dragonTick(dt, F);
+  if (typeof dpTick === 'function') dpTick(dt, F);      // питомцы-дракончики (dragonpet.js)
   griffinTick(dt, F);
   salamanderTick(dt, F);
   fishTick(dt, F);
@@ -1285,6 +1300,7 @@ function fairyDrawList(list, c, x0, y0, x1, y1) {
   brownieDraw(list, c, F, x0, y0, x1, y1);
   unicornDraw(list, c, F, x0, y0, x1, y1);
   dragonDraw(list, c, F, x0, y0, x1, y1);
+  if (typeof dpDraw === 'function') { dpDraw(list, c, F, x0, y0, x1, y1); dpUiSync(); }
   griffinDraw(list, c, F, x0, y0, x1, y1);
   salamanderDraw(list, c, F, x0, y0, x1, y1);
   fishDraw(list, c, F, x0, y0, x1, y1);
@@ -1294,7 +1310,7 @@ function fairyDrawList(list, c, x0, y0, x1, y1) {
 }
 
 // ---------- Кооператив: сказочных зверей считает сервер, клиенты их только рисуют ----------
-const FY_MIRROR = ['bw', 'sal', 'uni', 'dr', 'gr', 'fish', 'gg', 'end'];
+const FY_MIRROR = ['bw', 'sal', 'uni', 'dr', 'gr', 'fish', 'gg', 'end', 'dp'];
 function fyMirrorOut() {
   const F = Game.fairy;
   if (!F || typeof coopPlain !== 'function') return null;
@@ -1332,7 +1348,8 @@ function serializeFairy1() {
     b: F.bw.map(b => [b.bid, b.milk, b.dec, b.prank]), bc: [...F.chk],
     s: F.sal.map(s => s.bid), sc: [...F.salChk],
   };
-  if (F.dr) o.d = [F.dr.nx, F.dr.ny, F.dr.tamed ? 1 : 0, F.dr.stage || 0, F.dr.raids || 0];
+  if (F.dr) o.d = [F.dr.nx, F.dr.ny, F.dr.tamed ? 1 : 0, F.dr.stage || 0, F.dr.raids || 0, F.dr.sp || null, F.dr.name || null, F.dr.trait || null, F.dr.st === 'gone' || F.dr.away > Game.time ? Math.max(1, Math.round((F.dr.away || 0) - Game.time)) : 0, F.dr.st === 'gone' ? 1 : 0];
+  if (F.dp) o.dp = F.dp;
   if (F.gr) o.g = [F.gr.nx, F.gr.ny, F.gr.tr, F.gr.st === 'gone' || F.gr.st === 'dying' ? Math.round(F.gr.resp) : 0];
   if (F.gg) o.e = F.gg.egg;
   // дракончик, грифон и яйцо после загрузки встают не сразу — до этого их сохранённые данные не должны теряться
@@ -1350,6 +1367,7 @@ function loadFairy1(o) {
   for (const bid of o.s || []) F.sal.push({ bid, acc: 0, was: false, ph: Math.random() * 9, bright: 0 });
   for (const id of o.sc || []) F.salChk.add(id);
   if (o.d) F.drSaved = o.d;
+  if (o.dp && Array.isArray(o.dp.pets)) F.dp = o.dp;
   if (o.g) F.grSaved = o.g;
   if (o.e != null) F.ggSaved = o.e;
 }

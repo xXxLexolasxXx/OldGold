@@ -219,7 +219,7 @@ function makeBoulders() {
     c.beginPath(); c.moveTo(rnd(8, 12), rnd(6, 9)); c.lineTo(rnd(12, 16), rnd(11, 14)); c.lineTo(rnd(15, 19), rnd(14, 16)); c.stroke();
     if (k % 2) for (let m = 0; m < 5; m++) ellipse(c, rnd(7, 18), rnd(5, 9), rnd(1, 2), 0.8, 'rgba(90,120,50,0.6)');
     grain(cv, 0.15, k);
-    SPR.boulders.push(toPixelArt(cv, SS, { outline: true }));
+    SPR.boulders.push(toPixelArt(cv, SS, { outline: true, specks: true }));
   }
 }
 
