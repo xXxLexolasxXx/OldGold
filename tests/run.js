@@ -84,6 +84,7 @@ scriptTest('spire: глава 6 — подъём к Чёрному шпилю: �
 scriptTest('traitor: шпион Малгора — летописец Пим, письмо, простить/не прощать, удар в спину, падение, сейв, эпилог', 'traitor-test.js', [], 420000);
 scriptTest('oathbal: баланс классов героя', 'oath-balance.js');
 scriptTest('abil: способности классов, ресурс, лечение отдыхом, панель, миграция, кооп, баланс', 'abil-test.js');
+scriptTest('skelart: скелеты в пиксель-арте — кадры 6/8/9/4/9/13, виды, кэш, облик в сейве, рисование без падений', 'skelart-test.js');
 scriptTest('icon: значки, названия и описания всех способностей, окно гильдии', 'icon-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
