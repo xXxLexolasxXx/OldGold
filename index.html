@@ -29,8 +29,9 @@
 <link rel="stylesheet" href="css/council.css">
 <link rel="stylesheet" href="css/landscape.css">
 <link rel="stylesheet" href="css/reveal.css">
+<link rel="stylesheet" href="css/uilayers.css">
 </head>
-<body>
+<body class="ui-loading">
 <div id="app">
   <aside id="panel">
     <button id="sheet-close" class="m-only">▾ Свернуть</button>
@@ -123,7 +124,7 @@
     <div id="mtool" class="hidden">
       <span id="mtool-text"></span>
       <button id="mtool-ok" title="Поставить">✓</button>
-      <button id="mtool-rot" title="Повернуть">↻</button>
+      <button id="mtool-rot" title="Повернуть вход здания">↻ Вход</button>
       <button id="mtool-x" title="Отмена">✕</button>
     </div>
     <div id="help" class="hidden">
@@ -154,6 +155,7 @@
 <script src="js/telemetry.js"></script>
 <script src="js/world/fire.js"></script>
 <script src="js/loading.js"></script>
+<script src="js/uilayers.js"></script>
 <script src="js/sound/mute.js"></script>
 <script src="js/config.js"></script>
 <script src="js/difficulty.js"></script>

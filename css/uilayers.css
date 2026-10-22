@@ -1,0 +1,44 @@
+/* Слои интерфейса и режимы экрана (js/uilayers.js ставит режим на <body>).
+   Порядок слоёв снизу вверх — новые панели ставьте по этой лестнице, а не «на всякий случай повыше»:
+     карта и её подписи                       0–2
+     значок версии                            --z-badge (3)
+     игровые панели: герой, способности,
+       карточки, подсказки, тосты, цели       4–21
+     верхняя полоса (время, скорость)         25
+     панель размещения ✓ ↻ ✕ (телефон)        --z-place (58) — выше всего игрового, ниже обучения и раскрытых меню
+     обучение, раскрытые выпадающие меню      60–65
+     окна поверх игры                         390+
+   Заставка/меню (#loading, 10) лежит выше карты, а игровой интерфейс в это время просто скрыт (ui-loading). */
+:root { --z-badge: 3; --z-place: 58; }
+
+/* ---------- Заставка и стартовое меню: ни скорости, ни героя, ни стройки ---------- */
+body.ui-loading #app { visibility: hidden !important; }
+body.ui-loading :is(#ab-bar, #mtool, #tut-arrow, #ach-toasts) { display: none !important; }
+
+/* ---------- Стройка (телефон): панель размещения сверху, остальное уступает ---------- */
+body.mobile #mtool:not(.hidden) { z-index: var(--z-place) !important; }
+body.ui-place :is(#ab-bar, #hero-card, #wk-card, #ver-badge) { display: none !important; }
+
+/* ---------- Окно поверх игры: способности, подсказки и версия убраны (вернутся, когда окно закроют) ---------- */
+body.ui-modal :is(#ab-bar, #ver-badge, #hint, #pause-banner) { display: none !important; }
+
+/* ---------- Панель способностей на экране (ui-ab): подсказки не залезают под неё ---------- */
+/* ПК и планшет: по центру между кнопкой героя (слева, ~130px) и панелью; подсказка о повороте и пауза — стопкой */
+body.ui-ab:not(.mobile) :is(#tool-hint, #hint, #pause-banner) { left: calc((100% - var(--ui-ab-w, 0px) + 130px) / 2); max-width: calc(100% - var(--ui-ab-w, 0px) - 160px); white-space: normal; }
+body.ui-ab:not(.mobile):has(#tool-hint:not(.hidden)) #pause-banner { bottom: 84px; }
+/* телефон (портрет и боком): над панелью */
+body.mobile.ui-ab #pause-banner { bottom: calc(var(--ui-ab-top, 0px) + 6px); }
+body.mobile.ui-ab #hint { bottom: calc(var(--ui-ab-top, 0px) + 50px); }
+
+/* ---------- Значок версии: мелко внизу в безопасной зоне, ничего не накрывает ---------- */
+#ver-badge {
+  position: fixed; z-index: var(--z-badge); padding: 1px 4px; margin: 0;
+  left: calc(env(safe-area-inset-left, 0px) + 6px); right: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+  font: 10px/1.2 Kurale, Georgia, serif; color: #e9dcc0; opacity: .45; background: none; border: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+#ver-badge:hover { opacity: .9; }
+body.mobile:not(.land) #ver-badge { left: auto; right: calc(env(safe-area-inset-right, 0px) + 6px); bottom: calc(env(safe-area-inset-bottom, 0px) + 62px); }
+body.mobile.land #ver-badge { left: calc(var(--sl, 0px) + 58px); }   /* правее колонки вкладок, панель способностей — справа */
+/* на заставке и в меню — в правом нижнем углу, под кнопками меню (не на логотипе) */
+body.ui-loading #ver-badge { z-index: 11; left: auto !important; transform: none !important; right: calc(env(safe-area-inset-right, 0px) + 6px) !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 2px) !important; }
