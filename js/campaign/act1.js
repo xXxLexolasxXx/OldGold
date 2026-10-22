@@ -139,7 +139,7 @@ function camp1Road(b, net) {
   return goal >= 0;
 }
 
-function camp1Place(type, ax, ay, net) {
+function camp1Place(type, ax, ay, net, done = true) {
   if (!BUILDINGS[type]) return null;
   for (let r = 0; r < 14; r++) for (let k = 0; k < Math.max(1, r * 8); k++) {
     const a = k / Math.max(1, r * 8) * Math.PI * 2;
@@ -150,7 +150,7 @@ function camp1Place(type, ax, ay, net) {
     let ok = true;
     for (let yy = y - 1; yy <= y + dd.h && ok; yy++) for (let xx = x - 1; xx <= x + dd.w && ok; xx++) if (inb(xx, yy) && World.bmap[idx(xx, yy)]) ok = false;
     if (!ok || !inb(x + dd.dx, y + dd.dy + 1) || !canPlaceRoad(x + dd.dx, y + dd.dy + 1) && !World.road[idx(x + dd.dx, y + dd.dy + 1)]) continue;
-    const b = placeBuilding(type, x, y, true, 0);
+    const b = placeBuilding(type, x, y, done, 0);
     if (!camp1Road(b, net)) { removeBuilding(b); continue; }
     return b;
   }

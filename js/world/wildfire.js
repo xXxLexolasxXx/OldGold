@@ -22,6 +22,9 @@ const WF_ROOF = [1, 1, 0.55, 0.25];   // шанс загореться по ур
 const WF_BURN = [1, 1, 0.8, 0.6];     // сколько здание горит по уровню
 const WF_SRC_TYPES = new Set(['bonfire', 'bakery', 'inn', 'smithy', 'brewery', 'kiln', 'forge']);
 
+if (typeof WK_NOKICK !== 'undefined') WK_NOKICK.add('douse');
+if (typeof ANIM_SFX !== 'undefined') ANIM_SFX.douse = 'hiss';
+
 const wfMirror = () => typeof isMirror === 'function' && isMirror();
 const WFS = () => Game.wf || (Game.wf = { cells: [], bld: [], t: 0, sp: 0, rk: 0, n: 0, ever: 0, ep: 0 });
 const wfRain = () => typeof WX !== 'undefined' && WX.k > 0.45;
@@ -175,11 +178,12 @@ function wfTick(dt) {
   for (let k = S.bld.length - 1; k >= 0; k--) {
     const q = S.bld[k], b = Game.buildings.find(o => o.id === q.id);
     if (!b || b.removed) { S.bld.splice(k, 1); continue; }
-    if (typeof dzHit === 'function') dzHit(b, d * 0.03 * (q.w ? 0.35 : 1), 0.8);
+    if (typeof dzHit === 'function') dzHit(b, d * 0.03 * (q.w ? 0.35 : 1) * (q.fs && q.fs.length ? Math.max(0.4, 1 - 0.2 * q.fs.length) : 1), 0.8);
     if (rain) q.dur -= d * 2;
     if (now - q.t0 > q.dur || now - q.t0 > WF_LIFE_MAX) S.bld.splice(k, 1);
   }
 
+  wfDouseTick();
   if (!S.cells.length && !S.bld.length) S.n = 0;   // всё догорело — следующий пожар начинается с чистого листа
 
   // 3. Перекидывание (раз в 1,5 с)
@@ -228,6 +232,101 @@ function wfTick(dt) {
         }
       }
     }
+  }
+}
+
+// ---------- Гномы тушат горящие здания ----------
+// У каждого горящего здания (малый очаг или пожар-бедствие) стараются быть не меньше двух тушильщиков, у большого — трое:
+// каждый встаёт со своей стороны (запад, восток, север, юг), поворачивается к стене и плещет из ведра (анимация «douse»);
+// ведро пополняют из колодца, если он есть. Каждый бросок сокращает горение; пока тушат двое, здание горит как у колодца.
+const WF_DOUSE_DIST = 45;         // издалека гномы не бегут
+const WF_DOUSE_THROW = 1.1;       // секунд на бросок ведра
+const WF_DOUSE_CUT = 2.2;         // на сколько секунд бросок сокращает горение
+const WF_SIDES = [[-1, 0], [1, 0], [0, -1], [0, 1]];   // запад, восток, север, юг
+
+function wfFireBlds() {
+  const out = [], S = Game.wf, D = Game.dz;
+  if (S) for (const q of S.bld) { const b = Game.buildings.find(o => o.id === q.id); if (b && !b.removed) out.push({ q, b }); }
+  if (D && D.cur && D.cur.k === 'fire' && D.cur.b) for (const q of D.cur.b) { const b = Game.buildings.find(o => o.id === q.id); if (b && !b.removed) out.push({ q, b }); }
+  return out;
+}
+
+// клетка у стены здания с нужной стороны
+function wfSpot(b, side) {
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2, [sx, sy] = WF_SIDES[side];
+  const ox = sx < 0 ? b.x - 1 : sx > 0 ? b.x + b.w : cx, oy = sy < 0 ? b.y - 1 : sy > 0 ? b.y + b.h : cy;
+  for (let r = 0; r < 4; r++) for (let k = 0; k < 14; k++) {
+    const j = Math.round(wfRnd(-1.5, 1.5)), x = Math.floor(ox + (sx ? sx * r : j)), y = Math.floor(oy + (sy ? sy * r : j));
+    if (inb(x, y) && isWalkable(x, y) && !World.bmap[idx(x, y)]) return [x + 0.5, y + 0.5];
+  }
+  return null;
+}
+
+// очаг ещё числится горящим (в малых или в пожаре-бедствии)
+function wfLive(q) { const S = Game.wf, D = Game.dz; return !!((S && S.bld.includes(q)) || (D && D.cur && D.cur.b && D.cur.b.includes(q))); }
+
+// ближайшая проходимая клетка у точки (дверь колодца сама занята)
+function wfNear(x, y) {
+  for (let r = 0; r < 3; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    const xx = Math.floor(x) + dx, yy = Math.floor(y) + dy;
+    if (inb(xx, yy) && isWalkable(xx, yy) && !World.bmap[idx(xx, yy)]) return [xx + 0.5, yy + 0.5];
+  }
+  return null;
+}
+
+function wfDouser(u, q) { return !u.dead && u.brk && u.brk.kind === 'douse' && u.dq === q.id; }
+
+function* wfDouseGen(u, q, b, spot, side) {
+  u.brk.until = Game.time + 60;
+  floater(u.x, u.y - 1, ['Тушим!', 'Воды!', 'Горит!', 'Держись, дом!'][(u.id + side) % 4], '#cfe8ff');
+  yield { walk: spot, offroad: true };
+  const wells = typeof dzWells === 'function' ? dzWells() : [];
+  let n = 0;
+  while (!b.removed && wfLive(q) && Game.time < u.brk.until) {
+    u.face = b.x + b.w / 2 >= u.x - (side > 1 ? (u.id % 2 ? 0.2 : -0.2) : 0) ? 1 : -1;   // с севера и юга поворот по гному — стоят лицом в разные стороны
+    yield { wait: WF_DOUSE_THROW, anim: 'douse' };
+    q.dur -= WF_DOUSE_CUT;
+    const px = Math.max(b.x, Math.min(b.x + b.w, u.x)), py = Math.max(b.y, Math.min(b.y + b.h, u.y));
+    fxBurst(px * TILE, py * TILE - 14, 12, ['#9fd4ff', '#d8f0ff', '#5aa0e0'], 40, 30, 0.6, 1.6, 200);
+    fxBurst(px * TILE, py * TILE - 18, 3, ['rgba(220,220,220,0.5)'], 8, 14, 1.4, 3, -20);
+    if (++n % 3 === 0 && wells.length && Game.time - q.t0 < q.dur - 5) {   // за водой к колодцу и обратно
+      let w = wells[0], bd = 1e9;
+      for (const o of wells) { const d = Math.hypot(o.doorX - u.x, o.doorY - u.y); if (d < bd) { bd = d; w = o; } }
+      if (bd < 30) {
+        const nw = wfNear(w.doorX, w.doorY) || spot;
+        yield { walk: nw, offroad: true };
+        floater(u.x, u.y - 1, 'Набрал!', '#cfe8ff');
+        yield { wait: 0.9, anim: 'dig' };
+        yield { walk: spot, offroad: true };
+      }
+    }
+  }
+  floater(u.x, u.y - 1, 'Потушили!', '#cfe8ff');
+}
+
+function wfDouseTick() {
+  const list = wfFireBlds();
+  // страховка: огонь у «своего» здания погас, а гном ещё в перерыве (идёт за водой, застрял) — отпускаем
+  for (const u of Game.units) if (u.brk && u.brk.kind === 'douse' && !list.some(e => e.b.id === u.dq) && (Game.time - (u.dts || 0) > 4 || Game.time < u.dts)) endBreak(u);
+  if (!list.length) return;
+  const people = Game.units.filter(u => wfPersonFree(u) && !u.owner && !u.carry && !u.glide);
+  for (const { q, b } of list) {
+    q.fs = (q.fs || []).filter(id => { const u = Game.units.find(o => o.id === id); return u && wfDouser(u, q); });
+    const need = b.w * b.h >= 12 ? 3 : 2, left = q.dur - (Game.time - q.t0);
+    if (q.fs.length >= 2) q.w = true;
+    if (q.fs.length >= need || left < 3) continue;
+    const used = new Set(q.fs.map(id => (Game.units.find(o => o.id === id) || {}).dsd));
+    let side = -1;
+    for (let k = 0; k < 4 && side < 0; k++) if (!used.has((q.id + k) % 4)) side = (q.id + k) % 4;   // каждый со своей стороны
+    if (side < 0) continue;
+    let best = null, bd = WF_DOUSE_DIST;
+    for (const u of people) { if (u.brk) continue; const d = Math.hypot(u.x - b.x - b.w / 2, u.y - b.y - b.h / 2); if (d < bd) { bd = d; best = u; } }
+    if (!best) continue;
+    const spot = wfSpot(b, side) || wfSpot(b, (side + 2) % 4);
+    if (!spot) continue;
+    startBreak(best, 'douse', wfDouseGen(best, q, b, spot, side));
+    best.dq = b.id; best.dsd = side; best.dts = Game.time; q.fs.push(best.id);
+    people.splice(people.indexOf(best), 1);
   }
 }
 

@@ -63,7 +63,8 @@ function campNpcSprite(kind, f) {
   const [cv, c] = mkSprite(40, 48, 3);
   c.translate(20, 44);
   c.scale(1, 1 - f * 0.02);
-  if (kind === 'tan') campDrawTan(c, f); else campDrawPim(c, f);
+  const D = { tan: campDrawTan, vaska: campDrawVaska, zhmykha: campDrawZhmykha, kremen: campDrawKremen, pim: campDrawPim };
+  (D[kind] || campDrawPim)(c, f);
   return (CAMP_NPC_SPR[key] = toPixelArt(cv, 3, { outline: true, outlineDark: 0.3, alphaCut: 100 }));
 }
 function campDrawTan(c, f) {
@@ -95,6 +96,48 @@ function campDrawPim(c, f) {
   ellipse(c, -1.8, -26.6, 0.8, f === 1 ? 0.2 : 0.75, '#1a0f0a'); ellipse(c, 2, -26.6, 0.8, f === 1 ? 0.2 : 0.75, '#1a0f0a');
   naLimb(c, 4.6, -30, 8, -36, 0.7, '#f2eee4');                                         // перо за ухом
   c.fillStyle = '#3ac87a'; c.fillRect(-7.4, -12, 2, 2); c.fillRect(6.8, -12.6, 1.6, 1.6);   // зелёные пальцы
+}
+// кузнец Васька под завалом: кожаный фартук, молот, борода в саже; машет рукой «я тут!»
+function campDrawVaska(c, f) {
+  c.fillStyle = 'rgba(10,8,4,0.32)'; c.beginPath(); c.ellipse(0, 0, 8, 2.2, 0, 0, 7); c.fill();
+  naLimb(c, -2.4, -8, -3, 0, 2.4, '#3a3028'); naLimb(c, 2.4, -8, 3, 0, 2.4, '#3a3028');
+  poly(c, [[-7, -22], [7, -22], [8, -7], [-8, -7]], '#a04a2a');                     // рубаха
+  poly(c, [[-5, -18], [5, -18], [6, -5], [-6, -5]], '#6a4424');                     // фартук
+  ellipse(c, 0, -26, 5.6, 5.2, '#d8a880');
+  poly(c, [[-5.4, -24.4], [5.4, -24.4], [4, -15], [0, -13], [-4, -15]], '#3a2a20');   // борода в саже
+  ellipse(c, -2, -27, 0.8, f === 1 ? 0.2 : 0.75, '#1a0f0a'); ellipse(c, 2, -27, 0.8, f === 1 ? 0.2 : 0.75, '#1a0f0a');
+  poly(c, [[-5.4, -28.4], [-4, -32], [4, -32], [5.4, -28.4]], '#5a3a24');
+  naLimb(c, 6, -20, 10, -30 - f * 2, 2.2, '#d8a880');                                // машет
+  naLimb(c, -6, -18, -9, -10, 2.2, '#d8a880');
+  c.fillStyle = '#5a5a62'; c.fillRect(-12, -12, 5, 4); naLimb(c, -9, -8, -9, -2, 1, '#6a4a2a');   // молот
+}
+// Жмыха Кремнёвая: старейшина Кремнёвки — коренастая, в серо-синей шали, с половником (им же и правит)
+function campDrawZhmykha(c, f) {
+  c.fillStyle = 'rgba(10,8,4,0.32)'; c.beginPath(); c.ellipse(0, 0, 9, 2.4, 0, 0, 7); c.fill();
+  poly(c, [[-8, -20], [8, -20], [10, 0], [-10, 0]], '#5a6a86');                     // юбка
+  poly(c, [[-9, -24], [9, -24], [8, -14], [-8, -14]], '#7a8aa6');                   // шаль
+  c.fillStyle = '#4a5a76'; for (const x of [-7, -3, 1, 5]) c.fillRect(x, -15, 2, 2);  // бахрома
+  ellipse(c, 0, -28, 5.6, 5.2, '#e0b498');
+  poly(c, [[-6, -28], [-5, -33], [5, -33], [6, -28], [4, -31], [-4, -31]], '#c8ccd4');   // седые волосы
+  ellipse(c, 0, -34, 3, 2, '#c8ccd4');                                                 // пучок
+  ellipse(c, -2, -28.4, 0.8, f === 1 ? 0.2 : 0.7, '#1a0f0a'); ellipse(c, 2, -28.4, 0.8, f === 1 ? 0.2 : 0.7, '#1a0f0a');
+  c.fillStyle = '#9a5a4a'; c.fillRect(-1.6, -25.4, 3.2, 0.8);                         // поджатые губы
+  naLimb(c, 7, -20, 12, -24, 2.2, '#e0b498'); naLimb(c, 12, -24, 12, -36, 1, '#8a8a92');   // половник
+  ellipse(c, 12, -37, 2.4, 1.6, '#a8a8b0');
+}
+// Кремень-младший: задира Кремнёвки — здоровяк в кремнёво-сером жилете, кулаки как булыжники
+function campDrawKremen(c, f) {
+  c.fillStyle = 'rgba(10,8,4,0.32)'; c.beginPath(); c.ellipse(0, 0, 10, 2.6, 0, 0, 7); c.fill();
+  naLimb(c, -3, -9, -4, 0, 3, '#3a3a42'); naLimb(c, 3, -9, 4, 0, 3, '#3a3a42');
+  poly(c, [[-9, -26], [9, -26], [8, -8], [-8, -8]], '#b07a5a');                     // рубаха
+  poly(c, [[-8, -25], [-2, -25], [-3, -9], [-8, -9]], '#6a7078'); poly(c, [[2, -25], [8, -25], [8, -9], [3, -9]], '#6a7078');   // жилет
+  ellipse(c, 0, -30, 6, 5.4, '#e8b890');
+  poly(c, [[-6, -28], [6, -28], [4, -21], [0, -19], [-4, -21]], '#c86a2a');         // рыжая борода
+  poly(c, [[-6, -31], [-5, -35.6], [5, -35.6], [6, -31]], '#c86a2a');
+  ellipse(c, -2.2, -31, 0.9, f === 1 ? 0.2 : 0.8, '#1a0f0a'); ellipse(c, 2.2, -31, 0.9, f === 1 ? 0.2 : 0.8, '#1a0f0a');
+  c.fillStyle = '#5a2a1a'; c.fillRect(-3.4, -33.4, 2.4, 0.7); c.fillRect(1, -33.4, 2.4, 0.7);    // нахмуренные брови
+  ellipse(c, -11, -14, 3.2, 3, '#e8b890'); ellipse(c, 11, -14, 3.2, 3, '#e8b890');   // кулаки
+  naLimb(c, -8, -24, -11, -15, 3, '#b07a5a'); naLimb(c, 8, -24, 11, -15, 3, '#b07a5a');
 }
 function campDrawNpc(c, kind, x, y) {
   const t = Game.time, f = (t * 0.5 + x) % 6 < 0.15 ? 1 : 0;

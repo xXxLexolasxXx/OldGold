@@ -521,6 +521,7 @@ function heroPanel() {
     <div class="irow">Команда: ${mate ? `<b>${UNIT_TYPES[mate.type].name}</b> <button data-hero="leave" class="hp-sm">Отпустить</button>` : '<span class="muted">пусто — кликните по гному</span>'}</div>
     <div class="irow muted small">Оружие: ${H.equip.weapon || 'нет'} · Доспех: ${H.equip.armor || 'нет'}</div>
     ${typeof neuPanelRow === 'function' ? neuPanelRow() : ''}
+    ${typeof dpHeroRow === 'function' ? dpHeroRow() : ''}
     <div class="tip">Кликните по стройке, полю, дереву, камню, куче груза или зданию без работника — ${H.name} пойдёт делать это. По земле — просто идёт. Esc — снять выбор.</div>`;
 }
 

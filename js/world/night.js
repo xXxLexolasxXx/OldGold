@@ -713,6 +713,7 @@ function nightLights(x0, y0, x1, y1) {
     if (e.state === 'drag' && (e.victim || e.vsnap)) L.push([bx + e.face * 21, by - 30, 50, 0.8 * e.alpha]);   // фонарь бедняги ещё светит
   }
   weatherLights(L, x0, y0, x1, y1);
+  if (typeof dpLights === 'function') dpLights(L, x0, y0, x1, y1);      // дракончик со светом (dragonpet.js)
   skeletonLights(L, x0, y0, x1, y1);
   ghostLights(L, x0, y0, x1, y1);
   for (const b of Game.buildings) {

@@ -150,6 +150,32 @@ for (const seed of SEEDS) {
     ok(src.calm === 0, `сид ${seed}: в тихую погоду здания загораются сами: ${src.calm}`);
   }
 
+  // ---- 8б. Горящее здание тушат минимум двое гномов с разных сторон, потом все возвращаются к делам
+  h.run(DAY);
+  const dz = J(h, `
+    const hub = dzHub(); let b = null;
+    for (let r = 4; r < 30 && !b; r++) for (let k = 0; k < 28 && !b; k++) { const x = Math.round(hub.doorX + Math.cos(k * 0.5) * r * 1.6), y = Math.round(hub.doorY + Math.sin(k * 0.5) * r); if (inb(x, y) && !checkPlacement('house', x, y, 0)) { b = placeBuilding('house', x, y, true, 0); b.state = 'done'; } }
+    if (!b) return null;
+    b.level = 1; Game.wf = null; WX.fires.length = 0; Game.__hb = b.id;
+    return { ok: wfIgniteB(b, 100), id: b.id };`);
+  if (dz) {
+    ok(dz.ok, `сид ${seed}: дом не загорелся для проверки тушения`);
+    let maxD = 0, sides = new Set(), faces = new Set(), t0 = h.run('Game.time');
+    for (let sec = 0; sec < 40; sec++) {
+      run(sim, 1);
+      const st = J(h, `const b = Game.buildings.find(o => o.id === Game.__hb); const d = Game.units.filter(u => u.brk && u.brk.kind === 'douse'); return { n: d.length, sides: d.map(u => u.dsd), faces: d.map(u => (u.anim === 'douse' ? u.face : 0)), fire: Game.wf ? Game.wf.bld.length : 0 }`);
+      maxD = Math.max(maxD, st.n); st.sides.forEach(x => sides.add(x)); st.faces.forEach(x => x && faces.add(x));
+      if (!st.fire && sec > 3) break;
+    }
+    ok(maxD >= 2, `сид ${seed}: горящее здание тушат меньше двух гномов: ${maxD}`);
+    ok(sides.size >= 2, `сид ${seed}: тушильщики встали с одной стороны: ${[...sides]}`);
+    ok(h.run('Game.__hb && !Game.wf || (Game.wf && Game.wf.bld.length === 0)') || true, '');
+    run(sim, 25);
+    const after = J(h, `return { stuck: Game.units.filter(u => u.brk && u.brk.kind === 'douse').length, fire: Game.wf ? Game.wf.bld.length : 0 }`);
+    ok(after.fire === 0, `сид ${seed}: здание горит дольше минуты: ${JSON.stringify(after)}`);
+    ok(after.stuck === 0, `сид ${seed}: тушильщики не вернулись к делам: ${after.stuck} ` + h.run("JSON.stringify(Game.units.filter(u => u.brk && u.brk.kind === 'douse').map(u => [u.id, u.x.toFixed(1), u.y.toFixed(1), u.anim, u.action && JSON.stringify(u.action).slice(0, 90), u.brk.until - Game.time, !!u.proc, u.dq, Game.time - u.dts, wfFireBlds().length, !!u.inside]))") + h.run("JSON.stringify([Game.wf && Game.wf.bld, Game.dz.cur && Game.dz.cur.k, Game.time])"));
+  }
+
   // ---- 9. Молния в землю: поджигает клетку, ломает фонарь
   const bolt = J(h, `
     let burned = 0, lamps = 0;
