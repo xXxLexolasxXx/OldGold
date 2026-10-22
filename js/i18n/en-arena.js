@@ -52,7 +52,7 @@ I18N.add('en', {
   "Соперник в 4 клетках получает удар и оглушён на 1,2 с": "An opponent within 4 tiles takes a hit and is stunned for 1.2 s",
   "Трибуны ревут: 6 с бард лечится, шкала ульты +15%": "The stands roar: the bard heals for 6 s, ultimate gauge +15%",
   "Пассивно: откаты короче на 15%, мана быстрее": "Passive: 15% shorter cooldowns, faster mana",
-  "Фальшивая нота": "Sour note", "Соперник в 5 клетках: удар ×0,8, −15 ресурса и 0,8 с не может колдовать": "An opponent within 5 tiles: a ×0.8 hit, −15 resource and no casting for 0.8 s",
+  "Фальшивая нота": "Sour note", "Соперник в 5 клетках: удар ×0,8, −15 ресурса и 1 с не может колдовать": "An opponent within 5 tiles: a ×0.8 hit, −15 resource and no casting for 1 s",
   "Ульта. 8 с: соперник в 6 клетках пляшет (оглушён, потом замедлен), бард точнее и быстрее": "Ultimate. 8 s: an opponent within 6 tiles dances (stunned, then slowed), the bard is more accurate and faster",
   "6 с: бьёт вдвое чаще": "6 s: strikes twice as often",
   "Удар и 1,5 с соперник не может колдовать": "A hit, and the opponent can't cast for 1.5 s",

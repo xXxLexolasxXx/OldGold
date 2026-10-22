@@ -24,7 +24,7 @@ const ARENA_TUNE = {
   spd: 3.2, rollT: 0.45, rollMove: 0.3, rollDist: 1.5, rollCd: 5, atkLock: 0.15, reach: 0.15,
   // удары
   shotSp: 11, heavyEvery: 3, heavyWind: 0.4, heavyMul: 1.6, heavyCos: 0.75, heavyExtra: 0.7, openT: 2, openMul: 1.5,
-  comboN: 3, comboT: 2.5, finMul: 1.4, finCd: 6, shotLock: 0.25, crit: 0.1, critMul: 1.5, spread: 0.2, iceMul: 1.2,
+  comboN: 3, comboT: 2.5, finMul: 1.4, finCd: 6, shotLock: 0.25, crit: 0.15, critMul: 1.8, spread: 0.3, iceMul: 1.2,
   // статусы: потолки и иммунитеты
   stunMax: 1.5, iceMax: 2, ccImm: 3, ccWin: 6, rootMax: 2.5, rootImm: 3, slowMax: 4, slowMul: 0.6, silMax: 2,
   dotPct: 0.02, dotCap: 0.25, blind: 0.3, dodgeMax: 0.6, redMin: -0.5, redMax: 0.7, accMin: 0.05, accMax: 0.97,
@@ -35,21 +35,21 @@ const ARENA_TUNE = {
     mana: { start: 100, regen: 3 },
     faith: { start: 60, regen: 1.5, hit: 4, hurt: 6 },
   },
-  ultDeal: 1, ultTake: 0.7, ultPerRound: 1, otHeal: 0.75,
+  ultDeal: 1, ultTake: 0.7, ultPerRound: 1, otHeal: 0.71, dotHeal: 0.53,
   // классы: здоровье = кооп-база + 8·12 и Клятва (раздел 5), дальше — по итогам матрицы ботов (АРЕНА_БАЛАНС.md)
   // mv — скорость (Клятва), rng — дальность, atkT — интервал удара, dmg — урон удара, acc — точность, crit — шанс крита,
-  // shot — снаряд вместо удара вблизи, dodge — уворот Клятвы, melee — точность вплотную у стрелка
+  // shot — снаряд вместо удара вблизи, dodge — уворот Клятвы, melee — точность вплотную у стрелка, stand — бот не кайтит
   cls: {
-    warrior: { res: 'rage', hp: 271, mv: 0.94, rng: 1.5, atkT: 1.0, dmg: 7.0, acc: 0.85 },
-    barbarian: { res: 'rage', hp: 214, mv: 1, rng: 1.5, atkT: 1.15, dmg: 6.5, acc: 0.8 },
-    archer: { res: 'energy', hp: 265, mv: 1, rng: 7, atkT: 1.1, dmg: 7.0, acc: 0.85, shot: 'arrow', melee: 0.8 },
-    rogue: { res: 'energy', hp: 209, mv: 1, rng: 1.4, atkT: 0.9, dmg: 6.85, acc: 0.88, crit: 0.2 },
-    mage: { res: 'mana', hp: 226, mv: 1, rng: 6, atkT: 1.2, dmg: 7.0, acc: 0.9, shot: 'bolt' },
-    druid: { res: 'mana', hp: 235, mv: 1, rng: 3.6, atkT: 1.2, dmg: 5.6, acc: 0.88, shot: 'thorn' },
-    priest: { res: 'mana', hp: 255, mv: 1, rng: 1.4, atkT: 1.1, dmg: 6.4, acc: 0.77 },
-    paladin: { res: 'faith', hp: 245, mv: 0.96, rng: 1.5, atkT: 1.1, dmg: 5.75, acc: 0.85 },
-    bard: { res: 'mana', hp: 268, mv: 1, rng: 1.5, atkT: 0.95, dmg: 8.5, acc: 0.8 },
-    monk: { res: 'energy', hp: 278, mv: 1.06, rng: 1.4, atkT: 0.7, dmg: 5.0, acc: 0.86, dodge: 0.1 },
+    warrior: { res: 'rage', hp: 294, mv: 0.937, rng: 1.5, atkT: 1.0, dmg: 6.93, acc: 0.85 },
+    barbarian: { res: 'rage', hp: 236, mv: 1.029, rng: 1.5, atkT: 1.15, dmg: 6.49, acc: 0.8 },
+    archer: { res: 'energy', hp: 283, mv: 1.006, rng: 6.74, atkT: 1.1, dmg: 6.77, acc: 0.85, shot: 'arrow', melee: 0.8 },
+    rogue: { res: 'energy', hp: 227, mv: 0.995, rng: 1.4, atkT: 0.9, dmg: 6.75, acc: 0.88, crit: 0.2 },
+    mage: { res: 'mana', hp: 238, mv: 0.975, rng: 6.2, atkT: 1.2, dmg: 6.62, acc: 0.9, shot: 'bolt' },
+    druid: { res: 'mana', hp: 273, mv: 0.922, rng: 3.76, atkT: 1.2, dmg: 5.89, acc: 0.88, shot: 'thorn', stand: 1 },
+    priest: { res: 'mana', hp: 284, mv: 1.045, rng: 1.4, atkT: 1.1, dmg: 6.53, acc: 0.77 },
+    paladin: { res: 'faith', hp: 272, mv: 0.966, rng: 1.5, atkT: 1.1, dmg: 5.83, acc: 0.85 },
+    bard: { res: 'mana', hp: 296, mv: 1.018, rng: 1.5, atkT: 0.95, dmg: 8.53, acc: 0.8 },
+    monk: { res: 'energy', hp: 299, mv: 1.049, rng: 1.4, atkT: 0.7, dmg: 4.92, acc: 0.86, dodge: 0.1 },
   },
   // способности (раздел 7.1). cost — ресурс, cd — откат, dur — время действия, buf — усиления на время
   // (atk точность, dmg урон, red меньше урона по себе, dodge уворот, spd чаще удары, mv скорость, regen %/с здоровья),
@@ -83,39 +83,39 @@ const ARENA_TUNE = {
     nimble: { pas: { dodge: 0.15 } },
     ult_rogue: { ult: 1, n: 3, mul: 2, every: 0.5 },
 
-    fire: { cost: 10, cd: 6, r: 7, mul: 1.6, burn: 3 },
+    fire: { cost: 10, cd: 6, r: 7, mul: 1.554, burn: 3 },
     ward: { cost: 12, cd: 25, dur: 3 },
     frost: { cost: 14, cd: 12, r: 7, mul: 0.6, ice: 2 },
     shield: { cost: 16, cd: 35, dur: 5, buf: { red: 0.5 } },
     spring: { pas: { res: 1.6 } },
     ult_mage: { ult: 1, dur: 4, every: 0.5, mul: 1.2, lag: 0.6, fall: 0.45, hitR: 1.3, spread: 1.2 },
 
-    thorns: { cost: 10, cd: 14, r: 5, mul: 0.8, root: 1 },
-    grow: { cost: 15, cd: 30, dur: 6, zr: 2.5, slow: 0.2 },
-    mend: { cost: 20, cd: 30, heal: 0.15 },
+    thorns: { cost: 10, cd: 14, r: 5, mul: 0.8, root: 0.994 },
+    grow: { cost: 15, cd: 30, dur: 6, zr: 2.5, slow: 0.221 },
+    mend: { cost: 20, cd: 30, heal: 0.145 },
     beast: { cost: 25, cd: 50, dur: 12, hp: 25, mul: 0.6, every: 1.2, sp: 4.5 },
     wild: { cost: 30, cd: 60, dur: 10, buf: { dmg: 0.4, red: 0.2, regen: 1 } },
-    ult_druid: { ult: 1, dur: 8, zr: 5, root: 1.5, every: 3, regen: 3 },
+    ult_druid: { ult: 1, dur: 8, zr: 5, root: 1.449, every: 3, regen: 3 },
 
-    heal: { cost: 18, cd: 25, heal: 0.21 },
+    heal: { cost: 18, cd: 25, heal: 0.215 },
     cure: { cost: 15, cd: 35, imm: 2 },
     bless: { cost: 20, cd: 35, dur: 10, buf: { atk: 0.2, red: 0.1 } },
     turn: { cost: 25, cd: 30, r: 4, push: 3, blind: 2 },
     mercy: { pas: { heal: 1.15, hpr: 0.2 } },
     ult_priest: { ult: 1, r: 6, blind: 2.5, heal: 0.6 },
 
-    hands: { cost: 25, cd: 40, heal: 0.18 },
+    hands: { cost: 25, cd: 40, heal: 0.189 },
     smite: { cost: 20, cd: 14, next: 2.2, blind: 1 },
-    consecrate: { cost: 30, cd: 35, dur: 8, zr: 3, dot: 2, regen: 2 },
+    consecrate: { cost: 30, cd: 35, dur: 8, zr: 3, dot: 1.233, regen: 1 },
     faith: { cost: 25, cd: 40, dur: 6, buf: { red: 0.35 } },
     aura: { pas: { atk: 0.08, red: 0.08 } },
-    ult_paladin: { ult: 1, dur: 10, zr: 5, dot: 3, slow: 0.4, buf: { red: 0.35 } },
+    ult_paladin: { ult: 1, dur: 10, zr: 5, dot: 2.04, slow: 0.4, buf: { red: 0.35 } },
 
     inspire: { cost: 12, cd: 30, dur: 10, buf: { atk: 0.2, mv: 0.1, dmg: 0.15 } },
-    chord: { cost: 18, cd: 25, r: 4, mul: 1, stun: 1.2 },
+    chord: { cost: 18, cd: 25, r: 4, mul: 1, stun: 1.205 },
     five: { cost: 10, cd: 45, dur: 6, buf: { regen: 2 }, gauge: 15 },
     voice: { pas: { cd: 0.85, res: 1.3 } },
-    sour: { cost: 20, cd: 30, r: 5, mul: 0.8, drain: 15, sil: 0.8 },
+    sour: { cost: 20, cd: 30, r: 5, mul: 0.8, drain: 15, sil: 0.983 },
     ult_bard: { ult: 1, dur: 8, r: 6, stun: 1.5, slow: 0.4, buf: { atk: 0.3, spd: 0.25 } },
 
     flurry: { cost: 30, cd: 30, dur: 6, buf: { spd: 1 } },
@@ -130,9 +130,9 @@ const ARENA_TUNE = {
     barbarian: ['bleed', 4], rogue: ['bleed', 4], druid: ['slow', 4], archer: ['slow', 3], mage: ['burn', 3] },
   // боты: реакция (с), доля перекатов от тяжёлых ударов, держит ли дистанцию, бережёт ли ресурс, прерывает ли
   bot: {
-    1: { react: 0.6, roll: 0, kite: 0, save: 0, think: 0.6, dodgeShot: 0, zone: 0, aim: 0.6, lead: 0 },
-    2: { react: 0.35, roll: 0.5, kite: 1, save: 0, think: 0.3, dodgeShot: 0.15, zone: 1, aim: 0.85, lead: 0.3 },
-    3: { react: 0.2, roll: 0.85, kite: 1, save: 1, think: 0.15, dodgeShot: 0.4, zone: 1, aim: 1, lead: 0.5 },
+    1: { react: 0.6, roll: 0, kite: 0, save: 0, think: 0.6, dodgeShot: 0, zone: 0, aim: 0.6, lead: 0, err: 0.4 },
+    2: { react: 0.35, roll: 0.5, kite: 1, save: 0, think: 0.3, dodgeShot: 0.15, zone: 1, aim: 0.85, lead: 0.3, err: 0.3 },
+    3: { react: 0.2, roll: 0.85, kite: 1, save: 1, think: 0.15, dodgeShot: 0.4, zone: 1, aim: 1, lead: 0.5, err: 0.25 },
   },
 };
 
@@ -205,7 +205,7 @@ const ARENA_TXT = {
   chord: ['Оглушающий аккорд', 'Соперник в 4 клетках получает удар и оглушён на 1,2 с'],
   five: ['Дай пять!', 'Трибуны ревут: 6 с бард лечится, шкала ульты +15%'],
   voice: ['Звонкий голос', 'Пассивно: откаты короче на 15%, мана быстрее'],
-  sour: ['Фальшивая нота', 'Соперник в 5 клетках: удар ×0,8, −15 ресурса и 0,8 с не может колдовать'],
+  sour: ['Фальшивая нота', 'Соперник в 5 клетках: удар ×0,8, −15 ресурса и 1 с не может колдовать'],
   ult_bard: ['Эпическая баллада', 'Ульта. 8 с: соперник в 6 клетках пляшет (оглушён, потом замедлен), бард точнее и быстрее'],
   flurry: ['Шквал ударов', '6 с: бьёт вдвое чаще'],
   palm: ['Удар ладонью', 'Удар и 1,5 с соперник не может колдовать'],
@@ -355,15 +355,17 @@ function arRes(F, n) { F.res = arClamp(F.res + n, 0, 100); }
 // шкала ульты: одна ульта за раунд (АРЕНА.md 7.3 — «в среднем одна ульта за раунд»), иначе затяжной бой с лечением даёт три
 function arUltAdd(F, n) { if (F.ultN < ARENA_TUNE.ultPerRound) F.ult = Math.min(100, F.ult + n); }
 // лечение в овертайме вдвое слабее: затяжка лечением не должна переигрывать урон
-const arHealMul = S => (S.ot ? ARENA_TUNE.otHeal : 1);
+// кровь и горение режут получаемое лечение вдвое — «DoT мимо лечения» (АРЕНА.md 7.1, баланс 22.10)
+const arHealMul = (S, F) => (S.ot ? ARENA_TUNE.otHeal : 1) * (F && (F.st.burn > S.T || F.st.bleed > S.T) ? ARENA_TUNE.dotHeal : 1);
 
 // Урон по B. kind: 'hit' — удар или снаряд (броня, ярость, лёд), 'dot' — горение/кровь, 'zone' — песок, круги
 function arHurt(S, A, B, n, kind, info) {
   const T = ARENA_TUNE, now = S.T;
   if (B.dead || n <= 0) return 0;
   if (B.st.inv > now) { arEv(S, { k: 'inv', i: B.i }); return 0; }
+  // срез урона действует и против зон соперника (Освящение, солнце); горящий песок по краю — мимо брони (баланс 22.10)
+  if (kind === 'hit' || (kind === 'zone' && A)) n *= 1 - arRed(S, B);
   if (kind === 'hit') {
-    n *= 1 - arRed(S, B);
     if (B.st.ice > now) { n *= T.iceMul; B.st.ice = 0; arEv(S, { k: 'shatter', i: B.i }); }
   }
   n = Math.max(0, n);
@@ -383,7 +385,7 @@ function arHurt(S, A, B, n, kind, info) {
 }
 function arenaHealF(S, F, part, why) {
   if (F.dead) return 0;
-  const n = Math.min(F.mhp - F.hp, F.mhp * part * F.pas.heal * arHealMul(S));
+  const n = Math.min(F.mhp - F.hp, F.mhp * part * F.pas.heal * arHealMul(S, F));
   if (n <= 0) return 0;
   F.hp += n; F.sm.heal += n;
   arEv(S, { k: 'heal', i: F.i, n: Math.round(n * 10) / 10, why: why || '' });
@@ -833,9 +835,9 @@ function arZones(S, dt) {
       if (z.fol) { z.x = own.x; z.y = own.y; }
       const A = z.k === 'holy' ? a.consecrate : a.ult_paladin;
       if (inB) { arHurt(S, own, B, B.mhp * A.dot / 100 * dt, 'zone'); if (A.slow) arCC(S, own, B, 'slow', 0.35, { pct: A.slow }); }
-      if (A.regen && (inA || z.fol)) { const h = Math.min(own.mhp - own.hp, own.mhp * A.regen / 100 * dt * arHealMul(S)); own.hp += h; own.sm.heal += h; }
+      if (A.regen && (inA || z.fol)) { const h = Math.min(own.mhp - own.hp, own.mhp * A.regen / 100 * dt * arHealMul(S, own)); own.hp += h; own.sm.heal += h; }
     } else if (z.k === 'grove') {
-      if (inA) { const h = Math.min(own.mhp - own.hp, own.mhp * a.ult_druid.regen / 100 * dt * arHealMul(S)); own.hp += h; own.sm.heal += h; }
+      if (inA) { const h = Math.min(own.mhp - own.hp, own.mhp * a.ult_druid.regen / 100 * dt * arHealMul(S, own)); own.hp += h; own.sm.heal += h; }
       if (now >= z.nt) { z.nt += a.ult_druid.every; if (inB) arCC(S, own, B, 'root', a.ult_druid.root, { force: 1 }); }
     } else if (z.k === 'rain') {
       // стрелы падают по одной; каждая — по зоне целиком
@@ -890,7 +892,7 @@ function arFighterTick(S, F, inp, dt) {
   else arRes(F, R.regen * F.pas.res * dt);
   // здоровье: пассивки и «лечащие» усиления (%/с)
   const rg = F.pas.hpr + arStat(S, F, 'regen');
-  if (rg > 0 && !F.dead) { const h = Math.min(F.mhp - F.hp, F.mhp * rg / 100 * dt * arHealMul(S)); F.hp += h; F.sm.heal += h; }
+  if (rg > 0 && !F.dead) { const h = Math.min(F.mhp - F.hp, F.mhp * rg / 100 * dt * arHealMul(S, F)); F.hp += h; F.sm.heal += h; }
   // горение и кровь — с потолком на эффект
   for (const s of ['burn', 'bleed']) {
     if (!(st[s] > now) || st[s + 'B'] <= 0) continue;
@@ -1044,7 +1046,7 @@ function arenaHash(S) {
 // ---------- Бот-дуэлянт (6.6): те же входы, что у игрока, с задержкой реакции ----------
 // роль способности для бота
 const ARENA_BOT_ROLE = {
-  bash: 'cc', cry: 'buff', surge: 'buff', wall: 'def', ult_warrior: 'ult',
+  bash: 'cc', cry: 'buff', surge: 'buff', wall: 'def', ult_warrior: 'ultdef',
   rage: 'buff', reckless: 'buff', stomp: 'cc', roar: 'hit', ult_barbarian: 'ult',
   aimed: 'hit', volley: 'hit', trap: 'trap', leap: 'flee', ult_archer: 'ult',
   sneak: 'hit', trip: 'cc', steal: 'steal', vanish: 'def', ult_rogue: 'ult',
@@ -1058,7 +1060,7 @@ const ARENA_BOT_ROLE = {
 // «форма» бота на раунд: живой игрок тоже то собран, то рассеян — реакция, перекаты, дистанция, напор, разброс решений
 function arBotForm(B) {
   const r = () => arRnd(B);
-  B.fm = { r: 0.75 + 0.6 * r(), rl: (r() - 0.5) * 0.3, k: (r() - 0.5) * 2, n: r(), ag: r(), th: 0.8 + 0.5 * r() };
+  B.fm = { r: 0.75 + 0.6 * r(), rl: (r() - 0.5) * 0.3, k: (r() - 0.5) * 2, n: r(), ag: r(), th: 0.8 + 0.5 * r(), err: r() * ARENA_TUNE.bot[B.tier].err };
 }
 // удобная дистанция: стрелки держат свою, ближники — вплотную
 function arBotRange(S, F) { const C = ARENA_TUNE.cls[F.cls]; return C.shot ? Math.min(C.rng + F.pas.rng - 1, 5.5) : C.rng * 0.75; }
@@ -1085,6 +1087,8 @@ function arenaBotInput(S, i) {
   }
   if (now < B.think) { out.mx = B.mx; out.my = B.my; out.cast = -1; return out; }
   B.think = now + P.think * fm.th * (0.8 + 0.4 * arRnd(B));
+  // ошибка формы: замешкался — шагнул не туда и не нажал приём (у живых игроков так и бывает)
+  if (arRnd(B) < fm.err) { B.mx = out.mx = (arRnd(B) - 0.5) * 2; B.my = out.my = (arRnd(B) - 0.5) * 2; return out; }
   // ---- куда идти ----
   let tx = T.cx, ty = T.cy, want = 0;
   const tgt = vis ? O : null;
@@ -1093,10 +1097,10 @@ function arenaBotInput(S, i) {
   if (tgt) {
     const keep = arBotRange(S, F) + (C.shot ? fm.k : 0);
     const ux = (F.x - O.x) / (dist || 1), uy = (F.y - O.y) / (dist || 1);
-    if (ranged && P.kite && dist < keep - 1.2 && arRnd(B) > fm.ag * 0.5) { tx = F.x + ux * 2; ty = F.y + uy * 2; want = 1; }
+    if (ranged && P.kite && !C.stand && dist < keep - 1.2 && arRnd(B) > fm.ag * 0.5) { tx = F.x + ux * 2; ty = F.y + uy * 2; want = 1; }
     else if (dist > keep || (ranged && !arLos(F.x, F.y, O.x, O.y))) { const ld = ranged ? 0 : P.lead * Math.min(1, dist / 4); tx = O.x + O.vx * ld; ty = O.y + O.vy * ld; want = 1; }
     else if (!ranged && dist > C.rng) { tx = O.x + O.vx * P.lead * 0.5; ty = O.y + O.vy * P.lead * 0.5; want = 1; }
-    else if (ranged && P.kite) { tx = F.x - uy * 1.5; ty = F.y + ux * 1.5; want = 0.6; }
+    else if (ranged && P.kite && !C.stand) { tx = F.x - uy * 1.5; ty = F.y + ux * 1.5; want = 0.6; }
   } else if (B.lastSeen && now - B.lastSeen[2] < 3) { tx = B.lastSeen[0] + (arRnd(B) - 0.5) * 3; ty = B.lastSeen[1] + (arRnd(B) - 0.5) * 3; want = 0.8; }
   else { tx = T.cx + (arRnd(B) - 0.5) * 6; ty = T.cy + (arRnd(B) - 0.5) * 6; want = 0.7; }
   // опасные зоны и горящий край — уходить (умелые боты)
@@ -1106,6 +1110,8 @@ function arenaBotInput(S, i) {
       if (z.o === i) continue;
       const bad = z.k === 'holy' || z.k === 'sun' || z.k === 'rain' || z.k === 'meteor' || z.k === 'grove' || z.k === 'roots' || z.k === 'trap';
       if (!bad) continue;
+      // ближник не бежит из зоны, где стоит цель: драться придётся там (Освящение вокруг паладина, Корни под друидом)
+      if (!ranged && vis && z.k !== 'trap' && z.k !== 'rain' && z.k !== 'meteor' && arD2(O.x, O.y, z.x, z.y) < z.r * z.r) continue;
       const rr = z.k === 'trap' ? 1.1 : z.r + 0.6, d2 = arD2(F.x, F.y, z.x, z.y);
       if (d2 < rr * rr) { const d = Math.sqrt(d2) || 0.01; ax += (F.x - z.x) / d * 2; ay += (F.y - z.y) / d * 2; }
     }
@@ -1145,6 +1151,8 @@ function arBotCast(S, i, B, P, dist, vis) {
       case 'heal': score = hp < (P.save ? 0.55 : 0.7) ? 9 : hp < 0.85 && B.tier === 1 ? 3 : 0; break;
       case 'heal2': score = hp < 0.9 ? 4 : 0; break;
       case 'ultheal': score = hp < 0.4 || hp < 0.6 && ohp > 0.7 ? 10 : 0; break;
+      // защитная ульта: под ульту соперника или на краю (чемпион); остальные — как обычную
+      case 'ultdef': if (vis && dist < 5.5) score = P.save ? (oUlt ? 11 : hp < 0.45 && threat ? 8 : 0) : 7; break;
       case 'cc':
         if (!vis || dist > r + 0.1) break;
         if (P.save) score = (O.swing ? 9 : 0) + (oUlt ? 8 : 0) + (ohp < 0.35 ? 5 : 0) + (dist < 2.5 && hp < 0.5 ? 4 : 0) + (O.st.stunImm > now ? -20 : 2);
@@ -1156,7 +1164,7 @@ function arBotCast(S, i, B, P, dist, vis) {
       case 'ult': if (vis && dist <= Math.max(a.r || 0, a.zr || 0, reach, 3) + 0.5) score = 7 + (ohp < 0.5 ? 2 : 0); break;
       case 'zone': if (vis && dist <= (a.zr || 3) - 0.3) score = 5; break;
       case 'trap': if (vis && dist < 4 && dist > 1.2) score = 4; break;
-      case 'flee': if (vis && dist < 1.8 && C.shot) score = 6; break;
+      case 'flee': if (vis && dist < 2.4 && C.shot && !T.cls[O.cls].shot) score = 7; break;
       case 'gap': if (vis && dist > 2.4 && dist < 4.6) score = 5; break;
       case 'steal': if (vis && dist <= r && (O.res >= 30 || O.ult >= 50)) score = 4; break;
       case 'ward': if (vis && dist < 7 && !(F.st.ward > now) && hp < 0.95) score = 3; break;
