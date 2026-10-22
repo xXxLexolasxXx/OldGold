@@ -158,7 +158,8 @@ function tavernRender() {
       <span style="display:block;width:100%;text-align:left"><b style="font-size:16px;display:block">${d.name}${lvl ? ' ' + lvl : ''}${locked ? ' 🔒' : ''}</b><small style="display:block">${locked ? 'Победите Малгора, чтобы открыть' : d.desc}</small>${best ? `<small style="display:block">Рекорд недели: ${best}</small>` : ''}</span></button>`;
   }).join('');
   cards.querySelectorAll('button[data-d]').forEach(b => {
-    b.onmouseenter = () => { const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (d && !b.disabled) tavernSay(d.say); };
+    b.onmouseenter = () => { const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (d && !b.disabled) { tavernSay(d.say); Tav.hover = true; } };
+    b.onmouseleave = () => { Tav.hover = false; };
     b.onclick = () => { const d = RUN_DIFFS.find(x => x.id === b.dataset.d); if (d && !b.disabled) { RSfx.play('ui'); tavernClose(); runStart(d); } };
   });
   const pal = RUN_PALS[m.pal];
@@ -186,76 +187,211 @@ function tavernFrame(dt) {
   tavernDraw(Tav.cv.getContext('2d'), Tav.t);
 }
 
-// Сцена 320×180: стена, очаг, полки, стойка, хозяин. Всё собственной рисовкой.
+// Сцена 320×180: тёплый зал — очаг с котлом, окно в ночь, полки с бутылками, бочки с кранами, стойка.
+// Хозяин и посетители — настоящие гномы игры (drawPerson из people.js), поэтому выглядят как жители деревни.
+// Неподвижная часть рисуется один раз в Tav.bg, каждый кадр — огонь, свет, гномы, пар и искры.
+const TAV_SPR = new Map();
+function tavGnome(type, look, view, pose, frame, opt, part) {
+  const key = `${type}|${look}|${view}|${pose}|${frame}|${opt && opt.gest || ''}|${opt && opt.gf || 0}|${part}`;
+  let cv = TAV_SPR.get(key);
+  if (cv) return cv;
+  const [c2, ctx] = mkSprite(PW, PH, PS);
+  drawPerson(ctx, type, lookOf({ type, look }), view, pose, frame, null, null, mulberry32(look * 977 + 13), opt || {});
+  cv = toPixelArt(c2, PS / part, { outline: true, outlineDark: 0.36, alphaCut: 105 });
+  if (TAV_SPR.size > 260) TAV_SPR.delete(TAV_SPR.keys().next().value);
+  TAV_SPR.set(key, cv);
+  return cv;
+}
+// гном ногами в точке (x, y); flip — смотрит влево
+function tavPut(c, spr, x, y, part, flip) {
+  const sx = Math.round(x - (flip ? PW - PFX : PFX) * part), sy = Math.round(y - PFY * part);
+  if (!flip) { c.drawImage(spr, sx, sy); return; }
+  c.save(); c.translate(sx + spr.width, sy); c.scale(-1, 1); c.drawImage(spr, 0, 0); c.restore();
+}
+
+function tavBg() {
+  const cv = mkCanvas(320, 180), c = cv.getContext('2d');
+  c.imageSmoothingEnabled = false;
+  const rnd = mulberry32(4242), px = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+  // стена: вертикальные доски с волокном
+  for (let x = 0; x < 320; x += 12) {
+    const tone = ['#5a3820', '#603c22', '#56361e', '#5e3a20'][(x / 12) % 4];
+    px(x, 0, 12, 96, tone); px(x, 0, 1, 96, '#3e2412'); px(x + 11, 0, 1, 96, '#6e4a2a');
+    for (let k = 0; k < 5; k++) px(x + 2 + ((rnd() * 8) | 0), (rnd() * 90) | 0, 1, 4 + ((rnd() * 8) | 0), '#4e3018');
+    if (rnd() < 0.5) { const ky = 10 + ((rnd() * 70) | 0); px(x + 4, ky, 3, 2, '#3e2412'); px(x + 5, ky, 1, 1, '#2a180a'); }   // сучок
+  }
+  // нижние панели
+  px(0, 90, 320, 30, '#3e2614'); px(0, 90, 320, 2, '#7a5430'); px(0, 92, 320, 1, '#2a180a');
+  for (let x = 4; x < 320; x += 26) { px(x, 96, 22, 20, '#4a2e18'); px(x, 96, 22, 1, '#2e1c0e'); px(x, 96, 1, 20, '#2e1c0e'); px(x + 21, 96, 1, 20, '#6a4626'); px(x, 115, 22, 1, '#6a4626'); }
+  // пол: доски вширь, к зрителю шире
+  let y = 120, hgt = 5;
+  while (y < 180) {
+    px(0, y, 320, hgt, (y / 5 | 0) % 2 ? '#6a4424' : '#704828'); px(0, y, 320, 1, '#4a2e16');
+    for (let x = ((rnd() * 60) | 0); x < 320; x += 50 + ((rnd() * 50) | 0)) px(x, y, 1, hgt, '#4a2e16');
+    for (let k = 0; k < 6; k++) px((rnd() * 320) | 0, y + 1 + ((rnd() * (hgt - 1)) | 0), 6 + ((rnd() * 10) | 0), 1, '#5e3c1e');
+    y += hgt; hgt += 1;
+  }
+  // потолочные балки и гирлянды хмеля
+  px(0, 0, 320, 7, '#3a2210'); px(0, 7, 320, 2, '#2a180a'); px(0, 0, 320, 1, '#5a3a1e');
+  for (const bx of [84, 236]) { px(bx, 0, 8, 120, '#3a2210'); px(bx, 0, 1, 120, '#5a3a1e'); px(bx + 7, 0, 1, 120, '#24140a'); }
+  for (let x = 4; x < 320; x += 3) {
+    const sag = Math.round(Math.sin((x % 80) / 80 * Math.PI) * 5);
+    px(x, 8 + sag, 2, 1, '#4a6a22');
+    if (x % 9 === 1) { px(x - 1, 9 + sag, 3, 3, '#7aa83a'); px(x, 10 + sag, 1, 1, '#a8d060'); px(x, 12 + sag, 1, 1, '#4a6a22'); }
+  }
+  // окно в ночь (между балкой и полками)
+  const wx = 98, wy = 22;
+  px(wx - 3, wy - 3, 32, 44, '#3a2210'); px(wx - 3, wy + 38, 32, 3, '#7a5430');
+  const sky = c.createLinearGradient(0, wy, 0, wy + 38); sky.addColorStop(0, '#0e1638'); sky.addColorStop(1, '#2a3a6a');
+  c.fillStyle = sky; c.fillRect(wx, wy, 26, 38);
+  px(wx, wy, 3, 3, '#3a2210'); px(wx + 23, wy, 3, 3, '#3a2210'); px(wx, wy, 1, 6, '#3a2210'); px(wx + 25, wy, 1, 6, '#3a2210');   // скруглённый верх
+  for (let k = 0; k < 9; k++) px(wx + 2 + ((rnd() * 22) | 0), wy + 3 + ((rnd() * 18) | 0), 1, 1, rnd() < 0.3 ? '#fff6c0' : '#c8d0f0');
+  px(wx + 17, wy + 6, 5, 5, '#f4ecc8'); px(wx + 18, wy + 5, 3, 7, '#f4ecc8'); px(wx + 19, wy + 6, 3, 4, '#cfc8a8');   // луна
+  px(wx, wy + 28, 26, 10, '#16203e'); for (let x = wx; x < wx + 26; x += 4) px(x, wy + 24 + ((x * 7) % 5), 3, 14, '#121a32');   // ели за окном
+  px(wx + 12, wy, 2, 38, '#3a2210'); px(wx, wy + 18, 26, 2, '#3a2210');   // переплёт
+  px(wx + 2, wy + 22, 2, 2, '#ffd27a'); px(wx + 6, wy + 30, 1, 1, '#ffd27a');   // огоньки дальней деревни
+  // горшок с геранью на подоконнике
+  px(wx + 3, wy + 34, 7, 5, '#a8502a'); px(wx + 3, wy + 34, 7, 1, '#c8703a'); px(wx + 4, wy + 30, 5, 4, '#3e7426'); px(wx + 5, wy + 29, 2, 2, '#e04a4a'); px(wx + 8, wy + 31, 1, 1, '#e04a4a');
+  // очаг: каменная кладка, полка, котёл
+  const fx = 8, fy = 30;
+  for (let j = 0; j < 9; j++) for (let i = 0; i < 6; i++) {
+    const bx = fx + i * 11 - (j % 2 ? 5 : 0), by = fy + j * 10;
+    if (bx < fx - 2 || bx > fx + 60) continue;
+    const g = ['#7a7068', '#6e655e', '#847a70', '#6a6058'][((i * 5 + j * 3) % 4)];
+    px(Math.max(fx, bx), by, Math.min(10, fx + 66 - bx), 9, g); px(Math.max(fx, bx), by, 10, 1, '#968a7e'); px(Math.max(fx, bx), by + 8, 10, 1, '#4e4640');
+  }
+  px(fx + 12, fy + 34, 42, 56, '#2a2420'); px(fx + 14, fy + 36, 38, 54, '#120c08');   // топка
+  c.fillStyle = '#2a2420'; c.beginPath(); c.arc(fx + 33, fy + 36, 21, Math.PI, 0); c.fill();
+  c.fillStyle = '#120c08'; c.beginPath(); c.arc(fx + 33, fy + 37, 19, Math.PI, 0); c.fill();
+  px(fx - 4, fy + 6, 74, 5, '#5a3a1e'); px(fx - 4, fy + 6, 74, 1, '#8a6038'); px(fx - 4, fy + 11, 74, 1, '#2a180a');   // полка
+  // на полке: кружки, свеча, подкова
+  for (const [mx2, col] of [[fx + 2, '#d8d0c0'], [fx + 10, '#b8a888'], [fx + 52, '#d8d0c0']]) { px(mx2, fy, 6, 6, col); px(mx2 + 6, fy + 2, 1, 3, col); px(mx2, fy, 6, 1, '#f4ecd0'); }
+  px(fx + 30, fy - 3, 4, 9, '#f0e6c8'); px(fx + 28, fy + 4, 8, 2, '#a07a30');
+  c.strokeStyle = '#9aa0aa'; c.lineWidth = 2; c.beginPath(); c.arc(fx + 44, fy - 4, 4, 0.2, Math.PI - 0.2); c.stroke();
+  px(fx + 33, fy + 40, 1, 22, '#2a2420');                                     // цепь котла
+  c.fillStyle = '#26221e'; c.beginPath(); c.ellipse(fx + 33, fy + 68, 11, 8, 0, 0, Math.PI * 2); c.fill();
+  px(fx + 22, fy + 61, 22, 3, '#3a342e'); px(fx + 24, fy + 61, 18, 1, '#5a524a');
+  // дрова у очага
+  for (let k = 0; k < 4; k++) { px(fx + 66 + (k % 2) * 3, 110 - k * 4, 12, 4, '#6a4424'); px(fx + 66 + (k % 2) * 3, 110 - k * 4, 3, 4, '#c8a070'); px(fx + 67 + (k % 2) * 3, 111 - k * 4, 1, 2, '#8a6038'); }
+  // коврик у очага
+  c.fillStyle = '#8a2a22'; c.beginPath(); c.ellipse(46, 148, 34, 7, 0, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = '#d8a040'; c.lineWidth = 1; c.beginPath(); c.ellipse(46, 148, 30, 5, 0, 0, Math.PI * 2); c.stroke();
+  // полки с бутылками за стойкой
+  for (const sy of [30, 56]) {
+    px(128, sy + 18, 104, 4, '#5a3a1e'); px(128, sy + 18, 104, 1, '#8a6038'); px(128, sy + 22, 104, 1, '#24140a');
+    for (const bx of [131, 230]) px(bx - 2, sy + 22, 3, 5, '#4a2e18');
+    let bx = 132;
+    while (bx < 226) {
+      const kind = (rnd() * 5) | 0, col = ['#3e7a3a', '#8a5a1a', '#6a1e2a', '#2e5a7a', '#c8902a'][kind];
+      if (kind === 4 && bx < 214) { px(bx, sy + 8, 12, 10, '#8a5a2a'); px(bx, sy + 10, 12, 1, '#b8902c'); px(bx, sy + 15, 12, 1, '#b8902c'); px(bx + 1, sy + 8, 1, 10, '#a8703a'); bx += 14; continue; }   // бочонок
+      const h2 = 9 + ((rnd() * 6) | 0);
+      px(bx, sy + 18 - h2, 5, h2, col); px(bx + 1, sy + 18 - h2 - 3, 3, 3, col); px(bx + 1, sy + 18 - h2 - 4, 3, 1, '#2a180a');
+      px(bx + 1, sy + 19 - h2, 1, h2 - 3, 'rgba(255,255,255,0.35)'); px(bx, sy + 12, 5, 3, '#e8dcb8');
+      bx += 7;
+    }
+  }
+  // большие бочки с кранами справа
+  for (const [bx2, by2] of [[256, 50], [286, 50], [271, 82]]) {
+    c.fillStyle = '#7a4a22'; c.beginPath(); c.ellipse(bx2 + 13, by2 + 13, 14, 14, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#9a6430'; c.beginPath(); c.ellipse(bx2 + 13, by2 + 13, 10, 10, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#3a2210'; c.lineWidth = 1; for (let k = -6; k <= 6; k += 4) { c.beginPath(); c.moveTo(bx2 + 13 + k, by2 + 4); c.lineTo(bx2 + 13 + k, by2 + 22); c.stroke(); }
+    c.strokeStyle = '#c8a050'; c.lineWidth = 2; c.beginPath(); c.ellipse(bx2 + 13, by2 + 13, 13, 13, 0, 0, Math.PI * 2); c.stroke();
+    px(bx2 + 11, by2 + 20, 5, 3, '#c8a050'); px(bx2 + 12, by2 + 23, 3, 3, '#a07a30'); px(bx2 + 13, by2 + 26, 1, 1, '#ffcc5a');
+  }
+  px(252, 76, 64, 4, '#4a2e18'); px(252, 108, 64, 4, '#4a2e18');   // козлы под бочки
+  // вывеска отряда: топоры и кружка
+  px(144, 10, 72, 18, '#3a2210'); px(146, 12, 68, 14, '#c8a870'); px(146, 12, 68, 1, '#e8d0a0'); px(146, 25, 68, 1, '#8a6a40');
+  c.strokeStyle = '#7a8088'; c.lineWidth = 2; c.beginPath(); c.moveTo(166, 24); c.lineTo(180, 14); c.moveTo(194, 24); c.lineTo(180, 14); c.stroke();
+  px(176, 14, 8, 9, '#f4ecd0'); px(184, 16, 2, 4, '#f4ecd0'); px(176, 13, 8, 2, '#ffffff'); px(177, 16, 6, 6, '#e0a030');
+  // стойка
+  px(118, 106, 184, 44, '#5a3418'); px(114, 100, 192, 8, '#8a5a2a'); px(114, 100, 192, 1, '#c08a4a'); px(114, 107, 192, 1, '#3a2210');
+  for (let x = 124; x < 300; x += 22) { px(x, 112, 18, 30, '#64401e'); px(x, 112, 18, 1, '#3a2210'); px(x, 112, 1, 30, '#3a2210'); px(x + 17, 112, 1, 30, '#7a522a'); }
+  px(116, 142, 188, 2, '#c8a050'); px(116, 143, 188, 1, '#7a5a20');   // латунная перекладина для ног
+  for (let x = 130; x < 300; x += 40) px(x, 140, 2, 6, '#a07a30');
+  // кран-колонна на стойке
+  px(242, 82, 8, 18, '#a07a30'); px(242, 82, 8, 2, '#e0c070'); for (const k of [0, 1, 2]) { px(238 + k * 6, 86, 3, 8, '#7a3a1c'); px(238 + k * 6, 85, 3, 1, '#c8703a'); }
+  // стол на переднем плане
+  px(222, 156, 98, 7, '#7a4a22'); px(222, 156, 98, 1, '#b07a42'); px(222, 163, 98, 2, '#3a2210'); px(230, 165, 7, 15, '#5a3418');
+  for (let x = 226; x < 320; x += 9) px(x, 158, 1, 4, '#6a3e1c');
+  return cv;
+}
+
 function tavernDraw(c, t) {
   c.imageSmoothingEnabled = false;
-  const fl = 0.75 + Math.sin(t * 9) * 0.12 + Math.sin(t * 23) * 0.08;
-  // стена и пол
-  c.fillStyle = '#2a1a0e'; c.fillRect(0, 0, 320, 180);
-  for (let y = 0; y < 110; y += 10) for (let x = (y / 10 % 2) * 12 - 12; x < 320; x += 24) { c.fillStyle = (x / 24 + y / 10) % 2 ? '#35210f' : '#2f1d0e'; c.fillRect(x, y, 23, 9); }
-  for (let x = 0; x < 320; x += 20) { c.fillStyle = x / 20 % 2 ? '#4a3018' : '#43291a'; c.fillRect(x, 120, 20, 60); c.fillStyle = '#2a190c'; c.fillRect(x, 120, 1, 60); }
-  c.fillStyle = '#1a0f08'; c.fillRect(0, 118, 320, 3);
-  // балки
-  c.fillStyle = '#4a2c14'; c.fillRect(0, 6, 320, 6); c.fillRect(70, 0, 6, 118); c.fillRect(244, 0, 6, 118);
-  // очаг слева
-  c.fillStyle = '#6a625a'; c.fillRect(14, 40, 52, 78); c.fillStyle = '#3a342e'; c.fillRect(22, 58, 36, 60);
-  c.fillStyle = '#0c0604'; c.fillRect(26, 64, 28, 54);
-  const g = c.createRadialGradient(40, 112, 2, 40, 104, 30 * fl); g.addColorStop(0, 'rgba(255,230,120,0.95)'); g.addColorStop(0.5, 'rgba(255,120,30,0.7)'); g.addColorStop(1, 'rgba(255,60,10,0)');
-  c.fillStyle = g; c.fillRect(8, 60, 64, 60);
-  for (let k = 0; k < 5; k++) { const fx = 30 + k * 5, h = 14 + Math.sin(t * 8 + k * 1.7) * 5 + (k === 2 ? 6 : 0); c.fillStyle = k % 2 ? '#ffb43c' : '#ff7a1e'; c.fillRect(fx, 114 - h, 4, h); c.fillStyle = '#ffe680'; c.fillRect(fx + 1, 114 - h * 0.55, 2, h * 0.55); }
-  c.fillStyle = '#3a2410'; c.fillRect(26, 114, 28, 4);
-  // отсветы на всю сцену от огня
-  c.fillStyle = `rgba(255,140,40,${0.07 * fl})`; c.fillRect(0, 0, 320, 180);
-  // полки с бочонками справа
-  for (const [x, y] of [[255, 30], [255, 62]]) {
-    c.fillStyle = '#5a3a1c'; c.fillRect(x, y + 20, 56, 4);
-    for (let k = 0; k < 3; k++) { c.fillStyle = '#8a5a2a'; c.fillRect(x + 4 + k * 18, y + 4, 14, 16); c.fillStyle = '#b8902c'; c.fillRect(x + 4 + k * 18, y + 8, 14, 1); c.fillRect(x + 4 + k * 18, y + 15, 14, 1); }
+  if (!Tav.bg) Tav.bg = tavBg();
+  c.drawImage(Tav.bg, 0, 0);
+  const fl = 0.78 + Math.sin(t * 9) * 0.1 + Math.sin(t * 23) * 0.07 + Math.sin(t * 3.1) * 0.05;
+  // огонь в очаге: языки, угли, поленья
+  const fx = 41;
+  for (let k = 0; k < 7; k++) {
+    const x = fx - 12 + k * 4, h = 12 + Math.sin(t * 8 + k * 1.7) * 4 + (k === 3 ? 7 : k === 2 || k === 4 ? 4 : 0);
+    c.fillStyle = k % 2 ? '#ff9a2a' : '#e8601a'; c.fillRect(x, 116 - h, 4, h);
+    c.fillStyle = '#ffd25a'; c.fillRect(x + 1, 116 - h * 0.6, 2, h * 0.6);
+    c.fillStyle = '#fff2b0'; c.fillRect(x + 1, 116 - h * 0.25, 2, h * 0.25);
   }
-  // фонари
-  for (const x of [112, 208]) {
-    const sw = Math.sin(t * 1.3 + x) * 1.5;
-    c.fillStyle = '#2a2018'; c.fillRect(x + sw, 12, 1, 14);
-    c.fillStyle = '#3a2c1c'; c.fillRect(x - 4 + sw, 26, 9, 10);
-    const lg = c.createRadialGradient(x + sw, 31, 1, x + sw, 31, 22); lg.addColorStop(0, `rgba(255,220,120,${0.85 * fl})`); lg.addColorStop(1, 'rgba(255,180,60,0)');
-    c.fillStyle = lg; c.fillRect(x - 24, 8, 50, 46); c.fillStyle = '#ffe9a0'; c.fillRect(x - 2 + sw, 28, 5, 6);
+  c.fillStyle = '#4a2a14'; c.fillRect(fx - 14, 114, 30, 3); c.fillRect(fx - 10, 111, 22, 3);
+  c.fillStyle = '#ff6a1a'; for (let k = 0; k < 6; k++) c.fillRect(fx - 12 + k * 5, 117, 2, 1);
+  // пар над котлом
+  for (let k = 0; k < 3; k++) { const ph = (t * 0.6 + k / 3) % 1; c.fillStyle = `rgba(230,230,220,${0.35 * (1 - ph)})`; c.fillRect(fx - 2 + Math.sin(t * 2 + k) * 3 + k * 2, 88 - ph * 26, 3, 3); }
+  // кот у очага: спит, хвост покачивается, ухо дёргается
+  const kx = 40, ky = 147;
+  c.fillStyle = '#3a3040'; c.beginPath(); c.ellipse(kx, ky, 9, 4.5, 0, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.ellipse(kx - 8, ky - 2, 4, 3.5, 0, 0, Math.PI * 2); c.fill();
+  c.fillRect(kx - 11, ky - 7, 2, 3); c.fillRect(kx - 7, ky - 7 + (Math.sin(t * 0.7) > 0.95 ? 1 : 0), 2, 3);
+  c.fillStyle = '#e8b040'; c.fillRect(kx - 10, ky - 3, 2, 1);
+  const tw = Math.sin(t * 1.6) * 2; c.fillStyle = '#3a3040'; c.fillRect(kx + 8, ky + 1, 4, 2); c.fillRect(kx + 11, ky - 1 + tw * 0.5, 2, 3);
+  c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(kx - 6, ky - 4, 10, 1);
+  // хозяин за стойкой: наш гном-пивовар; машет, протирает кружку, показывает на забег
+  const cyc = t % 14, idle = Math.floor(t * 5) % IDLE_FRAMES;
+  const gest = Tav.hover ? 'point' : t < 3 || (cyc > 9 && cyc < 11) ? 'wave' : cyc > 5 && cyc < 7.5 ? 'drink' : '';
+  const keeper = tavGnome('brewer', 11, 'S', 'idle', idle, gest ? { gest, gf: gestCyc(t) } : {}, 3);
+  tavPut(c, keeper, 186, 124, 3, false);
+  // стойка поверх ног хозяина
+  c.drawImage(Tav.bg, 114, 100, 192, 50, 114, 100, 192, 50);
+  // кружки на стойке: пена и пар
+  for (const [x, full] of [[130, 1], [150, 1], [222, 0], [266, 1], [282, 1]]) {
+    c.fillStyle = '#d8d0c0'; c.fillRect(x, 92, 9, 9); c.fillStyle = '#a89878'; c.fillRect(x, 99, 9, 2); c.fillRect(x + 9, 94, 2, 5); c.fillStyle = '#f4ecd0'; c.fillRect(x + 1, 93, 2, 6);
+    if (full) { c.fillStyle = '#fff8e8'; c.fillRect(x - 1, 89, 11, 4); c.fillRect(x + 1, 88, 6, 1); c.fillStyle = '#e8dcc0'; c.fillRect(x - 1, 92, 11, 1); }
   }
-  // вывеска на стене: кружка и мечи
-  c.fillStyle = '#6a4a1a'; c.fillRect(140, 38, 40, 26); c.fillStyle = '#d8c48a'; c.fillRect(142, 40, 36, 22);
-  c.strokeStyle = '#7a8088'; c.lineWidth = 2; c.beginPath(); c.moveTo(148, 58); c.lineTo(172, 44); c.moveTo(172, 58); c.lineTo(148, 44); c.stroke();
-  // стойка
-  c.fillStyle = '#5a3a1c'; c.fillRect(96, 104, 128, 40); c.fillStyle = '#7a5226'; c.fillRect(92, 100, 136, 8);
-  c.fillStyle = '#3a2410'; for (let x = 100; x < 224; x += 20) c.fillRect(x, 112, 1, 32);
-  c.fillStyle = '#9a7036'; c.fillRect(92, 100, 136, 2);
-  // хозяин: приземистый гном с огромной бородой, фартук
-  const bob = Math.sin(t * 2) * 0.7, hx = 160;
-  c.fillStyle = '#3a2a50'; c.fillRect(hx - 16, 82 + bob, 32, 24);                   // тело
-  c.fillStyle = '#d8d0c0'; c.fillRect(hx - 12, 90 + bob, 24, 16);                  // фартук
-  c.fillStyle = '#e8b890'; c.fillRect(hx - 9, 62 + bob, 18, 16);                   // лицо
-  c.fillStyle = '#b0562a'; c.fillRect(hx - 10, 76 + bob, 20, 20);                  // борода
-  c.fillStyle = '#c8663a'; c.fillRect(hx - 8, 76 + bob, 16, 16);
-  c.fillStyle = '#8a3c1c'; for (let k = 0; k < 5; k++) c.fillRect(hx - 8 + k * 4, 88 + bob + (k % 2) * 2, 2, 8);
-  c.fillStyle = '#1a1008'; c.fillRect(hx - 5, 68 + bob, 3, 3); c.fillRect(hx + 2, 68 + bob, 3, 3);   // глаза
-  if (Math.sin(t * 0.9) > 0.96) { c.fillStyle = '#e8b890'; c.fillRect(hx + 2, 68 + bob, 3, 3); }          // подмигивает
-  c.fillStyle = '#7a3a1c'; c.fillRect(hx - 7, 60 + bob, 14, 5);                    // брови/шапка
-  c.fillStyle = '#4a2a60'; c.fillRect(hx - 11, 56 + bob, 22, 8); c.fillRect(hx - 8, 52 + bob, 16, 5);   // колпак
-  // рука с кружкой: протирает
-  const hand = Math.sin(t * 3.2) * 4;
-  c.fillStyle = '#e8b890'; c.fillRect(hx + 12 + hand * 0.4, 94 + bob, 7, 6);
-  c.fillStyle = '#d8d0c0'; c.fillRect(hx + 14, 90 + bob, 8, 10); c.fillStyle = '#a07a30'; c.fillRect(hx + 22, 93 + bob, 3, 5);
-  c.fillStyle = '#f4ecd0'; c.fillRect(hx + 15, 88 + bob, 6, 2);
-  // кружки на стойке
-  for (const x of [112, 130, 192, 206]) { c.fillStyle = '#d8d0c0'; c.fillRect(x, 92, 8, 9); c.fillStyle = '#f4ecd0'; c.fillRect(x, 90, 8, 3); c.fillStyle = '#a07a30'; c.fillRect(x + 8, 94, 2, 4); }
-  // пар/искры
-  if (Math.random() < 0.3) Tav.parts.push({ x: 164 + Math.random() * 8, y: 86, vx: Math.random() * 6 - 3, vy: -12 - Math.random() * 6, a: 0.5, k: 's' });
-  if (Math.random() < 0.4) Tav.parts.push({ x: 28 + Math.random() * 24, y: 100, vx: Math.random() * 10 - 5, vy: -28 - Math.random() * 20, a: 1, k: 'f' });
+  // посетители: двое за столом (один пьёт, другой хлопает), у стойки — официантка
+  const p1 = tavGnome('miner', 3, 'E', 'idle', (idle + 2) % IDLE_FRAMES, (t % 9) > 6 ? { gest: 'drink', gf: gestCyc(t) } : {}, 3);
+  const p2 = tavGnome('woodcutter', 11, 'S', 'idle', (idle + 4) % IDLE_FRAMES, (t % 11) > 8.5 ? { gest: 'clap', gf: gestCyc(t * 1.4) } : {}, 3);
+  const p3 = tavGnome('waitress', 1, 'S', 'idle', (idle + 1) % IDLE_FRAMES, (t % 13) > 10 ? { gest: 'wave', gf: gestCyc(t * 1.2) } : {}, 3);
+  tavPut(c, p3, 118, 174, 3, false);
+  tavPut(c, p2, 256, 174, 3, false);
+  tavPut(c, p1, 302, 176, 3, true);
+  // стол поверх ног сидящих и кружки на нём
+  c.drawImage(Tav.bg, 222, 156, 98, 24, 222, 156, 98, 24);
+  for (const x of [236, 284]) { c.fillStyle = '#d8d0c0'; c.fillRect(x, 148, 8, 8); c.fillStyle = '#fff8e8'; c.fillRect(x - 1, 146, 10, 3); c.fillStyle = '#a89878'; c.fillRect(x + 8, 150, 2, 4); }
+  c.fillStyle = '#f0e6c8'; c.fillRect(268, 146, 3, 10); c.fillStyle = '#ffd25a'; c.fillRect(268, 143 + (Math.sin(t * 11) > 0 ? 0 : 1), 3, 3); c.fillStyle = '#fff6c0'; c.fillRect(269, 144, 1, 1);
+  // фонари на балках
+  const lamps = [[88, 40], [240, 40]];
+  for (const [x, y] of lamps) {
+    const sw = Math.sin(t * 1.3 + x) * 1.2;
+    c.fillStyle = '#2a2018'; c.fillRect(x + 3 + sw * 0.5, 9, 1, y - 9);
+    c.fillStyle = '#2a1e14'; c.fillRect(x + sw, y, 8, 2); c.fillRect(x + sw, y + 11, 8, 2); c.fillRect(x + sw, y, 1, 13); c.fillRect(x + 7 + sw, y, 1, 13);
+    c.fillStyle = `rgb(255,${200 + fl * 40 | 0},120)`; c.fillRect(x + 1 + sw, y + 2, 6, 9); c.fillStyle = '#fff6d0'; c.fillRect(x + 3 + sw, y + 4, 2, 4);
+  }
+  // тёплый свет: очаг, фонари, свеча (сложением)
+  c.save(); c.globalCompositeOperation = 'lighter';
+  const glow = (x, y, r, a, col) => { const g = c.createRadialGradient(x, y, 1, x, y, r); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); };
+  glow(fx, 104, 70 * fl, 0.32, '255,130,40');
+  for (const [x, y] of lamps) glow(x + 4, y + 7, 46 * (0.9 + fl * 0.1), 0.26, '255,190,90');
+  glow(269, 144, 24 * fl, 0.3, '255,200,100');
+  glow(160, 30, 60, 0.06, '255,170,80');
+  c.restore();
+  // искры из очага и пылинки в свете фонарей
+  if (Math.random() < 0.4) Tav.parts.push({ x: fx - 8 + Math.random() * 16, y: 104, vx: Math.random() * 10 - 5, vy: -26 - Math.random() * 18, a: 1, k: 'f' });
+  if (Math.random() < 0.05) Tav.parts.push({ x: 60 + Math.random() * 200, y: 30 + Math.random() * 60, vx: Math.random() * 4 - 2, vy: Math.random() * 2 - 1, a: 0.8, k: 'd' });
   for (let i = Tav.parts.length - 1; i >= 0; i--) {
-    const p = Tav.parts[i]; p.x += p.vx * 0.016; p.y += p.vy * 0.016; p.a -= 0.012;
-    if (p.a <= 0) { Tav.parts.splice(i, 1); continue; }
-    c.fillStyle = p.k === 's' ? `rgba(240,240,240,${p.a * 0.5})` : `rgba(255,${160 + (p.a * 90) | 0},40,${p.a})`;
-    c.fillRect(p.x | 0, p.y | 0, p.k === 's' ? 2 : 1, p.k === 's' ? 2 : 1);
+    const p = Tav.parts[i]; p.x += p.vx * 0.016; p.y += p.vy * 0.016; p.a -= p.k === 'd' ? 0.004 : 0.014;
+    if (p.a <= 0 || p.y < 40 && p.k === 'f') { Tav.parts.splice(i, 1); continue; }
+    c.fillStyle = p.k === 'f' ? `rgba(255,${160 + (p.a * 90) | 0},40,${p.a})` : `rgba(255,240,200,${p.a * 0.5})`;
+    c.fillRect(p.x | 0, p.y | 0, 1, 1);
   }
-  // виньетка
-  const v = c.createRadialGradient(160, 90, 60, 160, 90, 200); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.55)');
+  // общий тёплый тон и мягкая виньетка
+  c.fillStyle = `rgba(255,150,60,${0.05 * fl})`; c.fillRect(0, 0, 320, 180);
+  const v = c.createRadialGradient(170, 95, 70, 170, 95, 210); v.addColorStop(0, 'rgba(20,8,0,0)'); v.addColorStop(1, 'rgba(20,8,0,0.55)');
   c.fillStyle = v; c.fillRect(0, 0, 320, 180);
 }
 
