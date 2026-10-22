@@ -194,8 +194,9 @@ const closedSoon = async (cl, ms = 3000) => { const t0 = Date.now(); while (!cl.
       { t: 'prio', k: 'tasks', key: 'constructor', v: 1 }, { t: 'setperm', key: 'constructor', on: true }, { t: 'setdiff', k: 'constructor' },
       { t: 'go', x: 1e300, y: -1e300 }, { t: 'view', x0: 1e300, y0: 0, x1: -1e300, y1: 5 }, { t: 'road', cells: [[1e9, 1e9], 'x', null, [{}, []]] },
       { t: 'erase', cells: Array.from({ length: 5000 }, (_, i) => [i % 90, i % 60]) }, { t: 'trav', a: 'talk', id: 1e300 }, { t: 'dil', seq: {}, i: 1 },
-      { t: 'decor', k: 'constructor', x: 10, y: 10 }, { t: 'decor', k: '__proto__', x: 1e300, y: 1 }, { t: 'decor', k: 'statue', x: '5', y: [] }, { t: 'undecor', x: -1, y: 1e9 },
-      { t: 'give', to: '__proto__', slot: 0 }, { t: 'give', to: 'constructor', slot: 'length' }, { t: 'give', to: {}, slot: 1e300, n: -1 }, { t: 'vote', i: 'constructor' },
+      // кооп-пакет: кривые, но без опасных имён (их режет msgSafe, а больше 20 таких — обрыв, это проверено выше)
+      { t: 'decor', k: 'tree', x: 10, y: 10 }, { t: 'decor', k: 'statue', x: '5', y: [] }, { t: 'undecor', x: -1, y: 1e9 },
+      { t: 'give', to: 'nobody', slot: '1', n: -1 }, { t: 'give', to: 'Fuzzer', slot: 0 }, { t: 'give', to: 'Fuzzer', slot: 1e300 }, { t: 'vote', i: 99 },
     ];
     for (const m of poison) me.send(m);
     me.send('{"t":"go","x":1e999,"y":1}');
