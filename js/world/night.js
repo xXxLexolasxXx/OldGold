@@ -235,6 +235,7 @@ function fxBurst(x, y, n, cols, sp, up, life, size, grav = 260) {
 // удар топором: щепки летят из ствола, дерево вздрагивает
 function entHit(e, u, big) {
   e.hitT = Game.time;
+  if (e.rock) rockCrack(e);
   const L = ENT_LOOK[entBase(e).kind];
   const { bx, by } = entBase(e);
   fxBurst(bx - e.face * 6, by - 30, big ? 26 : 10, [L.light, L.bark, '#d8b080', L.dark], big ? 110 : 70, 70, 0.7, 2.2);
@@ -482,6 +483,13 @@ function updateEnts(dt) {
         break;
       }
       case 'dying':
+        if (e.rock && e.t >= 0.9 && !e.split) {   // камень раскололся: осколки и грохот
+          e.split = true;
+          const { bx, by } = entBase(e);
+          fxBurst(bx, by - 20, 20, [ROCK_COL.base, ROCK_COL.mid, ROCK_COL.light, ROCK_COL.dark], 90, 60, 0.9, 2.4, 260);
+          fxBurst(bx, by - 8, 8, ['rgba(200,186,160,0.55)', 'rgba(170,156,130,0.5)'], 20, 14, 1.2, 3.5, -12);
+          sfxAt('thud', e.x * TILE, e.y * TILE, 1.2);
+        }
         // шатается → заваливается → удар о землю: пыль, листья, бревно
         if (e.t >= 2.2) {
           const { bx, by } = entBase(e);

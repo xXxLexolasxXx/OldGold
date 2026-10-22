@@ -643,7 +643,7 @@ function roadMaskBits(x, y, grow) {
   }
   ca.setTransform(1, 0, 0, 1, 0, 0);
   cb.setTransform(1, 0, 0, 1, 0, 0); cb.clearRect(0, 0, S, S);
-  cb.filter = 'blur(3.5px)'; cb.drawImage(a, 0, 0); cb.filter = 'none';
+  blurDraw(cb, a, S, S, 3.5);
   const d = cb.getImageData(0, 0, S, S).data, bits = new Uint8Array(S * S);
   for (let i = 0; i < bits.length; i++) bits[i] = d[i * 4 + 3] >= 128 ? 1 : 0;
   return bits;

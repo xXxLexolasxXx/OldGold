@@ -478,7 +478,7 @@ const KIT_SYNC = ['hfx', 'abfx', 'abbu', 'abcd', 'abt', 'rs', 'rsm', 'abShare'];
         floater(o.x, o.y - 1.8, `Держится! (${o.nhp})`, '#e8e0c0');
         fxBurst(o.x * TILE, o.y * TILE - 12, 8, f.kind === 'skel' ? ['#e6dfc8', '#c8c0a4'] : ['#8a6a3a', '#c8a070'], 55, 40, 0.5, 1.5, 200);
         sfxAt(f.kind === 'skel' ? 'rattle' : 'chop', o.x * TILE, o.y * TILE, 0.7);
-        if (f.kind === 'ent') o.hitT = Game.time;
+        if (f.kind === 'ent') { o.hitT = Game.time; if (o.rock) rockCrack(o); }
         return;
       }
     }

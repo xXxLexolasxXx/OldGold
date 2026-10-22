@@ -33,8 +33,9 @@ body.mobile:not(.land) #tabs { grid-template-columns: repeat(var(--rv-n, 9), min
 @keyframes rv-note-out { to { opacity: 0; transform: translate(-50%, -12px); } }
 
 /* телефон: в верхней части экрана — окно обучения, плашку ставим ниже, над картой */
-body.mobile .rv-note { top: 34%; max-width: 92vw; }
-body.mobile.land .rv-note { top: calc(var(--st, 0px) + 50px); left: 55%; max-width: 60vw; }
+body.mobile .rv-note { top: 46%; max-width: 92vw; }
+/* горизонталь: слева сверху окно обучения, справа сверху карточка героя — плашка внизу, по центру свободной части */
+body.mobile.land .rv-note { top: auto; bottom: calc(var(--sb, 0px) + 64px); left: calc((var(--left, 60px) + min(330px, 44vw) + 100vw) / 2); max-width: calc(100vw - var(--left, 60px) - min(330px, 44vw) - 24px); }
 
 [data-reveal="all"] .rv-st { margin-left: 4px; color: var(--gold-hi); }
 
