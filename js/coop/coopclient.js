@@ -199,7 +199,7 @@ function coopUnits(m) {
     if (aSeen && !m.d) aSeen.add(d.i);
     let a = Coop.anim.get(d.i);
     if (!a) { a = makeAnimal(d.k, 0, 0); a.id = d.i; a.x = d.x; a.y = d.y; Coop.anim.set(d.i, a); }
-    a.tx = d.x; a.ty = d.y; a.face = d.f; a.moving = !!d.m; a.loot = d.l || null; a.state = d.s; a.phase = d.p;
+    a.tx = d.x; a.ty = d.y; a.face = d.f; a.moving = !!d.m; a.loot = d.l || null; a.state = d.s; a.phase = d.p; a.burn = d.b ? (a.burn || { t: 0, mirror: 1 }) : null;
   }
   if (aSeen) for (const id of [...Coop.anim.keys()]) if (!aSeen.has(id)) Coop.anim.delete(id);
   Game.animals = [...Coop.anim.values()];

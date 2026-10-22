@@ -301,9 +301,10 @@ function dzIgnite(cur, i, wells) {
 }
 function dzIgniteB(cur, b, wells) {
   if (cur.b.some(q => q.id === b.id) || b.type === 'storehouse' || b.type === 'well' || cur.bBurnt.has(b.id)) return;
+  if (typeof wfRoof === 'function' && Math.random() >= wfRoof(b)) return;   // крыша: солома занимается легко, черепица почти не горит
   const w = dzWellNear(b.doorX + 0.5, b.doorY, wells);
   cur.bBurnt.add(b.id);
-  cur.b.push({ id: b.id, t0: Game.time, dur: dzR(16, 24) * (w ? 0.5 : 1), w: !!w });
+  cur.b.push({ id: b.id, t0: Game.time, dur: dzR(16, 24) * (typeof WF_BURN !== 'undefined' ? WF_BURN[Math.max(1, Math.min(3, b.level || 1))] : 1) * (w ? 0.5 : 1), w: !!w });
   cur.st.spoil += dzSpoil(b, w ? 0.1 : 0.3);
   if (typeof floater === 'function') floater(dzCx(b), b.y, 'Пожар!', '#ff9040');
 }
