@@ -303,16 +303,105 @@ function rockEntHand(e) {
   return { x: g.bx + e.face * g.S.w * (reach ? 0.75 : 0.62), y: reach ? g.by - 6 : g.top - 4 };   // в клешне
 }
 
-function rockLeg(c, ax, ay, kx, ky, fx, fy) {
-  c.lineCap = 'round'; c.lineJoin = 'round';
-  for (const [col, w, o] of [[ROCK_COL.dark, 3.4, 0], [ROCK_COL.mid, 1.8, -0.4], [ROCK_COL.light, 0.6, -0.8]]) {
-    c.strokeStyle = col; c.lineWidth = w;
-    c.beginPath(); c.moveTo(ax + o, ay + o); c.lineTo(kx + o, ky + o); c.lineTo(fx + o * 0.5, fy); c.stroke();
+// затемнение цвета для дальних ног: t — доля чёрно-бурого
+function rockDim(hex, t) {
+  if (!t) return hex;
+  const n = parseInt(hex.slice(1), 16), k = 1 - t;
+  return `rgb(${Math.round((n >> 16 & 255) * k + 14 * t)},${Math.round((n >> 8 & 255) * k + 10 * t)},${Math.round((n & 255) * k + 6 * t)})`;
+}
+
+// Сегмент ноги: сужающийся каменный «пласт» — тёмный контур, тело, светлый бок сверху, тень снизу и поперечные швы
+function rockSeg(c, x0, y0, x1, y1, w0, w1, ridges, dim = 0) {
+  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+  const side = (k, w) => [[x0 + nx * w0 * k * w, y0 + ny * w0 * k * w], [x1 + nx * w1 * k * w, y1 + ny * w1 * k * w]];
+  const quad = (grow, col) => {
+    const [a0, a1] = side(0.5, 1), [b0, b1] = side(-0.5, 1);
+    const g = grow / L;
+    c.fillStyle = col; c.beginPath();
+    c.moveTo(a0[0] + nx * grow * 0.5 - dx * g, a0[1] + ny * grow * 0.5 - dy * g); c.lineTo(a1[0] + nx * grow * 0.5 + dx * g, a1[1] + ny * grow * 0.5 + dy * g);
+    c.lineTo(b1[0] - nx * grow * 0.5 + dx * g, b1[1] - ny * grow * 0.5 + dy * g); c.lineTo(b0[0] - nx * grow * 0.5 - dx * g, b0[1] - ny * grow * 0.5 - dy * g);
+    c.closePath(); c.fill();
+  };
+  quad(0.9, rockDim(ROCK_COL.dark, dim));                                  // контур
+  quad(0, rockDim('#5c5043', dim));                                        // тело
+  const up = ny < 0 || (ny === 0 && nx < 0) ? 1 : -1;        // какая сторона смотрит вверх — та светлее
+  const [l0, l1] = side(0.34 * up, 1), [d0, d1] = side(-0.34 * up, 1);
+  c.lineCap = 'butt';
+  c.strokeStyle = rockDim(ROCK_COL.base, dim); c.lineWidth = Math.max(0.5, (w0 + w1) * 0.12);
+  c.beginPath(); c.moveTo(l0[0], l0[1]); c.lineTo(l1[0], l1[1]); c.stroke();
+  c.strokeStyle = rockDim(ROCK_COL.dark, dim); c.lineWidth = Math.max(0.5, (w0 + w1) * 0.14);
+  c.beginPath(); c.moveTo(d0[0], d0[1]); c.lineTo(d1[0], d1[1]); c.stroke();
+  for (let k = 1; k <= ridges; k++) {                       // швы между каменными плитками
+    const t = k / (ridges + 1), w = w0 + (w1 - w0) * t, px = x0 + dx * t, py = y0 + dy * t;
+    c.strokeStyle = rockDim(ROCK_COL.dark, dim); c.lineWidth = 0.55;
+    c.beginPath(); c.moveTo(px + nx * w * 0.5, py + ny * w * 0.5); c.lineTo(px - nx * w * 0.5, py - ny * w * 0.5); c.stroke();
   }
-  // сустав и коготь
-  ellipse(c, kx, ky, 2, 1.7, ROCK_COL.dark); ellipse(c, kx - 0.4, ky - 0.4, 1.3, 1.1, ROCK_COL.base);
-  c.strokeStyle = ROCK_COL.dark; c.lineWidth = 1;
-  c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + (fx > ax ? 1.6 : -1.6), fy + 1.2); c.stroke();
+}
+
+// Паучья нога: бедро (толстое, длинное, вверх-наружу) → высокое колено-валун с шипом → голень (тоньше, вниз) → лапка с когтем.
+// ax,ay — крепление к телу, kx,ky — колено, fx,fy — стопа
+function rockLeg(c, ax, ay, kx, ky, fx, fy, dim = 0, moss = 0) {
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  const out = fx > ax ? 1 : -1, D = col => rockDim(col, dim);
+  const tx = fx + (kx - fx) * 0.18, ty = fy + (ky - fy) * 0.18;   // лапка начинается чуть выше стопы
+  rockSeg(c, ax, ay, kx, ky, 4, 3, 2, dim);                  // бедро
+  rockSeg(c, kx, ky, tx, ty, 3, 1.4, 3, dim);                // голень сужается к лапке
+  // коготь: тёмный крючок вперёд-вниз
+  c.fillStyle = D(ROCK_COL.dark); c.beginPath();
+  c.moveTo(tx - 0.8, ty); c.lineTo(tx + 0.8, ty); c.lineTo(fx + out * 1.7, fy + 1.3); c.lineTo(fx, fy + 0.3); c.closePath(); c.fill();
+  c.strokeStyle = D(ROCK_COL.light); c.lineWidth = 0.4; c.beginPath(); c.moveTo(tx, ty + 0.2); c.lineTo(fx + out * 0.6, fy + 0.6); c.stroke();
+  // колено: каменный узел с шипом вверх
+  c.fillStyle = D(ROCK_COL.dark); c.beginPath();
+  c.moveTo(kx - 1.3, ky - 0.6); c.lineTo(kx + out * 0.5, ky - 3.2); c.lineTo(kx + 1.3, ky - 0.6); c.closePath(); c.fill();
+  ellipse(c, kx, ky, 2.5, 2.1, D(ROCK_COL.dark)); ellipse(c, kx - 0.2, ky - 0.2, 1.9, 1.6, D(ROCK_COL.base));
+  ellipse(c, kx - 0.6, ky - 0.7, 0.9, 0.6, D(ROCK_COL.light));
+  // мох на колене: шапка кочками, лоскут свисает на бедро
+  if (moss) {
+    const m = [['#33461a', 2.2, 1.2, 0, -1.3], ['#5a7428', 1.8, 1, -0.5, -1.6], ['#6e8a30', 1, 0.6, -0.9, -2], ['#4a6422', 1.2, 0.9, out * 1.2, -0.6], ['#5a7428', 0.9, 1.3, -out * 1.5, 0.6]];
+    for (const [col, rx, ry, ox, oy] of m) ellipse(c, kx + ox, ky + oy, rx, ry, D(col));
+  }
+  // сустав у тела
+  ellipse(c, ax, ay, 2.4, 2, D(ROCK_COL.dark)); ellipse(c, ax - 0.2, ay - 0.2, 1.7, 1.4, D(ROCK_COL.mid));
+}
+
+// Удар по камню (гном или герой): прибавляет трещин на теле; на последнем ударе камень раскалывается (night.js)
+function rockCrack(e) { e.crack = Math.min(0.9, (e.crack || 0) + 0.2); }
+
+// насколько разошлись половины: после первой секунды умирания и до падения
+function rockSplitAmt(e) {
+  if (e.state !== 'dying' || !e.rock) return 0;
+  const u = (e.t - 0.9) / 1.3;
+  return u <= 0 ? 0 : Math.min(1, u * u * (3 - 2 * u));
+}
+
+// линия раскола через макушку тела (координаты — в системе тела, как у трещин)
+function rockSplitLine(ch, seed) {
+  const [dx, dy, rx, ry] = ch, r = mulberry32(seed * 7 + 3), pts = [];
+  for (let n = 0; n <= 6; n++) pts.push([dx + (n % 2 ? 1 : -1) * (0.8 + r() * 2.6), dy - ry * 1.3 + n * ry * 2.6 / 6]);
+  return pts;
+}
+
+// Трещины по телу: несколько ломаных от макушки вниз, с ответвлениями; level 0..1 — сколько их и как далеко дошли
+function rockCracks(c, ch, level, seed) {
+  const [dx, dy, rx, ry] = ch, r = mulberry32(seed * 13 + 5);
+  const n = Math.max(1, Math.ceil(level * 5));
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  for (let k = 0; k < n; k++) {
+    let px = dx + (r() - 0.5) * rx * 1.1, py = dy - ry * (0.35 + r() * 0.45);
+    const steps = Math.max(2, Math.round(2 + level * 5)), line = [[px, py]], br = [];
+    for (let t = 0; t < steps; t++) {
+      px += (r() - 0.5) * 4.4; py += 1.4 + r() * 2.6;
+      if (Math.abs(px - dx) > rx * 0.9 || py > dy + ry * 0.85) break;
+      line.push([px, py]);
+      if (t === 1 && r() < 0.7) br.push([px, py, (r() < 0.5 ? -1 : 1)]);
+    }
+    for (const [col, o, lw] of [['rgba(24,17,10,0.92)', 0, 0.9], ['rgba(236,222,190,0.45)', 0.7, 0.5]]) {   // тёмная щель и светлая кромка
+      c.strokeStyle = col; c.lineWidth = lw;
+      c.beginPath(); line.forEach(([x, y], i) => (i ? c.lineTo(x + o, y + o) : c.moveTo(x + o, y + o)));
+      for (const [bx0, by0, d] of br) { c.moveTo(bx0 + o, by0 + o); c.lineTo(bx0 + d * 3 + o, by0 + 2 + o); c.lineTo(bx0 + d * 4.6 + o, by0 + 4.4 + o); }
+      c.stroke();
+    }
+  }
 }
 
 function drawRockEnt(c, e) {
@@ -333,36 +422,47 @@ function drawRockEnt(c, e) {
       const sw = e.moving ? Math.sin(e.phase * 1.6 + grp * Math.PI) : 0;
       // ноги растут из-под глыбы веером: передняя, средняя, задняя; колени высоко и широко
       const ax = bx + side * (S.w * 0.12 + j * 2), ay = top - 5 + j;
-      let fx = ax + side * (S.w * 0.34 + j * 5) * (0.35 + 0.65 * k) + sw * 3.5, fy = by + (j - 1) * 2.5 - Math.max(0, sw) * 3;
-      let kx = ax + side * (S.w * 0.2 + j * 3) * (0.4 + 0.6 * k), ky = ay - (8 + j * 2) * k - 2;
+      let fx = ax + side * (S.w * 0.5 + j * 5) * (0.35 + 0.65 * k) + sw * 3.5, fy = by + (j - 1) * 2.5 - Math.max(0, sw) * 3;
+      let kx = ax + side * (S.w * 0.3 + j * 3) * (0.4 + 0.6 * k), ky = ay - (12 + j * 2) * k - 3;   // колено выше и ближе к телу, чем стопа: нога ломаной аркой, как у паука
       const front = side === e.face && j === 0;
       // передняя лапа: тянется к гному, держит его или колет в бою
       if (front && atk < 0.8) { const up = atk < 0.35; fx = bx + side * S.w * (up ? 0.35 : 0.6); fy = up ? top - 22 : by - 2; kx = (ax + fx) / 2 + side * 4; ky = Math.min(ay, fy) - 8; }
-      rockLeg(c, ax, ay, kx, ky, fx, fy);
+      rockLeg(c, ax, ay, kx, ky, fx, fy, [0, 0.22, 0.42][j], ((g.h >>> (j * 3 + (side > 0 ? 1 : 5))) & 3) !== 0);   // дальние ноги темнее, мох — не на всех коленях
     }
   }
   // сама глыба — тем же рисунком, что и обычные камни
   const spr = rockSprite(g.size, g.h % ROCK_VARIANTS, true);   // тело — одна большая глыба
   const sc = 0.82 + ((g.h >>> 21) % 30) / 100;
   const tilt = e.moving ? Math.sin(e.phase * 1.6) * 0.04 : e.state === 'fight' ? Math.sin(e.t * 9) * 0.05 : 0;
-  c.save();
+  const sp = rockSplitAmt(e);                                  // 0 — цела, 1 — половины разошлись
+  const ch = S.chunks[0], flip = (g.h >>> 13) & 1;
+  const level = e.state === 'dying' ? 1 : (e.crack || 0);
+  const drawBody = () => {
+    c.drawImage(spr, -S.w / 2, -(S.h - 6), S.w, S.h);
+    if (level > 0) rockCracks(c, ch, level * (e.state === 'dying' ? Math.min(1, e.t / 0.8) : 1), e.i);
+  };
   c.imageSmoothingEnabled = true;
-  c.translate(bx, top); c.rotate(tilt);
-  c.scale((g.h >>> 13) & 1 ? -sc : sc, sc);
-  c.drawImage(spr, -S.w / 2, -(S.h - 6), S.w, S.h);
-  c.restore();
-  c.imageSmoothingEnabled = R.smooth;
-  // трещины, пока погибает
-  if (e.state === 'dying') {
-    c.strokeStyle = 'rgba(28,20,12,0.9)'; c.lineWidth = 1;
-    const r = mulberry32(e.i);
-    for (let n = 0; n < 4; n++) {
-      let px = bx + (r() - 0.5) * S.w * 0.4, py = top - S.h * 0.5;
-      c.beginPath(); c.moveTo(px, py);
-      for (let s = 0; s < Math.min(5, e.t * 4); s++) { px += (r() - 0.5) * 6; py += 2 + r() * 3; c.lineTo(px, py); }
-      c.stroke();
+  if (!sp) {
+    c.save();
+    c.translate(bx, top); c.rotate(tilt); c.scale(flip ? -sc : sc, sc);
+    drawBody();
+    c.restore();
+  } else {
+    // раскололся по трещине: половины расходятся, оседают и заваливаются в стороны
+    const zig = rockSplitLine(ch, e.i);
+    for (const hs of [-1, 1]) {
+      c.save();
+      c.translate(bx + hs * sp * 7, top + sp * 5); c.rotate(hs * sp * 0.32); c.scale(flip ? -sc : sc, sc);
+      c.beginPath();
+      c.moveTo(hs * S.w, -S.h * 1.3); for (const [zx, zy] of zig) c.lineTo(zx, zy); c.lineTo(hs * S.w, 12); c.closePath();
+      c.clip();
+      drawBody();
+      c.strokeStyle = ROCK_COL.dark; c.lineWidth = 1.6;      // свежий скол
+      c.beginPath(); zig.forEach(([zx, zy], n) => (n ? c.lineTo(zx, zy) : c.moveTo(zx, zy))); c.stroke();
+      c.restore();
     }
   }
+  c.imageSmoothingEnabled = R.smooth;
   if (k > 0.3) drawRockClaws(c, e, g);   // крабьи клешни спереди
   // глаза (кроме погибшего)
   if (!(e.state === 'dying' && e.t > 0.5)) drawRockEyes(c, e, Math.min(1, 0.3 + nightAmt()));
@@ -420,6 +520,8 @@ function drawRockClaws(c, e, g) {
     let cx = bx + side * S.w * 0.33, cy = top - 3 + k;
     let open = 0.25 + Math.max(0, Math.sin(Game.time * 2.6 + k * 2 + e.i)) * 0.35;   // лениво пощёлкивает
     if (e.state === 'fight') { open = 0.15 + Math.abs(Math.sin(Game.time * 12 + k)) * 0.75; cy -= atk < 0.35 ? 8 : 0; cx += atk >= 0.35 && atk < 0.8 ? side * 5 : 0; }
+    const spl = rockSplitAmt(e);
+    if (spl) { cx += side * spl * 9; cy += spl * 7; open = 0.9 * spl; }   // клешни отваливаются вместе с половинами
     const holding = e.state === 'drag' && side === f;
     if (holding) { const h = rockEntHand(e); cx = h.x; cy = h.y; open = e.t < GRAB_REACH ? 0.85 : 0.1; }
     const lo = clawJaw(g.size, v, k, false), up = clawJaw(g.size, v, k, true);
