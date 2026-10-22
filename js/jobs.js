@@ -320,7 +320,8 @@ function* workerGen(u, b) {
     if (typeof injWants === 'function' && (injWants(u) || injCalled(u))) { yield { leave: true }; return; }   // травма или вызов к раненому (sickness.js)
     // здание побито нечистью, а чинить некому (строителей ночью тоже уносят) — через 15 с работник чинит сам:
     // иначе к середине игры стояли 12–16 зданий, и рудник без ремонта не давал золота школе (ДЕФИЦИТЫ.md)
-    if (b.dmg >= 0.5 && !b.upg) {
+    // (не в кампании: там темп бегства задан сценарием — акт 2, волна обвала, и работники в побитых зданиях остаются на месте)
+    if (b.dmg >= 0.5 && !b.upg && !Game.camp) {
       if (b.repairer && !b.repairer.dead) b.dmgWait = 0;
       else if ((b.dmgWait = (b.dmgWait || 0) + 1) > 15) { b.dmgWait = 0; b.repairer = u; yield* repairGen(u, b);
         if (!b.removed && u.home === b && u.inside !== b && !(yield* goHome(u, b))) { yield { wait: 3 }; return; }

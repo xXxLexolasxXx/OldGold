@@ -151,7 +151,8 @@ function dispatchSerfs() {
   let nfDone = false;
   // рудники тоже: золотой рудник в 60 клетках от склада стоял «полным» (5/5 руды), пока курьеры возили зерно, —
   // руда ехала к плавильне по две штуки, золота для школы 26 за 47 суток (ДЕФИЦИТЫ.md, сид 4)
-  const isMine = b => b.def && (b.def.need === 'rock' || b.def.need === 'crystal');
+  // (не в кампании: там темп бегства из акта 2 задан сценарием и чувствителен к тому, куда ушли курьеры)
+  const isMine = b => !Game.camp && b.def && (b.def.need === 'rock' || b.def.need === 'crystal');
   const collectNearlyFull = () => { if (nfDone) return; nfDone = true; collectOutputs(b => !b.isPile && b.state === 'done' && (isFoodProducer(b) || isMine(b)) && !!b.def.outputs && nearlyFull(b)); };
 
   // «Перенос ресурсов» (вкладка «Приоритеты»): Выкл — не свозить на склад (кроме еды), Низкий — по 1 перевозчику
