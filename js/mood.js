@@ -643,17 +643,17 @@ function initMoodUI() {
     c.beginPath(); c.ellipse(u.x * TILE, u.y * TILE + 6, 10, 5, 0, 0, Math.PI * 2); c.stroke(); c.globalAlpha = 1;
   };
   window.addEventListener('keydown', e => { if (e.code === 'Escape' && Game.selUnit && mdCardOn()) { Game.selUnit = null; updateUI(true); } });
-  // сводка в панели «Жители»
-  const _ph = peopleHTML;
-  peopleHTML = function () {
-    let h = _ph();
+  // сводка настроения во вкладке «Хозяйство» — перед статистикой
+  const _oh = overviewHTML;
+  overviewHTML = function (alerts) {
+    const h = _oh(alerts);
     if (typeof isMirror === 'function' && isMirror()) return h;
     const V = mdVillage();
     if (!V.n) return h;
     const row = `<div class="stat-row${V.avg < 45 ? ' warn' : ''}"><b>Настроение</b><span class="v" style="color:${mdCol(V.avg)}">${Math.round(V.avg)} · ${mdFaceFor(V.avg).toLowerCase()}</span></div>` +
       (V.bad ? `<div class="stat-row warn">Ворчат и ленятся: ${V.bad}</div>` : '') + (V.good ? `<div class="stat-row muted">Бодры и шутят: ${V.good}</div>` : '');
-    const i = h.indexOf('</div>');
-    return i >= 0 ? h.slice(0, i + 6) + row + h.slice(i + 6) : h + row;
+    const i = h.indexOf('<div class="group-title">Произведено за игру</div>');
+    return i >= 0 ? h.slice(0, i) + row + h.slice(i) : h + row;
   };
 }
 function mdCardOn() { const u = Game.selUnit; return !!(u && u !== Game.hero && !u.rec && !u.gx && isPerson(u) && u.type !== 'hero'); }

@@ -58,7 +58,6 @@ const PC_ACTS = [
   { id: 'tabN', g: 'panel', name: 'Следующая вкладка панели', def: 'Tab', mods: 1, run: () => pcTab(1) },
   { id: 'tabP', g: 'panel', name: 'Предыдущая вкладка', def: 'Shift+Tab', mods: 1, run: () => pcTab(-1) },
   { id: 'pStore', g: 'panel', name: 'Запасы', def: 'KeyU', run: () => pcOpenTab('store') },
-  { id: 'pPeople', g: 'panel', name: 'Жители', def: 'KeyI', run: () => pcOpenTab('people') },
   { id: 'pOver', g: 'panel', name: 'Хозяйство', def: 'KeyO', run: () => pcOpenTab('overview') },
   { id: 'pLog', g: 'panel', name: 'Журнал событий', def: 'KeyY', run: () => pcOpenTab('log') },
   { id: 'chron', g: 'misc', name: 'Летопись', def: 'KeyL', legacy: 'KeyL' },

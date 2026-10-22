@@ -1,7 +1,7 @@
 /* Интерфейс по ходу игры (js/reveal.js): появление кнопок, разовая подсветка, плашка «Новое» */
 
 /* портрет телефона: видимые вкладки — по центру, без дыр на месте ещё не открытых */
-body.mobile:not(.land) #tabs { grid-template-columns: repeat(var(--rv-n, 9), minmax(0, 68px)); justify-content: center; }
+body.mobile:not(.land) #tabs { grid-template-columns: repeat(var(--rv-n, 8), minmax(0, 68px)); justify-content: center; }
 
 /* появление: выезд снизу со вспышкой, потом мягкое свечение до первого нажатия */
 .rv-new { position: relative; animation: rv-in .7s cubic-bezier(.2, 1.4, .4, 1) both, rv-glow 1.4s ease-in-out .7s infinite; z-index: 1; }

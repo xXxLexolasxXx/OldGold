@@ -101,7 +101,7 @@ I18N.add('en', {
   "В капкане!": "Trapped!", "Колья!": "Stakes!", "Колья сломаны": "Stakes broken", "Яркий свет!": "Bright light!",
 
   // мобильный интерфейс (js/landscape.js, js/restip.js)
-  "Меню: строительство, склад, жители…": "Menu: building, storehouse, residents…", "Интерфейс (горизонтально)": "Interface (landscape)", "Интерфейс": "Interface",
+  "Меню: строительство, склад, хозяйство…": "Menu: building, storehouse, economy…", "Интерфейс (горизонтально)": "Interface (landscape)", "Интерфейс": "Interface",
   "Как выглядит игра, когда телефон повёрнут набок. В вертикальном положении ничего не меняется.": "How the game looks when the phone is turned sideways. In portrait nothing changes.",
   "А · Колонка слева": "A · Left column",
   "Узкая колонка иконок: строительство, склад, жители, хозяйство, журнал, меню. Панели выезжают поверх карты.": "A narrow column of icons: building, storehouse, residents, household, log, menu. Panels slide in over the map.",
