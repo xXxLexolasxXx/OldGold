@@ -21,9 +21,10 @@ function runStart(diff, o) {
   const opts = rkind ? rsRankedOpts(rkind, rkey) : { seed: o.seed != null ? o.seed : (Math.random() * 1e9) | 0, diff: { id: d.id, name: d.name, floors: d.floors, mult: d.mult, lvl: d.lvl }, heroes: [hero] };
   opts.heroes[0].cloak = meta.cloak | 0;   // плащ только для вида, на ход забега не влияет
   Object.assign(Run, {
-    on: true, diff: d, meta, opts, S: rsNew(opts), me: 0, keys: {}, joy: null, prevSpeed: Game.speed || 1, flash: 0, pops: [], acc: 0,
-    rec: [], lastMx: 0, lastMy: 0, press: { dash: false, slam: false }, ranked: !!(o.ranked && rkind), rkind, rkey, shown: false,
+    on: true, diff: d, meta, opts, net: o.net || null, S: o.net ? runNetBlank(o.net) : rsNew(opts), me: 0, keys: {}, joy: null, prevSpeed: Game.speed || 1, flash: 0, pops: [], acc: 0,
+    rec: [], lastMx: 0, lastMy: 0, press: { dash: false, slam: false }, ranked: !!(o.ranked && rkind && !o.net), rkind: o.net ? null : rkind, rkey, shown: false,
   });
+  if (o.net) Run.me = o.net.me;   // кооп-забег: бой считает сервер (js/run/runnet.js), здесь только ввод и рисование
   try { setSpeed(0); } catch (e) { /* без паузы */ }
   const el = document.createElement('div');
   el.id = 'run-ui';
@@ -57,7 +58,7 @@ function runStart(diff, o) {
   let last = performance.now();
   const loop = now => {
     if (!Run.on) return;
-    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    const dt = Math.max(0, Math.min(0.1, (now - last) / 1000)); last = now;
     try { runFrame(dt); RSfx.ambTick(dt); runDraw(); } catch (e) { console.error(e); }
     Run.raf = requestAnimationFrame(loop);
   };
@@ -74,6 +75,7 @@ function runInput() {
   return [Math.round(ix * 8), Math.round(iy * 8)];   // направление ×8 целым — то же, что увидит переигровка
 }
 function runFrame(dt) {
+  if (Run.net) { runNetFrame(dt); runHud(); return; }
   const S = Run.S;
   Run.flash = Math.max(0, Run.flash - dt);
   for (let i = Run.pops.length - 1; i >= 0; i--) { const p = Run.pops[i]; p.t -= dt; p.y -= 14 * dt; if (p.t <= 0) Run.pops.splice(i, 1); }
@@ -127,6 +129,7 @@ function runPickShow() {
   }).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => {
     if (!Run.S.pick) return;
+    if (Run.net) { coopSend({ t: 'run', a: 'pick', k: +b.dataset.i }); Run.S.pick = null; Run.pickShown = false; box.style.display = 'none'; Run.msg = 'Ждём остальных…'; Run.msgT = 3; return; }
     Run.rec.push([Run.S.step, Run.me, 3, +b.dataset.i]);
     rsChoose(Run.S, Run.me, +b.dataset.i); runEvents();
     Run.pickShown = false; box.style.display = 'none';
@@ -137,6 +140,7 @@ function runPickShow() {
 function runQuit() {
   const S = Run.S;
   if (S.over) return;
+  if (Run.net) { coopSend({ t: 'run', a: 'quit' }); return; }
   Run.rec.push([S.step, Run.me, 4]);
   rsEnd(S, false, true); runEvents();
 }
@@ -217,6 +221,10 @@ function runDraw() {
     if (o.gone || o.down) continue;
     if (o.swing > 0) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(o.x + o.face * 8, o.y - 4, 10, o.face > 0 ? -1 : Math.PI - 1, o.face > 0 ? 1 : Math.PI + 1); c.stroke(); }
     if (o.slam > 0) { c.strokeStyle = `rgba(255,200,80,${o.slam * 3})`; c.lineWidth = 3; c.beginPath(); c.arc(o.x, o.y, 40 * (1 - o.slam / 0.3 * 0.7), 0, 7); c.stroke(); }
+  }
+  if (Run.net && Run.net.nicks) {
+    c.font = 'bold 6px sans-serif'; c.textAlign = 'center';
+    S.heroes.forEach((o, i) => { if (i === Run.me || o.gone) return; c.fillStyle = '#000a'; c.fillText(Run.net.nicks[i] || '', o.x + 0.5, o.y - 19.5); c.fillStyle = o.down ? '#ffb0a0' : '#f1dfb0'; c.fillText(Run.net.nicks[i] || '', o.x, o.y - 20); });
   }
   for (const s of S.shots) { c.fillStyle = s.own === 'e' ? '#b070ff' : (s.r ? '#ff9a3a' : '#e8e0d0'); c.beginPath(); c.arc(s.x, s.y, s.own === 'e' ? 3 : s.r ? 3.5 : 2, 0, 7); c.fill(); if (s.own === 'e') { c.fillStyle = '#6aff9a'; c.fillRect(s.x - 1, s.y - 1, 2, 2); } }
   c.font = 'bold 8px sans-serif'; c.textAlign = 'center';

@@ -64,6 +64,10 @@ const events = require('./events').createEvents(DATA, log);
 const errReports = require('./errors').createErrors(DATA, log);   // анонимные отчёты об ошибках у игроков (POST /err)
 const tele = require('./telemetry').createTelemetry(DATA, log, events);   // статистика по согласию (POST /t), «Сообщить о проблеме» (POST /report), удаление по id (POST /t/forget)
 const runboard = require('./runboard').createRunboard(DATA, log);   // таблица рекордов забегов: POST /runs/submit|board|forget (переигровка записи ядром забега)
+// Кооп-забег до 5 героев (КООП_ЗАБЕГ.md): комнаты (server/rooms.js, общий код с ареной) и бой в комнате (server/runroom.js)
+const { createRooms } = require('./rooms');
+const runKind = require('./runroom').createRunKind({ log, out: key => runHeroOut(key), back: key => runHeroBack(key), finish: r => rooms.finish(r) });
+const rooms = createRooms({ log, maxRooms: +process.env.OLDGOLD_MAX_ROOMS || 6, kinds: { run: runKind } });
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {
@@ -375,6 +379,7 @@ class Conn {
     if (!this.alive) return;
     this.alive = false;
     conns.delete(this);
+    if (this.key) rooms.detach(this.key);   // кооп-забег: герой стоит под щитом и ждёт возврата
     if (this.inGame) {
       left.set(this.key, Date.now());
       stats.leave(this.key);
@@ -473,6 +478,44 @@ function sendUnits() {
     if (c.d) { const v = c.view || [NaN, NaN, NaN, NaN]; c.sendText(call('coopUnitsFor', c.nick, v[0], v[1], v[2], v[3])); continue; }
     if (!full) full = call('coopUnitsPacket');
     c.sendFrame(c.z ? fz || (fz = pack(full, true)) : fp || (fp = pack(full, false)));
+  }
+}
+
+// ---------- Кооп-забег: герой уходит из деревни в таверну и возвращается ----------
+const connOf = key => { for (const c of conns) if (c.key === key && c.alive) return c; return null; };
+function runHeroOut(key) {
+  const c = connOf(key);
+  if (!c || !c.inGame || c.inRun) return;
+  const d = call('coopLeave', c.nick);
+  call('coopViewDrop', c.nick);
+  if (d) users[key].hero = JSON.parse(d);
+  c.inRun = true;
+  broadcast({ t: 'toast', text: `${c.nick} спускается в подземелье Малгора` });
+}
+function runHeroBack(key) {
+  const c = connOf(key);
+  if (!c || !c.inRun) return;
+  c.inRun = false;
+  if (!c.inGame || !users[key].hero) return;
+  const uid = call('coopJoin', c.nick, JSON.stringify(users[key].hero));
+  call('coopViewDrop', c.nick);
+  c.sendText(call('coopInitPacket', uid));
+  const me = call('coopMeData', c.nick);
+  if (me) c.sendText(me);
+}
+function onRoom(c, m) {
+  const me = { key: c.key, nick: c.nick, send: o => c.send(o) };
+  const reply = x => c.send({ t: 'room', a: x.err ? 'err' : 'ok', msg: x.err || '', room: x.room ? rooms.pub(x.room) : null });
+  const meta = m.meta && typeof m.meta === 'object' && !Array.isArray(m.meta) ? { ups: m.meta.ups, weapon: m.meta.weapon, pal: m.meta.pal, cloak: m.meta.cloak } : null;
+  const setMeta = r => { const mm = r && r.members.get(c.key); if (mm && meta) mm.meta = meta; };
+  switch (m.a) {
+    case 'list': c.send({ t: 'room', a: 'list', rooms: rooms.list('run') }); return;
+    case 'create': { const x = rooms.create('run', me, { diff: ['walk', 'dive', 'curse'].includes(m.diff) ? m.diff : 'dive', lvl: Math.max(1, Math.min(5, m.lvl | 0 || 1)) }); setMeta(x.room); reply(x); return; }
+    case 'join': { const x = rooms.join(String(m.code || '').slice(0, 8), me); setMeta(x.room); reply(x); return; }
+    case 'ready': { const r = rooms.roomOf(c.key); setMeta(r); rooms.ready(c.key, !!m.on); return; }
+    case 'opts': rooms.setOpts(c.key, { diff: ['walk', 'dive', 'curse'].includes(m.diff) ? m.diff : 'dive', lvl: Math.max(1, Math.min(5, m.lvl | 0 || 1)) }); return;
+    case 'start': { const x = rooms.start(c.key); if (x.err) reply(x); return; }
+    case 'leave': rooms.leave(c.key); c.send({ t: 'room', a: 'left' }); return;
   }
 }
 
@@ -584,6 +627,15 @@ function onGameMessage(c, m, text) {
     if (v.every(Number.isFinite)) c.view = v.map(x => Math.max(-1e4, Math.min(1e4, Math.round(x))));
     return;
   }
+  // ввод кооп-забега идёт часто (джойстик), поэтому мимо общего ведра — со своим пределом 60 в секунду
+  if (m.t === 'run' && m.a === 'in') {
+    const t = Date.now();
+    if (t - (c.rinAt || 0) > 1000) { c.rinAt = t; c.rinN = 0; }
+    if (++c.rinN > 60) return;
+    const r = rooms.roomOf(c.key);
+    if (r && r.kind === 'run' && r.state === 'play') runKind.input(r, c.key, m);
+    return;
+  }
   // защита от заливания (залипшая мышь, кривой клиент, бот): ведро на 60 сообщений, 30 в секунду — на ВСЕ сообщения
   // после входа (раньше пауза, доска почёта и прочие служебные шли мимо и рассылали тосты всем без предела)
   const nowMs = Date.now();
@@ -595,6 +647,14 @@ function onGameMessage(c, m, text) {
     return;
   }
   c.bucket--;
+  if (m.t === 'room') { onRoom(c, m); return; }
+  if (m.t === 'run') {
+    const r = rooms.roomOf(c.key);
+    if (!r || r.kind !== 'run' || r.state !== 'play') return;
+    if (m.a === 'pick') runKind.pick(r, c.key, m.k);
+    else if (m.a === 'quit') runKind.quit(r, c.key);
+    return;
+  }
   if (m.t === 'class') {
     const rec = users[c.key];
     if (rec.hero || c.inGame) return;
