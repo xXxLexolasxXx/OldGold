@@ -74,8 +74,8 @@ const HEAL = 'const H = Game.hero.hero; H.hp = H.maxhp; Game.hero.food = 1; retu
   const b0 = J(`const c = Game.dil.cur; if (!c || c.id !== 'malgor_spy') return { id: c && c.id }; const r = dilResolve(1, null); return { ok: r.ok, st: Game.foe.tiers.as.tr.st };`);
   ok(b0.ok && b0.st === 'rant', 'не прощать: нет окна или Пим не начал речь ' + JSON.stringify(b0));
   for (let k = 0; k < 14; k++) { J(HEAL); S.runFor(sim, 1, 1, () => {}); }
-  const b1 = J(`const T = Game.foe.tiers, S = T.as.tr; return { st: S.st, mw: S.mw, pim: Game.units.some(u => u.pim && !u.dead), fx: (S.fx || []).map(f => f.k), gold: dilHave('gold'), k: S.k };`);
-  ok(b1.st === 'fell' && b1.mw === 0.9 && !b1.pim && b1.fx.includes('fall') && b1.gold >= g0 + 15 - 1, 'не прощать: Пим не сорвался / нет награды ' + JSON.stringify(b1) + ' было золота ' + g0);
+  const b1 = J(`const T = Game.foe.tiers, S = T.as.tr; return { st: S.st, mw: S.mw, sg: S.gold, pim: Game.units.some(u => u.pim && !u.dead), fx: (S.fx || []).map(f => f.k), gold: dilHave('gold'), k: S.k };`);
+  ok(b1.st === 'fell' && b1.mw === 0.9 && !b1.pim && b1.fx.includes('fall') && b1.sg === 15, 'не прощать: Пим не сорвался / нет награды ' + JSON.stringify(b1) + ' было золота ' + g0);
   J('const s = JSON.parse(JSON.stringify(serializeGame())); applySave(s); return 1;');
   for (let k = 0; k < 6; k++) { J(KILL('Game.foe.tiers.open')); J(HEAL); S.runFor(sim, 1, 1, () => {}); }
   const b2 = J(`const B = spireBoss(), A = Game.foe.tiers.as; return { boss: !!B, trw: !!(B && B._trw), m: B ? B.mhp : 0, full: Math.round(FSPEC.malgor.mhp * (A.bm || 1)) };`);

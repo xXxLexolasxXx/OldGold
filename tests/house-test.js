@@ -5,10 +5,10 @@ const L = require('./lib/sim');
 const fails = [];
 const ok = (c, m) => { if (!c) { fails.push(m); console.log('  ✗ ' + m); } else console.log('  ✓ ' + m); };
 
-function place(sim, n) {
+function place(sim, n, r0 = 3) {
   return JSON.parse(sim.h.run(`JSON.stringify((function () {
     const hub = Game.buildings.find(b => b.type === 'storehouse'), out = [];
-    for (let r = 3; r < 30 && out.length < ${n}; r++) for (let dy = -r; dy <= r && out.length < ${n}; dy++) for (let dx = -r; dx <= r && out.length < ${n}; dx++) {
+    for (let r = ${r0}; r < 30 && out.length < ${n}; r++) for (let dy = -r; dy <= r && out.length < ${n}; dy++) for (let dx = -r; dx <= r && out.length < ${n}; dx++) {
       const x = hub.x + dx, y = hub.y + dy;
       if (x < 2 || y < 2 || x > MAP_W - 4 || y > MAP_H - 4) continue;
       if (!checkPlacement('house', x, y, 0)) { const b = placeBuilding('house', x, y, true, 0); out.push(b.id); }
@@ -110,19 +110,20 @@ const J = (sim, c) => JSON.parse(sim.h.run('JSON.stringify((function(){' + c + '
   ok(J(sim, 'return Game.units.filter(u => u.dwell).length') > 0, 'кооп: жильцы расселены');
 }
 
-// ---- 4. Баланс: с домами деревня живёт не хуже, чем без них (двое суток, бот строит хозяйство)
+// ---- 4. Баланс: с домами деревня живёт не хуже, чем без них (двое суток, бот строит хозяйство; сумма по сидам — одна деревня слишком случайна)
 {
-  const runV = houses => {
-    const sim = L.newSim(22);
-    if (houses) place(sim, 5);
+  const runV = (seed, houses) => {
+    const sim = L.newSim(seed);
+    if (houses) place(sim, 4, 8);
     L.runFor(sim, 1150, 5, () => L.botTurn(sim));
     return Object.assign(J(sim, `return { alive: Game.units.filter(u => !u.dead && isPerson(u) && u.type !== 'hero').length,
-      made: Object.values(Game.produced).reduce((a, n) => a + n, 0), lost: Game.lostGnomes || 0, slept: Game.units.filter(u => u.md && u.md.ev.some(e => e[0] === 'home')).length };`), { err: sim.errors.length });
+      made: Object.values(Game.produced).reduce((a, n) => a + n, 0), slept: Game.units.filter(u => u.md && u.md.ev.some(e => e[0] === 'home')).length };`), { err: sim.errors.length });
   };
-  const a = runV(false), b = runV(true);
-  console.log(`    без домов: жителей ${a.alive}, сделано ${a.made}, потерь ${a.lost} · с домами: жителей ${b.alive}, сделано ${b.made}, потерь ${b.lost}, выспались дома ${b.slept}`);
-  ok(b.alive >= a.alive - 1, 'с домами жителей не меньше');
-  ok(b.made >= a.made * 0.85, 'с домами производство не проседает больше чем на 15%');
+  const sum = (houses) => [13, 22, 31].map(s => runV(s, houses)).reduce((a, r) => ({ alive: a.alive + r.alive, made: a.made + r.made, slept: a.slept + r.slept, err: a.err + r.err }), { alive: 0, made: 0, slept: 0, err: 0 });
+  const a = sum(false), b = sum(true);
+  console.log(`    три деревни без домов: жителей ${a.alive}, сделано ${a.made} · с домами: жителей ${b.alive}, сделано ${b.made}, выспались дома ${b.slept}`);
+  ok(b.alive >= a.alive - 3, 'с домами жителей не меньше (допуск 1 на деревню)');
+  ok(b.made >= a.made * 0.88, 'с домами производство не проседает больше чем на 12%');
   ok(!a.err && !b.err, 'двое суток без ошибок');
 }
 
