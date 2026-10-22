@@ -377,7 +377,7 @@ function arHurt(S, A, B, n, kind, info) {
   if (B.hp <= 0) { B.hp = 0; B.dead = true; }
   return n;
 }
-function arHeal(S, F, part, why) {
+function arenaHealF(S, F, part, why) {
   if (F.dead) return 0;
   const n = Math.min(F.mhp - F.hp, F.mhp * part * F.pas.heal);
   if (n <= 0) return 0;
@@ -615,7 +615,7 @@ function arCast(S, F, slot, inp) {
       break;
     }
     case 'ult_priest': {
-      arHeal(S, F, a.heal, k);
+      arenaHealF(S, F, a.heal, k);
       F.st = Object.assign(arStFresh(), { inv: F.st.inv, invis: F.st.invis, lastStun: F.st.lastStun, stunImm: F.st.stunImm, rootImm: F.st.rootImm, block: F.st.block, imm: F.st.imm });
       B = arFoeIn(S, F, a.r);
       if (B) arCC(S, F, B, 'blind', a.blind);
@@ -650,7 +650,7 @@ function arCast(S, F, slot, inp) {
       break;
     }
     default:
-      if (a.heal) arHeal(S, F, a.heal, k);
+      if (a.heal) arenaHealF(S, F, a.heal, k);
       if (a.next) { F.next = a.next; F.nextK = k; }
   }
   // общее: время действия, ресурс, откат

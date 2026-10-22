@@ -103,7 +103,7 @@ function arLobby() {
   for (const id of ['#ar-hud', '#ar-sur', '#ar-joy', '#ar-bar', '#ar-brum']) Arena.el.querySelector(id).classList.add('hidden');
   Arena.el.querySelector('#ar-msg').textContent = '';
   arLobbyRender();
-  arSay(arPick(AR_BRUM.lobby));
+  arBrumSay(arPick(AR_BRUM.lobby));
 }
 function arLobbyRender() {
   const P = Arena.el.querySelector('#ar-panel'), my = arMyLook(Arena.cls);
@@ -136,7 +136,7 @@ function arClick(e) {
   const [k, v] = b.dataset.ar.split(':');
   ASfx.play('ui');
   if (k === 'cls') { Arena.cls = v; Arena.clsSet = true; arSave(); arLobbyRender(); }
-  else if (k === 'tier') { Arena.tier = +v; arSave(); arLobbyRender(); arSay(t(AR_BRUM.bot[Arena.tier])); }
+  else if (k === 'tier') { Arena.tier = +v; arSave(); arLobbyRender(); arBrumSay(t(AR_BRUM.bot[Arena.tier])); }
   else if (k === 'go') arStart(false);
   else if (k === 'again') arStart(true);
   else if (k === 'lobby') arLobby();
@@ -164,7 +164,7 @@ function arStart(rematch) {
   arBarBuild();
   arHud(true);
   const a = `${arMyName()} (${arClsName(Arena.cls)})`, b = `${t(AR_TIERS[Arena.tier].name)} (${arClsName(Arena.foe)})`;
-  arSay(rematch ? arPick(AR_BRUM.rematch) : arPick(AR_BRUM.intro, a, b));
+  arBrumSay(rematch ? arPick(AR_BRUM.rematch) : arPick(AR_BRUM.intro, a, b));
   arFansReact(Arena.fans, 'cheer', Arena.ct, 0.6);
   ASfx.play('crowd', 0.8);
   void T;
@@ -222,7 +222,7 @@ function arEvents(S) {
   for (const e of S.ev) {
     switch (e.k) {
       case 'count': ASfx.play('count'); Arena.el.querySelector('#ar-msg').textContent = String(e.n); break;
-      case 'go': ASfx.play('gong'); ASfx.play('go'); Arena.el.querySelector('#ar-msg').textContent = t('Бой!'); setTimeout(() => { if (Arena.el && Arena.S === S) Arena.el.querySelector('#ar-msg').textContent = ''; }, 800); if (e.round > 1) arSay(arPick(AR_BRUM.go)); break;
+      case 'go': ASfx.play('gong'); ASfx.play('go'); Arena.el.querySelector('#ar-msg').textContent = t('Бой!'); setTimeout(() => { if (Arena.el && Arena.S === S) Arena.el.querySelector('#ar-msg').textContent = ''; }, 800); if (e.round > 1) arBrumSay(arPick(AR_BRUM.go)); break;
       case 'dmg': {
         if (e.src === 'ring') { if (S.tick % 10 === 0) arPop(e.i, '−' + Math.max(1, Math.round(e.n * 10)), '#ff8a30'); break; }
         const col = e.i === me ? '#ff8a70' : '#ffe680';
@@ -233,12 +233,12 @@ function arEvents(S) {
         if (e.heavy || e.crit) arFansReact(Arena.fans, 'gasp', Arena.ct, 0.3);
         break;
       }
-      case 'miss': arPop(e.i, t('Мимо'), '#d8d0b0'); ASfx.play('miss'); Arena.misses = (Arena.misses || 0) + 1; if (Arena.misses % 6 === 0) { arFansReact(Arena.fans, 'boo', Arena.ct, 0.4); ASfx.play('boo'); if (Math.random() < 0.4) arSay(arPick(AR_BRUM.boo)); } break;
+      case 'miss': arPop(e.i, t('Мимо'), '#d8d0b0'); ASfx.play('miss'); Arena.misses = (Arena.misses || 0) + 1; if (Arena.misses % 6 === 0) { arFansReact(Arena.fans, 'boo', Arena.ct, 0.4); ASfx.play('boo'); if (Math.random() < 0.4) arBrumSay(arPick(AR_BRUM.boo)); } break;
       case 'dodge': arPop(e.i, t('Перекат!'), '#cfe8ff'); break;
       case 'inv': arPop(e.i, t('Неуязвим'), '#cfe8ff'); break;
       case 'shield': arPop(e.i, t('Строй держит!'), '#8ac8ff'); ASfx.play('shield'); break;
       case 'block': ASfx.play('thud'); arBurstAt(e.x, e.y, ['#d8d0bc', '#8a8478'], 6); break;
-      case 'perfect': arPop(e.i, t('Идеальный уворот!'), '#ffe070', true); arPop(e.a, t('Открыт!'), '#ffd040', true); ASfx.play('perfect'); arFansReact(Arena.fans, 'cheer', Arena.ct, 0.5); if (Math.random() < 0.5) arSay(arPick(AR_BRUM.perfect)); break;
+      case 'perfect': arPop(e.i, t('Идеальный уворот!'), '#ffe070', true); arPop(e.a, t('Открыт!'), '#ffd040', true); ASfx.play('perfect'); arFansReact(Arena.fans, 'cheer', Arena.ct, 0.5); if (Math.random() < 0.5) arBrumSay(arPick(AR_BRUM.perfect)); break;
       case 'whiff': arPop(e.i, t('Мимо!'), '#e8e0c0'); break;
       case 'tel': ASfx.play('tel'); if (e.i !== me && !Arena.telHint) { Arena.telHint = true; arPop(me, t('Красный клин — перекат!'), '#ff8a70', true); } break;
       case 'roll': ASfx.play('roll'); arBurstAt(S.f[e.i].x, S.f[e.i].y + 0.2, ['#d8c8a0', '#a89870'], 8); break;
@@ -257,7 +257,7 @@ function arEvents(S) {
         arPop(e.i, nm + '!', (typeof ABIL_COL !== 'undefined' && ABIL_COL[k]) || '#ffe070', e.k === 'ult');
         Arena.burst[e.i] = { k, s: Arena.ct };
         ASfx.play(e.k === 'ult' ? 'ult' : 'cast');
-        if (e.k === 'ult') { arFansReact(Arena.fans, 'cheer', Arena.ct, 1); ASfx.play('crowd', 1); arSay(arPick(AR_BRUM.ult)); Arena.flash = 0.35; }
+        if (e.k === 'ult') { arFansReact(Arena.fans, 'cheer', Arena.ct, 1); ASfx.play('crowd', 1); arBrumSay(arPick(AR_BRUM.ult)); Arena.flash = 0.35; }
         break;
       }
       case 'fail': if (e.i === me) arPop(me, t({ far: 'Далеко', hidden: 'Не видно', los: 'Колонна мешает', res: 'Не хватает сил', cd: 'Ещё не готово', ult: 'Шкала не полна', stun: 'Не до того', sil: 'Молчит' }[e.why] || 'Нельзя'), '#d8d0b0'); break;
@@ -270,11 +270,11 @@ function arEvents(S) {
       case 'arrowfall': arBurstAt(e.x, e.y, ['#d8c8a0', '#a89870'], 3); ASfx.play('shot', 0.6); break;
       case 'shot': ASfx.play('shot'); break;
       case 'blink': arBurstAt(e.x, e.y, ['#3a3448', '#5a5068', '#8a8aa8'], 10); break;
-      case 'ot': arSay(arPick(AR_BRUM.ot)); Arena.el.querySelector('#ar-msg').textContent = t('Овертайм!'); setTimeout(() => { if (Arena.el) Arena.el.querySelector('#ar-msg').textContent = ''; }, 1200); ASfx.play('gong'); break;
+      case 'ot': arBrumSay(arPick(AR_BRUM.ot)); Arena.el.querySelector('#ar-msg').textContent = t('Овертайм!'); setTimeout(() => { if (Arena.el) Arena.el.querySelector('#ar-msg').textContent = ''; }, 1200); ASfx.play('gong'); break;
       case 'round': {
         const w = e.w, nmW = w === me ? arMyName() : t(AR_TIERS[Arena.tier].name), nmL = w === me ? t(AR_TIERS[Arena.tier].name) : arMyName();
         Arena.el.querySelector('#ar-msg').textContent = t('Раунд — {0}!', nmW);
-        if (S.winner < 0) arSay(e.why === 'time' ? arPick(AR_BRUM.time) : arPick(AR_BRUM.round, nmW, nmL), 'win');
+        if (S.winner < 0) arBrumSay(e.why === 'time' ? arPick(AR_BRUM.time) : arPick(AR_BRUM.round, nmW, nmL), 'win');
         ASfx.play('gong'); ASfx.play('crowd', 1);
         arFansReact(Arena.fans, w === me ? 'mug' : 'cheer', Arena.ct, 0.8);
         break;
@@ -283,7 +283,7 @@ function arEvents(S) {
       case 'won': {
         const w = e.w, nmW = w === me ? arMyName() : t(AR_TIERS[Arena.tier].name), nmL = w === me ? t(AR_TIERS[Arena.tier].name) : arMyName();
         Arena.prevPot = 1 - w;
-        arSay(e.sur ? arPick(AR_BRUM.sur) : S.score[1 - w] === 0 ? arPick(AR_BRUM.dry, nmW, nmL) : arPick(AR_BRUM.win, nmW, nmL), 'win');
+        arBrumSay(e.sur ? arPick(AR_BRUM.sur) : S.score[1 - w] === 0 ? arPick(AR_BRUM.dry, nmW, nmL) : arPick(AR_BRUM.win, nmW, nmL), 'win');
         ASfx.play(w === me ? 'win' : 'lose');
         setTimeout(() => ASfx.play('pot'), 900);
         arFansReact(Arena.fans, w === me ? 'mug' : 'laugh', Arena.ct, 1);
@@ -300,7 +300,7 @@ function arBurstAt(x, y, cols, n) {
     Arena.fx.push({ x: x * TILE, y: y * TILE - 8, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.5 - 40 * Math.random(), g: 200, t: 0, life: 0.5 + Math.random() * 0.4, col: cols[k % cols.length], s: 1.5 + Math.random() * 1.5 });
   }
 }
-function arSay(text, mood) {
+function arBrumSay(text, mood) {
   const b = Arena.el && Arena.el.querySelector('#ar-brum');
   if (!b) return;
   b.querySelector('span').textContent = text;
