@@ -64,6 +64,11 @@ Object.assign(ABIL_ICON, {
   chord: ['k:#3a2416 P:#d8a0ff W:#f4e8ff', '......kkkk..', '......kkkk..', '......k..k..', '......k..k..', '......k..k..', '..P...k..k..', '.P..kkk.kkk.', 'P..kkkkkkkk.', 'P..kkkk.kkk.', '.P..kk..kk..', '..P.........', '............'],
   voice: ['o:#c88a4a b:#8a5a2a P:#f0a0d0', '........P...', '.......o..P.', '......oo....', '..bbooooo.P.', '.bboooooo...', '.bboooooo.PP', '.bboooooo...', '..bbooooo.P.', '......oo....', '.......o..P.', '........P...', '............'],
   palm: ['F:#e4b08a f:#b8845a Y:#ffe0c0', '..F.F.F.....', '..F.F.F.F...', '..F.F.F.F...', '..FFFFFFF...', 'F.FFFFFFF.Y.', 'FFFFFFFFF..Y', '.FFFFFFFF.Y.', '..FFFFFFF..Y', '..fFFFFFf...', '...fFFFf..Y.', '...ffff.....', '............'],
+  // четыре способности пятого слота (вместе с ареной, АРЕНА.md 7.1): рык, отскок, фальшивая нота, шаг ветра
+  roar: ['R:#c8302a W:#fff6e0 k:#2a1a10 O:#ff8a30', '............', '.O.......O..', 'O..kkkkk..O.', '..kRRRRRk...', '.kRWRRRWRk..', '.kRRRRRRRk.O', '.kRkkkkkRk..', '.kRWkkkWRk.O', '..kRRRRRk...', 'O..kkkkk..O.', '.O.......O..', '............'],
+  leap: ['G:#7ac85a B:#3a7a2a W:#cfe8ff', '............', '....GGGGG...', '...G.....G..', '..G.......G.', '.GGG......G.', 'GGGGG.....G.', '..G.......G.', '..G......G..', '...G....G...', '....GGGG....', '.B..W...B...', 'BBB.W..BBB..'],
+  sour: ['k:#3a2416 P:#d8a0ff R:#e04a3a', '......kkkk..', '......k..k..', '......k..R..', '......k.R...', '......kR....', '..kk.Rk.....', '.kkkkRk.....', '.kkkR.......', '..kR........', '.R..........', 'R.....P.P...', '..........P.'],
+  windstep: ['C:#c0e0ff B:#6a90c8 F:#e4b08a', '............', '.CCCCCC.....', '......CC....', '..BBBBB.C...', '.......B.C..', '.CCCC...B.C.', '.....C..B.C.', '..FFF.C.B.C.', '.FFFFF..B...', '.FFFFFF.....', '..FFFF......', '............'],
   calm: ['C:#c0e0ff B:#6a90c8', '....CCCC....', '..CC....CC..', '.C........C.', '.C...BB...C.', 'C...BCCB...C', 'C...BCCB...C', 'C....BB....C', '.C........B.', '.C.......B..', '..CC...BB...', '....CCB.....', '............'],
   // малые кнопки панели: атака, еда, перевязка, привал, домой
   u_eat: ['b:#c88a4a B:#8a5a2a W:#f0e0c0', '............', '............', '...BBBBBB...', '..BbbbbbbB..', '.BbbWbbWbbB.', '.BbbbbbbbbB.', '.BbWbbbbWbB.', '.BbbbbbbbbB.', '.BBBBBBBBBB.', '............', '............', '............'],
@@ -283,6 +288,58 @@ const ABIL_FX = {
     abFace(h, f.o); h.hfx = { k: 'strike', t: Game.time + 0.35 };
     abHit(f, h, 1); abStun(f, 2.5, h, 'Оглушён!');
     abBurstAt(f.o, ['#ffffff', '#ffe0c0'], 10);
+  },
+  // рык варвара: лесные враги замедлены, скелеты пятятся, ходячие деревья на миг теряются
+  roar(h) {
+    const fs = abFoes(h, 4);
+    if (!fs.length) return abNoFoe(h);
+    for (const f of fs) {
+      if (f.kind === 'neu' && typeof cbFxSet === 'function') cbFxSet(f.o, 'slow', 6, h, 'Ноги ватные!', '#ff9a70');
+      else if (f.kind === 'skel' && f.o.state === 'roam') { f.o.scared = 4; f.o.goal = null; floater(f.o.x, f.o.y - 2, 'Пятится!', '#ff9a70'); }
+      else abStun(f, 1, h, 'Оторопь!', '#ff9a70');
+    }
+    floater(h.x, h.y - 2.6, 'Р-Р-РЫ!', '#ff6a3a');
+    fxBurst(h.x * TILE, h.y * TILE - 18, 20, ['#ff6a3a', '#ffb070', '#fff0d0'], 120, 30, 0.6, 1.8, 0);
+    h.hfx = { k: 'win0', t: Game.time + 0.5 };
+  },
+  // отскок лучника: прыжок от врага (как перекат, только дальше), на миг почти неуязвим
+  leap(h) {
+    if (h.inside) return false;
+    const f = abFoes(h, 6)[0];
+    let ux = -(h.face || 1), uy = 0;
+    if (f) { const dx = h.x - f.o.x, dy = h.y - f.o.y, d = Math.hypot(dx, dy) || 1; ux = dx / d; uy = dy / d; }
+    let k = 3;
+    while (k > 0.5 && !isWalkable(Math.floor(h.x + ux * k), Math.floor(h.y + uy * k))) k -= 0.5;
+    if (k <= 0.5) { floater(h.x, h.y - 1.6, 'Некуда прыгать', '#e8e0c0'); return false; }
+    h.roll = { x0: h.x, y0: h.y, dx: ux * k, dy: uy * k, t: 0 };
+    if (Math.abs(ux) > 0.2) h.face = ux > 0 ? 1 : -1;
+    const H = h.hero;
+    if (H) { H.rollT = Game.time + 0.3; H.rollAt = Game.time; }
+    h.hfx = { k: 'parry', t: Game.time + 0.4 };
+    fxBurst(h.x * TILE, h.y * TILE - 4, 10, ['#d8c8a0', '#9ec8ff'], 50, 20, 0.5, 1.6, 200);
+  },
+  // фальшивая нота барда: враги в 5 клетках стоят как вкопанные, потом плетутся
+  sour(h) {
+    const fs = abFoes(h, 5);
+    if (!fs.length) return abNoFoe(h);
+    for (const f of fs) {
+      if (f.kind === 'neu' && typeof cbFxSet === 'function') { cbFxSet(f.o, 'stun', 2, h, 'Уши вянут!', '#d8a0ff'); cbFxSet(f.o, 'slow', 5, h); }
+      else abStun(f, 2, h, 'Уши вянут!', '#d8a0ff');
+    }
+    fxBurst(h.x * TILE, h.y * TILE - 16, 16, ['#d8a0ff', '#e04a3a', '#f4e8ff'], 90, 30, 0.7, 1.8, 0);
+    h.hfx = { k: 'win0', t: Game.time + 0.5 };
+  },
+  // шаг ветра монаха: рывок к ближайшему врагу, следующий удар без промаха (next в HERO_ABIL)
+  windstep(h) {
+    if (h.inside) return false;
+    const f = abFoes(h, 6)[0];
+    if (!f) return abNoFoe(h);
+    const dx = f.o.x - h.x, dy = f.o.y - h.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+    let k = Math.min(4, d - 1);
+    while (k > 0.3 && !isWalkable(Math.floor(h.x + ux * k), Math.floor(h.y + uy * k))) k -= 0.5;
+    if (k > 0.3) h.roll = { x0: h.x, y0: h.y, dx: ux * k, dy: uy * k, t: 0 };
+    abFace(h, f.o);
+    fxBurst(h.x * TILE, h.y * TILE - 8, 14, ['#c0e0ff', '#ffffff', '#6a90c8'], 70, 20, 0.5, 1.6, 0);
   },
 };
 
