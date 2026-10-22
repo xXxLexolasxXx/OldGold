@@ -2,10 +2,8 @@
 // Шпион Малгора — летописец Пим Чернилкин на подъёме к шпилю (js/world/traitor.js)
 I18N.add('en', {
   // «Что нового» 0.10.101
-  'Предатель в своих': 'A Traitor Among Us',
-  'Летописец деревни Пим Чернилкин с первых дней пишет летопись в двух экземплярах. Зачем ему вторая копия, почему вороны Шпиля на него не каркают и почему у него зелёные чернила — ищите намёки в журнале «Лор»': "From day one the village chronicler Pim Inkwell keeps the chronicle in two copies. Why he needs the second copy, why the Spire's ravens never caw at him and why his ink is green — look for hints in the Lore journal",
-  'На подъёме к шпилю Пим догоняет отряд, а после второго стража ворон Малгора путает адресата и роняет герою письмо «Агенту П. Ч.». Решать вам: простить или нет (в коопе — голосованием или хостом)': 'On the ascent Pim catches up with the squad, and after the second guardian a raven of Malgor\'s gets the address wrong and drops the hero a letter "To Agent P. I.". It\'s your call: forgive him or not (in co-op — by vote or by the host)',
-  'Простите — Пим встанет в отряд и выдаст слабое место стража. Но кто предал однажды… Не простите — Пим расскажет свой злобный план, пятясь к краю яруса. Эпилог запомнит, чем всё кончилось': "Forgive him — Pim joins the squad and gives away a guardian's weak spot. But once a traitor… Don't — and Pim tells you his evil plan while backing towards the edge of the tier. The epilogue will remember how it ended",
+  'Новый знакомый': 'A New Acquaintance',
+  'В деревне завёлся летописец. Человек как человек, пишет в книгу, всем кивает. Но стоит присмотреться: у каждого в хронике свои секреты, а по дороге к шпилю проверяется, кому можно верить. Выбор будет за вами': 'A chronicler has turned up in the village. Regular fellow, writes in his book, nods at everyone. But look closer: everyone has secrets in the chronicle, and on the road to the spire you will find out whom to trust. The choice will be yours',
   'Записываю: «герой храбро шагнул в туман…» Красиво. Отправлю… в архив.': 'Writing down: "the hero bravely stepped into the mist…" Lovely. I\'ll send it… to the archive.',
   'Не обращайте на меня внимания. Я просто пишу. Всё. Подробно.': "Don't mind me. I'm just writing. Everything. In detail.",
   'Сколько вас в отряде? Это для летописи! Только для летописи.': "How many of you are in the squad? It's for the chronicle! Only for the chronicle.",
