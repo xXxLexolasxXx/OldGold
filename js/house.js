@@ -262,6 +262,13 @@ if (typeof infoBuilding === 'function') {
 if (typeof Building === 'function') {
   // вид дома — свойство здания: рисуется в render.js, eras.js, leisure.js, levels.js (5-й аргумент buildingSprite)
   Object.defineProperty(Building.prototype, 'hv', { get() { return this.type === 'house' ? houseVar(this) : 0; }, configurable: true });
+  // готовому дому дорога не нужна: жильцы доходят пешком, дрова печь берёт со склада сама (season.js);
+  // иначе над каждым домом без мостовой висел красный значок «нет дороги» — поверх крыш и деревьев
+  const _pr = Building.prototype.problem;
+  Building.prototype.problem = function () {
+    const p = _pr.call(this);
+    return p === 'noroad' && this.type === 'house' && this.state === 'done' ? null : p;
+  };
 }
 
 if (typeof step === 'function') {

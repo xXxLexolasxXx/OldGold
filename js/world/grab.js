@@ -173,7 +173,7 @@ function ghGrabIndex(g) {
 }
 const GH_PAL = { out: 'rgba(24,60,64,0.95)', fill: '#dff4ea', hi: '#ffffff' };
 
-// Потолок «тихих» похищений за ночь (сова, мышь, призрак): не больше 2 + 10 % жителей и не из последних пяти —
+// Потолок похищений за ночь (сова, мышь, призрак, нечисть, скелет): на «Обычном» 1 + 5 % жителей, не из последних пяти —
 // иначе с третьей ночи деревня без присмотра пустела за несколько ночей (headless-прогоны: 12 из 12 вымерли,
 // 59 % смертей — совы). Нечисть и скелеты дерутся как раньше: это видимая угроза, с ней игрок может бороться.
 function nightTakeOk() {
@@ -183,7 +183,10 @@ function nightTakeOk() {
   for (const u of Game.units) if (!u.dead && isPerson(u) && u.type !== 'carter') people++;
   // первые три ночи (кроме «Выживания») — не больше одного и не из последних восьми: деревня ещё не успела обзавестись школой
   const early = ni < 3 && Game.diff !== 'survival' && !Game.noGrace;
-  return people > (early ? 8 : 5) && Game.nightTake.n < (early ? 1 : 2 + Math.floor(people * 0.1));
+  // потолок по сложности (difficulty.js takeBase + takePer · жителей): на «Обычном» 1 + 5 % — при 2 + 10 % деревня
+  // теряла по 3–4 гнома за сутки (совы, нечисть, скелеты), школа не успевала восполнять, и сиды 1, 2, 4 вымирали (ДЕФИЦИТЫ.md)
+  const d = dif(), base = d.takeBase != null ? d.takeBase : 2, per = d.takePer != null ? d.takePer : 0.1;
+  return people > (early ? 8 : 5) && Game.nightTake.n < (early ? 1 : base + Math.floor(people * per));
 }
 function nightTook() { if (Game.nightTake) Game.nightTake.n++; }
 // одинокий гном вдали от своих — лёгкая добыча; в толпе похитители не рискуют
