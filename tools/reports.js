@@ -8,6 +8,8 @@
 // Снимок забрать к себе: scp root@сервер:/var/lib/oldgold/reports/<номер>/shot.jpg .
 const fs = require('fs');
 const path = require('path');
+// текст отчёта написал игрок: ESC-последовательности и прочие управляющие символы не пускаем в терминал
+const tty = s => String(s).replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g, '␀');
 
 function list(dir) {
   const rdir = path.join(dir, 'reports');
@@ -20,7 +22,7 @@ function list(dir) {
 }
 
 function line(r) {
-  return `${r.n}  ${String(r.ts || '').replace('T', ' ').slice(0, 16)}  ${String(r.v).padEnd(8)} ${r.dev === 'phone' ? 'тел' : 'ПК '} ${r.mode === 'coop' ? 'кооп' : '    '} ${r.shot ? '📷' : '  '}${r.save ? '💾' : '  '}  ${String(r.text).replace(/\s+/g, ' ').slice(0, 90)}`;
+  return tty(`${r.n}  ${String(r.ts || '').replace('T', ' ').slice(0, 16)}  ${String(r.v).padEnd(8)} ${r.dev === 'phone' ? 'тел' : 'ПК '} ${r.mode === 'coop' ? 'кооп' : '    '} ${r.shot ? '📷' : '  '}${r.save ? '💾' : '  '}  ${String(r.text).replace(/\s+/g, ' ').slice(0, 90)}`);
 }
 
 function show(r, full) {
@@ -31,7 +33,7 @@ function show(r, full) {
   if (r.crash) L.push('--- Журнал сбоев ---', r.crash, '');
   const log = r.log || [];
   L.push(`--- Консоль (${full ? 'все' : 'последние 30 из'} ${log.length} строк${full ? '' : '; --log — все'}) ---`, ...(full ? log : log.slice(-30)));
-  return L.join('\n');
+  return tty(L.join('\n'));
 }
 
 module.exports = { list, line, show };

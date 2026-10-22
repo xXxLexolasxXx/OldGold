@@ -387,7 +387,7 @@ function gdGuardDown(N, killer) {
   }
 }
 
-// ---------- Эхо павших ----------
+// ---------- Призраки павших (в коде — echo) ----------
 
 function gdFallenTick(T) {
   const far = T.r[0] + 6;
@@ -403,7 +403,7 @@ function gdFallenTick(T) {
     if (T.fallen.length >= 16) continue;
     T.fallen.push({ n: u.hero ? u.hero.name : typeof neuName === 'function' ? neuName(u) : 'Гном', k: u.hero ? 'hero' : u.rec ? 'rec' : 'gnome', c: unitCls(u) || u.type || '' });
     T.clean = 0;
-    floater(u.x, u.y - 2.4, 'Тьма запомнила…', '#c8a8ff');
+    floater(u.x, u.y - 2.4, 'Вернётся призраком…', '#c8a8ff');
   }
 }
 
@@ -412,7 +412,7 @@ function gdEcho(B) {
   if (!T || T.none) return;
   const cap = Math.round(6 * gdDiff()), list = T.fallen.slice(-cap);
   if (!list.length) {
-    toast('Эхо павших молчит: на подъёме никто не пал. Малгору некого позвать!');
+    toast('Призраков павших нет: на подъёме никто не погиб. Малгору некого поднять!');
     floater(B.x, B.y - 3.6, 'Где… где мои мёртвые?!', '#b8ff90');
     return;
   }
@@ -424,8 +424,8 @@ function gdEcho(B) {
   });
   const names = list.map(f => f.n).slice(0, 4).join(', ') + (list.length > 4 ? '…' : '');
   floater(B.x, B.y - 3.6, 'Встаньте, павшие! Служите мне!', '#b8ff90');
-  toast(`Эхо павших: Малгор поднял призраков (${list.length}) — ${names}. Чем меньше потерь, тем тише эхо.`);
-  logEvent('night', `Эхо павших: Малгор поднял ${list.length} призраков`, B.x, B.y);
+  toast(`Призраки павших: Малгор поднял тех, кто погиб на подъёме (${list.length}) — ${names}. Чем меньше потерь, тем меньше призраков.`);
+  logEvent('night', `Призраки павших: Малгор поднял ${list.length} павших`, B.x, B.y);
 }
 
 // ---------- Такт ----------
@@ -467,7 +467,7 @@ function gdTick(dt) {
 // ---------- Подключение ----------
 
 FSPEC.bonem = { name: 'Костяной прислужник', mhp: 18, dmg: [2, 4], cd: 1.4, rng: 1.4, spd: 2.3, parry: 0, xp: 12, sz: 7, draw: (c, N) => gdDrawBone(c, N) };
-FSPEC.echo = { name: 'Эхо павших', mhp: 40, dmg: [5, 9], cd: 1.5, rng: 1.5, spd: 2.4, parry: 0.05, xp: 25, sz: 8, draw: (c, N) => gdDrawEcho(c, N) };
+FSPEC.echo = { name: 'Призрак павшего', mhp: 40, dmg: [5, 9], cd: 1.5, rng: 1.5, spd: 2.4, parry: 0.05, xp: 25, sz: 8, draw: (c, N) => gdDrawEcho(c, N) };
 FSPEC.ftower = { name: 'Магическая башня', mhp: 110, xp: 70, sz: 10, big: true, still: true, parry: 0, ai: rdTower, draw: (c, N) => gdDrawTower(c, N), drop: [['magicstone', 1, 0.7], ['mana', 1, 0.4]] };
 for (const k of GD_ORDER) {
   const G = GD_KINDS[k];

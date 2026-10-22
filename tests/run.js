@@ -49,7 +49,9 @@ const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
   if (p.status !== 0 && !r.fails.length) r.fails.push(out.trim().slice(0, 500) || 'код выхода ' + p.status);
 });
 scriptTest('load: скрипты, пути, синтаксис', 'check-load.js');
+scriptTest('savefile: золотые сейвы всех версий, битые и огромные файлы, копии, импорт/экспорт, мир коопа и откат', 'save-test.js', ['3'], 480000);
 scriptTest('server: раздача файлов, /err, /e, /t, /report, /stats', 'server-test.js');
+scriptTest('fuzz-server: злонамеренные запросы и сообщения не роняют и не портят сервер', 'fuzz-server-test.js');
 scriptTest('crashlog: причины вылетов, отчёты, лимиты', 'crashlog-test.js');
 scriptTest('telemetry: статистика по согласию, отчёты о проблемах, удаление по id', 'telemetry-test.js');
 scriptTest('neutrals2: ранги и новые народы леса, сейв', 'neutrals2-test.js');
@@ -57,18 +59,24 @@ scriptTest('wildlife: живность по биомам и дням, меньш
 scriptTest('frogfolk: жаболюды — поселения у воды, касты, прыжок, влажность, яд, зима, сейв', 'frogfolk-test.js');
 scriptTest('raid: курган Курганного князя — вход по клику в одиночке и в коопе, подпись, причины, сейв', 'raid-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
+scriptTest('disaster: стихийные бедствия — знамения, виды на сидах, колодец, ремонт, море, сейв, кооп', 'disaster-test.js', [], 420000);
 scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
+scriptTest('heroapp: цвет жилета героя — наряд, фигура, сейв', 'heroapp-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
+scriptTest('unions: профсоюзы — советы по стройке и ремеслу, редкий показ, выключатель, сейв, кооп', 'unions-test.js');
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('nightfog: ночной туман не гуще потолка и редеет над деревней', 'nightfog-test.js');
+scriptTest('lantern: днём фонари выключены, вечером горят, на рассвете гаснут', 'lantern-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
 scriptTest('injury: травмы — частота, лазарет, лекарь, сводка, груз, куры', 'injury-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
 scriptTest('fam: семьи и поколения, сохранение', 'fam-test.js');
 scriptTest('zemelka: ножички — партия гномов, болельщики, партия героя, сохранение', 'zemelka-test.js');
 scriptTest('kids: детские игры, замки, приручение, трубка, взросление', 'kids-test.js');
+scriptTest('pixel: чистка пикселей — камни, скалы, краб без одиночных чёрных точек', 'pixel-clean-test.js');
+scriptTest('sea: море, обитатели, рыбацкая хижина, кракен, шторм, сейв', 'sea-test.js');
 scriptTest('folk: гномки и гномята — облик, пиво, «Бах!», не дерутся, сейв', 'folk-test.js');
 scriptTest('durability: прочность снаряжения, ремонт, очередь доспехов, сейв', 'durability-test.js');
 scriptTest('arms: оружейная рано, особое оружие гильдий, заточка, свойства 3 уровня, сейв', 'arms-test.js');
@@ -88,6 +96,9 @@ scriptTest('newworld: хост начинает мир на своей карт�
 scriptTest('piles: мусор не копится, потолок кучек, подпись подбора', 'piles-test.js');
 scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
+scriptTest('wild: поселения диких гномов — число на картах, обмен, караван, купец, поединок, бунт, сейв', 'wild-test.js', [], 600000);
+scriptTest('whatsnew: пропущенные обновления в окне «Что нового»', 'whatsnew-test.js');
+scriptTest('uilayers: слои интерфейса — загрузка без скорости, стройка поверх способностей', 'uilayers-test.js');
 scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js');
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 

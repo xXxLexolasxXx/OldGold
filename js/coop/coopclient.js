@@ -25,6 +25,10 @@ function coopSaved(set) {
 // Можно подменить ссылкой: ...?server=wss://адрес
 const COOP_SERVER = 'wss://151-252-107-75.sslip.io';
 
+// Строки от сервера в разметку — только через это: ссылку ?server= может подсунуть кто угодно, и чужой сервер
+// прислал бы в чат или подписи <img onerror=…> (XSS на странице игры, доступ к сохранениям и входу)
+const coopEsc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 // адрес сервера, если страница открыта с него же
 function coopOrigin() { return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host; }
 
@@ -71,8 +75,8 @@ function coopConnect(opts) {
     if (location.protocol === 'https:' && opts.server.startsWith('ws://')) { reject(new Error('Страница открыта по https, а сервер без шифрования (ws://). Откройте игру с адреса сервера: ' + coopHttpUrl(opts.server) + '/ — или настройте wss (server/DEPLOY.md)')); return; }
     try { ws = new WebSocket(opts.server); } catch (e) { reject(new Error('Неверный адрес сервера')); return; }
     Coop.ws = ws; Coop.creds = opts;
-    const fail = msg => { if (settled) return; settled = true; reject(new Error(msg)); try { ws.close(); } catch (e) { /* ничего */ } };
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token, ver: coopVer(), z: COOP_ZIP ? 1 : 0 }));
+    const fail = (msg, wait) => { if (settled) return; settled = true; reject(Object.assign(new Error(msg), { wait }));  try { ws.close(); } catch (e) { /* ничего */ } };
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', mode: opts.mode, nick: opts.nick, pass: opts.pass, token: opts.token, ver: coopVer(), z: COOP_ZIP ? 1 : 0, d: 1 }));
     ws.binaryType = 'arraybuffer';
     ws.onerror = () => fail('Сервер не отвечает. Он запущен? Адрес верный?');
     ws.onclose = () => { if (!settled) fail('Связь оборвана'); else if (Coop.ws === ws) coopLost(); };
@@ -86,7 +90,7 @@ function coopConnect(opts) {
     };
     const handleText = data => {
       let m; try { m = JSON.parse(data); } catch (e) { return; }
-      if (m.t === 'err') { if (m.stale) coopSaved(null); return fail(m.msg); }
+      if (m.t === 'err') { if (m.stale) coopSaved(null); return fail(m.msg, m.wait); }
       if (m.t === 'welcome') {
         if (m.token) coopSaved({ server: opts.server, nick: m.nick, token: m.token });
         Coop.perms = m.perms; Coop.permLabels = m.permLabels;
@@ -115,7 +119,7 @@ function coopApplyInit(m) {
   Game.nextId = Math.max(Game.nextId, m.nextId || 0);
   Game.time = m.time;
   Game.paused = false; Game.speed = 1;
-  Coop.uid = m.uid; Coop.anim.clear(); Coop.bubbles.clear(); Coop.roadBatch = [];
+  Coop.uid = m.uid; Coop.view = null; Coop.mir = null; Coop.anim.clear(); Coop.bubbles.clear(); Coop.roadBatch = [];
   Coop.saveT = 0;
   if (Coop.host) unlockAll();       // хосту доступно всё, остальным меню открывается по мере развития деревни
   else renderBuildMenu();
@@ -152,20 +156,29 @@ function coopChat(m) {
 function coopUnits(m) {
   if (Math.abs(Game.time - m.time) > 1) Game.time = m.time; else Game.time += (m.time - Game.time) * 0.3;
   const byId = new Map(Game.buildings.map(b => [b.id, b]));
-  const seen = new Set();
+  // d:1 — дельта: пришли только изменившиеся (тип и внешность — лишь при первом показе), ушедшие — в ug,
+  // раз в секунду ids — весь состав. Без d — старый полный пакет: кого нет в списке, того нет и в деревне.
+  const seen = m.d ? (m.ids ? new Set(m.ids) : null) : new Set();
+  if (m.ug) for (const id of m.ug) coopDropUnit(id);
   for (const d of m.units) {
-    seen.add(d.i);
+    if (seen && !m.d) seen.add(d.i);
     let u = Game.unitMap.get(d.i);
     if (!u) {
+      if (!d.t) continue;
       u = new Unit(d.t, 0, 0);
       u.id = d.i; u.x = d.x; u.y = d.y; u.smoker = false;
       Game.units.push(u); Game.unitMap.set(u.id, u);
     }
-    u.tx = d.x; u.ty = d.y; u.face = d.f; u.vdir = d.v || 'S'; u.look = d.lk; u.food = d.fd;
+    u.tx = d.x; u.ty = d.y; u.face = d.f; u.vdir = d.v || 'S'; u.food = d.fd;
+    if (d.lk !== undefined) u.look = d.lk;
     u.anim = d.a || null; u.carry = d.c || null; u.carryN = d.n || 0;
     u.inside = d.in ? byId.get(d.in) || null : null;
     u.injury = d.inj || null; u.drunkAt = d.dr ? 1e9 : 0; u.ouchUntil = d.ou ? Game.time + 0.7 : 0;
-    for (const k of COOP_UNIT_EX) u[k] = d.ex && d.ex[k] !== undefined ? d.ex[k] : undefined;
+    for (const k of COOP_UNIT_EX) {
+      // семья и облик в дельте приходят только вместе с типом (sx), в старом пакете — в ex
+      if (COOP_UNIT_STATIC.includes(k)) { if (!m.d || d.t !== undefined) u[k] = (d.sx && d.sx[k]) ?? (d.ex && d.ex[k]); continue; }
+      u[k] = d.ex && d.ex[k] !== undefined ? d.ex[k] : undefined;
+    }
     if (d.m) { if (!(u.action && u.action.walk)) u.action = { walk: [0, 0], path: [1], i: 0, block: 0 }; }
     else if (d.at !== undefined) { if (!u.action || u.action.walk) u.action = { wait: 1, T: d.aT, anim: d.a }; u.action.t = d.at; }
     else u.action = null;
@@ -178,21 +191,40 @@ function coopUnits(m) {
       }
     }
   }
-  for (let i = Game.units.length - 1; i >= 0; i--) {
-    const u = Game.units[i];
-    if (!seen.has(u.id)) { Game.units.splice(i, 1); Game.unitMap.delete(u.id); if (Game.hero === u) Game.hero = null; }
-  }
+  if (seen) for (let i = Game.units.length - 1; i >= 0; i--) if (!seen.has(Game.units[i].id)) coopDropUnit(Game.units[i].id);
   // звери
-  const next = [];
+  const aSeen = m.d ? (m.aids ? new Set(m.aids) : null) : new Set();
+  if (m.ag) for (const id of m.ag) Coop.anim.delete(id);
   for (const d of m.animals) {
+    if (aSeen && !m.d) aSeen.add(d.i);
     let a = Coop.anim.get(d.i);
     if (!a) { a = makeAnimal(d.k, 0, 0); a.id = d.i; a.x = d.x; a.y = d.y; Coop.anim.set(d.i, a); }
     a.tx = d.x; a.ty = d.y; a.face = d.f; a.moving = !!d.m; a.loot = d.l || null; a.state = d.s; a.phase = d.p;
-    next.push(a);
   }
-  for (const id of [...Coop.anim.keys()]) if (!next.includes(Coop.anim.get(id))) Coop.anim.delete(id);
-  Game.animals = next;
+  if (aSeen) for (const id of [...Coop.anim.keys()]) if (!aSeen.has(id)) Coop.anim.delete(id);
+  Game.animals = [...Coop.anim.values()];
   if (m.mir) coopMirror(m.mir);
+  if (m.d) coopMirrorDelta(m);
+}
+
+function coopDropUnit(id) {
+  const u = Game.unitMap.get(id);
+  if (!u) return;
+  const i = Game.units.indexOf(u);
+  if (i >= 0) Game.units.splice(i, 1);
+  Game.unitMap.delete(id);
+  if (Game.hero === u) Game.hero = null;
+}
+
+// Какие клетки видит камера: сервер шлёт жителей вне них реже (интерес-менеджмент). Шлём, только когда окно сдвинулось.
+function coopSendView() {
+  if (!R.canvas || !R.cam) return;
+  const z = devScale(), x0 = Math.floor(R.cam.x / TILE), y0 = Math.floor(R.cam.y / TILE);
+  const x1 = Math.ceil((R.cam.x + R.canvas.width / z) / TILE), y1 = Math.ceil((R.cam.y + R.canvas.height / z) / TILE);
+  const v = [x0, y0, x1, y1], o = Coop.view;
+  if (o && v.every((k, i) => Math.abs(k - o[i]) < 2)) return;
+  Coop.view = v;
+  coopSend({ t: 'view', x0, y0, x1, y1 });
 }
 
 function coopApplyBuilding(d, byId) {
@@ -241,7 +273,8 @@ function coopDropBuilding(b) {
   if (k >= 0) Game.buildings.splice(k, 1);
 }
 
-const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx', 'wild'];
+const COOP_LISTS = ['ghosts', 'skels', 'ents', 'owls', 'bats', 'critters', 'falling', 'neutrals', 'lepr', 'lairs', 'raiders', 'foeShots', 'foeZones', 'games', 'dshots', 'dtowers', 'wfx', 'swp', 'wild'];
+const COOP_UNIT_STATIC = ['fam', 'ap'];   // как на сервере (coopsim.js)
 const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp', 'bah'];
 
 // ссылки {__u:id} / {__b:id} из снимка превращаем обратно в жителей и здания
@@ -280,6 +313,7 @@ function coopMirror(m) {
   if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
   if (typeof dilMirrorIn === 'function') dilMirrorIn(m.dil);
   if (typeof travMirrorIn === 'function') travMirrorIn(m.trav);
+  if (typeof wgsMirrorIn === 'function') wgsMirrorIn(m.wgs);
   if (typeof lawMirrorIn === 'function') lawMirrorIn(m.law);
   if (typeof medMirrorIn === 'function') medMirrorIn(m.med);
   if (typeof rscMirrorIn === 'function') rscMirrorIn(m.rsc);
@@ -290,7 +324,28 @@ function coopMirror(m) {
   if (!festWas && festOn()) festCheers();       // праздник начался — аплодисменты и у клиентов
   Object.assign(WX, m.wx, { ready: true });
   if (typeof seaMirrorIn === 'function') seaMirrorIn(m.sea);
+  if (typeof seaLifeMirrorIn === 'function') seaLifeMirrorIn(m.sl);
   if (typeof fyMirrorIn === 'function') fyMirrorIn(m.fy);      // единорог, дракон, грифон, саламандры (fairy1.js)
+}
+
+// Дельта зеркала (d:1): последнее состояние держим у себя и собираем из него полный снимок для coopMirror —
+// так обёртки coopMirror из других модулей (гильдии, умения, оборона…) получают то же, что и раньше.
+// ml — изменившиеся записи списков, mg — ушедшие, mids — весь состав (раз в секунду), mo — прочие ключи, когда поменялись.
+function coopMirrorDelta(m) {
+  const C = Coop.mir || (Coop.mir = { lists: {}, mo: {} });
+  if (!m.ml && !m.mg && !m.mids && !m.mo && !C.ready) return;
+  if (m.mo) Object.assign(C.mo, m.mo);
+  for (const k in m.ml || {}) { const L = C.lists[k] || (C.lists[k] = new Map()); for (const d of m.ml[k]) L.set(d.__id, d); }
+  for (const k in m.mg || {}) { const L = C.lists[k]; if (L) for (const id of m.mg[k]) L.delete(id); }
+  for (const k in m.mids || {}) {
+    const L = C.lists[k] || (C.lists[k] = new Map()), keep = new Set(m.mids[k]);
+    for (const id of L.keys()) if (!keep.has(id)) L.delete(id);
+  }
+  C.ready = true;
+  // копия: coopSyncList и coopResolve меняют записи на месте (новые записи становятся объектами игры)
+  const full = JSON.parse(JSON.stringify(C.mo));
+  for (const k in C.lists) full[k] = JSON.parse(JSON.stringify([...C.lists[k].values()]));
+  coopMirror(full);
 }
 
 function coopWorld(m) {
@@ -348,6 +403,8 @@ function coopStep(dt) {
   if (h && h.cmd && Game.time - Coop.heroCmdAt > 1.2 && !(h.action && h.action.walk)) h.cmd = null;
   Coop.saveT += dt;
   if (Coop.saveT >= 30) { Coop.saveT = 0; coopSaveCopy(); }
+  Coop.viewT = (Coop.viewT || 0) + dt;
+  if (Coop.viewT >= 0.25) { Coop.viewT = 0; coopSendView(); }
 }
 
 // Копия общего мира на случай, когда сервер выключен: свой слот, личные сохранения не трогаем
@@ -548,7 +605,7 @@ function coopPickClass(classes) {
   const box = document.createElement('div');
   box.id = 'cp-class'; box.className = 'cp-modal';
   box.innerHTML = `<div class="cp-card"><h2>Кто ты, гном?</h2><p>Первый заход в деревню: выбери класс. Он останется с героем.</p>
-    <div class="cp-cls">${Object.entries(classes).map(([k, c]) => `<button class="cp-c" style="--c:${c.col}" data-cls="${k}"><img src="${portraitURL('hero_' + k, 7)}" alt="" style="width:48px;height:48px;image-rendering:pixelated;display:block;margin:0 auto 4px"><b>${c.name}</b>${c.info}<small>здоровье ${c.hp}</small></button>`).join('')}</div></div>`;
+    <div class="cp-cls">${Object.entries(classes).map(([k, c]) => `<button class="cp-c" style="--c:${coopEsc(c.col)}" data-cls="${coopEsc(k)}"><img src="${coopEsc(portraitURL('hero_' + k, 7))}" alt="" style="width:48px;height:48px;image-rendering:pixelated;display:block;margin:0 auto 4px"><b>${coopEsc(c.name)}</b>${coopEsc(c.info)}<small>здоровье ${coopEsc(c.hp)}</small></button>`).join('')}</div></div>`;
   document.body.appendChild(box);
   box.addEventListener('click', e => {
     const b = e.target.closest('[data-cls]');
@@ -564,7 +621,7 @@ function coopInvHtml() {
   const me = Coop.me;
   const inv = me ? me.inv : Array(10).fill(null);
   return `<div class="cp-inv">${inv.map((s, i) => s
-    ? `<div class="cp-slot has" data-coop="use" data-slot="${i}" title="${ITEM_NAME(s.k)} — клик: съесть, Shift+клик: выбросить">${ITEM_NAME(s.k).slice(0, 5)}<i>${s.n}</i></div>`
+    ? `<div class="cp-slot has" data-coop="use" data-slot="${i}" title="${coopEsc(ITEM_NAME(s.k))} — клик: съесть, Shift+клик: выбросить">${coopEsc(String(ITEM_NAME(s.k)).slice(0, 5))}<i>${coopEsc(s.n)}</i></div>`
     : '<div class="cp-slot"></div>').join('')}</div>`;
 }
 
@@ -597,7 +654,7 @@ function coopInitHud() {
     if (b) {
       const k = b.dataset.cp, pop = document.getElementById('cp-pop');
       if (k === 'chat') {
-        pop.innerHTML = Coop.meta.chat.map((t, i) => `<button data-cpchat="${i}">${t}</button>`).join('');
+        pop.innerHTML = Coop.meta.chat.map((t, i) => `<button data-cpchat="${i}">${coopEsc(t)}</button>`).join('');
         pop.classList.toggle('open', !(pop.classList.contains('open') && pop.dataset.k === 'chat')); pop.dataset.k = 'chat';
       } else if (k === 'inv') {
         pop.innerHTML = coopInvHtml();
@@ -657,9 +714,9 @@ function coopQuestHud(x, title) {
 function coopVilHud(v) {
   const el = document.getElementById('cp-vil');
   if (!el || !v) return;
-  const q = v.q, tm = q ? `${Math.floor(q.left / 60)}:${String(q.left % 60).padStart(2, '0')}` : '';
-  el.innerHTML = (q ? `<div>${q.done ? '<span class="ok">Заказ выполнен</span>' : 'Заказ деревни'}: ${q.w.toLowerCase()} «${q.g}» <b>${q.have}/${q.need}</b>${q.done ? '' : ` <span class="lo">· до вечера ${tm} · +${q.rw} зол.</span>`}</div>` : '')
-    + `<div class="lo">Ночей без потерь подряд: <b>${v.st}</b> · рекорд ${v.best}${v.hero && v.hero.length ? ' · герои ночи: ' + v.hero.map(h => h[0] + ' ×' + h[1]).join(', ') : ''}</div>`;
+  const q = v.q, e = coopEsc, tm = q ? `${Math.floor(q.left / 60)}:${String(q.left % 60).padStart(2, '0')}` : '';
+  el.innerHTML = (q ? `<div>${q.done ? '<span class="ok">Заказ выполнен</span>' : 'Заказ деревни'}: ${e(String(q.w).toLowerCase())} «${e(q.g)}» <b>${e(q.have)}/${e(q.need)}</b>${q.done ? '' : ` <span class="lo">· до вечера ${e(tm)} · +${e(q.rw)} зол.</span>`}</div>` : '')
+    + `<div class="lo">Ночей без потерь подряд: <b>${e(v.st)}</b> · рекорд ${e(v.best)}${Array.isArray(v.hero) && v.hero.length ? ' · герои ночи: ' + v.hero.map(h => e(h[0]) + ' ×' + e(h[1])).join(', ') : ''}</div>`;
 }
 
 function coopRefreshHud() {
@@ -671,7 +728,7 @@ function coopRefreshHud() {
   const lg = document.getElementById('cp-log');
   if (lg) {
     const now = Date.now();
-    lg.innerHTML = Coop.chatLog.filter(m => now - m.at < 12000).slice(-5).map(m => `<div><b>${m.from}:</b> ${m.text}</div>`).join('');
+    lg.innerHTML = Coop.chatLog.filter(m => now - m.at < 12000).slice(-5).map(m => `<div><b>${coopEsc(m.from)}:</b> ${coopEsc(m.text)}</div>`).join('');
   }
   if (Game.selUnit && Game.selUnit === Game.hero) updateUI(true);
 }
@@ -745,8 +802,8 @@ function coopLost() {
     if (!opts) { busy = false; stop = true; msg.textContent = 'Войдите заново через меню (Выйти → Общая деревня).'; return; }
     coopConnect(opts).then(() => { stop = true; Coop.reconnecting = false; box.remove(); }).catch(e => {
       busy = false;
-      msg.textContent = e.message;
-      if (!stop && !Coop.kicked) setTimeout(tryAgain, 3000);
+      msg.textContent = e.message + (e.wait ? ` (следующая попытка через ${e.wait} с)` : '');
+      if (!stop && !Coop.kicked) setTimeout(tryAgain, e.wait ? e.wait * 1000 : 3000);
     });
   };
   box.addEventListener('click', e => {
@@ -1090,7 +1147,7 @@ function coopHint() {
       const saved = coopSaved();
       const b = document.createElement('button');
       b.className = 'sm-btn primary'; b.dataset.smJoin = '1';
-      b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${j.online}${saved ? ' · войти как ' + saved.nick : ' · вход и регистрация'}</small>`;
+      b.innerHTML = `<b>Общая деревня</b><small>онлайн: ${coopEsc(j.online)}${saved ? ' · войти как ' + coopEsc(saved.nick) : ' · вход и регистрация'}</small>`;
       smSubAdd(b, true);
       b.addEventListener('click', () => {
         const sv = coopSaved();
@@ -1138,7 +1195,7 @@ function coopAdminRender(box) {
   const labels = Coop.permLabels || {}, perms = Coop.perms || {};
   const list = box.querySelector('.cp-adm');
   list.innerHTML = Object.keys(labels).map(k =>
-    `<button class="cp-tg${perms[k] ? ' on' : ''}" data-perm="${k}"><span class="cp-nm">${labels[k]}</span><span class="cp-st">${perms[k] ? 'можно' : 'нельзя'}</span></button>`).join('');
+    `<button class="cp-tg${perms[k] ? ' on' : ''}" data-perm="${coopEsc(k)}"><span class="cp-nm">${coopEsc(labels[k])}</span><span class="cp-st">${perms[k] ? 'можно' : 'нельзя'}</span></button>`).join('');
   list.querySelectorAll('.cp-tg.on').forEach((b, i) => {
     if (typeof vineSVG === 'function') b.insertAdjacentHTML('beforeend', vineSVG(b.offsetWidth || 300, b.offsetHeight || 46, ['hops', 'grape', 'wheat'][i % 3], 11 + i * 7));
   });
@@ -1184,6 +1241,7 @@ function coopAdminOpen() {
     if (m.t === 'tempo') { Coop.tempo = { speed: m.speed, paused: m.paused, votes: m.votes, need: m.need }; tempoShow(); return; }
     if (m.t === 'prio') { prioApply(m.p); updateUI(true); return; }
     if (m.t === 'wk') { wkApply(m); updateUI(true); return; }
+    if (m.t === 'un') { if (typeof unApply === 'function') unApply(m); return; }
     if (m.t === 'diff') {
       Game.diff = diffKey(m.k);
       toast('Сложность деревни: ' + dif().name);
@@ -1216,17 +1274,17 @@ function coopAdminOpen() {
 function coopStatsShow(x, server) {
   coopCss();
   document.getElementById('cp-stats')?.remove();
-  const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = coopEsc;
   const dt = t => (t ? new Date(t).toLocaleString(I18N.locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
   const cls = (Coop.meta && Coop.meta.classes) || {};
   const box = document.createElement('div');
   box.id = 'cp-stats'; box.className = 'cp-modal';
   box.innerHTML = `<div class="cp-card" style="text-align:left;width:min(640px,94vw)"><h2 style="text-align:center">Статистика деревни</h2>
-    <p>Игроков всего: <b>${x.players}</b> · за неделю: <b>${x.activeWeek}</b> · сегодня: <b>${x.today.players}</b> (входов ${x.today.logins}) · сейчас: <b>${x.onlineNow}</b><br>
-    Пик онлайна: <b>${x.peak.n}</b> (${dt(x.peak.at)}) · наиграно всего: <b>${x.totalHours} ч</b> · ведётся с ${dt(x.since)} · сервер ${esc(server)}</p>
+    <p>Игроков всего: <b>${esc(x.players)}</b> · за неделю: <b>${esc(x.activeWeek)}</b> · сегодня: <b>${esc(x.today.players)}</b> (входов ${esc(x.today.logins)}) · сейчас: <b>${esc(x.onlineNow)}</b><br>
+    Пик онлайна: <b>${esc(x.peak.n)}</b> (${esc(dt(x.peak.at))}) · наиграно всего: <b>${esc(x.totalHours)} ч</b> · ведётся с ${dt(x.since)} · сервер ${esc(server)}</p>
     <table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="color:#f6d458"><th align="left">Игрок</th><th>Класс</th><th>Входов</th><th>Часов</th><th>Последний вход</th></tr>
-    ${x.list.map(p => `<tr><td>${p.online ? '● ' : ''}${esc(p.nick)}</td><td align="center">${esc((cls[p.cls] || {}).name || p.cls || '')}</td><td align="center">${p.logins}</td><td align="center">${p.hours}</td><td align="center">${dt(p.last)}</td></tr>`).join('')}</table>
-    <p style="margin-top:10px">По дням: ${x.days.slice(0, 7).map(d => `${d.day.slice(5)} — ${d.players} игр., ${d.logins} вх., пик ${d.peak}`).join(' · ') || '—'}</p>
+    ${x.list.map(p => `<tr><td>${p.online ? '● ' : ''}${esc(p.nick)}</td><td align="center">${esc((cls[p.cls] || {}).name || p.cls || '')}</td><td align="center">${esc(p.logins)}</td><td align="center">${esc(p.hours)}</td><td align="center">${esc(dt(p.last))}</td></tr>`).join('')}</table>
+    <p style="margin-top:10px">По дням: ${esc(x.days.slice(0, 7).map(d => `${String(d.day).slice(5)} — ${d.players} игр., ${d.logins} вх., пик ${d.peak}`).join(' · ') || '—')}</p>
     <div style="text-align:center"><button class="cp-btn" data-close>Закрыть</button></div></div>`;
   document.body.appendChild(box);
   box.addEventListener('click', e => { if (e.target.closest('[data-close]') || e.target === box) box.remove(); });

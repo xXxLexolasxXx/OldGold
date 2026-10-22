@@ -226,6 +226,7 @@ function step(dt) {
   faunaTick(dt);
   fauna2Tick(dt);
   beastsTick(dt);
+  if (typeof seaLifeTick === 'function') seaLifeTick(dt);   // морские обитатели (seafauna.js)
   chestsTick(dt);
   fairyTick(dt);
   fairy2Tick(dt);
@@ -480,7 +481,7 @@ function initInput() {
     Input.keys.add(e.key === 'Shift' ? 'Shift' : e.code);
     if (e.code === 'Escape') { setTool(null); selectBuilding(null); }
     if (e.code === 'Space') { e.preventDefault(); togglePause(); }
-    const spd = (e.shiftKey && e.code.match(/^Digit([1-4])$/)) || e.code.match(/^Numpad([1-4])$/);   // Shift+1…4 и цифры справа: ×0,5 / ×1 / ×2 / ×3
+    const spd = (e.shiftKey && e.code.match(/^Digit([1-3])$/)) || e.code.match(/^Numpad([1-3])$/);   // Shift+1…3 и цифры справа: ×1 / ×2 / ×3
     if (spd) { e.preventDefault(); pickSpeed(+spd[1] - 1); }
     if (e.code === 'KeyR') setTool(Game.tool && Game.tool.kind === 'road' ? null : { kind: 'road' });
     if (e.code === 'KeyT') rotateTool();
@@ -612,8 +613,12 @@ function startGame() {
   const saveOnLeave = () => {
     if (Game.stress || !Game.units || !Game.units.length) return;
     if (typeof StartMenu !== 'undefined' && StartMenu.open) return;       // не затираем автосохранение, пока на заставке
+    if (Game.goal && Game.goal.over && Game.goal.over.res === 'lose') return;   // проигранную деревню (goal.js стёр её автосейв) не воскрешаем
+    if (saveOnLeave.t && Date.now() - saveOnLeave.t < 1500) return;       // события закрытия приходят пачкой (скрытие, pagehide, freeze) — пишем один раз
+    saveOnLeave.t = Date.now();
     saveGame('auto');
   };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnLeave(); });
   window.addEventListener('pagehide', saveOnLeave);
+  document.addEventListener('freeze', saveOnLeave);   // Chrome на Android замораживает фоновую вкладку без pagehide
 }

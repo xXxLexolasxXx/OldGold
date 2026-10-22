@@ -80,6 +80,7 @@ function spyFall(u) {
   sfxAt('wail', u.x * TILE, u.y * TILE, 0.6);
   S.st = 'fell'; S.t = Game.time;
   const got = dilGive('gold', 15);
+  S.gold = got;                                                   // сколько вышло из сумки (склад потом может потратить)
   S.mw = 0.9;
   const B = Game.raiders.find(N => N.k === 'malgor' && foeLive(N));
   if (B && !B._trw) { B._trw = 1; B.mhp = Math.round(B.mhp * 0.9); B.hp = Math.min(B.hp, B.mhp); Game.foe.bossHp = B.hp; }

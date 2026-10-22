@@ -10,7 +10,8 @@
 //    версия, устройство, id и (по галочке) сохранение → POST /report. Это не статистика, а явное действие игрока.
 //  · «Удалить мои данные»: POST /t/forget — сервер стирает записи и отчёты с этим id, у игрока id меняется.
 
-const TELE_KEY = 'feod.tele', TELE_ID = 'feod.tid', TELE_Q = 'feod.telq';
+// feod.consent: с 0.10.107 спрашиваем заново всех (в 0.10.102 статистика была включена без вопроса, старый ключ feod.tele не считается согласием)
+const TELE_KEY = 'feod.consent', TELE_ID = 'feod.tid', TELE_Q = 'feod.telq';
 const Tele = { lines: [], sid: '', t0: Date.now(), q: [], built: {}, errs: 0, errSent: 0, lastEv: '', hurt: '', deaths: {}, vdead: false, busy: false, next: 0, fails: 0 };
 
 // ---- журнал консоли: последние 200 строк (для отчёта о проблеме; сам по себе никуда не уходит)

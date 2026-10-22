@@ -49,20 +49,21 @@ const { createTelemetry, cleanEvent } = require('../server/telemetry');
   {
     const p = page({}, 'xxxlexolasxxx.github.io');
     check(p.ctx.teleOn() === false, 'статистика должна быть выключена по умолчанию');
+    check(page({ 'feod.tele': JSON.stringify({ on: true, asked: 1 }) }, 'xxxlexolasxxx.github.io').ctx.teleOn() === false, '«Хорошо» из 0.10.102 (старый ключ) не должно считаться согласием');
     beat(p);
     check(!p.sent.some(s => /\/t$/.test(s.url)), 'без согласия ушёл запрос на /t');
     check(p.ctx.teleDeclined() === false, 'без ответа — не «отказ» (воронка /e работает как раньше)');
   }
   // ---- 2. Локальная разработка: даже с согласием не шлём
   for (const host of ['localhost', '127.0.0.1', '192.168.1.5', 'game.test']) {
-    const p = page({ 'feod.tele': JSON.stringify({ on: true, asked: 1 }) }, host);
+    const p = page({ 'feod.consent': JSON.stringify({ on: true, asked: 1 }) }, host);
     check(p.ctx.teleOn() === false, 'на ' + host + ' статистика не должна включаться');
     beat(p);
     check(!p.sent.length, 'на ' + host + ' ушёл запрос');
   }
   // ---- 3. С согласием: снимок раз в минуту, тело проходит серверную проверку
   {
-    const p = page({ 'feod.tele': JSON.stringify({ on: true, asked: 1 }) }, 'xxxlexolasxxx.github.io');
+    const p = page({ 'feod.consent': JSON.stringify({ on: true, asked: 1 }) }, 'xxxlexolasxxx.github.io');
     p.ctx.console.warn('проверка журнала', { a: 1 });
     beat(p);
     const t = p.sent.find(s => /\/t$/.test(s.url));
@@ -83,7 +84,7 @@ const { createTelemetry, cleanEvent } = require('../server/telemetry');
   }
   // ---- 4. Отказ: воронка /e тоже молчит
   {
-    const p = page({ 'feod.tele': JSON.stringify({ on: false, asked: 1 }), 'oldgold-pending': '["start-mobile"]' }, 'xxxlexolasxxx.github.io');
+    const p = page({ 'feod.consent': JSON.stringify({ on: false, asked: 1 }), 'oldgold-pending': '["start-mobile"]' }, 'xxxlexolasxxx.github.io');
     check(p.ctx.teleDeclined() === true, 'отказ не распознан');
     p.ctx.statsSend();
     check(!p.sent.some(s => /\/e$/.test(s.url)), 'после отказа воронка /e всё равно отправилась');

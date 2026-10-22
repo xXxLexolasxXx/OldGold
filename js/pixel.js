@@ -75,38 +75,43 @@ function toPixelArt(src, scale, opts = {}) {
   const d = img.data;
   const sw = src.width;
   const n = scale * scale;
+  // настройки читаем один раз: цикл идёт по сотням тысяч пикселей
+  const punch = opts.punch, hue = opts.hueShift, keepAlpha = opts.keepAlpha, cut = opts.alphaCut ?? 110;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     let r = 0, g = 0, b = 0, a = 0;
-    for (let yy = 0; yy < scale; yy++) for (let xx = 0; xx < scale; xx++) {
-      const o = ((y * scale + yy) * sw + x * scale + xx) * 4;
-      const al = sd[o + 3];
-      r += sd[o] * al; g += sd[o + 1] * al; b += sd[o + 2] * al; a += al;
+    for (let yy = 0; yy < scale; yy++) {
+      let o = ((y * scale + yy) * sw + x * scale) * 4;
+      for (let xx = 0; xx < scale; xx++, o += 4) {
+        const al = sd[o + 3];
+        r += sd[o] * al; g += sd[o + 1] * al; b += sd[o + 2] * al; a += al;
+      }
     }
     const o = (y * W + x) * 4;
     if (a > 0) {
       let R = r / a, G = g / a, B = b / a;
-      if (opts.punch) {
+      if (punch) {
         // сочнее и контрастнее: тянем от серого и от середины яркости
-        const l = R * 0.3 + G * 0.59 + B * 0.11, s = opts.punch;
+        const l = R * 0.3 + G * 0.59 + B * 0.11, s = punch;
         R = l + (R - l) * (1 + s * 0.9); G = l + (G - l) * (1 + s * 0.9); B = l + (B - l) * (1 + s * 0.9);
         R = 128 + (R - 128) * (1 + s * 0.5); G = 128 + (G - 128) * (1 + s * 0.5); B = 128 + (B - 128) * (1 + s * 0.5);
       }
-      if (opts.hueShift) {
+      if (hue) {
         // как рисует художник: тени холоднее (в сине-лиловое), свет теплее (в золото)
-        const l = R * 0.3 + G * 0.59 + B * 0.11, t = (l - 120) / 120, k = opts.hueShift;
+        const l = R * 0.3 + G * 0.59 + B * 0.11, t = (l - 120) / 120, k = hue;
         if (t < 0) { R += t * 14 * k; G += t * 6 * k; B -= t * 16 * k; }
         else { R += t * 16 * k; G += t * 8 * k; B -= t * 14 * k; }
       }
       d[o] = R; d[o + 1] = G; d[o + 2] = B;
     }
     const alpha = a / n;
-    if (opts.keepAlpha) d[o + 3] = alpha;
-    else d[o + 3] = alpha >= (opts.alphaCut ?? 110) ? 255 : 0;
+    if (keepAlpha) d[o + 3] = alpha;
+    else d[o + 3] = alpha >= cut ? 255 : 0;
   }
   if (!opts.keepAlpha) {
     quantizeData(d, W, H, opts.dither || 0);
     if (opts.clean) cleanOrphans(d, W, H);
     if (opts.ink) inkData(d, W, H, opts.ink);
+    if (opts.specks) dropSpecks(d, W, H, opts.specks === true ? 70 : opts.specks);   // только камни и скалы: чужие спрайты не трогаем
     if (opts.outline !== false) outlineData(d, W, H, opts.outlineDark ?? 0.42);
     if (opts.onData) opts.onData(d, W, H);      // пиксели уже в памяти — дёшево разобрать на месте
   }
@@ -123,9 +128,15 @@ function inkData(d, W, H, thr) {
   for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
     const i = y * W + x, l = lum[i];
     if (l < 0 || l < 26) continue;
-    for (const j of [i - 1, i + 1, i - W, i + W]) {
-      if (lum[j] >= 0 && lum[j] - l > thr) { mark[i] = 1; break; }
-    }
+    // четыре соседа без временного массива на каждый пиксель
+    let j = i - 1;
+    if (lum[j] >= 0 && lum[j] - l > thr) { mark[i] = 1; continue; }
+    j = i + 1;
+    if (lum[j] >= 0 && lum[j] - l > thr) { mark[i] = 1; continue; }
+    j = i - W;
+    if (lum[j] >= 0 && lum[j] - l > thr) { mark[i] = 1; continue; }
+    j = i + W;
+    if (lum[j] >= 0 && lum[j] - l > thr) mark[i] = 1;
   }
   for (let i = 0; i < W * H; i++) if (mark[i]) {
     // тёмная линия своего цвета, с лиловым оттенком — не мёртвый чёрный
@@ -150,22 +161,54 @@ function cleanOrphans(d, W, H) {
   }
 }
 
+// Чистка «мусорных» точек в готовых пикселях (RGBA). Опирается только на соседей, поэтому годится и для
+// спрайтов, нарисованных уже в 1×, и для 2×-заготовок камней. Что делает:
+//  • пиксель без единого непрозрачного соседа (8 сторон) — висящая точка, стирается;
+//  • тёмный пиксель (яркость < thr) без тёмных соседей — «чёрная точка» на теле: красится цветом соседей.
+// Лежащие вдоль контура тёмные пиксели считаются тёмными соседями друг друга, поэтому цельная обводка не страдает.
+function pixLum(d, o) { return d[o] * 0.3 + d[o + 1] * 0.59 + d[o + 2] * 0.11; }
+function dropSpecks(d, W, H, thr = 70) {
+  const src = new Uint8ClampedArray(d), n8 = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+  let changed = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const o = (y * W + x) * 4;
+    if (!src[o + 3]) continue;
+    let solid = 0, dark = 0, r = 0, g = 0, b = 0, k = 0;
+    for (const [dx, dy] of n8) {
+      const xx = x + dx, yy = y + dy;
+      if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+      const p = (yy * W + xx) * 4;
+      if (!src[p + 3]) continue;
+      solid++;
+      if (pixLum(src, p) < thr) dark++;
+      else { r += src[p]; g += src[p + 1]; b += src[p + 2]; k++; }
+    }
+    if (!solid) { d[o + 3] = 0; changed++; continue; }
+    if (dark === 0 && k && pixLum(src, o) < thr) { d[o] = r / k; d[o + 1] = g / k; d[o + 2] = b / k; changed++; }
+  }
+  return changed;
+}
+
+// Число «мусорных» точек (то же правило, ничего не меняет) — для тестов и листа аудита
+function countSpecks(d, W, H, thr = 70) {
+  const c = new Uint8ClampedArray(d);
+  return dropSpecks(c, W, H, thr);
+}
+
 // Цветная обводка: прозрачный пиксель рядом с непрозрачным становится тёмным оттенком соседа.
 function outlineData(d, W, H, dark) {
   const src = new Uint8ClampedArray(d);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const o = (y * W + x) * 4;
     if (src[o + 3] !== 0) continue;
-    let nr = -1, ng = 0, nb = 0;
-    for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
-      const xx = x + dx, yy = y + dy;
-      if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
-      const p = (yy * W + xx) * 4;
-      if (src[p + 3] === 0) continue;
-      nr = src[p]; ng = src[p + 1]; nb = src[p + 2];
-      break;
-    }
-    if (nr < 0) continue;
+    // первый непрозрачный сосед: снизу, сверху, справа, слева (без временных массивов на каждый пиксель)
+    let p = -1;
+    if (y + 1 < H && src[o + W * 4 + 3] !== 0) p = o + W * 4;
+    else if (y > 0 && src[o - W * 4 + 3] !== 0) p = o - W * 4;
+    else if (x + 1 < W && src[o + 7] !== 0) p = o + 4;
+    else if (x > 0 && src[o - 1] !== 0) p = o - 4;
+    if (p < 0) continue;
+    const nr = src[p], ng = src[p + 1], nb = src[p + 2];
     const pi = PAL[palIndex(nr * dark, ng * dark, nb * dark * 1.1)];
     d[o] = pi[0]; d[o + 1] = pi[1]; d[o + 2] = pi[2]; d[o + 3] = 255;
   }

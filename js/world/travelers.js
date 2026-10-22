@@ -146,6 +146,7 @@ function tvChooseKind() {
   let tot = 0;
   for (const k in TV_KINDS) {
     const K = TV_KINDS[k];
+    if (!K.w) continue;                                            // купцы диких гномов приходят только от своих поселений
     if (K.day && day < K.day && !Game.noGrace) continue;
     if (k === 'brigand' && !hasGuard) continue;                    // без героя и рекрутов разбойник — нечестно
     if (eve && !K.evil && k !== 'wanderer') continue;              // вечером ходят бродяги и злые
@@ -648,54 +649,70 @@ if (typeof window !== 'undefined' && window.addEventListener && typeof onLeftCli
 
 // ---------- Рисунок ----------
 
-// пиксельные смайлики 9×9: o — контур, y — лицо, k — глаза/рот, w — светлое
+// Лица над головой: портрет самого гнома (голова с бородой, как на спрайте) в круге цвета настроения, в углу значок.
+// good — улыбка, neu — ровный рот, evil — злые брови, seek — вопрос. Спрайты рисует wildart.js.
 const TV_EMO = {
-  good: { pal: { o: '#4a3010', y: '#ffd84a', k: '#3a2408', w: '#fff4b0' }, rows: ['..ooooo..', '.oywyyyo.', 'oyykykyyo', 'oyyyyyyyo', 'oykyyykyo', 'oyykkkyyo', 'oyyyyyyyo', '.oyyyyyo.', '..ooooo..'] },
-  neu:  { pal: { o: '#3a3020', y: '#e8d8a8', k: '#3a2c18', w: '#fff8e0' }, rows: ['..ooooo..', '.oywyyyo.', 'oyykykyyo', 'oyyyyyyyo', 'oyyyyyyyo', 'oykkkkkyo', 'oyyyyyyyo', '.oyyyyyo.', '..ooooo..'] },
-  evil: { pal: { o: '#2a0808', r: '#d83a3a', k: '#1a0404', y: '#ffd040', h: '#7a1a1a' }, rows: ['h.......h', '.h.ooo.h.', '.orrrrro.', 'orkrrrkro', 'orrkrkrro', 'orrrrrrro', 'orkyyykro', '.orkkkro.', '..ooooo..'] },
-  seek: { pal: { o: '#102a4a', w: '#bfe8ff', b: '#4aa8f0' }, rows: ['..oooo...', '.owwwwo..', 'owwoowwo.', '.oo.owbo.', '...owbo..', '...owo...', '...oo....', '...owo...', '...oo....'] },
+  good: { ring: '#4a9a3a', glyph: 'smile' },
+  neu:  { ring: '#8a8a82', glyph: 'flat' },
+  evil: { ring: '#c8281a', glyph: 'angry' },
+  seek: { ring: '#3a6ac8', glyph: 'q' },
 };
+const TV_SC = 1;                // спрайт диких гномов уже в масштабе наших
 const TV_EMO_CV = {};
-const TV_SC = 1.5;              // путник крупнее старой фигурки каравана — как обычный гном
-function tvEmoCanvas(k) {
-  if (TV_EMO_CV[k]) return TV_EMO_CV[k];
-  const E = TV_EMO[k], cv = document.createElement('canvas');
-  cv.width = 9; cv.height = 9;
+function tvWildKey(T) { return T.wk || (T.k.startsWith('wt_') ? 'wt:' + T.k.slice(3) : T.k); }
+function tvEmoCanvas(k, key) {
+  const ck = k + '|' + key;
+  if (TV_EMO_CV[ck]) return TV_EMO_CV[ck];
+  const E = TV_EMO[k], cv = document.createElement('canvas'), W = 34, M = W / 2;
+  cv.width = W; cv.height = W;
   const c = cv.getContext('2d');
-  E.rows.forEach((row, y) => { for (let x = 0; x < 9; x++) { const ch = row[x]; if (ch !== '.' && E.pal[ch]) { c.fillStyle = E.pal[ch]; c.fillRect(x, y, 1, 1); } } });
-  return (TV_EMO_CV[k] = cv);
+  c.fillStyle = 'rgba(20,14,6,0.8)'; c.beginPath(); c.arc(M, M, M - 0.5, 0, 7); c.fill();
+  c.strokeStyle = E.ring; c.lineWidth = 2; c.beginPath(); c.arc(M, M, M - 1.5, 0, 7); c.stroke();
+  c.save(); c.beginPath(); c.arc(M, M, M - 2.5, 0, 7); c.clip(); c.imageSmoothingEnabled = true;
+  const spr = wildSprite(key, 'S', 'idle', 0);
+  if (spr) c.drawImage(spr, 6, 10, 40, 40, 0, 0, W, W);
+  c.restore();
+  // значок настроения в правом нижнем углу
+  const gx = W - 8, gy = W - 8;
+  c.fillStyle = E.ring; c.beginPath(); c.arc(gx, gy, 6.5, 0, 7); c.fill();
+  c.strokeStyle = '#fff'; c.fillStyle = '#fff'; c.lineWidth = 1.3; c.lineCap = 'round';
+  if (E.glyph === 'smile') { c.beginPath(); c.arc(gx, gy - 0.5, 3, 0.25, Math.PI - 0.25); c.stroke(); c.fillRect(gx - 2.4, gy - 3, 1.2, 1.2); c.fillRect(gx + 1.2, gy - 3, 1.2, 1.2); }
+  else if (E.glyph === 'flat') { c.beginPath(); c.moveTo(gx - 2.6, gy + 1.5); c.lineTo(gx + 2.6, gy + 1.5); c.stroke(); c.fillRect(gx - 2.4, gy - 2.6, 1.2, 1.2); c.fillRect(gx + 1.2, gy - 2.6, 1.2, 1.2); }
+  else if (E.glyph === 'angry') { c.beginPath(); c.moveTo(gx - 3.2, gy - 3.4); c.lineTo(gx - 0.6, gy - 1.6); c.moveTo(gx + 3.2, gy - 3.4); c.lineTo(gx + 0.6, gy - 1.6); c.stroke(); c.beginPath(); c.arc(gx, gy + 3.2, 2.2, Math.PI + 0.3, -0.3); c.stroke(); }
+  else { c.font = 'bold 10px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', gx, gy + 0.5); }
+  return (TV_EMO_CV[ck] = cv);
 }
-function tvDrawEmo(c, k, X, Y, big) {
-  const s = big ? 2 : 1.6, w = Math.round(9 * s);
+function tvDrawEmo(c, k, X, Y, big, key) {
+  const w = big ? 36 : 28;
   const bob = Math.round(Math.sin(Game.time * 3 + X * 0.1) * 1.5);
   c.save();
-  c.imageSmoothingEnabled = false;
-  c.fillStyle = 'rgba(20,14,6,0.55)'; c.beginPath(); c.arc(X, Y + bob, w * 0.62, 0, 7); c.fill();
-  c.drawImage(tvEmoCanvas(k), Math.round(X - w / 2), Math.round(Y - w / 2 + bob), w, w);
+  c.imageSmoothingEnabled = true;
+  c.drawImage(tvEmoCanvas(k, key || 'wanderer'), Math.round(X - w / 2), Math.round(Y - w / 2 + bob), w, w);
   c.restore();
 }
 
-function tvDrawGnome(c, X, Y, T, ph, walk) {
-  const K = TV_KINDS[T.k] || TV_KINDS.wanderer, f = T.f || 1;
-  const b = walk ? Math.round(Math.abs(Math.sin(ph)) * -1) : 0, lg = walk ? Math.round(Math.sin(ph) * 1.5) : 0;
-  c.fillStyle = 'rgba(10,8,4,0.3)'; c.beginPath(); c.ellipse(X, Y, 6, 2, 0, 0, 7); c.fill();
-  if (K.pack) { c.fillStyle = '#8a6a3a'; c.fillRect(X - 6 * f - (f > 0 ? 0 : -1), Y - 12 + b, 4, 7); c.fillStyle = '#6a4a22'; c.fillRect(X - 6 * f - (f > 0 ? 0 : -1), Y - 12 + b, 4, 1); }
-  if (K.basket) { c.fillStyle = '#a87a3a'; c.fillRect(X + 3 * f - (f > 0 ? 0 : 3), Y - 7 + b, 4, 3); c.fillStyle = '#6ac04a'; c.fillRect(X + 3 * f - (f > 0 ? 0 : 3), Y - 8 + b, 4, 1); }
-  c.fillStyle = '#2a1c10'; c.fillRect(X - 3 + lg, Y - 3, 2, 3); c.fillRect(X + 1 - lg, Y - 3, 2, 3);
-  c.fillStyle = K.body; c.fillRect(X - 3, Y - 10 + b, 6, 8);
-  c.fillStyle = 'rgba(0,0,0,0.18)'; c.fillRect(X - 3, Y - 4 + b, 6, 1);
-  c.fillStyle = '#e8b890'; c.fillRect(X - 2, Y - 14 + b, 4, 4);
-  if (K.beard) { c.fillStyle = K.beard; c.fillRect(X - 2, Y - 11 + b, 4, 3); c.fillRect(X - 1, Y - 8 + b, 2, 1); }
-  if (K.braid) { c.fillStyle = K.braid; c.fillRect(X - 3 * f - (f > 0 ? 0 : 1), Y - 13 + b, 1, 6); }
-  if (K.mask) { c.fillStyle = '#12121a'; c.fillRect(X - 2, Y - 13 + b, 4, 2); }
-  c.fillStyle = K.hat; c.fillRect(X - 3, Y - 16 + b, 6, 3); c.fillRect(X - 2, Y - 18 + b, 4, 2);
-  if (T.k === 'pilgrim' || T.k === 'seeker' || T.k === 'thief') { c.fillRect(X - 3, Y - 14 + b, 1, 4); c.fillRect(X + 2, Y - 14 + b, 1, 4); }   // капюшон
-  else c.fillRect(X - 1 + f, Y - 19 + b, 2, 1);
-  c.fillStyle = '#1a1208'; c.fillRect(X + (f > 0 ? 0 : -1), Y - 13 + b, 1, 1);
-  if (K.staff) { c.fillStyle = '#7a5a2a'; c.fillRect(X + 4 * f, Y - 17 + b, 1, 17); c.fillStyle = '#d8c070'; c.fillRect(X + 4 * f - 1, Y - 18 + b, 3, 2); }
-  if (K.bag) { c.fillStyle = '#c8a060'; c.fillRect(X - 1, Y - 8 + b, 4, 3); c.fillStyle = '#e04030'; c.fillRect(X, Y - 7 + b, 1, 1); }
-  if (K.club) { c.fillStyle = '#6a4a2a'; c.fillRect(X + 3 * f, Y - 13 + b, 2, 9); c.fillStyle = '#4a3018'; c.fillRect(X + 3 * f - 1, Y - 14 + b, 4, 3); }
-  if (T.loot) { c.fillStyle = '#d8b878'; c.fillRect(X - 5 * f - 2, Y - 13 + b, 5, 6); c.fillStyle = '#ffd700'; c.fillRect(X - 5 * f - 1, Y - 13 + b, 3, 1); }
+// куда смотрит: по сдвигу с прошлого кадра (в сейв не пишется). Вид S/N/E; влево/вправо — по T.f
+function tvLook(T, px, py) {
+  const dx = px - (T._lx == null ? px : T._lx), dy = py - (T._ly == null ? py : T._ly);
+  T._lx = px; T._ly = py;
+  if (Math.abs(dx) + Math.abs(dy) > 0.004) {
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    T._v = ay > ax * 1.3 ? (dy > 0 ? 'S' : 'N') : 'E';
+    if (ax > 0.002) T.f = dx < 0 ? -1 : 1;
+  }
+  return T._v || 'S';
+}
+// ступни в (X, Y); walk — идёт; fr — кадр боя (windup/strike/hurt…)
+function tvDrawGnome(c, X, Y, T, ph, walk, fr) {
+  const key = tvWildKey(T), D = wildDesc(key), f = T.f || 1, id = (T.id | 0) + 1;
+  c.fillStyle = 'rgba(10,8,4,0.3)'; c.beginPath(); c.ellipse(X, Y, 6 * (D.scale || 1), 2, 0, 0, 7); c.fill();
+  let view = walk ? (T._v || 'E') : 'S', pose = 'idle', frame = 0, opt = {};
+  if (fr) { view = 'E'; pose = 'fight'; frame = fr; }
+  else if (walk) { pose = 'walk'; frame = Math.floor(Game.time * (T.st === 'flee' ? 14 : 9) + id) & 7; }
+  else if (T.st === 'talk') { const w = wildFrame('talk', Game.time, id); pose = w[0]; frame = w[1]; opt = w[2]; view = 'E'; }
+  else { const w = wildFrame('idle', Game.time, id); frame = w[1]; }
+  wildDraw(c, key, X, Y, view, f, pose, frame, opt, D.scale || 1);
+  if (T.loot) { c.fillStyle = '#d8b878'; c.fillRect(X - 7 * f - 2, Y - 22, 5, 6); c.fillStyle = '#ffd700'; c.fillRect(X - 7 * f - 1, Y - 22, 3, 1); }
 }
 
 function tvDrawList(list, c, x0, y0, x1, y1) {
@@ -715,14 +732,12 @@ function tvDrawList(list, c, x0, y0, x1, y1) {
     const walk = T.st === 'in' || T.st === 'out' || T.st === 'flee';
     list.push([py + 0.2, () => {
       const X = Math.round(px * TILE), Y = Math.round(py * TILE + 6);
-      const ph = walk ? Game.time * (T.st === 'flee' ? 13 : 8) : 0;
-      c.save();
-      c.translate(X, Y); c.scale(TV_SC, TV_SC);
-      tvDrawGnome(c, 0, 0, T, ph, walk);
-      c.restore(); c.save();
+      tvLook(T, px, py);
+      tvDrawGnome(c, X, Y, T, 0, walk);
       const near = h && Math.hypot(h.x - px, h.y - py) < 8;
-      tvDrawEmo(c, tvShown(T), X, Y - 40, near || T.st === 'talk');
-      if (T.st === 'flee' && T.loot) { c.fillStyle = '#e03a2a'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillText('!', X + 14, Y - 34 + Math.sin(Game.time * 8) * 2); }
+      c.save();
+      tvDrawEmo(c, tvShown(T), X, Y - 52, near || T.st === 'talk', tvWildKey(T));
+      if (T.st === 'flee' && T.loot) { c.fillStyle = '#e03a2a'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillText('!', X + 16, Y - 40 + Math.sin(Game.time * 8) * 2); }
       c.restore();
     }]);
   }
@@ -739,18 +754,13 @@ function tvDrawBrigand(c, N) {
   c.save();
   c.globalAlpha = al;
   if (dead) { c.translate(X, Y); c.rotate(-1.4 * (N.face || 1)); c.translate(-X, -Y); }
-  const T = { k: 'brigand', f: N.face || 1, loot: N.loot ? 1 : 0 };
-  c.translate(X, Y); c.scale(TV_SC, TV_SC);
-  tvDrawGnome(c, 0, 0, T, Game.time * 10, walk);
-  if (!dead && (fr === 'windup' || fr === 'strike')) {           // замах дубиной
-    const f = N.face || 1, up = fr === 'windup';
-    c.fillStyle = '#6a4a2a';
-    if (up) c.fillRect(1 * f, -24, 2, 10); else c.fillRect(4 * f - (f < 0 ? 9 : 0), -11, 10, 2);
-  }
-  if (!dead && (fr === 'hurt' || fr === 'stagger')) { c.globalAlpha = 0.45 * al; c.fillStyle = '#ffffff'; c.fillRect(-3, -18, 6, 18); }
+  const T = { k: 'brigand', f: N.face || 1, loot: N.loot ? 1 : 0, id: N.id };
+  const fk = fr === 'windup' ? 'windup' : fr === 'strike' ? 'strike' : (fr === 'hurt' || fr === 'stagger' || dead) ? 'hurt' : null;
+  tvDrawGnome(c, X, Y, T, 0, walk, fk);
+  if (!dead && fk === 'hurt') { c.globalAlpha = 0.3 * al; c.fillStyle = '#ffffff'; c.fillRect(X - 6, Y - 38, 12, 38); }
   c.restore();
   if (dead) return;
-  tvDrawEmo(c, 'evil', X, Y - 42, true);
+  tvDrawEmo(c, 'evil', X, Y - 54, true, 'brigand');
   if (N.hp < N.mhp - 0.5) {
     const w = 18, hy = Y - 56, r = Math.max(0, N.hp / N.mhp);
     c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(X - w / 2 - 1, hy - 1, w + 2, 4);
