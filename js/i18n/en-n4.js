@@ -148,7 +148,7 @@ I18N.add('en', {
   "{0} — откроется окно с запасами.": "{0} — a window with the stock opens.", "склада": "the storehouse",
   "Мельница и пекарня": "Mill and Bakery",
   "Значки над домами говорят, чего не хватает: дороги, рабочего, сырья. Все беды разом — во вкладке «Хозяйство». Достроите цепочку — меню само откроет новый раздел.": "Icons over houses say what is missing: a road, a worker, raw materials. All troubles at once are in the “Household” tab. Finish the chain — and the menu will open a new section by itself.",
-  "Откройте вкладку «Хозяйство» (свиток).": "Open the “Household” tab (scroll).",
+  "Откройте вкладку «Хозяйство» (столбики).": "Open the “Household” tab (bar chart).",
   "Нечисть — забота героя. В углу экрана — панель способностей:": "The nasties are the hero’s business. In the screen corner is the ability panel:",
   "атака": "attack",
   "{0} бьёт ближайшего врага, а свои приёмы у каждого класса появятся после учёбы в гильдии{1}. {2} Днём целей нет — просто попробуйте.": "{0} hits the nearest enemy, and each class gets its own moves after training at a guild{1}. {2} There are no targets by day — just give it a try.",

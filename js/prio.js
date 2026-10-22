@@ -213,22 +213,22 @@ if (typeof document !== 'undefined' && typeof navigator !== 'undefined' && navig
   const sec = document.getElementById('prio-list');
   if (sec) sec.addEventListener('click', prioClick);
   if (typeof ICON_GRIDS !== 'undefined') {
-    ICON_GRIDS.ui.prio = { pal: { o: '#2a1e10', g: '#e4b434', G: '#a06a14', w: '#d8d4c8', s: '#8a857c', r: '#c8503a' }, rows: [
-      '................',
-      '.oooooooooooooo.',
-      '.owwwwwwwwwwwwo.',
-      '.ow.gg..ssssswo.',
-      '.owwwwwwwwwwwwo.',
-      '.ow.g.gg.sssswo.',
-      '.owwwwwwwwwwwwo.',
-      '.ow.gg..ssswwwo.',
-      '.owwwwwwwwwwwwo.',
-      '.orr.gg.ssssswo.',
-      '.owwwwwwwwwwwwo.',
-      '.ow.g...ssswwwo.',
-      '.owwwwwwwwwwwwo.',
-      '.oooooooooooooo.',
-      '................',
+    ICON_GRIDS.ui.prio = { pal: { o: '#2a1e10', g: '#e4b434', G: '#ffe48a', s: '#9a948a', S: '#e4e0d6' }, rows: [
+      '....o...........',
+      '...oGo..........',
+      '..oGggo...ooo...',
+      '.oGggggo.oSsso..',
+      'oGggggggooSsso..',
+      '.ooGggoo.oSsso..',
+      '..oGggo..oSsso..',
+      '..oGggo..oSsso..',
+      '..oGggo..oSsso..',
+      '..oGggo.ooSssoo.',
+      '..oGggooSsssssso',
+      '..oGggo.oSsssso.',
+      '..oGggo..oSsso..',
+      '...ooo....oSo...',
+      '...........o....',
       '................'] };
   }
   { const b = document.createElement('div'); b.id = 'pause-banner'; b.className = 'hidden'; (document.getElementById('view') || document.body).appendChild(b); }

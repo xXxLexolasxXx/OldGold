@@ -1142,10 +1142,6 @@ function coopInitControls() {
     const b = Game.buildings.find(x => x.isStore && x.isStore()) || Game.buildings[0];
     if (b) coopSend({ t: 'bact', id: b.id, act: 'block', g: s.dataset.block });
   }, true);
-  document.getElementById('people-list').addEventListener('click', e => {
-    const t = Coop.on && e.target.closest('[data-train]');
-    if (t) { stop(e); coopSend({ t: 'qt', type: t.dataset.train }); }
-  }, true);
   document.getElementById('tab-menu').addEventListener('click', e => {
     const t = Coop.on && e.target.closest('[data-menu]');
     if (!t) return;

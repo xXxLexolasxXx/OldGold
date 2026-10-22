@@ -1,5 +1,5 @@
 /* Вкладка «Совет деревни» (js/council.js) и указы (js/laws.js) */
-#tabs { grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; }
+#tabs { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; }
 .tab-btn { min-width: 0; }
 .tab-btn img { width: 26px; height: 26px; }
 body.mobile .tab-btn img { width: 32px; height: 32px; }
