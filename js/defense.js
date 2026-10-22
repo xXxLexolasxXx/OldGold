@@ -93,13 +93,15 @@ UNIT_TYPES.sentry = { name: 'Дозорный башни', shirt: '#7a3a2a', noT
 const fortAt = (x, y) => { if (!inb(x, y)) return null; const o = World.obj[idx(x, y)]; return o && o.t === 'fort' ? o : null; };
 const fortDone = o => o.bt === undefined;
 const fortMax = o => { const F = FORTS[o.f]; return F.hp ? F.hp[o.lv - 1] : F.charges[o.lv - 1]; };
+// Секция стены на дороге: нечисть не пускает, а жители, курьеры и стража проходят насквозь (blk не ставим — path.js её не видит)
+const fortIsFence = f => f === 'wall_wood' || f === 'wall_stone';
 const fortIsWall = o => o && (o.f === 'wall_wood' || o.f === 'wall_stone' || o.f === 'gate');
 const fortNight = () => isNightNow() || isEveningNow();
 
 // Закрыто ли для нечисти (стена, баррикада, закрытые ворота)
 function defFoeBlocked(x, y) {
   const o = fortAt(Math.floor(x), Math.floor(y));
-  return !!o && fortDone(o) && (!!o.blk || (o.f === 'gate' && !o.open));
+  return !!o && fortDone(o) && (!!o.blk || !!o.fence || (o.f === 'gate' && !o.open));
 }
 
 // ---------- Склады: цена ----------
@@ -169,14 +171,14 @@ function defCheck(f, x, y, fast) {
     const o = World.obj[i];
     if (o && o.t !== 'stump' && !isStreetObj(o)) return 'Мешают деревья, камни или поля';
   }
-  if (road && !(F.trap || f === 'gate')) return 'Мешает дорога';
+  if (road && !(F.trap || f === 'gate' || fortIsFence(f))) return 'Мешает дорога';
   if (f === 'torch' && road) return 'Мешает дорога';
-  if (F.blk || f === 'gate') {
+  if ((F.blk || f === 'gate') && !(road && fortIsFence(f))) {
     for (const u of Game.units) if (!u.dead && !u.inside && Math.floor(u.x) === x && Math.floor(u.y) === y && f !== 'gate') return 'Здесь кто-то стоит — подождите';
     const p = Game.piles.get(i);
     if (p && !p.removed && F.blk) return 'Здесь лежит груз';
   }
-  if (F.blk && !fast && defBlocksLogistics(i)) return 'Перекроет проход к зданиям — поставьте ворота';
+  if (F.blk && !(road && fortIsFence(f)) && !fast && defBlocksLogistics(i)) return 'Перекроет проход к зданиям — поставьте ворота';
   return null;
 }
 
@@ -237,7 +239,8 @@ function defFinish(i, silent) {
   const F = FORTS[o.f];
   delete o.bt;
   o.hp = fortMax(o);
-  if (F.blk) {
+  if (F.blk && fortIsFence(o.f) && World.road[i]) o.fence = 1;
+  else if (F.blk) {
     o.blk = 1;
     // груз, упавший на клетку во время стройки, переезжает на соседнюю: под стеной ему не место
     const pile = Game.piles.get(i);
@@ -350,7 +353,7 @@ function defSave() {
   for (let i = 0; i < N_TILES; i++) {
     const o = World.obj[i];
     if (!o || o.t !== 'fort') continue;
-    out.push([i, o.f, o.lv, o.hp, o.bt === undefined ? -1 : o.bt, o.up === undefined ? -1 : o.up, o.mode || '', o.m || '']);
+    out.push([i, o.f, o.lv, o.hp, o.bt === undefined ? -1 : o.bt, o.up === undefined ? -1 : o.up, o.mode || '', o.m || (o.fence ? 'fence' : '')]);
   }
   return out;
 }
@@ -360,7 +363,8 @@ function defLoad(list) {
     if (!FORTS[f] || i < 0 || i >= N_TILES) continue;
     const o = { t: 'fort', f, lv: lv || 1, hp };
     if (bt >= 0) { o.bt = bt; DEF.prog.set(i, bt * FORTS[f].time[0]); }
-    else if (FORTS[f].blk) o.blk = 1;
+    else if (FORTS[f].blk && m !== 'fence') o.blk = 1;
+    if (m === 'fence') o.fence = 1;
     if (up >= 0) { o.up = up; DEF.prog.set(i, up * FORTS[f].time[1]); }
     if (f === 'gate') { o.mode = mode || 'auto'; o.m = m || 'wood'; o.open = o.mode === 'open' || (o.mode === 'auto' && !fortNight()); }
     World.obj[i] = o;
