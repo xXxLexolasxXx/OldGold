@@ -45,6 +45,16 @@ const BOT = `(function () {
     const [sx, sy] = C.flags.school;
     for (let y = sy - 5; y <= sy + 5; y++) for (let x = sx - 5; x <= sx + 5; x++) { const o = inb(x, y) && World.obj[idx(x, y)]; if (o && o.t === 'stone' && Math.hypot(x - sx, y - sy) <= 4.5) { World.obj[idx(x, y)] = null; y = 1e9; break; } }
   }
+  // стройка по сценарию (акт 3): площадка нужного здания у лагеря, дорогу к складу бот кладёт сразу
+  const BT = { 'Поставить дома': 'house', 'Дом лесоруба': 'woodcutter', 'Ферма': 'farm', 'Пекарня': 'bakery', 'Свой колодец': 'well' };
+  for (const o of (C.act === 3 && C.objs) || []) {
+    const t = BT[o.t];
+    if (!t || o.cur >= o.need) continue;
+    const have = Game.buildings.filter(b => b.type === t && !b.removed && !b.foreign).length;
+    if (have >= o.need) continue;
+    const k = Game.__botK = (Game.__botK || 0) + 1;
+    camp1Place(t, CAMP3.start[0] + Math.round(Math.cos(k) * 8), CAMP3.start[1] + Math.round(Math.sin(k) * 7), camp1Net(), false);
+  }
   // гоблины: дерущихся дольше 25 с бот «добивает» героем (иначе прогон слишком зависит от случайных стычек)
   for (const N of Game.raiders) {
     if (N.st === 'die' || N.st === 'vanish' || !N.ctag) continue;
@@ -144,6 +154,42 @@ const BOT = `(function () {
   console.log(`Проверка: прогон акта 2 — ${((Date.now() - t0) / 1000).toFixed(0)} с`);
 }
 
+// ---------- 1в. Акт 3 «Гости и рыба» (наследие акта 2: 22 гнома, Васька; дуэль принята) ----------
+{
+  const { h, errors } = host(303);
+  const t0 = Date.now();
+  h.run(`localStorage.setItem('oldgold.campaign', JSON.stringify({ v: 1, done: { 1: { stars: 2 }, 2: { stars: 2 } }, legacy: { a1: { alive: 36 }, a2: { saved: 22, bread: 30, vaska: true } }, last: 2 }))`);
+  h.run('Game.__campPick = { duel: 0, comb: 0, songs: 0 }; campStart(3); Game.heroAsk = false;');
+  const info = JSON.parse(h.run('JSON.stringify({ p: campPeople(), krem: Game.buildings.filter(b => b.foreign).length, ours: Game.buildings.filter(b => !b.foreign).length, vaska: Game.units.some(u => u.cname === "Васька") })'));
+  console.log(`Проверка: акт 3 — беглецов ${info.p}, домов Кремнёвки ${info.krem}, наших зданий ${info.ours}, Васька ${info.vaska ? 'с нами' : 'нет'}`);
+  if (info.p < 21 || info.p > 25) fail(`в акт 3 пришло не столько гномов, сколько дошло в акте 2 (22+Васька): ${info.p}`);
+  if (info.krem < 9) fail('Кремнёвка построена не полностью: ' + info.krem);
+  if (!info.vaska) fail('кузнец Васька из наследия акта 2 не пришёл');
+  const seen = [];
+  let lastI = -1, over = null, workAbroad = 0;
+  for (let sec = 0; sec < 60 * 60; sec++) {
+    try { h.run('for (let k = 0; k < 20; k++) step(0.05);'); h.run(BOT); } catch (e) { fail('акт 3, исключение на ' + sec + ' с: ' + String(e.stack || e).split('\n').slice(0, 3).join(' | ')); break; }
+    if (sec % 2) continue;
+    const s = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, k: (campStepNow(Game.camp) || {}).k, over: Game.camp.over, abroad: Game.units.filter(u => !u.dead && u.home && u.home.foreign).length })'));
+    if (s.i !== lastI) { seen.push(`${s.i}:${s.k}@${sec}`); lastI = s.i; }
+    workAbroad = Math.max(workAbroad, s.abroad);
+    if (s.over) { over = s.over; break; }
+  }
+  const end = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, n: CAMP_ACTS[3].steps.length, f: { resp: Game.camp.flags.resp, duelWon: Game.camp.flags.duelWon, choices: Game.camp.flags.choices }, prog: campProg(), objs: Game.camp.objs })'));
+  console.log('Проверка: акт 3, шаги ' + seen.join(' '));
+  if (!over) fail(`акт 3 не закончился за 60 минут: шаг ${end.i} из ${end.n}; цели ${JSON.stringify(end.objs)}`);
+  else {
+    console.log(`Проверка: акт 3 — итог «${over.res}» на ${Math.round(over.stats.t / 60)} мин, уважение ${end.f.resp}, дуэль ${end.f.duelWon ? 'выиграна' : 'нет'}, выборы ${JSON.stringify(end.f.choices)}`);
+    if (over.res !== 'win') fail('акт 3 не пройден: ' + over.why);
+    else if (!end.prog.legacy.a3) fail('наследие акта 3 не записано');
+  }
+  if (workAbroad) fail(`наши работники ушли работать в Кремнёвку: ${workAbroad}`);
+  if (!end.f.duelWon) fail('дуэль с Кремнем не состоялась');
+  const errs = errors.filter(e => !/предупрежд/i.test(e));
+  if (errs.length) fail('акт 3, ошибки в логе: ' + errs.slice(0, 3).join(' | '));
+  console.log(`Проверка: прогон акта 3 — ${((Date.now() - t0) / 1000).toFixed(0)} с`);
+}
+
 // ---------- 2. Поражение: жители гибнут ----------
 {
   const { h } = host(7);
@@ -179,6 +225,7 @@ const BOT = `(function () {
       for (const l of S.lines || []) out.add(l[1]);
       for (const o of S.objs || []) out.add(o.t);
       if (S.hint) out.add(S.hint); if (S.label) out.add(S.label);
+      if (S.k === 'choice') { out.add(S.t); out.add(S.text); for (const o of S.opts) { out.add(o.t); if (o.out) out.add(o.out); } }
     }
     }
     for (const k in CAMP_WHO) if (CAMP_WHO[k].name) out.add(CAMP_WHO[k].name);

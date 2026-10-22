@@ -22,6 +22,7 @@ const CAMP_WHO = {
   shnyr: { name: 'Король Шнырь Пороховой', ch: 'Ш', col: '#a8d060', bg: '#24300e' },
   gob: { name: 'Гоблин', ch: 'г', col: '#8ab850', bg: '#1e2a10' },
   zhmykha: { name: 'Жмыха Кремнёвая', ch: 'Ж', col: '#b0c4e0', bg: '#1e2838' },
+  kremen: { name: 'Кремень-младший', ch: 'К', col: '#e09060', bg: '#3a2014' },
   mrak: { name: 'Малгор', ch: 'М', col: '#9cf06a', bg: '#2a1840' },
   hero: { name: 'Герой', ch: '★', col: '#ffe9a8', bg: '#2a2a3a' },
   note: { name: '', ch: '✎', col: '#e0c890', bg: '#2a2014' },
@@ -144,6 +145,14 @@ const CAMP_STEP = {
     tick(C, s, S, dt) { s.t += dt; if (S.during) S.during(C, s, dt); return S.until ? !!S.until(C, s) : s.t >= (S.sec || 0); },
   },
   do: { init(C, s, S) { S.fn(C); }, tick() { return true; } },
+  // выбор (дилемма): вопрос и варианты; выбранный вариант применяет fx и показывает итог. Без интерфейса — вариант def
+  choice: {
+    init(C, s) { s.pick = -1; s.done = false; },
+    tick(C, s, S) {
+      if (!campHasUI() && s.pick < 0) { const pre = Game.__campPick && Game.__campPick[S.id]; campChoose(C, pre != null ? pre : Math.max(0, S.opts.findIndex(o => o.def))); s.done = true; }   // __campPick — ответы тестов
+      return s.done;
+    },
+  },
   check: {
     init(C) { C.cp = C.i; C.cpN = (C.cpN || 0) + 1; if (campHasUI() && typeof saveGame === 'function') setTimeout(() => { if (Game.camp === C) { saveGame(CAMP_CP); saveGame(CAMP_SLOT); } }, 0); },
     tick() { return true; },
@@ -170,6 +179,17 @@ function campGoalEval(C, s, S) {
   return all;
 }
 
+function campChoose(C, i) {
+  const S = campStepNow(C), s = C.st;
+  if (!S || S.k !== 'choice' || s.pick >= 0) return;
+  const o = S.opts[i];
+  if (!o) return;
+  s.pick = i;
+  (C.flags.choices || (C.flags.choices = {}))[S.id] = i;
+  if (o.fx) o.fx(C);
+  if (typeof logEvent === 'function') logEvent('gossip', `${S.t}: ${o.t}`);
+}
+
 function campStepNow(C) { const A = CAMP_ACTS[C.act]; return A && A.steps[C.i] || null; }
 
 function campEnter(C, i) {
@@ -180,6 +200,7 @@ function campEnter(C, i) {
   const S = A.steps[i];
   C.st = {};
   if (!S) return;
+  if (S.when && !S.when(C)) { C.st.skip = 1; return; }       // шаг не для этой ветки сюжета
   if (S.mark) C.mark = S.mark;
   if (S.label) C.label = S.label;
   CAMP_STEP[S.k].init(C, C.st, S);
@@ -203,8 +224,8 @@ function campTick(dt) {
   for (let guard = 0; guard < 8 && !C.over; guard++) {
     const S = campStepNow(C);
     if (!S) { campFinish(C, 'win', ''); return; }
-    if (!CAMP_STEP[S.k].tick(C, C.st, S, dt)) break;
-    if (S.after) S.after(C);
+    if (!C.st.skip && !CAMP_STEP[S.k].tick(C, C.st, S, dt)) break;
+    if (S.after && !C.st.skip) S.after(C);
     campEnter(C, C.i + 1);
     dt = 0;
   }
@@ -261,7 +282,7 @@ function campStart(n, opts = {}) {
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser(), C = Game.camp;
-    if (C) s.camp = { v: 1, act: C.act, i: C.i, t: Math.round(C.t), cp: C.cp, cpN: C.cpN, flags: C.flags, tilt: C.tilt, lost: C.lost, over: C.over, label: C.label, timer: C.timer || null };
+    if (C) s.camp = { v: 1, act: C.act, i: C.i, t: Math.round(C.t), cp: C.cp, cpN: C.cpN, flags: C.flags, tilt: C.tilt, lost: C.lost, over: C.over, label: C.label, timer: C.timer || null, meter: C.meter || null };
     return s;
   };
   const _apply = applySave;
@@ -271,7 +292,7 @@ function campStart(n, opts = {}) {
     Game.camp = null;
     const o = s && s.camp;
     if (!o || !CAMP_ACTS[o.act]) return;
-    const C = Game.camp = { v: 1, act: o.act, i: Math.max(0, o.i | 0), st: null, seq: 0, t: o.t || 0, cp: o.cp ?? -1, cpN: o.cpN || 0, flags: o.flags || {}, tilt: o.tilt || 0, lost: o.lost || 0, over: o.over || null, objs: null, mark: null, label: o.label || '', timer: o.timer || null };
+    const C = Game.camp = { v: 1, act: o.act, i: Math.max(0, o.i | 0), st: null, seq: 0, t: o.t || 0, cp: o.cp ?? -1, cpN: o.cpN || 0, flags: o.flags || {}, tilt: o.tilt || 0, lost: o.lost || 0, over: o.over || null, objs: null, mark: null, label: o.label || '', timer: o.timer || null, meter: o.meter || null };
     const A = CAMP_ACTS[o.act];
     if (A.onLoad) A.onLoad(C);
     if (Game.dz) Game.dz.freq = 0;
@@ -292,6 +313,13 @@ function campStart(n, opts = {}) {
     serializeGame = function () { const s = _ser2(); if (Game.foe && Game.foe.camp && s.fo) s.fo.camp = 1; return s; };
     const _ap2 = applySave;
     applySave = function (s) { _ap2(s); if (s && s.camp && Game.foe && !Game.foe.camp) { Game.foe.camp = 1; Game.foe.defeated = false; Game.foe.stage = 0; Game.foe.boss = null; Game.raiders = []; } };
+  }
+  // чужие здания кампании (b.foreign — соседская деревня): стоят как декорация — без значков-проблем, грузов и работников
+  if (typeof Building === 'function') {
+    const P = Building.prototype, _pr = P.problem, _de = P.demand, _of = P.offer;
+    P.problem = function () { return this.foreign ? null : _pr.call(this); };
+    P.demand = function (g) { return this.foreign ? 0 : _de.call(this, g); };
+    P.offer = function (g) { return this.foreign ? 0 : _of.call(this, g); };
   }
   // что в кампании выключено
   if (typeof goalTick === 'function') { const _g = goalTick; goalTick = function (dt) { if (!Game.camp) _g(dt); }; }
@@ -345,6 +373,11 @@ function campUiAct(a, btn) {
     if (a === 'next' && CampUI.k < S.lines.length - 1) { CampUI.k++; campRenderDlg(C, S); return; }
     C.st.done = true;
     campHideDlg();
+  } else if (a === 'pick') {
+    if (C) campChoose(C, +btn.dataset.i);
+  } else if (a === 'picked') {
+    if (C && C.st) C.st.done = true;
+    campRestoreBtns(); campHideDlg();
   } else if (a === 'show') {
     const z = btn && btn.dataset.z && btn.dataset.z.split(',').map(Number);
     if (z && typeof centerOn === 'function') centerOn((z[0] + 0.5) * TILE, (z[1] + 0.5) * TILE);
@@ -363,6 +396,13 @@ function campUiAct(a, btn) {
   } else if (a === 'stay') {
     campHideEnd(); Game.paused = false;
   }
+}
+
+function campRestoreBtns() {
+  const bt = campEls().dlg.querySelector('.cd-btns');
+  bt.classList.remove('choice');
+  bt.innerHTML = '<button data-camp="skip" class="ghost">Пропустить</button><button data-camp="next">Дальше ▸</button>';
+  CampUI.choiceKey = '';
 }
 
 function campRestart() {
@@ -386,10 +426,37 @@ function campRenderDlg(C, S) {
   const tx = E.dlg.querySelector('.cd-text');
   tx.textContent = text;
   tx.classList.remove('in'); void tx.offsetWidth; tx.classList.add('in');
+  if (!E.dlg.querySelector('[data-camp="next"]')) campRestoreBtns();
   E.dlg.querySelector('[data-camp="next"]').textContent = CampUI.k < S.lines.length - 1 ? 'Дальше ▸' : 'Закрыть ▸';
   E.dlg.classList.toggle('cut', S.k === 'cut');
   E.dlg.classList.remove('hidden');
 }
+// окно выбора: вопрос, варианты кнопками; после выбора — чем кончилось, и «Дальше»
+function campRenderChoice(C, S) {
+  const E = campEls(), s = C.st, key = C.seq + ':' + s.pick;
+  if (CampUI.choiceKey === key) return;
+  CampUI.choiceKey = key;
+  CampUI.seq = C.seq;
+  const w = CAMP_WHO[S.who] || CAMP_WHO.note;
+  E.dlg.querySelector('.cd-face').innerHTML = campFace(w);
+  E.dlg.querySelector('.cd-who').textContent = S.t;
+  E.dlg.querySelector('.cd-who').style.color = w.col;
+  const tx = E.dlg.querySelector('.cd-text'), bt = E.dlg.querySelector('.cd-btns');
+  if (s.pick < 0) {
+    tx.textContent = S.text;
+    bt.innerHTML = S.opts.map((o, i) => `<button data-camp="pick" data-i="${i}">${campEsc(o.t)}</button>`).join('');
+    bt.classList.add('choice');
+    if (!Game.paused) { CampUI.wasPaused = true; Game.paused = true; }
+  } else {
+    tx.textContent = S.opts[s.pick].out || '';
+    bt.innerHTML = '<button data-camp="picked">Дальше ▸</button>';
+    bt.classList.remove('choice');
+  }
+  tx.classList.remove('in'); void tx.offsetWidth; tx.classList.add('in');
+  E.dlg.classList.remove('cut');
+  E.dlg.classList.remove('hidden');
+}
+
 function campHideDlg() {
   const E = campEls();
   E.dlg.classList.add('hidden');
@@ -405,7 +472,7 @@ function campBlocked() {
 function campHudRender(C) {
   const E = campEls(), A = CAMP_ACTS[C.act];
   if (!C.objs || C.over) { E.hud.classList.add('hidden'); CampUI.sig = ''; return; }
-  const sig = C.seq + '|' + C.objs.map(o => o.cur + '/' + o.need).join(',') + '|' + C.label + '|' + (C.timer ? Math.floor(C.timer.t - Game.time) : '');
+  const sig = C.seq + '|' + C.objs.map(o => o.cur + '/' + o.need).join(',') + '|' + C.label + '|' + (C.timer ? Math.floor(C.timer.t - Game.time) : '') + '|' + (C.meter ? C.flags[C.meter.key] : '');
   if (sig === CampUI.sig) return;
   CampUI.sig = sig;
   let h = `<div class="cmh-act">Акт ${C.act}. ${campEsc(A.name)}</div>`;
@@ -419,6 +486,7 @@ function campHudRender(C) {
     h += '</li>';
   }
   h += '</ul>';
+  if (C.meter) { const v = C.flags[C.meter.key] || 0; h += `<div class="cmh-meter">${campEsc(C.meter.label)}: <b class="${v > 0 ? 'up' : v < 0 ? 'down' : ''}">${v > 0 ? '+' : ''}${v}</b></div>`; }
   if (C.timer) { const left = Math.max(0, C.timer.t - Game.time); h += `<div class="cmh-timer">${campEsc(C.timer.label)}: ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}</div>`; }
   if (C.hint) h += `<div class="cmh-hint">${campEsc(C.hint)}</div>`;
   E.hud.innerHTML = h;
@@ -465,7 +533,8 @@ function campUiTick() {
   }
   campHudRender(C);
   const S = campStepNow(C);
-  const talk = S && (S.k === 'say' || S.k === 'cut') && !C.st.done;
+  if (S && S.k === 'choice' && !C.st.done && !C.st.skip && C.st.pick !== undefined) { if (!campBlocked()) campRenderChoice(C, S); return; }
+  const talk = S && (S.k === 'say' || S.k === 'cut') && !C.st.done && !C.st.skip;
   if (!talk) { if (!E.dlg.classList.contains('hidden')) campHideDlg(); CampUI.seq = C.seq; return; }
   if (campBlocked()) return;
   const now = performance.now(), dt = Math.min(1, (now - (CampUI.lastNow || now)) / 1000);
