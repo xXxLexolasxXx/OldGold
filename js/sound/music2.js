@@ -234,7 +234,7 @@ function boneClack(t, vel = 0.05) {
 TRACKS.push(
   {
     // «Хрустальная заводь» — ре лидийский: чаши и подвески звенят над арфой, окарина тянет напев, женский хор.
-    name: 'Хрустальная заводь', elf: true, eighth: 0.3, swing: 0, bars: 32, voiceFrom: 8, seed: 3101, lead: 'ocarina', level: 1.0,
+    name: 'Хрустальная заводь', fantasy: true, eighth: 0.3, swing: 0, bars: 32, voiceFrom: 8, seed: 3101, lead: 'ocarina', level: 1.0,
     scale: [62, 64, 66, 68, 69, 71, 73, 74, 76, 78, 80, 81, 83, 85, 86],
     chords: {
       D: { root: 38, tones: [50, 54, 57, 62, 66, 69, 74] }, A: { root: 45, tones: [52, 57, 61, 64, 69, 73, 76] },
@@ -247,7 +247,7 @@ TRACKS.push(
   },
   {
     // «Танец светлячков» — ми миксолидийский, быстрый 6/8: мандолина, калимба, свирель, бубен.
-    name: 'Танец светлячков', elf: true, eighth: 0.2, swing: 0, bars: 48, voiceFrom: 24, seed: 3202, lead: 'whistle', level: 0.9,
+    name: 'Танец светлячков', fantasy: true, eighth: 0.2, swing: 0, bars: 48, voiceFrom: 24, seed: 3202, lead: 'whistle', level: 0.9,
     scale: [64, 66, 68, 69, 71, 73, 74, 76, 78, 80, 81, 83, 85, 86, 88],
     chords: {
       E: { root: 40, tones: [52, 56, 59, 64, 68, 71, 76] }, D: { root: 38, tones: [54, 57, 62, 66, 69, 74, 78] },
@@ -260,7 +260,7 @@ TRACKS.push(
   },
   {
     // «Древо памяти» — до лидийский, неторопливый: виолончель, хор, мягкий горн, колокола.
-    name: 'Древо памяти', elf: true, eighth: 0.45, swing: 0, bars: 24, voiceFrom: 4, seed: 3303, lead: 'lowflute', level: 1.15,
+    name: 'Древо памяти', fantasy: true, eighth: 0.45, swing: 0, bars: 24, voiceFrom: 4, seed: 3303, lead: 'lowflute', level: 1.15,
     scale: [48, 50, 52, 54, 55, 57, 59, 60, 62, 64, 66, 67, 69, 71, 72, 74, 76],
     chords: {
       C: { root: 36, tones: [48, 52, 55, 60, 64, 67, 72] }, G: { root: 43, tones: [50, 55, 59, 62, 67, 71, 74] },
