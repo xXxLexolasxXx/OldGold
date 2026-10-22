@@ -1055,7 +1055,8 @@ function setMusic(on) {
   if (on) Music.nextTime = Math.max(Music.nextTime, Music.ctx.currentTime + 0.15);
 }
 
-function initMusic() {
+// сохранённые выключатели; читаются сразу при загрузке файла — кнопка-нота заставки с первого кадра в верном виде
+function musicLoadPrefs() {
   // на локальном сервере (вкладки разработки и тестов) музыка по умолчанию выключена — не жужжит фоном из всех вкладок
   const dev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   // в приложении на телефоне игра не перебивает чужую музыку (плеер в наушниках): пока игрок сам не включил — музыка выключена
@@ -1065,6 +1066,11 @@ function initMusic() {
     const v = localStorage.getItem('feod.menuMusic');
     Music.menuOn = new URLSearchParams(location.search).get('menumusic') === '1' ? true : v === null ? Music.on : v !== '0';
   } catch (e) { Music.menuOn = Music.on; }
+}
+if (typeof location !== 'undefined' && typeof localStorage !== 'undefined') try { musicLoadPrefs(); } catch (e) { /* без браузера */ }
+
+function initMusic() {
+  musicLoadPrefs();
   audioKickOnGesture(startMusic);
   try {
     if (audioPhoneApp() && !Music.on && localStorage.getItem('feod.music') === null && !localStorage.getItem('feod.musicHint')) {

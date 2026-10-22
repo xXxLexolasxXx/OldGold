@@ -73,6 +73,7 @@ function nqBusy() {
   if (typeof StartMenu !== 'undefined' && StartMenu.open) return true;
   const ld = document.getElementById('loading');
   if (ld && !ld.classList.contains('hidden')) return true;
+  if (document.body && document.body.classList && document.body.classList.contains('ui-place')) return true;   // на телефоне в руке здание (js/uilayers.js): окна ждут, пока не поставит или не отменит
   for (const el of document.querySelectorAll(NQ_BLOCK)) if (nqVisible(el)) return true;
   return false;
 }

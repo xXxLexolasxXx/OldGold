@@ -68,6 +68,7 @@ scriptTest('unions: профсоюзы — советы по стройке и �
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('nightfog: ночной туман не гуще потолка и редеет над деревней', 'nightfog-test.js');
+scriptTest('lantern: днём фонари выключены, вечером горят, на рассвете гаснут', 'lantern-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
 scriptTest('injury: травмы — частота, лазарет, лекарь, сводка, груз, куры', 'injury-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
@@ -96,6 +97,7 @@ scriptTest('leprechaun: лепреконы у рудников, споры за 
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
 scriptTest('wild: поселения диких гномов — число на картах, обмен, караван, купец, поединок, бунт, сейв', 'wild-test.js', [], 600000);
 scriptTest('whatsnew: пропущенные обновления в окне «Что нового»', 'whatsnew-test.js');
+scriptTest('uilayers: слои интерфейса — загрузка без скорости, стройка поверх способностей', 'uilayers-test.js');
 scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js');
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 

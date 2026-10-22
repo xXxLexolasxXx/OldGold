@@ -5,6 +5,27 @@
 
 const CHANGELOG = [
   {
+    v: '0.11.9', date: '2026-10-22', title: 'Окна больше не лезут друг на друга',
+    news: [
+      'Кнопка поворота при стройке на телефоне теперь подписана «↻ Вход» и стрелкой показывает, куда смотрит вход',
+    ],
+    fixes: [
+      'Телефон и планшет: пока ставите здание, панель способностей героя и её подсказка сворачиваются — кнопки ✓ ↻ ✕ всегда сверху и под пальцем',
+      'Окна и воспоминания не выскакивают поверх стройки: дождутся, пока здание поставите или отмените',
+      'В окне здания и других окнах не видно панели способностей, подсказок и баннера паузы',
+      'Подсказки и баннер паузы больше не прячутся под панелью способностей',
+      'На экране загрузки больше не мигает кнопка скорости «×1», а номер версии не наезжает на логотип — он мелко в углу внизу',
+      'Музыка в меню: остался один выключатель (нота в углу) — он виден сразу, не выскакивает поверх логотипа, а «♪» игры больше не дублирует его на заставке; выключенная музыка запоминается',
+    ],
+  },
+  {
+    v: '0.11.8', date: '2026-10-22', title: 'Фонари только по темноте',
+    news: [],
+    fixes: [
+      'Фонари у гномов и уличные фонари теперь зажигаются и гаснут вместе с сумерками: днём и на светлом рассвете они не горят, а старый фонарь со вчерашнего вечера не светит, пока не стемнеет',
+    ],
+  },
+  {
     v: '0.11.7', date: '2026-10-22', title: 'Указатель шпиля — только в финале',
     news: [
       'Стрелка к Чёрному шпилю больше не мозолит глаза в начале и середине игры: она появляется только в последней главе сценария, когда пора идти на Малгора. Миникарта и чек-лист похода работают как раньше.',
@@ -1432,16 +1453,9 @@ function whatsNewShow(force) {
 }
 
 // Номер версии мелко внизу экрана (меню и игра): тестеры называют его в отзывах. Тап открывает «Что нового».
-// Берётся из GAME_VERSION; пустая зона касаний вокруг не нужна, клик ловит только сама надпись.
+// Берётся из GAME_VERSION; пустая зона касаний вокруг не нужна, клик ловит только сама надпись. Место и слой — css/uilayers.css.
 function versionBadgeInit() {
   if (document.getElementById('ver-badge')) return;
-  const st = document.createElement('style'); st.id = 'ver-badge-css';
-  st.textContent = `#ver-badge{position:fixed;z-index:3;right:calc(env(safe-area-inset-right,0px) + 6px);bottom:calc(env(safe-area-inset-bottom,0px) + 2px);padding:1px 4px;font:10px/1.2 Kurale,Georgia,serif;color:#e9dcc0;opacity:.45;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#ver-badge:hover{opacity:.9}
-body.mobile:not(.land) #ver-badge{bottom:calc(env(safe-area-inset-bottom,0px) + 62px)}
-body.mobile.land #ver-badge{right:auto;left:50%;transform:translateX(-50%)}
-body:has(#loading:not(.hidden)) #ver-badge{z-index:600;bottom:auto;top:calc(env(safe-area-inset-top,0px) + 2px);right:auto;left:calc(env(safe-area-inset-left,0px) + 6px);transform:none}`;
-  document.head.appendChild(st);
   const b = document.createElement('button'); b.id = 'ver-badge'; b.type = 'button';
   b.textContent = 'v' + GAME_VERSION; b.title = 'Что нового';
   b.onclick = () => whatsNewShow(true);

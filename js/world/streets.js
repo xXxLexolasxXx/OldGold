@@ -197,7 +197,7 @@ function drawStreetObj(c, x, y, o) {
     const age = o.born !== undefined ? Game.time - o.born : 99;
     if (age < 0) return;
     if (age < GROW_T) { const k = age / GROW_T; c.save(); c.beginPath(); c.rect(px - 10, py + 30 - 50 * k, TILE + 20, 50 * k + 4); c.clip(); c.translate(0, (1 - k) * 6); drawGothicLamp(c, px + 22, py + 24, hash(idx(x, y)) % 7, false, 0); c.restore(); return; }
-    drawGothicLamp(c, px + 22, py + 24, hash(idx(x, y)) % 7, isEveningNow() && !o.out, x * 3.1 + y);
+    drawGothicLamp(c, px + 22, py + 24, hash(idx(x, y)) % 7, lampsOn() && !o.out, x * 3.1 + y);
     const m = decorMorph(o, x, y);
     if (m) drawMorph(c, m, px, py, o, Math.min(1, (nightAmt() - 0.35) * 3));
   } else drawDecorObj(c, x, y, o);
