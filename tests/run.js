@@ -93,7 +93,7 @@ scriptTest('icon: значки, названия и описания всех с
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
-scriptTest('campaign: акт 1 «Праздник Первого Камня» — город, штрек, волны гоблинов, взрыв и крен, сейв, итог, поражение, перевод', 'campaign-test.js', [], 420000);
+scriptTest('campaign: акты 1–2 — праздник, волны гоблинов, взрыв, обвал и бегство, сейв, итог, наследие, поражение, перевод', 'campaign-test.js', [], 420000);
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
