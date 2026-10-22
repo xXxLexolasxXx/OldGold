@@ -571,7 +571,7 @@ function* flipGen(u) {
   u.fun = { k: 'flip', t0: Game.time, until: Game.time + 0.85 * n + 0.2 };
   floater(u.x, u.y - 1.4, 'Смотри!', '#fff2a0');
   yield { wait: 0.5 };
-  u.fun.t0 = Game.time;
+  if (u.fun) u.fun.t0 = Game.time;      // сальто могли прервать (fun сброшен), пока ждали
   for (let k = 0; k < n; k++) yield { wait: 0.85 };
   u.fun = null;
   if (Math.random() < 0.25) {            // не вышло: приземлился на пятую точку
