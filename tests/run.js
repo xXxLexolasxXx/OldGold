@@ -59,11 +59,14 @@ scriptTest('wildlife: живность по биомам и дням, меньш
 scriptTest('frogfolk: жаболюды — поселения у воды, касты, прыжок, влажность, яд, зима, сейв', 'frogfolk-test.js');
 scriptTest('raid: курган Курганного князя — вход по клику в одиночке и в коопе, подпись, причины, сейв', 'raid-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
+scriptTest('wildfire: горящие куры и деревья, фонари, печи, молния, колодец и крыши, огонь всегда гаснет', 'wildfire-test.js', [], 420000);
 scriptTest('disaster: стихийные бедствия — знамения, виды на сидах, колодец, ремонт, море, сейв, кооп', 'disaster-test.js', [], 420000);
 scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
 scriptTest('heroapp: цвет жилета героя — наряд, фигура, сейв', 'heroapp-test.js');
 scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
+scriptTest('pc: управление для ПК — переназначение клавиш, обмен, запреты, сохранение, способности героя', 'pc-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
+scriptTest('coop-hire: кооп — обученный специалист занимает здание, клиент видит работника', 'coop-hire-test.js');
 scriptTest('unions: профсоюзы — советы по стройке и ремеслу, редкий показ, выключатель, сейв, кооп', 'unions-test.js');
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
@@ -90,6 +93,7 @@ scriptTest('icon: значки, названия и описания всех с
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
+scriptTest('campaign: акт 1 «Праздник Первого Камня» — город, штрек, волны гоблинов, взрыв и крен, сейв, итог, поражение, перевод', 'campaign-test.js', [], 420000);
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');

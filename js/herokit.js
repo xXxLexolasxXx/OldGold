@@ -178,7 +178,7 @@ const HERO_ABIL = {
 const ABIL_MAX = 6;
 const ABIL_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'];
 const ABIL_KEYN = ['1', '2', '3', '4', '5', '6'];
-const abKeyN = (a, i) => a && a.ult ? '6' : ABIL_KEYN[i];
+const abKeyN = (a, i) => a && a.ult ? ABIL_KEYN[5] : ABIL_KEYN[i];
 // клавиша цифры → номер способности в списке класса (ульта всегда на 6)
 function abIdxByKey(H, n) {
   const as = heroAbils(H);
