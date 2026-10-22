@@ -24,10 +24,10 @@ const ARENA_TUNE = {
   spd: 3.2, rollT: 0.45, rollMove: 0.3, rollDist: 1.5, rollCd: 5, atkLock: 0.15, reach: 0.15,
   // удары
   shotSp: 11, heavyEvery: 3, heavyWind: 0.4, heavyMul: 1.6, heavyCos: 0.75, heavyExtra: 0.7, openT: 2, openMul: 1.5,
-  comboN: 3, comboT: 2.5, finMul: 1.4, crit: 0.1, critMul: 1.5, spread: 0.2, iceMul: 1.2,
+  comboN: 3, comboT: 2.5, finMul: 1.4, finCd: 6, shotLock: 0.25, crit: 0.1, critMul: 1.5, spread: 0.2, iceMul: 1.2,
   // статусы: потолки и иммунитеты
   stunMax: 1.5, iceMax: 2, ccImm: 3, ccWin: 6, rootMax: 2.5, rootImm: 3, slowMax: 4, slowMul: 0.6, silMax: 2,
-  dotPct: 0.02, dotCap: 0.25, blind: 0.3, dodgeMax: 0.75, redMin: -0.5, redMax: 0.85, accMin: 0.05, accMax: 0.97,
+  dotPct: 0.02, dotCap: 0.25, blind: 0.3, dodgeMax: 0.6, redMin: -0.5, redMax: 0.7, accMin: 0.05, accMax: 0.97,
   // ресурсы (все по 100) и шкала ульты
   res: {
     rage: { start: 20, hit: 8, hurt: 6, decay: 3, calm: 3 },
@@ -40,34 +40,34 @@ const ARENA_TUNE = {
   // mv — скорость (Клятва), rng — дальность, atkT — интервал удара, dmg — урон удара, acc — точность, crit — шанс крита,
   // shot — снаряд вместо удара вблизи, dodge — уворот Клятвы, melee — точность вплотную у стрелка
   cls: {
-    warrior: { res: 'rage', hp: 211, mv: 0.94, rng: 1.5, atkT: 1.0, dmg: 7.3, acc: 0.85 },
-    barbarian: { res: 'rage', hp: 164, mv: 1, rng: 1.5, atkT: 1.15, dmg: 6.25, acc: 0.8 },
-    archer: { res: 'energy', hp: 187, mv: 1, rng: 7, atkT: 1.1, dmg: 7, acc: 0.85, shot: 'arrow', melee: 0.8 },
-    rogue: { res: 'energy', hp: 154, mv: 1, rng: 1.4, atkT: 0.9, dmg: 6.35, acc: 0.88, crit: 0.2 },
-    mage: { res: 'mana', hp: 174, mv: 1, rng: 6, atkT: 1.2, dmg: 7.5, acc: 0.9, shot: 'bolt' },
-    druid: { res: 'mana', hp: 148, mv: 1, rng: 5, atkT: 1.2, dmg: 4.5, acc: 0.88, shot: 'thorn' },
-    priest: { res: 'mana', hp: 198, mv: 1, rng: 1.4, atkT: 1.1, dmg: 6.6, acc: 0.77 },
-    paladin: { res: 'faith', hp: 187, mv: 0.96, rng: 1.5, atkT: 1.1, dmg: 6.05, acc: 0.85 },
-    bard: { res: 'mana', hp: 190, mv: 1, rng: 1.5, atkT: 0.95, dmg: 7.5, acc: 0.8 },
-    monk: { res: 'energy', hp: 227, mv: 1.06, rng: 1.4, atkT: 0.7, dmg: 5.05, acc: 0.86, dodge: 0.1 },
+    warrior: { res: 'rage', hp: 271, mv: 0.94, rng: 1.5, atkT: 1.0, dmg: 7.2, acc: 0.85 },
+    barbarian: { res: 'rage', hp: 214, mv: 1, rng: 1.5, atkT: 1.15, dmg: 6.3, acc: 0.8 },
+    archer: { res: 'energy', hp: 255, mv: 1, rng: 7, atkT: 1.1, dmg: 7.4, acc: 0.85, shot: 'arrow', melee: 0.8 },
+    rogue: { res: 'energy', hp: 209, mv: 1, rng: 1.4, atkT: 0.9, dmg: 6.6, acc: 0.88, crit: 0.2 },
+    mage: { res: 'mana', hp: 219, mv: 1, rng: 6, atkT: 1.2, dmg: 7.25, acc: 0.9, shot: 'bolt' },
+    druid: { res: 'mana', hp: 206, mv: 1, rng: 5, atkT: 1.2, dmg: 4.8, acc: 0.88, shot: 'thorn' },
+    priest: { res: 'mana', hp: 238, mv: 1, rng: 1.4, atkT: 1.1, dmg: 6.05, acc: 0.77 },
+    paladin: { res: 'faith', hp: 232, mv: 0.96, rng: 1.5, atkT: 1.1, dmg: 5.75, acc: 0.85 },
+    bard: { res: 'mana', hp: 268, mv: 1, rng: 1.5, atkT: 0.95, dmg: 8.2, acc: 0.8 },
+    monk: { res: 'energy', hp: 278, mv: 1.06, rng: 1.4, atkT: 0.7, dmg: 4.8, acc: 0.86, dodge: 0.1 },
   },
   // способности (раздел 7.1). cost — ресурс, cd — откат, dur — время действия, buf — усиления на время
   // (atk точность, dmg урон, red меньше урона по себе, dodge уворот, spd чаще удары, mv скорость, regen %/с здоровья),
   // pas — пассивка (res, heal, cd — множители; остальное прибавляется), ult — ульта со шкалы, r — дальность до соперника
   ab: {
-    bash: { cost: 20, cd: 10, r: 1.9, mul: 1, stun: 1.2 },
+    bash: { cost: 20, cd: 10, r: 1.9, mul: 1, stun: 1 },
     cry: { cost: 15, cd: 30, dur: 8, buf: { atk: 0.15 } },
     stand: { pas: { red: 0.15 } },
     surge: { cost: 30, cd: 40, dur: 6, buf: { spd: 1, atk: 0.25 } },
-    wall: { cost: 40, cd: 60, dur: 5, buf: { red: 0.6 }, r: 3, stun: 1 },
-    ult_warrior: { ult: 1, dur: 8, buf: { red: 0.8 }, r: 5, stun: 1.5 },
+    wall: { cost: 40, cd: 60, dur: 5, buf: { red: 0.45 }, r: 3, stun: 1 },
+    ult_warrior: { ult: 1, dur: 6, buf: { red: 0.6 }, r: 5, stun: 1.5 },
 
-    rage: { cost: 30, cd: 40, dur: 10, buf: { dmg: 0.5, red: 0.4 } },
+    rage: { cost: 30, cd: 40, dur: 10, buf: { dmg: 0.4, red: 0.3 } },
     reckless: { cost: 15, cd: 25, dur: 6, buf: { atk: 0.35, red: -0.25 } },
-    stomp: { cost: 25, cd: 20, r: 3, mul: 1, stun: 1.5 },
+    stomp: { cost: 25, cd: 20, r: 3, mul: 1, stun: 1.2 },
     hide: { pas: { red: 0.12, hpr: 0.3 } },
     roar: { cost: 20, cd: 25, r: 4, slow: 0.3, slowT: 6 },
-    ult_barbarian: { ult: 1, dur: 10, buf: { dmg: 1, red: 0.5, spd: 0.5 }, r: 4, stun: 1 },
+    ult_barbarian: { ult: 1, dur: 10, buf: { dmg: 0.8, red: 0.35, spd: 0.5 }, r: 4, stun: 1 },
 
     aimed: { cost: 25, cd: 10, next: 2.2 },
     volley: { cost: 40, cd: 30, n: 5, mul: 0.7, gap: 0.06 },
@@ -77,7 +77,7 @@ const ARENA_TUNE = {
     ult_archer: { ult: 1, zr: 3, n: 14, mul: 0.9, delay: 0.8, dur: 3, lead: 0.5 },
 
     sneak: { cost: 25, cd: 12, next: 2.5, back: 3 },
-    trip: { cost: 20, cd: 14, r: 2.2, stun: 1.5 },
+    trip: { cost: 20, cd: 14, r: 2.2, stun: 1.2 },
     steal: { cost: 30, cd: 40, r: 3, take: 20, gauge: 10 },
     vanish: { cost: 40, cd: 45, dur: 4, next: 2.5 },
     nimble: { pas: { dodge: 0.15 } },
@@ -86,33 +86,33 @@ const ARENA_TUNE = {
     fire: { cost: 10, cd: 6, r: 7, mul: 1.6, burn: 3 },
     ward: { cost: 12, cd: 25, dur: 3 },
     frost: { cost: 14, cd: 12, r: 7, mul: 0.6, ice: 2 },
-    shield: { cost: 16, cd: 35, dur: 5, buf: { red: 0.7 } },
+    shield: { cost: 16, cd: 35, dur: 5, buf: { red: 0.5 } },
     spring: { pas: { res: 1.6 } },
     ult_mage: { ult: 1, dur: 4, every: 0.5, mul: 1.2, lag: 0.6, fall: 0.45, hitR: 1.3, spread: 1.2 },
 
-    thorns: { cost: 10, cd: 14, r: 5, mul: 0.8, root: 2 },
-    grow: { cost: 15, cd: 30, dur: 6, zr: 3, slow: 0.4 },
-    mend: { cost: 20, cd: 30, heal: 0.2 },
+    thorns: { cost: 10, cd: 14, r: 5, mul: 0.8, root: 1.5 },
+    grow: { cost: 15, cd: 30, dur: 6, zr: 3, slow: 0.3 },
+    mend: { cost: 20, cd: 30, heal: 0.15 },
     beast: { cost: 25, cd: 50, dur: 12, hp: 40, mul: 0.6, every: 1.2, sp: 4.5 },
-    wild: { cost: 30, cd: 60, dur: 10, buf: { dmg: 0.4, red: 0.3, regen: 1.5 } },
+    wild: { cost: 30, cd: 60, dur: 10, buf: { dmg: 0.4, red: 0.2, regen: 1 } },
     ult_druid: { ult: 1, dur: 8, zr: 5, root: 1.5, every: 3, regen: 3 },
 
-    heal: { cost: 18, cd: 25, heal: 0.22 },
+    heal: { cost: 18, cd: 25, heal: 0.16 },
     cure: { cost: 15, cd: 35, imm: 2 },
     bless: { cost: 20, cd: 35, dur: 10, buf: { atk: 0.2, red: 0.1 } },
     turn: { cost: 25, cd: 30, r: 4, push: 3, blind: 2 },
-    mercy: { pas: { heal: 1.25, hpr: 0.3 } },
-    ult_priest: { ult: 1, r: 6, blind: 2.5 },
+    mercy: { pas: { heal: 1.15, hpr: 0.2 } },
+    ult_priest: { ult: 1, r: 6, blind: 2.5, heal: 0.6 },
 
-    hands: { cost: 25, cd: 40, heal: 0.25 },
+    hands: { cost: 25, cd: 40, heal: 0.18 },
     smite: { cost: 20, cd: 14, next: 2.2, blind: 1 },
     consecrate: { cost: 30, cd: 35, dur: 8, zr: 3, dot: 2, regen: 2 },
-    faith: { cost: 25, cd: 40, dur: 6, buf: { red: 0.4 } },
+    faith: { cost: 25, cd: 40, dur: 6, buf: { red: 0.35 } },
     aura: { pas: { atk: 0.08, red: 0.08 } },
-    ult_paladin: { ult: 1, dur: 10, zr: 5, dot: 3, slow: 0.4, buf: { red: 0.5 } },
+    ult_paladin: { ult: 1, dur: 10, zr: 5, dot: 3, slow: 0.4, buf: { red: 0.35 } },
 
     inspire: { cost: 12, cd: 30, dur: 10, buf: { atk: 0.2, mv: 0.1, dmg: 0.15 } },
-    chord: { cost: 18, cd: 25, r: 4, mul: 1, stun: 1.5 },
+    chord: { cost: 18, cd: 25, r: 4, mul: 1, stun: 1.2 },
     five: { cost: 10, cd: 45, dur: 6, buf: { regen: 2 }, gauge: 15 },
     voice: { pas: { cd: 0.85, res: 1.3 } },
     sour: { cost: 20, cd: 30, r: 5, mul: 0.8, drain: 25, sil: 2 },
@@ -120,10 +120,10 @@ const ARENA_TUNE = {
 
     flurry: { cost: 30, cd: 30, dur: 6, buf: { spd: 1 } },
     palm: { cost: 20, cd: 12, r: 1.9, mul: 1, sil: 1.5 },
-    patience: { cost: 25, cd: 35, dur: 8, buf: { dodge: 0.4, red: 0.2 } },
+    patience: { cost: 25, cd: 35, dur: 8, buf: { dodge: 0.3, red: 0.15 } },
     calm: { pas: { res: 1.5, dodge: 0.05 } },
     windstep: { cost: 15, cd: 15, dist: 4 },
-    ult_monk: { ult: 1, dur: 6, buf: { spd: 2, dodge: 0.6, dmg: 0.5 }, r: 3, push: 2.5 },
+    ult_monk: { ult: 1, dur: 6, buf: { spd: 1.5, dodge: 0.45, dmg: 0.4 }, r: 3, push: 2.5 },
   },
   // добивание комбо по классу: [статус, секунд] (bard — сбит с ритма: −ресурс)
   fin: { warrior: ['stun', 1], monk: ['stun', 0.8], priest: ['blind', 2], paladin: ['blind', 2], bard: ['drain', 15],
@@ -153,18 +153,18 @@ const ARENA_CLS = Object.keys(ARENA_KIT);
 
 // Имена и описания на арене (поле pvp): имена прежние, кроме тех, чей деревенский смысл на арене пуст (раздел 7)
 const ARENA_TXT = {
-  bash: ['Удар щитом', 'Удар вплотную и оглушение на 1,2 с'],
+  bash: ['Удар щитом', 'Удар вплотную и оглушение на 1 с'],
   cry: ['Боевой клич', '8 с: точность +15%, снимает замедление'],
   stand: ['Непоколебимость', 'Пассивно: урон по воину −15%'],
   surge: ['Всплеск действий', '6 с: бьёт вдвое чаще, точность +25%'],
-  wall: ['Стена щитов', '5 с: урон по нему −60%; соперник в 3 клетках сбит с ног на 1 с'],
-  ult_warrior: ['Несокрушимый строй', 'Ульта. 8 с: урон по воину −80%, стрелы и снаряды не пробивают; соперник в 5 клетках сбит с ног на 1,5 с'],
-  rage: ['Ярость', '10 с: урон +50%, по нему −40%'],
+  wall: ['Стена щитов', '5 с: урон по нему −45%; соперник в 3 клетках сбит с ног на 1 с'],
+  ult_warrior: ['Несокрушимый строй', 'Ульта. 6 с: урон по воину −60%, стрелы и снаряды не пробивают; соперник в 5 клетках сбит с ног на 1,5 с'],
+  rage: ['Ярость', '10 с: урон +40%, по нему −30%'],
   reckless: ['Безрассудная атака', '6 с: точность +35%, но урон по нему +25%'],
-  stomp: ['Топот', 'Соперник в 3 клетках падает на 1,5 с и получает удар'],
+  stomp: ['Топот', 'Соперник в 3 клетках падает на 1,2 с и получает удар'],
   hide: ['Толстая шкура', 'Пассивно: урон по нему −12%, +0,3% здоровья в секунду'],
   roar: ['Рык', 'Соперник в 4 клетках замедлен на 30%'],
-  ult_barbarian: ['Гнев предков', 'Ульта. 10 с: урон вдвое, по нему −50%, бьёт чаще; соперник в 4 клетках падает на 1 с'],
+  ult_barbarian: ['Гнев предков', 'Ульта. 10 с: урон +80%, по нему −35%, бьёт чаще; соперник в 4 клетках падает на 1 с'],
   aimed: ['Меткий выстрел', 'Следующий выстрел — без промаха и в 2,2 раза сильнее'],
   volley: ['Залп', 'Пять стрел без промаха по ×0,7; перекат или колонна спасают'],
   trap: ['Ловушка', 'Капкан под ноги (до двух): наступивший 2 с в путах и открыт'],
@@ -172,7 +172,7 @@ const ARENA_TXT = {
   leap: ['Отскок', 'Прыжок на 3 клетки от соперника, 0,3 с неуязвим'],
   ult_archer: ['Дождь стрел', 'Ульта. 3 с на зону 3 клетки у соперника падают 14 стрел; зона видна заранее — из неё можно выйти'],
   sneak: ['Скрытая атака', 'Следующий удар без промаха ×2,5, со спины ×3'],
-  trip: ['Подножка', 'Соперник рядом падает на 1,5 с'],
+  trip: ['Подножка', 'Соперник рядом падает на 1,2 с'],
   steal: ['Карманы', 'Крадёт у соперника 20 ресурса и 10% шкалы ульты'],
   vanish: ['Исчезновение', '4 с невидим для соперника, следующий удар ×2,5'],
   nimble: ['Увёртливость', 'Пассивно: уходит от 15% ударов'],
@@ -180,39 +180,39 @@ const ARENA_TXT = {
   fire: ['Огненный шар', 'Снаряд ×1,6, поджигает на 3 с'],
   ward: ['Оберег', '3 с: следующий контроль не действует; снимает горение и кровь'],
   frost: ['Ледяная стрела', 'Снаряд: соперник во льду 2 с, удар по замёрзшему сильнее'],
-  shield: ['Щит', '5 с: урон по магу −70%'],
+  shield: ['Щит', '5 с: урон по магу −50%'],
   spring: ['Источник', 'Пассивно: мана копится в 1,6 раза быстрее'],
   ult_mage: ['Метеоритный дождь', 'Ульта. 4 с метеориты падают вокруг соперника; зона идёт за ним с отставанием — можно убежать'],
-  thorns: ['Шипы', 'Соперник в 5 клетках: удар ×0,8 и 2 с в путах'],
-  grow: ['Корни', '6 с: земля в 3 клетках вокруг друида замедляет соперника на 40%'],
-  mend: ['Целебное слово', '+20% здоровья'],
+  thorns: ['Шипы', 'Соперник в 5 клетках: удар ×0,8 и 1,5 с в путах'],
+  grow: ['Корни', '6 с: земля в 3 клетках вокруг друида замедляет соперника на 30%'],
+  mend: ['Целебное слово', '+15% здоровья'],
   beast: ['Призыв зверя', '12 с дух-волк кусает соперника; волка можно убить'],
-  wild: ['Дикий облик', '10 с: урон +40%, по нему −30%, +1,5% здоровья в секунду'],
+  wild: ['Дикий облик', '10 с: урон +40%, по нему −20%, +1% здоровья в секунду'],
   ult_druid: ['Гнев природы', 'Ульта. 8 с роща в 5 клетках: соперник в путах каждые 3 с, друид лечится'],
-  heal: ['Исцеление', '+22% здоровья'],
+  heal: ['Исцеление', '+16% здоровья'],
   cure: ['Очищение', 'Снимает все статусы и 2 с защищает от контроля'],
   bless: ['Благословение', '10 с: точность +20%, урон по жрецу −10%'],
   turn: ['Изгнание', 'Соперник в 4 клетках отброшен на 3 клетки и ослеплён на 2 с'],
-  mercy: ['Милосердие', 'Пассивно: лечение ×1,25, +0,3% здоровья в секунду'],
-  ult_priest: ['Чудо', 'Ульта. Полное исцеление и снятие всего; соперник в 6 клетках ослеплён на 2,5 с'],
-  hands: ['Наложение рук', '+25% здоровья'],
+  mercy: ['Милосердие', 'Пассивно: лечение ×1,15, +0,2% здоровья в секунду'],
+  ult_priest: ['Чудо', 'Ульта. +60% здоровья и снятие всех статусов; соперник в 6 клетках ослеплён на 2,5 с'],
+  hands: ['Наложение рук', '+18% здоровья'],
   smite: ['Святой удар', 'Следующий удар без промаха ×2,2 и ослепляет на 1 с'],
   consecrate: ['Освящение', '8 с круг 3 клетки: соперник в нём горит, паладин лечится'],
-  faith: ['Щит веры', '6 с: урон по паладину −40%'],
+  faith: ['Щит веры', '6 с: урон по паладину −35%'],
   aura: ['Аура мужества', 'Пассивно: точность +8%, урон по нему −8%'],
-  ult_paladin: ['Кара Костра', 'Ульта. 10 с солнце в 5 клетках: соперник горит и замедлен, по паладину −50%'],
-  inspire: ['Песня бодрости', '10 с: точность +20%, скорость +10%'],
-  chord: ['Оглушающий аккорд', 'Соперник в 4 клетках оглушён на 1,5 с'],
+  ult_paladin: ['Кара Костра', 'Ульта. 10 с солнце в 5 клетках: соперник горит и замедлен, по паладину −35%'],
+  inspire: ['Песня бодрости', '10 с: точность +20%, урон +15%, скорость +10%'],
+  chord: ['Оглушающий аккорд', 'Соперник в 4 клетках получает удар и оглушён на 1,2 с'],
   five: ['Дай пять!', 'Трибуны ревут: 6 с бард лечится, шкала ульты +15%'],
   voice: ['Звонкий голос', 'Пассивно: откаты короче на 15%, мана быстрее'],
-  sour: ['Фальшивая нота', 'Соперник в 5 клетках теряет 25 ресурса и 2 с не может колдовать'],
+  sour: ['Фальшивая нота', 'Соперник в 5 клетках: удар ×0,8, −25 ресурса и 2 с не может колдовать'],
   ult_bard: ['Эпическая баллада', 'Ульта. 8 с: соперник в 6 клетках пляшет (оглушён, потом замедлен), бард точнее и быстрее'],
   flurry: ['Шквал ударов', '6 с: бьёт вдвое чаще'],
   palm: ['Удар ладонью', 'Удар и 1,5 с соперник не может колдовать'],
-  patience: ['Терпеливая оборона', '8 с: уворот +40%, урон по нему −20%'],
+  patience: ['Терпеливая оборона', '8 с: уворот +30%, урон по нему −15%'],
   calm: ['Внутренний покой', 'Пассивно: энергия в 1,5 раза быстрее, уворот +5%'],
   windstep: ['Шаг ветра', 'Рывок к сопернику на 4 клетки, следующий удар без промаха'],
-  ult_monk: ['Тысяча ударов', 'Ульта. 6 с: бьёт втрое чаще, уворот 60%, урон +50%; соперник в 3 клетках отброшен'],
+  ult_monk: ['Тысяча ударов', 'Ульта. 6 с: бьёт в 2,5 раза чаще, уворот +45%, урон +40%; соперник в 3 клетках отброшен'],
 };
 // деревенские способности получают арена-описание (одна таблица на обе стороны)
 if (typeof HERO_ABIL !== 'undefined') for (const c in HERO_ABIL) for (const a of HERO_ABIL[c]) if (ARENA_TXT[a.k]) a.pvp = ARENA_TXT[a.k][1];
@@ -269,7 +269,7 @@ function arRoundReset(S, F) {
   F.x = T.cx + side * T.start; F.y = T.cy; F.dx = -side; F.dy = 0; F.face = -side; F.vx = F.vy = 0; F.mx = F.my = 0;
   F.hp = F.mhp; F.res = T.res[F.rk].start; F.ult = 0; F.cd = {}; F.buf = {}; F.st = arStFresh();
   F.atkCd = 0.6; F.lock = 0; F.atkN = 0; F.swing = null; F.cmbN = 0; F.cmbT = -9; F.roll = null; F.rollCd = 0; F.rollAt = -9;
-  F.next = 0; F.nextK = ''; F.combat = -9; F.dance = null; F.anim = null; F.dead = false;
+  F.next = 0; F.nextK = ''; F.combat = -9; F.dance = null; F.anim = null; F.dead = false; F.finT = 0;
   F.rs = { dmg: 0, taken: 0 };
 }
 
@@ -615,7 +615,7 @@ function arCast(S, F, slot, inp) {
       break;
     }
     case 'ult_priest': {
-      arHeal(S, F, 1, k);
+      arHeal(S, F, a.heal, k);
       F.st = Object.assign(arStFresh(), { inv: F.st.inv, invis: F.st.invis, lastStun: F.st.lastStun, stunImm: F.st.stunImm, rootImm: F.st.rootImm, block: F.st.block, imm: F.st.imm });
       B = arFoeIn(S, F, a.r);
       if (B) arCC(S, F, B, 'blind', a.blind);
@@ -690,7 +690,7 @@ function arAuto(S, F, dt) {
   if (C.shot && !arLos(F.x, F.y, tg.o.x, tg.o.y)) return;
   const spd = 1 + arStat(S, F, 'spd');
   F.atkCd = C.atkT / spd;
-  F.lock = T.atkLock;
+  F.lock = C.shot ? T.shotLock : T.atkLock;
   if (F.st.invis > now) F.st.invis = 0;
   if (tg.pet) {
     // по волку: просто удар, без комбо
@@ -748,7 +748,9 @@ function arMelee(S, F, B, mul, heavy) {
 function arFinisher(S, F, B) {
   const e = ARENA_TUNE.fin[F.cls];
   arEv(S, { k: 'fin', i: F.i });
-  if (!e) return;
+  // эффект добивания — не чаще раза в 6 с (иначе ближник держит соперника в статусе постоянно)
+  if (!e || F.finT > S.T) return;
+  F.finT = S.T + ARENA_TUNE.finCd;
   if (e[0] === 'drain') { arRes(B, -e[1]); arEv(S, { k: 'drain', i: B.i, n: e[1] }); }
   else arCC(S, F, B, e[0], e[1]);
 }

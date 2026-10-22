@@ -48,7 +48,7 @@ const place = (S, ax, ay, bx, by) => { S.f[0].x = ax; S.f[0].y = ay; S.f[1].x = 
   const W = S.f[0], M = S.f[1];
   W.res = 100;
   let e = evs(S, 1, [{ cast: 0 }, null]);                       // удар щитом: оглушение 1,2 с
-  ok(M.st.stun > S.T + 1.0 && M.st.stun <= S.T + T.stunMax + 1e-6, `удар щитом не оглушил или дольше потолка: ${(M.st.stun - S.T).toFixed(2)}`);
+  ok(M.st.stun > S.T + T.ab.bash.stun - 0.1 && M.st.stun <= S.T + T.stunMax + 1e-6, `удар щитом не оглушил или дольше потолка: ${(M.st.stun - S.T).toFixed(2)}`);
   ok(e.some(x => x.k === 'st' && x.s === 'stun'), 'нет события оглушения');
   // ещё оглушение сразу — иммунитет
   W.cd = {}; W.res = 100;
@@ -67,7 +67,7 @@ const place = (S, ax, ay, bx, by) => { S.f[0].x = ax; S.f[0].y = ay; S.f[1].x = 
   place(S2, 5, 7, 8, 7);
   const D = S2.f[0], W2 = S2.f[1];
   evs(S2, 1, [{ cast: 0 }, null]);
-  ok(W2.st.root > S2.T + 1.5, 'шипы не опутали');
+  ok(W2.st.root > S2.T + T.ab.thorns.root - 0.1, 'шипы не опутали');
   step(S2, 50); D.cd = {}; D.res = 100;
   const e2 = evs(S2, 1, [{ cast: 0 }, null]);
   ok(e2.some(x => x.k === 'imm'), 'путы прошли сквозь иммунитет');
@@ -273,7 +273,7 @@ const place = (S, ax, ay, bx, by) => { S.f[0].x = ax; S.f[0].y = ay; S.f[1].x = 
     for (const f of files) {
       const src = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       // явные t('…') и строки таблиц: русские литералы в одинарных кавычках
-      for (const m of src.matchAll(/'((?:[^'\\\n]|\\.)*[А-Яа-яЁё](?:[^'\\\n]|\\.)*)'/g)) {
+      for (const m of src.matchAll(/'((?:[^'\\\n\r]|\\.)*[А-Яа-яЁё](?:[^'\\\n\r]|\\.)*)'/g)) {
         const s = m[1].replace(/\\'/g, "'");
         if (/^\s*\/\//.test(src.slice(src.lastIndexOf('\n', m.index) + 1, m.index))) continue;   // комментарий
         if (!(s in dict) && !miss.includes(s)) miss.push(s);
