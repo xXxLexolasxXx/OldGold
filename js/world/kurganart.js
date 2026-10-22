@@ -10,7 +10,7 @@ const KP_C = {
   bone: '#e4ddd2', bone2: '#b6ada0', bone3: '#867e74', ink: '#1e1b19', flash: '#f6f2ea',
   iron: ['#9e958a', '#706960', '#4a4540'], rust: ['#c8946a', '#a06840', '#6e432a'], gold: ['#e4b434', '#a4701c', '#7e5214'],
   cape: [['#3a3a7a', '#2c2a5a', '#1c1a3e'], ['#33306a', '#26204a', '#161232'], ['#4e2850', '#3a1c3e', '#220e28']],
-  eye: ['#3a76a6', '#76b2d4', '#e6f6ff'], glow: '#6ad0ff',
+  eye: ['#4aa6e6', '#8ae0ff', '#ffffff'], glow: '#6ad0ff', blade: ['#f6fbff', '#a6d2e6', '#5292bc', '#22486c'],
 };
 const KP_CACHE = new Map();
 let KP_SCRATCH = null;
@@ -110,6 +110,7 @@ function kpPaint(c, fr, ph) {
   c.fillStyle = BONE2; c.beginPath(); c.ellipse(-3, hipY + 0.4, 5, 2.4, 0, 0, 7); c.fill();
   c.fillStyle = INK; c.fillRect(-11.5, hipY - 7, 23, 5.4); c.fillStyle = C.rust[2]; c.fillRect(-10.6, hipY - 6.2, 21.2, 3.8);
   c.fillStyle = C.gold[1]; c.fillRect(-2.6, hipY - 6.6, 5.2, 4.6); c.fillStyle = C.gold[0]; c.fillRect(-1.6, hipY - 5.6, 3.2, 2.4);          // пряжка
+  for (const sx2 of [-8.6, 8.6]) { c.strokeStyle = INK; c.lineWidth = 1.2; c.beginPath(); c.moveTo(sx2, hipY - 3); c.lineTo(sx2, hipY + 1.4); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(sx2, hipY + 4.4, 3.8, 0, 7); c.fill(); c.fillStyle = BONE; c.beginPath(); c.arc(sx2, hipY + 4, 2.9, 0, 7); c.fill(); c.fillStyle = INK; c.fillRect(sx2 - 2, hipY + 3, 1.6, 1.6); c.fillRect(sx2 + 0.4, hipY + 3, 1.6, 1.6); }
   for (const [dx, len] of [[-8, 9], [-3, 12], [3, 8], [8, 11]]) {
     const sw2 = Math.sin(P.sway * 1 + dx) * 1.2 + P.mv * P.sw * dx * 0.1;
     c.beginPath(); c.moveTo(dx - 2.4, hipY - 2); c.lineTo(dx + 2.4, hipY - 2); c.lineTo(dx + 1.6 + sw2, hipY + len); c.lineTo(dx - 0.2 + sw2, hipY + len - 3); c.lineTo(dx - 1.6 + sw2, hipY + len); c.closePath();
@@ -160,10 +161,11 @@ function kpPaint(c, fr, ph) {
     for (const [dx, h] of [[-5, 8], [0, 11], [5, 8]]) { c.fillStyle = INK; c.beginPath(); c.moveTo(px + dx - 2.8, y - 4.4); c.lineTo(px + dx + 0.4, y - 4.4 - h); c.lineTo(px + dx + 2.8, y - 4.4); c.fill(); c.fillStyle = BONE; c.beginPath(); c.moveTo(px + dx - 1.6, y - 4.4); c.lineTo(px + dx + 0.3, y - 3.4 - h); c.lineTo(px + dx + 1.8, y - 4.4); c.fill(); }
   }
   // высокий рваный воротник мантии за головой
-  { const bx0 = 3 + lean * 0.9 + P.hdx; c.beginPath(); c.moveTo(-16 + lean * 0.5, shY + 4); for (const [x, y] of [[-17, -86], [-11, -80], [-9, -94], [-3, -84], [2, -98], [8, -86]]) c.lineTo(bx0 + x + 2, y + sk * 0.8 + P.bob); c.lineTo(10 + lean * 0.5, shY + 4); c.closePath(); c.strokeStyle = INK; c.lineWidth = 2; c.stroke(); c.fillStyle = cape[1]; c.fill(); c.fillStyle = cape[2]; c.fillRect(-14 + lean * 0.5, shY - 4, 24, 8); }
+  { const bx0 = 3 + lean * 0.9 + P.hdx; c.beginPath(); c.moveTo(-16 + lean * 0.5, shY + 4); for (const [x, y] of [[-17, -86], [-11, -80], [-9, -94], [-3, -84], [2, -98], [8, -86]]) c.lineTo(bx0 + x + 2, y + sk * 0.8 + P.bob); c.lineTo(10 + lean * 0.5, shY + 4); c.closePath(); c.strokeStyle = INK; c.lineWidth = 2; c.stroke(); c.fillStyle = cape[1]; c.fill(); }
   // ---- голова: череп с провалами, клыки, кривая корона
   const hx = 3 + lean * 0.9 + P.hdx, hy = -81 + sk * 0.8 + P.bob + P.hdy, jaw = P.jaw;
-  bone(cx, shY + 2, hx - 1, hy + 8, 5.4);                                                         // шея
+  bone(cx - 1, shY + 5, hx - 4.5, hy + 7, 4.2);                                                     // шея: к затылку, не под челюсть
+  
   c.save(); c.translate(hx, hy); c.rotate(P.tilt - 0.04 + P.hdy * 0.01);
   c.fillStyle = INK; c.beginPath(); c.ellipse(0, 0, 11.4, 10.4, 0, 0, 7); c.fill();
   c.fillStyle = BONE; c.beginPath(); c.ellipse(0, 0, 10.2, 9.2, 0, 0, 7); c.fill();
@@ -171,12 +173,15 @@ function kpPaint(c, fr, ph) {
   c.strokeStyle = C.bone3; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-1, -8.4); c.lineTo(1, -4.4); c.lineTo(-0.6, -2); c.stroke();                // трещина на черепе
   // глазницы: две тёмные ямы, злой наклон
   c.fillStyle = INK;
-  c.beginPath(); c.moveTo(-7.2, -3.6); c.lineTo(-0.2, -1.6); c.lineTo(-0.8, 4.6); c.quadraticCurveTo(-5, 5.8, -7.4, 1.4); c.closePath(); c.fill();
-  c.beginPath(); c.moveTo(1.4, -1.8); c.lineTo(9.8, -4.8); c.lineTo(9.6, 1.8); c.quadraticCurveTo(5.6, 5.8, 1.8, 4.2); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(-8, -5.4); c.lineTo(-1.6, -1.2); c.lineTo(-2.2, 4.8); c.quadraticCurveTo(-5.6, 6.2, -8, 1.6); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(2.2, -1.4); c.lineTo(10.4, -5.8); c.lineTo(10.2, 1.8); c.quadraticCurveTo(6, 6.2, 2.6, 4.4); c.closePath(); c.fill();
+  // тяжёлые надбровья: костяные козырьки злым изломом над провалами
+  c.fillStyle = BONE2; c.beginPath(); c.moveTo(-9.2, -7); c.lineTo(-1, -2.6); c.lineTo(-1.2, -1); c.lineTo(-8.4, -4.4); c.closePath(); c.fill(); c.beginPath(); c.moveTo(11.6, -8); c.lineTo(1.8, -2.8); c.lineTo(2, -1.2); c.lineTo(11, -5.4); c.closePath(); c.fill();
+  c.strokeStyle = INK; c.lineWidth = 0.9; c.beginPath(); c.moveTo(-8.6, -7); c.lineTo(-1, -2.6); c.moveTo(11, -8); c.lineTo(1.8, -2.8); c.stroke();
   // нос и пасть
   c.beginPath(); c.moveTo(0.8, 3.6); c.lineTo(-0.6, 7); c.lineTo(2.8, 7); c.fill();
   c.fillStyle = INK; c.fillRect(-5.6, 7.4, 14, 2.4 + jaw);
-  c.fillStyle = BONE; for (let i = 0; i < 6; i++) { const th = i === 1 || i === 4 ? 4 : 2.8; c.beginPath(); c.moveTo(-5.2 + i * 2.3, 7.4); c.lineTo(-4.2 + i * 2.3, 7.4 + th); c.lineTo(-3.2 + i * 2.3, 7.4); c.fill(); }
+  c.fillStyle = BONE; for (let i = 0; i < 6; i++) { const th = i === 1 || i === 4 ? 6 : 3.4; c.beginPath(); c.moveTo(-5.2 + i * 2.3, 7.4); c.lineTo(-4.2 + i * 2.3, 7.4 + th); c.lineTo(-3.2 + i * 2.3, 7.4); c.fill(); }
   if (jaw > 2) { c.fillStyle = BONE2; c.fillRect(-4.8, 9.8 + jaw - 0.6, 11, 2.2); c.fillStyle = INK; c.fillRect(-4.8, 11.8 + jaw - 0.6, 11, 0.8); }
   else { c.fillStyle = BONE2; c.fillRect(-4.8, 9.6, 11, 2.4); c.fillStyle = BONE; for (let i = 0; i < 5; i++) c.fillRect(-4.2 + i * 2.3, 9.6, 1.1, 1.8); }
   // корона: кривая, ржавое золото, один зубец сломан
@@ -185,7 +190,7 @@ function kpPaint(c, fr, ph) {
   const cg = c.createLinearGradient(-10, 0, 10, 0); cg.addColorStop(0, C.gold[0]); cg.addColorStop(0.55, C.gold[1]); cg.addColorStop(1, C.gold[2]);
   c.fillStyle = cg; c.fillRect(-10, -2, 20, 5.2); c.fillStyle = C.gold[0]; c.fillRect(-10, -2, 20, 1.2);
   c.fillStyle = C.rust[1]; c.fillRect(-4, 0, 3, 1.6); c.fillRect(5, -1, 2, 1.4);                               // ржавчина
-  for (const [dx, h, br] of [[-9, 8, 0], [-4, 12, 0], [1.4, 7, 1], [6, 13, 0], [10, 6, 0]]) {
+  for (const [dx, h, br] of [[-9, 10, 0], [-4, 16, 0], [1.4, 7, 1], [6, 17, 0], [10, 9, 0]]) {
     const tip = br ? 4 : h;
     c.fillStyle = INK; c.beginPath(); c.moveTo(dx - 3, -2); c.lineTo(dx + (br ? 1.4 : 0.4), -2 - tip - 1.6); c.lineTo(dx + 3, -2); c.fill();
     c.fillStyle = C.gold[1]; c.beginPath(); c.moveTo(dx - 2, -2); c.lineTo(dx + (br ? 1.2 : 0.4), -1.6 - tip); c.lineTo(dx + 2, -2); c.fill();
@@ -194,29 +199,40 @@ function kpPaint(c, fr, ph) {
   c.restore();
   c.restore();
   // свет в глазницах (после поворота головы пересчитываем точку, поворот мал)
-  const lit = P.flare > 0.9 || ph === 3 ? 2 : ph === 2 ? 1 : (P.flare > 0 ? 1 : 0), ec = C.eye[lit];
+  const lit = P.flare > 0.9 || ph === 3 ? 2 : ph === 2 ? 1 : 0, ec = C.eye[lit];
   const ex = (x, y) => [hx + x * Math.cos(P.tilt - 0.04) - y * Math.sin(P.tilt - 0.04), hy + x * Math.sin(P.tilt - 0.04) + y * Math.cos(P.tilt - 0.04)];
-  const e1 = ex(-4, 0.8), e2 = ex(5.6, 0), sz = ph === 3 ? 3 : 2;
-  marks.push([e1[0], e1[1], ec, sz], [e2[0], e2[1], ec, sz]);
-  if (ph >= 2) { marks.push([e1[0] - 1, e1[1], 'rgba(106,208,255,0.5)', 1], [e2[0] + sz, e2[1], 'rgba(106,208,255,0.5)', 1]); }
+  const e1 = ex(-5, 1), e2 = ex(6.4, 0.4), sz = ph === 3 ? 4 : 3;
+  marks.push([e1[0], e1[1], ec, sz], [e2[0], e2[1], ec, sz], [e1[0] - 2, e1[1] - 1, ec, 2], [e2[0] + sz - 1, e2[1] - 1, ec, 2]);
+  marks.push([e1[0] - 3, e1[1] - 2, 'rgba(106,208,255,0.55)', 1], [e2[0] + sz + 1, e2[1] - 2, 'rgba(106,208,255,0.55)', 1]);
   const cg2 = ex(0.6 - 1, -8.4 - 0.6); marks.push([cg2[0] + 2, cg2[1] - 0.6, C.glow, 2]);                       // камень на короне
-  // ---- меч: тяжёлый, ржавый, щербатый; хват — за рукоять, ладонь на ней
+  // ---- меч: зазубренный клинок из холодной стали, светящиеся руны; хват — за рукоять, ладонь на ней
   const hd = [P.hand[0] + lean * 0.3, P.hand[1] + sk * 0.5 + P.bob], sa = [shx + 3, shY + 3];
   const ex2 = (sa[0] + hd[0]) / 2 - 2, ey2 = (sa[1] + hd[1]) / 2 + 5;
   bone(sa[0], sa[1], ex2, ey2, 5.4); bone(ex2, ey2, hd[0], hd[1], 4.6); joint(ex2, ey2, 3);
-  c.save(); c.translate(hd[0] + Math.cos(P.ang) * 6, hd[1] + Math.sin(P.ang) * 6); c.rotate(P.ang);
-  c.fillStyle = INK; c.beginPath(); c.moveTo(-1, -5.2); c.lineTo(48, -5.6); c.lineTo(55, 0); c.lineTo(48, 5.6); c.lineTo(-1, 5.2); c.closePath(); c.fill();
-  const rg = c.createLinearGradient(0, -4, 0, 4); rg.addColorStop(0, C.rust[0]); rg.addColorStop(0.45, C.rust[1]); rg.addColorStop(1, C.rust[2]);
-  c.fillStyle = rg; c.beginPath(); c.moveTo(0, -4); c.lineTo(47, -4.2); c.lineTo(53, 0); c.lineTo(47, 4.2); c.lineTo(0, 4); c.closePath(); c.fill();
-  c.fillStyle = C.rust[2]; c.fillRect(2, -0.6, 42, 1.2);                                           // дол
-  c.fillStyle = INK; for (const x of [9, 18, 27, 36]) { c.beginPath(); c.moveTo(x, -4.2); c.lineTo(x + 2.4, -1.8); c.lineTo(x + 4.6, -4.2); c.fill(); }   // щербины
-  c.fillStyle = C.iron[0]; for (const x of [6, 22, 33]) c.fillRect(x, 1.6, 3.4, 1.4);               // светлая сталь под ржавчиной
-  c.fillStyle = '#c0501a'; for (const x of [12, 30, 41]) c.fillRect(x, -3, 3, 1.6);
-  if (ph === 3) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(110,210,255,0.8)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(2, -4.4); c.lineTo(50, -4.6); c.moveTo(2, 4.4); c.lineTo(50, 4.4); c.stroke(); c.restore(); }
-  c.fillStyle = INK; c.fillRect(-6, -9, 6, 18); c.fillStyle = C.iron[1]; c.fillRect(-5, -8, 4, 16); c.fillStyle = C.iron[0]; c.fillRect(-5, -8, 1.4, 16);      // гарда
-  c.fillStyle = INK; c.fillRect(-15, -2.6, 10, 5.2); c.fillStyle = C.rust[2]; c.fillRect(-14, -1.6, 8.6, 3.2);                                                     // рукоять
-  c.fillStyle = INK; c.beginPath(); c.arc(-16, 0, 3.8, 0, 7); c.fill(); c.fillStyle = C.gold[1]; c.beginPath(); c.arc(-16, 0, 2.6, 0, 7); c.fill();          // навершие
+  const gw = [0.55, 0.8, 1][ph - 1], cs = Math.cos(P.ang), sn2 = Math.sin(P.ang), org = [hd[0] + cs * 6, hd[1] + sn2 * 6];
+  const wp = (l, w) => [org[0] + cs * l - sn2 * w, org[1] + sn2 * l + cs * w];       // точка клинка: l — вдоль, w — поперёк
+  c.save(); c.translate(org[0], org[1]); c.rotate(P.ang);
+  c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(90,190,255,${0.16 * gw})`; c.lineWidth = 15; c.beginPath(); c.moveTo(4, 0); c.lineTo(58, 0); c.stroke(); c.lineWidth = 8; c.strokeStyle = `rgba(150,230,255,${0.2 * gw})`; c.stroke(); c.restore();
+  // клинок: широкий у гарды, к концу сужается и загибается; нижняя кромка зазубрена
+  const blade = (e) => { c.beginPath(); c.moveTo(0, -5.8 - e); c.lineTo(40, -5 - e); c.quadraticCurveTo(54, -4 - e, 64 + e, -3.6 + e * 0.2); c.lineTo(46, 3 + e); for (let k = 0; k < 4; k++) { c.lineTo(38 - k * 10, 3.6 + e + 2.4); c.lineTo(34 - k * 10, 5.6 + e); } c.lineTo(0, 5.8 + e); c.closePath(); };
+  blade(1.1); c.fillStyle = INK; c.fill();
+  const bg = c.createLinearGradient(0, -6, 0, 6); bg.addColorStop(0, C.blade[0]); bg.addColorStop(0.35, C.blade[1]); bg.addColorStop(0.75, C.blade[2]); bg.addColorStop(1, C.blade[3]);
+  blade(0); c.fillStyle = bg; c.fill();
+  c.fillStyle = C.blade[3]; c.fillRect(2, -0.8, 46, 1.6);                                          // дол
+  c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(190,245,255,${0.55 + 0.4 * gw})`; c.lineWidth = 1.3; c.beginPath(); c.moveTo(3, 0); c.lineTo(52, 0); c.stroke(); c.restore();
+  c.fillStyle = C.blade[0]; c.fillRect(2, -5, 38, 1.1); c.fillStyle = '#ffffff'; c.fillRect(46, -3.6, 12, 0.9);   // блик по лезвию
   c.restore();
+  for (let k = 0; k < 4; k++) { const q = wp(9 + k * 9, 0); marks.push([q[0] - 1, q[1] - 1, ph === 1 ? '#8ae0ff' : '#ffffff', ph === 3 ? 3 : 2]); }   // руны
+  c.save(); c.translate(org[0], org[1]); c.rotate(P.ang);
+  // гарда: чёрная сталь с изогнутыми рогами и камнем
+  c.fillStyle = INK; c.beginPath(); c.moveTo(-5, -13); c.quadraticCurveTo(-1, -9, 2, -6); c.lineTo(2, 6); c.quadraticCurveTo(-1, 9, -5, 13); c.lineTo(-3, 5); c.lineTo(-3, -5); c.closePath(); c.fill();
+  c.fillStyle = C.iron[2]; c.beginPath(); c.moveTo(-4, -11.6); c.quadraticCurveTo(-0.6, -8.4, 1, -5.4); c.lineTo(1, 5.4); c.quadraticCurveTo(-0.6, 8.4, -4, 11.6); c.lineTo(-2.4, 4.6); c.lineTo(-2.4, -4.6); c.closePath(); c.fill();
+  c.fillStyle = C.gold[0]; c.fillRect(-2.2, -4, 1.4, 8);
+  c.fillStyle = INK; c.fillRect(-16, -2.8, 12, 5.6); c.fillStyle = '#2a2430'; c.fillRect(-15, -1.8, 10.4, 3.6);          // рукоять в кожаной обмотке
+  c.fillStyle = C.gold[1]; for (const x of [-14, -10.4, -6.8]) c.fillRect(x, -2, 1.2, 4);
+  c.fillStyle = INK; c.beginPath(); c.arc(-18, 0, 4.4, 0, 7); c.fill(); c.fillStyle = C.blade[1]; c.beginPath(); c.arc(-18, 0, 3.2, 0, 7); c.fill();        // навершие-кристалл
+  c.restore();
+  { const g1 = wp(-1.4, 0), g2 = wp(-18, 0); marks.push([g1[0] - 1, g1[1] - 1, '#ffffff', 2], [g2[0] - 1, g2[1] - 1, '#ffffff', 2]); }
   // костяная ладонь на рукояти
   c.fillStyle = INK; c.beginPath(); c.arc(hd[0], hd[1], 4.6, 0, 7); c.fill(); c.fillStyle = BONE; c.beginPath(); c.arc(hd[0], hd[1], 3.4, 0, 7); c.fill();
   c.strokeStyle = INK; c.lineWidth = 0.9; const dx = Math.cos(P.ang), dy = Math.sin(P.ang);
