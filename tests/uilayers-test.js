@@ -83,6 +83,13 @@ const iApp = html.indexOf('<div id="app">'), iSpeed = html.indexOf('id="speed-cu
 check(iApp >= 0 && iApp < iSpeed && iSpeed < iLoad, 'кнопка скорости вне #app — заставка её не спрячет');
 check(html.includes('href="css/uilayers.css"') && html.includes('src="js/uilayers.js"'), 'index.html: слои не подключены');
 
+// ---- раскрытое меню верхней полосы выше окна обучения (шаг «Первая ночь»: «Ускорьте время»)
+const tutZ = +(read('css/tutorial.css').match(/#tut \{[^}]*z-index: (\d+)/) || [])[1];
+const ddZ = +(css.match(/#topbar:has\(\.dd\.open\)\s*\{\s*z-index:\s*(\d+)/) || [])[1];
+check(ddZ > tutZ, `раскрытое меню скорости (${ddZ}) не выше окна обучения (${tutZ}) — ×2 ×3 не нажать`);
+for (const f of fs.readdirSync(path.join(ROOT, 'css')).filter(f => f !== 'uilayers.css' && f !== 'style.css'))
+  check(!/#topbar:has\(\.dd\.open\)\s*\{\s*z-index/.test(read('css/' + f)), `css/${f}: z-index раскрытой верхней полосы задаётся не в uilayers.css`);
+
 // ---- музыка на заставке: один выключатель с первого кадра, «♪» игры внутри скрытого #app, логотип ниже кнопки на телефоне
 const iSnd = html.indexOf('id="dd-snd"');
 check(iApp < iSnd && iSnd < iLoad, '«♪» верхней полосы вне #app — на заставке будет второй выключатель музыки');
