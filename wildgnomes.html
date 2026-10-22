@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Лист диких гномов</title>
+<style>
+body{margin:0;background:#2a3a1e;color:#eee;font:13px/1.35 sans-serif}
+#bar{position:sticky;top:0;background:#000c;padding:6px 10px;display:flex;gap:12px;align-items:center;z-index:2;flex-wrap:wrap}
+h3{margin:14px 10px 2px;color:#f6d458}
+p{margin:0 10px 4px;color:#cfc;max-width:900px}
+.row{display:flex;flex-wrap:wrap;gap:8px;padding:4px 10px}
+.cell{display:flex;flex-direction:column;align-items:center;font-size:11px;color:#dfe;text-align:center}
+canvas{image-rendering:pixelated;background:#4f7a30}
+.ours canvas{background:#4f7a30;outline:2px solid #6ac}
+</style></head><body>
+<div id="bar"><b>Дикие гномы — лист-сравнение</b> <label>вариант <select id="st" onchange="location.search='?style='+this.value"><option value="A">A — землистые дикари</option><option value="B">B — ближе к нашим</option></select></label>
+<label>масштаб <select id="sc"><option>2</option><option selected>3</option><option>4</option></select></label>
+<label>вид <select id="vw"><option value="S" selected>лицом</option><option value="E">боком</option><option value="N">спиной</option></select></label>
+<span id="err" style="color:#f88"></span></div>
+<div id="out"></div>
+<script>
+window.onerror = (m, s, l) => { document.getElementById('err').textContent += ' ' + m + ' @' + (s || '').split('/').pop() + ':' + l + ';'; };
+window.WILD_STYLE = new URLSearchParams(location.search).get('style') || 'A';
+const files = ['js/world/fire.js', 'js/config.js', 'js/world.js', 'js/sprites.js', 'js/pixel.js', 'js/smoking.js', 'js/people.js', 'js/world/wildart.js'];
+(async () => {
+  for (const f of files) await new Promise(ok => { const s = document.createElement('script'); s.src = f + '?v=' + Date.now(); s.onload = ok; s.onerror = () => { err.textContent += ' не загрузился ' + f; ok(); }; document.head.appendChild(s); });
+  if (typeof Game === 'undefined') window.Game = { time: 0 };
+  if (typeof R === 'undefined') window.R = { smooth: false };
+  if (typeof unitLevel === 'undefined') window.unitLevel = () => 1;
+  spriteBudgetOk = () => true;   // лист строит сотни кадров за раз
+  const q = new URLSearchParams(location.search); if (q.get('sc')) sc.value = q.get('sc'); if (q.get('vw')) vw.value = q.get('vw');
+  st.value = WILD_STYLE; draw(); sc.onchange = vw.onchange = draw;
+})();
+const BG = '#4f7a30';
+function cell(row, spr, label, k, cls, flip) {
+  const d = document.createElement('div'); d.className = 'cell ' + (cls || '');
+  const cv = document.createElement('canvas'); cv.width = spr.width * k; cv.height = spr.height * k;
+  const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+  if (flip) { c.translate(cv.width, 0); c.scale(-1, 1); }
+  c.drawImage(spr, 0, 0, cv.width, cv.height);
+  d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = label; d.appendChild(sp); row.appendChild(d);
+}
+let SECN = 0; const ONLY = new URLSearchParams(location.search).get('sec');
+function sect(title, note) { SECN++; const h = document.createElement('h3'); h.textContent = title; out.appendChild(h); if (note) { const p = document.createElement('p'); p.textContent = note; out.appendChild(p); } const r = document.createElement('div'); r.className = 'row'; out.appendChild(r); if (ONLY && +ONLY !== SECN) { h.style.display = 'none'; r.style.display = 'none'; const pp = h.nextSibling; if (note && pp) pp.style.display = 'none'; } return r; }
+const ours = (type, look, view, pose = 'idle', frame = 0, opt = {}) => personSprite({ type, look, carry: null }, view, pose, frame, opt);
+function draw() {
+  const k = +sc.value, V = vw.value; out.innerHTML = ''; SECN = 0;
+  Game.time = 0;
+  // 1. наш и дикие путники
+  let r = sect('1. Наш гном и дикие путники', 'Те же пропорции, уши, нос, живот, сапоги и пиксельная обводка. Но у наших — зелёная туника и мшистый колпак, у диких — землистая одежда, повязки/рога/капюшоны, косы и дреды, раскраска, заплатки, ремень с амулетом.');
+  cell(r, ours('woodcutter', 11, V), 'наш: дровосек', k, 'ours'); cell(r, ours('farmer', 23, V), 'наш: фермер', k, 'ours'); cell(r, ours('miner', 5, V), 'наш: шахтёр', k, 'ours');
+  for (const [key, nm] of [['pilgrim', 'паломник'], ['herbalist', 'травница'], ['courier', 'гонец'], ['wanderer', 'бродяга'], ['seeker', 'искатель']]) cell(r, wildSprite(key, V, 'walk', 2), 'дикий: ' + nm, k);
+  // 2. роли
+  r = sect('2. Наш · путник · торговец · воин · злой', 'Злые (вор, разбойник, вождь злого поселения): тёмная одежда, кость и шипы, красная раскраска, красные глаза, крупнее.');
+  cell(r, ours('hero', 3, V, 'idle', 0, { wpn: 'sword||1' }), 'наш: герой', k, 'ours');
+  cell(r, wildSprite('wanderer', V, 'idle', 0), 'путник (бродяга)', k);
+  cell(r, wildSprite('wt:sand', V, 'idle', 0), 'торговец (песочник)', k);
+  cell(r, wildSprite('folk:grey:0', V, 'fight', 'ready'), 'воин (сизые)', k);
+  cell(r, wildSprite('folk:copper:0', V, 'fight', 'windup'), 'воин: замах', k);
+  cell(r, wildSprite('folk:copper:0', V, 'fight', 'strike'), 'воин: удар', k);
+  cell(r, wildSprite('thief', V, 'walk', 3), 'злой: вор', k);
+  cell(r, wildSprite('brigand', V, 'fight', 'ready'), 'злой: разбойник', k);
+  cell(r, wildSprite('chief:copper!', V, 'fight', 'ready'), 'злой вождь', k);
+  // 3. фракции
+  r = sect('3. Четыре фракции: жители (3 вида), торговец, вождь', 'Фракцию видно по цвету повязки, головному убору и бороде: Медноборы — рога и рыжие косы; Мхиные — лосиные рога, венок, мох, зелёная кожа; Сизые — меховая шапка, плетёная борода, щит; Песочники — чалма, золотые бусины, весы.');
+  if (!ONLY || +ONLY === 3) for (const f of ['copper', 'moss', 'grey', 'sand']) {
+    const row = document.createElement('div'); row.className = 'row'; row.style.width = '100%'; out.appendChild(row);
+    for (let i = 0; i < 3; i++) cell(row, wildSprite(`folk:${f}:${i}`, V, 'idle', 0), `${f} · житель ${i + 1}`, k);
+    cell(row, wildSprite(`wt:${f}`, V, 'walk', 1), 'торговец', k); cell(row, wildSprite(`chief:${f}`, V, 'idle', 0), 'вождь', k);
+    cell(row, wildSprite(`folk:${f}:0!`, V, 'idle', 0), 'злой житель', k); cell(row, wildSprite(`chief:${f}!`, V, 'idle', 0), 'злой вождь', k);
+  }
+  // 4. кадры
+  r = sect('4. Кадры: покой · ходьба 8 · разговор · торговля · удар · смерть · радость', 'Один вид (' + V + '), боец Медноборов. Направления: лицом, боком (зеркало даёт «влево»), спиной.');
+  const K = 'folk:copper:0';
+  for (let i = 0; i < 2; i++) cell(r, wildSprite(K, V, 'idle', i * 3), 'покой ' + (i + 1), k);
+  for (let i = 0; i < 8; i++) cell(r, wildSprite(K, V, 'walk', i), 'ходьба ' + (i + 1), k);
+  for (let i = 0; i < 3; i++) cell(r, wildSprite(K, V, 'idle', 0, { gest: ['wave', 'point', 'fist'][i], gf: 1, wpn: '' }), ['разговор: машет', 'разговор: указывает', 'разговор: кулак'][i], k);
+  cell(r, wildSprite('wt:copper', V, 'idle', 0, { gest: 'clap', gf: 1 }), 'торговля: хлопок', k);
+  for (const fr of ['windup', 'strike', 'follow', 'parry', 'hurt']) cell(r, wildSprite(K, V, 'fight', fr), { windup: 'замах', strike: 'удар', follow: 'довод', parry: 'блок', hurt: 'ранен' }[fr], k);
+  for (const fr of ['win0', 'win1']) cell(r, wildSprite(K, V, 'fight', fr), 'радость ' + (fr === 'win0' ? 1 : 2), k);
+  // смерть — повороты
+  [0, -0.35, -0.8, -1.2, -1.45, -1.57].forEach((a, i) => { const s = wildSprite(K, V, 'fight', 'hurt'), cv = document.createElement('canvas'); cv.width = s.width * 1.4; cv.height = s.height; const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.translate(cv.width * 0.5, s.height * 0.92); c.rotate(a); c.globalAlpha = i === 5 ? 0.6 : 1; c.drawImage(s, -s.width / 2, -s.height * 0.92); cell(r, cv, 'смерть ' + (i + 1), k); });
+  // 5. три направления одного и того же
+  r = sect('5. Три ракурса (боком зеркалится)', '');
+  for (const key of ['wanderer', 'chief:moss', 'brigand', 'wt:sand']) for (const v of ['S', 'E', 'N']) cell(r, wildSprite(key, v, 'idle', 0), key + ' ' + v, k);
+  // 6. издалека
+  r = sect('6. Издалека (масштаб игры 1:1 и вид «большая карта» ×0,6): где наши, где дикие?', 'Слева наши гномы, справа дикие: узнаются по силуэту (рога, перья, воротник) и цвету (земля, а не зелень).');
+  for (const sc2 of [1, 0.6]) {
+    const cv = document.createElement('canvas'); cv.width = 520; cv.height = 130; const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+    c.fillStyle = '#5c8a36'; c.fillRect(0, 0, 520, 130); for (let i = 0; i < 160; i++) { c.fillStyle = i % 2 ? '#528030' : '#68983c'; c.fillRect((i * 97) % 520, (i * 53) % 130, 3, 2); }
+    c.save(); c.scale(sc2, sc2);
+    const ourT = ['woodcutter', 'builder', 'miner', 'farmer', 'stonemason', 'baker', 'carpenter'];
+    ourT.forEach((t, i) => { const s = ours(t, 3 + i * 9, 'S', 'walk', i); c.drawImage(s, 12 + i * 34 - PFX + 13, 70 / sc2 - PFY + 30 + (i % 2) * 8, PW, PH); });
+    const wk = ['wanderer', 'chief:copper', 'folk:moss:0', 'folk:grey:0', 'wt:sand', 'brigand', 'folk:sand:0'];
+    wk.forEach((t, i) => { const s = wildSprite(t, 'S', 'walk', i); c.drawImage(s, 280 + i * 34 - PFX + 13, 70 / sc2 - PFY + 30 + (i % 2) * 8, PW, PH); });
+    c.restore();
+    const d = document.createElement('div'); d.className = 'cell'; cv.style.width = 1040 + 'px'; cv.style.height = 260 + 'px'; d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = 'масштаб ' + sc2; d.appendChild(sp); r.appendChild(d);
+  }
+}
+</script></body></html>
