@@ -962,11 +962,12 @@ function fzCanvas(key, w, h, ox, oy, draw) {
 }
 // Банши: печальная и жуткая плакальщица в рваном саване, пиксель-арт 64×84 (1 пиксель = 1 пиксель спрайта, потом ×3 без сглаживания).
 // Саван в складках и просвечивает, хвост рассыпается лоскутами и дымкой; лицо живое, но мёртвое: впалые глазницы с огоньками, дорожки слёз, скорбный рот (в крике — раскрыт).
-// Руки тонкие, пальцы разведены веером и чуть загнуты. Всё симметрично относительно оси. wail — крик, руки воздеты. p — фаза (0..5)
+// Руки тонкие, пальцы разведены веером и чуть загнуты. Всё симметрично относительно оси.
+// lv — стадия крика: 0 покой, 1 замах (руки поднимаются, рот приоткрыт; так же опускаются), 2 крик. p — фаза парения (0..11); в покое на фазе 7 глаза закрыты.
 const FZ_B4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
-function fzBansheePx(wail, p) {
+function fzBansheePx(lv, p) {
   const cv = document.createElement('canvas'); cv.width = 64; cv.height = 84;
-  const c = cv.getContext('2d'), OX = 32, OY = 30, ph = p / 6 * Math.PI * 2;
+  const c = cv.getContext('2d'), OX = 32, OY = 30, ph = p / 12 * Math.PI * 2, wail = lv === 2, kk = lv / 2, lerp = (a, b) => a + (b - a) * kk, blink = lv === 0 && p === 7;
   const P = (x, y, col) => { c.fillStyle = col; c.fillRect(OX + x, OY + y, 1, 1); };
   const M = (x, y, col) => { P(x, y, col); P(-1 - x, y, col); };                    // x >= 0: пара пикселей, зеркально относительно оси
   const dth = (x, y) => (FZ_B4[y & 3][x & 3] + 0.5) / 16;
@@ -1023,7 +1024,7 @@ function fzBansheePx(wail, p) {
   }
   // длинные седые космы по бокам: пряди разной длины, тают к кончикам; верх — седая макушка с пробором
   for (let k = 0; k < 5; k++) {
-    const len = 20 + k * 3 + (k === 4 ? 4 : 0) + (wail ? 2 : 0), top = -13 + (k > 2 ? k - 2 : 0);
+    const len = 20 + k * 3 + (k === 4 ? 4 : 0) + (kk * 2 | 0), top = -13 + (k > 2 ? k - 2 : 0);
     for (let y = top; y <= top + len; y++) {
       const t = (y - top) / len, w = Math.round(Math.sin(ph + y * 0.2 + k) * (t * 1.6));
       if (dth(5 + k, y) > 1 - t * t) continue;
@@ -1053,8 +1054,11 @@ function fzBansheePx(wail, p) {
   M(4, -12, 'rgb(130,158,192)'); M(4, -11, 'rgb(176,200,224)'); M(4, -10, 'rgb(130,158,192)'); M(4, -9, 'rgb(176,200,224)');
   // брови-«домиком» (скорбь), впалые глазницы, огоньки, дорожки слёз
   for (const [x, y] of [[1, -11], [2, -11], [3, -10], [4, -10]]) M(x, y, 'rgb(70,96,128)');
-  for (const [x, y] of [[1, -9], [2, -9], [3, -9], [1, -8], [2, -8], [3, -8], [2, -7]]) M(x, y, CORE);
-  M(2, -8, 'rgb(120,250,225)'); M(2, -9, 'rgb(230,255,250)');
+  if (blink) for (const x of [1, 2, 3]) M(x, -8, 'rgb(60,84,116)');                  // веки
+  else {
+    for (const [x, y] of [[1, -9], [2, -9], [3, -9], [1, -8], [2, -8], [3, -8], [2, -7]]) M(x, y, CORE);
+    M(2, -8, wail ? 'rgb(190,255,240)' : 'rgb(120,250,225)'); M(2, -9, 'rgb(230,255,250)');
+  }
   for (const x of [1, 3]) M(x, -7, 'rgb(96,126,160)');                              // тень под глазами
   for (const y of [-6, -5, -4]) M(3, y, 'rgba(110,235,215,0.65)');                  // слёзы
   M(3, -3, 'rgba(110,235,215,0.35)');
@@ -1066,6 +1070,9 @@ function fzBansheePx(wail, p) {
   if (wail) {
     for (const [x0, x1, y] of [[0, 1, -3], [0, 2, -2], [0, 2, -1], [0, 2, 0], [0, 1, 1]]) for (let x = x0; x <= x1; x++) M(x, y, CORE);
     M(0, -3, '#f2fbff'); M(1, -3, '#f2fbff'); M(2, -2, '#f2fbff'); M(1, 1, '#f2fbff'); M(0, 1, '#f2fbff'); M(2, 0, 'rgb(190,214,230)');
+  } else if (lv === 1) {
+    for (const [x0, x1, y] of [[0, 1, -4], [0, 2, -3], [0, 1, -2]]) for (let x = x0; x <= x1; x++) M(x, y, CORE);
+    M(0, -4, '#f2fbff'); M(1, -4, '#f2fbff');
   } else {
     M(0, -4, CORE); M(1, -4, CORE); M(2, -3, CORE); M(0, -3, 'rgb(150,184,210)'); M(3, -4, 'rgb(130,160,190)');
   }
@@ -1075,8 +1082,8 @@ function fzBansheePx(wail, p) {
   const sw1 = Math.round(Math.sin(ph) * 1), sw2 = Math.round(Math.sin(ph * 2));
   for (const s of [-1, 1]) {
     const Q = (x, y, col) => P(s > 0 ? x : -1 - x, y, col);
-    const hx = (wail ? 12 : 11) + sw1, hy = wail ? -14 + sw2 : 12 + sw2;
-    const sx = 7, sy = 5, mx = (sx + hx) / 2 + 4, my = (sy + hy) / 2 + (wail ? 0 : 3);
+    const hx = Math.round(lerp(11, 12)) + sw1, hy = Math.round(lerp(12, -14)) + sw2;
+    const sx = 7, sy = 5, mx = (sx + hx) / 2 + 4, my = (sy + hy) / 2 + Math.round(lerp(3, 0));
     for (let m = 0; m <= 24; m++) {
       const t = m / 24, u = 1 - t, x = u * u * sx + 2 * u * t * mx + t * t * hx, y = u * u * sy + 2 * u * t * my + t * t * hy;
       const w = t < 0.4 ? 3 : 2, col = t < 0.4 ? 'rgba(150,198,230,0.9)' : t < 0.7 ? 'rgba(190,222,240,0.92)' : 'rgba(215,240,250,0.95)';
@@ -1084,10 +1091,10 @@ function fzBansheePx(wail, p) {
     }
     for (const [t, l] of [[0.1, 5], [0.22, 7], [0.34, 5]]) {                           // лохмотья рукава
       const u = 1 - t, x = Math.round(u * u * sx + 2 * u * t * mx + t * t * hx), y = Math.round(u * u * sy + 2 * u * t * my + t * t * hy) + 2;
-      for (let k = 0; k < l; k++) if (dth(x + k, y + k) < 1 - k / l) Q(x + (wail ? 0 : 1), y + k, `rgba(120,172,214,${0.7 - k * 0.08})`);
+      for (let k = 0; k < l; k++) if (dth(x + k, y + k) < 1 - k / l) Q(x + (kk < 0.5 ? 1 : 0), y + k, `rgba(120,172,214,${0.7 - k * 0.08})`);
     }
     // кисть
-    const dir = wail ? -Math.PI / 2 + 0.3 : Math.PI / 2 - 0.3, ca = Math.cos(dir), sa = Math.sin(dir);
+    const dir = lerp(Math.PI / 2 - 0.3, -Math.PI / 2 + 0.3), ca = Math.cos(dir), sa = Math.sin(dir);
     for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) Q(hx + i, hy + j, 'rgba(205,234,247,0.95)');
     const line = (x0, y0, x1, y1, col, th) => {
       const n = Math.max(1, Math.round(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
@@ -1105,10 +1112,10 @@ function fzBansheePx(wail, p) {
   }
   return cv;
 }
-function fzBansheeSprite(wail, p) {
-  const k = 'ban' + wail + p;
+function fzBansheeSprite(lv, p) {
+  const k = 'ban' + lv + p;
   if (FZ_CVC[k]) return FZ_CVC[k];
-  const px = fzBansheePx(wail, p);
+  const px = fzBansheePx(lv, p);
   const cv = fzCanvas(k, 64, 84, 32, 30, c => { c.imageSmoothingEnabled = false; c.drawImage(px, -32, -30, 64, 84); });
   cv.fzPx = true;
   return cv;
@@ -1283,7 +1290,7 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
   const N = F.noon;
   if (N && vis(N.x, N.y) && N.alpha > 0) list.push([N.y + 0.2, () => fzDrawHi(c, fzNoonSprite(Math.floor(N.ph * 3) % 6), N.x, N.y, N.alpha, N.face, 6)]);
   for (const b of F.ban) if (vis(b.x, b.y) && b.alpha > 0) list.push([b.y + 0.3, () => {
-    fzDrawHi(c, fzBansheeSprite(b.wail > 0 ? 1 : 0, Math.floor(b.ph * 2.2) % 6), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, -14 + Math.sin(b.ph * 1.7) * 3);
+    fzDrawHi(c, fzBansheeSprite(b.wail > 2.1 ? 1 : b.wail > 0.3 ? 2 : b.wail > 0 ? 1 : 0, Math.floor(b.ph * 4.4) % 12), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, -14 + Math.sin(b.ph * 1.7) * 3);
   }]);
   for (const w of F.wolves) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.1, () => {
     fzDrawHi(c, fzWolfSprite(Math.floor(w.ph) % 4, w.howlT > 0), w.x, w.y, Math.min(1, w.alpha * 1.4), w.face, 4);
