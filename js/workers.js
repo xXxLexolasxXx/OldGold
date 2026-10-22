@@ -394,6 +394,11 @@ function wkOpts(cur, list, extra) {
 function wkCardBody(u) {
   const s = wkStatus(u), p = u.wk;
   let h = `<div class="wk-t">Работа · ${wkName(u)}${wkPinLabel(u) ? ' · 📌' : ''}</div>`;
+  if (typeof isProf === 'function' && isProf(u)) {
+    const L = unitLevel(u), M = levelMax(u.type), t = LEVEL_XP[u.type], sp = Math.round((PROF_SPEED[L] - 1) * 100);
+    h += `<div class="wk-hint">Уровень ${L} из ${M}${L < M ? ` · выслуга ${u.xp || 0} из ${t[L]}` : ''}${sp ? ` · быстрее на ${sp}%` : ''}<br>${profPerkText(u.type)}</div>`;
+    if (u.type === 'stonemason' && u.home && u.home.type === 'quarry') h += `<div class="wk-hint">Ходит за камнем до ${quarryReach(u, u.home)} клеток от каменоломни</div>`;
+  }
   h += s.why ? `<div class="wk-st idle">Стоит: <b>${s.why}</b></div>` : `<div class="wk-st">Занят: ${s.doing || 'при деле'}</div>`;
   const cd = Math.max(0, Math.ceil((u.kickAt || -1e9) + WK_KICK_CD - Game.time));
   const kick = wkKickable(u) || (wkMirror() && s.why);

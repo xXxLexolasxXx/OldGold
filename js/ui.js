@@ -568,18 +568,21 @@ function peopleHTML() {
   return h;
 }
 
-// Выслуга трудяг и работяг: сколько на каком уровне и шкала до следующего у каждого
+// Выслуга трудяг, работяг и мастеров: сколько на каком уровне и шкала до следующего у каждого
 function levelsHTML(type) {
   const list = Game.units.filter(u => u.type === type).sort((a, b) => (b.xp || 0) - (a.xp || 0));
-  const by = [0, 0, 0, 0];
+  const M = levelMax(type), by = new Array(M + 1).fill(0), prof = LEVEL_XP[type] === PROF_XP;
   for (const u of list) by[unitLevel(u)]++;
-  const what = type === 'serf' ? ['', 'носит по 1', 'по 2 за раз', 'по 3 за раз'] : ['', 'ждёт подвоза', 'берёт 1 материал', 'берёт 2 материала'];
-  const need = type === 'serf' ? 'доставок' : 'очков (здание 3, дорога 1)';
-  let h = `<div class="lvls"><div class="muted small">${[1, 2, 3].filter(l => by[l]).map(l => `ур.${l}: <b>${by[l]}</b> (${what[l]})`).join(' · ')}</div><div class="xpbars">`;
+  const what = type === 'serf' ? ['', 'носит по 1', 'по 2 за раз', 'по 3 за раз'] : type === 'builder' ? ['', 'ждёт подвоза', 'берёт 1 материал', 'берёт 2 материала']
+    : PROF_SPEED.map(k => k > 1 ? `быстрее на ${Math.round((k - 1) * 100)}%` : 'новичок');
+  const need = type === 'serf' ? 'доставок' : type === 'builder' ? 'очков (здание 3, дорога 1)' : type === 'healer' ? 'очков (2 за перевязку)' : 'циклов работы';
+  const lv = [];
+  for (let l = 1; l <= M; l++) if (by[l]) lv.push(`ур.${l}: <b>${by[l]}</b> (${what[l]})`);
+  let h = `<div class="lvls"><div class="muted small">${lv.join(' · ')}</div>${prof ? `<div class="muted small">Опыт: ${profPerkText(type)}</div>` : ''}<div class="xpbars">`;
   const shown = list.slice(0, 12);
   for (const u of shown) {
     const L = unitLevel(u), p = levelProgress(u), xp = u.xp || 0, t = LEVEL_XP[type];
-    const tip = L >= 3 ? `Уровень 3, выслуга ${xp}. Выше некуда, только в начальство` : `Уровень ${L}: ${xp} из ${t[L]} ${need} до следующего`;
+    const tip = L >= M ? `Уровень ${M}, выслуга ${xp}. Выше некуда, только в начальство` : `Уровень ${L}: ${xp} из ${t[L]} ${need} до следующего`;
     h += `<span class="xpbar l${L}" title="${tip}"><i style="width:${Math.round(p * 100)}%"></i><b>${L}</b></span>`;
   }
   if (list.length > shown.length) h += `<span class="muted small">+${list.length - shown.length}</span>`;

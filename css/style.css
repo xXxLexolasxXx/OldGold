@@ -748,6 +748,8 @@ body.mobile #dd-zoom { display: none; }
 .xpbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#8ab048, #4e8a2a); }
 .xpbar.l2 i { background: linear-gradient(#e8c860, #b08a2a); }
 .xpbar.l3 i { background: linear-gradient(#ffe070, #d8a020); }
+.xpbar.l4 i { background: linear-gradient(#ffb070, #d86a20); }
+.xpbar.l5 i { background: linear-gradient(#ff9ad0, #b04ad8); }
 .xpbar b { position: absolute; right: 2px; top: -1px; font-size: 9px; line-height: 10px; color: #f6eccc; text-shadow: 0 0 2px #000, 0 0 2px #000; font-family: 'PT Serif', Georgia, serif; }
 
 /* телефон в портрете: название не шире экрана, меню ниже — больше места костру */
