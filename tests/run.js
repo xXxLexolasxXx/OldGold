@@ -90,6 +90,7 @@ scriptTest('traitor: шпион Малгора — летописец Пим, п
 scriptTest('oathbal: баланс классов героя', 'oath-balance.js');
 scriptTest('abil: способности классов, ресурс, лечение отдыхом, панель, миграция, кооп, баланс', 'abil-test.js');
 scriptTest('skelart: скелеты в пиксель-арте — кадры 6/8/9/4/9/13, виды, кэш, облик в сейве, рисование без падений', 'skelart-test.js');
+scriptTest('kurganart: Курганный князь в пиксель-арте — кадры, фазы I–III, кэш, рисование без падений', 'kurganart-test.js');
 scriptTest('icon: значки, названия и описания всех способностей, окно гильдии', 'icon-test.js');
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');

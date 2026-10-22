@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Лист Курганного князя: было и стало</title>
+<style>
+body{margin:0;background:#1a1c22;color:#eee;font:13px/1.35 sans-serif}
+#bar{position:sticky;top:0;background:#000c;padding:6px 10px;display:flex;gap:12px;align-items:center;z-index:2}
+h3{margin:12px 10px 2px;color:#f6d458}.row{display:flex;flex-wrap:wrap;gap:6px;padding:4px 10px}
+.cell{display:flex;flex-direction:column;align-items:center;font-size:10px;color:#aab}
+canvas{image-rendering:pixelated;background:#2a2e38}
+</style></head><body>
+<div id="bar"><b>Курганный князь: было (вектор) и стало (пиксель-арт)</b><label>масштаб <select id="sc"><option>1</option><option selected>2</option><option>3</option></select></label><span id="err" style="color:#f88"></span></div>
+<div id="out"></div>
+<script>function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}</script>
+<script src="js/config.js"></script><script src="js/sprites.js"></script><script src="js/pixel.js"></script>
+<script>const Game = { time: 0, raid: null }; let R = {};</script>
+<script src="js/world/kurganart.js"></script>
+<script>
+// старое рисование берём из raid.js как есть
+fetch('js/world/raid.js').then(r => r.text()).then(src => {
+  const a = src.indexOf('const RP = '), b = src.indexOf('function raidDrawWard');
+  const chunk = src.slice(a, b).replace(/function raidDrawMound[\s\S]*?\n}\n/, '').replace(/function raidDrawSign[\s\S]*?\n}\n/, '').replace(/function raidDrawMarks[\s\S]*?\n}\n/, '').replace("if (typeof kpDraw === 'function') return kpDraw(c, N);", '');
+  (0, eval)(chunk + ';window.__oldKurgan = raidDrawKurgan;');
+  draw();
+}).catch(e => { err.textContent = e; });
+const W = KP.W, H = KP.H;
+function cellOld(k, fr, t, bg) { const cv = document.createElement('canvas'); cv.width = 70 * k * 1; cv.height = 70 * k; const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.scale(k, k); Game.time = t; const N = { x: 35 / TILE, y: (62 - 6) / TILE, face: 1, st: 'idle', fr, dt: 0, id: 1 }; __oldKurgan(c, N); return cv; }
+function cellNew(k, fr, ph) { const cv = document.createElement('canvas'); cv.width = W * k; cv.height = H * k; const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; const e = kpSprite(fr, ph); c.drawImage(e.cv, 0, 0, W * k, H * k); KP._last = null; return cv; }
+function draw() {
+  if (!window.__oldKurgan) return;
+  const k = +sc.value; out.innerHTML = '';
+  const sec = t => { const h = document.createElement('h3'); h.textContent = t; out.appendChild(h); const r = document.createElement('div'); r.className = 'row'; out.appendChild(r); return r; };
+  const add = (r, cv, label) => { const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv); const s = document.createElement('span'); s.textContent = label; d.appendChild(s); r.appendChild(d); };
+  let r = sec('БЫЛО — вектор, ~50 px ростом (рядом шкала в 32 px = клетка)');
+  for (const [fr, n] of [['i0', 'покой'], ['w1', 'ход'], ['windup', 'замах'], ['strike', 'удар'], ['roar', 'рёв'], ['hurt', 'удар по нему']]) add(r, cellOld(k * 2, fr, 0.3), n);
+  for (const ph of [1, 2, 3]) {
+    r = sec('СТАЛО — фаза ' + ['I «Костяной щит»', 'II «Могильный холод»', 'III «Ярость»'][ph - 1] + ': покой · ход · замах · удар · возврат · рёв · удар по нему');
+    for (const [fr, n] of [['i0', 'покой'], ['i3', 'покой'], ['w1', 'ход'], ['w5', 'ход'], ['windup', 'замах'], ['strike', 'удар'], ['recover', 'возврат'], ['roar', 'рёв'], ['hurt', 'удар по нему']]) add(r, cellNew(k, fr, ph), n);
+  }
+  r = sec('СТАЛО — смерть (d0…d5), фаза III'); for (let i = 0; i < 6; i++) add(r, cellNew(k, 'd' + i, 3), 'смерть ' + (i + 1));
+  r = sec('СТАЛО — покой, 6 кадров, фаза II'); for (let i = 0; i < 6; i++) add(r, cellNew(k, 'i' + i, 2), 'покой ' + (i + 1));
+  r = sec('СТАЛО — ходьба, 8 кадров, фаза I'); for (let i = 0; i < 8; i++) add(r, cellNew(k, 'w' + i, 1), 'ход ' + (i + 1));
+}
+sc.oninput = draw; window.onerror = (m, s, l) => { err.textContent = m + ' @' + l; };
+</script></body></html>
