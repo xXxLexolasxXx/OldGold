@@ -127,7 +127,7 @@ function drawBarrier(c, F) {
     if (!G) return;
     const heroes = Game.units.filter(u => u.type === 'hero' && !u.dead);
     for (const r of G.runes) {
-      if (r.got || r.x < x0 - 1 || r.x > x1 + 1 || r.y < y0 - 1 || r.y > y1 + 1) continue;
+      if (!r || r.got || r.x < x0 - 1 || r.x > x1 + 1 || r.y < y0 - 1 || r.y > y1 + 1) continue;
       if (!G.known && !heroes.some(h => Math.hypot(h.x - r.x, h.y - r.y) < 14)) continue;       // пока не знаем про руны — видны только вблизи героя
       list.push([r.y + 0.6, () => drawRune(c, r)]);
     }
