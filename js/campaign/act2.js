@@ -22,7 +22,7 @@ function camp2Ruins(C) {
   // трещины в каждом доме, северные дома рухнули
   for (const b of Game.buildings.slice()) {
     if (b.removed || b.type === 'storehouse' || b.type === 'school' || b.type === 'inn') continue;
-    if (b.type === 'house' && b.y < 52 && rnd() < 0.6) { removeBuilding(b); continue; }
+    if (b.type === 'house' && b.y < 52 && rnd() < 0.6) { (C.flags.ruins || (C.flags.ruins = [])).push([b.x, b.y, b.w, b.h, (b.x + b.y) % 3]); removeBuilding(b); continue; }
     b.dmg = Math.min(0.8, 0.2 + rnd() * 0.45); b.dzFix = 1;
   }
   // валуны по северному кварталу и у кузнеца
@@ -88,7 +88,7 @@ function camp2WaveTick(C, dt) {
   if (W.tk < 0.5) return;
   W.tk = 0;
   const y = W.y;
-  if (Math.random() < 0.5 && typeof sfxAt === 'function') sfxAt('dzRumble', 64 * TILE, y * TILE, 0.8);
+  if (Math.random() < 0.5 && typeof campSnd === 'function') campSnd('campRockfall', null, y, 0.9);
   // дома, оказавшиеся под волной, проваливаются
   for (const b of Game.buildings.slice()) {
     if (b.removed || b.y + b.h > y) continue;
@@ -206,6 +206,13 @@ CAMP_ACTS[2] = {
     if (hall && !C.flags.tanGone && hall[0] > x0 - 2 && hall[0] < x1 + 2 && hall[1] > y0 - 2 && hall[1] < y1 + 3) list.push([hall[1] + 0.95, () => campDrawNpc(c, 'tan', hall[0] + 1.6, hall[1] + 0.2)]);
     if (!C.flags.vaska) { const [vx, vy] = CAMP2.vaska; if (vx > x0 - 2 && vx < x1 + 2 && vy > y0 - 2 && vy < y1 + 3) list.push([vy + 0.9, () => campDrawNpc(c, 'vaska', vx, vy)]); }
     for (const m of C.flags.shrooms || []) if (m[0] > x0 - 1 && m[0] < x1 + 1 && m[1] > y0 - 1 && m[1] < y1 + 2 && (!C.flags.wave || m[1] > C.flags.wave.y)) list.push([m[1], () => caveDrawShroom(c, m)]);
+    // руины рухнувших домов: пока на их месте ничего не построили и их не накрыл обвал
+    if (typeof campDrawRuin === 'function') for (const r of C.flags.ruins || []) {
+      if (r[0] + r[2] < x0 - 1 || r[0] > x1 + 1 || r[1] > y1 + 2 || r[1] + r[3] < y0 - 2 || (C.flags.wave && C.flags.wave.y > r[1] + r[3])) continue;
+      let built = false;
+      for (let y = r[1]; y < r[1] + r[3] && !built; y++) for (let x = r[0]; x < r[0] + r[2]; x++) if (inb(x, y) && World.bmap[idx(x, y)]) { built = true; break; }
+      if (!built) list.push([r[1] + r[3] - 0.2, () => campDrawRuin(c, r)]);
+    }
     if (C.flags.wave) list.push([C.flags.wave.y + 0.5, () => camp2DrawWave(c, x0, y0, x1, y1)]);
   },
   steps: [
@@ -237,7 +244,7 @@ CAMP_ACTS[2] = {
       C.timer = null;
       if (!C.flags.wave) C.flags.wave = { y: CAMP2.waveY0 };
       C.vfx = { t: Game.time, dur: 8, amp: 9 };
-      if (typeof sfxAt === 'function') sfxAt('dzRumble', 64 * TILE, 20 * TILE, 1.6);
+      if (typeof campSnd === 'function') { campSnd('campBoom', 64, 20, 1.1); campSnd('campRockfall', null, 20, 1.2); }
     }, lines: [
       ['note', 'Свод застонал, и гора начала складываться — ряд за рядом, с севера на юг.'],
       ['grum', 'БЕГОМ! Все к Южным воротам! Не оглядываться — гора за нами не гонится, она просто падает!'],
