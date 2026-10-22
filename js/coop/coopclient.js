@@ -336,6 +336,7 @@ function coopMirror(m) {
   if (m.foe !== undefined) Game.foe = m.foe ? Object.assign(Game.foe || {}, m.foe) : null;     // шпиль Малгора (enemy.js)
   if (typeof spireMirrorIn === 'function') spireMirrorIn(m.sp);     // тропа к шпилю: рубит сервер (spire.js)
   Game.glq = m.glq || null;      // руны и пробуждение голема (golemlife.js)
+  if (Game.glq && Array.isArray(Game.glq.runes)) Game.glq.runes = Game.glq.runes.filter(Boolean);
   Game.golem = m.golem ? Object.assign(Game.golem || {}, coopResolve(m.golem)) : null;
   Game.sub = m.sub ? coopResolve(m.sub) : null;
   Game.lostGnomes = m.lost || 0;
