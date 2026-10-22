@@ -114,3 +114,4 @@ for (const seed of SEEDS) {
 
 if (fails.length) { console.log(`\nГолем: провалов ${fails.length}`); process.exit(1); }
 console.log('Голем: всё зелёное');
+process.exit(0);
