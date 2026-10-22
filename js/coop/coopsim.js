@@ -672,7 +672,7 @@ function coopUnitsBuild() {
   }
   for (const a of Game.animals) {
     if (a.dead) continue;
-    const s = JSON.stringify({ i: a.id, k: a.kind, x: r2(a.x), y: r2(a.y), f: a.face, m: a.moving ? 1 : 0, p: r2(a.phase), l: a.loot || undefined, s: a.state });
+    const s = JSON.stringify({ i: a.id, k: a.kind, x: r2(a.x), y: r2(a.y), f: a.face, m: a.moving ? 1 : 0, p: r2(a.phase), l: a.loot || undefined, s: a.state, b: a.burn ? 1 : undefined });
     animals.push({ id: a.id, x: a.x, y: a.y, s });
     aLive.add(a.id);
   }
@@ -794,6 +794,7 @@ function coopWorldPacket() {
   for (const b of Game.buildings) {
     const d = serializeBuilding(b);
     d.wk = b.working ? 1 : 0;
+    if (b.worker && !b.worker.dead && b.worker.home === b) d.wr = b.worker.id;      // кто здесь работает: по этому клиент знает, есть ли у здания работник (coopLinkWorkers)
     const sig = JSON.stringify(d);
     d.an = r2(b.anim || 0);
     nb.set(d.id, sig);

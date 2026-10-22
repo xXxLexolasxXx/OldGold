@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="css/dilemma.css">
 <link rel="stylesheet" href="css/chronicle.css">
 <link rel="stylesheet" href="css/lore.css">
+<link rel="stylesheet" href="css/campaign.css">
 <link rel="stylesheet" href="css/daily.css">
 <link rel="stylesheet" href="css/mapedit.css">
 <link rel="stylesheet" href="css/council.css">
@@ -75,6 +76,7 @@
           <button data-savefile="open"><img data-icon="save" alt="">Файл сохранения</button>
           <button data-menu="tutorial"><img data-icon="play" alt="">Обучение (по шагам)</button>
           <button data-menu="lang"><img data-icon="scroll" alt=""><span class="lang-name">English</span></button>
+          <button data-pc="open"><img data-icon="menu" alt="">Управление <kbd>F1</kbd></button>
           <button data-guide="open"><img data-icon="scroll" alt="">Справка <kbd>H</kbd></button>
           <button data-chron="open"><img data-icon="log" alt="">Летопись <kbd>L</kbd></button>
           <button data-photo="open"><img data-icon="scroll" alt="">Фото-режим <kbd>K</kbd></button>
@@ -88,7 +90,7 @@
           <div><kbd>P</kbd> пауза здания, <kbd>B</kbd> закрыть/открыть доставки, <kbd>[</kbd> <kbd>]</kbd> соседнее здание</div>
           <div><kbd>T</kbd> повернуть здание: вход на юг, восток или запад</div>
           <div><kbd>Shift</kbd>+клик — строить несколько</div>
-          <div><kbd>Пробел</kbd> пауза игры</div>
+          <div><kbd>Пробел</kbd> пауза игры, <kbd>F1</kbd> окно «Управление» (клавиши можно переназначить)</div>
           <div>Масштаб: колесо мыши, <kbd>+</kbd> <kbd>−</kbd> или кнопки вверху</div>
         </div>
       </section>
@@ -194,6 +196,7 @@
 <script src="js/smoking.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/people.js"></script>
+<script src="js/world/wildart.js"></script>
 <script src="js/world/creatures.js"></script>
 <script src="js/world/groundstyle.js"></script><script src="js/world/groundsets.js"></script><script src="js/world/nightground.js"></script><script src="js/world/gargoyle.js"></script><script src="js/world/terrain.js"></script>
 <script src="js/render.js"></script>
@@ -235,6 +238,7 @@
 <script src="js/heromana.js"></script>
 <script src="js/combat.js"></script>
 <script src="js/world/neutralart2.js"></script>
+<script src="js/world/goblinart.js"></script>
 <script src="js/world/neutrals2.js"></script>
 <script src="js/world/frogart.js"></script>
 <script src="js/world/frogart2.js"></script>
@@ -288,6 +292,8 @@
 <script src="js/world/spire.js"></script>
 <script src="js/world/guards.js"></script>
 <script src="js/world/ascent.js"></script>
+<script src="js/world/spirelive.js"></script>
+<script src="js/world/echoart.js"></script>
 <script src="js/world/traitor.js"></script>
 <script src="js/world/travelers.js"></script>
 <script src="js/world/wildgnomes.js"></script>
@@ -320,8 +326,14 @@
 <script src="js/lore.js"></script>
 <script src="js/menugroups.js"></script>
 <script src="js/world/disasters.js"></script>
+<script src="js/world/wildfire.js"></script>
 <script src="js/reveal.js"></script>
 <script src="js/house.js"></script>
+<script src="js/campaign.js"></script>
+<script src="js/campaign/cavern.js"></script>
+<script src="js/campaign/art.js"></script>
+<script src="js/campaign/act1.js"></script>
+<script src="js/pccontrols.js"></script>
 <script data-goatcounter="https://lexolas.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

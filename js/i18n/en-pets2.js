@@ -81,7 +81,7 @@ I18N.add('en', {
   // имена
   'Зазулий Третий': 'Zazuly the Third', 'Мшанка': 'Mossy', 'Листопад': 'Leaffall', 'Желудь': 'Acorn', 'Уголёк': 'Ember', 'Чих-Пых': 'Sneezepuff', 'Искра': 'Spark',
   'Льдинка': 'Icicle', 'Сосулий': 'Frostbeard', 'Пломбир': 'Sundae', 'Булька': 'Bubbles', 'Тинник': 'Duckweed', 'Квакса': 'Croaky', 'Дракончик': 'Dragonling',
-  // «Что нового» 0.11.10
+  // «Что нового» 0.11.18
   'Дракончики-питомцы': 'Dragonling pets',
   'Дикий дракончик больше не приручается сам, стоит пройти мимо: он осторожный и улетает от бегущего героя и драки. Подойдите спокойно, встаньте рядом — и он заговорит (первого зовут Зазулий Третий, и он потерялся)': 'The wild dragonling no longer tames itself when you walk past: it is wary and flies away from a running hero or a fight. Approach calmly, stand next to it — and it will talk (the first one is called Zazuly the Third, and he is lost)',
   'Приручение — угощением со склада: у каждого дракончика свои любимые лакомства, смайлик на кнопке подсказывает, охотно ли он возьмёт. Есть три попытки, потом он улетает. Друиду и лучнику-следопыту везёт больше': 'Taming takes a treat from the storehouse: every dragonling has favourite snacks, and the smiley on the button hints how eagerly it will take one. You get three tries, then it flies off. Druids and archer-rangers have better luck',

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Аудит пикселей: камни, горы, краб</title>
+<style>
+body{margin:0;background:#4f7a30;color:#fff;font:12px sans-serif}
+.row{display:flex;flex-wrap:wrap;gap:10px;padding:8px;align-items:flex-end}
+.cell{display:flex;flex-direction:column;align-items:center}
+canvas{image-rendering:pixelated;background:#4f7a30}
+#err{color:#f88}
+</style></head><body><div id="err"></div><div id="out"></div>
+<script>
+const q=new URLSearchParams(location.search), Z=+(q.get('z')||4);
+window.onerror=(m,s,l)=>{document.getElementById('err').textContent+=` ${m} @${(s||'').split('/').pop()}:${l};`;};
+window.ENT_LOOK={};window.MT_PAL_BIOME={};window.MapOpt={};window.GMOSS=['#3a5a2a','#4a6e30','#5c8236','#73963e'];
+const files=['js/world/fire.js','js/config.js','js/world.js','js/path.js','js/entities.js','js/levels.js','js/events.js','js/sprites.js','js/world/night.js','js/world/rocks.js','js/world/mountains.js','js/pixel.js','js/world/seaart.js'];
+(async()=>{
+ for(const f of files){await new Promise(ok=>{const s=document.createElement('script');s.src='../'+(q.get('base')||'')+f+'?v='+Date.now();s.onload=ok;s.onerror=()=>{document.getElementById('err').textContent+=' не загрузился '+f;ok();};document.head.appendChild(s);});}
+ if(typeof R==='undefined')window.R={smooth:false};
+ try{ run(); if(q.get('save'))await savePng(q.get('save')); }catch(e){document.getElementById('err').textContent+=' run: '+e.message+e.stack;}
+})();
+async function savePng(name){
+ const cells=[...document.querySelectorAll('.cell')],W=1600,pad=8;let x=pad,y=pad,rowH=0;const pos=[];
+ for(const c of cells){const cv=c.querySelector('canvas'),w=cv.width+pad,h=cv.height+26;if(x+w>W){x=pad;y+=rowH+pad;rowH=0;}pos.push([x,y]);x+=w;rowH=Math.max(rowH,h);}
+ const big=document.createElement('canvas');big.width=W;big.height=y+rowH+pad;const g=big.getContext('2d');g.fillStyle='#4f7a30';g.fillRect(0,0,big.width,big.height);
+ cells.forEach((c,i)=>{const cv=c.querySelector('canvas');g.drawImage(cv,pos[i][0],pos[i][1]);g.fillStyle='#fff';g.font='14px sans-serif';g.fillText(c.querySelector('div').textContent,pos[i][0],pos[i][1]+cv.height+16);});
+ const r=await fetch('http://127.0.0.1:8862/?name='+name,{method:'POST',body:big.toDataURL('image/png')});document.title='saved '+name+' '+await r.text();
+}
+function sec(t){const h=document.createElement('div');h.style.cssText='padding:4px 8px;background:#0006';h.textContent=t;document.getElementById('out').appendChild(h);const r=document.createElement('div');r.className='row';document.getElementById('out').appendChild(r);return r;}
+window.ISO=[];
+// лишние одиночные тёмные пиксели: тёмный пиксель без тёмных соседей среди 8
+function isoDark(cv,thr){thr=thr||80;const W=cv.width,H=cv.height,d=cv.getContext('2d').getImageData(0,0,W,H).data;const dk=(x,y)=>{if(x<0||y<0||x>=W||y>=H)return false;const o=(y*W+x)*4;return d[o+3]>128&&d[o]*.3+d[o+1]*.59+d[o+2]*.11<thr;};const out=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!dk(x,y))continue;let n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if((dx||dy)&&dk(x+dx,y+dy))n++;if(n===0)out.push([x,y]);}return out;}
+function cell(row,cv,label,z){const iso=isoDark(cv);ISO.push([label,iso.length,iso.slice(0,4).join(';')]);z=z||Z;const d=document.createElement('div');d.className='cell';const c=document.createElement('canvas');c.width=cv.width*z;c.height=cv.height*z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(cv,0,0,c.width,c.height);if(q.get('mark'))for(const[x,y]of iso){g.strokeStyle='#f0f';g.lineWidth=2;g.strokeRect(x*z-1,y*z-1,z+2,z+2);}d.appendChild(c);const l=document.createElement('div');l.textContent=label+(iso.length?' ⚠'+iso.length:'');d.appendChild(l);row.appendChild(d);}
+// как в игре: спрайт камня рисуется со сглаживанием в размер S.w×S.h
+function rockAsDrawn(size,v,sc){const S=ROCK_SIZES[size];const spr=rockSprite(size,v);const cv=mkCanvas(Math.round(S.w*sc),Math.round(S.h*sc));const g=cv.getContext('2d');g.imageSmoothingEnabled=true;g.drawImage(spr,0,0,cv.width,cv.height);return cv;}
+function run(){
+ const only=(q.get('only')||'rock,jaw,mount,boulder,crab').split(',');
+ let r;
+ if(only.includes('rock')){r=sec('Камни L/M/S × 6 вариантов (как в игре, 1×)');
+ for(const s of ['L','M','S'])for(let v=0;v<ROCK_VARIANTS;v++){if(q.get('rv')&&!q.get('rv').split(',').includes(s+v))continue;cell(r,rockAsDrawn(s,v,1),s+v,+(q.get('zr')||4));}}
+ if(only.includes('jaw')){r=sec('Челюсти клешней камня-краба');
+ for(const s of ['L','M'])for(let k=1;k<=2;k++)for(const up of[false,true]){const j=clawJaw(s,0,k,up);cell(r,j.cv,s+k+(up?'u':'l'),3);}}
+ if(only.includes('claw')){r=sec('Клешня камня в сборе (пасть закрыта/приоткрыта/раскрыта), как в игре');
+ for(const sz of['L','M'])for(const open of[0.05,0.3,0.8]){const lo=clawJaw(sz,0,1,false),up=clawJaw(sz,0,1,true);const cv=mkCanvas(60,50),g=cv.getContext('2d');g.imageSmoothingEnabled=true;g.translate(30,28);g.drawImage(lo.cv,-lo.W/2,-lo.H/2,lo.W,lo.H);g.translate(up.hx-up.W/2,up.hy-up.H/2);g.rotate(-open);g.drawImage(up.cv,-up.hx,-up.hy,up.W,up.H);cell(r,cv,sz+' open '+open,+(q.get('zj')||8));}}
+ if(only.includes('leg')){r=sec('Нога камня');const cv=mkCanvas(60,40),g=cv.getContext('2d');rockLeg(g,30,8,18,2,10,30);rockLeg(g,30,8,42,2,50,30);cell(r,cv,'ноги',8);}
+ if(only.includes('ent')){r=sec('Ходячий камень целиком: стоит, идёт, бьёт, держит');
+ window.Game=window.Game||{time:0};window.nightAmt=()=>1;window.hash=i=>(Math.imul(i,2654435761)>>>0);window.GRAB_REACH=0.9;window.entBase=e=>({bx:e.px,by:e.py});
+ for(const [lbl,st] of [['стоит',{state:'idle',k:1}],['идёт',{state:'walk',moving:true,k:1,phase:1.3}],['бьёт',{state:'fight',k:1,atk:Game.time-0.2,t:0.1}],['лежит',{state:'idle',k:0.02}]]){
+  const cv=mkCanvas(100,80),g=cv.getContext('2d');g.fillStyle='#4f7a30';g.fillRect(0,0,100,80);
+  const e=Object.assign({i:7,o:{n:5},face:1,alpha:1,x:0,y:0,phase:0,t:0,moving:false,px:50,py:62},st);
+  try{drawRockEnt(g,e);}catch(x){document.getElementById('err').textContent+=' ent '+x.message;}
+  cell(r,cv,lbl,+(q.get('ze')||6));}}
+ if(only.includes('mount')){r=sec('Горы (пиксель-арт)');
+ for(const s of['S','M'])for(let v=0;v<MT_VARIANTS;v++)cell(r,mtSprite(s,v),s+v,3);}
+ if(only.includes('boulder')){r=sec('Валуны SPR.boulders'); try{makeBoulders();SPR.boulders.forEach((b,i)=>cell(r,b,'b'+i,8));}catch(e){}}
+ if(only.includes('crab')){r=sec('Краб: кадры');
+ const pick=q.get('cf')?q.get('cf').split(','):null;
+ for(const a in SEA_ART.crab.anims){for(let f=0;f<SEA_ART.crab.anims[a];f++){if(pick&&!pick.includes(a+f))continue;cell(r,seaSprite('crab',a,f).cv,a+f,+(q.get('zc')||10));}}}
+}
+</script></body></html>

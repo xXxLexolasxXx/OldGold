@@ -13,45 +13,70 @@ const ROCK_SIZES = {
 };
 const ROCK_COL = { light: '#dccaa4', base: '#988870', mid: '#736655', dark: '#43392e', deep: '#231c15' };
 const ROCK_SPR = {};
+const ROCK_K = 2;                                   // рисуем вдвое подробнее клетки мира
 
 function rockSprite(size, variant, body = false) {
   const key = size + variant + (body ? "B" : "");   // B — одна большая глыба: тело ходячего камня
   if (ROCK_SPR[key]) return ROCK_SPR[key];
   const S = ROCK_SIZES[size], K = 2;                 // рисуем вдвое подробнее, чем клетка мира
-  const cv = mkCanvas(S.w * K, S.h * K);
+  let cv = mkCanvas(S.w * K, S.h * K);
   const c = cv.getContext('2d');
   c.scale(K, K);
   c.lineJoin = 'round'; c.lineCap = 'round';
   srand = mulberry32(4100 + variant * 131 + size.charCodeAt(0) * 7);
   const cx = S.w / 2, by = S.h - 6;
-  // мягкая тень-подложка
-  for (let k = 0; k < 6; k++) {
-    c.fillStyle = `rgba(18,14,8,${0.07})`;
-    c.beginPath(); c.ellipse(cx + 2, by + 1, S.w * 0.42 - k * 1.6, 5 - k * 0.5, 0, 0, 7); c.fill();
-  }
   // валуны: от дальних к ближним
   let chunks = S.chunks.map(([dx, dy, rx, ry]) => [cx + dx + rnd(-2, 2), by + dy + rnd(-1, 1), rx * rnd(0.88, 1.1), ry * rnd(0.88, 1.1)]);
   if (body) chunks = chunks.slice(0, 1);
   chunks.sort((a, b) => a[1] - b[1]);
-  for (const ch of chunks) drawBoulder(c, ...ch);
-  if (body) { ROCK_SPR[key] = cv; return cv; }
+  for (const ch of chunks) drawBoulder(c, ...ch, false);
+  if (body) { cv = rockPixels(cv, S, rockShadow(S, cx, by, chunks)); ROCK_SPR[key] = cv; return cv; }
   // трава и галька у подножия
   for (let k = 0; k < (size === 'S' ? 4 : 8); k++) {
     const x = cx + rnd(-S.w * 0.4, S.w * 0.4), y = by + rnd(-1, 2.5);
     tuftPebbles(c, x, y, rnd(2.5, 4.5));
   }
   for (let k = 0; k < (size === 'S' ? 4 : 7); k++) {
-    const x = cx + rnd(-S.w * 0.45, S.w * 0.45), y = by + rnd(0, 3.5), r = rnd(0.8, 1.8);
-    ellipse(c, x + 0.3, y + 0.4, r, r * 0.65, ROCK_COL.deep);
+    const x = cx + rnd(-S.w * 0.45, S.w * 0.45), y = by + rnd(0, 3.5), r = rnd(1.1, 1.9);
     ellipse(c, x, y, r, r * 0.65, srand() < 0.5 ? ROCK_COL.mid : ROCK_COL.base);
     ellipse(c, x - r * 0.3, y - r * 0.25, r * 0.45, r * 0.3, ROCK_COL.light);
   }
+  cv = rockPixels(cv, S, rockShadow(S, cx, by, chunks));
   ROCK_SPR[key] = cv;
   return cv;
 }
 
+// Мягкая тень глыб на земле: отдельный слой, чтобы порог прозрачности пикселизации её не съел
+function rockShadow(S, cx, by, chunks) {
+  const cv = mkCanvas(S.w * ROCK_K, S.h * ROCK_K), c = cv.getContext('2d');
+  c.scale(ROCK_K, ROCK_K);
+  for (let k = 0; k < 6; k++) {
+    c.fillStyle = 'rgba(18,14,8,0.07)';
+    c.beginPath(); c.ellipse(cx + 2, by + 1, S.w * 0.42 - k * 1.6, 5 - k * 0.5, 0, 0, 7); c.fill();
+  }
+  c.fillStyle = 'rgba(20,15,8,0.35)';
+  for (const [x, y, rx, ry] of chunks) { c.beginPath(); c.ellipse(x + rx * 0.25, y + ry * 0.48, rx * 1.02, ry * 0.32, 0, 0, 7); c.fill(); }
+  return cv;
+}
+
+// Заготовка рисуется вдвое подробнее клетки и сводится в настоящие пиксели: одна цельная обводка по силуэту
+// (а не штрих, который на ребре пикселя то темнеет, то бледнеет), ни одной одиночной тёмной точки.
+// Тень (если есть) подкладывается мягко под пиксельный рисунок
+function rockPixels(cv, S, shadow) {
+  const art = toPixelArt(cv, ROCK_K, { outline: true, outlineDark: 0.3, alphaCut: 100, specks: 84 });
+  // после обводки ещё раз: кончик травинки или крошка у контура могли остаться одиночными
+  const ag = art.getContext('2d'), img = ag.getImageData(0, 0, art.width, art.height);
+  dropSpecks(img.data, art.width, art.height, 84);
+  ag.putImageData(img, 0, 0);
+  if (!shadow) return art;
+  const out = mkCanvas(art.width, art.height), g = out.getContext('2d');
+  g.imageSmoothingEnabled = true; g.drawImage(shadow, 0, 0, art.width, art.height);
+  g.imageSmoothingEnabled = false; g.drawImage(art, 0, 0);
+  return out;
+}
+
 // Один валун: неровный многогранник, свет сверху-слева, ребро делит его на светлую и теневую грани
-function drawBoulder(c, x, y, rx, ry) {
+function drawBoulder(c, x, y, rx, ry, shadow = true) {
   const n = 10, pts = [];
   const a0 = rnd(0, 0.6);
   for (let k = 0; k < n; k++) {
@@ -63,8 +88,10 @@ function drawBoulder(c, x, y, rx, ry) {
     pts.push([px, py]);
   }
   // тень от валуна на земле
-  c.fillStyle = 'rgba(20,15,8,0.35)';
-  c.beginPath(); c.ellipse(x + rx * 0.25, y + ry * 0.48, rx * 1.02, ry * 0.32, 0, 0, 7); c.fill();
+  if (shadow) {
+    c.fillStyle = 'rgba(20,15,8,0.35)';
+    c.beginPath(); c.ellipse(x + rx * 0.25, y + ry * 0.48, rx * 1.02, ry * 0.32, 0, 0, 7); c.fill();
+  }
   poly(c, pts, lingrad(c, x - rx, y - ry, x + rx, y + ry, [[0, ROCK_COL.light], [0.38, ROCK_COL.base], [0.75, ROCK_COL.mid], [1, ROCK_COL.dark]]));
   clipPoly(c, pts, () => {
     // ребро от макушки вниз — правая грань в тени
@@ -104,7 +131,7 @@ function drawBoulder(c, x, y, rx, ry) {
   c.beginPath();
   let started = false;
   for (const [px, py] of pts) {
-    if (px < x + rx * 0.2 && py < y + ry * 0.1) { if (!started) { c.moveTo(px + 0.4, py + 0.4); started = true; } else c.lineTo(px + 0.4, py + 0.4); }
+    if (px < x + rx * 0.2 && py < y + ry * 0.1) { if (!started) { c.moveTo(px + 0.9, py + 0.9); started = true; } else c.lineTo(px + 0.9, py + 0.9);  }   // кант внутри обводки, не рвёт её
   }
   c.stroke();
   // мох на макушке и пятна лишайника
@@ -278,13 +305,13 @@ function rockEntHand(e) {
 
 function rockLeg(c, ax, ay, kx, ky, fx, fy) {
   c.lineCap = 'round'; c.lineJoin = 'round';
-  for (const [col, w, o] of [[ROCK_COL.deep, 3.4, 0], [ROCK_COL.mid, 1.8, -0.4], [ROCK_COL.light, 0.6, -0.8]]) {
+  for (const [col, w, o] of [[ROCK_COL.dark, 3.4, 0], [ROCK_COL.mid, 1.8, -0.4], [ROCK_COL.light, 0.6, -0.8]]) {
     c.strokeStyle = col; c.lineWidth = w;
     c.beginPath(); c.moveTo(ax + o, ay + o); c.lineTo(kx + o, ky + o); c.lineTo(fx + o * 0.5, fy); c.stroke();
   }
   // сустав и коготь
-  ellipse(c, kx, ky, 2, 1.7, ROCK_COL.deep); ellipse(c, kx - 0.4, ky - 0.4, 1.3, 1.1, ROCK_COL.base);
-  c.strokeStyle = ROCK_COL.deep; c.lineWidth = 1;
+  ellipse(c, kx, ky, 2, 1.7, ROCK_COL.dark); ellipse(c, kx - 0.4, ky - 0.4, 1.3, 1.1, ROCK_COL.base);
+  c.strokeStyle = ROCK_COL.dark; c.lineWidth = 1;
   c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + (fx > ax ? 1.6 : -1.6), fy + 1.2); c.stroke();
 }
 
@@ -362,8 +389,8 @@ function clawJaw(size, variant, k, up) {
   const key = size + variant + k + (up ? 'u' : 'l');
   if (CLAW_SPR[key]) return CLAW_SPR[key];
   const [, , rx0, ry0] = ROCK_SIZES[size].chunks[k];
-  const rx = rx0 * 1.15, ry = ry0 * 1.15, K = 2, W = Math.ceil(rx * 2 + 6), H = Math.ceil(ry * 2 + 6);
-  const cv = mkCanvas(W * K, H * K), c = cv.getContext('2d');
+  const rx = rx0 * 1.15, ry = ry0 * 1.15, K = ROCK_K, W = Math.ceil(rx * 2 + 6), H = Math.ceil(ry * 2 + 6);
+  let cv = mkCanvas(W * K, H * K); const c = cv.getContext('2d');
   c.scale(K, K); c.lineJoin = 'round';
   const cx = W / 2, cy = H / 2;
   // челюсть: половина глыбы с зубчатым краем-прикусом
@@ -372,10 +399,14 @@ function clawJaw(size, variant, k, up) {
   for (let t = 0; t <= 8; t++) bite.push([W - t * W / 8, cy + (up ? 1 : -0.4) + (t % 2 ? (up ? 1.4 : -1.4) : 0)]);
   const clip = up ? [half[0], half[1], ...bite] : [[0, cy - 0.6], ...bite.slice().reverse().map(([x, y]) => [x, y]), [W, H], [0, H]];
   srand = mulberry32(5300 + variant * 31 + k * 7 + size.charCodeAt(0));
-  clipPoly(c, clip, () => drawBoulder(c, cx, cy, rx, ry));
+  clipPoly(c, clip, () => drawBoulder(c, cx, cy, rx, ry, false));
   // тёмная пасть по линии прикуса
-  c.strokeStyle = ROCK_COL.deep; c.lineWidth = 0.9;
+  // только поверх самой челюсти (source-atop): иначе линия торчит чёрными полосками за её края
+  c.globalCompositeOperation = 'source-atop';
+  c.strokeStyle = 'rgba(35,28,21,0.85)'; c.lineWidth = 0.7;
   c.beginPath(); bite.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+  c.globalCompositeOperation = 'source-over';
+  cv = rockPixels(cv, null, null);
   CLAW_SPR[key] = { cv, W, H, hx: cx - rx * 0.7, hy: cy };   // шарнир — у заднего края
   return CLAW_SPR[key];
 }
@@ -393,7 +424,7 @@ function drawRockClaws(c, e, g) {
     if (holding) { const h = rockEntHand(e); cx = h.x; cy = h.y; open = e.t < GRAB_REACH ? 0.85 : 0.1; }
     const lo = clawJaw(g.size, v, k, false), up = clawJaw(g.size, v, k, true);
     // короткий каменный сустав к телу
-    ellipse(c, (cx + bx + side * S.w * 0.18) / 2, cy + 1, 3, 2.4, ROCK_COL.deep);
+    ellipse(c, (cx + bx + side * S.w * 0.18) / 2, cy + 1, 3, 2.4, ROCK_COL.dark);
     ellipse(c, (cx + bx + side * S.w * 0.18) / 2 - 0.4, cy + 0.6, 2.2, 1.7, ROCK_COL.mid);
     c.save();
     c.imageSmoothingEnabled = true;
