@@ -349,7 +349,9 @@ function dispatchRepairs(idleBuilders) {
 }
 
 function dispatchWorkers() {
-  const bs = Game.prio ? [...Game.buildings].sort((a, b) => prioScore(b) - prioScore(a)) : Game.buildings;   // «Высокий» цех получает свободного гнома первым
+  const rush = typeof seaWoodRush === 'function' && seaWoodRush();   // дров на зиму мало — дом лесоруба получает свободного гнома первым (season.js)
+  const sc = b => (Game.prio ? prioScore(b) : 0) + (rush ? seaRush(b) : 0);
+  const bs = Game.prio || rush ? [...Game.buildings].sort((a, b) => sc(b) - sc(a)) : Game.buildings;   // «Высокий» цех получает свободного гнома первым
   for (const b of bs) {
     if (b.state !== 'done' || !b.def.worker || (b.worker && !b.worker.dead && b.worker.home === b)) continue;
     if (prioOff(b)) continue;      // выключен во вкладке «Приоритеты» — нового рабочего не ставим

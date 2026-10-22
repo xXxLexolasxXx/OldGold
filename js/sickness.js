@@ -191,7 +191,8 @@ function sickCheck(u, now, units) {
   const I = u.ill;
   if (!I) {
     // простуда: холод и сырость; живот: голод и скудный стол
-    let pc = 0.0002 + (rain ? 0.0025 : 0) + (winter && !inside ? (night ? 0.004 : 0.0015) : 0) + (tired ? 0.001 : 0);
+    const coldIn = inside && !!u.inside.cold;       // нетопленое здание зимой (season.js)
+    let pc = 0.0002 + (rain ? 0.0025 : 0) + (winter && !inside ? (night ? 0.004 : 0.0015) : 0) + (coldIn ? 0.003 : 0) + (tired ? 0.001 : 0);
     let pg = 0.0001 + (u.food < HUNGRY ? 0.003 : 0) + (skLaw('fast') ? 0.0012 : 0) - (skLaw('feast') ? 0.0001 : 0);
     if (sad) { pc *= 1.5; pg *= 1.5; }
     // зараза от соседей (в трактире — вдвое)
@@ -207,7 +208,7 @@ function sickCheck(u, now, units) {
     }
     const r = Math.random();
     if (pk && r < ps * calm) sickInfect(u, pk, 'заразился от соседа');
-    else if (r < pc * calm) sickInfect(u, 'cold', rain ? 'промок под дождём' : 'продрог');
+    else if (r < pc * calm) sickInfect(u, 'cold', rain ? 'промок под дождём' : coldIn ? 'замёрз в нетопленом здании' : 'продрог');
     else if (r < (pc + pg) * calm) sickInfect(u, 'gut', 'съел что-то не то');
     return;
   }
@@ -217,7 +218,7 @@ function sickCheck(u, now, units) {
   if (u.ward) return;                                    // в лазарете тяжесть считает палата
   // тяжелеет от холода, голода и усталости, иначе понемногу проходит
   // тяжелеет от холода (простуда), пустого живота и сильной усталости; просто «голодноват» — уже не мешает поправляться
-  const bad = (I.k === 'cold' && (rain || winter && !inside)) || u.food <= 0.05 || (md && md.rest < 0.1);
+  const bad = (I.k === 'cold' && (rain || winter && !inside || inside && u.inside.cold)) || u.food <= 0.05 || (md && md.rest < 0.1);
   I.s += bad ? K.grow * (skCalm() ? 0.6 : 1) : -K.heal * (inside ? 1.4 : 1) * (skCalm() ? 1.5 : 1) * (skHerbs() ? 1.3 : 1);
   if (u.brk && u.brk.kind === 'sick') I.s -= K.heal * 1.5;
   I.s = Math.round(Math.min(1, I.s) * 1000) / 1000;
@@ -289,7 +290,7 @@ function* sickWardGen(u, b) {
       if (Game.time >= u.injuryUntil) injHeal(u, 'ward');
     }
     if (!u.ill) continue;
-    u.ill.s -= doc ? 0.03 : 0.012;
+    u.ill.s -= (doc ? 0.03 : 0.012) * (b.cold ? 0.5 : 1);        // в нетопленом лазарете поправляются вдвое медленнее
     if (u.ill.s <= 0.02) { sickCure(u, 'ward'); break; }
   }
   u.ward = null;

@@ -335,7 +335,7 @@ function* recipeWork(u, b) {
   if (!r) { yield { wait: 2 }; return; }
   recipeConsume(b, r);
   b.working = true;
-  yield { wait: r.time, anim: 'work' };
+  yield { wait: r.time * (b.cold ? WINTER_COLD_WORK : 1), anim: 'work' };     // в нетопленой мастерской руки мёрзнут (season.js)
   b.working = false;
   if (b.removed) return;
   recipeProduce(b, r);
@@ -364,7 +364,7 @@ function* woodcutterWork(u, b) {
       t.o.res = true;
       const ok = yield { walk: [t.x, t.y] };
       if (!ok) { t.o.res = false; yield { wait: 2 }; return; }
-      yield { wait: 4.5, anim: 'chop' };
+      yield { wait: typeof seaRush === 'function' && seaRush(b) ? 3.2 : 4.5, anim: 'chop' };   // дров мало перед зимой — рубят быстрее
       const i = idx(t.x, t.y);
       if (World.obj[i] === t.o) {
         World.obj[i] = { t: 'stump', g: 0 };

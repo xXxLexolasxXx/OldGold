@@ -169,6 +169,7 @@ class Building {
 
   offer(g) {
     if (this.state !== 'done') return 0;
+    if (g === 'trunk' && this.isStore() && typeof seaWoodHold === 'function') return Math.max(0, this.stock[g] - this.reserved[g] - seaWoodHold());   // зимний запас дров не уходит на лесопилку и стройку (season.js)
     if (this.isStore() || (this.def.outputs && this.def.outputs[g] != null))
       return this.stock[g] - this.reserved[g];
     return 0;
@@ -182,6 +183,7 @@ class Building {
     // достройка: везут материалы; школа при этом учит дальше — золото ей нужно и во время достройки
     if (this.upg && !(this.type === 'school' && !this.upg.cost[g])) return Math.max(0, (this.upg.cost[g] || 0) - this.upg.used[g] - this.upg.stock[g] - this.incoming[g]);
     if (this.noDeliver || this.isStore() || !this.def.inputs) return 0;   // закрыто для доставок
+    if (g === 'trunk' && this.type === 'sawmill' && typeof seaWoodLow === 'function' && seaWoodLow()) return 0;   // дров на зиму мало — брёвна копим для печей, а не пилим (season.js)
     const cap = this.def.inputs[g];
     if (!cap || !this.wantsInput(g)) return 0;
     return Math.max(0, cap - this.stock[g] - this.incoming[g]);

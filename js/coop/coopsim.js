@@ -794,6 +794,7 @@ function coopWorldPacket() {
   for (const b of Game.buildings) {
     const d = serializeBuilding(b);
     d.wk = b.working ? 1 : 0;
+    d.cd = b.cold ? 1 : 0;
     if (b.worker && !b.worker.dead && b.worker.home === b) d.wr = b.worker.id;      // кто здесь работает: по этому клиент знает, есть ли у здания работник (coopLinkWorkers)
     const sig = JSON.stringify(d);
     d.an = r2(b.anim || 0);

@@ -196,6 +196,7 @@ function mdUpdate(u, now) {
   if (rain && !u.umbrella) { cz -= 3; add('rain', -3); }
   // u.petWarm — греет дракончик (dragonpet.js)
   if (winter && !inside && !sur.fire && !(u.petWarm > now)) { cz -= night ? 5 : 3; add('cold', night ? -5 : -3); }
+  if (inside && u.inside.cold) { cz -= 4; add('cold', -5); }          // внутри нетопленого здания зимой (season.js)
   if (sur.fire && (night || winter)) { cz += 3; add('fire', 3); }
   if (inside) cz += 2;
   if (sur.lamp && night) { cz += 1; add('lamp', 2); }
