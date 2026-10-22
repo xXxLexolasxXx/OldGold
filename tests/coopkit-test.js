@@ -63,7 +63,7 @@ wait(2); drain();
   ok(cli.h.run(`(World.obj[idx(${spot[0]}, ${spot[1]})] || {}).by`) === 'Ая', 'клиент не видит автора декора');
   // лимит на игрока
   const placed = R(`(() => { let n = 0; for (let k = 0; k < 400 && n < 20; k++) { const c = randomFreeNear(${spot[0]}, ${spot[1]}, 2, 14); if (!c) break; coop.actAt.delete('Ая'); coopCmd('Ая', JSON.stringify({ t: 'decor', k: 'bed', x: c[0], y: c[1] }), false); if (World.obj[idx(c[0], c[1])] && World.obj[idx(c[0], c[1])].by === 'Ая') n++; } return vdCount('Ая').mine; })()`);
-  ok(placed === 12, `лимит декора на игрока не держится: ${placed}`);
+  ok(placed === 15, `лимит декора на игрока не держится: ${placed}`);
   // право decor выключено — нельзя
   R(`coopSetPerms(JSON.stringify({ decor: false })); coop.actAt.clear()`);
   drain();
@@ -82,7 +82,7 @@ wait(2); drain();
   // хост убирает чужое
   cmd('Ая', { t: 'undecor', x: free[0], y: free[1] }, true);
   ok(!R(`World.obj[idx(${free[0]}, ${free[1]})]`), 'хост не смог убрать чужой декор');
-  console.log(`декор: статуя, лимит ${placed}/12, красота ${beauty}`);
+  console.log(`декор: статуя, лимит ${placed}/15, красота ${beauty}`);
 }
 
 // ---------- 2. Передача предметов ----------
