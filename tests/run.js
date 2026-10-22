@@ -68,6 +68,7 @@ scriptTest('unions: профсоюзы — советы по стройке и �
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
 scriptTest('nightfog: ночной туман не гуще потолка и редеет над деревней', 'nightfog-test.js');
+scriptTest('lantern: днём фонари выключены, вечером горят, на рассвете гаснут', 'lantern-test.js');
 scriptTest('sick: болезни и лазарет, сохранение', 'sick-test.js');
 scriptTest('injury: травмы — частота, лазарет, лекарь, сводка, груз, куры', 'injury-test.js');
 scriptTest('rsc: открытия, сохранение', 'rsc-test.js');
