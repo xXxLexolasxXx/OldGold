@@ -357,6 +357,7 @@ function igniteHen(a) {
 // вызывается из updateAnimal вместо обычного поведения
 function burnHenStep(a, dt) {
   const b = a.burn;
+  if (typeof wfHenStep === 'function' && wfHenStep(a, dt)) return;   // вода, колодец или дождь потушили
   b.t += dt; b.turn -= dt; b.cl -= dt;
   if (b.turn <= 0) { b.turn = wrnd(0.25, 0.6); b.dir += wrnd(-2, 2); }
   const nx = a.x + Math.cos(b.dir) * 3.2 * dt, ny = a.y + Math.sin(b.dir) * 3.2 * dt;
@@ -369,7 +370,7 @@ function burnHenStep(a, dt) {
       addScorch(a.x, a.y, 0.5);
       fxBurst(a.x * TILE, a.y * TILE, 18, ['#f4f0e6', '#d8d0c0', '#3a3430'], 40, 40, 1.2, 2, 80);   // перья и пепел
       floater(a.x, a.y - 0.8, 'Сгорела…', '#ffb060');
-      logEvent('weather', 'Курица сгорела от молнии', a.x, a.y);
+      logEvent('weather', b.src ? 'Курица сгорела в огне' : 'Курица сгорела от молнии', a.x, a.y);
       removeAnimal(a);
     } else {
       sfxAt('hiss', a.x * TILE, a.y * TILE);
@@ -467,6 +468,12 @@ function weatherDrawList(list, c, x0, y0, x1, y1) {
   }
   for (const f of WX.fires) {
     if (f.x < x0 - 1 || f.x > x1 + 1 || f.y < y0 - 1 || f.y > y1 + 1) continue;
+    if (f.wf) {   // очаг малого огня (wildfire.js): пламя поверх крон, у здания — повыше; гаснет плавно
+      const k = Math.min(1, (f.life - (Game.time - f.t0)) / 2.5, (Game.time - f.t0) / 0.6 + 0.2);
+      if (k <= 0.03) continue;
+      list.push([f.sy || f.y + 0.95, () => drawFire(c, f.x * TILE, f.y * TILE + (f.sy ? -14 : 6), 'blaze', Game.time, (f.x * 7 + f.y * 3) | 0, { alpha: Math.max(0.2, k), sparks: 2 })]);
+      continue;
+    }
     list.push([f.y + 0.3, () => drawFlames(c, f.x * TILE, f.y * TILE + 4, 12, 15, 0.9 * (1 - (Game.time - f.t0) / f.life), f.x * 7)]);
   }
   for (const u of Game.units) {

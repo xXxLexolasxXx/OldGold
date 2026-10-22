@@ -647,7 +647,7 @@ function foeTick(dt) {
     const N = Game.raiders[i];
     if (N.st === 'die') { N.dt += dt; if (N.dt > (N.k === 'malgor' ? 4 : 3.4)) Game.raiders.splice(i, 1); continue; }
     if (N.st === 'vanish') { N.vt += dt; if (N.vt > 1.5) Game.raiders.splice(i, 1); continue; }
-    if (dawn && N.k !== 'malgor' && !N.summoned && !FSPEC[N.k].big) {                // на рассвете расходятся; награбленное роняют
+    if (dawn && N.k !== 'malgor' && !N.summoned && !FSPEC[N.k].big && !N.stay) {   // stay — враги кампании (campaign.js) рассвета не боятся                // на рассвете расходятся; награбленное роняют
       if (N.loot) { dropPile(Math.floor(N.x), Math.floor(N.y), N.loot.g, N.loot.n); N.loot = null; }
       N.st = 'vanish'; N.vt = 0; N.tg = 0; continue;
     }
