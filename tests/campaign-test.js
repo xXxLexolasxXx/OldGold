@@ -147,7 +147,10 @@ const BOT = `(function () {
       if (!end.open3) fail('после акта 2 не открылся акт 3');
     }
   }
-  if (waveMax < 80) fail('волна обвала не прошла город (y ' + waveMax.toFixed(0) + ')');
+  if (waveMax < 80) {   // бот мог вывести всех раньше волны (зависит от сдвига генератора случайных) — тогда это не провал
+    const msg = 'волна обвала не прошла город (y ' + waveMax.toFixed(0) + ')';
+    if (over && over.res === 'win' && !end.f.buried) warn(msg); else fail(msg);
+  }
   if (!end.f.vaska) warn('кузнеца Ваську не откопали');
   const errs = errors.filter(e => !/предупрежд/i.test(e));
   if (errs.length) fail('акт 2, ошибки в логе: ' + errs.slice(0, 3).join(' | '));

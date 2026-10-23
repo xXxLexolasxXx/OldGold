@@ -235,6 +235,7 @@ function fxBurst(x, y, n, cols, sp, up, life, size, grav = 260) {
 // удар топором: щепки летят из ствола, дерево вздрагивает
 function entHit(e, u, big) {
   e.hitT = Game.time;
+  if (e.rock) rockCrack(e);
   const L = ENT_LOOK[entBase(e).kind];
   const { bx, by } = entBase(e);
   fxBurst(bx - e.face * 6, by - 30, big ? 26 : 10, [L.light, L.bark, '#d8b080', L.dark], big ? 110 : 70, 70, 0.7, 2.2);
@@ -482,6 +483,13 @@ function updateEnts(dt) {
         break;
       }
       case 'dying':
+        if (e.rock && e.t >= 0.9 && !e.split) {   // камень раскололся: осколки и грохот
+          e.split = true;
+          const { bx, by } = entBase(e);
+          fxBurst(bx, by - 20, 20, [ROCK_COL.base, ROCK_COL.mid, ROCK_COL.light, ROCK_COL.dark], 90, 60, 0.9, 2.4, 260);
+          fxBurst(bx, by - 8, 8, ['rgba(200,186,160,0.55)', 'rgba(170,156,130,0.5)'], 20, 14, 1.2, 3.5, -12);
+          sfxAt('thud', e.x * TILE, e.y * TILE, 1.2);
+        }
         // шатается → заваливается → удар о землю: пыль, листья, бревно
         if (e.t >= 2.2) {
           const { bx, by } = entBase(e);
@@ -976,8 +984,8 @@ function drawEntBody(c, kind, L, P, seed) {
     claws(c, fx, fy, side > 0 ? 0.25 : Math.PI - 0.25, 1.9, 11, 4, side * 0.5, LL, seed + 20 + i * 7, 2.6);
   });
   // туловище: сгорбленный корявый ствол
-  // низ ствола расходится корнями прямо в ноги — без стыка
-  const pts = [[cx - 10, 84], [cx - 15, 93], [cx - 12, 92], [cx - 10, 97], [cx - 6, 90], [cx - 2, 86], [cx + 2, 86], [cx + 6, 90], [cx + 10, 97], [cx + 12, 92], [cx + 15, 93], [cx + 11, 84],
+  // низ ствола расходится в ноги плавной аркой: без острого паха и ступенек
+  const pts = [[cx - 10, 84], [cx - 13.5, 91], [cx - 13, 96], [cx - 9, 98.5], [cx - 4.5, 97.5], [cx, 96], [cx + 4.5, 97.5], [cx + 9, 98.5], [cx + 13, 96], [cx + 13.5, 91], [cx + 10, 84],
     [cx + 9.5, 70], [cx + 9, top + 6], [cx + 6, top], [cx - 5, top], [cx - 8.5, top + 6], [cx - 9, 70]];
   poly(c, pts, lingrad(c, cx - 11, 0, cx + 12, 0, [[0, L.light], [0.35, L.bark], [1, L.dark]]));
   // к низу ствол темнеет и перетекает в цвет ног

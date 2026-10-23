@@ -100,25 +100,11 @@ function drawCave(c, x0, y0, x1, y1) {
   c.save();
   c.imageSmoothingEnabled = true;
   c.drawImage(CAVE.cv, ox, oy, w * S, h * S);
-  // столбы света: косые лучи сверху и пылинки в них
+  // столбы света (caveBeam): пятно на полу, объёмный луч из волокон, пылинки
   c.globalCompositeOperation = 'lighter';
-  for (const [sx, sy, sr] of shafts) {
-    if (sx < x0 - 8 || sx > x1 + 8 || sy < y0 - 4 || sy > y1 + 14) continue;
-    const x = (sx + 0.5) * TILE, y = (sy + 0.5) * TILE, r = sr * TILE, top = y - r * 4.2, a = 0.16 * sun + 0.03;
-    const g = c.createLinearGradient(x, top, x, y + r * 0.6);
-    g.addColorStop(0, `rgba(255,236,180,0)`); g.addColorStop(0.55, `rgba(255,236,180,${a})`); g.addColorStop(1, `rgba(255,220,150,${a * 0.6})`);
-    c.fillStyle = g;
-    c.beginPath(); c.moveTo(x - r * 0.45 - r * 0.6, top); c.lineTo(x + r * 0.45 - r * 0.6, top); c.lineTo(x + r * 1.05, y + r * 0.5); c.lineTo(x - r * 1.05, y + r * 0.5); c.closePath(); c.fill();
-    c.globalAlpha = 0.3 * sun;
-    c.drawImage(NIGHT.warm, x - r * 1.2, y - r, r * 2.4, r * 2);
-    c.globalAlpha = 1;
-    // пылинки: медленно плывут в луче (по времени, без состояния)
-    c.fillStyle = `rgba(255,244,210,${0.55 * sun})`;
-    for (let i = 0; i < 9; i++) {
-      const ph = (Game.time * 0.05 + i * 0.137 + sx * 0.031) % 1;
-      const px = x + Math.sin(i * 2.3 + Game.time * 0.4) * r * 0.7 - r * 0.6 * (1 - ph), py = top + (y - top) * ph;
-      c.fillRect(Math.round(px), Math.round(py), 1, 1);
-    }
+  for (const s of shafts) {
+    if (s[0] < x0 - 10 || s[0] > x1 + 10 || s[1] < y0 - 4 || s[1] > y1 + 16) continue;
+    caveBeam(c, s, sun);
   }
   // ореолы фонарей и костров
   for (const [x, y, r, a, kind] of lights) {
@@ -127,6 +113,80 @@ function drawCave(c, x0, y0, x1, y1) {
   }
   c.restore();
   c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Столб солнца: объёмный луч ----------
+// Луч в своих единицах (r — радиус дыры): пол — y = 0, свод — y = −BEAM_H; сверху уже, к полу шире, наклонён (солнце слева сверху).
+// Тело луча и волокна света запекаются один раз в два варианта (A и B) и медленно перетекают друг в друга — свет «дышит».
+// Поверх — пятно на полу (тёплое ядро и отсвет), а в объёме луча плавают пылинки: в середине ярче, у краёв гаснут.
+const BEAM_H = 4.6, BEAM_LEAN = 0.16, BEAM_W = 1.35, BEAM_PX = 40;   // высота, наклон, полуширина спрайта (в r), пикселей на r
+const beamHW = v => 0.4 + (1 - v / -BEAM_H) * 0.72;                  // полуширина луча на высоте v (v ≤ 0)
+
+function caveBeamSpr(k) {
+  const key = 'beam' + k;
+  if (CAVE[key]) return CAVE[key];
+  const W = Math.round(BEAM_W * 2 * BEAM_PX), H = Math.round((BEAM_H + 0.3) * BEAM_PX);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const c = cv.getContext('2d'), rnd = mulberry32(0xBEA4 + k * 977);
+  c.translate(W / 2, BEAM_H * BEAM_PX); c.scale(BEAM_PX, BEAM_PX);
+  const ray = (u0, u1, a, end) => {                   // волокно: полоса от свода к полу, расходится вместе с лучом
+    const g = c.createLinearGradient(0, -BEAM_H, 0, 0);
+    g.addColorStop(0, 'rgba(255,246,220,0)'); g.addColorStop(0.12, `rgba(255,246,220,${a})`);
+    g.addColorStop(end, `rgba(255,236,196,${a * 0.7})`); g.addColorStop(Math.min(1, end + 0.12), 'rgba(255,236,196,0)');
+    c.fillStyle = g;
+    const t = beamHW(-BEAM_H), b = beamHW(0);
+    c.beginPath(); c.moveTo(u0 * t, -BEAM_H); c.lineTo(u1 * t, -BEAM_H); c.lineTo(u1 * b, 0); c.lineTo(u0 * b, 0); c.closePath(); c.fill();
+  };
+  c.globalCompositeOperation = 'lighter';
+  if ('filter' in c) c.filter = 'blur(1.5px)';
+  // тело: мягкая середина, края тают; книзу чуть плотнее
+  for (let i = 0; i < 7; i++) { const w = 1 - i * 0.13; ray(-w, w, 0.035 + i * 0.008, 0.86); }
+  // волокна: узкие и широкие, разной длины и силы
+  for (let i = 0; i < 16; i++) {
+    const u = (rnd() * 2 - 1) * 0.85, w = 0.03 + rnd() * 0.12;
+    ray(u - w, u + w, 0.07 + rnd() * 0.2, 0.45 + rnd() * 0.45);
+  }
+  if ('filter' in c) c.filter = 'none';
+  return (CAVE[key] = cv);
+}
+// пятно света на полу: тёплое ядро, мягкий край
+function caveBeamPool() {
+  if (CAVE.pool) return CAVE.pool;
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const c = cv.getContext('2d'), g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,248,226,0.95)'); g.addColorStop(0.35, 'rgba(255,236,190,0.7)'); g.addColorStop(0.7, 'rgba(255,214,150,0.25)'); g.addColorStop(1, 'rgba(255,200,130,0)');
+  c.fillStyle = g; c.fillRect(0, 0, 64, 64);
+  return (CAVE.pool = cv);
+}
+function caveBeam(c, s, sun) {
+  const [sx, sy, sr] = s, x = (sx + 0.5) * TILE, y = (sy + 0.5) * TILE, r = sr * TILE, t = Game.time;
+  const amp = 0.08 + 0.92 * sun;                                            // ночью — бледный лунный столб
+  // пол: широкий отсвет и яркое пятно под лучом
+  c.globalAlpha = 0.12 * amp; c.drawImage(NIGHT.warm, x - r * 1.9, y - r * 1.25, r * 3.8, r * 2.5);
+  const P = caveBeamPool();
+  c.globalAlpha = 0.26 * amp; c.drawImage(P, x - r * 1.2, y - r * 0.68, r * 2.4, r * 1.36);
+  c.globalAlpha = 0.16 * amp; c.drawImage(P, x - r * 0.6, y - r * 0.34, r * 1.2, r * 0.68);
+  // луч: два запечённых варианта перетекают друг в друга
+  c.save();
+  c.translate(x, y); c.transform(1, 0, BEAM_LEAN, 1, 0, 0); c.scale(r, r);
+  const A = caveBeamSpr(0), B = caveBeamSpr(1), w = BEAM_W * 2, h = BEAM_H + 0.3, k = 0.5 + 0.5 * Math.sin(t * 0.35 + sx * 1.7);
+  c.globalAlpha = (0.36 + 0.22 * k) * amp; c.drawImage(A, -BEAM_W, -BEAM_H, w, h);
+  c.globalAlpha = (0.36 + 0.22 * (1 - k)) * amp; c.drawImage(B, -BEAM_W, -BEAM_H, w, h);
+  // пылинки: медленно кружат в объёме луча; в середине ярче, у краёв и под сводом гаснут, иногда вспыхивают
+  const px = 1 / r;
+  for (let i = 0; i < 30; i++) {
+    const f = (i * 0.618 + t * 0.011 * (1 + (i % 3) * 0.5)) % 1, v = -BEAM_H * 0.92 * (1 - f) - 0.05;
+    const u = Math.sin(i * 12.9898) * 0.8 + Math.sin(t * 0.3 + i) * 0.12, d = Math.abs(u);
+    const tw = 0.35 + 0.65 * Math.max(0, Math.sin(t * 1.3 + i * 2.1)), edge = Math.min(1, f * 6, (1 - f) * 8);
+    const a = tw * edge * (1 - d * 0.75) * amp;
+    if (a < 0.05) continue;
+    const big = i % 6 === 0 ? 2 : 1;
+    c.globalAlpha = Math.min(1, a);
+    c.fillStyle = i % 4 ? '#fff4d6' : '#ffffff';
+    c.fillRect(u * beamHW(v), v, big * px, big * px);
+  }
+  c.restore();
+  c.globalAlpha = 1;
 }
 
 // светящиеся подгорные грибы: где — решает акт (Game.camp.flags.shrooms), рисуются в общем списке по глубине

@@ -508,8 +508,11 @@ function drawBuilding(c, b, ghost) {
   if (b.type === 'mill' && spr.hub) drawSails(c, ox + spr.hub[0], oy + spr.hub[1], b.anim);
   if (spr.pen && b.stock) drawPigs(c, b, spr, ox, oy);
   c.imageSmoothingEnabled = R.smooth;
-  if (spr.chimneys && (b.working || b.type === 'inn' || b.type === 'farm' || ghost))
-    for (const [sx, sy] of spr.chimneys) drawSmoke(c, ox + sx, oy + sy, b.id + sx, b.working ? 1 : 0.5);
+  // зимой печи топятся брёвнами (season.js): дым идёт, только пока топят; нетопленое здание — иней и сосульки
+  const heat = !ghost && typeof seaHeating === 'function' && seaHeating() && WINTER_HEATED.includes(b.type);
+  if (heat && b.cold) drawColdFx(c, b, spr, ox, oy);
+  if (spr.chimneys && (heat ? !b.cold : (b.working || b.type === 'inn' || b.type === 'farm' || ghost)))
+    for (const [sx, sy] of spr.chimneys) drawSmoke(c, ox + sx, oy + sy, b.id + sx, b.working || heat ? 1 : 0.5);
   if (spr.glow && (b.working || b.type === 'crystalmine')) {
     const gx = ox + spr.glow[0], gy = oy + spr.glow[1];
     const a = (b.working ? 0.35 : 0.2) + 0.12 * Math.sin(t * 7) + 0.08 * Math.sin(t * 19);
@@ -717,6 +720,32 @@ function drawSailsOld(c, x, y, a) {
   c.fillStyle = '#24170f'; c.fillRect(-3, -3, 6, 6);
   c.fillStyle = '#875434'; c.fillRect(-2, -2, 3, 3);
   c.restore();
+}
+
+// иней на нетопленом здании: голубоватая дымка по силуэту (кэш на спрайте) и ряд сосулек вдоль крыши и карниза
+const COLD_FX_CACHE = new WeakMap();
+function drawColdFx(c, b, spr, ox, oy) {
+  let fr = COLD_FX_CACHE.get(spr.canvas);
+  if (!fr) {
+    const f = document.createElement('canvas'); f.width = spr.canvas.width; f.height = spr.canvas.height;
+    const g = f.getContext('2d');
+    g.drawImage(spr.canvas, 0, 0);
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = 'rgba(190,225,255,0.34)'; g.fillRect(0, 0, f.width, f.height);
+    g.fillStyle = 'rgba(255,255,255,0.18)';
+    for (let y = 0; y < f.height; y += 2) for (let x = (y >> 1) & 1; x < f.width; x += 4) g.fillRect(x, y, 1, 1);
+    COLD_FX_CACHE.set(spr.canvas, fr = f);
+  }
+  c.imageSmoothingEnabled = false;
+  c.drawImage(fr, ox, oy, spr.w, spr.h);
+  c.imageSmoothingEnabled = R.smooth;
+  const n = Math.max(3, Math.round(spr.w / 22)), y0 = oy + spr.h * 0.62;
+  for (let k = 0; k < n; k++) {
+    const x = Math.round(ox + spr.w * (0.12 + 0.76 * ((k * 0.6180339 + (b.id % 7) * 0.13) % 1))), len = 6 + ((k * 5 + b.id) % 6);
+    c.fillStyle = '#e8f6ff'; c.fillRect(x - 1, y0, 4, 2);
+    c.fillStyle = '#bfe3ff'; c.fillRect(x, y0 + 2, 2, len - 3);
+    c.fillStyle = '#8cc8f0'; c.fillRect(x, y0 + len - 1, 1, 1);
+  }
 }
 
 function drawSmoke(c, x, y, seed, amount) {

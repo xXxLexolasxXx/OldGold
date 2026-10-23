@@ -28,6 +28,7 @@ const COOP_CHAT = [
 const COOP_PERMS = {
   build: 'Строить здания', road: 'Класть дороги', erase: 'Сносить здания', eraseRoad: 'Убирать дороги и поля',
   field: 'Размечать поля', upgrade: 'Улучшать здания', manage: 'Паузы, доставки, рецепты, склад', train: 'Обучать жителей', chat: 'Чат', council: 'Совет деревни (голосование раз в сутки)',
+  decor: 'Украшать деревню (декор)', give: 'Передавать предметы другим игрокам',
 };
 const COOP_INV = 10;
 const COOP_DRUNK = 5, COOP_FALL = 1, COOP_STARS = 4;
@@ -39,9 +40,10 @@ const coop = {
   t: 0, lvT: 0,
   perms: Object.fromEntries(Object.keys(COOP_PERMS).map(k => [k, true])),
   // общая жизнь: ночи без потерь и заказы деревни (сохраняются отдельным файлом сервера)
-  vil: { streak: 0, best: 0, nights: 0, hall: {}, fr: {} },
+  vil: { streak: 0, best: 0, nights: 0, hall: {}, fr: {}, gq: {}, relays: 0, breads: 0 },
   quest: null, qDone: 0, prevNight: false, prevEve: false, lostAtEve: null,
   pairQ: [], pairDay: new Map(), cn: null, cnDay: -1, qT: 0,
+  rq: null, rqNext: 0, relayDay: -1, breadDay: -1, actAt: new Map(),
 };
 
 // ---------- Герой игрока ----------
@@ -75,6 +77,7 @@ function coopJoin(name, dataJson) {
   H.hp = d.hp > 0 ? Math.min(d.hp, H.maxhp) : H.maxhp;
   H.inv = Array.from({ length: COOP_INV }, (_, i) => (d.inv && d.inv[i]) || null);
   u.hero = H;
+  coopDropStale(H);
   coop.players.set(name, u);
   coopCheckBrothers(H);
   coop.out.push({ msg: { t: 'toast', text: `${name} (${H.cls}) приходит в деревню` } });
@@ -223,8 +226,22 @@ function coopCmd(name, msgJson, admin) {
     case 'go': if (u && coopInt(m.x) && coopInt(m.y)) coopGo(u, m.x, m.y); break;
     case 'prio': if (can('manage')) coop.out.push({ msg: prioCmd(m) }); break;
     case 'use': if (u && coopInt(m.slot) && m.slot >= 0 && m.slot < COOP_INV) coopUseItem(u, m.slot); break;
-    case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) u.hero.inv[m.slot] = null; break;
-    case 'vote': if (u && coopInt(m.i) && can('upgrade')) coopVote(name, m.i); break;
+    case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) { const k = u.hero.inv[m.slot].k; u.hero.inv[m.slot] = null; if (COOP_QITEM[k]) coopGroupFail(`${name} выбросил «${COOP_QITEM[k]}»`); } break;
+    case 'give': if (u && can('give') && coopSlow(name, 0.8)) coopGive(name, m); break;
+    case 'decor': {
+      if (!u || !can('decor') || !coopSlow(name, 0.25)) break;
+      if (!coopInt(m.x) || !coopInt(m.y) || !vdOwn(m.k)) break;
+      const r = vdPlace(m.k, m.x, m.y, name);
+      if (!r.ok) coopSay(name, r.text);
+      break;
+    }
+    case 'undecor': {
+      if (!u || !coopInt(m.x) || !coopInt(m.y) || !coopSlow(name, 0.15)) break;
+      const r = vdRemove(m.x, m.y, name, admin);
+      if (!r.ok && r.text) coopSay(name, r.text);
+      break;
+    }
+    case 'vote': if (u && coopInt(m.i) && can('council')) coopVote(name, m.i); break;
     case 'chat': {
       if (!can('chat')) break;
       const text = coopInt(m.i) ? COOP_CHAT[m.i] : null;
@@ -244,7 +261,7 @@ function coopCmd(name, msgJson, admin) {
       break;
     }
     case 'bact': {
-      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', untrainall: 'train', hire: 'train' }[m.act] || 'manage';
+      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', untrainall: 'train', hire: 'train', assign: 'manage' }[m.act] || 'manage';
       if (can(need)) coopBuildingAct(name, m);
       break;
     }
@@ -259,6 +276,7 @@ function coopCmd(name, msgJson, admin) {
     case 'wgs': if (typeof wgsCmd === 'function') wgsCmd(name, m); break;
     case 'dp': if (typeof dpDo === 'function') { const r = dpDo(coop.players.get(name), String(m.a || ''), +m.x || 0, typeof m.g === 'string' ? m.g : null); if (r && r.text) coopSay(name, r.text); } break;
     case 'campaign': coopCamp(name, !!admin, m); break;
+    case 'glq': if (m.a === 'wake' && typeof glWake === 'function') glWake(); break;
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
     case 'rsc': if (typeof rscCmd === 'function' && can('council')) rscCmd(name, m); break;
     case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
@@ -291,6 +309,8 @@ function coopCmd(name, msgJson, admin) {
         if (!Array.isArray(c) || !coopInt(c[0]) || !coopInt(c[1]) || !inb(c[0], c[1])) continue;
         const bld = World.bmap[idx(c[0], c[1])] && Game.buildings.find(b => b.id === World.bmap[idx(c[0], c[1])]);
         const key = bld && !(bld.state !== 'done') ? 'erase' : 'eraseRoad';
+        const dec = !bld && World.obj[idx(c[0], c[1])];
+        if (dec && dec.by && dec.by !== name && !admin) { coopSay(name, `Это поставил ${dec.by} — убрать может только автор или хост`); continue; }
         if (admin || coop.perms[key]) eraseAt([c[0], c[1]]); else denied = key;
       }
       if (denied) coopSay(name, 'Хост запретил: ' + COOP_PERMS[denied].toLowerCase());
@@ -312,7 +332,8 @@ function coopBuildingAct(name, m) {
     case 'train': if (coopOwn(UNIT_TYPES, m.type) && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy && b.queue && b.queue.length < 10) b.queue.push(m.type); break;
     case 'untrain': if (coopInt(m.i)) b.queue.splice(m.i, 1); break;
     case 'untrainall': b.queue.length = 0; break;
-    case 'hire': if (b.def.worker) queueTraining(b.def.worker); break;
+    case 'hire': if (b.def.worker) { const bad = hireTrain(b); if (bad) coopSay(name, bad); } break;
+    case 'assign': if (b.def.worker && coopInt(m.u)) { const bad = hireAssign(b, Game.unitMap.get(m.u)); if (bad) coopSay(name, bad); } break;
     case 'recipe': if (b.recipeOn && coopInt(m.i) && m.i >= 0 && m.i < b.recipeOn.length) b.recipeOn[m.i] = !!m.on; break;
     case 'crop': if (b.crops && coopOwn(b.crops, m.c)) b.crops[m.c] = !!m.on; break;
     case 'block': if (coopOwn(GOODS, m.g)) Game.storeBlock[m.g] = !Game.storeBlock[m.g]; break;
@@ -352,6 +373,7 @@ function coopQuestHave() { const q = coop.quest; return q ? Math.max(0, (Game.pr
 
 function coopVillageTick() {
   if (!coop.players.size) return;
+  coopParcels();
   const night = isNightNow(), eve = isEveningNow();
   // вечер: считаем потери с этой точки; заказ, не выполненный за день, сгорает
   if (eve && !coop.prevEve) {
@@ -534,7 +556,7 @@ function coopTick(dt) {
 // ---------- Снимки ----------
 
 // Плоская копия состояния для клиентов: числа, строки, массивы и простые объекты; жители и здания — ссылкой по id
-const COOP_SKIP = new Set(['path', 'proc', 'action', 'ref']);
+const COOP_SKIP = new Set(['path', 'proc', 'action', 'ref', 'job']);
 const COOP_OP = Object.getPrototypeOf({});   // свой Object.prototype контекста (vm), а не хозяйский
 const coopIds = new WeakMap();
 let coopIdN = 1;
@@ -551,7 +573,7 @@ function coopPlain(v, d = 0, top = false) {
     return v.map(x => { const p = coopPlain(x, d + 1); return p === undefined ? null : p; });
   }
   const pr = Object.getPrototypeOf(v);
-  if (!top && pr !== COOP_OP && pr !== null) return undefined;
+  if (!top && pr !== COOP_OP && pr !== null && Object.getPrototypeOf(pr) !== null) return undefined;     // простой объект из любой области памяти (мир с диска), но не Unit/Building/класс
   if (d > 3) return undefined;
   const o = {};
   for (const k in v) { if (COOP_SKIP.has(k)) continue; const p = coopPlain(v[k], d + 1); if (p !== undefined) o[k] = p; }
@@ -582,6 +604,7 @@ function coopMirror() {
     foeZones: typeof foeMirrorZones === 'function' ? foeMirrorZones() : [],
     foe: typeof foeMirror === 'function' ? foeMirror() : null,
     sp: typeof spireMirrorOut === 'function' ? spireMirrorOut() : null,
+    glq: Game.glq ? coopPlain(Game.glq, 0, true) : null,
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
     lost: Game.lostGnomes || 0, df: Game.diff,
@@ -592,6 +615,7 @@ function coopMirror() {
     trav: typeof travMirrorOut === 'function' ? travMirrorOut() : null,
     wgs: typeof wgsMirrorOut === 'function' ? wgsMirrorOut() : null,
     law: typeof lawMirrorOut === 'function' ? lawMirrorOut() : null,
+    dist: typeof distMirrorOut === 'function' ? distMirrorOut() : null,
     med: typeof medMirrorOut === 'function' ? medMirrorOut() : null,
     rsc: typeof rscMirrorOut === 'function' ? rscMirrorOut() : null,
     fam: typeof famMirrorOut === 'function' ? famMirrorOut() : null,
@@ -796,6 +820,7 @@ function coopWorldPacket() {
   for (const b of Game.buildings) {
     const d = serializeBuilding(b);
     d.wk = b.working ? 1 : 0;
+    d.cd = b.cold ? 1 : 0;
     if (b.worker && !b.worker.dead && b.worker.home === b) d.wr = b.worker.id;      // кто здесь работает: по этому клиент знает, есть ли у здания работник (coopLinkWorkers)
     const sig = JSON.stringify(d);
     d.an = r2(b.anim || 0);
@@ -1139,9 +1164,12 @@ function coopCouncilOpen() {
   const ups = [], seen = new Set();
   for (const b of Game.buildings) if (canUpgrade(b) && !b.upg && !seen.has(b.type)) { seen.add(b.type); ups.push({ type: b.type, l: b.def.name }); }
   let cn = null;
-  if (locked.length && (k % 2 === 1 || !ups.length)) {
+  const dOpts = typeof distEligible === 'function' && distEligible() && (!Game.dist || k % 3 === 2) ? distScan() : [];
+  if (dOpts.length) {
+    cn = { kind: 'district', q: 'Куда строить новый район?', opts: dOpts.map(o => ({ ...o, l: `${o.l}: плюс — ${DIST_KINDS[o.k].b.filter(t => BUILDINGS[t]).slice(0, 3).map(t => BUILDINGS[t].name.toLowerCase()).join(', ')} быстрее; минус — ${DIST_KINDS[o.k].minus.split(':')[0].toLowerCase()}` })) };
+  } else if (locked.length && (k % 2 === 1 || !ups.length)) {
     cn = { kind: 'unlock', q: 'Что открыть в меню строительства?', opts: locked.slice(0, 4).map(s => ({ id: s.id, l: UNLOCK_NAMES[s.id] || s.id })) };
-  } else if (ups.length) {
+  } else if (ups.length && coop.perms.upgrade) {
     ups.sort(() => Math.random() - 0.5);
     cn = { kind: 'upgrade', q: 'Какое здание улучшить до уровня 2?', opts: ups.slice(0, 4) };
   }
@@ -1166,7 +1194,9 @@ function coopCouncilClose() {
   if (top <= 0) { coop.out.push({ msg: { t: 'toast', text: 'Совет деревни: никто не проголосовал, всё остаётся как есть' } }); return; }
   const win = cnt.map((n, i) => n === top ? i : -1).filter(i => i >= 0);
   const o = cn.opts[win[Math.floor(Math.random() * win.length)]];
-  if (cn.kind === 'upgrade') {
+  if (cn.kind === 'district') {
+    if (distSet(o, 'Совет')) coop.out.push({ msg: { t: 'toast', text: `Совет решил: новый район — ${DIST_KINDS[o.k].n.toLowerCase()} (голосов: ${top}). Зона подсвечена на карте` } });
+  } else if (cn.kind === 'upgrade') {
     const b = Game.buildings.find(x => x.type === o.type && canUpgrade(x) && !x.upg);
     if (b && startUpgrade(b)) coop.out.push({ msg: { t: 'toast', text: `Совет решил: улучшить «${o.l}» (голосов: ${top})` } });
     else coop.out.push({ msg: { t: 'toast', text: `Совет выбрал «${o.l}», но улучшить его уже нельзя` } });
@@ -1187,7 +1217,7 @@ function coopCouncilTick() {
   const k = coopDayIx(), p = coopDayP();
   if (coop.cnDay === k || !coop.players.size || p < 8 || p > EVE_START - 70) return;
   coop.cnDay = k;
-  if (coop.perms.council && coop.perms.upgrade) coopCouncilOpen();
+  if (coop.perms.council) coopCouncilOpen();
 }
 
 // ---- такт и данные для клиента ----
@@ -1205,6 +1235,7 @@ function coopQuestTick(night) {
     }
   }
   coopPairTick(night);
+  coopGroupTick(night);
   coopCouncilTick();
   const dawn = coop.lampDawn; coop.lampDawn = false;
   coopLampTick(night, dawn);
@@ -1237,6 +1268,9 @@ function coopQuestInfo(name) {
   }
   const cn = coop.cn;
   if (cn) out.c = { q: cn.q, o: cn.opts.map(o => o.l), v: cn.opts.map((_, i) => [...cn.votes.values()].filter(x => x === i).length), left: Math.max(0, Math.round(cn.until - Game.time)), my: cn.votes.has(name) ? cn.votes.get(name) : -1 };
+  if (cn && cn.kind === 'district') out.c.pts = cn.opts.map(o => ({ k: o.k, x: o.x, y: o.y, r: o.r }));
+  const r = coopGroupInfo(name);
+  if (r) out.r = r;
   return out;
 }
 
@@ -1374,4 +1408,199 @@ function coopCampProg() {
   const _fb = fxBurst;
   // только крупные (взрыв, обвал дома): мелкие искры и пыль жителей клиенты рисуют сами
   fxBurst = function (...a) { if (Game.camp && a[2] >= 20 && coop.out.length < 200) coop.out.push({ msg: { t: 'campaign', a: 'fx', p: a.map(v => (typeof v === 'number' ? r2(v) : v)) } }); return _fb(...a); };
+}
+
+// ---------- Передача предметов и квесты «Эстафета» и «Передать хлеб» ----------
+// give: из рюкзака в рюкзак другому игроку, только вблизи (COOP_GIVE_R клеток), не чаще coopSlow, не больше
+// COOP_GIVE_DAY передач в сутки. Рюкзак получателя полон — предмет ждёт в очереди посылок (vil.gq, до COOP_GIVE_Q)
+// и приходит сам, как освободится место (и после перезахода). Эстафета: палочка идёт по цепочке игроков, на каждый
+// этап COOP_RELAY_LEG секунд, последний несёт её к складу. «Передать хлеб»: груз хлеба со склада надо донести
+// до дальней метки за COOP_BREAD_T секунд, по дороге его можно передавать друг другу (с грузом идёшь медленнее).
+
+const COOP_GIVE_R = 4, COOP_GIVE_Q = 6, COOP_GIVE_DAY = 60;
+const COOP_RELAY_LEG = 90, COOP_BREAD_T = 240, COOP_BREAD_N = 4, COOP_CARGO_SLOW = 0.8;
+const COOP_QITEM = { baton: 'Эстафетная палочка', cargo: 'Груз хлеба' };
+const ITEM_RU = k => COOP_QITEM[k] || (GOODS[k] ? GOODS[k].name : k);
+
+// не чаще раза в sec секунд игрового времени на игрока (антиспам)
+function coopSlow(name, sec) {
+  const t = coop.actAt.get(name);
+  if (t != null && Game.time >= t && Game.time - t < sec) return false;
+  coop.actAt.set(name, Game.time);
+  return true;
+}
+
+function coopInvHas(H, k) { return H.inv.some(s => s && s.k === k); }
+
+// предметы квестов живут, только пока квест идёт, и только у того, кто сейчас несёт
+function coopDropStale(H) {
+  const rq = coop.rq;
+  for (let i = 0; i < H.inv.length; i++) {
+    const s = H.inv[i];
+    if (s && COOP_QITEM[s.k] && !(rq && rq.item === s.k && rq.holder === H.owner)) H.inv[i] = null;
+  }
+}
+
+function coopGive(name, m) {
+  const u = coop.players.get(name), H = u.hero;
+  const to = typeof m.to === 'string' ? coop.players.get(m.to) : null;
+  if (!to || m.to === name) { coopSay(name, 'Этого игрока нет в деревне'); return; }
+  if (!coopInt(m.slot) || m.slot < 0 || m.slot >= COOP_INV) return;
+  const s = H.inv[m.slot];
+  if (!s) return;
+  if (m.n !== undefined && !(coopInt(m.n) && m.n > 0)) return;
+  const n = m.n !== undefined ? Math.min(m.n, s.n) : s.n;
+  if (H.downT || to.hero.downT) { coopSay(name, 'Сейчас не до передачи'); return; }
+  const d = coopDist(u, to);
+  if (d > COOP_GIVE_R) { coopSay(name, `Подойди к ${m.to} поближе: ${Math.round(d)} кл., надо не дальше ${COOP_GIVE_R}`); return; }
+  const k = coopDayIx();
+  if (!H.gv || H.gv.k !== k) H.gv = { k, n: 0 };
+  if (H.gv.n >= COOP_GIVE_DAY) { coopSay(name, 'На сегодня хватит передач — завтра'); return; }
+  const rq = coop.rq;
+  if (s.k === 'baton') {
+    if (!rq || rq.kind !== 'relay' || rq.holder !== name) return;
+    const next = rq.chain[rq.i + 1];
+    if (m.to !== next) { coopSay(name, `Эстафету ждёт ${next || 'склад'}`); return; }
+  }
+  if (COOP_QITEM[s.k] && !to.hero.inv.some(x => !x)) { coopSay(name, `У ${m.to} полный рюкзак — «${COOP_QITEM[s.k]}» некуда взять`); return; }
+  // в рюкзак или в очередь посылок
+  let queued = false;
+  if (!coopAddItem(to.hero, s.k, n)) {
+    const q = coop.vil.gq[m.to] || (coop.vil.gq[m.to] = []);
+    if (q.length >= COOP_GIVE_Q) { coopSay(name, `У ${m.to} полны и рюкзак, и очередь посылок`); return; }
+    q.push({ k: s.k, n, from: name });
+    queued = true;
+  }
+  const what = `${ITEM_RU(s.k)} ×${n}`, key = s.k;
+  s.n -= n; if (s.n <= 0) H.inv[m.slot] = null;
+  H.gv.n++;
+  coopSay(name, `Передано ${m.to}: ${what}${queued ? ' (ждёт в очереди посылок — рюкзак полон)' : ''}`);
+  coopSay(m.to, `${name} передаёт тебе: ${what}${queued ? ' — придёт, как освободится место в рюкзаке' : ''}`);
+  floater(to.x, to.y - 1.8, `+${what}`, '#ffe8a0');
+  if (rq && rq.item === key && rq.holder === name) coopGroupPass(m.to);
+}
+
+// посылки из очереди: как только в рюкзаке есть место (раз в секунду)
+function coopParcels() {
+  for (const nm of Object.keys(coop.vil.gq)) {
+    const u = coop.players.get(nm), q = coop.vil.gq[nm];
+    if (!Array.isArray(q)) { delete coop.vil.gq[nm]; continue; }
+    if (!u) continue;
+    while (q.length && coopAddItem(u.hero, q[0].k, q[0].n)) { const p = q.shift(); coopSay(nm, `Пришла посылка от ${p.from}: ${ITEM_RU(p.k)} ×${p.n}`); }
+    if (!q.length) delete coop.vil.gq[nm];
+  }
+}
+
+// ---- групповые квесты ----
+
+function coopStoreTake(g, n) {
+  let have = 0;
+  for (const b of Game.buildings) if (b.isStore() && !b.removed && b.state === 'done') have += Math.max(0, b.offer(g));
+  if (have < n) return false;
+  let left = n;
+  for (const b of Game.buildings) { if (!left) break; if (!b.isStore() || b.removed || b.state !== 'done') continue; const t = Math.min(left, Math.max(0, b.offer(g))); b.stock[g] -= t; left -= t; }
+  return true;
+}
+
+function coopGroupStart(night) {
+  const k = coopDayIx(), p = coopDayP();
+  if (night || p < 10 || p > EVE_START - 50 || Game.time < coop.rqNext) return;
+  coop.rqNext = Game.time + 45;
+  const free = [...coop.players.values()].filter(u => !u.hero.downT && u.hero.inv.some(x => !x));
+  if (coop.relayDay !== k && coop.players.size >= 2 && free.length) {
+    const first = free[Math.floor(Math.random() * free.length)];
+    const chain = [first.owner, ...[...coop.players.keys()].filter(n => n !== first.owner).sort(() => Math.random() - 0.5).slice(0, 4)];
+    coop.relayDay = k;
+    coop.rq = { kind: 'relay', item: 'baton', chain, i: 0, holder: chain[0], carried: [chain[0]], until: Game.time + COOP_RELAY_LEG };
+    coopAddItem(first.hero, 'baton', 1);
+    coop.out.push({ msg: { t: 'toast', text: `Эстафета! Палочка у ${chain[0]}, дальше: ${chain.slice(1).join(' → ')} → склад. На каждый этап ${COOP_RELAY_LEG} секунд` } });
+    return;
+  }
+  if (coop.breadDay !== k && free.length) {
+    const tgt = coopFarPoint();
+    if (!tgt || !coopStoreTake('bread', COOP_BREAD_N)) return;
+    const u = free[Math.floor(Math.random() * free.length)];
+    coop.breadDay = k;
+    coop.rq = { kind: 'bread', item: 'cargo', holder: u.owner, carried: [u.owner], x: tgt[0], y: tgt[1], until: Game.time + COOP_BREAD_T };
+    coopAddItem(u.hero, 'cargo', 1);
+    coop.out.push({ msg: { t: 'toast', text: `Передать хлеб: ${u.owner} несёт груз хлеба на дальний хутор (метка на карте). ${Math.round(COOP_BREAD_T / 60)} минуты; с грузом тяжело — передавайте друг другу!` } });
+  }
+}
+
+function coopGroupPass(to) {
+  const rq = coop.rq;
+  rq.holder = to;
+  if (!rq.carried.includes(to)) rq.carried.push(to);
+  if (rq.kind !== 'relay') return;
+  rq.i++;
+  rq.until = Game.time + COOP_RELAY_LEG;
+  const next = rq.chain[rq.i + 1];
+  coop.out.push({ msg: { t: 'toast', text: `Эстафета: палочка у ${to}. ${next ? 'Дальше — ' + next : 'Последний этап — к складу!'}` } });
+}
+
+function coopGroupEnd(text) {
+  coop.rq = null;
+  for (const u of coop.players.values()) coopDropStale(u.hero);
+  if (text) coop.out.push({ msg: { t: 'toast', text } });
+}
+function coopGroupFail(why) { if (coop.rq) coopGroupEnd(`${coop.rq.kind === 'relay' ? 'Эстафета' : '«Передать хлеб»'} сорвалась: ${why}`); }
+
+function coopGroupDone() {
+  const rq = coop.rq, relay = rq.kind === 'relay';
+  const gold = relay ? 3 + rq.carried.length : 6, xp = relay ? 30 : 35, item = relay ? ['sausage', 1] : ['bread', 1];
+  const got = coopVillageGold(gold);
+  coopGroupEnd(null);
+  for (const nm of rq.carried) {
+    const u = coop.players.get(nm);
+    if (!u) continue;
+    coopReward(u.hero, xp, item);
+    const key = relay ? 'relay' : 'bread';
+    u.hero.qstat[key] = (u.hero.qstat[key] || 0) + 1;
+    if (u.hero.qstat[key] >= 3) coopGiveTitle(u.hero, relay ? 'Скороход' : 'Хлебный обоз');
+  }
+  if (relay) coop.vil.relays = (coop.vil.relays || 0) + 1; else coop.vil.breads = (coop.vil.breads || 0) + 1;
+  coop.out.push({ msg: { t: 'toast', text: `${relay ? 'Эстафета пройдена' : 'Хлеб довезли'}! ${rq.carried.join(', ')}: +${xp} опыта${got ? `, +${gold} золота на склад` : ''}` } });
+}
+
+function coopGroupTick(night) {
+  const rq = coop.rq;
+  if (!rq) { coopGroupStart(night); return; }
+  const u = coop.players.get(rq.holder);
+  if (!u) { coopGroupFail(`${rq.holder} ушёл из деревни`); return; }
+  if (!coopInvHas(u.hero, rq.item)) { coopGroupFail('груз потерян'); return; }
+  if (Game.time > rq.until) { coopGroupFail('не успели'); return; }
+  if (rq.kind === 'relay') {
+    if (rq.i >= rq.chain.length - 1) {
+      const st = Game.buildings.find(b => b.type === 'storehouse' && !b.removed);
+      if (!st || Math.hypot(u.x - (st.doorX + 0.5), u.y - (st.doorY + 0.5)) <= 3) coopGroupDone();
+    } else if (!coop.players.has(rq.chain[rq.i + 1])) {
+      rq.chain.splice(rq.i + 1, 1);       // следующий ушёл — бежим к тому, кто за ним
+      coopSay(rq.holder, `Эстафета: дальше — ${rq.chain[rq.i + 1] || 'склад'}`);
+    }
+  } else if (Math.hypot(u.x - (rq.x + 0.5), u.y - (rq.y + 0.5)) <= 2) coopGroupDone();
+}
+
+function coopGroupInfo(name) {
+  const rq = coop.rq;
+  if (!rq) return null;
+  const left = Math.max(0, Math.round(rq.until - Game.time)), me = rq.holder === name, mu = coop.players.get(name);
+  let pt = null, x;
+  if (rq.kind === 'relay') {
+    const next = rq.chain[rq.i + 1], nu = next && coop.players.get(next), st = Game.buildings.find(b => b.type === 'storehouse' && !b.removed);
+    if (nu) pt = [Math.floor(nu.x), Math.floor(nu.y)]; else if (st) pt = [st.doorX, st.doorY];
+    x = `${rq.chain.map((n, i) => i === rq.i ? `[${n}]` : n).join(' → ')} → склад`;
+    if (me) x = (next ? `Беги к ${next} и передай палочку (Рюкзак → кому)` : 'Неси палочку к складу!') + ' · ' + x;
+    else if (next === name) x = `${rq.holder} бежит к тебе с палочкой · ` + x;
+  } else {
+    pt = [rq.x, rq.y];
+    const d = mu ? Math.round(Math.hypot(rq.x + 0.5 - mu.x, rq.y + 0.5 - mu.y)) : 0;
+    x = me ? `Груз у тебя: неси к метке, ${d} кл. Тяжело — можно передать тому, кто рядом` : `Груз несёт ${rq.holder} — помоги донести, до метки ${d} кл.`;
+  }
+  return { t: rq.kind === 'relay' ? 'Эстафета' : 'Передать хлеб', x, left, me: me ? 1 : 0, pts: pt ? [pt] : [] };
+}
+
+// с грузом хлеба герой идёт медленнее
+if (typeof teamSpeedMul === 'function') {
+  const _tsm = teamSpeedMul;
+  teamSpeedMul = function (u) { const v = _tsm(u); return u && u.owner && u.hero && u.hero.inv && coopInvHas(u.hero, 'cargo') ? v * COOP_CARGO_SLOW : v; };
 }

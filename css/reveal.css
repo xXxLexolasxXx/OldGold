@@ -1,7 +1,7 @@
 /* Интерфейс по ходу игры (js/reveal.js): появление кнопок, разовая подсветка, плашка «Новое» */
 
 /* портрет телефона: видимые вкладки — по центру, без дыр на месте ещё не открытых */
-body.mobile:not(.land) #tabs { grid-template-columns: repeat(var(--rv-n, 9), minmax(0, 68px)); justify-content: center; }
+body.mobile:not(.land) #tabs { grid-template-columns: repeat(var(--rv-n, 8), minmax(0, 68px)); justify-content: center; }
 
 /* появление: выезд снизу со вспышкой, потом мягкое свечение до первого нажатия */
 .rv-new { position: relative; animation: rv-in .7s cubic-bezier(.2, 1.4, .4, 1) both, rv-glow 1.4s ease-in-out .7s infinite; z-index: 1; }
@@ -33,8 +33,9 @@ body.mobile:not(.land) #tabs { grid-template-columns: repeat(var(--rv-n, 9), min
 @keyframes rv-note-out { to { opacity: 0; transform: translate(-50%, -12px); } }
 
 /* телефон: в верхней части экрана — окно обучения, плашку ставим ниже, над картой */
-body.mobile .rv-note { top: 34%; max-width: 92vw; }
-body.mobile.land .rv-note { top: calc(var(--st, 0px) + 50px); left: 55%; max-width: 60vw; }
+body.mobile .rv-note { top: 46%; max-width: 92vw; }
+/* горизонталь: слева сверху окно обучения, справа сверху карточка героя — плашка внизу, по центру свободной части */
+body.mobile.land .rv-note { top: auto; bottom: calc(var(--sb, 0px) + 64px); left: calc((var(--left, 60px) + min(330px, 44vw) + 100vw) / 2); max-width: calc(100vw - var(--left, 60px) - min(330px, 44vw) - 24px); }
 
 [data-reveal="all"] .rv-st { margin-left: 4px; color: var(--gold-hi); }
 
@@ -47,5 +48,3 @@ body.mobile.land .rv-note { top: calc(var(--st, 0px) + 50px); left: 55%; max-wid
 .res-more span { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; text-shadow: 0 0 3px #000, 0 1px 0 #000; }
 .res-more img { width: 18px; height: 18px; }
 .res-more b { color: var(--gold-hi); }
-/* раскрытый список верхней полосы — поверх целей деревни */
-#topbar:has(.dd.open) { z-index: 21; }

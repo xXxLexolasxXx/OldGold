@@ -75,7 +75,7 @@ function raidPhase(N, F, ph) {
   const K = RAID_KINDS[F.k], P = K.phases[ph - 1];
   F.hint = P.hint;
   rdSay(`${K.name} — фаза ${['I', 'II', 'III'][ph - 1] || ph}: «${P.n}». ${P.hint}`);
-  floater(N.x, N.y - 3, `«${P.n}»`, '#9ae0ff');
+  floater(N.x, N.y - 4.2, `«${P.n}»`, '#9ae0ff');
   N.ov = ['roar']; N.ovT = 0; N.ovP = 0.6;
   fxBurst(N.x * TILE, N.y * TILE - 20, 30, ['#6ad0ff', '#bff0ff', '#2a6aaa'], 110, 70, 1, 2.4, -20);
   if (K.phase) K.phase(N, F, ph);
@@ -257,13 +257,13 @@ const KURGAN = {
       F.nextAdd = Game.time + 14;
       if ((Game.skels || []).filter(s => s.state !== 'dead' && Math.hypot(s.x - N.x, s.y - N.y) < 10).length < 4)
         for (let k = 0; k < 2; k++) { const s = randomFreeNear(Math.floor(N.x), Math.floor(N.y), 2, 4, (x, y) => isWalkable(x, y)); if (s) skelRise(s[0] + 0.5, s[1] + 0.5, k * 0.8); }
-      floater(N.x, N.y - 2.6, 'Встаньте, слуги!', '#9ae0ff');
+      floater(N.x, N.y - 4, 'Встаньте, слуги!', '#9ae0ff');
     }
     // фаза II и III: синие круги под героями
     if (F.ph >= 2 && Game.time >= F.nextMark) {
       F.nextMark = Game.time + (F.ph === 3 ? 6 : 7.5);
       for (const h of raidHeroes(N.x, N.y, 12)) F.marks.push({ x: +h.x.toFixed(2), y: +h.y.toFixed(2), t: Game.time + 1.6 });
-      floater(N.x, N.y - 2.6, 'Холод могил!', '#9ae0ff');
+      floater(N.x, N.y - 4, 'Холод могил!', '#9ae0ff');
     }
     for (let i = F.marks.length - 1; i >= 0; i--) {
       const m = F.marks[i];
@@ -307,9 +307,9 @@ raidRegister('kurgan', KURGAN);
       if (N.hp <= 0 && !Game.neutrals.some(M => M.k === 'kost' && M.st !== 'die' && M !== N)) rdSay('Обереги разбиты — щит князя пал!');
       return;
     }
-    if (F.sh) { dmg *= 0.25; if (Math.random() < 0.3) floater(N.x, N.y - 2.4, 'Щит оберегов!', '#9ae0ff'); }
+    if (F.sh) { dmg *= 0.25; if (Math.random() < 0.3) floater(N.x, N.y - 3.8, 'Щит оберегов!', '#9ae0ff'); }
     // удар со спины разбойника
-    if (u && (unitCls(u) === 'rogue' || (u.hero && u.hero.clsKey === 'rogue')) && (u.x - N.x) * N.face < 0 && Math.hypot(u.x - N.x, u.y - N.y) < 2.4) { dmg *= 2; floater(N.x, N.y - 2.6, 'Со спины!', '#e0b0ff'); }
+    if (u && (unitCls(u) === 'rogue' || (u.hero && u.hero.clsKey === 'rogue')) && (u.x - N.x) * N.face < 0 && Math.hypot(u.x - N.x, u.y - N.y) < 2.4) { dmg *= 2; floater(N.x, N.y - 4, 'Со спины!', '#e0b0ff'); }
     if (key) F.dmg[key] = (F.dmg[key] || 0) + Math.max(0, Math.min(N.hp, dmg));
     _hit(N, u, dmg);
   };
@@ -327,7 +327,7 @@ raidRegister('kurgan', KURGAN);
     if (tg.hero) {
       const lost = Math.max(0, was - tg.hero.hp), key = rdKey(tg);
       F.taken[key] = (F.taken[key] || 0) + lost;
-      if (F.ph === 3 && lost > 0) { N.hp = Math.min(N.mhp, N.hp + lost * 0.35); floater(N.x, N.y - 2.2, '+' + Math.round(lost * 0.35), '#9ae0ff'); }
+      if (F.ph === 3 && lost > 0) { N.hp = Math.min(N.mhp, N.hp + lost * 0.35); floater(N.x, N.y - 3.6, '+' + Math.round(lost * 0.35), '#9ae0ff'); }
     }
   };
   // клик по кургану — «Войти в курган»: герой идёт к проёму, там князь встаёт или герой узнаёт, чего не хватает.
@@ -472,6 +472,7 @@ function raidDrawMarks(c, F) {
 
 // Князь: высокий скелет в ржавом золотом доспехе, корона с синими камнями, рваный синий плащ, древний меч
 function raidDrawKurgan(c, N) {
+  if (typeof kpDraw === 'function') return kpDraw(c, N);          // пиксельный князь — kurganart.js; ниже старое векторное рисование
   const fr = N.fr || 'i0', t = Game.time, dead = N.st === 'die';
   const al = dead ? Math.max(0, Math.min(1, 1 - (N.dt - 0.6) / 2.6)) : 1;
   if (al <= 0) return;
@@ -556,7 +557,7 @@ function raidDrawBar(c) {
   if (!F) return;
   const N = Game.neutrals.find(M => M.id === F.nid);
   if (!N || N.st === 'die') return;
-  const px = Math.round(N.x * TILE), py = Math.round(N.y * TILE - 54), w = 64, r = Math.max(0, N.hp / N.mhp);
+  const px = Math.round(N.x * TILE), py = Math.round(N.y * TILE - 124), w = 72, r = Math.max(0, N.hp / N.mhp);
   c.fillStyle = 'rgba(10,6,2,0.9)'; c.fillRect(px - w / 2 - 2, py - 2, w + 4, 8);
   c.fillStyle = '#2a3a5a'; c.fillRect(px - w / 2, py, w, 4);
   c.fillStyle = F.sh ? '#9ae0ff' : r > 0.66 ? '#6ad0ff' : r > 0.33 ? '#e0b030' : '#e04a3a'; c.fillRect(px - w / 2, py, Math.round(w * r), 4);

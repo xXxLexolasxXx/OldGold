@@ -237,7 +237,8 @@ if (kmax > kmin * 3) console.log(`  ⚠ разброс убийств по кл�
     for (const c of ['mage', 'barbarian']) { H.clsKey = c; H.level = 15; H.abCd = {}; const html = abBarHTML(abBarState()); out[c] = { b: (html.match(/data-ab="/g) || []).length, ult: /class="[^"]*\\bult\\b[^"]*" data-ab="\\d"/.test(html), six: html.includes('>6</i>') }; }
     return out;`);
   ok(bar.mage.b === 6 && bar.mage.ult && bar.mage.six, 'панель мага не на 6 кнопок с ультой: ' + JSON.stringify(bar.mage));
-  ok(bar.barbarian.b === 5 && bar.barbarian.ult && bar.barbarian.six, 'панель варвара: 4 обычных + ульта: ' + JSON.stringify(bar.barbarian));
+  // с арены (АРЕНА.md, решение 3) у варвара пятая способность — «Рык»: 5 обычных + ульта
+  ok(bar.barbarian.b === 6 && bar.barbarian.ult && bar.barbarian.six, 'панель варвара: 5 обычных + ульта: ' + JSON.stringify(bar.barbarian));
   // ульта закрыта до 13 уровня
   setup('mage', 12);
   spawnSkels(2);

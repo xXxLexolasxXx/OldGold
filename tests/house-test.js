@@ -43,6 +43,11 @@ const J = (sim, c) => JSON.parse(sim.h.run('JSON.stringify((function(){' + c + '
   const vs = J(sim, `return Game.buildings.filter(b => b.type === 'house').map(b => b.hv);`);
   ok(new Set(vs).size >= 4 && vs.every(v => v >= 0 && v < 8), 'виды домов разные (0–7): ' + vs.join(','));
   ok(sim.h.run('HV.length') === 8, 'восемь вариантов облика');
+  // готовому дому дорога не нужна: над домом без мостовой нет красного значка, а у стройки без дороги он остаётся
+  const pr = J(sim, `const hs = Game.buildings.filter(b => b.type === 'house');
+    return { off: hs.filter(b => !b.roadLinked()).length, bad: hs.filter(b => b.problem()).length,
+      site: (() => { const b = hs.find(x => !x.roadLinked()), id = Game.nextId, p = new Building('house', b.x, b.y, false, b.rot).problem(); Game.nextId = id; return p; })() };`);
+  ok(pr.off > 0 && pr.bad === 0 && pr.site === 'noroad', `дом без дороги без значка (без дороги ${pr.off}, со значком ${pr.bad}), стройка: ${pr.site}`);
   // семья: двое взрослых — супруги, у них гномёнок
   J(sim, `const a = Game.units.filter(u => houseFolk(u) && u.type !== 'kid' && u.fam);
     const m = a.find(u => u.fam.sx === 'm'), f = a.find(u => u !== m);

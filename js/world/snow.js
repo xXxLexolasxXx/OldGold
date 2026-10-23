@@ -237,10 +237,12 @@ function seaChipTip() {
   const S = SEA(), i = seaIdx(), h = i === 1 || i === 2 ? (isMirror() ? S.hay : seaHayInfo()) : null;
   let tip = `${SEA_NAMES[i]}: день ${seaDayIn() + 1} из ${S.len}.` + (S.fixed == null ? ` Смена сезона через ${S.len - seaDayIn()} сут.` : '');
   if (i === 0) tip += ' Всё растёт. Осенью пора делать заготовки.';
-  if (i === 1) tip += ' Осень: заготовь сено и зерно, зимой ничего не растёт.';
-  if (i === 2) tip += ' Зима: снег, лёд, ничего не растёт; свиньи и звери едят сено.';
+  if (i === 1) tip += ' Осень: заготовь сено, зерно и дрова, зимой ничего не растёт.';
+  if (i === 2) tip += ' Зима: снег, лёд, ничего не растёт; свиньи и звери едят сено, печи едят брёвна.';
   if (i === 3) tip += ' Весна: снег тает, всё оживает.';
   if (h && h.need) tip += ` Сено: ${h.have} из ~${h.need} нужных.`;
+  const w = (i === 1 || i === 2) && S.fixed == null ? (isMirror() ? S.wood : seaWoodInfo()) : null;
+  if (w && w.n) tip += ` Дрова: ${w.have} из ~${w.need} брёвен.` + (w.cold ? ` Мёрзнет зданий: ${w.cold}.` : "");
   return tip;
 }
 function seaChip() {

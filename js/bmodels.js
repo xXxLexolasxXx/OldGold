@@ -1592,8 +1592,7 @@ function buildingSpriteBase(type, rot = 0, level = 1, era = buildingEra(type, le
   // тень размытая — хватает обычного разрешения (в 36 раз меньше видеопамяти, чем было)
   const blurred = mkCanvas(W, H);
   const bc = blurred.getContext('2d');
-  bc.filter = 'blur(1.4px)';
-  bc.drawImage(scv, 0, 0, W, H);
+  blurDraw(bc, scv, W, H, 1.4);
   spr.shadow = blurred;
   SPR.buildings[key] = spr;
   return spr;

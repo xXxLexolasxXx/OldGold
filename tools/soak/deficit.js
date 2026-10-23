@@ -43,6 +43,39 @@ const BOT2 = `(function () {
   if (builders + (q.builder || 0) < 2 + Game.buildings.length * 0.12) push('builder');
 })()`;
 
+// Камень кончился: валуны у каменоломен выбраны, а без камня не строится ни дорога, ни дом — стройка встаёт навсегда
+// (сид 4 стоял на 16 зданиях с 4-х по 96-е сутки при пустом камне). Игрок поставил бы новую каменоломню у ближайших валунов,
+// поближе к дорогам: ищем место с самой короткой дорогой до сети (BFS от сети), не дожидаясь очереди плана.
+const QUARRY = `(function () {
+  const hub = Game.buildings.find(b => b.type === 'storehouse');
+  if (!hub) return;
+  let stone = 0; for (const b of Game.buildings) if (b.isStore()) stone += b.stock.stone;
+  if (stone >= 3) return;
+  const qs = Game.buildings.filter(b => b.type === 'quarry' && !b.removed);
+  if (qs.some(b => b.state !== 'done' || findObjNear(b.doorX, b.doorY, 10, o => o.t === 'stone' && o.n > 0))) return;
+  const net = new Set(); const st = [idx(hub.doorX, hub.doorY)]; net.add(st[0]);
+  while (st.length) { const i = st.pop(), x = i % MAP_W, y = (i / MAP_W) | 0; for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) { const nx = x + dx, ny = y + dy; if (!inb(nx, ny)) continue; const j = idx(nx, ny); if (!net.has(j) && (World.road[j] || Game.roadSites.has(j))) { net.add(j); st.push(j); } } }
+  const prev = new Map(), queue = []; for (const j of net) { prev.set(j, -1); queue.push(j); }
+  for (let h = 0; h < queue.length && h < 40000; h++) {
+    const i = queue[h], px = i % MAP_W, py = (i / MAP_W) | 0;
+    for (const [dx, dy] of [[0,1],[1,0],[-1,0],[0,-1]]) {
+      const nx = px + dx, ny = py + dy; if (!inb(nx, ny)) continue; const j = idx(nx, ny);
+      if (prev.has(j) || !canPlaceRoad(nx, ny)) continue;
+      prev.set(j, i); queue.push(j);
+      // дверь каменоломни на этой клетке: где стоит здание?
+      for (let y = ny - 3; y <= ny; y++) for (let x = nx - 2; x <= nx; x++) {
+        const dd = bDims('quarry', 0); if (x + dd.dx !== nx || y + dd.dy !== ny) continue;
+        if (checkPlacement('quarry', x, y, 0) || !findObjNear(x + 1, y + 2, 8, o => o.t === 'stone' && o.n > 0)) continue;
+        let blocked = false; for (let k = prev.get(j); k >= 0 && !blocked; k = prev.get(k)) { const kx = k % MAP_W, ky = (k / MAP_W) | 0; if (kx >= x && kx < x + dd.w && ky >= y && ky < y + dd.h) blocked = true; }
+        if (blocked) continue;
+        placeBuilding('quarry', x, y, false, 0);
+        for (let k = j; k >= 0; k = prev.get(k)) if (!net.has(k)) placeRoadSite(k % MAP_W, (k / MAP_W) | 0);
+        return 'каменоломня у валунов';
+      }
+    }
+  }
+})()`;
+
 // Рудники ставятся только у скал, а скалы бывают далеко от склада — общий бот (tests/lib/sim.js) ищет место лишь рядом (то же с каменоломней: у валунов, иначе камня нет и стройки встают)
 // и пропускает рудник. Здесь: ближайшее к складу допустимое место на всей карте + дорога до сети (как поставил бы игрок).
 const MINE = `(function () {
@@ -70,6 +103,22 @@ const MINE = `(function () {
     bot.i++; bot.fails = 0;
     return 'рудник ' + type;
   }
+})()`;
+
+// Учёт убыли: кто убирает жителей (по имени вызвавшей функции: skTakes — скелет, owlTakes — сова, entTakes — нечисть и т. п.)
+const LOSS = `(function () {
+  if (Game.__loss) return;
+  Game.__loss = {};
+  const orig = removeUnit;
+  removeUnit = function (u) {
+    if (!u.dead && isPerson(u) && u.type !== 'carter') {
+      const fr = (new Error().stack || '').split('\\n')[2] || '';
+      const m = fr.match(/at (?:Object\\.)?([\\w$.]+)/);
+      const k = (m ? m[1] : '?') + ':' + u.type;
+      Game.__loss[k] = (Game.__loss[k] || 0) + 1;
+    }
+    return orig.apply(this, arguments);
+  };
 })()`;
 
 const SNAP = `(function () {
@@ -101,6 +150,8 @@ const SNAP = `(function () {
     ppl: ppl.length, hungry: ppl.filter(u => !u.noFood && u.food < HUNGRY).length, starving: ppl.filter(u => !u.noFood && u.food <= 0).length,
     innFood, innBeer, storeFood, schoolGold, schoolQ: school.reduce((a, b) => a + b.queue.length, 0),
     hayNeed: H.need, hayHave: H.have, pigs: Game.buildings.reduce((a, b) => a + seaHerd(b), 0), pigsLost: SEA().pigsLost,
+    loss: Object.assign({}, Game.__loss || {}),
+    goldChain: Game.buildings.filter(b => b.type === 'goldmine' || b.type === 'metallurgist').map(b => b.type[0] + ':' + (b.state !== 'done' ? b.state : b.problem() || 'ok')).join(' '),
     faint: Game.log.filter(l => /упал от голода/.test(l.text || l.msg || '')).length, bld: Game.buildings.length,
     produced: Object.fromEntries(T.map(g => [g, Math.round(Game.produced[g] || 0)])) });
 })()`;
@@ -108,19 +159,23 @@ const SNAP = `(function () {
 function runSeed(seed, years) {
   const sim = L.newSim(seed);
   const len = sim.h.run('SEA().len');
-  const target = len * 4 * years;
+  const target = +arg('days', 0) || len * 4 * years;   // --days N — короткий зонд
   const samples = [];
   const t0 = Date.now();
   let k = 0;
   while (true) {
     L.stepN(sim, 200);                         // 10 игровых секунд
     if (++k % 6) continue;                     // раз в игровую минуту
+    sim.h.run(LOSS);
+    sim.h.run(QUARRY);
     sim.h.run(MINE.replace('__PLAN__', JSON.stringify(PLAN)));
     L.botTurn(sim, PLAN);
     sim.h.run(BOT2);
     const s = JSON.parse(sim.h.run(SNAP));
     samples.push(s);
+    if (k % 360 === 0 && arg('probe')) fs.writeFileSync(path.join(__dirname, `deficit-${seed}${arg('tag', '')}.json`), JSON.stringify({ seed, years, len, samples }));   // --probe 1: промежуточный файл
     if (k % 360 === 0) console.error(`seed ${seed}: день ${s.day}/${target}, жителей ${s.ppl}, зданий ${s.bld}, ${((Date.now() - t0) / 1000) | 0} с`);
+    if (arg('at') && s.day >= +arg('at')) { console.log(sim.h.run(fs.readFileSync(arg('eval'), 'utf8'))); process.exit(0); }   // --at D --eval file.js: зонд в песочнице
     if (s.day >= target) break;
   }
   return { seed, years, len, wall: ((Date.now() - t0) / 1000) | 0, errors: sim.errors.slice(0, 10), samples };
@@ -169,13 +224,13 @@ function table(sums) {
 }
 
 if (arg('sum')) {
-  const sums = arg('sum').split(',').map(s => summarize(JSON.parse(fs.readFileSync(path.join(__dirname, `deficit-${s}.json`), 'utf8'))));
+  const sums = arg('sum').split(',').map(s => summarize(JSON.parse(fs.readFileSync(path.join(__dirname, `deficit-${s}${arg('tag', '')}.json`), 'utf8'))));
   console.log(table(sums));
   for (const s of sums) console.log(`\nseed ${s.seed}: конец — сутки ${s.end.day}, жителей ${s.end.ppl}, зданий ${s.end.bld}; зимы: ` + s.winter.map(w => `г${w.y}: сено ${w.hayHave}/${w.hayNeed}, свиней ${w.pigs0}, пало ${w.pigsLost}, жителей ${w.ppl0}→${w.ppl1}, голодных max ${w.hungryMax}, трактир пуст ${w.noFood} мин, обмороков ${w.faints}`).join('; '));
 } else {
   const seed = +arg('seed', 1), years = +arg('years', 3);
   const r = runSeed(seed, years);
-  fs.writeFileSync(path.join(__dirname, `deficit-${seed}.json`), JSON.stringify(r));
+  fs.writeFileSync(path.join(__dirname, `deficit-${seed}${arg('tag', '')}.json`), JSON.stringify(r));
   const s = summarize(r);
   console.log(`seed ${seed}: ${r.wall} с, ошибок ${r.errors.length}`); for (const e of r.errors) console.log('  ✗ ' + e);
   console.log(table([s]));

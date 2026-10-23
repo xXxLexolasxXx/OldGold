@@ -42,7 +42,7 @@ UNLOCKS.push({ id: 'home', items: ['house'], after: ['sawmill'] });
 if (typeof UNLOCK_NAMES !== 'undefined') UNLOCK_NAMES.home = 'Дома';
 if (typeof REVEAL_STAGE !== 'undefined') REVEAL_STAGE.home = ['Дома', 'Плотник предлагает жилые дома: ночью жильцы спят в них и прячутся от нечисти. Пока домов нет, гномы ночуют как раньше — где придётся.'];
 if (typeof SARC_B !== 'undefined') SARC_B.house = 'Четыре стены, крыша и кровать. Гному больше не надо — разве что пива и чтобы призрак не заглядывал в окно.';
-if (typeof MD_WHY !== 'undefined') Object.assign(MD_WHY, { home: 'Выспался дома', nohome: 'Ночует где придётся', hid: 'Отсиделся дома' });
+if (typeof MD_WHY !== 'undefined') Object.assign(MD_WHY, { home: 'Выспался дома', nohome: 'Ночует где придётся', hid: 'Отсиделся дома', coldhome: 'Спал в нетопленом доме' });
 if (typeof HINTS !== 'undefined') HINTS.house = { icon: ['ui', 'play'], text: 'Открыты дома! Поставьте пару домов у костра: ночью жильцы спят там и высыпаются, а от призраков и скелетов прячутся внутри. Дом на 3 гнома, семья живёт вместе. Без домов всё как раньше, но с домами бездомные ворчат.',
   when: () => !!(Game.unlocked && Game.unlocked.home) };
 
@@ -153,13 +153,14 @@ function* houseGen(u, b, why0) {
       }
       continue;
     }
-    if (typeof mdBump === 'function') mdBump(u, 'rest', why === 'inn' ? HOUSE.INN_SLEEP : HOUSE.SLEEP[lv - 1]);
+    if (typeof mdBump === 'function') mdBump(u, 'rest', (why === 'inn' ? HOUSE.INN_SLEEP : HOUSE.SLEEP[lv - 1]) * (b.cold ? WINTER_COLD_SLEEP : 1));   // нетопленый дом зимой: не выспишься (season.js)
     const rest = u.md ? u.md.rest : 1;
     if (!isNightNow() && t >= 5) break;                           // рассвет — пора вставать
     if (u.type !== 'kid' && t >= HOUSE.MIN_SLEEP && rest >= HOUSE.WAKE) break;
   }
   if (typeof moodPoke === 'function') {
-    if (why === 'sleep') moodPoke(u, 'home', HOUSE.MOOD[lv - 1], 240);
+    if (why === 'sleep' && b.cold) moodPoke(u, 'coldhome', -5, 300);
+    else if (why === 'sleep') moodPoke(u, 'home', HOUSE.MOOD[lv - 1], 240);
     else if (why === 'hide') moodPoke(u, 'hid', 2, 90);
     else moodPoke(u, 'nohome', -3, 200);
   }
@@ -261,6 +262,13 @@ if (typeof infoBuilding === 'function') {
 if (typeof Building === 'function') {
   // вид дома — свойство здания: рисуется в render.js, eras.js, leisure.js, levels.js (5-й аргумент buildingSprite)
   Object.defineProperty(Building.prototype, 'hv', { get() { return this.type === 'house' ? houseVar(this) : 0; }, configurable: true });
+  // готовому дому дорога не нужна: жильцы доходят пешком, дрова печь берёт со склада сама (season.js);
+  // иначе над каждым домом без мостовой висел красный значок «нет дороги» — поверх крыш и деревьев
+  const _pr = Building.prototype.problem;
+  Building.prototype.problem = function () {
+    const p = _pr.call(this);
+    return p === 'noroad' && this.type === 'house' && this.state === 'done' ? null : p;
+  };
 }
 
 if (typeof step === 'function') {

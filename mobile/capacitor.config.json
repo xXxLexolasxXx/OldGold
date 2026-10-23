@@ -13,6 +13,7 @@
   "ios": { "contentInset": "never", "backgroundColor": "#1a130d" },
   "android": { "backgroundColor": "#1a130d", "allowMixedContent": false },
   "plugins": {
-    "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#1a130d", "showSpinner": false }
+    "SplashScreen": { "launchShowDuration": 1200, "launchAutoHide": true, "backgroundColor": "#1a130d", "showSpinner": false },
+    "SystemBars": { "insetsHandling": "css", "initialViewportFitValueHint": "cover" }
   }
 }

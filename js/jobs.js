@@ -318,6 +318,16 @@ function* workerGen(u, b) {
       u.nextEatTry = Game.time + 15;
     }
     if (typeof injWants === 'function' && (injWants(u) || injCalled(u))) { yield { leave: true }; return; }   // травма или вызов к раненому (sickness.js)
+    // здание побито нечистью, а чинить некому (строителей ночью тоже уносят) — через 15 с работник чинит сам:
+    // иначе к середине игры стояли 12–16 зданий, и рудник без ремонта не давал золота школе (ДЕФИЦИТЫ.md)
+    // (не в кампании: там темп бегства задан сценарием — акт 2, волна обвала, и работники в побитых зданиях остаются на месте)
+    if (b.dmg >= 0.5 && !b.upg && !Game.camp) {
+      if (b.repairer && !b.repairer.dead) b.dmgWait = 0;
+      else if ((b.dmgWait = (b.dmgWait || 0) + 1) > 15) { b.dmgWait = 0; b.repairer = u; yield* repairGen(u, b);
+        if (!b.removed && u.home === b && u.inside !== b && !(yield* goHome(u, b))) { yield { wait: 3 }; return; }
+        continue;
+      }
+    }
     if (b.paused || prioOff(b) || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
     const work = WORK[b.type] || recipeWork;
     yield* work(u, b);
@@ -335,7 +345,7 @@ function* recipeWork(u, b) {
   if (!r) { yield { wait: 2 }; return; }
   recipeConsume(b, r);
   b.working = true;
-  yield { wait: r.time, anim: 'work' };
+  yield { wait: r.time * (b.cold ? WINTER_COLD_WORK : 1), anim: 'work' };     // в нетопленой мастерской руки мёрзнут (season.js)
   b.working = false;
   if (b.removed) return;
   recipeProduce(b, r);
@@ -364,7 +374,7 @@ function* woodcutterWork(u, b) {
       t.o.res = true;
       const ok = yield { walk: [t.x, t.y] };
       if (!ok) { t.o.res = false; yield { wait: 2 }; return; }
-      yield { wait: 4.5, anim: 'chop' };
+      yield { wait: typeof seaRush === 'function' && seaRush(b) ? 3.2 : 4.5, anim: 'chop' };   // дров мало перед зимой — рубят быстрее
       const i = idx(t.x, t.y);
       if (World.obj[i] === t.o) {
         World.obj[i] = { t: 'stump', g: 0 };
