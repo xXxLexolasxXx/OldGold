@@ -182,7 +182,7 @@ function skOpen() {
     const card = (it, i) => {
       const own = skOwned(m, tab, i), on = w[tab] === i, buy = !own && it.src === 'shards', shop = !own && it.src === 'shop';
       return `<div style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:6px;border:1px solid ${on ? '#ffd84a' : '#6a4a1a'};border-radius:6px;${own ? '' : 'opacity:.75'}">
-        <canvas data-pv="${i}" width="20" height="24" style="width:40px;height:48px;image-rendering:pixelated;background:#1a0f08;border-radius:4px"></canvas>
+        <canvas data-pv="${i}" width="20" height="26" style="width:40px;height:52px;image-rendering:pixelated;background:#1a0f08;border-radius:4px"></canvas>
         <span style="flex:1"><b>${it.n}</b>${own ? '' : ' 🔒'}<br><small>${it.d}</small></span>
         ${on ? `<button data-sk="off" style="${btn}">Снять</button>` : own ? `<button data-sk="wear:${i}" style="${btn}">Надеть</button>` : buy ? `<button data-sk="buy:${i}" ${m.shards >= it.shards ? '' : 'disabled'} style="${btn};${m.shards >= it.shards ? '' : 'opacity:.5'}">${it.shards} ◆</button>` : shop ? `<button disabled style="${btn};opacity:.5">Лавка — скоро</button>` : ''}</div>`;
     };
@@ -196,7 +196,7 @@ function skOpen() {
     box.querySelectorAll('canvas[data-pv]').forEach(cv => {
       const c = cv.getContext('2d'), sk = { hat: -1, beard: -1, cape: -1 }; sk[tab] = +cv.dataset.pv;
       const hold = Run.S; Run.S = Run.S || { t: Tav.t || 0 };
-      try { runDrawDwarf(c, 10, 18, RUN_CLOAKS[m.cloak % RUN_CLOAKS.length][1], 1, false, false, false, null, 0, sk); } catch (e) { /* превью не важно */ }
+      try { runDrawDwarf(c, 10, 20, RUN_CLOAKS[m.cloak % RUN_CLOAKS.length][1], 1, false, false, false, null, 0, sk); } catch (e) { /* превью не важно */ }
       Run.S = hold;
     });
   };
