@@ -348,7 +348,7 @@ function pcTipText() {
   if (best) {
     const T = UNIT_TYPES[best.type] || {}, h = best.type === 'hero' && best.hero;
     if (h) return `<b>${pcEsc(h.name || t('Герой'))}</b><br><span>${pcEsc(t('Герой, уровень {0}', h.level || 1))}</span>`;
-    let lv = ''; try { if (typeof unitLevel === 'function' && (best.type === 'serf' || best.type === 'builder')) lv = t(', уровень {0}', unitLevel(best)); } catch (e) { /* без уровня */ }
+    let lv = ''; try { if (typeof unitLevel === 'function' && LEVEL_XP[best.type]) lv = t(', уровень {0}', unitLevel(best)); } catch (e) { /* без уровня */ }
     return `<b>${pcEsc(T.name || best.type)}</b>${lv ? `<br><span>${pcEsc(lv.replace(/^, /, ''))}</span>` : ''}`;
   }
   const b = typeof buildingAt === 'function' ? buildingAt([tx, ty]) : null;
