@@ -13,7 +13,7 @@ I18N.add('en', {
   'Гоблин-подрывник': 'Goblin sapper', 'Остатки гоблинов удрали в штрек.': 'The last goblins fled into the shaft.',
   // акты и персонажи
   'Праздник Первого Камня': 'Feast of the First Stone', 'Гора ложится': 'The Mountain Lies Down', 'Гости и рыба': 'Guests and Fish', 'Игра не стоит свеч': 'Not Worth the Candles',
-  'Тан Борода Старший': 'Tan Beard the Elder', 'Шнырь Пороховой': 'Snitch Powderkeg', 'Король Шнырь Пороховой': 'King Snitch Powderkeg', 'Чемпион гоблинов': 'Goblin champion', 'Король гоблинов': 'Goblin king', 'Гоблин': 'Goblin', 'Жмыха Кремнёвая': 'Zhmykha Flintwick', 'Подгорье': 'Undermount',
+  'Тан Борода Старший': 'Tan Beard the Elder', 'Шнырь Пороховой': 'Snitch Powderkeg', 'Король Шнырь Пороховой': 'King Snitch Powderkeg', 'Чемпион гоблинов': 'Goblin champion', 'Король гоблинов': 'Goblin king', 'Гоблин': 'Goblin', 'Тролль': 'Troll', 'Голем': 'Golem', 'Жмыха Кремнёвая': 'Zhmykha Flintwick', 'Подгорье': 'Undermount',
   'Кампания, акт 1: город внутри горы Брюзги': 'Campaign, act 1: the town inside Mount Grouch', 'Подгорье': 'Undermount',
   // этапы и цели
   'Канун праздника': 'Feast Eve', 'Ночь перед праздником': 'The night before the feast', 'День праздника: ждём вечера': 'Feast day: waiting for evening',
