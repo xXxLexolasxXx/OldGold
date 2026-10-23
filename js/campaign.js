@@ -90,6 +90,21 @@ function campProduced(g) { return (Game.produced && Game.produced[g]) || 0; }
 function campIn(u, z) { return !!u && !u.inside && Math.hypot(u.x - z[0], u.y - z[1]) <= z[2]; }
 function campDone(type) { return Game.buildings.filter(b => b.type === type && b.state === 'done' && !b.removed).length; }
 function campFoes(tag) { return Game.raiders.filter(N => N.st !== 'die' && N.st !== 'vanish' && (!tag || N.ctag === tag)); }
+// где сейчас отряд метки tag (◎ у цели «отбить»): вожак, если жив, иначе первый живой
+function campFoeAt(tag) {
+  const L = campFoes(tag);
+  if (!L.length) return null;
+  const N = L.find(M => FSPEC[M.k] && FSPEC[M.k].mhp >= 100) || L[0];
+  return [Math.round(N.x), Math.round(N.y)];
+}
+// отставшие: отряд tag дольше sec после t0 бродит вдали от всех (застрял в лесу) — удирает, чтобы цель «отбить» не повисла
+function campStragglers(tag, t0, sec, msg) {
+  if (!t0 || Game.time - t0 < sec) return;
+  const L = campFoes(tag);
+  if (!L.length || L.some(N => Game.units.some(u => !u.dead && isPerson(u) && Math.hypot(u.x - N.x, u.y - N.y) < 12))) return;
+  for (const N of L) { N.st = 'vanish'; N.vt = 0; }
+  if (msg) campSay(msg);
+}
 function campSay(text) { if (typeof toast === 'function') toast(text); }
 
 // враг кампании: налётчик из enemy.js (видят его герой, рекруты и башни), не уходит на рассвете
@@ -253,7 +268,7 @@ function campGoalEval(C, s, S) {
     else cur = Math.max(0, Math.min(need, o.cur(C, s) | 0));
     if (cur >= need) s.got[o.id || o.t] = 1;
     else all = false;
-    out.push({ t: o.t, cur, need, z: zone || o.at || null, opt: !!o.opt });
+    out.push({ t: o.t, cur, need, z: zone || (typeof o.at === 'function' ? o.at(C) : o.at) || null, opt: !!o.opt });
   }
   C.objs = out;
   C.hint = S.hint || '';

@@ -25,28 +25,31 @@ function camp2Ruins(C) {
     if (b.type === 'house' && b.y < 52 && rnd() < 0.6) { (C.flags.ruins || (C.flags.ruins = [])).push([b.x, b.y, b.w, b.h, (b.x + b.y) % 3]); removeBuilding(b); continue; }
     b.dmg = Math.min(0.8, 0.2 + rnd() * 0.45); b.dzFix = 1;
   }
-  // валуны по северному кварталу и у кузнеца
+  const sc = Game.buildings.find(b => b.type === 'school' && !b.removed);
+  C.flags.school = sc ? [sc.doorX, sc.doorY + 1] : CAMP1.start.slice();
+  const [vx, vy] = CAMP2.vaska;
+  // валуны по северному кварталу. Не у школы и не у кузнеца: случайный валун в завале считался частью задания,
+  // а валун у прохода в «клетку» Васьки не давал герою подойти — кузнец не выходил (отзыв тестера)
   const busy = new Set(Game.units.map(u => idx(Math.floor(u.x), Math.floor(u.y))));
   let n = 0;
   for (let tries = 0; tries < 3000 && n < 70; tries++) {
     const x = 20 + (rnd() * 88 | 0), y = 22 + (rnd() * 26 | 0), i = idx(x, y);
     if (World.terrain[i] !== T_GRASS || World.bmap[i] || World.road[i] || World.obj[i] || busy.has(i)) continue;
+    if (Math.hypot(x - C.flags.school[0], y - C.flags.school[1]) < 6 || Math.hypot(x - vx, y - vy) < 6) continue;
     setStone(i, 2 + (rnd() * 3 | 0)); n++;
   }
-  // завал у школы: валуны вокруг входа
-  const sc = Game.buildings.find(b => b.type === 'school' && !b.removed);
-  C.flags.school = sc ? [sc.doorX, sc.doorY + 1] : CAMP1.start.slice();
+  // завал у школы: валуны вокруг входа (их клетки запоминаем — задание считает только их)
+  const rub = C.flags.rubbleI = [];
   let k = 0;
   for (let r = 2; r <= 4 && k < 7; r++) for (let a = 0; a < 12 && k < 7; a++) {
     const x = Math.round(C.flags.school[0] + Math.cos(a * 0.52) * r), y = Math.round(C.flags.school[1] + Math.sin(a * 0.52) * r * 0.7);
     if (!inb(x, y)) continue;
     const i = idx(x, y);
     if (World.terrain[i] !== T_GRASS || World.bmap[i] || World.road[i] || World.obj[i] || busy.has(i)) continue;
-    setStone(i, 2); k++;
+    setStone(i, 2); rub.push(i); k++;
   }
   C.flags.rubble0 = k;
-  // каменная «клетка» вокруг кузнеца
-  const [vx, vy] = CAMP2.vaska;
+  // каменная «клетка» вокруг кузнеца: проход снизу
   for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
     if (Math.abs(dx) < 2 && Math.abs(dy) < 2 || dy === 2 && dx === 0) continue;
     const i = idx(vx + dx, vy + dy);
@@ -76,6 +79,13 @@ function camp2StonesNear(p, r) {
   }
   return n;
 }
+// сколько валунов завала у школы ещё лежит; старые сейвы без списка клеток — по кругу у входа
+function camp2Rubble(C) {
+  if (!C.flags.rubbleI) return camp2StonesNear(C.flags.school, 4.5);
+  return C.flags.rubbleI.filter(i => World.obj[i] && World.obj[i].t === 'stone').length;
+}
+// герой у кузнеца: шире, чем сама «клетка» (r=5 от центра клетки) — хватит подойти к любой её стороне
+const camp2AtVaska = () => campHeroes().some(h => campIn(h, [CAMP2.vaska[0] + 0.5, CAMP2.vaska[1] + 0.5, 5]));
 
 // ---------- Волна обвала ----------
 
@@ -189,8 +199,13 @@ CAMP_ACTS[2] = {
   tick(C, dt) {
     C.lost = Math.max(0, (Game.lostGnomes || 0) - (C.flags.lost0 || 0));
     camp2WaveTick(C, dt);
-    // кузнец: глыбы разбиты и герой у завала — откапывают
-    if (!C.flags.vaska && !campFoes('rock').length && campHeroes().some(h => campIn(h, CAMP2.vaska.concat(3)))) camp2Vaska(C);
+    // кузнец: глыбы разбиты и герой у завала — откапывают. Раньше герой должен был встать в r=3 от клетки (50,31),
+    // то есть ровно в проход «клетки»; у камней рядом это не засчитывалось — тестер разбил глыбы, а Васька не вышел
+    if (!C.flags.vaska && !campFoes('rock').length) {
+      if (camp2AtVaska()) camp2Vaska(C);
+      else if (!C.flags.rockHint && C.flags.rockSeen) { C.flags.rockHint = 1; campSay('Глыбы разбиты! Подведите героя к завалу — Ваську откопают.'); }
+    }
+    if (campFoes('rock').length) C.flags.rockSeen = 1;
   },
   fail(C) {
     if (campPeople() < 1) return 'Под горой не осталось никого.';
@@ -228,11 +243,11 @@ CAMP_ACTS[2] = {
     ] },
     { k: 'do', fn(C) { if (!C.timer) C.timer = { t: Game.time + CAMP2.timer, label: 'Гора держится' }; } },
     { k: 'check' },
-    { k: 'goal', label: 'Сборы', hint: 'Глыбы бьёт герой (клик по ним). Валуны у школы разбивает герой или каменотёсы. Хлеб пекут мельница и пекарня.',
+    { k: 'goal', label: 'Сборы', hint: 'Глыбы у кузнеца бьёт герой (клик по ним), потом подведите героя к завалу — Ваську откопают сами. Камни вокруг кузнеца бить не нужно. У школы хватит разбить все валуны, кроме одного. Хлеб пекут мельница и пекарня.',
       objs: [
         { id: 'vaska', t: 'Откопать кузнеца Ваську', at: CAMP2.vaska, cur: C => (C.flags.vaska ? 1 : 0) },
         { id: 'bread', t: 'Запасти хлеба в дорогу', need: CAMP2.bread, cur: () => campStock('bread') },
-        { id: 'rubble', t: 'Расчистить завал у школы', need: 1, cur: C => (camp2StonesNear(C.flags.school, 4.5) ? 0 : 1) },
+        { id: 'rubble', t: 'Расчистить завал у школы', need: 1, at: C => C.flags.school, cur: C => (camp2Rubble(C) <= 1 ? 1 : 0) },
         { id: 'tan', t: 'Герой: проститься с Таном', zone: C => C.flags.hall.concat(2.4) },
       ],
       during(C) { for (const N of campFoes('rock')) if (N.hold) { const h = campHeroNear(N.x, N.y, 6); if (h) { N.hold = 0; N.tg = h.id; N.prov = Game.time; } } },

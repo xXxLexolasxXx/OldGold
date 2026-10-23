@@ -163,6 +163,61 @@ const BOT = `(function () {
   console.log(`Проверка: прогон акта 2 — ${((Date.now() - t0) / 1000).toFixed(0)} с`);
 }
 
+// ---------- 1г. Устойчивость заданий (отзыв тестера 23.10): вожак волны акта 1, кузнец и завал акта 2 ----------
+// (башня у ниши штрека — в main, tests/camp-tower-test.js)
+{
+  const { h, errors } = host(515);
+  h.run('campStart(1); Game.heroAsk = false; for (let k = 0; k < 20; k++) step(0.05);');
+  const a1 = JSON.parse(h.run(`(function () {
+    const C = Game.camp, r = {};
+    // волна с чемпионом: щит слабее, ◎ цели указывает на вожака
+    camp1Wave(C, 2, true, 1);
+    const ch = campFoes('w').find(N => N.k === 'goblinChamp');
+    r.parry = ch && ch.parry;
+    const S = CAMP_ACTS[1].steps.find(s => s.objs && s.objs[0].id === 'w2');
+    const at = S.objs[0].at(C);
+    r.at = !!(ch && at && Math.abs(at[0] - ch.x) <= 1 && Math.abs(at[1] - ch.y) <= 1);
+    // вожак ранится: 30 ударов по 6 снимают заметно больше половины здоровья
+    const hp0 = ch.hp; for (let k = 0; k < 30 && foeLive(ch); k++) foeHit(ch, campHero(), 6); r.dmg = hp0 - Math.max(0, ch.hp);
+    // отставшие: отряд вдали от всех дольше срока — удирает
+    const g = campFoe('goblin', 1.5, 1.5, 'zz', { hunt: true }); g.st = 'idle';
+    campStragglers('zz', Game.time - 300, 240); r.strag = g.st;
+    return JSON.stringify(r);
+  })()`));
+  if (a1.parry !== 0.1) fail('акт 1: щит чемпиона волны не ослаблен: ' + a1.parry);
+  if (!a1.at) fail('акт 1: ◎ цели «отбить волну» не показывает на вожака');
+  if (!(a1.dmg > 65)) fail('акт 1: по вожаку почти не проходит урон: ' + a1.dmg);
+  if (a1.strag !== 'vanish') fail('отставший гоблин вдали от всех не удрал: ' + a1.strag);
+
+  h.run(`localStorage.setItem('oldgold.campaign', JSON.stringify({ v: 1, done: { 1: { t: 1, stars: 2, alive: 36 } }, legacy: { a1: { alive: 36, key: 1, caches: 1 } }, last: 1 }))`);
+  h.run('campStart(2); Game.heroAsk = false; for (let k = 0; k < 20; k++) step(0.05);');
+  const a2 = JSON.parse(h.run(`(function () {
+    const C = Game.camp, A = CAMP_ACTS[2], [vx, vy] = CAMP2.vaska, r = {}, hero = campHero();
+    // случайных валунов у кузнеца нет (только «клетка» вокруг него)
+    r.stray = 0;
+    for (let y = vy - 5; y <= vy + 5; y++) for (let x = vx - 5; x <= vx + 5; x++) { const o = inb(x, y) && World.obj[idx(x, y)];
+      if (o && o.t === 'stone' && Math.max(Math.abs(x - vx), Math.abs(y - vy)) > 2 && Math.hypot(x - vx, y - vy) < 6) r.stray++; }
+    // глыбы разбиты, герой стоит у «клетки» снаружи (раньше нужно было встать ровно в проход)
+    for (const N of campFoes('rock')) N.st = 'die';
+    hero.inside = null; hero.x = vx + 0.5; hero.y = vy + 5; hero.path = null;
+    A.tick(C, 0.05); r.vaska = !!C.flags.vaska;
+    // завал у школы: разбили все валуны, кроме одного — засчитано
+    const rub = C.flags.rubbleI || [];
+    r.rub0 = rub.length; rub.slice(1).forEach(i => { World.obj[i] = null; });
+    const S = A.steps.find(s => s.objs && s.objs.some(o => o.id === 'rubble')), o = S.objs.find(o => o.id === 'rubble');
+    r.rubble = o.cur(C); r.rubAt = !!o.at(C);
+    return JSON.stringify(r);
+  })()`));
+  if (a2.stray) fail(`акт 2: случайные валуны у кузнеца (${a2.stray}) — могут закрыть проход`);
+  if (!a2.vaska) fail('акт 2: глыбы разбиты, герой у завала — а кузнец не вышел');
+  if (a2.rub0 < 3) fail('акт 2: завал у школы не запомнил свои валуны: ' + a2.rub0);
+  if (a2.rubble !== 1) fail('акт 2: завал с одним оставшимся валуном не засчитан');
+  if (!a2.rubAt) fail('акт 2: у цели «завал у школы» нет метки ◎');
+  const errs = errors.filter(e => !/предупрежд/i.test(e));
+  if (errs.length) fail('устойчивость заданий, ошибки в логе: ' + errs.slice(0, 3).join(' | '));
+  console.log(`Проверка: устойчивость заданий — урон по вожаку ${Math.round(a1.dmg)}, Васька ${a2.vaska ? 'вышел' : 'нет'}, завал ${a2.rub0} валунов`);
+}
+
 // ---------- 1в. Акт 3 «Гости и рыба» (наследие акта 2: 22 гнома, Васька; дуэль принята) ----------
 {
   const { h, errors } = host(303);

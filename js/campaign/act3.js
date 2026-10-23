@@ -182,6 +182,8 @@ CAMP_ACTS[3] = {
       floater(N.x, N.y - 2.5, 'Сдаюсь! Сдаюсь!', '#ffe080');
     }
     if (C.flags.duel && !C.flags.duelWon && C.flags.duelOn && !campFoes('duel').length) C.flags.duelWon = 1;
+    // гоблин набега забрёл в лес и не выходит — цель «отбить» не должна висеть вечно
+    campStragglers('kraid', C.flags.raidT, 240, 'Остатки набега удрали в лес.');
   },
   fail(C) { return campPeople() < 1 ? 'Беглецов из Подгорья не осталось.' : null; },
   stars(C) {
@@ -271,7 +273,7 @@ CAMP_ACTS[3] = {
     { k: 'check' },
     { k: 'do', fn(C) {
       if (C.flags.raid) return;
-      C.flags.raid = 1;
+      C.flags.raid = 1; C.flags.raidT = Game.time;
       const [rx, ry] = CAMP3.raid;
       for (let k = 0; k < 5; k++) campFoe('goblin', rx + (k % 3) - 1, ry + (k / 3 | 0), 'kraid', { delay: k * 0.7, hunt: true });
       campFoe('goblinChamp', rx, ry + 2, 'kraid', { delay: 3, hunt: true });
@@ -288,7 +290,7 @@ CAMP_ACTS[3] = {
       ['grum', 'Герой — за речку! Гостю положено отплатить за ночлег. Хотя бы гоблинами.'],
     ] },
     { k: 'goal', label: 'Набег на Кремнёвку', hint: 'Гоблины идут на Кремнёвку с северо-востока. Брод — посередине речки.',
-      objs: [{ id: 'kraid', t: 'Отбить гоблинов от Кремнёвки', at: CAMP3.krem, cur: () => (campFoes('kraid').length ? 0 : 1) }],
+      objs: [{ id: 'kraid', t: 'Отбить гоблинов от Кремнёвки', at: () => campFoeAt('kraid') || CAMP3.krem, cur: () => (campFoes('kraid').length ? 0 : 1) }],
       after(C) { camp3Resp(C, 2); } },
     { k: 'wait', label: 'Ночь после набега', until: () => !camp3Night() },
     { k: 'choice', id: 'pim', who: 'zhmykha', t: 'Пим пишет и про них',

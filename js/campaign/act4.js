@@ -71,6 +71,7 @@ function camp4Camp(C, k) {
 function camp4Chase(C, n, champs, king, trolls = 0) {
   const col = C.flags.goal || CAMP4.start;
   const x = Math.min(CAMP4.W - 4, col[0] + 26), y = col[1];
+  C.flags.chaseT = Game.time;
   for (let k = 0; k < n; k++) campFoe('goblin', x + (k % 3), y - 2 + (k % 5), 'chase', { delay: k * 0.6, hunt: true });
   for (let k = 0; k < champs; k++) campFoe('goblinChamp', x + 2, y + k * 2, 'chase', { delay: 2 + k, hunt: true });
   for (let k = 0; k < trolls; k++) campFoe('campTroll', x + 4, y + 3 - k * 6, 'chase', { delay: 4 + k, hunt: true });
@@ -260,6 +261,8 @@ CAMP_ACTS[4] = {
   },
   tick(C) {
     C.lost = Math.max(0, (Game.lostGnomes || 0) - (C.flags.lost0 || 0));
+    // гоблин погони застрял в лесу вдали от колонны — «Отбить погоню» не должна висеть (у межевого камня погоня стоит нарочно)
+    if (!campFoes('chase').some(N => N.halt)) campStragglers('chase', C.flags.chaseT, 300, 'Отставшие гоблины погони потеряли след.');
     // король, получив своё, удирает на восток — вернётся к межевому камню
     for (const N of campFoes('chase')) if (N.k === 'shnyr' && N.hp < N.mhp * 0.35 && !C.flags.kingFled) {
       C.flags.kingFled = 1; N.st = 'vanish'; N.vt = 0;
@@ -296,8 +299,8 @@ CAMP_ACTS[4] = {
     { k: 'goal', label: 'День первый: в пути', hint: 'Колонна идёт сама. Герой — на разведку вперёд.',
       init(C) { if (!C.flags.march) camp4Go(C, CAMP4.camps[0]); },
       objs: [
-        { id: 'camp', t: 'Дойти до первой стоянки', at: CAMP4.camps[0], need: 1, cur: () => (camp4Near(CAMP4.camps[0], 7) >= camp4Ppl().length * 0.8 ? 1 : 0) },
-        { id: 'scout', t: 'Герой: разведать дорогу', zone: CAMP4.scouts[0].concat(2.6) },
+        { id: 'camp', t: 'Дойти до первой стоянки', at: CAMP4.camps[0], need: 1, cur: () => (camp4Near(CAMP4.camps[0], 9) >= camp4Ppl().length * 0.7 ? 1 : 0) },
+        { id: 'scout', t: 'Герой: разведать дорогу', zone: CAMP4.scouts[0].concat(3.2) },
       ] },
     { k: 'say', fx(C) { camp4Camp(C, 0); C.flags.found = (C.flags.found || 0) + 1; }, lines: [
       ['note', 'У дороги — старый верстовой камень. На нём клеймо: фонарь в круге.'],
@@ -320,8 +323,8 @@ CAMP_ACTS[4] = {
       objs: [
         { id: 'trap0', t: 'Ловушка: волчья яма на дороге', at: [108, Math.round(camp4RoadY(108))], cur: C => (camp4TrapSt(C, 0) ? 1 : 0) },
         { id: 'trap1', t: 'Ловушка: сеть у дороги', at: [96, Math.round(camp4RoadY(96))], cur: C => (camp4TrapSt(C, 1) ? 1 : 0) },
-        { id: 'camp', t: 'Дойти до второй стоянки', at: CAMP4.camps[1], cur: () => (camp4Near(CAMP4.camps[1], 7) >= camp4Ppl().length * 0.8 ? 1 : 0) },
-        { id: 'scout', t: 'Герой: разведать брошенный лагерь', zone: CAMP4.scouts[1].concat(2.6) },
+        { id: 'camp', t: 'Дойти до второй стоянки', at: CAMP4.camps[1], cur: () => (camp4Near(CAMP4.camps[1], 9) >= camp4Ppl().length * 0.7 ? 1 : 0) },
+        { id: 'scout', t: 'Герой: разведать брошенный лагерь', zone: CAMP4.scouts[1].concat(3.2) },
       ] },
     { k: 'say', fx(C) {
       camp4Camp(C, 1); C.flags.found = (C.flags.found || 0) + 1;
@@ -355,8 +358,8 @@ CAMP_ACTS[4] = {
       objs: [
         { id: 'trap2', t: 'Ловушка: камни над дорогой', at: [72, Math.round(camp4RoadY(72))], cur: C => (camp4TrapSt(C, 2) ? 1 : 0) },
         { id: 'trap3', t: 'Ловушка: ещё одна яма', at: [60, Math.round(camp4RoadY(60))], cur: C => (camp4TrapSt(C, 3) ? 1 : 0) },
-        { id: 'camp', t: 'Дойти до третьей стоянки', at: CAMP4.camps[2], cur: () => (camp4Near(CAMP4.camps[2], 7) >= camp4Ppl().length * 0.8 ? 1 : 0) },
-        { id: 'scout', t: 'Герой: посмотреть, что за камень с огоньком', zone: CAMP4.scouts[2].concat(2.6) },
+        { id: 'camp', t: 'Дойти до третьей стоянки', at: CAMP4.camps[2], cur: () => (camp4Near(CAMP4.camps[2], 9) >= camp4Ppl().length * 0.7 ? 1 : 0) },
+        { id: 'scout', t: 'Герой: посмотреть, что за камень с огоньком', zone: CAMP4.scouts[2].concat(3.2) },
       ] },
     { k: 'say', fx(C) { camp4Camp(C, 2); C.flags.found = (C.flags.found || 0) + 1; }, lines: [
       ['note', 'Впереди, у самой дороги — межевой камень. На вершине горит огонь. Зелёный.'],
