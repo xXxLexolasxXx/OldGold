@@ -599,7 +599,7 @@ if (typeof hmCast === 'function') {
     const bob = (N.k === 'fairy' || N.k === 'pixie') && !dead ? Math.round(Math.sin(Game.time * 3.2 + N.id) * 1.3) : 0;
     c.translate(px, py + bob);
     c.scale(N.face < 0 ? -sc : sc, sc);
-    c.drawImage(sp.cv, -sp.ax, -sp.ay);
+    blitFine(c, sp.cv, -sp.ax, -sp.ay);
     c.restore();
     // стрела лучника в полёте
     const A = N.arw;

@@ -675,7 +675,7 @@ function campDrawGoblin(c, N, art) {
   if (Game.time - (N.hurtT || -9) < 0.2 && N.st !== 'die') fr = 'hurt';
   const kind = art || (N.k === 'goblinChamp' ? 'goblinChamp' : N.id % 2 ? 'goblinB' : 'goblin');
   const sp = naFrame(kind, fr), sc = kind === 'goblin' || kind === 'goblinB' ? 1.1 : 1;
-  c.save(); c.scale(sc, sc); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.restore();
+  c.save(); c.scale(sc, sc); blitFine(c, sp.cv, -sp.ax, -sp.ay); c.restore();
 }
 
 // ---------- Сохранения кампании ----------

@@ -13,26 +13,29 @@ const SA_CACHE = new Map();
 const SA_TAU = Math.PI * 2;
 
 // Пиксельная «кисть» поверх 2d-контекста: только целые пиксели, без сглаживания
-function saPen(g) {
+// q — клеток сетки на игровой пиксель: при мелком пикселе (PX_FINE, pixel.js) кисть рисует те же формы
+// на сетке в q раз мельче (холст увеличен в q раз и отмасштабирован), линии — в 2 клетки толщиной
+function saPen(g, q = 1) {
+  const R = v => Math.round(v * q) / q, u = 1 / q, d2 = q > 1 ? 2 / q : 1;
   const P = {
-    r(x, y, w, h, c) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); },
-    p(x, y, c) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), 1, 1); },
+    r(x, y, w, h, c) { g.fillStyle = c; g.fillRect(R(x), R(y), Math.max(u, R(w)), Math.max(u, R(h))); },
+    p(x, y, c) { g.fillStyle = c; g.fillRect(R(x), R(y), 1, 1); },        // точка — целый игровой пиксель: из точек сложены щупальца
     e(cx, cy, rx, ry, c) {   // эллипс построчно
       g.fillStyle = c;
-      for (let y = -Math.ceil(ry); y <= Math.ceil(ry); y++) {
-        const k = 1 - (y * y) / (ry * ry + 0.01);
+      for (let Y = -Math.ceil(ry * q); Y <= Math.ceil(ry * q); Y++) {
+        const y = Y / q, k = 1 - (y * y) / (ry * ry + 0.01);
         if (k < 0) continue;
-        const w = Math.round(rx * Math.sqrt(k));
-        g.fillRect(Math.round(cx - w), Math.round(cy + y), w * 2 + 1, 1);
+        const w = Math.round(rx * Math.sqrt(k) * q) / q;
+        g.fillRect(R(cx - w), R(cy) + y, w * 2 + u, u);
       }
     },
-    l(x0, y0, x1, y1, c) {   // отрезок Брезенхэма
+    l(x0, y0, x1, y1, c) {   // отрезок Брезенхэма (на сетке q)
       g.fillStyle = c;
-      x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+      x0 = Math.round(x0 * q); y0 = Math.round(y0 * q); x1 = Math.round(x1 * q); y1 = Math.round(y1 * q);
       const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
       let err = dx + dy;
-      for (let n = 0; n < 200; n++) {
-        g.fillRect(x0, y0, 1, 1);
+      for (let n = 0; n < 200 * q; n++) {
+        g.fillRect(x0 / q, y0 / q, d2, d2);
         if (x0 === x1 && y0 === y1) break;
         const e2 = 2 * err;
         if (e2 >= dy) { err += dy; x0 += sx; }
@@ -388,9 +391,10 @@ function seaSprite(kind, anim, f) {
   const key = kind + ':' + anim + ':' + f;
   let s = SA_CACHE.get(key);
   if (s) return s;
-  const cv = mkCanvas(A.w, A.h), g = cv.getContext('2d');
+  const q = typeof PX_FINE !== 'undefined' ? PX_FINE : 1, cv = mkCanvas(A.w * q, A.h * q), g = cv.getContext('2d');   // без pixel.js (тесты) — как раньше
+  if (q > 1) { g.scale(q, q); cv.fine = q; }
   if (A.pad) g.translate(A.pad[0], A.pad[1]);   // запас вокруг рисунка под обводку и поднятые клешни
-  A.draw(saPen(g), anim, f, n);
+  A.draw(saPen(g, q), anim, f, n);
   s = { cv, ax: A.ax, ay: A.ay };
   SA_CACHE.set(key, s);
   return s;
@@ -404,8 +408,8 @@ function seaBlit(c, kind, anim, f, px, py, face = 1, alpha = 1) {
   const ga = c.globalAlpha;
   if (alpha !== 1) c.globalAlpha = ga * alpha;
   c.imageSmoothingEnabled = false;
-  if (face < 0) { c.save(); c.translate(Math.round(px), Math.round(py)); c.scale(-1, 1); c.drawImage(s.cv, -s.ax, -s.ay); c.restore(); }
-  else c.drawImage(s.cv, Math.round(px) - s.ax, Math.round(py) - s.ay);
+  if (face < 0) { c.save(); c.translate(Math.round(px), Math.round(py)); c.scale(-1, 1); blitFine(c, s.cv, -s.ax, -s.ay); c.restore(); }
+  else blitFine(c, s.cv, Math.round(px) - s.ax, Math.round(py) - s.ay);
   c.imageSmoothingEnabled = R.smooth;
   c.globalAlpha = ga;
 }

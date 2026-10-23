@@ -215,14 +215,14 @@ function reaperSprite(mood, i, v = 0) {
   const key = mood + i + 'v' + v;
   let cv = REAPER_CACHE[key];
   if (cv) return cv;
-  cv = REAPER_CACHE[key] = document.createElement('canvas');
-  const W = Math.round(GHOST_W * REAPER_SC), H = Math.round(GHOST_H * REAPER_SC);
-  cv.width = W * GHOST_SS; cv.height = H * GHOST_SS;
+  cv = document.createElement('canvas');
+  const W = Math.round(GHOST_W * REAPER_SC), H = Math.round(GHOST_H * REAPER_SC), S = ghFineSS();
+  cv.width = W * S; cv.height = H * S;
   const c = cv.getContext('2d');
-  c.scale(GHOST_SS * REAPER_SC, GHOST_SS * REAPER_SC); c.translate(GHOST_OX, GHOST_OY);
+  c.scale(S * REAPER_SC, S * REAPER_SC); c.translate(GHOST_OX, GHOST_OY);
   const atk = mood === 'atk';
   paintReaper(c, atk ? 0 : i / REAPER_FRAMES, mood, atk ? i / (REAPER_ATK_FRAMES - 1) : 0, v);
-  return cv;
+  return (REAPER_CACHE[key] = ghFinePx(cv));
 }
 
 function paintReaper(c, p, mood, k, v = 0) {

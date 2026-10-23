@@ -5,7 +5,8 @@
 // расколот, синее пламя из груди, глаза белые, клинок светится. Логика босса (raid.js) не тронута: хитбокс, шкала, подписи те же,
 // только выше. Кадры берутся из N.fr: i0–i5, w0–w7, ready/step, windup/strike/recover, roar, hurt/stagger, d0–d5, v0–v3.
 
-const KP = { PS: 6, PART: 2, W: 140, H: 128, AX: 68, AY: 120, MAX: 48, TOP: 112 };
+const KP = { PS: 6, PART: PX_FINE > 1 ? 3 : 2,      // PART — пикселей арта на игровой (мелкий пиксель — 3)
+  W: 140, H: 128, AX: 68, AY: 120, MAX: 48, TOP: 112 };
 const KP_C = {
   bone: '#e4ddd2', bone2: '#b6ada0', bone3: '#867e74', ink: '#1e1b19', flash: '#f6f2ea',
   iron: ['#9e958a', '#706960', '#4a4540'], rust: ['#c8946a', '#a06840', '#6e432a'], gold: ['#e4b434', '#a4701c', '#7e5214'],
@@ -48,6 +49,7 @@ function kpSprite(fr, ph) {
   c.translate(KP.AX, KP.AY);
   const marks = kpPaint(c, fr, ph);
   const out = toPixelArt(cv, KP.PS / KP.PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
+  out.fine = KP.PART;
   // огни в глазницах и камни короны — ровные светящиеся пиксели без квантования
   const o = out.getContext('2d'), P2 = KP.PART;
   for (const m of marks) {
@@ -272,8 +274,7 @@ function kpDraw(c, N) {
   const sink = dead ? Math.min(20, N.dt * 8) : 0;
   c.translate(px, py + sink);
   if (N.face < 0) c.scale(-1, 1);
-  c.imageSmoothingEnabled = false;
-  c.drawImage(spr.cv, -KP.AX, -KP.AY, KP.W, KP.H);
+  blitFine(c, spr.cv, -KP.AX, -KP.AY, KP.W, KP.H);
   c.restore();
   if (!dead) {
     c.save(); c.globalCompositeOperation = 'lighter';
