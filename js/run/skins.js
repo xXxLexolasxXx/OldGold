@@ -5,30 +5,32 @@
 // Рисунок свой: в деревне — те же векторные приёмы, что у гномов people.js (потом спрайт переводится в пиксели),
 // в забеге — прямоугольники по 1 пикселю, как остальные фигурки подземелья.
 
-// cond(m) — открыто ли по мете забегов; shards — цена в осколках, если вещь покупается
+// src — откуда вещь: 'achv' (достижение, cond(m) — открыто ли по мете забегов), 'shards' (за осколки ◆, shards — цена),
+// 'shop' — задел под будущую лавку нарядов: такие вещи пока не продаются, открываются только записью m.skinsShop[слот+номер]
+// (реальной оплаты в игре нет; правило «награды — только косметика» сохраняется)
 const SK_HATS = [
-  { n: 'Колпак-трофей Малгора', d: 'Индиго с кристаллом. Победите Малгора.', cond: m => m.wins >= 1 },
-  { n: 'Рогатый шлем', d: 'Пройдите 10 забегов.', cond: m => m.runs >= 10 },
-  { n: 'Шапка-кружка', d: 'Пена не стекает. Почти.', shards: 5 },
-  { n: 'Корона из кирок', d: 'Войдите в десятку рекордов дня.', cond: m => !!m.top10 },
-  { n: 'Капюшон следопыта', d: 'Ежедневный забег 7 дней подряд.', cond: m => skStreak(m) >= 7 },
-  { n: 'Шлем с пером отряда', d: 'Кооп-забег впятером.', cond: m => (m.coopMax | 0) >= 5 },
-  { n: 'Котелок', d: 'С ручкой. Звенит при ходьбе.', shards: 3 },
+  { n: 'Колпак-трофей Малгора', d: 'Индиго с кристаллом. Победите Малгора.', src: 'achv', cond: m => m.wins >= 1 },
+  { n: 'Рогатый шлем', d: 'Пройдите 10 забегов.', src: 'achv', cond: m => m.runs >= 10 },
+  { n: 'Шапка-кружка', d: 'Пена не стекает. Почти.', src: 'shards', shards: 5 },
+  { n: 'Корона из кирок', d: 'Войдите в десятку рекордов дня.', src: 'achv', cond: m => !!m.top10 },
+  { n: 'Капюшон следопыта', d: 'Ежедневный забег 7 дней подряд.', src: 'achv', cond: m => skStreak(m) >= 7 },
+  { n: 'Шлем с пером отряда', d: 'Кооп-забег впятером.', src: 'achv', cond: m => (m.coopMax | 0) >= 5 },
+  { n: 'Котелок', d: 'С ручкой. Звенит при ходьбе.', src: 'shards', shards: 3 },
 ];
 const SK_BEARDS = [
-  { n: 'Огненная борода', d: 'Победите Малгора три раза (Проклятие III).', cond: m => m.wins >= 3 },
-  { n: 'Борода с косичками', d: 'Пройдите 30 забегов.', cond: m => m.runs >= 30 },
-  { n: 'Борода в рунах', d: 'Руны светятся в темноте подземелья.', shards: 4 },
-  { n: 'Седая до пола', d: 'Одолейте 500 врагов в забегах.', cond: m => (m.kills | 0) >= 500 },
-  { n: 'Борода с бусинами', d: 'Пройдите кооп-забег с друзьями.', cond: m => (m.coopRuns | 0) >= 1 },
+  { n: 'Огненная борода', d: 'Победите Малгора три раза (Проклятие III).', src: 'achv', cond: m => m.wins >= 3 },
+  { n: 'Борода с косичками', d: 'Пройдите 30 забегов.', src: 'achv', cond: m => m.runs >= 30 },
+  { n: 'Борода в рунах', d: 'Руны светятся в темноте подземелья.', src: 'shards', shards: 4 },
+  { n: 'Седая до пола', d: 'Одолейте 500 врагов в забегах.', src: 'achv', cond: m => (m.kills | 0) >= 500 },
+  { n: 'Борода с бусинами', d: 'Пройдите кооп-забег с друзьями.', src: 'achv', cond: m => (m.coopRuns | 0) >= 1 },
 ];
 const SK_CAPES = [
-  { n: 'Плащ-знамя отряда', d: 'Три кооп-забега.', cond: m => (m.coopRuns | 0) >= 3 },
-  { n: 'Меховая накидка', d: 'Тёплая, пахнет козой.', shards: 6 },
-  { n: 'Плащ звездочёта', d: 'Победите Малгора, ни разу не получив удара.', cond: m => !!m.flawless },
-  { n: 'Алая мантия', d: 'Победите Малгора пять раз (Проклятие V).', cond: m => m.wins >= 5 },
-  { n: 'Плащ из мешковины', d: 'Пройдите первый забег.', cond: m => m.runs >= 1 },
-  { n: 'Лиственный плащ', d: 'Из дубовых листьев с мхом.', shards: 3 },
+  { n: 'Плащ-знамя отряда', d: 'Три кооп-забега.', src: 'achv', cond: m => (m.coopRuns | 0) >= 3 },
+  { n: 'Меховая накидка', d: 'Тёплая, пахнет козой.', src: 'shards', shards: 6 },
+  { n: 'Плащ звездочёта', d: 'Победите Малгора, ни разу не получив удара.', src: 'achv', cond: m => !!m.flawless },
+  { n: 'Алая мантия', d: 'Победите Малгора пять раз (Проклятие V).', src: 'achv', cond: m => m.wins >= 5 },
+  { n: 'Плащ из мешковины', d: 'Пройдите первый забег.', src: 'achv', cond: m => m.runs >= 1 },
+  { n: 'Лиственный плащ', d: 'Из дубовых листьев с мхом.', src: 'shards', shards: 3 },
 ];
 const SK_SLOTS = [['hat', 'Шапка', SK_HATS], ['beard', 'Борода', SK_BEARDS], ['cape', 'Накидка', SK_CAPES]];
 
@@ -41,7 +43,8 @@ function skStreak(m) {
 function skOwned(m, slot, i) {
   const it = SK_SLOTS.find(s => s[0] === slot)[2][i];
   if (!it) return false;
-  if (it.cond) return !!it.cond(m);
+  if (it.src === 'achv') return !!it.cond(m);
+  if (it.src === 'shop') return !!(m.skinsShop && m.skinsShop[slot + i]);
   return !!(m.skinsBought && m.skinsBought[slot + i]);
 }
 function skWorn(m) { const w = m.skin && typeof m.skin === 'object' ? m.skin : {}; const ok = (s, v) => Number.isInteger(v) && v >= 0 && skOwned(m, s, v) ? v : -1; return { hat: ok('hat', w.hat), beard: ok('beard', w.beard), cape: ok('cape', w.cape) }; }
@@ -177,15 +180,15 @@ function skOpen() {
   const draw = () => {
     const m = runMeta(), w = skWorn(m), items = SK_SLOTS.find(s => s[0] === tab)[2];
     const card = (it, i) => {
-      const own = skOwned(m, tab, i), on = w[tab] === i, buy = !own && it.shards;
+      const own = skOwned(m, tab, i), on = w[tab] === i, buy = !own && it.src === 'shards', shop = !own && it.src === 'shop';
       return `<div style="display:flex;gap:8px;align-items:center;margin:5px 0;padding:6px;border:1px solid ${on ? '#ffd84a' : '#6a4a1a'};border-radius:6px;${own ? '' : 'opacity:.75'}">
         <canvas data-pv="${i}" width="20" height="24" style="width:40px;height:48px;image-rendering:pixelated;background:#1a0f08;border-radius:4px"></canvas>
         <span style="flex:1"><b>${it.n}</b>${own ? '' : ' 🔒'}<br><small>${it.d}</small></span>
-        ${on ? `<button data-sk="off" style="${btn}">Снять</button>` : own ? `<button data-sk="wear:${i}" style="${btn}">Надеть</button>` : buy ? `<button data-sk="buy:${i}" ${m.shards >= it.shards ? '' : 'disabled'} style="${btn};${m.shards >= it.shards ? '' : 'opacity:.5'}">${it.shards} ◆</button>` : ''}</div>`;
+        ${on ? `<button data-sk="off" style="${btn}">Снять</button>` : own ? `<button data-sk="wear:${i}" style="${btn}">Надеть</button>` : buy ? `<button data-sk="buy:${i}" ${m.shards >= it.shards ? '' : 'disabled'} style="${btn};${m.shards >= it.shards ? '' : 'opacity:.5'}">${it.shards} ◆</button>` : shop ? `<button disabled style="${btn};opacity:.5">Лавка — скоро</button>` : ''}</div>`;
     };
     box.innerHTML = `<div style="background:#2a1a0e;border:2px solid #b8902c;border-radius:8px;padding:14px;max-width:440px;width:100%;color:#f1dfb0">
       <div style="font-size:18px;font-weight:700;margin-bottom:6px">Переодеться <span style="float:right;font-size:14px">◆ ${m.shards}</span></div>
-      <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">${SK_SLOTS.map(s => `<button data-sk="tab:${s[0]}" style="${btn};${tab === s[0] ? 'background:#6a4a1a' : ''}">${s[1]}</button>`).join('')}<button data-sk="cloak" style="${btn}">Цвет плаща: ${RUN_CLOAKS[m.cloak % RUN_CLOAKS.length][0]}</button></div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">${SK_SLOTS.map(s => `<button data-sk="tab:${s[0]}" style="${btn};${tab === s[0] ? 'background:#6a4a1a' : ''}">${s[1]}</button>`).join('')}<button disabled title="Лавка нарядов откроется позже" style="${btn};opacity:.5">Лавка нарядов — скоро</button><button data-sk="cloak" style="${btn}">Цвет плаща: ${RUN_CLOAKS[m.cloak % RUN_CLOAKS.length][0]}</button></div>
       <div style="max-height:52vh;overflow:auto">${items.map(card).join('')}</div>
       <p style="font-size:12px;opacity:.8;margin:6px 0">Надетое видно и в забеге, и в деревне — в общей деревне его увидят все.</p>
       <div style="text-align:right"><button data-sk="x" style="${btn}">Закрыть</button></div></div>`;
@@ -203,7 +206,7 @@ function skOpen() {
     if (a === 'x') { box.remove(); tavernRender(); return; }
     if (a === 'tab') tab = v;
     if (a === 'cloak') { m.cloak = (m.cloak + 1) % RUN_CLOAKS.length; runMetaSave(m); }
-    if (a === 'buy') { const it = SK_SLOTS.find(s => s[0] === tab)[2][+v]; if (it.shards && m.shards >= it.shards) { m.shards -= it.shards; m.skinsBought = m.skinsBought || {}; m.skinsBought[tab + v] = 1; runMetaSave(m); RSfx.play('coin'); } }
+    if (a === 'buy') { const it = SK_SLOTS.find(s => s[0] === tab)[2][+v]; if (it.src === 'shards' && m.shards >= it.shards) { m.shards -= it.shards; m.skinsBought = m.skinsBought || {}; m.skinsBought[tab + v] = 1; runMetaSave(m); RSfx.play('coin'); } }
     if (a === 'wear' || a === 'off') {
       m.skin = Object.assign({ hat: -1, beard: -1, cape: -1 }, m.skin || {}); m.skin[tab] = a === 'wear' ? +v : -1; runMetaSave(m);
       skApplyVillage(skWorn(m)); RSfx.play('pick');

@@ -3,7 +3,7 @@
 // Одна и та же копия крутится в браузере (одиночный забег — js/run/dungeon.js рисует и озвучивает),
 // на сервере (кооп-комната до 5 героев) и при проверке рекорда (переигровка записи ввода).
 // Правила детерминизма: шаг всегда RS_DT, случайности только от сида (rsRand), никаких Math.random,
-// sin/cos/atan2/hypot (в разных браузерах дают разные последние знаки) и sort со случайным сравнением.
+// sin/cos/atan2/hypot/pow/** (в разных браузерах дают разные последние знаки; sqrt и + − × ÷ — точные по IEEE) и sort со случайным сравнением.
 // Звуки, всплывающие цифры и надписи — события в S.ev (разбирает и чистит тот, кто рисует).
 
 const RS_DT = 1 / 60;
@@ -18,6 +18,17 @@ const RS_UPS = [
   { id: 'flask', n: 'Хмельная фляга', d: 'Полное лечение' },
   { id: 'dash', n: 'Заговорённый рывок', d: 'Рывок чаще на 40%' },
 ];
+// ИИ-напарник в отряде (решение владельца 23.10): с самого начала — только у одиночки; отряду из живых он
+// предлагается в выборе награды, когда этаж дался тяжело: упало много героев, у всех мало здоровья или этаж затянулся
+const RS_UP_PAL = { id: 'pal', n: 'Позвать напарника', d: 'ИИ-гном пойдёт рядом до конца забега' };
+const rsUpInfo = id => (id === 'pal' ? RS_UP_PAL : RS_UPS.find(u => u.id === id));
+const RS_HARD_HP = 0.35, RS_HARD_T = 240;   // средняя доля здоровья отряда на выходе и время этажа, с.
+function rsHardFloor(S) {
+  const live = S.heroes.filter(h => !h.gone);
+  if (!live.length || S.n < 2) return false;
+  const hp = live.reduce((a, h) => a + (h.down ? 0 : h.hp / h.max), 0) / live.length;
+  return S.flDowns >= Math.max(2, Math.ceil(S.n / 2)) || hp < RS_HARD_HP || S.t - S.flT0 > RS_HARD_T;
+}
 const RS_COOP_PICK = 20;          // секунд на выбор награды в коопе
 const RS_COOP_STAIRS = 15;        // через столько секунд после первого на лестнице отряд спускается
 const RS_REVIVE = 3;              // секунд стоять рядом, чтобы поднять товарища
@@ -50,16 +61,17 @@ function rsNew(opts) {
     heroes: hs.map((o, i) => ({
       id: o.id != null ? o.id : i, x: 0, y: 0, max: o.hp || 100, hp: o.hp || 100, spd: 62, dmg: o.dmg || 12, cd: 0, rate: 0.55,
       dash: 0, dashCd: 0, dashMul: 1, slamCd: 0, slam: 0, face: 1, hit: 0, inv: 0, gold: 0, kills: 0, swing: 0, stepT: 0,
-      weapon: o.weapon || 'pick', choices: o.choices || 3, cloak: o.cloak | 0, ap: o.ap || null, sk: o.sk || null, hurts: 0, ups: [],
+      weapon: o.weapon || 'pick', palKind: RS_PAL_KINDS.includes(o.pal) ? o.pal : 'warrior', choices: o.choices || 3, cloak: o.cloak | 0, ap: o.ap || null, sk: o.sk || null, hurts: 0, ups: [],
       down: false, rev: 0, away: false, gone: false, mx: 0, my: 0, moving: false,
     })),
     pals: [],
   };
-  if (opts.pals !== false && S.n <= 2) S.heroes.forEach((h, i) => S.pals.push({ owner: i, x: 0, y: 0, hp: 60, max: 60, cd: 0, kind: RS_PAL_KINDS.includes(hs[i].pal) ? hs[i].pal : 'warrior', hit: 0, dead: false, moving: false, first: hs[i].pal }));
+  if (opts.pals !== false && S.n === 1) S.heroes.forEach((h, i) => rsAddPal(S, i));
   rsFloor(S);
   return S;
 }
 
+function rsAddPal(S, i) { const h = S.heroes[i]; S.pals.push({ owner: i, x: h.x - 14, y: h.y, hp: 60, max: 60, cd: 0, kind: h.palKind, hit: 0, dead: false, moving: false, first: h.palKind }); }
 function rsEv(S, e) { if (S.ev.length < 400) S.ev.push(e); }
 function rsMsg(S, text, t) { S.msg = text; S.msgT = t; rsEv(S, { k: 'msg', text, t }); }
 const rsActive = S => S.heroes.filter(h => !h.down && !h.gone && !h.away);
@@ -81,7 +93,7 @@ function rsFloor(S) {
     for (let x = Math.min(a.cx, b.cx); x <= Math.max(a.cx, b.cx); x++) { carve(x, a.cy); carve(x, a.cy + 1); }
     for (let y = Math.min(a.cy, b.cy); y <= Math.max(a.cy, b.cy); y++) { carve(b.cx, y); carve(b.cx + 1, y); }
   }
-  S.map = map; S.rooms = rooms; S.boss = boss;
+  S.map = map; S.rooms = rooms; S.boss = boss; S.flDowns = 0; S.flT0 = S.t;
   const s = rooms[0], e = rooms[rooms.length - 1];
   S.heroes.forEach((h, i) => {
     // отряд встаёт кучкой в первой комнате; лежавшие поднимаются с четвертью здоровья
@@ -128,7 +140,7 @@ function rsMove(S, o, dx, dy, r) {
   if (ok(o.x + dx, o.y)) o.x += dx;
   if (ok(o.x, o.y + dy)) o.y += dy;
 }
-const rsNearest = (o, list, rng) => { let b = null, bd = rng * rng; for (const e of list) { if (e.hp <= 0) continue; const d = (e.x - o.x) ** 2 + (e.y - o.y) ** 2; if (d < bd) { bd = d; b = e; } } return b; };
+const rsNearest = (o, list, rng) => { let b = null, bd = rng * rng; for (const e of list) { if (e.hp <= 0) continue; const ex = e.x - o.x, ey = e.y - o.y, d = ex * ex + ey * ey; if (d < bd) { bd = d; b = e; } } return b; };
 const rsPop = (S, x, y, text, col) => rsEv(S, { k: 'pop', x, y, text, col: col || '#fff' });
 const rsSfx = (S, n, vol) => rsEv(S, vol ? { k: 'sfx', n, vol } : { k: 'sfx', n });
 
@@ -156,7 +168,7 @@ function rsHurtHero(S, h, d) {
   if (h.hp > 0) return;
   h.hp = 0;
   if (S.n === 1) { rsEnd(S, false); return; }
-  h.down = true; h.rev = 0; rsPop(S, h.x, h.y - 16, 'Упал!', '#ffb0a0');
+  h.down = true; h.rev = 0; S.flDowns++; rsPop(S, h.x, h.y - 16, 'Упал!', '#ffb0a0');
   if (!S.heroes.some(o => !o.down && !o.gone)) rsEnd(S, false);
 }
 function rsEnd(S, win, quit) { if (S.over) return; S.over = { win: !!win, quit: !!quit, floors: S.floor + (win ? 1 : 0), t: S.t }; rsSfx(S, win ? 'win' : 'lose'); }
@@ -307,12 +319,14 @@ function rsStep(S, inputs) {
 // ---------- награды между этажами ----------
 function rsNext(S) {
   if (S.floor + 1 >= S.diff.floors) { rsEnd(S, true); return; }
-  const opts = [], got = [];
+  const opts = [], got = [], hard = rsHardFloor(S);
   S.heroes.forEach((h, i) => {
     const ids = RS_UPS.map(u => u.id);
     for (let k = ids.length - 1; k > 0; k--) { const j = (rsRand(S, 'ca') * (k + 1)) | 0; const tmp = ids[k]; ids[k] = ids[j]; ids[j] = tmp; }
     opts[i] = ids.slice(0, h.choices); got[i] = h.gone ? -1 : null;
+    if (hard && !S.pals.some(p => p.owner === i && !p.dead)) opts[i].unshift('pal');
   });
+  if (hard) rsMsg(S, 'Тяжело идёт? В награде можно позвать ИИ-напарника', 3);
   S.pick = { opts, got, t: RS_COOP_PICK };
   rsSfx(S, 'stairs');
 }
@@ -327,7 +341,9 @@ function rsUp(h, id) {
 function rsChoose(S, i, k) {
   const P = S.pick; if (!P || P.got[i] != null || !P.opts[i]) return false;
   const id = P.opts[i][Math.max(0, Math.min(P.opts[i].length - 1, k | 0))];
-  P.got[i] = id; const h = S.heroes[i]; rsUp(h, id); h.ups.push(id); rsSfx(S, 'pick');
+  P.got[i] = id; const h = S.heroes[i]; rsSfx(S, 'pick');
+  if (id === 'pal') { const old = S.pals.find(p => p.owner === i); if (old) Object.assign(old, { hp: 60, dead: false, kind: h.palKind }); else rsAddPal(S, i); }
+  else { rsUp(h, id); h.ups.push(id); }
   if (P.got.every(g => g != null)) { S.pick = null; S.floor++; rsFloor(S); }
   return true;
 }
@@ -351,6 +367,12 @@ function rsReplay(opts, rec) {
   const S = rsNew(opts), inp = S.heroes.map(() => ({ mx: 0, my: 0, dash: false, slam: false }));
   let k = 0, prev = -1;
   if (!Array.isArray(rec)) return { S, err: 'нет записи' };
+  // сначала вся запись целиком: кривые строки иначе не сдвигают указатель и переигровка крутится до предела шагов
+  for (let j = 0; j < rec.length; j++) {
+    const r = rec[j];
+    if (!Array.isArray(r) || r.length < 3 || !Number.isInteger(r[0]) || r[0] < 0 || r[0] > RS_MAX_STEPS) return { S, err: 'кривая запись' };
+    if (j && r[0] < rec[j - 1][0]) return { S, err: 'записи не по порядку' };
+  }
   while (!S.over) {
     let picked = false;
     while (k < rec.length && rec[k][0] === S.step) {
@@ -376,4 +398,4 @@ function rsReplay(opts, rec) {
   return { S, err: null, score: rsScore(S) };
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { RS_DT, RS_T, RS_W, RS_H, RS_UPS, RS_PAL_KINDS, rsNew, rsStep, rsChoose, rsEnd, rsScore, rsRewards, rsReplay, rsSeedOfDay, rsRand, rsActive, rsWeekOf, rsRankedOpts, RS_FAIR_HERO };
+if (typeof module !== 'undefined' && module.exports) module.exports = { RS_DT, RS_T, RS_W, RS_H, RS_UPS, RS_PAL_KINDS, rsNew, rsStep, rsChoose, rsUpInfo, rsHardFloor, RS_UP_PAL, rsEnd, rsScore, rsRewards, rsReplay, rsSeedOfDay, rsRand, rsActive, rsWeekOf, rsRankedOpts, RS_FAIR_HERO };

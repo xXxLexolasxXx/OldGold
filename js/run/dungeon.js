@@ -125,7 +125,7 @@ function runPickShow() {
   const S = Run.S, P = S.pick, box = Run.el.querySelector('#run-pick'), ids = P.opts[Run.me] || [];
   Run.pickShown = true; box.style.display = 'flex';
   box.innerHTML = '<div style="width:100%;text-align:center;color:#f1dfb0;font:700 22px sans-serif;margin-bottom:6px">Выберите награду</div>' + ids.map((id, i) => {
-    const u = RS_UPS.find(x => x.id === id);
+    const u = rsUpInfo(id);
     return `<button data-i="${i}" style="width:min(190px,44vw);padding:14px 10px;background:#3a2410;color:#f1dfb0;border:2px solid #b8902c;border-radius:8px;cursor:pointer"><b style="font-size:16px">${u.n}</b><br><small>${u.d}</small></button>`;
   }).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => {

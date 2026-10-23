@@ -33,7 +33,7 @@ function createRunKind(hooks) {
     const d = RUN_DIFFS[r.opts.diff] || RUN_DIFFS.dive;
     let diff = d;
     if (d.id === 'curse') { const lvl = Math.max(1, Math.min(5, r.opts.lvl | 0 || 1)); diff = Object.assign({}, d, { mult: 1.3 + 0.2 * lvl, lvl, name: 'Проклятие ' + lvl }); }
-    const S = RS.rsNew({ seed: (Math.random() * 1e9) >>> 0, diff, heroes: ms.map(m => Object.assign(heroFrom(m.meta), { id: m.nick })), pals: ms.length <= 2 });
+    const S = RS.rsNew({ seed: (Math.random() * 1e9) >>> 0, diff, heroes: ms.map(m => Object.assign(heroFrom(m.meta), { id: m.nick })) });
     r.game = { S, idx: new Map(ms.map((m, i) => [m.key, i])), inp: ms.map(() => ({ mx: 0, my: 0, dash: false, slam: false })), acc: 0, snapT: 0, floor: -1, pickSent: null, ev: [], t0: Date.now() };
     for (const m of ms) { H.out(m.key); sendGo(r, m); }
     H.log(`забег ${r.code}: старт, героев ${ms.length}, ${diff.name}`);

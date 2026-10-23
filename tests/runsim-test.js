@@ -45,6 +45,10 @@ ok(bossSeen >= 2, 'бот почти не доходит до босса');
   const back = r.rec.slice(); back.splice(10, 0, [0, 0, 1]);
   ok(R.rsReplay(opts, back).err, 'запись не по порядку принята');
   ok(R.rsReplay(opts, 'мусор').err && R.rsReplay(opts, [[0, 9, 0, 1, 1]]).err, 'мусорная запись принята');
+  // кривая строка в середине не должна крутить переигровку до предела шагов (нагрузка на сервер)
+  const t0 = Date.now(), bad = r.rec.slice(); bad.splice(3, 0, 'x');
+  ok(R.rsReplay(opts, bad).err === 'кривая запись' && Date.now() - t0 < 200, 'кривая строка в записи: переигровка не оборвалась сразу');
+  ok(R.rsReplay(opts, [[1.5, 0, 1]]).err === 'кривая запись' && R.rsReplay(opts, [[-1, 0, 1]]).err, 'дробный/отрицательный шаг принят');
 }
 
 // 5. отряд из 5: масштаб врагов, упавшие поднимаются, забег кончается, награды с бонусом
@@ -63,6 +67,25 @@ ok(bossSeen >= 2, 'бот почти не доходит до босса');
   ok(hurt.down && !s5.over, 'герой в отряде должен упасть, а не закончить забег');
   for (let k = 0; k < 60 * 4; k++) R.rsStep(s5, []);
   ok(!hurt.down && hurt.hp > 0, 'товарищи рядом должны поднять упавшего за 3 с');
+  // ИИ-напарник отряду — только после тяжёлого этажа, в выборе награды
+  {
+    const duo = R.rsNew({ seed: 9, diff: DIVE, heroes: [five[0], five[1]] });
+    ok(duo.pals.length === 0, 'отряд из 2 стартует без ИИ-напарников');
+    ok(!R.rsHardFloor(duo), 'свежий отряд не должен считаться «не вывозит»');
+    duo.flDowns = 2; ok(R.rsHardFloor(duo), 'два падения за этаж — тяжёлый этаж');
+    duo.flDowns = 0; duo.heroes.forEach(x => { x.hp = x.max * 0.2; }); ok(R.rsHardFloor(duo), 'мало здоровья у всех — тяжёлый этаж');
+    duo.heroes.forEach(x => { x.hp = x.max; }); duo.t = duo.flT0 + 300; ok(R.rsHardFloor(duo), 'затянутый этаж — тяжёлый');
+    duo.enemies.forEach(e => { e.hp = 0; }); duo.heroes.forEach(x => { x.x = duo.stairs.x; x.y = duo.stairs.y; });
+    R.rsStep(duo, []); R.rsStep(duo, []);
+    ok(duo.pick && duo.pick.opts[0][0] === 'pal' && duo.pick.opts[1][0] === 'pal', 'после тяжёлого этажа в награде должен быть «Позвать напарника»');
+    R.rsChoose(duo, 0, 0); R.rsChoose(duo, 1, 1);
+    ok(duo.pals.length === 1 && duo.pals[0].owner === 0 && !duo.pick, 'напарник появляется только у выбравшего');
+    ok(R.rsUpInfo('pal').n && R.rsUpInfo('blade').n, 'описание награды «напарник»');
+    const easy = R.rsNew({ seed: 9, diff: DIVE, heroes: [five[0], five[1]] });
+    easy.enemies.forEach(e => { e.hp = 0; }); easy.heroes.forEach(x => { x.x = easy.stairs.x; x.y = easy.stairs.y; });
+    R.rsStep(easy, []); R.rsStep(easy, []);
+    ok(easy.pick && !easy.pick.opts.some(o => o.includes('pal')), 'лёгкий этаж — напарника не предлагают');
+  }
   // кооп-забег ботами до конца
   const r = play({ seed: 77, diff: DIVE, heroes: five }, 40);
   console.log(`  · отряд из 5: ${r.S.over ? (r.S.over.win ? 'победа' : 'пали') : 'не кончил'}, этаж ${r.S.floor + 1}, убито ${r.S.kills}, ${(r.S.t / 60).toFixed(1)} мин`);
@@ -91,7 +114,7 @@ ok(R.rsSeedOfDay('2026-10-22') === R.rsSeedOfDay('2026-10-22') && R.rsSeedOfDay(
 // 8. в ядре нет того, что ломает переигровку в другом браузере
 {
   const src = fs.readFileSync(path.join(__dirname, '../js/run/runsim.js'), 'utf8').replace(/\/\/.*$/gm, '');
-  for (const bad of ['Math.random', 'Math.sin', 'Math.cos', 'Math.atan2', 'Math.hypot', 'Date.now', '.sort(']) ok(!src.includes(bad), `в runsim.js нельзя ${bad} — переигровка разойдётся`);
+  for (const bad of ['Math.random', 'Math.sin', 'Math.cos', 'Math.atan2', 'Math.hypot', 'Math.pow', '**', 'Math.exp', 'Math.log', 'Date.now', '.sort(']) ok(!src.includes(bad), `в runsim.js нельзя ${bad} — переигровка разойдётся`);
 }
 
 console.log(fails.length ? `Проверка ядра забега: провалов ${fails.length}` : 'Проверка ядра забега: всё в порядке');

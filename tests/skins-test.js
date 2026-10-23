@@ -16,6 +16,16 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'run', 'skins.j
 
 const M = Object.assign;
 check(ctx.MAX.length === 15 && ctx.MAX[12] >= ctx.SL[0][2].length - 1 && ctx.MAX[13] >= ctx.SL[1][2].length - 1 && ctx.MAX[14] >= ctx.SL[2][2].length - 1, 'HA_MAX не вмещает все скины');
+// источник у каждой вещи (задел под лавку: 'shop' без записи не открывается)
+for (const [s, , list] of ctx.SL) list.forEach((it, i) => {
+  check(['achv', 'shards', 'shop'].includes(it.src), `${s} ${i}: нет src`);
+  check(it.src !== 'achv' || typeof it.cond === 'function', `${s} ${i}: achv без условия`);
+  check(it.src !== 'shards' || it.shards > 0, `${s} ${i}: shards без цены`);
+});
+ctx.SL[0][2].push({ n: 't', d: 't', src: 'shop' });
+const si = ctx.SL[0][2].length - 1;
+check(!ctx.owned({ shards: 999, wins: 99, runs: 99 }, 'hat', si) && ctx.owned({ skinsShop: { ['hat' + si]: 1 } }, 'hat', si), 'вещь лавки: открывается только записью skinsShop');
+ctx.SL[0][2].pop();
 // открытие
 check(!ctx.owned({ wins: 0, runs: 0 }, 'hat', 0) && ctx.owned({ wins: 1, runs: 0 }, 'hat', 0), 'колпак Малгора открывается первой победой');
 check(ctx.owned({ runs: 1 }, 'cape', 4) && !ctx.owned({ runs: 0 }, 'cape', 4), 'мешковина — за первый забег');
