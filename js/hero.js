@@ -36,9 +36,16 @@ function heroDefaults(h) {
 }
 
 function heroStats(h) {
-  const L = h.level;
-  return { str: 6 + Math.round(L * 1.6), agi: 7 + Math.round(L * 1.2), int: 5 + Math.round(L * 1.4), end: 8 + Math.round(L * 1.5) };
+  const L = h.level, k = heroRestMul(h);
+  return { str: Math.round((6 + Math.round(L * 1.6)) * k), agi: Math.round((7 + Math.round(L * 1.2)) * k), int: 5 + Math.round(L * 1.4), end: 8 + Math.round(L * 1.5) };
 }
+
+// «отлёживание» после проигранного забега (js/run/tavern.js, meta.hurtUntil): минуту герой слабее и медленнее
+function heroRestLeft(h) {
+  if (typeof runMeta !== 'function' || typeof Game === 'undefined' || !Game.hero || Game.hero.hero !== h) return 0;
+  return Math.max(0, (runMeta().hurtUntil || 0) - Date.now());
+}
+const heroRestMul = h => (heroRestLeft(h) > 0 ? 0.8 : 1);
 
 function heroOf(u) {
   if (u.type === 'hero') return u;
@@ -508,7 +515,7 @@ function heroPanel() {
   const bar = (n, c) => `<span class="hp-bar"><i style="width:${Math.min(100, n * 2.2)}%;background:${c}"></i></span>`;
 
   return `<div class="ihead"><img class="bpic" src="${portraitURL('hero', h.look)}" alt=""><div><h3>${H.name}</h3>
-    <span class="muted small">${H.cls ? H.cls : 'Гном-универсал'} · уровень ${H.level}</span></div></div>
+    <span class="muted small">${H.cls ? H.cls : 'Гном-универсал'} · уровень ${H.level}</span>${heroRestLeft(H) > 0 ? `<br><span class="small" title="После проигранного забега: минуту слабее и медленнее">😴 Отлёживается: ${Math.ceil(heroRestLeft(H) / 1000)} с</span>` : ''}</div></div>
     <div class="hp-xp" title="${H.level >= HERO_LVL_MAX ? 'Высший, 15-й уровень' : `Растёт вместе с городом и боями: ${Math.floor(score)} из ${Math.ceil(hi)} очков до уровня ${H.level + 1}`}"><i style="width:${pct}%"></i></div>
     <div class="hp-stats">
       <div>Сила ${bar(s.str, '#d0603a')}<b>${s.str}</b></div>

@@ -107,6 +107,11 @@ scriptTest('faceart: портреты собеседников — 16 лиц, д
 scriptTest('campaign: акты 1–5 — праздник и взрыв, обвал, Кремнёвка, дорога к межевому камню, сценарий с наследием, сейв, поражение, перевод', 'campaign-test.js', [], 420000);
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
+scriptTest('runboard: таблица рекордов забегов — переигровка на сервере, попытка дня, согласие, удаление', 'runboard-test.js');
+scriptTest('runroom: кооп-забег до 5 героев — комнаты, бой на сервере, обрыв и возврат, по сети', 'runroom-test.js', [], 300000);
+scriptTest('sqtavern: Таверна отряда появляется сама у окраины — условие, место, рост деревни, сейв, кооп', 'sqtavern-test.js');
+scriptTest('skins: скины героя — открытие, облик деревни, рисунок, чистка на сервере', 'skins-test.js');
+scriptTest('runsim: ядро забега — детерминизм, бот до Малгора, переигровка, отряд из 5', 'runsim-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
 scriptTest('piles: мусор не копится, потолок кучек, подпись подбора', 'piles-test.js');
