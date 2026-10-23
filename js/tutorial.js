@@ -253,7 +253,7 @@ const TUT_STEPS = [
   {
     ph: 'Хозяйство', title: 'Где что не так', grum: false,
     text: () => 'Значки над домами говорят, чего не хватает: дороги, рабочего, сырья. Все беды разом — во вкладке «Хозяйство». Достроите цепочку — меню само откроет новый раздел.',
-    focus: () => uiF(tabSel('overview'), 'Откройте вкладку «Хозяйство» (свиток).'),
+    focus: () => uiF(tabSel('overview'), 'Откройте вкладку «Хозяйство» (столбики).'),
     done: () => UI.tab === 'overview' && (!isMob() || document.body.classList.contains('sheet-tab')),
   },
   {
@@ -524,6 +524,12 @@ function tutRect() {
     if (!el) return null;
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2) return null;
+    // раскрытый список (скорость, звук) — светлое окно и на него, иначе пункты выглядят неживыми
+    const dd = el.closest('.dd.open'), m = dd && dd.querySelector('.dd-menu');
+    if (m && m.getClientRects().length) {
+      const q = m.getBoundingClientRect(), x0 = Math.min(r.left, q.left), y0 = Math.min(r.top, q.top);
+      return { x: x0 - 5, y: y0 - 5, w: Math.max(r.right, q.right) - x0 + 10, h: Math.max(r.bottom, q.bottom) - y0 + 10, ui: true, open: true };
+    }
     return { x: r.left - 5, y: r.top - 5, w: r.width + 10, h: r.height + 10, ui: true };
   }
   if (f.k === 'map') {
@@ -552,7 +558,9 @@ function tutLoop() {
     if (r.ui && r.y < 90) { dir = 'up'; y = r.y + r.h; }
     const pr0 = Tut.el.getBoundingClientRect(), underPanel = x > pr0.left && x < pr0.right && y - 50 < pr0.bottom && y > pr0.top;
     if (r.ui && ((r.x < 40 && r.w < 320 && r.x + r.w < window.innerWidth / 3) || underPanel)) { dir = 'left'; x = r.x + r.w; y = r.y + r.h / 2; }
-    Tut.arrow.className = 'tut-arrow-' + dir;
+    Tut.arrow.className = r.open ? 'hidden' : 'tut-arrow-' + dir;   // список раскрыт — стрелка не лезет на пункты
+    // телефон: цель в верхней полосе — окно обучения чуть ниже, чтобы стрелка не легла на его ✕ и ☰
+    Tut.el.classList.toggle('top-hl', !!(r.ui && r.y < 60 && isMob() && !document.body.classList.contains('land')));
     Object.assign(Tut.arrow.style, { left: x + 'px', top: y + 'px' });
     // окно обучения не закрывает цель: цель там, где окно стоит обычно, — окно переезжает к другому краю
     if (!Tut.el.classList.contains('flip') || !Tut.home) Tut.home = Tut.el.getBoundingClientRect();

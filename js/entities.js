@@ -204,6 +204,7 @@ class Building {
       } else this.working = false;
     }
     if (this.type === 'school') {
+      if (!this.training && this.queue.length) schoolGoldFirst(this);
       if (!this.training && this.queue.length && this.stock.gold < 1 && this.incoming.gold <= 0) schoolStuck(this, dt);
       else { this.goldWait = 0; if (this.stock.gold >= 1) this.goldHint = false; }
       if (!this.training && this.queue.length && this.stock.gold >= 1) {
@@ -213,7 +214,8 @@ class Building {
       if (this.training) {
         this.training.t += dt;
         if (this.training.t >= TRAIN_TIME * (this.def.trainMult || 1)) {
-          spawnUnit(this.training.type, this.doorX, this.doorY);
+          const nu = spawnUnit(this.training.type, this.doorX, this.doorY);
+          if (typeof hireOnGraduate === 'function') hireOnGraduate(nu);   // выпускник, которого ждёт здание, — сразу туда (hire.js)
           logEvent('people', `Школа выпустила: ${UNIT_TYPES[this.training.type].name}`, this.doorX + 0.5, this.doorY);
           this.training = null;
         }
@@ -227,9 +229,38 @@ class Building {
 // Нет ни одного перевозчика — слиток со склада той же дороги берёт сам учитель (иначе некому привезти,
 // а научить перевозчика нечем). Золота нет вообще и перевозчиков нет — трудягу учат в долг,
 // чтобы деревня могла хотя бы возить. И одна понятная подсказка вместо молчаливого «Ждём золото».
+// Кого не хватает золотой цепочке: рудник или плавильня без работника, и такого гнома нет ни свободным, ни в учёбе.
+// Без шахтёра и металлурга золото не появится, а без золота их не выучить: деревня, у которой ночью утащили шахтёра,
+// теряла школу навсегда (замер tools/soak/deficit.js — сиды 1, 2, 4 вымирали к 96-м суткам, ДЕФИЦИТЫ.md).
+function goldChainNeed() {
+  for (const t of ['goldmine', 'metallurgist']) {
+    const w = BUILDINGS[t].worker;
+    if (!Game.buildings.some(b => b.type === t && b.state === 'done' && !b.removed && !(b.worker && !b.worker.dead && b.worker.home === b))) continue;
+    if (Game.units.some(u => u.type === w && !u.dead && !u.home)) continue;
+    if (Game.buildings.some(s => s.type === 'school' && s.training && s.training.type === w)) continue;
+    return w;
+  }
+  return null;
+}
+// шахтёр и металлург для пустых рудника и плавильни — первыми в очереди: последний слиток не уходит на трудягу
+function schoolGoldFirst(b) {
+  const w = goldChainNeed();
+  if (!w) return;
+  const i = b.queue.indexOf(w);
+  if (i > 0) { b.queue.splice(i, 1); b.queue.unshift(w); }
+}
 function schoolStuck(b, dt) {
   b.goldWait = (b.goldWait || 0) + dt;
   if (b.goldWait < 8) return;
+  // золота нет нигде, а рудник или плавильня пустует — шахтёра / металлурга учат в долг, первым в очереди
+  const gw = goldAnywhere() <= 0 && goldChainNeed();
+  if (gw) {
+    const i = b.queue.indexOf(gw);
+    if (i < 0) b.queue.unshift(gw); else if (i > 0) { b.queue.splice(i, 1); b.queue.unshift(gw); }
+    b.stock.gold++; b.goldWait = 0;
+    toast(gw === 'miner' ? 'Школа выучит шахтёра в долг: без него золота не будет' : 'Школа выучит металлурга в долг: без него золота не будет', b);
+    return;
+  }
   const carriers = Game.units.some(u => u.isCourier && !u.dead && !u.teamOf);
   if (!carriers) {
     const st = storeHaving(b.doorX, b.doorY, 'gold', compAt(b.doorX, b.doorY));

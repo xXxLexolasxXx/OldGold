@@ -10,7 +10,8 @@ const KP_C = {
   bone: '#e4ddd2', bone2: '#b6ada0', bone3: '#867e74', ink: '#1e1b19', flash: '#f6f2ea',
   iron: ['#9e958a', '#706960', '#4a4540'], rust: ['#c8946a', '#a06840', '#6e432a'], gold: ['#e4b434', '#a4701c', '#7e5214'],
   cape: [['#3a3a7a', '#2c2a5a', '#1c1a3e'], ['#33306a', '#26204a', '#161232'], ['#4e2850', '#3a1c3e', '#220e28']],
-  eye: ['#4aa6e6', '#8ae0ff', '#ffffff'], glow: '#6ad0ff', blade: ['#f6fbff', '#a6d2e6', '#5292bc', '#22486c'],
+  eye: [['#3fa0e8', '#d6f4ff', 'rgba(90,190,255,0.45)'], ['#8ee05a', '#efffb8', 'rgba(150,230,90,0.45)'], ['#ff2a1c', '#ffd8a0', 'rgba(255,60,40,0.5)']], // I голубые, II мертвенно-зелёные, III красные
+  glow: '#6ad0ff', blade: ['#f6fbff', '#a6d2e6', '#5292bc', '#22486c'],
 };
 const KP_CACHE = new Map();
 let KP_SCRATCH = null;
@@ -49,13 +50,26 @@ function kpSprite(fr, ph) {
   const out = toPixelArt(cv, KP.PS / KP.PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
   // огни в глазницах и камни короны — ровные светящиеся пиксели без квантования
   const o = out.getContext('2d'), P2 = KP.PART;
-  for (const [x, y, col, w] of marks) { o.fillStyle = col; o.fillRect(Math.round((KP.AX + x) * P2), Math.round((KP.AY + y) * P2), w || 2, w || 2); }
+  for (const m of marks) {
+    if (m.eye) { kpEye(o, Math.round((KP.AX + m.x) * P2), Math.round((KP.AY + m.y) * P2), m.side, m.col, m.big); continue; }
+    const [x, y, col, w] = m; o.fillStyle = col; o.fillRect(Math.round((KP.AX + x) * P2), Math.round((KP.AY + y) * P2), w || 2, w || 2);
+  }
   e = { cv: out };
   if (KP_CACHE.size >= KP.MAX) KP_CACHE.delete(KP_CACHE.keys().next().value);
   KP_CACHE.set(key, e);
   KP._last = e;
   if (typeof spriteSpent === 'function') spriteSpent(t0);
   return e;
+}
+
+// глаз пикселями арта: круглый горящий зрачок (злость даёт надбровье над ним), раскалённая сердцевина и тлеющий ореол
+const KP_EYE = [['.###.', '#####', '#####', '#####', '.###.'], ['..###..', '.#####.', '#######', '#######', '#######', '.#####.', '..###..']];
+function kpEye(o, cx, cy, side, col, big) {
+  const rows = KP_EYE[big ? 1 : 0], w = rows[0].length, h = rows.length, x0 = cx - (w >> 1), y0 = cy - (h >> 1);
+  const px = (x, y, c) => { o.fillStyle = c; o.fillRect(x0 + x, y0 + y, 1, 1); };
+  for (let y = -1; y <= h; y++) for (let x = -1; x <= w; x++) if ((rows[y] || '')[x] !== '#' && [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([ox, oy]) => (rows[y + oy] || '')[x + ox] === '#')) px(x, y, col[2]);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (rows[y][x] === '#') px(x, y, col[0]);
+  const m = w >> 1; px(m, h >> 1, col[1]); px(m - 1, h >> 1, col[1]); px(m, (h >> 1) - 1, col[1]); if (big) { px(m + 1, h >> 1, col[1]); px(m + 1, (h >> 1) - 1, col[1]); }
 }
 
 // c — контекст сверхвыборки, ноги в (0,0), вверх = минус, князь смотрит вправо. Возвращает [[x, y, цвет, размер]…] светящихся точек.
@@ -199,12 +213,10 @@ function kpPaint(c, fr, ph) {
   c.restore();
   c.restore();
   // свет в глазницах (после поворота головы пересчитываем точку, поворот мал)
-  const lit = P.flare > 0.9 || ph === 3 ? 2 : ph === 2 ? 1 : 0, ec = C.eye[lit];
-  const ex = (x, y) => [hx + x * Math.cos(P.tilt - 0.04) - y * Math.sin(P.tilt - 0.04), hy + x * Math.sin(P.tilt - 0.04) + y * Math.cos(P.tilt - 0.04)];
-  const e1 = ex(-5, 1), e2 = ex(6.4, 0.4), sz = ph === 3 ? 4 : 3;
-  marks.push([e1[0], e1[1], ec, sz], [e2[0], e2[1], ec, sz], [e1[0] - 2, e1[1] - 1, ec, 2], [e2[0] + sz - 1, e2[1] - 1, ec, 2]);
-  marks.push([e1[0] - 3, e1[1] - 2, 'rgba(106,208,255,0.55)', 1], [e2[0] + sz + 1, e2[1] - 2, 'rgba(106,208,255,0.55)', 1]);
-  const cg2 = ex(0.6 - 1, -8.4 - 0.6); marks.push([cg2[0] + 2, cg2[1] - 0.6, C.glow, 2]);                       // камень на короне
+  const ec = C.eye[ph - 1], ex = (x, y) => [hx + x * Math.cos(P.tilt - 0.04) - y * Math.sin(P.tilt - 0.04), hy + x * Math.sin(P.tilt - 0.04) + y * Math.cos(P.tilt - 0.04)];
+  const e1 = ex(-4.8, 0.2), e2 = ex(6.4, -0.4);
+  marks.push({ eye: 1, x: e1[0], y: e1[1], side: -1, col: ec, big: ph === 3 || P.flare > 0.9 }, { eye: 1, x: e2[0], y: e2[1], side: 1, col: ec, big: ph === 3 || P.flare > 0.9 });
+  const cg2 = ex(0.6 - 1, -8.4 - 0.6); marks.push([cg2[0] + 2, cg2[1] - 0.6, ec[0], 2]);                       // камень на короне
   // ---- меч: зазубренный клинок из холодной стали, светящиеся руны; хват — за рукоять, ладонь на ней
   const hd = [P.hand[0] + lean * 0.3, P.hand[1] + sk * 0.5 + P.bob], sa = [shx + 3, shY + 3];
   const ex2 = (sa[0] + hd[0]) / 2 - 2, ey2 = (sa[1] + hd[1]) / 2 + 5;

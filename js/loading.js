@@ -3,6 +3,15 @@
 if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
   CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) { const rr = Math.max(0, Math.min(Array.isArray(r) ? r[0] : (r || 0), Math.abs(w) / 2, Math.abs(h) / 2)); this.moveTo(x + rr, y); this.arcTo(x + w, y, x + w, y + h, rr); this.arcTo(x + w, y + h, x, y + h, rr); this.arcTo(x, y + h, x, y, rr); this.arcTo(x, y, x + w, y, rr); this.closePath(); };
 }
+// Safari (и iOS) не умеет ctx.filter — размытие рисуем сами: уменьшаем и растягиваем обратно (приближённо к blur(px))
+const CANVAS_FILTER_OK = typeof CanvasRenderingContext2D !== 'undefined' && 'filter' in CanvasRenderingContext2D.prototype;
+function blurDraw(dst, src, w, h, px) {
+  if (CANVAS_FILTER_OK) { dst.filter = 'blur(' + px + 'px)'; dst.drawImage(src, 0, 0, w, h); dst.filter = 'none'; return; }
+  const k = Math.max(2, Math.round(px * 1.6)), sw = Math.max(1, Math.ceil(w / k)), sh = Math.max(1, Math.ceil(h / k));
+  const t = document.createElement('canvas'); t.width = sw; t.height = sh;
+  const tc = t.getContext('2d'); tc.imageSmoothingEnabled = true; tc.drawImage(src, 0, 0, sw, sh);
+  const sm = dst.imageSmoothingEnabled; dst.imageSmoothingEnabled = true; dst.drawImage(t, 0, 0, sw, sh, 0, 0, w, h); dst.imageSmoothingEnabled = sm;
+}
 // Экран загрузки: ночной лес, большой костёр, девять гномов разных ремёсел
 // стоят вокруг, взявшись за руки, а вдали парят призраки и летучие мыши.
 // Самодостаточный файл: грузится первым, анимируется, пока тяжёлые скрипты ещё
@@ -902,7 +911,7 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
       ctx.translate(0, a.state === 'enter' ? -Math.abs(Math.sin(a.t * 9)) * 3 * a.k : 0);
       if (a.rot) ctx.rotate(a.rot * a.dir);
       const xray = a.type === 'zap' && a.s > 2.2 && a.s < 2.45, charred = a.type === 'zap' && a.s >= 2.45;
-      if (xray) ctx.filter = 'invert(1) contrast(1.4)'; else if (charred) ctx.filter = 'brightness(0.28) sepia(0.8)';
+      if (!CANVAS_FILTER_OK) { /* Safari: без фильтра рисуем как есть */ } else if (xray) ctx.filter = 'invert(1) contrast(1.4)'; else if (charred) ctx.filter = 'brightness(0.28) sepia(0.8)';
       const lit = (a.toX < W / 2 ? 1 : -1) * a.dir;
       drawGnome(a.g, 0, 0, a.k, 'front', lit, a.state === 'enter' ? Math.sin(a.t * 9) * 2 : Math.sin(a.t * 2 + a.ph), a.look);
       ctx.filter = 'none';

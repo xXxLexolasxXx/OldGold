@@ -174,14 +174,15 @@ function tavernRender() {
      <button id="tb-shop" style="${btn}">Мастерская деда</button>
      <button id="tb-board" style="${btn}">Рекорды</button>
      <button id="tb-squad" style="${btn}">Отряд (кооп)</button>
-     <button id="tb-arena" style="${btn};opacity:.6">Арена (скоро)</button>
+     <button id="tb-arena" style="${btn}">Арена</button>
      <span style="align-self:center;font-size:13px;opacity:.85">💎 ${m.stones} &nbsp; ◆ ${m.shards} &nbsp; Забегов: ${m.runs} · Побед: ${m.wins}${hurt ? ' · герой отлёживается' : ''}</span>`;
   Tav.el.querySelector('#tb-cloak').onclick = () => skOpen();
   Tav.el.querySelector('#tb-pal').onclick = () => { const ks = Object.keys(RUN_PALS), mm = runMeta(); mm.pal = ks[(ks.indexOf(mm.pal) + 1) % ks.length]; runMetaSave(mm); tavernRender(); tavernSay(RUN_PALS[mm.pal][1] + '.'); };
   Tav.el.querySelector('#tb-shop').onclick = tavernShop;
   Tav.el.querySelector('#tb-board').onclick = rbOpen;
   Tav.el.querySelector('#tb-squad').onclick = () => rnOpen();
-  Tav.el.querySelector('#tb-arena').onclick = () => tavernSay('Арена? Там пока делают трибуны. Приходи позже.');
+  // Арена (АРЕНА.md): тренировка с ботом; после боя — обратно в таверну
+  Tav.el.querySelector('#tb-arena').onclick = () => { if (typeof arenaOpen !== 'function') return; tavernClose(); arenaOpen('tavern'); };
 }
 
 function tavernSay(text) { Tav.say = text; Tav.sayT = 6; Tav.el.querySelector('#tav-say').textContent = text; Tav.el.querySelector('#tav-say').style.display = 'block'; }

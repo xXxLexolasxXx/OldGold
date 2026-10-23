@@ -266,7 +266,7 @@ function camp1Boom(C) {
   if (C.flags.boom) return;              // загрузились посреди катсцены: гора уже взорвана
   C.flags.kegs = []; C.flags.lit = 0; C.flags.shnyr = null; C.flags.boom = 1;
   for (let k = 0; k < 6; k++) fxBurst((mx + (Math.random() - 0.5) * 8) * TILE, (my + (Math.random() - 0.5) * 5) * TILE, 40, ['#fff2a0', '#ff9030', '#c04a20', '#5a4a3a', '#8a7a6a'], 160, 120, 1.6, 3.4, 120);
-  if (typeof sfxAt === 'function') { sfxAt('dzRumble', mx * TILE, my * TILE, 1.6); sfxAt('thud', mx * TILE, my * TILE, 1.5); }
+  if (typeof campSnd === 'function') campSnd('campBoom', mx, my, 1.4);
   // гоблины Шныря убегают в штрек и гибнут под обвалом
   for (const N of campFoes('w')) { N.st = 'vanish'; N.vt = 0; }
   // обломки: валуны на свободной земле северного квартала (не на дорогах, зданиях и жителях)
@@ -304,13 +304,14 @@ const camp1Wave = (C, n, fromGate, champs = 0) => {
   const [mx, my] = CAMP1.mine, [gx, gy] = CAMP1.gate;
   C.flags.wave = (C.flags.wave || 0) + 1;
   C.flags.waveT = Game.time;
+  if (typeof festOn === 'function' && festOn()) festEnd('raid');
   for (let k = 0; k < n; k++) {
     const g = fromGate && k % 2;
     const x = (g ? gx : mx) + (Math.random() - 0.5) * 3, y = (g ? gy - 2 : my + 2) + (Math.random() - 0.5) * 2;
     campFoe('goblin', x, y, 'w', { delay: k * 0.8, hunt: true });
   }
   for (let k = 0; k < champs; k++) campFoe('goblinChamp', mx + (k ? 2 : -2), my + 3, 'w', { delay: 2 + k, hunt: true });
-  if (typeof sfxAt === 'function') sfxAt('goblinCry', mx * TILE, my * TILE, 1);
+  if (typeof campSnd === 'function') campSnd('gobHorn', mx, my, 1.2);
 };
 const camp1WaveLeft = () => campFoes('w').length;
 const camp1Night = () => isNightNow() || isEveningNow();
@@ -415,11 +416,13 @@ CAMP_ACTS[1] = {
     ] },
     { k: 'wait', label: 'Ночь перед праздником', until: () => !camp1Night() },
     { k: 'wait', label: 'День праздника: ждём вечера', until: () => camp1Night() },
-    { k: 'say', fx(C) { if (typeof festCanStart === 'function' && typeof festivalStart === 'function' && festCanStart()) festivalStart('Праздник Первого Камня', 1); }, lines: [
+    // сценарный праздник: и ночью, и без трактирного эля — гуляют, пока не придут гоблины (camp1Wave гасит его)
+    { k: 'say', fx(C) { if (typeof festivalForce === 'function' && !festOn()) festivalForce('camp', 300, 'Праздник Первого Камня! Все бросили дела: песни, пляски и пиво у костра'); }, lines: [
       ['yagla', 'Сто лет назад наши прадеды положили первый камень. Сегодня — споём!'],
       ['tan', 'За гору! Чтоб стояла ещё сто!'],
       ['grum', 'Не говори под руку. Особенно горе.'],
     ] },
+    { k: 'wait', label: 'Праздник Первого Камня', sec: 40 },
     { k: 'check' },
     { k: 'do', fn(C) { C.flags.shnyr = CAMP1.ledge.slice(); C.flags.lit = 1; camp1Wave(C, 4, false); } },
     { k: 'cut', cam: [66, 22], label: 'Нападение', lines: [

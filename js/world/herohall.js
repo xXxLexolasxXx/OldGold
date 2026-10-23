@@ -329,7 +329,7 @@ function hhServerHook() {
     const L = H.quests && H.quests.list, hall = hhHall();
     if (!L || !hall) return;
     const i = L.findIndex(q => !q.done && !HH_CLASS_ONLY.has(q.id));
-    if (i >= 0) L[i] = { id: Math.random() < 0.5 && coop.players.size > 1 ? 'duel' : 'trial', n: 0, need: 1, done: false };
+    if (i >= 0) L[i] = { id: 'trial', n: 0, need: 1, done: false };   // дуэль «до первой кружки» убрана (АРЕНА.md, решение 1)
   };
   const _gt = coopGiveTitle;
   coopGiveTitle = function (H, t) { const n = (H.titles || []).length; _gt(H, t); if ((H.titles || []).length > n) hhPoints(H, 2); };
@@ -342,13 +342,8 @@ function hhServerHook() {
     if (!u || !hall) return;
     switch (m.a) {
       case 'duel': {
-        const o = coop.players.get(String(m.who));
-        if (!o || o === u) { coopSay(name, 'Такого героя сейчас нет в деревне'); break; }
-        if (hhDist(u, hall) > HH_NEAR) { coopSay(name, 'Подойдите ближе к залу героев'); break; }
-        if (hhBusy(name) || hhBusy(o.hero.owner) || o.hero.downT || u.hero.downT) { coopSay(name, 'Кто-то из вас сейчас занят'); break; }
-        HH.asks.set(o.hero.owner, { from: name, until: Game.time + 30 });
-        coopSay(o.hero.owner, `${name} вызывает вас на дуэль в зале героев! Откройте зал героев → «Арена»`);
-        coopSay(name, `Вызов отправлен: ${o.hero.owner} думает 30 секунд`);
+        // автобой «до первой кружки» убран: дуэли теперь на арене (АРЕНА.md, решение 1); старые клиенты получают объяснение
+        coopSay(name, 'Дуэли переехали на арену: зал героев → «Арена»');
         break;
       }
       case 'accept': {
@@ -484,17 +479,12 @@ function hhPaneQuests(I) {
 }
 
 function hhPaneArena(I) {
-  let x = hhNearBar(I);
+  // вход на площадку арены (АРЕНА.md): настоящий бой вместо автобоя; рейтинг и вызов по нику — с онлайн-боями
+  let x = `<h3>Арена</h3><div class="hh-row"><div>Бой героя против героя: шесть способностей, перекат, телеграфы. Пока — тренировка с ботом: любой класс, три соперника. Титулы «Дуэлянт» и «Гроза арены» будут даваться за победы на арене, когда откроются бои с людьми.</div><button class="hh-b" data-hh="arena">На арену</button></div>`;
+  x += hhNearBar(I);
   if (I.fight) {
     const f = I.fight;
     x += `<h3>Бой: ${hhEsc(f.w)}</h3><div>Вы</div><div class="hh-bar"><i style="width:${Math.round(100 * f.hp / f.mx)}%;background:#5ac04a"></i></div><div>${hhEsc(f.w)}</div><div class="hh-bar"><i style="width:${Math.round(100 * f.ohp / f.omx)}%;background:#d0603a"></i></div><div class="small">Бой идёт сам: считают сила, ловкость и стойкость. Настоящее здоровье не страдает.</div>`;
-  }
-  x += `<h3>Дуэль</h3><div class="small">Рекорд: <b>${I.dw}</b> побед, <b>${I.dl}</b> поражений. Бой «до первой кружки» — героя это не калечит.</div>`;
-  for (const f of I.ask) x += `<div class="hh-near"><span><b>${hhEsc(f)}</b> вызывает вас на дуэль!</span><button class="hh-b" data-hh="acc">Принять</button><button class="hh-b sec" data-hh="dec">Отказать</button></div>`;
-  if (!I.on.length) x += '<div class="small">В деревне больше никого нет — дуэлянтов пока не видно. Испытания ниже ждут одиночек.</div>';
-  for (const o of I.on) {
-    const C = hhClsMeta(o.c);
-    x += `<div class="hh-row"><div><b style="color:${C.col}">${hhEsc(o.n)}</b> <small>${hhEsc(C.name)} · ур. ${o.l}</small></div><button class="hh-b" data-hh="duel:${hhEsc(o.n)}" ${I.near && !I.busy && !o.b ? '' : 'disabled'}>Вызвать</button></div>`;
   }
   x += `<h3>Испытания <small>осталось сегодня: ${I.tl}</small></h3>`;
   for (let k = 1; k < HH_TIERS.length; k++) {
@@ -614,6 +604,7 @@ function hhClick(e) {
       break;
     }
     case 'look': if (typeof haEditNow === 'function') haEditNow(); break;
+    case 'arena': document.getElementById('hh-win')?.remove(); if (typeof arenaOpen === 'function') arenaOpen('hall'); break;
     case 'board': hhAskBoard(true); break;
   }
 }

@@ -11,6 +11,9 @@
 const GL_W = 176, GL_H = 128, GL_AX = 88, GL_AY = 116;      // холст в пикселях мира; опорная точка — центр ступней
 const GL_ST = { hi: '#b4afa2', mid: '#8a8579', lo: '#5e5951', ink: '#26221f' };
 const GL_MOSS = ['#3e6a22', '#4a6e30', '#5c8236', '#73963e'];
+// мох по временам года (индексы seaIdx: 0 лето, 1 осень, 2 зима, 3 весна): летом гуще, осенью жухлый, зимой иней
+const GL_MOSS_SEA = [['#2f7a1c', '#3f8f24', '#55a82c', '#7ac03a'], ['#8a5a1e', '#a8661c', '#b8802a', '#7a4a1a'], ['#b6d0e4', '#d4e6f2', '#9ab8d2', '#eef6fb'], ['#3e6a22', '#4a6e30', '#5c8236', '#73963e']];
+let GL_SEA = 3, GL_DORM = false, GL_LOOK = '';
 const GL_GOLD = '#e4b434', GL_EYE = '#ffb02e', GL_EYE2 = '#fff2a0';
 const GL_FRAMES = { walk: 8, idle: 4, wave: 12, pound: 12, look: 12, stomp: 12, stretch: 12, scratch: 12, flex: 12 };
 const GL_EMOTES = [['wave', 2.6, 2], ['pound', 3.2, 2], ['look', 3.6, 3], ['stomp', 2.4, 2], ['stretch', 3.4, 2], ['scratch', 3, 2], ['flex', 2.8, 2]];   // имя, длительность с, вес
@@ -48,10 +51,11 @@ function gBlob(c, x, y, rx, ry, seed, o = {}) {
 
 // Конечность из цепочки валунов поверх тёмной жилы
 function gLimb(c, x0, y0, x1, y1, r0, r1, seed, tone, mo = 4) {
-  c.lineCap = 'round'; line(c, x0, y0, x1, y1, shade(GL_ST.lo, tone), (r0 + r1) * 1.25); c.lineCap = 'butt';
-  for (let i = 0; i <= 3; i++) {
-    const t = i / 3, r = r0 + (r1 - r0) * t;
-    gBlob(c, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r * 1.04, r * 0.95, seed + i * 3, { tone, n: 8, crack: i === 1, moss: mo + (i & 1) });
+  c.lineCap = 'round'; line(c, x0, y0, x1, y1, shade(GL_ST.lo, tone), (r0 + r1) * 0.7); c.lineCap = 'butt';   // жила уже кладки — край рисуют сами валуны
+  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+  for (let i = 0; i <= 5; i++) {
+    const t = i / 5, r = r0 + (r1 - r0) * t, off = (i & 1 ? 1 : -1) * r * 0.1;   // валуны вразбежку — кладка до самого края
+    gBlob(c, x0 + dx * t + nx * off, y0 + dy * t + ny * off, r * (i & 1 ? 1.02 : 1.1), r * (i & 1 ? 1.08 : 0.98), seed + i * 3, { tone: tone + (i & 1 ? 0.03 : -0.02), n: 8, crack: i === 2, moss: Math.ceil((mo + (i & 1)) * 0.6) });
   }
 }
 
@@ -130,6 +134,8 @@ function golemPoseMore(P, pose, f) {
 
 function drawGolemBody(c, view, pose, f) {
   const P = golemPose(view, pose, f), E = view === 'E', N = view === 'N';
+  GL_MOSS.splice(0, 4, ...GL_MOSS_SEA[GL_SEA]);
+  if (GL_DORM) P.rune = 0.1;
   const kx = E ? 0.6 : 1, bob = -P.up, sx = P.sx, br = P.br;
   c.save(); c.translate(GL_AX, GL_AY); c.lineJoin = 'round';
 
@@ -213,6 +219,7 @@ function drawGolemBody(c, view, pose, f) {
       const ey = hy - 1.2, ex = E ? [hx + 1.5, hx + 7.5] : [hx - 4.6, hx + 4.6];
       poly(c, [[ex[0] - 5.6, ey - 3.2], [ex[1] + 5.6, ey - 3.2], [ex[1] + 5.6, ey - 0.8], [ex[0] - 5.6, ey - 0.8]], shade(GL_ST.lo, -0.35), rgba(GL_ST.ink, 0.9), 0.6);
       for (const x of ex) {
+        if (GL_DORM) { c.fillStyle = '#3a3226'; c.fillRect(x - 2.3, ey + 0.6, 4.6, 1.2); continue; }   // спит: глаза — тёмные щёлки
         c.globalAlpha = 0.5; ellipse(c, x, ey + 1.4, 5.6, 4, GL_EYE); c.globalAlpha = 1;
         c.fillStyle = GL_EYE; c.fillRect(x - 2.3, ey, 4.6, 2.3);
         c.fillStyle = GL_EYE2; c.fillRect(x - 1.1, ey + 0.4, 2.2, 1.2);
@@ -227,12 +234,25 @@ function drawGolemBody(c, view, pose, f) {
   torso();
   if (!E) { arm(0); arm(1); pauldron(0); pauldron(1); } else { pauldron(0); arm(1); pauldron(1); }
   if (!N) head();
+  if (typeof golemDeco === 'function') golemDeco(c, view, P, sx, bob, kx);
   c.restore();
 }
 
 // ---------- Кэш кадров ----------
 
+// Облик: время года и «спит/ожил» (Game.glq, golemlife.js) — при смене кадры перерисовываются
+const golemSea = () => (typeof seaIdx === 'function' ? seaIdx() : 3);
+const golemDorm = () => !!(Game.glq && !Game.glq.awake);
+function golemLookSync() {
+  const k = golemSea() + (golemDorm() ? 'd' : 'a');
+  if (k === GL_LOOK) return;
+  GL_LOOK = k; GL_CACHE.clear(); GL_QUEUE = null;
+}
+// зимой голем медленнее
+const golemSpeedMul = () => (golemSea() === 2 ? 0.6 : 1);
+
 function golemSprite(view, pose, f, force) {
+  golemLookSync();
   const key = view + pose + f;
   let cv = GL_CACHE.get(key);
   if (cv) return cv;
@@ -242,6 +262,7 @@ function golemSprite(view, pose, f, force) {
   const [c2, ctx] = GL_SCRATCH;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c2.width, c2.height);
   ctx.setTransform(PS, 0, 0, PS, 0, 0);
+  GL_SEA = golemSea(); GL_DORM = golemDorm();
   drawGolemBody(ctx, view, pose, f);
   cv = toPixelArt(c2, PS / PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
   GL_CACHE.set(key, cv);
@@ -264,8 +285,9 @@ function golemIdleWarm() {
 function golemWarmup() {
   if (!GL_QUEUE) {
     GL_QUEUE = [];
-    for (const v of ['S', 'E', 'N']) for (const p of ['walk', 'idle']) for (let f = 0; f < GL_FRAMES[p]; f++) GL_QUEUE.push([v, p, f]);
-    for (const p of Object.keys(GL_FRAMES).slice(2)) for (let f = 0; f < GL_FRAMES[p]; f++) GL_QUEUE.push(['S', p, f]);
+    if (golemDorm()) GL_QUEUE.push(['S', 'idle', 0]);
+    else for (const v of ['S', 'E', 'N']) for (const p of ['walk', 'idle']) for (let f = 0; f < GL_FRAMES[p]; f++) GL_QUEUE.push([v, p, f]);
+    if (!golemDorm()) for (const p of Object.keys(GL_FRAMES).slice(2)) for (let f = 0; f < GL_FRAMES[p]; f++) GL_QUEUE.push(['S', p, f]);
   }
   const q = GL_QUEUE.shift();
   if (q) golemSprite(q[0], q[1], q[2], true);
@@ -329,11 +351,12 @@ function golemPickEmote(g) {
 function golemTick(dt) {
   const g = Game.golem;
   if (!g) return;
+  golemLookSync();
   if (GL_QUEUE === null || GL_QUEUE.length) golemIdleWarm();
   g.t += dt;
   const gx = Math.round(g.fx), gy = Math.round(g.fy);
   if (g.state === 'walk') {
-    const dx = g.tx - g.fx, dy = g.ty - g.fy, d = Math.hypot(dx, dy), stepD = Math.min(d, 0.62 * dt);
+    const dx = g.tx - g.fx, dy = g.ty - g.fy, d = Math.hypot(dx, dy), stepD = Math.min(d, 0.62 * golemSpeedMul() * dt);
     if (d < 1e-3 || !golemFree(Math.round(g.tx), Math.round(g.ty))) { g.state = 'idle'; g.timer = 1.5 + Math.random() * 3; g.fx = Math.round(g.fx); g.fy = Math.round(g.fy); }
     else {
       g.fx += dx / d * stepD; g.fy += dy / d * stepD; g.ph += stepD / 1.7;
@@ -370,6 +393,7 @@ function golemTick(dt) {
 // ---------- Отрисовка ----------
 
 function golemFrameOf(g) {
+  if (golemDorm()) return ['idle', 0];
   if (g.state === 'walk') return ['walk', Math.floor(g.ph * 8) & 7];
   if (g.state === 'emote') return [g.emote, Math.min(GL_FRAMES[g.emote] - 1, Math.floor(g.et / g.dur * GL_FRAMES[g.emote]))];
   return ['idle', Math.floor(g.t * 2.2) & 3];
@@ -378,7 +402,8 @@ function golemFrameOf(g) {
 function drawGolem(c, g) {
   const px = Math.round((g.fx + 1.5) * TILE), py = Math.round((g.fy + 2) * TILE - 10);
   const [pose, f] = golemFrameOf(g);
-  let spr = golemSprite(g.view, pose, f), view = g.view;
+  const view0 = golemDorm() ? 'S' : g.view;
+  let spr = golemSprite(view0, pose, f), view = view0;
   if (!spr) spr = g.last || golemSprite('S', 'idle', 0, true);
   g.last = spr;
   const lift = g.state === 'emote' && g.emote === 'wave' ? 1 : 0;

@@ -58,6 +58,8 @@
 
 /* телефон: сверху окно обучения — сцена снизу, над вкладками */
 body.mobile #lore-card { top: auto; bottom: calc(66px + env(safe-area-inset-bottom)); padding: 7px 10px 8px; }
+/* горизонталь: окно обучения слева — сцена правее него, «Пропустить» обучения не закрывает */
+body.mobile.land #lore-card { left: calc((var(--left, 60px) + min(330px, 44vw) + 100vw) / 2); width: min(440px, calc(100vw - var(--left, 60px) - min(330px, 44vw) - 24px)); bottom: calc(var(--sb, 0px) + 56px); }
 body.mobile .lc-text { font-size: 14px; }
 body.mobile .lc-face { width: 36px; height: 36px; font-size: 18px; }
 body.mobile .lc-btns button { min-height: 40px; }

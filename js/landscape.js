@@ -75,7 +75,7 @@ function initLand() {
 
   // быстрые кнопки варианта Б (в А они скрыты стилями)
   const fab = document.createElement('button');
-  fab.id = 'land-fab'; fab.title = 'Меню: строительство, склад, жители…'; fab.textContent = '☰';
+  fab.id = 'land-fab'; fab.title = 'Меню: строительство, склад, хозяйство…'; fab.textContent = '☰';
   const bld = document.createElement('button');
   bld.id = 'land-build'; bld.title = 'Строительство'; bld.innerHTML = '<img data-icon="build" alt="">';
   view.appendChild(fab); view.appendChild(bld);

@@ -109,6 +109,7 @@ const HERO_ABIL = {
     { k: 'reckless', name: 'Безрассудная атака', lvl: 3, cost: 15, cd: 30, dur: 8, buf: { atk: 0.35, red: -0.25 }, desc: '8 с: попадает на 35% чаще, но и сам открыт: урон по нему +25%' },
     { k: 'stomp', name: 'Топот', lvl: 6, cost: 25, cd: 25, fx: 'stomp', desc: 'Топает так, что враги в 3 клетках падают на 2,5 с и получают удар' },
     { k: 'hide', name: 'Толстая шкура', lvl: 9, passive: { red: 0.12, hpr: 0.3 }, desc: 'Пассивно: урон по нему −12%, ссадины затягиваются сами' },
+    { k: 'roar', name: 'Рык', lvl: 11, cost: 20, cd: 30, fx: 'roar', desc: 'Рычит так, что лесные враги в 4 клетках 6 с еле волочат ноги, а нечисть пятится' },
     { k: 'ult_barbarian', name: 'Гнев предков', lvl: 13, ult: true, cost: 80, cd: 240, dur: 15, buf: { dmg: 1, red: 0.5, spd: 0.5 }, fx: 'ult_barbarian', desc: 'Ульта. 15 с: урон вдвое выше, по нему −50%, бьёт чаще; враги в 4 клетках падают и получают удар' },
   ],
   archer: [
@@ -116,6 +117,7 @@ const HERO_ABIL = {
     { k: 'volley', name: 'Залп', lvl: 3, cost: 40, cd: 40, shots: { n: 5, kind: 'arrow', r: 8, mul: 0.8 }, desc: 'Пять стрел без промаха по всем врагам в 8 клетках' },
     { k: 'trap', name: 'Ловушка', lvl: 6, cost: 30, cd: 30, fx: 'trap', desc: 'Ставит капкан под ноги (до двух): враг, наступивший на него, застревает на 5 с' },
     { k: 'eagle', name: 'Орлиный глаз', lvl: 9, passive: { atk: 0.1 }, desc: 'Пассивно: стреляет на 10% точнее' },
+    { k: 'leap', name: 'Отскок', lvl: 11, cost: 20, cd: 18, dur: 1, buf: { dodge: 0.9 }, fx: 'leap', desc: 'Прыжок на 3 клетки от ближайшего врага; на миг почти неуязвим — тяжёлый удар уходит мимо' },
     { k: 'ult_archer', name: 'Дождь стрел', lvl: 13, ult: true, cost: 80, cd: 200, shots: { n: 14, kind: 'arrow', r: 10, mul: 1.2 }, fx: 'ult_archer', desc: 'Ульта. С неба падают четырнадцать стрел без промаха по врагам в 10 клетках' },
   ],
   rogue: [
@@ -164,6 +166,7 @@ const HERO_ABIL = {
     { k: 'chord', name: 'Оглушающий аккорд', lvl: 3, cost: 18, cd: 30, fx: 'chord', desc: 'Враги в 4 клетках оглушены на 2,5 с' },
     { k: 'five', name: 'Дай пять!', lvl: 5, cost: 10, cd: 60, oath: 'five', desc: 'До шести гномов рядом получают «Дали пять»: настроение вверх на полторы минуты' },
     { k: 'voice', name: 'Звонкий голос', lvl: 9, passive: { cd: 0.85, res: 1.3 }, desc: 'Пассивно: перезарядка короче на 15%, мана копится быстрее' },
+    { k: 'sour', name: 'Фальшивая нота', lvl: 11, cost: 20, cd: 35, fx: 'sour', desc: 'Нота мимо всех ладов: враги в 5 клетках 2 с стоят как вкопанные, потом ещё 3 с плетутся' },
     { k: 'ult_bard', name: 'Эпическая баллада', lvl: 13, ult: true, cost: 55, cd: 240, dur: 15, buf: { atk: 0.3, spd: 0.25 }, fx: 'ult_bard', desc: 'Ульта. 15 с поёт так, что враги в 6 клетках пляшут (оглушены), команда точнее и крепче, а гномы в 12 клетках веселеют' },
   ],
   monk: [
@@ -171,6 +174,7 @@ const HERO_ABIL = {
     { k: 'palm', name: 'Удар ладонью', lvl: 3, cost: 20, cd: 12, fx: 'palm', desc: 'Ближайший враг получает удар и 2,5 с не может прийти в себя' },
     { k: 'patience', name: 'Терпеливая оборона', lvl: 6, cost: 25, cd: 40, dur: 10, buf: { dodge: 0.4, red: 0.2 }, desc: '10 с: уходит от 40% ударов, остальные слабее на 20%' },
     { k: 'calm', name: 'Внутренний покой', lvl: 9, passive: { res: 1.5, dodge: 0.05 }, desc: 'Пассивно: энергия копится в 1,5 раза быстрее, уворот +5%' },
+    { k: 'windstep', name: 'Шаг ветра', lvl: 11, cost: 15, cd: 15, next: 1.5, fx: 'windstep', desc: 'Рывок к ближайшему врагу на 4 клетки; следующий удар — без промаха и в полтора раза сильнее' },
     { k: 'ult_monk', name: 'Тысяча ударов', lvl: 13, ult: true, cost: 80, cd: 220, dur: 7, buf: { spd: 0.6, dodge: 0.6, dmg: 0.5 }, fx: 'ult_monk', desc: 'Ульта. 7 с: бьёт втрое чаще, уходит от 60% ударов, урон +50%; в начале сносит врагов в 3 клетках' },
   ],
 };
@@ -354,12 +358,13 @@ const ABIL_COL = {
   hands: '#fff0b0', smite: '#ffe060', consecrate: '#ffe890', faith: '#f0e0a0', aura: '#ffd070',
   inspire: '#f0a0d0', chord: '#d8a0ff', five: '#ffd070', voice: '#f0a0d0',
   flurry: '#ffd080', palm: '#ffe0c0', patience: '#f0a8d0', calm: '#c0e0ff',
+  roar: '#ff6a3a', leap: '#9ec8ff', sour: '#d8a0ff', windstep: '#c0e0ff',
 };
 const ABIL_SND = {
   bash: 'parry', cry: 'cheer', surge: 'dash', wall: 'parry', rage: 'roar', stomp: 'rumble', aimed: 'thud', trap: 'click',
   sneak: 'whoosh', trip: 'whiff', steal: 'treasure', vanish: 'whoosh', fire: 'crackle', ward: 'hiss', frost: 'glass', thorns: 'creak', grow: 'chime',
   mend: 'heal', beast: 'roar', wild: 'roar', heal: 'heal', cure: 'heal', hands: 'heal', smite: 'chime', consecrate: 'chime', chord: 'toot', five: 'five',
-  inspire: 'pipe', flurry: 'dash', palm: 'slap',
+  inspire: 'pipe', flurry: 'dash', palm: 'slap', roar: 'roar', leap: 'whoosh', sour: 'toot', windstep: 'dash',
 };
 
 // ---------- Значки способностей 12×12 (своя пиксельная графика) ----------
@@ -478,7 +483,7 @@ const KIT_SYNC = ['hfx', 'abfx', 'abbu', 'abcd', 'abt', 'rs', 'rsm', 'abShare'];
         floater(o.x, o.y - 1.8, `Держится! (${o.nhp})`, '#e8e0c0');
         fxBurst(o.x * TILE, o.y * TILE - 12, 8, f.kind === 'skel' ? ['#e6dfc8', '#c8c0a4'] : ['#8a6a3a', '#c8a070'], 55, 40, 0.5, 1.5, 200);
         sfxAt(f.kind === 'skel' ? 'rattle' : 'chop', o.x * TILE, o.y * TILE, 0.7);
-        if (f.kind === 'ent') o.hitT = Game.time;
+        if (f.kind === 'ent') { o.hitT = Game.time; if (o.rock) rockCrack(o); }
         return;
       }
     }

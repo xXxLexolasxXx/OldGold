@@ -261,7 +261,7 @@ function coopCmd(name, msgJson, admin) {
       break;
     }
     case 'bact': {
-      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', untrainall: 'train', hire: 'train' }[m.act] || 'manage';
+      const need = { demolish: 'erase', upgrade: 'upgrade', upgcancel: 'upgrade', train: 'train', untrain: 'train', untrainall: 'train', hire: 'train', assign: 'manage' }[m.act] || 'manage';
       if (can(need)) coopBuildingAct(name, m);
       break;
     }
@@ -275,6 +275,7 @@ function coopCmd(name, msgJson, admin) {
     case 'trav': if (typeof travCmd === 'function') travCmd(name, m); break;
     case 'wgs': if (typeof wgsCmd === 'function') wgsCmd(name, m); break;
     case 'dp': if (typeof dpDo === 'function') { const r = dpDo(coop.players.get(name), String(m.a || ''), +m.x || 0, typeof m.g === 'string' ? m.g : null); if (r && r.text) coopSay(name, r.text); } break;
+    case 'glq': if (m.a === 'wake' && typeof glWake === 'function') glWake(); break;
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
     case 'rsc': if (typeof rscCmd === 'function' && can('council')) rscCmd(name, m); break;
     case 'law': if (typeof lawCmd === 'function' && can('council')) lawCmd(name, !!admin, m); break;
@@ -330,7 +331,8 @@ function coopBuildingAct(name, m) {
     case 'train': if (coopOwn(UNIT_TYPES, m.type) && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy && b.queue && b.queue.length < 10) b.queue.push(m.type); break;
     case 'untrain': if (coopInt(m.i)) b.queue.splice(m.i, 1); break;
     case 'untrainall': b.queue.length = 0; break;
-    case 'hire': if (b.def.worker) queueTraining(b.def.worker); break;
+    case 'hire': if (b.def.worker) { const bad = hireTrain(b); if (bad) coopSay(name, bad); } break;
+    case 'assign': if (b.def.worker && coopInt(m.u)) { const bad = hireAssign(b, Game.unitMap.get(m.u)); if (bad) coopSay(name, bad); } break;
     case 'recipe': if (b.recipeOn && coopInt(m.i) && m.i >= 0 && m.i < b.recipeOn.length) b.recipeOn[m.i] = !!m.on; break;
     case 'crop': if (b.crops && coopOwn(b.crops, m.c)) b.crops[m.c] = !!m.on; break;
     case 'block': if (coopOwn(GOODS, m.g)) Game.storeBlock[m.g] = !Game.storeBlock[m.g]; break;
@@ -553,7 +555,7 @@ function coopTick(dt) {
 // ---------- Снимки ----------
 
 // Плоская копия состояния для клиентов: числа, строки, массивы и простые объекты; жители и здания — ссылкой по id
-const COOP_SKIP = new Set(['path', 'proc', 'action', 'ref']);
+const COOP_SKIP = new Set(['path', 'proc', 'action', 'ref', 'job']);
 const COOP_OP = Object.getPrototypeOf({});   // свой Object.prototype контекста (vm), а не хозяйский
 const coopIds = new WeakMap();
 let coopIdN = 1;
@@ -570,7 +572,7 @@ function coopPlain(v, d = 0, top = false) {
     return v.map(x => { const p = coopPlain(x, d + 1); return p === undefined ? null : p; });
   }
   const pr = Object.getPrototypeOf(v);
-  if (!top && pr !== COOP_OP && pr !== null) return undefined;
+  if (!top && pr !== COOP_OP && pr !== null && Object.getPrototypeOf(pr) !== null) return undefined;     // простой объект из любой области памяти (мир с диска), но не Unit/Building/класс
   if (d > 3) return undefined;
   const o = {};
   for (const k in v) { if (COOP_SKIP.has(k)) continue; const p = coopPlain(v[k], d + 1); if (p !== undefined) o[k] = p; }
@@ -601,6 +603,7 @@ function coopMirror() {
     foeZones: typeof foeMirrorZones === 'function' ? foeMirrorZones() : [],
     foe: typeof foeMirror === 'function' ? foeMirror() : null,
     sp: typeof spireMirrorOut === 'function' ? spireMirrorOut() : null,
+    glq: Game.glq ? coopPlain(Game.glq, 0, true) : null,
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
     lost: Game.lostGnomes || 0, df: Game.diff,

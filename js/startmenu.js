@@ -171,6 +171,8 @@ function smAction(a) {
     smRender(); smShow('mp');
   } else if (a === 'help') {
     smShow('help');
+  } else if (a === 'arena') {
+    if (typeof arenaOpen === 'function') arenaOpen('menu');
   } else if (a === 'mode-back') {
     smShow('mode');
   } else if (a === 'lang') {
@@ -224,6 +226,7 @@ function initStartMenu() {
       <button class="sm-btn primary" data-sm="continue"><b>Продолжить</b><small></small></button>
       <button class="sm-btn" data-sm="new"><b>Новая игра</b><small>новый мир, назвать героя</small></button>
       <button class="sm-btn" data-sm="mp"><b>Мультиплеер</b><small>играть с друзьями</small></button>
+      <button class="sm-btn" data-sm="arena"><b>Арена</b><small>бой с ботом: попробуйте любой класс</small></button>
       <button class="sm-btn ghost" data-sm="help"><b>Как играть</b></button>
       <button class="sm-btn ghost" data-sm="lang"><b class="lang-name">${I18N.other}</b></button>
       <button class="sm-btn ghost" data-sm="more"><b>Ещё</b><small>вызов дня, редактор, ачивки</small></button>

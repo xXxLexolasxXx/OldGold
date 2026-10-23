@@ -73,5 +73,8 @@ I18N.add('en', {
   "Нора броненосца": "Armadillo Burrow", "Гоблинский лагерь": "Goblin Camp", "Стойбище гномтавров": "Gnometaur Camp",
 
   // лист земли (ground.html)
-  "Лист вариантов земли": "Ground Variants Sheet", "Варианты ДНЕВНОЙ земли": "DAYTIME ground variants", "клеток": "tiles", "сид": "seed"
+  "Лист вариантов земли": "Ground Variants Sheet", "Варианты ДНЕВНОЙ земли": "DAYTIME ground variants", "клеток": "tiles", "сид": "seed",
+  // школа: шахтёр и металлург в долг (entities.js schoolStuck)
+  "Школа выучит шахтёра в долг: без него золота не будет": "The school will train a miner on credit: without one there will be no gold",
+  "Школа выучит металлурга в долг: без него золота не будет": "The school will train a smelter on credit: without one there will be no gold"
 });

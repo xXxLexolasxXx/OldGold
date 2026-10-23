@@ -414,15 +414,26 @@ function campRestart() {
   if (typeof updateUI === 'function') updateUI(true);
 }
 
-function campFace(w) {
-  return `<span class="cd-ch" style="color:${w.col};background:${w.bg}">${campEsc(w.ch)}</span>`;
+// портрет собеседника (js/campaign/faces.js): два кадра, второй (моргание) поверх по CSS; без портрета — буква в круге
+function campFace(w, who) {
+  const a = typeof campFaceUrl === 'function' ? campFaceUrl(who, 0) : '';
+  if (!a) return `<span class="cd-ch" style="color:${w.col};background:${w.bg}">${campEsc(w.ch)}</span>`;
+  return `<span class="cd-pt" style="border-color:${w.col};background-color:${w.bg}"><img src="${a}" alt=""><img class="cd-blink" src="${campFaceUrl(who, 1)}" alt="" style="animation-delay:-${(Math.random() * 4).toFixed(1)}s"></span>`;
+}
+// портрет меняется только при смене собеседника — иначе моргание сбивалось бы на каждой реплике
+function campSetFace(E, w, who) {
+  const el = E.dlg.querySelector('.cd-face');
+  if (el.dataset.who === who) return;
+  el.dataset.who = who;
+  el.innerHTML = campFace(w, who);
 }
 
 function campRenderDlg(C, S) {
   const E = campEls(), [who, text] = S.lines[CampUI.k] || ['note', ''];
   const w = CAMP_WHO[who] || CAMP_WHO.note;
   const name = who === 'hero' && campHero() ? campHero().hero.name || w.name : w.name;
-  E.dlg.querySelector('.cd-face').innerHTML = campFace(w);
+  const fem = who === 'hero' && typeof haOf === 'function' && (haOf(campHero()) || [])[10] === 1;
+  campSetFace(E, w, fem ? 'heroF' : CAMP_WHO[who] ? who : 'note');
   E.dlg.querySelector('.cd-who').textContent = name;
   E.dlg.querySelector('.cd-who').style.color = w.col;
   const tx = E.dlg.querySelector('.cd-text');
@@ -440,7 +451,7 @@ function campRenderChoice(C, S) {
   CampUI.choiceKey = key;
   CampUI.seq = C.seq;
   const w = CAMP_WHO[S.who] || CAMP_WHO.note;
-  E.dlg.querySelector('.cd-face').innerHTML = campFace(w);
+  campSetFace(E, w, CAMP_WHO[S.who] ? S.who : 'note');
   E.dlg.querySelector('.cd-who').textContent = S.t;
   E.dlg.querySelector('.cd-who').style.color = w.col;
   const tx = E.dlg.querySelector('.cd-text'), bt = E.dlg.querySelector('.cd-btns');
