@@ -1192,7 +1192,7 @@ function coopInitControls() {
   document.getElementById('tab-menu').addEventListener('click', e => {
     const t = Coop.on && e.target.closest('[data-menu]');
     if (!t) return;
-    if (['new', 'load', 'loadauto', 'stress', 'hour', 'entdemo', 'entrock', 'entwater', 'entgroup', 'entwin'].includes(t.dataset.menu)) { stop(e); toast('В общей деревне это недоступно'); }
+    if (['load', 'loadauto'].includes(t.dataset.menu)) { stop(e); toast('В общей деревне это недоступно'); }
   }, true);
   // горячие клавиши здания: пауза (P) и доставки (B)
   window.addEventListener('keydown', e => {

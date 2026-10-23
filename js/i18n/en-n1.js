@@ -69,7 +69,7 @@ I18N.add('en', {
   "Выступить в поход ▸": "March out ▸",
   "Показать шпиль": "Show the spire",
   "Указатель шпиля включён": "Spire pointer is on",
-  "Указатель шпиля скрыт. Вернуть — в меню, «Настройки».": "Spire pointer hidden. Bring it back in the menu, “Settings”.",
+  "Указатель шпиля скрыт. Вернуть — в меню, «Ещё».": "Spire pointer hidden. Bring it back in the menu, “More”.",
   "Чёрный шпиль · {0} кл.": "Black Spire · {0} tiles",
   "Указатель на Чёрный шпиль — тап, чтобы развернуть": "Black Spire pointer — tap to expand",
   "Чёрный шпиль — тап, чтобы свернуть": "Black Spire — tap to collapse",

@@ -311,7 +311,7 @@ function teleMenu() {
   const list = document.querySelector('#tab-menu .menu-list');
   if (!list || document.getElementById('tele-rep-btn')) return;
   const mk = (id, text, title, fn) => { const b = document.createElement('button'); b.id = id; b.title = title; b.innerHTML = '<span></span>'; b.querySelector('span').textContent = text; b.onclick = fn; return b; };
-  const after = document.getElementById('crashlog-btn') || list.lastElementChild;
+  const after = list.lastElementChild;
   const rep = mk('tele-rep-btn', 'Сообщить о проблеме', 'Отправить автору описание, снимок экрана и журнал (по желанию — сохранение)', teleReport);
   const tog = mk('tele-btn', '', 'Анонимная статистика для улучшения игры (без ника и сохранений)', () => { if (!teleLocal()) teleSetOn(!teleOn()); });
   const del = mk('tele-del-btn', 'Удалить мои данные', 'Стереть на сервере статистику и отчёты с этого устройства', teleForget);
