@@ -453,12 +453,21 @@ function loreWho(k) {
   return LORE_WHO[k] || LORE_WHO.note;
 }
 
+// портрет рассказчика (js/campaign/faces.js, 72×72 пикселя); без портрета (сервер, тесты, чужой голос) — буква в круге
+function loreFace(w, who) {
+  const heroF = who === 'hero' && typeof haOf === 'function' && Game.hero && (haOf(Game.hero) || [])[10] === 1;
+  const key = heroF ? 'heroF' : who;
+  const a = typeof campFaceUrl === 'function' ? campFaceUrl(key, 0) : '';
+  if (!a) return `<div class="lc-face" style="background:${w.bg};color:${w.col};border-color:${w.col}">${w.ch}</div>`;
+  return `<span class="lc-pt" style="border-color:${w.col};background-color:${w.bg}"><img src="${a}" alt=""><img class="lc-blink" src="${campFaceUrl(key, 1)}" alt="" style="animation-delay:-${(Math.random() * 4).toFixed(1)}s"></span>`;
+}
+
 function loreRender() {
   const { f, i } = Lore.cur, L = f.lines[i], w = loreWho(L[0]), last = i >= f.lines.length - 1;
   const text = t(L[1]);
   Lore.el.innerHTML = `
     <div class="lc-top"><span class="lc-kind">${loreEsc(t(LORE_KIND[f.kind] || ''))}</span><b>${loreEsc(t(f.title))}</b><span class="lc-ch">${loreEsc(t('Глава {0}', f.ch))}</span></div>
-    <div class="lc-say"><div class="lc-face" style="background:${w.bg};color:${w.col};border-color:${w.col}">${w.ch}</div>
+    <div class="lc-say">${loreFace(w, L[0])}
       <div class="lc-body">${w.name ? `<div class="lc-name" style="color:${w.col}">${loreEsc(t(w.name))}</div>` : ''}<div class="lc-text${L[0] === 'note' ? ' note' : ''}${L[0] === 'mrak' ? ' dark' : ''}"></div></div></div>
     <div class="lc-btns"><button data-lc="skip">${loreEsc(t('Пропустить'))}</button>${last ? `<button data-lc="book">${loreEsc(t('В журнал «Лор»'))}</button>` : ''}<span class="lc-dots">${f.lines.map((x, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</span>
       <button data-lc="next" class="primary">${loreEsc(t(last ? 'Закрыть' : 'Дальше ▸'))}</button></div>`;

@@ -8,7 +8,7 @@
 
 const Arena = { on: false, el: null, cv: null, S: null, prev: null, acc: 0, raf: 0, last: 0, keys: {}, joy: null, cast: -1, roll: 0,
   from: '', cls: 'warrior', tier: 2, foe: '', pops: [], fx: [], fans: [], walk: [0, 0], holders: [{}, {}], burst: [null, null],
-  pot: -1, prevPot: -1, ct: 0, scr: 'lobby', hudT: 0, endT: 0, surT: 0, prevSpeed: 1, touch: false, brumT: 0, mood: '', look: null, seenOver: false };
+  mi: 0, net: null, pot: -1, prevPot: -1, ct: 0, scr: 'lobby', hudT: 0, endT: 0, surT: 0, prevSpeed: 1, touch: false, brumT: 0, mood: '', look: null, seenOver: false };
 const AR_LS = 'og_arena';
 const AR_TIERS = [null, { name: 'Соломенный страж', info: 'Ходит и бьёт. Перекатываться не умеет — учитесь на нём.' },
   { name: 'Старый ветеран арены', info: 'Держит дистанцию, иногда уходит от тяжёлых ударов.' },
@@ -16,7 +16,7 @@ const AR_TIERS = [null, { name: 'Соломенный страж', info: 'Ход
 
 // ---------- Реплики Брюма (в манере лиг: смешно и чуть обидно) ----------
 const AR_BRUM = {
-  lobby: ['Выбирай класс и соперника. Остальное я прокомментирую — громко и несправедливо.', 'Рейтинговые бои скоро. Пока тренируйся на чучелах — они не обижаются.',
+  lobby: ['Выбирай класс и соперника. Остальное я прокомментирую — громко и несправедливо.', 'Хочешь рейтинг — зови живого соперника. Чучела рейтинг не дают, зато и не обижаются.',
     'Любой класс, любое чучело. В деревне так не дадут — там надо учиться. Тут — только падать.', 'Лига Опилок ждёт вас. Не обижайтесь: из опилок тоже что-то делают. Например, опилки.'],
   intro: ['Дамы и гномы! Слева — {0}, справа — {1}. Ставки не принимаются: денег у вас всё равно нет.', 'На песке {0} против {1}. Песок, кстати, тоже участвует. Он всегда побеждает.',
     'Встречайте: {0}! И {1}, которого мы встречаем из вежливости.', 'Арена открыта! Трибуны полны. Ну, почти. Ну, кто-то есть. {0} против {1}!'],
@@ -35,6 +35,7 @@ const AR_BRUM = {
 };
 const arPick = (L, ...a) => { const s = L[(Math.random() * L.length) | 0]; return a.length ? t(s, ...a) : t(s); };
 const arEsc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const arName = i => (Arena.net ? Arena.net.nm[i] : i === Arena.mi ? arMyName() : t(AR_TIERS[Arena.tier].name));
 const arClsName = k => t(typeof GCLS !== 'undefined' && GCLS[k] ? GCLS[k].name : k);
 const arClsCol = k => (typeof GCLS !== 'undefined' && GCLS[k] ? GCLS[k].col : '#e8dcc0');
 
@@ -88,6 +89,7 @@ function arenaOpen(from) {
 }
 function arenaClose() {
   if (!Arena.on) return;
+  if (typeof arNetLeave === 'function') arNetLeave(true);
   Arena.on = false; cancelAnimationFrame(Arena.raf);
   window.removeEventListener('keydown', Arena.kd, true); window.removeEventListener('keyup', Arena.ku, true); window.removeEventListener('blur', Arena.blur);
   window.removeEventListener('click', Arena.clk, true); window.removeEventListener('pointerdown', Arena.pd, true);
@@ -99,7 +101,8 @@ function arenaClose() {
 
 // ---------- Экран арены: выбор класса и соперника ----------
 function arLobby() {
-  Arena.scr = 'lobby'; Arena.S = null;
+  Arena.scr = 'lobby'; Arena.S = null; Arena.net = null; Arena.mi = 0;
+  if (typeof arNetHello === 'function') arNetHello();
   for (const id of ['#ar-hud', '#ar-sur', '#ar-joy', '#ar-bar', '#ar-brum']) Arena.el.querySelector(id).classList.add('hidden');
   Arena.el.querySelector('#ar-msg').textContent = '';
   arLobbyRender();
@@ -117,15 +120,14 @@ function arLobbyRender() {
   const C = ARENA_TUNE.cls[Arena.cls];
   P.className = 'ar-lobby';
   P.innerHTML = `<div class="ar-card">
-    <div class="ar-top"><h2>${t('Арена')} <small>${t('тренировка с ботом')}</small></h2><button class="ar-x" data-ar="exit" title="${t('Выйти')}">✕</button></div>
+    <div class="ar-top"><h2>${t('Арена')} <small>${t('бой с ботом и онлайн')}</small></h2><button class="ar-x" data-ar="exit" title="${t('Выйти')}">✕</button></div>
     <div class="ar-sub">${t('На песок выходит арена-копия героя 13 уровня: все шесть способностей, ульта копится от урона. Деревенское железо не в счёт — решают руки и класс.')}</div>
     <h3>${t('Ваш класс')}</h3><div class="ar-cls">${cls}</div>
     <div class="ar-info"><b style="color:${arClsCol(Arena.cls)}">${arEsc(arClsName(Arena.cls))}</b> · ${t('здоровье {0}', C.hp)} · ${C.shot ? t('бьёт издалека: {0} клеток', C.rng) : t('бьёт вблизи')}</div>
     <div class="ar-kit">${kit}</div>
     <h3>${t('Соперник')}</h3><div class="ar-tiers">${tiers}</div>
     <div class="ar-go"><button class="ar-b big" data-ar="go">${t('В бой!')}</button></div>
-    <h3>${t('Скоро')}</h3>
-    <div class="ar-soon"><button disabled>${t('Рейтинговый бой')}</button><button disabled>${t('Вызвать друга')}</button><button disabled>${t('Таблица и лиги')}</button></div>
+    ${typeof arNetLobbyHtml === 'function' ? arNetLobbyHtml() : ''}
     <div class="ar-keys">${Arena.touch ? t('Джойстик слева — ходить, кнопки справа — способности и перекат.') : t('WASD или стрелки — ходить, 1–6 — способности, V или пробел — перекат, Esc — сдаться. Бьёт сам, когда соперник рядом.')}</div>
   </div>`;
 }
@@ -138,15 +140,17 @@ function arClick(e) {
   if (k === 'cls') { Arena.cls = v; Arena.clsSet = true; arSave(); arLobbyRender(); }
   else if (k === 'tier') { Arena.tier = +v; arSave(); arLobbyRender(); arBrumSay(t(AR_BRUM.bot[Arena.tier])); }
   else if (k === 'go') arStart(false);
-  else if (k === 'again') arStart(true);
+  else if (k === 'again') { if (Arena.net && typeof arNetAgain === 'function') arNetAgain(); else arStart(true); }
   else if (k === 'lobby') arLobby();
   else if (k === 'exit') arenaClose();
   else if (k === 'sur' && Arena.scr === 'fight') arSurrender();
+  else if (typeof arNetClick === 'function') arNetClick(k, v, b);
 }
 
 // ---------- Бой ----------
 function arStart(rematch) {
   const T = ARENA_TUNE;
+  Arena.net = null; Arena.mi = 0;
   if (!rematch || !Arena.foe) { const pool = ARENA_CLS.filter(k => k !== Arena.cls); Arena.foe = pool[(Math.random() * pool.length) | 0]; }
   Arena.pot = rematch ? Arena.prevPot : -1;
   const seed = ((Math.random() * 2147483647) | 0) + 1;
@@ -183,18 +187,22 @@ function arInput() {
 }
 
 function arFrame(dt) {
-  const S = Arena.S, T = ARENA_TUNE;
+  let S = Arena.S;
+  const T = ARENA_TUNE;
   arSizeCanvas();
   if (S) {
     Arena.acc += dt;
     let n = 0;
-    while (Arena.acc >= T.dt && n < 6) {
-      Arena.prev = S.f.map(F => [F.x, F.y]);
-      arenaStep(S, [arInput(), null]);
-      arEvents(S);
-      Arena.acc -= T.dt; n++;
+    if (Arena.net) { arNetPump(dt); S = Arena.S; }   // онлайн: ядро шагает по кадрам входов с сервера
+    else {
+      while (Arena.acc >= T.dt && n < 6) {
+        Arena.prev = S.f.map(F => [F.x, F.y]);
+        arenaStep(S, [arInput(), null]);
+        arEvents(S);
+        Arena.acc -= T.dt; n++;
+      }
+      if (n >= 6) Arena.acc = 0;
     }
-    if (n >= 6) Arena.acc = 0;
     Arena.ct = S.T + Arena.acc;
     for (let i = 0; i < 2; i++) { const F = S.f[i], v = Math.sqrt(F.vx * F.vx + F.vy * F.vy); Arena.walk[i] = (Arena.walk[i] + v * dt * 3.2) % 8; }
     if (S.phase === 'over' && !Arena.seenOver) { Arena.seenOver = true; Arena.endT = Arena.ct + 1.6; }
@@ -218,7 +226,7 @@ function arPop(i, text, col, big) {
   if (Arena.pops.length > 40) Arena.pops.shift();
 }
 function arEvents(S) {
-  const me = 0, now = S.T;
+  const me = Arena.mi, now = S.T;
   for (const e of S.ev) {
     switch (e.k) {
       case 'count': ASfx.play('count'); Arena.el.querySelector('#ar-msg').textContent = String(e.n); break;
@@ -272,7 +280,7 @@ function arEvents(S) {
       case 'blink': arBurstAt(e.x, e.y, ['#3a3448', '#5a5068', '#8a8aa8'], 10); break;
       case 'ot': arBrumSay(arPick(AR_BRUM.ot)); Arena.el.querySelector('#ar-msg').textContent = t('Овертайм!'); setTimeout(() => { if (Arena.el) Arena.el.querySelector('#ar-msg').textContent = ''; }, 1200); ASfx.play('gong'); break;
       case 'round': {
-        const w = e.w, nmW = w === me ? arMyName() : t(AR_TIERS[Arena.tier].name), nmL = w === me ? t(AR_TIERS[Arena.tier].name) : arMyName();
+        const w = e.w, nmW = arName(w), nmL = arName(1 - w);
         Arena.el.querySelector('#ar-msg').textContent = t('Раунд — {0}!', nmW);
         if (S.winner < 0) arBrumSay(e.why === 'time' ? arPick(AR_BRUM.time) : arPick(AR_BRUM.round, nmW, nmL), 'win');
         ASfx.play('gong'); ASfx.play('crowd', 1);
@@ -281,7 +289,7 @@ function arEvents(S) {
       }
       case 'rest': Arena.el.querySelector('#ar-msg').textContent = t('Раунд {0}', e.round); break;
       case 'won': {
-        const w = e.w, nmW = w === me ? arMyName() : t(AR_TIERS[Arena.tier].name), nmL = w === me ? t(AR_TIERS[Arena.tier].name) : arMyName();
+        const w = e.w, nmW = arName(w), nmL = arName(1 - w);
         Arena.prevPot = 1 - w;
         arBrumSay(e.sur ? arPick(AR_BRUM.sur) : S.score[1 - w] === 0 ? arPick(AR_BRUM.dry, nmW, nmL) : arPick(AR_BRUM.win, nmW, nmL), 'win');
         ASfx.play(w === me ? 'win' : 'lose');
@@ -311,7 +319,7 @@ function arBrumSay(text, mood) {
 
 // ---------- Итог матча ----------
 function arResult() {
-  const S = Arena.S, me = S.f[0], won = S.winner === 0;
+  const S = Arena.S, mi = Arena.mi, me = S.f[mi], won = S.winner === mi;
   Arena.scr = 'result';
   for (const id of ['#ar-sur', '#ar-bar', '#ar-joy']) Arena.el.querySelector(id).classList.add('hidden');
   Arena.el.querySelector('#ar-msg').textContent = '';
@@ -319,13 +327,13 @@ function arResult() {
   P.className = 'ar-res';
   const sm = me.sm;
   P.innerHTML = `<div class="ar-card small">
-    <h2 class="${won ? 'win' : 'lose'}">${won ? t('Победа!') : S.sur === 0 ? t('Вы сдались') : t('Поражение')}</h2>
-    <div class="ar-score">${S.score[0]} : ${S.score[1]}</div>
-    <div class="ar-vs">${arEsc(arMyName())} (${arEsc(arClsName(Arena.cls))}) — ${arEsc(t(AR_TIERS[Arena.tier].name))} (${arEsc(arClsName(Arena.foe))})</div>
-    ${won ? `<div class="ar-note">${t('Соломенный, ветеран или чемпион — победа есть победа. Рейтинг и награды появятся с онлайн-боями.')}</div>`
+    <h2 class="${won ? 'win' : 'lose'}">${won ? t('Победа!') : S.sur === mi ? t('Вы сдались') : t('Поражение')}</h2>
+    <div class="ar-score">${S.score[mi]} : ${S.score[1 - mi]}</div>
+    <div class="ar-vs">${arEsc(arName(mi))} (${arEsc(arClsName(me.cls))}) — ${arEsc(arName(1 - mi))} (${arEsc(arClsName(S.f[1 - mi].cls))})</div>
+    ${Arena.net ? arNetResultHtml(won) : won ? `<div class="ar-note">${t('Соломенный, ветеран или чемпион — победа есть победа. Рейтинг даёт бой с живым соперником: кнопка «Рейтинговый бой» на экране арены.')}</div>`
     : `<div class="ar-note pot">${t('Вам вручён Позорный горшок: носить один бой. Реванш — и снимете.')}</div>`}
     <div class="ar-stats">${t('Урон: {0} · лечение: {1} · идеальных уворотов: {2} · способностей: {3}', Math.round(sm.dmg), Math.round(sm.heal), sm.perfect, sm.casts)}</div>
-    <div class="ar-go"><button class="ar-b big" data-ar="again">${t('Реванш')}</button><button class="ar-b" data-ar="lobby">${t('Другой бой')}</button><button class="ar-b sec" data-ar="exit">${t('Выйти')}</button></div>
+    <div class="ar-go"><button class="ar-b big" data-ar="again">${Arena.net ? t('Ещё бой') : t('Реванш')}</button><button class="ar-b" data-ar="lobby">${t('Другой бой')}</button><button class="ar-b sec" data-ar="exit">${t('Выйти')}</button></div>
   </div>`;
 }
 
@@ -336,7 +344,7 @@ function arHud(force) {
   const T = ARENA_TUNE, left = Math.max(0, T.roundT - S.t), fight = S.phase === 'fight';
   const side = (F, i) => {
     const pct = Math.max(0, F.hp / F.mhp * 100), cups = [0, 1].map(k => `<i class="${S.score[i] > k ? 'on' : ''}"></i>`).join('');
-    const nm = i === 0 ? arMyName() : t(AR_TIERS[Arena.tier].name);
+    const nm = arName(i);
     return `<div class="ar-side s${i}"><div class="ar-nm"><b>${arEsc(nm)}</b> <small style="color:${arClsCol(F.cls)}">${arEsc(arClsName(F.cls))}</small><span class="ar-cups">${cups}</span></div>
       <div class="ar-hp"><i style="width:${pct.toFixed(1)}%"></i><span>${Math.ceil(F.hp)} / ${F.mhp}</span></div>
       <div class="ar-sts">${arStWords(S, F).map(([w, c]) => `<em style="color:${c}">${arEsc(w)}</em>`).join('')}</div></div>`;
@@ -358,7 +366,7 @@ function arBarBuild() {
 function arBarUpdate() {
   const S = Arena.S, bar = Arena.el && Arena.el.querySelector('#ar-bar');
   if (!S || !bar) return;
-  const F = S.f[0], T = ARENA_TUNE, now = S.T, kit = ARENA_KIT[F.cls];
+  const F = S.f[Arena.mi], T = ARENA_TUNE, now = S.T, kit = ARENA_KIT[F.cls];
   const R = typeof ABIL_RES !== 'undefined' ? ABIL_RES[F.rk] : { name: F.rk, col: '#e8c040' };
   const res = bar.querySelector('.ar-res');
   res.querySelector('i').style.width = Math.round(F.res) + '%'; res.querySelector('i').style.background = R.col;
@@ -398,8 +406,8 @@ function arKey(e) {
   e.stopImmediatePropagation();
   const scr = Arena.scr, code = e.code;
   if (scr !== 'fight') {
-    if (code === 'Escape') { if (scr === 'result') arLobby(); else arenaClose(); e.preventDefault(); }
-    else if (code === 'Enter' && !e.repeat) { arStart(scr === 'result'); e.preventDefault(); }
+    if (code === 'Escape') { if (scr === 'result' || scr === 'queue' || scr === 'invite' || scr === 'board') { if (typeof arNetLeave === 'function') arNetLeave(); arLobby(); } else arenaClose(); e.preventDefault(); }
+    else if (code === 'Enter' && !e.repeat && (scr === 'lobby' || scr === 'result')) { if (Arena.net && typeof arNetAgain === 'function') arNetAgain(); else arStart(scr === 'result'); e.preventDefault(); }
     return;
   }
   e.preventDefault();
@@ -429,7 +437,7 @@ function arJoyInit(joy) {
 }
 function arSurrender() {
   const b = Arena.el.querySelector('#ar-sur');
-  if (Arena.surT > performance.now()) { Arena.surT = 0; arenaSurrender(Arena.S, 0); arEvents(Arena.S); b.textContent = t('Сдаться'); return; }
+  if (Arena.surT > performance.now()) { Arena.surT = 0; b.textContent = t('Сдаться'); if (Arena.net) { arNetSend({ a: 'surrender' }); return; } arenaSurrender(Arena.S, Arena.mi); arEvents(Arena.S); return; }
   Arena.surT = performance.now() + 3000;
   b.textContent = t('Точно сдаться? Ещё раз');
   setTimeout(() => { if (Arena.el && Arena.surT && Arena.surT <= performance.now()) { Arena.surT = 0; b.textContent = t('Сдаться'); } }, 3100);
@@ -499,8 +507,8 @@ function arDrawWorld(c, S, t) {
   for (const o of T.obs) list.push([o.y, () => arDrawObs(c, o)]);
   const pos = S.f.map((F, i) => { const p = Arena.prev && Arena.prev[i] || [F.x, F.y]; return [p[0] + (F.x - p[0]) * a, p[1] + (F.y - p[1]) * a]; });
   S.f.forEach((F, i) => list.push([pos[i][1], () => {
-    arDrawFighter(c, Arena, F, pos[i][0], pos[i][1], t, Arena.holders[i], i === 0);
-    if (F.st.invis > S.T && i !== 0) return;
+    arDrawFighter(c, Arena, F, pos[i][0], pos[i][1], t, Arena.holders[i], i === Arena.mi);
+    if (F.st.invis > S.T && i !== Arena.mi) return;
     const u = { x: pos[i][0], y: pos[i][1], face: F.face, hfx: F.anim && F.anim.k === 'hurt' && S.T - F.anim.t < 0.3 ? { t: t + 0.1 } : null };
     // свечение действующей способности и вспышка в момент приёма
     let best = null, bl = 0;
@@ -514,10 +522,10 @@ function arDrawWorld(c, S, t) {
   for (const p of S.shots) { const B = S.f[p.tg]; arDrawShot(c, p, t, B.x - p.x, B.y - p.y); }
   // полоски здоровья над головами
   S.f.forEach((F, i) => {
-    if (F.dead || (F.st.invis > S.T && i !== 0)) return;
+    if (F.dead || (F.st.invis > S.T && i !== Arena.mi)) return;
     const x = pos[i][0] * TILE, y = pos[i][1] * TILE - 60, w = 32;
     c.fillStyle = 'rgba(0,0,0,0.7)'; c.fillRect(x - w / 2 - 1, y - 1, w + 2, 5);
-    c.fillStyle = i === 0 ? '#5ac04a' : '#d0503a'; c.fillRect(x - w / 2, y, w * Math.max(0, F.hp / F.mhp), 3);
+    c.fillStyle = i === Arena.mi ? '#5ac04a' : '#d0503a'; c.fillRect(x - w / 2, y, w * Math.max(0, F.hp / F.mhp), 3);
     c.fillStyle = '#b070ff'; c.fillRect(x - w / 2, y + 3, w * F.ult / 100, 1);
   });
 }
@@ -592,6 +600,9 @@ function arCss() {
   .ar-b{padding:8px 16px;font-size:14px;background:#8a6a1c;color:#fff4d0;border:1px solid #d8b04a;border-radius:6px;cursor:pointer;font-family:inherit}
   .ar-b.big{font-size:18px;padding:10px 26px;font-weight:bold}.ar-b.sec{background:#3a2c14;border-color:#7a5f28}
   .ar-soon{display:flex;flex-wrap:wrap;gap:6px}.ar-soon button{padding:5px 10px;background:#2a2014;color:#a89878;border:1px dashed #5a4a2a;border-radius:5px;font-family:inherit;font-size:12px}
+  .ar-soon.on button:not(:disabled){background:#4a3414;color:#f6e8c0;border:1px solid #d8b04a;cursor:pointer}.ar-soon input{width:96px;padding:5px 8px;background:#15100a;color:#f6e8c0;border:1px solid #7a5f28;border-radius:5px;font-family:inherit;font-size:13px}
+  .ar-lnk{background:none;border:none;color:#c8a878;text-decoration:underline;cursor:pointer;font-family:inherit;font-size:11px;padding:0}
+  .ar-lg{color:var(--c);font-weight:bold}.ar-tab{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}.ar-tab th{text-align:left;color:#f6d458;border-bottom:1px solid #5a4a2a;padding:2px 4px}.ar-tab td{padding:2px 4px;border-bottom:1px solid #2a2014}
   .ar-keys{font-size:11px;opacity:.7;margin-top:8px}
   .ar-res h2{margin:4px 0;font-size:30px}.ar-res h2.win{color:#9fe070}.ar-res h2.lose{color:#ff9a70}
   .ar-score{font-size:34px;font-weight:bold;color:#f6d458}.ar-vs{font-size:13px;opacity:.85}

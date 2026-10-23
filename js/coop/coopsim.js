@@ -572,7 +572,7 @@ function coopPlain(v, d = 0, top = false) {
     return v.map(x => { const p = coopPlain(x, d + 1); return p === undefined ? null : p; });
   }
   const pr = Object.getPrototypeOf(v);
-  if (!top && pr !== COOP_OP && pr !== null) return undefined;
+  if (!top && pr !== COOP_OP && pr !== null && Object.getPrototypeOf(pr) !== null) return undefined;     // простой объект из любой области памяти (мир с диска), но не Unit/Building/класс
   if (d > 3) return undefined;
   const o = {};
   for (const k in v) { if (COOP_SKIP.has(k)) continue; const p = coopPlain(v[k], d + 1); if (p !== undefined) o[k] = p; }

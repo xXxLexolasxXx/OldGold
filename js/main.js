@@ -230,6 +230,7 @@ function step(dt) {
   chestsTick(dt);
   fairyTick(dt);
   fairy2Tick(dt);
+  if (typeof nightGroundTick === 'function') nightGroundTick(dt);   // плотоядные цветы цапают гномов: испуг без урона (nightground.js)
   updateFalling(dt);
   sfxTick(dt);
   Game.bumpT = (Game.bumpT || 0) + dt;

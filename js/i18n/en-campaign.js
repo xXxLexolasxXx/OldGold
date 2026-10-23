@@ -13,7 +13,7 @@ I18N.add('en', {
   'Гоблин-подрывник': 'Goblin sapper', 'Остатки гоблинов удрали в штрек.': 'The last goblins fled into the shaft.',
   // акты и персонажи
   'Праздник Первого Камня': 'Feast of the First Stone', 'Гора ложится': 'The Mountain Lies Down', 'Гости и рыба': 'Guests and Fish', 'Игра не стоит свеч': 'Not Worth the Candles',
-  'Тан Борода Старший': 'Tan Beard the Elder', 'Шнырь Пороховой': 'Snitch Powderkeg', 'Король Шнырь Пороховой': 'King Snitch Powderkeg', 'Чемпион гоблинов': 'Goblin champion', 'Король гоблинов': 'Goblin king', 'Гоблин': 'Goblin', 'Жмыха Кремнёвая': 'Zhmykha Flintwick', 'Подгорье': 'Undermount',
+  'Тан Борода Старший': 'Tan Beard the Elder', 'Шнырь Пороховой': 'Snitch Powderkeg', 'Король Шнырь Пороховой': 'King Snitch Powderkeg', 'Чемпион гоблинов': 'Goblin champion', 'Король гоблинов': 'Goblin king', 'Гоблин': 'Goblin', 'Тролль': 'Troll', 'Голем': 'Golem', 'Жмыха Кремнёвая': 'Zhmykha Flintwick', 'Подгорье': 'Undermount',
   'Кампания, акт 1: город внутри горы Брюзги': 'Campaign, act 1: the town inside Mount Grouch', 'Подгорье': 'Undermount',
   // этапы и цели
   'Канун праздника': 'Feast Eve', 'Ночь перед праздником': 'The night before the feast', 'День праздника: ждём вечера': 'Feast day: waiting for evening',
@@ -217,5 +217,15 @@ I18N.add('en', {
   'Колонна не дошла: в живых никого.': 'The column did not make it: no one is left alive.',
   'до Долины дошли {0} гномов — их и припасы обоза ждёт сценарий «Тишина дороже золота».': '{0} gnomes reached the Valley — they and the wagon supplies continue in the scenario "Silence Is Worth More Than Gold".',
   'Дальше — сценарий на новой карте Долины: главы 1–6, Чёрный шпиль. Наследие кампании переходит с вами.': 'Next — the scenario on a new map of the Valley: chapters 1–6, the Black Spire. The campaign legacy comes with you.',
-  ' Грум хмурится: «Ты пришёл к нам в Подгорье наутро после взрыва, Пим. С готовой летописью праздника. Тебя там не было.»': ' Grum frowns: "You came to Undermount the morning after the explosion, Pim. With a ready-made chronicle of the feast. You were not there."',
+  'Грум хмурится: «Ты пришёл к нам в Подгорье наутро после взрыва, Пим. С готовой летописью праздника. Тебя там не было.»': ' Grum frowns: "You came to Undermount the morning after the explosion, Pim. With a ready-made chronicle of the feast. You were not there."',
+  // тайник, итог акта 1, праздник, имена, подгорный биом
+  'Тайник Тана ({0} из 3): старый кошель с монетами и записка «на чёрный день».': "Tan's stash ({0} of 3): an old purse of coins and a note, \"for a rainy day\".",
+  'Ключ Тана у героя; с вами уходят {0} гномов.': "The hero has Tan's key; {0} gnomes leave with you.",
+  'Праздник Первого Камня! Все бросили дела: песни, пляски и пиво у костра': 'Feast of the First Stone! Everyone dropped their work: songs, dancing and beer by the fire',
+  'Васька': 'Vaska',
+  'город под горой: камень, полумрак и солнце сквозь дыры в своде': 'a town under the mountain: stone, twilight and sunlight through holes in the vault',
+  'П1. Пол пещеры': 'P1. Cave floor', 'Серый камень в трещинах, щебень и валуны; ни травинки.': 'Cracked grey stone, rubble and boulders; not a blade of grass.',
+  'П2. Тёсаные плиты': 'P2. Hewn slabs', 'Гномья мостовая: плиты со швами, стёртые сотней лет шагов.': 'Gnomish paving: seamed slabs worn down by a hundred years of footsteps.',
+  'П3. Подгорная земля': 'P3. Undermount soil', 'Тёмная утоптанная земля, корни сверху и бледные грибы.': 'Dark trampled earth, roots on top and pale mushrooms.',
+  'П4. Кристальная россыпь': 'P4. Crystal scatter', 'Камень с искрами самоцветной крошки — подарок жилы.': 'Stone flecked with gem dust, a gift of the vein.',
 });

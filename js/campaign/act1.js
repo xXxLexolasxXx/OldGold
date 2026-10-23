@@ -313,6 +313,18 @@ const camp1Wave = (C, n, fromGate, champs = 0) => {
   for (let k = 0; k < champs; k++) campFoe('goblinChamp', mx + (k ? 2 : -2), my + 3, 'w', { delay: 2 + k, hunt: true });
   if (typeof campSnd === 'function') campSnd('gobHorn', mx, my, 1.2);
 };
+// сценарный праздник: всегда (и поверх случайного дневного), ночью, и мастеровые выходят из мастерских к костру —
+// иначе гуляли бы только трудяги и строители. Работа возобновится сама (workerGen по u.home), когда праздник кончится.
+function camp1Feast() {
+  if (typeof festivalForce !== 'function') return;
+  if (festOn() && typeof festRelease === 'function') festRelease();
+  festivalForce('camp', 300, 'Праздник Первого Камня! Все бросили дела: песни, пляски и пиво у костра');
+  for (const u of Game.units) {
+    const b = u.inside;
+    if (u.dead || !b || u.home !== b || u.carry || u.type === 'hero' || !isPerson(u) || /tower|barrack|wall|gate/.test(b.type)) continue;
+    u.inside = null; u.x = b.doorX + 0.5; u.y = b.doorY + 0.5; u.proc = null; u.action = null; u.anim = null;
+  }
+}
 const camp1WaveLeft = () => campFoes('w').length;
 const camp1Night = () => isNightNow() || isEveningNow();
 
@@ -417,7 +429,7 @@ CAMP_ACTS[1] = {
     { k: 'wait', label: 'Ночь перед праздником', until: () => !camp1Night() },
     { k: 'wait', label: 'День праздника: ждём вечера', until: () => camp1Night() },
     // сценарный праздник: и ночью, и без трактирного эля — гуляют, пока не придут гоблины (camp1Wave гасит его)
-    { k: 'say', fx(C) { if (typeof festivalForce === 'function' && !festOn()) festivalForce('camp', 300, 'Праздник Первого Камня! Все бросили дела: песни, пляски и пиво у костра'); }, lines: [
+    { k: 'say', fx: camp1Feast, lines: [
       ['yagla', 'Сто лет назад наши прадеды положили первый камень. Сегодня — споём!'],
       ['tan', 'За гору! Чтоб стояла ещё сто!'],
       ['grum', 'Не говори под руку. Особенно горе.'],

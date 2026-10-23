@@ -51,10 +51,11 @@ function gBlob(c, x, y, rx, ry, seed, o = {}) {
 
 // Конечность из цепочки валунов поверх тёмной жилы
 function gLimb(c, x0, y0, x1, y1, r0, r1, seed, tone, mo = 4) {
-  c.lineCap = 'round'; line(c, x0, y0, x1, y1, shade(GL_ST.lo, tone), (r0 + r1) * 1.25); c.lineCap = 'butt';
-  for (let i = 0; i <= 3; i++) {
-    const t = i / 3, r = r0 + (r1 - r0) * t;
-    gBlob(c, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r * 1.04, r * 0.95, seed + i * 3, { tone, n: 8, crack: i === 1, moss: mo + (i & 1) });
+  c.lineCap = 'round'; line(c, x0, y0, x1, y1, shade(GL_ST.lo, tone), (r0 + r1) * 0.7); c.lineCap = 'butt';   // жила уже кладки — край рисуют сами валуны
+  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+  for (let i = 0; i <= 5; i++) {
+    const t = i / 5, r = r0 + (r1 - r0) * t, off = (i & 1 ? 1 : -1) * r * 0.1;   // валуны вразбежку — кладка до самого края
+    gBlob(c, x0 + dx * t + nx * off, y0 + dy * t + ny * off, r * (i & 1 ? 1.02 : 1.1), r * (i & 1 ? 1.08 : 0.98), seed + i * 3, { tone: tone + (i & 1 ? 0.03 : -0.02), n: 8, crack: i === 2, moss: Math.ceil((mo + (i & 1)) * 0.6) });
   }
 }
 

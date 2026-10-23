@@ -21,6 +21,9 @@ const CAMP_WHO = {
   tan: { name: 'Тан Борода Старший', ch: 'Т', col: '#f0d070', bg: '#3a3010' },
   shnyr: { name: 'Король Шнырь Пороховой', ch: 'Ш', col: '#a8d060', bg: '#24300e' },
   gob: { name: 'Гоблин', ch: 'г', col: '#8ab850', bg: '#1e2a10' },
+  champ: { name: 'Чемпион гоблинов', ch: 'Ч', col: '#c8c070', bg: '#262a14' },
+  troll: { name: 'Тролль', ch: 'Т', col: '#9ac070', bg: '#1a2a14' },
+  golem: { name: 'Голем', ch: 'Г', col: '#e8b030', bg: '#2a2a24' },
   zhmykha: { name: 'Жмыха Кремнёвая', ch: 'Ж', col: '#b0c4e0', bg: '#1e2838' },
   kremen: { name: 'Кремень-младший', ch: 'К', col: '#e09060', bg: '#3a2014' },
   mrak: { name: 'Малгор', ch: 'М', col: '#9cf06a', bg: '#2a1840' },
@@ -46,6 +49,25 @@ const campHasUI = () => typeof document !== 'undefined' && !window.__SERVER__ &&
 
 // ---------- Помощники для сценариев ----------
 
+// облик героя переходит между актами: имя, цвета/борода/жилет (hero.app), класс гильдии (clsKey, mastery)
+function campHeroLook(u) {
+  const H = u && u.hero;
+  if (!H) return null;
+  const o = { name: H.name };
+  if (H.app) o.app = H.app.slice();
+  for (const k of ['clsKey', 'cls', 'mastery']) if (H[k] != null) o[k] = H[k];
+  return o;
+}
+function campHeroLookApply(u, o) {
+  if (!u || !u.hero || !o) return false;
+  if (o.name) u.hero.name = o.name;
+  if (Array.isArray(o.app) && (typeof haClean !== 'function' || haClean(o.app))) u.hero.app = o.app.slice();
+  for (const k of ['clsKey', 'cls', 'mastery']) if (o[k] != null) u.hero[k] = o[k];
+  u._spr = null;
+  if (typeof HA !== 'undefined' && u.hero.app) HA.last = u.hero.app.slice();
+  Game.heroAsk = false;
+  return true;
+}
 function campHero() { return Game.units.find(u => u.type === 'hero' && !u.dead) || null; }
 function campPeople() { let n = 0; for (const u of Game.units) if (!u.dead && isPerson(u) && u.type !== 'hero' && u.type !== 'carter') n++; return n; }
 function campStock(g) { let n = 0; for (const b of Game.buildings) if (!b.removed && b.isStore && b.isStore()) n += Math.max(0, b.stock[g] || 0); return n; }
@@ -244,6 +266,7 @@ function campFinish(C, res, why) {
     p.done[C.act] = { t: Date.now(), time: stats.t, stars: Math.max(stars, old ? old.stars : 0), alive: stats.alive };
     if (A.legacy) p.legacy = Object.assign(p.legacy || {}, A.legacy(C, stats));
     p.last = C.act;
+    const hl = campHeroLook(campHero() || Game.hero); if (hl) p.hero = hl;   // погиб под конец — облик всё равно его
     campProgSave(p);
     if (typeof track === 'function') track('camp-win-' + C.act, 'Кампания: пройден акт ' + C.act);
   } else if (typeof track === 'function') track('camp-lose-' + C.act, 'Кампания: поражение в акте ' + C.act);
@@ -269,6 +292,7 @@ function campStart(n, opts = {}) {
   Game.camp = { v: 1, act: n, i: -1, st: null, seq: 0, t: 0, cp: -1, cpN: 0, flags: {}, tilt: 0, lost: 0, over: null, objs: null, mark: null, label: '' };
   A.setup(Game.camp, opts);
   if (campHasUI() && typeof buildTerrain === 'function') { buildTerrain(A.seed); if (typeof updateMinimapBase === 'function') updateMinimapBase(); }
+  if (n > 1) campHeroLookApply(campHero(), campProg().hero);
   campEnter(Game.camp, 0);
   if (typeof track === 'function') track('camp-start-' + n, 'Кампания: начат акт ' + n);
   return true;
@@ -328,6 +352,8 @@ function campStart(n, opts = {}) {
   if (typeof goalUiTick === 'function') { const _gu = goalUiTick; goalUiTick = function (f) { if (!Game.camp) _gu(f); else { const h = document.getElementById('goal-hud'); if (h) h.classList.add('hidden'); } }; }
   if (typeof dilTick === 'function') { const _d = dilTick; dilTick = function (dt) { if (!Game.camp) _d(dt); }; }
   if (typeof loreTick === 'function') { const _l = loreTick; loreTick = function (dt) { if (!Game.camp) _l(dt); }; }
+  // случайных праздников в кампании нет — только сценарные (festivalForce в актах)
+  if (typeof festivalTick === 'function') { const _ft = festivalTick; festivalTick = function (dt) { if (Game.camp && !Game.festival) return; _ft(dt); }; }
   if (typeof tutStart === 'function') { const _t = tutStart; tutStart = function (m) { if (!Game.camp) _t(m); }; }
   // мир акта собран вручную: курганы, новые логова по ночам, бродячие народы и путники в сюжет не вмешиваются
   for (const fn of ['raidTick', 'fwTick', 'ftTick', 'tvTick', 'lepTick', 'wgTick']) {

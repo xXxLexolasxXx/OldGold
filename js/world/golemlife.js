@@ -101,6 +101,10 @@ function glStyle() {
   const st = document.createElement('style'); st.id = 'gl-style';
   st.textContent = `#gl-modal{position:fixed;inset:0;z-index:391;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(6,4,10,.6);overflow-y:auto}
 #gl-modal.hidden{display:none}.gl-card{width:min(96vw,560px);max-height:calc(100vh - 24px);overflow-y:auto}
+.gl-head{display:flex;gap:12px;align-items:center;margin-bottom:4px}.gl-hd{flex:1;min-width:0}.gl-hd h2{margin:0;text-align:left}
+.gl-pt{flex:none;position:relative;display:block;width:72px;height:72px;border:2px solid #f0d070;overflow:hidden;background:radial-gradient(circle at 50% 40%,rgba(255,240,200,.22),rgba(0,0,0,.35) 75%),#1e2a24;box-shadow:inset 0 0 0 1px #0a0705,inset 0 0 0 3px rgba(201,162,74,.35),0 0 10px rgba(0,0,0,.6)}
+.gl-pt img{position:absolute;left:0;top:0;width:72px;height:72px;image-rendering:pixelated}.gl-pt .gl-blink{opacity:0;animation:gl-blink 4.6s steps(1) infinite}
+@keyframes gl-blink{0%,94%{opacity:0}95%,99%{opacity:1}}@media (prefers-reduced-motion:reduce){.gl-pt .gl-blink{animation:none}}
 .gl-who{color:#a8987a;font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
 .gl-text{margin:6px 0 10px;line-height:1.45}.gl-r{display:flex;gap:8px;align-items:center;margin:4px 0;font-size:14px}
 .gl-r i{display:inline-block;width:12px;height:12px;border:2px solid #b8902c;transform:rotate(45deg);flex:none}.gl-r.ok i{background:currentColor}
@@ -130,12 +134,17 @@ function glHide() {
   }
 }
 const glEsc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// портрет Старца (js/campaign/faces.js); без портрета (сервер, тесты) — только подпись
+function glFace() {
+  const a = typeof campFaceUrl === 'function' ? campFaceUrl('elder', 0) : '';
+  return a ? `<span class="gl-pt"><img src="${a}" alt=""><img class="gl-blink" src="${campFaceUrl('elder', 1)}" alt=""></span>` : '';
+}
 function glShowElder() {
   if (!glHasUI()) return;
   const G = glEnsure(), D = glDialogState();
   G.known = true;
   const el = glModalEl();
-  let h = `<div class="gm-card gl-card"><div class="gl-who">Старец</div><h2>Каменный сторож</h2><div class="gl-text">${glEsc(D.text)}</div>`;
+  let h = `<div class="gm-card gl-card"><div class="gl-head">${glFace()}<div class="gl-hd"><div class="gl-who">Старец</div><h2>Каменный сторож</h2></div></div><div class="gl-text">${glEsc(D.text)}</div>`;
   if (!D.awake) for (const r of D.runes) h += `<div class="gl-r${r.got ? ' ok' : ''}" style="color:${r.got ? '#9be08a' : GL_RUNE_COL[r.k]}"><i></i><span>${r.got ? 'Есть' : 'Ищем'}: руна ${glEsc(GL_RUNE_NAME[r.k])} — <span style="color:#d8cfb8">${glEsc(r.hint)}</span></span></div>`;
   h += `<div class="gm-btns">${D.canWake ? '<button class="sm-btn primary" data-gl="wake">Разбудить голема</button>' : ''}<button class="sm-btn" data-gl="close">${D.canWake ? 'Позже' : 'Понял'}</button></div></div>`;
   el.innerHTML = h; el.classList.remove('hidden');
@@ -419,7 +428,7 @@ function glHealTick(g) {
   const _apply = applySave;
   applySave = function (s) {
     _apply(s);
-    Game.glq = s.glq && Array.isArray(s.glq.runes) ? s.glq : null;
+    Game.glq = s.glq && Array.isArray(s.glq.runes) ? JSON.parse(JSON.stringify(s.glq)) : null;
     glEnsure();
   };
 }

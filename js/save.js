@@ -85,7 +85,7 @@ function serializeGame() {
     units: Game.units.map(u => ({
       type: u.type, x: u.x, y: u.y, food: u.food, look: u.look, home: u.home ? u.home.id : 0,
       homePen: u.homePen || 0, homeStable: u.homeStable || 0, smoker: u.smoker, xp: u.xp || undefined,
-      h: u.hero || undefined, tm: u.teamOf ? Game.units.findIndex(x => x.id === u.teamOf) : undefined,   // герой и его напарник
+      h: u.hero || undefined, tm: u.teamOf && Game.units.some(x => x.id === u.teamOf) ? Game.units.findIndex(x => x.id === u.teamOf) : undefined,   // герой и его напарник; напарник того, кого уже нет в списке, не пишется как -1 (иначе сейв после загрузки отличался)
     })),
   };
 }

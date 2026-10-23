@@ -63,6 +63,14 @@ const stats = createStats(DATA, log);
 const events = require('./events').createEvents(DATA, log);
 const errReports = require('./errors').createErrors(DATA, log);   // анонимные отчёты об ошибках у игроков (POST /err)
 const tele = require('./telemetry').createTelemetry(DATA, log, events);   // статистика по согласию (POST /t), «Сообщить о проблеме» (POST /report), удаление по id (POST /t/forget)
+const runboard = require('./runboard').createRunboard(DATA, log);   // таблица рекордов забегов: POST /runs/submit|board|forget (переигровка записи ядром забега)
+// Кооп-забег до 5 героев (КООП_ЗАБЕГ.md): комнаты (server/rooms.js, общий код с ареной) и бой в комнате (server/runroom.js)
+const { createRooms } = require('./rooms');
+const runKind = require('./runroom').createRunKind({ log, out: key => runHeroOut(key), back: key => runHeroBack(key), finish: r => rooms.finish(r) });
+const roomKinds = { run: runKind };
+const rooms = createRooms({ log, maxRooms: +process.env.OLDGOLD_MAX_ROOMS || 30, grace: 25000, kinds: roomKinds });   // общие комнаты: кооп-забег и арена
+const arena = require('./arena').createArena({ DATA, log, rooms });
+roomKinds.arena = arena.kind;
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {
@@ -258,6 +266,7 @@ function handleHttp(req, res) {
   if (events.handle(req, res, ip)) return;
   if (errReports.handle(req, res, ip)) return;
   if (tele.handle(req, res, ip)) return;
+  if (runboard.handle(req, res, ip)) return;
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405); res.end(); return; }
   if (p === '/stats') {
     const q = new URL(req.url, 'http://x').searchParams;
@@ -278,11 +287,24 @@ function handleHttp(req, res) {
     const h = { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': /^\.(ttf|woff2|png)$/.test(ext) ? 'public, max-age=604800' : 'no-cache', Vary: 'Accept-Encoding' };
     if (/^\.(html|js|css|svg|json|webmanifest|ttf)$/.test(ext) && buf.length > 1024 && /gzip/.test(req.headers['accept-encoding'] || '')) {
       h['Content-Encoding'] = 'gzip';
-      res.writeHead(200, h); res.end(zlib.gzipSync(buf, { level: 6 })); return;
+      res.writeHead(200, h); res.end(gzipCached(file, buf)); return;
     }
     res.writeHead(200, h);
     res.end(buf);
   });
+}
+// Сжатые копии статики. Раньше каждый запрос сжимал файл заново в главном потоке (changelog.js 209 КБ ≈ 8 мс, все скрипты
+// страницы ≈ 130 мс): поток запросов крупных файлов из интернета тормозил шаг мира для всех. Ключ — содержимое файла,
+// после git pull файл пересжимается сам.
+const GZ_CACHE = new Map();
+function gzipCached(file, buf) {
+  const key = buf.length + ':' + crypto.createHash('sha1').update(buf).digest('base64');
+  const c = GZ_CACHE.get(file);
+  if (c && c.key === key) return c.gz;
+  const gz = zlib.gzipSync(buf, { level: 6 });
+  if (GZ_CACHE.size >= 400) GZ_CACHE.clear();
+  GZ_CACHE.set(file, { key, gz });
+  return gz;
 }
 
 // ---------- Мини-WebSocket ----------
@@ -373,6 +395,7 @@ class Conn {
     if (!this.alive) return;
     this.alive = false;
     conns.delete(this);
+    if (this.key) { rooms.detach(this.key); arena.onDrop(this.key); }   // кооп-забег: герой под щитом ждёт возврата; арена: бой на паузу, очередь свободна
     if (this.inGame) {
       left.set(this.key, Date.now());
       stats.leave(this.key);
@@ -474,6 +497,44 @@ function sendUnits() {
   }
 }
 
+// ---------- Кооп-забег: герой уходит из деревни в таверну и возвращается ----------
+const connOf = key => { for (const c of conns) if (c.key === key && c.alive) return c; return null; };
+function runHeroOut(key) {
+  const c = connOf(key);
+  if (!c || !c.inGame || c.inRun) return;
+  const d = call('coopLeave', c.nick);
+  call('coopViewDrop', c.nick);
+  if (d) users[key].hero = JSON.parse(d);
+  c.inRun = true;
+  broadcast({ t: 'toast', text: `${c.nick} спускается в подземелье Малгора` });
+}
+function runHeroBack(key) {
+  const c = connOf(key);
+  if (!c || !c.inRun) return;
+  c.inRun = false;
+  if (!c.inGame || !users[key].hero) return;
+  const uid = call('coopJoin', c.nick, JSON.stringify(users[key].hero));
+  call('coopViewDrop', c.nick);
+  c.sendText(call('coopInitPacket', uid));
+  const me = call('coopMeData', c.nick);
+  if (me) c.sendText(me);
+}
+function onRoom(c, m) {
+  const me = { key: c.key, nick: c.nick, send: o => c.send(o) };
+  const reply = x => c.send({ t: 'room', a: x.err ? 'err' : 'ok', msg: x.err || '', room: x.room ? rooms.pub(x.room) : null });
+  const meta = m.meta && typeof m.meta === 'object' && !Array.isArray(m.meta) ? { ups: m.meta.ups, weapon: m.meta.weapon, pal: m.meta.pal, cloak: m.meta.cloak } : null;
+  const setMeta = r => { const mm = r && r.members.get(c.key); if (mm && meta) mm.meta = meta; };
+  switch (m.a) {
+    case 'list': c.send({ t: 'room', a: 'list', rooms: rooms.list('run') }); return;
+    case 'create': { const x = rooms.create('run', me, { diff: ['walk', 'dive', 'curse'].includes(m.diff) ? m.diff : 'dive', lvl: Math.max(1, Math.min(5, m.lvl | 0 || 1)) }); setMeta(x.room); reply(x); return; }
+    case 'join': { const x = rooms.join(String(m.code || '').slice(0, 8), me); setMeta(x.room); reply(x); return; }
+    case 'ready': { const r = rooms.roomOf(c.key); setMeta(r); rooms.ready(c.key, !!m.on); return; }
+    case 'opts': rooms.setOpts(c.key, { diff: ['walk', 'dive', 'curse'].includes(m.diff) ? m.diff : 'dive', lvl: Math.max(1, Math.min(5, m.lvl | 0 || 1)) }); return;
+    case 'start': { const x = rooms.start(c.key); if (x.err) reply(x); return; }
+    case 'leave': rooms.leave(c.key); c.send({ t: 'room', a: 'left' }); return;
+  }
+}
+
 // ---------- Сообщения игроков ----------
 function joinWorld(c) {
   const rec = users[c.key];
@@ -545,6 +606,7 @@ async function auth(c, m) {
   const meta = JSON.parse(call('coopMeta'));
   c.send({ t: 'welcome', token, nick: c.nick, host: c.isHost, perms: meta.perms, permLabels: meta.permLabels, needClass: !rec.hero, classes: meta.classes, chat: meta.chat, sv: SERVER_VER });
   if (rec.hero) joinWorld(c);
+  arena.onBack({ key: c.key, nick: c.nick, send: o => c.send(o) });   // вернулся в идущий бой арены — продолжает
 }
 const nickFails = new Map();   // ключ ника -> { n, t }: неудачные пароли с любых адресов
 
@@ -582,6 +644,17 @@ function onGameMessage(c, m, text) {
     if (v.every(Number.isFinite)) c.view = v.map(x => Math.max(-1e4, Math.min(1e4, Math.round(x))));
     return;
   }
+  // ввод кооп-забега идёт часто (джойстик), поэтому мимо общего ведра — со своим пределом 60 в секунду
+  if (m.t === 'run' && m.a === 'in') {
+    const t = Date.now();
+    if (t - (c.rinAt || 0) > 1000) { c.rinAt = t; c.rinN = 0; }
+    if (++c.rinN > 60) return;
+    const r = rooms.roomOf(c.key);
+    if (r && r.kind === 'run' && r.state === 'play') runKind.input(r, c.key, m);
+    return;
+  }
+  // ввод боя арены идёт 20 раз в секунду — мимо общего ведра, со своим пределом 30/с (arena.onInput)
+  if (m.t === 'arena' && m.a === 'in') { if (arena.onInput(c, m) === 'flood') c.sock.destroy(); return; }
   // защита от заливания (залипшая мышь, кривой клиент, бот): ведро на 60 сообщений, 30 в секунду — на ВСЕ сообщения
   // после входа (раньше пауза, доска почёта и прочие служебные шли мимо и рассылали тосты всем без предела)
   const nowMs = Date.now();
@@ -593,6 +666,15 @@ function onGameMessage(c, m, text) {
     return;
   }
   c.bucket--;
+  if (m.t === 'room') { onRoom(c, m); return; }
+  if (m.t === 'run') {
+    const r = rooms.roomOf(c.key);
+    if (!r || r.kind !== 'run' || r.state !== 'play') return;
+    if (m.a === 'pick') runKind.pick(r, c.key, m.k);
+    else if (m.a === 'quit') runKind.quit(r, c.key);
+    return;
+  }
+  if (m.t === 'arena') { arena.onMessage({ key: c.key, nick: c.nick, ip: c.ip, send: o => c.send(o) }, m); return; }
   if (m.t === 'class') {
     const rec = users[c.key];
     if (rec.hero || c.inGame) return;
@@ -601,7 +683,7 @@ function onGameMessage(c, m, text) {
     const full = admitMsg(c, c.key);
     if (full) return refuse(c, full);
     rec.hero = { cls: m.cls, level: 1, hp: meta.classes[m.cls].hp, inv: [{ k: 'bread', n: 2 }], look: (Math.random() * 1000) | 0 };
-    if (Array.isArray(m.ap) && m.ap.length <= 12) rec.hero.ap = m.ap.map(v => (Number.isInteger(v) ? v : -1));   // облик героя (heroapp.js чистит значения при входе)
+    if (Array.isArray(m.ap) && m.ap.length <= 15) rec.hero.ap = m.ap.map(v => (Number.isInteger(v) ? v : -1));   // облик героя (heroapp.js чистит значения при входе)
     saveUsers();
     joinWorld(c);
     return;
@@ -789,14 +871,17 @@ setInterval(() => {
   for (const [k, f] of authFails) if (now - f.t > 60000) authFails.delete(k);
 }, 5000);
 
-function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); process.exit(0); }
+function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); runboard.save(); arena.stop(); process.exit(0); }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 server.listen(PORT, process.env.HOST || '0.0.0.0', () => {
   log(`Сервер OldGold запущен на порту ${PORT}`);
   log(`Хост играет здесь:  http://localhost:${PORT}/`);
-  for (const list of Object.values(os.networkInterfaces()))
+  // список адресов — только подсказка для LAN; под песочницей systemd без AF_NETLINK вызов бросает EAFNOSUPPORT и ронял сервер на старте
+  let ifaces = {};
+  try { ifaces = os.networkInterfaces(); } catch (e) { log('адреса сети не прочитались (песочница?):', e.code || e.message); }
+  for (const list of Object.values(ifaces))
     for (const a of list || []) if (a.family === 'IPv4' && !a.internal) log(`Друзьям в сети:     http://${a.address}:${PORT}/`);
   log(`Данные: ${DATA}`);
 });
