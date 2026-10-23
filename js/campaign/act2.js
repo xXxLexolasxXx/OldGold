@@ -222,6 +222,9 @@ CAMP_ACTS[2] = {
       ['grum', 'Кузнеца Ваську завалило у северной стены. Без кузнеца на новом месте мы — просто бородатые туристы.'],
       ['pim', 'Я запишу: «ушли организованно».'],
       ['grum', 'Запиши: «ушли быстро». Это важнее.'],
+      ['note', 'Из трещин в полу тянет сыростью и зверем. Внизу, под городом, кто-то тяжело ходит.'],
+      ['troll', 'Гномы шумели. Гора упала. Тролль без пещеры. Тролль найдёт гномов.'],
+      ['grum', 'Слыхали? Гоблины взорвали, а виноваты мы. Как всегда: у нас бороды заметнее.'],
     ] },
     { k: 'do', fn(C) { if (!C.timer) C.timer = { t: Game.time + CAMP2.timer, label: 'Гора держится' }; } },
     { k: 'check' },
@@ -263,7 +266,11 @@ CAMP_ACTS[2] = {
       during(C) {
         this.objs[1].need = C.flags.need || 12;
         // засада просыпается, когда к ней подходят
-        for (const N of campFoes('amb')) if (N.hold) for (const u of Game.units) if (!u.dead && isPerson(u) && Math.hypot(u.x - N.x, u.y - N.y) < 7) { N.hold = 0; N.hunt = true; N.tg = u.id; N.prov = Game.time; break; }
+        for (const N of campFoes('amb')) if (N.hold) for (const u of Game.units) if (!u.dead && isPerson(u) && Math.hypot(u.x - N.x, u.y - N.y) < 7) {
+          N.hold = 0; N.hunt = true; N.tg = u.id; N.prov = Game.time;
+          if (N.k === 'goblinChamp' && !C.flags.champBark) { C.flags.champBark = 1; campBark(N, 'Стоять, бородатые! Дальше — только через Чемпиона!'); }
+          break;
+        }
       },
       or: C => C.flags.wave && C.flags.wave.y >= CAMP2.waveEnd - 0.5 },
     { k: 'wait', label: 'Бегство', until: C => !C.flags.wave || C.flags.wave.y >= CAMP2.waveEnd - 0.5 || !Game.units.some(u => !u.dead && isPerson(u) && u.type !== 'hero' && u.y < CAMP2.exit[1] - 3) },
@@ -274,6 +281,8 @@ CAMP_ACTS[2] = {
       ['grum', 'Таны уходят последними. Он ушёл… вместе с горой.'],
       ['pim', 'Это я тоже запишу. Красиво.'],
       ['grum', 'Это не красиво, Пим. Это грустно. Пиши «грустно».'],
+      ['troll', 'Гномы ушли? Тролль запомнил запах. Тролль догонит. Тролль не торопится — тролль долго живёт.'],
+      ['grum', 'Прекрасно. За нами гонятся гоблины и тролли. Никогда ещё мы не были так популярны.'],
     ] },
     { k: 'end' },
   ],

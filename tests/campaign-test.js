@@ -213,7 +213,7 @@ const BOT = `(function () {
     minX = Math.min(minX, s.x); king = king || s.king; haltedAtBorder = Math.max(haltedAtBorder, s.halt);
     if (s.over) { over = s.over; break; }
   }
-  const end = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, n: CAMP_ACTS[4].steps.length, f: { fires: Game.camp.flags.fires, found: Game.camp.flags.found, fled: Game.camp.flags.kingFled }, prog: campProg(), open5: campIsOpen(5), objs: Game.camp.objs })'));
+  const end = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, n: CAMP_ACTS[4].steps.length, f: { fires: Game.camp.flags.fires, found: Game.camp.flags.found, fled: Game.camp.flags.kingFled, traps: Game.camp.flags.traps || {}, duel: Game.camp.flags.duelDone }, prog: campProg(), open5: campIsOpen(5), objs: Game.camp.objs })'));
   console.log('Проверка: акт 4, шаги ' + seen.join(' '));
   if (!over) fail(`акт 4 не закончился за 60 минут: шаг ${end.i} из ${end.n}; цели ${JSON.stringify(end.objs)}`);
   else {
@@ -223,7 +223,23 @@ const BOT = `(function () {
   }
   if (minX > h.run('CAMP4.border')) fail('колонна не дошла до межевого камня');
   if (!king) fail('король Шнырь так и не вышел на бой');
+  if (Object.keys(end.f.traps).length < 4) fail('ловушки тролля на дороге не все сняты или сработали: ' + JSON.stringify(end.f.traps));
+  if (!end.f.duel) fail('поединок с Чемпионом второй ночью не состоялся');
+  else console.log('Проверка: акт 4 — ловушки ' + JSON.stringify(end.f.traps) + ', поединок состоялся');
   if (!haltedAtBorder) fail('погоня не остановилась у межевого камня');
+  // ловушки, которые никто не снял: яма (хлеб, травма), сеть (тролль из засады), обвал (камни на дороге)
+  const th = JSON.parse(h.run(`JSON.stringify((() => {
+    const C = Game.camp, s = Game.buildings.find(b => b.type === 'storehouse' && !b.removed), b0 = s.stock.bread || 0;
+    const ppl = camp4Ppl().slice(0, 3);
+    for (const u of ppl) { u.injury = null; u.march = 1; }
+    C.flags.traps = {};
+    for (let i = 0; i < CAMP4_TRAPS.length; i++) camp4TrapHit(C, camp4Trap(i), ppl);
+    let stones = 0; const t = camp4Trap(2);
+    for (let y = t.y - 3; y <= t.y + 3; y++) for (let x = t.x - 3; x <= t.x + 3; x++) { const o = World.obj[idx(x, y)]; if (o && o.t === 'stone') stones++; }
+    return { bread: b0 - (s.stock.bread || 0), hurt: ppl.filter(u => u.injury).length, troll: campFoes('trap').filter(N => N.k === 'campTroll').length, stones };
+  })())`));
+  if (th.bread < 6 || !th.hurt || !th.troll || !th.stones) fail('ловушки тролля срабатывают не так: ' + JSON.stringify(th));
+  else console.log('Проверка: акт 4 — сработавшие ловушки: ' + JSON.stringify(th));
   // акт 5: сценарий на новой карте, наследие кампании
   h.run('campStart(5); Game.heroAsk = false;');
   const sc = JSON.parse(h.run('JSON.stringify({ camp: !!Game.camp, mode: Game.goal && Game.goal.mode, foe: !!(Game.foe && !Game.foe.camp), leg: Game.campLeg, vaska: Game.units.some(u => u.cname === "Васька"), iron: Game.buildings.find(b => b.type === "storehouse").stock.iron, custom: !!MapOpt.custom })'));
@@ -232,6 +248,12 @@ const BOT = `(function () {
   if (sc.mode !== 'scenario') fail('акт 5 — не сценарий «Тишина дороже золота»');
   if (!sc.foe) fail('в сценарии нет настоящего Малгора');
   if (!sc.leg || !sc.vaska || !(sc.iron >= 6)) fail('наследие кампании не перешло в сценарий (Васька, железо)');
+  // голем с наследием: руны собраны — просыпается (реплики идут окном кампании, без интерфейса — молча) и идёт ломать
+  try {
+    const gw = h.run('glEnsure(); for (const r of Game.glq.runes) r.got = 1; Game.golem ? String(glWake()) : "нет голема"');
+    if (gw === 'false') fail('голем с тремя рунами не проснулся');
+    console.log('Проверка: акт 5 — голем проснулся: ' + gw + ', реплик ' + h.run('Object.values(CAMP_ACTS[5].talk).flat().length'));
+  } catch (e) { fail('акт 5, голем: ' + String(e).split('\n')[0]); }
   h.run('for (let k = 0; k < 400; k++) step(0.05);');
   const errs = errors.filter(e => !/предупрежд/i.test(e));
   if (errs.length) fail('акты 4–5, ошибки в логе: ' + errs.slice(0, 3).join(' | '));
@@ -269,6 +291,7 @@ const BOT = `(function () {
     const out = new Set();
     for (const A of Object.values(CAMP_ACTS)) {
     out.add(A.name); out.add(A.outro);
+    for (const L of Object.values(A.talk || {})) for (const l of L) out.add(l[1]);
     for (const S of A.steps) {
       for (const l of S.lines || []) out.add(l[1]);
       for (const o of S.objs || []) out.add(o.t);
