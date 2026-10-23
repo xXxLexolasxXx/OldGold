@@ -67,7 +67,10 @@ const runboard = require('./runboard').createRunboard(DATA, log);   // табл�
 // Кооп-забег до 5 героев (КООП_ЗАБЕГ.md): комнаты (server/rooms.js, общий код с ареной) и бой в комнате (server/runroom.js)
 const { createRooms } = require('./rooms');
 const runKind = require('./runroom').createRunKind({ log, out: key => runHeroOut(key), back: key => runHeroBack(key), finish: r => rooms.finish(r) });
-const rooms = createRooms({ log, maxRooms: +process.env.OLDGOLD_MAX_ROOMS || 6, kinds: { run: runKind } });
+const roomKinds = { run: runKind };
+const rooms = createRooms({ log, maxRooms: +process.env.OLDGOLD_MAX_ROOMS || 30, grace: 25000, kinds: roomKinds });   // общие комнаты: кооп-забег и арена
+const arena = require('./arena').createArena({ DATA, log, rooms });
+roomKinds.arena = arena.kind;
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {
@@ -392,7 +395,7 @@ class Conn {
     if (!this.alive) return;
     this.alive = false;
     conns.delete(this);
-    if (this.key) rooms.detach(this.key);   // кооп-забег: герой стоит под щитом и ждёт возврата
+    if (this.key) { rooms.detach(this.key); arena.onDrop(this.key); }   // кооп-забег: герой под щитом ждёт возврата; арена: бой на паузу, очередь свободна
     if (this.inGame) {
       left.set(this.key, Date.now());
       stats.leave(this.key);
@@ -603,6 +606,7 @@ async function auth(c, m) {
   const meta = JSON.parse(call('coopMeta'));
   c.send({ t: 'welcome', token, nick: c.nick, host: c.isHost, perms: meta.perms, permLabels: meta.permLabels, needClass: !rec.hero, classes: meta.classes, chat: meta.chat, sv: SERVER_VER });
   if (rec.hero) joinWorld(c);
+  arena.onBack({ key: c.key, nick: c.nick, send: o => c.send(o) });   // вернулся в идущий бой арены — продолжает
 }
 const nickFails = new Map();   // ключ ника -> { n, t }: неудачные пароли с любых адресов
 
@@ -649,6 +653,8 @@ function onGameMessage(c, m, text) {
     if (r && r.kind === 'run' && r.state === 'play') runKind.input(r, c.key, m);
     return;
   }
+  // ввод боя арены идёт 20 раз в секунду — мимо общего ведра, со своим пределом 30/с (arena.onInput)
+  if (m.t === 'arena' && m.a === 'in') { if (arena.onInput(c, m) === 'flood') c.sock.destroy(); return; }
   // защита от заливания (залипшая мышь, кривой клиент, бот): ведро на 60 сообщений, 30 в секунду — на ВСЕ сообщения
   // после входа (раньше пауза, доска почёта и прочие служебные шли мимо и рассылали тосты всем без предела)
   const nowMs = Date.now();
@@ -668,6 +674,7 @@ function onGameMessage(c, m, text) {
     else if (m.a === 'quit') runKind.quit(r, c.key);
     return;
   }
+  if (m.t === 'arena') { arena.onMessage({ key: c.key, nick: c.nick, ip: c.ip, send: o => c.send(o) }, m); return; }
   if (m.t === 'class') {
     const rec = users[c.key];
     if (rec.hero || c.inGame) return;
@@ -864,7 +871,7 @@ setInterval(() => {
   for (const [k, f] of authFails) if (now - f.t > 60000) authFails.delete(k);
 }, 5000);
 
-function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); runboard.save(); process.exit(0); }
+function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); runboard.save(); arena.stop(); process.exit(0); }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 

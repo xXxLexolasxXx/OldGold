@@ -196,6 +196,10 @@ const closedSoon = async (cl, ms = 3000) => { const t0 = Date.now(); while (!cl.
       { t: 'erase', cells: Array.from({ length: 5000 }, (_, i) => [i % 90, i % 60]) }, { t: 'trav', a: 'talk', id: 1e300 }, { t: 'dil', seq: {}, i: 1 },
       // кооп-пакет: кривые, но без опасных имён (их режет msgSafe, а больше 20 таких — обрыв, это проверено выше)
       { t: 'decor', k: 'tree', x: 10, y: 10 }, { t: 'decor', k: 'statue', x: '5', y: [] }, { t: 'undecor', x: -1, y: 1e9 },
+      // арена онлайн: кривые команды очереди, вызова, ввода и таблицы
+      { t: 'arena', a: 'queue', cls: { x: 1 } }, { t: 'arena', a: 'queue', cls: 5 }, { t: 'arena', a: 'invite', cls: 'zzz' },
+      { t: 'arena', a: 'accept', code: 'zzzzzz' }, { t: 'arena', a: 'accept', code: [1] }, { t: 'arena', a: 'in', mx: 'x', my: [], cast: 1e9, roll: {}, aim: 'a' }, { t: 'arena', a: 5 }, { t: 'arena' },
+      { t: 'arena', a: 'surrender' }, { t: 'arena', a: 'board' }, { t: 'arena', a: 'hide', on: 'да' }, { t: 'arena', a: 'resume' }, { t: 'arena', a: 'hello' }, { t: 'arena', a: 'leave' },
       { t: 'give', to: 'nobody', slot: '1', n: -1 }, { t: 'give', to: 'Fuzzer', slot: 0 }, { t: 'give', to: 'Fuzzer', slot: 1e300 }, { t: 'vote', i: 99 },
     ];
     for (const m of poison) me.send(m);
