@@ -534,6 +534,8 @@ I18N.add('en', {
   "Часы пик": "Rush Hour",
   "10 столкновений на дорогах. Трудяги, конечно, ни при чём.": "10 road collisions. The haulers, of course, had nothing to do with it.",
   "Охотник за привидениями": "Ghostbuster",
+  "Жатва окончена": "Harvest Is Over",
+  "Одолеть жнеца. Коса теперь висит над камином, косить ею никто не решается.": "Defeat a reaper. The scythe now hangs over the fireplace; nobody dares to mow with it.",
   "Три призрака отправлены на покой. Или в отпуск — кто их разберёт.": "Three ghosts put to rest. Or on vacation — who can tell.",
   "Диплом мастера": "Master's Diploma",
   "Герой обучился в гильдии. Теперь с гордостью смотрит в зеркало.": "The hero trained at a guild. Now he looks proudly in the mirror.",

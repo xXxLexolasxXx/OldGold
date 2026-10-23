@@ -419,7 +419,7 @@ function glHealTick(g) {
   const _apply = applySave;
   applySave = function (s) {
     _apply(s);
-    Game.glq = s.glq && Array.isArray(s.glq.runes) ? s.glq : null;
+    Game.glq = s.glq && Array.isArray(s.glq.runes) ? JSON.parse(JSON.stringify(s.glq)) : null;
     glEnsure();
   };
 }
