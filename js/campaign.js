@@ -109,6 +109,15 @@ if (typeof FSPEC !== 'undefined') {
   FSPEC.goblinChamp = { name: 'Чемпион гоблинов', mhp: 130, dmg: [6, 10], cd: 1.9, rng: 1.9, spd: 1.8, parry: 0.3, xp: 130, sz: 13,
     drop: [['gold', 3, 1], ['iron', 1, 0.5]], draw: (c, N) => campDrawGoblin(c, N), ai: campGoblinAi, bar: (c, N, px, py) => { if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - 70, false); } };
 }
+// тролль из-под Брюзги: гора легла на его пещеру, и виноватыми он назначил гномов. Медленный, толстокожий, бьёт больно
+if (typeof FSPEC !== 'undefined') {
+  FSPEC.campTroll = { name: 'Тролль из-под Брюзги', mhp: 120, dmg: [7, 12], cd: 2.2, rng: 1.9, spd: 1.35, parry: 0.08, xp: 140, sz: 18,
+    drop: [['hide', 2, 1], ['gold', 2, 0.7]], draw: (c, N) => campDrawGoblin(c, N, 'troll'), ai: campGoblinAi,
+    bar: (c, N, px, py) => { if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - 58, false); } };
+}
+// короткая реплика над головой врага (гоблины, тролли): живой противник, а не мишень
+function campBark(N, text, col = '#f0e0a0') { if (N && text) floater(N.x, N.y - (N.k === 'campTroll' ? 3.4 : 2.6), text, col); }
+
 function campGoblinAi(N, dt) {
   if (N.halt) { N.st = 'idle'; N.tg = 0; N.cdA -= dt; return; }   // встали как вкопанные (граница владений)
   if (N.hold && !N.tg) {
@@ -481,7 +490,7 @@ function campEls() {
     if (b) { e.stopPropagation(); campUiAct(b.dataset.camp, b); }
   }, true);
   document.addEventListener('keydown', e => {
-    if (!Game.camp || CampUI.el.dlg.classList.contains('hidden')) return;
+    if (!(Game.camp || campTalkOn()) || CampUI.el.dlg.classList.contains('hidden')) return;
     if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); campUiAct('next'); }
     else if (e.code === 'Escape') campUiAct('skip');
   });
@@ -493,6 +502,12 @@ function campUiAct(a, btn) {
   if (a === 'cstart') { campCoopStartAsk(+btn.dataset.n); return; }
   if (a === 'cclose') { campHideEnd(); return; }
   if (campMir() && C && campCoopAct(C, a, btn)) return;
+  if ((a === 'next' || a === 'skip') && !C && campTalkOn()) {
+    if (a === 'skip') CampUI.talk.length = 0; else CampUI.talk.shift();
+    CampUI.talkCur = null; CampUI.idle = 0;
+    if (!CampUI.talk.length) campHideDlg();
+    return;
+  }
   if (a === 'next' || a === 'skip') {
     const S = C && campStepNow(C);
     if (!S || (S.k !== 'say' && S.k !== 'cut')) return;
@@ -609,8 +624,12 @@ function campSetFace(E, w, who) {
 }
 
 function campRenderDlg(C, S) {
-  const E = campEls(), [who, text] = S.lines[CampUI.k] || ['note', ''];
-  const w = CAMP_WHO[who] || CAMP_WHO.note;
+  const [who, text] = S.lines[CampUI.k] || ['note', ''];
+  campRenderLine(who, text, CampUI.k < S.lines.length - 1, S.k === 'cut');
+  if (campMir()) { CampUI.voteSig = ''; campCoopBtns(C, S); }
+}
+function campRenderLine(who, text, more, cut) {
+  const E = campEls(), w = CAMP_WHO[who] || CAMP_WHO.note;
   const name = who === 'hero' && campHero() ? campHero().hero.name || w.name : w.name;
   const fem = who === 'hero' && typeof haOf === 'function' && (haOf(campHero()) || [])[10] === 1;
   campSetFace(E, w, fem ? 'heroF' : CAMP_WHO[who] ? who : 'note');
@@ -620,9 +639,8 @@ function campRenderDlg(C, S) {
   tx.textContent = text;
   tx.classList.remove('in'); void tx.offsetWidth; tx.classList.add('in');
   if (!E.dlg.querySelector('[data-camp="next"]')) campRestoreBtns();
-  E.dlg.querySelector('[data-camp="next"]').textContent = CampUI.k < S.lines.length - 1 ? 'Дальше ▸' : 'Закрыть ▸';
-  if (campMir()) { CampUI.voteSig = ''; campCoopBtns(C, S); }
-  E.dlg.classList.toggle('cut', S.k === 'cut');
+  E.dlg.querySelector('[data-camp="next"]').textContent = more ? 'Дальше ▸' : 'Закрыть ▸';
+  E.dlg.classList.toggle('cut', !!cut);
   E.dlg.classList.remove('hidden');
 }
 // окно выбора: вопрос, варианты кнопками; после выбора — чем кончилось, и «Дальше»
@@ -722,6 +740,7 @@ function campUiTick() {
   const E = campEls();
   if (!C) {
     if (!E.hud.classList.contains('hidden')) E.hud.classList.add('hidden');
+    if (campTalkOn()) { if (!campBlocked()) campTalkTick(); return; }
     if (!E.dlg.classList.contains('hidden')) campHideDlg();
     return;
   }
@@ -753,6 +772,20 @@ function campUiTick() {
     if (k !== CampUI.k) { CampUI.k = k; campRenderDlg(C, S); } else campCoopBtns(C, S);
     return;
   }
+  CampUI.idle += dt;
+  if (CampUI.idle >= CAMP_IDLE) campUiAct('next');
+}
+
+// реплики вне акта (сценарий с наследием кампании, акт 5): очередь [[кто, текст]…], игру не останавливают, листаются сами
+const campTalkOn = () => !!(CampUI.talk && CampUI.talk.length);
+function campTalk(lines) {
+  if (!campHasUI() || !lines || !lines.length) return;
+  (CampUI.talk || (CampUI.talk = [])).push(...lines);
+}
+function campTalkTick() {
+  const now = performance.now(), dt = Math.min(1, (now - (CampUI.lastNow || now)) / 1000), L = CampUI.talk[0];
+  CampUI.lastNow = now;
+  if (CampUI.talkCur !== L) { CampUI.talkCur = L; CampUI.idle = 0; campRenderLine(L[0], L[1], CampUI.talk.length > 1, false); return; }
   CampUI.idle += dt;
   if (CampUI.idle >= CAMP_IDLE) campUiAct('next');
 }

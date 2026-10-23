@@ -1,8 +1,9 @@
 'use strict';
 // Кампания, акт 4 «Игра не стоит свеч» (КАМПАНИЯ.md §3): дорога на запад по дедовой карте. Колонна идёт от стоянки
 // к стоянке, на стоянке зажигается большой костёр (у огня гоблины гномов не трогают), герой днём разведывает путь,
-// а ночью отбивает погоню Шныря. На третью ночь приходит сам король. У межевого камня с зелёным огнём погоня
-// останавливается: дальше — земли Малгора. «Игра не стоит свеч. Буквально — он их гасит.»
+// а ночью отбивает погоню Шныря. Тролль из-под Брюзги обгоняет колонну и ставит на дороге ловушки (яма, сеть, обвал) —
+// днём герой их снимает. Вторая ночь — поединок с Чемпионом гоблинов, на третью приходит сам король. У межевого камня
+// с зелёным огнём погоня останавливается: дальше — земли Малгора. «Игра не стоит свеч. Буквально — он их гасит.»
 // Дальше — сценарий «Тишина дороже золота» (акт 5, js/campaign/act5.js) с наследием кампании.
 
 const CAMP4 = {
@@ -17,13 +18,15 @@ const CAMP4 = {
 
 // ---------- Карта: дорога с востока на запад, пустошь → луга ----------
 
+const camp4RoadY = x => 36 + Math.sin(x * 0.07) * 4 + Math.sin(x * 0.19) * 1.5;
+
 function camp4Map() {
   const { W, H } = CAMP4, m = meNew(W, H, 'meadow', 'Дорога на запад');
   m.seed = CAMP4.seed; m.nm = 'manual'; m.desc = 'Кампания, акт 4: дорога к Долине Старого Золота';
   const n1 = camp1Noise(51, 9), n2 = camp1Noise(52, 6), nf = camp1Noise(53, 7);
   const rnd = mulberry32(CAMP4.seed);
   const at = (x, y) => y * W + x;
-  const roadY = x => 36 + Math.sin(x * 0.07) * 4 + Math.sin(x * 0.19) * 1.5;
+  const roadY = camp4RoadY;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = at(x, y);
     if (y < 6 + (n1(x, y) - 0.5) * 6 || y > H - 7 + (n2(x, y) - 0.5) * 5) m.t[i] = 2;
@@ -65,11 +68,12 @@ function camp4Camp(C, k) {
   }
 }
 
-function camp4Chase(C, n, champs, king) {
+function camp4Chase(C, n, champs, king, trolls = 0) {
   const col = C.flags.goal || CAMP4.start;
   const x = Math.min(CAMP4.W - 4, col[0] + 26), y = col[1];
   for (let k = 0; k < n; k++) campFoe('goblin', x + (k % 3), y - 2 + (k % 5), 'chase', { delay: k * 0.6, hunt: true });
   for (let k = 0; k < champs; k++) campFoe('goblinChamp', x + 2, y + k * 2, 'chase', { delay: 2 + k, hunt: true });
+  for (let k = 0; k < trolls; k++) campFoe('campTroll', x + 4, y + 3 - k * 6, 'chase', { delay: 4 + k, hunt: true });
   if (king && !C.flags.kingOut) {
     C.flags.kingOut = 1;
     const N = campFoe('shnyr', x + 3, y, 'chase', { delay: 3, hunt: true });
@@ -83,6 +87,107 @@ if (typeof FSPEC !== 'undefined') {
   FSPEC.shnyr = { name: 'Король Шнырь Пороховой', mhp: 260, dmg: [6, 11], cd: 1.7, rng: 1.8, spd: 2.2, parry: 0.25, xp: 260, sz: 10,
     drop: [['gold', 6, 1]], draw: (c, N) => campDrawGoblin(c, N, 'shnyrKing'), ai: campGoblinAi,
     bar: (c, N, px, py) => { if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - 62, true); } };
+}
+
+// поединок второй ночи: Чемпион бьётся только с героем, свита ждёт в сторонке. Чемпион пал — свита разбегается;
+// герой тянет дольше двух минут — свите надоедает, и Чемпион становится обычной погоней
+if (typeof FSPEC !== 'undefined' && FSPEC.goblinChamp) {
+  FSPEC.champDuel = Object.assign({}, FSPEC.goblinChamp, { draw: (c, N) => campDrawGoblin(c, N, 'goblinChamp'),
+    ai(N, dt) { const h = campHero(); if (h && !h.dead && N.ctag === 'duel') { N.tg = h.id; N.hunt = true; N.prov = Game.time; } campGoblinAi(N, dt); } });
+}
+function camp4Duelist(C) {
+  const col = C.flags.goal || CAMP4.camps[1];
+  campFoe('champDuel', Math.min(CAMP4.W - 4, col[0] + 9), col[1], 'duel', { delay: 1, hunt: true });
+  C.flags.duelT = Game.time;
+}
+function camp4DuelTick(C) {
+  if (C.flags.duelDone) return;
+  const D = campFoes('duel')[0], late = Game.time - (C.flags.duelT || Game.time) > 120;
+  if (!D) {
+    C.flags.duelDone = 1; C.flags.duelWon = 1;
+    const h = campHero();
+    if (h) floater(h.x, h.y - 2.6, 'Чемпион повержен! Свита удирает', '#ffe080');
+    for (const N of campFoes('chase')) { N.halt = 0; N.st = 'vanish'; N.vt = 0; }
+    return;
+  }
+  if (late) { C.flags.duelDone = 1; D.ctag = 'chase'; campBark(D, 'Надоело! Все на них!'); for (const N of campFoes('chase')) N.halt = 0; return; }
+  for (const N of campFoes('chase')) N.halt = N.st === 'emerge' && N.t < 0 ? 0 : 1;
+}
+
+// ---------- Ловушки тролля на дороге (дни 2 и 3) ----------
+// Герой снимает ловушку, если дойдёт до неё первым; иначе она срабатывает на голове колонны (колонна идёт на запад)
+
+const CAMP4_TRAPS = [[108, 'pit', 2], [96, 'net', 2], [72, 'rocks', 3], [60, 'pit', 3]];    // x на дороге, вид, день
+const camp4Trap = i => { const [x, k, d] = CAMP4_TRAPS[i]; return { i, x, y: Math.round(camp4RoadY(x)), k, d }; };
+const camp4TrapSt = (C, i) => (C.flags.traps || {})[i] || '';
+
+function camp4TrapTick(C, day) {
+  const T = C.flags.traps || (C.flags.traps = {}), h = campHero(), ppl = camp4Ppl();
+  for (let i = 0; i < CAMP4_TRAPS.length; i++) {
+    const t = camp4Trap(i);
+    if (t.d !== day || T[i]) continue;
+    if (h && !h.inside && Math.hypot(h.x - t.x - 0.5, h.y - t.y - 0.5) < 2) {
+      T[i] = 'off';
+      floater(t.x + 0.5, t.y - 1, 'Ловушка снята', '#a8e080');
+      if (typeof logEvent === 'function') logEvent('gossip', 'Герой снял ловушку тролля на дороге', t.x, t.y);
+      continue;
+    }
+    const lead = ppl.filter(u => u.march && u.x < t.x + 1.5 && Math.abs(u.y - t.y) < 6);
+    if (lead.length) camp4TrapHit(C, t, lead.sort((a, b) => a.x - b.x));
+  }
+}
+
+// колонна ждёт у костра, пока герой проверяет дорогу: до 40 с или пока ловушки дня не сняты
+function camp4DayGo(C, day, p) {
+  if (C.flags.goal && C.flags.goal[0] === p[0]) return;
+  const w = C.flags.mw || (C.flags.mw = {});
+  if (w[day] == null) w[day] = Game.time + 40;
+  if (Game.time >= w[day] || !CAMP4_TRAPS.some((t, i) => t[2] === day && !camp4TrapSt(C, i))) camp4Go(C, p);
+}
+
+function camp4TrapHit(C, t, lead) {
+  C.flags.traps[t.i] = 'hit';
+  const cx = t.x + 0.5, cy = t.y + 0.5, hurt = n => { if (typeof injure === 'function') for (const u of lead.slice(0, n)) injure(u, Math.random() < 0.5 ? 'arm' : 'leg'); };
+  if (t.k === 'pit') {
+    const s = Game.buildings.find(b => b.type === 'storehouse' && !b.removed);
+    if (s) s.stock.bread = Math.max(0, (s.stock.bread || 0) - 6);
+    hurt(1);
+    floater(cx, cy - 1.5, 'В яму! Телега без колеса, хлеба −6', '#f08a6a');
+  } else if (t.k === 'net') {
+    floater(cx, cy - 1.5, 'Сеть! Засада тролля!', '#f08a6a');
+    const N = campFoe('campTroll', t.x - 2, t.y - 4, 'trap', { hunt: true });
+    campBark(N, 'Попались! Тролль ужинает!');
+  } else {
+    const busy = new Set(Game.units.map(u => idx(Math.floor(u.x), Math.floor(u.y))));
+    for (let k = 0; k < 14; k++) {
+      const x = t.x - 2 + (k % 5), y = t.y - 2 + (k / 5 | 0) * 2, i = idx(x, y);
+      if (inb(x, y) && World.terrain[i] === T_GRASS && !World.bmap[i] && !World.obj[i] && !busy.has(i)) setStone(i, 2);
+    }
+    hurt(2);
+    PF.regT = -1e9;
+    floater(cx, cy - 1.5, 'Обвал! Камни на дороге', '#f08a6a');
+    fxBurst(cx * TILE, cy * TILE, 26, ['#8a7a6a', '#5a4a3a', '#c8b898'], 90, 80, 1.2, 3, 160);
+    if (typeof campSnd === 'function') campSnd('campRockfall', t.x, t.y, 1);
+  }
+}
+
+// вид ловушек: яма под листьями (сработала — открытая, с кольями), сеть с колокольцами, валуны на подпорке
+function camp4DrawTrap(c, t, st) {
+  const x = Math.round(t.x * TILE + 16), y = Math.round(t.y * TILE + 18), tm = Game.time;
+  if (t.k === 'pit') {
+    c.fillStyle = st ? '#1a120a' : '#5a4a26'; c.beginPath(); c.ellipse(x, y, 15, 6, 0, 0, 7); c.fill();
+    if (st) { c.strokeStyle = '#8a6a3a'; c.lineWidth = 2; for (const dx of [-8, -3, 2, 7]) { c.beginPath(); c.moveTo(x + dx, y + 3); c.lineTo(x + dx + 1, y - 2); c.stroke(); } return; }
+    for (const [dx, dy, col] of [[-9, -1, '#6a7a30'], [-3, 2, '#8a8a3a'], [4, -2, '#7a6a2a'], [9, 1, '#6a7a30'], [0, -3, '#9a8a40']]) { c.fillStyle = col; c.beginPath(); c.ellipse(x + dx, y + dy, 3.5, 1.6, dx * 0.2, 0, 7); c.fill(); }
+    c.fillStyle = '#c8b080'; for (const dx of [-6, 1, 6]) { c.beginPath(); c.moveTo(x + dx - 1.5, y); c.lineTo(x + dx, y - 4); c.lineTo(x + dx + 1.5, y); c.fill(); }
+  } else if (t.k === 'net') {
+    c.strokeStyle = 'rgba(200,180,130,0.85)'; c.lineWidth = 1;
+    for (let k = -3; k <= 3; k++) { c.beginPath(); c.moveTo(x + k * 5 - 6, y - 6); c.lineTo(x + k * 5 + 6, y + 6); c.moveTo(x + k * 5 + 6, y - 6); c.lineTo(x + k * 5 - 6, y + 6); c.stroke(); }
+    c.fillStyle = '#e0c050'; for (const dx of [-14, 14]) { c.beginPath(); c.arc(x + dx + Math.sin(tm * 6 + dx) * 0.8, y - 6, 1.8, 0, 7); c.fill(); }
+  } else {
+    c.strokeStyle = '#6a4a2a'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(x - 10, y + 2); c.lineTo(x - 5, y - 16); c.stroke();
+    c.strokeStyle = '#c8b080'; c.lineWidth = 1; c.beginPath(); c.moveTo(x - 5, y - 16); c.quadraticCurveTo(x + 4, y - 6, x + 12, y); c.stroke();
+    for (const [dx, dy, r] of [[-1, -19, 5], [5, -16, 4], [1, -24, 3.5]]) { c.fillStyle = '#7a7468'; c.beginPath(); c.ellipse(x + dx, y + dy, r, r * 0.8, 0, 0, 7); c.fill(); c.fillStyle = '#9a9488'; c.beginPath(); c.ellipse(x + dx - 1, y + dy - 1, r * 0.5, r * 0.35, 0, 0, 7); c.fill(); }
+  }
 }
 
 function camp4DrawStone(c) {
@@ -169,6 +274,11 @@ CAMP_ACTS[4] = {
     const [sx, sy] = CAMP4.stone, [px, py] = CAMP4.spire;
     if (sx > x0 - 3 && sx < x1 + 3 && sy > y0 - 3 && sy < y1 + 4) list.push([sy + 0.9, () => camp4DrawStone(c)]);
     if (px > x0 - 6 && px < x1 + 6 && py > y0 - 12 && py < y1 + 4) list.push([py + 0.5, () => camp4DrawSpire(c)]);
+    for (let i = 0; i < CAMP4_TRAPS.length; i++) {
+      const t = camp4Trap(i), st = camp4TrapSt(Game.camp, i);
+      if (t.d > (Game.camp.flags.trapDay || 0) || st === 'off' || (st && t.k !== 'pit')) continue;
+      if (t.x > x0 - 2 && t.x < x1 + 2 && t.y > y0 - 2 && t.y < y1 + 2) list.push([t.y + 0.2, () => camp4DrawTrap(c, t, st)]);
+    }
     if (typeof campDrawCartAt === 'function') for (const k of camp4Carts()) if (k.x > x0 - 3 && k.x < x1 + 3 && k.y > y0 - 2 && k.y < y1 + 3) list.push([k.y + 0.9, () => campDrawCartAt(c, k.x, k.y, k.ph, k.flip)]);
   },
   steps: [
@@ -178,6 +288,7 @@ CAMP_ACTS[4] = {
       ['pim', 'Налево у сухого дуба, потом прямо до камня с огоньком. Я… читал.'],
       ['yagla', 'Пим, у тебя всё «читал». Ты что, и про нас читал, пока мы не пришли?'],
       ['pim', 'Ха-ха. Нет, конечно. Пошли?'],
+      ['grum', 'За нами — Шнырь, за Шнырём — тролль из-под Брюзги. Каждый хочет свою долю. А мы, выходит, пирог.'],
     ] },
     { k: 'do', fn(C) { camp4Go(C, CAMP4.camps[0]); } },
     { k: 'check' },
@@ -199,10 +310,16 @@ CAMP_ACTS[4] = {
     { k: 'goal', label: 'Ночь первая', objs: [{ id: 'n1', t: 'Отбить погоню', cur: () => (campFoes('chase').length ? 0 : 1) }] },
     { k: 'wait', label: 'Ночь первая', until: () => !camp4Night() },
     // ---- день 2
-    { k: 'do', fn(C) { camp4Go(C, CAMP4.camps[1]); } },
-    { k: 'goal', label: 'День второй: в пути',
-      init(C) { if (!C.flags.goal || C.flags.goal[0] !== CAMP4.camps[1][0]) camp4Go(C, CAMP4.camps[1]); },
+    { k: 'cut', pause: true, cam: [104, 36], label: 'Следы на дороге', fx(C) { C.flags.trapDay = Math.max(2, C.flags.trapDay || 0); }, lines: [
+      ['note', 'Утром на дороге — следы. Огромные, босые, по три пальца. Ночью кто-то обогнал колонну.'],
+      ['troll', 'Тролль впереди. Тролль копал. Тролль ждёт.'],
+      ['grum', 'Тролль наставил ловушек. Герой — вперёд, проверь дорогу. Колонна подождёт у костра, но недолго.'],
+    ] },
+    { k: 'goal', label: 'День второй: в пути', hint: 'Ловушки тролля — на дороге впереди. Колонна ждёт у костра, пока герой их снимает (до 40 секунд), потом идёт сама.',
+      during(C) { camp4DayGo(C, 2, CAMP4.camps[1]); camp4TrapTick(C, 2); },
       objs: [
+        { id: 'trap0', t: 'Ловушка: волчья яма на дороге', at: [108, Math.round(camp4RoadY(108))], cur: C => (camp4TrapSt(C, 0) ? 1 : 0) },
+        { id: 'trap1', t: 'Ловушка: сеть у дороги', at: [96, Math.round(camp4RoadY(96))], cur: C => (camp4TrapSt(C, 1) ? 1 : 0) },
         { id: 'camp', t: 'Дойти до второй стоянки', at: CAMP4.camps[1], cur: () => (camp4Near(CAMP4.camps[1], 7) >= camp4Ppl().length * 0.8 ? 1 : 0) },
         { id: 'scout', t: 'Герой: разведать брошенный лагерь', zone: CAMP4.scouts[1].concat(2.6) },
       ] },
@@ -215,14 +332,29 @@ CAMP_ACTS[4] = {
       ['grum', 'Сто лет «можно» не наступало. Ну что ж. Наступило без спросу. В котелке — десяток монет: прадед знал, что мы вернёмся.'],
     ] },
     { k: 'wait', label: 'Стоянка у костра', until: () => camp4Night() },
-    { k: 'do', fn(C) { if (!C.flags.n2) { C.flags.n2 = 1; camp4Chase(C, 7, 1, false); } } },
-    { k: 'goal', label: 'Ночь вторая', objs: [{ id: 'n2', t: 'Отбить погоню (с чемпионом)', cur: () => (campFoes('chase').length ? 0 : 1) }] },
+    { k: 'do', fn(C) { if (!C.flags.n2) { C.flags.n2 = 1; camp4Chase(C, 6, 0, false); camp4Duelist(C); } } },
+    { k: 'cut', cam: CAMP4.camps[1], label: 'Ночь вторая', lines: [
+      ['champ', 'Эй, правнук Фонарщика! Выходи один на один! Победишь — уйдём до утра. Проиграешь — заберу бороду.'],
+      ['champ', 'Чужую. У тебя своей маловато.'],
+      ['grum', 'Гоблинская дуэль — это честно до первого удара в спину. Иди, правнук. Только спиной к нему не стой.'],
+    ] },
+    { k: 'goal', label: 'Ночь вторая: поединок', hint: 'Чемпион бьётся только с героем, свита ждёт. Победите его — свита разбежится.',
+      during(C) { camp4DuelTick(C); },
+      objs: [
+        { id: 'duel', t: 'Победить Чемпиона в поединке', cur: C => (C.flags.duelDone ? 1 : 0) },
+        { id: 'n2', t: 'Отбить погоню', cur: () => (campFoes('chase').length || campFoes('duel').length ? 0 : 1) },
+      ] },
     { k: 'wait', label: 'Ночь вторая', until: () => !camp4Night() },
     // ---- день 3
-    { k: 'do', fn(C) { camp4Go(C, CAMP4.camps[2]); } },
-    { k: 'goal', label: 'День третий: в пути',
-      init(C) { if (!C.flags.goal || C.flags.goal[0] !== CAMP4.camps[2][0]) camp4Go(C, CAMP4.camps[2]); },
+    { k: 'cut', pause: true, cam: [68, 36], label: 'Следы на дороге', fx(C) { C.flags.trapDay = 3; }, lines: [
+      ['troll', 'Тролль снова впереди. Камни — наверху. Яма — внизу. Гномы — посередине.'],
+      ['grum', 'Он ещё и стихи сочиняет. Герой, вперёд — снимать его поэзию с дороги.'],
+    ] },
+    { k: 'goal', label: 'День третий: в пути', hint: 'Ловушки тролля — на дороге впереди. Колонна ждёт у костра, пока герой их снимает (до 40 секунд), потом идёт сама.',
+      during(C) { camp4DayGo(C, 3, CAMP4.camps[2]); camp4TrapTick(C, 3); },
       objs: [
+        { id: 'trap2', t: 'Ловушка: камни над дорогой', at: [72, Math.round(camp4RoadY(72))], cur: C => (camp4TrapSt(C, 2) ? 1 : 0) },
+        { id: 'trap3', t: 'Ловушка: ещё одна яма', at: [60, Math.round(camp4RoadY(60))], cur: C => (camp4TrapSt(C, 3) ? 1 : 0) },
         { id: 'camp', t: 'Дойти до третьей стоянки', at: CAMP4.camps[2], cur: () => (camp4Near(CAMP4.camps[2], 7) >= camp4Ppl().length * 0.8 ? 1 : 0) },
         { id: 'scout', t: 'Герой: посмотреть, что за камень с огоньком', zone: CAMP4.scouts[2].concat(2.6) },
       ] },
@@ -235,6 +367,8 @@ CAMP_ACTS[4] = {
     { k: 'do', fn(C) { if (!C.flags.n3) { C.flags.n3 = 1; camp4Chase(C, 8, 2, true); } } },
     { k: 'cut', cam: [64, 38], label: 'Ночь третья', lines: [
       ['shnyr', 'Бородатые! Король лично пришёл попрощаться! С фейерверком!'],
+      ['champ', 'Вчерашний Чемпион был ненастоящий! Я — настоящий! У меня и шлем есть!'],
+      ['shnyr', 'Вот и покажи. А я покомандую. Издалека.'],
       ['grum', 'Сам Шнырь. В короне. На королевскую взбучку тоже, значит, лично.'],
     ] },
     { k: 'goal', label: 'Ночь третья', hint: 'Король крепок, но трусоват: поколотите его — удерёт.',
@@ -243,7 +377,7 @@ CAMP_ACTS[4] = {
     // ---- к межевому камню
     { k: 'do', fn(C) {
       camp4Go(C, [CAMP4.stone[0] - 2, CAMP4.stone[1] + 2]);
-      if (!C.flags.last) { C.flags.last = 1; camp4Chase(C, 6, 1, false); C.flags.kingOut = 0; camp4Chase(C, 0, 0, true); }
+      if (!C.flags.last) { C.flags.last = 1; camp4Chase(C, 6, 1, false, 1); C.flags.kingOut = 0; camp4Chase(C, 0, 0, true); }
     } },
     { k: 'goal', label: 'Межевой камень', hint: 'Погоня за спиной. Колонна — за камень, на запад.',
       objs: [{ id: 'cross', t: 'Довести колонну за межевой камень', at: CAMP4.stone, cur: () => (camp4Ppl().filter(u => u.x < CAMP4.border).length >= camp4Ppl().length * 0.8 ? 1 : 0) }],
@@ -255,10 +389,13 @@ CAMP_ACTS[4] = {
       for (const N of campFoes('chase')) N.halt = 1;
       C.flags.shnyrEnd = 1;
     }, lines: [
-      ['note', 'Гоблины выбежали к камню — и встали. Даже самые глупые. Особенно самые глупые.'],
+      ['note', 'Гоблины и тролль выбежали к камню — и встали. Даже самые глупые. Особенно самые глупые.'],
       ['shnyr', 'Стоять! Там Малгор. Игра не стоит свеч.'],
       ['gob', 'Каких свеч, ваше величество?'],
       ['shnyr', 'Любых. Буквально — он их гасит. Разворачиваемся!'],
+      ['champ', 'Ваше величество, я их догоню! Я быстрый!'],
+      ['shnyr', 'Догонишь. А обратно? Оттуда быстрыми не возвращаются. Оттуда вообще не возвращаются.'],
+      ['troll', 'Зелёный огонь. Тролль помнит. Тролль не пойдёт. Тролль… подождёт.'],
       ['mrak', '…Шум. Опять шум.'],
       ['grum', 'Слыхали? Кто-то там не спит. Ну да ладно.'],
       ['grum', 'Земля свободна. Подозрительно свободна.'],
