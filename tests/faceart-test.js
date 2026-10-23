@@ -1,5 +1,5 @@
 'use strict';
-// Портреты собеседников (js/campaign/faces.js): 13 лиц (гномы, гоблины, Малгор, рассказчик, герой и героиня, Старец голема),
+// Портреты собеседников (js/campaign/faces.js): 16 лиц (гномы, гоблины и их чемпион, тролль, голем, Малгор, рассказчик, герой и героиня, Старец голема),
 // каждое рисуется двумя кадрами (глаза открыты / моргнул) без исключений, кадры действительно разные, холст — 36×36 единиц
 // с надвыборкой ×6 → готовый портрет 72×72 пикселя; кэш не растёт сверх числа кадров; все собеседники кампании и лора
 // имеют портрет; без рисования (сервер, тесты) campFaceUrl возвращает '' — и диалоги остаются с буквой в круге.
@@ -40,8 +40,8 @@ vm.runInContext('document.createElement = (n) => __mk(1, 1);', Object.assign(ctx
 const run = s => vm.runInContext(s, ctx);
 
 const WHO = run('Object.keys(CAMP_FACE_DRAW)');
-check(WHO.length === 13, 'лиц должно быть 13, а их ' + WHO.length);
-for (const k of ['grum', 'yagla', 'pim', 'tan', 'shnyr', 'gob', 'zhmykha', 'kremen', 'mrak', 'note', 'hero', 'heroF', 'elder']) check(WHO.includes(k), 'нет лица ' + k);
+check(WHO.length === 16, 'лиц должно быть 16, а их ' + WHO.length);
+for (const k of ['grum', 'yagla', 'pim', 'tan', 'shnyr', 'gob', 'zhmykha', 'kremen', 'mrak', 'note', 'hero', 'heroF', 'elder', 'champ', 'troll', 'golem']) check(WHO.includes(k), 'нет лица ' + k);
 check(run('CF_W') === 72, 'портрет должен быть 72×72 пикселя');
 
 // два кадра у каждого лица — без исключений и разные
@@ -64,7 +64,7 @@ check(url === 'data:72x72', 'campFaceUrl вернул ' + url);
 for (const k of WHO) { run(`campFaceUrl('${k}', 0)`); run(`campFaceUrl('${k}', 1)`); }
 const n1 = run('Object.keys(CAMP_FACE).length');
 SIZES = []; for (const k of WHO) { run(`campFaceUrl('${k}', 0)`); run(`campFaceUrl('${k}', 1)`); }
-check(n1 === 26, 'в кэше должно быть 26 кадров, а их ' + n1);
+check(n1 === 32, 'в кэше должно быть 32 кадра, а их ' + n1);
 check(SIZES.length === 0, 'повторный вызов рисует заново');
 check(run("campFaceUrl('нет такого', 0)") === '', 'неизвестный собеседник должен давать пустую строку');
 
@@ -84,4 +84,4 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'campaign', 'fa
 check(bare.__r === '', 'без document портрет должен быть пустым');
 
 if (fails.length) { for (const f of fails) console.log('✗ ' + f); process.exit(1); }
-console.log('Портреты: 13 лиц × 2 кадра, 72×72, кэш 26 кадров — в порядке');
+console.log('Портреты: 16 лиц × 2 кадра, 72×72, кэш 32 кадра — в порядке');
