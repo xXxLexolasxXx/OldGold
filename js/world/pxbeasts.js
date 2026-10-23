@@ -314,34 +314,15 @@ function pbTroll(K, P, kind) {
   };
   const toes = (L, ramp) => { for (let t = 0; t < 4; t++) { const tx = L.fx + 18 + t * 6; pbBall(K, tx, -5, 4, 4.6, ramp, { amb: 0.5, fade: 0.4 }); K.path([[tx + 2, -6, 1.8], [tx + 6, -2, 0.6]], () => T.NA[t % 2]); } };
   const farL = legG(-30, -1), nearL = legG(14, 1);
-  const farA = armG(-14, -172, 0, 50, 46, true);                                             // дальнее плечо — позади, за туловищем, в руке оружие
-  const ang = P.up > 0.5 ? -2.2 : P.a < -0.3 ? -2.5 : P.a > 0.5 ? 0.5 : 1.95 + P.a * 0.3;    // висит назад-вниз / замах за голову / удар вперёд-вниз
-  Object.assign(farA, armG(-14, -172, ang, 50, 46, true));
-  const nearA = armG(40, -166, 1.5 - a * 0.25, 54, 50, false);                                 // ближняя рука свободна, висит до колен
-  if (P.up > 0.5 || a < -0.3 || a > 0.5) {                                                      // замах и удар — двумя руками: ближняя кисть берёт рукоять выше дальней
-    const gx = farA.hx + Math.cos(farA.a2 - 1.1) * 20, gy = farA.hy + Math.sin(farA.a2 - 1.1) * 20;
-    Object.assign(nearA, pbIK(40, -166, gx, gy, 54, 50, a > 0.5 ? 1 : -1), { grip: true });
-  }
+  const ang = P.up > 0.5 ? -2.2 : P.a < -0.3 ? -2.5 : P.a > 0.5 ? 0.5 : 1.75 + P.a * 0.3;    // висит / замах за голову / удар вперёд-вниз
+  const nearA = armG(-4, -168, ang, 52, 48, true);                                             // ближняя рука — от плеча у горба, в ней оружие
+  const farA = armG(26, -170, 1.45 - a * 0.2, 50, 46, false);                                  // дальняя — за туловищем, свободно висит
   const hx = 62 + (a > 0.5 ? 8 : 0), hy = -176 + (P.hurt > 0.5 ? 5 : 0);
   // ---- дальние нога и рука: отдельная, более тёмная «глина» за телом
   const INK0 = kind === 'trollS' ? [24, 22, 20] : [14, 22, 12];
   pbBlob(K, armPrims(farA).map(p => (p.e ? { e: [p.e[0], p.e[1], p.e[2] + 3.4, p.e[3] + 3.4] } : { c: p.c.map(([x, y, r]) => [x, y, r + 3.4]) })), [INK0], { amb: 0.5, k: 4 });   // тёмная обводка дальней руки
   pbBlob(K, [...legPrims(farL), ...armPrims(farA)], SKD, { amb: 0.36, k: 6, tex: texSkin });
   toes(farL, SKD);
-  // ---- оружие в дальней руке: за туловищем, пальцы обхватывают рукоять поверх
-  const whx = farA.hx, why = farA.hy, wa = farA.a2, bx = Math.cos(wa - 1.1), by = Math.sin(wa - 1.1);
-  if (T.wpn === 'club') {
-    const tx = whx + bx * 110, ty = why + by * 110;
-    pbLimb(K, whx - bx * 14, why - by * 14, tx, ty, 6, 16, WO, { tex: (t) => (((t * 30) % 1) < 0.12 ? -0.2 : 0) });
-    for (const t of [0.45, 0.7, 0.85]) pbBall(K, whx + bx * 110 * t + by * 12, why + by * 110 * t - bx * 12, 4, 4, WO, { amb: 0.5 });
-    for (const [t, r] of [[0.92, 1], [0.8, -1]]) K.path([[whx + bx * 110 * t, why + by * 110 * t, 2], [whx + bx * 110 * t + by * 10 * r, why + by * 110 * t - bx * 10 * r, 1]], () => [180, 176, 160]);
-  } else if (T.wpn === 'rock') {
-    pbBall(K, whx + bx * 20, why + by * 20, 30, 26, [[70, 62, 50], [106, 96, 80], [140, 130, 110], [176, 166, 146]], { amb: 0.5, rim: true, tex: (x, y) => (K.hsh(x * 0.4 + y * 2.3) > 0.9 ? -0.25 : 0) });
-    pbBall(K, whx + bx * 20 - 8, why + by * 20 - 10, 10, 6, T.moss, { amb: 0.5, fade: 0.4 });
-  } else {
-    const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push([whx + bx * 100 * t + Math.sin(t * 9) * 6, why + by * 100 * t + Math.cos(t * 7) * 6, 8 - t * 4]); }
-    K.path(pts, () => WO[1]); for (const t of [0.4, 0.7, 0.95]) K.path([[pts[Math.round(t * 8)][0], pts[Math.round(t * 8)][1], 2], [pts[Math.round(t * 8)][0] + 4, pts[Math.round(t * 8)][1] + 18, 1]], () => T.slime[0]);
-  }
   fingers(farA, SKD);
   // ---- тело одной «глиной»: горб, туловище, загривок, голова с челюстью, ближние нога и рука
   pbBlob(K, [
@@ -370,6 +351,20 @@ function pbTroll(K, P, kind) {
   const INK = kind === 'trollS' ? [24, 22, 20] : [14, 22, 12];
   pbBlob(K, armPrims(nearA).map(p => (p.e ? { e: [p.e[0], p.e[1], p.e[2] + 3.4, p.e[3] + 3.4] } : { c: p.c.map(([x, y, r]) => [x, y, r + 3.4]) })), [INK], { amb: 0.5, k: 4 });
   pbBlob(K, armPrims(nearA), SK, { amb: 0.5, k: 4, depth: 12, tex: texSkin });
+  // ---- оружие в ближней руке
+  const whx = nearA.hx, why = nearA.hy, wa = nearA.a2, bx = Math.cos(wa - 1.1), by = Math.sin(wa - 1.1);
+  if (T.wpn === 'club') {
+    const tx = whx + bx * 110, ty = why + by * 110;
+    pbLimb(K, whx - bx * 14, why - by * 14, tx, ty, 6, 16, WO, { tex: (t) => (((t * 30) % 1) < 0.12 ? -0.2 : 0) });
+    for (const t of [0.45, 0.7, 0.85]) pbBall(K, whx + bx * 110 * t + by * 12, why + by * 110 * t - bx * 12, 4, 4, WO, { amb: 0.5 });
+    for (const [t, r] of [[0.92, 1], [0.8, -1]]) K.path([[whx + bx * 110 * t, why + by * 110 * t, 2], [whx + bx * 110 * t + by * 10 * r, why + by * 110 * t - bx * 10 * r, 1]], () => [180, 176, 160]);
+  } else if (T.wpn === 'rock') {
+    pbBall(K, whx + bx * 20, why + by * 20, 30, 26, [[70, 62, 50], [106, 96, 80], [140, 130, 110], [176, 166, 146]], { amb: 0.5, rim: true, tex: (x, y) => (K.hsh(x * 0.4 + y * 2.3) > 0.9 ? -0.25 : 0) });
+    pbBall(K, whx + bx * 20 - 8, why + by * 20 - 10, 10, 6, T.moss, { amb: 0.5, fade: 0.4 });
+  } else {
+    const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push([whx + bx * 100 * t + Math.sin(t * 9) * 6, why + by * 100 * t + Math.cos(t * 7) * 6, 8 - t * 4]); }
+    K.path(pts, () => WO[1]); for (const t of [0.4, 0.7, 0.95]) K.path([[pts[Math.round(t * 8)][0], pts[Math.round(t * 8)][1], 2], [pts[Math.round(t * 8)][0] + 4, pts[Math.round(t * 8)][1] + 18, 1]], () => T.slime[0]);
+  }
   fingers(nearA, SK);
   // ---- лицо: ухо, пакля, бровь, глаз, нос, рот, клыки
   pbPoly(K, [[hx - 22, hy - 6], [hx - 40, hy - 18], [hx - 34, hy + 2], [hx - 22, hy + 6]], (x, y) => pbPick(SK, 0.55 - (x - hx + 40) / 30 * 0.1, K.dth(x, y)));
