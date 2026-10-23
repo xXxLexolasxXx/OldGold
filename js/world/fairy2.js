@@ -263,12 +263,15 @@ function fzLeshyTick(F, dt) {
   } else if (L.state === 'calm') {
     if (L.t > 6) L.state = 'leave';
   }
+  fzDying(L, L.state === 'leave');
+  L.mv = L.lx !== undefined && Math.hypot(L.x - L.lx, L.y - L.ly) > 1e-4; L.lx = L.x; L.ly = L.y;   // идёт — рисуется походка
   if (L.state === 'leave') { L.alpha -= dt * 0.4; if (L.alpha <= 0) F.les = null; }
 }
 
 // ---------- Кикимора ----------
 function fzKikTick(F, k, dt, act) {
   k.ph += dt; k.t += dt;
+  fzDying(k, !act);
   if (!act) { k.alpha = Math.max(0, k.alpha - dt * 0.5); return !!F.over && k.alpha <= 0; }
   k.alpha = Math.min(1, k.alpha + dt * 0.4);
   if (k.sated) { k.state = k.state === 'drag' ? 'hide' : k.state; }
@@ -358,6 +361,7 @@ function fzPondTick(F, P, dt, act) {
   v.ph += dt; r.ph += dt; v.t += dt; r.t += dt;
   const a = act ? Math.min(1, v.alpha + dt * 0.35) : Math.max(0, v.alpha - dt * 0.4);
   v.alpha = a; r.alpha = a;
+  fzDying(v, !act); fzDying(r, !act);
   if (!act) return !!F.over && a <= 0;
   // русалка: поёт по расписанию
   if (!P.calm) {
@@ -498,6 +502,7 @@ function fzBansheeTick(F, act, dt) {
     b.ph += dt; b.t += dt; b.wail = Math.max(0, b.wail - dt);
     let leaving = !act;
     if (b.omen && b.t > 7) leaving = true;
+    fzDying(b, leaving);
     b.alpha = Math.max(0, Math.min(0.75, b.alpha + (leaving ? -dt * 0.5 : dt * 0.4)));
     if (leaving && b.alpha <= 0) { F.ban.splice(i, 1); continue; }
     if (b.omen) { const dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy) || 1; if (d > 2) { b.x += dx / d * 0.5 * dt; b.y += dy / d * 0.5 * dt; } b.face = dx >= 0 ? 1 : -1; }
@@ -544,6 +549,7 @@ function fzWolvesTick(F, act, dt) {
     const w = ws[i];
     w.ph += dt * 6; w.t += dt; w.howlT = Math.max(0, (w.howlT || 0) - dt); w.howl -= dt; w.hold = Math.max(0, w.hold - dt);
     const away = !act || w.state === 'fade';
+    fzDying(w, away);
     w.alpha = Math.max(0, Math.min(0.62, w.alpha + (away ? -dt * 0.5 : dt * 0.4)));
     if (away && w.alpha <= 0) { fzWolfDrop(w, false); ws.splice(i, 1); continue; }
     if (w.state === 'fade') { w.x += (w.fx || 1) * 2.5 * dt; continue; }
@@ -668,6 +674,7 @@ function fzNoonTick(F, dt) {
   n.ph += dt; n.t += dt;
   const u = Game.unitMap.get(n.tgt);
   const away = n.state === 'leave' || nightAmt() > 0.05 || !u || u.dead;
+  fzDying(n, away);
   n.alpha = Math.max(0, Math.min(0.9, n.alpha + (away ? -dt * 0.6 : dt * 0.5)));
   if (away && n.alpha <= 0) { F.noon = null; return; }
   if (away) return;
@@ -1026,11 +1033,11 @@ function fzPxKit(W, H, OX, OY) {
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext('2d'), img = c.createImageData(W, H), D = img.data, SOL = new Uint8Array(W * H);
   const K = {
-    cv, W, H,
+    cv, W, H, ox: 0, oy: 0,                                                             // ox, oy — сдвиг всего, что рисуется (покачивание корпуса)
     dth: (x, y) => (FZ_B4[(Math.round(y) + OY) & 3][(Math.round(x) + OX) & 3] + 0.5) / 16,
     hsh: n => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); },
     P(x, y, col, a = 1, sol = true) {
-      x = Math.round(x) + OX; y = Math.round(y) + OY;
+      x = Math.round(x + K.ox) + OX; y = Math.round(y + K.oy) + OY;
       if (x < 0 || y < 0 || x >= W || y >= H || a <= 0) return;
       const i = (y * W + x) * 4, da = D[i + 3] / 255, oa = a + da * (1 - a);
       for (let k = 0; k < 3; k++) D[i + k] = Math.round((col[k] * a + D[i + k] * da * (1 - a)) / oa);
@@ -1058,6 +1065,7 @@ function fzPxKit(W, H, OX, OY) {
     },
     // обводка по маске твёрдых пикселей, цветная (не чёрная)
     outline(col, a = 0.92) {
+      if (FZ_NOOUT) return;                                                             // поза для кадров гибели: обводку кладёт fzPxDie
       for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
         const i = y * W + x;
         if (SOL[i] || !(SOL[i - 1] || SOL[i + 1] || SOL[i - W] || SOL[i + W])) continue;
@@ -1066,7 +1074,7 @@ function fzPxKit(W, H, OX, OY) {
         D[j + 3] = Math.round(oa * 255);
       }
     },
-    done() { c.putImageData(img, 0, 0); return cv; },
+    done() { c.putImageData(img, 0, 0); cv.fzSol = SOL; return cv; },
   };
   return K;
 }
@@ -1238,10 +1246,10 @@ function fzBansheePx(lv, p) {
 function fzBansheeSprite(lv, p) { return fzPxSprite('ban' + lv + '_' + p, 64, 84, 32, 30, () => fzBansheePx(lv, p)); }
 // Призрачный волк: тощий, горбатый, ощеренный — вздыбленный загривок шипами, видны рёбра и впалое брюхо, череп-морда с отвисшей челюстью и клыками,
 // злой прищур с ледяным огоньком. Хвост и лапы рассыпаются в дымку. Пиксель-арт 252×162 (×3 мельче мирового 84×54), рисуется 1:1 в 3× холст.
-// f — кадр бега 0..3, howl — морда вверх (вой).
+// f — кадр бега 0..3, howl — вой: 0 нет, 1 морда поднимается (замах), 2 морда вверх.
 function fzWolfPx(f, howl) {
   const K = fzPxKit(252, 162, 118, 138), { P, R, L, dth, hsh } = K;
-  const t = f / 4 * Math.PI * 2, bob = Math.round(Math.sin(t * 2) * 1.5);
+  const t = f / 4 * Math.PI * 2, bob = Math.round(Math.sin(t * 2) * 1.5), hk = howl / 2, hl = (a, b) => a + (b - a) * hk;
   const C0 = [6, 14, 24], C1 = [16, 30, 52], C2 = [34, 60, 96], C3 = [62, 100, 152], C4 = [104, 148, 204], C5 = [156, 196, 232], C6 = [206, 228, 248], C7 = [242, 250, 255];
   const G1 = [110, 240, 220], G2 = [210, 255, 246], TON = [96, 44, 86];
   const inE = (x, y, cx, cy, rx, ry) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
@@ -1277,7 +1285,7 @@ function fzWolfPx(f, howl) {
   };
   leg(28, 0, true, false); leg(-40, Math.PI, true, true);
   // шея: тонкая, жилистая, уходит за грудь (рисуется до туловища)
-  K.path([[22, -66 + bob, 9], [howl ? 50 : 56, howl ? -80 + bob : -71 + bob, 7], [howl ? 64 : 76, howl ? -86 + bob : -70 + bob, 6.5]], (u, e, sd) => e ? (sd > 0 ? C3 : C5) : sd > 0 ? C4 : C5);
+  K.path([[22, -66 + bob, 9], [hl(56, 50), hl(-71, -80) + bob, 7], [hl(76, 64), hl(-70, -86) + bob, 6.5]], (u, e, sd) => e ? (sd > 0 ? C3 : C5) : sd > 0 ? C4 : C5);
   // туловище: горб загривка, тонкая талия, глубокая грудь; мех клочьями
   R(-72, -102, 66, -28, (x, y) => {
     if (!body(x, y)) return null;
@@ -1303,13 +1311,13 @@ function fzWolfPx(f, howl) {
     });
   }
   // голова в своей системе координат: поворот вокруг шеи (вой — морда вверх)
-  const PX = howl ? 64 : 76, PY = (howl ? -86 : -70) + bob, A = howl ? -1.0 : 0.12, ca = Math.cos(A), sa = Math.sin(A);
+  const PX = hl(76, 64), PY = hl(-70, -86) + bob, A = hl(0.12, -1.0), ca = Math.cos(A), sa = Math.sin(A);
   const H = (f2, x0 = -16, y0 = -40, x1 = 64, y1 = 40) => {
     const xs = [x0, x1], ys = [y0, y1], bx = [], by = [];
     for (const a of xs) for (const b of ys) { bx.push(PX + a * ca - b * sa); by.push(PY + a * sa + b * ca); }
     R(Math.min(...bx), Math.min(...by), Math.max(...bx), Math.max(...by), (x, y) => { const dx = x - PX, dy = y - PY; return f2(dx * ca + dy * sa, -dx * sa + dy * ca); });
   };
-  const jawA = howl ? 0.75 : 0.5;
+  const jawA = hl(0.5, 0.75);
   const inJawU = (u, v) => u > 6 && u < 52 && v > -12 && v < 10 && v < -12 + (52 - u) * 0.1 + 18 && v > -3 - (u - 6) * 0.05 - 9;   // верхняя челюсть
   const lj = (u, v) => { const r = u * Math.cos(-jawA) - (v - 6) * Math.sin(-jawA), q = u * Math.sin(-jawA) + (v - 6) * Math.cos(-jawA); return [r, q]; };   // локальные оси нижней челюсти
   // ухо
@@ -1343,24 +1351,31 @@ function fzWolfPx(f, howl) {
   K.outline([12, 24, 44]);
   return K.done();
 }
-function fzWolfSprite(f, howl) { return fzPxSprite('wolf' + f + (howl ? 'h' : ''), 84, 54, 42, 46, () => fzWolfPx(f, howl)); }
+function fzWolfSprite(f, howl) { return fzPxSprite('wolf' + f + 'h' + howl, 84, 54, 42, 46, () => fzWolfPx(f, howl)); }
 // Леший: сутулый великан из коры. Рога-ветви с листвой, лицо — кора с глубокими дуплами глаз, в которых тлеют жёлто-зелёные огни, пасть-дупло с зубами-щепками;
 // мшистая борода с лозой до пояса, грибы на плече, руки-сучья до колен с когтями-прутьями, ноги уходят корнями в землю.
-// Пиксель-арт 108×150 (×3 мельче мирового 36×50), рисуется 1:1 в 3× холст. arms — гнев: руки вскинуты, пасть раскрыта; p — фаза качания 0..5.
-function fzLeshyPx(arms, p) {
+// Пиксель-арт 108×150 (×3 мельче мирового 36×50), рисуется 1:1 в 3× холст. lv — гнев: 0 покой, 1 замах (руки в стороны, пасть приоткрыта),
+// 2 руки вскинуты, пасть раскрыта; p — фаза качания 0..5. walk 0..5 — шаг: ноги по очереди поднимаются в колене, корпус качается над опорной.
+function fzLeshyPx(lv, p, walk = -1) {
   const K = fzPxKit(108, 150, 54, 144), { P, R, L, dth, hsh } = K;
-  const ph = p / 6 * Math.PI * 2, sw = Math.sin(ph), HY = -88;
+  const wk = walk >= 0, wp = walk / 6 * Math.PI * 2, ph = (wk ? walk : p) / 6 * Math.PI * 2, sw = Math.sin(ph), HY = -88, kk = lv / 2, arms = lv === 2;
+  const bob = wk ? -Math.round(Math.abs(Math.sin(wp)) * 2) : 0, bx = wk ? Math.round(-Math.sin(wp) * 1.5) : 0;
   const B0 = [26, 18, 12], B1 = [50, 36, 24], B2 = [84, 62, 40], B3 = [120, 92, 62], B4 = [160, 128, 90], B5 = [196, 168, 124];
   const M0 = [26, 46, 20], M1 = [48, 80, 30], M2 = [84, 122, 46], M3 = [132, 172, 70];
   const LF1 = [60, 100, 36], LF2 = [104, 146, 52], LF3 = [176, 120, 40], E1 = [196, 255, 80], E2 = [250, 255, 200], RED = [176, 46, 28], WH = [238, 230, 210];
   const bark = (x, y, s = 0) => { const g = ((x * 3 + Math.floor(y / 7) * 5 + 400) % 9); return g === 0 ? B1 : g === 4 && hsh(x + y * 0.1) > 0.5 ? B3 : s > 0 ? B3 : B2; };
-  // корни в земле
-  for (const s of [-1, 1]) for (let k = 0; k < 3; k++) {
-    const a = s * (0.3 + k * 0.5), x0 = s * 14, l = 12 + k * 4;
-    K.path([[x0, -6, 4], [x0 + Math.sin(a) * l * 0.6, -2, 2.6], [x0 + Math.sin(a) * l, 1 + k, 1]], (u, e) => e ? B1 : B2);
+  // корни в земле; у поднятой в шаге ноги корни поджаты
+  for (const s of [-1, 1]) {
+    const lift = wk ? Math.max(0, Math.sin(wp + (s > 0 ? 0 : Math.PI))) * 9 : 0, fy = -lift;
+    for (let k = 0; k < 3; k++) {
+      const a = s * (0.3 + k * 0.5 - lift * 0.03), x0 = s * 14, l = (12 + k * 4) * (1 - lift / 13);
+      K.path([[x0, fy - 6, 4], [x0 + Math.sin(a) * l * 0.6, fy - 2, 2.6], [x0 + Math.sin(a) * l, fy + 1 + k, 1]], (u, e) => e ? B1 : B2);
+    }
+    // ноги-стволы: в шаге — колено чуть наружу, ствол одной формой от бедра до корней
+    if (!wk) L(s * 10, -40, s * 14, -5, 9, 7.5, (u, e, sd) => e ? B1 : sd * s > 4 ? B3 : bark(s * 12 + Math.round(sd / 9), Math.round(u * 30)));
+    else K.path([[s * 10 + bx, -40 + bob, 9], [s * (12.5 + lift * 0.35) + bx * 0.5, -22 - lift * 0.7, 8.2], [s * 14, -5 - lift, 7.5]], (u, e, sd) => e ? B1 : sd * s > 2 ? B3 : bark(s * 12 + Math.round(sd / 5), Math.round(u * 30)));
   }
-  // ноги-стволы
-  for (const s of [-1, 1]) L(s * 10, -40, s * 14, -5, 9, 7.5, (u, e, sd) => e ? B1 : sd * s > 4 ? B3 : bark(s * 12 + Math.round(sd / 9), Math.round(u * 30)));
+  K.ox = bx; K.oy = bob;                                                                // корпус качается над опорной ногой
   // рога-ветви с листвой (позади головы)
   const tine = (x0, y0, a, l, r, depth, s) => {
     const x1 = x0 + Math.cos(a) * l, y1 = y0 + Math.sin(a) * l;
@@ -1403,15 +1418,15 @@ function fzLeshyPx(arms, p) {
   for (const s of [-1, 1]) {
     const ex = s * 5.5 - 0.5, ey = HY - 1;
     R(ex - 5, ey - 4, ex + 5, ey + 5, (x, y) => { const d = ((x - ex) / 4.2) ** 2 + ((y - ey) / 3.6) ** 2; return d <= 1 ? B0 : d <= 1.5 ? B1 : null; });
-    const g = arms ? 1.6 : 1 + (p % 3 === 0 ? 0.3 : 0);
+    const g = lv ? 1.2 + kk * 0.4 : 1 + (p % 3 === 0 ? 0.3 : 0);
     R(ex - 4, ey - 3, ex + 4, ey + 4, (x, y) => { const d = Math.hypot(x - ex, y - ey - 0.5); return d < g ? E2 : d < g + 1.1 ? E1 : null; });
-    R(ex - 8, ey - 8, ex + 8, ey + 8, (x, y) => { const d = Math.hypot(x - ex, y - ey); return d > 4 && d < 7 && dth(x, y) < (arms ? 0.35 : 0.18) ? [...E1, 0.4] : null; }, false);
+    R(ex - 8, ey - 8, ex + 8, ey + 8, (x, y) => { const d = Math.hypot(x - ex, y - ey); return d > 4 && d < 7 && dth(x, y) < 0.18 + kk * 0.17 ? [...E1, 0.4] : null; }, false);
     L(ex - s * 3, HY - 8, ex + s * 6, HY - 3, 1, 0.7, () => B0);                         // хмурая складка коры
   }
   // нос-сучок
   L(0, HY + 2, 0.5, HY + 9, 2.2, 1.6, (u, e) => e ? B1 : B4);
   // пасть-дупло с зубами-щепками
-  const mry = arms ? 6 : 3, my = HY + 12 + (arms ? 2 : 0);
+  const mry = 3 + kk * 3, my = HY + 12 + kk * 2;
   R(-9, my - mry - 1, 8, my + mry + 1, (x, y) => {
     const d = ((x + 0.5) / 7.5) ** 2 + ((y - my) / mry) ** 2;
     if (d > 1) return d < 1.4 ? B1 : null;
@@ -1433,8 +1448,9 @@ function fzLeshyPx(arms, p) {
   }
   // руки-сучья: до колен; в гневе — вскинуты, когти-прутья веером
   for (const s of [-1, 1]) {
-    const sx = s * 19, sy = -76, hx = s * (arms ? 37 : 30) + (arms ? 0 : sw * s * 1.5), hy = arms ? -116 : -30;
-    const ex = s * (arms ? 35 : 32), ey = arms ? -90 : -54;
+    const asw = wk ? Math.sin(wp + (s > 0 ? Math.PI : 0)) * 4 * (1 - kk) : 0;             // в шаге руки ходят навстречу ногам
+    const sx = s * 19, sy = -76, hx = s * (30 + 7 * kk) + sw * s * 1.5 * (1 - kk), hy = -30 - 86 * kk + asw;
+    const ex = s * (32 + 3 * kk), ey = -54 - 36 * kk + asw * 0.5;
     L(sx, sy, ex, ey, 7, 5, (u, e, sd) => e ? B1 : sd * s > 0 ? B3 : B2);
     L(ex, ey, hx, hy, 5, 3.6, (u, e, sd) => e ? B1 : sd * s > 0 ? B3 : B2);
     R(ex - 6, ey - 6, ex + 6, ey + 6, (x, y) => Math.hypot(x - ex, y - ey) < 4.5 && dth(x, y) < 0.5 ? M2 : null);   // мох на локте
@@ -1448,19 +1464,22 @@ function fzLeshyPx(arms, p) {
   K.outline([30, 22, 12]);
   return K.done();
 }
-function fzLeshySprite(arms, p) { return fzPxSprite('les' + (arms ? 'A' : '') + p, 36, 50, 18, 48, () => fzLeshyPx(arms, p)); }
+function fzLeshySprite(lv, p, walk = -1) { return fzPxSprite('les' + lv + '_' + p + 'w' + walk, 36, 50, 18, 48, () => fzLeshyPx(lv, p, walk)); }
 // Кикимора: сгорбленная болотная карга. Длинные мокрые волосы-тина до земли, из-под них — серо-зелёное иссохшее лицо с крючковатым носом,
 // круглые глаза, залитые жёлтым светом, широкий рот с игольчатыми зубами; рваное платье, тощие руки с длинными когтями. С волос капает вода.
-// Пиксель-арт 78×96 (×3 мельче мирового 26×32), рисуется 1:1 в 3× холст. b — руки вскинуты когтями вверх, рот разинут; p — фаза 0..3 (капли, колыхание).
-function fzKikPx(b, p) {
+// Пиксель-арт 78×96 (×3 мельче мирового 26×32), рисуется 1:1 в 3× холст. lv — рывок: 0 покой, 1 замах (когти тянутся вперёд-вверх, рот приоткрыт),
+// 2 руки вскинуты когтями вверх, рот разинут; p — фаза 0..3 (капли, колыхание). walk 0..5 — шаг: из-под подола по очереди ступают костлявые ступни.
+function fzKikPx(lv, p, walk = -1) {
   const K = fzPxKit(78, 96, 39, 90), { P, R, L, dth, hsh } = K;
-  const ph = p / 4 * Math.PI * 2, HY = -58;
+  const wk = walk >= 0, wp = walk / 6 * Math.PI * 2, ph = wk ? wp : p / 4 * Math.PI * 2, HY = -58, kk = lv / 2;
+  const bob = wk ? -Math.round(Math.abs(Math.sin(wp)) * 1.5) : 0, bx = wk ? Math.round(-Math.sin(wp)) : 0, hem = wk ? Math.round(Math.sin(wp) * 2) : 0;
   const H0 = [12, 28, 20], H1 = [24, 50, 34], H2 = [44, 80, 50], H3 = [72, 116, 66], H4 = [118, 158, 92];
   const S0 = [48, 62, 50], S1 = [88, 108, 86], S2 = [134, 154, 124], S3 = [174, 192, 156], S4 = [204, 218, 184];
   const Y1 = [240, 242, 106], Y2 = [255, 255, 222], DK = [18, 14, 12], TE = [232, 226, 198], RG0 = [56, 46, 34], RG1 = [84, 70, 52], RG2 = [112, 96, 72], WA = [160, 214, 210];
   // тина и грязь под ногами
   R(-26, -4, 26, 6, (x, y) => { const d = Math.hypot(x / 25, (y - 1) / 4.5); return d < 1 && dth(x, y) < 1.1 - d ? (hsh(x + y * 9) > 0.6 ? H2 : RG0) : null; }, false);
   // задние космы — плащ из тины до земли
+  K.ox = bx; K.oy = bob;
   for (let k = 0; k < 14; k++) {
     const s = k % 2 ? 1 : -1, i = k >> 1, x0 = s * (4 + i * 1.4), pts = [];
     for (let m = 0; m <= 8; m++) { const u = m / 8; pts.push([x0 + s * (Math.sin(u * 2.4) * 5 + u * i * 1.3) + Math.sin(ph + u * 3 + k) * 1.8 * u, HY - 10 + u * (62 + hsh(k) * 8), 3 - u * 1.2]); }
@@ -1470,26 +1489,38 @@ function fzKikPx(b, p) {
   R(-14, -50, 14, -2, (x, y) => {
     const hw = 6.5 + (y + 50) * 0.08, ax = Math.abs(x + 0.5);
     if (ax > hw) return null;
-    if (y > -8 && hsh(Math.floor(x / 2) + 3) * 8 > -y) return null;                    // рваный подол
+    if (y > -8 && hsh(Math.floor((x + hem) / 2) + 3) * 8 > -y) return null;            // рваный подол
     if (ax > hw - 1) return RG0;
     return ((x + 400) % 5 === 0 || (y + 400) % 11 === 0 && hsh(x) > 0.5) ? RG0 : x < 0 ? RG1 : RG2;
   });
   for (const [x, y] of [[-4, -36], [3, -24], [-2, -14]]) R(x - 2, y - 2, x + 2, y + 3, (px, py) => Math.hypot(px - x, (py - y) / 1.4) < 1.8 ? DK : null);   // прорехи
+  // ступни в шаге (поверх подола): серые, костлявые, с чёрными когтями; поднятая — выше
+  if (wk) {
+    K.ox = 0; K.oy = 0;
+    for (const s of [-1, 1]) {
+      const lift = Math.max(0, Math.sin(wp + (s > 0 ? 0 : Math.PI))) * 5, fx = s * 4.5, fy = -1.5 - lift;
+      L(s * 3.5, -10, fx, fy - 1, 1.5, 1.3, (u, e) => e ? S0 : S2);
+      R(fx - 5, fy - 3, fx + 5, fy + 3, (x, y) => { const d = ((x - fx) / 3.6) ** 2 + ((y - fy) / (1.8 - lift * 0.1)) ** 2; return d <= 1 ? (d > 0.6 && y > fy ? S0 : S2) : null; });
+      for (let k = -1; k <= 1; k++) L(fx + k * 1.6, fy + 1, fx + k * 2.2, fy + 3 - lift * 0.3, 0.7, 0.2, () => DK);
+    }
+    K.ox = bx; K.oy = bob;
+  }
   // руки: тощие, длинные пальцы-когти; в рывке вскинуты в стороны
   for (const s of [-1, 1]) {
-    const sx = s * 9, sy = -47, hx = s * (b ? 26 : 15), hy = b ? -76 : -18 + Math.sin(ph + s) * 1.5, ex = s * (b ? 22 : 16), ey = b ? -52 : -32;
+    const asw = wk ? Math.sin(wp + (s > 0 ? Math.PI : 0)) * 2 * (1 - kk) : 0;
+    const sx = s * 9, sy = -47, hx = s * (15 + 11 * kk), hy = -18 - 58 * kk + Math.sin(ph + s) * 1.5 * (1 - kk) + asw, ex = s * (16 + 6 * kk), ey = -32 - 20 * kk + asw * 0.5;
     L(sx, sy, ex, ey, 2.6, 2, (u, e) => e ? S0 : S2);
     L(ex, ey, hx, hy, 2, 1.5, (u, e) => e ? S0 : S3);
     const dir = Math.atan2(hy - ey, hx - ex);
     for (const j of [-1.5, -0.5, 0.5, 1.5]) {
-      const a = dir + j * 0.32, x1 = hx + Math.cos(a) * 5, y1 = hy + Math.sin(a) * 5, a2 = a + j * 0.25 * (b ? -1 : 1), x2 = x1 + Math.cos(a2) * 5, y2 = y1 + Math.sin(a2) * 5;
+      const a = dir + j * 0.32, x1 = hx + Math.cos(a) * 5, y1 = hy + Math.sin(a) * 5, a2 = a + j * 0.25 * (kk > 0.6 ? -1 : 1), x2 = x1 + Math.cos(a2) * 5, y2 = y1 + Math.sin(a2) * 5;
       L(hx, hy, x1, y1, 0.9, 0.8, () => S2);
       L(x1, y1, x2, y2, 0.8, 0.2, u => u > 0.5 ? DK : RG0);
     }
     for (let k = 0; k < 3; k++) L(sx + s * k, sy, sx + s * k + Math.sin(ph + k) * 1.5, sy + 10 + k * 3, 1, 0.4, () => k & 1 ? H2 : H1);   // тина свисает с плеч
   }
   // голова: иссохшее лицо
-  const jaw = b ? 15 : 13;
+  const jaw = 13 + 2 * kk;
   const face = (x, y) => { const dx = (x + 0.5) / 10.5, dy = (y - HY) / (y > HY ? jaw : 10); return dx * dx * (1 + Math.max(0, dy) * 0.8) + dy * dy <= 1; };
   R(-12, HY - 11, 12, HY + jaw + 1, (x, y) => {
     if (!face(x, y)) return null;
@@ -1511,12 +1542,12 @@ function fzKikPx(b, p) {
   K.path([[-0.5, HY + 1, 1.4], [0.5, HY + 6, 2], [-1, HY + 9, 1.2]], (u, e) => e ? S1 : S3);
   P(-1, HY + 8, S0);
   // рот с игольчатыми зубами
-  const mry = b ? 5 : 1.8, my = HY + 12 + (b ? 1.5 : 0);
+  const mry = 1.8 + 3.2 * kk, my = HY + 12 + 1.5 * kk;
   R(-9, my - mry - 1, 8, my + mry + 1, (x, y) => {
     const ax = Math.abs(x + 0.5), up = ax > 3 ? (ax - 3) * 0.5 : 0, d = (ax / 7.5) ** 2 + ((y - my + up) / mry) ** 2;
     if (d > 1) return null;
     const tt = y - (my - up - mry), bb = my - up + mry - y;
-    if (ax < 7 && ((tt < (x & 1 ? 2.5 : 1) ) || (b && bb < (x & 1 ? 1 : 2.5)))) return TE;
+    if (ax < 7 && ((tt < (x & 1 ? 2.5 : 1) ) || (kk > 0.4 && bb < (x & 1 ? 1 : 2.5)))) return TE;
     return DK;
   });
   // передние пряди: падают на лицо и плечи, мокрые
@@ -1533,13 +1564,14 @@ function fzKikPx(b, p) {
   K.outline([14, 28, 18]);
   return K.done();
 }
-function fzKikSprite(b, p) { return fzPxSprite('kik' + (b ? 'B' : 'A') + p, 26, 32, 13, 30, () => fzKikPx(b, p)); }
+function fzKikSprite(lv, p, walk = -1) { return fzPxSprite('kik' + lv + '_' + p + 'w' + walk, 26, 32, 13, 30, () => fzKikPx(lv, p, walk)); }
 // Водяной: жирный жабий старик по грудь в воде. Плоская широкая голова, пасть во всё лицо с пилой зубов, выпученные жёлтые глаза
 // с узкими зрачками, плавники-уши с шипами, волосы и борода из тины с ракушками, бородавки и чешуя на плечах.
-// Пиксель-арт 90×84 (×3 мельче мирового 30×28), рисуется 1:1 в 3× холст. b — схватка: перепончатые лапы вскинуты, пасть разинута; p — фаза 0..3.
-function fzVodPx(b, p) {
+// Пиксель-арт 90×84 (×3 мельче мирового 30×28), рисуется 1:1 в 3× холст. lv — схватка: 0 покой, 1 замах (лапы поднимаются, пасть приоткрыта),
+// 2 перепончатые лапы вскинуты, пасть разинута; p — фаза 0..3.
+function fzVodPx(lv, p) {
   const K = fzPxKit(90, 84, 45, 78), { P, R, L, dth, hsh } = K;
-  const ph = p / 4 * Math.PI * 2, HY = -46;
+  const ph = p / 4 * Math.PI * 2, HY = -46, kk = lv / 2;
   const V0 = [14, 40, 36], V1 = [30, 72, 64], V2 = [52, 110, 96], V3 = [80, 146, 124], V4 = [130, 190, 160], BL = [168, 200, 156];
   const A0 = [18, 48, 24], A1 = [42, 92, 44], A2 = [76, 138, 62], A3 = [120, 176, 90];
   const Y1 = [236, 214, 70], Y2 = [255, 246, 170], DK = [24, 10, 14], TE = [232, 226, 196], TG = [140, 52, 64], SH1 = [236, 214, 184], SH2 = [196, 140, 110];
@@ -1562,7 +1594,7 @@ function fzVodPx(b, p) {
   });
   // руки
   for (const s of [-1, 1]) {
-    const sx = s * 24, sy = -30, ex = s * (b ? 34 : 31), ey = b ? -38 : -16, hx = s * (b ? 38 : 26), hy = b ? -64 : -6 + Math.sin(ph + s) * 1;
+    const sx = s * 24, sy = -30, ex = s * (31 + 3 * kk), ey = -16 - 22 * kk, hx = s * (26 + 12 * kk), hy = -6 - 58 * kk + Math.sin(ph + s) * (1 - kk);
     L(sx, sy, ex, ey, 6, 5, (u, e) => e ? V1 : V2);
     L(ex, ey, hx, hy, 5, 3.6, (u, e) => e ? V1 : V3);
     const dir = Math.atan2(hy - ey, hx - ex), tips = [];
@@ -1604,13 +1636,13 @@ function fzVodPx(b, p) {
       const d = Math.hypot(x - ex, y - ey);
       if (d > 7) return null;
       if (d > 5.8) return V1;
-      if (y < ey - 4 + (b ? 1 : 0)) return V2;                                        // веко
-      if (Math.abs(x - ex) < (b ? 0.9 : 1.4) && Math.abs(y - ey) < 4) return DK;      // зрачок-щель
+      if (y < ey - 4 + (kk > 0.4 ? 1 : 0)) return V2;                                        // веко
+      if (Math.abs(x - ex) < 1.4 - 0.5 * kk && Math.abs(y - ey) < 4) return DK;      // зрачок-щель
       return d < 2.5 && x < ex ? Y2 : Y1;
     });
   }
   // пасть во всё лицо, пила зубов
-  const mry = b ? 9 : 4, my = HY + 4 + mry * 0.6;
+  const mry = 4 + 5 * kk, my = HY + 4 + mry * 0.6;
   R(-21, my - mry - 2, 21, my + mry + 2, (x, y) => {
     const ax = Math.abs(x + 0.5), dn = (ax / 20) ** 2 * 3;                              // уголки вниз
     const d = (ax / 19) ** 2 + ((y - my - dn) / mry) ** 2;
@@ -1619,7 +1651,7 @@ function fzVodPx(b, p) {
     if (tt < 3.2 * (1 - Math.abs(saw - 0.5) * 2) + 0.5) return TE;                     // верхняя пила
     const bb = my + dn + mry * Math.sqrt(Math.max(0, 1 - (ax / 19) ** 2)) - y;
     if (bb < 2.6 * (1 - Math.abs(((ax + 1.5) % 3) / 3 - 0.5) * 2) + 0.3) return TE;    // нижняя пила
-    return b && y > my + 2 && ax < 8 ? TG : DK;
+    return kk > 0.6 && y > my + 2 && ax < 8 ? TG : DK;
   });
   // борода из тины с ракушками
   for (let k = 0; k < 9; k++) {
@@ -1635,13 +1667,14 @@ function fzVodPx(b, p) {
   K.outline([10, 30, 30]);
   return K.done();
 }
-function fzVodSprite(b, p) { return fzPxSprite('vod' + (b ? 'B' : 'A') + p, 30, 28, 15, 26, () => fzVodPx(b, p)); }
+function fzVodSprite(lv, p) { return fzPxSprite('vod' + lv + '_' + p, 30, 28, 15, 26, () => fzVodPx(lv, p)); }
 // Русалка: не нечисть с оскалом, а красивая девушка на камне у воды. Длинные золотистые волосы с зелёными прядями тины, венок из кувшинок,
 // большие бирюзовые глаза, румянец, мягкая улыбка; мокрая белая рубаха, чешуйчатый хвост бирюзой с веером плавника.
-// Пиксель-арт 66×90 (×3 мельче мирового 22×30), рисуется 1:1 в 3× холст. sing — поёт: рот приоткрыт, глаза прикрыты, рука протянута; p — фаза 0..3.
-function fzRusPx(sing, p) {
+// Пиксель-арт 66×90 (×3 мельче мирового 22×30), рисуется 1:1 в 3× холст. lv — песня: 0 сидит, 1 вдох (рука идёт от волос вперёд, губы приоткрыты),
+// 2 поёт: рот открыт, глаза прикрыты, рука протянута ладонью вверх; p — фаза 0..3.
+function fzRusPx(lv, p) {
   const K = fzPxKit(66, 90, 33, 84), { P, R, L, dth, hsh } = K;
-  const ph = p / 4 * Math.PI * 2, HY = -64;
+  const ph = p / 4 * Math.PI * 2, HY = -64, sing = lv === 2, kk = lv / 2, lp = (a, b) => a + (b - a) * kk;
   const R0 = [150, 100, 92], R1 = [204, 152, 138], R2 = [236, 198, 182], R3 = [250, 224, 210], CH = [236, 160, 156], LIP = [200, 88, 100];
   const H0 = [84, 60, 32], H1 = [132, 100, 54], H2 = [184, 148, 84], H3 = [222, 192, 124], HG = [104, 138, 82];
   const W0 = [150, 164, 178], W1 = [206, 216, 224], W2 = [242, 246, 250];
@@ -1677,11 +1710,12 @@ function fzRusPx(sing, p) {
   if (sing) {
     L(-9, -48, -16, -40, 2.4, 2, (u, e) => e ? W0 : W1);
     L(-16, -40, -21, -48, 2, 1.7, (u, e) => e ? R0 : R2);
-    R(-25, -52, -18, -46, (x, y) => Math.hypot(x - 22, (y + 49) * 1.4) < 3 ? (y > -48 ? R1 : R2) : null);
+    R(-25, -52, -18, -46, (x, y) => Math.hypot(x + 22, (y + 49) * 1.4) < 3 ? (y > -48 ? R1 : R2) : null);
   } else {
-    L(-9, -48, -14, -38, 2.4, 2, (u, e) => e ? W0 : W1);
-    L(-14, -38, -9, -30, 2, 1.7, (u, e) => e ? R0 : R2);
-    R(-10, -32, -5, -27, (x, y) => Math.hypot(x - 7.5, y + 29.5) < 2.2 ? R2 : null);
+    const elx = lp(-14, -16), ely = lp(-38, -40), hdx = lp(-9, -19), hdy = lp(-30, -45), pcx = lp(-7.5, -20), pcy = lp(-29.5, -46.5);
+    L(-9, -48, elx, ely, 2.4, 2, (u, e) => e ? W0 : W1);
+    L(elx, ely, hdx, hdy, 2, 1.7, (u, e) => e ? R0 : R2);
+    R(pcx - 3, pcy - 3, pcx + 3, pcy + 3, (x, y) => Math.hypot(x - pcx, y - pcy) < 2.2 ? R2 : null);
   }
   // шея
   R(-3, -57, 2, -51, (x, y) => x === -3 || x === 2 ? R1 : R2);
@@ -1708,7 +1742,7 @@ function fzRusPx(sing, p) {
     L(ex - s * 1.5, ey - 4.5, ex + s * 2.5, ey - 5, 0.6, 0.5, () => H1);                // брови мягкой дугой
   }
   P(-1, HY + 3, R1); P(0, HY + 4, R1);                                                  // нос
-  if (sing) R(-3, HY + 5, 2, HY + 9, (x, y) => { const d = ((x + 0.5) / 1.8) ** 2 + ((y - HY - 7) / 1.6) ** 2; return d <= 1 ? (d < 0.4 ? [120, 40, 56] : LIP) : null; });
+  if (lv) { const rx = sing ? 1.8 : 1.3, ry = sing ? 1.6 : 1.05; R(-3, HY + 5, 2, HY + 9, (x, y) => { const d = ((x + 0.5) / rx) ** 2 + ((y - HY - 7) / ry) ** 2; return d <= 1 ? (d < 0.4 ? [120, 40, 56] : LIP) : null; }); }
   else { for (let x = -3; x <= 2; x++) P(x, HY + 6 + (Math.abs(x + 0.5) > 2 ? -1 : 0), LIP); P(-1, HY + 7, CH); P(0, HY + 7, CH); }
   // волосы: чёлка с пробором, пряди у лица, одна прядь через плечо на грудь
   R(-10, HY - 12, 9, HY - 3, (x, y) => {
@@ -1730,7 +1764,268 @@ function fzRusPx(sing, p) {
   K.outline([60, 44, 54]);
   return K.done();
 }
-function fzRusSprite(sing, p) { return fzPxSprite('rus' + (sing ? 'B' : 'A') + p, 22, 30, 11, 28, () => fzRusPx(sing, p)); }
+function fzRusSprite(lv, p) { return fzPxSprite('rus' + lv + '_' + p, 22, 30, 11, 28, () => fzRusPx(lv, p)); }
+// ---------- Гибель нечисти ----------
+// Поза покоя рисуется без обводки, по ней — распад: сдвиг пикселей (вихрь, подъём, крен, оседание, растекание), растворение Байером
+// по фронту s(x, y) с хэш-шумом, у фронта — перекраска в материал по яркости (полова, туман, дым, труха, тина, вода, пена).
+// Поверх — частицы и остаток на земле, обводка в конце по уцелевшему. t — ход гибели: кадр f 0..5 → t = (f + 1) / 6.
+let FZ_NOOUT = false;
+const fzH = n => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+const fzCl = v => v < 0 ? 0 : v > 1 ? 1 : v;
+const fzRamp = (rs, c, a) => { const l = (c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11) / 255, r = rs[Math.min(rs.length - 1, Math.floor(l * rs.length * 1.15))]; return a === undefined ? r : [...r, a]; };
+function fzPxDie(make, W, H, OX, OY, t, sp) {
+  FZ_NOOUT = true;
+  let src;
+  try { src = make(); } finally { FZ_NOOUT = false; }
+  const sd = src.getContext('2d').getImageData(0, 0, W, H).data, ss = src.fzSol, K = fzPxKit(W, H, OX, OY);
+  for (let y = -OY; y < H - OY; y++) for (let x = -OX; x < W - OX; x++) {
+    const m = sp.map(x, y);
+    if (!m) continue;
+    const ix = Math.round(m[0]) + OX, iy = Math.round(m[1]) + OY;
+    if (ix < 0 || iy < 0 || ix >= W || iy >= H) continue;
+    const i = iy * W + ix, a = sd[i * 4 + 3] / 255;
+    if (!a) continue;
+    const n = K.dth(x, y) * 0.55 + fzH(ix * 7.31 + iy * 3.17) * 0.45, v = t * 1.3 - sp.s(ix - OX, iy - OY);
+    if (v > 0.12 + n * 0.3) continue;                                                   // распалось
+    let col = [sd[i * 4], sd[i * 4 + 1], sd[i * 4 + 2]];
+    if (v > -0.22 + n * 0.3) col = sp.mat(col, ix - OX, iy - OY, v);                   // у фронта — уже материал
+    K.P(x, y, col, col.length > 3 ? col[3] * a : a, !!ss[i] && col.length === 3);
+  }
+  sp.fx(K);
+  K.outline(sp.edge);
+  return K.done();
+}
+// кадр гибели по угасанию: da — прозрачность в миг начала гибели
+const fzDieF = (a, da) => Math.max(0, Math.min(5, Math.floor((1 - a / (da || 1)) * 6)));
+function fzDying(o, on) { if (on && !o.dying) o.da = Math.max(0.05, o.alpha); o.dying = on; }
+
+// Полудница: вихрь раскручивается, рубаха и тело осыпаются снизу вверх половой и пылью, нимб гаснет на середине; остаётся пыльный круг.
+function fzNoonDiePx(t) {
+  const K2 = [124, 64, 24], K3 = [178, 110, 38], K4 = [216, 162, 60], K5 = [238, 206, 122], K6 = [250, 234, 186], DU = [K2, K3, K4, K5, K6];
+  const tw = t * t, lift = tw * 14;
+  return fzPxDie(() => fzNoonPx(0, 0), 180, 264, 90, 240, t, {
+    map: (x, y) => [x - Math.sin(y * 0.06 + t * 7) * tw * 12 * (0.4 - y / 200), y + lift],
+    s: (x, y) => Math.hypot(x, y + 167) > 34 && y < -110 ? 0.42 : fzCl(-y / 225),
+    mat: (c, x, y, v) => fzRamp(v > 0 ? [K2, K3, K4] : DU, c),
+    edge: [52, 26, 10],
+    fx(K) {
+      const { P, R, dth } = K;
+      R(-86, -40, 86, 8, (x, y) => {                                                     // пыль у земли клубится шире
+        const d = (x / (30 + t * 50)) ** 2 + ((y - 2 + t * 6) / (6 + t * 12)) ** 2;
+        return d < 1 && dth(x, y) < 0.6 * (1 - d) * (0.4 + t) ? [...(d < 0.4 ? K4 : K3), 0.6] : null;
+      }, false);
+      for (let i = 0; i < 6; i++) {                                                      // петли вихря раскручиваются и бледнеют
+        const u = i / 5, y0 = -4 - u * (40 + t * 110), rx = 10 + u * 30 + t * 30, ry = rx * 0.22 + 1;
+        for (let s = 0; s < 1; s += 1 / (rx * 6)) {
+          const a = s * Math.PI * 2, dash = ((s * 3 + t * 2 + i * 0.37) % 1 + 1) % 1;
+          if (dash > 0.5 || dth(Math.cos(a) * rx, y0 + Math.sin(a) * ry) > 1 - t * 0.6) continue;
+          P(Math.cos(a) * rx, y0 + Math.sin(a) * ry, Math.sin(a) > 0 ? K5 : K3, 0.7 - t * 0.35, false);
+        }
+      }
+      const fy = Math.max(-225, -t * 1.3 * 225);
+      for (let j = 0; j < 130; j++) {                                                    // полова летит от фронта по спирали вверх-наружу
+        const u = fzH(j * 1.7 + 3);
+        if (u > t * 1.2) continue;
+        const age = t - u * 0.8, r = 6 + age * 70 * (0.4 + fzH(j * 7.1)), a = fzH(j * 3.3) * 6.283 + age * 9;
+        const x = Math.cos(a) * r, y = fy * fzH(j * 5.3) - age * 40 * fzH(j * 2.9) + Math.sin(a) * r * 0.25 - lift;
+        const fr = Math.sin(a) > 0, k = j % 3;                                          // соломинки по 2–3 пикселя наискось
+        P(x, y, j % 5 === 0 ? K2 : fr ? K5 : K4, 1, false);
+        P(x + 1, y + (k === 1 ? 1 : 0), fr ? K4 : K3, 0.95, false);
+        if (k === 2) P(x + 2, y + 1, K3, 0.9, false);
+      }
+    },
+  });
+}
+// Баньши: саван тает снизу вверх и поднимается холодным туманом, клубы расходятся; ледяные огоньки глаз гаснут последними.
+function fzBansheeDiePx(t) {
+  const C3 = [60, 100, 150], C4 = [104, 150, 204], C5 = [152, 198, 230], C6 = [205, 232, 246], G1 = [110, 240, 220], G2 = [200, 255, 244], MI = [C3, C4, C5, C6];
+  const lift = t * t * 34, wv = y => Math.sin(y * 0.09 + t * 9) * t * 6;
+  return fzPxDie(() => fzBansheePx(0, 0), 192, 252, 96, 90, t, {
+    map: (x, y) => [x + wv(y), y + lift],
+    s: (x, y) => fzCl((150 - y) / 235),
+    mat: (c, x, y, v) => fzRamp(MI, c, Math.max(0.15, 0.55 - Math.max(0, v) * 1.2)),
+    edge: [12, 26, 46],
+    fx(K) {
+      const { R, dth } = K, fy = Math.max(-60, 150 - t * 1.3 * 235);
+      for (let j = 0; j < 30; j++) {
+        const u = fzH(j * 2.1);
+        if (u > t * 1.1) continue;
+        const cx = (fzH(j * 3.7) - 0.5) * (50 + t * 80), cy = fy + fzH(j * 5.9) * (150 - fy) - t * 40 - lift * 0.5, r = 6 + fzH(j * 7.3) * 8 + t * 7;
+        R(cx - r * 1.6, cy - r, cx + r * 1.6, cy + r, (x, y) => { const d = Math.hypot((x - cx) / 1.6, (y - cy) * 1.4) / r; return d < 1 && dth(x, y) < (1 - d) * (1 - d) * 0.7 * (1.2 - t * 0.5) ? [...(d < 0.35 ? C6 : C5), 0.32] : null; }, false);
+      }
+      const a = 1 - Math.max(0, t - 0.6) * 1.6;
+      for (const s of [-1, 1]) {
+        const ey = -29 - lift, ex = s * 6.5 - 0.5 - wv(ey);
+        R(ex - 3, ey - 3, ex + 3, ey + 3, (x, y) => { const d = Math.hypot(x - ex, y - ey); return d < 1 ? [...G2, a] : d < 2.2 ? [...G1, a * 0.7] : null; }, false);
+      }
+    },
+  });
+}
+// Призрачный волк: рассыпается в дым от хвоста к морде, дым уходит вверх и назад; огонёк глаза тлеет в дыму.
+function fzWolfDiePx(t) {
+  const SM = [[18, 26, 40], [36, 50, 72], [66, 84, 112], [104, 124, 154], [150, 170, 196]], G1 = [110, 240, 220], G2 = [210, 255, 246];
+  const lf = x => Math.max(0, t * 1.3 - (x + 118) / 240) * 30, xF = Math.min(134, -118 + t * 1.3 * 240);
+  return fzPxDie(() => fzWolfPx(0, 0), 252, 162, 118, 138, t, {
+    map: (x, y) => { const l = lf(x); return [x + l * 0.6, y + l]; },
+    s: x => fzCl((x + 118) / 240),
+    mat: (c, x, y, v) => fzRamp(SM, c, Math.max(0.2, 0.75 - Math.max(0, v) * 1.5)),
+    edge: [12, 24, 44],
+    fx(K) {
+      const { R, dth } = K;
+      for (let j = 0; j < 34; j++) {
+        const x0 = -118 + fzH(j * 1.9) * (xF + 118), age = (xF - x0) / 240;
+        const cx = x0 - age * 30, cy = -50 - fzH(j * 4.3) * 30 - age * 55, r = 4 + fzH(j * 6.1) * 6 + age * 12;
+        R(cx - r, cy - r, cx + r, cy + r, (x, y) => { const d = Math.hypot(x - cx, (y - cy) * 1.3) / r; return d < 1 && dth(x, y) < (1 - d) * 0.6 * (1 - age * 0.5) ? [...(d < 0.45 ? SM[3] : SM[2]), 0.5] : null; }, false);
+      }
+      const a = 1 - Math.max(0, t - 0.65) * 1.6, ex = 87 - lf(87) * 0.6, ey = -76 - lf(87);
+      R(ex - 4, ey - 4, ex + 4, ey + 4, (x, y) => { const d = Math.hypot(x - ex, y - ey); return d < 1.2 ? [...G2, a] : d < 2.6 ? [...G1, a * 0.7] : null; }, false);
+    },
+  });
+}
+// Леший: кренится, как подрубленное дерево, и рассыпается кусками коры и трухой, листва с рогов кружит вниз; остаётся трухлявая куча
+// с мхом и мухоморами, в ней догорают два зелёных огонька.
+function fzLeshyDiePx(t) {
+  const LF1 = [60, 100, 36], LF2 = [104, 146, 52], LF3 = [176, 120, 40], M2 = [84, 122, 46], M3 = [132, 172, 70], E1 = [196, 255, 80], RED = [176, 46, 28], WH = [238, 230, 210];
+  const TR = [[44, 30, 20], [84, 62, 40], [124, 94, 60], [164, 130, 88], [196, 166, 120]];
+  const ang = Math.pow(Math.min(1, t / 0.55), 2) * 0.4, ca = Math.cos(ang), sa = Math.sin(ang), PX = 8;
+  const sF = (x, y) => fzCl(0.22 + fzH(Math.floor(x / 5) * 13.1 + Math.floor(y / 5) * 7.7) * 0.4 + fzCl((y + 120) / 120) * 0.25);
+  const rot = (x, y) => [PX + (x - PX) * ca - y * sa, (x - PX) * sa + y * ca];
+  const pw = 8 + t * 30, phh = t * t * 14 + t * 4, top = x => -phh * Math.max(0, 1 - (x / pw) ** 2) - fzH(Math.floor(x / 2) * 3.1) * 2 * t;
+  return fzPxDie(() => fzLeshyPx(0, 0), 108, 150, 54, 144, t, {
+    map: (x, y) => [PX + (x - PX) * ca + y * sa, -(x - PX) * sa + y * ca],
+    s: sF,
+    mat: c => fzRamp(TR, c),
+    edge: [30, 22, 12],
+    fx(K) {
+      const { P, R } = K;
+      for (let j = 0; j < 70; j++) {                                                     // куски коры и труха падают
+        const sx = (fzH(j * 1.3) - 0.5) * 46, sy = -14 - fzH(j * 2.7) * 120, age = t * 1.3 - sF(sx, sy) - 0.05;
+        if (age <= 0) continue;
+        const [dx, dy] = rot(sx, sy), x = dx + (fzH(j * 5.1) - 0.5) * age * 40, y = dy + age * age * 300;
+        if (y > top(x)) continue;
+        const col = j % 4 === 0 ? TR[1] : j % 3 === 0 ? TR[3] : TR[2];
+        R(x, y, x + (j % 3 ? 1 : 0), y + (j % 2), () => col);
+      }
+      for (let j = 0; j < 26; j++) {                                                     // листва кружит вниз и ложится на кучу
+        const age = t * 1.3 - 0.12 - fzH(j * 1.1) * 0.5;
+        if (age <= 0) continue;
+        const sx = (fzH(j * 3.1) - 0.5) * 64, sy = -150 + fzH(j * 4.9) * 70, [dx, dy] = rot(sx, sy);
+        const x = dx + Math.sin(age * 9 + j) * 7, y = Math.min(top(dx) - 1, dy + age * 150), c = j % 5 === 0 ? LF3 : j & 1 ? LF2 : LF1;
+        P(x, y, c); P(x + 1, y, c); P(x + 1, y + 1, LF1); if (j % 3 === 0) P(x + 2, y + 1, c);
+      }
+      R(-pw - 2, -phh - 4, pw + 2, 2, (x, y) => {                                        // трухлявая куча
+        const tp = top(x);
+        if (y < tp || y > 1) return null;
+        const g = fzH(x * 3.7 + y * 5.3);
+        if (t > 0.5 && y - tp < 1.5 && g > 0.55) return g > 0.8 ? M3 : M2;               // мох поверху
+        return g > 0.86 ? TR[4] : y - tp < 2 || g > 0.6 ? TR[3] : g > 0.3 ? TR[2] : TR[1];
+      });
+      if (t > 0.8) for (const [gx, r] of [[-6, 3], [4, 2.4]]) {                          // мухоморы на куче
+        const gy = top(gx) - 3;
+        P(gx, gy + 1, WH); P(gx, gy + 2, WH);
+        R(gx - r - 1, gy - r, gx + r + 1, gy + 1, (x, y) => { const d = Math.hypot((x - gx) / r, (y - gy) / (r * 0.8)); return d <= 1 && y <= gy ? (fzH(x * 5 + y) > 0.75 ? WH : RED) : null; });
+      }
+      if (t > 0.8) for (const s of [-1, 1]) { const ex = s * 5, ey = Math.round(-phh * 0.4); R(ex - 1, ey - 1, ex + 1, ey + 1, (x, y) => x === ex && y === ey ? [250, 255, 200] : [...E1, 0.7], false); }
+    },
+  });
+}
+// Кикимора: оседает в тину — тело тонет и расплывается книзу, лужа ряски растёт и пускает пузыри; напоследок из тины глядят два жёлтых глаза.
+function fzKikDiePx(t) {
+  const H0 = [12, 28, 20], H1 = [24, 50, 34], H2 = [44, 80, 50], H3 = [72, 116, 66], H4 = [118, 158, 92], RG0 = [56, 46, 34], Y1 = [240, 242, 106], Y2 = [255, 255, 222];
+  const SL = [H0, H1, H2, H3, H4], sink = Math.pow(t, 1.3) * 80, rx = 9 + t * 17, ry = 2.5 + t * 2.5;
+  return fzPxDie(() => fzKikPx(0, 0), 78, 96, 39, 90, t, {
+    map: (x, y) => { if (y > -1) return null; const w = 1 + t * 0.7 * fzCl((y + 22) / 22); return [x / w + Math.sin(y * 0.4 + t * 10) * t * 1.2, y - sink]; },
+    s: (x, y) => fzCl(0.5 + (-y / 90) * 0.12),
+    mat: c => fzRamp(SL, c),
+    edge: [14, 28, 18],
+    fx(K) {
+      const { P, R, L } = K;
+      if (t < 0.7) for (let j = 0; j < 4; j++) {                                        // тина стекает в лужу
+        const x = (fzH(j * 3.3) - 0.5) * rx * 1.2, y0 = -6 - fzH(j * 5.7) * Math.max(4, 40 - sink * 0.6);
+        L(x, y0, x + 0.5, -1, 1, 0.6, (u, e) => e ? H1 : H2);
+      }
+      R(-rx - 1, -1 - ry, rx + 1, 2, (x, y) => {                                         // лужа ряски
+        const d = (x / rx) ** 2 + ((y + 1) / ry) ** 2;
+        if (d > 1 || y > 2) return null;
+        const g = fzH(x * 2.3 + y * 7.9);
+        return d > 0.8 ? H1 : g > 0.9 ? H4 : g > 0.75 ? RG0 : (x + y) & 1 ? H2 : H3;
+      });
+      for (let j = 0; j < 5; j++) {                                                      // пузыри
+        const bx = (fzH(j * 4.1 + t * 13) - 0.5) * rx * 1.4, by = -1 - (fzH(j * 6.3 + t * 7) - 0.5) * ry, r = 0.8 + fzH(j * 2.9) * 0.9;
+        R(bx - 2, by - 2, bx + 2, by + 2, (x, y) => { const d = Math.hypot(x - bx, y - by); return d < r ? (x < bx && y < by ? H4 : H3) : null; });
+      }
+      if (t > 0.8) for (const s of [-1, 1]) { const ex = s * 3.5, ey = -2; P(ex, ey, Y2); P(ex - 1, ey, Y1); P(ex + 1, ey, Y1); P(ex, ey - 1, Y1); }
+    },
+  });
+}
+// Водяной: оседает и растекается лужей — сплющивается, расползается вширь, светлеет водой; по луже расходятся круги,
+// из неё напоследок торчат выпученные жёлтые глаза.
+function fzVodDiePx(t) {
+  const WT = [[16, 50, 60], [34, 90, 100], [70, 140, 150], [130, 196, 204], [190, 236, 240]], V1 = [30, 72, 64], V2 = [52, 110, 96], Y1 = [236, 214, 70], Y2 = [255, 246, 170], DK = [24, 10, 14];
+  const q = 1 - 0.88 * t, rx = 16 + t * 24, ry = 3 + t * 3;
+  return fzPxDie(() => fzVodPx(0, 0), 90, 84, 45, 78, t, {
+    map: (x, y) => { const w = 1 + t * 1.3 * fzCl((y + 6 + 30 * q) / (30 * q)); return [x / w, (y + 6) / q - 6]; },
+    s: (x, y) => fzCl(0.55 + (-y / 78) * 0.15),
+    mat: c => fzRamp(WT, c, 0.85),
+    edge: [10, 30, 30],
+    fx(K) {
+      const { R, dth } = K;
+      R(-rx - 1, -3 - ry, rx + 1, 3, (x, y) => { const d = (x / rx) ** 2 + ((y + 3) / ry) ** 2; return d < 1 && dth(x, y) < 0.9 - d * 0.5 ? [...(d > 0.7 ? WT[2] : WT[3]), 0.7] : null; }, false);
+      for (let i = 0; i < 2; i++) {                                                      // круги по воде
+        const k = (t * 1.5 + i * 0.5) % 1, ax = rx * (0.4 + k * 0.7), ay = ry * (0.4 + k * 0.7);
+        R(-ax - 1, -3 - ay - 1, ax + 1, -3 + ay + 1, (x, y) => Math.abs(Math.hypot(x / ax, (y + 3) / ay) - 1) < 0.9 / ax * 1.6 && dth(x, y) < 1 - k * 0.6 ? [...WT[4], 0.75] : null, false);
+      }
+      if (t > 0.6) for (const s of [-1, 1]) {                                            // глаза над водой
+        const ex = s * 7, ey = -5;
+        R(ex - 4, ey - 4, ex + 4, ey, (x, y) => {
+          const d = Math.hypot(x - ex, y - ey);
+          if (d > 3.6) return null;
+          if (d > 2.7) return V1;
+          if (y < ey - 2.2) return V2;
+          return Math.abs(x - ex) < 0.8 ? DK : d < 1.4 && x < ex ? Y2 : Y1;
+        });
+      }
+    },
+  });
+}
+// Русалка: рассыпается морской пеной от плавника вверх — пузырьки поднимаются, на камне остаётся шапка пены с цветами из венка.
+function fzRusDiePx(t) {
+  const FO = [[120, 160, 180], [176, 206, 218], [220, 236, 242], [246, 250, 252]], FW = [250, 250, 238], FY = [240, 208, 90], FP = [234, 150, 172];
+  const yF = Math.max(-84, -t * 1.3 * 76 / 0.9), hw = 8 + t * 14, hh = 2 + t * 7, top = x => -hh * Math.max(0, 1 - (x / hw) ** 2);
+  const bub = (K, bx, by, r) => K.R(bx - r - 1, by - r - 1, bx + r + 1, by + r + 1, (x, y) => {
+    const d = Math.hypot(x - bx, y - by);
+    return d > r ? null : d > r - 0.9 ? FO[1] : x < bx && y < by && d < r * 0.6 ? FO[3] : FO[2];
+  });
+  return fzPxDie(() => fzRusPx(0, 0), 66, 90, 33, 84, t, {
+    map: (x, y) => [x + Math.sin(y * 0.3 + t * 8) * t, y],
+    s: (x, y) => fzCl(-y / 76 * 0.9 - (x > 6 ? 0.1 : 0)),
+    mat: c => fzRamp(FO, c),
+    edge: [40, 58, 76],
+    fx(K) {
+      K.R(-hw - 1, -hh - 1, hw + 1, 1, (x, y) => y >= top(x) && y <= 0 ? (fzH(x * 3.1 + y * 5.7) > 0.7 ? FO[3] : FO[2]) : null);   // шапка пены
+      for (let j = 0; j < 14; j++) bub(K, (fzH(j * 2.2) - 0.5) * hw * 1.8, top((fzH(j * 2.2) - 0.5) * hw * 1.8) + 1, 0.8 + fzH(j * 3.9) * 1.4);
+      for (let j = 0; j < 60; j++) {                                                     // пузырьки от фронта вверх
+        const u = fzH(j * 1.7);
+        if (u > t * 1.4 || u < (t - 0.75) * 2.4) continue;                              // к концу пузырьки лопаются
+        const y = yF + fzH(j * 2.3) * (-yF) * 0.9 - t * 10 * fzH(j * 5.1), x = (fzH(j * 3.1) - 0.5) * (22 + t * 12) + (y > -28 ? 5 : 0);
+        bub(K, x, y, 0.7 + fzH(j * 4.7) * 1.6);
+      }
+      if (t > 0.8) for (const [x, c] of [[-5, FW], [1, FP], [6, FW]]) {                  // цветы из венка на пене
+        const y = top(x) - 1;
+        K.R(x - 2, y - 2, x + 2, y + 2, (px, py) => { const d = Math.hypot(px - x, py - y); return d < 0.8 ? FY : d < 2 ? c : null; });
+      }
+    },
+  });
+}
+const FZ_DIE = {
+  noon: f => fzPxSprite('noonD' + f, 60, 88, 30, 80, () => fzNoonDiePx((f + 1) / 6)),
+  ban: f => fzPxSprite('banD' + f, 64, 84, 32, 30, () => fzBansheeDiePx((f + 1) / 6)),
+  wolf: f => fzPxSprite('wolfD' + f, 84, 54, 42, 46, () => fzWolfDiePx((f + 1) / 6)),
+  les: f => fzPxSprite('lesD' + f, 36, 50, 18, 48, () => fzLeshyDiePx((f + 1) / 6)),
+  kik: f => fzPxSprite('kikD' + f, 26, 32, 13, 30, () => fzKikDiePx((f + 1) / 6)),
+  vod: f => fzPxSprite('vodD' + f, 30, 28, 15, 26, () => fzVodDiePx((f + 1) / 6)),
+  rus: f => fzPxSprite('rusD' + f, 22, 30, 11, 28, () => fzRusDiePx((f + 1) / 6)),
+};
 function fzDrawHi(c, cv, x, y, a, face, dy) {
   const [ox, oy, w, h] = cv.fzO;
   c.save();
@@ -1780,9 +2075,12 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
   const L = F.les;
   if (L && vis(L.x, L.y)) {
     list.push([L.y + 0.05, () => {
-      const arms = L.state === 'angry' && Math.floor(L.ph * 1.5) % 2 === 0;
       fzShadow(c, L.x, L.y, 14, 0.3 * L.alpha);
-      fzDrawHi(c, fzLeshySprite(arms, Math.floor(L.ph * 2) % 6), L.x, L.y + 0.1, L.alpha, 1, 4 + (Math.sin(L.ph * 2) > 0.7 ? 1 : 0));
+      if (L.dying) fzDrawHi(c, FZ_DIE.les(fzDieF(L.alpha, L.da)), L.x, L.y + 0.1, 1, 1, 4);
+      else {
+        const lv = L.state === 'angry' ? [0, 1, 2, 1][Math.floor(L.ph * 3) % 4] : 0;     // гнев: замах → руки вскинуты → опускает
+        fzDrawHi(c, fzLeshySprite(lv, Math.floor(L.ph * 2) % 6, L.mv ? Math.floor(L.ph * 6) % 6 : -1), L.x, L.y + 0.1, L.alpha, 1, 4 + (!L.mv && Math.sin(L.ph * 2) > 0.7 ? 1 : 0));
+      }
       if (L.gift) fzDraw(c, S.bread, L.gift.x, L.gift.y, { a: 1, dy: 2 });
     }]);
   }
@@ -1797,9 +2095,13 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
         if (Math.sin(k.ph * 0.7) > 0.2) { c.save(); c.globalAlpha *= a; c.fillStyle = '#f0f26a'; c.fillRect(Math.round(k.x * TILE - 4), Math.round(k.y * TILE - 6), 2, 2); c.fillRect(Math.round(k.x * TILE + 3), Math.round(k.y * TILE - 6), 2, 2); c.restore(); }
         fzRipple(c, k.x, k.y, k.ph, a, 12);
       } else {
-        const rise = k.state === 'chase' || k.state === 'drag';
+        const walk = k.state === 'chase' || k.state === 'drag', dy = 4 + (k.state === 'rest' ? 3 : 0);
         fzShadow(c, k.x, k.y, 8, 0.25 * a);
-        fzDrawHi(c, fzKikSprite(rise && Math.floor(k.ph * 5) % 2 === 1, Math.floor(k.ph * 3) % 4), k.x, k.y, a, k.face, 4 + (k.state === 'rest' ? 3 : 0));
+        if (k.dying) fzDrawHi(c, FZ_DIE.kik(fzDieF(a, k.da)), k.x, k.y, 1, k.face, dy);
+        else {
+          const lv = k.state === 'chase' ? [0, 1, 2, 1][Math.floor(k.ph * 5) % 4] : k.state === 'drag' ? 1 : 0;   // рывок с замахом; тащит — когти вперёд
+          fzDrawHi(c, fzKikSprite(lv, Math.floor(k.ph * 3) % 4, walk ? Math.floor(k.ph * 8) % 6 : -1), k.x, k.y, a, k.face, dy);
+        }
         if (k.state === 'rest') fzReeds(c, k.x, k.y, k.ph, a * 0.8);
       }
     }]);
@@ -1809,21 +2111,30 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
     const v = P.vod, r = P.rus;
     list.push([v.y + 0.9, () => {
       fzRipple(c, v.x, v.y, v.ph, v.alpha, 14);
-      fzDrawHi(c, fzVodSprite(v.state === 'grab', Math.floor(v.ph * 2) % 4), v.x, v.y + (v.state === 'grab' ? 0.05 : 0.18 + Math.sin(v.ph * 2) * 0.03), v.alpha, v.face, 4);
+      const lv = v.state === 'grab' ? (v.t < 0.3 || v.t > 1.45 ? 1 : 2) : 0, vy = v.y + (lv ? 0.05 : 0.18 + Math.sin(v.ph * 2) * 0.03);   // замах → схватка → лапы опускаются
+      if (v.dying) fzDrawHi(c, FZ_DIE.vod(fzDieF(v.alpha, v.da)), v.x, vy, 1, v.face, 4);
+      else fzDrawHi(c, fzVodSprite(lv, Math.floor(v.ph * 2) % 4), v.x, vy, v.alpha, v.face, 4);
     }]);
     list.push([r.y + 0.2, () => {
       c.fillStyle = '#7a7872'; c.beginPath(); c.ellipse(Math.round(r.x * TILE), Math.round(r.y * TILE + 3), 9, 3, 0, 0, 7); c.fill();       // камень
-      fzDrawHi(c, fzRusSprite(r.state === 'sing', Math.floor(r.ph * 2) % 4), r.x, r.y, r.alpha, 1, 3);
+      if (r.dying) fzDrawHi(c, FZ_DIE.rus(fzDieF(r.alpha, r.da)), r.x, r.y, 1, 1, 3);
+      else fzDrawHi(c, fzRusSprite(r.state === 'sing' ? (r.t < 0.5 || r.t > 5.5 ? 1 : 2) : 0, Math.floor(r.ph * 2) % 4), r.x, r.y, r.alpha, 1, 3);   // вдох → песня → выдох
     }]);
   }
   for (const w of F.wisps || []) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.5, () => fzWispDraw(c, w)]);
   const N = F.noon;
-  if (N && vis(N.x, N.y) && N.alpha > 0) list.push([N.y + 0.2, () => fzDrawHi(c, fzNoonSprite(N.state === 'haunt' ? fzNoonLv(N.t) : 0, Math.floor(N.ph * 3) % 6), N.x, N.y, N.alpha, N.face, 6)]);
+  if (N && vis(N.x, N.y) && N.alpha > 0) list.push([N.y + 0.2, () => N.dying
+    ? fzDrawHi(c, FZ_DIE.noon(fzDieF(N.alpha, N.da)), N.x, N.y, 0.9, N.face, 6)
+    : fzDrawHi(c, fzNoonSprite(N.state === 'haunt' ? fzNoonLv(N.t) : 0, Math.floor(N.ph * 3) % 6), N.x, N.y, N.alpha, N.face, 6)]);
   for (const b of F.ban) if (vis(b.x, b.y) && b.alpha > 0) list.push([b.y + 0.3, () => {
-    fzDrawHi(c, fzBansheeSprite(b.wail > 2.1 ? 1 : b.wail > 0.3 ? 2 : b.wail > 0 ? 1 : 0, Math.floor(b.ph * 4.4) % 12), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, -14 + Math.sin(b.ph * 1.7) * 3);
+    const dy = -14 + Math.sin(b.ph * 1.7) * 3;
+    if (b.dying) fzDrawHi(c, FZ_DIE.ban(fzDieF(b.alpha, b.da)), b.x, b.y, 0.94, b.face, dy);
+    else fzDrawHi(c, fzBansheeSprite(b.wail > 2.1 ? 1 : b.wail > 0.3 ? 2 : b.wail > 0 ? 1 : 0, Math.floor(b.ph * 4.4) % 12), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, dy);
   }]);
   for (const w of F.wolves) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.1, () => {
-    fzDrawHi(c, fzWolfSprite(Math.floor(w.ph) % 4, w.howlT > 0), w.x, w.y, Math.min(1, w.alpha * 1.4), w.face, 4);
+    const hl = w.howlT > 1.5 || (w.howlT > 0 && w.howlT < 0.3) ? 1 : w.howlT > 0 ? 2 : 0;   // морда поднимается → вой → опускается
+    if (w.dying) fzDrawHi(c, FZ_DIE.wolf(fzDieF(w.alpha, w.da)), w.x, w.y, 0.87, w.face, 4);
+    else fzDrawHi(c, fzWolfSprite(Math.floor(w.ph) % 4, hl), w.x, w.y, Math.min(1, w.alpha * 1.4), w.face, 4);
     if (w.stole) { c.save(); c.globalAlpha *= w.alpha + 0.3; c.fillStyle = '#ffd880'; c.fillRect(Math.round(w.x * TILE + w.face * 14), Math.round(w.y * TILE - 6), 3, 4); c.restore(); }
   }]);
 }
