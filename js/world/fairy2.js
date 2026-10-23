@@ -842,39 +842,24 @@ function fzNoonPx(lv, p) {
   // серп: рукоять поперёк кулака, от кольца клинок идёт вперёд и закручивается крюком (кривизна растёт к острию), шире всего в первой трети
   const sickle = (hx, hy, a) => {
     const ux = Math.cos(a), uy = Math.sin(a);
-    L(hx - ux * 5, hy - uy * 5, hx + ux * 13, hy + uy * 13, 2.4, 2.1, (t, e) => e ? [70, 38, 18] : (Math.round(t * 18) % 3 === 0 ? [86, 46, 22] : [126, 74, 36]));   // рукоять с обмоткой
-    L(hx + ux * 12.5, hy + uy * 12.5, hx + ux * 15, hy + uy * 15, 2.6, 2.4, (t, e) => e ? I0 : I1);                                                   // стальная втулка
-    // клинок-«вопросик»: продолжает рукоять коротким горлом и сразу уходит в большую дугу (~200°);
-    // шире всего в начале дуги, к острию сходит на нет; из двух сторон изгиба берём ту, где острие заворачивает назад к телу
-    const N = 44, NS = 4, RAD = 15, ST = 1.3, blade = sg => {
-      const q = []; let x = hx + ux * 15, y = hy + uy * 15, d = a;
-      for (let i = 0; i <= N; i++) {
-        const u = Math.max(0, (i - NS) / (N - NS)), w = i <= NS ? 2.8 : u < 0.2 ? 2.8 + u / 0.2 * 2.4 : 5.2 * (1 - (u - 0.2) / 0.8) + 0.3;
-        q.push([x, y, w]);
-        if (i >= NS) d += sg * ST / RAD;
-        x += Math.cos(d) * ST; y += Math.sin(d) * ST;
-      }
-      return q;
-    };
-    const A = blade(1), B = blade(-1), tipD = q => Math.hypot(q[N][0], q[N][1] + 130), sg = tipD(A) < tipD(B) ? 1 : -1, pts = sg > 0 ? A : B;
-    // заливка одним проходом: ближайшая точка кривой, сторона и ширина клинка в ней
-    const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
-    R(Math.min(...xs) - 6, Math.min(...ys) - 6, Math.max(...xs) + 6, Math.max(...ys) + 6, (px, py) => {
-      let best = 1e9, bo = 0, bw = 0, bt = 0;
-      for (let i = 1; i < pts.length; i++) {
-        const [x0, y0, w0] = pts[i - 1], [x1, y1, w1] = pts[i], dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy;
-        const u = Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / l2)), ex = px - x0 - dx * u, ey = py - y0 - dy * u, dd = ex * ex + ey * ey;
-        if (dd < best) { best = dd; bo = (ex * dy - ey * dx) / Math.sqrt(l2); bw = w0 + (w1 - w0) * u; bt = (i - 1 + u) / N; }
-      }
-      const o = -bo * sg, half = bw;                                                 // o > 0 — вогнутая сторона (жало)
-      const jag = 0;
-      if (o > half + 0.5 || o < -half - 0.5 - jag) return null;
-      if (o < -half + 0.6) return I0;                                                   // обух
-      if (o > half - 0.6) return bt > 0.2 && bt < 0.85 && hsh(px * 3 + py) > 0.55 ? K7 : I3;   // жало блестит на солнце
-      if (hsh(px * 7 + py * 13) > 0.97) return RU;                                       // редкая ржа
-      if (Math.abs(o + half * 0.25) < 0.7 && bt < 0.8) return I3;                           // блик вдоль клинка
-      return o > 0 ? I2 : [140, 130, 118];
-    });
+    L(hx - ux * 8, hy - uy * 8, hx + ux * 9, hy + uy * 9, 2.2, 2, (t, e) => e ? [70, 38, 18] : t < 0.08 ? [70, 38, 18] : [118, 70, 34]);   // рукоять
+    L(hx + ux * 8.5, hy + uy * 8.5, hx + ux * 11, hy + uy * 11, 2.5, 2.5, (t, e) => e ? I0 : I1);                                          // кольцо
+    const sg = -Math.sin(a + Math.PI / 2) > -Math.sin(a - Math.PI / 2) ? 1 : -1, N = 40, pts = [];
+    let x = hx + ux * 11, y = hy + uy * 11, d = a;
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, w = t < 0.3 ? 3 + t * 5.5 : 4.65 * (1 - (t - 0.3) / 0.7) + 0.25;
+      pts.push([x, y, w]);
+      d += sg * (t < 0.1 ? 0.02 : 0.095); x += Math.cos(d) * 1.35; y += Math.sin(d) * 1.35;   // короткое горло, дальше ровная дуга ~200° — серп-«вопросик»
+    }
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0, w0] = pts[i - 1], [x1, y1, w1] = pts[i], t0 = (i - 1) / N;
+      L(x0, y0, x1, y1, w0, w1, (t, e, sd) => {
+        const inner = sd * sg > 0;
+        if (e && !inner) return I0;                                                     // обух
+        if (e && inner) return t0 > 0.25 && t0 < 0.8 && hsh(x0 * 3 + y0) > 0.55 ? K7 : I3;   // жало блестит на солнце
+        return hsh(Math.round(x0) * 7 + Math.round(y0) * 13 + (sd > 0 ? 1 : 0)) > 0.86 ? RU : inner ? I2 : [128, 116, 102];   // ржа
+      });
+    }
   };
   // дальняя (левая) рука — когтистая пятерня
   arm(-1, pose.L);
