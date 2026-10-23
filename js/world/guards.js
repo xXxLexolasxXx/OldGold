@@ -467,7 +467,7 @@ function gdTick(dt) {
 // ---------- Подключение ----------
 
 FSPEC.bonem = { name: 'Костяной прислужник', mhp: 18, dmg: [2, 4], cd: 1.4, rng: 1.4, spd: 2.3, parry: 0, xp: 12, sz: 7, draw: (c, N) => gdDrawBone(c, N) };
-FSPEC.echo = { name: 'Призрак павшего', mhp: 40, dmg: [5, 9], cd: 1.5, rng: 1.5, spd: 2.4, parry: 0.05, xp: 25, sz: 8, draw: (c, N) => gdDrawEcho(c, N) };
+FSPEC.echo = { name: 'Павший гном', mhp: 40, dmg: [5, 9], cd: 1.5, rng: 1.5, spd: 2.4, parry: 0.05, xp: 25, sz: 8, draw: (c, N) => gdDrawEcho(c, N) };
 FSPEC.ftower = { name: 'Магическая башня', mhp: 110, xp: 70, sz: 10, big: true, still: true, parry: 0, ai: rdTower, draw: (c, N) => gdDrawTower(c, N), drop: [['magicstone', 1, 0.7], ['mana', 1, 0.4]] };
 for (const k of GD_ORDER) {
   const G = GD_KINDS[k];
