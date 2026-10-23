@@ -87,6 +87,19 @@ function neuTrySite(rng, stamp, minStart) {
   return { x, y, ds };
 }
 
+// Враждебные лагеря (жаболюды, гоблины, тролли, броненосцы, гномтавры, ледяные элементали) — не ближе этого до края
+// любого здания деревни. Одного расстояния от центра карты мало: улица и постройки уходят от центра на 10–15 клеток
+const neuHostileGap = () => (mapIsLegacy() ? 16 : 20);
+function neuVillageDist(x, y) {
+  let d = 1e9;
+  for (const b of Game.buildings) {
+    const dx = Math.max(b.x - x, 0, x - (b.x + (b.w || 1) - 1)), dy = Math.max(b.y - y, 0, y - (b.y + (b.h || 1) - 1));
+    const e = Math.hypot(dx, dy);
+    if (e < d) d = e;
+  }
+  return d;
+}
+
 function neuAddLair(k, site, minStart) {
   const { x, y, ds } = site;
   const far = Math.min(1, Math.max(0, (ds - minStart) / 40));
