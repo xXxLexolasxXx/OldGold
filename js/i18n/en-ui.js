@@ -1431,4 +1431,14 @@ I18N.add('en', {
   "Вкладка «Склад» стала «Запасами и запретами»: что склады принимают и растёт ли запас. Сколько чего лежит — в строке ресурсов сверху, там теперь видны все товары.": "The \"Storehouse\" tab is now \"Stores and bans\": what storehouses accept and whether the stock is growing. Amounts are in the resource bar at the top, which now shows every good.",
   "Опытным: Меню → Настройки → «Показать всё сразу». Старые сохранения открываются со всем, что уже было.": "For veterans: Menu → Settings → \"Show everything at once\". Old saves load with everything they already had.",
   "Нанимать гномов теперь только в школе — лишняя кнопка «+» во вкладке «Жители» убрана. И ещё несколько мелких правок.": "Gnomes are now hired only at the school — the extra \"+\" button in the Villagers tab is gone. And a few more small fixes.",
+  // меню игры (js/menugroups.js): кнопки, которым не хватало перевода
+  "Меню игры стало короче": "A shorter game menu",
+  "Меню игры стало короче: «Сохранить» и «Загрузить» — одним рядом сверху, рядом «Автосохранение» и «Справка». Остальное — в двух разделах: «Настройки» и «Ещё»": "The game menu is shorter: \"Save\" and \"Load\" sit side by side at the top, with \"Autosave\" and \"Help\" next to them. Everything else lives in two sections: \"Settings\" and \"More\"",
+  "Из меню игры убраны повторы: «Вызов дня» остался на стартовом экране, а журнал сбоев отправляется через «Ещё» → «Сообщить о проблеме»": "Duplicates are gone from the game menu: \"Daily challenge\" stays on the start screen, and the crash log is sent via \"More\" → \"Report a problem\"",
+  "Файл сохранения": "Save file",
+  "Сообщить о проблеме": "Report a problem",
+  "Удалить мои данные": "Delete my data",
+  "Помогать статистикой: да": "Help with statistics: yes",
+  "Помогать статистикой: нет": "Help with statistics: no",
+  "Статистика: не на локальной": "Statistics: off on a local copy",
 });

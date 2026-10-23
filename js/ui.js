@@ -449,13 +449,10 @@ function initUI() {
     const t = e.target.closest('[data-menu]');
     if (!t) return;
     const m = t.dataset.menu;
-    track('menu-' + m, { save: 'Сохранил игру', load: 'Загрузил сохранение', loadauto: 'Загрузил автосохранение', new: 'Открыл «Новая карта»', help: 'Открыл «Как играть»' }[m]);
+    track('menu-' + m, { save: 'Сохранил игру', load: 'Загрузил сохранение', loadauto: 'Загрузил автосохранение' }[m]);
     if (m === 'save') toast(saveGame('manual') ? 'Игра сохранена' : 'Не удалось сохранить');
     if (m === 'load') { if (loadGame('manual')) { toast('Игра загружена'); updateUI(true); } else toast('Сохранения нет'); }
     if (m === 'loadauto') { if (loadGame('auto')) { toast('Загружено автосохранение'); updateUI(true); } else toast('Автосохранения пока нет'); }
-    if (m === 'new' && confirm('Начать на новой карте? Несохранённый прогресс пропадёт.')) newGame();
-    if (m === 'help') document.getElementById('help').classList.toggle('hidden');
-    if (m === 'lang') I18N.toggle();
     if (m === 'lang') I18N.toggle();
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     if (m === 'mainmenu') exitToMainMenu();

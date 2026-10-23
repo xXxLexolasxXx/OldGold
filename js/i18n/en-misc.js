@@ -521,7 +521,7 @@ I18N.add('en', {
   "Сложность деревни": "Village difficulty",
   "Сложность деревни: {0}": "Village difficulty: {0}",
   "память: куча {0} МБ · холсты {1} МБ · сбоев {2}{3}": "memory: heap {0} MB · canvases {1} MB · failures {2}{3}",
-  "вылеты: {0} · ошибок в журнале {1} (кнопка ниже или меню → «Скопировать журнал»)": "crashes: {0} · errors in the log {1} (button below or menu → \"Copy log\")",
+  "вылеты: {0} · ошибок в журнале {1} (кнопка ниже или меню → «Ещё» → «Сообщить о проблеме»)": "crashes: {0} · errors in the log {1} (button below or menu → \"More\" → \"Report a problem\")",
   "Скопировать журнал": "Copy log",
   "Скопировать журнал сбоев и вылетов, чтобы отправить автору (без ника и сохранений)": "Copy the crash and failure log to send to the author (without nickname or saves)",
   "сохранение из более новой версии игры (формат {0}, игра понимает до {1})": "save from a newer game version (format {0}, the game understands up to {1})",
