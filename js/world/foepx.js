@@ -380,16 +380,20 @@ function fpxHeadIce(X, hx, hy, Q, o) {                                          
   }
   X.R(hx - 6, hy - r * 1.05, hx + 10, hy - r * 0.5, (x, y) => ((x - hx - 2) / 8) ** 2 + ((y - hy + r * 0.85) / 2.6) ** 2 < 1 && X.dth(x, y) < 0.6 ? o.I[4] : null);   // иней на темени
 }
-function fpxHeadBone(X, hx, hy, Q, o) {                                                      // бычий череп с закрученными рогами
+function fpxHeadBone(X, hx, hy, Q, o) {                                                      // бычий череп, бараньи рога закручены назад вокруг уха
   const r = 12.5;
   fpxHorn(X, hx - 7, hy - 7, -1, 18, 3.4, o.Hr, -0.25);
-  fpxSkull(X, hx, hy, r, { Bn: o.Bn, G: o.G, open: Q.open, blink: Q.blink, hot: Q.hurt });
-  const cx = hx - r * 0.45, cy = hy - r * 0.05;                                             // ближний рог — спираль вокруг уха
+  const cx = hx - r * 0.95, cy = hy + r * 0.05;                                             // спираль за черепом: корень у темени, виток назад и вниз
   let px = 0, py = 0;
-  for (let m = 0; m <= 18; m++) {
-    const u = m / 18, a = -1.1 - u * 4.6, rr = r * 1.05 * (1 - u * 0.5), x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr, w = 5 * (1 - u * 0.8);
-    if (m) X.limb(px, py, x, y, w + 0.4, w, o.Hr, { f: (t, xx, yy, v) => (m % 2 && t < 0.3) ? X.q(o.Hr, v - 0.35, xx, yy) : null });
+  for (let m = 0; m <= 20; m++) {
+    const u = m / 20, a = -0.9 - u * 4.9, rr = r * 0.95 * (1 - u * 0.6), x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr, w = 5.2 * (1 - u * 0.75);
+    if (m) X.limb(px, py, x, y, w + 0.4, w, o.Hr, { b: -0.05, f: (t, xx, yy, v) => (m % 2 && t < 0.3) ? X.q(o.Hr, v - 0.35, xx, yy) : null });
     px = x; py = y;
+  }
+  fpxSkull(X, hx, hy, r, { Bn: o.Bn, G: o.G, open: Q.open, blink: Q.blink, hot: Q.hurt });
+  for (const k of [-0.25, 0.25]) {                                                          // короткие рожки на лбу
+    const bx = hx + r * (0.15 + k), by = hy - r * 0.85;
+    X.poly([[bx - 2, by + 1.5], [bx + 1 + k * 8, by - 7], [bx + 2, by + 1.5]], o.Hr, (x) => x < bx ? 0.85 : 0.45);
   }
 }
 function fpxHeadShadow(X, hx, hy, Q, o) {                                                    // острый капюшон, в пустоте — глаза и парящий оскал
@@ -826,7 +830,7 @@ function fpxGolem(X, Q) {
     rune(hx - 3, hipY + 16, fx + 2, hipY + 34);
   }
   fpxStone(X, ux + 6, -92 + uy, 42, 30, ST, 2, -0.1);                                        // брюхо
-  fpxStone(X, ux + 6, -124 + uy, 56, 40, ST, 5, 0);                                          // грудь-глыба
+  fpxStone(X, ux + 6, -124 + uy, 52, 40, ST, 5, 0);                                          // грудь-глыба
   fpxStone(X, ux - 18, -158 + uy, 36, 22, ST, 9, 0.08);                                      // горб
   X.R(ux - 56, -186 + uy, ux + 20, -146 + uy, (x, y) => { const d = ((x - ux + 18) / 36) ** 2 + ((y + 158 - uy) / 22) ** 2; return d < 1 && d > 0.55 && y < -160 + uy && X.dth(x, y) < 0.8 ? X.q(MS, 0.3 + X.hsh(Math.round(x)) * 0.7, x, y) : null; });
   for (const s of [-1, 1]) fpxStone(X, s * 42 + ux + (s > 0 ? 4 : 0), -150 + uy, 26, 22, ST, 60 + s, s < 0 ? -0.1 : 0.1);   // плечи-валуны выше головы
@@ -841,8 +845,8 @@ function fpxGolem(X, Q) {
   });
   const head = () => {
   // голова утоплена ниже плеч, выдвинута вперёд: тяжёлый лоб, рога-кристаллы, глаза-угли, клыкастая пасть с отсветом
-  const hx = ux + 20, hy = -134 + uy + (Q.st === 'strike' ? 8 : 0) + (Q.hurt ? -3 : 0);
-  X.ell(hx - 4, hy + 4, 25, 21, [ST[0]]);                                                    // тень-провал вокруг головы
+  const hx = ux + 12, hy = -166 + uy + (Q.st === 'strike' ? 8 : 0) + (Q.hurt ? -3 : 0);
+  X.ell(hx - 2, hy + 8, 24, 18, [ST[0]]);                                                    // тень-провал вокруг головы
   fpxStone(X, hx, hy + 4, 20, 17, ST, 13, 0.12);
   for (const [dx, a, L] of [[-12, -2.2, 22], [2, -1.6, 20], [12, -0.9, 26]]) { const bx = hx + dx, by = hy - 8, nx = -Math.sin(a), ny = Math.cos(a); X.poly([[bx + nx * 4, by + ny * 4], [bx + Math.cos(a) * L, by + Math.sin(a) * L], [bx - nx * 4, by - ny * 4]], CR, (x, y) => ((x - bx) * nx + (y - by) * ny) > 0 ? 0.95 : 0.45); }
   X.poly([[hx - 18, hy - 6], [hx + 20, hy - 9], [hx + 22, hy - 2], [hx + 12, hy + 1], [hx + 3, hy - 2], [hx - 6, hy + 1], [hx - 17, hy - 1]], ST, (x, y) => y < hy - 5 ? 0.95 : 0.6);   // лоб
