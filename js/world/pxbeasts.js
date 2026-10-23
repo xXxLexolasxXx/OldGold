@@ -131,6 +131,13 @@ function pbEye(K, x, y, r, P, white, pupil, lid) {
   pbDot(K, x + 1, y + 0.3, pupil, Math.max(0.6, r * 0.45));
   K.P(x - 1, y - 1, [255, 255, 240]);
 }
+// рука по двум звеньям от плеча (sx, sy) к цели (tx, ty): локоть сгибается в сторону bend (+1 — вниз-назад)
+function pbIK(sx, sy, tx, ty, l1, l2, bend = 1) {
+  const dx = tx - sx, dy = ty - sy, d = Math.min(Math.hypot(dx, dy), l1 + l2 - 1), a0 = Math.atan2(dy, dx);
+  const ca = Math.max(-1, Math.min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d))), a1 = a0 + bend * Math.acos(ca);
+  const ex = sx + Math.cos(a1) * l1, ey = sy + Math.sin(a1) * l1, hx = sx + Math.cos(a0) * d, hy = sy + Math.sin(a0) * d;
+  return { sx, sy, ex, ey, hx, hy, a2: Math.atan2(hy - ey, hx - ex) };
+}
 // масштаб рисунка: те же координаты, но в s раз крупнее (детали остаются в пикселях арта)
 function pbScaled(K, s) {
   const Q = {
@@ -311,6 +318,10 @@ function pbTroll(K, P, kind) {
   const ang = P.up > 0.5 ? -2.2 : P.a < -0.3 ? -2.5 : P.a > 0.5 ? 0.5 : 1.95 + P.a * 0.3;    // висит назад-вниз / замах за голову / удар вперёд-вниз
   Object.assign(farA, armG(-14, -172, ang, 50, 46, true));
   const nearA = armG(40, -166, 1.5 - a * 0.25, 54, 50, false);                                 // ближняя рука свободна, висит до колен
+  if (P.up > 0.5 || a < -0.3 || a > 0.5) {                                                      // замах и удар — двумя руками: ближняя кисть берёт рукоять выше дальней
+    const gx = farA.hx + Math.cos(farA.a2 - 1.1) * 20, gy = farA.hy + Math.sin(farA.a2 - 1.1) * 20;
+    Object.assign(nearA, pbIK(40, -166, gx, gy, 54, 50, a > 0.5 ? 1 : -1), { grip: true });
+  }
   const hx = 62 + (a > 0.5 ? 8 : 0), hy = -176 + (P.hurt > 0.5 ? 5 : 0);
   // ---- дальние нога и рука: отдельная, более тёмная «глина» за телом
   pbBlob(K, [...legPrims(farL), ...armPrims(farA)], SKD, { amb: 0.36, k: 6, tex: texSkin });
@@ -366,7 +377,7 @@ function pbTroll(K, P, kind) {
   K.outline(kind === 'trollS' ? [30, 28, 26] : [18, 26, 14]);
 }
 // тролли ещё в работе (позы рук на замахе) — до одобрения владельцем в игре остаются векторными
-const PB_TROLLS_READY = false;
+const PB_TROLLS_READY = true;
 if (PB_TROLLS_READY) {
   NA_PX.troll = (K, P) => pbTroll(K, P, 'troll');
   NA_PX.trollS = (K, P) => pbTroll(K, P, 'trollS');
