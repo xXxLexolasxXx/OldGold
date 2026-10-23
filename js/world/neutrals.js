@@ -629,7 +629,8 @@ function neuDraw(c, N) {
   const bob = N.k === 'fairy' && !dead ? Math.round(Math.sin(t * 3.2 + N.id) * 1.3) : 0;
   c.translate(px, py + bob);
   if (N.face < 0) c.scale(-1, 1);
-  c.drawImage(sp.cv, -sp.ax, -sp.ay);
+  if (sp.hi) { c.imageSmoothingEnabled = false; c.drawImage(sp.cv, -sp.ax, -sp.ay, sp.w, sp.h); }   // 3× пиксельный кадр (pxbeasts.js)
+  else c.drawImage(sp.cv, -sp.ax, -sp.ay);
   c.restore();
   if (!dead && N.hp < N.mhp - 0.5) {
     const w = 18, hy = py - (N.k === 'leshy' ? 64 : (N.k === 'fairy' || N.k === 'pixie') ? 46 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);
