@@ -307,9 +307,9 @@ function pbTroll(K, P, kind) {
   };
   const toes = (L, ramp) => { for (let t = 0; t < 4; t++) { const tx = L.fx + 18 + t * 6; pbBall(K, tx, -5, 4, 4.6, ramp, { amb: 0.5, fade: 0.4 }); K.path([[tx + 2, -6, 1.8], [tx + 6, -2, 0.6]], () => T.NA[t % 2]); } };
   const farL = legG(-30, -1), nearL = legG(14, 1);
-  const farA = armG(18, -178, 0, 50, 46, true);                                              // дальнее плечо — за туловищем, в руке оружие
-  const ang = P.up > 0.5 ? -2.4 : P.a < -0.3 ? -2.3 : P.a > 0.5 ? 0.55 : 1.2 + P.a * 0.4;    // висит / замах вверх / удар вперёд-вниз
-  Object.assign(farA, armG(18, -178, ang, 50, 46, true));
+  const farA = armG(-14, -172, 0, 50, 46, true);                                             // дальнее плечо — позади, за туловищем, в руке оружие
+  const ang = P.up > 0.5 ? -2.2 : P.a < -0.3 ? -2.5 : P.a > 0.5 ? 0.5 : 1.95 + P.a * 0.3;    // висит назад-вниз / замах за голову / удар вперёд-вниз
+  Object.assign(farA, armG(-14, -172, ang, 50, 46, true));
   const nearA = armG(40, -166, 1.5 - a * 0.25, 54, 50, false);                                 // ближняя рука свободна, висит до колен
   const hx = 62 + (a > 0.5 ? 8 : 0), hy = -176 + (P.hurt > 0.5 ? 5 : 0);
   // ---- дальние нога и рука: отдельная, более тёмная «глина» за телом
@@ -332,7 +332,7 @@ function pbTroll(K, P, kind) {
   fingers(farA, SKD);
   // ---- тело одной «глиной»: горб, туловище, загривок, голова с челюстью, ближние нога и рука
   pbBlob(K, [
-    { e: [-36, -172, 44, 40] }, { e: [2, -138, 58, 50] },
+    { e: [-24, -170, 32, 30] }, { e: [2, -140, 56, 52] },
     { c: [[16, -166, 30], [hx - 12, hy + 4, 26]] },
     ...legPrims(nearL), ...armPrims(nearA),
   ], SK, { amb: 0.46, k: 14, depth: 22, tex: texSkin });
@@ -348,7 +348,7 @@ function pbTroll(K, P, kind) {
   // приметы вида: камни с мхом, космы мха по горбу, тина
   if (kind === 'trollS') for (const [x, y, r] of [[-40, -190, 9], [-20, -176, 6], [30, -150, 7], [-54, -150, 6]]) { pbBall(K, x, y, r + 2, r, [[90, 76, 56], [130, 112, 86], [168, 150, 120]], { amb: 0.5 }); pbBall(K, x - 2, y - 4, r * 0.6, r * 0.5, T.moss, { amb: 0.5, fade: 0.4 }); }
   else for (let i = 0; i < 7; i++) {                                                     // мох пучками по горбу, разной величины
-    const x = -76 + K.hsh(i * 3.1) * 64, top = -172 - 40 * Math.sqrt(Math.max(0, 1 - ((x + 36) / 44) ** 2)), y = top + 6 + K.hsh(i * 7.3) * 46, r = 3 + K.hsh(i * 1.7) * 5;   // россыпью по спине и бокам
+    const x = -50 + K.hsh(i * 3.1) * 56, top = -170 - 30 * Math.sqrt(Math.max(0, 1 - ((x + 24) / 32) ** 2)), y = top + 6 + K.hsh(i * 7.3) * 46, r = 3 + K.hsh(i * 1.7) * 5;   // россыпью по спине и бокам
     pbBall(K, x, y, r * 1.3, r, T.HA, { amb: 0.55, fade: 0.5, tex: (xx, yy) => (K.hsh(Math.floor(xx / 2) * 3.3 + Math.floor(yy / 2)) > 0.6 ? 0.12 : -0.05) });
     for (let k = 0; k < 3; k++) K.path([[x - r + k * r, y + r * 0.6, 1.4], [x - r + k * r + (K.hsh(i + k) - 0.5) * 3, y + r * 0.6 + 4 + K.hsh(i * 2 + k) * 8, 0.6]], (tt) => T.HA[tt > 0.5 ? 0 : 1]);
   }
