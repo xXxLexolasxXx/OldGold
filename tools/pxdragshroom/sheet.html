@@ -7,7 +7,7 @@
 try {
 const W = 1500, cv = document.getElementById('cv');
 const FR = [['idle', 'покой'], ['walk', 'ходьба'], ['atk', 'атака']];
-const H = 40 + 2 * 335 + 20 + 345 + 20 + 40 + 6 * 175 + 40 + 3 * 170 + 40 + 260;
+const H = 40 + 2 * 335 + 20 + 375 + 20 + 40 + 6 * 175 + 40 + 3 * 170 + 40 + 260;
 cv.width = W; cv.height = H;
 const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
 c.fillStyle = '#1b2a1f'; c.fillRect(0, 0, W, H);
@@ -25,9 +25,9 @@ T('Легендарный дракон и чумной моховик — тел
 y += 2 * 335 + 20;
 T('Моховик ×8', 20, y, 18); y += 6;
 [['idle', 1, 'Моховик: покой'], ['walk', 1, 'Моховик: ходьба'], ['atk', 3, 'Моховик: удар шляпкой']].forEach(([m, p, n], i) => {
-  const x = 10 + i * 495, yy = y; cell(x, yy, 490, 340); T(n, x + 10, yy + 26, 18, '#ffd860'); put(fzShroomSprite(m, p), x + 245, yy + 300, 8);
+  const x = 10 + i * 495, yy = y; cell(x, yy, 490, 370); T(n, x + 10, yy + 26, 18, '#ffd860'); put(fzShroomSprite(m, p), x + 245, yy + 360, 8);
 });
-y += 345 + 20;
+y += 375 + 20;
 T('Дракон — все кадры ×3 (1:1 с сеткой): покой p0..5 (p4 моргает), ходьба p0..5, атака p0..5 (0–1 вдох)', 20, y + 6, 18); y += 14;
 FR.forEach(([m, mn], r) => { for (let p = 0; p < 6; p++) { const i = r * 6 + p, x = 10 + (i % 3) * 495, yy = y + Math.floor(i / 3) * 175; cell(x, yy, 490, 170); T(mn + ' p' + p, x + 6, yy + 18, 13); put(fzDragonSprite(m, p), x + 160, yy + 162, 3); } });
 y += 6 * 175 + 10;

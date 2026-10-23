@@ -92,6 +92,7 @@ function fzDragonPx(mode, p) {
   const BE = [[128, 84, 34], [176, 124, 50], [214, 166, 72], [240, 204, 110], [255, 234, 164]];
   const HO = [[64, 42, 22], [124, 88, 44], [190, 152, 86], [234, 206, 140], [255, 244, 206]];
   const HOF = [[44, 30, 18], [86, 62, 34], [134, 104, 62]];
+  const CL = [[56, 48, 40], [116, 104, 86], [184, 170, 142], [238, 228, 202]], CLF = [[36, 32, 28], [74, 66, 56], [120, 110, 92]];
   const MEM = [[12, 34, 46], [18, 56, 66], [28, 84, 84], [44, 116, 102], [74, 156, 124], [120, 196, 146]];
   const EMB = [[190, 56, 18], [255, 128, 36], [255, 198, 84], [255, 246, 190]];
   const FL = [[150, 28, 18], [226, 76, 22], [255, 142, 36], [255, 208, 84], [255, 250, 206]];
@@ -142,21 +143,31 @@ function fzDragonPx(mode, p) {
   wing([-2, -64 + hb], wa + 0.14, false);
 
   // ---- лапы: бедро, голень, ступня и когти — одной формой ----
+  // ---- лапы дракона: мощное бедро, голень в чешуйчатых щитках, ступня с тремя пальцами веером, загнутые когти, шпора ----
   const leg = (hx0, hy0, ph, hind) => {
     const sv = walk ? Math.sin(t + ph) * 9 : 0, lift = walk ? Math.max(0, Math.cos(t + ph)) * 7 : 0, out = [];
-    let toe;
+    let ank, ball;
     if (hind) {
-      const kn = [hx0 + 6 + sv * 0.3, hy0 + 16 - lift * 0.4], hk = [hx0 - 4 + sv * 0.8, -11 - lift]; toe = [hx0 + 8 + sv, -3 - lift];
-      out.push({ f: DS_cap(hx0, hy0, kn[0], kn[1], 13, 8), front: true, fw: 6 }, { f: DS_cap(kn[0], kn[1], hk[0], hk[1], 7.5, 4.6), k: 5 }, { f: DS_cap(hk[0], hk[1], toe[0], toe[1], 4.6, 3.6), k: 4 });
+      const kn = [hx0 + 9 + sv * 0.35, hy0 + 14 - lift * 0.5];
+      ank = [hx0 + 2 + sv * 0.8, -11 - lift * 0.9]; ball = [hx0 + 8 + sv, -4.5 - lift];
+      out.push({ f: DS_cap(hx0, hy0, kn[0], kn[1], 14, 10), front: true, fw: 7, W: 9 }, { f: DS_ell(hx0 + 2, hy0 + 7, 13, 11), k: 6 },
+        { f: DS_cap(kn[0], kn[1], ank[0], ank[1], 9.5, 6.6), k: 6, scute: 1 }, { f: DS_cap(ank[0], ank[1], ball[0], ball[1], 6.6, 5.4), k: 4, scute: 1 },
+        { f: DS_cap(ank[0] - 3, ank[1] + 3, ank[0] - 8, ank[1] + 8, 2.4, 0.3), mat: 'claw', k: 1.5 });               // шпора
     } else {
-      const el = [hx0 + 4 + sv * 0.3, hy0 + 18 - lift * 0.4], wr = [hx0 + 6 + sv * 0.9, -6 - lift]; toe = [hx0 + 15 + sv, -3 - lift];
-      out.push({ f: DS_cap(hx0, hy0, el[0], el[1], 11, 7.4), front: true, fw: 5 }, { f: DS_cap(el[0], el[1], wr[0], wr[1], 7.4, 5), k: 5 }, { f: DS_cap(wr[0], wr[1], toe[0], toe[1], 4.6, 3.2), k: 4 });
+      const el = [hx0 - 3 + sv * 0.3, hy0 + 17 - lift * 0.4];
+      ank = [hx0 + 5 + sv * 0.85, -8 - lift * 0.9]; ball = [hx0 + 11 + sv, -4.5 - lift];
+      out.push({ f: DS_cap(hx0, hy0, el[0], el[1], 11.5, 8.4), front: true, fw: 6, W: 8 }, { f: DS_cap(el[0], el[1], ank[0], ank[1], 8.4, 5.8), k: 5, scute: 1 },
+        { f: DS_ell((el[0] + ank[0]) / 2 + 2.5, (el[1] + ank[1]) / 2 - 3, 5.5, 7.5), k: 4 }, { f: DS_cap(ank[0], ank[1], ball[0], ball[1], 5.8, 5), k: 4 });
     }
-    for (let k = 0; k < 3; k++) out.push({ f: DS_cap(toe[0] + 1, toe[1] + (k - 1) * 1.4, toe[0] + 6 + k * 0.4, toe[1] + 1.6 + (k - 1) * 1.1, 1.7, 0.3), mat: 'horn', k: 1 });
+    // три пальца веером: дальний выше и короче, ближний ниже; у каждого свой объём (front), когти светлые, крючком
+    for (const [k, dx, dy, r] of [[-1, 7, -2.5, 2.8], [0, 11, 1, 3.3], [1, 8.5, 3.6, 3.4]]) {
+      const b0 = [ball[0] + 1, ball[1] + k * 1.4], tip = [ball[0] + dx, ball[1] + dy], mid = [(b0[0] + tip[0]) / 2, (b0[1] + tip[1]) / 2 - 1.1];
+      out.push({ f: DS_cap(b0[0], b0[1], mid[0], mid[1], r, r * 0.86), k: 1, front: true, fw: 1.6, W: 2.5 }, { f: DS_cap(mid[0], mid[1], tip[0], tip[1], r * 0.86, r * 0.7), k: 1, front: true, fw: 1.6, W: 2.5 });
+      out.push({ f: DS_cap(tip[0] + r * 0.4, tip[1] - 0.8, tip[0] + 4.2, tip[1] - 0.2, 1.5, 0.9), mat: 'claw', k: 0.6 }, { f: DS_cap(tip[0] + 4.2, tip[1] - 0.2, tip[0] + 5.6, tip[1] + 2.2, 0.9, 0.2), mat: 'claw', k: 0.4 });
+    }
     return out;
   };
-  const sv0 = walk ? 0 : 0;
-  DS_body(K, [...leg(-12, -42 + hb, Math.PI, true), ...leg(22, -48 + hb, 0, false)], { skin: SKF, horn: HOF }, { bb: BB, W: 6, k: 4 });
+  DS_body(K, [...leg(-12, -42 + hb, Math.PI, true), ...leg(22, -48 + hb, 0, false)], { skin: SKF, horn: HOF, claw: CLF }, { bb: BB, W: 6, k: 4 });
 
   // ---- пасть изнутри (до тела: тело накроет челюсти, видна только щель) ----
   if (ja > 0) R(J[0], hy - 2, Math.max(upTip[0], jawTip[0]) + 1, jawTip[1] + 2, (x, y) => {
@@ -167,7 +178,7 @@ function fzDragonPx(mode, p) {
   // ---- тело одной формой ----
   const parts = [];
   parts.push({ f: DS_tube(tail), k: 6 });
-  parts.push({ f: DS_ell(-20, -42 + hb, 19, 17), k: 8, bel: 1 }, { f: DS_cap(-20, -40 + hb, 8, -44 + hb, 16, 18), k: 8, bel: 1 }, { f: DS_ell(10, -52 + hb, 19, 20 + br * 0.6), k: 8, bel: 1 });
+  parts.push({ f: DS_ell(-20, -42 + hb, 19, 17), k: 8 }, { f: DS_cap(-20, -40 + hb, 8, -44 + hb, 16, 18), k: 8, bel: 1 }, { f: DS_ell(10, -52 + hb, 19, 20 + br * 0.6), k: 8, bel: 1 });
   parts.push({ f: DS_tube(neck), k: 9, bel: 2 });
   // гребень шипов: хвост → спина → шея
   const dors = [...tail.slice().reverse(), ...torso, ...neck.slice(0, -1)];
@@ -196,7 +207,7 @@ function fzDragonPx(mode, p) {
     parts.push({ f: DS_tube(DS_bez([b0, c0, e0], 8, r0, 0.7)), mat: 'horn', k: 1.5, front: true, fw: 2, W: 3 });
 
   const lg = [0, 1];
-  const body = DS_body(K, parts, { skin: SK, belly: BE, horn: HO }, {
+  const body = DS_body(K, parts, { skin: SK, belly: BE, horn: HO, claw: CL }, {
     bb: BB, W: 8, k: 5,
     mat2: (x, y, n, mat, ow, gx, gy, dep) => (lg[0] = gx, lg[1] = gy, 0) || mat === 'skin' && ow.bel && gy * 0.8 + gx * 0.5 > 0.32 + (dth(x, y) - 0.5) * 0.12 && dep < (ow.bel === 2 ? 7 : 11) ? 'belly' : null,
     light: (x, y, mat) => mat === 'belly' ? 0.12 + glowAt(x, y) * 0.18 : 0,
@@ -271,9 +282,9 @@ function fzDragonSprite(mode, p) { return fzPxSprite('dr' + mode + p, 100, 50, 4
 // ================= Чумной моховик =================
 // Живой гриб с лицом на ножке: сиреневая шляпка в белых пятнах, пластинки снизу, зелёная плесень и споры.
 // Ножка, ступни и ручки — одна форма (слиты), без воротничка. Шляпка — отдельная форма над ножкой.
-// mode: 'idle' (p 0..5, на p4 моргает), 'walk' (p 0..5), 'atk' (p 0..1 замах: шляпка назад, ручки вверх; p 2..5 удар шляпкой и облако спор). Сетка 132×126 (мир 44×42).
+// mode: 'idle' (p 0..5, на p4 моргает), 'walk' (p 0..5), 'atk' (p 0..1 замах: шляпка назад, ручки вверх; p 2..5 удар шляпкой и облако спор). Сетка 132×132 (мир 44×44).
 function fzShroomPx(mode, p) {
-  const K = fzPxKit(132, 126, 66, 114), { P, R, L, dth, hsh } = K, BB = [-66, -114, 65, 11];
+  const K = fzPxKit(132, 132, 66, 120), { P, R, L, dth, hsh } = K, BB = [-66, -120, 65, 11];
   const t = p / 6 * Math.PI * 2;
   const CP = [[46, 20, 80], [80, 40, 120], [118, 64, 160], [156, 96, 196], [192, 136, 224], [226, 184, 244]];
   const ST = [[92, 90, 70], [128, 126, 98], [166, 166, 132], [202, 202, 168], [230, 230, 198], [250, 248, 226]];
@@ -283,7 +294,7 @@ function fzShroomPx(mode, p) {
   const PL = [[96, 160, 52], [150, 218, 86], [206, 252, 140]];
   const OUT = [34, 14, 38];
   const walk = mode === 'walk', atk = mode === 'atk', wind = atk && p < 2, smash = atk && p >= 2;
-  const bob = walk ? -Math.round(Math.abs(Math.sin(t)) * 2) : mode === 'idle' ? Math.round(Math.sin(t)) : wind ? 2 : 0;
+  const bob = (walk ? -Math.round(Math.abs(Math.sin(t)) * 2) : mode === 'idle' ? Math.round(Math.sin(t)) : wind ? 2 : 0) - 13;   // −13: тело выше, ноги длиннее
   const tilt = walk ? Math.round(Math.sin(t - 0.8) * 2.4) : mode === 'idle' ? Math.round(Math.sin(t - 0.6) * 1.8) : wind ? -6 : 6;
   const cx = tilt, cy = -70 + bob + (smash ? 5 : wind ? -3 : 0), crx = 41, cry = 28;
   const lean = smash ? 4 : wind ? -3 : tilt * 0.4;                                     // ножка клонится вслед за шляпкой
@@ -302,12 +313,13 @@ function fzShroomPx(mode, p) {
   // ---- ножка, ступни и ручки одной формой ----
   const sx = y => lean * Math.min(1, Math.max(0, (-y - 12) / 52));
   const parts = [
-    { f: DS_cap(0, -16 + bob, sx(-38), -38 + bob, 15.5, 17), k: 4 },
+    { f: DS_cap(0, -22 + bob, sx(-38), -38 + bob, 14, 17), k: 4 },
     { f: DS_cap(sx(-38), -38 + bob, sx(-64), -64 + bob, 17, 12), k: 6 },
   ];
-  for (const [x, ph] of [[-8, Math.PI], [8, 0]]) {
-    const sv = walk ? Math.sin(t + ph) * 7 : 0, lift = walk ? Math.max(0, Math.cos(t + ph)) * 5 : 0, fy = -4 - lift, fx = x + sv;
-    parts.push({ f: DS_cap(x * 0.6, -20 + bob, fx, fy, 7, 5.5), k: 7 }, { f: DS_ell(fx + 2, fy + 1, 8.4, 4.2), k: 4, front: true, fw: 3, W: 4 });
+  for (const [x, ph] of [[-9, Math.PI], [9, 0]]) {
+    const sv = walk ? Math.sin(t + ph) * 8 : 0, lift = walk ? Math.max(0, Math.cos(t + ph)) * 6 : 0, fy = -4 - lift, fx = x + sv;
+    const kn = [x + sv * 0.5 + 1.5, -17 - lift * 0.6];                                // колено чуть вперёд
+    parts.push({ f: DS_cap(x * 0.7, -24 + bob, kn[0], kn[1], 6.6, 5.4), k: 6, front: true, fw: 3 }, { f: DS_cap(kn[0], kn[1], fx, fy, 5.4, 4.8), k: 2.5 }, { f: DS_ell(fx + 2, fy + 1, 8.4, 4.2), k: 4, front: true, fw: 3, W: 4 });
   }
   const hands = [];
   for (const side of [-1, 1]) {
@@ -330,31 +342,38 @@ function fzShroomPx(mode, p) {
   });
   for (const [hx, hy] of hands) for (let k = -1; k <= 1; k++) P(hx + k * 2, hy + 5, ST[1]);               // пальчики
 
-  // ---- лицо ----
-  const fx = sx(-32) + 3, fy = -33 + bob, jw = smash ? 5 : wind ? 2 : mode === 'idle' && p === 3 ? 1 : 0;
+  // ---- лицо: злое — брови резко сведены, глаза-щёлки с ядовитым огнём, складки на переносице, оскал с кривыми зубами ----
+  const fx = sx(-32) + 3, fy = -33 + bob, jw = smash ? 5 : wind ? 3 : 1;
   const blink = mode === 'idle' && p === 4;
   for (const [ex, sd] of [[fx - 6, -1], [fx + 8, 1]]) {
-    R(ex - 6, fy - 6, ex + 6, fy + 6, (x, y) => {                                                        // впалые круги — мягко в цвет ножки
-      const d = Math.hypot((x - ex) / 5.6, (y - fy - 0.5) / 5.8);
-      return d <= 1 && dth(x, y) < (1 - d) * 2.2 ? (d < 0.75 ? [96, 54, 104] : [132, 104, 128]) : null;
+    R(ex - 7, fy - 7, ex + 7, fy + 6, (x, y) => {                                                        // впалые тёмные глазницы
+      const d = Math.hypot((x - ex) / 6.2, (y - fy) / 5.4);
+      return d <= 1 && dth(x, y) < (1 - d) * 2.4 ? (d < 0.7 ? [84, 40, 92] : [126, 96, 122]) : null;
     });
-    if (blink) L(ex - 4, fy + 1, ex + 4, fy + 1, 1, 1, () => OUT);
-    else R(ex - 4, fy - 5, ex + 4, fy + 5, (x, y) => {
-      if (((x - ex) / 3.8) ** 2 + ((y - fy) / 4.2) ** 2 > 1) return null;
-      if (y < fy - 1.5 + (sd < 0 ? 1 : -1) * (x - ex) * 0.4 - (smash ? 1 : 0)) return null;             // злой скос
-      if (((x - ex - 0.6) / 1.5) ** 2 + ((y - fy + 0.5) / 2.2) ** 2 <= 1) return [30, 16, 8];
-      return y > fy + 1.5 ? [246, 226, 120] : [250, 246, 214];
+    if (blink) L(ex - 4, fy + 1, ex + 4, fy, 1, 1, () => OUT);
+    else R(ex - 5, fy - 4, ex + 5, fy + 4, (x, y) => {
+      if (((x - ex) / 4.4) ** 2 + ((y - fy - 0.5) / 3.2) ** 2 > 1) return null;
+      if (y < fy - 1 - sd * (x - ex) * 0.75 - (smash ? 1 : 0)) return null;                         // веко срезано бровью к переносице
+      if (Math.abs(x - ex + sd * 0.8) < 1 && Math.abs(y - fy - 0.6) < 1.6) return [150, 10, 14];   // зрачок-уголёк
+      return Math.hypot(x - ex, y - fy) < 2.4 ? [226, 250, 110] : [176, 214, 64];
     });
-    L(ex - 5, fy - 5 + (sd < 0 ? -1 : 1) * 1.5, ex + 5, fy - 5 + (sd < 0 ? 1 : -1) * 1.5, 1.2, 1.2, () => GL[0]);
+    L(ex + sd * 6.5, fy - 6.5, ex - sd * 5, fy - 1.5, 1.6, 1.3, () => GL[0]);                            // бровь: снаружи высоко, к носу низко
+    P(ex + sd * 7, fy - 7, GL[0]);
   }
-  P(fx + 1, fy + 3, ST[1]); P(fx + 1, fy + 4, ST[1]);
-  R(fx - 7, fy + 6, fx + 9, fy + 14 + jw, (x, y) => {
-    const d = ((x - (fx + 1)) / (7 + jw * 0.3)) ** 2 + ((y - (fy + 9)) / (2.2 + jw * 0.9)) ** 2;
-    if (d > 1) return null;
-    if (d > 0.7) return [60, 16, 40];
-    return (y - fy) % 4 === 0 && dth(x, y) > 0.3 ? [220, 70, 80] : [60, 16, 40];
+  for (const dx of [0, 2]) L(fx + dx, fy - 7, fx + dx + (dx ? 0.5 : -0.5), fy - 2, 0.6, 0.6, () => ST[1]);   // складки на переносице
+  P(fx + 1, fy + 2, ST[1]); P(fx, fy + 3, ST[0]); P(fx + 2, fy + 3, ST[0]);                               // ноздри
+  L(fx - 4, fy + 2, fx - 8, fy + 8, 0.6, 0.6, () => ST[1]); L(fx + 6, fy + 2, fx + 10, fy + 8, 0.6, 0.6, () => ST[1]);   // носогубные складки
+  const mx = fx + 1, top = x => fy + 7 + ((x - mx) / 8) ** 2 * 2.5, bot = x => top(x) + 2 + jw * Math.max(0, 1 - ((x - mx) / 9.5) ** 2);
+  R(mx - 10, fy + 5, mx + 10, fy + 16 + jw, (x, y) => {                                                     // оскал: уголки вниз
+    if (Math.abs(x - mx) > 9.5 || y < top(x) || y > bot(x)) return null;
+    if (y > bot(x) - 1.5 && Math.abs(x - mx) < 5 && jw > 2) return [190, 60, 80];
+    return [46, 8, 26];
   });
-  for (let k = 0; k < 4; k++) { const x = fx - 4 + k * 3; P(x, fy + 7, ST[5]); P(x, fy + 8, ST[5]); if (jw > 1) P(x + 1, fy + 11 + jw, ST[5]); }
+  for (let k = -3; k <= 3; k++) {
+    const x = mx + k * 2.6, tl = (k === -2 || k === 2) ? 3 : (k & 1) ? 1 : 2;                             // верхние: клыки длиннее, кривые
+    for (let q = 0; q < tl; q++) P(x + (q === 2 ? (k < 0 ? -0.6 : 0.6) : 0), top(x) + 0.5 + q, q ? ST[4] : ST[5]);
+    if (jw > 1 && Math.abs(k) < 3) { const yb = bot(x); P(x + 1, yb - 0.5, ST[4]); if (k % 2 === 0) P(x + 1, yb - 1.5, ST[5]); }
+  }
   for (const [dx, dy] of [[-12, 8], [12, 12], [-9, 20]]) if (stalk.at(fx + dx, fy + dy) < -1) { P(fx + dx, fy + dy, PL[1]); P(fx + dx + 1, fy + dy, PL[0]); P(fx + dx, fy + dy + 1, PL[0]); }
 
   // ---- шляпка: пластинки снизу узкой дугой, купол одной формой, пятна красятся по его свету ----
@@ -385,4 +404,4 @@ function fzShroomPx(mode, p) {
   return K.done();
 }
 const DS_inE2 = (x, y, cx, cy, rx, ry) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
-function fzShroomSprite(mode, p) { return fzPxSprite('sh' + mode + p, 44, 42, 22, 38, () => fzShroomPx(mode, p)); }
+function fzShroomSprite(mode, p) { return fzPxSprite('sh' + mode + p, 44, 44, 22, 40, () => fzShroomPx(mode, p)); }
