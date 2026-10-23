@@ -450,7 +450,7 @@ function coopStateSet(json) {
 // Меню строительства для игроков открывается постепенно (как в одиночной игре), хост видит всё.
 // Стадии считаются по уже построенному: так же и со старым миром.
 function coopInitUnlocks() {
-  Game.unlocked = { res: true };
+  Game.unlocked = Game.unlocked && Game.unlocked.sqtGone ? { res: true, sqtGone: true } : { res: true };   // «таверну снесли» — не стадия меню, не сбрасываем
   for (let ch = true; ch;) {
     ch = false;
     for (const st of UNLOCKS) if (!Game.unlocked[st.id] && unlockReady(st)) { Game.unlocked[st.id] = true; ch = true; }
