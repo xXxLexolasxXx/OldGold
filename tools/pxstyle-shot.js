@@ -12,7 +12,7 @@ const sheets = process.argv.slice(2).length ? process.argv.slice(2) : ['undead',
   pg.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') console.log(m.type(), m.text()); });
   for (const s of sheets) {
     const page = process.env.PXS_PAGE || 'pxstyle.html';
-    const url = 'file:///' + path.resolve(__dirname, page).replace(/\\/g, '/') + '?s=' + s;
+    const url = 'file:///' + path.resolve(__dirname, page).replace(/\\/g, '/') + '?s=' + s + (process.env.PXS_Q || '');
     await pg.goto(url);
     await pg.waitForFunction(() => document.title.startsWith('ready') || document.title.startsWith('fail'), null, { timeout: 120000 });
     console.log(s, await pg.title());
