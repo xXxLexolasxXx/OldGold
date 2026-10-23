@@ -536,7 +536,7 @@ function lepDraw(c, L) {
     }
     c.translate(px, py - Math.round(L.z || 0) + Math.round((L.sink || 0) * 30));
     if (L.face < 0) c.scale(-1, 1);
-    c.drawImage(sp.cv, -sp.ax, -sp.ay);
+    blitFine(c, sp.cv, -sp.ax, -sp.ay);
     c.restore();
   }
   if (hasPot) potLayer('F');

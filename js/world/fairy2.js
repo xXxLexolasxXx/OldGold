@@ -1716,7 +1716,7 @@ function fzDrawHi(c, cv, x, y, a, face, dy) {
   c.globalAlpha *= a; c.imageSmoothingEnabled = !cv.fzPx;
   c.translate(Math.round(x * TILE), Math.round(y * TILE + dy));
   if (face < 0) c.scale(-1, 1);
-  c.drawImage(cv, -ox, -oy, w, h);
+  blitFine(c, cv, -ox, -oy, w, h);
   c.restore();
 }
 
@@ -1731,7 +1731,9 @@ function fzDraw(c, spr, x, y, o = {}) {
   if (S !== 1) c.imageSmoothingQuality = 'high';
   c.translate(px, py);
   if (o.face < 0) c.scale(-1, 1);
-  c.drawImage(spr, Math.round(-spr.width * S / 2), Math.round(-spr.height * S + (o.lift || 0)), spr.width * S, spr.height * S);
+  const W = spr.width / (spr.fine || 1), H = spr.height / (spr.fine || 1);   // мелкий пиксель: размер в игровых пикселях
+  if (spr.fine > 1) blitFine(c, spr, Math.round(-W * S / 2), Math.round(-H * S + (o.lift || 0)), W * S, H * S);
+  else c.drawImage(spr, Math.round(-W * S / 2), Math.round(-H * S + (o.lift || 0)), W * S, H * S);
   c.restore();
 }
 function fzShadow(c, x, y, rx, a = 0.3) { c.fillStyle = `rgba(10,8,4,${a})`; c.beginPath(); c.ellipse(x * TILE, y * TILE + 2, rx, rx * 0.26, 0, 0, 7); c.fill(); }

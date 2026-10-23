@@ -85,14 +85,17 @@ const NA_SPEC = {
 };
 
 const naCache = new Map();
+const NA_CACHE_PX = 24e6;          // предел пикселей в кэше (~96 МБ): самые давние кадры уходят первыми
+let naCachePx = 0;
 function naHash(a, b) { const n = Math.sin(a * 127.1 + b * 311.7 + 374.5) * 43758.5453; return n - Math.floor(n); }
 
 function naFrame(kind, fr) {
   const key = kind + '|' + fr;
   let s = naCache.get(key);
-  if (s) return s;
-  const S = NA_SPEC[kind];
-  const [cv, c] = mkSprite(S.w, S.h, 3);
+  if (s) { naCache.delete(key); naCache.set(key, s); return s; }
+  const S = NA_SPEC[kind], F = PX_FINE;
+  // мелкий пиксель: F деталей на игровой пиксель, сверхвыборка 2 на пиксель арта (при F = 1 — 3, как было)
+  const [cv, c] = mkSprite(S.w, S.h, F > 1 ? 2 * F : 3);
   c.lineCap = 'round'; c.lineJoin = 'round';
   const P = naPose(fr);
   P.pal = S.pal || null;
@@ -101,7 +104,8 @@ function naFrame(kind, fr) {
   if (S.sc) c.scale(S.sc, S.sc);
   NA_DRAW[kind](c, P, fr);
   c.restore();
-  const out = toPixelArt(cv, 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
+  const out = toPixelArt(cv, F > 1 ? 2 : 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
+  out.fine = F;
   if (P.fade > 0) {   // рассыпается пикселями: случайные точки пропадают (пиксель-арт «дизер»), остальные бледнеют
     const oc = out.getContext('2d'), img = oc.getImageData(0, 0, out.width, out.height), d = img.data;
     for (let y = 0; y < out.height; y++) for (let x = 0; x < out.width; x++) {
@@ -113,6 +117,11 @@ function naFrame(kind, fr) {
     oc.putImageData(img, 0, 0);
   }
   s = { cv: out, ax: S.ax, ay: S.ay, w: S.w, h: S.h };
+  naCachePx += out.width * out.height;
+  while (naCachePx > NA_CACHE_PX && naCache.size) {
+    const k0 = naCache.keys().next().value, c0 = naCache.get(k0).cv;
+    naCachePx -= c0.width * c0.height; naCache.delete(k0);
+  }
   naCache.set(key, s);
   return s;
 }
