@@ -880,7 +880,7 @@ function pbFoam(Q, x0, x1, y, k = 1) {
 // горизонтальным зрачком-щелью и кровавыми прожилками под тяжёлыми складками век; по бокам поднимаются
 // щупальца с присосками. f = 3 — моргает, остальные кадры — медленно щурится и дышит.
 function pbKraEye(Q, a, f) {
-  const blink = f === 3, sq = [1, 0.9, 0.78, 0, 0.84, 0.95][f % 6], C = PBS.KR, br = Math.sin(f / 6 * Math.PI * 2) * 0.6;
+  const blink = f === 3, sq = [1, 0.96, 0.9, 0, 0.92, 1][f % 6], C = PBS.KR, br = Math.sin(f / 6 * Math.PI * 2) * 0.6;
   // щупальца сзади
   for (const s of [-1, 1]) {
     const pts = []; for (let i = 0; i <= 12; i++) { const t = i / 12; pts.push([s * (27 - t * t * 13), -t * 30 + t * t * 6 + Math.sin(f * 1.1 + t * 3 + s) * 1, 3.2 * (1 - t * 0.85)]); }
@@ -898,8 +898,8 @@ function pbKraEye(Q, a, f) {
   for (const [x, y] of [[-8, -14], [6, -13], [14, -6], [-15, -5]]) pbDot(Q, x, y + br, [250, 220, 240], 0.35);   // блики слизи
   // два глаза под складками век
   for (const [ex, er] of [[-8.6, 1], [8.6, 1]]) {
-    const ey = -7 + br, ry = 4.6 * sq;
-    pbBall(Q, ex, ey - 1, 7.6, 6.2 * Math.max(0.4, sq) + 1.6, C.slice(0, 3), { amb: 0.3 });   // складка
+    const ey = -7.6 + br, ry = 5.6 * sq;
+    pbBall(Q, ex, ey, 7.8, 6.6, C.slice(0, 3), { amb: 0.28 });                                  // впадина вокруг глаза
     if (!blink) {
       pbBall(Q, ex, ey, 6.6, ry, [[150, 104, 10], [214, 160, 28], [250, 206, 64], [255, 236, 146]], { amb: 0.62, tex: (x, y) => {
         const d = Math.hypot((x - ex) / 6.6, (y - ey) / Math.max(0.5, ry)), an = Math.atan2(y - ey, x - ex);
@@ -910,7 +910,8 @@ function pbKraEye(Q, a, f) {
       pbDot(Q, ex - 2.4, ey - 2, [255, 255, 236], 0.55);
       Q.R(ex - 9, ey - 8, ex + 9, ey + 6, (x, y) => (Math.hypot(x - ex, (y - ey) * 1.3) < 8.4 && Math.hypot(x - ex, (y - ey) * 1.3) > 6.8 && Q.dth(x, y) < 0.25 ? [255, 200, 60, 0.45] : null), false);   // жёлтый отсвет
     } else Q.path([[ex - 6, ey, 0.5], [ex + 6, ey, 0.5]], () => C[0]);
-    Q.path([[ex - 7, ey - 4.6 * Math.max(0.45, sq) - 1.4, 0.9], [ex, ey - 5.6 * Math.max(0.45, sq) - 1.4, 1.1], [ex + 7, ey - 4.2 * Math.max(0.45, sq) - 1.2, 0.8]], () => C[0]);   // тяжёлое веко
+    const inner = ex < 0 ? 1 : -1;                                                         // злой прищур: веко скошено к переносице
+    Q.path([[ex - 7.4, ey - 5.4 + (inner > 0 ? -0.6 : 2.6), 1.6], [ex + 7.4, ey - 5.4 + (inner > 0 ? 2.6 : -0.6), 1.6]], (t, e) => (e ? C[0] : C[1]));   // косое веко: злой прищур к переносице
   }
   pbFoam(Q, -30, 30, -1);
   Q.outline([20, 6, 18]);
