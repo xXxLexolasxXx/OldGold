@@ -2,7 +2,7 @@
 // Звери и упряжки: олень, кролик, коза (дикая и вьючная), волк, телега извозчика.
 // Рисуются боком, мордой вправо (влево — отражением). Кэшируются по кадрам.
 
-const CR_CACHE = new Map();
+const CR_CACHE = afLru(16e6);   // кадры с грузом и телеги множатся — давние вытесняются (animalart.js)
 const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21], elk: [46, 46, 23, 42], fox: [28, 20, 14, 17], duck: [22, 20, 11, 17] };
 
 // Курица: белая, красный гребешок, семенит
@@ -295,13 +295,13 @@ function creatureSprite(kind, f, load, n = 1, view = 'E') {
   if (cv) return cv;
   const [w, h, ax, ay] = CR_SIZE[kind];
   CR_N = crFrames(kind);
-  const [c2, c] = mkSprite(w, h, 3);
   // перенос так, чтобы копыта/колёса стояли в точке (ax, ay)
-  c.translate(ax, ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14, duck: 13 }[kind]);
-  if (kind === 'cart') { if (view === 'E') drawCartRig(c, f, load, n); else drawCartFront(c, f, load, n, view); }
-  else drawCreature(c, kind, f, load);
-  CR_CACHE.set(key, c2);
-  return c2;
+  const oy = ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14, duck: 13 }[kind];
+  const paint = c => { if (kind === 'cart') { if (view === 'E') drawCartRig(c, f, load, n); else drawCartFront(c, f, load, n, view); } else drawCreature(c, kind, f, load); };
+  if (afFine()) cv = afVec(w, h, ax, oy, paint);     // мелкий пиксель ×3 (animalart.js): по памяти столько же, сколько прежний вектор ×3
+  else { const [c2, c] = mkSprite(w, h, 3); c.translate(ax, oy); paint(c); cv = c2; }
+  CR_CACHE.set(key, cv);
+  return cv;
 }
 
 // Нарисовать зверя/упряжку ступнями в точке (px, py)
@@ -311,9 +311,9 @@ function drawCreatureAt(c, kind, px, py, face, moving, phase, load, n, view = 'E
   const [w, h, ax, ay] = CR_SIZE[kind];
   c.fillStyle = 'rgba(10,8,4,0.3)';
   c.beginPath(); c.ellipse(px + 1, py, w * 0.32, 2.2, 0, 0, 7); c.fill();
-  c.imageSmoothingEnabled = true;
-  if (face < 0) { c.save(); c.translate(px, py); c.scale(-1, 1); c.drawImage(spr, -ax, -ay, w, h); c.restore(); }
-  else c.drawImage(spr, px - ax, py - ay, w, h);
+  c.imageSmoothingEnabled = !spr.fine;
+  if (face < 0) { c.save(); c.translate(px, py); c.scale(-1, 1); afBlit(c, spr, -ax, -ay, w, h); c.restore(); }
+  else afBlit(c, spr, px - ax, py - ay, w, h);
   c.imageSmoothingEnabled = R.smooth;
 }
 

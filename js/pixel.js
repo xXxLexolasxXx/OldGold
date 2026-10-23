@@ -64,6 +64,27 @@ function quantizeData(d, w, h, dither = 0, ox = 0, oy = 0) {
   }
 }
 
+// Мелкий пиксель нечисти (решение 23.10): кадр сводится в PX_FINE раз детальнее и рисуется в прежнем
+// игровом размере. На телефонах и слабых машинах — 1 (как раньше): память кадров растёт в PX_FINE² раз.
+const PX_FINE = (() => {
+  try {
+    if (navigator.deviceMemory && navigator.deviceMemory <= 4) return 1;
+    if (window.matchMedia && matchMedia('(pointer: coarse)').matches) return 1;
+  } catch (e) { /* без navigator — по умолчанию мелкий */ }
+  return 3;
+})();
+
+// Нарисовать кадр с пометкой cv.fine в игровом размере. Пока на пиксель мира меньше физических
+// пикселей, чем деталей в кадре, — сглаживаем, иначе мелкий пиксель рябит при уменьшении.
+function blitFine(c, cv, x, y, w = cv.width / (cv.fine || 1), h = cv.height / (cv.fine || 1)) {
+  const f = cv.fine || 1;
+  if (f === 1) { c.drawImage(cv, x, y, w, h); return; }
+  const sm = c.imageSmoothingEnabled, dev = typeof devScale === 'function' ? devScale() : 1;
+  c.imageSmoothingEnabled = PX_FINE > 1 && dev < f;
+  c.drawImage(cv, x, y, w, h);
+  c.imageSmoothingEnabled = sm;
+}
+
 // Канвас со сверхвыборкой SS -> пиксельный 1× канвас.
 // opts: outline (bool), alphaCut (порог), keepAlpha (для теней)
 function toPixelArt(src, scale, opts = {}) {
@@ -108,7 +129,7 @@ function toPixelArt(src, scale, opts = {}) {
     else d[o + 3] = alpha >= cut ? 255 : 0;
   }
   if (!opts.keepAlpha) {
-    quantizeData(d, W, H, opts.dither || 0);
+    if (opts.quant) opts.quant(d, W, H); else quantizeData(d, W, H, opts.dither || 0);   // quant — свой подбор палитры (animalart.js: с сохранением оттенка)
     if (opts.clean) cleanOrphans(d, W, H);
     if (opts.ink) inkData(d, W, H, opts.ink);
     if (opts.specks) dropSpecks(d, W, H, opts.specks === true ? 70 : opts.specks);   // только камни и скалы: чужие спрайты не трогаем

@@ -474,8 +474,8 @@ function drawOwlGrab(c, o) {
   else if (o.pkind) { c.save(); c.translate(pvx, py2 + 8); c.scale(0.8, 0.8); drawCreatureAt(c, o.pkind, 0, 0, o.pface || 1, hold, Game.time * 6, null); c.restore(); }
   c.imageSmoothingEnabled = true;
   c.save(); c.translate(o.x, o.y); c.rotate(p.tilt * dir); if (dir < 0) c.scale(-1, 1);
-  if (p.spr === 'perch') c.drawImage(owlSprite('perch', 0, false, 0), -OWL_FX * p.S, -OWL_FY * p.S + 6, OWL_W * p.S, OWL_H * p.S);
-  else c.drawImage(owlSprite('fly', 0, 0, p.fr), -OWLF_FX * p.S, -OWLF_FY * p.S, OWLF_W * p.S, OWLF_H * p.S);
+  if (p.spr === 'perch') afBlit(c, owlSprite('perch', 0, false, 0), -OWL_FX * p.S, -OWL_FY * p.S + 6, OWL_W * p.S, OWL_H * p.S);
+  else afBlit(c, owlSprite('fly', 0, 0, p.fr), -OWLF_FX * p.S, -OWLF_FY * p.S, OWLF_W * p.S, OWLF_H * p.S);
   c.restore();
   c.imageSmoothingEnabled = false;
   if (hold) { drawGrip(c, pvx - 4, py2 - 9, 1, p.k, OW_PAL, 0.6); drawGrip(c, pvx + 4, py2 - 9, -1, p.k, OW_PAL, 0.6); }

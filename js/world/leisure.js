@@ -618,12 +618,11 @@ function owlSprite(kind, look, blink, frame) {
   if (cv) return cv;
   const fly = kind === 'fly';
   const W = fly ? OWLF_W : OWL_W, H = fly ? OWLF_H : OWL_H;
-  const [c2, c] = mkSprite(W, H, OWL_SS);
-  c.translate(fly ? OWLF_FX : OWL_FX, fly ? OWLF_FY : OWL_FY);
-  const r = mulberry32(fly ? 41 : 17);
-  if (fly) drawOwlFlying(c, frame, r); else drawOwlPerched(c, look, blink, r);
-  OWL_CACHE.set(key, c2);
-  return c2;
+  const paint = c => { const r = mulberry32(fly ? 41 : 17); if (fly) drawOwlFlying(c, frame, r); else drawOwlPerched(c, look, blink, r); };
+  if (afFine()) cv = afVec(W, H, fly ? OWLF_FX : OWL_FX, fly ? OWLF_FY : OWL_FY, paint);   // мелкий пиксель ×3 (animalart.js)
+  else { const [c2, c] = mkSprite(W, H, OWL_SS); c.translate(fly ? OWLF_FX : OWL_FX, fly ? OWLF_FY : OWL_FY); paint(c); cv = c2; }
+  OWL_CACHE.set(key, cv);
+  return cv;
 }
 
 function drawOwls(c) {
@@ -641,14 +640,14 @@ function drawOwls(c) {
       const spr = owlSprite('fly', 0, 0, fr);
       c.save(); c.translate(x, y); if (o.face < 0) c.scale(-1, 1);
       if (o.item) { c.save(); c.translate(0, 6); c.scale(0.4, 0.4); drawLoad(c, o.item); c.restore(); }
-      c.drawImage(spr, -OWLF_FX, -OWLF_FY, OWLF_W, OWLF_H);
+      afBlit(c, spr, -OWLF_FX, -OWLF_FY, OWLF_W, OWLF_H);
       c.restore();
       continue;
     }
     // сидит на крыше; принесённую вещь держит в лапах
     if (o.item) { c.save(); c.translate(x + 0.5, y + 0.6); c.scale(0.38, 0.38); drawLoad(c, o.item); c.restore(); }
     const spr = owlSprite('perch', o.look, o.blink > 0, 0);
-    c.drawImage(spr, x - OWL_FX, y - OWL_FY, OWL_W, OWL_H);
+    afBlit(c, spr, x - OWL_FX, y - OWL_FY, OWL_W, OWL_H);
   }
   // вещи, которые сова выронила, — падают на землю
   for (const f of Game.falling || []) {
