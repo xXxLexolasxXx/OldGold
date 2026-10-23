@@ -75,22 +75,23 @@ function cfCapShape(c, cx, b, s, tall, style, K) {
 }
 // style — фасон (0–9), dir — в какую сторону загнут (1 вправо, −1 влево)
 function cfCap(c, o) {
-  const col = o.col, B = o.by ?? 13.8, W = o.w ?? 8.4, st = o.style ?? 0, s = o.dir ?? 1, K = W / 4.3, T = (o.tall ?? CF_TALL[st]) * 1.08, cx = 18;
+  const col = o.col, B = o.by ?? 14.6, W = o.w ?? 8.4, st = o.style ?? 0, s = o.dir ?? 1, K = W / 4.3, T = (o.tall ?? CF_TALL[st]) * 1.3, cx = 18;
+  // мох: у всех колпаков налётом (как у работяг в игре), у Старца — гуще; зерно — из цвета, чтобы узор не прыгал
+  const mseed = o.moss || parseInt(col.slice(1), 16) % 997, mn = o.moss ? 1 : 0.45;
   const path = () => cfCapShape(c, cx, B, s, T, st, K);
-  path(); c.fillStyle = col; c.fill();
+  // свет слева, тень справа — плавно, как lingrad у колпаков игры (жёсткий раздел пополам читался как два колпака)
+  path(); c.fillStyle = lingrad(c, cx - W * 1.1, 0, cx + W * 1.2, 0, [[0, shade(col, 0.25)], [0.5, col], [1, shade(col, -0.4)]]); c.fill();
   c.save(); path(); c.clip();
-  c.fillStyle = shade(col, -0.32);                                                                       // тень с одной стороны
-  c.beginPath(); c.moveTo(cx + 1.2, B); c.lineTo(cx + 1.8, B - T * 0.5); c.lineTo(cx + 1.4, B - T * 1.2); c.lineTo(cx + 30, B - T * 1.2); c.lineTo(cx + 30, B + 2); c.closePath(); c.fill();
   ellipse(c, cx - W * 0.42, B - T * 0.3, 1.1, T * 0.2, shade(col, 0.3));                                 // блик
   if (st === 0 || st === 1 || st === 3 || st === 5 || st === 7) {                                        // складки
     c.strokeStyle = shade(col, -0.4); c.lineWidth = 0.3;
     c.beginPath(); c.moveTo(cx - 2, B); c.quadraticCurveTo(cx - 1.6 * s, B - T * 0.5, cx + 1 * s, B - T * 0.8); c.stroke();
     c.beginPath(); c.moveTo(cx + 2.4, B); c.quadraticCurveTo(cx + 3 * s, B - T * 0.3, cx + 4 * s, B - T * 0.6); c.stroke();
   }
-  if (o.moss) {
-    const r = mulberry32(o.moss | 0);
-    c.fillStyle = '#7ab04e'; for (let k = 0; k < 16; k++) c.fillRect(cx - W + r() * W * 2, B - r() * T, 0.8, 0.7);
-    c.fillStyle = '#4e8a2a'; for (let k = 0; k < 8; k++) c.fillRect(cx - W + r() * W * 2, B - r() * T * 0.8, 0.9, 0.9);
+  {
+    const r = mulberry32(mseed | 0);
+    c.fillStyle = o.moss ? '#7ab04e' : shade(col, 0.28); for (let k = 0; k < 18 * mn; k++) c.fillRect(cx - W * 1.2 + r() * W * 2.4, B - r() * T, 0.8, 0.7);
+    c.fillStyle = o.moss ? '#4e8a2a' : '#6a9a3e'; for (let k = 0; k < 10 * mn; k++) c.fillRect(cx - W * 1.2 + r() * W * 2.4, B - r() * T * 0.9, 0.9, 0.8);
   }
   c.restore();
   if (o.band) { c.fillStyle = o.band; c.fillRect(cx - W + 0.8, B - 2.6, W * 2 - 1.6, 1); c.fillStyle = shade(o.band, -0.35); c.fillRect(cx - W + 0.8, B - 1.7, W * 2 - 1.6, 0.35); }
@@ -102,7 +103,7 @@ function cfCap(c, o) {
   c.fillStyle = lingrad(c, 0, B - 1.6, 0, B + 1.6, [[0, shade(col, 0.2)], [0.55, col], [1, shade(col, -0.4)]]); c.fill(); c.clip();
   c.fillStyle = shade(col, -0.45); c.fillRect(cx - BW - 1, B + 1.1, BW * 2 + 2, 0.5);
   c.fillStyle = shade(col, 0.4); c.fillRect(cx - BW + 0.5, B - 1.4, BW * 2 - 1, 0.4);
-  if (o.moss) { const r = mulberry32((o.moss | 0) + 5); c.fillStyle = '#6aa03e'; for (let k = 0; k < 7; k++) c.fillRect(cx - W + r() * W * 2, B - 1.4 + r() * 2.6, 1, 0.8); }
+  { const r = mulberry32((mseed | 0) + 5); c.fillStyle = '#6aa03e'; for (let k = 0; k < 7 * mn; k++) c.fillRect(cx - W + r() * W * 2, B - 1.4 + r() * 2.6, 1, 0.8); }
   c.restore();
 }
 // борода: shape — spade (лопатой), fork (раздвоенная), point (клинышком), short; len — нижняя точка; wid — полуширина вверху
@@ -137,6 +138,7 @@ function cfMouth(c, col, o = {}) {
 // гном целиком: тело, голова, борода, лицо, колпак; o — набор настроек (цвета профессии и черты характера)
 function cfGnome(c, f, o) {
   const skin = o.skin || '#e8b890', skin2 = o.skin2 || '#c89470';
+  c.save(); c.translate(0, 1.6);                                                                         // колпак высокий — гнома чуть ниже
   cfShoulders(c, o.coat, shade(o.coat, -0.3), o.wide || 0);
   if (o.vest) cfVest(c, o.vest, o.rivets);
   if (o.under) poly(c, [[13, 26], [18, 30.4], [23, 26], [21, 25.4], [18, 27.6], [15, 25.4]], o.under);
@@ -147,10 +149,11 @@ function cfGnome(c, f, o) {
   cfNose(c, 18, 19.6, o.nose || 2.1, o.noseCol);
   if (o.must) cfMouth(c, o.must, o.mo || {});
   else { c.fillStyle = '#7a3a2a'; c.fillRect(16.4, 22.2, 3.2, 0.7); }
-  cfBrows(c, 14.8, 21.2, o.browY || 15.2, o.brow, o.frown || 0, o.browW || 1);
   if (o.extra) o.extra(c, f);
   if (o.cap) cfCap(c, o.cap);
+  cfBrows(c, 14.8, 21.2, o.browY || 15.6, o.brow, o.frown || 0, o.browW || 1);                           // брови поверх отворота — колпак натянут до глаз, как в игре
   if (o.over) o.over(c, f);
+  c.restore();
 }
 
 // Грум Ворчун: прораб — жёлтый колпак строителя, бордовая куртка, косматые седеющие брови домиком, борода лопатой
@@ -200,7 +203,7 @@ function cfPim(c, f) {
 // Тан Борода Старший: старейшина — высокий синий колпак с золотой лентой и рубином, белая борода до колен, мантия с золотом
 function cfTan(c, f) {
   cfGnome(c, f, { coat: '#2a4a8a', wide: 1, skin: '#e8b890', skin2: '#c89470', beard: '#f2eee4', bd: { len: 36, wid: 7.4, top: 18 }, must: '#e8e4d8', mo: { w: 3.2 },
-    brow: '#f8f6ee', frown: -0.2, browW: 1.4, nose: 2.2, iris: '#2a3a5a', cap: { col: '#2a4a8a', style: 1, tall: 13, dir: 1, w: 8.4, band: '#f0c848' },
+    brow: '#f8f6ee', frown: -0.2, browW: 1.4, nose: 2.2, iris: '#2a3a5a', cap: { col: '#2a4a8a', style: 1, dir: 1, w: 8.4, band: '#f0c848' },
     extra(c) { c.fillStyle = '#e8c050'; c.fillRect(3, 31, 8, 1.1); c.fillRect(25, 31, 8, 1.1); },
     over(c) { ellipse(c, 18, 11.8, 1.3, 1.3, '#e03a4a'); ellipse(c, 17.5, 11.3, 0.45, 0.45, '#ffb0b8'); } });   // рубин на ленте
 }
@@ -327,7 +330,7 @@ function cfHeroF(c, f) {
 // на шее руна-оберег (светится бирюзой; на втором кадре гаснет вместе с глазами)
 function cfElder(c, f) {
   cfGnome(c, f, { coat: '#5a5a52', vest: '#7a7a6c', skin: '#d8c0a0', skin2: '#b09878', beard: '#e4e2d4', bd: { len: 35, wid: 7, top: 18 }, must: '#d8d6c8', mo: { w: 3.4 },
-    brow: '#eceadc', frown: -0.3, browW: 1.1, browY: 14.8, nose: 2.3, iris: '#2a5a5a', cap: { col: '#5e7a52', style: 4, dir: -1, w: 8.6, moss: 29, band: '#8a7a5a' },
+    brow: '#eceadc', frown: -0.3, browW: 1.1, nose: 2.3, iris: '#2a5a5a', cap: { col: '#4e7e3a', style: 4, dir: -1, w: 8.6, moss: 29, band: '#8a7a5a' },
     extra(c) { c.fillStyle = '#6aa03e'; for (const [x, y] of [[12.4, 25], [14, 29], [22.6, 27], [21, 32], [16, 33.4]]) c.fillRect(x, y, 1.1, 0.9); c.fillStyle = '#4e8a2a'; for (const [x, y] of [[13, 27], [23, 30], [18, 31]]) c.fillRect(x, y, 0.8, 0.8); },   // мох в бороде
     over(c, f) {
       c.strokeStyle = '#8a7a5a'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(13, 26.6); c.quadraticCurveTo(18, 31, 23, 26.6); c.stroke();
