@@ -362,7 +362,9 @@ function campStart(n, opts = {}) {
   try { setupStart(A.seed, { custom: map }); } finally { CampBoot.on = false; }
   if (typeof releaseStart === 'function') releaseStart();
   for (const b of Game.buildings) b.hold = false;
-  if (typeof allUnlocked === 'function') Game.unlocked = allUnlocked();
+  // меню открыто целиком — и сразу перерисовано: иначе на панели оставалась одна вкладка «Ресурсы» от releaseStart
+  // (акт 3: «поставить дома», а вкладки «Основа» нет — отзыв тестера; после загрузки сейва чинилось само)
+  if (typeof allUnlocked === 'function') { Game.unlocked = allUnlocked(); if (typeof renderBuildMenu === 'function') { UI.shown = null; renderBuildMenu(); } }
   if (Game.dz) Game.dz.freq = 0;
   Game.camp = { v: 1, act: n, i: -1, st: null, seq: 0, t: 0, cp: -1, cpN: 0, flags: {}, tilt: 0, lost: 0, over: null, objs: null, mark: null, label: '' };
   A.setup(Game.camp, opts);
