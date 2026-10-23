@@ -50,7 +50,7 @@ function stats(R) {
   const f = C.map(c => R.F[c].w / R.F[c].n);
   return { o4, o2, mx: 50 + mx * 100, fieldOut: f.filter(v => v < 0.45 || v > 0.55).length, len: R.avgLen, timer: R.timerShare, f };
 }
-const run = (x, seed) => runMatrix({ n: N, tier: 3, seed, over: overOf(x), threads: 16 });
+const run = (x, seed) => runMatrix({ n: N, tier: 3, seed, over: overOf(x), threads: 8 });
 // решение (JᵀJ + λ·diag) dx = −Jᵀr методом Гаусса
 function solve(J, r, lam) {
   const n = J[0].length, M = Array.from({ length: n }, () => new Float64Array(n + 1));

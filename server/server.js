@@ -63,6 +63,12 @@ const stats = createStats(DATA, log);
 const events = require('./events').createEvents(DATA, log);
 const errReports = require('./errors').createErrors(DATA, log);   // анонимные отчёты об ошибках у игроков (POST /err)
 const tele = require('./telemetry').createTelemetry(DATA, log, events);   // статистика по согласию (POST /t), «Сообщить о проблеме» (POST /report), удаление по id (POST /t/forget)
+// Комнаты (server/rooms.js, общий код для арены и кооп-забега) и Арена онлайн (АРЕНА.md, этап 3): очередь, бой 1 на 1, рейтинг, лиги
+const { createRooms } = require('./rooms');
+const roomKinds = {};
+const rooms = createRooms({ log, maxRooms: +process.env.OLDGOLD_MAX_ROOMS || 30, grace: 25000, kinds: roomKinds });
+const arena = require('./arena').createArena({ DATA, log, rooms });
+roomKinds.arena = arena.kind;
 // версия сервера — коммит, из которого он запущен
 const SERVER_VER = (() => {
   try {
@@ -373,6 +379,7 @@ class Conn {
     if (!this.alive) return;
     this.alive = false;
     conns.delete(this);
+    if (this.key) { rooms.detach(this.key); arena.onDrop(this.key); }   // арена: бой встаёт на паузу, очередь освобождается
     if (this.inGame) {
       left.set(this.key, Date.now());
       stats.leave(this.key);
@@ -545,6 +552,7 @@ async function auth(c, m) {
   const meta = JSON.parse(call('coopMeta'));
   c.send({ t: 'welcome', token, nick: c.nick, host: c.isHost, perms: meta.perms, permLabels: meta.permLabels, needClass: !rec.hero, classes: meta.classes, chat: meta.chat, sv: SERVER_VER });
   if (rec.hero) joinWorld(c);
+  arena.onBack({ key: c.key, nick: c.nick, send: o => c.send(o) });   // вернулся в идущий бой арены — продолжает
 }
 const nickFails = new Map();   // ключ ника -> { n, t }: неудачные пароли с любых адресов
 
@@ -582,6 +590,8 @@ function onGameMessage(c, m, text) {
     if (v.every(Number.isFinite)) c.view = v.map(x => Math.max(-1e4, Math.min(1e4, Math.round(x))));
     return;
   }
+  // ввод боя арены идёт 20 раз в секунду — мимо общего ведра, со своим пределом 30/с (arena.onInput)
+  if (m.t === 'arena' && m.a === 'in') { if (arena.onInput(c, m) === 'flood') c.sock.destroy(); return; }
   // защита от заливания (залипшая мышь, кривой клиент, бот): ведро на 60 сообщений, 30 в секунду — на ВСЕ сообщения
   // после входа (раньше пауза, доска почёта и прочие служебные шли мимо и рассылали тосты всем без предела)
   const nowMs = Date.now();
@@ -593,6 +603,7 @@ function onGameMessage(c, m, text) {
     return;
   }
   c.bucket--;
+  if (m.t === 'arena') { arena.onMessage({ key: c.key, nick: c.nick, ip: c.ip, send: o => c.send(o) }, m); return; }
   if (m.t === 'class') {
     const rec = users[c.key];
     if (rec.hero || c.inGame) return;
@@ -789,7 +800,7 @@ setInterval(() => {
   for (const [k, f] of authFails) if (now - f.t > 60000) authFails.delete(k);
 }, 5000);
 
-function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); process.exit(0); }
+function shutdown() { log('остановка, сохраняю мир…'); saveWorld(); arena.stop(); process.exit(0); }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 

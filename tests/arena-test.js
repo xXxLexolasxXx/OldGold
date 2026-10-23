@@ -262,7 +262,7 @@ const place = (S, ax, ay, bx, by) => { S.f[0].x = ax; S.f[0].y = ay; S.f[1].x = 
 
 // ---------- 11. Перевод: все строки арены есть в js/i18n/en-arena.js ----------
 {
-  const files = ['js/arena/arenasim.js', 'js/arena/arena.js', 'js/arena/arenaart.js', 'js/arena/arenasfx.js'].filter(f => fs.existsSync(path.join(__dirname, '..', f)));
+  const files = ['js/arena/arenasim.js', 'js/arena/arena.js', 'js/arena/arenaart.js', 'js/arena/arenasfx.js', 'js/arena/arenanet.js'].filter(f => fs.existsSync(path.join(__dirname, '..', f)));
   const en = path.join(__dirname, '..', 'js', 'i18n', 'en-arena.js');
   if (!fs.existsSync(en)) fails.push('нет словаря js/i18n/en-arena.js');
   else {

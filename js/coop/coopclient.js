@@ -140,6 +140,7 @@ function coopHandle(m) {
     case 'chron': if (typeof chronMirrorIn === 'function') chronMirrorIn(m.e); break;
     case 'saved': break;
     case 'restarting': Coop.reconnecting = true; toast('Сервер перезапускается…'); break;
+    case 'arena': if (typeof arenaNetIn === 'function') arenaNetIn(m); break;   // арена онлайн (js/arena/arenanet.js)
     case 'kicked': Coop.kicked = m.msg || 'Вы вошли в деревню из другого окна'; break;
   }
 }
