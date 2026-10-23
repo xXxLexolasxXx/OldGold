@@ -5,7 +5,7 @@ const { chromium } = require('D:/для игры/feod/tools/browsers/node_module
   const pg = await br.newPage();
   pg.on('pageerror', e => console.log('pageerror', e.message));
   pg.on('console', m => console.log(m.type(), m.text()));
-  await pg.goto('file:///' + path.resolve(__dirname, 'sheet.html').split(path.sep).join('/'));
+  await pg.goto('file:///' + path.resolve(__dirname, process.argv[3] || 'sheet.html').split(path.sep).join('/'));
   await pg.waitForFunction(() => document.title !== '…', null, { timeout: 60000 });
   console.log(await pg.title());
   const data = await pg.evaluate(() => document.getElementById('cv').toDataURL('image/png'));

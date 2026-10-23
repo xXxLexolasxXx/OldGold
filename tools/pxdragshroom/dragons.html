@@ -1,0 +1,72 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#1b2a1f">
+<canvas id="cv"></canvas>
+<script src="../../js/world/fairy2.js"></script>
+<script src="dragshroom.js"></script>
+<script src="dragon.js"></script>
+<script>
+try {
+const W = 1500, cv = document.getElementById('cv');
+const AD = [['idle', 6, 'покой'], ['walk', 6, 'ходьба'], ['atk', 6, 'огонь стоя'], ['fly', 8, 'полёт'], ['flyatk', 6, 'огонь в полёте'], ['sleep', 6, 'сон в гнезде']];
+const BA = [['idle', 6, 'покой'], ['fly', 8, 'полёт'], ['flyatk', 6, 'огонь в полёте'], ['sleep', 6, 'сон в гнезде']];
+const adN = AD.reduce((s, a) => s + a[1], 0), baN = BA.reduce((s, a) => s + a[1], 0);
+const H = 40 + 3 * 375 + 30 + Math.ceil(adN / 3) * 195 + 40 + 2 * 345 + 30 + Math.ceil(baN / 6) * 150 + 40 + 230 + 40 + 330 + 20;
+cv.width = W; cv.height = H;
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#1b2a1f'; c.fillRect(0, 0, W, H);
+const T = (s, x, y, sz = 22, col = '#f2e6c8') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.fillText(s, x, y); };
+const cell = (x, y, w, h) => { c.fillStyle = '#4a6a34'; c.fillRect(x, y, w, h); c.fillStyle = '#557a3c'; for (let i = 0; i < 40; i++) c.fillRect(x + (i * 37 % w), y + (i * 53 % h), 3, 2); };
+const put = (spr, x, y, Z, face = 1) => {
+  const [ox, oy, w, h] = spr.fzO; c.save(); c.imageSmoothingEnabled = !spr.fzPx; c.translate(x, y); if (face < 0) c.scale(-1, 1);
+  c.drawImage(spr, -ox * Z, -oy * Z, w * Z, h * Z); c.restore();
+};
+let y = 30;
+T('Взрослый легендарный дракон — крупно ×6 (каждый пиксель сетки = 2×2)', 20, y, 22); y += 10;
+[['idle', 0, 'покой'], ['fly', 0, 'полёт: крылья вверху'], ['fly', 4, 'полёт: крылья внизу'], ['flyatk', 2, 'огонь в полёте'], ['sleep', 0, 'сон в гнезде'], ['atk', 3, 'огонь стоя']].forEach(([m, p, n], i) => {
+  const x = 10 + (i % 2) * 740, yy = y + Math.floor(i / 2) * 375; cell(x, yy, 735, 370); T(n, x + 10, yy + 26, 18, '#ffd860'); put(fzDragonSprite(m, p), x + 290, yy + 360, 6);
+});
+y += 3 * 375 + 20;
+T('Взрослый — все кадры ×3 (1:1 с сеткой)', 20, y + 6, 18); y += 14;
+let i = 0;
+for (const [m, n, nm] of AD) for (let p = 0; p < n; p++, i++) { const x = 10 + (i % 3) * 495, yy = y + Math.floor(i / 3) * 195; cell(x, yy, 490, 190); T(nm + ' ' + (p + 1), x + 6, yy + 18, 13); put(fzDragonSprite(m, p), x + 150, yy + 182, 3); }
+y += Math.ceil(adN / 3) * 195 + 20;
+T('Дракончик — крупно ×8: пухлый малыш той же породы', 20, y + 6, 22); y += 16;
+[['idle', 0, 'покой'], ['fly', 0, 'полёт: вверх'], ['fly', 4, 'полёт: вниз'], ['flyatk', 2, 'огонёк'], ['sleep', 1, 'сон (пузырь из носа)'], ['idle', 4, 'моргает']].forEach(([m, p, n], i) => {
+  const x = 10 + (i % 4) * 370, yy = y + Math.floor(i / 4) * 345; cell(x, yy, 365, 340); T(n, x + 10, yy + 26, 18, '#ffd860'); put(fzBabyDragonSprite(m, p), x + 170, yy + 325, 7);
+});
+y += 2 * 345 + 10;
+T('Дракончик — все кадры ×3', 20, y + 6, 18); y += 14;
+i = 0;
+for (const [m, n, nm] of BA) for (let p = 0; p < n; p++, i++) { const x = 10 + (i % 6) * 246, yy = y + Math.floor(i / 6) * 150; cell(x, yy, 240, 145); T(nm + ' ' + (p + 1), x + 6, yy + 18, 13); put(fzBabyDragonSprite(m, p), x + 110, yy + 136, 3); }
+y += Math.ceil(baN / 6) * 150 + 20;
+// питомцы: та же перекраска, что в dragonpet.js (dpSpr), но с захватом бирюзы крыльев (оттенок 60..200)
+T('Питомцы (перекраска как в игре): лесной, огненный, ледяной, болотный — ×4', 20, y + 6, 18); y += 14;
+const SP = [['лесной', null], ['огненный', { hue: 8, sat: 1.15, lit: 1 }], ['ледяной', { hue: 198, sat: 0.8, lit: 1.18 }], ['болотный', { hue: 282, sat: 0.55, lit: 0.85 }]];
+const recol = (base, S) => {
+  if (!S) return base;
+  const c2 = document.createElement('canvas'); c2.width = base.width; c2.height = base.height; const g = c2.getContext('2d'); g.drawImage(base, 0, 0);
+  const im = g.getImageData(0, 0, base.width, base.height), a = im.data;
+  for (let k = 0; k < a.length; k += 4) {
+    if (!a[k + 3]) continue;
+    const r = a[k] / 255, gg = a[k + 1] / 255, b = a[k + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), l = (mx + mn) / 2, dd = mx - mn;
+    if (dd < 0.08) continue;
+    let h = mx === r ? ((gg - b) / dd) % 6 : mx === gg ? (b - r) / dd + 2 : (r - gg) / dd + 4; h *= 60; if (h < 0) h += 360;
+    if (h < 60 || h > 200) continue;
+    const s = Math.min(1, dd / (1 - Math.abs(2 * l - 1)) * S.sat), L2 = Math.min(0.95, l * S.lit);
+    const C = (1 - Math.abs(2 * L2 - 1)) * s, X = C * (1 - Math.abs((S.hue / 60) % 2 - 1)), m = L2 - C / 2, sec = Math.floor(S.hue / 60) % 6;
+    const rgb = [[C, X, 0], [X, C, 0], [0, C, X], [0, X, C], [X, 0, C], [C, 0, X]][sec];
+    a[k] = (rgb[0] + m) * 255; a[k + 1] = (rgb[1] + m) * 255; a[k + 2] = (rgb[2] + m) * 255;
+  }
+  g.putImageData(im, 0, 0); c2.fzO = base.fzO; c2.fzPx = true; return c2;
+};
+cell(10, y, 1480, 220);
+SP.forEach(([n, S], k) => { T(n, 60 + k * 370, y + 22, 14); put(recol(fzBabyDragonSprite('idle', 0), S), 120 + k * 370, y + 210, 4); put(recol(fzBabyDragonSprite('fly', 1), S), 280 + k * 370, y + 200, 2); });
+y += 240;
+T('Как в игре (×2): гном, дракончик, взрослый дракон', 20, y + 6, 18); y += 14;
+cell(10, y, 1480, 320);
+const gn = (x, yy, Z) => { c.fillStyle = '#7a4a2a'; c.fillRect(x - 4 * Z, yy - 12 * Z, 8 * Z, 12 * Z); c.fillStyle = '#e0b088'; c.fillRect(x - 3 * Z, yy - 17 * Z, 6 * Z, 5 * Z); c.fillStyle = '#c03020'; c.fillRect(x - 4 * Z, yy - 21 * Z, 8 * Z, 4 * Z); };
+gn(60, y + 300, 2); put(fzBabyDragonSprite('idle', 0), 170, y + 300, 2); put(fzBabyDragonSprite('fly', 2), 300, y + 250, 2);
+put(fzDragonSprite('idle', 0), 560, y + 300, 2); put(fzDragonSprite('fly', 1), 980, y + 260, 2); put(fzDragonSprite('sleep', 0), 1300, y + 300, 2);
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>
