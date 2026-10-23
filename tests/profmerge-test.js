@@ -122,3 +122,4 @@ section = 'школа';
 
 if (fails.length) { console.log(`\nПРОВАЛ: ${fails.length}`); process.exit(1); }
 console.log('\nСлияние профессий: всё в порядке');
+process.exit(0);   // открытые таймеры симуляции держат процесс — иначе run.js ждёт до таймаута
