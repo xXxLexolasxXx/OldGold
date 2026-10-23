@@ -458,7 +458,7 @@ function pigSpriteHR(stage, f) {
   c.fillStyle = 'rgba(110,70,40,0.35)'; c.beginPath(); c.ellipse(-2, -2.4, 4, 1.4, 0, 0, Math.PI * 2); c.fill();
   };
   let cv;
-  if (afFine()) cv = afVec(24, 16, 12, 13, paint);        // мелкий пиксель ×3 (animalart.js)
+  if (afFine()) cv = akPig(stage, f);                    // ручной пиксель-арт ×3 (animalpx.js)
   else { const [c2, c] = mkSprite(24, 16, 3); c.translate(12, 13); paint(c); cv = c2; }
   PIG_CACHE[key] = cv;
   return cv;

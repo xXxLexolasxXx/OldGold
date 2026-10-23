@@ -298,7 +298,7 @@ function creatureSprite(kind, f, load, n = 1, view = 'E') {
   // перенос так, чтобы копыта/колёса стояли в точке (ax, ay)
   const oy = ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14, duck: 13 }[kind];
   const paint = c => { if (kind === 'cart') { if (view === 'E') drawCartRig(c, f, load, n); else drawCartFront(c, f, load, n, view); } else drawCreature(c, kind, f, load); };
-  if (afFine()) cv = afVec(w, h, ax, oy, paint);     // мелкий пиксель ×3 (animalart.js): по памяти столько же, сколько прежний вектор ×3
+  if (afFine()) cv = AK_CR[kind] && view === 'E' ? AK_CR[kind](f, load, n) : afVec(w, h, ax, oy, paint);   // мелкий пиксель ×3: ручной пиксель-арт (animalpx.js) или вектор, сведённый втрое детальнее
   else { const [c2, c] = mkSprite(w, h, 3); c.translate(ax, oy); paint(c); cv = c2; }
   CR_CACHE.set(key, cv);
   return cv;

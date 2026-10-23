@@ -1,0 +1,31 @@
+<!doctype html><meta charset=utf-8><title>Животные — крупно</title>
+<body style="margin:0;background:#2a3a22">
+<canvas id=cv></canvas>
+<script>
+// Крупный просмотр кадров: ?e=<выражение JS, дающее массив [кадр, ширина в игровых px]> &s=масштаб (экранных px на мелкий пиксель).
+// ?root — папка с игрой (для листа «было» — копия origin/main). Под каждым кадром — он же в игровом размере ×1, ×2, ×3.
+window.PXS_NOSTART = true;
+const Q = new URLSearchParams(location.search), ROOT = Q.get('root') || '..', S = +(Q.get('s') || 6);
+const ERR = [];
+window.addEventListener('error', e => ERR.push((e.filename || '').split('/').pop() + ': ' + e.message));
+window.addEventListener('load', () => setTimeout(async () => {
+  const load = src => new Promise(r => { const s = document.createElement('script'); s.src = ROOT + '/' + src; s.onload = s.onerror = r; document.body.appendChild(s); });
+  for (const f of window.AF_FILES || []) await load(f);
+  try {
+    R.cam = R.cam || {}; R.cam.z = 3; Game.time = 1.3;
+    const list = eval(Q.get('e') || '[]').filter(it => it && it[0]).map(([cv, gw]) => ({ cv, gw, gh: cv.height * gw / cv.width }));
+    let W = 20, H = 0; for (const it of list) { W += it.gw * 3 * S + 24; H = Math.max(H, it.gh * 3 * S); }
+    const cv = document.getElementById('cv'); cv.width = Math.max(200, W); cv.height = H + 40 + Math.max(...list.map(it => it.gh)) * 3 + 20;
+    const c = cv.getContext('2d'); c.fillStyle = '#4a6a34'; c.fillRect(0, 0, cv.width, cv.height);
+    let x = 20;
+    for (const it of list) {
+      c.imageSmoothingEnabled = false;
+      c.drawImage(it.cv, x, 10 + H - it.gh * 3 * S, it.gw * 3 * S, it.gh * 3 * S);
+      let bx = x;
+      for (const k of [1, 2, 3]) { c.imageSmoothingEnabled = !!it.cv.fine && k < it.cv.fine; c.drawImage(it.cv, bx, H + 30, it.gw * k, it.gh * k); bx += it.gw * k + 8; }
+      x += it.gw * 3 * S + 24;
+    }
+    document.title = 'ready ' + (typeof PX_FINE !== 'undefined' ? PX_FINE : 1) + ' ' + ERR.length + ' ' + ERR.slice(0, 3).join(' | ');
+  } catch (e) { document.title = 'fail ' + e.message + ' ' + (e.stack || '').split('\n')[1]; }
+}, 50));
+</script>

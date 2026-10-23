@@ -1,9 +1,9 @@
 'use strict';
 // Животные мелким пикселем ×3 (решение владельца 23.10, тот же шаблон, что у нечисти): один пиксель арта —
 // треть игрового пикселя, размер зверя на экране прежний. Механизм — PX_FINE и blitFine в pixel.js.
-//  • векторные звери (creatures.js, свиньи, совы, олени упряжки) сводятся в пиксель-арт втрое детальнее;
-//  • ручные карты-строки (вороны, лягушки, кабан, медведь, коты, аисты, лесная мелочь) перерисовываются здесь
-//    на мелкой сетке: контур скругляется по соседним клеткам, тело получает свет сверху и обводку своим цветом;
+//  • почти все звери нарисованы заново ручным пиксель-артом в animalpx.js (метод Полудницы, fzPxKit);
+//  • остальное векторное (совы, лошадь в телеге, олени упряжки) сводится в пиксель-арт втрое детальнее (afVec);
+//  • карты-строки без своей перерисовки (улей, кротовина) — на мелкой сетке: контур скругляется, свет и обводка своим цветом;
 //  • при PX_FINE = 1 (телефоны и слабые машины) всё рисуется как раньше.
 
 const afFine = () => typeof PX_FINE !== 'undefined' && PX_FINE > 1;
@@ -205,52 +205,12 @@ function afProc(W, H, fn, o = {}) {
   return cv;
 }
 
-// ---------- Ручная перерисовка ----------
-// Рисунок в игровых пикселях на холсте той же карты (w×h, земля — нижний край, морда вправо). Каждый мелкий
-// пиксель берёт ближайший из заданных цветов cols — без промежуточных оттенков и лишних точек; край — тот же цвет темнее.
-let AF_PAINT = null;
-function afPaint(w, h, cols, draw, o = {}) {
-  const F = PX_FINE, S = 2, W = w * F, H = h * F, cw = W * S, ch = H * S;
-  if (!AF_PAINT || AF_PAINT.width < cw || AF_PAINT.height < ch) AF_PAINT = mkCanvas(Math.max(cw, AF_PAINT ? AF_PAINT.width : 0), Math.max(ch, AF_PAINT ? AF_PAINT.height : 0));
-  const g = AF_PAINT.getContext('2d', { willReadFrequently: true });
-  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cw, ch);
-  g.scale(F * S, F * S); g.lineCap = 'round'; g.lineJoin = 'round';
-  draw(g);
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  const sd = g.getImageData(0, 0, cw, ch).data, rgb = cols.map(hexToRgb);
-  const cv = mkCanvas(W, H), c = cv.getContext('2d'), img = c.createImageData(W, H), d = img.data, cut = (o.cut ?? 118) * 4;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let r = 0, gg = 0, b = 0, a = 0;
-    for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
-      const q = ((y * S + j) * cw + x * S + i) * 4, al = sd[q + 3];
-      r += sd[q] * al; gg += sd[q + 1] * al; b += sd[q + 2] * al; a += al;
-    }
-    if (a < cut) continue;
-    r /= a; gg /= a; b /= a;
-    let best = rgb[0], bd = 1e9;
-    for (const p of rgb) { const dr = p[0] - r, dg = p[1] - gg, db = p[2] - b, dd = dr * dr * 2 + dg * dg * 4 + db * db * 3; if (dd < bd) { bd = dd; best = p; } }
-    const q = (y * W + x) * 4;
-    d[q] = best[0]; d[q + 1] = best[1]; d[q + 2] = best[2]; d[q + 3] = 255;
-  }
-  cleanOrphans(d, W, H);
-  afShadeFine(d, W, H, F, { rim: o.rim ?? 0.64, lit: 0, low: 1 });
-  c.putImageData(img, 0, 0);
-  cv.fine = F;
-  return cv;
-}
-
-// Кисти для рисунков: эллипс, многоугольник, линия, кривая
-const afE = (c, x, y, rx, ry, col, rot = 0) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, Math.max(0.05, rx), Math.max(0.05, ry), rot, 0, 7); c.fill(); };
-const afP = (c, pts, col) => { c.fillStyle = col; c.beginPath(); pts.forEach(([x, y], i) => c[i ? 'lineTo' : 'moveTo'](x, y)); c.closePath(); c.fill(); };
-const afL = (c, x0, y0, x1, y1, col, lw = 1) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
-const afQ = (c, x0, y0, cx, cy, x1, y1, col, lw = 1) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, x1, y1); c.stroke(); };
-// нога с коленом: от бедра (x, y0) к ступне (x + off, y1); колено чуть вперёд
-const afLeg = (c, x, y0, y1, off, col, lw, knee = 0.35) => { const ym = y0 + (y1 - y0) * 0.5; c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(x, y0); c.quadraticCurveTo(x + off * 0.3 + knee, ym, x + off, y1); c.stroke(); };
+// ---------- Ручная перерисовка (animalpx.js) ----------
 // фаза шага из ключа кадра: «…W3» / «…w3» из N кадров → 0..1, иначе null
 const afPh = (key, N) => { const m = /[wW](\d+)$/.exec(key); return m ? (+m[1] % N) / N : null; };
 
 const AF_HAND_LIST = [];
-const afHand = (re, fn) => AF_HAND_LIST.push([re, fn]);
+const afHand = (re, fn) => AF_HAND_LIST.unshift([re, fn]);   // поздняя регистрация главнее
 // в PAL нет близкого тона (насыщенный тёмно-рыжий мех) — свой цвет, огрублённый до ступеней по 16: тонов всё равно немного
 function afQuantHue(d, W, H) {
   for (let o = 0; o < W * H * 4; o += 4) if (d[o + 3]) {

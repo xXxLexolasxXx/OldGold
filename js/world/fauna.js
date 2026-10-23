@@ -167,6 +167,7 @@ const CROW_LEGS = [
 // В полёте крылья собираются из пикселей: тело + голова + клюв и крыло, поднятое или опущенное
 // При мелком пикселе (animalart.js) те же формулы считаются на сетке втрое мельче: контур крыла и клюв ровнее
 function crowFlySprite(frame) {
+  if (afFine()) return akCrowFly(frame);                 // ручной пиксель-арт ×3 (animalpx.js)
   const W = 22, H = 15;
   return afProc(W, H, (px, each) => {
     each((x, y) => {                                                   // тело — вытянутый овал

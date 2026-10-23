@@ -218,6 +218,7 @@ const BE_FISH = [
 function beFlySprite(key, o, frame) {
   const k = key + frame;
   if (BE_CACHE[k]) return BE_CACHE[k];
+  if (afFine()) { const cv = akBirdFly(o, frame); cv.beFace = 1; return BE_CACHE[k] = cv; }   // ручной пиксель-арт ×3 (animalpx.js)
   const W = 30, H = 20, fine = afFine();
   const cv = afProc(W, H, (px, each) => {
   const inPoly = (pts, x, y) => {
