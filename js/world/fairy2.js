@@ -824,6 +824,7 @@ function fzNoonPx(lv, p) {
     // костлявое предплечье
     L(ex, ey, hx, hy, 3, 2.2, (t, e, sd) => e ? (sd * s > 0 ? S0 : S1) : t < 0.12 ? S3 : sd * s < -30 ? S3 : S2);
     R(hx - 4, hy - 4, hx + 4, hy + 4, (x, y) => { const d = (x - hx) ** 2 + (y - hy) ** 2; return d <= 12 ? (d > 8 ? S1 : S2) : null; });
+    return [ex, ey];
   };
   const claw = (hx, hy, dir, side) => {                                               // ладонь, четыре пальца веером и большой, длинные загнутые когти
     for (const j of [-1.5, -0.5, 0.5, 1.5, -3.2]) {
@@ -838,23 +839,27 @@ function fzNoonPx(lv, p) {
       L(x2, y2, x2 + Math.cos(a3) * cl, y2 + Math.sin(a3) * cl, 1.2, 0.2, (t, e) => t > 0.8 ? K0 : e ? K1 : t < 0.4 ? K2 : K1);
     }
   };
+  // серп: рукоять поперёк кулака, от кольца клинок идёт вперёд и закручивается крюком (кривизна растёт к острию), шире всего в первой трети
   const sickle = (hx, hy, a) => {
     const ux = Math.cos(a), uy = Math.sin(a);
-    let nx = uy, ny = -ux; if (nx < 0) { nx = -nx; ny = -ny; }
-    L(hx - ux * 7, hy - uy * 7, hx + ux * 9, hy + uy * 9, 2.2, 2, (t, e) => e ? [70, 38, 18] : t > 0.3 && t < 0.4 ? [70, 38, 18] : [118, 70, 34]);   // рукоять
-    L(hx + ux * 8, hy + uy * 8, hx + ux * 11, hy + uy * 11, 2.4, 2.4, (t, e) => e ? I0 : I1);                                                        // кольцо
-    const bx = hx + ux * 11, by = hy + uy * 11, Rr = 17, cx = bx + nx * Rr, cy = by + ny * Rr, a0 = Math.atan2(by - cy, bx - cx);
-    const sg = (-Math.sin(a0) * ux + Math.cos(a0) * uy) > 0 ? 1 : -1, SW = 3.7;
-    R(cx - Rr - 2, cy - Rr - 2, cx + Rr + 2, cy + Rr + 2, (x, y) => {
-      const dx = x - cx, dy = y - cy, d = Math.sqrt(dx * dx + dy * dy);
-      let da = (Math.atan2(dy, dx) - a0) * sg; da = ((da % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-      if (da > SW) return null;
-      const t = da / SW, w = 5 * (1 - t) + 0.6;
-      if (d > Rr + 0.5 || d < Rr + 0.5 - w) return null;
-      if (d > Rr - 0.6) return I0;                                                        // обух
-      if (d < Rr + 1.5 - w) return t > 0.3 && t < 0.75 && hsh(x * 3 + y) > 0.6 ? K7 : I3;  // жало блестит на солнце
-      return hsh(x * 7 + y * 13) > 0.82 ? RU : I2;                                        // ржа
-    });
+    L(hx - ux * 8, hy - uy * 8, hx + ux * 9, hy + uy * 9, 2.2, 2, (t, e) => e ? [70, 38, 18] : t < 0.08 ? [70, 38, 18] : [118, 70, 34]);   // рукоять
+    L(hx + ux * 8.5, hy + uy * 8.5, hx + ux * 11, hy + uy * 11, 2.5, 2.5, (t, e) => e ? I0 : I1);                                          // кольцо
+    const sg = -Math.sin(a + Math.PI / 2) > -Math.sin(a - Math.PI / 2) ? 1 : -1, N = 40, pts = [];
+    let x = hx + ux * 11, y = hy + uy * 11, d = a;
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, w = t < 0.3 ? 3 + t * 5.5 : 4.65 * (1 - (t - 0.3) / 0.7) + 0.25;
+      pts.push([x, y, w]);
+      d += sg * (0.055 + 0.07 * t); x += Math.cos(d) * 1.35; y += Math.sin(d) * 1.35;
+    }
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0, w0] = pts[i - 1], [x1, y1, w1] = pts[i], t0 = (i - 1) / N;
+      L(x0, y0, x1, y1, w0, w1, (t, e, sd) => {
+        const inner = sd * sg > 0;
+        if (e && !inner) return I0;                                                     // обух
+        if (e && inner) return t0 > 0.25 && t0 < 0.8 && hsh(x0 * 3 + y0) > 0.55 ? K7 : I3;   // жало блестит на солнце
+        return hsh(Math.round(x0) * 7 + Math.round(y0) * 13 + (sd > 0 ? 1 : 0)) > 0.86 ? RU : inner ? I2 : [128, 116, 102];   // ржа
+      });
+    }
   };
   // дальняя (левая) рука — когтистая пятерня
   arm(-1, pose.L);
@@ -935,11 +940,12 @@ function fzNoonPx(lv, p) {
   for (let k = 0; k < 4; k++) strand(k, false);
 
   // ---- ближняя (правая) рука с серпом
-  arm(1, pose.R);
-  sickle(pose.R[0], pose.R[1], pose.R[2]);
+  const [rex, rey] = arm(1, pose.R), fa = Math.atan2(pose.R[1] - rey, pose.R[0] - rex);
+  const ha = [fa + Math.PI / 2 - 0.35, fa - Math.PI / 2 + 0.35].reduce((b, c) => Math.cos(c) * 0.6 - Math.sin(c) > Math.cos(b) * 0.6 - Math.sin(b) ? c : b);   // рукоять поперёк кулака, вперёд-вверх
+  sickle(pose.R[0], pose.R[1], ha);
   R(pose.R[0] - 4, pose.R[1] - 4, pose.R[0] + 4, pose.R[1] + 4, (x, y) => { const d = (x - pose.R[0]) ** 2 + (y - pose.R[1]) ** 2; return d <= 10 ? (d > 6 ? S1 : S2) : null; });   // кулак на рукояти
   for (const j of [-1, 0, 1]) {                                                       // когти поверх рукояти
-    const a = pose.R[2] + Math.PI / 2, x = pose.R[0] + Math.cos(pose.R[2]) * j * 2.2 + Math.cos(a) * 3, y = pose.R[1] + Math.sin(pose.R[2]) * j * 2.2 + Math.sin(a) * 3;
+    const a = fa, x = pose.R[0] + Math.cos(ha) * j * 2.2 + Math.cos(a) * 2.5, y = pose.R[1] + Math.sin(ha) * j * 2.2 + Math.sin(a) * 2.5;
     L(x, y, x + Math.cos(a - 0.6) * 4, y + Math.sin(a - 0.6) * 4, 1, 0.2, t => t > 0.7 ? K0 : K1);
   }
 
