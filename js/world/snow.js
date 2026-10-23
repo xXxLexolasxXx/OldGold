@@ -8,7 +8,7 @@
 //  · холодный и тёплый оттенок кадра, значок сезона у часов.
 // Данные берутся из Game.sea (season.js): snow, ice — плавные 0..1.
 
-const SNOW_VARS = 3;
+const SNOW_VARS = 8;
 const SNOWTILE = { snow: {}, ice: {} };
 const snowH = (a, b) => { const n = Math.sin(a * 127.1 + b * 311.7 + 74.7) * 43758.5453; return n - Math.floor(n); };
 
@@ -32,6 +32,12 @@ function snowTileMake(edge, v, ice) {
       // снег: белый с голубоватыми тенями и редкими искрами
       const sh = h2 < 0.3 ? 14 : h2 > 0.75 ? 0 : 6;
       r = 238 - sh; gc = 245 - sh * 0.7; b = 252 - sh * 0.3;
+      // сугробы и наст: мягкие гребни (светлые) и впадины (голубые тени), у каждого варианта свой рисунок
+      const f = v * 1.7, rid = Math.sin(x * 0.21 + y * 0.12 + f) * Math.sin(y * 0.18 - x * 0.08 + f * 1.3) + Math.sin((x + y * 0.6) * 0.45 + f * 2) * 0.25;
+      if (rid > 0.5) { r += 6; gc += 4; b += 2; } else if (rid < -0.55) { r -= 16; gc -= 10; b -= 2; }
+      if (v % 3 === 1 && h2 > 0.62 && h < 0.5) { r -= 5; gc -= 2; }                          // рябь наста
+      if (v >= 5 && Math.hypot(x - (6 + snowH(v, 8) * 20), y - (6 + snowH(v, 9) * 20)) < 2.6 + v % 2) { r -= 14; gc -= 8; }   // ямка-вмятина
+      if (v === 4 || v === 7) { r += snowH(x * 0.7, y * 0.7 + v) > 0.8 ? 14 : 0; b -= 3 * (v & 1); }  // тёплые блики / синева
       if (h > 0.96) { r = gc = b = 255; } else if (h < 0.05) { r -= 14; gc -= 10; b -= 3; }
       if (depth < 1.2) { r -= 26; gc -= 14; b -= 4; }      // голубая тень на кромке
     } else {
@@ -59,7 +65,7 @@ function snowTileMake(edge, v, ice) {
 }
 // плитки строятся по требованию (на карте встречается лишь десяток-другой сочетаний краёв)
 function snowTile(e, v, ice) {
-  const m = ice ? SNOWTILE.ice : SNOWTILE.snow, k = e * 4 + v;
+  const m = ice ? SNOWTILE.ice : SNOWTILE.snow, k = e * 16 + v;
   return m[k] || (m[k] = snowTileMake(e, v, ice));
 }
 
@@ -101,7 +107,7 @@ function snowDrawGround(c, x0, y0, x1, y1) {
   const T = World.terrain, W = MAP_W, H = MAP_H;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const i = y * W + x, t = T[i];
-    const v = (x * 7 + y * 13 + ((x * y) & 3)) % SNOW_VARS;
+    const v = Math.floor(snowH(x * 1.3, y * 0.7) * SNOW_VARS);
     if (t === T_WATER) {
       if (S.ice < 0.02) continue;
       const nw = j => T[j] !== T_WATER;
