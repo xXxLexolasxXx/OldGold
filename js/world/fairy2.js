@@ -849,17 +849,24 @@ function fzNoonPx(lv, p) {
     for (let i = 0; i <= N; i++) {
       const t = i / N, w = t < 0.3 ? 3 + t * 5.5 : 4.65 * (1 - (t - 0.3) / 0.7) + 0.25;
       pts.push([x, y, w]);
-      d += sg * (0.055 + 0.07 * t); x += Math.cos(d) * 1.35; y += Math.sin(d) * 1.35;
+      d += sg * (t < 0.12 ? 0.02 : 0.1); x += Math.cos(d) * 1.35; y += Math.sin(d) * 1.35;   // короткий прямой «стебель», дальше ровный круглый крюк — как у друидического серпа
     }
-    for (let i = 1; i < pts.length; i++) {
-      const [x0, y0, w0] = pts[i - 1], [x1, y1, w1] = pts[i], t0 = (i - 1) / N;
-      L(x0, y0, x1, y1, w0, w1, (t, e, sd) => {
-        const inner = sd * sg > 0;
-        if (e && !inner) return I0;                                                     // обух
-        if (e && inner) return t0 > 0.25 && t0 < 0.8 && hsh(x0 * 3 + y0) > 0.55 ? K7 : I3;   // жало блестит на солнце
-        return hsh(Math.round(x0) * 7 + Math.round(y0) * 13 + (sd > 0 ? 1 : 0)) > 0.86 ? RU : inner ? I2 : [128, 116, 102];   // ржа
-      });
-    }
+    // заливка одним проходом: ближайшая точка кривой, сторона и ширина клинка в ней
+    const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+    R(Math.min(...xs) - 6, Math.min(...ys) - 6, Math.max(...xs) + 6, Math.max(...ys) + 6, (px, py) => {
+      let best = 1e9, bo = 0, bw = 0, bt = 0;
+      for (let i = 1; i < pts.length; i++) {
+        const [x0, y0, w0] = pts[i - 1], [x1, y1, w1] = pts[i], dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy;
+        const u = Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / l2)), ex = px - x0 - dx * u, ey = py - y0 - dy * u, dd = ex * ex + ey * ey;
+        if (dd < best) { best = dd; bo = (ex * dy - ey * dx) / Math.sqrt(l2); bw = w0 + (w1 - w0) * u; bt = (i - 1 + u) / N; }
+      }
+      const o = -bo * sg, half = bw;                                                 // o > 0 — вогнутая сторона (жало)
+      if (Math.abs(o) > half + 0.5) return null;
+      if (o < -half + 0.6) return I0;                                                   // обух
+      if (o > half - 0.6) return bt > 0.2 && bt < 0.85 && hsh(px * 3 + py) > 0.55 ? K7 : I3;   // жало блестит на солнце
+      if (hsh(px * 7 + py * 13) > 0.88) return RU;                                       // ржа
+      return o > 0 ? I2 : [128, 116, 102];
+    });
   };
   // дальняя (левая) рука — когтистая пятерня
   arm(-1, pose.L);
