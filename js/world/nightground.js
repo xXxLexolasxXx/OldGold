@@ -48,27 +48,28 @@ function ngLit(nx, ny) {   // шар со светом сверху-слева: 
   return Math.max(0, Math.min(1, 0.18 + 0.82 * (-0.5 * nx - 0.55 * ny + 0.67 * z)));
 }
 function ngNoise(fx, fy) { return (((fx * 73856093) ^ (fy * 19349663)) >>> 0) % 1000 / 1000; }
-function ngArt(key, w, h, fn, noOutline) {
+// ol — цвет обводки (по умолчанию почти чёрный; у тварей в стиле Полудницы — тёплый бурый); «мягкие» пиксели (пыльца) без обводки
+function ngArt(key, w, h, fn, noOutline, ol = '#0a0610', olK = 0.72) {
   return ngSprite(key, w * NG_Q, h * NG_Q, (c, P, W, H) => {
-    const Q = NG_Q, buf = new Array(W * H).fill(null);
+    const Q = NG_Q, buf = new Array(W * H).fill(null), soft = new Uint8Array(W * H);
     const A = {
       Q,
       set(fx, fy, col) { if (col && fx >= 0 && fy >= 0 && fx < W && fy < H) buf[fy * W + fx] = col; },
       erase(test) { for (let fy = 0; fy < H; fy++) for (let fx = 0; fx < W; fx++) if (buf[fy * W + fx] && test((fx + 0.5) / Q, (fy + 0.5) / Q)) buf[fy * W + fx] = null; },
-      fill(x0, y0, x1, y1, f) {
+      fill(x0, y0, x1, y1, f, nosol) {
         const a = Math.max(0, Math.floor(x0 * Q)), b = Math.min(W - 1, Math.ceil(x1 * Q)), e = Math.max(0, Math.floor(y0 * Q)), d = Math.min(H - 1, Math.ceil(y1 * Q));
-        for (let fy = e; fy <= d; fy++) for (let fx = a; fx <= b; fx++) { const col = f((fx + 0.5) / Q, (fy + 0.5) / Q, fx, fy); if (col) buf[fy * W + fx] = col; }
+        for (let fy = e; fy <= d; fy++) for (let fx = a; fx <= b; fx++) { const col = f((fx + 0.5) / Q, (fy + 0.5) / Q, fx, fy); if (col) { buf[fy * W + fx] = col; soft[fy * W + fx] = nosol ? 1 : 0; } }
       },
-      ellipse(cx, cy, rx, ry, f) {
-        A.fill(cx - rx, cy - ry, cx + rx, cy + ry, (x, y, fx, fy) => { const nx = (x - cx) / rx, ny = (y - cy) / ry; return nx * nx + ny * ny <= 1 ? (typeof f === 'string' ? f : f(nx, ny, fx, fy)) : null; });
+      ellipse(cx, cy, rx, ry, f, nosol) {
+        A.fill(cx - rx, cy - ry, cx + rx, cy + ry, (x, y, fx, fy) => { const nx = (x - cx) / rx, ny = (y - cy) / ry; return nx * nx + ny * ny <= 1 ? (typeof f === 'string' ? f : f(nx, ny, fx, fy)) : null; }, nosol);
       },
-      seg(x0, y0, x1, y1, r0, r1, f) {   // f(t вдоль, nx, ny — смещение от оси в долях радиуса, fx, fy)
+      seg(x0, y0, x1, y1, r0, r1, f, nosol) {   // f(t вдоль, nx, ny — смещение от оси в долях радиуса, fx, fy)
         const dx = x1 - x0, dy = y1 - y0, L2 = dx * dx + dy * dy || 1e-6, R = Math.max(r0, r1);
         A.fill(Math.min(x0, x1) - R, Math.min(y0, y1) - R, Math.max(x0, x1) + R, Math.max(y0, y1) + R, (x, y, fx, fy) => {
           const t = Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / L2)), r = r0 + (r1 - r0) * t, ox = x - x0 - dx * t, oy = y - y0 - dy * t;
           if (ox * ox + oy * oy > r * r) return null;
           return typeof f === 'string' ? f : f(t, ox / r, oy / r, fx, fy);
-        });
+        }, nosol);
       },
     };
     fn(A, w, h);
@@ -76,10 +77,10 @@ function ngArt(key, w, h, fn, noOutline) {
       const edge = [];
       for (let fy = 0; fy < H; fy++) for (let fx = 0; fx < W; fx++) {
         const i = fy * W + fx;
-        if (!buf[i]) continue;
+        if (!buf[i] || soft[i]) continue;
         if (fx === 0 || fy === 0 || fx === W - 1 || fy === H - 1 || !buf[i - 1] || !buf[i + 1] || !buf[i - W] || !buf[i + W]) edge.push(i);
       }
-      for (const i of edge) buf[i] = ngMix(buf[i], '#0a0610', 0.72);
+      for (const i of edge) buf[i] = ngMix(buf[i], ol, olK);
     }
     const img = c.createImageData(W, H), d = img.data;
     for (let i = 0; i < buf.length; i++) if (buf[i]) { const v = ngRgb(buf[i]); d[i * 4] = v[0]; d[i * 4 + 1] = v[1]; d[i * 4 + 2] = v[2]; d[i * 4 + 3] = 255; }
@@ -142,18 +143,83 @@ function ngHand(set, f) {
   });
 }
 
-// ---- плотоядный цветок (вид сбоку, как «чомпер»): большая голова на толстом стебле, две челюсти на шарнире ----
-// Кадры: 0 и 1 — покой (голова чуть покачивается), 2, 3, 4 — пасть раскрывается в три шага (на 4 откинулся назад),
-// 5 хлопнул (бросок вперёд), 6 и 7 — жуёт (щёки ходят, пасть чуть приоткрывается). Челюсти — не картинки, а формы: каждая точка
-// берётся обратным поворотом вокруг шарнира у затылка, поэтому челюсти не налезают друг на друга и любой угол рисуется чисто. Смотрит вправо; влево — зеркалом вокруг основания стебля.
-// Пять расцветок: фиолетовый, красный, жёлтый, зелёный, бело-розовый. Кусает без урона: гном только пугается (nightGroundTick).
-const NG_FL_VARS = [
-  { hi: '#c9b2ff', md: '#7e58cc', lo: '#4c3080', ol: '#241438', spot: '#e6dbff', in: '#4a1830', tg: '#e07a98' },   // фиолетовый
-  { hi: '#ff9e86', md: '#d8402e', lo: '#8c2018', ol: '#401010', spot: '#ffd2a8', in: '#3c0c10', tg: '#f08a9a' },   // красный
-  { hi: '#fff3a0', md: '#e8bc34', lo: '#a4701c', ol: '#4a3010', spot: '#fffbe0', in: '#5a1c14', tg: '#e8788a' },   // жёлтый
-  { hi: '#d6ee86', md: '#76b43e', lo: '#3f7a2a', ol: '#143414', spot: '#f2ffc0', in: '#3a1a1a', tg: '#e8788a' },   // зелёный
-  { hi: '#ffffff', md: '#f6b6d0', lo: '#d070a0', ol: '#6a2e52', spot: '#ffe8f2', in: '#5a1a30', tg: '#ee6a8a' },   // бело-розовый
+// ---- цветы в стилистике Полудницы (fairy2.js): тёплая бурая обводка, лепестки с жилками, зелёный сочный стебель, зубчатые листья ----
+const NG_STEM = ['#14240f', '#22381a', '#2f4a26', '#3f6430', '#5e8e3c', '#8cc054'];
+const NG_PETALS = [   // лепестки: глубина у основания, тень, тело, свет, кромка
+  ['#2a1040', '#4a2a7a', '#6e44b0', '#9c74e0', '#cdb4ff'],   // фиолетовый
+  ['#3e0806', '#7a1a10', '#b42a1a', '#e05a34', '#ff9a70'],   // красный
+  ['#4e2a06', '#8a5410', '#c88a1a', '#eebc3a', '#fff0a0'],   // жёлтый
+  ['#14280a', '#2a4a16', '#467a24', '#78aa3a', '#bee07a'],   // зелёный
+  ['#5a2a3a', '#a06078', '#d898b2', '#f4cadb', '#ffffff'],   // бело-розовый
 ];
+const NG_HEAT = ['#280f06', '#4e240e', '#7c4018', '#b26e26', '#d8a23c', '#eece7a', '#faeaba', '#fffce8'];   // зной Полудницы: от бурого до добела
+const NG_PARCH = ['#5c3016', '#925c2e', '#c69258', '#e4c086', '#f6e0b0'];                                  // кожа-пергамент
+const NG_FANG = ['#8a6a44', '#d8bc8a', '#f4e2b8', '#fffce8'];
+const NG_WARM_OL = '#2a1406';
+// лепесток-лодочка от (x0, y0) по направлению a длиной L, шириной wd: у основания тёмный, к кончику светлый, жилки, кончик с выемкой
+function ngPetal(A, x0, y0, a, L, wd, pal, curl) {
+  const ux = Math.cos(a), uy = Math.sin(a), R = L + wd;
+  A.fill(x0 - R, y0 - R, x0 + R, y0 + R, (x, y, fx, fy) => {
+    const dx = x - x0, dy = y - y0, t = (dx * ux + dy * uy) / L, s = dx * -uy + dy * ux;
+    if (t < 0 || t > 1) return null;
+    const half = wd * Math.sin(Math.PI * Math.min(1, Math.pow(t, 0.7) * 0.92 + 0.04)) * (t > 0.86 ? 1 - (t - 0.86) * 2.2 : 1);
+    if (Math.abs(s) > half) return null;
+    if (t > 0.9 && Math.abs(s) < half * 0.25) return null;                                  // выемка на кончике
+    const q = s / (half || 1);
+    if (Math.abs(q) < 0.12 && t < 0.8) return pal[1];                                       // жилка
+    if (Math.abs(Math.abs(q) - 0.55) < 0.07 && t > 0.2 && t < 0.7) return pal[2];           // боковые жилки
+    return ngTone(pal, 0.25 + t * 0.6 - q * 0.22 + (curl && t > 0.75 ? 0.25 : 0), fx, fy);  // загнутый кончик ловит свет
+  });
+}
+// Растение под головой: трава у корня, S-образный стебель с шипами до (tx, ty), два зубчатых листа-серпа, два маленьких цветка
+// на веточках и бутон с зубками в щёлке. Возвращает pt(k) — точку стебля (0 у земли, 1 у головы).
+function ngPlant(A, W, H, PET, tx, ty, sw, ph) {
+  const bx = W / 2, len = H - 0.6 - ty;
+  for (let j = 0; j < 14; j++) { const gx = bx - 10 + j * 1.55, gh = 1.8 + (j * 7 % 5) * 0.5; A.seg(gx, H, gx + ((j & 1) ? 0.6 : -0.5), H - gh, 0.28, 0.06, j % 3 ? NG_STEM[2] : NG_STEM[3]); }
+  const pt = (k) => [bx + (tx - bx) * k * k * (3 - 2 * k) + Math.sin(k * 6.283) * 1.2 + sw * k, H - 0.6 - len * k];
+  for (let i = 0; i < 12; i++) { const [x0, y0] = pt(i / 12), [x1, y1] = pt((i + 1) / 12); A.seg(x0, y0, x1, y1, 1.35, 1.2, (t, nx, ny, fx, fy) => ngTone(NG_STEM, 0.62 - 0.5 * nx, fx, fy)); }
+  for (const [k, s] of [[0.3, 1], [0.6, -1]]) { const [x, y] = pt(k); A.seg(x + s * 1.3, y, x + s * 2.7, y - 1.2, 0.4, 0.05, NG_STEM[1]); }   // шипы
+  const leaf = (k, s, L, wd) => {   // широкий зубчатый лист, изогнут серпом, с жилками
+    const [sx, sy] = pt(k), N = 18, pts = [];
+    let x = sx + s * 0.8, y = sy, d = s > 0 ? -0.35 : Math.PI + 0.35;
+    for (let i = 0; i <= N; i++) { pts.push([x, y]); d += -s * 0.07; x += Math.cos(d) * L / N; y += Math.sin(d) * L / N; }
+    A.fill(sx - L - 2, sy - L - 2, sx + L + 2, sy + 3, (px, py, fx, fy) => {
+      let best = 1e9, bi = 0;
+      for (let i = 0; i <= N; i++) { const dd = (px - pts[i][0]) ** 2 + (py - pts[i][1]) ** 2; if (dd < best) { best = dd; bi = i; } }
+      const t = bi / N, half = wd * Math.sin(Math.PI * Math.pow(t, 0.8)) * (1 + 0.18 * Math.sin(t * 40)), dist = Math.sqrt(best);   // зубчики по краю
+      if (dist > half || t < 0.04) return null;
+      const [ax, ay] = pts[Math.max(0, bi - 1)], [cx2, cy2] = pts[Math.min(N, bi + 1)], side = ((px - pts[bi][0]) * -(cy2 - ay) + (py - pts[bi][1]) * (cx2 - ax)) * s;
+      if (dist < 0.18 && t < 0.92) return NG_STEM[2];
+      if (Math.abs(((t * 6 + dist * 0.5) % 1) - 0.5) < 0.06 && dist > 0.3 && dist < half * 0.85) return NG_STEM[3];
+      return ngTone(NG_STEM, 0.4 + (side > 0 ? 0.3 : -0.05) + (dist / half) * 0.15, fx, fy);
+    });
+  };
+  leaf(0.16, -1, 8.5, 2.1); leaf(0.4, 1, 7.5, 1.9);
+  const bloom = (k, s, dx, dy, r) => {   // маленький цветок на веточке: та же расцветка, в серединке пыльники
+    const [sx, sy] = pt(k), cx = sx + s * dx + sw * 0.3, cy = sy - dy;
+    A.seg(sx + s * 0.6, sy, cx - s * 0.4, cy + 0.8, 0.42, 0.34, (t, nx, ny, fx, fy) => ngTone(NG_STEM, 0.55 - nx * 0.4, fx, fy));
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + k * 3; ngPetal(A, cx + Math.cos(a) * 0.5, cy + Math.sin(a) * 0.5, a, r, r * 0.38, PET, false); }
+    A.ellipse(cx, cy, r * 0.32, r * 0.32, (nx, ny, fx, fy) => ngTone([NG_HEAT[2], NG_HEAT[3], NG_HEAT[4], NG_HEAT[5]], ngLit(nx, ny), fx, fy));
+  };
+  bloom(0.5, -1, 6.4, 3.2, 2.3); bloom(0.27, 1, 7, 2, 2);
+  {   // бутон: зелёные чашелистики сжаты, из щёлки торчат зубки
+    const [sx, sy] = pt(0.62), ex = sx + 6.5 + sw * 0.4, ey = sy - 4.5;
+    A.seg(sx + 0.6, sy, ex - 0.6, ey + 1.6, 0.5, 0.42, (t, nx, ny, fx, fy) => ngTone(NG_STEM, 0.55 - nx * 0.4, fx, fy));
+    A.ellipse(ex, ey, 1.7, 2.3, (nx, ny, fx, fy) => {
+      if (Math.abs(nx + ny * 0.25) < 0.1 && ny < 0.6) return NG_HEAT[0];
+      if (Math.abs(nx + ny * 0.25) < 0.26 && ny > -0.5 && ny < 0.4 && (Math.floor((ny + 1) * 5) & 1)) return NG_HEAT[6];
+      if (ny < -0.6) return ngTone(PET, 0.6 + nx * 0.2, fx, fy);
+      return ngTone(NG_STEM, ngLit(nx, ny), fx, fy);
+    });
+  }
+  return pt;
+}
+
+// ---- плотоядный цветок (вид сбоку, как «чомпер»): голова — тугой бутон из лепестков-чешуй, две челюсти на шарнире у затылка ----
+// Кадры: 0 и 1 — покой (голова чуть покачивается), 2, 3, 4 — пасть раскрывается в три шага (на 4 откинулся назад),
+// 5 хлопнул (бросок вперёд), 6 и 7 — жуёт. Челюсти — не картинки, а формы: каждая точка берётся обратным поворотом вокруг шарнира,
+// чешуйки нарисованы в координатах своей челюсти и поворачиваются вместе с ней; шарнир закрыт зелёными чашелистиками — стыка не видно.
+// Смотрит вправо; влево — зеркалом вокруг основания стебля. Пять расцветок. Кусает без урона: гном только пугается (nightGroundTick).
 const NG_FL_F = [   // th — подъём верхней челюсти, lo — опускание нижней (градусы); dx, dy — сдвиг головы; ch — щёки (глубина нижней челюсти)
   { th: 0, lo: 0, dx: 0, dy: 0, ch: 6.5 }, { th: 0, lo: 0, dx: 0, dy: -1, ch: 6.5 },
   { th: 10, lo: 3, dx: 0, dy: 0, ch: 6.5 }, { th: 22, lo: 7, dx: -0.5, dy: -0.5, ch: 6.5 }, { th: 36, lo: 12, dx: -1, dy: -1, ch: 6.5 },
@@ -162,78 +228,130 @@ const NG_FL_F = [   // th — подъём верхней челюсти, lo —
 ];
 const NG_FL_N = NG_FL_F.length;
 const NG_FL_W = 36, NG_FL_H = 48, NG_FL_HX = 13, NG_FL_HY = 21;
-const NG_STEM = ['#14240f', '#22381a', '#2f4a26', '#3f6430', '#5e8e3c', '#8cc054'];
-function ngLeaf(A, x0, y0, x1, y1, wd) {   // лист-лодочка с жилкой
-  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
-  A.fill(Math.min(x0, x1) - wd, Math.min(y0, y1) - wd, Math.max(x0, x1) + wd, Math.max(y0, y1) + wd, (x, y, fx, fy) => {
-    const t = ((x - x0) * dx + (y - y0) * dy) / (L * L), s = ((x - x0) * -dy + (y - y0) * dx) / L;
-    if (t < 0 || t > 1) return null;
-    const half = wd * Math.sin(Math.PI * Math.pow(t, 0.75));
-    if (Math.abs(s) > half) return null;
-    if (Math.abs(s) < 0.16 && t < 0.92) return NG_STEM[2];
-    return ngTone(NG_STEM, 0.45 - (s / half) * 0.3 + t * 0.2, fx, fy);
-  });
-}
 function ngFlower(v, f) {
   return ngArt('flower_' + v + '_' + f, NG_FL_W, NG_FL_H, (A, W, H) => {
-    const V = NG_FL_VARS[v], F = NG_FL_F[f], sx = NG_FL_HX + F.dx, sy = NG_FL_HY + F.dy, bx = W / 2;
-    // стебель: цепочка отрезков по S-кривой от земли к шарниру головы, на нём шипы
-    const top = sy + 6.5, len = H - 0.6 - top;
-    const pt = (k) => [bx + (sx - 1.5 - bx) * k * k * (3 - 2 * k) + Math.sin(k * 6.283) * 1.4, H - 0.6 - len * k];
-    for (let i = 0; i < 14; i++) {
-      const [x0, y0] = pt(i / 14), [x1, y1] = pt((i + 1) / 14);
-      A.seg(x0, y0, x1, y1, 1.8 - i * 0.03, 1.8 - (i + 1) * 0.03, (t, nx, ny, fx, fy) => ngTone(NG_STEM, 0.62 - 0.5 * nx, fx, fy));
-    }
-    for (const [k, s] of [[0.28, 1], [0.52, -1], [0.74, 1]]) { const [x, y] = pt(k); A.seg(x + s * 1.5, y, x + s * 3, y - 1.3, 0.45, 0.06, NG_STEM[1]); }
-    ngLeaf(A, bx - 0.5, H - 0.8, bx - 10.5, H - 4.8, 2.1); ngLeaf(A, bx + 0.5, H - 1.2, bx + 11, H - 6.2, 2.3);
-    // голова: верхняя и нижняя челюсти на шарнире (sx, sy); точка мира (X, Y) поворачивается назад в координаты челюсти
+    const PET = NG_PETALS[v], F = NG_FL_F[f], sx = NG_FL_HX + F.dx, sy = NG_FL_HY + F.dy, sw = F.dx * 0.25;
     const th = F.th * Math.PI / 180, lo = F.lo * Math.PI / 180, ct = Math.cos(th), st = Math.sin(th), cl = Math.cos(lo), sl = Math.sin(lo);
     const CX = 5, RX = 11, RU = 10.5, LX = 5.5, RXL = 10, RL = F.ch, open = F.th > 0.5, HX = -4.6, HY = 0.4;   // HX, HY — шарнир у затылка
-    const UT = [[6, 2], [9.5, 2], [13, 3]], LT = [[7.8, 2], [11.3, 2]];   // клыки: место и длина (передний верхний — длинный)
-    const fang = (lx, d, T) => { for (const [t, n] of T) { if (d < 0 || d >= n) continue; const hw = 1.05 * (1 - d / n), q = Math.abs(lx - t) / hw; if (q < 1) return q; } return -1; };
+    ngPlant(A, W, H, PET, sx - 2.5, sy + 6.2, sw, f * 0.35);
+    // иглы зубов: место и длина; у передних длиннее
+    const UT = [[2.6, 1.3], [4.4, 1.8], [6.3, 1.6], [8.2, 2.1], [10.2, 1.7], [12.3, 2.5], [14.2, 1.6]], LT = [[3.6, 1.2], [5.5, 1.5], [7.4, 1.4], [9.3, 1.7], [11.3, 1.5], [13.2, 1.9]];
+    const fang = (lx, d, T) => { for (const [t, n] of T) { if (d < 0 || d >= n) continue; const hw = 0.62 * (1 - d / n), q = Math.abs(lx - t) / hw; if (q < 1) return q; } return -1; };
     const upL = (X, Y) => { const x = X - HX, y = Y - HY; return [x * ct - y * st + HX, x * st + y * ct + HY]; };
     const lwL = (X, Y) => { const x = X - HX, y = Y - HY; return [x * cl + y * sl + HX, -x * sl + y * cl + HY]; };
-    const HP = [V.ol, ngMix(V.lo, V.ol, 0.45), V.lo, ngMix(V.lo, V.md, 0.5), V.md, ngMix(V.md, V.hi, 0.5), V.hi];
-    const TOOTH = ['#a89c86', '#d8cfbc', '#f2ecdc', '#ffffff'];
+    // чешуйки-лепестки на челюсти: ряды по удалению от центра, столбцы по углу; кончики смотрят наружу, по краю силуэт зубчатый
+    const scale = (nx, ny, fx, fy, upper) => {
+      const rho = Math.sqrt(nx * nx + ny * ny), ang = Math.atan2(ny, nx), t = upper ? (ang + Math.PI) / Math.PI : ang / Math.PI;
+      const rows = [[0, 0.42, 4], [0.42, 0.72, 7], [0.72, 1.02, 10]], ri = rho < 0.42 ? 0 : rho < 0.72 ? 1 : 2, [r0, r1, n] = rows[ri];
+      const u = t * n + (ri & 1) * 0.5, cu = u - Math.floor(u), rv = (rho - r0) / (r1 - r0);
+      const w = 0.5 * Math.sqrt(Math.max(0, 1 - Math.max(0, (rv - 0.5) / 0.5) ** 2));
+      if (Math.abs(cu - 0.5) > w) return ri === 2 && rv > 0.62 ? null : PET[0];   // щель между чешуйками / зубчатый край
+      if (Math.abs(cu - 0.5) < 0.05 && rv < 0.85) return PET[1];
+      return ngTone(PET, 0.18 + rv * 0.35 + ngLit(nx * 0.9, upper ? ny : ny * 0.7) * 0.5 - Math.abs(cu - 0.5) * 0.4, fx, fy);
+    };
     A.fill(sx - 10, sy - 23, sx + 23, sy + 15, (x, y, fx, fy) => {
       const X = x - sx, Y = y - sy, [ux, uy] = upL(X, Y), [lx, ly] = lwL(X, Y);
-      let q = uy >= 0 && ux > 2 ? fang(ux, uy, UT) : -1;
-      if (q >= 0) return q > 0.72 ? TOOTH[0] : ngTone(TOOTH, 0.95 - uy * 0.25 - q * 0.3, fx, fy);
-      q = ly < 0 && lx > 2 ? fang(lx, -ly, LT) : -1;
-      if (q >= 0) return q > 0.72 ? TOOTH[0] : ngTone(TOOTH, 0.95 + ly * 0.25 - q * 0.3, fx, fy);
+      let q = (open || ux > 9.5) && uy >= 0 && ux > 1.6 ? fang(ux, open ? uy : uy * 2, UT) : -1;   // у закрытого бутона спереди торчат кончики клыков
+      if (q >= 0) return q > 0.7 ? NG_FANG[0] : ngTone(NG_FANG, 0.95 - uy * 0.3 - q * 0.3, fx, fy);
+      q = open && ly < 0 && lx > 2.6 ? fang(lx, -ly, LT) : -1;
+      if (q >= 0) return q > 0.7 ? NG_FANG[0] : ngTone(NG_FANG, 0.95 + ly * 0.3 - q * 0.3, fx, fy);
       if (uy < 0 && ((ux - CX) / RX) ** 2 + (uy / RU) ** 2 <= 1) {   // верхняя челюсть
-        if (ux > -1 && uy > -0.55) return open ? ngMix(V.tg, V.ol, 0.55) : V.ol;   // губа; у открытой пасти — десна
-        const ex = ux - 6.5, ey = uy + 5.5;
-        if (ex * ex / 2.9 + ey * ey / 2.2 <= 1) {   // глаз: белок, чёрный зрачок вперёд, блик
-          const px = ex - 0.35, py = ey;
-          if ((px + 0.25) ** 2 + (py + 0.35) ** 2 < 0.12) return '#ffffff';
-          if (px * px / 0.85 + py * py / 1.05 <= 1) return '#120c1a';
-          return ex * ex / 2.9 + ey * ey / 2.2 > 0.72 ? V.ol : '#f4efe0';
-        }
-        const by = -8.1 + (ux - 6.5) * 0.28;   // сердитая бровь
-        if (ux > 3.8 && ux < 9.6 && Math.abs(uy - by) < 0.42) return V.ol;
-        for (const [sxp, syp, r] of [[-1, -6, 1.2], [10.5, -7.6, 0.9], [13, -3.6, 0.8], [2.5, -9, 1], [0.5, -2.6, 0.7], [4, -1.6, 0.55]]) {
-          const d = ((ux - sxp) / r) ** 2 + ((uy - syp) / (r * 0.75)) ** 2;
-          if (d <= 1) return d < 0.55 ? V.spot : ngMix(V.spot, V.md, 0.5);
-        }
-        return ngTone(HP, ngLit((ux - CX) / RX, uy / RU), fx, fy);
+        if (open ? ux > -1.5 && uy > -0.6 : ux > 6 && uy > -0.4) return open ? ngMix(PET[0], '#c04860', 0.55) : PET[1];   // губы смыкаются только спереди; у открытой пасти — десна
+        return scale((ux - CX) / RX, uy / RU, fx, fy, true);
       }
       if (ly >= 0 && ((lx - LX) / RXL) ** 2 + (ly / RL) ** 2 <= 1) {   // нижняя челюсть
-        if (open && ly < 0.55 && lx > -1) return ngMix(V.tg, V.ol, 0.55);   // нижняя десна
-        return ngTone(HP, ngLit((lx - LX) / RXL * 0.7, 0.25 + ly / RL * 0.7) * 0.85, fx, fy);
+        if (open && ly < 0.6 && lx > -1.5) return ngMix(PET[0], '#c04860', 0.55);
+        return scale((lx - LX) / RXL, ly / RL, fx, fy, false);
       }
-      const ma = (Math.atan2(Y - HY, X - HX) + th) / (th + lo || 1), mr = Math.hypot(X - HX, Y - HY);   // доля угла между губами и даль от шарнира
-      if (open && X > HX && uy >= 0 && ly <= 0 && mr < 20 - 7 * Math.sin(Math.PI * Math.max(0, Math.min(1, ma)))) {   // нутро клином между челюстями: язык снизу, глотка у шарнира
+      const ma = (Math.atan2(Y - HY, X - HX) + th) / (th + lo || 1), mr = Math.hypot(X - HX, Y - HY);
+      if (open && X > HX && uy >= 0 && ly <= 0 && mr < 20 - 7 * Math.sin(Math.PI * Math.max(0, Math.min(1, ma)))) {   // нутро клином: язык снизу, глотка у шарнира
         if (F.food && (lx - 8) ** 2 + (ly + 2.2) ** 2 < 0.8) return ngTone(['#6a4020', '#a87040', '#d8a868'], 0.6, fx, fy);
-        if (ly > -1.7 && lx < 12.5) return ly > -0.9 ? ngMix(V.tg, '#ffffff', 0.25) : V.tg;
-        return ngTone([V.ol, V['in'], ngMix(V['in'], V.tg, 0.3)], Math.min(1, (X - HX) / 13) * 0.95, fx, fy);
+        if (ly > -1.7 && lx < 12.5) return ly > -0.9 ? '#e07890' : '#c04860';
+        return ngTone([NG_HEAT[0], '#3a0c14', '#6a1a24'], Math.min(1, (X - HX) / 13) * 0.95, fx, fy);
       }
       return null;
     });
-    if (F.food) { A.ellipse(sx + 15, sy + 6, 0.45, 0.4, '#c8a060'); A.ellipse(sx + 12.5, sy + 8.4, 0.35, 0.35, '#8c5a30'); }
-    // чашелистики под головой
-    for (const [dx, ex, ey] of [[-1.5, -4.5, 9.5], [0.5, 2.5, 10.2], [-0.5, -1, 10.4]]) A.seg(sx + dx, sy + 6.8, sx + ex, sy + ey, 0.9, 0.15, (t, nx, ny, fx, fy) => ngTone(NG_STEM, 0.5 - 0.4 * nx, fx, fy));
-  });
+    // слюна с переднего клыка, когда пасть распахнута
+    if (F.th > 30) { const tx = sx + HX + (14.2 - HX) * ct + (1.6 - HY) * st, ty = sy + HY - (14.2 - HX) * st + (1.6 - HY) * ct; A.seg(tx, ty, tx + 0.2, ty + 2.2, 0.2, 0.32, '#e8b0b8', true); }
+    // чашелистики поверх шарнира: прячут стык челюстей
+    for (const [a, L, wd] of [[Math.PI * 0.95, 6.2, 1.5], [Math.PI * 1.18, 5.4, 1.3], [Math.PI * 0.72, 5.2, 1.3], [Math.PI * 1.4, 4.2, 1.1]]) ngPetal(A, sx + HX + 1.4, sy + HY + 0.6, a, L, wd, NG_STEM.slice(0, 5), false);
+    A.ellipse(sx + HX + 1.2, sy + HY + 0.8, 1.8, 1.8, (nx, ny, fx, fy) => ngTone(NG_STEM, ngLit(nx, ny), fx, fy));
+    // пыльца
+    for (let j = 0; j < (F.dx > 2 ? 9 : 4); j++) { const a = j * 2.1 + f, r = 9 + (j * 5 % 6); A.ellipse(sx + 6 + Math.cos(a) * r, sy - 4 + Math.sin(a) * r * 0.6, 0.3, 0.3, j % 2 ? NG_HEAT[6] : NG_HEAT[5], true); }
+  }, false, NG_WARM_OL, 0.78);
+}
+
+// ---- цветок-полудница: отдельная тварь. Сердцевина — лицо-череп Полудницы в трещинах от зноя: злые брови, глубокие глазницы с добела
+// раскалёнными точками, безгубый оскал; при укусе челюсть отвисает в разинутую пасть с клыками. Вокруг два ряда лепестков с жилками,
+// за ними чашелистики, по краю сердцевины тычинки с пыльцой; снизу зелёная завязь. Кадры — как у плотоядного цветка (0–7).
+const NG_NOON_F = [
+  { mo: 0, dy: 0, sw: 0, op: 0 }, { mo: 0, dy: -0.4, sw: 1, op: 0, blink: true },
+  { mo: 1.6, dy: -0.3, sw: 0.5, op: 0.35 }, { mo: 3.2, dy: -0.8, sw: 0, op: 0.7 }, { mo: 5, dy: -1.3, sw: -0.5, op: 1, flare: true },
+  { mo: 0, dy: 1.2, sw: 0, op: -0.5, snap: true },
+  { mo: 0.9, dy: 0.5, sw: 0.4, op: 0.1 }, { mo: 0, dy: 0.2, sw: -0.4, op: 0, food: true },
+];
+function ngNoonFlower(v, f) {
+  return ngArt('noonfl_' + v + '_' + f, 36, 48, (A, W, H) => {
+    const F = NG_NOON_F[f], PET = NG_PETALS[v], ph = f * 0.35, K = NG_HEAT, S = NG_PARCH;
+    const hx = 18 + F.sw * 0.6, hy = 15 + F.dy, FS = 0.72, jaw = 6.6 + F.mo * 0.9 + (F.snap ? -0.4 : 0);   // FS — лицо меньше, цветка больше
+    ngPlant(A, W, H, PET, hx, hy + jaw * FS + 1.6, F.sw, ph);
+    const op = F.op, spread = 1 + op * 0.14;
+    for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 + 0.2 + ph * 0.05; ngPetal(A, hx + Math.cos(a) * 3.4, hy + Math.sin(a) * 3.4, a, 9.6 * spread, 1.15, NG_STEM.slice(0, 5), false); }   // чашелистики
+    for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2 + ph * 0.06 + F.sw * 0.03; ngPetal(A, hx + Math.cos(a) * 3.2, hy + Math.sin(a) * 3.2, a + Math.sin(i * 1.7) * 0.06, (8.2 + (i % 2) * 0.9) * spread, 2.35, PET, op > 0.5); }
+    for (let i = 0; i < 14; i++) { const a = (i + 0.5) / 14 * Math.PI * 2 + ph * 0.06; ngPetal(A, hx + Math.cos(a) * 3.2, hy + Math.sin(a) * 3.2, a, (6 + (i % 3) * 0.35) * (1 + op * 0.08), 1.85, [PET[1], PET[2], PET[3], PET[4], PET[4]], false); }
+    for (let i = 0; i < 18; i++) {   // тычинки по краю сердцевины
+      const a = i / 18 * Math.PI * 2 + 0.1, r0 = 6.2 * FS, r1 = (7.4 + (i % 2) * 0.6 + op * 0.4) * FS + 0.4, k = Math.sin(a) > 0 ? jaw / 6.6 : 1;
+      const x0 = hx + Math.cos(a) * r0, y0 = hy + Math.sin(a) * r0 * k, x1 = hx + Math.cos(a) * r1, y1 = hy + Math.sin(a) * r1 * k;
+      A.seg(x0, y0, x1, y1, 0.12, 0.1, K[4], true); A.ellipse(x1, y1, 0.32, 0.32, i % 3 ? K[5] : K[6], true);
+    }
+    A.ellipse(hx, hy + jaw * FS - 0.2, 2.8, 2.1, (nx, ny, fx, fy) => ny < -0.3 ? null : ngTone(NG_STEM, ngLit(nx, ny * 0.8) * 0.9, fx, fy));   // завязь
+    const inFace = (x, y) => { const dx = (x - hx) / 6.4, dy = (y - hy) / (y > hy ? jaw : 6.6); return dx * dx * (1 + Math.max(0, dy) * 0.8) + dy * dy <= 1; };
+    A.fill(hx - 7 * FS, hy - 7 * FS, hx + 7 * FS, hy + (jaw + 0.5) * FS, (x0, y0, fx, fy) => {
+      const x = hx + (x0 - hx) / FS, y = hy + (y0 - hy) / FS;
+      if (!inFace(x, y)) return null;
+      const ax = Math.abs(x - hx), ry = y - hy;
+      for (const s of [-1, 1]) {   // глазницы с раскалённой точкой; при укусе разгорается
+        const ex = hx + s * 2.5, ey = hy - 0.6, d = ((x - ex) / 1.75) ** 2 + ((y - ey) / 1.45) ** 2;
+        if (d <= 1) {
+          if (F.blink) return Math.abs(y - ey) < 0.25 ? S[0] : S[1];
+          const g = Math.hypot(x - ex, y - ey + 0.1), hot = F.flare ? 0.75 : F.mo > 0 ? 0.6 : 0.45;
+          return g < hot * 0.55 ? K[7] : g < hot ? K[5] : g < hot + 0.35 && ngNoise(fx, fy) > 0.4 ? K[2] : K[0];
+        }
+        if (d <= 1.4) return S[0];
+        const by = hy - 2.6 - (s * (x - hx) - 1.2) * 0.42;   // бровь: внутренний край ниже — злоба
+        if (s * (x - hx) > 0.6 && s * (x - hx) < 4.4 && Math.abs(y - by) < 0.32) return K[0];
+      }
+      if (ry > 1.4 && ry < 2.9 && ax < (ry - 1.3) * 0.55 + 0.1) return K[0];   // нос черепа
+      const my = hy + 4.2;
+      if (F.mo > 0.5) {   // разинутая пасть с клыками
+        const mry = F.mo * 0.72, mcy = my + F.mo * 0.45, d = ((x - hx) / (3.3 + F.mo * 0.12)) ** 2 + ((y - mcy) / mry) ** 2;
+        if (d <= 1) {
+          const tt = y - (mcy - mry), bb = mcy + mry - y, k = (((x - hx + 4) / 0.9) % 1 + 1) % 1, longF = F.flare ? 1.5 : 0.9;
+          if (ax < 3 && tt < (k < 0.5 ? longF : 0.45) && Math.abs(k - 0.25) < 0.22) return tt < 0.2 ? K[5] : K[6];
+          if (ax < 2.8 && bb < (k > 0.5 ? longF * 0.8 : 0.4) && Math.abs(k - 0.75) < 0.22) return K[6];
+          if (F.food && Math.hypot(x - hx - 0.6, y - mcy - 0.3) < 0.6) return '#6a3a1a';
+          return d < 0.3 && F.mo > 3 ? '#6e1808' : K[0];
+        }
+        if (d <= 1.3) return S[0];
+      } else {   // безгубый растянутый оскал до ушей
+        const up = ax > 2.6 ? (ax - 2.6) * 0.55 : 0, yy = y + up;
+        if (ax < 5 && yy > my - 0.55 && yy < my + 0.55) {
+          if (Math.abs(yy - my) > 0.33) return K[0];
+          return ax > 4.2 ? K[0] : (Math.floor((x - hx + 8) / 0.7) & 1) ? K[5] : K[6];
+        }
+      }
+      if (Math.abs(x - (hx - 1.6 + Math.sin(y * 2.2) * 0.35)) < 0.12 && ry < -3.2) return S[1];   // трещины от зноя
+      if (Math.abs(y - (hy + 1.6 + (x - hx - 4.5) * 0.6)) < 0.12 && x > hx + 3.8 && x < hx + 5.6) return S[1];
+      const ch = ((ax - 4.1) / 1.3) ** 2 + ((ry - 3.1) / 1.6) ** 2;   // впалые щёки
+      if (ch < 1) return ch < 0.45 ? S[0] : S[1];
+      if (((ax - 3.6) / 1.2) ** 2 + ((ry - 0.9) / 0.8) ** 2 < 1) return S[4];   // скулы
+      if (ax > 5.6) return ngMix(S[1], PET[1], 0.35);                           // край сердцевины уходит в цвет лепестков
+      if (ax > 5.2) return S[1];
+      return ngTone(S, 0.75 - ry / 14 - ax / 18 + (ngNoise(fx, fy) - 0.5) * 0.12, fx, fy);
+    });
+    for (let j = 0; j < (F.snap ? 10 : 6); j++) { const a = j * 2.1 + ph * 2, r = 11 + (j * 5 % 6); A.ellipse(hx + Math.cos(a) * r, hy + Math.sin(a) * r * 0.8 - 1, 0.3, 0.3, j % 2 ? K[6] : K[5], true); }   // пыльца
+    if (F.food) for (const [dx, dy] of [[3.6, 6.2], [-3, 7]]) A.ellipse(hx + dx, hy + dy, 0.35, 0.3, '#8a5a2a', true);
+  }, false, NG_WARM_OL, 0.78);
 }
 
 // ---- надгробие: 0..5 — всё выше из земли; закруглённый камень, вырезанный крест и строки, трещина, мох ----
@@ -649,7 +767,7 @@ function ngFog(set, v) {
 
 // ---- что стоит на клетке и в какой момент ----
 // Мир режется на квадраты; в каждом квадрате вид стоит не больше раза и только в середине квадрата, поэтому между двумя
-// экземплярами одного вида не меньше 8 клеток (цветок), 10 (плита и все твари) и 4 (глаза).
+// экземплярами одного вида не меньше 8 клеток (цветок), 10 (плита и все твари), 12 (цветок-полудница) и 4 (глаза).
 // Разные виды не жмутся друг к другу: из двух ближе 4 клеток остаётся один (ngPrio).
 // Вся жуть держится окраин: клетка годится, только если в 2 клетках вокруг нет построек и дорог.
 // На экране 32×20 клеток выходит 3–5 цветков, 4–7 тварей разных видов и 4–7 пар глаз; твари показываются по очереди, не все разом.
@@ -657,8 +775,9 @@ const NG_SPOT = {
   1: { S: 15, m: 5, p: 0.26, salt: 41 }, 2: { S: 12, m: 4, p: 0.55, salt: 53 }, 3: { S: 14, m: 5, p: 0.3, salt: 67 }, 4: { S: 8, m: 2, p: 0.45, salt: 7 },
   5: { S: 15, m: 5, p: 0.24, salt: 79 }, 6: { S: 15, m: 5, p: 0.24, salt: 91 }, 7: { S: 15, m: 5, p: 0.24, salt: 103 },
   8: { S: 15, m: 5, p: 0.24, salt: 113 }, 9: { S: 15, m: 5, p: 0.24, salt: 127 }, 10: { S: 15, m: 5, p: 0.24, salt: 139 },
+  11: { S: 18, m: 6, p: 0.28, salt: 151 },   // цветок-полудница — реже всех
 };
-const NG_ORDER = [2, 3, 1, 5, 6, 7, 8, 9, 10, 4];   // все виды, что стоят по квадратам
+const NG_ORDER = [2, 3, 1, 5, 6, 7, 8, 9, 10, 11, 4];   // все виды, что стоят по квадратам
 function ngTileOk(tx, ty) {
   if (tx < 2 || ty < 2 || tx >= MAP_W - 2 || ty >= MAP_H - 2) return false;
   const i = ty * MAP_W + tx;
@@ -750,11 +869,11 @@ function ngFlowerPose(st, t, fx, fy, ph) {   // -> кадр, face (1 вправ�
 // одна клетка: картинка и положение (px, py — низ спрайта)
 function ngDrawTile(c, kind, set, tx, ty, seed, t, al, glowPass, v) {
   const ph = gsHash(tx, ty, seed + 11), { px, py } = ngPlaceXY(tx, ty, seed);
-  if (kind === 2) {
+  if (kind === 2 || kind === 11) {
     if (glowPass) return;
-    const key = ty * MAP_W + tx;
+    const key = kind * 1e7 + ty * MAP_W + tx;
     let st = NG_FL.get(key); if (!st) { st = { t0: -99, next: 0, face: ph < 0.5 ? 1 : -1 }; NG_FL.set(key, st); }
-    const f = ngFlowerPose(st, t, px / TILE, py / TILE, ph), s = ngFlower(v | 0, f);
+    const f = ngFlowerPose(st, t, px / TILE, py / TILE, ph), s = (kind === 11 ? ngNoonFlower : ngFlower)(v | 0, f);
     c.globalAlpha = al;
     const sw = s.width / NG_Q, sh = s.height / NG_Q;
     if (st.face < 0) { c.save(); c.translate(Math.round(px), 0); c.scale(-1, 1); c.drawImage(s, -sw / 2, Math.round(py - sh + 2), sw, sh); c.restore(); }
@@ -792,15 +911,18 @@ function nightGroundTick(dt) {
   if (ngTickT < 0.5) return;
   ngTickT = 0;
   if (nightAmt() < 0.55) return;
-  const seed = Game.seed | 0, S = NG_SPOT[2].S;
+  const seed = Game.seed | 0;
   for (const u of Game.units) {
     if (u.dead || u.inside || !isPerson(u) || u.type === 'carter' || (u.ngBiteCD || 0) > Game.time || !interruptible(u)) continue;
     let bit = null;
-    for (let cy = Math.floor((u.y - 2) / S); cy <= Math.floor((u.y + 2) / S) && !bit; cy++) for (let cx = Math.floor((u.x - 2) / S); cx <= Math.floor((u.x + 2) / S) && !bit; cx++) {
-      const sp = ngSpot(2, cx, cy, seed, ngTileOk);
-      if (!sp) continue;
-      const p = ngPlaceXY(sp.tx, sp.ty, seed), fx = p.px / TILE, fy = p.py / TILE;
-      if (Math.hypot(u.x - fx, u.y - fy) < NG_BITE) bit = { x: fx, y: fy };
+    for (const k of [2, 11]) {   // плотоядный цветок и цветок-полудница
+      const S = NG_SPOT[k].S;
+      for (let cy = Math.floor((u.y - 2) / S); cy <= Math.floor((u.y + 2) / S) && !bit; cy++) for (let cx = Math.floor((u.x - 2) / S); cx <= Math.floor((u.x + 2) / S) && !bit; cx++) {
+        const sp = ngSpot(k, cx, cy, seed, ngTileOk);
+        if (!sp) continue;
+        const p = ngPlaceXY(sp.tx, sp.ty, seed), fx = p.px / TILE, fy = p.py / TILE;
+        if (Math.hypot(u.x - fx, u.y - fy) < NG_BITE) bit = { x: fx, y: fy };
+      }
     }
     if (bit) ngBite(u, bit.x, bit.y);
   }
@@ -840,7 +962,7 @@ function nightGroundDraw(c, x0, y0, x1, y1) {
   const al = ngAlpha();
   if (!al) return;
   const set = ngSetNow(), seed = Game.seed | 0, t = Game.time;
-  for (const k of [3, 1, 5, 6, 7, 8, 9, 10, 2]) ngSpots(k, x0, y0, x1, y1, seed, ngTileOk, (sp) => ngDrawTile(c, k, set, sp.tx, sp.ty, seed, t, al, false, k === 2 ? ngFlowerVar(sp.cx, sp.cy, seed) : 0));
+  for (const k of [3, 1, 5, 6, 7, 8, 9, 10, 11, 2]) ngSpots(k, x0, y0, x1, y1, seed, ngTileOk, (sp) => ngDrawTile(c, k, set, sp.tx, sp.ty, seed, t, al, false, k === 2 || k === 11 ? ngFlowerVar(sp.cx, sp.cy, seed) : 0));
 }
 // Второй проход (после затемнения): глаза и туман
 const NG_FOG_CH = 6;

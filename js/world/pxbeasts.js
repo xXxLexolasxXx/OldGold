@@ -365,9 +365,13 @@ function pbTroll(K, P, kind) {
   if (a > 0.5) for (let i = 0; i < 18; i++) { const t = i / 17, an = -1.4 + t * 1.9; K.P(40 + Math.cos(an) * 150, -100 + Math.sin(an) * 110, [236, 232, 214], 0.65 - t * 0.3, false); }
   K.outline(kind === 'trollS' ? [30, 28, 26] : [18, 26, 14]);
 }
-NA_PX.troll = (K, P) => pbTroll(K, P, 'troll');
-NA_PX.trollS = (K, P) => pbTroll(K, P, 'trollS');
-NA_PX.trollB = (K, P) => pbTroll(K, P, 'trollB');
+// тролли ещё в работе (позы рук на замахе) — до одобрения владельцем в игре остаются векторными
+const PB_TROLLS_READY = false;
+if (PB_TROLLS_READY) {
+  NA_PX.troll = (K, P) => pbTroll(K, P, 'troll');
+  NA_PX.trollS = (K, P) => pbTroll(K, P, 'trollS');
+  NA_PX.trollB = (K, P) => pbTroll(K, P, 'trollB');
+}
 
 // ======================= Броненосец: бронированный зверь =======================
 // Единицы — как у векторного drawArmad (масштаб NA_SPEC.sc). Тяжёлый панцирь из колец-пластин с роговыми
