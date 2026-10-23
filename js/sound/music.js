@@ -936,6 +936,7 @@ function computeMood() {
   else if (now - Music.graveT < 1) { Music.graveIn += 1; if (Music.graveIn >= 3 && now > Music.graveCool) return 'grave'; }
   const k = typeof WX !== 'undefined' ? WX.k : 0;
   if (k > 0.6 || (Music.mood === 'storm' && k > 0.4)) return 'storm';
+  if (Game.festival && Game.festival.on && Game.festival.night) return 'feast';   // сценарный праздник (кампания) гуляет и ночью
   if (typeof isNightNow === 'function' && isNightNow()) return 'night';
   if (now < Music.dawnUntil) return 'dawn';
   if (Game.festival && Game.festival.on) return 'feast';          // праздник: пьют, не работают, веселятся
