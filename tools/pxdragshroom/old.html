@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#1b2a1f"><canvas id="cv"></canvas>
+<script>window.mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }; window.R = { smooth: false }; window.Game = { units: [], buildings: [] }; window.onerror = (m) => { document.title = 'fail ' + m; };</script>
+<script src="../../js/world/fairy1.js"></script>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script>
+try {
+const cv = document.getElementById('cv'); cv.width = 1500; cv.height = 760;
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.fillStyle = '#1b2a1f'; c.fillRect(0, 0, 1500, 760);
+const T = (s, x, y, sz = 18, col = '#f2e6c8') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.fillText(s, x, y); };
+const cell = (x, y, w, h) => { c.fillStyle = '#4a6a34'; c.fillRect(x, y, w, h); };
+const blit = (s, x, y, Z) => c.drawImage(s, x - s.width * Z / 2, y - s.height * Z, s.width * Z, s.height * Z);
+T('Сейчас в игре (старые векторные спрайты), крупно ×4', 20, 28, 22);
+T('Дракончик (малыш): сидит в гнезде — кадр 1; летает — 8 кадров взмаха крыльями', 20, 60);
+cell(10, 70, 1480, 200);
+blit(sprBabyDragon(1), 90, 250, 4); for (let i = 0; i < 8; i++) blit(sprBabyDragon(10 + i), 260 + i * 158, 250, 4);
+T('гнездо', 60, 92, 14); for (let i = 0; i < 8; i++) T('полёт ' + (i + 1), 220 + i * 158, 92, 14);
+T('Взрослый дракон: то же самое — 1 кадр сидя + 8 кадров полёта', 20, 300);
+cell(10, 310, 1480, 230);
+blit(sprDragon(1), 100, 525, 4); for (let i = 0; i < 8; i++) blit(sprDragon(10 + i), 270 + i * 158, 525, 3.2);
+T('Как в игре ×2: малыш, взрослый, новый легендарный (покой) — для размера', 20, 580);
+cell(10, 590, 1480, 160);
+blit(sprBabyDragon(1), 120, 735, 2); blit(sprDragon(1), 320, 735, 2);
+const s = fzDragonSprite('idle', 0), [ox, oy, w, h] = s.fzO; c.drawImage(s, 560 - ox * 2, 735 - oy * 2, w * 2, h * 2);
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message; }
+</script>

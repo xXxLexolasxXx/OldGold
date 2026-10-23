@@ -452,7 +452,8 @@ function dpDraw(list, c, F, x0, y0, x1, y1) {
       const px = p.x * TILE, py = p.y * TILE + 4, air = p.z > 1, S = DP_SP[p.sp] || DP_SP.forest;
       fyShadow(c, px, py, air ? 6 : 8, air ? 0.16 : 0.3);
       const sc = 0.8 + Math.min(DP_LV_MAX, p.lv) * 0.03;           // растёт с уровнем
-      fyBlit(c, dpSpr(p.sp, air ? fyCyc8(p.ph * 36) : 1), px, py - p.z, p.face || 1, p.sick ? 0.75 : 1, sc);
+      if (typeof pxbBlit === 'function') pxbBlit(c, pxbBaby(p.sp, air ? 'fly' : 'idle', air ? Math.floor(p.ph * 36) & 7 : Math.floor(p.ph * 4) % 6), px, py - p.z, p.face || 1, p.sick ? 0.75 : 1, sc);
+      else fyBlit(c, dpSpr(p.sp, air ? fyCyc8(p.ph * 36) : 1), px, py - p.z, p.face || 1, p.sick ? 0.75 : 1, sc);
       // искорки вида: угольки, снежинки, светлячки, листики
       if ((Math.floor(p.ph * 5) % 3) === 0) { c.fillStyle = S.spark[Math.floor(p.ph * 3) & 1]; c.fillRect(Math.round(px - (p.face || 1) * 10 + Math.sin(p.ph * 4) * 3), Math.round(py - p.z - 6 + Math.cos(p.ph * 3) * 4), 2, 2); }
       if (p.sick) { c.fillStyle = '#a0e0a0'; c.fillRect(Math.round(px + 6), Math.round(py - p.z - 28 - (p.ph * 8) % 6), 2, 2); }
@@ -549,7 +550,7 @@ function dpUiSync() {
   if (T.trust < 3) h += '<button data-dp="talk">💬 Поговорить</button>';
   h += '<button data-dp="leave">Уйти</button></div><div class="dp-tip">Смайлик — как охотно дракончик возьмёт угощение. Не бегите и не деритесь рядом: спугнёте.</div>';
   el.innerHTML = h; el.classList.remove('hidden');
-  try { const cv = document.getElementById('dp-face'), g = cv.getContext('2d'); g.imageSmoothingEnabled = false; const s = dpSpr(d.sp, 1); g.drawImage(s, Math.round((62 - afW(s)) / 2), 56 - afH(s), afW(s), afH(s)); } catch (e) { /* без портрета */ }
+  try { const cv = document.getElementById('dp-face'), g = cv.getContext('2d'); g.imageSmoothingEnabled = false; if (typeof pxbBaby === 'function') { const s = pxbBaby(d.sp, 'idle', 0), k = Math.min(62 / s.width, 56 / s.height); g.drawImage(s, Math.round((62 - s.width * k) / 2), Math.round(56 - s.height * k), Math.round(s.width * k), Math.round(s.height * k)); } else { const s = dpSpr(d.sp, 1); g.drawImage(s, Math.round((62 - afW(s)) / 2), 56 - afH(s), afW(s), afH(s)); } } catch (e) { /* без портрета */ }
 }
 
 // строка в окне героя
