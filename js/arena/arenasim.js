@@ -41,11 +41,11 @@ const ARENA_TUNE = {
   // shot — снаряд вместо удара вблизи, dodge — уворот Клятвы, melee — точность вплотную у стрелка, stand — бот не кайтит
   cls: {
     warrior: { res: 'rage', hp: 294, mv: 0.937, rng: 1.5, atkT: 1.0, dmg: 6.93, acc: 0.85 },
-    barbarian: { res: 'rage', hp: 236, mv: 1.029, rng: 1.5, atkT: 1.15, dmg: 6.49, acc: 0.8 },
+    barbarian: { res: 'rage', hp: 236, mv: 1.029, rng: 1.5, atkT: 1.15, dmg: 6.3, acc: 0.8 },
     archer: { res: 'energy', hp: 283, mv: 1.006, rng: 6.74, atkT: 1.1, dmg: 6.77, acc: 0.85, shot: 'arrow', melee: 0.8 },
-    rogue: { res: 'energy', hp: 227, mv: 0.995, rng: 1.4, atkT: 0.9, dmg: 6.75, acc: 0.88, crit: 0.2 },
-    mage: { res: 'mana', hp: 238, mv: 0.975, rng: 6.2, atkT: 1.2, dmg: 6.62, acc: 0.9, shot: 'bolt' },
-    druid: { res: 'mana', hp: 273, mv: 0.922, rng: 3.76, atkT: 1.2, dmg: 5.89, acc: 0.88, shot: 'thorn', stand: 1 },
+    rogue: { res: 'energy', hp: 227, mv: 0.995, rng: 1.4, atkT: 0.9, dmg: 6.55, acc: 0.88, crit: 0.2 },
+    mage: { res: 'mana', hp: 238, mv: 0.975, rng: 6.2, atkT: 1.2, dmg: 6.8, acc: 0.9, shot: 'bolt', melee: 0.8 },
+    druid: { res: 'mana', hp: 250, mv: 0.922, rng: 3.76, atkT: 1.2, dmg: 6.3, acc: 0.88, shot: 'thorn', stand: 1 },
     priest: { res: 'mana', hp: 284, mv: 1.045, rng: 1.4, atkT: 1.1, dmg: 6.53, acc: 0.77 },
     paladin: { res: 'faith', hp: 272, mv: 0.966, rng: 1.5, atkT: 1.1, dmg: 5.83, acc: 0.85 },
     bard: { res: 'mana', hp: 296, mv: 1.018, rng: 1.5, atkT: 0.95, dmg: 8.53, acc: 0.8 },
@@ -90,7 +90,7 @@ const ARENA_TUNE = {
     spring: { pas: { res: 1.6 } },
     ult_mage: { ult: 1, dur: 4, every: 0.5, mul: 1.2, lag: 0.6, fall: 0.45, hitR: 1.3, spread: 1.2 },
 
-    thorns: { cost: 10, cd: 14, r: 5, mul: 0.8, root: 0.994 },
+    thorns: { cost: 10, cd: 14, r: 5, mul: 0.8, root: 1.3 },
     grow: { cost: 15, cd: 30, dur: 6, zr: 2.5, slow: 0.221 },
     mend: { cost: 20, cd: 30, heal: 0.145 },
     beast: { cost: 25, cd: 50, dur: 12, hp: 25, mul: 0.6, every: 1.2, sp: 4.5 },
@@ -1097,7 +1097,9 @@ function arenaBotInput(S, i) {
   if (tgt) {
     const keep = arBotRange(S, F) + (C.shot ? fm.k : 0);
     const ux = (F.x - O.x) / (dist || 1), uy = (F.y - O.y) / (dist || 1);
-    if (ranged && P.kite && !C.stand && dist < keep - 1.2 && arRnd(B) > fm.ag * 0.5) { tx = F.x + ux * 2; ty = F.y + uy * 2; want = 1; }
+    // друид стоит на месте, но пока соперник в путах или оглушён — отходит (баланс 23.10: иначе быстрый ближник его просто забивает)
+    const pinned = O.st.root > now || O.st.stun > now || O.st.ice > now;
+    if (ranged && P.kite && (!C.stand || pinned) && dist < keep - 1.2 && arRnd(B) > fm.ag * 0.5) { tx = F.x + ux * 2; ty = F.y + uy * 2; want = 1; }
     else if (dist > keep || (ranged && !arLos(F.x, F.y, O.x, O.y))) { const ld = ranged ? 0 : P.lead * Math.min(1, dist / 4); tx = O.x + O.vx * ld; ty = O.y + O.vy * ld; want = 1; }
     else if (!ranged && dist > C.rng) { tx = O.x + O.vx * P.lead * 0.5; ty = O.y + O.vy * P.lead * 0.5; want = 1; }
     else if (ranged && P.kite && !C.stand) { tx = F.x - uy * 1.5; ty = F.y + ux * 1.5; want = 0.6; }
