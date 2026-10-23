@@ -843,14 +843,18 @@ function fzNoonPx(lv, p) {
   const sickle = (hx, hy, a) => {
     const ux = Math.cos(a), uy = Math.sin(a);
     L(hx - ux * 8, hy - uy * 8, hx + ux * 9, hy + uy * 9, 2.2, 2, (t, e) => e ? [70, 38, 18] : t < 0.08 ? [70, 38, 18] : [118, 70, 34]);   // рукоять
-    L(hx + ux * 8.5, hy + uy * 8.5, hx + ux * 11, hy + uy * 11, 2.5, 2.5, (t, e) => e ? I0 : I1);                                          // кольцо
-    const sg = -Math.sin(a + Math.PI / 2) > -Math.sin(a - Math.PI / 2) ? 1 : -1, N = 40, pts = [];
-    let x = hx + ux * 11, y = hy + uy * 11, d = a;
-    for (let i = 0; i <= N; i++) {
-      const t = i / N, w = t < 0.3 ? 3 + t * 5.5 : 4.65 * (1 - (t - 0.3) / 0.7) + 0.25;
-      pts.push([x, y, w]);
-      d += sg * (t < 0.12 ? 0.02 : 0.1); x += Math.cos(d) * 1.35; y += Math.sin(d) * 1.35;   // короткий прямой «стебель», дальше ровный круглый крюк — как у друидического серпа
-    }
+    L(hx + ux * 8.5, hy + uy * 8.5, hx + ux * 11, hy + uy * 11, 2.8, 2.8, (t, e) => e ? [110, 78, 30] : hsh(t * 9) > 0.5 ? [214, 176, 92] : [168, 128, 56]);   // бронзовая гарда
+    // S-образный клинок: у гарды лёгкий прогиб в обратную сторону, дальше длинная дуга, к острию круче; из двух сторон изгиба берём ту, где острие заворачивает назад к телу
+    const N = 40, blade = sg => {
+      const q = []; let x = hx + ux * 11, y = hy + uy * 11, d = a;
+      for (let i = 0; i <= N; i++) {
+        const t = i / N, w = t < 0.45 ? 2.2 + t / 0.45 * 2.6 : 4.8 * (1 - (t - 0.45) / 0.55) + 0.3;
+        q.push([x, y, w]);
+        d += sg * (t < 0.2 ? -0.03 : 0.02 + 0.14 * Math.pow((t - 0.2) / 0.8, 1.2)); x += Math.cos(d) * 1.3; y += Math.sin(d) * 1.3;
+      }
+      return q;
+    };
+    const A = blade(1), B = blade(-1), tipD = q => Math.hypot(q[N][0], q[N][1] + 130), sg = tipD(A) < tipD(B) ? 1 : -1, pts = sg > 0 ? A : B;
     // заливка одним проходом: ближайшая точка кривой, сторона и ширина клинка в ней
     const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
     R(Math.min(...xs) - 6, Math.min(...ys) - 6, Math.max(...xs) + 6, Math.max(...ys) + 6, (px, py) => {
@@ -861,7 +865,8 @@ function fzNoonPx(lv, p) {
         if (dd < best) { best = dd; bo = (ex * dy - ey * dx) / Math.sqrt(l2); bw = w0 + (w1 - w0) * u; bt = (i - 1 + u) / N; }
       }
       const o = -bo * sg, half = bw;                                                 // o > 0 — вогнутая сторона (жало)
-      if (Math.abs(o) > half + 0.5) return null;
+      const jag = bt > 0.08 && bt < 0.7 && Math.floor(bt * 70) % 3 === 0 ? 1.3 : 0;      // зазубрины по обуху
+      if (o > half + 0.5 || o < -half - 0.5 - jag) return null;
       if (o < -half + 0.6) return I0;                                                   // обух
       if (o > half - 0.6) return bt > 0.2 && bt < 0.85 && hsh(px * 3 + py) > 0.55 ? K7 : I3;   // жало блестит на солнце
       if (hsh(px * 7 + py * 13) > 0.88) return RU;                                       // ржа
