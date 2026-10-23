@@ -93,7 +93,7 @@ function blurDraw(dst, src, w, h, px) {
     { hat: '#f4f0e4', coat: '#c86a3a', beard: '#eae0b0', tool: 'chef', name: 'baker' },
     { hat: '#c8862a', coat: '#5a3a6a', beard: '#9a7a52', tool: 'mug', name: 'brewer' },
     { hat: '#4a3a8a', coat: '#3a2a6a', beard: '#e8e8f0', tool: 'wizard', name: 'enchanter' },
-    { hat: '#3a4a6a', coat: '#7a2a2a', beard: '#6a5a40', tool: 'helmet', name: 'armorer' },
+    { hat: '#3a4a6a', coat: '#7a2a2a', beard: '#6a5a40', tool: 'helmet', name: 'smelter' },
     { hat: '#d4a018', coat: '#8a1c22', beard: '#f0e8c8', tool: 'crown', name: 'hero' },
   ];
   const SKIN = ['#f2c8a0', '#e4b08a', '#d8a078'];

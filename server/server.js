@@ -724,7 +724,7 @@ function onGameMessage(c, m, text) {
     const n = Math.max(0, Math.min(400, m.n | 0));
     run(`(function (n) {
       const st = Game.buildings.find(b => b.type === 'storehouse') || { doorX: MAP_W >> 1, doorY: MAP_H >> 1 };
-      const T = ['serf', 'serf', 'serf', 'builder', 'woodcutter', 'farmer', 'stonemason', 'carpenter'];
+      const T = ['serf', 'serf', 'serf', 'builder', 'woodcutter', 'farmer', 'stonemason', 'woodcutter'];
       for (let k = 0, tries = 0; k < n && tries < n * 50; tries++) {
         const x = st.doorX + Math.floor(Math.random() * 31) - 15, y = st.doorY + Math.floor(Math.random() * 31) - 15;
         if (!inb(x, y) || !isWalkable(x, y)) continue;

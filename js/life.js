@@ -54,7 +54,7 @@ function* smokeGen(u, time) {
   if (Math.random() < 0.25) litter(u);                // окурок под ноги
 }
 
-const FOOD_WORKERS = new Set(['farmer', 'miller', 'baker', 'butcher', 'breeder']);
+const FOOD_WORKERS = new Set(['farmer', 'baker', 'butcher', 'herder']);
 
 function* joinGen(u, host) {
   // подойти к курящему и встать рядом

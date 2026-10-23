@@ -258,7 +258,7 @@ function schoolStuck(b, dt) {
     const i = b.queue.indexOf(gw);
     if (i < 0) b.queue.unshift(gw); else if (i > 0) { b.queue.splice(i, 1); b.queue.unshift(gw); }
     b.stock.gold++; b.goldWait = 0;
-    toast(gw === 'miner' ? 'Школа выучит шахтёра в долг: без него золота не будет' : 'Школа выучит металлурга в долг: без него золота не будет', b);
+    toast(gw === 'miner' ? 'Школа выучит шахтёра в долг: без него золота не будет' : 'Школа выучит кузнеца в долг: без него золота не будет', b);
     return;
   }
   const carriers = Game.units.some(u => u.isCourier && !u.dead && !u.teamOf);

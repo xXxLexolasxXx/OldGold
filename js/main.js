@@ -183,7 +183,7 @@ function setupStart(seed, opts = {}) {
   Object.assign(store.stock, DIFF_STOCK);
 
   const { sy, x0, x1 } = lay;
-  const start = { serf: 8, builder: 4, woodcutter: 1, carpenter: 1, stonemason: 1, farmer: 1 };
+  const start = { serf: 8, builder: 4, woodcutter: 2, stonemason: 1, farmer: 1 };
   for (const [type, n] of Object.entries(start))
     for (let k = 0; k < n; k++) {
       if (type === 'serf') spawnUnit(type, x0 + 1 + Math.floor(k * (x1 - x0 - 2) / n), sy);   // курьеры — на улице
