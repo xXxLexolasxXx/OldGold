@@ -663,7 +663,7 @@ function onGameMessage(c, m, text) {
     const full = admitMsg(c, c.key);
     if (full) return refuse(c, full);
     rec.hero = { cls: m.cls, level: 1, hp: meta.classes[m.cls].hp, inv: [{ k: 'bread', n: 2 }], look: (Math.random() * 1000) | 0 };
-    if (Array.isArray(m.ap) && m.ap.length <= 12) rec.hero.ap = m.ap.map(v => (Number.isInteger(v) ? v : -1));   // облик героя (heroapp.js чистит значения при входе)
+    if (Array.isArray(m.ap) && m.ap.length <= 15) rec.hero.ap = m.ap.map(v => (Number.isInteger(v) ? v : -1));   // облик героя (heroapp.js чистит значения при входе)
     saveUsers();
     joinWorld(c);
     return;

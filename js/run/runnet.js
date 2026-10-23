@@ -80,7 +80,7 @@ function rnView(dt) {
   const cl = Run.net.cloaks || [];
   S.heroes = b.h.map((hb, i) => {
     const ha = a.h[i] || hb, f = hb[5];
-    return { x: rnLerp(ha[0], hb[0], k), y: rnLerp(ha[1], hb[1], k), hp: hb[2], max: hb[3], face: hb[4], down: !!(f & 1), away: !!(f & 2), gone: !!(f & 4), moving: !!(f & 8), swing: f & 16 ? 0.1 : 0, hit: f & 32 ? 0.1 : 0, inv: 0, rev: hb[6] / 10, gold: hb[7], slam: hb[8] / 100, spd: hb[9], dashing: !!hb[10], cloak: cl[i] | 0 };
+    return { x: rnLerp(ha[0], hb[0], k), y: rnLerp(ha[1], hb[1], k), hp: hb[2], max: hb[3], face: hb[4], down: !!(f & 1), away: !!(f & 2), gone: !!(f & 4), moving: !!(f & 8), swing: f & 16 ? 0.1 : 0, hit: f & 32 ? 0.1 : 0, inv: 0, rev: hb[6] / 10, gold: hb[7], slam: hb[8] / 100, spd: hb[9], dashing: !!hb[10], cloak: cl[i] | 0, sk: (Run.net.sks || [])[i] || null };
   });
   // свой герой — из предсказания
   const me = S.heroes[Run.me], P = Run.predict;
@@ -146,6 +146,7 @@ function rnOver(m) {
   const meta = runMeta(), rw = m.rw;
   meta.runs++; meta.stones += rw.stones | 0; meta.shards += rw.shards | 0;
   if (m.win) meta.wins++;
+  meta.kills = (meta.kills | 0) + ((Run.S.heroes[Run.me] || {}).kills | 0);
   meta.best = Math.max(meta.best, rw.floors | 0);
   meta.coopRuns = (meta.coopRuns || 0) + 1; meta.coopMax = Math.max(meta.coopMax || 0, Run.net.n | 0);
   if (!m.win) meta.hurtUntil = Date.now() + 60000;
@@ -166,7 +167,7 @@ function rnOpen() {
   box.style.cssText = 'position:absolute;inset:0;z-index:6;background:#000b;display:flex;align-items:center;justify-content:center;padding:8px;overflow:auto';
   Tav.el.appendChild(box);
   RN.el = box; RN.err = '';
-  const metaOut = () => { const m = runMeta(); return { ups: m.ups, weapon: m.weapon, pal: m.pal, cloak: m.cloak }; };
+  const metaOut = () => { const m = runMeta(); return { ups: m.ups, weapon: m.weapon, pal: m.pal, cloak: m.cloak, sk: skWorn(m) }; };
   box.onclick = e => {
     const t = e.target.closest('[data-rn]'); if (!t || t.disabled) return;
     const a = t.dataset.rn;

@@ -50,7 +50,7 @@ function rsNew(opts) {
     heroes: hs.map((o, i) => ({
       id: o.id != null ? o.id : i, x: 0, y: 0, max: o.hp || 100, hp: o.hp || 100, spd: 62, dmg: o.dmg || 12, cd: 0, rate: 0.55,
       dash: 0, dashCd: 0, dashMul: 1, slamCd: 0, slam: 0, face: 1, hit: 0, inv: 0, gold: 0, kills: 0, swing: 0, stepT: 0,
-      weapon: o.weapon || 'pick', choices: o.choices || 3, cloak: o.cloak | 0, ap: o.ap || null, ups: [],
+      weapon: o.weapon || 'pick', choices: o.choices || 3, cloak: o.cloak | 0, ap: o.ap || null, sk: o.sk || null, hurts: 0, ups: [],
       down: false, rev: 0, away: false, gone: false, mx: 0, my: 0, moving: false,
     })),
     pals: [],
@@ -152,7 +152,7 @@ function rsHurt(S, e, d, by) {
 }
 function rsHurtHero(S, h, d) {
   if (h.inv > 0 || S.over || h.down || h.away || h.gone) return;
-  rsSfx(S, 'heroHurt'); h.hp -= d; h.inv = 0.5; h.hit = 0.15; rsPop(S, h.x, h.y - 10, Math.round(d), '#ff8a8a');
+  rsSfx(S, 'heroHurt'); h.hp -= d; h.hurts++; h.inv = 0.5; h.hit = 0.15; rsPop(S, h.x, h.y - 10, Math.round(d), '#ff8a8a');
   if (h.hp > 0) return;
   h.hp = 0;
   if (S.n === 1) { rsEnd(S, false); return; }

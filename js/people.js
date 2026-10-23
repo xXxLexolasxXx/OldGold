@@ -733,6 +733,7 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
     c.fillStyle = radgrad(c, hx - 1, hy - 1, 0.4, R * 1.5, [[0, sk[0]], [0.7, sk[1]], [1, sk[2]]]);
     c.beginPath(); c.ellipse(hx, hy, R, R * 1.02, 0, 0, Math.PI * 2); c.fill();
     const bc = nob ? hc : drawBeard(c, 'S', hx, hy, L, type, bottom, r);
+    if (O.skBeard >= 0 && !nob) skinBeard(c, O.skBeard, 'S', hx, hy);
     // пухлые румяные щёки
     ellipse(c, hx - 2.4, hy + 1.1, 1.5, 1.2, sk[0]); ellipse(c, hx + 2.4, hy + 1.1, 1.5, 1.2, sk[0]);
     ellipse(c, hx - 2.4, hy + 1.3, 1.1, 0.8, 'rgba(225,100,80,0.55)'); ellipse(c, hx + 2.4, hy + 1.3, 1.1, 0.8, 'rgba(225,100,80,0.55)');
@@ -758,6 +759,7 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
     c.fillStyle = radgrad(c, hx, hy - 1, 0.4, R * 1.5, [[0, sk[0]], [0.7, sk[1]], [1, sk[2]]]);
     c.beginPath(); c.ellipse(hx, hy, R * 0.92, R, 0, 0, Math.PI * 2); c.fill();
     const bc = nob ? hc : drawBeard(c, 'E', hx, hy, L, type, bottom, r);
+    if (O.skBeard >= 0 && !nob) skinBeard(c, O.skBeard, 'E', hx, hy);
     ellipse(c, hx + 1.9, hy + 1.1, 1.3, 1.1, sk[0]); ellipse(c, hx + 1.9, hy + 1.3, 1, 0.7, 'rgba(225,100,80,0.55)');
     if (L.freckles && !O.fem) drawFreckles(c, hx - 0.4, hy, sk, 1);
     ellipse(c, hx + 1.6, hy + 0.8, 2.2, 0.7, 'rgba(48,22,8,0.55)');
@@ -1359,10 +1361,11 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -3.6, hipY + 0.7, -0.5, 0.86, !armed);
       }
       if (courier) line(c, -2, shY + 0.2, 2.4, hipY, '#4a2c14', 0.6);
+      if (O.skCape >= 0) skinCape(c, O.skCape, 'E', shY, hipY, false);
       if (L.wild) wildBody(c, 'E', L, shY, hipY, headY, sw);
       head(0.6, () => {
         drawHead(c, 'E', 0.6, headY, L, O, type, false, beardBottom, r);   // курево рисует drawSmoking (smoking.js)
-        if (!opt.nohat) drawCap(c, O, 'E', 0.6, headY, tipSway, L, r, lvl);
+        if (!opt.nohat) { if (O.skHat >= 0) skinHat(c, O.skHat, 'E', 0.6, headY, tipSway); else drawCap(c, O, 'E', 0.6, headY, tipSway, L, r, lvl); }
       });
       if (sling) {
         poly(c, [[-0.4, shY + 0.6], [3.4, shY + 3.2], [-0.8, shY + 4.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
@@ -1535,11 +1538,12 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       else if (st === 'blade' || st === 'stab') drawSheath(c, W.m, sx, hipY + 0.3, sd, 0.9, !armed);
       if (W.o && WPN_STYLE[W.o] === 'stab') drawSheath(c, W.o, -sx, hipY + 0.4, -sd, 0.9, !armed);
     }
+    if (O.skCape >= 0 && !front) skinCape(c, O.skCape, view, shY, hipY, true);
     if (L.wild) wildBody(c, view, L, shY, hipY, headY, sw);
     if (front) { arm(-1); arm(1); }
     head(0, () => {
       drawHead(c, view, 0, headY, L, O, type, false, beardBottom, r);
-      if (!opt.nohat) drawCap(c, O, view, 0, headY, tipSway, L, r, lvl);
+      if (!opt.nohat) { if (O.skHat >= 0) skinHat(c, O.skHat, view, 0, headY, tipSway); else drawCap(c, O, view, 0, headY, tipSway, L, r, lvl); }
     });
     // поднятая рука жеста — поверх головы и бороды
     if (gest && front) { arm(1); if (gest === 'stretch' || gest === 'clap' || gest === 'panic' || gest === 'six7') arm(-1); }

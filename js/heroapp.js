@@ -14,7 +14,7 @@ const HA_LEN_NAMES = ['До груди', 'До ремня'];
 const HA_MUST_NAMES = ['Пышные', 'Закрученные', 'Моржовые'];
 const HA_DECO_NAMES = ['Веточка', 'Листья', 'Грибок', 'Перо', 'Жёлудь', 'Без украшений'];
 // индексы массива: 0 колпак (-1 — шлем или шапка класса), 1 цвет колпака (у шлема класса — перекраска), 9 жилет/доспех, 2 цвет бороды, 3 форма бороды, 4 длина, 5 усы, 6 кожа, 7 куртка, 8 украшение
-const HA_MAX = [9, 11, 11, 4, 1, 2, 2, 11, 5, 11, 1, 5];   // 9 — цвет жилета/доспеха, 10 — гном/гномка, 11 — причёска гномки
+const HA_MAX = [9, 11, 11, 4, 1, 2, 2, 11, 5, 11, 1, 5, 6, 4, 5];   // 12–14 — скины шапка/борода/накидка из забега (skins.js), редактор их не трогает   // 9 — цвет жилета/доспеха, 10 — гном/гномка, 11 — причёска гномки
 const HA_SEX_NAMES = ['Гном', 'Гномка'];
 const HA_CLS_CAP = { warrior: '#9aa0aa', barbarian: '#8a6a4a', mage: '#2c4a9a', archer: '#3a7a2a', druid: '#6a5230', rogue: '#2a2a34', monk: '#d8501a', priest: '#e4e0d2', bard: '#b03a7a', paladin: '#d8d8e0' };
 const HA = { last: null, hooked: false, types: new Map(), look: {} };
@@ -51,6 +51,7 @@ function haType(base, ap) {
   if (ap[6] >= 0) L.skin = ap[6];
   if (ap[8] >= 0) L.deco = ap[8];
   if (ap[10] === 1) { if (ap[11] >= 0) L.hs = ap[11]; if (ap[2] >= 0) L.hair = HA_BEARD_COLS[ap[2]]; }   // героиня: причёска, цвет волос
+  o.skHat = ap[12] >= 0 ? ap[12] : -1; o.skBeard = ap[13] >= 0 ? ap[13] : -1; o.skCape = ap[14] >= 0 ? ap[14] : -1;
   HA.look[key] = L;
   HA.types.set(key, true);
   return key;
@@ -218,8 +219,8 @@ function haOpenEditor(opts) {
     else if (s) { ap[+s.dataset.i] = +s.dataset.v; draw(); }
     else if (b) {
       const k = b.dataset.ha;
-      if (k === 'rnd') { const sx = ap[10]; for (let i = 0; i < HA_MAX.length; i++) ap[i] = Math.floor(Math.random() * (HA_MAX[i] + 1)); ap[10] = sx; draw(); }
-      else if (k === 'def') { const sx = ap[10]; ap.fill(-1); ap[10] = sx; draw(); }
+      if (k === 'rnd') { const sx = ap[10]; for (let i = 0; i < 12; i++) ap[i] = Math.floor(Math.random() * (HA_MAX[i] + 1)); ap[10] = sx; draw(); }
+      else if (k === 'def') { const sx = ap[10], sk = ap.slice(12); ap.fill(-1); ap[10] = sx; sk.forEach((v, j) => { ap[12 + j] = v; }); draw(); }
       else if (k === 'no') { close(); if (opts.onCancel) opts.onCancel(); }
       else if (k === 'ok') { const nm = box.querySelector('#ha-name'); close(); opts.onOk(haClean(ap), nm ? nm.value.trim().slice(0, 16) : null); }
     }

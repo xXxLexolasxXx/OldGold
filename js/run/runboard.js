@@ -66,6 +66,7 @@ function rbSend(kind) {
     const st = rbState();
     if (r && (r.score != null || /уже засчитана/.test(r.err || ''))) { delete st.pending[kind]; rbSave(st); }
     if (r && r.top) RB.cache[kind] = r;
+    if (r && r.me && r.me.place >= 1 && r.me.place <= 10 && kind === 'day') { const mm = runMeta(); if (!mm.top10) { mm.top10 = 1; runMetaSave(mm); } }
     try { toast(r && r.err ? 'Рекорд: ' + r.err : `Рекорд принят: ${r.score} очков, место ${r.me ? r.me.place : '—'}`); } catch (e) { /* без тоста */ }
     if (RB.el) rbDraw();
     return r;

@@ -15,8 +15,11 @@ const r1 = v => Math.round(v * 10) / 10;
 function heroFrom(meta) {
   const m = meta && typeof meta === 'object' ? meta : {}, U = m.ups && typeof m.ups === 'object' ? m.ups : {};
   const hp = Math.max(0, Math.min(5, U.hp | 0)), dmg = Math.max(0, Math.min(5, U.dmg | 0)), ch = Math.max(0, Math.min(1, U.choice | 0));
-  return { hp: 100 + 10 * hp, dmg: 12 * (1 + 0.08 * dmg), weapon: ['pick', 'xbow', 'staff'].includes(m.weapon) ? m.weapon : 'pick', choices: 3 + ch, pal: RS.RS_PAL_KINDS.includes(m.pal) ? m.pal : 'warrior', cloak: Math.max(0, Math.min(15, m.cloak | 0)) };
+  return { hp: 100 + 10 * hp, dmg: 12 * (1 + 0.08 * dmg), weapon: ['pick', 'xbow', 'staff'].includes(m.weapon) ? m.weapon : 'pick', choices: 3 + ch, pal: RS.RS_PAL_KINDS.includes(m.pal) ? m.pal : 'warrior', cloak: Math.max(0, Math.min(15, m.cloak | 0)), sk: skinOf(m.sk) };
 }
+// скины (только вид): индекс в пределах числа вещей слота, иначе без скина
+const SK_N = { hat: 7, beard: 5, cape: 6 };
+function skinOf(s) { const o = s && typeof s === 'object' ? s : {}, r = {}; for (const k in SK_N) r[k] = Number.isInteger(o[k]) && o[k] >= 0 && o[k] < SK_N[k] ? o[k] : -1; return r; }
 // карта этажа строкой: по символу на клетку ('0'/'1') — 52×38 = 2 КБ, приходит раз на этаж
 const mapStr = S => Array.prototype.map.call(S.map, v => (v ? '1' : '0')).join('');
 
@@ -37,7 +40,7 @@ function createRunKind(hooks) {
   };
   function sendGo(r, m) {
     const G = r.game, i = G.idx.get(m.key);
-    m.send({ t: 'run', a: 'go', me: i, n: G.S.n, diff: G.S.diff, nicks: [...G.idx.keys()].map(k => (r.members.get(k) || {}).nick || '?'), cloaks: G.S.heroes.map(h => h.cloak) });
+    m.send({ t: 'run', a: 'go', me: i, n: G.S.n, diff: G.S.diff, nicks: [...G.idx.keys()].map(k => (r.members.get(k) || {}).nick || '?'), cloaks: G.S.heroes.map(h => h.cloak), sks: G.S.heroes.map(h => h.sk) });
     sendFloor(r, m);
   }
   function sendFloor(r, m) {

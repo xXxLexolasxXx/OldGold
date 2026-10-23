@@ -19,6 +19,7 @@ function runStart(diff, o) {
   // ежедневный и недельный строятся ядром от даты начала — сервер переиграет их этими же условиями
   const rkind = diff.daily ? 'day' : diff.weekly ? 'week' : null, rkey = rkind === 'day' ? runDayKey() : rkind ? rsWeekOf(runDayKey()) : null;
   const opts = rkind ? rsRankedOpts(rkind, rkey) : { seed: o.seed != null ? o.seed : (Math.random() * 1e9) | 0, diff: { id: d.id, name: d.name, floors: d.floors, mult: d.mult, lvl: d.lvl }, heroes: [hero] };
+  opts.heroes[0].sk = skWorn(meta);
   opts.heroes[0].cloak = meta.cloak | 0;   // плащ только для вида, на ход забега не влияет
   Object.assign(Run, {
     on: true, diff: d, meta, opts, net: o.net || null, S: o.net ? runNetBlank(o.net) : rsNew(opts), me: 0, keys: {}, joy: null, prevSpeed: Game.speed || 1, flash: 0, pops: [], acc: 0,
@@ -150,6 +151,8 @@ function runEnd() {
   const meta = runMeta(), rw = rsRewards(S), score = rsScore(S), h = S.heroes[Run.me];
   meta.runs++; meta.stones += rw.stones; meta.shards += rw.shards;
   if (win) meta.wins++;
+  meta.kills = (meta.kills | 0) + (h ? h.kills | 0 : 0);
+  if (win && h && !h.hurts && !Run.ranked) meta.flawless = true;
   meta.best = Math.max(meta.best, rw.floors);
   if (Run.rkind === 'week') meta.weekBest[Run.rkey] = Math.max(meta.weekBest[Run.rkey] || 0, score);
   if (Run.rkind === 'day') { meta.dayBest = meta.dayBest || {}; meta.dayBest[Run.rkey] = Math.max(meta.dayBest[Run.rkey] || 0, score); const ks = Object.keys(meta.dayBest).sort(); while (ks.length > 30) delete meta.dayBest[ks.shift()]; }
@@ -212,8 +215,8 @@ function runDraw() {
   for (const o of S.heroes) {
     if (o.gone) continue;
     ents.push({ y: o.y, f: () => {
-      if (o.down) { c.globalAlpha = 0.55; runDrawDwarf(c, o.x, o.y, RUN_CLOAKS[o.cloak % RUN_CLOAKS.length][1], o.face, false, false, false, null, 0); c.globalAlpha = 1; if (o.rev > 0) { c.fillStyle = '#000a'; c.fillRect(o.x - 8, o.y - 22, 16, 3); c.fillStyle = '#8aff9a'; c.fillRect(o.x - 8, o.y - 22, 16 * o.rev / 3, 3); } return; }
-      runDrawDwarf(c, o.x, o.y, RUN_CLOAKS[o.cloak % RUN_CLOAKS.length][1], o.face, o.hit > 0 || (o.inv > 0 && ((S.t * 20) | 0) % 2), false, o.moving, null, o.swing);
+      if (o.down) { c.globalAlpha = 0.55; runDrawDwarf(c, o.x, o.y, RUN_CLOAKS[o.cloak % RUN_CLOAKS.length][1], o.face, false, false, false, null, 0, o.sk); c.globalAlpha = 1; if (o.rev > 0) { c.fillStyle = '#000a'; c.fillRect(o.x - 8, o.y - 22, 16, 3); c.fillStyle = '#8aff9a'; c.fillRect(o.x - 8, o.y - 22, 16 * o.rev / 3, 3); } return; }
+      runDrawDwarf(c, o.x, o.y, RUN_CLOAKS[o.cloak % RUN_CLOAKS.length][1], o.face, o.hit > 0 || (o.inv > 0 && ((S.t * 20) | 0) % 2), false, o.moving, null, o.swing, o.sk);
     } });
   }
   ents.sort((a, b) => a.y - b.y).forEach(o => o.f());
@@ -235,7 +238,7 @@ function runDraw() {
   if (Run.flash > 0) { c.fillStyle = `rgba(255,220,120,${Run.flash * 0.6})`; c.fillRect(0, 0, W, H); }
 }
 
-function runDrawDwarf(c, x, y, cloak, face, hit, pal, moving, kind, swing) {
+function runDrawDwarf(c, x, y, cloak, face, hit, pal, moving, kind, swing, sk) {
   const T = Run.S.t, step = moving ? Math.sin(T * 14 + x * 0.1) : 0, bob = moving ? Math.abs(step) * -1 : Math.sin(T * 3 + x) * 0.4;
   x = Math.round(x); y = Math.round(y);
   c.fillStyle = 'rgba(0,0,0,0.38)'; c.fillRect(x - 6, y + 4, 12, 3);
@@ -245,15 +248,18 @@ function runDrawDwarf(c, x, y, cloak, face, hit, pal, moving, kind, swing) {
   const by = Math.round(y + bob);
   // плащ и тело
   c.fillStyle = cloak; c.fillRect(x - 4, by - 6, 8, 8); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(x - 4, by + 1, 8, 1); c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(x - 4, by - 6, 8, 1);
+  if (sk && sk.cape >= 0) skRun(c, sk, x, by, face, 'cape');
   c.fillStyle = '#6a4a1a'; c.fillRect(x - 4, by - 1, 8, 1); c.fillStyle = '#d8b050'; c.fillRect(x - 1, by - 1, 2, 1);   // пояс с пряжкой
   // голова и борода
   c.fillStyle = '#e8b890'; c.fillRect(x - 3, by - 11, 6, 5);
   const beard = pal ? ({ warrior: '#8a5a2a', archer: '#a0a0a8', healer: '#e8e0d0', bomber: '#c85a2a' })[kind] || '#8a5a2a' : '#c8663a';
   c.fillStyle = beard; c.fillRect(x - 3, by - 8, 6, 5); c.fillRect(x - 2, by - 3, 4, 1);
+  if (sk && sk.beard >= 0) skRun(c, sk, x, by, face, 'beard');
   c.fillStyle = 'rgba(0,0,0,0.2)'; c.fillRect(x - 3, by - 5, 6, 1);
   c.fillStyle = '#1a1008'; c.fillRect(x + face - 1, by - 10, 1, 1); c.fillRect(x + face + 1, by - 10, 1, 1);
   // шлем или колпак
-  if (kind === 'healer') { c.fillStyle = '#e8e0d0'; c.fillRect(x - 4, by - 14, 8, 4); c.fillStyle = '#c8402a'; c.fillRect(x - 1, by - 13, 2, 3); c.fillRect(x - 2, by - 12, 4, 1); }
+  if (sk && sk.hat >= 0) skRun(c, sk, x, by, face, 'hat');
+  else if (kind === 'healer') { c.fillStyle = '#e8e0d0'; c.fillRect(x - 4, by - 14, 8, 4); c.fillStyle = '#c8402a'; c.fillRect(x - 1, by - 13, 2, 3); c.fillRect(x - 2, by - 12, 4, 1); }
   else if (kind === 'archer') { c.fillStyle = '#4a8a3a'; c.fillRect(x - 4, by - 13, 8, 3); c.fillRect(x - 2, by - 15, 5, 2); c.fillStyle = '#e8e0d0'; c.fillRect(x + 2, by - 16, 1, 3); }
   else if (kind === 'bomber') { c.fillStyle = '#5a4a3a'; c.fillRect(x - 4, by - 13, 8, 3); c.fillStyle = '#c8962a'; c.fillRect(x - 4, by - 12, 8, 1); c.fillStyle = '#7ad8ff'; c.fillRect(x - 3, by - 11, 2, 1); }
   else { c.fillStyle = '#8a929a'; c.fillRect(x - 4, by - 14, 8, 4); c.fillRect(x - 2, by - 15, 4, 1); c.fillStyle = '#c8d0d8'; c.fillRect(x - 4, by - 14, 8, 1); c.fillRect(x + face * 2, by - 13, 1, 3); }
