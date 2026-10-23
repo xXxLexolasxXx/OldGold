@@ -12,48 +12,50 @@ canvas{image-rendering:pixelated;background:#1a2230}
 <label>масштаб <select id="sc"><option>3</option><option selected>4</option><option>5</option></select></label>
 <label>время <input id="tm" type="range" min="0" max="60" step="0.1" value="3" style="width:260px"></label><span id="err" style="color:#f88"></span></div>
 <div id="out"></div>
-<script src="js/config.js"></script><script src="js/world.js"></script><script src="js/sprites.js"></script><script src="js/world/groundstyle.js"></script><script src="js/world/groundsets.js"></script><script src="js/world/nightground.js"></script>
+<script src="js/config.js"></script><script src="js/world.js"></script><script src="js/sprites.js"></script><script src="js/world/groundstyle.js"></script><script src="js/world/groundsets.js"></script><script>var Game = { units: [], animals: [], time: 0, seed: 7 };</script><script src="js/world/nightground.js"></script>
 <script>
 function strip(title, sprites, k) {
   const h = document.createElement('h3'); h.textContent = title; out.appendChild(h);
   const row = document.createElement('div'); row.className = 'row'; out.appendChild(row);
   sprites.forEach((s, i) => {
-    const cv = document.createElement('canvas'); cv.width = s.width * k; cv.height = s.height * k;
+    const cv = document.createElement('canvas'); cv.width = s.width / NG_Q * k; cv.height = s.height / NG_Q * k;
     const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(s, 0, 0, cv.width, cv.height);
     const d = document.createElement('div'); d.className = 'cell'; d.appendChild(cv); const sp = document.createElement('span'); sp.textContent = 'кадр ' + (i + 1); d.appendChild(sp); row.appendChild(d);
   });
 }
+const q = new URLSearchParams(location.search);
 function draw() {
   out.innerHTML = '';
   const set = st.value, k = +sc.value, t = +tm.value, seed = 7;
   strip('Рука скелета (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngHand(set, f)), k);
-  strip('Плотоядный цветок (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngFlower(set, f)), k);
+  for (let v = 0; v < 5; v++) strip('Плотоядный цветок, расцветка ' + (v + 1) + ' (8 кадров: покой ×2, раскрывает ×3, хлопнул, жуёт ×2)', [...Array(NG_FL_N).keys()].map(f => ngFlower(v, f)), k);
   strip('Надгробие поднимается (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngTomb(set, f)), k);
-  strip('Глаза (3 кадра) и туман', [0, 1, 2].map(f => ngEyes(set, f)).concat([ngFog(set, 0)]), k);
+  strip('Череп из земли (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngSkull(set, f)), k);
+  strip('Щупальца с глазом (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngTentacle(set, f)), k);
+  strip('Паук из норы (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngSpider(set, f)), k);
+  strip('Рука зомби (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngZombie(set, f)), k);
+  strip('Гроб из земли (7 кадров)', [0, 1, 2, 3, 4, 5, 6].map(f => ngCoffin(set, f)), k);
+  strip('Поганки с глазами (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngShrooms(set, f)), k);
+  for (let v = 0; v < NG_EYE_N; v++) strip('Глаза, порода ' + (v + 1) + ' (открыты, прищур, закрыты)', [0, 1, 2].map(f => ngEyes(set, f, v)), k);
+  strip('Туман', [ngFog(set, 0)], k);
   const h = document.createElement('h3'); h.textContent = 'Сцена ночью (ползунок — время)'; out.appendChild(h);
   const V = Object.values(GROUND_VARIANTS).filter(v => v.set === set)[0];
-  const tw = 14, th = 8, g = groundPatch(V.id, tw, th, seed), cv = document.createElement('canvas');
-  cv.width = tw * 32; cv.height = th * 32; const c = cv.getContext('2d');
+  const tw = +(q.get('w') || 40), th = +(q.get('h') || 24), g = groundPatch(V.id, tw, th, seed), cv = document.createElement('canvas');
+  const z = +(q.get('z') || 1); cv.width = tw * 32 * z; cv.height = th * 32 * z; const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.scale(z, z);   // z — масштаб сцены: при 4 виден мелкий пиксель
   c.drawImage(g, 0, 0);
-  // ночное затемнение (как в игре — синий оттенок)
-  c.fillStyle = 'rgba(8,14,40,0.62)'; c.fillRect(0, 0, cv.width, cv.height);
-  // раскладка: каждая клетка — по сиду; внизу ряд с «чистыми» примерами
-  for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) {
-    const kd = ngKindAt(tx, ty, seed);
-    if (!kd) continue;
-    ngDrawTile(c, kd, set, tx, ty, seed, t, 1, false);
-  }
-  c.fillStyle = 'rgba(8,14,40,0.0)';
-  for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) { if (ngKindAt(tx, ty, seed) === 4) ngDrawTile(c, 4, set, tx, ty, seed, t, 1, true); }
+  c.fillStyle = 'rgba(8,14,40,0.62)'; c.fillRect(0, 0, cv.width, cv.height);   // ночное затемнение
+  const ok = () => true;
+  for (const kd of [3, 1, 5, 6, 7, 8, 9, 10, 2]) ngSpots(kd, 0, 0, tw - 1, th - 1, seed, ok, (sp) => ngDrawTile(c, kd, set, sp.tx, sp.ty, seed, t, 1, false, kd === 2 ? ngFlowerVar(sp.cx, sp.cy, seed) : 0));
+  ngSpots(4, 0, 0, tw - 1, th - 1, seed, ok, (sp) => ngDrawTile(c, 4, set, sp.tx, sp.ty, seed, t, 1, true));
   for (let i = 0; i < 6; i++) {   // туман поверх
     const s = ngFog(set, i & 1); c.globalAlpha = 0.3; c.drawImage(s, ((i * 97) % 380) + Math.sin(t * 0.05 + i) * 26, (i * 53) % 200); c.globalAlpha = 1;
   }
-  const out2 = document.createElement('canvas'); out2.width = cv.width * (k - 1); out2.height = cv.height * (k - 1);
+  const out2 = document.createElement('canvas'); out2.width = cv.width; out2.height = cv.height; out2.style.maxWidth = '100%';
   const o = out2.getContext('2d'); o.imageSmoothingEnabled = false; o.drawImage(cv, 0, 0, out2.width, out2.height);
   const row = document.createElement('div'); row.className = 'row'; row.appendChild(out2); out.appendChild(row);
 }
 for (const e of [st, sc, tm]) e.oninput = draw;
-const q = new URLSearchParams(location.search); if (q.get('set')) st.value = q.get('set'); if (q.get('t')) tm.value = q.get('t');
+if (q.get('set')) st.value = q.get('set'); if (q.get('t')) tm.value = q.get('t');
 window.onerror = (m, s, l) => { err.textContent = m + ' @' + l; };
 draw();
 </script></body></html>
