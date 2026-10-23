@@ -890,30 +890,305 @@ function fzNoonTick(F, dt) {
   } else if (n.state === 'leave') n.alpha = 0;
 }
 
-// Огонёк и Полудница рисуются мягкой кистью
-function fzNoonSprite(p) {
-  return fzCanvas('noon' + p, 46, 70, 23, 62, c => {
-    const ph = p / 6 * Math.PI * 2;
-    // вихрь пыли: расширяющиеся к верху петли
-    for (let i = 0; i < 9; i++) {
-      const t = i / 8, y = -t * 52, rx = 5 + t * 12, sh = Math.sin(ph + t * 5) * 2.6;
-      c.strokeStyle = `rgba(222,196,140,${0.55 - t * 0.2})`; c.lineWidth = 2.2;
-      c.beginPath(); c.ellipse(sh, y, rx, rx * 0.28, 0, 0, 7); c.stroke();
+// Полудница: высокая иссохшая баба в выгоревшей рубахе, венок из колосьев с маками, за головой — раскалённый нимб полуденного солнца.
+// Лицо — обтянутый череп в трещинах от зноя: злые брови, впалые глазницы с добела раскалёнными точками, растянутый безгубый оскал (в ударе — разинутая пасть).
+// Солома волос вздыблена жаром, низ рубахи обгорел и рассыпается в пылевой вихрь с половой. В правой руке ржавый серп, левая — когтистая пятерня.
+// Пиксель-арт 180×264: шаг пикселя втрое мельче мирового (шаблон нечисти «×3»), рисуется 1:1 в 3× холст.
+// lv: 0 покой, 1 замах серпом (так же и опускание), 2 удар. p — фаза вихря 0..5 (петли и полова зациклены); в покое на p=4 моргает.
+function fzNoonPx(lv, p) {
+  const W = 180, H = 264, OX = 90, OY = 240;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const c = cv.getContext('2d'), img = c.createImageData(W, H), D = img.data, SOL = new Uint8Array(W * H);
+  const ph = p / 6 * Math.PI * 2, hit = lv === 2, blink = lv === 0 && p === 4, HY = -163;
+  // палитра: зной от раскалённо-белого до бурого
+  const K0 = [40, 16, 6], K1 = [78, 36, 14], K2 = [124, 64, 24], K3 = [178, 110, 38], K4 = [216, 162, 60], K5 = [238, 206, 122], K6 = [250, 234, 186], K7 = [255, 252, 232];
+  const S0 = [92, 48, 22], S1 = [146, 92, 46], S2 = [198, 146, 88], S3 = [228, 192, 134], S4 = [246, 224, 176];
+  const I0 = [46, 34, 28], I1 = [96, 82, 70], I2 = [164, 152, 136], I3 = [232, 228, 214], RU = [146, 70, 32], RED = [168, 44, 26], RED2 = [204, 82, 44];
+  const dth = (x, y) => (FZ_B4[(y + OY) & 3][(x + OX) & 3] + 0.5) / 16;
+  const hsh = n => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+  const P = (x, y, col, a = 1, sol = true) => {
+    x = Math.round(x) + OX; y = Math.round(y) + OY;
+    if (x < 0 || y < 0 || x >= W || y >= H || a <= 0) return;
+    const i = (y * W + x) * 4, da = D[i + 3] / 255, oa = a + da * (1 - a);
+    for (let k = 0; k < 3; k++) D[i + k] = Math.round((col[k] * a + D[i + k] * da * (1 - a)) / oa);
+    D[i + 3] = Math.round(oa * 255);
+    if (sol) SOL[y * W + x] = 1;
+  };
+  // заливка по условию: f(x, y) → цвет или null
+  const R = (x0, y0, x1, y1, f, sol = true) => {
+    for (let y = Math.floor(y0); y <= Math.ceil(y1); y++) for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) {
+      const col = f(x, y);
+      if (col) P(x, y, col, col[3] === undefined ? 1 : col[3], sol);
     }
-    // женская фигура в светлом платье внутри вихря
-    const g = c.createLinearGradient(0, -48, 0, 0); g.addColorStop(0, 'rgba(255,248,226,0.95)'); g.addColorStop(1, 'rgba(240,214,160,0.2)');
-    c.fillStyle = g; c.beginPath(); c.moveTo(-3, -34); c.lineTo(-9 + Math.sin(ph) * 1.4, -2); c.lineTo(9 + Math.sin(ph + 2) * 1.4, -2); c.lineTo(3, -34); c.closePath(); c.fill();
-    c.fillStyle = 'rgba(255,244,214,0.97)'; c.beginPath(); c.ellipse(0, -40, 4.2, 5, 0, 0, 7); c.fill();
-    c.fillStyle = 'rgba(70,50,30,0.9)'; c.beginPath(); c.ellipse(0, -43, 5, 4, 0, Math.PI, 0); c.fill();       // платок
-    c.fillStyle = '#2a1a10'; c.fillRect(-2.4, -41, 1.4, 1.8); c.fillRect(1, -41, 1.4, 1.8);
-    c.fillStyle = '#ffd860'; c.fillRect(-2, -40.6, 0.8, 1); c.fillRect(1.4, -40.6, 0.8, 1);
-    c.fillStyle = '#2a1a10'; c.beginPath(); c.ellipse(0, -37.4, 1.3, 0.8, 0, 0, 7); c.fill();
-    // руки с серпом
-    c.strokeStyle = 'rgba(250,236,200,0.9)'; c.lineWidth = 1.6;
-    c.beginPath(); c.moveTo(-3, -32); c.lineTo(-11, -24 + Math.sin(ph) * 2); c.moveTo(3, -32); c.lineTo(11, -26); c.stroke();
-    c.strokeStyle = 'rgba(210,220,230,0.95)'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(11, -26); c.quadraticCurveTo(17, -30, 14, -38); c.stroke();
+  };
+  // толстая линия с сужением: f(t, край) → цвет
+  const L = (x0, y0, x1, y1, r0, r1, f, sol = true) => {
+    const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy || 1, rm = Math.max(r0, r1) + 1;
+    R(Math.min(x0, x1) - rm, Math.min(y0, y1) - rm, Math.max(x0, x1) + rm, Math.max(y0, y1) + rm, (x, y) => {
+      const t = Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / l2)), ex = x - x0 - dx * t, ey = y - y0 - dy * t, r = r0 + (r1 - r0) * t, d = Math.sqrt(ex * ex + ey * ey);
+      return d <= r ? f(t, d > r - 1, ex * dy - ey * dx) : null;
+    }, sol);
+  };
+
+  // ---- раскалённый нимб за головой: кольцо и лучи, лучи медленно вращаются
+  const NX = 0, NY = HY - 4;
+  R(NX - 56, NY - 56, NX + 56, NY + 56, (x, y) => {
+    const dx = x - NX, dy = y - NY, d = Math.sqrt(dx * dx + dy * dy), an = Math.atan2(dy, dx) - ph / 12;
+    if (d >= 37 && d < 42) return d < 38 || d >= 41 ? [...K4, 0.95] : d < 35.5 ? [...K7, 0.95] : [...K6, 0.95];
+    const ray = ((an / (Math.PI * 2) * 12) % 1 + 1) % 1, long = Math.floor(((an / (Math.PI * 2) * 12) % 12 + 12) % 12) % 2 === 0;
+    const len = long ? 15 : 9, w = 0.12 * (1 - (d - 42) / len);
+    if (d >= 42 && d < 42 + len && Math.abs(ray - 0.5) < w) return d < 42 + len * 0.5 ? [...K5, 0.9] : dth(x, y) < 0.6 ? [...K4, 0.75] : null;
+    return null;
+  }, false);
+
+  // ---- пылевой вихрь: петли (задние половины), плотный столб, полова
+  const loops = front => {
+    for (let i = 0; i < 11; i++) {
+      const t = i / 10, y0 = 2 - t * 104, rx = 9 + t * 12 + t * t * 34, ry = rx * 0.24 + 1.5, sx = Math.sin(ph + t * 4.5) * 7 * t, th = t > 0.5 ? 3 : 2;
+      for (let s = 0; s < 1; s += 1 / (rx * 7)) {
+        const a = s * Math.PI * 2, sn = Math.sin(a);
+        if ((sn > 0) !== front) continue;
+        const dash = ((s * 3 - p / 6 + i * 0.37) % 1 + 1) % 1;
+        if (dash > 0.64) continue;
+        const x = sx + Math.cos(a) * rx, y = y0 + sn * ry, head = dash > 0.52;
+        const col = front ? (head ? K6 : t > 0.6 ? K5 : K4) : (t > 0.6 ? K3 : K2);
+        for (let k = 0; k < th; k++) P(x, y + k, col, front ? 0.85 - k * 0.15 : 0.6, false);
+      }
+    }
+  };
+  const chaff = front => {
+    for (let j = 0; j < 40; j++) {
+      const r = 12 + hsh(j) * 42, yy = -4 - hsh(j * 7 + 1) * 112, a = hsh(j * 3 + 2) * Math.PI * 2 + ph * (1 + (j & 1)), sn = Math.sin(a);
+      if ((sn > 0) !== front) continue;
+      const x = Math.cos(a) * r * (0.5 + 0.5 * (-yy / 116)), y = yy + sn * r * 0.22;
+      if (j % 5 === 0) P(x, y, K2, 0.9, false);
+      else { P(x, y, front ? K5 : K4, 0.9, false); P(x + 1, y, front ? K4 : K3, 0.75, false); }
+    }
+  };
+  R(-30, -4, 30, 8, (x, y) => { const d = (x / 28) ** 2 + ((y - 2) / 5) ** 2; return d < 1 && dth(x, y) < 0.55 * (1 - d) ? [...K3, 0.6] : null; }, false);   // пыль у земли
+  loops(false); chaff(false);
+  for (let y = -76; y <= 2; y++) {                                                    // столб вихря
+    const t = -y / 76, hw = 4 + t * t * 20 + t * 4, sx = Math.sin(ph + t * 4.5) * 7 * t * 1.05;
+    for (let x = Math.floor(sx - hw); x <= Math.ceil(sx + hw); x++) {
+      const r = (x - sx) / hw, band = (((r * 1.6 + y * 0.09 + p / 6) % 1) + 1) % 1, a = (0.82 - t * 0.3) * (1 - r * r * 0.6);
+      if (dth(x, y) > a) continue;
+      P(x, y, band < 0.22 ? K5 : band < 0.5 ? K3 : band < 0.62 ? K4 : K2, 0.85, false);
+    }
+  }
+
+  // ---- волосы-солома позади: длинные пряди, по ветру назад; часть прядей вздыблена жаром вверх, как языки пламени
+  const strand = (k, back) => {
+    const side = k % 2 ? 1 : -1, wild = back && k % 4 === 3, fi = back ? 0.45 + (k >> 1) * 0.18 : 1.35 + (k >> 1) * 0.3;
+    const x0 = side * Math.sin(fi) * 16, y0 = HY - 2 - Math.cos(fi) * 18;
+    const len = wild ? 30 + hsh(k) * 14 : back ? 44 + hsh(k) * 26 : 30 + hsh(k) * 10, cols = back ? [K4, K3, K2] : [K5, K4, K3];
+    let px0 = x0, py0 = y0;
+    for (let m = 1; m <= 14; m++) {
+      const t = m / 14, wv = Math.sin(ph + t * 5 + k * 1.3) * 4 * t;
+      const x = wild ? x0 + side * t * 10 - t * t * 10 + wv : x0 + side * t * (back ? 12 + (k >> 1) * 1.6 : 4) + wv * (back ? 1 : 0.4) - (back ? t * t * 8 : 0);
+      const y = wild ? y0 - t * len * 0.7 + t * t * 6 : y0 + t * len;
+      if (t < 0.8 || dth(Math.round(x), Math.round(y)) < (1 - t) * 4) L(px0, py0, x, y, 2.4 - t * 1.4, 2.4 - t * 1.6, (u, e) => e ? cols[2] : cols[(k + m) % 2]);
+      px0 = x; py0 = y;
+    }
+  };
+  for (let k = 0; k < 16; k++) strand(k, true);
+
+  // ---- рубаха: узкая в груди и талии, книзу раструбом; складки, вышивка, обгорелый рваный подол тает в вихре
+  const cxAt = y => y > -108 ? Math.sin(ph + y * 0.05) * 3 * (y + 108) / 42 : 0;
+  const hwAt = y => y < -132 ? 12 + (y + 140) * 0.75 : y < -118 ? 18 - (y + 132) * 0.28 : y < -108 ? 14 - (y + 118) * 0.3 : 11 + (-108 - y < 0 ? (y + 108) * 0.58 : 0);
+  const bot = x => -64 + Math.floor(hsh(Math.floor(x / 3) + 11) * 16) + Math.round(Math.sin(ph + x * 0.25) * 3);
+  R(-50, -140, 50, -44, (x, y) => {
+    const cx = cxAt(y), hw = hwAt(y), r = (x - cx) / hw;
+    if (Math.abs(r) > 1 || y > bot(x)) return null;
+    if (y > -86 && dth(x, y) > 1 - (y + 86) / (bot(x) + 92)) return null;
+    if (y < -131 && Math.abs(x) < (y + 141) * 0.6) return null;                    // вырез ворота
+    let col = r < -0.72 ? K4 : r > 0.82 ? K5 : y < -120 && r > 0.1 && r < 0.45 ? K7 : K6;
+    if (y > -108 && ((((x - cx) / (hw / 4) + Math.sin(y * 0.08 + ph) * 0.3) % 1 + 1) % 1) < 0.16) col = r < 0 ? K4 : K5;   // складки
+    if (y > -128 && y < -116 && Math.abs(x) < 10 && (y + 128) % 4 === 0) col = K5;   // рёбра сквозь ткань
+    if (y > -92 && dth(x, y) < (y + 92) / 34) col = y > -76 && dth(x + 1, y) < (y + 76) / 30 ? K2 : K3;   // гарь и пыль
+    if (y >= -82 && y <= -78) { const q = Math.abs(((x + 60) % 6) - 3) + Math.abs(y + 80); if (q <= 2) col = q < 1 ? RED2 : RED; }   // вышивка по подолу
+    return col;
   });
+  // ворот: кожа, ключицы, яремная впадина; красная вышивка по кромке
+  R(-8, -141, 8, -131, (x, y) => {
+    const v = (y + 141) * 0.6;
+    if (Math.abs(x) >= v) return Math.abs(x) < v + 1.6 && y > -140 ? (((x + y) & 1) ? RED : RED2) : null;
+    if (y === -136 && Math.abs(x) > 1) return S1;
+    if (Math.abs(x) <= 1 && y > -139 && y < -135) return S0;
+    return y > -134 ? S1 : S2;
+  });
+  // пояс и концы пояса, треплет ветром назад
+  R(-16, -112, 16, -106, (x, y) => Math.abs(x) <= hwAt(y) ? (y === -112 ? RED2 : y === -106 ? [96, 28, 16] : (x + y) % 5 === 0 ? RED2 : RED) : null);
+  for (const [o, l] of [[0, 30], [3, 24]]) L(-6 + o, -108, -20 - o + Math.sin(ph + o) * 5, -108 + l, 2.2, 1.4, (t, e) => e ? [96, 28, 16] : t > 0.85 && dth(o, l) < 0.5 ? RED2 : RED);
+
+  // ---- руки, кисти с когтями, серп
+  const S = [[-16, -134], [16, -134]];
+  const pose = [
+    { L: [-34, -94, Math.PI / 2 + 0.3], R: [34, -100, Math.PI / 2 - 0.25] },
+    { L: [-40, -142, -Math.PI / 2 - 0.55], R: [24, -186, -Math.PI / 2 - 0.65] },
+    { L: [-44, -124, Math.PI + 0.15], R: [50, -116, 0.35] },
+  ][lv];
+  if (hit) R(-30, -200, 80, -60, (x, y) => {                                        // след удара серпом
+    const dx = x - 14, dy = y + 136, d = Math.sqrt(dx * dx + dy * dy), a = Math.atan2(dy, dx);
+    if (a < -2.1 || a > 0.55 || Math.abs(d - 60) > 2.5 + (a + 2.1) * 1.2) return null;
+    const t = (a + 2.1) / 2.65;
+    return dth(x, y) < t ? [...(Math.abs(d - 60) < 1.5 ? K7 : K5), 0.4 + t * 0.5] : null;
+  }, false);
+  const arm = (s, h) => {
+    const [sx, sy] = S[s < 0 ? 0 : 1], [hx, hy] = h, mx = (sx + hx) / 2, my = (sy + hy) / 2;
+    let nx = -(hy - sy), ny = hx - sx; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+    if (nx * s < 0) { nx = -nx; ny = -ny; }
+    const ex = mx + nx * 7, ey = my + ny * 7 + 2;
+    // рукав до локтя: широкий, с лохмотьями и вышитой полосой
+    L(sx, sy, ex, ey, 6, 4.5, (t, e, sd) => e ? K4 : t > 0.72 && t < 0.86 ? (((sd | 0) & 2) ? RED : RED2) : sd * s > 0 ? K5 : K6);
+    for (let k = 0; k < 4; k++) L(ex - 3 + k * 2, ey + 2, ex - 3 + k * 2 + Math.sin(ph + k) * 2, ey + 5 + hsh(k + s) * 6, 1, 0.5, () => k & 1 ? K4 : K5);
+    // костлявое предплечье
+    L(ex, ey, hx, hy, 3, 2.2, (t, e, sd) => e ? (sd * s > 0 ? S0 : S1) : t < 0.12 ? S3 : sd * s < -30 ? S3 : S2);
+    R(hx - 4, hy - 4, hx + 4, hy + 4, (x, y) => { const d = (x - hx) ** 2 + (y - hy) ** 2; return d <= 12 ? (d > 8 ? S1 : S2) : null; });
+  };
+  const claw = (hx, hy, dir, side) => {                                               // ладонь, четыре пальца веером и большой, длинные загнутые когти
+    for (const j of [-1.5, -0.5, 0.5, 1.5, -3.2]) {
+      const thumb = j < -2, a = dir + j * (thumb ? 0.4 : 0.36) * side, a2 = a + 0.2 * side;
+      const l1 = thumb ? 4.5 : Math.abs(j) > 1 ? 6 : 7.5, l2 = thumb ? 3.5 : Math.abs(j) > 1 ? 4.5 : 5.5;
+      const bx = hx + Math.cos(a) * 2.5, by = hy + Math.sin(a) * 2.5;
+      const x1 = bx + Math.cos(a) * l1, y1 = by + Math.sin(a) * l1, x2 = x1 + Math.cos(a2) * l2, y2 = y1 + Math.sin(a2) * l2;
+      L(bx, by, x1, y1, 1.3, 1.1, (t, e) => e ? S1 : S2);
+      P(x1, y1, S0);
+      L(x1, y1, x2, y2, 1.1, 0.9, (t, e) => e ? S1 : S3);
+      const a3 = a2 + 0.45 * side, cl = thumb ? 4 : 6.5;
+      L(x2, y2, x2 + Math.cos(a3) * cl, y2 + Math.sin(a3) * cl, 1.2, 0.2, (t, e) => t > 0.8 ? K0 : e ? K1 : t < 0.4 ? K2 : K1);
+    }
+  };
+  const sickle = (hx, hy, a) => {
+    const ux = Math.cos(a), uy = Math.sin(a);
+    let nx = uy, ny = -ux; if (nx < 0) { nx = -nx; ny = -ny; }
+    L(hx - ux * 7, hy - uy * 7, hx + ux * 9, hy + uy * 9, 2.2, 2, (t, e) => e ? [70, 38, 18] : t > 0.3 && t < 0.4 ? [70, 38, 18] : [118, 70, 34]);   // рукоять
+    L(hx + ux * 8, hy + uy * 8, hx + ux * 11, hy + uy * 11, 2.4, 2.4, (t, e) => e ? I0 : I1);                                                        // кольцо
+    const bx = hx + ux * 11, by = hy + uy * 11, Rr = 17, cx = bx + nx * Rr, cy = by + ny * Rr, a0 = Math.atan2(by - cy, bx - cx);
+    const sg = (-Math.sin(a0) * ux + Math.cos(a0) * uy) > 0 ? 1 : -1, SW = 3.7;
+    R(cx - Rr - 2, cy - Rr - 2, cx + Rr + 2, cy + Rr + 2, (x, y) => {
+      const dx = x - cx, dy = y - cy, d = Math.sqrt(dx * dx + dy * dy);
+      let da = (Math.atan2(dy, dx) - a0) * sg; da = ((da % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      if (da > SW) return null;
+      const t = da / SW, w = 5 * (1 - t) + 0.6;
+      if (d > Rr + 0.5 || d < Rr + 0.5 - w) return null;
+      if (d > Rr - 0.6) return I0;                                                        // обух
+      if (d < Rr + 1.5 - w) return t > 0.3 && t < 0.75 && hsh(x * 3 + y) > 0.6 ? K7 : I3;  // жало блестит на солнце
+      return hsh(x * 7 + y * 13) > 0.82 ? RU : I2;                                        // ржа
+    });
+  };
+  // дальняя (левая) рука — когтистая пятерня
+  arm(-1, pose.L);
+  claw(pose.L[0], pose.L[1], pose.L[2], -1);
+
+  // ---- шея: тонкая, жилистая
+  R(-4, -150, 4, -136, (x, y) => Math.abs(x) <= 3 ? (Math.abs(x) === 3 ? S1 : x === -1 && y > -146 ? S1 : S2) : null);
+
+  // ---- голова: шапка соломенных волос с пробором, венок, лицо-череп
+  R(-18, HY - 22, 18, HY + 14, (x, y) => {
+    const dx = x / 17.5, dy = (y - HY + 2) / 20;
+    if (dx * dx + dy * dy > 1) return null;
+    const st = (((Math.atan2(x, y - HY + 26) * 10) % 1) + 1) % 1;
+    return x === 0 && y < HY - 12 ? K2 : st < 0.3 ? K3 : st < 0.65 ? K4 : K5;
+  });
+  const jaw = hit ? 25 : lv === 1 ? 20 : 18;
+  const face = (x, y) => { const dx = (x + 0.5) / 14, dy = (y - HY) / (y > HY ? jaw : 15); return dx * dx * (1 + Math.max(0, dy) * 0.9) + dy * dy <= 1 && y >= HY - 12; };
+  R(-15, HY - 13, 15, HY + jaw + 1, (x, y) => {
+    if (!face(x, y)) return null;
+    const ax = Math.abs(x + 0.5), edge = !face(x + (x < 0 ? -1 : 1), y) || !face(x, y + 1);
+    if (edge) return S0;
+    const ch = (ax - 9.5) ** 2 * 0.7 + (y - HY - 7) ** 2;
+    if (ch < 10) return ch < 4 ? S0 : S1;                                               // впалые щёки
+    if (ax > 11) return S1;
+    if ((ax - 9) ** 2 + (y - HY - 1.5) ** 2 < 4) return S4;                             // скулы
+    if (y < HY - 7 && ax < 7) return S4;
+    return y > HY + 12 ? S2 : S3;
+  });
+  for (const [x, y] of [[-4, HY - 11], [-3, HY - 10], [-3, HY - 9], [-2, HY - 8], [5, HY - 11], [6, HY - 10], [6, HY - 9], [11, HY + 4], [10, HY + 5], [10, HY + 6], [-11, HY + 9], [-10, HY + 10]]) P(x, y, S1);   // трещины от зноя
+  // глазницы: глубокие, с раскалённой точкой; брови сведены злобно
+  for (const s of [-1, 1]) {
+    const ex = s * 6 - (s < 0 ? 1 : 0), ey = HY - 1;
+    R(ex - 6, ey - 5, ex + 6, ey + 5, (x, y) => { const d = ((x - ex) / 4.8) ** 2 + ((y - ey) / 4) ** 2; return d <= 1 ? (blink ? (y === ey ? S0 : S1) : K0) : d <= 1.45 ? S0 : null; });
+    if (!blink) {
+      const g = hit ? 1.6 : 1.1, cy = ey + 0.5;
+      R(ex - 3, cy - 3, ex + 3, cy + 3, (x, y) => { const d = Math.hypot(x - ex, y - cy); return d < g ? K7 : d < g + 1 ? K5 : d < g + 2 && dth(x, y) < 0.5 ? K3 : null; });
+      if (hit) R(ex - 7, ey - 7, ex + 7, ey + 7, (x, y) => { const d = Math.hypot(x - ex, y - ey); return d > 5.5 && d < 7 && dth(x, y) < 0.35 ? [...K6, 0.55] : null; }, false);
+    }
+    L(ex - s * 4, HY - 6, ex + s * 5, HY - 10, 0.9, 0.7, (t, e) => e ? K1 : K0);      // бровь: внутренний край ниже — злоба
+  }
+  // нос черепа: провал
+  P(-1, HY + 3, S1); P(-1, HY + 4, S1);
+  for (const [x, y] of [[-3, HY + 6], [-2, HY + 6], [1, HY + 6], [0, HY + 6], [-2, HY + 7], [-1, HY + 7], [0, HY + 7], [-1, HY + 8]]) P(x, y, K0);
+  // рот
+  const MY = HY + 12;
+  if (lv === 0) {                                                                     // безгубый растянутый оскал до ушей
+    for (let x = -10; x <= 9; x++) {
+      const ax = Math.abs(x + 0.5), up = ax > 7 ? Math.round(ax - 7) : 0;
+      P(x, MY - up, K0); P(x, MY + 2 - up, K0);
+      P(x, MY + 1 - up, ax > 8 ? K0 : x & 1 ? K5 : K6);
+      if (ax < 7 && !(x & 1)) { P(x, MY - 1, S0); P(x, MY + 3, S0); }
+    }
+  } else {
+    const ry = hit ? 9 : 4, my = MY + (hit ? 5 : 2);
+    R(-10, my - ry - 1, 9, my + ry + 1, (x, y) => {
+      const d = ((x + 0.5) / 7.5) ** 2 + ((y - my) / ry) ** 2;
+      if (d > 1) return d < 1.35 ? S0 : null;
+      const tt = y - (my - ry), bb = my + ry - y, tl = (x & 1) ? 2 : hit ? 5 : 2;     // клыки сверху и снизу, длинные в ударе
+      if (Math.abs(x + 0.5) < 7 && (tt < tl || bb < (hit ? ((x & 1) ? 4 : 1.5) : 1.5))) return (x & 1) ? K5 : K6;
+      return d < 0.35 && hit ? [110, 24, 12] : K0;
+    });
+  }
+  // венок: колосья веером (зерно в три ряда, ости), жгут из соломы, кровавые маки
+  for (let k = 0; k < 9; k++) {
+    const a = (k - 4) * 0.28 + Math.sin(ph + k) * 0.05, bx = Math.sin(a) * 16, by = HY - 16 - Math.cos(a) * 2, len = 10 + (k % 2 ? 0 : 3) + (k === 4 ? 2 : 0);
+    const ux = Math.sin(a * 1.15), uy = -Math.cos(a * 1.15);
+    L(bx, by, bx + ux * 3, by + uy * 3, 0.6, 0.6, () => K3);
+    for (let m = 3; m < len; m += 2) {
+      const x = bx + ux * m, y = by + uy * m, w = m < len - 2 ? 1.4 : 0.6;
+      P(x - uy * w, y + ux * w, K5); P(x + uy * w, y - ux * w, K3); P(x, y, K4); P(x + ux, y + uy, K2);
+    }
+    const tx = bx + ux * len, ty = by + uy * len;
+    for (const o of [-0.35, 0, 0.35]) for (let m = 1; m < 7; m++) if (dth(Math.round(tx + o * 9), m) < 1 - m / 8) P(tx + Math.sin(a * 1.15 + o) * m, ty - Math.cos(a * 1.15 + o) * m, K6, 0.8);   // ости
+  }
+  R(-19, HY - 21, 19, HY - 11, (x, y) => { const d = (x / 18) ** 2 + ((y - HY + 16) / 3.6) ** 2; return d <= 1 && y >= HY - 17 ? (((x + y) % 3 + 3) % 3 === 0 ? K2 : (x + y) & 1 ? K3 : K4) : null; });
+  for (const s of [-1, 1]) R(s * 12 - 3, HY - 20, s * 12 + 3, HY - 13, (x, y) => { const d = (x - s * 12) ** 2 + (y - HY + 16) ** 2; return d <= 1 ? K0 : d <= 5 ? (y < HY - 16 ? RED2 : RED) : d <= 8 ? [110, 26, 14] : null; });
+  // пряди спереди: от висков падают на плечи и грудь, обрамляют лицо
+  for (let k = 0; k < 4; k++) strand(k, false);
+
+  // ---- ближняя (правая) рука с серпом
+  arm(1, pose.R);
+  sickle(pose.R[0], pose.R[1], pose.R[2]);
+  R(pose.R[0] - 4, pose.R[1] - 4, pose.R[0] + 4, pose.R[1] + 4, (x, y) => { const d = (x - pose.R[0]) ** 2 + (y - pose.R[1]) ** 2; return d <= 10 ? (d > 6 ? S1 : S2) : null; });   // кулак на рукояти
+  for (const j of [-1, 0, 1]) {                                                       // когти поверх рукояти
+    const a = pose.R[2] + Math.PI / 2, x = pose.R[0] + Math.cos(pose.R[2]) * j * 2.2 + Math.cos(a) * 3, y = pose.R[1] + Math.sin(pose.R[2]) * j * 2.2 + Math.sin(a) * 3;
+    L(x, y, x + Math.cos(a - 0.6) * 4, y + Math.sin(a - 0.6) * 4, 1, 0.2, t => t > 0.7 ? K0 : K1);
+  }
+
+  // ---- передние половины петель вихря и полова
+  loops(true); chaff(true);
+
+  // ---- обводка: тёплая тёмно-бурая, без чёрного
+  const OUTC = [58, 24, 8];
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const i = y * W + x;
+    if (SOL[i] || !(SOL[i - 1] || SOL[i + 1] || SOL[i - W] || SOL[i + W])) continue;
+    const j = i * 4, a = 0.92, da = D[j + 3] / 255, oa = a + da * (1 - a);
+    for (let k = 0; k < 3; k++) D[j + k] = Math.round((OUTC[k] * a + D[j + k] * da * (1 - a)) / oa);
+    D[j + 3] = Math.round(oa * 255);
+  }
+  c.putImageData(img, 0, 0);
+  return cv;
 }
+function fzNoonSprite(lv, p) {
+  const k = 'noon' + lv + p;
+  if (FZ_CVC[k]) return FZ_CVC[k];
+  const px = fzNoonPx(lv, p);
+  const cv = fzCanvas(k, 60, 88, 30, 80, c => { c.imageSmoothingEnabled = false; c.drawImage(px, -30, -80, 60, 88); });
+  cv.fzPx = true;
+  return cv;
+}
+// Кадр Полудницы по времени кружения над жертвой: замах — удар серпом — опускание — покой
+const fzNoonLv = t => { const s = t % 2.2; return s < 0.45 ? 1 : s < 0.8 ? 2 : s < 1.05 ? 1 : 0; };
+// Огонёк рисуется мягкой кистью
 function fzWispDraw(c, w) {
   const px = Math.round(w.x * TILE), py = Math.round(w.y * TILE - 16 + Math.sin(w.ph) * 4), r = 9 + Math.sin(w.ph * 2.3) * 1.5;
   c.save(); c.globalAlpha *= w.alpha; c.globalCompositeOperation = 'lighter';
@@ -1288,7 +1563,7 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
   }
   for (const w of F.wisps || []) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.5, () => fzWispDraw(c, w)]);
   const N = F.noon;
-  if (N && vis(N.x, N.y) && N.alpha > 0) list.push([N.y + 0.2, () => fzDrawHi(c, fzNoonSprite(Math.floor(N.ph * 3) % 6), N.x, N.y, N.alpha, N.face, 6)]);
+  if (N && vis(N.x, N.y) && N.alpha > 0) list.push([N.y + 0.2, () => fzDrawHi(c, fzNoonSprite(N.state === 'haunt' ? fzNoonLv(N.t) : 0, Math.floor(N.ph * 3) % 6), N.x, N.y, N.alpha, N.face, 6)]);
   for (const b of F.ban) if (vis(b.x, b.y) && b.alpha > 0) list.push([b.y + 0.3, () => {
     fzDrawHi(c, fzBansheeSprite(b.wail > 2.1 ? 1 : b.wail > 0.3 ? 2 : b.wail > 0 ? 1 : 0, Math.floor(b.ph * 4.4) % 12), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, -14 + Math.sin(b.ph * 1.7) * 3);
   }]);
