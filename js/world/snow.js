@@ -65,6 +65,36 @@ function snowTile(e, v, ice) {
 
 const snowable = i => { const t = World.terrain[i]; return t === T_GRASS || t === T_SAND; };
 
+// Дорога под снегом: сначала ровный снег по всей клетке (как у соседних), поверх — сама мостовая с её же
+// сглаженными краями, присыпанная утоптанным снегом. Раньше снег на клетке дороги был слабее целым квадратом —
+// получались серые заплатки со стыками вместо контура дороги.
+const SNOWROAD = new Map();
+function snowRoadDraw(c, x, y, snow) {
+  const bi = Math.floor(y / TBAND), rb = TERR.rb[bi];
+  if (!rb) return;
+  const i = y * MAP_W + x, lvl = Math.round(Math.min(1, snow) * 8), ver = TERR.rver | 0;
+  let e = SNOWROAD.get(i);
+  if (!e || e.lvl !== lvl || e.ver !== ver) {
+    if (!e) e = { cv: document.createElement('canvas') };
+    const cv = e.cv; cv.width = cv.height = TILE;
+    const g = cv.getContext('2d');
+    g.drawImage(rb.cv, x * TILE, y * TILE - rb.y0, TILE, TILE, 0, 0, TILE, TILE);
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = `rgba(214,220,228,${(0.5 * lvl / 8).toFixed(2)})`;   // утоптанный снег: серо-голубой, мостовая просвечивает
+    g.fillRect(0, 0, TILE, TILE);
+    const d = g.getImageData(0, 0, TILE, TILE), a = d.data;
+    for (let k = 0; k < a.length; k += 4) {   // шов камня чуть теплее — талая грязь
+      if (!a[k + 3]) continue;
+      const h = snowH((k >> 2) % TILE + x * 7, ((k >> 2) / TILE | 0) + y * 5);
+      if (h < 0.16) { a[k] = Math.max(0, a[k] - 22); a[k + 1] = Math.max(0, a[k + 1] - 24); a[k + 2] = Math.max(0, a[k + 2] - 30); }
+    }
+    g.putImageData(d, 0, 0);
+    e.lvl = lvl; e.ver = ver; SNOWROAD.set(i, e);
+  }
+  c.globalAlpha = 1;
+  c.drawImage(e.cv, x * TILE, y * TILE);
+}
+
 function snowDrawGround(c, x0, y0, x1, y1) {
   const S = SEA();
   if (S.snow < 0.02 && S.ice < 0.02) return;
@@ -83,9 +113,10 @@ function snowDrawGround(c, x0, y0, x1, y1) {
     } else if ((t === T_GRASS || t === T_SAND) && S.snow >= 0.02) {
       const ns = (j, bit) => (T[j] === T_WATER ? bit << 4 : !snowable(j) || World.bmap[j] !== 0 ? bit : 0);
       const e = (y > 0 ? ns(i - W, 1) : 0) | (x < W - 1 ? ns(i + 1, 2) : 0) | (y < H - 1 ? ns(i + W, 4) : 0) | (x > 0 ? ns(i - 1, 8) : 0);
-      c.globalAlpha = Math.min(1, S.snow) * (World.road[i] ? 0.42 : 0.93);
+      c.globalAlpha = Math.min(1, S.snow) * 0.93;
       const m = typeof OCN !== 'undefined' && OCN.on && OCN.m9 && S.ice > 0.5 ? OCN.m9[i] : 0;
       c.drawImage(m ? oceanIceTile(snowTile(e & 15, v, false), snowTile(0, v, true), m, false, 'l' + (e & 15) + ':' + v + ':' + m) : snowTile(e, v, false), x * TILE, y * TILE);
+      if (World.road[i]) snowRoadDraw(c, x, y, S.snow);
     }
   }
   c.globalAlpha = 1;
