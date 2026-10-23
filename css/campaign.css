@@ -10,10 +10,10 @@
 .cd-face { flex: none; }
 .cd-ch { width: 50px; height: 50px; border: 2px solid; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-size: 24px; font-weight: bold; box-shadow: 0 0 10px rgba(0,0,0,0.6); }
-/* портрет 36×36 пикселей (js/campaign/faces.js) ×2; моргание — второй кадр поверх на миг */
+/* портрет 72×72 пикселя (js/campaign/faces.js), один к одному; рамка: золотой кант, тёмная вставка; моргание — второй кадр поверх на миг */
 .cd-pt { position: relative; display: block; width: 72px; height: 72px; border: 2px solid; overflow: hidden;
   background-image: radial-gradient(circle at 50% 40%, rgba(255,240,200,0.22), rgba(0,0,0,0.35) 75%);
-  box-shadow: inset 0 0 0 1px #0a0705, 0 0 10px rgba(0,0,0,0.6); }
+  box-shadow: inset 0 0 0 1px #0a0705, inset 0 0 0 3px rgba(201,162,74,0.35), 0 0 10px rgba(0,0,0,0.6); }
 .cd-pt img { position: absolute; left: 0; top: 0; width: 72px; height: 72px; image-rendering: pixelated; }
 .cd-pt .cd-blink { opacity: 0; animation: cd-blink 4.2s steps(1) infinite; }
 @keyframes cd-blink { 0%, 95% { opacity: 0; } 96%, 99% { opacity: 1; } }

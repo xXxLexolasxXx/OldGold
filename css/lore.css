@@ -15,6 +15,13 @@
 .lc-say { display: flex; gap: 10px; align-items: flex-start; margin: 7px 0 8px; }
 .lc-face { flex: none; width: 42px; height: 42px; border: 2px solid; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-size: 21px; font-weight: bold; animation: lc-glow 2.4s ease-in-out infinite; }
+/* портрет 72×72 пикселя (faces.js): один пиксель арта — один пиксель экрана; рамка — как у окна диалога кампании */
+.lc-pt { flex: none; position: relative; display: block; width: 72px; height: 72px; border: 2px solid; overflow: hidden;
+  background-image: radial-gradient(circle at 50% 40%, rgba(255,240,200,0.22), rgba(0,0,0,0.35) 75%);
+  box-shadow: inset 0 0 0 1px #0a0705, inset 0 0 0 3px rgba(201,162,74,0.35), 0 0 10px rgba(0,0,0,0.6); }
+.lc-pt img { position: absolute; left: 0; top: 0; width: 72px; height: 72px; image-rendering: pixelated; }
+.lc-pt .lc-blink { opacity: 0; animation: lc-blink 4.2s steps(1) infinite; }
+@keyframes lc-blink { 0%, 95% { opacity: 0; } 96%, 99% { opacity: 1; } }
 @keyframes lc-glow { 50% { box-shadow: 0 0 14px 2px currentColor; } }
 .lc-body { flex: 1; min-width: 0; }
 .lc-name { font-size: 13px; font-weight: bold; margin-bottom: 1px; }
@@ -54,7 +61,7 @@
 #lore-fx.k-find i:nth-child(1) { left: 30%; top: 22%; } #lore-fx.k-find i:nth-child(2) { left: 70%; top: 18%; } #lore-fx.k-find i:nth-child(3) { left: 18%; top: 60%; }
 #lore-fx.k-find i:nth-child(4) { left: 84%; top: 55%; } #lore-fx.k-find i:nth-child(5) { left: 50%; top: 80%; }
 @keyframes lf-spark { 0%, 100% { opacity: 0; transform: scale(0.4); } 50% { opacity: 1; transform: scale(1.3); } }
-@media (prefers-reduced-motion: reduce) { #lore-card, #lore-fx, #lore-fx i, .lc-face { animation: none !important; } #lore-fx i { display: none; } }
+@media (prefers-reduced-motion: reduce) { #lore-card, #lore-fx, #lore-fx i, .lc-face, .lc-blink { animation: none !important; } #lore-fx i { display: none; } }
 
 /* телефон: сверху окно обучения — сцена снизу, над вкладками */
 body.mobile #lore-card { top: auto; bottom: calc(66px + env(safe-area-inset-bottom)); padding: 7px 10px 8px; }

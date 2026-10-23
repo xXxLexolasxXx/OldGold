@@ -102,6 +102,7 @@ scriptTest('icon: значки, названия и описания всех с
 scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
+scriptTest('faceart: портреты собеседников — 13 лиц, два кадра, 72×72 пикселя, кэш, у всех собеседников кампании и лора есть портрет', 'faceart-test.js');
 scriptTest('campaign: акты 1–5 — праздник и взрыв, обвал, Кремнёвка, дорога к межевому камню, сценарий с наследием, сейв, поражение, перевод', 'campaign-test.js', [], 420000);
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
