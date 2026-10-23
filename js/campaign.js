@@ -46,6 +46,25 @@ const campHasUI = () => typeof document !== 'undefined' && !window.__SERVER__ &&
 
 // ---------- Помощники для сценариев ----------
 
+// облик героя переходит между актами: имя, цвета/борода/жилет (hero.app), класс гильдии (clsKey, mastery)
+function campHeroLook(u) {
+  const H = u && u.hero;
+  if (!H) return null;
+  const o = { name: H.name };
+  if (H.app) o.app = H.app.slice();
+  for (const k of ['clsKey', 'cls', 'mastery']) if (H[k] != null) o[k] = H[k];
+  return o;
+}
+function campHeroLookApply(u, o) {
+  if (!u || !u.hero || !o) return false;
+  if (o.name) u.hero.name = o.name;
+  if (Array.isArray(o.app) && (typeof haClean !== 'function' || haClean(o.app))) u.hero.app = o.app.slice();
+  for (const k of ['clsKey', 'cls', 'mastery']) if (o[k] != null) u.hero[k] = o[k];
+  u._spr = null;
+  if (typeof HA !== 'undefined' && u.hero.app) HA.last = u.hero.app.slice();
+  Game.heroAsk = false;
+  return true;
+}
 function campHero() { return Game.units.find(u => u.type === 'hero' && !u.dead) || null; }
 function campPeople() { let n = 0; for (const u of Game.units) if (!u.dead && isPerson(u) && u.type !== 'hero' && u.type !== 'carter') n++; return n; }
 function campStock(g) { let n = 0; for (const b of Game.buildings) if (!b.removed && b.isStore && b.isStore()) n += Math.max(0, b.stock[g] || 0); return n; }
@@ -244,6 +263,7 @@ function campFinish(C, res, why) {
     p.done[C.act] = { t: Date.now(), time: stats.t, stars: Math.max(stars, old ? old.stars : 0), alive: stats.alive };
     if (A.legacy) p.legacy = Object.assign(p.legacy || {}, A.legacy(C, stats));
     p.last = C.act;
+    const hl = campHeroLook(campHero()); if (hl) p.hero = hl;
     campProgSave(p);
     if (typeof track === 'function') track('camp-win-' + C.act, 'Кампания: пройден акт ' + C.act);
   } else if (typeof track === 'function') track('camp-lose-' + C.act, 'Кампания: поражение в акте ' + C.act);
@@ -269,6 +289,7 @@ function campStart(n, opts = {}) {
   Game.camp = { v: 1, act: n, i: -1, st: null, seq: 0, t: 0, cp: -1, cpN: 0, flags: {}, tilt: 0, lost: 0, over: null, objs: null, mark: null, label: '' };
   A.setup(Game.camp, opts);
   if (campHasUI() && typeof buildTerrain === 'function') { buildTerrain(A.seed); if (typeof updateMinimapBase === 'function') updateMinimapBase(); }
+  if (n > 1) campHeroLookApply(campHero(), campProg().hero);
   campEnter(Game.camp, 0);
   if (typeof track === 'function') track('camp-start-' + n, 'Кампания: начат акт ' + n);
   return true;

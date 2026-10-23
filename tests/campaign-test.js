@@ -247,6 +247,28 @@ const BOT = `(function () {
   else console.log('Проверка: поражение — «' + o.why + '»');
 }
 
+// ---------- 2б. Облик героя переходит между актами и в сценарий (campProg().hero, Game.campLeg.hero, сейв cleg) ----------
+{
+  const { h, errors } = host(13);
+  h.run('campStart(1); Game.heroAsk = false;');
+  h.run('const H = campHero().hero; H.name = "Борин"; H.app = [2, 3, 4, 1, 0, 1, 0, 5, 0, 6, 0, -1]; H.clsKey = "warrior"; H.mastery = 2;');
+  h.run('campFinish(Game.camp, "win", "")');
+  h.run('campStart(2); Game.heroAsk = true;');   // heroAsk снова поднимет сам запуск акта — проверяем, что он не нужен
+  const a2 = JSON.parse(h.run('JSON.stringify({ H: campHero().hero, ask: Game.heroAsk })'));
+  if (a2.H.name !== 'Борин' || !a2.H.app || a2.H.app[1] !== 3 || a2.H.app[9] !== 6 || a2.H.clsKey !== 'warrior' || a2.H.mastery !== 2) fail('облик героя не перешёл в акт 2: ' + JSON.stringify(a2.H));
+  h.run('campFinish(Game.camp, "win", "")');
+  h.run('campStart(5); Game.heroAsk = false;');
+  const a5 = JSON.parse(h.run('JSON.stringify({ H: campHero().hero, leg: Game.campLeg, ser: serializeGame().cleg })'));
+  if (a5.H.name !== 'Борин' || !a5.H.app || a5.H.app[7] !== 5 || a5.H.clsKey !== 'warrior') fail('облик героя не перешёл в сценарий: ' + JSON.stringify(a5.H));
+  if (!a5.leg || !a5.leg.hero || a5.leg.hero.clsKey !== 'warrior' || !a5.ser || !a5.ser.hero) fail('облик героя не попал в Game.campLeg / cleg');
+  // сейв старой версии: cleg без hero и вовсе без cleg грузится
+  h.run('const old = serializeGame(); delete old.cleg.hero; applySave(JSON.parse(JSON.stringify(old))); const o2 = serializeGame(); delete o2.cleg; applySave(JSON.parse(JSON.stringify(o2)));');
+  if (h.run('Game.campLeg') !== null && h.run('!!Game.campLeg')) fail('сейв без cleg оставил наследие');
+  const errs = errors.filter(e => !/предупрежд/i.test(e));
+  if (errs.length) fail('перенос облика, ошибки в логе: ' + errs.slice(0, 3).join(' | '));
+  else console.log('Проверка: облик героя (имя, цвета, класс) — акт 1 → 2 → сценарий, сейв cleg');
+}
+
 // ---------- 3. Вне кампании ничего не меняется ----------
 {
   const { h } = host(11);
@@ -276,6 +298,12 @@ const BOT = `(function () {
     for (const k in CAMP_WHO) if (CAMP_WHO[k].name) out.add(CAMP_WHO[k].name);
     return [...out];
   })())`));
+  // строки, которые код собирает на лету (итоги, тосты, подписи): ключи-шаблоны с {0}
+  const dyn = ['Тайник Тана ({0} из 3): старый кошель с монетами и записка «на чёрный день».', 'Ключ Тана у героя; с вами уходят {0} гномов.',
+    'Праздник Первого Камня! Все бросили дела: песни, пляски и пиво у костра', 'Васька', 'до перевала дошли {0} гномов; хлеба в дорогу — {1}.',
+    'до перевала дошли {0} гномов, с ними кузнец Васька; хлеба в дорогу — {1}.', 'до Долины дошли {0} гномов — их и припасы обоза ждёт сценарий «Тишина дороже золота».',
+    '{0} уважения', 'Подгорье', 'Наследие: {0}', 'Акт {0}: {1} ▸', 'Продолжить кампанию', 'Кампания'];
+  texts.push(...dyn);
   const miss = texts.filter(t => t && !dict[t] && !['Грум Ворчун', 'Бабушка Ягла', 'Пим Чернилкин', 'Малгор', 'Герой'].includes(t));
   if (miss.length) fail(`нет английского перевода (${miss.length}): ` + miss.slice(0, 4).join(' | '));
   else console.log(`Проверка: перевод актов — ${texts.length} строк`);

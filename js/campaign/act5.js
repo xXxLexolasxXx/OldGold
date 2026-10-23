@@ -20,7 +20,7 @@ function campLegacyApply() {
     if (s) { const u = spawnUnit('smelter', s[0], s[1]); if (u) u.cname = 'Васька'; }
     store.stock.iron = (store.stock.iron || 0) + 6; store.stock.sword = (store.stock.sword || 0) + 2;
   }
-  Game.campLeg = { from: 1, extra, vaska: !!a2.vaska, trade: !!gift.trade };
+  Game.campLeg = { from: 1, extra, vaska: !!a2.vaska, trade: !!gift.trade, hero: campProg().hero || null };
   return Game.campLeg;
 }
 
@@ -28,14 +28,14 @@ CAMP_ACTS[5] = {
   id: 5, name: 'Тишина дороже золота', scenario: true, goalMode: 'scenario', steps: [],
   // запуск: новая карта Долины, сценарий, наследие; имя героя — то же, что в кампании
   start() {
-    const h0 = campHero(), name = h0 && h0.hero && h0.hero.name;
+    const look = campProg().hero || campHeroLook(campHero());
     const seed = (Math.random() * 1e9) | 0;
     setupStart(seed, { biome: 'meadow', size: 'large' });
     if (campHasUI() && typeof buildTerrain === 'function') { buildTerrain(seed); if (typeof updateMinimapBase === 'function') updateMinimapBase(); }
     if (typeof goalNew === 'function') goalNew('scenario');
     campLegacyApply();
-    const h = campHero();
-    if (h && name) { h.hero.name = name; Game.heroAsk = false; }
+    campHeroLookApply(campHero(), look);
+    if (Game.campLeg && look) Game.campLeg.hero = look;
     const p = campProg(); p.last = 5; campProgSave(p);
     if (typeof track === 'function') track('camp-start-5', 'Кампания: сценарий с наследием');
     return true;
