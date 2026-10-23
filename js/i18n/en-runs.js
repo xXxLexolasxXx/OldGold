@@ -26,6 +26,7 @@ I18N.add('en', {
   "Позвать напарника": "Call a companion", "ИИ-гном пойдёт рядом до конца забега": "An AI gnome will walk with you until the end of the run",
   "Тяжело идёт? В награде можно позвать ИИ-напарника": "Rough going? You can call an AI companion as a reward",
   "Лавка — скоро": "Shop — soon", "Лавка нарядов — скоро": "Outfit shop — soon", "Лавка нарядов откроется позже": "The outfit shop will open later",
+  "На окраине деревни открылась Таверна отряда ⚔ — отсюда спускаются в подземелья Малгора": "A Squad Tavern ⚔ has opened on the edge of the village — the way down to Malgor’s dungeons",
   "Ежедневный": "Daily", "Снова в строю!": "Back in action!", "Новый напарник!": "New companion!",
   "нет записи": "no recording", "кривая запись": "bad recording", "нет героя {0}": "no hero {0}", "выбор без награды": "pick without a reward", "записи не по порядку": "recording out of order",
   "забег брошен на выборе награды": "run abandoned at the reward pick", "слишком длинный забег": "run too long", "запись кончилась": "recording ended", "запись кончилась до конца забега": "recording ended before the run did",

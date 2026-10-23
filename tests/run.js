@@ -107,6 +107,7 @@ scriptTest('photo: фото-режим, рамки и фильтры', 'photo-te
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('runboard: таблица рекордов забегов — переигровка на сервере, попытка дня, согласие, удаление', 'runboard-test.js');
 scriptTest('runroom: кооп-забег до 5 героев — комнаты, бой на сервере, обрыв и возврат, по сети', 'runroom-test.js', [], 300000);
+scriptTest('sqtavern: Таверна отряда появляется сама у окраины — условие, место, рост деревни, сейв, кооп', 'sqtavern-test.js');
 scriptTest('skins: скины героя — открытие, облик деревни, рисунок, чистка на сервере', 'skins-test.js');
 scriptTest('runsim: ядро забега — детерминизм, бот до Малгора, переигровка, отряд из 5', 'runsim-test.js');
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');

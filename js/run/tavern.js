@@ -34,9 +34,7 @@ BUILDINGS.squadtavern = {
   name: 'Таверна отряда', cat: 'Основа', w: 4, h: 3, top: 90, cost: { timber: 8, stone: 6 }, wideDoor: true, auto: true,
   desc: 'Здесь собирают отряд для спуска в подземелья Малгора. Хозяин предложит забег, а ещё тут можно переодеться и выбрать напарника.',
 };
-BUILD_ORDER.push('squadtavern');
-UNLOCKS.push({ id: 'squad', items: ['squadtavern'] });
-if (typeof UNLOCK_NAMES !== 'undefined') UNLOCK_NAMES.squad = 'Таверна отряда';
+// Таверну игрок не строит (решение владельца 23.10, КООП_ЗАБЕГ.md В8): она вырастает сама на окраине, см. «появление» ниже
 Object.assign(SIGN_OF, { squadtavern: 'swords' });
 DWARF_TYPES.add('squadtavern');
 Object.assign(MODELS, {
@@ -68,22 +66,56 @@ Object.assign(MODELS, {
   },
 });
 
-// ---------- доступность ----------
+// ---------- появление ----------
+// Условие: в сюжете — пройдена глава 3; в свободной игре и в коопе — 12+ жителей и герой 3-го уровня.
+const SQT_POP = 12, SQT_LVL = 3;
 function squadTavernOpen() {
   const g = Game.goal;
-  if (!g) return false;
-  if (g.mode === 'scenario') return g.ch >= 3;   // глава 3 «Пиво вместо совести» пройдена
-  return Game.buildings.some(b => b.type === 'brewery' && b.state === 'done');   // свободная игра: пивоварня стоит
+  if (g && g.mode === 'scenario') return g.ch >= 3;   // глава 3 «Пиво вместо совести» пройдена
+  const pop = Game.units.filter(u => isPerson(u) && !u.dead).length;
+  return pop >= SQT_POP && Game.units.some(u => u.type === 'hero' && !u.dead && u.hero && (u.hero.level | 0) >= SQT_LVL);
+}
+// «Крайнее боковое» здание — то, что дальше всех от склада (центра деревни) по горизонтали, слева или справа.
+// Таверна встаёт за ним наружу, с зазором 4–5 клеток (не вышло — ищем шире вокруг этой точки).
+// Появившуюся таверну не двигаем: она обычное готовое здание и лежит в сейве, хоть деревня потом и разрастётся.
+function squadTavernSpot() {
+  const bs = Game.buildings.filter(b => !b.removed && b.type !== 'squadtavern');
+  if (!bs.length) return null;
+  const hub = bs.find(b => b.isStore && b.isStore()) || bs[0], cx = hub.x + hub.w / 2;
+  let edge = bs[0], best = -1;
+  for (const b of bs) { const d = Math.max(Math.abs(b.x - cx), Math.abs(b.x + b.w - cx)); if (d > best) { best = d; edge = b; } }
+  const side = edge.x + edge.w / 2 >= cx ? 1 : -1, D = BUILDINGS.squadtavern, ey = edge.y + edge.h - D.h;
+  const tries = [];
+  for (const gap of [4, 5]) for (const dy of [0, -1, 1, -2, 2, -3, 3]) tries.push([side > 0 ? edge.x + edge.w + gap : edge.x - gap - D.w, ey + dy]);
+  for (let r = 1; r <= 8; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+    tries.push([(side > 0 ? edge.x + edge.w + 4 : edge.x - 4 - D.w) + dx * side, ey + dy]);
+  }
+  for (const [x, y] of tries) if (checkPlacement('squadtavern', x, y, 0, true) === null && checkPlacement('squadtavern', x, y, 0) === null) return { x, y, edge, side };
+  return null;
+}
+function squadTavernAppear() {
+  if (Game.buildings.some(b => b.type === 'squadtavern' && !b.removed)) return null;
+  if (!squadTavernOpen()) return null;
+  const sp = squadTavernSpot();
+  if (!sp) return null;
+  const b = placeBuilding('squadtavern', sp.x, sp.y, true);
+  const msg = 'На окраине деревни открылась Таверна отряда ⚔ — отсюда спускаются в подземелья Малгора';
+  try { if (typeof gnews === 'function') gnews(msg, b); else toast(msg, b); } catch (e) { /* без тоста */ }
+  return b;
 }
 {
   const _step = step;
-  let acc = 0;
+  let acc = 0, wait = 5;
   step = function (dt) {
     _step(dt);
     acc += dt;
-    if (acc < 2) return;
+    if (acc < wait) return;
     acc = 0;
-    if (Game.unlocked && !Game.unlocked.squad && squadTavernOpen()) unlockStage('squad');
+    // в кооп-клиенте мир ведёт сервер: таверна приходит оттуда, как любое здание
+    if (typeof Coop !== 'undefined' && Coop.on && !(typeof isServer === 'function' && isServer())) return;
+    // нет места у окраины — следующая попытка через минуту, а не каждые 5 с (поиск с проверкой прохода не бесплатный)
+    wait = squadTavernAppear() || !squadTavernOpen() || Game.buildings.some(b => b.type === 'squadtavern' && !b.removed) ? 5 : 60;
   };
 }
 
