@@ -30,6 +30,7 @@ function draw() {
   strip('Рука скелета (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngHand(set, f)), k);
   for (let v = 0; v < 5; v++) strip('Плотоядный цветок, расцветка ' + (v + 1) + ' (8 кадров: покой ×2, раскрывает ×3, хлопнул, жуёт ×2)', [...Array(NG_FL_N).keys()].map(f => ngFlower(v, f)), k);
   strip('Надгробие поднимается (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngTomb(set, f)), k);
+  for (let v = 0; v < 5; v++) strip('Цветок-полудница, расцветка ' + (v + 1) + ' (8 кадров)', [...Array(NG_FL_N).keys()].map(f => ngNoonFlower(v, f)), k);
   strip('Череп из земли (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngSkull(set, f)), k);
   strip('Щупальца с глазом (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngTentacle(set, f)), k);
   strip('Паук из норы (6 кадров)', [0, 1, 2, 3, 4, 5].map(f => ngSpider(set, f)), k);
@@ -45,7 +46,7 @@ function draw() {
   c.drawImage(g, 0, 0);
   c.fillStyle = 'rgba(8,14,40,0.62)'; c.fillRect(0, 0, cv.width, cv.height);   // ночное затемнение
   const ok = () => true;
-  for (const kd of [3, 1, 5, 6, 7, 8, 9, 10, 2]) ngSpots(kd, 0, 0, tw - 1, th - 1, seed, ok, (sp) => ngDrawTile(c, kd, set, sp.tx, sp.ty, seed, t, 1, false, kd === 2 ? ngFlowerVar(sp.cx, sp.cy, seed) : 0));
+  for (const kd of [3, 1, 5, 6, 7, 8, 9, 10, 11, 2]) ngSpots(kd, 0, 0, tw - 1, th - 1, seed, ok, (sp) => ngDrawTile(c, kd, set, sp.tx, sp.ty, seed, t, 1, false, kd === 2 || kd === 11 ? ngFlowerVar(sp.cx, sp.cy, seed) : 0));
   ngSpots(4, 0, 0, tw - 1, th - 1, seed, ok, (sp) => ngDrawTile(c, 4, set, sp.tx, sp.ty, seed, t, 1, true));
   for (let i = 0; i < 6; i++) {   // туман поверх
     const s = ngFog(set, i & 1); c.globalAlpha = 0.3; c.drawImage(s, ((i * 97) % 380) + Math.sin(t * 0.05 + i) * 26, (i * 53) % 200); c.globalAlpha = 1;

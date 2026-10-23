@@ -9,7 +9,7 @@ for (const seed of [11]) {
   const h = S.newSim(seed).h;
   const r = JSON.parse(h.run(`JSON.stringify((() => {
     const out = { kinds: {}, vars: 0, badVar: 0, pose: [], cross: 999 }, all = [];
-    for (const k of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    for (const k of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
       const pts = [];
       ngSpots(k, 0, 0, MAP_W - 1, MAP_H - 1, Game.seed | 0, ngTileOk, sp => { pts.push(sp); all.push([k, sp.tx, sp.ty]); });
       let minD = 999;
@@ -52,7 +52,7 @@ for (const seed of [11]) {
     }
     return out;
   })())`));
-  for (const [k, minWant, maxWinWant, name] of [[2, 8, 5, 'цветок'], [1, 10, 5, 'рука'], [3, 10, 5, 'плита'], [5, 10, 5, 'череп'], [6, 10, 5, 'щупальца'], [7, 10, 5, 'паук'], [8, 10, 5, 'рука зомби'], [9, 10, 5, 'гроб'], [10, 10, 5, 'поганки'], [4, 4, 8, 'глаза']]) {
+  for (const [k, minWant, maxWinWant, name] of [[2, 8, 5, 'цветок'], [1, 10, 5, 'рука'], [3, 10, 5, 'плита'], [5, 10, 5, 'череп'], [6, 10, 5, 'щупальца'], [7, 10, 5, 'паук'], [8, 10, 5, 'рука зомби'], [9, 10, 5, 'гроб'], [10, 10, 5, 'поганки'], [11, 12, 4, 'цветок-полудница'], [4, 4, 8, 'глаза']]) {
     const d = r.kinds[k];
     ok(d.n > 0, `сид ${seed}: ${name} не встречается`);
     ok(d.minD >= minWant, `сид ${seed}: ${name}: два на расстоянии ${d.minD} < ${minWant}`);
