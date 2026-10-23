@@ -216,6 +216,9 @@ if (!loadWorld()) {
   log('создан новый мир, зерно', seed, custom ? 'карта игрока ' + run('MapOpt.custom.name') : 'биом ' + biome + ', размер ' + size);
 }
 
+// OLDGOLD_COOP_CAMPAIGN=0 — спрятать кампанию в коопе (бета): у хоста нет кнопки, команда запуска акта отклоняется
+if (process.env.OLDGOLD_COOP_CAMPAIGN === '0') { run('coopCampOff(true)'); log('кампания в коопе выключена (OLDGOLD_COOP_CAMPAIGN=0)'); }
+
 function saveWorld() {
   if (noSave) return false;
   try {
@@ -755,7 +758,7 @@ function onGameMessage(c, m, text) {
   // чат рассылается всем — не чаще раза в 1,5 секунды с игрока
   if (m.t === 'chat') { if (nowMs - (c.chatAt || 0) < 1500) return; c.chatAt = nowMs; }
   // кампания: хост переводит деревню в мир акта — прежний (не кампанийный) мир сначала уходит в архив
-  if (m.t === 'campaign' && c.isHost && m.a === 'start' && !run('!!Game.camp') && saveWorld() && fs.existsSync(WORLD_FILE)) {
+  if (m.t === 'campaign' && c.isHost && m.a === 'start' && !run('coop.noCamp') && !run('!!Game.camp') && saveWorld() && fs.existsSync(WORLD_FILE)) {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     try { fs.copyFileSync(WORLD_FILE, path.join(DATA, 'world-' + stamp + '-before-camp.json')); log('мир до кампании сохранён в архив', stamp); } catch (e) { log('архив мира перед кампанией не записан:', e.message); }
   }

@@ -370,7 +370,8 @@ function campCoopMsg(m) {
 
 {
   const _step = step;
-  step = function (dt) { _step(dt); if (Game.camp && !(typeof isMirror === 'function' && isMirror())) campTick(dt); };
+  // кооп-клиент без связи (сервер перезапускается) — по-прежнему зеркало: своё состояние шага не полное, считать сценарий нельзя
+  step = function (dt) { _step(dt); if (Game.camp && !(typeof isMirror === 'function' && isMirror()) && !campMir()) campTick(dt); };
   const _reset = resetGameState;
   resetGameState = function () { _reset(); Game.camp = null; };
   const _ser = serializeGame;
@@ -389,6 +390,9 @@ function campCoopMsg(m) {
     const C = Game.camp = { v: 1, act: o.act, i: Math.max(0, o.i | 0), st: null, seq: 0, t: o.t || 0, cp: o.cp ?? -1, cpN: o.cpN || 0, flags: o.flags || {}, tilt: o.tilt || 0, lost: o.lost || 0, over: o.over || null, objs: null, mark: null, label: o.label || '', timer: o.timer || null, meter: o.meter || null };
     const A = CAMP_ACTS[o.act];
     if (A.onLoad) A.onLoad(C);
+    // колонна на марше: пометки u.march в сейв юнитов не попадают, флаг — попадает; без этого после загрузки (контрольная точка,
+    // перезапуск кооп-сервера) шаг «Дойти до стоянки» ждал вечно, а гномы стояли
+    if (C.flags.march) { const [mx, my, ms] = C.flags.march; campMarch(Game.units.filter(u => !u.dead && isPerson(u) && u.type !== 'hero' && u.type !== 'carter'), mx, my, ms); }
     if (Game.dz) Game.dz.freq = 0;
   };
   // Малгор в кампании не живёт: заглушка за краем карты, гнев не растёт (гоблины кампании — налётчики enemy.js)

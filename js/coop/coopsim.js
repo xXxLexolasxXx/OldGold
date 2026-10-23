@@ -374,6 +374,8 @@ function coopQuestHave() { const q = coop.quest; return q ? Math.max(0, (Game.pr
 function coopVillageTick() {
   if (!coop.players.size) return;
   coopParcels();
+  // в акте кампании у деревни сценарий: заказы, задания дня, Совет и серии ночей молчат (посылки идут)
+  if (Game.camp) { coop.quest = null; coop.cn = null; coop.prevNight = isNightNow(); coop.prevEve = isEveningNow(); coop.lostAtEve = null; return; }
   const night = isNightNow(), eve = isEveningNow();
   // вечер: считаем потери с этой точки; заказ, не выполненный за день, сгорает
   if (eve && !coop.prevEve) {
@@ -451,6 +453,8 @@ function coopStateSet(json) {
 // Меню строительства для игроков открывается постепенно (как в одиночной игре), хост видит всё.
 // Стадии считаются по уже построенному: так же и со старым миром.
 function coopInitUnlocks() {
+  // мир акта кампании (перезапуск сервера посреди акта): в акте открыто всё, как при campStart, — иначе гости не строят башни
+  if (Game.camp && typeof allUnlocked === 'function') { Game.unlocked = allUnlocked(); return; }
   Game.unlocked = { res: true };
   for (let ch = true; ch;) {
     ch = false;
@@ -532,7 +536,7 @@ function coopTick(dt) {
   coop.vilT = (coop.vilT || 0) + dt;
   if (coop.vilT >= 1) { coop.vilT = 0; coopVillageTick(); }
   coop.lvT += dt;
-  if (coop.lvT >= 2) {
+  if (coop.lvT >= 2 && !Game.camp) {   // в кампании город готовый — уровень героя от него не растёт
     coop.lvT = 0;
     const L = heroLevelAt(heroTownScore());
     for (const u of coop.players.values()) if (L > u.hero.level) { u.hero.level = L; u.hero.maxhp = coopBaseHp(u.hero.clsKey, L); }
@@ -788,7 +792,7 @@ function coopUnitsFor(name, x0, y0, x1, y1) {
 function coopInitPacket(uid) {
   const s = serializeGame();
   s.units = [];
-  return JSON.stringify({ t: 'init', world: s, ob: coopAllObjs(), uid, time: Game.time, nextId: Game.nextId });
+  return JSON.stringify({ t: 'init', world: s, ob: coopAllObjs(), uid, time: Game.time, nextId: Game.nextId, cc: coop.noCamp ? 0 : 1 });
 }
 
 // Разница мира с прошлой рассылкой: здания, объекты на клетках, дороги, стройки дорог, груды.
@@ -886,7 +890,7 @@ function coopMeData(name) {
   const u = coop.players.get(name);
   if (!u) return null;
   const H = u.hero;
-  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, food: r2(u.food), vil: coopVillageInfo(), qx: coopQuestInfo(name), xp: H.xp || 0, tt: H.title || null });
+  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, food: r2(u.food), vil: Game.camp ? null : coopVillageInfo(), qx: Game.camp ? null : coopQuestInfo(name), xp: H.xp || 0, tt: H.title || null });
 }
 
 function coopDrain() {
@@ -1339,8 +1343,12 @@ function coopAutoFight(u) {
 // на сервере; реплики листаются голосом «Дальше» (C.st.rd), выбор делает хост, контрольная точка — CampSrv.cp.
 
 coop.reinit = false;
+// выключатель кооп-кампании (сервер: OLDGOLD_COOP_CAMPAIGN=0): кнопка у хоста прячется, команда start отклоняется
+coop.noCamp = false;
+function coopCampOff(on) { coop.noCamp = !!on; }
 
 function coopCampStart(n, fromCp) {
+  if (coop.noCamp) return 'Кампания в общей деревне пока недоступна';
   if (typeof campStart !== 'function') return 'Кампании на этом сервере нет';
   if (fromCp) { if (!CampSrv.cp) return 'Контрольной точки ещё нет'; }
   else if (!CAMP_ACTS[n]) return 'Такого акта нет';
