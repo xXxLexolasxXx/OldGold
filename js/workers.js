@@ -161,8 +161,9 @@ function wkWhy(u) {
     for (const b of sites) for (const k of ['trunk', 'timber', 'stone']) if (b.demand(k) > 0) need.add(wkGN(k));
     return need.size ? 'стройки ждут материал: ' + [...need].join(', ') : 'ждёт, пока освободится стройка';
   }
-  const bt = Object.keys(BUILDINGS).find(k => BUILDINGS[k].worker === u.type);
-  return bt ? `нет свободного здания: «${BUILDINGS[bt].name}»` : 'нет работы';
+  const bts = Object.keys(BUILDINGS).filter(k => BUILDINGS[k].worker === u.type);
+  if (bts.length > 1) return `все мастерские заняты (${bts.length}) — постройте ещё одну`;   // кузнец: 4 цеха
+  return bts.length ? `нет свободного здания: «${BUILDINGS[bts[0]].name}»` : 'нет работы';
 }
 
 function wkRouteName(p) {

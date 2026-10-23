@@ -258,7 +258,7 @@ function schoolStuck(b, dt) {
     const i = b.queue.indexOf(gw);
     if (i < 0) b.queue.unshift(gw); else if (i > 0) { b.queue.splice(i, 1); b.queue.unshift(gw); }
     b.stock.gold++; b.goldWait = 0;
-    toast(gw === 'miner' ? 'Школа выучит шахтёра в долг: без него золота не будет' : 'Школа выучит металлурга в долг: без него золота не будет', b);
+    toast(gw === 'miner' ? 'Школа выучит шахтёра в долг: без него золота не будет' : 'Школа выучит кузнеца в долг: без него золота не будет', b);
     return;
   }
   const carriers = Game.units.some(u => u.isCourier && !u.dead && !u.teamOf);
@@ -619,7 +619,7 @@ const LEVEL_XP = { serf: [0, 12, 40], builder: [0, 9, 30] };
 // Мастера в зданиях — 5 уровней; очко выслуги за каждый удачный цикл работы (срубил, отколол, собрал урожай,
 // вынул партию из печи, вылечил). Всем — работа быстрее (PROF_SPEED), у профессии ещё своё (PROF_PERK, js/jobs.js).
 const PROF_XP = [0, 12, 35, 75, 140];
-const PROF_KEYS = ['woodcutter', 'carpenter', 'stonemason', 'farmer', 'baker', 'miner', 'smelter', 'breeder', 'butcher', 'tanner',
+const PROF_KEYS = ['woodcutter', 'stonemason', 'farmer', 'baker', 'miner', 'smelter', 'butcher',
   'enchanter', 'brewer', 'herder', 'healer', 'fisher'];
 for (const k of PROF_KEYS) LEVEL_XP[k] = PROF_XP;
 const PROF_SPEED = [1, 1, 1.08, 1.16, 1.25, 1.35];

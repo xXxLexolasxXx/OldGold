@@ -16,7 +16,7 @@ h.run(fs.readFileSync(path.join(__dirname, 'harness.js'), 'utf8'));
 h.ctx.H.init(SEED);
 const SIM_DT = h.run('SIM_DT');
 const grow = h.run(`(function () {
-  const PROFS = ['serf', 'serf', 'serf', 'builder', 'woodcutter', 'farmer', 'stonemason', 'carpenter', 'miller', 'baker'];
+  const PROFS = ['serf', 'serf', 'serf', 'builder', 'woodcutter', 'farmer', 'stonemason', 'woodcutter', 'baker', 'baker'];
   let k = 0;
   return function () {
     for (const st of Game.buildings) if (st.isStore() && st.state === 'done') for (const g of GOOD_KEYS) if ((st.stock[g] || 0) < 60) st.stock[g] = 60;

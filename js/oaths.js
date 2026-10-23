@@ -48,7 +48,7 @@ const OATHS = {
 };
 const OATH_GUILD_LORE = 'У гномов нет классов — есть Клятвы предков, выбитые под очагом гильдии. Сто лет они спали, пока Малгор из Чёрного шпиля не наслал проклятие ночи. Клятва даёт силу и берёт плату.';
 const OATH_IRON = new Set(['sword', 'ironArmor', 'rustySword', 'rustyAxe2']);
-const OATH_TRAIL = new Set(['woodcutter', 'herder', 'breeder', 'hunter', 'forager', 'fisher']);
+const OATH_TRAIL = new Set(['woodcutter', 'herder', 'hunter', 'forager', 'fisher']);
 if (typeof MD_WHY !== 'undefined') Object.assign(MD_WHY, {
   oguard: 'Воин на страже', obarb: 'Варвар рядом — не спорим', opal: 'Под защитой паладина', otrail: 'Следопыт показал тропу',
   ocalm: 'Монах рядом — тихо', osong: 'Бард играет',

@@ -356,8 +356,9 @@ function dispatchRepairs(idleBuilders) {
 
 function dispatchWorkers() {
   const rush = typeof seaWoodRush === 'function' && seaWoodRush();   // дров на зиму мало — дом лесоруба получает свободного гнома первым (season.js)
-  const sc = b => (Game.prio ? prioScore(b) : 0) + (rush ? seaRush(b) : 0);
-  const bs = Game.prio || rush ? [...Game.buildings].sort((a, b) => sc(b) - sc(a)) : Game.buildings;   // «Высокий» цех получает свободного гнома первым
+  // плавильня золота при равном приоритете — раньше оружейной и доспехов: кузнец у них один (без золота школа встаёт)
+  const sc = b => (Game.prio ? prioScore(b) : 0) + (rush ? seaRush(b) : 0) + (b.type === 'metallurgist' ? 0.5 : 0);
+  const bs = [...Game.buildings].sort((a, b) => sc(b) - sc(a));   // «Высокий» цех получает свободного гнома первым
   for (const b of bs) {
     if (b.state !== 'done' || !b.def.worker || (b.worker && !b.worker.dead && b.worker.home === b)) continue;
     if (prioOff(b)) continue;      // выключен во вкладке «Приоритеты» — нового рабочего не ставим

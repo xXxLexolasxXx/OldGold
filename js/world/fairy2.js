@@ -395,7 +395,7 @@ function fzCutScan(F) {
   let cutters = 0;
   for (const u of Game.units) {
     if (u.type !== 'woodcutter' || u.dead) continue;
-    cutters++;
+    if (!u.home || u.home.type === 'woodcutter') cutters++;   // лесничий с лесопилки леса не рубит — порог гнева прежний
     const ch = !!(u.action && u.action.anim === 'chop');
     if (u._fzChop && !ch && u.carry === 'trunk') F.cut++;
     u._fzChop = ch;
