@@ -195,7 +195,7 @@ function campGoalEval(C, s, S) {
     else cur = Math.max(0, Math.min(need, o.cur(C, s) | 0));
     if (cur >= need) s.got[o.id || o.t] = 1;
     else all = false;
-    out.push({ t: o.t, cur, need, z: zone || o.at || null, opt: !!o.opt });
+    out.push({ t: o.t, cur, need, z: zone || o.at || null, put: o.put || null, opt: !!o.opt });
   }
   C.objs = out;
   C.hint = S.hint || '';
@@ -645,9 +645,24 @@ function campUiTick() {
         if (A.draw) A.draw(list, c, x0, y0, x1, y1);
         const z = C.objs && C.objs.find(o => o.z && o.cur < o.need);
         if (z) list.push([z.z[1] - 0.5, () => campDrawZone(c, z.z)]);
+        for (const o of C.objs || []) if (o.put && o.cur < o.need) list.push([o.put[1] + o.put[3], () => campDrawPut(c, o.put)]);
       } catch (e) { if (!campDrawZone.err) { campDrawZone.err = 1; console.error(e); } }
     };
   }
+}
+
+// место под стройку, которое задание требует точно: рамка по размеру здания с подписью
+function campDrawPut(c, p) {
+  const t = Game.time, x = p[0] * TILE, y = p[1] * TILE, w = p[2] * TILE, h = p[3] * TILE;
+  c.save();
+  c.fillStyle = `rgba(255,220,120,${0.14 + Math.sin(t * 4) * 0.06})`;
+  c.fillRect(x, y, w, h);
+  c.strokeStyle = '#ffd860'; c.lineWidth = 2; c.setLineDash([6, 4]); c.lineDashOffset = -t * 12;
+  c.strokeRect(x, y, w, h);
+  c.setLineDash([]);
+  c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#ffd860'; c.strokeStyle = '#3a2a10'; c.lineWidth = 3;
+  c.strokeText('Строить здесь', x + w / 2, y - 6); c.fillText('Строить здесь', x + w / 2, y - 6);
+  c.restore();
 }
 
 function campDrawZone(c, z) {
