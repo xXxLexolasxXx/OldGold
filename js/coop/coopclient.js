@@ -118,11 +118,13 @@ function coopConnect(opts) {
 }
 
 function coopApplyInit(m) {
+  Coop.noCamp = m.cc === 0;   // сервер спрятал кампанию в коопе (OLDGOLD_COOP_CAMPAIGN=0)
   Coop.on = true; Coop.mirror = true; Game.coop = true;
   document.body.classList.add('coop');   // в онлайне время считает сервер: скорость выбирает хост, паузу просят голосованием
   document.body.classList.toggle('coop-host', !!Coop.host);
   Coop.tempo = Coop.tempo || { speed: 1, paused: false };
   applySave(m.world);
+  if (typeof updateMinimapBase === 'function') updateMinimapBase();   // хост мог сменить мир на ходу (акт кампании) — карта другого размера
   Game.units = []; Game.unitMap.clear(); Game.animals = []; Game.hero = null; Game.heroAsk = false; Game.selUnit = null; Game.selected = null;
   Game.piles.clear();
   World.obj.fill(null);
@@ -148,6 +150,7 @@ function coopHandle(m) {
     case 'me': Coop.me = m; coopRefreshHud(); coopVilHud(m.vil); coopQuestHud(m.qx, m.tt); break;
     case 'unlock': if (typeof unlockStage === 'function') unlockStage(m.id, true); break;
     case 'toast': toast(m.text, null, 'coop'); break;
+    case 'campaign': if (typeof campCoopMsg === 'function') campCoopMsg(m); break;
     case 'fl': floater(m.x, m.y, m.text, m.col || '#fff6d0'); break;
     case 'chat': coopChat(m); break;
     case 'chron': if (typeof chronMirrorIn === 'function') chronMirrorIn(m.e); break;
@@ -342,6 +345,7 @@ function coopMirror(m) {
   Game.sub = m.sub ? coopResolve(m.sub) : null;
   Game.lostGnomes = m.lost || 0;
   if (typeof goalMirrorIn === 'function') goalMirrorIn(m.goal);
+  if (typeof campMirrorIn === 'function') campMirrorIn(m.camp, m.campf, m.cprog);   // кампания: сценарий считает сервер (campaign.js)
   if (typeof tradeMirrorIn === 'function') tradeMirrorIn(m.trade);
   if (typeof dilMirrorIn === 'function') dilMirrorIn(m.dil);
   if (typeof travMirrorIn === 'function') travMirrorIn(m.trav);
@@ -726,7 +730,7 @@ function coopInitHud() {
   hud.innerHTML = `<div id="cp-vil"></div><div id="cp-qs"></div><div id="cp-log"></div><div id="cp-pop"></div>
     <div class="cp-row"><span id="cp-online" style="align-self:center;background:rgba(26,19,13,.85);padding:3px 7px;border-radius:4px"></span>
     <button data-cp="chat" title="Сказать что-нибудь">Чат</button><button data-cp="inv" title="Инвентарь героя и передача предметов">Рюкзак</button><button data-cp="decor" title="Украсить деревню">Декор</button>
-    ${Coop.host ? '<button data-cp="restart" title="Только хост">Сервер ⟳</button>' : ''}<button data-cp="leave" title="Выйти из общей деревни">Выйти</button></div>`;
+    ${Coop.host && !Coop.noCamp ? '<button data-cp="camp" title="Сюжетная кампания для всей деревни — только хост">Кампания</button>' : ''}${Coop.host ? '<button data-cp="restart" title="Только хост">Сервер ⟳</button>' : ''}<button data-cp="leave" title="Выйти из общей деревни">Выйти</button></div>`;
   document.getElementById('view').appendChild(hud);
   hud.addEventListener('click', e => {
     const b = e.target.closest('[data-cp]');
@@ -743,6 +747,7 @@ function coopInitHud() {
         pop.innerHTML = coopDecorHtml();
         pop.classList.toggle('open', !(pop.classList.contains('open') && pop.dataset.k === 'decor')); pop.dataset.k = 'decor';
       } else if (k === 'restart') coopRestartDialog();
+      else if (k === 'camp') { if (typeof campCoopMenu === 'function') campCoopMenu(); }
       else if (k === 'leave') { if (confirm('Выйти из общей деревни? Герой и рюкзак сохранятся.')) coopLeaveGame(); }
       return;
     }
@@ -794,6 +799,7 @@ function coopDecorHtml() {
 // Личные и парные задания, Совет деревни (считает сервер, приходит вместе с 'me')
 function coopQuestHud(x, title) {
   const el = document.getElementById('cp-qs');
+  if (el && !x && Game.camp) { el.innerHTML = ''; el.dataset.sig = ''; Coop.qx = null; return; }   // акт кампании: заданий дня нет
   if (!el || !x) return;
   Coop.qx = x;
   const sig = JSON.stringify([x, title]);
@@ -822,6 +828,7 @@ function coopQuestHud(x, title) {
 // «Заказ деревни» и серия ночей без потерь (считает сервер, приходит вместе с 'me')
 function coopVilHud(v) {
   const el = document.getElementById('cp-vil');
+  if (el && !v && Game.camp) { el.innerHTML = ''; return; }
   if (!el || !v) return;
   const q = v.q, e = coopEsc, tm = q ? `${Math.floor(q.left / 60)}:${String(q.left % 60).padStart(2, '0')}` : '';
   el.innerHTML = (q ? `<div>${q.done ? '<span class="ok">Заказ выполнен</span>' : 'Заказ деревни'}: ${e(String(q.w).toLowerCase())} «${e(q.g)}» <b>${e(q.have)}/${e(q.need)}</b>${q.done ? '' : ` <span class="lo">· до вечера ${e(tm)} · +${e(q.rw)} зол.</span>`}</div>` : '')

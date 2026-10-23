@@ -190,7 +190,7 @@ CAMP_ACTS[2] = {
     C.lost = Math.max(0, (Game.lostGnomes || 0) - (C.flags.lost0 || 0));
     camp2WaveTick(C, dt);
     // кузнец: глыбы разбиты и герой у завала — откапывают
-    if (!C.flags.vaska && !campFoes('rock').length && campIn(campHero(), CAMP2.vaska.concat(3))) camp2Vaska(C);
+    if (!C.flags.vaska && !campFoes('rock').length && campHeroes().some(h => campIn(h, CAMP2.vaska.concat(3)))) camp2Vaska(C);
   },
   fail(C) {
     if (campPeople() < 1) return 'Под горой не осталось никого.';
@@ -232,7 +232,7 @@ CAMP_ACTS[2] = {
         { id: 'rubble', t: 'Расчистить завал у школы', need: 1, cur: C => (camp2StonesNear(C.flags.school, 4.5) ? 0 : 1) },
         { id: 'tan', t: 'Герой: проститься с Таном', zone: C => C.flags.hall.concat(2.4) },
       ],
-      during(C) { for (const N of campFoes('rock')) if (N.hold) { const h = campHero(); if (h && Math.hypot(h.x - N.x, h.y - N.y) < 6) { N.hold = 0; N.tg = h.id; N.prov = Game.time; } } },
+      during(C) { for (const N of campFoes('rock')) if (N.hold) { const h = campHeroNear(N.x, N.y, 6); if (h) { N.hold = 0; N.tg = h.id; N.prov = Game.time; } } },
       or: C => Game.time >= C.timer.t },
     { k: 'say', fx(C) { C.flags.breadOut = campStock('bread'); }, lines: [
       ['tan', 'Ну, ступайте. Таны уходят последними — а я ещё и самый медленный.'],

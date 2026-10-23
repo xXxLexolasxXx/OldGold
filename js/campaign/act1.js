@@ -349,12 +349,11 @@ CAMP_ACTS[1] = {
       for (const N of campFoes('w')) { N.st = 'vanish'; N.vt = 0; }
       campSay('Остатки гоблинов удрали в штрек.');
     }
-    // тайники Тана: герой проходит рядом — находка (★★★)
-    const h = campHero();
-    if (!h) return;
+    // тайники Тана: герой (в коопе — любой) проходит рядом — находка (★★★)
     C.flags.found = C.flags.found || [];
     CAMP1.caches.forEach((p, i) => {
-      if (C.flags.found.includes(i) || Math.hypot(h.x - p[0] - 0.5, h.y - p[1] - 0.5) > 1.6) return;
+      const h = campHeroNear(p[0] + 0.5, p[1] + 0.5, 1.6);
+      if (C.flags.found.includes(i) || !h) return;
       C.flags.found.push(i);
       const store = Game.buildings.find(b => b.type === 'storehouse' && !b.removed);
       if (store) store.stock.gold = (store.stock.gold || 0) + 5;
@@ -410,8 +409,7 @@ CAMP_ACTS[1] = {
         { id: 'bread', t: 'Испечь хлеба', need: 10, cur: C => campProduced('bread') - C.flags.h0 },
       ],
       during(C) {
-        const h = campHero();
-        for (const N of campFoes('scout')) if (N.hold && h && Math.hypot(h.x - N.x, h.y - N.y) < 7) { N.hold = 0; N.tg = h.id; N.prov = Game.time; }
+        for (const N of campFoes('scout')) { const h = N.hold && campHeroNear(N.x, N.y, 7); if (h) { N.hold = 0; N.tg = h.id; N.prov = Game.time; } }
         if (!campFoes('scout').length) C.flags.scoutsDone = 1;
       } },
     { k: 'say', lines: [
