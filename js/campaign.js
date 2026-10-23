@@ -740,7 +740,7 @@ function campUiTick() {
   const E = campEls();
   if (!C) {
     if (!E.hud.classList.contains('hidden')) E.hud.classList.add('hidden');
-    if (campTalkOn()) { if (!campBlocked()) campTalkTick(); return; }
+    if (campTalkOn()) { if (!campBlocked()) campTalkUiTick(); return; }
     if (!E.dlg.classList.contains('hidden')) campHideDlg();
     return;
   }
@@ -782,7 +782,7 @@ function campTalk(lines) {
   if (!campHasUI() || !lines || !lines.length) return;
   (CampUI.talk || (CampUI.talk = [])).push(...lines);
 }
-function campTalkTick() {
+function campTalkUiTick() {
   const now = performance.now(), dt = Math.min(1, (now - (CampUI.lastNow || now)) / 1000), L = CampUI.talk[0];
   CampUI.lastNow = now;
   if (CampUI.talkCur !== L) { CampUI.talkCur = L; CampUI.idle = 0; campRenderLine(L[0], L[1], CampUI.talk.length > 1, false); return; }
