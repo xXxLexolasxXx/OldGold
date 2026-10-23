@@ -324,6 +324,8 @@ function pbTroll(K, P, kind) {
   }
   const hx = 62 + (a > 0.5 ? 8 : 0), hy = -176 + (P.hurt > 0.5 ? 5 : 0);
   // ---- дальние нога и рука: отдельная, более тёмная «глина» за телом
+  const INK0 = kind === 'trollS' ? [24, 22, 20] : [14, 22, 12];
+  pbBlob(K, armPrims(farA).map(p => (p.e ? { e: [p.e[0], p.e[1], p.e[2] + 3.4, p.e[3] + 3.4] } : { c: p.c.map(([x, y, r]) => [x, y, r + 3.4]) })), [INK0], { amb: 0.5, k: 4 });   // тёмная обводка дальней руки
   pbBlob(K, [...legPrims(farL), ...armPrims(farA)], SKD, { amb: 0.36, k: 6, tex: texSkin });
   toes(farL, SKD);
   // ---- оружие в дальней руке: за туловищем, пальцы обхватывают рукоять поверх
@@ -345,7 +347,7 @@ function pbTroll(K, P, kind) {
   pbBlob(K, [
     { e: [-24, -170, 32, 30] }, { e: [2, -140, 56, 52] },
     { c: [[16, -166, 30], [hx - 12, hy + 4, 26]] },
-    ...legPrims(nearL), ...armPrims(nearA),
+    ...legPrims(nearL),
   ], SK, { amb: 0.46, k: 14, depth: 22, tex: texSkin });
   // голова — своя «глина» поверх шеи: череп, челюсть, нос сливаются между собой, но лицо читается
   pbBlob(K, [{ e: [hx - 4, hy + 2, 32, 28] }, { e: [hx + 12, hy + 16, 24, 13] }, { e: [hx + 31, hy + 4, 13, 12] }, { e: [hx + 8, hy - 10, 17, 7] }], SK, { amb: 0.52, k: 6, depth: 14, tex: texSkin });
@@ -355,7 +357,7 @@ function pbTroll(K, P, kind) {
   // набедренная повязка поверх бёдер
   pbPoly(K, [[-50, -104], [44, -108], [40, -78], [24, -70], [10, -80], [-6, -68], [-22, -80], [-40, -72], [-50, -84]], (x, y) => pbPick(T.CL, 0.55 - (y + 104) / 40 * 0.3 + (K.hsh(Math.floor(x / 7) * 1.7) - 0.5) * 0.25, K.dth(x, y)));
   K.path([[-48, -100, 1.6], [42, -104, 1.6]], () => T.CL[0]);
-  toes(nearL, SK); fingers(nearA, SK);
+  toes(nearL, SK);
   // приметы вида: камни с мхом, космы мха по горбу, тина
   if (kind === 'trollS') for (const [x, y, r] of [[-40, -190, 9], [-20, -176, 6], [30, -150, 7], [-54, -150, 6]]) { pbBall(K, x, y, r + 2, r, [[90, 76, 56], [130, 112, 86], [168, 150, 120]], { amb: 0.5 }); pbBall(K, x - 2, y - 4, r * 0.6, r * 0.5, T.moss, { amb: 0.5, fade: 0.4 }); }
   else for (let i = 0; i < 7; i++) {                                                     // мох пучками по горбу, разной величины
@@ -364,6 +366,11 @@ function pbTroll(K, P, kind) {
     for (let k = 0; k < 3; k++) K.path([[x - r + k * r, y + r * 0.6, 1.4], [x - r + k * r + (K.hsh(i + k) - 0.5) * 3, y + r * 0.6 + 4 + K.hsh(i * 2 + k) * 8, 0.6]], (tt) => T.HA[tt > 0.5 ? 0 : 1]);
   }
   if (kind === 'trollB') for (const [x, y] of [[-30, -150], [20, -170], [-50, -130]]) K.path([[x, y, 2.2], [x + 2, y + 8, 1.6], [x, y + 14, 1]], () => T.slime[1]);
+  // ближняя рука — поверх тела, с тёмной обводкой, чтобы не сливалась с туловищем
+  const INK = kind === 'trollS' ? [24, 22, 20] : [14, 22, 12];
+  pbBlob(K, armPrims(nearA).map(p => (p.e ? { e: [p.e[0], p.e[1], p.e[2] + 3.4, p.e[3] + 3.4] } : { c: p.c.map(([x, y, r]) => [x, y, r + 3.4]) })), [INK], { amb: 0.5, k: 4 });
+  pbBlob(K, armPrims(nearA), SK, { amb: 0.5, k: 4, depth: 12, tex: texSkin });
+  fingers(nearA, SK);
   // ---- лицо: ухо, пакля, бровь, глаз, нос, рот, клыки
   pbPoly(K, [[hx - 22, hy - 6], [hx - 40, hy - 18], [hx - 34, hy + 2], [hx - 22, hy + 6]], (x, y) => pbPick(SK, 0.55 - (x - hx + 40) / 30 * 0.1, K.dth(x, y)));
   for (let i = 0; i < 9; i++) { const x = hx - 26 + i * 5; K.path([[x, hy - 22, 3], [x - 4 - K.hsh(i * 7) * 6, hy - 8 + K.hsh(i) * 10, 1]], (t) => T.HA[t > 0.5 ? 0 : 1 + (i % 2)]); }
