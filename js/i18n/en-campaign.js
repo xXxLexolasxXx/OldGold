@@ -217,7 +217,7 @@ I18N.add('en', {
   'Колонна не дошла: в живых никого.': 'The column did not make it: no one is left alive.',
   'до Долины дошли {0} гномов — их и припасы обоза ждёт сценарий «Тишина дороже золота».': '{0} gnomes reached the Valley — they and the wagon supplies continue in the scenario "Silence Is Worth More Than Gold".',
   'Дальше — сценарий на новой карте Долины: главы 1–6, Чёрный шпиль. Наследие кампании переходит с вами.': 'Next — the scenario on a new map of the Valley: chapters 1–6, the Black Spire. The campaign legacy comes with you.',
-  ' Грум хмурится: «Ты пришёл к нам в Подгорье наутро после взрыва, Пим. С готовой летописью праздника. Тебя там не было.»': ' Grum frowns: "You came to Undermount the morning after the explosion, Pim. With a ready-made chronicle of the feast. You were not there."',
+  'Грум хмурится: «Ты пришёл к нам в Подгорье наутро после взрыва, Пим. С готовой летописью праздника. Тебя там не было.»': ' Grum frowns: "You came to Undermount the morning after the explosion, Pim. With a ready-made chronicle of the feast. You were not there."',
   // тайник, итог акта 1, праздник, имена, подгорный биом
   'Тайник Тана ({0} из 3): старый кошель с монетами и записка «на чёрный день».': "Tan's stash ({0} of 3): an old purse of coins and a note, \"for a rainy day\".",
   'Ключ Тана у героя; с вами уходят {0} гномов.': "The hero has Tan's key; {0} gnomes leave with you.",

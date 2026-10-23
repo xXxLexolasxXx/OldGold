@@ -263,7 +263,7 @@ function campFinish(C, res, why) {
     p.done[C.act] = { t: Date.now(), time: stats.t, stars: Math.max(stars, old ? old.stars : 0), alive: stats.alive };
     if (A.legacy) p.legacy = Object.assign(p.legacy || {}, A.legacy(C, stats));
     p.last = C.act;
-    const hl = campHeroLook(campHero()); if (hl) p.hero = hl;
+    const hl = campHeroLook(campHero() || Game.hero); if (hl) p.hero = hl;   // погиб под конец — облик всё равно его
     campProgSave(p);
     if (typeof track === 'function') track('camp-win-' + C.act, 'Кампания: пройден акт ' + C.act);
   } else if (typeof track === 'function') track('camp-lose-' + C.act, 'Кампания: поражение в акте ' + C.act);
@@ -349,6 +349,8 @@ function campStart(n, opts = {}) {
   if (typeof goalUiTick === 'function') { const _gu = goalUiTick; goalUiTick = function (f) { if (!Game.camp) _gu(f); else { const h = document.getElementById('goal-hud'); if (h) h.classList.add('hidden'); } }; }
   if (typeof dilTick === 'function') { const _d = dilTick; dilTick = function (dt) { if (!Game.camp) _d(dt); }; }
   if (typeof loreTick === 'function') { const _l = loreTick; loreTick = function (dt) { if (!Game.camp) _l(dt); }; }
+  // случайных праздников в кампании нет — только сценарные (festivalForce в актах)
+  if (typeof festivalTick === 'function') { const _ft = festivalTick; festivalTick = function (dt) { if (Game.camp && !Game.festival) return; _ft(dt); }; }
   if (typeof tutStart === 'function') { const _t = tutStart; tutStart = function (m) { if (!Game.camp) _t(m); }; }
   // мир акта собран вручную: курганы, новые логова по ночам, бродячие народы и путники в сюжет не вмешиваются
   for (const fn of ['raidTick', 'fwTick', 'ftTick', 'tvTick', 'lepTick', 'wgTick']) {

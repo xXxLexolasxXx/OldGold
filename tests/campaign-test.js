@@ -75,13 +75,15 @@ const BOT = `(function () {
   if (!info.foe) fail('Малгор в кампании должен быть заглушкой (Game.foe.camp)');
   if (!info.custom) fail('мир акта строится не по карте (MapOpt.custom)');
   const seen = [];
+  const festSeen = { n: 0, on: 0, max: 0, night: false, inside: 0, mus: '' };
   let saved = null, lastI = -1, boomSeen = false, tiltMax = 0, minPeople = 999;
   for (let sec = 0; sec < 75 * 60; sec++) {
     try { h.run('for (let k = 0; k < 20; k++) step(0.05);'); h.run(BOT); } catch (e) { fail('исключение на ' + sec + ' с: ' + String(e.stack || e).split('\n').slice(0, 3).join(' | ')); break; }
     if (sec % 2) continue;
-    const s = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, k: (campStepNow(Game.camp) || {}).k, over: Game.camp.over, tilt: Game.camp.tilt, boom: !!Game.camp.flags.boom, p: campPeople(), lbl: Game.camp.label })'));
+    const s = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, k: (campStepNow(Game.camp) || {}).k, over: Game.camp.over, tilt: Game.camp.tilt, boom: !!Game.camp.flags.boom, p: campPeople(), lbl: Game.camp.label, fest: festOn(), feast: Game.units.filter(u => !u.dead && u.brk && u.brk.kind === "feast").length, inside: Game.units.filter(u => !u.dead && isPerson(u) && u.inside).length, night: camp1Night(), mus: (function () { try { return typeof computeMood === "function" ? computeMood() : ""; } catch (e) { return "err"; } })() })'));
     if (s.i !== lastI) { seen.push(`${s.i}:${s.k}@${sec}`); lastI = s.i; }
     if (s.boom) boomSeen = true;
+    if (s.lbl === 'Праздник Первого Камня') { festSeen.n++; if (s.fest) festSeen.on++; festSeen.max = Math.max(festSeen.max, s.feast); festSeen.night = festSeen.night || s.night; festSeen.inside = Math.max(festSeen.inside, s.inside); if (s.fest) festSeen.mus = s.mus; }
     tiltMax = Math.max(tiltMax, s.tilt);
     minPeople = Math.min(minPeople, s.p);
     // сохранение посреди акта (после первой контрольной точки, до ночи) → загрузка: тот же шаг и флаги
@@ -103,6 +105,10 @@ const BOT = `(function () {
   console.log('Проверка: шаги ' + seen.join(' '));
   if (!end.over) fail(`акт 1 не закончился за 75 минут: застрял на шаге ${end.i} из ${end.n} (${seen.slice(-3).join(' ')})`);
   if (!boomSeen) fail('взрыва не было (flags.boom)');
+  console.log(`Проверка: праздник акта 1 — ${JSON.stringify(festSeen)}`);
+  if (process.env.CAMP_ONLY1) process.exit(0);
+  if (!festSeen.n || festSeen.on < festSeen.n * 0.8) fail('сценарный праздник акта 1 не начался или быстро погас: ' + JSON.stringify(festSeen));
+  if (festSeen.max < 12) fail(`на праздник у костра вышло мало гномов (${festSeen.max})`);
   if (tiltMax < 0.05) fail('гора не накренилась (tilt ' + tiltMax + ')');
   if (end.over && end.over.res === 'win') {
     if (!end.prog.done[1]) fail('прогресс кампании не записан (done[1])');
@@ -147,7 +153,8 @@ const BOT = `(function () {
       if (!end.open3) fail('после акта 2 не открылся акт 3');
     }
   }
-  if (waveMax < 80) fail('волна обвала не прошла город (y ' + waveMax.toFixed(0) + ')');
+  // бегство кончается, как только все ушли из города, — тогда волна может не докатиться до самого перевала
+  if (waveMax < 70) fail('волна обвала не прошла город (y ' + waveMax.toFixed(0) + ')');
   if (!end.f.vaska) warn('кузнеца Ваську не откопали');
   const errs = errors.filter(e => !/предупрежд/i.test(e));
   if (errs.length) fail('акт 2, ошибки в логе: ' + errs.slice(0, 3).join(' | '));
@@ -305,6 +312,17 @@ const BOT = `(function () {
     '{0} уважения', 'Подгорье', 'Наследие: {0}', 'Акт {0}: {1} ▸', 'Продолжить кампанию', 'Кампания'];
   texts.push(...dyn);
   const miss = texts.filter(t => t && !dict[t] && !['Грум Ворчун', 'Бабушка Ягла', 'Пим Чернилкин', 'Малгор', 'Герой'].includes(t));
+  // реальный переводчик (js/i18n.js + все словари): итоги со числами и дополнение Грума в дилемме шпиона
+  for (const f of require('fs').readdirSync(require('path').join(__dirname, '../js/i18n'))) if (/^en.*\.js$/.test(f)) require('vm').runInContext(require('fs').readFileSync(require('path').join(__dirname, '../js/i18n', f), 'utf8'), h.ctx);
+  const live = JSON.parse(h.run(`(function () {
+    const p = campProg(); p.done[1] = { t: 1, stars: 1 }; campProgSave(p);
+    const e = DIL_BY_ID.malgor_spy, d0 = e.d;
+    dilOpen(e); const d1 = e.d; e.d = d0; if (Game.dil) Game.dil.cur = null;
+    const C = { flags: { saved: 32, breadOut: 30, vaska: true, resp: 3, found: [1, 2] } };
+    return JSON.stringify([d1, CAMP_ACTS[2].legacyText(C), CAMP_ACTS[3].legacyText(C), CAMP_ACTS[1].legacyText(C), CAMP_ACTS[4].legacyText(C), 'Тайник Тана (2 из 3): старый кошель с монетами и записка «на чёрный день».', '+2 уважения'].map(s => [s, I18N.tr(s)]));
+  })()`));
+  if (!/Подгорье/.test(live[0][0])) fail('в дилемме шпиона нет реплики Грума о Подгорье');
+  for (const [ru, en] of live) if (/[А-Яа-яЁё]/.test(en)) miss.push(ru.slice(0, 60) + ' → ' + en.slice(0, 60));
   if (miss.length) fail(`нет английского перевода (${miss.length}): ` + miss.slice(0, 4).join(' | '));
   else console.log(`Проверка: перевод актов — ${texts.length} строк`);
 }

@@ -57,7 +57,12 @@ if (typeof dilOpen === 'function') {
   const _do = dilOpen;
   dilOpen = function (e) {
     const done = (campProg().done || {})[1];
-    if (e && e.id === 'malgor_spy' && done && e.d.indexOf('Подгорье') < 0) e.d += ' Грум хмурится: «Ты пришёл к нам в Подгорье наутро после взрыва, Пим. С готовой летописью праздника. Тебя там не было.»';
+    if (e && e.id === 'malgor_spy' && done && e.d.indexOf('Подгорье') < 0) {
+      // склейка — новая строка для перевода: кладём в словарь её английскую версию из двух известных половин
+      const orig = e.d, add = 'Грум хмурится: «Ты пришёл к нам в Подгорье наутро после взрыва, Пим. С готовой летописью праздника. Тебя там не было.»';
+      e.d = orig + ' ' + add;
+      if (typeof I18N !== 'undefined' && I18N.tr) { const en = I18N.tr(orig), ea = I18N.tr(add); if (en !== orig && ea !== add) I18N.add('en', { [e.d]: en + ' ' + ea }); }
+    }
     return _do(e);
   };
 }
