@@ -106,6 +106,7 @@ scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
 scriptTest('faceart: портреты собеседников — 16 лиц, два кадра, 72×72 пикселя, кэш, у всех собеседников кампании и лора есть портрет', 'faceart-test.js');
 scriptTest('campaign: акты 1–5 — праздник и взрыв, обвал, Кремнёвка, дорога к межевому камню, сценарий с наследием, сейв, поражение, перевод', 'campaign-test.js', [], 420000);
+scriptTest('camp-tower: задание акта 1 про башню у штрека', 'camp-tower-test.js');
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
 scriptTest('runboard: таблица рекордов забегов — переигровка на сервере, попытка дня, согласие, удаление', 'runboard-test.js');

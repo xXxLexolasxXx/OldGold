@@ -5,6 +5,11 @@
 // Карта строится кодом (camp1Map) в формате редактора карт: tools/campaign/mkmaps.js выгружает её в maps/campaign/,
 // там её можно открыть и поправить в «Редакторе карт».
 
+// башня «у штрека»: в радиусе 14 и не глубже ниши (вход штрека y=21, башня на самом входе стоит на y=20 — тоже считается)
+function camp1TowerAtMine(b) {
+  return b.type === 'watchtower' && b.state === 'done' && !b.removed && Math.hypot(b.x - CAMP1.mine[0], b.y - CAMP1.mine[1]) < 14 && b.y > CAMP1.mine[1] - 4;
+}
+
 const CAMP1 = {
   W: 128, H: 96, seed: 100100,
   start: [64, 52],             // площадь у склада
@@ -420,7 +425,7 @@ CAMP_ACTS[1] = {
     ] },
     { k: 'goal', label: 'Тревога', hint: 'Башня — меню «Оборона». Стройматериалы на складе есть.',
       objs: [{ id: 'tower', t: 'Поставить сторожевую башню у штрека', at: CAMP1.mine,
-        cur: () => Game.buildings.some(b => b.type === 'watchtower' && b.state === 'done' && !b.removed && Math.hypot(b.x - CAMP1.mine[0], b.y - CAMP1.mine[1]) < 14 && b.y > CAMP1.mine[1]) ? 1 : 0 }] },
+        cur: () => Game.buildings.some(camp1TowerAtMine) ? 1 : 0 }] },
     { k: 'wait', label: 'Канун праздника', until: () => camp1Night() },
     { k: 'say', lines: [
       ['yagla', 'Спать, спать! Завтра праздник, а у кого борода не расчёсана — тот моет посуду.'],
