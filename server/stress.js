@@ -19,7 +19,7 @@ const MAP_W = 96;
 const TYPES = ['woodcutter', 'quarry', 'farm', 'sawmill', 'mill', 'bakery', 'swine', 'goatpen', 'brewery', 'hopfarm'];
 // производственные цепочки: здания ставятся рядом и соединяются дорогой со складом
 const CHAINS = [['woodcutter', 'sawmill'], ['farm', 'mill', 'bakery'], ['swine', 'butcher'], ['hopfarm', 'brewery'], ['quarry'], ['school'], ['house', 'house']];
-const TRAIN = ['serf', 'serf', 'builder', 'woodcutter', 'farmer', 'carpenter', 'stonemason', 'baker'];
+const TRAIN = ['serf', 'serf', 'builder', 'woodcutter', 'farmer', 'woodcutter', 'stonemason', 'baker'];
 const CLASSES = ['warrior', 'barbarian', 'mage', 'archer', 'druid', 'rogue', 'monk', 'priest', 'paladin', 'bard'];
 const RUN = crypto.randomBytes(3).toString('hex');
 

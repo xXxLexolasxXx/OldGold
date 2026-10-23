@@ -52,6 +52,43 @@ CAMP_ACTS[5] = {
   resetGameState = function () { _rs(); Game.campLeg = null; };
 }
 
+// голем (js/world/golemlife.js) у прошедших кампанию говорит: просыпается от рун, идёт бить горы на пути к Чёрному
+// шпилю, упирается в барьер Малгора. Грум помнит, как гора выгнала их из Подгорья. Реплики — окном кампании (campTalk)
+CAMP_ACTS[5].talk = {
+  wake: [
+    ['golem', 'Р-р-руны. Тёплые. Камень… проснулся.'],
+    ['grum', 'Доброе утро, громадина. Тут такое дело: гора на дороге.'],
+    ['golem', 'Гора. На дороге. Плохо. Голем — уберёт.'],
+    ['grum', 'Одна гора нас уже выгнала из дома. Пусть эта теперь боится.'],
+  ],
+  go: [['golem', 'Иду. Бить. Горы.']],
+  barrier: [
+    ['golem', 'Дальше — колючее. Магия. Голем не пройдёт.'],
+    ['golem', 'Дорога — есть. Гора — нет. Дальше — вы, маленькие.'],
+    ['grum', 'Спасибо, каменный. За час сделал то, на что нам надо сто лет и бочку пива.'],
+  ],
+  clear: [
+    ['golem', 'Дорога — есть. Гора — нет.'],
+    ['grum', 'Вот это прораб. Ни одного перекура.'],
+  ],
+};
+const CAMP5_GOLEM_BARK = ['Гора — мешает.', 'Камень — в крошку.', 'Бум.', 'Ещё гора.', 'Хрусть. Хорошо.'];
+const camp5Golem = () => !!Game.campLeg && !(typeof glMirror === 'function' && glMirror());
+if (typeof glWake === 'function') {
+  const T = CAMP_ACTS[5].talk;
+  const _wake = glWake;
+  glWake = function () { const ok = _wake(); if (ok && camp5Golem()) campTalk(T.wake); return ok; };
+  const _smash = glStartSmash;
+  glStartSmash = function (g) { const ok = _smash(g); if (ok && camp5Golem()) campTalk(T.go); return ok; };
+  const _step = glSmashStep;
+  glSmashStep = function (g, j) {
+    _step(g, j);
+    if (camp5Golem() && (j.barks = (j.barks || 0) + 1) % 3 === 1) floater(g.fx + 1.5, g.fy - 2.4, CAMP5_GOLEM_BARK[(j.barks / 3 | 0) % CAMP5_GOLEM_BARK.length], '#ffcf6a');
+  };
+  const _end = glJobEnd;
+  glJobEnd = function (g, j) { const smash = j.kind === 'smash', bar = !!j.barrier; _end(g, j); if (smash && camp5Golem()) campTalk(bar ? T.barrier : T.clear); };
+}
+
 // дилемма шпиона: прошедшие кампанию помнят, кто и когда пришёл в Подгорье
 if (typeof dilOpen === 'function') {
   const _do = dilOpen;

@@ -40,7 +40,7 @@ BUILDINGS.house = {
 BUILD_ORDER.push('house');
 UNLOCKS.push({ id: 'home', items: ['house'], after: ['sawmill'] });
 if (typeof UNLOCK_NAMES !== 'undefined') UNLOCK_NAMES.home = 'Дома';
-if (typeof REVEAL_STAGE !== 'undefined') REVEAL_STAGE.home = ['Дома', 'Плотник предлагает жилые дома: ночью жильцы спят в них и прячутся от нечисти. Пока домов нет, гномы ночуют как раньше — где придётся.'];
+if (typeof REVEAL_STAGE !== 'undefined') REVEAL_STAGE.home = ['Дома', 'Лесничий предлагает жилые дома: ночью жильцы спят в них и прячутся от нечисти. Пока домов нет, гномы ночуют как раньше — где придётся.'];
 if (typeof SARC_B !== 'undefined') SARC_B.house = 'Четыре стены, крыша и кровать. Гному больше не надо — разве что пива и чтобы призрак не заглядывал в окно.';
 if (typeof MD_WHY !== 'undefined') Object.assign(MD_WHY, { home: 'Выспался дома', nohome: 'Ночует где придётся', hid: 'Отсиделся дома', coldhome: 'Спал в нетопленом доме' });
 if (typeof HINTS !== 'undefined') HINTS.house = { icon: ['ui', 'play'], text: 'Открыты дома! Поставьте пару домов у костра: ночью жильцы спят там и высыпаются, а от призраков и скелетов прячутся внутри. Дом на 3 гнома, семья живёт вместе. Без домов всё как раньше, но с домами бездомные ворчат.',

@@ -766,7 +766,7 @@ function infoBuilding(b) {
     h += '<div class="train-grid">';
     for (const t of UNIT_KEYS) {
       const q = b.queue.filter(x => x === t).length;
-      h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><img src="${portraitURL(t)}" alt="">${UNIT_TYPES[t].name.slice(0, 7)}${q ? `<span class="q">${q}</span>` : ''}</button>`;
+      h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><img src="${portraitURL(t)}" alt="">${UNIT_TYPES[t].name.split('-')[0].slice(0, 9)}${q ? `<span class="q">${q}</span>` : ''}</button>`;
     }
     h += '</div>';
   }

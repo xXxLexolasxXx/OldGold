@@ -178,7 +178,7 @@ I18N.add('en', {
   // оборона (js/defense.js)
   "Частокол": "Palisade", "заострённые брёвна": "sharpened logs", "на каменном цоколе, в железных скобах": "on a stone base, in iron brackets",
   "Забор из заострённых брёвен. Нечисть упирается, гномы обходят, а лесоруб смотрит на него как на свой личный сорванный план.": "A fence of sharpened logs. The nasties get stuck, the gnomes walk around it, and the woodcutter looks at it like a personal sabotaged plan.",
-  "Частокол на каменном цоколе в железных скобах: ломать вдвое дольше. Лесоруб примирился — брёвен ушло столько же.": "A palisade on a stone base in iron brackets: twice as long to break. The woodcutter made peace — it took the same number of logs.",
+  "Частокол на каменном цоколе в железных скобах: ломать вдвое дольше. Лесничий примирился — брёвен ушло столько же.": "A palisade on a stone base in iron brackets: twice as long to break. The forester made peace — it took the same number of logs.",
   "Каменная стена": "Stone Wall", "кладка из бутового камня": "rubble-stone masonry", "с зубцами и смотровой кромкой": "with crenellations and a lookout edge",
   "Бутовая стена в рост гнома плюс шляпа. Дорого, зато сама стоит и никого не просит о помощи.": "A rubble wall one gnome tall, plus a hat. Pricey, but it stands by itself and asks nobody for help.",
   "Стена с зубцами: крепче вдвое и красивее вчетверо. Зубцы ничего не делают — просто внушают уважение.": "A crenellated wall: twice as sturdy and four times as pretty. The crenellations do nothing — they just inspire respect.",
