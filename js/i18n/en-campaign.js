@@ -26,7 +26,7 @@ I18N.add('en', {
   'Выберите героя (кнопка слева внизу или H) и кликните по месту на земле.': 'Select the hero (bottom-left button or H) and click a spot on the ground.',
   'Штрек — ниша в северной стене пещеры (кнопка ◎ покажет).': 'The shaft is a niche in the north wall of the cave (the ◎ button shows it).',
   'Кликните по гоблину героем, чтобы напасть. Пиво варит пивоварня из зерна и хмеля со склада, хлеб пекут мельница и пекарня.': 'Click a goblin with the hero to attack. The brewery makes beer from wheat and hops in the storehouse; the mill and bakery make bread.',
-  'Башня — меню «Оборона». Стройматериалы на складе есть.': 'The tower is in the "Defense" menu. The storehouse has building materials.',
+  'Башня — меню «Оборона». Место показано рамкой «Строить здесь». Стройматериалы на складе есть.': 'The tower is in the "Defense" menu. The spot is marked with a "Build here" frame. The storehouse has building materials.',
   'Жители прячутся у большого костра и в домах. Башни стреляют сами.': 'Gnomes hide by the great bonfire and in their houses. Towers shoot on their own.',
   'Валуны у штрека уберут каменотёсы; трещины в домах починят строители.': 'Stonemasons will clear the boulders by the shaft; builders will mend the cracked houses.',
   // итог
