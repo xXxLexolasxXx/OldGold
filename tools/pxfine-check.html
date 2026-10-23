@@ -18,6 +18,17 @@ window.addEventListener("load", () => setTimeout(async () => {
     R.cam = R.cam || {}; R.cam.z = +(new URLSearchParams(location.search).get('z') || 3); R.sprMs = 0;
     const cv = document.getElementById('cv'); cv.width = 1800; cv.height = 700; const c = cv.getContext('2d');
     c.fillStyle = '#3a5a2a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(R.cam.z, R.cam.z); c.imageSmoothingEnabled = false;
+    if (new URLSearchParams(location.search).get('s') === 'sea2') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 2400; cv.height = 620; c.fillStyle = '#1e4a6a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(4, 4);
+      [['kraeye', 'idle', 0], ['kraeye', 'idle', 3]].forEach(([k, a, f], i) => seaBlit(c, k, a, f, 40 + i * 60, 40));
+      [['serpent', 'swim', 0], ['serpent', 'swim', 3], ['serpent', 'atk', 4], ['serpent', 'die', 3]].forEach(([k, a, f], i) => seaBlit(c, k, a, f, 80 + (i % 2) * 260, 100 + Math.floor(i / 2) * 50));
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'gri') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 2400; cv.height = 460; c.fillStyle = '#3a5a2a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(4, 4);
+      [['idle', 0], ['walk', 2], ['fly', 0], ['fly', 4], ['atk', 4], ['die', 7]].forEach(([p, i], k) => fyBlit(c, sprGriffin(p, i), 50 + k * 95, 100));
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
     if (new URLSearchParams(location.search).get('s') === 'beast') {
       const kinds = (new URLSearchParams(location.search).get('k') || 'goblinChamp,troll').split(','), FR = (new URLSearchParams(location.search).get('f') || 'i0,windup,strike').split(',');
       c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 2400; cv.height = 40 + kinds.length * 460; c.fillStyle = '#2c4438'; c.fillRect(0, 0, cv.width, cv.height);

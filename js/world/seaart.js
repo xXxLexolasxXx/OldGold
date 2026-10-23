@@ -391,7 +391,16 @@ function seaSprite(kind, anim, f) {
   const key = kind + ':' + anim + ':' + f;
   let s = SA_CACHE.get(key);
   if (s) return s;
-  const q = typeof PX_FINE !== 'undefined' ? PX_FINE : 1, cv = mkCanvas(A.w * q, A.h * q), g = cv.getContext('2d');   // без pixel.js (тесты) — как раньше
+  const q = typeof PX_FINE !== 'undefined' ? PX_FINE : 1;   // без pixel.js (тесты) — как раньше
+  if (q > 1 && A.px && typeof fzPxKit === 'function') {   // ручной пиксель-арт на сетке ×3 (pxbeasts.js): свой размер и опора
+    const K = fzPxKit(A.pw * 3, A.ph * 3, A.pax * 3, A.pay * 3);
+    A.px(pbScaled(K, 3), anim, f, n);
+    const pcv = K.done(); pcv.fine = 3;
+    s = { cv: pcv, ax: A.pax, ay: A.pay };
+    SA_CACHE.set(key, s);
+    return s;
+  }
+  const cv = mkCanvas(A.w * q, A.h * q), g = cv.getContext('2d');
   if (q > 1) { g.scale(q, q); cv.fine = q; }
   if (A.pad) g.translate(A.pad[0], A.pad[1]);   // запас вокруг рисунка под обводку и поднятые клешни
   A.draw(saPen(g, q), anim, f, n);
