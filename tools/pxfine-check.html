@@ -24,9 +24,9 @@ window.addEventListener("load", () => setTimeout(async () => {
       document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
     }
     if (new URLSearchParams(location.search).get('s') === 'sea2') {
-      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 2400; cv.height = 680; c.fillStyle = '#1e4a6a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(4, 4);
-      [['kraeye', 'idle', 0], ['kraeye', 'idle', 3], ['tent', 'idle', 1], ['tent', 'atk', 2], ['tent', 'atk', 5]].forEach(([k, a, f], i) => seaBlit(c, k, a, f, 45 + i * 75, 50));
-      [['serpent', 'swim', 0], ['serpent', 'swim', 3], ['serpent', 'atk', 4], ['serpent', 'die', 3]].forEach(([k, a, f], i) => seaBlit(c, k, a, f, 90 + (i % 2) * 280, 115 + Math.floor(i / 2) * 50));
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 2400; cv.height = 880; c.fillStyle = '#1e4a6a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(4, 4);
+      [['kraeye', 'idle', 0], ['kraeye', 'idle', 3], ['tent', 'idle', 1], ['tent', 'atk', 2], ['tent', 'atk', 5]].forEach(([k, a, f], i) => seaBlit(c, k, a, f, 45 + i * 85, 100));
+      [['serpent', 'swim', 0], ['serpent', 'swim', 3], ['serpent', 'atk', 4], ['serpent', 'die', 3]].forEach(([k, a, f], i) => seaBlit(c, k, a, f, 90 + (i % 2) * 280, 160 + Math.floor(i / 2) * 50));
       document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
     }
     if (new URLSearchParams(location.search).get('s') === 'gri') {
