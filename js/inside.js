@@ -230,7 +230,7 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests, n, hw) {
   }
   if (!vis) return;
   if (w.st === 'serve') carry = w.t > 1 ? 'tray:' + (w.food || 'bread') : null;
-  const sp = personSprite({ type: 'waitress', look: b.id * 37 + 5, carry }, view, pose, pose === 'walk' ? (Math.floor(w.f) & 7) : 0, {});
+  const sp = personSprite({ type: 'waitress', look: b.id * 37 + 5, carry }, view, pose, pose === 'walk' ? (Math.floor(w.f * 1.5) % WALK_FRAMES) : 0, {});
   const px = Math.round(w.x), py = Math.round(w.y);
   c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(px + 1, py, 5.5, 2, 0, 0, 7); c.fill();
   if (w.face < 0 && view === 'E') { c.save(); c.translate(px, py); c.scale(-1, 1); c.drawImage(sp, -PFX, -PFY, PW, PH); c.restore(); }
@@ -372,7 +372,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
   if (el < 1.6) {
     const p = ease(el / 1.6);
     gx = dx + (gx0 - dx) * p; gy = dy + (sy - dy) * p;
-    gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 12) % 8);
+    gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 18) % WALK_FRAMES);
   } else if (el < T_HIT) {
     gsp = mk('serf', gl, 'E', 'idle', 0, { gest: 'flirt', gf: Math.floor((el - 1.6) * 12) % 6 });
     gsh = 1.2 + Math.sin(el * 4.5) * 1.3;                                // наваливается на стойку
@@ -384,7 +384,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
     else if (el < tPick) {                                               // идёт к колпаку
       const p = ease((el - tHat) / (tPick - tHat));
       gx = gx0 - 4 + (pickX - (gx0 - 4)) * p; gflip = pickX < gx0 - 4;
-      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 9) % 8, nh); gsh = 1.6;     // голова понурая
+      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 13.5) % WALK_FRAMES, nh); gsh = 1.6;     // голова понурая
     } else if (el < tUp) {                                               // нагибается
       gx = pickX; gflip = pickX < gx0 - 4;
       gsp = mk('serf', gl, 'E', 'duck', 0, nh); gsh = 0;
@@ -394,7 +394,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
     } else {                                                             // колпак снова часть спрайта
       const p = ease(clamp((el - tOn) / 1.5));
       gx = pickX + (dx - pickX) * p; gy = sy + (dy - sy) * p; gflip = dx < pickX;
-      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 9) % 8); gsh = 1;
+      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 13.5) % WALK_FRAMES); gsh = 1;
     }
     if (el < 5.2) gsh = e < 0.17 ? -2 : -9 * Math.exp(-4.5 * (e - 0.17)) * Math.cos(12 * (e - 0.17)) + (el > 3.95 ? 1 : 0);
   }
@@ -410,7 +410,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
   else {
     const p = ease(clamp((el - 6.0) / 1.2));
     wX = wx + (dx - wx) * p; wY = sy + (dy - sy) * p; wflip = dx < wx;
-    wsp = mk('waitress', wl, 'E', 'walk', Math.floor(el * 11) % 8);
+    wsp = mk('waitress', wl, 'E', 'walk', Math.floor(el * 16.5) % WALK_FRAMES);
   }
   if (el > 3.3 && el < 3.9) wX -= el < 3.5 ? (el - 3.3) * 7.5 : el < 3.75 ? 3.2 : 3.2 * (3.9 - el) / 0.15;   // выпад вперёд на ударе
   const shadow = (x, y) => { c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(Math.round(x) + 1, Math.round(y), 5.5, 2, 0, 0, 7); c.fill(); };

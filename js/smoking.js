@@ -8,17 +8,21 @@
 const SM_U = 1 / 3, SM_PAD = 1, SM_W = 48, SM_H = 22, SM_A = 12;   // SM_A — строка оси (там рот)
 const SM_GRIP = 7;                                                  // в пикселях курева от губ: где рука держит
 const SM_INK = '#1c1216';                                           // контур
-const SM_NF = 6;                                                    // кадров: достал, поднёс, вдох, затяжка, убрал, выдох
-const SM_DUR = [0.5, 0.4, 0.5, 0.9, 0.6, 1.5];                                // сколько держится каждый кадр, сек
+const SM_NF = 12;                                                   // кадров: 6 опорных (достал, поднёс, вдох, затяжка, убрал, выдох) и по одному промежуточному после каждого
+const SM_DUR = [0.5, 0.4, 0.5, 0.9, 0.6, 1.5].flatMap(d => [d / 2, d / 2]);   // сколько держится каждый кадр, сек (цикл прежний)
+// опорный кадр i → 2i, промежуточный 2i+1 — середина между i и следующим (после выдоха — возврат к «достал»)
+const smMid = (p, q) => Array.isArray(p) ? p.map((x, k) => (x + q[k]) / 2) : (p + q) / 2;
+const smExp = a => a.flatMap((v, i) => [v, smMid(v, a[(i + 1) % a.length])]);
 const SM_CYCLE = SM_DUR.reduce((a, b) => a + b, 0);
-const SM_SLOPE = { E: [-0.55, -0.28, 0, 0, -0.14, -0.25], S: [-0.5, -0.28, 0.2, 0.2, 0, -0.2] };                             // наклон: рука внизу — курево задрано
-const SM_EMBER_LVL = [0, 1, 2, 2, 1, 1];                                  // накал огонька по кадрам
+const SM_SLOPE = { E: smExp([-0.55, -0.28, 0, 0, -0.14, -0.25]), S: smExp([-0.5, -0.28, 0.2, 0.2, 0, -0.2]) };                             // наклон: рука внизу — курево задрано
+const SM_EMBER_LVL = [0, 1, 2, 2, 1, 1].flatMap(v => [v, v]);                                  // накал огонька по кадрам
 
 // Положение кулака (мировые пиксели от ног) в каждом кадре; E — боком (лицом вправо), S — анфас
 const SMOKE_ARM = {
   E: { hand: [[5.7, -8.2], [6.0, -10.6], [6.6, -13.0], [6.5, -13.0], [6.4, -11.8], [6.1, -10.4]], elbow: [[2.8, -9.4], [2.9, -9.6], [3.0, -9.6], [3.0, -9.6], [3.0, -9.6], [2.9, -9.6]] },
   S: { hand: [[5.0, -8.2], [4.4, -10.6], [3.7, -12.7], [3.7, -12.8], [4.3, -11.6], [4.4, -10.6]], elbow: [[5.4, -8.8], [5.4, -10.4], [5.2, -12.0], [5.2, -12.0], [5.2, -11.0], [5.4, -10.4]] },
 };
+for (const V of ['E', 'S']) { SMOKE_ARM[V].hand = smExp(SMOKE_ARM[V].hand); SMOKE_ARM[V].elbow = smExp(SMOKE_ARM[V].elbow); }
 const SMOKE_MOUTH = { E: [4.3, -13.3], S: [1.4, -13.0] };
 
 // ---------- палитры ----------
@@ -299,6 +303,7 @@ function drawSmoking(c, u, px, py, view) {
   const fr = smokeFrameOf(u), id = smokeKindOf(u), sp = smokeItemSprite(id, fr, view === 'E' ? 'E' : 'S');
   const face = view === 'E' ? (u.face < 0 ? -1 : 1) : 1, V = view === 'E' ? 'E' : 'S';
   const hand = SMOKE_ARM[V].hand[fr];
+  const fb = fr >> 1, pb = ((fr & 1) + smokePhaseOf(u)) / 2;   // опорный кадр (0–5) и доля его длительности
   // колонка SM_PAD+SM_GRIP спрайта должна лечь в кулак
   const gc = SM_PAD + SM_GRIP;
   const ox = hand[0] - gc * SM_U, oy = hand[1] + 0.25 - (SM_A + sp.shift(gc)) * SM_U;
@@ -318,10 +323,10 @@ function drawSmoking(c, u, px, py, view) {
   const T = Game.time + u.id * 0.37;
   for (let k = 0; k < 3; k++) {
     const p = (T * 0.5 + k / 3) % 1;
-    smPuff(c, ex + Math.sin(p * 6 + k + u.id) * 1.1 + p * 1.5, ey - p * 11, 1 + Math.floor(p * 3), p, fr === 2 || fr === 3 ? 0.8 : 0.55);
+    smPuff(c, ex + Math.sin(p * 6 + k + u.id) * 1.1 + p * 1.5, ey - p * 11, 1 + Math.floor(p * 3), p, fb === 2 || fb === 3 ? 0.8 : 0.55);
   }
-  if (fr === 5 || (fr === 0 && smokePhaseOf(u) < 0.5)) {
-    const ph = fr === 5 ? smokePhaseOf(u) : 0.6 + smokePhaseOf(u) * 0.4;   // шлейф доходит и до следующего кадра
+  if (fb === 5 || (fb === 0 && pb < 0.5)) {
+    const ph = fb === 5 ? pb : 0.6 + pb * 0.4;   // шлейф доходит и до следующего кадра
     const m = SMOKE_MOUTH[V];
     const mx = m[0] + 1.2 + ph * 5, my = m[1] + 0.8 - ph * (V === 'S' ? 7 : 4);
     for (let k = 0; k < 7; k++) {

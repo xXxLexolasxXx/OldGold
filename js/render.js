@@ -144,16 +144,13 @@ function swingFrame(u) {
   // долгое действие (жатва, рубка) — несколько отдельных ударов с паузами, по ~0.9 с на удар
   const n = a && a.T ? Math.max(1, Math.round(a.T / 0.9)) : 1;
   const p = a && a.T ? ((1 - Math.max(0, a.t) / a.T) * n) % 1 : 1;
-  // 8 кадров: рука опущена → поднимает (4 кадра) → над плечом → отведена назад → удар → инструмент внизу
-  if (p < 0.08) return 4;
-  if (p < 0.16) return 3;
-  if (p < 0.24) return 2;
-  if (p < 0.32) return 1;
-  if (p < 0.42) return 0;      // замах над плечом
-  if (p < 0.5) return 7;       // чуть назад — разгон
-  if (p < 0.54) return 5;      // удар
-  if (p < 0.6) return 6;       // инструмент в нижней точке
-  return 6;                    // пауза
+  // 12 кадров (SWING_A в people.js): подъём 0–6, назад 7, разгон 8, удар 9, низ 10, возврат 11
+  if (p < 0.4) return Math.floor(p / 0.4 * 7);
+  if (p < 0.46) return 7;
+  if (p < 0.5) return 8;
+  if (p < 0.54) return 9;
+  if (p < 0.58) return 10;
+  return 11;                   // возврат и пауза
 }
 
 // ---------- Жители ----------
@@ -168,7 +165,7 @@ function drawUnit(c, u) {
     return;
   }
   let pose = 'idle', frame = 0, view = u.vdir || 'S', face = u.face;
-  if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / (u.type === 'kid' ? 0.75 : 1.1)) & 7; }   // гномята семенят быстрее
+  if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / ((u.type === 'kid' ? 0.75 : 1.1) * 8 / WALK_FRAMES)) % WALK_FRAMES; }   // гномята семенят быстрее
   else if (u.anim === 'duck' || u.anim === 'forage') pose = 'duck';
   else if (u.anim === 'smoke') { pose = 'smoke'; view = smokeViewOf(u); }   // кто в анфас (с коротким куревом), кто боком
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
@@ -225,7 +222,7 @@ function drawUnit(c, u) {
   }
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, lying ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
-  if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 6 тактов, 2 позы
+  if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 12 тактов, позы по высоте груди
   // жест и так движется: в покое без дыхания, на ходу — две опорные позы (шаг уже даёт 8 кадров), чтобы не множить спрайты
   if (opt.gest && opt.gest !== 'five') { if (pose === 'idle') frame = 0; else if (pose === 'walk') opt.gf = gestK(opt.gf) >= 0.5 ? 1 : 0; }
   const spr = personSprite(u, view, pose, frame, opt);
