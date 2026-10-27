@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#1b2a1f"><canvas id="cv"></canvas>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script>
+try {
+const cv = document.getElementById('cv'); cv.width = 1500; cv.height = 560; const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#1b2a1f'; c.fillRect(0, 0, 1500, 560);
+const T = (s, x, y) => { c.fillStyle = '#f2e6c8'; c.font = 'bold 14px Segoe UI'; c.fillText(s, x, y); };
+const put = (spr, x, y, Z) => { const [ox, oy, w, h] = spr.fzO; c.drawImage(spr, x - ox * Z, y - oy * Z, w * Z, h * Z); };
+const L = [['hurt', 0], ['hurt', 1], ['die', 0], ['die', 1], ['die', 2], ['die', 3], ['die', 4], ['die', 5], ['win', 0], ['win', 1], ['win', 2], ['win', 3]];
+L.forEach(([m, p], i) => { const x = 10 + (i % 6) * 246, y = 10 + Math.floor(i / 6) * 270; c.fillStyle = '#4a6a34'; c.fillRect(x, y, 240, 260); T(m + ' ' + p, x + 6, y + 18); put(fzShroomSprite(m, p), x + 120, y + 245, 4.5); });
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message; }
+</script>

@@ -846,6 +846,17 @@ function dragonDraw(list, c, F, x0, y0, x1, y1) {
     const px = d.x * TILE, py = d.y * TILE + 4, air = d.z > 1;
     fyShadow(c, px, py, air ? 7 : 9, air ? 0.16 : 0.3);
     if (d.st === 'gone') return;
+    if (typeof pxbBlit === 'function') {       // пиксельные дракон и дракончик (pxbeasts.js): сон, полёт, огонь в полёте, покой
+      const bab = (m, k) => pxbBaby(d.sp, m, k);
+      if (d.st === 'nest') { const k = Math.floor(d.ph * 3) % 6; pxbBlit(c, d.stage ? fzDragonSprite('sleep', k) : bab('sleep', k), px, py); return; }
+      const fire = d.st === 'fire' && d.fire, m = air ? (fire ? 'flyatk' : 'fly') : 'idle';
+      const k = m === 'fly' ? Math.floor(d.ph * (d.stage ? 32 : 36)) & 7 : m === 'flyatk' ? Math.floor(d.ph * 12) % 6 : Math.floor(d.ph * 4) % 6;
+      pxbBlit(c, d.stage ? fzDragonSprite(m, k) : bab(m, k), px, py - d.z, d.face || 1);
+      const ty = py - d.z - (d.stage ? 62 : 44);
+      if (d.talk) { c.fillStyle = '#fff6d8'; c.fillRect(Math.round(px + 6), Math.round(ty), 9, 7); c.fillStyle = '#3a2a14'; for (const dx of [8, 10, 12]) c.fillRect(Math.round(px + dx), Math.round(ty + 3), 1, 1); }
+      if (d.loot && air) { c.save(); c.translate(px + (d.face || 1) * 6, py - d.z + 2); c.scale(0.3, 0.3); drawLoad(c, 'gold'); c.restore(); }
+      return;
+    }
     const own = fr => typeof dpWildSpr === 'function' ? dpWildSpr(d, fr) : null;
     if (d.st === 'nest') {      // спит свернувшись на камне, из ноздри дымок
       fyBlit(c, d.stage ? sprDragon(1) : own(1) || sprBabyDragon(1), px, py, 1, 1, d.stage ? 0.8 : 1);

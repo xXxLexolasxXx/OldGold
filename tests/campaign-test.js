@@ -168,7 +168,10 @@ const BOT = `(function () {
   const { h, errors } = host(303);
   const t0 = Date.now();
   h.run(`localStorage.setItem('oldgold.campaign', JSON.stringify({ v: 1, done: { 1: { stars: 2 }, 2: { stars: 2 } }, legacy: { a1: { alive: 36 }, a2: { saved: 22, bread: 30, vaska: true } }, last: 2 }))`);
+  // панель строительства перерисована уже с открытым меню (иначе на ней одна вкладка «Ресурсы» — домов не поставить)
+  h.run('Game.__menuOk = 0; const __rbm = renderBuildMenu; renderBuildMenu = function () { Game.__menuOk = !!(Game.unlocked.home && Game.unlocked.def); return __rbm.apply(this, arguments); };');
   h.run('Game.__campPick = { duel: 0, comb: 0, songs: 0 }; campStart(3); Game.heroAsk = false;');
+  if (h.run('Game.__menuOk') !== true) fail('акт 3: после старта акта панель строительства не перерисована с открытым меню — нет вкладки «Основа»');
   const info = JSON.parse(h.run('JSON.stringify({ p: campPeople(), krem: Game.buildings.filter(b => b.foreign).length, ours: Game.buildings.filter(b => !b.foreign).length, vaska: Game.units.some(u => u.cname === "Васька") })'));
   console.log(`Проверка: акт 3 — беглецов ${info.p}, домов Кремнёвки ${info.krem}, наших зданий ${info.ours}, Васька ${info.vaska ? 'с нами' : 'нет'}`);
   if (info.p < 21 || info.p > 25) fail(`в акт 3 пришло не столько гномов, сколько дошло в акте 2 (22+Васька): ${info.p}`);

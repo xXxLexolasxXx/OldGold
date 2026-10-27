@@ -85,6 +85,27 @@ const NA_SPEC = {
 };
 
 const naCache = new Map();
+// Ручной пиксель-арт на сетке ×3 (как Полудница, fzPxKit в fairy2.js): NA_PX[вид](K, P, кадр) рисует позу
+// стоя, в пикселях арта (3 на игровой), начало — у ног, лицом вправо. Сдвиг, наклон и вспышку удара
+// из позы накладывает naPxFrame. Есть только при мелком пикселе (PX_FINE > 1); иначе — вектор NA_DRAW.
+const NA_PX = {};
+function naPxFrame(kind, S, P, fr) {
+  const W = S.w * 3, H = S.h * 3, AX = S.ax * 3, AY = S.ay * 3, sc = (S.sc || 1) * 3;
+  const K = fzPxKit(W, H, AX, AY);
+  NA_PX[kind](K, P, fr);
+  const art = K.done(), out = mkCanvas(W, H), o = out.getContext('2d');
+  o.imageSmoothingEnabled = false;
+  o.translate(AX + Math.round(P.x * sc), AY + Math.round(P.y * sc));
+  if (P.rot) o.rotate(P.rot);
+  if (P.sq && P.sq !== 1) o.scale(1 / Math.sqrt(P.sq), P.sq);
+  o.drawImage(art, -AX, -AY);
+  if (P.hurt > 0.05) {                                   // вспышка удара: тёплый блик по силуэту
+    o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = 'source-atop';
+    o.fillStyle = `rgba(255,236,220,${Math.min(0.4, P.hurt * 0.32)})`; o.fillRect(0, 0, W, H);
+  }
+  out.fine = 3;
+  return out;
+}
 const NA_CACHE_PX = 24e6;          // предел пикселей в кэше (~96 МБ): самые давние кадры уходят первыми
 let naCachePx = 0;
 function naHash(a, b) { const n = Math.sin(a * 127.1 + b * 311.7 + 374.5) * 43758.5453; return n - Math.floor(n); }
@@ -94,18 +115,22 @@ function naFrame(kind, fr) {
   let s = naCache.get(key);
   if (s) { naCache.delete(key); naCache.set(key, s); return s; }
   const S = NA_SPEC[kind], F = PX_FINE;
-  // мелкий пиксель: F деталей на игровой пиксель, сверхвыборка 2 на пиксель арта (при F = 1 — 3, как было)
-  const [cv, c] = mkSprite(S.w, S.h, F > 1 ? 2 * F : 3);
-  c.lineCap = 'round'; c.lineJoin = 'round';
   const P = naPose(fr);
   P.pal = S.pal || null;
-  c.save();
-  c.translate(S.ax, S.ay);
-  if (S.sc) c.scale(S.sc, S.sc);
-  NA_DRAW[kind](c, P, fr);
-  c.restore();
-  const out = toPixelArt(cv, F > 1 ? 2 : 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
-  out.fine = F;
+  let out;
+  if (F > 1 && NA_PX[kind]) out = naPxFrame(kind, S, P, fr);
+  else {
+    // мелкий пиксель: F деталей на игровой пиксель, сверхвыборка 2 на пиксель арта (при F = 1 — 3, как было)
+    const [cv, c] = mkSprite(S.w, S.h, F > 1 ? 2 * F : 3);
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    c.save();
+    c.translate(S.ax, S.ay);
+    if (S.sc) c.scale(S.sc, S.sc);
+    NA_DRAW[kind](c, P, fr);
+    c.restore();
+    out = toPixelArt(cv, F > 1 ? 2 : 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
+    out.fine = F;
+  }
   if (P.fade > 0) {   // рассыпается пикселями: случайные точки пропадают (пиксель-арт «дизер»), остальные бледнеют
     const oc = out.getContext('2d'), img = oc.getImageData(0, 0, out.width, out.height), d = img.data;
     for (let y = 0; y < out.height; y++) for (let x = 0; x < out.width; x++) {
