@@ -197,7 +197,7 @@ function* deliverGen(u, from, to, g, n = 1) {
 // сходит и новичок, а не стоит у колышков.
 function* fetchForSiteGen(u, s, force) {
   const want = Math.max(force ? 1 : 0, unitLevel(u) - 1);
-  if (want <= 0 || u.carry || u.injury === 'arm') return false;
+  if (want <= 0 || u.carry || injArm(u.injury)) return false;
   const comp = s.isRoad ? 0 : compAt(s.doorX, s.doorY);   // камень к дороге носят и по траве (как трудяги)
   // чего не хватает: дороге — камень, зданию — доски, камень, брёвна
   let g = null, n = 0;

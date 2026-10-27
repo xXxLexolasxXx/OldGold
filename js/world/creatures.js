@@ -3,12 +3,12 @@
 // Рисуются боком, мордой вправо (влево — отражением). Кэшируются по кадрам.
 
 const CR_CACHE = afLru(16e6);   // кадры с грузом и телеги множатся — давние вытесняются (animalart.js)
-const CR_SIZE = { deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21], elk: [46, 46, 23, 42], fox: [28, 20, 14, 17], duck: [22, 20, 11, 17] };
+const CR_SIZE = { henbuff: [22, 30, 11, 28], deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21], elk: [46, 46, 23, 42], fox: [28, 20, 14, 17], duck: [22, 20, 11, 17] };
 
-// Курица: белая, красный гребешок, семенит
-function drawChicken(c, f, peck) {
+// Курица: белая, красный гребешок, семенит; noLegs — тело без ног (для куриной мести на накачанных ногах)
+function drawChicken(c, f, peck, noLegs) {
   const step = f === null ? 0 : Math.sin(f / CR_N * Math.PI * 2);
-  line(c, -1, 9, -1 + step * 1.2, 13, '#e0a030', 0.6); line(c, 1, 9, 1 - step * 1.2, 13, '#e0a030', 0.6);
+  if (!noLegs) { line(c, -1, 9, -1 + step * 1.2, 13, '#e0a030', 0.6); line(c, 1, 9, 1 - step * 1.2, 13, '#e0a030', 0.6); }
   c.fillStyle = '#f0ece0'; c.beginPath(); c.moveTo(-5.4, 4); c.lineTo(-3.6, 7); c.lineTo(-6, 7.4); c.closePath(); c.fill();   // хвост
   ellipse(c, -0.4, 7, 4.2, 3, '#f4f0e6'); ellipse(c, -0.8, 7.6, 2.6, 1.6, '#d8d0c0');
   c.save(); if (peck) c.translate(1.8, 3.4);   // клюёт: голова вниз и вперёд
@@ -17,6 +17,27 @@ function drawChicken(c, f, peck) {
   poly(c, [[4.4, 3.2], [5.8, 3.6], [4.4, 4.2]], '#e8a028');
   c.fillStyle = '#1a1210'; c.fillRect(3.1, 2.8, 0.5, 0.5);
   c.restore();
+}
+
+// Месть кур: у курицы вырастают комично накачанные человеческие ноги, и она пинает гнома.
+// load: 'g0..g3' — ноги растут, 'k0..k5' — пинок (угол бедра a и сгиб колена b), 's' — стоит. Длина ног L игровых px
+const HEN_KICK = [[-0.5, 0.9], [0.4, 1.0], [1.2, 0.4], [1.55, 0], [0.8, 0.8], [0.1, 0.3]];
+function henBuffPose(load) {
+  const t = load || 's', L = t[0] === 'g' ? [0.3, 0.55, 0.8, 1][+t[1] || 0] * 9 : 9, k = t[0] === 'k' ? HEN_KICK[+t[1] || 0] : [0.06, 0.16];
+  return { L, a: k[0], b: k[1], ka2: t[0] === 'k' ? -0.12 : -0.06, kb2: 0.12, kick: t[0] === 'k' };
+}
+function drawHenBuff(c, load) {
+  const P = henBuffPose(load), L = P.L, hipY = 28 - 3.4 - L, th = L * 0.5, sk = '#e8b088', skd = '#c88c68', w = Math.max(1.2, L / 9 * 3.2);
+  const leg = (hx, a, b, col) => {
+    const kx = hx + Math.sin(a) * th, ky = hipY + Math.cos(a) * th, ax = kx + Math.sin(a - b) * th, ay = ky + Math.cos(a - b) * th;
+    line(c, hx, hipY, kx, ky, col, w); ellipse(c, hx + (kx - hx) * 0.45, hipY + (ky - hipY) * 0.45, w * 0.75, w * 0.95, col);
+    line(c, kx, ky, ax, ay, col, w * 0.65); ellipse(c, kx + (ax - kx) * 0.32, ky + (ay - ky) * 0.32, w * 0.6, w * 0.75, col);
+    ellipse(c, ax + Math.cos(a - b) * 0.9, ay, w * 0.75, w * 0.32, col);
+  };
+  leg(-1.3, P.ka2, P.kb2, skd);
+  ellipse(c, 0, hipY - 0.3, 2.4, 1.4, '#e4ddd0');
+  c.save(); c.translate(0, hipY - 9.4 - Math.sin(Math.max(0, P.a)) * 0.6); drawChicken(c, null, false, true); c.restore();
+  leg(1.3, P.a, P.b, sk);
 }
 
 // Ручной питомец (кролик, утка): красный бантик на шее и посылка на спине.
@@ -150,6 +171,7 @@ function drawGoatBody(c, f, col, pack, load) {
 
 function drawCreature(c, kind, f, load) {
   if (kind === 'chicken') { drawChicken(c, f, load === 'peck'); return; }
+  if (kind === 'henbuff') { drawHenBuff(c, load); return; }
   if (kind === 'goose') { drawGoose(c, f, load === 'attack', load === 'swim'); return; }
   if (kind === 'duck') { drawDuck(c, f, load); return; }
   if (kind === 'goat') { drawGoatBody(c, f, '#d8d0c0', false); return; }
@@ -296,7 +318,7 @@ function creatureSprite(kind, f, load, n = 1, view = 'E') {
   const [w, h, ax, ay] = CR_SIZE[kind];
   CR_N = crFrames(kind);
   // перенос так, чтобы копыта/колёса стояли в точке (ax, ay)
-  const oy = ay - { cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14, duck: 13 }[kind];
+  const oy = ay - { henbuff: 28, cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14, duck: 13 }[kind];
   const paint = c => { if (kind === 'cart') { if (view === 'E') drawCartRig(c, f, load, n); else drawCartFront(c, f, load, n, view); } else drawCreature(c, kind, f, load); };
   if (afFine()) cv = AK_CR[kind] && view === 'E' ? AK_CR[kind](f, load, n) : afVec(w, h, ax, oy, paint);   // мелкий пиксель ×3: ручной пиксель-арт (animalpx.js) или вектор, сведённый втрое детальнее
   else { const [c2, c] = mkSprite(w, h, 3); c.translate(ax, oy); paint(c); cv = c2; }
@@ -306,6 +328,7 @@ function creatureSprite(kind, f, load, n = 1, view = 'E') {
 
 // Нарисовать зверя/упряжку ступнями в точке (px, py)
 function drawCreatureAt(c, kind, px, py, face, moving, phase, load, n, view = 'E') {
+  if (kind === 'chicken' && load && load[0] === 'B') { kind = 'henbuff'; load = load.slice(1); moving = false; }   // месть кур: на накачанных ногах
   const f = moving ? Math.floor(phase * crFrames(kind) / 4) % crFrames(kind) : null;   // период шага прежний (4), кадров больше
   const spr = creatureSprite(kind, f, load, n, view);
   const [w, h, ax, ay] = CR_SIZE[kind];

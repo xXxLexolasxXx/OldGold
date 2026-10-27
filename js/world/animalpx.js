@@ -286,21 +286,69 @@ const akG = pts => pts.map(([x, y]) => [x * 3, y * 3]);
 const akRipple = (K, cy, rx, ry, a, col = [235, 245, 255]) => K.R(-rx * 3 - 2, cy * 3 - ry * 3 - 2, rx * 3 + 2, cy * 3 + ry * 3 + 2, (x, y) => { const d = Math.hypot((x + 0.5) / (rx * 3), (y + 0.5 - cy * 3) / (ry * 3)); return Math.abs(d - 1) < 0.06 ? [...col, a] : null; }, false);
 
 // Курица: белая, красный гребешок и бородка, семенит; клюёт — голова вниз
-AK_CR.chicken = (f, load) => {
-  const K = akKit(16, 15, 8, 13), g = v => v * 3, st = f == null ? 0 : Math.sin(akT(f, 6)), peck = load === 'peck';
-  const W = akRamp('#f2eee4', 6, 0.42), Wd = akRamp('#d4ccbc', 5), RED = akRamp('#d83a24', 4), LEG = akRamp('#e0a030', 4);
-  for (const [x, s] of [[-1, st], [1, -st]]) { K.limb(g(x), g(-4), g(x + s * 1.2), g(-0.4), 1, 0.9, LEG); K.limb(g(x + s * 1.2 - 0.8), g(-0.2), g(x + s * 1.2 + 1), g(-0.2), 0.8, 0.6, LEG); }
-  akPoly(K, akG([[-2.4, -8.4], [-6.2, -10.8], [-6.6, -6.4], [-3.6, -5]]), W, 0.7);                                   // хвост
-  for (let k = 0; k < 3; k++) K.limb(g(-4.6 + k * 0.5), g(-9.6 + k * 1.1), g(-6.2 + k * 0.3), g(-9.8 + k * 1.4), 0.7, 0.4, Wd);
-  K.blob([[g(-0.4), g(-6), g(4.3), g(3.1)], [g(1.6), g(-7.2), g(2.4), g(2.4)]], W, { fur: 0.5, round: 6, zone: (x, y) => [Wd, akCl((y - g(-4.6)) / 1) * akCl((g(1.5) - x) / 2)] });
-  K.limb(g(-2.6), g(-6.6), g(1), g(-5.6), 1.6, 1.2, Wd, { bias: 0.1 });                                              // крыло
-  const hx = g(2.8) + (peck ? g(1.8) : 0), hy = g(-9.6) + (peck ? g(3.4) : 0);
+// тело курицы (без ног) со сдвигом вверх dy игровых px; peck — голова вниз, angry — сердитые брови
+function akHenBody(K, g, dy, peck, angry) {
+  const W = akRamp('#f2eee4', 6, 0.42), Wd = akRamp('#d4ccbc', 5), RED = akRamp('#d83a24', 4), G = v => g(v) - g(dy);
+  akPoly(K, [[g(-2.4), G(-8.4)], [g(-6.2), G(-10.8)], [g(-6.6), G(-6.4)], [g(-3.6), G(-5)]], W, 0.7);                 // хвост
+  for (let k = 0; k < 3; k++) K.limb(g(-4.6 + k * 0.5), G(-9.6 + k * 1.1), g(-6.2 + k * 0.3), G(-9.8 + k * 1.4), 0.7, 0.4, Wd);
+  K.blob([[g(-0.4), G(-6), g(4.3), g(3.1)], [g(1.6), G(-7.2), g(2.4), g(2.4)]], W, { fur: 0.5, round: 6, zone: (x, y) => [Wd, akCl((y - G(-4.6)) / 1) * akCl((g(1.5) - x) / 2)] });
+  K.limb(g(-2.6), G(-6.6), g(1), G(-5.6), 1.6, 1.2, Wd, { bias: 0.1 });                                              // крыло
+  const hx = g(2.8) + (peck ? g(1.8) : 0), hy = G(-9.6) + (peck ? g(3.4) : 0);
   K.blob([[hx, hy, g(1.9), g(1.8)]], W, { round: 4, fur: 0.2 });
   for (let k = 0; k < 3; k++) K.R(hx - 6 + k * 2.4, hy - 9, hx - 1 + k * 2.4, hy - 4, (x, y) => Math.hypot(x + 0.5 - (hx - 2.6 + k * 2.2), y + 0.5 - (hy - 5.6 - (k === 1 ? 1 : 0))) < 1.5 ? K.tone(RED, 0.5, x, y) : null);   // гребешок
   K.blob([[hx + g(0.8), hy + g(1.5), 1.4, 2]], RED, { round: 1, rim: false });
   akPoly(K, [[hx + 4.2, hy - 1.6], [hx + 8.6, hy + 0.2], [hx + 4.2, hy + 1.8]], akRamp('#e8a028', 4), 0.7, 0.1);
   K.eye(hx + 1.6, hy - 1, 1.5, [60, 30, 20], [20, 14, 12]);
+  if (angry) for (let k = 0; k < 4; k++) K.P(hx - 0.5 + k, hy - 3.6 + k * 0.5, [70, 30, 24]);                         // сердитая бровь
+}
+
+AK_CR.chicken = (f, load) => {
+  const K = akKit(16, 15, 8, 13), g = v => v * 3, st = f == null ? 0 : Math.sin(akT(f, 6)), peck = load === 'peck';
+  const LEG = akRamp('#e0a030', 4);
+  for (const [x, s] of [[-1, st], [1, -st]]) { K.limb(g(x), g(-4), g(x + s * 1.2), g(-0.4), 1, 0.9, LEG); K.limb(g(x + s * 1.2 - 0.8), g(-0.2), g(x + s * 1.2 + 1), g(-0.2), 0.8, 0.6, LEG); }
+  akHenBody(K, g, 0, peck, false);
   return K.fin([96, 80, 66]);
+};
+
+// Курица-мстительница на комично накачанных человеческих ногах (месть кур, leisure.js): load — 'g0..g3' ноги растут,
+// 'k0..k5' пинок (замах → удар → назад), 's' стоит. Бёдра-окорока, икры-шары, рельеф, босые ступни с пальцами
+AK_CR.henbuff = (f, load) => {
+  const K = akKit(22, 30, 11, 28), g = v => v * 3, P = henBuffPose(load), L = P.L, sc = L / 9;
+  const SK = akRamp('#e8b088', 8, 0.55), SKd = akRamp('#c88c68', 6, 0.5), HI = [254, 232, 206];
+  const hipY = -2.4 - L, th = L * 0.52, cf = L * 0.52;
+  const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
+  // нога одной формой: диски вдоль кости (бедро, колено, голень, ступня, пальцы) сливаются плавным минимумом —
+  // без швов на стыках; рельеф мышц — тёмная бороздка между головками квадрицепса и икры, блики на выпуклостях
+  const leg = (hx, a, b, far) => {
+    const kx = hx + Math.sin(a) * th, ky = hipY + Math.cos(a) * th, ax = kx + Math.sin(a - b) * cf, ay = ky + Math.cos(a - b) * cf;
+    const R = far ? SKd : SK, tw = 0.85 + sc * 1.25, cw = 0.65 + sc * 0.95, fa = a - b;
+    const discs = [], bone = (x0, y0, x1, y1, w0, w1, bulge, bAt, nrm) => {
+      for (let t = 0; t <= 1.0001; t += 0.1) { const w = w0 + (w1 - w0) * t + bulge * Math.exp(-(((t - bAt) / 0.3) ** 2)); discs.push([g(x0 + (x1 - x0) * t) + nrm[0] * g(w) * 0.12, g(y0 + (y1 - y0) * t) + nrm[1] * g(w) * 0.12, g(w)]); }
+    };
+    const nT = [Math.cos(a), -Math.sin(a)], nC = [Math.cos(fa), -Math.sin(fa)];                                   // нормали: мышцы выпирают назад/вперёд
+    bone(hx, hipY, kx, ky, tw, tw * 0.58, sc * 0.75, 0.38, [-nT[0], -nT[1]]);                                          // бедро: окорок назад
+    bone(kx, ky, ax, ay, cw * 0.85, cw * 0.45, sc * 0.65, 0.26, [-nC[0], -nC[1]]);                                      // голень: икра-шар назад
+    discs.push([g(kx), g(ky), g(cw * 0.7)]);                                                                        // колено
+    const fx = g(ax) + Math.cos(fa) * g(1.3 + sc * 0.6), fy = g(ay) + Math.sin(fa) * g(0.5) + 1;                     // ступня вперёд от голеностопа
+    for (let t = 0; t <= 1.0001; t += 0.25) discs.push([g(ax) + (fx - g(ax)) * t + Math.cos(fa) * g(0.4), g(ay) + (fy - g(ay)) * t + 1, g(0.9 + sc * 0.3) * (1 - t * 0.25)]);
+    for (let t = 0; t < 3; t++) discs.push([fx + Math.cos(fa) * (g(1.1 + sc * 0.5) - t * 1.6), fy + Math.sin(fa) * 1.5 - 0.6 - t * 0.2, 1.3 - t * 0.15]);   // пальцы
+    const sdf = (x, y) => { let d = 1e9; for (const [cx, cy, r] of discs) d = smin(d, Math.hypot(x + 0.5 - cx, y + 0.5 - cy) - r, 2.6); return d; };
+    const crease = (x, y) => {                                                                                       // бороздки мышц
+      if (sc < 0.45) return 0;
+      const px = x + 0.5, py = y + 0.5;
+      const along = (x0, y0, x1, y1, t0, t1, off) => { const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy || 1, t = ((px - x0) * dx + (py - y0) * dy) / l2; if (t < t0 || t > t1) return 9; const nx = -dy / Math.sqrt(l2), ny = dx / Math.sqrt(l2); return Math.abs((px - x0 - dx * t) * nx + (py - y0 - dy * t) * ny - off); };
+      const q = along(g(hx), g(hipY), g(kx), g(ky), 0.18, 0.72, g(tw) * 0.22 * (far ? 1 : -1)), c = along(g(kx), g(ky), g(ax), g(ay), 0.1, 0.55, 0);
+      return Math.min(q, c) < 0.6 ? 1 : 0;
+    };
+    const glint = (x, y) => { const px = x + 0.5, py = y + 0.5; const d1 = Math.hypot(px - g(hx + (kx - hx) * 0.36) + Math.cos(a) * g(tw) * 0.5, py - g(hipY + (ky - hipY) * 0.36)), d2 = Math.hypot(px - g(kx + (ax - kx) * 0.26) + Math.cos(fa) * g(cw) * 0.45, py - g(ky + (ay - ky) * 0.26)); return d1 < 1.5 || d2 < 1.2; };
+    K.blob(discs.map(([x, y, r]) => [x, y, r + 3, r + 3]), R, { inside: (x, y) => sdf(x, y) < 0, round: g(tw) * 0.95, fur: 0, shade: 0.3,
+      mark: (x, y, v) => crease(x, y) ? K.tone(R, v - 0.2, x, y) : !far && sc > 0.5 && glint(x, y) ? HI : null });
+  };
+  leg(-1.5, P.ka2, P.kb2, true);
+  K.blob([[0, g(hipY) - 2, g(2.7), g(1.6)]], akRamp('#e4ddd0', 5, 0.4), { round: 3, fur: 0.6 });                     // пушистые «шортики» из перьев
+  akHenBody(K, g, L - 0.6 + Math.sin(Math.max(0, P.a)) * 0.6, false, P.kick);
+  leg(1.5, P.a, P.b, false);
+  return K.fin([96, 70, 52]);
 };
 
 // Гусь: длинная изогнутая шея, оранжевый клюв; в атаке шея вперёд и крылья вверх; плывёт — сидит в воде с рябью

@@ -65,7 +65,7 @@ const HEAVY = new Set(['trunk', 'stone', 'timber', 'pig', 'goldore', 'leatherArm
 
 // трудяга с выслугой носит 2 и 3 предмета (уровни 2 и 3)
 function carryCap(u) { return u.type === 'serf' ? unitLevel(u) : (CARRY_CAP[u.type] || 1); }
-function canCarry(u, g) { return !(u.injury === 'arm' && HEAVY.has(g)); }
+function canCarry(u, g) { return !(injArm(u.injury) && HEAVY.has(g)); }
 
 // Подобрать перевозчика под партию: большой партии — телегу, средней — козу, иначе курьера.
 function pickCarrier(idle, x, y, g, amount) {

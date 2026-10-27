@@ -94,7 +94,7 @@ function* kpRun(u, kind) {
 function kidRecruits(leader, n) {
   const c = [];
   for (const o of Game.units) {
-    if (o === leader || o.type !== 'kid' || o.dead || o.inside || o.brk || o.gp || o.eat || o.food < HUNGRY || o.injury === 'leg') continue;
+    if (o === leader || o.type !== 'kid' || o.dead || o.inside || o.brk || o.gp || o.eat || o.food < HUNGRY || injLeg(o.injury)) continue;
     const d = Math.hypot(o.x - leader.x, o.y - leader.y);
     if (d < GAME_FAR) c.push([d, o]);
   }
