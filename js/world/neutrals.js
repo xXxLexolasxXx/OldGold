@@ -339,6 +339,7 @@ function neuMove(N, tx, ty, spd, dt) {
   else if (ok(N.x, ny)) N.y = ny;
   else { N.stuck = (N.stuck || 0) + dt; if (N.stuck > 0.8) { N.stuck = 0; return true; } return false; }
   if (Math.abs(dx) > 0.05) N.face = dx > 0 ? 1 : -1;
+  if (Math.abs(dy) > 0.05 || Math.abs(dx) > 0.05) N.vf = dy > Math.abs(dx) * 1.2 ? 1 : 0;    // идёт на зрителя — вид анфас (у кого он нарисован)
   N.ph += st * 3.6;
   return d - st < 0.08;
 }
@@ -405,7 +406,7 @@ function neuThink(N, dt) {
     if (N.st === 'atk' && N.atkT < 0.56) {
       // замах и удар: урон — на кадре «удар»
       N.atkT += dt;
-      N.face = tg.x >= N.x ? 1 : -1;
+      N.face = tg.x >= N.x ? 1 : -1; N.vf = tg.y - N.y > Math.abs(tg.x - N.x) * 1.2 ? 1 : 0;
       if (!N.hit && N.atkT >= 0.24) { N.hit = 1; if (N.dist <= S.rng + 0.8) neuStrike(N, tg); }
     } else {
       const low = N.k === 'fairy' && N.hp < N.mhp * 0.3;
@@ -418,7 +419,7 @@ function neuThink(N, dt) {
         N.st = 'chase';
         neuMove(N, tg.x, tg.y, S.spd, dt);
       } else {
-        N.face = tg.x >= N.x ? 1 : -1;
+        N.face = tg.x >= N.x ? 1 : -1; N.vf = tg.y - N.y > Math.abs(tg.x - N.x) * 1.2 ? 1 : 0;
         if (N.cdA <= 0) { N.st = 'atk'; N.atkT = 0; N.hit = 0; N.cdA = S.cd * neuR(0.9, 1.2); }
         else if (N.st === 'atk') { N.st = 'chase'; N.atkT = 9; }
       }
@@ -630,7 +631,8 @@ function neuDrawLair(c, L) {
 }
 
 function neuDraw(c, N) {
-  const S = NSPEC[N.k], sp = naFrame(N.k, N.fr || 'i0'), t = Game.time;
+  const fk = N.vf && PX_FINE > 1 && NA_PX[N.k + 'F'] ? N.k + 'F' : N.k;                    // анфас, если нарисован (тролли)
+  const S = NSPEC[N.k], sp = naFrame(fk, N.fr || 'i0'), t = Game.time;
   const px = Math.round(N.x * TILE), py = Math.round(N.y * TILE + 6);
   const dead = N.st === 'die';
   const al = dead ? Math.max(0, Math.min(1, 1 - (N.dt - 0.9) / 2.3)) : 1;
@@ -655,7 +657,7 @@ function neuDraw(c, N) {
 // Зеркало для кооператива: только то, что нужно для рисования (id — общий с сервером)
 function neuMirror() {
   const r = v => Math.round(v * 100) / 100;
-  return Game.neutrals.map(N => ({ __id: N.id, id: N.id, k: N.k, x: r(N.x), y: r(N.y), face: N.face, st: N.st, fr: N.fr, hp: Math.round(N.hp), mhp: N.mhp, dt: r(N.dt), lv: N.lv }));
+  return Game.neutrals.map(N => ({ __id: N.id, id: N.id, k: N.k, x: r(N.x), y: r(N.y), face: N.face, vf: N.vf || 0, st: N.st, fr: N.fr, hp: Math.round(N.hp), mhp: N.mhp, dt: r(N.dt), lv: N.lv }));
 }
 function neuMirrorLairs() { return Game.lairs.map(L => ({ __id: L.id, id: L.id, k: L.k, x: L.x, y: L.y })); }
 
