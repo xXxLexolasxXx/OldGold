@@ -9,10 +9,11 @@
 //   B — «дед»: старый гном с носом-картошкой, бородой-туманом до пояса и обрывком цепи на запястье, глаза — тлеющие провалы;
 //   C — «саван»: глубокий капюшон, череп в тени, сквозь рваный саван видны рёбра, длинные когти.
 // mood: 'idle' | 'boo' | 'calm' | 'atk' | 'hurt' | 'flee'; p — фаза парения 0..1 (петля); k — ход удара 0..1
-// (замах 0–.35, бросок .35–.6, отдача). Подключается после pxbeasts.js. Пока облик не выбран, в игре рисуется
-// прежний векторный призрак (GHOST_PX = null).
+// (замах 0–.35, бросок .35–.6, отдача). Подключается после pxbeasts.js.
+// Владелец выбрал A и B вперемешку: каждому призраку облик достаётся при рождении (ghInit, g.look), C пока не в игре.
+// Захват гнома (grab) по-прежнему рисуется векторным призраком ghosts.js.
 
-let GHOST_PX = null;
+const GHOST_PX = ['A', 'B'];
 const GPX = {
   SH: [[14, 38, 48], [28, 64, 74], [50, 100, 106], [84, 144, 142], [128, 190, 178], [180, 228, 212], [226, 250, 240]],
   BO: [[56, 70, 68], [98, 116, 110], [148, 166, 158], [194, 210, 200], [232, 244, 236]],
@@ -269,4 +270,18 @@ function ghostPxSprite(v, mood, f) {
   f = Math.max(0, Math.min(GPX_N[mood] - 1, f | 0));
   return fzPxSprite('gh' + v + mood + f, 60, 76, 30, 32, () => mood === 'die' ? ghostPxDie(v, (f + 1) / 6)
     : ghostPx(v, mood, mood === 'atk' ? 0 : f / GPX_N[mood], mood === 'atk' ? f / (GPX_N.atk - 1) : 0));
+}
+
+// Кадр для игры по общему бюджету новых спрайтов (spriteBudgetOk, people.js): кадр строится десятки миллисекунд,
+// поэтому новый — только если в этом кадре рендера ещё есть время; иначе рисуется прошлый кадр этого призрака.
+const GPX_LAST = new WeakMap();
+function ghostPxFrame(g, v, mood, f) {
+  f = Math.max(0, Math.min(GPX_N[mood] - 1, f | 0));
+  const have = FZ_CVC['gh' + v + mood + f], last = GPX_LAST.get(g);
+  if (have) { GPX_LAST.set(g, have); return have; }
+  if (last && typeof spriteBudgetOk === 'function' && !spriteBudgetOk(true)) return last;
+  const t0 = performance.now(), cv = ghostPxSprite(v, mood, f);
+  if (typeof spriteSpent === 'function') spriteSpent(t0);
+  GPX_LAST.set(g, cv);
+  return cv;
 }

@@ -49,7 +49,12 @@ function ghostsSpawn(n) {
 
 // ---------- Здоровье, урон, гибель, бегство ----------
 const ghMaxHp = () => Math.min(GH.HP_MAX, GH.HP0 + GH.HP_NIGHT * Math.max(0, nightIndex() - 1));
-function ghInit(g) { if (g && g.kind !== 'reaper' && g.mhp == null) { g.mhp = ghMaxHp(); g.hp = g.mhp; } return g; }
+function ghInit(g) {
+  if (!g || g.kind === 'reaper') return g;
+  if (g.mhp == null) { g.mhp = ghMaxHp(); g.hp = g.mhp; }
+  if (!g.look) g.look = Math.random() < 0.5 ? 'A' : 'B';          // пиксельный облик (ghostpx.js): колпак или дед — вперемешку
+  return g;
+}
 // живой и видимый обычный призрак — его можно бить
 const ghLive = g => !!g && g.kind !== 'reaper' && !g.slain && !g.exo && g.rev !== false && g.alpha >= 0.25 && g.mode !== 'leave' && g.mode !== 'grab' && (Game.ghosts || []).includes(g);
 const ghProv = g => Game.time - (g.prov || -99) < GH.FORGET;
@@ -429,13 +434,13 @@ function drawGhosts(c) {
     c.globalAlpha = A;
     c.imageSmoothingEnabled = true;
     if (rp) blitFine(c, reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES, g.var || 0), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
-    else if (typeof GHOST_PX !== 'undefined' && GHOST_PX && !grab) {
-      // пиксельный облик (ghostpx.js), когда владелец его выбрал: гибель по угасанию, вспышка раны, бегство
+    else if (typeof GHOST_PX !== 'undefined' && GHOST_PX.length && !grab) {
+      // пиксельный облик (ghostpx.js, A или B по g.look): гибель по угасанию, вспышка раны, бегство
       const pm = g.slain ? 'die' : Game.time - (g.hurtT || -9) < 0.25 ? 'hurt' : g.mode === 'flee' ? 'flee' : mood;
       const pf = pm === 'die' ? fzDieF(g.alpha, g.da) : pm === 'atk' ? Math.floor(g.atkT / GHOST_ATK_DUR * GPX_N.atk) : Math.floor(t * GPX_FPS + g.ph * 1.43) % GPX_N[pm];
       if (g.slain) c.globalAlpha = Math.min(1, flick);
       c.imageSmoothingEnabled = false;
-      c.drawImage(ghostPxSprite(GHOST_PX, pm, pf), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
+      c.drawImage(ghostPxFrame(g, GHOST_PX.includes(g.look) ? g.look : GHOST_PX[0], pm, pf), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
     }
     else blitFine(c, ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
     if (grab && g.vsnap) { c.imageSmoothingEnabled = false; ghDrawVictim(c, g, Math.min(8, gi), g.alpha, px, py); }
