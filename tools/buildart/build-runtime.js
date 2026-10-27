@@ -19,6 +19,9 @@ const parts = [
   ['bvar12.js (реквизит блока 1)', R('bvar12.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
   ['bvar13.js (колодец, извозчик, торговый пост, загон)', R('bvar13.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
   ['bvar14.js (лазарет)', R('bvar14.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
+  ['bvar15.js (реквизит блока 2)', R('bvar15.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
+  ['bvar16.js (пекарня, хмельник, свинарник)', R('bvar16.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
+  ['bvar17.js (ферма, пивоварня, бойня)', R('bvar17.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
   ['px-runtime.js', R('px-runtime.js')],
 ];
 const out = `'use strict';

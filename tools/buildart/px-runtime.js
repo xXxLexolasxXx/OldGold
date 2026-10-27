@@ -11,6 +11,7 @@ const PX_HOUSES = [
 const PX_HOUSE_KINDS = PX_HOUSES.map((f, i) => i);
 const PX_HOUSE_NAMES = ['Белёный коттедж', 'Высокий фахверк', 'Изба с крыльцом', 'Каменный домик', 'Круглый домик', 'Г-образный дом', 'Дом на сваях', 'Дом в старом дубе'];
 
+const PX_FOOD = new Set(['farm', 'bakery', 'hopfarm', 'brewery', 'swine', 'butchery']);
 function pxModel(type, g, d, lv, vr) {
   if (type === 'inn') { g.rot = 0; (d.rot ? buildInnProfile : buildInn)(g, lv, ROOF_LV[lv](STRAW1.olive)); return; }
   g.rot = d.rot ? 1 : 0;
@@ -24,6 +25,12 @@ function pxModel(type, g, d, lv, vr) {
   if (type === 'tradepost') { buildTrade(g, lv); return; }
   if (type === 'goatpen') { buildGoat(g, lv); return; }
   if (type === 'infirmary') { g.dynPiles = true; buildInf(g, lv); return; }
+  if (type === 'farm') { g.dynPiles = true; buildFarm(g, lv); return; }
+  if (type === 'bakery') { buildBakery(g, lv); return; }
+  if (type === 'hopfarm') { buildHop(g, lv); return; }
+  if (type === 'brewery') { g.dynPiles = true; buildBrew(g, lv); return; }
+  if (type === 'swine') { buildSwine(g, lv); return; }
+  if (type === 'butchery') { buildButch(g, lv); return; }
   PX_HOUSES[vr](g, lv);
 }
 
@@ -76,6 +83,15 @@ function pxBuild(type, rot, lv, vr) {
   if (type === 'tradepost') { spr.cartSpot = opt(M.cartSpot); spr.loadFrom = opt(M.loadFrom); }
   if (type === 'well') spr.bucket = opt(M.bucket);
   if (type === 'infirmary') { spr.beds = (M.beds || []).map(([a, b]) => [scr(a), scr(b)]); spr.rack = opt(M.rack); spr.cauldron = opt(M.cauldron); spr.cots = arr(M.cots); }
+  if (type === 'farm' || type === 'brewery') { spr.piles = {}; for (const k in M.piles || {}) spr.piles[k] = M.piles[k].map(scr); }
+  if (PX_FOOD.has(type)) {   // точки анимаций двора (inside.js): одиночные [x,y,z] и списки точек → экранные координаты
+    spr.pt = {};
+    for (const k in M) { const v = M[k]; if (k === 'piles' || k === 'pen' || k === 'wins' || !Array.isArray(v) || !v.length) continue; spr.pt[k] = Array.isArray(v[0]) ? v.map(scr) : typeof v[0] === 'number' ? scr(v) : null; }
+  }
+  if (type === 'swine' && M.pen) {   // загон для игровых свиней (render.js drawPigs): углы в экранных координатах
+    const [[x0, y0], [x1, y1]] = M.pen, q = [scr([x0, y0, 0]), scr([x1, y0, 0]), scr([x0, y1, 0])], cs = [...q, scr([x1, y1, 0])];
+    spr.penQuad = q; spr.pen = [Math.min(...cs.map(p => p[0])), Math.min(...cs.map(p => p[1])), Math.max(...cs.map(p => p[0])), Math.max(...cs.map(p => p[1]))];
+  }
   if (type === 'storehouse') {
     spr.piles = {}; for (const k in M.piles || {}) spr.piles[k] = M.piles[k].map(scr);
     spr.runes = arr(M.glow); spr.drop = arr(M.drop); spr.circle = opt(M.circle);
