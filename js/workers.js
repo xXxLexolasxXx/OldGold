@@ -123,6 +123,7 @@ function wkDoing(u) {
   if (u.repairJob) return 'чинит: ' + wkBN(u.repairJob).toLowerCase();
   if (u.fieldJob >= 0) return 'вскапывает поле';
   if (u.helpField >= 0) return 'помогает убрать урожай';
+  if (u.rushJob >= 0 && typeof rushDoing === 'function') return rushDoing(u);
   if (u.job && !u.job.removed) return (u.job.upg && u.job.state === 'done' ? 'достраивает: ' : 'строит: ') + wkBN(u.job).toLowerCase();
   if (u.home && !u.home.removed && !u.home.problem()) return 'работает: ' + wkBN(u.home).toLowerCase();
   return '';

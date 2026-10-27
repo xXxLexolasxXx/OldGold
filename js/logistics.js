@@ -372,6 +372,8 @@ function dispatchBuilders() {
       }
     }
   }
+  // «Навались!» (rush.js): всех оставшихся — на то, чего деревне не хватает
+  if (typeof rushDispatch === 'function') rushDispatch(idle);
 }
 
 // Повреждённое здание чинит любой свободный гном (не только работяга): сначала свободные работяги,
@@ -431,6 +433,7 @@ function auditReserved() {
     if (u.cmd && u.cmd.i != null) claim.add(u.cmd.i);
     if (u.fieldJob >= 0) claim.add(u.fieldJob);
     if (u.helpField >= 0) claim.add(u.helpField);
+    if (u.rushJob >= 0) claim.add(u.rushJob);
   }
   const stale = (i, has = claim.has(i)) => { if (has) { resStale.delete(i); return false; } const n = (resStale.get(i) || 0) + 1; if (n >= 3) { resStale.delete(i); return true; } resStale.set(i, n); return false; };
   // урну (streets.js) бронирует конкретный работяга (o.res = id): претендент — только он сам, иначе урна у людной
