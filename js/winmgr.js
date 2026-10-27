@@ -258,7 +258,9 @@ function wmGoalTick(busy) {
   if (WM.gSig == null || !sig) { WM.gSig = sig; return; }
   if (sig !== WM.gSig) {
     WM.gSig = sig;
-    if (GoalUI.fold && !busy) { WM.gAuto = now; fold(false); }
+    // цели живут в панели (js/winpanel.js): новое задание — панель/значок сами показывают его, ничего не разворачиваем на карте
+    if (typeof wpNewTask === 'function') wpNewTask();
+    else if (GoalUI.fold && !busy) { WM.gAuto = now; fold(false); }
     hud.classList.remove('wm-gh-new'); void hud.offsetWidth; hud.classList.add('wm-gh-new');
     clearTimeout(WM.gT); WM.gT = setTimeout(() => hud.classList.remove('wm-gh-new'), 2600);
   }
@@ -334,7 +336,7 @@ function wmSync() {
       const open = new Set(wmRevealed());
       for (const v of head.querySelectorAll('[data-wmv]')) { v.hidden = !open.has(v.dataset.wmv); v.classList.toggle('active', v.dataset.wmv === UI.tab); }
     }
-    if (mode === 'title') { const tt = head.querySelector('#wm-title'), want = UI.tab === 'menu' ? wmT('Меню') : ''; if (tt.textContent !== want) tt.textContent = want; }
+    if (mode === 'title') { const tt = head.querySelector('#wm-title'), want = UI.tab === 'menu' ? wmT('Меню') : UI.tab === 'task' ? wmT('Задания') : ''; if (tt.textContent !== want) tt.textContent = want; }
   }
   // кнопки телефона: «Деревня» видна, если открыта хоть одна её вкладка; значки и подсветки — с исходных вкладок
   const vil = document.querySelector('#tabs [data-tab="village"]');
@@ -371,6 +373,7 @@ function wmSync() {
   if (mob && s2 === 'tab' && UI.tab === 'build') document.querySelector('#tabs [data-tab="build"]')?.classList.add('active');
   if (typeof rvCount === 'function') rvCount();   // сколько кнопок в нижней полосе — для раскладки без дыр
   wmAdminBtn();
+  if (typeof wpSync === 'function') wpSync();
 }
 
 // ---------- подписи значков на телефоне: долгое нажатие показывает title (как у нижних вкладок, ui.js tabTipsInit) ----------
@@ -410,6 +413,7 @@ function initWinMgr() {
   WM.init = true;
   wmInitTabs();
   wmInitHead();
+  if (typeof wpInit === 'function') wpInit();   // содержимое панели: карточка постройки, задания, поход (js/winpanel.js)
   wmTipsInit();
   if (!document.getElementById('wm-chip')) { const c = document.createElement('div'); c.id = 'wm-chip'; document.body.appendChild(c); }
   // пересчёт сразу после смены вкладки или шторки и 4 раза в секунду (окна, которые прячутся стилем)

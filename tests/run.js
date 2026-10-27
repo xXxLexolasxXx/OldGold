@@ -133,6 +133,7 @@ scriptTest('wild: поселения диких гномов — число на
 scriptTest('whatsnew: пропущенные обновления в окне «Что нового»', 'whatsnew-test.js');
 scriptTest('uilayers: слои интерфейса — загрузка без скорости, стройка поверх способностей', 'uilayers-test.js');
 scriptTest('winmgr: одно окно за раз, «Деревня», «⋯» по делу, права хоста на виду', 'winmgr-test.js');
+scriptTest('winpanel: карточка постройки, задания в панели, герой в походе', 'winpanel-test.js');
 scriptTest('fair: ярмарка — оружейная лавка за золото казны, рюкзак, сохранение, понятная панель', 'fair-test.js');
 scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js', [], 900000);
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);

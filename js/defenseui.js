@@ -14,7 +14,7 @@ function defMenuButtons() {
     btn.dataset.type = 'fort:' + f;
     btn.title = F.desc[0];
     btn.innerHTML = `<img class="bimg" src="${defIconURL(f)}" alt=""><span class="bname">${F.name}</span>${costHTML(F.cost[0])}`;
-    btn.onclick = () => setTool(Game.tool && Game.tool.kind === 'fort' && Game.tool.f === f ? null : { kind: 'fort', f, type: 'fort:' + f });
+    btn.onclick = () => typeof wpPick === 'function' ? wpPick('fort:' + f) : setTool(Game.tool && Game.tool.kind === 'fort' && Game.tool.f === f ? null : { kind: 'fort', f, type: 'fort:' + f });
     if (Game.tool && Game.tool.kind === 'fort' && Game.tool.f === f) btn.classList.add('active');
     list.insertBefore(btn, first);
   }

@@ -610,7 +610,8 @@ function renderBuildList() {
     if ((UI.fresh || []).includes(type)) { btn.classList.add('enter'); btn.addEventListener('animationend', () => btn.classList.remove('enter'), { once: true }); }
     btn.dataset.type = type;
     btn.innerHTML = `<img class="bimg" src="${buildingIconURL(type)}" alt=""><span class="bname">${def.name}</span>${costHTML(def.cost)}`;
-    btn.onclick = () => setTool(Game.tool && Game.tool.type === type ? null : { kind: 'build', type, rot: def.noRotate || def.rots ? 0 : (UI.lastRot || 0) });
+    // нажали постройку — карточка вместо списка (js/winpanel.js), оттуда «Поставить»
+    btn.onclick = () => typeof wpPick === 'function' ? wpPick(type) : setTool(Game.tool && Game.tool.type === type ? null : { kind: 'build', type, rot: def.noRotate || def.rots ? 0 : (UI.lastRot || 0) });
     btn.onmouseenter = () => { if (Mobile.on) return; UI.hoverType = type; updateUI(true); };
     btn.onmouseleave = () => { UI.hoverType = null; updateUI(true); };
     if (Game.tool && Game.tool.type === type) btn.classList.add('active');

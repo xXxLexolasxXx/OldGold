@@ -48,7 +48,7 @@ body.mobile:not(.land) #tab-area { height: auto; max-height: 62vh; max-height: 6
 body.mobile:not(.land) #info-wrap { max-height: 62vh; max-height: 62dvh; }
 
 /* пока открыта шторка (портрет) — карточки и цели на карте не налезают на неё */
-body.mobile:not(.land).wm-sheet :is(#goal-hud, #daily-hud, #mood-card, #rec-card, #fort-card, #wk-card, #hero-card, #coop-hud, #nq-pins) { display: none !important; }
+body.mobile:not(.land).wm-sheet :is(#mood-card, #rec-card, #fort-card, #wk-card, #hero-card, #coop-hud, #nq-pins) { display: none !important; }   /* цели и задания дня — в самой шторке (winpanel.js) */
 
 /* плашка «Новое: …» (reveal.js) при открытой шторке — сверху, над картой, а не поверх шторки */
 body.mobile:not(.land).wm-sheet .rv-note { top: calc(54px + env(safe-area-inset-top)); }
@@ -117,3 +117,82 @@ body.mobile #coop-hud .cp-row { flex-wrap: wrap; justify-content: flex-end; }
 body.wm-tool #goal-hud > :not(.gh-head), body.wm-tool #coop-hud :is(#cp-qs, #cp-vil) { display: none !important; }
 /* телефон боком: шторка тоже по высоте содержимого (раньше тянулась до низа экрана пустой тёмной полосой) */
 body.mobile.land #tab-area, body.mobile.land #info-wrap { bottom: auto; max-height: calc(100vh - var(--st, 0px) - var(--bar, 0px) - var(--sb, 0px) - 10px); max-height: calc(100dvh - var(--st, 0px) - var(--bar, 0px) - var(--sb, 0px) - 10px); overflow-y: auto; }
+
+/* ================= Панель: карточка постройки, задания, поход (js/winpanel.js) ================= */
+/* ПК: вкладок теперь девять — колонки по числу видимых, без переноса */
+body:not(.mobile) #tabs { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+
+/* карточка постройки вместо списка */
+#wp-card { display: none; }
+#tab-build.wp-carded > :not(#wp-card) { display: none !important; }
+#tab-build.wp-carded #wp-card { display: block; animation: bl-pop .28s cubic-bezier(.2, .9, .3, 1.1) both; }
+#wp-card .wp-cbar { margin-bottom: 6px; }
+#wp-card .wp-cbar button { padding: 5px 10px; font-size: 13px; }
+#wp-card .wp-cbody { padding: 6px 8px; background: rgba(48, 34, 15, .55); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--gold, #e4b434); }
+#wp-card .wp-place { display: flex; width: 100%; margin-top: 8px; min-height: 44px; font-size: 16px; font-weight: bold; color: #2a1606; text-shadow: none;
+  background: linear-gradient(#f0c84a, #c8902a); box-shadow: inset 0 0 0 1px #fff2b8, 0 2px 0 #000; }
+#wp-card .wp-place.active { color: #fff6dc; background: linear-gradient(#5a7a2c, #3a5418); text-shadow: 0 1px 0 #000; }
+body.mobile #wp-card .wp-place { min-height: 50px; font-size: 17px; }
+
+/* вкладка «Задания»: окна целей, заданий дня и коопа — обычными блоками панели, не плашками на карте */
+#wp-task { display: flex; flex-direction: column; gap: 6px; }
+#wp-task > :is(#goal-hud, #daily-hud, #cp-vil, #cp-qs) { position: static !important; inset: auto !important; transform: none !important; width: auto !important; max-width: none !important;
+  min-width: 0 !important; opacity: 1 !important; margin: 0; pointer-events: auto; box-shadow: none; font-size: 13px; }
+#wp-task #goal-hud [data-gh="fold"] { display: none; }
+#wp-task #goal-hud.wm-gh-new { animation: wm-gh-new 2.4s ease-out both; }
+body.mobile #wp-task > :is(#goal-hud, #daily-hud, #cp-vil, #cp-qs) { font-size: 14px; }
+#tabs [data-tab="task"] .badge { display: none; }
+#tabs .wp-new, #wp-chip.wp-new { animation: rv-glow 1.2s ease-in-out 3; }
+/* пока цели не открыты игроку (reveal.js) — и вкладки, и значка нет */
+body.rv-on:not(.rv-all):not(.rv-goal) :is(#tabs [data-tab="task"], #wp-chip) { display: none !important; }
+
+/* значок целей на карте (телефон): одна строка, касание — вкладка «Задания» */
+#wp-chip { display: none; }
+body.mobile:not(.land) #wp-chip:not(.wp-none) {
+  display: block; position: absolute; z-index: 20; top: calc(48px + env(safe-area-inset-top)); left: 8px; max-width: 70vw; padding: 5px 11px;
+  font-size: 13px; color: var(--gold, #e4b434); background: rgba(26, 19, 13, .92); border: 1px solid #b8902c; border-radius: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+body.mobile.land #wp-chip:not(.wp-none) { display: block; position: absolute; z-index: 20; top: calc(var(--st, 0px) + 6px); left: calc(var(--left, 60px) + 4px); padding: 4px 10px; font-size: 12px;
+  color: var(--gold, #e4b434); background: rgba(26, 19, 13, .92); border: 1px solid #b8902c; border-radius: 14px; }
+body:is(.wm-sheet, .wp-away, .ui-loading, .ui-modal) #wp-chip { display: none !important; }
+
+/* ================= Герой в походе: деревня уходит, остаётся герой ================= */
+#wp-hero { display: none; }
+body.wp-away #wp-hero { display: block; animation: wp-in .35s ease-out both; }
+@keyframes wp-in { from { opacity: 0; transform: translateY(10px); } }
+body.wp-away:not(.mobile) #panel > :not(#logo):not(.mm-wrap):not(#wp-hero):not(#panel-resize) { display: none !important; }
+body.wp-away:not(.mobile) #wp-hero { padding: 8px; background: rgba(10, 7, 5, .62); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line, #8a6a3a); }
+body.wp-away.mobile :is(#tab-area, #info-wrap, #wm-head, #sheet-close) { display: none !important; }
+body.wp-away.mobile #tabs .tab-btn:not([data-tab="menu"]) { display: none !important; }
+body.wp-away.mobile #wp-hero { position: fixed; z-index: 19; top: calc(48px + env(safe-area-inset-top)); left: 8px; right: 8px; padding: 7px 9px;
+  background: rgba(20, 14, 8, .93); border: 2px solid #b8902c; border-radius: 8px; }
+body.wp-away.mobile.land #wp-hero { left: calc(var(--left, 60px) + 4px); right: auto; width: min(320px, 44vw); top: calc(var(--st, 0px) + 6px); }
+body.wp-away :is(#goal-hud, #daily-hud, #wp-chip, #mood-card, #rec-card, #fort-card, #wk-card, #hero-card) { display: none !important; }   /* герой — в панели похода */
+#wp-hero .wp-hh { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+#wp-hero .wp-hh img { width: 40px; height: 40px; image-rendering: pixelated; border: 1px solid #8a6a28; border-radius: 4px; }
+#wp-hero .wp-hh > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#wp-hero .wp-hh b { color: var(--gold, #e4b434); font-size: 15px; }
+#wp-hero .wp-hh small { font-size: 12px; color: var(--text-dim, #c8b890); }
+#wp-hero .wp-hh button { padding: 5px 9px; font-size: 13px; }
+#wp-hero .wp-bar { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-size: 12.5px; }
+#wp-hero .wp-bar > span { width: 74px; flex: none; }
+#wp-hero .wp-bar > div { position: relative; flex: 1; height: 14px; background: #15100a; border: 1px solid #0a0705; border-radius: 3px; overflow: hidden; }
+#wp-hero .wp-bar i { position: absolute; left: 0; top: 0; bottom: 0; }
+#wp-hero .wp-bar b { position: absolute; inset: 0; text-align: center; font-size: 10.5px; line-height: 14px; color: #fff; text-shadow: 0 1px 0 #000; }
+#wp-hero .wp-row { margin: 4px 0; font-size: 13px; }
+#wp-hero .wp-inv { display: flex; flex-wrap: wrap; gap: 4px; }
+#wp-hero .wp-inv span { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 3px; background: #241a0e; border: 1px solid #8a6a28; border-radius: 4px; }
+#wp-hero .wp-inv img { width: 26px; height: 26px; image-rendering: pixelated; }
+#wp-hero .wp-inv em { font-style: normal; font-size: 10px; }
+#wp-hero .wp-inv b { position: absolute; right: 2px; bottom: 0; font-size: 10px; color: #fff; text-shadow: 0 1px 0 #000; }
+body.mobile #wp-hero .wp-inv span { min-width: 28px; height: 28px; }
+body.mobile #wp-hero .wp-bar > span { width: 64px; }
+/* способности — по центру снизу, выезжают */
+body.wp-away #ab-bar { right: auto !important; left: 50% !important; transform: translateX(-50%); align-items: center; animation: wp-ab .45s cubic-bezier(.2, .9, .3, 1.1) both; }
+body.wp-away #ab-bar .ab-tip { right: auto; left: 50%; transform: translateX(-50%); }
+@keyframes wp-ab { from { opacity: 0; transform: translate(-50%, 40px); } to { opacity: 1; transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { body.wp-away #ab-bar, body.wp-away #wp-hero, #tab-build.wp-carded #wp-card { animation: none; } }
+/* цели в панели видны и во время обучения (на карте их прятали, чтобы не налезали на окно обучения) */
+body.mobile:is(.rv-goal, .rv-all, :not(.rv-on)):has(#tut:not(.hidden)) #wp-task #goal-hud { display: block !important; }
+/* телефон боком: цели прятались при открытой шторке (landscape.css) — теперь они в самой шторке */
+body.mobile.land:is(.sheet-tab, .sheet-info):is(.rv-goal, .rv-all, :not(.rv-on)) #wp-task #goal-hud, body.mobile.land:is(.sheet-tab, .sheet-info) #wp-task #daily-hud:not(.hidden) { display: block !important; }
