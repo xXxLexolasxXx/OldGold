@@ -172,7 +172,6 @@ function drawFrogfolk(c, P, caste, fr) {
   // знаки на щеке и кольца-серьги
   c.strokeStyle = k(T.mark); c.lineWidth = 0.55;
   for (const [x0, y0, x1, y1] of [[hx - 3.6, hy - 0.6, hx - 1.6, hy + 1.4], [hx - 2.6, hy - 1.4, hx - 0.8, hy + 0.6]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
-  if (ZB && !jaw) for (const fx of [3.4, 6]) poly(c, [[hx + fx - 0.6, hy + 2.4], [hx + fx + 0.6, hy + 2.3], [hx + fx + 0.1, hy + 4.4]], k('#efe6cc'));       // клычки из-под губы
   if (caste === 'G' || caste === 'P' || ZB) for (let i = 0; i < 3; i++) { c.strokeStyle = k('#d8c070'); c.lineWidth = 0.5; c.beginPath(); c.arc(hx + 0.4 + i * 1.5, hy + 3.2 - i * 0.2, 0.8, 0, 7); c.stroke(); }
   // ---------- головной убор по касте ----------
   if (hood) {
