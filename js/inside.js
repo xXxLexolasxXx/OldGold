@@ -247,6 +247,8 @@ function drawInside(c, b, spr, ox, oy) {
   if (spr.px === 'school') drawSchoolYard(c, b, spr, ox, oy);
   if (spr.px === 'sawmill') drawSawYard(c, b, spr, ox, oy);
   if (spr.px === 'quarry') drawQuarryYard(c, b, spr, ox, oy);
+  if (spr.px === 'goatpen' || spr.px === 'stable') drawPenAnimals(c, b, spr, ox, oy);
+  if (spr.px === 'tradepost') drawTradeYard(c, b, spr, ox, oy);
   if (b.type === 'inn') { if (spr.pxInn) drawInnYard(c, b, spr, ox, oy); drawInnPorch(c, b, spr, ox, oy); drawInnOven(c, b, spr, ox, oy); drawBarmaid(c, b, spr, ox, oy); if (spr.pxInn) drawInnExtraDiners(c, b, spr, ox, oy); }
 }
 
@@ -656,6 +658,55 @@ function drawQuarryYard(c, b, spr, ox, oy) {
   if (on && spr.block && f >= 4) {   // удар: сколы и пыль от блока
     const [bx, by] = spr.block;
     for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI + (f - 4) * 0.3, r = (f - 3) * 2; c.fillStyle = k % 2 ? '#c6c9bf' : '#8792a4'; c.fillRect(Math.round(ox + bx - 4 + Math.cos(a) * r), Math.round(oy + by - 6 - Math.sin(a) * r), 1, 1); }
+  }
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Загон для коз и выгул извозчика (bldpx.js): игровые козы и лошади бродят в загонах ----------
+// Козы — те же, что в лесу (creatures 'goat'), лошади — та же, что в упряжке. Каждая ходит к случайной точке
+// внутри своего загона, стоит, щиплет траву. Состояние — в b._pen (не в сейве).
+function drawPenAnimals(c, b, spr, ox, oy) {
+  if (b.state !== 'done') return;
+  const goats = spr.px === 'goatpen', lv = spr.pxLv || 1;
+  const rects = goats ? (spr.penRect ? [spr.penRect] : []) : (spr.penRects || []);
+  if (!rects.length) return;
+  const n = goats ? [2, 4, 6][lv - 1] : [1, 2, 3][lv - 1], kind = goats ? 'goat' : 'horse', t = Game.time;
+  let A = b._pen;
+  if (!A || A.length !== n) {
+    A = b._pen = [];
+    for (let k = 0; k < n; k++) { const r = rects[k % rects.length]; A.push({ r, x: r[0][0] + (r[1][0] - r[0][0]) * ((k * 0.37 + 0.2) % 1), y: r[0][1] + (r[1][1] - r[0][1]) * ((k * 0.61 + 0.3) % 1), tx: 0, ty: 0, wait: k * 1.3, face: k % 2 ? -1 : 1, ph: 0, last: t }); }
+  }
+  c.imageSmoothingEnabled = false;
+  for (const a of A.slice().sort((p, q) => p.y - q.y)) {
+    const dt = Math.min(0.1, Math.max(0, t - a.last)); a.last = t;
+    let moving = false;
+    if (a.wait > 0) a.wait -= dt;
+    else {
+      if (!a.tx) { const [p0, p1] = a.r; a.tx = p0[0] + 8 + Math.random() * Math.max(1, p1[0] - p0[0] - 16); a.ty = p0[1] + 6 + Math.random() * Math.max(1, p1[1] - p0[1] - 10); }
+      const ex = a.tx - a.x, ey = a.ty - a.y, d = Math.hypot(ex, ey), v = goats ? 6 : 8;
+      if (d < 1) { a.tx = 0; a.wait = 2 + Math.random() * 5; }
+      else { const s = Math.min(d, v * dt); a.x += ex / d * s; a.y += ey / d * s; a.ph += dt * 6; moving = true; if (Math.abs(ex) > 0.3) a.face = ex > 0 ? 1 : -1; }
+    }
+    drawCreatureAt(c, kind, ox + a.x, oy + a.y, a.face, moving, a.ph);
+  }
+  if (!goats && spr.cartSpot) drawCreatureAt(c, 'cart', ox + spr.cartSpot[0], oy + spr.cartSpot[1], 1, false, 0, null, 0);   // телега у дома извозчика
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Торговый пост (bldpx.js): торговая телега подъезжает, торговец грузит товар из пристройки ----------
+function drawTradeYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.cartSpot) return;
+  const t = Game.time + b.id * 3, cyc = t % 24, [cx, cy] = spr.cartSpot, [lx, ly] = spr.loadFrom || [cx - 12, cy + 30];
+  c.imageSmoothingEnabled = false;
+  // 0–4 с: телега въезжает справа; 4–18: стоит, торговец носит ящики; 18–24: уезжает влево
+  let x = cx, moving = false;
+  if (cyc < 4) { x = cx + (4 - cyc) * 14; moving = true; } else if (cyc > 18) { x = cx - (cyc - 18) * 14; moving = true; }
+  const n = cyc < 4 ? 0 : Math.min(4, Math.floor((cyc - 4) / 3));
+  drawCreatureAt(c, 'cart', ox + x, oy + cy, cyc > 18 ? -1 : -1, moving, t * 6, n ? 'crate' : null, n);
+  if (cyc >= 4 && cyc <= 18) {   // торговец ходит от пристройки к телеге с ящиком
+    const ph = ((cyc - 4) % 3) / 3, go = ph < 0.5, f = go ? ph * 2 : (1 - ph) * 2;
+    const px = lx + (cx - 6 - lx) * f, py = ly + (cy + 4 - ly) * f;
+    drawFolk(c, { type: 'serf', look: b.id * 71 + 9, carry: go ? 'crate' : null }, ox + px, oy + py, go ? (cx > lx ? 'E' : 'W') : (cx > lx ? 'W' : 'E'), 'walk', Math.floor(t * 9) & 7, {});
   }
   c.imageSmoothingEnabled = R.smooth;
 }
