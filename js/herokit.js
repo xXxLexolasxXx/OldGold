@@ -407,11 +407,12 @@ function abilIconURL(k) {
   const pal = {};
   for (const p of g[0].split(' ')) { const [ch, col] = p.split(':'); pal[ch] = col; }
   const cv = mkCanvas(14, 14), c = cv.getContext('2d');
-  const on = (x, y) => y >= 0 && y < 12 && x >= 0 && x < 12 && g[1 + y][x] !== '.';
+  const px = (x, y) => (g[1 + y] || '')[x] || '.';   // у части глифов 11 строк — недостающая строка пустая (иначе панель падала каждый кадр)
+  const on = (x, y) => y >= 0 && y < 12 && x >= 0 && x < 12 && px(x, y) !== '.';
   // тёмный контур вокруг силуэта — читается на любом фоне
   c.fillStyle = '#1a1008';
   for (let y = -1; y <= 12; y++) for (let x = -1; x <= 12; x++) if (!on(x, y) && (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1))) c.fillRect(x + 1, y + 1, 1, 1);
-  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) { const ch = g[1 + y][x]; if (ch !== '.') { c.fillStyle = pal[ch] || '#fff'; c.fillRect(x + 1, y + 1, 1, 1); } }
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) { const ch = px(x, y); if (ch !== '.') { c.fillStyle = pal[ch] || '#fff'; c.fillRect(x + 1, y + 1, 1, 1); } }
   return (ABIL_ICON_URL[k] = cv.toDataURL());
 }
 

@@ -539,9 +539,9 @@ for (const k of GD_ORDER) {
     const s = _ser(), T = gdT();
     if (s.fo && T) {
       if (T.none) s.fo.tr = { none: 1 };
-      else {
-        const hp = T.homes.map((h, i) => { const N = Game.raiders.find(M => M.gi === i && foeLive(M)); return N ? Math.round(N.hp) : 0; });
-        T.towers.forEach((t, j) => { if (t.hp !== 0) { const N = Game.raiders.find(M => M.tj === j && M.k === 'ftower' && foeLive(M)); t.hp = N ? Math.round(N.hp) : t.hp; } });
+      else {   // на кооп-клиенте ярусы приходят зеркалом без башен — копия мира падала каждые 30 с
+        const hp = (T.homes || []).map((h, i) => { const N = Game.raiders.find(M => M.gi === i && foeLive(M)); return N ? Math.round(N.hp) : 0; });
+        (T.towers || []).forEach((t, j) => { if (t.hp !== 0) { const N = Game.raiders.find(M => M.tj === j && M.k === 'ftower' && foeLive(M)); t.hp = N ? Math.round(N.hp) : t.hp; } });
         s.fo.tr = { cx: T.cx, cy: T.cy, n: T.n, o: T.open, r: T.r, k: T.kinds, a0: T.a0, h: T.homes, tw: T.towers, g: T.gates, s: T.seals, f: T.fallen, cl: T.clean, hp, e: T.ecl, ft: Math.round(T.fightT) };
       }
     }

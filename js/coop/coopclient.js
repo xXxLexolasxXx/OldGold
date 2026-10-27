@@ -1229,6 +1229,7 @@ function coopInitControls() {
           issueCmd(h, c);
           if (c.kind !== 'move') floater(c.tx + 0.5, c.ty - 0.4, c.label, '#f6d458');
           coopHintDone();
+          if (inn) selectBuilding(b);   // герой идёт поесть, но и окно трактира открывается — иначе по нему «не кликнуть»
           return;
         }
         toast('Сюда не пройти');

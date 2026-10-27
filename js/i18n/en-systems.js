@@ -254,7 +254,7 @@ I18N.add('en', {
   "Детей и так полон двор: {0} из {1}": "The yard is already full of children: {0} of {1}",
   "Мало еды на складах для детей: нужно {0}": "Not enough food in the stores for children: {0} needed",
   " — новое звание даст простор": " — a new rank will give more room",
-  // «Срочно» вместо приоритетов (prio.js), 0.11.55
+  // «Срочно» вместо приоритетов (prio.js), 0.11.56
   "Срочно": "Urgent",
   "Срочно!": "Urgent!",
   "Срочно: 20 секунд все свободные гномы носят сюда и отсюда, следом — всё, что связано с этим зданием. Нажмите ещё раз — снова 20 секунд": "Urgent: for 20 seconds every free gnome carries to and from here, then everything linked to this building. Press again for another 20 seconds",
