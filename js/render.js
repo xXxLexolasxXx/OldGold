@@ -959,6 +959,7 @@ function render() {
   drawNightFx(c);
   drawFireflies(c);
   drawWeather(c);
+  if (typeof campFogDraw === 'function') campFogDraw(c);          // туман войны кампании (campaign/fog.js)
   drawStatusIcons(c, x0, y0, x1, y1);
   drawLogMark(c);
   drawTutMarks(c);
@@ -1125,6 +1126,7 @@ function drawMinimap() {
   const c = MINI.ctx, cv = MINI.canvas;
   c.imageSmoothingEnabled = false;
   c.drawImage(MINI.base, 0, 0, cv.width, cv.height);
+  if (typeof campFogMini === 'function') campFogMini(c, cv);
   const sx = cv.width / (MAP_W * TILE), sy = cv.height / (MAP_H * TILE);
   const s = camScale();
   c.strokeStyle = '#f6f2ea'; c.lineWidth = 2;
@@ -1137,6 +1139,7 @@ function drawMinimapUnits() {
   const c = MINI.ctx, cv = MINI.canvas;
   const kx = cv.width / MAP_W, ky = cv.height / MAP_H, fac = cv.width / Math.max(60, cv.clientWidth);   // точки не мельче 3 пикселей на экране
   const dot = (x, y, col, s = 2.4) => {
+    if (typeof campFogHid === 'function' && campFogHid(x, y)) return;     // в тумане кампании никого не видно
     s = Math.max(s, 3 * fac); const px = x * kx - s / 2, py = y * ky - s / 2;
     c.fillStyle = 'rgba(8,6,4,0.85)'; c.fillRect(px - 0.8, py - 0.8, s + 1.6, s + 1.6);
     c.fillStyle = col; c.fillRect(px, py, s, s);
