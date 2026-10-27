@@ -1,0 +1,79 @@
+<!doctype html><meta charset=utf-8><title>Животные — лист проверки</title>
+<body style="margin:0;background:#2a3a22">
+<canvas id=cv></canvas>
+<script>
+// Лист всех животных игры, нарисованных собственными функциями отрисовки. Скрипты игры грузятся по порядку
+// index.html выбранной папки (?root=../../wt-animals-base — «было», без root — эта папка). Снимает tools/animals-shot.js.
+window.PXS_NOSTART = true;
+const Q = new URLSearchParams(location.search), ROOT = Q.get('root') || '..', Z = +(Q.get('z') || 3);
+const ERR = [];
+window.addEventListener('error', e => ERR.push((e.filename || '').split('/').pop() + ': ' + e.message));
+window.addEventListener('load', () => setTimeout(async () => {
+  const load = src => new Promise(r => { const s = document.createElement('script'); s.src = ROOT + '/' + src; s.onload = s.onerror = r; document.body.appendChild(s); });
+  for (const f of window.AF_FILES || []) await load(f);
+  try { draw(); document.title = 'ready ' + (typeof PX_FINE !== 'undefined' ? PX_FINE : 1) + ' ' + ERR.length + ' ' + ERR.slice(0, 3).join(' | '); }
+  catch (e) { document.title = 'fail ' + e.message + ' ' + (e.stack || '').split('\n')[1]; }
+}, 50));
+
+function draw() {
+  R.cam = R.cam || {}; R.cam.z = Z; R.smooth = false; Game.time = 1.3;
+  const cv = document.getElementById('cv'), W = 620, H = 440;
+  cv.width = W * Z; cv.height = H * Z;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#4a6a34'; c.fillRect(0, 0, cv.width, cv.height);
+  c.scale(Z, Z); c.imageSmoothingEnabled = false;
+  const T = typeof TILE !== 'undefined' ? TILE : 16;
+  const blit = (s, x, y, w, h) => typeof afBlit === 'function' ? afBlit(c, s, x, y, w, h) : c.drawImage(s, x, y, w || s.width, h || s.height);
+  const label = (t, x, y) => { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.font = '11px sans-serif'; c.fillStyle = '#e8f0d0'; c.fillText(t, x * Z, y * Z); c.restore(); };
+  let x = 0, y = 0;
+  const row = (title, y0) => { label(title, 4, y0 - 2); };
+
+  // 1. Звери creatures.js
+  row('Звери (вектор): олень, кролик, коза, вьючная коза, волк, лиса, лось, курица, гусь, утка', 12);
+  x = 20;
+  for (const [k, w] of [['deer', 36], ['rabbit', 20], ['goat', 30], ['packgoat', 30], ['wolf', 34], ['fox', 30], ['elk', 48], ['chicken', 18], ['goose', 28], ['duck', 24]]) {
+    drawCreatureAt(c, k, x + w / 2, 60, 1, false, 0, null);
+    drawCreatureAt(c, k, x + w / 2, 100, 1, true, 1.3, k === 'goose' ? 'attack' : null);
+    x += w + 8;
+  }
+  drawCreatureAt(c, 'cart', 420, 100, 1, true, 0.7, 'bread', 3);
+  drawCreatureAt(c, 'cart', 500, 100, 1, true, 0.7, 'bread', 3, 'S');
+  drawCreatureAt(c, 'cart', 560, 100, 1, true, 0.7, 'bread', 3, 'N');
+
+  // 2. Свиньи, совы, сани
+  row('Свиньи, совы, олени Деда Мороза', 120);
+  [1, 2, 3].forEach((st, i) => blit(pigSpriteHR(st, i & 1), 10 + i * 28, 132, 24, 16));
+  blit(owlSprite('perch', 0, false, 0), 100, 128, OWL_W, OWL_H);
+  blit(owlSprite('perch', 1, true, 0), 120, 128, OWL_W, OWL_H);
+  blit(owlSprite('fly', 0, 0, 10), 140, 130, OWLF_W, OWLF_H);
+  blit(owlSprite('fly', 0, 0, 14), 176, 130, OWLF_W, OWLF_H);
+  if (typeof wfxSleigh === 'function') { const sp = wfxSleigh(1); blit(sp.cv, 220, 122); }
+
+  // 3. Лесная мелочь fauna.js / fauna2.js
+  row('Вороны, лягушки, мышь, барсук, белка, ёж, дятел, крот', 210);
+  const crow = (k, x0, y0) => { const s = crowSprite(k); blit(s, x0, y0); };
+  crow('s0', 10, 222); crow('w2', 32, 222); crow('f0', 54, 220); crow('f3', 80, 220); crow('f6', 106, 220);
+  ['sit', 'croak', 'air'].forEach((n, i) => blit(frogSprite(n), 136 + i * 16, 230));
+  const f2 = (key, rows, x0) => f2draw(c, key, rows, x0, 248, 1, 0, false);
+  f2('mouseA', MOUSE_A, 194); f2('badgerA', BADGER_A, 222); f2('badgerD', BADGER_DIG, 254); f2('sqS', SQ_SIT, 282); f2('sqW1', SQ_RUN, 302);
+  f2('hg', HEDGE, 324); f2('hgBall', HEDGE_BALL, 344); f2('pkA', PECKER_A, 364); f2('hill', HILL, 388); f2('mole1', MOLE_HEAD, 410);
+
+  // 4. Кабан, медведь, коты, аист, цапля, улей, рыба
+  row('Кабан, медведь, коты, аист, цапля, улей, рыба', 262);
+  const be = (key, rows, x0, y0, pal) => beDraw(c, key, rows, x0, y0, 1, 0, false, pal);
+  be('boarA', BOAR_A, 20, 300); be('boarR', BOAR_ROOT, 50, 300); be('bearA', BEAR_A, 86, 300); be('bearE', BEAR_EAT, 120, 300);
+  CAT_VARS.forEach((v, i) => { be('cat' + i + 'i', CAT_SIT, 150 + i * 18, 300, v.pal); });
+  be('cat0s', CAT_SLEEP, 228, 300, CAT_VARS[0].pal); be('cat1w1', CAT_WALK_A, 250, 300, CAT_VARS[1].pal);
+  be('storkS', STORK_S, 276, 300); be('heronS', HERON_S, 300, 300); be('heronK', HERON_STRIKE, 326, 300);
+  blit(beFlySprite('storkF', BE_STORK_FLY, 0), 346, 274); blit(beFlySprite('heronF', BE_HERON_FLY, 4), 380, 280);
+  be('hive', BEE_HIVE, 420, 300); blit(beSpr('fish', BE_FISH), 440, 290);
+
+  // 5. Дикие звери wildlife.js
+  row('Заяц, пичуги, фазан, сурок, выдра, мшистый олень, звёздный лис', 318);
+  let id = 1;
+  const wl = (k, x0, extra = {}) => { const S = WL_SPEC[k]; wlDraw(c, Object.assign({ k, st: 'idle', mv: false, rt: 0, id: id++, x: x0 / T, y: 362 / T, face: 1, n: 3, life: S.life[1] - 10, fade: 0 }, extra)); };
+  wl('hare', 16); wl('hare', 40, { mv: true }); wl('bird', 70); wl('pheasant', 100); wl('marmot', 130); wl('marmot', 150, { st: 'react', rt: 0.4 });
+  wl('otter', 180); wl('stag', 220); wl('stag', 260, { mv: true }); wl('starfox', 300);
+  if (typeof dpSpr === 'function' && typeof sprBabyDragon === 'function') { blit(dpSpr('forest', 1), 340, 330); blit(dpSpr('fire', 1), 380, 330); }
+}
+</script>

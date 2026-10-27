@@ -423,7 +423,7 @@ function injTick(now) {
 function injNoteEnsure() { const M = medEnsure(); return M.inj || (M.inj = { n: 0, t: Game.time, why: {} }); }
 function injNote(u) {
   injNoteEnsure().n++;
-  if (typeof logEvent === 'function') logEvent('med', `${UNIT_TYPES[u.type].name} ${u.injury === 'leg' ? 'повредил ногу' : 'повредил руку'}`, u.x, u.y);
+  if (typeof logEvent === 'function') logEvent('med', `${UNIT_TYPES[u.type].name} ${u.injury === 'both' ? 'сломал руку и ногу' : u.injury === 'leg' ? 'повредил ногу' : 'повредил руку'}`, u.x, u.y);
 }
 function injWhy(u, k) { const N = injNoteEnsure(); N.why[k] = (N.why[k] || 0) + 1; }
 // почему раненые не лечатся у лекаря ('' — всё в порядке)
@@ -590,7 +590,7 @@ if (typeof step === 'function') {
     (s.units || []).forEach((d, k) => {
       const u = Game.units[k];
       if (u && Array.isArray(d.ill) && Object.prototype.hasOwnProperty.call(SICK_KINDS, d.ill[0]) && Number.isFinite(+d.ill[1])) u.ill = { k: d.ill[0], s: Math.max(0.01, Math.min(1, +d.ill[1])) };
-      if (u && Array.isArray(d.inj) && (d.inj[0] === 'leg' || d.inj[0] === 'arm') && Number.isFinite(+d.inj[1]) && isPerson(u)) {
+      if (u && Array.isArray(d.inj) && (d.inj[0] === 'leg' || d.inj[0] === 'arm' || d.inj[0] === 'both') && Number.isFinite(+d.inj[1]) && isPerson(u)) {
         u.injury = d.inj[0]; u.injuryUntil = Game.time + Math.max(1, Math.min(INJURY_TIME, +d.inj[1])); u.injAt = Game.time; u.injCare = null; u.healedBy = null;
       }
     });
@@ -635,7 +635,7 @@ function medHTML() {
     h += '<div class="md-list">';
     for (const u of hurt.slice(0, 8)) {
       const where = u.ward ? 'в лазарете' : u.injDoc ? 'лекарь идёт' : 'заживает';
-      h += `<div class="md-row" data-cn="med:go:${u.id}"><span class="md-dot" style="background:#e8e2d0"></span><span class="md-n">${UNIT_TYPES[u.type].name}</span><span class="md-k">${u.injury === 'leg' ? 'Нога' : 'Рука'} · ${where}</span></div>`;
+      h += `<div class="md-row" data-cn="med:go:${u.id}"><span class="md-dot" style="background:#e8e2d0"></span><span class="md-n">${UNIT_TYPES[u.type].name}</span><span class="md-k">${u.injury === 'both' ? 'Рука и нога' : u.injury === 'leg' ? 'Нога' : 'Рука'} · ${where}</span></div>`;
     }
     if (hurt.length > 8) h += `<div class="muted small">и ещё ${hurt.length - 8}…</div>`;
     h += '</div>';

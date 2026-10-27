@@ -420,6 +420,7 @@ function dpSpr(sp, fr) {
   cv = base;
   try {
     const c2 = mkCanvas(base.width, base.height), g = c2.getContext('2d');
+    if (base.fine) c2.fine = base.fine;           // мелкий пиксель кадра сохраняем (blitFine рисует в игровом размере)
     g.drawImage(base, 0, 0);
     const im = g.getImageData(0, 0, base.width, base.height), a = im.data;
     for (let i = 0; i < a.length; i += 4) {
@@ -549,7 +550,7 @@ function dpUiSync() {
   if (T.trust < 3) h += '<button data-dp="talk">💬 Поговорить</button>';
   h += '<button data-dp="leave">Уйти</button></div><div class="dp-tip">Смайлик — как охотно дракончик возьмёт угощение. Не бегите и не деритесь рядом: спугнёте.</div>';
   el.innerHTML = h; el.classList.remove('hidden');
-  try { const cv = document.getElementById('dp-face'), g = cv.getContext('2d'); g.imageSmoothingEnabled = false; if (typeof pxbBaby === 'function') { const s = pxbBaby(d.sp, 'idle', 0), k = Math.min(62 / s.width, 56 / s.height); g.drawImage(s, Math.round((62 - s.width * k) / 2), Math.round(56 - s.height * k), Math.round(s.width * k), Math.round(s.height * k)); } else { const s = dpSpr(d.sp, 1); g.drawImage(s, Math.round((62 - s.width) / 2), 56 - s.height); } } catch (e) { /* без портрета */ }
+  try { const cv = document.getElementById('dp-face'), g = cv.getContext('2d'); g.imageSmoothingEnabled = false; if (typeof pxbBaby === 'function') { const s = pxbBaby(d.sp, 'idle', 0), k = Math.min(62 / s.width, 56 / s.height); g.drawImage(s, Math.round((62 - s.width * k) / 2), Math.round(56 - s.height * k), Math.round(s.width * k), Math.round(s.height * k)); } else { const s = dpSpr(d.sp, 1); g.drawImage(s, Math.round((62 - afW(s)) / 2), 56 - afH(s), afW(s), afH(s)); } } catch (e) { /* без портрета */ }
 }
 
 // строка в окне героя

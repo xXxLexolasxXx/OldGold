@@ -15,7 +15,7 @@ const F2_PAL = {
   r: '#d42c24', y: '#b0a078', a: '#2c2c36', s: '#ece8dc',
 };
 const F2_CACHE = {};
-const f2sprite = (k, rows) => F2_CACHE[k] || (F2_CACHE[k] = faSprite(rows, F2_PAL));
+const f2sprite = (k, rows) => F2_CACHE[k] || (F2_CACHE[k] = afSprite(rows, F2_PAL, k));   // мелкий пиксель ×3 — animalart.js
 
 // ---------- Карты ----------
 const MOUSE_A = ['.......Mm.', '..mmmmmkp.', '.mmmmmmmm.', 'pmmmmmmmm.', '.p.mmmmm..', '...m..m...'];
@@ -122,12 +122,12 @@ const PECKER_B = [
 ];
 
 function f2draw(c, key, rows, x, y, face = 1, lift = 0, shadow = true) {
-  const spr = f2sprite(key, rows), w = spr.width, h = spr.height;
+  const spr = f2sprite(key, rows), w = afW(spr), h = afH(spr);
   if (shadow) { c.fillStyle = 'rgba(10,8,4,0.28)'; c.beginPath(); c.ellipse(x, y, Math.max(3, w * 0.38), 1.6, 0, 0, 7); c.fill(); }
   c.imageSmoothingEnabled = false;
   c.save(); c.translate(Math.round(x), Math.round(y - h - lift + 1));
   if (face < 0) c.scale(-1, 1);
-  c.drawImage(spr, -Math.round(w / 2), 0);
+  afBlit(c, spr, -Math.round(w / 2), 0);
   c.restore();
   c.imageSmoothingEnabled = R.smooth;
 }
@@ -414,13 +414,13 @@ function drawHill(c, h) {
   c.globalAlpha = fade;
   const spr = f2sprite('hill', HILL);
   c.imageSmoothingEnabled = false;
-  c.drawImage(spr, Math.round(px - spr.width / 2), Math.round(py - spr.height * grow), spr.width, Math.max(1, Math.round(spr.height * grow)));
+  afBlit(c, spr, Math.round(px - afW(spr) / 2), Math.round(py - afH(spr) * grow), afW(spr), Math.max(1, Math.round(afH(spr) * grow)));
   if (h.up < 0 && grow >= 1) {                 // кротик выглядывает из кучки
     const m = (Math.floor(h.ph + age * 2) & 1) ? MOLE_HEAD : MOLE_HEAD2;
     const ms = f2sprite(m === MOLE_HEAD ? 'mole1' : 'mole2', m);
-    const rise = Math.min(1, -h.up * 2) * ms.height;
+    const rise = Math.min(1, -h.up * 2) * afH(ms);
     c.save(); c.beginPath(); c.rect(px - 8, py - 22, 16, 22 - 2); c.clip();
-    c.drawImage(ms, Math.round(px - ms.width / 2), Math.round(py - 4 - rise));
+    afBlit(c, ms, Math.round(px - afW(ms) / 2), Math.round(py - 4 - rise));
     c.restore();
   }
   c.globalAlpha = 1; c.imageSmoothingEnabled = R.smooth;
