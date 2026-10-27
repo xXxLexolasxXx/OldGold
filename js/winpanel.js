@@ -1,7 +1,10 @@
 'use strict';
 // Что показывает панель (ПК — левая колонка, телефон — шторка) — по слову владельца 27.10: «разгрузить экран».
-//   • Стройка → список построек. Нажали постройку → список уходит, на его месте карточка: что это, цена, что даёт,
-//     «Поставить» (взять в руку) и «← К списку». Во время обучения — как раньше, сразу в руку (шаги ждут именно этого).
+//   • Стройка → список построек. Нажали постройку → список уходит, на его месте карточка (что это, цена, что даёт),
+//     и постройка СРАЗУ в руке — ставите на карту без лишней кнопки. «← К списку», Esc или ✕ на панели размещения —
+//     отмена, снова список. Во время обучения — без карточки, просто в руку (шаги ждут именно этого).
+//     Второй вариант на выбор (WP_PICK = 'button', localStorage oldgold-buildpick=button): в карточке кнопка «Поставить»,
+//     нажали — карточка закрывается, панель возвращается к списку, постройка в руке.
 //   • Задания: цели деревни (goal.js), задания дня (daily.js), задания и совет общей деревни (coopclient.js) больше не
 //     висят на карте — их окна переезжают в панель, во вкладку «Задания». На телефоне на карте только строка-значок
 //     «Цели 2/4 ▸», касание открывает вкладку. Поставили здание или стройку закрыли — панель показывает задания.
@@ -11,7 +14,8 @@
 // Вызывается из js/winmgr.js: wpInit() при старте, wpSync() при каждом пересчёте. Чистая функция wpAwayNext — в тестах.
 
 const WP = { card: null, placed: false, away: false, peek: false, hero: '', chip: '', sig: '' };
-const WP_AWAY = 26, WP_HOME = 20;     // клеток до костра/склада: дальше — поход, ближе — снова деревня (с запасом, чтобы не мигало)
+const WP_AWAY = 26, WP_HOME = 20;
+const wpPickMode = () => { try { return localStorage.getItem('oldgold-buildpick') === 'button' ? 'button' : 'instant'; } catch (e) { return 'instant'; } };     // клеток до костра/склада: дальше — поход, ближе — снова деревня (с запасом, чтобы не мигало)
 
 // чистая: включён ли режим похода. was — прежнее значение, d — расстояние до деревни в клетках (null — нет героя/деревни)
 function wpAwayNext(was, d) {
@@ -30,11 +34,14 @@ function wpPick(type) {
   // во время обучения шаги ждут, что постройка сразу в руке
   if (typeof Tut !== 'undefined' && Tut.on) { setTool(Game.tool && Game.tool.type === type ? null : tool); return; }
   WP.card = type;
+  if (wpPickMode() === 'instant') setTool(tool);
   wpCardRender();
 }
+// вариант «с кнопкой»: «Поставить» — карточка закрывается, снова список построек, постройка в руке
 function wpPlace() {
   const type = WP.card;
   if (!type) return;
+  WP.card = null; wpCardRender();
   if (type.startsWith('fort:')) setTool({ kind: 'fort', f: type.slice(5), type });
   else { const def = BUILDINGS[type]; setTool({ kind: 'build', type, rot: def.noRotate || def.rots ? 0 : (UI.lastRot || 0) }); }
 }
@@ -60,10 +67,10 @@ function wpCardRender() {
   }
   tab.classList.toggle('wp-carded', !!WP.card);
   if (!WP.card) { card.innerHTML = ''; return; }
-  const inHand = Game.tool && Game.tool.type === WP.card;
-  card.innerHTML = `<div class="wp-cbar"><button data-wp="back">← ${wpT('К списку')}</button></div>`
+  const btn = wpPickMode() === 'button';
+  card.innerHTML = `<div class="wp-cbar"><button data-wp="back">← ${wpT('К списку')}</button>${btn ? '' : `<span class="wp-hint">${wpT('Укажите место на карте')}</span>`}</div>`
     + `<div class="wp-cbody">${wpCardHTML(WP.card)}</div>`
-    + `<button class="wp-place${inHand ? ' active' : ''}" data-wp="place">${inHand ? wpT('В руке — укажите место на карте') : wpT('Поставить')}</button>`;
+    + (btn ? `<button class="wp-place" data-wp="place">${wpT('Поставить')}</button>` : '');
 }
 
 // ---------- вкладка «Задания» ----------
@@ -183,8 +190,8 @@ function wpSync() {
     if (!wpMob() && !(Game.selected && !Game.selected.removed)) openTab('task');
   }
   if (WP.card && UI.tab !== 'build') { WP.card = null; wpCardRender(); }
-  const inHand = !!(WP.card && Game.tool && Game.tool.type === WP.card), btn = document.querySelector('#wp-card .wp-place');
-  if (btn && btn.classList.contains('active') !== inHand) wpCardRender();
+  // постройку из руки убрали (Esc, ✕, другой инструмент) — карточка закрывается, снова список
+  if (WP.card && wpPickMode() === 'instant' && !(Game.tool && Game.tool.type === WP.card)) { WP.card = null; wpCardRender(); }
   // поход
   const loading = b.contains('ui-loading');
   const was = WP.away;
@@ -215,7 +222,7 @@ function wpInit() {
 }
 
 if (typeof I18N !== 'undefined' && I18N.add) I18N.add('en', {
-  'К списку': 'Back to list', 'Поставить': 'Place', 'В руке — укажите место на карте': 'In hand: pick a spot on the map',
+  'К списку': 'Back to list', 'Укажите место на карте': 'Pick a spot on the map', 'Поставить': 'Place',
   'Задания': 'Tasks', 'До': 'To', 'Задания: цели деревни, задания дня': 'Tasks: village goals, daily tasks', 'Цели': 'Goals',
   'Заданий пока нет. Стройте — цели деревни появятся здесь.': 'No tasks yet. Keep building: village goals will appear here.',
   'Показать деревню': 'Show the village', 'Здоровье': 'Health', 'Сытость': 'Fullness', 'Ранен': 'Wounded', 'рана': 'wound', 'Рюкзак': 'Backpack', 'ур.': 'lv.',
