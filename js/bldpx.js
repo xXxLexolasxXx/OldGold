@@ -10,6 +10,7 @@ const { innPxSprite, pxSprite, pxPile, PX_HOUSE_NAMES } = (() => {
 // В конце — обводка по маске твёрдых пикселей и тёмные линии на стыках граней (дальняя грань темнеет у ближней).
 
 let BK = 3; const BSK = 0.5, BDK = 0.78;
+let FINE = 1;   // мелкий растр: геометрия и обводка в FINE раз мельче, узоры материалов — в прежних пикселях (u, v целые)
 const BRAY = [-0.5, 1, -0.78];                           // направление взгляда вглубь (ось проекции)
 const BLIGHT = (() => { const v = [-0.45, -0.62, 0.65], l = Math.hypot(...v); return v.map(a => a / l); })();
 const bhex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -73,8 +74,8 @@ class BGrid {
   }
   // локальные координаты модели → мир (как toW в bmodels.js: при rot=1 фасад смотрит на восток)
   W3(p) { return this.rot ? [this.LD - p[1], p[0], p[2]] : p; }
-  sx(X, Y) { return this.ox + (X + Y * BSK) * BK; }
-  sy(Y, Z) { return this.oy - (Y * BDK + Z) * BK; }
+  sx(X, Y) { return this.ox + (X + Y * BSK) * BK * FINE; }
+  sy(Y, Z) { return this.oy - (Y * BDK + Z) * BK * FINE; }
   depth(X, Y, Z) { return -0.5 * X + Y - 0.78 * Z; }
   put(x, y, c, z, f) {
     if (x < 0 || y < 0 || x >= this.W || y >= this.H) return;
@@ -93,8 +94,8 @@ class BGrid {
     if (v3.dot(n, BRAY) > 0) n = [-n[0], -n[1], -n[2]];
     const nl = v3.dot(n, BLIGHT);
     const li = o.li != null ? o.li : nl > 0.55 ? 0 : nl > 0.25 ? 1 : nl > -0.5 ? 2 : 3;
-    const Mu = [(Uw[0] + Uw[1] * BSK) * BK, -(Uw[1] * BDK + Uw[2]) * BK];
-    const Mv = [(Vw[0] + Vw[1] * BSK) * BK, -(Vw[1] * BDK + Vw[2]) * BK];
+    const Mu = [(Uw[0] + Uw[1] * BSK) * BK * FINE, -(Uw[1] * BDK + Uw[2]) * BK * FINE];
+    const Mv = [(Vw[0] + Vw[1] * BSK) * BK * FINE, -(Vw[1] * BDK + Vw[2]) * BK * FINE];
     const det = Mu[0] * Mv[1] - Mu[1] * Mv[0];
     if (Math.abs(det) < 1e-6) return;
     let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
@@ -117,7 +118,9 @@ class BGrid {
         if (!inside) continue;
         const dx = cx - S[0][0], dy = cy - S[0][1];
         const a = (dx * Mv[1] - dy * Mv[0]) / det, b = (Mu[0] * dy - Mu[1] * dx) / det;
-        const c = mat(a * BK, b * BK, F);
+        let c;
+        if (FINE === 1) c = mat(a * BK, b * BK, F);
+        else { const ua = a * BK, vb = b * BK, uf = Math.floor(ua), vf = Math.floor(vb); F.fu = ua - uf; F.fv = vb - vf; F.fx = px; F.fy = py; c = mat(uf, vf, F); }   // fu, fv — доля внутри мирового пикселя: материалы рисуют по ней мелкую фактуру
         if (!c) continue;
         const X = O[0] + a * Uw[0] + b * Vw[0], Y = O[1] + a * Uw[1] + b * Vw[1], Z = O[2] + a * Uw[2] + b * Vw[2];
         this.put(px, py, c, this.depth(X, Y, Z) + dz, fid);
@@ -129,7 +132,9 @@ class BGrid {
   sprite(at, draw, dz = 0) {
     const p = this.W3(at), z = this.depth(p[0], p[1], p[2]) + dz, fid = this.nf++;
     const bx = Math.round(this.sx(p[0], p[1])), by = Math.round(this.sy(p[1], p[2]));
-    draw((x, y, c) => c && this.put(bx + x, by + y, c, z, fid), bx, by);
+    const k = (this.spk || 1) * FINE;   // мелкий шаг пикселя (BK > 1): реквизит, нарисованный в пикселях ×1, ставим блоками k×k — размер тот же
+    if (k === 1) draw((x, y, c) => c && this.put(bx + x, by + y, c, z, fid), bx, by);
+    else draw((x, y, c) => { if (c) for (let j = 0; j < k; j++) for (let i = 0; i < k; i++) this.put(bx + x * k + i, by + y * k + j, c, z, fid); }, bx, by);
   }
   // обводка снаружи (тёплый тёмный) и тёмные линии на стыках: дальний пиксель рядом с ближней чужой гранью темнеет
   finish(o = {}) {
@@ -801,7 +806,7 @@ const P1 = {
   smoke: bramp(['#e4e2dc', '#bcbab4', '#908e8a']),
   straw: bramp(['#e8c868', '#c8a448', '#a07c30', '#705420']),
 };
-const p1 = (R, i, n = 3) => R[i < 0 ? 0 : i > n ? n : i];
+const p1 = (R, i, n = R.length - 1) => R[i < 0 ? 0 : i > n ? n : i];
 // свет: li 0 — освещённая грань (юг/запад/верх), 1 — боковая (восток), 2 — тень
 const L1 = F => (F.li >= 2 ? 1 : F.li);
 
@@ -861,6 +866,14 @@ const m1FasciaDark = (u, v, F) => (v > F.T - 1 ? P1.beamD[0] : P1.beamD[1]);
 function m1Stone(R, cw = 5, ch = 3) {
   return (u, v, F) => {
     const row = Math.floor(v / ch), st = row % 2 ? Math.floor(cw / 2) : 0, uu = (((u + st) % cw) + cw) % cw, vv = ((v % ch) + ch) % ch, k = L1(F);
+    if (F.fu != null) {   // шов в 1 пиксель растра, скол-блик сверху-слева, тень снизу-справа, шероховатость
+      if ((uu === 0 && F.fu < 0.4) || (vv === 0 && F.fv < 0.4)) return p1(R, 3);
+      const h = bhash(Math.floor((u + st) / cw), row, 211); let i = h < 0.3 ? 0 : h < 0.8 ? 1 : 2; if (F.h && v > F.h - 3) i += 1;
+      const c = p1(R, i + k);
+      if ((uu === 0 || vv === 0)) return fShade(c, 1.12);
+      if ((uu === cw - 1 && F.fu > 0.6) || (vv === ch - 1 && F.fv > 0.6)) return fShade(c, 0.84);
+      return fShade(c, fGrain(F, 938, 0.12));
+    }
     if (uu === 0 || vv === 0) return p1(R, 3);
     const h = bhash(Math.floor((u + st) / cw), row, 211);
     let i = h < 0.3 ? 0 : h < 0.8 ? 1 : 2;
@@ -884,17 +897,47 @@ function m1Plaster(R, o = {}) {
         if (o.brace !== false && kx % 2 === (o.braceOdd ? 1 : 0)) { const t = (v - low) / (h - low); const bx = o.braceX ? bw - t * bw : t * bw; if (Math.abs(lu - bx) < 1.3) return true; }
         return false;
       })();
-      if (inB) return p1(B, 1 + k);
+      if (inB) return F.fu != null ? fShade(p1(B, 1 + k), fGrain(F, 942, 0.14)) : p1(B, 1 + k);
     }
     let i = k;
     if (bhash(u, v, 212) < 0.04) i += 1;
     if (F.h && v > F.h - 3) i += 1;
+    if (F.fu != null) {   // штукатурка: мелкая шероховатость, редкие волосяные трещины и затёки
+      const c = p1(R, i), cr = bhash(Math.floor(u / 6), Math.floor(v / 5), 939);
+      if (cr < 0.12 && Math.abs((u % 6) + F.fu - 3 - Math.sin((v + F.fv) * 1.3) * 1.2) < 0.18) return fShade(c, 0.86);
+      return fShade(c, fGrain(F, 940, 0.09) * (bhash(Math.floor(u / 3), Math.floor(v / 2), 941) < 0.15 ? 0.97 : 1));
+    }
     return p1(R, i);
   };
 }
-function m1Logs(R) { return (u, v, F) => { const vv = ((v % 4) + 4) % 4, k = L1(F); let i = vv === 0 ? 3 : vv === 1 ? 2 : vv === 2 ? 1 : 0; if (vv === 3 && bhash(Math.floor(u / 5), Math.floor(v / 4), 213) < 0.2) i = 1; if (F.h && v > F.h - 3) i += 1; return p1(R, i + (vv === 0 ? 0 : k)); }; }
-function m1Plank(R, pw = 4, ver = true) { return (u, v, F) => { const a = ver ? u : v, aa = ((a % pw) + pw) % pw, k = L1(F); if (aa === 0) return p1(R, 3); const h = bhash(Math.floor(a / pw), 0, 214); let i = h < 0.3 ? 0 : h < 0.85 ? 1 : 2; if (F.h && v > F.h - 3) i += 1; return p1(R, i + k); }; }
-function m1Brick(R) { return (u, v, F) => { const row = Math.floor(v / 3), st = row % 2 ? 3 : 0, uu = (((u + st) % 6) + 6) % 6, vv = ((v % 3) + 3) % 3, k = L1(F); if (uu === 0 || vv === 0) return p1(R, 3); const h = bhash(Math.floor((u + st) / 6), row, 215); return p1(R, (h < 0.25 ? 0 : h < 0.8 ? 1 : 2) + k); }; }
+
+// ---- мелкая фактура при растре ×3 (FINE > 1): F.fu, F.fv — положение внутри мирового пикселя, F.fx, F.fy — пиксель растра ----
+const fShade = (c, k) => (k === 1 ? c : [Math.min(255, c[0] * k) | 0, Math.min(255, c[1] * k) | 0, Math.min(255, c[2] * k) | 0]);
+const fGrain = (F, s, a = 0.07) => 1 + (bhash(F.fx, F.fy, s) - 0.5) * a;   // зерно по пикселям растра
+// доски: шов в 1 пиксель растра, светлая кромка после шва и тень перед ним, волокна вдоль доски, редкие сучки и шляпки гвоздей
+function fPlank(c, R, a, aa, pw, along, F) {
+  if (F.fu == null) return c;
+  const sub = (aa + F.fu) / pw, board = Math.floor(a / pw);
+  if (aa === 0) return F.fu < 0.34 ? p1(R, 3) : fShade(c, 1.12);
+  if (aa === pw - 1 && F.fu > 0.66) return fShade(c, 0.86);
+  const L = along + F.fv, col = Math.floor(sub * pw * 3);
+  const wav = Math.sin(L * 0.45 + board * 1.7) * 0.6;
+  if (bhash(board, Math.floor(sub * pw * 3 + wav), 931) < 0.22) return fShade(c, 0.9);   // волокно
+  const kn = Math.floor(L / 9), kx = 0.25 + bhash(board, kn, 932) * 0.5, ky = kn * 9 + 4.5;
+  if (bhash(board, kn, 933) < 0.18 && (sub - kx) ** 2 * pw * pw + (L - ky) ** 2 * 0.6 < 0.8) return fShade(c, 0.72);   // сучок
+  if (((L % 12) + 12) % 12 < 0.4 && Math.abs(sub - 0.5) < 0.12) return fShade(c, 0.65);   // гвоздь
+  return fShade(c, fGrain(F, 934, 0.05) * (col % 3 === 0 ? 0.97 : 1));
+}
+function m1Logs(R) { return (u, v, F) => { const vv = ((v % 4) + 4) % 4, k = L1(F);
+  if (F.fu != null) {   // бревно круглое: снизу тень и щель, сверху блик; кора — штрихи вдоль бревна
+    const t = (vv + F.fv) / 4; if (t < 0.08) return p1(R, 3);
+    let i = t < 0.3 ? 2 : t < 0.55 ? 1 : t < 0.85 ? 0 : 1; if (F.h && v > F.h - 3) i += 1;
+    const c = p1(R, i + k), log = Math.floor(v / 4), stroke = bhash(Math.floor((u + F.fu) * 0.7 + bhash(log, 0, 935) * 9), Math.floor((vv + F.fv) * 3), 936);
+    return fShade(c, stroke < 0.2 ? 0.88 : stroke > 0.92 ? 1.08 : fGrain(F, 937, 0.05));
+  }
+  let i = vv === 0 ? 3 : vv === 1 ? 2 : vv === 2 ? 1 : 0; if (vv === 3 && bhash(Math.floor(u / 5), Math.floor(v / 4), 213) < 0.2) i = 1; if (F.h && v > F.h - 3) i += 1; return p1(R, i + (vv === 0 ? 0 : k)); }; }
+function m1Plank(R, pw = 4, ver = true) { return (u, v, F) => { const a = ver ? u : v, aa = ((a % pw) + pw) % pw, k = L1(F); if (aa === 0 && F.fu == null) return p1(R, 3); const h = bhash(Math.floor(a / pw), 0, 214); let i = h < 0.3 ? 0 : h < 0.85 ? 1 : 2; if (F.h && v > F.h - 3) i += 1; const c = p1(R, i + k); if (F.fu == null) return c; const F2 = ver ? F : Object.assign({}, F, { fu: F.fv, fv: F.fu }); return fPlank(c, R, a, aa, pw, ver ? v : u, F2); }; }
+function m1Brick(R) { return (u, v, F) => { const row = Math.floor(v / 3), st = row % 2 ? 3 : 0, uu = (((u + st) % 6) + 6) % 6, vv = ((v % 3) + 3) % 3, k = L1(F); if (F.fu != null) { if ((uu === 0 && F.fu < 0.45) || (vv === 0 && F.fv < 0.45)) return p1(R, 3); const h = bhash(Math.floor((u + st) / 6), row, 215); const c = p1(R, (h < 0.25 ? 0 : h < 0.8 ? 1 : 2) + k); return fShade(c, (uu === 0 || vv === 0) ? 1.1 : fGrain(F, 943, 0.12)); } if (uu === 0 || vv === 0) return p1(R, 3); const h = bhash(Math.floor((u + st) / 6), row, 215); return p1(R, (h < 0.25 ? 0 : h < 0.8 ? 1 : 2) + k); }; }
 const m1Flat = c => () => c;
 
 // --- окна и двери (рама 1 px) ---
@@ -1028,10 +1071,13 @@ const SHINGLE1 = bramp(['#b48a5c', '#8e6840', '#6c4c2c', '#48321c']);
 // пряди колонками, валик конька, толстый свес с торцами (материал cut — m1StrawCut)
 function m1Straw3(R) {
   return (u, v, F) => {
-    const k = L1(F), L = F.L, t = v / L, c = Math.floor(u / 2), h = bhash(c, 0, 271);
-    if (v > L) { const len = 1 + (bhash(c, 1, 272) * 2 | 0); if (v > L + len) return null; return p1(R, 3); }
+    const fine = F.fu != null, su = fine ? u + F.fu : u, sv = fine ? v + F.fv : v;   // на мелком растре пряди тоньше мирового пикселя
+    const k = L1(F), L = F.L, t = sv / L, c = fine ? Math.floor(su * 1.5) : Math.floor(u / 2), h = bhash(c, 0, 271);
+    if (v > L) { const len = 1 + (bhash(c, 1, 272) * 2 | 0); if (sv > L + len) return null; return p1(R, 3); }
     // базовый тон по положению на скате, с дизерингом между зонами
-    let i = t + (bdith(u, v) - 0.5) * 0.35 < 0.22 ? 0 : t + (bdith(u, v) - 0.5) * 0.35 < 0.62 ? 1 : 2;
+    const dth = fine ? bhash(F.fx, F.fy, 277) : bdith(u, v);
+    let i = t + (dth - 0.5) * 0.35 < 0.22 ? 0 : t + (dth - 0.5) * 0.35 < 0.62 ? 1 : 2;
+    if (fine && bhash(c, Math.floor(sv / 3), 278) < 0.12) i += 1;   // отдельные тёмные стебли
     // пряди: часть колонок светлее/темнее
     if (h < 0.18) i -= 1; else if (h > 0.84) i += 1;
     // курсы: слой каждые 7 px, сверху блик, снизу тень
@@ -3390,6 +3436,8 @@ QB.axeLog = P => {   // полено-чурбак с воткнутым топо
 PILE_DRAW.hay = f => P => Q1.hay(P, 4 + Math.round(f * 5));                                // стог растёт с запасом сена
 PILE_DRAW.beer = f => P => (f < 0.5 ? Q1.barrel(P, 5, 6) : Q1.barrel(P, 7, 9));            // бочонок → бочка
 
+// проба растра ×3 на листе (в игре растр задаёт PX_FINE в px-runtime.js)
+
 // ======== px-runtime.js ========
 // Игровая часть пиксельных зданий (трактир, склад, дома): из модели собирает объект спрайта в формате buildingSprite
 // (canvas/shadow/w/h/top/padx/…) и переводит точки модели (веранда, печь, окна, кучи груза…) в пиксели спрайта.
@@ -3404,6 +3452,7 @@ const PX_HOUSES = [
 const PX_HOUSE_KINDS = PX_HOUSES.map((f, i) => i);
 const PX_HOUSE_NAMES = ['Белёный коттедж', 'Высокий фахверк', 'Изба с крыльцом', 'Каменный домик', 'Круглый домик', 'Г-образный дом', 'Дом на сваях', 'Дом в старом дубе'];
 
+const PX_FINE = 3;
 const PX_FOOD = new Set(['farm', 'bakery', 'hopfarm', 'brewery', 'swine', 'butchery']);
 function pxModel(type, g, d, lv, vr) {
   if (type === 'inn') { g.rot = 0; (d.rot ? buildInnProfile : buildInn)(g, lv, ROOF_LV[lv](STRAW1.olive)); return; }
@@ -3431,13 +3480,13 @@ function pxBuild(type, rot, lv, vr) {
   const def = BUILDINGS[type], d = bDims(type, rot);
   const FW = d.w * TILE, FD = d.h * TILE, top = def.top + 34;
   const W = Math.ceil(FW + BPADX * 2 + FD * BSK), H = FD + top + BBOTTOM;
-  BK = 1;
-  const g = new BGrid(W, H, BPADX, top + FD);
+  BK = 1; FINE = PX_FINE;   // растр ×3 — как у гномов; узоры материалов в мировых пикселях
+  const g = new BGrid(W * FINE, H * FINE, BPADX * FINE, (top + FD) * FINE);
   g.LD = type === 'inn' ? FD : def.h * TILE; g.noSmoke = true;
   pxModel(type, g, d, lv, vr);
   g.finish({ step: 1.6, ink: P1.ink });
   const M = g.meta || {};
-  const scr = p => { const q = g.W3(p); return [g.sx(q[0], q[1]), g.sy(q[1], p[2] || 0)]; };
+  const scr = p => { const q = g.W3(p); return [g.sx(q[0], q[1]) / PX_FINE, g.sy(q[1], p[2] || 0) / PX_FINE]; };
   // окна → [cx, cy, w, h, round] (как WIN_REC у старых зданий); у повёрнутой модели сторона меняется
   const sideW = s => (g.rot ? { S: 'E', W: 'S', E: 'N', N: 'W' }[s] : s);
   const wins = [];
@@ -3455,7 +3504,7 @@ function pxBuild(type, rot, lv, vr) {
   sc.beginPath(); corners.forEach((p, i) => (i ? sc.lineTo(p[0] + 3, p[1] - 2) : sc.moveTo(p[0] + 3, p[1] - 2))); sc.closePath(); sc.fill();
   const opt = p => p && scr(p), arr = a => (a || []).map(scr);
   const spr = {
-    canvas: pxUp(g.toCanvas(), 3), shadow, w: W, h: H, top, padx: BPADX, fw: FW, baseY: top + FD - 2, doorCx: BPADX + (d.dx + 0.5) * TILE,
+    canvas: pxUp(g.toCanvas(), 3 / PX_FINE), shadow, w: W, h: H, top, padx: BPADX, fw: FW, baseY: top + FD - 2, doorCx: BPADX + (d.dx + 0.5) * TILE,
     px: type, pxLv: lv, k1: true,
     chimneys: (g.chim || []).map(scr), wins, doorPt: opt(M.doorPt),
     perches: [scr([LW / 2, LD * 0.7, 40])],
@@ -3489,6 +3538,7 @@ function pxBuild(type, rot, lv, vr) {
     spr.piles = {}; for (const k in M.piles || {}) spr.piles[k] = M.piles[k].map(scr);
     spr.runes = arr(M.glow); spr.drop = arr(M.drop); spr.circle = opt(M.circle);
   }
+  FINE = 1;
   return spr;
 }
 

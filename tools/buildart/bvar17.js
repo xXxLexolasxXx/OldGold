@@ -107,3 +107,6 @@ BDEFS.bake3 = BL(buildBakery, 'Пекарня', 2, 2, 66);
 BDEFS.swine3 = BL(buildSwine, 'Свинарник', 4, 3, 56);
 PILE_DRAW.hay = f => P => Q1.hay(P, 4 + Math.round(f * 5));                                // стог растёт с запасом сена
 PILE_DRAW.beer = f => P => (f < 0.5 ? Q1.barrel(P, 5, 6) : Q1.barrel(P, 7, 9));            // бочонок → бочка
+
+// проба растра ×3 на листе (в игре растр задаёт PX_FINE в px-runtime.js)
+BDEFS.farmF3 = { w: 4, h: 3, top: 72, vars: [{ name: 'ферма ×3', make: g => buildFarm(g, 3) }], title: 'Ферма ×3', bk: 1, fine: 3, ink: P1.ink };

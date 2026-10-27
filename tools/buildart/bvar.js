@@ -331,10 +331,11 @@ function renderVariant(type, vi, rot = 0) {
   BK = def.bk || 3;
   const FW = rot ? LD : LW, FD = rot ? LW : LD, top = def.top + 34;
   const W = Math.ceil(FW + BPADX_ * 2 + FD * BSK), H = FD + top + BBOTTOM_;
-  const g = new BGrid(Math.round(W * BK), Math.round(H * BK), Math.round(BPADX_ * BK), Math.round((top + FD) * BK));
-  g.rot = rot; g.LD = LD;
+  FINE = def.fine || 1;
+  const g = new BGrid(Math.round(W * BK * FINE), Math.round(H * BK * FINE), Math.round(BPADX_ * BK * FINE), Math.round((top + FD) * BK * FINE));
+  g.rot = rot; g.LD = LD; g.spk = def.spk || 1;
   def.vars[vi].make(g);
   g.finish({ step: def.bk && def.bk < 2 ? 1.6 : 1.0, ink: def.ink });
   groundShadow(g, [[-6, -4, 0], [LW + 6, -4, 0], [LW + 6, LD + 4, 0], [-6, LD + 4, 0]], 0.22);
-  return g.toCanvas();
+  const cv = g.toCanvas(); FINE = 1; return cv;
 }
