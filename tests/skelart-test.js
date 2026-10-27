@@ -1,5 +1,5 @@
 'use strict';
-// Скелеты в пиксель-арте (js/world/skelart.js): кадры покоя 6, ходьбы 8, атаки 9, удара 4, смерти 9, захвата 9+4;
+// Скелеты в пиксель-арте (js/world/skelart.js): кадры покоя, ходьбы, атаки, смерти — по 12, удара 6, захвата 9+4 (КАДРЫ.md);
 // три вида (юг, восток, север); все кадры рисуются без исключений и действительно различаются; выбор кадра по состоянию
 // скелета не выходит за границы ни в одном состоянии (рост, бой, удар, испуг, смерть, захват, уход в землю);
 // кэш не растёт сверх числа кадров; внешность — ключ из дома скелета и переживает сейв (дом хранится с точностью до десятой).
@@ -43,7 +43,7 @@ ctx.document.createElement = () => makeCanvas(1, 1);
 vm.runInContext('mkCanvas = (w, h) => __mk(w, h);', ctx);
 const run = code => vm.runInContext(code, ctx);
 
-const COUNT = { idle: 6, walk: 8, atk: 9, hit: 4, die: 9, grab: 13 };
+const COUNT = { idle: 12, walk: 12, atk: 12, hit: 6, die: 12, grab: 13 };   // КАДРЫ.md: стандарт 12, рана 6
 const SKA = run('SKA');
 for (const [k, n] of Object.entries(COUNT)) check(SKA.FR[k] === n, `кадров «${k}» должно быть ${n}, а не ${SKA.FR[k]}`);
 
@@ -103,7 +103,7 @@ ctx.Game.time = 100;
 const fr = o => { ctx.__st = { ...base, ...o }; ctx.__v = 'S'; return run('skelFrameOf(__st, __v)'); };
 check(fr({}).join() === 'idle,' + fr({})[1] + ',S', 'покой стоит видом на нас');
 check(fr({ moving: true, phase: 1 })[0] === 'walk', 'идущий скелет — кадры ходьбы');
-check(fr({ state: 'dead', t: 0.01 })[0] === 'die' && fr({ state: 'dead', t: 0.01 })[1] === 0 && fr({ state: 'dead', t: 3 })[1] === 8, 'смерть: от первого кадра к последнему');
+check(fr({ state: 'dead', t: 0.01 })[0] === 'die' && fr({ state: 'dead', t: 0.01 })[1] === 0 && fr({ state: 'dead', t: 3 })[1] === COUNT.die - 1, 'смерть: от первого кадра к последнему');
 check(fr({ state: 'fight', atk: 99.9 })[0] === 'atk' && fr({ state: 'fight', atk: 99.9 })[2] === 'E', 'в бою — кадры атаки сбоку');
 check(fr({ state: 'fight', hitT: 99.95, atk: 100.1 })[0] === 'hit', 'удар по скелету — кадры «удар»');
 check(fr({ state: 'grab', t: 0.2, vsnap: {} })[0] === 'grab', 'похищение — кадры захвата');
@@ -133,4 +133,4 @@ for (const k of [0.1, 0.5, 0.99]) { ctx.__st = { ...base, k, state: 'rise' }; ct
 check(run('SKA_CACHE.size') - before <= 1, 'рост из земли плодит новые кадры');
 
 if (fails.length) { for (const f of fails) console.log('✗ ' + f); process.exit(1); }
-console.log(`Скелеты в пиксель-арте: ${made} кадров (покой 6, ходьба 8 ×3 вида; атака 9, удар 4, смерть 9, захват 13) × 4 облика, ${probes} проб выбора кадра, рисование без падений`);
+console.log(`Скелеты в пиксель-арте: ${made} кадров (покой 12, ходьба 12 ×3 вида; атака 12, удар 6, смерть 12, захват 13) × 4 облика, ${probes} проб выбора кадра, рисование без падений`);

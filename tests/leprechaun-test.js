@@ -8,7 +8,7 @@ const sim = L.newSim(5), h = sim.h, J = c => JSON.parse(h.run('JSON.stringify((f
 const run = sec => L.runFor(sim, sec, 5, () => {});
 
 // кадры: стандарт КАДРЫ.md — покой 6, ходьба 8, танец 12–16, исходы спора
-ok(h.run('LEP_IDLE.length') === 6 && h.run('LEP_WALK.length') === 8, 'покой должен быть 6 кадров, ходьба 8');
+ok(h.run('LEP_IDLE.length') === 12 && h.run('LEP_WALK.length') === 12, 'покой и ходьба должны быть по 12 кадров (КАДРЫ.md)');
 const dn = h.run('LEP_DANCE.length');
 ok(dn >= 12 && dn <= 16, 'танец должен быть 12–16 кадров, а не ' + dn);
 ok(h.run('LEP_STEAL.length') === 4 && h.run('LEP_SLAP.length') === 9 && h.run('LEP_TUG.length') === 3, 'кадры исходов: 4 / 9 / перетягивание 3');
