@@ -65,7 +65,7 @@ function* bnBansheeGen(u, c) {
   sfxAt('chime', b.x * TILE, b.y * TILE);
   for (let k = 0; k < 3; k++) {
     u.gest = 'fist'; u.gestUntil = Game.time + 0.7; u.gestFace = u.face;
-    if (k === 1) { floater(b.x, b.y - 2.4, 'А-а-ау-у!', '#dcecff'); sfxAt('wail', b.x * TILE, b.y * TILE, 0.8); if (u.hero && typeof hlHurt === 'function') hlHurt(u, 2, 'ghost'); }
+    if (k === 1) { floater(b.x, b.y - 2.4, 'А-а-ау-у!', '#dcecff'); sfxAt('wail', b.x * TILE, b.y * TILE, 0.8); if (u.hero && typeof hlHurt === 'function') hlHurt(u, 2 * (typeof fsEnvMul === 'function' ? fsEnvMul(u) : 1), 'ghost'); }
     yield { wait: 0.6 };
     if (!bnBanOk(b)) return;
     fxBurst(b.x * TILE, b.y * TILE - 16, 7, ['#fff6c0', '#ffe070', '#bfe8ff'], 50, 60, 0.9, 1.6, -40);

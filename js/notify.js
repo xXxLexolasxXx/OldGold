@@ -186,7 +186,7 @@ function nqShow(text, kind, onClick, target) {
 function nqRateOk() {
   const t = nqNow();
   Notify.shown = Notify.shown.filter(x => t - x < 60000);
-  return Notify.shown.length < (nqFull() ? 20 : 6);
+  return Notify.shown.length < (nqFull() ? 20 : document.body.classList.contains('mobile') ? 4 : 6);
 }
 
 toast = function (text, target, kind) {
@@ -222,7 +222,8 @@ function nqPump() {
     if (!x.urgent && t - x.at > 20000) { nqJournal(x.text, x.kind, x.n, false, x.target); return false; }
     return true;
   });
-  const max = nqFull() ? 3 : 2;
+  // на телефоне в спокойном режиме — один тост за раз (остальные ждут очереди или уходят в журнал)
+  const max = nqFull() ? 3 : document.body.classList.contains('mobile') ? 1 : 2;
   const now = nqLive();
   let live = now.length;
   // ответ на действие игрока не ждёт: старый тост сгорает раньше срока
@@ -284,8 +285,12 @@ Notify.offer = function (text, onClick, kind) {
   nqPump();
 };
 
+// между окнами очереди — пауза ~1,2 с: закрыли одно, следующее не выскакивает в тот же миг
+// (Notify.busyAt ставит nqTick, пока экран занят; goal.js ждёт Notify.gap() перед заставкой главы)
+const NQ_GAP_MS = 1200;
+Notify.gap = () => nqNow() - (Notify.busyAt || -1e9) < NQ_GAP_MS;
 function nqModalPump() {
-  if (!Notify.modals.length || nqBusy()) return;
+  if (!Notify.modals.length || nqBusy() || Notify.gap()) return;
   const E = Notify.entry;
   if (E && E.step <= 5 && Notify.modals[0].prio > 0) return;   // сначала вход по шагам
   if (nqTutBusy() && Notify.modals[0].prio > 1) return;
@@ -464,6 +469,7 @@ function nqWatch() {
 
 function nqTick() {
   try {
+    if (nqBusy()) Notify.busyAt = nqNow();
     nqWatch();
     nqSteps();
     nqQuietEnd();

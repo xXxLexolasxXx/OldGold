@@ -489,10 +489,10 @@ function drawBuilding(c, b, ghost) {
   const fx = b.x * TILE, fy = b.y * TILE, fw = b.w * TILE, fh = b.h * TILE;
   c.imageSmoothingEnabled = true;
   c.imageSmoothingQuality = 'high';
-  if (!ghost && b.selfBuild && b.state === 'build') { drawSelfBuild(c, b); return; }
+  if (!ghost && b.selfBuild && b.state === 'build') { drawSelfBuild(c, b); c.imageSmoothingEnabled = R.smooth; c.imageSmoothingQuality = 'low'; return; }
   if (!ghost && b.state !== 'done') {
     drawSite(c, b, spr, ox, oy, fx, fy, fw, fh);
-    c.imageSmoothingEnabled = R.smooth;
+    c.imageSmoothingEnabled = R.smooth; c.imageSmoothingQuality = 'low';
     return;
   }
   if (b._gnd) b._gnd = null;     // достроено — холст земли больше не нужен
@@ -504,7 +504,9 @@ function drawBuilding(c, b, ghost) {
   const t = Game.time;
   if (b.type === 'mill' && spr.hub) drawSails(c, ox + spr.hub[0], oy + spr.hub[1], b.anim);
   if (spr.pen && b.stock) drawPigs(c, b, spr, ox, oy);
-  c.imageSmoothingEnabled = R.smooth;
+  // качество 'high' только для спрайта здания: оставленное на холсте, оно на отдалении (сглаживание включено)
+  // заставляло так же дорого масштабировать полосы земли и всё остальное — 5 кадр/с (отчёт 261023-2109-e00a)
+  c.imageSmoothingEnabled = R.smooth; c.imageSmoothingQuality = 'low';
   // зимой печи топятся брёвнами (season.js): дым идёт, только пока топят; нетопленое здание — иней и сосульки
   const heat = !ghost && typeof seaHeating === 'function' && seaHeating() && WINTER_HEATED.includes(b.type);
   if (heat && b.cold) drawColdFx(c, b, spr, ox, oy);
@@ -856,6 +858,7 @@ function render() {
   c.fillRect(0, 0, canvas.width, canvas.height);
   const z = devScale();
   R.smooth = z < 1;          // сильно отдалено — сглаживаем, чтобы пиксель-арт не рябил
+  c.imageSmoothingQuality = 'low';   // дешёвое сглаживание по умолчанию; 'high' ставят точечно и возвращают
   c.setTransform(z, 0, 0, z, -Math.round(cam.x * z), -Math.round(cam.y * z));
   c.imageSmoothingEnabled = R.smooth;
   terrDraw(c, cam, canvas.width / z, canvas.height / z);
@@ -1030,11 +1033,13 @@ function drawOverlay(c) {
     const bx = h[0] - Math.floor(d.w / 2), by = h[1] - d.h + 1;
     const err = checkPlacement(tool.type, bx, by, d.rot);
     if (tool.type === 'bonfire') drawBonfireRings(c, (bx + d.w / 2) * TILE, (by + d.h / 2) * TILE);
-    c.fillStyle = err ? 'rgba(220,40,30,0.35)' : 'rgba(60,220,80,0.3)';
+    c.fillStyle = err ? 'rgba(220,40,30,0.25)' : 'rgba(60,220,80,0.16)';
     c.fillRect(bx * TILE, by * TILE, d.w * TILE, d.h * TILE);
-    c.globalAlpha = 0.7;
+    // примерка — заметно полупрозрачное здание (не путать с построенным), едва заметно дышит
+    c.globalAlpha = 0.55 + 0.03 * Math.sin(performance.now() / 320);
     drawBuilding(c, { type: tool.type, rot: d.rot, x: bx, y: by, w: d.w, h: d.h, doorX: bx + d.dx, doorY: by + d.dy, state: 'done', anim: 0, id: 0, stock: emptyGoods(), pigs: [] }, true);
     c.globalAlpha = 1;
+    c.strokeStyle = err ? 'rgba(255,80,64,0.75)' : 'rgba(96,255,128,0.6)'; c.lineWidth = 1; c.strokeRect(bx * TILE + 0.5, by * TILE + 0.5, d.w * TILE - 1, d.h * TILE - 1);
     ant((bx + d.dx) * TILE + 2, (by + d.dy) * TILE + 2, TILE - 4, TILE - 4, err ? '#ff5040' : '#60ff80');
   } else if (tool.kind === 'fort') {
     defPreview(c, h);

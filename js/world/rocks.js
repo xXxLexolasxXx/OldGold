@@ -170,15 +170,16 @@ function drawRock(c, x, y, o, i) {
   if (((h >>> 17) % 3) === 0) size = size === 'L' ? 'M' : 'S';
   const S = ROCK_SIZES[size];
   const spr = rockSprite(size, h % ROCK_VARIANTS);
-  const sc = 0.82 + ((h >>> 21) % 30) / 100;
+  // родной пиксельный масштаб, без сглаживания: дробный масштаб 0,82–1,11 со сглаживанием мылил грани (разнообразие — размеры, варианты, отражение)
+  const sc = 1;
   let bx = x * TILE + 16 + ((h >>> 5) % 15) - 7, by = y * TILE + 26 + ((h >>> 9) % 11) - 5;
   if (o.hitT && Game.time - o.hitT < 0.18) bx += (Math.floor(Game.time * 60) & 1) ? 1 : -1;   // вздрагивает от удара
   const flip = (h >>> 13) & 1;
   c.save();
-  c.imageSmoothingEnabled = true;
+  c.imageSmoothingEnabled = false;
   c.translate(Math.round(bx), Math.round(by));
   c.scale(flip ? -sc : sc, sc);
-  c.drawImage(spr, -S.w / 2, -(S.h - 6), S.w, S.h);
+  c.drawImage(spr, -Math.round(S.w / 2), -(S.h - 6), S.w, S.h);
   c.restore();
   c.imageSmoothingEnabled = R.smooth;
   // свежие трещины от кирки

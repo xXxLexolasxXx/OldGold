@@ -266,6 +266,7 @@ function neuHit(N, u, dmg) {
     if (S.fly ? inb(Math.floor(kx), Math.floor(ky)) : isWalkable(Math.floor(kx), Math.floor(ky))) { N.x = kx; N.y = ky; }
     fxBurst(px, py, 7, N.k === 'spore' ? ['#b8f070', '#9ad04a'] : N.k === 'fairy' ? ['#fff6b0', '#ffe070'] : ['#c8a070', '#8a6a4a'], 60, 40, 0.5, 1.6, 200);
   }
+  if (typeof fsHeroHit === 'function') dmg = fsHeroHit(N, u, dmg);   // сила окружения растёт с героем (foescale.js)
   N.hp -= dmg;
   floater(N.x, N.y - 1.6, '−' + Math.max(1, Math.round(dmg)), '#ffd070');
   sfxAt('thud', N.x * TILE, N.y * TILE, 0.5);
@@ -647,11 +648,7 @@ function neuDraw(c, N) {
   if (sp.hi) { c.imageSmoothingEnabled = false; c.drawImage(sp.cv, -sp.ax, -sp.ay, sp.w, sp.h); }   // 3× пиксельный кадр (pxbeasts.js)
   else blitFine(c, sp.cv, -sp.ax, -sp.ay);
   c.restore();
-  if (!dead && N.hp < N.mhp - 0.5) {
-    const w = 18, hy = py - (N.k === 'leshy' ? 64 : (N.k === 'fairy' || N.k === 'pixie') ? 46 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);
-    c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(px - w / 2 - 1, hy - 1, w + 2, 4);
-    c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(px - w / 2, hy, Math.round(w * r), 2);
-  }
+  if (!dead && fsBarOn(N)) fsBar(c, px, py - (N.k === 'leshy' ? 64 : (N.k === 'fairy' || N.k === 'pixie') ? 46 : N.k === 'boar' ? 38 : 40), N.hp / N.mhp);
 }
 
 // Зеркало для кооператива: только то, что нужно для рисования (id — общий с сервером)

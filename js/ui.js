@@ -51,7 +51,8 @@ function toast(text, target, kind) {
   const mob = document.body.classList.contains('mobile');
   // важное (поход, зима, голод, золото школы) висит заметно дольше
   const keep = /поход|Зим|Осень|голод|школ.*золот|золот.*школ|Малгор|Победа|Поражение/i.test(String(text)) ? 1.7 : 1;
-  setTimeout(() => toastClose(el), keep * Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70)));
+  // но не дольше 10 с на телефоне и 9 с на ПК — длинные зимние тосты висели по полминуты и копились
+  setTimeout(() => toastClose(el), Math.min(mob ? 10000 : 9000, keep * Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70))));
 }
 
 // Шутка при самой первой стройке (один раз на устройство, только на экране — на игру не влияет, кооп не трогает)
@@ -81,10 +82,11 @@ function costHTML(cost) {
     .map(([g, n]) => `<span>${gi(g)}${n}</span>`).join('') + '</div>';
 }
 
-// Иконка здания: обрезаем прозрачные поля спрайта и плавно уменьшаем.
-function buildingIconURL(type) {
-  if (UI.bicons[type]) return UI.bicons[type];
-  const spr = buildingSprite(type).canvas;
+// Иконка здания: обрезаем прозрачные поля спрайта и плавно уменьшаем. vr — вид дома (у домов их восемь).
+function buildingIconURL(type, vr = 0) {
+  const key = vr ? type + '~' + vr : type;
+  if (UI.bicons[key]) return UI.bicons[key];
+  const spr = buildingSprite(type, 0, 1, undefined, vr).canvas;
   const c0 = spr.getContext('2d');
   const d = c0.getImageData(0, 0, spr.width, spr.height).data;
   let x0 = spr.width, y0 = spr.height, x1 = 0, y1 = 0;
@@ -98,8 +100,8 @@ function buildingIconURL(type) {
   c.imageSmoothingEnabled = k < 1;
   c.imageSmoothingQuality = 'high';
   c.drawImage(spr, x0, y0, w, h, (144 - w * k) / 2, 108 - h * k, w * k, h * k);
-  UI.bicons[type] = cv.toDataURL();
-  return UI.bicons[type];
+  UI.bicons[key] = cv.toDataURL();
+  return UI.bicons[key];
 }
 
 function makeUITextures() {
@@ -265,7 +267,7 @@ function setTool(tool) {
   if (tool.kind === 'build') document.querySelector(`.bbtn[data-type="${tool.type}"]`)?.classList.add('active');
   if (tool.kind === 'road') document.getElementById('tool-road').classList.add('active');
   if (tool.kind === 'erase') document.getElementById('tool-erase').classList.add('active');
-  if (tool.kind === 'field') document.getElementById('tool-' + tool.crop)?.classList.add('active');
+  if (tool.kind === 'field') { document.getElementById('tool-' + tool.crop)?.classList.add('active'); document.querySelector(`.bbtn[data-field="${tool.crop}"]`)?.classList.add('active'); }
 }
 
 function setSpeed(s) {
@@ -277,10 +279,16 @@ function setSpeed(s) {
 // Выпадающие панели верхней строки: одна открыта за раз, закрываются по клику мимо и по Esc
 function initDropdowns() {
   const all = [...document.querySelectorAll('#topbar .dd')];
-  const closeAll = except => all.forEach(d => { if (d !== except) d.classList.remove('open'); });
+  // закрытие — не мгновенно: меню сворачивается обратно (.closing, css/style.css), потом прячется
+  const close = d => {
+    if (!d.classList.contains('open')) return;
+    d.classList.remove('open'); d.classList.add('closing');
+    clearTimeout(d._ct); d._ct = setTimeout(() => d.classList.remove('closing'), d.id === 'dd-res' ? 520 : 240);
+  };
+  const closeAll = except => all.forEach(d => { if (d !== except) close(d); });
   for (const d of all) {
     const t = d.querySelector('.dd-t');
-    t.addEventListener('click', e => { e.stopPropagation(); closeAll(d); d.classList.toggle('open'); });
+    t.addEventListener('click', e => { e.stopPropagation(); closeAll(d); if (d.classList.contains('open')) close(d); else { clearTimeout(d._ct); d.classList.remove('closing'); d.classList.add('open'); } });
   }
   document.addEventListener('pointerdown', e => { if (!e.target.closest('#topbar .dd')) closeAll(); }, true);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
@@ -356,6 +364,17 @@ function openBuildCat(k) {
   renderBuildList();
 }
 
+// значок ремесла в углу портрета в школе: лица похожи, а инструмент сразу говорит, кто это
+const TRAIN_ICON = { serf: ['ui', 'deliver'], builder: ['ui', 'build'], woodcutter: ['good', 'trunk'], carpenter: ['good', 'timber'], stonemason: ['good', 'stone'],
+  farmer: ['good', 'wheat'], miller: ['good', 'flour'], baker: ['good', 'bread'], miner: ['good', 'goldore'], smelter: ['good', 'sword'], breeder: ['good', 'pig'],
+  butcher: ['good', 'sausage'], tanner: ['good', 'leather'], armorer: ['good', 'ironArmor'], enchanter: ['good', 'mana'], hopgrower: ['good', 'hops'], brewer: ['good', 'beer'],
+  herder: ['good', 'hide'], stableman: ['good', 'hay'], carter: ['ui', 'deliver'], fisher: ['good', 'fish'], healer: ['good', 'potion'] };
+function trainIconHTML(t) {
+  const k = TRAIN_ICON[t];
+  if (!k || (k[0] === 'good' && !GOODS[k[1]])) return '';
+  try { return `<img class="tb-ic" src="${iconURL(k[0], k[1], 2)}" alt="">`; } catch (e) { return ''; }
+}
+
 function queueTraining(type) {
   const schools = Game.buildings.filter(b => b.type === 'school' && b.state === 'done');
   if (!schools.length) { toast('Нет готовой школы'); return; }
@@ -408,6 +427,16 @@ function visibleCats() {
   return BUILD_CATS.map((c, k) => k).filter(k => buildTypesIn(BUILD_CATS[k]).length);
 }
 function buildTypesIn(cat) { return BUILD_ORDER.filter(t => BUILDINGS[t].cat === cat && menuItemShown(t)); }
+// значок плитки раздела (если такой постройки ещё нет в меню — первая открытая в разделе)
+const BUILD_CAT_ICON = { 'Основа': 'house', 'Ресурсы': 'woodcutter', 'Еда': 'farm', 'Ремесло': 'weaponsmith', 'Магия': 'magiccircle', 'Гильдии': 'guild_warrior', 'Оборона': 'watchtower' };
+// поля пшеницы и хмеля — первыми в разделе «Еда»
+const FIELD_TOOLS = [['wheat', 'Поле пшеницы', 'бесплатно'], ['hops', 'Поле хмеля', '1 доска за клетку']];
+function buildCatCount(cat) {
+  let n = buildTypesIn(cat).length;
+  if (cat === 'Еда') n += FIELD_TOOLS.filter(([c]) => isUnlocked('tool:' + c)).length;
+  if (cat === 'Оборона' && typeof FORT_ORDER !== 'undefined') n += FORT_ORDER.filter(f => isUnlocked('fort:' + f)).length;
+  return n;
+}
 
 function renderBuildMenu() {
   const vis = visibleCats();
@@ -423,16 +452,31 @@ function renderBuildMenu() {
     const name = BUILD_CATS[k];
     let b = UI.catEls[name];
     if (!b) {
+      // плитка раздела: значок постройки раздела, название и сколько в нём позиций
       b = UI.catEls[name] = document.createElement('button');
-      b.textContent = name;
+      b.innerHTML = '<img class="bc-ico" alt=""><span class="bc-n"></span><small class="bc-c"></small>';
+      b.querySelector('.bc-n').textContent = name;
       b.onclick = () => openBuildCat(k);
       if (UI.shown && UI.catsReady) { b.classList.add('enter'); b.addEventListener('animationend', () => b.classList.remove('enter'), { once: true }); }
     }
+    const types = buildTypesIn(name), rep = types.includes(BUILD_CAT_ICON[name]) ? BUILD_CAT_ICON[name] : types[0];
+    const im = b.querySelector('.bc-ico');
+    if (rep && im.dataset.t !== rep) { im.dataset.t = rep; im.src = buildingIconURL(rep); }
+    const cnt = String(buildCatCount(name)), c = b.querySelector('.bc-c');
+    if (c.textContent !== cnt) c.textContent = cnt;
     b.title = name;
     b.dataset.cat = name;
     box.appendChild(b);                          // повторная вставка выстраивает порядок
   }
   for (const name in UI.catEls) if (!vis.some(k => BUILD_CATS[k] === name)) { UI.catEls[name].remove(); delete UI.catEls[name]; }
+  // плитки рядами по 4: пустые места в последнем ряду — заглушка «Скоро» (разделы открываются по ходу игры)
+  box.querySelectorAll('.bc-soon').forEach(e => e.remove());
+  for (let i = 0; i < (4 - vis.length % 4) % 4; i++) {
+    const s = document.createElement('button');
+    s.className = 'bc-soon'; s.disabled = true; s.title = 'Скоро: новые постройки откроются по ходу игры';
+    s.innerHTML = '<span class="bc-lock">🔒</span><span class="bc-n">Скоро</span>';
+    box.appendChild(s);
+  }
   UI.catsReady = true;
   // инструменты полей
   for (const crop of ['wheat', 'hops']) {
@@ -554,14 +598,32 @@ function renderBuildList() {
   document.querySelectorAll('#build-cats button').forEach(b => b.classList.toggle('active', b.dataset.cat === BUILD_CATS[UI.cat]));
   const list = document.getElementById('build-list');
   list.innerHTML = '';
+  // смена раздела — список всплывает снизу (css/winmgr.css, .bl-pop)
+  if (UI.listCat !== UI.cat) {
+    if (UI.listCat != null) { list.classList.remove('bl-pop'); void list.offsetWidth; list.classList.add('bl-pop'); }
+    UI.listCat = UI.cat;
+  }
+  if (BUILD_CATS[UI.cat] === 'Еда') for (const [crop, name, note] of FIELD_TOOLS) {
+    if (!isUnlocked('tool:' + crop)) continue;
+    const tool = document.getElementById('tool-' + crop), btn = document.createElement('button');
+    btn.className = 'bbtn bfield';
+    btn.dataset.field = crop;
+    btn.title = tool.title;
+    btn.innerHTML = `<img class="bimg" src="${iconURL('good', crop, 3)}" alt=""><span class="bname">${name}</span><span class="bnote">${note}</span>`;
+    btn.onclick = () => tool.click();
+    if (Game.tool && Game.tool.kind === 'field' && Game.tool.crop === crop) btn.classList.add('active');
+    list.appendChild(btn);
+  }
   for (const type of buildTypesIn(BUILD_CATS[UI.cat])) {
     const def = BUILDINGS[type];
     const btn = document.createElement('button');
     btn.className = 'bbtn';
     if ((UI.fresh || []).includes(type)) { btn.classList.add('enter'); btn.addEventListener('animationend', () => btn.classList.remove('enter'), { once: true }); }
     btn.dataset.type = type;
-    btn.innerHTML = `<img class="bimg" src="${buildingIconURL(type)}" alt=""><span class="bname">${def.name}</span>${costHTML(def.cost)}`;
-    btn.onclick = () => setTool(Game.tool && Game.tool.type === type ? null : { kind: 'build', type, rot: def.noRotate || def.rots ? 0 : (UI.lastRot || 0) });
+    // у дома при каждом открытии меню — случайный из восьми видов: показываем, что дома бывают разные
+    btn.innerHTML = `<img class="bimg" src="${buildingIconURL(type, type === 'house' ? (Math.random() * 8) | 0 : 0)}" alt=""><span class="bname">${def.name}</span>${costHTML(def.cost)}`;
+    // нажали постройку — карточка вместо списка (js/winpanel.js), оттуда «Поставить»
+    btn.onclick = () => typeof wpPick === 'function' ? wpPick(type) : setTool(Game.tool && Game.tool.type === type ? null : { kind: 'build', type, rot: def.noRotate || def.rots ? 0 : (UI.lastRot || 0) });
     btn.onmouseenter = () => { if (Mobile.on) return; UI.hoverType = type; updateUI(true); };
     btn.onmouseleave = () => { UI.hoverType = null; updateUI(true); };
     if (Game.tool && Game.tool.type === type) btn.classList.add('active');
@@ -709,7 +771,7 @@ function infoBuilding(b) {
   }
   const def = b.def;
   const same = Game.buildings.filter(x => x.type === b.type).length;
-  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type)}" alt=""><div><h3>${def.name}${b.level >= 2 ? ` <span class="lvl">ур. ${b.level}</span>` : ''}</h3>${statusChip(b)}</div></div>`;
+  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type, b.type === 'house' ? b.hv || 0 : 0)}" alt=""><div><h3>${def.name}${b.level >= 2 ? ` <span class="lvl">ур. ${b.level}</span>` : ''}</h3>${statusChip(b)}</div></div>`;
   h += Guide.whyHTML(b);
   h += '<div class="iactions">';
   if (same > 1) h += `<button data-act="prev" title="Предыдущее такое же ([)">${ui('prev')}</button><button data-act="next" title="Следующее такое же (])">${ui('next')}</button>`;
@@ -793,7 +855,7 @@ function infoBuilding(b) {
     h += '<div class="train-grid">';
     for (const t of UNIT_KEYS) {
       const q = b.queue.filter(x => x === t).length;
-      h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><img src="${portraitURL(t)}" alt="">${UNIT_TYPES[t].name.split('-')[0].slice(0, 9)}${q ? `<span class="q">${q}</span>` : ''}</button>`;
+      h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><span class="tb-pic"><img src="${portraitURL(t)}" alt="">${trainIconHTML(t)}</span><span class="tb-n">${UNIT_TYPES[t].name.split('-')[0]}</span>${q ? `<span class="q">${q}</span>` : ''}</button>`;
     }
     h += '</div>';
   }

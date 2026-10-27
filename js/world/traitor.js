@@ -37,7 +37,18 @@ function* spyScribeGen(u) {
   u.idleFlag = false; u.food = 1;
   const T = asT(), A = spyA(), S = A && A.tr;
   if (T && S && S.st === 'rant') { yield* spyRantGen(u, T, S); return; }
-  if (!T || !S || Game.foe.defeated) { yield { wait: 2 }; if (Game.foe && Game.foe.defeated) { const lost = Game.lostGnomes; removeUnit(u); Game.lostGnomes = lost; } return; }
+  if (!T || !S || Game.foe.defeated) {
+    // шпиля или похода уже нет (Малгор побеждён, ярусы сброшены): летописцу тут делать нечего. Раньше без ярусов он
+    // вечно стоял на дороге и оставался в отряде героя — «гном зациклился» (отчёты 261023-2107-ec29, -2108-9f15)
+    yield { wait: 2 };
+    u._orph = (u._orph || 0) + 1;
+    if ((Game.foe && Game.foe.defeated) || u._orph >= 3) {
+      if (!(Game.foe && Game.foe.defeated)) spySay(u, 'Похоже, подвиг отменили. Унесу записи в архив.');
+      const lost = Game.lostGnomes; u.teamOf = null; removeUnit(u); Game.lostGnomes = lost;
+    }
+    return;
+  }
+  u._orph = 0;
   if (S.st === 'reveal' || S.st === 'open') { yield { wait: 0.5 }; return; }       // стоит, бледный, держит письмо
   const h = asLeader(u.x, u.y, 40);
   if (!h) { yield { wait: 1 }; return; }

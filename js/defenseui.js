@@ -14,7 +14,7 @@ function defMenuButtons() {
     btn.dataset.type = 'fort:' + f;
     btn.title = F.desc[0];
     btn.innerHTML = `<img class="bimg" src="${defIconURL(f)}" alt=""><span class="bname">${F.name}</span>${costHTML(F.cost[0])}`;
-    btn.onclick = () => setTool(Game.tool && Game.tool.kind === 'fort' && Game.tool.f === f ? null : { kind: 'fort', f, type: 'fort:' + f });
+    btn.onclick = () => typeof wpPick === 'function' ? wpPick('fort:' + f) : setTool(Game.tool && Game.tool.kind === 'fort' && Game.tool.f === f ? null : { kind: 'fort', f, type: 'fort:' + f });
     if (Game.tool && Game.tool.kind === 'fort' && Game.tool.f === f) btn.classList.add('active');
     list.insertBefore(btn, first);
   }
@@ -24,11 +24,29 @@ function defMenuButtons() {
   for (const b of btns) list.insertBefore(b, first);
 }
 
+// раздел «Оборона» по группам: стены, ловушки, свет и башни (заголовок на всю ширину сетки)
+const DEF_GROUPS = [['Стены', ['wall_wood', 'wall_stone', 'gate', 'barricade']], ['Ловушки', ['pit', 'spike', 'fire']], ['Свет и башни', null]];
+function defMenuGroups() {
+  const list = document.getElementById('build-list');
+  if (!list) return;
+  const btns = [...list.querySelectorAll('.bbtn')], used = new Set();
+  const out = [];
+  for (const [name, fs] of DEF_GROUPS) {
+    const g = btns.filter(b => !used.has(b) && (fs ? fs.some(f => b.dataset.type === 'fort:' + f) : true));
+    if (!g.length) continue;
+    g.forEach(b => used.add(b));
+    const h = document.createElement('div');
+    h.className = 'bgroup'; h.textContent = name;
+    out.push(h, ...g);
+  }
+  for (const el of out) list.appendChild(el);
+}
+
 {
   const _rbl = renderBuildList;
   renderBuildList = function () {
     _rbl();
-    if (BUILD_CATS[UI.cat] === 'Оборона') defMenuButtons();
+    if (BUILD_CATS[UI.cat] === 'Оборона') { defMenuButtons(); defMenuGroups(); }
   };
 
   const _st = setTool;

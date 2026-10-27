@@ -156,8 +156,11 @@ function drawInnPorch(c, b, spr, ox, oy) {
   b.awn = Math.max(0, Math.min(1, (b.awn || 0) + Math.sign(want - (b.awn || 0)) * dt * 0.7));
   c.imageSmoothingEnabled = false;
   const hw = innHalf(b), tw = hw * 2 - 6, DS = innSeats(b), cap = DS.length;
-  innDeck(c, tx, ty, hw);
+  if (!spr.noDeck) innDeck(c, tx, ty, hw);   // у пиксельного трактира настил уже в спрайте
   innBench(c, tx, ty - 6, tw + 2);   // дальняя скамья
+  // у пиксельного трактира дверь позади стола: официантка подходит к столу сзади и рисуется за едоками
+  const waitBehind = !!spr.pxInn && !slapTick(b, diners.length);
+  if (waitBehind) { drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 0, hw); if (innLv(b) >= 3) drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 1, hw); }
   const seat = (u, i) => {
     const [dx, row] = DS[i];
     const view = row < 0 ? 'S' : 'N';
@@ -188,7 +191,7 @@ function drawInnPorch(c, b, spr, ox, oy) {
   }
   innBench(c, tx, ty + 7, tw + 2);   // ближняя скамья — поверх спин
   if (slapTick(b, diners.length)) drawSlapScene(c, b, spr, tx, ty, ox, oy);
-  else {
+  else if (!waitBehind) {
     drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 0, hw);
     if (innLv(b) >= 3) drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 1, hw);
   }
@@ -204,7 +207,7 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests, n, hw) {
   const dt = Math.min(0.1, Math.max(0, t - w.last)); w.last = t;
   const dp = spr.doorPt || [spr.doorCx, spr.baseY - 6];
   const dx = ox + dp[0], dy = oy + dp[1] + 4;
-  const tgtX = n ? tx + hw + 4 : tx - hw - 4, tgtY = ty + 9;
+  const tgtX = spr.pxInn ? tx + (n ? 1 : -1) * Math.max(6, hw - 10) : n ? tx + hw + 4 : tx - hw - 4, tgtY = spr.pxInn ? ty - 12 : ty + 9;   // пиксельный трактир: за столом, со стороны дома
   w.t -= dt;
   const walkTo = (X, Y, v) => {
     const ex = X - w.x, ey = Y - w.y, d = Math.hypot(ex, ey);
@@ -240,7 +243,8 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests, n, hw) {
 function drawInside(c, b, spr, ox, oy) {
   insideScan();
   drawInsideLife(c, b, spr, ox, oy);
-  if (b.type === 'inn') { drawInnPorch(c, b, spr, ox, oy); drawInnOven(c, b, spr, ox, oy); drawBarmaid(c, b, spr, ox, oy); }
+  if (spr.px === 'storehouse') drawStoreYard(c, b, spr, ox, oy);
+  if (b.type === 'inn') { if (spr.pxInn) drawInnYard(c, b, spr, ox, oy); drawInnPorch(c, b, spr, ox, oy); drawInnOven(c, b, spr, ox, oy); drawBarmaid(c, b, spr, ox, oy); if (spr.pxInn) drawInnExtraDiners(c, b, spr, ox, oy); }
 }
 
 // Огонь в печи на первом этаже трактира: живое пламя в топке и тёплый отсвет
@@ -481,4 +485,115 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
       c.globalAlpha = 0.7 * (1 - a); slapPx(c, gx + sd * 5 - 1, gy - 24 - a * 9, 2 + (a > 0.5 ? 1 : 0), 2, '#f4f4f0'); c.globalAlpha = 1;
     }
   }
+}
+
+// ---------- Пиксельный трактир (bldpx.js): двор, запасы на полках, едоки за дальними столами ----------
+// Костёр с вертелом, завсегдатаи на брёвнах, гном у колоды, метатель дротиков, музыкант на сцене —
+// декоративная жизнь двора, её больше на каждом уровне. Запасы на полках кухни полнеют и пустеют по b.stock.
+
+const INN_YARD_REG = [0, 1, 3, 4];          // завсегдатаев у костра по уровню
+function innFolk(b, k) { return { type: 'farmer', look: (b.id * 97 + k * 31) >>> 0, carry: null }; }
+function drawFolk(c, u, x, y, view, pose, frame, opt, flip) {
+  const sp = personSprite(u, view, pose, frame, opt || {});
+  if (flip) { c.save(); c.translate(Math.round(x), Math.round(y)); c.scale(-1, 1); c.drawImage(sp, -PFX, -PFY, PW, PH); c.restore(); }
+  else c.drawImage(sp, Math.round(x) - PFX, Math.round(y) - PFY, PW, PH);
+}
+
+function drawInnYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done') return;
+  const t = Game.time, lv = spr.pxInn;
+  c.imageSmoothingEnabled = false;
+  // запасы на полках кухни: доля заполнения склада трактира → сколько слотов занято
+  const inp = b.def.inputs || {}, keys = Object.keys(inp).filter(k => k !== 'beer' && k !== 'darkbeer');
+  let have = 0, cap = 0; for (const k of keys) { have += Math.min(inp[k], (b.stock && b.stock[k]) || 0); cap += inp[k]; }
+  const fill = cap ? have / cap : 0, slots = spr.pantry || [];
+  const order = keys.filter(k => b.stock && b.stock[k] > 0);
+  for (let i = 0; i < Math.min(slots.length, Math.ceil(fill * slots.length)); i++) {
+    const [x, y] = slots[i], food = order.length ? order[i % order.length] : 'bread';
+    innFoodSprite(c, food === 'chicken' ? 'chickenleg' : food, ox + x, oy + y);
+  }
+  const beer = ((b.stock && b.stock.beer) || 0) + ((b.stock && b.stock.darkbeer) || 0);
+  if (beer > 0 && spr.stock) for (let i = 0; i < Math.min(spr.stock.length, Math.ceil(beer / 4)); i++) {   // бочонки пива на поддоне у входа
+    const [x, y] = spr.stock[i], X = Math.round(ox + x), Y = Math.round(oy + y);
+    c.fillStyle = '#50361e'; c.fillRect(X - 3, Y - 7, 6, 7); c.fillStyle = '#9a6c42'; c.fillRect(X - 2, Y - 7, 4, 7); c.fillStyle = '#64646e'; c.fillRect(X - 3, Y - 5, 6, 1); c.fillRect(X - 3, Y - 2, 6, 1);
+  }
+  // костёр и вертел
+  if (spr.fire) {
+    const [x, y] = spr.fire;
+    glow(c, ox + x, oy + y - 3, 22, '255,140,40', 0.22 + Math.sin(t * 7 + b.id) * 0.04);
+    drawFire(c, ox + x, oy + y, 'tiny', t, b.id + 11, { glow: 0 });
+  }
+  if (spr.spit) {   // тушка поворачивается: блик бежит по боку, капает жир
+    const [x, y] = spr.spit, X = ox + x, Y = oy + y, ph = (t * 1.3) % 1;
+    c.fillStyle = '#ffe8a0'; c.fillRect(Math.round(X - 4 + ph * 8), Math.round(Y - 1), 1, 1);
+    if (ph < 0.1) { c.fillStyle = '#ffd060'; c.fillRect(Math.round(X), Math.round(Y + 3 + ph * 30), 1, 1); }
+  }
+  // завсегдатаи у костра: сидят, пьют, хлопают
+  const reg = Math.min(INN_YARD_REG[lv] || 0, (spr.seats || []).length), fx = spr.fire ? spr.fire[0] : 0, fy = spr.fire ? spr.fire[1] : 0;
+  for (let k = 0; k < reg; k++) {
+    const [x, y] = spr.seats[k], cyc = (t * 0.5 + k * 1.7 + b.id) % 6;
+    const gest = cyc < 1.4 ? 'drink' : cyc < 2.2 ? 'clap' : '';
+    drawFolk(c, innFolk(b, k), ox + x, oy + y + 2, y < fy ? 'S' : 'N', 'idle', Math.floor(t * 6 + k) % 6, { gest, gf: gestCyc(t * 1.6 + k) }, x > fx);
+  }
+  // колка дров
+  if (spr.chop) { const [x, y] = spr.chop; drawFolk(c, innFolk(b, 7), ox + x + 5, oy + y + 1, 'E', 'work', { anim: 'chop', f: Math.floor(t * 8 + b.id) % 8 }, {}, true); }
+  // дротики: бросок, полёт к мишени
+  if (spr.darts && lv >= 2) {
+    const [x, y] = spr.darts, sx = ox + x - 18, sy = oy + y + 20, cyc = (t * 0.6 + b.id) % 3;
+    drawFolk(c, innFolk(b, 8), sx, sy, 'E', 'idle', 0, { gest: cyc < 0.5 ? 'chest' : '', gf: gestCyc(t * 2) });
+    if (cyc > 0.5 && cyc < 0.9) { const f = (cyc - 0.5) / 0.4; c.fillStyle = '#3c3c44'; c.fillRect(Math.round(sx + 4 + f * 14), Math.round(sy - 18 - Math.sin(f * Math.PI) * 4 - f * 2), 2, 1); }
+  }
+  // музыкант на сцене (3-й уровень): притопывает, ноты всплывают
+  if (spr.stage && lv >= 3) {
+    const [x, y] = spr.stage;
+    drawFolk(c, innFolk(b, 9), ox + x, oy + y, 'S', 'idle', Math.floor(t * 8) % 6, { gest: 'clap', gf: gestCyc(t * 3) });
+    for (let n = 0; n < 2; n++) { const f = (t * 0.7 + n * 0.5) % 1; c.globalAlpha = 1 - f; c.fillStyle = '#2a1a24'; c.fillRect(Math.round(ox + x + 6 + f * 6 + n * 3), Math.round(oy + y - 30 - f * 12), 2, 2); c.fillRect(Math.round(ox + x + 7 + f * 6 + n * 3), Math.round(oy + y - 34 - f * 12), 1, 4); c.globalAlpha = 1; }
+  }
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// Едоки сверх мест у главного стола садятся за столы веранды и двора
+function drawInnExtraDiners(c, b, spr, ox, oy) {
+  const diners = (INS_DINE.get(b) || []).slice(innSeats(b).length);
+  if (!diners.length || !(spr.tables || []).length) return;
+  const t = Game.time, seats = [];
+  for (const [x, y] of spr.tables) seats.push([x - 4, y - 5, 'S'], [x + 4, y - 5, 'S'], [x - 4, y + 3, 'N'], [x + 4, y + 3, 'N']);
+  c.imageSmoothingEnabled = false;
+  const list = diners.slice(0, seats.length).map((u, i) => ({ u, s: seats[i] })).sort((p, q) => p.s[1] - q.s[1]);
+  for (const { u, s } of list) {
+    const [x, y, face] = s;
+    drawFolk(c, { type: u.type, look: u.look, carry: null, injury: u.injury }, ox + x, oy + y + 3, face, 'idle', 0, { gest: 'eat', gf: gestCyc(t * 1.8 + u.id * 0.7) });
+  }
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Пиксельный склад (bldpx.js): кучи груза по запасам, мерцание рун и кристаллов ----------
+const STORE_PILE_CAP = 15;   // столько единиц товара — одна полная куча
+function storePileAmount(b, kind) {
+  const st = b.stock || {};
+  if (kind === 'trunk' || kind === 'timber' || kind === 'stone') return st[kind] || 0;
+  let n = 0;
+  for (const g in st) {
+    if (g === 'trunk' || g === 'timber' || g === 'stone' || !GOODS[g]) continue;
+    const food = GOODS[g].group === 'Еда';
+    if ((kind === 'food') === food) n += st[g] || 0;
+  }
+  return n;
+}
+function drawStoreYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done') return;
+  const t = Game.time;
+  c.imageSmoothingEnabled = false;
+  for (const kind in spr.piles || {}) {
+    const spots = spr.piles[kind], total = storePileAmount(b, kind) / STORE_PILE_CAP;
+    for (let i = 0; i < spots.length; i++) {
+      const f = Math.max(0, Math.min(1, total - i));        // кучи заполняются по очереди
+      if (f <= 0) continue;
+      const P = pxPile(kind, f), [x, y] = spots[i];
+      c.drawImage(P.cv, Math.round(ox + x - P.ax), Math.round(oy + y - P.ay), P.w, P.h);
+    }
+  }
+  for (const [x, y] of spr.runes || []) glow(c, ox + x, oy + y - 4, 9, '140,240,220', 0.22 + Math.sin(t * 2.3 + x) * 0.08);
+  if (spr.circle) glow(c, ox + spr.circle[0], oy + spr.circle[1], 16, '120,230,210', 0.16 + Math.sin(t * 1.6) * 0.06);
+  c.imageSmoothingEnabled = R.smooth;
 }

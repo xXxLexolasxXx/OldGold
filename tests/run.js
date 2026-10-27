@@ -131,12 +131,16 @@ scriptTest('runsim: ядро забега — детерминизм, бот д�
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
 scriptTest('piles: мусор не копится, потолок кучек, подпись подбора', 'piles-test.js');
+scriptTest('reports: баги из отчётов тестеров — летописец без шпиля, значки в 11 строк, давние кучки на дороге', 'reports-test.js');
 scriptTest('dragonpet: дракончики-питомцы — шанс поимки, осторожность, разговор, умения, уход, сейв, миграция', 'dragonpet-test.js');
 scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
 scriptTest('wild: поселения диких гномов — число на картах, обмен, караван, купец, поединок, бунт, сейв', 'wild-test.js', [], 600000);
 scriptTest('whatsnew: пропущенные обновления в окне «Что нового»', 'whatsnew-test.js');
 scriptTest('uilayers: слои интерфейса — загрузка без скорости, стройка поверх способностей', 'uilayers-test.js');
+scriptTest('winmgr: одно окно за раз, «Деревня», «⋯» по делу, права хоста на виду', 'winmgr-test.js');
+scriptTest('winpanel: карточка постройки, задания в панели, герой в походе', 'winpanel-test.js');
+scriptTest('fair: ярмарка — оружейная лавка за золото казны, рюкзак, сохранение, понятная панель', 'fair-test.js');
 scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js', [], 900000);
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 

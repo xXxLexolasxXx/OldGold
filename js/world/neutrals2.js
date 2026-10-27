@@ -220,7 +220,7 @@ function n2RollHit(N, u) {
   floater(u.x, u.y - 2, 'Сбит!', '#ffb070');
   u.ouchUntil = now + 0.8;
   if (u.hero || u.rec) {
-    N2.mul = 1; neuHurtUnit(u, dmg);
+    N2.mul = 1; (typeof fsEnvHurt === 'function' ? fsEnvHurt : neuHurtUnit)(u, dmg);
     if (u.hero && u.hero.hp <= 0) neuHeroDown(N, u);
   } else if (isPerson(u)) injure(u, 'leg');
 }
@@ -600,7 +600,9 @@ if (typeof hmCast === 'function') {
     const bob = (N.k === 'fairy' || N.k === 'pixie') && !dead ? Math.round(Math.sin(Game.time * 3.2 + N.id) * 1.3) : 0;
     c.translate(px, py + bob);
     c.scale(N.face < 0 ? -sc : sc, sc);
-    blitFine(c, sp.cv, -sp.ax, -sp.ay);
+    // 3× пиксельный кадр (pxbeasts.js) — в его размер w×h, как в neuDraw; иначе грибник-вожак выходил втрое больше (отчёт 261026-1356-2931)
+    if (sp.hi) { c.imageSmoothingEnabled = false; c.drawImage(sp.cv, -sp.ax, -sp.ay, sp.w, sp.h); }
+    else blitFine(c, sp.cv, -sp.ax, -sp.ay);
     c.restore();
     // стрела лучника в полёте
     const A = N.arw;
@@ -616,11 +618,7 @@ if (typeof hmCast === 'function') {
     }
     if (dead) return;
     const top = py - Math.round((N2_TOP[N.k] || 40) * sc);
-    if (N.hp < N.mhp - 0.5) {
-      const w = 18 + (rk - 1) * 3, r = Math.max(0, N.hp / N.mhp);
-      c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(px - w / 2 - 1, top - 1, w + 2, 4);
-      c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(px - w / 2, top, Math.round(w * r), 2);
-    }
+    if (fsBarOn(N)) fsBar(c, px, top, N.hp / N.mhp, 22 + (rk - 1) * 3);
     if (rk > 1) n2Badge(c, px, top - 5, rk);
   };
 }

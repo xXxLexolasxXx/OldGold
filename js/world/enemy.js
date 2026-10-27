@@ -311,6 +311,7 @@ function foeHit(N, u, dmg) {
       N.cdA = Math.max(N.cdA, 0.35); N.atkT = 9;
     }
   }
+  if (N.k !== 'malgor' && !S.big && typeof fsHeroHit === 'function') dmg = fsHeroHit(N, u, dmg);   // сила окружения растёт с героем (foescale.js)
   N.hp -= dmg;
   floater(N.x, N.y - 1.8, '−' + Math.max(1, Math.round(dmg)), '#ffd070');
   sfxAt('thud', N.x * TILE, N.y * TILE, 0.5);
@@ -969,6 +970,7 @@ function foeDrawMalgor(c, N) {
 }
 
 function foeDrawBar(c, N, px, top, wide) {
+  if (!wide && typeof fsBar === 'function') return fsBar(c, px, top, N.hp / N.mhp);     // обычные враги — общая полоска (foescale.js)
   const w = wide ? 56 : 18, r = Math.max(0, N.hp / N.mhp);
   c.fillStyle = 'rgba(10,6,24,0.85)'; c.fillRect(px - w / 2 - 1, top - 1, w + 2, wide ? 6 : 4);
   c.fillStyle = r > 0.5 ? '#7ad84a' : r > 0.25 ? '#e0b040' : '#d84a3a';
@@ -1012,7 +1014,7 @@ function foeDrawRaider(c, N) {
     if (nightAmt() < 0.05) foeBossBar(c, N);
     if (N.shield) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(156,255,102,0.55)'; c.lineWidth = 2; c.beginPath(); c.ellipse(px, py - 26, 17, 28, 0, 0, 7); c.stroke(); c.fillStyle = 'rgba(156,255,102,0.1)'; c.fill(); c.restore(); }
   } else if (S.bar) S.bar(c, N, px, py);
-  else if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - (fly ? 34 : N.k === 'knight' ? 44 : 32), false);
+  else if (fsBarOn(N)) foeDrawBar(c, N, px, py - (fly ? 34 : N.k === 'knight' ? 44 : 32), false);
   if (N.loot) { c.fillStyle = GOODS[N.loot.g].color; c.fillRect(px + (N.face < 0 ? -9 : 5), py - 12, 5, 5); c.fillStyle = '#000'; c.fillRect(px + (N.face < 0 ? -9 : 5), py - 12, 5, 1); }
 }
 

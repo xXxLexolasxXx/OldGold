@@ -657,7 +657,7 @@ function drawOwls(c) {
   for (const f of Game.falling || []) {
     c.save(); c.translate(f.x, f.y); c.rotate(f.rot); c.scale(0.45, 0.45); drawLoad(c, f.g); c.restore();
   }
-  c.imageSmoothingEnabled = prev;
+  c.imageSmoothingEnabled = prev; c.imageSmoothingQuality = 'low';
 }
 
 // ---------- Месть кур ----------

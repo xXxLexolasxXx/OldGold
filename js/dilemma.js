@@ -665,6 +665,9 @@ function dilUiSync() {
     const e = DIL_BY_ID[last.id], o = e && e.o[last.i];
     if (e && o) {
       const el = dilModalEl();
+      // итог уже на экране: в коопе зеркало приходит несколько раз в секунду, и окно перерисовывалось каждый раз —
+      // мигало, а кнопка «Ну ладно» пересоздавалась под пальцем (жалоба владельца 27.10)
+      if (DilUI.sig === 'res' + last.seq && !el.classList.contains('hidden')) return;
       el.innerHTML = `<div class="gm-card dl-card dl-res"><div class="dl-head"><div class="dl-ic">${ui(e.ic)}</div><div><div class="dl-kicker">Решение принято</div><h2>${dilEsc(e.t)}</h2></div></div>
         <div class="dl-pick">«${dilEsc(o.t)}»</div><div class="dl-text">${dilEsc(last.out)}</div>
         <div class="dl-chips res">${(last.chips || []).map(c => `<span class="dl-chip ${c.k}">${dilEsc(c.t)}</span>`).join('')}</div>${dilStatusHTML()}

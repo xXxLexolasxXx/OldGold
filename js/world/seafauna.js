@@ -195,7 +195,7 @@ const SL_TICK = {
     if (o.st === 'beach') {   // вынесло на берег: жалит, кто рядом пройдёт; сохнет
       o.dry = (o.dry || 0) + dt;
       const g = slPeopleNear(o.x, o.y, 0.8, u => u.type !== 'kid')[0];
-      if (g && slOnce('jel' + (g.id || ''), 30)) { o.st = 'atk'; o.t = 0.75; o.ph = 0; floater(g.x, g.y - 1.4, 'Ай, медуза!', '#f0c0ff'); faunaSfx('jellyZap', o.x, o.y); if (g.type === 'hero') hlHurt(g, 2, true); else if (!g.injury) scare(g, o); fstat('jellySting'); }
+      if (g && slOnce('jel' + (g.id || ''), 30)) { o.st = 'atk'; o.t = 0.75; o.ph = 0; floater(g.x, g.y - 1.4, 'Ай, медуза!', '#f0c0ff'); faunaSfx('jellyZap', o.x, o.y); if (g.type === 'hero') hlHurt(g, 2 * (typeof fsEnvMul === 'function' ? fsEnvMul(g) : 1), true); else if (!g.injury) scare(g, o); fstat('jellySting'); }
       if (o.dry > 60) { o.st = 'die'; o.ph = 0; }
       return;
     }
@@ -314,7 +314,7 @@ const SL_TICK = {
     if (o.st === 'atk') {
       if ((o.t -= dt) <= 0) {
         o.st = 'swim'; o.t = slR(2, 4);
-        if (hero && hd < 2.2) { hlHurt(hero, 6, true); faunaSfx('serpHiss', o.x, o.y); }
+        if (hero && hd < 2.2) { hlHurt(hero, 6 * (typeof fsEnvMul === 'function' ? fsEnvMul(hero) : 1), true); faunaSfx('serpHiss', o.x, o.y); }
       }
       if (hero && hd < 2.4) {   // герой рубит голову, пока змей вздымается
         o.hp -= dt * 9; hero.gest = 'fist'; hero.gestUntil = Game.time + 0.6; hero.gestFace = o.x > hero.x ? 1 : -1;
@@ -477,7 +477,7 @@ function slTentSlam(t, hero) {
   slSplash(fx, fy, 1); faunaSfx('tentSlam', fx, fy, 1);
   if (typeof shake === 'function') shake(3);
   for (const u of slPeopleNear(fx, fy, 1.8)) {
-    if (u.type === 'hero') { hlHurt(u, 7, true); continue; }
+    if (u.type === 'hero') { hlHurt(u, 7 * (typeof fsEnvMul === 'function' ? fsEnvMul(u) : 1), true); continue; }
     if (!u.injury) scare(u, t);
     if (!u.injury && slRand() < 0.3) { injure(u, slRand() < 0.5 ? 'arm' : 'leg'); u.injuryUntil = Game.time + 45; floater(u.x, u.y - 1.4, 'Ох!', '#ffb0a0'); }
   }
