@@ -67,5 +67,36 @@ const sv = J(`const H = Game.hero.hero; H.inv.fill(null); hlAddItem(H, 'sword', 
 ok(sv, 'сохранение с мечом в рюкзаке');
 ok(!sim.errors.length, 'исключения в симуляции: ' + sim.errors.join(' | '));
 
+// 8. Общая деревня: на сервере меч ждёт героя, «grab» кладёт в рюкзак, «putdown» — на землю, «stash» — на склад, «release» отдаёт трудягам
+{
+  const srv = S.newSim(43, { coop: true });
+  const R = js => srv.h.run(js);
+  const cmd = (who, o) => R(`coopCmd(${JSON.stringify(who)}, ${JSON.stringify(JSON.stringify(o))}, false)`);
+  const wait = (cond, sec) => { for (let i = 0; i < sec * 4; i++) { S.stepN(srv, 5); R('coopDrain()'); if (R(`!!(${cond})`)) return true; } return false; };
+  R(`coopJoin('Ая', JSON.stringify({ cls: 'warrior' })); const u = coop.players.get('Ая'); heroStopUnit(u); u.cmd = null;
+    const st = Game.buildings.find(b => b.type === 'storehouse'); const c = randomFreeNear(st.doorX, st.doorY + 3, 0, 4, (x, y) => isWalkable(x, y) && !World.door[idx(x, y)]);
+    u.x = c[0] + 0.5; u.y = c[1] + 0.5; Game.crows = [];
+    const at = randomFreeNear(c[0] + 3, c[1], 1, 4, (x, y) => isWalkable(x, y) && !World.bmap[idx(x, y)] && !Game.piles.get(idx(x, y)));
+    globalThis.__p = dropPile(at[0], at[1], 'sword', 1); u.hero.inv.fill(null); 0`);
+  ok(R('__p.heroHold - Game.time') > 60 && R(`__p.offer('sword')`) === 0, 'кооп: меч на земле должен ждать героя');
+  cmd('Ая', { t: 'grab', x: R('__p.x'), y: R('__p.y') });
+  ok(wait(`coop.players.get('Ая').hero.inv.some(s => s && s.k === 'sword')`, 40), 'кооп: «grab» не положил меч в рюкзак');
+  S.stepN(srv, 20);
+  cmd('Ая', { t: 'putdown', slot: R(`coop.players.get('Ая').hero.inv.findIndex(s => s && s.k === 'sword')`) });
+  ok(R(`!coop.players.get('Ая').hero.inv.some(s => s && s.k === 'sword') && [...Game.piles.values()].some(p => p.stock.sword > 0)`), 'кооп: «putdown» не положил меч на землю');
+  R(`globalThis.__s0 = Game.buildings.filter(b => b.isStore()).reduce((n, b) => n + b.stock.bow, 0); coop.players.get('Ая').hero.inv[0] = { k: 'bow', n: 1 }; 0`);
+  S.stepN(srv, 20);
+  cmd('Ая', { t: 'stash', slot: 0 });
+  ok(wait(`!coop.players.get('Ая').hero.inv[0]`, 60) && R(`Game.buildings.filter(b => b.isStore()).reduce((n, b) => n + b.stock.bow, 0) - __s0`) === 1, 'кооп: «stash» не сдал лук на склад');
+  R(`globalThis.__q = dropPile(__p.x, __p.y, 'dagger', 1); 0`);
+  S.stepN(srv, 20);
+  cmd('Ая', { t: 'release', x: R('__q.x'), y: R('__q.y') });
+  ok(R(`__q.offer('dagger')`) === 1, 'кооп: «release» должен отдать вещь трудягам');
+  R(`coop.players.get('Ая').hero.inv[1] = { k: 'baton', n: 1 }; 0`); S.stepN(srv, 20);
+  cmd('Ая', { t: 'putdown', slot: 1 });
+  ok(R(`!!coop.players.get('Ая').hero.inv[1]`), 'кооп: предмет задания (эстафета) нельзя выложить на землю');
+  ok(!srv.errors.length, 'кооп: исключения на сервере: ' + srv.errors.join(' | '));
+}
+
 console.log(fails.length ? `Проверка вещей: ${fails.length} провал(ов)` : 'Проверка вещей: всё в порядке');
 process.exit(fails.length ? 1 : 0);

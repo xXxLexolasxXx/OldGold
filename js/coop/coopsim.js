@@ -228,6 +228,7 @@ function coopCmd(name, msgJson, admin) {
     case 'use': if (u && coopInt(m.slot) && m.slot >= 0 && m.slot < COOP_INV) coopUseItem(u, m.slot); break;
     case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) { const k = u.hero.inv[m.slot].k; u.hero.inv[m.slot] = null; if (COOP_QITEM[k]) coopGroupFail(`${name} выбросил «${COOP_QITEM[k]}»`); } break;
     case 'give': if (u && can('give') && coopSlow(name, 0.8)) coopGive(name, m); break;
+    case 'grab': case 'release': case 'putdown': case 'stash': if (u && typeof gpCoopCmd === 'function' && coopSlow(name, 0.3)) gpCoopCmd(u, m); break;   // вещи на земле и в рюкзаке (gearpick.js)
     case 'decor': {
       if (!u || !can('decor') || !coopSlow(name, 0.25)) break;
       if (!coopInt(m.x) || !coopInt(m.y) || !vdOwn(m.k)) break;

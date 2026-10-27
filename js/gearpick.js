@@ -17,6 +17,10 @@ const gpFree = (p, g) => p.stock[g] - p.reserved[g];
 const gpGearIn = p => GOOD_KEYS.find(g => gpGear(g) && gpFree(p, g) > 0) || null;
 const gpHeld = p => p && !p.removed && p.heroHold > Game.time && !!gpGearIn(p);
 const gpRoom = (H, g) => H.inv.some(s => !s || (s.k === g && s.n < 20));
+const gpSrvOn = () => typeof isServer === 'function' && isServer();   // сервер общей деревни
+const gpCoopOn = () => typeof Coop !== 'undefined' && Coop.on && Game.hero && Game.hero.hero;   // клиент общей деревни
+// сообщение игроку: в общей деревне — тому, чей герой; в одиночной — всплывашкой
+const gpSay = (u, text) => { if (u && u.hero && u.hero.owner && typeof coopSay === 'function') coopSay(u.hero.owner, text); else toast(text); };
 
 // ---------- Снаряжение на земле ждёт героя ----------
 {
@@ -25,7 +29,7 @@ const gpRoom = (H, g) => H.inv.some(s => !s || (s.k === g && s.n < 20));
   const _drop = dropPile;
   dropPile = function (x, y, g, n) {
     const p = _drop(x, y, g, n);
-    if (p && gpGear(g) && gpOn()) p.heroHold = Game.time + GP_HOLD;
+    if (p && gpGear(g) && (gpOn() || gpSrvOn())) p.heroHold = Game.time + GP_HOLD;
     return p;
   };
 }
@@ -89,7 +93,7 @@ function* gpGrabGen(u, c) {
   if (!ok) return;
   const g = !p.removed && gpFree(p, c.g) > 0 ? c.g : (!p.removed && gpGearIn(p));
   if (!g) { floater(u.x, u.y - 1.6, 'Уже унесли…', '#e8a070'); return; }
-  if (!gpRoom(H, g)) { floater(u.x, u.y - 1.6, 'Рюкзак полон', '#e8a070'); toast('Рюкзак героя полон: выложите или выбросите что-нибудь'); return; }
+  if (!gpRoom(H, g)) { floater(u.x, u.y - 1.6, 'Рюкзак полон', '#e8a070'); gpSay(u, 'Рюкзак героя полон: выложите или выбросите что-нибудь'); return; }
   yield { wait: 0.5, anim: 'duck' };
   if (p.removed || gpFree(p, g) <= 0) { floater(u.x, u.y - 1.6, 'Уже унесли…', '#e8a070'); return; }
   p.stock[g]--; cleanupPile(p);
@@ -97,11 +101,11 @@ function* gpGrabGen(u, c) {
   if (typeof durFresh === 'function') durFresh(H, g);
   floater(u.x, u.y - 1.6, 'Взял: ' + hlName(g), '#ffe8a0');
   updateUI(true);
-  if (!c.equip) return;
+  if (!c.equip || !H.equip) return;
   const slot = H.inv.findIndex(s => s && s.k === g);
   if (slot < 0) return;
   yield* hlEquipGen(u, { slot });
-  if (H.equip[HL_GEAR[g].slot] !== g) toast(`Не вышло надеть — ${hlName(g).toLowerCase()} в рюкзаке. Нажмите на него в рюкзаке, чтобы попробовать ещё`);
+  if (H.equip[HL_GEAR[g].slot] !== g) gpSay(u, `Не вышло надеть — ${hlName(g).toLowerCase()} в рюкзаке. Нажмите на него в рюкзаке, чтобы попробовать ещё`);
   updateUI(true);
 }
 
@@ -117,7 +121,7 @@ function gpSlotMenu(i, xy) {
   else if (g === 'bandage') items.push({ t: 'Перевязаться', main: true, f: () => heroAbility('use' + i) });
   items.push({ t: 'Положить на землю', d: 'рядом с героем', f: () => gpPutDown(i) });
   if (GOODS[g] && !GOODS[g].noStore) items.push({ t: 'Отнести на склад', d: 'герой сам сходит', f: () => gpToStore(i) });
-  items.push({ t: 'Выбросить насовсем', d: 'вещь пропадёт', f: () => { hlDrop(i); toast(`${nm} выброшен${many}`); } });
+  items.push({ t: 'Выбросить насовсем', d: 'вещь пропадёт', f: () => { hlDrop(i); toast(`Выброшено: ${nm}${many}`); } });
   gpMenu(nm + many, g, items, xy);
 }
 
@@ -166,13 +170,17 @@ function* gpStashGen(u, c) {
       const p = Game.piles.get(idx(t[0], t[1]));
       if (p && !p.removed && gpGearIn(p) && gpPileMenu(p)) return;
     }
+    if (gpCoopOn() && !Game.tool && inb(t[0], t[1])) {
+      const p = Game.piles.get(idx(t[0], t[1]));
+      if (p && !p.removed && gpGearIn(p) && gpCoopPileMenu(p)) return;
+    }
     _click(t);
   };
 
   const _rc = resolveCmd;
   resolveCmd = function (t) {
     const c = _rc(t);
-    if (c && c.kind === 'pile' && gpOn()) { const g = gpGearIn(c.p); if (g) c.label = hlName(g) + ': взять?'; }
+    if (c && c.kind === 'pile' && (gpOn() || gpCoopOn())) { const g = gpGearIn(c.p); if (g) c.label = hlName(g) + ': взять?'; }
     return c;
   };
 
@@ -207,10 +215,11 @@ function* gpStashGen(u, c) {
   const _ov = drawOverlay;
   drawOverlay = function (c) {
     _ov(c);
-    if (!gpOn()) return;
+    const co = gpCoopOn();          // в общей деревне бронь не приходит с сервера — кольцо у любого снаряжения
+    if (!gpOn() && !co) return;
     const t = Game.time;
     for (const p of Game.piles.values()) {
-      if (!gpHeld(p)) continue;
+      if (co ? p.removed || !gpGearIn(p) : !gpHeld(p)) continue;
       const px = (p.x + 0.5) * TILE, py = (p.y + 0.5) * TILE + 4, k = 0.5 + 0.5 * Math.sin(t * 5);
       c.strokeStyle = `rgba(255,214,90,${0.55 + 0.4 * k})`; c.lineWidth = 1.5;
       c.beginPath(); c.ellipse(px, py, 11 + 2 * k, 5 + k, 0, 0, Math.PI * 2); c.stroke();
@@ -220,6 +229,60 @@ function* gpStashGen(u, c) {
 
   const _rs = resetGameState;
   resetGameState = function () { _rs(); gpMenuClose(); };
+}
+
+
+// ---------- Общая деревня ----------
+// Экипировки в коопе нет (оружие героя — от класса), поэтому «В руку» нет: вещь — в рюкзак, на землю или на склад.
+// Сервер (coopsim.js): команды grab / release / putdown / stash; клиент — те же меню, что в одиночной игре.
+
+function gpCoopCmd(u, m) {
+  const H = u.hero;
+  if (m.t === 'grab' || m.t === 'release') {
+    const p = Number.isInteger(m.x) && Number.isInteger(m.y) && inb(m.x, m.y) ? Game.piles.get(idx(m.x, m.y)) : null;
+    const g = p && !p.removed && gpGearIn(p);
+    if (!g) return;
+    if (m.t === 'release') { p.heroHold = 0; return; }
+    if (H.stunUntil > Game.time) return;
+    issueCmd(u, { kind: 'grab', p, g, equip: false, tx: p.x, ty: p.y, label: 'Взять в рюкзак' });
+    return;
+  }
+  if (!Number.isInteger(m.slot) || m.slot < 0 || m.slot >= H.inv.length) return;
+  const s = H.inv[m.slot];
+  if (!s || !GOODS[s.k]) { if (s) coopSay(H.owner, 'Это из рюкзака не выложить'); return; }     // задания (эстафета, груз) — только передать
+  if (m.t === 'putdown') {
+    const p = dropPile(Math.floor(u.x), Math.floor(u.y), s.k, s.n);
+    if (p) { H.inv[m.slot] = null; floater(p.x + 0.5, p.y - 0.4, 'Положил: ' + hlName(s.k), '#ffe8a0'); }
+  } else if (m.t === 'stash') {
+    const st = nearestStore(u.x, u.y, s.k);
+    if (!st) { coopSay(H.owner, 'Нет склада, куда отнести'); return; }
+    issueCmd(u, { kind: 'stashInv', k: s.k, st, tx: st.doorX, ty: st.doorY, label: 'Отнести на склад' });
+  }
+}
+
+function gpCoopPileMenu(p) {
+  const g = gpGearIn(p);
+  if (!g) return false;
+  const send = (t, label) => { coopSend({ t, x: p.x, y: p.y }); if (label) floater(p.x + 0.5, p.y - 0.4, label, '#f6d458'); };
+  gpMenu(hlName(g), g, [
+    { t: 'В рюкзак', d: `${Game.hero.hero.name} подберёт`, main: true, f: () => send('grab', 'Взять в рюкзак') },
+    { t: 'Пусть отнесут на склад', d: 'трудяги заберут', f: () => send('release') },
+  ]);
+  return true;
+}
+
+function gpCoopSlotMenu(i, xy) {
+  const s = Coop.me && Coop.me.inv && Coop.me.inv[i];
+  if (!s) return;
+  const nm = HL_GEAR[s.k] || typeof ITEM_NAME !== 'function' ? hlName(s.k) : ITEM_NAME(s.k), many = s.n > 1 ? ` ×${s.n}` : '';
+  const items = [];
+  if (HL_FOOD[s.k] || s.k === 'fish') items.push({ t: 'Съесть', d: 'сытость и немного здоровья', main: true, f: () => coopSend({ t: 'use', slot: i }) });
+  if (GOODS[s.k]) {
+    items.push({ t: 'Положить на землю', d: 'рядом с героем', f: () => coopSend({ t: 'putdown', slot: i }) });
+    if (!GOODS[s.k].noStore) items.push({ t: 'Отнести на склад', d: 'герой сам сходит', f: () => coopSend({ t: 'stash', slot: i }) });
+  }
+  items.push({ t: 'Выбросить насовсем', d: 'вещь пропадёт', f: () => coopSend({ t: 'drop', slot: i }) });
+  gpMenu(nm + many, GOODS[s.k] ? s.k : 'bread', items, xy);
 }
 
 if (typeof HINTS !== 'undefined') {

@@ -704,7 +704,7 @@ function coopInvHtml() {
   const me = Coop.me;
   const inv = me ? me.inv : Array(10).fill(null);
   return `<div class="cp-inv">${inv.map((s, i) => s
-    ? `<div class="cp-slot has" data-coop="use" data-slot="${i}" title="${coopEsc(ITEM_NAME(s.k))} — клик: съесть, Shift+клик: выбросить">${coopEsc(String(ITEM_NAME(s.k)).slice(0, 5))}<i>${coopEsc(s.n)}</i></div>`
+    ? `<div class="cp-slot has" data-coop="use" data-slot="${i}" title="${coopEsc(ITEM_NAME(s.k))} — нажмите: съесть, положить, на склад, выбросить">${coopEsc(String(ITEM_NAME(s.k)).slice(0, 5))}<i>${coopEsc(s.n)}</i></div>`
     : '<div class="cp-slot"></div>').join('')}</div>`;
 }
 
@@ -780,6 +780,7 @@ function coopInitHud() {
 function coopSlotClick(el, e) {
   const slot = +el.dataset.slot;
   if (Coop.giveTo && el.closest('#cp-pop')) { coopSend({ t: 'give', to: Coop.giveTo, slot }); return; }
+  if (!e.shiftKey && typeof gpCoopSlotMenu === 'function') { gpCoopSlotMenu(slot, [e.clientX, e.clientY]); return; }   // меню вещи (gearpick.js)
   coopSend({ t: e.shiftKey ? 'drop' : 'use', slot });
 }
 
