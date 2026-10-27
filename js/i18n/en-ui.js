@@ -963,6 +963,8 @@ I18N.add('en', {
   "Построить: {0}": "Build: {0}",
   "Жителей": "Gnomes",
   "Пережить ночей": "Survive nights",
+  "Пережить ночь": "Survive the night", "Пережить {0} ночь": "Survive {0} nights", "Пережить {0} ночи": "Survive {0} nights", "Пережить {0} ночей": "Survive {0} nights",
+  "пережито ночей": "nights survived",
   "Произвести: {0}": "Produce: {0}",
   "Звание «{0}»": "Title \"{0}\"",
   "Победить тёмного мага Малгора": "Defeat the dark mage Malgor",

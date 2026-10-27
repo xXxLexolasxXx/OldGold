@@ -362,6 +362,7 @@ function* mdDrinkGen(u, inn) {
     if (inn.stock[mug] - inn.reserved[mug] > 0) {
       inn.stock[mug]--;
       moodPoke(u, 'beer', 12, 150);
+      u.braveUntil = Game.time + (mug === 'darkbeer' ? BRAVE_DARK : BRAVE_BEER);
       mdBump(u, 'soc', 0.4); mdBump(u, 'fun', 0.2);
       const M = mdOf(u); M.low = 0; M.m = Math.min(100, M.m + 12);
       if (Math.random() < Math.min(0.9, DRUNK_CHANCE * (mug === 'darkbeer' ? 2 : 1) * 0.7)) u.drunkAt = Game.time + 3 + Math.random() * 9;   // тоска — плохой закусон
@@ -693,4 +694,16 @@ function mdCardOn() { const u = Game.selUnit; return !!(u && u !== Game.hero && 
 
   const _start = startGame;
   startGame = function () { _start(); initMoodUI(); updateUI(true); };
+}
+
+// Пивная храбрость: после кружки гном не пугается нечисти — не бежит и не столбенеет, а бурчит и идёт по делам.
+// Вызовы с «кем пугают» (куры, гонимые прочь) не трогаем: там второй аргумент.
+if (typeof fleeGen === 'function' && typeof freezeGen === 'function') {
+  const _fl = fleeGen, _fr = freezeGen;
+  const braveGen = function* (u) {
+    floater(u.x, u.y - 1, ['Не боюсь!', 'Я и не такое пил!', 'Пф, нечисть…'][Math.floor(Math.random() * 3)], '#ffd070');
+    yield { wait: 0.6 };
+  };
+  fleeGen = function (u, a) { return !a && u.braveUntil > Game.time ? braveGen(u) : _fl(u, a); };
+  freezeGen = function (u) { return u.braveUntil > Game.time ? braveGen(u) : _fr(u); };
 }

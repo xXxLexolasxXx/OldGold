@@ -98,6 +98,7 @@ function* eatGen(u, inn) {
         inn.stock[mug]--;
         const dark = mug === 'darkbeer';
         u.food = Math.min(dark ? 1.4 : 1.2, u.food + (dark ? 0.4 : 0.2));
+        u.braveUntil = Game.time + (dark ? BRAVE_DARK : BRAVE_BEER);   // пивная храбрость (mood.js)
         // захмелел: через несколько секунд пути свалится спать
         if (Math.random() < Math.min(0.95, DRUNK_CHANCE * (dark ? 2 : 1) * fk)) u.drunkAt = Game.time + 3 + Math.random() * 9;
       }
