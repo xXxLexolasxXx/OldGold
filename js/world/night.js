@@ -351,7 +351,7 @@ function newEnt(p) {
 
 // есть ли рядом большой костёр: он отпугивает нечисть
 function nearBonfire(x, y, r) {
-  for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done' && Math.hypot(b.x + b.w / 2 - x, b.y + b.h / 2 - y) <= r) return true;
+  for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done' && Math.hypot(b.x + b.w / 2 - x, b.y + b.h / 2 - y) <= r * bonfireMul(b)) return true;
   return false;
 }
 
@@ -726,7 +726,7 @@ function nightLights(x0, y0, x1, y1) {
   ghostLights(L, x0, y0, x1, y1);
   for (const b of Game.buildings) {
     if (b.state !== 'done' || b.x + b.w < x0 - 3 || b.x > x1 + 3 || b.y + b.h < y0 - 3 || b.y > y1 + 3) continue;
-    if (b.type === 'bonfire') L.push([(b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE, BONFIRE_LIGHT, 1]);
+    if (b.type === 'bonfire') L.push([(b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE, BONFIRE_LIGHT * bonfireMul(b), 1]);
     else if (b.type === 'inn' || b.isStore() || (b.worker && b.worker.inside === b))
       L.push([(b.doorX + 0.5) * TILE, b.doorY * TILE, 36, 0.4]);                // окна и дверь светятся
   }

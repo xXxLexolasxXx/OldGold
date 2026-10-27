@@ -1084,12 +1084,12 @@ function drawBonfire(c, g) {
 
 // Пламя костра: по центру одно большое пламя (9 кадров, fire.js 'bonfire') закрывает середину и верх брёвен;
 // без дела (нет мусора) огня нет — в основании переливаются угольки
-function drawBonfireFlames(c, x, y, strong, seed) {
+function drawBonfireFlames(c, x, y, strong, seed, mul = 1) {
   const t = Game.time;
   if (strong) {
-    glow(c, x, y + 10, 130, '255,110,30', 0.18);
-    glow(c, x, y - 14, 80, '255,160,60', 0.3);
-    drawFire(c, x, y + 2, 'bonfire', t, seed, { glow: 0, sparks: 16 });
+    glow(c, x, y + 10, 130 * mul, '255,110,30', 0.18);
+    glow(c, x, y - 14, 80 * mul, '255,160,60', 0.3);
+    drawFire(c, x, y + 2, 'bonfire', t, seed, { glow: 0, sparks: Math.round(16 * mul), scale: mul > 1 ? mul : undefined });
     return;
   }
   glow(c, x, y + 4, 44, '255,90,24', 0.1 + 0.03 * Math.sin(t * 2 + seed));
