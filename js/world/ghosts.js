@@ -53,6 +53,7 @@ function ghInit(g) {
   if (!g || g.kind === 'reaper') return g;
   if (g.mhp == null) { g.mhp = ghMaxHp(); g.hp = g.mhp; }
   if (!g.look) g.look = Math.random() < 0.5 ? 'A' : 'B';          // пиксельный облик (ghostpx.js): колпак или дед — вперемешку
+  if (g.rag == null) g.rag = ['', 'T1', 'T2'][(Math.random() * 3) | 0];   // саван: гладкий, полосы или рваньё — вперемешку
   return g;
 }
 // живой и видимый обычный призрак — его можно бить
@@ -447,7 +448,7 @@ function drawGhosts(c) {
       const pf = pm === 'die' ? fzDieF(g.alpha, g.da) : pm === 'atk' ? Math.floor(g.atkT / GHOST_ATK_DUR * GPX_N.atk) : Math.floor(t * GPX_FPS + g.ph * 1.43) % GPX_N[pm];
       if (g.slain) c.globalAlpha = Math.min(1, flick);
       c.imageSmoothingEnabled = false;
-      c.drawImage(ghostPxFrame(g, GHOST_PX.includes(g.look) ? g.look : GHOST_PX[0], pm, pf), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
+      c.drawImage(ghostPxFrame(g, GHOST_PX.includes(g.look) ? g.look : GHOST_PX[0], pm, pf, g.rag === 'T1' || g.rag === 'T2' ? g.rag : ''), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
     }
     else blitFine(c, ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
     if (grab && g.vsnap) { c.imageSmoothingEnabled = false; ghDrawVictim(c, g, Math.min(8, gi), g.alpha, px, py); }

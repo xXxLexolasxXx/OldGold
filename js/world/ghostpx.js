@@ -120,7 +120,7 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
   claw(AF, -1, true);
 
   // ---- одна форма: саван, плечи, ближняя рука, голова, колпак / капюшон, борода
-  // саван: гладкий или лохмотья (o.rag — пробный лист tools/pxghost/ghostrags.html): T1 полосы, T2 рваньё с дырами — как у жнеца
+  // саван: гладкий или лохмотья (o.rag, у каждого призрака свой — g.rag): T1 полосы, T2 рваньё с дырами; лист tools/pxghost/ghostrags.html
   const caps0 = DS_chain(spine).map(q => q.f), sho = ell(lean * 0.6, 17, 30, 14);
   const shroud0 = (x, y) => { let u = sho(x, y); for (const f of caps0) u = DS_smin(u, f(x, y), 7); return u; };
   const vn = (x, y, sc) => {
@@ -132,17 +132,17 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
   const shroud = o.rag === 'T1' ? (x, y) => {
     let d = shroud0(x, y);
     if (y > 24) d += Math.max(0, Math.sin(y * 0.6 + hsh(Math.floor(y / 5)) * 4)) * 2.6 * Math.min(1, (y - 24) / 24);
-    if (y > 40) {
-      const xs = x - sway(y, 2.5) * (y - 40) / 50, i = Math.floor((xs + 200) / 6.5), fx = ((xs + 200) % 6.5) / 6.5;
-      const end = tailEnd - 6 - hsh(i * 3.3) * 52;
+    if (y > 52) {
+      const xs = x - sway(y, 2.5) * (y - 52) / 50, i = Math.floor((xs + 200) / 6.5), fx = ((xs + 200) % 6.5) / 6.5;
+      const end = tailEnd - 4 - hsh(i * 3.3) * 26;                                  // низ выгрызен неглубоко
       if (y > end) d = Math.max(d, (y - end) * 0.8);
-      if (fx < 0.17 || fx > 0.93) d = Math.max(d, Math.min(3.5, (y - 40) * 0.08));
+      if (fx < 0.14 || fx > 0.95) d = Math.max(d, Math.min(2.5, (y - 52) * 0.08));
     }
     return d;
   } : o.rag === 'T2' ? (x, y) => {
     let d = shroud0(x, y) + (vn(x + sway(y, 3), y, 6) - 0.45) * 6 + (vn(x * 1.7, y * 1.7, 3.5) - 0.5) * 2.5;
     for (let i = 0; i < 5; i++) {
-      const hx = lean * 0.5 + (hsh(i * 7.7 + 1) - 0.5) * 34, hy = 32 + hsh(i * 3.9 + 2) * 52, r = 2.5 + hsh(i * 5.1) * 3.5;
+      const hx = lean * 0.5 + (hsh(i * 7.7 + 1) - 0.5) * 34, hy = 32 + hsh(i * 3.9 + 2) * 52, r = 1.6 + hsh(i * 5.1) * 2.2;                                                                        // дыры небольшие
       const dh = r - Math.hypot((x - hx) * (1 + (vn(x, y, 3) - 0.5) * 0.6), y - hy);
       if (dh > -2) d = Math.max(d, dh * 1.6);
     }
@@ -267,9 +267,9 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
 }
 
 // Гибель: саван тает снизу вверх и поднимается холодным туманом, огоньки глаз гаснут последними; t — 0..1
-function ghostPxDie(v, t) {
+function ghostPxDie(v, t, rag) {
   const { SH } = GPX, MI = [SH[2], SH[3], SH[4], SH[5], SH[6]], lift = t * t * 30, wv = y => Math.sin(y * 0.09 + t * 9) * t * 6;
-  return fzPxDie(() => ghostPx(v, 'idle', 0), 180, 228, 90, 96, t, {
+  return fzPxDie(() => ghostPx(v, 'idle', 0, 0, { rag }), 180, 228, 90, 96, t, {
     map: (x, y) => [x + wv(y), y + lift],
     s: (x, y) => fzCl((126 - y) / 220),
     mat: (c, x, y, val) => fzRamp(MI, c, Math.max(0.15, 0.6 - Math.max(0, val) * 1.2)),
@@ -293,21 +293,21 @@ function ghostPxDie(v, t) {
 // Кадры (выбор владельца — шаг 12 кадров на петлю парения 1,2 с, 10 к/с; ролики promo/ref/ghost-px-2026-10-27): парение и «задобрен» — 12,
 // пугает — 9 (рот раскрыт), удар — 9 (замах 3, бросок 3, отдача 3), рана — 1, бегство — 6, гибель — 6. Холст 3× мира, 1:1 без сглаживания.
 const GPX_N = { idle: 12, boo: 9, calm: 12, atk: 9, hurt: 1, flee: 6, die: 6 }, GPX_FPS = 10;
-function ghostPxSprite(v, mood, f) {
+function ghostPxSprite(v, mood, f, rag = '') {
   f = Math.max(0, Math.min(GPX_N[mood] - 1, f | 0));
-  return fzPxSprite('gh' + v + mood + f, 60, 76, 30, 32, () => mood === 'die' ? ghostPxDie(v, (f + 1) / 6)
-    : ghostPx(v, mood, mood === 'atk' ? 0 : f / GPX_N[mood], mood === 'atk' ? f / (GPX_N.atk - 1) : 0));
+  return fzPxSprite('gh' + v + mood + f + rag, 60, 76, 30, 32, () => mood === 'die' ? ghostPxDie(v, (f + 1) / 6, rag)
+    : ghostPx(v, mood, mood === 'atk' ? 0 : f / GPX_N[mood], mood === 'atk' ? f / (GPX_N.atk - 1) : 0, { rag }));
 }
 
 // Кадр для игры по общему бюджету новых спрайтов (spriteBudgetOk, people.js): кадр строится десятки миллисекунд,
 // поэтому новый — только если в этом кадре рендера ещё есть время; иначе рисуется прошлый кадр этого призрака.
 const GPX_LAST = new WeakMap();
-function ghostPxFrame(g, v, mood, f) {
+function ghostPxFrame(g, v, mood, f, rag = '') {
   f = Math.max(0, Math.min(GPX_N[mood] - 1, f | 0));
-  const have = FZ_CVC['gh' + v + mood + f], last = GPX_LAST.get(g);
+  const have = FZ_CVC['gh' + v + mood + f + rag], last = GPX_LAST.get(g);
   if (have) { GPX_LAST.set(g, have); return have; }
   if (last && typeof spriteBudgetOk === 'function' && !spriteBudgetOk(true)) return last;
-  const t0 = performance.now(), cv = ghostPxSprite(v, mood, f);
+  const t0 = performance.now(), cv = ghostPxSprite(v, mood, f, rag);
   if (typeof spriteSpent === 'function') spriteSpent(t0);
   GPX_LAST.set(g, cv);
   return cv;
