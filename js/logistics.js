@@ -416,6 +416,20 @@ function dispatchWorkers() {
     u.idleFlag = false; u.idleStreak = 0;
     u.proc = null; u.action = null; u.anim = null;
   }
+  // вторые места (здание 3-го уровня, таблица WORK_SLOTS в levels.js) — только когда у всех зданий уже есть первый
+  if (typeof workSlots !== 'function') return;
+  for (const b of bs) {
+    if (b.state !== 'done' || b.removed || !b.def.worker || !b.worker || workSlots(b) < 2) continue;
+    let n = bldStaff(b).length;
+    while (n < workSlots(b)) {
+      const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf && !u.brk && !u.dead);
+      const u = takeNearest(idle, b.doorX, b.doorY);
+      if (!u) break;
+      u.home = b; n++;
+      u.idleFlag = false; u.idleStreak = 0;
+      u.proc = null; u.action = null; u.anim = null;
+    }
+  }
 }
 
 // Бронь объектов на карте (o.res у деревьев, глыб, полей, брёвен, урн; ROCKMINE.res у скалы) снимает тот, кто её
