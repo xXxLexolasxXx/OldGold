@@ -1785,9 +1785,9 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
       const a = k.alpha;
       if (a <= 0) return;
       if (k.state === 'hide' || k.state === 'back') {
-        fzReeds(c, k.x, k.y, k.ph, a);
+        if (!k.well) fzReeds(c, k.x, k.y, k.ph, a);
         if (Math.sin(k.ph * 0.7) > 0.2) { c.save(); c.globalAlpha *= a; c.fillStyle = '#f0f26a'; c.fillRect(Math.round(k.x * TILE - 4), Math.round(k.y * TILE - 6), 2, 2); c.fillRect(Math.round(k.x * TILE + 3), Math.round(k.y * TILE - 6), 2, 2); c.restore(); }
-        fzRipple(c, k.x, k.y, k.ph, a, 12);
+        if (!k.well) fzRipple(c, k.x, k.y, k.ph, a, 12);
       } else {
         const rise = k.state === 'chase' || k.state === 'drag';
         fzShadow(c, k.x, k.y, 8, 0.25 * a);
