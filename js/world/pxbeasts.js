@@ -416,6 +416,37 @@ function pbTrArmDetail(K, A, SK, kn, seed) {
     pbBall(K, x, y, 2.6, 2.4, SK.slice(1, 4), { amb: 0.5 }); pbDot(K, x - 0.6, y - 0.8, SK[4], 0.8);
   }
 }
+// нога тролля одной «глиной»: G — бедро (sx, sy), колено (ex, ey), щиколотка (hx, hy); f — «перёд» в плоскости рисунка (профиль),
+// o — наружу (анфас). Квадрицепс, задняя мышца/внутренняя головка, коленная чашечка, икра, узкая щиколотка
+function pbTrLegPrims(G, f, o, foot) {
+  const mx = (G.sx + G.ex) / 2, my = (G.sy + G.ey) / 2, cx = G.ex + (G.hx - G.ex) * 0.35, cy = G.ey + (G.hy - G.ey) * 0.35, ix = G.sx + (G.ex - G.sx) * 0.7, iy = G.sy + (G.ey - G.sy) * 0.7;
+  const pr = [
+    { c: [[G.sx, G.sy, 22], [mx, my, 18.5], [G.ex, G.ey, 15], [cx, cy, 15.5], [G.ex + (G.hx - G.ex) * 0.82, G.ey + (G.hy - G.ey) * 0.82, 10.5], [G.hx, G.hy, 12]] },
+    { e: [mx + f[0] * 7 + o[0] * 8, my + f[1] * 7 + o[1] * 8, 14, 16] },                                // квадрицепс / наружная мышца бедра
+    { e: [ix - f[0] * 7 - o[0] * 6, iy - f[1] * 7 - o[1] * 6, 11.5, 12] },                              // задняя / внутренняя головка над коленом
+    { e: [G.ex + f[0] * 10, G.ey + f[1] * 10 - (f[0] ? 0 : 2), 7.5, 7] },                               // коленная чашечка
+    { e: [cx - f[0] * 7 + o[0] * 6, cy - f[1] * 7, 11.5, 14] },                                         // икра
+    { e: foot },
+  ];
+  if (o[0]) pr.push({ e: [cx - o[0] * 5, cy + 2, 9.5, 12] });                                          // внутренняя икра (анфас)
+  return pr;
+}
+// фактура ног: складки под коленом, борозды между мышцами бедра и икры, морщины на щиколотке
+function pbTrLegTex(legs) {
+  return (x, y) => {
+    let v = 0;
+    for (const G of legs) {
+      const de = Math.hypot(x - G.ex, y - G.ey - 6);
+      if (de < 12 && Math.abs(Math.sin(de * 1.4)) > 0.92 && y > G.ey) v -= 0.14;                                    // складки под коленом
+      const tx = G.ex - G.sx, ty = G.ey - G.sy, tl = Math.hypot(tx, ty) || 1, t = ((x - G.sx) * tx + (y - G.sy) * ty) / (tl * tl), sd = ((x - G.sx) * ty - (y - G.sy) * tx) / tl;
+      if (t > 0.2 && t < 0.85 && Math.abs(sd + 1 - Math.sin(t * 3.14) * 5) < 0.8) v -= 0.15;                         // борозда на бедре
+      const bx = G.hx - G.ex, by = G.hy - G.ey, bl = Math.hypot(bx, by) || 1, u = ((x - G.ex) * bx + (y - G.ey) * by) / (bl * bl), su = ((x - G.ex) * by - (y - G.ey) * bx) / bl;
+      if (u > 0.15 && u < 0.6 && Math.abs(su - 2 - Math.sin(u * 5.2) * 4) < 0.7) v -= 0.13;                         // борозда на икре
+      if (u > 0.78 && u < 0.98 && ((u * 50) % 1) < 0.18 && Math.abs(su) < 11) v -= 0.09;                            // морщины на щиколотке
+    }
+    return v;
+  };
+}
 // фактура руки тролля поверх кожи: складки у локтя, вздутая жила на предплечье, борозда между мышцами плеча, морщины у запястья
 function pbTrArmTex(texSkin, A) {
   const fx = A.hx - A.ex, fy = A.hy - A.ey, fl = Math.sqrt(fx * fx + fy * fy) || 1, ux = A.ex - A.sx, uy = A.ey - A.sy, ul = Math.sqrt(ux * ux + uy * uy) || 1;
@@ -480,7 +511,8 @@ function pbTroll(K, P, kind) {
   // геометрия: ноги, руки, голова
   const legG = (hx, sgn) => { const kx = hx + sgn * sw * 12 + 6, fx = hx + sgn * sw * 20 + 4; return { hx, kx, ky: -54, fx }; };
   const armG = (sx, sy, ang, len1, len2, grip) => { const ex = sx + Math.cos(ang) * len1, ey = sy + Math.sin(ang) * len1, a2 = ang - 0.35 + (grip ? 0.2 : 0); return { sx, sy, ex, ey, a2, hx: ex + Math.cos(a2) * len2, hy: ey + Math.sin(a2) * len2, grip }; };
-  const legPrims = L => [{ c: [[L.hx, -96, 22], [L.kx, L.ky, 16.5], [L.fx, -14, 13]] }, { e: [L.fx + 12, -8, 25, 10] }];
+  const legGeo = L => ({ sx: L.hx, sy: -96, ex: L.kx, ey: L.ky, hx: L.fx, hy: -14 });
+  const legPrims = L => pbTrLegPrims(legGeo(L), [1, 0], [0, 0], [L.fx + 12, -8, 25, 10]);
   const armDir = A => { const ux = A.ex - A.sx, uy = A.ey - A.sy, l = Math.hypot(ux, uy) || 1; return [uy / l, -ux / l]; };   // «перёд» плеча (бицепс), локоть — назад
   const armPrims = A => { const bn = armDir(A); return pbTrArmPrims(A, A.hx + Math.cos(A.a2) * 6, A.hy + Math.sin(A.a2) * 6, bn, [-bn[0], -bn[1]]); };
   // пальцы рук и ног — поверх, узловатые, с когтями
@@ -516,8 +548,9 @@ function pbTroll(K, P, kind) {
   // ---- дальние нога и рука: отдельная, более тёмная «глина» за телом
   const INK0 = [0, 0, 0];
   pbBlob(K, armPrims(farA).map(p => (p.e ? { e: [p.e[0], p.e[1], p.e[2] + 3.4, p.e[3] + 3.4] } : { c: p.c.map(([x, y, r]) => [x, y, r + 3.4]) })), [INK0], { amb: 0.5, k: 4 });   // тёмная обводка дальней руки
-  pbBlob(K, [...legPrims(farL), ...armPrims(farA)], SKD, { amb: 0.36, k: 6, tex: pbTrArmTex(texSkin, farA) });
+  pbBlob(K, [...legPrims(farL), ...armPrims(farA)], SKD, { amb: 0.36, k: 6, tex: ((ta, tl) => (x, y) => ta(x, y) + tl(x, y))(pbTrArmTex(texSkin, farA), pbTrLegTex([legGeo(farL)])) });
   toes(farL, SKD);
+  pbTrArmDetail(K, legGeo(farL), SKD, [1, 0], 41);
   fingers(farA, SKD);
   pbTrArmDetail(K, farA, SKD, (d => [-d[0], -d[1]])(armDir(farA)), 11);
   armFur(farA, HR.slice(0, 3));
@@ -526,7 +559,11 @@ function pbTroll(K, P, kind) {
     { e: [-24, -170, 32, 30] }, { e: [2, -140, 56, 52] },
     { c: [[16, -166, 30], [hx - 12, hy + 4, 26]] },
     ...legPrims(nearL),
-  ], SK, { amb: 0.46, k: 14, depth: 22, tex: texSkin });
+  ], SK, { amb: 0.46, k: 14, depth: 22, tex: ((tl) => (x, y) => texSkin(x, y) + tl(x, y))(pbTrLegTex([legGeo(nearL)])) });
+  // горб: бугры позвонков по хребту, складки кожи, бородавки
+  for (let i = 0; i < 7; i++) { const th = Math.PI * 1.0 + i * 0.12, x = -24 + Math.cos(th) * 30, y = -170 + Math.sin(th) * 28, r = 4.8 - i * 0.25; pbBall(K, x + 1, y + 1, r, r * 0.9, SK.slice(1, 5), { amb: 0.55 }); pbDot(K, x - 0.5, y - 1.2, SK[4], 1); }
+  for (const rr of [17, 23]) { const pts = []; for (let i = 0; i <= 8; i++) { const th = Math.PI * 1.08 + i * 0.05 + rr * 0.004; pts.push([-24 + Math.cos(th) * rr, -170 + Math.sin(th) * rr * 0.95, 0.8]); } K.path(pts, () => SK[1], false); }
+  for (let i = 0; i < 5; i++) { const x = -44 + K.hsh(i * 4.3) * 36, y = -186 + K.hsh(i * 6.7) * 34; pbBall(K, x, y, 2.4, 2.2, SK.slice(1, 4), { amb: 0.5 }); pbDot(K, x - 0.6, y - 0.8, SK[4], 0.8); }
   // голова — своя «глина» поверх шеи: череп, челюсть, нос сливаются между собой, но лицо читается
   pbBlob(K, [{ c: [[18, -164, 28], [hx - 12, hy + 6, 25]] }, { e: [hx - 4, hy + 2, 32, 28] }, { e: [hx + 12, hy + 16 + jd * 0.42, 24, 13.5] }, { e: [hx + 31, hy + 4, 13, 12] }, { e: [hx + 8, hy - 10, 17, 7] }], SK, { amb: 0.5, k: 11, depth: 16, tex: texSkin });
   // брюхо светлее, вплавлено дизером; складки, пуп
@@ -535,6 +572,7 @@ function pbTroll(K, P, kind) {
   // набедренная повязка поверх бёдер
   pbTrLoin(K, T, kind, -52, 46, -104, -4 / 98);
   toes(nearL, SK);
+  pbTrArmDetail(K, legGeo(nearL), SK, [1, 0], 53);
   // приметы вида: камни с мхом, космы мха по горбу, тина
   if (kind === 'trollS') for (const [x, y, r] of [[-40, -190, 9], [-20, -176, 6], [30, -150, 7], [-54, -150, 6]]) { pbBall(K, x, y, r + 2, r, [[90, 76, 56], [130, 112, 86], [168, 150, 120]], { amb: 0.5 }); pbBall(K, x - 2, y - 4, r * 0.6, r * 0.5, T.moss, { amb: 0.5, fade: 0.4 }); }
   else for (let i = 0; i < 7; i++) {                                                     // мох пучками по горбу, разной величины
@@ -633,7 +671,7 @@ function pbTrollF(K0, P, kind) {
   const INK = [0, 0, 0];
   pbShadow(K, 88);
   // ---- геометрия: ноги (на ходьбе поднимаются поочерёдно), руки, голова
-  const leg = s => { const lift = Math.max(0, sw * s) * 26; return { s, lift, prims: [{ c: [[s * 26, -96, 24], [s * 33, -52 - lift * 0.6, 17], [s * 34, -15 - lift, 14]] }, { e: [s * 36, -8 - lift, 21, 10] }] }; };
+  const leg = s => { const lift = Math.max(0, sw * s) * 26, G = { sx: s * 26, sy: -96, ex: s * 33, ey: -52 - lift * 0.6, hx: s * 34, hy: -15 - lift }; return { s, lift, G, prims: pbTrLegPrims(G, [0, 0], [s, 0], [s * 36, -8 - lift, 21, 10]) }; };
   const L1 = leg(-1), L2 = leg(1);
   const arm = (sx, sy, ex, ey, hx, hy) => { const A = { sx, sy, ex, ey, hx, hy }, s = Math.sign(sx); A.kn = [s, 0]; A.prims = pbTrArmPrims(A, hx, hy + 4, [-s * 0.4, 0], A.kn); return A; };   // локоть наружу
   // оружейная рука (справа): висит / замах над головой / удар наискось / возврат
@@ -644,7 +682,8 @@ function pbTrollF(K0, P, kind) {
   // ---- оружие поднято над головой — рисуется до тела
   if (up || a < -0.3) pbTrWeapon(K, T, W.hx, W.hy - 4, wd);
   // ---- тело одной «глиной»: таз, брюхо, плечевой пояс с горбом, ноги
-  pbBlob(K, [{ e: [0, -104, 46, 28] }, { e: [0, -136, 58, 44] }, { e: [0, -170, 66, 26] }, { c: [[-62, -170, 22], [62, -170, 22]] }, ...L1.prims, ...L2.prims], SK, { amb: 0.46, k: 14, depth: 22, tex: texSkin });
+  pbBlob(K, [{ e: [0, -104, 46, 28] }, { e: [0, -136, 58, 44] }, { e: [0, -170, 66, 26] }, { c: [[-62, -170, 22], [62, -170, 22]] }, ...L1.prims, ...L2.prims], SK, { amb: 0.46, k: 14, depth: 22, tex: ((tl) => (x, y) => texSkin(x, y) + tl(x, y))(pbTrLegTex([L1.G, L2.G])) });
+  for (const L of [L1, L2]) pbTrArmDetail(K, L.G, SK, [0, -0.2], L.s > 0 ? 61 : 67);
   pbBall(K, 0, -128, 38, 34, T.BE, { amb: 0.42, fade: 0.5, clip: (x, y) => (x / 52) ** 2 + ((y + 134) / 44) ** 2 < 0.9, tex: (x, y) => (Math.abs(((y + 128) % 11)) < 1 && Math.abs(x) < 26 ? -0.14 : 0) });
   pbDot(K, 0, -116, T.BE[0], 1.4);
   pbTrLoin(K, T, kind, -52, 52, -110, 0);
@@ -681,7 +720,13 @@ function pbTrollF(K0, P, kind) {
   }
   // ---- лицо: тень под бровью, глаза, ноздри, рот, клыки-бивни (наружу), верхние клычки
   pbChain(K, [[-24, hy - 6, 1.6], [0, hy - 3, 1.4], [24, hy - 6, 1.6]], SK.slice(0, 2));
-  for (const s of [-1, 1]) pbEye(K, s * 12, hy - 1, 3.4, P, [236, 200, 70], [120, 20, 10], SK[0]);
+  for (const s of [-1, 1]) {                                                                   // злые глаза: брови сведены к переносице, накрывают глаз сверху, мешки снизу
+    pbEye(K, s * 12, hy - 1, 3.4, P, [250, 170, 40], [150, 10, 6], SK[0]);
+    K.path([[s * 3, hy - 3, 2.8], [s * 12, hy - 6.5, 2.6], [s * 22, hy - 10, 1.8]], () => SK[0]);
+    K.path([[s * 5, hy - 6.5, 1.1], [s * 16, hy - 11, 0.8]], () => SK[3], false);
+    K.path([[s * 7, hy + 4, 0.8], [s * 17, hy + 3, 0.7]], () => SK[1]);
+  }
+  K.path([[0, hy - 7, 0.9], [0, hy - 2, 0.7]], () => SK[1]); K.path([[-3, hy - 8, 0.7], [-2, hy - 3, 0.6]], () => SK[1]); K.path([[3, hy - 8, 0.7], [2, hy - 3, 0.6]], () => SK[1]);   // морщины на переносице
   pbDot(K, -4, hy + 10, SK[0], 1.6); pbDot(K, 4, hy + 10, SK[0], 1.6); pbDot(K, 2, hy + 1, SK[3], 1.4);
   if (open) pbBall(K, 0, hy + 20, 13, 4 + P.mouth * 4, [[30, 8, 6], [60, 18, 14], [90, 30, 22]], { amb: 0.3 });
   else K.path([[-15, hy + 19, 1], [15, hy + 19, 1]], () => SK[0]);
