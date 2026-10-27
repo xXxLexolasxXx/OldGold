@@ -1,4 +1,4 @@
-// Картинки «было → стало» для поста: старый спрайт (tools/buildart/before/*.png, снят до переделки) и новый из игры.
+// Картинки «было → стало» для поста («стало» — только 3-й уровень, по просьбе владельца): старый спрайт (tools/buildart/before/*.png, снят до переделки) и новый из игры.
 // node beforeafter.js [порт] → promo/posts/buildings-*.png
 const path = require('path'), fs = require('fs');
 const { chromium } = require('D:/для игры/feod/tools/browsers/node_modules/playwright-core');
@@ -17,7 +17,7 @@ const b64 = f => 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname,
     const buildingSprite0 = buildingSprite; const bs = (...a) => ({ canvas: crop(buildingSprite0(...a).canvas) });
     for (const lv of [1, 2, 3]) o['inn' + lv] = bs('inn', 0, lv).canvas.toDataURL();
     for (const lv of [1, 3]) o['storehouse' + lv] = bs('storehouse', 0, lv).canvas.toDataURL();
-    for (let v = 0; v < 8; v++) o['house' + v] = bs('house', 0, 1, undefined, v).canvas.toDataURL();
+    for (let v = 0; v < 8; v++) o['house' + v] = bs('house', 0, 3, undefined, v).canvas.toDataURL();
     return o;
   });
   const card = (title, before, afters, file) => `
@@ -30,8 +30,8 @@ const b64 = f => 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname,
           <div style="display:flex;gap:18px;align-items:flex-end">${afters.map(a => `<img class="cr" src="${a}" style="image-rendering:pixelated">`).join('')}</div></div>
       </div></div>`;
   const shots = [
-    ['Трактир', b64('inn.png'), [after.inn1, after.inn2, after.inn3], 'buildings-inn.png'],
-    ['Склад', b64('storehouse.png'), [after.storehouse1, after.storehouse3], 'buildings-store.png'],
+    ['Трактир', b64('inn.png'), [after.inn3], 'buildings-inn.png'],
+    ['Склад', b64('storehouse.png'), [after.storehouse3], 'buildings-store.png'],
     ['Дом', b64('house.png'), [0, 1, 2, 3].map(v => after['house' + v]), 'buildings-houses-a.png'],
     ['Ещё дома', null, [4, 5, 6, 7].map(v => after['house' + v]), 'buildings-houses-b.png'],
   ];
