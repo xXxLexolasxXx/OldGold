@@ -60,3 +60,4 @@ if (!r3.err) {
 ok(!sim.errors.length, 'исключения: ' + sim.errors.slice(0, 2).join(' | '));
 if (fails.length) { console.log(`✗ отчёты тестеров: ${fails.length} ошибок`); process.exit(1); }
 console.log('✓ отчёты тестеров: летописец без шпиля, значки в 11 строк, давние кучки на дороге');
+process.exit(0);
