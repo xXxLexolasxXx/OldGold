@@ -295,16 +295,47 @@ function pbZhabF(K, P) {
     for (let k = -8; k <= 8; k++) K.P(ex + k, ey - 7 + lid + Math.abs(k) * 0.14 + (s * k > 0 ? Math.abs(k) * 0.08 : 0), C.SK[0]);   // веко ниже к внешнему краю — взгляд исподлобья
   }
 
-  // ---------- капюшон аркой: подшитый край над глазами, складки, полы закрывают плечи ----------
-  K.R(-58, hy - 42, 58, -56, (x, y) => {
-    const out = (x / 46) ** 2 + ((y - hy + 4) / 38) ** 2 <= 1 || (y > hy && Math.abs(x) < 44 + (y - hy) * 0.3);       // полы ложатся на плечи скатом
-    const hole = (x / 36) ** 2 + ((y - hy - 4) / 27) ** 2 <= 1;
-    if (!out || hole) return null;
-    const rimD = (x / 36) ** 2 + ((y - hy - 4) / 27) ** 2;
-    if (rimD < 1.22) return pbPick(C.CL, 0.82 - (y - hy + 30) / 60 * 0.3, K.dth(x, y));                     // толстый подшитый край
-    const fold = Math.sin(Math.atan2(y - hy, x) * 9) * 0.16 + (K.hsh(Math.floor(Math.atan2(y - hy, x) * 14) * 3.1) - 0.5) * 0.14;
-    return pbPick(C.CL, 0.56 - (y - hy + 40) / 80 * 0.3 + fold, K.dth(x, y));
-  });
+  // ---------- капюшон: мятая грубая ткань, не дуга ----------
+  // контур неровный: колпак съехал набок и примят, макушка торчит острым углом; ткань провисает складками,
+  // край обтрёпан. Фактура: грубое плетение, швы-складки, светлые потёртости, заплата с крупными стежками
+  {
+    const cx = -3, cy = hy - 4;                                                               // колпак чуть съехал влево
+    const outR = a => 1 + Math.sin(a * 3 + 0.7) * 0.05 + Math.sin(a * 7 + 2.1) * 0.035 + Math.sin(a * 13) * 0.018;   // вмятины по контуру
+    const holeR = a => 1 + Math.sin(a * 4 + 1.3) * 0.045 + Math.sin(a * 9) * 0.02;                                   // край у лица тоже неровный
+    const tip = (x, y) => { const ty = hy - 52, t = (y - ty) / 16; return t >= 0 && t <= 1 && Math.abs(x - (-12 + t * 6)) < t * 9; };   // острый кончик на макушке
+    const crease = (x, y) => {                                                                // глубокие складки — изогнутые линии
+      for (const [x0, k, w] of [[-30, 0.5, 1.6], [-16, 0.25, 1.2], [8, -0.18, 1.4], [24, -0.45, 1.6], [36, -0.7, 1.2]]) {
+        const lx = x0 + (y - (hy - 36)) * k + Math.sin(y * 0.18 + x0) * 2.2;
+        if (Math.abs(x - lx) < w) return -0.34 + Math.abs(x - lx) / w * 0.2;
+        if (x - lx > w && x - lx < w + 2.4) return 0.16;                                      // освещённый гребень складки
+      }
+      return 0;
+    };
+    K.R(-62, hy - 54, 62, -56, (x, y) => {
+      const ax = x - cx, ay = y - cy, a = Math.atan2(ay, ax);
+      const r1 = Math.hypot(ax / 46, ay / 39) / outR(a);
+      const fray = y < hy - 4 && r1 > 0.96 && K.hsh(Math.floor(a * 60) * 2.3) > 0.62;        // обтрёпанный край — выщерблины
+      let out = (r1 <= 1 && !fray) || tip(x, y) || (y > hy && Math.abs(x - cx * 0.5) < 44 + (y - hy) * 0.3 + Math.sin(y * 0.6 + x * 0.1) * 1.5);
+      const hd = Math.hypot(x / 36, (y - hy - 4) / 27) / holeR(Math.atan2(y - hy - 4, x));
+      if (!out || hd <= 1) return null;
+      if (hd < 1.16 + Math.sin(Math.atan2(y - hy - 4, x) * 5) * 0.05) {                       // подшитый край: толще и светлее, с тёмным швом
+        if (Math.abs(hd - 1.11) < 0.012 && ((x + y) & 3) === 0) return C.CL[0];                 // стежки по шву
+        return pbPick(C.CL, 0.78 - (y - hy + 30) / 60 * 0.3 + (K.hsh(Math.floor(x / 2) * 1.7) - 0.5) * 0.18, K.dth(x, y));
+      }
+      // заплата на правом боку (слева от зрителя): ткань светлее, стежки по кромке
+      const px = x + 34, py = y - hy + 14;
+      if (px > -7 && px < 7 && py > -8 && py < 7) {
+        if ((px < -5 || px > 5 || py < -6 || py > 5) && ((x + y) & 1)) return C.LE[0];
+        return pbPick(C.LE, 0.62 + (K.hsh(x * 3.1 + y) - 0.5) * 0.2, K.dth(x, y));
+      }
+      const weave = (((x >> 1) + (y >> 1)) & 1 ? 0.06 : -0.06) + ((x % 3 === 0) ? -0.05 : 0);   // грубое плетение
+      const wear = K.hsh(Math.floor(x / 5) * 7.3 + Math.floor(y / 4) * 3.1) > 0.86 ? 0.2 : 0;   // потёртости
+      const sag = Math.sin(a * 6 + 0.4) * 0.1;                                                    // провисы между складками
+      return pbPick(C.CL, 0.52 - (y - hy + 40) / 80 * 0.32 + crease(x, y) + weave + wear + sag, K.dth(x, y));
+    });
+    // нитки, торчащие из обтрёпанного края
+    for (let k = 0; k < 9; k++) { const a = -2.9 + k * 0.32, r = outR(a), x = cx + Math.cos(a) * 46 * r, y = cy + Math.sin(a) * 39 * r; if (K.hsh(k * 5.7) > 0.4) K.path([[x, y, 0.5], [x + Math.cos(a) * 3, y + Math.sin(a) * 3 + 1, 0.4]], () => C.CL[1]); }
+  }
   for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const x = s * (30 + i * 6), y = -57; pbPoly(K, [[x - 3, y], [x + 3, y], [x + s * 2 + wing, y + 8 + K.hsh(i + s) * 6]], C.CL); }   // рваный край пол над руками
 
   // ---------- шарф под челюстью с узлом ----------
