@@ -39,11 +39,19 @@ function fyMove(o, tx, ty, spd, dt) {
 
 // ---------- Спрайты ----------
 const fyCache = new Map();
+// Мелкий пиксель (PX_FINE, pixel.js) для дракона, грифона и эндермена: кисти fyE/fyL/fyP/fyD/fyOutline
+// растеризуют на сетке FY_Q клеток на игровой пиксель — те же формы, пиксель в FY_Q раз мельче.
+let FY_Q = 1;
+const FY_FINE = /^(dra2|gri3|end2)/;
 function fySpr(key, w, h, draw) {
   let cv = fyCache.get(key);
   if (cv) return cv;
-  cv = mkCanvas(w, h);
-  draw(cv.getContext('2d'));
+  const q = PX_FINE > 1 && FY_FINE.test(key) ? PX_FINE : 1;
+  cv = mkCanvas(w * q, h * q);
+  const c = cv.getContext('2d');
+  if (q > 1) { c.scale(q, q); cv.fine = q; }
+  FY_Q = q;
+  try { draw(c); } finally { FY_Q = 1; }
   fyCache.set(key, cv);
   return cv;
 }
@@ -57,7 +65,8 @@ function fyBlit(c, spr, px, py, face = 1, alpha = 1, scale = 1) {
   c.translate(Math.round(px), Math.round(py));
   if (face < 0) c.scale(-1, 1);
   if (scale !== 1) c.scale(scale, scale);
-  c.drawImage(spr, -Math.round(spr.width / 2), -spr.height);
+  if (spr.fine > 1) { const W = spr.width / spr.fine, H = spr.height / spr.fine; blitFine(c, spr, -Math.round(W / 2), -H, W, H); }
+  else c.drawImage(spr, -Math.round(spr.width / 2), -spr.height);
   c.restore();
   c.imageSmoothingEnabled = R.smooth;
 }
@@ -68,29 +77,36 @@ function fyShadow(c, px, py, rx, a = 0.3) {
 // ---------- Растеризатор: эллипсы, толстые линии, многоугольники, обводка ----------
 function fyE(c, cx, cy, rx, ry, col) {
   c.fillStyle = col;
-  for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
-    const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
-    if (dx * dx + dy * dy <= 1) c.fillRect(x, y, 1, 1);
+  const q = FY_Q;
+  for (let Y = Math.floor((cy - ry) * q); Y <= Math.ceil((cy + ry) * q); Y++) for (let X = Math.floor((cx - rx) * q); X <= Math.ceil((cx + rx) * q); X++) {
+    const dx = ((X + 0.5) / q - cx) / rx, dy = ((Y + 0.5) / q - cy) / ry;
+    if (dx * dx + dy * dy <= 1) c.fillRect(X / q, Y / q, 1 / q, 1 / q);
   }
 }
 function fyL(c, x0, y0, x1, y1, w0, w1, col) {
-  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
+  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2 * FY_Q));
   for (let i = 0; i <= n; i++) { const t = i / n, r = Math.max(0.5, (w0 + (w1 - w0) * t) / 2); fyE(c, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r, r, col); }
 }
 function fyP(c, pts, col) {
   c.fillStyle = col;
   const ys = pts.map(p => p[1]);
-  for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) {
-    const yy = y + 0.5, xs = [];
+  const Q = FY_Q;
+  for (let Y = Math.floor(Math.min(...ys) * Q); Y <= Math.ceil(Math.max(...ys) * Q); Y++) {
+    const yy = (Y + 0.5) / Q, xs = [];
     for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; if ((a[1] <= yy && b[1] > yy) || (b[1] <= yy && a[1] > yy)) xs.push(a[0] + (yy - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); }
     xs.sort((p, q) => p - q);
-    for (let k = 0; k + 1 < xs.length; k += 2) for (let x = Math.round(xs[k]); x < Math.round(xs[k + 1]); x++) c.fillRect(x, y, 1, 1);
+    for (let k = 0; k + 1 < xs.length; k += 2) { const x0 = Math.round(xs[k] * Q), x1 = Math.round(xs[k + 1] * Q); if (x1 > x0) c.fillRect(x0 / Q, Y / Q, (x1 - x0) / Q, 1 / Q); }
   }
 }
-const fyD = (c, x, y, col) => { c.fillStyle = col; c.fillRect(Math.floor(x), Math.floor(y), 1, 1); };
+const fyD = (c, x, y, col) => {                    // точка: при мелком пикселе — 2×2 клетки сетки (2/3 игрового пикселя)
+  c.fillStyle = col;
+  if (FY_Q > 1) c.fillRect(Math.floor(x * FY_Q) / FY_Q, Math.floor(y * FY_Q) / FY_Q, 2 / FY_Q, 2 / FY_Q);
+  else c.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+};
 // объём: тёмная форма, поверх чуть сдвинутая средняя и светлая
 function fyE3(c, cx, cy, rx, ry, [d, m, l]) { fyE(c, cx, cy, rx, ry, d); fyE(c, cx - 0.5, cy - 0.6, rx - 0.7, ry - 0.8, m); if (l) fyE(c, cx - rx * 0.25, cy - ry * 0.4, rx * 0.5, ry * 0.4, l); }
 function fyOutline(c, w, h, col) {
+  w *= FY_Q; h *= FY_Q;                              // при мелком пикселе контур — в клетках сетки
   const a = c.getImageData(0, 0, w, h).data, mark = [];
   const op = (x, y) => x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 100;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!op(x, y) && (op(x - 1, y) || op(x + 1, y) || op(x, y - 1) || op(x, y + 1))) mark.push([x, y]);

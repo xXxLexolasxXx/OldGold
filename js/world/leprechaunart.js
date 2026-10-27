@@ -265,14 +265,15 @@ const lepCache = new Map();
 function lepFrame(fr) {
   let s = lepCache.get(fr);
   if (s) return s;
-  const S = LEP_SPEC, [cv, c] = mkSprite(S.w, S.h, 3);
+  const S = LEP_SPEC, F = PX_FINE, [cv, c] = mkSprite(S.w, S.h, F > 1 ? 2 * F : 3);   // мелкий пиксель — как naFrame
   c.lineCap = 'round'; c.lineJoin = 'round';
   const P = lepPose(fr);
   c.save();
   c.translate(S.ax, S.ay); c.scale(S.sc, S.sc);
   drawLep(c, P);
   c.restore();
-  const out = toPixelArt(cv, 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
+  const out = toPixelArt(cv, F > 1 ? 2 : 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
+  out.fine = F;
   if (P.fade > 0) {       // растворение: пиксели пропадают «дизером», остальные зеленеют и бледнеют
     const oc = out.getContext('2d'), img = oc.getImageData(0, 0, out.width, out.height), d = img.data;
     for (let y = 0; y < out.height; y++) for (let x = 0; x < out.width; x++) {

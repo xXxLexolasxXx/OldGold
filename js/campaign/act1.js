@@ -245,7 +245,7 @@ function camp1DrawShnyr(c, p) {
   const t = Game.time, x = Math.round(p[0] * TILE + 16), y = Math.round(p[1] * TILE + 26);
   const ph = t % 3.2, fr = ph < 0.3 ? 'windup' : ph < 0.5 ? 'strike' : ph < 0.8 ? 'recover' : 'i' + ((t * 5) % 6 | 0);
   const sp = naFrame('shnyrKing', fr);
-  c.save(); c.translate(x, y); c.scale(-1, 1); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.restore();
+  c.save(); c.translate(x, y); c.scale(-1, 1); blitFine(c, sp.cv, -sp.ax, -sp.ay); c.restore();
   // искры фитиля на скипетре
   c.fillStyle = (t * 9 | 0) % 2 ? '#fff2a0' : '#ff9030';
   c.fillRect(x - 22 + Math.round(Math.sin(t * 17) * 2), y - 52 + Math.round(Math.cos(t * 13) * 2), 2, 2);

@@ -1053,18 +1053,19 @@ const ENT_FACE = [
 function makeEntFrame(kind, name) {
   const L = ENT_LOOK[kind], seed = 9000 + Object.keys(ENT_LOOK).indexOf(kind) * 97;
   srand = mulberry32(seed);
-  const [cv, c] = mkSprite(ENT_SW, ENT_SH);
+  const F = PX_FINE, [cv, c] = mkSprite(ENT_SW, ENT_SH, F > 1 ? 2 * F : SS);   // мелкий пиксель: F деталей на игровой
   const P = entPose(name, L);
   drawEntBody(c, kind, L, P, seed);
   drawEntCrown(c, kind, L, seed);
   drawEntArms(c, kind, L, P, seed);
   grain(cv, 0.08, seed);
-  const out = toPixelArt(cv, SS, { outline: true, alphaCut: 100 });
+  const out = toPixelArt(cv, F > 1 ? 2 : SS, { outline: true, alphaCut: 100 });
+  out.fine = F;
   const oc = out.getContext('2d');
   const x0 = ENT_CX - 7;
   const pal = { h: L.light, o: '#140a05', s: '#0a0503', n: L.light, N: L.dark, r: '#140a05', m: '#050201', t: '#d0b88c' };
   ENT_FACE.forEach((row, y) => {
-    for (let x = 0; x < row.length; x++) if (row[x] !== '.') { oc.fillStyle = pal[row[x]]; oc.fillRect(x0 + x, L.faceY + y, 1, 1); }
+    for (let x = 0; x < row.length; x++) if (row[x] !== '.') { oc.fillStyle = pal[row[x]]; oc.fillRect((x0 + x) * F, (L.faceY + y) * F, F, F); }
   });
   return { cv: out, eyes: [[x0 + 2, L.faceY + 6], [x0 + 10, L.faceY + 6]], hand: P.arms[1][2] };
 }
@@ -1184,7 +1185,7 @@ function drawEnt(c, e) {
     const sway = e.state === 'fight' ? Math.sin(e.t * 9) * 0.05 : e.moving ? Math.sin(e.phase * 0.85) * 0.03 : 0;
     c.translate(bx, by + rise); c.rotate(sway);
     if (e.face < 0) c.scale(-1, 1);
-    c.drawImage(f.cv, -ENT_CX, -ENT_BASE);
+    blitFine(c, f.cv, -ENT_CX, -ENT_BASE);
     // зрачки тлеют и косятся
     const look = Math.sin(Game.time * 0.7 + e.i) > 0.3 ? 1 : 0;
     const fl = 170 + Math.round(Math.sin(Game.time * 8 + e.i) * 40);

@@ -119,6 +119,7 @@ I18N.add('en', {
   "страж": "guardian", "стража": "guardian",
   "Костяной прислужник": "Bone Minion",
   "Призрак павшего": "Ghost of the Fallen",
+  "Павший гном": "Fallen Gnome",
   "Магическая башня": "Magic Tower",
   "Магическая башня разрушена!": "The magic tower is destroyed!",
   "Чистая победа: на подъёме никто не пал! Малгор оставил ещё золота.": "Flawless victory: nobody fell on the climb! Malgor left extra gold.",

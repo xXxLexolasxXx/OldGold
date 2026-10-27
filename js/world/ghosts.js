@@ -143,17 +143,28 @@ function ghostLights(L, x0, y0, x1, y1) {
 const GHOST_FRAMES = 9, GHOST_ATK_FRAMES = 8, GHOST_ATK_DUR = 0.9, GHOST_SS = 3, GHOST_W = 60, GHOST_H = 76, GHOST_OX = 30, GHOST_OY = 32;
 const GHOST_CACHE = {};
 
+// Мелкий пиксель (PX_FINE > 1): призрак и жнец рисуются вдвое плотнее и сводятся в пиксель-арт
+// с шагом 1/PX_FINE игрового пикселя; полупрозрачные клочья режем пониже, чтобы тело не таяло.
+function ghFineSS() { return PX_FINE > 1 ? 2 * PX_FINE : GHOST_SS; }
+function ghFinePx(cv) {
+  if (PX_FINE <= 1) return cv;
+  const out = toPixelArt(cv, 2, { outline: true, outlineDark: 0.5, alphaCut: 60, clean: true });
+  out.fine = PX_FINE;
+  return out;
+}
+
 function ghostSprite(mood, i) {
   const key = mood + i;
   let cv = GHOST_CACHE[key];
   if (cv) return cv;
-  cv = GHOST_CACHE[key] = document.createElement('canvas');
-  cv.width = GHOST_W * GHOST_SS; cv.height = GHOST_H * GHOST_SS;
+  const S = ghFineSS();
+  cv = document.createElement('canvas');
+  cv.width = GHOST_W * S; cv.height = GHOST_H * S;
   const c = cv.getContext('2d');
-  c.scale(GHOST_SS, GHOST_SS); c.translate(GHOST_OX, GHOST_OY);
+  c.scale(S, S); c.translate(GHOST_OX, GHOST_OY);
   const atk = mood === 'atk', grab = mood === 'grab' || mood === 'carry';
   paintGhost(c, grab ? (mood === 'carry' ? i / 4 : 0) : atk ? 0 : i / GHOST_FRAMES, mood, grab ? (mood === 'carry' ? 8 : i) : atk ? i / (GHOST_ATK_FRAMES - 1) : 0);
-  return cv;
+  return (GHOST_CACHE[key] = ghFinePx(cv));
 }
 
 // p — фаза плавания 0..1 (петля), k — ход удара 0..1: замах (0–.35), бросок (.35–.6), отдача
@@ -321,8 +332,8 @@ function drawGhosts(c) {
     c.translate(px, py); c.scale(g.face, 1);
     c.globalAlpha = A;
     c.imageSmoothingEnabled = true;
-    if (rp) c.drawImage(reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES, g.var || 0), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
-    else c.drawImage(ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
+    if (rp) blitFine(c, reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES, g.var || 0), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
+    else blitFine(c, ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
     if (grab && g.vsnap) { c.imageSmoothingEnabled = false; ghDrawVictim(c, g, Math.min(8, gi), g.alpha, px, py); }
     c.restore();
     // клочья тумана, уходящие вверх от призрака
