@@ -36,32 +36,31 @@ const PROFS = ['woodcutter', 'builder', 'miner', 'stonemason', 'baker'];
 const PNAME = { woodcutter: 'дровосек', builder: 'строитель', miner: 'шахтёр', stonemason: 'каменщик', baker: 'пекарь' };
 SRC.reduce((p, f) => p.then(() => load(f)), Promise.resolve()).then(() => PEOPLE_TXT).then(txt => {
   const V = [
-    { name: 'ОРИГИНАЛ', sub: 'как сейчас в игре', o: build(txt, {}) },
-    { name: '1 · только глаза', sub: 'колпак чуть выше, глаза видны', o: build(txt, { eyes: 1 }) },
-    { name: '2 · глаза + пиксель ×3', sub: 'то же, пиксель мельче в 1,5 раза', o: build(txt, { eyes: 1, part: 3 }) },
-    { name: '3 · глаза + пиксель ×4', sub: 'пиксель мельче вдвое', o: build(txt, { eyes: 1, part: 4 }) },
+    { name: 'ОРИГИНАЛ · пиксель ×2', sub: 'как сейчас в игре', o: build(txt, {}) },
+    { name: 'пиксель ×3', sub: 'мельче в 1,5 раза, рисунок тот же', o: build(txt, { part: 3 }) },
+    { name: 'пиксель ×4', sub: 'мельче вдвое, рисунок тот же', o: build(txt, { part: 4 }) },
   ];
   const spr = (v, t, look, view = 'S', pose = 'idle') => ({ cv: v.o.personSprite({ type: t, look, carry: null }, view, pose, 0), k: v.o.PART });
   const c0 = document.getElementById('sheet'), W = 1280;
-  const cw = 320, H = 70 + 38 * 12 + 40 + 2 * (38 * 6 + 38) + 38 * 6 + 70;
+  const cw = 320, H = 70 + 38 * 12 + 40 + 3 * (38 * 6 + 38) + 38 * 6 + 70;
   c0.height = H; const c = c0.getContext('2d'); c.imageSmoothingEnabled = false;
   c.fillStyle = '#4f7a30'; c.fillRect(0, 0, W, H);
   const lab = (t, x, y, f = 'bold 14px sans-serif', col = '#fff') => { c.font = f; c.fillStyle = '#0007'; c.fillText(t, x + 1, y + 1); c.fillStyle = col; c.fillText(t, x, y); };
   // ступни гнома в точке (PFX, PFY) спрайта; Z — экранных пикселей на пиксель мира
   const blit = (s, fx, fy, Z) => { const k = Z / s.k; c.drawImage(s.cv, fx - 13 * Z, fy - 35 * Z, s.cv.width * k, s.cv.height * k); };
-  lab('Гномы: оригинал и лёгкая правка (то же рисование, что в игре)', 16, 28, 'bold 20px sans-serif', '#e8f4d0');
+  lab('Гномы: оригинал в пикселе ×2, ×3, ×4 (рисунок не менялся)', 16, 28, 'bold 20px sans-serif', '#e8f4d0');
   lab('Ряд 1 — крупно ×12 к миру. Ряд 2 — профессии ×6. Ряд 3 — вид сбоку и со спины.', 16, 48, '13px sans-serif', '#e8f4d0');
   let y = 70;
   V.forEach((v, i) => { lab(v.name, i * cw + 12, y + 8); lab(v.sub, i * cw + 12, y + 24, '11px sans-serif', '#d8ecc0'); blit(spr(v, 'woodcutter', 5), i * cw + cw / 2, y + 30 + 35 * 12, 12); });
   y += 38 * 12 + 40;
-  for (const vi of [0, 2]) {
+  for (const vi of [0, 1, 2]) {
     lab(V[vi].name, 12, y, 'bold 13px sans-serif');
     PROFS.forEach((t, j) => { blit(spr(V[vi], t, 5 + j), 110 + j * 200, y + 12 + 35 * 6, 6); lab(PNAME[t], 85 + j * 200, y + 12 + 38 * 6 + 4, '11px sans-serif', '#d8ecc0'); });
     y += 38 * 6 + 38;
   }
   lab('сбоку и со спины', 12, y, 'bold 13px sans-serif');
   [0, 1, 2].forEach(vi => ['E', 'N'].forEach((vw, j) => { blit(spr(V[vi], 'woodcutter', 5, vw), 90 + (vi * 2 + j) * 150, y + 12 + 35 * 6, 6); }));
-  lab('оригинал · сбоку, со спины   |   только глаза · сбоку, со спины   |   глаза + ×3 · сбоку, со спины', 12, y + 38 * 6 + 28, '11px sans-serif', '#d8ecc0');
+  lab('×2 · сбоку, со спины   |   ×3 · сбоку, со спины   |   ×4 · сбоку, со спины', 12, y + 38 * 6 + 28, '11px sans-serif', '#d8ecc0');
   window.READY = true;
 }).catch(e => { window.ERR = String(e); window.READY = true; });
 </script>
