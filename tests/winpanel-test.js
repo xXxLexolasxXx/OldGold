@@ -1,7 +1,7 @@
 'use strict';
 // Содержимое панели без браузера (js/winpanel.js, css/winmgr.css):
 //  · поход героя включается дальше WP_AWAY клеток и выключается только ближе WP_HOME (на границе не мигает);
-//  · нажатая постройка открывает карточку, а не сразу в руку (кроме обучения); «Оборона» — так же;
+//  · нажатая постройка сразу в руке (список остаётся), справка о ней — всплывает через 0,7 с (мышь/палец);
 //  · окна целей, заданий дня и коопа переезжают во вкладку «Задания»; на телефоне на карте только строка-значок;
 //  · в походе деревенская панель скрыта, способности по центру, есть кнопка «⌂ Деревня».
 // Запуск: node tests/winpanel-test.js
@@ -23,14 +23,12 @@ check(wpAwayNext(true, (WP_AWAY + WP_HOME) / 2) === true, 'между порог
 check(wpAwayNext(true, WP_HOME - 1) === false, 'вернулся к деревне — не поход');
 
 const src = read('js/winpanel.js'), ui = read('js/ui.js'), def = read('js/defenseui.js'), css = read('css/winmgr.css'), html = read('index.html');
-check(/wpPick\(type\)/.test(ui) && /wpPick\('fort:' \+ f\)/.test(def), 'постройка и укрепление открывают карточку');
-check(/Tut\.on\) \{ setTool/.test(src), 'во время обучения постройка сразу в руке');
+check(/wpPick\(type\)/.test(ui) && /wpPick\('fort:' \+ f\)/.test(def), 'постройка и укрепление идут через wpPick');
+check(/function wpPick[\s\S]{0,260}setTool\(Game\.tool && Game\.tool\.type === type \? null : tool\)/.test(src), 'нажали постройку — сразу в руке, список остаётся');
+check(/const WP_TIP_MS = 700;/.test(src) && /#wp-pop\.on\s*\{\s*display:\s*block/.test(css), 'справка о постройке всплывает через 0,7 с');
 check(/\['goal-hud', 'daily-hud', 'cp-vil', 'cp-qs'\]/.test(src), 'цели, задания дня и коопа — во вкладке «Задания»');
-check(/#tab-build\.wp-carded > :not\(#wp-card\)\s*\{\s*display:\s*none/.test(css), 'карточка заменяет список');
 check(/body\.wp-away:not\(\.mobile\) #panel > :not\(#logo\)/.test(css) && /body\.wp-away #ab-bar\s*\{[^}]*left:\s*50%/.test(css), 'поход: деревня скрыта, способности по центру');
 check(/data-wp="peek"/.test(src), 'в походе есть кнопка «⌂ Деревня»');
-check(/WP\.card = type;\s+if \(wpPickMode\(\) === 'instant'\) setTool\(tool\);/.test(src), 'вариант 1: нажали постройку — карточка и сразу в руке');
-check(/function wpPlace\(\) \{[\s\S]{0,80}WP\.card = null; wpCardRender\(\);/.test(src), 'вариант 2: «Поставить» возвращает к списку');
 check(/!loading && !tut && wpAwayNext/.test(src), 'во время обучения поход не включается');
 check(html.indexOf('js/winpanel.js') > html.indexOf('js/winmgr.js'), 'winpanel.js после winmgr.js');
 

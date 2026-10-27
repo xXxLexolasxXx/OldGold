@@ -129,17 +129,11 @@ body.mobile.land #tab-area, body.mobile.land #info-wrap { bottom: auto; max-heig
 /* ПК: вкладок теперь девять — колонки по числу видимых, без переноса */
 body:not(.mobile) #tabs { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 
-/* карточка постройки вместо списка */
-#wp-card { display: none; }
-#tab-build.wp-carded > :not(#wp-card) { display: none !important; }
-#tab-build.wp-carded #wp-card { display: block; animation: bl-pop .28s cubic-bezier(.2, .9, .3, 1.1) both; }
-#wp-card .wp-cbar { margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-#wp-card .wp-place { display: flex; width: 100%; margin-top: 8px; min-height: 44px; font-size: 16px; font-weight: bold; color: #2a1606; text-shadow: none;
-  background: linear-gradient(#f0c84a, #c8902a); box-shadow: inset 0 0 0 1px #fff2b8, 0 2px 0 #000; }
-body.mobile #wp-card .wp-place { min-height: 50px; font-size: 17px; }
-#wp-card .wp-hint { flex: 1; font-size: 13px; color: #9fe070; animation: rv-glow 1.4s ease-in-out 2; padding: 2px 4px; }
-#wp-card .wp-cbar button { padding: 5px 10px; font-size: 13px; }
-#wp-card .wp-cbody { padding: 6px 8px; background: rgba(48, 34, 15, .55); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--gold, #e4b434); }
+/* всплывающая справка о постройке (задержали мышь / подержали палец 0,7 с) */
+#wp-pop { position: fixed; z-index: 62; display: none; width: min(300px, calc(100vw - 12px)); max-height: 70vh; overflow: auto; padding: 8px 10px; pointer-events: none;
+  background: rgba(26, 19, 13, .97); color: #e8dcc0; border: 2px solid #b8902c; border-radius: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, .7); font-size: 13px; line-height: 1.35; }
+#wp-pop.on { display: block; animation: wp-in .18s ease-out both; }
+body.mobile #wp-pop { font-size: 14px; }
 
 /* вкладка «Задания»: окна целей, заданий дня и коопа — обычными блоками панели, не плашками на карте */
 #wp-task { display: flex; flex-direction: column; gap: 6px; }
@@ -198,7 +192,7 @@ body.mobile #wp-hero .wp-bar > span { width: 64px; }
 body.wp-away #ab-bar { right: auto !important; left: 50% !important; transform: translateX(-50%); align-items: center; animation: wp-ab .45s cubic-bezier(.2, .9, .3, 1.1) both; }
 body.wp-away #ab-bar .ab-tip { right: auto; left: 50%; transform: translateX(-50%); }
 @keyframes wp-ab { from { opacity: 0; transform: translate(-50%, 40px); } to { opacity: 1; transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { body.wp-away #ab-bar, body.wp-away #wp-hero, #tab-build.wp-carded #wp-card { animation: none; } }
+@media (prefers-reduced-motion: reduce) { body.wp-away #ab-bar, body.wp-away #wp-hero, #wp-pop.on { animation: none; } }
 /* цели в панели видны и во время обучения (на карте их прятали, чтобы не налезали на окно обучения) */
 body.mobile:is(.rv-goal, .rv-all, :not(.rv-on)):has(#tut:not(.hidden)) #wp-task #goal-hud { display: block !important; }
 /* телефон боком: цели прятались при открытой шторке (landscape.css) — теперь они в самой шторке */

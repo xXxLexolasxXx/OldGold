@@ -1,10 +1,8 @@
 'use strict';
 // Что показывает панель (ПК — левая колонка, телефон — шторка) — по слову владельца 27.10: «разгрузить экран».
-//   • Стройка → список построек. Нажали постройку → список уходит, на его месте карточка (что это, цена, что даёт),
-//     и постройка СРАЗУ в руке — ставите на карту без лишней кнопки. «← К списку», Esc или ✕ на панели размещения —
-//     отмена, снова список. Во время обучения — без карточки, просто в руку (шаги ждут именно этого).
-//     Второй вариант на выбор (WP_PICK = 'button', localStorage oldgold-buildpick=button): в карточке кнопка «Поставить»,
-//     нажали — карточка закрывается, панель возвращается к списку, постройка в руке.
+//   • Стройка → список построек. Нажали постройку → она подсвечивается в списке и сразу в руке, ставите на карту;
+//     список остаётся на месте (можно глянуть, что ещё построить). Справка о постройке — всплывающее окошко: мышь
+//     задержали на кнопке WP_TIP_MS (0,7 с) или на телефоне подержали палец столько же (тогда постройка в руку не берётся).
 //   • Задания: цели деревни (goal.js), задания дня (daily.js), задания и совет общей деревни (coopclient.js) больше не
 //     висят на карте — их окна переезжают в панель, во вкладку «Задания». На телефоне на карте только строка-значок
 //     «Цели 2/4 ▸», касание открывает вкладку. Поставили здание или стройку закрыли — панель показывает задания.
@@ -13,9 +11,9 @@
 //     рюкзак. Ближе WP_HOME клеток — деревня возвращается. Кнопка «⌂ Деревня» показывает её и в походе.
 // Вызывается из js/winmgr.js: wpInit() при старте, wpSync() при каждом пересчёте. Чистая функция wpAwayNext — в тестах.
 
-const WP = { card: null, placed: false, away: false, peek: false, hero: '', chip: '', sig: '' };
-const WP_AWAY = 26, WP_HOME = 20;
-const wpPickMode = () => { try { return localStorage.getItem('oldgold-buildpick') === 'button' ? 'button' : 'instant'; } catch (e) { return 'instant'; } };     // клеток до костра/склада: дальше — поход, ближе — снова деревня (с запасом, чтобы не мигало)
+const WP = { placed: false, away: false, peek: false, hero: '', chip: '', sig: '' };
+const WP_AWAY = 26, WP_HOME = 20;     // клеток до костра/склада: дальше — поход, ближе — снова деревня (с запасом, чтобы не мигало)
+const WP_TIP_MS = 700;                // задержка всплывающей справки о постройке
 
 // чистая: включён ли режим похода. was — прежнее значение, d — расстояние до деревни в клетках (null — нет героя/деревни)
 function wpAwayNext(was, d) {
@@ -27,50 +25,63 @@ if (typeof module !== 'undefined') module.exports = Object.assign(module.exports
 const wpT = s => (typeof t === 'function' ? t(s) : s);
 const wpMob = () => typeof Mobile !== 'undefined' && Mobile.on;
 
-// ---------- карточка постройки ----------
+// ---------- выбор постройки и всплывающая справка ----------
+// нажали постройку — сразу в руку (повторное нажатие — убрать из руки); подсветку в списке ставит setTool
 function wpPick(type) {
-  const fort = type.startsWith('fort:');
-  const tool = fort ? { kind: 'fort', f: type.slice(5), type } : { kind: 'build', type, rot: BUILDINGS[type].noRotate || BUILDINGS[type].rots ? 0 : (UI.lastRot || 0) };
-  // во время обучения шаги ждут, что постройка сразу в руке
-  if (typeof Tut !== 'undefined' && Tut.on) { setTool(Game.tool && Game.tool.type === type ? null : tool); return; }
-  WP.card = type;
-  if (wpPickMode() === 'instant') setTool(tool);
-  wpCardRender();
+  const tool = type.startsWith('fort:') ? { kind: 'fort', f: type.slice(5), type } : { kind: 'build', type, rot: BUILDINGS[type].noRotate || BUILDINGS[type].rots ? 0 : (UI.lastRot || 0) };
+  setTool(Game.tool && Game.tool.type === type ? null : tool);
 }
-// вариант «с кнопкой»: «Поставить» — карточка закрывается, снова список построек, постройка в руке
-function wpPlace() {
-  const type = WP.card;
-  if (!type) return;
-  WP.card = null; wpCardRender();
-  if (type.startsWith('fort:')) setTool({ kind: 'fort', f: type.slice(5), type });
-  else { const def = BUILDINGS[type]; setTool({ kind: 'build', type, rot: def.noRotate || def.rots ? 0 : (UI.lastRot || 0) }); }
-}
-function wpCardHTML(type) {
+function wpInfoHTML(type) {
   if (type.startsWith('fort:')) {
     const f = type.slice(5), F = FORTS[f];
     return `<div class="ihead"><img class="bpic" src="${defIconURL(f)}" alt=""><div><h3>${F.name}</h3><span class="chip off">Оборона</span></div></div>`
       + '<div class="isec">Стоимость</div>' + costHTML(F.cost[0]) + `<div class="idesc">${(F.desc || []).join(' ')}</div>`;
   }
+  if (type.startsWith('tool:') || !BUILDINGS[type]) return '';
   return infoPreview(type);
 }
-function wpCardRender() {
-  const tab = document.getElementById('tab-build');
-  if (!tab) return;
-  let card = document.getElementById('wp-card');
-  if (!card) {
-    card = document.createElement('div'); card.id = 'wp-card';
-    tab.appendChild(card);
-    card.addEventListener('click', e => {
-      if (e.target.closest('[data-wp="back"]')) { WP.card = null; setTool(null); wpCardRender(); return; }
-      if (e.target.closest('[data-wp="place"]')) wpPlace();
-    });
-  }
-  tab.classList.toggle('wp-carded', !!WP.card);
-  if (!WP.card) { card.innerHTML = ''; return; }
-  const btn = wpPickMode() === 'button';
-  card.innerHTML = `<div class="wp-cbar"><button data-wp="back">← ${wpT('К списку')}</button>${btn ? '' : `<span class="wp-hint">${wpT('Укажите место на карте')}</span>`}</div>`
-    + `<div class="wp-cbody">${wpCardHTML(WP.card)}</div>`
-    + (btn ? `<button class="wp-place" data-wp="place">${wpT('Поставить')}</button>` : '');
+function wpTipShow(btn) {
+  const html = wpInfoHTML(btn.dataset.type || '');
+  if (!html) return;
+  let pop = document.getElementById('wp-pop');
+  if (!pop) { pop = document.createElement('div'); pop.id = 'wp-pop'; document.body.appendChild(pop); }
+  pop.innerHTML = html;
+  pop.classList.add('on');
+  const r = btn.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight, pr = pop.getBoundingClientRect();
+  // ПК — справа от кнопки (над картой), телефон — над шторкой по центру
+  let x = wpMob() ? (W - pr.width) / 2 : r.right + 10, y = wpMob() ? r.top - pr.height - 10 : r.top - 20;
+  if (x + pr.width > W - 6) x = Math.max(6, r.left - pr.width - 10);
+  y = Math.min(Math.max(6, y), H - pr.height - 6);
+  pop.style.left = Math.round(x) + 'px'; pop.style.top = Math.round(y) + 'px';
+}
+function wpTipHide() { const pop = document.getElementById('wp-pop'); if (pop) pop.classList.remove('on'); }
+function wpTipsInit() {
+  const list = document.getElementById('tab-build');
+  if (!list || list.dataset.wpTip) return;
+  list.dataset.wpTip = '1';
+  let timer = 0, held = false, cur = null;
+  const btnOf = e => e.target.closest && e.target.closest('.bbtn[data-type]');
+  list.addEventListener('mouseover', e => {
+    if (wpMob()) return;
+    const b = btnOf(e);
+    if (b === cur) return;
+    cur = b; clearTimeout(timer); wpTipHide();
+    if (b) timer = setTimeout(() => wpTipShow(b), WP_TIP_MS);
+  });
+  list.addEventListener('mouseleave', () => { cur = null; clearTimeout(timer); wpTipHide(); });
+  // телефон: подержали палец — справка, а постройка в руку не берётся
+  list.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') { clearTimeout(timer); wpTipHide(); return; }
+    const b = btnOf(e);
+    held = false; clearTimeout(timer); wpTipHide();
+    if (b) timer = setTimeout(() => { held = true; wpTipShow(b); }, WP_TIP_MS);
+  });
+  const up = () => { clearTimeout(timer); if (held) setTimeout(wpTipHide, 2500); };
+  list.addEventListener('pointerup', up);
+  list.addEventListener('pointercancel', up);
+  list.addEventListener('scroll', () => { clearTimeout(timer); wpTipHide(); }, true);
+  list.addEventListener('click', e => { if (held && btnOf(e)) { held = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  list.addEventListener('contextmenu', e => { if (btnOf(e)) e.preventDefault(); });
 }
 
 // ---------- вкладка «Задания» ----------
@@ -110,7 +121,7 @@ function wpAdopt() {
 // новое задание: на ПК — панель сама показывает задания (если ничего не строим и здание не выбрано), на телефоне — мигает значок
 function wpNewTask() {
   for (const el of [document.querySelector('#tabs [data-tab="task"]'), document.getElementById('wp-chip')]) if (el) { el.classList.remove('wp-new'); void el.offsetWidth; el.classList.add('wp-new'); }
-  if (!wpMob() && !Game.tool && !(Game.selected && !Game.selected.removed) && (UI.tab === 'build' ? !WP.card : true) && UI.tab !== 'menu') openTab('task');
+  if (!wpMob() && !Game.tool && !(Game.selected && !Game.selected.removed) && UI.tab !== 'build' && UI.tab !== 'menu') openTab('task');
 }
 function wpChip() {
   const chip = document.getElementById('wp-chip');
@@ -184,14 +195,12 @@ function wpSync() {
   const b = document.body.classList;
   wpAdopt();
   wpChip();
-  // поставили здание (или стройку закрыли) — карточка уходит, панель показывает задания
+  // поставили здание — панель показывает задания
   if (WP.placed && !(Game.tool && Game.tool.kind === 'build')) {
-    WP.placed = false; WP.card = null; wpCardRender();
+    WP.placed = false;
     if (!wpMob() && !(Game.selected && !Game.selected.removed)) openTab('task');
   }
-  if (WP.card && UI.tab !== 'build') { WP.card = null; wpCardRender(); }
-  // постройку из руки убрали (Esc, ✕, другой инструмент) — карточка закрывается, снова список
-  if (WP.card && wpPickMode() === 'instant' && !(Game.tool && Game.tool.type === WP.card)) { WP.card = null; wpCardRender(); }
+  if (Game.tool || UI.tab !== 'build') wpTipHide();
   // поход
   const loading = b.contains('ui-loading');
   const was = WP.away;
@@ -207,13 +216,10 @@ function wpSync() {
 
 function wpInit() {
   wpInitTask();
-  wpCardRender();
+  wpTipsInit();
   // постановка здания из руки (одиночка — placeBuilding, кооп — она же шлёт просьбу серверу)
   const _pb = placeBuilding;
   placeBuilding = function (...a) { const r = _pb.apply(this, a); if (Game.tool && Game.tool.kind === 'build') WP.placed = true; return r; };
-  // смена раздела стройки — снова список
-  const _obc = openBuildCat;
-  openBuildCat = function (k) { WP.card = null; _obc(k); wpCardRender(); };
   // на ПК по умолчанию — задания (если вкладка уже открыта игроку)
   if (!wpMob() && UI.tab === 'build' && !(typeof Tut !== 'undefined' && Tut.on)) {
     const tb = document.querySelector('#tabs [data-tab="task"]');
@@ -222,7 +228,6 @@ function wpInit() {
 }
 
 if (typeof I18N !== 'undefined' && I18N.add) I18N.add('en', {
-  'К списку': 'Back to list', 'Укажите место на карте': 'Pick a spot on the map', 'Поставить': 'Place',
   'Задания': 'Tasks', 'До': 'To', 'Задания: цели деревни, задания дня': 'Tasks: village goals, daily tasks', 'Цели': 'Goals',
   'Заданий пока нет. Стройте — цели деревни появятся здесь.': 'No tasks yet. Keep building: village goals will appear here.',
   'Показать деревню': 'Show the village', 'Здоровье': 'Health', 'Сытость': 'Fullness', 'Ранен': 'Wounded', 'рана': 'wound', 'Рюкзак': 'Backpack', 'ур.': 'lv.',
