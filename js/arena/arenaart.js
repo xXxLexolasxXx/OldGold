@@ -261,7 +261,7 @@ function arDrawFighter(c, A, F, x, y, t, holder, me) {
   else if (an && an.k === 'atk' && ae < 0.36) frame = ae < 0.1 ? 'windup' : ae < 0.22 ? 'strike' : 'follow';
   else if (an && an.k === 'cast' && ae < 0.55) frame = 'c' + Math.min(5, Math.floor(ae / 0.55 * 6));
   else if (st.stun > now || st.ice > now || (an && an.k === 'hurt' && ae < 0.25)) frame = 'hurt';
-  else if (moving) { pose = 'walk'; frame = Math.floor((A.walk[F.i] || 0)) & 7; }
+  else if (moving) { pose = 'walk'; frame = Math.floor(A.walk[F.i] || 0) % WALK_FRAMES; }
   const spr = typeof personSprite === 'function' ? personSprite(holder, view, pose, frame, { wpn: AR_WPN[F.cls] }) : null;
   const face = F.face || 1;
   c.save();

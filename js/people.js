@@ -7,7 +7,7 @@
 // переводится в пиксель-арт ×2 (полпикселя мира на точку) с тёмной обводкой.
 
 const PS = 6;      // сверхвыборка рисования
-const PART = 2;    // пикселей арта на пиксель мира
+const PART = PX_FINE > 1 ? 3 : 2;    // пикселей арта на пиксель мира: ×3 (как у нечисти), на телефонах и слабых — как раньше ×2
 const PW = 26, PH = 38, PFX = 13, PFY = 35;
 
 const SKINS = [['#f2c8a0', '#d89e78', '#a86a4c'], ['#e4b08a', '#c88864', '#94583c'], ['#c88e66', '#a46a46', '#6e442a']];
@@ -792,7 +792,7 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
 // ---------- Жесты ----------
 // Локоть и кисть для жеста: E — сбоку (лицом вправо, плечо в x≈0.4), S/N — рука side=±1.
 // Жесты: 4 такта туда-обратно между опорными позами 0 и 1. t — прежний счётчик (полный цикл = 2 единицы)
-const GEST_FRAMES = 4;   // 4 такта туда-обратно = 3 различимые позы (0, середина, 1) — плавнее прежних двух, без раздувания кэша
+const GEST_FRAMES = 12;   // 12 тактов туда-обратно: плавное движение руки при пиксель-арте ×3 (цикл те же 2 с)
 function gestCyc(t) { return 10 + (Math.floor(t * GEST_FRAMES / 2) % GEST_FRAMES); }
 function gestK(gf) { return gf < 10 ? gf : (1 - Math.cos((gf - 10) / GEST_FRAMES * Math.PI * 2)) / 2; }
 function gestPts(g, f, side, shY, headY, view) {
@@ -1155,16 +1155,16 @@ function femBust(c, shY, skin) {
   ellipse(c, 0, shY - 0.4, 2.2, 0.8, skin[0]);
 }
 
-// Стандарт кадров: покой 6 (дыхание), ходьба 8, работа 8 (замах → удар → возврат), бой 9
-const IDLE_FRAMES = 6, WORK_FRAMES = 8;
-// при 2 px мира на пиксель арта подъём груди различим только как «ниже/выше на пиксель»: 6 тактов цикла,
-// но спрайта два (IDLE_POSE — какой из них показывать на такте), иначе кэш гномов растёт вшестеро
-const IDLE_BREATH = [0, 0, 0, 0.5, 0, 0];
-const IDLE_POSE = [0, 0, 3, 3, 3, 0];
-// углы руки с инструментом по кадрам: 0 — над плечом, 6 — удар вниз, 7 — отведён назад перед ударом
-const SWING_A = [0.05, 0.35, 0.63, 0.92, 1.2, 1.5, 1.8, -0.14];
-const SWING_SICKLE = [1.3, 1.5, 1.68, 1.88, 2.06, 2.26, 2.45, 1.17];
-const SWING_DIP = [-0.3, -0.15, 0, 0.05, 0.1, 0.3, 0.5, -0.4];
+// Стандарт кадров: покой 12 (дыхание), ходьба 12, работа 12 (замах → удар → возврат), бой 9
+const IDLE_FRAMES = 12, WORK_FRAMES = 12, WALK_FRAMES = 12;
+// плавный вдох-выдох за 12 тактов; подъём груди кратен пикселю арта (1/3 мира), поэтому одинаковые по высоте такты
+// делят один спрайт (IDLE_POSE — какой показывать на такте), иначе кэш гномов растёт вдвое
+const IDLE_BREATH = Array.from({ length: IDLE_FRAMES }, (_, i) => Math.round((1 - Math.cos(i / IDLE_FRAMES * Math.PI * 2)) / 4 * 6) / 6);
+const IDLE_POSE = IDLE_BREATH.map((b, i) => IDLE_BREATH.indexOf(b));
+// 12 кадров удара в порядке времени: 0 инструмент внизу → 1–5 подъём → 6 над плечом → 7 отведён назад → 8 разгон → 9 удар → 10 нижняя точка → 11 возврат
+const SWING_A = [1.2, 1.05, 0.9, 0.75, 0.6, 0.35, 0.05, -0.14, 0.7, 1.5, 1.8, 1.6];
+const SWING_SICKLE = [2.06, 1.97, 1.88, 1.78, 1.68, 1.5, 1.3, 1.17, 1.7, 2.26, 2.45, 2.3];
+const SWING_DIP = [0.1, 0.08, 0.05, 0, -0.1, -0.2, -0.3, -0.4, -0.05, 0.3, 0.5, 0.35];
 // бросок (детские игры, kidsplay.js), 9 кадров: рука вперёд → вверх → назад → замах → удержание → разгон → отпускание (6) → проводка → возврат
 const TOSS_A = [0.9, 0.1, -0.7, -1.2, -1.3, -0.3, 1.2, 2.0, 1.4];
 const TOSS_DIP = [0, -0.1, -0.2, -0.3, -0.3, 0, 0.3, 0.6, 0.2];
@@ -1175,7 +1175,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const O = OUTFIT[type] || OUTFIT.serf;
   const shirt = O.robe ? (O.robeCol || '#2e5a26') : (O.coat || L.green), pants = O.pants;
   const gait = opt.gait || '', gest = carry ? '' : (opt.gest || ''), gf = gest === 'five' ? (opt.gf || 0) : gestK(opt.gf || 0);
-  const ph = pose === 'walk' ? frame / 8 * Math.PI * 2 : 0;
+  const ph = pose === 'walk' ? frame / WALK_FRAMES * Math.PI * 2 : 0;
   const sw = Math.sin(ph);
   const limp = injury === 'leg' && pose === 'walk';
   const bob = pose === 'walk' ? -Math.abs(Math.cos(ph)) * (limp ? 1.2 : gait === 'tired' ? 0.3 : 0.7) + 0.3 : 0;
@@ -1430,7 +1430,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (gest === 'drink') drawFlask(c, h[0] + 1.8, h[1] - 0.8, 0.5);
         if (gest === 'chest' && gf >= 0.5) drawFlask(c, h[0] + 2.2, h[1] - 1.6, 0.2);
       } else if (pose === 'smoke') {
-        const sa = SMOKE_ARM.E, sf = frame | 0;   // кадр курения 0..3: достал, поднёс, затяжка, выдох
+        const sa = SMOKE_ARM.E, sf = frame | 0;   // кадр курения 0..11 (6 опорных и промежуточные, см. smoking.js)
         smoothLimb(c, [0.4, shY + 0.4], sa.elbow[sf], sa.hand[sf], 2, shirt);
         hand(c, sa.hand[sf][0], sa.hand[sf][1], skin[0]);
       } else if (pose === 'tame') {

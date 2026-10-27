@@ -322,6 +322,7 @@ const JOIN_CD = 30;                           // перезарядка подс
 const JOIN_RADIUS = 10;                       // в клетках: перекур заразен, как чума
 const SLEEP_TIME = 60;                        // пьяный сон
 const STARVE_FAINT = 25, FAINT_TIME = 15;      // через сколько секунд без еды падает, сколько лежит
+const BRAVE_BEER = 150, BRAVE_DARK = 300;   // «пивная храбрость», сек: пиво / тёмное пиво
 const DRUNK_CHANCE = 0.65;                   // шанс захмелеть после кружки
 const INJURY_TIME = 150;                      // сколько заживает травма
 const COLLIDE_CHANCE = 0.015;                 // базовый шанс уронить груз при столкновении

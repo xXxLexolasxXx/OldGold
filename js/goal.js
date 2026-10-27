@@ -30,7 +30,7 @@ const GOAL_RANKS = [
     text: 'Тридцать гномов, куча зданий и ни одного повода для скромности. Поздравляем: это город.',
   },
 ];
-const GOAL_NEED_NAMES = { pop: 'жители', blds: 'здания', nights: 'ночи', bread: 'хлеб', timber: 'доски' };
+const GOAL_NEED_NAMES = { pop: 'жители', blds: 'здания', nights: 'пережито ночей', bread: 'хлеб', timber: 'доски' };
 const GOAL_GOOD_NAMES = { gold: 'золота', timber: 'досок', stone: 'камня', bread: 'хлеба', beer: 'пива' };
 
 const GOAL_WHO = {
@@ -172,12 +172,19 @@ function goalStats() {
 
 // ---------- Цели ----------
 
+// «Пережить ночь» / «Пережить 3 ночи» / «Пережить 5 ночей»: склонение по числу
+function goalNightsText(n) {
+  const m = n % 100, d = n % 10;
+  if (n === 1) return 'Пережить ночь';
+  return 'Пережить ' + n + (m >= 11 && m <= 14 ? ' ночей' : d === 1 ? ' ночь' : d >= 2 && d <= 4 ? ' ночи' : ' ночей');
+}
+
 function goalObjective(o, S) {
   const done = t => Game.buildings.filter(b => b.state === 'done' && b.type === t).length;
   if (o.k === 'build') return { t: 'Построить: ' + BUILDINGS[o.t].name, cur: Math.min(1, done(o.t)), need: 1 };
   if (o.k === 'any') return { t: o.label, cur: Math.min(1, o.ts.reduce((s, t) => s + done(t), 0)), need: 1 };
   if (o.k === 'pop') return { t: 'Жителей', cur: Math.min(o.n, S.pop), need: o.n };
-  if (o.k === 'nights') return { t: 'Пережить ночей', cur: Math.min(o.n, S.nights), need: o.n };
+  if (o.k === 'nights') return { t: goalNightsText(o.n), cur: Math.min(o.n, S.nights), need: o.n };
   if (o.k === 'prod') return { t: 'Произвести: ' + GOODS[o.g].name.toLowerCase(), cur: Math.min(o.n, Math.floor((Game.produced || {})[o.g] || 0)), need: o.n };
   if (o.k === 'rank') return { t: 'Звание «' + GOAL_RANKS[o.n].name + '»', cur: Math.min(o.n, S.rank), need: o.n };
   if (o.k === 'guards') return typeof guardsGoal === 'function' ? guardsGoal() : { t: 'Победить стражей Чёрного шпиля', cur: 1, need: 1 };
@@ -489,6 +496,19 @@ function goalHudRender() {
   if (html !== GoalUI.hudHtml) { GoalUI.hudHtml = html; goalHudEl().innerHTML = html; }
 }
 
+// заставка главы — одно окно за раз: ждёт, пока закроют сцену лора или другое окно очереди, и короткую паузу после
+function goalCutWait() {
+  if (typeof Lore !== 'undefined' && (Lore.cur || performance.now() - (Lore.closedAt || -1e9) < 1200)) return true;
+  if (typeof Notify === 'undefined' || !Notify.busy) return false;
+  return Notify.busy() || (Notify.gap && Notify.gap());
+}
+
+// заставка уже пришла, но ещё не открыта — обучение не выныривает между окнами
+function goalCutPending() {
+  const g = Game.goal;
+  return !!(g && !GoalUI.open && (g.cuts || (g.cut ? [g.cut] : [])).some(c => c.seq > GoalUI.seen));
+}
+
 function goalUiTick(force) {
   if (!goalHas() || typeof StartMenu !== 'undefined' && StartMenu.open) return;
   const g = Game.goal;
@@ -498,7 +518,7 @@ function goalUiTick(force) {
   goalHudRender();
   if (GoalUI.pendingMode && !document.getElementById('hero-name') && !GoalUI.open) { GoalUI.pendingMode = false; goalAskMode(); return; }
   const next = (g.cuts || (g.cut ? [g.cut] : [])).find(c => c.seq > GoalUI.seen);
-  if (next && !GoalUI.open && !Game.heroAsk && !GoalUI.pendingMode && !document.getElementById('hero-name')) goalOpenCut(next);
+  if (next && !GoalUI.open && !Game.heroAsk && !GoalUI.pendingMode && !document.getElementById('hero-name') && !goalCutWait()) goalOpenCut(next);
 }
 
 {

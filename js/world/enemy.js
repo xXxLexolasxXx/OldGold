@@ -251,7 +251,7 @@ function foeRavens(F, n) {
 function rdOk(N, x, y) {
   if (FSPEC[N.k].fly) return x > 0.5 && y > 0.5 && x < MAP_W - 0.5 && y < MAP_H - 0.5;
   if (!isWalkable(Math.floor(x), Math.floor(y))) return false;
-  return N.k === 'malgor' || !nearBonfire(x, y, BONFIRE_SAFE);          // у большого костра слуги не держатся
+  return N.k === 'malgor' || !!Game.camp || !nearBonfire(x, y, BONFIRE_SAFE);   // у большого костра слуги не держатся; в кампании гоблины проходят сквозь ауру (гномов в ней всё равно не трогают)
 }
 function rdStep(N, tx, ty, spd, dt) {
   const dx = tx - N.x, dy = ty - N.y, d = Math.hypot(dx, dy);
