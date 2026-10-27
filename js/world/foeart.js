@@ -296,18 +296,19 @@ for (const gk of Object.keys(FOE_GUARD)) {
 // кадр по состоянию налётчика (enemy.js): погоня — шаг, атака — замах/удар/возврат, иначе — покой
 function foeFrameOf(N) {
   if (N.st === 'die' || N.st === 'vanish') return 'ready';         // падение и растворение даёт сам enemy.js
-  if (N.st === 'atk' && N.atkT !== undefined) return N.atkT < 0.24 ? 'windup' : N.atkT < 0.36 ? 'strike' : N.atkT < 0.7 ? 'recover' : 'ready';
-  if (N.st === 'chase') return 'w' + (Math.floor((N.ph || 0) * 4) & 7);
-  return 'i' + (Math.floor(Game.time * 5 + (N.id || 0)) % 6);
+  if (N.st === 'atk' && N.atkT !== undefined) return N.atkT < 0.7 ? naAtkFr(N.atkT, 0.7) : 'ready';
+  if (N.st === 'chase') return 'w' + (Math.floor((N.ph || 0) * 6) % NA_N);
+  return naIdleFr(Game.time, N.id || 0);
 }
-// кадр по анимации стража (guards.js gdFrame)
-function foeGuardFrame(an, f) {
-  if (an === 'walk') return 'w' + (f & 7);
-  if (an === 'atk') return f < 3 ? 'windup' : f < 6 ? 'strike' : f < 8 ? 'recover' : 'ready';
-  if (an === 'cast') return 'c' + Math.min(5, f);
-  if (an === 'hurt') return 'hurt';
+// кадр по анимации стража (guards.js gdFrame даёт вид действия; номер кадра — по 12 из тех же часов, КАДРЫ.md)
+function foeGuardFrame(an, f, N) {
+  const t = Game.time;
+  if (an === 'walk') return naWalkFr((N.ph || 0) * 1.2);
+  if (an === 'atk') return naAtkFr(N.atkT, 0.56);
+  if (an === 'cast') return 'c' + Math.min(NA_N - 1, Math.floor((N.skT || 0) / Math.max(0.1, N.skW || 0.8) * NA_N));
+  if (an === 'hurt') return naHurtFr(t - (N.hurtT || t));
   if (an === 'die') return 'ready';
-  return 'i' + (f % 6);
+  return naIdleFr(t + (N.id % 7) * 0.13);
 }
 function foeBlit(c, kind, fr, s = 1) {
   const sp = naFrame(kind, fr);
@@ -320,12 +321,12 @@ foeDrawThrall = function (c, N, big) { foeBlit(c, 'fThrall', foeFrameOf(N), big 
 foeDrawKnight = function (c, N) { foeBlit(c, 'fKnight', foeFrameOf(N)); };
 foeDrawRaven = function (c, N) {
   const y = -18 + Math.sin((N.ph || 0) * 0.5) * 1.5;
-  c.save(); c.translate(0, y); foeBlit(c, 'fRaven', (Math.floor(N.ph || 0) & 1) ? 'i1' : 'i4'); c.restore();
+  c.save(); c.translate(0, y); foeBlit(c, 'fRaven', 'i' + (Math.floor((N.ph || 0) * 6) % NA_N)); c.restore();
 };
 foeDrawMalgor = function (c, N) {
     const t = Game.time, hov = Math.sin(t * 2.2) * 1.6, cast = N.castT > 0, ph = N.phase || N.fz || 1;
     c.save(); c.translate(0, -6 + hov);
-    foeBlit(c, ph === 3 ? 'fMalgor3' : 'fMalgor1', cast ? 'c3' : 'i' + (Math.floor(t * 4) % 6));
+    foeBlit(c, ph === 3 ? 'fMalgor3' : 'fMalgor1', cast ? 'c6' : 'i' + (Math.floor(t * 8) % NA_N));
     c.restore();
     // свечение кристалла — как раньше, векторное
     c.save(); c.globalCompositeOperation = 'lighter';
@@ -340,7 +341,7 @@ if (typeof gdDrawGuard === 'function') {
     c.save();
     if (an === 'die') c.globalAlpha *= Math.max(0, 1 - f / 9);
     if (N.veil) c.globalAlpha *= 0.45;
-    foeBlit(c, 'fG_' + k, foeGuardFrame(an, f));
+    foeBlit(c, 'fG_' + k, foeGuardFrame(an, f, N));
     c.restore();
     // сияние стихии и уязвимость — как раньше
     c.save(); c.globalCompositeOperation = 'lighter';
@@ -354,7 +355,7 @@ if (typeof gdDrawGuard === 'function') {
     const [an, f] = gdFrame(N);
     c.save();
     if (an === 'die') { c.globalAlpha *= Math.max(0, 1 - f / 9); c.translate(0, f * 0.6); }
-    foeBlit(c, 'fBone', foeGuardFrame(an, f));
+    foeBlit(c, 'fBone', foeGuardFrame(an, f, N));
     c.restore();
   };
 }

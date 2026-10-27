@@ -147,7 +147,7 @@ function ftJumpThink(N, dt) {
   if (J.ph === 'air') {
     const p = Math.min(1, J.t / J.dur);
     N.x = J.sx + (J.tx - J.sx) * p; N.y = J.sy + (J.ty - J.sy) * p;
-    N.fr = p < 0.22 ? 'j2' : p < 0.5 ? 'j3' : p < 0.72 ? 'j4' : 'j5';
+    N.fr = 'j' + (3 + Math.min(5, Math.floor(p * 6)));            // полёт: кадры 3…8 из 12
     if (p >= 1) {
       J.ph = 'land'; J.t = 0; N.x = J.tx; N.y = J.ty;
       if (J.perch) { N.pch = { x: N.x, y: N.y, until: ftNow() + 22 + ftRand() * 22 }; sfxAt('frogHop', N.x * TILE, N.y * TILE, 0.5); }
@@ -215,7 +215,7 @@ function ftJumpThink(N, dt) {
           ftAfter(N, tg);
           return;
         }
-      } else { N.st = 'idle'; N.fr = 'i' + (Math.floor(now * 5 + N.id) % 6); return; }
+      } else { N.st = 'idle'; N.fr = naIdleFr(now, N.id); return; }
     }
     // ---- высохли: бросают погоню и прыжком к воде ----
     if (tg && N.wet < 0.25 && !N.cold) {
@@ -253,10 +253,10 @@ function ftJumpThink(N, dt) {
     if (N.pat === 1 && Math.hypot(N.wx - N.hx, N.wy - N.hy) > 7) { const a = Math.atan2(N.wy - N.hy, N.wx - N.hx); N.wx = N.hx + Math.cos(a) * 7; N.wy = N.hy + Math.sin(a) * 7; }
     ftAfter(N, tg);
     // маги не машут посохом: любая их атака — каст с огоньком/молнией на расстоянии (кадры c0…c5, пик на 0,24 с)
-    if ((N.k === 'ftP' || N.k === 'ftR') && N.st === 'atk' && N.atkT === 0 && tg) { N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.08; N.fr = 'c0'; }
+    if ((N.k === 'ftP' || N.k === 'ftR') && N.st === 'atk' && N.atkT === 0 && tg) { N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.04; N.fr = 'c0'; }
     // ближний бой дротика: охотник у цели на дистанции ≥3,5 дует из трубки (6 кадров)
     if (N.k === 'ftB' && N.st === 'atk' && N.atkT === 0 && tg) {
-      if (Math.hypot(tg.x - N.x, tg.y - N.y) >= 3.5) { N.ov = NA_FRAMES.throwd; N.ovT = 0; N.ovP = 0.08; N.fr = 't0'; }
+      if (Math.hypot(tg.x - N.x, tg.y - N.y) >= 3.5) { N.ov = NA_FRAMES.throwd; N.ovT = 0; N.ovP = 0.04; N.fr = 't0'; }
     }
   };
 }
@@ -289,7 +289,7 @@ function ftAfter(N, tg) {
     for (const M of Game.neutrals) if (M !== N && neuAlive(M) && ftIs(M) && M.hp < M.mhp * 0.6 && Math.hypot(M.x - N.x, M.y - N.y) < 7 && (!low || M.hp / M.mhp < low.hp / low.mhp)) low = M;
     if (low) {
       const h = Math.round(low.mhp * 0.22); low.hp = Math.min(low.mhp, low.hp + h);
-      N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13; N.face = low.x >= N.x ? 1 : -1;
+      N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065; N.face = low.x >= N.x ? 1 : -1;
       fxBurst(low.x * TILE, low.y * TILE - 14, 14, ['#9af0a0', '#d8ffd8', '#ffe070'], 60, 60, 0.9, 1.6, -30);
       floater(low.x, low.y - 2, '+' + h, '#8af070'); floater(N.x, N.y - 2.3, 'Водное исцеление', '#9af0a0');
       sfxAt('ftHeal', low.x * TILE, low.y * TILE, 0.8);
@@ -301,7 +301,7 @@ function ftAfter(N, tg) {
       for (const M of Game.neutrals) if (M !== N && neuAlive(M) && ftIs(M) && !M.tg && !M.tor && Math.hypot(M.x - N.x, M.y - N.y) < FT_CALL_R) { M.tg = tg.id; M.prov = now; M.cdA = 0.4 + ftRand() * 0.8; M.pat = 0; n++; }
       if (n) {
         N.callT = now + 30;
-        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13;
+        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065;
         floater(N.x, N.y - 2.5, 'Ква-а-а-а-а!', '#c8a0ff'); sfxAt('ftCroak', N.x * TILE, N.y * TILE, 1);
         logEvent('animal', `Шаман жаболюдов созвал соседей на помощь (${n})`, N.x, N.y);
         return;
@@ -310,7 +310,7 @@ function ftAfter(N, tg) {
     // 3) молния: бьёт цель и цепью — тех, кто рядом; оглушает (замедляет) на пару секунд
     if (!(N.zapT > now)) {
       N.zapT = now + 9;
-      N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13; N.face = tg.x >= N.x ? 1 : -1;
+      N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065; N.face = tg.x >= N.x ? 1 : -1;
       const pts = [[tg.x, tg.y]]; let n = 0;
       for (const u of Game.units) {
         if (u === tg || u.dead || u.inside || ftKid(u) || !(u.hero || u.rec || isPerson(u)) || Math.hypot(u.x - tg.x, u.y - tg.y) > 2.6) continue;
@@ -326,7 +326,7 @@ function ftAfter(N, tg) {
   }
   if (N.k === 'ftR' && !(N.abT > now) && N.st !== 'atk') {
     N.abT = now + 7 + ftRand() * 3;
-    N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13; N.face = tg.x >= N.x ? 1 : -1;
+    N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065; N.face = tg.x >= N.x ? 1 : -1;
     N.dart = { x: Math.round(tg.x * 100) / 100, y: Math.round(tg.y * 100) / 100, t: Math.round(now * 100) / 100, o: 2 };
     floater(N.x, N.y - 2.4, 'Огненный шар!', '#ffb050'); sfxAt('ftFire', N.x * TILE, N.y * TILE, 1);
     for (const u of Game.units) {
@@ -346,14 +346,14 @@ function ftAfter(N, tg) {
       const hurt = Game.neutrals.filter(M => M !== N && neuAlive(M) && ftIs(M) && M.hp < M.mhp * 0.75 && Math.hypot(M.x - N.x, M.y - N.y) < 10);
       if (hurt.length && !(N.healT > now)) {
         N.healT = now + 9;
-        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13;
+        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065;
         for (const M of hurt.slice(0, 6)) { const h = Math.round(M.mhp * 0.2); M.hp = Math.min(M.mhp, M.hp + h); floater(M.x, M.y - 2, '+' + h, '#8af070'); fxBurst(M.x * TILE, M.y * TILE - 14, 10, ['#9af0a0', '#d8ffd8', '#ffe070'], 60, 60, 0.9, 1.6, -30); }
         floater(N.x, N.y - 3.4, 'Королевское исцеление!', '#9af0a0'); sfxAt('ftHeal', N.x * TILE, N.y * TILE, 1);
         return;
       }
       if (!(N.decT > now) && Game.neutrals.some(M => M !== N && neuAlive(M) && ftIs(M) && !M.tg && Math.hypot(M.x - N.x, M.y - N.y) < 20)) {
         N.decT = now + 45;
-        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13;
+        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065;
         let n = 0;
         for (const M of Game.neutrals) if (M !== N && neuAlive(M) && ftIs(M) && !M.tor && Math.hypot(M.x - N.x, M.y - N.y) < 20) { if (!M.tg) M.tg = tg.id; M.prov = now; M.rage = now + 12; M.cdA = 0.3 + ftRand() * 0.6; M.job = null; M.pat = 0; n++; }
         floater(N.x, N.y - 3.4, 'Подданные — ко мне!', '#ffd040'); sfxAt('ftCroakLow', N.x * TILE, N.y * TILE, 1);
@@ -362,7 +362,7 @@ function ftAfter(N, tg) {
       }
       if (!(N.stormT > now)) {
         N.stormT = now + 10;
-        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13; N.face = tg.x >= N.x ? 1 : -1;
+        N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065; N.face = tg.x >= N.x ? 1 : -1;
         const pts = [[tg.x, tg.y]]; let n = 0;
         for (const u of Game.units) {
           if (u === tg || u.dead || u.inside || ftKid(u) || !(u.hero || u.rec || isPerson(u)) || Math.hypot(u.x - tg.x, u.y - tg.y) > 3) continue;
@@ -378,7 +378,7 @@ function ftAfter(N, tg) {
   }
   if (N.k === 'ftK' && !N.cried && N.st !== 'atk' && (N.hp < N.mhp * 0.9 || Math.hypot(tg.x - N.x, tg.y - N.y) < 6)) {
     N.cried = now;
-    N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13;
+    N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065;
     let n = 0;
     for (const M of Game.neutrals) if (neuAlive(M) && ftIs(M) && Math.hypot(M.x - N.x, M.y - N.y) < 8) { M.rage = now + 10; n++; }
     floater(N.x, N.y - 3, 'Боевой клич!', '#ffd040'); sfxAt('ftCroakLow', N.x * TILE, N.y * TILE, 1);
@@ -637,7 +637,7 @@ function ftLairTick(L, now) {
   for (const u of near) {
     if (u.hero || u.rec || !isPerson(u)) continue;
     if (ftKid(u)) {
-      if (!(L.kidT > now - 20)) { L.kidT = now; const M = mem[(ftRand() * mem.length) | 0]; floater(M.x, M.y - 2.2, 'Ква-а? (мило)', '#ffe9c8'); if (!M.jp && !M.pch) { M.ov = NA_FRAMES.jump; M.ovT = 0; M.ovP = 0.08; M.fr = 'j0'; } sfxAt('ftCroak', M.x * TILE, M.y * TILE, 0.3); }
+      if (!(L.kidT > now - 20)) { L.kidT = now; const M = mem[(ftRand() * mem.length) | 0]; floater(M.x, M.y - 2.2, 'Ква-а? (мило)', '#ffe9c8'); if (!M.jp && !M.pch) { M.ov = NA_FRAMES.jump; M.ovT = 0; M.ovP = 0.053; M.fr = 'j0'; } sfxAt('ftCroak', M.x * TILE, M.y * TILE, 0.3); }
       continue;
     }
     if (!(L.shoo > now - 20)) { L.shoo = now; u.fleeUntil = now + 5; floater(u.x, u.y - 1.8, 'Ква! Брысь!', '#ffe9a0'); }
@@ -680,7 +680,7 @@ function ftFriend(L, mem, now) {
       if (typeof foeHit === 'function' && typeof DEF_KILLER !== 'undefined') { DEF_KILLER.x = at.x; DEF_KILLER.y = at.y; foeHit(R, DEF_KILLER, 5 + (at.rk || 1)); }
       if (typeof defShot === 'function') Game.dshots.push({ x: at.x, y: at.y - 0.5, gx: R.x, gy: R.y - 0.5, born: now, dur: 0.3, k: 'dart' });
       at.dart = { x: Math.round(R.x * 100) / 100, y: Math.round(R.y * 100) / 100, t: Math.round(now * 100) / 100, o: 0 };
-      at.face = R.x >= at.x ? 1 : -1; at.ov = NA_FRAMES.throwd; at.ovT = 0; at.ovP = 0.08;
+      at.face = R.x >= at.x ? 1 : -1; at.ov = NA_FRAMES.throwd; at.ovT = 0; at.ovP = 0.04;
       sfxAt('ftDart', at.x * TILE, at.y * TILE, 0.6);
       if (!(L.defLog > now - 90)) { L.defLog = now; logEvent('animal', 'Жаболюды-друзья метнули дротики во врагов у деревни', R.x, R.y); }
       break;

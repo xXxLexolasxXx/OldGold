@@ -3,10 +3,10 @@
 // Тот же конвейер, что у гномов и скелетов (skelart.js): рисование с сверхвыборкой → toPixelArt, кадры лениво в кэше.
 // Фазы I–III меняют вид: I — выцветший, глаза почти погасли; II — трещины с холодным светом, глаза разгораются; III — «Ярость»: нагрудник
 // расколот, синее пламя из груди, глаза белые, клинок светится. Логика босса (raid.js) не тронута: хитбокс, шкала, подписи те же,
-// только выше. Кадры берутся из N.fr: i0–i5, w0–w7, ready/step, windup/strike/recover, roar, hurt/stagger, d0–d5, v0–v3.
+// только выше. Кадры берутся из N.fr: по 12 — i, w, a (атака), r (рёв), d, v; по 6 — h (рана), p (парирование); и одиночные позы.
 
 const KP = { PS: 6, PART: PX_FINE > 1 ? 3 : 2,      // PART — пикселей арта на игровой (мелкий пиксель — 3)
-  W: 140, H: 128, AX: 68, AY: 120, MAX: 48, TOP: 112 };
+  W: 140, H: 128, AX: 68, AY: 120, MAX: 96, TOP: 112 };
 const KP_C = {
   bone: '#e4ddd2', bone2: '#b6ada0', bone3: '#867e74', ink: '#1e1b19', flash: '#f6f2ea',
   iron: ['#9e958a', '#706960', '#4a4540'], rust: ['#c8946a', '#a06840', '#6e432a'], gold: ['#e4b434', '#a4701c', '#7e5214'],
@@ -19,21 +19,43 @@ let KP_SCRATCH = null;
 
 function kpPhaseOf(N) { const F = typeof Game !== 'undefined' && Game.raid && Game.raid.f; return F && F.nid === N.id && F.ph ? Math.min(3, F.ph) : 1; }
 
-function kpParams(fr) {
-  const TAU = Math.PI * 2, kind = fr.replace(/\d+$/, ''), n = +fr.slice(kind.length) || 0;
+function kpKey(kind, n) {
+  const TAU = Math.PI * 2;
   const P = { lean: 0, bob: 0, sw: 0, cw: 0, mv: 0, hand: [17, -52], ang: -1.15, bhand: [-13, -50], jaw: 1, hdx: 0, hdy: 0, flare: 0, flash: 0, sink: 0, adv: 0, sway: 0, tilt: 0 };
-  P.sway = Math.sin(n / 6 * TAU);
-  if (kind === 'i') { P.bob = Math.sin(n / 6 * TAU) * 1.2; P.hdx = Math.sin(n / 6 * TAU + 1) * 0.8; P.bhand = [-13 + P.sway * 1.2, -50 + P.sway]; P.ang = -1.15 + P.sway * 0.05; P.flare = n % 3 === 0 ? 0.4 : 0; }
-  else if (kind === 'w') { const ph = n / 8 * TAU; P.mv = 1; P.sw = Math.sin(ph); P.cw = Math.cos(ph); P.bob = -Math.abs(P.sw) * 1.6; P.sway = P.sw; P.ang = -1.05 + P.sw * 0.1; P.bhand = [-13 - P.sw * 4, -50 + Math.abs(P.sw)]; P.hand = [17 + P.sw * 2, -52]; }
+  P.sway = Math.sin(n / KP_N * TAU);
+  if (kind === 'i') { P.bob = Math.sin(n / KP_N * TAU) * 1.2; P.hdx = Math.sin(n / KP_N * TAU + 1) * 0.8; P.bhand = [-13 + P.sway * 1.2, -50 + P.sway]; P.ang = -1.15 + P.sway * 0.05; P.flare = n % 4 === 0 ? 0.4 : 0; }
+  else if (kind === 'w') { const ph = n / KP_N * TAU; P.mv = 1; P.sw = Math.sin(ph); P.cw = Math.cos(ph); P.bob = -Math.abs(P.sw) * 1.6; P.sway = P.sw; P.ang = -1.05 + P.sw * 0.1; P.bhand = [-13 - P.sw * 4, -50 + Math.abs(P.sw)]; P.hand = [17 + P.sw * 2, -52]; }
   else if (kind === 'ready' || kind === 'step') { P.lean = 1.5; P.hand = [21, -50]; P.ang = -0.8; P.bhand = [-14, -52]; }
   else if (kind === 'windup') { P.lean = -3; P.hand = [6, -90]; P.ang = -2.45; P.bhand = [-18, -78]; P.hdx = -2; P.jaw = 3; }
   else if (kind === 'strike') { P.lean = 4.5; P.adv = 5; P.hand = [31, -48]; P.ang = 0.55; P.bhand = [-8, -56]; P.jaw = 3.5; P.hdy = 2; }
   else if (kind === 'recover') { P.lean = 2; P.adv = 2; P.hand = [24, -50]; P.ang = -0.45; P.bhand = [-12, -52]; P.jaw = 2; }
   else if (kind === 'roar') { P.lean = -2.5; P.hand = [23, -86]; P.ang = -1.9; P.bhand = [-22, -88]; P.jaw = 6; P.hdx = -2.5; P.hdy = -2; P.flare = 1; }
   else if (kind === 'hurt' || kind === 'stagger') { P.lean = -5; P.hand = [13, -46]; P.ang = -0.9; P.bhand = [-16, -58]; P.jaw = 4; P.hdx = -3; P.flash = 1; P.flare = 0.6; }
-  else if (kind === 'd') { const k = n / 5; P.sink = k * 20; P.lean = -k * 7; P.hdy = k * 12; P.hdx = -k * 4; P.hand = [15 + k * 6, -52 + k * 16]; P.ang = -1.15 + k * 2.5; P.bhand = [-13 - k * 3, -50 + k * 14]; P.jaw = 2 + k * 3; P.tilt = k * 0.5; }
-  else if (kind === 'v') { const w = [0, 3, 0, -3][n % 4]; P.hand = [21, -88 + w]; P.ang = -1.7 + w * 0.05; P.bhand = [-20, -86 - w]; P.jaw = 4; P.flare = 1; P.bob = w * 0.3; }
+  else if (kind === 'd') { const k = n / (KP_N - 1); P.sink = k * 20; P.lean = -k * 7; P.hdy = k * 12; P.hdx = -k * 4; P.hand = [15 + k * 6, -52 + k * 16]; P.ang = -1.15 + k * 2.5; P.bhand = [-13 - k * 3, -50 + k * 14]; P.jaw = 2 + k * 3; P.tilt = k * 0.5; }
+  else if (kind === 'v') { const w = Math.round(Math.sin(n / KP_N * 2 * TAU) * 30) / 10; P.hand = [21, -88 + w]; P.ang = -1.7 + w * 0.05; P.bhand = [-20, -86 - w]; P.jaw = 4; P.flare = 1; P.bob = w * 0.3; }
   return P;
+}
+// 12 кадров (КАДРЫ.md): покой, шаг, гибель, торжество — формулами; атака, рёв, рана, парирование — смешением ключевых поз
+const KP_N = 12;
+function kpMix(A, B, t) {
+  const o = {};
+  for (const k in A) o[k] = Array.isArray(A[k]) ? A[k].map((v, i) => v + (B[k][i] - v) * t) : A[k] + (B[k] - A[k]) * t;
+  return o;
+}
+function kpParams(fr) {
+  const kind = fr.replace(/\d+$/, ''), n = +fr.slice(kind.length) || 0, K = q => kpKey(q, 0), sm = x => x * x * (3 - 2 * x);
+  if (kind === 'a') {          // как naPoseTable: стойка → замах 0,22 → удар 0,30 → возврат 0,44 → стойка 0,56
+    const AK = [[0, 'ready'], [0.22, 'windup'], [0.3, 'strike'], [0.44, 'recover'], [0.56, 'ready']], u = (n + 0.5) / KP_N * 0.56;
+    let i = 0; while (i < AK.length - 2 && u > AK[i + 1][0]) i++;
+    return kpMix(K(AK[i][1]), K(AK[i + 1][1]), sm(Math.max(0, Math.min(1, (u - AK[i][0]) / (AK[i + 1][0] - AK[i][0])))));
+  }
+  if (kind === 'h' || kind === 'p') {   // рана и парирование — 6 кадров: рывок, пик, дрожь, просел, выпрямляется
+    const c = [0.7, 1, 0.85, 0.6, 0.32, 0.1][Math.min(5, n)], P = kpMix(K('ready'), K('hurt'), kind === 'p' ? c * 0.45 : c);
+    P.flash = kind === 'h' && c > 0.5 ? 1 : 0; P.hdx += n === 2 ? 1 : 0;
+    return P;
+  }
+  if (kind === 'r') { const c = [0, 0.35, 0.7, 1, 1, 1, 1, 1, 0.8, 0.55, 0.3, 0.1][Math.min(11, n)], P = kpMix(K('ready'), K('roar'), c); P.jaw += n >= 4 && n <= 7 ? (n % 2) * 1.5 : 0; P.flare = c; return P; }
+  return kpKey(kind, n);
 }
 
 function kpSprite(fr, ph) {
@@ -261,7 +283,7 @@ function kpDraw(c, N) {
   if (al <= 0) return;
   const ph = kpPhaseOf(N), px = Math.round(N.x * TILE), py = Math.round(N.y * TILE + 6);
   const fr = N.fr || 'i0';
-  const spr = kpSprite(/^(i|w|d|v)\d$|^(ready|step|windup|strike|recover|roar|hurt|stagger)$/.test(fr) ? fr : 'i0', ph);
+  const spr = kpSprite(/^(i|w|d|v|a|r)(\d|1[01])$|^[hp][0-5]$|^(ready|step|windup|strike|recover|roar|hurt|stagger)$/.test(fr) ? fr : 'i0', ph);
   if (!spr) return;
   c.save();
   c.globalAlpha = al;

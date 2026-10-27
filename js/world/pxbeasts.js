@@ -2089,9 +2089,14 @@ function pxbBaby(sp, mode, p) {
 }
 // Чумной моховик: кадры нейтралов (naFrame в neutralart.js: покой, ходьба, бой, смерть, торжество) → свои режимы
 const PXB_SPORE = { ready: ['idle', 0], step: ['walk', 1], windup: ['atk', 0], strike: ['atk', 3], recover: ['atk', 5], parry: ['atk', 1], hurt: ['hurt', 0], stagger: ['hurt', 1], roar: ['atk', 2] };
-for (let k = 0; k < 6; k++) { PXB_SPORE['i' + k] = ['idle', k]; PXB_SPORE['d' + k] = ['die', k]; }
-for (let k = 0; k < 8; k++) PXB_SPORE['w' + k] = ['walk', Math.round(k * 6 / 8) % 6];
-for (let k = 0; k < 4; k++) PXB_SPORE['v' + k] = ['win', k];
+// покой и шаг — по 12 (фаза шляпки по синусу, кадр k → p = k / 2); удар, гибель, торжество, рана нарисованы
+// поштучно (6 / 6 / 4 / 2 позы) — на 12 кадров стандарта приходятся ближайшие из них
+for (let k = 0; k < 12; k++) {
+  PXB_SPORE['i' + k] = ['idle', k / 2]; PXB_SPORE['w' + k] = ['walk', k / 2];
+  PXB_SPORE['d' + k] = ['die', Math.round(k * 5 / 11)]; PXB_SPORE['v' + k] = ['win', [0, 1, 2, 3, 2, 1][k >> 1]];
+  PXB_SPORE['a' + k] = ['atk', [0, 0, 1, 1, 1, 2, 3, 3, 4, 4, 5, 5][k]]; PXB_SPORE['r' + k] = ['atk', 2];
+}
+for (let k = 0; k < 6; k++) { PXB_SPORE['h' + k] = ['hurt', k < 2 ? 0 : 1]; PXB_SPORE['p' + k] = ['atk', 1]; }
 if (typeof naFrame === 'function') {
   const naOld = naFrame;
   naFrame = function (kind, fr) {
