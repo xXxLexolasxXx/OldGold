@@ -39,27 +39,27 @@ function buildInn(g, lv, roofs) {
   const WIN = (side, at, a, z, w, h, o = {}) => { elem(g, side, at, a, z, w, h, m1Window(Object.assign({ w, h }, o))); meta.wins.push({ side, at, a, z, w, h, round: !!o.round }); };
   const deckTop = (u, v) => (((v | 0) % 3) === 0 ? P1.plank[2] : P1.plank[(u + v) % 9 < 1 ? 1 : 0]);
   // ---- главный дом: компактный, отодвинут вглубь — спереди широкая зона действия
-  const Lo = { x0: 42, x1: 100, y0: 50, y1: 92, h: 15 }, Up = { x0: 38, x1: 104, y0: 46, y1: 92, z0: 15, h: 18 };
+  const Lo = { x0: 30, x1: 88, y0: 50, y1: 92, h: 15 }, Up = { x0: 26, x1: 92, y0: 46, y1: 92, z0: 15, h: 18 };   // сдвинут влево: крыша не налезает на бар
   box(g, Object.assign({ mat: m1Stone(P1.stone) }, Lo));
-  beam1(g, 38, 104, 46, 50, 14, 1, P1.plank);
+  beam1(g, 26, 92, 46, 50, 14, 1, P1.plank);
   box(g, Object.assign({ mat: m1Plaster(P1.plaster, { frame: true, bay: 16, mid: true, braceOdd: true }) }, Up));
   roof(g, Up, { type: 'gable', axis: 'Y', rise: 30, ov: 3, ovg: 5, mat: m1Ivy(roofs.main, [{ u: 30, v: 16, rx: 12, ry: 9 }, { u: 18, v: 32, rx: 7, ry: 6 }]), cut: roofs.cut, th: roofs.th || 2, gable: m1Plaster(P1.plaster, { frame: true, bay: 13, brace: false }) });
-  chimney1(g, 48, 72, Up.z0 + Up.h, 20, { w: 6, d: 6 });
-  WIN('S', Up.y0, 65, 36, 12, 14, { arch: true });
+  chimney1(g, 36, 72, Up.z0 + Up.h, 20, { w: 6, d: 6 });
+  WIN('S', Up.y0, 53, 36, 12, 14, { arch: true });
   if (lv >= 3) {
-    beam1(g, 58, 84, 40, 46, 34, 2, P1.plank); railing1(g, 58, 84, 40.5, 40.5, 36, 5); railing1(g, 58, 58, 40.5, 46, 36, 5); railing1(g, 84, 84, 40.5, 46, 36, 5);
-    g.sprite([71, 40, 41], P => Q1.planter(P, 11), -0.5);
-  } else g.sprite([71, 45.5, 35], P => Q1.planter(P, 13), -0.5);
-  elem(g, 'S', Up.y0 - 0.3, 63, 52, 16, 7, m1Sprite(16, 7, P => Q1.board(P, 'mug', 16, 7)));
-  WIN('S', Lo.y0, 46, 4, 9, 10, { sill: true });
+    beam1(g, 46, 72, 40, 46, 34, 2, P1.plank); railing1(g, 46, 72, 40.5, 40.5, 36, 5); railing1(g, 46, 46, 40.5, 46, 36, 5); railing1(g, 72, 72, 40.5, 46, 36, 5);
+    g.sprite([59, 40, 41], P => Q1.planter(P, 11), -0.5);
+  } else g.sprite([59, 45.5, 35], P => Q1.planter(P, 13), -0.5);
+  elem(g, 'S', Up.y0 - 0.3, 51, 52, 16, 7, m1Sprite(16, 7, P => Q1.board(P, 'mug', 16, 7)));
+  WIN('S', Lo.y0, 36, 4, 9, 10, { sill: true }); WIN('S', Lo.y0, 52, 4, 9, 10, { sill: true });
   elem(g, 'S', Lo.y0, 73, 0, 14, 15, m1Door({ w: 14, h: 15, arch: true, knob: true }));
   meta.doorPt = [80, Lo.y0, 0];
-  elem(g, 'S', Lo.y0, 90, 0, 8, 11, m1Door({ w: 8, h: 11, col: P1.dark }));                      // дверь кухни
-  for (const x of [44, 60, 86]) { WIN('S', Up.y0, x, 20, 9, 9); if (x !== 60) g.sprite([x + 4.5, 45.5, 19], P => Q1.planter(P, 9), -0.5); }
-  WIN('E', Lo.x1, 58, 4, 9, 10, {}); WIN('E', Lo.x1, 78, 4, 9, 10, {}); WIN('E', Up.x1, 70, 20, 9, 9);
+  for (const x of [32, 48, 76]) { WIN('S', Up.y0, x, 20, 9, 9); if (x !== 48) g.sprite([x + 4.5, 45.5, 19], P => Q1.planter(P, 9), -0.5); }
+  WIN('E', Lo.x1, 58, 4, 9, 10, {}); WIN('E', Lo.x1, 78, 4, 9, 10, {}); elem(g, 'E', Lo.x1, 66, 0, 8, 11, m1Door({ w: 8, h: 11, col: P1.dark }));   // дверь на кухню
+  WIN('E', Up.x1, 70, 20, 9, 9);
   S2([[68, 44], [90, 44]], (x, y) => post1(g, x, y, 0, 14));
   roof(g, { x0: 68, x1: 92, y0: 46, y1: 50, h: 15 }, { type: 'lean', down: 'S', rise: 3, ov: 2, mat: m1Awning(), cut: m1Flat(P1.red[1]), th: 1 });
-  g.sprite([64, 49.5, 12], P => Q1.lantern(P)); g.sprite([96, 49.5, 12], P => Q1.lantern(P));
+  g.sprite([64, 49.5, 12], P => Q1.lantern(P)); g.sprite([89, 49.5, 12], P => Q1.lantern(P));
   g.sprite([80, 49, 0], P => Q1.steps(P, 16, 2));
   // ---- бар-пристройка сзади справа (6): кирпич, холодный фахверк, синяя чешуя, окно барменши
   const Wb = { x0: 104, x1: 126, y0: 66, y1: 92, h: 12 }, Ub = { x0: 102, x1: 126, y0: 64, y1: 92, z0: 12, h: 14 };
@@ -88,10 +88,10 @@ function buildInn(g, lv, roofs) {
   for (const x of [105, 110, 115]) mugs(g, x, ky0 + 1, 7);
   g.sprite([124, ky0 + 6, 0.8], P => Q1.logs(P)); g.sprite([104, 48, 0.8], P => Q1.barrel(P, 7, 9)); g.sprite([124, 64, 0.8], P => Q1.sack(P));
   // ---- площадка разгрузки слева у дома: поддон, ящики, мешки, тележка (сюда носят припасы)
-  box(g, { x0: 8, x1: 38, y0: 50, y1: 64, h: 1, mat: m1Flat(P1.plank[3]), top: (u, v) => P1.plank[(u | 0) % 4 === 0 ? 3 : 2] });
-  g.sprite([14, 52, 1], P => Q1.crate(P, 8)); g.sprite([14, 52, 9], P => Q1.crate(P, 7)); g.sprite([26, 54, 1], P => Q1.sack(P)); g.sprite([32, 60, 1], P => Q1.sack(P, 6, 8)); g.sprite([22, 62, 1], P => Q1.barrel(P, 7, 9));
-  meta.stock = [[14, 56, 1], [24, 56, 1], [32, 54, 1], [18, 62, 1], [30, 62, 1]];
-  g.sprite([4, 42, 0], P => { PR.rect(P, 0, -8, 14, -4, P1.plank[2]); PR.rect(P, 0, -9, 14, -9, P1.plank[0]); PR.rect(P, 14, -7, 20, -7, P1.plank[3]); PR.ell(P, 4, -2, 2.5, 2.5, (x, y, a, b) => (a * a + b * b > 0.5 ? P1.plank[3] : P1.iron[1])); PR.ell(P, 11, -2, 2.5, 2.5, (x, y, a, b) => (a * a + b * b > 0.5 ? P1.plank[3] : P1.iron[1])); });
+  box(g, { x0: 36, x1: 66, y0: 36, y1: 46, h: 1, mat: m1Flat(P1.plank[3]), top: (u, v) => P1.plank[(u | 0) % 4 === 0 ? 3 : 2] });
+  g.sprite([40, 38, 1], P => Q1.crate(P, 8)); g.sprite([40, 38, 9], P => Q1.crate(P, 7)); g.sprite([52, 40, 1], P => Q1.sack(P)); g.sprite([60, 44, 1], P => Q1.sack(P, 6, 8)); g.sprite([48, 45, 1], P => Q1.barrel(P, 7, 9));
+  meta.stock = [[40, 42, 1], [50, 42, 1], [60, 40, 1], [44, 45, 1], [56, 45, 1]];
+  g.sprite([8, 54, 0], P => { PR.rect(P, 0, -8, 14, -4, P1.plank[2]); PR.rect(P, 0, -9, 14, -9, P1.plank[0]); PR.rect(P, 14, -7, 20, -7, P1.plank[3]); PR.ell(P, 4, -2, 2.5, 2.5, (x, y, a, b) => (a * a + b * b > 0.5 ? P1.plank[3] : P1.iron[1])); PR.ell(P, 11, -2, 2.5, 2.5, (x, y, a, b) => (a * a + b * b > 0.5 ? P1.plank[3] : P1.iron[1])); });
   // ---- веранда справа спереди (растёт по уровням), без крыши
   const V = { x0: 98, x1: 126, y0: 4, y1: ky0 - 2 };
   box(g, { x0: V.x0, x1: V.x1, y0: V.y0, y1: V.y1, h: 1.2, mat: m1Flat(P1.plank[2]), top: deckTop });
@@ -103,7 +103,7 @@ function buildInn(g, lv, roofs) {
   if (lv >= 2) {
     g.sprite([112, V.y1 - 7, 1.2], P => Q1.table(P, 14)); meta.tables.push([112, V.y1 - 7, 1.2]);
     g.sprite([124, 5, 15], P => Q1.lantern(P)); g.sprite([99, 5, 15], P => Q1.lantern(P));
-    bunting(g, [98, 6, 15], [66, 46, 32]);
+    bunting(g, [98, 6, 15], [84, 46, 32]);
   }
   // ---- пивной двор слева спереди
   if (lv < 3) {
@@ -130,7 +130,7 @@ function buildInn(g, lv, roofs) {
     lampPost(g, 64, 2);
   }
   for (let k = 0; k < 7; k++) g.sprite([80 + (k % 2 ? 2 : -2), 6 + k * 6, 0], P => Q1.stones(P));
-  g.sprite([64, 49, 0], P => Q1.flowers(P, 6)); g.sprite([48, 49, 0], P => Q1.flowers(P, 8)); g.sprite([96, 49, 0], P => Q1.flowers(P, 6));
+  g.sprite([64, 49, 0], P => Q1.flowers(P, 6)); g.sprite([28, 49, 0], P => Q1.flowers(P, 6)); g.sprite([92, 60, 0], P => Q1.flowers(P, 6));
   g.sprite([66, 2, 0], P => Q1.mushroom(P, 3));
 }
 
