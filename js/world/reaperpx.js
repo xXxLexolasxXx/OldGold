@@ -31,7 +31,7 @@ const RPX = {
   EDGE: [2, 4, 10],
 };
 
-function reaperPx(v, mood, p = 0, k = 0, hv = 0) {
+function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
   const K = fzPxKit(243, 309, 120, 129), { P, R, L, dth, hsh } = K, TAU = Math.PI * 2, { RB, BO, VO, IR, WD, CL } = RPX;
   const atk = mood === 'atk', boo = mood === 'boo' || atk;
   const sn = (m, o = 0) => Math.sin(p * TAU * m + o), sm = x => x * x * (3 - 2 * x);
@@ -159,7 +159,58 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0) {
   if (v === 'R3') horn([[HX - 4, HY - 38], [HX - 4, HY - 46], [HX - 3, HY - 54]], 3);
 
   // ---- одна форма: ряса, плечи, ближняя рука, голова и убор
-  const parts = [...DS_chain(spine, { mat: 'rb', k: 8 }), { f: ell(lean * 0.6, 22, 40, 18), mat: 'rb', k: 9 }, ...armParts(AN)];
+  // ряса: гладкая (rag = null) или лохмотья — T1 полосы, T2 рваньё с дырами, T3 клочья (лист tools/pxghost/rags.html)
+  const robeCaps = DS_chain(spine).map(q => q.f), shoulder = ell(lean * 0.6, 22, 40, 18);
+  const robe0 = (x, y) => { let u = shoulder(x, y); for (const f of robeCaps) u = DS_smin(u, f(x, y), 8); return u; };
+  const vn = (x, y, sc) => {                                                          // гладкий шум по сетке хэшей
+    const gx = x / sc, gy = y / sc, ix = Math.floor(gx), iy = Math.floor(gy), fx = gx - ix, fy = gy - iy, h = (a, b) => hsh(a * 57.1 + b * 13.7);
+    const u = fx * fx * (3 - 2 * fx), w = fy * fy * (3 - 2 * fy);
+    return (h(ix, iy) * (1 - u) + h(ix + 1, iy) * u) * (1 - w) + (h(ix, iy + 1) * (1 - u) + h(ix + 1, iy + 1) * u) * w;
+  };
+  const sway = (y, a) => Math.sin(y * 0.09 + p * TAU) * a;                           // лохмотья колышутся
+  const robe = !rag ? robe0 : rag === 'T1' ? (x, y) => {
+    let d = robe0(x, y);
+    if (y > 30) {                                                                     // по бокам — зазубрины
+      d += Math.max(0, Math.sin(y * 0.55 + hsh(Math.floor(y / 6)) * 4)) * 3.2 * Math.min(1, (y - 30) / 30);
+    }
+    if (y > 52) {                                                                     // низ распущен на полосы разной длины, между ними — щели
+      const xs = x - sway(y, 3) * (y - 52) / 60, i = Math.floor((xs + 200) / 8), fx = ((xs + 200) % 8) / 8;
+      const end = tailEnd - 8 - hsh(i * 3.3) * 70;
+      if (y > end) d = Math.max(d, (y - end) * 0.8);
+      if (fx < 0.16 || fx > 0.94) d = Math.max(d, Math.min(4, (y - 52) * 0.08));
+    }
+    return d;
+  } : rag === 'T2' ? (x, y) => {
+    let d = robe0(x, y) + (vn(x + sway(y, 4), y, 7) - 0.45) * 7 + (vn(x * 1.7, y * 1.7, 4) - 0.5) * 3;
+    for (let i = 0; i < 6; i++) {                                                     // сквозные дыры в ткани
+      const hx = lean * 0.5 + (hsh(i * 7.7) - 0.5) * 44, hy = 42 + hsh(i * 3.9) * 70, r = 3 + hsh(i * 5.1) * 4.5;
+      const dh = r - Math.hypot((x - hx) * (1 + (vn(x, y, 3) - 0.5) * 0.6), y - hy);
+      if (dh > -2) d = Math.max(d, dh * 1.6);
+    }
+    return d;
+  } : (x, y) => {
+    let d = robe0(x, y);
+    if (y > 26) {                                                                     // острые клочья по краю
+      const ph = (y + sway(y, 6) + hsh(Math.floor(y / 11)) * 5) / 11, tri = Math.abs((ph % 1 + 1) % 1 - 0.5) * 2;
+      d += (tri - 0.35) * 7 * Math.min(1, (y - 26) / 24);
+    }
+    if (y > 70) {                                                                     // подол зубьями
+      const ph = (x + sway(y, 5) + 200) / 13, tri = Math.abs((ph % 1 + 1) % 1 - 0.5) * 2;
+      d += Math.max(0, (y - 70) / (tailEnd - 70) * 30 * (1 - tri) - 6) * 0.6;
+    }
+    return d;
+  };
+  const shreds = [];                                                                  // T3: оторванные лоскуты летят назад; у всех лохмотьев — тряпки с рукавов
+  if (rag === 'T3') for (let i = 0; i < 4; i++) {
+    const t = 0.25 + i * 0.16, s0 = spine[Math.floor(t * N)], ax = s0[0] - s0[2] + 3, ay = s0[1], len = 18 + hsh(i * 2.3) * 14;
+    const pts = []; for (let j = 0; j <= 5; j++) { const u = j / 5; pts.push([ax - u * len, ay + u * len * 0.35 + Math.sin(u * 3 + p * TAU + i) * 4 * u, 4.5 * (1 - u) + 0.6]); }
+    shreds.push(...DS_chain(pts, { mat: 'rb', k: 4 }));
+  }
+  if (rag) for (const A of [AN]) for (let i = 0; i < 3; i++) {
+    const t = 0.35 + i * 0.25, sx = A.shx + (A.ex - A.shx) * t, sy = A.shy + (A.ey - A.shy) * t + 6, len = 12 + hsh(i * 4.4 + 1) * 10;
+    shreds.push(...DS_chain([[sx, sy, 3.5], [sx - 2 + sway(sy, 2), sy + len * 0.6, 2.2], [sx - 3 + sway(sy + 9, 3), sy + len, 0.8]], { mat: 'rb', k: 3 }));
+  }
+  const parts = [{ f: robe, mat: 'rb', k: 8 }, ...shreds, ...armParts(AN)];
   if (v === 'R1') {
     parts.push({ f: ell(HX, HY - 2, 23, 25), mat: 'hm', k: 6 }, { f: ell(HX, HY + 16 + drop * 0.6, 17, 13 + drop * 0.5), mat: 'hm', k: 5 });
     parts.push({ f: (x, y) => Math.max(faceF(x, y), HY - 9 - y) - 1, mat: 'void', zone: true });
@@ -250,15 +301,16 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0) {
 }
 // Кадры: парение 12 (10 к/с, как у призраков), гнев 9, взмах косой 9. hv — форма рогов 0..2.
 const RPX_N = { idle: 12, boo: 9, atk: 9 };
-function reaperPxSprite(v, mood, f, n = RPX_N[mood], hv = 0) {
+let RPX_RAG = null;      // лохмотья рясы в игре: null — гладкая; 'T1' | 'T2' | 'T3' — после выбора владельца
+function reaperPxSprite(v, mood, f, n = RPX_N[mood], hv = 0, rag = RPX_RAG) {
   f = Math.max(0, Math.min(n - 1, f | 0));
-  return fzPxSprite('rp' + v + mood + f + '_' + n + 'h' + hv, 81, 103, 40, 43, () => reaperPx(v, mood, mood === 'atk' ? 0 : f / n, mood === 'atk' ? f / (n - 1) : 0, hv));
+  return fzPxSprite('rp' + v + mood + f + '_' + n + 'h' + hv + (rag || ''), 81, 103, 40, 43, () => reaperPx(v, mood, mood === 'atk' ? 0 : f / n, mood === 'atk' ? f / (n - 1) : 0, hv, rag));
 }
 // кадр для игры по бюджету новых спрайтов (как ghostPxFrame)
 const RPX_LAST = new WeakMap();
 function reaperPxFrame(g, v, mood, f, hv) {
   f = Math.max(0, Math.min(RPX_N[mood] - 1, f | 0));
-  const have = FZ_CVC['rp' + v + mood + f + '_' + RPX_N[mood] + 'h' + hv], last = RPX_LAST.get(g);
+  const have = FZ_CVC['rp' + v + mood + f + '_' + RPX_N[mood] + 'h' + hv + (RPX_RAG || '')], last = RPX_LAST.get(g);
   if (have) { RPX_LAST.set(g, have); return have; }
   if (last && typeof spriteBudgetOk === 'function' && !spriteBudgetOk(true)) return last;
   const t0 = performance.now(), cv = reaperPxSprite(v, mood, f, RPX_N[mood], hv);
