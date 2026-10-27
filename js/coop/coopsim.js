@@ -831,6 +831,7 @@ function coopWorldPacket() {
     d.wk = b.working ? 1 : 0;
     d.cd = b.cold ? 1 : 0;
     if (b.worker && !b.worker.dead && b.worker.home === b) d.wr = b.worker.id;      // кто здесь работает: по этому клиент знает, есть ли у здания работник (coopLinkWorkers)
+    if (d.wr && typeof workSlots === 'function' && workSlots(b) > 1) { const x = Game.units.filter(u => u.home === b && u !== b.worker && !u.dead).map(u => u.id); if (x.length) d.wx = x; }   // вторые места (ур.3)
     const sig = JSON.stringify(d);
     d.an = r2(b.anim || 0);
     nb.set(d.id, sig);
