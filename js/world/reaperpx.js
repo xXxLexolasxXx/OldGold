@@ -185,13 +185,13 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0) {
       for (const j of [0.7, 1.2]) { const a = -Math.PI / 2 + s * j * 0.5, b = [HX - 3 + s * j * 14, HY - 34 + j * 6]; horn([b, [b[0] + Math.cos(a) * 7, b[1] + Math.sin(a) * 7], [b[0] + Math.cos(a) * 14, b[1] + Math.sin(a) * 14]], 2.8); }
       continue;
     }
-    const b = v === 'R1' ? [HX + s * 19, HY - 9] : [HX + s * 19, HY - 25], pts = [];
+    const b = v === 'R1' ? [HX + s * 19, HY - 9] : hv === 0 ? [HX + s * 19, HY - 25] : [HX + s * (hv === 1 ? 21 : 19), HY - 18], pts = [];   // бычьи и винтовые — пониже, у висков
     if (hv === 0) {                                                                     // баранья спираль: вверх, наружу и вниз к щеке, тугой завиток
       const c0 = [b[0] + s * 13 * HS, b[1] + 3 * HS], th0 = s > 0 ? Math.PI : 0, r0 = Math.hypot(b[0] - c0[0], b[1] - c0[1]);
-      for (let i = 0; i <= 26; i++) { const t = i / 26, th = th0 + s * t * Math.PI * 2 * (v === 'R2' ? 1.05 : 1.15), r = r0 * (1 - 0.55 * t) + 6 * HS * Math.sin(t * Math.PI) * (1 - t); pts.push([c0[0] + Math.cos(th) * r, c0[1] + Math.sin(th) * r]); }
+      for (let i = 0; i <= 26; i++) { const t = i / 26, th = th0 + s * t * Math.PI * 2 * (v === 'R2' ? 0.74 : 1.15), r = r0 * (1 - 0.32 * t) + 6 * HS * Math.sin(t * Math.PI) * (1 - t); pts.push([c0[0] + Math.cos(th) * r, c0[1] + Math.sin(th) * r]); }
       horn(pts, 7 * HS);
     } else if (hv === 1) {                                                              // винтом вверх: высокие, витые
-      for (let i = 0; i <= 22; i++) { const t = i / 22; pts.push([b[0] + s * (5 + 8 * t + Math.sin(t * Math.PI * 2.5 * curl) * 6 * (1 - t * 0.5)) * HS, b[1] - 46 * t * HS]); }
+      for (let i = 0; i <= 22; i++) { const t = i / 22; pts.push([b[0] + s * (6 + 18 * t + Math.sin(t * Math.PI * 2.5 * curl) * 6 * (1 - t * 0.5)) * HS, b[1] - 44 * t * HS]); }   // винтом вверх и вразлёт
       horn(pts, 6 * HS);
     } else {                                                                            // бычьи: вбок, вверх и завиток внутрь на конце
       for (let i = 0; i <= 14; i++) { const t = i / 14; pts.push([b[0] + s * (30 * Math.sin(t * Math.PI * 0.55)) * HS, b[1] - (4 + 30 * t * t) * HS]); }
