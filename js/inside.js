@@ -244,6 +244,8 @@ function drawInside(c, b, spr, ox, oy) {
   insideScan();
   drawInsideLife(c, b, spr, ox, oy);
   if (spr.px === 'storehouse') drawStoreYard(c, b, spr, ox, oy);
+  if (spr.px === 'school') drawSchoolYard(c, b, spr, ox, oy);
+  if (spr.px === 'sawmill') drawSawYard(c, b, spr, ox, oy);
   if (b.type === 'inn') { if (spr.pxInn) drawInnYard(c, b, spr, ox, oy); drawInnPorch(c, b, spr, ox, oy); drawInnOven(c, b, spr, ox, oy); drawBarmaid(c, b, spr, ox, oy); if (spr.pxInn) drawInnExtraDiners(c, b, spr, ox, oy); }
 }
 
@@ -595,5 +597,51 @@ function drawStoreYard(c, b, spr, ox, oy) {
   }
   for (const [x, y] of spr.runes || []) glow(c, ox + x, oy + y - 4, 9, '140,240,220', 0.22 + Math.sin(t * 2.3 + x) * 0.08);
   if (spr.circle) glow(c, ox + spr.circle[0], oy + spr.circle[1], 16, '120,230,210', 0.16 + Math.sin(t * 1.6) * 0.06);
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Пиксельная школа (bldpx.js): гномята на площадке ----------
+// Днём во дворе играют гномята: прыгают по классикам, качаются на качелях, читают под деревом;
+// на 2-м уровне — песочница и качели-балансир, на 3-м — горка и майское дерево. Ночью двор пуст.
+function kidFolk(b, k) { return { type: 'kid', look: (b.id * 131 + k * 47) >>> 0, carry: null }; }
+// гномёнок мельче взрослого (×0.7), ноги — в точке (x, y)
+function drawKid(c, b, k, x, y, view, pose, frame, opt) {
+  const sp = personSprite(kidFolk(b, k), view, pose, frame, opt || {}), s = 0.7;
+  c.drawImage(sp, Math.round(x - PFX * s), Math.round(y - PFY * s), Math.round(PW * s), Math.round(PH * s));
+}
+function drawSchoolYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.play || (typeof isNightNow === 'function' && isNightNow())) return;
+  const t = Game.time, P = spr.play, lv = spr.pxLv || 1, X = p => ox + p[0], Y = p => oy + p[1];
+  c.imageSmoothingEnabled = false;
+  // 1-й уровень: классики, качели, чтение под деревом
+  if (P.hop) { const ph = (t * 0.6 + b.id) % 1, jump = Math.abs(Math.sin(ph * Math.PI * 4)) * 2; drawKid(c, b, 0, X(P.hop), Y(P.hop) + 6 - ph * 12 - jump, 'N', 'idle', 0); }
+  if (P.swing) { const s = P.swing[0], a = Math.sin(t * 2.4); drawKid(c, b, 1, X(s) + a * 2, Y(s) - Math.abs(a) * 1.5, 'S', 'idle', 0, { gest: 'clap', gf: gestCyc(t) }); }
+  if (P.read) drawKid(c, b, 3, X(P.read), Y(P.read), 'S', 'idle', Math.floor(t * 2) % 6, { gest: 'eat', gf: 10 });
+  // 2-й: песочница и огородик
+  if (lv >= 2 && P.sand) drawKid(c, b, 4, X(P.sand), Y(P.sand), 'S', 'work', { anim: 'pat', f: Math.floor(t * 8) % 8 });
+  if (lv >= 2 && P.garden) drawKid(c, b, 11, X(P.garden), Y(P.garden), 'S', 'work', { anim: 'dig', f: Math.floor(t * 6) % 8 });
+  // 3-й: качели-балансир, горка, второй на качелях
+  if (lv >= 3 && P.seesaw) P.seesaw.forEach((s, k) => { const a = Math.sin(t * 2) * (k ? -1 : 1) * 2; drawKid(c, b, 5 + k, X(s), Y(s) - a, k ? 'W' : 'E', 'idle', 0); });
+  if (lv >= 3 && P.slide) { const ph = (t * 0.5 + b.id) % 1; drawKid(c, b, 7, X(P.slide) + ph * 12, Y(P.slide) - 12 + ph * 12, 'E', 'idle', 0); }
+  if (lv >= 3 && P.swing && P.swing[1]) { const s = P.swing[1], a = Math.sin(t * 2.4 + 1.3); drawKid(c, b, 2, X(s) + a * 2, Y(s) - Math.abs(a) * 1.5, 'S', 'idle', 0); }
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Пиксельная лесопилка (bldpx.js): диск крутится, бревно идёт на пилу, летят опилки, рабочие у станка ----------
+function drawSawYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.saw) return;
+  const t = Game.time, on = !!b.working, [sx, sy] = spr.saw, X = ox + sx, Y = oy + sy, r = spr.sawR || 12;
+  c.imageSmoothingEnabled = false;
+  if (on && !spr.sawSide) {   // блики на зубьях бегут по кругу — диск крутится
+    for (let k = 0; k < 6; k++) { const a = t * 14 + k * Math.PI / 3; c.fillStyle = '#ffffff'; c.fillRect(Math.round(X + Math.cos(a) * (r - 1)), Math.round(Y - Math.sin(a) * (r - 1)), 1, 1); }
+  }
+  if (on) for (let k = 0; k < 8; k++) {   // опилки веером
+    const f = (t * 3 + k / 8) % 1, dir = spr.sawSide ? -1 : 1;
+    c.fillStyle = ['#e8c868', '#c8a448', '#f2e0a0'][k % 3];
+    c.fillRect(Math.round(X - dir * f * 10 + Math.sin(k * 3.1) * 3), Math.round(Y + 2 - Math.sin(f * Math.PI) * 6 + f * 6), 1, 1);
+  }
+  const w = spr.workers || [];
+  if (w[0]) drawFolk(c, { type: 'woodcutter', look: b.id * 53 + 1 }, ox + w[0][0], oy + w[0][1], 'W', on ? 'work' : 'idle', on ? { anim: 'build', f: Math.floor(t * 6) % 8 } : 0, {});   // подаёт бревно
+  if (w[1]) drawFolk(c, { type: 'woodcutter', look: b.id * 53 + 2 }, ox + w[1][0], oy + w[1][1], 'E', on ? 'work' : 'idle', on ? { anim: 'chop', f: Math.floor(t * 5 + 3) % 8 } : 0, {});   // принимает доски
   c.imageSmoothingEnabled = R.smooth;
 }

@@ -258,9 +258,10 @@ function eraEvict(keep) {
   for (const k in SPR.buildings) { const e = +k.split('#e')[1]; if (e && !keep.includes(e)) delete SPR.buildings[k]; }
 }
 
+const PX_TYPES = new Set(['inn', 'storehouse', 'house', 'school', 'sawmill', 'woodcutter', 'quarry']);   // здания в новом пиксельном стиле (bldpx.js)
 function buildingSprite(type, rot = 0, level = 1, settle, vr = 0) {
   const lv = level >= 3 && (BUILDINGS[type].up3 || type.startsWith('guild_')) ? 3 : level >= 2 && BUILDINGS[type].up ? 2 : 1;
-  if ((type === 'inn' || type === 'storehouse' || type === 'house') && typeof pxSprite === 'function') return pxSprite(type, rot, lv, vr);   // пиксельные здания ×1 со своими уровнями (bldpx.js)
+  if (PX_TYPES.has(type) && typeof pxSprite === 'function') return pxSprite(type, rot, lv, vr);   // пиксельные здания ×1 со своими уровнями (bldpx.js)
   const era = buildingEra(type, lv, settle);
   if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot, 1, era, vr);
   const d = bDims(type, rot);
