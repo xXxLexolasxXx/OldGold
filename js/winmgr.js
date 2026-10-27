@@ -142,6 +142,7 @@ function wmInitHead() {
       else wmOpenInfo();
       return;
     }
+    if (e.target.closest('[data-wmx]')) { if (typeof selectBuilding === 'function') selectBuilding(null); else { Game.selected = null; updateUI(true); } return; }
     const v = e.target.closest('[data-wmv]');
     if (v) { WM.vtab = v.dataset.wmv; openTab(v.dataset.wmv); mobileSheet('tab'); }
   });
@@ -315,35 +316,35 @@ function wmSync() {
   // шапка шторки (телефон) / колонки (ПК)
   const head = document.getElementById('wm-head');
   if (head) {
-    const mode = pcOne ? 'seg' : !mob || !s2 ? '' : s2 === 'info' || UI.tab === 'build' ? 'seg' : WM_VKEYS.has(UI.tab) ? 'vil' : 'title';
+    // в шапке — только то, что сейчас открыто (без переключателя «Стройка | Здание»): название и значок;
+    // вкладки «Деревни» — строкой значков. ПК: у окна здания свой ✕ (снять выбор)
+    const showInfo = pcOne ? WM.pc === 'info' : s2 === 'info';
+    const mode = !(pcOne || (mob && s2)) ? '' : !showInfo && WM_VKEYS.has(UI.tab) ? 'vil' : 'title';
     head.dataset.mode = mode;
-    const sel = selB;
-    const sb = head.querySelector('[data-wms="build"]'), si = head.querySelector('[data-wms="info"]');
-    sb.classList.toggle('active', pcOne ? WM.pc === 'tab' : s2 === 'tab');
-    si.classList.toggle('active', pcOne ? WM.pc === 'info' : s2 === 'info');
-    // ПК: левая кнопка — открытая вкладка (Стройка, Журнал…), её значок
-    const tb = document.querySelector(`#tabs .tab-btn[data-tab="${UI.tab}"]`);
-    const tn = pcOne && tb ? wmT((tb.title || '').split(':')[0].replace(/\s*\(.*$/, '')) || wmT('Стройка') : wmT('Стройка');
-    const ts = sb.querySelector('span'); if (ts.textContent !== (UI.tab === 'build' ? wmT('Стройка') : tn)) ts.textContent = UI.tab === 'build' ? wmT('Стройка') : tn;
-    const ti = sb.querySelector('img'), tsrc = pcOne && tb && UI.tab !== 'build' ? tb.querySelector('img').src : '';
-    if ((ti.dataset.t || '') !== tsrc) { ti.dataset.t = tsrc; if (tsrc) ti.src = tsrc; else wmIcon(ti, 'ui', 'build'); }
-    si.classList.toggle('off', !sel);
-    const nm = sel ? (sel.def && sel.def.name) || wmT('Здание') : wmT('Здание');
-    const sp = si.querySelector('span'); if (sp.textContent !== nm) sp.textContent = nm;
-    const im = si.querySelector('img'), key = sel ? sel.type : 'house';
-    if (im.dataset.k !== key) { im.dataset.k = key; try { im.src = buildingIconURL(key); } catch (e) { /* без значка */ } }
     if (mode === 'vil') {
       const open = new Set(wmRevealed());
       for (const v of head.querySelectorAll('[data-wmv]')) { v.hidden = !open.has(v.dataset.wmv); v.classList.toggle('active', v.dataset.wmv === UI.tab); }
     }
-    if (mode === 'title') { const tt = head.querySelector('#wm-title'), want = UI.tab === 'menu' ? wmT('Меню') : UI.tab === 'task' ? wmT('Задания') : ''; if (tt.textContent !== want) tt.textContent = want; }
+    if (mode === 'title') {
+      const tt = head.querySelector('#wm-title');
+      const T = { build: ['ui', 'build', 'Стройка'], task: ['ui', 'scroll', 'Задания'], menu: ['ui', 'menu', 'Меню'] }[UI.tab] || ['ui', 'menu', ''];
+      const key = showInfo && selB ? 'b:' + selB.type + ':' + (selB.def && selB.def.name) + ':' + pcOne : 't:' + UI.tab;
+      if (tt.dataset.k !== key) {
+        tt.dataset.k = key;
+        let src = '', name = '';
+        if (showInfo && selB) { try { src = buildingIconURL(selB.type); } catch (e) { /* без значка */ } name = (selB.def && selB.def.name) || wmT('Здание'); }
+        else { try { src = iconURL(T[0], T[1], 2); } catch (e) { /* без значка */ } name = wmT(T[2]); }
+        tt.innerHTML = `${src ? `<img src="${src}" alt="">` : ''}<span></span>${showInfo && pcOne ? `<button class="wm-tx" data-wmx title="${wmT('Закрыть окно здания (Esc)')}">✕</button>` : ''}`;
+        tt.querySelector('span').textContent = name;
+      }
+    }
   }
   // кнопки телефона: «Деревня» видна, если открыта хоть одна её вкладка; значки и подсветки — с исходных вкладок
   const vil = document.querySelector('#tabs [data-tab="village"]');
   if (vil) {
     const list = wmRevealed();
     vil.classList.toggle('wm-none', !list.length);
-    vil.classList.toggle('active', mob && s2 === 'tab' && WM_VKEYS.has(UI.tab));
+    vil.classList.toggle('active', WM_VKEYS.has(UI.tab) && (mob ? s2 === 'tab' : WM.pc === 'tab'));
     let n = 0, dot = false, hl = false, fresh = false;
     for (const v of WM_VILLAGE) {
       const o = document.querySelector(`#tabs .tab-btn[data-tab="${v.k}"]`);
@@ -377,7 +378,7 @@ function wmSync() {
 }
 
 // ---------- подписи значков на телефоне: долгое нажатие показывает title (как у нижних вкладок, ui.js tabTipsInit) ----------
-const WM_TIP_SEL = '#topbar button, #hero-btn, #nq-pill, #fair-chip, #wm-vtabs button, #wm-seg button';
+const WM_TIP_SEL = '#topbar button, #hero-btn, #nq-pill, #fair-chip, #wm-vtabs button';
 function wmTipsInit() {
   let tip = null, timer = 0, hideT = 0, held = false;
   const hide = () => { clearTimeout(timer); clearTimeout(hideT); if (tip) tip.classList.remove('on'); };
@@ -448,7 +449,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && document
 
 // переводы новых подписей (остальные — в js/i18n/en*.js)
 if (typeof I18N !== 'undefined' && I18N.add) I18N.add('en', {
-  'Здание': 'Building', 'Кликните здание на карте — здесь откроется его окно': 'Click a building on the map: its window opens here', 'Здание: окно выбранного здания': 'Building: the selected building\'s window',
+  'Здание': 'Building', 'Закрыть окно здания (Esc)': 'Close the building window (Esc)', 'Кликните здание на карте — здесь откроется его окно': 'Click a building on the map: its window opens here', 'Здание: окно выбранного здания': 'Building: the selected building\'s window',
   'Деревня: запасы, хозяйство, журнал, торговля, приоритеты, совет': 'Village: stores, estate, log, trade, priorities, council',
   'Запасы': 'Stores', 'Хозяйство': 'Estate', 'Журнал': 'Log', 'Торговля': 'Trade', 'Приоритеты': 'Priorities', 'Совет': 'Council', 'Свернуть': 'Collapse',
   'Коснитесь здания на карте — здесь откроется его окно': 'Tap a building on the map: its window opens here',

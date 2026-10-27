@@ -6,9 +6,11 @@
 
 /* ---------- Нижняя полоса: Стройка · Здание · Деревня · Меню (телефон, портрет) ---------- */
 .wm-m, .wm-cap { display: none; }
-body.mobile:not(.land) #tabs .wm-m { display: inline-flex; }
-body.mobile:not(.land) #tabs .wm-m.wm-none { display: none !important; }
-body.mobile:not(.land) #tabs .tab-btn:is([data-tab="store"], [data-tab="overview"], [data-tab="log"], [data-tab="trade"], [data-tab="prio"], [data-tab="council"]) { display: none !important; }
+/* везде (ПК, телефон вертикально и боком): шесть вкладок хозяйства — внутри «Деревни»; кнопки «Здание» нет — окно здания
+   открывается касанием здания на карте, и в панели видно одно: либо вкладка, либо здание */
+#tabs .wm-m[data-tab="village"] { display: inline-flex; }
+#tabs .wm-m.wm-none, #tabs [data-tab="info"] { display: none !important; }
+#tabs .tab-btn:is([data-tab="store"], [data-tab="overview"], [data-tab="log"], [data-tab="trade"], [data-tab="prio"], [data-tab="council"]) { display: none !important; }
 body.mobile:not(.land) #tabs { grid-template-columns: repeat(var(--rv-n, 4), minmax(0, 92px)); justify-content: space-evenly; }
 body.mobile:not(.land) #tabs .tab-btn { height: 54px; flex-direction: column; gap: 1px; }
 body.mobile:not(.land) #tabs .tab-btn img { width: 28px; height: 28px; }
@@ -21,7 +23,12 @@ body.mobile:not(.land) #tabs .tab-btn.active .wm-cap { color: #fff6dc; }
 #wm-head { display: none; }
 body.mobile:not(.land).wm-sheet #wm-head:not([data-mode=""]) { display: flex; order: 0; align-items: stretch; gap: 6px; min-height: 42px; padding-right: 50px; }
 #wm-head > div { display: none; }
-#wm-head[data-mode="seg"] #wm-seg, #wm-head[data-mode="vil"] #wm-vtabs, #wm-head[data-mode="title"] #wm-title { display: flex; flex: 1 1 auto; min-width: 0; }
+#wm-head[data-mode="vil"] #wm-vtabs, #wm-head[data-mode="title"] #wm-title { display: flex; flex: 1 1 auto; min-width: 0; }
+#wm-title { gap: 7px; }
+#wm-title img { width: 26px; height: 26px; object-fit: contain; flex: none; }
+#wm-title span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#wm-title .wm-tx { flex: none; width: 32px; height: 30px; padding: 0; font-size: 17px; font-weight: bold; color: #fff; background: linear-gradient(#8a2e1e, #5a1a10); box-shadow: inset 0 0 0 1px #e07050; }
+body:not(.mobile) #wm-title { font-size: 15px; padding-left: 4px; }
 #wm-seg { border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line, #8a6a3a); }
 #wm-seg button { flex: 1 1 50%; min-width: 0; border: 0; box-shadow: none; font-size: 15px; font-weight: bold; padding: 4px 6px; white-space: nowrap; overflow: hidden; }
 #wm-seg button span { overflow: hidden; text-overflow: ellipsis; }
@@ -196,3 +203,8 @@ body.wp-away #ab-bar .ab-tip { right: auto; left: 50%; transform: translateX(-50
 body.mobile:is(.rv-goal, .rv-all, :not(.rv-on)):has(#tut:not(.hidden)) #wp-task #goal-hud { display: block !important; }
 /* телефон боком: цели прятались при открытой шторке (landscape.css) — теперь они в самой шторке */
 body.mobile.land:is(.sheet-tab, .sheet-info):is(.rv-goal, .rv-all, :not(.rv-on)) #wp-task #goal-hud, body.mobile.land:is(.sheet-tab, .sheet-info) #wp-task #daily-hud:not(.hidden) { display: block !important; }
+
+/* телефон боком: вкладки «Деревни» — строкой над шторкой */
+body.mobile.land.wm-sheet #wm-head[data-mode="vil"] { display: flex; position: absolute; z-index: 7; left: var(--sheet-left, 56px); top: calc(var(--st, 0px) + var(--bar, 0px) + 4px);
+  width: var(--sheet-w); height: 46px; padding: 2px 4px; box-sizing: border-box; background: rgba(14, 10, 6, .98); border: 2px solid #0a0705; }
+body.mobile.land.wm-sheet:has(#wm-head[data-mode="vil"]) #tab-area { top: calc(var(--st, 0px) + var(--bar, 0px) + 52px); }
