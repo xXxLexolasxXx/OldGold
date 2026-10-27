@@ -18,7 +18,7 @@ const PXS_SHEETS = {
     ['Баньши', 3, () => fzBansheeSprite(0, 0), () => fzBansheeSprite(2, 3), false],
     ['Скелет', 2, () => (pxsBudget(), skelSprite({ hx: 3, hy: 5 }, 'E', 'idle', 0).cv), () => (pxsBudget(), skelSprite({ hx: 3, hy: 5 }, 'E', 'atk', 4).cv)],
     ['Курганный князь', 2, () => (pxsBudget(), kpSprite('i0', 1).cv), () => (pxsBudget(), kpSprite('strike', 1).cv)],
-    ['Призрачный волк', 3, () => fzWolfSprite(0, false), () => fzWolfSprite(1, true), true, { vec: true, cut: 60 }],
+    ['Призрачный волк', 3, () => fzWolfSprite(0, false), () => fzWolfSprite(1, 2), true, { vec: true, cut: 60 }],
     ['Полудница', 3, () => fzNoonSprite(0), () => fzNoonSprite(3), true, { vec: true, cut: 120 }],
     ['Призрак павшего', 1, () => ecSprite(ecLook({ k: 'hero', c: 'warrior' }), 'hov', 0), () => ecSprite(ecLook({ k: 'hero', c: 'warrior' }), 'atk', 5)],
     ['Летучие мыши', 12, () => pxsRt(24, 24, 12, 18, c => { Game.bats = [{ x: 0, y: 0, z: 8, ph: 0.3, state: 'fly' }]; drawBats(c); }),
