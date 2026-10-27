@@ -257,8 +257,9 @@ function lepSeqStep(L, dt) {
     if (s[2]) lepSeqEvent(L, u, s[2]);
     if (L.si === 0) L.sT = Math.max(0, L.sT - 99);          // первый шаг стартует с нуля
   }
-  const s = L.seq[L.si], k = L.sT / s[1];
-  L.fr = s[0] || L.fr;
+  const s = L.seq[L.si], k = L.sT / s[1], pv = L.si > 0 ? L.seq[L.si - 1][0] : '';
+  // смена позы тянется через два промежуточных кадра (lepMix в leprechaunart.js): 12+ кадров на каждую сценку, КАДРЫ.md
+  L.fr = s[0] && pv && pv !== s[0] && k < 0.6 ? 'm' + pv + '~' + s[0] + '~' + (k < 0.3 ? 0.33 : 0.67) : s[0] || L.fr;
   L.gx = u.x; L.gy = u.y;
   // нырок: дуга от места победы к горшку; потом погружение
   if (s[2] === 'dive') { const e = k * k * (3 - 2 * k); L.x = L.dx0 + (L.potX - L.dx0) * e; L.y = L.dy0 + (L.potY - L.dy0) * e; L.z = Math.sin(Math.min(1, k) * Math.PI) * 24; }
@@ -335,7 +336,7 @@ function lepAbort(L) {
 
 // ---------- Жизнь ----------
 
-function lepFrameIdle(L) { return 'i' + (Math.floor(Game.time * 5 + L.id) % 6); }
+function lepFrameIdle(L) { return 'i' + (Math.floor(Game.time * 10 + L.id) % 12); }
 
 function lepThink(L, dt) {
   const now = Game.time;
@@ -366,7 +367,7 @@ function lepThink(L, dt) {
     const near = lepMove(L, u.x, u.y, LEP_SPEED, dt);
     if (Math.hypot(u.x - L.x, u.y - L.y) < 1.2) lepStartDuel(L, u);
     else if (near) { L.st = 'idle'; L.t = 2; L.cd = now + 20; L.fr = lepFrameIdle(L); return; }     // упёрся в препятствие и не дошёл — бросает затею
-    L.fr = 'w' + (Math.floor(L.ph) % 8);
+    L.fr = 'w' + (Math.floor(L.ph * 1.5) % 12);
     return;
   }
   if (L.st === 'dance') {
@@ -382,7 +383,7 @@ function lepThink(L, dt) {
   const home = Math.hypot(L.x - L.hx, L.y - L.hy);
   if (L.st === 'roam') {
     if (lepMove(L, L.wx, L.wy, LEP_SPEED * 0.4, dt)) { L.st = 'idle'; L.t = lepRand(3, 8); }
-    L.fr = 'w' + (Math.floor(L.ph) % 8);
+    L.fr = 'w' + (Math.floor(L.ph * 1.5) % 12);
     return;
   }
   // покой
@@ -525,8 +526,8 @@ function lepDraw(c, L) {
     if (!(L.sink > 0)) { c.fillStyle = 'rgba(10,8,4,0.3)'; c.beginPath(); c.ellipse(px, py + 1, 8 * (1 - Math.min(0.5, L.z / 50)), 2.6, 0, 0, 7); c.fill(); }
     // слиток, который тянут: от рук лепрекона к рукам гнома
     if (L.tug) {
-      const gx = L.gx * TILE, mx = (px + gx) / 2, my = py - 14 + (L.fr === 't1' ? -1 : L.fr === 't2' ? 1 : 0);
-      c.save(); c.translate(mx, my); c.rotate((L.fr === 't0' ? 0.1 : L.fr === 't2' ? -0.1 : 0)); c.fillStyle = '#8a6410'; c.fillRect(-7, -3, 14, 6);
+      const gx = L.gx * TILE, mx = (px + gx) / 2, fk = L.fr[0] === 'm' ? L.fr.split('~')[1] : L.fr, my = py - 14 + (fk === 't1' ? -1 : fk === 't2' ? 1 : 0);
+      c.save(); c.translate(mx, my); c.rotate((fk === 't0' ? 0.1 : fk === 't2' ? -0.1 : 0)); c.fillStyle = '#8a6410'; c.fillRect(-7, -3, 14, 6);
       c.fillStyle = '#f6d458'; c.fillRect(-6, -2, 12, 4); c.fillStyle = '#fff2a0'; c.fillRect(-5, -2, 9, 1); c.restore();
     }
     c.save();

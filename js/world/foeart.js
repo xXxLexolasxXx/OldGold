@@ -397,21 +397,22 @@ function ecxWeapon(c, w, acc) {
 function ecxPaint(c, V, an, f) {
   const lt = 'rgba(255,255,255,0.45)';
   if (V.wisp) {                                                                          // «Огонёк Лампы»: язычок пламени с глазками
-    const bob = an === 'hov' ? Math.sin(f / 9 * 6.283) * 2 : 0, h = [10, 12, 13, 12, 11, 10, 12, 13, 11][an === 'hov' ? f : 0];
+    const bob = an === 'hov' ? Math.sin(f / EC_N * 6.283) * 2 : 0, h = an === 'hov' ? ecA([10, 12, 13, 12, 11, 10, 12, 13, 11], f, EC_N, true) : 10;
     c.fillStyle = '#ffaa3c'; c.beginPath(); c.moveTo(-4.4, -10 + bob); c.quadraticCurveTo(-4.8, -10 - h * 0.6 + bob, 0, -12 - h + bob); c.quadraticCurveTo(4.8, -10 - h * 0.6 + bob, 4.4, -10 + bob); c.quadraticCurveTo(0, -6 + bob, -4.4, -10 + bob); c.fill();
     c.fillStyle = '#ffd070'; c.beginPath(); c.moveTo(-2.8, -10 + bob); c.quadraticCurveTo(-2.6, -9 - h * 0.6 + bob, 0, -10 - h + bob); c.quadraticCurveTo(2.6, -9 - h * 0.6 + bob, 2.8, -10 + bob); c.quadraticCurveTo(0, -7.6 + bob, -2.8, -10 + bob); c.fill();
     ellipse(c, -1.4, -15 + bob, 0.6, 0.9, '#3a1a40'); ellipse(c, 1.6, -15 + bob, 0.6, 0.9, '#3a1a40');
-    if (an === 'atk' && f >= 3 && f <= 5) { c.fillStyle = '#fff4c0'; c.beginPath(); c.moveTo(4, -19 + bob); c.lineTo(13, -19.6 + bob); c.lineTo(4, -17.6 + bob); c.fill(); }
+    if (an === 'atk' && f >= 5 && f <= 8) { c.fillStyle = '#fff4c0'; c.beginPath(); c.moveTo(4, -19 + bob); c.lineTo(13, -19.6 + bob); c.lineTo(4, -17.6 + bob); c.fill(); }
     return;
   }
   const H = !!V.hero, col = V.col, dk = shade(col.replace(/rgb\((\d+),(\d+),(\d+)\)/, (m, r, g, b) => '#' + [r, g, b].map(v => (+v).toString(16).padStart(2, '0')).join('')), -0.22);
-  const bob = an === 'hov' ? Math.sin(f / 9 * 6.283) * 1.5 : an === 'hurt' ? [1, 2, 1, 0][f] : 0;
-  const lean = an === 'atk' ? [0, -1, -1, -2, 1, 2, 2, 1][f] : an === 'hurt' ? -[1, 2, 1, 0][f] : 0;
-  const arm = an === 'atk' ? [-0.5, -1.3, -2.1, -2.5, -0.5, 0.9, 1.3, 0.5][f] : -0.35 + (an === 'hov' ? Math.sin(f / 9 * 6.283 + 1) * 0.12 : 0);
+  const HB = [1, 2, 1.5, 1, 0.5, 0];                                                     // рана — 6 кадров (КАДРЫ.md)
+  const bob = an === 'hov' ? Math.sin(f / EC_N * 6.283) * 1.5 : an === 'hurt' ? HB[f] : 0;
+  const lean = an === 'atk' ? ecA([0, -1, -1, -2, 1, 2, 2, 1], f, EC_N) : an === 'hurt' ? -HB[f] + (f === 2 ? 1 : f === 3 ? -0.5 : 0) : 0;
+  const arm = an === 'atk' ? ecA([-0.5, -1.3, -2.1, -2.5, -0.5, 0.9, 1.3, 0.5], f, EC_N) : -0.35 + (an === 'hov' ? Math.sin(f / EC_N * 6.283 + 1) * 0.12 : 0);
   c.save();
   c.translate(lean, -4 + bob);
   // хвост: дымный язык вместо ног
-  const tw = an === 'hov' ? f : an === 'atk' ? f + 2 : 3, tip = Math.sin((tw + 6) / 9 * 6.283) * 3;
+  const tw = an === 'hov' ? f : an === 'atk' ? f * 0.67 + 3 : 4, tip = Math.sin((tw + 8) / EC_N * 6.283) * 3;
   c.fillStyle = col; c.beginPath(); c.moveTo(-4.6, -4.4); c.quadraticCurveTo(-3.6 + tip * 0.3, 2, tip, 4.6); c.quadraticCurveTo(3 + tip * 0.3, 1.4, 4.6, -4.4); c.closePath(); c.fill();
   c.strokeStyle = dk; c.lineWidth = 0.5; c.beginPath(); c.moveTo(1.6, -3.4); c.quadraticCurveTo(1 + tip * 0.3, 0.6, tip * 0.8, 3.4); c.stroke();
   // тело: балахон шире к подолу; у героя — плащ цвета класса за спиной
@@ -458,9 +459,10 @@ function ecxPaint(c, V, an, f) {
   ecxWeapon(c, V.wpn, V.acc || V.cap);
   c.restore();
   // след удара
-  if (an === 'atk' && f >= 4 && f <= 6) {
-    c.strokeStyle = `rgba(255,255,255,${0.95 - (f - 4) * 0.2})`; c.lineWidth = 1.4;
-    c.beginPath(); c.arc(sw, bodyY + 2, H ? 15 : 12, -1.9, -1.9 + (f - 3) * 0.9); c.stroke();
+  if (an === 'atk' && f >= 6 && f <= 9) {
+    const q = (f - 6) / 3;
+    c.strokeStyle = `rgba(255,255,255,${0.95 - q * 0.4})`; c.lineWidth = 1.4;
+    c.beginPath(); c.arc(sw, bodyY + 2, H ? 15 : 12, -1.9, -1.9 + (1 + q * 2) * 0.9); c.stroke();
   }
   c.restore();
 }
@@ -474,15 +476,15 @@ if (typeof ecSprite === 'function') {
     if (cv) return cv;
     cv = nxFine(EC_W, EC_H, EC_OX, EC_OY, c => {
       if (an === 'in') {                         // встаёт из земли снизу вверх
-        const k = (f + 1) / 6;
+        const k = (f + 1) / EC_N;
         c.save(); c.beginPath(); c.rect(-EC_OX, -EC_OY, EC_W, EC_OY + 1); c.clip();
         c.translate(0, (1 - k) * 30); ecxPaint(c, V, 'hov', 0); c.restore();
       } else if (an === 'out') {                 // тает: поднимается и рассыпается
-        c.save(); c.translate(0, -f * 2); ecxPaint(c, V, 'hov', f); c.restore();
-        nxDissolve(c, -EC_OX, -EC_OY, EC_W, EC_H, 31 + f, 0.8 + f * 0.9);
+        c.save(); c.translate(0, -f); ecxPaint(c, V, 'hov', f); c.restore();
+        nxDissolve(c, -EC_OX, -EC_OY, EC_W, EC_H, 31 + f, 0.8 + f * 0.41);
       } else ecxPaint(c, V, an, f);
     }, { outlineDark: 0.6 });
-    if (an === 'hurt') { const o = cv.getContext('2d'); o.globalCompositeOperation = 'source-atop'; o.fillStyle = `rgba(255,255,255,${[0.75, 0.5, 0.3, 0.1][f]})`; o.fillRect(0, 0, cv.width, cv.height); }
+    if (an === 'hurt') { const o = cv.getContext('2d'); o.globalCompositeOperation = 'source-atop'; o.fillStyle = `rgba(255,255,255,${[0.75, 0.6, 0.45, 0.3, 0.18, 0.08][f]})`; o.fillRect(0, 0, cv.width, cv.height); }
     if (EC_CACHE.size >= EC_CACHE_MAX) EC_CACHE.delete(EC_CACHE.keys().next().value);
     EC_CACHE.set(key, cv);
     return cv;
