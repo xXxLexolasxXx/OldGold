@@ -130,6 +130,7 @@ scriptTest('runsim: ядро забега — детерминизм, бот д�
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
 scriptTest('piles: мусор не копится, потолок кучек, подпись подбора', 'piles-test.js');
+scriptTest('reports: баги из отчётов тестеров — летописец без шпиля, значки в 11 строк, давние кучки на дороге', 'reports-test.js');
 scriptTest('dragonpet: дракончики-питомцы — шанс поимки, осторожность, разговор, умения, уход, сейв, миграция', 'dragonpet-test.js');
 scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
