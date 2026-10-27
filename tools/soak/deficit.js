@@ -235,3 +235,4 @@ if (arg('sum')) {
   console.log(`seed ${seed}: ${r.wall} с, ошибок ${r.errors.length}`); for (const e of r.errors) console.log('  ✗ ' + e);
   console.log(table([s]));
 }
+process.exit(0);   // таймеры игры в песочнице иначе держат процесс часами после конца прогона

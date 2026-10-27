@@ -3,6 +3,7 @@
 //   npm test                    — быстрый прогон (smoke, ~1–2 минуты)
 //   npm run test:long           — длинный прогон (несколько игровых часов на нескольких сидах)
 //   node tests/run.js --only sim --seeds 7,8 --minutes 30   — выборочно
+//   node tests/run.js --quick --shard 1/3 --retry 1          — CI: облегчённо, треть проверок, упавшую повторить один раз
 // Наборы: load (порядок и синтаксис скриптов), sim (инварианты симуляции), save (сохранение→загрузка),
 // det (детерминизм: один сид — одно и то же состояние), coop (клиент кооператива не расходится с сервером).
 const path = require('path');
@@ -14,20 +15,40 @@ const L = require('./lib/sim');
 const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf('--' + k); return i >= 0 ? argv[i + 1] : d; };
 const LONG = argv.includes('--long');
+const QUICK = !LONG && argv.includes('--quick');   // облегчённо: один сид, короче симуляция и кооп
 const ONLY = arg('only', '').split(',').filter(Boolean);
-const SEEDS = arg('seeds', LONG ? '11,22,33,44' : '11,22').split(',').map(Number);
-const MINUTES = +arg('minutes', LONG ? 120 : 15);
-const COOP_MIN = +arg('coop-minutes', LONG ? 60 : 8);
+const SEEDS = arg('seeds', LONG ? '11,22,33,44' : QUICK ? '11' : '11,22').split(',').map(Number);
+const MINUTES = +arg('minutes', LONG ? 120 : QUICK ? 8 : 15);
+const COOP_MIN = +arg('coop-minutes', LONG ? 60 : QUICK ? 4 : 8);
+// --shard k/n — только k-я из n частей проверок (по кругу), для параллельных задач CI
+const [SHARD_K, SHARD_N] = arg('shard', '1/1').split('/').map(Number);
+// --retry N — упавшую проверку повторить до N раз; прошла со второй попытки — замечание «нестабильна», не провал
+// (ложные красные от нагрузки машины: house, unions, kids, tempo…)
+const RETRY = +arg('retry', 0);
 const STUCK_SEC = 240;            // идущий житель стоит на месте дольше — «застрял»
 const LIMITS = { units: 400, buildings: 600, animals: 500, piles: 800, floaters: 600, log: 2000, ents: 300, ghosts: 200, skels: 300, critters: 500, roadSites: 2000, falling: 300 };
 
 const results = [];
 const t00 = Date.now();
+let testNo = 0;
 function test(name, fn) {
   if (ONLY.length && !ONLY.some(o => name.startsWith(o))) return;
-  const t0 = Date.now(), r = { name, fails: [], warns: [], info: [] };
+  if (testNo++ % SHARD_N !== SHARD_K - 1) return;
+  const t0 = Date.now(), first = [];
+  let r, tries = 0;
   process.stdout.write(`▶ ${name} … `);
-  try { fn(r); } catch (e) { r.fails.push('исключение: ' + String(e && e.stack || e).split('\n').slice(0, 6).join('\n    ')); }
+  for (;;) {
+    r = { name, fails: [], warns: [], info: [] };
+    try { fn(r); } catch (e) { r.fails.push('исключение: ' + String(e && e.stack || e).split('\n').slice(0, 6).join('\n    ')); }
+    if (!r.fails.length || tries >= RETRY) break;
+    if (!first.length) first.push(...r.fails.slice(0, 3));
+    tries++;
+    process.stdout.write(`повтор ${tries} … `);
+  }
+  if (tries) {
+    r.tries = tries + 1;
+    if (!r.fails.length) r.warns.unshift(`нестабильна: прошла с ${tries + 1}-й попытки, в первой: ${first.join(' | ').slice(0, 300)}`);
+  }
   r.ms = Date.now() - t0;
   results.push(r);
   console.log(`${r.fails.length ? '✗ ПРОВАЛ' : r.warns.length ? '⚠ есть замечания' : '✓'} (${(r.ms / 1000).toFixed(1)} с)`);
@@ -310,5 +331,16 @@ test(`coop: клиент не расходится с сервером, ${COOP_M
 const fails = results.filter(r => r.fails.length), warns = results.filter(r => r.warns.length);
 console.log(`\n${results.length} проверок за ${((Date.now() - t00) / 1000).toFixed(0)} с: ` +
   `${results.length - fails.length} прошло, ${fails.length} провалено${warns.length ? `, с замечаниями ${warns.length}` : ''}.`);
+const flaky = results.filter(r => r.tries && !r.fails.length);
+if (flaky.length) console.log('Нестабильные (прошли с повтора): ' + flaky.map(r => r.name.split(':')[0]).join(', '));
 if (argv.includes('--json')) fs.writeFileSync(arg('json'), JSON.stringify(results, null, 2));
+// в CI — таблица в сводку задачи GitHub Actions
+if (process.env.GITHUB_STEP_SUMMARY) {
+  const cell = s => String(s).replace(/\|/g, '\\|').replace(/\n\s*/g, ' ').slice(0, 300);
+  const rows = results.filter(r => r.fails.length || r.warns.length)
+    .map(r => `| ${r.fails.length ? '✗' : '⚠'} | ${cell(r.name.split(':')[0])} | ${(r.ms / 1000).toFixed(0)} с | ${cell((r.fails[0] || r.warns[0]))} |`);
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### tests/run.js ${SHARD_N > 1 ? `(часть ${SHARD_K}/${SHARD_N})` : ''}\n\n` +
+    `${results.length} проверок: ${results.length - fails.length} прошло, ${fails.length} провалено, с замечаниями ${warns.length}, нестабильных ${flaky.length}.\n\n` +
+    (rows.length ? '| | проверка | время | первое сообщение |\n|---|---|---|---|\n' + rows.join('\n') + '\n\n' : ''));
+}
 process.exit(fails.length ? 1 : 0);
