@@ -279,3 +279,19 @@ function m1Straw3(R) {
 }
 function m1StrawCut(R) { return (u, v, F) => (v > F.T - 1 ? p1(R, 1) : ((u + (v | 0)) % 3 === 0 ? p1(R, 3) : p1(R, 2 + (bhash(u, v, 276) < 0.3 ? 1 : 0)))); }
 STRAW1.olive = bramp(['#d8d08c', '#aeaa60', '#84803e', '#585424']);
+
+// Чешуя крупная: пластины 6×5, полукруглый низ с тёмной каймой, блик слева сверху, тень справа, разброс тона
+function m1Scale2(R) {
+  return (u, v, F) => {
+    const k = L1(F);
+    if (v < 3) return p1(R, v < 1 ? 1 + k : 2 + k);
+    const w = v - 3, row = Math.floor(w / 5), st = row % 2 ? 3 : 0, tu = (((u + st) % 6) + 6) % 6, vv = ((w % 5) + 5) % 5;
+    const id = Math.floor((u + st) / 6), h = bhash(id, row, 311);
+    const d = Math.hypot(tu - 2.5, Math.max(0, vv - 1.5) * 1.6);       // скругление нижнего края
+    if (d > 3.2) return p1(R, 1 + k);                                  // зазор — виден ряд ниже
+    if (d > 2.4) return R[3];                                          // кайма пластины
+    let i = tu < 2 && vv < 2 ? 0 : tu > 3 || vv > 2 ? 2 : 1;
+    if (h < 0.15) i += 1; else if (h > 0.9) i -= 1;
+    return p1(R, i + k);
+  };
+}

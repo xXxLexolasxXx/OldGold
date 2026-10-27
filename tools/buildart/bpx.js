@@ -472,7 +472,7 @@ function roof(g, b, r) {
         slope(g, [[xm, y1 + ovg - hip, zr], [x0 - ov, y1 + ovg, ze], [x1 + ov, y1 + ovg, ze]], r.mat, { cap: 0, li: 1 });
       }
       edgeBand(g, [x1 + ov, y0 - ovg, ze], [x1 + ov, y1 + ovg, ze], th, cut, { li: 2 });
-      edgeBand(g, [x0 - ov, y0 - ovg, ze], [x1 + ov, y0 - ovg, ze], th, cut);
+      if (hip) edgeBand(g, [x0 - ov, y0 - ovg, ze], [x1 + ov, y0 - ovg, ze], th, cut);   // у фронтона горизонтальной кромки нет
       if (!hip) {
         edgeBand(g, [x0 - ov, y0 - ovg, ze], [xm, y0 - ovg, zr], th, cut);
         edgeBand(g, [xm, y0 - ovg, zr], [x1 + ov, y0 - ovg, ze], th, cut, { li: 1 });

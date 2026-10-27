@@ -236,7 +236,7 @@ function inn1Paths(g, lv, ky0) {
 const ROOF_LV = {
   1: s => ({ main: m1Straw3(s), wing: m1Straw3(s), cut: m1StrawCut(s), cutW: m1StrawCut(s), th: 4 }),
   2: () => ({ main: m1Shingle(SHINGLE1), wing: m1Shingle(SHINGLE1), cut: m1Fascia, cutW: m1FasciaDark }),
-  3: () => ({ main: m1Tile2(P1.tileR), wing: m1Scale(P1.scale), cut: m1Fascia, cutW: m1FasciaDark }),
+  3: () => ({ main: m1Tile2(P1.tileR), wing: m1Scale2(P1.scale), cut: m1Fascia, cutW: m1FasciaDark }),
 };
 const INN_LV_VARS = [
   { name: 'Уровень 1 — солома (оливковая): малая веранда, двор с деревом', make: g => buildInn(g, 1, ROOF_LV[1](STRAW1.olive)) },
