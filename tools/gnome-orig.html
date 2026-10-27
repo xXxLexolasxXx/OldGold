@@ -1,0 +1,67 @@
+<!doctype html><meta charset=utf-8><title>Гномы: оригинал с лёгкой правкой</title>
+<body style="margin:0;background:#2a3a22">
+<canvas id=sheet width=1280 height=10></canvas>
+<script>
+// Лист «оригинал + чуть-чуть»: тот же векторный гном из js/people.js, правки только в копии кода в памяти:
+// колпак выше (виден лоб), настоящие глаза вместо тени, и опционально пиксель мельче (PART 3/4). Рендер: node tools/gnome-orig-render.js
+window.ENT_LOOK = {}; window.TILE = 32; window.R = { sprMs: 0 };
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function unitLevel() { return 1; }
+function drawFire() {}
+window.Game = { time: 0, buildings: [] };
+const SRC = ['../js/config.js', '../js/sprites.js', '../js/pixel.js'];
+const load = f => new Promise(ok => { const s = document.createElement('script'); s.src = f; s.onload = ok; s.onerror = () => { window.ERR = (window.ERR || '') + ' нет ' + f; ok(); }; document.head.appendChild(s); });
+function rep(src, a, b) { if (!src.includes(a)) throw new Error('нет фрагмента: ' + a.slice(0, 50)); return src.replace(a, b); }
+// opt: eyes (глаза и поднятый колпак), part (пикселей арта на мир)
+function build(txt, opt) {
+  let s = txt.split(String.fromCharCode(13)).join('');
+  if (opt.part) { s = rep(s, 'const PS = 6; ', 'const PS = 12; '); s = rep(s, 'const PART = 2; ', 'const PART = ' + opt.part + '; '); }
+  if (opt.eyes) {
+    const up = opt.up || 1.3;
+    s = rep(s, 'const b = hy - 1.1; ', 'const b = hy - 1.1 - ' + up + '; ');
+    // вид спереди: тень и брови-полоски заменены глазами; брови выше
+    s = rep(s, "ellipse(c, hx, hy + 0.8, 3.3, 0.75, 'rgba(48,22,8,0.55)');\n    c.fillStyle = shade(bc, -0.12); rrect(c, hx - 3.1, hy + 0.3, 2.7, 0.9, 0.4); c.fill(); rrect(c, hx + 0.4, hy + 0.3, 2.7, 0.9, 0.4); c.fill();",
+      "c.fillStyle = shade(bc, -0.12); rrect(c, hx - 3, hy - 0.55, 2.5, 0.8, 0.4); c.fill(); rrect(c, hx + 0.5, hy - 0.55, 2.5, 0.8, 0.4); c.fill();\n    for (const sd of [-1, 1]) { ellipse(c, hx + sd * 1.6, hy + 1.2, 1.15, 1.2, '#f6efe0'); ellipse(c, hx + sd * 1.55, hy + 1.25, 0.72, 1.0, '#1c120c'); ellipse(c, hx + sd * 1.3, hy + 0.9, 0.22, 0.22, '#ffffff'); }");
+    s = rep(s, "c.fillStyle = shade(bc, -0.05); rrect(c, hx - 3.9, hy + 0.1, 3.3, 1.3, 0.5); c.fill(); rrect(c, hx + 0.6, hy + 0.1, 3.3, 1.3, 0.5); c.fill();\n      for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) line(c, hx + sd * (1 + k * 1.1), hy + 0.5, hx + sd * (1.3 + k * 1.1), hy - 0.6 - (k % 2) * 0.4, shade(bc, -0.05), 0.4);",
+      "c.fillStyle = shade(bc, -0.05); rrect(c, hx - 3.9, hy - 0.8, 3.3, 1.1, 0.5); c.fill(); rrect(c, hx + 0.6, hy - 0.8, 3.3, 1.1, 0.5); c.fill();\n      for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) line(c, hx + sd * (1 + k * 1.1), hy - 0.4, hx + sd * (1.3 + k * 1.1), hy - 1.3 - (k % 2) * 0.4, shade(bc, -0.05), 0.4);");
+    // вид сбоку
+    s = rep(s, "ellipse(c, hx + 1.6, hy + 0.8, 2.2, 0.7, 'rgba(48,22,8,0.55)');\n    c.fillStyle = shade(bc, -0.12); rrect(c, hx + 1, hy + 0.3, 2.8, 0.9, 0.4); c.fill();",
+      "c.fillStyle = shade(bc, -0.12); rrect(c, hx + 1, hy - 0.55, 2.8, 0.8, 0.4); c.fill();\n    ellipse(c, hx + 2.2, hy + 1.2, 0.95, 1.05, '#f6efe0'); ellipse(c, hx + 2.45, hy + 1.25, 0.6, 0.85, '#1c120c'); ellipse(c, hx + 2.2, hy + 0.9, 0.22, 0.22, '#ffffff');");
+    s = rep(s, "if (L.brow && !O.fem) { c.fillStyle = shade(bc, -0.05); rrect(c, hx + 0.8, hy + 0.1, 3.6, 1.3, 0.5); c.fill(); for (let k = 0; k < 3; k++) line(c, hx + 1.4 + k * 1.1, hy + 0.5, hx + 1.8 + k * 1.1, hy - 0.6 - (k % 2) * 0.4, shade(bc, -0.05), 0.4); }",
+      "if (L.brow && !O.fem) { c.fillStyle = shade(bc, -0.05); rrect(c, hx + 0.8, hy - 0.8, 3.6, 1.1, 0.5); c.fill(); for (let k = 0; k < 3; k++) line(c, hx + 1.4 + k * 1.1, hy - 0.4, hx + 1.8 + k * 1.1, hy - 1.3 - (k % 2) * 0.4, shade(bc, -0.05), 0.4); }");
+  }
+  return new Function(s + '\n;return { personSprite, PART, PW, PH, PFX, PFY };')();
+}
+const PROFS = ['woodcutter', 'builder', 'miner', 'stonemason', 'baker'];
+const PNAME = { woodcutter: 'дровосек', builder: 'строитель', miner: 'шахтёр', stonemason: 'каменщик', baker: 'пекарь' };
+SRC.reduce((p, f) => p.then(() => load(f)), Promise.resolve()).then(() => PEOPLE_TXT).then(txt => {
+  const V = [
+    { name: 'ОРИГИНАЛ', sub: 'как сейчас в игре', o: build(txt, {}) },
+    { name: '1 · только глаза', sub: 'колпак чуть выше, глаза видны', o: build(txt, { eyes: 1 }) },
+    { name: '2 · глаза + пиксель ×3', sub: 'то же, пиксель мельче в 1,5 раза', o: build(txt, { eyes: 1, part: 3 }) },
+    { name: '3 · глаза + пиксель ×4', sub: 'пиксель мельче вдвое', o: build(txt, { eyes: 1, part: 4 }) },
+  ];
+  const spr = (v, t, look, view = 'S', pose = 'idle') => ({ cv: v.o.personSprite({ type: t, look, carry: null }, view, pose, 0), k: v.o.PART });
+  const c0 = document.getElementById('sheet'), W = 1280;
+  const cw = 320, H = 70 + 38 * 12 + 40 + 2 * (38 * 6 + 38) + 38 * 6 + 70;
+  c0.height = H; const c = c0.getContext('2d'); c.imageSmoothingEnabled = false;
+  c.fillStyle = '#4f7a30'; c.fillRect(0, 0, W, H);
+  const lab = (t, x, y, f = 'bold 14px sans-serif', col = '#fff') => { c.font = f; c.fillStyle = '#0007'; c.fillText(t, x + 1, y + 1); c.fillStyle = col; c.fillText(t, x, y); };
+  // ступни гнома в точке (PFX, PFY) спрайта; Z — экранных пикселей на пиксель мира
+  const blit = (s, fx, fy, Z) => { const k = Z / s.k; c.drawImage(s.cv, fx - 13 * Z, fy - 35 * Z, s.cv.width * k, s.cv.height * k); };
+  lab('Гномы: оригинал и лёгкая правка (то же рисование, что в игре)', 16, 28, 'bold 20px sans-serif', '#e8f4d0');
+  lab('Ряд 1 — крупно ×12 к миру. Ряд 2 — профессии ×6. Ряд 3 — вид сбоку и со спины.', 16, 48, '13px sans-serif', '#e8f4d0');
+  let y = 70;
+  V.forEach((v, i) => { lab(v.name, i * cw + 12, y + 8); lab(v.sub, i * cw + 12, y + 24, '11px sans-serif', '#d8ecc0'); blit(spr(v, 'woodcutter', 5), i * cw + cw / 2, y + 30 + 35 * 12, 12); });
+  y += 38 * 12 + 40;
+  for (const vi of [0, 2]) {
+    lab(V[vi].name, 12, y, 'bold 13px sans-serif');
+    PROFS.forEach((t, j) => { blit(spr(V[vi], t, 5 + j), 110 + j * 200, y + 12 + 35 * 6, 6); lab(PNAME[t], 85 + j * 200, y + 12 + 38 * 6 + 4, '11px sans-serif', '#d8ecc0'); });
+    y += 38 * 6 + 38;
+  }
+  lab('сбоку и со спины', 12, y, 'bold 13px sans-serif');
+  [0, 1, 2].forEach(vi => ['E', 'N'].forEach((vw, j) => { blit(spr(V[vi], 'woodcutter', 5, vw), 90 + (vi * 2 + j) * 150, y + 12 + 35 * 6, 6); }));
+  lab('оригинал · сбоку, со спины   |   только глаза · сбоку, со спины   |   глаза + ×3 · сбоку, со спины', 12, y + 38 * 6 + 28, '11px sans-serif', '#d8ecc0');
+  window.READY = true;
+}).catch(e => { window.ERR = String(e); window.READY = true; });
+</script>
