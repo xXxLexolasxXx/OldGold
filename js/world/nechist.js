@@ -265,7 +265,7 @@ function* repairBody(u, b) {
       sfxAt('build', px, py, 0.8);
     });
     yield { wait: 1, anim: 'build' };
-    b.dmg = Math.max(0, (b.dmg || 0) - 0.12);
+    b.dmg = Math.max(0, (b.dmg || 0) - 0.2);   // было 0.12 — разбитое здание чинили почти 10 с на месте
   }
   b.dmg = 0; b.repairer = null;
   if (!b.removed) { floater(b.x + b.w / 2, b.y, 'Починено', '#c8e080'); logEvent('build', `${b.def.name} починен`, b.doorX + 0.5, b.doorY); }

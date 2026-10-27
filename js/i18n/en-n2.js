@@ -183,5 +183,16 @@ I18N.add('en', {
   "Не пьёт и не курит; нечисть не утащит — у него игрушечный пистолет": "Doesn’t drink or smoke; the nasties won’t drag him off — he has a toy pistol",
   "Не курит, пьёт редко; на поле и у печи проворнее, выхаживает больных; с нечистью не дерётся": "Doesn’t smoke, rarely drinks; nimbler in the field and at the oven, nurses the sick; doesn’t fight the nasties",
   "Пол: {0} · роль: {1}": "Sex: {0} · role: {1}",
-  "Гномёнок пальнул из игрушечного пистолета — и нечисть удрала. Детей не трогать!": "A gnome kid fired a toy pistol — and the nasties fled. Don’t touch the kids!"
+  "Гномёнок пальнул из игрушечного пистолета — и нечисть удрала. Детей не трогать!": "A gnome kid fired a toy pistol — and the nasties fled. Don’t touch the kids!",
+  // ремонт: почему не чинят (logistics.js repairWhy)
+  "{0}: повреждено — {1}": "{0}: damaged — {1}",
+  "Повреждено — {0}": "Damaged — {0}",
+  "здание повреждено — {0}": "building damaged — {0}",
+  "чинят": "being repaired",
+  "гном идёт чинить": "a gnome is on the way to repair",
+  "нет материалов на ремонт: {0}": "no materials for repairs: {0}",
+  "нет работяг — некому чинить": "no builders — nobody to repair",
+  "работяги отдыхают — починят после": "builders are resting — repairs later",
+  "зовут ближайшего работягу": "calling the nearest builder",
+  "починят, когда освободится работяга": "will be repaired when a builder is free",
 });
