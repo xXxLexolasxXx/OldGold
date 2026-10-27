@@ -244,12 +244,24 @@ function gpCoopCmd(u, m) {
     if (!g) return;
     if (m.t === 'release') { p.heroHold = 0; return; }
     if (H.stunUntil > Game.time) return;
-    issueCmd(u, { kind: 'grab', p, g, equip: false, tx: p.x, ty: p.y, label: 'Взять в рюкзак' });
+    issueCmd(u, { kind: 'grab', p, g, equip: !!m.eq, tx: p.x, ty: p.y, label: m.eq ? 'Взять в руку' : 'Взять в рюкзак' });
+    return;
+  }
+  if (m.t === 'unequip') {
+    const sl = m.s === 'armor' ? 'armor' : 'weapon', k = H.equip[sl];
+    if (!k) return;
+    if (coopAddItem(H, k, 1)) { H.equip[sl] = null; floater(u.x, u.y - 1.6, 'Снял: ' + hlName(k), '#ffe8a0'); }
+    else coopSay(H.owner, 'Рюкзак полон');
     return;
   }
   if (!Number.isInteger(m.slot) || m.slot < 0 || m.slot >= H.inv.length) return;
   const s = H.inv[m.slot];
   if (!s || !GOODS[s.k]) { if (s) coopSay(H.owner, 'Это из рюкзака не выложить'); return; }     // задания (эстафета, груз) — только передать
+  if (m.t === 'equip') {
+    if (!HL_GEAR[s.k] || H.stunUntil > Game.time) return;
+    issueCmd(u, { kind: 'equip', slot: m.slot, tx: Math.floor(u.x), ty: Math.floor(u.y), label: 'Надеть' });
+    return;
+  }
   if (m.t === 'putdown') {
     const p = dropPile(Math.floor(u.x), Math.floor(u.y), s.k, s.n);
     if (p) { H.inv[m.slot] = null; floater(p.x + 0.5, p.y - 0.4, 'Положил: ' + hlName(s.k), '#ffe8a0'); }
@@ -264,8 +276,11 @@ function gpCoopPileMenu(p) {
   const g = gpGearIn(p);
   if (!g) return false;
   const send = (t, label) => { coopSend({ t, x: p.x, y: p.y }); if (label) floater(p.x + 0.5, p.y - 0.4, label, '#f6d458'); };
+  const send2 = eq => { coopSend({ t: 'grab', x: p.x, y: p.y, eq }); floater(p.x + 0.5, p.y - 0.4, eq ? 'Взять в руку' : 'Взять в рюкзак', '#f6d458'); };
+  const E = (Coop.me && Coop.me.eq) || {};
   gpMenu(hlName(g), g, [
-    { t: 'В рюкзак', d: `${Game.hero.hero.name} подберёт`, main: true, f: () => send('grab', 'Взять в рюкзак') },
+    { t: 'В руку героя', d: `${Game.hero.hero.name} подберёт и наденет${E[HL_GEAR[g].slot] ? ' (старое — в рюкзак)' : ''}`, main: true, f: () => send2(true) },
+    { t: 'В рюкзак', d: 'подобрать, надеть потом', f: () => send2(false) },
     { t: 'Пусть отнесут на склад', d: 'трудяги заберут', f: () => send('release') },
   ]);
   return true;
@@ -276,13 +291,35 @@ function gpCoopSlotMenu(i, xy) {
   if (!s) return;
   const nm = HL_GEAR[s.k] || typeof ITEM_NAME !== 'function' ? hlName(s.k) : ITEM_NAME(s.k), many = s.n > 1 ? ` ×${s.n}` : '';
   const items = [];
+  if (HL_GEAR[s.k]) items.push({ t: 'Надеть', d: 'получается через раз', main: true, f: () => coopSend({ t: 'equip', slot: i }) });
   if (HL_FOOD[s.k] || s.k === 'fish') items.push({ t: 'Съесть', d: 'сытость и немного здоровья', main: true, f: () => coopSend({ t: 'use', slot: i }) });
   if (GOODS[s.k]) {
     items.push({ t: 'Положить на землю', d: 'рядом с героем', f: () => coopSend({ t: 'putdown', slot: i }) });
     if (!GOODS[s.k].noStore) items.push({ t: 'Отнести на склад', d: 'герой сам сходит', f: () => coopSend({ t: 'stash', slot: i }) });
   }
+  // отдать герою другого игрока, если он рядом (сервер ещё раз проверит расстояние и дневной предел)
+  const me = Game.hero;
+  for (const o of Game.units) {
+    if (o === me || o.dead || !o.owner || o.type !== 'hero' || Math.hypot(o.x - me.x, o.y - me.y) > 4.5) continue;
+    items.push({ t: 'Отдать: ' + o.owner, d: 'герою рядом', f: () => coopSend({ t: 'give', to: o.owner, slot: i }) });
+  }
   items.push({ t: 'Выбросить насовсем', d: 'вещь пропадёт', f: () => coopSend({ t: 'drop', slot: i }) });
   gpMenu(nm + many, GOODS[s.k] ? s.k : 'bread', items, xy);
+}
+
+// надетое в рюкзаке общей деревни: «Оружие: Меч [снять]»
+if (typeof coopInvHtml === 'function') {
+  const _inv = coopInvHtml;
+  coopInvHtml = function () {
+    const E = (Coop.me && Coop.me.eq) || {};
+    const one = (sl, label) => E[sl] ? `${label}: <b>${hlName(E[sl])}</b> <button class="cp-sm" data-cpun="${sl}">снять</button>` : '';
+    const row = [one('weapon', 'Оружие'), one('armor', 'Доспех')].filter(Boolean).join(' · ');
+    return (row ? `<div class="cp-give">${row}</div>` : '') + _inv();
+  };
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-cpun]');
+    if (b && gpCoopOn()) { e.preventDefault(); e.stopPropagation(); coopSend({ t: 'unequip', s: b.dataset.cpun }); }
+  }, true);
 }
 
 if (typeof HINTS !== 'undefined') {

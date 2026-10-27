@@ -95,6 +95,32 @@ ok(!sim.errors.length, 'исключения в симуляции: ' + sim.erro
   R(`coop.players.get('Ая').hero.inv[1] = { k: 'baton', n: 1 }; 0`); S.stepN(srv, 20);
   cmd('Ая', { t: 'putdown', slot: 1 });
   ok(R(`!!coop.players.get('Ая').hero.inv[1]`), 'кооп: предмет задания (эстафета) нельзя выложить на землю');
+  // в руку с земли — даже не своего класса (маг с мечом), видно всем, сохраняется; снять; надеть из рюкзака; отдать другому
+  R(`coopJoin('Бо', JSON.stringify({ cls: 'mage' })); const a = coop.players.get('Ая'), b = coop.players.get('Бо'); heroStopUnit(b); b.cmd = null; b.x = a.x + 1; b.y = a.y; b.hero.inv.fill(null);
+    heroStopUnit(a); a.cmd = null; a.hero.inv.fill(null); a.hero.equip.weapon = null;
+    globalThis.__r = Math.random; Math.random = () => 0.01; globalThis.__p = dropPile(Math.floor(b.x) + 2, Math.floor(b.y), 'sword', 1); 0`);
+  S.stepN(srv, 20);
+  cmd('Бо', { t: 'grab', x: R('__p.x'), y: R('__p.y'), eq: true });
+  const inHand = wait(`coop.players.get('Бо').hero.equip.weapon === 'sword'`, 40);
+  R('Math.random = __r; 0');
+  ok(inHand, 'кооп: маг должен взять меч в руку');
+  ok(R(`JSON.stringify(coopUnitRec(coop.players.get('Бо'), Game.time))`).includes('"w":"sword"'), 'кооп: меч в руке должен быть виден другим (пакет героя)');
+  ok(JSON.parse(R(`coopHeroData('Бо')`)).eq.weapon === 'sword', 'кооп: надетое должно сохраняться');
+  S.stepN(srv, 20);
+  cmd('Бо', { t: 'unequip', s: 'weapon' });
+  ok(R(`!coop.players.get('Бо').hero.equip.weapon && coop.players.get('Бо').hero.inv.some(s => s && s.k === 'sword')`), 'кооп: «снять» должно вернуть меч в рюкзак');
+  S.stepN(srv, 20);
+  const slot = R(`coop.players.get('Бо').hero.inv.findIndex(s => s && s.k === 'sword')`);
+  cmd('Бо', { t: 'give', to: 'Ая', slot });
+  ok(R(`coop.players.get('Ая').hero.inv.some(s => s && s.k === 'sword') && !coop.players.get('Бо').hero.inv.some(s => s && s.k === 'sword')`), 'кооп: меч должен перейти к герою другого игрока');
+  R(`globalThis.__r = Math.random; Math.random = () => 0.01; 0`); S.stepN(srv, 20);
+  cmd('Ая', { t: 'equip', slot: R(`coop.players.get('Ая').hero.inv.findIndex(s => s && s.k === 'sword')`) });
+  const eq2 = wait(`coop.players.get('Ая').hero.equip.weapon === 'sword'`, 20);
+  R('Math.random = __r; 0');
+  ok(eq2, 'кооп: «надеть» из рюкзака');
+  // вход с подделанным надетым: хлеб в руку и меч в доспех не принимаются
+  R(`coopLeave('Бо'); coopJoin('Бо', JSON.stringify({ cls: 'mage', eq: { weapon: 'bread', armor: 'sword' } })); 0`);
+  ok(R(`JSON.stringify(coop.players.get('Бо').hero.equip)`) === '{"weapon":null,"armor":null}', 'кооп: подделанное надетое при входе не принимается: ' + R(`JSON.stringify(coop.players.get('Бо').hero.equip)`));
   ok(!srv.errors.length, 'кооп: исключения на сервере: ' + srv.errors.join(' | '));
 }
 

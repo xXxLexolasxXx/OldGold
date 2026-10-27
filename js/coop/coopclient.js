@@ -201,7 +201,7 @@ function coopUnits(m) {
     else u.action = null;
     if (d.ow) {
       u.owner = d.ow; u.title = d.tt || null;
-      u.hero = Object.assign(u.hero || {}, { name: d.ow, owner: d.ow, level: d.lv, clsKey: d.cl, hp: d.hp, maxhp: d.mhp, cls: ((Coop.meta && Coop.meta.classes[d.cl]) || {}).name || '', equip: { weapon: null, armor: null } });
+      u.hero = Object.assign(u.hero || {}, { name: d.ow, owner: d.ow, level: d.lv, clsKey: d.cl, hp: d.hp, maxhp: d.mhp, cls: ((Coop.meta && Coop.meta.classes[d.cl]) || {}).name || '', equip: { weapon: d.w || null, armor: d.ar || null } });   // надетое видно всем (gearpick.js)
       if (d.i === Coop.uid && Game.hero !== u) {
         Game.hero = u;
         if (!Game.selUnit) { Game.selUnit = null; centerOn(u.x * TILE, u.y * TILE); }   // без карточки: новичку хватает карты
@@ -687,7 +687,7 @@ function coopPickClass(classes) {
 }
 
 const COOP_ITEM_RU = { baton: 'Эстафетная палочка', cargo: 'Груз хлеба' };
-const ITEM_NAME = k => COOP_ITEM_RU[k] || (typeof GOODS !== 'undefined' && GOODS[k] ? GOODS[k].name : k);
+const ITEM_NAME = k => COOP_ITEM_RU[k] || (typeof GOODS !== 'undefined' && GOODS[k] ? GOODS[k].name : typeof HL_GEAR !== 'undefined' && HL_GEAR[k] ? HL_GEAR[k].name : k);
 
 // Передать предмет: выбрать, кому (рядом, не дальше 4 клеток), потом клик по слоту
 function coopGiveBar() {
