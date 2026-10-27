@@ -386,7 +386,7 @@ function campMirrorOut() {
   const st = { k: s.k || 0, done: !!s.done, skip: !!s.skip, rd: Object.keys(s.rd || {}) };
   if (s.pick !== undefined) { st.pick = s.pick; st.left = Math.max(0, Math.ceil(CAMP_COOP_PICK - (s.wt || 0))); }
   return JSON.parse(JSON.stringify({ act: C.act, i: C.i, seq: C.seq, t: Math.round(C.t), objs: C.objs, hint: C.hint, label: C.label, mark: C.mark,
-    tilt: Math.round((C.tilt || 0) * 1000) / 1000, vfx: C.vfx || null, timer: C.timer || null, meter: C.meter || null, over: C.over, cpN: C.cpN || 0, st, np: coop.players.size }));
+    tilt: Math.round((C.tilt || 0) * 1000) / 1000, vfx: C.vfx || null, zb: C.zb ? { x: Math.round(C.zb.x * 100) / 100, y: Math.round(C.zb.y * 100) / 100, face: C.zb.face, vf: C.zb.vf || 0, mv: C.zb.mv, ph: Math.round((C.zb.ph || 0) * 10) / 10 } : null, timer: C.timer || null, meter: C.meter || null, over: C.over, cpN: C.cpN || 0, st, np: coop.players.size }));
 }
 
 function campMirrorIn(m, f, prog) {

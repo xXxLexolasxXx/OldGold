@@ -511,7 +511,7 @@ function strike(u, f) {
     if (!GCLS[cls] || !GCLS[cls].shot) {
       const def = u.type === 'hero' && u.hero ? heroDef(u) : u.rec && u.rec.armor ? 0.3 : 0;
       if (Math.random() < 0.3 * (1 - def)) {
-        if (u.type === 'hero' && typeof hlHurt === 'function' && hlOn()) hlHurt(u, 6, 'hit');
+        if (u.type === 'hero' && typeof hlHurt === 'function' && hlOn()) hlHurt(u, 6 * (typeof fsEnvMul === 'function' ? fsEnvMul(u) : 1), 'hit');
         else injure(u, Math.random() < 0.5 ? 'arm' : 'leg');
         floater(u.x, u.y - 1.6, 'Ай!', '#ff9a80');
       }

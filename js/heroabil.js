@@ -194,7 +194,7 @@ const ABIL_FX = {
   },
   ward(h, a, H) {
     let n = 0;
-    for (const g of Game.ghosts || []) if (Math.hypot(g.x - h.x, g.y - h.y) < 12) { g.mode = 'leave'; g.modeT = 99; floater(g.x, g.y - 1.6, 'А-а-ай!', '#cfe6ff'); n++; }
+    for (const g of Game.ghosts || []) if (ghLive(g) && Math.hypot(g.x - h.x, g.y - h.y) < 12) n++;      // призраков не гонит, а жжёт светом — половина здоровья (banish.js)
     for (const s of Game.skels || []) if (Math.hypot(s.x - h.x, s.y - h.y) < 7 && s.state === 'roam') { s.scared = 8; s.goal = null; n++; }
     for (const e of Game.ents || []) if ((e.state === 'walk' || e.state === 'smash') && Math.hypot(e.x - h.x, e.y - h.y) < 7) {
       e.target = null; e.goal = null; e.state = 'ghosted'; e.t = 0; e.gFrom = [h.x, h.y]; n++;
@@ -762,6 +762,28 @@ const AB_UTIL = [
   { k: 'u_camp', run: 'u_camp', icon: 'u_camp', name: 'Привал', desc: `Развести костерок и отдохнуть ${AB_CAMP_T} с: +3% здоровья в секунду, раны затягиваются. Не рядом с врагами` },
   { k: 'u_home', run: 'tp', icon: 'tp', name: 'Домой', desc: 'Телепорт на базу — к большому костру или складу', solo: true },
 ];
+// На виду — только «Атака» и способности класса. Редкое — в «⋯» и только когда к месту (abMoreList):
+// еда и привал — раненому, «Домой» — далеко от базы, капкан/колья/фонарь (combatfield.js, клавиши N/M/J) — при врагах рядом или ночью.
+const AB_MORE = [
+  { k: 'u_eat', u: 'u_eat' }, { k: 'u_camp', u: 'u_camp' }, { k: 'u_home', u: 'u_home' },
+  { k: 'cf_trap', cf: 'trap', icon: 'trap', name: 'Капкан', key: 'N', desc: 'Поставить капкан под ноги: первый враг в нём оглушён и открыт для удара' },
+  { k: 'cf_stakes', cf: 'stakes', icon: 'cf_stakes', name: 'Колья', key: 'M', desc: 'Вбить колья: рвут и замедляют всех, кто на них налез' },
+  { k: 'cf_lamp', cf: 'lamp', icon: 'cf_lamp', name: 'Фонарь', key: 'J', desc: 'Боевой фонарь: светит вокруг, нечисть в его свете слабее' },
+];
+const AB_HOME_FAR = 22;   // клеток до костра/склада, дальше которых «Домой» имеет смысл
+// чистая: какие пункты «⋯» показать сейчас. c — { eat, hurt, foes, night, far, mir }
+function abMoreList(c) {
+  return AB_MORE.filter(m => {
+    if (m.k === 'u_eat') return c.eat && c.hurt;
+    if (m.k === 'u_camp') return c.hurt && !c.foes;
+    if (m.k === 'u_home') return !c.mir && c.far;
+    return c.foes || c.night;
+  }).map(m => m.k);
+}
+if (typeof ABIL_ICON !== 'undefined') {
+  ABIL_ICON.cf_stakes = ABIL_ICON.cf_stakes || ['T:#f0e0b8 W:#c89a5a w:#8a5a2a D:#5a3a18 g:#4a6a2a', '..T...T...T.', '..W...W...W.', '.wW..wW..wW.', '.wW..wW..wW.', '.wW..wW..wW.', 'DDDDDDDDDDDD', '.wW..wW..wW.', '.wW..wW..wW.', '.wW..wW..wW.', 'gggggggggggg', '............', '............'];
+  ABIL_ICON.cf_lamp = ABIL_ICON.cf_lamp || ['K:#6a6a74 k:#2a2a30 Y:#ffe070 O:#f0a020', '.....KK.....', '....K..K....', '....KKKK....', '...KkkkkK...', '...kYYYYk...', '...kYOOYk...', '...kYOOYk...', '...kYYYYk...', '...KkkkkK...', '....KKKK....', '............', '............'];
+}
 
 function abBarState() {
   const h = Game.hero, H = h && h.hero;
@@ -776,7 +798,14 @@ function abBarState() {
     return { i, a, lock, left, pct: left && cdFull ? Math.min(1, left / cdFull) : 0, on: ((H.abT || {})[a.k] || 0) > now, lack: !lock && !a.passive && a.cost > rv };
   });
   const camp = Math.max(0, (H.campCd || 0) - now);
-  return { h, H, rk, rv, rm, slots, camp, mir, eat: abEatSlot(h) >= 0, band: (H.inv || []).some(s => s && s.k === 'bandage') && (h.injury || H.hp < H.maxhp * 0.6) };
+  const eat = abEatSlot(h) >= 0;
+  const hurt = !!h.injury || (H.maxhp > 0 && H.hp < H.maxhp * 0.9);
+  const foes = typeof foesNear === 'function' && foesNear(h.x, h.y, 9).length > 0;
+  const night = (typeof isNightNow === 'function' && isNightNow()) || (typeof isEveningNow === 'function' && isEveningNow());
+  const base = (Game.buildings || []).filter(b => !b.removed && (b.type === 'bonfire' || b.type === 'storehouse'));
+  const far = base.length > 0 && Math.min(...base.map(b => Math.hypot(b.x + b.w / 2 - h.x, b.y + b.h / 2 - h.y))) > AB_HOME_FAR;
+  const more = abMoreList({ eat, hurt, foes, night, far, mir });
+  return { h, H, rk, rv, rm, slots, camp, mir, eat, more, band: (H.inv || []).some(s => s && s.k === 'bandage') && (h.injury || H.hp < H.maxhp * 0.6) };
 }
 
 function abBarHTML(S) {
@@ -792,13 +821,20 @@ function abBarHTML(S) {
       + (s.a.passive && !s.lock ? '<i class="ab-cost ab-inf">∞</i>' : '')
       + `<i class="ab-key">${abKeyN(s.a, s.i)}</i></button>`;
   }).join('');
-  const util = AB_UTIL.filter(u => !(u.solo && S.mir)).map(u => {
-    const dis = (u.k === 'u_eat' && !S.eat) || (u.k === 'u_camp' && S.camp > 0) || (u.k === 'u_home' && (S.H.cdTp || 0) > Game.time);
-    const icon = u.k === 'u_eat' && S.band ? 'u_band' : u.icon;
-    return `<button class="ab-u${dis ? ' dim' : ''}" data-abu="${u.k}" aria-label="${u.name}"><img src="${abilIcon16(icon)}" alt="">${u.k === 'u_camp' && S.camp > 0 ? `<em>${Math.ceil(S.camp)}</em>` : ''}</button>`;
-  }).join('');
+  const atk = AB_UTIL[0], more = S.more || [];
+  if (!more.length) ABX.more = false;
+  const moreBtn = more.length ? `<button class="ab-u ab-more${ABX.more ? ' on' : ''}" data-abmore="1" aria-label="Ещё действия">${ABX.more ? '✕' : '⋯'}<i class="ab-mn">${more.length}</i></button>` : '';
+  const util = moreBtn + `<button class="ab-u" data-abu="${atk.k}" aria-label="${atk.name}"><img src="${abilIcon16(atk.icon)}" alt=""></button>`;
+  const fan = ABX.more ? '<div class="ab-fan">' + more.map(k => {
+    const m = AB_MORE.find(x => x.k === k), u = m.u && AB_UTIL.find(x => x.k === m.u), now = Game.time;
+    const name = u ? u.name : m.name;
+    const left = m.k === 'u_camp' ? S.camp : m.k === 'u_home' ? Math.max(0, (S.H.cdTp || 0) - now) : m.cf ? Math.max(0, ((S.H.cfCd || {})[m.cf] || 0) - now) : 0;
+    const icon = m.k === 'u_eat' && S.band ? 'u_band' : u ? u.icon : m.icon;
+    const key = typeof Mobile !== 'undefined' && Mobile.on ? '' : m.key ? ` <kbd>${m.key}</kbd>` : '';
+    return `<div class="ab-fr"><span>${name}${key}</span><button class="ab-u${left > 0 ? ' dim' : ''}" data-abm="${m.k}" aria-label="${name}"><img src="${abilIcon16(icon)}" alt="">${left > 0 ? `<em>${Math.ceil(left)}</em>` : ''}</button></div>`;
+  }).join('') + '</div>' : '';
   const none = S.slots.length ? '' : '<div class="ab-none">Способности даст гильдия</div>';
-  return `${res}<div class="ab-util">${util}</div><div class="ab-slots">${slots}${none}</div>`;
+  return `${res}${fan}<div class="ab-util">${util}</div><div class="ab-slots">${slots}${none}</div>`;
 }
 
 function abTipFor(el) {
@@ -812,14 +848,26 @@ function abTipFor(el) {
     const st = s.lock ? `откроется на ${a.lvl} уровне` : s.left > 0 ? `готово через ${Math.ceil(s.left)} с` : s.lack ? `не хватает: ${R}` : '';
     return `<b>${a.name}</b>${st ? ` <small>${st}</small>` : ''}<br>${a.desc}<br><small>${meta}</small>`;
   }
-  const u = AB_UTIL.find(x => x.k === el.dataset.abu);
+  if (el.dataset.abmore) return '<b>Ещё действия</b><br>Еда, привал, домой, капкан, колья, фонарь — появляются здесь, когда они к месту';
+  const m = el.dataset.abm && AB_MORE.find(x => x.k === el.dataset.abm);
+  const u = m ? (m.u ? AB_UTIL.find(x => x.k === m.u) : m) : AB_UTIL.find(x => x.k === el.dataset.abu);
   return u ? `<b>${u.name}</b>${u.key ? ` <small>клавиша ${u.key}</small>` : ''}<br>${u.desc}` : '';
 }
 
 function abBarUse(el) {
   if (!Game.hero || Game.hero.dead) return;
   let ok = false;
+  if (el.dataset.abmore) { ABX.more = !ABX.more; abBarUpdate(true); return; }
   if (el.dataset.ab != null) ok = heroUseAbility(+el.dataset.ab);
+  else if (el.dataset.abm) {
+    const m = AB_MORE.find(x => x.k === el.dataset.abm), u = m && m.u && AB_UTIL.find(x => x.k === m.u);
+    if (u) { heroAbility(u.run); ok = true; }
+    else if (m && m.cf) {
+      if (typeof Coop !== 'undefined' && Coop.on) { if (typeof coopSend === 'function') coopSend({ t: 'deploy', k: m.cf }); ok = true; }
+      else if (typeof cfPlace === 'function') ok = cfPlace(Game.hero, m.cf);
+    }
+    ABX.more = false;
+  }
   else { const u = AB_UTIL.find(x => x.k === el.dataset.abu); if (u) { heroAbility(u.run); ok = true; } }
   if (typeof Tut !== 'undefined' && Tut.on) Tut.cast = true;
   el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 160);
@@ -835,7 +883,7 @@ function abBarUpdate(force) {
   bar.classList.toggle('hidden', !show);
   if (!show) return;
   const html = abBarHTML(S);
-  if (force || bar.dataset.h !== html) { bar.dataset.h = html; bar.innerHTML = html + (ABX.tip ? `<div class="ab-tip">${abTipFor(ABX.tip)}</div>` : ''); if (ABX.tip) ABX.tip = bar.querySelector(ABX.tip.dataset.ab != null ? `[data-ab="${ABX.tip.dataset.ab}"]` : `[data-abu="${ABX.tip.dataset.abu}"]`); }
+  if (force || bar.dataset.h !== html) { bar.dataset.h = html; bar.innerHTML = html + (ABX.tip ? `<div class="ab-tip">${abTipFor(ABX.tip)}</div>` : ''); if (ABX.tip) ABX.tip = bar.querySelector(ABX.tip.dataset.ab != null ? `[data-ab="${ABX.tip.dataset.ab}"]` : ABX.tip.dataset.abm ? `[data-abm="${ABX.tip.dataset.abm}"]` : ABX.tip.dataset.abmore ? '[data-abmore]' : `[data-abu="${ABX.tip.dataset.abu}"]`); }
 }
 
 function initAbBar() {
@@ -849,7 +897,7 @@ function initAbBar() {
   const tipHide = () => { if (ABX.tip) { ABX.tip = null; abBarUpdate(true); } };
   bar.addEventListener('pointerdown', e => {
     e.stopPropagation();
-    const el = e.target.closest('[data-ab],[data-abu]');
+    const el = e.target.closest('[data-ab],[data-abu],[data-abm],[data-abmore]');
     if (!el) return;
     down = el; held = false;
     clearTimeout(hold);
@@ -869,7 +917,7 @@ function initAbBar() {
   // мышь: наведение — подсказка
   bar.addEventListener('mouseover', e => {
     if (typeof Mobile !== 'undefined' && Mobile.on) return;
-    const el = e.target.closest('[data-ab],[data-abu]');
+    const el = e.target.closest('[data-ab],[data-abu],[data-abm],[data-abmore]');
     if (el && el !== ABX.tip) tipShow(el);
   });
   bar.addEventListener('mouseleave', tipHide);
@@ -901,6 +949,14 @@ function initAbBar() {
   #ab-bar .ab-u{width:40px;height:40px;background:#241a0e;border:1px solid #8a6a28;box-shadow:0 2px 0 #000}
   #ab-bar .ab-u img{width:26px;height:26px;image-rendering:pixelated;display:block;margin:auto}
   #ab-bar .ab-u.dim img{filter:grayscale(1) brightness(.5)}#ab-bar .ab-u em{font-size:12px}
+  #ab-bar .ab-more{font-size:22px;font-weight:bold;color:#f6d458;line-height:1}#ab-bar .ab-more.on{border-color:#f6d458;background:#4a3818}
+  #ab-bar .ab-mn{right:3px;bottom:1px;font-size:10px;color:#e8dcc0}
+  #ab-bar .ab-fan{display:flex;flex-direction:column;align-items:flex-end;gap:5px;animation:abFan .2s ease-out both}
+  @keyframes abFan{from{opacity:0;transform:translateY(10px)}}
+  #ab-bar .ab-fr{display:flex;align-items:center;gap:7px}
+  #ab-bar .ab-fr span{padding:3px 8px;font-size:13px;color:#f0e4c0;background:rgba(20,14,8,.92);border:1px solid #6a5428;border-radius:5px;white-space:nowrap}
+  #ab-bar .ab-fr kbd{font-size:10px;color:#ffe9a8;margin-left:3px}
+  body.mobile #ab-bar .ab-fr .ab-u{width:44px;height:44px}
   #ab-bar .ab-res{position:relative;width:min(100%,180px);height:10px;background:#15100a;border:1px solid #0a0705;border-radius:4px;overflow:hidden}
   #ab-bar .ab-res i{position:static;display:block;height:100%}
   #ab-bar .ab-res span{position:absolute;inset:0;text-align:center;font-size:8px;line-height:10px;color:#fff;text-shadow:0 1px 0 #000}

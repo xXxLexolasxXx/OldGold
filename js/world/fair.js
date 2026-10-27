@@ -3,7 +3,8 @@
 // · Обмен с заезжими купцами: 6 предложений с ограниченным запасом (товары — со складов и на склад);
 // · конкурсы по очереди (3 за ярмарку): метание молота, стрельба, загадки, пироги — герои против жителей и рекрутов;
 // · призы: золото в казну, вещь герою, титул «Чемпион ярмарки», слава гильдии рекрута-победителя;
-// · в общей деревне — лоты между игроками (вещь из рюкзака за вещь) и личное задание «Сыграть в конкурсе ярмарки».
+// · в общей деревне — лоты между игроками (вещь из рюкзака за вещь) и личное задание «Сыграть в конкурсе ярмарки»;
+// · оружейная лавка: мечи, луки, кинжалы, посохи и доспехи — дорого, за золото казны, сразу в рюкзак героя (по одной штуке).
 // С «Праздником» (festival.js) не пересекается: в день ярмарки праздник не начинается и наоборот;
 // удачная ярмарка (все конкурсы сыграны) зовёт праздник на следующий день.
 // Game.fair = { id, on, x, y, offers, cs, ci, lots, res } — сегодняшняя ярмарка; Game.fairDay — номер дня следующей.
@@ -26,6 +27,11 @@ const FAIR_OFFERS = [
   { give: { magicstone: 2 }, get: { gold: 2 } }, { give: { hops: 4 }, get: { darkbeer: 2 } },
 ];
 const FAIR_WANT = ['bread', 'sausage', 'chickenleg', 'steak', 'croissant'];
+// оружейная лавка: цена в золоте казны (вдвое-втрое дороже оружейной), по одной штуке за ярмарку
+const FAIR_ARMS = [
+  { g: 'sword', gold: 8 }, { g: 'bow', gold: 8 }, { g: 'dagger', gold: 6 }, { g: 'staff', gold: 9 },
+  { g: 'leatherArmor', gold: 6 }, { g: 'mageArmor', gold: 9 }, { g: 'ironArmor', gold: 12 },
+];
 const FAIR_STALLS = [
   { dx: -3.2, dy: -0.6, col: '#c83a2a', goods: ['bread', 'croissant'], n: 'Хлебная лавка' },
   { dx: -1.6, dy: -1.9, col: '#2f6a9a', goods: ['beer', 'darkbeer'], n: 'Пивная' },
@@ -76,7 +82,8 @@ function fairStart() {
   const offers = pool.slice(0, 6).map(o => ({ give: o.give, get: o.get, left: 3 }));
   const ks = Object.keys(FAIR_CONTESTS).sort(() => Math.random() - 0.5).slice(0, 3);
   Game.fairN = (Game.fairN || 0) + 1;
-  Game.fair = { id: Game.fairN, on: true, x: x + 0.5, y: y + 0.5, offers, cs: ks.map(k => ({ k, st: 'wait', sc: [] })), ci: 0, next: Game.time + 20, lots: [], res: [], lotN: 1, t0: Game.time };
+  const arms = FAIR_ARMS.filter(a => GOODS[a.g]).map(a => ({ g: a.g, gold: a.gold, left: 1 }));
+  Game.fair = { id: Game.fairN, on: true, x: x + 0.5, y: y + 0.5, offers, arms, cs: ks.map(k => ({ k, st: 'wait', sc: [] })), ci: 0, next: Game.time + 20, lots: [], res: [], lotN: 1, t0: Game.time };
   frSay('Ярмарка открылась на площади у склада! Обмен с купцами и конкурсы — кнопка «Ярмарка» вверху');
   logEvent('festival', 'Открылась ярмарка: пять лавок и три конкурса', x + 0.5, y);
   if (typeof sfxAt === 'function') sfxAt('chime', x * TILE, y * TILE);
@@ -113,6 +120,22 @@ function fairTrade(i, who) {
   floater(F.x, F.y - 2.2, `Обмен: ${frList(o.get)}`, '#ffe070');
   if (typeof sfxAt === 'function') sfxAt('mug', F.x * TILE, F.y * TILE, 0.7);
   logEvent('festival', `${who || 'Деревня'} выменял на ярмарке: ${frList(o.give)} → ${frList(o.get)}`, F.x, F.y);
+  return '';
+}
+
+// оружейная лавка: золото казны → вещь в рюкзак героя (h — герой-юнит)
+function fairBuyArm(i, h, who) {
+  const F = Game.fair, a = F && F.arms && F.arms[i];
+  if (!a || a.left <= 0) return 'Это уже купили';
+  if (!h || !h.hero || h.dead) return 'Покупает герой';
+  if (frHave('gold') < a.gold) return `В казне не хватает золота: нужно ${a.gold}`;
+  const add = frServer() ? (typeof coopAddItem === 'function' && coopAddItem(h.hero, a.g, 1)) : (typeof hlAddItem === 'function' && Array.isArray(h.hero.inv) && hlAddItem(h.hero, a.g, 1));
+  if (!add) return 'Рюкзак героя полон';
+  frTake('gold', a.gold);
+  a.left--;
+  floater(F.x, F.y - 2.2, `Куплено: ${frGoodName(a.g)}`, '#ffe070');
+  if (typeof sfxAt === 'function') sfxAt('chime', F.x * TILE, F.y * TILE, 0.6);
+  logEvent('festival', `${who || 'Герой'} купил на ярмарке: ${frGoodName(a.g)} за ${a.gold} золота`, F.x, F.y);
   return '';
 }
 
@@ -406,18 +429,29 @@ function fairPanelHTML() {
     else {
       const me = c.sc.find(e => e.who === key), left = FAIR_TRIES - (me ? me.n : 0);
       const far = h && Math.hypot(h.x - F.x, h.y - F.y) > 7;
-      x += `<div class="fr-sec">Конкурс: <b>${C.n}</b> · ещё ${Math.max(0, Math.round(c.end - Game.time))} с<br><small>решает ${({ str: 'сила', agi: 'ловкость', int: 'смекалка', end: 'стойкость' })[C.st]} героя и удача</small></div>`;
+      x += `<div class="fr-sec">Конкурс: <b>${C.n}</b> · ещё ${Math.max(0, Math.round(c.end - Game.time))} с<br><small>Чем больше у героя ${({ str: 'силы', agi: 'ловкости', int: 'смекалки', end: 'стойкости' })[C.st]}, тем лучше. ${FAIR_TRIES} попытки, в зачёт — лучшая.</small></div>`;
       if (h) x += far ? `<button class="fr-big" data-fr="go">Подойти на площадь</button>` : `<button class="fr-big" data-fr="join" ${left > 0 ? '' : 'disabled'}>${C.verb}! <small>(попыток: ${left})</small></button>`;
       const tab = c.sc.filter(e => e.n > 0).sort((a, b) => b.best - a.best).slice(0, 6);
       if (tab.length) x += '<div class="fr-tab">' + tab.map((e, i) => `<div${e.who === key ? ' class="me"' : ''}>${i + 1}. ${e.name}${e.rec ? ' <small>(рекрут)</small>' : ''} — <b>${e.best}</b> ${C.unit}</div>`).join('') + '</div>';
     }
   }
   if (F.res.length) x += '<div class="fr-sec small">Призы: ' + F.res.map(r => `${FAIR_CONTESTS[r.k].n} — <b>${r.name}</b>`).join('; ') + '</div>';
-  x += '<div class="fr-sec"><b>Купцы меняют</b> <small>(со складов на склад)</small></div><div class="fr-offs">';
+  // обмен: слева — что отдаём со складов, справа — что придёт на склад; подписи словами, не только значками
+  x += '<div class="fr-sec fr-hd"><b>Обмен у купцов</b><small>Нажмите строку: отдаёте слева — получаете справа. Со складов и на склад.</small></div><div class="fr-offs fr-rows">';
+  const nm = o => Object.entries(o).map(([g, n]) => `${frIcon(g)}${GOODS[g] ? GOODS[g].name : g} <b>×${n}</b>`).join(', ');
   F.offers.forEach((o, i) => {
-    x += `<button class="fr-off" data-fr="trade:${i}" ${o.left > 0 ? '' : 'disabled'} title="Осталось: ${o.left}"><span>${Object.entries(o.give).map(([g, n]) => frIcon(g) + n).join(' ')}</span><span class="fr-ar">→</span><span>${Object.entries(o.get).map(([g, n]) => frIcon(g) + n).join(' ')}</span><small>×${o.left}</small></button>`;
+    x += `<button class="fr-off fr-row" data-fr="trade:${i}" ${o.left > 0 ? '' : 'disabled'}><span>${nm(o.give)}</span><span class="fr-ar">→</span><span>${nm(o.get)}</span><small class="fr-left">${o.left > 0 ? 'ещё ' + o.left : 'разобрали'}</small></button>`;
   });
   x += '</div>';
+  if (F.arms && F.arms.length) {
+    const gold = frHave('gold');
+    x += `<div class="fr-sec fr-hd"><b>Оружейная лавка</b><small>Дорого: за золото казны (сейчас ${gold}), вещь сразу в рюкзак героя. По одной штуке.</small></div><div class="fr-offs fr-rows">`;
+    F.arms.forEach((a, i) => {
+      const can = a.left > 0 && h && (frMirror() || gold >= a.gold);   // в общей деревне казну проверяет сервер
+      x += `<button class="fr-off fr-row fr-arm" data-fr="arm:${i}" ${can ? '' : 'disabled'}><span>${frIcon(a.g)} ${typeof hlName === 'function' ? hlName(a.g) : GOODS[a.g].name}</span><span class="fr-pr">${frIcon('gold')}<b>${a.gold}</b></span><small class="fr-left">${a.left > 0 ? (frMirror() || gold >= a.gold ? 'купить' : 'мало золота') : 'продано'}</small></button>`;
+    });
+    x += '</div>';
+  }
   if (frMirror()) {
     x += '<div class="fr-sec"><b>Лоты игроков</b> <small>(вещь из рюкзака за вещь)</small></div>';
     for (const L of F.lots) {
@@ -442,6 +476,7 @@ function fairAct(a, arg) {
   const h = frMyHero();
   if (frMirror()) {
     if (a === 'trade') coopSend({ t: 'fair', a: 'trade', i: +arg });
+    else if (a === 'arm') coopSend({ t: 'fair', a: 'arm', i: +arg });
     else if (a === 'join') coopSend({ t: 'fair', a: 'join' });
     else if (a === 'take') coopSend({ t: 'fair', a: 'take', id: +arg });
     else if (a === 'go' && Game.fair) coopSend({ t: 'go', x: Math.floor(Game.fair.x), y: Math.floor(Game.fair.y) + 1 });
@@ -453,6 +488,7 @@ function fairAct(a, arg) {
   }
   let bad = '';
   if (a === 'trade') bad = fairTrade(+arg, 'Деревня');
+  else if (a === 'arm') bad = fairBuyArm(+arg, h, h && h.hero && h.hero.name);
   else if (a === 'join' && h) bad = fairJoin(h);
   else if (a === 'go' && h && Game.fair) { const c = resolveCmd([Math.floor(Game.fair.x), Math.floor(Game.fair.y) + 1]); if (c) issueCmd(h, c); }
   if (bad) toast(bad);
@@ -468,15 +504,21 @@ function fairUI() {
     #fair-chip b{color:#fff}
     #fair-panel{position:absolute;top:80px;left:50%;transform:translateX(-50%);width:min(340px,calc(100vw - 24px));max-height:calc(100dvh - 160px);overflow-y:auto;z-index:7;display:none;padding:6px 10px 10px;background:rgba(26,19,13,.95);color:#e8dcc0;border:1px solid #c89a3a;border-radius:6px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.6)}
     #fair-panel .fr-h{display:flex;justify-content:space-between;align-items:center;color:#f6d458;font-size:15px;border-bottom:1px dashed #6a5020;padding-bottom:3px}
-    #fair-panel .fr-x{padding:0 6px}#fair-panel .fr-sec{margin:6px 0 3px;line-height:1.35}#fair-panel small{opacity:.75}
+    #fair-panel .fr-x{min-width:36px;min-height:32px;padding:0 8px;font-size:20px;font-weight:bold;color:#fff;background:linear-gradient(#8a2e1e,#5a1a10);box-shadow:inset 0 0 0 1px #e07050}#fair-panel .fr-sec{margin:6px 0 3px;line-height:1.35}#fair-panel small{opacity:.75}
     #fair-panel .fr-big{width:100%;padding:6px;font-size:14px;margin:3px 0}
     #fair-panel .fr-tab div{padding:1px 4px}#fair-panel .fr-tab .me{background:rgba(255,220,140,.12);color:#ffe9a0}
     #fair-panel .fr-offs{display:grid;grid-template-columns:1fr 1fr;gap:4px}
     #fair-panel .fr-off{display:flex;align-items:center;gap:3px;justify-content:space-between;padding:3px 5px;font-size:12px}
     #fair-panel .fr-ar{opacity:.7}#fair-panel .fr-ic{width:16px;height:16px;image-rendering:pixelated;vertical-align:middle}
+    #fair-panel .fr-hd{display:flex;flex-direction:column;gap:1px;border-top:1px dashed #6a5020;padding-top:5px}#fair-panel .fr-hd small{font-size:11.5px}
+    #fair-panel .fr-rows{grid-template-columns:1fr}#fair-panel .fr-row{justify-content:flex-start;text-align:left;gap:6px;font-size:13px;padding:5px 7px}
+    #fair-panel .fr-row>span:first-child{flex:1 1 auto}#fair-panel .fr-row .fr-left{margin-left:auto;font-size:11px;white-space:nowrap}
+    #fair-panel .fr-arm .fr-pr{color:#f6d458;white-space:nowrap}#fair-panel .fr-row:disabled{opacity:.5}
+    body.mobile #fair-panel .fr-row{font-size:14px;padding:7px 8px;min-height:40px}
     #fair-panel .fr-lot{display:flex;align-items:center;gap:4px;margin:3px 0;flex-wrap:wrap}#fair-panel .fr-lot button{margin-left:auto}
     #fair-panel input{width:38px}
-    body.mobile #fair-chip{top:calc(96px + env(safe-area-inset-top))}body.mobile #fair-panel{top:calc(124px + env(safe-area-inset-top))}`;
+    body.mobile #fair-chip{top:calc(96px + env(safe-area-inset-top))}body.mobile #fair-panel{top:calc(124px + env(safe-area-inset-top));max-height:calc(100dvh - 200px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+    body.mobile:has(#fair-panel[style*="block"]) #ab-bar{display:none}`;
     document.head.appendChild(st);
     chip = document.createElement('div'); chip.id = 'fair-chip';
     pan = document.createElement('div'); pan.id = 'fair-panel';
@@ -510,7 +552,7 @@ function fairMirror() {
   const F = Game.fair;
   if (!F) return null;
   const c = F.cs[F.ci];
-  return { id: F.id, on: F.on, x: F.x, y: F.y, ci: F.ci, next: F.next, offers: F.offers, res: F.res, lots: F.lots,
+  return { id: F.id, on: F.on, x: F.x, y: F.y, ci: F.ci, next: F.next, offers: F.offers, arms: F.arms || [], res: F.res, lots: F.lots,
     cs: F.cs.map(x => x === c ? { k: x.k, st: x.st, end: x.end, sc: x.sc.map(e => ({ who: e.who, name: e.name, n: e.n, best: e.best, rec: e.rec || 0 })) } : { k: x.k, st: x.st, sc: [] }) };
 }
 
@@ -527,6 +569,7 @@ function frServerHook() {
     const ok = k => admin || coop.perms[k];
     if (m.a === 'trade' && Number.isInteger(m.i)) { if (!ok('manage')) { coopSay(name, 'Хост запретил: обмен со складов'); return; } const bad = fairTrade(m.i, name); if (bad) coopSay(name, bad); }
     else if (m.a === 'join') { const bad = fairJoin(u); if (bad) coopSay(name, bad); }
+    else if (m.a === 'arm' && Number.isInteger(m.i)) { if (!ok('manage')) { coopSay(name, 'Хост запретил: тратить казну'); return; } const bad = fairBuyArm(m.i, u, name); if (bad) coopSay(name, bad); }
     else if (m.a === 'lot' && Number.isInteger(m.slot) && m.slot >= 0 && m.slot < u.hero.inv.length) fairLot(name, m.slot, typeof m.want === 'string' ? m.want : '', m.wn);
     else if (m.a === 'take' && Number.isInteger(m.id)) fairTake(name, m.id);
   };

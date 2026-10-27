@@ -264,7 +264,7 @@ function golemSprite(view, pose, f, force) {
   ctx.setTransform(PS, 0, 0, PS, 0, 0);
   GL_SEA = golemSea(); GL_DORM = golemDorm();
   drawGolemBody(ctx, view, pose, f);
-  cv = toPixelArt(c2, PS / PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
+  cv = toPixelArt(c2, PS / 2, { outline: true, outlineDark: 0.36, alphaCut: 105 });
   GL_CACHE.set(key, cv);
   if (!force) spriteSpent(t0);
   return cv;

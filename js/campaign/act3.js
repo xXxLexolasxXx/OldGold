@@ -13,6 +13,7 @@ const CAMP3 = {
   krem: [96, 50],              // центр Кремнёвки
   ford: [70, 50],              // брод через речку
   raid: [118, 20],             // откуда ночью приходят гоблины
+  reeds: [67, 64],             // камыши у речки: там сидит Жабьен (побочное задание)
   build: [['house', 3], ['woodcutter', 1], ['farm', 1], ['bakery', 1], ['well', 1]],
 };
 
@@ -170,7 +171,7 @@ CAMP_ACTS[3] = {
     C.flags.resp = 0; C.flags.lost0 = Game.lostGnomes || 0;
     C.meter = { key: 'resp', label: 'Уважение Кремнёвки' };
   },
-  tick(C) {
+  tick(C, dt) {
     C.lost = Math.max(0, (Game.lostGnomes || 0) - (C.flags.lost0 || 0));
     // чужое не трогаем: остановленное — обратно на паузу; снесённое — обида (один раз за дом)
     for (const b of Game.buildings) if (b.foreign && !b.paused) b.paused = true;
@@ -184,6 +185,7 @@ CAMP_ACTS[3] = {
     if (C.flags.duel && !C.flags.duelWon && C.flags.duelOn && !campFoes('duel').length) C.flags.duelWon = 1;
     // гоблин набега забрёл в лес и не выходит — цель «отбить» не должна висеть вечно
     campStragglers('kraid', C.flags.raidT, 240, 'Остатки набега удрали в лес.');
+    if (typeof campZbTick === 'function') campZbTick(C, dt);
   },
   fail(C) { return campPeople() < 1 ? 'Беглецов из Подгорья не осталось.' : null; },
   stars(C) {
@@ -192,7 +194,7 @@ CAMP_ACTS[3] = {
   },
   legacy(C) {
     const r = C.flags.resp || 0;
-    return { a3: { resp: r, gift: r >= 3 ? { bread: 20, stone: 20, trade: 1 } : r >= 1 ? { bread: 20 } : {} } };
+    return { a3: { resp: r, gift: r >= 3 ? { bread: 20, stone: 20, trade: 1 } : r >= 1 ? { bread: 20 } : {}, zhab: C.zb ? 1 : 0 } };
   },
   legacyText(C) {
     const r = C.flags.resp || 0;
@@ -203,6 +205,9 @@ CAMP_ACTS[3] = {
     const npc = (k, p) => { if (p && p[0] > x0 - 2 && p[0] < x1 + 2 && p[1] > y0 - 2 && p[1] < y1 + 3) list.push([p[1] + 0.95, () => campDrawNpc(c, k, p[0], p[1])]); };
     npc('zhmykha', F.zh);
     if (!F.duelOn || F.duelWon) npc('kremen', F.kr);
+    if (typeof campZbDraw === 'function') campZbDraw(list, c, x0, y0, x1, y1);
+    // до встречи Жабьен сидит в камышах
+    if (!C.zb && F.zbWait && !F.zbGone && typeof campZbDraw === 'function') campZbDraw(list, c, x0, y0, x1, y1, { x: CAMP3.reeds[0] + 0.5, y: CAMP3.reeds[1] + 0.5, face: 1 });
     // хозяева ходят по деревне днём; вечером и ночью сидят по домам
     if (typeof campDrawKvAt === 'function' && !camp3Night() && Math.abs(CAMP3.krem[0] - (x0 + x1) / 2) < (x1 - x0) / 2 + 20)
       for (const r of camp3KvRoutes(C)) {
@@ -269,6 +274,35 @@ CAMP_ACTS[3] = {
         { t: 'Ходить по очереди', def: 1, out: 'Очередь у колодца — лучшее место для сплетен. Теперь все знают всё. Даже лишнее.' },
         { t: 'Брать сколько надо', fx: C => camp3Resp(C, -1), out: 'Вода общая, обида — тоже. Особенно обида.' },
       ] },
+    // ---- побочное задание: Жаба в камышах
+    { k: 'goal', label: 'Кто квакает в камышах?', hint: 'Необязательно. У речки, в камышах к югу от брода, кто-то квакает басом. Сходите героем, пока не стемнело.',
+      init(C) { C.flags.zbWait = 1; },
+      objs: [{ id: 'zb', t: 'Герой: заглянуть в камыши', opt: true, at: CAMP3.reeds, cur: C => (C.flags.zbMet || (C.flags.zbMet = campHeroNear(CAMP3.reeds[0], CAMP3.reeds[1], 3.5) ? 1 : 0)) }],
+      or: () => camp3Night(),
+      after(C) { C.flags.zbWait = 0; if (!C.flags.zbMet) C.flags.zbGone = 1; } },
+    { k: 'say', when: C => !!C.flags.zbMet, label: 'Жаба в камышах', lines: [
+      ['note', 'В камышах сидит жаболюд: синий, в плаще из ряски, с колчаном. Дротиков в колчане — ровно один.'],
+      ['zhab', 'Ква. Стоять. Это мои камыши. Я — Жабьен, охотник. Бывший охотник с бывшего болота.'],
+      ['grum', 'Бывшего?'],
+      ['zhab', 'Пришли гоблины с бочками. Бабах — и болото стало ямой. Яма — без воды. Жабьен — без дома.'],
+      ['zhab', 'У них порох. У меня — обида. Обида громче. Ква.'],
+      ['yagla', 'Худющий-то какой! Тебя кормил кто-нибудь, лягушонок?'],
+      ['zhab', 'Мухи кормили. Собой. Потом мухи тоже ушли. После бабаха.'],
+    ] },
+    { k: 'choice', id: 'zhab', who: 'zhab', t: 'Жабьен просится в колонну', when: C => !!C.flags.zbMet,
+      text: 'Жабьен разглядывает ваш обоз так, будто это болото на колёсах. «Возьмёте — буду метать дротики в гоблинов. Не возьмёте — буду метать в вас. Шутка. Ква. Почти.»',
+      opts: [
+        { t: 'Взять с собой и накормить (−2 хлеба)', fx: C => { campZbFeed(2); campZbJoin(C, CAMP3.reeds[0], CAMP3.reeds[1]); },
+          out: 'Жабьен съел хлеб, понюхал второй и спрятал его за щеку «на потом». Теперь в колонне есть охотник — с колчаном и с обидой.' },
+        { t: 'Взять, но пусть сам ловит мух', fx: C => campZbJoin(C, CAMP3.reeds[0], CAMP3.reeds[1]),
+          out: '«Мухи — тоже еда, просто летучая», — пожал плечами Жабьен и запрыгал за героем.' },
+        { t: 'Нам и так погоня на хвосте', def: 1, fx: C => { C.flags.zbGone = 1; },
+          out: '«Погоня — это хорошо, — квакнул Жабьен. — Значит, гоблины придут сами». И нырнул в камыши.' },
+      ] },
+    { k: 'say', when: C => !!C.zb, lines: [
+      ['zhab', 'Где гоблины — там Жабьен. Где Жабьен — там гоблинам мокро.'],
+      ['grum', 'Ещё один рот… Ладно. Рот с дротиками — уже не просто рот.'],
+    ] },
     { k: 'wait', label: 'День второй: до вечера', until: () => camp3Night() },
     { k: 'check' },
     { k: 'do', fn(C) {
