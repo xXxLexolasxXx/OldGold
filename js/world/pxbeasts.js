@@ -512,7 +512,7 @@ function pbTroll(K, P, kind) {
   const legG = (hx, sgn) => { const kx = hx + sgn * sw * 12 + 6, fx = hx + sgn * sw * 20 + 4; return { hx, kx, ky: -54, fx }; };
   const armG = (sx, sy, ang, len1, len2, grip) => { const ex = sx + Math.cos(ang) * len1, ey = sy + Math.sin(ang) * len1, a2 = ang - 0.35 + (grip ? 0.2 : 0); return { sx, sy, ex, ey, a2, hx: ex + Math.cos(a2) * len2, hy: ey + Math.sin(a2) * len2, grip }; };
   const legGeo = L => ({ sx: L.hx, sy: -96, ex: L.kx, ey: L.ky, hx: L.fx, hy: -14 });
-  const legPrims = L => pbTrLegPrims(legGeo(L), [1, 0], [0, 0], [L.fx + 12, -8, 25, 10]);
+  const legPrims = L => pbTrLegPrims(legGeo(L), [1, 0], [0, 0], [L.fx + 12, -6, 27, 6.5])   /* ступня плоская, вся подошва на земле */;
   const armDir = A => { const ux = A.ex - A.sx, uy = A.ey - A.sy, l = Math.hypot(ux, uy) || 1; return [uy / l, -ux / l]; };   // «перёд» плеча (бицепс), локоть — назад
   const armPrims = A => { const bn = armDir(A); return pbTrArmPrims(A, A.hx + Math.cos(A.a2) * 6, A.hy + Math.sin(A.a2) * 6, bn, [-bn[0], -bn[1]]); };
   // пальцы рук и ног — поверх, узловатые, с когтями
@@ -539,7 +539,7 @@ function pbTroll(K, P, kind) {
     const back = Math.atan2(-dy, -dx);
     for (let i = 0; i < 3; i++) { const e = lock(A.ex + nx * 6, A.ey + ny * 6, back + 0.5 + (i - 1) * 0.35, (18 + i * 4) * L, 5.5, 0.7, ramp, kind === 'trollS'); if (i === 1) tipDeco(e, 2.4); }
   };
-  const toes = (L, ramp) => { for (let t = 0; t < 4; t++) { const tx = L.fx + 18 + t * 6; pbBall(K, tx, -5, 4, 4.6, ramp, { amb: 0.5, fade: 0.4 }); K.path([[tx + 2, -6, 1.8], [tx + 6, -2, 0.6]], () => T.NA[t % 2]); } };
+  const toes = (L, ramp) => { for (let t = 0; t < 4; t++) { const tx = L.fx + 18 + t * 6; pbBall(K, tx, -3, 4.2, 3, ramp, { amb: 0.5, fade: 0.4 }); K.path([[tx + 2, -3.5, 1.6], [tx + 6, -0.5, 0.6]], () => T.NA[t % 2]); } };
   const farL = legG(-30, -1), nearL = legG(14, 1);
   const ang = P.up > 0.5 ? -2.2 : P.a < -0.3 ? -2.5 : P.a > 0.5 ? 0.5 : 1.75 + P.a * 0.3;    // висит / замах за голову / удар вперёд-вниз
   const nearA = armG(-4, -168, ang, 52, 48, true);                                             // ближняя рука — от плеча у горба, в ней оружие
@@ -671,7 +671,7 @@ function pbTrollF(K0, P, kind) {
   const INK = [0, 0, 0];
   pbShadow(K, 88);
   // ---- геометрия: ноги (на ходьбе поднимаются поочерёдно), руки, голова
-  const leg = s => { const lift = Math.max(0, sw * s) * 26, G = { sx: s * 26, sy: -96, ex: s * 33, ey: -52 - lift * 0.6, hx: s * 34, hy: -15 - lift }; return { s, lift, G, prims: pbTrLegPrims(G, [0, 0], [s, 0], [s * 36, -8 - lift, 21, 10]) }; };
+  const leg = s => { const lift = Math.max(0, sw * s) * 26, G = { sx: s * 26, sy: -96, ex: s * 33, ey: -52 - lift * 0.6, hx: s * 34, hy: -15 - lift }; return { s, lift, G, prims: pbTrLegPrims(G, [0, 0], [s, 0], [s * 36, -6 - lift, 23, 6.5]) }; };
   const L1 = leg(-1), L2 = leg(1);
   const arm = (sx, sy, ex, ey, hx, hy) => { const A = { sx, sy, ex, ey, hx, hy }, s = Math.sign(sx); A.kn = [s, 0]; A.prims = pbTrArmPrims(A, hx, hy + 4, [-s * 0.4, 0], A.kn); return A; };   // локоть наружу
   // оружейная рука (справа): висит / замах над головой / удар наискось / возврат
@@ -687,7 +687,7 @@ function pbTrollF(K0, P, kind) {
   pbBall(K, 0, -128, 38, 34, T.BE, { amb: 0.42, fade: 0.5, clip: (x, y) => (x / 52) ** 2 + ((y + 134) / 44) ** 2 < 0.9, tex: (x, y) => (Math.abs(((y + 128) % 11)) < 1 && Math.abs(x) < 26 ? -0.14 : 0) });
   pbDot(K, 0, -116, T.BE[0], 1.4);
   pbTrLoin(K, T, kind, -52, 52, -110, 0);
-  for (const L of [L1, L2]) for (let t = 0; t < 3; t++) { const tx = L.s * 36 + (t - 1) * 9; pbBall(K, tx, -4 - L.lift, 4.4, 4.6, SK, { amb: 0.5, fade: 0.4 }); K.path([[tx, -1 - L.lift, 1.8], [tx + (t - 1), 3 - L.lift, 0.6]], () => T.NA[t % 2]); }
+  for (const L of [L1, L2]) for (let t = 0; t < 3; t++) { const tx = L.s * 36 + (t - 1) * 9; pbBall(K, tx, -3 - L.lift, 4.4, 3, SK, { amb: 0.5, fade: 0.4 }); K.path([[tx, -1.5 - L.lift, 1.6], [tx + (t - 1), 1.5 - L.lift, 0.6]], () => T.NA[t % 2]); }
   // приметы вида на плечах
   if (DR) for (const [x, y, r] of [[-56, -184, 8], [50, -188, 6], [-30, -186, 5], [64, -170, 5]]) { pbBall(K, x, y, r + 2, r, [[90, 76, 56], [130, 112, 86], [168, 150, 120]], { amb: 0.5 }); pbBall(K, x - 2, y - 4, r * 0.6, r * 0.5, T.moss, { amb: 0.5, fade: 0.4 }); }
   else for (let i = 0; i < 6; i++) { const s = i % 2 ? 1 : -1, x = s * (40 + K.hsh(i * 3.1) * 26), y = -182 + K.hsh(i * 7.3) * 26, r = 3 + K.hsh(i * 1.7) * 4; pbBall(K, x, y, r * 1.3, r, kind === 'trollB' ? HR : T.HA, { amb: 0.55, fade: 0.5 }); }
@@ -730,8 +730,8 @@ function pbTrollF(K0, P, kind) {
   pbDot(K, -4, hy + 10, SK[0], 1.6); pbDot(K, 4, hy + 10, SK[0], 1.6); pbDot(K, 2, hy + 1, SK[3], 1.4);
   if (open) pbBall(K, 0, hy + 20, 13, 4 + P.mouth * 4, [[30, 8, 6], [60, 18, 14], [90, 30, 22]], { amb: 0.3 });
   else K.path([[-15, hy + 19, 1], [15, hy + 19, 1]], () => SK[0]);
-  pbTrTusk(K, T, kind, 13, hy + 25, -1.3, 15, 4.6, -0.95, 1);                                   // бивни загнуты внутрь — смотрят друг на друга
-  pbTrTusk(K, T, kind, -13, hy + 25, -Math.PI + 1.3, 15, 4.6, 0.95, -1);
+  pbTrTusk(K, T, kind, 19, hy + 25, -1.3, 15, 4.6, -0.95, 1);                                   // бивни загнуты внутрь — смотрят друг на друга
+  pbTrTusk(K, T, kind, -19, hy + 25, -Math.PI + 1.3, 15, 4.6, 0.95, -1);
   for (const s of [-1, 1]) pbTrTusk(K, T, kind, s * 7, hy + 14, s > 0 ? 1.7 : Math.PI - 1.7, 6, 2.4, s * -0.3, s);
   // ---- оружие у тела (висит / удар / возврат) — до руки, чтобы кулак лёг поверх рукояти
   if (!(up || a < -0.3)) pbTrWeapon(K, T, W.hx, W.hy + 2, wd);
