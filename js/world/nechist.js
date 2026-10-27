@@ -361,6 +361,7 @@ function drawBats(c) {
   for (const b of bats) {
     if (b.state === 'grab') { drawBatGrab(c, b); continue; }
     const px = Math.round(b.x * TILE), py = Math.round(b.y * TILE - b.z);
+    if (typeof onScreen === 'function' && !onScreen(px, py, 48)) continue;
     const flap = Math.sin(b.ph), w = 5 + Math.abs(flap) * 2.5, up = flap * 3.2;
     c.fillStyle = 'rgba(10,8,4,0.2)'; c.beginPath(); c.ellipse(px, b.y * TILE + 2, 4, 1.2, 0, 0, 7); c.fill();
     c.fillStyle = '#16121c';

@@ -314,9 +314,9 @@ function ghostPxFrame(g, v, mood, f, rag = '') {
   f = Math.max(0, Math.min(GPX_N[mood] - 1, f | 0));
   const have = FZ_CVC['gh' + v + mood + f + rag], last = GPX_LAST.get(g);
   if (have) { GPX_LAST.set(g, have); return have; }
-  if (last && typeof spriteBudgetOk === 'function' && !spriteBudgetOk(true)) return last;
+  if (last && typeof spriteBudgetOk === 'function' && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return last;
   const t0 = performance.now(), cv = ghostPxSprite(v, mood, f, rag);
-  if (typeof spriteSpent === 'function') spriteSpent(t0);
+  if (typeof spriteSpent === 'function') { spriteSpent(t0); heavySpent(t0); }
   GPX_LAST.set(g, cv);
   return cv;
 }

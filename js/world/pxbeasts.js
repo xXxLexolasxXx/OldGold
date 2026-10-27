@@ -42,12 +42,21 @@ function pbChain(K, pts, ramp, o = {}) {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   for (const [x, y, r] of pts) { x0 = Math.min(x0, x - r); x1 = Math.max(x1, x + r); y0 = Math.min(y0, y - r); y1 = Math.max(y1, y + r); }
   const amb = o.amb ?? 0.45;
+  // сегменты заранее (как в pbBlob): ax, ay, ar, dx, dy, l2, len, br, рамка капсулы; сегмент, чья рамка не ближе
+  // лучшего найденного, лучшим не станет — его не считаем (результат тот же)
+  const SG = [];
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, ay, ar] = pts[i - 1], [bx, by, brr] = pts[i], dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1, rm = Math.max(ar, brr);
+    SG.push([ax, ay, ar, dx, dy, l2, Math.sqrt(l2), brr, Math.min(ax, bx) - rm, Math.min(ay, by) - rm, Math.max(ax, bx) + rm, Math.max(ay, by) + rm]);
+  }
   K.R(x0 - 1, y0 - 1, x1 + 1, y1 + 1, (xx, yy) => {
     const px = xx + 0.5, py = yy + 0.5;
     let best = 1e9, bs = 0, blit = 0, bt = 0, bi = 0;
     for (let i = 1; i < pts.length; i++) {
-      const [ax, ay, ar] = pts[i - 1], [bx, by, brr] = pts[i], dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1, len = Math.sqrt(l2);
-      const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2)), ex = px - ax - dx * t, ey = py - ay - dy * t, r = ar + (brr - ar) * t, d = Math.hypot(ex, ey);
+      const G = SG[i - 1], gx = Math.max(G[8] - px, 0, px - G[10]), gy = Math.max(G[9] - py, 0, py - G[11]);
+      if ((gx || gy) && Math.sqrt(gx * gx + gy * gy) >= best) continue;
+      const ax = G[0], ay = G[1], ar = G[2], dx = G[3], dy = G[4], l2 = G[5], len = G[6], brr = G[7];
+      const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2)), ex = px - ax - dx * t, ey = py - ay - dy * t, r = ar + (brr - ar) * t, d = Math.sqrt(ex * ex + ey * ey);
       const sd = d - r;                                                         // знаковое расстояние до поверхности
       if (sd < best) { best = sd; const nx = dy / len, ny = -dx / len; bs = (ex * nx + ey * ny) / Math.max(0.5, r); blit = nx * PB_L[0] + ny * PB_L[1]; bt = (i - 1 + t) / (pts.length - 1); bi = i; }
     }
@@ -69,17 +78,46 @@ function pbBlob(K, prims, ramp, o = {}) {
     for (const [x, y, r] of p.c) { x0 = Math.min(x0, x - r); x1 = Math.max(x1, x + r); y0 = Math.min(y0, y - r); y1 = Math.max(y1, y + r); }
     return p;
   });
+  // Рамка каждой части и нижняя оценка её поля снаружи рамки (lb): часть, у которой lb >= f + k, мягкий минимум
+  // не меняет вовсе (h = 1, f остаётся прежним бит в бит) — её не считаем. Тролль строился ~300 мс на кадр, на
+  // телефоне секунды (отчёты 27.10): почти всё время — поле расстояний по всем частям для каждого пикселя.
+  const BB = P.map(p => {
+    if (p.e) { const [x, y, rx, ry] = p.e; return [x - rx, y - ry, x + rx, y + ry, Math.min(rx, ry) / Math.max(rx, ry), Math.min(rx, ry)]; }
+    let a = 1e9, b = 1e9, c = -1e9, d = -1e9;
+    for (const [x, y, r] of p.c) { a = Math.min(a, x - r); b = Math.min(b, y - r); c = Math.max(c, x + r); d = Math.max(d, y + r); }
+    return [a, b, c, d, 1];
+  });
+  // сегмент цепочки: ax, ay, ar, dx, dy, l2, br − ar и рамка капсулы (x0, y0, x1, y1)
+  const SG = P.map(p => {
+    if (p.e) return null;
+    const G = [];
+    for (let i = 1; i < p.c.length; i++) {
+      const [ax, ay, ar] = p.c[i - 1], [bx, by, br] = p.c[i], dx = bx - ax, dy = by - ay, r = Math.max(ar, br);
+      G.push(ax, ay, ar, dx, dy, dx * dx + dy * dy || 1, br - ar, Math.min(ax, bx) - r, Math.min(ay, by) - r, Math.max(ax, bx) + r, Math.max(ay, by) + r);
+    }
+    return G;
+  });
   const sdf = (px, py) => {
     let f = 1e9;
-    for (const p of P) {
+    for (let q = 0; q < P.length; q++) {
+      const p = P[q];
+      if (f < 1e8) {
+        const bb = BB[q], ex = Math.max(bb[0] - px, 0, px - bb[2]), ey = Math.max(bb[1] - py, 0, py - bb[3]);
+        if ((ex || ey) && Math.sqrt(ex * ex + ey * ey) * bb[4] >= f + k) continue;
+      }
       let d;
-      if (p.e) { const [x, y, rx, ry] = p.e, nx = (px - x) / rx, ny = (py - y) / ry; d = (Math.sqrt(nx * nx + ny * ny) - 1) * Math.min(rx, ry); }
+      if (p.e) { const E = p.e, nx = (px - E[0]) / E[2], ny = (py - E[1]) / E[3]; d = (Math.sqrt(nx * nx + ny * ny) - 1) * BB[q][5]; }
       else {
+        // сегменты заранее числами (SG); сегмент, чья рамка дальше текущего минимума, минимум не изменит
         d = 1e9;
-        for (let i = 1; i < p.c.length; i++) {
-          const [ax, ay, ar] = p.c[i - 1], [bx, by, br] = p.c[i], dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
-          const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2));
-          d = Math.min(d, Math.hypot(px - ax - dx * t, py - ay - dy * t) - (ar + (br - ar) * t));
+        const G = SG[q];
+        for (let j = 0; j < G.length; j += 11) {
+          const gx = Math.max(G[j + 7] - px, 0, px - G[j + 9]), gy = Math.max(G[j + 8] - py, 0, py - G[j + 10]);
+          if ((gx || gy) && Math.sqrt(gx * gx + gy * gy) >= d) continue;
+          const ax = G[j], ay = G[j + 1], dx = G[j + 3], dy = G[j + 4];
+          const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / G[j + 5]));
+          const ex = px - ax - dx * t, ey = py - ay - dy * t;
+          d = Math.min(d, Math.sqrt(ex * ex + ey * ey) - (G[j + 2] + G[j + 6] * t));
         }
       }
       const h = Math.max(0, Math.min(1, 0.5 + 0.5 * (d - f) / k));          // мягкий минимум (полиномиальный)
@@ -1484,9 +1522,9 @@ if (typeof SEA_ART !== 'undefined') {
 const DS_smin = (a, b, k) => { if (k <= 0) return Math.min(a, b); const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
 const DS_cap = (ax, ay, bx, by, ra, rb) => {          // капсула с сужением
   const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
-  return (x, y) => { const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)); return Math.hypot(x - ax - dx * t, y - ay - dy * t) - (ra + (rb - ra) * t); };
+  return (x, y) => { const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)), ex = x - ax - dx * t, ey = y - ay - dy * t; return Math.sqrt(ex * ex + ey * ey) - (ra + (rb - ra) * t); };   // sqrt, не hypot: в разы быстрее, кадры те же
 };
-const DS_ell = (cx, cy, rx, ry) => (x, y) => (Math.hypot((x - cx) / rx, (y - cy) / ry) - 1) * Math.min(rx, ry);
+const DS_ell = (cx, cy, rx, ry) => { const m = Math.min(rx, ry); return (x, y) => { const nx = (x - cx) / rx, ny = (y - cy) / ry; return (Math.sqrt(nx * nx + ny * ny) - 1) * m; }; };
 const DS_sst = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const DS_pip = (x, y, poly) => {
   let ins = false;
