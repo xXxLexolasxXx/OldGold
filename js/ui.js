@@ -81,10 +81,11 @@ function costHTML(cost) {
     .map(([g, n]) => `<span>${gi(g)}${n}</span>`).join('') + '</div>';
 }
 
-// Иконка здания: обрезаем прозрачные поля спрайта и плавно уменьшаем.
-function buildingIconURL(type) {
-  if (UI.bicons[type]) return UI.bicons[type];
-  const spr = buildingSprite(type).canvas;
+// Иконка здания: обрезаем прозрачные поля спрайта и плавно уменьшаем. vr — вид дома (у домов их восемь).
+function buildingIconURL(type, vr = 0) {
+  const key = vr ? type + '~' + vr : type;
+  if (UI.bicons[key]) return UI.bicons[key];
+  const spr = buildingSprite(type, 0, 1, undefined, vr).canvas;
   const c0 = spr.getContext('2d');
   const d = c0.getImageData(0, 0, spr.width, spr.height).data;
   let x0 = spr.width, y0 = spr.height, x1 = 0, y1 = 0;
@@ -98,8 +99,8 @@ function buildingIconURL(type) {
   c.imageSmoothingEnabled = k < 1;
   c.imageSmoothingQuality = 'high';
   c.drawImage(spr, x0, y0, w, h, (144 - w * k) / 2, 108 - h * k, w * k, h * k);
-  UI.bicons[type] = cv.toDataURL();
-  return UI.bicons[type];
+  UI.bicons[key] = cv.toDataURL();
+  return UI.bicons[key];
 }
 
 function makeUITextures() {
@@ -618,7 +619,8 @@ function renderBuildList() {
     btn.className = 'bbtn';
     if ((UI.fresh || []).includes(type)) { btn.classList.add('enter'); btn.addEventListener('animationend', () => btn.classList.remove('enter'), { once: true }); }
     btn.dataset.type = type;
-    btn.innerHTML = `<img class="bimg" src="${buildingIconURL(type)}" alt=""><span class="bname">${def.name}</span>${costHTML(def.cost)}`;
+    // у дома при каждом открытии меню — случайный из восьми видов: показываем, что дома бывают разные
+    btn.innerHTML = `<img class="bimg" src="${buildingIconURL(type, type === 'house' ? (Math.random() * 8) | 0 : 0)}" alt=""><span class="bname">${def.name}</span>${costHTML(def.cost)}`;
     // нажали постройку — карточка вместо списка (js/winpanel.js), оттуда «Поставить»
     btn.onclick = () => typeof wpPick === 'function' ? wpPick(type) : setTool(Game.tool && Game.tool.type === type ? null : { kind: 'build', type, rot: def.noRotate || def.rots ? 0 : (UI.lastRot || 0) });
     btn.onmouseenter = () => { if (Mobile.on) return; UI.hoverType = type; updateUI(true); };
@@ -768,7 +770,7 @@ function infoBuilding(b) {
   }
   const def = b.def;
   const same = Game.buildings.filter(x => x.type === b.type).length;
-  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type)}" alt=""><div><h3>${def.name}${b.level >= 2 ? ` <span class="lvl">ур. ${b.level}</span>` : ''}</h3>${statusChip(b)}</div></div>`;
+  let h = `<div class="ihead"><img class="bpic" src="${buildingIconURL(b.type, b.type === 'house' ? b.hv || 0 : 0)}" alt=""><div><h3>${def.name}${b.level >= 2 ? ` <span class="lvl">ур. ${b.level}</span>` : ''}</h3>${statusChip(b)}</div></div>`;
   h += Guide.whyHTML(b);
   h += '<div class="iactions">';
   if (same > 1) h += `<button data-act="prev" title="Предыдущее такое же ([)">${ui('prev')}</button><button data-act="next" title="Следующее такое же (])">${ui('next')}</button>`;

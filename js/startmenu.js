@@ -83,9 +83,9 @@ function smLoadPrepared(slot, label, onLoaded, onFail) {
 {
   const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
   const _icon = buildingIconURL;
-  buildingIconURL = function (type) {
-    if (StartMenu.busy && !(UI.bicons && UI.bicons[type])) { StartMenu.iconsLater = true; return BLANK; }
-    return _icon(type);
+  buildingIconURL = function (type, vr) {
+    if (StartMenu.busy && !(UI.bicons && UI.bicons[vr ? type + '~' + vr : type])) { StartMenu.iconsLater = true; return BLANK; }
+    return _icon(type, vr);
   };
 }
 

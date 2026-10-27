@@ -53,6 +53,8 @@ fs.mkdirSync(OUT, { recursive: true });
       R.cam.z = 2; centerOn((X0 + 6) * TILE, (Y0 + 3) * TILE);
     `), `houses-L${lv}.png`);
   }
+  const icons = await pg.evaluate(() => { Game.unlocked = Game.unlocked || {}; Game.unlocked.home = true; for (const u of UNLOCKS) for (const it of u.items) if (it === 'house') Game.unlocked[u.id] = true; const seen = new Set(); for (let k = 0; k < 12; k++) { UI.shown = null; UI.cat = BUILD_CATS.findIndex(c => buildTypesIn(c).includes('house')); renderBuildMenu(); const im = document.querySelector('.bbtn[data-type="house"] img'); if (im) seen.add(im.src.length + ':' + im.src.slice(-40)); } return seen.size; });
+  console.log('разных иконок дома за 12 открытий:', icons);
   const names = await pg.evaluate(() => Game.buildings.filter(b => b.type === 'house').map(b => b.hv).join(','));
   console.log('вид домов (hv):', names);
   console.log(errs.length ? errs.slice(0, 10).join('\n') : 'ошибок нет');
