@@ -24,11 +24,29 @@ function defMenuButtons() {
   for (const b of btns) list.insertBefore(b, first);
 }
 
+// раздел «Оборона» по группам: стены, ловушки, свет и башни (заголовок на всю ширину сетки)
+const DEF_GROUPS = [['Стены', ['wall_wood', 'wall_stone', 'gate', 'barricade']], ['Ловушки', ['pit', 'spike', 'fire']], ['Свет и башни', null]];
+function defMenuGroups() {
+  const list = document.getElementById('build-list');
+  if (!list) return;
+  const btns = [...list.querySelectorAll('.bbtn')], used = new Set();
+  const out = [];
+  for (const [name, fs] of DEF_GROUPS) {
+    const g = btns.filter(b => !used.has(b) && (fs ? fs.some(f => b.dataset.type === 'fort:' + f) : true));
+    if (!g.length) continue;
+    g.forEach(b => used.add(b));
+    const h = document.createElement('div');
+    h.className = 'bgroup'; h.textContent = name;
+    out.push(h, ...g);
+  }
+  for (const el of out) list.appendChild(el);
+}
+
 {
   const _rbl = renderBuildList;
   renderBuildList = function () {
     _rbl();
-    if (BUILD_CATS[UI.cat] === 'Оборона') defMenuButtons();
+    if (BUILD_CATS[UI.cat] === 'Оборона') { defMenuButtons(); defMenuGroups(); }
   };
 
   const _st = setTool;
