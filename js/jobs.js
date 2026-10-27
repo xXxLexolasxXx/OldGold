@@ -272,16 +272,24 @@ function* buildGen(u, s) {
       break;
     }
     if (s.state === 'site') {
-      // разметка: три удара по колышкам
-      for (let k = 0; k < SITE_HITS && !s.removed; k++) { yield { wait: HIT_TIME, anim: 'build' }; s.hits++; s.lastHit = Game.time; }
+      // разметка: три удара по колышкам; прерванную добивает следующий строитель, а не начинает заново
+      // (иначе ударов больше, чем здания, — отчёт 261027-1943-ab8d: колодец наслаивался и ронял рисовалку)
+      while (s.hits < SITE_HITS && !s.removed) { yield { wait: HIT_TIME, anim: 'build' }; s.hits++; s.lastHit = Game.time; }
       if (!s.removed) s.state = 'build';
       continue;
+    }
+    // весь материал уложен, а здание не сдано: прошлого строителя прервали на последней единице —
+    // добить удары и сдать, а не ждать материала, которого больше не будет («один гном вечно строит»)
+    if (s.used >= s.total) {
+      while (s.hits < s.maxHits && !s.removed) { yield { wait: HIT_TIME, anim: 'build' }; s.hits++; s.lastHit = Game.time; }
+      if (s.removed) break;
+      finishBuilding(s); builtIt = true; break;
     }
     const g = ['trunk', 'timber', 'stone'].find(k => s.stock[k] > 0);
     if (g) {
       // каждая единица материала — несколько ударов молота, каждый добавляет кусочек здания
       s.stock[g]--; s.usedOf[g]++; s.used++;
-      for (let k = 0; k < HITS_PER_UNIT && !s.removed; k++) { yield { wait: HIT_TIME, anim: 'build' }; s.hits++; s.lastHit = Game.time; }
+      while (s.hits < SITE_HITS + s.used * HITS_PER_UNIT && !s.removed) { yield { wait: HIT_TIME, anim: 'build' }; s.hits++; s.lastHit = Game.time; }
       if (s.removed) break;
       if (s.used >= s.total) { finishBuilding(s); builtIt = true; break; }
       idleT = 0;

@@ -87,7 +87,7 @@ const NA_SPEC = {
 const naCache = new Map();
 // Ручной пиксель-арт на сетке ×3 (как Полудница, fzPxKit в fairy2.js): NA_PX[вид](K, P, кадр) рисует позу
 // стоя, в пикселях арта (3 на игровой), начало — у ног, лицом вправо. Сдвиг, наклон и вспышку удара
-// из позы накладывает naPxFrame. Есть только при мелком пикселе (PX_FINE > 1); иначе — вектор NA_DRAW.
+// из позы накладывает naPxFrame. На телефонах (PX_FINE = 1) кадр сводится в ×1 (pxToCoarse).
 const NA_PX = {};
 function naPxFrame(kind, S, P, fr) {
   const W = S.w * 3, H = S.h * 3, AX = S.ax * 3, AY = S.ay * 3, sc = (S.sc || 1) * 3;
@@ -118,7 +118,7 @@ function naFrame(kind, fr) {
   const P = naPose(fr);
   P.pal = S.pal || null;
   let out;
-  if (F > 1 && NA_PX[kind]) out = naPxFrame(kind, S, P, fr);
+  if (NA_PX[kind]) out = pxToCoarse(naPxFrame(kind, S, P, fr));   // на телефоне — тот же арт, сведённый в ×1
   else {
     // мелкий пиксель: F деталей на игровой пиксель, сверхвыборка 2 на пиксель арта (при F = 1 — 3, как было)
     const [cv, c] = mkSprite(S.w, S.h, F > 1 ? 2 * F : 3);

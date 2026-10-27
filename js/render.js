@@ -596,7 +596,7 @@ function siteState(b, spr) {
   const cells = siteCells(spr);
   if (!b._site || b._site.spr !== spr) b._site = { spr, cv: mkCanvas(spr.canvas.width, spr.canvas.height), n: 0, pops: [], top: 1e9 };
   const S = b._site;
-  const target = Math.floor(b.buildFrac * cells.length);
+  const target = Math.min(cells.length, Math.floor(b.buildFrac * cells.length));   // ударов бывало больше, чем здания (старые сейвы)
   if (S.n < target) {
     const sc = S.cv.getContext('2d');
     const fresh = S.n > 0;     // при загрузке игры не мигаем всем зданием
