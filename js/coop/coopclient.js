@@ -481,7 +481,7 @@ function coopSaveCopy() {
     const i = idx(t[0], t[1]), id = World.bmap[i];
     if (id) {
       const b = Game.buildings.find(o => o.id === id);
-      if (b && b.state === 'done' && !confirm(`Снести «${b.def.name}»? Деревня общая — другие игроки это увидят.`)) return;
+      if (b) { askDemolish(b, `Снести «${b.def.name}»? Деревня общая — другие игроки это увидят.`, () => coopSend({ t: 'erase', cells: [[t[0], t[1]]] })); return; }
     }
     coopSend({ t: 'erase', cells: [[t[0], t[1]]] });
   };
@@ -1169,7 +1169,7 @@ function coopInitControls() {
     else if (t.dataset.untrainAt) act(b, 'untrain', { i: +t.dataset.untrainAt });
     else if (a === 'demolish') {
       if (b.isRoad) coopSend({ t: 'erase', cells: [[b.x, b.y]] });
-      else if (b.state !== 'done' || confirm('Снести «' + b.def.name + '»? Деревня общая — другие игроки это увидят.')) act(b, 'demolish');
+      else askDemolish(b, 'Снести «' + b.def.name + '»? Деревня общая — другие игроки это увидят.', () => act(b, 'demolish'));
       Game.selected = null;
     } else if (a) act(b, a, t.dataset.u ? { u: +t.dataset.u } : undefined);
     else if (t.dataset.block) act(b, 'block', { g: t.dataset.block });

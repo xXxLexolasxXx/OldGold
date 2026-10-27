@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#1b2a1f">
+<canvas id="cv"></canvas>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script>
+try {
+const W = 1500, cv = document.getElementById('cv');
+const FR = [['idle', 'покой'], ['walk', 'ходьба'], ['atk', 'атака']];
+const H = 40 + 2 * 335 + 20 + 375 + 20 + 40 + 6 * 175 + 40 + 3 * 170 + 40 + 260;
+cv.width = W; cv.height = H;
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#1b2a1f'; c.fillRect(0, 0, W, H);
+const T = (s, x, y, sz = 22, col = '#f2e6c8') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.fillText(s, x, y); };
+const cell = (x, y, w, h) => { c.fillStyle = '#4a6a34'; c.fillRect(x, y, w, h); c.fillStyle = '#557a3c'; for (let i = 0; i < 40; i++) c.fillRect(x + (i * 37 % w), y + (i * 53 % h), 3, 2); };
+const put = (spr, x, y, Z, face = 1) => {
+  const [ox, oy, w, h] = spr.fzO; c.save(); c.imageSmoothingEnabled = !spr.fzPx; c.translate(x, y); if (face < 0) c.scale(-1, 1);
+  c.drawImage(spr, -ox * Z, -oy * Z, w * Z, h * Z); c.restore();
+};
+let y = 30;
+T('Легендарный дракон и чумной моховик — тело одной формой, стыки слиты. Пиксель ×3 мельче мирового, крупно ×6', 20, y, 22); y += 12;
+[['idle', 0, 'Дракон: покой'], ['walk', 1, 'Дракон: ходьба'], ['atk', 0, 'Дракон: вдох (горло разгорается)'], ['atk', 3, 'Дракон: огонь']].forEach(([m, p, n], i) => {
+  const x = 10 + (i % 2) * 740, yy = y + Math.floor(i / 2) * 335; cell(x, yy, 735, 330); T(n, x + 10, yy + 26, 18, '#ffd860'); put(fzDragonSprite(m, p), x + 300, yy + 315, 6);
+});
+y += 2 * 335 + 20;
+T('Моховик ×8', 20, y, 18); y += 6;
+[['idle', 1, 'Моховик: покой'], ['walk', 1, 'Моховик: ходьба'], ['atk', 3, 'Моховик: удар шляпкой']].forEach(([m, p, n], i) => {
+  const x = 10 + i * 495, yy = y; cell(x, yy, 490, 370); T(n, x + 10, yy + 26, 18, '#ffd860'); put(fzShroomSprite(m, p), x + 245, yy + 360, 8);
+});
+y += 375 + 20;
+T('Дракон — все кадры ×3 (1:1 с сеткой): покой p0..5 (p4 моргает), ходьба p0..5, атака p0..5 (0–1 вдох)', 20, y + 6, 18); y += 14;
+FR.forEach(([m, mn], r) => { for (let p = 0; p < 6; p++) { const i = r * 6 + p, x = 10 + (i % 3) * 495, yy = y + Math.floor(i / 3) * 175; cell(x, yy, 490, 170); T(mn + ' p' + p, x + 6, yy + 18, 13); put(fzDragonSprite(m, p), x + 160, yy + 162, 3); } });
+y += 6 * 175 + 10;
+T('Моховик — все кадры ×3', 20, y + 6, 18); y += 14;
+FR.forEach(([m, mn], r) => { for (let p = 0; p < 6; p++) { const x = 10 + p * 246, yy = y + r * 170; cell(x, yy, 240, 164); T(mn + ' p' + p, x + 6, yy + 18, 13); put(fzShroomSprite(m, p), x + 110, yy + 152, 3); } });
+y += 3 * 170 + 20;
+T('Как в игре (масштаб ×1 и ×2) рядом с гномом-ориентиром', 20, y + 6, 18); y += 14;
+cell(10, y, 1480, 220);
+const gn = (x, yy, Z) => { c.fillStyle = '#7a4a2a'; c.fillRect(x - 4 * Z, yy - 12 * Z, 8 * Z, 12 * Z); c.fillStyle = '#e0b088'; c.fillRect(x - 3 * Z, yy - 17 * Z, 6 * Z, 5 * Z); c.fillStyle = '#c03020'; c.fillRect(x - 4 * Z, yy - 21 * Z, 8 * Z, 4 * Z); };
+gn(30, y + 200, 1); put(fzDragonSprite('idle', 0), 100, y + 200, 1); put(fzDragonSprite('atk', 3), 190, y + 200, 1); put(fzShroomSprite('idle', 1), 300, y + 200, 1); put(fzShroomSprite('atk', 3), 360, y + 200, 1);
+gn(460, y + 200, 2); put(fzDragonSprite('idle', 0), 620, y + 200, 2); put(fzDragonSprite('walk', 2), 900, y + 200, 2, -1); put(fzShroomSprite('idle', 1), 1100, y + 200, 2); put(fzShroomSprite('atk', 4), 1250, y + 200, 2);
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>

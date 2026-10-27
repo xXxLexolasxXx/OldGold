@@ -542,7 +542,7 @@ function ftSite(stamp, relax) {
     if (bad) continue;
     if (!relax && (water < 8 || nearW < 3.2 || nearW > 8)) continue;
     if (relax && nearW < 3.2) continue;
-    if (Game.buildings.some(b => Math.hypot(b.x - x, b.y - y) < 12)) continue;
+    if (neuVillageDist(x, y) < neuHostileGap() + (relax ? 0 : 2)) continue;   // свайная деревня широкая: в первый проход — с запасом
     if (Game.lairs.some(l => Math.hypot(l.x - x, l.y - y) < 13)) continue;
     return { x, y, ds: Math.hypot(x - cx, y - cy), minStart };
   }

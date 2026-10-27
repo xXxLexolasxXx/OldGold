@@ -329,7 +329,7 @@ function seaFrostSites(n) {
     const x = 5 + ((Math.random() * (MAP_W - 10)) | 0), y = 5 + ((Math.random() * (MAP_H - 10)) | 0), i = idx(x, y);
     if (World.terrain[i] !== T_GRASS || World.bmap[i] || World.road[i] || World.obj[i] || !reachedIn(stamp, x, y)) continue;
     if (Math.hypot(x - cx, y - cy) < 19) continue;
-    if (Game.buildings.some(b => Math.hypot(b.x - x, b.y - y) < 12)) continue;
+    if (neuVillageDist(x, y) < neuHostileGap() - (t < 3000 ? 0 : 4)) continue;   // разросшейся деревне — запасной проход поближе
     if (Game.lairs.some(l => Math.hypot(l.x - x, l.y - y) < 10) || out.some(o => Math.hypot(o[0] - x, o[1] - y) < 14)) continue;
     out.push([x, y]);
   }
