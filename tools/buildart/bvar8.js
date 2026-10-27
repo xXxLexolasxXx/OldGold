@@ -88,36 +88,47 @@ function buildStore(g, lv, roofs) {
   chimneyCrooked(g, 40, 80, Up.z0 + Up.h + 6, 16, { stone: true, w: 5, d: 5, lean: 2 });
   g.sprite([4, 55.5, 26], P => Q3.herbs(P, 2), -0.5); g.sprite([46, 55.5, 26], P => Q3.herbs(P, 2), -0.5);
   // ---- длинная пристройка слева спереди (до дома): бревенчатая стена с запада, открыта во двор
-  const W = { x0: 2, x1: 18, y0: 6, y1: 48 };
-  wallW(g, W.x0, W.y0, W.y1, 0, 13, m1Logs(P1.log)); wallN(g, W.x0, W.x1, W.y1, 0, 13, m1Logs(P1.log));
-  for (const y of [8, 27, 46]) post1(g, W.x1 - 2, y, 0, 12, 2, P3.oak);
-  roof(g, { x0: W.x0, x1: W.x1, y0: W.y0, y1: W.y1, h: 12 }, { type: 'lean', down: 'E', rise: 6, ov: 2, mat: roofs.wing, cut: roofs.cutW, th: 3 });
+  const W = { x0: 2, x1: lv >= 3 ? 20 : 18, y0: lv === 1 ? 22 : 6, y1: 48 }, wh = lv >= 3 ? 20 : 13;
+  wallW(g, W.x0, W.y0, W.y1, 0, wh, m1Logs(P1.log)); wallN(g, W.x0, W.x1, W.y1, 0, wh, m1Logs(P1.log));
+  for (let y = W.y0 + 2; y <= W.y1; y += 19) post1(g, W.x1 - 2, y, 0, wh - 1, 2, P3.oak);
+  if (lv >= 3) { beam1(g, W.x0, W.x1, W.y0, W.y1, 10, 1.2, P1.plank); g.sprite([W.x1 - 1, 30, 10], P => Q2.sacks(P, 4), -0.5); beam1(g, W.x1 - 3, W.x1 + 6, 26, 28, wh + 2, 1.5, P3.oak); g.sprite([W.x1 + 5, 27, wh], P => { PR.rect(P, 0, 0, 0, 10, BP.rope[1]); Q1.crate((x, y, c) => P(x - 3, y + 18, c), 6); }, -0.5); }
+  roof(g, { x0: W.x0, x1: W.x1, y0: W.y0, y1: W.y1, h: wh - 1 }, { type: 'lean', down: 'E', rise: 6, ov: 2, mat: roofs.wing, cut: roofs.cutW, th: 3 });
   g.sprite([18, 5, 10], P => Q3.herbs(P, 2), -0.5);
-  g.sprite([26, 40, 0], P => Q2.planks(P, 6, 18)); meta.piles.timber = [26, 40, 0];
-  g.sprite([26, 24, 0], P => Q2.sacks(P, 6)); meta.piles.food = [26, 24, 0];
-  g.sprite([24, 10, 0], P => Q2.crates(P)); meta.piles.goods = [24, 10, 0];
+  g.sprite([26, 40, 0], P => Q2.planks(P, lv === 1 ? 4 : 7, 18)); meta.piles.timber = [26, 40, 0];
+  g.sprite([26, 26, 0], P => Q2.sacks(P, lv === 1 ? 3 : 6)); meta.piles.food = [26, 26, 0];
+  if (lv >= 2) { g.sprite([24, 10, 0], P => Q2.crates(P)); meta.piles.goods = [24, 10, 0]; }
+  if (lv >= 3) { g.sprite([36, 12, 0], P => Q2.planks(P, 6, 16)); g.sprite([38, 30, 0], P => Q2.sacks(P, 5)); }
   // ---- правая пристройка: бревенчатый амбар сзади + навес на столбах с подкосами спереди
-  const A = { x0: 58, x1: 126, y0: 80, y1: 92, h: 14 };
+  const ax = lv === 1 ? 80 : 58, A = { x0: ax, x1: 126, y0: 80, y1: 92, h: 14 };
   box(g, Object.assign({ mat: m1Logs(P1.log) }, A));
-  roof(g, { x0: 58, x1: 126, y0: 72, y1: 92, h: 18 }, { type: 'lean', down: 'S', rise: 8, ov: 2, mat: roofs.wing, cut: roofs.cutW, th: 3 });
-  for (const x of [58, 80, 102, 124]) post1(g, x, 72, 0, 17, 2.5, P3.oak);
-  beam1(g, 57, 127, 72, 74.5, 16, 1.6, P3.oak);
-  for (const x of [58, 80, 102]) g.sprite([x + 2.5, 72.5, 15], P => { PR.line(P, 0, 0, 5, -3, P3.oak[1]); PR.line(P, 0, 1, 5, -2, P3.oak[2]); }, -0.3);   // подкосы
-  for (const x of [80, 102, 124]) g.sprite([x, 72.5, 15], P => { PR.line(P, 0, 0, -5, -3, P3.oak[1]); PR.line(P, 0, 1, -5, -2, P3.oak[2]); }, -0.3);
-  elem(g, 'S', A.y0, 66, 2, 12, 11, m1Door({ w: 12, h: 11, double: true, col: P3.oak }));
+  roof(g, { x0: ax, x1: 126, y0: 72, y1: 92, h: 18 }, { type: 'lean', down: 'S', rise: 8, ov: 2, mat: roofs.wing, cut: roofs.cutW, th: 3 });
+  const px = lv === 1 ? [80, 102, 124] : [58, 80, 102, 124];
+  for (const x of px) post1(g, x, 72, 0, 17, 2.5, P3.oak);
+  beam1(g, ax - 1, 127, 72, 74.5, 16, 1.6, P3.oak);
+  for (const x of px.slice(0, -1)) g.sprite([x + 2.5, 72.5, 15], P => { PR.line(P, 0, 0, 5, -3, P3.oak[1]); PR.line(P, 0, 1, 5, -2, P3.oak[2]); }, -0.3);   // подкосы
+  for (const x of px.slice(1)) g.sprite([x, 72.5, 15], P => { PR.line(P, 0, 0, -5, -3, P3.oak[1]); PR.line(P, 0, 1, -5, -2, P3.oak[2]); }, -0.3);
+  elem(g, 'S', A.y0, ax + 8, 2, 12, 11, m1Door({ w: 12, h: 11, double: true, col: P3.oak }));
   elem(g, 'S', A.y0, 108, 5, 8, 6, m1Window({ w: 8, h: 6, G: P3.crystal }));
   // ложементы перед навесом: два бруса на столбиках, на них брёвна — видно, сколько леса
-  for (const x of [84, 108]) { post1(g, x, 58, 0, 5, 1.5, P3.oak); post1(g, x, 68, 0, 5, 1.5, P3.oak); beam1(g, x - 0.5, x + 2, 58, 69.5, 5, 1.2, P3.oak); }
-  g.sprite([96, 64, 5], P => Q2.logStack(P, 4, 7)); meta.piles.trunk = [96, 64, 5];
-  g.sprite([68, 66, 0], P => Q2.barrels(P)); g.sprite([120, 64, 0], P => Q2.crates(P));
-  g.sprite([70, 79, 0], P => Q2.barrels(P, 2)); g.sprite([114, 79, 0], P => Q2.sacks(P, 3));
+  const racks = lv === 1 ? [96] : lv === 2 ? [72, 102] : [66, 88, 110];
+  for (const cx of racks) { for (const x of [cx - 10, cx + 8]) { post1(g, x, 58, 0, 5, 1.5, P3.oak); post1(g, x, 68, 0, 5, 1.5, P3.oak); beam1(g, x - 0.5, x + 2, 58, 69.5, 5, 1.2, P3.oak); } g.sprite([cx, 64, 5], P => Q2.logStack(P, lv === 1 ? 3 : 4, lv === 3 ? 5 : 6)); }
+  meta.piles.trunk = [racks[0], 64, 5]; meta.racks = racks.map(x => [x, 64, 5]);
+  if (lv >= 2) { g.sprite([120, 64, 0], P => Q2.crates(P)); g.sprite([ax + 12, 79, 0], P => Q2.barrels(P, 2)); }
+  g.sprite([114, 79, 0], P => Q2.sacks(P, 3));
   // инструменты на стене амбара: топор, пила, мотыга
   g.sprite([82, A.y0 - 0.2, 10], P => { PR.line(P, 0, 0, 0, -8, P1.plank[1]); PR.rect(P, -2, -9, 1, -7, P1.iron[1]); PR.rect(P, 5, -8, 15, -7, P1.iron[1]); for (let x = 6; x <= 15; x += 2) P(x, -6, P1.iron[2]); PR.rect(P, 15, -9, 16, -6, P1.plank[2]); PR.line(P, 20, 0, 20, -9, P1.plank[1]); PR.rect(P, 18, -10, 22, -10, P1.iron[1]); }, -0.5);
   g.sprite([92, 72, 14], P => Q1.lantern(P), -0.5); g.sprite([114, 72, 14], P => Q1.lantern(P), -0.5);
   // ---- двор и дорожки: от въезда (x 80) к обоим воротам и к навесу
   groundYard(g, 20, 126, 4, 60);
   paveSand(g, 73, 87, 0, 50); paveSand(g, 6, 87, 44, 56); paveSand(g, 87, 98, 46, 56);
-  g.sprite([110, 30, 0], P => Q2.stones(P, 12)); meta.piles.stone = [110, 30, 0];
+  g.sprite([110, 30, 0], P => Q2.stones(P, lv === 1 ? 8 : 12)); meta.piles.stone = [110, 30, 0];
+  if (lv >= 3) g.sprite([98, 18, 0], P => Q2.stones(P, 9));
+  if (lv >= 2) g.sprite([56, 36, 0], P => Q2.crane(P, 30, 14));
+  if (lv >= 3) {   // помост у ворот и рунный круг на земле, где носильщики сгружают ношу
+    box(g, { x0: 2, x1: 48, y0: 50, y1: 57, h: 3, mat: m1Stone(P1.stone, 5, 3), top: (u, v) => P1.plank[(v | 0) % 3 === 0 ? 2 : (u | 0) % 11 === 0 ? 1 : 0] });
+    g.sprite([62, 24, 0.3], P => { for (let k = 0; k < 28; k++) { const a = k / 28 * Math.PI * 2; P(Math.round(Math.cos(a) * 10), Math.round(Math.sin(a) * 5), P3.rune[k % 3 ? 1 : 0]); } for (const [x, y] of [[0, -2], [-1, -1], [1, -1], [0, 0], [-2, 1], [2, 1], [0, 2]]) P(x, y, P3.rune[0]); }, -0.1);
+    meta.circle = [62, 24, 0.3];
+  }
   meta.drop = [[40, 30, 0], [96, 50, 0], [100, 30, 0]];
   // ---- волшебство
   g.sprite([70, 3, 0], P => Q3.runeStone(P, 16)); g.sprite([91, 3, 0], P => Q3.runeStone(P, 14));
@@ -134,8 +145,7 @@ const ROOF_ST = {
   3: () => ({ main: m1Tile2(P1.slate), wing: m1Shingle(SHINGLE1), cut: m1FasciaDark, cutW: m1Fascia }),
 };
 BDEFS.store2 = { w: 4, h: 3, top: 70, vars: [
-  { name: 'Склад: дом + длинная пристройка + навес, волшебный (уровень 1, камыш)', make: g => buildStore(g, 1, ROOF_ST[1]()) },
-  { name: 'Уровень 2 — дранка', make: g => buildStore(g, 2, ROOF_ST[2]()) },
-  { name: 'Уровень 3 — сланцевая черепица', make: g => buildStore(g, 3, ROOF_ST[3]()) },
-  { name: 'Вариант: сланец на всех крышах (уровень 1)', make: g => buildStore(g, 1, { main: m1Tile2(P1.slate), wing: m1Tile2(P1.slate), cut: m1FasciaDark, cutW: m1FasciaDark }) },
+  { name: 'Уровень 1 — камыш: короткие пристройки, один ложемент', make: g => buildStore(g, 1, ROOF_ST[1]()) },
+  { name: 'Уровень 2 — дранка: пристройки во всю длину, два ложемента, кран', make: g => buildStore(g, 2, ROOF_ST[2]()) },
+  { name: 'Уровень 3 — сланец: высокая пристройка с чердаком и лебёдкой, три ложемента, помост у ворот, рунный круг', make: g => buildStore(g, 3, ROOF_ST[3]()) },
 ], title: 'Склад (сводный, ×1)', bk: 1, ink: P1.ink };
