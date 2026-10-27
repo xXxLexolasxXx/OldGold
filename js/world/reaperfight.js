@@ -123,7 +123,7 @@ const rpTarget = g => { const u = g.tg && Game.unitMap ? Game.unitMap.get(g.tg) 
     // только в бою: мимоходом жнец задевает героя, как раньше (5–8), чтобы обычные ночи не стали тяжелее
     if (g.kind !== 'reaper' || hit0 || !g.atkHit || !u || u.dead || !rpProv(g) || Math.hypot(u.x - g.x, u.y - g.y) >= REAPER_REACH) return;
     const extra = 6 + 0.6 * Math.min(12, nightIndex()) + 2 * ((g.ph3 || 1) - 1);
-    if (u.hero) { if (typeof heroHit === 'function') heroHit(u, extra, ''); return; }
+    if (u.hero) { if (typeof heroHit === 'function') heroHit(u, extra * (typeof fsEnvMul === 'function' ? fsEnvMul(u) : 1), ''); return; }
     if (typeof neuHurtUnit === 'function') {
       neuHurtUnit(u, extra + Math.random() * 4);
       floater(u.x, u.y - 2.4, 'Коса!', '#bfeaff');

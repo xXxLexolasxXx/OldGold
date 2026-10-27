@@ -463,7 +463,7 @@ function wgDuelStep(D, dt) {
     neuThink(N, dt);
     for (const f of ['cbTick', 'abTick', 'hmTick', 'hmFxStep', 'kitTick']) if (typeof globalThis[f] === 'function') globalThis[f](dt);
   } finally { Game.neutrals = keep; }
-  if (h._psn > Game.time) { D.pa = (D.pa || 0) + dt; if (D.pa >= 1) { D.pa = 0; hlHurt(h, 2, true); } }
+  if (h._psn > Game.time) { D.pa = (D.pa || 0) + dt; if (D.pa >= 1) { D.pa = 0; hlHurt(h, 2 * (typeof fsEnvMul === 'function' ? fsEnvMul(h) : 1), true); } }
   if (!h.cmd && !h.proc && !h.dead && !h.roll && D.t > 1) issueCmd(h, { kind: 'attack', f: { kind: 'neu', o: N }, tx: Math.floor(N.x), ty: Math.floor(N.y), label: 'Поединок' });
   if (h.dead || !h.hero || h.hero.hp <= 0) return wgDuelEnd(D, 'lose');
   if (N.hp <= N.mhp * 0.15) return wgDuelEnd(D, 'win');

@@ -270,7 +270,7 @@ const KURGAN = {
       if (Game.time < m.t) continue;
       F.marks.splice(i, 1);
       fxBurst(m.x * TILE, m.y * TILE, 16, ['#bff0ff', '#6ad0ff', '#ffffff'], 70, 50, 0.6, 1.8, -30);
-      for (const h of raidHeroes(m.x, m.y, 1.15)) { neuHurtUnit(h, 18 * dif().neuDmg); floater(h.x, h.y - 2.2, 'Холод!', '#9ae0ff'); F.taken[rdKey(h)] = (F.taken[rdKey(h)] || 0) + 18; raidDownCheck(N, h); }
+      for (const h of raidHeroes(m.x, m.y, 1.15)) { (typeof fsEnvHurt === 'function' ? fsEnvHurt : neuHurtUnit)(h, 18 * dif().neuDmg); floater(h.x, h.y - 2.2, 'Холод!', '#9ae0ff'); F.taken[rdKey(h)] = (F.taken[rdKey(h)] || 0) + 18; raidDownCheck(N, h); }
     }
     // «держат»: боец вплотную забирает удары на себя
     const tank = raidHeroes(N.x, N.y, 2.2).find(h => RAID_TANKS.has(h.hero.clsKey));

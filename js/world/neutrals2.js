@@ -220,7 +220,7 @@ function n2RollHit(N, u) {
   floater(u.x, u.y - 2, 'Сбит!', '#ffb070');
   u.ouchUntil = now + 0.8;
   if (u.hero || u.rec) {
-    N2.mul = 1; neuHurtUnit(u, dmg);
+    N2.mul = 1; (typeof fsEnvHurt === 'function' ? fsEnvHurt : neuHurtUnit)(u, dmg);
     if (u.hero && u.hero.hp <= 0) neuHeroDown(N, u);
   } else if (isPerson(u)) injure(u, 'leg');
 }

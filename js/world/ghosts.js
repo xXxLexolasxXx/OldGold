@@ -121,7 +121,7 @@ function ghostStrikeTick(g, dt) {
       g.atkHit = true;
       const rp = g.kind === 'reaper';
       if (d < (rp ? REAPER_REACH : 2.4) && u.hero) {
-        hlHurt(u, rp ? 5 + Math.random() * 3 : 2 + Math.random() * 2, 'ghost');
+        hlHurt(u, (rp ? 5 + Math.random() * 3 : 2 + Math.random() * 2) * (typeof fsEnvMul === 'function' ? fsEnvMul(u) : 1), 'ghost');
         fxBurst(u.x * TILE, u.y * TILE - 14, 8, ['#bfffe0', '#6fd0b0', '#e8fff6'], 40, 50, 0.7, 1.6, -20);
         floater(u.x, u.y - 2.4, 'Холод пробирает!', '#bfeaff');
       }

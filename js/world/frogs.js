@@ -275,7 +275,7 @@ function ftTreeNear(x, y, r) {
 // шаманы и вождь: умения в бою
 function ftShock(N, u, k) {
   const m = FT.mul, s0 = FT.src; FT.mul = 1; FT.src = null;
-  try { neuHurtUnit(u, neuR(5, 8) * (k || 1) * (1 + 0.25 * ((N.rk || 1) - 1)) * dif().neuDmg); } finally { FT.mul = m; FT.src = s0; }
+  try { (typeof fsEnvHurt === 'function' ? fsEnvHurt : neuHurtUnit)(u, neuR(5, 8) * (k || 1) * (1 + 0.25 * ((N.rk || 1) - 1)) * dif().neuDmg); } finally { FT.mul = m; FT.src = s0; }
   u.fgUntil = ftNow() + 2.2; u.ouchUntil = ftNow() + 0.5;
   if (u.hero && u.hero.hp <= 0) neuHeroDown(N, u);
 }
@@ -332,7 +332,7 @@ function ftAfter(N, tg) {
     for (const u of Game.units) {
       if (u.dead || u.inside || ftKid(u) || !(u.hero || u.rec || isPerson(u)) || Math.hypot(u.x - tg.x, u.y - tg.y) > 2) continue;
       const m = FT.mul, s0 = FT.src; FT.mul = 1; FT.src = null;
-      try { neuHurtUnit(u, neuR(6, 9) * (1 + 0.25 * ((N.rk || 1) - 1)) * dif().neuDmg); } finally { FT.mul = m; FT.src = s0; }
+      try { (typeof fsEnvHurt === 'function' ? fsEnvHurt : neuHurtUnit)(u, neuR(6, 9) * (1 + 0.25 * ((N.rk || 1) - 1)) * dif().neuDmg); } finally { FT.mul = m; FT.src = s0; }
       u.brnUntil = now + 4; u.ouchUntil = now + 0.5;
       if (u.hero && u.hero.hp <= 0) neuHeroDown(N, u);
     }
