@@ -112,7 +112,7 @@ function gpSlotMenu(i, xy) {
   if (!s) return;
   const g = s.k, nm = hlName(g), many = s.n > 1 ? ` ×${s.n}` : '';
   const items = [];
-  if (HL_GEAR[g]) items.push({ t: 'Надеть', d: 'удаётся не с первого раза', main: true, f: () => heroAbility('use' + i) });
+  if (HL_GEAR[g]) items.push({ t: 'Надеть', d: 'получается через раз', main: true, f: () => heroAbility('use' + i) });
   else if (HL_FOOD[g]) items.push({ t: 'Съесть', d: 'сытость и немного здоровья', main: true, f: () => heroAbility('use' + i) });
   else if (g === 'bandage') items.push({ t: 'Перевязаться', main: true, f: () => heroAbility('use' + i) });
   items.push({ t: 'Положить на землю', d: 'рядом с героем', f: () => gpPutDown(i) });
