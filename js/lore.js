@@ -23,7 +23,7 @@ const LORE_WHO = {
   mrak: { name: 'Малгор', ch: 'М', col: '#9cf06a', bg: '#2a1840' },
   note: { name: '', ch: '✎', col: '#e0c890', bg: '#2a2014' },
 };
-const LORE_KIND = { memory: 'Воспоминание', find: 'Находка', vision: 'Видение', voice: 'Голос из тьмы', letter: 'Письмо', fire: 'Вдалеке', song: 'Песня' };
+const LORE_KIND = { news: 'Новое в деревне', memory: 'Воспоминание', find: 'Находка', vision: 'Видение', voice: 'Голос из тьмы', letter: 'Письмо', fire: 'Вдалеке', song: 'Песня' };
 
 // ---------- Условия ----------
 const loreB = t => Game.buildings.some(b => b.type === t && !b.removed);
@@ -445,6 +445,7 @@ function loreEls() {
     if (k === 'next') loreNext();
     if (k === 'skip') loreClose();
     if (k === 'book') { loreClose(); loreBookOpen(Lore.lastId); }
+    if (k === 'go') { const go = Lore.cur && Lore.cur.f.go; loreClose(); if (go && typeof introGo === 'function') introGo(go); }
   });
 }
 
@@ -454,7 +455,7 @@ function loreShow(f) {
   Lore.lastId = f.id;
   Lore.lastAt = Lore.playT;
   if (typeof Tut !== 'undefined' && Tut.on) Tut.loreSlot = false;   // между этими шагами сцена уже была
-  loreFind(f);
+  if (!f.intro) loreFind(f);   // «Новое в деревне» (intro.js) — не в журнал, а в мир
   Lore.el.setAttribute('data-nq-modal', '');   // держит общую очередь окон, пока открыта
   Lore.el.className = 'k-' + f.kind;
   Lore.fx.className = 'k-' + f.kind;
@@ -481,10 +482,11 @@ function loreRender() {
   const { f, i } = Lore.cur, L = f.lines[i], w = loreWho(L[0]), last = i >= f.lines.length - 1;
   const text = t(L[1]);
   Lore.el.innerHTML = `
-    <div class="lc-top"><span class="lc-kind">${loreEsc(t(LORE_KIND[f.kind] || ''))}</span><b>${loreEsc(t(f.title))}</b><span class="lc-ch">${loreEsc(t('Глава {0}', f.ch))}</span></div>
+    <div class="lc-top"><span class="lc-kind">${loreEsc(t(LORE_KIND[f.kind] || ''))}</span><b>${loreEsc(t(f.title))}</b><span class="lc-ch">${loreEsc(f.intro ? t('Новое в деревне') : t('Глава {0}', f.ch))}</span></div>
     <div class="lc-say">${loreFace(w, L[0])}
       <div class="lc-body">${w.name ? `<div class="lc-name" style="color:${w.col}">${loreEsc(t(w.name))}</div>` : ''}<div class="lc-text${L[0] === 'note' ? ' note' : ''}${L[0] === 'mrak' ? ' dark' : ''}"></div></div></div>
-    <div class="lc-btns"><button data-lc="skip">${loreEsc(t('Пропустить'))}</button>${last ? `<button data-lc="book">${loreEsc(t('В журнал «Лор»'))}</button>` : ''}<span class="lc-dots">${f.lines.map((x, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</span>
+    ${last && f.next ? `<div class="lc-next">${loreEsc(f.next)}</div>` : ''}
+    <div class="lc-btns"><button data-lc="skip">${loreEsc(t('Пропустить'))}</button>${last && !f.intro ? `<button data-lc="book">${loreEsc(t('В журнал «Лор»'))}</button>` : ''}${last && f.go ? `<button data-lc="go">${loreEsc(t('Показать на стройке'))}</button>` : ''}<span class="lc-dots">${f.lines.map((x, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</span>
       <button data-lc="next" class="primary">${loreEsc(t(last ? 'Закрыть' : 'Дальше ▸'))}</button></div>`;
   Lore.el.classList.remove('hidden');
   Lore.fx.classList.remove('hidden');
