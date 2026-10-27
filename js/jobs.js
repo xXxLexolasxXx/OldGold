@@ -98,6 +98,7 @@ function* eatGen(u, inn) {
         inn.stock[mug]--;
         const dark = mug === 'darkbeer';
         u.food = Math.min(dark ? 1.4 : 1.2, u.food + (dark ? 0.4 : 0.2));
+        u.braveUntil = Game.time + (dark ? BRAVE_DARK : BRAVE_BEER);   // пивная храбрость (mood.js)
         // захмелел: через несколько секунд пути свалится спать
         if (Math.random() < Math.min(0.95, DRUNK_CHANCE * (dark ? 2 : 1) * fk)) u.drunkAt = Game.time + 3 + Math.random() * 9;
       }
@@ -206,9 +207,9 @@ function* fetchForSiteGen(u, s, force) {
     if (need > 0) { g = k; n = Math.min(want, need); break; }
   }
   if (!g) return false;
-  const st = storeHaving(u.x, u.y, g, comp);
+  const st = storeHaving(u.x, u.y, g, comp, s);
   if (!st) return false;
-  n = Math.min(n, st.offer(g));
+  n = Math.min(n, offerFor(st, g, s));
   st.reserved[g] += n; s.incoming[g] += n;
   u.dlv = { from: st, to: s, g, n, gen: u.proc };   // чтобы учёт «в пути» видел эту ношу
   let ok = yield { walk: [st.doorX, st.doorY] };
@@ -327,7 +328,7 @@ function* workerGen(u, b) {
         continue;
       }
     }
-    if (b.paused || prioOff(b) || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
+    if (b.paused || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
     const work = WORK[b.type] || recipeWork, m0 = PROF_MADE.get(b) || 0;
     yield* work(u, b);
     if ((PROF_MADE.get(b) || 0) > m0 && !b.removed) gainXp(u, 1);   // выслуга мастеру — за цикл, который что-то дал

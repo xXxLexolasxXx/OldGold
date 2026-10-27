@@ -1,6 +1,7 @@
 'use strict';
-// Изгнание нечисти (js/world/banish.js): обычных призраков снова можно прогнать молитвой героя (призрак замирает,
-// герой не пугается), в общей деревне — тоже; изгнание нежити жреца, оберег мага отпускают призраков и гонят банши;
+// Изгнание нечисти (js/world/banish.js): обычного призрака можно одолеть молитвой героя (призрак замирает, герой не пугается;
+// с 0.11.57 молитва снимает половину здоровья, остальное герой добивает в бою), в общей деревне — тоже;
+// изгнание нежити жреца и оберег мага снимают призракам ровно половину здоровья (не прогоняют) и гонят банши;
 // банши прогоняется кликом, до конца ночи не воет; жнец по-прежнему сопротивляется; ночи без вмешательства прежние.
 // Запуск: node tests/banish-test.js
 const S = require('./lib/sim');
@@ -47,9 +48,9 @@ ok(J(`return !interruptible(Game.hero);`), 'герой, идущий изгон�
 // ---------- 2. Изгнание нежити жреца: без скелетов, только духи ----------
 atNight(2); setup('priest', 10); ghost(2); ghost(-2.5, 1); banshee(1.5, -1.5);
 const turn = J(`const h = Game.hero, as = heroAbils(h.hero), i = as.findIndex(a => a.k === 'turn'); const r = heroAbilityFor(h, i);
-  return { r, ghosts: Game.ghosts.filter(g => g.mode !== 'leave').length, ban: fz().ban.filter(b => !b.gone).length, away: fz().banAway > Game.time };`);
+  return { r, half: Game.ghosts.every(g => !g.slain && g.mode !== 'leave' && g.hp === g.mhp - Math.ceil(g.mhp / 2)), ban: fz().ban.filter(b => !b.gone).length, away: fz().banAway > Game.time };`);
 ok(turn.r === true, 'изгнание нежити без скелетов не срабатывает рядом с духами');
-ok(turn.ghosts === 0, `изгнание нежити не отпустило призраков: осталось ${turn.ghosts}`);
+ok(turn.half, 'изгнание нежити: призракам не ровно половина здоровья — ' + JSON.stringify(turn));
 ok(turn.ban === 0 && turn.away, 'изгнание нежити не прогнало банши: ' + JSON.stringify(turn));
 // без духов и врагов — способность не тратится
 atNight(2); setup('priest', 10);
@@ -58,8 +59,8 @@ ok(J(`const h = Game.hero, as = heroAbils(h.hero), i = as.findIndex(a => a.k ===
 // ---------- 3. Оберег мага гонит и банши ----------
 atNight(2); setup('mage', 5); ghost(3); banshee(-3);
 const ward = J(`const h = Game.hero, as = heroAbils(h.hero), i = as.findIndex(a => a.k === 'ward'); heroAbilityFor(h, i);
-  return { g: Game.ghosts.filter(g => g.mode !== 'leave').length, b: fz().ban.filter(b => !b.gone).length };`);
-ok(ward.g === 0 && ward.b === 0, 'оберег мага: ' + JSON.stringify(ward));
+  return { g: Game.ghosts.every(g => !g.slain && g.hp === g.mhp - Math.ceil(g.mhp / 2)), b: fz().ban.filter(b => !b.gone).length };`);
+ok(ward.g && ward.b === 0, 'оберег мага: ' + JSON.stringify(ward));
 
 // ---------- 4. Банши кликом; не возвращается до конца ночи ----------
 atNight(2); setup('warrior', 3); banshee(3);
@@ -77,9 +78,9 @@ atNight(3, 420); setup('priest', 10);
 sim.h.run(`{ const h = Game.hero, x = h.x + 2, y = h.y; Game.ghosts.push({ kind: 'reaper', x, y, hx: x, hy: y, alpha: 1, ph: 0, face: 1, rev: true, mode: 'drift', modeT: 0, tx: x, ty: y, retarget: 9, scan: 9, var: 0 }); rpInit(Game.ghosts[0]); }`);
 ghost(-2);
 const rp = J(`const h = Game.hero, as = heroAbils(h.hero), i = as.findIndex(a => a.k === 'turn'), g = Game.ghosts[0], hp0 = g.hp; RPF.wide = true; const pre = foesNear(h.x, h.y, 6).map(f => f.kind); RPF.wide = false; const nf = (Game.floaters || []).length; let said = []; const _t = toast; toast = m => said.push(m); const r = heroAbilityFor(h, i); toast = _t;
-  return { said, fl: (Game.floaters || []).slice(nf).map(f => f.text || f.t), r, pre, inside: !!h.inside, dead: h.dead, lvl: h.hero.level, mode: g.mode, dmg: hp0 - g.hp, ghost: Game.ghosts[1].mode, cd: JSON.stringify(h.hero.abCd), rs: h.hero.rs, fs: foesNear(h.x, h.y, 6).map(f => f.kind) };`);
+  return { said, fl: (Game.floaters || []).slice(nf).map(f => f.text || f.t), r, pre, inside: !!h.inside, dead: h.dead, lvl: h.hero.level, mode: g.mode, dmg: hp0 - g.hp, ghost: Game.ghosts[1].hp / Game.ghosts[1].mhp, cd: JSON.stringify(h.hero.abCd), rs: h.hero.rs, fs: foesNear(h.x, h.y, 6).map(f => f.kind) };`);
 ok(rp.mode !== 'leave' && rp.dmg > 10, 'жнец: ' + JSON.stringify(rp));
-ok(rp.ghost === 'leave', 'рядом со жнецом обычный призрак не отпущен');
+ok(rp.ghost > 0 && rp.ghost <= 0.5, 'рядом со жнецом обычному призраку не половина здоровья: ' + rp.ghost);
 ok(J(`const g = Game.ghosts[0]; return !hlGhostAt([Math.floor(g.x), Math.floor(g.y)]) && resolveCmd([Math.floor(g.x), Math.floor(g.y)]).kind === 'attack';`), 'клик по жнецу — не бой');
 
 // ---------- 6. Общая деревня: молитва по клику работает ----------
@@ -102,5 +103,5 @@ ok(J(`const g = Game.ghosts[0]; return !hlGhostAt([Math.floor(g.x), Math.floor(g
 
 if (sim.errors.length) for (const e of sim.errors.slice(0, 5)) ok(false, 'исключение: ' + e);
 if (fails.length) { console.log(`✗ провалов: ${fails.length}`); process.exit(1); }
-console.log('✓ изгнание: молитва по клику (и в коопе), изгнание нежити и оберег гонят призраков и банши, жнец сопротивляется');
+console.log('✓ изгнание: молитва по клику (и в коопе) — половина здоровья и бой, изгнание нежити и оберег — половина здоровья призракам, банши прогнана, жнец сопротивляется');
 process.exit(0);

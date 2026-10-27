@@ -354,7 +354,7 @@ I18N.add('en', {
   "Телепорт": "Teleport",
   "на базу, к складу": "back to base, to the storehouse",
   "+{0}% здоровья": "+{0}% health",
-  "— надеть (шанс удачи 30%)": "— equip (30% chance of luck)",
+  "— надеть (шанс удачи 50%)": "— equip (50% chance of luck)",
   "— съесть": "— eat",
   "Оружие": "Weapon",
   "Доспех": "Armor",

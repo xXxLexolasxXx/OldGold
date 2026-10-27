@@ -1,0 +1,41 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#141c22">
+<canvas id="cv" width="1280" height="720"></canvas>
+<script>var NA_SPEC = {}, NA_PX = {}, PX_FINE = 3;</script>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script src="../../js/world/ghostpx.js"></script>
+<script>
+// Видео для согласования: frameAt(t) рисует кадр ролика в момент t (с). Снимает tools/pxghost/video.js (по умолчанию эта страница).
+// Шаг — 12 кадров на петлю парения 1,2 с (10 к/с), выбор владельца. 0–6 с: облики A, B, C парят;
+// 6–12 с: парит → рот раскрывается → пугает → удар когтями → рот закрывается → парит.
+const cv = document.getElementById('cv'), c = cv.getContext('2d');
+const SPR = {}, FPS = 10;
+const spr = (v, mood, p, k, open) => { const key = [v, mood, p.toFixed(4), k.toFixed(4), open == null ? '' : open.toFixed(3)].join('|'); return SPR[key] || (SPR[key] = fzPxSprite('vid' + key, 60, 76, 30, 32, () => ghostPx(v, mood, p, k, open == null ? {} : { open }))); };
+const T = (s, x, y, sz = 22, col = '#e6eef0') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.textAlign = 'center'; c.fillText(s, x, y); };
+const put = (s, x, y, Z) => { c.imageSmoothingEnabled = false; const [ox, oy, w, h] = s.fzO; c.drawImage(s, x - ox * Z, y - oy * Z, w * Z, h * Z); };
+const glow = (x, y, r) => { const g = c.createRadialGradient(x, y, 4, x, y, r); g.addColorStop(0, 'rgba(120,255,190,0.18)'); g.addColorStop(1, 'rgba(120,255,190,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r); };
+const cl = v => Math.max(0, Math.min(1, v));
+function scene(t) {
+  if (t < 1.5) return ['idle', (t % 1.2) / 1.2, 0, null, 'парит'];
+  if (t < 1.8) return ['boo', 0, 0, cl((t - 1.5 + 0.1) / 0.3), 'раскрывает рот'];
+  if (t < 3.3) return ['boo', ((t - 1.8) % 0.9) / 0.9, 0, null, 'пугает'];
+  if (t < 4.2) return ['atk', 0, cl((t - 3.3) / 0.8), null, 'удар когтями'];
+  if (t < 4.5) return ['idle', 0, 0, Math.max(0.1, 1 - (t - 4.2 + 0.1) / 0.3), 'закрывает рот'];
+  return ['idle', ((t - 4.5) % 1.2) / 1.2, 0, null, 'парит'];
+}
+function frameAt(t) {
+  c.fillStyle = '#141c22'; c.fillRect(0, 0, 1280, 720);
+  c.fillStyle = '#1b262d'; for (let i = 0; i < 90; i++) c.fillRect((i * 137) % 1280, 120 + (i * 71) % 600, 4, 2);
+  const part2 = t >= 6, q = Math.floor((part2 ? t - 6 : t) * FPS + 1e-6) / FPS;
+  const [m, p, k, open, lab] = part2 ? scene(q) : ['idle', (q % 1.2) / 1.2, 0, null, 'парят'];
+  T('Шаг 12 кадров (10 к/с), облики A, B, C — ' + lab, 640, 46, 28, '#ffd860');
+  ['A', 'B', 'C'].forEach((v, i) => {
+    const x = 240 + i * 400, y = 330;
+    glow(x, y + 40, 200);
+    put(spr(v, m, p, k, open), x, y, 4.5);
+    T(['A — колпак', 'B — дед', 'C — саван'][i], x, 660, 26, '#bff0dc');
+  });
+}
+try { frameAt(0); frameAt(7); document.title = 'ready'; } catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>

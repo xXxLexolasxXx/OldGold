@@ -1,24 +1,8 @@
-/* Приоритеты работ и пауза с планированием (js/prio.js) */
+/* «Срочно» в окне здания и пауза с планированием (js/prio.js) */
 #prio-list { font-size: 13px; }
 .pr-intro { padding: 4px 2px 8px; color: #e9dcc0; line-height: 1.4; }
-.pr-warn { margin: 0 0 8px; padding: 6px 8px; background: rgba(120,30,20,0.35); border: 1px solid #b04030; color: #ffd0c0; line-height: 1.4; }
-.pr-h { margin: 10px 0 4px; color: var(--gold-hi, #f0d27a); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
-.pr-row { padding: 6px 4px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-.pr-name { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.pr-name img { width: 22px; height: 22px; }
-.pr-n { margin-left: auto; color: #a99c80; font-size: 12px; }
-.pr-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
-.pr-seg button { padding: 4px 2px; font-size: 12px; min-height: 30px; opacity: 0.75; }
-.pr-seg button.on { opacity: 1; font-weight: bold; box-shadow: inset 0 0 0 2px var(--gold, #d2a73c); }
-.pr-seg .pr-0.on { background: #5a2a22; color: #ffd0c0; }
-.pr-seg .pr-1.on { background: #34404f; color: #cfe0f4; }
-.pr-seg .pr-2.on { background: #3a3e2c; color: #e9e2c0; }
-.pr-seg .pr-3.on { background: #6a5316; color: #fff0b0; }
-.pr-hint { margin-top: 4px; color: #a99c80; font-size: 12px; line-height: 1.35; }
-.pr-job .pr-hint { font-size: 11.5px; }
-.pr-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 2px 4px; color: #a99c80; font-size: 12px; }
-.pr-foot kbd { padding: 0 5px; border: 1px solid var(--gold, #d2a73c); border-radius: 3px; background: #1a130d; color: var(--gold-hi, #f0d27a); }
-body.mobile .pr-seg button { min-height: 38px; font-size: 13px; }
+.iactions button.urg { display: inline-flex; align-items: center; gap: 3px; font-weight: bold; }
+.iactions button.urg.active { background: #a8701a; color: #fff4b0; box-shadow: inset 0 0 0 2px #ffd24a; }
 /* пауза: полоса сверху карты */
 #pause-banner { position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 4; max-width: calc(100% - 24px);
   padding: 6px 14px; background: rgba(20,14,8,0.9); border: 1px solid var(--gold, #d2a73c); color: #f0e6c8; font-size: 13px; text-align: center; pointer-events: none; }
@@ -29,9 +13,6 @@ body.mobile #pause-banner { bottom: calc(74px + env(safe-area-inset-bottom)); to
 /* онлайн: скорость выбирает хост, остальным — только пауза голосованием */
 body.coop:not(.coop-host) #dd-speed [data-speed]:not([data-speed="0"]) { display: none; }
 /* Рабочие (js/workers.js): вкладка «Рабочие» и карточка гнома */
-.pr-views { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 0 0 6px; }
-.pr-views button { min-height: 30px; opacity: 0.7; }
-.pr-views button.on { opacity: 1; font-weight: bold; box-shadow: inset 0 0 0 2px var(--gold, #d2a73c); }
 .wk-sum { padding: 2px 2px 6px; color: #e9dcc0; }
 .wk-bad { color: #ffb08a; }
 .wk-cap { display: flex; align-items: center; gap: 6px; margin: 2px 0 6px; color: #a99c80; font-size: 12px; }

@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#141c22">
+<canvas id="cv"></canvas>
+<script src="../../js/world/fairy2.js"></script>
+<script>var NA_SPEC = {}, NA_PX = {}, PX_FINE = 3;</script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script src="../../js/world/ghostpx.js"></script>
+<script>
+// Лист согласования: три облика пиксельного призрака (A колпак, B дед, C саван), крупно ×6 и все позы ×3 (1:1 с сеткой),
+// внизу — как в игре (×1 и ×2) рядом с гномом-ориентиром. Снимок: node tools/pxghost/shot.js out.png
+try {
+const VS = [['A', 'A — «колпак»: гном-мертвец в остром колпаке, череп, борода из тумана'], ['B', 'B — «дед»: нос-картошка, борода-туман до пояса, цепь на запястье'], ['C', 'C — «саван»: глубокий капюшон, череп в тени, рёбра сквозь саван, длинные когти']];
+const POSES = [['idle', 0, 'парит'], ['idle', 4, 'парит, фаза 4'], ['boo', 2, 'пугает'], ['atk', 2, 'замах'], ['atk', 4, 'бросок когтями'],
+  ['hurt', 0, 'ранен'], ['flee', 1, 'бежит'], ['calm', 3, 'задобрен хлебом'], ['die', 2, 'гибель, кадр 3'], ['die', 4, 'гибель, кадр 5']];
+const W = 1720, RH = 540, cv = document.getElementById('cv');
+cv.width = W; cv.height = 50 + VS.length * RH + 300;
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#141c22'; c.fillRect(0, 0, W, cv.height);
+const T = (s, x, y, sz = 20, col = '#e6eef0') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.fillText(s, x, y); };
+const cell = (x, y, w, h) => { c.fillStyle = '#26323a'; c.fillRect(x, y, w, h); c.fillStyle = '#2c3a42'; for (let i = 0; i < 50; i++) c.fillRect(x + (i * 37 % w), y + (i * 53 % h), 3, 2); };
+const put = (spr, x, y, Z) => { const [ox, oy, w, h] = spr.fzO; c.save(); c.imageSmoothingEnabled = false; c.translate(x, y); c.drawImage(spr, -ox * Z, -oy * Z, w * Z, h * Z); c.restore(); };
+T('Призрак в пиксель-арте: метод Полудницы и дракона — тело одной формой (smin), пиксель ×3 мельче мирового. Выберите облик: A, B или C', 16, 32, 21, '#ffd860');
+VS.forEach(([v, name], r) => {
+  const y0 = 50 + r * RH;
+  T(name, 16, y0 + 26, 20, '#bff0dc');
+  cell(10, y0 + 36, 380, 494); put(ghostPxSprite(v, 'idle', 0), 200, y0 + 36 + 32 * 6 + 10, 6);
+  POSES.forEach(([m, f, n], i) => {
+    const x = 400 + (i % 5) * 262, y = y0 + 36 + Math.floor(i / 5) * 248;
+    cell(x, y, 256, 242); T(n, x + 8, y + 20, 14); put(ghostPxSprite(v, m, f), x + 128, y + 30 + 32 * 3, 3);
+  });
+});
+const yb = 50 + VS.length * RH + 10;
+T('Как в игре (×1 и ×2) ночью, рядом с гномом', 16, yb + 20, 18, '#ffd860');
+c.fillStyle = '#0e1418'; c.fillRect(10, yb + 30, W - 20, 250);
+const gn = (x, yy, Z) => { c.fillStyle = '#7a4a2a'; c.fillRect(x - 4 * Z, yy - 12 * Z, 8 * Z, 12 * Z); c.fillStyle = '#e0b088'; c.fillRect(x - 3 * Z, yy - 17 * Z, 6 * Z, 5 * Z); c.fillStyle = '#c03020'; c.fillRect(x - 4 * Z, yy - 21 * Z, 8 * Z, 4 * Z); };
+const glow = (x, y, r, a) => { const g = c.createRadialGradient(x, y, 2, x, y, r); g.addColorStop(0, `rgba(120,255,190,${a})`); g.addColorStop(1, 'rgba(120,255,190,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); };
+let x = 60;
+gn(x, yb + 250, 1); x += 50;
+for (const [v] of VS) { glow(x, yb + 200, 30, 0.25); c.globalAlpha = 0.85; put(ghostPxSprite(v, 'idle', 0), x, yb + 205, 1); put(ghostPxSprite(v, 'atk', 4), x + 70, yb + 205, 1); c.globalAlpha = 1; x += 150; }
+x += 40; gn(x, yb + 270, 2); x += 110;
+for (const [v] of VS) { glow(x, yb + 140, 60, 0.25); c.globalAlpha = 0.85; put(ghostPxSprite(v, 'idle', 0), x, yb + 150, 2); c.globalAlpha = 1; x += 170; }
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>

@@ -194,7 +194,7 @@ const ABIL_FX = {
   },
   ward(h, a, H) {
     let n = 0;
-    for (const g of Game.ghosts || []) if (Math.hypot(g.x - h.x, g.y - h.y) < 12) { g.mode = 'leave'; g.modeT = 99; floater(g.x, g.y - 1.6, 'А-а-ай!', '#cfe6ff'); n++; }
+    for (const g of Game.ghosts || []) if (ghLive(g) && Math.hypot(g.x - h.x, g.y - h.y) < 12) n++;      // призраков не гонит, а жжёт светом — половина здоровья (banish.js)
     for (const s of Game.skels || []) if (Math.hypot(s.x - h.x, s.y - h.y) < 7 && s.state === 'roam') { s.scared = 8; s.goal = null; n++; }
     for (const e of Game.ents || []) if ((e.state === 'walk' || e.state === 'smash') && Math.hypot(e.x - h.x, e.y - h.y) < 7) {
       e.target = null; e.goal = null; e.state = 'ghosted'; e.t = 0; e.gFrom = [h.x, h.y]; n++;

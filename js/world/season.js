@@ -158,6 +158,28 @@ function seaWoodHold() {
   return S.holdW;
 }
 const seaWoodLow = () => seaWoodHold() > 0 && !!SEA().holdLow;
+// Стройкам не хватает досок: на складах и у лесопилок досок меньше, чем ждут стройки и достройки.
+// Тогда зимний запас не держит лесопилку голодной: раньше перед зимой она стояла всю осень и зиму,
+// и здания, заложенные игроком, не могли достроиться (отзыв владельца 27.10).
+function seaTimberShort() {
+  const S = SEA();
+  if (S.tsT != null && Math.abs(Game.time - S.tsT) < 2) return S.ts;
+  let need = 0, have = 0;
+  for (const b of Game.buildings) {
+    if (b.removed) continue;
+    if (b.state !== 'done' || b.upg) need += b.demand('timber');
+    else if (b.isStore() || b.type === 'sawmill') have += Math.max(0, b.stock.timber - b.reserved.timber);
+  }
+  S.tsT = Game.time; S.ts = need > have;
+  return S.ts;
+}
+// Брёвна из зимнего запаса склада отдаём стройке (её заложил игрок, и без неё встаёт всё, даже новый дом лесоруба)
+// и лесопилке, когда стройкам не хватает досок или игрок нажал «Срочно». Остальным (торговля, указы, ярмарка) — только сверх запаса.
+function seaWoodFor(d) {
+  if (!d || d.removed) return false;
+  if (d.isRoad || d.state !== 'done' || d.upg) return true;
+  return d.type === 'sawmill' && (seaTimberShort() || (typeof urgOn === 'function' && urgOn(d)));
+}
 const seaRush = d => (d && d.type === 'woodcutter' && seaWoodRush()) ? 1 : 0;
 function seaTakeWood(b) {
   let best = null, bd = 1e9;

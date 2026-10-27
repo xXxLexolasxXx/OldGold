@@ -75,7 +75,6 @@ function pickCarrier(idle, x, y, g, amount) {
   const ok = idle.filter(u => canCarry(u, g));
   if (!ok.length) return null;
   const pref = amount >= 3 ? ['carter', 'goat', 'serf'] : amount >= 2 ? ['goat', 'serf', 'carter'] : ['serf', 'goat', 'carter'];
-  if (Game.prio) pref.sort((a, b) => prioLv('jobs', prioJobKey(b)) - prioLv('jobs', prioJobKey(a)));   // «Высокий» перевозчик — первым (порядок при равных не меняется)
   for (const t of pref) {
     let list = ok.filter(u => u.type === t);
     if (!list.length) continue;
@@ -142,7 +141,7 @@ function cropPlenty(g) {
 function dispatchSerfs() {
   updateRoadComps();
   // проголодавшийся без дела сначала поест (think() отправит его в трактир) — иначе диспетчер успевал дать ему заказ раньше
-  let idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk && !u.wantsEat() && (prioJobLv(u) !== 0 || wkBoosted(u)) && wkMay(u));
+  let idleAll = Game.units.filter(u => u.isCourier && u.idleFlag && !u.inside && !u.brk && !u.wantsEat() && wkMay(u));
   wkPinnedCouriers(idleAll);          // курьеры с маршрутом «откуда → куда» (workers.js) — только своё
   idleAll = wkTrim(idleAll);           // лимит «на работе» во вкладке «Рабочие»
   if (!idleAll.length) return;
@@ -177,26 +176,26 @@ function dispatchSerfs() {
   const isMine = b => b.def && (b.def.need === 'rock' || b.def.need === 'crystal');
   const collectNearlyFull = () => { if (nfDone) return; nfDone = true; collectOutputs(b => !b.isPile && b.state === 'done' && (isFoodProducer(b) || isMine(b)) && !!b.def.outputs && nearlyFull(b)); };
 
-  // «Перенос ресурсов» (вкладка «Приоритеты»): Выкл — не свозить на склад (кроме еды), Низкий — по 1 перевозчику
-  // на здание, Высокий — рассыпанное с земли раньше заявок и по 5 перевозчиков на здание
-  const haul = prioLv('tasks', 'haul'), haulPer = [0, 1, 3, 5][haul];
-  if (haul === 3) collectOutputs(b => b.isPile);     // рассыпанное с земли — раньше заявок
+  // «Срочно» (prio.js): само здание идёт сразу после голода и золота для школы — в него и из него везут все свободные;
+  // его отрасль — после пищевых цехов на исходе, но раньше строек. Остальным авто-срочность (еда мало, дрова, ночь)
+  // только переставляет заявки внутри их места в очереди.
   const reqs = [];
   for (const [d, comp] of compOf) {
     if (!comp || !idleBy.has(comp)) continue;
-    if (prioBlocked(d)) continue;      // адресат выключен во вкладке «Приоритеты»
+    const lv = urgLv(d), au = lv ? 0 : autoUrg(d) * 0.3;
     // трактир на исходе: срочно — только до нормы (INN_LOW), остальное до полного — обычной очередью.
     // Иначе одна «тревога» отправляла в трактир по 30–40 трудяг разом
     let innBudget = d.type === 'inn' && d.state === 'done' && !d.upg ? Math.max(INN_LOW, Game.units.length * 0.1) - innFoodLeft(d) : 0;
     for (const g of GOOD_KEYS) {
       const n = d.demand(g);
       if (n <= 0) continue;
-      const pri = reqPri(d, g) - prioScore(d), r = Math.random();
+      const base = reqPri(d, g), r = Math.random();
+      const pri = lv === 2 ? Math.min(base, -1.9) : lv === 1 ? Math.min(base, -0.9) : base - au;
       if (d.type === 'inn' && pri < 0 && FOODS.includes(g)) {
         const urgent = Math.min(n, Math.max(0, Math.ceil(innBudget)));
         innBudget -= urgent;
         if (urgent) reqs.push({ d, g, n: urgent, comp, pri, r });
-        if (n > urgent) reqs.push({ d, g, n: n - urgent, comp, pri: 1 - prioScore(d), r });
+        if (n > urgent) reqs.push({ d, g, n: n - urgent, comp, pri: lv ? pri : 1 - au, r });
         continue;
       }
       reqs.push({ d, g, n, comp, pri, r });
@@ -204,8 +203,15 @@ function dispatchSerfs() {
   }
   reqs.sort((a, b) => a.pri - b.pri || a.r - b.r);
 
+  // вывоз продукции срочного здания (все свободные) и его отрасли (до 5 на здание) — на своём месте в очереди
+  let hotOut = false, branchOut = false;
+  const anyLv = l => [...urgBranch().values()].includes(l);
+  const outHot = () => { if (hotOut) return; hotOut = true; if (anyLv(2)) collectOutputs(b => urgLv(b) === 2, Infinity); };
+  const outBranch = () => { if (branchOut) return; branchOut = true; if (anyLv(1)) collectOutputs(b => urgLv(b) === 1, 5); };
   let foodOut = false;
   for (const r of reqs) {
+    if (r.pri > -1.9) outHot();
+    if (r.pri > -0.9) outBranch();
     // еда в трактир — самое первое, иначе ферма с полным амбаром забирает всех курьеров, а деревня голодает
     if (r.pri >= 0) collectNearlyFull();          // заявки трактира и пищевых цехов — раньше разгрузки полных ферм
     // после еды для трактира и цехов — урожай и еду с ферм, мельницы, пекарни, бойни,
@@ -217,13 +223,13 @@ function dispatchSerfs() {
     while (need > 0 && idle.length) {
       let src = null, sd = 1e9;
       for (const o of depots) {
-        if ((o === r.d && !(r.d.upg && r.d.isStore())) || compOf.get(o) !== r.comp || o.offer(r.g) <= 0) continue;
+        if ((o === r.d && !(r.d.upg && r.d.isStore())) || compOf.get(o) !== r.comp || offerFor(o, r.g, r.d) <= 0) continue;
         // сперва забираем у мастерской — иначе она встанет с полным складом, а склад опустеет
         const dd = mdist(o.doorX, o.doorY, r.d.doorX, r.d.doorY) + (o.isPile || !o.isStore() ? 0 : 25);
         if (dd < sd) { sd = dd; src = o; }
       }
       if (!src) break;
-      const avail = src.offer(r.g);
+      const avail = offerFor(src, r.g, r.d);
       const u = pickCarrier(idle, src.doorX, src.doorY, r.g, Math.min(need, avail));
       if (!u) break;
       const n = Math.min(need, avail, carryCap(u, r.g));
@@ -232,16 +238,15 @@ function dispatchSerfs() {
     }
   }
 
+  outHot(); outBranch();
   collectNearlyFull();
   if (!foodOut) collectOutputs(b => !b.isPile && isFoodProducer(b));
   // рассыпанное по земле (в том числе зерно и хлеб) — раньше, чем продукция неспешных мастерских
-  if (haul > 0) {
-    collectOutputs(b => b.isPile);
-    collectOutputs(b => !b.isPile && !isFoodProducer(b));
-  }
+  collectOutputs(b => b.isPile);
+  collectOutputs(b => !b.isPile && !isFoodProducer(b));
 
   // Готовую продукцию и рассыпанное — на ближайший склад той же сети
-  function collectOutputs(pred) {
+  function collectOutputs(pred, perMax) {
     for (const b of depots) {
       if (!pred(b)) continue;
       const isP = b.isPile;
@@ -250,7 +255,7 @@ function dispatchSerfs() {
       if (!idle || !idle.length) continue;
       const goods = isP ? GOOD_KEYS : Object.keys(b.def.outputs);
       let taken = 0;                                           // на одно здание — не больше 3 перевозчиков за раз (диспетчер идёт каждые 0.4 с)
-      const per = isFoodProducer(b) ? 3 : haulPer || 3;       // еду вывозим всегда; прочее — по «Переносу ресурсов»
+      const per = perMax || 3;                                 // срочное — все свободные, его отрасль — до 5
       for (const g of goods) {
         if (!isP && b.def.crops && cropPlenty(g)) continue;    // зерна и сена на складах вдоволь — пусть лежит на ферме, мельница и свинарник возьмут оттуда
         let left = b.offer(g);
@@ -268,6 +273,12 @@ function dispatchSerfs() {
   }
 }
 
+// Сколько источник отдаст именно этому адресату: стройке и лесопилке без досок — и брёвна из зимнего запаса склада (season.js)
+function offerFor(o, g, to) {
+  if (g === 'trunk' && to && !o.isPile && o.isStore() && typeof seaWoodFor === 'function' && seaWoodFor(to)) return o.stock.trunk - o.reserved.trunk;
+  return o.offer(g);
+}
+
 // стройка на обрывке дороги без склада: материал к ней несут и по траве (как к стройке дороги)
 function siteOffNet(b) {
   if (!b || b.isPile || b.isRoad || b.state === 'done' || typeof b.isStore !== 'function') return false;
@@ -278,10 +289,10 @@ function siteOffNet(b) {
 // Ближайший склад, где товар g есть в наличии (откуда взять). В отличие от nearestStore, не смотрит на запрет
 // «склад не принимает» и закрытые доставки: они про то, что везут НА склад, а не про то, что с него берут.
 // Раньше стройка проверяла только ближайший склад — пустой ближний склад прятал 131 камень на дальнем.
-function storeHaving(x, y, g, comp = 0) {
+function storeHaving(x, y, g, comp = 0, to = null) {
   let best = null, bd = 1e9;
   for (const b of Game.buildings) {
-    if (!b.isStore() || b.offer(g) <= 0) continue;
+    if (!b.isStore() || offerFor(b, g, to) <= 0) continue;
     if (comp && compAt(b.doorX, b.doorY) !== comp) continue;
     const d = Math.abs(b.doorX - x) + Math.abs(b.doorY - y);
     if (d < bd) { bd = d; best = b; }
@@ -301,21 +312,23 @@ function dispatchBuilders() {
   // на перерыве (перекур, сон, испуг) не трогаем: иначе proc обнуляется, а brk остаётся — гном до конца стройки
   // «непрерываем» (не ест, не пугается, не ходит на праздник), клетка перекура занята, а после стройки он
   // продолжает прерванное перекуром дело, как будто ничего не было
-  let idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead && !u.brk && (prioJobLv(u) !== 0 || wkBoosted(u)) && wkMay(u));
+  let idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead && !u.brk && wkMay(u));
   wkPinnedBuilders(idle);              // закреплённые за зданием (workers.js) — только его стройка, достройка, ремонт
   idle = wkTrim(idle);                 // лимит «на работе»
   dispatchRepairs(idle);
   if (!idle.length) return;
   // стройка без материала и без доставки в пути подождёт: работяга без дела там только стоит
   const matOk = (b, st) => ['trunk', 'timber', 'stone'].some(k => st[k] > 0 || b.incoming[k] > 0 ||
-    (b.demand(k) > 0 && storeHaving(b.doorX, b.doorY, k, compAt(b.doorX, b.doorY))));   // работяга донесёт сам
+    (b.demand(k) > 0 && storeHaving(b.doorX, b.doorY, k, compAt(b.doorX, b.doorY), b)));   // работяга донесёт сам
   const sites = [
     ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold && (b.state === 'site' || matOk(b, b.stock))),
     ...Game.buildings.filter(b => b.upg && !b.upg.builder && matOk(b, b.upg.stock)),
     // дорогу можно копать сразу, а мостить — когда камень на месте или в пути
     ...[...Game.roadSites.values()].filter(s => !s.builder && (s.dug < 1 || s.stock.stone + s.incoming.stone > 0 || storeHaving(s.x, s.y, 'stone'))),
-  ].filter(s => !prioBlocked(s));
-  if (Game.prio) sites.sort((a, b) => prioScore(b) - prioScore(a));      // «Высокий» приоритет — первым в очереди на работяг
+  ];
+  // срочная стройка и её отрасль — первыми, потом авто-срочность (еда мало, зима, ночь); при равных порядок прежний
+  const ss = s => urgLv(s) * 2 + autoUrg(s);
+  if (sites.some(s => ss(s) > 0)) sites.sort((a, b) => ss(b) - ss(a));
   for (const s of sites) {
     const u = takeNearest(idle, s.doorX, s.doorY);
     if (!u) return;
@@ -325,7 +338,7 @@ function dispatchBuilders() {
     u.proc = null; u.action = null; u.anim = null;
   }
   // оставшиеся без дела работяги вскапывают заложенные поля (бесплатно)
-  if (idle.length && Game.fieldPlans && Game.fieldPlans.size && prioLv('tasks', 'food') !== 0) {
+  if (idle.length && Game.fieldPlans && Game.fieldPlans.size) {
     for (const i of [...Game.fieldPlans]) {
       const o = World.obj[i];
       if (!o || o.t !== 'field' || !o.plan) { Game.fieldPlans.delete(i); continue; }
@@ -342,7 +355,7 @@ function dispatchBuilders() {
   // ещё свободные — помогают фермерам убирать созревшие поля
   if (idle.length) {
     for (const b of Game.buildings) {
-      if (b.state !== 'done' || !idle.length || !b.def.crops || prioOff(b)) continue;
+      if (b.state !== 'done' || !idle.length || !b.def.crops) continue;
       for (const f of farmFields(b)) {
         if (f.o.g < 1 || f.o.res || outFull(b, f.o.crop)) continue;
 
@@ -366,6 +379,7 @@ function dispatchRepairs(idleBuilders) {
     if (b.dmg > 0.05 && !b.repairer && !b.removed) (todo || (todo = [])).push(b);
   }
   if (!todo) return;
+  todo.sort((a, b) => urgLv(b) - urgLv(a));         // срочное («Срочно» в окне здания) чинят первым
   const free = Game.units.filter(u => u.idleFlag && !u.inside && !u.dead && !u.brk && u.type !== 'builder' && !u.isCourier &&
     u.type !== 'hero' && !u.teamOf && !UNIT_TYPES[u.type].animal && !u.home && u.type !== 'carter');
   for (const b of todo) {
@@ -380,11 +394,10 @@ function dispatchRepairs(idleBuilders) {
 function dispatchWorkers() {
   const rush = typeof seaWoodRush === 'function' && seaWoodRush();   // дров на зиму мало — дом лесоруба получает свободного гнома первым (season.js)
   // плавильня золота при равном приоритете — раньше оружейной и доспехов: кузнец у них один (без золота школа встаёт)
-  const sc = b => (Game.prio ? prioScore(b) : 0) + (rush ? seaRush(b) : 0) + (b.type === 'metallurgist' ? 0.5 : 0);
-  const bs = [...Game.buildings].sort((a, b) => sc(b) - sc(a));   // «Высокий» цех получает свободного гнома первым
+  const sc = b => urgLv(b) * 3 + autoUrg(b) + (rush ? seaRush(b) : 0) + (b.type === 'metallurgist' ? 0.5 : 0);
+  const bs = [...Game.buildings].sort((a, b) => sc(b) - sc(a));   // срочный цех и его отрасль получают свободного гнома первыми
   for (const b of bs) {
     if (b.state !== 'done' || !b.def.worker || (b.worker && !b.worker.dead && b.worker.home === b)) continue;
-    if (prioOff(b)) continue;      // выключен во вкладке «Приоритеты» — нового рабочего не ставим
     b.worker = null;
     // у здания «потерялась» запись о работнике, а сам гном за ним числится — возвращаем запись, а не ищем замену
     const mine = Game.units.find(u => u.home === b && !u.dead && !u.teamOf && u.type !== 'hero');

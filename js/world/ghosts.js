@@ -2,9 +2,21 @@
 // Призраки: с вечера бродят над деревней 1–3 прозрачных гнома-тени. Пугают всех, кого видят —
 // и гномов, и нечисть, — но сами безобидны. Призрака можно задобрить хлебом: гном с хлебом в руках
 // отдаёт его, призрак успокаивается, благодарит и (иногда) оставляет золотую монету.
+// С 0.11.66 призрак смертен (жалоба тестера 261026-2235-c649: «много призраков, с первого раза не прогнать — дай полоску и бой»):
+// здоровье растёт с ночами (36, +2 за ночь, до 60), тронутый призрак бросается на обидчика и студит его когтями, раненый
+// (меньше 45%) может удрать, вне боя раны затягиваются. Святые силы снимают ровно половину здоровья (ghHoly) — дважды, и он развеян;
+// за победу опыт и иногда монета. Выходят реже и меньше: бывают пустые вечера, одновременно не больше 3 (+1 за четыре потери, до 6).
+// Бой с отрядом, способности и полоса здоровья — ghostfight.js.
 
 const GHOST_SEE = 4.5, GHOST_SEE_ENT = 5.5;
 const GHOST_APPEAR = 0.3;   // проступают, когда потемнело настолько (вечер темнеет до 0.35 — то есть к концу вечера, а не с его начала)
+const GH = {
+  HP0: 36, HP_NIGHT: 2, HP_MAX: 60,                        // здоровье: 36 на первых ночах, +2 за ночь, до 60
+  XP: 24, XP_NIGHT: 2,                                     // опыт за победу: 24 + 2 за ночь (до 10-й)
+  FORGET: 20, REACH: 1.6, CD: 2.4, SPD: 1.25,              // бой: забывает обидчика через 20 с, бьёт вплотную раз в 2,4 с
+  FLEE_AT: 0.45, FLEE_P: 0.35, FLEE_SPD: 2.4, FLEE_T: 5,   // раненый ниже 45% удирает с вероятностью 35% (раз за жизнь)
+  REGEN: 0.6, CAP: 3, CAP_MAX: 6,
+};
 
 // где появиться: из кладбища, если оно есть, иначе над случайным жителем
 function ghostSpot(gy, live) {
@@ -14,17 +26,83 @@ function ghostSpot(gy, live) {
   return { x: Math.max(2, Math.min(MAP_W - 2, x)), y: Math.max(2, Math.min(MAP_H - 2, y)), gy: false };
 }
 
+// Сколько призраков выходит за вечер: было 1–3 + половина потерь каждый вечер, теперь треть вечеров пустые, иначе 1–2 + четверть потерь
+function ghostsWant() {
+  const lost = Game.lostGnomes || 0;
+  return Math.random() < 0.3 ? 0 : 1 + (Math.random() < 0.35 ? 1 : 0) + Math.floor(lost / 4);
+}
+const ghostsCap = () => Math.min(GH.CAP_MAX, GH.CAP + Math.floor((Game.lostGnomes || 0) / 4));
+
 // Призраки заводятся с началом вечера, но остаются невидимыми (rev: false) до GHOST_APPEAR — см. ghostsTick
 function ghostsSpawn(n) {
   const gs = Game.ghosts || (Game.ghosts = []);
   const live = Game.units.filter(u => !u.dead);
-  const gy = graveyardOf(), cap = Math.min(12, 4 + Math.floor((Game.lostGnomes || 0) / 3));
-  for (let i = 0; i < n && gs.filter(g => g.kind !== 'reaper').length < cap; i++) {
+  const gy = graveyardOf(), cap = ghostsCap();
+  let made = 0;
+  for (let i = 0; i < n && gs.filter(g => g.kind !== 'reaper' && !g.slain).length < cap; i++, made++) {
     const sp = ghostSpot(gy, live);
-    gs.push({ x: sp.x, y: sp.y, hx: sp.x, hy: sp.y, alpha: 0, ph: Math.random() * 9, face: 1, rev: false, fromGy: sp.gy,
-      mode: 'drift', modeT: 0, tx: sp.x, ty: sp.y, retarget: 0, scan: Math.random() });
+    gs.push(ghInit({ x: sp.x, y: sp.y, hx: sp.x, hy: sp.y, alpha: 0, ph: Math.random() * 9, face: 1, rev: false, fromGy: sp.gy,
+      mode: 'drift', modeT: 0, tx: sp.x, ty: sp.y, retarget: 0, scan: Math.random() }));
   }
-  if (n > 0) logEvent('night', 'Над деревней поплыли призраки');
+  if (made > 0) logEvent('night', 'Над деревней поплыли призраки');
+}
+
+// ---------- Здоровье, урон, гибель, бегство ----------
+const ghMaxHp = () => Math.min(GH.HP_MAX, GH.HP0 + GH.HP_NIGHT * Math.max(0, nightIndex() - 1));
+function ghInit(g) {
+  if (!g || g.kind === 'reaper') return g;
+  if (g.mhp == null) { g.mhp = ghMaxHp(); g.hp = g.mhp; }
+  if (!g.look) g.look = Math.random() < 0.5 ? 'A' : 'B';          // пиксельный облик (ghostpx.js): колпак или дед — вперемешку
+  if (g.rag == null) g.rag = ['', 'T1', 'T2'][(Math.random() * 3) | 0];   // саван: гладкий, полосы или рваньё — вперемешку
+  return g;
+}
+// живой и видимый обычный призрак — его можно бить
+const ghLive = g => !!g && g.kind !== 'reaper' && !g.slain && !g.exo && g.rev !== false && g.alpha >= 0.25 && g.mode !== 'leave' && g.mode !== 'grab' && (Game.ghosts || []).includes(g);
+const ghProv = g => Game.time - (g.prov || -99) < GH.FORGET;
+function ghTarget(g) {
+  const u = !g.tg ? null : Game.unitMap ? Game.unitMap.get(g.tg) : Game.units.find(o => o.id === g.tg);
+  return u && !(typeof neuUnitOut === 'function' ? neuUnitOut(u) : u.dead || u.inside) ? u : null;
+}
+const ghWho = u => u ? (u.hero ? u.hero.name : typeof unitTitle === 'function' ? unitTitle(u) : 'Житель') : 'Кто-то';
+
+// урон по призраку; возвращает, сколько снято
+function ghHurt(g, u, dmg, el, src) {
+  if (!ghLive(g)) return 0;
+  ghInit(g);
+  dmg = Math.max(1, Math.min(g.hp, Math.round(dmg)));
+  g.hp -= dmg; g.prov = Game.time; g.hurtT = Game.time;
+  if (u && !u.dead && g.mode !== 'flee') g.tg = u.id;
+  if (g.mode === 'calm' || g.mode === 'boo') { g.mode = 'drift'; g.modeT = 0; }
+  const holy = el === 'holy' || el === 'sacred', px = g.x * TILE, py = g.y * TILE - 16;
+  fxBurst(px, py, holy ? 12 : 7, holy ? ['#fff6c0', '#ffe070', '#ffffff'] : el === 'fire' ? ['#fff0a0', '#ff9a30', '#e04a18'] : ['#bfffe0', '#6fd0b0', '#2a3a44'], 60, 40, 0.5, 1.6, holy ? -40 : 120);
+  floater(g.x, g.y - 2.1, '−' + dmg, holy ? '#ffe070' : '#c8f0e0');
+  sfxAt('thud', px, py, 0.45);
+  if (g.hp <= 0) { ghDie(g, u); return dmg; }
+  if (!g.fled && g.hp <= g.mhp * GH.FLEE_AT && Math.random() < GH.FLEE_P) ghFlee(g, u);
+  return dmg;
+}
+// святая сила: ровно половина здоровья (изгнание, оберег, «Чудо», солнце, освящённая земля)
+function ghHoly(g, u, src) { return ghLive(g) ? ghHurt(g, u, Math.ceil(ghInit(g).mhp / 2), 'holy', src || 'holy') : 0; }
+
+function ghFlee(g, u) {
+  g.fled = true; g.mode = 'flee'; g.modeT = GH.FLEE_T; g.holdUntil = 0; g.atkT = 0; g.atkU = null;
+  const fx = u ? g.x - u.x : Math.random() - 0.5, fy = u ? g.y - u.y : Math.random() - 0.5, d = Math.hypot(fx, fy) || 1;
+  g.tx = Math.max(1.5, Math.min(MAP_W - 1.5, g.x + fx / d * 12)); g.ty = Math.max(1.5, Math.min(MAP_H - 1.5, g.y + fy / d * 12));
+  g.face = g.tx >= g.x ? 1 : -1;
+  ghostSay(g, ['У-у-у… не надо!', 'Прочь, прочь!', 'Больно… ухожу…'][(Math.random() * 3) | 0]);
+  sfxAt('wail', g.x * TILE, g.y * TILE, 0.7);
+}
+
+function ghDie(g, u) {
+  g.slain = true; g.hp = 0; g.da = Math.max(0.05, g.alpha); g.exo = Game.time; g.mode = 'leave'; g.modeT = 99;
+  g.atkT = 0; g.atkU = null; g.holdUntil = 0; g.tx = g.x; g.ty = g.y;
+  ghostSay(g, ['Свет… наконец-то…', 'Отпустили… спасибо…', 'Я иду домой…'][(Math.random() * 3) | 0]);
+  fxBurst(g.x * TILE, g.y * TILE - 16, 26, ['#ffffff', '#fff6c0', '#bfffe0', '#6fd0b0'], 110, 70, 1.1, 2.2, -50);
+  sfxAt('wail', g.x * TILE, g.y * TILE, 0.6); sfxAt('chime', g.x * TILE, g.y * TILE, 0.9);
+  if (Math.random() < 0.4) dropPile(Math.floor(g.x), Math.floor(g.y), 'gold', 1);
+  if (u && typeof neuGiveXp === 'function') neuGiveXp(g, u, GH.XP + GH.XP_NIGHT * Math.min(10, nightIndex()));
+  Game.ghostSlain = (Game.ghostSlain || 0) + 1;
+  logEvent('night', `${ghWho(u)} развеял призрака`, g.x, g.y);
 }
 
 function ghostSay(g, text) { floater(g.x, g.y - 1.6, text, '#cfe6ff'); }
@@ -60,6 +138,27 @@ function ghostsTick(dt) {
     }
     if (g.kind === 'reaper') { reaperTick(g, dt); if (g.mode === 'boo' && g.modeT <= 0) g.mode = 'drift'; continue; }     // жнец: своя механика (reaper.js)
     if (g.mode === 'grab') { ghGrabTick(g, dt); continue; }       // уносит гнома — больше ничем не занят
+    if (g.slain) continue;                                        // развеян: только тает
+    ghInit(g);
+    if (g.mode === 'flee') {                                      // удирает от обидчика, никого не пугает
+      const dx = g.tx - g.x, dy = g.ty - g.y, d = Math.hypot(dx, dy);
+      if (d > 0.3) { g.x += dx / d * GH.FLEE_SPD * dt; g.y += dy / d * GH.FLEE_SPD * dt; g.face = dx >= 0 ? 1 : -1; }
+      g.hx = g.x; g.hy = g.y;
+      continue;
+    }
+    if (ghProv(g)) {                                              // в бою: бросается на обидчика и бьёт когтями
+      const u = ghTarget(g);
+      if (u && !leaving && g.alpha >= 0.3) {
+        if (g.atkT > 0) { ghostStrikeTick(g, dt); continue; }
+        if (g.abStun > Game.time) continue;
+        const dx = u.x - g.x, dy = u.y - g.y, d = Math.hypot(dx, dy) || 1;
+        g.face = dx >= 0 ? 1 : -1;
+        if (d > 1.2) { const st = Math.min(d - 1.2, GH.SPD * dt); g.x += dx / d * st; g.y += dy / d * st; }
+        g.hx = g.x; g.hy = g.y; g.tx = g.x; g.ty = g.y;
+        if (d < GH.REACH && (g.sweepCD || 0) < Game.time) { g.sweepCD = Game.time + GH.CD; ghostStrike(g, u); }
+        continue;
+      }
+    } else if (g.hp < g.mhp) g.hp = Math.min(g.mhp, g.hp + GH.REGEN * dt);   // вне боя раны затягиваются
     if (g.atkT > 0) ghostStrikeTick(g, dt);
     else if (g.mode === 'drift' || g.mode === 'boo') {
       if (g.retarget <= 0 || Math.hypot(g.tx - g.x, g.ty - g.y) < 0.6) {
@@ -124,6 +223,9 @@ function ghostStrikeTick(g, dt) {
         hlHurt(u, rp ? 5 + Math.random() * 3 : 2 + Math.random() * 2, 'ghost');
         fxBurst(u.x * TILE, u.y * TILE - 14, 8, ['#bfffe0', '#6fd0b0', '#e8fff6'], 40, 50, 0.7, 1.6, -20);
         floater(u.x, u.y - 2.4, 'Холод пробирает!', '#bfeaff');
+      } else if (!rp && d < 2.4 && u.rec && typeof neuHurtUnit === 'function') {     // рекрут, что бьётся с призраком, тоже мёрзнет
+        neuHurtUnit(u, 2 + Math.random() * 2);
+        floater(u.x, u.y - 2.4, 'Холод!', '#bfeaff');
       }
     }
   }
@@ -332,9 +434,27 @@ function drawGhosts(c) {
     c.translate(px, py); c.scale(g.face, 1);
     c.globalAlpha = A;
     c.imageSmoothingEnabled = true;
-    if (rp) blitFine(c, reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES, g.var || 0), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
+    if (rp && typeof reaperPxFrame === 'function') {
+      // пиксельный жнец (reaperpx.js): рога — одна из трёх форм g.var, у каждой свой колпак; ряса — полосы или рваньё (g.rag)
+      const rm = g.slain ? 'die' : Game.time - (g.hurtT || -9) < 0.25 ? 'hurt' : atk ? 'atk' : mood === 'boo' ? 'boo' : 'idle';
+      const rf = rm === 'die' ? Math.floor((1 - g.alpha / (g.da || 1)) * RPX_N.die) : atk ? Math.floor(g.atkT / GHOST_ATK_DUR * RPX_N.atk) : Math.floor(t * 10 + g.ph * 1.27) % RPX_N[rm];
+      if (g.slain) c.globalAlpha = Math.min(1, flick);
+      c.imageSmoothingEnabled = false;
+      c.drawImage(reaperPxFrame(g, 'R2', rm, rf, (g.var || 0) % 3, g.rag === 'T1' || g.rag === 'T2' ? g.rag : (g.var || 0) % 2 ? 'T2' : 'T1'), -40, -43, 81, 103);
+    }
+    else if (rp) blitFine(c, reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES, g.var || 0), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
+    else if (typeof GHOST_PX !== 'undefined' && GHOST_PX.length) {
+      // пиксельный облик (ghostpx.js, A или B по g.look): гибель по угасанию, вспышка раны, бегство
+      const pm = g.slain ? 'die' : grab ? mood : Game.time - (g.hurtT || -9) < 0.25 ? 'hurt' : g.mode === 'flee' ? 'flee' : mood;
+      const pf = pm === 'die' ? Math.floor((1 - g.alpha / (g.da || 1)) * GPX_N.die) : pm === 'atk' ? Math.floor(g.atkT / GHOST_ATK_DUR * GPX_N.atk)
+        : pm === 'grab' ? Math.floor((g.gt || 0) / GH_T[8] * (GPX_N.grab - 1)) : Math.floor(t * GPX_FPS + g.ph * 1.43) % GPX_N[pm];
+      g._pxPose = pm === 'grab' ? ghPoseLerp(Math.min(GPX_N.grab - 1, pf) / (GPX_N.grab - 1) * GH_T[8]) : pm === 'carry' ? ghPoseAt(8) : null;
+      if (g.slain) c.globalAlpha = Math.min(1, flick);
+      c.imageSmoothingEnabled = false;
+      c.drawImage(ghostPxFrame(g, GHOST_PX.includes(g.look) ? g.look : GHOST_PX[0], pm, pf, g.rag === 'T1' || g.rag === 'T2' ? g.rag : ''), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
+    }
     else blitFine(c, ghostSprite(mood, frame), -GHOST_OX, -GHOST_OY, GHOST_W, GHOST_H);
-    if (grab && g.vsnap) { c.imageSmoothingEnabled = false; ghDrawVictim(c, g, Math.min(8, gi), g.alpha, px, py); }
+    if (grab && g.vsnap) { c.imageSmoothingEnabled = false; ghDrawVictim(c, g, Math.min(8, gi), g.alpha, px, py, g._pxPose || null); }
     c.restore();
     // клочья тумана, уходящие вверх от призрака
     c.save(); c.globalAlpha = 1;

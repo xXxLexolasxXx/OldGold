@@ -147,7 +147,7 @@ Object.assign(ABIL_FX, {
       if (ok) { n++; floater(u.x, u.y - 1.4, 'Здоров!', '#a0ffb0'); }
     }
     for (const f of abFoes(h, 8)) { if (f.kind === 'skel') abForceKill(f, h); else if (f.kind === 'ent' && f.o.state === 'walk') { f.o.state = 'ghosted'; f.o.t = 0; f.o.gFrom = [h.x, h.y]; } }
-    for (const g of Game.ghosts || []) if (Math.hypot(g.x - h.x, g.y - h.y) < 12) { g.mode = 'leave'; g.modeT = 99; }
+    // призраков «Чудо» не прогоняет: свет снимает им половину здоровья (banish.js)
     floater(h.x, h.y - 2.6, `Чудо! Исцелено: ${n}`, '#fff2a0');
     abCast(h);
   },

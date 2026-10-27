@@ -605,6 +605,14 @@ function heroBtnUpdate() {
         }
         teamAskClose();
         const c = resolveCmd(t);
+        // тап по готовому зданию открывает его, не снимая героя (без крестика); повторный тап по открытому — приказ (работать, отнести)
+        const ob = buildingAt(t);
+        if (ob && ob.state === 'done' && !ob.upg && Game.selected !== ob) {
+          Game.selected = ob;
+          if (Mobile.on) mobileSheet('info');
+          updateUI(true);
+          return;
+        }
         if (c) {
           issueCmd(h, c);
           if (c.kind !== 'move') floater(c.tx + 0.5, c.ty - 0.4, c.label, '#f6d458');

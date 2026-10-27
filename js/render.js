@@ -144,16 +144,13 @@ function swingFrame(u) {
   // долгое действие (жатва, рубка) — несколько отдельных ударов с паузами, по ~0.9 с на удар
   const n = a && a.T ? Math.max(1, Math.round(a.T / 0.9)) : 1;
   const p = a && a.T ? ((1 - Math.max(0, a.t) / a.T) * n) % 1 : 1;
-  // 8 кадров: рука опущена → поднимает (4 кадра) → над плечом → отведена назад → удар → инструмент внизу
-  if (p < 0.08) return 4;
-  if (p < 0.16) return 3;
-  if (p < 0.24) return 2;
-  if (p < 0.32) return 1;
-  if (p < 0.42) return 0;      // замах над плечом
-  if (p < 0.5) return 7;       // чуть назад — разгон
-  if (p < 0.54) return 5;      // удар
-  if (p < 0.6) return 6;       // инструмент в нижней точке
-  return 6;                    // пауза
+  // 12 кадров (SWING_A в people.js): подъём 0–6, назад 7, разгон 8, удар 9, низ 10, возврат 11
+  if (p < 0.4) return Math.floor(p / 0.4 * 7);
+  if (p < 0.46) return 7;
+  if (p < 0.5) return 8;
+  if (p < 0.54) return 9;
+  if (p < 0.58) return 10;
+  return 11;                   // возврат и пауза
 }
 
 // ---------- Жители ----------
@@ -168,7 +165,7 @@ function drawUnit(c, u) {
     return;
   }
   let pose = 'idle', frame = 0, view = u.vdir || 'S', face = u.face;
-  if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / (u.type === 'kid' ? 0.75 : 1.1)) & 7; }   // гномята семенят быстрее
+  if (moving) { pose = 'walk'; frame = Math.floor(u.walkPhase / ((u.type === 'kid' ? 0.75 : 1.1) * 8 / WALK_FRAMES)) % WALK_FRAMES; }   // гномята семенят быстрее
   else if (u.anim === 'duck' || u.anim === 'forage') pose = 'duck';
   else if (u.anim === 'smoke') { pose = 'smoke'; view = smokeViewOf(u); }   // кто в анфас (с коротким куревом), кто боком
   else if (u.anim === 'tame') { pose = 'tame'; view = 'E'; }
@@ -225,7 +222,7 @@ function drawUnit(c, u) {
   }
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, lying ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
-  if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 6 тактов, 2 позы
+  if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 12 тактов, позы по высоте груди
   // жест и так движется: в покое без дыхания, на ходу — две опорные позы (шаг уже даёт 8 кадров), чтобы не множить спрайты
   if (opt.gest && opt.gest !== 'five') { if (pose === 'idle') frame = 0; else if (pose === 'walk') opt.gf = gestK(opt.gf) >= 0.5 ? 1 : 0; }
   const spr = personSprite(u, view, pose, frame, opt);
@@ -818,8 +815,9 @@ function drawClouds(c) {
 function drawStatusIcons(c, x0, y0, x1, y1) {
   for (const b of Game.buildings) {
     if (b.x + b.w < x0 || b.x > x1 || b.y > y1 || b.y < y0 - 3) continue;
-    let icon = null;
-    if (b.state !== 'done') {
+    let icon = urgOn(b) ? ['ui', 'urgent'] : null;
+    if (icon) { /* «Срочно» видно поверх любой беды */ }
+    else if (b.state !== 'done') {
       if (b.problem() === 'noroad') icon = ['ui', 'road'];
       else if (!b.builder) {
         // нечего класть и никто не везёт — значок материала, а не «нет работяги» (работяги-то свободны)
@@ -841,7 +839,7 @@ function drawStatusIcons(c, x0, y0, x1, y1) {
     const bob = Math.round(Math.sin(Game.time * 3 + b.id) * 1.5);
     const ix = b.x * TILE + Math.round(b.w * TILE / 2) - 11, iy = b.y * TILE - 34 + bob;
     c.fillStyle = '#160e0a'; c.fillRect(ix, iy, 22, 22);
-    c.fillStyle = icon[1] === 'pause' ? '#45291a' : '#6a2018'; c.fillRect(ix + 1, iy + 1, 20, 20);
+    c.fillStyle = icon[1] === 'pause' ? '#45291a' : icon[1] === 'urgent' ? '#a8701a' : '#6a2018'; c.fillRect(ix + 1, iy + 1, 20, 20);
     c.fillStyle = 'rgba(255,255,255,0.15)'; c.fillRect(ix + 1, iy + 1, 20, 1);
     c.fillStyle = '#160e0a'; c.fillRect(ix + 9, iy + 22, 4, 2); c.fillRect(ix + 10, iy + 24, 2, 1);
     c.drawImage(iconCanvas(icon[0], icon[1]), ix + 2, iy + 2);
@@ -958,6 +956,7 @@ function render() {
   drawNightFx(c);
   drawFireflies(c);
   drawWeather(c);
+  if (typeof campFogDraw === 'function') campFogDraw(c);          // туман войны кампании (campaign/fog.js)
   drawStatusIcons(c, x0, y0, x1, y1);
   drawLogMark(c);
   drawTutMarks(c);
@@ -1124,6 +1123,7 @@ function drawMinimap() {
   const c = MINI.ctx, cv = MINI.canvas;
   c.imageSmoothingEnabled = false;
   c.drawImage(MINI.base, 0, 0, cv.width, cv.height);
+  if (typeof campFogMini === 'function') campFogMini(c, cv);
   const sx = cv.width / (MAP_W * TILE), sy = cv.height / (MAP_H * TILE);
   const s = camScale();
   c.strokeStyle = '#f6f2ea'; c.lineWidth = 2;
@@ -1136,6 +1136,7 @@ function drawMinimapUnits() {
   const c = MINI.ctx, cv = MINI.canvas;
   const kx = cv.width / MAP_W, ky = cv.height / MAP_H, fac = cv.width / Math.max(60, cv.clientWidth);   // точки не мельче 3 пикселей на экране
   const dot = (x, y, col, s = 2.4) => {
+    if (typeof campFogHid === 'function' && campFogHid(x, y)) return;     // в тумане кампании никого не видно
     s = Math.max(s, 3 * fac); const px = x * kx - s / 2, py = y * ky - s / 2;
     c.fillStyle = 'rgba(8,6,4,0.85)'; c.fillRect(px - 0.8, py - 0.8, s + 1.6, s + 1.6);
     c.fillStyle = col; c.fillRect(px, py, s, s);

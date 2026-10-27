@@ -204,7 +204,7 @@ function arFrame(dt) {
       if (n >= 6) Arena.acc = 0;
     }
     Arena.ct = S.T + Arena.acc;
-    for (let i = 0; i < 2; i++) { const F = S.f[i], v = Math.sqrt(F.vx * F.vx + F.vy * F.vy); Arena.walk[i] = (Arena.walk[i] + v * dt * 3.2) % 8; }
+    for (let i = 0; i < 2; i++) { const F = S.f[i], v = Math.sqrt(F.vx * F.vx + F.vy * F.vy); Arena.walk[i] = (Arena.walk[i] + v * dt * 4.8) % 12; }
     if (S.phase === 'over' && !Arena.seenOver) { Arena.seenOver = true; Arena.endT = Arena.ct + 1.6; }
     if (Arena.seenOver && Arena.endT && Arena.ct >= Arena.endT && Arena.scr === 'fight') arResult();
     Arena.hudT -= dt;

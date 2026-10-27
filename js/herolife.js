@@ -8,7 +8,7 @@
 const HL_INV = 10;                    // вещей в рюкзаке
 const HL_DRUNK = 5, HL_FALL = 1, HL_STARS = 4;
 const HL_TP_CD = 60;
-const HL_EQUIP_WIN = 0.3;             // шанс удачного надевания: в 70% случаев неудача
+const HL_EQUIP_WIN = 0.5;             // шанс удачного надевания: каждый второй раз неудача
 
 // Что можно надеть. Чужим сессиям: добавьте свой товар сюда — он сам станет надеваемым.
 // slot: 'weapon' | 'armor'; cls — для какого класса (необязательно)
@@ -125,7 +125,7 @@ function* hlTakeGen(u, c) {
   yield { leave: true };
 }
 
-// ---------- Неловкое надевание: в 70% неудача ----------
+// ---------- Неловкое надевание: в половине случаев неудача ----------
 
 function* hlEquipGen(u, c) {
   const H = u.hero, s = H.inv[c.slot];
@@ -195,12 +195,13 @@ function* hlExorcise(u, c) {
     fxBurst(g.x * TILE, g.y * TILE - 14, 7, ['#fff6c0', '#ffe070', '#bfe8ff'], 50, 60, 0.9, 1.6, -40);
   }
   if ((Game.ghosts || []).indexOf(g) < 0) return;
-  g.exo = Game.time; g.mode = 'leave'; g.modeT = 99;
-  ghostSay(g, ['Свет… наконец-то…', 'Спасибо, что отпустил…', 'Я иду домой…'][(Math.random() * 3) | 0]);
-  sfxAt('wail', g.x * TILE, g.y * TILE, 0.8);
-  if (Math.random() < 0.45) { dropPile(Math.floor(g.x), Math.floor(g.y), 'gold', 1); logEvent('night', `${u.hero ? u.hero.name : "Лекарь"} отпустил призрака, тот оставил монету`, g.x, g.y); }
-  else logEvent('night', `${u.hero ? u.hero.name : "Лекарь"} прогнал призрака в мир иной`, g.x, g.y);
+  // с 0.11.66 молитва не прогоняет, а жжёт светом: половина здоровья каждому призраку в 3 клетках (ghHoly, ghosts.js)
+  let n = 0;
+  for (const o of (Game.ghosts || []).slice()) if (ghLive(o) && Math.hypot(o.x - g.x, o.y - g.y) < 3 && ghHoly(o, u, 'exorcise')) n++;
+  if (n) logEvent('night', `${u.hero ? u.hero.name : "Лекарь"} обжёг молитвой призраков: ${n}`, g.x, g.y);
   yield { wait: 0.6 };
+  // недобитого герой и рекрут добивают в бою (лекарь не воин — молится снова, когда отдохнёт)
+  if ((u.hero || u.rec) && ghLive(g)) yield* fightGen(u, { kind: 'ghost', o: g });
 }
 
 // ---------- Заклинания ----------
@@ -434,7 +435,7 @@ function hlTick(dt) {
     let inv = '<div class="hl-inv">';
     for (let i = 0; i < HL_INV; i++) {
       const s = H.inv[i];
-      inv += s ? `<button class="hl-slot" data-hero="use${i}" title="${hlName(s.k)}${HL_GEAR[s.k] ? ' — надеть (шанс удачи 30%)' : HL_FOOD[s.k] ? ' — съесть' : ''}. Правый клик — выбросить"><img src="${iconURL('good', s.k, 2)}" alt="">${s.n > 1 ? `<i>${s.n}</i>` : ''}</button>` : '<span class="hl-slot empty"></span>';
+      inv += s ? `<button class="hl-slot" data-hero="use${i}" title="${hlName(s.k)}${HL_GEAR[s.k] ? ' — надеть (шанс удачи 50%)' : HL_FOOD[s.k] ? ' — съесть' : ''}. Правый клик — выбросить"><img src="${iconURL('good', s.k, 2)}" alt="">${s.n > 1 ? `<i>${s.n}</i>` : ''}</button>` : '<span class="hl-slot empty"></span>';
     }
     inv += '</div>';
     const eq = (slot, label, un) => H.equip[slot] ? `${label}: <b>${hlName(H.equip[slot])}</b> <button data-hero="${un}" class="hp-sm">снять</button>` : `${label}: <span class="muted">нет</span>`;
