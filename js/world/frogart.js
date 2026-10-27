@@ -14,6 +14,7 @@ NA_EXTRA.ftP = ['jump', 'cast', 'sleep'];
 NA_EXTRA.ftK = ['jump', 'cast', 'sleep'];
 NA_EXTRA.ftR = ['jump', 'cast', 'sleep'];
 NA_EXTRA.ftQ = ['jump', 'cast', 'sleep'];
+NA_EXTRA.ftZ = ['jump', 'sleep'];
 
 // новые позы: присед (crouch), растяжение в воздухе (air), трубка у рта (pipe), горловой мешок (sac)
 const FT_POSE = {
@@ -47,6 +48,8 @@ const FT_PAL = {
   P: { skin: '#8a68b0', skin2: '#664890', belly: '#e8d4ee', belly2: '#c4a8d0', cloak: '#4e2e62', cloak2: '#341e44', eye: '#f6d040', mark: '#f4ecff', fe: ['#f070d0', '#a050e8', '#58b8f0'] },
   R: { skin: '#c4573a', skin2: '#8a3424', belly: '#f2d4a4', belly2: '#d4a878', cloak: '#6a2a1a', cloak2: '#42180e', eye: '#ffe040', mark: '#ffd88a', fe: ['#ff5a2a', '#ffa030', '#ffe060'] },
   Q: { skin: '#2f8a52', skin2: '#1f6038', belly: '#eaf2b8', belly2: '#c0d088', cloak: '#5a2a8a', cloak2: '#3a1a5a', eye: '#ff5a3a', mark: '#fff6c0', fe: ['#ffd040', '#c04aa0', '#38c8e8'] },
+  // Жабьен (кампания): болотно-оливковый, бурый плащ-капюшон, синее и розовое перо
+  Z: { skin: '#8a9a3c', skin2: '#62742a', belly: '#eedcb4', belly2: '#ccb486', cloak: '#5e3a26', cloak2: '#3c2418', eye: '#f2b428', mark: '#f4f6ea', fe: ['#3a8ad8', '#c04aa0', '#e8789a'] },
   K: { skin: '#c4aa3a', skin2: '#8e7a22', belly: '#f6ebb2', belly2: '#d8c680', cloak: '#9a2e22', cloak2: '#6a1e18', eye: '#ff8a28', mark: '#fffbe0', fe: ['#ffd040', '#e84a38', '#fff0a0'] },
 };
 
@@ -67,7 +70,8 @@ function drawFrogfolk(c, P, caste, fr) {
   const T = FT_PAL[caste], k = col => naK(P, col), sleep = !!P.sleep;
   const cr = sleep ? 1 : (P.crouch || 0), air = P.air || 0, sw = sleep ? 0 : P.leg;
   const SK = k(T.skin), SK2 = k(T.skin2), BL = k(T.belly), BL2 = k(T.belly2), CL = k(T.cloak), CL2 = k(T.cloak2);
-  const hood = caste === 'G' || caste === 'P' || caste === 'R';
+  const hood = caste === 'G' || caste === 'P' || caste === 'R' || caste === 'Z';
+  const ZB = caste === 'Z';
   naShadow(c, air > 0.3 ? 10 : 14);
   c.save();
   c.translate(sleep ? 0 : P.x, sleep ? 0 : P.y);
@@ -86,6 +90,7 @@ function drawFrogfolk(c, P, caste, fr) {
     naLimb(c, hx, hy, kx, ky, 5.4, col);
     ellipse(c, (hx + kx) / 2, (hy + ky) / 2, 4.6, 3.2, col);
     naLimb(c, kx, ky, ax, ay, 3, col);
+    if (ZB) { naLimb(c, ftLerp(kx, ax, 0.3), ftLerp(ky, ay, 0.3), ftLerp(kx, ax, 0.72), ftLerp(ky, ay, 0.72), 3.5, near ? CL : CL2); c.strokeStyle = k('#c8a878'); c.lineWidth = 0.45; c.beginPath(); c.moveTo(ftLerp(kx, ax, 0.5) - 1.6, ftLerp(ky, ay, 0.5) - 0.4); c.lineTo(ftLerp(kx, ax, 0.5) + 1.6, ftLerp(ky, ay, 0.5) + 0.4); c.stroke(); }
     // стопа с тремя перепончатыми пальцами
     const fx = ax + ftLerp(5.2, -1, air), fy = ay + ftLerp(0.4, 3.6, air);
     poly(c, [[ax, ay - 0.6], [fx, fy - 1.1], [fx + 1, fy + 0.2], [fx, fy + 1.1], [ax, ay + 1.3]], near ? shade(T.skin, -0.12) : shade(T.skin2, -0.1));
@@ -98,6 +103,13 @@ function drawFrogfolk(c, P, caste, fr) {
     const gx = 7 + sw * 1.6, gy = -1.3 - Math.max(0, -sw) * 1.4;
     if (air > 0.3 || P.up > 0.5) { naLimb(c, sx - 2, sy, sx + 5, sy + 3 - air * 6, 2.6, SK2); naLimb(c, sx + 5, sy + 3 - air * 6, sx + 10, sy + 1 - air * 8, 2.2, SK2); hand(sx + 10, sy + 1 - air * 8, SK2, false); }
     else { naLimb(c, sx - 2, sy, sx + 2.4, sy + (gy - sy) * 0.55, 2.6, SK2); naLimb(c, sx + 2.4, sy + (gy - sy) * 0.55, gx, gy, 2.2, SK2); hand(gx, gy, SK2, true); }
+  }
+  // Жабьен носит за спиной кривую палку с бусинами на шнурке
+  if (ZB && !P.dead) {
+    naLimb(c, 3, -11 + dy, -7, -36 + dy, 1.3, k('#5a3a22'));
+    naLimb(c, -7, -36 + dy, -9.4, -39 + dy, 0.9, k('#5a3a22'));
+    c.strokeStyle = k('#c8a878'); c.lineWidth = 0.5; c.beginPath(); c.moveTo(-5.6, -32.4 + dy); c.lineTo(-3.4, -28 + dy + P.wing * 0.3); c.stroke();
+    ellipse(c, -3.4, -27.4 + dy + P.wing * 0.3, 0.9, 0.9, k('#2a2a2a')); ellipse(c, -2.4, -26.6 + dy + P.wing * 0.3, 0.8, 0.8, k('#2a2a2a'));
   }
   // ---------- плащ-хвост позади ----------
   if (caste !== 'B' && !P.dead) {
@@ -160,7 +172,7 @@ function drawFrogfolk(c, P, caste, fr) {
   // знаки на щеке и кольца-серьги
   c.strokeStyle = k(T.mark); c.lineWidth = 0.55;
   for (const [x0, y0, x1, y1] of [[hx - 3.6, hy - 0.6, hx - 1.6, hy + 1.4], [hx - 2.6, hy - 1.4, hx - 0.8, hy + 0.6]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
-  if (caste === 'G' || caste === 'P') for (let i = 0; i < 3; i++) { c.strokeStyle = k('#d8c070'); c.lineWidth = 0.5; c.beginPath(); c.arc(hx + 0.4 + i * 1.5, hy + 3.2 - i * 0.2, 0.8, 0, 7); c.stroke(); }
+  if (caste === 'G' || caste === 'P' || ZB) for (let i = 0; i < 3; i++) { c.strokeStyle = k('#d8c070'); c.lineWidth = 0.5; c.beginPath(); c.arc(hx + 0.4 + i * 1.5, hy + 3.2 - i * 0.2, 0.8, 0, 7); c.stroke(); }
   // ---------- головной убор по касте ----------
   if (hood) {
     naBlob(c, [[hx - 12, hy + 7], [hx - 11, hy - 2], [hx - 6, hy - 8], [hx + 1, hy - 9.4], [hx + 7.4, hy - 7.4], [hx + 9.6, hy - 5], [hx + 5.4, hy - 5.6], [hx - 0.4, hy - 5], [hx - 4.4, hy - 1], [hx - 6, hy + 3]], CL, 0.08, -0.3);
@@ -195,6 +207,7 @@ function drawFrogfolk(c, P, caste, fr) {
   else H = [ftLerp(r0[0], str[0], Math.min(1, P.a)), ftLerp(r0[1], str[1], Math.min(1, P.a))];
   const el = [(sx + H[0]) / 2 - 0.5, (sy + H[1]) / 2 + 2.2];
   naLimb(c, sx, sy, el[0], el[1], 2.8, SK); naLimb(c, el[0], el[1], H[0], H[1], 2.4, SK);
+  if (ZB) naLimb(c, ftLerp(el[0], H[0], 0.25), ftLerp(el[1], H[1], 0.25), ftLerp(el[0], H[0], 0.7), ftLerp(el[1], H[1], 0.7), 2.9, CL);
   hand(H[0], H[1], SK, false);
   // оружие: угол φ (0 → вперёд, π/2 → вниз)
   let phi;
@@ -255,6 +268,10 @@ function drawFrogfolk(c, P, caste, fr) {
     c.beginPath(); c.arc(qx + dx * 4 + px * 1.6, qy + dyv * 4 + py * 1.6, 1.8, 0, 6); c.stroke();
     for (const [i, col] of T.fe.entries()) { c.strokeStyle = k(col); c.lineWidth = 0.9; const q = W(11 - i * 2.2); c.beginPath(); c.moveTo(q[0], q[1]); c.lineTo(q[0] - px * 2.2 + dx * 0.4, q[1] - py * 2.2 + 3.6 + i); c.stroke(); }
     for (const o of [6, 8.4]) { const q = W(o); ellipse(c, q[0] + px * 1.4, q[1] + py * 1.4, 0.8, 0.8, k('#e8e0c8')); }
+    if (ZB) {          // у Жабьена посох простой, без колдовского огня; обмотка у кулака
+      naLimb(c, W(-2)[0], W(-2)[1], W(3)[0], W(3)[1], 2.6, CL);
+      if (P.a > 0.5) { c.strokeStyle = 'rgba(255,255,230,0.75)'; c.lineWidth = 0.8; c.beginPath(); c.arc(H[0], H[1], 20, phi - 1.3, phi - 0.2); c.stroke(); }
+    } else {
     const gx = qx + dx * 5, gy = qy + dyv * 5;
     const el = caste === 'R' ? '255,140,40' : '110,200,255', hot = caste === 'R' ? '255,230,120' : '230,250,255';
     const gl = P.cast > 0 ? P.cast : (P.a > 0.3 ? 0.5 : 0.18);
@@ -265,6 +282,7 @@ function drawFrogfolk(c, P, caste, fr) {
     else if (gl > 0.25) { c.strokeStyle = `rgba(${hot},0.9)`; c.lineWidth = 0.7; for (let z = 0; z < 3; z++) { const a = z * 2.1 + gl * 4; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + Math.cos(a) * 4, gy + Math.sin(a) * 4 - 1); c.lineTo(gx + Math.cos(a + 0.5) * 7, gy + Math.sin(a + 0.5) * 6 - 1); c.stroke(); } }
     c.restore();
     if (P.a > 0.5 && !P.cast) { c.strokeStyle = 'rgba(255,255,230,0.75)'; c.lineWidth = 0.8; c.beginPath(); c.arc(H[0], H[1], 20, phi - 1.3, phi - 0.2); c.stroke(); }
+    }
   }
   leg(2, true, sw);
   if (caste === 'Q' && P.cast > 0) {
@@ -302,6 +320,8 @@ NA_DRAW.ftP = (c, P, f) => drawFrogfolk(c, P, 'P', f);
 NA_DRAW.ftR = (c, P, f) => drawFrogfolk(c, P, 'R', f);
 NA_DRAW.ftQ = (c, P, f) => drawFrogfolk(c, P, 'Q', f);
 NA_DRAW.ftK = (c, P, f) => drawFrogfolk(c, P, 'K', f);
+NA_SPEC.ftZ = { name: 'Жабьен', w: 94, h: 66, ax: 44, ay: 54, sc: 1.24 };   // при мелком пикселе — ручной пиксель (campaign/zhabpx.js)
+NA_DRAW.ftZ = (c, P, f) => drawFrogfolk(c, P, 'Z', f);
 
 // =============== Свайная деревня у воды ===============
 NA_LAIR.ftvil = { name: 'Свайная деревня жаболюдов', w: 140, h: 100, ax: 70, ay: 60 };

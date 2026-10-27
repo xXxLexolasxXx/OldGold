@@ -905,7 +905,7 @@ function griffinTick(dt, F) {
     if (g.duel > 1.3) {
       g.duel = 0;
       if (!g.seen) { g.seen = 1; fstat('grifFight'); logEvent('animal', 'Грифон бросился защищать сокровище', g.x, g.y); toast('Грифон защищает своё сокровище!'); }
-      neuHurtUnit(foe, 3 + Math.random() * 3); floater(foe.x, foe.y - 1.6, 'Крр-ряу!', '#ffd8a0');
+      (typeof fsEnvHurt === 'function' ? fsEnvHurt : neuHurtUnit)(foe, 3 + Math.random() * 3); floater(foe.x, foe.y - 1.6, 'Крр-ряу!', '#ffd8a0');
       const dmg = neuDamageOf(foe) * (0.7 + Math.random() * 0.5);
       g.hp -= dmg; floater(g.x, g.y - 2, '−' + Math.round(dmg), '#ffffff');
       if (g.hp <= 0) {

@@ -132,7 +132,7 @@ function hmTick() {
   const _remove = removeUnit;
   removeUnit = function (u) {
     if (u.type === 'hero' && u.hero && !u.dead && hlOn() && u === Game.hero) {
-      if ((Game.skels || []).some(s => s.fighters && s.fighters.includes(u) && s.state !== 'grab')) { hlHurt(u, 16, 'ранен скелетом'); return; }
+      if ((Game.skels || []).some(s => s.fighters && s.fighters.includes(u) && s.state !== 'grab')) { hlHurt(u, 16 * (typeof fsEnvMul === 'function' ? fsEnvMul(u) : 1), 'ранен скелетом'); return; }
     }
     _remove(u);
   };

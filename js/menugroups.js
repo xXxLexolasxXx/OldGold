@@ -7,7 +7,7 @@
 // Порядок верхнего уровня задаёт CSS (order), а не перестановка узлов — так наблюдатель не зацикливается.
 
 const MENU_QUICK = '[data-menu="save"], [data-menu="load"]';   // ряд из двух кнопок
-const MENU_TOP = '[data-menu="loadauto"], [data-guide], [data-menu="mainmenu"]';   // всегда на виду
+const MENU_TOP = '[data-menu="loadauto"], [data-guide], [data-menu="mainmenu"], [data-wm="admin"]';   // всегда на виду
 const MENU_GROUPS = [
   { k: 'set', icon: 'menu', name: 'Настройки', sel: '[data-menu="lang"], [data-pc], [data-land="open"], [data-nq="mode"], #dz-btn, #eco-btn, #tele-btn' },
   { k: 'more', icon: 'scroll', name: 'Ещё', sel: '*' },

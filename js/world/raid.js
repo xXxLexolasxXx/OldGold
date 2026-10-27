@@ -270,7 +270,7 @@ const KURGAN = {
       if (Game.time < m.t) continue;
       F.marks.splice(i, 1);
       fxBurst(m.x * TILE, m.y * TILE, 16, ['#bff0ff', '#6ad0ff', '#ffffff'], 70, 50, 0.6, 1.8, -30);
-      for (const h of raidHeroes(m.x, m.y, 1.15)) { neuHurtUnit(h, 18 * dif().neuDmg); floater(h.x, h.y - 2.2, 'Холод!', '#9ae0ff'); F.taken[rdKey(h)] = (F.taken[rdKey(h)] || 0) + 18; raidDownCheck(N, h); }
+      for (const h of raidHeroes(m.x, m.y, 1.15)) { (typeof fsEnvHurt === 'function' ? fsEnvHurt : neuHurtUnit)(h, 18 * dif().neuDmg); floater(h.x, h.y - 2.2, 'Холод!', '#9ae0ff'); F.taken[rdKey(h)] = (F.taken[rdKey(h)] || 0) + 18; raidDownCheck(N, h); }
     }
     // «держат»: боец вплотную забирает удары на себя
     const tank = raidHeroes(N.x, N.y, 2.2).find(h => RAID_TANKS.has(h.hero.clsKey));
@@ -548,7 +548,7 @@ function raidDrawWard(c, N) {
   if (!dead) { c.globalCompositeOperation = 'lighter'; const f = Math.sin(t * 9 + N.id) * 1.2; c.fillStyle = 'rgba(90,200,255,0.6)'; c.beginPath(); c.ellipse(px + 0.5, py - 25, 3, 5 + f, 0, 0, 7); c.fill(); c.fillStyle = 'rgba(210,248,255,0.9)'; c.fillRect(px, py - 26, 1, 3); }
   if (N.ov) { c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(px - 7, py - 24, 15, 25); }
   c.restore();
-  if (!dead && N.hp < N.mhp) { const w = 14, r = N.hp / N.mhp; c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(px - w / 2 - 1, py - 33, w + 2, 4); c.fillStyle = '#6ad0ff'; c.fillRect(px - w / 2, py - 32, Math.round(w * r), 2); }
+  if (!dead && fsBarOn(N)) fsBar(c, px, py - 33, N.hp / N.mhp);
 }
 
 // общая шкала над князем

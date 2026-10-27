@@ -37,7 +37,7 @@ function reapersSpawn() {
       if (Math.hypot(x - cx, y - cy) > 16) break;
     }
     gs.push({ kind: 'reaper', x, y, hx: x, hy: y, alpha: 0, ph: Math.random() * 9, face: 1, rev: false, appear: 0.95, fromGy: true,
-      mode: 'drift', modeT: 0, tx: x, ty: y, retarget: 0, scan: 1 + Math.random(), sweepCD: 0, var: Math.floor(Math.random() * REAPER_HORNS) });
+      mode: 'drift', modeT: 0, tx: x, ty: y, retarget: 0, scan: 1 + Math.random(), sweepCD: 0, var: Math.floor(Math.random() * REAPER_HORNS), rag: Math.random() < 0.5 ? 'T1' : 'T2' });   // rag — лохмотья рясы (reaperpx.js)
     have++;
   }
   logEvent('night', 'Из тумана на окраине потянуло могильным холодом: вышел жнец');
