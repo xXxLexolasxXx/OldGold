@@ -8,13 +8,13 @@ function innPxBuild(rot, lv) {
   const W = Math.ceil(FW + BPADX * 2 + FD * BSK), H = FD + top + BBOTTOM;
   BK = 1;
   const g = new BGrid(W, H, BPADX, top + FD);
-  g.rot = d.rot; g.LD = def.h * TILE; g.noSmoke = true;
-  buildInn(g, lv, ROOF_LV[lv](STRAW1.olive));
+  g.rot = 0; g.LD = FD; g.noSmoke = true;   // вход на восток — своя ровная компоновка 3×4, а не поворот модели
+  (d.rot ? buildInnTall : buildInn)(g, lv, ROOF_LV[lv](STRAW1.olive));
   g.finish({ step: 1.6, ink: P1.ink });
   const M = g.meta;
   const scr = p => { const q = g.W3(p); return [g.sx(q[0], q[1]), g.sy(q[1], p[2] || 0)]; };
   // окна → [cx, cy, w, h, round] в пикселях спрайта (как WIN_REC у старых зданий)
-  const sideW = s => (d.rot ? { S: 'E', W: 'S', E: 'N', N: 'W' }[s] : s);   // какой стороной мира смотрит окно
+  const sideW = s => s;
   const wins = [];
   for (const w of M.wins) {
     const ws = sideW(w.side);
@@ -25,14 +25,14 @@ function innPxBuild(rot, lv) {
   }
   const shadow = mkCanvas(W, H), sc = shadow.getContext('2d');
   sc.filter = 'blur(2px)'; sc.fillStyle = 'rgba(30,22,12,0.32)';
-  const corners = [[0, 0, 0], [def.w * TILE, 0, 0], [def.w * TILE, def.h * TILE, 0], [0, def.h * TILE, 0]].map(scr);
+  const corners = [[0, 0, 0], [FW, 0, 0], [FW, FD, 0], [0, FD, 0]].map(scr);
   sc.beginPath(); corners.forEach((p, i) => (i ? sc.lineTo(p[0] + 3, p[1] - 2) : sc.moveTo(p[0] + 3, p[1] - 2))); sc.closePath(); sc.fill();
   const spr = {
     canvas: innPxUp(g.toCanvas(), 3), shadow, w: W, h: H, top, padx: BPADX, fw: FW, baseY: top + FD - 2, doorCx: BPADX + (d.dx + 0.5) * TILE,
     pxInn: lv, noDeck: true, k1: true,
     chimneys: (g.chim || []).map(scr), wins,
     porch: scr(M.porch), oven: scr(M.oven), bar: scr(M.bar), doorPt: scr(M.doorPt),
-    perches: [scr([33, 69, 63]), scr([114, 78, 44])],
+    perches: d.rot ? [scr([30, 99, 63]), scr([78, 113, 42])] : [scr([33, 69, 63]), scr([114, 78, 44])],
     fire: M.fire && scr(M.fire), spit: M.spit && scr(M.spit), chop: M.chop && scr(M.chop), darts: M.darts && scr(M.darts), stage: M.stage && scr(M.stage),
     seats: (M.seats || []).map(scr), tables: (M.tables || []).map(scr), pantry: (M.pantry || []).map(scr), stock: (M.stock || []).map(scr),
     feast: (M.feast || []).map(p => [...scr(p), p[3]]),
