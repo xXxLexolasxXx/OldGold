@@ -1335,7 +1335,7 @@ function pbFoam(Q, x0, x1, y, k = 1) {
 // горизонтальным зрачком-щелью и кровавыми прожилками под тяжёлыми складками век; по бокам поднимаются
 // щупальца с присосками. f = 3 — моргает, остальные кадры — медленно щурится и дышит.
 function pbKraEye(Q, a, f) {
-  const blink = f === 3, sq = [1, 0.96, 0.9, 0, 0.92, 1][f % 6], C = PBS.KR, br = Math.sin(f / 6 * Math.PI * 2) * 0.6;
+  const blink = Math.round(f) === 3, sq = saL([1, 0.96, 0.9, 0, 0.92, 1], f % 6), C = PBS.KR, br = Math.sin(f / 6 * Math.PI * 2) * 0.6;
   // щупальца сзади
   for (const s of [-1, 1]) {
     const pts = []; for (let i = 0; i <= 12; i++) { const t = i / 12; pts.push([s * (27 - t * t * 13), -t * 30 + t * t * 6 + Math.sin(f * 1.1 + t * 3 + s) * 1, 3.2 * (1 - t * 0.85)]); }
@@ -1410,7 +1410,7 @@ function pbTent(Q, a, f, n) {
   // стекающая вода
   for (const i of [4, 9, 14]) { const p = pts[i]; for (let k = 0; k < 3; k++) pbDot(Q, p[0] + p[2] + 0.6, p[1] + k * 2.2, PBS.WA[0], 0.35); }
   pbFoam(Q, -12, 12, 0.2, 1.3);
-  if (a === 'atk' && f === 5) for (const [x, y] of [[-10, -6], [10, -10], [-14, -16], [14, -3], [0, -22]]) pbDot(Q, x, y, PBS.WA[1], 0.9);
+  if (a === 'atk' && Math.round(f) === 5) for (const [x, y] of [[-10, -6], [10, -10], [-14, -16], [14, -3], [0, -22]]) pbDot(Q, x, y, PBS.WA[1], 0.9);
   Q.outline([20, 6, 18]);
 }
 // Морской змей: легендарный, тёмный, с бирюзовым перламутром и светящимися красными глазами. Три кольца
@@ -1464,7 +1464,7 @@ function pbSerpent(Q, a, f, n) {
   pbPoly(Q, [[hx - 4, hy - 1], [hx - 12, hy - 6], [hx - 10, hy - 1], [hx - 13, hy + 3], [hx - 4, hy + 1.6]], FIN);   // жабры-плавник
   for (const oy of [-0.6, 0.8]) Q.path([[hx - 4, hy + oy, 0.2], [hx - 10, hy + oy * 3, 0.15]], () => FIN[0]);
   pbFoam(Q, bx - 8, bx + 7, 0.2, 1.3);
-  if (a === 'atk' && f === 5) for (const [x, y] of [[48, -12], [50, -5], [44, -20], [52, -16]]) pbDot(Q, x, y, PBS.WA[1], 0.8);
+  if (a === 'atk' && Math.round(f) === 5) for (const [x, y] of [[48, -12], [50, -5], [44, -20], [52, -16]]) pbDot(Q, x, y, PBS.WA[1], 0.8);
   Q.outline([4, 18, 24]);
 }
 if (typeof SEA_ART !== 'undefined') {
