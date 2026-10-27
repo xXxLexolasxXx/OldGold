@@ -68,7 +68,7 @@ const HEAVY = new Set(['trunk', 'stone', 'timber', 'pig', 'goldore', 'leatherArm
 // курьеров, а мельница при 700 зерна на складе и плавильня без брёвен ждали подвоза (замер tools/soak/deficit.js, ДЕФИЦИТЫ.md)
 const LIGHT = new Set(['bread', 'croissant', 'sausage', 'chickenleg', 'fish', 'flour', 'hay', 'hops']);
 function carryCap(u, g) { return u.type === 'serf' ? unitLevel(u) + (g && LIGHT.has(g) ? 1 : 0) : (CARRY_CAP[u.type] || 1); }
-function canCarry(u, g) { return !(u.injury === 'arm' && HEAVY.has(g)); }
+function canCarry(u, g) { return !(injArm(u.injury) && HEAVY.has(g)); }
 
 // Подобрать перевозчика под партию: большой партии — телегу, средней — козу, иначе курьера.
 function pickCarrier(idle, x, y, g, amount) {
@@ -325,7 +325,7 @@ function dispatchBuilders() {
   const matOk = (b, st) => ['trunk', 'timber', 'stone'].some(k => st[k] > 0 || b.incoming[k] > 0 ||
     (b.demand(k) > 0 && storeHaving(b.doorX, b.doorY, k, compAt(b.doorX, b.doorY), b)));   // работяга донесёт сам
   const sites = [
-    ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold && (b.state === 'site' || matOk(b, b.stock))),
+    ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold && (b.state === 'site' || b.used >= b.total || matOk(b, b.stock))),   // всё уложено, но не сдано — добить
     ...Game.buildings.filter(b => b.upg && !b.upg.builder && matOk(b, b.upg.stock)),
     // дорогу можно копать сразу, а мостить — когда камень на месте или в пути
     ...[...Game.roadSites.values()].filter(s => !s.builder && (s.dug < 1 || s.stock.stone + s.incoming.stone > 0 || storeHaving(s.x, s.y, 'stone'))),
@@ -372,6 +372,8 @@ function dispatchBuilders() {
       }
     }
   }
+  // «Навались!» (rush.js): всех оставшихся — на то, чего деревне не хватает
+  if (typeof rushDispatch === 'function') rushDispatch(idle);
 }
 
 // Повреждённое здание чинит любой свободный гном (не только работяга): сначала свободные работяги,
@@ -414,6 +416,20 @@ function dispatchWorkers() {
     u.idleFlag = false; u.idleStreak = 0;
     u.proc = null; u.action = null; u.anim = null;
   }
+  // вторые места (здание 3-го уровня, таблица WORK_SLOTS в levels.js) — только когда у всех зданий уже есть первый
+  if (typeof workSlots !== 'function') return;
+  for (const b of bs) {
+    if (b.state !== 'done' || b.removed || !b.def.worker || !b.worker || workSlots(b) < 2) continue;
+    let n = bldStaff(b).length;
+    while (n < workSlots(b)) {
+      const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf && !u.brk && !u.dead);
+      const u = takeNearest(idle, b.doorX, b.doorY);
+      if (!u) break;
+      u.home = b; n++;
+      u.idleFlag = false; u.idleStreak = 0;
+      u.proc = null; u.action = null; u.anim = null;
+    }
+  }
 }
 
 // Бронь объектов на карте (o.res у деревьев, глыб, полей, брёвен, урн; ROCKMINE.res у скалы) снимает тот, кто её
@@ -431,6 +447,7 @@ function auditReserved() {
     if (u.cmd && u.cmd.i != null) claim.add(u.cmd.i);
     if (u.fieldJob >= 0) claim.add(u.fieldJob);
     if (u.helpField >= 0) claim.add(u.helpField);
+    if (u.rushJob >= 0) claim.add(u.rushJob);
   }
   const stale = (i, has = claim.has(i)) => { if (has) { resStale.delete(i); return false; } const n = (resStale.get(i) || 0) + 1; if (n >= 3) { resStale.delete(i); return true; } resStale.set(i, n); return false; };
   // урну (streets.js) бронирует конкретный работяга (o.res = id): претендент — только он сам, иначе урна у людной

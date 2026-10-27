@@ -119,7 +119,7 @@ function* heroHaul(u, c) {
 
 // одна ходка: со склада на стройку. Возвращает true, если что-то повёз.
 function* serfAssistBuild(u, s) {
-  if (s.removed || (!s.isRoad && s.state === 'done' && !s.upg) || u.injury === 'arm') return false;
+  if (s.removed || (!s.isRoad && s.state === 'done' && !s.upg) || injArm(u.injury)) return false;
   const cap = carryCap(u);
   for (const g of (s.isRoad ? ['stone'] : BUILD_GOODS)) {
     const need = s.demand ? s.demand(g) : 0;
@@ -139,7 +139,7 @@ function* serfAssistBuild(u, s) {
 
 // продукцию мастерской, которую герой решил убрать, — на склад
 function* serfAssistHaul(u, b) {
-  if (b.removed || !b.def.outputs || u.injury === 'arm') return false;
+  if (b.removed || !b.def.outputs || injArm(u.injury)) return false;
   const g = Object.keys(b.def.outputs).find(k => b.offer(k) > 0);
   if (!g) return false;
   const st = nearestStore(u.x, u.y, g);

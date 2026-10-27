@@ -151,7 +151,7 @@ function rainShelterTick(dt) {
   if (WX.k < 0.6 || WX.target === 0) return;
   for (const u of Game.units) {
     if (u.dead || u.type === 'hero' || u.teamOf || u.type === 'carter' || !isPerson(u) || !interruptible(u)) continue;
-    if (u.carry || u.dlv || u.job || u.cmd || u.repairJob || u.fieldJob >= 0 || u.helpField >= 0 || u.food < HUNGRY) continue;
+    if (u.carry || u.dlv || u.job || u.cmd || u.repairJob || u.fieldJob >= 0 || u.helpField >= 0 || u.rushJob >= 0 || u.food < HUNGRY) continue;
     if (u.rainNo === WX.rainNo) continue;                         // в этот ливень уже решал
     u.rainNo = WX.rainNo;
     if ((u.id * 7 + (WX.rainNo || 0) * 3) % 10 >= RAIN_HIDE_SHARE * 10) continue;

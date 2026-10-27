@@ -858,6 +858,7 @@ function infoBuilding(b) {
       h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><span class="tb-pic"><img src="${portraitURL(t)}" alt="">${trainIconHTML(t)}</span><span class="tb-n">${UNIT_TYPES[t].name.split('-')[0]}</span>${q ? `<span class="q">${q}</span>` : ''}</button>`;
     }
     h += '</div>';
+    if (typeof wkCensusHTML === 'function') h += wkCensusHTML();   // сводка жителей по профессиям и уровням (workers.js)
   }
   if (b.type === 'inn') {
     const hungry = Game.units.filter(u => u.food < HUNGRY).length;

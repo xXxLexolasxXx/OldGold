@@ -698,7 +698,7 @@ class Unit {
     this.nextSmoke = Game.time + SMOKE_CD_MIN + Math.random() * (SMOKE_CD_MAX - SMOKE_CD_MIN);
     this.nextJoin = 0;
     this.brk = null;        // текущий перерыв: перекур, сон
-    this.injury = null;     // 'leg' | 'arm'
+    this.injury = null;     // 'leg' | 'arm' | 'both' (рука и нога сразу — после куриной мести)
     this.injuryUntil = 0;
     this.drunkAt = 0;
   }
@@ -717,6 +717,7 @@ class Unit {
     if (this.teamOf) { const g = teamThink(this); if (g) return g; }               // напарник героя
     if (this.isCourier) { this.idleFlag = true; return idleGen(this); }
     if (this.repairJob) { this.idleFlag = false; return repairGen(this, this.repairJob); }   // чинит любой свободный гном
+    if (this.rushJob >= 0) { this.idleFlag = false; return rushGen(this, this.rushJob); }    // «Навались!» (rush.js)
     if (this.type === 'builder') {
       if (this.fieldJob >= 0) { this.idleFlag = false; return fieldDigGen(this, this.fieldJob); }
       if (this.helpField >= 0) { this.idleFlag = false; return helpHarvestGen(this, this.helpField); }
@@ -728,6 +729,8 @@ class Unit {
     }
     if (this.home && !this.home.removed) { this.idleFlag = false; return workerGen(this, this.home); }
     this.home = null;
+    const ri = typeof rushPick === 'function' ? rushPick(this) : -1;   // мастер без своего здания — на «Навались!» (rush.js)
+    if (ri >= 0) { this.rushJob = ri; this.idleFlag = false; return rushGen(this, ri); }
     this.idleFlag = true;
     return idleGen(this);
   }
@@ -829,7 +832,7 @@ class Unit {
       if (this.type === 'goat') speed = onRoad ? 2.15 : 1.7;
       if (a.squeeze) speed *= 0.4;
       if (this.food <= 0 && !this.noFood) speed *= 0.5;
-      if (this.injury === 'leg') speed *= 0.55;
+      if (injLeg(this.injury)) speed *= 0.55;
       if (this.hangUntil > Game.time) speed *= 0.75;     // похмелье после праздника
       if (this.pzUntil > Game.time || this.fgUntil > Game.time) speed *= 0.65;     // яд жаболюдов и их болотный туман (frogs.js)
       if (this.fleeUntil > Game.time) speed *= 1.7;     // удирает от гусей
@@ -862,7 +865,7 @@ class Unit {
     }
     if (a.wait !== undefined) {
       if (a.t === undefined) {
-        a.t = a.wait * (this.food <= 0 && !this.noFood ? 1.6 : 1) * (this.injury === 'arm' && a.anim ? 1.5 : 1);
+        a.t = a.wait * (this.food <= 0 && !this.noFood ? 1.6 : 1) * (injArm(this.injury) && a.anim ? 1.5 : 1);
         if (a.anim && (this.type === 'hero' || this.teamOf)) a.t /= teamWorkMul(this);
         else if (a.anim && this.home && LEVEL_XP[this.type] === PROF_XP) a.t /= profSpeed(this);   // опытный мастер работает быстрее
         a.T = a.t;                              // полная длительность — для фаз замаха и удара

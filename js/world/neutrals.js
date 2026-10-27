@@ -632,7 +632,7 @@ function neuDrawLair(c, L) {
 }
 
 function neuDraw(c, N) {
-  const fk = N.vf && PX_FINE > 1 && NA_PX[N.k + 'F'] ? N.k + 'F' : N.k;                    // анфас, если нарисован (тролли)
+  const fk = N.vf && NA_PX[N.k + 'F'] ? N.k + 'F' : N.k;                    // анфас, если нарисован (тролли)
   const S = NSPEC[N.k], sp = naFrame(fk, N.fr || 'i0'), t = Game.time;
   const px = Math.round(N.x * TILE), py = Math.round(N.y * TILE + 6);
   const dead = N.st === 'die';

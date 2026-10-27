@@ -1,7 +1,7 @@
 'use strict';
 // Ручной пиксель-арт на сетке ×3 (метод Полудницы, fzPxKit в fairy2.js) для нейтралов naFrame:
 // чемпион гоблинов, тролли, броненосец, гномтавры, ледяной элементаль (два облика).
-// Рисуется только при мелком пикселе (PX_FINE > 1, NA_PX в neutralart.js); на телефонах — прежний вектор.
+// При мелком пикселе (PX_FINE > 1) — как есть, на телефонах сводится в ×1 (pxToCoarse в pixel.js).
 // Единицы — пиксели арта (3 на игровой пиксель), начало координат у ног, лицом вправо, вверх — минус.
 
 // ---------- общая кисть: объём светом сверху-слева, дизер на границах тонов ----------
@@ -834,7 +834,7 @@ function pbArmad(Q, P) {
   leg(-13, sw, true); leg(10, -sw, true);
   Q.outline([30, 22, 18]);
 }
-if (NA_SPEC.armad && PX_FINE > 1) Object.assign(NA_SPEC.armad, { w: 120, h: 76, ax: 58, ay: 64 });   // крупнее: шипы, рог и хвост-булава
+if (NA_SPEC.armad) Object.assign(NA_SPEC.armad, { w: 120, h: 76, ax: 58, ay: 64 });   // крупнее: шипы, рог и хвост-булава
 NA_PX.armad = (K, P) => pbArmad(pbScaled(K, 3 * NA_SPEC.armad.sc), P);
 
 // ======================= Гномтавры: копейщик и лучник =======================
@@ -1050,7 +1050,7 @@ function pbFrostB(Q, P) {
   for (const [dx, dy] of [[-20, -40], [18, -46], [-22, -24], [20, -28], [0, -70], [14, -62]]) pbDot(Q, dx, dy, I[5], 0.4);
   Q.outline([6, 18, 40]);
 }
-if (NA_SPEC.frost && PX_FINE > 1) Object.assign(NA_SPEC.frost, { w: 150, h: 112, ax: 72, ay: 98 });   // крупнее: шире холст под тесак и космы
+if (NA_SPEC.frost) Object.assign(NA_SPEC.frost, { w: 150, h: 112, ax: 72, ay: 98 });   // крупнее: шире холст под тесак и космы
 NA_PX.frost = (K, P) => (FROST_LOOK === 'B' ? pbFrostB : pbFrostA)(pbScaled(K, 3 * NA_SPEC.frost.sc), P);
 // для листа выбора: оба облика отдельными видами
 if (NA_SPEC.frost) {
@@ -1304,13 +1304,13 @@ function pbGriffin(Q, P) {
 if (typeof sprGriffin === 'function') {
   const _gri = sprGriffin;
   sprGriffin = function (pose, i = 0) {
-    if (PX_FINE <= 1 || typeof fzPxKit !== 'function') return _gri(pose, i);
+    if (typeof fzPxKit !== 'function') return _gri(pose, i);
     const key = 'griPX' + pose + i;
     let cv = fyCache.get(key);
     if (cv) return cv;
     const K = fzPxKit(62 * 3, 60 * 3, 0, 0);
     pbGriffin(pbScaled(K, 3), griParams(pose, i));
-    cv = K.done(); cv.fine = 3;
+    cv = pxToCoarse(Object.assign(K.done(), { fine: 3 }));   // на телефоне — тот же арт в ×1
     fyCache.set(key, cv);
     return cv;
   };

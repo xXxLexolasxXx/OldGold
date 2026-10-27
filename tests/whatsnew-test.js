@@ -30,7 +30,19 @@ const heads = html => (html.match(/<summary>([^<]*)<\/summary>/g) || []).map(s =
 
 const P = page(null), CL = P.ctx.CHANGELOG;
 check(CL.length > 14, 'в журнале слишком мало записей для теста');
-check(P.ctx.GV === CL[0].v, 'GAME_VERSION не первая запись');
+check(P.ctx.GV === CL[0].v, 'GAME_VERSION не первая запись');
+// версии свежих записей уникальны и строго растут по числам (после 0.11.99 идёт 0.12.0, а не 0.11.100; строкой «0.12.0» < «0.9.2» — нельзя)
+{
+  const num = v => v.split('.').map(Number);
+  const cmp = (a, b) => { const x = num(a), y = num(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
+  const bad = [];
+  for (let i = 0; i + 1 < Math.min(CL.length, 40); i++) if (cmp(CL[i].v, CL[i + 1].v) <= 0) bad.push(CL[i + 1].v + '→' + CL[i].v);
+  check(!bad.length, 'версии не растут/повторяются: ' + bad.join(', '));
+  check(cmp('0.12.0', '0.11.99') > 0 && cmp('0.12.1', '0.12.0') > 0, 'сравнение версий');
+  check(cmp('0.13.0', '0.12.99') > 0, 'сравнение версий через границу');
+  const big = CL.slice(0, 40).filter(e => num(e.v)[2] >= 100).map(e => e.v);
+  check(!big.length, 'патч не бывает больше 99 — после x.y.99 идёт x.(y+1).0: ' + big.join(', '));
+}
 
 // игрок видел версию CL[4] → пропустил записи 1..3
 {

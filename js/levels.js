@@ -161,6 +161,14 @@ function levelDefL3(type) {
   return o;
 }
 
+// Рабочие места по уровням — одна таблица на все здания с мастером: [ур.1, ур.2, ур.3]. Второй работник — такой же
+// гном с u.home === b (b.worker остаётся первым); ставят его диспетчер (logistics.js) и найм в окне здания (hire.js).
+const WORK_SLOTS_DEF = [1, 1, 2];
+const WORK_SLOTS = { goatpen: [1, 1, 1], stable: [1, 1, 1] };   // в загонах и так по 3 козы/лошади — второй пастух лишний
+const workSlotsOf = (type, lv) => (WORK_SLOTS[type] || WORK_SLOTS_DEF)[Math.min(3, Math.max(1, lv || 1)) - 1];
+function workSlots(b) { return b && b.def && b.def.worker ? workSlotsOf(b.type, b.level) : 0; }
+function bldStaff(b) { return Game.units.filter(u => u.home === b && !u.dead); }
+
 function canUpgrade(b) { return b.state === 'done' && !b.removed && !b.isRoad && ((b.level || 1) < 2 ? !!b.def.up : (b.level || 1) < 3 && !!b.def.up3); }
 // следующий уровень здания и цена достройки до него
 const nextLevelOf = b => ((b.level || 1) >= 2 ? 3 : 2);

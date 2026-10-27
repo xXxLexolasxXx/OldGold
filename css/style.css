@@ -672,6 +672,11 @@ body.mm-folded #mm-size { display: none; }
 #sub-btn img { width: 16px; height: 16px; image-rendering: pixelated; }
 #sub-btn.sub-ready { border-color: #a8d060; box-shadow: 0 0 8px rgba(168,208,96,0.6); animation: subpulse 1.6s ease-in-out infinite; }
 #sub-btn.sub-on { background: #3a5a1c; color: #e8ffc0; }
+#rush-btn { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-weight: bold; }
+.menu-list #rush-btn { display: flex; width: 100%; }
+#rush-btn img { width: 16px; height: 16px; image-rendering: pixelated; }
+#rush-btn.rush-on { background: #7a3a14; color: #ffe0a0; box-shadow: 0 0 8px rgba(255,170,60,0.55); }
+#rush-btn .rn { font-style: normal; }
 @keyframes subpulse { 50% { box-shadow: 0 0 14px rgba(168,208,96,0.95); } }
 
 /* ---------- Стартовый экран (js/startmenu.js) ---------- */

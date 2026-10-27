@@ -94,7 +94,7 @@ function* kpRun(u, kind) {
 function kidRecruits(leader, n) {
   const c = [];
   for (const o of Game.units) {
-    if (o === leader || o.type !== 'kid' || o.dead || o.inside || o.brk || o.gp || o.eat || o.food < HUNGRY || o.injury === 'leg') continue;
+    if (o === leader || o.type !== 'kid' || o.dead || o.inside || o.brk || o.gp || o.eat || o.food < HUNGRY || injLeg(o.injury)) continue;
     const d = Math.hypot(o.x - leader.x, o.y - leader.y);
     if (d < GAME_FAR) c.push([d, o]);
   }
@@ -722,6 +722,7 @@ function kpNeeds() {
     if (b.removed || b.state !== 'done') continue;
     const w = b.def && b.def.worker;
     if (w && !(b.worker && b.worker.home === b)) need[w] = (need[w] || 0) + 1;
+    else if (w && typeof workSlots === 'function' && workSlots(b) > 1) need[w] = (need[w] || 0) + Math.max(0, workSlots(b) - bldStaff(b).length);   // свободное второе место (ур.3)
     if (b.type === 'school') { for (const t of b.queue || []) have[t] = (have[t] || 0) + 1; if (b.training) have[b.training.type] = (have[b.training.type] || 0) + 1; }
   }
   for (const x of Game.units) if (!x.dead && !x.home && x.type !== 'kid' && need[x.type]) have[x.type] = (have[x.type] || 0) + 1;
