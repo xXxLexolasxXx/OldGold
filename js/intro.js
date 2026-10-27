@@ -238,9 +238,8 @@ if (typeof LORE_ON !== 'undefined' && LORE_ON) {
   const _as = applySave;
   applySave = function (s) {
     _as(s);
-    Game.intro = {};
-    if (Array.isArray(s.intro)) for (const k of s.intro) Game.intro[k] = 1;
-    else introSilent();   // сохранение до «Нового в деревне»: прошлые ветки не пересказываем
+    // сохранение до «Нового в деревне» — поля нет: первый тик молча засчитает открытые ветки (introTick)
+    Game.intro = Array.isArray(s.intro) ? Object.fromEntries(s.intro.map(k => [k, 1])) : null;
     Intro.quietUntil = (Game.time || 0) + INTRO_QUIET;
   };
   const _ng = newGame;
