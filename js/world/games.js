@@ -73,7 +73,7 @@ function gameRecruits(leader, n) {
   for (const o of Game.units) {
     if (o === leader || o.dead || o.inside || o.brk || !o.idleFlag || o.gp || o.glide || o.carry || o.dlv || !isPerson(o)) continue;
     if (o.isCourier || o.type === 'hero' || o.teamOf || o.rec || o.gx || o.gm || o.repairJob || o.cmd) continue;
-    if (o.food < HUNGRY || o.injury === 'leg') continue;
+    if (o.food < HUNGRY || injLeg(o.injury)) continue;
     const d = Math.hypot(o.x - leader.x, o.y - leader.y);
     if (d < GAME_FAR) c.push([d, o]);
   }

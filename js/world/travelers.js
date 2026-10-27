@@ -393,7 +393,7 @@ if (typeof neuThink === 'function') {
       N.fleeT += dt;
       if (N.ov) N.ovT += dt;
       neuMove(N, N.ex, N.ey, NSPEC.brigand.spd * 1.15, dt);
-      N.st = 'flee'; N.fr = 'w' + (Math.floor(N.ph) % 8);
+      N.st = 'flee'; N.fr = naWalkFr(N.ph);
       if (Math.hypot(N.x - N.ex, N.y - N.ey) < 1.2 || N.fleeT > 40) N.gone = 1;
       return;
     }
@@ -755,7 +755,7 @@ function tvDrawBrigand(c, N) {
   c.globalAlpha = al;
   if (dead) { c.translate(X, Y); c.rotate(-1.4 * (N.face || 1)); c.translate(-X, -Y); }
   const T = { k: 'brigand', f: N.face || 1, loot: N.loot ? 1 : 0, id: N.id };
-  const fk = fr === 'windup' ? 'windup' : fr === 'strike' ? 'strike' : (fr === 'hurt' || fr === 'stagger' || dead) ? 'hurt' : null;
+  const k0 = naFightKey(fr), fk = dead ? 'hurt' : k0 === 'recover' || k0 === 'parry' ? null : k0;
   tvDrawGnome(c, X, Y, T, 0, walk, fk);
   if (!dead && fk === 'hurt') { c.globalAlpha = 0.3 * al; c.fillStyle = '#ffffff'; c.fillRect(X - 6, Y - 38, 12, 38); }
   c.restore();

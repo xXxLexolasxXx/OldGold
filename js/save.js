@@ -14,7 +14,7 @@ function resetGameState() {
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
   ROCKMINE.hp.clear(); ROCKMINE.mined.clear(); ROCKMINE.res.clear();
   Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0; Game.festival = null; Game.festNext = undefined; Game.festWish = false; Game.brawl = null; Game.brawlNext = undefined; Game.brawlN = 0;
-  Game.bats = [];
+  Game.bats = []; Game.batAway = 0; Game.batHint = false;
   Game.crows = []; Game.frogs = []; Game.worms = []; Game.chests = null; Game.fairy = null; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1; resetFairy();
   beastsReset();
   if (typeof seaLifeReset === 'function') seaLifeReset();
@@ -195,7 +195,7 @@ function applySave(s) {
     u.homePen = d.homePen || 0; u.homeStable = d.homeStable || 0; u.xp = d.xp || 0;   // старые сохранения: выслуги нет
     if (d.smoker !== undefined) u.smoker = d.smoker;
     const home = byId.get(d.home);
-    if (home) { u.home = home; home.worker = u; }
+    if (home) { u.home = home; if (!(home.worker && home.worker.home === home)) home.worker = u; }   // второй работник (ур.3) первого не вытесняет
     if (d.h) { u.hero = d.h; if (u.type === 'hero') { Game.hero = u; u.smoker = false; } }
     Game.units.push(u);
     Game.unitMap.set(u.id, u);

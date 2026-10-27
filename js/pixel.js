@@ -74,6 +74,14 @@ const PX_FINE = (() => {
   return 3;
 })();
 
+// Телефон (PX_FINE = 1): ручной пиксель-арт ×3 сводим в ×1 — те же новые модели, а память кадров как раньше
+function pxToCoarse(cv) {
+  if (PX_FINE > 1 || (cv.fine || 1) === 1) return cv;
+  const out = toPixelArt(cv, cv.fine, { alphaCut: 110, outline: false });
+  out.fine = 1;
+  return out;
+}
+
 // Нарисовать кадр с пометкой cv.fine в игровом размере. Пока на пиксель мира меньше физических
 // пикселей, чем деталей в кадре, — сглаживаем, иначе мелкий пиксель рябит при уменьшении.
 function blitFine(c, cv, x, y, w = cv.width / (cv.fine || 1), h = cv.height / (cv.fine || 1)) {
@@ -129,7 +137,7 @@ function toPixelArt(src, scale, opts = {}) {
     else d[o + 3] = alpha >= cut ? 255 : 0;
   }
   if (!opts.keepAlpha) {
-    quantizeData(d, W, H, opts.dither || 0);
+    if (opts.quant) opts.quant(d, W, H); else quantizeData(d, W, H, opts.dither || 0);   // quant — свой подбор палитры (animalart.js: с сохранением оттенка)
     if (opts.clean) cleanOrphans(d, W, H);
     if (opts.ink) inkData(d, W, H, opts.ink);
     if (opts.specks) dropSpecks(d, W, H, opts.specks === true ? 70 : opts.specks);   // только камни и скалы: чужие спрайты не трогаем

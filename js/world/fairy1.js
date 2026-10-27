@@ -117,11 +117,11 @@ function fyOutline(c, w, h, col) {
   c.restore();
 }
 
-// Кадры фей-зверей: fr 0/1 — опорные позы (как раньше), 10..17 — 8 кадров цикла, 20..25 — 6 кадров;
+// Кадры фей-зверей: fr 0/1 — опорные позы (как раньше), 30..41 — 12 кадров цикла (КАДРЫ.md; 10..17 и 20..25 — прежние 8 и 6);
 // промежуточные позы тянутся между опорными по косинусу (fyMix), кэш по номеру кадра
 function fyK(fr) {
   if (fr < 2) return fr;
-  const N = fr >= 20 ? 6 : 8, i = fr - (fr >= 20 ? 20 : 10);
+  const N = fr >= 30 ? 12 : fr >= 20 ? 6 : 8, i = fr - (fr >= 30 ? 30 : fr >= 20 ? 20 : 10);
   return (1 - Math.cos(i / N * Math.PI * 2)) / 2;
 }
 function fyMix(a, b, k) {
@@ -129,7 +129,7 @@ function fyMix(a, b, k) {
   if (Array.isArray(a)) return a.map((v, n) => fyMix(v, b[n], k));
   const o = {}; for (const n in a) o[n] = fyMix(a[n], b[n], k); return o;
 }
-const fyCyc8 = t => 10 + (Math.floor(t) & 7), fyCyc6 = t => 20 + (Math.floor(t) % 6);
+const fyCyc8 = t => 30 + (Math.floor(t * 1.5) % 12), fyCyc6 = t => 30 + (Math.floor(t * 2) % 12);   // оба — 12 кадров, период прежний
 
 function sprUnicorn(fr) {
   return fySpr('uni2' + fr, 48, 44, c => {
@@ -217,7 +217,7 @@ function sprDragon(fr) {
 // take — взлёт (6); atk — замах, бросок клювом и когтями, возврат (9); die — вскрик, падение, лежит (8).
 // Хвост и клюв двигаются во всех позах. Опорные позы крыла: GRI_UP — вверх, GRI_DN — вниз, GRI_FOLD — сложено на спине.
 const GRI_DIE_T = 1.1, GRI_ATK_T = 0.9, GRI_WIND = 0.9, GRI_TAKE_T = 0.6;
-const GRI_N = { idle: 6, walk: 8, fly: 8, take: 6, atk: 9, die: 8 };
+const GRI_N = { idle: 12, walk: 12, fly: 12, take: 12, atk: 12, die: 12 };   // КАДРЫ.md: всё по 12
 const GRI_UP = [[2, 0], [6, -6], [12, -10], [19, -11], [26, -9]], GRI_DN = [[0, 14], [2, 8], [6, 3], [12, 0], [19, -1]];
 const GRI_FOLD = [[1, 23], [4, 21], [8, 19.5], [12, 18.5], [16, 18]], GRI_DROOP = [[3, 31], [6, 30], [10, 28.5], [14, 27], [18, 25]];
 function griParams(pose, i) {
@@ -225,32 +225,32 @@ function griParams(pose, i) {
   const P = { wing: GRI_FOLD, by: 0, hx: 0, hy: 0, beak: 0, tail: 0, tlift: 0, lf: 0, lr: 0, tuck: 0, claw: 0, eye: 1 };
   if (pose === 'idle') {
     P.by = S(ph) > 0.35 ? -1 : 0; P.hy = P.by; P.tail = S(ph - 0.8) * 2.6; P.tlift = S(ph) * 0.8;
-    P.wing = GRI_FOLD.map(([x, y]) => [x, y + S(ph) * 0.6]); P.beak = i === 3 ? 0.4 : 0; P.eye = i === 5 ? 0 : 1;
+    P.wing = GRI_FOLD.map(([x, y]) => [x, y + S(ph) * 0.6]); P.beak = i === 6 || i === 7 ? 0.4 : 0; P.eye = i === 10 ? 0 : 1;
   } else if (pose === 'walk') {
     P.lf = S(ph) * 3.4; P.lr = -S(ph) * 3.4; P.by = Math.cos(ph * 2) > 0.3 ? -1 : 0; P.hy = P.by; P.hx = Math.round(S(ph) * 0.9);
-    P.tail = S(ph - 1.2) * 3.2; P.tlift = S(ph * 2) * 0.8; P.wing = GRI_FOLD.map(([x, y]) => [x, y + S(ph * 2) * 0.5]); P.beak = i === 5 ? 0.3 : 0;
+    P.tail = S(ph - 1.2) * 3.2; P.tlift = S(ph * 2) * 0.8; P.wing = GRI_FOLD.map(([x, y]) => [x, y + S(ph * 2) * 0.5]); P.beak = i === 7 || i === 8 ? 0.3 : 0;
   } else if (pose === 'fly') {
     const k = (1 - Math.cos(ph)) / 2;
     P.wing = fyMix(GRI_UP, GRI_DN, k); P.by = Math.round(-1.6 * (1 - Math.cos(ph - 0.9)) / 2); P.hy = Math.round(P.by * 0.5);
     P.tuck = 0.75; P.lf = S(ph - 1) * 1.2; P.lr = -S(ph - 1) * 1.2; P.tail = S(ph - 1.5) * 3.6; P.tlift = -P.by + S(ph - 1.5) * 1.2;
-    P.beak = (i === 2 || i === 3) ? 0.55 : 0;
+    P.beak = i >= 3 && i <= 5 ? 0.55 : 0;
   } else if (pose === 'take') {
-    const t = i / 5;
+    const t = i / (GRI_N.take - 1);
     P.wing = t < 0.5 ? fyMix(GRI_FOLD, GRI_UP, sm(t / 0.5)) : fyMix(GRI_UP, GRI_DN, sm((t - 0.5) / 0.5));
-    P.by = i === 0 ? 1 : -Math.round(t * 2); P.hy = i === 0 ? 1 : 0; P.hx = i === 0 ? -1 : 0; P.tuck = t * 0.75; P.lr = i < 2 ? -2 : 0; P.lf = i < 2 ? 2 : 0;
-    P.tail = -2 * t + S(ph) * 1.2; P.tlift = t * 3; P.beak = (i === 2 || i === 3) ? 0.7 : 0;
+    P.by = i < 2 ? 1 : -Math.round(t * 2); P.hy = i < 2 ? 1 : 0; P.hx = i < 2 ? -1 : 0; P.tuck = t * 0.75; P.lr = i < 4 ? -2 : 0; P.lf = i < 4 ? 2 : 0;
+    P.tail = -2 * t + S(ph) * 1.2; P.tlift = t * 3; P.beak = i >= 4 && i <= 6 ? 0.7 : 0;
   } else if (pose === 'atk') {
-    const k = i / 8, wind = sm(cl(k / 0.33)), strike = sm(cl((k - 0.33) / 0.22)), rec = sm(cl((k - 0.6) / 0.4));
+    const k = i / (GRI_N.atk - 1), wind = sm(cl(k / 0.33)), strike = sm(cl((k - 0.33) / 0.22)), rec = sm(cl((k - 0.6) / 0.4));
     P.wing = k < 0.33 ? fyMix(GRI_FOLD, GRI_UP, wind) : k < 0.6 ? fyMix(GRI_UP, GRI_DN, strike) : fyMix(GRI_DN, GRI_FOLD, rec);
     P.hx = Math.round(-2 * wind * (1 - strike) + 7 * strike * (1 - rec)); P.hy = Math.round(wind * (1 - strike) + 3 * strike * (1 - rec));
     P.beak = cl(0.3 * wind * (1 - strike) + strike * (1 - rec) * 1.1); P.claw = strike * (1 - rec); P.lf = P.claw * 6;
     P.by = Math.round(-wind * (1 - strike) * 1.4); P.tail = -3 * strike + S(ph) * 1.2; P.tlift = wind * 3 * (1 - rec);
   } else if (pose === 'die') {
-    const t = i / 7, drop = sm(cl((t - 0.15) / 0.55)), down = sm(cl((t - 0.2) / 0.5));
+    const t = i / (GRI_N.die - 1), drop = sm(cl((t - 0.15) / 0.55)), down = sm(cl((t - 0.2) / 0.5));
     P.by = Math.round(drop * 6);
     P.wing = t < 0.15 ? GRI_UP : fyMix(fyMix(GRI_UP, GRI_DN, 0.5), GRI_DROOP, sm(cl((t - 0.15) / 0.6)));
-    P.hx = i < 2 ? -3 : Math.round(-3 + 6 * down); P.hy = (i < 2 ? -2 : Math.round(-2 + 10 * down)) + P.by;
-    P.beak = i < 2 ? 1 : i < 4 ? 0.5 : 0; P.eye = i < 3 ? 1 : 0; P.tuck = sm(cl(t / 0.6)) * 0.9; P.lf = -2 * drop; P.lr = 2 * drop;
+    P.hx = t < 0.2 ? -3 : Math.round(-3 + 6 * down); P.hy = (t < 0.2 ? -2 : Math.round(-2 + 10 * down)) + P.by;
+    P.beak = t < 0.2 ? 1 : t < 0.45 ? 0.5 : 0; P.eye = t < 0.4 ? 1 : 0; P.tuck = sm(cl(t / 0.6)) * 0.9; P.lf = -2 * drop; P.lr = 2 * drop;
     P.tail = S(ph * 1.5) * 2 * (1 - drop); P.tlift = -drop * 2;
   }
   return P;
@@ -848,9 +848,10 @@ function dragonDraw(list, c, F, x0, y0, x1, y1) {
     if (d.st === 'gone') return;
     if (typeof pxbBlit === 'function') {       // пиксельные дракон и дракончик (pxbeasts.js): сон, полёт, огонь в полёте, покой
       const bab = (m, k) => pxbBaby(d.sp, m, k);
-      if (d.st === 'nest') { const k = Math.floor(d.ph * 3) % 6; pxbBlit(c, d.stage ? fzDragonSprite('sleep', k) : bab('sleep', k), px, py); return; }
+      if (d.st === 'nest') { const k = (Math.floor(d.ph * 6) % 12) / 2;   // 12 кадров: фаза дыхания дробная (t = p / 6)
+      pxbBlit(c, d.stage ? fzDragonSprite('sleep', k) : bab('sleep', k), px, py); return; }
       const fire = d.st === 'fire' && d.fire, m = air ? (fire ? 'flyatk' : 'fly') : 'idle';
-      const k = m === 'fly' ? Math.floor(d.ph * (d.stage ? 32 : 36)) & 7 : m === 'flyatk' ? Math.floor(d.ph * 12) % 6 : Math.floor(d.ph * 4) % 6;
+      const k = m === 'fly' ? (Math.floor(d.ph * (d.stage ? 48 : 54)) % 12) * 2 / 3 : m === 'flyatk' ? Math.floor(d.ph * 12) % 6 : (Math.floor(d.ph * 8) % 12) / 2;   // полёт и покой — 12 кадров
       pxbBlit(c, d.stage ? fzDragonSprite(m, k) : bab(m, k), px, py - d.z, d.face || 1);
       const ty = py - d.z - (d.stage ? 62 : 44);
       if (d.talk) { c.fillStyle = '#fff6d8'; c.fillRect(Math.round(px + 6), Math.round(ty), 9, 7); c.fillStyle = '#3a2a14'; for (const dx of [8, 10, 12]) c.fillRect(Math.round(px + dx), Math.round(ty + 3), 1, 1); }
@@ -963,13 +964,13 @@ function griffinDraw(list, c, F, x0, y0, x1, y1) {
     const px = g.x * TILE, py = g.y * TILE + 4, air = g.z > 1;
     fyShadow(c, px, py, air ? 8 : 12, air ? 0.16 : 0.3);
     let pose, fr, al = 1;
-    if (g.st === 'dying') { pose = 'die'; fr = Math.min(7, Math.floor(g.dyT / GRI_DIE_T * 8)); al = Math.min(1, (GRI_DIE_T - g.dyT) / 0.3 + 0.01); }
-    else if (g.at > 0) { pose = 'atk'; fr = Math.min(8, Math.floor(g.at / GRI_ATK_T * 9)); }
-    else if (g.tk > 0) { pose = 'take'; fr = Math.min(5, Math.floor((1 - g.tk / GRI_TAKE_T) * 6)); }
-    else if (g.perch && g.z > 0.3) { pose = 'take'; fr = Math.min(5, Math.floor(g.z / 14 * 6)); }
-    else if (air) { pose = 'fly'; fr = Math.floor(g.ph * 16) & 7; }
-    else if (g.wlk) { pose = 'walk'; fr = Math.floor(g.ph * 12) & 7; }
-    else { pose = 'idle'; fr = Math.floor(g.ph * 6) % 6; }
+    if (g.st === 'dying') { pose = 'die'; fr = Math.min(11, Math.floor(g.dyT / GRI_DIE_T * 12)); al = Math.min(1, (GRI_DIE_T - g.dyT) / 0.3 + 0.01); }
+    else if (g.at > 0) { pose = 'atk'; fr = Math.min(11, Math.floor(g.at / GRI_ATK_T * 12)); }
+    else if (g.tk > 0) { pose = 'take'; fr = Math.min(11, Math.floor((1 - g.tk / GRI_TAKE_T) * 12)); }
+    else if (g.perch && g.z > 0.3) { pose = 'take'; fr = Math.min(11, Math.floor(g.z / 14 * 12)); }
+    else if (air) { pose = 'fly'; fr = Math.floor(g.ph * 24) % 12; }
+    else if (g.wlk) { pose = 'walk'; fr = Math.floor(g.ph * 18) % 12; }
+    else { pose = 'idle'; fr = Math.floor(g.ph * 12) % 12; }
     fyBlit(c, sprGriffin(pose, fr), px, py - g.z, g.face, al, 0.8);
   }]);
 }

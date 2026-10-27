@@ -46,3 +46,4 @@ fs.writeFileSync(path.join(__dirname, `out-${SEED}.json`), JSON.stringify(res, n
 console.log(`seed ${SEED}: ${SECS}с игры за ${wall.toFixed(0)}с, шаг ${res.stepAvgMs} мс (max ${res.stepMaxMs}), ошибок шага ${errs}, жителей ${res.units} (max ${res.maxUnits}), зданий ${res.buildings}, потерь ${res.lost}, проблем ${issues.length}`);
 for (const e of res.errSamples) console.log('  STEP-ERR x' + e[1] + ': ' + e[0]);
 for (const is of issues) console.log(`  [${is.sev}] x${is.n} ${is.key}: ${is.text.slice(0, 400)}`);
+process.exit(0);   // таймеры игры в песочнице иначе держат процесс часами после конца прогона

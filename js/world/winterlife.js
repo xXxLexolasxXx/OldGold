@@ -502,7 +502,7 @@ function wfxSleigh(f) {
   const key = 's' + f;
   let s = WFX_CACHE.get(key);
   if (s) return s;
-  const W = 150, H = 76, ax = 52, ay = 62, [cv, c] = mkSprite(W, H, 3);
+  const W = 150, H = 76, ax = 52, ay = 62, F = afFine() ? PX_FINE : 1, [cv, c] = mkSprite(W, H, F > 1 ? 2 * F : 3);   // олени упряжки — мелким пикселем ×3 (animalart.js)
   c.translate(ax, ay); c.lineCap = 'round'; c.lineJoin = 'round';
   const g = (f % 4) / 4 * 6.2832;
   // упряжь
@@ -550,7 +550,8 @@ function wfxSleigh(f) {
   c.fillStyle = '#20262e'; c.fillRect(1.6, -32.2 + bob, 1.2, 1.2); c.fillRect(4, -32.2 + bob, 1.2, 1.2);
   c.strokeStyle = '#d83a3a'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(5, -24); c.lineTo(11, -22); c.stroke();
   c.strokeStyle = '#6a4a22'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(11, -22); c.lineTo(15, -20.4); c.stroke();
-  const out = toPixelArt(cv, 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
+  const out = F > 1 ? toPixelArt(cv, 2, { outline: true, outlineDark: 0.55, alphaCut: 100, clean: true }) : toPixelArt(cv, 3, { outline: true, outlineDark: 0.3, alphaCut: 100 });
+  out.fine = F;
   s = { cv: out, ax, ay };
   WFX_CACHE.set(key, s);
   return s;
@@ -585,7 +586,7 @@ function wfxDrawList(list, c, x0, y0, x1, y1) {
       const sp = wfxSleigh(Math.floor(w.ph) & 3), px = Math.round(w.x * TILE), py = Math.round(w.y * TILE + 6), z = w.z || 18;
       c.fillStyle = 'rgba(10,8,4,0.22)'; c.beginPath(); c.ellipse(px, py + 2, 40, 7, 0, 0, 7); c.fill();
       c.save(); c.translate(px, py - z); if (w.face < 0) c.scale(-1, 1);
-      c.drawImage(sp.cv, -sp.ax, -sp.ay);
+      afBlit(c, sp.cv, -sp.ax, -sp.ay);
       c.restore();
       // искры волшебного следа
       for (let k = 0; k < 6; k++) {

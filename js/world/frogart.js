@@ -1,13 +1,13 @@
 'use strict';
 // Жаболюды / жаболюды (ЖАБОЛЮДЫ.md): кадры четырёх каст и свайная деревня у воды.
 // Тот же конвейер, что у neutralart.js/neutralart2.js: вектор в 3× → пиксели, кэш naCache, кадры строятся лениво.
-// Кадры по КАДРЫ.md: покой 6, ходьба 8, прыжок 8, бой 9, удар по нему 4, смерть 6, торжество 4, сон 2;
-// синие — ещё метание/трубка 6 (t0…t5), фиолетовые и вождь — колдовство 6 (c0…c5).
+// Кадры по КАДРЫ.md: по 12 — покой, ходьба, прыжок, атака, смерть, торжество, сон, метание (t, синие), колдовство (c,
+// фиолетовые и вождь); получение удара 6. Промежуточные — смешением ключевых поз (naExpand в neutralart.js).
 // Образ — собственный рисунок: приземистый жаболюд, длинные трёхпалые лапы, золотые глаза, плащ-капюшон, перья у бедра.
 // Подключается после neutralart2.js.
 
-NA_FRAMES.jump = ['j0', 'j1', 'j2', 'j3', 'j4', 'j5', 'j6', 'j7'];
-NA_FRAMES.throwd = ['t0', 't1', 't2', 't3', 't4', 't5'];
+NA_FRAMES.jump = naSeq('j', NA_N);      // прыжок и метание — по 12 (КАДРЫ.md), из прежних 8 и 6 ключевых поз
+NA_FRAMES.throwd = naSeq('t', NA_N);
 NA_EXTRA.ftG = ['jump', 'sleep'];
 NA_EXTRA.ftB = ['jump', 'throwd', 'sleep'];
 NA_EXTRA.ftP = ['jump', 'cast', 'sleep'];
@@ -33,6 +33,11 @@ const FT_POSE = {
   t4: { pipe: 0.6, a: 0.3, eye: 0, sac: 0.3, x: 1 },
   t5: { pipe: 0.15, a: 0.05, eye: 0, sac: 0.2 },
 };
+{
+  const J = [0, 1, 2, 3, 4, 5, 6, 7].map(k => FT_POSE['j' + k]), Tt = [0, 1, 2, 3, 4, 5].map(k => FT_POSE['t' + k]);
+  naExpand(J, NA_N, false).forEach((q, k) => { FT_POSE['j' + k] = q; });
+  naExpand(Tt, NA_N, false).forEach((q, k) => { FT_POSE['t' + k] = q; });
+}
 {
   const _np = naPose;
   naPose = function (n) {
@@ -64,6 +69,7 @@ const FT_DEAD = {
   d4: { x: -5, y: 0, rot: -1.2, eye: 3, dead: 1, crouch: 0.4, a: 0, fade: 0.45 },
   d5: { x: -5, y: 0, rot: -1.2, eye: 3, dead: 1, crouch: 0.4, a: 0, fade: 0.85 },
 };
+{ const D = [0, 1, 2, 3, 4, 5].map(k => FT_DEAD['d' + k]); naExpand(D, NA_N, false).forEach((q, k) => { FT_DEAD['d' + k] = q; }); }
 
 function drawFrogfolk(c, P, caste, fr) {
   if (FT_DEAD[fr]) P = Object.assign({}, P, FT_DEAD[fr]);

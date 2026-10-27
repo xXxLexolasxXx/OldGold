@@ -132,5 +132,38 @@ const PLACE = `portraitURL = () => ''; buildingIconURL = () => ''; iconURL = () 
   ok(!sim.errors.length, 'кооп: исключения: ' + sim.errors.slice(0, 2).join(' | '));
 }
 
+// 5) места по уровням (WORK_SLOTS): дом лесоруба 3-го уровня берёт второго лесничего, оба переживают сохранение;
+//    сводка жителей в окне «Школа» считает их
+{
+  const sim = S.newSim(11);
+  S.runFor(sim, 20, 10, () => {});
+  const J = code => JSON.parse(sim.h.run(`JSON.stringify((() => { ${PLACE} ${code} })())`));
+  const r = J(`clearType('woodcutter');
+    const A = place('woodcutter');
+    spawnUnit('woodcutter', A.doorX, A.doorY + 1); spawnUnit('woodcutter', A.doorX + 1, A.doorY + 1);
+    const res = { s1: workSlots(A) };
+    dispatchWorkers();
+    res.n1 = bldStaff(A).length;
+    upgradeBuilding(A, true); upgradeBuilding(A, true);
+    res.lv = A.level; res.s3 = workSlots(A);
+    dispatchWorkers();
+    res.n3 = bldStaff(A).length; res.main = !!(A.worker && A.worker.home === A);
+    res.html = /Работники · 2\\/2/.test(hireHTML(A));
+    res.census = /Лесничий<\\/span><b>2/.test(wkCensusHTML());
+    Game.__wc = A.id;
+    return res;`);
+  ok(r.s1 === 1 && r.n1 === 1, `ур.1: мест ${r.s1}, работает ${r.n1} (ждали 1/1)`);
+  ok(r.lv === 3 && r.s3 === 2 && r.n3 === 2 && r.main, `ур.3: уровень ${r.lv}, мест ${r.s3}, работает ${r.n3}, первый ${r.main}`);
+  ok(r.html, 'окно дома лесоруба 3-го уровня не показывает «Работники · 2/2»');
+  ok(r.census, 'сводка жителей не насчитала двух лесничих');
+  const save = JSON.parse(sim.h.run('JSON.stringify(serializeGame())'));
+  sim.h.ctx.__s = save; sim.h.run('applySave(__s)');
+  ok(sim.h.run('(() => { const b = Game.buildings.find(b => b.id === Game.__wc); return bldStaff(b).length + (b.worker && b.worker.home === b ? 10 : 0); })()') === 12, 'после загрузки в доме лесоруба не два работника');
+  S.runFor(sim, 30, 10, () => {});
+  ok(sim.h.run('bldStaff(Game.buildings.find(b => b.id === Game.__wc)).length') === 2, 'второй лесничий ушёл из дома за 30 с');
+  ok(!sim.errors.length, 'места по уровням: исключения: ' + sim.errors.slice(0, 2).join(' | '));
+  console.log(`места по уровням: ур.1 ${r.n1}/${r.s1}, ур.3 ${r.n3}/${r.s3}`);
+}
+
 console.log(fails.length ? `\nПровалено: ${fails.length}` : '\nНайм в окне здания: OK');
 process.exit(fails.length ? 1 : 0);

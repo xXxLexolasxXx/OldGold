@@ -155,7 +155,7 @@ function gdLights() {
     if (u.lampR) r = Math.max(r, u.lampR);                      // «Лампа предков» фонарщика (этап 2)
     if (r) out.push([u.x, u.y, r]);
   }
-  for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done' && Math.hypot(b.x - T.cx, b.y - T.cy) < far + 6) out.push([b.x + b.w / 2, b.y + b.h / 2, BONFIRE_SAFE * 0.8]);
+  for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done' && Math.hypot(b.x - T.cx, b.y - T.cy) < far + 6) out.push([b.x + b.w / 2, b.y + b.h / 2, BONFIRE_SAFE * 0.8 * bonfireMul(b)]);
   for (const N of Game.raiders) if (N.gk === 'fire' && foeLive(N)) out.push([N.x, N.y, 2.6]);
   return out;
 }

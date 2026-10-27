@@ -383,22 +383,23 @@ function wlWings(rows, cx, cy, span, off, ch) {
 const WL_CACHE = new Map();
 function wlSprite(key, rowsFn, pal) {
   let s = WL_CACHE.get(key);
-  if (!s) { s = faSprite(rowsFn(), pal); WL_CACHE.set(key, s); }
+  if (!s) { s = afSprite(rowsFn(), pal, 'wl:' + key); WL_CACHE.set(key, s); }   // мелкий пиксель ×3 — animalart.js
   return s;
 }
 function wlBlit(c, spr, x, y, face, lift = 0, alpha = 1, shadow = true) {
-  const w = spr.width, h = spr.height;
+  const w = afW(spr), h = afH(spr);
   if (shadow) { c.fillStyle = `rgba(10,8,4,${0.26 * alpha})`; c.beginPath(); c.ellipse(x, y, Math.max(2, w * 0.36), 1.4, 0, 0, 7); c.fill(); }
   c.imageSmoothingEnabled = false;
   c.save(); c.globalAlpha = alpha; c.translate(Math.round(x), Math.round(y - h - lift + 1));
   if (face < 0) c.scale(-1, 1);
-  c.drawImage(spr, -Math.round(w / 2), 0);
+  afBlit(c, spr, -Math.round(w / 2), 0);
   c.restore();
   c.imageSmoothingEnabled = R.smooth;
 }
 
-const WL_HOP = [0, 1, 3, 3, 1, 0];
-const WL_FLAP8 = [-2, -1, 0, 1, 2, 1, 0, -1];
+// шаг, скачки и полёт — 12 кадров (КАДРЫ.md); покой и испуг — прежние позы (пиксельные зверьки 6–10 px, промежуточных поз нет)
+const WL_HOP = Array.from({ length: 12 }, (_, i) => Math.round(3 * Math.sin((i + 0.5) / 12 * Math.PI)));
+const WL_FLAP8 = Array.from({ length: 12 }, (_, i) => Math.round(-2 * Math.cos(i / 12 * Math.PI * 2)));
 // номер кадра цикла из N по времени (в кооперативе клиент сам ведёт анимацию между снимками)
 const wlFr = (o, rate, N) => Math.floor(Game.time * rate + o.id * 0.37) % N;
 
@@ -407,45 +408,45 @@ function wlFrame(o) {
   const k = o.k, st = o.st, R0 = WL_ROWS;
   if (k === 'hare') {
     if (st === 'react') { const i = Math.min(3, Math.floor(o.rt / 0.18)); return ['up' + i, () => i % 2 ? wlShift(R0.hareUp, 0, 1, 6, 9, 1) : R0.hareUp, i < 2 ? i : 0]; }   // 4 кадра: привстал, уши торчком/прижал
-    if (o.mv) { const i = wlFr(o, st === 'flee' ? 14 : 8, 6); return ['w' + i, () => gaitRows(R0.hare, 2, 6, i), WL_HOP[i]]; }
+    if (o.mv) { const i = wlFr(o, st === 'flee' ? 28 : 16, 12); return ['w' + i, () => gaitRows(R0.hare, 2, 12, i), WL_HOP[i]]; }
     const i = wlFr(o, 3, 6);                                                        // покой 6: уши и нос шевелятся
     return ['i' + i, () => (i === 2 || i === 3) ? wlShift(R0.hare, 0, 1, 9, 10, 1) : i === 5 ? wlShift(R0.hare, 2, 3, 8, 12, 1) : R0.hare, 0];
   }
   if (k === 'bird') {
     const base = R0.bird, cx = 3, cy = 2, span = 3, wc = 'W';
-    if (st === 'flee' || (st === 'react' && o.rt > 0.5)) { const i = wlFr(o, 16, 8); return ['f' + i, () => wlWings(base, cx, cy, span, WL_FLAP8[i], wc), 4 + (i % 4 > 1 ? 1 : 0)]; }   // полёт 8
+    if (st === 'flee' || (st === 'react' && o.rt > 0.5)) { const i = wlFr(o, 24, 12); return ['f' + i, () => wlWings(base, cx, cy, span, WL_FLAP8[i], wc), 4 + (i % 6 > 2 ? 1 : 0)]; }   // полёт 12
     if (st === 'react') { const i = Math.min(3, Math.floor(o.rt / 0.14)); return ['r' + i, () => wlWings(base, cx, cy, Math.min(span, i + 1), -1, wc), 0]; }    // 4: крылья раскрываются
-    if (o.mv) { const i = wlFr(o, 10, 6); return ['w' + i, () => base, WL_HOP[i] > 1 ? 1 : 0]; }
+    if (o.mv) { const i = wlFr(o, 20, 12); return ['w' + i, () => base, WL_HOP[i] > 1 ? 1 : 0]; }
     const i = wlFr(o, 4, 6);
     return ['i' + i, () => (i === 1 || i === 4) ? R0.birdPeck : base, 0];        // покой: клюёт зёрна
   }
   if (k === 'pheasant') {
     if (st === 'react') { const i = Math.min(3, Math.floor(o.rt / 0.18)); return ['r' + i, () => wlWings(R0.pheasant, 8, 5, 2 + i, -1, 'B'), i]; }
-    if (o.mv) { const i = wlFr(o, st === 'flee' ? 14 : 8, 6); return ['w' + i, () => gaitRows(R0.pheasant, 2, 6, i), 0]; }
+    if (o.mv) { const i = wlFr(o, st === 'flee' ? 28 : 16, 12); return ['w' + i, () => gaitRows(R0.pheasant, 2, 12, i), 0]; }
     const i = wlFr(o, 2.5, 6);
     return ['i' + i, () => (i === 2 || i === 3) ? wlShift(R0.pheasant, 0, 3, 8, 13, 2) : R0.pheasant, 0];
   }
   if (k === 'marmot') {
     if (st === 'react') { const i = Math.min(3, Math.floor(o.rt / 0.18)); return ['r' + i, () => i === 0 ? R0.marmot : i === 3 ? wlShift(R0.marmotUp, 0, 2, 3, 7, 1) : R0.marmotUp, 0]; }   // встал столбиком и свистит
-    if (o.mv) { const i = wlFr(o, st === 'flee' ? 14 : 9, 6); return ['w' + i, () => gaitRows(R0.marmot, 1, 6, i), 0]; }
+    if (o.mv) { const i = wlFr(o, st === 'flee' ? 28 : 18, 12); return ['w' + i, () => gaitRows(R0.marmot, 1, 12, i), 0]; }
     const i = wlFr(o, 2, 6);
     return ['i' + i, () => i === 4 ? R0.marmotUp : i === 1 ? wlShift(R0.marmot, 1, 3, 5, 9, 1) : R0.marmot, 0];
   }
   if (k === 'otter') {
     if (o.sw) { const i = wlFr(o, 4, 6); return ['s' + i, () => i % 3 === 2 ? R0.otterSwim.map(r => r.replace(/w/g, '.')) : R0.otterSwim, 0]; }
     if (st === 'react') { const i = Math.min(3, Math.floor(o.rt / 0.18)); return ['r' + i, () => i % 2 ? wlShift(R0.otter, 0, 1, 9, 13, 1) : R0.otter, i === 1 || i === 2 ? 1 : 0]; }   // 4: привстала, огляделась
-    if (o.mv) { const i = wlFr(o, st === 'flee' ? 14 : 9, 6); return ['w' + i, () => gaitRows(R0.otter, 1, 6, i), 0]; }
+    if (o.mv) { const i = wlFr(o, st === 'flee' ? 28 : 18, 12); return ['w' + i, () => gaitRows(R0.otter, 1, 12, i), 0]; }
     const i = wlFr(o, 2, 6);
     return ['i' + i, () => i === 2 || i === 3 ? wlShift(R0.otter, 0, 1, 9, 13, 1) : R0.otter, 0];
   }
   if (k === 'stag') {
     if (st === 'react') { const i = Math.min(3, Math.floor(o.rt / 0.18)); return ['r' + i, () => R0.stag, [0, 1, 2, 1][i]]; }
-    if (o.mv) { const i = wlFr(o, st === 'flee' ? 12 : 7, 8); return ['w' + i, () => gaitRows(R0.stag, 3, 8, i), st === 'flee' ? [0, 1, 3, 4, 4, 3, 1, 0][i] : 0]; }   // крупный: 8 кадров
+    if (o.mv) { const i = wlFr(o, st === 'flee' ? 18 : 10.5, 12); return ['w' + i, () => gaitRows(R0.stag, 3, 12, i), st === 'flee' ? Math.round(4 * Math.sin((i + 0.5) / 12 * Math.PI)) : 0]; }   // крупный: 12 кадров
     const i = wlFr(o, 1.5, 6);
     return ['i' + i, () => i >= 2 && i <= 4 ? wlShift(R0.stag, 0, 8, 11, 18, i === 3 ? 6 : 5) : R0.stag, 0];   // пасётся: голова к траве
   }
   if (k === 'starfox') {
-    if (o.mv) { const i = wlFr(o, st === 'flee' ? 14 : 9, 8); return ['w' + i, () => gaitRows(R0.starfox, 2, 8, i), 0]; }
+    if (o.mv) { const i = wlFr(o, st === 'flee' ? 21 : 13.5, 12); return ['w' + i, () => gaitRows(R0.starfox, 2, 12, i), 0]; }
     if (st === 'react') { const i = Math.min(3, Math.floor(o.rt / 0.18)); return ['r' + i, () => i === 1 || i === 2 ? wlShift(R0.starfox, 0, 1, 10, 15, 1) : R0.starfox, i === 2 ? 1 : 0]; }   // 4: прижал уши, припал
     const i = wlFr(o, 2, 6);
     return ['i' + i, () => i % 3 === 1 ? R0.starfox.map(r => r.replace(/\+/g, '*')) : i % 3 === 2 ? R0.starfox.map(r => r.replace(/\*/g, '+')) : R0.starfox, 0];   // хвост мерцает
@@ -495,7 +496,7 @@ function wlDraw(c, o) {
   }
   if (o.k === 'starfox' || o.k === 'stag') {     // мягкое свечение редких зверей
     const g = o.k === 'starfox' ? '200,210,255' : '200,255,170', a2 = (o.k === 'starfox' ? 0.22 : 0.12) * alpha * (0.8 + 0.2 * Math.sin(Game.time * 3 + o.id));
-    c.fillStyle = `rgba(${g},${a2})`; c.beginPath(); c.ellipse(px, py - spr.height * 0.45, spr.width * 0.55, spr.height * 0.5, 0, 0, 7); c.fill();
+    c.fillStyle = `rgba(${g},${a2})`; c.beginPath(); c.ellipse(px, py - afH(spr) * 0.45, afW(spr) * 0.55, afH(spr) * 0.5, 0, 0, 7); c.fill();
   }
   wlBlit(c, spr, px, py, o.face, lift + (fly ? 4 : 0), alpha, !(o.k === 'otter' && o.sw) && !fly);
   if (o.k === 'starfox' && o.mv) {          // звёздный след

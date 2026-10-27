@@ -302,7 +302,7 @@ function drawDamage(c, b, ox, oy, spr) {
 
 // ---------- Летучие мыши ----------
 // С вечера две-три мыши (не больше трёх — чтобы не мельтешили) кружат над деревней; пролетевшая у самой головы гнома пугает его
-// ненадолго (взмах руками, возглас). На рассвете улетают.
+// ненадолго (взмах руками, возглас). На рассвете улетают. Прогнать мышь можно (haunts.js): она улетает, а не гибнет.
 
 function batsTick(dt) {
   const bats = Game.bats || (Game.bats = []);
@@ -310,9 +310,10 @@ function batsTick(dt) {
   const cx = Game.units.length ? Game.units.reduce((s, u) => s + u.x, 0) / Game.units.length : MAP_W / 2;
   const cy = Game.units.length ? Game.units.reduce((s, u) => s + u.y, 0) / Game.units.length : MAP_H / 2;
   // прилетают с вечера
-  if (dark > 0.3 && bats.length < 3 && Math.random() < dt * 0.12 && startOpen('bats')) {
-    const a = Math.random() * Math.PI * 2;
-    bats.push({ x: cx + Math.cos(a) * 24, y: cy + Math.sin(a) * 18, z: 28 + Math.random() * 20, tx: cx, ty: cy, ph: Math.random() * 9, spd: 2.4 + Math.random() * 1.2, retarget: 0, leave: false, cd: 0 });
+  // (гнёзда, сезон и глубина ночи — в haunts.js; прогнанная стая возвращается не сразу)
+  if (dark > 0.3 && bats.length < batCap() && batOpen() && Math.random() < dt * batRate() && startOpen('bats')) {
+    const sp = batSpawnPoint(cx, cy);
+    bats.push({ x: sp.x, y: sp.y, z: 28 + Math.random() * 20, tx: cx, ty: cy, ph: Math.random() * 9, spd: 2.4 + Math.random() * 1.2, retarget: 0, leave: false, cd: 0 });
   }
   for (let i = bats.length - 1; i >= 0; i--) {
     const b = bats[i];
@@ -325,6 +326,7 @@ function batsTick(dt) {
       const u = Game.units.length ? Game.units[(Math.random() * Game.units.length) | 0] : null;
       b.tx = (u ? u.x : cx) + (Math.random() - 0.5) * 8; b.ty = (u ? u.y : cy) + (Math.random() - 0.5) * 6; b.retarget = 2 + Math.random() * 3;
     }
+    if (!b.leave) batAvoidLight(b);                                       // свет костра и фонарей мышь облетает
     const dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy) || 1;
     // порывистый зигзаг, как у настоящих мышей
     const wob = Math.sin(b.ph * 0.31) * 1.6;
@@ -338,9 +340,12 @@ function batsTick(dt) {
       for (const u of Game.units) {
         if (u.inside || u.dead || !isPerson(u) || (u.batCD || 0) > Game.time) continue;
         if (Math.hypot(u.x - b.x, u.y - b.y) < 1.7) {
+          if (batSafe(u)) continue;                                       // у костра, под фонарём, с фонарём в руке — не тронет
           u.batCD = Game.time + 25;
+          if (batShooTry(b, u)) break;                                   // страж или смелый гном гонит мышь сам
           if (batCanTake(b, u)) { batTakes(b, u); break; }               // редко: пикирует и уносит одинокого гнома
           gesture(u, 'panic', 1.3, b.x);
+          batHint();
           floater(u.x, u.y - 1.2, ['Летучая мышь!', 'Брысь!', 'Ай, над головой!'][Math.floor(Math.random() * 3)], '#e8e0f0');
           sfxAt('squeak', b.x * TILE, b.y * TILE, 0.9);
           break;

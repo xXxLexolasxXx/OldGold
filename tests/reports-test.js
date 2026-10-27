@@ -57,6 +57,31 @@ if (!r3.err) {
   ok(r3.trash === 0, 'мусор с дороги «унесли» на склад, а склад его не берёт');
 }
 
+// ---------- 4. прерванная стройка (261027-1943-ab8d колодец, 261027-1847-2c11 «один гном вечно строит»):
+// разметку прервали после двух ударов — ударов не больше, чем здания; материал весь уложен, а здание не сдано — сдают
+const r4 = JSON.parse(R(`JSON.stringify((() => {
+  const st = Game.buildings.find(b => b.type === 'storehouse');
+  const put = (dx, dy) => { for (let r = 3; r < 20; r++) for (let a = 0; a < 16; a++) { const x = st.x + Math.round(Math.cos(a / 16 * 6.28) * r) + dx, y = st.y + Math.round(Math.sin(a / 16 * 6.28) * r) + dy; if (!checkPlacement('well', x, y, 0)) return placeBuilding('well', x, y, false, 0); } return null; };
+  const a = put(0, 0); if (!a) return { err: 'некуда поставить колодец' };
+  a.hits = 2;                                                      // разметку прервали на втором ударе
+  const b = put(4, 4); if (!b) return { err: 'некуда поставить второй колодец' };
+  b.state = 'build'; b.used = b.total; b.hits = b.maxHits - 2;     // последнюю единицу уложили, удары не добиты
+  for (const g in b.usedOf) b.usedOf[g] = b.def.cost[g] || 0;
+  return { a: a.id, b: b.id };
+})())`));
+ok(!r4.err, r4.err);
+if (!r4.err) {
+  let over = 0;
+  for (let i = 0; i < 40 && R(`Game.buildings.filter(b => b.id === ${r4.a} || b.id === ${r4.b}).some(b => b.state !== 'done')`); i++) {
+    S.runFor(sim, 10, 10, () => {});
+    over = Math.max(over, R(`Math.max(...Game.buildings.filter(b => b.id === ${r4.a} || b.id === ${r4.b}).map(b => b.state === 'done' ? 0 : b.hits - b.maxHits))`));
+  }
+  ok(R(`Game.buildings.find(b => b.id === ${r4.b}).state`) === 'done', 'стройка с уложенным материалом не сдана — гном «вечно строит»');
+  ok(R(`Game.buildings.find(b => b.id === ${r4.a}).state`) === 'done', 'прерванная разметка: колодец не достроен');
+  ok(over <= 0, `ударов больше, чем здания (+${over}) — рисовалка стройки падает`);
+}
+
 ok(!sim.errors.length, 'исключения: ' + sim.errors.slice(0, 2).join(' | '));
 if (fails.length) { console.log(`✗ отчёты тестеров: ${fails.length} ошибок`); process.exit(1); }
-console.log('✓ отчёты тестеров: летописец без шпиля, значки в 11 строк, давние кучки на дороге');
+console.log('✓ отчёты тестеров: летописец без шпиля, значки в 11 строк, давние кучки на дороге, прерванная стройка');
+process.exit(0);

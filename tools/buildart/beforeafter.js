@@ -15,6 +15,7 @@ const b64 = f => 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname,
     const o = {};
     const crop = cv => { const c = cv.getContext('2d'), d = c.getImageData(0, 0, cv.width, cv.height).data; let x0 = cv.width, y0 = cv.height, x1 = 0, y1 = 0; for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] > 0) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } const o2 = document.createElement('canvas'); o2.width = x1 - x0 + 1; o2.height = y1 - y0 + 1; o2.getContext('2d').drawImage(cv, -x0, -y0); return o2; };
     const buildingSprite0 = buildingSprite; const bs = (...a) => ({ canvas: crop(buildingSprite0(...a).canvas) });
+    for (const t of ['school', 'sawmill', 'woodcutter', 'quarry', 'bonfire']) o[t] = bs(t, 0, 3).canvas.toDataURL();
     for (const lv of [1, 2, 3]) o['inn' + lv] = bs('inn', 0, lv).canvas.toDataURL();
     for (const lv of [1, 3]) o['storehouse' + lv] = bs('storehouse', 0, lv).canvas.toDataURL();
     for (let v = 0; v < 8; v++) o['house' + v] = bs('house', 0, 3, undefined, v).canvas.toDataURL();
@@ -34,6 +35,10 @@ const b64 = f => 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname,
     ['Склад', b64('storehouse.png'), [after.storehouse3], 'buildings-store.png'],
     ['Дом', b64('house.png'), [0, 1, 2, 3].map(v => after['house' + v]), 'buildings-houses-a.png'],
     ['Ещё дома', null, [4, 5, 6, 7].map(v => after['house' + v]), 'buildings-houses-b.png'],
+    ['Школа', b64('school.png'), [after.school], 'buildings-school.png'],
+    ['Лесопилка', b64('sawmill.png'), [after.sawmill], 'buildings-sawmill.png'],
+    ['Дом лесоруба', b64('woodcutter.png'), [after.woodcutter], 'buildings-woodcutter.png'],
+    ['Каменоломня', b64('quarry.png'), [after.quarry], 'buildings-quarry.png'],
   ];
   for (const [t, b, a, f] of shots) {
     await pg.setContent(`<body style="margin:0;background:#2b3a22">${card(t, b, a, f)}</body>`);

@@ -68,10 +68,10 @@ function fwStep(W, tx, ty, spd, dt, fly) {
 }
 function fwFrame(W, moving, scared) {
   const t = fwNow();
-  if (W.fl > t) return 'v' + [0, 1, 2, 3, 2, 1][Math.floor((t * 5) % 6)];        // радость освобождения
-  if (scared) return 'h' + (Math.floor(t * 8 + W.id) % 4);
-  if (W.k === 'moth') return (moving ? 'w' : 'i') + (Math.floor(t * (moving ? 10 : 6) + W.id) % (moving ? 8 : 6));
-  return moving ? 'w' + (Math.floor(W.ph) % 8) : 'i' + (Math.floor(t * 5 + W.id) % 6);
+  if (W.fl > t) return naWinFr(t);        // радость освобождения
+  if (scared) return 'h' + (Math.floor(t * 12 + W.id) % NA_HURT_N);
+  if (W.k === 'moth') return (moving ? 'w' : 'i') + (Math.floor(t * (moving ? 15 : 12) + W.id) % NA_N);
+  return moving ? naWalkFr(W.ph) : naIdleFr(t, W.id);
 }
 const fwFear = W => Game.units.find(u => !u.dead && !u.inside && (u.hero || isPerson(u)) && Math.hypot(u.x - W.x, u.y - W.y) < (W.k === 'snail' ? 1.8 : 2.6));
 
@@ -207,7 +207,7 @@ function ftJobThink(N, dt) {
   const d = Math.hypot(tx - N.x, ty - N.y), sp = S.spd * (J.ph === 'flee' ? 1.5 : 0.95);
   if (J.ph === 'back') {
     const W = Game.swp.find(w => w.id === J.id);
-    if (W && W.cap === N.id && Math.hypot(W.x - N.x, W.y - N.y) > 3.6) { N.st = 'idle'; N.fr = 'i' + (Math.floor(now * 5 + N.id) % 6); return true; }       // ждёт ведомого
+    if (W && W.cap === N.id && Math.hypot(W.x - N.x, W.y - N.y) > 3.6) { N.st = 'idle'; N.fr = naIdleFr(now, N.id); return true; }       // ждёт ведомого
     if (d < 1.9) {
       const L = Game.lairs.find(l => l.id === N.lair);
       if (W && L && W.cap === N.id) {

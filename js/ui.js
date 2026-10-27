@@ -51,7 +51,8 @@ function toast(text, target, kind) {
   const mob = document.body.classList.contains('mobile');
   // важное (поход, зима, голод, золото школы) висит заметно дольше
   const keep = /поход|Зим|Осень|голод|школ.*золот|золот.*школ|Малгор|Победа|Поражение/i.test(String(text)) ? 1.7 : 1;
-  setTimeout(() => toastClose(el), keep * Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70)));
+  // но не дольше 10 с на телефоне и 9 с на ПК — длинные зимние тосты висели по полминуты и копились
+  setTimeout(() => toastClose(el), Math.min(mob ? 10000 : 9000, keep * Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70))));
 }
 
 // Шутка при самой первой стройке (один раз на устройство, только на экране — на игру не влияет, кооп не трогает)
@@ -857,6 +858,7 @@ function infoBuilding(b) {
       h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><span class="tb-pic"><img src="${portraitURL(t)}" alt="">${trainIconHTML(t)}</span><span class="tb-n">${UNIT_TYPES[t].name.split('-')[0]}</span>${q ? `<span class="q">${q}</span>` : ''}</button>`;
     }
     h += '</div>';
+    if (typeof wkCensusHTML === 'function') h += wkCensusHTML();   // сводка жителей по профессиям и уровням (workers.js)
   }
   if (b.type === 'inn') {
     const hungry = Game.units.filter(u => u.food < HUNGRY).length;
@@ -903,7 +905,7 @@ function infoBuilding(b) {
       h += `<div class="recipe${b.crops[crop] ? '' : ' off'}">${gi(crop)} ${CROP_NAMES[crop]}<span class="t">полей: ${cnt[crop] || 0}</span>${def.crops.length > 1 ? `<input type="checkbox" data-crop="${crop}" ${b.crops[crop] ? 'checked' : ''}>` : ''}</div>`;
     h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div><div class="small muted">${def.crops.includes('hops') ? `Поля хмеля закладывайте инструментом «Хмель» рядом (до ${FARM_R} клеток): доска за подвесы.` : `Поля закладывайте инструментом «Пшеница» рядом с фермой (до ${FARM_R} клеток) — работяга вскопает их бесплатно.`} Сено — побочный продукт жатвы.</div>`;
   }
-  if (b.type === 'bonfire') h += `<div class="small muted">Кольца на карте: свет и защита от нечисти — ${BONFIRE_SAFE} клеток, у костра возрождаются герои — ${BONFIRE_HERO}, вне ${BONFIRE_NOSPAWN} нечисть и не появляется.</div>`;
+  if (b.type === 'bonfire') { const m = bonfireMul(b), f = r => Math.round(r * m * 10) / 10; h += `<div class="small muted">Кольца на карте: свет и защита от нечисти — ${f(BONFIRE_SAFE)} клеток, у костра возрождаются герои — ${f(BONFIRE_HERO)}, ближе ${f(BONFIRE_NOSPAWN)} нечисть не появляется.${m > 1 ? ' Костёр уровня ' + b.level + ': всё шире в ' + m + ' раза.' : ''}</div>`; }
   if (b.type === 'swine') {
     const st = ['', '⅓', '⅔'];
     h += '<div class="isec">Загон</div>';

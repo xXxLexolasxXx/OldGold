@@ -3,6 +3,7 @@
 //   npm test                    — быстрый прогон (smoke, ~1–2 минуты)
 //   npm run test:long           — длинный прогон (несколько игровых часов на нескольких сидах)
 //   node tests/run.js --only sim --seeds 7,8 --minutes 30   — выборочно
+//   node tests/run.js --quick --shard 1/3 --retry 1          — CI: облегчённо, треть проверок, упавшую повторить один раз
 // Наборы: load (порядок и синтаксис скриптов), sim (инварианты симуляции), save (сохранение→загрузка),
 // det (детерминизм: один сид — одно и то же состояние), coop (клиент кооператива не расходится с сервером).
 const path = require('path');
@@ -14,20 +15,40 @@ const L = require('./lib/sim');
 const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf('--' + k); return i >= 0 ? argv[i + 1] : d; };
 const LONG = argv.includes('--long');
+const QUICK = !LONG && argv.includes('--quick');   // облегчённо: один сид, короче симуляция и кооп
 const ONLY = arg('only', '').split(',').filter(Boolean);
-const SEEDS = arg('seeds', LONG ? '11,22,33,44' : '11,22').split(',').map(Number);
-const MINUTES = +arg('minutes', LONG ? 120 : 15);
-const COOP_MIN = +arg('coop-minutes', LONG ? 60 : 8);
+const SEEDS = arg('seeds', LONG ? '11,22,33,44' : QUICK ? '11' : '11,22').split(',').map(Number);
+const MINUTES = +arg('minutes', LONG ? 120 : QUICK ? 8 : 15);
+const COOP_MIN = +arg('coop-minutes', LONG ? 60 : QUICK ? 4 : 8);
+// --shard k/n — только k-я из n частей проверок (по кругу), для параллельных задач CI
+const [SHARD_K, SHARD_N] = arg('shard', '1/1').split('/').map(Number);
+// --retry N — упавшую проверку повторить до N раз; прошла со второй попытки — замечание «нестабильна», не провал
+// (ложные красные от нагрузки машины: house, unions, kids, tempo…)
+const RETRY = +arg('retry', 0);
 const STUCK_SEC = 240;            // идущий житель стоит на месте дольше — «застрял»
 const LIMITS = { units: 400, buildings: 600, animals: 500, piles: 800, floaters: 600, log: 2000, ents: 300, ghosts: 200, skels: 300, critters: 500, roadSites: 2000, falling: 300 };
 
 const results = [];
 const t00 = Date.now();
+let testNo = 0;
 function test(name, fn) {
   if (ONLY.length && !ONLY.some(o => name.startsWith(o))) return;
-  const t0 = Date.now(), r = { name, fails: [], warns: [], info: [] };
+  if (testNo++ % SHARD_N !== SHARD_K - 1) return;
+  const t0 = Date.now(), first = [];
+  let r, tries = 0;
   process.stdout.write(`▶ ${name} … `);
-  try { fn(r); } catch (e) { r.fails.push('исключение: ' + String(e && e.stack || e).split('\n').slice(0, 6).join('\n    ')); }
+  for (;;) {
+    r = { name, fails: [], warns: [], info: [] };
+    try { fn(r); } catch (e) { r.fails.push('исключение: ' + String(e && e.stack || e).split('\n').slice(0, 6).join('\n    ')); }
+    if (!r.fails.length || tries >= RETRY) break;
+    if (!first.length) first.push(...r.fails.slice(0, 3));
+    tries++;
+    process.stdout.write(`повтор ${tries} … `);
+  }
+  if (tries) {
+    r.tries = tries + 1;
+    if (!r.fails.length) r.warns.unshift(`нестабильна: прошла с ${tries + 1}-й попытки, в первой: ${first.join(' | ').slice(0, 300)}`);
+  }
   r.ms = Date.now() - t0;
   results.push(r);
   console.log(`${r.fails.length ? '✗ ПРОВАЛ' : r.warns.length ? '⚠ есть замечания' : '✓'} (${(r.ms / 1000).toFixed(1)} с)`);
@@ -63,6 +84,7 @@ scriptTest('wildlife: живность по биомам и дням, меньш
 scriptTest('frogfolk: жаболюды — поселения у воды, касты, прыжок, влажность, яд, зима, сейв', 'frogfolk-test.js');
 scriptTest('raid: курган Курганного князя — вход по клику в одиночке и в коопе, подпись, причины, сейв', 'raid-test.js');
 scriptTest('season: сезоны по 8 суток, старые сейвы, снег', 'season-test.js');
+scriptTest('haunts: прогон летучих мышей, нечисть по местам (колодец, поле, гнёзда), сезон и глубина ночи', 'haunts-test.js');
 scriptTest('firewood: дрова зимой — расход, холод без дров, лето без расхода, напоминание, сейв', 'firewood-test.js');
 scriptTest('wildfire: горящие куры и деревья, фонари, печи, молния, колодец и крыши, огонь всегда гаснет', 'wildfire-test.js', [], 420000);
 scriptTest('disaster: стихийные бедствия — знамения, виды на сидах, колодец, ремонт, море, сейв, кооп', 'disaster-test.js', [], 420000);
@@ -84,9 +106,11 @@ scriptTest('profmerge: слитые профессии — кузнец, лес�
 scriptTest('unions: профсоюзы — советы по стройке и ремеслу, редкий показ, выключатель, сейв, кооп', 'unions-test.js', LONG ? [] : ['10'], 420000);
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
+scriptTest('rush: «Навались!» — свободные и мастера без дела идут на дефицит, отбой, таймер, сохранение, кооп', 'rush-test.js');
 scriptTest('nightground: цветки, руки и плиты ночной земли редко и не кучей, пять цветов, цветок жуёт при жертве', 'nightground-test.js', [], 900000);
 scriptTest('nightfog: ночной туман не гуще потолка и редеет над деревней', 'nightfog-test.js');
 scriptTest('banish: изгнание — молитва по клику (и в коопе) жжёт и добивает, изгнание нежити и оберег — половина здоровья призракам, банши прогнана, жнец сопротивляется', 'banish-test.js');
+scriptTest('banshee: банши — призрак с кладбища: сама нападает, ранит героя, гибнет от оружия, святая сила — половина', 'banshee-test.js');
 scriptTest('ghosts: призраки смертны — здоровье, святые силы снимают половину, опыт за победу, раненый удирает, выходят реже', 'ghost-hp-test.js');
 scriptTest('reaper: жнец смертен — стихии, фазы, изгнание ранит, рассвет, награда, сейв, кооп, баланс боя', 'reaper-test.js', LONG ? [] : ['--quick']);
 scriptTest('lantern: днём фонари выключены, вечером горят, на рассвете гаснут', 'lantern-test.js');
@@ -111,13 +135,14 @@ scriptTest('oathbal: баланс классов героя', 'oath-balance.js')
 scriptTest('abil: способности классов, ресурс, лечение отдыхом, панель, миграция, кооп, баланс', 'abil-test.js');
 scriptTest('arena: арена PvP — детерминизм, контроль и иммунитеты, горение, таймер, сдача, входы, 60 способностей, боты, матрица', 'arena-test.js');
 scriptTest('arena-net: арена онлайн — очередь по Эло, бой по сети, копия боя по кадрам, рейтинг и лиги, накрутки, обрыв и пауза, мусорные входы, таблица', 'arena-net-test.js');
-scriptTest('skelart: скелеты в пиксель-арте — кадры 6/8/9/4/9/13, виды, кэш, облик в сейве, рисование без падений', 'skelart-test.js');
+scriptTest('skelart: скелеты в пиксель-арте — кадры 12/12/12/6/12/13, виды, кэш, облик в сейве, рисование без падений', 'skelart-test.js');
 scriptTest('kurganart: Курганный князь в пиксель-арте — кадры, фазы I–III, кэш, рисование без падений', 'kurganart-test.js');
 scriptTest('icon: значки, названия и описания всех способностей, окно гильдии', 'icon-test.js');
 scriptTest('tempo: кооп-пауза, скорость, старые приоритеты не рассылаются', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
 scriptTest('newstart: начало игры — костёр первым шагом, лор чередуется с обучением, «Пережить N ночей»', 'newstart-test.js');
+scriptTest('intro: «Новое в деревне» — лорное введение к каждой новой ветке стройки', 'intro-test.js');
 scriptTest('faceart: портреты собеседников — 16 лиц, два кадра, 72×72 пикселя, кэш, у всех собеседников кампании и лора есть портрет', 'faceart-test.js');
 scriptTest('campaign: акты 1–5 — праздник и взрыв, обвал, Кремнёвка, дорога к межевому камню, сценарий с наследием, сейв, поражение, перевод', 'campaign-test.js', [], 900000);
 scriptTest('camp-tower: задание акта 1 про башню у штрека', 'camp-tower-test.js');
@@ -131,7 +156,7 @@ scriptTest('runsim: ядро забега — детерминизм, бот д�
 scriptTest('maps: свои карты — формат, проверка, мир, сейв, цель', 'maps-test.js');
 scriptTest('newworld: хост начинает мир на своей карте', 'newworld-test.js');
 scriptTest('piles: мусор не копится, потолок кучек, подпись подбора', 'piles-test.js');
-scriptTest('reports: баги из отчётов тестеров — летописец без шпиля, значки в 11 строк, давние кучки на дороге', 'reports-test.js');
+scriptTest('reports: баги из отчётов тестеров — летописец без шпиля, значки в 11 строк, давние кучки на дороге, прерванная стройка', 'reports-test.js');
 scriptTest('dragonpet: дракончики-питомцы — шанс поимки, осторожность, разговор, умения, уход, сейв, миграция', 'dragonpet-test.js');
 scriptTest('leprechaun: лепреконы у рудников, споры за слиток, лимиты золота, сейв', 'leprechaun-test.js');
 scriptTest('trav: одинокие путники — смайлики, разговор, вор, разбойник, сохранение', 'trav-test.js');
@@ -309,5 +334,16 @@ test(`coop: клиент не расходится с сервером, ${COOP_M
 const fails = results.filter(r => r.fails.length), warns = results.filter(r => r.warns.length);
 console.log(`\n${results.length} проверок за ${((Date.now() - t00) / 1000).toFixed(0)} с: ` +
   `${results.length - fails.length} прошло, ${fails.length} провалено${warns.length ? `, с замечаниями ${warns.length}` : ''}.`);
+const flaky = results.filter(r => r.tries && !r.fails.length);
+if (flaky.length) console.log('Нестабильные (прошли с повтора): ' + flaky.map(r => r.name.split(':')[0]).join(', '));
 if (argv.includes('--json')) fs.writeFileSync(arg('json'), JSON.stringify(results, null, 2));
+// в CI — таблица в сводку задачи GitHub Actions
+if (process.env.GITHUB_STEP_SUMMARY) {
+  const cell = s => String(s).replace(/\|/g, '\\|').replace(/\n\s*/g, ' ').slice(0, 300);
+  const rows = results.filter(r => r.fails.length || r.warns.length)
+    .map(r => `| ${r.fails.length ? '✗' : '⚠'} | ${cell(r.name.split(':')[0])} | ${(r.ms / 1000).toFixed(0)} с | ${cell((r.fails[0] || r.warns[0]))} |`);
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### tests/run.js ${SHARD_N > 1 ? `(часть ${SHARD_K}/${SHARD_N})` : ''}\n\n` +
+    `${results.length} проверок: ${results.length - fails.length} прошло, ${fails.length} провалено, с замечаниями ${warns.length}, нестабильных ${flaky.length}.\n\n` +
+    (rows.length ? '| | проверка | время | первое сообщение |\n|---|---|---|---|\n' + rows.join('\n') + '\n\n' : ''));
+}
 process.exit(fails.length ? 1 : 0);

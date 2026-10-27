@@ -43,6 +43,9 @@ const REVEAL = [
   { k: 'sub', sel: '#sub-btn', icon: 'broom', name: 'Субботник',
     lore: 'Нашлась метла! Раз в день, с утра, можно объявить субботник — деревня приберётся. Скрипя.',
     when: () => rvDay() >= 2 },
+  { k: 'rush', sel: '#rush-btn', icon: 'people', name: 'Навались!',
+    lore: 'Бригадир научился кричать «Навались!»: кто без дела — бегом туда, чего деревне не хватает. Брёвна, камень, зерно.',
+    when: () => rvBuilt('woodcutter') && rvBuilt('quarry') || rvDay() >= 2 },
   { k: 'chron', sel: '[data-chron="open"]', icon: 'log', name: 'Летопись',
     lore: 'Пережили первую ночь — это надо записать. Летопись в меню: «Ещё».',
     when: () => rvNights() >= 1 && !rvEvening() },
@@ -219,7 +222,7 @@ function rvMenuButton() {
   unlockStage = function (id, quiet) {
     const had = Game.unlocked && Game.unlocked[id], lore = REVEAL_STAGE[id];
     _us(id, quiet || !!lore);
-    if (!had && !quiet && lore && Game.unlocked[id] && !RV.all) rvNote(lore[0], lore[1], 'build');
+    if (!had && !quiet && lore && Game.unlocked[id] && !RV.all && !(typeof introFor === 'function' && introFor(id))) rvNote(lore[0], lore[1], 'build');
   };
 }
 

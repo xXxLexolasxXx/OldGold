@@ -515,6 +515,9 @@ function initResToggle() {
     _s2();
     const b = document.getElementById('sub-btn'), list = document.querySelector('#tab-menu .menu-list');
     if (b && list && b.parentElement !== list) { const wrap = b.parentElement; list.prepend(b); if (wrap && wrap.classList.contains('speed') && !wrap.children.length) wrap.remove(); }
+    // «Навались!» — рядом с «Субботником» (rush.js)
+    const r = document.getElementById('rush-btn');
+    if (r && b && list && r.parentElement !== list) { const wrap = r.parentElement; b.after(r); if (wrap && wrap.classList.contains('speed') && !wrap.children.length) wrap.remove(); }
   };
 }
 
