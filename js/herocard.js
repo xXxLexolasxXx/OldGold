@@ -91,7 +91,7 @@ function hcHeroHTML() {
     let inv = '<div class="hl-inv">';
     for (let i = 0; i < HL_INV; i++) {
       const it = H.inv[i];
-      inv += it ? `<button class="hl-slot" data-hero="use${i}" title="${hlName(it.k)}${HL_GEAR[it.k] ? ' — надеть (шанс удачи 30%)' : HL_FOOD[it.k] ? ' — съесть' : ''}. Правый клик — выбросить"><img src="${iconURL('good', it.k, 2)}" alt="">${it.n > 1 ? `<i>${it.n}</i>` : ''}</button>` : '<span class="hl-slot empty"></span>';
+      inv += it ? `<button class="hl-slot" data-hero="use${i}" title="${hlName(it.k)}${HL_GEAR[it.k] ? ' — надеть (шанс удачи 50%)' : HL_FOOD[it.k] ? ' — съесть' : ''}. Правый клик — выбросить"><img src="${iconURL('good', it.k, 2)}" alt="">${it.n > 1 ? `<i>${it.n}</i>` : ''}</button>` : '<span class="hl-slot empty"></span>';
     }
     x += `<div class="irow small muted">Рюкзак (${H.inv.filter(Boolean).length}/${HL_INV})</div>${inv}</div>`;
   }

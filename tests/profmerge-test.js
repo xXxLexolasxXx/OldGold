@@ -93,8 +93,8 @@ section = 'подлог';
     ok(JSON.stringify(got) === JSON.stringify(want), `типы: ${JSON.stringify(got)}`);
     const sc = JSON.parse(s2.h.run(`JSON.stringify((() => { const b = Game.buildings.find(b => b.type === 'school'); return b ? { q: b.queue, t: b.training && b.training.type } : null; })())`));
     if (sc) ok(JSON.stringify(sc) === JSON.stringify({ q: ['woodcutter', 'smelter', 'herder', 'serf'], t: 'smelter' }), `школа: ${JSON.stringify(sc)}`);
-    const pr = JSON.parse(s2.h.run('JSON.stringify(Game.prio.jobs)'));
-    ok(JSON.stringify(pr) === JSON.stringify({ smelter: 1 }), `приоритеты: ${JSON.stringify(pr)} (старые профессии — в «Авто»)`);
+    // ручные приоритеты из старого сейва (поле pr) больше не читаются и не пишутся обратно
+    ok(s2.h.run('Game.prio === undefined && !("pr" in serializeGame())'), 'старые приоритеты из сейва не проигнорированы');
     L.runFor(s2, 60, 10);
     ok(!s2.errors.length, `исключения: ${s2.errors.slice(0, 2).join(' | ')}`);
   }

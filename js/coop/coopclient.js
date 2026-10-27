@@ -201,7 +201,7 @@ function coopUnits(m) {
     else u.action = null;
     if (d.ow) {
       u.owner = d.ow; u.title = d.tt || null;
-      u.hero = Object.assign(u.hero || {}, { name: d.ow, owner: d.ow, level: d.lv, clsKey: d.cl, hp: d.hp, maxhp: d.mhp, cls: ((Coop.meta && Coop.meta.classes[d.cl]) || {}).name || '', equip: { weapon: null, armor: null } });
+      u.hero = Object.assign(u.hero || {}, { name: d.ow, owner: d.ow, level: d.lv, clsKey: d.cl, hp: d.hp, maxhp: d.mhp, cls: ((Coop.meta && Coop.meta.classes[d.cl]) || {}).name || '', equip: { weapon: d.w || null, armor: d.ar || null } });   // надетое видно всем (gearpick.js)
       if (d.i === Coop.uid && Game.hero !== u) {
         Game.hero = u;
         if (!Game.selUnit) { Game.selUnit = null; centerOn(u.x * TILE, u.y * TILE); }   // без карточки: новичку хватает карты
@@ -272,7 +272,7 @@ function coopApplyBuilding(d, byId) {
   b.hits = d.hits ?? (b.state === 'done' ? b.maxHits : 0);
   b.queue = d.queue || [];
   b.training = d.training || null;
-  b.paused = !!d.paused; b.hold = !!d.hold; b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
+  b.paused = !!d.paused; b.urgUntil = d.urg || 0; b.hold = !!d.hold; b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
   if (d.recipeOn && d.recipeOn.length === b.recipeOn.length) b.recipeOn = d.recipeOn;
   b.recipeIdx = d.recipeIdx || 0;
   b.orders = Array.isArray(d.orders) ? d.orders : [];
@@ -687,7 +687,7 @@ function coopPickClass(classes) {
 }
 
 const COOP_ITEM_RU = { baton: 'Эстафетная палочка', cargo: 'Груз хлеба' };
-const ITEM_NAME = k => COOP_ITEM_RU[k] || (typeof GOODS !== 'undefined' && GOODS[k] ? GOODS[k].name : k);
+const ITEM_NAME = k => COOP_ITEM_RU[k] || (typeof GOODS !== 'undefined' && GOODS[k] ? GOODS[k].name : typeof HL_GEAR !== 'undefined' && HL_GEAR[k] ? HL_GEAR[k].name : k);
 
 // Передать предмет: выбрать, кому (рядом, не дальше 4 клеток), потом клик по слоту
 function coopGiveBar() {
@@ -704,7 +704,7 @@ function coopInvHtml() {
   const me = Coop.me;
   const inv = me ? me.inv : Array(10).fill(null);
   return `<div class="cp-inv">${inv.map((s, i) => s
-    ? `<div class="cp-slot has" data-coop="use" data-slot="${i}" title="${coopEsc(ITEM_NAME(s.k))} — клик: съесть, Shift+клик: выбросить">${coopEsc(String(ITEM_NAME(s.k)).slice(0, 5))}<i>${coopEsc(s.n)}</i></div>`
+    ? `<div class="cp-slot has" data-coop="use" data-slot="${i}" title="${coopEsc(ITEM_NAME(s.k))} — нажмите: съесть, положить, на склад, выбросить">${coopEsc(String(ITEM_NAME(s.k)).slice(0, 5))}<i>${coopEsc(s.n)}</i></div>`
     : '<div class="cp-slot"></div>').join('')}</div>`;
 }
 
@@ -780,6 +780,7 @@ function coopInitHud() {
 function coopSlotClick(el, e) {
   const slot = +el.dataset.slot;
   if (Coop.giveTo && el.closest('#cp-pop')) { coopSend({ t: 'give', to: Coop.giveTo, slot }); return; }
+  if (!e.shiftKey && typeof gpCoopSlotMenu === 'function') { gpCoopSlotMenu(slot, [e.clientX, e.clientY]); return; }   // меню вещи (gearpick.js)
   coopSend({ t: e.shiftKey ? 'drop' : 'use', slot });
 }
 
@@ -1229,6 +1230,7 @@ function coopInitControls() {
           issueCmd(h, c);
           if (c.kind !== 'move') floater(c.tx + 0.5, c.ty - 0.4, c.label, '#f6d458');
           coopHintDone();
+          if (inn) selectBuilding(b);   // герой идёт поесть, но и окно трактира открывается — иначе по нему «не кликнуть»
           return;
         }
         toast('Сюда не пройти');
@@ -1384,7 +1386,7 @@ function coopAdminOpen() {
   coopHandle = function (m) {
     if (m.t === 'stats') { coopStatsShow(m.s, m.server); return; }
     if (m.t === 'tempo') { Coop.tempo = { speed: m.speed, paused: m.paused, votes: m.votes, need: m.need }; tempoShow(); return; }
-    if (m.t === 'prio') { prioApply(m.p); updateUI(true); return; }
+    if (m.t === 'prio') return;      // старый сервер с ручными приоритетами — их больше нет
     if (m.t === 'wk') { wkApply(m); updateUI(true); return; }
     if (m.t === 'un') { if (typeof unApply === 'function') unApply(m); return; }
     if (m.t === 'diff') {

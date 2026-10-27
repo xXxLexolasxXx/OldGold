@@ -76,6 +76,8 @@ function coopJoin(name, dataJson) {
   H.maxhp = coopBaseHp(cls, level);
   H.hp = d.hp > 0 ? Math.min(d.hp, H.maxhp) : H.maxhp;
   H.inv = Array.from({ length: COOP_INV }, (_, i) => (d.inv && d.inv[i]) || null);
+  // надетое (gearpick.js): только то, что правда можно надеть, и в свой слот
+  if (d.eq && typeof d.eq === 'object') for (const sl of ['weapon', 'armor']) { const k = d.eq[sl]; if (typeof k === 'string' && HL_GEAR[k] && HL_GEAR[k].slot === sl) H.equip[sl] = k; }
   u.hero = H;
   coopDropStale(H);
   coop.players.set(name, u);
@@ -88,7 +90,7 @@ function coopHeroData(name) {
   const u = coop.players.get(name);
   if (!u) return null;
   const H = u.hero;
-  return JSON.stringify({ cls: H.clsKey, level: H.level, hp: Math.round(H.hp), inv: H.inv, x: u.x, y: u.y, food: u.food, look: u.look, nf: H.nightFalls || 0, q: H.quests || null, xp: H.xp || 0, ti: H.titles || [], qs: H.qstat || {}, tt: H.title || null });
+  return JSON.stringify({ cls: H.clsKey, level: H.level, hp: Math.round(H.hp), inv: H.inv, eq: H.equip, x: u.x, y: u.y, food: u.food, look: u.look, nf: H.nightFalls || 0, q: H.quests || null, xp: H.xp || 0, ti: H.titles || [], qs: H.qstat || {}, tt: H.title || null });
 }
 
 function coopLeave(name) {
@@ -224,10 +226,10 @@ function coopCmd(name, msgJson, admin) {
   const can = k => { if (admin || coop.perms[k]) return true; coopSay(name, 'Хост запретил: ' + COOP_PERMS[k].toLowerCase()); return false; };
   switch (m.t) {
     case 'go': if (u && coopInt(m.x) && coopInt(m.y)) coopGo(u, m.x, m.y); break;
-    case 'prio': if (can('manage')) coop.out.push({ msg: prioCmd(m) }); break;
     case 'use': if (u && coopInt(m.slot) && m.slot >= 0 && m.slot < COOP_INV) coopUseItem(u, m.slot); break;
     case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) { const k = u.hero.inv[m.slot].k; u.hero.inv[m.slot] = null; if (COOP_QITEM[k]) coopGroupFail(`${name} выбросил «${COOP_QITEM[k]}»`); } break;
     case 'give': if (u && can('give') && coopSlow(name, 0.8)) coopGive(name, m); break;
+    case 'grab': case 'release': case 'putdown': case 'stash': case 'equip': case 'unequip': if (u && typeof gpCoopCmd === 'function' && coopSlow(name, 0.3)) gpCoopCmd(u, m); break;   // вещи на земле и в рюкзаке (gearpick.js)
     case 'decor': {
       if (!u || !can('decor') || !coopSlow(name, 0.25)) break;
       if (!coopInt(m.x) || !coopInt(m.y) || !vdOwn(m.k)) break;
@@ -328,6 +330,7 @@ function coopBuildingAct(name, m) {
     case 'deliver': if (b.state === 'done' && (b.def.inputs || b.isStore())) toggleDeliver(b); break;
     case 'upgrade': if (canUpgrade(b)) startUpgrade(b); break;
     case 'upgcancel': if (b.upg) cancelUpgrade(b); break;
+    case 'urgent': urgPress(b); break;
     case 'demolish': removeBuilding(b); break;
     case 'train': if (coopOwn(UNIT_TYPES, m.type) && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy && b.queue && b.queue.length < 10) b.queue.push(m.type); break;
     case 'untrain': if (coopInt(m.i)) b.queue.splice(m.i, 1); break;
@@ -681,7 +684,7 @@ function coopUnitRec(u, now) {
   for (const k of COOP_UNIT_EX) { const v = u[k]; if (v) (ex || (ex = {}))[k] = coopPlain(v, 1); }
   if (ex) o.ex = ex;
   if (u.owner) o.ow = u.owner;
-  if (u.hero && u.owner) { o.hp = Math.round(u.hero.hp); o.mhp = u.hero.maxhp; o.cl = u.hero.clsKey; o.lv = u.hero.level; if (u.hero.title) o.tt = u.hero.title; }
+  if (u.hero && u.owner) { o.hp = Math.round(u.hero.hp); o.mhp = u.hero.maxhp; o.cl = u.hero.clsKey; o.lv = u.hero.level; if (u.hero.title) o.tt = u.hero.title; const E = u.hero.equip; if (E && E.weapon) o.w = E.weapon; if (E && E.armor) o.ar = E.armor; }
   return o;
 }
 
@@ -890,7 +893,7 @@ function coopMeData(name) {
   const u = coop.players.get(name);
   if (!u) return null;
   const H = u.hero;
-  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, food: r2(u.food), vil: Game.camp ? null : coopVillageInfo(), qx: Game.camp ? null : coopQuestInfo(name), xp: H.xp || 0, tt: H.title || null });
+  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, eq: H.equip, food: r2(u.food), vil: Game.camp ? null : coopVillageInfo(), qx: Game.camp ? null : coopQuestInfo(name), xp: H.xp || 0, tt: H.title || null });
 }
 
 function coopDrain() {
@@ -1428,7 +1431,7 @@ function coopCampProg() {
 const COOP_GIVE_R = 4, COOP_GIVE_Q = 6, COOP_GIVE_DAY = 60;
 const COOP_RELAY_LEG = 90, COOP_BREAD_T = 240, COOP_BREAD_N = 4, COOP_CARGO_SLOW = 0.8;
 const COOP_QITEM = { baton: 'Эстафетная палочка', cargo: 'Груз хлеба' };
-const ITEM_RU = k => COOP_QITEM[k] || (GOODS[k] ? GOODS[k].name : k);
+const ITEM_RU = k => COOP_QITEM[k] || (GOODS[k] ? GOODS[k].name : typeof HL_GEAR !== 'undefined' && HL_GEAR[k] ? HL_GEAR[k].name : k);   // набор класса (ржавый меч, посох искр) — не товар, но имя есть
 
 // не чаще раза в sec секунд игрового времени на игрока (антиспам)
 function coopSlow(name, sec) {

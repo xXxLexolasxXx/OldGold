@@ -76,10 +76,9 @@ async function login(port, nick, xff) {
     host.c.send({ t: 'pause', on: true }); await sleep(400);
     ok(host.c.last('tempo').paused === true && guest.c.last('tempo').paused === true, 'хост не поставил паузу сразу');
     // на паузе строить можно (команда проходит), время стоит
+    // ручных приоритетов больше нет: команду старого клиента сервер молча пропускает и ничего не рассылает
     guest.c.send({ t: 'prio', k: 'tasks', key: 'wood', v: 0 }); await sleep(400);
-    ok(host.c.last('prio') && host.c.last('prio').p.tasks.wood === 0, 'приоритет не разослан хосту');
-    guest.c.send({ t: 'prio', k: 'tasks', key: 'zzz', v: 0 }); guest.c.send({ t: 'prio', k: 'jobs', key: 'serf', v: 9 }); await sleep(300);
-    const p = host.c.last('prio').p; ok(Object.keys(p.tasks).join() === 'wood' && Object.keys(p.jobs).length === 0, 'принят мусор: ' + JSON.stringify(p));
+    ok(!host.c.last('prio') && !guest.c.last('prio'), 'сервер разослал старую команду prio');
     // снять паузу: хост сразу
     host.c.send({ t: 'pause', on: false }); await sleep(400);
     ok(guest.c.last('tempo').paused === false, 'хост не снял паузу');

@@ -435,6 +435,7 @@ const CAMP_FACE_DRAW = { grum: cfGrum, yagla: cfYagla, pim: cfPim, tan: cfTan, s
 
 // data-URL кадра портрета (f: 0 — обычный, 1 — моргнул); '' — портрета нет или рисовать негде (сервер, тесты)
 function campFaceUrl(who, f) {
+  if (typeof pxfFaceUrl === 'function') { const u = pxfFaceUrl(who, f); if (u) return u; }   // новые портреты ручным пикселем (facespx.js); прежние — запасные
   const key = who + f;
   if (CAMP_FACE[key] !== undefined) return CAMP_FACE[key];
   const D = CAMP_FACE_DRAW[who];
