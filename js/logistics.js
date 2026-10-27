@@ -325,7 +325,7 @@ function dispatchBuilders() {
   const matOk = (b, st) => ['trunk', 'timber', 'stone'].some(k => st[k] > 0 || b.incoming[k] > 0 ||
     (b.demand(k) > 0 && storeHaving(b.doorX, b.doorY, k, compAt(b.doorX, b.doorY), b)));   // работяга донесёт сам
   const sites = [
-    ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold && (b.state === 'site' || matOk(b, b.stock))),
+    ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold && (b.state === 'site' || b.used >= b.total || matOk(b, b.stock))),   // всё уложено, но не сдано — добить
     ...Game.buildings.filter(b => b.upg && !b.upg.builder && matOk(b, b.upg.stock)),
     // дорогу можно копать сразу, а мостить — когда камень на месте или в пути
     ...[...Game.roadSites.values()].filter(s => !s.builder && (s.dug < 1 || s.stock.stone + s.incoming.stone > 0 || storeHaving(s.x, s.y, 'stone'))),
