@@ -498,9 +498,15 @@ function goalHudRender() {
 
 // заставка главы — одно окно за раз: ждёт, пока закроют сцену лора или другое окно очереди, и короткую паузу после
 function goalCutWait() {
-  if (typeof Lore !== 'undefined' && Lore.cur) return true;
+  if (typeof Lore !== 'undefined' && (Lore.cur || performance.now() - (Lore.closedAt || -1e9) < 1200)) return true;
   if (typeof Notify === 'undefined' || !Notify.busy) return false;
   return Notify.busy() || (Notify.gap && Notify.gap());
+}
+
+// заставка уже пришла, но ещё не открыта — обучение не выныривает между окнами
+function goalCutPending() {
+  const g = Game.goal;
+  return !!(g && !GoalUI.open && (g.cuts || (g.cut ? [g.cut] : [])).some(c => c.seq > GoalUI.seen));
 }
 
 function goalUiTick(force) {

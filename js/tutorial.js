@@ -18,6 +18,7 @@ const Tut = {
 const TUT_LORE_AT = 1200;     // мс после «✔ Готово»: тут может начаться сцена лора
 const TUT_STEP_AT = 1800;     // мс после «✔ Готово»: следующий шаг (если сцены нет)
 const TUT_LORE_GAP = 1500;    // мс тишины между закрытой сценой и следующим шагом
+const TUT_UNDER_GAP = 1500;   // мс: панель обучения не выныривает сразу после чужого окна (заставка ждёт 1,2 с — успеет открыться)
 
 const isMob = () => typeof Mobile !== 'undefined' && Mobile.on;
 const findB = type => Game.buildings.find(b => b.type === type && !b.removed);
@@ -609,7 +610,10 @@ function tutLoop() {
     if (!Tut.on) { hide(); return; }
     Tut.raf = requestAnimationFrame(step);
     // поверх открыто другое окно (сцена лора, глава, дилемма) — панель обучения уходит, чтобы окна не лезли друг на друга
-    const under = typeof nqBusy === 'function' && nqBusy();
+    // и ещё TUT_UNDER_GAP после него (карточка лора гаснет, следом может открыться заставка главы), и пока заставка ждёт очереди
+    const busy = typeof nqBusy === 'function' && nqBusy(), now = performance.now();
+    if (busy) Tut.busyAt = now;
+    const under = busy || now - (Tut.busyAt || -1e9) < TUT_UNDER_GAP || (typeof goalCutPending === 'function' && goalCutPending());
     Tut.el.classList.toggle('under', under);
     Tut.list.classList.toggle('under', under);
     const r = Tut.doneAt ? null : tutRect();

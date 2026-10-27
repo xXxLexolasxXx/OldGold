@@ -65,6 +65,7 @@ ok(run(`tutLoreHold()`), 'следующий шаг обучения начнё�
 // сцену закрыли: пауза, потом шаг
 run(`Lore.cur = null; Lore.closedAt = performance.now();`);
 ok(run(`tutLoreHold()`), 'следующий шаг начался сразу после сцены, без паузы');
+ok(run(`goalCutWait()`), 'заставка главы открылась сразу после сцены, без паузы');
 run(`Lore.closedAt = performance.now() - 2000; Tut.doneAt = performance.now() - 2500;`);
 ok(!run(`tutLoreHold()`), 'после паузы шаг обучения всё ещё ждёт');
 // вторая сцена в ту же паузу не попадает
