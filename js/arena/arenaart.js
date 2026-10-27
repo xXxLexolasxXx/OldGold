@@ -256,11 +256,11 @@ function arDrawFighter(c, A, F, x, y, t, holder, me) {
   let pose = 'fight', frame = 'ready', view = 'E';
   const moving = Math.sqrt(F.vx * F.vx + F.vy * F.vy) > 0.4 && !F.swing;
   const an = F.anim, ae = an ? now - an.t : 9;
-  if (S.phase === 'end' && S.lastW === F.i || S.phase === 'over' && S.winner === F.i) frame = Math.floor(t * 4) % 2 ? 'win1' : 'win0';
+  if (S.phase === 'end' && S.lastW === F.i || S.phase === 'over' && S.winner === F.i) frame = 'v' + (Math.floor(t * 12) % 12);   // 12 кадров (КАДРЫ.md, people.js FIGHT_KEY)
   else if (F.swing) frame = 'windup';
-  else if (an && an.k === 'atk' && ae < 0.36) frame = ae < 0.1 ? 'windup' : ae < 0.22 ? 'strike' : 'follow';
-  else if (an && an.k === 'cast' && ae < 0.55) frame = 'c' + Math.min(5, Math.floor(ae / 0.55 * 6));
-  else if (st.stun > now || st.ice > now || (an && an.k === 'hurt' && ae < 0.25)) frame = 'hurt';
+  else if (an && an.k === 'atk' && ae < 0.36) frame = 'a' + Math.min(11, 4 + Math.floor(ae / 0.36 * 8));
+  else if (an && an.k === 'cast' && ae < 0.55) frame = 'c' + Math.min(11, Math.floor(ae / 0.55 * 12));
+  else if (st.stun > now || st.ice > now || (an && an.k === 'hurt' && ae < 0.3)) frame = an && an.k === 'hurt' && ae < 0.3 ? 'h' + Math.min(5, Math.floor(ae / 0.05)) : 'hurt';
   else if (moving) { pose = 'walk'; frame = Math.floor(A.walk[F.i] || 0) % WALK_FRAMES; }
   const spr = typeof personSprite === 'function' ? personSprite(holder, view, pose, frame, { wpn: AR_WPN[F.cls] }) : null;
   const face = F.face || 1;

@@ -101,7 +101,7 @@ function zemFanPool(g) {
   const v = g.vis, c = [];
   for (const o of Game.units) {
     if (o.dead || o.inside || o.brk || !o.idleFlag || o.gp || o.glide || o.carry || o.dlv || !isPerson(o)) continue;
-    if (o.isCourier || zIsHero(o) || o.teamOf || o.rec || o.gx || o.gm || o.repairJob || o.cmd || o.food < HUNGRY || o.injury === 'leg') continue;
+    if (o.isCourier || zIsHero(o) || o.teamOf || o.rec || o.gx || o.gm || o.repairJob || o.cmd || o.food < HUNGRY || injLeg(o.injury)) continue;
     const d = Math.hypot(o.x - v.cx, o.y - v.cy);
     if (d < ZEM_NEAR) c.push([d, o]);
   }
@@ -552,7 +552,7 @@ function zemPartner(h) {
   let best = null, bd = 17;
   for (const o of Game.units) {
     if (o === h || o.dead || o.inside || o.brk || o.gp || o.glide || o.carry || o.dlv || !isPerson(o) || zIsHero(o) || o.teamOf || o.cmd || o.rec || o.gx || o.gm) continue;
-    if (!o.idleFlag || o.isCourier || o.repairJob || o.food < HUNGRY || o.injury === 'leg') continue;
+    if (!o.idleFlag || o.isCourier || o.repairJob || o.food < HUNGRY || injLeg(o.injury)) continue;
     const d = Math.hypot(o.x - h.x, o.y - h.y);
     if (d < bd) { bd = d; best = o; }
   }

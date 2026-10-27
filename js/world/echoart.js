@@ -3,13 +3,13 @@
 // Герои — по классу (шлем и меч воина, капюшон и лук лучника, шляпа и посох мага, рога варвара, нимб жреца…),
 // гномы — по профессии (колпак её цвета и инструмент: топор лесоруба, кирка шахтёра, свеча, коса пахаря…),
 // рекруты — гном в колпаке цвета гильдии с её оружием; фонарщик — с лампой, «Огонёк Лампы» — блуждающий огонёк.
-// Кадры (задание этапа 4): парение 9, атака 8 (замах 4, удар 3, возврат 1), появление 6, исчезновение 6, удар 4.
+// Кадры (КАДРЫ.md, стандарт 12): парение, атака (замах, удар на 6–9, возврат), появление, исчезновение — по 12, рана — 6.
 // Кадры рисуются один раз в маленький холст и лежат в кэше (ключ: облик + действие + кадр); спрайты
 // ночной нечисти из ghosts.js не используются. Рисует FSPEC.echo.draw → gdDrawEcho (guards.js).
 
 const EC_W = 40, EC_H = 54, EC_OX = 20, EC_OY = 48;
 const EC_CACHE = new Map(), EC_CACHE_MAX = 700;
-const EC_UP = new Map();                       // когда призрак встал (по id): появление — 6 кадров после выхода из тумана
+const EC_UP = new Map();                       // когда призрак встал (по id): появление — 12 кадров после выхода из тумана
 
 const EC_HERO = 'rgb(112,214,150)', EC_GNOME = 'rgb(196,160,255)';
 // облик героя/рекрута по классу: убор и оружие
@@ -43,17 +43,20 @@ function ecLook(L) {
 }
 
 // ---------- кадр ----------
+// КАДРЫ.md, стандарт 12: парение, удар, появление, таяние — по 12, рана — 6. Позы — прежние ключи (ecA тянет их по кадрам).
+const EC_N = 12, EC_HN = 6;
+const ecA = (a, f, n, loop) => { const u = loop ? f / n * a.length : f / (n - 1) * (a.length - 1), i = Math.floor(u) % a.length, t = u - Math.floor(u); return a[i] + (a[(i + 1) % a.length] - a[i]) * t; };
 function ecFrame(N) {
   const t = Game.time;
-  if (N.st === 'die') return ['out', Math.min(5, Math.floor(N.dt / 0.2))];
-  if (N.st === 'vanish') return ['out', Math.min(5, Math.floor(N.vt / 0.22))];
+  if (N.st === 'die') return ['out', Math.min(EC_N - 1, Math.floor(N.dt / 0.1))];
+  if (N.st === 'vanish') return ['out', Math.min(EC_N - 1, Math.floor(N.vt / 0.11))];
   if (N.st === 'emerge') return ['in', 0];
   if (!EC_UP.has(N.id)) { EC_UP.set(N.id, t); if (EC_UP.size > 64) EC_UP.delete(EC_UP.keys().next().value); }
   const up = t - EC_UP.get(N.id);
-  if (up >= 0 && up < 0.9) return ['in', Math.min(5, Math.floor(up / 0.15))];
-  if (t - (N.hurtT || -9) < 0.32) return ['hurt', Math.min(3, Math.floor((t - N.hurtT) / 0.08))];
-  if (N.st === 'atk' && N.atkT < 0.56) return ['atk', Math.min(7, Math.floor(N.atkT / 0.07))];
-  return ['hov', Math.floor((t + (N.id % 9) * 0.11) / 0.12) % 9];
+  if (up >= 0 && up < 0.9) return ['in', Math.min(EC_N - 1, Math.floor(up / 0.075))];
+  if (t - (N.hurtT || -9) < 0.3) return ['hurt', Math.min(EC_HN - 1, Math.floor((t - N.hurtT) / 0.05))];
+  if (N.st === 'atk' && N.atkT < 0.56) return ['atk', Math.min(EC_N - 1, Math.floor(N.atkT / 0.56 * EC_N))];
+  return ['hov', Math.floor((t + (N.id % 9) * 0.11) / 0.09) % EC_N];
 }
 
 // ---------- рисование кадра в холст ----------
@@ -88,31 +91,32 @@ function ecWeapon(c, w, acc) {
 
 function ecPaintWisp(c, an, f) {
   // «Огонёк Лампы»: язычок пламени с глазками
-  const bob = an === 'hov' ? Math.round(Math.sin(f / 9 * 6.283) * 2) : 0, h = [10, 12, 13, 12, 11, 10, 12, 13, 11][an === 'hov' ? f : 0];
+  const bob = an === 'hov' ? Math.round(Math.sin(f / EC_N * 6.283) * 2) : 0, h = Math.round(an === 'hov' ? ecA([10, 12, 13, 12, 11, 10, 12, 13, 11], f, EC_N, true) : 10);
   const g = c.createRadialGradient(0, -14 + bob, 0, 0, -14 + bob, 14);
   g.addColorStop(0, 'rgba(255,230,140,0.55)'); g.addColorStop(1, 'rgba(255,200,90,0)');
   c.fillStyle = g; c.fillRect(-16, -30 + bob, 32, 32);
   ecP(c, -4, -10 + bob - h, 8, h, 'rgba(255,170,60,0.85)'); ecP(c, -3, -8 + bob - h, 6, h - 2, '#ffd070'); ecP(c, -1, -12 + bob - h, 2, 3, '#ffd070');
   ecP(c, -2, -16 + bob, 1, 2, '#3a1a40'); ecP(c, 1, -16 + bob, 1, 2, '#3a1a40');
-  if (an === 'atk' && f >= 3 && f <= 5) { ecP(c, 4, -20 + bob, 8, 3, 'rgba(255,220,120,0.8)'); ecP(c, 10, -21 + bob, 3, 5, '#fff4c0'); }
+  if (an === 'atk' && f >= 5 && f <= 8) { ecP(c, 4, -20 + bob, 8, 3, 'rgba(255,220,120,0.8)'); ecP(c, 10, -21 + bob, 3, 5, '#fff4c0'); }
 }
 
 function ecPaint(c, V, an, f) {
   if (V.wisp) { ecPaintWisp(c, an, f); return; }
   const H = !!V.hero, top = H ? -32 : -26, col = V.col;
-  const bob = an === 'hov' ? Math.round(Math.sin(f / 9 * 6.283) * 1.5) : an === 'hurt' ? [1, 2, 1, 0][f] : 0;
-  const lean = an === 'atk' ? [0, -1, -1, -2, 1, 2, 2, 1][f] : an === 'hurt' ? -[1, 2, 1, 0][f] : 0;
-  const arm = an === 'atk' ? [-0.5, -1.3, -2.1, -2.5, -0.5, 0.9, 1.3, 0.5][f] : -0.35 + (an === 'hov' ? Math.sin(f / 9 * 6.283 + 1) * 0.12 : 0);
+  const HB = [1, 2, 1.5, 1, 0.5, 0], AL = [0, -1, -1, -2, 1, 2, 2, 1], AA = [-0.5, -1.3, -2.1, -2.5, -0.5, 0.9, 1.3, 0.5];
+  const bob = an === 'hov' ? Math.round(Math.sin(f / EC_N * 6.283) * 1.5) : an === 'hurt' ? Math.round(HB[f] + (f === 2 ? 0.5 : 0)) : 0;
+  const lean = an === 'atk' ? Math.round(ecA(AL, f, EC_N)) : an === 'hurt' ? -HB[f] + (f === 2 ? 1 : f === 3 ? -0.5 : 0) : 0;   // рана: откинуло, дрожь, выпрямился
+  const arm = an === 'atk' ? ecA(AA, f, EC_N) : -0.35 + (an === 'hov' ? Math.sin(f / EC_N * 6.283 + 1) * 0.12 : 0);
   c.save();
   c.translate(lean, -4 + bob);
   // свечение
   const g = c.createRadialGradient(0, top + 12, 0, 0, top + 12, 18);
   g.addColorStop(0, col.replace('rgb', 'rgba').replace(')', ',0.35)')); g.addColorStop(1, col.replace('rgb', 'rgba').replace(')', ',0)'));
   c.fillStyle = g; c.fillRect(-20, top - 6, 40, 40);
-  // хвост вместо ног: колышется (парение 9 кадров)
-  const tw = an === 'hov' ? f : an === 'atk' ? f + 2 : 3;
+  // хвост вместо ног: колышется (парение 12 кадров)
+  const tw = an === 'hov' ? f : an === 'atk' ? f * 0.67 + 3 : 4;
   for (let i = 0; i < 4; i++) {
-    const w = 8 - i * 2, dx = Math.round(Math.sin((tw + i * 2) / 9 * 6.283) * (1 + i * 0.6));
+    const w = 8 - i * 2, dx = Math.round(Math.sin((tw + i * 2.7) / EC_N * 6.283) * (1 + i * 0.6));
     ecP(c, -w / 2 + dx, -4 + i * 2, w, 2, col);
   }
   // тело: балахон шире к подолу; у героя — плащ цвета класса за спиной
@@ -158,9 +162,10 @@ function ecPaint(c, V, an, f) {
   ecWeapon(c, V.wpn, V.acc || V.cap);
   c.restore();
   // след удара (кадры удара атаки)
-  if (an === 'atk' && f >= 4 && f <= 6) {
-    c.strokeStyle = `rgba(255,255,255,${0.75 - (f - 4) * 0.25})`; c.lineWidth = 2;
-    c.beginPath(); c.arc(sw, bodyY + 2, H ? 15 : 12, -1.9, -1.9 + (f - 3) * 0.9); c.stroke();
+  if (an === 'atk' && f >= 6 && f <= 9) {
+    const q = (f - 6) / 3;
+    c.strokeStyle = `rgba(255,255,255,${0.75 - q * 0.6})`; c.lineWidth = 2;
+    c.beginPath(); c.arc(sw, bodyY + 2, H ? 15 : 12, -1.9, -1.9 + (1 + q * 2) * 0.9); c.stroke();
   }
   c.restore();
 }
@@ -174,25 +179,25 @@ function ecSprite(V, an, f) {
   const c = cv.getContext('2d');
   c.save(); c.translate(EC_OX, EC_OY);
   if (an === 'in') {                           // встаёт из земли: снизу вверх, у ног — дымка
-    const k = (f + 1) / 6;
+    const k = (f + 1) / EC_N;
     c.save(); c.beginPath(); c.rect(-EC_OX, -EC_OY, EC_W, EC_OY + 1); c.clip();
     c.translate(0, Math.round((1 - k) * 30));
     ecPaint(c, V, 'hov', 0);
     c.restore();
     for (let i = 0; i < 4; i++) ecP(c, -10 + i * 6, -2 - ((i + f) % 3), 4, 2, `rgba(200,180,255,${0.6 - k * 0.4})`);
   } else if (an === 'out') {                   // тает: поднимается и рассыпается точками
-    c.save(); c.translate(0, -f * 2); ecPaint(c, V, 'hov', f); c.restore();
+    c.save(); c.translate(0, -f); ecPaint(c, V, 'hov', f); c.restore();
     c.globalCompositeOperation = 'destination-out';
-    const p = (f + 1) / 6;
+    const p = (f + 1) / EC_N;
     for (let y = -EC_OY; y < EC_H - EC_OY; y += 2) for (let x = -EC_OX; x < EC_W - EC_OX; x += 2) {
       const h = ((x * 73856093) ^ (y * 19349663)) >>> 0;
       if ((h % 1000) / 1000 < p) c.fillRect(x, y, 2, 2);
     }
     c.globalCompositeOperation = 'source-over';
-    for (let i = 0; i < f + 2; i++) ecP(c, -8 + ((i * 7) % 16), -30 - f * 4 - i * 3, 1, 1, 'rgba(230,220,255,0.8)');
+    for (let i = 0; i < (f >> 1) + 2; i++) ecP(c, -8 + ((i * 7) % 16), -30 - f * 2 - i * 3, 1, 1, 'rgba(230,220,255,0.8)');
   } else {
     ecPaint(c, V, an, f);
-    if (an === 'hurt') { c.globalCompositeOperation = 'source-atop'; c.fillStyle = `rgba(255,255,255,${[0.75, 0.5, 0.3, 0.1][f]})`; c.fillRect(-EC_OX, -EC_OY, EC_W, EC_H); }
+    if (an === 'hurt') { c.globalCompositeOperation = 'source-atop'; c.fillStyle = `rgba(255,255,255,${[0.75, 0.6, 0.45, 0.3, 0.18, 0.08][f]})`; c.fillRect(-EC_OX, -EC_OY, EC_W, EC_H); }
   }
   c.restore();
   if (EC_CACHE.size >= EC_CACHE_MAX) EC_CACHE.delete(EC_CACHE.keys().next().value);

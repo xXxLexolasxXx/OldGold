@@ -317,7 +317,7 @@ function hcDrawSwing(c, s, now) {
     const h = Game.hero;
     if (!h || h.dead || h.inside || !h.hero) return;
     const now = Game.time, key = h.hero.clsKey, def = SWING[key] || SWING_DEF;
-    const fr = typeof fightFrameRaw === 'function' ? fightFrameRaw(h) : null, hx = h.hfx;
+    const fr0 = typeof fightFrameRaw === 'function' ? fightFrameRaw(h) : null, fr = typeof fightKey === 'function' ? fightKey(fr0) : fr0, hx = h.hfx;
     // новый удар или заклинание — запускаем след
     if (fr === 'strike' && h._swFr !== 'strike') heroSwings.push({ t0: now, x: h.x * TILE, y: h.y * TILE, fa: hcFace(h), n: (h._swN = (h._swN || 0) + 1), def });
     else if (hx && hx.k === 'win0' && hx !== h._swHfx && hx.t > now) heroSwings.push({ t0: now, x: h.x * TILE, y: h.y * TILE, fa: hcFace(h), n: (h._swN = (h._swN || 0) + 1), def: def.kind === 'bolt' || def.kind === 'arrow' ? def : SWING.mage });

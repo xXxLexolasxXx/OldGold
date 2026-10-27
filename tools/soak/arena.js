@@ -85,19 +85,26 @@ function report(R) {
   const lines = [];
   lines.push('| строка против столбца | ' + R.cls.map(c => short[c]).join(' | ') + ' | против поля |');
   lines.push('|---|' + R.cls.map(() => '---:').join('|') + '|---:|');
-  const bad = [];
+  // пара целиком — обе стороны площадки: строка против столбца плюс столбец против строки
+  const bad = [], hard = [];
+  R.cls.forEach((a, i) => R.cls.forEach((b, j) => {
+    if (j <= i) return;
+    const x = R.M[a][b], y = R.M[b][a], p = Math.round(100 * (x.w + y.n - y.w) / (x.n + y.n));
+    if (p < 40 || p > 60) bad.push(`${short[a]}–${short[b]} ${p}%`);
+    if (p < 20 || p > 80) hard.push(`${short[a]}–${short[b]} ${p}%`);
+  }));
   for (const a of R.cls) {
     const row = R.cls.map(b => {
       const p = pct(R.M[a][b].w, R.M[a][b].n);
-      if (a < b && (p < 40 || p > 60)) bad.push(`${short[a]}–${short[b]} ${p}%`);
       return a === b ? '—' : (p < 40 || p > 60 ? `**${p}**` : String(p));
     });
     const f = pct(R.F[a].w, R.F[a].n);
     lines.push(`| ${short[a]} | ${row.join(' | ')} | ${f < 45 || f > 55 ? `**${f}**` : f} |`);
   }
   const field = R.cls.map(a => pct(R.F[a].w, R.F[a].n));
-  const ok = !bad.length && field.every(f => f >= 45 && f <= 55) && R.avgLen >= 35 && R.avgLen <= 55 && R.timerShare < 0.25 && R.stunShare < 0.05;
-  return { table: lines.join('\n'), bad, field, ok };
+  // допуск для боя ботов (решение владельца 23.10): каждая пара 20–80%, класс против поля 45–55%; 40–60% — цель для живых боёв
+  const ok = !hard.length && field.every(f => f >= 45 && f <= 55) && R.avgLen >= 35 && R.avgLen <= 55 && R.timerShare < 0.25 && R.stunShare < 0.05;
+  return { table: lines.join('\n'), bad, hard, field, ok };
 }
 
 async function main() {
@@ -110,17 +117,18 @@ async function main() {
   console.log(`\nбоёв: ${R.cls.length * R.cls.length * R.n}, раундов: ${R.rounds}, средний раунд ${R.avgLen.toFixed(1)} с, по таймеру ${(R.timerShare * 100).toFixed(1)}%, оглушён >30% — ${(R.stunShare * 100).toFixed(1)}%, ${sec} с`);
   console.log('по классам (урон/лечение за раунд, идеальных увёртов за матч):');
   for (const c of R.cls) { const s = R.cs[c]; console.log(`  ${c.padEnd(10)} урон ${(s.dmg / s.rounds).toFixed(0).padStart(4)}  лечение ${(s.heal / s.rounds).toFixed(0).padStart(4)}  увёртов ${(s.perfect / s.fr).toFixed(2)}`); }
-  console.log(rep.bad.length ? 'вне 40–60%: ' + rep.bad.join(', ') : 'все пары в 40–60%');
+  console.log(rep.hard.length ? 'вне 20–80% (допуск): ' + rep.hard.join(', ') : 'все пары в 20–80% (допуск)');
+  console.log(rep.bad.length ? `вне 40–60% (цель для живых боёв): ${rep.bad.length} — ${rep.bad.join(', ')}` : 'все пары в 40–60%');
   console.log(rep.ok ? 'В ДОПУСКЕ' : 'НЕ В ДОПУСКЕ');
   if (argv.includes('--write')) {
     const A = require(SIM);
     const file = path.join(__dirname, '..', '..', 'АРЕНА_БАЛАНС.md');
     const md = `# Баланс арены — матрица ботов\n\nСгенерировано \`node tools/soak/arena.js --write\` ${new Date().toISOString().slice(0, 10)}. Таблица \`ARENA_TUNE\` v${A.ARENA_TUNE.v}, протокол ${A.ARENA_PROTO}.\n` +
       `Боты: уровень ${R.tier} (${['', 'Соломенный', 'Ветеран', 'Чемпион'][R.tier]}), обе стороны; ${R.n} боёв на пару (поровну с каждой стороны площадки), всего ${R.cls.length * R.cls.length * R.n}, сиды от ${opt.seed}.\n\n` +
-      `Цель (АРЕНА.md, 7.4): каждая пара 40–60%, каждый класс против поля 45–55%, средний раунд 35–55 с, по таймеру < 25%, «оглушён > 30% времени» < 5%.\n\n` +
+      `Допуск для боя ботов (решение владельца 23.10): каждая пара 20–80% (обе стороны площадки вместе), каждый класс против поля 45–55%, средний раунд 35–55 с, по таймеру < 25%, «оглушён > 30% времени» < 5%. Цель 40–60% по парам (АРЕНА.md, 7.4) проверяется по боям живых игроков.\n\n` +
       `## Доля побед строки над столбцом, %\n\n${rep.table}\n\n` +
       `## Итог\n\n- Средняя длина раунда: **${R.avgLen.toFixed(1)} с**\n- Раундов по таймеру: **${(R.timerShare * 100).toFixed(1)}%**\n- Бойцов, оглушённых больше 30% матча: **${(R.stunShare * 100).toFixed(1)}%**\n` +
-      `- Пары вне 40–60%: ${rep.bad.length ? rep.bad.join(', ') : 'нет'}\n- Вердикт: **${rep.ok ? 'в допуске' : 'НЕ в допуске'}**\n\n` +
+      `- Пары вне 20–80% (допуск): ${rep.hard.length ? rep.hard.join(', ') : 'нет'}\n- Пары вне 40–60% (цель для живых боёв): ${rep.bad.length}${rep.bad.length ? ' — ' + rep.bad.join(', ') : ''}\n- Вердикт: **${rep.ok ? 'в допуске' : 'НЕ в допуске'}**\n\n` +
       `## По классам (за раунд)\n\n| класс | урон | лечение | идеальных увёртов за матч |\n|---|---:|---:|---:|\n` +
       R.cls.map(c => { const s = R.cs[c]; return `| ${c} | ${(s.dmg / s.rounds).toFixed(0)} | ${(s.heal / s.rounds).toFixed(0)} | ${(s.perfect / s.fr).toFixed(2)} |`; }).join('\n') + '\n';
     fs.writeFileSync(file, md);

@@ -226,6 +226,7 @@ function coopCmd(name, msgJson, admin) {
   const can = k => { if (admin || coop.perms[k]) return true; coopSay(name, 'Хост запретил: ' + COOP_PERMS[k].toLowerCase()); return false; };
   switch (m.t) {
     case 'go': if (u && coopInt(m.x) && coopInt(m.y)) coopGo(u, m.x, m.y); break;
+    case 'rush': if (typeof rushCmd === 'function' && can('manage') && coopSlow(name, 1)) rushCmd(name); break;   // «Навались!» (rush.js)
     case 'use': if (u && coopInt(m.slot) && m.slot >= 0 && m.slot < COOP_INV) coopUseItem(u, m.slot); break;
     case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) { const k = u.hero.inv[m.slot].k; u.hero.inv[m.slot] = null; if (COOP_QITEM[k]) coopGroupFail(`${name} выбросил «${COOP_QITEM[k]}»`); } break;
     case 'give': if (u && can('give') && coopSlow(name, 0.8)) coopGive(name, m); break;
@@ -622,6 +623,7 @@ function coopMirror() {
     trav: typeof travMirrorOut === 'function' ? travMirrorOut() : null,
     wgs: typeof wgsMirrorOut === 'function' ? wgsMirrorOut() : null,
     law: typeof lawMirrorOut === 'function' ? lawMirrorOut() : null,
+    rush: typeof rushMirrorOut === 'function' ? rushMirrorOut() : null,
     dist: typeof distMirrorOut === 'function' ? distMirrorOut() : null,
     med: typeof medMirrorOut === 'function' ? medMirrorOut() : null,
     rsc: typeof rscMirrorOut === 'function' ? rscMirrorOut() : null,
@@ -829,6 +831,7 @@ function coopWorldPacket() {
     d.wk = b.working ? 1 : 0;
     d.cd = b.cold ? 1 : 0;
     if (b.worker && !b.worker.dead && b.worker.home === b) d.wr = b.worker.id;      // кто здесь работает: по этому клиент знает, есть ли у здания работник (coopLinkWorkers)
+    if (d.wr && typeof workSlots === 'function' && workSlots(b) > 1) { const x = Game.units.filter(u => u.home === b && u !== b.worker && !u.dead).map(u => u.id); if (x.length) d.wx = x; }   // вторые места (ур.3)
     const sig = JSON.stringify(d);
     d.an = r2(b.anim || 0);
     nb.set(d.id, sig);

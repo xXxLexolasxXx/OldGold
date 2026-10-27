@@ -380,7 +380,7 @@ function hlTick(dt) {
     const [x, y] = t;
     if (inb(x, y)) {
       const gh = hlGhostAt(t);
-      if (gh) return { kind: 'exorcise', g: gh, tx: Math.floor(gh.x), ty: Math.floor(gh.y), label: 'Прогнать призрака' };
+      if (gh) return { kind: 'exorcise', g: gh, tx: Math.floor(gh.x), ty: Math.floor(gh.y), label: gh.kind === 'banshee' ? 'Прогнать банши' : 'Прогнать призрака' };
       const b = buildingAt(t);
       if (b && !b.isRoad && b.state === 'done' && !b.upg) {
         if (b.type === 'inn') return { kind: 'tavern', b, tx: b.doorX, ty: b.doorY, label: 'Поесть в трактире' };

@@ -2,30 +2,26 @@
 // Нейтралы 2 (НЕЙТРАЛЫ_2.md): кадры новых народов леса — тролли (лесной, каменный, болотный), броненосец, гоблины
 // (два облика), гномтавры (копейщик и лучник) — и их логова. Тот же конвейер, что у neutralart.js: вектор в 3×,
 // сведение в пиксели, кэш naCache, кадры строятся лениво при первом показе.
-// Кадры по КАДРЫ.md: покой 6, ходьба 8, бой 9, смерть 6, торжество 4 + получение удара 4 (h0…h3) — у всех нейтралов.
-// Броненосец ещё: сворачивание 4 (cu), качение 8 (ro), разворот 4 (un), отскок 4 (bo).
+// Кадры по КАДРЫ.md: общие из neutralart.js (покой, ходьба, атака, смерть, торжество — по 12, получение удара 6).
+// Броненосец ещё: сворачивание, качение, разворот, отскок — по 12.
 // Подключается после neutralart.js и frostart.js.
 
-NA_FRAMES.hurt4 = ['h0', 'h1', 'h2', 'h3'];
-NA_FRAMES.curl = ['cu0', 'cu1', 'cu2', 'cu3'];
-NA_FRAMES.roll = ['ro0', 'ro1', 'ro2', 'ro3', 'ro4', 'ro5', 'ro6', 'ro7'];
-NA_FRAMES.uncurl = ['un0', 'un1', 'un2', 'un3'];
-NA_FRAMES.bounce = ['bo0', 'bo1', 'bo2', 'bo3'];
+NA_FRAMES.curl = naSeq('cu', NA_N);
+NA_FRAMES.roll = naSeq('ro', NA_N);
+NA_FRAMES.uncurl = naSeq('un', NA_N);
+NA_FRAMES.bounce = naSeq('bo', NA_N);
 NA_EXTRA.armad = ['curl', 'roll', 'uncurl', 'bounce'];
 
 // позы, которых нет в общей таблице naPose
-const NA2_POSE = {
-  h0: { x: -2, rot: -0.1, hurt: 1, eye: 2, mouth: 0.5, wing: -1, a: -0.2 },        // вздрогнул
-  h1: { x: -4, rot: -0.22, hurt: 0.8, eye: 2, mouth: 0.9, wing: 1, a: -0.4 },      // отшатнулся
-  h2: { x: -3, y: 1, rot: -0.12, hurt: 0.45, eye: 2, sq: 0.94, wing: -1, a: -0.1 }, // просел
-  h3: { x: -1, rot: -0.03, hurt: 0.15, eye: 1, wing: 0 },                            // выпрямился
-};
-for (let k = 0; k < 4; k++) {
-  NA2_POSE['cu' + k] = { curl: (k + 1) / 4, eye: k < 2 ? 1 : 2, y: 0 };
-  NA2_POSE['un' + k] = { curl: 1 - (k + 1) / 4, eye: k > 2 ? 1 : 2, spin: 0 };
-  NA2_POSE['bo' + k] = { curl: 1, spin: -k * 0.5, x: -[2, 5, 7, 8][k], y: -[3, 6, 4, 0][k], hurt: k < 2 ? 0.8 : 0.2, bonk: k < 3 ? 1 - k * 0.3 : 0 };
+const NA2_POSE = {};
+{
+  const CU = [0, 1, 2, 3, 4].map(k => ({ curl: k / 4, eye: k < 3 ? 1 : 2, y: 0 }));
+  naExpand(CU.slice(1), NA_N, false).forEach((q, k) => { NA2_POSE['cu' + k] = q; });
+  naExpand(CU.slice(0, 4).reverse().map(q => Object.assign({}, q, { spin: 0, eye: q.curl < 0.4 ? 1 : 2 })), NA_N, false).forEach((q, k) => { NA2_POSE['un' + k] = q; });
+  const BO = [0, 1, 2, 3].map(k => ({ curl: 1, spin: -k * 0.5, x: -[2, 5, 7, 8][k], y: -[3, 6, 4, 0][k], hurt: k < 2 ? 0.8 : 0.2, bonk: k < 3 ? 1 - k * 0.3 : 0 }));
+  naExpand(BO, NA_N, false).forEach((q, k) => { NA2_POSE['bo' + k] = q; });
+  for (let k = 0; k < NA_N; k++) NA2_POSE['ro' + k] = { curl: 1, spin: k / NA_N * 6.2832, dust: 1 + (k % 2) };
 }
-for (let k = 0; k < 8; k++) NA2_POSE['ro' + k] = { curl: 1, spin: k / 8 * 6.2832, dust: 1 + (k % 2) };
 {
   const _np = naPose;
   naPose = function (n) {

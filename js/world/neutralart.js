@@ -1,79 +1,150 @@
 'use strict';
 // Лесные нейтралы: пиксель-арт кадры. Четыре вида (лесная фея, леший, кабан-страж, чумной моховик),
-// у каждого по 33 кадра: покой 6 + ходьба 8 + БОЙ 9 + смерть 6 + торжество 4.
-//
-// Бой — ровно 9 кадров, как просили: 1 стойка, 2 шаг в выпад, 3 замах, 4 удар, 5 возврат,
-// 6 парирование, 7 получение урона, 8 пошатнулся, 9 рёв-зов своих.
-// Смерть — 6 кадров: удар, отшатнулся, падает, лежит, тает, остаётся пыль. Меньше — падение выглядит прыжком,
-// больше — затягивается и мешает игроку собирать добычу; 6 кадров по 0,11 с = 0,66 с самого падения плюс
-// «растворение» ещё 1,4 с на последних двух кадрах (альфа гасится при отрисовке, а не новыми кадрами).
-// Победа — 4 кадра (пинг-понг: поднял руки, подпрыгнул, пик, опустил) — крутится по кругу, пока рядом лежит поверженный.
+// кадры по КАДРЫ.md (стандарт 12): покой, ходьба, атака, смерть, торжество — по 12, получение удара и парирование — 6.
+// Смерть: удар, отшатнулся, падает, лежит, тает, остаётся пыль — 12 кадров по 0,055 с = 0,66 с самого падения плюс
+// «растворение» ещё 1,4 с на последних кадрах (альфа гасится при отрисовке, а не новыми кадрами).
+// Торжество крутится по кругу (поднял руки, подпрыгнул, пик, опустил), пока рядом лежит поверженный.
 //
 // Рисуется векторно в 3× и сводится в пиксели (toPixelArt) — тот же конвейер, что у деревьев, гномов и нечисти.
 // Все кадры смотрят вправо, влево — отражением при отрисовке. Начало координат — точка земли под ногами.
 
+// Стандарт 12 кадров (КАДРЫ.md, как у призраков): покой, ходьба, атака, смерть, торжество, колдовство, сон — по 12
+// (10 к/с), получение удара — 6 (0,3 с). Прежние 4–9 поз остались ключевыми: промежуточные кадры — плавное
+// смешение соседних ключей (naMix), рисовалки видов читают только числа позы, поэтому новые кадры не рисуются руками.
+// Одиночные позы боя (ready, step, windup, strike, recover, parry, hurt, stagger, roar) живы для сцен и чужих файлов.
+const naSeq = (p, n) => Array.from({ length: n }, (_, k) => p + k);
+const NA_N = 12, NA_HURT_N = 6, NA_ATK_T = 0.56;     // атака: замах до 0,24 с, удар до 0,36, возврат до 0,56 (neuFrame)
 const NA_FRAMES = {
-  idle: ['i0', 'i1', 'i2', 'i3', 'i4', 'i5'],                     // дыхание, покачивание, моргание
-  walk: ['w0', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7'],         // полный шаг: контакт, проход, максимум, проход — на обе ноги
+  idle: naSeq('i', NA_N),                         // дыхание, покачивание, моргание
+  walk: naSeq('w', NA_N),                         // полный шаг на обе ноги
   fight: ['ready', 'step', 'windup', 'strike', 'recover', 'parry', 'hurt', 'stagger', 'roar'],
-  die: ['d0', 'd1', 'd2', 'd3', 'd4', 'd5'],
-  win: ['v0', 'v1', 'v2', 'v3'],
+  atk: naSeq('a', NA_N),                          // стойка → замах → удар → возврат
+  hurt: naSeq('h', NA_HURT_N),                    // вздрогнул → отшатнулся → дрожь → просел → выпрямился
+  die: naSeq('d', NA_N),
+  win: naSeq('v', NA_N),
 };
-// у фей ещё колдовство (6 кадров) и сон (2 кадра): 14 → 25 + 8 = 33 кадра на вид
-NA_FRAMES.cast = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5'];
-NA_FRAMES.sleep = ['z0', 'z1'];
-NA_FRAMES.curse = ['k0', 'k1', 'k2', 'k3', 'k4', 'k5'];   // тёмное заклинание: то же движение, но посох чёрно-фиолетовый
+NA_FRAMES.cast = naSeq('c', NA_N);
+NA_FRAMES.sleep = naSeq('z', NA_N);
+NA_FRAMES.curse = naSeq('k', NA_N);   // тёмное заклинание: то же движение, но посох чёрно-фиолетовый
+NA_FRAMES.roar = naSeq('r', NA_N);
+NA_FRAMES.parry = naSeq('p', NA_HURT_N);
+NA_FRAMES.hurt4 = NA_FRAMES.hurt;     // прежнее имя (neutrals2.js, frogart2.js)
 const NA_EXTRA = { fairy: ['cast', 'curse', 'sleep'], pixie: ['cast', 'curse', 'sleep'] };
-const NA_ALL = [].concat(NA_FRAMES.idle, NA_FRAMES.walk, NA_FRAMES.fight, NA_FRAMES.die, NA_FRAMES.win);
+const NA_ALL = [].concat(NA_FRAMES.idle, NA_FRAMES.walk, NA_FRAMES.fight, NA_FRAMES.atk, NA_FRAMES.hurt, NA_FRAMES.die, NA_FRAMES.win);
+
+// Смешение поз: числа — линейно, «переключатели» (глаза, лежит, тьма, сон) — по ближнему ключу
+const NA_STEPF = { eye: 1, dead: 1, dark: 1, sleep: 1 };
+function naMix(A, B, t) {
+  const o = {};
+  for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) {
+    const d = k === 'sq' ? 1 : 0, a = A[k] ?? d, b = B[k] ?? d;
+    o[k] = NA_STEPF[k] || typeof a !== 'number' ? (t < 0.5 ? a : b) : a + (b - a) * t;
+  }
+  return o;
+}
+// n кадров из ключей keys (позы): loop — по кругу, иначе от первого до последнего включительно
+function naExpand(keys, n, loop) {
+  const out = [], m = keys.length;
+  for (let k = 0; k < n; k++) {
+    const u = loop ? k / n * m : k / (n - 1) * (m - 1), i = Math.min(m - 1, Math.floor(u)), t = u - i;
+    out.push(t < 1e-6 ? Object.assign({}, keys[i]) : naMix(keys[i], keys[(i + 1) % m], t));
+  }
+  return out;
+}
+// кадр атаки по времени от начала (t, с) при общей длительности dur: кадр 6 — удар
+const naAtkFr = (t, dur = NA_ATK_T) => 'a' + Math.max(0, Math.min(NA_N - 1, Math.floor(t / dur * NA_N)));
+const naIdleFr = (t, id = 0) => 'i' + (Math.floor(t * 10 + id) % NA_N + NA_N) % NA_N;     // 1,2 с на вдох-выдох
+const naWalkFr = ph => 'w' + (Math.floor(ph * 1.5) % NA_N + NA_N) % NA_N;                  // ph — прежняя фаза шага (8 на цикл)
+const naDieFr = dt => 'd' + Math.min(NA_N - 1, Math.floor(dt / 0.055));                     // падение 0,66 с, как было
+const naWinFr = t => 'v' + (Math.floor(t * 10) % NA_N + NA_N) % NA_N;
+const naHurtFr = t => 'h' + Math.max(0, Math.min(NA_HURT_N - 1, Math.floor(t / 0.05)));
+// смысл кадра для чужих рисовалок (гномы-разбойники, дикие гномы, налётчики): 'windup' | 'strike' | 'recover' | 'hurt' | null
+function naFightKey(fr) {
+  if (!fr) return null;
+  if (fr === 'windup' || fr === 'strike' || fr === 'recover') return fr;
+  if (fr === 'hurt' || fr === 'stagger' || /^h\d/.test(fr)) return 'hurt';
+  if (/^p\d/.test(fr)) return 'parry';
+  if (/^a\d/.test(fr)) { const k = +fr.slice(1); return k < 5 ? 'windup' : k < 8 ? 'strike' : 'recover'; }
+  return null;
+}
 
 // Общая таблица поз; рисовалка каждого вида читает только то, что ей нужно.
 // x,y — сдвиг тела; rot — наклон; a — рука/голова/оружие: −1 замах … 0 готов … 1 удар; up — руки вверх;
 // b — защита (парирование); leg — фаза шага −1…1; mouth — рот; eye — 0 обычный, 1 злой, 2 зажмурен, 3 крестик;
 // hurt — «белая вспышка» от удара; sq — растяжение; wing — взмах; fade — растворение; dead — лежит
+// ключевые позы (прежние кадры); из них naPoseTable собирает по 12 кадров на действие
+const NA_KEY = {
+  ready: { eye: 1, a: 0, wing: 0 },
+  step: { x: 2, leg: 0.9, a: 0.15, eye: 1, wing: 1 },
+  windup: { x: -2, rot: -0.1, a: -1, eye: 1, wing: -1 },
+  strike: { x: 5, rot: 0.18, a: 1, eye: 1, mouth: 0.6, wing: 1 },
+  recover: { x: 2, rot: 0.06, a: 0.35, eye: 1, wing: 0 },
+  parry: { x: -2, rot: -0.08, b: 1, a: -0.2, eye: 1, wing: -1 },
+  hurt: { x: -4, rot: -0.22, hurt: 1, eye: 2, mouth: 0.8, wing: -1 },
+  stagger: { x: -2, rot: 0.14, hurt: 0.55, eye: 2, y: 1, wing: 1 },
+  roar: { y: -1, rot: -0.14, a: -0.6, mouth: 1, eye: 1, sq: 1.08, wing: 1 },
+  d0: { x: -4, rot: -0.25, hurt: 1, eye: 2, mouth: 0.6, wing: -1 },
+  d1: { x: -6, rot: -0.6, y: 0, hurt: 0.7, eye: 3, a: -0.5, wing: 1 },
+  d2: { x: -8, rot: -1.1, y: -1, hurt: 0.4, eye: 3, a: -0.2, wing: -1 },
+  d3: { x: -9, rot: -1.5, y: -3, eye: 3, dead: 1, wing: 0 },
+  d4: { x: -9, rot: -1.5, y: -3, eye: 3, dead: 1, fade: 0.45 },
+  d5: { x: -9, rot: -1.5, y: -3, eye: 3, dead: 1, fade: 0.85 },
+  c0: { a: -0.6, wing: -1, eye: 0, rot: -0.05 },
+  c1: { up: 1, y: -2, eye: 0, wing: 1, cast: 0.2 },
+  c2: { up: 1, y: -4, rot: 0.08, eye: 0, mouth: 0.5, wing: -1, cast: 0.55 },
+  c3: { a: 0.6, x: 2, y: -2, eye: 0, mouth: 0.4, wing: 1, cast: 1 },
+  c4: { a: 1, x: 3, rot: 0.14, eye: 0, wing: -1, cast: 0.8 },
+  c5: { a: 0.3, x: 1, eye: 0, wing: 0, cast: 0.3 },
+  k0: { a: -0.6, wing: -1, eye: 1, rot: -0.05, dark: 1 },
+  k1: { up: 1, y: -2, eye: 1, wing: 1, cast: 0.2, dark: 1 },
+  k2: { up: 1, y: -4, rot: 0.08, eye: 1, mouth: 0.5, wing: -1, cast: 0.55, dark: 1 },
+  k3: { a: 0.6, x: 2, y: -2, eye: 1, mouth: 0.4, wing: 1, cast: 1, dark: 1 },
+  k4: { a: 1, x: 3, rot: 0.14, eye: 1, wing: -1, cast: 0.8, dark: 1 },
+  k5: { a: 0.3, x: 1, eye: 1, wing: 0, cast: 0.3, dark: 1 },
+  z0: { rot: -1.45, x: -9, y: -3, eye: 2, sleep: 1 },
+  z1: { rot: -1.45, x: -9, y: -2.4, eye: 2, sleep: 2 },
+  v0: { up: 1, eye: 0, mouth: 0.3, wing: 1 },
+  v1: { up: 1, y: -5, eye: 0, mouth: 1, wing: -1 },
+  v2: { up: 1, y: -1, eye: 0, mouth: 0.4, wing: 1 },
+  v3: { up: 0.2, a: 0.2, rot: 0.05, eye: 0, mouth: 0.5, wing: 0 },
+};
+let NA_T = null;
+function naPoseTable() {
+  const K = NA_KEY, T = Object.assign({}, K), put = (p, arr) => arr.forEach((q, k) => { T[p + k] = q; });
+  const TAU = Math.PI * 2;
+  // покой: вдох-выдох (y, растяжение), мерное махание крыльями, подёргивание рукой, моргание на 9-м кадре (0,1 с)
+  for (let k = 0; k < NA_N; k++) { const c = (1 - Math.cos(k / NA_N * TAU)) / 2; T['i' + k] = { y: -c, sq: 1 + 0.02 * c, wing: Math.max(-1, Math.min(1, Math.sin(k / NA_N * TAU) * 1.3)), a: 0.05 * c, eye: k === 8 ? 2 : 0 }; }
+  // ходьба: фаза ноги по синусу, подскок на каждом шаге, крылья в такт
+  for (let k = 0; k < NA_N; k++) { const ph = Math.sin(k / NA_N * TAU); T['w' + k] = { leg: Math.round(ph * 100) / 100, y: -Math.round(Math.abs(ph) * 90) / 100, wing: -Math.cos(k / NA_N * TAU) }; }
+  // атака: ключи по времени (с) — стойка, замах к 0,22, удар 0,30, возврат 0,44, стойка 0,56; кадр берёт середину своего отрезка
+  const AK = [[0, K.ready], [0.22, K.windup], [0.3, K.strike], [0.44, K.recover], [NA_ATK_T, K.ready]];
+  for (let k = 0; k < NA_N; k++) {
+    const u = (k + 0.5) / NA_N * NA_ATK_T; let i = 0;
+    while (i < AK.length - 2 && u > AK[i + 1][0]) i++;
+    const t = Math.max(0, Math.min(1, (u - AK[i][0]) / (AK[i + 1][0] - AK[i][0])));
+    T['a' + k] = naMix(AK[i][1], AK[i + 1][1], t * t * (3 - 2 * t));
+  }
+  // получение удара, 6 кадров по 0,05 с
+  put('h', [
+    { x: -2, rot: -0.1, hurt: 1, eye: 2, mouth: 0.5, wing: -1, a: -0.2 },                  // вздрогнул
+    { x: -4, rot: -0.22, hurt: 1, eye: 2, mouth: 0.8, wing: 1, a: -0.4 },                  // отшатнулся
+    { x: -3.5, y: 0.5, rot: -0.17, hurt: 0.75, eye: 2, mouth: 0.9, wing: -1, a: -0.3 },    // дрожь
+    { x: -3, y: 1, rot: -0.12, hurt: 0.45, eye: 2, sq: 0.94, wing: -0.5, a: -0.1 },        // просел
+    { x: -1.8, y: 0.5, rot: -0.07, hurt: 0.25, eye: 1, sq: 0.97, wing: 0.5 },              // поднимается
+    { x: -0.6, rot: -0.02, hurt: 0.08, eye: 1, wing: 0 },                                  // выпрямился
+  ]);
+  put('r', naExpand([K.ready, K.roar, Object.assign({}, K.roar, { y: -1.6, sq: 1.11 }), K.roar, K.ready], NA_N, false));   // рёв-зов своих
+  put('p', naExpand([K.ready, K.parry, Object.assign({}, K.parry, { x: -2.6 }), K.ready], NA_HURT_N, false));       // парирование, как и рана, — 6
+  put('d', naExpand([K.d0, K.d1, K.d2, K.d3, K.d4, K.d5], NA_N, false));
+  put('c', naExpand([K.c0, K.c1, K.c2, K.c3, K.c4, K.c5], NA_N, false));
+  put('k', naExpand([K.k0, K.k1, K.k2, K.k3, K.k4, K.k5], NA_N, false));
+  put('v', naExpand([K.v0, K.v1, K.v2, K.v3, K.v2, K.v1], NA_N, true));                  // поднял руки, подпрыгнул, пик, опустил — по кругу
+  for (let k = 0; k < NA_N; k++) { const c = (1 - Math.cos(k / NA_N * TAU)) / 2; T['z' + k] = { rot: -1.45, x: -9, y: -3 + 0.6 * c, eye: 2, sleep: k < NA_N / 2 ? 1 : 2 }; }   // сон: медленный вдох
+  return T;
+}
 function naPose(n) {
-  const w = {};
-  const T = {
-    ready: { eye: 1, a: 0, wing: 0 },
-    step: { x: 2, leg: 0.9, a: 0.15, eye: 1, wing: 1 },
-    windup: { x: -2, rot: -0.1, a: -1, eye: 1, wing: -1 },
-    strike: { x: 5, rot: 0.18, a: 1, eye: 1, mouth: 0.6, wing: 1 },
-    recover: { x: 2, rot: 0.06, a: 0.35, eye: 1, wing: 0 },
-    parry: { x: -2, rot: -0.08, b: 1, a: -0.2, eye: 1, wing: -1 },
-    hurt: { x: -4, rot: -0.22, hurt: 1, eye: 2, mouth: 0.8, wing: -1 },
-    stagger: { x: -2, rot: 0.14, hurt: 0.55, eye: 2, y: 1, wing: 1 },
-    roar: { y: -1, rot: -0.14, a: -0.6, mouth: 1, eye: 1, sq: 1.08, wing: 1 },
-    d0: { x: -4, rot: -0.25, hurt: 1, eye: 2, mouth: 0.6, wing: -1 },
-    d1: { x: -6, rot: -0.6, y: 0, hurt: 0.7, eye: 3, a: -0.5, wing: 1 },
-    d2: { x: -8, rot: -1.1, y: -1, hurt: 0.4, eye: 3, a: -0.2, wing: -1 },
-    d3: { x: -9, rot: -1.5, y: -3, eye: 3, dead: 1, wing: 0 },
-    d4: { x: -9, rot: -1.5, y: -3, eye: 3, dead: 1, fade: 0.45 },
-    d5: { x: -9, rot: -1.5, y: -3, eye: 3, dead: 1, fade: 0.85 },
-    c0: { a: -0.6, wing: -1, eye: 0, rot: -0.05 },
-    c1: { up: 1, y: -2, eye: 0, wing: 1, cast: 0.2 },
-    c2: { up: 1, y: -4, rot: 0.08, eye: 0, mouth: 0.5, wing: -1, cast: 0.55 },
-    c3: { a: 0.6, x: 2, y: -2, eye: 0, mouth: 0.4, wing: 1, cast: 1 },
-    c4: { a: 1, x: 3, rot: 0.14, eye: 0, wing: -1, cast: 0.8 },
-    c5: { a: 0.3, x: 1, eye: 0, wing: 0, cast: 0.3 },
-    k0: { a: -0.6, wing: -1, eye: 1, rot: -0.05, dark: 1 },
-    k1: { up: 1, y: -2, eye: 1, wing: 1, cast: 0.2, dark: 1 },
-    k2: { up: 1, y: -4, rot: 0.08, eye: 1, mouth: 0.5, wing: -1, cast: 0.55, dark: 1 },
-    k3: { a: 0.6, x: 2, y: -2, eye: 1, mouth: 0.4, wing: 1, cast: 1, dark: 1 },
-    k4: { a: 1, x: 3, rot: 0.14, eye: 1, wing: -1, cast: 0.8, dark: 1 },
-    k5: { a: 0.3, x: 1, eye: 1, wing: 0, cast: 0.3, dark: 1 },
-    z0: { rot: -1.45, x: -9, y: -3, eye: 2, sleep: 1 },
-    z1: { rot: -1.45, x: -9, y: -2.4, eye: 2, sleep: 2 },
-    v0: { up: 1, eye: 0, mouth: 0.3, wing: 1 },
-    v1: { up: 1, y: -5, eye: 0, mouth: 1, wing: -1 },
-    v2: { up: 1, y: -1, eye: 0, mouth: 0.4, wing: 1 },
-    v3: { up: 0.2, a: 0.2, rot: 0.05, eye: 0, mouth: 0.5, wing: 0 },
-  };
-  // покой — 6 кадров: вдох-выдох (y, растяжение), мерное махание крыльями, подёргивание рукой, моргание на 5-м кадре
-  for (let k = 0; k < 6; k++) T['i' + k] = { y: [0, -0.4, -0.9, -1, -0.6, -0.2][k], sq: [1, 1.01, 1.02, 1.02, 1.01, 1][k], wing: [0, 1, 1, 0, -1, -1][k], a: [0, 0.03, 0.05, 0.05, 0.03, 0][k], eye: k === 4 ? 2 : 0 };
-  // ходьба — 8 кадров: фаза ноги по синусу, подскок на каждом шаге, крылья в такт
-  for (let k = 0; k < 8; k++) { const ph = Math.sin(k / 8 * 6.2832); T['w' + k] = { leg: Math.round(ph * 100) / 100, y: -Math.round(Math.abs(ph) * 90) / 100, wing: [-1, -0.5, 0.5, 1, 0.5, -0.5, -1, 0][k] }; }
-  const p = Object.assign({ dark: 0, cast: 0, sleep: 0, x: 0, y: 0, rot: 0, a: 0, up: 0, b: 0, leg: 0, mouth: 0, eye: 0, hurt: 0, sq: 1, wing: 0, fade: 0, dead: 0 }, T[n]);
-  if (w[n] !== undefined) p.leg = w[n];
-  return p;
+  const T = NA_T || (NA_T = naPoseTable());
+  return Object.assign({ dark: 0, cast: 0, sleep: 0, x: 0, y: 0, rot: 0, a: 0, up: 0, b: 0, leg: 0, mouth: 0, eye: 0, hurt: 0, sq: 1, wing: 0, fade: 0, dead: 0 }, T[n]);
 }
 
 const NA_SPEC = {
@@ -87,7 +158,7 @@ const NA_SPEC = {
 const naCache = new Map();
 // Ручной пиксель-арт на сетке ×3 (как Полудница, fzPxKit в fairy2.js): NA_PX[вид](K, P, кадр) рисует позу
 // стоя, в пикселях арта (3 на игровой), начало — у ног, лицом вправо. Сдвиг, наклон и вспышку удара
-// из позы накладывает naPxFrame. Есть только при мелком пикселе (PX_FINE > 1); иначе — вектор NA_DRAW.
+// из позы накладывает naPxFrame. На телефонах (PX_FINE = 1) кадр сводится в ×1 (pxToCoarse).
 const NA_PX = {};
 function naPxFrame(kind, S, P, fr) {
   const W = S.w * 3, H = S.h * 3, AX = S.ax * 3, AY = S.ay * 3, sc = (S.sc || 1) * 3;
@@ -118,7 +189,7 @@ function naFrame(kind, fr) {
   const P = naPose(fr);
   P.pal = S.pal || null;
   let out;
-  if (F > 1 && NA_PX[kind]) out = naPxFrame(kind, S, P, fr);
+  if (NA_PX[kind]) out = pxToCoarse(naPxFrame(kind, S, P, fr));   // на телефоне — тот же арт, сведённый в ×1
   else {
     // мелкий пиксель: F деталей на игровой пиксель, сверхвыборка 2 на пиксель арта (при F = 1 — 3, как было)
     const [cv, c] = mkSprite(S.w, S.h, F > 1 ? 2 * F : 3);

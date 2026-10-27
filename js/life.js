@@ -277,6 +277,8 @@ function injure(u, part) {
   u.injAt = Game.time; u.injCare = null; u.healedBy = null; u.healedAt = 0;
   if (typeof injNote === 'function') injNote(u);        // лечение и сводка (sickness.js)
 }
+// травма ноги / руки с учётом 'both' (рука и нога сразу)
+const injLeg = v => v === 'leg' || v === 'both', injArm = v => v === 'arm' || v === 'both';
 
 // уронить груз на землю: кучку подберут курьеры. Некуда положить (вокруг вода, стены) — груз остаётся в руках
 function dropLoad(u) {

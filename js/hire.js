@@ -2,11 +2,17 @@
 // Найм прямо в окне здания (замена вкладки «Жители»): у каждого здания со своим мастером (b.def.worker) —
 // кто здесь работает, кого из той же профессии можно поставить сюда (свободного или перевести из другого такого же
 // здания — тогда они меняются местами) и кнопка «Обучить»: школа учит мастера, и выпускник идёт именно сюда
-// (бронь b.hireReq, сохраняется и уходит клиентам коопа вместе со зданием). Место у здания одно.
+// (бронь b.hireReq, сохраняется и уходит клиентам коопа вместе со зданием). Мест по уровню — workSlots (levels.js):
+// первый — b.worker, второй (ур.3) — просто гном с u.home === b.
 // Кооп: кнопки шлют bact 'hire' (право train) и 'assign' (право manage), считает сервер.
 
 function hireMirror() { return typeof Coop !== 'undefined' && !!Coop.mirror; }
 function hireStaffed(b) { return !!(b.worker && !b.worker.dead && b.worker.home === b); }
+const hireSlots = b => typeof workSlots === 'function' ? workSlots(b) : 1;
+const hireStaff = b => typeof bldStaff === 'function' ? bldStaff(b) : (hireStaffed(b) ? [b.worker] : []);
+const hireFull = b => hireStaff(b).length >= hireSlots(b);
+// где гном сейчас мастером (первым или вторым) — или null
+const hireFrom = u => u.home && !u.home.removed && u.home.def && u.home.def.worker === u.type ? u.home : null;
 
 // Сколько мастеров этого ремесла сейчас учится во всех школах
 function hirePending(type) {
@@ -24,7 +30,7 @@ function hireCands(b) {
   if (!type) return out;
   for (const u of Game.units) {
     if (u.type !== type || u.dead || u.teamOf || u.home === b) continue;
-    const from = u.home && !u.home.removed && u.home.worker === u ? u.home : null;
+    const from = hireFrom(u);
     out.push({ u, from, d: Math.abs(u.x - b.doorX) + Math.abs(u.y - b.doorY) + (from ? 1000 : 0) });
   }
   return out.sort((a, c) => a.d - c.d);
@@ -45,7 +51,7 @@ function hireWhyNot(b, u) {
 // Снять гнома с прежнего места: выходит из здания к двери, груз в руках кладёт кучкой
 function hireDetach(u) {
   const old = u.home;
-  if (old && old.worker === u) old.worker = null;
+  if (old && old.worker === u) old.worker = Game.units.find(x => x !== u && x.home === old && !x.dead) || null;   // второй становится первым
   if (u.inside) { const ib = u.inside; u.inside = null; u.x = ib.doorX + 0.5; u.y = ib.doorY + 0.5; }
   if (u.carry) { if (typeof dropPile === 'function') dropPile(Math.floor(u.x), Math.floor(u.y), u.carry, u.carryN || 1); u.carry = null; }
   u.home = null;
@@ -53,16 +59,18 @@ function hireDetach(u) {
   if (u.releaseOcc) u.releaseOcc();
 }
 function hireSeat(b, u) {
-  u.home = b; b.worker = u;
+  u.home = b;
+  if (!hireStaffed(b)) b.worker = u;
   u.idleFlag = false; u.idleStreak = 0;
 }
 
-// Поставить гнома сюда. Если у здания был свой мастер, а новый пришёл из другого такого же здания — меняются местами.
+// Поставить гнома сюда. Есть свободное место — просто встаёт; все места заняты, а новый пришёл из другого такого же
+// здания — меняется местами с первым мастером.
 function hireAssign(b, u) {
   const bad = hireWhyNot(b, u);
   if (bad) return bad;
-  const from = u.home && !u.home.removed && u.home.worker === u ? u.home : null;
-  const prev = hireStaffed(b) ? b.worker : null;
+  const from = hireFrom(u);
+  const prev = hireFull(b) && hireStaffed(b) ? b.worker : null;
   hireDetach(u);
   if (prev) {
     hireDetach(prev);
@@ -100,7 +108,7 @@ function hireOnGraduate(u) {
   let best = null, bd = 1e9;
   for (const b of Game.buildings) {
     if (!b.hireReq || b.removed || b.state !== 'done' || b.def.worker !== u.type) continue;
-    if (hireStaffed(b)) { b.hireReq = 0; continue; }
+    if (hireFull(b)) { b.hireReq = 0; continue; }
     const d = Math.abs(u.x - b.doorX) + Math.abs(u.y - b.doorY);
     if (d < bd) { bd = d; best = b; }
   }
@@ -136,13 +144,17 @@ function hireLvl(u) { const L = typeof unitLevel === 'function' ? unitLevel(u) :
 // Блок «Работник» в окне здания (вместо прежней строки с одной кнопкой «Обучить»)
 function hireHTML(b) {
   const type = b.def.worker, T = UNIT_TYPES[type];
-  const w = hireStaffed(b) ? b.worker : null;
-  const st = w ? (w.inside === b ? (b.working ? 'работает' : 'внутри') : 'в пути / снаружи') : null;
-  const pend = !w && b.hireReq && hirePending(type) > 0;
-  let h = `<div class="isec">Работник · ${w ? 1 : 0}/1</div>`;
-  h += `<div class="irow"><img class="portrait" src="${portraitURL(type, w ? w.look : 3)}" alt="">
-    <div><div>${w ? `${hireName(w)} <span class="muted small">${T.name.toLowerCase()}${hireLvl(w)}</span>` : T.name}</div>
-    <div class="small ${w ? 'muted' : 'warn'}">${w ? st : pend ? 'учится в школе — придёт сюда' : 'места свободно: 1'}</div></div></div>`;
+  const staff = hireStaff(b), slots = hireSlots(b), full = staff.length >= slots;
+  const pend = !full && b.hireReq && hirePending(type) > 0;
+  const more = typeof workSlotsOf === 'function' && (b.level || 1) < 3 && workSlotsOf(b.type, 3) > slots ? ` · на 3-м ур. мест: ${workSlotsOf(b.type, 3)}` : '';
+  let h = `<div class="isec">${slots > 1 ? 'Работники' : 'Работник'} · ${staff.length}/${slots}<span class="muted small">${more}</span></div>`;
+  for (const w of staff) {
+    const st = w.inside === b ? (b.working ? 'работает' : 'внутри') : 'в пути / снаружи';
+    h += `<div class="irow"><img class="portrait" src="${portraitURL(type, w.look)}" alt="">
+    <div><div>${hireName(w)} <span class="muted small">${T.name.toLowerCase()}${hireLvl(w)}</span></div><div class="small muted">${st}</div></div></div>`;
+  }
+  if (!full) h += `<div class="irow"><img class="portrait" src="${portraitURL(type, 3)}" alt="">
+    <div><div>${T.name}</div><div class="small warn">${pend ? 'учится в школе — придёт сюда' : `места свободно: ${slots - staff.length}`}</div></div></div>`;
 
   const cands = hireCands(b);
   if (cands.length) {
@@ -151,13 +163,13 @@ function hireHTML(b) {
       const where = c.from ? `работает: «${c.from.def.name}»` : 'свободен';
       return `<div class="irow hire-c"><img class="portrait" src="${portraitURL(type, c.u.look)}" alt="">
         <div style="flex:1"><div>${hireName(c.u)}<span class="muted small">${hireLvl(c.u)}</span></div><div class="small ${bad ? 'warn' : 'muted'}">${bad || where}</div></div>
-        <button data-act="assign" data-u="${c.u.id}" ${bad ? 'disabled' : ''} title="${c.from && w ? 'Поменять местами' : 'Поставить сюда'}">${c.from && w ? 'Обмен' : 'Сюда'}</button></div>`;
+        <button data-act="assign" data-u="${c.u.id}" ${bad ? 'disabled' : ''} title="${c.from && full ? 'Поменять местами' : 'Поставить сюда'}">${c.from && full ? 'Обмен' : 'Сюда'}</button></div>`;
     }).join('');
-    h += w ? `<details class="hire-more" data-hb="${b.id}"${typeof UI !== 'undefined' && UI.hireOpen === b.id ? ' open' : ''}><summary class="small">Поставить другого: ${T.name.toLowerCase()} (${cands.length})</summary>${rows}</details>`
+    h += full ? `<details class="hire-more" data-hb="${b.id}"${typeof UI !== 'undefined' && UI.hireOpen === b.id ? ' open' : ''}><summary class="small">Поставить другого: ${T.name.toLowerCase()} (${cands.length})</summary>${rows}</details>`
       : `<div class="small muted">Та же профессия в деревне:</div>${rows}`;
     if (cands.length > 4) h += `<div class="small muted">и ещё ${cands.length - 4}</div>`;
   }
-  if (!w && !pend) {
+  if (!full && !pend) {
     const bad = hireTrainWhy(b), eta = hireEta();
     const sub = bad || (`1 золото, ≈${eta || TRAIN_TIME} с · выпускник придёт сюда` + (hireGoldLow() ? ' · золота нет — начнут, когда привезут' : ''));
     h += `<button class="upg${bad ? ' no' : ''}" data-act="hire" ${bad ? 'disabled' : ''} title="Школа обучит мастера для этого здания"><span><b>Обучить: ${T.name.toLowerCase()}</b><small>${sub}</small></span></button>`;

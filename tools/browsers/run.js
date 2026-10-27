@@ -46,7 +46,8 @@ function stats(t) {
 
 async function launch() {
   if (ENGINE === 'chromium') {
-    const exe = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(fs.existsSync);
+    const exe = [process.env.CHROME_PATH, 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+      '/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/chromium'].find(f => f && fs.existsSync(f));
     return pw.chromium.launch({ executablePath: exe, headless: true, args: ['--enable-precise-memory-info', '--autoplay-policy=user-gesture-required'] });
   }
   return pw[ENGINE].launch({ headless: true });
@@ -184,8 +185,17 @@ async function runProfile(browser, base, p) {
   for (const p of PROFILES) {
     if (ONLY && !p.name.includes(ONLY)) continue;
     process.stderr.write(`>> ${ENGINE} ${p.name}\n`);
-    try { const r = await runProfile(browser, base, p); all.push(r); console.log(JSON.stringify(r)); } catch (e) { console.log(JSON.stringify({ profile: p.name, fatal: String(e.message) })); }
+    try { const r = await runProfile(browser, base, p); all.push(r); console.log(JSON.stringify(r)); } catch (e) { all.push({ profile: p.name, fatal: String(e.message), errors: ['pageerror: профиль упал: ' + String(e.message)] }); console.log(JSON.stringify({ profile: p.name, fatal: String(e.message) })); }
   }
   fs.writeFileSync(path.join(OUT, `results-${ENGINE}${PRIVATE ? '-priv' : ''}.json`), JSON.stringify(all, null, 1));
   await browser.close(); srv.close();
+  // --strict 1 (CI): код выхода 1, если профиль упал, на странице было исключение (pageerror) или не прошёл ключевой шаг
+  if (arg('strict', '0') === '1') {
+    const KEY = ['load', 'new-game', 'save-load'];
+    const why = r => [...(r.errors || []).filter(e => e.startsWith('pageerror')),
+      ...KEY.filter(k => r.steps && r.steps[k] && !r.steps[k].ok).map(k => `шаг ${k}: ${r.steps[k].err}`)];
+    const bad = all.length ? all.filter(r => why(r).length) : [{ profile: '(ни одного профиля)', errors: ['pageerror: не запустился'] }];
+    for (const r of bad) console.error(`✗ ${r.profile}: ${why(r).join(' | ')}`);
+    if (bad.length) process.exit(1);
+  }
 })();

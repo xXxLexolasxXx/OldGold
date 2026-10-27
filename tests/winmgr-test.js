@@ -67,5 +67,14 @@ check(eq(W.wmStackHide([{ id: 'adm', seq: 5, pinned: true }, { id: 'b', seq: 2 }
   check(/\[data-wm="admin"\]/.test(read('js/menugroups.js')), 'пункт «Права игроков» — на виду в меню');
 }
 
+// ---- оповещения не копятся: плашки уходят сами и по ✕, на телефоне одна плашка и один тост, тост не дольше 10 с
+{
+  const pins = read('js/pins.js'), nq = read('js/notify.js'), ui = read('js/ui.js');
+  check(/PIN_MAX = \(\) => \(document\.body\.classList\.contains\('mobile'\) \? 1 : 3\)/.test(pins), 'телефон: одна закреплённая плашка');
+  check(/PIN_SHOW_MS = 20000/.test(pins) && /data-pinx/.test(pins) && /pinSnooze\(p\.id\)/.test(pins), 'плашка уходит сама через 20 с и по ✕');
+  check(/contains\('mobile'\) \? 1 : 2/.test(nq), 'телефон: один тост за раз');
+  check(/Math\.min\(mob \? 10000 : 9000/.test(ui), 'тост не висит дольше 10 с');
+}
+
 if (fails.length) { console.log('ПРОВАЛ:\n  ' + fails.join('\n  ')); process.exit(1); }
 console.log('winmgr: ok');

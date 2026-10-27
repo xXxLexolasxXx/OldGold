@@ -62,7 +62,7 @@ function raidStart(kind, x, y) {
 function raidMake(k, x, y, mhp) {
   const N = {
     id: Game.nextId++, k, lair: 0, raid: 1, x, y, hx: x, hy: y, mhp, hp: mhp, lv: 1, face: 1, st: 'idle', t: 1,
-    fr: 'i0', ph: 0, tg: 0, prov: Game.time, cdA: 1.5, atkT: 9, hit: 1, ov: ['roar'], ovT: 0, ovP: 0.5, winT: 0, dt: 0, wx: 0, wy: 0, say: 0,
+    fr: 'i0', ph: 0, tg: 0, prov: Game.time, cdA: 1.5, atkT: 9, hit: 1, ov: NA_FRAMES.roar, ovT: 0, ovP: 0.042, winT: 0, dt: 0, wx: 0, wy: 0, say: 0,
   };
   return N;
 }
@@ -76,7 +76,7 @@ function raidPhase(N, F, ph) {
   F.hint = P.hint;
   rdSay(`${K.name} — фаза ${['I', 'II', 'III'][ph - 1] || ph}: «${P.n}». ${P.hint}`);
   floater(N.x, N.y - 4.2, `«${P.n}»`, '#9ae0ff');
-  N.ov = ['roar']; N.ovT = 0; N.ovP = 0.6;
+  N.ov = NA_FRAMES.roar; N.ovT = 0; N.ovP = 0.05;
   fxBurst(N.x * TILE, N.y * TILE - 20, 30, ['#6ad0ff', '#bff0ff', '#2a6aaa'], 110, 70, 1, 2.4, -20);
   if (K.phase) K.phase(N, F, ph);
 }
@@ -290,7 +290,7 @@ raidRegister('kurgan', KURGAN);
 {
   const _th = neuThink;
   neuThink = function (N, dt) {
-    if (N.k === 'kost') { N.prov = Game.time; if (N.st === 'die') N.dt += dt; if (N.ov) { N.ovT += dt; } N.fr = N.st === 'die' ? 'd' + Math.min(5, Math.floor(N.dt / 0.11)) : N.ov ? N.ov[Math.min(N.ov.length - 1, Math.floor(N.ovT / 0.14))] : 'i0'; if (N.ov && N.ovT > 0.3) N.ov = null; return; }
+    if (N.k === 'kost') { N.prov = Game.time; if (N.st === 'die') N.dt += dt; if (N.ov) { N.ovT += dt; } N.fr = N.st === 'die' ? naDieFr(N.dt) : N.ov ? N.ov[Math.min(N.ov.length - 1, Math.floor(N.ovT / (N.ovP || 0.05)))] : 'i0'; if (N.ov && N.ovT > (N.ovP || 0.05) * N.ov.length) N.ov = null; return; }
     _th(N, dt);
   };
   const _hit = neuHit;
@@ -485,8 +485,8 @@ function raidDrawKurgan(c, N) {
   const sink = dead ? Math.min(14, N.dt * 6) : 0;
   c.translate(px, py + sink);
   if (N.face < 0) c.scale(-1, 1);
-  const hurt = fr === 'hurt' || fr === 'stagger', lean = hurt ? -2 : 0;
-  const walk = fr[0] === 'w' ? +fr.slice(1) : -1, step = walk >= 0 ? (walk % 4 < 2 ? 1 : -1) : 0;
+  const fk = naFightKey(fr), hurt = fk === 'hurt', lean = hurt ? -2 : 0;
+  const walk = fr[0] === 'w' ? +fr.slice(1) : -1, step = walk >= 0 ? (walk % 6 < 3 ? 1 : -1) : 0;
   const bob = fr[0] === 'i' ? Math.round(Math.sin(t * 2) * 0.8) : 0;
   const P = RP(c, lean, bob);
   const BONE = '#e6dfc8', BONE2 = '#b8b096', DK = '#1a120a', GOLD = '#b8902e', GOLD2 = '#e0b84a', RUST = '#7a5a1e', CAPE = '#2a3a6a', CAPE2 = '#1a2448', BLUE = '#6ad0ff';
@@ -505,7 +505,7 @@ function raidDrawKurgan(c, N) {
   // наплечники
   P(-11, -31, 6, 5, DK); P(-10, -30, 4, 3, GOLD2); P(5, -31, 6, 5, DK); P(6, -30, 4, 3, GOLD2);
   // голова: череп, синие глаза, корона
-  const jaw = fr === 'roar' ? 2 : 0;
+  const jaw = fr === 'roar' || /^r\d/.test(fr) ? 2 : 0;
   P(-6, -42, 12, 12 + jaw, DK); P(-5, -41, 10, 9, BONE); P(-5, -41, 10, 2, '#f4eedc');
   P(-4, -38, 3, 3, '#0a1018'); P(1, -38, 3, 3, '#0a1018');
   c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(120,220,255,${0.7 + 0.3 * Math.sin(t * 6)})`; c.fillRect(-3 + lean, -37 + bob, 2, 2); c.fillRect(2 + lean, -37 + bob, 2, 2); c.restore();
@@ -514,7 +514,7 @@ function raidDrawKurgan(c, N) {
   for (const dx of [-6, -1, 4]) { P(dx, -49, 2, 4, GOLD); P(dx, -49, 1, 1, GOLD2); }
   P(-4, -44, 2, 2, BLUE); P(2, -44, 2, 2, BLUE);
   // меч: по кадру — на плече, занесён, удар
-  const pose = fr === 'windup' ? 'up' : fr === 'strike' ? 'down' : fr === 'recover' ? 'mid' : 'rest';
+  const pose = fk === 'windup' ? 'up' : fk === 'strike' ? 'down' : fk === 'recover' ? 'mid' : 'rest';
   c.save(); c.translate(7 + lean, -22 + bob);
   c.rotate(pose === 'up' ? -2.4 : pose === 'down' ? 0.5 : pose === 'mid' ? -0.6 : -1.1);
   P(-2, -2, 4, 4, DK); P(-1, -1, 2, 2, BONE);                         // кисть

@@ -123,6 +123,7 @@ function wkDoing(u) {
   if (u.repairJob) return 'чинит: ' + wkBN(u.repairJob).toLowerCase();
   if (u.fieldJob >= 0) return 'вскапывает поле';
   if (u.helpField >= 0) return 'помогает убрать урожай';
+  if (u.rushJob >= 0 && typeof rushDoing === 'function') return rushDoing(u);
   if (u.job && !u.job.removed) return (u.job.upg && u.job.state === 'done' ? 'достраивает: ' : 'строит: ') + wkBN(u.job).toLowerCase();
   if (u.home && !u.home.removed && !u.home.problem()) return 'работает: ' + wkBN(u.home).toLowerCase();
   return '';
@@ -379,6 +380,32 @@ function wkListHTML() {
 function wkRowHTML(u, s) {
   const pin = wkPinLabel(u);
   return `<div class="wk-u${s.why ? ' idle' : ''}" data-wk="sel:${u.id}"><b>${wkName(u)}</b>${unitLevel(u) > 1 ? `<small>ур.${unitLevel(u)}</small>` : ''}<span>${s.why ? '⏸ ' + s.why : s.doing || 'занят'}</span>${pin ? `<i>📌 ${pin}</i>` : ''}</div>`;
+}
+
+// Сводка жителей (окно «Школа», под наймом): сколько гномов каждой профессии и сколько какого уровня.
+// Строки — в порядке профессий игры; дети отдельной строкой, герой и животные не считаются.
+function wkCensusHTML() {
+  const by = {}; let kids = 0, all = 0;
+  for (const u of Game.units) {
+    if (u.dead || u.type === 'hero') continue;
+    if (u.kid || u.type === 'kid') { kids++; all++; continue; }
+    if (!UNIT_TYPES[u.type] || UNIT_TYPES[u.type].animal) continue;
+    all++;
+    const r = by[u.type] || (by[u.type] = { n: 0, lv: {} });
+    r.n++;
+    const L = typeof unitLevel === 'function' ? unitLevel(u) : 1;
+    r.lv[L] = (r.lv[L] || 0) + 1;
+  }
+  let h = `<div class="isec">Жители · ${all}</div><div class="wk-cen">`;
+  for (const t of ALL_UNIT_KEYS) {
+    const r = by[t];
+    if (!r) continue;
+    const lv = typeof levelMax === 'function' && levelMax(t) > 1
+      ? Object.keys(r.lv).sort((a, b) => a - b).map(L => `ур.${L}: ${r.lv[L]}`).join(' · ') : '';
+    h += `<div class="wk-cr"><span>${UNIT_TYPES[t].name}</span><b>${r.n}</b><small>${lv}</small></div>`;
+  }
+  if (kids) h += `<div class="wk-cr"><span>Дети</span><b>${kids}</b><small></small></div>`;
+  return h + (all ? '' : '<span class="pr-hint">пока никого</span>') + '</div>';
 }
 
 // выбор здания для закрепления/маршрута

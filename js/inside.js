@@ -244,6 +244,12 @@ function drawInside(c, b, spr, ox, oy) {
   insideScan();
   drawInsideLife(c, b, spr, ox, oy);
   if (spr.px === 'storehouse') drawStoreYard(c, b, spr, ox, oy);
+  if (spr.px === 'school') drawSchoolYard(c, b, spr, ox, oy);
+  if (spr.px === 'sawmill') drawSawYard(c, b, spr, ox, oy);
+  if (spr.px === 'quarry') drawQuarryYard(c, b, spr, ox, oy);
+  if (spr.px === 'goatpen' || spr.px === 'stable') drawPenAnimals(c, b, spr, ox, oy);
+  if (spr.px === 'tradepost') drawTradeYard(c, b, spr, ox, oy);
+  if (spr.px === 'infirmary') drawInfYard(c, b, spr, ox, oy);
   if (b.type === 'inn') { if (spr.pxInn) drawInnYard(c, b, spr, ox, oy); drawInnPorch(c, b, spr, ox, oy); drawInnOven(c, b, spr, ox, oy); drawBarmaid(c, b, spr, ox, oy); if (spr.pxInn) drawInnExtraDiners(c, b, spr, ox, oy); }
 }
 
@@ -595,5 +601,154 @@ function drawStoreYard(c, b, spr, ox, oy) {
   }
   for (const [x, y] of spr.runes || []) glow(c, ox + x, oy + y - 4, 9, '140,240,220', 0.22 + Math.sin(t * 2.3 + x) * 0.08);
   if (spr.circle) glow(c, ox + spr.circle[0], oy + spr.circle[1], 16, '120,230,210', 0.16 + Math.sin(t * 1.6) * 0.06);
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Пиксельная школа (bldpx.js): гномята на площадке ----------
+// Днём во дворе играют гномята: прыгают по классикам, качаются на качелях, читают под деревом;
+// на 2-м уровне — песочница и качели-балансир, на 3-м — горка и майское дерево. Ночью двор пуст.
+function kidFolk(b, k) { return { type: 'kid', look: (b.id * 131 + k * 47) >>> 0, carry: null }; }
+// гномёнок мельче взрослого (×0.7), ноги — в точке (x, y)
+function drawKid(c, b, k, x, y, view, pose, frame, opt) {
+  const sp = personSprite(kidFolk(b, k), view, pose, frame, opt || {}), s = 0.7;
+  c.drawImage(sp, Math.round(x - PFX * s), Math.round(y - PFY * s), Math.round(PW * s), Math.round(PH * s));
+}
+function drawSchoolYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.play || (typeof isNightNow === 'function' && isNightNow())) return;
+  const t = Game.time, P = spr.play, lv = spr.pxLv || 1, X = p => ox + p[0], Y = p => oy + p[1];
+  c.imageSmoothingEnabled = false;
+  // 1-й уровень: классики, качели, чтение под деревом
+  if (P.hop) { const ph = (t * 0.6 + b.id) % 1, jump = Math.abs(Math.sin(ph * Math.PI * 4)) * 2; drawKid(c, b, 0, X(P.hop), Y(P.hop) + 6 - ph * 12 - jump, 'N', 'idle', 0); }
+  if (P.swing) { const s = P.swing[0], a = Math.sin(t * 2.4); drawKid(c, b, 1, X(s) + a * 2, Y(s) - Math.abs(a) * 1.5, 'S', 'idle', 0, { gest: 'clap', gf: gestCyc(t) }); }
+  if (P.read) drawKid(c, b, 3, X(P.read), Y(P.read), 'S', 'idle', Math.floor(t * 2) % 6, { gest: 'eat', gf: 10 });
+  // 2-й: песочница и огородик
+  if (lv >= 2 && P.sand) drawKid(c, b, 4, X(P.sand), Y(P.sand), 'S', 'work', { anim: 'pat', f: Math.floor(t * 8) % 8 });
+  if (lv >= 2 && P.garden) drawKid(c, b, 11, X(P.garden), Y(P.garden), 'S', 'work', { anim: 'dig', f: Math.floor(t * 6) % 8 });
+  // 3-й: качели-балансир, горка, второй на качелях
+  if (lv >= 3 && P.seesaw) P.seesaw.forEach((s, k) => { const a = Math.sin(t * 2) * (k ? -1 : 1) * 2; drawKid(c, b, 5 + k, X(s), Y(s) - a, k ? 'W' : 'E', 'idle', 0); });
+  if (lv >= 3 && P.slide) { const ph = (t * 0.5 + b.id) % 1; drawKid(c, b, 7, X(P.slide) + ph * 12, Y(P.slide) - 12 + ph * 12, 'E', 'idle', 0); }
+  if (lv >= 3 && P.swing && P.swing[1]) { const s = P.swing[1], a = Math.sin(t * 2.4 + 1.3); drawKid(c, b, 2, X(s) + a * 2, Y(s) - Math.abs(a) * 1.5, 'S', 'idle', 0); }
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Пиксельная лесопилка (bldpx.js): диск крутится, бревно идёт на пилу, летят опилки, рабочие у станка ----------
+function drawSawYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.saw) return;
+  const t = Game.time, on = !!b.working, [sx, sy] = spr.saw, X = ox + sx, Y = oy + sy, r = spr.sawR || 12;
+  c.imageSmoothingEnabled = false;
+  if (on && !spr.sawSide) {   // блики на зубьях бегут по кругу — диск крутится
+    for (let k = 0; k < 6; k++) { const a = t * 14 + k * Math.PI / 3; c.fillStyle = '#ffffff'; c.fillRect(Math.round(X + Math.cos(a) * (r - 1)), Math.round(Y - Math.sin(a) * (r - 1)), 1, 1); }
+  }
+  if (on) for (let k = 0; k < 8; k++) {   // опилки веером
+    const f = (t * 3 + k / 8) % 1, dir = spr.sawSide ? -1 : 1;
+    c.fillStyle = ['#e8c868', '#c8a448', '#f2e0a0'][k % 3];
+    c.fillRect(Math.round(X - dir * f * 10 + Math.sin(k * 3.1) * 3), Math.round(Y + 2 - Math.sin(f * Math.PI) * 6 + f * 6), 1, 1);
+  }
+  const w = spr.workers || [];
+  if (w[0]) drawFolk(c, { type: 'woodcutter', look: b.id * 53 + 1 }, ox + w[0][0], oy + w[0][1], 'W', on ? 'work' : 'idle', on ? { anim: 'build', f: Math.floor(t * 6) % 8 } : 0, {});   // подаёт бревно
+  if (w[1]) drawFolk(c, { type: 'woodcutter', look: b.id * 53 + 2 }, ox + w[1][0], oy + w[1][1], 'E', on ? 'work' : 'idle', on ? { anim: 'chop', f: Math.floor(t * 5 + 3) % 8 } : 0, {});   // принимает доски
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Пиксельная каменоломня (bldpx.js): на переднем плане каменотёс тешет блок, летят сколы ----------
+function drawQuarryYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.work) return;
+  const t = Game.time, on = !!b.working, [wx, wy] = spr.work, f = Math.floor(t * 7 + b.id) % 8;
+  c.imageSmoothingEnabled = false;
+  drawFolk(c, { type: 'stonemason', look: b.id * 61 + 3 }, ox + wx, oy + wy, 'E', on ? 'work' : 'idle', on ? { anim: 'mine', f } : 0, {});
+  if (on && spr.block && f >= 4) {   // удар: сколы и пыль от блока
+    const [bx, by] = spr.block;
+    for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI + (f - 4) * 0.3, r = (f - 3) * 2; c.fillStyle = k % 2 ? '#c6c9bf' : '#8792a4'; c.fillRect(Math.round(ox + bx - 4 + Math.cos(a) * r), Math.round(oy + by - 6 - Math.sin(a) * r), 1, 1); }
+  }
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Загон для коз и выгул извозчика (bldpx.js): игровые козы и лошади бродят в загонах ----------
+// Козы — те же, что в лесу (creatures 'goat'), лошади — та же, что в упряжке. Каждая ходит к случайной точке
+// внутри своего загона, стоит, щиплет траву. Состояние — в b._pen (не в сейве).
+function drawPenAnimals(c, b, spr, ox, oy) {
+  if (b.state !== 'done') return;
+  const goats = spr.px === 'goatpen', lv = spr.pxLv || 1;
+  const rects = goats ? (spr.penRect ? [spr.penRect] : []) : (spr.penRects || []);
+  if (!rects.length) return;
+  const n = goats ? [2, 4, 6][lv - 1] : [1, 2, 3][lv - 1], kind = goats ? 'goat' : 'horse', t = Game.time;
+  let A = b._pen;
+  if (!A || A.length !== n) {
+    A = b._pen = [];
+    for (let k = 0; k < n; k++) { const r = rects[k % rects.length]; A.push({ r, x: r[0][0] + (r[1][0] - r[0][0]) * ((k * 0.37 + 0.2) % 1), y: r[0][1] + (r[1][1] - r[0][1]) * ((k * 0.61 + 0.3) % 1), tx: 0, ty: 0, wait: k * 1.3, face: k % 2 ? -1 : 1, ph: 0, last: t }); }
+  }
+  c.imageSmoothingEnabled = false;
+  for (const a of A.slice().sort((p, q) => p.y - q.y)) {
+    const dt = Math.min(0.1, Math.max(0, t - a.last)); a.last = t;
+    let moving = false;
+    if (a.wait > 0) a.wait -= dt;
+    else {
+      if (!a.tx) { const [p0, p1] = a.r; a.tx = p0[0] + 8 + Math.random() * Math.max(1, p1[0] - p0[0] - 16); a.ty = p0[1] + 6 + Math.random() * Math.max(1, p1[1] - p0[1] - 10); }
+      const ex = a.tx - a.x, ey = a.ty - a.y, d = Math.hypot(ex, ey), v = goats ? 6 : 8;
+      if (d < 1) { a.tx = 0; a.wait = 2 + Math.random() * 5; }
+      else { const s = Math.min(d, v * dt); a.x += ex / d * s; a.y += ey / d * s; a.ph += dt * 6; moving = true; if (Math.abs(ex) > 0.3) a.face = ex > 0 ? 1 : -1; }
+    }
+    drawCreatureAt(c, kind, ox + a.x, oy + a.y, a.face, moving, a.ph);
+  }
+  if (!goats && spr.cartSpot) drawCreatureAt(c, 'cart', ox + spr.cartSpot[0], oy + spr.cartSpot[1], 1, false, 0, null, 0);   // телега у дома извозчика
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Торговый пост (bldpx.js): торговая телега подъезжает, торговец грузит товар из пристройки ----------
+function drawTradeYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.cartSpot) return;
+  const t = Game.time + b.id * 3, cyc = t % 24, [cx, cy] = spr.cartSpot, [lx, ly] = spr.loadFrom || [cx - 12, cy + 30];
+  c.imageSmoothingEnabled = false;
+  // 0–4 с: телега въезжает справа; 4–18: стоит, торговец носит ящики; 18–24: уезжает влево
+  let x = cx, moving = false;
+  if (cyc < 4) { x = cx + (4 - cyc) * 14; moving = true; } else if (cyc > 18) { x = cx - (cyc - 18) * 14; moving = true; }
+  const n = cyc < 4 ? 0 : Math.min(4, Math.floor((cyc - 4) / 3));
+  drawCreatureAt(c, 'cart', ox + x, oy + cy, cyc > 18 ? -1 : -1, moving, t * 6, n ? 'crate' : null, n);
+  if (cyc >= 4 && cyc <= 18) {   // торговец ходит от пристройки к телеге с ящиком
+    const ph = ((cyc - 4) % 3) / 3, go = ph < 0.5, f = go ? ph * 2 : (1 - ph) * 2;
+    const px = lx + (cx - 6 - lx) * f, py = ly + (cy + 4 - ly) * f;
+    drawFolk(c, { type: 'serf', look: b.id * 71 + 9, carry: go ? 'crate' : null }, ox + px, oy + py, go ? (cx > lx ? 'E' : 'W') : (cx > lx ? 'W' : 'E'), 'walk', Math.floor(t * 9) & 7, {});
+  }
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Лазарет (bldpx.js): травы растут на грядках, лекарь срезает, сушит и варит зелье ----------
+// Каждый пучок растёт ~40 с от ростка до цветка; лекарь обходит грядку — срезанное начинает расти заново.
+// Цикл лекаря 18 с: грядка (срезает) → сушилка (развешивает) → котёл (мешает). Котёл всегда булькает, под ним огонь.
+function drawInfYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.beds) return;
+  const t = Game.time + b.id * 7, PL = ['#7cb444', '#548c30', '#386420'], FL = ['#c6a8ff', '#f8f4ea', '#ffd864', '#e04c40'];
+  c.imageSmoothingEnabled = false;
+  const cyc = t % 18, bedI = Math.floor(t / 18) % spr.beds.length;
+  spr.beds.forEach(([a, e], bi) => {
+    const n = Math.max(1, Math.floor((e[0] - a[0]) / 4));
+    for (let k = 0; k <= n; k++) {
+      const x = a[0] + (e[0] - a[0]) * k / n, y = a[1] + (e[1] - a[1]) * k / n;
+      const cut = bi === bedI && cyc < 6 && k <= n * cyc / 6 ? (cyc - 6 * k / n) : 99;   // срезано в этом обходе — растёт с нуля
+      const g = Math.min(1, ((t * 0.025 + k * 0.17 + bi * 0.31) % 1.3) * (cut < 99 ? 0 : 1) + (cut < 99 ? Math.min(1, cut * 0.05) : 0));
+      const h = Math.round(1 + g * 4), X = Math.round(ox + x), Y = Math.round(oy + y);
+      c.fillStyle = PL[(k + bi) % 3]; c.fillRect(X, Y - h, 1, h); if (g > 0.4) { c.fillRect(X - 1, Y - h + 1, 1, 1); c.fillRect(X + 1, Y - h + 2, 1, 1); }
+      if (g > 0.85) { c.fillStyle = FL[(k + bi) % 4]; c.fillRect(X, Y - h - 1, 1, 1); }
+    }
+  });
+  // котёл: огонь под ним, пузыри и пар
+  if (spr.cauldron) {
+    const [cx, cy] = spr.cauldron, X = ox + cx, Y = oy + cy;
+    drawFire(c, X, Y - 1, 'tiny', t, b.id + 5, { glow: 0 });
+    for (let k = 0; k < 4; k++) { const p = (t * 1.2 + k / 4) % 1; c.fillStyle = p < 0.7 ? '#a4d85c' : '#d8ffb0'; c.fillRect(Math.round(X - 5 + k * 3 + Math.sin(k * 2) * 1), Math.round(Y - 16 - p * 3), 1, 1); }
+    for (let k = 0; k < 3; k++) { const p = (t * 0.35 + k / 3) % 1; c.globalAlpha = 0.55 * (1 - p); c.fillStyle = '#d8f0c8'; c.fillRect(Math.round(X - 2 + Math.sin(p * 6 + k) * 3), Math.round(Y - 20 - p * 16), 3, 2); }
+    c.globalAlpha = 1;
+  }
+  // лекарь
+  const bed = spr.beds[bedI], rack = spr.rack, cau = spr.cauldron;
+  let px, py, pose = 'walk', fr = Math.floor(t * 9) & 7, view = 'E', opt = {};
+  const lerp = (p, q, f) => [p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f];
+  if (cyc < 6) { [px, py] = lerp(bed[0], bed[1], cyc / 6); py += 3; pose = 'work'; fr = { anim: 'reap', f: Math.floor(t * 8) % 8 }; }
+  else if (cyc < 8) { [px, py] = lerp([bed[1][0], bed[1][1] + 3], [rack[0], rack[1] + 4], (cyc - 6) / 2); view = rack[0] < bed[1][0] ? 'W' : 'E'; }
+  else if (cyc < 11) { [px, py] = [rack[0] + 4, rack[1] + 4]; pose = 'idle'; fr = 0; opt = { gest: 'stretch', gf: gestCyc(t) }; view = 'S'; }
+  else if (cyc < 13) { [px, py] = lerp([rack[0] + 4, rack[1] + 4], [cau[0] + 10, cau[1] + 2], (cyc - 11) / 2); view = 'W'; }
+  else if (cyc < 17) { [px, py] = [cau[0] + 10, cau[1] + 2]; pose = 'work'; fr = { anim: 'dig', f: Math.floor(t * 5) % 8 }; view = 'W'; }
+  else { [px, py] = lerp([cau[0] + 10, cau[1] + 2], [bed[0][0], bed[0][1] + 3], cyc - 17); }
+  drawFolk(c, { type: 'healer', look: b.id * 83 + 4, carry: cyc >= 6 && cyc < 8 ? 'hay' : null }, ox + px, oy + py, view, pose, fr, opt);
   c.imageSmoothingEnabled = R.smooth;
 }

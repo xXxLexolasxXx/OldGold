@@ -1192,8 +1192,9 @@ const MODELS = {
     m.custom(c => {
       const g = m.g, cx = Math.round(g.fx + g.fw / 2), cy = Math.round(g.fy + g.fh / 2 + 10);
       shadowAt(c, cx, cy + 8, 46, 17);
-      g.spr.handArt = { art: bonfireArt, x: cx, y: cy, ax: BF_AX, ay: BF_AY };
-      g.spr.fire = [cx + BF_FIRE[0] - BF_AX, cy + BF_FIRE[1] - BF_AY];
+      const s = [1, 1.2, 1.4][Math.max(1, Math.min(3, m.lv || 1)) - 1];   // костёр 2-го и 3-го уровня — чаша крупнее
+      g.spr.handArt = { art: bonfireArt, x: cx, y: cy, ax: BF_AX, ay: BF_AY, s };
+      g.spr.fire = [cx + (BF_FIRE[0] - BF_AX) * s, cy + (BF_FIRE[1] - BF_AY) * s];
       (g.spr.chimneys = g.spr.chimneys || []).push([cx, cy - 70]);
     }, 0, 60);
   },
@@ -1582,11 +1583,11 @@ function buildingSpriteBase(type, rot = 0, level = 1, era = buildingEra(type, le
   spr.canvas = toPixelArt(cv, BS / 3, { outline: true, outlineDark: 0.18, alphaCut: 100, punch: 0.14, hueShift: 1, clean: true, ink: 62, onData: (d, PWd) => { spr.perches = roofTopPoints(d, PWd, 3); } });
   // ручной пиксель-арт — поверх, без автоматической обработки: каждый пиксель как нарисован
   if (spr.handArt) {
-    const h = spr.handArt, art = h.art(), k = spr.canvas.width / spr.w;
+    const h = spr.handArt, art = h.art(), k = spr.canvas.width / spr.w, s = h.s || 1;
     const oc = spr.canvas.getContext('2d');
     oc.imageSmoothingEnabled = false;
-    oc.drawImage(art, Math.round((h.x - h.ax) * k), Math.round((h.y - h.ay) * k), art.width * k, art.height * k);
-    spr.perches = (h.art.perches || []).map(([px, py]) => [h.x - h.ax + px, h.y - h.ay + py]);
+    oc.drawImage(art, Math.round((h.x - h.ax * s) * k), Math.round((h.y - h.ay * s) * k), Math.round(art.width * k * s), Math.round(art.height * k * s));
+    spr.perches = (h.art.perches || []).map(([px, py]) => [h.x + (px - h.ax) * s, h.y + (py - h.ay) * s]);
     delete spr.handArt;
   }
   // тень размытая — хватает обычного разрешения (в 36 раз меньше видеопамяти, чем было)

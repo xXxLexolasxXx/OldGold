@@ -229,13 +229,13 @@ function n2RollThink(N, dt) {
   const R = N.rl, now = n2Now();
   R.t += dt;
   if (R.ph === 'curl') {
-    N.fr = 'cu' + Math.min(3, Math.floor(R.t / 0.1));
+    N.fr = 'cu' + Math.min(NA_N - 1, Math.floor(R.t / 0.4 * NA_N));
     if (N.tel) N.tel.p = Math.min(1, R.t / 0.4);
     if (R.t >= 0.4) { R.ph = 'roll'; R.t = 0; }
     return;
   }
   if (R.ph === 'roll') {
-    N.fr = 'ro' + (Math.floor(R.went * 2.6) % 8);
+    N.fr = 'ro' + (Math.floor(R.went * 3.9) % NA_N);
     if (Math.floor(R.t * 4) !== Math.floor((R.t - dt) * 4)) sfxAt('armadRoll', N.x * TILE, N.y * TILE, 0.35);
     // гномёнок впереди — объехать боком, а если некуда — тормозить
     const kid = Game.units.find(u => n2Kid(u) && !u.dead && !u.inside && (() => { const ax = u.x - N.x, ay = u.y - N.y, along = ax * R.dx + ay * R.dy, lat = Math.abs(ax * -R.dy + ay * R.dx); return along > 0 && along < 2.6 && lat < 1; })());
@@ -265,7 +265,7 @@ function n2RollThink(N, dt) {
       if (M === N || !neuAlive(M) || R.hit.includes(M.id) || Math.hypot(M.x - N.x, M.y - N.y) > 0.9) continue;
       R.hit.push(M.id);
       const d = 6 + n2Rand() * 4;
-      M.hp -= d; M.ov = NA_FRAMES.hurt4; M.ovT = 0; M.ovP = 0.07;
+      M.hp -= d; M.ov = NA_FRAMES.hurt; M.ovT = 0; M.ovP = 0.05;
       floater(M.x, M.y - 1.8, '−' + Math.round(d), '#ffd070');
       if (M.hp <= 0) neuKill(M, null);
     }
@@ -273,7 +273,7 @@ function n2RollThink(N, dt) {
     return;
   }
   if (R.ph === 'bounce') {
-    N.fr = 'bo' + Math.min(3, Math.floor(R.t / 0.12));
+    N.fr = 'bo' + Math.min(NA_N - 1, Math.floor(R.t / 0.48 * NA_N));
     const bx = N.x - R.dx * dt * 2.4, by = N.y - R.dy * dt * 2.4;
     if (isWalkable(Math.floor(bx), Math.floor(by))) { N.x = bx; N.y = by; }
     if (R.t >= 0.48) {
@@ -283,7 +283,7 @@ function n2RollThink(N, dt) {
     return;
   }
   // разворот: раскрылся, огляделся
-  N.fr = 'un' + Math.min(3, Math.floor(R.t / 0.1));
+  N.fr = 'un' + Math.min(NA_N - 1, Math.floor(R.t / 0.4 * NA_N));
   if (R.t >= 0.4) { N.rl = null; N.st = 'chase'; N.rlCd = now + 7; N.face = -N.face; N.atkT = 9; }
 }
 
@@ -379,12 +379,11 @@ function n2RollThink(N, dt) {
     else if (N.k === 'gtSpear' || N.k === 'gtBow') sfxAt('gtGallop', N.x * TILE, N.y * TILE, 0.7);
   };
 
-  // по шару броненосца бьют вполсилы… вчетверть; 4 кадра получения удара у всех
+  // по шару броненосца бьют вполсилы… вчетверть; получение удара — общие 6 кадров (neutralart.js)
   const _nh = neuHit;
   neuHit = function (N, u, dmg) {
     if (N.rl && N.rl.ph !== 'bounce' && neuAlive(N)) { dmg *= 0.25; if (!(N.armSay > n2Now() - 2)) { N.armSay = n2Now(); floater(N.x, N.y - 2.4, 'Броня!', '#c8d0d8'); } }
     _nh(N, u, dmg);
-    if (N.ov && N.ov[0] === 'hurt' && N.st !== 'die') { N.ov = NA_FRAMES.hurt4; N.ovT = 0; N.ovP = 0.07; }
   };
 
   // удар нейтрала: множитель ранга; лучник — видимая стрела; тролль — глухой удар дубины
@@ -463,7 +462,7 @@ function n2SpellHit(M, u, dmg, el) {
   if (!neuAlive(M)) return;
   neuProvoke(M, u);
   M.hp -= dmg;
-  M.ov = NA_FRAMES.hurt4; M.ovT = 0; M.ovP = 0.07;
+  M.ov = NA_FRAMES.hurt; M.ovT = 0; M.ovP = 0.05;
   floater(M.x, M.y - 1.7, '−' + Math.max(1, Math.round(dmg)), el === 'fire' ? '#ff9a40' : '#fff2a0');
   if (el === 'fire') { if (typeof cbFxSet === 'function') cbFxSet(M, 'burn', 3, u, null); if (N2_TROLLS[M.k]) M.noRegen = n2Now() + 6; }
   if (M.hp <= 0) neuKill(M, u);

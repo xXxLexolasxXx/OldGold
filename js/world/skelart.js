@@ -1,11 +1,12 @@
 'use strict';
 // Пиксель-арт скелетов: те же 4 вида (юг, восток, север; запад — зеркало), та же сверхвыборка и конвейер toPixelArt, что у гномов.
-// Кадры: покой 6, ходьба 8, атака 9, удар по нему 4, смерть 9, захват 9 + шаг с ношей 4 (КАДРЫ.md).
+// Кадры (КАДРЫ.md, стандарт 12): покой, ходьба, атака, смерть — по 12, удар по нему 6, захват 9 + шаг с ношей 4.
 // Кадры строятся лениво и лежат в кэше с вытеснением; внешность — 2 бита (цвет колпака (рыжий, охра), щит), считаются из дома скелета (ключи, не в сейве).
 // Рисует drawSkeleton (skeletons.js вызывает skelDraw отсюда); без этого файла остаётся старое векторное рисование.
 
 const SKA = { PS: 6, PART: PX_FINE > 1 ? 3 : 2,      // PART — пикселей арта на игровой (мелкий пиксель — 3)
-  W: 52, H: 56, AX: 22, AY: 50, FR: { idle: 6, walk: 8, atk: 9, hit: 4, die: 9, grab: 13 }, ATK_DUR: 0.72, HIT_DUR: 0.2, DIE_DUR: 0.9, MAX: PX_FINE > 1 ? 400 : 700 };
+  W: 52, H: 56, AX: 22, AY: 50, FR: { idle: 12, walk: 12, atk: 12, hit: 6, die: 12, grab: 13 }, ATK_DUR: 0.72, HIT_DUR: 0.3,   // КАДРЫ.md: по 12, рана 6
+  DIE_DUR: 0.9, MAX: PX_FINE > 1 ? 600 : 900 };   // 12 кадров на действие: 3 вида × 4 облика × все позы помещаются
 // палитра общая с призраками и нечистью: тёплая кость, ржавчина, мох; зрачки — тот же зелёный, что у призраков (#6fe0b4)
 const SKA_C = {
   bone: '#e4ddd2', bone2: '#b6ada0', bone3: '#867e74', ink: '#1e1b19', flash: '#f6f2ea',
@@ -57,23 +58,25 @@ function skelParams(pose, i) {
   const TAU = Math.PI * 2;
   const P = { cw: 0, lean: 0, bob: 0, sw: 0, mv: 0, ang: -1.1, jaw: 0.6, hdx: 0, hdy: 0, sink: 0, armB: 0, flash: 0, adv: 0, gp: null, eyeLit: 0.8, shake: 0 };
   if (pose === 'idle') {
-    const ph = i / 6 * TAU;
+    const ph = i / SKA.FR.idle * TAU;
     P.bob = Math.sin(ph) * 0.5; P.armB = Math.sin(ph + 1) * 0.9; P.ang = -1.1 + Math.sin(ph) * 0.1; P.hdx = Math.sin(ph + 0.8) * 0.5; P.lean = Math.sin(ph) * 0.3;
     P.eyeLit = i % 3 === 0 ? 1 : i % 3 === 1 ? 0.7 : 0.4;
   } else if (pose === 'walk') {
-    const ph = i / 8 * TAU, sw = Math.sin(ph);
+    const ph = i / SKA.FR.walk * TAU, sw = Math.sin(ph);
     P.mv = 1; P.sw = sw; P.cw = Math.cos(ph); P.bob = -Math.abs(sw) * 0.8; P.ang = -0.9 + sw * 0.2; P.armB = -sw * 3; P.hdx = Math.sin(ph * 2) * 0.3; P.eyeLit = i % 2 ? 1 : 0.65;
   } else if (pose === 'atk') {
-    const k = i / 8;
+    const k = i / (SKA.FR.atk - 1);
     P.eyeLit = 1;
     if (k < 0.33) { const u = _sm(k / 0.33); P.ang = -1.1 - 1.2 * u; P.lean = -1.2 * u; P.armB = -1.5 * u; P.jaw = 0.6 + 1.2 * u; }
     else if (k < 0.67) { const u = _sm((k - 0.33) / 0.34); P.ang = -2.3 + 3.0 * u; P.lean = -1.2 + 4.4 * u; P.adv = 2.2 * u; P.armB = -1.5 + 3 * u; P.jaw = 2.2; }
     else { const u = _sm((k - 0.67) / 0.33); P.ang = 0.7 - 1.6 * u; P.lean = 3.2 * (1 - u); P.adv = 2.2 * (1 - u); P.armB = 1.5 * (1 - u); P.jaw = 2.2 - 1.6 * u; }
   } else if (pose === 'hit') {
-    P.lean = [-1.2, -3, -2, -0.6][i]; P.hdx = [-1, -2.2, -1.2, -0.3][i]; P.hdy = [0, 0.6, 0.3, 0][i]; P.jaw = [1.6, 2.6, 1.6, 0.8][i];
-    P.flash = [1, 0.7, 0.2, 0][i]; P.ang = [-1.3, -1.6, -1.4, -1.2][i]; P.shake = [0.8, -0.8, 0.4, 0][i]; P.armB = [-1, -2, -1, 0][i]; P.eyeLit = 0.3;
+    // 6 кадров: вздрогнул → откинуло → дрожь → просел → выпрямляется
+    P.lean = [-1.2, -3, -2.6, -2, -1.2, -0.4][i]; P.hdx = [-1, -2.2, -1.8, -1.2, -0.6, -0.2][i]; P.hdy = [0, 0.6, 0.5, 0.3, 0.1, 0][i]; P.jaw = [1.6, 2.6, 2.2, 1.6, 1.2, 0.8][i];
+    P.flash = [1, 0.7, 0.45, 0.2, 0.08, 0][i]; P.ang = [-1.3, -1.6, -1.5, -1.4, -1.3, -1.2][i]; P.shake = [0.8, -0.8, 0.6, -0.4, 0.2, 0][i]; P.armB = [-1, -2, -1.6, -1, -0.5, 0][i]; P.eyeLit = 0.3;
   } else if (pose === 'die') {
-    P.sink = [0, 3, 6.5][Math.min(2, i)]; P.lean = -i * 1.8; P.hdx = -i * 1.2; P.hdy = i * 1.6; P.ang = -1.1 + i * 0.9; P.jaw = 3; P.armB = -i * 1.5; P.eyeLit = 0.5 - i * 0.2; P.flash = i === 0 ? 0.5 : 0;
+    const q = Math.min(2, i * 2 / 3);                                     // падение — кадры 0…3, дальше куча костей
+    P.sink = q < 1 ? 3 * q : 3 + 3.5 * (q - 1); P.lean = -q * 1.8; P.hdx = -q * 1.2; P.hdy = q * 1.6; P.ang = -1.1 + q * 0.9; P.jaw = 3; P.armB = -q * 1.5; P.eyeLit = 0.5 - q * 0.2; P.flash = i === 0 ? 0.5 : i === 1 ? 0.25 : 0;
   } else if (pose === 'grab') {
     const gp = skPoseAt(i);
     P.gp = gp; P.lean = gp.lean; P.jaw = 1.2 + gp.k * 1.4; P.eyeLit = 1;      // челюсть сжимается вместе с пальцами
@@ -88,7 +91,7 @@ function skelPaint(c, look, view, pose, frame) {
   const C = SKA_C, P = skelParams(pose, frame), hatC = C.hat[look & 1], shield = !!(look & 2);
   const BONE = P.flash ? C.flash : C.bone, BONE2 = C.bone2, INK = C.ink;
   c.lineCap = 'round'; c.lineJoin = 'round';
-  if (pose === 'die' && frame >= 3) { skelPile(c, look, (frame - 2) / 6); return null; }
+  if (pose === 'die' && frame >= 4) { skelPile(c, look, (frame - 3) / 8); return null; }
   c.translate(P.adv + P.shake, 0);
   const lean = P.lean, S = view === 'E' ? 1 : 0;
   const bone = (x1, y1, x2, y2, w = 1.8) => { c.strokeStyle = INK; c.lineWidth = w + 1.2; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.strokeStyle = BONE; c.lineWidth = w; c.stroke(); };
@@ -313,15 +316,15 @@ function skelFrameOf(s, view) {
   const gi = typeof skGrabIndex === 'function' ? skGrabIndex(s) : -1;
   if (gi >= 0) return ['grab', gi, 'E'];
   const sinceHit = t - (s.hitT || -9);
-  if (sinceHit >= 0 && sinceHit < SKA.HIT_DUR) return ['hit', Math.min(3, Math.floor(sinceHit / SKA.HIT_DUR * 4)), 'E'];
+  if (sinceHit >= 0 && sinceHit < SKA.HIT_DUR) return ['hit', Math.min(SKA.FR.hit - 1, Math.floor(sinceHit / SKA.HIT_DUR * SKA.FR.hit)), 'E'];
   const atk = t - (s.atk || -9);
   if (st === 'fight' || atk < SKA.ATK_DUR) {
-    if (atk >= 0 && atk < SKA.ATK_DUR) return ['atk', Math.min(8, Math.floor(atk / SKA.ATK_DUR * 9)), 'E'];
-    if (st === 'fight') return ['idle', ((Math.floor((t * 2 + s.phase) / 6.2832 * 6) % 6) + 6) % 6, 'E'];
+    if (atk >= 0 && atk < SKA.ATK_DUR) return ['atk', Math.min(SKA.FR.atk - 1, Math.floor(atk / SKA.ATK_DUR * SKA.FR.atk)), 'E'];
+    if (st === 'fight') return ['idle', ((Math.floor((t * 2 + s.phase) / 6.2832 * 12) % 12) + 12) % 12, 'E'];
   }
-  if (s.scared > 0) return ['atk', 3, 'E'];            // меч над головой, дрожит
-  if (s.moving) return ['walk', ((Math.floor(s.phase * 1.4 / 6.2832 * 8) % 8) + 8) % 8, view];
-  return ['idle', ((Math.floor((t * 2 + s.phase) / 6.2832 * 6) % 6) + 6) % 6, view];
+  if (s.scared > 0) return ['atk', 4, 'E'];            // меч над головой, дрожит
+  if (s.moving) return ['walk', ((Math.floor(s.phase * 1.4 / 6.2832 * 12) % 12) + 12) % 12, view];
+  return ['idle', ((Math.floor((t * 2 + s.phase) / 6.2832 * 12) % 12) + 12) % 12, view];
 }
 
 function skelDraw(c, s) {

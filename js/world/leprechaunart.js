@@ -1,5 +1,5 @@
 'use strict';
-// Лепрекон: пиксель-арт кадры (стандарт КАДРЫ.md: покой 6, ходьба 8). Рисуется векторно в 3× и сводится в пиксели
+// Лепрекон: пиксель-арт кадры (стандарт КАДРЫ.md: 12 — покой, ходьба; танец 16; сценки спора — смешением поз). Рисуется векторно в 3× и сводится в пиксели
 // (toPixelArt) — тот же конвейер, что у нейтралов (neutralart.js). Все кадры смотрят вправо, влево — отражением.
 // Начало координат — точка земли под ногами; бедро в (0, −10).
 //
@@ -19,8 +19,8 @@ const LP = {
   hat: '#2a9448', hatD: '#17622c', hatL: '#58c868', band: '#16120e',
 };
 
-const LEP_IDLE = ['i0', 'i1', 'i2', 'i3', 'i4', 'i5'];
-const LEP_WALK = ['w0', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7'];
+const LEP_IDLE = Array.from({ length: 12 }, (_, k) => 'i' + k);      // КАДРЫ.md, стандарт 12: шесть прежних поз и смешения между ними
+const LEP_WALK = Array.from({ length: 12 }, (_, k) => 'w' + k);
 const LEP_DANCE = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15'];
 const LEP_TUG = ['t0', 't1', 't2'];
 const LEP_STEAL = ['x0', 'x1', 'x2', 'x3'];
@@ -34,7 +34,20 @@ const LEP_ALL = [].concat(LEP_IDLE, LEP_WALK, LEP_DANCE, LEP_TUG, LEP_STEAL, LEP
 
 const LEP_HIPS = { lh: [-6, -2.2], rh: [-4.4, -2.8], ep: 'hip' };       // руки на поясе (кисти по обе стороны бёдер)
 
+// Промежуточный кадр: 'm<A>~<B>~<t>' — смешение поз A и B (числа и точки — линейно, переключатели — по ближней).
+// Сценки спора (leprechaun.js, lepSmooth) так тянут каждую смену позы на 3 кадра; покой 12 — пары соседних поз из шести.
+function lepMix(A, B, t) {
+  const o = {};
+  for (const k in A) { const a = A[k], b = B[k]; o[k] = Array.isArray(a) && Array.isArray(b) ? a.map((v, i) => v + (b[i] - v) * t) : typeof a === 'number' && typeof b === 'number' && k !== 'eye' && k !== 'ingot' ? a + (b - a) * t : t < 0.5 ? a : b; }
+  return o;
+}
 function lepPose(n) {
+  let mm;
+  if ((mm = /^m(.+)~(.+)~([\d.]+)$/.exec(n))) return lepMix(lepPose(mm[1]), lepPose(mm[2]), +mm[3]);
+  if ((mm = /^i(\d+)$/.exec(n)) && +mm[1] < 12) { const u = +mm[1] / 2, i = Math.floor(u); return u === i ? lepPose('k' + i) : lepMix(lepPose('k' + i), lepPose('k' + (i + 1) % 6), u - i); }
+  return lepPoseKey(n.replace(/^k(\d)$/, 'i$1'));
+}
+function lepPoseKey(n) {
   const d = (o) => Object.assign({ x: 0, y: 0, rot: 0, lf: [-2.6, 0], rf: [2.6, 0], lh: [-6.2, 2.6], rh: [-4.6, 3], ep: '', hat: 0, mouth: 0, eye: 0, ingot: 0, click: 0, cheek: 0, hurt: 0, fade: 0, tip: 0, head: 0, sq: 1, stars: 0 }, o);
   let m;
   if ((m = /^i(\d)$/.exec(n))) {          // покой: дыхание, поза «руки в боки/большие пальцы за жилет», приподнимает шляпу, поглаживает кошель
@@ -45,8 +58,8 @@ function lepPose(n) {
     else if (k === 5) { P.rh = [-4.6, 3]; P.lh = [-6.2, 2.6]; }
     return P;
   }
-  if ((m = /^w(\d)$/.exec(n))) {          // ходьба: 8 кадров, шаг пружинистый, носки врозь
-    const ph = +m[1] / 8 * 6.2832, s = Math.sin(ph), c = Math.cos(ph);
+  if ((m = /^w(\d+)$/.exec(n))) {          // ходьба: 12 кадров, шаг пружинистый, носки врозь
+    const ph = +m[1] / 12 * 6.2832, s = Math.sin(ph), c = Math.cos(ph);
     return d({
       y: -Math.abs(s) * 1.1 + 0.3, rot: 0.04 * s, lf: [-s * 5.4, -Math.max(0, c) * 3.4], rf: [s * 5.4, -Math.max(0, -c) * 3.4],
       lh: [-5.4 - s * 2.6, 3], rh: [-4.2 + s * 2.6, 3], hat: -0.03 * c, mouth: 0,

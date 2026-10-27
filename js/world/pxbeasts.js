@@ -1,7 +1,7 @@
 'use strict';
 // Ручной пиксель-арт на сетке ×3 (метод Полудницы, fzPxKit в fairy2.js) для нейтралов naFrame:
 // чемпион гоблинов, тролли, броненосец, гномтавры, ледяной элементаль (два облика).
-// Рисуется только при мелком пикселе (PX_FINE > 1, NA_PX в neutralart.js); на телефонах — прежний вектор.
+// При мелком пикселе (PX_FINE > 1) — как есть, на телефонах сводится в ×1 (pxToCoarse в pixel.js).
 // Единицы — пиксели арта (3 на игровой пиксель), начало координат у ног, лицом вправо, вверх — минус.
 
 // ---------- общая кисть: объём светом сверху-слева, дизер на границах тонов ----------
@@ -834,7 +834,7 @@ function pbArmad(Q, P) {
   leg(-13, sw, true); leg(10, -sw, true);
   Q.outline([30, 22, 18]);
 }
-if (NA_SPEC.armad && PX_FINE > 1) Object.assign(NA_SPEC.armad, { w: 120, h: 76, ax: 58, ay: 64 });   // крупнее: шипы, рог и хвост-булава
+if (NA_SPEC.armad) Object.assign(NA_SPEC.armad, { w: 120, h: 76, ax: 58, ay: 64 });   // крупнее: шипы, рог и хвост-булава
 NA_PX.armad = (K, P) => pbArmad(pbScaled(K, 3 * NA_SPEC.armad.sc), P);
 
 // ======================= Гномтавры: копейщик и лучник =======================
@@ -1050,7 +1050,7 @@ function pbFrostB(Q, P) {
   for (const [dx, dy] of [[-20, -40], [18, -46], [-22, -24], [20, -28], [0, -70], [14, -62]]) pbDot(Q, dx, dy, I[5], 0.4);
   Q.outline([6, 18, 40]);
 }
-if (NA_SPEC.frost && PX_FINE > 1) Object.assign(NA_SPEC.frost, { w: 150, h: 112, ax: 72, ay: 98 });   // крупнее: шире холст под тесак и космы
+if (NA_SPEC.frost) Object.assign(NA_SPEC.frost, { w: 150, h: 112, ax: 72, ay: 98 });   // крупнее: шире холст под тесак и космы
 NA_PX.frost = (K, P) => (FROST_LOOK === 'B' ? pbFrostB : pbFrostA)(pbScaled(K, 3 * NA_SPEC.frost.sc), P);
 // для листа выбора: оба облика отдельными видами
 if (NA_SPEC.frost) {
@@ -1098,21 +1098,22 @@ function pbEchoWeapon(Q, w, acc, ang, x, y) {
 }
 function pbEcho(Q, V, an, f) {
   if (V.wisp) {                                                                          // «Огонёк Лампы»: язычок пламени с глазками
-    const bob = an === 'hov' ? Math.sin(f / 9 * 6.283) * 2 : 0, h = [10, 12, 13, 12, 11, 10, 12, 13, 11][an === 'hov' ? f : 0];
+    const bob = an === 'hov' ? Math.sin(f / EC_N * 6.283) * 2 : 0, h = an === 'hov' ? ecA([10, 12, 13, 12, 11, 10, 12, 13, 11], f, EC_N, true) : 10;   // 12 кадров (КАДРЫ.md)
     pbPoly(Q, [[-4.6, -9 + bob], [-4, -10 - h * 0.6 + bob], [0, -12 - h + bob], [4, -10 - h * 0.6 + bob], [4.6, -9 + bob], [0, -6 + bob]], (x, y) => pbPick([[220, 100, 30], [255, 160, 50], [255, 210, 100], [255, 244, 190]], 0.9 - Math.hypot(x, y + 11 - bob) / 10, Q.dth(x, y)));
     for (const s of [-1, 1]) pbBall(Q, s * 1.5, -15 + bob, 0.7, 1, [[50, 20, 60], [80, 40, 90]], { amb: 0.4 });
-    if (an === 'atk' && f >= 3 && f <= 5) pbPoly(Q, [[4, -20 + bob], [14, -20.6 + bob], [4, -17.6 + bob]], [[255, 220, 120], [255, 250, 200]]);
+    if (an === 'atk' && f >= 5 && f <= 8) pbPoly(Q, [[4, -20 + bob], [14, -20.6 + bob], [4, -17.6 + bob]], [[255, 220, 120], [255, 250, 200]]);
     Q.outline([120, 50, 20]);
     return;
   }
   const H = !!V.hero, T = pbTone(V.col), sw = H ? 6 : 5, bodyH = H ? 13 : 10, bodyY = -4 - bodyH;
-  const bob = an === 'hov' ? Math.sin(f / 9 * 6.283) * 1.5 : an === 'hurt' ? [1, 2, 1, 0][f] : 0;
-  const lean = an === 'atk' ? [0, -1, -1, -2, 1, 2, 2, 1][f] : an === 'hurt' ? -[1, 2, 1, 0][f] : 0;
-  const arm = an === 'atk' ? [-0.5, -1.3, -2.1, -2.5, -0.5, 0.9, 1.3, 0.5][f] : -0.35 + (an === 'hov' ? Math.sin(f / 9 * 6.283 + 1) * 0.12 : 0);
+  const HB = [1, 2, 1.5, 1, 0.5, 0];                                                     // парение, удар — 12 кадров, рана — 6 (КАДРЫ.md)
+  const bob = an === 'hov' ? Math.sin(f / EC_N * 6.283) * 1.5 : an === 'hurt' ? HB[f] : 0;
+  const lean = an === 'atk' ? ecA([0, -1, -1, -2, 1, 2, 2, 1], f, EC_N) : an === 'hurt' ? -HB[f] + (f === 2 ? 1 : f === 3 ? -0.5 : 0) : 0;
+  const arm = an === 'atk' ? ecA([-0.5, -1.3, -2.1, -2.5, -0.5, 0.9, 1.3, 0.5], f, EC_N) : -0.35 + (an === 'hov' ? Math.sin(f / EC_N * 6.283 + 1) * 0.12 : 0);
   const ox = lean, oy = -4 + bob, X = x => x + ox, Y = y => y + oy;
   // хвост-дым: сужается, колышется, тает дизером
-  const tw = an === 'hov' ? f : an === 'atk' ? f + 2 : 3;
-  const tail = []; for (let i = 0; i <= 8; i++) { const t = i / 8; tail.push([X(Math.sin((tw + t * 6) / 9 * 6.283) * 2.4 * t), Y(-4 + t * 10), sw * (1 - t * 0.8)]); }
+  const tw = an === 'hov' ? f : an === 'atk' ? f * 0.67 + 3 : 4;
+  const tail = []; for (let i = 0; i <= 8; i++) { const t = i / 8; tail.push([X(Math.sin((tw + t * 8) / EC_N * 6.283) * 2.4 * t), Y(-4 + t * 10), sw * (1 - t * 0.8)]); }
   Q.path(tail, (t, e, s) => (Q.dth(t * 40, s) < 1.05 - t * 0.9 ? pbPick(T, 0.62 - t * 0.35 + s * 0.0, 0.5) : null));
   // плащ героя за спиной
   if (H) pbPoly(Q, [[X(-sw - 0.6), Y(bodyY + 1)], [X(sw + 0.6), Y(bodyY + 1)], [X(sw + 1.6), Y(bodyY + bodyH + 1)], [X(sw - 1), Y(bodyY + bodyH + 3)], [X(-sw + 1), Y(bodyY + bodyH + 2)], [X(-sw - 1.8), Y(bodyY + bodyH + 3.4)]], pbRampHex(V.acc));
@@ -1181,7 +1182,7 @@ function pbEcho(Q, V, an, f) {
   pbEchoWeapon(Q, V.wpn, V.acc || V.cap, arm + (an === 'atk' ? 1.2 : 0.3 - arm) + Math.PI, ex, ey);
   pbBall(Q, ex, ey, 1.2, 1.2, T, { amb: 0.65 });
   // след удара
-  if (an === 'atk' && f >= 4 && f <= 6) for (let i = 0; i < 16; i++) { const t = i / 15, a2 = -1.9 + t * (f - 3) * 0.9, r = H ? 15 : 12; pbDot(Q, sx + Math.cos(a2) * r, sy + Math.sin(a2) * r, [255, 255, 255], 0.35); }
+  if (an === 'atk' && f >= 6 && f <= 9) for (let i = 0; i < 16; i++) { const t = i / 15, a2 = -1.9 + t * (1 + (f - 6) * 0.67) * 0.9, r = H ? 15 : 12; pbDot(Q, sx + Math.cos(a2) * r, sy + Math.sin(a2) * r, [255, 255, 255], 0.35); }
   Q.outline(T[0]);
 }
 if (typeof ecSprite === 'function') {
@@ -1195,13 +1196,13 @@ if (typeof ecSprite === 'function') {
     pbEcho(Q, V, an === 'in' || an === 'out' ? 'hov' : an, an === 'in' ? 0 : f);
     cv = K.done(); cv.fine = 3;
     if (an === 'in') {                                                                     // встаёт из земли: сдвиг вниз, ниже земли — срезано
-      const sh = Math.round((1 - (f + 1) / 6) * 30 * 3), c2 = mkCanvas(cv.width, cv.height), o2 = c2.getContext('2d');
+      const sh = Math.round((1 - (f + 1) / EC_N) * 30 * 3), c2 = mkCanvas(cv.width, cv.height), o2 = c2.getContext('2d');
       o2.beginPath(); o2.rect(0, 0, cv.width, EC_OY * 3 + 1); o2.clip(); o2.drawImage(cv, 0, sh); cv = c2; cv.fine = 3;
     }
     if (an === 'out' || an === 'hurt') {
       const o = cv.getContext('2d');
-      if (an === 'hurt') { o.globalCompositeOperation = 'source-atop'; o.fillStyle = `rgba(255,255,255,${[0.75, 0.5, 0.3, 0.1][f]})`; o.fillRect(0, 0, cv.width, cv.height); }
-      else { const img = o.getImageData(0, 0, cv.width, cv.height), d = img.data, p = (f + 1) / 6; for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] && naHash(x >> 1, y >> 1) < p) d[(y * cv.width + x) * 4 + 3] = 0; o.putImageData(img, 0, 0); }
+      if (an === 'hurt') { o.globalCompositeOperation = 'source-atop'; o.fillStyle = `rgba(255,255,255,${[0.75, 0.6, 0.45, 0.3, 0.18, 0.08][f]})`; o.fillRect(0, 0, cv.width, cv.height); }
+      else { const img = o.getImageData(0, 0, cv.width, cv.height), d = img.data, p = (f + 1) / EC_N; for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] && naHash(x >> 1, y >> 1) < p) d[(y * cv.width + x) * 4 + 3] = 0; o.putImageData(img, 0, 0); }
     }
     if (EC_CACHE.size >= EC_CACHE_MAX) EC_CACHE.delete(EC_CACHE.keys().next().value);
     EC_CACHE.set(key, cv);
@@ -1304,13 +1305,13 @@ function pbGriffin(Q, P) {
 if (typeof sprGriffin === 'function') {
   const _gri = sprGriffin;
   sprGriffin = function (pose, i = 0) {
-    if (PX_FINE <= 1 || typeof fzPxKit !== 'function') return _gri(pose, i);
+    if (typeof fzPxKit !== 'function') return _gri(pose, i);
     const key = 'griPX' + pose + i;
     let cv = fyCache.get(key);
     if (cv) return cv;
     const K = fzPxKit(62 * 3, 60 * 3, 0, 0);
     pbGriffin(pbScaled(K, 3), griParams(pose, i));
-    cv = K.done(); cv.fine = 3;
+    cv = pxToCoarse(Object.assign(K.done(), { fine: 3 }));   // на телефоне — тот же арт в ×1
     fyCache.set(key, cv);
     return cv;
   };
@@ -1334,7 +1335,7 @@ function pbFoam(Q, x0, x1, y, k = 1) {
 // горизонтальным зрачком-щелью и кровавыми прожилками под тяжёлыми складками век; по бокам поднимаются
 // щупальца с присосками. f = 3 — моргает, остальные кадры — медленно щурится и дышит.
 function pbKraEye(Q, a, f) {
-  const blink = f === 3, sq = [1, 0.96, 0.9, 0, 0.92, 1][f % 6], C = PBS.KR, br = Math.sin(f / 6 * Math.PI * 2) * 0.6;
+  const blink = Math.round(f) === 3, sq = saL([1, 0.96, 0.9, 0, 0.92, 1], f % 6), C = PBS.KR, br = Math.sin(f / 6 * Math.PI * 2) * 0.6;
   // щупальца сзади
   for (const s of [-1, 1]) {
     const pts = []; for (let i = 0; i <= 12; i++) { const t = i / 12; pts.push([s * (27 - t * t * 13), -t * 30 + t * t * 6 + Math.sin(f * 1.1 + t * 3 + s) * 1, 3.2 * (1 - t * 0.85)]); }
@@ -1409,7 +1410,7 @@ function pbTent(Q, a, f, n) {
   // стекающая вода
   for (const i of [4, 9, 14]) { const p = pts[i]; for (let k = 0; k < 3; k++) pbDot(Q, p[0] + p[2] + 0.6, p[1] + k * 2.2, PBS.WA[0], 0.35); }
   pbFoam(Q, -12, 12, 0.2, 1.3);
-  if (a === 'atk' && f === 5) for (const [x, y] of [[-10, -6], [10, -10], [-14, -16], [14, -3], [0, -22]]) pbDot(Q, x, y, PBS.WA[1], 0.9);
+  if (a === 'atk' && Math.round(f) === 5) for (const [x, y] of [[-10, -6], [10, -10], [-14, -16], [14, -3], [0, -22]]) pbDot(Q, x, y, PBS.WA[1], 0.9);
   Q.outline([20, 6, 18]);
 }
 // Морской змей: легендарный, тёмный, с бирюзовым перламутром и светящимися красными глазами. Три кольца
@@ -1463,7 +1464,7 @@ function pbSerpent(Q, a, f, n) {
   pbPoly(Q, [[hx - 4, hy - 1], [hx - 12, hy - 6], [hx - 10, hy - 1], [hx - 13, hy + 3], [hx - 4, hy + 1.6]], FIN);   // жабры-плавник
   for (const oy of [-0.6, 0.8]) Q.path([[hx - 4, hy + oy, 0.2], [hx - 10, hy + oy * 3, 0.15]], () => FIN[0]);
   pbFoam(Q, bx - 8, bx + 7, 0.2, 1.3);
-  if (a === 'atk' && f === 5) for (const [x, y] of [[48, -12], [50, -5], [44, -20], [52, -16]]) pbDot(Q, x, y, PBS.WA[1], 0.8);
+  if (a === 'atk' && Math.round(f) === 5) for (const [x, y] of [[48, -12], [50, -5], [44, -20], [52, -16]]) pbDot(Q, x, y, PBS.WA[1], 0.8);
   Q.outline([4, 18, 24]);
 }
 if (typeof SEA_ART !== 'undefined') {
@@ -1572,12 +1573,15 @@ function fzShroomPx(mode, p) {
   const PL = [[96, 160, 52], [150, 218, 86], [206, 252, 140]];
   const OUT = [34, 14, 38];
   const walk = mode === 'walk', atk = mode === 'atk', wind = atk && p < 2, smash = atk && p >= 2;
-  const hurt = mode === 'hurt', die = mode === 'die', win = mode === 'win', down = die && p >= 3;
+  const hurt = mode === 'hurt', die = mode === 'die', win = mode === 'win', dk = die ? Math.max(0, Math.min(1, p - 2)) : 0;
+  // p бывает дробным (12 кадров стандарта, КАДРЫ.md): позы-таблицы читаются с плавным переходом между соседними
+  const ar = A => { const q = Math.max(0, Math.min(A.length - 1, p)), i = Math.floor(q), f = q - i; return i + 1 < A.length ? A[i] + (A[i + 1] - A[i]) * f : A[i]; };
   const bob = (walk ? -Math.round(Math.abs(Math.sin(t)) * 2) : mode === 'idle' ? Math.round(Math.sin(t)) : wind ? 2 : hurt ? 1 + p
-    : win ? -[0, 5, 2, 0][p] : die ? [1, 4, 14, 22, 22, 22][p] : 0) - 13;   // −13: тело выше, ноги длиннее
-  const tilt = walk ? Math.round(Math.sin(t - 0.8) * 2.4) : mode === 'idle' ? Math.round(Math.sin(t - 0.6) * 1.8) : wind ? -6 : hurt ? -5 : win ? 0 : die ? [-6, -10, -14, 0, 0, 0][p] : 6;
-  const cx = down ? -24 : tilt, cy = down ? -28 : -70 + bob + (smash ? 5 : wind ? -3 : die && p === 2 ? 6 : 0), crx = 41, cry = 28;
-  const capA = die ? [0, -0.1, -0.45, -1.25, -1.25, -1.25][p] : 0, ca = Math.cos(capA), sa = Math.sin(capA);
+    : win ? -ar([0, 5, 2, 0]) : die ? ar([1, 4, 14, 22, 22, 22]) : 0) - 13;   // −13: тело выше, ноги длиннее
+  const tilt = walk ? Math.round(Math.sin(t - 0.8) * 2.4) : mode === 'idle' ? Math.round(Math.sin(t - 0.6) * 1.8) : wind ? -6 : hurt ? -5 : win ? 0 : die ? ar([-6, -10, -14, -14, -14, -14]) : 6;
+  const cyU = -70 + bob + (smash ? 5 : wind ? -3 : die ? 6 * Math.max(0, 1 - Math.abs(p - 2)) : 0);
+  const cx = tilt + (-24 - tilt) * dk, cy = cyU + (-28 - cyU) * dk, crx = 41, cry = 28;     // гибель: шляпка валится набок плавно (p 2…3)
+  const capA = die ? ar([0, -0.1, -0.45, -1.25, -1.25, -1.25]) : 0, ca = Math.cos(capA), sa = Math.sin(capA);
   const capR = f => (x, y) => { const dx = x - cx, dy = y - cy; return f(cx + dx * ca + dy * sa, cy - dx * sa + dy * ca); };
   const lean = smash ? 4 : wind ? -3 : hurt ? -3 : die ? -6 : tilt * 0.4;                // ножка клонится вслед за шляпкой
 
@@ -1608,7 +1612,7 @@ function fzShroomPx(mode, p) {
     const ph = walk ? Math.sin(t + (side > 0 ? 0 : Math.PI)) * 5 : 0, sh = [sx(-46) + side * 13, -46 + bob];
     let hx, hy;
     if (wind) { hx = sh[0] + side * 6; hy = sh[1] - 22; }
-    else if (win) { hx = sh[0] + side * (15 + (p & 1) * 2); hy = sh[1] - 2 - (p === 1 ? 3 : 0); }   // торжество: кулачки в стороны
+    else if (win) { hx = sh[0] + side * (15 + (Math.round(p) & 1) * 2); hy = sh[1] - 2 - 3 * Math.max(0, 1 - Math.abs(p - 1)); }   // торжество: кулачки в стороны
     else if (hurt) { hx = sh[0] + side * 8 + 4; hy = sh[1] - 6; }
     else if (die) { hx = sh[0] + side * (9 + (p > 1 ? 3 : 0)); hy = sh[1] + (p > 1 ? 9 : 14); }
     else if (smash) { hx = sh[0] + 18 - (side < 0 ? 6 : 0); hy = sh[1] + 4 + (p & 1) * 2; }
@@ -1629,7 +1633,7 @@ function fzShroomPx(mode, p) {
 
   // ---- лицо: злое — брови резко сведены, глаза-щёлки с ядовитым огнём, складки на переносице, оскал с кривыми зубами ----
   const fx = sx(-32) + 3, fy = -33 + bob, jw = smash ? 5 : wind || hurt || die || win ? 3 : 1;
-  const blink = (mode === 'idle' && p === 4) || hurt || (die && p === 0), xeye = die && p > 0;
+  const blink = (mode === 'idle' && p === 4) || hurt || (die && p < 0.5), xeye = die && p >= 0.5;
   for (const [ex, sd] of [[fx - 6, -1], [fx + 8, 1]]) {
     R(ex - 7, fy - 7, ex + 7, fy + 6, (x, y) => {                                                        // впалые тёмные глазницы
       const d = Math.hypot((x - ex) / 6.2, (y - fy) / 5.4);
@@ -2089,9 +2093,15 @@ function pxbBaby(sp, mode, p) {
 }
 // Чумной моховик: кадры нейтралов (naFrame в neutralart.js: покой, ходьба, бой, смерть, торжество) → свои режимы
 const PXB_SPORE = { ready: ['idle', 0], step: ['walk', 1], windup: ['atk', 0], strike: ['atk', 3], recover: ['atk', 5], parry: ['atk', 1], hurt: ['hurt', 0], stagger: ['hurt', 1], roar: ['atk', 2] };
-for (let k = 0; k < 6; k++) { PXB_SPORE['i' + k] = ['idle', k]; PXB_SPORE['d' + k] = ['die', k]; }
-for (let k = 0; k < 8; k++) PXB_SPORE['w' + k] = ['walk', Math.round(k * 6 / 8) % 6];
-for (let k = 0; k < 4; k++) PXB_SPORE['v' + k] = ['win', k];
+// всё по 12 (рана 6): покой и шаг — фаза шляпки по синусу (p = k / 2); удар, гибель, торжество, рана — дробный p,
+// fzShroomPx тянет свои позы-таблицы между соседними (ar)
+for (let k = 0; k < 12; k++) {
+  PXB_SPORE['i' + k] = ['idle', k / 2]; PXB_SPORE['w' + k] = ['walk', k / 2];
+  PXB_SPORE['d' + k] = ['die', Math.round(k * 5 / 11 * 4) / 4];                                    // гибель: позы 0…5 плавно за 12 кадров
+  PXB_SPORE['v' + k] = ['win', Math.round((1 - Math.cos(k / 12 * Math.PI * 2)) * 1.5 * 4) / 4];   // торжество: 0 → 3 → 0 по кругу
+  PXB_SPORE['a' + k] = ['atk', Math.round(k * 5 / 11 * 4) / 4]; PXB_SPORE['r' + k] = ['atk', 2];
+}
+for (let k = 0; k < 6; k++) { PXB_SPORE['h' + k] = ['hurt', [0, 1, 0.75, 0.5, 0.25, 0][k]]; PXB_SPORE['p' + k] = ['atk', 1]; }
 if (typeof naFrame === 'function') {
   const naOld = naFrame;
   naFrame = function (kind, fr) {

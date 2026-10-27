@@ -239,9 +239,9 @@ function neuProvoke(N, u) {
   for (const M of Game.neutrals) {
     if (M === N || !neuAlive(M) || M.tg || Math.hypot(M.x - N.x, M.y - N.y) > NEU_CALL_R) continue;
     M.tg = u.id; M.prov = now; M.cdA = 0.5 + Math.random() * 0.9; called++;
-    if (called <= 2) { M.ov = ['roar']; M.ovT = 0; M.ovP = 0.55; }
+    if (called <= 2) { M.ov = NA_FRAMES.roar; M.ovT = 0; M.ovP = 0.046; }
   }
-  N.ov = ['roar']; N.ovT = 0; N.ovP = 0.5;
+  N.ov = NA_FRAMES.roar; N.ovT = 0; N.ovP = 0.042;
   const S = NSPEC[N.k];
   floater(N.x, N.y - 2.1, S.msg[(Math.random() * S.msg.length) | 0], '#ffe9a0');
   logEvent('animal', called ? `${S.name} поднял тревогу — «свои» бегут на помощь` : `${S.name} дерётся с ${neuName(u)}`, N.x, N.y);
@@ -256,11 +256,11 @@ function neuHit(N, u, dmg) {
   const px = N.x * TILE, py = N.y * TILE - 12;
   if (Math.random() < S.parry) {
     dmg *= 0.25;
-    N.ov = ['parry']; N.ovT = 0; N.ovP = 0.28;
+    N.ov = NA_FRAMES.parry; N.ovT = 0; N.ovP = 0.05;
     floater(N.x, N.y - 1.9, 'Отбил!', '#cfe8ff');
     fxBurst(px, py, 5, ['#ffffff', '#cfe8ff'], 40, 20, 0.3, 1.3, 120);
   } else {
-    N.ov = ['hurt', 'stagger']; N.ovT = 0; N.ovP = 0.14;
+    N.ov = NA_FRAMES.hurt; N.ovT = 0; N.ovP = 0.05;
     N.cdA = Math.max(N.cdA, 0.35); N.atkT = 9;
     const d = Math.hypot(N.x - u.x, N.y - u.y) || 1, kx = N.x + (N.x - u.x) / d * 0.3, ky = N.y + (N.y - u.y) / d * 0.3;
     if (S.fly ? inb(Math.floor(kx), Math.floor(ky)) : isWalkable(Math.floor(kx), Math.floor(ky))) { N.x = kx; N.y = ky; }
@@ -346,20 +346,17 @@ function neuMove(N, tx, ty, spd, dt) {
 }
 
 function neuFrame(N) {
-  if (N.st === 'die') { const k = Math.min(5, Math.floor(N.dt / 0.11)); return 'd' + k; }
-  if (N.winT > 0) return 'v' + [0, 1, 2, 3, 2, 1][Math.floor((N.winT * 5) % 6)];
+  if (N.st === 'die') return naDieFr(N.dt);
+  if (N.winT > 0) return naWinFr(N.winT);
   if (N.ov) { const i = Math.floor(N.ovT / (N.ovP || 0.14)); if (i < N.ov.length) return N.ov[i]; N.ov = null; }
   if (N.st === 'atk') {
-    const t = N.atkT;
-    if (t < 0.24) return 'windup';
-    if (t < 0.36) return 'strike';
-    if (t < 0.56) return 'recover';
+    if (N.atkT < NA_ATK_T) return naAtkFr(N.atkT);
     return 'ready';
   }
-  if (N.st === 'chase' || N.st === 'flee') return N.dist < 3.2 && N.st === 'chase' ? (Math.floor(N.ph) % 2 ? 'step' : 'ready') : 'w' + (Math.floor(N.ph) % 8);
-  if (N.st === 'roam' || N.st === 'home') return 'w' + (Math.floor(N.ph) % 8);
-  if ((N.k === 'pixie' || N.k === 'fairy') && typeof isNightNow === 'function' && isNightNow() && !(Game.time - (N.awake || -99) < 25) && N.st === 'idle') return Math.floor(Game.time * 0.8 + N.id) % 2 ? 'z1' : 'z0';   // ночью феи спят, пока рядом нет нечисти
-  return 'i' + (Math.floor(Game.time * 5 + N.id) % 6);
+  if (N.st === 'chase' || N.st === 'flee') return N.dist < 3.2 && N.st === 'chase' ? (Math.floor(N.ph) % 2 ? 'step' : 'ready') : naWalkFr(N.ph);
+  if (N.st === 'roam' || N.st === 'home') return naWalkFr(N.ph);
+  if ((N.k === 'pixie' || N.k === 'fairy') && typeof isNightNow === 'function' && isNightNow() && !(Game.time - (N.awake || -99) < 25) && N.st === 'idle') return 'z' + (Math.floor(Game.time * 4.8 + N.id) % NA_N);   // ночью феи спят, пока рядом нет нечисти
+  return naIdleFr(Game.time, N.id);
 }
 
 function neuStrike(N, tg) {
@@ -632,7 +629,7 @@ function neuDrawLair(c, L) {
 }
 
 function neuDraw(c, N) {
-  const fk = N.vf && PX_FINE > 1 && NA_PX[N.k + 'F'] ? N.k + 'F' : N.k;                    // анфас, если нарисован (тролли)
+  const fk = N.vf && NA_PX[N.k + 'F'] ? N.k + 'F' : N.k;                    // анфас, если нарисован (тролли)
   const S = NSPEC[N.k], sp = naFrame(fk, N.fr || 'i0'), t = Game.time;
   const px = Math.round(N.x * TILE), py = Math.round(N.y * TILE + 6);
   const dead = N.st === 'die';
@@ -729,7 +726,7 @@ function neuGiftGen(u, c) {
     const s = H.inv[slot], k = s.k;
     s.n--; if (s.n <= 0) H.inv[slot] = null;
     L.fr = Math.min(100, (L.fr || 0) + NEU_GIFT[k]);
-    N.ov = ['roar']; N.ovT = 0; N.ovP = 0.6; N.winT = 2;
+    N.ov = NA_FRAMES.roar; N.ovT = 0; N.ovP = 0.05; N.winT = 2;
     fxBurst(N.x * TILE, N.y * TILE - 14, 14, ['#ffb0e0', '#fff6b0', '#c8a0ff'], 60, 60, 0.9, 1.6, -30);
     sfxAt('chime', N.x * TILE, N.y * TILE, 0.7);
     if (L.fr < 50) { floater(N.x, N.y - 2, `Спасибо! (дружба ${L.fr}/50)`, '#ffb0e0'); return; }
@@ -809,7 +806,7 @@ function neuPixieMagic(N, dt) {
   // 1) нечисть: пять заклинаний — по виду цели
   const cast = (name, col, x, y, dark) => {
     if (dark) col = ['#c060ff', '#8a2ad0', '#ff4a8a'];
-    N.ov = dark ? NA_FRAMES.curse : NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.13; N.face = x >= N.x ? 1 : -1; N.awake = Game.time;
+    N.ov = dark ? NA_FRAMES.curse : NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065; N.face = x >= N.x ? 1 : -1; N.awake = Game.time;
     fxBurst(x * TILE, y * TILE - 10, 18, col, 70, 70, 0.9, 1.8, -20);
     sfxAt('chime', x * TILE, y * TILE, 0.6);
     floater(x, y - 1.9, name, col[0]);
