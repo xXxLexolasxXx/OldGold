@@ -548,7 +548,7 @@ function raidDrawWard(c, N) {
   if (!dead) { c.globalCompositeOperation = 'lighter'; const f = Math.sin(t * 9 + N.id) * 1.2; c.fillStyle = 'rgba(90,200,255,0.6)'; c.beginPath(); c.ellipse(px + 0.5, py - 25, 3, 5 + f, 0, 0, 7); c.fill(); c.fillStyle = 'rgba(210,248,255,0.9)'; c.fillRect(px, py - 26, 1, 3); }
   if (N.ov) { c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(px - 7, py - 24, 15, 25); }
   c.restore();
-  if (!dead && N.hp < N.mhp) { const w = 14, r = N.hp / N.mhp; c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(px - w / 2 - 1, py - 33, w + 2, 4); c.fillStyle = '#6ad0ff'; c.fillRect(px - w / 2, py - 32, Math.round(w * r), 2); }
+  if (!dead && fsBarOn(N)) fsBar(c, px, py - 33, N.hp / N.mhp);
 }
 
 // общая шкала над князем

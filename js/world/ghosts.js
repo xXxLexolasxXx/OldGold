@@ -18,7 +18,7 @@ function ghostSpot(gy, live) {
 function ghostsSpawn(n) {
   const gs = Game.ghosts || (Game.ghosts = []);
   const live = Game.units.filter(u => !u.dead);
-  const gy = graveyardOf(), cap = Math.min(12, 4 + Math.floor((Game.lostGnomes || 0) / 3));
+  const gy = graveyardOf(), cap = fsGhostCap();      // меньше, чем раньше (до 12), и зависит от силы героя — foescale.js
   for (let i = 0; i < n && gs.filter(g => g.kind !== 'reaper').length < cap; i++) {
     const sp = ghostSpot(gy, live);
     gs.push({ x: sp.x, y: sp.y, hx: sp.x, hy: sp.y, alpha: 0, ph: Math.random() * 9, face: 1, rev: false, fromGy: sp.gy,

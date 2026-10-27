@@ -761,11 +761,7 @@ function tvDrawBrigand(c, N) {
   c.restore();
   if (dead) return;
   tvDrawEmo(c, 'evil', X, Y - 54, true, 'brigand');
-  if (N.hp < N.mhp - 0.5) {
-    const w = 18, hy = Y - 56, r = Math.max(0, N.hp / N.mhp);
-    c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(X - w / 2 - 1, hy - 1, w + 2, 4);
-    c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(X - w / 2, hy, Math.round(w * r), 2);
-  }
+  if (fsBarOn(N)) fsBar(c, X, Y - 56, N.hp / N.mhp);
 }
 
 if (typeof neuDrawList === 'function') {

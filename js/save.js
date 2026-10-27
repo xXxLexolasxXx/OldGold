@@ -58,7 +58,7 @@ function applyNight(n) {
   Game.nightEntTotal = Game.ents.length;
   // призраки не сохраняются: ночью они проступают заново сами (старые сейвы с полем ghosts его игнорируют)
   Game.ghosts = [];
-  if (Game.entNight != null && Game.entNight === nightIndex() && isNightNow() && !isDawnNow()) ghostsSpawn(1 + Math.floor(Math.random() * 3) + Math.floor((Game.lostGnomes || 0) / 2));
+  if (Game.entNight != null && Game.entNight === nightIndex() && isNightNow() && !isDawnNow()) ghostsSpawn(fsGhostCount());
   for (const [x, y] of n.skels || []) skelRise(x, y, Math.random() * 2);
 }
 

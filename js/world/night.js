@@ -630,7 +630,7 @@ function nightTick(dt) {
   if (eve && Game.entNight !== ni) {
     Game.entNight = ni;
     spawnEnts();
-    ghostsSpawn(startNights() <= 1 && START_GRACE.on && !Game.noGrace ? START_GRACE.firstGhosts : 1 + Math.floor(Math.random() * 3) + Math.floor((Game.lostGnomes || 0) / 2));
+    ghostsSpawn(startNights() <= 1 && START_GRACE.on && !Game.noGrace ? START_GRACE.firstGhosts : fsGhostCount());
     if (startOpen('reaper')) reapersSpawn();
     if (startOpen('skeletons')) skeletonsSpawn();
     if (isLongNight()) toast('Эта ночь будет долгой — в полтора раза дольше обычной. Готовьте хлеб и костры!');

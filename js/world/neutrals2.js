@@ -616,11 +616,7 @@ if (typeof hmCast === 'function') {
     }
     if (dead) return;
     const top = py - Math.round((N2_TOP[N.k] || 40) * sc);
-    if (N.hp < N.mhp - 0.5) {
-      const w = 18 + (rk - 1) * 3, r = Math.max(0, N.hp / N.mhp);
-      c.fillStyle = 'rgba(10,6,2,0.85)'; c.fillRect(px - w / 2 - 1, top - 1, w + 2, 4);
-      c.fillStyle = r > 0.5 ? '#5ac04a' : r > 0.25 ? '#e0b030' : '#e04a3a'; c.fillRect(px - w / 2, top, Math.round(w * r), 2);
-    }
+    if (fsBarOn(N)) fsBar(c, px, top, N.hp / N.mhp, 22 + (rk - 1) * 3);
     if (rk > 1) n2Badge(c, px, top - 5, rk);
   };
 }
