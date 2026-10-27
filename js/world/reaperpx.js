@@ -76,6 +76,10 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
     : boo ? [34, -10] : [30 + sn(1, 1) * 2, 26 + sn(2) * 3];
   const ux = Math.cos(pa), uy = Math.sin(pa), POLE_UP = 92, POLE_DN = 64;
   const top = [hand[0] + ux * POLE_UP, hand[1] + uy * POLE_UP], bot = [hand[0] - ux * POLE_DN, hand[1] - uy * POLE_DN];
+  // хват: ладонь сбоку от древка (со стороны тела), пальцы обхватывают древко спереди; GN — от ладони через древко
+  const gs = (-hand[0] * -uy + (20 - hand[1]) * ux) > 0 ? -1 : 1, GNX = -uy * gs, GNY = ux * gs;
+  const GP = (a, b) => [hand[0] + GNX * a + ux * b, hand[1] + GNY * a + uy * b];
+  const palm = GP(-6.5, 0);
   const scythe = () => {
     L(bot[0], bot[1], top[0], top[1], 2.4, 2.1, (t, e, sd) => e ? WD[0] : sd > 0 ? WD[1] : ((t * 40 | 0) % 7 === 0 ? WD[1] : WD[2]));     // древко
     R(bot[0] - 4, bot[1] - 4, bot[0] + 4, bot[1] + 4, (x, y) => { const d = Math.hypot(x - bot[0], y - bot[1]); return d < 3.2 ? (d < 2 ? IR[2] : IR[1]) : null; });   // набалдашник
@@ -102,7 +106,7 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
   const arm = s => {
     const shx = lean * 0.5 + s * 26, shy = 20;
     let hx, hy;
-    if (s > 0) [hx, hy] = hand;
+    if (s > 0) [hx, hy] = palm;
     else if (atk) { hx = -30 + 60 * strike - 20 * recoil; hy = -30 * wind + 40 * strike; }
     else if (boo) { hx = -48; hy = -46 + sn(2) * 4; }
     else { hx = -50 + sn(1) * 5; hy = 14 + sn(2, 1) * 8; }
@@ -124,6 +128,23 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
       const a3 = a2 + 0.5 * s, cl = th ? 7 : 13;
       L(x2, y2, x2 + Math.cos(a3) * cl, y2 + Math.sin(a3) * cl, 1.6, 0.2, (t, e) => t > 0.72 || e ? CL[0] : t < 0.35 ? CL[2] : CL[1]);
     }
+  };
+
+  // кисть на древке: ладонь у древка, четыре пальца поперёк, сверху вниз один под другим, кончики загнуты крючком назад; большой палец сверху
+  const gripClaw = () => {
+    const B = BO;
+    R(palm[0] - 8, palm[1] - 8, palm[0] + 8, palm[1] + 8, (x, y) => { const d = (x - palm[0]) ** 2 + (y - palm[1]) ** 2; return d <= 30 ? (d > 18 ? B[1] : B[2]) : null; });
+    for (const j of [1.5, 0.5, -0.5, -1.5]) {
+      const o = j * 3.4, fl = Math.abs(j) > 1 ? 0.85 : 1;
+      const [x0, y0] = GP(-3.5, o * 0.8), [x1, y1] = GP(3.6 * fl, o - 0.4), [x2, y2] = GP(5.6 * fl, o - 2.6), [x3, y3] = GP(3 * fl, o - 5.2);
+      L(x0, y0, x1, y1, 2.3, 1.9, (t, e) => e ? B[1] : t > 0.45 ? B[3] : B[2]);
+      P(x1, y1, B[0]);
+      L(x1, y1, x2, y2, 1.7, 1.4, (t, e) => e ? B[1] : B[2]);
+      L(x2, y2, x3, y3, 1.5, 0.2, (t, e) => t > 0.72 || e ? CL[0] : t < 0.35 ? CL[2] : CL[1]);    // коготь-крючок
+    }
+    const [t0x, t0y] = GP(-4.5, 6.5), [t1x, t1y] = GP(1.5, 8.6), [t2x, t2y] = GP(3.4, 7);
+    L(t0x, t0y, t1x, t1y, 2, 1.6, (t, e) => e ? B[1] : B[3]);
+    L(t1x, t1y, t2x, t2y, 1.3, 0.2, (t, e) => t > 0.6 || e ? CL[0] : CL[1]);
   };
 
   // ---- слои сзади вперёд: в покое коса за спиной, дальняя рука
@@ -289,7 +310,8 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
 
   // ---- ближняя кисть на древке; в ударе коса впереди всего
   if (atk) scythe();
-  claw(AN, 1, false, true);
+  if (!atk) L(hand[0] - ux * 16, hand[1] - uy * 16, hand[0] + ux * 16, hand[1] + uy * 16, 2.4, 2.4, (t, e, sd) => e ? WD[0] : sd > 0 ? WD[1] : WD[2]);   // кусок древка в кулаке — поверх рясы
+  gripClaw();
   // ---- холодная дымка вокруг хвоста
   for (let n = 0; n < 40; n++) {
     const t = 0.4 + hsh(n * 3.1) * 0.7, s = spine[Math.min(N, Math.floor(t * N))];
