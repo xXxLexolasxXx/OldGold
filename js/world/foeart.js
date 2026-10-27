@@ -311,6 +311,12 @@ function foeGuardFrame(an, f, N) {
   return naIdleFr(t + (N.id % 7) * 0.13);
 }
 function foeBlit(c, kind, fr, s = 1) {
+  const px = typeof foePxFrame === 'function' ? foePxFrame(kind, fr) : null;   // ручной пиксель-арт (foepx.js)
+  if (px) {
+    const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false;
+    c.drawImage(px.cv, -px.ax * s, -px.ay * s, px.w * s, px.h * s);
+    c.imageSmoothingEnabled = sm; return;
+  }
   const sp = naFrame(kind, fr);
   if (s !== 1) { c.save(); c.scale(s, s); blitFine(c, sp.cv, -sp.ax, -sp.ay); c.restore(); }
   else blitFine(c, sp.cv, -sp.ax, -sp.ay);
@@ -330,9 +336,10 @@ foeDrawMalgor = function (c, N) {
     c.restore();
     // свечение кристалла — как раньше, векторное
     c.save(); c.globalCompositeOperation = 'lighter';
-    const sx = 9, g = c.createRadialGradient(sx, -56 + hov - (cast ? 4 : 0), 0, sx, -56 + hov, cast ? 30 : 18);
+    const px = typeof foePxFrame === 'function' && FPX_DRAW.fMalgor1, sx = px ? 12 : 9, cy = (px ? -74 : -56) + hov;   // кристалл пиксельного посоха выше
+    const g = c.createRadialGradient(sx, cy - (cast ? 4 : 0), 0, sx, cy, cast ? 30 : 18);
     g.addColorStop(0, `rgba(${ph === 3 ? '150,255,100' : '170,90,255'},${cast ? 0.7 : 0.4})`); g.addColorStop(1, 'rgba(170,90,255,0)');
-    c.fillStyle = g; c.fillRect(sx - 30, -96 + hov, 62, 62);
+    c.fillStyle = g; c.fillRect(sx - 30, cy - 40, 62, 62);
     c.restore();
 };
 if (typeof gdDrawGuard === 'function') {
