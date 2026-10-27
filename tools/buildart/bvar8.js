@@ -142,7 +142,7 @@ function buildStore(g, lv, roofs) {
 const ROOF_ST = {
   1: () => ({ main: m1Straw3(STRAW1.reed), wing: m1Straw3(STRAW1.reed), cut: m1StrawCut(STRAW1.reed), cutW: m1StrawCut(STRAW1.reed), th: 3 }),
   2: () => ({ main: m1Shingle2(SHINGLE1, 0.6), wing: m1Shingle2(SHINGLE1, 0.9), cut: m1Fascia, cutW: m1Fascia }),
-  3: () => ({ main: m1Ivy(m1Tile2(P1.slate), [{ u: 34, v: 30, rx: 9, ry: 6 }], bramp(['#7a9a4c', '#5a7a3a', '#3e5a2a', '#2a3e1e'])), wing: m1Shingle2(SHINGLE1, 1), cut: m1FasciaDark, cutW: m1Fascia }),
+  3: () => ({ main: m1Ivy(m1Scale2(P1.scale), [{ u: 34, v: 30, rx: 9, ry: 6 }], bramp(['#7a9a4c', '#5a7a3a', '#3e5a2a', '#2a3e1e'])), wing: m1Ivy(m1Scale2(P1.scale), [{ u: 60, v: 14, rx: 10, ry: 5 }, { u: 150, v: 18, rx: 8, ry: 5 }], bramp(['#7a9a4c', '#5a7a3a', '#3e5a2a', '#2a3e1e'])), cut: m1FasciaDark, cutW: m1FasciaDark }),   // синяя черепица на всех крышах
 };
 BDEFS.store2 = { w: 4, h: 3, top: 70, vars: [
   { name: 'Уровень 1 — камыш: короткие пристройки, один ложемент', make: g => buildStore(g, 1, ROOF_ST[1]()) },

@@ -162,3 +162,67 @@ const HOUSE_VARS = [
 BDEFS.houses = { w: 2, h: 2, top: 70, vars: HOUSE_VARS.map((v, i) => ({ name: v.name, make: g => v.make(g, 1, i) })), title: 'Дома, уровень 1: фасад и вид сбоку', bk: 1, ink: P1.ink };
 BDEFS.houses2 = { w: 2, h: 2, top: 70, vars: HOUSE_VARS.map((v, i) => ({ name: v.name, make: g => v.make(g, 2, i) })), title: 'Дома, уровень 2', bk: 1, ink: P1.ink };
 BDEFS.houses3 = { w: 2, h: 2, top: 70, vars: HOUSE_VARS.map((v, i) => ({ name: v.name, make: g => v.make(g, 3, i) })), title: 'Дома, уровень 3', bk: 1, ink: P1.ink };
+
+// ---- Замена норы: три варианта на выбор ----
+const BARK = bramp(['#8a6a4a', '#6a4e34', '#4e3824', '#342416']);
+const LEAF = bramp(['#9ccc5a', '#6aa040', '#4a7a2e', '#30561e']);
+const matBark = (u, v, F) => { const k = L1(F), c = Math.floor(u / 3); let i = bhash(c, 0, 801) < 0.3 ? 0 : 1; if (((u + Math.floor(v / 7)) % 3) === 0) i = 2; if (bhash(c, Math.floor(v / 5), 802) < 0.08) i = 3; return p1(BARK, i + k); };
+const matLeaf = (u, v, F) => { const k = L1(F), h = bhash(Math.floor(u / 3), Math.floor(v / 3), 803); let i = h < 0.3 ? 0 : h < 0.75 ? 1 : 2; if (v / F.L > 0.75) i += 1; if (bhash(u, v, 804) < 0.05) return P1.red[0]; return p1(LEAF, i + k); };
+const HOUSE_ALT = [
+  { name: 'А. Дом на сваях: приподнятый сруб, лестница, под полом — куры и дрова', make(g, lv, vi = 6) {
+    g.meta = {};
+    const F = { x0: 8, x1: 56, y0: 22, y1: 56, z0: 10, h: 14 };
+    for (const [x, y] of [[9, 23], [26, 23], [44, 23], [53, 23], [9, 53], [53, 53], [30, 53]]) post1(g, x, y, 0, 10, 2.5, P3.oak);
+    beam1(g, 8, 56, 22, 56, 9, 1.4, P1.plank);
+    box(g, Object.assign({ mat: m1Logs(P1.logD || P1.log) }, F));
+    const R = houseRoof(lv, vi);
+    roofSag(g, F, { axis: 'X', rise: 18, sag: 2, flare: 3, ov: 3, ovg: 4, mat: R.mat, cut: R.cut, th: R.th, gable: m1Plank(P1.plank, 4) });
+    elem(g, 'S', F.y0, 42, 10, 9, 12, m1Door({ w: 9, h: 12, col: P1.dark, arch: true })); g.meta.doorPt = [48, 14, 0];
+    HWIN(g, 'S', F.y0, 14, 14, 8, 7, { frameR: P1.plank }); HWIN(g, 'S', F.y0, 26, 14, 8, 7, { frameR: P1.plank }); HWIN(g, 'E', F.x1, 36, 14, 7, 7, { frameR: P1.plank });
+    beam1(g, 38, 56, 16, 22, 9, 1.2, P1.plank); railing1(g, 38, 56, 16.5, 16.5, 10.2, 4);   // площадка у двери
+    g.sprite([48, 8, 0], P => { for (let k = 0; k < 6; k++) { PR.rect(P, -4, -k * 2 - 1, 4, -k * 2 - 1, P1.plank[k % 2]); } PR.line(P, -5, 0, -5, -12, P1.plank[2]); PR.line(P, 5, 0, 5, -12, P1.plank[3]); });   // лестница
+    g.sprite([20, 40, 0], P => HQ.hens(P)); g.sprite([34, 44, 0], P => HQ.wood(P));
+    chimney1(g, 16, 40, F.z0 + F.h + 8, 10, { stone: true, w: 5, d: 5 });
+    g.sprite([4, 14, 0], P => HQ.waterBarrel(P));
+    if (lv >= 2) g.sprite([20, 18, 10], P => Q1.planter(P, 11), -0.5);
+    if (lv >= 3) g.sprite([60, 34, 0], P => HQ.laundry(P, 0));
+  } },
+  { name: 'Б. Каменная башенка: три этажа, деревянная надстройка, голубятня и флюгер', make(g, lv, vi = 6) {
+    g.meta = {};
+    const T = { x0: 24, x1: 50, y0: 28, y1: 54, h: 26 }, U = { x0: 22, x1: 52, y0: 26, y1: 56, z0: 26, h: 10 };
+    box(g, Object.assign({ mat: m1Stone(P1.stoneW, 6, 4) }, T));
+    beam1(g, 22, 52, 26, 56, 25, 1.4, P1.beam);
+    box(g, Object.assign({ mat: m1Plank(P1.plankB, 4) }, U));
+    const R = houseRoof(lv, vi);
+    roof(g, U, { type: 'hip', axis: 'X', rise: 18, hipL: 17.5, ov: 3, mat: R.mat, cut: R.cut, th: R.th });   // шатёр (pyr вырождает переднюю грань в отрезок)
+    hDoor(g, 'S', T.y0, 43, 9, 13, { col: P1.plank });
+    HWIN(g, 'S', T.y0, 30, 12, 6, 8, { arch: true }); HWIN(g, 'S', U.y0, 32, 28, 10, 6, { frameR: P1.plank }); HWIN(g, 'E', T.x1, 38, 14, 6, 8, { arch: true }); HWIN(g, 'E', U.x1, 36, 28, 8, 6, { frameR: P1.plank });
+    g.sprite([37, 41, 54 + (lv >= 3 ? 2 : 0)], P => { PR.rect(P, 0, -8, 0, 0, P1.iron[2]); PR.rect(P, -4, -8, 4, -8, P1.iron[1]); PR.rect(P, 2, -10, 5, -9, P1.iron[1]); P(-5, -9, P1.iron[1]); });   // флюгер
+    // голубятня на шесте и пристройка-сарайчик
+    g.sprite([12, 30, 0], P => { PR.rect(P, 0, -18, 0, 0, P3.oak[1]); PR.rect(P, -5, -26, 5, -18, P1.plank[1]); PR.rect(P, -6, -27, 6, -27, P1.tileD[1]); for (const x of [-3, 2]) PR.rect(P, x, -23, x + 1, -21, P1.ink); P(4, -29, P1.white[0]); P(5, -29, P1.white[1]); P(-2, -28, P1.white[0]); });
+    box(g, { x0: 52, x1: 62, y0: 32, y1: 50, h: 9, mat: m1Plank(P1.plank, 4), top: m1Flat(P1.plank[1]) });
+    roof(g, { x0: 52, x1: 62, y0: 32, y1: 50, h: 9 }, { type: 'lean', down: 'E', rise: 3, ov: 2, mat: R.mat, cut: R.cut, th: 2 });
+    g.sprite([18, 16, 0], P => Q1.flowers(P, 10)); g.sprite([6, 50, 0], P => HQ.wood(P));
+    if (lv >= 2) g.sprite([30, 22, 0], P => HQ.bench(P));
+    if (lv >= 3) { beam1(g, 26, 48, 22, 26, 25, 1.2, P1.plank); railing1(g, 26, 48, 22.5, 22.5, 26.2, 4); }
+  } },
+  { name: 'В. Дом в старом дубе: толстый ствол с дверью и окнами, крона вместо крыши, корни', make(g, lv, vi = 6) {
+    g.meta = {};
+    const cx = 32, cy = 40, rr = 15;
+    cyl(g, cx, cy, rr + 3, 0, 3, matBark, 24);                         // корни-основание
+    cyl(g, cx, cy, rr, 3, 26, matBark, 24);
+    elem(g, 'S', cy - rr + 0.8, 43, 3, 10, 13, m1Door({ w: 10, h: 13, arch: true, knob: true, col: P1.plank })); g.meta.doorPt = [48, cy - rr, 0];
+    HWIN(g, 'S', cy - rr + 1.2, 22, 12, 6, 7, { arch: true }); HWIN(g, 'E', cx + rr - 1, cy - 2, 16, 6, 7, { round: true });
+    // ветви и крона — на 3-м уровне ещё и домик-скворечник наверху
+    dome(g, cx, cy + 2, 26, 22, 20, matLeaf, m1Flat(LEAF[3]), 28, 7, 2);
+    dome(g, cx - 12, cy - 6, 12, 22, 10, matLeaf, m1Flat(LEAF[3]), 20, 5, 2);
+    dome(g, cx + 14, cy + 10, 12, 24, 10, matLeaf, m1Flat(LEAF[3]), 20, 5, 2);
+    chimneyCrooked(g, 40, 48, 38, 12, { stone: true, w: 4, d: 4, lean: 2 });
+    g.sprite([12, 22, 0], P => { for (const [x, y] of [[0, 0], [5, 2], [-4, 3]]) PR.ell(P, x, y, 4, 1.4, () => BARK[2]); });   // корни
+    g.sprite([56, 18, 0], P => Q3.shroomPatch(P)); g.sprite([8, 50, 0], P => Q3.shroomPatch(P));
+    g.sprite([46, 20, 3], P => Q1.lantern(P));
+    if (lv >= 2) { g.sprite([24, 18, 0], P => HQ.bench(P)); g.sprite([20, 26, 30], P => Q3.wisp(P), -2); }
+    if (lv >= 3) { box(g, { x0: 44, x1: 54, y0: 30, y1: 40, z0: 34, h: 7, mat: m1Plank(P1.plank, 3), top: m1Flat(P1.plank[1]) }); roof(g, { x0: 44, x1: 54, y0: 30, y1: 40, h: 7, z0: 34 }, { type: 'gable', axis: 'X', rise: 5, ov: 2, mat: m1Tile2(P1.tileR), cut: m1Fascia, th: 1.5 }); }
+  } },
+];
+BDEFS.housealt = { w: 2, h: 2, top: 70, vars: HOUSE_ALT.flatMap(v => [1, 3].map(lv => ({ name: v.name + ` (уровень ${lv})`, make: g => v.make(g, lv) }))), title: 'Замена норы: три варианта', bk: 1, ink: P1.ink };
