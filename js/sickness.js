@@ -412,7 +412,8 @@ function injTick(now) {
     if (now - (u.injAt || 0) < INJ.CALL) continue;
     // долго не может дойти — зовём лекаря
     if (!healers) healers = Game.units.filter(h => h.type === 'healer' && !h.dead && !h.injPat && !h.injury && (h.brk ? INJ_SKIP_BRK.has(h.brk.kind) : interruptible(h) || h.inside === h.home));
-    let best = null, bd = 40;
+    // ближайший свободный лекарь, как бы далеко раненый ни ушёл: без предела радиуса дальних (носильщики, рудокопы) никто не лечил
+    let best = null, bd = Infinity;
     for (const h of healers) { const d = Math.hypot(h.x - u.x, h.y - u.y); if (d < bd) { bd = d; best = h; } }
     if (best) { best.injPat = u; u.injDoc = best; healers.splice(healers.indexOf(best), 1); }
   }
