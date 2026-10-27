@@ -537,7 +537,8 @@ for (const k of GD_ORDER) {
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser(), T = gdT();
-    if (s.fo && T) {
+    // у кооп-клиента ярусы из зеркала сервера — без башен и ворот; копия мира без них падала каждые 30 с (отчёт 261026-1839-c751)
+    if (s.fo && T && (T.none || (T.homes && T.towers))) {
       if (T.none) s.fo.tr = { none: 1 };
       else {   // на кооп-клиенте ярусы приходят зеркалом без башен — копия мира падала каждые 30 с
         const hp = (T.homes || []).map((h, i) => { const N = Game.raiders.find(M => M.gi === i && foeLive(M)); return N ? Math.round(N.hp) : 0; });
