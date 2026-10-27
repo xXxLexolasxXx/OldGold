@@ -328,9 +328,10 @@ const TILE_ = 32, BPADX_ = 38, BBOTTOM_ = 14;
 // спрайт варианта: холст размером как в игре (×3)
 function renderVariant(type, vi, rot = 0) {
   const def = BDEFS[type], LW = def.w * TILE_, LD = def.h * TILE_;
-  const FW = rot ? LD : LW, FD = rot ? LW : LD, top = def.top + 24;
+  BK = def.bk || 3;
+  const FW = rot ? LD : LW, FD = rot ? LW : LD, top = def.top + 34;
   const W = Math.ceil(FW + BPADX_ * 2 + FD * BSK), H = FD + top + BBOTTOM_;
-  const g = new BGrid(W * BK, H * BK, BPADX_ * BK, (top + FD) * BK);
+  const g = new BGrid(Math.round(W * BK), Math.round(H * BK), Math.round(BPADX_ * BK), Math.round((top + FD) * BK));
   g.rot = rot; g.LD = LD;
   def.vars[vi].make(g);
   g.finish({ step: 1.0 });

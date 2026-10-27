@@ -1,6 +1,6 @@
 <!doctype html><meta charset=utf-8><title>…</title>
 <body style="margin:0;background:#4a5d36;font:bold 15px sans-serif;color:#fff">
-<script src="bpx.js"></script><script src="bvar.js"></script>
+<script src="bpx.js"></script><script src="bpx2.js"></script><script src="bvar.js"></script><script src="bvar2.js"></script>
 <div id=root></div>
 <script>
 const q = new URLSearchParams(location.search), only = q.get('type'), scale = +(q.get('scale') || 2 / 3), rots = (q.get('rots') || '0,1').split(',').map(Number);
@@ -10,7 +10,7 @@ for (const type of Object.keys(BDEFS)) {
   if (only && only !== type) continue;
   const def = BDEFS[type];
   const h = document.createElement('div'); h.textContent = def.title; h.style.cssText = 'font-size:26px;padding:10px 12px 0'; root.appendChild(h);
-  const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:6px'; root.appendChild(row);
+  const row = document.createElement('div'); row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px;padding:6px'; root.appendChild(row);
   def.vars.forEach((v, i) => {
     const cell = document.createElement('div'); cell.style.cssText = 'background:#3f4f2e;padding:6px;border-radius:6px;flex:0 0 auto';
     const t = document.createElement('div'); t.textContent = `Вариант ${i + 1}. ${v.name}`; t.style.cssText = 'margin-bottom:4px;max-width:560px;font-weight:normal'; cell.appendChild(t);
@@ -20,7 +20,7 @@ for (const type of Object.keys(BDEFS)) {
         PNGS[`${type}-v${i + 1}-r${rot}`] = cv.toDataURL();
         const im = document.createElement('img'); im.src = cv.toDataURL(); im.style.cssText = `image-rendering:pixelated;display:block;width:${Math.round(cv.width * scale)}px;height:${Math.round(cv.height * scale)}px`;
         cell.appendChild(im);
-        if (rot === 0) { const im2 = document.createElement('img'); im2.src = cv.toDataURL(); im2.style.cssText = `image-rendering:pixelated;display:block;width:${Math.round(cv.width / 3)}px;height:${Math.round(cv.height / 3)}px;margin:2px 0 6px`; cell.appendChild(im2); }
+        if (rot === 0) { const im2 = document.createElement('img'); im2.src = cv.toDataURL(); im2.style.cssText = `image-rendering:pixelated;display:block;width:${Math.round(cv.width / BK)}px;height:${Math.round(cv.height / BK)}px;margin:2px 0 6px`; cell.appendChild(im2); }
       } catch (e) { const er = document.createElement('div'); er.textContent = 'ОШИБКА ' + e.message + ' ' + (e.stack || '').split('\n')[1]; er.style.color = '#f88'; cell.appendChild(er); console.error(e); }
     }
     row.appendChild(cell);
