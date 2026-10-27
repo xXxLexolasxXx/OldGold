@@ -207,7 +207,7 @@ const BUILDINGS = {
     desc: 'Варит пиво из зерна и хмеля. Пиво везут в трактир.',
   },
   mill: {
-    name: 'Мельница', cat: 'Еда', w: 2, h: 2, top: 118, noRotate: true, cost: { timber: 4, stone: 2 }, worker: 'baker',
+    name: 'Мельница', cat: 'Еда', w: 2, h: 2, top: 118, cost: { timber: 4, stone: 2 }, worker: 'baker',
     inputs: { wheat: 14 }, outputs: { flour: 12 },
     recipes: [{ in: { wheat: 1 }, out: { flour: 1 }, time: 8 }],
     desc: 'Мелет зерно в муку.',
