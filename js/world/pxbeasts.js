@@ -1163,6 +1163,7 @@ function DS_body(K, parts, mats, o) {
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
     const id = j * w + i; if (U[id] > 0) continue;
     const x = x0 + i, y = y0 + j;
+    if (o.cut && o.cut(x, y, -U[id])) continue;                                        // рассыпание (хвост призрака тает Байером)
     let n = nrm(U, i, j, Wd), mat = o.mat || 'skin';
     for (let k = 0; k < parts.length; k++) {
       const q = parts[k], d = D[k][id];

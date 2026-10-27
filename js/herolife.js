@@ -195,12 +195,13 @@ function* hlExorcise(u, c) {
     fxBurst(g.x * TILE, g.y * TILE - 14, 7, ['#fff6c0', '#ffe070', '#bfe8ff'], 50, 60, 0.9, 1.6, -40);
   }
   if ((Game.ghosts || []).indexOf(g) < 0) return;
-  g.exo = Game.time; g.mode = 'leave'; g.modeT = 99;
-  ghostSay(g, ['Свет… наконец-то…', 'Спасибо, что отпустил…', 'Я иду домой…'][(Math.random() * 3) | 0]);
-  sfxAt('wail', g.x * TILE, g.y * TILE, 0.8);
-  if (Math.random() < 0.45) { dropPile(Math.floor(g.x), Math.floor(g.y), 'gold', 1); logEvent('night', `${u.hero ? u.hero.name : "Лекарь"} отпустил призрака, тот оставил монету`, g.x, g.y); }
-  else logEvent('night', `${u.hero ? u.hero.name : "Лекарь"} прогнал призрака в мир иной`, g.x, g.y);
+  // с 0.11.57 молитва не прогоняет, а жжёт светом: половина здоровья каждому призраку в 3 клетках (ghHoly, ghosts.js)
+  let n = 0;
+  for (const o of (Game.ghosts || []).slice()) if (ghLive(o) && Math.hypot(o.x - g.x, o.y - g.y) < 3 && ghHoly(o, u, 'exorcise')) n++;
+  if (n) logEvent('night', `${u.hero ? u.hero.name : "Лекарь"} обжёг молитвой призраков: ${n}`, g.x, g.y);
   yield { wait: 0.6 };
+  // недобитого герой и рекрут добивают в бою (лекарь не воин — молится снова, когда отдохнёт)
+  if ((u.hero || u.rec) && ghLive(g)) yield* fightGen(u, { kind: 'ghost', o: g });
 }
 
 // ---------- Заклинания ----------

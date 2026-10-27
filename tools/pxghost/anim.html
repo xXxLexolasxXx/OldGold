@@ -1,0 +1,53 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#141c22">
+<canvas id="cv" width="1280" height="720"></canvas>
+<script>var NA_SPEC = {}, NA_PX = {}, PX_FINE = 3;</script>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script src="../../js/world/ghostpx.js"></script>
+<script>
+// Видео для согласования: frameAt(t) рисует кадр ролика в момент t (с). Снимает tools/pxghost/video.js.
+// 0–6 с: шаг анимации парения — 6, 8 и 12 кадров на петлю 1,2 с (облик B).
+// 6–12 с: облики A, B, C при шаге 8 к/с: парит → рот раскрывается (3 кадра) → пугает → удар (6 кадров) → рот закрывается → парит.
+const cv = document.getElementById('cv'), c = cv.getContext('2d');
+const SPR = {};
+const spr = (v, mood, p, k, open) => { const key = [v, mood, p.toFixed(3), k.toFixed(3), open == null ? '' : open.toFixed(2)].join('|'); return SPR[key] || (SPR[key] = fzPxSprite('vid' + key, 60, 76, 30, 32, () => ghostPx(v, mood, p, k, open == null ? {} : { open }))); };
+const T = (s, x, y, sz = 22, col = '#e6eef0', al = 'left') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.textAlign = al; c.fillText(s, x, y); };
+const put = (s, x, y, Z) => { c.imageSmoothingEnabled = false; const [ox, oy, w, h] = s.fzO; c.drawImage(s, x - ox * Z, y - oy * Z, w * Z, h * Z); };
+const glow = (x, y, r) => { const g = c.createRadialGradient(x, y, 4, x, y, r); g.addColorStop(0, 'rgba(120,255,190,0.18)'); g.addColorStop(1, 'rgba(120,255,190,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r); };
+const STEP = 0.125;
+// сцена при шаге 8 к/с: возвращает [mood, p, k, open, подпись]
+function scene(t) {
+  const f = Math.floor(t / STEP), idle = n => ['idle', (n % 8) / 8, 0, null, 'парит'];
+  if (t < 1.5) return idle(f);
+  if (t < 1.875) { const i = f - 12; return ['boo', (i % 6) / 6, 0, [0.33, 0.66, 1][i] ?? 1, 'раскрывает рот']; }
+  if (t < 3.375) { const i = f - 15; return ['boo', (i % 6) / 6, 0, null, 'пугает']; }
+  if (t < 4.125) { const i = f - 27; return ['atk', 0, Math.min(5, i) / 5, null, 'удар когтями']; }
+  if (t < 4.5) { const i = f - 33; return ['idle', 0, 0, [0.66, 0.33, 0.12][i] ?? 0.12, 'закрывает рот']; }
+  return idle(f - 36);
+}
+function frameAt(t) {
+  c.fillStyle = '#141c22'; c.fillRect(0, 0, 1280, 720);
+  c.fillStyle = '#1b262d'; for (let i = 0; i < 90; i++) c.fillRect((i * 137) % 1280, 120 + (i * 71) % 600, 4, 2);
+  if (t < 6) {
+    T('Шаг анимации: сколько кадров на одну петлю парения (1,2 с)', 640, 46, 28, '#ffd860', 'center');
+    [6, 8, 12].forEach((n, i) => {
+      const x = 240 + i * 400, y = 330, fr = Math.floor((t % 1.2) / 1.2 * n);
+      glow(x, y + 40, 200);
+      put(spr('B', 'idle', fr / n, 0), x, y, 4.5);
+      T(`${n} кадров` + (n === 8 ? ' — предлагаю' : ''), x, 640, 26, n === 8 ? '#bff0dc' : '#e6eef0', 'center');
+      T(`${(n / 1.2).toFixed(1)} к/с, кадр ${fr + 1}/${n}`, x, 676, 18, '#9fb8c0', 'center');
+    });
+  } else {
+    const s = t - 6, [m, p, k, open, lab] = scene(s);
+    T('Облики A, B, C при шаге 8 кадров/с: ' + lab, 640, 46, 28, '#ffd860', 'center');
+    ['A', 'B', 'C'].forEach((v, i) => {
+      const x = 240 + i * 400, y = 330;
+      glow(x, y + 40, 200);
+      put(spr(v, m, p, k, open), x, y, 4.5);
+      T(['A — колпак', 'B — дед', 'C — саван'][i], x, 660, 26, '#bff0dc', 'center');
+    });
+  }
+}
+try { frameAt(0); frameAt(7); document.title = 'ready'; } catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>
