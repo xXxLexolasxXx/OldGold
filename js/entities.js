@@ -314,6 +314,7 @@ class Pile {
     this.reserved = emptyGoods();
     this.incoming = emptyGoods();
     this.removed = false;
+    this.t0 = Game.time;   // когда легла: давняя кучка на дороге убирается раньше заявок (logistics.js)
     this.ageAt = {};       // когда лёг «неходовой» груз (мусор, куски курицы): склад его не берёт, такие кучки со временем убираются
   }
   offer(g) { return this.stock[g] - this.reserved[g]; }

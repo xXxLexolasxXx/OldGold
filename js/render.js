@@ -492,10 +492,10 @@ function drawBuilding(c, b, ghost) {
   const fx = b.x * TILE, fy = b.y * TILE, fw = b.w * TILE, fh = b.h * TILE;
   c.imageSmoothingEnabled = true;
   c.imageSmoothingQuality = 'high';
-  if (!ghost && b.selfBuild && b.state === 'build') { drawSelfBuild(c, b); return; }
+  if (!ghost && b.selfBuild && b.state === 'build') { drawSelfBuild(c, b); c.imageSmoothingEnabled = R.smooth; c.imageSmoothingQuality = 'low'; return; }
   if (!ghost && b.state !== 'done') {
     drawSite(c, b, spr, ox, oy, fx, fy, fw, fh);
-    c.imageSmoothingEnabled = R.smooth;
+    c.imageSmoothingEnabled = R.smooth; c.imageSmoothingQuality = 'low';
     return;
   }
   if (b._gnd) b._gnd = null;     // достроено — холст земли больше не нужен
@@ -507,7 +507,9 @@ function drawBuilding(c, b, ghost) {
   const t = Game.time;
   if (b.type === 'mill' && spr.hub) drawSails(c, ox + spr.hub[0], oy + spr.hub[1], b.anim);
   if (spr.pen && b.stock) drawPigs(c, b, spr, ox, oy);
-  c.imageSmoothingEnabled = R.smooth;
+  // качество 'high' только для спрайта здания: оставленное на холсте, оно на отдалении (сглаживание включено)
+  // заставляло так же дорого масштабировать полосы земли и всё остальное — 5 кадр/с (отчёт 261023-2109-e00a)
+  c.imageSmoothingEnabled = R.smooth; c.imageSmoothingQuality = 'low';
   // зимой печи топятся брёвнами (season.js): дым идёт, только пока топят; нетопленое здание — иней и сосульки
   const heat = !ghost && typeof seaHeating === 'function' && seaHeating() && WINTER_HEATED.includes(b.type);
   if (heat && b.cold) drawColdFx(c, b, spr, ox, oy);
@@ -858,6 +860,7 @@ function render() {
   c.fillRect(0, 0, canvas.width, canvas.height);
   const z = devScale();
   R.smooth = z < 1;          // сильно отдалено — сглаживаем, чтобы пиксель-арт не рябил
+  c.imageSmoothingQuality = 'low';   // дешёвое сглаживание по умолчанию; 'high' ставят точечно и возвращают
   c.setTransform(z, 0, 0, z, -Math.round(cam.x * z), -Math.round(cam.y * z));
   c.imageSmoothingEnabled = R.smooth;
   terrDraw(c, cam, canvas.width / z, canvas.height / z);

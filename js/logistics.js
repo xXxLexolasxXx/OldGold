@@ -181,6 +181,12 @@ function dispatchSerfs() {
   // на здание, Высокий — рассыпанное с земли раньше заявок и по 5 перевозчиков на здание
   const haul = prioLv('tasks', 'haul'), haulPer = [0, 1, 3, 5][haul];
   if (haul === 3) collectOutputs(b => b.isPile);     // рассыпанное с земли — раньше заявок
+  else if (haul > 0) {
+    // кучка, пролежавшая на дороге больше минуты, — тоже раньше заявок, по одной за проход диспетчера. Иначе в
+    // занятой деревне (свободных трудяг нет) рассыпанное копилось годами: в мире коопа 84 кучки (отчёт 261026-1839-c751)
+    let one = 0;
+    collectOutputs(b => b.isPile && !one && World.road[idx(b.x, b.y)] && Game.time - (b.t0 ?? -1e9) > 60 && GOOD_KEYS.some(g => b.offer(g) > 0 && !GOODS[g].noStore) && ++one);
+  }
   const reqs = [];
   for (const [d, comp] of compOf) {
     if (!comp || !idleBy.has(comp)) continue;
@@ -435,4 +441,23 @@ function dispatchAll() {
   dispatchWorkers();
   dispatchBuilders();
   dispatchSerfs();
+  sweepRoadPiles();
+}
+
+// Кучка, пять минут пролежавшая на дороге, «подобрана прохожими»: годный груз — на ближайший склад, который его берёт.
+// Без этого в деревне с нехваткой трудяг рассыпанное копилось на дорогах часами (кооп: 84 кучки, отчёт 261026-1839-c751).
+// Что везут (бронь) и что склад не берёт (мусор, запрет «не принимать») — остаётся на месте.
+const PILE_SWEEP_T = 300;
+function sweepRoadPiles() {
+  for (const p of [...Game.piles.values()]) {
+    if (p.removed || !World.road[idx(p.x, p.y)] || Game.time - (p.t0 ?? Game.time) < PILE_SWEEP_T) continue;
+    for (const g of GOOD_KEYS) {
+      const n = p.offer(g);
+      if (n <= 0) continue;
+      const st = nearestStore(p.x, p.y, g);
+      if (!st) continue;
+      st.stock[g] += n; p.stock[g] -= n;
+    }
+    cleanupPile(p);
+  }
 }

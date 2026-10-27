@@ -605,7 +605,7 @@ function coopPlates(c) {
   c.textAlign = 'center';
   for (const u of Game.units) {
     if (!u.owner || u.inside) continue;
-    const H = u.hero, px = u.x * TILE, py = u.y * TILE - 38;
+    const H = u.hero, px = u.x * TILE, py = u.y * TILE - 50;   // выше навершия посоха (жрец, маг): на -38 развилка торчала из ника «ушами»
     const col = (classes[H.clsKey] || {}).col || '#f0d890';
     c.font = 'bold 8px sans-serif';
     c.lineWidth = 3; c.strokeStyle = 'rgba(20,12,4,0.9)'; c.strokeText(u.owner, px, py);
