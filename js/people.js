@@ -792,7 +792,7 @@ function drawHead(c, view, hx, hy, L, O, type, pipe, bottom, r) {
 // ---------- Жесты ----------
 // Локоть и кисть для жеста: E — сбоку (лицом вправо, плечо в x≈0.4), S/N — рука side=±1.
 // Жесты: 4 такта туда-обратно между опорными позами 0 и 1. t — прежний счётчик (полный цикл = 2 единицы)
-const GEST_FRAMES = 4;   // 4 такта туда-обратно = 3 различимые позы (0, середина, 1) — плавнее прежних двух, без раздувания кэша
+const GEST_FRAMES = 12;   // 12 тактов туда-обратно: плавное движение руки при пиксель-арте ×3 (цикл те же 2 с)
 function gestCyc(t) { return 10 + (Math.floor(t * GEST_FRAMES / 2) % GEST_FRAMES); }
 function gestK(gf) { return gf < 10 ? gf : (1 - Math.cos((gf - 10) / GEST_FRAMES * Math.PI * 2)) / 2; }
 function gestPts(g, f, side, shY, headY, view) {
@@ -1430,7 +1430,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
         if (gest === 'drink') drawFlask(c, h[0] + 1.8, h[1] - 0.8, 0.5);
         if (gest === 'chest' && gf >= 0.5) drawFlask(c, h[0] + 2.2, h[1] - 1.6, 0.2);
       } else if (pose === 'smoke') {
-        const sa = SMOKE_ARM.E, sf = frame | 0;   // кадр курения 0..3: достал, поднёс, затяжка, выдох
+        const sa = SMOKE_ARM.E, sf = frame | 0;   // кадр курения 0..11 (6 опорных и промежуточные, см. smoking.js)
         smoothLimb(c, [0.4, shY + 0.4], sa.elbow[sf], sa.hand[sf], 2, shirt);
         hand(c, sa.hand[sf][0], sa.hand[sf][1], skin[0]);
       } else if (pose === 'tame') {

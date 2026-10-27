@@ -18,6 +18,7 @@ const pw = require('D:/для игры/feod/tools/browsers/node_modules/playwrig
   await p.waitForTimeout(2000);
   await p.evaluate(() => { const b = [...document.querySelectorAll('button')].find(b => b.offsetWidth && b.textContent.trim() === 'В путь'); if (b) b.click(); });
   await p.waitForTimeout(4000);
+  console.log(await p.evaluate(() => { const cv = document.createElement('canvas'); cv.width = 200; cv.height = 200; const c = cv.getContext('2d'); const u = Game.units.find(x => x.type !== 'goat') ; for (let f = 0; f < 12; f++) { smokeItemSprite(1, f, 'E'); smokeItemSprite(1, f, 'S'); } for (let t = 0; t < 40; t += 0.7) { Game.time = t; drawSmoking(c, u, 100, 100, t % 2 < 1 ? 'E' : 'S'); } return 'курево ок'; }));
   console.log(await p.evaluate(() => ({ units: Game.units.length, part: PART })));
   await p.screenshot({ path: process.argv[3] || 'D:/wt-gnome/promo/ref/gnome-frames-2026-10-27/game.png' });
   console.log('ошибки:', errs.length ? errs.slice(0, 5) : 'нет');

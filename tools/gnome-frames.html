@@ -9,9 +9,9 @@ function unitLevel() { return 1; }
 function drawFire() {}
 window.Game = { time: 0, buildings: [] };
 const Q = new URLSearchParams(location.search), TYPE = Q.get('type') || 'woodcutter';
-const SRC = ['../js/config.js', '../js/sprites.js', '../js/pixel.js', '../js/people.js'];
+const SRC = ['../js/config.js', '../js/sprites.js', '../js/pixel.js', '../js/smoking.js', '../js/people.js'];
 const load = f => new Promise(ok => { const s = document.createElement('script'); s.src = f; s.onload = ok; s.onerror = () => { window.ERR = (window.ERR || '') + ' нет ' + f; ok(); }; document.head.appendChild(s); });
-const ROWS = JSON.parse(Q.get('rows') || '[["стоит (дыхание)","S","idle"],["ходьба сбоку","E","walk"],["ходьба спереди","S","walk"],["ходьба со спины","N","walk"],["ходьба с ношей","E","walk","timber"],["рубка топором","E","work","chop"],["кирка","E","work","mine"],["молоток","E","work","build"],["серп","E","work","reap"],["лопата","E","work","dig"]]');
+const ROWS = JSON.parse(Q.get('rows') || '[["стоит (дыхание)","S","idle"],["ходьба сбоку","E","walk"],["ходьба спереди","S","walk"],["ходьба со спины","N","walk"],["ходьба с ношей","E","walk","timber"],["рубка топором","E","work","chop"],["кирка","E","work","mine"],["молоток","E","work","build"],["серп","E","work","reap"],["лопата","E","work","dig"],["курение боком","E","smoke"],["курение анфас","S","smoke"],["почёсывание","S","idle","g:scratch"],["потягивание","S","idle","g:stretch"],["хлопок","S","idle","g:clap"],["машет рукой","E","idle","g:wave"]]');
 SRC.reduce((p, f) => p.then(() => load(f)), Promise.resolve()).then(() => {
   const Z = 6, k = Z / PART, CW = 104, RH = 38 * Z + 18;
   const cv = document.getElementById('sheet'); cv.height = 40 + ROWS.length * RH; const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
@@ -21,9 +21,10 @@ SRC.reduce((p, f) => p.then(() => load(f)), Promise.resolve()).then(() => {
     const [name, view, pose, extra] = r, y = 40 + ri * RH;
     c.font = 'bold 12px sans-serif'; c.fillStyle = '#fff'; c.fillText(name, 8, y + 12);
     for (let f = 0; f < 12; f++) {
-      const u = { type: TYPE, look: 5, carry: pose === 'walk' && extra ? extra : null, carryN: 1 };
+      const u = { type: TYPE, look: 5, carry: pose === 'walk' && extra && !extra.startsWith('g:') ? extra : null, carryN: 1 };
       const fr = pose === 'work' ? { anim: extra, f } : f;
-      const spr = personSprite(u, view, pose, fr, {});
+      const g = extra && extra.startsWith('g:') ? extra.slice(2) : '', opt = g ? { gest: g, gf: 10 + f } : {};
+      const spr = personSprite(u, view, pose, g ? 0 : fr, opt);
       c.drawImage(spr, 4 + f * CW + CW / 2 - 13 * Z, y + 18 + 35 * Z - 35 * Z + 0, spr.width * k, spr.height * k);
       c.font = '10px sans-serif'; c.fillStyle = '#d8ecc0'; c.fillText(String(f + 1), 4 + f * CW + CW / 2 - 3, y + RH - 2);
     }
