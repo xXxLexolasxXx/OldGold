@@ -33,10 +33,10 @@ const RPX = {
 
 function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
   const K = fzPxKit(243, 309, 120, 129), { P, R, L, dth, hsh } = K, TAU = Math.PI * 2, { RB, BO, VO, IR, WD, CL } = RPX;
-  const atk = mood === 'atk', boo = mood === 'boo' || atk;
+  const atk = mood === 'atk', hurt = mood === 'hurt', boo = mood === 'boo' || atk;
   const sn = (m, o = 0) => Math.sin(p * TAU * m + o), sm = x => x * x * (3 - 2 * x);
   const wind = atk ? sm(Math.min(1, k / 0.35)) : 0, strike = atk ? sm(Math.max(0, Math.min(1, (k - 0.35) / 0.25))) : 0, recoil = atk ? sm(Math.max(0, (k - 0.6) / 0.4)) : 0;
-  const lean = atk ? (-10 * wind + 24 * strike) * (1 - recoil) : 0;
+  const lean = atk ? (-10 * wind + 24 * strike) * (1 - recoil) : hurt ? -14 : 0;
   const HX = lean * 0.7, HY = (atk ? 5 * strike - 4 * wind : 0) + sn(1, 0.8) * 1.5;
   const eye = RPX.EYE[boo ? 'boo' : 'idle'];
   const open = atk ? Math.max(wind * 0.3, strike) * (1 - recoil * 0.6) : boo ? 0.9 : 0.12 + 0.06 * sn(2);
@@ -299,12 +299,13 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
   K.outline(RPX.EDGE);
   return K.done();
 }
-// Кадры: парение 12 (10 к/с, как у призраков), гнев 9, взмах косой 9. hv — форма рогов 0..2.
-const RPX_N = { idle: 12, boo: 9, atk: 9 };
+// Кадры: всё по 12 (10 к/с, как у призраков) — парение, гнев, взмах косой, гибель; рана — одна вспышка. hv — форма рогов 0..2.
+const RPX_N = { idle: 12, boo: 12, atk: 12, hurt: 1, die: 12 };
 let RPX_RAG = null;      // ряса по умолчанию (лист); в игре у каждого жнеца свои лохмотья — g.rag: 'T1' полосы или 'T2' рваньё (выбор владельца)
 function reaperPxSprite(v, mood, f, n = RPX_N[mood], hv = 0, rag = RPX_RAG) {
   f = Math.max(0, Math.min(n - 1, f | 0));
-  return fzPxSprite('rp' + v + mood + f + '_' + n + 'h' + hv + (rag || ''), 81, 103, 40, 43, () => reaperPx(v, mood, mood === 'atk' ? 0 : f / n, mood === 'atk' ? f / (n - 1) : 0, hv, rag));
+  return fzPxSprite('rp' + v + mood + f + '_' + n + 'h' + hv + (rag || ''), 81, 103, 40, 43, () => mood === 'die' ? reaperPxDie(v, (f + 1) / n, hv, rag)
+    : reaperPx(v, mood, mood === 'atk' ? 0 : f / n, mood === 'atk' ? f / (n - 1) : 0, hv, rag));
 }
 // кадр для игры по бюджету новых спрайтов (как ghostPxFrame)
 const RPX_LAST = new WeakMap();
@@ -317,4 +318,28 @@ function reaperPxFrame(g, v, mood, f, hv, rag = RPX_RAG) {
   if (typeof spriteSpent === 'function') spriteSpent(t0);
   RPX_LAST.set(g, cv);
   return cv;
+}
+
+// Гибель жнеца: ряса осыпается чёрным пеплом снизу вверх, коса падает, рога и колпак держатся дольше, огоньки глаз гаснут последними; t — 0..1
+function reaperPxDie(v, t, hv, rag) {
+  const { RB } = RPX, MI = [RB[1], RB[2], RB[3], RB[4], RB[5]], lift = t * t * 26, wv = y => Math.sin(y * 0.08 + t * 8) * t * 7;
+  return fzPxDie(() => reaperPx(v, 'idle', 0, 0, hv, rag), 243, 309, 120, 129, t, {
+    map: (x, y) => [x + wv(y), y + lift],
+    s: (x, y) => fzCl((176 - y) / 300),
+    mat: (c, x, y, val) => fzRamp(MI, c, Math.max(0.2, 0.7 - Math.max(0, val) * 1.2)),
+    edge: RPX.EDGE,
+    fx(K) {
+      const { R, dth } = K, fy = Math.max(-110, 176 - t * 1.3 * 300);
+      for (let j = 0; j < 34; j++) {
+        if (fzH(j * 2.1) > t * 1.1) continue;
+        const cx = (fzH(j * 3.7) - 0.5) * (70 + t * 100), cy = fy + fzH(j * 5.9) * (176 - fy) - t * 50 - lift * 0.5, r = 7 + fzH(j * 7.3) * 9 + t * 8;
+        R(cx - r * 1.6, cy - r, cx + r * 1.6, cy + r, (x, y) => { const d = Math.hypot((x - cx) / 1.6, (y - cy) * 1.4) / r; return d < 1 && dth(x, y) < (1 - d) * (1 - d) * 0.7 * (1.2 - t * 0.5) ? [...(d < 0.35 ? RB[3] : RB[2]), 0.4] : null; }, false);
+      }
+      const a = 1 - Math.max(0, t - 0.6) * 1.6, E = RPX.EYE.idle;
+      for (const s of [-1, 1]) {
+        const ey = 3 - lift, ex = s * 8 - wv(ey);
+        R(ex - 4, ey - 4, ex + 4, ey + 4, (x, y) => { const d = Math.hypot(x - ex, y - ey); return d < 1.2 ? [...E[1], a] : d < 2.8 ? [...E[0], a * 0.7] : null; }, false);
+      }
+    },
+  });
 }

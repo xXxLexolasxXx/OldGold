@@ -30,14 +30,15 @@ const GPX = {
 
 function ghostPx(v, mood, p = 0, k = 0, o = {}) {
   const K = fzPxKit(180, 228, 90, 96), { P, R, L, dth, hsh } = K, TAU = Math.PI * 2, { SH, BO, CAP, VO, IR, CL } = GPX;
-  const atk = mood === 'atk', boo = mood === 'boo' || atk, calm = mood === 'calm', flee = mood === 'flee', hurt = mood === 'hurt';
+  const gp = mood === 'grab' || mood === 'carry' ? o.gp : null;                         // похищение: руки по позе GH_POSE (grab.js), ×3 в сетку
+  const atk = mood === 'atk', boo = mood === 'boo' || atk || !!gp, calm = mood === 'calm', flee = mood === 'flee', hurt = mood === 'hurt';
   const sn = (m, o = 0) => Math.sin(p * TAU * m + o), sm = x => x * x * (3 - 2 * x);
   const wind = atk ? sm(Math.min(1, k / 0.35)) : 0, strike = atk ? sm(Math.max(0, Math.min(1, (k - 0.35) / 0.25))) : 0, recoil = atk ? sm(Math.max(0, (k - 0.6) / 0.4)) : 0;
-  const lean = atk ? (-9 * wind + 27 * strike) * (1 - recoil) : flee ? 14 : hurt ? -12 : 0;
+  const lean = gp ? gp.lean * 3 : atk ? (-9 * wind + 27 * strike) * (1 - recoil) : flee ? 14 : hurt ? -12 : 0;
   const HX = lean * 0.7, HY = (atk ? 4.5 * strike - 3 * wind : hurt ? -3 : 0) + sn(1, 0.8) * 1.2;
   const eye = GPX.EYE[boo ? 'boo' : calm ? 'calm' : 'idle'];
   // раскрытие рта 0..1: челюсть отпадает вниз, овал лица вытягивается, рот не выходит за подбородок
-  const open = o.open ?? (atk ? Math.max(wind * 0.4, strike) * (1 - recoil * 0.6) : boo ? 0.85 + 0.15 * sn(2) : hurt ? 0.35 : calm ? 0 : 0.1 + 0.06 * sn(2));
+  const open = o.open ?? (gp ? 1 : atk ? Math.max(wind * 0.4, strike) * (1 - recoil * 0.6) : boo ? 0.85 + 0.15 * sn(2) : hurt ? 0.35 : calm ? 0 : 0.1 + 0.06 * sn(2));
   const drop = open * 7, FX = HX + (v === 'C' ? 2 : 0), FY = HY + 3, FRX = v === 'B' ? 14 : 14;
   // овал лица: лоб под полями колпака (FY − 13), подбородок FY + 19 + drop, книзу сужается
   const faceF = (x, y) => {
@@ -81,7 +82,8 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
   const arm = s => {
     const shx = lean * 0.5 + s * 20, shy = 15;
     let hx, hy;
-    if (atk) {
+    if (gp) { [hx, hy] = (s > 0 ? gp.hf : gp.hn).map(q => q * 3); }
+    else if (atk) {
       const wx = s * 21 - 9, wy = -63, sx = 63 - s * 6, sy = 33 - s * 9, rx = s * 33, ry = 18, lift = Math.max(wind, 0.15);
       hx = (wx + (sx - wx) * strike) * (1 - recoil) + rx * recoil; hy = (wy + (sy - wy) * strike) * (1 - recoil) + ry * recoil;
       hx = shx + (hx - shx) * lift; hy = shy + (hy - shy) * lift;
@@ -291,11 +293,14 @@ function ghostPxDie(v, t, rag) {
 }
 
 // Кадры (выбор владельца — шаг 12 кадров на петлю парения 1,2 с, 10 к/с; ролики promo/ref/ghost-px-2026-10-27): парение и «задобрен» — 12,
-// пугает — 9 (рот раскрыт), удар — 9 (замах 3, бросок 3, отдача 3), рана — 1, бегство — 6, гибель — 6. Холст 3× мира, 1:1 без сглаживания.
-const GPX_N = { idle: 12, boo: 9, calm: 12, atk: 9, hurt: 1, flee: 6, die: 6 }, GPX_FPS = 10;
+// пугает, удар, бегство, гибель, похищение (хват 12 по ходу GH_T + унос 12 по кругу) — тоже по 12; рана — одна вспышка 0,25 с.
+// Холст 3× мира, 1:1 без сглаживания.
+const GPX_N = { idle: 12, boo: 12, calm: 12, atk: 12, hurt: 1, flee: 12, die: 12, grab: 12, carry: 12 }, GPX_FPS = 10;
 function ghostPxSprite(v, mood, f, rag = '') {
   f = Math.max(0, Math.min(GPX_N[mood] - 1, f | 0));
-  return fzPxSprite('gh' + v + mood + f + rag, 60, 76, 30, 32, () => mood === 'die' ? ghostPxDie(v, (f + 1) / 6, rag)
+  return fzPxSprite('gh' + v + mood + f + rag, 60, 76, 30, 32, () => mood === 'die' ? ghostPxDie(v, (f + 1) / GPX_N.die, rag)
+    : mood === 'grab' ? ghostPx(v, 'grab', 0, 0, { rag, gp: ghPoseLerp(f / (GPX_N.grab - 1) * GH_T[8]) })
+    : mood === 'carry' ? ghostPx(v, 'carry', f / GPX_N.carry, 0, { rag, gp: ghPoseAt(8) })
     : ghostPx(v, mood, mood === 'atk' ? 0 : f / GPX_N[mood], mood === 'atk' ? f / (GPX_N.atk - 1) : 0, { rag }));
 }
 
