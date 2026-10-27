@@ -131,54 +131,10 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0) {
   DS_body(K, armParts(AF), { rb: RB.slice(0, 5), bo: BO.slice(0, 4) }, { bb: [-120, -128, 121, 179], W: 6, k: 5, amb: 0.12, mat: 'rb' });
   claw(AF, -1, true, false);
 
-  // ---- одна форма: ряса, плечи, ближняя рука, голова и убор
-  const parts = [...DS_chain(spine, { mat: 'rb', k: 8 }), { f: ell(lean * 0.6, 22, 40, 18), mat: 'rb', k: 9 }, ...armParts(AN)];
-  if (v === 'R1') {
-    parts.push({ f: ell(HX, HY - 2, 23, 25), mat: 'hm', k: 6 }, { f: ell(HX, HY + 16 + drop * 0.6, 17, 13 + drop * 0.5), mat: 'hm', k: 5 });
-    parts.push({ f: (x, y) => Math.max(faceF(x, y), HY - 9 - y) - 1, mat: 'void', zone: true });
-  } else if (v === 'R2') {
-    parts.push({ f: ell(HX, HY - 2, 22, 22), mat: 'bo', k: 6 }, { f: faceF, mat: 'bo', k: 4 });
-    parts.push(...DS_chain(CP.cone, { mat: 'cap', k: 3 }));
-    parts.push({ f: ell(HX, HY - 12, CP.brim, 9), mat: 'cap', k: 2, front: true, fw: 3 });
-    parts.push({ f: (x, y) => Math.max(DS_ell(HX, HY - 15, 26, 40)(x, y), Math.abs(y - HY + 24) - 3), mat: 'band', zone: true });
-    for (const [px, py] of CP.patch) parts.push({ f: (x, y) => Math.max(Math.abs(x - px) - 6, Math.abs(y - py) - 5), mat: 'patch', zone: true });
-    if (CP.bob) parts.push({ f: ell(CP.bob[0], CP.bob[1], 6, 6), mat: 'band', k: 2, front: true, fw: 3 });
-    parts.push({ f: (x, y) => Math.max(faceF(x, y), HY - 5 - y), mat: 'bo', zone: true });
-  } else {
-    parts.push({ f: ell(HX - 3, HY - 5, 33, 36), mat: 'cap', k: 9 });
-    parts.push(...DS_chain([[HX - 8, HY - 30, 15], [HX - 18 + tip * 0.5, HY - 50, 6], [HX - 28 + tip, HY - 62, 1]], { mat: 'cap', k: 5 }));
-    parts.push({ f: (x, y) => faceF(x, y) - 4, mat: 'void', zone: true });
-  }
-  const tex = (x, y, mat, idx, ramp) => {
-    const cy = y - HY, cx = x - HX;
-    if (mat === 'rb') { const w = ((x * 0.22 + Math.sin(y * 0.06 + p * TAU) * 2) % 6 + 6) % 6; return y > 30 && w < 1 ? ramp[Math.max(0, idx - 1)] : null; }
-    if (mat === 'cap' && v === 'R2') {
-      if (cy > -12 && cy < -2.5 && cy > -6 && hsh(Math.floor(x / 2) * 3.7) > 0.6) return ramp[0];
-      if (cy < -26 && (((cx + cy * 0.3 + 60) % 9) + 9) % 9 < 1.2) return ramp[Math.max(0, idx - 1)];
-      if (cy < -30 && (((cy + Math.sin(cx * 0.3) * 2.5) % 12) + 12) % 12 > 10.5) return ramp[Math.min(ramp.length - 1, idx + 1)];
-    }
-    if (mat === 'cap' && v === 'R3') { const d = faceF(x, y); if (d > 0 && d < 6 && hsh(Math.floor(x / 2) + y * 0.3) > 0.55) return ramp[0]; }
-    if (mat === 'band') return Math.round(cy + 24) === 0 && ((x + 60) % 5) < 2 ? BO[2] : null;
-    if (mat === 'patch') { const [px, py] = CP.patch.reduce((a, q) => Math.hypot(x - q[0], y - q[1]) < Math.hypot(x - a[0], y - a[1]) ? q : a), ex = Math.abs(x - px), ey = Math.abs(y - py); return ex > 5 || ey > 4 ? (((x + y) & 1) ? BO[3] : ramp[0]) : null; }
-    if (mat === 'hm') {                                                                // шлем: заклёпки по ободу
-      if (Math.abs(cy + 8) < 1 && Math.abs(cx) > 12 && Math.abs(cx) < 20 && (x & 3) === 0) return RPX.IR[3];
-    }
-    return null;
-  };
-  DS_body(K, parts, { rb: RB, bo: BO, cap: CP.fab, band: CP.band, patch: RPX.PATCH, hm: RPX.HM, void: VO }, { bb: [-120, -128, 121, 179], W: 10, k: 6, amb: 0.14, mat: 'rb', cut, tex });
-
-  // ---- череп в прорези шлема (R1) или в глубине капюшона (R3)
-  if (v !== 'R2') DS_body(K, [{ f: ell(FX, FY - 4, 15, 13), mat: 'bo' }, { f: faceF, mat: 'bo', k: 4 }],
-    { bo: BO.slice(0, 4) }, { bb: [-50, -50, 50, 60], W: 6, k: 4, amb: 0.1, mat: 'bo' });
-  // кромка лица
-  R(FX - 22, HY - 8, FX + 22, FY + 32 + drop, (x, y) => { const d = faceF(x, y); return d > -1.2 && d <= 0 && y > HY - 6 ? BO[0] : null; });
-
-  // ---- рога: три формы (hv, как g.var у векторного жнеца) — 0 бараньи спирали, 1 винтом вверх, 2 бычьи с завитком на конце;
+  // ---- рога: часть ОДНОЙ формы — капсулы вдоль оси слиты с колпаком smin, у корня цвет колпака переходит в рог Байером.
+  // Три формы (hv, как g.var у векторного жнеца) — 0 бараньи спирали, 1 винтом вверх, 2 бычьи с завитком на конце;
   // у шлема (R1) крупные, у колпака (R2) торчат сквозь колпак и закручены сильнее; R3 — корона костяных шипов
-  const horn = (pts, r0) => {
-    const H = RPX.HORN, n = pts.length - 1;
-    K.path(pts.map((q, i) => [q[0], q[1], r0 * Math.pow(1 - i / n, 0.75) + 0.5]), (t, e, sd) => e ? H[0] : (Math.floor(t * 22) % 3 === 0 ? H[1] : t > 0.82 ? H[4] : sd > 0 ? H[2] : H[3]));
-  };
+  const HORNS = [], horn = (pts, r0) => HORNS.push(pts.map((q, i) => [q[0], q[1], r0 * Math.pow(1 - i / (pts.length - 1), 0.75) + 0.5]));
   const curl = v === 'R2' ? 1.45 : 1, HS = v === 'R2' ? 1.1 : 1.25;                    // закрут и размер
   for (const s of [-1, 1]) {
     if (v === 'R3') {
@@ -201,6 +157,58 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0) {
     }
   }
   if (v === 'R3') horn([[HX - 4, HY - 38], [HX - 4, HY - 46], [HX - 3, HY - 54]], 3);
+
+  // ---- одна форма: ряса, плечи, ближняя рука, голова и убор
+  const parts = [...DS_chain(spine, { mat: 'rb', k: 8 }), { f: ell(lean * 0.6, 22, 40, 18), mat: 'rb', k: 9 }, ...armParts(AN)];
+  if (v === 'R1') {
+    parts.push({ f: ell(HX, HY - 2, 23, 25), mat: 'hm', k: 6 }, { f: ell(HX, HY + 16 + drop * 0.6, 17, 13 + drop * 0.5), mat: 'hm', k: 5 });
+    parts.push({ f: (x, y) => Math.max(faceF(x, y), HY - 9 - y) - 1, mat: 'void', zone: true });
+  } else if (v === 'R2') {
+    parts.push({ f: ell(HX, HY - 2, 22, 22), mat: 'bo', k: 6 }, { f: faceF, mat: 'bo', k: 4 });
+    parts.push(...DS_chain(CP.cone, { mat: 'cap', k: 3 }));
+    parts.push({ f: ell(HX, HY - 12, CP.brim, 9), mat: 'cap', k: 2, front: true, fw: 3 });
+    parts.push({ f: (x, y) => Math.max(DS_ell(HX, HY - 15, 26, 40)(x, y), Math.abs(y - HY + 24) - 3), mat: 'band', zone: true });
+    for (const [px, py] of CP.patch) parts.push({ f: (x, y) => Math.max(Math.abs(x - px) - 6, Math.abs(y - py) - 5), mat: 'patch', zone: true });
+    if (CP.bob) parts.push({ f: ell(CP.bob[0], CP.bob[1], 6, 6), mat: 'band', k: 2, front: true, fw: 3 });
+    parts.push({ f: (x, y) => Math.max(faceF(x, y), HY - 5 - y), mat: 'bo', zone: true });
+  } else {
+    parts.push({ f: ell(HX - 3, HY - 5, 33, 36), mat: 'cap', k: 9 });
+    parts.push(...DS_chain([[HX - 8, HY - 30, 15], [HX - 18 + tip * 0.5, HY - 50, 6], [HX - 28 + tip, HY - 62, 1]], { mat: 'cap', k: 5 }));
+    parts.push({ f: (x, y) => faceF(x, y) - 4, mat: 'void', zone: true });
+  }
+  const tex = (x, y, mat, idx, ramp) => {
+    const cy = y - HY, cx = x - HX;
+    if (mat === 'horn') {                                                             // ход вдоль рога: рёбра поперёк, светлый кончик, у корня — колпак
+      let bt = 0, bd = 1e9, bh = null;
+      for (const h of HORNS) for (let i = 0; i < h.length; i++) { const d = (x - h[i][0]) ** 2 + (y - h[i][1]) ** 2; if (d < bd) { bd = d; bt = i / (h.length - 1); bh = h; } }
+      const len = bh.length, root = bt * len;
+      if (v === 'R2' && root < 3.5 && dth(x, y) < 1 - root / 3.5) return CP.fab[Math.min(CP.fab.length - 1, idx)];
+      if (Math.floor(bt * 22) % 3 === 0) return ramp[Math.max(0, idx - 1)];
+      if (bt > 0.82) return ramp[Math.min(ramp.length - 1, idx + 1)];
+      return null;
+    }
+    if (mat === 'rb') { const w = ((x * 0.22 + Math.sin(y * 0.06 + p * TAU) * 2) % 6 + 6) % 6; return y > 30 && w < 1 ? ramp[Math.max(0, idx - 1)] : null; }
+    if (mat === 'cap' && v === 'R2') {
+      if (cy > -12 && cy < -2.5 && cy > -6 && hsh(Math.floor(x / 2) * 3.7) > 0.6) return ramp[0];
+      if (cy < -26 && (((cx + cy * 0.3 + 60) % 9) + 9) % 9 < 1.2) return ramp[Math.max(0, idx - 1)];
+      if (cy < -30 && (((cy + Math.sin(cx * 0.3) * 2.5) % 12) + 12) % 12 > 10.5) return ramp[Math.min(ramp.length - 1, idx + 1)];
+    }
+    if (mat === 'cap' && v === 'R3') { const d = faceF(x, y); if (d > 0 && d < 6 && hsh(Math.floor(x / 2) + y * 0.3) > 0.55) return ramp[0]; }
+    if (mat === 'band') return Math.round(cy + 24) === 0 && ((x + 60) % 5) < 2 ? BO[2] : null;
+    if (mat === 'patch') { const [px, py] = CP.patch.reduce((a, q) => Math.hypot(x - q[0], y - q[1]) < Math.hypot(x - a[0], y - a[1]) ? q : a), ex = Math.abs(x - px), ey = Math.abs(y - py); return ex > 5 || ey > 4 ? (((x + y) & 1) ? BO[3] : ramp[0]) : null; }
+    if (mat === 'hm') {                                                                // шлем: заклёпки по ободу
+      if (Math.abs(cy + 8) < 1 && Math.abs(cx) > 12 && Math.abs(cx) < 20 && (x & 3) === 0) return RPX.IR[3];
+    }
+    return null;
+  };
+  for (const h of HORNS) parts.push(...DS_chain(h, { mat: 'horn', k: 3, front: true, fw: 2, W: 4 }));
+  DS_body(K, parts, { rb: RB, bo: BO, cap: CP.fab, band: CP.band, patch: RPX.PATCH, hm: RPX.HM, void: VO, horn: RPX.HORN }, { bb: [-120, -128, 121, 179], W: 10, k: 6, amb: 0.14, mat: 'rb', cut, tex });
+
+  // ---- череп в прорези шлема (R1) или в глубине капюшона (R3)
+  if (v !== 'R2') DS_body(K, [{ f: ell(FX, FY - 4, 15, 13), mat: 'bo' }, { f: faceF, mat: 'bo', k: 4 }],
+    { bo: BO.slice(0, 4) }, { bb: [-50, -50, 50, 60], W: 6, k: 4, amb: 0.1, mat: 'bo' });
+  // кромка лица
+  R(FX - 22, HY - 8, FX + 22, FY + 32 + drop, (x, y) => { const d = faceF(x, y); return d > -1.2 && d <= 0 && y > HY - 6 ? BO[0] : null; });
 
   // ---- лицо: глазницы, ледяные (в гневе — красные) огоньки, провал носа, пасть
   for (const e of [-1, 1]) {
