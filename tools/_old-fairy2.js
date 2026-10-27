@@ -1,0 +1,1231 @@
+'use strict';
+// Тёмные сказочные существа. Живут по ночам рядом с нечистью (night.js, ghosts.js, graveyard.js) и на её же правилах:
+//  • КИКИМОРА — сидит в камышах у воды; хватает гнома с берега и тащит в тину, груз оставляет себе. Откуп — еда на кочке;
+//  • ЛЕШИЙ — хозяин леса. Если за сутки срублено много деревьев, насылает «блуждания» на дровосеков (ходят кругами).
+//    Хлеб на пне его смягчает;
+//  • ВОДЯНОЙ и РУСАЛКА — в озере: водяной тащит груз с берега, русалка поёт и заманивает гномов к воде. Пиво в воду — утихают;
+//  • БАНШИ — воет у кладбища и перед бедой гнома (журнал, мигание значка), пугает работников рядом;
+//  • БЛУЖДАЮЩИЕ ОГОНЬКИ — три болотных огонька у воды уводят гнома без фонаря в тину;
+//  • ПОЛУДНИЦА — в зной кружит голову крестьянину в поле; пиво её прогоняет;
+//  • ПРИЗРАЧНЫЙ ВОЛК — ходит за ночной нечистью, воет, отнимает у гномов фонари. Костёр и герой его отгоняют.
+// Существа не сохраняются (как призраки): с вечера заводятся заново. В сохранение идёт счётчик срубленного и гнев лешего (поле f2),
+// итоги — в Game.faunaStat. Звуков нет — только floater-тексты.
+
+const FZ_PAL = {
+  k: '#10141a', e: '#f0f26a', E: '#c8ff6a', t: '#ece8d0',
+  L: '#5a4630', l: '#8a7050', w: '#b09a70', M: '#3e6a2a', m: '#68a040',
+  g: '#6a8a5a', G: '#4a6a40', h: '#2e4a2c', H: '#4a7a44', r: '#5a4632', R: '#3c2e20', u: '#3e3424',
+  S: '#4a8a7c', s: '#2e6a5c', b: '#8ad0b0', a: '#2c6a3a', A: '#4a9a50',
+  z: '#c8843a', Z: '#8a5420', X: '#e8b060', x: '#c83a28', q: '#f4ecd8',
+  p: '#e6d4c4', P: '#c4a898', c: '#d4607a', T: '#3a9ab8', Y: '#78d4e4', C: '#2a7a98', j: '#58d8c8', J: '#2e9a98', o: '#e8a0b8',
+  W: '#f6fbff', V: '#dce8f6', B: '#a8b8d8', D: '#6a7ea8', n: '#1a2438',
+  f: '#b6c4e0', F: '#7684a8', y: '#9affff', d: '#56628a',
+};
+const fzSpr = (k, rows) => FZ_CACHE[k] || (FZ_CACHE[k] = faSprite(rows, FZ_PAL));
+const FZ_CACHE = {};
+
+// ---------- Карты ----------
+const fzMirror = rows => rows.map(r => r + r.split('').reverse().join(''));
+// ЛЕШИЙ — 24×30: рога-ветви с листвой, кора, глаза-огоньки, мшистая борода с лозой, грибы на плечах, корни вместо ступней
+const FZ_LESHY = fzMirror([
+  '.m...m..w...',
+  'mMm.mMm.wl.m',
+  '.mMmmMlwl.mM',
+  '..mMMlwLLmMm',
+  '...wlLLLLLLm',
+  '....LLLLLLLL',
+  '....LLEELLLL',
+  '....LLEkLLLL',
+  '....LLLLLLlL',
+  '....LLLLLkkk',
+  '....LmMLLkLL',
+  '...LmMmmLLLL',
+  '..xLmMmMmmMm',
+  '.xqLmmMmMmmM',
+  '.LLLmMmmMmMm',
+  'LLlLLmMmMmmM',
+  'LL.LLLmMmMmm',
+  'LwLLLlLmmMmm',
+  'L.LLlLLLmMmM',
+  'L.LLLLLkkLmm',
+  '..LLLlLLkLLL',
+  '..LLLLLLLLlL',
+  '..LLlLLLLLLL',
+  '..LLLLL.LLLL',
+  '..LLlLL.LLLL',
+  '..LLLLL.LLLL',
+  '.LLLLLL.LLLL',
+  'LLlLLLLL.LLL',
+  'LLLmLLLLL.LL',
+  'mLLLLmLLLLLL',
+]);
+const FZ_LESHY_ARMS = fzMirror([
+  'w..m...m..w.',
+  'lwm.mMm.wl.m',
+  '.lMmmMlwl.mM',
+  '..mMMlwLLmMm',
+  '..lwlLLLLLLm',
+  '...LLLLLLLLL',
+  '...LLLEELLLL',
+  '....LLEkLLLL',
+  '....LLLLLLlL',
+  '....LLLLLkkk',
+  '...LLmMLLkLL',
+  '..LLmMmmLLLL',
+  '.LLxLmMmMmMm',
+  'LLxqLmmMmMmM',
+  'LL.LLmMmmMmM',
+  'L..LLLmMmMmm',
+  'w..LLLlLmMmm',
+  'w..LLlLLLmMm',
+  '...LLLLLkLmm',
+  '...LLLlLLkLL',
+  '...LLLLLLLlL',
+  '...LLlLLLLLL',
+  '...LLLLL.LLL',
+  '...LLlLL.LLL',
+  '...LLLLL.LLL',
+  '..LLLLLL.LLL',
+  '.LLlLLLL.LLL',
+  'LLLmLLLLL.LL',
+  'mLLLLmLLLLLL',
+]);
+// КИКИМОРА — 20×22: длинные волосы до самой тины, глаза залиты светом, руки от плеч
+const FZ_KIK_A = [
+  '.......hhhhhh.......',
+  '.....hhHhhhhHhh.....',
+  '....hhhhHhhhhhhh....',
+  '...hhhhgggggghhhh...',
+  '...hhhgggggggghhh...',
+  '..hhhggEEggEEgghhh..',
+  '..hhhggEEggEEgghhh..',
+  '..hhhgggggggggghhh..',
+  '..hhHggtgttgtgghhh..',
+  '..hhhgggttttgggHhh..',
+  '..hhhhgggggggghhhh..',
+  '..hhhh.gggggg.hhhh..',
+  '.hhHhhrrrggrrrhhhHh.',
+  '.hhhhrrrrrrrrrrhhhh.',
+  '.hhHgrrrrrrrrrrghHh.',
+  '.hhhg.rrrrrrrr.ghhh.',
+  '.hhHg.rrRrrRrr.ghHh.',
+  '.hhhg.rrrrrrrr.ghhh.',
+  'hhhHgg.rrrrrr.gghHhh',
+  'hhh.tg.rrrrrr.gt.hhh',
+  'hh..t..rrrrrr..t..hh',
+  'h...u.uuuuuuuu.u...h',
+];
+const FZ_KIK_B = [   // руки вскинуты в стороны когтями вверх
+  '.......hhhhhh.......',
+  '.....hhHhhhhHhh.....',
+  '....hhhhHhhhhhhh....',
+  '...hhhhgggggghhhh...',
+  '...hhhgggggggghhh...',
+  '..hhhggEEggEEgghhh..',
+  '..hhhggEEggEEgghhh..',
+  't.hhhgggggggggghhh.t',
+  'tg.hhggtgttgtgghh.gt',
+  '.g.hhgggttttgggHh.g.',
+  '.gg.hhgggggggghh.gg.',
+  '..g.hh.gggggg.hh.g..',
+  '..ggrrrrrggrrrrrgg..',
+  '..hhhrrrrrrrrrrhhh..',
+  '.hhHhrrrrrrrrrrhHhh.',
+  '.hhhh.rrrrrrrr.hhhh.',
+  '.hhHh.rrRrrRrr.hHhh.',
+  '.hhhh.rrrrrrrr.hhhh.',
+  'hhhHhh.rrrrrr.hhHhhh',
+  'hhh.hh.rrrrrr.hh.hhh',
+  'hh..h..rrrrrr..h..hh',
+  'h...u.uuuuuuuu.u...h',
+];
+// ВОДЯНОЙ — 24×24: лягушачий рот с пилой зубов, выпученные жёлтые глаза, перепонки-уши, борода и волосы из тины,
+// чешуя на плечах и ракушки в тине; из воды по грудь. B — вскинул перепончатые лапы
+const FZ_VOD_A = fzMirror([
+  '....A.a..a.A',
+  '..a.AaaAaAaA',
+  '.aAaaAAaaAaa',
+  '.aAaSSSSSSSS',
+  '..aSSjSSSSSS',
+  '.ssSSSSSSSSj',
+  'sbsSeeeSSSSS',
+  'sbsSeekeSSSS',
+  '.ssSSeeeSSSS',
+  '..SSSSsSSSSs',
+  '..SSjSSSSSjS',
+  '..Skkkkkkkkk',
+  '..Sktktktktt',
+  '..SSktktktkk',
+  '.aSSSSkkkkkk',
+  'aAaaSSSSSSaA',
+  'aAAaAaaSSaAa',
+  'aAaAAaAaAaAA',
+  'sSaAaAAaAAaA',
+  'sSSaAaAaAaAA',
+  'SSsSSaAaSSaA',
+  'SsSsSSaASsSS',
+  'sSsSsSsSSsSs',
+  'SsSsSsSsSsSs',
+]);
+const FZ_VOD_B = fzMirror([
+  'S...A.a..a.A',
+  'Ss.aAaaAaAaA',
+  'tS.aAAaaAaaA',
+  'tS.aSSSSSSSS',
+  '.S.aSjSSSSSS',
+  '.Ss.SSSSSSSj',
+  '.sbsSeeeSSSS',
+  '.sbsSeekeSSS',
+  '..ssSSeeeSSS',
+  '..sSSSSsSSSs',
+  '..SSSjSSSSjS',
+  '..Skkkkkkkkk',
+  '..Sktktktktt',
+  '..SSktktktkk',
+  '.aSSSSkkkkkk',
+  'aAaaSSSSSSaA',
+  'aAAaAaaSSaAa',
+  'aAaAAaAaAaAA',
+  'sSaAaAAaAAaA',
+  'sSSaAaAaAaAA',
+  'SSsSSaAaSSaA',
+  'SsSsSSaASsSS',
+  'sSsSsSsSSsSs',
+  'SsSsSsSsSsSs',
+]);
+const FZ_RUS_A = [
+  '...HhhhhhH...',
+  '..hhhhhhhhhH.',
+  '.hhhppppphhh.',
+  '.hhpkpppkphh.',
+  '.hhppppppHhh.',
+  '.hhhppppphhh.',
+  '.hhhhpppphhh.',
+  '.hhhooppooh..',
+  '.hhhpppppphh.',
+  '..hhpppppphh.',
+  '...hYTTTTY...',
+  '...YTTTTTTY..',
+  '..TTYTTYTTYT.',
+  '..TTTYTTYTT..',
+  '...TTTTTTTY..',
+  '....TYTTTT.Y.',
+  '.....CTTC.YTY',
+  '......CC...CC',
+];
+const FZ_RUS_B = FZ_RUS_A.map((r, i) => i === 4 ? '.hhppcccpHhh.' : i === 5 ? '.hhhpcccphhh.' : r);
+// «подношение»: кочка с булкой; на пне — та же булка
+const FZ_MOUND = [
+  '....m.....m....m',
+  '...mM..m..mM..mM',
+  '.mmmMmmMmmmMmmMm',
+  'mMmmmmMmmmmmMmmm',
+  'rrMrrrrMrrrrMrrr',
+  'RrrrrRrrrrRrrrrR',
+  '.RRRRRRRRRRRRRR.',
+];
+const FZ_LOAF = [
+  '..zXXXXz..',
+  '.zXzXXzXz.',
+  'zXXXXXXXXz',
+  'zzXXXXXXzZ',
+  '.ZZZZZZZZ.',
+];
+
+function fzSprites() {
+  return {
+    les: fzSpr('les', FZ_LESHY), lesA: fzSpr('lesA', FZ_LESHY_ARMS),
+    kikA: fzSpr('kikA', FZ_KIK_A), kikB: fzSpr('kikB', FZ_KIK_B),
+    vodA: fzSpr('vodA', FZ_VOD_A), vodB: fzSpr('vodB', FZ_VOD_B),
+    rusA: fzSpr('rusA', FZ_RUS_A), rusB: fzSpr('rusB', FZ_RUS_B),
+    mound: fzSpr('mound', FZ_MOUND), bread: fzSpr('bread', FZ_LOAF),
+  };
+}
+
+// ---------- Состояние ----------
+function fz() {
+  return Game.fairy2 || (Game.fairy2 = { day: -1, cut: 0, angryUntil: 0, calmDay: -2, night: -1, kik: [], les: null, pond: null, ban: [], wolves: [], wisps: [], noon: null, noonDay: -1, shore: null, lost: -1, omenAt: 0, lastCut: 0 });
+}
+function resetFairy() { Game.fairy2 = null; }
+function serializeFairy() {
+  const F = Game.fairy2;
+  if (!F || (!F.cut && !F.angryUntil)) return undefined;
+  return { d: F.day, c: F.cut, a: Math.max(0, Math.round(F.angryUntil)), cd: F.calmDay };
+}
+function loadFairy(o) {
+  resetFairy();
+  if (!o) return;
+  const F = fz();
+  F.day = o.d === undefined ? -1 : o.d; F.cut = o.c || 0; F.angryUntil = o.a || 0; F.calmDay = o.cd === undefined ? -2 : o.cd;
+}
+
+const FZ_ON = () => FAUNA_ON() && typeof Game.units !== 'undefined' && Game.units && Game.buildings;
+const fzName = u => UNIT_TYPES[u.type].name.toLowerCase();
+const fzDark = () => nightAmt();
+const fzCanBeTaken = u => isPerson(u) && u.type !== 'carter' && u.type !== 'hero' && !u.inside && !u.dead;
+const fzLand = (x, y) => inb(x, y) && isWalkable(x, y) && !World.bmap[idx(x, y)];
+
+// гном отдаёт «откуп»: из рук, а если нет — из кладовой (обеденный припас); возвращает название блага или null
+function fzOffer(u, goods, pStore) {
+  if (u.carry && goods.includes(u.carry)) {
+    const g = u.carry;
+    u.carryN = (u.carryN || 1) - 1;
+    if (u.carryN <= 0) { u.carry = null; u.carryN = 0; }
+    return g;
+  }
+  if (pStore && Math.random() < pStore) {
+    for (const b of Game.buildings) {
+      if (b.type !== 'storehouse' || b.state !== 'done' || b.removed || !b.stock) continue;
+      for (const g of goods) if (b.stock[g] - (b.reserved ? b.reserved[g] : 0) >= 1) { b.stock[g]--; return g; }
+    }
+  }
+  return null;
+}
+const FZ_FOOD = ['bread', 'sausage', 'chickenleg', 'steak', 'croissant', 'chicken', 'wheat', 'flour'];
+const FZ_BEER = ['beer', 'darkbeer'];
+
+// «Блуждание»: гном ходит кругами и теряет время
+function* fzWanderGen(u, why) {
+  floater(u.x, u.y - 1.2, why || 'Куда это я?..', '#cfe0a0');
+  const cx = u.x, cy = u.y, a0 = Math.random() * 6.28;
+  for (let k = 0; k < 6; k++) {
+    const a = a0 + k * 1.05, s = randomFreeNear(Math.floor(cx + Math.cos(a) * 2.4), Math.floor(cy + Math.sin(a) * 2.4), 0, 1.4, fzLand);
+    if (s) yield { walk: s, offroad: true };
+    yield { wait: 0.5 + Math.random() * 0.8, anim: 'lost' };
+  }
+  floater(u.x, u.y - 1.2, 'Где я?..', '#cfe0a0');
+}
+function fzDaze(u, spot, say) {
+  if (u.brk) endBreak(u);
+  startBreak(u, 'lure', null);
+  u.proc = (function* () {
+    floater(u.x, u.y - 1.2, say, '#bfeaff');
+    const ok = yield { walk: spot, offroad: true };
+    yield { wait: 6 + Math.random() * 3, anim: 'lost' };
+    floater(u.x, u.y - 1.2, 'Ох… где я?', '#e8f0ff');
+  })();
+}
+function fzBog(u) {
+  if (u.brk) endBreak(u);
+  startBreak(u, 'freeze', null);
+  u.proc = (function* () {
+    floater(u.x, u.y - 1.4, 'Тону!', '#ffc0c0');
+    for (let k = 0; k < 50 && u._bog; k++) yield { wait: 0.3, anim: 'freeze' };
+    u._bog = false;
+    floater(u.x, u.y - 1.2, 'Фу, тина!', '#d8e8b0');
+  })();
+}
+
+function fzScareAround(x, y, r, cd, txt, col) {
+  let n = 0;
+  for (const u of Game.units) {
+    if (!isPerson(u) || u.type === 'carter' || u.inside || u.dead || (u.fzCD || 0) > Game.time) continue;
+    if (Math.hypot(u.x - x, u.y - y) > r) continue;
+    u.fzCD = Game.time + cd;
+    floater(u.x, u.y - 1.3, txt, col || '#e0ecff');
+    scare(u, { x, y });
+    n++;
+  }
+  return n;
+}
+
+// ---------- Берега ----------
+function fzShore() {
+  const F = fz();
+  if (F.shore) return F.shore;
+  const out = [];
+  for (let y = 3; y < MAP_H - 3; y++) for (let x = 3; x < MAP_W - 3; x++) {
+    if (!fzLand(x, y)) continue;
+    const i = idx(x, y);
+    if (World.road[i] || World.obj[i] || World.door[i]) continue;
+    let wx = -1, wy = -1;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (inb(x + dx, y + dy) && World.terrain[idx(x + dx, y + dy)] === T_WATER) { wx = x + dx; wy = y + dy; break; }
+    if (wx < 0) continue;
+    let n = 0;
+    for (let yy = y - 3; yy <= y + 3; yy++) for (let xx = x - 3; xx <= x + 3; xx++) if (inb(xx, yy) && World.terrain[idx(xx, yy)] === T_WATER) n++;
+    if (n >= 6) out.push({ x, y, wx, wy, n });
+  }
+  F.shore = out;
+  return out;
+}
+// выбрать берег поближе к деревне (иначе встречи не случатся), не ближе d от уже занятых
+function fzPickShore(taken, d) {
+  const sh = fzShore();
+  if (!sh.length) return null;
+  const cx = MAP_W / 2, cy = MAP_H / 2;
+  const free = sh.filter(s => taken.every(t => Math.hypot(t.x - s.x, t.y - s.y) >= d));
+  const pool = (free.length ? free : sh).slice().sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy));
+  const top = pool.slice(0, Math.max(3, Math.ceil(pool.length * 0.35)));
+  return top[(Math.random() * top.length) | 0];
+}
+
+// ---------- Ночной завод ----------
+function fzSpawnNight() {
+  const F = fz();
+  F.kik = []; F.ban = []; F.wolves = []; F.pond = null;
+  const taken = [];
+  const nk = isLongNight() ? 2 : 1;
+  for (let k = 0; k < nk; k++) {
+    const s = fzPickShore(taken, 9);
+    if (!s) break;
+    taken.push(s);
+    F.kik.push({ hx: s.x, hy: s.y, wx: s.wx, wy: s.wy, x: s.wx + 0.5, y: s.wy + 0.5, state: 'hide', t: 0, ph: Math.random() * 9, face: 1, alpha: 0, tgt: 0, sated: false, scan: 0, rest: 0 });
+  }
+  const p = fzPickShore(taken, 9);
+  if (p) {
+    F.pond = {
+      x: p.x, y: p.y, wx: p.wx, wy: p.wy, calm: false, hoard: [],
+      vod: { x: p.wx + 0.5, y: p.wy + 0.5, state: 'hide', t: 0, ph: Math.random() * 9, alpha: 0, face: 1, scan: 0, tgt: 0 },
+      rus: { x: p.x + 0.5, y: p.y + 0.5, state: 'sit', t: 0, ph: Math.random() * 9, alpha: 0, song: 4 + Math.random() * 6, scan: 0 },
+    };
+  }
+  F.lost = Game.lostGnomes || 0;
+  fzWispsSpawn(F);
+  logEvent('night', 'К воде вышли кикимора и русалка — на берегу лучше не задерживаться');
+}
+
+function fzMakeBanshee(x, y, omen) {
+  return { x, y, hx: x, hy: y, tx: x, ty: y, alpha: 0, ph: Math.random() * 9, face: 1, omen, t: 0, wailT: 3 + Math.random() * 8, retarget: 0, wail: 0 };
+}
+
+// ---------- Лес и леший ----------
+function fzCutScan(F) {
+  const k = cycleAt(Game.time).k;
+  if (F.day !== k) { F.day = k; F.cut = 0; }
+  let cutters = 0;
+  for (const u of Game.units) {
+    if (u.type !== 'woodcutter' || u.dead) continue;
+    cutters++;
+    const ch = !!(u.action && u.action.anim === 'chop');
+    if (u._fzChop && !ch && u.carry === 'trunk') F.cut++;
+    u._fzChop = ch;
+  }
+  const thr = Math.max(6, cutters * 4);
+  if (F.cut >= thr && Game.time > F.angryUntil && F.calmDay !== k) {
+    F.angryUntil = Game.time + 110; F.cut = 0;
+    toast('Леший недоволен вырубкой: дровосеки начнут блуждать по лесу');
+    logEvent('tree', 'Лес гневается: леший послал дровосекам блуждания', undefined, undefined);
+    fstat('leshAngry');
+  }
+}
+function fzLeshySpawn(F) {
+  let best = null, bd = 1e9;
+  const wc = Game.buildings.filter(b => b.type === 'woodcutter' && b.state === 'done' && !b.removed);
+  const ref = wc.length ? wc[(Math.random() * wc.length) | 0] : null;
+  const cx = ref ? ref.doorX : MAP_W >> 1, cy = ref ? ref.doorY : MAP_H >> 1;
+  const tr = findObjNear(cx, cy, 10, o => o.t === 'tree');
+  if (tr) { best = [tr.x, tr.y]; }
+  const x = best ? best[0] + 0.5 : cx + 5.5, y = best ? best[1] + 0.8 : cy + 0.5;
+  F.les = { x, y, state: 'angry', alpha: 0, ph: Math.random() * 9, t: 0, wander: 0, gift: null, said: 0 };
+}
+function fzLeshyTick(F, dt) {
+  const angry = Game.time < F.angryUntil;
+  if (angry && !F.les) fzLeshySpawn(F);
+  const L = F.les;
+  if (!L) return;
+  L.ph += dt; L.t += dt;
+  if (L.state === 'angry') {
+    L.alpha = Math.min(1, L.alpha + dt * 0.5);
+    if (!angry) { L.state = 'leave'; floater(L.x, L.y - 2.2, 'Ладно, живите…', '#bfe890'); logEvent('tree', 'Леший отступил: лес снова спокоен'); }
+    else {
+      L.wander -= dt;
+      if (L.wander <= 0) {
+        L.wander = 2;
+        for (const u of Game.units) {
+          if (u.type !== 'woodcutter' || u.dead || u.inside || (u.fzWander || 0) > Game.time || !interruptible(u)) continue;
+          if (Math.hypot(u.x - L.x, u.y - L.y) > 26) continue;
+          u.fzWander = Game.time + 22;
+          const g = fzOffer(u, ['bread'], 0.4);
+          if (g) {
+            const stump = findObjNear(Math.floor(u.x), Math.floor(u.y), 6, o => o.t === 'stump');
+            L.gift = stump ? { x: stump.x + 0.5, y: stump.y + 0.6 } : { x: u.x, y: u.y + 0.3 };
+            L.state = 'calm'; L.t = 0; F.angryUntil = 0; F.calmDay = F.day;
+            floater(u.x, u.y - 1.3, 'Хлебушек, хозяин леса', '#ffe9b0');
+            floater(L.x, L.y - 2.4, 'Хм… уважил', '#bfe890');
+            logEvent('tree', `${UNIT_TYPES[u.type].name} оставил хлеб на пне — леший смягчился`, u.x, u.y);
+            fstat('leshPaid');
+            break;
+          }
+          startBreak(u, 'wander', null);
+          u.proc = fzWanderGen(u);
+          fstat('leshWander');
+          if (Game.time - (F.lastWanderLog || -99) > 25) { F.lastWanderLog = Game.time; logEvent('tree', `Леший водит кругами: ${fzName(u)} блуждает по лесу`, u.x, u.y); }
+        }
+      }
+    }
+  } else if (L.state === 'calm') {
+    if (L.t > 6) L.state = 'leave';
+  }
+  if (L.state === 'leave') { L.alpha -= dt * 0.4; if (L.alpha <= 0) F.les = null; }
+}
+
+// ---------- Кикимора ----------
+function fzKikTick(F, k, dt, act) {
+  k.ph += dt; k.t += dt;
+  if (!act) { k.alpha = Math.max(0, k.alpha - dt * 0.5); return !!F.over && k.alpha <= 0; }
+  k.alpha = Math.min(1, k.alpha + dt * 0.4);
+  if (k.sated) { k.state = k.state === 'drag' ? 'hide' : k.state; }
+  switch (k.state) {
+    case 'hide': {
+      k.scan -= dt;
+      if (k.scan > 0) break;
+      k.scan = 0.5;
+      for (const u of Game.units) {
+        if (!fzCanBeTaken(u) || (u.kikCD || 0) > Game.time) continue;
+        const d = Math.hypot(u.x - k.hx, u.y - k.hy);
+        if (d > 7) continue;
+        const g = fzOffer(u, FZ_FOOD, d < 3.6 ? 0.3 : 0);        // кто идёт мимо с едой — кладёт на кочку
+        if (g) {
+          k.sated = true; u.kikCD = Game.time + 60;
+          floater(u.x, u.y - 1.3, 'Это тебе, болотная', '#ffe9b0');
+          floater(k.x, k.y - 1.6, 'Хи-хи… спасибо', '#c8f0a0');
+          logEvent('night', `${UNIT_TYPES[u.type].name} оставил еду на кочке — кикимора довольна`, k.hx, k.hy);
+          fstat('kikPaid');
+          break;
+        }
+        if (k.sated || !interruptible(u) || d > 6.5) continue;
+        k.tgt = u.id; k.state = 'chase'; k.t = 0; k.x = k.wx + 0.5; k.y = k.wy + 0.5;
+        floater(k.x, k.y - 1.6, 'Иди-ка сюда…', '#c8f0a0');
+        break;
+      }
+      break;
+    }
+    case 'chase': {
+      const u = Game.unitMap.get(k.tgt);
+      if (!u || u.dead || u.inside || k.t > 9 || k.sated || Math.hypot(u.x - k.hx, u.y - k.hy) > 9) { k.state = 'back'; k.tgt = 0; break; }
+      const dx = u.x - k.x, dy = u.y - k.y, d = Math.hypot(dx, dy) || 1;
+      if (d > 0.8) {
+        const s = Math.min(d, 1.9 * dt), nx = k.x + dx / d * s, ny = k.y + dy / d * s;
+        if (fzLand(Math.floor(nx), Math.floor(ny)) || World.terrain[idx(Math.floor(nx), Math.floor(ny))] === T_WATER) { k.x = nx; k.y = ny; }
+        k.face = dx >= 0 ? 1 : -1;
+      } else {
+        u.kikCD = Game.time + 90; u._bog = true;
+        k.loot = u.carry ? [u.carry, u.carryN || 1] : null;
+        u.carry = null; u.carryN = 0;
+        fzBog(u);
+        k.state = 'drag'; k.t = 0;
+        floater(k.x, k.y - 1.6, 'Моё!', '#c8f0a0');
+        logEvent('night', `Кикимора утащила в тину: ${fzName(u)}${k.loot ? ' (вместе с грузом)' : ''}`, k.x, k.y);
+        fstat('kikGrab');
+      }
+      break;
+    }
+    case 'drag': {
+      const u = Game.unitMap.get(k.tgt);
+      const dx = k.hx + 0.5 - k.x, dy = k.hy + 0.5 - k.y, d = Math.hypot(dx, dy);
+      if (d > 0.2) { const s = Math.min(d, 1.3 * dt); k.x += dx / d * s; k.y += dy / d * s; k.face = dx >= 0 ? 1 : -1; }
+      if (u && u._bog) { u.x = k.x - k.face * 0.45; u.y = k.y + 0.1; }
+      if (d <= 0.2 || k.t > 10) {
+        if (u) {
+          u._bog = false; u.x = k.hx + 0.5; u.y = k.hy + 0.9;
+          if (!u.injury && Math.random() < 0.35) { injure(u, 'leg'); u.injuryUntil = Game.time + 40; }
+        }
+        k.state = 'rest'; k.t = 0; k.tgt = 0; k.rest = 14 + Math.random() * 14;
+        if (k.loot) { k.hoard = k.loot; k.loot = null; }
+      }
+      break;
+    }
+    case 'back': {
+      const dx = k.wx + 0.5 - k.x, dy = k.wy + 0.5 - k.y, d = Math.hypot(dx, dy);
+      if (d < 0.15) { k.x = k.wx + 0.5; k.y = k.wy + 0.5; k.state = 'hide'; k.scan = 2; break; }
+      const s = Math.min(d, 1.5 * dt); k.x += dx / d * s; k.y += dy / d * s;
+      break;
+    }
+    case 'rest': {
+      if (k.t > k.rest) k.state = 'back';
+      break;
+    }
+  }
+  // сытая кикимора мирно отдыхает: хватает еды
+  if (k.sated && k.state === 'chase') k.state = 'back';
+  return false;
+}
+function fzKikCleanup(k) {
+  const u = k.tgt && Game.unitMap.get(k.tgt);
+  if (u && u._bog) u._bog = false;
+}
+
+// ---------- Водяной и русалка ----------
+function fzPondTick(F, P, dt, act) {
+  const v = P.vod, r = P.rus;
+  v.ph += dt; r.ph += dt; v.t += dt; r.t += dt;
+  const a = act ? Math.min(1, v.alpha + dt * 0.35) : Math.max(0, v.alpha - dt * 0.4);
+  v.alpha = a; r.alpha = a;
+  if (!act) return !!F.over && a <= 0;
+  // русалка: поёт по расписанию
+  if (!P.calm) {
+    r.song -= dt;
+    if (r.state === 'sit' && r.song <= 0) { r.state = 'sing'; r.t = 0; floater(r.x, r.y - 2.4, 'Ла-а-а… ♪', '#bfeaff'); }
+    else if (r.state === 'sing') {
+      if (r.t > 6) { r.state = 'sit'; r.song = 9 + Math.random() * 8; }
+      r.scan -= dt;
+      if (r.scan <= 0) {
+        r.scan = 1;
+        if (Math.random() < 0.3) floater(r.x + (Math.random() - 0.5) * 1.5, r.y - 2.6, '♪', '#bfeaff');
+        for (const u of Game.units) {
+          if (!fzCanBeTaken(u) || (u.lureCD || 0) > Game.time || !interruptible(u)) continue;
+          if (Math.hypot(u.x - r.x, u.y - r.y) > 9) continue;
+          u.lureCD = Game.time + 80;
+          // гном с пивом успевает бросить его в воду — песня стихает
+          const g = fzOffer(u, FZ_BEER, 0.25);
+          if (g) { fzPondCalm(F, P, u); break; }
+          const spot = randomFreeNear(Math.floor(r.x), Math.floor(r.y), 1, 2.6, fzLand);
+          if (!spot) continue;
+          fzDaze(u, spot, 'Что за голос…');
+          u._lure = Game.time;
+          fstat('rusLure');
+          if (Game.time - (F.lastLureLog || -99) > 30) { F.lastLureLog = Game.time; logEvent('night', `Русалка заманила к воде: ${fzName(u)}`, r.x, r.y); }
+          break;
+        }
+      }
+    }
+  } else if (r.state === 'sing') r.state = 'sit';
+  // заворожённые теряют фонарь у воды
+  for (const u of Game.units) {
+    if (u._lure && Game.time - u._lure > 5 && u.lantern && Math.hypot(u.x - r.x, u.y - r.y) < 4) {
+      u._lure = 0;
+      if (Math.random() < 0.3) { u.lantern = false; floater(u.x, u.y - 1.2, 'Плюх! Фонарь…', '#ffd880'); logEvent('night', `${UNIT_TYPES[u.type].name} уронил фонарь в воду`, u.x, u.y); }
+    } else if (u._lure && Game.time - u._lure > 12) u._lure = 0;
+  }
+  // водяной: утаскивает груз с берега
+  if (!P.calm) {
+    if (v.state === 'hide') {
+      v.scan -= dt;
+      if (v.scan <= 0) {
+        v.scan = 0.8;
+        let hit = null;
+        for (const u of Game.units) {
+          if (!isPerson(u) || u.inside || u.dead || u.type === 'hero' || !u.carry || (u.vodCD || 0) > Game.time) continue;
+          if (Math.hypot(u.x - v.x, u.y - v.y) < 3.2) { hit = { u }; break; }
+        }
+        if (!hit) for (const p of Game.piles.values()) {
+          if (p.removed || Math.hypot(p.x + 0.5 - v.x, p.y + 0.5 - v.y) > 3.4) continue;
+          const g = GOOD_KEYS.find(gg => p.stock[gg] - p.reserved[gg] > 0);
+          if (g) { hit = { p, g }; break; }
+        }
+        if (hit) { v.state = 'grab'; v.t = 0; v.hit = hit; v.face = (hit.u ? hit.u.x : hit.p.x) >= v.x ? 1 : -1; floater(v.x, v.y - 1.6, 'Моё-ё!', '#a0f0d8'); }
+      }
+    } else if (v.state === 'grab') {
+      if (v.t > 0.9 && v.hit) {
+        const h = v.hit; v.hit = null;
+        let what = null;
+        if (h.u && h.u.carry) {
+          what = [h.u.carry, h.u.carryN || 1]; h.u.carry = null; h.u.carryN = 0; h.u.vodCD = Game.time + 70;
+          floater(h.u.x, h.u.y - 1.3, 'Мой груз!', '#ffc0c0'); scare(h.u, v);
+        } else if (h.p && !h.p.removed) {
+          const g = h.g, n = Math.min(3, h.p.stock[g] - h.p.reserved[g]);
+          if (n > 0) { h.p.stock[g] -= n; what = [g, n]; cleanupPile(h.p); }
+        }
+        if (what) {
+          P.hoard.push(what);
+          floater(v.x, v.y - 1.4, 'Плюх!', '#a0f0d8');
+          logEvent('night', `Водяной утащил в омут: ${GOODS[what[0]].name.toLowerCase()} ×${what[1]}`, v.x, v.y);
+          fstat('vodSteal');
+        }
+      }
+      if (v.t > 1.8) { v.state = 'hide'; v.scan = 4; }
+    }
+  }
+}
+function fzPondCalm(F, P, u) {
+  P.calm = true;
+  floater(u.x, u.y - 1.3, 'Плюх! Пей, хозяин', '#ffe9b0');
+  floater(P.vod.x, P.vod.y - 1.6, 'Буль-буль… благодарствую', '#a0f0d8');
+  logEvent('night', `${UNIT_TYPES[u.type].name} бросил пиво в озеро — водяной и русалка утихли`, P.x, P.y);
+  fstat('waterPaid');
+  let back = '';
+  while (P.hoard.length) {
+    const [g, n] = P.hoard.pop();
+    dropPile(P.x, P.y, g, n);
+    back = ' и вернул украденное';
+  }
+  if (back) logEvent('night', 'Водяной вернул украденное на берег', P.x, P.y);
+  if (Math.random() < 0.5) dropPile(P.x, P.y, 'gold', 1);
+}
+
+// ---------- Банши ----------
+function fzOmen(F, x, y, why, u) {
+  if (Game.time - F.omenAt < 10 || F.ban.filter(b => b.omen).length >= 2) return;
+  F.omenAt = Game.time;
+  const b = fzMakeBanshee(x + (Math.random() < 0.5 ? -2.4 : 2.4), y - 0.6, true);
+  b.tx = x; b.ty = y; b.alpha = 0.1;
+  F.ban.push(b);
+  floater(b.x, b.y - 2.2, 'Ау-у-у!', '#dcecff');
+  const t = u ? ` у ${fzName(u)}` : '';
+  logEvent('night', `Банши завыла${t}: ${why}`, x, y);
+  toast('Банши воет — быть беде!');
+  fstat('banOmen');
+  fzScareAround(x, y, 6, 40, 'Банши!', '#dcecff');
+  try {                                   // мигает значок журнала
+    const lb = document.getElementById('log-badge');
+    if (lb && lb.animate) lb.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: 'scale(1.5)', filter: 'brightness(2.4)' }, { transform: 'scale(1)', filter: 'brightness(1)' }], { duration: 600, iterations: 6 });
+  } catch (e) { /* без DOM — не страшно */ }
+}
+function fzBansheeTick(F, act, dt) {
+  const gy = graveyardOf();
+  // постоянная плакальщица у кладбища
+  if (act && gy && !F.ban.some(b => !b.omen)) F.ban.push(fzMakeBanshee(gy.x + 1 + Math.random() * (gy.w - 2), gy.y + 0.5 + Math.random() * (gy.h - 1), false));
+  if (act) {
+    F.banScan = (F.banScan || 0) - dt;
+    if (F.banScan <= 0) {
+      F.banScan = 0.5;
+      // потеря гнома — вой на кладбище
+      const lost = Game.lostGnomes || 0;
+      if (F.lost >= 0 && lost > F.lost && gy) fzOmen(F, gy.x + gy.w / 2, gy.y + gy.h / 2, 'ещё один гном не вернётся', null);
+      F.lost = lost;
+      const hostile = [];
+      for (const e of Game.ents || []) if ((e.state === 'walk' || e.state === 'smash') && !e.dead) hostile.push(e);
+      for (const s of Game.skels || []) if (s.state === 'roam' && !s.dead) hostile.push(s);
+      for (const u of Game.units) {
+        if (!isPerson(u) || u.inside || u.dead) continue;
+        const inj = !!u.injury;
+        if (inj && !u._bnInj) { u._bnInj = true; if (isNightNow() && Math.random() < 0.5) fzOmen(F, u.x, u.y, 'гном ранен', u); }
+        else if (!inj) u._bnInj = false;
+        if (!hostile.length || (u.bnCD || 0) > Game.time || u.type === 'hero') continue;
+        for (const e of hostile) if (Math.hypot(e.x - u.x, e.y - u.y) < 5) { u.bnCD = Game.time + 70; fzOmen(F, u.x, u.y, 'нечисть рядом с гномом', u); break; }
+      }
+    }
+  }
+  for (let i = F.ban.length - 1; i >= 0; i--) {
+    const b = F.ban[i];
+    b.ph += dt; b.t += dt; b.wail = Math.max(0, b.wail - dt);
+    let leaving = !act;
+    if (b.omen && b.t > 7) leaving = true;
+    b.alpha = Math.max(0, Math.min(0.75, b.alpha + (leaving ? -dt * 0.5 : dt * 0.4)));
+    if (leaving && b.alpha <= 0) { F.ban.splice(i, 1); continue; }
+    if (b.omen) { const dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy) || 1; if (d > 2) { b.x += dx / d * 0.5 * dt; b.y += dy / d * 0.5 * dt; } b.face = dx >= 0 ? 1 : -1; }
+    else {
+      b.retarget -= dt;
+      if (b.retarget <= 0 || Math.hypot(b.tx - b.x, b.ty - b.y) < 0.4) {
+        b.retarget = 4 + Math.random() * 4;
+        b.tx = b.hx + (Math.random() - 0.5) * 7; b.ty = b.hy + (Math.random() - 0.5) * 5;
+      }
+      const dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy) || 1;
+      b.x += dx / d * 0.45 * dt; b.y += dy / d * 0.45 * dt; b.face = dx >= 0 ? 1 : -1;
+    }
+    b.wailT -= dt;
+    if (b.wailT <= 0 && b.alpha > 0.35) {
+      b.wailT = 16 + Math.random() * 14; b.wail = 2.4;
+      floater(b.x, b.y - 2.4, ['У-у-у…', 'Ау-у-у!', 'И-и-и…'][(Math.random() * 3) | 0], '#dcecff');
+      if (fzScareAround(b.x, b.y, 7, 45, 'Банши!..', '#dcecff')) { fstat('banWail'); if (Game.time - (F.lastWailLog || -99) > 60) { F.lastWailLog = Game.time; logEvent('night', 'Банши воет у кладбища — работники в страхе', b.x, b.y); } }
+    }
+  }
+}
+
+// ---------- Призрачный волк ----------
+function fzBonfireNear(x, y, r) {
+  for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done' && !b.removed && Math.hypot(b.x + b.w / 2 - x, b.y + b.h / 2 - y) < r) return b;
+  return null;
+}
+function fzWolvesTick(F, act, dt) {
+  const ws = F.wolves;
+  if (act) {
+    F.wolfScan = (F.wolfScan || 0) - dt;
+    if (F.wolfScan <= 0) {
+      F.wolfScan = 2;
+      const esc = [];
+      for (const e of Game.ents || []) if ((e.state === 'walk' || e.state === 'smash') && !e.dead) esc.push(e);
+      for (const s of Game.skels || []) if (s.state === 'roam' && !s.dead) esc.push(s);
+      const want = Math.min(3, Math.ceil(esc.length / 3));
+      if (ws.filter(w => w.state !== 'fade').length < want && Math.random() < 0.5) {
+        const e = esc[(Math.random() * esc.length) | 0];
+        if (!fzBonfireNear(e.x, e.y, 9)) ws.push({ x: e.x + 1.5, y: e.y + 0.5, alpha: 0, ph: Math.random() * 9, face: 1, state: 'escort', esc: e, ang: Math.random() * 6.28, howl: 8 + Math.random() * 15, hold: 0, t: 0, victim: 0, home: [e.x, e.y] });
+      }
+    }
+  }
+  for (let i = ws.length - 1; i >= 0; i--) {
+    const w = ws[i];
+    w.ph += dt * 6; w.t += dt; w.howlT = Math.max(0, (w.howlT || 0) - dt); w.howl -= dt; w.hold = Math.max(0, w.hold - dt);
+    const away = !act || w.state === 'fade';
+    w.alpha = Math.max(0, Math.min(0.62, w.alpha + (away ? -dt * 0.5 : dt * 0.4)));
+    if (away && w.alpha <= 0) { fzWolfDrop(w, false); ws.splice(i, 1); continue; }
+    if (w.state === 'fade') { w.x += (w.fx || 1) * 2.5 * dt; continue; }
+    // отгоняют: костёр или герой
+    const hero = heroNear(w.x, w.y, 5.5), bf = fzBonfireNear(w.x, w.y, 9);
+    if (hero || bf) {
+      floater(w.x, w.y - 1.5, 'Ай-й!', '#cfe0ff');
+      const lantern = fzWolfDrop(w, true);
+      logEvent('night', (hero ? 'Герой' : 'Костёр') + ` отогнал призрачного волка${lantern ? ' — фонарь вернулся хозяину' : ''}`, w.x, w.y);
+      fstat('wolfBanish');
+      w.state = 'fade'; w.fx = w.x > (bf ? bf.x : hero.x) ? 1 : -1; w.face = w.fx; continue;
+    }
+    let tx = w.x, ty = w.y, sp = 1.5;
+    const tgt = w.state === 'lunge' ? Game.unitMap.get(w.victim) : null;
+    if (w.state === 'lunge') {
+      if (!tgt || tgt.dead || tgt.inside || !tgt.lantern || w.t > 5) { w.state = 'escort'; w.t = 0; }
+      else {
+        tx = tgt.x; ty = tgt.y; sp = 3.8;
+        if (Math.hypot(tgt.x - w.x, tgt.y - w.y) < 0.9) {
+          tgt.lantern = false; w.stole = tgt.id; w.state = 'flee'; w.t = 0;
+          floater(tgt.x, tgt.y - 1.3, 'Фонарь!', '#ffd880'); scare(tgt, w);
+          floater(w.x, w.y - 1.5, 'Р-р-р…', '#cfe0ff');
+          logEvent('night', `Призрачный волк отнял фонарь у: ${fzName(tgt)}`, w.x, w.y);
+          fstat('wolfSteal');
+        }
+      }
+    } else if (w.state === 'flee') {
+      const sx = w.home[0] - w.x, sy = w.home[1] - w.y, sd = Math.hypot(sx, sy) || 1;
+      tx = w.x - sx / sd * 4 + (w.x > MAP_W / 2 ? 3 : -3); ty = w.y - sy / sd; sp = 3;
+      if (w.t > 14) { w.state = 'fade'; w.fx = w.x > MAP_W / 2 ? 1 : -1; continue; }
+    } else {
+      const e = w.esc;
+      const alive = e && !e.dead && (e.state === 'walk' || e.state === 'smash' || e.state === 'roam' || e.state === 'fight');
+      if (!alive) { w.esc = null; w.state = 'escort'; tx = w.home[0]; ty = w.home[1]; sp = 0.9; if (w.t > 20) w.state = 'fade'; }
+      else { w.home = [e.x, e.y]; w.ang += dt * 0.4; tx = e.x + Math.cos(w.ang) * 2.2; ty = e.y + Math.sin(w.ang) * 1.5; }
+      if (!w.hold && w.state === 'escort') {
+        for (const u of Game.units) {
+          if (!u.lantern || !fzCanBeTaken(u) || (u.wolfCD || 0) > Game.time) continue;
+          if (Math.hypot(u.x - w.x, u.y - w.y) < 5.5 && !fzBonfireNear(u.x, u.y, 9)) { u.wolfCD = Game.time + 60; w.state = 'lunge'; w.victim = u.id; w.t = 0; break; }
+        }
+      }
+    }
+    const dx = tx - w.x, dy = ty - w.y, d = Math.hypot(dx, dy);
+    if (d > 0.1) { const s = Math.min(d, sp * dt); w.x += dx / d * s; w.y += dy / d * s; if (Math.abs(dx) > 0.05) w.face = dx > 0 ? 1 : -1; }
+    if (w.howl <= 0 && w.alpha > 0.3) {
+      w.howl = 22 + Math.random() * 14;
+      floater(w.x, w.y - 1.6, 'Ау-у-у-у!', '#cfe0ff'); w.howlT = 1.8;
+      if (fzScareAround(w.x, w.y, 6.5, 50, 'Волк воет!', '#cfe0ff')) fstat('wolfHowl');
+    }
+  }
+}
+// волк уходит: если украл фонарь и его отогнали — фонарь возвращается
+function fzWolfDrop(w, giveBack) {
+  if (!w.stole) return false;
+  const u = Game.unitMap.get(w.stole);
+  w.stole = 0;
+  if (giveBack && u && !u.dead && isNightNow()) { u.lantern = true; return true; }
+  return false;
+}
+
+
+// ---------- Блуждающие огоньки ----------
+// Три болотных огонька парят у воды. Гном без фонаря идёт на огонёк, пока тот не погаснет — и блуждает в тине.
+function fzWispsSpawn(F) {
+  F.wisps = [];
+  const s = F.pond ? { x: F.pond.x, y: F.pond.y } : (F.kik[0] ? { x: F.kik[0].hx, y: F.kik[0].hy } : null);
+  if (!s) return;
+  for (let i = 0; i < 3; i++) F.wisps.push({ x: s.x + (Math.random() - 0.5) * 6, y: s.y + (Math.random() - 0.5) * 4, hx: s.x, hy: s.y, tx: s.x, ty: s.y, ph: Math.random() * 9, alpha: 0, retarget: 0, scan: Math.random() * 2 });
+}
+function fzWispsTick(F, act, dt) {
+  for (let i = F.wisps.length - 1; i >= 0; i--) {
+    const w = F.wisps[i];
+    w.ph += dt * 2; w.retarget -= dt; w.scan -= dt;
+    w.alpha = Math.max(0, Math.min(1, w.alpha + (act ? dt * 0.4 : -dt * 0.5)));
+    if (!act && F.over && w.alpha <= 0) { F.wisps.splice(i, 1); continue; }
+    if (w.retarget <= 0 || Math.hypot(w.tx - w.x, w.ty - w.y) < 0.4) { w.tx = w.hx + (Math.random() - 0.5) * 9; w.ty = w.hy + (Math.random() - 0.5) * 6; w.retarget = 3 + Math.random() * 3; }
+    const dx = w.tx - w.x, dy = w.ty - w.y, d = Math.hypot(dx, dy) || 1;
+    w.x += dx / d * 0.7 * dt; w.y += dy / d * 0.7 * dt;
+    if (!act || w.scan > 0) continue;
+    w.scan = 1;
+    for (const u of Game.units) {
+      if (!fzCanBeTaken(u) || u.lantern || (u.wispCD || 0) > Game.time || !interruptible(u)) continue;
+      if (Math.hypot(u.x - w.x, u.y - w.y) > 6) continue;
+      u.wispCD = Game.time + 70;
+      if (u.brk) endBreak(u);
+      startBreak(u, 'lure', null);
+      u.proc = (function* () {
+        floater(u.x, u.y - 1.2, 'Огонёк! Тётя, идём за ним', '#bfffe8');
+        for (let k = 0; k < 3; k++) {
+          const s2 = randomFreeNear(Math.floor(w.x), Math.floor(w.y), 0, 2.6, fzLand);
+          if (s2) yield { walk: s2, offroad: true };
+          yield { wait: 0.6, anim: 'lost' };
+        }
+        floater(u.x, u.y - 1.2, 'Погас… где я?', '#cfe8e0');
+        yield { wait: 2, anim: 'lost' };
+      })();
+      fstat('wispLure');
+      if (Game.time - (F.lastWispLog || -99) > 30) { F.lastWispLog = Game.time; logEvent('night', `Болотный огонёк увёл гнома без фонаря: ${fzName(u)}`, w.x, w.y); }
+      break;
+    }
+  }
+}
+
+// ---------- Полудница ----------
+// В самый зной появляется вихрь пыли с женским лицом, находит работающего в поле крестьянина и кружит ему голову.
+// Пиво — откуп: выпила и ушла.
+function fzNoonTick(F, dt) {
+  const cy = cycleAt(Game.time);
+  const mid = EVE_START * 0.5;
+  if (!F.noon && F.noonDay !== cy.k && nightAmt() < 0.01 && Math.abs(cy.p - mid) < EVE_START * 0.12) {
+    F.noonDay = cy.k;
+    const fs = Game.units.filter(u => u.type === 'farmer' && fzCanBeTaken(u));
+    if (fs.length) {
+      const u = fs[(Math.random() * fs.length) | 0];
+      F.noon = { x: u.x + 7, y: u.y - 1, tgt: u.id, state: 'come', t: 0, ph: Math.random() * 9, alpha: 0, face: -1 };
+      floater(F.noon.x, F.noon.y - 2, 'Ш-ш-ш…', '#e8d8b0');
+      logEvent('animal', 'В зной над полем закружилась Полудница', F.noon.x, F.noon.y);
+    }
+  }
+  const n = F.noon;
+  if (!n) return;
+  n.ph += dt; n.t += dt;
+  const u = Game.unitMap.get(n.tgt);
+  const away = n.state === 'leave' || nightAmt() > 0.05 || !u || u.dead;
+  n.alpha = Math.max(0, Math.min(0.9, n.alpha + (away ? -dt * 0.6 : dt * 0.5)));
+  if (away && n.alpha <= 0) { F.noon = null; return; }
+  if (away) return;
+  if (n.state === 'come') {
+    const dx = u.x - n.x, dy = u.y - n.y, d = Math.hypot(dx, dy) || 1;
+    n.face = dx >= 0 ? 1 : -1;
+    if (d > 1.1) { n.x += dx / d * 1.8 * dt; n.y += dy / d * 1.8 * dt; }
+    else {
+      const g = fzOffer(u, FZ_BEER, 0.2);
+      if (g) {
+        floater(u.x, u.y - 1.3, 'Выпей, Полудница', '#ffe9b0'); floater(n.x, n.y - 2.2, 'Хороша брага…', '#e8d8b0');
+        logEvent('animal', `${UNIT_TYPES[u.type].name} угостил Полудницу пивом — она ушла`, u.x, u.y);
+        fstat('noonPaid'); n.state = 'leave'; return;
+      }
+      n.state = 'haunt'; n.t = 0;
+      if (u.brk) endBreak(u);
+      if (interruptible(u)) {
+        startBreak(u, 'freeze', null);
+        u.proc = (function* () { floater(u.x, u.y - 1.3, 'В голове шумит…', '#f0e0b0'); yield { wait: 7, anim: 'lost' }; floater(u.x, u.y - 1.2, 'Фух, отпустило', '#f0e0b0'); })();
+        fstat('noonDaze');
+        logEvent('animal', `Полудница заморочила голову: ${fzName(u)} застыл в поле`, u.x, u.y);
+      }
+    }
+  } else if (n.state === 'haunt') {
+    n.x = u.x + Math.cos(n.ph * 1.6) * 0.8; n.y = u.y + Math.sin(n.ph * 1.6) * 0.4;
+    if (n.t > 9) n.state = 'leave';
+  } else if (n.state === 'leave') n.alpha = 0;
+}
+
+// Огонёк и Полудница рисуются мягкой кистью
+function fzNoonSprite(p) {
+  return fzCanvas('noon' + p, 46, 70, 23, 62, c => {
+    const ph = p / 6 * Math.PI * 2;
+    // вихрь пыли: расширяющиеся к верху петли
+    for (let i = 0; i < 9; i++) {
+      const t = i / 8, y = -t * 52, rx = 5 + t * 12, sh = Math.sin(ph + t * 5) * 2.6;
+      c.strokeStyle = `rgba(222,196,140,${0.55 - t * 0.2})`; c.lineWidth = 2.2;
+      c.beginPath(); c.ellipse(sh, y, rx, rx * 0.28, 0, 0, 7); c.stroke();
+    }
+    // женская фигура в светлом платье внутри вихря
+    const g = c.createLinearGradient(0, -48, 0, 0); g.addColorStop(0, 'rgba(255,248,226,0.95)'); g.addColorStop(1, 'rgba(240,214,160,0.2)');
+    c.fillStyle = g; c.beginPath(); c.moveTo(-3, -34); c.lineTo(-9 + Math.sin(ph) * 1.4, -2); c.lineTo(9 + Math.sin(ph + 2) * 1.4, -2); c.lineTo(3, -34); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255,244,214,0.97)'; c.beginPath(); c.ellipse(0, -40, 4.2, 5, 0, 0, 7); c.fill();
+    c.fillStyle = 'rgba(70,50,30,0.9)'; c.beginPath(); c.ellipse(0, -43, 5, 4, 0, Math.PI, 0); c.fill();       // платок
+    c.fillStyle = '#2a1a10'; c.fillRect(-2.4, -41, 1.4, 1.8); c.fillRect(1, -41, 1.4, 1.8);
+    c.fillStyle = '#ffd860'; c.fillRect(-2, -40.6, 0.8, 1); c.fillRect(1.4, -40.6, 0.8, 1);
+    c.fillStyle = '#2a1a10'; c.beginPath(); c.ellipse(0, -37.4, 1.3, 0.8, 0, 0, 7); c.fill();
+    // руки с серпом
+    c.strokeStyle = 'rgba(250,236,200,0.9)'; c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(-3, -32); c.lineTo(-11, -24 + Math.sin(ph) * 2); c.moveTo(3, -32); c.lineTo(11, -26); c.stroke();
+    c.strokeStyle = 'rgba(210,220,230,0.95)'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(11, -26); c.quadraticCurveTo(17, -30, 14, -38); c.stroke();
+  });
+}
+function fzWispDraw(c, w) {
+  const px = Math.round(w.x * TILE), py = Math.round(w.y * TILE - 16 + Math.sin(w.ph) * 4), r = 9 + Math.sin(w.ph * 2.3) * 1.5;
+  c.save(); c.globalAlpha *= w.alpha; c.globalCompositeOperation = 'lighter';
+  const g = c.createRadialGradient(px, py, 0, px, py, r * 2.2); g.addColorStop(0, 'rgba(210,255,240,0.95)'); g.addColorStop(0.3, 'rgba(110,240,200,0.5)'); g.addColorStop(1, 'rgba(60,200,180,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(px, py, r * 2.2, 0, 7); c.fill();
+  c.restore();
+}
+
+// ---------- Главный тик ----------
+function fairy2Tick(dt) {
+  if (!FZ_ON()) return;
+  const F = fz();
+  F.acc = (F.acc || 0) + dt;
+  fzSelfStep(F, dt);
+}
+function fzSelfStep(F, dt) {
+  const ni = nightIndex(), eve = isEveningNow(), dawn = isDawnNow();
+  if (eve && !dawn && F.night !== ni) { F.night = ni; fzSpawnNight(); }
+  const act = fzDark() > 0.35 && !dawn;
+  F.over = dawn || (!eve && !isNightNow());       // ночь кончилась: можно убирать с карты
+  F.acc2 = (F.acc2 || 0) + dt;
+  if (F.acc2 >= 0.4) { fzCutScan(F); F.acc2 = 0; }
+  fzLeshyTick(F, dt);
+  for (let i = F.kik.length - 1; i >= 0; i--) {
+    const k = F.kik[i];
+    if (fzKikTick(F, k, dt, act)) { fzKikCleanup(k); F.kik.splice(i, 1); }
+  }
+  if (F.pond && fzPondTick(F, F.pond, dt, act)) F.pond = null;
+  fzBansheeTick(F, act, dt);
+  fzWolvesTick(F, act, dt);
+  fzWispsTick(F, act, dt);
+  fzNoonTick(F, dt);
+}
+
+// ---------- Банши и волк: рисуются «призрачно» (мягкая кисть, как призраки в ghosts.js) один раз в 3× холсты ----------
+const FZ_SS = 3, FZ_CVC = {};
+function fzCanvas(key, w, h, ox, oy, draw) {
+  let cv = FZ_CVC[key];
+  if (cv) return cv;
+  cv = FZ_CVC[key] = document.createElement('canvas');
+  cv.width = w * FZ_SS; cv.height = h * FZ_SS; cv.fzO = [ox, oy, w, h];
+  const c = cv.getContext('2d');
+  c.scale(FZ_SS, FZ_SS); c.translate(ox, oy); c.lineJoin = 'round'; c.lineCap = 'round';
+  draw(c);
+  return cv;
+}
+// Банши: бледная плакальщица в саване. Низ — как у призраков: хвост-саван сужается и рассыпается зернистой дымкой, без ног.
+// Длинные седые волосы мягкой пеленой по бокам, пустые глазницы с тлеющими зрачками, бестелесные руки с мелкими когтями.
+// wail — рот раскрыт, руки воздеты. p — фаза (0..5)
+function fzBansheeSprite(wail, p) {
+  return fzCanvas('ban' + wail + p, 64, 84, 32, 30, c => {
+    const TAU = Math.PI * 2, ph = p / 6 * TAU, sn = (m, o = 0) => Math.sin(ph * m + o);
+    let sd = (p * 131 + wail * 17 + 7) % 2147483647;
+    const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    const tailLen = 46, N = 22, L = [], R = [];
+    for (let n = 0; n <= N; n++) {
+      const t = n / N, y = 2 + t * tailLen;
+      const hw = 7.2 * Math.pow(1 - t, 0.7) + 0.6 + (t > 0.3 ? Math.sin(t * 41 + (n % 3) * 1.7 + ph) * 1.2 * t : 0);
+      const cx = sn(1, -t * 5.2) * (0.8 + t * 6);
+      L.push([cx - hw, y]); R.push([cx + hw, y]);
+    }
+    const body = () => { c.beginPath(); c.moveTo(L[0][0], L[0][1]); for (const q of L) c.lineTo(q[0], q[1]); for (let n = R.length - 1; n >= 0; n--) c.lineTo(R[n][0], R[n][1]); c.closePath(); };
+    // внешняя дымка
+    let g = c.createLinearGradient(0, -8, 0, 44);
+    g.addColorStop(0, 'rgba(170,215,240,0.38)'); g.addColorStop(1, 'rgba(90,150,210,0)');
+    c.fillStyle = g; c.save(); c.scale(1.5, 1); body(); c.fill(); c.restore();
+    // волосы позади: мягкая пелена, тающая к концам (без отдельных прядей)
+    const lock = (s, alpha) => {
+      const gr = c.createLinearGradient(0, -12, 0, 40);
+      gr.addColorStop(0, `rgba(240,250,255,${alpha})`); gr.addColorStop(0.55, `rgba(205,228,248,${alpha * 0.6})`); gr.addColorStop(1, 'rgba(150,190,235,0)');
+      c.fillStyle = gr; c.beginPath();
+      c.moveTo(s * 3, -13);
+      c.bezierCurveTo(s * 11, -12, s * 13 + sn(1, s) * 1.6, 8, s * 10 + sn(1, 1 + s) * 3, 34 + (wail ? 4 : 0));
+      c.quadraticCurveTo(s * 7, 28, s * 5.2, 12);
+      c.quadraticCurveTo(s * 4, 2, s * 3, -2);
+      c.closePath(); c.fill();
+    };
+    lock(-1, 0.8); lock(1, 0.8);
+    // сам саван: бледный сверху, прозрачный снизу
+    g = c.createLinearGradient(0, -2, 0, 48);
+    g.addColorStop(0, 'rgba(228,246,252,0.96)'); g.addColorStop(0.35, 'rgba(160,200,232,0.8)'); g.addColorStop(0.7, 'rgba(90,135,190,0.42)'); g.addColorStop(1, 'rgba(60,100,170,0)');
+    c.fillStyle = g; body(); c.fill();
+    c.save(); body(); c.clip();
+    // тёмная пустота под грудью
+    g = c.createRadialGradient(0, 8, 1, 0, 10, 9); g.addColorStop(0, 'rgba(8,24,40,0.55)'); g.addColorStop(1, 'rgba(8,24,40,0)');
+    c.fillStyle = g; c.fillRect(-12, 0, 24, 20);
+    // зернистое растворение: чем ниже, тем больше «выеденных» крупинок
+    c.globalCompositeOperation = 'destination-out';
+    for (let n = 0; n < 460; n++) {
+      const t = 0.22 + rnd() * 0.78, i = Math.min(N, Math.floor(t * N)), y = 2 + t * tailLen;
+      if (rnd() > Math.pow(t, 1.4) * 1.1) continue;
+      const x = L[i][0] + rnd() * (R[i][0] - L[i][0]) * 1.3 - 1, z = 0.5 + rnd() * 1.4;
+      c.fillStyle = `rgba(0,0,0,${0.55 + rnd() * 0.45})`; c.fillRect(x, y, z, z);
+    }
+    c.globalCompositeOperation = 'source-over';
+    c.restore();
+    // крупинки ушедшей дымки под и рядом с хвостом
+    for (let n = 0; n < 30; n++) {
+      const t = 0.35 + rnd() * 0.75, i = Math.min(N, Math.floor(t * N)), y = 2 + t * tailLen + rnd() * 4;
+      const x = L[i][0] + (rnd() * 1.6 - 0.3) * (R[i][0] - L[i][0]) + sn(1, n) * 1.5, z = 0.5 + rnd() * 0.9;
+      c.fillStyle = `rgba(${190 + rnd() * 40 | 0},${225 + rnd() * 25 | 0},255,${(0.55 - (t - 0.35) * 0.4) * (0.4 + rnd() * 0.6)})`; c.fillRect(x, y, z, z);
+    }
+    // шея и голова
+    c.fillStyle = 'rgba(226,244,252,0.95)'; c.fillRect(-1.7, -3, 3.4, 6);
+    c.fillStyle = 'rgba(236,250,255,0.97)'; c.beginPath(); c.ellipse(0, -9, 6.1, 6.6, 0, Math.PI, 0); c.fill();         // макушка и волосы над лицом
+    c.fillStyle = 'rgba(226,244,252,1)'; c.beginPath(); c.ellipse(0, -7, 4.2, 5.8, 0, 0, 7); c.fill();                   // лицо
+    // боковые пряди волос впереди — мягкие, как пелена
+    for (const s of [-1, 1]) {
+      const gr = c.createLinearGradient(0, -12, 0, 22);
+      gr.addColorStop(0, 'rgba(244,252,255,0.96)'); gr.addColorStop(1, 'rgba(190,220,245,0)');
+      c.fillStyle = gr; c.beginPath(); c.moveTo(s * 3.6, -13); c.bezierCurveTo(s * 7.6, -12, s * 8.4, -2, s * 7.4 + sn(1, s) * 1.2, 20); c.quadraticCurveTo(s * 5.2, 8, s * 4.2, -3); c.closePath(); c.fill();
+    }
+    // пустые глазницы + тлеющие зрачки, ресницы
+    c.fillStyle = '#0a1620'; c.beginPath(); c.ellipse(-1.9, -7.4, 1.3, 1.9, 0.15, 0, 7); c.ellipse(1.9, -7.4, 1.3, 1.9, -0.15, 0, 7); c.fill();
+    c.fillStyle = '#9affea'; c.fillRect(-2.2, -7.1, 0.8, 1); c.fillRect(1.5, -7.1, 0.8, 1);
+    c.strokeStyle = '#0a1620'; c.lineWidth = 0.5;
+    c.beginPath(); c.moveTo(-3.5, -8.7); c.lineTo(-4.4, -9.5); c.moveTo(3.5, -8.7); c.lineTo(4.4, -9.5); c.stroke();
+    c.fillStyle = wail ? '#0a1620' : '#7a8aaa';
+    c.beginPath(); c.ellipse(0, wail ? -2.8 : -3.2, wail ? 1.6 : 1.1, wail ? 2.9 : 0.45, 0, 0, 7); c.fill();
+    // бестелесные руки: от плеча тают в дымку, к кисти проступают; когти мелкие
+    for (const s of [-1, 1]) {
+      const shx = s * 4.4, shy = 3;
+      const hx = s * (wail ? 13 : 12) + sn(1, s) * 1.4, hy = wail ? -18 + sn(2, s) * 1.6 : 9 + sn(2, s * 1.3) * 2;
+      const mx = (shx + hx) / 2 + s * 3, my = (shy + hy) / 2 + (wail ? 0 : 3) + sn(1, s * 2) * 1.2;
+      const ag = c.createLinearGradient(shx, shy, hx, hy);
+      ag.addColorStop(0, 'rgba(210,235,250,0.55)'); ag.addColorStop(0.5, 'rgba(170,210,240,0.12)'); ag.addColorStop(1, 'rgba(230,248,255,0.75)');
+      c.strokeStyle = 'rgba(150,200,240,0.12)'; c.lineWidth = 4.2;
+      c.beginPath(); c.moveTo(shx, shy); c.quadraticCurveTo(mx, my, hx, hy); c.stroke();
+      c.strokeStyle = ag; c.lineWidth = 0.7;
+      for (const o of [-1, 1]) { c.beginPath(); c.moveTo(shx, shy + o); c.quadraticCurveTo(mx, my + o * 1.3, hx, hy + o * 0.6); c.stroke(); }
+      // кисть и мелкие когти
+      c.fillStyle = 'rgba(232,248,255,0.8)'; c.beginPath(); c.ellipse(hx, hy, 1.7, 2.1, 0, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(244,252,255,0.95)'; c.lineWidth = 0.55;
+      const dir = wail ? -1 : 1;
+      for (let f = -1; f <= 1; f++) { c.beginPath(); c.moveTo(hx + f * 0.9, hy + dir * 1.6); c.lineTo(hx + f * 1.7 + s * 0.4, hy + dir * 4.4); c.stroke(); }
+    }
+  });
+}
+// Призрачный волк: тощий, горбатый, ощеренный — вздыбленный загривок, видны рёбра, пасть с клыками, злой прищур.
+// Мех клочьями, лапы и хвост рассыпаются в дымку. f — кадр бега 0..3, howl — морда вверх
+function fzWolfSprite(f, howl) {
+  return fzCanvas('wolf' + f + (howl ? 'h' : ''), 84, 54, 42, 46, c => {
+    const t = f / 4 * Math.PI * 2;
+    let sd = (f * 977 + (howl ? 55 : 3)) % 2147483647;
+    const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    const g = c.createLinearGradient(0, -34, 0, 4);
+    g.addColorStop(0, 'rgba(214,232,252,0.96)'); g.addColorStop(0.5, 'rgba(150,186,230,0.8)'); g.addColorStop(1, 'rgba(96,136,200,0.15)');
+    const fur = g;
+    // зловещее свечение вокруг
+    const gl = c.createRadialGradient(0, -16, 4, 0, -16, 34); gl.addColorStop(0, 'rgba(120,200,255,0.22)'); gl.addColorStop(1, 'rgba(120,200,255,0)');
+    c.fillStyle = gl; c.fillRect(-42, -46, 84, 54);
+    // хвост: низкий, дымный, рассыпается
+    const tg = c.createLinearGradient(-16, -14, -40, -10); tg.addColorStop(0, 'rgba(170,200,238,0.85)'); tg.addColorStop(1, 'rgba(150,190,235,0)');
+    c.strokeStyle = tg; c.lineWidth = 5.4; c.beginPath(); c.moveTo(-18, -18); c.bezierCurveTo(-26, -18, -32, -12 + Math.sin(t) * 2, -41, -11 + Math.sin(t + 1) * 3); c.stroke();
+    c.lineWidth = 2.4; c.strokeStyle = 'rgba(220,238,255,0.5)'; c.beginPath(); c.moveTo(-18, -19); c.bezierCurveTo(-26, -20, -32, -14, -40, -14 + Math.sin(t + 1) * 3); c.stroke();
+    // лапы
+    const leg = (x, ph, far) => {
+      const sw = Math.sin(t + ph) * 5.5, lift = Math.max(0, Math.cos(t + ph)) * 3;
+      const kx = x + sw * 0.5, ky = -7 - lift, fx = x + sw, fy = -lift;
+      c.strokeStyle = far ? 'rgba(112,146,200,0.75)' : fur; c.lineCap = 'round';
+      c.lineWidth = 5.2; c.beginPath(); c.moveTo(x, -15); c.lineTo(kx, ky); c.stroke();
+      c.lineWidth = 3; c.beginPath(); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
+      c.strokeStyle = far ? 'rgba(200,225,250,0.6)' : 'rgba(240,250,255,0.95)'; c.lineWidth = 0.7;
+      for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(fx + 1 + k * 0.9, fy); c.lineTo(fx + 3.2 + k * 1.1, fy + 1.4); c.stroke(); }     // когти
+    };
+    leg(11, 0, true); leg(-12, Math.PI, true);
+    // туловище: горб загривка, тонкая талия, глубокая грудь
+    c.fillStyle = fur;
+    c.beginPath(); c.moveTo(-21, -15); c.bezierCurveTo(-21, -24, -12, -26, -4, -23); c.bezierCurveTo(1, -24, 6, -32, 13, -29); c.bezierCurveTo(20, -26, 22, -18, 17, -11); c.bezierCurveTo(12, -6, 5, -9, 0, -10); c.bezierCurveTo(-8, -8, -21, -8, -21, -15); c.closePath(); c.fill();
+    // рёбра — видна пустота внутри
+    c.strokeStyle = 'rgba(54,84,140,0.55)'; c.lineWidth = 0.9;
+    for (let i = 0; i < 4; i++) { const x = -3 + i * 3.6; c.beginPath(); c.moveTo(x, -22 + (i > 1 ? 2 : 0)); c.quadraticCurveTo(x + 3.4, -17, x + 1.6, -11); c.stroke(); }
+    // вздыбленный загривок
+    c.fillStyle = 'rgba(230,242,255,0.95)';
+    for (let i = 0; i < 9; i++) { const x = -18 + i * 3.7, base = -24 - Math.max(0, i - 3) * 0.9, h = 5 + (i % 2) * 2.2 + (i > 3 ? 1.5 : 0); c.beginPath(); c.moveTo(x, base + 1.5); c.lineTo(x + 1.4 + Math.sin(t + i) * 0.5, base - h); c.lineTo(x + 3.2, base + 1); c.fill(); }
+    // шея и голова (опущена, пасть оскалена)
+    const hy = howl ? -10 : 0;
+    c.fillStyle = fur;
+    c.beginPath(); c.moveTo(11, -29); c.lineTo(22 + (howl ? -3 : 0), -28 + hy * 0.4); c.lineTo(27, -20 + hy * 0.5); c.lineTo(18, -10); c.closePath(); c.fill();
+    c.save(); c.translate(howl ? 21 : 27, howl ? -35 : -19); c.rotate(howl ? -0.95 : 0.3);
+    // нижняя челюсть: отвисла
+    c.fillStyle = 'rgba(180,206,240,0.97)';
+    c.beginPath(); c.moveTo(1, 2); c.lineTo(13.5, 8 + (howl ? 1 : 0)); c.lineTo(13, 10); c.lineTo(1, 5); c.closePath(); c.fill();
+    // пасть изнутри
+    c.fillStyle = '#10101e'; c.beginPath(); c.moveTo(3, 0); c.lineTo(14, 1); c.lineTo(13.5, 8); c.lineTo(2, 4); c.closePath(); c.fill();
+    c.fillStyle = '#7a3a5a'; c.beginPath(); c.moveTo(5, 4); c.quadraticCurveTo(9, 3.4, 12, 6.4); c.lineTo(10, 7); c.closePath(); c.fill();     // язык
+    // череп и верхняя челюсть
+    c.fillStyle = 'rgba(204,224,248,0.98)';
+    c.beginPath(); c.ellipse(0, -1, 6.8, 5, 0, 0, 7); c.fill();
+    c.beginPath(); c.moveTo(3, -4); c.lineTo(15.5, -1.2); c.lineTo(15, 1.2); c.lineTo(3, 1.6); c.closePath(); c.fill();
+    // клыки сверху и снизу
+    c.fillStyle = '#f6fcff';
+    for (const [x, y, l] of [[8, 1.4, 2.8], [11, 1.2, 3.6], [13.6, 1.2, 2.4]]) { c.beginPath(); c.moveTo(x - 0.9, y); c.lineTo(x + 0.2, y + l); c.lineTo(x + 1, y); c.fill(); }
+    for (const [x, y, l] of [[9, 7.2, 2.8], [12, 8, 3]]) { c.beginPath(); c.moveTo(x - 0.9, y); c.lineTo(x + 0.2, y - l); c.lineTo(x + 1, y); c.fill(); }
+    // нос и морщины ярости
+    c.fillStyle = '#0c1424'; c.beginPath(); c.arc(15.6, -0.8, 1.5, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(60,92,150,0.8)'; c.lineWidth = 0.7;
+    c.beginPath(); c.moveTo(9, -3); c.lineTo(12.4, -2); c.moveTo(8.6, -1.6); c.lineTo(12, -0.6); c.stroke();
+    // злой глаз: свечение, узкий зрачок, нависшая бровь
+    c.fillStyle = 'rgba(154,255,255,0.4)'; c.beginPath(); c.arc(4.6, -1.7, 3.4, 0, 7); c.fill();
+    c.fillStyle = '#c8ffff'; c.beginPath(); c.moveTo(2.4, -1.2); c.lineTo(7.2, -3); c.lineTo(6.4, -0.2); c.lineTo(2.8, 0.2); c.closePath(); c.fill();
+    c.fillStyle = '#0c1a2c'; c.fillRect(4.6, -2.3, 1, 1.8);
+    c.fillStyle = '#26406c'; c.beginPath(); c.moveTo(1.4, -4.4); c.lineTo(8.2, -3.4); c.lineTo(7.8, -2.2); c.lineTo(1.6, -2.6); c.closePath(); c.fill();
+    // уши прижаты назад
+    c.fillStyle = 'rgba(176,204,240,0.98)';
+    c.beginPath(); c.moveTo(-1, -4); c.lineTo(-9, -8); c.lineTo(-2, -0.4); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-3, -2); c.lineTo(-10.5, -3); c.lineTo(-4.4, 1.6); c.closePath(); c.fill();
+    c.restore();
+    leg(14, Math.PI * 0.5, false); leg(-8, Math.PI * 1.5, false);
+    // нижняя часть растворяется: градиент и зерно
+    c.globalCompositeOperation = 'destination-out';
+    const gg = c.createLinearGradient(0, -11, 0, 4); gg.addColorStop(0, 'rgba(0,0,0,0)'); gg.addColorStop(1, 'rgba(0,0,0,0.95)');
+    c.fillStyle = gg; c.fillRect(-44, -11, 88, 16);
+    for (let n = 0; n < 260; n++) { const x = -22 + rnd() * 48, y = -22 + rnd() * 24; if (rnd() > Math.pow((y + 22) / 24, 1.8)) continue; c.fillStyle = `rgba(0,0,0,${0.5 + rnd() * 0.5})`; c.fillRect(x, y, 0.8 + rnd() * 1.2, 0.8 + rnd() * 1.2); }
+    c.globalCompositeOperation = 'source-over';
+    // искры холодной дымки
+    for (let n = 0; n < 16; n++) { c.fillStyle = `rgba(200,236,255,${0.2 + rnd() * 0.4})`; c.fillRect(-26 + rnd() * 52, -8 + rnd() * 10, 0.8 + rnd(), 0.8 + rnd()); }
+  });
+}
+function fzDrawHi(c, cv, x, y, a, face, dy) {
+  const [ox, oy, w, h] = cv.fzO;
+  c.save();
+  c.globalAlpha *= a; c.imageSmoothingEnabled = true;
+  c.translate(Math.round(x * TILE), Math.round(y * TILE + dy));
+  if (face < 0) c.scale(-1, 1);
+  c.drawImage(cv, -ox, -oy, w, h);
+  c.restore();
+}
+
+// ---------- Рисование ----------
+let FZS = null;
+function fzDraw(c, spr, x, y, o = {}) {
+  const px = Math.round(x * TILE), py = Math.round(y * TILE + (o.dy || 0));
+  c.save();
+  c.globalAlpha *= o.a === undefined ? 1 : o.a;
+  const S = o.s || 1;
+  c.imageSmoothingEnabled = S !== 1;   // дробный масштаб без сглаживания рвёт контур в пунктир
+  if (S !== 1) c.imageSmoothingQuality = 'high';
+  c.translate(px, py);
+  if (o.face < 0) c.scale(-1, 1);
+  c.drawImage(spr, Math.round(-spr.width * S / 2), Math.round(-spr.height * S + (o.lift || 0)), spr.width * S, spr.height * S);
+  c.restore();
+}
+function fzShadow(c, x, y, rx, a = 0.3) { c.fillStyle = `rgba(10,8,4,${a})`; c.beginPath(); c.ellipse(x * TILE, y * TILE + 2, rx, rx * 0.26, 0, 0, 7); c.fill(); }
+function fzReeds(c, x, y, ph, a) {
+  c.save(); c.globalAlpha *= a;
+  for (let i = -3; i <= 3; i++) {
+    const bx = Math.round(x * TILE + i * 4), sway = Math.round(Math.sin(ph * 1.3 + i) * 1.2), h = 14 + ((i * 7) & 5);
+    c.fillStyle = '#3e6a2a'; c.fillRect(bx + sway, Math.round(y * TILE + 4) - h, 1, h);
+    c.fillStyle = '#5a8a3a'; c.fillRect(bx + sway + 1, Math.round(y * TILE + 4) - h + 3, 1, h - 3);
+    if (i % 2) { c.fillStyle = '#6a4a28'; c.fillRect(bx + sway - 1, Math.round(y * TILE + 4) - h - 3, 3, 4); }
+  }
+  c.restore();
+}
+function fzRipple(c, x, y, ph, a, rx) {
+  c.save(); c.globalAlpha *= a * 0.6; c.strokeStyle = '#cfeef0'; c.lineWidth = 1;
+  for (let i = 0; i < 2; i++) { const k = (ph * 0.5 + i * 0.5) % 1; c.globalAlpha = a * 0.6 * (1 - k); c.beginPath(); c.ellipse(Math.round(x * TILE), Math.round(y * TILE + 3), rx * (0.6 + k * 0.7), rx * 0.2 * (0.6 + k * 0.7), 0, 0, 7); c.stroke(); }
+  c.restore();
+}
+
+function fairy2DrawList(list, c, x0, y0, x1, y1) {
+  if (!FZ_ON() || !Game.fairy2) return;
+  const F = Game.fairy2, vis = (x, y) => x >= x0 - 3 && x <= x1 + 3 && y >= y0 - 4 && y <= y1 + 4;
+  FZS = FZS || fzSprites();
+  const S = FZS;
+  const L = F.les;
+  if (L && vis(L.x, L.y)) {
+    list.push([L.y + 0.05, () => {
+      const arms = L.state === 'angry' && Math.floor(L.ph * 1.5) % 2 === 0;
+      fzShadow(c, L.x, L.y, 14, 0.3 * L.alpha);
+      fzDraw(c, arms ? S.lesA : S.les, L.x, L.y + 0.1, { a: L.alpha, dy: 4, s: 1, lift: Math.sin(L.ph * 2) > 0.7 ? 1 : 0 });
+      if (L.gift) fzDraw(c, S.bread, L.gift.x, L.gift.y, { a: 1, dy: 2 });
+    }]);
+  }
+  for (const k of F.kik) if (vis(k.hx, k.hy)) {
+    list.push([(k.state === 'hide' ? k.wy + 0.9 : k.y) + 0.1, () => {
+      fzDraw(c, S.mound, k.hx + 0.5, k.hy + 0.55, { a: Math.max(0.4, k.alpha), dy: 4 });
+      if (k.sated) fzDraw(c, S.bread, k.hx + 0.5, k.hy + 0.42, { dy: 3 });
+      const a = k.alpha;
+      if (a <= 0) return;
+      if (k.state === 'hide' || k.state === 'back') {
+        fzReeds(c, k.x, k.y, k.ph, a);
+        if (Math.sin(k.ph * 0.7) > 0.2) { c.save(); c.globalAlpha *= a; c.fillStyle = '#f0f26a'; c.fillRect(Math.round(k.x * TILE - 4), Math.round(k.y * TILE - 6), 2, 2); c.fillRect(Math.round(k.x * TILE + 3), Math.round(k.y * TILE - 6), 2, 2); c.restore(); }
+        fzRipple(c, k.x, k.y, k.ph, a, 12);
+      } else {
+        const rise = k.state === 'chase' || k.state === 'drag';
+        fzShadow(c, k.x, k.y, 8, 0.25 * a);
+        fzDraw(c, rise && Math.floor(k.ph * 5) % 2 ? S.kikB : S.kikA, k.x, k.y, { a, dy: 4, face: k.face, lift: k.state === 'rest' ? 3 : 0 });
+        if (k.state === 'rest') fzReeds(c, k.x, k.y, k.ph, a * 0.8);
+      }
+    }]);
+  }
+  const P = F.pond;
+  if (P && vis(P.x, P.y) && P.vod.alpha > 0) {
+    const v = P.vod, r = P.rus;
+    list.push([v.y + 0.9, () => {
+      fzRipple(c, v.x, v.y, v.ph, v.alpha, 14);
+      fzDraw(c, v.state === 'grab' ? S.vodB : S.vodA, v.x, v.y + (v.state === 'grab' ? 0.05 : 0.18 + Math.sin(v.ph * 2) * 0.03), { a: v.alpha, dy: 4, face: v.face });
+    }]);
+    list.push([r.y + 0.2, () => {
+      c.fillStyle = '#7a7872'; c.beginPath(); c.ellipse(Math.round(r.x * TILE), Math.round(r.y * TILE + 3), 9, 3, 0, 0, 7); c.fill();       // камень
+      fzDraw(c, r.state === 'sing' && Math.floor(r.ph * 3) % 2 ? S.rusB : S.rusA, r.x, r.y, { a: r.alpha, dy: 3, lift: 0, face: 1 });
+    }]);
+  }
+  for (const w of F.wisps || []) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.5, () => fzWispDraw(c, w)]);
+  const N = F.noon;
+  if (N && vis(N.x, N.y) && N.alpha > 0) list.push([N.y + 0.2, () => fzDrawHi(c, fzNoonSprite(Math.floor(N.ph * 3) % 6), N.x, N.y, N.alpha, N.face, 6)]);
+  for (const b of F.ban) if (vis(b.x, b.y) && b.alpha > 0) list.push([b.y + 0.3, () => {
+    fzDrawHi(c, fzBansheeSprite(b.wail > 0 ? 1 : 0, Math.floor(b.ph * 2.2) % 6), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, -14 + Math.sin(b.ph * 1.7) * 3);
+  }]);
+  for (const w of F.wolves) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.1, () => {
+    fzDrawHi(c, fzWolfSprite(Math.floor(w.ph) % 4, w.howlT > 0), w.x, w.y, Math.min(1, w.alpha * 1.4), w.face, 4);
+    if (w.stole) { c.save(); c.globalAlpha *= w.alpha + 0.3; c.fillStyle = '#ffd880'; c.fillRect(Math.round(w.x * TILE + w.face * 14), Math.round(w.y * TILE - 6), 3, 4); c.restore(); }
+  }]);
+}
