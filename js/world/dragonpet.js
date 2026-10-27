@@ -452,7 +452,7 @@ function dpDraw(list, c, F, x0, y0, x1, y1) {
       const px = p.x * TILE, py = p.y * TILE + 4, air = p.z > 1, S = DP_SP[p.sp] || DP_SP.forest;
       fyShadow(c, px, py, air ? 6 : 8, air ? 0.16 : 0.3);
       const sc = 0.8 + Math.min(DP_LV_MAX, p.lv) * 0.03;           // растёт с уровнем
-      if (typeof pxbBlit === 'function') pxbBlit(c, pxbBaby(p.sp, air ? 'fly' : 'idle', air ? Math.floor(p.ph * 36) & 7 : Math.floor(p.ph * 4) % 6), px, py - p.z, p.face || 1, p.sick ? 0.75 : 1, sc);
+      if (typeof pxbBlit === 'function') pxbBlit(c, pxbBaby(p.sp, air ? 'fly' : 'idle', air ? (Math.floor(p.ph * 54) % 12) * 2 / 3 : (Math.floor(p.ph * 8) % 12) / 2), px, py - p.z, p.face || 1, p.sick ? 0.75 : 1, sc);
       else fyBlit(c, dpSpr(p.sp, air ? fyCyc8(p.ph * 36) : 1), px, py - p.z, p.face || 1, p.sick ? 0.75 : 1, sc);
       // искорки вида: угольки, снежинки, светлячки, листики
       if ((Math.floor(p.ph * 5) % 3) === 0) { c.fillStyle = S.spark[Math.floor(p.ph * 3) & 1]; c.fillRect(Math.round(px - (p.face || 1) * 10 + Math.sin(p.ph * 4) * 3), Math.round(py - p.z - 6 + Math.cos(p.ph * 3) * 4), 2, 2); }

@@ -4,7 +4,7 @@
 // неторопливо бродит рядом с городом, иногда останавливается, поворачивается к нам и размахивает
 // руками или бьёт себя кулаками в грудь.
 // Рисуется из угловатых валунов с мхом, трещинами, янтарными глазами и золотой руной на груди;
-// три вида (спереди, сбоку, со спины), походка 8 кадров, дыхание 4, два жеста по 12 кадров.
+// три вида (спереди, сбоку, со спины), походка, дыхание и жесты — по 12 кадров (КАДРЫ.md).
 // Кадры строятся лениво в 6× и уменьшаются до арта (как люди в people.js), обводка и тень — в том же стиле.
 // Положение хранится в сохранении (поле golem), старые сохранения получают голема при загрузке.
 
@@ -15,7 +15,7 @@ const GL_MOSS = ['#3e6a22', '#4a6e30', '#5c8236', '#73963e'];
 const GL_MOSS_SEA = [['#2f7a1c', '#3f8f24', '#55a82c', '#7ac03a'], ['#8a5a1e', '#a8661c', '#b8802a', '#7a4a1a'], ['#b6d0e4', '#d4e6f2', '#9ab8d2', '#eef6fb'], ['#3e6a22', '#4a6e30', '#5c8236', '#73963e']];
 let GL_SEA = 3, GL_DORM = false, GL_LOOK = '';
 const GL_GOLD = '#e4b434', GL_EYE = '#ffb02e', GL_EYE2 = '#fff2a0';
-const GL_FRAMES = { walk: 8, idle: 4, wave: 12, pound: 12, look: 12, stomp: 12, stretch: 12, scratch: 12, flex: 12 };
+const GL_FRAMES = { walk: 12, idle: 12, wave: 12, pound: 12, look: 12, stomp: 12, stretch: 12, scratch: 12, flex: 12 };
 const GL_EMOTES = [['wave', 2.6, 2], ['pound', 3.2, 2], ['look', 3.6, 3], ['stomp', 2.4, 2], ['stretch', 3.4, 2], ['scratch', 3, 2], ['flex', 2.8, 2]];   // имя, длительность с, вес
 const GL_CACHE = new Map();
 let GL_SCRATCH = null, GL_QUEUE = null;
@@ -65,7 +65,7 @@ function golemPose(view, pose, f) {
   const P = { up: 0, sx: 0, head: { dx: 0, dy: 0 }, mouth: 0, br: 0, rune: 0.5, feet: [{ x: 0, y: 0 }, { x: 0, y: 0 }], arms: [{ th: 0.2, sw: 0, b: -0.25 }, { th: 0.2, sw: 0, b: -0.25 }], shake: 0 };
   const E = view === 'E';
   if (pose === 'walk') {
-    const ph = f / 8 * Math.PI * 2, s = Math.sin(ph), cs = Math.cos(ph);
+    const ph = f / GL_FRAMES.walk * Math.PI * 2, s = Math.sin(ph), cs = Math.cos(ph);
     P.up = Math.abs(cs) * 3.2; P.sx = s * (E ? 0.8 : 2); P.br = cs * 0.5;
     if (E) { P.feet[0] = { x: -s * 11, y: Math.max(0, -cs) * 7 }; P.feet[1] = { x: s * 11, y: Math.max(0, cs) * 7 }; }
     else { P.feet[0] = { x: 0, y: Math.max(0, -cs) * 6 }; P.feet[1] = { x: 0, y: Math.max(0, cs) * 6 }; }
@@ -73,7 +73,7 @@ function golemPose(view, pose, f) {
     P.arms[1] = { th: 0.2 + Math.abs(s) * 0.06, sw: -s * 0.42, b: -0.28 };
     P.head.dy = Math.abs(cs) * 0.8; P.rune = 0.45 + 0.2 * s;
   } else if (pose === 'idle') {
-    const b = Math.sin(f / 4 * Math.PI * 2);
+    const b = Math.sin(f / GL_FRAMES.idle * Math.PI * 2);
     P.br = b; P.up = b * 0.5; P.head.dy = -b * 0.5;
     P.arms[0] = { th: 0.2 + b * 0.04, sw: 0.05, b: -0.28 }; P.arms[1] = { th: 0.2 - b * 0.04, sw: -0.05, b: -0.28 };
     P.rune = 0.5 + 0.35 * b;
@@ -394,9 +394,9 @@ function golemTick(dt) {
 
 function golemFrameOf(g) {
   if (golemDorm()) return ['idle', 0];
-  if (g.state === 'walk') return ['walk', Math.floor(g.ph * 8) & 7];
+  if (g.state === 'walk') return ['walk', Math.floor(g.ph * 12) % 12];
   if (g.state === 'emote') return [g.emote, Math.min(GL_FRAMES[g.emote] - 1, Math.floor(g.et / g.dur * GL_FRAMES[g.emote]))];
-  return ['idle', Math.floor(g.t * 2.2) & 3];
+  return ['idle', Math.floor(g.t * 6.6) % 12];
 }
 
 function drawGolem(c, g) {

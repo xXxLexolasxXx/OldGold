@@ -457,16 +457,18 @@ function drawGhosts(c) {
     c.imageSmoothingEnabled = true;
     if (g.kind === 'banshee' && typeof fzBansheeSprite === 'function') {
       const k = atk ? g.atkT / GHOST_ATK_DUR : 0;
-      const cv = g.slain && typeof FZ_DIE !== 'undefined' ? FZ_DIE.ban(Math.min(5, Math.floor((1 - g.alpha / (g.da || 1)) * 6)))
-        : fzBansheeSprite(atk ? (k < 0.2 ? 1 : 2) : g.mode === 'boo' ? 2 : 0, Math.floor(t * 4.4 + g.ph) % 12);
+      // 12 кадров (КАДРЫ.md): гибель — FZ_N, руки при ударе поднимаются 6 ступенями и опускаются в конце удара
+      const up = k < 0.2 ? Math.ceil(k / 0.2 * 6) / 6 : k > 0.85 ? Math.max(1 / 6, Math.ceil((1 - k) / 0.15 * 6) / 6) : 2;
+      const cv = g.slain && typeof FZ_DIE !== 'undefined' ? FZ_DIE.ban(Math.min(FZ_N - 1, Math.floor((1 - g.alpha / (g.da || 1)) * FZ_N)))
+        : fzBansheeSprite(atk ? Math.min(2, up) : g.mode === 'boo' ? 2 : 0, Math.floor(t * 4.4 + g.ph) % 12);
       if (g.slain) c.globalAlpha = Math.min(1, flick);
       c.imageSmoothingEnabled = false;
       blitFine(c, cv, -cv.fzO[0], -cv.fzO[1], cv.fzO[2], cv.fzO[3]);
     }
     else if (rp && typeof reaperPxFrame === 'function') {
       // пиксельный жнец (reaperpx.js): рога — одна из трёх форм g.var, у каждой свой колпак; ряса — полосы или рваньё (g.rag)
-      const rm = g.slain ? 'die' : Game.time - (g.hurtT || -9) < 0.25 ? 'hurt' : atk ? 'atk' : mood === 'boo' ? 'boo' : 'idle';
-      const rf = rm === 'die' ? Math.floor((1 - g.alpha / (g.da || 1)) * RPX_N.die) : atk ? Math.floor(g.atkT / GHOST_ATK_DUR * RPX_N.atk) : Math.floor(t * 10 + g.ph * 1.27) % RPX_N[rm];
+      const rm = g.slain ? 'die' : Game.time - (g.hurtT || -9) < GPX_HURT_DUR ? 'hurt' : atk ? 'atk' : mood === 'boo' ? 'boo' : 'idle';
+      const rf = rm === 'die' ? Math.floor((1 - g.alpha / (g.da || 1)) * RPX_N.die) : rm === 'hurt' ? Math.floor((Game.time - g.hurtT) / 0.05) : atk ? Math.floor(g.atkT / GHOST_ATK_DUR * RPX_N.atk) : Math.floor(t * 10 + g.ph * 1.27) % RPX_N[rm];
       if (g.slain) c.globalAlpha = Math.min(1, flick);
       c.imageSmoothingEnabled = false;
       c.drawImage(reaperPxFrame(g, 'R2', rm, rf, (g.var || 0) % 3, g.rag === 'T1' || g.rag === 'T2' ? g.rag : (g.var || 0) % 2 ? 'T2' : 'T1'), -40, -43, 81, 103);
@@ -474,8 +476,8 @@ function drawGhosts(c) {
     else if (rp) blitFine(c, reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES, g.var || 0), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
     else if (typeof GHOST_PX !== 'undefined' && GHOST_PX.length) {
       // пиксельный облик (ghostpx.js, A или B по g.look): гибель по угасанию, вспышка раны, бегство
-      const pm = g.slain ? 'die' : grab ? mood : Game.time - (g.hurtT || -9) < 0.25 ? 'hurt' : g.mode === 'flee' ? 'flee' : mood;
-      const pf = pm === 'die' ? Math.floor((1 - g.alpha / (g.da || 1)) * GPX_N.die) : pm === 'atk' ? Math.floor(g.atkT / GHOST_ATK_DUR * GPX_N.atk)
+      const pm = g.slain ? 'die' : grab ? mood : Game.time - (g.hurtT || -9) < GPX_HURT_DUR ? 'hurt' : g.mode === 'flee' ? 'flee' : mood;
+      const pf = pm === 'die' ? Math.floor((1 - g.alpha / (g.da || 1)) * GPX_N.die) : pm === 'hurt' ? Math.floor((Game.time - g.hurtT) / 0.05) : pm === 'atk' ? Math.floor(g.atkT / GHOST_ATK_DUR * GPX_N.atk)
         : pm === 'grab' ? Math.floor((g.gt || 0) / GH_T[8] * (GPX_N.grab - 1)) : Math.floor(t * GPX_FPS + g.ph * 1.43) % GPX_N[pm];
       g._pxPose = pm === 'grab' ? ghPoseLerp(Math.min(GPX_N.grab - 1, pf) / (GPX_N.grab - 1) * GH_T[8]) : pm === 'carry' ? ghPoseAt(8) : null;
       if (g.slain) c.globalAlpha = Math.min(1, flick);

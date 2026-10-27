@@ -509,11 +509,11 @@ function slDraw(c, o) {
       }
       return;
     }
-    case 'salmon': return o.st === 'jump' ? seaBlit(c, 'salmon', 'jump', Math.min(5, Math.floor((0.9 - o.t) / 0.9 * 6)), px, py, o.face) : seaBlit(c, 'salmon', 'swim', Math.floor(o.ph * 10), px, py, o.face);
+    case 'salmon': return o.st === 'jump' ? seaBlit(c, 'salmon', 'jump', (0.9 - o.t) / 0.9 * 6, px, py, o.face) : seaBlit(c, 'salmon', 'swim', o.ph * 10, px, py, o.face);   // кадр дробный: 12 ступеней в seaSprite
     case 'crab': {
       const a = o.st === 'walk' ? 'walk' : o.st === 'atk' ? 'atk' : o.st === 'die' ? 'die' : o.st === 'hide' ? 'hide' : 'idle';
       const fps = a === 'walk' ? 14 : a === 'idle' ? 5 : 8;
-      const f = a === 'die' || a === 'hide' || a === 'atk' ? Math.min(seaFrames('crab', a) - 1, Math.floor(o.ph * (a === 'atk' ? 12 : 6))) : Math.floor(o.ph * fps);
+      const f = a === 'die' || a === 'hide' || a === 'atk' ? o.ph * (a === 'atk' ? 12 : 6) : o.ph * fps;
       c.fillStyle = 'rgba(30,20,10,0.25)'; c.fillRect(Math.round(px) - 5, Math.round(py) + 1, 10, 2);
       return seaBlit(c, 'crab', a, f, px, py + 2, o.face);
     }
@@ -521,41 +521,41 @@ function slDraw(c, o) {
     case 'shell': return seaBlit(c, o.pearl && Math.floor(o.ph * 2) % 9 === 0 ? 'pearl' : 'shell', o.pearl && Math.floor(o.ph * 2) % 9 === 0 ? 'idle' : 'idle', o.pearl ? 2 : o.v, px, py, 1);
     case 'jelly': {
       const a = o.st === 'atk' ? 'atk' : o.st === 'die' ? 'die' : 'swim';
-      const f = a === 'swim' ? Math.floor(o.ph * 6) : Math.min(seaFrames('jelly', a) - 1, Math.floor(o.ph * 10));
+      const f = a === 'swim' ? o.ph * 6 : o.ph * 10;
       return seaBlit(c, 'jelly', a, f, px, py + (o.st === 'beach' ? 3 : 0), 1, o.st === 'beach' ? 0.85 : 0.75);
     }
     case 'turtle': {
       const a = o.st === 'swim' ? 'swim' : o.st === 'lay' ? 'idle' : 'walk';
-      return seaBlit(c, 'turtle', a, Math.floor(o.ph * (a === 'swim' ? 6 : a === 'walk' ? 7 : 3)), px, py + 2, o.face);
+      return seaBlit(c, 'turtle', a, o.ph * (a === 'swim' ? 6 : a === 'walk' ? 7 : 3), px, py + 2, o.face);
     }
     case 'hatch': return seaBlit(c, 'hatch', 'walk', Math.floor(o.ph * 12), px, py + 1, o.face);
     case 'gull': {
       const ground = o.st === 'stand' || (o.z < 2 && o.st !== 'dive');
       if (o.z > 2) { c.fillStyle = 'rgba(10,20,30,0.18)'; c.beginPath(); c.ellipse(px, py + 2, 4, 1.4, 0, 0, 7); c.fill(); }
-      if (o.st === 'die') return seaBlit(c, 'gull', 'die', Math.min(5, Math.floor(o.ph * 6)), px, py - o.z, o.face);
+      if (o.st === 'die') return seaBlit(c, 'gull', 'die', o.ph * 6, px, py - o.z, o.face);
       if (o.st === 'dive') return seaBlit(c, 'gull', 'atk', 2, px, py - o.z, o.face);
-      if (ground) return seaBlit(c, 'gull', 'idle', Math.floor(o.ph * 3), px, py + 2, o.face);
-      seaBlit(c, 'gull', 'fly', Math.floor(o.ph * 9), px, py - o.z, o.face);
+      if (ground) return seaBlit(c, 'gull', 'idle', o.ph * 3, px, py + 2, o.face);
+      seaBlit(c, 'gull', 'fly', o.ph * 9, px, py - o.z, o.face);
       if (o.bread) { c.fillStyle = '#c8843c'; c.fillRect(Math.round(px + o.face * 5), Math.round(py - o.z - 6), 3, 2); }
       else if (o.fish) { c.fillStyle = '#c8d8e4'; c.fillRect(Math.round(px + o.face * 5), Math.round(py - o.z - 6), 3, 1); }
       return;
     }
     case 'corm': {
       if (o.st === 'under') return;
-      if (o.st === 'dive') return seaBlit(c, 'corm', 'dive', Math.min(8, Math.floor(o.ph * 11)), px, py, o.face);
-      if (o.st === 'fly' || o.st === 'home') { c.fillStyle = 'rgba(10,20,30,0.18)'; c.fillRect(Math.round(px) - 4, Math.round(py) + 1, 8, 1); return seaBlit(c, 'corm', 'fly', Math.floor(o.ph * 9), px, py - o.z, o.face); }
-      return seaBlit(c, 'corm', 'idle', Math.floor(o.ph * 3), px, py - 6, o.face);
+      if (o.st === 'dive') return seaBlit(c, 'corm', 'dive', o.ph * 11, px, py, o.face);
+      if (o.st === 'fly' || o.st === 'home') { c.fillStyle = 'rgba(10,20,30,0.18)'; c.fillRect(Math.round(px) - 4, Math.round(py) + 1, 8, 1); return seaBlit(c, 'corm', 'fly', o.ph * 9, px, py - o.z, o.face); }
+      return seaBlit(c, 'corm', 'idle', o.ph * 3, px, py - 6, o.face);
     }
-    case 'dolphin': return o.st === 'jump' ? seaBlit(c, 'dolphin', 'jump', Math.min(8, Math.floor((1.1 - o.t) / 1.1 * 9)), px, py, o.face) : seaBlit(c, 'dolphin', 'swim', Math.floor(o.ph * 5), px, py, o.face);
-    case 'whale': return o.st === 'spout' ? seaBlit(c, 'whale', 'spout', Math.min(5, Math.floor((1.4 - o.t) / 1.4 * 6)), px, py, o.face) : seaBlit(c, 'whale', 'swim', Math.floor(o.ph * 1.6), px, py, o.face);
+    case 'dolphin': return o.st === 'jump' ? seaBlit(c, 'dolphin', 'jump', (1.1 - o.t) / 1.1 * 9, px, py, o.face) : seaBlit(c, 'dolphin', 'swim', o.ph * 5, px, py, o.face);
+    case 'whale': return o.st === 'spout' ? seaBlit(c, 'whale', 'spout', (1.4 - o.t) / 1.4 * 6, px, py, o.face) : seaBlit(c, 'whale', 'swim', o.ph * 1.6, px, py, o.face);
     case 'octo': {
       const a = o.st === 'die' ? 'die' : o.st === 'atk' ? 'atk' : o.st === 'swim' ? 'swim' : 'idle';
-      const f = a === 'die' || a === 'atk' ? Math.min(seaFrames('octo', a) - 1, Math.floor(o.ph * 10)) : Math.floor(o.ph * 6);
+      const f = a === 'die' || a === 'atk' ? o.ph * 10 : o.ph * 6;
       return seaBlit(c, 'octo', a, f, px, py, o.face, 0.85);
     }
     case 'serpent': {
       const a = o.st === 'die' ? 'die' : o.st === 'atk' ? 'atk' : 'swim';
-      const f = a === 'swim' ? Math.floor(o.ph * 6) : Math.min(seaFrames('serpent', a) - 1, Math.floor(o.ph * 10));
+      const f = a === 'swim' ? o.ph * 6 : o.ph * 10;
       return seaBlit(c, 'serpent', a, f, px, py, o.face);
     }
   }
@@ -565,13 +565,13 @@ function slDrawKraken(list, c, vis) {
   if (!K) return;
   if (vis(K.x, K.y)) list.push([K.y - 0.2, () => {
     const up = K.st === 'die' ? Math.max(0, 1 - K.ph / 2) : Math.min(1, K.ph / 2);
-    seaBlit(c, 'kraeye', 'idle', Math.floor(K.ph * 2), K.x * TILE, K.y * TILE + (1 - up) * 10, 1, up);
+    seaBlit(c, 'kraeye', 'idle', K.ph * 2, K.x * TILE, K.y * TILE + (1 - up) * 10, 1, up);
   }]);
   for (const t of K.tents) {
     if (t.st === 'dead' || !vis(t.x, t.y)) continue;
     list.push([t.y + 0.15, () => {
       const a = t.st, n = seaFrames('tent', a === 'rise' ? 'rise' : a);
-      const f = a === 'idle' ? Math.floor(t.ph * 5) : Math.min(n - 1, Math.floor(t.ph * (a === 'atk' ? 12 : a === 'die' ? 8 : 10)));
+      const f = a === 'idle' ? t.ph * 5 : t.ph * (a === 'atk' ? 12 : a === 'die' ? 8 : 10);
       seaBlit(c, 'tent', a, f, t.x * TILE, t.y * TILE + 4, t.face);
       if (t.st !== 'die' && t.hp < SL_TENT_HP) { const w = 14 * t.hp / SL_TENT_HP; c.fillStyle = '#2a0a18'; c.fillRect(Math.round(t.x * TILE) - 7, Math.round(t.y * TILE) - 44, 14, 2); c.fillStyle = '#e05a8a'; c.fillRect(Math.round(t.x * TILE) - 7, Math.round(t.y * TILE) - 44, Math.round(w), 2); }
     }]);

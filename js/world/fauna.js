@@ -188,9 +188,9 @@ function crowFlySprite(frame) {
       return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0)) ? col : null;
     });
     const quad = (p, q, r, t, col) => { tri(...p, ...q, ...r, col); tri(...p, ...r, ...t, col); };
-    const W6 = flapPose([[7, 8], [15, 8], [14, 1], [4, 2]], [[6, 8], [15, 8], [15, 6], [2, 6]], [[7, 8], [15, 8], [13, 14], [4, 13]], frame, 8);
-    const H6 = flapPose([8, 7, 13, 7, 8, 3], [8, 7, 13, 7, 6, 7], [8, 9, 13, 9, 8, 12], frame, 8);
-    quad(...W6, FA_PAL.k); tri(...H6, FA_PAL.h);       // крыло: вверх → ровно → вниз, 8 кадров
+    const W6 = flapPose([[7, 8], [15, 8], [14, 1], [4, 2]], [[6, 8], [15, 8], [15, 6], [2, 6]], [[7, 8], [15, 8], [13, 14], [4, 13]], frame, 12);
+    const H6 = flapPose([8, 7, 13, 7, 8, 3], [8, 7, 13, 7, 6, 7], [8, 9, 13, 9, 8, 12], frame, 12);
+    quad(...W6, FA_PAL.k); tri(...H6, FA_PAL.h);       // крыло: вверх → ровно → вниз, 12 кадров
     if (afFine()) for (let k = 0; k < 3; k++) {          // маховые перья: светлые прожилки к кончику крыла
       const [[ax, ay], [bx, by], [cx, cy], [dx, dy]] = W6, t = 0.3 + k * 0.22, sx = ax + (bx - ax) * t, sy = ay + (by - ay) * t, ex = dx + (cx - dx) * t, ey = dy + (cy - dy) * t;
       each((x, y) => { const L = Math.hypot(ex - sx, ey - sy) || 1, u = ((x - sx) * (ex - sx) + (y - sy) * (ey - sy)) / (L * L); if (u < 0.35 || u > 0.92) return null; return Math.abs(((x - sx) * (ey - sy) - (y - sy) * (ex - sx)) / L) < 0.2 ? FA_PAL.h : null; });
@@ -201,11 +201,11 @@ const FA_CACHE = {};
 function crowSprite(kind) {
   if (FA_CACHE[kind]) return FA_CACHE[kind];
   let cv;
-  if (kind[0] === 'w') cv = afSprite(gaitRows([...CROW_STAND, ...CROW_LEGS[0]], 2, 6, +kind.slice(1)), FA_PAL, 'crow:' + kind);   // шаг по земле: 6 кадров
+  if (kind[0] === 'w') cv = afSprite(gaitRows([...CROW_STAND, ...CROW_LEGS[0]], 2, 12, +kind.slice(1)), FA_PAL, 'crow:' + kind);   // шаг по земле: 12 кадров
   else if (kind.startsWith('s')) {                 // s0..s2 — стоя, ноги в разных позах
     const legs = CROW_LEGS[+kind[1]];
     cv = afSprite([...CROW_STAND, ...legs], FA_PAL, 'crow:' + kind);
-  } else cv = crowFlySprite(+kind[1]);        // f0..f2
+  } else cv = crowFlySprite(+kind.slice(1));   // f0..f11 — 12 кадров взмаха
   return FA_CACHE[kind] = cv;
 }
 
@@ -351,8 +351,8 @@ function drawCrow(c, cr) {
   c.fillStyle = 'rgba(10,8,4,' + (air ? 0.16 : 0.3) + ')';
   c.beginPath(); c.ellipse(px, py, air ? 6 : 6.5, 2, 0, 0, 7); c.fill();
   let spr;
-  if (air) spr = crowSprite('f' + (Math.floor(cr.ph * 18) & 7));
-  else spr = (cr.walking ? crowSprite('w' + (Math.floor(cr.ph * 10.5) % 6)) : crowSprite('s0'));
+  if (air) spr = crowSprite('f' + (Math.floor(cr.ph * 27) % 12));
+  else spr = (cr.walking ? crowSprite('w' + (Math.floor(cr.ph * 21) % 12)) : crowSprite('s0'));
   const w = afW(spr), h = afH(spr);
   const lift = air ? cr.z : (cr.peck > 0 && (Math.floor(cr.ph * 6) & 1) ? -1 : 0);
   const y0 = air ? py - cr.z - h * 0.62 : py - h + 1;

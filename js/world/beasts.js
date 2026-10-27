@@ -243,7 +243,7 @@ function beFlySprite(key, o, frame) {
     px(23, 7, o.body); px(23, 6, o.body); px(24, 6, o.body); px(24, 6, o.eye);
     for (let t = 0; t < 6; t++) px(5 - t, 11 + (t > 2 ? 1 : 0), o.leg);              // ноги за хвост
   }
-  const wing = flapPose([[9, 9], [17, 9], [16, 1], [3, 3]], [[8, 9], [17, 9], [17, 7], [2, 7]], [[9, 11], [16, 11], [14, 19], [5, 18]], frame, 8);   // 8 кадров взмаха
+  const wing = flapPose([[9, 9], [17, 9], [16, 1], [3, 3]], [[8, 9], [17, 9], [17, 7], [2, 7]], [[9, 11], [16, 11], [14, 19], [5, 18]], frame, 12);   // 12 кадров взмаха
   poly(wing, o.wing, o.tip);
   if (fine) for (let k = 1; k < 4; k++) {           // маховые перья: тонкие тени от плеча к краю крыла
     const [[ax, ay], [bx, by], [cx, cy], [dx, dy]] = wing, t = k / 4, sx = ax + (bx - ax) * t, sy = ay + (by - ay) * t, ex = dx + (cx - dx) * t, ey = dy + (cy - dy) * t, L = Math.hypot(ex - sx, ey - sy) || 1;
@@ -363,7 +363,7 @@ function beBoarsTick(dt) {
 function beDrawBoar(c, b) {
   const px = b.x * TILE, py = b.y * TILE + 4;
   if (b.root > 0) beDraw(c, 'boarR', BOAR_ROOT, px, py, b.face);
-  else if (b.moving) { const i = Math.floor(b.ph * 0.6 * 4) % 8; beDraw(c, 'boarW' + i, gaitRows(BOAR_A, 2, 8, i), px, py, b.face); }   // 8 кадров шага
+  else if (b.moving) { const i = Math.floor(b.ph * 0.6 * 6) % 12; beDraw(c, 'boarW' + i, gaitRows(BOAR_A, 2, 12, i), px, py, b.face); }   // 12 кадров шага
   else beDraw(c, 'boarA', BOAR_A, px, py, b.face);
 }
 
@@ -529,7 +529,7 @@ function beDrawBear(c, bd) {
   if (bd.state === 'away') return;
   const px = bd.x * TILE, py = bd.y * TILE + 5;
   if (bd.state === 'eat') beDraw(c, 'bearE', BEAR_EAT, px, py, bd.face, Math.round(Math.sin(bd.eat * 7)), true);
-  else if (bd.moving) { const i = Math.floor(bd.ph * 0.9 * 4) % 8; beDraw(c, 'bearW' + i, gaitRows(BEAR_A, 3, 8, i), px, py, bd.face); }
+  else if (bd.moving) { const i = Math.floor(bd.ph * 0.9 * 6) % 12; beDraw(c, 'bearW' + i, gaitRows(BEAR_A, 3, 12, i), px, py, bd.face); }
   else beDraw(c, 'bearA', BEAR_A, px, py, bd.face);
   if (bd.state === 'eat') {                                           // разъярённые пчёлы вокруг морды
     for (let k = 0; k < 4; k++) {
@@ -657,7 +657,7 @@ function beDrawCat(c, k) {
   const px = k.x * TILE, py = k.y * TILE + 3, pal = CAT_VARS[k.v].pal;
   const key = 'cat' + k.v;
   if (k.state === 'sleep') beDraw(c, key + 's', CAT_SLEEP, px, py, k.face, 0, true, pal);
-  else if (k.moving) { const i = Math.floor(k.ph * 0.9 * 3) % 6; beDraw(c, key + 'w' + i, gaitRows(CAT_WALK_A, 2, 6, i), px, py, k.face, 0, true, pal); }
+  else if (k.moving) { const i = Math.floor(k.ph * 0.9 * 6) % 12; beDraw(c, key + 'w' + i, gaitRows(CAT_WALK_A, 2, 12, i), px, py, k.face, 0, true, pal); }
   else beDraw(c, key + 'i', CAT_SIT, px, py, k.face, 0, true, pal);
 }
 
@@ -834,7 +834,7 @@ function beDrawStork(c, s) {
   const py = s.y * TILE + 4;
   c.fillStyle = 'rgba(10,8,4,' + (air ? 0.16 : 0.28) + ')'; c.beginPath(); c.ellipse(px, py, 6, 2, 0, 0, 7); c.fill();
   if (air && s.z > 1.5) {
-    const spr = beFlySprite('storkF', BE_STORK_FLY, Math.floor(s.ph * 10) & 7);
+    const spr = beFlySprite('storkF', BE_STORK_FLY, Math.floor(s.ph * 15) % 12);
     c.imageSmoothingEnabled = false;
     c.save(); c.translate(Math.round(px), Math.round(py - s.z - 10)); if (s.face < 0) c.scale(-1, 1); afBlit(c, spr, -15, 0); c.restore();
     c.imageSmoothingEnabled = R.smooth;
@@ -945,7 +945,7 @@ function beDrawHeron(c, h) {
   const px = h.x * TILE, py = h.y * TILE + 4;
   if (h.state === 'fly' || h.state === 'leave') {
     c.fillStyle = 'rgba(10,8,4,0.16)'; c.beginPath(); c.ellipse(px, py, 6, 2, 0, 0, 7); c.fill();
-    const spr = beFlySprite('heronF', BE_HERON_FLY, Math.floor(h.ph * 10) & 7);
+    const spr = beFlySprite('heronF', BE_HERON_FLY, Math.floor(h.ph * 15) % 12);
     c.imageSmoothingEnabled = false;
     c.save(); c.translate(Math.round(px), Math.round(py - h.z - 10)); if (h.face < 0) c.scale(-1, 1); afBlit(c, spr, -15, 0); c.restore();
     c.imageSmoothingEnabled = R.smooth;

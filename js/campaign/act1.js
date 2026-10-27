@@ -243,7 +243,7 @@ function camp1DrawKeg(c, k, t, lit) {
 function camp1DrawShnyr(c, p) {
   if (typeof naFrame !== 'function') return;
   const t = Game.time, x = Math.round(p[0] * TILE + 16), y = Math.round(p[1] * TILE + 26);
-  const ph = t % 3.2, fr = ph < 0.3 ? 'windup' : ph < 0.5 ? 'strike' : ph < 0.8 ? 'recover' : 'i' + ((t * 5) % 6 | 0);
+  const ph = t % 3.2, fr = ph < 0.8 ? naAtkFr(ph, 0.8) : naIdleFr(t);
   const sp = naFrame('shnyrKing', fr);
   c.save(); c.translate(x, y); c.scale(-1, 1); blitFine(c, sp.cv, -sp.ax, -sp.ay); c.restore();
   // искры фитиля на скипетре

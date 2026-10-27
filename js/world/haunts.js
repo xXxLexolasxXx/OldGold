@@ -122,7 +122,7 @@ function fzNear(F, s, d) {
     for (const P of F.wp || []) if (vis(P.x, P.y) && P.vod.alpha > 0) {
       const v = P.vod;
       list.push([v.y + 0.9, () => {
-        fzDrawHi(c, fzVodSprite(v.state === 'grab', Math.floor(v.ph * 2) % 4), v.x, v.y - 0.1 + Math.sin(v.ph * 2) * 0.03, v.alpha, v.face, 4);
+        fzDrawHi(c, fzVodSprite(v.state === 'grab' ? fzLv(Math.min(1, v.t / 1.8), 0.17, 0.8) : 0, (Math.floor(v.ph * 6) % FZ_N) / 3), v.x, v.y - 0.1 + Math.sin(v.ph * 2) * 0.03, v.alpha, v.face, 4);
       }]);
     }
   };

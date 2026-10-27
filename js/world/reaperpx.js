@@ -33,11 +33,11 @@ const RPX = {
 
 function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
   const K = fzPxKit(243, 309, 120, 129), { P, R, L, dth, hsh } = K, TAU = Math.PI * 2, { RB, BO, VO, IR, WD, CL } = RPX;
-  const atk = mood === 'atk', hurt = mood === 'hurt', boo = mood === 'boo' || atk;
+  const atk = mood === 'atk', hurt = mood === 'hurt', boo = mood === 'boo' || atk, hi = Math.round(k * 5), hh = hurt ? GPX_HURT[hi] : 0;
   const sn = (m, o = 0) => Math.sin(p * TAU * m + o), sm = x => x * x * (3 - 2 * x);
   const wind = atk ? sm(Math.min(1, k / 0.35)) : 0, strike = atk ? sm(Math.max(0, Math.min(1, (k - 0.35) / 0.25))) : 0, recoil = atk ? sm(Math.max(0, (k - 0.6) / 0.4)) : 0;
-  const lean = atk ? (-10 * wind + 24 * strike) * (1 - recoil) : hurt ? -14 : 0;
-  const HX = lean * 0.7, HY = (atk ? 5 * strike - 4 * wind : 0) + sn(1, 0.8) * 1.5;
+  const lean = atk ? (-10 * wind + 24 * strike) * (1 - recoil) : hurt ? -14 * hh + GPX_SHK[hi] : 0;
+  const HX = lean * 0.7, HY = (atk ? 5 * strike - 4 * wind : hurt ? -3 * hh : 0) + sn(1, 0.8) * 1.5;
   const eye = RPX.EYE[boo ? 'boo' : 'idle'];
   const open = atk ? Math.max(wind * 0.3, strike) * (1 - recoil * 0.6) : boo ? 0.9 : 0.12 + 0.06 * sn(2);
   const drop = open * 9, FX = HX + (v === 'R3' ? 2 : 0), FY = HY + 4, FRX = 16;
@@ -321,13 +321,13 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
   K.outline(RPX.EDGE);
   return K.done();
 }
-// Кадры: всё по 12 (10 к/с, как у призраков) — парение, гнев, взмах косой, гибель; рана — одна вспышка. hv — форма рогов 0..2.
-const RPX_N = { idle: 12, boo: 12, atk: 12, hurt: 1, die: 12 };
+// Кадры: всё по 12 (10 к/с, как у призраков) — парение, гнев, взмах косой, гибель; рана — 6 кадров по 0,05 с (GPX_HURT в ghostpx.js). hv — форма рогов 0..2.
+const RPX_N = { idle: 12, boo: 12, atk: 12, hurt: 6, die: 12 };
 let RPX_RAG = null;      // ряса по умолчанию (лист); в игре у каждого жнеца свои лохмотья — g.rag: 'T1' полосы или 'T2' рваньё (выбор владельца)
 function reaperPxSprite(v, mood, f, n = RPX_N[mood], hv = 0, rag = RPX_RAG) {
   f = Math.max(0, Math.min(n - 1, f | 0));
   return fzPxSprite('rp' + v + mood + f + '_' + n + 'h' + hv + (rag || ''), 81, 103, 40, 43, () => mood === 'die' ? reaperPxDie(v, (f + 1) / n, hv, rag)
-    : reaperPx(v, mood, mood === 'atk' ? 0 : f / n, mood === 'atk' ? f / (n - 1) : 0, hv, rag));
+    : reaperPx(v, mood, mood === 'atk' || mood === 'hurt' ? 0 : f / n, mood === 'atk' || mood === 'hurt' ? f / (n - 1) : 0, hv, rag));
 }
 // кадр для игры по бюджету новых спрайтов (как ghostPxFrame)
 const RPX_LAST = new WeakMap();

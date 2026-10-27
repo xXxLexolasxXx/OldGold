@@ -843,7 +843,7 @@ function drawFlask(c, x, y, tilt) {
   c.restore();
 }
 
-// ---------- Оружие героя и 9 кадров боя ----------
+// ---------- Оружие героя и кадры боя (ключевые позы; по 12 кадров — FIGHT_KEY ниже) ----------
 // Оружие приходит строкой opt.wpn = 'основное|в левой руке|1' (1 — выхвачено, иначе в ножнах / за спиной;
 // строку собирает heroWpnOf в herokit.js). Кадры боя — pose 'fight', только вид сбоку, frame — имя кадра:
 // стойка, замах, удар, довод, парирование, получил удар, победа (2 кадра), выхватывание из ножен.
@@ -873,32 +873,33 @@ const FIGHT_BODY = {
   parry: [0.02, 1.0, -0.5, 0.45], hurt: [-0.28, 0.4, -0.2, 0.08], win0: [-0.06, 0, -0.18, 0.18], win1: [-0.1, -0.7, -0.12, 0.12], draw: [0.04, 0.4, -0.35, 0.3],
 };
 
-// Выхватывание и убирание: по 4 кадра d0..d3 (рука к рукояти → вытягивает → замах над собой → вскинул к стойке)
-// и s0..s3 (то же в обратную сторону). Клинки и кинжалы идут из ножен на бедре с разворотом через спину,
+// Выхватывание и убирание: по 6 кадров d0..d5 (КАДРЫ.md: короткое действие, как рана; рука к рукояти → вытягивает → замах над собой → вскинул к стойке)
+// и s0..s5 (то же в обратную сторону). Клинки и кинжалы идут из ножен на бедре с разворотом через спину,
 // секира, посох и лук — из-за спины через плечо, кулаки (обмотки) прячутся к груди — «за пазуху».
 const WPN_DRAW_T = 0.44;
 (function () {
-  const L = (a, b, t) => a + (b - a) * t, TS = [0, 0.3, 0.62, 0.88];
+  const L = (a, b, t) => a + (b - a) * t, TS = [0, 0.2, 0.42, 0.64, 0.84, 0.96];
   for (const st in FIGHT_ARM) {
     const A = FIGHT_ARM[st], d = A.draw, r = A.ready, wrap = st === 'blade' || st === 'stab';
     const mk = t => [L(d[0], r[0], t), L(d[1], wrap ? r[1] + 2 * Math.PI : r[1], t), L(d[2] ?? 4.2, r[2] ?? 4.2, t)];
-    TS.forEach((t, i) => { A['d' + i] = mk(t); A['s' + (3 - i)] = mk(t); });
+    TS.forEach((t, i) => { A['d' + i] = mk(t); A['s' + (TS.length - 1 - i)] = mk(t); });
   }
   const lerpArr = (a, b, t) => a.map((v, i) => L(v, b[i], t));
   for (const T of [FIGHT_BODY, FIGHT_BACK.free, FIGHT_BACK.shield]) {
-    TS.forEach((t, i) => { T['d' + i] = T['s' + (3 - i)] = lerpArr(T.draw, T.ready, t); });
+    TS.forEach((t, i) => { T['d' + i] = T['s' + (TS.length - 1 - i)] = lerpArr(T.draw, T.ready, t); });
   }
 })();
-// Каст и лечение: 6 кадров c0..c5 (стойка → вскинул оружие → пик силы → опускает), стандарт «каст 6»
-const CAST_FRAMES = 6;
+// Каст и лечение: 12 кадров c0..c11 (стойка → вскинул оружие → пик силы на c6–c7 → опускает), КАДРЫ.md
+const CAST_FRAMES = 12;
 (function () {
   const L = (a, b, t) => a + (b - a) * t;
-  const P = [[0.3, 0], [0.7, 0], [1, 0], [1, 0.6], [0.8, 0], [0.4, 0]];   // [доля ready→win0, доля win0→win1]
+  const P6 = [[0.3, 0], [0.7, 0], [1, 0], [1, 0.6], [0.8, 0], [0.4, 0]];   // [доля ready→win0, доля win0→win1] — прежние 6 ключей
+  const P = Array.from({ length: CAST_FRAMES }, (_, k) => { const u = k * 5 / (CAST_FRAMES - 1), i = Math.min(4, Math.floor(u)), t = u - i; return [L(P6[i][0], P6[i + 1][0], t), L(P6[i][1], P6[i + 1][1], t)]; });
   const mix = (r, w0, w1, [a, b], def) => r.map((v, n) => L(L(v, w0[n] ?? def, a), w1[n] ?? def, b));
   for (const st in FIGHT_ARM) { const A = FIGHT_ARM[st]; P.forEach((q, i) => { A['c' + i] = mix([A.ready[0], A.ready[1], A.ready[2] ?? 4.2], A.win0, A.win1, q, 4.2); }); }
   for (const T of [FIGHT_BODY, FIGHT_BACK.free, FIGHT_BACK.shield]) P.forEach((q, i) => { T['c' + i] = mix(T.ready, T.win0, T.win1, q, 0); });
 })();
-const isCastF = f => typeof f === 'string' && f.length === 2 && f[0] === 'c';
+const isCastF = f => typeof f === 'string' && /^c\d\d?$/.test(f);
 // ---------- Драка и отлёт (js/world/brawl.js) ----------
 // Кадры пьяной драки поверх тех же таблиц: пинок (kwind/kick/kfollow), бутыль (bwind/bhit/bfollow — после удара остаётся «розочка»),
 // шатание (sg0/sg1), падение (fl0 — на землю его кладёт поворот в render.js), вставание (up0/up1), отлёт героя (fy0/fy1/fy2) и сидение (sit).
@@ -924,6 +925,26 @@ Object.assign(FIGHT_BACK.free, {
 // герой и рекруты держат оружие: у новых кадров те же углы, что у «получил удар»
 for (const st in FIGHT_ARM) for (const n in FIGHT_BODY) if (!FIGHT_ARM[st][n]) FIGHT_ARM[st][n] = FIGHT_ARM[st].hurt;
 for (const k of ['free', 'shield']) for (const n in FIGHT_BODY) if (!FIGHT_BACK[k][n]) FIGHT_BACK[k][n] = FIGHT_BACK[k].hurt;
+// Стандарт 12 кадров (КАДРЫ.md): атака a0…a11 (стойка → замах → удар → довод → стойка), торжество v0…v11, рана h0…h5,
+// парирование p0…p5 — смешение прежних поз. FIGHT_KEY даёт новому кадру смысл прежнего (след взмаха, свечение посоха, тетива).
+const FIGHT_KEY = {};
+(function () {
+  const L = (a, b, t) => Array.from({ length: Math.max(a.length, b.length) }, (_, i) => { const x = a[i] ?? 4.2, y = b[i] ?? 4.2; return x + (y - x) * t; });
+  const AK = [['ready', 'ready', 0], ['ready', 'windup', 0.4], ['ready', 'windup', 0.8], ['windup', 'windup', 0], ['windup', 'windup', 0], ['windup', 'strike', 0.5],
+    ['strike', 'strike', 0], ['strike', 'strike', 0], ['strike', 'follow', 0.5], ['follow', 'follow', 0], ['follow', 'ready', 0.5], ['follow', 'ready', 0.85]];
+  const HC = [0.6, 1, 0.85, 0.6, 0.3, 0.1], PC = [0.5, 1, 1, 0.8, 0.5, 0.2];
+  for (const T of [...Object.values(FIGHT_ARM), FIGHT_BODY, FIGHT_BACK.free, FIGHT_BACK.shield]) {
+    const g = n => T[n] || T.ready;
+    AK.forEach(([a, b, t], k) => { T['a' + k] = L(g(a), g(b), t); });
+    HC.forEach((t, k) => { T['h' + k] = L(g('ready'), g('hurt'), t); });
+    PC.forEach((t, k) => { T['p' + k] = L(g('ready'), g('parry'), t); });
+    for (let k = 0; k < 12; k++) T['v' + k] = L(g('win0'), g('win1'), (1 - Math.cos(k / 12 * Math.PI * 2)) / 2);
+  }
+  AK.forEach((_, k) => { FIGHT_KEY['a' + k] = k < 2 ? 'ready' : k < 5 ? 'windup' : k < 8 ? 'strike' : 'follow'; });
+  for (let k = 0; k < 6; k++) { FIGHT_KEY['h' + k] = 'hurt'; FIGHT_KEY['p' + k] = 'parry'; }
+  for (let k = 0; k < 12; k++) FIGHT_KEY['v' + k] = k < 6 ? 'win0' : 'win1';
+})();
+const fightKey = f => FIGHT_KEY[f] || f;
 // бутыль в кулаке: [угол (0 — вверх, π/2 — вперёд), разбита ли]
 const BOTTLE_POSE = { bwind: [-0.55, 0], bhit: [1.95, 0], bfollow: [2.6, 1] };
 function drawBottle(c, x, y, ang, broken) {
@@ -946,7 +967,7 @@ function drawBottle(c, x, y, ang, broken) {
 }
 
 // кадр выхватывания / убирания по времени с начала (null — анимация кончилась)
-function wpnAnimFrame(k, el) { return el >= 0 && el < WPN_DRAW_T ? k + Math.min(3, Math.floor(el / WPN_DRAW_T * 4)) : null; }
+function wpnAnimFrame(k, el) { return el >= 0 && el < WPN_DRAW_T ? k + Math.min(5, Math.floor(el / WPN_DRAW_T * 6)) : null; }
 
 function wpnParse(s) { const [m, o, out] = String(s).split('|'); return { m: m || '', o: o || '', out: out === '1' }; }
 
@@ -964,19 +985,22 @@ function fightFrameOf(u, moving) {
 function fightFrameRaw(u) {
   if (u.hfx && u.hfx.t > Game.time) {
     const h = u.hfx;
-    if (h.k !== 'cast') return h.k;
+    if (h.k !== 'cast') {                                  // удар способностью, отбив, рана — кадры по ходу (≈0,4 с), остальное — поза
+      const q = Math.max(0, 1 - (h.t - Game.time) / 0.4);
+      return h.k === 'strike' ? 'a' + Math.min(11, 6 + Math.floor(q * 6)) : h.k === 'parry' ? 'p' + Math.min(5, Math.floor(q * 6)) : h.k === 'hurt' ? 'h' + Math.min(5, Math.floor(q * 6)) : h.k;
+    }
     return 'c' + Math.min(CAST_FRAMES - 1, Math.max(0, Math.floor((1 - (h.t - Game.time) / h.d) * CAST_FRAMES)));
   }
   const an = u.anim;
   if (!an || an[0] !== 'f' || !FIGHT_ANIM_SET.has(an)) return null;
   const a = u.action, p = a && a.T ? 1 - Math.max(0, a.t) / a.T : 1;
-  if (an === 'fatk') return p < 0.22 ? 'ready' : p < 0.78 ? 'windup' : 'strike';
-  if (an === 'ffollow') return p < 0.55 ? 'follow' : 'ready';
-  if (an === 'fwin') return Math.floor(p * 6) % 2 ? 'win1' : 'win0';
+  if (an === 'fatk') return 'a' + Math.min(7, Math.floor(p * 8));              // 12 кадров атаки: a0…a7 — замах и удар,
+  if (an === 'ffollow') return 'a' + (8 + Math.min(3, Math.floor(p * 4)));   // a8…a11 — довод и возврат в стойку
+  if (an === 'fwin') return 'v' + (Math.floor(p * 36) % 12);
   if (an === 'fdraw') return wpnAnimFrame('d', p * WPN_DRAW_T) || 'ready';
   if (an === 'fready') return 'ready';
-  if (an === 'fparry') return 'parry';
-  if (an === 'fhurt') return 'hurt';
+  if (an === 'fparry') return 'p' + Math.min(5, Math.floor(p * 6));
+  if (an === 'fhurt') return 'h' + Math.min(5, Math.floor(p * 6));
   return null;
 }
 const FIGHT_ANIM_SET = new Set(['fatk', 'ffollow', 'fwin', 'fdraw', 'fready', 'fparry', 'fhurt']);
@@ -1281,10 +1305,10 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       // на ходу клинок покачивается вместе с шагом, рука подпрыгивает: меч несут, а не приклеили
       const wk = !fight && pose === 'walk' && (wst === 'blade' || wst === 'stab') ? sw : 0;
       wA = { hx: hx + wk * 0.3, hy: hy + wk * 0.5, dx: Math.sin(Wd + wk * 0.16), dy: -Math.cos(Wd + wk * 0.16), Wd };
-      const two = (wst === 'heavy' || wst === 'staff') && ff !== 'draw' && ff !== 'd0' && ff !== 's3' && !(wst === 'staff' && (ff === 'win0' || ff === 'win1' || isCastF(ff)));
+      const fk = fightKey(ff), two = (wst === 'heavy' || wst === 'staff') && ff !== 'draw' && ff !== 'd0' && ff !== 's5' && !(wst === 'staff' && (fk === 'win0' || fk === 'win1' || isCastF(ff)));
       let bx, by;
       if (two) { bx = hx - wA.dx * 2.4; by = hy - wA.dy * 2.4; }          // двуручное: вторая рука ниже на древке
-      else if (wst === 'bow') { const q = FIGHT_BACK.bow[ff]; if (q) { bx = -0.4 + q[0]; by = shY + 0.4 + q[1]; } else { bx = hx - 0.9; by = hy + 0.3; } }
+      else if (wst === 'bow') { const q = FIGHT_BACK.bow[fk]; if (q) { bx = -0.4 + q[0]; by = shY + 0.4 + q[1]; } else { bx = hx - 0.9; by = hy + 0.3; } }
       else if (!fight && pose === 'walk' && W.o !== 'wshield') { bx = Math.sin(-armA) * 2.8 + 0.8; by = shY + Math.cos(-armA) * 2.8 + 2.6; }
       else { const q = (W.o === 'wshield' ? FIGHT_BACK.shield : FIGHT_BACK.free)[ff]; bx = -0.4 + q[0]; by = shY + 0.4 + q[1]; }
       wA.bx = bx; wA.by = by;
@@ -1292,7 +1316,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     if (armed && !sling) upper(() => {
       // дальняя рука: за телом, держит щит, второй кинжал, древко или тетиву
       smoothLimb(c, [-0.4, shY + 0.4], [(-0.4 + wA.bx) / 2 + 0.3, (shY + 0.4 + wA.by) / 2 + 0.7], [wA.bx, wA.by], 2.2, shade(shirt, -0.35));
-      if (W.o && WPN_STYLE[W.o] === 'stab') { const d = ff === 'windup' || ff === 'parry' ? [0.95, -0.3] : [0.85, 0.52]; drawWeapon(c, W.o, wA.bx, wA.by, d[0], d[1]); }
+      if (W.o && WPN_STYLE[W.o] === 'stab') { const d = fightKey(ff) === 'windup' || fightKey(ff) === 'parry' ? [0.95, -0.3] : [0.85, 0.52]; drawWeapon(c, W.o, wA.bx, wA.by, d[0], d[1]); }
       hand(c, wA.bx, wA.by, skin[2]);
     });
     else if (!tool && !carry && pose !== 'smoke') upper(() => {
@@ -1374,24 +1398,24 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       } else if (armed) {
         const { hx, hy, dx, dy } = wA;
         if (W.o === 'wshield') drawShield(c, wA.bx + 0.9, wA.by - 0.6, 1.7, 3.9);          // щит перед грудью
-        if (fight === 'strike' && (wst === 'blade' || wst === 'heavy')) {
+        if (fightKey(fight) === 'strike' && (wst === 'blade' || wst === 'heavy')) {
           // след удара: светлая дуга от замаха к удару
           const R0 = 4.2 + (wst === 'heavy' ? 7.4 : 7.2);
           c.strokeStyle = 'rgba(250,246,230,0.7)'; c.lineWidth = 1.3; c.lineCap = 'round';
           c.beginPath(); c.arc(0.4, shY + 0.4, R0 * 0.82, -2.1, -0.15); c.stroke();
         }
-        if (wst === 'bow') drawBow(c, W.m, hx, hy, wA.Wd, ff === 'windup' ? [wA.bx, wA.by] : null);
-        else if (wst !== 'fist') drawWeapon(c, W.m, hx, hy, dx, dy, (ff === 'draw' || ff === 'd0' || ff === 's3') && (wst === 'blade' || wst === 'stab') ? 'hilt' : undefined);
-        if (wst === 'staff' && (fight === 'windup' || fight === 'strike' || fight === 'win0' || fight === 'win1' || (isCastF(fight) && fight !== 'c0' && fight !== 'c5'))) {
+        if (wst === 'bow') drawBow(c, W.m, hx, hy, wA.Wd, fightKey(ff) === 'windup' ? [wA.bx, wA.by] : null);
+        else if (wst !== 'fist') drawWeapon(c, W.m, hx, hy, dx, dy, (ff === 'draw' || ff === 'd0' || ff === 's5') && (wst === 'blade' || wst === 'stab') ? 'hilt' : undefined);
+        if (wst === 'staff' && (['windup', 'strike', 'win0', 'win1'].includes(fightKey(fight)) || (isCastF(fight) && fight !== 'c0' && fight !== 'c1' && fight !== 'c10' && fight !== 'c11'))) {
           // посох копит и выпускает силу: свечение на конце
-          const t = 8.4, gx = hx + dx * t, gy = hy + dy * t, big = fight === 'strike' || fight === 'c3';
+          const t = 8.4, gx = hx + dx * t, gy = hy + dy * t, big = fightKey(fight) === 'strike' || fight === 'c6' || fight === 'c7';
           const col = W.m === 'wstaff' ? ['#7ae070', '#e8ffd0'] : W.m === 'sstaff' ? ['#8ad8ff', '#fffbe0'] : ['#ffb040', '#fff0a0'];
           ellipse(c, gx, gy, big ? 2.2 : 1.4, big ? 2.2 : 1.4, col[0]); ellipse(c, gx, gy, big ? 1.1 : 0.7, big ? 1.1 : 0.7, col[1]);
         }
         smoothLimb(c, [0.4, shY + 0.4], [(0.4 + hx) / 2 + 0.4, (shY + 0.4 + hy) / 2 + 0.6], [hx, hy], 2.1, shirt);
         if (wst === 'fist') {
           // кулак (у монаха — в обмотках)
-          ellipse(c, hx, hy, fight === 'strike' || fight === 'bhit' ? 1.95 : 1.5, fight === 'strike' || fight === 'bhit' ? 1.9 : 1.45, skin[1]);
+          ellipse(c, hx, hy, fightKey(fight) === 'strike' || fight === 'bhit' ? 1.95 : 1.5, fightKey(fight) === 'strike' || fight === 'bhit' ? 1.9 : 1.45, skin[1]);
           if (fight && BOTTLE_POSE[fight]) drawBottle(c, hx, hy, BOTTLE_POSE[fight][0], BOTTLE_POSE[fight][1]);
           if (W.m === 'fists') { line(c, hx - 1.2, hy - 0.4, hx + 1.2, hy - 0.4, '#e8dcc0', 0.45); line(c, hx - 1.2, hy + 0.5, hx + 1.2, hy + 0.5, '#e8dcc0', 0.45); }
         } else hand(c, hx, hy, skin[1]);

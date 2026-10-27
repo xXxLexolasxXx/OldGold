@@ -131,7 +131,7 @@ function akTail(K, pts, ramp, tip, o = {}) {
 
 // Псовые сбоку (волк, лиса): o — палитры (G основа, D чепрак, C светлое, PAW лапы, EAR внутри уха), размер s, носочки, хвост
 function akCanine(K, f, o) {
-  const s = o.s || 1, t = akT(f, 8), ph = k => f == null ? null : t + k, bob = f == null ? 0 : Math.round(Math.sin(t * 2) * 0.8);
+  const s = o.s || 1, t = akT(f, 12), ph = k => f == null ? null : t + k, bob = f == null ? 0 : Math.round(Math.sin(t * 2) * 0.8);
   const { G, D, C, PAW } = o, X = v => v * s, Y = v => v * s + bob + (o.low || 0), top = Y(-27);
   const legO = { r0: 3.2 * s, r1: 2 * s, r2: 1.6 * s, step: 6 * s, pw: 2.6 * s, sock: o.sock };
   const legR = () => G;
@@ -181,7 +181,7 @@ AK_CR.fox = (f, load) => {
 // hump — горб на холке, neck — [x0, y0, x1, y1, r0, r1], head [cx, cy, rx, ry], muzzle [cx, cy, rx, ry, rot], legTop, legs [задние x, передние x],
 // G/C/D/HOOF — рампы, horns(K, g) — рога/рога-лопаты поверх, extra(K, g) — пятна, борода, поклажа
 function akHoof(K, f, o) {
-  const g = v => v * 3, t = akT(f, 8), ph = k => f == null ? null : t + k, bob = f == null ? 0 : Math.round(Math.sin(t * 2) * 1);
+  const g = v => v * 3, t = akT(f, 12), ph = k => f == null ? null : t + k, bob = f == null ? 0 : Math.round(Math.sin(t * 2) * 1);
   const { G, C, HOOF } = o, LG = o.LEG || G, B = o.body, top = g(o.legTop) + bob;
   const lo = { r0: (o.thigh || 1.25) * 3, r1: (o.shin || 0.62) * 3, r2: (o.shin || 0.62) * 2.6, step: g(o.step || 2.4), lift: g(1.2), pw: 2.2, sock: o.SOCK };
   const hoof = (x, ph0, far) => { akLeg(K, g(x), top, ph(ph0), far, LG, null, lo); const sw = ph(ph0) == null ? 0 : Math.sin(ph(ph0)) * lo.step, lift = ph(ph0) == null ? 0 : Math.max(0, Math.cos(ph(ph0))) * lo.lift; K.R(g(x) + sw - 3, -lift - 3, g(x) + sw + 3, -lift, (px, py) => Math.abs(px + 0.5 - g(x) - sw) < 1.9 && py >= -lift - 2.5 ? K.tone(HOOF, far ? 0.2 : 0.55, px, py) : null); };
@@ -303,7 +303,7 @@ function akHenBody(K, g, dy, peck, angry) {
 }
 
 AK_CR.chicken = (f, load) => {
-  const K = akKit(16, 15, 8, 13), g = v => v * 3, st = f == null ? 0 : Math.sin(akT(f, 6)), peck = load === 'peck';
+  const K = akKit(16, 15, 8, 13), g = v => v * 3, st = f == null ? 0 : Math.sin(akT(f, 12)), peck = load === 'peck';
   const LEG = akRamp('#e0a030', 4);
   for (const [x, s] of [[-1, st], [1, -st]]) { K.limb(g(x), g(-4), g(x + s * 1.2), g(-0.4), 1, 0.9, LEG); K.limb(g(x + s * 1.2 - 0.8), g(-0.2), g(x + s * 1.2 + 1), g(-0.2), 0.8, 0.6, LEG); }
   akHenBody(K, g, 0, peck, false);
@@ -353,7 +353,7 @@ AK_CR.henbuff = (f, load) => {
 
 // Гусь: длинная изогнутая шея, оранжевый клюв; в атаке шея вперёд и крылья вверх; плывёт — сидит в воде с рябью
 AK_CR.goose = (f, load) => {
-  const attack = load === 'attack', swim = load === 'swim', st = f == null ? 0 : Math.sin(akT(f, 6));
+  const attack = load === 'attack', swim = load === 'swim', st = f == null ? 0 : Math.sin(akT(f, 12));
   const K = akKit(26, 24, 12, 21), g = v => v * 3, dy = swim ? g(5.5) : 0;
   const W = akRamp('#f2eee6', 6, 0.42), Wd = akRamp('#d0c8ba', 5), OR = akRamp('#f08a20', 5);
   if (!swim) for (const [x, s] of [[-1.4, st], [1.4, -st]]) { const fx = g(x + s * 1.6); K.limb(g(x), g(-5.6), fx, g(-0.6), 1.3, 1.1, OR); K.R(fx - 4, -3, fx + 5, 0, (px, py) => ((px + 0.5 - fx - 0.6) / 4.2) ** 2 + ((py + 0.5 + 1) / 1.3) ** 2 <= 1 ? K.tone(OR, 0.45, px, py) : null); }
@@ -380,7 +380,7 @@ AK_CR.goose = (f, load) => {
 
 // Утка-кряква: бурая, зелёная голова, белое кольцо, синее «зеркальце»; на воде — в круге ряби
 AK_CR.duck = (f, load) => {
-  const fl = petFlags(load), K = akKit(22, 20, 11, 17), g = v => v * 3, st = f == null ? 0 : Math.sin(akT(f, 6)), dy = fl.swim ? g(2.4) : 0;
+  const fl = petFlags(load), K = akKit(22, 20, 11, 17), g = v => v * 3, st = f == null ? 0 : Math.sin(akT(f, 12)), dy = fl.swim ? g(2.4) : 0;
   const B = akRamp('#8a6a46', 6, 0.5), Bl = akRamp('#d2c0a0', 5), GR = akRamp('#2f7040', 6, 0.55), Y = akRamp('#e8b830', 4), OR = akRamp('#e08a24', 4);
   const SPEC = [[40, 70, 150], [58, 92, 176], [96, 132, 210]];
   if (fl.swim) { akRipple(K, -0.4, 8 + st * 0.6, 2.3, 0.6); akRipple(K, -0.4, 5.6, 1.5, 0.55); }
@@ -397,7 +397,7 @@ AK_CR.duck = (f, load) => {
 
 // Кролик: серо-бурый, белый хвостик-пуховка, длинные уши; скачет
 AK_CR.rabbit = (f, load) => {
-  const K = akKit(18, 14, 9, 12), g = v => v * 3, hop = f == null ? 0 : Math.abs(Math.sin(akT(f, 6))) * 2.4, dy = -g(hop);
+  const K = akKit(18, 14, 9, 12), g = v => v * 3, hop = f == null ? 0 : Math.abs(Math.sin(akT(f, 12))) * 2.4, dy = -g(hop);
   const B = akRamp('#9a8a74', 6, 0.5), Bl = akRamp('#d4c8b4', 5), WH = akRamp('#f4f0e8', 3), PINK = [224, 168, 160];
   K.blob([[g(-1.4), g(-1.6) + dy, g(2.4), g(1.6)]], B, { round: 3, fur: 0.3 });                                    // задняя лапа
   K.blob([[0, g(-3) + dy, g(4.4), g(3)], [g(2.4), g(-4.2) + dy, g(2.2), g(2.2)]], B, { fur: 0.7, round: 6, zone: (x, y) => [Bl, akCl((y - dy - g(-2.4)) / 1) * akCl((x - g(-2.4)) / 1.2), 0.1] });
@@ -426,7 +426,7 @@ function akStub(K, x, top, t, ph, far, ramp, r, o = {}) {
 
 // Кабан: бурый, щетина по хребту, пятачок, клык; роет — голова к земле
 afHand(/^boar/, (rows, pal, key) => {
-  const [w, h] = akWH(rows), root = key === 'boarR', t = akPhK(key, 8), g = v => v * 3, K = akKit(w, h, 0, h);
+  const [w, h] = akWH(rows), root = key === 'boarR', t = akPhK(key, 12), g = v => v * 3, K = akKit(w, h, 0, h);
   const B = akRamp('#5e4836', 7, 0.55), N = akRamp('#2e2420', 4), SN = akRamp('#c69484', 5), TUSK = akRamp('#ece6cc', 3), HOOF = akRamp('#1e1814', 3);
   const lift = h > 10 ? g(-1) : 0;
   for (const [x, ph] of [[4.4, Math.PI], [15.2, 0]]) akStub(K, x, -3.4 + lift / 3, t, ph, true, B, 2.1, { foot: HOOF });
@@ -453,7 +453,7 @@ afHand(/^boar/, (rows, pal, key) => {
 
 // Медведь: бурый, горб на загривке, круглые уши, светлая морда; ест мёд — морда в меду
 afHand(/^bear/, (rows, pal, key) => {
-  const [w, h] = akWH(rows), eat = key === 'bearE', t = akPhK(key, 8), g = v => v * 3, K = akKit(w, h, 0, h);
+  const [w, h] = akWH(rows), eat = key === 'bearE', t = akPhK(key, 12), g = v => v * 3, K = akKit(w, h, 0, h);
   const B = akRamp('#6c4628', 7, 0.55), Bd = akRamp('#4a2e1a', 5), M = akRamp('#c09a6e', 5), PAW = akRamp('#32200f', 4), HON = akRamp('#e0b438', 4);
   const lift = h > 13 ? -3 : 0;
   for (const [x, ph] of [[5.6, Math.PI], [18.6, 0]]) akStub(K, x, -3.6 + lift / 3, t, ph, true, Bd, 3.6, { foot: PAW, step: 1.2 });
@@ -509,7 +509,7 @@ afHand(/^cat\d/, (rows, pal, key) => {
     head(g(8.3), g(-8), g(2.4), false);
     return K.fin([Math.round(A[0][0] * 0.6), Math.round(A[0][1] * 0.55), Math.round(A[0][2] * 0.6)]);
   }
-  const t = akPhK(key, 6), lift = h > 9 ? -3 : 0;                                                                // идёт
+  const t = akPhK(key, 12), lift = h > 9 ? -3 : 0;                                                                // идёт
   for (const [x, ph] of [[2.8, Math.PI], [11.4, 0]]) akStub(K, x, -2.6 + lift / 3, t, ph, true, A, 1.4, { step: 1 });
   K.path([[g(2), g(-4) + lift, 2.2], [g(0.6), g(-5.6) + lift, 1.9], [g(1), g(-8) + lift, 1.6]], (u, e) => K.tone(A, e ? 0.3 : 0.6, 0, 0));
   K.blob([[g(6.8), g(-4.4) + lift, g(5.4), g(1.8)]], A, { fur: 0.5, round: 4, zone: (x, y) => furZ(x, y, (x, y) => y > g(-3.4) + lift && x > g(8)) });
@@ -563,7 +563,7 @@ afHand(/^heron[SK]$/, (rows, pal, key) => {
 afHand(/^crow:[sw]/, (rows, pal, key) => {
   const [w, h] = akWH(rows), g = v => v * 3, K = akKit(w, h, 0, h), kind = key.split(':')[1];
   const B = akRamp('#2a2a36', 6, 0.45), GL = akRamp('#4a4a6a', 4), BEAK = akRamp('#cfae58', 4), LEG = akRamp('#7a6444', 3);
-  const t = kind[0] === 'w' ? (+kind.slice(1) % 6) / 6 * AK_TAU : null, sn = t == null ? 0 : Math.sin(t), pose = kind[0] === 's' ? +kind[1] : 0, sp = pose === 1 ? 1.4 : pose === 2 ? -0.6 : 0;
+  const t = kind[0] === 'w' ? (+kind.slice(1) % 12) / 12 * AK_TAU : null, sn = t == null ? 0 : Math.sin(t), pose = kind[0] === 's' ? +kind[1] : 0, sp = pose === 1 ? 1.4 : pose === 2 ? -0.6 : 0;
   const leg = (x, off, far) => { K.limb(g(x), g(-3), g(x + off), g(-0.3), 0.8, 0.7, LEG, { bias: far ? -0.3 : 0 }); K.limb(g(x + off) - 2, -1, g(x + off) + 2.4, -1, 0.6, 0.6, LEG, { bias: far ? -0.3 : 0 }); };
   leg(9.4, -sn * 1.1 - sp * 0.4, true);
   akPoly(K, akG([[0, -5.6], [3.6, -6.8], [6.8, -5.4], [5.8, -3.4], [0.6, -4.2]]), B, 0.45, 0);                  // хвост
@@ -620,7 +620,7 @@ afHand(/^mouse/, (rows, pal, key) => {
 
 // ---------- Барсук (BADGER_A 21×9, роет BADGER_DIG): серый, белая морда с чёрными полосами ----------
 afHand(/^badger/, (rows, pal, key) => {
-  const [w, h] = akWH(rows), g = v => v * 3, K = akKit(w, h, 0, h), dig = key === 'badgerD', t = akPhK(key, 6);
+  const [w, h] = akWH(rows), g = v => v * 3, K = akKit(w, h, 0, h), dig = key === 'badgerD', t = akPhK(key, 12);
   const Bg = akRamp('#8c8c96', 6, 0.5), Bd = akRamp('#56565e', 5), W = akRamp('#f0ece0', 4, 0.35), N = akRamp('#25252c', 4), lift = h > 9 ? -3 : 0;
   for (const [x, ph] of [[3.6, Math.PI], [13.6, 0]]) akStub(K, x, -2 + lift / 3, t, ph, true, N, 2, { step: 0.8 });
   const tilt = dig ? 0.12 : 0;
@@ -642,7 +642,7 @@ afHand(/^badger/, (rows, pal, key) => {
 // ---------- Белка (SQ_SIT 13×8, прыжок SQ_RUN/SQ_RUN2 13×7): рыжая, пышный хвост, кисточки на ушах ----------
 afHand(/^sq/, (rows, pal, key) => {
   const [w, h] = akWH(rows), g = v => v * 3, K = akKit(w, h, 0, h), O = akRamp(pal.o, 6, 0.55), Od = akRamp(pal.O, 5), C = akRamp(pal.c, 4, 0.35);
-  const sit = key === 'sqS', ph = afPh(key, 6), str = ph == null || ph < 0.5 ? 1 : -1;
+  const sit = key === 'sqS', ph = afPh(key, 12), str = ph == null || ph < 0.5 ? 1 : -1;
   const tail = sit ? [[4.4, -1, 2.6], [1.6, -1.6, 4.2], [0.8, -4.4, 4.6], [1.8, -6.6, 3.6]] : [[3.8, -3.2, 2.4], [1.4, -3.6, 3.6], [0.8, -5.2, 3.6], [1.6, -6.2, 2.6]];
   akTail(K, tail.map(([x, y, r]) => [g(x), g(y), r]), O, null, { fur: 1.3, round: 4, seed: 8 });
   if (sit) {
@@ -731,7 +731,7 @@ afHand(/^wl:hareW?:/, (rows, pal, key) => {
     K.P(g(9.4), g(-6.8), NOSE); K.eye(g(8.4), g(-7.4), 1.2, [60, 40, 26], [16, 12, 10]);
     return K.fin(akInk(Hh));
   }
-  const t = F.kind === 'w' ? F.n / 6 * AK_TAU : null, hop = t == null ? 0 : Math.sin(F.n / 6 * Math.PI) * 1.2, dy = -g(hop * 0.4);
+  const t = F.kind === 'w' ? F.n / 12 * AK_TAU : null, hop = t == null ? 0 : Math.sin(F.n / 12 * Math.PI) * 1.2, dy = -g(hop * 0.4);
   const ear = F.fr === 'i2' || F.fr === 'i3', nose = F.fr === 'i5' ? 1 : 0;
   const s = t == null ? 0 : Math.cos(t);
   K.limb(g(2.6 - s), g(-2) + dy, g(2.4 - s * 1.6), g(-0.4), 1.6, 1.2, Hh, { bias: -0.15 });
@@ -757,7 +757,7 @@ afHand(/^wl:birdW?:/, (rows, pal, key) => {
   K.blob([[hx, hy, g(1.2), g(1.1)]], B, { round: 2 });
   K.P(hx + g(1.2), hy, O); K.P(hx + g(1.2) + 1, hy, O); K.P(hx + g(1.2), hy + 1, O);
   K.eye(hx + 0.8, hy - 0.6, 0.8, [20, 16, 14], [14, 12, 10]);
-  if (fly) { const off = F.kind === 'f' ? [-2, -1, 0, 1, 2, 1, 0, -1][F.n % 8] : -1, sp = F.kind === 'r' ? Math.min(3, F.n + 1) : 3; for (const s of [-1, 1]) akPoly(K, [[g(3), g(-2.8)], [g(3 + s * sp * 0.9), g(-2.8 + off * 0.9)], [g(3 + s * sp), g(-2.2 + off)], [g(3.6), g(-2.2)]], WG, 0.6, 0); }
+  if (fly) { const off = F.kind === 'f' ? Math.round(-2 * Math.cos(F.n / 12 * AK_TAU)) : -1, sp = F.kind === 'r' ? Math.min(3, F.n + 1) : 3; for (const s of [-1, 1]) akPoly(K, [[g(3), g(-2.8)], [g(3 + s * sp * 0.9), g(-2.8 + off * 0.9)], [g(3 + s * sp), g(-2.2 + off)], [g(3.6), g(-2.2)]], WG, 0.6, 0); }
   return K.fin(akInk(B));
 });
 
@@ -765,7 +765,7 @@ afHand(/^wl:birdW?:/, (rows, pal, key) => {
 afHand(/^wl:pheasant:/, (rows, pal, key) => {
   const [w, h] = akWH(rows), g = v => v * 3, K = akKit(w, h, 0, h), P = pal, F = akWl(key);
   const Bc = akRamp(P.b, 6, 0.5), Bl = akRamp(P.B, 4), Tt = akRamp(P.t, 5), Gg = akRamp(P.g, 5, 0.5), RD = akRamp(P.r, 3), C = akRamp(P.c, 3), L = akRamp(P.l, 3);
-  const t = F.kind === 'w' ? F.n / 6 * AK_TAU : null, sn = t == null ? 0 : Math.sin(t), peck = F.fr === 'i2' || F.fr === 'i3' ? 2 : 0;
+  const t = F.kind === 'w' ? F.n / 12 * AK_TAU : null, sn = t == null ? 0 : Math.sin(t), peck = F.fr === 'i2' || F.fr === 'i3' ? 2 : 0;
   for (const [x, s] of [[5.6, sn], [8.2, -sn]]) { K.limb(g(x), g(-2.6), g(x + s), g(-0.3), 0.8, 0.7, L); K.limb(g(x + s) - 1.6, -1, g(x + s) + 1.8, -1, 0.6, 0.6, L); }
   K.path([[g(4.6), g(-5), 3], [g(2.4), g(-5.6), 2.4], [g(0.2), g(-6), 1.6]], (u, e, sd) => (Math.floor(u * 10) % 2 ? Tt[1] : sd > 0 ? Tt[2] : Tt[3]));
   K.blob([[g(7.4), g(-4.2), g(3.6), g(1.9)]], Bc, { round: 5, fur: 0.2, mark: (x, y, v) => K.hsh(Math.floor(x / 2) * 7 + Math.floor(y / 2) * 3) > 0.82 ? Tt[0] : null });
@@ -794,7 +794,7 @@ afHand(/^wl:marmot:/, (rows, pal, key) => {
     K.P(g(5.6), g(-6.4), WH); K.eye(g(4.8), g(-7.4), 1.1, [30, 20, 14], [12, 10, 8]);
     return K.fin(akInk(M));
   }
-  const t = F.kind === 'w' ? F.n / 6 * AK_TAU : null, dip = F.fr === 'i1' ? g(1) : 0;
+  const t = F.kind === 'w' ? F.n / 12 * AK_TAU : null, dip = F.fr === 'i1' ? g(1) : 0;
   for (const [x, ph] of [[2.4, Math.PI], [6.6, 0]]) akStub(K, x, -1.2, t, ph, false, N, 1.3, { step: 0.6 });
   K.blob([[g(4.6), g(-2.8), g(4), g(2)]], M, { fur: 0.7, round: 5, zone: (x, y) => [Ml, akCl((y - g(-2)) / 1), 0.1] });
   K.blob([[g(7.6), g(-4.2) + dip, g(1.6), g(1.3)], [g(8.8), g(-3.8) + dip, g(0.8), g(0.8)]], M, { round: 3, zone: (x, y) => [N, akCl((x - g(8.6)) / 0.8), 0, 0.3] });
@@ -812,7 +812,7 @@ afHand(/^wl:otter:/, (rows, pal, key) => {
     if (F.n % 3 !== 2) for (const s of [-1, 1]) K.R(g(3) + s * 6 - 4, -3, g(3) + s * 6 + 4, 0, (x, y) => y === -1 ? [...WT, 0.8] : null, false);
     return K.fin(akInk(O));
   }
-  const t = F.kind === 'w' ? F.n / 6 * AK_TAU : null, look = F.kind === 'i' && (F.n === 2 || F.n === 3) || (F.kind === 'r' && F.n % 2) ? g(1) : 0;
+  const t = F.kind === 'w' ? F.n / 12 * AK_TAU : null, look = F.kind === 'i' && (F.n === 2 || F.n === 3) || (F.kind === 'r' && F.n % 2) ? g(1) : 0;
   K.path([[g(3), g(-2.4), 2.4], [g(1.2), g(-2.6), 1.8], [g(0.2), g(-3.6), 1]], (u, e) => K.tone(O, e ? 0.3 : 0.55, 0, 0));
   for (const [x, ph] of [[3.4, Math.PI], [10, 0]]) akStub(K, x, -1, t, ph, false, O, 1.3, { step: 0.5 });
   K.blob([[g(6.6), g(-2.2), g(4.4), g(1.4)]], O, { fur: 0.3, round: 4, zone: (x, y) => [Ol, akCl((y - g(-1.6)) / 0.8) * akCl((x - g(8)) / 1), 0.1] });
@@ -903,7 +903,7 @@ function akWing(K, quad, ramp, tip, o = {}) {
 // Ворона в полёте (22×15): тело, голова с клювом, хвост; крыло вверх → ровно → вниз
 function akCrowFly(frame) {
   const K = akKit(22, 15, 0, 0), g = v => v * 3, B = akRamp('#2a2a36', 6, 0.45), GL = akRamp('#4a4a6a', 4), BEAK = akRamp('#cfae58', 4);
-  const W6 = flapPose([[7, 8], [15, 8], [14, 1], [4, 2]], [[6, 8], [15, 8], [15, 6], [2, 6]], [[7, 8], [15, 8], [13, 14], [4, 13]], frame, 8);
+  const W6 = flapPose([[7, 8], [15, 8], [14, 1], [4, 2]], [[6, 8], [15, 8], [15, 6], [2, 6]], [[7, 8], [15, 8], [13, 14], [4, 13]], frame, 12);
   const up = W6[2][1] < 6;
   if (!up) akWing(K, W6.map(([x, y]) => [x + 1, y - 0.6]), GL, B, {});                                // дальнее крыло
   akPoly(K, akG([[0.6, 7.4], [5, 7.2], [5, 9.8], [1, 10]]), B, 0.4);                                    // хвост
@@ -917,7 +917,7 @@ function akCrowFly(frame) {
 // Аист/цапля в полёте (30×20): шея вперёд, ноги назад, крыло с тёмными кончиками (o — палитра BE_STORK_FLY/BE_HERON_FLY)
 function akBirdFly(o, frame) {
   const K = akKit(30, 20, 0, 0), g = v => v * 3, B = akRamp(o.body, 6, 0.42), BL = akRamp(o.belly, 4), N = akRamp(o.neck, 4, 0.4), TIP = akRamp(o.tip, 4, 0.5), BILL = akRamp(o.bill, 4), LEG = akRamp(o.leg, 3);
-  const wing = flapPose([[9, 9], [17, 9], [16, 1], [3, 3]], [[8, 9], [17, 9], [17, 7], [2, 7]], [[9, 11], [16, 11], [14, 19], [5, 18]], frame, 8);
+  const wing = flapPose([[9, 9], [17, 9], [16, 1], [3, 3]], [[8, 9], [17, 9], [17, 7], [2, 7]], [[9, 11], [16, 11], [14, 19], [5, 18]], frame, 12);
   K.limb(g(6), g(10.6), g(0.6), g(11.8), 1, 0.9, LEG); K.limb(g(6), g(11), g(0.4), g(12.4), 1, 0.9, LEG, { bias: -0.2 });   // ноги назад
   K.blob([[g(12), g(10), g(6), g(2.4)]], B, { round: 5, fur: 0.2, zone: (x, y) => [BL, akCl((y - g(10.6)) / 1), 0.05] });
   K.path([[g(17), g(9.4), 2.6], [g(20.5), g(8.6), 2.2], [g(23.4), g(7.2), 2]], (u, e, sd) => K.tone(N, e ? 0.4 : sd > 0 ? 0.55 : 0.8, 0, 0));

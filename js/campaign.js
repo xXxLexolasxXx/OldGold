@@ -898,10 +898,10 @@ function campDrawGoblin(c, N, art) {
   if (typeof naFrame !== 'function') return;
   let fr;
   if (N.st === 'die') fr = 'd0';
-  else if (N.st === 'atk') fr = N.atkT < 0.24 ? 'windup' : N.atkT < 0.4 ? 'strike' : 'recover';
-  else if (N.st === 'chase') fr = 'w' + ((Game.time * 11 + N.id) % 8 | 0);
-  else fr = 'i' + ((Game.time * 5 + N.id) % 6 | 0);
-  if (Game.time - (N.hurtT || -9) < 0.2 && N.st !== 'die') fr = 'hurt';
+  else if (N.st === 'atk') fr = naAtkFr(N.atkT, 0.6);
+  else if (N.st === 'chase') fr = 'w' + ((Game.time * 16.5 + N.id) % NA_N | 0);
+  else fr = naIdleFr(Game.time, N.id);
+  if (Game.time - (N.hurtT || -9) < 0.3 && N.st !== 'die') fr = naHurtFr(Game.time - N.hurtT);
   const kind = art || (N.k === 'goblinChamp' ? 'goblinChamp' : N.id % 2 ? 'goblinB' : 'goblin');
   const sp = naFrame(kind, fr), sc = kind === 'goblin' || kind === 'goblinB' ? 1.1 : 1;
   c.save(); c.scale(sc, sc); blitFine(c, sp.cv, -sp.ax, -sp.ay); c.restore();
