@@ -186,7 +186,7 @@ function nqShow(text, kind, onClick, target) {
 function nqRateOk() {
   const t = nqNow();
   Notify.shown = Notify.shown.filter(x => t - x < 60000);
-  return Notify.shown.length < (nqFull() ? 20 : 6);
+  return Notify.shown.length < (nqFull() ? 20 : document.body.classList.contains('mobile') ? 4 : 6);
 }
 
 toast = function (text, target, kind) {
@@ -222,7 +222,8 @@ function nqPump() {
     if (!x.urgent && t - x.at > 20000) { nqJournal(x.text, x.kind, x.n, false, x.target); return false; }
     return true;
   });
-  const max = nqFull() ? 3 : 2;
+  // на телефоне в спокойном режиме — один тост за раз (остальные ждут очереди или уходят в журнал)
+  const max = nqFull() ? 3 : document.body.classList.contains('mobile') ? 1 : 2;
   const now = nqLive();
   let live = now.length;
   // ответ на действие игрока не ждёт: старый тост сгорает раньше срока

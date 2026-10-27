@@ -51,7 +51,8 @@ function toast(text, target, kind) {
   const mob = document.body.classList.contains('mobile');
   // важное (поход, зима, голод, золото школы) висит заметно дольше
   const keep = /поход|Зим|Осень|голод|школ.*золот|золот.*школ|Малгор|Победа|Поражение/i.test(String(text)) ? 1.7 : 1;
-  setTimeout(() => toastClose(el), keep * Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70)));
+  // но не дольше 10 с на телефоне и 9 с на ПК — длинные зимние тосты висели по полминуты и копились
+  setTimeout(() => toastClose(el), Math.min(mob ? 10000 : 9000, keep * Math.max(mob ? 7000 : 4500, 2800 + String(text).length * (mob ? 110 : 70))));
 }
 
 // Шутка при самой первой стройке (один раз на устройство, только на экране — на игру не влияет, кооп не трогает)
