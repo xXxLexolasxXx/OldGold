@@ -373,7 +373,7 @@ function spireSetting() { try { return localStorage.getItem('feod.spirePtr') !==
 function spireSetSetting(on) {
   try { localStorage.setItem('feod.spirePtr', on ? '1' : '0'); } catch (e) { /* нет доступа к хранилищу */ }
   spirePtrMenuSync();
-  if (typeof toast === 'function') toast(on ? 'Указатель шпиля включён' : 'Указатель шпиля скрыт. Вернуть — в меню, «Настройки».');
+  if (typeof toast === 'function') toast(on ? 'Указатель шпиля включён' : 'Указатель шпиля скрыт. Вернуть — в меню, «Ещё».');
 }
 function spireFolded() {
   const g = Game.goal;

@@ -298,7 +298,7 @@ function foeHit(N, u, dmg) {
     dmg *= 0.3;
     if (Game.time - (N.shT || 0) > 1.5) { N.shT = Game.time; floater(N.x, N.y - 3, N.k === 'malgor' ? 'Щит тьмы!' : 'Щит!', '#b8ff90'); }
     fxBurst(px, py, 6, ['#9cff66', '#b07cff'], 50, 30, 0.4, 1.4, 80);
-  } else if (Math.random() < (S.parry || 0)) {
+  } else if (Math.random() < (N.parry != null ? N.parry : S.parry || 0)) {   // N.parry — щит слабее у отдельного врага (кампания)
     dmg *= 0.25;
     floater(N.x, N.y - 2.1, 'Отбил!', '#cfe8ff');
     fxBurst(px, py, 5, ['#ffffff', '#cfe8ff'], 40, 20, 0.3, 1.3, 120);

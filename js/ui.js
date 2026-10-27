@@ -13,6 +13,31 @@ function toastKind(text) {   // тип оповещения → цвет печ�
   return '';
 }
 function toastClose(el) { if (!el || !el.parentNode || el.classList.contains('burn')) return; el.classList.add('burn'); setTimeout(() => el.remove(), 320); }
+// Своё окно «Да/Нет» вместо системного confirm(): тот на телефоне (Android-обёртка) срабатывает
+// через раз и замораживает игру, из-за чего снос «лагал» и здание оставалось на месте
+function askYes(text, onYes) {
+  if (document.getElementById('ask-yes')) return;
+  const el = document.createElement('div');
+  el.id = 'ask-yes';
+  el.style.cssText = 'position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(10,6,2,0.55)';
+  const btn = 'margin:0 6px;padding:8px 18px;border-radius:6px;cursor:pointer;font:inherit;border:1px solid #b8902c';
+  el.innerHTML = `<div style="max-width:300px;margin:16px;padding:16px 18px;background:#2a1a0c;color:#f1dfb0;border:2px solid #b8902c;border-radius:8px;text-align:center">
+    <div class="ask-text" style="margin-bottom:14px"></div>
+    <button data-a="no" style="${btn};background:#3a2410;color:#f1dfb0">Отмена</button><button data-a="yes" style="${btn};background:#8a3a1a;color:#fff">Да</button></div>`;
+  el.querySelector('.ask-text').textContent = text;
+  const close = () => el.remove();
+  el.addEventListener('click', e => {
+    const a = e.target.dataset && e.target.dataset.a;
+    if (a === 'yes') { close(); onYes(); } else if (a === 'no' || e.target === el) close();
+  });
+  document.body.appendChild(el);
+}
+function askDemolish(b, text, onYes) {
+  // стройку сносим без вопросов; на сервере кооператива (navigator 'node') спросить некого
+  if (b.state !== 'done' || navigator.userAgent === 'node') { onYes(); return; }
+  askYes(text || `Снести «${b.def.name}»?`, () => { if (!b.removed) onYes(); });
+}
+
 function toast(text, target, kind) {
   const box = document.getElementById('toasts');
   if (!box) return;
@@ -449,13 +474,10 @@ function initUI() {
     const t = e.target.closest('[data-menu]');
     if (!t) return;
     const m = t.dataset.menu;
-    track('menu-' + m, { save: 'Сохранил игру', load: 'Загрузил сохранение', loadauto: 'Загрузил автосохранение', new: 'Открыл «Новая карта»', help: 'Открыл «Как играть»' }[m]);
+    track('menu-' + m, { save: 'Сохранил игру', load: 'Загрузил сохранение', loadauto: 'Загрузил автосохранение' }[m]);
     if (m === 'save') toast(saveGame('manual') ? 'Игра сохранена' : 'Не удалось сохранить');
     if (m === 'load') { if (loadGame('manual')) { toast('Игра загружена'); updateUI(true); } else toast('Сохранения нет'); }
     if (m === 'loadauto') { if (loadGame('auto')) { toast('Загружено автосохранение'); updateUI(true); } else toast('Автосохранения пока нет'); }
-    if (m === 'new' && confirm('Начать на новой карте? Несохранённый прогресс пропадёт.')) newGame();
-    if (m === 'help') document.getElementById('help').classList.toggle('hidden');
-    if (m === 'lang') I18N.toggle();
     if (m === 'lang') I18N.toggle();
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     if (m === 'mainmenu') exitToMainMenu();
@@ -502,7 +524,7 @@ function initUI() {
     else if (act === 'untrainall') b.queue.length = 0;
     else if (act === 'demolish') {
       if (b.isRoad) removeRoadSite(b);
-      else if (b.state !== 'done' || confirm(`Снести «${b.def.name}»?`)) removeBuilding(b);
+      else askDemolish(b, null, () => removeBuilding(b));
       Game.selected = null;
     }
     else if (act === 'pause') b.paused = !b.paused;
@@ -766,7 +788,7 @@ function infoBuilding(b) {
     h += '<div class="train-grid">';
     for (const t of UNIT_KEYS) {
       const q = b.queue.filter(x => x === t).length;
-      h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><img src="${portraitURL(t)}" alt="">${UNIT_TYPES[t].name.slice(0, 7)}${q ? `<span class="q">${q}</span>` : ''}</button>`;
+      h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><img src="${portraitURL(t)}" alt="">${UNIT_TYPES[t].name.split('-')[0].slice(0, 9)}${q ? `<span class="q">${q}</span>` : ''}</button>`;
     }
     h += '</div>';
   }

@@ -245,7 +245,7 @@ function camp1DrawShnyr(c, p) {
   const t = Game.time, x = Math.round(p[0] * TILE + 16), y = Math.round(p[1] * TILE + 26);
   const ph = t % 3.2, fr = ph < 0.3 ? 'windup' : ph < 0.5 ? 'strike' : ph < 0.8 ? 'recover' : 'i' + ((t * 5) % 6 | 0);
   const sp = naFrame('shnyrKing', fr);
-  c.save(); c.translate(x, y); c.scale(-1, 1); c.drawImage(sp.cv, -sp.ax, -sp.ay); c.restore();
+  c.save(); c.translate(x, y); c.scale(-1, 1); blitFine(c, sp.cv, -sp.ax, -sp.ay); c.restore();
   // искры фитиля на скипетре
   c.fillStyle = (t * 9 | 0) % 2 ? '#fff2a0' : '#ff9030';
   c.fillRect(x - 22 + Math.round(Math.sin(t * 17) * 2), y - 52 + Math.round(Math.cos(t * 13) * 2), 2, 2);
@@ -316,7 +316,8 @@ const camp1Wave = (C, n, fromGate, champs = 0) => {
     const x = (g ? gx : mx) + (Math.random() - 0.5) * 3, y = (g ? gy - 2 : my + 2) + (Math.random() - 0.5) * 2;
     campFoe('goblin', x, y, 'w', { delay: k * 0.8, hunt: true });
   }
-  for (let k = 0; k < champs; k++) campFoe('goblinChamp', mx + (k ? 2 : -2), my + 3, 'w', { delay: 2 + k, hunt: true });
+  // щит чемпиона в первом акте слабее: герой ещё молод, и «Отбил!» через раз читалось как «по нему не попасть»
+  for (let k = 0; k < champs; k++) campFoe('goblinChamp', mx + (k ? 2 : -2), my + 3, 'w', { delay: 2 + k, hunt: true }).parry = 0.1;
   if (typeof campSnd === 'function') campSnd('gobHorn', mx, my, 1.2);
 };
 // сценарный праздник: всегда (и поверх случайного дневного), ночью, и мастеровые выходят из мастерских к костру —
@@ -332,6 +333,7 @@ function camp1Feast() {
   }
 }
 const camp1WaveLeft = () => campFoes('w').length;
+const CAMP1_WHINT = 'Гоблины идут на ближайших гномов и на башню у штрека — ◎ у цели показывает, где они. Чемпион прикрывается щитом: бейте его героем вместе с воинами.';
 const camp1Night = () => isNightNow() || isEveningNow();
 
 CAMP_ACTS[1] = {
@@ -355,12 +357,11 @@ CAMP_ACTS[1] = {
       for (const N of campFoes('w')) { N.st = 'vanish'; N.vt = 0; }
       campSay('Остатки гоблинов удрали в штрек.');
     }
-    // тайники Тана: герой проходит рядом — находка (★★★)
-    const h = campHero();
-    if (!h) return;
+    // тайники Тана: герой (в коопе — любой) проходит рядом — находка (★★★)
     C.flags.found = C.flags.found || [];
     CAMP1.caches.forEach((p, i) => {
-      if (C.flags.found.includes(i) || Math.hypot(h.x - p[0] - 0.5, h.y - p[1] - 0.5) > 1.6) return;
+      const h = campHeroNear(p[0] + 0.5, p[1] + 0.5, 1.6);
+      if (C.flags.found.includes(i) || !h) return;
       C.flags.found.push(i);
       const store = Game.buildings.find(b => b.type === 'storehouse' && !b.removed);
       if (store) store.stock.gold = (store.stock.gold || 0) + 5;
@@ -416,8 +417,7 @@ CAMP_ACTS[1] = {
         { id: 'bread', t: 'Испечь хлеба', need: 10, cur: C => campProduced('bread') - C.flags.h0 },
       ],
       during(C) {
-        const h = campHero();
-        for (const N of campFoes('scout')) if (N.hold && h && Math.hypot(h.x - N.x, h.y - N.y) < 7) { N.hold = 0; N.tg = h.id; N.prov = Game.time; }
+        for (const N of campFoes('scout')) { const h = N.hold && campHeroNear(N.x, N.y, 7); if (h) { N.hold = 0; N.tg = h.id; N.prov = Game.time; } }
         if (!campFoes('scout').length) C.flags.scoutsDone = 1;
       } },
     { k: 'say', lines: [
@@ -445,16 +445,21 @@ CAMP_ACTS[1] = {
     { k: 'do', fn(C) { C.flags.shnyr = CAMP1.ledge.slice(); C.flags.lit = 1; camp1Wave(C, 4, false); } },
     { k: 'cut', cam: [66, 22], label: 'Нападение', lines: [
       ['shnyr', 'Эй, бородатые! С праздником! Подарок уже под горой — осталось развернуть!'],
+      ['champ', 'А я — Чемпион! Сорок бород в мешке, и мешок ещё не полный! Кто тут самый бородатый — выходи!'],
       ['grum', 'Гоблины! Все к большому костру, у огня они не держатся! Герой — к штреку!'],
     ] },
-    { k: 'goal', label: 'Нападение', hint: 'Жители прячутся у большого костра и в домах. Башни стреляют сами.',
-      objs: [{ id: 'w1', t: 'Отбить первую волну гоблинов', need: 1, cur: () => camp1WaveLeft() ? 0 : 1 }] },
+    { k: 'goal', label: 'Нападение', hint: 'Жители прячутся у большого костра и в домах. Башни стреляют сами. ' + CAMP1_WHINT,
+      objs: [{ id: 'w1', t: 'Отбить первую волну гоблинов', need: 1, at: () => campFoeAt('w'), cur: () => camp1WaveLeft() ? 0 : 1 }] },
     { k: 'do', fn(C) { camp1Wave(C, 6, true, 1); } },
     { k: 'say', lines: [['grum', 'Ещё лезут! И с юга тоже — от ворот! Они нас окружают. Вежливо, по-гоблински.']] },
-    { k: 'goal', label: 'Нападение', objs: [{ id: 'w2', t: 'Отбить вторую волну (штрек и Южные ворота)', need: 1, cur: () => camp1WaveLeft() ? 0 : 1 }] },
+    { k: 'goal', label: 'Нападение', hint: CAMP1_WHINT, objs: [{ id: 'w2', t: 'Отбить вторую волну (штрек и Южные ворота)', need: 1, at: () => campFoeAt('w'), cur: () => camp1WaveLeft() ? 0 : 1 }] },
     { k: 'do', fn(C) { camp1Wave(C, 8, true, 2); } },
-    { k: 'say', lines: [['shnyr', 'Не нравится наш праздник? А у нас ещё фейерверк есть!']] },
-    { k: 'goal', label: 'Нападение', objs: [{ id: 'w3', t: 'Отбить третью волну', need: 1, cur: () => camp1WaveLeft() ? 0 : 1 }] },
+    { k: 'say', lines: [
+      ['shnyr', 'Не нравится наш праздник? А у нас ещё фейерверк есть!'],
+      ['champ', 'Ваше величество, дайте я их сам! По одному, как орешки!'],
+      ['shnyr', 'Сиди, Чемпион. Орешки сейчас сами расколются. Вместе со скорлупой.'],
+    ] },
+    { k: 'goal', label: 'Нападение', hint: CAMP1_WHINT, objs: [{ id: 'w3', t: 'Отбить третью волну', need: 1, at: () => campFoeAt('w'), cur: () => camp1WaveLeft() ? 0 : 1 }] },
     { k: 'cut', cam: [66, 22], lines: [
       ['shnyr', 'Ладно, по-хорошему не хотите. БАБАХ!'],
       ['grum', 'Он сказал «бабах»? Все от горы! БЫСТРО!'],
@@ -466,6 +471,9 @@ CAMP_ACTS[1] = {
         ['grum', 'Гора… накренилась.'],
         ['yagla', 'Как ты после праздника.'],
         ['grum', 'Я хотя бы потом выпрямляюсь.'],
+        ['note', 'Из глубины, из-под обвала, донёсся рёв. Низкий, долгий и очень обиженный.'],
+        ['troll', 'КТО… УРОНИЛ… ГОРУ… НА ТРОЛЛЯ?!'],
+        ['grum', 'Под нами жили тролли. Сто лет — и ни разу не постучали. Теперь постучат.'],
       ] },
     { k: 'goal', label: 'Утро после', hint: 'Валуны у штрека уберут каменотёсы; трещины в домах починят строители.',
       init(C) { C.tilt = CAMP1_TILT; },

@@ -96,12 +96,13 @@ function n2TrollKind() { const b = n2Biome(); return b === 'swamp' ? 'trollB' : 
 
 function n2Site(k, stamp, near) {
   const cx = MAP_W >> 1, cy = MAP_H >> 1, minStart = mapIsLegacy() ? 20 : 24, open = k === 'armad' || k === 'gnomtaur';
-  for (let t = 0; t < 3000; t++) {
+  // первому логову народа — больше попыток: кольцо «не у деревни, но и не на краю карты» узкое
+  for (let t = 0, T = near ? 6000 : 3000; t < T; t++) {
     const x = 5 + ((n2Rand() * (MAP_W - 10)) | 0), y = 5 + ((n2Rand() * (MAP_H - 10)) | 0), i = idx(x, y);
     if (World.terrain[i] !== T_GRASS || World.bmap[i] || World.road[i] || !reachedIn(stamp, x, y)) continue;
     const ds = Math.hypot(x - cx, y - cy);
     if (ds < minStart + (t < 1500 ? 4 : 0) - (near ? 6 : 0)) continue;
-    if (near && t < 2700 && ds > minStart + 20) continue;    // первое логово народа — там, где его встретят, а не на краю карты
+    if (near && t < T - 300 && ds > minStart + 24) continue;    // первое логово народа — там, где его встретят, а не на краю карты
     let trees = 0, bad = false;
     for (let yy = y - 4; yy <= y + 4 && !bad; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
       if (!inb(xx, yy)) { bad = true; break; }
@@ -110,7 +111,7 @@ function n2Site(k, stamp, near) {
       if (o && o.t === 'tree') trees++;
     }
     if (bad || (open ? trees > (near && t >= 2000 ? 24 : 14) : trees < (t < 2000 ? 8 : 3))) continue;
-    if (Game.buildings.some(b => Math.hypot(b.x - x, b.y - y) < 12)) continue;
+    if (neuVillageDist(x, y) < neuHostileGap()) continue;
     if (Game.lairs.some(l => Math.hypot(l.x - x, l.y - y) < 13)) continue;
     return { x, y, ds, minStart };
   }
@@ -599,7 +600,7 @@ if (typeof hmCast === 'function') {
     const bob = (N.k === 'fairy' || N.k === 'pixie') && !dead ? Math.round(Math.sin(Game.time * 3.2 + N.id) * 1.3) : 0;
     c.translate(px, py + bob);
     c.scale(N.face < 0 ? -sc : sc, sc);
-    c.drawImage(sp.cv, -sp.ax, -sp.ay);
+    blitFine(c, sp.cv, -sp.ax, -sp.ay);
     c.restore();
     // стрела лучника в полёте
     const A = N.arw;

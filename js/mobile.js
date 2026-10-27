@@ -185,7 +185,8 @@ function initTouch() {
       return;
     }
     if (mode === 'fort') { defToolUp(); return; }
-    if (mode === 'erase' && !T.moved) { eraseAt(T.tile); return; }
+    // палец чуть дрогнул, но не ушёл с клетки — это всё равно касание (иначе снос здания «не срабатывал»)
+    if (mode === 'erase' && (!T.moved || Input.lastEraseTile === T.tile.join())) { eraseAt(T.tile); return; }
     if ((mode === 'one' || mode === 'ghost') && !T.moved) tapTile(T.tile);
   };
   cv.addEventListener('touchend', end, { passive: false });

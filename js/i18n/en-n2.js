@@ -33,6 +33,7 @@ I18N.add('en', {
   "стройки ждут материал: {0}": "sites are waiting for materials: {0}",
   "ждёт, пока освободится стройка": "waiting for a site to free up",
   "нет свободного здания: «{0}»": "no free building: “{0}”",
+  "все мастерские заняты ({0}) — постройте ещё одну": "all workshops are taken ({0}) — build another one",
   "нет работы": "no work", "куда угодно": "anywhere", "отовсюду": "from anywhere",
   "А ну работать!": "Get to work!", "Подъём, лентяй!": "Up, lazybones!", "Кто не работает — тот не ест!": "No work, no supper!",
   "Тут тебе не курорт!": "This ain’t a spa!", "Пинок — лучший мотиватор!": "A kick is the best motivator!",

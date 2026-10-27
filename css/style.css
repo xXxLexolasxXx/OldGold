@@ -523,6 +523,7 @@ body.mobile .dd-menu button { min-height: 38px; min-width: 42px; }
 body.mobile #topbar .m-only { order: 0; }
 body.mobile #dd-res .dd-t span:nth-child(n+3) { display: none; }   /* на телефоне в кнопке — дерево и камень, остальное в списке */
 body.mobile #dd-snd .dd-menu, body.mobile #dd-speed .dd-menu { right: 0; }
+body.mobile #dd-snd .dd-menu { flex-direction: column; align-items: stretch; }   /* в строку три кнопки шире 270 px и уходили за левый край экрана */
 body.mobile #toasts { top: calc(96px + env(safe-area-inset-top)); width: 94%; z-index: 21; }   /* под верхней полосой, поверх целей и вызова дня */
 body.mobile .toast, body.mobile .ach-toast { font-family: 'PT Serif', Georgia, serif; line-height: 1.3; letter-spacing: 0; }   /* Ruslan Display в мелком кегле плохо читается */
 body.mobile #view #hero-card .hc-body { zoom: .9; }
@@ -919,7 +920,18 @@ body.mobile.show-mm.mm-big .mm-wrap { left: 50%; right: auto; transform: transla
 }
 .team-ask button { min-width: 44px; min-height: 40px; font-size: 20px; }
 
-/* меню игры: четыре кнопки, группы раскрываются плавно (js/menugroups.js) */
+/* меню игры: сверху «Сохранить | Загрузить», «Автосохранение», «Справка»; ниже группы «Настройки» и «Ещё» (js/menugroups.js) */
+.mg-quick { order: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 4px; }
+.mg-quick button { justify-content: center; }
+.mg-quick button kbd { margin-left: 6px; }
+.menu-list > [data-menu="loadauto"] { order: 1; }
+.menu-list > [data-guide] { order: 2; }
+.menu-list > .mg[data-mg="set"] { order: 3; }
+.menu-list > .mg[data-mg="more"] { order: 4; }
+.menu-list > [data-menu="mainmenu"] { order: 5; margin-top: 4px; }
+body.coop .menu-list :is([data-menu="load"], [data-menu="loadauto"]) { display: none; }   /* в общей деревне загрузка недоступна */
+body:not(.mobile) .menu-list [data-land="open"] { display: none; }   /* поворот набок — только телефон */
+body.mobile .menu-list kbd { display: none; }   /* клавиши на телефоне ни к чему */
 .mg.hidden { display: none; }
 .mg-h { width: 100%; }
 .mg-h .mg-n { margin-left: auto; min-width: 20px; padding: 0 5px; font-size: 11px; color: var(--text-dim); border: 1px solid var(--line); border-radius: 9px; }

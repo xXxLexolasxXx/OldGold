@@ -4,7 +4,8 @@
 // Кадры строятся лениво и лежат в кэше с вытеснением; внешность — 2 бита (цвет колпака (рыжий, охра), щит), считаются из дома скелета (ключи, не в сейве).
 // Рисует drawSkeleton (skeletons.js вызывает skelDraw отсюда); без этого файла остаётся старое векторное рисование.
 
-const SKA = { PS: 6, PART: 2, W: 52, H: 56, AX: 22, AY: 50, FR: { idle: 6, walk: 8, atk: 9, hit: 4, die: 9, grab: 13 }, ATK_DUR: 0.72, HIT_DUR: 0.2, DIE_DUR: 0.9, MAX: 700 };
+const SKA = { PS: 6, PART: PX_FINE > 1 ? 3 : 2,      // PART — пикселей арта на игровой (мелкий пиксель — 3)
+  W: 52, H: 56, AX: 22, AY: 50, FR: { idle: 6, walk: 8, atk: 9, hit: 4, die: 9, grab: 13 }, ATK_DUR: 0.72, HIT_DUR: 0.2, DIE_DUR: 0.9, MAX: PX_FINE > 1 ? 400 : 700 };
 // палитра общая с призраками и нечистью: тёплая кость, ржавчина, мох; зрачки — тот же зелёный, что у призраков (#6fe0b4)
 const SKA_C = {
   bone: '#e4ddd2', bone2: '#b6ada0', bone3: '#867e74', ink: '#1e1b19', flash: '#f6f2ea',
@@ -32,6 +33,7 @@ function skelSprite(s, view, pose, frame) {
   c.translate(SKA.AX, SKA.AY);
   const eyes = skelPaint(c, look, view, pose, frame);
   const out = toPixelArt(cv, SKA.PS / SKA.PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
+  out.fine = SKA.PART;
   // огоньки в глазницах: ровные пиксели без квантования, мерцают по кадрам
   if (eyes) {
     const o = out.getContext('2d'), P = SKA.PART;
@@ -340,7 +342,7 @@ function skelDraw(c, s) {
   if (s.scared > 0) c.translate(Math.round(Math.sin(Game.time * 50) * 0.8), 0);
   if (view === 'E' && f < 0) c.scale(-1, 1);
   c.imageSmoothingEnabled = false;
-  c.drawImage(spr.cv, -SKA.AX, -SKA.AY, SKA.W, SKA.H);
+  blitFine(c, spr.cv, -SKA.AX, -SKA.AY, SKA.W, SKA.H);
   c.restore();
   if (gp && s.vsnap) skDrawVictim(c, s, px, py, f, gi, gp, k, gp.behind ? 'grip' : undefined);
 }

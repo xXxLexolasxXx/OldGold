@@ -1,0 +1,154 @@
+<!doctype html><meta charset=utf-8><title>Нечисть — выбор пиксельного шаблона</title>
+<body style="margin:0;background:#1d2e26">
+<canvas id=cv></canvas>
+<script>
+// Листы выбора стиля нечисти. Грузим скрипты игры по порядку index.html, после pixel.js — перехватчик toPixelArt.
+window.PXS_NOSTART = true;
+const PXS_FILES = ["../js/i18n.js","../js/crashlog.js","../js/telemetry.js","../js/world/fire.js","../js/loading.js","../js/uilayers.js","../js/sound/mute.js","../js/config.js","../js/difficulty.js","../js/mapgen.js","../js/world.js","../js/path.js","../js/entities.js","../js/levels.js","../js/events.js","../js/jobs.js","../js/life.js","../js/world/animals.js","../js/world/leisure.js","../js/world/streets.js","../js/world/night.js","../js/world/rocks.js","../js/world/nechist.js","../js/world/ghosts.js","../js/world/reaper.js","../js/world/skeletons.js","../js/world/grab.js","../js/world/mountains.js","../js/logistics.js","../js/sprites.js","../js/buildings.js","../js/bmodels.js","../js/world/graveyard.js","../js/world/decor.js","../js/world/subbotnik.js","../js/pixel.js","../js/pixelart.js","../js/pixelart2.js","../js/pixelart3.js","../js/pixelstyle.js","../js/smoking.js","../js/icons.js","../js/people.js","../js/world/skelart.js","../js/world/wildart.js","../js/world/creatures.js","../js/world/groundstyle.js","../js/world/groundsets.js","../js/world/nightground.js","../js/world/gargoyle.js","../js/world/terrain.js","../js/render.js","../js/inside.js","../js/save.js","../js/ui.js","../js/sound/music.js","../js/sound/music2.js","../js/sound/sfx.js","../js/world/fauna.js","../js/world/fauna2.js","../js/world/mimics.js","../js/world/beasts.js","../js/world/strange.js","../js/world/fairy1.js","../js/world/fairy2.js","../js/world/nechistart.js","../js/sound/sfx3.js","../js/world/weather.js","../js/sound/sfx2.js","../js/sound/ambience.js","../js/sound/seasfx.js","../js/stress.js","../js/mobile.js","../js/stats.js","../js/tutorial.js","../js/layout.js","../js/landscape.js","../js/main.js","../js/hero.js","../js/herolife.js","../js/flask.js","../js/herochain.js","../js/guilds.js","../js/world/neutralart.js","../js/world/neutrals.js","../js/world/leprechaunart.js","../js/world/leprechaun.js","../js/herokit.js","../js/heromana.js","../js/combat.js","../js/world/neutralart2.js","../js/world/goblinart.js","../js/world/neutrals2.js","../js/world/frogart.js","../js/world/frogart2.js","../js/combatfield.js","../js/guildpath.js","../js/herocard.js","../js/goal.js","../js/mapedit.js","../js/eras.js","../js/trade.js","../js/prio.js","../js/workers.js","../js/hire.js","../js/dilemma.js","../js/startmenu.js","../js/savefile.js","../js/mapeditui.js","../js/perf.js","../js/profile.js","../js/legacy.js","../js/world/golem.js","../js/world/pets.js","../js/world/festival.js","../js/world/season.js","../js/world/snow.js","../js/world/frostart.js","../js/world/winterlife.js","../js/world/ocean.js","../js/world/seaart.js","../js/world/seafauna.js","../js/world/seawork.js","../js/world/seafolk.js","../js/world/wildlife.js","../js/world/brawl.js","../js/world/games.js","../js/world/memes.js","../js/mood.js","../js/council.js","../js/laws.js","../js/sickness.js","../js/world/dragonpet.js","../js/world/frogs.js","../js/research.js","../js/family.js","../js/villdecor.js","../js/district.js","../js/world/kidsplay.js","../js/world/zemelka.js","../js/folk.js","../js/world/frogwild.js","../js/world/fair.js","../js/world/raid.js","../js/world/kurganart.js","../js/world/enemy.js","../js/world/spire.js","../js/world/golemart.js","../js/world/golemlife.js","../js/world/guards.js","../js/world/ascent.js","../js/world/spirelive.js","../js/world/echoart.js","../js/world/traitor.js","../js/world/travelers.js","../js/world/wildgnomes.js","../js/defense.js","../js/defensewar.js","../js/defenseart.js","../js/defenseui.js","../js/run/runsfx.js","../js/run/tavern.js","../js/run/dungeon.js","../js/coop/coopclient.js","../js/heroapp.js","../js/world/herohall.js","../js/oaths.js","../js/changelog.js","../js/guide.js","../js/chronicle.js","../js/photo.js","../js/daily.js","../js/native.js","../js/pwa.js","../js/durability.js","../js/arms.js","../js/heroabil.js","../js/heroult.js","../js/world/reaperfight.js","../js/world/banish.js","../js/arena/arenasim.js","../js/arena/arenaart.js","../js/arena/arenasfx.js","../js/arena/arena.js","../js/restip.js","../js/notify.js","../js/pins.js","../js/unions.js","../js/lore.js","../js/menugroups.js","../js/world/disasters.js","../js/world/wildfire.js","../js/reveal.js","../js/house.js","../js/campaign.js","../js/campaign/cavern.js","../js/campaign/art.js","../js/campaign/faces.js","../js/campaign/props.js","../js/campaign/sound.js","../js/campaign/act1.js","../js/campaign/act2.js","../js/campaign/act3.js","../js/campaign/act4.js","../js/campaign/act5.js","../js/world/foeart.js","../js/world/pxbeasts.js","../js/pccontrols.js"];
+const PXS_ERR = [];
+window.addEventListener('error', e => PXS_ERR.push((e.filename || '').split('/').pop() + ': ' + e.message));
+window.addEventListener("load", () => setTimeout(async () => {
+  const load = src => new Promise(r => { const s = document.createElement('script'); s.src = src; s.onload = s.onerror = r; document.body.appendChild(s); });
+  for (const f of PXS_FILES) {
+    await load(f);
+    
+  }
+  
+  try {
+    R.cam = R.cam || {}; R.cam.z = +(new URLSearchParams(location.search).get('z') || 3); R.sprMs = 0;
+    const cv = document.getElementById('cv'); cv.width = 1800; cv.height = 700; const c = cv.getContext('2d');
+    c.fillStyle = '#3a5a2a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(R.cam.z, R.cam.z); c.imageSmoothingEnabled = false;
+    if (new URLSearchParams(location.search).get('s') === 'gnome') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 1600; cv.height = 420; c.fillStyle = '#3a5a2a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(6, 6);
+      ['folk:moss:1!', 'chief:copper!', 'brigand', 'thief'].forEach((k, i) => { R.sprMs = 0; R.newSprites = 0; const sp = wildSprite(k, 'E', 'idle', 0); if (sp) c.drawImage(sp, 10 + i * 60, 20, sp.width / 2, sp.height / 2); });
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'sea2') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 2400; cv.height = 880; c.fillStyle = '#1e4a6a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(4, 4);
+      [['kraeye', 'idle', 0], ['kraeye', 'idle', 3], ['tent', 'idle', 1], ['tent', 'atk', 2], ['tent', 'atk', 5]].forEach(([k, a, f], i) => seaBlit(c, k, a, f, 45 + i * 85, 100));
+      [['serpent', 'swim', 0], ['serpent', 'swim', 3], ['serpent', 'atk', 4], ['serpent', 'die', 3]].forEach(([k, a, f], i) => seaBlit(c, k, a, f, 90 + (i % 2) * 280, 160 + Math.floor(i / 2) * 50));
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'gri') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 2400; cv.height = 460; c.fillStyle = '#3a5a2a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(4, 4);
+      [['idle', 0], ['walk', 2], ['fly', 0], ['fly', 4], ['atk', 4], ['die', 7]].forEach(([p, i], k) => fyBlit(c, sprGriffin(p, i), 50 + k * 95, 100));
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'beast') {
+      const kinds = (new URLSearchParams(location.search).get('k') || 'goblinChamp,troll').split(','), FR = (new URLSearchParams(location.search).get('f') || 'i0,windup,strike').split(',');
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 2400; cv.height = 40 + kinds.length * 460; c.fillStyle = '#2c4438'; c.fillRect(0, 0, cv.width, cv.height);
+      kinds.forEach((k, r) => FR.forEach((fr, i) => { const sp = naFrame(k, fr); c.save(); c.setTransform(3, 0, 0, 3, 0, 0); blitFine(c, sp.cv, 30 + i * 260 + sp.ax * 0.8 - sp.ax, 10 + r * 150 + 140 - sp.ay); c.restore(); }));
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'final') {
+      // итоговый лист: всё, что переведено на мелкий пиксель ×3, в игровом виде при масштабе 3
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 2400; cv.height = 2330; c.fillStyle = '#1d2e26'; c.fillRect(0, 0, cv.width, cv.height);
+      const Z = 3, T = (t, x, y, sz = 22, col = '#e8f4ea') => { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = col; c.font = 'bold ' + sz + 'px sans-serif'; c.fillText(t, x, y); c.restore(); };
+      T('Нечисть мелким пикселем ×3 — итог (как в игре, масштаб 3)', 24, 46, 34);
+      T('Векторная нечисть сведена втрое детальнее; слуги Малгора, стражи, эхо павших и летучие мыши нарисованы заново. Феи (Полудница, баньши, леший, кикимора, водяной, русалка, волк) — в ветке Полудницы.', 24, 78, 17, '#b8d4c0');
+      let row = 0;
+      const ROW = (title, items, h) => {
+        const y0 = 110 + row; T(title, 24, y0 + 22, 22, '#ffd27a');
+        c.save(); c.setTransform(Z, 0, 0, Z, 0, 0); c.fillStyle = '#2c4438'; c.fillRect(8 / Z, (y0 + 32) / Z, (cv.width - 16) / Z, h / Z);
+        let x = 24 / Z; const base = (y0 + 32 + h - 10) / Z;
+        for (const [nm, draw, w] of items) { draw(x + w / 2, base); c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#cfe8d6'; c.font = '14px sans-serif'; c.textAlign = 'center'; c.fillText(nm, (x + w / 2) * Z, y0 + 32 + h + 18); c.restore(); x += w + 8; }
+        c.restore(); row += h + 64;
+      };
+      const na = (k, fr) => (x, y) => { const sp = naFrame(k, fr); blitFine(c, sp.cv, x - sp.ax, y - sp.ay); };
+      R.sprMs = 0;
+      ROW('Гоблины, тролли, жаболюды, лесные', [
+        ['гоблин', na('goblin', 'i0'), 34], ['гоблин: удар', na('goblin', 'strike'), 40], ['чемпион', na('goblinChamp', 'strike'), 80], ['Шнырь', na('shnyrKing', 'i0'), 50],
+        ['лесной тролль', na('troll', 'strike'), 110], ['каменный тролль', na('trollS', 'i0'), 100], ['жаболюд-копейщик', na('ftG', 'strike'), 70], ['король жаболюдов', na('ftQ', 'i0'), 100],
+      ], 300);
+      ROW('Жаболюды, гномтавры и лесной народ', [
+        ['огнемаг', na('ftR', 'c3'), 60], ['охотник', na('ftB', 't3'), 70], ['гномтавр', na('gtSpear', 'i0'), 70], ['броненосец', na('armad', 'strike'), 66], ['леший-нейтрал', na('leshy', 'strike'), 70], ['кабан-страж', na('boar', 'i0'), 56],
+        ['моховик', na('spore', 'strike'), 60], ['фея', na('fairy', 'c3'), 54], ['ледяной элементаль', na('frost', 'strike'), 66],
+        ['лепрекон', (x, y) => { const l = lepFrame('i0'); blitFine(c, l.cv, x - l.ax, y - l.ay); }, 30],
+      ], 260);
+      ROW('Нежить и лес', [
+        ['ходячее дерево', (x, y) => { const e = entSprite('oak', 'f1'); blitFine(c, e.cv, x - ENT_CX, y - ENT_BASE); }, 84],
+        ['Курганный князь', (x, y) => { R.sprMs = 0; const k = kpSprite('strike', 2); blitFine(c, k.cv, x - KP.AX, y - KP.AY, KP.W, KP.H); }, 120],
+        ['скелет', (x, y) => { R.sprMs = 0; R.newSprites = 0; const s2 = skelSprite({ hx: 3, hy: 5 }, 'E', 'atk', 4); blitFine(c, s2.cv, x - SKA.AX, y - SKA.AY, SKA.W, SKA.H); }, 40],
+        ['призрак', (x, y) => blitFine(c, ghostSprite('atk', 4), x - GHOST_OX, y - 20 - GHOST_OY, GHOST_W, GHOST_H), 60],
+        ['жнец', (x, y) => blitFine(c, reaperSprite('atk', 4, 0), x - GHOST_OX * REAPER_SC, y - 20 - GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC), 84],
+        ['летучая мышь', (x, y) => blitFine(c, nxBatFrame(0.8), x - 9, y - 30, 18, 14), 24],
+      ], 360);
+      ROW('Малгор и его слуги — нарисованы заново', [
+        ['Малгор', na('fMalgor1', 'i0'), 44], ['Малгор: колдует', na('fMalgor3', 'c3'), 50], ['рыцарь тьмы', na('fKnight', 'strike'), 64], ['прислужник', na('fThrall', 'windup'), 40],
+        ['ворон', (x, y) => { const sp = naFrame('fRaven', 'i1'); blitFine(c, sp.cv, x - sp.ax, y - 14 - sp.ay); }, 26], ['костяной', na('fBone', 'strike'), 28],
+        ['страж огня', na('fG_fire', 'i0'), 52], ['страж льда', na('fG_ice', 'strike'), 60], ['страж костей', na('fG_bone', 'i0'), 52], ['страж теней', na('fG_shadow', 'c3'), 52], ['страж-голем', na('fG_golem', 'strike'), 74],
+        ['ожившая глыба', na('fRock', 'i0'), 30],
+      ], 240);
+      const ec = (L, an, f) => (x, y) => blitFine(c, ecSprite(ecLook(L), an, f), x - EC_OX, y - EC_OY, EC_W, EC_H);
+      ROW('Эхо павших, дракон, грифон, эндермен, море', [
+        ['эхо: воин', ec({ k: 'hero', c: 'warrior' }, 'atk', 5), 40], ['эхо: маг', ec({ k: 'hero', c: 'mage' }, 'hov', 0), 34], ['эхо: жрец', ec({ k: 'hero', c: 'priest' }, 'hov', 2), 34], ['эхо: шахтёр', ec({ k: 'gnome', c: 'miner' }, 'atk', 4), 38],
+        ['дракончик', (x, y) => fyBlit(c, sprDragon(0), x, y), 50], ['грифон', (x, y) => fyBlit(c, sprGriffin('atk', 4), x, y), 64], ['эндермен', (x, y) => fyBlit(c, sprEnder(1), x, y), 70],
+        ['краб', (x, y) => seaBlit(c, 'crab', 'atk', 4, x, y), 22], ['осьминог', (x, y) => seaBlit(c, 'octo', 'atk', 2, x, y), 28], ['змей', (x, y) => seaBlit(c, 'serpent', 'swim', 0, x, y), 48], ['кракен', (x, y) => seaBlit(c, 'tent', 'atk', 2, x, y), 24], ['глаз кракена', (x, y) => seaBlit(c, 'kraeye', 'idle', 0, x, y), 30],
+      ], 360);
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'sea') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 1900; cv.height = 500; c.fillStyle = '#1e4a6a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(5, 5);
+      const L = [['crab', 'idle', 0], ['crab', 'atk', 4], ['jelly', 'swim', 0], ['octo', 'idle', 0], ['octo', 'atk', 2], ['serpent', 'swim', 0], ['tent', 'atk', 2], ['kraeye', 'idle', 0], ['gull', 'idle', 0], ['mermaid', 'sit', 0], ['vodyanoy', 'idle', 0]];
+      let x = 20; L.forEach(([k, a, f]) => { const s2 = seaSprite(k, a, f); if (!s2) return; seaBlit(c, k, a, f, x + s2.ax, 70, 1, 1); x += s2.cv.width / (s2.cv.fine || 1) + 8; });
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'fy') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 1900; cv.height = 800; c.fillStyle = '#3a5a2a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(3, 3);
+      const L = [sprDragon(1), sprDragon(0), sprDragon(13), sprGriffin('idle', 0), sprGriffin('fly', 2), sprGriffin('atk', 4), sprEnder(0), sprEnder(1)];
+      let x = 40; L.forEach((sp, i) => { fyBlit(c, sp, x, i < 6 ? 110 : 240, 1, 1, 1); x += sp.width / (sp.fine || 1) + 14; if (i === 5) x = 40; });
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'echo') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 1900; cv.height = 700; c.fillStyle = '#1e2a30'; c.fillRect(0, 0, cv.width, cv.height); c.scale(4, 4);
+      const looks = [{ k: 'hero', c: 'warrior' }, { k: 'hero', c: 'mage' }, { k: 'hero', c: 'priest' }, { k: 'hero', c: 'barbarian' }, { k: 'hero', c: 'archer' }, { k: 'gnome', c: 'miner' }, { k: 'gnome', c: 'woodcutter' }, { k: 'gnome', c: 'lamplighter' }, { k: 'gnome', c: 'lamp' }];
+      looks.forEach((L, i) => { const V = ecLook(L); [['hov', 0], ['atk', 5]].forEach(([an, f], j) => { const sp = ecSprite(V, an, f); blitFine(c, sp, 20 + i * 50 - EC_OX + 10, 60 + j * 60 - EC_OY + 10, EC_W, EC_H); }); });
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'fzcmp') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 1500; cv.height = 860; c.fillStyle = '#1d2e26'; c.fillRect(0, 0, cv.width, cv.height);
+      c.fillStyle = '#e8f4ea'; c.font = 'bold 30px sans-serif'; c.fillText('Лесная нечисть фей: было → стало (пиксель ×3 мельче)', 20, 42);
+      c.font = '18px sans-serif'; c.fillStyle = '#b8d4c0'; c.fillText('Кикимора, леший, водяной — страшнее, по образцу Полудницы; русалка — живая девушка. Масштаб ×3, в каждой паре: покой и атака/пение.', 20, 70);
+      const old = { les: fzSpr('les', FZ_LESHY), lesA: fzSpr('lesA', FZ_LESHY_ARMS), kikA: fzSpr('kikA', FZ_KIK_A), kikB: fzSpr('kikB', FZ_KIK_B), vodA: fzSpr('vodA', FZ_VOD_A), vodB: fzSpr('vodB', FZ_VOD_B), rusA: fzSpr('rusA', FZ_RUS_A), rusB: fzSpr('rusB', FZ_RUS_B) };
+      const S = fzSprites(), Z = 3;
+      [['Кикимора', 'kikA', 'kikB'], ['Леший', 'les', 'lesA'], ['Водяной', 'vodA', 'vodB'], ['Русалка', 'rusA', 'rusB']].forEach(([nm, a, b], i) => {
+        const x0 = 20 + i * 370; c.fillStyle = '#e8f4ea'; c.font = 'bold 22px sans-serif'; c.fillText(nm, x0, 110);
+        c.font = '15px sans-serif'; c.fillStyle = '#8fb09a'; c.fillText('было', x0, 135); c.fillText('стало', x0, 300);
+        c.fillStyle = '#2c4438'; c.fillRect(x0, 140, 350, 130); c.fillRect(x0, 305, 350, 530);
+        c.imageSmoothingEnabled = false;
+        [a, b].forEach((k, j) => { const o = old[k]; c.drawImage(o, x0 + 20 + j * 170, 260 - o.height * Z, o.width * Z, o.height * Z);
+          const n = S[k], W = n.width / n.fine, H = n.height / n.fine; c.drawImage(n, x0 + 4 + j * 172, 825 - H * Z, W * Z, H * Z); });
+      });
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'fz') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 1860; cv.height = 340; c.fillStyle = '#2a4a2a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(3, 3);
+      const S = fzSprites(); let x = 20;
+      for (const k of ['les', 'lesA', 'kikA', 'kikB', 'vodA', 'vodB', 'rusA', 'rusB']) { const sp = S[k], W = sp.width / (sp.fine || 1), H = sp.height / (sp.fine || 1); blitFine(c, sp, x, 108 - H, W, H); x += W + 12; }
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'ban') {
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 1900; cv.height = 900; c.fillStyle = '#2a3a30'; c.fillRect(0, 0, cv.width, cv.height); c.scale(R.cam.z, R.cam.z);
+      [[0, 0], [0, 3], [0, 7], [1, 2], [2, 4], [2, 9]].forEach(([lv, p], i) => { const b = fzBansheeSprite(lv, p); blitFine(c, b, 10 + i * 100 + 50 - b.fzO[0], 40 + 30 - b.fzO[1] + 30, b.fzO[2], b.fzO[3]); });
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    if (new URLSearchParams(location.search).get('s') === 'foe') {
+      const K = ['fThrall', 'fKnight', 'fMalgor1', 'fMalgor3', 'fBone', 'fRock', 'fRaven', 'fG_fire', 'fG_ice', 'fG_bone', 'fG_shadow', 'fG_golem'], FR = ['i0', 'w2', 'windup', 'strike', 'c3', 'hurt'];
+      c.setTransform(1, 0, 0, 1, 0, 0); cv.width = 1900; cv.height = 2100; c.fillStyle = '#3a5a2a'; c.fillRect(0, 0, cv.width, cv.height); c.scale(R.cam.z, R.cam.z);
+      K.forEach((k, r) => FR.forEach((fr, i) => { const sp = naFrame(k, fr); blitFine(c, sp.cv, 40 + i * 100 - sp.ax / 2 + 30, 50 + r * 57 - sp.ay + 40); }));
+      document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length; return;
+    }
+    const L = [['goblinChamp', 'i0'], ['troll', 'strike'], ['ftQ', 'i0'], ['leshy', 'i0'], ['frost', 'strike']];
+    let x = 50; for (const [k, fr] of L) { const sp = naFrame(k, fr); blitFine(c, sp.cv, x - sp.ax, 110 - sp.ay); x += sp.w * 0.8; }
+    const e = entSprite('oak', 'idle'); blitFine(c, e.cv, 60 - ENT_CX, 225 - ENT_BASE);
+    R.sprMs = 0; const k = kpSprite('i0', 1); blitFine(c, k.cv, 170 - KP.AX, 225 - KP.AY, KP.W, KP.H);
+    R.sprMs = 0; R.newSprites = 0; const s = skelSprite({ hx: 3, hy: 5 }, 'E', 'idle', 0); blitFine(c, s.cv, 250 - SKA.AX, 225 - SKA.AY, SKA.W, SKA.H);
+    blitFine(c, ghostSprite('idle', 0), 320 - GHOST_OX, 200 - GHOST_OY, GHOST_W, GHOST_H);
+    blitFine(c, reaperSprite('idle', 0, 0), 400 - GHOST_OX, 200 - GHOST_OY, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
+    const w = fzWolfSprite(0, false); blitFine(c, w, 480 - w.fzO[0], 220 - w.fzO[1], w.fzO[2], w.fzO[3]);
+    const l = lepFrame('i0'); blitFine(c, l.cv, 560 - l.ax, 225 - l.ay);
+    document.title = 'ready ' + PX_FINE + ' ' + PXS_ERR.length;
+  } catch (e) { console.error(e.stack); document.title = 'fail ' + e.message; }
+  if (PXS_ERR.length) console.warn(PXS_ERR.slice(0, 15).join('\n'));
+}, 0));
+</script>

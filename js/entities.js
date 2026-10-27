@@ -258,7 +258,7 @@ function schoolStuck(b, dt) {
     const i = b.queue.indexOf(gw);
     if (i < 0) b.queue.unshift(gw); else if (i > 0) { b.queue.splice(i, 1); b.queue.unshift(gw); }
     b.stock.gold++; b.goldWait = 0;
-    toast(gw === 'miner' ? 'Школа выучит шахтёра в долг: без него золота не будет' : 'Школа выучит металлурга в долг: без него золота не будет', b);
+    toast(gw === 'miner' ? 'Школа выучит шахтёра в долг: без него золота не будет' : 'Школа выучит кузнеца в долг: без него золота не будет', b);
     return;
   }
   const carriers = Game.units.some(u => u.isCourier && !u.dead && !u.teamOf);
@@ -616,24 +616,39 @@ function innFood(b) {
 // доставку, работяге — за стройку (здание 3, дорога 1). Уровень 2 и 3: трудяга носит
 // 2 и 3 предмета за раз, работяга сам берёт со склада 1 и 2 материала на стройку.
 const LEVEL_XP = { serf: [0, 12, 40], builder: [0, 9, 30] };
+// Мастера в зданиях — 5 уровней; очко выслуги за каждый удачный цикл работы (срубил, отколол, собрал урожай,
+// вынул партию из печи, вылечил). Всем — работа быстрее (PROF_SPEED), у профессии ещё своё (PROF_PERK, js/jobs.js).
+const PROF_XP = [0, 12, 35, 75, 140];
+const PROF_KEYS = ['woodcutter', 'stonemason', 'farmer', 'baker', 'miner', 'smelter', 'butcher',
+  'enchanter', 'brewer', 'herder', 'healer', 'fisher'];
+for (const k of PROF_KEYS) LEVEL_XP[k] = PROF_XP;
+const PROF_SPEED = [1, 1, 1.08, 1.16, 1.25, 1.35];
+const isProf = u => LEVEL_XP[u.type] === PROF_XP;
+// во сколько раз мастер работает быстрее новичка (делит время ударов, замесов, плавки)
+function profSpeed(u) { return isProf(u) ? PROF_SPEED[unitLevel(u)] : 1; }
+function levelMax(type) { const t = LEVEL_XP[type]; return t ? t.length : 1; }
 function unitLevel(u) {
   const t = LEVEL_XP[u.type];
   if (!t) return 1;
   const xp = u.xp || 0;
-  return xp >= t[2] ? 3 : xp >= t[1] ? 2 : 1;
+  let L = 1;
+  while (L < t.length && xp >= t[L]) L++;
+  return L;
 }
-// Доля пути до следующего уровня (0..1); на 3-м уровне всегда 1
+// Доля пути до следующего уровня (0..1); на последнем уровне всегда 1
 function levelProgress(u) {
   const t = LEVEL_XP[u.type];
   if (!t) return 1;
   const L = unitLevel(u), xp = u.xp || 0;
-  if (L >= 3) return 1;
+  if (L >= t.length) return 1;
   return Math.min(1, (xp - t[L - 1]) / (t[L] - t[L - 1]));
 }
 const LEVEL_UP_TEXT = {
   serf: ['', 'дорос до 2-го уровня: теперь таскает по две штуки и жалуется вдвое громче', 'дорос до 3-го уровня: три предмета за раз и взгляд человека, который видел всё'],
   builder: ['', 'дорос до 2-го уровня: сам прихватывает со склада материал, чтобы не ждать трудяг', 'дорос до 3-го уровня: тащит на стройку по два материала, строит и поучает'],
 };
+const PROF_UP_TEXT = ['', 'дорос до 2-го уровня: руки помнят, работа идёт быстрее', 'дорос до 3-го уровня: делает быстрее и уже знает пару хитростей',
+  'дорос до 4-го уровня: мастер своего дела, иногда выходит больше, чем положено', 'дорос до 5-го уровня: живая легенда цеха, соседи ходят смотреть'];
 // Начислить выслугу и сообщить, если дорос до нового уровня
 function gainXp(u, n) {
   if (!LEVEL_XP[u.type]) return;
@@ -641,11 +656,13 @@ function gainXp(u, n) {
   u.xp = (u.xp || 0) + n;
   const after = unitLevel(u);
   if (after > before) {
-    const msg = `${UNIT_TYPES[u.type].name} ${LEVEL_UP_TEXT[u.type][after - 1]}`;
+    const prof = isProf(u);
+    const msg = `${UNIT_TYPES[u.type].name} ${(prof ? PROF_UP_TEXT : LEVEL_UP_TEXT[u.type])[after - 1]}`;
     logEvent('people', msg, u.x, u.y);
-    // мягкий старт: в первые двое суток всплывашка — только про первое повышение каждого звания, остальные в журнале
+    // мягкий старт: в первые двое суток всплывашка — только про первое повышение каждого звания, остальные в журнале;
+    // мастеров много разных — про них всегда только первое повышение звания
     const key = u.type + after, seen = Game.lvToast || (Game.lvToast = {});
-    if (typeof toast === 'function' && (!seen[key] || startOpen('lvToast'))) toast(msg);
+    if (typeof toast === 'function' && (!seen[key] || (!prof && startOpen('lvToast')))) toast(msg);
     seen[key] = 1;
   }
 }
@@ -846,6 +863,7 @@ class Unit {
       if (a.t === undefined) {
         a.t = a.wait * (this.food <= 0 && !this.noFood ? 1.6 : 1) * (this.injury === 'arm' && a.anim ? 1.5 : 1);
         if (a.anim && (this.type === 'hero' || this.teamOf)) a.t /= teamWorkMul(this);
+        else if (a.anim && this.home && LEVEL_XP[this.type] === PROF_XP) a.t /= profSpeed(this);   // опытный мастер работает быстрее
         a.T = a.t;                              // полная длительность — для фаз замаха и удара
         this.anim = a.anim || null;
         // звук инструмента — в момент удара, а не замаха

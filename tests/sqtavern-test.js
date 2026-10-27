@@ -21,7 +21,7 @@ const sim = S.newSim(12);
 sim.h.run(`if (!Game.hero) spawnHero && 0; for (const u of Game.units) if (u.type === 'hero' && u.hero) u.hero.level = 1`);
 S.stepN(sim, 200);
 ok(tav(sim).length === 0, 'таверна появилась без условия');
-ok(sim.h.run(`BUILD_ORDER.includes('squadtavern')`) === false, 'таверны не должно быть в меню стройки');
+ok(sim.h.run(`menuItemShown('squadtavern')`) === false, 'таверны не должно быть в меню стройки');
 // 2. условие выполнено — появляется сама, готовая, в 4–5 клетках наружу от крайнего бокового здания
 prep(sim);
 const hasHero = sim.h.run(`Game.units.some(u => u.type === 'hero')`);
@@ -44,8 +44,19 @@ if (t.length) {
   // 4. сейв/загрузка
   const save = sim.h.run(`JSON.stringify(serializeGame())`);
   ok(/squadtavern/.test(save), 'таверна не попала в сейв');
+  // 5. снесли — больше не возвращается сама, зато есть в меню стройки и ставится обычной стройкой
+  sim.h.run(`removeBuilding(Game.buildings.find(b => b.type === 'squadtavern' && !b.removed))`);
+  S.stepN(sim, 400);
+  ok(tav(sim).length === 0, 'снесённая таверна вернулась сама: ' + JSON.stringify(tav(sim)));
+  ok(sim.h.run(`menuItemShown('squadtavern')`) === true, 'после сноса таверны нет в меню стройки');
+  ok(sim.h.run(`checkPlacement('squadtavern', ${T.x}, ${T.y}, 0)`) === null, 'на месте снесённой таверны нельзя строить');
+  sim.h.run(`placeBuilding('squadtavern', ${T.x}, ${T.y}, false)`);
+  S.stepN(sim, 200);
+  ok(tav(sim).length === 1 && tav(sim)[0].x === T.x, 'новую таверну не поставить на старое место');
+  const save2 = JSON.parse(sim.h.run(`JSON.stringify(serializeGame())`));
+  ok(save2.unlocked.includes('sqtGone'), 'отметка «снесли — строй сам» не попала в сейв');
 }
-// 5. кооп: ставит сервер и всем говорит
+// 6. кооп: ставит сервер и всем говорит
 const srv = S.newSim(43, { coop: true });
 srv.h.run(`coopJoin('Ая', JSON.stringify({ cls: 'warrior' }))`);
 prep(srv);
@@ -54,6 +65,15 @@ S.stepN(srv, 200);
 ok(tav(srv).length === 1, 'в коопе сервер не поставил таверну');
 const ev = JSON.parse(srv.h.run('coopDrain()'));
 ok(ev.some(e => e.msg && e.msg.t === 'toast' && /Таверна отряда/.test(e.msg.text)), 'в коопе нет оповещения о таверне');
+
+// 7. кооп-мир с сюжетной целью (на сервере 27.10 лежит goal {mode:'scenario', ch:2}): кампании в коопе нет,
+//    главы там не идут — условие как в свободной игре, иначе таверна в общей деревне не появится никогда
+const srv2 = S.newSim(44, { coop: true });
+srv2.h.run(`coopJoin('Бо', JSON.stringify({ cls: 'warrior' }))`);
+prep(srv2);
+srv2.h.run(`Game.goal = goalNew('scenario'); Game.goal.ch = 2; for (const u of Game.units) if (u.type === 'hero' && u.hero) u.hero.level = 3`);
+S.stepN(srv2, 200);
+ok(tav(srv2).length === 1, 'в коопе с сюжетной целью (глава 2) таверна не появилась');
 
 if (fails.length) { console.log('ПРОВАЛ: ' + fails.length); process.exit(1); }
 console.log('Проверка таверны отряда: всё в порядке');

@@ -87,6 +87,19 @@ function neuTrySite(rng, stamp, minStart) {
   return { x, y, ds };
 }
 
+// Враждебные лагеря (жаболюды, гоблины, тролли, броненосцы, гномтавры, ледяные элементали) — не ближе этого до края
+// любого здания деревни. Одного расстояния от центра карты мало: улица и постройки уходят от центра на 10–15 клеток
+const neuHostileGap = () => (mapIsLegacy() ? 16 : 20);
+function neuVillageDist(x, y) {
+  let d = 1e9;
+  for (const b of Game.buildings) {
+    const dx = Math.max(b.x - x, 0, x - (b.x + (b.w || 1) - 1)), dy = Math.max(b.y - y, 0, y - (b.y + (b.h || 1) - 1));
+    const e = Math.hypot(dx, dy);
+    if (e < d) d = e;
+  }
+  return d;
+}
+
 function neuAddLair(k, site, minStart) {
   const { x, y, ds } = site;
   const far = Math.min(1, Math.max(0, (ds - minStart) / 40));
@@ -629,7 +642,8 @@ function neuDraw(c, N) {
   const bob = N.k === 'fairy' && !dead ? Math.round(Math.sin(t * 3.2 + N.id) * 1.3) : 0;
   c.translate(px, py + bob);
   if (N.face < 0) c.scale(-1, 1);
-  c.drawImage(sp.cv, -sp.ax, -sp.ay);
+  if (sp.hi) { c.imageSmoothingEnabled = false; c.drawImage(sp.cv, -sp.ax, -sp.ay, sp.w, sp.h); }   // 3× пиксельный кадр (pxbeasts.js)
+  else blitFine(c, sp.cv, -sp.ax, -sp.ay);
   c.restore();
   if (!dead && N.hp < N.mhp - 0.5) {
     const w = 18, hy = py - (N.k === 'leshy' ? 64 : (N.k === 'fairy' || N.k === 'pixie') ? 46 : N.k === 'boar' ? 38 : 40), r = Math.max(0, N.hp / N.mhp);

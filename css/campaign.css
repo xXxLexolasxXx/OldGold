@@ -80,3 +80,6 @@
 body.mobile #camp-hud { width: min(240px, 58vw); font-size: 12px; }
 body.mobile #camp-dlg { bottom: calc(66px + env(safe-area-inset-bottom)); }
 @media (prefers-reduced-motion: reduce) { #camp-dlg, .cd-text.in, #camp-bars i, .cd-pt .cd-blink { animation: none !important; } }
+
+/* кооп: выбор делает хост — у остальных подпись под вариантами */
+#camp-dlg .cd-coop { flex-basis: 100%; text-align: center; font-size: 12px; opacity: .75; margin-top: 2px; }

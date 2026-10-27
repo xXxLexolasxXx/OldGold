@@ -397,7 +397,7 @@ function fwDraw(c, W) {
   const bob = W.k === 'moth' ? Math.round(Math.sin(t * 3 + W.id) * 2) : 0;
   c.translate(px, py + bob);
   if (W.face < 0) c.scale(-1, 1);
-  c.drawImage(sp.cv, -sp.ax, -sp.ay);
+  blitFine(c, sp.cv, -sp.ax, -sp.ay);
   c.restore();
   // свет мотылька-фонарика: ночью ярче
   if (W.k === 'moth') {
