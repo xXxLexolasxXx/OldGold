@@ -66,6 +66,15 @@ ok(tav(srv).length === 1, 'в коопе сервер не поставил та
 const ev = JSON.parse(srv.h.run('coopDrain()'));
 ok(ev.some(e => e.msg && e.msg.t === 'toast' && /Таверна отряда/.test(e.msg.text)), 'в коопе нет оповещения о таверне');
 
+// 7. кооп-мир с сюжетной целью (на сервере 27.10 лежит goal {mode:'scenario', ch:2}): кампании в коопе нет,
+//    главы там не идут — условие как в свободной игре, иначе таверна в общей деревне не появится никогда
+const srv2 = S.newSim(44, { coop: true });
+srv2.h.run(`coopJoin('Бо', JSON.stringify({ cls: 'warrior' }))`);
+prep(srv2);
+srv2.h.run(`Game.goal = goalNew('scenario'); Game.goal.ch = 2; for (const u of Game.units) if (u.type === 'hero' && u.hero) u.hero.level = 3`);
+S.stepN(srv2, 200);
+ok(tav(srv2).length === 1, 'в коопе с сюжетной целью (глава 2) таверна не появилась');
+
 if (fails.length) { console.log('ПРОВАЛ: ' + fails.length); process.exit(1); }
 console.log('Проверка таверны отряда: всё в порядке');
 process.exit(0);

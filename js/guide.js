@@ -49,7 +49,7 @@ function whyInfo(b) {
   if (p === 'noworker') {
     const w = UNIT_TYPES[b.def.worker].name.toLowerCase();
     const free = Game.units.some(u => u.type === b.def.worker && !u.home && !u.dead && !u.teamOf);
-    if (free) return { t: `Свободный ${w} уже есть — сейчас придёт.`, a: 'Если долго: проверьте вкладку «Приоритеты» — не выключена ли эта профессия.', icon: 'noworker' };
+    if (free) return { t: `Свободный ${w} уже есть — сейчас придёт.`, a: 'Если долго: нажмите «Срочно» — здание получит свободного гнома первым.', icon: 'noworker' };
     return { t: `Нет рабочего: нужен именно ${w} — работяги и трудяги его не заменят.`, a: 'Ниже в окне этого здания: «Сюда» — перевести такого мастера из другого здания, или «Обучить» — школа выучит его за 1 золото, и он придёт прямо сюда.', icon: 'noworker' };
   }
   if (p === 'enough') return { t: 'Отдыхает: этой еды на складах вдоволь (~12 обедов на жителя). Курьеры не тратят время на лишний вывоз.', a: 'Снова заработает, как только запас подъедят.', icon: 'full' };
@@ -80,12 +80,11 @@ function whyInfo(b) {
 const SITE_MATS = ['trunk', 'timber', 'stone'];
 function siteWhy(b) {
   if (b.builder || b.hold) return null;
-  if (prioBlocked(b)) return { t: 'Стройки выключены во вкладке «Приоритеты».', a: 'Поставьте «Стройка» на «Авто» или «Высокий».', icon: 'pause' };
   const comp = compAt(b.doorX, b.doorY);
   const left = k => (b.def.cost[k] || 0) - b.usedOf[k];
   const onSite = SITE_MATS.some(k => b.stock[k] > 0), coming = SITE_MATS.some(k => b.incoming[k] > 0);
   const need = SITE_MATS.filter(k => left(k) > b.stock[k] + b.incoming[k]);
-  const gone = need.filter(k => !storeHaving(b.doorX, b.doorY, k, comp));
+  const gone = need.filter(k => !storeHaving(b.doorX, b.doorY, k, comp, b));
   const people = Game.units.filter(u => !u.dead && !u.teamOf);
   const bTot = people.filter(u => u.type === 'builder').length;
   const bFree = people.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.brk).length;
@@ -98,8 +97,8 @@ function siteWhy(b) {
       a: storeHas(g) > 0 ? `«${name}» лежит на складе, не связанном дорогой с этой стройкой — протяните дорогу.` : pr.length ? `Это делает: ${pr.map(bName).join(', ')} — проверьте, работает ли.` : `Постройте: ${producersOf(g).slice(0, 2).map(bName).join(' или ')}.`, icon: 'g:' + g };
   }
   if (!bTot) return { t: 'В деревне нет ни одного работяги.', a: 'Обучите работягу в окне школы, 1 золото — или выберите героя (H) и кликните по стройке: он достроит сам.', icon: 'noworker' };
-  if (!bFree) return { t: `Все работяги заняты (${bTot}). Закончат — придут.`, a: 'Быстрее: обучите ещё работяг в школе, поставьте «Стройка» на «Высокий» во вкладке «Приоритеты» или пошлите героя (H) на стройку.', icon: 'noworker' };
-  if (need.length && !sFree) return { t: `Материал на складе есть, но все трудяги заняты (свободно 0 из ${sTot}).`, a: 'Работяга сейчас придёт и принесёт сам. Чтобы быстрее — обучите трудяг или поднимите «Стройку» в «Приоритетах».', icon: 'g:' + need[0] };
+  if (!bFree) return { t: `Все работяги заняты (${bTot}). Закончат — придут.`, a: 'Быстрее: обучите ещё работяг в школе, нажмите «Срочно» в окне стройки или пошлите героя (H) на стройку.', icon: 'noworker' };
+  if (need.length && !sFree) return { t: `Материал на складе есть, но все трудяги заняты (свободно 0 из ${sTot}).`, a: 'Работяга сейчас придёт и принесёт сам. Чтобы быстрее — обучите трудяг или нажмите «Срочно».', icon: 'g:' + need[0] };
   return { t: `Работяга уже идёт (свободно ${bFree} из ${bTot}).`, a: 'Подождите немного.', icon: 'noworker' };
 }
 
@@ -122,7 +121,7 @@ function schoolWhy(b) {
   }
   const serfs = Game.units.filter(u => u.isCourier && !u.dead && !u.teamOf);
   if (!serfs.length) return { t: 'Нет ни одного трудяги, чтобы привезти золото.', a: 'Школа сама возьмёт слиток со склада и выучит трудягу.', icon: 'noworker' };
-  return { t: 'Золото на складе есть — его привезут первым же свободным трудягой.', a: 'Если долго: проверьте вкладку «Приоритеты» (трудяги не на «Выкл»).', icon: 'g:gold' };
+  return { t: 'Золото на складе есть — его привезут первым же свободным трудягой.', a: 'Если долго: нажмите «Срочно» — на 20 секунд сюда повезут первым.', icon: 'g:gold' };
 }
 
 function whyHTML(b) {
@@ -319,7 +318,7 @@ const HINTS = {
     when: () => Game.buildings.some(b => b.level === 2) },
   icon: { icon: ['ui', 'noworker'], text: 'Над зданием значок — значит, оно встало. Коснитесь (кликните) здания: в окне будет причина и что делать. Все проблемы собраны во вкладке «Хозяйство».', ref: 't:roads',
     when: () => Guide.playT > 120 && Game.buildings.some(b => b.state === 'done' && b.problem() && b.problem() !== 'paused') },
-  prio: { icon: ['ui', 'prio'], text: 'Гномы хватаются не за то? Вкладка «Приоритеты»: что делать в первую очередь (еда, стройка, дрова, оборона) и кого отключить. «Авто» — как раньше, ничего трогать не обязательно. А на паузе (Пробел) можно спокойно расставить дороги и здания.',
+  prio: { icon: ['ui', 'prio'], text: 'Что важнее, гномы решают сами: сначала еда, зимой дрова, к ночи оборона. Нужно что-то прямо сейчас? В окне здания кнопка «Срочно» — 20 секунд все свободные носят туда и оттуда. А на паузе (Пробел) можно спокойно расставить дороги и здания.',
     when: () => Guide.playT > 480 && Game.buildings.filter(b => b.state === 'done').length >= 10 },
   gest: { icon: ['ui', 'scroll'], text: 'Телефон: один палец — карта, два — масштаб, касание здания — выбрать, со зданием в руке касание показывает место, второе — ставит. Дорогу ведите пальцем.', ref: 't:mob',
     when: () => Mobile && Mobile.on && Guide.playT > 40 },

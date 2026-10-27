@@ -224,7 +224,6 @@ function coopCmd(name, msgJson, admin) {
   const can = k => { if (admin || coop.perms[k]) return true; coopSay(name, 'Хост запретил: ' + COOP_PERMS[k].toLowerCase()); return false; };
   switch (m.t) {
     case 'go': if (u && coopInt(m.x) && coopInt(m.y)) coopGo(u, m.x, m.y); break;
-    case 'prio': if (can('manage')) coop.out.push({ msg: prioCmd(m) }); break;
     case 'use': if (u && coopInt(m.slot) && m.slot >= 0 && m.slot < COOP_INV) coopUseItem(u, m.slot); break;
     case 'drop': if (u && coopInt(m.slot) && u.hero.inv[m.slot]) { const k = u.hero.inv[m.slot].k; u.hero.inv[m.slot] = null; if (COOP_QITEM[k]) coopGroupFail(`${name} выбросил «${COOP_QITEM[k]}»`); } break;
     case 'give': if (u && can('give') && coopSlow(name, 0.8)) coopGive(name, m); break;
@@ -329,6 +328,7 @@ function coopBuildingAct(name, m) {
     case 'deliver': if (b.state === 'done' && (b.def.inputs || b.isStore())) toggleDeliver(b); break;
     case 'upgrade': if (canUpgrade(b)) startUpgrade(b); break;
     case 'upgcancel': if (b.upg) cancelUpgrade(b); break;
+    case 'urgent': urgPress(b); break;
     case 'demolish': removeBuilding(b); break;
     case 'train': if (coopOwn(UNIT_TYPES, m.type) && !UNIT_TYPES[m.type].animal && !UNIT_TYPES[m.type].legacy && b.queue && b.queue.length < 10) b.queue.push(m.type); break;
     case 'untrain': if (coopInt(m.i)) b.queue.splice(m.i, 1); break;

@@ -528,6 +528,7 @@ function initUI() {
       Game.selected = null;
     }
     else if (act === 'pause') b.paused = !b.paused;
+    else if (act === 'urgent') urgPress(b);
     else if (act === 'upgrade') startUpgrade(b);
     else if (act === 'upgcancel') cancelUpgrade(b);
     else if (act === 'deliver') toggleDeliver(b);
@@ -714,6 +715,10 @@ function infoBuilding(b) {
   if (same > 1) h += `<button data-act="prev" title="Предыдущее такое же ([)">${ui('prev')}</button><button data-act="next" title="Следующее такое же (])">${ui('next')}</button>`;
   h += `<button data-act="goto" title="Показать на карте">${ui('eye')}</button>`;
   if (b.state === 'done' && (def.worker || def.auto)) h += `<button data-act="pause" title="Пауза производства (P)" class="${b.paused ? 'active' : ''}">${ui(b.paused ? 'play' : 'pause')}</button>`;
+  if (urgCan(b)) {
+    const on = urgOn(b);
+    h += `<button data-act="urgent" class="urg${on ? ' active' : ''}" title="Срочно: 20 секунд все свободные гномы носят сюда и отсюда, следом — всё, что связано с этим зданием. Нажмите ещё раз — снова 20 секунд">${ui('urgent')}<span>${on ? t('{0} с', urgLeft(b)) : 'Срочно'}</span></button>`;
+  }
   h += `<span class="grow"></span><button data-act="demolish" title="Снести">${ui('trash')}</button></div>`;
   // большая понятная кнопка: принимать ли сюда доставки
   if (b.state === 'done' && (def.inputs || b.isStore())) {

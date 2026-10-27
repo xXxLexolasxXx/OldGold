@@ -272,7 +272,7 @@ function coopApplyBuilding(d, byId) {
   b.hits = d.hits ?? (b.state === 'done' ? b.maxHits : 0);
   b.queue = d.queue || [];
   b.training = d.training || null;
-  b.paused = !!d.paused; b.hold = !!d.hold; b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
+  b.paused = !!d.paused; b.urgUntil = d.urg || 0; b.hold = !!d.hold; b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
   if (d.recipeOn && d.recipeOn.length === b.recipeOn.length) b.recipeOn = d.recipeOn;
   b.recipeIdx = d.recipeIdx || 0;
   b.orders = Array.isArray(d.orders) ? d.orders : [];
@@ -1230,6 +1230,7 @@ function coopInitControls() {
           issueCmd(h, c);
           if (c.kind !== 'move') floater(c.tx + 0.5, c.ty - 0.4, c.label, '#f6d458');
           coopHintDone();
+          if (inn) selectBuilding(b);   // герой идёт поесть, но и окно трактира открывается — иначе по нему «не кликнуть»
           return;
         }
         toast('Сюда не пройти');
@@ -1385,7 +1386,7 @@ function coopAdminOpen() {
   coopHandle = function (m) {
     if (m.t === 'stats') { coopStatsShow(m.s, m.server); return; }
     if (m.t === 'tempo') { Coop.tempo = { speed: m.speed, paused: m.paused, votes: m.votes, need: m.need }; tempoShow(); return; }
-    if (m.t === 'prio') { prioApply(m.p); updateUI(true); return; }
+    if (m.t === 'prio') return;      // старый сервер с ручными приоритетами — их больше нет
     if (m.t === 'wk') { wkApply(m); updateUI(true); return; }
     if (m.t === 'un') { if (typeof unApply === 'function') unApply(m); return; }
     if (m.t === 'diff') {

@@ -68,7 +68,8 @@ scriptTest('wildfire: горящие куры и деревья, фонари, �
 scriptTest('disaster: стихийные бедствия — знамения, виды на сидах, колодец, ремонт, море, сейв, кооп', 'disaster-test.js', [], 420000);
 scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
 scriptTest('heroapp: цвет жилета героя — наряд, фигура, сейв', 'heroapp-test.js');
-scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
+scriptTest('urgent: авто-срочность и кнопка «Срочно», старые приоритеты в сейве', 'urgent-test.js');
+scriptTest('woodhold: зимний запас дров не держит стройку и лесопилку без досок', 'woodhold-test.js');
 scriptTest('pc: управление для ПК — переназначение клавиш, обмен, запреты, сохранение, способности героя', 'pc-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('coop-hire: кооп — обученный специалист занимает здание, клиент видит работника', 'coop-hire-test.js');
@@ -111,7 +112,7 @@ scriptTest('arena-net: арена онлайн — очередь по Эло, �
 scriptTest('skelart: скелеты в пиксель-арте — кадры 6/8/9/4/9/13, виды, кэш, облик в сейве, рисование без падений', 'skelart-test.js');
 scriptTest('kurganart: Курганный князь в пиксель-арте — кадры, фазы I–III, кэш, рисование без падений', 'kurganart-test.js');
 scriptTest('icon: значки, названия и описания всех способностей, окно гильдии', 'icon-test.js');
-scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
+scriptTest('tempo: кооп-пауза, скорость, старые приоритеты не рассылаются', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
 scriptTest('faceart: портреты собеседников — 16 лиц, два кадра, 72×72 пикселя, кэш, у всех собеседников кампании и лора есть портрет', 'faceart-test.js');
