@@ -1030,11 +1030,13 @@ function drawOverlay(c) {
     const bx = h[0] - Math.floor(d.w / 2), by = h[1] - d.h + 1;
     const err = checkPlacement(tool.type, bx, by, d.rot);
     if (tool.type === 'bonfire') drawBonfireRings(c, (bx + d.w / 2) * TILE, (by + d.h / 2) * TILE);
-    c.fillStyle = err ? 'rgba(220,40,30,0.35)' : 'rgba(60,220,80,0.3)';
+    c.fillStyle = err ? 'rgba(220,40,30,0.25)' : 'rgba(60,220,80,0.16)';
     c.fillRect(bx * TILE, by * TILE, d.w * TILE, d.h * TILE);
-    c.globalAlpha = 0.7;
+    // примерка — заметно полупрозрачное здание (не путать с построенным), едва заметно дышит
+    c.globalAlpha = 0.55 + 0.03 * Math.sin(performance.now() / 320);
     drawBuilding(c, { type: tool.type, rot: d.rot, x: bx, y: by, w: d.w, h: d.h, doorX: bx + d.dx, doorY: by + d.dy, state: 'done', anim: 0, id: 0, stock: emptyGoods(), pigs: [] }, true);
     c.globalAlpha = 1;
+    c.strokeStyle = err ? 'rgba(255,80,64,0.75)' : 'rgba(96,255,128,0.6)'; c.lineWidth = 1; c.strokeRect(bx * TILE + 0.5, by * TILE + 0.5, d.w * TILE - 1, d.h * TILE - 1);
     ant((bx + d.dx) * TILE + 2, (by + d.dy) * TILE + 2, TILE - 4, TILE - 4, err ? '#ff5040' : '#60ff80');
   } else if (tool.kind === 'fort') {
     defPreview(c, h);
