@@ -21,6 +21,8 @@ const GPX = {
   IR: [[36, 46, 52], [80, 94, 100], [136, 152, 156]],
   CL: [[8, 16, 18], [30, 42, 42], [66, 80, 76]],
   EYE: { idle: [[80, 226, 170], [214, 255, 236]], boo: [[255, 60, 30], [255, 214, 170]], calm: [[120, 200, 255], [226, 246, 255]] },
+  BAND: [[8, 16, 22], [18, 32, 40], [32, 52, 60], [52, 78, 84]],
+  PATCH: [[20, 30, 30], [34, 50, 48], [52, 74, 68], [76, 102, 92]],
   BRD: [[70, 124, 124], [118, 176, 166], [172, 222, 206], [218, 246, 236], [244, 255, 250]],
   EDGE: [6, 22, 28],
 };
@@ -35,10 +37,10 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
   const eye = GPX.EYE[boo ? 'boo' : calm ? 'calm' : 'idle'];
   // раскрытие рта 0..1: челюсть отпадает вниз, овал лица вытягивается, рот не выходит за подбородок
   const open = o.open ?? (atk ? Math.max(wind * 0.4, strike) * (1 - recoil * 0.6) : boo ? 0.85 + 0.15 * sn(2) : hurt ? 0.35 : calm ? 0 : 0.1 + 0.06 * sn(2));
-  const drop = open * 7, FX = HX + (v === 'C' ? 2 : 0), FY = HY + 3, FRX = v === 'B' ? 13 : 14;
-  // овал лица: лоб под полями колпака (FY − 13), подбородок FY + 16 + drop, книзу сужается
+  const drop = open * 7, FX = HX + (v === 'C' ? 2 : 0), FY = HY + 3, FRX = v === 'B' ? 14 : 14;
+  // овал лица: лоб под полями колпака (FY − 13), подбородок FY + 19 + drop, книзу сужается
   const faceF = (x, y) => {
-    const dy = (y - FY) / (y > FY ? 16 + drop : 13), dx = (x - FX) / (FRX * (1 - Math.max(0, dy) * 0.28));
+    const dy = (y - FY) / (y > FY ? 19 + drop : 13), dx = (x - FX) / (FRX * (1 - Math.max(0, dy) * 0.24));
     return (Math.hypot(dx, dy) - 1) * 12;
   };
   const ell = (cx, cy, rx, ry) => DS_ell(cx, cy, rx, ry), cap = DS_cap;
@@ -58,6 +60,17 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
   };
   const folds = (x, y, mat, idx, ramp) => {                                           // складки савана — вертикальные тени, волной; пряди бороды деда
     if (mat === 'brd') return ((x * 0.5 + Math.sin(y * 0.11 + p * TAU) * 1.2) % 3 + 3) % 3 < 0.8 ? ramp[Math.max(0, idx - 2)] : null;
+    if (mat === 'cap') {                                                              // колпак: складки по конусу, мятые кольца, потрёпанный край полей, у капюшона — бахрома
+      const cy = y - HY, cx = x - HX;
+      if (cy > -9 && cy < -2 && hsh(Math.floor(x / 2) * 3.7) > 0.62 && (v !== 'C') && cy > -4.5) return ramp[0];
+      if (v === 'C') { const d = faceF(x, y); return d > 0 && d < 5 && hsh(Math.floor(x / 2) + y * 0.3) > 0.55 ? ramp[0] : (((cx * 0.3 + cy * 0.12) % 4 + 4) % 4 < 0.7 ? ramp[Math.max(0, idx - 1)] : null); }
+      if (cy < -19 && (((cx + cy * 0.3 + 40) % 8) + 8) % 8 < 1.2) return ramp[Math.max(0, idx - 1)];
+      if (cy < -22 && (((cy + Math.sin(cx * 0.35) * 2.2) % 10) + 10) % 10 < 1) return ramp[Math.max(0, idx - 2)];
+      if (cy < -22 && (((cy + Math.sin(cx * 0.35) * 2.2) % 10) + 10) % 10 > 8.6) return ramp[Math.min(ramp.length - 1, idx + 1)];
+      return null;
+    }
+    if (mat === 'band') return Math.round(y - HY + (v === 'B' ? 19 : 20)) === 0 && ((x + 40) % 4) < 2 ? GPX.BO[2] : null;   // стежки по ленте
+    if (mat === 'patch') { const ex = Math.abs(x - (v === 'B' ? HX + 7 : HX - 5 + tip * 0.15)), ey = Math.abs(y - HY + (v === 'B' ? 28 : 31)); return (ex > 3.5 || ey > 3) ? (((x + y) & 1) ? GPX.BO[3] : ramp[0]) : null; }
     if (mat !== 'sh') return null;
     const w = ((x * 0.26 + Math.sin(y * 0.07 + p * TAU) * 1.6) % 5 + 5) % 5;
     return y > 24 && w < 0.9 ? ramp[Math.max(0, idx - 1)] : null;
@@ -116,6 +129,8 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
     parts.push({ f: ell(HX, HY - 2, 18, 19), mat: 'bo', k: 6 }, { f: faceF, mat: 'bo', k: 4 });
     parts.push(...DS_chain([[HX, HY - 13, 19], [HX - 4 + tip * 0.3, HY - 38, 10], [HX - 14 + tip, HY - 60, 4], [HX - 26 + tip * 1.5, HY - 70, 1]], { mat: 'cap', k: 3 }));
     parts.push({ f: ell(HX, HY - 10, 23, 7), mat: 'cap', k: 2, front: true, fw: 3 });
+    parts.push({ f: (x, y) => Math.max(DS_ell(HX, HY - 13, 19, 30)(x, y), Math.abs(y - HY + 20) - 2.5), mat: 'band', zone: true });
+    parts.push({ f: (x, y) => Math.max(Math.abs(x - HX + 5 - tip * 0.15) - 4.5, Math.abs(y - HY + 31) - 4), mat: 'patch', zone: true });
     parts.push({ f: (x, y) => Math.max(faceF(x, y), HY - 4 - y), mat: 'bo', zone: true });
     for (const e of [-1, 1]) parts.push({ f: ell(FX + e * 10, FY + 7 + drop * 0.3, 2.5, 5), mat: 'hol', zone: true });
   } else if (v === 'B') {
@@ -123,9 +138,11 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
     const bw = sn(1, 1.3) * 4 - strike * 9;
     parts.push({ f: ell(HX, HY - 1, 19, 18), mat: 'bo', k: 6 });
     parts.push(...DS_chain([[HX, HY - 11, 20], [HX + 2, HY - 33, 11], [HX + 15 + tip, HY - 45, 5], [HX + 28 + tip, HY - 36, 2]], { mat: 'cap', k: 3 }));
-    parts.push({ f: (x, y) => Math.max(ell(FX, FY + 7 + drop * 0.5, 21, 24 + drop * 0.6)(x, y), HY - 5 - y), mat: 'brd', k: 4, front: true, fw: 5, W: 6 });
-    parts.push(...DS_chain([[FX, FY + 22 + drop, 15], [FX + 2 + bw * 0.5, FY + 40, 11], [FX - 1 + bw, FY + 58, 5], [FX - 4 + bw * 1.6, FY + 70, 1]], { mat: 'brd', k: 6, front: true, fw: 5, W: 6 }));
+    parts.push({ f: (x, y) => Math.max(ell(FX, FY + 12 + drop * 0.6, 18, 22 + drop * 0.6)(x, y), FY - 3 - y), mat: 'brd', k: 4, front: true, fw: 5, W: 6 });
+    parts.push(...DS_chain([[FX, FY + 27 + drop, 14], [FX + 2 + bw * 0.5, FY + 44, 10], [FX - 1 + bw, FY + 60, 5], [FX - 4 + bw * 1.6, FY + 72, 1]], { mat: 'brd', k: 6, front: true, fw: 5, W: 6 }));
     parts.push({ f: ell(HX, HY - 9, 23, 7), mat: 'cap', k: 2, front: true, fw: 3 });
+    parts.push({ f: (x, y) => Math.max(DS_ell(HX, HY - 12, 20, 30)(x, y), Math.abs(y - HY + 19) - 2.5), mat: 'band', zone: true });
+    parts.push({ f: (x, y) => Math.max(Math.abs(x - HX - 7) - 4.5, Math.abs(y - HY + 28) - 4), mat: 'patch', zone: true });
     parts.push({ f: (x, y) => Math.max(faceF(x, y), HY - 4 - y), mat: 'bo', zone: true });
     parts.push({ f: ell(FX + 2, FY + 5, 4.5, 4), mat: 'nose', zone: true });
   } else {
@@ -134,7 +151,7 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
     parts.push({ f: (x, y) => faceF(x, y) - 3, mat: 'void', zone: true });
     parts.push({ f: ell(lean * 0.5, 36, 13, 17), mat: 'void', zone: true });
   }
-  const body = DS_body(K, parts, { sh: SH, bo: BO, hol: BO.slice(0, 3), cap: CAP, brd: GPX.BRD, nose: BO, void: VO }, {
+  const body = DS_body(K, parts, { sh: SH, bo: BO, hol: BO.slice(0, 3), cap: CAP, band: GPX.BAND, patch: GPX.PATCH, brd: GPX.BRD, nose: BO, void: VO }, {
     bb: [-88, -92, 87, 126], W: 9, k: 6, amb: 0.22, mat: 'sh', cut, tex: folds,
     light: hurt ? () => 0.3 : undefined,
   });
@@ -144,9 +161,9 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
     ...[-1, 1].map(e => ({ f: ell(FX + e * 10, FY + 7 + drop * 0.3, 2.5, 5), mat: 'hol', zone: true }))], { bo: BO.slice(0, 4), hol: BO.slice(0, 2) }, { bb: [-40, -40, 40, 50], W: 6, k: 4, amb: 0.1, mat: 'bo', light: hurt ? () => 0.3 : undefined });
 
   // ---- борода из тумана (A): пряди растут по линии челюсти — от висков вокруг подбородка, лицо не закрывают
-  if (v === 'A') for (let b = -4; b <= 4; b++) {
-    const th = Math.PI / 2 + b * 0.36, a = 0.85 - Math.abs(b) * 0.07;
-    const x0 = FX + Math.cos(th) * (FRX * (1 - 0.28 * Math.max(0, Math.sin(th))) + 1), y0 = FY + Math.sin(th) * (16 + drop + 1);
+  if (v === 'A') for (let b = -3; b <= 3; b++) {
+    const th = Math.PI / 2 + b * 0.3, a = 0.85 - Math.abs(b) * 0.07;
+    const x0 = FX + Math.cos(th) * (FRX * (1 - 0.24 * Math.max(0, Math.sin(th))) + 1), y0 = FY + Math.sin(th) * (19 + drop + 1);
     const x1 = x0 + Math.cos(th) * 5 + sn(1, b * 0.9) * 3, y1 = y0 + 14, x2 = x0 + Math.cos(th) * 8 + sn(2, b * 1.3) * 7 - strike * 9, y2 = y0 + 26 + (4 - Math.abs(b)) * 4;
     const pts = [];
     for (let i = 0; i <= 8; i++) { const t = i / 8, u = 1 - t; pts.push([u * u * x0 + 2 * u * t * x1 + t * t * x2, u * u * y0 + 2 * u * t * y1 + t * t * y2, 2.2 - t * 1.4]); }
@@ -245,9 +262,9 @@ function ghostPxDie(v, t) {
   });
 }
 
-// Кадры (шаг 8 к/с, ролик promo/ref/ghost-px-2026-10-27): парение и «задобрен» — 8 на петлю, пугает — 6 (рот раскрыт), удар — 6
-// (замах 2, бросок 2, отдача 2), рана — 1, бегство — 4, гибель — 6. Холст 3× мира, 1:1 без сглаживания.
-const GPX_N = { idle: 8, boo: 6, calm: 8, atk: 6, hurt: 1, flee: 4, die: 6 }, GPX_FPS = 8;
+// Кадры (выбор владельца — шаг 12 кадров на петлю парения 1,2 с, 10 к/с; ролики promo/ref/ghost-px-2026-10-27): парение и «задобрен» — 12,
+// пугает — 9 (рот раскрыт), удар — 9 (замах 3, бросок 3, отдача 3), рана — 1, бегство — 6, гибель — 6. Холст 3× мира, 1:1 без сглаживания.
+const GPX_N = { idle: 12, boo: 9, calm: 12, atk: 9, hurt: 1, flee: 6, die: 6 }, GPX_FPS = 10;
 function ghostPxSprite(v, mood, f) {
   f = Math.max(0, Math.min(GPX_N[mood] - 1, f | 0));
   return fzPxSprite('gh' + v + mood + f, 60, 76, 30, 32, () => mood === 'die' ? ghostPxDie(v, (f + 1) / 6)
