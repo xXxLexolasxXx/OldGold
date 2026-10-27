@@ -19,6 +19,7 @@ const ARENA_TUNE = {
   cx: 7, cy: 7, R: 7, fr: 0.4, start: 4.5,
   obs: [{ k: 'col', x: 7, y: 4.2, r: 0.6 }, { k: 'col', x: 7, y: 9.8, r: 0.6 }, { k: 'box', x: 4.4, y: 4.6, r: 0.55 }, { k: 'box', x: 9.6, y: 9.4, r: 0.55 }],
   // раунд и матч
+  holyCut: 0.5, kiteSlow: 1,
   roundT: 75, otT: 60, otEvery: 5, otStep: 0.5, otMin: 2.5, otDmg: 0.03, countT: 3, endT: 1.2, restT: 2.8, wins: 2,
   // движение и перекат
   spd: 3.2, rollT: 0.45, rollMove: 0.3, rollDist: 1.5, rollCd: 5, atkLock: 0.15, reach: 0.15,
@@ -40,15 +41,15 @@ const ARENA_TUNE = {
   // mv — скорость (Клятва), rng — дальность, atkT — интервал удара, dmg — урон удара, acc — точность, crit — шанс крита,
   // shot — снаряд вместо удара вблизи, dodge — уворот Клятвы, melee — точность вплотную у стрелка, stand — бот не кайтит
   cls: {
-    warrior: { res: 'rage', hp: 294, mv: 0.937, rng: 1.5, atkT: 1.0, dmg: 6.93, acc: 0.85 },
-    barbarian: { res: 'rage', hp: 236, mv: 1.029, rng: 1.5, atkT: 1.15, dmg: 6.3, acc: 0.8 },
-    archer: { res: 'energy', hp: 283, mv: 1.006, rng: 6.74, atkT: 1.1, dmg: 6.77, acc: 0.85, shot: 'arrow', melee: 0.8 },
+    warrior: { res: 'rage', hp: 291, mv: 0.937, rng: 1.5, atkT: 1.0, dmg: 6.93, acc: 0.85 },
+    barbarian: { res: 'rage', hp: 236, mv: 1.029, rng: 1.5, atkT: 1.15, dmg: 6.2, acc: 0.8 },
+    archer: { res: 'energy', hp: 283, mv: 1.006, rng: 6.74, atkT: 1.1, dmg: 6.7, acc: 0.85, shot: 'arrow', melee: 0.8 },
     rogue: { res: 'energy', hp: 227, mv: 0.995, rng: 1.4, atkT: 0.9, dmg: 6.55, acc: 0.88, crit: 0.2 },
     mage: { res: 'mana', hp: 238, mv: 0.975, rng: 6.2, atkT: 1.2, dmg: 6.8, acc: 0.9, shot: 'bolt', melee: 0.8 },
-    druid: { res: 'mana', hp: 250, mv: 0.922, rng: 3.76, atkT: 1.2, dmg: 6.3, acc: 0.88, shot: 'thorn', stand: 1 },
+    druid: { res: 'mana', hp: 245, mv: 0.922, rng: 3.76, atkT: 1.2, dmg: 6.3, acc: 0.88, shot: 'thorn', stand: 1 },
     priest: { res: 'mana', hp: 284, mv: 1.045, rng: 1.4, atkT: 1.1, dmg: 6.53, acc: 0.77 },
-    paladin: { res: 'faith', hp: 272, mv: 0.966, rng: 1.5, atkT: 1.1, dmg: 5.83, acc: 0.85 },
-    bard: { res: 'mana', hp: 296, mv: 1.018, rng: 1.5, atkT: 0.95, dmg: 8.53, acc: 0.8 },
+    paladin: { res: 'faith', hp: 272, mv: 0.966, rng: 1.5, atkT: 1.1, dmg: 5.75, acc: 0.85 },
+    bard: { res: 'mana', hp: 307, mv: 1.018, rng: 1.5, atkT: 0.95, dmg: 8.2, acc: 0.8 },
     monk: { res: 'energy', hp: 299, mv: 1.049, rng: 1.4, atkT: 0.7, dmg: 4.92, acc: 0.86, dodge: 0.1 },
   },
   // способности (раздел 7.1). cost — ресурс, cd — откат, dur — время действия, buf — усиления на время
@@ -90,7 +91,7 @@ const ARENA_TUNE = {
     spring: { pas: { res: 1.6 } },
     ult_mage: { ult: 1, dur: 4, every: 0.5, mul: 1.2, lag: 0.6, fall: 0.45, hitR: 1.3, spread: 1.2 },
 
-    thorns: { cost: 10, cd: 14, r: 5, mul: 0.8, root: 1.3 },
+    thorns: { cost: 10, cd: 14, r: 5, mul: 0.8, root: 1.5 },
     grow: { cost: 15, cd: 30, dur: 6, zr: 2.5, slow: 0.221 },
     mend: { cost: 20, cd: 30, heal: 0.145 },
     beast: { cost: 25, cd: 50, dur: 12, hp: 25, mul: 0.6, every: 1.2, sp: 4.5 },
@@ -100,7 +101,7 @@ const ARENA_TUNE = {
     heal: { cost: 18, cd: 25, heal: 0.215 },
     cure: { cost: 15, cd: 35, imm: 2 },
     bless: { cost: 20, cd: 35, dur: 10, buf: { atk: 0.2, red: 0.1 } },
-    turn: { cost: 25, cd: 30, r: 4, push: 3, blind: 2 },
+    turn: { cost: 25, cd: 30, r: 4, push: 3, blind: 2, cut: 8 },
     mercy: { pas: { heal: 1.15, hpr: 0.2 } },
     ult_priest: { ult: 1, r: 6, blind: 2.5, heal: 0.6 },
 
@@ -244,7 +245,7 @@ function arLos(ax, ay, bx, by) {
 // ---------- Создание боя ----------
 function arStFresh() {
   return { stun: 0, ice: 0, root: 0, slow: 0, slowV: 1, burn: 0, burnB: 0, burnS: -1, bleed: 0, bleedB: 0, bleedS: -1,
-    open: 0, blind: 0, sil: 0, invis: 0, inv: 0, ward: 0, imm: 0, stunImm: 0, rootImm: 0, lastStun: -99, block: 0 };
+    open: 0, blind: 0, sil: 0, invis: 0, inv: 0, ward: 0, imm: 0, stunImm: 0, rootImm: 0, lastStun: -99, block: 0, holy: 0 };
 }
 function arPassives(cls) {
   const C = ARENA_TUNE.cls[cls], p = { red: 0, atk: 0, dodge: C.dodge || 0, hpr: 0, rng: 0, res: 1, heal: 1, cd: 1 };
@@ -356,7 +357,8 @@ function arRes(F, n) { F.res = arClamp(F.res + n, 0, 100); }
 function arUltAdd(F, n) { if (F.ultN < ARENA_TUNE.ultPerRound) F.ult = Math.min(100, F.ult + n); }
 // лечение в овертайме вдвое слабее: затяжка лечением не должна переигрывать урон
 // кровь и горение режут получаемое лечение вдвое — «DoT мимо лечения» (АРЕНА.md 7.1, баланс 22.10)
-const arHealMul = (S, F) => (S.ot ? ARENA_TUNE.otHeal : 1) * (F && (F.st.burn > S.T || F.st.bleed > S.T) ? ARENA_TUNE.dotHeal : 1);
+// святой огонь (зоны паладина, «Изгнание» жреца) выжигает лечение того, кого задел, на время (баланс 23.10: против регенерации друида)
+const arHealMul = (S, F) => (S.ot ? ARENA_TUNE.otHeal : 1) * (F && (F.st.burn > S.T || F.st.bleed > S.T) ? ARENA_TUNE.dotHeal : 1) * (F && F.st.holy > S.T && F.cls !== 'priest' && F.cls !== 'paladin' ? ARENA_TUNE.holyCut : 1);   // своих свет не жжёт
 
 // Урон по B. kind: 'hit' — удар или снаряд (броня, ярость, лёд), 'dot' — горение/кровь, 'zone' — песок, круги
 function arHurt(S, A, B, n, kind, info) {
@@ -625,6 +627,7 @@ function arCast(S, F, slot, inp) {
       let ux = B.x - F.x, uy = B.y - F.y, L = Math.sqrt(ux * ux + uy * uy) || 1;
       if (!(B.st.inv > now) && !(B.st.imm > now)) arPush(S, B, ux / L, uy / L, a.push);
       arCC(S, F, B, 'blind', a.blind);
+      if (a.cut) B.st.holy = Math.max(B.st.holy || 0, now + a.cut);
       break;
     }
     case 'ult_priest': {
@@ -834,7 +837,7 @@ function arZones(S, dt) {
     } else if (z.k === 'holy' || z.k === 'sun') {
       if (z.fol) { z.x = own.x; z.y = own.y; }
       const A = z.k === 'holy' ? a.consecrate : a.ult_paladin;
-      if (inB) { arHurt(S, own, B, B.mhp * A.dot / 100 * dt, 'zone'); if (A.slow) arCC(S, own, B, 'slow', 0.35, { pct: A.slow }); }
+      if (inB) { arHurt(S, own, B, B.mhp * A.dot / 100 * dt, 'zone'); if (A.slow) arCC(S, own, B, 'slow', 0.35, { pct: A.slow }); B.st.holy = Math.max(B.st.holy || 0, now + 1); }
       if (A.regen && (inA || z.fol)) { const h = Math.min(own.mhp - own.hp, own.mhp * A.regen / 100 * dt * arHealMul(S, own)); own.hp += h; own.sm.heal += h; }
     } else if (z.k === 'grove') {
       if (inA) { const h = Math.min(own.mhp - own.hp, own.mhp * a.ult_druid.regen / 100 * dt * arHealMul(S, own)); own.hp += h; own.sm.heal += h; }
@@ -1098,7 +1101,7 @@ function arenaBotInput(S, i) {
     const keep = arBotRange(S, F) + (C.shot ? fm.k : 0);
     const ux = (F.x - O.x) / (dist || 1), uy = (F.y - O.y) / (dist || 1);
     // друид стоит на месте, но пока соперник в путах или оглушён — отходит (баланс 23.10: иначе быстрый ближник его просто забивает)
-    const pinned = O.st.root > now || O.st.stun > now || O.st.ice > now;
+    const pinned = O.st.root > now || O.st.stun > now || O.st.ice > now || (T.kiteSlow && O.st.slow > now);
     if (ranged && P.kite && (!C.stand || pinned) && dist < keep - 1.2 && arRnd(B) > fm.ag * 0.5) { tx = F.x + ux * 2; ty = F.y + uy * 2; want = 1; }
     else if (dist > keep || (ranged && !arLos(F.x, F.y, O.x, O.y))) { const ld = ranged ? 0 : P.lead * Math.min(1, dist / 4); tx = O.x + O.vx * ld; ty = O.y + O.vy * ld; want = 1; }
     else if (!ranged && dist > C.rng) { tx = O.x + O.vx * P.lead * 0.5; ty = O.y + O.vy * P.lead * 0.5; want = 1; }
