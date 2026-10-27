@@ -4,7 +4,8 @@
 //   • Панель (ПК — левая колонка, телефон — шторка): Стройка | Здание | Деревня | Меню. На телефоне нижняя полоса —
 //     четыре кнопки; шесть вкладок хозяйства (Запасы, Хозяйство, Журнал, Торговля, Приоритеты, Совет) собраны в «Деревню»
 //     и переключаются строкой значков в шапке шторки. Стройка и Здание — вкладки одной шторки (шапка-переключатель).
-//     ПК: на вкладке стройки колонка не делится пополам — стройка по высоте содержимого, окно здания берёт остаток.
+//     ПК: в колонке тоже ОДНО окно — либо вкладка (стройка, журнал…), либо окно здания; сверху переключатель
+//     «Стройка | Здание: …». Выбрали здание на карте — колонка показывает его, сняли выбор или нажали вкладку — вкладку.
 //   • Окно поверх (полноэкранные окна, окна общей очереди notify.js): видно одно, самое новое; прежние ждут скрытыми
 //     и возвращаются, когда новое закроют. Открылось окно — шторка телефона сворачивается и потом возвращается сама.
 //     Окна обучения и лора ставятся в очередь Notify.modal(id, show, prio) из notify.js и помечаются data-nq-modal.
@@ -13,7 +14,7 @@
 //   • «Назад» на Android и Esc закрывают верхнее: окно → шторку → выбор.
 // Чистые функции (wmVillageTabs, wmStackHide) проверяет tests/winmgr-test.js без браузера.
 
-const WM = { t: 0, stash: null, seen: new Map(), seq: 0, vtab: null };
+const WM = { t: 0, stash: null, seen: new Map(), seq: 0, vtab: null, pc: 'tab', selId: null };
 const WM_VILLAGE = [
   { k: 'store', name: 'Запасы' }, { k: 'overview', name: 'Хозяйство' }, { k: 'log', name: 'Журнал' },
   { k: 'trade', name: 'Торговля' }, { k: 'prio', name: 'Приоритеты' }, { k: 'council', name: 'Совет' },
@@ -111,7 +112,8 @@ function wmInitHead() {
   h.id = 'wm-head';
   h.innerHTML = `<div id="wm-seg"><button data-wms="build"><img alt=""><span></span></button><button data-wms="info"><img alt=""><span></span></button></div>`
     + `<div id="wm-vtabs"></div><div id="wm-title"></div>`;
-  panel.insertBefore(h, close ? close.nextSibling : panel.firstChild);
+  const area = document.getElementById('tab-area');
+  panel.insertBefore(h, area || (close ? close.nextSibling : panel.firstChild));   // ПК: под вкладками, над окном
   // крестик — прежний #sheet-close (на него ссылается обучение): в портрете он стоит в правом углу шапки
   if (close) { close.setAttribute('aria-label', wmT('Свернуть')); close.title = wmT('Свернуть'); close.textContent = '✕'; }
   wmIcon(h.querySelector('[data-wms="build"] img'), 'ui', 'build');
@@ -128,6 +130,14 @@ function wmInitHead() {
   h.addEventListener('click', e => {
     const s = e.target.closest('[data-wms]');
     if (s) {
+      const mob = typeof Mobile !== 'undefined' && Mobile.on;
+      if (!mob) {   // ПК: переключаем, что показывает колонка
+        if (s.dataset.wms === 'build') WM.pc = 'tab';
+        else if (Game.selected && !Game.selected.removed) WM.pc = 'info';
+        else toast(wmT('Кликните здание на карте — здесь откроется его окно'));
+        wmSync();
+        return;
+      }
       if (s.dataset.wms === 'build') { if (UI.tab !== 'build') openTab('build'); mobileSheet('tab'); }
       else wmOpenInfo();
       return;
@@ -186,6 +196,9 @@ function wmFloatStack(modal) {
   // панель, которую открыл сам игрок (ярмарка), главнее плашек, что пришли сами: она не прячется под ними
   const hide = new Set(wmStackHide(list.map(el => ({ id: el, seq: el.id === 'fair-panel' ? Infinity : WM_FSEEN.get(el) }))));
   for (const el of list) el.classList.toggle('wm-wait', hide.has(el) || (park && el.id !== 'tut'));
+  // обучение при открытой шторке телефона — сворачиваем в полоску (как при касании карты, mobile.js), не поверх шторки
+  const tut = list.find(el => el.id === 'tut');
+  if (tut && park && !modal) tut.classList.add('min');
 }
 
 // закрыть верхнее окно: его крестик / «Закрыть» / Esc
@@ -290,16 +303,28 @@ function wmSync() {
   b.toggle('wm-sheet', !!s2);
   b.toggle('wm-tool', !!Game.tool);
   wmGoalTick(!!Game.tool || (mob && !!s2) || modal);
-  b.toggle('wm-build', !mob && UI.tab === 'build' && !b.contains('info-float'));
-  // шапка шторки
+  // ПК: одно окно в колонке. Новый выбор здания — показываем его; выбор сняли — вкладку
+  const pcOne = !mob && !b.contains('info-float');
+  const selB = Game.selected && !Game.selected.removed ? Game.selected : null, selId = selB ? selB.id : null;
+  if (selId !== WM.selId) { WM.selId = selId; WM.pc = selId != null ? 'info' : 'tab'; }
+  if (!selB) WM.pc = 'tab';
+  b.toggle('wm-pc-tab', pcOne && WM.pc === 'tab');
+  b.toggle('wm-pc-info', pcOne && WM.pc === 'info');
+  // шапка шторки (телефон) / колонки (ПК)
   const head = document.getElementById('wm-head');
   if (head) {
-    const mode = !mob || !s2 ? '' : s2 === 'info' || UI.tab === 'build' ? 'seg' : WM_VKEYS.has(UI.tab) ? 'vil' : 'title';
+    const mode = pcOne ? 'seg' : !mob || !s2 ? '' : s2 === 'info' || UI.tab === 'build' ? 'seg' : WM_VKEYS.has(UI.tab) ? 'vil' : 'title';
     head.dataset.mode = mode;
-    const sel = Game.selected && !Game.selected.removed ? Game.selected : null;
+    const sel = selB;
     const sb = head.querySelector('[data-wms="build"]'), si = head.querySelector('[data-wms="info"]');
-    sb.classList.toggle('active', s2 === 'tab');
-    si.classList.toggle('active', s2 === 'info');
+    sb.classList.toggle('active', pcOne ? WM.pc === 'tab' : s2 === 'tab');
+    si.classList.toggle('active', pcOne ? WM.pc === 'info' : s2 === 'info');
+    // ПК: левая кнопка — открытая вкладка (Стройка, Журнал…), её значок
+    const tb = document.querySelector(`#tabs .tab-btn[data-tab="${UI.tab}"]`);
+    const tn = pcOne && tb ? wmT((tb.title || '').split(':')[0].replace(/\s*\(.*$/, '')) || wmT('Стройка') : wmT('Стройка');
+    const ts = sb.querySelector('span'); if (ts.textContent !== (UI.tab === 'build' ? wmT('Стройка') : tn)) ts.textContent = UI.tab === 'build' ? wmT('Стройка') : tn;
+    const ti = sb.querySelector('img'), tsrc = pcOne && tb && UI.tab !== 'build' ? tb.querySelector('img').src : '';
+    if ((ti.dataset.t || '') !== tsrc) { ti.dataset.t = tsrc; if (tsrc) ti.src = tsrc; else wmIcon(ti, 'ui', 'build'); }
     si.classList.toggle('off', !sel);
     const nm = sel ? (sel.def && sel.def.name) || wmT('Здание') : wmT('Здание');
     const sp = si.querySelector('span'); if (sp.textContent !== nm) sp.textContent = nm;
@@ -391,7 +416,7 @@ function initWinMgr() {
   const _ms = mobileSheet;
   mobileSheet = function (kind) { _ms(kind); if (kind) WM.stash = null; try { wmSync(); } catch (e) { /* интерфейс ещё не готов */ } };
   const _ot = openTab;
-  openTab = function (name) { _ot(name); try { wmSync(); } catch (e) { /* интерфейс ещё не готов */ } };
+  openTab = function (name) { _ot(name); WM.pc = 'tab'; try { wmSync(); } catch (e) { /* интерфейс ещё не готов */ } };
   window.addEventListener('keydown', e => {
     if (e.code !== 'Escape' || e.defaultPrevented) return;
     if (typeof Mobile !== 'undefined' && Mobile.on && wmSheet() && !wmDialogs().length) mobileSheet(null);
@@ -419,7 +444,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && document
 
 // переводы новых подписей (остальные — в js/i18n/en*.js)
 if (typeof I18N !== 'undefined' && I18N.add) I18N.add('en', {
-  'Здание': 'Building', 'Здание: окно выбранного здания': 'Building: the selected building\'s window',
+  'Здание': 'Building', 'Кликните здание на карте — здесь откроется его окно': 'Click a building on the map: its window opens here', 'Здание: окно выбранного здания': 'Building: the selected building\'s window',
   'Деревня: запасы, хозяйство, журнал, торговля, приоритеты, совет': 'Village: stores, estate, log, trade, priorities, council',
   'Запасы': 'Stores', 'Хозяйство': 'Estate', 'Журнал': 'Log', 'Торговля': 'Trade', 'Приоритеты': 'Priorities', 'Совет': 'Council', 'Свернуть': 'Collapse',
   'Коснитесь здания на карте — здесь откроется его окно': 'Tap a building on the map: its window opens here',

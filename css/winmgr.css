@@ -61,10 +61,14 @@ body.mobile:not(.land).wm-sheet .rv-note { top: calc(54px + env(safe-area-inset-
   font-size: 13px; color: var(--gold, #e4b434); background: rgba(26, 19, 13, .94); border: 2px solid #b8902c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ---------- ПК: на вкладке стройки колонка без пустот — стройка по высоте содержимого, окно здания берёт остаток ---------- */
-body.wm-build:not(.mobile) #tab-area { flex: 0 1 auto; min-height: 0; }
-body.wm-build:not(.mobile) #info-wrap { flex: 1 1 0; height: auto !important; min-height: 170px; }
-body.wm-build:not(.mobile) #split { display: none; }
+/* ---------- ПК: в колонке одно окно — либо вкладка, либо окно здания (переключатель #wm-head сверху) ---------- */
+body:not(.mobile):is(.wm-pc-tab, .wm-pc-info) #wm-head { display: flex; align-items: stretch; min-height: 36px; }
+body:not(.mobile) #wm-head #wm-seg button { font-size: 13.5px; padding: 3px 6px; }
+body:not(.mobile) #wm-head #wm-seg button img { width: 20px; height: 20px; }
+body.wm-pc-tab:not(.mobile) :is(#info-wrap, #split) { display: none !important; }
+body.wm-pc-tab:not(.mobile) #tab-area { flex: 0 1 auto; min-height: 0; }   /* по высоте содержимого — ниже доска колонки, а не тёмная пустота */
+body.wm-pc-info:not(.mobile) :is(#tab-area, #split) { display: none !important; }
+body.wm-pc-info:not(.mobile) #info-wrap { flex: 1 1 auto; height: auto !important; min-height: 0; }
 
 /* ---------- Кооп: панель гостя/хоста над способностями, а не под ними ---------- */
 body.ui-ab #coop-hud { bottom: calc(var(--ui-ab-top, 0px) + 8px) !important; }

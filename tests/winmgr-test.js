@@ -4,6 +4,7 @@
 //  · из нескольких окон поверх видно одно — самое новое; окно прав хоста не прячется никогда;
 //  · «⋯»: еда и привал — раненому (привал — не при врагах), «Домой» — далеко от базы и не в общей деревне,
 //    капкан/колья/фонарь — при врагах или ночью; в спокойной ситуации «⋯» пуст (кнопки нет);
+//  · ПК: в колонке одно окно (вкладка или здание);
 //  · подключение: скрипт после reveal.js, стили после uilayers.css; кооп-панель над способностями; поля — в «Еде».
 // Запуск: node tests/winmgr-test.js
 const fs = require('fs');
@@ -59,7 +60,7 @@ check(eq(W.wmStackHide([{ id: 'adm', seq: 5, pinned: true }, { id: 'b', seq: 2 }
   check(/\.wm-wait\s*\{[^}]*visibility:\s*hidden/.test(css), 'ждущее окно скрыто');
   check(/body\.ui-ab #coop-hud\s*\{[^}]*--ui-ab-top/.test(css), 'панель коопа — над панелью способностей');
   check(/#tool-wheat, #tool-hops\s*\{\s*display:\s*none/.test(css), 'поля убраны из верхнего ряда');
-  check(/body\.wm-build:not\(\.mobile\) #info-wrap\s*\{[^}]*flex:\s*1 1 0/.test(css), 'ПК: окно здания берёт остаток колонки');
+  check(/body\.wm-pc-tab:not\(\.mobile\) :is\(#info-wrap, #split\)\s*\{\s*display:\s*none/.test(css) && /body\.wm-pc-info:not\(\.mobile\) :is\(#tab-area, #split\)\s*\{\s*display:\s*none/.test(css), 'ПК: в колонке одно окно — либо вкладка, либо здание');
   const ui = read('js/ui.js');
   check(/FIELD_TOOLS/.test(ui) && /BUILD_CATS\[UI\.cat\] === 'Еда'/.test(ui), 'поля пшеницы и хмеля — в разделе «Еда»');
   check(/backButton[^\n]*wmBack/.test(read('js/native.js')), '«Назад» на Android закрывает верхнее окно');
