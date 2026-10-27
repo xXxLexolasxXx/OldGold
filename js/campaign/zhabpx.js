@@ -28,18 +28,6 @@ function pbZhab(K, P, fr) {
   const sac = P.sac >= 0 ? P.sac : Math.min(1, (P.mouth || 0) * 0.9);
   pbShadow(K, air > 0.3 ? 30 : 44);
 
-  // ---------- палка с бусинами за спиной ----------
-  if (!dead) {
-    const bx0 = 4, by0 = -40 + dy, bx1 = -26, by1 = -150 + dy;
-    pbLimb(K, bx0, by0, bx1, by1, 2.4, 1.8, C.WO, { amb: 0.4 });
-    K.path([[bx1 + 2, by1 + 8, 1.2], [bx1 - 6, by1 - 2, 0.7]], () => C.WO[2]);              // развилка
-    K.path([[bx1 + 4, by1 + 4, 1.2], [bx1 + 10, by1 - 6, 0.6]], () => C.WO[1]);
-    const sx = bx1 + 6, sy = by1 + 18, s = wing * 1.5;
-    K.path([[sx, sy, 0.5], [sx + 4 + s, sy + 14, 0.5]], () => C.LE[3]);                      // шнурок
-    pbBall(K, sx + 4 + s, sy + 16, 2.4, 2.4, [[20, 20, 22], [44, 44, 48], [90, 90, 96]], { amb: 0.5 });
-    pbBall(K, sx + 8 + s, sy + 13, 2, 2, [[20, 20, 22], [44, 44, 48], [90, 90, 96]], { amb: 0.5 });
-  }
-
   // ---------- рваный плащ за спиной ----------
   {
     const fl = wing * 3;
@@ -84,13 +72,20 @@ function pbZhab(K, P, fr) {
     { e: [-4, -50 + dy, 30, 26] },                       // корпус-груша
     { e: [8, -36 + dy * 0.8, 24, 18] },                  // брюхо опущено вниз
     { c: [[-2, -64 + dy, 20], [hx - 14, hy + 4, 18]] },  // шеи у жабы нет: голова сидит на плечах
-    { e: [hx, hy, 32, 19] },                              // плоская широкая голова
-    { e: [hx + 14, hy + 7, 22, 10] },                     // морда и нижняя челюсть
-    { e: [hx + 12, hy - 13, 12, 10] },                    // бугор глаза
+    { e: [hx, hy, 30, 18] },                              // плоская широкая голова
+    { e: [hx + 16, hy + 4, 20, 11] },                     // морда: тупой широкий нос вперёд
+    { e: [hx + 16, hy - 14, 11, 10] },                    // бугор глаза — наверху, ближе к морде
   ], C.SK, { amb: 0.46, k: 7, depth: 16, tex: (x, y) => (K.hsh(x * 0.37 + y * 5.3) > 0.955 ? -0.25 : K.hsh(x * 1.3 + y * 0.7) > 0.985 ? 0.25 : 0) });
-  // кремовое брюхо и горловой мешок: светлая форма поверх, края вплавлены дизером
+  // кремовое брюхо; горло и нижняя челюсть — одна светлая полоса от рта до груди
   pbBall(K, 16, -34 + dy * 0.8, 18, 19, C.BE, { amb: 0.4, fade: 0.4 });
-  pbBall(K, hx + 8, hy + 19, 20 + sac * 6, 9 + sac * 6, C.BE, { amb: 0.32, fade: 0.25 });
+  // рот: широкий, низко на голове, уголок опущен под глазом сзади (жабья хмурость)
+  const mouthY = x => { const t = (x - (hx - 8)) / 44; return hy + 11 - t * 7 + Math.sin(Math.min(1, Math.max(0, t)) * Math.PI) * -1.5; };
+  pbBall(K, hx + 6, hy + 20, 22 + sac * 6, 9 + sac * 6, C.BE, { amb: 0.36 });                   // горловой мешок под челюстью
+  K.R(hx - 10, hy - 2, hx + 37, hy + 22, (x, y) => {                                            // нижняя челюсть: всё, что ниже рта
+    const inHead = ((x + 0.5 - hx) / 30) ** 2 + ((y + 0.5 - hy) / 18) ** 2 <= 1 || ((x + 0.5 - hx - 16) / 20) ** 2 + ((y + 0.5 - hy - 4) / 11) ** 2 <= 1;
+    if (!inHead || y < mouthY(x) + 1 || x < hx - 8) return null;
+    return pbPick(C.BE, 0.72 - (y - mouthY(x)) / 14 * 0.45, K.dth(x, y));
+  });
   // белая руна на брюхе (как на рисунке: перевёрнутая «галочка» с чертой)
   for (const [x0, y0, x1, y1] of [[10, -44, 16, -32], [22, -44, 16, -32], [16, -32, 16, -22], [12, -27, 20, -27]]) K.path([[x0, y0 + dy * 0.8, 0.6], [x1, y1 + dy * 0.8, 0.6]], () => C.PAINT);
 
@@ -113,23 +108,28 @@ function pbZhab(K, P, fr) {
 
   // ---------- лицо ----------
   const open = (P.mouth || 0) > 0.35;
-  // рот во всю голову: от угла под капюшоном до кончика морды; губа светлее
+  // открытый рот: нижняя челюсть отходит вниз, внутри тёмно-красное и язык
   if (open) {
     const j = 3 + P.mouth * 7;
-    pbPoly(K, [[hx - 18, hy + 6], [hx + 34, hy + 3], [hx + 30, hy + 7 + j], [hx - 10, hy + 9 + j * 0.6]], () => [58, 20, 20]);
-    pbBall(K, hx + 10, hy + 7 + j * 0.6, 13, 2.6, [[150, 60, 70], [200, 96, 104]], { amb: 0.5 });
+    pbPoly(K, [[hx - 8, mouthY(hx - 8)], [hx + 36, mouthY(hx + 36)], [hx + 32, mouthY(hx + 32) + j], [hx - 4, mouthY(hx - 4) + j * 0.5]], () => [58, 20, 20]);
+    pbBall(K, hx + 14, mouthY(hx + 14) + j * 0.6, 12, 2.4, [[150, 60, 70], [200, 96, 104]], { amb: 0.5 });
   }
-  for (let i = 0; i <= 26; i++) { const t = i / 26, x = hx - 20 + t * 54, y = hy + 6 - Math.sin(t * Math.PI) * 3 + t * -3; K.P(x, y, C.DARK); K.P(x, y + 1, C.DARK); K.P(x, y - 1, C.SK[3]); }
-  // клык из-под губы (как на рисунке — один длинный и один маленький)
-  K.path([[hx + 10, hy + 6, 2.2], [hx + 12, hy + 19, 0.5]], (t, e) => pbPick(C.BONE, 0.85 - t * 0.4 - (e ? 0.3 : 0), K.dth(hx, t * 9)));
-  K.path([[hx + 20, hy + 5, 1.4], [hx + 21, hy + 11, 0.4]], (t, e) => pbPick(C.BONE, 0.8 - t * 0.4 - (e ? 0.3 : 0), K.dth(hx + 3, t * 9)));
-  pbDot(K, hx + 30, hy - 3, C.DARK); pbDot(K, hx + 31, hy - 3, C.SK[0]);                 // ноздря
-  // кольца-серьги в щеке у угла рта
-  for (const [x, y] of [[hx - 10, hy + 9], [hx - 4, hy + 11], [hx + 2, hy + 12]]) K.R(x - 3, y - 3, x + 3, y + 3, (xx, yy) => { const d = Math.hypot(xx + 0.5 - x, yy + 0.5 - y); return d > 1.4 && d < 2.8 ? (yy < y ? C.GOLD[2] : C.GOLD[1]) : null; });
-  // белые полосы раскраски: на темени и щеке
-  for (const [x0, y0, x1, y1] of [[hx - 10, hy - 14, hx - 3, hy - 2], [hx - 3, hy - 17, hx + 3, hy - 6], [hx - 18, hy - 6, hx - 12, hy + 3]]) K.path([[x0, y0, 0.9], [x1, y1, 0.6]], () => C.PAINT);
+  // линия рта и светлая верхняя губа над ней
+  for (let x = hx - 8; x <= hx + 36; x++) { const y = Math.round(mouthY(x)); K.P(x, y, C.DARK); if (x < hx - 4 || x > hx + 32) K.P(x, y + 1, C.DARK); K.P(x, y - 1, C.SK[4]); }
+  // клык торчит из-под губы вниз по светлому горлу (как на рисунке), второй — маленький
+  for (const [fx, len, w] of [[hx + 14, 11, 2.2], [hx + 24, 5, 1.4]]) {
+    const fy = mouthY(fx) + 1;
+    K.path([[fx, fy, w], [fx + 1, fy + len, 0.5]], (t, e) => pbPick(C.BONE, 0.85 - t * 0.35 - (e ? 0.35 : 0), K.dth(fx, fy + t * 9)));
+    K.path([[fx - w, fy, 0.5], [fx, fy + len, 0.5]], () => C.BONE[0]);                      // тень по краю — клык не тонет в кремовом
+  }
+  // ноздря на кончике морды, над губой
+  K.P(hx + 32, hy - 2, C.DARK); K.P(hx + 33, hy - 2, C.DARK); K.P(hx + 32, hy - 3, C.SK[1]);
+  // кольца-серьги у уголка рта
+  for (const [x, y] of [[hx - 10, hy + 12], [hx - 5, hy + 14], [hx, hy + 14]]) K.R(x - 3, y - 3, x + 3, y + 3, (xx, yy) => { const d = Math.hypot(xx + 0.5 - x, yy + 0.5 - y); return d > 1.4 && d < 2.8 ? (yy < y ? C.GOLD[2] : C.GOLD[1]) : null; });
+  // белые полосы раскраски: на темени за глазом и на щеке
+  for (const [x0, y0, x1, y1] of [[hx - 2, hy - 15, hx + 4, hy - 4], [hx + 4, hy - 18, hx + 8, hy - 8], [hx - 10, hy - 6, hx - 5, hy + 4]]) K.path([[x0, y0, 0.9], [x1, y1, 0.6]], () => C.PAINT);
   // глаз: золото, поперечный зрачок, блик; тяжёлое веко — взгляд исподлобья
-  const ex = hx + 13, ey = hy - 14;
+  const ex = hx + 17, ey = hy - 15;
   if (P.eye >= 2) {
     pbBall(K, ex, ey, 7, 6, C.SK, { amb: 0.6 });
     if (P.eye === 3) for (let k = -4; k <= 4; k++) { K.P(ex + k, ey + k * 0.8, C.DARK); K.P(ex + k, ey - k * 0.8, C.DARK); }
@@ -146,13 +146,13 @@ function pbZhab(K, P, fr) {
 
   // ---------- капюшон: плотная ткань с краем над глазом, складки, лохмотья по низу ----------
   {
-    const hood = [[hx + 26, hy - 22], [hx + 14, hy - 32], [hx - 6, hy - 37], [hx - 30, hy - 32], [hx - 48, hy - 14], [hx - 54, hy + 10], [-28, -46 + dy], [-14, -54 + dy], [hx - 32, hy + 16], [hx - 22, hy + 4], [hx - 14, hy - 10], [hx - 2, hy - 20], [hx + 12, hy - 23]];
+    const hood = [[hx + 26, hy - 27], [hx + 14, hy - 37], [hx - 6, hy - 41], [hx - 30, hy - 35], [hx - 48, hy - 16], [hx - 54, hy + 10], [-28, -46 + dy], [-14, -54 + dy], [hx - 32, hy + 16], [hx - 22, hy + 4], [hx - 12, hy - 12], [hx + 2, hy - 25], [hx + 14, hy - 28]];
     pbPoly(K, hood, (x, y) => {
       const fold = Math.sin((x * 0.8 - y) * 0.28) * 0.16 + (K.hsh(Math.floor((x - y * 0.5) / 3) * 2.9) - 0.5) * 0.12;
       return pbPick(C.CL, 0.6 - (y - hy + 30) / 70 * 0.35 + (x - hx) / 80 * 0.2 + fold, K.dth(x, y));
     });
     // толстый подшитый край капюшона над глазом и вдоль щеки
-    K.path([[hx + 26, hy - 22, 2], [hx + 12, hy - 24, 2.4], [hx - 2, hy - 21, 2.4], [hx - 14, hy - 11, 2.4], [hx - 22, hy + 3, 2], [hx - 32, hy + 16, 1.8]], (t, e) => pbPick(C.CL, e ? 0.3 : 0.8, K.dth(hx + t * 20, hy)));
+    K.path([[hx + 26, hy - 27, 2], [hx + 14, hy - 29, 2.4], [hx + 2, hy - 26, 2.4], [hx - 12, hy - 13, 2.4], [hx - 22, hy + 3, 2], [hx - 32, hy + 16, 1.8]], (t, e) => pbPick(C.CL, e ? 0.3 : 0.8, K.dth(hx + t * 20, hy)));
     for (let i = 0; i < 6; i++) { const x = hx - 40 + i * 6, y = hy - 26 + i * 2; K.path([[x, y, 0.5], [x - 4, y + 16, 0.5]], () => C.CL[1]); }   // складки
     // лохмотья по краю у плеча
     for (let i = 0; i < 4; i++) { const x = -26 + i * 7, y = -50 + dy + i * -2; pbPoly(K, [[x, y], [x + 5, y], [x + 2 + wing, y + 12 + K.hsh(i) * 6]], C.CL); }
@@ -167,33 +167,45 @@ function pbZhab(K, P, fr) {
     K.path([[bx, by, 0.4], [bx + 3 + s * 1.4, by + 23, 0.4]], () => F[0]);
   }
 
-  // ---------- ближняя рука с кривой дубиной ----------
+  // ---------- ближняя рука с длинным суковатым посохом ----------
   {
+    // ang — куда смотрит верхний конец посоха: в покое — вверх и назад, за капюшон; нижний конец с крюком — у земли впереди
     let H, ang;
-    if (air > 0.3) { H = [44, -96 + dy]; ang = -0.5; }
-    else if (P.up > 0.5) { H = [30, -132]; ang = -1.5; }
-    else if (P.b > 0.5) { H = [48, -76 + dy]; ang = -1.9; }
-    else if ((P.a || 0) < 0) { const t = -P.a; H = [42 - t * 22, -34 - t * 56 + dy]; ang = 1.25 - t * 3.3; }
-    else { const t = Math.min(1, P.a || 0); H = [42 + t * 16, -34 - t * 22 + dy]; ang = 1.25 - t * 0.9; }
+    if (air > 0.3) { H = [44, -96 + dy]; ang = -1.6; }
+    else if (P.up > 0.5) { H = [30, -120]; ang = -1.7; }
+    else if (P.b > 0.5) { H = [48, -76 + dy]; ang = -2.5; }
+    else if ((P.a || 0) < 0) { const t = -P.a; H = [42 - t * 22, -34 - t * 56 + dy]; ang = -2.15 - t * 0.5; }
+    else { const t = Math.min(1, P.a || 0); H = [42 + t * 16, -34 - t * 22 + dy]; ang = -2.15 + t * 1.2; }
     const sx = 14, sy = -58 + dy, A = pbIK(sx, sy, H[0], H[1], 28, 28, 1);
     pbChain(K, [[A.sx, A.sy, 7], [A.ex, A.ey, 5], [A.hx, A.hy, 4.4]], C.SK, { amb: 0.46 });
     // обмотка предплечья
     for (let k = 0; k < 3; k++) { const t = 0.3 + k * 0.2, x = A.ex + (A.hx - A.ex) * t, y = A.ey + (A.hy - A.ey) * t, nx = -Math.sin(A.a2), ny = Math.cos(A.a2); pbLimb(K, x - nx * 7, y - ny * 7, x + nx * 7, y + ny * 7, 2, 2, C.LE, { amb: 0.55 }); }
-    // дубина: суковатая палка, вниз-вперёд от кулака, на конце — загнутый крюк; ремни у кулака и посередине
-    const dx = Math.cos(ang), dyv = Math.sin(ang), px = -dyv, py = dx;
+    // посох одной палкой: от крюка у земли через кулак до развилки над капюшоном; суковатый, с наростами
+    const dx = Math.cos(ang), dyv = Math.sin(ang), px = -dyv, py = dx, LO = 36, HI = 118;
     const pts = [];
-    for (let i = 0; i <= 10; i++) { const t = i / 10, s = -16 + t * 66, w = Math.sin(t * 9) * 1.6; pts.push([H[0] + dx * s + px * w, H[1] + dyv * s + py * w, 3.2 - t * 0.6 + (i === 3 || i === 7 ? 0.8 : 0)]); }
-    K.path(pts, (t, e, sd) => pbPick(C.WO, 0.55 + (sd > 0 ? 0.18 : -0.12) + (e ? -0.18 : 0) + (K.hsh(Math.floor(t * 30)) - 0.5) * 0.2, K.dth(H[0] + t * 50, H[1])));
-    const ex2 = pts[10][0], ey2 = pts[10][1], hook = [];
-    for (let i = 0; i <= 8; i++) { const a = i / 8 * 3.6, r = 8 - i * 0.45; hook.push([ex2 + dx * Math.sin(a) * r + px * (r - Math.cos(a) * r), ey2 + dyv * Math.sin(a) * r + py * (r - Math.cos(a) * r), 2.6 - i * 0.18]); }
-    K.path(hook, (t, e, sd) => pbPick(C.WO, 0.5 + (sd > 0 ? 0.2 : -0.1) + (e ? -0.2 : 0), K.dth(ex2 + t * 9, ey2)));
-    for (const s of [-6, -2, 24, 28]) { const x = H[0] + dx * s, y = H[1] + dyv * s; pbLimb(K, x - px * 4, y - py * 4, x + px * 4, y + py * 4, 1.6, 1.6, C.LE, { amb: 0.5 }); }
-    const tx = H[0] + dx * 26, ty = H[1] + dyv * 26;
-    K.path([[tx, ty, 0.6], [tx + 2 + wing, ty + 12, 0.5]], () => C.LE[3]); K.path([[tx + 2, ty, 0.6], [tx + 5 + wing, ty + 10, 0.5]], () => C.LE[2]);   // висячие ремешки
-    // кулак поверх рукояти: три пальца обхватывают
+    for (let i = 0; i <= 16; i++) { const t = i / 16, s = -LO + t * (LO + HI), w = Math.sin(t * 13) * 1.4 + Math.sin(t * 5.3) * 1.2; pts.push([H[0] + dx * s + px * w, H[1] + dyv * s + py * w, 3.3 - t * 1.1 + (i === 4 || i === 9 || i === 13 ? 0.8 : 0)]); }
+    K.path(pts, (t, e, sd) => pbPick(C.WO, 0.55 + (sd > 0 ? 0.18 : -0.12) + (e ? -0.18 : 0) + (K.hsh(Math.floor(t * 50)) - 0.5) * 0.2, K.dth(H[0] + t * 50, H[1])));
+    // нижний конец загнут крюком
+    const bx = pts[0][0], by = pts[0][1], hook = [];
+    for (let i = 0; i <= 8; i++) { const a = i / 8 * 3.6, r = 7 - i * 0.4; hook.push([bx - dx * Math.sin(a) * r + px * (r - Math.cos(a) * r), by - dyv * Math.sin(a) * r + py * (r - Math.cos(a) * r), 3 - i * 0.2]); }
+    K.path(hook, (t, e, sd) => pbPick(C.WO, 0.5 + (sd > 0 ? 0.2 : -0.1) + (e ? -0.2 : 0), K.dth(bx + t * 9, by)));
+    // верхний конец: развилка-рогатка, на шнурке две чёрные бусины
+    const tx = pts[16][0], ty = pts[16][1];
+    K.path([[tx, ty, 1.6], [tx + dx * 9 + px * 4, ty + dyv * 9 + py * 4, 0.7]], () => C.WO[2]);
+    K.path([[tx - dx * 2, ty - dyv * 2, 1.4], [tx + dx * 7 - px * 5, ty + dyv * 7 - py * 5, 0.6]], () => C.WO[1]);
+    const qx = tx - dx * 14, qy = ty - dyv * 14, s = wing * 1.5;
+    K.path([[qx, qy, 0.5], [qx + 3 + s, qy + 14, 0.5]], () => C.LE[3]);
+    pbBall(K, qx + 3 + s, qy + 16, 2.4, 2.4, [[20, 20, 22], [44, 44, 48], [90, 90, 96]], { amb: 0.5 });
+    pbBall(K, qx + 7 + s, qy + 13, 2, 2, [[20, 20, 22], [44, 44, 48], [90, 90, 96]], { amb: 0.5 });
+    // ремни: обмотка над и под кулаком, и ещё одна у крюка с висячими ремешками
+    for (const sq of [-8, 6, 10, -26, -22]) { const x = H[0] + dx * sq, y = H[1] + dyv * sq; pbLimb(K, x - px * 4, y - py * 4, x + px * 4, y + py * 4, 1.6, 1.6, C.LE, { amb: 0.5 }); }
+    const rx = H[0] - dx * 24, ry = H[1] - dyv * 24;
+    K.path([[rx, ry, 0.6], [rx + 3 + wing, ry + 10, 0.5]], () => C.LE[3]); K.path([[rx + 2, ry, 0.6], [rx + 6 + wing, ry + 8, 0.5]], () => C.LE[2]);
+    // кулак поверх посоха: пальцы обхватывают
     pbBall(K, A.hx, A.hy, 5.4, 5, C.SK, { amb: 0.56 });
     for (let k = -1; k <= 1; k++) K.P(A.hx + px * k * 2.6 + dx * 3, A.hy + py * k * 2.6 + dyv * 3, C.SK[1]);
-    if ((P.a || 0) > 0.5) for (let i = 0; i < 12; i++) { const t = i / 11, an = ang - 1.6 + t * 1.5, r = 62; K.P(H[0] + Math.cos(an) * r * 0.8 - 6, H[1] + Math.sin(an) * r * 0.7 + 10, [236, 232, 214, 0.7 - t * 0.3], 0.8, false); }
+    // след удара верхним концом
+    if ((P.a || 0) > 0.5) for (let i = 0; i < 14; i++) { const t = i / 13, an = ang - 1.3 + t * 1.2, r = HI - 6; K.P(H[0] + Math.cos(an) * r, H[1] + Math.sin(an) * r, [236, 232, 214, 0.7 - t * 0.3], 0.8, false); }
   }
 
   // ---------- сон: «Z» ----------
