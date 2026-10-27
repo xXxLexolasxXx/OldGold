@@ -28,13 +28,17 @@ const W = 1280, H = 800, Z = +(process.env.Z || 4);
     for (let pass = 0; pass < 2 && !best; pass++) for (let y = 4; y < MAP_H - 4; y++) for (let x = 4; x < MAP_W - 4; x++) {
       const d = Math.hypot(x - hx, y - hy); if (d < 5 || d > 10) continue;
       let ok = true, bad = 0;
+      let wat = 0;                                                                                 // вода близко — хуже: гнома могут запинать в озеро
+      for (let j = -7; j <= 7; j += 2) for (let i = -7; i <= 7; i += 2) { const px = x + i, py = y + j; if (!inb(px, py) || World.terrain[idx(px, py)] === T_WATER) wat++; }
+      const ks = Game.raid && Game.raid.site, kd = ks && ks.x != null ? Math.hypot(x - ks.x, y - ks.y) : 99;   // курган с подписью — подальше
+      if (pass === 0 && (wat || kd < 10)) continue;
       for (let j = -3; j <= 3 && ok; j++) for (let i = -3; i <= 3 && ok; i++) { const q = idx(x + i, y + j); if (World.bmap[q] || World.terrain[q] === T_WATER || World.terrain[q] === T_ROCK) ok = false; else if (!isWalkable(x + i, y + j) || big(World.obj[q]) || World.road[q]) bad++; }
       if (!ok || (pass === 0 && bad)) continue;
       // коридор побега: гном удирает от кур ещё на 6 клеток — там тоже должно быть чисто
       const fx = (x - hx) / d, fy = (y - hy) / d; let cor = 0;
       for (let s = 1; s <= 7 && ok; s++) for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const px = Math.round(x + fx * s) + i, py = Math.round(y + fy * s) + j; if (!inb(px, py)) { ok = false; break; } const q = idx(px, py); if (World.bmap[q] || World.terrain[q] === T_WATER || World.terrain[q] === T_ROCK) ok = false; else if (!isWalkable(px, py) || big(World.obj[q]) || World.road[q]) cor++; }
       if (!ok || (pass === 0 && cor)) continue;
-      const sc = Math.abs(d - 7.5) + bad * 0.5 + cor * 0.3; if (sc < bd) { bd = sc; best = [x, y]; }
+      const sc = Math.abs(d - 7.5) + bad * 0.5 + cor * 0.3 + wat * 0.4; if (sc < bd) { bd = sc; best = [x, y]; }
     }
     if (!best) return 'нет поляны';
     { const d = Math.hypot(best[0] - hx, best[1] - hy), fx = (best[0] - hx) / d, fy = (best[1] - hy) / d;            // для демо: расчистить деревья и камни на поляне и в коридоре
