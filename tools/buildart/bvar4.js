@@ -43,7 +43,7 @@ function buildInn(g, lv, roofs) {
   box(g, Object.assign({ mat: m1Stone(P1.stone) }, Lo));
   beam1(g, 38, 104, 46, 50, 14, 1, P1.plank);
   box(g, Object.assign({ mat: m1Plaster(P1.plaster, { frame: true, bay: 16, mid: true, braceOdd: true }) }, Up));
-  roof(g, Up, { type: 'gable', axis: 'Y', rise: 30, ov: 3, ovg: 5, mat: m1Ivy(roofs.main, [{ u: 30, v: 16, rx: 12, ry: 9 }, { u: 18, v: 32, rx: 7, ry: 6 }]), cut: roofs.cut, th: 2, gable: m1Plaster(P1.plaster, { frame: true, bay: 13, brace: false }) });
+  roof(g, Up, { type: 'gable', axis: 'Y', rise: 30, ov: 3, ovg: 5, mat: m1Ivy(roofs.main, [{ u: 30, v: 16, rx: 12, ry: 9 }, { u: 18, v: 32, rx: 7, ry: 6 }]), cut: roofs.cut, th: roofs.th || 2, gable: m1Plaster(P1.plaster, { frame: true, bay: 13, brace: false }) });
   chimney1(g, 48, 72, Up.z0 + Up.h, 20, { w: 6, d: 6 });
   WIN('S', Up.y0, 65, 36, 12, 14, { arch: true });
   if (lv >= 3) {
@@ -66,7 +66,7 @@ function buildInn(g, lv, roofs) {
   box(g, Object.assign({ mat: m1Brick(P1.brick) }, Wb));
   beam1(g, 102, 126, 64, 66, 11, 1, P1.plank);
   box(g, Object.assign({ mat: m1Plaster(P1.plasterC, { frame: true, bay: 14, mid: true, braceX: true, beam: P1.beamD }) }, Ub));
-  roof(g, Ub, { type: 'gable', axis: 'Y', rise: 18, ov: 3, ovg: 4, mat: roofs.wing, cut: roofs.cutW, th: 2, gable: m1Plaster(P1.plasterC, { frame: true, bay: 12, brace: false, beam: P1.beamD }) });
+  roof(g, Ub, { type: 'gable', axis: 'Y', rise: 18, ov: 3, ovg: 4, mat: roofs.wing, cut: roofs.cutW, th: roofs.th || 2, gable: m1Plaster(P1.plasterC, { frame: true, bay: 12, brace: false, beam: P1.beamD }) });
   chimney1(g, 116, 84, Ub.z0 + Ub.h + 3, 16, { brick: true, w: 5, d: 5 });
   WIN('S', Ub.y0, 109, 15, 10, 9, { frameR: P1.beamD });
   meta.bar = [114, Ub.y0 - 0.3, 19.5];
@@ -135,12 +135,12 @@ function buildInn(g, lv, roofs) {
 }
 
 const ROOF_LV = {
-  1: s => ({ main: m1Straw2(s), wing: m1Straw2(s), cut: (u, v, F) => s[2], cutW: (u, v, F) => s[3] }),
+  1: s => ({ main: m1Straw3(s), wing: m1Straw3(s), cut: m1StrawCut(s), cutW: m1StrawCut(s), th: 4 }),
   2: () => ({ main: m1Shingle(SHINGLE1), wing: m1Shingle(SHINGLE1), cut: m1Fascia, cutW: m1FasciaDark }),
   3: () => ({ main: m1Tile2(P1.tileR), wing: m1Scale(P1.scale), cut: m1Fascia, cutW: m1FasciaDark }),
 };
 const INN_LV_VARS = [
-  { name: 'Уровень 1 — солома (ржаная): малая веранда, двор с деревом', make: g => buildInn(g, 1, ROOF_LV[1](STRAW1.rye)) },
+  { name: 'Уровень 1 — солома (оливковая): малая веранда, двор с деревом', make: g => buildInn(g, 1, ROOF_LV[1](STRAW1.olive)) },
   { name: 'Уровень 2 — дранка: веранда больше, второй стол, фонари, гирлянда, бочка во дворе', make: g => buildInn(g, 2, ROOF_LV[2]()) },
   { name: 'Уровень 3 — черепица и чешуя: вторая терраса с перголой, бочка-бар, сцена, балкон на фронтоне', make: g => buildInn(g, 3, ROOF_LV[3]()) },
 ];
