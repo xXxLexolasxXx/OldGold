@@ -519,7 +519,53 @@ function pxfNote(K, f) {
   K.rect(55 + fx, 22, 2, 2, '#fff6c8');
 }
 
-const PXF_DRAW = { grum: pxfGrum, yagla: pxfYagla, pim: pxfPim, tan: pxfTan, shnyr: pxfShnyr, gob: pxfGoblin, zhmykha: pxfZhmykha, kremen: pxfKremen, mrak: pxfMalgor, note: pxfNote, hero: pxfHero, heroF: pxfHeroF, elder: pxfElder, champ: pxfChamp, troll: pxfTroll, golem: pxfGolem };
+// Жабьен: оливковая жаба анфас в буром капюшоне — золотые глаза с поперечным зрачком выглядывают из-под края,
+// широкий рот с клычками, кольца-серьги в щеке, белые полосы боевой раскраски, кремовое горло и руна на груди
+function pxfZhab(K, f) {
+  const SK = '#8a9a3c', SK2 = '#62742a', BL = '#eedcb4', CL = '#5e3a26', CL2 = '#3c2418';
+  const cloth = K.M(CL, { r: 7, tex: pxfStrands(3, 0.8), dith: 0.15 });
+  // капюшон сзади и плащ на плечах — одной формой
+  K.fill(K.SMOOTH(K.PL([[-1, 36], [1, 27], [3, 14], [8, 4.6], [18, 1.6], [28, 4.6], [33, 14], [35, 27], [37, 36]]), 2), cloth);
+  // плечи и грудь: кожа в вырезе плаща, кремовое брюхо с белой руной
+  K.fill(K.SMOOTH(K.PL([[8, 36], [10, 28], [26, 28], [28, 36]]), 1.4), K.M(SK, { r: 7 }));
+  K.fill(K.E(18, 34, 6.4, 5.4), K.M(BL, { r: 6, bias: 0.1 }));
+  for (const [x0, y0, x1, y1] of [[32, 62, 36, 67], [40, 62, 36, 67], [36, 67, 36, 71]]) K.line(x0, y0, x1, y1, '#f4f6ea');
+  // голова: широкая плоская, глаза-бугры сливаются с ней (smin), горловой мешок
+  const head = K.SM(K.E(18, 20, 12.6, 7.6), K.U(K.E(11, 14.6, 4.4, 4.2), K.E(25, 14.6, 4.4, 4.2)), 2.4);
+  K.fill(K.E(18, 26, 9, 4.2), K.M(BL, { r: 6 }));
+  K.fill(head, K.M(SK, { r: 12, bias: 0.15, tex: (x, y) => pxfHash(x >> 1, y >> 1) > 0.88 ? -0.8 : 0 }));
+  K.fill(K.E(18, 24, 10.6, 2.2), K.M(BL, { r: 3, bias: 0.2 }));                 // светлая губа
+  // край капюшона над глазами (поверх головы), лохмотья по бокам
+  const rim = K.SUB(K.E(18, 12, 15, 9.6), K.E(18, 16.4, 13.2, 8.6));
+  K.fill(K.AND(rim, K.RB(0, 0, 36, 14.4)), K.M(CL, { r: 4, bias: 0.15 }));
+  K.line(14, 7, 22, 6, pxfH(pxfRamp(CL)[4])); K.line(22, 6, 30, 7, pxfH(pxfRamp(CL)[3]));
+  K.fill(K.PL([[2.6, 18], [0.6, 25], [2.6, 23], [3.4, 27], [4.6, 21]]), K.M(CL2, { r: 2 }));
+  K.fill(K.PL([[33.4, 18], [35.4, 25], [33.4, 23], [32.6, 27], [31.4, 21]]), K.M(CL2, { r: 2 }));
+  // глаза: золото, поперечный зрачок; моргнул — веко цвета кожи
+  for (const ex of [22, 50]) {
+    const ey = 30;
+    if (f) { for (let x = -4; x <= 4; x++) { K.px(ex + x, ey + 1 + Math.round(Math.abs(x) * 0.25), '#2a1a0a'); K.px(ex + x, ey - 1, pxfH(pxfRamp(SK)[3])); } continue; }
+    for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) {
+      const r = Math.hypot(x, y * 1.05); if (r > 4.4) continue;
+      K.px(ex + x, ey + y, r > 3.5 ? '#9a6414' : y > 1 ? '#d8901c' : y < -1 ? '#ffd860' : '#f2b428');
+    }
+    K.rect(ex - 3, ey, 7, 1, '#1a0f0a'); K.rect(ex - 2, ey - 1, 5, 3, '#1a0f0a');                   // поперечный зрачок
+    K.px(ex - 2, ey - 3, '#ffffff'); K.px(ex - 1, ey - 3, '#fff6d0'); K.px(ex - 2, ey - 2, '#fff6d0');
+    for (let x = -5; x <= 5; x++) K.px(ex + x, ey - 4 + Math.round(Math.abs(x) * 0.3), pxfH(pxfRamp(SK2)[1]));     // тяжёлое веко: взгляд исподлобья
+    for (let x = -4; x <= 4; x++) K.px(ex + x, ey - 5 + Math.round(Math.abs(x) * 0.3), pxfH(pxfRamp(SK)[2]));
+  }
+  // ноздри, рот во всю ширину, клычки
+  K.px(33, 41, '#2a1a0a'); K.px(39, 41, '#2a1a0a');
+  for (let x = 12; x <= 60; x++) { const t = (x - 36) / 24; K.px(x, Math.round(46 + t * t * -3 + 1), '#2a1a0a'); }
+  for (const fx of [29, 43]) { K.rect(fx, 48, 2, 2, '#efe6cc'); K.px(fx, 50, '#efe6cc'); K.px(fx + 1, 48, '#fffaea'); }
+  // серьги в левой щеке и белые полосы раскраски над глазами
+  for (let i = 0; i < 3; i++) { const cx = 14 + i * 2, cy = 46 + i; K.px(cx, cy - 1, '#d8c070'); K.px(cx - 1, cy, '#d8c070'); K.px(cx + 1, cy, '#a88a40'); K.px(cx, cy + 1, '#a88a40'); }
+  for (const [x, y] of [[29, 34], [31, 33], [41, 33], [43, 34]]) K.line(x, y, x + (x < 36 ? -2 : 2), y + 4, '#f4f6ea');
+  // завязка плаща на груди
+  K.line(20, 56, 28, 58, '#c8a878'); K.line(52, 56, 44, 58, '#c8a878'); K.rect(35, 57, 2, 2, '#c8a878');
+}
+
+const PXF_DRAW = { grum: pxfGrum, yagla: pxfYagla, pim: pxfPim, tan: pxfTan, shnyr: pxfShnyr, gob: pxfGoblin, zhmykha: pxfZhmykha, kremen: pxfKremen, mrak: pxfMalgor, note: pxfNote, hero: pxfHero, heroF: pxfHeroF, elder: pxfElder, champ: pxfChamp, troll: pxfTroll, golem: pxfGolem, zhab: pxfZhab };
 const PXF_CACHE = {};
 // data-URL кадра (f: 0 — обычный, 1 — моргнул); '' — портрета нет или рисовать негде
 function pxfFaceUrl(who, f) {
