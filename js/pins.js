@@ -5,8 +5,13 @@
 // Появление записывается в журнал оповещений как важное — один раз за появление. Считается на клиенте по видимому
 // состоянию (в кооперативе — по зеркалу), раз в 2 с; плашка появляется и пропадает только после двух проверок подряд.
 
-const Pins = { cur: new Map(), seen: new Map(), el: null, t: 0, food: [] };
-const PIN_MAX = () => (document.body.classList.contains('mobile') ? 2 : 3);
+const Pins = { cur: new Map(), seen: new Map(), el: null, t: 0, food: [], shownAt: new Map(), snooze: new Map() };
+const PIN_MAX = () => (document.body.classList.contains('mobile') ? 1 : 3);
+// плашка не висит вечно: показали PIN_SHOW_MS — прячется на PIN_SNOOZE_MS (или раньше, если стало срочнее); ✕ — то же сразу.
+// Спрятанное остаётся в журнале оповещений (кнопка-свиток) и в «+N».
+const PIN_SHOW_MS = 20000, PIN_SNOOZE_MS = 4 * 60 * 1000;
+function pinSnooze(id) { const p = Pins.cur.get(id); Pins.snooze.set(id, { until: performance.now() + PIN_SNOOZE_MS, sev: p ? p.sev : 0 }); Pins.shownAt.delete(id); }
+function pinHidden(p, t) { const z = Pins.snooze.get(p.id); return !!z && t < z.until && p.sev <= z.sev; }
 
 const pinDone = b => b && b.state === 'done' && !b.removed;
 const pinAll = type => Game.buildings.filter(b => b.type === type && pinDone(b));
@@ -139,7 +144,7 @@ function pinsUpdate() {
   }
   for (const id of [...Pins.seen.keys()]) if (!now.has(id)) {
     const s = Pins.seen.get(id);
-    if (s > 0) Pins.seen.set(id, -1); else { Pins.seen.delete(id); Pins.cur.delete(id); }
+    if (s > 0) Pins.seen.set(id, -1); else { Pins.seen.delete(id); Pins.cur.delete(id); Pins.shownAt.delete(id); Pins.snooze.delete(id); }
   }
   pinsDraw();
 }
@@ -152,6 +157,8 @@ function pinsDraw() {
     el = Pins.el = document.createElement('div');
     el.id = 'nq-pins';
     el.addEventListener('click', e => {
+      const x = e.target.closest('[data-pinx]');
+      if (x) { e.stopPropagation(); pinSnooze(x.dataset.pinx); pinsDraw(); return; }
       const b = e.target.closest('[data-pin]');
       if (!b) return;
       const p = Pins.cur.get(b.dataset.pin);
@@ -160,13 +167,18 @@ function pinsDraw() {
     });
     view.appendChild(el);
   }
-  const list = [...Pins.cur.values()].sort((a, b) => b.sev - a.sev);
+  const t = performance.now();
+  const list = [...Pins.cur.values()].filter(p => !pinHidden(p, t)).sort((a, b) => b.sev - a.sev);
   const max = PIN_MAX(), shown = list.slice(0, max);
+  for (const p of shown) {
+    if (!Pins.shownAt.has(p.id)) Pins.shownAt.set(p.id, t);
+    else if (t - Pins.shownAt.get(p.id) > PIN_SHOW_MS) pinSnooze(p.id);   // повисела — уходит сама
+  }
   const key = shown.map(p => p.id + p.sev + p.text).join('|') + list.length;
   if (key !== Pins.key) {
     Pins.key = key;
     const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-    el.innerHTML = shown.map(p => `<button data-pin="${p.id}" class="s${p.sev}" title="${esc(p.tip)}">${pinIco(p.ico)}${esc(p.text)}${p.target ? '<u>▸</u>' : ''}</button>`).join('') +
+    el.innerHTML = shown.map(p => `<button data-pin="${p.id}" class="s${p.sev}" title="${esc(p.tip)}">${pinIco(p.ico)}${esc(p.text)}${p.target ? '<u>▸</u>' : ''}<b class="pin-x" data-pinx="${p.id}" title="Скрыть">✕</b></button>`).join('') +
       (list.length > max ? `<button data-pin="more" class="s0" title="Журнал оповещений">+${list.length - max}</button>` : '');
   }
   // встаём туда, где начинаются тосты, а их сдвигаем ниже
@@ -187,6 +199,8 @@ function pinsDraw() {
     box-shadow:0 2px 6px rgba(0,0,0,.5)}
   #nq-pins button i{font-style:normal;font-size:15px;line-height:1}#nq-pins button img{width:20px;height:20px;flex:none}
   #nq-pins button u{text-decoration:none;opacity:.6}
+  #nq-pins .pin-x{margin-left:4px;padding:0 4px;font-size:13px;line-height:18px;color:#5a2a10;border-left:1px solid rgba(90,42,16,.35)}
+  body.mobile #nq-pins .pin-x{padding:4px 6px;font-size:15px}
   #nq-pins button.s2{background:linear-gradient(#ffd0b0,#e89a74);border-color:#8a1c12;animation:pinPulse 2.4s ease-in-out infinite}
   #nq-pins button.s0{background:linear-gradient(#d8d4e8,#a8a2c4);border-color:#3a3460}
   @keyframes pinPulse{50%{box-shadow:0 0 0 2px rgba(200,40,20,.55),0 2px 6px rgba(0,0,0,.5)}}
