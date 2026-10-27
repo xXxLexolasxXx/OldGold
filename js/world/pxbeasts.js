@@ -730,8 +730,8 @@ function pbTrollF(K0, P, kind) {
   pbDot(K, -4, hy + 10, SK[0], 1.6); pbDot(K, 4, hy + 10, SK[0], 1.6); pbDot(K, 2, hy + 1, SK[3], 1.4);
   if (open) pbBall(K, 0, hy + 20, 13, 4 + P.mouth * 4, [[30, 8, 6], [60, 18, 14], [90, 30, 22]], { amb: 0.3 });
   else K.path([[-15, hy + 19, 1], [15, hy + 19, 1]], () => SK[0]);
-  pbTrTusk(K, T, kind, 13, hy + 25, -1.85, 15, 4.6, 0.95, 1);
-  pbTrTusk(K, T, kind, -13, hy + 25, -Math.PI + 1.85, 15, 4.6, -0.95, -1);
+  pbTrTusk(K, T, kind, 13, hy + 25, -1.3, 15, 4.6, -0.95, 1);                                   // бивни загнуты внутрь — смотрят друг на друга
+  pbTrTusk(K, T, kind, -13, hy + 25, -Math.PI + 1.3, 15, 4.6, 0.95, -1);
   for (const s of [-1, 1]) pbTrTusk(K, T, kind, s * 7, hy + 14, s > 0 ? 1.7 : Math.PI - 1.7, 6, 2.4, s * -0.3, s);
   // ---- оружие у тела (висит / удар / возврат) — до руки, чтобы кулак лёг поверх рукояти
   if (!(up || a < -0.3)) pbTrWeapon(K, T, W.hx, W.hy + 2, wd);
