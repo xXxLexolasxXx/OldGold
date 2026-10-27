@@ -120,9 +120,36 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
   claw(AF, -1, true);
 
   // ---- одна форма: саван, плечи, ближняя рука, голова, колпак / капюшон, борода
+  // саван: гладкий или лохмотья (o.rag — пробный лист tools/pxghost/ghostrags.html): T1 полосы, T2 рваньё с дырами — как у жнеца
+  const caps0 = DS_chain(spine).map(q => q.f), sho = ell(lean * 0.6, 17, 30, 14);
+  const shroud0 = (x, y) => { let u = sho(x, y); for (const f of caps0) u = DS_smin(u, f(x, y), 7); return u; };
+  const vn = (x, y, sc) => {
+    const gx = x / sc, gy = y / sc, ix = Math.floor(gx), iy = Math.floor(gy), fx = gx - ix, fy = gy - iy, h = (a, b) => hsh(a * 57.1 + b * 13.7);
+    const u = fx * fx * (3 - 2 * fx), w = fy * fy * (3 - 2 * fy);
+    return (h(ix, iy) * (1 - u) + h(ix + 1, iy) * u) * (1 - w) + (h(ix, iy + 1) * (1 - u) + h(ix + 1, iy + 1) * u) * w;
+  };
+  const sway = (y, a) => Math.sin(y * 0.11 + p * TAU) * a;
+  const shroud = o.rag === 'T1' ? (x, y) => {
+    let d = shroud0(x, y);
+    if (y > 24) d += Math.max(0, Math.sin(y * 0.6 + hsh(Math.floor(y / 5)) * 4)) * 2.6 * Math.min(1, (y - 24) / 24);
+    if (y > 40) {
+      const xs = x - sway(y, 2.5) * (y - 40) / 50, i = Math.floor((xs + 200) / 6.5), fx = ((xs + 200) % 6.5) / 6.5;
+      const end = tailEnd - 6 - hsh(i * 3.3) * 52;
+      if (y > end) d = Math.max(d, (y - end) * 0.8);
+      if (fx < 0.17 || fx > 0.93) d = Math.max(d, Math.min(3.5, (y - 40) * 0.08));
+    }
+    return d;
+  } : o.rag === 'T2' ? (x, y) => {
+    let d = shroud0(x, y) + (vn(x + sway(y, 3), y, 6) - 0.45) * 6 + (vn(x * 1.7, y * 1.7, 3.5) - 0.5) * 2.5;
+    for (let i = 0; i < 5; i++) {
+      const hx = lean * 0.5 + (hsh(i * 7.7 + 1) - 0.5) * 34, hy = 32 + hsh(i * 3.9 + 2) * 52, r = 2.5 + hsh(i * 5.1) * 3.5;
+      const dh = r - Math.hypot((x - hx) * (1 + (vn(x, y, 3) - 0.5) * 0.6), y - hy);
+      if (dh > -2) d = Math.max(d, dh * 1.6);
+    }
+    return d;
+  } : shroud0;
   const parts = [
-    ...DS_chain(spine, { mat: 'sh', k: 7 }),
-    { f: ell(lean * 0.6, 17, 30, 14), mat: 'sh', k: 8 },
+    { f: shroud, mat: 'sh', k: 7 },
     ...armParts(AN, ['sh', 'bo']),
   ];
   const tip = sn(1, 0.6) * 6 + lean * 0.4;
