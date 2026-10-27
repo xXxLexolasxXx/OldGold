@@ -334,7 +334,7 @@ function renderVariant(type, vi, rot = 0) {
   const g = new BGrid(Math.round(W * BK), Math.round(H * BK), Math.round(BPADX_ * BK), Math.round((top + FD) * BK));
   g.rot = rot; g.LD = LD;
   def.vars[vi].make(g);
-  g.finish({ step: 1.0 });
+  g.finish({ step: def.bk && def.bk < 2 ? 1.6 : 1.0, ink: def.ink });
   groundShadow(g, [[-6, -4, 0], [LW + 6, -4, 0], [LW + 6, LD + 4, 0], [-6, LD + 4, 0]], 0.22);
   return g.toCanvas();
 }
