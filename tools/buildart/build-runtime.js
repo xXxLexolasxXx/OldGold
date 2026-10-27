@@ -18,6 +18,7 @@ const parts = [
   ['bvar11.js (школа, лесопилка, лесоруб, каменоломня)', R('bvar11.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
   ['bvar12.js (реквизит блока 1)', R('bvar12.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
   ['bvar13.js (колодец, извозчик, торговый пост, загон)', R('bvar13.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
+  ['bvar14.js (лазарет)', R('bvar14.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
   ['px-runtime.js', R('px-runtime.js')],
 ];
 const out = `'use strict';

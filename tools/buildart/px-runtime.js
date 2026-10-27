@@ -23,6 +23,7 @@ function pxModel(type, g, d, lv, vr) {
   if (type === 'stable') { buildStable(g, lv); return; }
   if (type === 'tradepost') { buildTrade(g, lv); return; }
   if (type === 'goatpen') { buildGoat(g, lv); return; }
+  if (type === 'infirmary') { g.dynPiles = true; buildInf(g, lv); return; }
   PX_HOUSES[vr](g, lv);
 }
 
@@ -74,6 +75,7 @@ function pxBuild(type, rot, lv, vr) {
   if (type === 'stable') { spr.penRects = (M.pens || []).map(rect); spr.cartSpot = opt(M.cartSpot); }
   if (type === 'tradepost') { spr.cartSpot = opt(M.cartSpot); spr.loadFrom = opt(M.loadFrom); }
   if (type === 'well') spr.bucket = opt(M.bucket);
+  if (type === 'infirmary') { spr.beds = (M.beds || []).map(([a, b]) => [scr(a), scr(b)]); spr.rack = opt(M.rack); spr.cauldron = opt(M.cauldron); spr.cots = arr(M.cots); }
   if (type === 'storehouse') {
     spr.piles = {}; for (const k in M.piles || {}) spr.piles[k] = M.piles[k].map(scr);
     spr.runes = arr(M.glow); spr.drop = arr(M.drop); spr.circle = opt(M.circle);
@@ -87,10 +89,12 @@ function pxUp(src, k) { const cv = mkCanvas(src.width * k, src.height * k), c = 
 // зеркало для входа с запада (rot 2): старые поля отражает mirrorSprite, новые — здесь
 function pxMirror(s) {
   const m = mirrorSprite(s, s.fw), W = s.w, pt = p => p && [W - p[0], p[1], ...p.slice(2)];
-  for (const k of ['fire', 'spit', 'chop', 'darts', 'stage', 'circle', 'saw', 'logIn', 'halves', 'dust', 'work', 'block', 'cartSpot', 'loadFrom', 'bucket']) m[k] = pt(s[k]);
+  for (const k of ['fire', 'spit', 'chop', 'darts', 'stage', 'circle', 'saw', 'logIn', 'halves', 'dust', 'work', 'block', 'cartSpot', 'loadFrom', 'bucket', 'rack', 'cauldron']) m[k] = pt(s[k]);
   for (const k of ['seats', 'tables', 'pantry', 'stock', 'runes', 'drop', 'workers']) m[k] = (s[k] || []).map(pt);
   const rr = r => r && [pt(r[0]), pt(r[1])];
   if (s.penRect) m.penRect = rr(s.penRect);
+  if (s.beds) m.beds = s.beds.map(rr);
+  if (s.cots) m.cots = s.cots.map(pt);
   if (s.penRects) m.penRects = s.penRects.map(rr);
   if (s.play) { m.play = {}; for (const k in s.play) m.play[k] = Array.isArray(s.play[k][0]) ? s.play[k].map(pt) : pt(s.play[k]); }
   if (s.piles) { m.piles = {}; for (const k in s.piles) m.piles[k] = s.piles[k].map(pt); }

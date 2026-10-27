@@ -249,6 +249,7 @@ function drawInside(c, b, spr, ox, oy) {
   if (spr.px === 'quarry') drawQuarryYard(c, b, spr, ox, oy);
   if (spr.px === 'goatpen' || spr.px === 'stable') drawPenAnimals(c, b, spr, ox, oy);
   if (spr.px === 'tradepost') drawTradeYard(c, b, spr, ox, oy);
+  if (spr.px === 'infirmary') drawInfYard(c, b, spr, ox, oy);
   if (b.type === 'inn') { if (spr.pxInn) drawInnYard(c, b, spr, ox, oy); drawInnPorch(c, b, spr, ox, oy); drawInnOven(c, b, spr, ox, oy); drawBarmaid(c, b, spr, ox, oy); if (spr.pxInn) drawInnExtraDiners(c, b, spr, ox, oy); }
 }
 
@@ -708,5 +709,46 @@ function drawTradeYard(c, b, spr, ox, oy) {
     const px = lx + (cx - 6 - lx) * f, py = ly + (cy + 4 - ly) * f;
     drawFolk(c, { type: 'serf', look: b.id * 71 + 9, carry: go ? 'crate' : null }, ox + px, oy + py, go ? (cx > lx ? 'E' : 'W') : (cx > lx ? 'W' : 'E'), 'walk', Math.floor(t * 9) & 7, {});
   }
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Лазарет (bldpx.js): травы растут на грядках, лекарь срезает, сушит и варит зелье ----------
+// Каждый пучок растёт ~40 с от ростка до цветка; лекарь обходит грядку — срезанное начинает расти заново.
+// Цикл лекаря 18 с: грядка (срезает) → сушилка (развешивает) → котёл (мешает). Котёл всегда булькает, под ним огонь.
+function drawInfYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.beds) return;
+  const t = Game.time + b.id * 7, PL = ['#7cb444', '#548c30', '#386420'], FL = ['#c6a8ff', '#f8f4ea', '#ffd864', '#e04c40'];
+  c.imageSmoothingEnabled = false;
+  const cyc = t % 18, bedI = Math.floor(t / 18) % spr.beds.length;
+  spr.beds.forEach(([a, e], bi) => {
+    const n = Math.max(1, Math.floor((e[0] - a[0]) / 4));
+    for (let k = 0; k <= n; k++) {
+      const x = a[0] + (e[0] - a[0]) * k / n, y = a[1] + (e[1] - a[1]) * k / n;
+      const cut = bi === bedI && cyc < 6 && k <= n * cyc / 6 ? (cyc - 6 * k / n) : 99;   // срезано в этом обходе — растёт с нуля
+      const g = Math.min(1, ((t * 0.025 + k * 0.17 + bi * 0.31) % 1.3) * (cut < 99 ? 0 : 1) + (cut < 99 ? Math.min(1, cut * 0.05) : 0));
+      const h = Math.round(1 + g * 4), X = Math.round(ox + x), Y = Math.round(oy + y);
+      c.fillStyle = PL[(k + bi) % 3]; c.fillRect(X, Y - h, 1, h); if (g > 0.4) { c.fillRect(X - 1, Y - h + 1, 1, 1); c.fillRect(X + 1, Y - h + 2, 1, 1); }
+      if (g > 0.85) { c.fillStyle = FL[(k + bi) % 4]; c.fillRect(X, Y - h - 1, 1, 1); }
+    }
+  });
+  // котёл: огонь под ним, пузыри и пар
+  if (spr.cauldron) {
+    const [cx, cy] = spr.cauldron, X = ox + cx, Y = oy + cy;
+    drawFire(c, X, Y - 1, 'tiny', t, b.id + 5, { glow: 0 });
+    for (let k = 0; k < 4; k++) { const p = (t * 1.2 + k / 4) % 1; c.fillStyle = p < 0.7 ? '#a4d85c' : '#d8ffb0'; c.fillRect(Math.round(X - 5 + k * 3 + Math.sin(k * 2) * 1), Math.round(Y - 16 - p * 3), 1, 1); }
+    for (let k = 0; k < 3; k++) { const p = (t * 0.35 + k / 3) % 1; c.globalAlpha = 0.55 * (1 - p); c.fillStyle = '#d8f0c8'; c.fillRect(Math.round(X - 2 + Math.sin(p * 6 + k) * 3), Math.round(Y - 20 - p * 16), 3, 2); }
+    c.globalAlpha = 1;
+  }
+  // лекарь
+  const bed = spr.beds[bedI], rack = spr.rack, cau = spr.cauldron;
+  let px, py, pose = 'walk', fr = Math.floor(t * 9) & 7, view = 'E', opt = {};
+  const lerp = (p, q, f) => [p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f];
+  if (cyc < 6) { [px, py] = lerp(bed[0], bed[1], cyc / 6); py += 3; pose = 'work'; fr = { anim: 'reap', f: Math.floor(t * 8) % 8 }; }
+  else if (cyc < 8) { [px, py] = lerp([bed[1][0], bed[1][1] + 3], [rack[0], rack[1] + 4], (cyc - 6) / 2); view = rack[0] < bed[1][0] ? 'W' : 'E'; }
+  else if (cyc < 11) { [px, py] = [rack[0] + 4, rack[1] + 4]; pose = 'idle'; fr = 0; opt = { gest: 'stretch', gf: gestCyc(t) }; view = 'S'; }
+  else if (cyc < 13) { [px, py] = lerp([rack[0] + 4, rack[1] + 4], [cau[0] + 10, cau[1] + 2], (cyc - 11) / 2); view = 'W'; }
+  else if (cyc < 17) { [px, py] = [cau[0] + 10, cau[1] + 2]; pose = 'work'; fr = { anim: 'dig', f: Math.floor(t * 5) % 8 }; view = 'W'; }
+  else { [px, py] = lerp([cau[0] + 10, cau[1] + 2], [bed[0][0], bed[0][1] + 3], cyc - 17); }
+  drawFolk(c, { type: 'healer', look: b.id * 83 + 4, carry: cyc >= 6 && cyc < 8 ? 'hay' : null }, ox + px, oy + py, view, pose, fr, opt);
   c.imageSmoothingEnabled = R.smooth;
 }
