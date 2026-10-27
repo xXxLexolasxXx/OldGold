@@ -411,7 +411,10 @@ function owlDrop(o) {
   const g = o.item; o.item = null;
   (Game.falling = Game.falling || []).push({ x: o.x, y: o.y, vy: -30, vx: (Math.random() - 0.5) * 30, rot: 0, vr: (Math.random() - 0.5) * 9, g, ground: o.ground || o.y + 40 });
   logEvent('owl', `Сова уронила с крыши: ${GOODS[g].name.toLowerCase()}`, o.x / TILE, (o.ground || o.y + 40) / TILE);
-  if (Game.time - lastOwlToast > 45) { lastOwlToast = Game.time; toast(`Сова уронила с крыши: ${GOODS[g].name.toLowerCase()}! Трудяги подберут`); }
+  // снаряжение ждёт героя (gearpick.js): подсказываем, что его можно взять в руку
+  const gear = typeof gpOn === 'function' && gpOn() && typeof HL_GEAR !== 'undefined' && HL_GEAR[g];
+  if (gear) toast(`Сова уронила с крыши: ${HL_GEAR[g].name.toLowerCase()}! Нажмите на него — взять герою в руку или отдать на склад`);
+  else if (Game.time - lastOwlToast > 45) { lastOwlToast = Game.time; toast(`Сова уронила с крыши: ${GOODS[g].name.toLowerCase()}! Трудяги подберут`); }
 }
 
 function updateFalling(dt) {

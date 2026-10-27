@@ -23,10 +23,10 @@ function site(sim, type) {
 }
 const B = id => `Game.buildings.find(b => b.id === ${id})`;
 
-// 1. Все трудяги заняты (здесь — выключены в «Приоритетах»): стройка всё равно идёт — работяга носит сам
+// 1. Все трудяги заняты (здесь — лимит «на работе: 0» во вкладке «Рабочие»): стройка всё равно идёт — работяга носит сам
 {
   const sim = sim0(11);
-  sim.R('prioSet("jobs","serf",0); prioSet("jobs","carter",0);');
+  sim.R('wkSetCap("serf", 0); wkSetCap("carter", 0);');
   const id = site(sim, 'woodcutter');
   sim.step(300);
   const st = JSON.parse(sim.R(`JSON.stringify({ s: ${B(id)}.state, used: ${B(id)}.used, total: ${B(id)}.total })`));
@@ -46,7 +46,7 @@ const B = id => `Game.buildings.find(b => b.id === ${id})`;
   const sim = sim0(12);
   const id = site(sim, 'quarry');
   sim.R('for (const u of Game.units) if (u.type === "builder") removeUnit(u); purgeDead();');   // работяги не носят сами: смотрим только учёт доставки
-  sim.R('prioSet("jobs","serf",0)');                      // новые доставки не назначаются — смотрим одну
+  sim.R('wkSetCap("serf", 0)');                      // новые доставки не назначаются — смотрим одну
   sim.step(1);
   const g = sim.R(`(function(){ const s = ${B(id)}, st = Game.buildings.find(b => b.isStore());
     const g = ['timber', 'stone', 'trunk'].find(k => s.demand(k) > 0 && st.offer(k) > 0);
@@ -62,7 +62,7 @@ const B = id => `Game.buildings.find(b => b.id === ${id})`;
   const inc = sim.R(`${B(id)}.incoming[Game.__g]`);
   info(`уронил ношу: «в пути» к стройке после испуга = ${inc}`);
   ok(inc === 0, `уроненная ноша числится «в пути» (${inc}) — стройка ждёт призрака и не зовёт других`);
-  sim.R('prioSet("jobs","serf",2)');
+  sim.R('wkSetCap("serf", null)');
   sim.step(90);
   const got = sim.R(`${B(id)}.stock[Game.__g] + ${B(id)}.usedOf[Game.__g]`);
   ok(got >= 1, `после испуга материал до стройки так и не дошёл за 1,5 мин (${got})`);

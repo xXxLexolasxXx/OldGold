@@ -143,8 +143,6 @@ function hireHTML(b) {
   h += `<div class="irow"><img class="portrait" src="${portraitURL(type, w ? w.look : 3)}" alt="">
     <div><div>${w ? `${hireName(w)} <span class="muted small">${T.name.toLowerCase()}${hireLvl(w)}</span>` : T.name}</div>
     <div class="small ${w ? 'muted' : 'warn'}">${w ? st : pend ? 'учится в школе — придёт сюда' : 'места свободно: 1'}</div></div></div>`;
-  if (!w && typeof prioOff === 'function' && prioOff(b))
-    h += '<div class="irow small warn">Выключено во вкладке «Приоритеты»: сами сюда не пойдут, поставьте вручную</div>';
 
   const cands = hireCands(b);
   if (cands.length) {
