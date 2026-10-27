@@ -8,7 +8,7 @@
 //    больше мышей, в долгую ночь — ещё больше; зимой вода дремлет, а мыши спят.
 // 2) Летучих мышей можно прогнать, а не убить: клик героя («Прогнать мышь»), изгнание нежити, оберег мага и
 //    костёр прогоняют их, стражи гонят сами, остальные гномы — иногда. Прогнанная мышь улетает, и стая
-//    возвращается не сразу.
+//    возвращается не сразу. Свет костра и фонарей мыши облетают, гнома в свету не трогают (см. «Свет»).
 
 // сезоны как в dilSeason(): 0 весна, 1 лето, 2 осень, 3 зима
 const HAUNTS = [
@@ -27,6 +27,9 @@ const HN = {
   SHOO_R: 4.5,               // дальше этого герой уже не достаёт
   WELL_BASE: 0.7,            // шанс, что в колодце поселилось что-то, в обычную ночь
   GUARD: ['warrior', 'archer', 'hero'],
+  CAP: 4,                    // больше четырёх мышей разом не бывает, как бы ни была глубока ночь
+  LAMP_R: 3.2,               // свет уличного фонаря, клеток (как в mood.js)
+  LANTERN: 0.6,              // фонарь в руке: столько налётов мышь бросает, не долетев
 };
 
 const hnSeason = () => (typeof dilSeason === 'function' ? dilSeason() : 1);
@@ -158,7 +161,7 @@ function batSpawnPoint(cx, cy) {
 // сколько мышей и как часто: сезон, глубина ночи, долгая ночь, гнёзда рядом
 function batCap() {
   const w = hnSeason() === 3 ? 0.5 : 1;
-  return Math.max(1, Math.round((3 + (hnRoosts().length ? 1 : 0)) * hauntNightMul() * w - 0.3));
+  return Math.max(1, Math.min(HN.CAP, Math.round((3 + (hnRoosts().length ? 1 : 0)) * hauntNightMul() * w - 0.3)));
 }
 function batRate() {
   const place = hnRoosts().some(r => r.type === 'graveyard') ? 'graveyard' : hnRoosts().length ? 'mine' : 'edge';
@@ -166,6 +169,45 @@ function batRate() {
 }
 // стая вернётся не сразу после прогона
 const batOpen = () => (Game.batAway || 0) <= Game.time;
+
+// ---------- Свет: мыши его боятся ----------
+// Чтобы мыши не стали новой бедой (как совы), против них есть простые средства: костёр и уличные фонари
+// держат их на расстоянии, фонарь в руке гнома чаще всего отпугивает, а прогнать мышь можно кликом.
+function lampNear(x, y, r) {
+  const cx = Math.floor(x), cy = Math.floor(y), R = Math.ceil(r);
+  for (let yy = cy - R; yy <= cy + R; yy++) for (let xx = cx - R; xx <= cx + R; xx++) {
+    if (!inb(xx, yy)) continue;
+    const o = World.obj[idx(xx, yy)];
+    if (o && o.t === 'lamp' && !o.out && Math.hypot(xx + 0.5 - x, yy + 0.5 - y) <= r) return [xx + 0.5, yy + 0.5];
+  }
+  return null;
+}
+// источник света рядом с точкой: [x, y] или null
+function batLitAt(x, y) {
+  for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done' && !b.removed && Math.hypot(b.doorX + 0.5 - x, b.doorY + 0.5 - y) < BONFIRE_SAFE) return [b.doorX + 0.5, b.doorY + 0.5];
+  return lampNear(x, y, HN.LAMP_R);
+}
+// гнома в свету мышь не пугает и не уносит; с фонарём в руке — чаще всего тоже
+function batSafe(u) {
+  if (nearBonfire(u.x, u.y, BONFIRE_SAFE) || lampNear(u.x, u.y, HN.LAMP_R)) return true;
+  return typeof lanternLit === 'function' && lanternLit(u) && Math.random() < HN.LANTERN;
+}
+// мышь, залетевшая в свет, отворачивает прочь
+function batAvoidLight(b) {
+  b.litCD = (b.litCD || 0) - 1;
+  if (b.litCD > 0) return;
+  b.litCD = 8;
+  const L = batLitAt(b.x, b.y);
+  if (!L) return;
+  const dx = b.x - L[0], dy = b.y - L[1], d = Math.hypot(dx, dy) || 1;
+  b.tx = b.x + dx / d * 7; b.ty = b.y + dy / d * 7; b.retarget = 1.5;
+}
+// подсказка игроку — один раз за игру, при первом налёте
+function batHint() {
+  if (Game.batHint) return;
+  Game.batHint = true;
+  toast('Летучие мыши боятся света: костёр и фонари держат их подальше. Мышь можно прогнать кликом');
+}
 
 // ---------- Прогон ----------
 function batShoo(b, who, how) {

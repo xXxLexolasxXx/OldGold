@@ -326,6 +326,7 @@ function batsTick(dt) {
       const u = Game.units.length ? Game.units[(Math.random() * Game.units.length) | 0] : null;
       b.tx = (u ? u.x : cx) + (Math.random() - 0.5) * 8; b.ty = (u ? u.y : cy) + (Math.random() - 0.5) * 6; b.retarget = 2 + Math.random() * 3;
     }
+    if (!b.leave) batAvoidLight(b);                                       // свет костра и фонарей мышь облетает
     const dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy) || 1;
     // порывистый зигзаг, как у настоящих мышей
     const wob = Math.sin(b.ph * 0.31) * 1.6;
@@ -339,10 +340,12 @@ function batsTick(dt) {
       for (const u of Game.units) {
         if (u.inside || u.dead || !isPerson(u) || (u.batCD || 0) > Game.time) continue;
         if (Math.hypot(u.x - b.x, u.y - b.y) < 1.7) {
+          if (batSafe(u)) continue;                                       // у костра, под фонарём, с фонарём в руке — не тронет
           u.batCD = Game.time + 25;
           if (batShooTry(b, u)) break;                                   // страж или смелый гном гонит мышь сам
           if (batCanTake(b, u)) { batTakes(b, u); break; }               // редко: пикирует и уносит одинокого гнома
           gesture(u, 'panic', 1.3, b.x);
+          batHint();
           floater(u.x, u.y - 1.2, ['Летучая мышь!', 'Брысь!', 'Ай, над головой!'][Math.floor(Math.random() * 3)], '#e8e0f0');
           sfxAt('squeak', b.x * TILE, b.y * TILE, 0.9);
           break;

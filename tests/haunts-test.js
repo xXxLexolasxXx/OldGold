@@ -58,6 +58,42 @@ console.log(`Проверка: страж прогнал ${guardN} из 40, фе
 ok(guardN >= 30, `стражи гонят мышь редко: ${guardN} из 40`);
 ok(plain >= 3 && plain <= 26, `обычные гномы гонят мышь вне разумного: ${plain} из 40`);
 
+// ---------- 2б. Противодействие: свет, фонарь, потолок ----------
+atNight(2, 340); setup();
+const light = J(`const h = Game.hero, x = Math.floor(h.x), y = Math.floor(h.y);
+  const far = { type: 'farmer', x: h.x, y: h.y };
+  const before = batSafe(far);
+  World.obj[idx(x + 1, y)] = { t: 'lamp' };
+  const lamp = batSafe(far), lit = !!batLitAt(h.x, h.y);
+  World.obj[idx(x + 1, y)].out = true;
+  const outLamp = batSafe(far);
+  World.obj[idx(x + 1, y)] = null;
+  return { before, lamp, lit, outLamp };`);
+ok(!light.before, 'гном в темноте уже «в безопасности»: ' + JSON.stringify(light));
+ok(light.lamp && light.lit, 'уличный фонарь не защищает от мышей: ' + JSON.stringify(light));
+ok(!light.outLamp, 'погасший фонарь всё ещё защищает');
+const bonf = J(`const b = Game.buildings.find(b => b.type === 'bonfire' && b.state === 'done'); if (!b) return null; return batSafe({ type: 'farmer', x: b.doorX + 1.5, y: b.doorY + 1.5 });`);
+ok(bonf !== false, 'у костра гнома пугает мышь');
+// фонарь в руке: большинство налётов мимо
+let lan = 0;
+for (let n = 0; n < 60; n++) lan += J(`return batSafe({ type: 'farmer', x: ${FAR[0]} + 0.5, y: ${FAR[1]} + 0.5, lantern: true }) ? 1 : 0;`);
+console.log(`Проверка: с фонарём в руке мышь отступила ${lan} из 60`);
+ok(lan >= 25 && lan <= 50, `фонарь в руке защищает вне разумного: ${lan} из 60`);
+// мышь в свету отворачивает
+{
+  const r = J(`const h = Game.hero, x = Math.floor(h.x), y = Math.floor(h.y); World.obj[idx(x, y)] = { t: 'lamp' };
+    const b = { x: h.x + 1, y: h.y, tx: h.x, ty: h.y, litCD: 0 }; batAvoidLight(b); World.obj[idx(x, y)] = null;
+    return { away: Math.hypot(b.tx - h.x, b.ty - h.y) > 5 };`);
+  ok(r.away, 'мышь в свете фонаря не отворачивает');
+}
+// потолок: даже в глубокую долгую ночь с гнёздами — не больше четырёх
+season(1); atNight(30, 340); sim.h.run(`Game.buildings.push(new Building('graveyard', 40, 40, true));`);
+ok(J(`return batCap();`) <= 4, 'мышей больше четырёх');
+sim.h.run(`Game.buildings.pop();`);
+// подсказка один раз
+const hint = J(`Game.batHint = false; const said = []; const _t = toast; toast = m => said.push(m); batHint(); batHint(); toast = _t; return said.length;`);
+ok(hint === 1, 'подсказка про мышей не одна: ' + hint);
+
 // ---------- 3. Спавн мышей: сезон и ночь ----------
 season(1); atNight(1, 340); const capSummer1 = J(`return batCap();`);
 atNight(8, 340); const capSummer8 = J(`return batCap();`);
