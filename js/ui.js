@@ -670,7 +670,7 @@ function collectAlerts() {
     const p = b.problem();
     if (!p || p === 'paused' || p === 'enough') continue;
     if (p === 'noroad') { out.push({ b, icon: ['ui', 'road'], text: `${b.def.name}: нет дороги к складу` }); continue; }
-    if (p === 'damaged') { out.push({ b, icon: ['ui', 'warn'], text: `${b.def.name}: повреждено нечистью, ждёт ремонта` }); continue; }
+    if (p === 'damaged') { out.push({ b, icon: ['ui', 'warn'], text: `${b.def.name}: повреждено — ${repairWhy(b) || 'ждёт ремонта'}` }); continue; }
     if (p === 'noworker') out.push({ b, icon: ['ui', 'noworker'], text: `${b.def.name}: нужен ${UNIT_TYPES[b.def.worker].name.toLowerCase()}` });
     else if (p === 'full') out.push({ b, icon: ['ui', 'full'], text: `${b.def.name}: всё заполнено` });
     else if (p.startsWith('need:')) out.push({ b, icon: ['good', p.slice(5)], text: `${b.def.name}: нет «${GOODS[p.slice(5)].name}»` });
@@ -719,7 +719,7 @@ function statusChip(b) {
   if (p === 'noroad') return '<span class="chip bad">Нет дороги к складу</span>';
   if (p === 'paused') return '<span class="chip off">На паузе</span>';
   if (p === 'noworker') return '<span class="chip bad">Нет рабочего</span>';
-  if (p === 'damaged') return '<span class="chip bad">Повреждено — ждёт ремонта</span>';
+  if (p === 'damaged') return `<span class="chip bad">Повреждено — ${repairWhy(b) || 'ждёт ремонта'}</span>`;
   if (p === 'full') return '<span class="chip wait">Всё заполнено</span>';
   if (p === 'enough') return '<span class="chip off">Отдыхает: еды на складе вдоволь</span>';
   return `<span class="chip bad">Нет: ${GOODS[p.slice(5)].name}</span>`;
@@ -905,7 +905,7 @@ function infoBuilding(b) {
       h += `<div class="recipe${b.crops[crop] ? '' : ' off'}">${gi(crop)} ${CROP_NAMES[crop]}<span class="t">полей: ${cnt[crop] || 0}</span>${def.crops.length > 1 ? `<input type="checkbox" data-crop="${crop}" ${b.crops[crop] ? 'checked' : ''}>` : ''}</div>`;
     h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div><div class="small muted">${def.crops.includes('hops') ? `Поля хмеля закладывайте инструментом «Хмель» рядом (до ${FARM_R} клеток): доска за подвесы.` : `Поля закладывайте инструментом «Пшеница» рядом с фермой (до ${FARM_R} клеток) — работяга вскопает их бесплатно.`} Сено — побочный продукт жатвы.</div>`;
   }
-  if (b.type === 'bonfire') h += `<div class="small muted">Кольца на карте: свет и защита от нечисти — ${BONFIRE_SAFE} клеток, у костра возрождаются герои — ${BONFIRE_HERO}, вне ${BONFIRE_NOSPAWN} нечисть и не появляется.</div>`;
+  if (b.type === 'bonfire') { const m = bonfireMul(b), f = r => Math.round(r * m * 10) / 10; h += `<div class="small muted">Кольца на карте: свет и защита от нечисти — ${f(BONFIRE_SAFE)} клеток, у костра возрождаются герои — ${f(BONFIRE_HERO)}, ближе ${f(BONFIRE_NOSPAWN)} нечисть не появляется.${m > 1 ? ' Костёр уровня ' + b.level + ': всё шире в ' + m + ' раза.' : ''}</div>`; }
   if (b.type === 'swine') {
     const st = ['', '⅓', '⅔'];
     h += '<div class="isec">Загон</div>';

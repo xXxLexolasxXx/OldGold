@@ -86,11 +86,36 @@ function buildSchool(g, lv) {
   g.sprite([86, 50, 0], P => QK.readTree(P)); g.meta.play.read = [80, 48, 0];
   g.sprite([60, 10, 0], P => QK.ball(P));
   if (lv >= 2) { g.sprite([34, 12, 0], P => QK.sandbox(P)); g.sprite([88, 12, 0], P => QK.seesaw(P)); g.meta.play.sand = [34, 10, 0]; g.meta.play.seesaw = [[78, 12, 3], [98, 12, 5]]; }
-  if (lv >= 3) { g.sprite([6, 10, 0], P => QK.slide(P)); g.sprite([60, 34, 0], P => QK.maypole(P)); g.meta.play.slide = [10, 8, 0]; g.meta.play.pole = [60, 34, 0]; g.sprite([92, 36, 0], P => Q3.crystalLamp(P, 14)); }
+  if (lv >= 3) { g.sprite([6, 10, 0], P => QK.slide(P)); g.sprite([32, 44, 0], P => QK.maypole(P)); g.meta.play.slide = [10, 8, 0]; g.meta.play.pole = [32, 44, 0]; g.sprite([92, 36, 0], P => Q3.crystalLamp(P, 14)); }
   g.sprite([4, 50, 0], P => Q3.shroomPatch(P)); g.sprite([54, 40, 0], P => Q3.crystalLamp(P, 14));
+  // угол справа от башни: ученический огород с травами, пугало и скворечник; выше уровнем — ульи и детский домик
+  box(g, { x0: 82, x1: 95, y0: 58, y1: 92, h: 1.5, mat: m1Plank(P1.plank, 3), top: (u, v) => ((v | 0) % 6 < 1 ? P1.plank[1] : (u + v) % 5 < 1 ? bhex('#4e3a28') : bhex('#6a5236')) });
+  for (let y = 61; y < 92; y += 6) g.sprite([88, y, 1.5], P => { for (let x = -5; x <= 5; x += 2) { const h = 2 + ((x + y) & 1); PR.rect(P, x, -h, x, 0, P1.grass[1 + ((x + y) & 1)]); if ((x + y) % 4 === 0) P(x, -h - 1, [P3.crystal[1], P1.gold[0], P1.red[0]][(x + y + 30) % 3]); } }, -0.2);
+  g.sprite([92, 74, 1.5], P => { PR.rect(P, 0, -16, 0, 0, P3.oak[1]); PR.rect(P, -5, -12, 5, -12, P3.oak[1]); PR.rect(P, -2, -12, 2, -6, P1.red[1]); PR.ell(P, 0, -15, 2.5, 2.5, () => P1.straw[1]); PR.rect(P, -3, -18, 3, -17, P1.straw[3]); P(-1, -15, P1.ink); P(1, -15, P1.ink); });   // пугало
+  g.sprite([84, 56, 0], P => { PR.rect(P, 0, -18, 0, 0, P3.oak[1]); PR.rect(P, -3, -24, 3, -18, P1.plank[1]); PR.rect(P, -4, -25, 4, -25, P1.tileR[1]); P(0, -21, P1.ink); });   // скворечник
+  g.meta.play.garden = [88, 66, 1.5];
+  if (lv >= 2) for (const y of [84, 90]) g.sprite([94, y, 1.5], P => { PR.rect(P, -3, -7, 3, 0, P1.straw[1]); for (let k = -6; k < 0; k += 2) PR.rect(P, -3, k, 3, k, P1.straw[3]); PR.rect(P, -4, -8, 4, -8, P1.plank[2]); P(0, -2, P1.ink); P(-6, -9, P1.gold[0]); P(5, -11, P1.gold[0]); });   // ульи с пчёлами
+  if (lv >= 3) { box(g, { x0: 84, x1: 94, y0: 60, y1: 70, z0: 1.5, h: 8, mat: m1Plank(P1.plankB, 3), top: m1Flat(P1.plank[1]) }); roof(g, { x0: 84, x1: 94, y0: 60, y1: 70, z0: 1.5, h: 8 }, { type: 'gable', axis: 'X', rise: 6, ov: 2, mat: m1Tile2(P1.tileR), cut: m1Fascia, th: 1.5 }); elem(g, 'S', 60, 87, 1.5, 4, 6, m1Door({ w: 4, h: 6, col: P1.red })); }
 }
 
 // =================== ЛЕСОПИЛКА: маленький цех в углу, большая циркулярка ===================
+// Диск — грань-круг в плоскости XZ (вдоль подачи бревна): в виде со входом сбоку он поворачивается вместе со станком.
+function sawDisc(g, cx, y, cz, r) {
+  const N = 32, pts = [];
+  for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2, rr = r + (i % 2 ? 0 : 1.3); pts.push([cx + Math.cos(a) * rr, y, cz + Math.sin(a) * rr]); }
+  // материал считаем от центра диска: (du, dv) — смещение пикселя от центра в плоскости диска
+  const disc = (du, dv) => { const d = Math.hypot(du, dv) / r, an = Math.atan2(dv, du); if (d > 0.93) return P1.iron[2]; if (d > 0.86) return P1.iron[0]; if (d < 0.13) return P1.iron[2]; if (d < 0.2) return P1.iron[1]; if (Math.abs(Math.sin(an * 3)) < 0.05 && d < 0.8) return P1.iron[1]; return du - dv < -r * 0.5 ? P1.white[0] : du + dv > r * 0.6 ? P1.iron[1] : P1.iron[0]; };
+  for (const [P, U] of [[pts, [1, 0, 0]], [pts.slice().reverse(), [-1, 0, 0]]]) {
+    const o = P[0], cu = (cx - o[0]) * U[0], cv = cz - o[2];
+    g.face(P, U, [0, 0, 1], (u, v) => disc(u - cu, v - cv), { dz: -0.4 });
+  }
+}
+// Бревно (или половинка) брусом вдоль X: кора по бокам, свежий срез на торцах
+function logBox(g, x0, x1, y0, y1, z0, h, half = false) {
+  const bark = (u, v, F) => P1.log[bcl(L1(F) + 1 + ((u | 0) % 7 === 0 ? 1 : 0) + (v < 1 ? 1 : 0), 3)];
+  box(g, { x0, x1, y0, y1, z0, h, mat: bark, E: (u, v) => (Math.hypot(u - (y1 - y0) / 2, v - h / 2) < 1 ? P1.log[2] : P1.straw[(u + v) % 3 < 1 ? 1 : 0]), top: half ? (u, v) => P1.straw[((u | 0) % 6 === 0) ? 1 : 0] : (u, v) => P1.log[(u | 0) % 5 === 0 ? 1 : 0] });
+}
+
 function buildSaw(g, lv) {
   g.meta = { wins: [] };
   const R = STRS(lv, STRAW1.reed, P1.tileD);
@@ -103,9 +128,10 @@ function buildSaw(g, lv) {
   const T = { x0: 40, x1: 90, y0: 26, y1: 34 };
   box(g, { x0: T.x0, x1: T.x1, y0: T.y0, y1: T.y1, h: 6, mat: m1Plank(P1.plank, 4, false), top: (u, v) => ((u | 0) % 12 === 0 ? P1.plank[2] : P1.plank[0]) });
   for (const x of [41, 64, 88]) for (const y of [26.5, 32.5]) post1(g, x, y, 0, 6, 1.2, P3.oak);
-  g.sprite([65, 30, 6], P => QK.bigSaw(P, lv >= 3 ? 14 : 12), -0.5); g.meta.saw = [65, 30, 6];
-  g.sprite([69, 30, 6], P => QK.log(P, 20), -0.3); g.meta.logIn = [69, 30, 6];
-  g.sprite([61, 28, 6], P => QK.halfLog(P, 16, true), -0.3); g.sprite([61, 32, 6], P => QK.halfLog(P, 16, true), -0.3); g.meta.halves = [61, 30, 6];
+  const r = lv >= 3 ? 14 : 12;
+  sawDisc(g, 65, 30, 6 + r * 0.55, r); g.meta.saw = [65, 30, 6 + r * 0.55]; g.meta.sawR = r;
+  logBox(g, 69, 89, 27, 33, 6, 6); g.meta.logIn = [79, 30, 9];
+  logBox(g, 44, 61, 25.5, 29, 6, 3.5, true); logBox(g, 44, 61, 31, 34.5, 6, 3.5, true); g.meta.halves = [52, 30, 8];
   g.sprite([65, 24, 0], P => QK.dust(P)); g.meta.dust = [65, 24, 0];
   // защитный кожух и ремённый привод от вала (на 2-м и 3-м уровне)
   if (lv >= 2) { g.sprite([65, 34, 6], P => { PR.rect(P, -3, -28, 3, -27, P1.iron[2]); PR.rect(P, -3, -27, -3, -20, P1.iron[2]); PR.rect(P, 3, -27, 3, -20, P1.iron[2]); }, -0.6); g.sprite([62, 40, 0], P => { PR.ell(P, 0, -8, 4, 4, () => P1.plank[2]); PR.line(P, 0, -12, 3, -30, P1.beam[2]); PR.line(P, 3, -12, 6, -30, P1.beam[2]); }); }
@@ -114,7 +140,7 @@ function buildSaw(g, lv) {
   g.sprite([46, 14, 0], P => Q2.planks(P, lv >= 2 ? 6 : 4, 18)); g.meta.plankPile = [46, 14, 0];
   if (lv >= 2) g.sprite([24, 18, 0], P => Q2.planks(P, 5, 16));
   if (lv >= 3) { g.sprite([100, 46, 0], P => Q2.crane(P, 26, 12)); g.sprite([14, 24, 0], P => Q1.lantern(P)); }
-  g.meta.workers = [[76, 22, 0], [54, 22, 0]];   // кто подаёт бревно и кто принимает доски
+  g.meta.workers = [[96, 26, 0], [36, 22, 0]];   // кто подаёт бревно и кто принимает доски
   groundYard(g, 32, 126, 4, 62);
   paveSand(g, 9, 21, 20, 36);
 }
@@ -179,7 +205,9 @@ const QUARRY2_VARS = [
     box(g, Object.assign({ mat: m1Plank(P1.plank, 3) }, H)); roof(g, H, { type: 'gable', axis: 'Y', rise: 8, ov: 2, ovg: 2, mat: R.mat, cut: R.cut, th: R.th, gable: m1Plank(P1.plank, 3) });
     elem(g, 'S', H.y0, 51, 0, 8, 9, m1Door({ w: 8, h: 9, col: P1.dark })); g.meta.doorPt = [55, H.y0, 0];
     g.sprite([24, 26, 0], P => QS.blocks(P)); g.sprite([34, 30, 0], P => QK.wedges(P)); g.sprite([10, 18, 0], P => QS.rocks(P, 6, P1.stoneB)); g.sprite([38, 12, 0], P => Q1.barrow(P));
-    g.meta.work = [31, 34, 0];
+    // передний план: каменотёс тешет блок на колоде (сам гном и сколы — анимация игры, inside.js)
+    box(g, { x0: 40, x1: 48, y0: 12, y1: 18, h: 4, mat: m1Stone(P1.stone, 4, 3), top: m1Flat(P1.stone[0]) });
+    g.meta.work = [36, 14, 0]; g.meta.block = [44, 15, 4];
     if (lv >= 2) g.sprite([8, 34, 0], P => QK.tripod(P));
   } },
   { name: 'К-2. Штольня в холме: деревянный портал, рельсы, вагонетка с камнем, фонари', make(g, lv) {

@@ -3,7 +3,7 @@
 // Рисуются боком, мордой вправо (влево — отражением). Кэшируются по кадрам.
 
 const CR_CACHE = afLru(16e6);   // кадры с грузом и телеги множатся — давние вытесняются (animalart.js)
-const CR_SIZE = { henbuff: [22, 30, 11, 28], deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21], elk: [46, 46, 23, 42], fox: [28, 20, 14, 17], duck: [22, 20, 11, 17] };
+const CR_SIZE = { henbuff: [22, 30, 11, 28], deer: [34, 37, 17, 34], rabbit: [18, 14, 9, 12], goat: [28, 26, 14, 23], packgoat: [28, 28, 14, 25], wolf: [32, 24, 16, 21], cart: [56, 38, 28, 33], horse: [36, 30, 18, 25], chicken: [16, 15, 8, 13], goose: [26, 24, 12, 21], elk: [46, 46, 23, 42], fox: [28, 20, 14, 17], duck: [22, 20, 11, 17] };
 
 // Курица: белая, красный гребешок, семенит; noLegs — тело без ног (для куриной мести на накачанных ногах)
 function drawChicken(c, f, peck, noLegs) {
@@ -306,6 +306,21 @@ function drawCartRig(c, f, load, n) {
   line(c, -1.6, 10, 6, 12, '#3a2414', 0.4);
 }
 
+// Лошадь без телеги (та же, что в упряжке извозчика): для конюшни и выгула
+function drawHorseOnly(c, f) {
+  c.translate(-12.6, 0);
+  const col = '#7a4a2a';
+  crLegs(c, [6, 18, 7.6, 19.6], 17, 11, f, col, 1.9);
+  c.fillStyle = lingrad(c, 0, 9, 0, 20, [[0, shade(col, 0.2)], [1, shade(col, -0.3)]]);
+  c.beginPath(); c.ellipse(12.6, 14, 9, 4.8, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = col; c.beginPath(); c.moveTo(18, 12); c.quadraticCurveTo(21, 4, 23, 3); c.lineTo(25, 5); c.quadraticCurveTo(22, 9, 21, 15); c.fill();
+  c.beginPath(); c.ellipse(25, 5, 3.6, 2, 0.5, 0, Math.PI * 2); c.fill();
+  ellipse(c, 27.6, 7, 1.2, 1, shade(col, -0.2));
+  c.fillStyle = '#1a1210'; c.fillRect(24.4, 3.6, 0.7, 0.7);
+  c.fillStyle = '#2a1a10'; c.beginPath(); c.moveTo(19, 9); c.quadraticCurveTo(21, 3, 23.4, 1.6); c.lineTo(22, 5); c.quadraticCurveTo(20.6, 9, 20, 12); c.fill();
+  c.beginPath(); c.moveTo(3.6, 12); c.quadraticCurveTo(0.6, 16, 2, 21); c.lineTo(3.6, 15); c.fill();
+}
+
 // Кадров ходьбы: 12 у всех (стандарт кадров, КАДРЫ.md)
 const CR_FRAMES = {};
 let CR_N = 12;
@@ -318,8 +333,8 @@ function creatureSprite(kind, f, load, n = 1, view = 'E') {
   const [w, h, ax, ay] = CR_SIZE[kind];
   CR_N = crFrames(kind);
   // перенос так, чтобы копыта/колёса стояли в точке (ax, ay)
-  const oy = ay - { henbuff: 28, cart: 28, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14, duck: 13 }[kind];
-  const paint = c => { if (kind === 'cart') { if (view === 'E') drawCartRig(c, f, load, n); else drawCartFront(c, f, load, n, view); } else drawCreature(c, kind, f, load); };
+  const oy = ay - { henbuff: 28, cart: 28, horse: 20, packgoat: 24, goat: 22, deer: 29, wolf: 21, rabbit: 11, chicken: 13, goose: 20.6, elk: 29, fox: 14, duck: 13 }[kind];
+  const paint = c => { if (kind === 'horse') drawHorseOnly(c, f); else if (kind === 'cart') { if (view === 'E') drawCartRig(c, f, load, n); else drawCartFront(c, f, load, n, view); } else drawCreature(c, kind, f, load); };
   if (afFine()) cv = AK_CR[kind] && view === 'E' ? AK_CR[kind](f, load, n) : afVec(w, h, ax, oy, paint);   // мелкий пиксель ×3: ручной пиксель-арт (animalpx.js) или вектор, сведённый втрое детальнее
   else { const [c2, c] = mkSprite(w, h, 3); c.translate(ax, oy); paint(c); cv = c2; }
   CR_CACHE.set(key, cv);

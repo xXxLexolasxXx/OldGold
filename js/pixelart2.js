@@ -130,14 +130,7 @@ function bonfireArt() {
     G.set(x, y, k % 3 ? W[3] : '#cfc4a8'); G.set(x + 1, y, k % 2 ? W[4] : '#8a7a5a');
   }
   stones(false);
-  // скамьи-брёвна у огня: цилиндр по горизонтали, торцы с кольцами
-  for (const [bx, by, w] of [[10, 80, 32], [64, 84, 28]]) {
-    px2Rect(G, bx, by, bx + w, by + 5, (x, y) => {
-      const t = (y - by) / 5, i = t < 0.2 ? 0 : t < 0.5 ? 1 : t < 0.78 ? 2 : 3;
-      return W[(x * 7 + y) % 11 === 0 ? Math.min(5, i + 1) : i];
-    });
-    for (const ex of [bx, bx + w]) px2Ell(G, ex, by + 2.6, 2.2, 3, (x, y, dx, dy) => (dx * dx + dy * dy > 0.5 ? W[2] : (y % 2 ? '#f0c888' : '#d89a5c')));
-  }
+  // скамей-брёвен перед костром больше нет: заслоняли огонь (просьба владельца)
   // котёл на треноге
   const kx = 88, ky = 50;
   for (const dx of [-8, 0, 8]) px2Line(G, kx + dx * 0.9, ky + 8, kx + dx * 0.25, ky - 10, 1.6, (x, y, s) => (s < 0 ? W[2] : W[4]));
