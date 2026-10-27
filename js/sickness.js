@@ -369,6 +369,7 @@ function* injVisitGen(h, p) {
       const b = h.home && h.home.type === 'infirmary' && !h.home.removed ? h.home : null;
       if (injTakeAid(b)) injHeal(p, 'doc');
       else p.injuryUntil = Math.min(p.injuryUntil, Game.time + INJ.BANDAGE);
+      if (typeof gainXp === 'function') gainXp(h, 2);           // выслуга лекаря — за каждого перевязанного
     }
   }
   if (p.injDoc === h) p.injDoc = null;

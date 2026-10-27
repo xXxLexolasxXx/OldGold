@@ -116,7 +116,7 @@ Take gear
 Teleport
 back to base, to the storehouse
 +{0}% health
-— equip (30% chance of luck)
+— equip (50% chance of luck)
 — eat
 Weapon
 Armor

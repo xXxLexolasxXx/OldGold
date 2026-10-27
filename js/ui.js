@@ -474,13 +474,10 @@ function initUI() {
     const t = e.target.closest('[data-menu]');
     if (!t) return;
     const m = t.dataset.menu;
-    track('menu-' + m, { save: 'Сохранил игру', load: 'Загрузил сохранение', loadauto: 'Загрузил автосохранение', new: 'Открыл «Новая карта»', help: 'Открыл «Как играть»' }[m]);
+    track('menu-' + m, { save: 'Сохранил игру', load: 'Загрузил сохранение', loadauto: 'Загрузил автосохранение' }[m]);
     if (m === 'save') toast(saveGame('manual') ? 'Игра сохранена' : 'Не удалось сохранить');
     if (m === 'load') { if (loadGame('manual')) { toast('Игра загружена'); updateUI(true); } else toast('Сохранения нет'); }
     if (m === 'loadauto') { if (loadGame('auto')) { toast('Загружено автосохранение'); updateUI(true); } else toast('Автосохранения пока нет'); }
-    if (m === 'new' && confirm('Начать на новой карте? Несохранённый прогресс пропадёт.')) newGame();
-    if (m === 'help') document.getElementById('help').classList.toggle('hidden');
-    if (m === 'lang') I18N.toggle();
     if (m === 'lang') I18N.toggle();
     if (m === 'tutorial') { if (Mobile.on) mobileSheet(null); tutStart(); }
     if (m === 'mainmenu') exitToMainMenu();
@@ -531,6 +528,7 @@ function initUI() {
       Game.selected = null;
     }
     else if (act === 'pause') b.paused = !b.paused;
+    else if (act === 'urgent') urgPress(b);
     else if (act === 'upgrade') startUpgrade(b);
     else if (act === 'upgcancel') cancelUpgrade(b);
     else if (act === 'deliver') toggleDeliver(b);
@@ -717,6 +715,10 @@ function infoBuilding(b) {
   if (same > 1) h += `<button data-act="prev" title="Предыдущее такое же ([)">${ui('prev')}</button><button data-act="next" title="Следующее такое же (])">${ui('next')}</button>`;
   h += `<button data-act="goto" title="Показать на карте">${ui('eye')}</button>`;
   if (b.state === 'done' && (def.worker || def.auto)) h += `<button data-act="pause" title="Пауза производства (P)" class="${b.paused ? 'active' : ''}">${ui(b.paused ? 'play' : 'pause')}</button>`;
+  if (urgCan(b)) {
+    const on = urgOn(b);
+    h += `<button data-act="urgent" class="urg${on ? ' active' : ''}" title="Срочно: 20 секунд все свободные гномы носят сюда и отсюда, следом — всё, что связано с этим зданием. Нажмите ещё раз — снова 20 секунд">${ui('urgent')}<span>${on ? t('{0} с', urgLeft(b)) : 'Срочно'}</span></button>`;
+  }
   h += `<span class="grow"></span><button data-act="demolish" title="Снести">${ui('trash')}</button></div>`;
   // большая понятная кнопка: принимать ли сюда доставки
   if (b.state === 'done' && (def.inputs || b.isStore())) {
@@ -791,7 +793,7 @@ function infoBuilding(b) {
     h += '<div class="train-grid">';
     for (const t of UNIT_KEYS) {
       const q = b.queue.filter(x => x === t).length;
-      h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><img src="${portraitURL(t)}" alt="">${UNIT_TYPES[t].name.slice(0, 7)}${q ? `<span class="q">${q}</span>` : ''}</button>`;
+      h += `<button class="tbtn" data-train="${t}" title="${UNIT_TYPES[t].name}"><img src="${portraitURL(t)}" alt="">${UNIT_TYPES[t].name.split('-')[0].slice(0, 9)}${q ? `<span class="q">${q}</span>` : ''}</button>`;
     }
     h += '</div>';
   }

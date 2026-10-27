@@ -8,7 +8,7 @@
 const HL_INV = 10;                    // вещей в рюкзаке
 const HL_DRUNK = 5, HL_FALL = 1, HL_STARS = 4;
 const HL_TP_CD = 60;
-const HL_EQUIP_WIN = 0.3;             // шанс удачного надевания: в 70% случаев неудача
+const HL_EQUIP_WIN = 0.5;             // шанс удачного надевания: каждый второй раз неудача
 
 // Что можно надеть. Чужим сессиям: добавьте свой товар сюда — он сам станет надеваемым.
 // slot: 'weapon' | 'armor'; cls — для какого класса (необязательно)
@@ -125,7 +125,7 @@ function* hlTakeGen(u, c) {
   yield { leave: true };
 }
 
-// ---------- Неловкое надевание: в 70% неудача ----------
+// ---------- Неловкое надевание: в половине случаев неудача ----------
 
 function* hlEquipGen(u, c) {
   const H = u.hero, s = H.inv[c.slot];
@@ -434,7 +434,7 @@ function hlTick(dt) {
     let inv = '<div class="hl-inv">';
     for (let i = 0; i < HL_INV; i++) {
       const s = H.inv[i];
-      inv += s ? `<button class="hl-slot" data-hero="use${i}" title="${hlName(s.k)}${HL_GEAR[s.k] ? ' — надеть (шанс удачи 30%)' : HL_FOOD[s.k] ? ' — съесть' : ''}. Правый клик — выбросить"><img src="${iconURL('good', s.k, 2)}" alt="">${s.n > 1 ? `<i>${s.n}</i>` : ''}</button>` : '<span class="hl-slot empty"></span>';
+      inv += s ? `<button class="hl-slot" data-hero="use${i}" title="${hlName(s.k)}${HL_GEAR[s.k] ? ' — надеть (шанс удачи 50%)' : HL_FOOD[s.k] ? ' — съесть' : ''}. Правый клик — выбросить"><img src="${iconURL('good', s.k, 2)}" alt="">${s.n > 1 ? `<i>${s.n}</i>` : ''}</button>` : '<span class="hl-slot empty"></span>';
     }
     inv += '</div>';
     const eq = (slot, label, un) => H.equip[slot] ? `${label}: <b>${hlName(H.equip[slot])}</b> <button data-hero="${un}" class="hp-sm">снять</button>` : `${label}: <span class="muted">нет</span>`;

@@ -681,6 +681,7 @@ function roadMaskCanvas(x, y, grow, cobbles) {
 function drawRoadTile(x, y) {
   if (!TERR.ready) return;
   const px = x * TILE, py = y * TILE, bi = Math.floor(y / TBAND);
+  TERR.rver = (TERR.rver | 0) + 1;   // сбрасывает кэш зимних плиток дороги (snow.js)
   if (!TERR.bands[bi]) return;   // полоса ещё строится — её дороги нарисуются, когда она будет готова
   const bands = diagBands(x, y), chamf = roadChamfers(x, y);
   const has = World.road[idx(x, y)] || bands.length || chamf.length;

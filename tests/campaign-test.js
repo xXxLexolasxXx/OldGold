@@ -163,6 +163,61 @@ const BOT = `(function () {
   console.log(`Проверка: прогон акта 2 — ${((Date.now() - t0) / 1000).toFixed(0)} с`);
 }
 
+// ---------- 1г. Устойчивость заданий (отзыв тестера 23.10): вожак волны акта 1, кузнец и завал акта 2 ----------
+// (башня у ниши штрека — в main, tests/camp-tower-test.js)
+{
+  const { h, errors } = host(515);
+  h.run('campStart(1); Game.heroAsk = false; for (let k = 0; k < 20; k++) step(0.05);');
+  const a1 = JSON.parse(h.run(`(function () {
+    const C = Game.camp, r = {};
+    // волна с чемпионом: щит слабее, ◎ цели указывает на вожака
+    camp1Wave(C, 2, true, 1);
+    const ch = campFoes('w').find(N => N.k === 'goblinChamp');
+    r.parry = ch && ch.parry;
+    const S = CAMP_ACTS[1].steps.find(s => s.objs && s.objs[0].id === 'w2');
+    const at = S.objs[0].at(C);
+    r.at = !!(ch && at && Math.abs(at[0] - ch.x) <= 1 && Math.abs(at[1] - ch.y) <= 1);
+    // вожак ранится: 30 ударов по 6 снимают заметно больше половины здоровья
+    const hp0 = ch.hp; for (let k = 0; k < 30 && foeLive(ch); k++) foeHit(ch, campHero(), 6); r.dmg = hp0 - Math.max(0, ch.hp);
+    // отставшие: отряд вдали от всех дольше срока — удирает
+    const g = campFoe('goblin', 1.5, 1.5, 'zz', { hunt: true }); g.st = 'idle';
+    campStragglers('zz', Game.time - 300, 240); r.strag = g.st;
+    return JSON.stringify(r);
+  })()`));
+  if (a1.parry !== 0.1) fail('акт 1: щит чемпиона волны не ослаблен: ' + a1.parry);
+  if (!a1.at) fail('акт 1: ◎ цели «отбить волну» не показывает на вожака');
+  if (!(a1.dmg > 65)) fail('акт 1: по вожаку почти не проходит урон: ' + a1.dmg);
+  if (a1.strag !== 'vanish') fail('отставший гоблин вдали от всех не удрал: ' + a1.strag);
+
+  h.run(`localStorage.setItem('oldgold.campaign', JSON.stringify({ v: 1, done: { 1: { t: 1, stars: 2, alive: 36 } }, legacy: { a1: { alive: 36, key: 1, caches: 1 } }, last: 1 }))`);
+  h.run('campStart(2); Game.heroAsk = false; for (let k = 0; k < 20; k++) step(0.05);');
+  const a2 = JSON.parse(h.run(`(function () {
+    const C = Game.camp, A = CAMP_ACTS[2], [vx, vy] = CAMP2.vaska, r = {}, hero = campHero();
+    // случайных валунов у кузнеца нет (только «клетка» вокруг него)
+    r.stray = 0;
+    for (let y = vy - 5; y <= vy + 5; y++) for (let x = vx - 5; x <= vx + 5; x++) { const o = inb(x, y) && World.obj[idx(x, y)];
+      if (o && o.t === 'stone' && Math.max(Math.abs(x - vx), Math.abs(y - vy)) > 2 && Math.hypot(x - vx, y - vy) < 6) r.stray++; }
+    // глыбы разбиты, герой стоит у «клетки» снаружи (раньше нужно было встать ровно в проход)
+    for (const N of campFoes('rock')) N.st = 'die';
+    hero.inside = null; hero.x = vx + 0.5; hero.y = vy + 5; hero.path = null;
+    A.tick(C, 0.05); r.vaska = !!C.flags.vaska;
+    // завал у школы: разбили все валуны, кроме одного — засчитано
+    const rub = C.flags.rubbleI || [];
+    r.rub0 = rub.length; rub.slice(1).forEach(i => { World.obj[i] = null; });
+    const S = A.steps.find(s => s.objs && s.objs.some(o => o.id === 'rubble')), o = S.objs.find(o => o.id === 'rubble');
+    r.rubble = o.cur(C); r.rubAt = !!o.at(C);
+    return JSON.stringify(r);
+  })()`));
+  if (a2.stray) fail(`акт 2: случайные валуны у кузнеца (${a2.stray}) — могут закрыть проход`);
+  if (!a2.vaska) fail('акт 2: глыбы разбиты, герой у завала — а кузнец не вышел');
+  if (a2.rub0 < 3) fail('акт 2: завал у школы не запомнил свои валуны: ' + a2.rub0);
+  if (a2.rubble !== 1) fail('акт 2: завал с одним оставшимся валуном не засчитан');
+  if (!a2.rubAt) fail('акт 2: у цели «завал у школы» нет метки ◎');
+  const errs = errors.filter(e => !/предупрежд/i.test(e));
+  if (errs.length) fail('устойчивость заданий, ошибки в логе: ' + errs.slice(0, 3).join(' | '));
+  console.log(`Проверка: устойчивость заданий — урон по вожаку ${Math.round(a1.dmg)}, Васька ${a2.vaska ? 'вышел' : 'нет'}, завал ${a2.rub0} валунов`);
+}
+
 // ---------- 1в. Акт 3 «Гости и рыба» (наследие акта 2: 22 гнома, Васька; дуэль принята) ----------
 {
   const { h, errors } = host(303);
@@ -222,7 +277,7 @@ const BOT = `(function () {
     minX = Math.min(minX, s.x); king = king || s.king; haltedAtBorder = Math.max(haltedAtBorder, s.halt);
     if (s.over) { over = s.over; break; }
   }
-  const end = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, n: CAMP_ACTS[4].steps.length, f: { fires: Game.camp.flags.fires, found: Game.camp.flags.found, fled: Game.camp.flags.kingFled }, prog: campProg(), open5: campIsOpen(5), objs: Game.camp.objs })'));
+  const end = JSON.parse(h.run('JSON.stringify({ i: Game.camp.i, n: CAMP_ACTS[4].steps.length, f: { fires: Game.camp.flags.fires, found: Game.camp.flags.found, fled: Game.camp.flags.kingFled, traps: Game.camp.flags.traps || {}, duel: Game.camp.flags.duelDone }, prog: campProg(), open5: campIsOpen(5), objs: Game.camp.objs })'));
   console.log('Проверка: акт 4, шаги ' + seen.join(' '));
   if (!over) fail(`акт 4 не закончился за 60 минут: шаг ${end.i} из ${end.n}; цели ${JSON.stringify(end.objs)}`);
   else {
@@ -232,7 +287,23 @@ const BOT = `(function () {
   }
   if (minX > h.run('CAMP4.border')) fail('колонна не дошла до межевого камня');
   if (!king) fail('король Шнырь так и не вышел на бой');
+  if (Object.keys(end.f.traps).length < 4) fail('ловушки тролля на дороге не все сняты или сработали: ' + JSON.stringify(end.f.traps));
+  if (!end.f.duel) fail('поединок с Чемпионом второй ночью не состоялся');
+  else console.log('Проверка: акт 4 — ловушки ' + JSON.stringify(end.f.traps) + ', поединок состоялся');
   if (!haltedAtBorder) fail('погоня не остановилась у межевого камня');
+  // ловушки, которые никто не снял: яма (хлеб, травма), сеть (тролль из засады), обвал (камни на дороге)
+  const th = JSON.parse(h.run(`JSON.stringify((() => {
+    const C = Game.camp, s = Game.buildings.find(b => b.type === 'storehouse' && !b.removed), b0 = s.stock.bread || 0;
+    const ppl = camp4Ppl().slice(0, 3);
+    for (const u of ppl) { u.injury = null; u.march = 1; }
+    C.flags.traps = {};
+    for (let i = 0; i < CAMP4_TRAPS.length; i++) camp4TrapHit(C, camp4Trap(i), ppl);
+    let stones = 0; const t = camp4Trap(2);
+    for (let y = t.y - 3; y <= t.y + 3; y++) for (let x = t.x - 3; x <= t.x + 3; x++) { const o = World.obj[idx(x, y)]; if (o && o.t === 'stone') stones++; }
+    return { bread: b0 - (s.stock.bread || 0), hurt: ppl.filter(u => u.injury).length, troll: campFoes('trap').filter(N => N.k === 'campTroll').length, stones };
+  })())`));
+  if (th.bread < 6 || !th.hurt || !th.troll || !th.stones) fail('ловушки тролля срабатывают не так: ' + JSON.stringify(th));
+  else console.log('Проверка: акт 4 — сработавшие ловушки: ' + JSON.stringify(th));
   // акт 5: сценарий на новой карте, наследие кампании
   h.run('campStart(5); Game.heroAsk = false;');
   const sc = JSON.parse(h.run('JSON.stringify({ camp: !!Game.camp, mode: Game.goal && Game.goal.mode, foe: !!(Game.foe && !Game.foe.camp), leg: Game.campLeg, vaska: Game.units.some(u => u.cname === "Васька"), iron: Game.buildings.find(b => b.type === "storehouse").stock.iron, custom: !!MapOpt.custom })'));
@@ -241,6 +312,12 @@ const BOT = `(function () {
   if (sc.mode !== 'scenario') fail('акт 5 — не сценарий «Тишина дороже золота»');
   if (!sc.foe) fail('в сценарии нет настоящего Малгора');
   if (!sc.leg || !sc.vaska || !(sc.iron >= 6)) fail('наследие кампании не перешло в сценарий (Васька, железо)');
+  // голем с наследием: руны собраны — просыпается (реплики идут окном кампании, без интерфейса — молча) и идёт ломать
+  try {
+    const gw = h.run('glEnsure(); for (const r of Game.glq.runes) r.got = 1; Game.golem ? String(glWake()) : "нет голема"');
+    if (gw === 'false') fail('голем с тремя рунами не проснулся');
+    console.log('Проверка: акт 5 — голем проснулся: ' + gw + ', реплик ' + h.run('Object.values(CAMP_ACTS[5].talk).flat().length'));
+  } catch (e) { fail('акт 5, голем: ' + String(e).split('\n')[0]); }
   h.run('for (let k = 0; k < 400; k++) step(0.05);');
   const errs = errors.filter(e => !/предупрежд/i.test(e));
   if (errs.length) fail('акты 4–5, ошибки в логе: ' + errs.slice(0, 3).join(' | '));
@@ -300,6 +377,7 @@ const BOT = `(function () {
     const out = new Set();
     for (const A of Object.values(CAMP_ACTS)) {
     out.add(A.name); out.add(A.outro);
+    for (const L of Object.values(A.talk || {})) for (const l of L) out.add(l[1]);
     for (const S of A.steps) {
       for (const l of S.lines || []) out.add(l[1]);
       for (const o of S.objs || []) out.add(o.t);

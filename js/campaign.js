@@ -6,13 +6,17 @@
 // Состояние миссии — Game.camp (пишется в сохранение мира), прогресс кампании и наследие — localStorage oldgold.campaign.
 // Считается в шаге симуляции; интерфейс (диалоги, полосы, цели, итог) только читает Game.camp и отмечает прочитанные реплики.
 // В кампании выключены: сценарий глав (goal.js), лор долины, обучение, случайные дилеммы, бедствия и Малгор (Game.foe — заглушка).
-// Кооп — позже: сейчас кампания только в одиночной игре.
+// Кооп (КАМПАНИЯ_КООП.md): сценарий считает сервер, клиентам — зеркало campMirrorOut/In; акт запускает хост (coopsim.js, команда campaign).
+// Реплики на сервере листаются голосом «Дальше» всех игроков или сами через CAMP_COOP_LINE с, паузы нет; выбор — за хостом.
 
 const CAMP_KEY = 'oldgold.campaign';
 const CAMP_SLOT = 'camp';            // слот свежего сейва кампании (saveGame/loadGame)
 const CAMP_CP = 'campcp';            // слот последней контрольной точки
 const CAMP_LINE_T = 1.2;             // без интерфейса (сервер, тесты): реплика «читается» столько игровых секунд
 const CAMP_IDLE = 14;                // с. без нажатий — реплика листается сама
+const CAMP_COOP_LINE = 10;           // кооп: строка листается сама через столько игровых секунд
+const CAMP_COOP_PICK = 90;           // кооп: хост не выбрал — вариант по умолчанию
+const CAMP_COOP_OUT = 8;             // кооп: итог выбора висит столько секунд (или пока все не нажали «Дальше»)
 const CAMP_ACTS = {};                // заполняют js/campaign/actN.js
 const CAMP_WHO = {
   grum: { name: 'Грум Ворчун', ch: 'Г', col: '#e0a050', bg: '#3a2a14' },
@@ -46,6 +50,10 @@ const campOn = () => !!Game.camp;
 const campAct = () => (Game.camp ? CAMP_ACTS[Game.camp.act] : null);
 // настоящий DOM (на сервере и в тестах document — заглушка, у неё nodeType не число)
 const campHasUI = () => typeof document !== 'undefined' && !window.__SERVER__ && !!document.getElementById && (document.getElementById('view') || {}).nodeType === 1;
+// кооп-сервер ведёт сценарий; без игроков (тесты одиночной кампании на том же движке сервера) — как в одиночной игре
+const campSrv = () => typeof coop !== 'undefined' && !!coop && !!coop.out && !!coop.players && coop.players.size > 0;
+const campMir = () => typeof Coop !== 'undefined' && !!Coop.mirror;                          // кооп-клиент: только зеркало
+const CampSrv = { cp: null, cpN: 0, byVote: 0, byTime: 0 };   // кооп-сервер: последняя контрольная точка (сейв мира строкой)
 
 // ---------- Помощники для сценариев ----------
 
@@ -69,12 +77,34 @@ function campHeroLookApply(u, o) {
   return true;
 }
 function campHero() { return Game.units.find(u => u.type === 'hero' && !u.dead) || null; }
+// в коопе героев несколько: зоны и «подойти» засчитываются любому
+function campHeroes() { return Game.units.filter(u => u.type === 'hero' && !u.dead); }
+function campHeroNear(x, y, r) {
+  let best = null, bd = r;
+  for (const h of campHeroes()) { const d = Math.hypot(h.x - x, h.y - y); if (!h.inside && d <= bd) { best = h; bd = d; } }
+  return best;
+}
 function campPeople() { let n = 0; for (const u of Game.units) if (!u.dead && isPerson(u) && u.type !== 'hero' && u.type !== 'carter') n++; return n; }
 function campStock(g) { let n = 0; for (const b of Game.buildings) if (!b.removed && b.isStore && b.isStore()) n += Math.max(0, b.stock[g] || 0); return n; }
 function campProduced(g) { return (Game.produced && Game.produced[g]) || 0; }
 function campIn(u, z) { return !!u && !u.inside && Math.hypot(u.x - z[0], u.y - z[1]) <= z[2]; }
 function campDone(type) { return Game.buildings.filter(b => b.type === type && b.state === 'done' && !b.removed).length; }
 function campFoes(tag) { return Game.raiders.filter(N => N.st !== 'die' && N.st !== 'vanish' && (!tag || N.ctag === tag)); }
+// где сейчас отряд метки tag (◎ у цели «отбить»): вожак, если жив, иначе первый живой
+function campFoeAt(tag) {
+  const L = campFoes(tag);
+  if (!L.length) return null;
+  const N = L.find(M => FSPEC[M.k] && FSPEC[M.k].mhp >= 100) || L[0];
+  return [Math.round(N.x), Math.round(N.y)];
+}
+// отставшие: отряд tag дольше sec после t0 бродит вдали от всех (застрял в лесу) — удирает, чтобы цель «отбить» не повисла
+function campStragglers(tag, t0, sec, msg) {
+  if (!t0 || Game.time - t0 < sec) return;
+  const L = campFoes(tag);
+  if (!L.length || L.some(N => Game.units.some(u => !u.dead && isPerson(u) && Math.hypot(u.x - N.x, u.y - N.y) < 12))) return;
+  for (const N of L) { N.st = 'vanish'; N.vt = 0; }
+  if (msg) campSay(msg);
+}
 function campSay(text) { if (typeof toast === 'function') toast(text); }
 
 // враг кампании: налётчик из enemy.js (видят его герой, рекруты и башни), не уходит на рассвете
@@ -94,6 +124,15 @@ if (typeof FSPEC !== 'undefined') {
   FSPEC.goblinChamp = { name: 'Чемпион гоблинов', mhp: 130, dmg: [6, 10], cd: 1.9, rng: 1.9, spd: 1.8, parry: 0.3, xp: 130, sz: 13,
     drop: [['gold', 3, 1], ['iron', 1, 0.5]], draw: (c, N) => campDrawGoblin(c, N), ai: campGoblinAi, bar: (c, N, px, py) => { if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - 70, false); } };
 }
+// тролль из-под Брюзги: гора легла на его пещеру, и виноватыми он назначил гномов. Медленный, толстокожий, бьёт больно
+if (typeof FSPEC !== 'undefined') {
+  FSPEC.campTroll = { name: 'Тролль из-под Брюзги', mhp: 120, dmg: [7, 12], cd: 2.2, rng: 1.9, spd: 1.35, parry: 0.08, xp: 140, sz: 18,
+    drop: [['hide', 2, 1], ['gold', 2, 0.7]], draw: (c, N) => campDrawGoblin(c, N, 'troll'), ai: campGoblinAi,
+    bar: (c, N, px, py) => { if (N.hp < N.mhp - 0.5) foeDrawBar(c, N, px, py - 58, false); } };
+}
+// короткая реплика над головой врага (гоблины, тролли): живой противник, а не мишень
+function campBark(N, text, col = '#f0e0a0') { if (N && text) floater(N.x, N.y - (N.k === 'campTroll' ? 3.4 : 2.6), text, col); }
+
 function campGoblinAi(N, dt) {
   if (N.halt) { N.st = 'idle'; N.tg = 0; N.cdA -= dt; return; }   // встали как вкопанные (граница владений)
   if (N.hold && !N.tg) {
@@ -141,14 +180,32 @@ function campMarchStop() { const C = Game.camp; if (C) C.flags.march = null; for
 // ---------- Шаги ----------
 // s — состояние шага (не сохраняется: после загрузки шаг начинается заново), S — описание шага из сценария
 
+// кооп: строка у всех одна (s.k); листается, когда «Дальше» нажали все игроки (s.rd — их ники), или сама через CAMP_COOP_LINE
+function campTalkTick(s, n, dt) {
+  s.k = s.k || 0; s.lt = (s.lt || 0) + dt; s.rd = s.rd || {};
+  let voted = 0;
+  for (const nick in s.rd) if (coop.players.has(nick)) voted++;
+  if (coop.players.size && (voted >= coop.players.size || s.lt >= CAMP_COOP_LINE)) {
+    if (voted >= coop.players.size) CampSrv.byVote++; else CampSrv.byTime++;    // для тестов: строки голосами или по времени
+    s.k++; s.lt = 0; s.rd = {};
+    if (s.k >= n) s.done = true;
+  }
+  return s.done;
+}
+
 const CAMP_STEP = {
   say: {
     init(C, s, S) { s.t = 0; s.done = false; if (S.fx) S.fx(C); },
-    tick(C, s, S, dt) { s.t += dt; return s.done || (!campHasUI() && s.t >= S.lines.length * CAMP_LINE_T); },
+    tick(C, s, S, dt) { s.t += dt; if (campSrv()) return campTalkTick(s, S.lines.length, dt); return s.done || (!campHasUI() && s.t >= S.lines.length * CAMP_LINE_T); },
   },
   cut: {
     init(C, s, S) { s.t = 0; s.done = false; if (S.fx) S.fx(C); },
-    tick(C, s, S, dt) { s.t += dt; if (S.during) S.during(C, s, dt); return (s.done || (!campHasUI() && s.t >= Math.max(S.lines.length * CAMP_LINE_T, S.min || 0))) && s.t >= (S.min || 0); },
+    tick(C, s, S, dt) {
+      s.t += dt;
+      if (S.during) S.during(C, s, dt);
+      if (campSrv()) return campTalkTick(s, S.lines.length, dt) && s.t >= (S.min || 0);
+      return (s.done || (!campHasUI() && s.t >= Math.max(S.lines.length * CAMP_LINE_T, S.min || 0))) && s.t >= (S.min || 0);
+    },
   },
   goal: {
     init(C, s, S) { s.got = {}; s.tk = 9; if (S.init) S.init(C, s); campGoalEval(C, s, S); },
@@ -171,13 +228,29 @@ const CAMP_STEP = {
   // выбор (дилемма): вопрос и варианты; выбранный вариант применяет fx и показывает итог. Без интерфейса — вариант def
   choice: {
     init(C, s) { s.pick = -1; s.done = false; },
-    tick(C, s, S) {
+    tick(C, s, S, dt) {
+      // кооп: выбирает хост (команда campaign/pick); молчит CAMP_COOP_PICK с — вариант по умолчанию. Итог висит, пока все не прочли
+      if (campSrv()) {
+        s.wt = (s.wt || 0) + dt;
+        if (s.pick < 0 && s.wt >= CAMP_COOP_PICK) campChoose(C, Math.max(0, S.opts.findIndex(o => o.def)));
+        if (s.pick >= 0) {
+          s.ot = (s.ot || 0) + dt; s.rd = s.rd || {};
+          let voted = 0;
+          for (const nick in s.rd) if (coop.players.has(nick)) voted++;
+          if (s.ot >= CAMP_COOP_OUT || (coop.players.size && voted >= coop.players.size)) s.done = true;
+        }
+        return s.done;
+      }
       if (!campHasUI() && s.pick < 0) { const pre = Game.__campPick && Game.__campPick[S.id]; campChoose(C, pre != null ? pre : Math.max(0, S.opts.findIndex(o => o.def))); s.done = true; }   // __campPick — ответы тестов
       return s.done;
     },
   },
   check: {
-    init(C) { C.cp = C.i; C.cpN = (C.cpN || 0) + 1; if (campHasUI() && typeof saveGame === 'function') setTimeout(() => { if (Game.camp === C) { saveGame(CAMP_CP); saveGame(CAMP_SLOT); } }, 0); },
+    init(C) {
+      C.cp = C.i; C.cpN = (C.cpN || 0) + 1;
+      if (campSrv()) { CampSrv.cp = JSON.stringify(serializeGame()); CampSrv.cpN++; return; }   // сервер пишет её в файл (server.js)
+      if (campHasUI() && typeof saveGame === 'function') setTimeout(() => { if (Game.camp === C) { saveGame(CAMP_CP); saveGame(CAMP_SLOT); } }, 0);
+    },
     tick() { return true; },
   },
   end: { init(C, s, S) { campFinish(C, 'win', S.why || ''); }, tick() { return false; } },
@@ -191,11 +264,11 @@ function campGoalEval(C, s, S) {
     let cur, need = o.need || 1;
     const zone = typeof o.zone === 'function' ? o.zone(C) : o.zone;
     if (s.got[o.id || o.t]) cur = need;
-    else if (zone) cur = campIn(campHero(), zone) ? 1 : 0;
+    else if (zone) cur = campHeroes().some(h => campIn(h, zone)) ? 1 : 0;
     else cur = Math.max(0, Math.min(need, o.cur(C, s) | 0));
     if (cur >= need) s.got[o.id || o.t] = 1;
     else all = false;
-    out.push({ t: o.t, cur, need, z: zone || o.at || null, put: o.put || null, opt: !!o.opt });
+    out.push({ t: o.t, cur, need, z: zone || (typeof o.at === 'function' ? o.at(C) : o.at) || null, put: o.put || null, opt: !!o.opt });
   }
   C.objs = out;
   C.hint = S.hint || '';
@@ -271,6 +344,8 @@ function campFinish(C, res, why) {
     if (typeof track === 'function') track('camp-win-' + C.act, 'Кампания: пройден акт ' + C.act);
   } else if (typeof track === 'function') track('camp-lose-' + C.act, 'Кампания: поражение в акте ' + C.act);
   C.over = { res, why, stars, stats };
+  // кооп: пройденный акт и наследие сервера уходят игрокам — каждый отмечает их в своей одиночной кампании (campMirrorIn)
+  if (res === 'win' && campSrv()) { const p = campProg(); C.over.prog = { done: p.done[C.act], legacy: p.legacy }; }
   C.objs = null; C.mark = null;
   if (typeof logEvent === 'function') logEvent('night', res === 'win' ? `Акт ${C.act} «${A.name}» пройден` : `Акт ${C.act}: поражение — ${why}`);
 }
@@ -300,11 +375,53 @@ function campStart(n, opts = {}) {
   return true;
 }
 
+// ---------- Кооп: зеркало сценария ----------
+// Сервер шлёт состояние миссии (флаги акта — отдельным ключом campf: меняются редко, а цели и таймер — часто).
+// Клиент ничего не считает: показывает цели, реплики, выбор и итог, а нажатия отправляет командой campaign.
+
+function campMirrorOut() {
+  const C = Game.camp;
+  if (!C) return null;
+  const s = C.st || {};
+  const st = { k: s.k || 0, done: !!s.done, skip: !!s.skip, rd: Object.keys(s.rd || {}) };
+  if (s.pick !== undefined) { st.pick = s.pick; st.left = Math.max(0, Math.ceil(CAMP_COOP_PICK - (s.wt || 0))); }
+  return JSON.parse(JSON.stringify({ act: C.act, i: C.i, seq: C.seq, t: Math.round(C.t), objs: C.objs, hint: C.hint, label: C.label, mark: C.mark,
+    tilt: Math.round((C.tilt || 0) * 1000) / 1000, vfx: C.vfx || null, timer: C.timer || null, meter: C.meter || null, over: C.over, cpN: C.cpN || 0, st, np: coop.players.size }));
+}
+
+function campMirrorIn(m, f, prog) {
+  if (prog !== undefined) CampUI.cprog = prog;
+  if (!m) { if (Game.camp) Game.camp = null; return; }
+  if (!Game.camp || Game.camp.act !== m.act) Game.camp = { flags: {}, st: {} };
+  const C = Game.camp;
+  Object.assign(C, m);
+  if (f) C.flags = f;
+  // кооп-деревня открывает меню постепенно, а в акте нужны башни и всё остальное сразу (на сервере открыто всё)
+  if (typeof unlockAll === 'function' && !CampUI.unlocked) { CampUI.unlocked = 1; unlockAll(); }
+  // пройденный в отряде акт — и в своей одиночной кампании (наследие — серверное)
+  const pr = C.over && C.over.prog;
+  if (pr && pr.done && CampUI.recorded !== C.act + ':' + pr.done.t) {
+    CampUI.recorded = C.act + ':' + pr.done.t;
+    const p = campProg(), old = p.done[C.act];
+    p.done[C.act] = Object.assign({}, pr.done, { stars: Math.max(pr.done.stars || 1, old ? old.stars : 0), coop: 1 });
+    p.legacy = Object.assign(p.legacy || {}, pr.legacy || {});
+    p.last = C.act;
+    campProgSave(p);
+  }
+}
+
+// сообщения сценария от сервера: звук (рожок, взрыв, обвал) и крупные вспышки
+function campCoopMsg(m) {
+  if (m.a === 'snd' && typeof campSnd === 'function') campSnd(m.k, m.x, m.y, m.v);
+  else if (m.a === 'fx' && Array.isArray(m.p) && typeof fxBurst === 'function') fxBurst(...m.p);
+}
+
 // ---------- Подключение к игре ----------
 
 {
   const _step = step;
-  step = function (dt) { _step(dt); if (Game.camp && !(typeof isMirror === 'function' && isMirror())) campTick(dt); };
+  // кооп-клиент без связи (сервер перезапускается) — по-прежнему зеркало: своё состояние шага не полное, считать сценарий нельзя
+  step = function (dt) { _step(dt); if (Game.camp && !(typeof isMirror === 'function' && isMirror()) && !campMir()) campTick(dt); };
   const _reset = resetGameState;
   resetGameState = function () { _reset(); Game.camp = null; };
   const _ser = serializeGame;
@@ -323,6 +440,9 @@ function campStart(n, opts = {}) {
     const C = Game.camp = { v: 1, act: o.act, i: Math.max(0, o.i | 0), st: null, seq: 0, t: o.t || 0, cp: o.cp ?? -1, cpN: o.cpN || 0, flags: o.flags || {}, tilt: o.tilt || 0, lost: o.lost || 0, over: o.over || null, objs: null, mark: null, label: o.label || '', timer: o.timer || null, meter: o.meter || null };
     const A = CAMP_ACTS[o.act];
     if (A.onLoad) A.onLoad(C);
+    // колонна на марше: пометки u.march в сейв юнитов не попадают, флаг — попадает; без этого после загрузки (контрольная точка,
+    // перезапуск кооп-сервера) шаг «Дойти до стоянки» ждал вечно, а гномы стояли
+    if (C.flags.march) { const [mx, my, ms] = C.flags.march; campMarch(Game.units.filter(u => !u.dead && isPerson(u) && u.type !== 'hero' && u.type !== 'carter'), mx, my, ms); }
     if (Game.dz) Game.dz.freq = 0;
   };
   // Малгор в кампании не живёт: заглушка за краем карты, гнев не растёт (гоблины кампании — налётчики enemy.js)
@@ -387,7 +507,7 @@ function campEls() {
     if (b) { e.stopPropagation(); campUiAct(b.dataset.camp, b); }
   }, true);
   document.addEventListener('keydown', e => {
-    if (!Game.camp || CampUI.el.dlg.classList.contains('hidden')) return;
+    if (!(Game.camp || campTalkOn()) || CampUI.el.dlg.classList.contains('hidden')) return;
     if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); campUiAct('next'); }
     else if (e.code === 'Escape') campUiAct('skip');
   });
@@ -396,6 +516,15 @@ function campEls() {
 
 function campUiAct(a, btn) {
   const C = Game.camp;
+  if (a === 'cstart') { campCoopStartAsk(+btn.dataset.n); return; }
+  if (a === 'cclose') { campHideEnd(); return; }
+  if (campMir() && C && campCoopAct(C, a, btn)) return;
+  if ((a === 'next' || a === 'skip') && !C && campTalkOn()) {
+    if (a === 'skip') CampUI.talk.length = 0; else CampUI.talk.shift();
+    CampUI.talkCur = null; CampUI.idle = 0;
+    if (!CampUI.talk.length) campHideDlg();
+    return;
+  }
   if (a === 'next' || a === 'skip') {
     const S = C && campStepNow(C);
     if (!S || (S.k !== 'say' && S.k !== 'cut')) return;
@@ -435,6 +564,61 @@ function campRestoreBtns() {
   CampUI.choiceKey = '';
 }
 
+// ---------- Кооп: кнопки клиента уходят на сервер ----------
+
+// true — нажатие обработано здесь (на сервер ушла команда campaign)
+function campCoopAct(C, a, btn) {
+  const send = o => coopSend(Object.assign({ t: 'campaign', seq: C.seq }, o));
+  if (a === 'next') { send({ a: 'next', k: CampUI.k }); CampUI.voted = C.seq + ':' + CampUI.k; CampUI.voteSig = ''; campCoopBtns(C, campStepNow(C)); return true; }
+  if (a === 'skip') { if (Coop.host) send({ a: 'skip' }); return true; }
+  if (a === 'pick') { if (Coop.host && C.st.pick < 0) send({ a: 'pick', i: +btn.dataset.i }); return true; }
+  if (a === 'picked') { send({ a: 'next' }); campRestoreBtns(); campHideDlg(); return true; }
+  if (a === 'retry-cp') { campHideEnd(); coopSend({ t: 'campaign', a: 'cp' }); return true; }
+  if (a === 'retry') { campHideEnd(); coopSend({ t: 'campaign', a: 'start', n: C.act }); return true; }
+  if (a === 'next-act') { campHideEnd(); coopSend({ t: 'campaign', a: 'start', n: C.act + 1 }); return true; }
+  if (a === 'menu') { if (confirm('Выйти из общей деревни в меню?')) location.reload(); return true; }
+  if (a === 'stay') { campHideEnd(); return true; }
+  return false;
+}
+
+// «Дальше» в коопе — голос: сколько уже нажали, нажал ли я; «Пропустить» — только у хоста
+function campCoopBtns(C, S) {
+  if (!S || !C.st) return;
+  const E = campEls(), nx = E.dlg.querySelector('[data-camp="next"]'), sk = E.dlg.querySelector('[data-camp="skip"]');
+  if (!nx) return;
+  const n = Math.max(1, C.np || 1), v = Math.min(n, (C.st.rd || []).length), mine = CampUI.voted === C.seq + ':' + CampUI.k;
+  const sig = [C.seq, CampUI.k, v, n, mine, Coop.host].join('|');
+  if (sig === CampUI.voteSig) return;
+  CampUI.voteSig = sig;
+  const last = CampUI.k >= S.lines.length - 1;
+  nx.textContent = (mine ? '✔ ' : '') + (last ? 'Закрыть' : 'Дальше') + (n > 1 ? ` ${v}/${n}` : '') + ' ▸';
+  nx.title = n > 1 ? 'Строка листается, когда нажмут все (или сама через несколько секунд)' : '';
+  if (sk) sk.classList.toggle('hidden', !Coop.host);
+}
+
+// меню хоста «Кампания»: акты по прогрессу сервера
+function campCoopMenu() {
+  const E = campEls(), pr = CampUI.cprog || { done: {} }, C = Game.camp;
+  const open = n => n === 1 || !!pr.done[n - 1];
+  let h = '<div class="ce-box"><div class="ce-act">Кооп</div><h2>Кампания «Исход из Подгорья»</h2><p class="ce-leg">Вся деревня переходит в мир акта. Герои сохраняют уровень и рюкзак. Нынешний мир сервера уйдёт в архив.</p><div class="ce-btns">';
+  for (let n = 1; n <= 5; n++) {
+    const A = CAMP_ACTS[n];
+    if (!A) continue;
+    const st = pr.done[n] ? ' ' + '★'.repeat(pr.done[n]) : '';
+    h += open(n) ? `<button data-camp="cstart" data-n="${n}">Акт ${n}. ${campEsc(A.name)}${st}</button>` : `<button disabled>🔒 Акт ${n}: пройдите акт ${n - 1}</button>`;
+  }
+  if (C && !C.over && C.cpN) h += '<button data-camp="retry-cp">С контрольной точки</button>';
+  h += '<button class="ghost" data-camp="cclose">Закрыть</button></div></div>';
+  E.end.innerHTML = h;
+  E.end.classList.remove('hidden');
+  CampUI.end = null;
+}
+function campCoopStartAsk(n) {
+  if (!confirm(`Начать акт ${n} «${CAMP_ACTS[n].name}» для всей деревни? Нынешний мир сервера сменится миром акта.`)) return;
+  campHideEnd();
+  coopSend({ t: 'campaign', a: 'start', n });
+}
+
 function campRestart() {
   const n = Game.camp ? Game.camp.act : 1;
   campStart(n);
@@ -457,8 +641,12 @@ function campSetFace(E, w, who) {
 }
 
 function campRenderDlg(C, S) {
-  const E = campEls(), [who, text] = S.lines[CampUI.k] || ['note', ''];
-  const w = CAMP_WHO[who] || CAMP_WHO.note;
+  const [who, text] = S.lines[CampUI.k] || ['note', ''];
+  campRenderLine(who, text, CampUI.k < S.lines.length - 1, S.k === 'cut');
+  if (campMir()) { CampUI.voteSig = ''; campCoopBtns(C, S); }
+}
+function campRenderLine(who, text, more, cut) {
+  const E = campEls(), w = CAMP_WHO[who] || CAMP_WHO.note;
   const name = who === 'hero' && campHero() ? campHero().hero.name || w.name : w.name;
   const fem = who === 'hero' && typeof haOf === 'function' && (haOf(campHero()) || [])[10] === 1;
   campSetFace(E, w, fem ? 'heroF' : CAMP_WHO[who] ? who : 'note');
@@ -468,8 +656,8 @@ function campRenderDlg(C, S) {
   tx.textContent = text;
   tx.classList.remove('in'); void tx.offsetWidth; tx.classList.add('in');
   if (!E.dlg.querySelector('[data-camp="next"]')) campRestoreBtns();
-  E.dlg.querySelector('[data-camp="next"]').textContent = CampUI.k < S.lines.length - 1 ? 'Дальше ▸' : 'Закрыть ▸';
-  E.dlg.classList.toggle('cut', S.k === 'cut');
+  E.dlg.querySelector('[data-camp="next"]').textContent = more ? 'Дальше ▸' : 'Закрыть ▸';
+  E.dlg.classList.toggle('cut', !!cut);
   E.dlg.classList.remove('hidden');
 }
 // окно выбора: вопрос, варианты кнопками; после выбора — чем кончилось, и «Дальше»
@@ -485,9 +673,10 @@ function campRenderChoice(C, S) {
   const tx = E.dlg.querySelector('.cd-text'), bt = E.dlg.querySelector('.cd-btns');
   if (s.pick < 0) {
     tx.textContent = S.text;
-    bt.innerHTML = S.opts.map((o, i) => `<button data-camp="pick" data-i="${i}">${campEsc(o.t)}</button>`).join('');
+    const wait = campMir() && !Coop.host;   // кооп: решает хост, остальные видят варианты
+    bt.innerHTML = S.opts.map((o, i) => `<button data-camp="pick" data-i="${i}"${wait ? ' disabled' : ''}>${campEsc(o.t)}</button>`).join('') + (wait ? '<div class="cd-coop">Решает хост</div>' : '');
     bt.classList.add('choice');
-    if (!Game.paused) { CampUI.wasPaused = true; Game.paused = true; }
+    if (!Game.paused && !campMir()) { CampUI.wasPaused = true; Game.paused = true; }
   } else {
     tx.textContent = S.opts[s.pick].out || '';
     bt.innerHTML = '<button data-camp="picked">Дальше ▸</button>';
@@ -545,7 +734,9 @@ function campShowEnd(C) {
   h += `<ul class="ce-stats"><li>Время: ${m} мин</li><li>Жителей спасено: ${o.stats.alive}</li><li>Потеряно: ${o.stats.lost}</li></ul>`;
   if (win && A.legacyText) h += `<p class="ce-leg">Наследие: ${campEsc(A.legacyText(C))}</p>`;
   h += '<div class="ce-btns">';
-  if (win) {
+  if (campMir() && !Coop.host) {
+    h += '<p class="ce-leg">Что дальше — решает хост.</p><button data-camp="stay">Остаться в мире</button>';
+  } else if (win) {
     h += nextOk ? `<button data-camp="next-act">Акт ${C.act + 1}: ${campEsc(CAMP_ACTS[C.act + 1].name)} ▸</button>` : `<button disabled>Акт ${C.act + 1} — скоро</button>`;
     if (nextOk && CAMP_ACTS[C.act + 1].scenario) h += '<p class="ce-leg">Дальше — сценарий на новой карте Долины: главы 1–6, Чёрный шпиль. Наследие кампании переходит с вами.</p>';
     h += '<button class="ghost" data-camp="stay">Остаться в мире</button>';
@@ -556,7 +747,7 @@ function campShowEnd(C) {
   h += '<button class="ghost" data-camp="menu">В меню</button></div></div>';
   E.end.innerHTML = h;
   E.end.classList.remove('hidden');
-  Game.paused = true;
+  if (!campMir()) Game.paused = true;
 }
 function campHideEnd() { const E = campEls(); E.end.classList.add('hidden'); CampUI.end = null; }
 
@@ -566,6 +757,7 @@ function campUiTick() {
   const E = campEls();
   if (!C) {
     if (!E.hud.classList.contains('hidden')) E.hud.classList.add('hidden');
+    if (campTalkOn()) { if (!campBlocked()) campTalkUiTick(); return; }
     if (!E.dlg.classList.contains('hidden')) campHideDlg();
     return;
   }
@@ -582,15 +774,35 @@ function campUiTick() {
   const now = performance.now(), dt = Math.min(1, (now - (CampUI.lastNow || now)) / 1000);
   CampUI.lastNow = now;
   if (CampUI.seq !== C.seq) {
-    CampUI.seq = C.seq; CampUI.k = 0; CampUI.idle = 0;
+    CampUI.seq = C.seq; CampUI.k = campMir() ? Math.min(C.st.k || 0, S.lines.length - 1) : 0; CampUI.idle = 0;
     if (S.k === 'cut') {
       E.bars.classList.remove('hidden');
       CampUI.cam = S.cam ? { x: (S.cam[0] + 0.5) * TILE, y: (S.cam[1] + 0.5) * TILE } : null;
-      if (S.pause && !Game.paused) { CampUI.wasPaused = true; Game.paused = true; }
+      if (S.pause && !Game.paused && !campMir()) { CampUI.wasPaused = true; Game.paused = true; }
     }
     campRenderDlg(C, S);
     return;
   }
+  // кооп: строку листает сервер (голоса всех или время) — догоняем его номер строки
+  if (campMir()) {
+    const k = Math.min(C.st.k || 0, S.lines.length - 1);
+    if (k !== CampUI.k) { CampUI.k = k; campRenderDlg(C, S); } else campCoopBtns(C, S);
+    return;
+  }
+  CampUI.idle += dt;
+  if (CampUI.idle >= CAMP_IDLE) campUiAct('next');
+}
+
+// реплики вне акта (сценарий с наследием кампании, акт 5): очередь [[кто, текст]…], игру не останавливают, листаются сами
+const campTalkOn = () => !!(CampUI.talk && CampUI.talk.length);
+function campTalk(lines) {
+  if (!campHasUI() || !lines || !lines.length) return;
+  (CampUI.talk || (CampUI.talk = [])).push(...lines);
+}
+function campTalkUiTick() {
+  const now = performance.now(), dt = Math.min(1, (now - (CampUI.lastNow || now)) / 1000), L = CampUI.talk[0];
+  CampUI.lastNow = now;
+  if (CampUI.talkCur !== L) { CampUI.talkCur = L; CampUI.idle = 0; campRenderLine(L[0], L[1], CampUI.talk.length > 1, false); return; }
   CampUI.idle += dt;
   if (CampUI.idle >= CAMP_IDLE) campUiAct('next');
 }

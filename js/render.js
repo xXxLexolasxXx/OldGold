@@ -818,8 +818,9 @@ function drawClouds(c) {
 function drawStatusIcons(c, x0, y0, x1, y1) {
   for (const b of Game.buildings) {
     if (b.x + b.w < x0 || b.x > x1 || b.y > y1 || b.y < y0 - 3) continue;
-    let icon = null;
-    if (b.state !== 'done') {
+    let icon = urgOn(b) ? ['ui', 'urgent'] : null;
+    if (icon) { /* «Срочно» видно поверх любой беды */ }
+    else if (b.state !== 'done') {
       if (b.problem() === 'noroad') icon = ['ui', 'road'];
       else if (!b.builder) {
         // нечего класть и никто не везёт — значок материала, а не «нет работяги» (работяги-то свободны)
@@ -841,7 +842,7 @@ function drawStatusIcons(c, x0, y0, x1, y1) {
     const bob = Math.round(Math.sin(Game.time * 3 + b.id) * 1.5);
     const ix = b.x * TILE + Math.round(b.w * TILE / 2) - 11, iy = b.y * TILE - 34 + bob;
     c.fillStyle = '#160e0a'; c.fillRect(ix, iy, 22, 22);
-    c.fillStyle = icon[1] === 'pause' ? '#45291a' : '#6a2018'; c.fillRect(ix + 1, iy + 1, 20, 20);
+    c.fillStyle = icon[1] === 'pause' ? '#45291a' : icon[1] === 'urgent' ? '#a8701a' : '#6a2018'; c.fillRect(ix + 1, iy + 1, 20, 20);
     c.fillStyle = 'rgba(255,255,255,0.15)'; c.fillRect(ix + 1, iy + 1, 20, 1);
     c.fillStyle = '#160e0a'; c.fillRect(ix + 9, iy + 22, 4, 2); c.fillRect(ix + 10, iy + 24, 2, 1);
     c.drawImage(iconCanvas(icon[0], icon[1]), ix + 2, iy + 2);

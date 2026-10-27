@@ -76,5 +76,5 @@ I18N.add('en', {
   "Лист вариантов земли": "Ground Variants Sheet", "Варианты ДНЕВНОЙ земли": "DAYTIME ground variants", "клеток": "tiles", "сид": "seed",
   // школа: шахтёр и металлург в долг (entities.js schoolStuck)
   "Школа выучит шахтёра в долг: без него золота не будет": "The school will train a miner on credit: without one there will be no gold",
-  "Школа выучит металлурга в долг: без него золота не будет": "The school will train a smelter on credit: without one there will be no gold"
+  "Школа выучит кузнеца в долг: без него золота не будет": "The school will train a smith on credit: without one there will be no gold"
 });

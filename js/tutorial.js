@@ -232,7 +232,7 @@ const TUT_STEPS = [
   },
   {
     ph: 'Стройка', title: 'Дом лесоруба', solo: true, chain: ['woodcutter'], enter: () => unlockStage('res', true),
-    text: () => 'Строить будем из брёвен и камня, как деды. Лесоруб рубит лес; лес, как ни странно, против.',
+    text: () => 'Строить будем из брёвен и камня, как деды. Лесничий рубит лес; лес, как ни странно, против.',
   },
   {
     ph: 'Стройка', title: 'Каменоломня', solo: true, chain: ['quarry'], enter: () => unlockStage('res', true),

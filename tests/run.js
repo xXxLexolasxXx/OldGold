@@ -38,9 +38,13 @@ function test(name, fn) {
 
 // ---------- 1. Загрузка
 // отдельный скрипт-проверка: строки «✗ …» — провалы, «⚠ …» — замечания, остальное без отступа — сводка
+// --slow K (или TEST_SLOW=K) — растянуть лимиты времени в K раз, когда машина занята другими прогонами
+const SLOW = Math.max(1, +arg('slow', process.env.TEST_SLOW || 1) || 1);
 const scriptTest = (name, file, args = [], ms = 180000) => test(name, r => {
-  const p = spawnSync(process.execPath, [path.join(__dirname, file), ...args], { encoding: 'utf8', timeout: ms });
+  const p = spawnSync(process.execPath, [path.join(__dirname, file), ...args], { encoding: 'utf8', timeout: ms * SLOW });
   const out = (p.stdout || '') + (p.stderr || '');
+  // убит по лимиту времени — это не провал проверки: под нагрузкой house и campaign шли по 7 минут и падали «красными» без единого ✗
+  if (p.error && p.error.code === 'ETIMEDOUT') { r.fails.push(`не успел за ${Math.round(ms * SLOW / 1000)} с (машина занята? повторите с --slow 2)`); return; }
   for (const l of out.split('\n')) {
     if (/^\s*✗/.test(l)) r.fails.push(l.replace(/^\s*✗\s*/, ''));
     else if (/^\s*⚠/.test(l)) r.warns.push(l.replace(/^\s*⚠\s*/, ''));
@@ -64,12 +68,18 @@ scriptTest('wildfire: горящие куры и деревья, фонари, �
 scriptTest('disaster: стихийные бедствия — знамения, виды на сидах, колодец, ремонт, море, сейв, кооп', 'disaster-test.js', [], 420000);
 scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
 scriptTest('heroapp: цвет жилета героя — наряд, фигура, сейв', 'heroapp-test.js');
-scriptTest('prio: приоритеты работ, сохранение', 'prio-test.js');
+scriptTest('urgent: авто-срочность и кнопка «Срочно», старые приоритеты в сейве', 'urgent-test.js');
+scriptTest('woodhold: зимний запас дров не держит стройку и лесопилку без досок', 'woodhold-test.js');
 scriptTest('pc: управление для ПК — переназначение клавиш, обмен, запреты, сохранение, способности героя', 'pc-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('coop-hire: кооп — обученный специалист занимает здание, клиент видит работника', 'coop-hire-test.js');
+scriptTest('campaign-coop: кампания в коопе — сервер и 2 клиента проходят акт 1, голоса «Дальше», контрольная точка', 'campaign-coop-test.js', [], 420000);
+scriptTest('campaign-coop-acts: кооп-кампания, акты 2–5 — 2 клиента, перезапуск сервера посреди акта, возврат к точке, выключатель', 'campaign-coop-acts-test.js', LONG ? [] : ['2,4,5'], 900000);
 scriptTest('coopkit: кооп-пакет — декор игроков, Совет выбирает район, передача предметов, эстафета, «передать хлеб»', 'coopkit-test.js', [], 420000);
 scriptTest('hire: найм в окне здания — перевод, обмен, обучение с бронью, сохранение, кооп', 'hire-test.js');
+scriptTest('profs: прокачка мастеров 1–5, каменотёс ходит дальше и долбит гору, сейв, кооп', 'profs-test.js', LONG ? [] : ['20'], 420000);
+scriptTest('guildrebuild: снос и перестройка гильдий — рекруты и глава переходят в новую, лимит держится', 'guildrebuild-test.js');
+scriptTest('profmerge: слитые профессии — кузнец, лесничий, пастух; старые сейвы переводятся', 'profmerge-test.js', LONG ? [] : ['1'], 600000);
 scriptTest('unions: профсоюзы — советы по стройке и ремеслу, редкий показ, выключатель, сейв, кооп', 'unions-test.js', LONG ? [] : ['10'], 420000);
 scriptTest('guildbuild: достройка гильдии не трогает билд героя, переучивание только по кнопке, сейв', 'guildbuild-test.js');
 scriptTest('law: указы деревни, сохранение', 'law-test.js');
@@ -89,6 +99,7 @@ scriptTest('sea: море, обитатели, рыбацкая хижина, к
 scriptTest('folk: гномки и гномята — облик, пиво, «Бах!», не дерутся, сейв', 'folk-test.js');
 scriptTest('durability: прочность снаряжения, ремонт, очередь доспехов, сейв', 'durability-test.js');
 scriptTest('arms: оружейная рано, особое оружие гильдий, заточка, свойства 3 уровня, сейв', 'arms-test.js');
+scriptTest('gearpick: меч с земли — в руку героя, рюкзак, на землю, на склад', 'gearpick-test.js');
 scriptTest('oath: Клятвы предков — 10 классов героя, задания по ролям, сохранение', 'oath-test.js');
 scriptTest('spire: глава 6 — подъём к Чёрному шпилю: стражи, врата, башни, затмение, Малгор, победа', 'spire-test.js', [], 420000);
 scriptTest('golem: руны, Старец, пробуждение, завал и барьер, сезоны, охота на скелетов', 'golem-test.js', [], 300000);
@@ -101,11 +112,11 @@ scriptTest('arena-net: арена онлайн — очередь по Эло, �
 scriptTest('skelart: скелеты в пиксель-арте — кадры 6/8/9/4/9/13, виды, кэш, облик в сейве, рисование без падений', 'skelart-test.js');
 scriptTest('kurganart: Курганный князь в пиксель-арте — кадры, фазы I–III, кэш, рисование без падений', 'kurganart-test.js');
 scriptTest('icon: значки, названия и описания всех способностей, окно гильдии', 'icon-test.js');
-scriptTest('tempo: кооп-пауза, скорость, приоритеты', 'tempo-test.js');
+scriptTest('tempo: кооп-пауза, скорость, старые приоритеты не рассылаются', 'tempo-test.js');
 scriptTest('chronicle: летопись деревни', 'chronicle-test.js');
 scriptTest('lore: фрагменты истории, главы, перевод', 'lore-test.js');
 scriptTest('faceart: портреты собеседников — 16 лиц, два кадра, 72×72 пикселя, кэш, у всех собеседников кампании и лора есть портрет', 'faceart-test.js');
-scriptTest('campaign: акты 1–5 — праздник и взрыв, обвал, Кремнёвка, дорога к межевому камню, сценарий с наследием, сейв, поражение, перевод', 'campaign-test.js', [], 420000);
+scriptTest('campaign: акты 1–5 — праздник и взрыв, обвал, Кремнёвка, дорога к межевому камню, сценарий с наследием, сейв, поражение, перевод', 'campaign-test.js', [], 900000);
 scriptTest('camp-tower: задание акта 1 про башню у штрека', 'camp-tower-test.js');
 scriptTest('photo: фото-режим, рамки и фильтры', 'photo-test.js');
 scriptTest('daily: вызов дня', 'daily-test.js');
@@ -123,7 +134,7 @@ scriptTest('trav: одинокие путники — смайлики, разг
 scriptTest('wild: поселения диких гномов — число на картах, обмен, караван, купец, поединок, бунт, сейв', 'wild-test.js', [], 600000);
 scriptTest('whatsnew: пропущенные обновления в окне «Что нового»', 'whatsnew-test.js');
 scriptTest('uilayers: слои интерфейса — загрузка без скорости, стройка поверх способностей', 'uilayers-test.js');
-scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js', [], 420000);
+scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js', [], 900000);
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
 
 // ---------- 2. Симуляция: инварианты

@@ -6,7 +6,8 @@
     "test": "node tests/run.js",
     "test:long": "node tests/run.js --long",
     "check": "node tests/check-load.js",
-    "test:maps": "node tests/maps-test.js"
+    "test:maps": "node tests/maps-test.js",
+    "test:visual": "node tests/visual-test.js"
   },
   "engines": { "node": ">=18" }
 }

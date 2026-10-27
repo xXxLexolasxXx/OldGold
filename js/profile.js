@@ -344,8 +344,6 @@ function profBtnLabel() {
   const b = document.querySelector('#start-menu [data-sm="profile"] small');
   const ttl = typeof lgTitle === 'function' ? ' · ' + lgTitle() : '';
   if (b) b.textContent = profCur().name + ttl;
-  const m = document.querySelector('[data-menu="profile"] span');
-  if (m) m.textContent = profCur().name;
 }
 
 function initProfile() {
@@ -373,14 +371,7 @@ function initProfile() {
   });
   win.querySelector('#prof-file').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) profImport(f); });
 
-  // игрок, слоты, ачивки и наследие — на стартовом экране («Игрок и ачивки»); в меню игры их больше нет
-  document.querySelector('#tab-menu').addEventListener('click', e => {
-    const t = e.target.closest('[data-menu]');
-    if (!t) return;
-    if (t.dataset.menu === 'profile') { if (Mobile.on) mobileSheet(null); profOpen('saves'); }
-    if (t.dataset.menu === 'ach') { if (Mobile.on) mobileSheet(null); profOpen('ach'); }
-    if (t.dataset.menu === 'legacy') { if (Mobile.on) mobileSheet(null); profOpen('legacy'); }
-  });
+  // игрок, слоты, ачивки и наследие — на стартовом экране («Игрок и ачивки»); в меню игры их нет
   const root = document.getElementById('start-menu');
   if (root && !root.querySelector('[data-sm="profile"]')) {
     const main = root.querySelector('[data-panel="main"]');

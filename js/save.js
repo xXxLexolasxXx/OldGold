@@ -96,7 +96,7 @@ function serializeBuilding(b) {
   return {
     id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
     used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
-    level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, orders: b.orders && b.orders.length ? b.orders : undefined, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops, hireReq: b.hireReq || undefined,
+    level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, urg: urgOn(b) ? b.urgUntil : undefined, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, orders: b.orders && b.orders.length ? b.orders : undefined, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops, hireReq: b.hireReq || undefined,
   };
 }
 
@@ -112,6 +112,12 @@ function savePiles() {
   for (const p of Game.piles.values()) if (!p.removed) for (const g of GOOD_KEYS) add(p.x, p.y, g, p.stock[g]);
   for (const u of Game.units) if (u.carry && !u.dead) add(Math.floor(u.x), Math.floor(u.y), u.carry, u.carryN || 1);
   return [...m.values()];
+}
+
+// слитая профессия → нынешняя (цепочкой: бронник-armorer → бронник → кузнец)
+function legacyType(t) {
+  for (let k = 0; k < 4 && UNIT_TYPES[t] && UNIT_TYPES[t].legacy; k++) t = UNIT_TYPES[t].legacy;
+  return t;
 }
 
 function applySave(s) {
@@ -151,9 +157,10 @@ function applySave(s) {
     Object.assign(b.usedOf, d.usedOf);
     b.used = d.used;
     b.hits = d.hits ?? (b.state === 'done' ? b.maxHits : SITE_HITS + d.used * HITS_PER_UNIT);
-    b.queue = (d.queue || []).map(q => (UNIT_TYPES[q] && UNIT_TYPES[q].legacy) || q);
-    b.training = d.training || null;
+    b.queue = (d.queue || []).map(legacyType);
+    b.training = d.training ? { ...d.training, type: legacyType(d.training.type) } : null;
     b.paused = !!d.paused;
+    if (d.urg > 0) b.urgUntil = d.urg;
     if (d.hold) b.hold = true;
     b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
     b.hireReq = d.hireReq ? 1 : 0;
@@ -178,11 +185,11 @@ function applySave(s) {
     Game.roadSites.set(idx(r.x, r.y), rs);
   }
   for (const d of s.units) {
-    // слитые профессии: старые жители переходят в новые (хмелевод → пахарь и т.д.)
+    // слитые профессии: старые жители переходят в новые (плотник → лесничий и т.д.);
+    // у кого есть мастерская — профессия по ней (свинопас в дубильне станет мясником)
     const home0 = byId.get(d.home);
-    let ty = d.type;
-    if (UNIT_TYPES[ty] && UNIT_TYPES[ty].legacy) ty = UNIT_TYPES[ty].legacy;
-    if (ty === 'tanner' && home0 && home0.type === 'tannery') ty = 'breeder';
+    let ty = legacyType(d.type);
+    if (ty !== d.type && home0 && home0.def.worker) ty = home0.def.worker;
     const u = new Unit(ty, 0, 0);
     u.x = d.x; u.y = d.y; u.food = d.food; u.look = d.look;
     u.homePen = d.homePen || 0; u.homeStable = d.homeStable || 0; u.xp = d.xp || 0;   // старые сохранения: выслуги нет

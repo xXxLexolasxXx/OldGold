@@ -734,7 +734,7 @@ function kpNeeds() {
 }
 
 // Приоритет: еда, дрова, стройка, оборона; затем всё остальное, чего не хватает
-const KP_PRIO = [['еда', ['baker', 'farmer', 'butcher', 'breeder', 'brewer']], ['дрова', ['woodcutter']], ['стройка', ['carpenter', 'stonemason', 'builder']]];
+const KP_PRIO = [['еда', ['baker', 'farmer', 'butcher', 'herder', 'brewer']], ['дрова', ['woodcutter']], ['стройка', ['stonemason', 'builder']]];
 
 function kidPickJob(u) {
   const lack = kpNeeds();

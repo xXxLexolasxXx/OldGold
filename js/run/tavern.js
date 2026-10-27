@@ -78,7 +78,9 @@ Object.assign(MODELS, {
 const SQT_POP = 12, SQT_LVL = 3;
 function squadTavernOpen() {
   const g = Game.goal;
-  if (g && g.mode === 'scenario') return g.ch >= 3;   // глава 3 «Пиво вместо совести» пройдена
+  // в общей деревне вне кампании главы не идут (на сервере бывает застрявший goal 'scenario', ch 2) — условие свободной игры
+  const coopFree = typeof coop !== 'undefined' && !!coop && !!coop.players && !Game.camp;
+  if (g && g.mode === 'scenario' && !coopFree) return g.ch >= 3;   // глава 3 «Пиво вместо совести» пройдена
   const pop = Game.units.filter(u => isPerson(u) && !u.dead).length;
   return pop >= SQT_POP && Game.units.some(u => u.type === 'hero' && !u.dead && u.hero && (u.hero.level | 0) >= SQT_LVL);
 }
