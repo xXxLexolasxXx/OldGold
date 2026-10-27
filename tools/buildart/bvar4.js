@@ -91,7 +91,6 @@ function buildInn(g, lv, roofs) {
   box(g, { x0: 42, x1: 64, y0: 40, y1: 48, h: 1, mat: m1Flat(P1.plank[3]), top: (u, v) => P1.plank[(u | 0) % 4 === 0 ? 3 : 2] });
   g.sprite([44, 41, 1], P => Q1.crate(P, 8)); g.sprite([44, 41, 9], P => Q1.crate(P, 7)); g.sprite([56, 42, 1], P => Q1.sack(P)); g.sprite([62, 46, 1], P => Q1.sack(P, 6, 8)); g.sprite([52, 47, 1], P => Q1.barrel(P, 7, 9));
   meta.stock = [[46, 44, 1], [54, 44, 1], [62, 43, 1], [48, 47, 1], [58, 47, 1]];
-  g.sprite([68, 58, 0], P => { PR.rect(P, 0, -8, 14, -4, P1.plank[2]); PR.rect(P, 0, -9, 14, -9, P1.plank[0]); PR.rect(P, 14, -7, 20, -7, P1.plank[3]); PR.ell(P, 4, -2, 2.5, 2.5, (x, y, a, b) => (a * a + b * b > 0.5 ? P1.plank[3] : P1.iron[1])); PR.ell(P, 11, -2, 2.5, 2.5, (x, y, a, b) => (a * a + b * b > 0.5 ? P1.plank[3] : P1.iron[1])); });
   // ---- веранда справа спереди (растёт по уровням), без крыши
   const V = { x0: 98, x1: 126, y0: 4, y1: ky0 - 2 };
   box(g, { x0: V.x0, x1: V.x1, y0: V.y0, y1: V.y1, h: 1.2, mat: m1Flat(P1.plank[2]), top: deckTop });
@@ -122,16 +121,76 @@ function buildInn(g, lv, roofs) {
     g.sprite([18, 12, 1.2], P => Q1.table(P, 14)); g.sprite([44, 12, 1.2], P => Q1.table(P, 14)); g.sprite([30, 26, 1.2], P => Q1.table(P, 14)); meta.tables.push([18, 12, 1.2], [44, 12, 1.2], [30, 26, 1.2]);
     g.sprite([6, 4, 17], P => Q1.lantern(P)); g.sprite([58, 4, 17], P => Q1.lantern(P)); g.sprite([32, 4, 17], P => Q1.lantern(P));
     g.sprite([62, 24, 0], P => { Q1.barrel((x, y, c) => P(x, y - 3, c), 11, 13); PR.rect(P, -6, -3, 6, -3, P1.plank[3]); P(-5, -2, P1.plank[3]); P(5, -2, P1.plank[3]); P(-5, -1, P1.plank[3]); P(5, -1, P1.plank[3]); P(7, -9, P1.iron[1]); P(8, -9, P1.iron[0]); });
-    box(g, { x0: 68, x1: 94, y0: 46, y1: 60, h: 3, mat: m1Plank(P1.plank, 4), top: (u, v) => P1.plank[(v | 0) % 4 === 0 ? 2 : 0] });   // сцена между домом и кухней
-    meta.stage = [81, 53, 3];
-    g.sprite([70, 47, 3], P => Q1.barrel(P, 7, 9));
-    g.sprite([92, 47, 3], P => { PR.rect(P, 0, -14, 0, 0, P1.beam[2]); PR.rect(P, -3, -14, 3, -14, P1.beam[1]); P(-2, -13, P1.gold[1]); P(2, -13, P1.gold[1]); });
     bunting(g, [4, 2, 17], [58, 2, 17]); bunting(g, [58, 2, 17], [98, 6, 15]);
     lampPost(g, 64, 2);
   }
   inn1Paths(g, lv, ky0);
+  innYard(g, lv, meta);
   g.sprite([2, 49, 0], P => Q1.flowers(P, 6)); g.sprite([12, 49, 0], P => Q1.flowers(P, 6)); g.sprite([96, 66, 0], P => Q1.flowers(P, 4));
   g.sprite([66, 2, 0], P => Q1.mushroom(P, 3)); g.sprite([70, 4, 0], P => Q1.mushroom(P, 2));
+}
+
+// Задний двор между домом и кухней (x 74..98, y 42..92) — место, где гномы тусуются. Отступ от дома ≥ 8 px.
+// 1: кострище с брёвнами-сиденьями, колода с топором и поленница; 2: + вертел с тушкой, мишень для дротиков, меловая доска;
+// 3: + сцена в глубине, пирамида бочонков, гирлянда. Точки для анимации — в meta (fire, spit, seats, chop, darts, stage).
+const Y1 = {
+  firePit(P) {   // каменное кольцо с углями (пламя рисует игра в meta.fire)
+    PR.ell(P, 0, -2, 8, 4, (x, y, a, b) => { const e = a * a + b * b; if (e > 0.55) return ((x + y) & 1) ? P1.stone[1] : P1.stone[2]; return e < 0.2 ? P1.gold[(x + y) & 1] : ((x * 3 + y) % 4 === 0 ? P1.red[0] : P1.dark[3]); });
+    PR.rect(P, -3, -4, 3, -4, P1.log[2]); PR.rect(P, -2, -3, 2, -3, P1.log[1]);
+  },
+  logSeat(P, w = 12) { PR.rect(P, -w / 2, -4, w / 2, -2, P1.log[1]); PR.rect(P, -w / 2, -4, w / 2, -4, P1.log[0]); PR.rect(P, -w / 2, -1, w / 2, -1, P1.log[3]); PR.ell(P, w / 2, -2.5, 1.6, 2, (x, y, a, b) => (a * a + b * b < 0.3 ? P1.log[0] : P1.log[2])); },
+  spit(P) {      // две рогатины, перекладина, тушка
+    for (const x of [-10, 10]) { PR.rect(P, x, -14, x, 0, P1.beam[1]); P(x - 1, -14, P1.beam[1]); P(x + 1, -14, P1.beam[1]); P(x - 1, -15, P1.beam[1]); P(x + 1, -15, P1.beam[1]); }
+    PR.rect(P, -12, -13, 12, -13, P1.iron[1]); P(13, -12, P1.iron[1]); P(13, -11, P1.iron[2]);
+    PR.ell(P, 0, -13, 6, 3.4, (x, y, a, b) => (b < -0.4 ? P1.gold[1] : a > 0.5 || b > 0.4 ? P1.log[2] : P1.log[0]));
+    P(-6, -15, P1.log[2]); P(6, -15, P1.log[2]);
+  },
+  chop(P) {      // колода с воткнутым топором
+    PR.rect(P, -4, -5, 4, 0, P1.log[2]); PR.ell(P, 0, -5, 4, 1.6, (x, y, a) => (a < -0.3 ? P1.log[0] : P1.log[1]));
+    PR.line(P, 1, -6, 5, -12, P1.plank[1]); PR.rect(P, -1, -7, 2, -6, P1.iron[0]); P(-1, -5, P1.iron[1]);
+  },
+  darts(P) {     // мишень на столбе
+    PR.rect(P, 0, -18, 0, 0, P1.beam[1]);
+    PR.ell(P, 0, -20, 5, 5, (x, y, a, b) => { const r = Math.hypot(a, b); return r > 0.8 ? P1.beam[2] : r > 0.55 ? P1.white[0] : r > 0.3 ? P1.red[1] : P1.gold[0]; });
+    P(1, -21, P1.iron[2]); P(-2, -19, P1.iron[2]); P(2, -18, P1.iron[2]);
+  },
+  chalk(P) {     // меловая доска «меню» на ножках
+    PR.line(P, -4, 0, -2, -12, P1.plank[2]); PR.line(P, 4, 0, 2, -12, P1.plank[2]);
+    PR.rect(P, -4, -14, 4, -5, P1.plank[3]); PR.rect(P, -3, -13, 3, -6, bhex('#2e3a32'));
+    for (const [y, w] of [[-12, 4], [-10, 5], [-8, 3]]) PR.rect(P, -2, y, -2 + w, y, P1.white[1]);
+  },
+  kegs(P) {      // пирамида бочонков на боку
+    const keg = (cx, cy) => PR.ell(P, cx, cy, 3.4, 3.4, (x, y, a, b) => { const r = a * a + b * b; return r > 0.7 ? P1.plank[3] : r > 0.45 ? P1.iron[1] : r < 0.15 ? P1.plank[0] : P1.plank[1]; });
+    for (let k = 0; k < 3; k++) keg(-7 + k * 7, -4); for (let k = 0; k < 2; k++) keg(-3.5 + k * 7, -10); keg(0, -16);
+  },
+  bench(P, w = 12) { Q1.bench(P, w); },
+};
+function innYard(g, lv, meta) {
+  // утоптанная земля под тусовкой
+  box(g, { x0: 74, x1: 98, y0: 42, y1: 90, h: 0.2, mat: m1Flat(P1.dark[1]), top: (u, v) => { const h = bhash(u, v, 301); return h < 0.08 ? P1.grass[2] : h < 0.5 ? bhex('#8a7458') : bhex('#9c8664'); } });
+  // кострище с брёвнами вокруг — главное место сборищ
+  g.sprite([86, 54, 0.2], P => Y1.firePit(P));
+  meta.fire = [86, 54, 0.6];
+  g.sprite([86, 47, 0.2], P => Y1.logSeat(P, 14)); g.sprite([86, 62, 0.2], P => Y1.logSeat(P, 14)); g.sprite([77, 54, 0.2], P => Y1.logSeat(P, 8)); g.sprite([95, 54, 0.2], P => Y1.logSeat(P, 8));
+  meta.seats = [[80, 47, 3], [92, 47, 3], [80, 62, 3], [92, 62, 3], [77, 54, 3], [95, 54, 3]];
+  // колода и поленница в глубине
+  g.sprite([80, 80, 0.2], P => Y1.chop(P)); meta.chop = [83, 80, 0];
+  g.sprite([88, 88, 0.2], P => Q1.logs(P));
+  if (lv >= 2) {
+    g.sprite([86, 55, 0.2], P => Y1.spit(P), -0.5); meta.spit = [86, 55, 13];
+    g.sprite([96, 76, 0.2], P => Y1.darts(P)); meta.darts = [96, 76, 20];
+    g.sprite([92, 26, 0], P => Y1.chalk(P));
+  } else g.sprite([92, 26, 0], P => Q1.barrel(P, 7, 9));
+  if (lv >= 3) {
+    box(g, { x0: 74, x1: 98, y0: 70, y1: 86, h: 3, mat: m1Plank(P1.plank, 4), top: (u, v) => P1.plank[(v | 0) % 4 === 0 ? 2 : 0] });   // сцена в глубине
+    meta.stage = [86, 78, 3];
+    g.sprite([76, 72, 3], P => Q1.barrel(P, 7, 9));
+    S2([[75, 84], [96, 84]], (x, y) => post1(g, x, y, 3, 16, 2));
+    beam1(g, 75, 98, 84, 86, 19, 1.2, P1.plank);
+    bunting(g, [75, 85, 19], [97, 85, 19]);
+    g.sprite([96, 66, 0.2], P => Y1.kegs(P));
+    g.sprite([88, 88, 0.2], P => Y1.chop(P));
+  }
 }
 
 // Мощёные дорожки: въезд с юга (x 74..86) → развилка → к двери дома (запад), к веранде и к кухне (восток).
