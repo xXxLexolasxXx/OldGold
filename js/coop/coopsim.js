@@ -455,7 +455,7 @@ function coopStateSet(json) {
 function coopInitUnlocks() {
   // мир акта кампании (перезапуск сервера посреди акта): в акте открыто всё, как при campStart, — иначе гости не строят башни
   if (Game.camp && typeof allUnlocked === 'function') { Game.unlocked = allUnlocked(); return; }
-  Game.unlocked = { res: true };
+  Game.unlocked = Game.unlocked && Game.unlocked.sqtGone ? { res: true, sqtGone: true } : { res: true };   // «таверну снесли» — не стадия меню, не сбрасываем
   for (let ch = true; ch;) {
     ch = false;
     for (const st of UNLOCKS) if (!Game.unlocked[st.id] && unlockReady(st)) { Game.unlocked[st.id] = true; ch = true; }

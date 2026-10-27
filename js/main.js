@@ -381,7 +381,7 @@ function eraseAt(t) {
   const id = World.bmap[i];
   if (id) {
     const b = Game.buildings.find(o => o.id === id);
-    if (b && (b.state !== 'done' || confirm(`Снести «${b.def.name}»?`))) removeBuilding(b);
+    if (b) askDemolish(b, null, () => removeBuilding(b));
     return;
   }
   if (removeField(t[0], t[1])) return;                              // убрать поле

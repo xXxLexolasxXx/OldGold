@@ -52,8 +52,10 @@ const jp = J(`
   const x0 = N.x, y0 = N.y;
   const okj = ftLeap(N, f[0] + 0.5, f[1] + 0.5, {});
   const ph = {};
-  for (let i = 0; i < 40; i++) { step(0.05); if (N.jp) ph[N.jp.ph] = 1; }
-  return { okj, ph: Object.keys(ph), moved: Math.hypot(N.x - x0, N.y - y0), land: !N.jp };`);
+  // меряем первое приземление: вдали от воды жаболюд тут же прыгает обратно к пруду
+  let at = null;
+  for (let i = 0; i < 40 && !at; i++) { step(0.05); if (N.jp) ph[N.jp.ph] = 1; else if (ph.air) at = [N.x, N.y]; }
+  return { okj, ph: Object.keys(ph), moved: at ? Math.hypot(at[0] - x0, at[1] - y0) : 0, land: !!at };`);
 if (jp.skip) console.log('  · прыжок: пропуск');
 else { ok(jp.okj && jp.ph.includes('crouch') && jp.ph.includes('air'), 'нет фаз прыжка: ' + JSON.stringify(jp)); ok(jp.moved > 2 && jp.land, 'прыжок не долетел: ' + JSON.stringify(jp)); }
 

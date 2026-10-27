@@ -34,7 +34,14 @@ BUILDINGS.squadtavern = {
   name: 'Таверна отряда', cat: 'Основа', w: 4, h: 3, top: 90, cost: { timber: 8, stone: 6 }, wideDoor: true, auto: true,
   desc: 'Здесь собирают отряд для спуска в подземелья Малгора. Хозяин предложит забег, а ещё тут можно переодеться и выбрать напарника.',
 };
-// Таверну игрок не строит (решение владельца 23.10, КООП_ЗАБЕГ.md В8): она вырастает сама на окраине, см. «появление» ниже
+// Таверну игрок не строит (решение владельца 23.10, КООП_ЗАБЕГ.md В8): она вырастает сама на окраине, см. «появление» ниже.
+// Но если её снесли — больше не возвращается, а появляется в меню «Основа» как обычная постройка.
+// Отметка «снесли» — ключ sqtGone в Game.unlocked: так она сама попадает в сейв и рассылается в коопе
+// сообщением unlock. В UNLOCKS её нет, поэтому «открыть всё» (сюжет, старые сейвы) её не ставит.
+function sqtGone() { return !!(Game.unlocked && Game.unlocked.sqtGone); }
+BUILD_ORDER.push('squadtavern');
+Object.defineProperty(BUILDINGS.squadtavern, 'noMenu', { get: () => !sqtGone() });
+if (typeof UNLOCK_NAMES !== 'undefined') UNLOCK_NAMES.sqtGone = 'Таверна отряда';
 Object.assign(SIGN_OF, { squadtavern: 'swords' });
 DWARF_TYPES.add('squadtavern');
 Object.assign(MODELS, {
@@ -95,6 +102,7 @@ function squadTavernSpot() {
   return null;
 }
 function squadTavernAppear() {
+  if (sqtGone()) return null;   // снесённую не возвращаем: игрок строит её сам
   if (Game.buildings.some(b => b.type === 'squadtavern' && !b.removed)) return null;
   if (!squadTavernOpen()) return null;
   const sp = squadTavernSpot();
@@ -103,6 +111,17 @@ function squadTavernAppear() {
   const msg = 'На окраине деревни открылась Таверна отряда ⚔ — отсюда спускаются в подземелья Малгора';
   try { if (typeof gnews === 'function') gnews(msg, b); else toast(msg, b); } catch (e) { /* без тоста */ }
   return b;
+}
+{
+  const _rb = removeBuilding;
+  removeBuilding = function (b) {
+    const was = b && !b.removed && b.type === 'squadtavern';
+    _rb(b);
+    if (was && Game.unlocked && !sqtGone()) {
+      unlockStage('sqtGone', true);
+      try { toast('Таверну отряда можно построить заново: меню «Основа»'); } catch (e) { /* без тоста */ }
+    }
+  };
 }
 {
   const _step = step;
