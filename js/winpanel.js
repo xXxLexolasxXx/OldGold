@@ -188,7 +188,9 @@ function wpSync() {
   // поход
   const loading = b.contains('ui-loading');
   const was = WP.away;
-  WP.away = !loading && wpAwayNext(WP.away, wpHeroDist());
+  // во время обучения поход не включаем: его стрелки показывают на вкладки и кнопки деревни
+  const tut = typeof Tut !== 'undefined' && Tut.on;
+  WP.away = !loading && !tut && wpAwayNext(WP.away, wpHeroDist());
   if (!WP.away) WP.peek = false;
   const away = WP.away && !WP.peek;
   if (away && !was && wpMob() && typeof mobileSheet === 'function') mobileSheet(null);

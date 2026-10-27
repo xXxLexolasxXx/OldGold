@@ -29,6 +29,7 @@ check(/\['goal-hud', 'daily-hud', 'cp-vil', 'cp-qs'\]/.test(src), 'цели, з�
 check(/#tab-build\.wp-carded > :not\(#wp-card\)\s*\{\s*display:\s*none/.test(css), 'карточка заменяет список');
 check(/body\.wp-away:not\(\.mobile\) #panel > :not\(#logo\)/.test(css) && /body\.wp-away #ab-bar\s*\{[^}]*left:\s*50%/.test(css), 'поход: деревня скрыта, способности по центру');
 check(/data-wp="peek"/.test(src), 'в походе есть кнопка «⌂ Деревня»');
+check(/!loading && !tut && wpAwayNext/.test(src), 'во время обучения поход не включается');
 check(html.indexOf('js/winpanel.js') > html.indexOf('js/winmgr.js'), 'winpanel.js после winmgr.js');
 
 if (fails.length) { console.log('ПРОВАЛ:\n  ' + fails.join('\n  ')); process.exit(1); }
