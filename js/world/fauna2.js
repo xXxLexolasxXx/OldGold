@@ -270,7 +270,7 @@ function drawBadger(c, bd) {
   if (bd.state === 'away') return;
   const px = bd.x * TILE, py = bd.y * TILE + 4;
   if (bd.state === 'dig') f2draw(c, 'badgerD', BADGER_DIG, px, py, bd.face, 0);
-  else if (bd.moving) { const i = Math.floor(bd.ph * 3) % 6; f2draw(c, 'badgerW' + i, gaitRows(BADGER_A, 2, 6, i), px, py, bd.face, 0); }
+  else if (bd.moving) { const i = Math.floor(bd.ph * 6) % 12; f2draw(c, 'badgerW' + i, gaitRows(BADGER_A, 2, 12, i), px, py, bd.face, 0); }
   else f2draw(c, 'badgerA', BADGER_A, px, py, bd.face, 0);
   if (bd.carry) { c.fillStyle = F2_PAL.F; c.fillRect(Math.round(px) + bd.face * 8 - 2, Math.round(py) - 11, 5, 4); c.fillStyle = F2_PAL.M; c.fillRect(Math.round(px) + bd.face * 8 - 2, Math.round(py) - 11, 5, 1); }
 }
@@ -339,7 +339,7 @@ function squirrelsTick(dt) {
 function drawSquirrel(c, s) {
   if (s.state === 'hide') return;
   const px = s.x * TILE, py = s.y * TILE + 2;
-  if (s.moving) { const i = Math.floor(s.ph * 24) % 6; f2draw(c, 'sqW' + i, gaitRows(i < 3 ? SQ_RUN : SQ_RUN2, 1, 6, i), px, py, s.face, [0, 1, 2, 2, 1, 0][i]); }   // скачет: 6 кадров, дуга прыжка
+  if (s.moving) { const i = Math.floor(s.ph * 48) % 12; f2draw(c, 'sqW' + i, gaitRows(i < 6 ? SQ_RUN : SQ_RUN2, 1, 12, i), px, py, s.face, Math.round(Math.sin((i + 0.5) / 12 * Math.PI) * 2)); }   // скачет: 6 кадров, дуга прыжка
   else f2draw(c, 'sqS', SQ_SIT, px, py, s.face, 0);
 }
 

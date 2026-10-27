@@ -188,8 +188,8 @@ function crowFlySprite(frame) {
     }
   };
   const quad = (p, q, r, t, col) => { tri(...p, ...q, ...r, col); tri(...p, ...r, ...t, col); };
-  const W6 = flapPose([[7, 8], [15, 8], [14, 1], [4, 2]], [[6, 8], [15, 8], [15, 6], [2, 6]], [[7, 8], [15, 8], [13, 14], [4, 13]], frame, 8);
-  const H6 = flapPose([8, 7, 13, 7, 8, 3], [8, 7, 13, 7, 6, 7], [8, 9, 13, 9, 8, 12], frame, 8);
+  const W6 = flapPose([[7, 8], [15, 8], [14, 1], [4, 2]], [[6, 8], [15, 8], [15, 6], [2, 6]], [[7, 8], [15, 8], [13, 14], [4, 13]], frame, 12);
+  const H6 = flapPose([8, 7, 13, 7, 8, 3], [8, 7, 13, 7, 6, 7], [8, 9, 13, 9, 8, 12], frame, 12);
   quad(...W6, FA_PAL.k); tri(...H6, FA_PAL.h);       // крыло: вверх → ровно → вниз, 8 кадров
   return cv;
 }
@@ -197,7 +197,7 @@ const FA_CACHE = {};
 function crowSprite(kind) {
   if (FA_CACHE[kind]) return FA_CACHE[kind];
   let cv;
-  if (kind[0] === 'w') cv = faSprite(gaitRows([...CROW_STAND, ...CROW_LEGS[0]], 2, 6, +kind.slice(1)));   // шаг по земле: 6 кадров
+  if (kind[0] === 'w') cv = faSprite(gaitRows([...CROW_STAND, ...CROW_LEGS[0]], 2, 12, +kind.slice(1)));   // шаг по земле: 12 кадров
   else if (kind.startsWith('s')) {                 // s0..s2 — стоя, ноги в разных позах
     const legs = CROW_LEGS[+kind[1]];
     cv = faSprite([...CROW_STAND, ...legs]);
@@ -347,8 +347,8 @@ function drawCrow(c, cr) {
   c.fillStyle = 'rgba(10,8,4,' + (air ? 0.16 : 0.3) + ')';
   c.beginPath(); c.ellipse(px, py, air ? 6 : 6.5, 2, 0, 0, 7); c.fill();
   let spr;
-  if (air) spr = crowSprite('f' + (Math.floor(cr.ph * 18) & 7));
-  else spr = (cr.walking ? crowSprite('w' + (Math.floor(cr.ph * 10.5) % 6)) : crowSprite('s0'));
+  if (air) spr = crowSprite('f' + (Math.floor(cr.ph * 27) % 12));
+  else spr = (cr.walking ? crowSprite('w' + (Math.floor(cr.ph * 21) % 12)) : crowSprite('s0'));
   const w = spr.width, h = spr.height;
   const lift = air ? cr.z : (cr.peck > 0 && (Math.floor(cr.ph * 6) & 1) ? -1 : 0);
   const y0 = air ? py - cr.z - h * 0.62 : py - h + 1;

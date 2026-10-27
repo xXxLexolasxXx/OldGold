@@ -284,10 +284,10 @@ function drawCartRig(c, f, load, n) {
   line(c, -1.6, 10, 6, 12, '#3a2414', 0.4);
 }
 
-// Кадров ходьбы: мелкая живность 6, крупные звери и упряжка 8 (стандарт кадров, КАДРЫ.md)
-const CR_FRAMES = { rabbit: 6, chicken: 6, duck: 6, goose: 6 };
-let CR_N = 8;
-const crFrames = kind => CR_FRAMES[kind] || 8;
+// Кадров ходьбы: 12 у всех (стандарт кадров, КАДРЫ.md)
+const CR_FRAMES = {};
+let CR_N = 12;
+const crFrames = kind => CR_FRAMES[kind] || 12;
 
 function creatureSprite(kind, f, load, n = 1, view = 'E') {
   const key = kind + '|' + f + '|' + (load || '') + '|' + n + '|' + view;
