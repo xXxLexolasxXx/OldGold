@@ -1042,13 +1042,18 @@ function fzPxKit(W, H, OX, OY) {
       for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], n = pts.length - 1; K.L(a[0], a[1], b[0], b[1], a[2], b[2], (t, e, s) => f((i - 1 + t) / n, e, s), sol); }
     },
     // обводка по маске твёрдых пикселей, цветная (не чёрная)
-    outline(col, a = 0.92) {
-      for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-        const i = y * W + x;
-        if (SOL[i] || !(SOL[i - 1] || SOL[i + 1] || SOL[i - W] || SOL[i + W])) continue;
-        const j = i * 4, da = D[j + 3] / 255, oa = a + da * (1 - a);
-        for (let k = 0; k < 3; k++) D[j + k] = Math.round((col[k] * a + D[j + k] * da * (1 - a)) / oa);
-        D[j + 3] = Math.round(oa * 255);
+    outline(col, a = 0.92, n = 1) {                                                       // n — толщина контура в пикселях сетки
+      for (let pass = 0; pass < n; pass++) {
+        const ring = [];
+        for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+          const i = y * W + x;
+          if (SOL[i] || !(SOL[i - 1] || SOL[i + 1] || SOL[i - W] || SOL[i + W])) continue;
+          const j = i * 4, da = D[j + 3] / 255, oa = a + da * (1 - a);
+          for (let k = 0; k < 3; k++) D[j + k] = Math.round((col[k] * a + D[j + k] * da * (1 - a)) / oa);
+          D[j + 3] = Math.round(oa * 255);
+          ring.push(i);
+        }
+        for (const i of ring) SOL[i] = 1;
       }
     },
     done() { c.putImageData(img, 0, 0); return cv; },

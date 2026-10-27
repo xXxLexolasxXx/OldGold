@@ -319,7 +319,7 @@ function pbTroll(K, P, kind) {
   const farA = armG(26, -170, 1.45 - a * 0.2, 50, 46, false);                                  // дальняя — за туловищем, свободно висит
   const hx = 62 + (a > 0.5 ? 8 : 0), hy = -176 + (P.hurt > 0.5 ? 5 : 0);
   // ---- дальние нога и рука: отдельная, более тёмная «глина» за телом
-  const INK0 = kind === 'trollS' ? [24, 22, 20] : [14, 22, 12];
+  const INK0 = [0, 0, 0];
   pbBlob(K, armPrims(farA).map(p => (p.e ? { e: [p.e[0], p.e[1], p.e[2] + 3.4, p.e[3] + 3.4] } : { c: p.c.map(([x, y, r]) => [x, y, r + 3.4]) })), [INK0], { amb: 0.5, k: 4 });   // тёмная обводка дальней руки
   pbBlob(K, [...legPrims(farL), ...armPrims(farA)], SKD, { amb: 0.36, k: 6, tex: texSkin });
   toes(farL, SKD);
@@ -349,7 +349,7 @@ function pbTroll(K, P, kind) {
   if (kind === 'trollB') for (const [x, y] of [[-30, -150], [20, -170], [-50, -130]]) K.path([[x, y, 2.2], [x + 2, y + 8, 1.6], [x, y + 14, 1]], () => T.slime[1]);
   // ---- оружие в ближней руке: рисуется ДО руки — рукоять уходит в кулак, пальцы ложатся поверх
   const whx = nearA.hx + Math.cos(nearA.a2) * 6, why = nearA.hy + Math.sin(nearA.a2) * 6, wa = nearA.a2, bx = Math.cos(wa - 1.1), by = Math.sin(wa - 1.1);
-  const INK = kind === 'trollS' ? [24, 22, 20] : [14, 22, 12];
+  const INK = [0, 0, 0];
   if (T.wpn === 'club') {
     const tx = whx + bx * 110, ty = why + by * 110;
     pbLimb(K, whx - bx * 18, why - by * 18, tx, ty, 6, 16, WO, { tex: (t) => (((t * 30) % 1) < 0.12 ? -0.2 : 0) });
@@ -392,7 +392,7 @@ function pbTroll(K, P, kind) {
   else K.path([[hx + 4, hy + 21, 1], [hx + 30, hy + 19, 1]], () => SK[0]);
   for (const t of [8, 26]) K.path([[hx + t, hy + 26, 3], [hx + t + 2, hy + 12, 1]], (tt) => T.NA[tt > 0.5 ? 1 : 0]);
   if (a > 0.5) for (let i = 0; i < 18; i++) { const t = i / 17, an = -1.4 + t * 1.9; K.P(40 + Math.cos(an) * 150, -100 + Math.sin(an) * 110, [236, 232, 214], 0.65 - t * 0.3, false); }
-  K.outline(kind === 'trollS' ? [30, 28, 26] : [18, 26, 14]);
+  K.outline([0, 0, 0], 1, 5);
 }
 // тролли ещё в работе (позы рук на замахе) — до одобрения владельцем в игре остаются векторными
 const PB_TROLLS_READY = true;
@@ -1324,7 +1324,7 @@ function fzShroomPx(mode, p) {
     }, false);
   }
   if (!die || p < 4) spore(true);
-  K.outline(OUT);
+  K.outline([0, 0, 0], 1, 2);
   const cv = K.done();
   const flash = hurt || (die && p === 0) ? 0.38 : 0, fade = die ? [0, 0, 0, 0, 0.45, 0.82][p] : 0;
   if (flash || fade) {                                                                     // вспышка удара; рассыпание пикселями (Байер)
