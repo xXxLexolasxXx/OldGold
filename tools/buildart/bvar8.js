@@ -15,18 +15,30 @@ const P3 = {
 };
 
 function paveSand(g, x0, x1, y0, y1) {
+  // мелкая плитка неправильной формы (4–5 px), швы с травинками, край рвётся в траву
+  const W = (x1 - x0) * BK, H = (y1 - y0) * BK;
   const pave = (u, v) => {
-    const row = Math.floor(v / 4), st = (row * 3) % 7, uu = (((u + st) % 7) + 7) % 7, vv = ((v % 4) + 4) % 4, id = Math.floor((u + st) / 7);
-    if (uu === 0 || vv === 0) return P3.sand[3];
-    const h = bhash(id, row, 501);
-    let i = h < 0.3 ? 0 : h < 0.85 ? 1 : 2;
-    if (vv === 1 && uu < 6 && i > 0) i -= 1;
-    return bhash(u, v, 502) < 0.04 ? P1.grass[1] : P3.sand[i];
+    const edge = Math.min(u, W - u, v, H - v);
+    if (edge < 2.5 && bhash(Math.floor(u / 2), Math.floor(v / 2), 504) < 0.55 - edge * 0.18) return null;   // рваный край
+    const row = Math.floor(v / 3), st = Math.floor(bhash(row, 0, 505) * 5), cw = 4 + Math.floor(bhash(Math.floor((u + st) / 5), row, 506) * 2);
+    const uu = (((u + st) % cw) + cw) % cw, vv = ((v % 3) + 3) % 3, id = Math.floor((u + st) / cw);
+    if (uu === 0 || vv === 0) return bhash(u, v, 507) < 0.12 ? P1.grass[2] : P3.sand[3];
+    const h = bhash(id, row, 508);
+    let i = h < 0.25 ? 0 : h < 0.8 ? 1 : 2;
+    if (vv === 1 && i > 0 && uu < cw - 1) i -= 1;                  // светлая верхняя кромка плитки
+    if (uu === cw - 1) i = Math.min(3, i + 1);                    // тень справа
+    return P3.sand[i];
   };
-  box(g, { x0, x1, y0, y1, h: 0.4, mat: m1Flat(P3.sand[3]), top: pave });
+  box(g, { x0, x1, y0, y1, h: 0.4, mat: () => null, top: pave });
 }
 function groundYard(g, x0, x1, y0, y1) {
-  box(g, { x0, x1, y0, y1, h: 0.2, mat: m1Flat(P1.dark[1]), top: (u, v) => { const h = bhash(u, v, 503); return h < 0.07 ? P1.grass[2] : h < 0.12 ? P1.grass[1] : h < 0.55 ? bhex('#8c7656') : bhex('#9e8864'); } });
+  // утоптанная земля: крупные мягкие пятна трёх тонов, редкие травинки и камешки
+  box(g, { x0, x1, y0, y1, h: 0.2, mat: () => null, top: (u, v) => {
+    const big = bhash(Math.floor(u / 9), Math.floor(v / 6), 509), h = bhash(u, v, 503);
+    if (h < 0.025) return P1.grass[1]; if (h < 0.035) return P1.stone[1];
+    const t = big + (bdith(u, v) - 0.5) * 0.25;
+    return t < 0.35 ? bhex('#8e7a5a') : t < 0.8 ? bhex('#9a8664') : bhex('#a69270');
+  } });
 }
 
 const Q3 = {
@@ -59,50 +71,61 @@ function runeGate(g, side, at, a, w, h) {
 function buildStore(g, lv, roofs) {
   const meta = g.meta = { piles: {}, wins: [] };
   const WIN = (side, at, a, z, w, h, o = {}) => { elem(g, side, at, a, z, w, h, m1Window(Object.assign({ w, h }, o))); meta.wins.push({ side, at, a, z, w, h }); };
-  // ---- главное здание: небольшое, каменный низ, тёмный дубовый фахверк, крутая провисшая крыша
-  const Lo = { x0: 54, x1: 102, y0: 58, y1: 92, h: 16 }, Up = { x0: 52, x1: 104, y0: 56, y1: 92, z0: 16, h: 12 };
+  // ---- главное здание: в левом краю участка
+  const Lo = { x0: 2, x1: 48, y0: 58, y1: 92, h: 16 }, Up = { x0: 0, x1: 50, y0: 56, y1: 92, z0: 16, h: 12 };
   box(g, Object.assign({ mat: m1Stone(P1.stoneW) }, Lo));
-  beam1(g, 52, 104, 56, 58, 15, 1, P3.oak);
+  beam1(g, 0, 50, 56, 58, 15, 1, P3.oak);
   box(g, Object.assign({ mat: m1Plaster(P1.plaster, { frame: true, bay: 13, braceOdd: true, beam: P3.oak }) }, Up));
   const Z = roofSag(g, Up, { axis: 'Y', rise: 30, sag: 3, flare: 4, ov: 3, ovg: 5, mat: m1Ivy(roofs.main, [{ u: 20, v: 18, rx: 8, ry: 6 }]), cut: roofs.cut, th: roofs.th || 3, gable: m1Plaster(P1.plaster, { frame: true, bay: 11, brace: false, beam: P3.oak }) });
-  // двое ворот: привоз и вывоз, со светящимися рунами
-  gate1(g, 'S', Lo.y0, 57, 15, 14, true); gate1(g, 'S', Lo.y0, 74, 15, 14, true);
-  runeGate(g, 'S', Lo.y0, 57, 15, 14); runeGate(g, 'S', Lo.y0, 74, 15, 14);
-  meta.gates = [[64.5, Lo.y0, 0], [81.5, Lo.y0, 0]];
-  WIN('S', Up.y0, 72, 18, 8, 8, { arch: true, G: P3.crystal });
-  elem(g, 'S', Up.y0 - 0.3, 58, 18, 10, 8, m1Door({ w: 10, h: 8, col: P3.oak }));                 // чердачная дверца
-  beam1(g, 61, 65, 48, 56, 30, 1.5, P3.oak); g.sprite([63, 50, 18], P => { PR.rect(P, 0, -10, 0, 0, BP.rope[1]); Q1.sack((x, y, c) => P(x, y + 2, c), 6, 7); });
+  gate1(g, 'S', Lo.y0, 5, 15, 14, true); gate1(g, 'S', Lo.y0, 29, 15, 14, true);
+  runeGate(g, 'S', Lo.y0, 5, 15, 14); runeGate(g, 'S', Lo.y0, 29, 15, 14);
+  meta.gates = [[12.5, Lo.y0, 0], [36.5, Lo.y0, 0]];
+  WIN('S', Up.y0, 21, 18, 8, 8, { arch: true, G: P3.crystal });
+  elem(g, 'S', Up.y0 - 0.3, 7, 18, 9, 8, m1Door({ w: 9, h: 8, col: P3.oak }));
+  beam1(g, 9, 13, 48, 56, 30, 1.5, P3.oak); g.sprite([11, 50, 18], P => { PR.rect(P, 0, -10, 0, 0, BP.rope[1]); Q1.sack((x, y, c) => P(x, y + 2, c), 6, 7); });
   WIN('E', Lo.x1, 66, 5, 7, 7, { G: P3.crystal, round: true }); WIN('E', Lo.x1, 80, 5, 7, 7, { G: P3.crystal, round: true });
-  g.sprite([78, 74, Z.zr(0.5) + 0.5], P => Q3.owl(P));
-  chimneyCrooked(g, 92, 80, Up.z0 + Up.h + 6, 16, { stone: true, w: 5, d: 5, lean: 2 });
-  g.sprite([56, 55.5, 26], P => Q3.herbs(P, 3), -0.5); g.sprite([98, 55.5, 26], P => Q3.herbs(P, 3), -0.5);
-  // ---- длинная пристройка слева спереди: бревенчатая стена с запада, навес открыт на восток, груз — вдоль неё
-  const W = { x0: 4, x1: 22, y0: 10, y1: 80 };
-  wallW(g, W.x0, W.y0, W.y1, 0, 14, m1Logs(P1.log)); wallN(g, W.x0, W.x1, W.y1, 0, 14, m1Logs(P1.log));
-  for (const y of [12, 34, 56, 78]) post1(g, W.x1 - 2, y, 0, 13, 2, P3.oak);
-  roof(g, { x0: W.x0, x1: W.x1, y0: W.y0, y1: W.y1, h: 13 }, { type: 'lean', down: 'E', rise: 6, ov: 2, mat: roofs.wing, cut: roofs.cutW, th: 3 });
-  g.sprite([22, 9, 10], P => Q3.herbs(P, 2), -0.5);
-  // ---- навес справа сзади: только крыша над задней полосой, брёвна спереди на виду
-  for (const [x, y] of [[108, 72], [124, 72], [108, 90], [124, 90]]) post1(g, x, y, 0, 15, 2, P3.oak);
-  roof(g, { x0: 106, x1: 126, y0: 72, y1: 92, h: 15 }, { type: 'lean', down: 'S', rise: 6, ov: 2, mat: roofs.wing, cut: roofs.cutW, th: 3 });
-  g.sprite([116, 84, 0], P => Q2.barrels(P));
-  // ---- площадка и дорожки
-  groundYard(g, 24, 126, 4, 56);
-  paveSand(g, 74, 88, 0, 58); paveSand(g, 58, 74, 44, 58); paveSand(g, 22, 58, 36, 44);
-  // кучи груза: вдоль длинной пристройки и у навеса (в игре растут и убывают по запасам)
-  g.sprite([32, 72, 0], P => Q2.planks(P, 6, 20)); meta.piles.timber = [32, 72, 0];
-  g.sprite([32, 54, 0], P => Q2.sacks(P, 6)); meta.piles.food = [32, 54, 0];
-  g.sprite([32, 26, 0], P => Q2.crates(P)); meta.piles.goods = [32, 26, 0];
-  g.sprite([116, 62, 0], P => Q2.logStack(P, 4, 5)); meta.piles.trunk = [116, 62, 0];
-  g.sprite([110, 34, 0], P => Q2.stones(P, 11)); meta.piles.stone = [110, 34, 0];
-  meta.drop = [[40, 40, 0], [100, 50, 0], [96, 30, 0]];   // где носильщики ставят ношу
-  // ---- волшебство: рунные камни у въезда, кристальные фонари, грибы, огоньки, знамя
-  g.sprite([70, 4, 0], P => Q3.runeStone(P, 16)); g.sprite([92, 4, 0], P => Q3.runeStone(P, 14));
-  g.sprite([52, 46, 0], P => Q3.crystalLamp(P, 18)); g.sprite([96, 46, 0], P => Q3.crystalLamp(P, 18));
-  g.sprite([26, 82, 0], P => Q3.shroomPatch(P)); g.sprite([104, 56, 0], P => Q3.shroomPatch(P)); g.sprite([8, 6, 0], P => Q3.shroomPatch(P));
-  g.sprite([60, 30, 14], P => Q3.wisp(P), -2); g.sprite([46, 22, 20], P => Q3.wisp(P), -2);
-  g.sprite([104, 12, 0], P => Q3.banner(P));
-  meta.glow = [[52, 46, 22], [96, 46, 22], [70, 4, 10], [92, 4, 9]];   // кристаллы и руны мерцают (игра)
+  g.sprite([25, 74, Z.zr(0.5) + 0.5], P => Q3.owl(P));
+  chimneyCrooked(g, 40, 80, Up.z0 + Up.h + 6, 16, { stone: true, w: 5, d: 5, lean: 2 });
+  g.sprite([4, 55.5, 26], P => Q3.herbs(P, 2), -0.5); g.sprite([46, 55.5, 26], P => Q3.herbs(P, 2), -0.5);
+  // ---- длинная пристройка слева спереди (до дома): бревенчатая стена с запада, открыта во двор
+  const W = { x0: 2, x1: 18, y0: 6, y1: 48 };
+  wallW(g, W.x0, W.y0, W.y1, 0, 13, m1Logs(P1.log)); wallN(g, W.x0, W.x1, W.y1, 0, 13, m1Logs(P1.log));
+  for (const y of [8, 27, 46]) post1(g, W.x1 - 2, y, 0, 12, 2, P3.oak);
+  roof(g, { x0: W.x0, x1: W.x1, y0: W.y0, y1: W.y1, h: 12 }, { type: 'lean', down: 'E', rise: 6, ov: 2, mat: roofs.wing, cut: roofs.cutW, th: 3 });
+  g.sprite([18, 5, 10], P => Q3.herbs(P, 2), -0.5);
+  g.sprite([26, 40, 0], P => Q2.planks(P, 6, 18)); meta.piles.timber = [26, 40, 0];
+  g.sprite([26, 24, 0], P => Q2.sacks(P, 6)); meta.piles.food = [26, 24, 0];
+  g.sprite([24, 10, 0], P => Q2.crates(P)); meta.piles.goods = [24, 10, 0];
+  // ---- правая пристройка: бревенчатый амбар сзади + навес на столбах с подкосами спереди
+  const A = { x0: 58, x1: 126, y0: 80, y1: 92, h: 14 };
+  box(g, Object.assign({ mat: m1Logs(P1.log) }, A));
+  roof(g, { x0: 58, x1: 126, y0: 72, y1: 92, h: 18 }, { type: 'lean', down: 'S', rise: 8, ov: 2, mat: roofs.wing, cut: roofs.cutW, th: 3 });
+  for (const x of [58, 80, 102, 124]) post1(g, x, 72, 0, 17, 2.5, P3.oak);
+  beam1(g, 57, 127, 72, 74.5, 16, 1.6, P3.oak);
+  for (const x of [58, 80, 102]) g.sprite([x + 2.5, 72.5, 15], P => { PR.line(P, 0, 0, 5, -3, P3.oak[1]); PR.line(P, 0, 1, 5, -2, P3.oak[2]); }, -0.3);   // подкосы
+  for (const x of [80, 102, 124]) g.sprite([x, 72.5, 15], P => { PR.line(P, 0, 0, -5, -3, P3.oak[1]); PR.line(P, 0, 1, -5, -2, P3.oak[2]); }, -0.3);
+  elem(g, 'S', A.y0, 66, 2, 12, 11, m1Door({ w: 12, h: 11, double: true, col: P3.oak }));
+  elem(g, 'S', A.y0, 108, 5, 8, 6, m1Window({ w: 8, h: 6, G: P3.crystal }));
+  // ложементы перед навесом: два бруса на столбиках, на них брёвна — видно, сколько леса
+  for (const x of [84, 108]) { post1(g, x, 58, 0, 5, 1.5, P3.oak); post1(g, x, 68, 0, 5, 1.5, P3.oak); beam1(g, x - 0.5, x + 2, 58, 69.5, 5, 1.2, P3.oak); }
+  g.sprite([96, 64, 5], P => Q2.logStack(P, 4, 7)); meta.piles.trunk = [96, 64, 5];
+  g.sprite([68, 66, 0], P => Q2.barrels(P)); g.sprite([120, 64, 0], P => Q2.crates(P));
+  g.sprite([70, 79, 0], P => Q2.barrels(P, 2)); g.sprite([114, 79, 0], P => Q2.sacks(P, 3));
+  // инструменты на стене амбара: топор, пила, мотыга
+  g.sprite([82, A.y0 - 0.2, 10], P => { PR.line(P, 0, 0, 0, -8, P1.plank[1]); PR.rect(P, -2, -9, 1, -7, P1.iron[1]); PR.rect(P, 5, -8, 15, -7, P1.iron[1]); for (let x = 6; x <= 15; x += 2) P(x, -6, P1.iron[2]); PR.rect(P, 15, -9, 16, -6, P1.plank[2]); PR.line(P, 20, 0, 20, -9, P1.plank[1]); PR.rect(P, 18, -10, 22, -10, P1.iron[1]); }, -0.5);
+  g.sprite([92, 72, 14], P => Q1.lantern(P), -0.5); g.sprite([114, 72, 14], P => Q1.lantern(P), -0.5);
+  // ---- двор и дорожки: от въезда (x 80) к обоим воротам и к навесу
+  groundYard(g, 20, 126, 4, 60);
+  paveSand(g, 73, 87, 0, 50); paveSand(g, 6, 87, 44, 56); paveSand(g, 87, 98, 46, 56);
+  g.sprite([110, 30, 0], P => Q2.stones(P, 12)); meta.piles.stone = [110, 30, 0];
+  meta.drop = [[40, 30, 0], [96, 50, 0], [100, 30, 0]];
+  // ---- волшебство
+  g.sprite([70, 3, 0], P => Q3.runeStone(P, 16)); g.sprite([91, 3, 0], P => Q3.runeStone(P, 14));
+  g.sprite([4, 52, 0], P => Q3.crystalLamp(P, 18)); g.sprite([52, 52, 0], P => Q3.crystalLamp(P, 18));
+  g.sprite([54, 86, 0], P => Q3.shroomPatch(P)); g.sprite([126, 52, 0], P => Q3.shroomPatch(P)); g.sprite([62, 8, 0], P => Q3.shroomPatch(P));
+  g.sprite([56, 30, 14], P => Q3.wisp(P), -2); g.sprite([44, 18, 20], P => Q3.wisp(P), -2); g.sprite([118, 46, 18], P => Q3.wisp(P), -2);
+  g.sprite([120, 12, 0], P => Q3.banner(P));
+  meta.glow = [[4, 52, 22], [52, 52, 22], [70, 3, 10], [91, 3, 9]];
 }
 
 const ROOF_ST = {
@@ -114,4 +137,5 @@ BDEFS.store2 = { w: 4, h: 3, top: 70, vars: [
   { name: 'Склад: дом + длинная пристройка + навес, волшебный (уровень 1, камыш)', make: g => buildStore(g, 1, ROOF_ST[1]()) },
   { name: 'Уровень 2 — дранка', make: g => buildStore(g, 2, ROOF_ST[2]()) },
   { name: 'Уровень 3 — сланцевая черепица', make: g => buildStore(g, 3, ROOF_ST[3]()) },
+  { name: 'Вариант: сланец на всех крышах (уровень 1)', make: g => buildStore(g, 1, { main: m1Tile2(P1.slate), wing: m1Tile2(P1.slate), cut: m1FasciaDark, cutW: m1FasciaDark }) },
 ], title: 'Склад (сводный, ×1)', bk: 1, ink: P1.ink };
