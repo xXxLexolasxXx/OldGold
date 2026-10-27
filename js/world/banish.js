@@ -83,7 +83,7 @@ function* bnBansheeGen(u, c) {
       const bx = t[0] + 0.5, by = t[1] + 0.5;
       if (shared && typeof hlGhostAt === 'function') {
         const gh = hlGhostAt(t);
-        if (gh) return { kind: 'exorcise', g: gh, tx: Math.floor(gh.x), ty: Math.floor(gh.y), label: 'Прогнать призрака' };
+        if (gh) return { kind: 'exorcise', g: gh, tx: Math.floor(gh.x), ty: Math.floor(gh.y), label: gh.kind === 'banshee' ? 'Прогнать банши' : 'Прогнать призрака' };
       }
       // банши рисуется выше своей точки — ловим и клик по её силуэту (клеткой выше)
       const b = bnBansheeAt(bx, by, 1.4) || bnBansheeAt(bx, by + 1, 1.2);

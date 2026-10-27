@@ -475,7 +475,7 @@ function fzOmen(F, x, y, why, u) {
 function fzBansheeTick(F, act, dt) {
   const gy = graveyardOf();
   // постоянная плакальщица у кладбища
-  if (act && gy && !F.ban.some(b => !b.omen)) F.ban.push(fzMakeBanshee(gy.x + 1 + Math.random() * (gy.w - 2), gy.y + 0.5 + Math.random() * (gy.h - 1), false));
+  // постоянная плакальщица у кладбища теперь призрак-банши (ghosts.js, kind 'banshee'): здесь остались только вестницы беды
   if (act) {
     F.banScan = (F.banScan || 0) - dt;
     if (F.banScan <= 0) {
