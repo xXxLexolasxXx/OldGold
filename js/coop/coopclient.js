@@ -281,6 +281,7 @@ function coopApplyBuilding(d, byId) {
   if (d.upg && b.upg) { Object.assign(b.upg.used, d.upg.used); Object.assign(b.upg.stock, d.upg.stock); b.upg.usedN = d.upg.usedN; b.upg.hits = d.upg.hits; }
   b.working = !!d.wk; b.cold = !!d.cd; if (d.an) b.anim = d.an;
   b.wid = d.wr || 0;
+  b.wxs = d.wx || null;
   b.hireReq = d.hireReq ? 1 : 0;
 }
 
@@ -293,6 +294,7 @@ function coopLinkWorkers() {
     const u = b.wid ? Game.unitMap.get(b.wid) : null;
     b.worker = u || null;
     if (u) want.set(u, b);
+    if (b.wxs) for (const id of b.wxs) { const x = Game.unitMap.get(id); if (x) want.set(x, b); }   // второй работник (ур.3)
   }
   for (const u of Game.units) { const b = want.get(u); if (b) u.home = b; else if (u.home && u.home.wid !== undefined) u.home = null; }
 }

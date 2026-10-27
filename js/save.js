@@ -195,7 +195,7 @@ function applySave(s) {
     u.homePen = d.homePen || 0; u.homeStable = d.homeStable || 0; u.xp = d.xp || 0;   // старые сохранения: выслуги нет
     if (d.smoker !== undefined) u.smoker = d.smoker;
     const home = byId.get(d.home);
-    if (home) { u.home = home; home.worker = u; }
+    if (home) { u.home = home; if (!(home.worker && home.worker.home === home)) home.worker = u; }   // второй работник (ур.3) первого не вытесняет
     if (d.h) { u.hero = d.h; if (u.type === 'hero') { Game.hero = u; u.smoker = false; } }
     Game.units.push(u);
     Game.unitMap.set(u.id, u);

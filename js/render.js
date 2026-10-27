@@ -439,8 +439,8 @@ function pigSpriteHR(stage, f) {
   const key = stage + '_' + f;
   if (PIG_CACHE[key]) return PIG_CACHE[key];
   const s = [0.55, 0.75, 1][stage - 1];
-  const [cv, c] = mkSprite(24, 16, 3);
-  c.translate(12, 13); c.scale(s, s);
+  const paint = c => {
+  c.scale(s, s);
   const body = '#eaa8a8', dark = '#c07878';
   const leg = f ? 1 : -1;
   for (const [lx, d] of [[-5, leg], [-2, -leg], [3, leg], [6, -leg]]) { c.fillStyle = dark; c.fillRect(lx + d * 0.5, -2, 1.6, 3); c.fillStyle = '#5a3030'; c.fillRect(lx + d * 0.5, 0.6, 1.6, 0.7); }
@@ -453,6 +453,10 @@ function pigSpriteHR(stage, f) {
   c.fillStyle = dark; c.beginPath(); c.moveTo(6, -8.6); c.lineTo(7.6, -11); c.lineTo(8.6, -8.4); c.fill();
   c.strokeStyle = dark; c.lineWidth = 0.6; c.beginPath(); c.moveTo(-8.4, -6); c.quadraticCurveTo(-10.5, -8, -9, -9); c.stroke();
   c.fillStyle = 'rgba(110,70,40,0.35)'; c.beginPath(); c.ellipse(-2, -2.4, 4, 1.4, 0, 0, Math.PI * 2); c.fill();
+  };
+  let cv;
+  if (afFine()) cv = akPig(stage, f);                    // ручной пиксель-арт ×3 (animalpx.js)
+  else { const [c2, c] = mkSprite(24, 16, 3); c.translate(12, 13); paint(c); cv = c2; }
   PIG_CACHE[key] = cv;
   return cv;
 }
@@ -473,8 +477,8 @@ function drawPigs(c, b, spr, ox, oy) {
     const s = pigSpriteHR(stage, moving ? Math.floor(Game.time * 5 + k) & 1 : 0);
     c.fillStyle = 'rgba(10,8,4,0.3)';
     c.beginPath(); c.ellipse(x + 13, y + 13, 7 * [0.55, 0.75, 1][stage - 1], 2, 0, 0, 7); c.fill();
-    if (dir < 0) { c.save(); c.translate(x + 24, y); c.scale(-1, 1); c.drawImage(s, 0, 0, 24, 16); c.restore(); }
-    else c.drawImage(s, x, y, 24, 16);
+    if (dir < 0) { c.save(); c.translate(x + 24, y); c.scale(-1, 1); afBlit(c, s, 0, 0, 24, 16); c.restore(); }
+    else afBlit(c, s, x, y, 24, 16);
   });
 }
 

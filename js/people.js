@@ -1201,7 +1201,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
   const gait = opt.gait || '', gest = carry ? '' : (opt.gest || ''), gf = gest === 'five' ? (opt.gf || 0) : gestK(opt.gf || 0);
   const ph = pose === 'walk' ? frame / WALK_FRAMES * Math.PI * 2 : 0;
   const sw = Math.sin(ph);
-  const limp = injury === 'leg' && pose === 'walk';
+  const limp = injLeg(injury) && pose === 'walk';
   const bob = pose === 'walk' ? -Math.abs(Math.cos(ph)) * (limp ? 1.2 : gait === 'tired' ? 0.3 : 0.7) + 0.3 : 0;
   const courier = !!O.frame;
   const duck = pose === 'duck' || pose === 'tame';
@@ -1288,14 +1288,14 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       const [kx, ky, ax, ay] = legPts(l);
       const col = l.far ? shade(pants, -0.3) : pants;
       if (!O.robe) smoothLimb(c, [0, hipY], [kx, ky], [ax, ay - 0.8], 2.8, col);
-      if (injury === 'leg' && !l.far && !O.robe) bandage(c, kx, ky + 0.4, ax, ay - 1.4);
+      if (injLeg(injury) && !l.far && !O.robe) bandage(c, kx, ky + 0.4, ax, ay - 1.4);
       boot(c, ax, ay + 0.2, 1, l.far ? '#2e1c10' : '#5a3a20');
     };
     const tool = pose === 'work' ? (ANIM_TOOL[frame.anim] || 'hammer') : null;
     // замах: 0 — инструмент поднят над плечом, 3 — удар вперёд-вниз; дуга ~100°, без прокрутки
     const ang = tool ? (tool === 'toss' ? TOSS_A : tool === 'pat' ? PAT_A : tool === 'sickle' || tool === 'spade' ? SWING_SICKLE : SWING_A)[frame.f] : 0;
     const armA = pose === 'walk' ? -sw * 0.55 : duck ? -0.5 : 0;
-    const sling = injury === 'arm';
+    const sling = injArm(injury);
     // руки с оружием: кадр боя, а на ходу и стоя с выхваченным оружием — «стойка»
     const ff = fight || 'ready';
     let wA = null;
@@ -1483,7 +1483,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
       const x = side * 1.9, ay = -0.2 - lift[k];
       const kx = duck ? side * 3 : x * 1.04, ky = (hipY + ay) / 2;
       if (!O.robe) smoothLimb(c, [x, hipY + dip], [kx, ky], [x * 1.05, ay - 1], 2.9, side > 0 === front ? shade(pants, -0.25) : pants);
-      if (injury === 'leg' && k === 1 && !O.robe) bandage(c, x * 1.05, ky + 0.6, x * 1.05, ay - 1.6);
+      if (injLeg(injury) && k === 1 && !O.robe) bandage(c, x * 1.05, ky + 0.6, x * 1.05, ay - 1.6);
       boot(c, x * 1.05, ay + 0.2, 0, '#5a3a20');
     }
     c.save(); c.translate(0, dip);
@@ -1491,7 +1491,7 @@ function drawPerson(c, type, L, view, pose, frame, carry, injury, r, opt = {}) {
     const arm = (side) => {
       const sx = side * 4.2, col = (side > 0) === front ? shade(shirt, -0.25) : shirt;
       const sk = skin[(side > 0) === front ? 1 : 0];
-      if (injury === 'arm' && side > 0) {
+      if (injArm(injury) && side > 0) {
         smoothLimb(c, [sx, shY + 0.6], [side * 4.4, shY + 3], [side * 0.8, shY + 3.6], 2, col);
         if (front) poly(c, [[-3, shY + 0.6], [4, shY + 2.6], [0, shY + 5.4]], '#f4f0e6', 'rgba(120,110,100,0.6)', 0.3);
         return;

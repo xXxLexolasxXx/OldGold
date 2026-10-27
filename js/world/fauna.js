@@ -165,43 +165,47 @@ const CROW_LEGS = [
   ['.......l.l......', '......ll.ll.....'],
 ];
 // В полёте крылья собираются из пикселей: тело + голова + клюв и крыло, поднятое или опущенное
+// При мелком пикселе (animalart.js) те же формулы считаются на сетке втрое мельче: контур крыла и клюв ровнее
 function crowFlySprite(frame) {
-  const W = 22, H = 15, cv = mkCanvas(W, H), c = cv.getContext('2d');
-  const px = (x, y, col) => { c.fillStyle = col; c.fillRect(x | 0, y | 0, 1, 1); };
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {          // тело — вытянутый овал
-    const ex = (x - 10) / 5.6, ey = (y - 8) / 2.6;
-    if (ex * ex + ey * ey <= 1) px(x, y, ey > 0.3 ? FA_PAL.m : FA_PAL.k);
-  }
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {          // голова
-    const ex = (x - 16) / 2.5, ey = (y - 6.5) / 2.2;
-    if (ex * ex + ey * ey <= 1) px(x, y, FA_PAL.k);
-  }
-  px(17, 6, FA_PAL.e); px(18, 7, FA_PAL.b); px(19, 7, FA_PAL.b); px(20, 8, FA_PAL.B); px(18, 8, FA_PAL.B);
-  for (let x = 1; x < 6; x++) { px(x, 8, FA_PAL.k); if (x < 4) px(x, 9, FA_PAL.m); }     // хвост
-  // крыло: треугольник от плеча к концу
-  const tri = (ax, ay, bx, by, cx2, cy2, col) => {
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+  if (afFine()) return akCrowFly(frame);                 // ручной пиксель-арт ×3 (animalpx.js)
+  const W = 22, H = 15;
+  return afProc(W, H, (px, each) => {
+    each((x, y) => {                                                   // тело — вытянутый овал
+      const ex = (x - 10) / 5.6, ey = (y - 8) / 2.6;
+      return ex * ex + ey * ey <= 1 ? (ey > 0.3 ? FA_PAL.m : FA_PAL.k) : null;
+    });
+    each((x, y) => { const ex = (x - 16) / 2.5, ey = (y - 6.5) / 2.2; return ex * ex + ey * ey <= 1 ? FA_PAL.k : null; });   // голова
+    if (afFine()) {                                                    // клюв клином и глаз с бликом
+      each((x, y) => x >= 17.6 && x <= 20.6 && Math.abs(y - (7.3 + (x - 17.6) * 0.25)) <= 0.75 - (x - 17.6) * 0.2 ? (y > 7.4 + (x - 17.6) * 0.25 ? FA_PAL.B : FA_PAL.b) : null);
+      each((x, y) => Math.hypot(x - 16.9, y - 6) <= 0.62 ? (x < 16.9 && y < 6 ? '#ffffff' : FA_PAL.e) : null);
+    } else { px(17, 6, FA_PAL.e); px(18, 7, FA_PAL.b); px(19, 7, FA_PAL.b); px(20, 8, FA_PAL.B); px(18, 8, FA_PAL.B); }
+    each((x, y) => x > 0.5 && x < 6 && y > 7.5 && y < 10 - (x > 3.5 ? 1 : 0) ? (y > 8.5 ? FA_PAL.m : FA_PAL.k) : null);   // хвост
+    // крыло: треугольник от плеча к концу
+    const tri = (ax, ay, bx, by, cx2, cy2, col) => each((x, y) => {
       const d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by);
       const d2 = (x - cx2) * (by - cy2) - (bx - cx2) * (y - cy2);
       const d3 = (x - ax) * (cy2 - ay) - (cx2 - ax) * (y - ay);
-      if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) px(x, y, col);
+      return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0)) ? col : null;
+    });
+    const quad = (p, q, r, t, col) => { tri(...p, ...q, ...r, col); tri(...p, ...r, ...t, col); };
+    const W6 = flapPose([[7, 8], [15, 8], [14, 1], [4, 2]], [[6, 8], [15, 8], [15, 6], [2, 6]], [[7, 8], [15, 8], [13, 14], [4, 13]], frame, 12);
+    const H6 = flapPose([8, 7, 13, 7, 8, 3], [8, 7, 13, 7, 6, 7], [8, 9, 13, 9, 8, 12], frame, 12);
+    quad(...W6, FA_PAL.k); tri(...H6, FA_PAL.h);       // крыло: вверх → ровно → вниз, 12 кадров
+    if (afFine()) for (let k = 0; k < 3; k++) {          // маховые перья: светлые прожилки к кончику крыла
+      const [[ax, ay], [bx, by], [cx, cy], [dx, dy]] = W6, t = 0.3 + k * 0.22, sx = ax + (bx - ax) * t, sy = ay + (by - ay) * t, ex = dx + (cx - dx) * t, ey = dy + (cy - dy) * t;
+      each((x, y) => { const L = Math.hypot(ex - sx, ey - sy) || 1, u = ((x - sx) * (ex - sx) + (y - sy) * (ey - sy)) / (L * L); if (u < 0.35 || u > 0.92) return null; return Math.abs(((x - sx) * (ey - sy) - (y - sy) * (ex - sx)) / L) < 0.2 ? FA_PAL.h : null; });
     }
-  };
-  const quad = (p, q, r, t, col) => { tri(...p, ...q, ...r, col); tri(...p, ...r, ...t, col); };
-  const W6 = flapPose([[7, 8], [15, 8], [14, 1], [4, 2]], [[6, 8], [15, 8], [15, 6], [2, 6]], [[7, 8], [15, 8], [13, 14], [4, 13]], frame, 12);
-  const H6 = flapPose([8, 7, 13, 7, 8, 3], [8, 7, 13, 7, 6, 7], [8, 9, 13, 9, 8, 12], frame, 12);
-  quad(...W6, FA_PAL.k); tri(...H6, FA_PAL.h);       // крыло: вверх → ровно → вниз, 8 кадров
-  return cv;
+  }, { lit: 0.08 });
 }
 const FA_CACHE = {};
 function crowSprite(kind) {
   if (FA_CACHE[kind]) return FA_CACHE[kind];
   let cv;
-  if (kind[0] === 'w') cv = faSprite(gaitRows([...CROW_STAND, ...CROW_LEGS[0]], 2, 12, +kind.slice(1)));   // шаг по земле: 12 кадров
+  if (kind[0] === 'w') cv = afSprite(gaitRows([...CROW_STAND, ...CROW_LEGS[0]], 2, 12, +kind.slice(1)), FA_PAL, 'crow:' + kind);   // шаг по земле: 12 кадров
   else if (kind.startsWith('s')) {                 // s0..s2 — стоя, ноги в разных позах
     const legs = CROW_LEGS[+kind[1]];
-    cv = faSprite([...CROW_STAND, ...legs]);
-  } else cv = crowFlySprite(+kind[1]);        // f0..f2
+    cv = afSprite([...CROW_STAND, ...legs], FA_PAL, 'crow:' + kind);
+  } else cv = crowFlySprite(+kind.slice(1));   // f0..f11 — 12 кадров взмаха
   return FA_CACHE[kind] = cv;
 }
 
@@ -227,7 +231,7 @@ function frogFrame(f) {
 }
 function frogSprite(name) {
   const k = 'frog_' + name;
-  return FA_CACHE[k] || (FA_CACHE[k] = faSprite(FROG_FR[name], { ...FA_PAL, q: '#d8f090' }));
+  return FA_CACHE[k] || (FA_CACHE[k] = afSprite(FROG_FR[name], { ...FA_PAL, q: '#d8f090' }, 'frog:' + name));
 }
 
 // ---------- Вороны ----------
@@ -349,13 +353,13 @@ function drawCrow(c, cr) {
   let spr;
   if (air) spr = crowSprite('f' + (Math.floor(cr.ph * 27) % 12));
   else spr = (cr.walking ? crowSprite('w' + (Math.floor(cr.ph * 21) % 12)) : crowSprite('s0'));
-  const w = spr.width, h = spr.height;
+  const w = afW(spr), h = afH(spr);
   const lift = air ? cr.z : (cr.peck > 0 && (Math.floor(cr.ph * 6) & 1) ? -1 : 0);
   const y0 = air ? py - cr.z - h * 0.62 : py - h + 1;
   c.imageSmoothingEnabled = false;
   c.save(); c.translate(Math.round(px), Math.round(y0 - (air ? 0 : lift)));
   if (cr.face < 0) c.scale(-1, 1);
-  c.drawImage(spr, -Math.round(w / 2), 0);
+  afBlit(c, spr, -Math.round(w / 2), 0);
   c.restore();
   if (air && cr.item) { c.save(); c.translate(px + cr.face * 7, py - cr.z + 1); c.scale(0.3, 0.3); drawLoad(c, cr.item); c.restore(); }
   c.imageSmoothingEnabled = R.smooth;
@@ -446,11 +450,11 @@ function drawFrog(c, f) {
   const arc = f.hop > 0.1 ? Math.sin(Math.min(1, f.hop) * Math.PI) * 9 : 0;
   c.fillStyle = 'rgba(10,8,4,0.28)';
   c.beginPath(); c.ellipse(px, py, 4.5 - arc * 0.2, 1.6, 0, 0, 7); c.fill();
-  const spr = frogSprite(frogFrame(f)), w = spr.width, h = spr.height;
+  const spr = frogSprite(frogFrame(f)), w = afW(spr), h = afH(spr);
   c.imageSmoothingEnabled = false;
   c.save(); c.translate(Math.round(px), Math.round(py - h - arc + 1));
   if (f.face < 0) c.scale(-1, 1);
-  c.drawImage(spr, -Math.round(w / 2), 0);
+  afBlit(c, spr, -Math.round(w / 2), 0);
   c.restore();
   c.imageSmoothingEnabled = R.smooth;
 }

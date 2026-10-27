@@ -1,0 +1,106 @@
+# Быстрая проверка OldGold на каждый push и pull request (~5–8 минут).
+#   syntax  — node --check всех js-файлов репозитория
+#   tests   — tests/run.js --quick, разбит на 4 параллельные части; упавшая проверка повторяется один раз
+#             (ложные красные от нагрузки: house, unions, kids, tempo) — прошла с повтора = замечание «нестабильна»
+#   browser — один браузер (Chrome на раннере), профиль desktop, быстрый режим
+#   ok      — итог одной строкой: его и делаем обязательным в защите ветки main (см. CI.md)
+# Сайт публикуется GitHub Pages прямо из ветки main (без workflow) — эти проверки на публикацию не влияют.
+name: ci
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: node --check
+        run: |
+          git ls-files -z '*.js' | xargs -0 -P 4 -n 20 sh -c 'for f; do node --check "$f" || { echo "::error file=$f::синтаксическая ошибка"; exit 255; }; done' _
+          echo "Синтаксис: $(git ls-files '*.js' | wc -l) js-файлов проверено" >> "$GITHUB_STEP_SUMMARY"
+
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: tests/run.js --quick (часть ${{ matrix.shard }}/4)
+        run: node tests/run.js --quick --shard ${{ matrix.shard }}/4 --retry 1 --json report-${{ matrix.shard }}.json 2>&1 | tee log-${{ matrix.shard }}.txt
+      - name: Отчёт и лог
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-${{ matrix.shard }}
+          path: |
+            report-${{ matrix.shard }}.json
+            log-${{ matrix.shard }}.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: playwright-core (без скачивания браузеров — берётся Chrome раннера)
+        working-directory: tools/browsers
+        run: npm ci --no-audit --no-fund
+      - name: Chrome, desktop, быстрый режим
+        env:
+          BR_OUT: ${{ github.workspace }}/browser-out
+        run: |
+          node tools/browsers/run.js --profile desktop --quick 1 --strict 1 2>&1 | tee browser-log.txt
+      - name: Сводка
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs"), f = "browser-out/results-chromium.json";
+            if (!fs.existsSync(f)) process.exit(0);
+            const out = ["### Браузер (Chrome, desktop)", "", "| профиль | шаги не прошли | ошибки страницы |", "|---|---|---|"];
+            for (const r of JSON.parse(fs.readFileSync(f, "utf8"))) {
+              const bad = Object.entries(r.steps || {}).filter(e => !e[1].ok).map(e => e[0]).join(", ") || "—";
+              out.push(`| ${r.profile} | ${bad} | ${(r.errors || []).length} |`);
+            }
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join("\n") + "\n");'
+      - name: Скриншоты, результаты и лог
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser
+          path: |
+            browser-out/
+            browser-log.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+  ok:
+    if: always()
+    needs: [syntax, tests, browser]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Все проверки зелёные
+        run: |
+          echo "syntax=${{ needs.syntax.result }} tests=${{ needs.tests.result }} browser=${{ needs.browser.result }}"
+          test "${{ needs.syntax.result }}" = success
+          test "${{ needs.tests.result }}" = success
+          test "${{ needs.browser.result }}" = success

@@ -68,7 +68,7 @@ const HEAVY = new Set(['trunk', 'stone', 'timber', 'pig', 'goldore', 'leatherArm
 // курьеров, а мельница при 700 зерна на складе и плавильня без брёвен ждали подвоза (замер tools/soak/deficit.js, ДЕФИЦИТЫ.md)
 const LIGHT = new Set(['bread', 'croissant', 'sausage', 'chickenleg', 'fish', 'flour', 'hay', 'hops']);
 function carryCap(u, g) { return u.type === 'serf' ? unitLevel(u) + (g && LIGHT.has(g) ? 1 : 0) : (CARRY_CAP[u.type] || 1); }
-function canCarry(u, g) { return !(u.injury === 'arm' && HEAVY.has(g)); }
+function canCarry(u, g) { return !(injArm(u.injury) && HEAVY.has(g)); }
 
 // Подобрать перевозчика под партию: большой партии — телегу, средней — козу, иначе курьера.
 function pickCarrier(idle, x, y, g, amount) {
@@ -415,6 +415,20 @@ function dispatchWorkers() {
     b.worker = u;
     u.idleFlag = false; u.idleStreak = 0;
     u.proc = null; u.action = null; u.anim = null;
+  }
+  // вторые места (здание 3-го уровня, таблица WORK_SLOTS в levels.js) — только когда у всех зданий уже есть первый
+  if (typeof workSlots !== 'function') return;
+  for (const b of bs) {
+    if (b.state !== 'done' || b.removed || !b.def.worker || !b.worker || workSlots(b) < 2) continue;
+    let n = bldStaff(b).length;
+    while (n < workSlots(b)) {
+      const idle = Game.units.filter(u => u.type === b.def.worker && !u.home && !u.inside && !u.teamOf && !u.brk && !u.dead);
+      const u = takeNearest(idle, b.doorX, b.doorY);
+      if (!u) break;
+      u.home = b; n++;
+      u.idleFlag = false; u.idleStreak = 0;
+      u.proc = null; u.action = null; u.anim = null;
+    }
   }
 }
 

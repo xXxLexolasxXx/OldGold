@@ -18,15 +18,15 @@ const BE_PAL = {
   b: '#4a7a9a', B: '#2e5470', i: '#b8d0dc', h: '#8a98a8', H: '#5a6878', c: '#d8c8a0',
 };
 const BE_CACHE = {};
-const beSpr = (key, rows, pal = BE_PAL) => BE_CACHE[key] || (BE_CACHE[key] = faSprite(rows, pal));
+const beSpr = (key, rows, pal = BE_PAL) => BE_CACHE[key] || (BE_CACHE[key] = afSprite(rows, pal, key));   // мелкий пиксель ×3 — animalart.js
 
 function beDraw(c, key, rows, x, y, face = 1, lift = 0, shadow = true, pal = BE_PAL) {
-  const spr = beSpr(key, rows, pal), w = spr.width, h = spr.height;
+  const spr = beSpr(key, rows, pal), w = afW(spr), h = afH(spr);
   if (shadow) { c.fillStyle = 'rgba(10,8,4,0.28)'; c.beginPath(); c.ellipse(x, y, Math.max(3, w * 0.4), Math.max(1.6, w * 0.1), 0, 0, 7); c.fill(); }
   c.imageSmoothingEnabled = false;
   c.save(); c.translate(Math.round(x), Math.round(y - h - lift + 1));
   if (face < 0) c.scale(-1, 1);
-  c.drawImage(spr, -Math.round(w / 2), 0);
+  afBlit(c, spr, -Math.round(w / 2), 0);
   c.restore();
   c.imageSmoothingEnabled = R.smooth;
 }
@@ -218,8 +218,9 @@ const BE_FISH = [
 function beFlySprite(key, o, frame) {
   const k = key + frame;
   if (BE_CACHE[k]) return BE_CACHE[k];
-  const W = 30, H = 20, cv = mkCanvas(W, H), c = cv.getContext('2d');
-  const px = (x, y, col) => { c.fillStyle = col; c.fillRect(x | 0, y | 0, 1, 1); };
+  if (afFine()) { const cv = akBirdFly(o, frame); cv.beFace = 1; return BE_CACHE[k] = cv; }   // ручной пиксель-арт ×3 (animalpx.js)
+  const W = 30, H = 20, fine = afFine();
+  const cv = afProc(W, H, (px, each) => {
   const inPoly = (pts, x, y) => {
     let r = false;
     for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
@@ -228,17 +229,27 @@ function beFlySprite(key, o, frame) {
     }
     return r;
   };
-  const poly = (pts, col, tipCol) => { for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (inPoly(pts, x + 0.5, y + 0.5)) px(x, y, tipCol && x < 7 ? tipCol : col); };
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {                      // тело
-    const ex = (x - 12) / 6, ey = (y - 10) / 2.4;
-    if (ex * ex + ey * ey <= 1) px(x, y, ey > 0.3 ? o.belly : o.body);
+  const poly = (pts, col, tipCol) => each((x, y) => inPoly(pts, x + 0.5, y + 0.5) ? (tipCol && x < 6.5 ? tipCol : col) : null);
+  each((x, y) => { const ex = (x - 12) / 6, ey = (y - 10) / 2.4; return ex * ex + ey * ey <= 1 ? (ey > 0.3 ? o.belly : o.body) : null; });   // тело
+  if (fine) {                                       // шея изгибом, клюв клином, голова с глазом
+    each((x, y) => x > 16.5 && x < 23.5 && Math.abs(y - (9 - (x - 17) * 0.35 - Math.sin((x - 17) / 6.5 * Math.PI) * 0.4)) < 0.62 ? o.neck : null);
+    each((x, y) => Math.hypot((x - 23.4) / 1.2, (y - 6.6) / 0.95) <= 1 ? o.body : null);
+    each((x, y) => x > 24 && x < 24 + o.beak + 0.5 && Math.abs(y - 7 - (x - 24) * 0.06) < 0.62 - (x - 24) / (o.beak + 1) * 0.45 ? (y > 7.1 + (x - 24) * 0.06 ? shade(o.bill, -0.25) : o.bill) : null);
+    each((x, y) => Math.hypot(x - 23.7, y - 6.3) < 0.42 ? o.eye : null);
+    each((x, y) => x > -0.5 && x < 5.5 && Math.abs(y - (11 + Math.max(0, 2.5 - x) * 0.4)) < 0.38 ? o.leg : null);   // ноги за хвост
+  } else {
+    for (let t = 0; t < 7; t++) px(17 + t, 9 - Math.round(t * 0.35), o.neck);       // шея
+    for (let x = 24; x < 24 + o.beak; x++) px(x, 7, o.bill);                        // клюв
+    px(23, 7, o.body); px(23, 6, o.body); px(24, 6, o.body); px(24, 6, o.eye);
+    for (let t = 0; t < 6; t++) px(5 - t, 11 + (t > 2 ? 1 : 0), o.leg);              // ноги за хвост
   }
-  for (let t = 0; t < 7; t++) px(17 + t, 9 - Math.round(t * 0.35), o.neck);       // шея
-  for (let x = 24; x < 24 + o.beak; x++) px(x, 7, o.bill);                        // клюв
-  px(23, 7, o.body); px(23, 6, o.body); px(24, 6, o.body); px(24, 6, o.eye);
-  for (let t = 0; t < 6; t++) px(5 - t, 11 + (t > 2 ? 1 : 0), o.leg);              // ноги за хвост
-  const wing = flapPose([[9, 9], [17, 9], [16, 1], [3, 3]], [[8, 9], [17, 9], [17, 7], [2, 7]], [[9, 11], [16, 11], [14, 19], [5, 18]], frame, 12);   // 12 кадров взмахаа
+  const wing = flapPose([[9, 9], [17, 9], [16, 1], [3, 3]], [[8, 9], [17, 9], [17, 7], [2, 7]], [[9, 11], [16, 11], [14, 19], [5, 18]], frame, 12);   // 12 кадров взмаха
   poly(wing, o.wing, o.tip);
+  if (fine) for (let k = 1; k < 4; k++) {           // маховые перья: тонкие тени от плеча к краю крыла
+    const [[ax, ay], [bx, by], [cx, cy], [dx, dy]] = wing, t = k / 4, sx = ax + (bx - ax) * t, sy = ay + (by - ay) * t, ex = dx + (cx - dx) * t, ey = dy + (cy - dy) * t, L = Math.hypot(ex - sx, ey - sy) || 1;
+    each((x, y) => { const u = ((x + 0.5 - sx) * (ex - sx) + (y + 0.5 - sy) * (ey - sy)) / (L * L); return u > 0.3 && u < 0.95 && Math.abs(((x + 0.5 - sx) * (ey - sy) - (y + 0.5 - sy) * (ex - sx)) / L) < 0.19 && inPoly(wing, x + 0.5, y + 0.5) ? shade(x < 6.5 ? o.tip : o.wing, -0.18) : null; });
+  }
+  }, { lit: 0.08 });
   cv.beFace = 1;
   return BE_CACHE[k] = cv;
 }
@@ -706,7 +717,7 @@ function beDrawFish(c, f) {
   c.fillStyle = 'rgba(8,24,40,0.25)'; c.beginPath(); c.ellipse(px, py + 1, 5, 1.8, 0, 0, 7); c.fill();
   c.imageSmoothingEnabled = false;
   c.save(); c.translate(Math.round(px), Math.round(py - h - 3)); c.scale(f.face, 1); c.rotate((j - 0.5) * 1.5);
-  c.drawImage(spr, -5, -2);
+  afBlit(c, spr, -5, -2);
   c.restore();
   const g = Math.sin(j * Math.PI * 3);                                // блик на чешуе
   if (g > 0.3) { c.fillStyle = '#ffffff'; c.fillRect(Math.round(px) + 2, Math.round(py - h - 6), 1, 1); c.fillRect(Math.round(px) + 1, Math.round(py - h - 5), 3, 1); c.fillRect(Math.round(px) + 2, Math.round(py - h - 4), 1, 1); }
@@ -825,7 +836,7 @@ function beDrawStork(c, s) {
   if (air && s.z > 1.5) {
     const spr = beFlySprite('storkF', BE_STORK_FLY, Math.floor(s.ph * 15) % 12);
     c.imageSmoothingEnabled = false;
-    c.save(); c.translate(Math.round(px), Math.round(py - s.z - 10)); if (s.face < 0) c.scale(-1, 1); c.drawImage(spr, -15, 0); c.restore();
+    c.save(); c.translate(Math.round(px), Math.round(py - s.z - 10)); if (s.face < 0) c.scale(-1, 1); afBlit(c, spr, -15, 0); c.restore();
     c.imageSmoothingEnabled = R.smooth;
     if (s.fish) { c.fillStyle = '#c8dce8'; c.fillRect(Math.round(px) + s.face * 12 - 2, Math.round(py - s.z - 4), 5, 2); }
   } else beDraw(c, 'storkS', STORK_S, px, py, s.face, 0, false);
@@ -936,7 +947,7 @@ function beDrawHeron(c, h) {
     c.fillStyle = 'rgba(10,8,4,0.16)'; c.beginPath(); c.ellipse(px, py, 6, 2, 0, 0, 7); c.fill();
     const spr = beFlySprite('heronF', BE_HERON_FLY, Math.floor(h.ph * 15) % 12);
     c.imageSmoothingEnabled = false;
-    c.save(); c.translate(Math.round(px), Math.round(py - h.z - 10)); if (h.face < 0) c.scale(-1, 1); c.drawImage(spr, -15, 0); c.restore();
+    c.save(); c.translate(Math.round(px), Math.round(py - h.z - 10)); if (h.face < 0) c.scale(-1, 1); afBlit(c, spr, -15, 0); c.restore();
     c.imageSmoothingEnabled = R.smooth;
     return;
   }
@@ -1044,13 +1055,13 @@ function beDrawFlock(c, fl) {
       c.fillStyle = 'rgba(10,8,4,0.3)'; c.beginPath(); c.ellipse(x, py, 6, 2, 0, 0, 7); c.fill();
       const spr = crowSprite('s0'), peck = (Math.floor(k.ph * 3) & 1) ? 1 : 0;
       c.imageSmoothingEnabled = false;
-      c.save(); c.translate(Math.round(x), Math.round(py - spr.height + 1 + peck)); if (k.ox < 0) c.scale(-1, 1); c.drawImage(spr, -Math.round(spr.width / 2), 0); c.restore();
+      c.save(); c.translate(Math.round(x), Math.round(py - afH(spr) + 1 + peck)); if (k.ox < 0) c.scale(-1, 1); afBlit(c, spr, -Math.round(afW(spr) / 2), 0); c.restore();
     } else {
       c.fillStyle = 'rgba(10,8,4,0.12)'; c.beginPath(); c.ellipse(x, py, 5, 1.6, 0, 0, 7); c.fill();
       const spr = crowSprite('f' + [0, 1, 2, 1][Math.floor(k.ph * 9) & 3]);
       const dir = fl.state === 'circle' ? (Math.cos(k.a) * -Math.sin(k.a) >= 0 ? 1 : -1) * (k.w > 0 ? 1 : -1) : fl.face;
       c.imageSmoothingEnabled = false;
-      c.save(); c.translate(Math.round(x), Math.round(py - z - spr.height * 0.62)); if (fl.state === 'circle' ? Math.sin(k.a) > 0 : dir < 0) c.scale(-1, 1); c.drawImage(spr, -Math.round(spr.width / 2), 0); c.restore();
+      c.save(); c.translate(Math.round(x), Math.round(py - z - afH(spr) * 0.62)); if (fl.state === 'circle' ? Math.sin(k.a) > 0 : dir < 0) c.scale(-1, 1); afBlit(c, spr, -Math.round(afW(spr) / 2), 0); c.restore();
     }
   }
   c.imageSmoothingEnabled = R.smooth;

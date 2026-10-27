@@ -129,7 +129,7 @@ function toPixelArt(src, scale, opts = {}) {
     else d[o + 3] = alpha >= cut ? 255 : 0;
   }
   if (!opts.keepAlpha) {
-    quantizeData(d, W, H, opts.dither || 0);
+    if (opts.quant) opts.quant(d, W, H); else quantizeData(d, W, H, opts.dither || 0);   // quant — свой подбор палитры (animalart.js: с сохранением оттенка)
     if (opts.clean) cleanOrphans(d, W, H);
     if (opts.ink) inkData(d, W, H, opts.ink);
     if (opts.specks) dropSpecks(d, W, H, opts.specks === true ? 70 : opts.specks);   // только камни и скалы: чужие спрайты не трогаем

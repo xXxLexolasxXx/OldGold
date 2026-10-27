@@ -383,16 +383,16 @@ function wlWings(rows, cx, cy, span, off, ch) {
 const WL_CACHE = new Map();
 function wlSprite(key, rowsFn, pal) {
   let s = WL_CACHE.get(key);
-  if (!s) { s = faSprite(rowsFn(), pal); WL_CACHE.set(key, s); }
+  if (!s) { s = afSprite(rowsFn(), pal, 'wl:' + key); WL_CACHE.set(key, s); }   // мелкий пиксель ×3 — animalart.js
   return s;
 }
 function wlBlit(c, spr, x, y, face, lift = 0, alpha = 1, shadow = true) {
-  const w = spr.width, h = spr.height;
+  const w = afW(spr), h = afH(spr);
   if (shadow) { c.fillStyle = `rgba(10,8,4,${0.26 * alpha})`; c.beginPath(); c.ellipse(x, y, Math.max(2, w * 0.36), 1.4, 0, 0, 7); c.fill(); }
   c.imageSmoothingEnabled = false;
   c.save(); c.globalAlpha = alpha; c.translate(Math.round(x), Math.round(y - h - lift + 1));
   if (face < 0) c.scale(-1, 1);
-  c.drawImage(spr, -Math.round(w / 2), 0);
+  afBlit(c, spr, -Math.round(w / 2), 0);
   c.restore();
   c.imageSmoothingEnabled = R.smooth;
 }
@@ -496,7 +496,7 @@ function wlDraw(c, o) {
   }
   if (o.k === 'starfox' || o.k === 'stag') {     // мягкое свечение редких зверей
     const g = o.k === 'starfox' ? '200,210,255' : '200,255,170', a2 = (o.k === 'starfox' ? 0.22 : 0.12) * alpha * (0.8 + 0.2 * Math.sin(Game.time * 3 + o.id));
-    c.fillStyle = `rgba(${g},${a2})`; c.beginPath(); c.ellipse(px, py - spr.height * 0.45, spr.width * 0.55, spr.height * 0.5, 0, 0, 7); c.fill();
+    c.fillStyle = `rgba(${g},${a2})`; c.beginPath(); c.ellipse(px, py - afH(spr) * 0.45, afW(spr) * 0.55, afH(spr) * 0.5, 0, 0, 7); c.fill();
   }
   wlBlit(c, spr, px, py, o.face, lift + (fly ? 4 : 0), alpha, !(o.k === 'otter' && o.sw) && !fly);
   if (o.k === 'starfox' && o.mv) {          // звёздный след
