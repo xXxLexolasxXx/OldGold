@@ -175,7 +175,7 @@ function pbZhab(K, P, fr) {
     else if (P.up > 0.5) { H = [30, -120]; ang = -1.7; }
     else if (P.b > 0.5) { H = [48, -76 + dy]; ang = -2.5; }
     else if ((P.a || 0) < 0) { const t = -P.a; H = [42 - t * 22, -34 - t * 56 + dy]; ang = -2.15 - t * 0.5; }
-    else { const t = Math.min(1, P.a || 0); H = [42 + t * 16, -34 - t * 22 + dy]; ang = -2.15 + t * 1.2; }
+    else { const t = Math.min(1, P.a || 0); H = [42 + t * 16, -34 - t * 22 + dy]; ang = -2.15 + t * 0.95; }
     const sx = 14, sy = -58 + dy, A = pbIK(sx, sy, H[0], H[1], 28, 28, 1);
     pbChain(K, [[A.sx, A.sy, 7], [A.ex, A.ey, 5], [A.hx, A.hy, 4.4]], C.SK, { amb: 0.46 });
     // обмотка предплечья
@@ -213,9 +213,140 @@ function pbZhab(K, P, fr) {
   K.outline([30, 22, 14]);
 }
 
+// ======================= Жабьен анфас: идёт к зрителю или стоит лицом =======================
+// Та же жаба, что и сбоку: присел, колени в стороны, дальняя от посоха рука пальцами в землю, посох — в правой руке
+// (слева от зрителя) от крюка у земли до развилки с бусинами над капюшоном. Голова широкая, глаза-бугры по краям,
+// капюшон аркой с подшитым краем, рот во всю ширину с опущенными уголками, светлая челюсть тает в горле.
+function pbZhabF(K, P) {
+  const C = PBZ, sw = P.leg || 0, wing = P.wing || 0, open = (P.mouth || 0) > 0.35;
+  pbShadow(K, 50);
+  const hx = 0, hy = -84;
+
+  // ---------- плащ за спиной: шире плеч, рваный низ ----------
+  pbPoly(K, [[-34, -98], [34, -98], [50, -62], [58, -16 + wing * 2], [50, -8], [44, -16], [36, -6], [28, -14], [-28, -14], [-36, -6], [-44, -16], [-50, -8], [-58, -16 - wing * 2], [-50, -62]], (x, y) => {
+    const fold = Math.sin(x * 0.42) * 0.16 + (K.hsh(Math.floor(x / 3) * 4.1) - 0.5) * 0.14;
+    return pbPick(C.CL, 0.36 + fold + (y + 98) / 90 * -0.12, K.dth(x, y));
+  });
+
+  // ---------- ноги: бёдра в стороны, колени вверх, голени вниз, ступни пальцами к зрителю ----------
+  const leg = d => {
+    const ph = d * sw, lift = Math.max(0, ph) * 7;
+    const tx = d * 24, kx = d * 34, ky = -42 - lift * 0.5, ax = d * 22, ay = -9 - lift;
+    pbBlob(K, [{ e: [tx, -30 - lift * 0.4, 17, 15] }, { c: [[kx, ky, 9], [ax, ay, 6]] }], C.SK, { amb: 0.46, k: 6, depth: 12, tex: (x, y) => (K.hsh(x * 0.53 + y * 3.7) > 0.95 ? -0.22 : 0) });
+    for (let k = 0; k < 3; k++) { const t = 0.3 + k * 0.18, x = kx + (ax - kx) * t, y = ky + (ay - ky) * t; pbLimb(K, x - 7, y, x + 7, y + 1, 2.2, 2.2, C.LE, { amb: 0.5 }); }
+    for (const [ox, oy] of [[d * 12, 4], [d * 4, 7], [-d * 4, 6]]) {
+      const fx = ax + ox, fy = Math.min(-1, ay + oy + lift * 0.6);
+      pbLimb(K, ax, ay + 2, fx, fy, 2.8, 1.8, C.SK, { amb: 0.5 });
+      pbBall(K, fx, fy, 2.4, 2, C.SK, { amb: 0.62 });
+    }
+    return [kx, ky];
+  };
+  leg(-1);
+  const [rkx, rky] = leg(1);
+
+  // ---------- туловище, шея и голова — одной формой ----------
+  pbBlob(K, [
+    { e: [0, -50, 26, 26] },
+    { e: [0, -38, 22, 18] },
+    { c: [[0, -62, 22], [0, hy + 6, 22]] },
+    { e: [hx, hy, 34, 18] },
+    { e: [hx - 19, hy - 13, 10, 9] }, { e: [hx + 19, hy - 13, 10, 9] },
+  ], C.SK, { amb: 0.46, k: 7, depth: 16, tex: (x, y) => (K.hsh(x * 0.37 + y * 5.3) > 0.955 ? -0.25 : K.hsh(x * 1.3 + y * 0.7) > 0.985 ? 0.25 : 0) });
+  pbBall(K, 0, -36, 16, 17, C.BE, { amb: 0.4, fade: 0.4 });
+  for (const [x0, y0, x1, y1] of [[-6, -46, 0, -34], [6, -46, 0, -34], [0, -34, 0, -24], [-4, -29, 4, -29]]) K.path([[x0, y0, 0.6], [x1, y1, 0.6]], () => C.PAINT);
+
+  // ---------- юбка из шкуры ----------
+  pbLimb(K, -26, -34, 26, -34, 3.2, 3.2, C.LE, { amb: 0.5 });
+  for (let k = 0; k < 15; k++) { const x = -24 + k * 3.4, len = 8 + K.hsh(k * 3.1) * 7; K.path([[x, -32, 2.4], [x + sw * (k % 2 ? 1 : -1), -32 + len, 0.7]], (t, e) => pbPick(C.FUR, 0.7 - t * 0.45 + (k % 3 ? 0 : -0.15) + (e ? -0.2 : 0), K.dth(x, t * 10))); }
+
+  // ---------- лицо ----------
+  const mY = x => hy + 6 + Math.pow(Math.min(1, Math.abs(x) / 31), 3) * 5;          // уголки рта опущены
+  if (open) { const j = 3 + P.mouth * 6; pbPoly(K, [[-30, mY(-30)], [30, mY(30)], [22, hy + 8 + j], [-22, hy + 8 + j]], () => [58, 20, 20]); pbBall(K, 0, hy + 8 + j * 0.6, 12, 2.4, [[150, 60, 70], [200, 96, 104]], { amb: 0.5 }); }
+  // светлая нижняя челюсть и горло — тает к краям дизером
+  K.R(-34, hy, 34, hy + 34, (x, y) => {
+    if (y < mY(x) + 1) return null;
+    const inHead = ((x + 0.5) / 34) ** 2 + ((y + 0.5 - hy) / 18) ** 2 <= 1, q = ((x + 0.5) / 28) ** 2 + ((y + 0.5 - hy - 14) / 13) ** 2;
+    let w = Math.max(inHead ? 1 - Math.max(0, (Math.abs(x) - 22) / 10) : 0, Math.min(1, (1 - q) / 0.95));
+    if (y > hy + 12) w = Math.min(w, Math.min(1, (1 - q) / 0.95));
+    if (w <= 0 || K.dth(x, y) > w) return null;
+    return pbPick(C.BE, 0.7 - (y - mY(x)) / 24 * 0.6, K.dth(x, y));
+  });
+  for (let x = -31; x <= 31; x++) { const y = Math.round(mY(x)); K.P(x, y, C.DARK); if (Math.abs(x) > 26) K.P(x, y + 1, C.DARK); K.P(x, y - 1, C.SK[4]); }
+  for (const s of [-1, 1]) { K.P(s * 5, hy - 5, C.DARK); K.P(s * 5, hy - 6, C.SK[1]); }                              // ноздри
+  for (const [x, y] of [[-27, hy + 12], [-22, hy + 14], [-17, hy + 15]]) K.R(x - 3, y - 3, x + 3, y + 3, (xx, yy) => { const d = Math.hypot(xx + 0.5 - x, yy + 0.5 - y); return d > 1.4 && d < 2.8 ? (yy < y ? C.GOLD[2] : C.GOLD[1]) : null; });
+  for (const [x0, y0, x1, y1] of [[-6, hy - 20, -5, hy - 9], [0, hy - 22, 0, hy - 10], [6, hy - 20, 5, hy - 9], [-30, hy - 4, -26, hy + 4]]) K.path([[x0, y0, 0.9], [x1, y1, 0.6]], () => C.PAINT);
+  for (const s of [-1, 1]) {
+    const ex = s * 19, ey = hy - 14;
+    if (P.eye >= 2) { pbBall(K, ex, ey, 7.4, 6.4, C.SK, { amb: 0.6 }); for (let k = -6; k <= 6; k++) K.P(ex + k, ey + 1 + Math.abs(k) * 0.2, C.DARK); continue; }
+    pbBall(K, ex, ey, 8, 7.6, C.EY, { amb: 0.58 });
+    for (let k = -6; k <= 6; k++) K.P(ex + k, ey + 7.2 - Math.abs(k) * 0.14, C.EY[0]);
+    K.R(ex - 6, ey, ex + 6, ey, () => C.DARK); K.R(ex - 4, ey - 1, ex + 4, ey + 1, () => C.DARK);
+    K.P(ex - 3, ey - 4, [255, 255, 240]); K.P(ex - 2, ey - 4, [255, 246, 200]);
+    const lid = P.eye === 1 ? 4 : 2;
+    K.R(ex - 9, ey - 9, ex + 9, ey - 7 + lid, (x, y) => (Math.hypot((x - ex) / 8.4, (y - ey) / 7.8) < 1.05 ? pbPick(C.SK, 0.55 - (y - ey + 8) / 14, K.dth(x, y)) : null));
+    for (let k = -8; k <= 8; k++) K.P(ex + k, ey - 7 + lid + Math.abs(k) * 0.14 + (s * k > 0 ? Math.abs(k) * 0.08 : 0), C.SK[0]);   // веко ниже к внешнему краю — взгляд исподлобья
+  }
+
+  // ---------- капюшон аркой: подшитый край над глазами, складки, полы до плеч ----------
+  K.R(-50, hy - 42, 50, -54, (x, y) => {
+    const out = (x / 48) ** 2 + ((y - hy + 4) / 38) ** 2 <= 1 || (y > hy && Math.abs(x) < 48 - (y - hy) * 0.1);
+    const hole = (x / 36) ** 2 + ((y - hy - 4) / 27) ** 2 <= 1;
+    if (!out || hole) return null;
+    const rimD = (x / 36) ** 2 + ((y - hy - 4) / 27) ** 2;
+    if (rimD < 1.22) return pbPick(C.CL, 0.82 - (y - hy + 30) / 60 * 0.3, K.dth(x, y));                     // толстый подшитый край
+    const fold = Math.sin(Math.atan2(y - hy, x) * 9) * 0.16 + (K.hsh(Math.floor(Math.atan2(y - hy, x) * 14) * 3.1) - 0.5) * 0.14;
+    return pbPick(C.CL, 0.56 - (y - hy + 40) / 80 * 0.3 + fold, K.dth(x, y));
+  });
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { const x = s * (38 + i * 4), y = -58 + i * 2; pbPoly(K, [[x - 3, y], [x + 3, y], [x + s * 2 + wing, y + 10 + K.hsh(i + s) * 6]], C.CL); }
+
+  // ---------- шарф под челюстью с узлом ----------
+  pbPoly(K, [[-24, -62], [0, -56], [24, -62], [26, -56], [0, -50], [-26, -56]], (x, y) => pbPick(C.CL, 0.5 + Math.sin(x * 0.4) * 0.15, K.dth(x, y)));
+  pbBall(K, 6, -54, 4.4, 3.6, C.CL, { amb: 0.55 });
+  pbPoly(K, [[4, -52], [9, -52], [11 + wing, -34], [6 + wing, -36]], C.CL);
+
+  // ---------- левая рука (справа от зрителя): длинная, пальцами в землю ----------
+  {
+    const A = pbIK(24, -62, 40 + sw * 2, -6, 32, 34, 1);
+    pbChain(K, [[A.sx, A.sy, 7], [A.ex, A.ey, 5], [A.hx, A.hy, 4.2]], C.SK, { amb: 0.46 });
+    for (let k = 0; k < 3; k++) { const t = 0.3 + k * 0.2, x = A.ex + (A.hx - A.ex) * t, y = A.ey + (A.hy - A.ey) * t; pbLimb(K, x - 6, y - 1, x + 6, y + 1, 2, 2, C.LE, { amb: 0.55 }); }
+    for (const a of [-0.6, 0, 0.6]) { const ang = Math.PI / 2 + a; pbLimb(K, A.hx, A.hy, A.hx + Math.cos(ang) * 9, A.hy + Math.sin(ang) * 6, 2, 1.4, C.SK, { amb: 0.5 }); pbBall(K, A.hx + Math.cos(ang) * 10, A.hy + Math.sin(ang) * 6.6, 2, 2, C.SK, { amb: 0.6 }); }
+  }
+  // перо у правого колена (у зрителя справа)
+  for (const [i, F] of C.FE.entries()) { const bx = rkx - 2 + i * 3, by = rky + 4, s = Math.sin(i + sw * 1.6) * 2; K.path([[bx, by, 1.6], [bx + 1 + s, by + 14, 2.2], [bx + 2 + s, by + 24, 0.6]], (t, e, sd) => pbPick(F, 0.7 - t * 0.3 + (sd > 0 ? -0.25 : 0.05) + (e ? -0.2 : 0), K.dth(bx, t * 9))); }
+
+  // ---------- правая рука (слева от зрителя) с длинным посохом ----------
+  {
+    const H = [-42, -46 - sw * 2], A = pbIK(-24, -62, H[0], H[1], 16, 16, -1);
+    const pts = [];
+    for (let i = 0; i <= 16; i++) { const t = i / 16, y = -2 + t * (-150), x = -46 + t * 8 + Math.sin(t * 13) * 1.3 + Math.sin(t * 5.3) * 1.1; pts.push([x, y, 3.3 - t * 1.1 + (i === 4 || i === 9 || i === 13 ? 0.8 : 0)]); }
+    K.path(pts, (t, e, sd) => pbPick(C.WO, 0.55 + (sd > 0 ? 0.18 : -0.12) + (e ? -0.18 : 0) + (K.hsh(Math.floor(t * 50)) - 0.5) * 0.2, K.dth(-46, t * 90)));
+    const hook = [];
+    for (let i = 0; i <= 8; i++) { const a = i / 8 * 3.6, r = 6 - i * 0.35; hook.push([-46 - (r - Math.cos(a) * r), -2 - Math.sin(a) * r * 0.6 + 2, 3 - i * 0.2]); }
+    K.path(hook, (t, e) => pbPick(C.WO, 0.5 + (e ? -0.2 : 0), K.dth(-46 + t * 9, -2)));
+    const tx = pts[16][0], ty = pts[16][1];
+    K.path([[tx, ty, 1.6], [tx + 6, ty - 8, 0.7]], () => C.WO[2]); K.path([[tx, ty + 2, 1.4], [tx - 6, ty - 6, 0.6]], () => C.WO[1]);
+    K.path([[tx + 1, ty + 14, 0.5], [tx + 4 + wing, ty + 28, 0.5]], () => C.LE[3]);
+    pbBall(K, tx + 4 + wing, ty + 30, 2.4, 2.4, [[20, 20, 22], [44, 44, 48], [90, 90, 96]], { amb: 0.5 });
+    pbBall(K, tx + 8 + wing, ty + 27, 2, 2, [[20, 20, 22], [44, 44, 48], [90, 90, 96]], { amb: 0.5 });
+    for (const yy of [-56, -38, -34, -14, -10]) pbLimb(K, -50, yy, -40, yy + 1, 1.6, 1.6, C.LE, { amb: 0.5 });
+    pbChain(K, [[A.sx, A.sy, 7], [A.ex, A.ey, 5], [A.hx, A.hy, 4.4]], C.SK, { amb: 0.5 });
+    for (let k = 0; k < 2; k++) { const t = 0.35 + k * 0.25, x = A.ex + (A.hx - A.ex) * t, y = A.ey + (A.hy - A.ey) * t; pbLimb(K, x - 5, y - 2, x + 5, y + 2, 2, 2, C.LE, { amb: 0.55 }); }
+    pbBall(K, H[0] + 1, H[1], 5.4, 5, C.SK, { amb: 0.56 });
+    for (let k = -1; k <= 1; k++) K.P(H[0] + 4, H[1] + k * 2.6, C.SK[1]);
+  }
+  K.outline([30, 22, 14]);
+}
+
 if (typeof NA_PX !== 'undefined' && typeof NA_SPEC !== 'undefined' && NA_SPEC.ftZ) {
   NA_PX.ftZ = (K, P, fr) => {
     if (typeof FT_DEAD !== 'undefined' && FT_DEAD[fr]) Object.assign(P, FT_DEAD[fr], { x: 6, y: 0 });    // падает навзничь на месте, не улетая за кадр
     pbZhab(K, P, fr);
+  };
+  // анфас (идёт к зрителю): только покой и ходьба — переваливается с ноги на ногу; остальное — боковые кадры
+  NA_SPEC.ftZF = NA_SPEC.ftZ; NA_DRAW.ftZF = NA_DRAW.ftZ;
+  NA_PX.ftZF = (K, P, fr) => {
+    if (!fr || (fr[0] !== 'i' && fr[0] !== 'w')) return NA_PX.ftZ(K, P, fr);
+    if (fr[0] === 'w') P.rot = -(P.leg || 0) * 0.05;
+    pbZhabF(K, P);
   };
 }

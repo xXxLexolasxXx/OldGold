@@ -40,6 +40,7 @@ function campZbTick(C, dt) {
       const st = Math.min(d, ZB.spd * (d > 8 ? 1.6 : 1) * dt);
       Z.x += dx / d * st; Z.y += dy / d * st; Z.mv = 1; Z.ph += st * 2.2;
       if (Math.abs(dx) > 0.05) Z.face = dx > 0 ? 1 : -1;
+      Z.vf = dy > Math.abs(dx) * 0.7 ? 1 : 0;                  // идёт к зрителю — лицом (анфас), иначе боком
     } else Z.mv = 0;
   } else Z.mv = 0;
   // дротики: ближайший враг кампании в пределах броска; в поединок (Кремень, Чемпион) не лезет — там честно один на один
@@ -53,7 +54,7 @@ function campZbTick(C, dt) {
   }
   if (!tg) { Z.cd = 0.4; return; }
   Z.cd = ZB.cd;
-  Z.face = tg.x >= Z.x ? 1 : -1;
+  Z.face = tg.x >= Z.x ? 1 : -1; Z.vf = 0;
   if (Game.dshots) Game.dshots.push({ x: Z.x, y: Z.y - 0.5, gx: tg.x, gy: tg.y - 0.5, born: now, dur: 0.28, k: 'dart' });
   if (typeof sfxAt === 'function') sfxAt('ftDart', Z.x * TILE, Z.y * TILE, 0.6);
   if (typeof DEF_KILLER !== 'undefined' && typeof foeHit === 'function') {
@@ -69,7 +70,7 @@ function campZbDraw(list, c, x0, y0, x1, y1, Zo) {
   if (!Z || typeof neuDraw !== 'function' || typeof NSPEC === 'undefined' || !NSPEC.ftZ) return;
   if (Z.x < x0 - 2 || Z.x > x1 + 2 || Z.y < y0 - 2 || Z.y > y1 + 3) return;
   list.push([Z.y + 0.1, () => {
-    const N = { k: 'ftZ', id: 7707, x: Z.x, y: Z.y, face: Z.face, st: Z.mv ? 'roam' : 'idle', ph: Z.ph || 0, hp: 1, mhp: 1, dt: 0, winT: 0 };
+    const N = { k: 'ftZ', id: 7707, x: Z.x, y: Z.y, face: Z.face, vf: Z.vf || 0, st: Z.mv ? 'roam' : 'idle', ph: Z.ph || 0, hp: 1, mhp: 1, dt: 0, winT: 0 };
     N.fr = typeof neuFrame === 'function' ? neuFrame(N) : 'i0';
     neuDraw(c, N);
     c.save();
