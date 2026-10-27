@@ -671,7 +671,7 @@ function pbTrollF(K0, P, kind) {
   const INK = [0, 0, 0];
   pbShadow(K, 88);
   // ---- геометрия: ноги (на ходьбе поднимаются поочерёдно), руки, голова
-  const leg = s => { const lift = Math.max(0, sw * s) * 26, G = { sx: s * 26, sy: -96, ex: s * 33, ey: -52 - lift * 0.6, hx: s * 34, hy: -15 - lift }; return { s, lift, G, prims: pbTrLegPrims(G, [0, 0], [s, 0], [s * 36, -6 - lift, 23, 6.5]) }; };
+  const leg = s => { const lift = Math.max(0, sw * s) * 26, G = { sx: s * 26, sy: -96, ex: s * 33, ey: -52 - lift * 0.6, hx: s * 34, hy: -15 - lift }; return { s, lift, G, prims: pbTrLegPrims(G, [0, 0], [s, 0], [s * 34, -6 - lift, 13, 6]) }; };
   const L1 = leg(-1), L2 = leg(1);
   const arm = (sx, sy, ex, ey, hx, hy) => { const A = { sx, sy, ex, ey, hx, hy }, s = Math.sign(sx); A.kn = [s, 0]; A.prims = pbTrArmPrims(A, hx, hy + 4, [-s * 0.4, 0], A.kn); return A; };   // локоть наружу
   // оружейная рука (справа): висит / замах над головой / удар наискось / возврат
@@ -687,7 +687,7 @@ function pbTrollF(K0, P, kind) {
   pbBall(K, 0, -128, 38, 34, T.BE, { amb: 0.42, fade: 0.5, clip: (x, y) => (x / 52) ** 2 + ((y + 134) / 44) ** 2 < 0.9, tex: (x, y) => (Math.abs(((y + 128) % 11)) < 1 && Math.abs(x) < 26 ? -0.14 : 0) });
   pbDot(K, 0, -116, T.BE[0], 1.4);
   pbTrLoin(K, T, kind, -52, 52, -110, 0);
-  for (const L of [L1, L2]) for (let t = 0; t < 3; t++) { const tx = L.s * 36 + (t - 1) * 9; pbBall(K, tx, -3 - L.lift, 4.4, 3, SK, { amb: 0.5, fade: 0.4 }); K.path([[tx, -1.5 - L.lift, 1.6], [tx + (t - 1), 1.5 - L.lift, 0.6]], () => T.NA[t % 2]); }
+  for (const L of [L1, L2]) for (let t = 0; t < 4; t++) { const tx = L.s * 34 + (t - 1.5) * 6; pbBall(K, tx, -3 - L.lift, 3.2, 2.8, SK, { amb: 0.5, fade: 0.4 }); K.path([[tx, -2.5 - L.lift, 2.4], [tx + (t - 1.5) * 0.9, 2 - L.lift, 1.5], [tx + (t - 1.5) * 1.6, 6 - L.lift, 0.5]], (u) => T.NA[u > 0.5 ? 1 : 0]); }   // четыре когтя на каждой ступне
   // приметы вида на плечах
   if (DR) for (const [x, y, r] of [[-56, -184, 8], [50, -188, 6], [-30, -186, 5], [64, -170, 5]]) { pbBall(K, x, y, r + 2, r, [[90, 76, 56], [130, 112, 86], [168, 150, 120]], { amb: 0.5 }); pbBall(K, x - 2, y - 4, r * 0.6, r * 0.5, T.moss, { amb: 0.5, fade: 0.4 }); }
   else for (let i = 0; i < 6; i++) { const s = i % 2 ? 1 : -1, x = s * (40 + K.hsh(i * 3.1) * 26), y = -182 + K.hsh(i * 7.3) * 26, r = 3 + K.hsh(i * 1.7) * 4; pbBall(K, x, y, r * 1.3, r, kind === 'trollB' ? HR : T.HA, { amb: 0.55, fade: 0.5 }); }
