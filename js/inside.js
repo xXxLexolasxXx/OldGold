@@ -4,9 +4,16 @@
 // и навес над столом, раскрывающийся под дождём. Всё рисуется поверх спрайта здания,
 // в сам спрайт (и сохранения) ничего не добавляется.
 
-const DINE_SEATS = [   // [dx, ряд (-1 дальний / 1 ближний)]
-  [-8, -1], [8, -1], [-8, 1], [8, 1],
-];
+// стол растёт с уровнем трактира: 4 / 6 / 8 едоков (по половине на каждой скамье); на 3-м уровне две официантки
+const INN_TABLE_W = [28, 42, 58];
+const innLv = b => Math.max(1, Math.min(3, b.level || 1));
+const innSeatsN = b => [4, 6, 8][innLv(b) - 1];
+const innHalf = b => INN_TABLE_W[innLv(b) - 1] / 2 + 3;      // половина ширины веранды
+function innSeats(b) {   // [dx, ряд (-1 дальний / 1 ближний)]
+  const n = innSeatsN(b) / 2, step = n === 2 ? 16 : 14, out = [];
+  for (let row = -1; row <= 1; row += 2) for (let i = 0; i < n; i++) out.push([Math.round((i - (n - 1) / 2) * step), row]);
+  return out;
+}
 
 let INS_STAMP = '', INS_CNT = new Map(), INS_DINE = new Map();
 function insideScan() {
@@ -83,8 +90,8 @@ function innFoodSprite(c, food, x, y) {
   ellipse(c, x, y, 3.2, 1, 'rgba(240,236,226,0.55)');
 }
 
-function innDeck(c, x, y) {   // дощатая терраса под столом
-  const x0 = x - 17, x1 = x + 17, y0 = y - 9, y1 = y + 8;
+function innDeck(c, x, y, hw) {   // дощатая терраса под столом
+  const x0 = x - hw, x1 = x + hw, y0 = y - 9, y1 = y + 8;
   c.fillStyle = 'rgba(12,10,6,0.28)'; c.fillRect(x0 + 2, y1 + 1, x1 - x0, 3);
   c.fillStyle = '#6a4424'; c.fillRect(x0, y1, x1 - x0, 3);
   c.fillStyle = '#b08450'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
@@ -94,11 +101,10 @@ function innDeck(c, x, y) {   // дощатая терраса под столо
   c.fillStyle = '#6a4424'; c.fillRect(x0, y0 - 6, x1 - x0, 1.4); c.fillRect(x0, y0 - 2.4, x1 - x0, 1);               // задние перила
 }
 
-function innTable(c, x, y) {   // (x, y) — середина стола на земле
-  const w = 28;
+function innTable(c, x, y, w) {   // (x, y) — середина стола на земле, w — длина
   c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(x + 2, y + 1, w / 2 + 2, 3.5, 0, 0, 7); c.fill();
   c.fillStyle = '#3a2210';
-  for (const dx of [-w / 2 + 3, w / 2 - 4]) { c.fillRect(x + dx, y - 5, 2, 5); }
+  for (const dx of w > 40 ? [-w / 2 + 3, 0, w / 2 - 4] : [-w / 2 + 3, w / 2 - 4]) { c.fillRect(x + dx, y - 5, 2, 5); }
   // столешница: клетчатая красно-белая скатерть
   c.fillStyle = '#a9743f'; c.fillRect(x - w / 2, y - 9, w, 5);
   c.fillStyle = '#6a4424'; c.fillRect(x - w / 2, y - 4.2, w, 1.4);
@@ -112,9 +118,9 @@ function innBench(c, x, y, w) {
   c.fillStyle = '#3a2210'; c.fillRect(x - w / 2 + 2, y - 0.8, 1.6, 2.4); c.fillRect(x + w / 2 - 3.6, y - 0.8, 1.6, 2.4);
 }
 
-function innAwning(c, x, y, k) {
-  // навес на четырёх столбах раскатывается от задней кромки к передней
-  const top = y - 30, bw = 16, fw = 19, depth = 11;
+function innAwning(c, x, y, k, sc) {
+  // навес на четырёх столбах раскатывается от задней кромки к передней; шире вместе со столом (sc)
+  const top = y - 30, bw = 16 * sc, fw = 19 * sc, depth = 11;
   c.globalAlpha = Math.min(1, k * 2);
   c.fillStyle = '#5a3a1e';
   for (const [dx, h0, ph] of [[-bw + 3, top + 2, y - 10], [bw - 3, top + 2, y - 10], [-fw + 3, top + depth, y + 4], [fw - 3, top + depth, y + 4]]) c.fillRect(x + dx - 0.7, h0, 1.6, ph - h0);
@@ -149,20 +155,22 @@ function drawInnPorch(c, b, spr, ox, oy) {
   b._awnT = t;
   b.awn = Math.max(0, Math.min(1, (b.awn || 0) + Math.sign(want - (b.awn || 0)) * dt * 0.7));
   c.imageSmoothingEnabled = false;
-  innDeck(c, tx, ty);
-  innBench(c, tx, ty - 6, 30);   // дальняя скамья
+  const hw = innHalf(b), tw = hw * 2 - 6, DS = innSeats(b), cap = DS.length;
+  innDeck(c, tx, ty, hw);
+  innBench(c, tx, ty - 6, tw + 2);   // дальняя скамья
   const seat = (u, i) => {
-    const [dx, row] = DINE_SEATS[i];
+    const [dx, row] = DS[i];
     const view = row < 0 ? 'S' : 'N';
     const opt = { gait: '', gest: 'eat', gf: gestCyc(t * 1.8 + u.id * 0.7) };
     const sp = personSprite({ type: u.type, look: u.look, carry: null, injury: u.injury }, view, 'idle', 0, opt);
     return { dx, row, sp, u };
   };
-  const seats = diners.slice(0, 4).map((u, i) => seat(u, i));
+  // ближние места занимаем по очереди: новый едок садится на ту скамью, где меньше народу
+  const seats = diners.slice(0, cap).map((u, i) => seat(u, i % 2 ? DS.length / 2 + (i >> 1) : i >> 1));
   for (const s of seats) if (s.row < 0) {
     c.drawImage(s.sp, tx + s.dx - PFX, ty + 1 - PFY, PW, PH);
   }
-  innTable(c, tx, ty);
+  innTable(c, tx, ty, tw);
   for (const s of seats) {
     // еда на столе перед каждым
     const fx = tx + s.dx, fy = ty - (s.row < 0 ? 7.2 : 5.2);
@@ -178,22 +186,25 @@ function drawInnPorch(c, b, spr, ox, oy) {
     c.drawImage(s.sp, tx + s.dx - PFX, sy - PFY, PW, PH);
     c.restore();
   }
-  innBench(c, tx, ty + 7, 30);   // ближняя скамья — поверх спин
+  innBench(c, tx, ty + 7, tw + 2);   // ближняя скамья — поверх спин
   if (slapTick(b, diners.length)) drawSlapScene(c, b, spr, tx, ty, ox, oy);
-  else drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length);
-  if (b.awn > 0.02) innAwning(c, tx, ty, b.awn);
+  else {
+    drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 0, hw);
+    if (innLv(b) >= 3) drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 1, hw);
+  }
+  if (b.awn > 0.02) innAwning(c, tx, ty, b.awn, hw / 17);
   c.imageSmoothingEnabled = R.smooth;
 }
 
 // Официантка выходит из трактира с подносом, идёт к столу, ставит еду и возвращается.
-function drawWaitress(c, b, spr, tx, ty, ox, oy, guests) {
-  const t = Game.time;
-  let w = b._wt;
-  if (!w) w = b._wt = { st: 'in', t: 0, x: 0, y: 0, last: t, f: 0, face: 1 };
+function drawWaitress(c, b, spr, tx, ty, ox, oy, guests, n, hw) {
+  const t = Game.time, key = n ? '_wt2' : '_wt';
+  let w = b[key];
+  if (!w) w = b[key] = { st: 'in', t: n ? 2.5 : 0, x: 0, y: 0, last: t, f: 0, face: 1 };
   const dt = Math.min(0.1, Math.max(0, t - w.last)); w.last = t;
   const dp = spr.doorPt || [spr.doorCx, spr.baseY - 6];
   const dx = ox + dp[0], dy = oy + dp[1] + 4;
-  const tgtX = tx - 21, tgtY = ty + 9;
+  const tgtX = n ? tx + hw + 4 : tx - hw - 4, tgtY = ty + 9;
   w.t -= dt;
   const walkTo = (X, Y, v) => {
     const ex = X - w.x, ey = Y - w.y, d = Math.hypot(ex, ey);
@@ -219,7 +230,7 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests) {
   }
   if (!vis) return;
   if (w.st === 'serve') carry = w.t > 1 ? 'tray:' + (w.food || 'bread') : null;
-  const sp = personSprite({ type: 'waitress', look: b.id * 37 + 5, carry }, view, pose, pose === 'walk' ? (Math.floor(w.f) & 7) : 0, {});
+  const sp = personSprite({ type: 'waitress', look: b.id * 37 + 5, carry }, view, pose, pose === 'walk' ? (Math.floor(w.f * 1.5) % WALK_FRAMES) : 0, {});
   const px = Math.round(w.x), py = Math.round(w.y);
   c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(px + 1, py, 5.5, 2, 0, 0, 7); c.fill();
   if (w.face < 0 && view === 'E') { c.save(); c.translate(px, py); c.scale(-1, 1); c.drawImage(sp, -PFX, -PFY, PW, PH); c.restore(); }
@@ -361,7 +372,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
   if (el < 1.6) {
     const p = ease(el / 1.6);
     gx = dx + (gx0 - dx) * p; gy = dy + (sy - dy) * p;
-    gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 12) % 8);
+    gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 18) % WALK_FRAMES);
   } else if (el < T_HIT) {
     gsp = mk('serf', gl, 'E', 'idle', 0, { gest: 'flirt', gf: Math.floor((el - 1.6) * 12) % 6 });
     gsh = 1.2 + Math.sin(el * 4.5) * 1.3;                                // наваливается на стойку
@@ -373,7 +384,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
     else if (el < tPick) {                                               // идёт к колпаку
       const p = ease((el - tHat) / (tPick - tHat));
       gx = gx0 - 4 + (pickX - (gx0 - 4)) * p; gflip = pickX < gx0 - 4;
-      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 9) % 8, nh); gsh = 1.6;     // голова понурая
+      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 13.5) % WALK_FRAMES, nh); gsh = 1.6;     // голова понурая
     } else if (el < tUp) {                                               // нагибается
       gx = pickX; gflip = pickX < gx0 - 4;
       gsp = mk('serf', gl, 'E', 'duck', 0, nh); gsh = 0;
@@ -383,7 +394,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
     } else {                                                             // колпак снова часть спрайта
       const p = ease(clamp((el - tOn) / 1.5));
       gx = pickX + (dx - pickX) * p; gy = sy + (dy - sy) * p; gflip = dx < pickX;
-      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 9) % 8); gsh = 1;
+      gsp = mk('serf', gl, 'E', 'walk', Math.floor(el * 13.5) % WALK_FRAMES); gsh = 1;
     }
     if (el < 5.2) gsh = e < 0.17 ? -2 : -9 * Math.exp(-4.5 * (e - 0.17)) * Math.cos(12 * (e - 0.17)) + (el > 3.95 ? 1 : 0);
   }
@@ -399,7 +410,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
   else {
     const p = ease(clamp((el - 6.0) / 1.2));
     wX = wx + (dx - wx) * p; wY = sy + (dy - sy) * p; wflip = dx < wx;
-    wsp = mk('waitress', wl, 'E', 'walk', Math.floor(el * 11) % 8);
+    wsp = mk('waitress', wl, 'E', 'walk', Math.floor(el * 16.5) % WALK_FRAMES);
   }
   if (el > 3.3 && el < 3.9) wX -= el < 3.5 ? (el - 3.3) * 7.5 : el < 3.75 ? 3.2 : 3.2 * (3.9 - el) / 0.15;   // выпад вперёд на ударе
   const shadow = (x, y) => { c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(Math.round(x) + 1, Math.round(y), 5.5, 2, 0, 0, 7); c.fill(); };

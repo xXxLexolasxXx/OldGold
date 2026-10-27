@@ -582,6 +582,10 @@ function drawUiIcon(c, name) {
     case 'pause':
       P(4, 3, 3, 10, '#e4ddd2'); P(9, 3, 3, 10, '#e4ddd2');
       break;
+    case 'urgent':    // «Срочно»: восклицательный знак
+      P(5, 1, 6, 10, '#160e0a'); P(5, 12, 6, 4, '#160e0a');
+      P(6, 2, 4, 8, '#ffd24a'); P(6, 13, 4, 2, '#ffd24a'); P(6, 2, 1, 8, '#fff4b0');
+      break;
     case 'play':
       for (let k = 0; k < 6; k++) P(5 + k, 3 + k, 1, 10 - k * 2, '#8eab4c');
       break;

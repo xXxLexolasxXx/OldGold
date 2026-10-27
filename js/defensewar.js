@@ -39,6 +39,8 @@ function defKill(h, label) {
 
 // Урон по врагу: p — шанс попасть, dmg — урон по «живым» врагам с запасом здоровья. Возвращает true, если попал
 function defHurt(h, p, dmg, from, label) {
+  // две стрелы в одну цель: вторая прилетает уже в павшего — без второго «Клац» и второй шкуры
+  if (h.o.dead || (h.kind === 'skel' && (h.o.state === 'dead' || h.o.state === 'sink'))) return false;
   if (Math.random() > p) {
     if (h.kind !== 'ghost') fxBurst(h.x * TILE, h.y * TILE - 8, 4, ['#f6f2ea', '#c8c0a4'], 35, 25, 0.35, 1.1, 200);
     return false;

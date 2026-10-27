@@ -96,7 +96,7 @@ function serializeBuilding(b) {
   return {
     id: b.id, type: b.type, x: b.x, y: b.y, rot: b.rot || 0, state: b.state, stock: nz(b.stock),
     used: b.used, usedOf: nz(b.usedOf), hits: b.hits, queue: b.queue, training: b.training,
-    level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, orders: b.orders && b.orders.length ? b.orders : undefined, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops, hireReq: b.hireReq || undefined,
+    level: b.level || 1, upg: b.upg ? { used: nz(b.upg.used), stock: nz(b.upg.stock), usedN: b.upg.usedN, hits: b.upg.hits } : null, paused: b.paused, urg: urgOn(b) ? b.urgUntil : undefined, hold: b.hold || undefined, noDeliver: !!b.noDeliver, dmg: b.dmg || 0, recipeOn: b.recipeOn, orders: b.orders && b.orders.length ? b.orders : undefined, recipeIdx: b.recipeIdx, pigs: b.pigs, crops: b.crops, hireReq: b.hireReq || undefined,
   };
 }
 
@@ -160,6 +160,7 @@ function applySave(s) {
     b.queue = (d.queue || []).map(legacyType);
     b.training = d.training ? { ...d.training, type: legacyType(d.training.type) } : null;
     b.paused = !!d.paused;
+    if (d.urg > 0) b.urgUntil = d.urg;
     if (d.hold) b.hold = true;
     b.noDeliver = !!d.noDeliver; b.dmg = d.dmg || 0;
     b.hireReq = d.hireReq ? 1 : 0;

@@ -1061,7 +1061,7 @@ I18N.add('en', {
   "Замёрзли!": "Freezing!",
   "Снегом!": "Snowed on!",
   "Ах так!": "Oh yeah?!",
-  // призраки смертны (ghosts.js, ghostfight.js, 0.11.57)
+  // призраки смертны (ghosts.js, ghostfight.js, 0.11.66)
   "У-у-у… не надо!": "Oooh… don't!",
   "Прочь, прочь!": "Away, away!",
   "Больно… ухожу…": "It hurts… I'm going…",

@@ -2,6 +2,8 @@
 // Лор: история долины малыми порциями. После каждого шага обучения (и дальше — по ходу первых часов)
 // случается короткая сцена: воспоминание старосты, находка, видение, письмо, голос из тьмы, чужой костёр.
 // Одна сцена за раз — через общую очередь окон (notify.js, Notify.modal), можно «Дальше» и «Пропустить».
+// Пока идёт обучение, сцены чередуются с его шагами: не больше одной сцены между двумя шагами (tutLoreSlot),
+// следующий шаг ждёт, пока сцену закроют (tutorial.js, tutLoreHold).
 // Найденное складывается в журнал «Лор» (меню → «Лор: история долины»), главы — как в СЮЖЕТ.md.
 // Прогресс — у игрока (localStorage oldgold.lore), а не у мира: в коопе каждый получает лор сам,
 // сервер и хост ничего не знают и ничего не ждут. Условия читаются из общего состояния мира (зеркала).
@@ -26,7 +28,7 @@ const LORE_KIND = { memory: 'Воспоминание', find: 'Находка', 
 // ---------- Условия ----------
 const loreB = t => Game.buildings.some(b => b.type === t && !b.removed);
 const loreDone = t => Game.buildings.some(b => b.type === t && b.state === 'done' && !b.removed);
-const loreTut = i => typeof Tut !== 'undefined' && !!(Tut.ok && Tut.ok[i]);
+const loreTut = id => typeof tutStepOk === 'function' && tutStepOk(id);   // шаг обучения выполнен (id шага из TUT_STEPS)
 const loreNights = () => (typeof goalNights === 'function' ? goalNights() : 0);
 const loreDay = () => (typeof cycleAt === 'function' ? cycleAt(Game.time).k + 1 : 1);
 const loreEve = () => typeof isEveningNow === 'function' && isEveningNow();
@@ -48,7 +50,7 @@ const LORE_FRAGS = [
   // ===== Глава 1. Приехали — по шагам обучения =====
   {
     id: 'map', ch: 1, tut: true, kind: 'memory', title: 'Дедова карта', hint: 'Первые минуты в долине',
-    when: () => loreTut(0) || Lore.playT > 50,
+    when: () => loreTut('look') || Lore.playT > 50,
     lines: [
       ['grum', 'Дедова карта. «Долина Старого Золота: тут золото поёт по ночам». Дед много чего писал. Особенно после третьей кружки.'],
       ['note', 'На краю карты нарисована башня, а рядом подписано: «НЕ ШУМЕТЬ». Буквы дрожат.'],
@@ -58,7 +60,7 @@ const LORE_FRAGS = [
   },
   {
     id: 'home', ch: 1, tut: true, kind: 'memory', title: 'Что осталось от Подгорья', hint: 'Загляните на склад',
-    when: () => loreTut(1) || Lore.playT > 110,
+    when: () => loreTut('store') || Lore.playT > 110,
     lines: [
       ['note', 'На складе — всё, что влезло в повозки: брёвна, пара мешков и старая кирка с зарубками.'],
       ['grum', 'Сто лет жили под Брюзгой-горой. Потом гора решила, что с неё хватит, и легла нам на крыши. Обиделась, наверное.'],
@@ -76,7 +78,7 @@ const LORE_FRAGS = [
   },
   {
     id: 'road', ch: 1, tut: true, kind: 'find', title: 'Старая дорога и чужие следы', hint: 'Первая дорога к складу',
-    when: () => loreTut(2) || loreRoad('woodcutter'),
+    when: () => loreTut('woodcutter') || loreRoad('woodcutter'),
     lines: [
       ['note', 'Под мхом нашлась старая мостовая — гномья, с клеймом-молоточком. По ней кто-то недавно прошёл.'],
       ['grum', 'Следы длинные, узкие и босые. Для гнома великоваты, для человека тощеваты. Ведут к башне. Я туда не пойду. Я посмотрел.'],
@@ -86,7 +88,7 @@ const LORE_FRAGS = [
   },
   {
     id: 'stamp', ch: 1, tut: true, kind: 'find', title: 'Камень с клеймом', hint: 'Каменоломня',
-    when: () => loreTut(3) || loreB('quarry'),
+    when: () => loreTut('quarry') || loreB('quarry'),
     lines: [
       ['note', 'Каменотёс отколол глыбу, а на ней клеймо: фонарь и молот.'],
       ['yagla', 'Знак Фонарщиков. Они держали в долине свет всю ночь. Пока свет горел, башня спала.'],
@@ -95,7 +97,7 @@ const LORE_FRAGS = [
   },
   {
     id: 'sawdust', ch: 1, tut: true, kind: 'memory', title: 'Староста вспоминает дом', hint: 'Лесопилка',
-    when: () => loreTut(4) || loreB('sawmill'),
+    when: () => loreTut('sawmill') || loreB('sawmill'),
     lines: [
       ['grum', 'Пахнет опилками — как в отцовской мастерской в Подгорье. Отец пилил, я подметал. Двести лет прошло, а я всё подметаю. Только теперь — за всеми.'],
       ['note', 'Грум отвернулся и сказал, что опилка попала в глаз. Опилок ещё не было.'],
@@ -104,7 +106,7 @@ const LORE_FRAGS = [
   },
   {
     id: 'seeds', ch: 1, tut: true, kind: 'memory', title: 'Последняя горсть', hint: 'Ферма',
-    when: () => loreTut(5) || loreB('farm'),
+    when: () => loreTut('farm') || loreB('farm'),
     lines: [
       ['yagla', 'Это зерно мы везли из Подгорья в кисете. Одна горсть. Не просыпьте — второй нет.'],
       ['grum', 'Засеять горстью целое поле? Гномы и не такое делали. Обычно — на спор.'],
@@ -113,7 +115,7 @@ const LORE_FRAGS = [
   },
   {
     id: 'song', ch: 1, tut: true, kind: 'song', title: 'Песня предков', hint: 'Первый хлеб',
-    when: () => loreTut(6) || loreProd('bread') >= 1 || loreDone('bakery'),
+    when: () => loreTut('bread') || loreProd('bread') >= 1 || loreDone('bakery'),
     lines: [
       ['note', 'Из пекарни потянуло хлебом, и Ягла запела. Остальные подхватили — кто как помнил:'],
       ['yagla', '«Горит фонарь, печётся хлеб, — пока огонь, и мы живём. А тьме — ни крошки, ни монет: мы до рассвета подождём».'],
@@ -124,7 +126,7 @@ const LORE_FRAGS = [
   },
   {
     id: 'barrel', ch: 1, tut: true, kind: 'letter', title: 'Записка в бочке', hint: 'Вкладка «Хозяйство»',
-    when: () => loreTut(7) || Lore.playT > 600,
+    when: () => loreTut('econ') || Lore.playT > 600,
     lines: [
       ['note', 'В трактире нашлась старая бочка, а в ней записка прадеда: «Кто читает — значит, вернулись. Свет не гасите. Камни не трогайте. Пиво — не досуха».'],
       ['grum', 'Свет — понял. Пиво — понял. Про камни потом разберёмся.'],
@@ -133,7 +135,7 @@ const LORE_FRAGS = [
   },
   {
     id: 'lantern', ch: 1, tut: true, kind: 'memory', title: 'Внук Фонарщика', hint: 'Первое дело героя',
-    when: () => loreTut(8) || !!(Game.hero && Game.hero.cmd && Game.hero.cmd.kind && Game.hero.cmd.kind !== 'move'),
+    when: () => loreTut('hero') || !!(Game.hero && Game.hero.cmd && Game.hero.cmd.kind && Game.hero.cmd.kind !== 'move'),
     lines: [
       ['note', 'У героя на поясе — старый фонарь с клеймом-молотом. Достался от прадеда вместе с фляжкой.'],
       ['grum', 'Его прадед был последним Фонарщиком. Фонарь, говорят, так и не погасил. А фляжку так и не допил. Семья держит слово.'],
@@ -336,7 +338,7 @@ const LORE_FRAGS = [
 
 // ---------- Состояние ----------
 
-const Lore = { found: {}, unread: 0, playT: 0, lastAt: -999, pend: null, cur: null, el: null, fx: null, typing: 0, idle: 0, world: '', silent: false, bookOpen: false };
+const Lore = { found: {}, unread: 0, playT: 0, lastAt: -999, closedAt: 0, pend: null, cur: null, el: null, fx: null, typing: 0, idle: 0, world: '', silent: false, bookOpen: false };
 const LORE_ON = typeof document !== 'undefined' && typeof window !== 'undefined' && !window.__SERVER__;
 
 function loreLoad() {
@@ -391,13 +393,25 @@ function loreTick(dt) {
   if (!Game.paused) Lore.playT += dt;
   if (Lore.pend || Lore.cur) return;
   const tutOn = typeof Tut !== 'undefined' && Tut.on;
-  const tutLeft = LORE_FRAGS.some(f => f.tut && !loreHas(f.id));
-  // сцены обучения — часто и по порядку шагов; остальное — реже и после главы 1; «к сроку» (вечер) — вне очереди
-  const ready = LORE_FRAGS.filter(f => (f.tut || f.soon || !(tutOn || tutLeft && Lore.playT < 1500)) && loreReady(f));
-  const f = ready.find(x => x.soon) || ready[0];
+  // идёт обучение: сцена — только в паузе между шагами (шаг выполнен, следующий ещё не начат), и сразу, без интервала
+  const slot = tutOn && typeof tutLoreSlot === 'function' && tutLoreSlot();
+  if (tutOn && !slot) return;
+  const f = loreTutPick(tutOn);
   if (!f || Lore.playT < 6) return;
-  if (Lore.playT - Lore.lastAt < (f.soon ? 4 : f.tut ? LORE_TUT_GAP : LORE_GAP)) return;
+  if (!slot && Lore.playT - Lore.lastAt < (f.soon ? 4 : f.tut ? LORE_TUT_GAP : LORE_GAP)) return;
   loreQueue(f);
+}
+
+// какая сцена следующая: сцены обучения — по порядку шагов; остальное — реже и после главы 1; «к сроку» (вечер) — вне очереди
+function loreTutPick(tutOn) {
+  const tutLeft = LORE_FRAGS.some(f => f.tut && !loreHas(f.id));
+  const ready = LORE_FRAGS.filter(f => (f.tut || f.soon || !(tutOn || tutLeft && Lore.playT < 1500)) && loreReady(f));
+  return ready.find(x => x.soon) || ready[0] || null;
+}
+// обучение спрашивает: есть ли сцена, которая встанет между шагами (тогда следующий шаг подождёт её)
+function loreTutReady() {
+  if (!LORE_ON || !Game.units || !Game.units.length || Lore.playT < 6 || loreMenuOpen()) return false;
+  return !!loreTutPick(true);
 }
 
 // на экране плашка «Новое: …» (reveal.js) — она стоит там же, где сцена: ждём, пока догорит
@@ -439,6 +453,7 @@ function loreShow(f) {
   Lore.cur = { f, i: 0 };
   Lore.lastId = f.id;
   Lore.lastAt = Lore.playT;
+  if (typeof Tut !== 'undefined' && Tut.on) Tut.loreSlot = false;   // между этими шагами сцена уже была
   loreFind(f);
   Lore.el.setAttribute('data-nq-modal', '');   // держит общую очередь окон, пока открыта
   Lore.el.className = 'k-' + f.kind;
@@ -506,6 +521,7 @@ function loreNext() {
 
 function loreClose() {
   clearInterval(Lore.typing); Lore.typing = 0;
+  if (Lore.cur) Lore.closedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
   Lore.cur = null;
   if (!Lore.el) return;
   Lore.el.removeAttribute('data-nq-modal');

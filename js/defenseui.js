@@ -195,7 +195,7 @@ function defTowerHTML(b) {
   h += `<div class="irow small">Дозорный-гном: стреляет на ${L2 ? 9 : 8} клеток, видит нечисть за ${L2 ? 14 : 11}. Стражи добавляют стрелков.</div>`;
   for (const q of g) h += `<div class="irow small">${q.c === 'archer' ? 'Лучник' : 'Воин'} · ур. ${q.l} — на посту</div>`;
   if (!g.length) h += '<div class="irow small muted">Лучники и воины гильдий со свободным приказом «охранять» сами придут на башню.</div>';
-  const off = T && T.ng;
+  const off = !!b.noGuards;
   h += `<button class="deliv ${off ? 'closed' : 'open'}" data-df="guards:${b.id}" title="Свободные рекруты гильдий не будут занимать башню"><span><b>${off ? 'Стражи не принимаются' : 'Принимать стражей из гильдий'}</b><small>нажмите, чтобы переключить</small></span></button>`;
   return h;
 }
