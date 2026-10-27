@@ -10,6 +10,9 @@ let MAP_W = MAP_NEW_W;
 let MAP_H = MAP_NEW_H;
 // Радиусы большого костра (клетки): нечисть и скелеты не заходят в BONFIRE_SAFE, свет ночью покрывает ту же зону, а у самого костра — тепло и точка возрождения героев
 const BONFIRE_SAFE = 8, BONFIRE_NOSPAWN = 12, BONFIRE_LIGHT = BONFIRE_SAFE * 30, BONFIRE_HERO = 5;
+// костёр 2-го и 3-го уровня больше и сильнее: все его радиусы умножаются (×1.3 и ×1.6)
+const BONFIRE_LV_MUL = [1, 1.3, 1.6];
+const bonfireMul = b => BONFIRE_LV_MUL[Math.max(1, Math.min(3, (b && b.level) || 1)) - 1];
 const SIM_DT = 0.05;      // шаг симуляции, сек
 
 const T_GRASS = 0, T_WATER = 1, T_ROCK = 2, T_SAND = 3;

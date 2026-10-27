@@ -518,7 +518,7 @@ function drawBuilding(c, b, ghost) {
     glow(c, gx, gy, 18, spr.glowColor || '255,160,60', a);
     if (!spr.glowColor && b.working) drawFire(c, gx, gy + 3, 'spark', t, b.id, { glow: 0, sparks: 2 });
   }
-  if (spr.fire && b.state === 'done') drawBonfireFlames(c, ox + spr.fire[0], oy + spr.fire[1], b.working || b.stock.trash > 0, b.id);
+  if (spr.fire && b.state === 'done') drawBonfireFlames(c, ox + spr.fire[0], oy + spr.fire[1], b.working || b.stock.trash > 0, b.id, b.type === 'bonfire' ? bonfireMul(b) : 1);
   if (spr.circle) {
     const [cx, cy] = spr.circle;
     const pulse = 0.5 + 0.5 * Math.sin(t * (b.working ? 3 : 1));
@@ -973,11 +973,11 @@ const BONFIRE_RINGS = [
   [BONFIRE_HERO, 'rgba(110,210,120,', 'возрождение и сбор'],
 ];
 R.showRings = typeof location !== 'undefined' && /[?&]rings=1/.test(location.search);
-function drawBonfireRings(c, cx, cy) {
+function drawBonfireRings(c, cx, cy, mul = 1) {
   c.save();
   c.font = '10px sans-serif'; c.textAlign = 'center';
-  for (const [r, col, label] of BONFIRE_RINGS) {
-    const px = r * TILE;
+  for (const [r0, col, label] of BONFIRE_RINGS) {
+    const r = Math.round(r0 * mul * 10) / 10, px = r * TILE;
     c.fillStyle = col + '0.07)'; c.strokeStyle = col + '0.75)'; c.lineWidth = 1.5;
     c.setLineDash([6, 5]); c.lineDashOffset = -Game.time * 8;
     c.beginPath(); c.arc(cx, cy, px, 0, 7); c.fill(); c.stroke();
@@ -1002,8 +1002,8 @@ function drawOverlay(c) {
     if (sel.isRoad) ant(sel.x * TILE + 2, sel.y * TILE + 2, TILE - 4, TILE - 4, '#f6d458');
     else ant(sel.x * TILE, sel.y * TILE, sel.w * TILE, sel.h * TILE, '#f6d458');
   }
-  if (sel && !sel.removed && sel.type === 'bonfire') drawBonfireRings(c, (sel.x + sel.w / 2) * TILE, (sel.y + sel.h / 2) * TILE);
-  else if (R.showRings) for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done') drawBonfireRings(c, (b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE);
+  if (sel && !sel.removed && sel.type === 'bonfire') drawBonfireRings(c, (sel.x + sel.w / 2) * TILE, (sel.y + sel.h / 2) * TILE, bonfireMul(sel));
+  else if (R.showRings) for (const b of Game.buildings) if (b.type === 'bonfire' && b.state === 'done') drawBonfireRings(c, (b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE, bonfireMul(b));
   const tool = Game.tool, h = R.hover;
   if (!tool && h && inb(h[0], h[1])) {
     const id = World.bmap[idx(h[0], h[1])];

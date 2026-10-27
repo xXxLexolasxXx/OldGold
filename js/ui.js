@@ -904,7 +904,7 @@ function infoBuilding(b) {
       h += `<div class="recipe${b.crops[crop] ? '' : ' off'}">${gi(crop)} ${CROP_NAMES[crop]}<span class="t">полей: ${cnt[crop] || 0}</span>${def.crops.length > 1 ? `<input type="checkbox" data-crop="${crop}" ${b.crops[crop] ? 'checked' : ''}>` : ''}</div>`;
     h += `<div class="irow muted">Всего полей: ${Object.values(cnt).reduce((a, v) => a + v, 0)} из ${FARM_FIELDS}</div><div class="small muted">${def.crops.includes('hops') ? `Поля хмеля закладывайте инструментом «Хмель» рядом (до ${FARM_R} клеток): доска за подвесы.` : `Поля закладывайте инструментом «Пшеница» рядом с фермой (до ${FARM_R} клеток) — работяга вскопает их бесплатно.`} Сено — побочный продукт жатвы.</div>`;
   }
-  if (b.type === 'bonfire') h += `<div class="small muted">Кольца на карте: свет и защита от нечисти — ${BONFIRE_SAFE} клеток, у костра возрождаются герои — ${BONFIRE_HERO}, вне ${BONFIRE_NOSPAWN} нечисть и не появляется.</div>`;
+  if (b.type === 'bonfire') { const m = bonfireMul(b), f = r => Math.round(r * m * 10) / 10; h += `<div class="small muted">Кольца на карте: свет и защита от нечисти — ${f(BONFIRE_SAFE)} клеток, у костра возрождаются герои — ${f(BONFIRE_HERO)}, ближе ${f(BONFIRE_NOSPAWN)} нечисть не появляется.${m > 1 ? ' Костёр уровня ' + b.level + ': всё шире в ' + m + ' раза.' : ''}</div>`; }
   if (b.type === 'swine') {
     const st = ['', '⅓', '⅔'];
     h += '<div class="isec">Загон</div>';
