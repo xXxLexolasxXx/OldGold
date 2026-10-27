@@ -339,11 +339,19 @@ function* workerGen(u, b) {
   }
 }
 
+// Мастеру нечего делать у своего здания: при «Навались!» (rush.js) идёт помогать с тем, чего не хватает, иначе ждёт
+function* idleWait(u, b, w) {
+  const i = typeof rushPick === 'function' ? rushPick(u) : -1;
+  if (i < 0) { yield { wait: w }; return; }
+  u.rushJob = i;
+  yield* rushGen(u, i);
+}
+
 function outFull(b, g) { return b.stock[g] >= b.def.outputs[g]; }
 
 function* recipeWork(u, b) {
   const r = pickRecipe(b);
-  if (!r) { yield { wait: 2 }; return; }
+  if (!r) { yield* idleWait(u, b, 2); return; }
   recipeConsume(b, r);
   b.working = true;
   yield { wait: r.time * (b.cold ? WINTER_COLD_WORK : 1), anim: 'work' };     // в нетопленой мастерской руки мёрзнут (season.js)
@@ -424,7 +432,7 @@ function* woodcutterWork(u, b) {
       return;
     }
   }
-  yield { wait: 3 };
+  yield* idleWait(u, b, 3);
 }
 
 // ---------- Долбление горы ----------
@@ -511,9 +519,9 @@ function quarryTarget(u, b) {
 }
 
 function* quarryWork(u, b) {
-  if (outFull(b, 'stone')) { yield { wait: 3 }; return; }
+  if (outFull(b, 'stone')) { yield* idleWait(u, b, 3); return; }
   const tg = quarryTarget(u, b);
-  if (!tg) { yield { wait: 4 }; return; }
+  if (!tg) { yield* idleWait(u, b, 4); return; }
   const s = tg.stone;
   if (!s) {
     const f = tg.face;
@@ -729,7 +737,7 @@ function* farmWork(u, b) {
     }
     return;
   }
-  yield { wait: 3 };
+  yield* idleWait(u, b, 3);
 }
 
 // Свинарник: каждая охапка сена — все подрастающие свиньи растут на треть,

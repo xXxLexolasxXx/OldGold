@@ -351,6 +351,7 @@ function coopMirror(m) {
   if (typeof travMirrorIn === 'function') travMirrorIn(m.trav);
   if (typeof wgsMirrorIn === 'function') wgsMirrorIn(m.wgs);
   if (typeof lawMirrorIn === 'function') lawMirrorIn(m.law);
+  if (typeof rushMirrorIn === 'function') rushMirrorIn(m.rush);
   if (typeof distMirrorIn === 'function') distMirrorIn(m.dist);
   if (typeof medMirrorIn === 'function') medMirrorIn(m.med);
   if (typeof rscMirrorIn === 'function') rscMirrorIn(m.rsc);
