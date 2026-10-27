@@ -295,3 +295,35 @@ function m1Scale2(R) {
     return p1(R, i + k);
   };
 }
+
+// Дранка подробная: ряды по 4 px, пластины 3–6 px разной ширины и тона, блик по верхней кромке, тень-нахлёст снизу,
+// волокна, у свеса темнее. Мох — пятнами и полосой у свеса (moss: 0..1 — сколько).
+function m1Shingle2(R, moss = 0.5) {
+  const M = P1.ivy;
+  return (u, v, F) => {
+    const k = L1(F);
+    if (v < 2) return p1(R, 2 + k);
+    const row = Math.floor((v - 2) / 4), vv = ((v - 2) % 4 + 4) % 4;
+    // ширина пластины: накопленная граница по хэшу
+    const st = Math.floor(bhash(row, 1, 601) * 6), x = u + st, cell = Math.floor(x / 5), cw = 3 + Math.floor(bhash(cell, row, 602) * 3), uu = x - cell * 5;
+    const id = cell * 7 + row;
+    // мох: пятна (крупные ячейки) + полоса у свеса, с рваным краем через дизеринг
+    if (moss > 0) {
+      const t = v / F.L, cx = Math.floor(u / 14), cy = Math.floor(v / 10);
+      const blob = bhash(cx, cy, 603) < 0.38 * moss ? 1 - Math.hypot((u % 14) - 7, ((v % 10) - 5) * 1.3) / 7 : 0;
+      const eave = t > 0.82 ? (t - 0.82) * 5 * moss : 0;
+      const m = Math.max(blob, eave) + (bdith(u, v) - 0.5) * 0.6;
+      if (m > 0.35) return M[bcl((m > 0.75 ? 1 : 2) + (bhash(u, v, 604) < 0.2 ? 1 : 0) + k - (vv === 0 ? 1 : 0), 3)];
+    }
+    if (uu >= cw) return p1(R, 3);                                   // щель между пластинами
+    if (vv === 3) return p1(R, 3 - (uu === 0 ? 0 : 1) + k > 3 ? 3 : 2 + k);   // тень-нахлёст
+    const h = bhash(id, 0, 605);
+    let i = h < 0.22 ? 0 : h < 0.8 ? 1 : 2;
+    if (vv === 0) i -= 1;                                            // блик по кромке
+    if (uu === 0 && vv > 0) i -= 1;                                  // светлый левый край
+    if (uu === cw - 1) i += 1;                                       // тёмный правый край
+    if (vv === 2 && bhash(u, row, 606) < 0.18) i += 1;               // волокно
+    if (v / F.L > 0.85) i += 1;
+    return p1(R, i + k);
+  };
+}
