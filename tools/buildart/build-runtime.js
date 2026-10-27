@@ -10,6 +10,7 @@ const parts = [
   ['bvar3.js (помощники)', cut(R('bvar3.js'), 'const WIN1', 'const TAV1_VARS')],
   ['bvar4.js (модель трактира)', cut(R('bvar4.js'), null, 'BDEFS.innlv')],
   ['bvar5.js (трактир, вход на восток)', R('bvar5.js')],
+  ['bvar6.js (трактир в профиль)', R('bvar6.js')],
   ['inn-runtime.js', R('inn-runtime.js')],
 ];
 const out = `'use strict';

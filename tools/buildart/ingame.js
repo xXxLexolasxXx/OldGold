@@ -28,7 +28,8 @@ fs.mkdirSync(OUT, { recursive: true });
   // спрайты: все уровни и повороты строятся без ошибок
   const sprInfo = await pg.evaluate(() => { const o = []; for (const lv of [1, 2, 3]) for (const r of [0, 1, 2]) { const s = buildingSprite('inn', r, lv); o.push(`L${lv}r${r} ${s.w}x${s.h} px=${s.pxInn} wins=${s.wins.length} ch=${s.chimneys.length}`); } return o; });
   console.log(sprInfo.join('\n'));
-  for (const lv of [1, 2, 3]) for (const rot of [0, 1]) {
+  const GIF = process.env.GIF === '1';
+  for (const lv of (GIF ? [2, 3] : [1, 2, 3])) for (const rot of [0, 1]) {
     await pg.evaluate(([lv, rot]) => {
       let inn = Game.buildings.find(b => b.type === 'inn' && !b.removed);
       if (!inn || inn.rot !== rot) { if (inn) { Game.buildings.splice(Game.buildings.indexOf(inn), 1); } const c = Game.buildings.find(b => b.type === 'bonfire') || Game.buildings[0]; const px = c.x + 5, py = c.y, dd = bDims('inn', rot); for (let y = py - 1; y < py + dd.h + 1; y++) for (let x = px - 1; x < px + dd.w + 1; x++) if (inb(x, y)) World.obj[idx(x, y)] = 0;   // участок под стройку свободен, как в игре
@@ -47,6 +48,10 @@ fs.mkdirSync(OUT, { recursive: true });
     await pg.evaluate(() => { for (const el of document.querySelectorAll('div')) { const t = el.textContent || ''; const cs = getComputedStyle(el); if ((cs.position === 'fixed' || cs.position === 'absolute') && (/ОБУЧЕНИЕ|Обучение · /.test(t) || /^ЦЕЛИ/i.test(t.trim())) && el.offsetWidth < 900) el.style.display = 'none'; } });
     await pg.waitForTimeout(300);
     await pg.screenshot({ path: path.join(OUT, `inn-L${lv}-r${rot}.png`) });
+    if (GIF) {
+      const box = await pg.evaluate(() => { const s = buildingSprite('inn', _inn.rot, _inn.level), sc = camScale(); const ox = _inn.x * TILE - s.padx, oy = _inn.y * TILE - s.top; return { x: (ox - R.cam.x) * sc + R.canvas.getBoundingClientRect().left, y: (oy - R.cam.y) * sc + R.canvas.getBoundingClientRect().top, w: s.w * sc, h: s.h * sc }; });
+      for (let f = 0; f < 18; f++) { await pg.screenshot({ path: path.join(OUT, `f-L${lv}-r${rot}-${String(f).padStart(2, '0')}.png`), clip: { x: Math.max(0, box.x), y: Math.max(0, box.y), width: Math.min(box.w, 1280 - box.x), height: Math.min(box.h, 800 - box.y) } }); await pg.waitForTimeout(120); }
+    }
   }
   console.log(errs.length ? errs.slice(0, 10).join('\n') : 'ошибок нет');
   await br.close();

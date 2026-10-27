@@ -9,7 +9,7 @@ function innPxBuild(rot, lv) {
   BK = 1;
   const g = new BGrid(W, H, BPADX, top + FD);
   g.rot = 0; g.LD = FD; g.noSmoke = true;   // вход на восток — своя ровная компоновка 3×4, а не поворот модели
-  (d.rot ? buildInnTall : buildInn)(g, lv, ROOF_LV[lv](STRAW1.olive));
+  (d.rot ? buildInnProfile : buildInn)(g, lv, ROOF_LV[lv](STRAW1.olive));   // боковой вход — дом в профиль, вход в торце
   g.finish({ step: 1.6, ink: P1.ink });
   const M = g.meta;
   const scr = p => { const q = g.W3(p); return [g.sx(q[0], q[1]), g.sy(q[1], p[2] || 0)]; };
@@ -32,7 +32,7 @@ function innPxBuild(rot, lv) {
     pxInn: lv, noDeck: true, k1: true,
     chimneys: (g.chim || []).map(scr), wins,
     porch: scr(M.porch), oven: scr(M.oven), bar: scr(M.bar), doorPt: scr(M.doorPt),
-    perches: d.rot ? [scr([30, 99, 63]), scr([78, 113, 42])] : [scr([33, 69, 63]), scr([114, 78, 44])],
+    perches: d.rot ? [scr([35, 92, 57]), scr([12, 95, 58])] : [scr([33, 69, 63]), scr([114, 78, 44])],
     fire: M.fire && scr(M.fire), spit: M.spit && scr(M.spit), chop: M.chop && scr(M.chop), darts: M.darts && scr(M.darts), stage: M.stage && scr(M.stage),
     seats: (M.seats || []).map(scr), tables: (M.tables || []).map(scr), pantry: (M.pantry || []).map(scr), stock: (M.stock || []).map(scr),
     feast: (M.feast || []).map(p => [...scr(p), p[3]]),

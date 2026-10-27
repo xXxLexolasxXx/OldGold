@@ -158,6 +158,9 @@ function drawInnPorch(c, b, spr, ox, oy) {
   const hw = innHalf(b), tw = hw * 2 - 6, DS = innSeats(b), cap = DS.length;
   if (!spr.noDeck) innDeck(c, tx, ty, hw);   // у пиксельного трактира настил уже в спрайте
   innBench(c, tx, ty - 6, tw + 2);   // дальняя скамья
+  // у пиксельного трактира дверь позади стола: официантка подходит к столу сзади и рисуется за едоками
+  const waitBehind = !!spr.pxInn && !slapTick(b, diners.length);
+  if (waitBehind) { drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 0, hw); if (innLv(b) >= 3) drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 1, hw); }
   const seat = (u, i) => {
     const [dx, row] = DS[i];
     const view = row < 0 ? 'S' : 'N';
@@ -188,7 +191,7 @@ function drawInnPorch(c, b, spr, ox, oy) {
   }
   innBench(c, tx, ty + 7, tw + 2);   // ближняя скамья — поверх спин
   if (slapTick(b, diners.length)) drawSlapScene(c, b, spr, tx, ty, ox, oy);
-  else {
+  else if (!waitBehind) {
     drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 0, hw);
     if (innLv(b) >= 3) drawWaitress(c, b, spr, tx, ty, ox, oy, diners.length, 1, hw);
   }
@@ -204,7 +207,7 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests, n, hw) {
   const dt = Math.min(0.1, Math.max(0, t - w.last)); w.last = t;
   const dp = spr.doorPt || [spr.doorCx, spr.baseY - 6];
   const dx = ox + dp[0], dy = oy + dp[1] + 4;
-  const tgtX = n ? tx + hw + 4 : tx - hw - 4, tgtY = ty + 9;
+  const tgtX = spr.pxInn ? tx + (n ? 1 : -1) * Math.max(6, hw - 10) : n ? tx + hw + 4 : tx - hw - 4, tgtY = spr.pxInn ? ty - 12 : ty + 9;   // пиксельный трактир: за столом, со стороны дома
   w.t -= dt;
   const walkTo = (X, Y, v) => {
     const ex = X - w.x, ey = Y - w.y, d = Math.hypot(ex, ey);
