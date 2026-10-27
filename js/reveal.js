@@ -222,7 +222,7 @@ function rvMenuButton() {
   unlockStage = function (id, quiet) {
     const had = Game.unlocked && Game.unlocked[id], lore = REVEAL_STAGE[id];
     _us(id, quiet || !!lore);
-    if (!had && !quiet && lore && Game.unlocked[id] && !RV.all) rvNote(lore[0], lore[1], 'build');
+    if (!had && !quiet && lore && Game.unlocked[id] && !RV.all && !(typeof introFor === 'function' && introFor(id))) rvNote(lore[0], lore[1], 'build');
   };
 }
 
