@@ -8,7 +8,8 @@
 //   R2 — «колпак»: высокий чёрный колпак-жнец с лентой, заплатой и потрёпанными полями (как у призраков), рожки сквозь колпак;
 //   R3 — «капюшон»: глубокий капюшон, череп в тени, над ним — корона из костяных шипов.
 // mood: 'idle' | 'boo' | 'atk'; p — фаза парения 0..1; k — ход взмаха 0..1 (замах 0–.35, удар .35–.6, отдача).
-// Пока только лист на согласование: в index.html не подключён.
+// Владелец выбрал: у всех жнецов колпак (R2), у каждой из трёх форм рогов (g.var) — свой колпак; шлем R1 и капюшон R3 не в игре.
+// В игре рисуется из drawGhosts (ghosts.js), R3 пока не в игре.
 
 const RPX = {
   RB: [[4, 6, 12], [10, 14, 24], [20, 26, 40], [34, 44, 64], [56, 72, 100], [90, 114, 148]],      // ряса: чёрно-синяя, холодный край
@@ -16,6 +17,10 @@ const RPX = {
   HM: [[6, 8, 12], [20, 24, 32], [42, 48, 60], [72, 82, 98], [124, 140, 160]],                    // шлем: воронёный
   CAP: [[6, 8, 14], [16, 20, 30], [30, 36, 50], [50, 58, 76], [80, 92, 112]],
   BAND: [[30, 6, 8], [64, 14, 14], [100, 28, 22], [140, 48, 34]],                                  // лента на колпаке — запёкшаяся кровь
+  BAND2: [[22, 8, 30], [46, 18, 58], [76, 34, 90], [110, 60, 124]],                                // лиловая
+  BAND3: [[8, 22, 18], [18, 44, 36], [34, 70, 56], [58, 100, 80]],                                  // тёмно-зелёная
+  CAP2: [[10, 8, 10], [22, 18, 22], [38, 32, 38], [60, 52, 58], [92, 82, 88]],                     // бурая чернь
+  CAP3: [[4, 8, 12], [12, 20, 28], [24, 36, 48], [42, 58, 74], [72, 92, 110]],                      // сине-чёрный
   PATCH: [[18, 20, 26], [32, 36, 44], [52, 58, 68], [78, 86, 98]],
   HORN: [[24, 8, 8], [60, 20, 14], [110, 44, 26], [170, 90, 50], [230, 170, 110]],
   VO: [[2, 4, 8], [8, 12, 20], [16, 22, 34]],
@@ -26,7 +31,7 @@ const RPX = {
   EDGE: [2, 4, 10],
 };
 
-function reaperPx(v, mood, p = 0, k = 0) {
+function reaperPx(v, mood, p = 0, k = 0, hv = 0) {
   const K = fzPxKit(243, 309, 120, 129), { P, R, L, dth, hsh } = K, TAU = Math.PI * 2, { RB, BO, VO, IR, WD, CL } = RPX;
   const atk = mood === 'atk', boo = mood === 'boo' || atk;
   const sn = (m, o = 0) => Math.sin(p * TAU * m + o), sm = x => x * x * (3 - 2 * x);
@@ -41,6 +46,18 @@ function reaperPx(v, mood, p = 0, k = 0) {
     return (Math.hypot(dx, dy) - 1) * 12;
   };
   const ell = DS_ell, cap = DS_cap, tip = sn(1, 0.6) * 7 + lean * 0.4;
+  // колпак жнеца — свой у каждой формы рогов (образец — колпаки призраков: лента со стежками, заплата, складки, потрёпанные поля):
+  //  hv 2 бычьи с завитком — высокий острый, кончик загнут назад, кровавая лента;
+  //  hv 0 бараньи спирали — мягкий, кончик свисает вперёд, широкие поля, лиловая лента, две заплаты;
+  //  hv 1 винтом вверх — узкий, между рогами, кончик крюком назад и вниз, помпон, тёмно-зелёная лента
+  const CP = [
+    { cone: [[HX, HY - 14, 25], [HX + 3, HY - 40, 14], [HX + 16 + tip * 0.6, HY - 58, 8], [HX + 32 + tip, HY - 54, 4], [HX + 38 + tip, HY - 42, 1.5]], brim: 33,
+      patch: [[HX + 9, HY - 36], [HX - 9, HY - 30]], band: RPX.BAND2, fab: RPX.CAP2 },
+    { cone: [[HX, HY - 15, 21], [HX - 3 + tip * 0.2, HY - 44, 11], [HX - 10 + tip * 0.6, HY - 70, 6], [HX - 26 + tip, HY - 80, 3.5], [HX - 36 + tip, HY - 70, 2]], brim: 26,
+      patch: [[HX - 5, HY - 44]], band: RPX.BAND3, fab: RPX.CAP3, bob: [HX - 37 + tip, HY - 66] },
+    { cone: [[HX, HY - 15, 24], [HX - 6 + tip * 0.3, HY - 48, 13], [HX - 20 + tip, HY - 78, 5], [HX - 36 + tip * 1.5, HY - 90, 1]], brim: 30,
+      patch: [[HX - 7 + tip * 0.15, HY - 42]], band: RPX.BAND, fab: RPX.CAP },
+  ][hv];
 
   // ---- ось рясы: плечи → длинный хвост
   const tailLen = 150 - 20 * strike, N = 14, spine = [];
@@ -121,10 +138,11 @@ function reaperPx(v, mood, p = 0, k = 0) {
     parts.push({ f: (x, y) => Math.max(faceF(x, y), HY - 9 - y) - 1, mat: 'void', zone: true });
   } else if (v === 'R2') {
     parts.push({ f: ell(HX, HY - 2, 22, 22), mat: 'bo', k: 6 }, { f: faceF, mat: 'bo', k: 4 });
-    parts.push(...DS_chain([[HX, HY - 15, 24], [HX - 6 + tip * 0.3, HY - 48, 13], [HX - 20 + tip, HY - 78, 5], [HX - 36 + tip * 1.5, HY - 90, 1]], { mat: 'cap', k: 3 }));
-    parts.push({ f: ell(HX, HY - 12, 30, 9), mat: 'cap', k: 2, front: true, fw: 3 });
-    parts.push({ f: (x, y) => Math.max(DS_ell(HX, HY - 15, 25, 40)(x, y), Math.abs(y - HY + 24) - 3), mat: 'band', zone: true });
-    parts.push({ f: (x, y) => Math.max(Math.abs(x - HX + 7 - tip * 0.15) - 6, Math.abs(y - HY + 42) - 5), mat: 'patch', zone: true });
+    parts.push(...DS_chain(CP.cone, { mat: 'cap', k: 3 }));
+    parts.push({ f: ell(HX, HY - 12, CP.brim, 9), mat: 'cap', k: 2, front: true, fw: 3 });
+    parts.push({ f: (x, y) => Math.max(DS_ell(HX, HY - 15, 26, 40)(x, y), Math.abs(y - HY + 24) - 3), mat: 'band', zone: true });
+    for (const [px, py] of CP.patch) parts.push({ f: (x, y) => Math.max(Math.abs(x - px) - 6, Math.abs(y - py) - 5), mat: 'patch', zone: true });
+    if (CP.bob) parts.push({ f: ell(CP.bob[0], CP.bob[1], 6, 6), mat: 'band', k: 2, front: true, fw: 3 });
     parts.push({ f: (x, y) => Math.max(faceF(x, y), HY - 5 - y), mat: 'bo', zone: true });
   } else {
     parts.push({ f: ell(HX - 3, HY - 5, 33, 36), mat: 'cap', k: 9 });
@@ -141,41 +159,45 @@ function reaperPx(v, mood, p = 0, k = 0) {
     }
     if (mat === 'cap' && v === 'R3') { const d = faceF(x, y); if (d > 0 && d < 6 && hsh(Math.floor(x / 2) + y * 0.3) > 0.55) return ramp[0]; }
     if (mat === 'band') return Math.round(cy + 24) === 0 && ((x + 60) % 5) < 2 ? BO[2] : null;
-    if (mat === 'patch') { const ex = Math.abs(x - HX + 7 - tip * 0.15), ey = Math.abs(y - HY + 42); return ex > 5 || ey > 4 ? (((x + y) & 1) ? BO[3] : ramp[0]) : null; }
-    if (mat === 'hm') {                                                                // шлем: гребень посередине, заклёпки по ободу
-      if (Math.abs(cx) < 1.5 && cy < -10) return ramp[Math.min(ramp.length - 1, idx + 1)];
+    if (mat === 'patch') { const [px, py] = CP.patch.reduce((a, q) => Math.hypot(x - q[0], y - q[1]) < Math.hypot(x - a[0], y - a[1]) ? q : a), ex = Math.abs(x - px), ey = Math.abs(y - py); return ex > 5 || ey > 4 ? (((x + y) & 1) ? BO[3] : ramp[0]) : null; }
+    if (mat === 'hm') {                                                                // шлем: заклёпки по ободу
       if (Math.abs(cy + 8) < 1 && Math.abs(cx) > 12 && Math.abs(cx) < 20 && (x & 3) === 0) return RPX.IR[3];
     }
     return null;
   };
-  DS_body(K, parts, { rb: RB, bo: BO, cap: RPX.CAP, band: RPX.BAND, patch: RPX.PATCH, hm: RPX.HM, void: VO }, { bb: [-120, -128, 121, 179], W: 10, k: 6, amb: 0.14, mat: 'rb', cut, tex });
+  DS_body(K, parts, { rb: RB, bo: BO, cap: CP.fab, band: CP.band, patch: RPX.PATCH, hm: RPX.HM, void: VO }, { bb: [-120, -128, 121, 179], W: 10, k: 6, amb: 0.14, mat: 'rb', cut, tex });
 
   // ---- череп в прорези шлема (R1) или в глубине капюшона (R3)
   if (v !== 'R2') DS_body(K, [{ f: ell(FX, FY - 4, 15, 13), mat: 'bo' }, { f: faceF, mat: 'bo', k: 4 }],
     { bo: BO.slice(0, 4) }, { bb: [-50, -50, 50, 60], W: 6, k: 4, amb: 0.1, mat: 'bo' });
-  if (v === 'R1') R(FX - 26, HY - 26, FX + 26, HY - 6, (x, y) => {                     // нахмуренный козырёк шлема поверх черепа
-    const d = ell(HX, HY - 2, 23, 25)(x, y);
-    return d < 0 && y < HY - 7 + Math.abs(x - HX) * 0.18 && y > HY - 13 + Math.abs(x - HX) * 0.18 ? (y < HY - 10 + Math.abs(x - HX) * 0.18 ? RPX.HM[3] : RPX.HM[1]) : null;
-  });
   // кромка лица
   R(FX - 22, HY - 8, FX + 22, FY + 32 + drop, (x, y) => { const d = faceF(x, y); return d > -1.2 && d <= 0 && y > HY - 6 ? BO[0] : null; });
 
-  // ---- рога: R1 — бараньи, загнутые к щекам; R2 — короткие рожки сквозь колпак; R3 — корона костяных шипов
+  // ---- рога: три формы (hv, как g.var у векторного жнеца) — 0 бараньи спирали, 1 винтом вверх, 2 бычьи с завитком на конце;
+  // у шлема (R1) крупные, у колпака (R2) торчат сквозь колпак и закручены сильнее; R3 — корона костяных шипов
   const horn = (pts, r0) => {
     const H = RPX.HORN, n = pts.length - 1;
-    K.path(pts.map((q, i) => [q[0], q[1], r0 * Math.pow(1 - i / n, 0.8) + 0.4]), (t, e, sd) => e ? H[0] : (Math.floor(t * 18) % 3 === 0 ? H[1] : t > 0.8 ? H[4] : sd > 0 ? H[2] : H[3]));
+    K.path(pts.map((q, i) => [q[0], q[1], r0 * Math.pow(1 - i / n, 0.75) + 0.5]), (t, e, sd) => e ? H[0] : (Math.floor(t * 22) % 3 === 0 ? H[1] : t > 0.82 ? H[4] : sd > 0 ? H[2] : H[3]));
   };
+  const curl = v === 'R2' ? 1.45 : 1, HS = v === 'R2' ? 1.1 : 1.25;                    // закрут и размер
   for (const s of [-1, 1]) {
-    if (v === 'R1') {
-      const b = [HX + s * 20, HY - 10], pts = [];
-      for (let i = 0; i <= 14; i++) { const t = i / 14, a = -Math.PI / 2 + s * (0.3 + t * 4.2), r = 10 + t * 10; pts.push([b[0] + s * 14 * t + Math.cos(a) * r * t * 1.2, b[1] - 4 * t + Math.sin(a) * r * t]); }
-      horn(pts, 6.5);
-    } else if (v === 'R2') {
-      const b = [HX + s * 20, HY - 22];
-      horn([b, [b[0] + s * 8, b[1] - 6], [b[0] + s * 12, b[1] - 15], [b[0] + s * 10, b[1] - 22]], 3.6);
-    } else for (const j of [0.7, 1.2]) {
-      const a = -Math.PI / 2 + s * j * 0.5, b = [HX - 3 + s * j * 14, HY - 34 + j * 6];
-      horn([b, [b[0] + Math.cos(a) * 7, b[1] + Math.sin(a) * 7], [b[0] + Math.cos(a) * 14, b[1] + Math.sin(a) * 14]], 2.8);
+    if (v === 'R3') {
+      for (const j of [0.7, 1.2]) { const a = -Math.PI / 2 + s * j * 0.5, b = [HX - 3 + s * j * 14, HY - 34 + j * 6]; horn([b, [b[0] + Math.cos(a) * 7, b[1] + Math.sin(a) * 7], [b[0] + Math.cos(a) * 14, b[1] + Math.sin(a) * 14]], 2.8); }
+      continue;
+    }
+    const b = v === 'R1' ? [HX + s * 19, HY - 9] : [HX + s * 19, HY - 25], pts = [];
+    if (hv === 0) {                                                                     // баранья спираль: вверх, наружу и вниз к щеке, тугой завиток
+      const c0 = [b[0] + s * 13 * HS, b[1] + 3 * HS], th0 = s > 0 ? Math.PI : 0, r0 = Math.hypot(b[0] - c0[0], b[1] - c0[1]);
+      for (let i = 0; i <= 26; i++) { const t = i / 26, th = th0 + s * t * Math.PI * 2 * (v === 'R2' ? 1.05 : 1.15), r = r0 * (1 - 0.55 * t) + 6 * HS * Math.sin(t * Math.PI) * (1 - t); pts.push([c0[0] + Math.cos(th) * r, c0[1] + Math.sin(th) * r]); }
+      horn(pts, 7 * HS);
+    } else if (hv === 1) {                                                              // винтом вверх: высокие, витые
+      for (let i = 0; i <= 22; i++) { const t = i / 22; pts.push([b[0] + s * (5 + 8 * t + Math.sin(t * Math.PI * 2.5 * curl) * 6 * (1 - t * 0.5)) * HS, b[1] - 46 * t * HS]); }
+      horn(pts, 6 * HS);
+    } else {                                                                            // бычьи: вбок, вверх и завиток внутрь на конце
+      for (let i = 0; i <= 14; i++) { const t = i / 14; pts.push([b[0] + s * (30 * Math.sin(t * Math.PI * 0.55)) * HS, b[1] - (4 + 30 * t * t) * HS]); }
+      const e = pts[pts.length - 1], c0 = [e[0] - s * 6 * HS, e[1]];
+      for (let i = 1; i <= 12; i++) { const t = i / 12, th = (s > 0 ? 0 : Math.PI) - s * t * Math.PI * 1.3 * curl, r = 6 * HS * (1 - 0.6 * t); pts.push([c0[0] + Math.cos(th) * r, c0[1] + Math.sin(th) * r]); }
+      horn(pts, 6.5 * HS);
     }
   }
   if (v === 'R3') horn([[HX - 4, HY - 38], [HX - 4, HY - 46], [HX - 3, HY - 54]], 3);
@@ -218,6 +240,21 @@ function reaperPx(v, mood, p = 0, k = 0) {
   K.outline(RPX.EDGE);
   return K.done();
 }
-function reaperPxSprite(v, mood, f, n) {
-  return fzPxSprite('rp' + v + mood + f + '_' + n, 81, 103, 40, 43, () => reaperPx(v, mood, mood === 'atk' ? 0 : f / n, mood === 'atk' ? f / (n - 1) : 0));
+// Кадры: парение 12 (10 к/с, как у призраков), гнев 9, взмах косой 9. hv — форма рогов 0..2.
+const RPX_N = { idle: 12, boo: 9, atk: 9 };
+function reaperPxSprite(v, mood, f, n = RPX_N[mood], hv = 0) {
+  f = Math.max(0, Math.min(n - 1, f | 0));
+  return fzPxSprite('rp' + v + mood + f + '_' + n + 'h' + hv, 81, 103, 40, 43, () => reaperPx(v, mood, mood === 'atk' ? 0 : f / n, mood === 'atk' ? f / (n - 1) : 0, hv));
+}
+// кадр для игры по бюджету новых спрайтов (как ghostPxFrame)
+const RPX_LAST = new WeakMap();
+function reaperPxFrame(g, v, mood, f, hv) {
+  f = Math.max(0, Math.min(RPX_N[mood] - 1, f | 0));
+  const have = FZ_CVC['rp' + v + mood + f + '_' + RPX_N[mood] + 'h' + hv], last = RPX_LAST.get(g);
+  if (have) { RPX_LAST.set(g, have); return have; }
+  if (last && typeof spriteBudgetOk === 'function' && !spriteBudgetOk(true)) return last;
+  const t0 = performance.now(), cv = reaperPxSprite(v, mood, f, RPX_N[mood], hv);
+  if (typeof spriteSpent === 'function') spriteSpent(t0);
+  RPX_LAST.set(g, cv);
+  return cv;
 }
