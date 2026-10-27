@@ -42,7 +42,7 @@ function kpSprite(fr, ph) {
   if (e) { KP_CACHE.delete(key); KP_CACHE.set(key, e); KP._last = e; return e; }
   if (typeof spriteBudgetOk === 'function' && !spriteBudgetOk(!!KP._last)) return KP._last;
   const t0 = performance.now();
-  if (!KP_SCRATCH) KP_SCRATCH = mkSprite(KP.W, KP.H, KP.PS);
+  if (!KP_SCRATCH) KP_SCRATCH = mkScratch(KP.W, KP.H, KP.PS);
   const [cv, c] = KP_SCRATCH;
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
   c.setTransform(KP.PS, 0, 0, KP.PS, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
