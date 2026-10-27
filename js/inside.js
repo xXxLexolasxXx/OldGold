@@ -246,6 +246,7 @@ function drawInside(c, b, spr, ox, oy) {
   if (spr.px === 'storehouse') drawStoreYard(c, b, spr, ox, oy);
   if (spr.px === 'school') drawSchoolYard(c, b, spr, ox, oy);
   if (spr.px === 'sawmill') drawSawYard(c, b, spr, ox, oy);
+  if (spr.px === 'quarry') drawQuarryYard(c, b, spr, ox, oy);
   if (b.type === 'inn') { if (spr.pxInn) drawInnYard(c, b, spr, ox, oy); drawInnPorch(c, b, spr, ox, oy); drawInnOven(c, b, spr, ox, oy); drawBarmaid(c, b, spr, ox, oy); if (spr.pxInn) drawInnExtraDiners(c, b, spr, ox, oy); }
 }
 
@@ -643,5 +644,18 @@ function drawSawYard(c, b, spr, ox, oy) {
   const w = spr.workers || [];
   if (w[0]) drawFolk(c, { type: 'woodcutter', look: b.id * 53 + 1 }, ox + w[0][0], oy + w[0][1], 'W', on ? 'work' : 'idle', on ? { anim: 'build', f: Math.floor(t * 6) % 8 } : 0, {});   // подаёт бревно
   if (w[1]) drawFolk(c, { type: 'woodcutter', look: b.id * 53 + 2 }, ox + w[1][0], oy + w[1][1], 'E', on ? 'work' : 'idle', on ? { anim: 'chop', f: Math.floor(t * 5 + 3) % 8 } : 0, {});   // принимает доски
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Пиксельная каменоломня (bldpx.js): на переднем плане каменотёс тешет блок, летят сколы ----------
+function drawQuarryYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done' || !spr.work) return;
+  const t = Game.time, on = !!b.working, [wx, wy] = spr.work, f = Math.floor(t * 7 + b.id) % 8;
+  c.imageSmoothingEnabled = false;
+  drawFolk(c, { type: 'stonemason', look: b.id * 61 + 3 }, ox + wx, oy + wy, 'E', on ? 'work' : 'idle', on ? { anim: 'mine', f } : 0, {});
+  if (on && spr.block && f >= 4) {   // удар: сколы и пыль от блока
+    const [bx, by] = spr.block;
+    for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI + (f - 4) * 0.3, r = (f - 3) * 2; c.fillStyle = k % 2 ? '#c6c9bf' : '#8792a4'; c.fillRect(Math.round(ox + bx - 4 + Math.cos(a) * r), Math.round(oy + by - 6 - Math.sin(a) * r), 1, 1); }
+  }
   c.imageSmoothingEnabled = R.smooth;
 }

@@ -31,6 +31,14 @@ fs.mkdirSync(OUT, { recursive: true });
     await pg.evaluate(setup);
     await pg.waitForTimeout(1200); await hide(); await pg.waitForTimeout(200);
     await pg.screenshot({ path: path.join(OUT, name) });
+    // крупно каждое здание по его рамке (зум 3)
+    const types = await pg.evaluate(() => (window._shotB || []).map((b, i) => i));
+    for (const i of types) {
+      const box = await pg.evaluate(i => { const b = window._shotB[i]; R.cam.z = 3; const s = buildingSprite(b.type, b.rot || 0, b.level); centerOn((b.x + b.w / 2) * TILE, (b.y + b.h / 2) * TILE - 20); const sc = camScale(), r = R.canvas.getBoundingClientRect(); const ox = b.x * TILE - s.padx, oy = b.y * TILE - s.top; return { x: (ox - R.cam.x) * sc + r.left, y: (oy - R.cam.y) * sc + r.top, w: s.w * sc, h: s.h * sc, t: b.type + (b.rot ? '-side' : '') }; }, i);
+      await pg.waitForTimeout(500);
+      const x = Math.max(0, box.x), y = Math.max(0, box.y);
+      await pg.screenshot({ path: path.join(OUT, name.replace('.png', '') + '-' + box.t + '.png'), clip: { x, y, width: Math.min(box.w, 1280 - x), height: Math.min(box.h, 800 - y) } });
+    }
   };
   const prep = `
     const c = Game.buildings.find(b => b.type === 'bonfire') || Game.buildings[0];
@@ -44,7 +52,8 @@ fs.mkdirSync(OUT, { recursive: true });
       const w = placeBuilding('sawmill', X0 + 4, Y0, true, 0); w.level = ${lv}; w.state = 'done'; w.working = true;
       const w2 = placeBuilding('sawmill', X0 + 4, Y0 + 3, true, 1); w2.level = ${lv}; w2.state = 'done'; w2.working = true;
       const h = placeBuilding('woodcutter', X0 + 8, Y0, true, 0); h.level = ${lv}; h.state = 'done';
-      const q = placeBuilding('quarry', X0 + 8, Y0 + 3, true, 0); q.level = ${lv}; q.state = 'done';
+      const q = placeBuilding('quarry', X0 + 8, Y0 + 3, true, 0); q.level = ${lv}; q.state = 'done'; q.working = true;
+      window._shotB = [s, w, w2, h, q];
       if (typeof Game.dayT !== 'undefined') Game.dayT = 0.4;
       R.cam.z = 2; centerOn((X0 + 6) * TILE, (Y0 + 2) * TILE);
     `), `batch2-L${lv}.png`);

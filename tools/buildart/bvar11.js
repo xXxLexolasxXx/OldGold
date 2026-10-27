@@ -205,7 +205,9 @@ const QUARRY2_VARS = [
     box(g, Object.assign({ mat: m1Plank(P1.plank, 3) }, H)); roof(g, H, { type: 'gable', axis: 'Y', rise: 8, ov: 2, ovg: 2, mat: R.mat, cut: R.cut, th: R.th, gable: m1Plank(P1.plank, 3) });
     elem(g, 'S', H.y0, 51, 0, 8, 9, m1Door({ w: 8, h: 9, col: P1.dark })); g.meta.doorPt = [55, H.y0, 0];
     g.sprite([24, 26, 0], P => QS.blocks(P)); g.sprite([34, 30, 0], P => QK.wedges(P)); g.sprite([10, 18, 0], P => QS.rocks(P, 6, P1.stoneB)); g.sprite([38, 12, 0], P => Q1.barrow(P));
-    g.meta.work = [31, 34, 0];
+    // передний план: каменотёс тешет блок на колоде (сам гном и сколы — анимация игры, inside.js)
+    box(g, { x0: 40, x1: 48, y0: 12, y1: 18, h: 4, mat: m1Stone(P1.stone, 4, 3), top: m1Flat(P1.stone[0]) });
+    g.meta.work = [36, 14, 0]; g.meta.block = [44, 15, 4];
     if (lv >= 2) g.sprite([8, 34, 0], P => QK.tripod(P));
   } },
   { name: 'К-2. Штольня в холме: деревянный портал, рельсы, вагонетка с камнем, фонари', make(g, lv) {

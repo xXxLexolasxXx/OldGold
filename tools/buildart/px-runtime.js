@@ -64,7 +64,7 @@ function pxBuild(type, rot, lv, vr) {
   });
   if (type === 'school') { spr.play = {}; for (const k in M.play || {}) spr.play[k] = Array.isArray(M.play[k][0]) ? M.play[k].map(scr) : scr(M.play[k]); }
   if (type === 'sawmill') Object.assign(spr, { saw: opt(M.saw), sawR: M.sawR, sawSide: !!g.rot, logIn: opt(M.logIn), halves: opt(M.halves), dust: opt(M.dust), workers: arr(M.workers) });
-  if (type === 'woodcutter' || type === 'quarry') spr.work = opt(M.work);
+  if (type === 'woodcutter' || type === 'quarry') { spr.work = opt(M.work); spr.block = opt(M.block); }
   if (type === 'storehouse') {
     spr.piles = {}; for (const k in M.piles || {}) spr.piles[k] = M.piles[k].map(scr);
     spr.runes = arr(M.glow); spr.drop = arr(M.drop); spr.circle = opt(M.circle);
@@ -78,7 +78,7 @@ function pxUp(src, k) { const cv = mkCanvas(src.width * k, src.height * k), c = 
 // зеркало для входа с запада (rot 2): старые поля отражает mirrorSprite, новые — здесь
 function pxMirror(s) {
   const m = mirrorSprite(s, s.fw), W = s.w, pt = p => p && [W - p[0], p[1], ...p.slice(2)];
-  for (const k of ['fire', 'spit', 'chop', 'darts', 'stage', 'circle', 'saw', 'logIn', 'halves', 'dust', 'work']) m[k] = pt(s[k]);
+  for (const k of ['fire', 'spit', 'chop', 'darts', 'stage', 'circle', 'saw', 'logIn', 'halves', 'dust', 'work', 'block']) m[k] = pt(s[k]);
   for (const k of ['seats', 'tables', 'pantry', 'stock', 'runes', 'drop', 'workers']) m[k] = (s[k] || []).map(pt);
   if (s.play) { m.play = {}; for (const k in s.play) m.play[k] = Array.isArray(s.play[k][0]) ? s.play[k].map(pt) : pt(s.play[k]); }
   if (s.piles) { m.piles = {}; for (const k in s.piles) m.piles[k] = s.piles[k].map(pt); }
