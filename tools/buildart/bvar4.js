@@ -113,7 +113,8 @@ function buildInn(g, lv, roofs) {
   } else if (lv === 2) {
     fence1(g, 4, 60, 4, 4); fence1(g, 4, 4, 4, 36);
     g.sprite([12, 26, 0], P => Q1.tree(P, 13));
-    for (const [x, y] of [[26, 12], [48, 12], [40, 26]]) { g.sprite([x, y, 0], P => Q1.table(P, 14)); meta.tables.push([x, y, 0]); }
+    meta.porch = [32, 17, 0];   // главный стол (6 мест) рисует игра — во дворе, не на маленькой веранде
+    g.sprite([52, 28, 0], P => Q1.bench(P, 10));
     g.sprite([8, 34, 0], P => Q1.sunflower(P, 18)); g.sprite([4, 38, 0], P => Q1.sunflower(P, 14));
     lampPost(g, 62, 2); lampPost(g, 4, 2); g.sprite([58, 26, 0], P => Q1.barrel(P));
     bunting(g, [4, 2, 16], [62, 2, 16]);
@@ -124,17 +125,7 @@ function buildInn(g, lv, roofs) {
     for (const [x, y] of [[4, 32], [34, 32], [64, 32]]) g.sprite([x, y, 19], P => Q1.lantern(P));
     bunting(g, [3, 31, 19], [33, 31, 19]); bunting(g, [33, 31, 19], [63, 31, 19]);
     lampPost(g, 2, 2);
-    // длинный стол: столешница, ножки, две скамьи; еда и кружки по всей длине
-    const T = { x0: 8, x1: 60, y0: 15, y1: 21 };
-    box(g, { x0: T.x0, x1: T.x1, y0: T.y0, y1: T.y1, z0: 5.5, h: 1.2, mat: (u, v, F) => P1.plank[F.li === 0 ? 1 : 2], top: (u, v) => P1.plank[((u | 0) % 9 === 0) ? 2 : ((v | 0) % 3 === 0 ? 1 : 0)] });
-    for (const x of [T.x0 + 1, (T.x0 + T.x1) / 2, T.x1 - 2]) for (const y of [T.y0 + 1, T.y1 - 2]) box(g, { x0: x, x1: x + 1, y0: y, y1: y + 1, z0: 1.2, h: 4.3, mat: m1Flat(P1.plank[3]) });
-    for (const y of [T.y0 - 4, T.y1 + 2]) { box(g, { x0: T.x0, x1: T.x1, y0: y, y1: y + 2, z0: 3, h: 1, mat: (u, v, F) => P1.plank[F.li === 0 ? 1 : 2], top: m1Flat(P1.plank[0]) }); for (const x of [T.x0 + 1, T.x1 - 2]) box(g, { x0: x, x1: x + 1, y0: y, y1: y + 2, z0: 1.2, h: 1.8, mat: m1Flat(P1.plank[3]) }); }
-    for (let x = T.x0 + 3; x < T.x1 - 2; x += 6) {
-      g.sprite([x, T.y0 + 1, 6.7], P => { P(0, -2, P1.gold[1]); P(0, -1, P1.gold[1]); P(0, -3, P1.white[0]); }, -1);
-      g.sprite([x + 3, T.y1 - 1, 6.7], P => { PR.ell(P, 0, -1, 2, 1.2, (xx, yy, aa, bb) => (bb < 0 ? P1.log[0] : P1.log[2])); }, -1);
-    }
-    g.sprite([(T.x0 + T.x1) / 2, (T.y0 + T.y1) / 2, 6.7], P => Q1.planter(P, 7), -1);
-    meta.feast = []; for (let x = T.x0 + 3; x < T.x1 - 2; x += 6) meta.feast.push([x, T.y0 - 3, 4, 'N'], [x, T.y1 + 3, 4, 'S']);   // места: сидят лицом к столу
+    meta.porch = [34, 18, 1.2];   // длинный стол на 8 едоков и скамьи рисует игра (inside.js) — так видно, кто ест
     // бочка-бар на козлах у края террасы
     g.sprite([68, 26, 0], P => { Q1.barrel((x, y, c) => P(x, y - 3, c), 11, 13); PR.rect(P, -6, -3, 6, -3, P1.plank[3]); P(-5, -2, P1.plank[3]); P(5, -2, P1.plank[3]); P(-5, -1, P1.plank[3]); P(5, -1, P1.plank[3]); P(7, -9, P1.iron[1]); P(8, -9, P1.iron[0]); });
     lampPost(g, 70, 2);

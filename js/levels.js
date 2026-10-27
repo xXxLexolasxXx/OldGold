@@ -260,6 +260,7 @@ function eraEvict(keep) {
 
 function buildingSprite(type, rot = 0, level = 1, settle, vr = 0) {
   const lv = level >= 3 && (BUILDINGS[type].up3 || type.startsWith('guild_')) ? 3 : level >= 2 && BUILDINGS[type].up ? 2 : 1;
+  if (type === 'inn' && typeof innPxSprite === 'function') return innPxSprite(rot, lv);   // пиксельный трактир ×1 со своими уровнями (bldpx.js)
   const era = buildingEra(type, lv, settle);
   if (lv < 2 && NO_GREEN.has(type)) return buildingSpriteBase(type, rot, 1, era, vr);
   const d = bDims(type, rot);

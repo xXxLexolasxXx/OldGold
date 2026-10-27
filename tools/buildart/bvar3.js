@@ -9,7 +9,8 @@ function chimney1(g, x, y, z0, h, o = {}) {
   box(g, { x0: x, x1: x + w, y0: y, y1: y + d, z0, h, mat: m, top: m1Flat(P1.stone[2]) });
   box(g, { x0: x - 1, x1: x + w + 1, y0: y - 1, y1: y + d + 1, z0: z0 + h, h: 1.5, mat: m1Flat(P1.stone[1]), top: m1Flat(P1.stone[0]) });
   g.face([[x + 1, y + 1, z0 + h + 1.51], [x + w - 1, y + 1, z0 + h + 1.51], [x + w - 1, y + d - 1, z0 + h + 1.51], [x + 1, y + d - 1, z0 + h + 1.51]], [1, 0, 0], [0, 1, 0], m1Flat(P1.ink), { dz: -0.01 });
-  if (o.smoke !== false) g.sprite([x + w / 2, y + d / 2, z0 + h + 2], P => Q1.smoke(P), -3);
+  (g.chim = g.chim || []).push([x + w / 2, y + d / 2, z0 + h + 2]);
+  if (o.smoke !== false && !g.noSmoke) g.sprite([x + w / 2, y + d / 2, z0 + h + 2], P => Q1.smoke(P), -3);   // в игре дым рисует render.js по spr.chimneys
 }
 function post1(g, x, y, z0, h, s = 2, R = P1.beam) { box(g, { x0: x, x1: x + s, y0: y, y1: y + s, z0, h, mat: (u, v, F) => R[F.li === 0 ? 1 : 2], top: m1Flat(R[1]) }); }
 function beam1(g, x0, x1, y0, y1, z0, h, R = P1.beam) { box(g, { x0, x1, y0, y1, z0, h, mat: (u, v, F) => R[F.li === 0 ? 1 : 2], top: m1Flat(R[0]) }); }
