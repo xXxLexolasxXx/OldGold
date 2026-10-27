@@ -138,6 +138,24 @@ function pbIK(sx, sy, tx, ty, l1, l2, bend = 1) {
   const ex = sx + Math.cos(a1) * l1, ey = sy + Math.sin(a1) * l1, hx = sx + Math.cos(a0) * d, hy = sy + Math.sin(a0) * d;
   return { sx, sy, ex, ey, hx, hy, a2: Math.atan2(hy - ey, hx - ex) };
 }
+// сплющить рисунок по высоте к земле (y = 0): sy < 1 — тело заваливается навзничь, от зрителя
+function pbSquashY(K, sy) {
+  const Q = {
+    W: K.W, H: K.H, cv: K.cv, hsh: K.hsh, done: K.done, outline: K.outline,
+    dth: (x, y) => K.dth(x, y * sy),
+    R(x0, y0, x1, y1, f, sol = true) { K.R(x0, Math.floor(y0 * sy), x1, Math.ceil(y1 * sy), (X, Y) => f(X, (Y + 0.5) / sy - 0.5), sol); },
+    P(x, y, col, a = 1, sol = true) { K.P(x, Math.round(y * sy), col, a, sol); },
+    L(x0, y0, x1, y1, r0, r1, f, sol = true) {
+      const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy || 1, rm = Math.max(r0, r1) + 1;
+      Q.R(Math.min(x0, x1) - rm, Math.min(y0, y1) - rm, Math.max(x0, x1) + rm, Math.max(y0, y1) + rm, (x, y) => {
+        const t = Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / l2)), ex = x - x0 - dx * t, ey = y - y0 - dy * t, r = r0 + (r1 - r0) * t, d = Math.sqrt(ex * ex + ey * ey);
+        return d <= r ? f(t, d > r - 1, ex * dy - ey * dx) : null;
+      }, sol);
+    },
+    path(pts, f, sol = true) { for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], n = pts.length - 1; Q.L(a[0], a[1], b[0], b[1], a[2], b[2], (t, e, sd) => f((i - 1 + t) / n, e, sd), sol); } },
+  };
+  return Q;
+}
 // масштаб рисунка: те же координаты, но в s раз крупнее (детали остаются в пикселях арта)
 function pbScaled(K, s) {
   const Q = {
@@ -293,6 +311,61 @@ const PBT = {
   trollS: { TK: [[72, 68, 62], [116, 110, 100], [162, 156, 144], [206, 200, 188]], HR: [[20, 16, 14], [40, 32, 26], [64, 52, 42], [92, 78, 64], [126, 110, 92]], SK: [[44, 44, 44], [72, 72, 70], [104, 104, 100], [138, 138, 132], [176, 174, 166]], BE: [[118, 114, 104], [150, 146, 134], [180, 176, 164]], HA: [[42, 42, 40], [62, 62, 58], [86, 86, 80]], CL: [[60, 46, 34], [90, 72, 52], [120, 98, 72]], NA: [[160, 150, 130], [204, 196, 176]], wpn: 'rock', moss: [[70, 100, 50], [104, 138, 70]] },
   trollB: { TK: [[62, 74, 40], [112, 122, 78], [166, 172, 124], [210, 214, 172]], HR: [[14, 16, 6], [32, 36, 14], [54, 60, 22], [82, 88, 34], [116, 120, 52]], SK: [[22, 46, 42], [40, 74, 66], [62, 104, 92], [90, 136, 120], [126, 168, 150]], BE: [[84, 116, 96], [114, 146, 122], [144, 176, 150]], HA: [[20, 40, 30], [34, 62, 46], [52, 88, 62]], CL: [[46, 54, 34], [70, 82, 50], [98, 112, 70]], NA: [[170, 178, 140], [210, 216, 180]], wpn: 'snag', slime: [[110, 170, 70], [160, 214, 100]] },
 };
+// ---- помощники тролля (вид сбоку и анфас)
+// прядь: изогнутый сужающийся жгут с бороздками и бликом по верхней стороне. dread — почти без сужения (дреды каменного)
+function pbTrLock(K, x, y, ang, len, w0, curl, ramp, dread = false) {
+  const pts = [], n = 7; let px = x, py = y, aa = ang;
+  for (let i = 0; i <= n; i++) { const t = i / n; pts.push([px, py, dread ? w0 * (1 - t * 0.3) : w0 * (1 - t * 0.88) + 0.5]); aa += curl / n; px += Math.cos(aa) * len / n; py += Math.sin(aa) * len / n; }
+  pbChain(K, pts, ramp, { amb: 0.5, tex: (t, sd) => (Math.abs(Math.sin(sd * (dread ? 5 : 8) + t * 3)) < 0.22 ? -0.2 : 0) + (t > 0.8 ? -0.08 : 0) });
+  const nx = Math.sin(ang), ny = -Math.cos(ang), hw = w0 * 0.35;
+  K.path(pts.slice(1, 5).map(([qx, qy, r], i) => [qx + nx * hw * (1 - i * 0.2) * Math.sign(ny || 1), qy - Math.abs(ny) * hw, Math.max(0.6, r * 0.18)]), () => ramp[ramp.length - 1], false);
+  return pts[n];
+}
+function pbTrTip(K, T, kind, e, r) {                                                                   // что на кончиках: камень-бусина / капля тины
+  if (kind === 'trollS') pbBall(K, e[0], e[1], r + 1.6, r + 0.8, [[70, 60, 46], [110, 96, 74], [150, 134, 104], [186, 172, 140]], { amb: 0.5 });
+  else if (kind === 'trollB') K.path([[e[0], e[1], 1.6], [e[0] + 0.5, e[1] + 6, 1.1], [e[0], e[1] + 10, 0.5]], (tt) => T.slime[tt > 0.5 ? 0 : 1]);
+}
+// клык-бивень: толстый у десны, с кольцами-бороздками, бликом по кромке и тёмным кончиком; mir = −1 — зеркально
+function pbTrTusk(K, T, kind, bx, by, ang, len, w0, curl, mir = 1) {
+  const pts = []; let px = bx, py = by, aa = ang;
+  for (let i = 0; i <= 6; i++) { const t = i / 6; pts.push([px, py, w0 * (1 - t * 0.82) + 0.4]); aa += curl / 6; px += Math.cos(aa) * len / 6; py += Math.sin(aa) * len / 6; }
+  pbChain(K, pts, T.TK, { amb: 0.55, tex: (t) => (((t * 5.5) % 1) < 0.13 && t < 0.75 ? -0.22 : 0) + (t < 0.15 ? -0.2 : 0) + (kind === 'trollS' && t > 0.55 && t < 0.62 ? -0.35 : 0) });
+  K.path([pts[1], pts[2], pts[4]].map(([x, y, r]) => [x + 0.8 * mir, y - 0.6, Math.max(0.6, r * 0.25)]), () => T.TK[3], false);   // блик по кромке
+  const [ex, ey] = pts[6]; K.P(ex, ey, T.TK[0]); K.P(ex - 0.5 * mir, ey + 0.8, T.TK[1]);                                           // потемневший кончик
+  if (kind === 'trollB') K.path([[bx + 2 * mir, by + 1, 1.2], [bx + 2.5 * mir, by + 7, 0.9], [bx + 2 * mir, by + 10, 0.4]], (tt) => T.slime[tt > 0.5 ? 0 : 1]);
+}
+// оружие в кулаке (whx, why), направленное под углом wd: дубина / валун / коряга
+function pbTrWeapon(K, T, whx, why, wd) {
+  const bx = Math.cos(wd), by = Math.sin(wd), WO = PBC.WO;
+  if (T.wpn === 'club') {
+    const tx = whx + bx * 110, ty = why + by * 110;
+    pbLimb(K, whx - bx * 18, why - by * 18, tx, ty, 6, 16, WO, { tex: (t) => (((t * 30) % 1) < 0.12 ? -0.2 : 0) });
+    for (const t of [0.45, 0.7, 0.85]) pbBall(K, whx + bx * 110 * t + by * 12, why + by * 110 * t - bx * 12, 4, 4, WO, { amb: 0.5 });
+    for (const [t, r] of [[0.92, 1], [0.8, -1]]) K.path([[whx + bx * 110 * t, why + by * 110 * t, 2], [whx + bx * 110 * t + by * 10 * r, why + by * 110 * t - bx * 10 * r, 1]], () => [180, 176, 160]);
+  } else if (T.wpn === 'rock') {
+    // валун: крупный, гранёный — плоскости сколов со своим светом, трещины, мох и лишайник
+    const R = [[44, 40, 36], [72, 66, 58], [104, 96, 84], [138, 128, 112], [172, 162, 142], [204, 196, 176]], cx = whx + bx * 30, cy = why + by * 30 - 6, rx = 44, ry = 38;
+    const facets = [[-0.9, -0.5, 0.82], [0.1, -0.95, 0.74], [0.8, -0.4, 0.5], [-0.7, 0.5, 0.42], [0.5, 0.7, 0.24], [0, 0, 0.6]];
+    K.R(cx - rx, cy - ry, cx + rx, cy + ry, (x, y) => {
+      const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry, d = nx * nx + ny * ny, wob = 1 + Math.sin(Math.atan2(ny, nx) * 5) * 0.06 + Math.sin(Math.atan2(ny, nx) * 9) * 0.03;
+      if (d > wob * wob) return null;
+      let best = 0, bd = 9; for (let i = 0; i < facets.length; i++) { const [fx, fy] = facets[i], dd = (nx - fx * 0.6) ** 2 + (ny - fy * 0.6) ** 2; if (dd < bd) { bd = dd; best = i; } }
+      let v = facets[best][2] + (K.hsh(Math.floor(x / 3) * 7.1 + Math.floor(y / 3) * 2.9) - 0.5) * 0.14;
+      if (Math.abs(Math.sin(nx * 7 + ny * 3) + Math.sin(ny * 6 - nx * 2)) < 0.05 && d < 0.8) v -= 0.4;   // трещины
+      if (d > 0.82 * wob * wob) v -= 0.12;
+      return pbPick(R, v, K.dth(x, y));
+    });
+    for (const [mx, my, r] of [[-20, -26, 12], [8, -32, 9], [-32, -6, 7]]) pbBall(K, cx + mx, cy + my, r * 1.3, r * 0.8, T.moss, { amb: 0.55, fade: 0.55 });   // мох на макушке
+    for (const [lx, ly] of [[18, 4], [-6, 14], [26, -14], [-26, 18]]) pbDot(K, cx + lx, cy + ly, [196, 186, 120], 2);                       // лишайник
+  } else {
+    // коряга: длинная, узловатая, с сучьями-рогатинами, корешками и висящей тиной
+    const pts = []; for (let i = 0; i <= 12; i++) { const t = i / 12; pts.push([whx - bx * 14 + bx * 160 * t + Math.sin(t * 9) * 9 * t, why - by * 14 + by * 160 * t + Math.cos(t * 7) * 9 * t, 11 - t * 6]); }
+    pbChain(K, pts, [[40, 26, 14], [66, 44, 24], [96, 66, 36], [126, 92, 54]], { tex: (t, sd) => ((((t * 14) % 1) < 0.1) ? -0.22 : 0) + (sd < -0.4 ? 0.08 : 0) });
+    for (const [t, ang, len] of [[0.55, -0.9, 40], [0.78, 0.8, 34], [0.95, -0.4, 24]]) { const p = pts[Math.round(t * 12)], a0 = wd + ang; pbChain(K, [[p[0], p[1], 5], [p[0] + Math.cos(a0) * len, p[1] + Math.sin(a0) * len, 1.6]], [[56, 36, 20], [90, 62, 34], [120, 86, 50]]); }
+    for (const t of [0.35, 0.6, 0.8, 0.98]) { const p = pts[Math.round(t * 12)]; K.path([[p[0], p[1], 2.4], [p[0] + 3, p[1] + 14, 1.6], [p[0] + 1, p[1] + 26, 0.8]], (tt) => T.slime[tt > 0.5 ? 1 : 0]); }   // тина
+    for (const t of [0.3, 0.7]) { const p = pts[Math.round(t * 12)]; pbBall(K, p[0], p[1] - 4, 5, 4, [[66, 44, 24], [96, 66, 36]], { amb: 0.5 }); }   // наросты-узлы
+  }
+}
 function pbTroll(K, P, kind) {
   const T = PBT[kind], SK = T.SK, a = P.a, sw = P.leg, open = P.mouth > 0.3;
   const SKD = SK.slice(0, 4), WO = PBC.WO;
@@ -312,20 +385,9 @@ function pbTroll(K, P, kind) {
       K.path([[tx, ty, 2.2], [tx + Math.cos(ca + 0.4) * 5, ty + Math.sin(ca + 0.4) * 5, 0.6]], () => T.NA[f % 2]);
     }
   };
-  // прядь: изогнутый сужающийся жгут с бороздками и бликом по верхней стороне. dread — почти без сужения (дреды каменного)
-  const lock = (x, y, ang, len, w0, curl, ramp, dread = false) => {
-    const pts = [], n = 7; let px = x, py = y, aa = ang;
-    for (let i = 0; i <= n; i++) { const t = i / n; pts.push([px, py, dread ? w0 * (1 - t * 0.3) : w0 * (1 - t * 0.88) + 0.5]); aa += curl / n; px += Math.cos(aa) * len / n; py += Math.sin(aa) * len / n; }
-    pbChain(K, pts, ramp, { amb: 0.5, tex: (t, sd) => (Math.abs(Math.sin(sd * (dread ? 5 : 8) + t * 3)) < 0.22 ? -0.2 : 0) + (t > 0.8 ? -0.08 : 0) });
-    const nx = Math.sin(ang), ny = -Math.cos(ang), hw = w0 * 0.35;
-    K.path(pts.slice(1, 5).map(([qx, qy, r], i) => [qx + nx * hw * (1 - i * 0.2) * Math.sign(ny || 1), qy - Math.abs(ny) * hw, Math.max(0.6, r * 0.18)]), () => ramp[ramp.length - 1], false);
-    return pts[n];
-  };
+  const lock = (...q) => pbTrLock(K, ...q);
   const HR = T.HR, HRD = HR.slice(0, 4);
-  const tipDeco = (e, r) => {                                                                   // что на кончиках: камень-бусина / капля тины
-    if (kind === 'trollS') pbBall(K, e[0], e[1], r + 1.6, r + 0.8, [[70, 60, 46], [110, 96, 74], [150, 134, 104], [186, 172, 140]], { amb: 0.5 });
-    else if (kind === 'trollB') K.path([[e[0], e[1], 1.6], [e[0] + 0.5, e[1] + 6, 1.1], [e[0], e[1] + 10, 0.5]], (tt) => T.slime[tt > 0.5 ? 0 : 1]);
-  };
+  const tipDeco = (e, r) => pbTrTip(K, T, kind, e, r);                                         // что на кончиках: камень-бусина / капля тины
   // шерсть на предплечье: пряди свисают с нижне-задней стороны руки, у локтя — пучок назад
   const armFur = (A, ramp) => {
     const L = kind === 'trollB' ? 1.5 : 1, dx = Math.cos(A.a2), dy = Math.sin(A.a2);
@@ -408,36 +470,9 @@ function pbTroll(K, P, kind) {
     }
   }
   // ---- оружие в ближней руке: рисуется ДО руки — рукоять уходит в кулак, пальцы ложатся поверх
-  const whx = nearA.hx + Math.cos(nearA.a2) * 6, why = nearA.hy + Math.sin(nearA.a2) * 6, wa = nearA.a2, bx = Math.cos(wa - 1.1), by = Math.sin(wa - 1.1);
+  const whx = nearA.hx + Math.cos(nearA.a2) * 6, why = nearA.hy + Math.sin(nearA.a2) * 6, wa = nearA.a2;
   const INK = [0, 0, 0];
-  if (T.wpn === 'club') {
-    const tx = whx + bx * 110, ty = why + by * 110;
-    pbLimb(K, whx - bx * 18, why - by * 18, tx, ty, 6, 16, WO, { tex: (t) => (((t * 30) % 1) < 0.12 ? -0.2 : 0) });
-    for (const t of [0.45, 0.7, 0.85]) pbBall(K, whx + bx * 110 * t + by * 12, why + by * 110 * t - bx * 12, 4, 4, WO, { amb: 0.5 });
-    for (const [t, r] of [[0.92, 1], [0.8, -1]]) K.path([[whx + bx * 110 * t, why + by * 110 * t, 2], [whx + bx * 110 * t + by * 10 * r, why + by * 110 * t - bx * 10 * r, 1]], () => [180, 176, 160]);
-  } else if (T.wpn === 'rock') {
-    // валун: крупный, гранёный — плоскости сколов со своим светом, трещины, мох и лишайник
-    const R = [[44, 40, 36], [72, 66, 58], [104, 96, 84], [138, 128, 112], [172, 162, 142], [204, 196, 176]], cx = whx + bx * 30, cy = why + by * 30 - 6, rx = 44, ry = 38;
-    const facets = [[-0.9, -0.5, 0.82], [0.1, -0.95, 0.74], [0.8, -0.4, 0.5], [-0.7, 0.5, 0.42], [0.5, 0.7, 0.24], [0, 0, 0.6]];
-    K.R(cx - rx, cy - ry, cx + rx, cy + ry, (x, y) => {
-      const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry, d = nx * nx + ny * ny, wob = 1 + Math.sin(Math.atan2(ny, nx) * 5) * 0.06 + Math.sin(Math.atan2(ny, nx) * 9) * 0.03;
-      if (d > wob * wob) return null;
-      let best = 0, bd = 9; for (let i = 0; i < facets.length; i++) { const [fx, fy] = facets[i], dd = (nx - fx * 0.6) ** 2 + (ny - fy * 0.6) ** 2; if (dd < bd) { bd = dd; best = i; } }
-      let v = facets[best][2] + (K.hsh(Math.floor(x / 3) * 7.1 + Math.floor(y / 3) * 2.9) - 0.5) * 0.14;
-      if (Math.abs(Math.sin(nx * 7 + ny * 3) + Math.sin(ny * 6 - nx * 2)) < 0.05 && d < 0.8) v -= 0.4;   // трещины
-      if (d > 0.82 * wob * wob) v -= 0.12;
-      return pbPick(R, v, K.dth(x, y));
-    });
-    for (const [mx, my, r] of [[-20, -26, 12], [8, -32, 9], [-32, -6, 7]]) pbBall(K, cx + mx, cy + my, r * 1.3, r * 0.8, T.moss, { amb: 0.55, fade: 0.55 });   // мох на макушке
-    for (const [lx, ly] of [[18, 4], [-6, 14], [26, -14], [-26, 18]]) pbDot(K, cx + lx, cy + ly, [196, 186, 120], 2);                       // лишайник
-  } else {
-    // коряга: длинная, узловатая, с сучьями-рогатинами, корешками и висящей тиной
-    const pts = []; for (let i = 0; i <= 12; i++) { const t = i / 12; pts.push([whx - bx * 14 + bx * 160 * t + Math.sin(t * 9) * 9 * t, why - by * 14 + by * 160 * t + Math.cos(t * 7) * 9 * t, 11 - t * 6]); }
-    pbChain(K, pts, [[40, 26, 14], [66, 44, 24], [96, 66, 36], [126, 92, 54]], { tex: (t, sd) => ((((t * 14) % 1) < 0.1) ? -0.22 : 0) + (sd < -0.4 ? 0.08 : 0) });
-    for (const [t, ang, len] of [[0.55, -0.9, 40], [0.78, 0.8, 34], [0.95, -0.4, 24]]) { const p = pts[Math.round(t * 12)], a0 = wa - 1.1 + ang; pbChain(K, [[p[0], p[1], 5], [p[0] + Math.cos(a0) * len, p[1] + Math.sin(a0) * len, 1.6]], [[56, 36, 20], [90, 62, 34], [120, 86, 50]]); }
-    for (const t of [0.35, 0.6, 0.8, 0.98]) { const p = pts[Math.round(t * 12)]; K.path([[p[0], p[1], 2.4], [p[0] + 3, p[1] + 14, 1.6], [p[0] + 1, p[1] + 26, 0.8]], (tt) => T.slime[tt > 0.5 ? 1 : 0]); }   // тина
-    for (const t of [0.3, 0.7]) { const p = pts[Math.round(t * 12)]; pbBall(K, p[0], p[1] - 4, 5, 4, [[66, 44, 24], [96, 66, 36]], { amb: 0.5 }); }   // наросты-узлы
-  }
+  pbTrWeapon(K, T, whx, why, wa - 1.1);
   // ближняя рука — поверх оружия и тела, с тёмной обводкой
   pbBlob(K, armPrims(nearA).map(p => (p.e ? { e: [p.e[0], p.e[1], p.e[2] + 3.4, p.e[3] + 3.4] } : { c: p.c.map(([x, y, r]) => [x, y, r + 3.4]) })), [INK], { amb: 0.5, k: 4 });
   pbBlob(K, armPrims(nearA), SK, { amb: 0.5, k: 4, depth: 12, tex: texSkin });
@@ -451,19 +486,98 @@ function pbTroll(K, P, kind) {
   if (open) pbBall(K, hx + 18, hy + 22, 12, 4 + P.mouth * 4, [[30, 8, 6], [60, 18, 14], [90, 30, 22]], { amb: 0.3 });
   else K.path([[hx + 4, hy + 21, 1], [hx + 30, hy + 19, 1]], () => SK[0]);
   // клыки: нижние бивни — изогнутые вверх-вперёд, толстые у десны, с кольцами-бороздками, сколами и тёмным кончиком; верхний клык — вниз из-под губы
-  const tusk = (bx, by, ang, len, w0, curl) => {
-    const pts = []; let px = bx, py = by, aa = ang;
-    for (let i = 0; i <= 6; i++) { const t = i / 6; pts.push([px, py, w0 * (1 - t * 0.82) + 0.4]); aa += curl / 6; px += Math.cos(aa) * len / 6; py += Math.sin(aa) * len / 6; }
-    pbChain(K, pts, T.TK, { amb: 0.55, tex: (t) => (((t * 5.5) % 1) < 0.13 && t < 0.75 ? -0.22 : 0) + (t < 0.15 ? -0.2 : 0) + (kind === 'trollS' && t > 0.55 && t < 0.62 ? -0.35 : 0) });
-    K.path([pts[1], pts[2], pts[4]].map(([x, y, r]) => [x + 0.8, y - 0.6, Math.max(0.6, r * 0.25)]), () => T.TK[3], false);   // блик по кромке
-    const [ex, ey] = pts[6]; K.P(ex, ey, T.TK[0]); K.P(ex - 0.5, ey + 0.8, T.TK[1]);                                           // потемневший кончик
-    if (kind === 'trollB') K.path([[bx + 2, by + 1, 1.2], [bx + 2.5, by + 7, 0.9], [bx + 2, by + 10, 0.4]], (tt) => T.slime[tt > 0.5 ? 0 : 1]);
-  };
-  tusk(hx + 6, hy + 22, -0.75, 18 + (kind === 'trollS' ? -2 : 0), 4.4, -1.25);         // дальний бивень, чуть короче
-  tusk(hx + 24, hy + 23, -0.7, 22, 5.4, -1.3);                                              // ближний — крупнее
+  const tusk = (...q) => pbTrTusk(K, T, kind, ...q);
+  tusk(hx + 1, hy + 22, -0.85, 16 + (kind === 'trollS' ? -2 : 0), 4.2, -1.2);         // дальний бивень, чуть короче
+  tusk(hx + 15, hy + 24, -0.9, 15, 5, -1.15);                                               // ближний — крупнее, кончик ниже носа
   tusk(hx + 33, hy + 13, 1.75, 8, 2.8, -0.4);                                               // верхний клык из-под губы
   if (a > 0.5) for (let i = 0; i < 18; i++) { const t = i / 17, an = -1.4 + t * 1.9; K.P(40 + Math.cos(an) * 150, -100 + Math.sin(an) * 110, [236, 232, 214], 0.65 - t * 0.3, false); }
   K.outline([0, 0, 0], 1, 5);
+}
+// ---- Тролль анфас: идёт на зрителя. Те же палитры, грива, клыки и оружие, что сбоку; кадры — те же позы naPose
+// (покой, ходьба: ноги поочерёдно, замах над головой, удар наискось через тело, боль, смерть — naPxFrame валит набок).
+// Оружие — в правой от зрителя руке, вторая свободна; при face < 0 спрайт отражается целиком.
+function pbTrollF(K0, P, kind) {
+  const K = P.fall ? pbSquashY(K0, 1 - P.fall * 0.6) : K0;                                // смерть: заваливается навзничь
+  const T = PBT[kind], SK = T.SK, HR = T.HR, HRD = HR.slice(0, 4), a = P.a || 0, sw = P.leg || 0, open = P.mouth > 0.3, up = P.up > 0.5 || P.fall > 0.3;
+  const DR = kind === 'trollS', LN = kind === 'trollB' ? 1.5 : DR ? 1.1 : 1, CU = kind === 'trollB' ? 1.9 : 1.45;
+  const texSkin = (x, y) => (K.hsh(x * 0.53 + y * 3.7) > 0.95 ? -0.22 : K.hsh(x * 1.9 + y * 0.37) > 0.97 ? 0.16 : 0) + (DR ? ((Math.floor(x / 11) + Math.floor(y / 9)) % 3 === 0 ? -0.07 : 0) : 0);
+  const lock = (...q) => pbTrLock(K, ...q), tip = (e, r) => pbTrTip(K, T, kind, e, r);
+  const mlock = (s, x, y, ang, len, w, curl, ramp) => lock(s * x, y, s > 0 ? ang : Math.PI - ang, len, w, s > 0 ? curl : -curl, ramp, DR);   // прядь, отражённая на сторону s
+  const INK = [0, 0, 0];
+  pbShadow(K, 88);
+  // ---- геометрия: ноги (на ходьбе поднимаются поочерёдно), руки, голова
+  const leg = s => { const lift = Math.max(0, sw * s) * 26; return { s, lift, prims: [{ c: [[s * 26, -96, 24], [s * 33, -52 - lift * 0.6, 17], [s * 34, -15 - lift, 14]] }, { e: [s * 36, -8 - lift, 21, 10] }] }; };
+  const L1 = leg(-1), L2 = leg(1);
+  const arm = (sx, sy, ex, ey, hx, hy) => ({ sx, sy, ex, ey, hx, hy, prims: [{ c: [[sx, sy, 21], [(sx + ex) / 2, (sy + ey) / 2, 18], [ex, ey, 15.5], [ex + (hx - ex) * 0.3, ey + (hy - ey) * 0.3, 16.5], [hx, hy, 13]] }, { e: [hx, hy + 4, 15, 13] }] });
+  // оружейная рука (справа): висит / замах над головой / удар наискось / возврат
+  const W = up || a < -0.3 ? arm(62, -172, 96, -206, 66, -248) : a > 0.5 ? arm(62, -168, 70, -136, 30, -104) : a > 0.15 ? arm(62, -170, 86, -138, 72, -100) : arm(62, -170, 84, -124, 84 + sw * 3, -76);
+  const wd = up || a < -0.3 ? -2.35 : a > 0.5 ? 2.25 : a > 0.15 ? 1.7 : 0.8;
+  const F = up ? arm(-62, -172, -94, -208, -70, -250) : arm(-62, -170, -82 - sw * 3, -124, -80 - sw * 6, -76 + Math.abs(sw) * 3);
+  const hy = -150 + (P.hurt > 0.5 ? 5 : 0) + (a > 0.5 ? 6 : 0);
+  // ---- оружие поднято над головой — рисуется до тела
+  if (up || a < -0.3) pbTrWeapon(K, T, W.hx, W.hy - 4, wd);
+  // ---- тело одной «глиной»: таз, брюхо, плечевой пояс с горбом, ноги
+  pbBlob(K, [{ e: [0, -104, 46, 28] }, { e: [0, -136, 58, 44] }, { e: [0, -170, 66, 26] }, { c: [[-62, -170, 22], [62, -170, 22]] }, ...L1.prims, ...L2.prims], SK, { amb: 0.46, k: 14, depth: 22, tex: texSkin });
+  pbBall(K, 0, -128, 38, 34, T.BE, { amb: 0.42, fade: 0.5, clip: (x, y) => (x / 52) ** 2 + ((y + 134) / 44) ** 2 < 0.9, tex: (x, y) => (Math.abs(((y + 128) % 11)) < 1 && Math.abs(x) < 26 ? -0.14 : 0) });
+  pbDot(K, 0, -116, T.BE[0], 1.4);
+  pbPoly(K, [[-50, -110], [50, -110], [46, -82], [30, -72], [14, -84], [0, -70], [-14, -84], [-30, -72], [-46, -82]], (x, y) => pbPick(T.CL, 0.55 - (y + 110) / 40 * 0.3 + (K.hsh(Math.floor(x / 7) * 1.7) - 0.5) * 0.25, K.dth(x, y)));
+  K.path([[-48, -106, 1.6], [48, -106, 1.6]], () => T.CL[0]);
+  for (const L of [L1, L2]) for (let t = 0; t < 3; t++) { const tx = L.s * 36 + (t - 1) * 9; pbBall(K, tx, -4 - L.lift, 4.4, 4.6, SK, { amb: 0.5, fade: 0.4 }); K.path([[tx, -1 - L.lift, 1.8], [tx + (t - 1), 3 - L.lift, 0.6]], () => T.NA[t % 2]); }
+  // приметы вида на плечах
+  if (DR) for (const [x, y, r] of [[-56, -184, 8], [50, -188, 6], [-30, -186, 5], [64, -170, 5]]) { pbBall(K, x, y, r + 2, r, [[90, 76, 56], [130, 112, 86], [168, 150, 120]], { amb: 0.5 }); pbBall(K, x - 2, y - 4, r * 0.6, r * 0.5, T.moss, { amb: 0.5, fade: 0.4 }); }
+  else for (let i = 0; i < 6; i++) { const s = i % 2 ? 1 : -1, x = s * (40 + K.hsh(i * 3.1) * 26), y = -182 + K.hsh(i * 7.3) * 26, r = 3 + K.hsh(i * 1.7) * 4; pbBall(K, x, y, r * 1.3, r, kind === 'trollB' ? HR : T.HA, { amb: 0.55, fade: 0.5 }); }
+  if (kind === 'trollB') for (const [x, y] of [[-50, -176], [44, -180], [-20, -150], [24, -120]]) K.path([[x, y, 2.2], [x + 1, y + 8, 1.6], [x, y + 14, 1]], () => T.slime[1]);
+  // ---- грива: задний тёмный слой спадает по обе стороны головы на плечи
+  pbBlob(K, [{ e: [0, hy - 26, 34, 15] }, { c: [[-26, hy - 22, 14], [-44, hy - 2, 12], [-54, hy + 22, 8]] }, { c: [[26, hy - 22, 14], [44, hy - 2, 12], [54, hy + 22, 8]] }], HRD, { amb: 0.42, k: 8, tex: (x, y) => (Math.abs(Math.sin(x * 0.9 + (y - hy) * 0.3)) < 0.2 ? -0.16 : 0) });
+  for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const u = i / 3, e = mlock(s, 8 + u * 20, hy - 30 + u * 8, -1.3 + u * 0.45 + (K.hsh(i * 2.3 + s) - 0.5) * 0.25, (40 + u * 28) * LN, DR ? 7 : 9, CU, HRD); if (i % 2) tip(e, 2.6); }
+  // ---- голова: череп, широкая челюсть, тяжёлая бровь, нос — одна «глина»; уши в стороны
+  for (const s of [-1, 1]) pbPoly(K, [[s * 26, hy - 6], [s * 46, hy - 20], [s * 40, hy + 2], [s * 26, hy + 6]], (x, y) => pbPick(SK, 0.5 + s * 0.06 - Math.abs(x) / 46 * 0.1, K.dth(x, y)));
+  pbBlob(K, [{ e: [0, hy, 29, 26] }, { e: [0, hy + 16, 31, 14] }, { e: [0, hy - 13, 26, 8] }, { e: [0, hy + 3, 10, 12] }], SK, { amb: 0.52, k: 6, depth: 14, tex: texSkin });
+  // верхний слой гривы, вихры и чёлка
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { const u = i / 2, e = mlock(s, 2 + u * 18, hy - 34, -1.5 + u * 0.4 + (K.hsh(i * 4.7 + s) - 0.5) * 0.3, (26 + u * 18) * LN, DR ? 6.5 : 8, CU * 0.85, HR); if (DR && i !== 1) tip(e, 2.3); }
+  if (!DR) for (let i = 0; i < 3; i++) lock((i - 1) * 9, hy - 36, -1.57 + (i - 1) * 0.35, 16 + K.hsh(i * 6.1) * 6, 6, (i - 1) * 0.6, HR);
+  else {
+    pbBall(K, 0, hy - 46, 12, 10, HR, { amb: 0.52, tex: (xx, yy) => (Math.abs(Math.sin(xx * 0.7 + (yy - hy) * 0.3)) < 0.25 ? -0.16 : 0) });
+    pbBall(K, 0, hy - 36, 11, 4.5, [[70, 60, 46], [110, 96, 74], [150, 134, 104], [186, 172, 140]], { amb: 0.5 });
+    lock(-4, hy - 54, -1.9, 20, 5, -1.4, HR, true);
+  }
+  for (let i = 0; i < 4; i++) lock(-12 + i * 8, hy - 26, 1.57 + (i - 1.5) * 0.18, 10 + (i % 2) * 3, 4.2, (i - 1.5) * 0.2, HR, DR);
+  if (kind === 'troll') {
+    K.path([[-16, hy - 36, 1.8], [-34, hy - 56, 1.3], [-40, hy - 62, 0.7]], (t) => [[60, 40, 22], [92, 64, 36]][t > 0.5 ? 0 : 1]);
+    for (const [lx, ly, la] of [[-40, hy - 62, -1.2], [-28, hy - 58, -2.2], [14, hy - 40, -0.8]]) {
+      const cx = Math.cos(la), cy = Math.sin(la);
+      pbPoly(K, [[lx, ly], [lx + cx * 5 - cy * 3.2, ly + cy * 5 + cx * 3.2], [lx + cx * 11, ly + cy * 11], [lx + cx * 5 + cy * 3.2, ly + cy * 5 - cx * 3.2]], (x, y) => pbPick([[44, 84, 24], [78, 128, 40], [120, 170, 60]], 0.45 + ((x - lx) * cy - (y - ly) * cx > 0 ? 0.25 : 0), K.dth(x, y)));
+    }
+  } else if (kind === 'trollB') {
+    for (let i = 0; i < 9; i++) pbDot(K, -40 + K.hsh(i * 7.7) * 80, hy - 30 + K.hsh(i * 3.9) * 50, [120, 176, 70], 1.6);
+    K.path([[18, hy - 34, 1.4], [30, hy - 72, 0.8]], () => [130, 120, 70]);
+    pbBall(K, 29, hy - 66, 2.6, 6, [[90, 60, 30], [124, 86, 44]], { amb: 0.5 });
+  }
+  // ---- лицо: тень под бровью, глаза, ноздри, рот, клыки-бивни (наружу), верхние клычки
+  pbChain(K, [[-24, hy - 6, 1.6], [0, hy - 3, 1.4], [24, hy - 6, 1.6]], SK.slice(0, 2));
+  for (const s of [-1, 1]) pbEye(K, s * 12, hy - 1, 3.4, P, [236, 200, 70], [120, 20, 10], SK[0]);
+  pbDot(K, -4, hy + 10, SK[0], 1.6); pbDot(K, 4, hy + 10, SK[0], 1.6); pbDot(K, 2, hy + 1, SK[3], 1.4);
+  if (open) pbBall(K, 0, hy + 20, 13, 4 + P.mouth * 4, [[30, 8, 6], [60, 18, 14], [90, 30, 22]], { amb: 0.3 });
+  else K.path([[-15, hy + 19, 1], [15, hy + 19, 1]], () => SK[0]);
+  pbTrTusk(K, T, kind, 13, hy + 25, -1.85, 15, 4.6, 0.95, 1);
+  pbTrTusk(K, T, kind, -13, hy + 25, -Math.PI + 1.85, 15, 4.6, -0.95, -1);
+  for (const s of [-1, 1]) pbTrTusk(K, T, kind, s * 7, hy + 14, s > 0 ? 1.7 : Math.PI - 1.7, 6, 2.4, s * -0.3, s);
+  // ---- оружие у тела (висит / удар / возврат) — до руки, чтобы кулак лёг поверх рукояти
+  if (!(up || a < -0.3)) pbTrWeapon(K, T, W.hx, W.hy + 2, wd);
+  // ---- руки поверх тела, с чёрной обводкой; шерсть на предплечьях; пальцы
+  const fur = (A, s) => {
+    const L = kind === 'trollB' ? 1.5 : 1;
+    for (let i = 0; i < 4; i++) { const t = 0.12 + i * 0.2, e = lock(A.ex + (A.hx - A.ex) * t + s * 12, A.ey + (A.hy - A.ey) * t, 1.57 - s * 0.5 + (K.hsh(i * 3.7 + s) - 0.5) * 0.3, (12 + K.hsh(i * 5.1 + s) * 8) * L, DR ? 3.6 : 4.2, s * 0.3, HR, DR); if (i % 2 === 0) tip(e, 2); }
+    for (let i = 0; i < 2; i++) { const e = lock(A.ex + s * 10, A.ey, (s > 0 ? 0.2 : Math.PI - 0.2) + i * s * 0.5, (16 + i * 4) * L, 5, s * 0.8, HR, DR); if (i) tip(e, 2.2); }
+  };
+  for (const [A, s, grip] of [[F, -1, false], [W, 1, true]]) {
+    pbBlob(K, A.prims.map(p => (p.e ? { e: [p.e[0], p.e[1], p.e[2] + 3.4, p.e[3] + 3.4] } : { c: p.c.map(([x, y, r]) => [x, y, r + 3.4]) })), [INK], { amb: 0.5, k: 4 });
+    pbBlob(K, A.prims, SK, { amb: 0.5, k: 4, depth: 12, tex: texSkin });
+    fur(A, s);
+    if (grip) for (let f = 0; f < 4; f++) pbBall(K, A.hx + (f - 1.5) * 6, A.hy + 3, 3.8, 3.4, SK, { amb: 0.55 });                   // костяшки на рукояти
+    else for (let f = 0; f < 4; f++) { const fx = A.hx + (f - 1.5) * 6.5, fy = A.hy + 13; pbChain(K, [[fx, fy - 4, 4.4], [fx + (f - 1.5), fy + 4, 3.6], [fx + (f - 1.5) * 1.5, fy + 9, 2.8]], SK); K.path([[fx + (f - 1.5) * 1.5, fy + 10, 2], [fx + (f - 1.5) * 2, fy + 15, 0.6]], () => T.NA[f % 2]); }
+  }
+  K.outline(INK, 1, 5);
 }
 // тролли ещё в работе (позы рук на замахе) — до одобрения владельцем в игре остаются векторными
 const PB_TROLLS_READY = true;
@@ -471,6 +585,8 @@ if (PB_TROLLS_READY) {
   NA_PX.troll = (K, P) => pbTroll(K, P, 'troll');
   NA_PX.trollS = (K, P) => pbTroll(K, P, 'trollS');
   NA_PX.trollB = (K, P) => pbTroll(K, P, 'trollB');
+  // вид анфас: свои «виды» 'trollF' и т. п. с той же меркой кадра; neuDraw берёт их, когда тролль идёт на зрителя
+  for (const k of ['troll', 'trollS', 'trollB']) { NA_SPEC[k + 'F'] = NA_SPEC[k]; NA_DRAW[k + 'F'] = NA_DRAW[k]; NA_PX[k + 'F'] = (K, P, fr) => { if (fr && fr[0] === 'd') { P.fall = Math.min(1, -(P.rot || 0) / 1.5); P.rot = 0; P.x = 0; P.y = 0; } else if (fr && fr[0] === 'w') P.rot = -(P.leg || 0) * 0.06;   /* ходьба анфас — переваливается с ноги на ногу */ pbTrollF(K, P, k); }; }   // смерть анфас — не набок, а навзничь
 }
 
 // ======================= Броненосец: бронированный зверь =======================
