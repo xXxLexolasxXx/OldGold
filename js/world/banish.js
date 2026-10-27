@@ -6,7 +6,8 @@
 //    к тому же призрак уплывал быстрее, чем ночью идёт герой, и через 14 шагов «Ушёл…»;
 //  · «Изгнание нежити» жреца призраков не трогало, а без скелетов рядом писало «Врагов рядом нет».
 // Теперь: призрак, которого изгоняют, замирает, герой во время молитвы не пугается; клик работает и в коопе;
-// изгнание нежити жреца, оберег мага, «Чудо» и солнце паладина отпускают призраков и прогоняют банши.
+// изгнание нежити жреца, оберег мага, «Чудо» и солнце паладина прогоняют банши, а призракам с 0.11.66 снимают ровно
+// половину здоровья (ghHoly в ghosts.js) — всем в зоне разом; второй раз — и призрак развеян.
 // Банши (fairy2.js) можно прогнать кликом героя («Прогнать банши») или теми же способностями: она уходит,
 // и до конца ночи (но не дольше 4 минут) плакальщица у кладбища не воет.
 
@@ -23,14 +24,6 @@ function bnBansheeAt(x, y, r) {
 }
 const bnSpiritsNear = (x, y, r) => (Game.ghosts || []).filter(g => bnGhostOk(g) && Math.hypot(g.x - x, g.y - y) < r).length + ((bnFz() || { ban: [] }).ban.filter(b => bnBanOk(b) && Math.hypot(b.x - x, b.y - y) < r).length);
 
-// отпустить призрака (как молитва героя) — с монеткой иногда
-function bnReleaseGhost(g, who) {
-  if (!bnGhostOk(g)) return false;
-  g.exo = Game.time; g.mode = 'leave'; g.modeT = 99;
-  ghostSay(g, ['Свет… наконец-то…', 'Спасибо, что отпустил…', 'Я иду домой…'][(Math.random() * 3) | 0]);
-  fxBurst(g.x * TILE, g.y * TILE - 14, 12, ['#fff6c0', '#ffe070', '#bfe8ff'], 60, 60, 0.9, 1.8, -40);
-  return true;
-}
 // прогнать банши: уходит, до конца ночи плакальщица не возвращается
 function bnBanish(b, who) {
   const F = bnFz();
@@ -44,13 +37,13 @@ function bnBanish(b, who) {
   if (typeof fstat === 'function') fstat('banBanish');
   return true;
 }
-// все духи вокруг: призраков отпускает, банши прогоняет (жнец не трогается — его ранит reaperfight.js)
-function bnBanishAround(h, r) {
+// все духи вокруг: призракам — половина здоровья, банши прогоняет (жнец не трогается — его ранит reaperfight.js)
+function bnBanishAround(h, r, noGhosts) {
   let n = 0;
-  for (const g of (Game.ghosts || []).slice()) if (bnGhostOk(g) && Math.hypot(g.x - h.x, g.y - h.y) < r && bnReleaseGhost(g, h)) n++;
+  for (const g of (Game.ghosts || []).slice()) if (!noGhosts && ghLive(g) && Math.hypot(g.x - h.x, g.y - h.y) < r && ghHoly(g, h, 'banish')) n++;
   const F = bnFz();
   for (const b of F ? F.ban.slice() : []) if (bnBanOk(b) && Math.hypot(b.x - h.x, b.y - h.y) < r && bnBanish(b, h)) n++;
-  if (n) logEvent('night', `${h.hero ? h.hero.name : unitTitle(h)}: свет изгнал духов (${n})`, h.x, h.y);
+  if (n) logEvent('night', `${h.hero ? h.hero.name : unitTitle(h)}: свет обжёг духов (${n})`, h.x, h.y);
   return n;
 }
 
@@ -155,8 +148,8 @@ function* bnBansheeGen(u, c) {
     let r;
     try { r = _haf(h, i); } finally { BN.spirit = false; }
     if (r && h) {
-      const n = bnBanishAround(h, a.turn ? BN.R_TURN : a.k === 'ult_paladin' ? 5 : BN.R_WARD);
-      if (n && a.turn) floater(h.x, h.y - 2.6, `Духи отпущены: ${n}`, '#fff2a0');
+      const n = bnBanishAround(h, a.turn ? BN.R_TURN : a.k === 'ult_paladin' ? 5 : BN.R_WARD, a.k === 'ult_paladin');      // призраков солнце жжёт само (ghostfight.js)
+      if (n && a.turn) floater(h.x, h.y - 2.6, `Свет жжёт духов: ${n}`, '#fff2a0');
     }
     return r;
   };

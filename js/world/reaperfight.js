@@ -38,7 +38,7 @@ function rpHurt(g, u, dmg, el, src) {
   rpInit(g);
   const k = RPF.EL[el] || 0.7;
   dmg = Math.max(1, dmg * k);
-  g.hp -= dmg; g.prov = Game.time;
+  g.hp -= dmg; g.prov = Game.time; g.hurtT = Game.time;
   if (RPF.trace) RPF.trace.push([src || '?', el, dmg]);
   if (u && !u.dead) g.tg = u.id;
   const px = g.x * TILE, py = g.y * TILE - 22;
@@ -70,7 +70,7 @@ function rpPhase(g, ph) {
 }
 
 function rpDie(g, u) {
-  g.slain = true; g.hp = 0; g.mode = 'leave'; g.modeT = 99; g.atkT = 0; g.atkU = null; g.tx = g.x; g.ty = g.y;
+  g.slain = true; g.da = Math.max(0.05, g.alpha); g.hp = 0; g.mode = 'leave'; g.modeT = 99; g.atkT = 0; g.atkU = null; g.tx = g.x; g.ty = g.y;
   const tx = Math.floor(g.x), ty = Math.floor(g.y), night = nightIndex();
   sfxAt('wail', g.x * TILE, g.y * TILE, 0.55);
   sfxAt('rattle', g.x * TILE, g.y * TILE, 1.4);

@@ -1,0 +1,208 @@
+/* Менеджер окон (js/winmgr.js): нижняя полоса телефона из четырёх кнопок, шапка шторки, «одно окно за раз»,
+   колонка ПК без пустых полей, кнопка «♛ Права» хоста. Слои — по лестнице css/uilayers.css. */
+
+/* ---------- Окно ждёт, пока закроют более новое ---------- */
+.wm-wait { visibility: hidden !important; pointer-events: none !important; }
+
+/* ---------- Нижняя полоса: Стройка · Здание · Деревня · Меню (телефон, портрет) ---------- */
+.wm-m, .wm-cap { display: none; }
+/* везде (ПК, телефон вертикально и боком): шесть вкладок хозяйства — внутри «Деревни»; кнопки «Здание» нет — окно здания
+   открывается касанием здания на карте, и в панели видно одно: либо вкладка, либо здание */
+#tabs .wm-m[data-tab="village"] { display: inline-flex; }
+#tabs .wm-m.wm-none, #tabs [data-tab="info"] { display: none !important; }
+#tabs .tab-btn:is([data-tab="store"], [data-tab="overview"], [data-tab="log"], [data-tab="trade"], [data-tab="prio"], [data-tab="council"]) { display: none !important; }
+body.mobile:not(.land) #tabs { grid-template-columns: repeat(var(--rv-n, 4), minmax(0, 92px)); justify-content: space-evenly; }
+body.mobile:not(.land) #tabs .tab-btn { height: 54px; flex-direction: column; gap: 1px; }
+body.mobile:not(.land) #tabs .tab-btn img { width: 28px; height: 28px; }
+body.mobile:not(.land) #tabs .wm-cap { display: block; font-size: 11px; line-height: 12px; color: var(--text-dim, #c8b890); white-space: nowrap; }
+body.mobile:not(.land) #tabs .tab-btn.active .wm-cap { color: #fff6dc; }
+#tabs [data-tab="info"].dim img { filter: grayscale(.8) brightness(.7); }
+.wm-hl { position: relative; z-index: 2; animation: tutPulse 1.1s ease-in-out infinite; }
+
+/* ---------- Шапка шторки ---------- */
+#wm-head { display: none; }
+body.mobile:not(.land).wm-sheet #wm-head:not([data-mode=""]) { display: flex; order: 0; align-items: stretch; gap: 6px; min-height: 42px; padding-right: 50px; }
+#wm-head > div { display: none; }
+#wm-head[data-mode="vil"] #wm-vtabs, #wm-head[data-mode="title"] #wm-title { display: flex; flex: 1 1 auto; min-width: 0; }
+#wm-title { gap: 7px; }
+#wm-title img { width: 26px; height: 26px; object-fit: contain; flex: none; }
+#wm-title span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#wm-title .wm-tx { flex: none; width: 32px; height: 30px; padding: 0; font-size: 17px; font-weight: bold; color: #fff; background: linear-gradient(#8a2e1e, #5a1a10); box-shadow: inset 0 0 0 1px #e07050; }
+body:not(.mobile) #wm-title { font-size: 15px; padding-left: 4px; }
+#wm-seg { border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line, #8a6a3a); }
+#wm-seg button { flex: 1 1 50%; min-width: 0; border: 0; box-shadow: none; font-size: 15px; font-weight: bold; padding: 4px 6px; white-space: nowrap; overflow: hidden; }
+#wm-seg button span { overflow: hidden; text-overflow: ellipsis; }
+#wm-seg button img { width: 22px; height: 22px; flex: none; object-fit: contain; }
+#wm-seg button.active { background: linear-gradient(#f0c84a, #c8902a); color: #2a1606; text-shadow: none; }
+#wm-seg button.off { opacity: .55; }
+#wm-vtabs { gap: 3px; overflow-x: auto; scrollbar-width: none; }
+#wm-vtabs button { flex: 1 0 auto; flex-direction: column; gap: 0; padding: 2px 5px; min-width: 48px; font-size: 10.5px; line-height: 12px; position: relative; }
+#wm-vtabs button[hidden] { display: none; }
+#wm-vtabs button img { width: 24px; height: 24px; }
+#wm-vtabs button.active { background: linear-gradient(#7a5a2c, #4e3816); box-shadow: inset 0 0 0 2px var(--gold, #e4b434); color: #fff6dc; }
+#wm-vtabs button.dot::after { content: ''; position: absolute; top: 2px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--red, #c8402a); border: 1px solid #0a0705; }
+#wm-title { align-items: center; padding-left: 6px; font-size: 17px; font-weight: bold; color: var(--gold, #e4b434); }
+
+/* крестик шторки (прежний «▾ Свернуть», #sheet-close): крупный, в правом углу шапки */
+body.mobile:not(.land) #sheet-close {
+  position: absolute; top: 4px; right: 6px; width: 42px; height: 42px; padding: 0; z-index: 3;
+  font-size: 22px; font-weight: bold; line-height: 1; color: #fff;
+  background: linear-gradient(#8a2e1e, #5a1a10); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px #e07050;
+}
+body.mobile:not(.land).sheet-tab #sheet-close, body.mobile:not(.land).sheet-info #sheet-close { display: inline-flex; }
+/* шторка по высоте содержимого, без пустой тёмной полосы */
+body.mobile:not(.land) #tab-area { height: auto; max-height: 62vh; max-height: 62dvh; }
+body.mobile:not(.land) #info-wrap { max-height: 62vh; max-height: 62dvh; }
+
+/* пока открыта шторка (портрет) — карточки и цели на карте не налезают на неё */
+body.mobile:not(.land).wm-sheet :is(#mood-card, #rec-card, #fort-card, #wk-card, #hero-card, #coop-hud, #nq-pins) { display: none !important; }   /* цели и задания дня — в самой шторке (winpanel.js) */
+
+/* плашка «Новое: …» (reveal.js) при открытой шторке — сверху, над картой, а не поверх шторки */
+body.mobile:not(.land).wm-sheet .rv-note { top: calc(54px + env(safe-area-inset-top)); }
+
+/* плашка «шторка свёрнута» — пока поверх открыто окно */
+#wm-chip { display: none; }
+#wm-chip.on {
+  display: block; position: fixed; left: 50%; transform: translateX(-50%); z-index: 9; pointer-events: none;
+  bottom: calc(66px + env(safe-area-inset-bottom)); max-width: calc(100vw - 24px); padding: 6px 14px; border-radius: 16px;
+  font-size: 13px; color: var(--gold, #e4b434); background: rgba(26, 19, 13, .94); border: 2px solid #b8902c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------- ПК: в колонке одно окно — либо вкладка, либо окно здания (переключатель #wm-head сверху) ---------- */
+body:not(.mobile):is(.wm-pc-tab, .wm-pc-info) #wm-head { display: flex; align-items: stretch; min-height: 36px; }
+body:not(.mobile) #wm-head #wm-seg button { font-size: 13.5px; padding: 3px 6px; }
+body:not(.mobile) #wm-head #wm-seg button img { width: 20px; height: 20px; }
+body.wm-pc-tab:not(.mobile) :is(#info-wrap, #split) { display: none !important; }
+body.wm-pc-tab:not(.mobile) #tab-area { flex: 0 1 auto; min-height: 0; }   /* по высоте содержимого — ниже доска колонки, а не тёмная пустота */
+body.wm-pc-info:not(.mobile) :is(#tab-area, #split) { display: none !important; }
+body.wm-pc-info:not(.mobile) #info-wrap { flex: 1 1 auto; height: auto !important; min-height: 0; }
+
+/* ---------- Кооп: панель гостя/хоста над способностями, а не под ними ---------- */
+body.ui-ab #coop-hud { bottom: calc(var(--ui-ab-top, 0px) + 8px) !important; }
+
+/* ---------- «♛ Права» хоста: всегда в верхней полосе ---------- */
+#wm-admin {
+  order: 99; pointer-events: auto; min-height: 30px; padding: 3px 10px; gap: 5px; font-size: 15px; font-weight: bold;
+  color: #f4e4ff; background: linear-gradient(#5a3480, #3a1e58); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px #c89cff, 0 2px 0 rgba(0,0,0,.5);
+}
+#wm-admin span { font-size: 13px; }
+body.mobile #wm-admin { min-height: 28px; padding: 2px 8px; }
+body.mobile #wm-admin span { display: none; }
+/* окна поверх не закрывают кнопку прав: верхняя полоса с ней — над затемнением */
+body:has(#wm-admin) #topbar:has(#wm-admin) { z-index: 10001; }
+
+/* ---------- Стройка: разделы плитками, раздел всплывает под ними ---------- */
+.tools { grid-template-columns: 1fr 1fr; }
+#tool-wheat, #tool-hops { display: none !important; }   /* поля — первыми в разделе «Еда» (js/ui.js FIELD_TOOLS) */
+#build-cats, body.mobile #build-cats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-bottom: 6px; overflow: visible; }
+#build-cats button, body.mobile #build-cats button {
+  flex-direction: column; gap: 0; padding: 3px 2px 2px; min-height: 52px; font-size: 11.5px; line-height: 1.1; position: relative; min-width: 0;
+}
+#build-cats .bc-ico { width: 30px; height: 26px; object-fit: contain; image-rendering: auto; }
+#build-cats .bc-n { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#build-cats .bc-c { position: absolute; top: 1px; right: 3px; font-size: 10px; color: var(--text-dim, #c8b890); }
+#build-cats button.active { box-shadow: inset 0 0 0 2px var(--gold, #e4b434), inset 0 1px 0 rgba(255,240,180,0.4); }
+body.mobile #build-cats button { min-height: 62px; font-size: 13px; }
+body.mobile #build-cats .bc-ico { width: 36px; height: 30px; }
+/* раздел — рамкой под плитками, без пустого места ниже */
+#build-list { padding: 5px; background: rgba(48, 34, 15, .55); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--gold, #e4b434); }
+#build-list.bl-pop { animation: bl-pop .3s cubic-bezier(.2, .9, .3, 1.1) both; transform-origin: top center; }
+@keyframes bl-pop { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #build-list.bl-pop { animation: none; } }
+#build-list .bgroup { grid-column: 1 / -1; margin: 4px 2px 0; font-size: 12px; font-weight: bold; letter-spacing: .5px; color: var(--gold, #e4b434); border-bottom: 1px solid rgba(228, 180, 52, .35); }
+#build-list .bgroup:first-child { margin-top: 0; }
+#build-list .bfield .bnote { font-size: 10.5px; color: var(--text-dim, #c8b890); }
+#build-list .bfield .bimg { image-rendering: pixelated; }
+#tab-menu .wm-admin-mi { color: #f4e4ff; box-shadow: inset 0 0 0 1px #c89cff; }
+#tab-menu .wm-admin-mi .wm-crown { font-size: 18px; width: 18px; text-align: center; }
+/* телефон: кнопки коопа переносятся в два ряда, а не уезжают за левый край */
+body.mobile #coop-hud .cp-row { flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---------- Окно задания: новое задание — подсветка; в руке здание/дорога — только заголовок ---------- */
+#goal-hud.wm-gh-new { animation: wm-gh-new 2.4s ease-out both; }
+@keyframes wm-gh-new { 0% { box-shadow: 0 0 0 3px #f6d458, 0 0 22px 6px rgba(246, 212, 88, .8); } 100% { box-shadow: none; } }
+body.wm-tool #goal-hud > :not(.gh-head), body.wm-tool #coop-hud :is(#cp-qs, #cp-vil) { display: none !important; }
+/* телефон боком: шторка тоже по высоте содержимого (раньше тянулась до низа экрана пустой тёмной полосой) */
+body.mobile.land #tab-area, body.mobile.land #info-wrap { bottom: auto; max-height: calc(100vh - var(--st, 0px) - var(--bar, 0px) - var(--sb, 0px) - 10px); max-height: calc(100dvh - var(--st, 0px) - var(--bar, 0px) - var(--sb, 0px) - 10px); overflow-y: auto; }
+
+/* ================= Панель: карточка постройки, задания, поход (js/winpanel.js) ================= */
+/* ПК: вкладок теперь девять — колонки по числу видимых, без переноса */
+body:not(.mobile) #tabs { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+
+/* всплывающая справка о постройке (задержали мышь / подержали палец 0,7 с) */
+#wp-pop { position: fixed; z-index: 62; display: none; width: min(300px, calc(100vw - 12px)); max-height: 70vh; overflow: auto; padding: 8px 10px; pointer-events: none;
+  background: rgba(26, 19, 13, .97); color: #e8dcc0; border: 2px solid #b8902c; border-radius: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, .7); font-size: 13px; line-height: 1.35; }
+#wp-pop.on { display: block; animation: wp-in .18s ease-out both; }
+body.mobile #wp-pop { font-size: 14px; }
+
+/* вкладка «Задания»: окна целей, заданий дня и коопа — обычными блоками панели, не плашками на карте */
+#wp-task { display: flex; flex-direction: column; gap: 6px; }
+#wp-task > :is(#goal-hud, #daily-hud, #cp-vil, #cp-qs) { position: static !important; inset: auto !important; transform: none !important; width: auto !important; max-width: none !important;
+  min-width: 0 !important; opacity: 1 !important; margin: 0; pointer-events: auto; box-shadow: none; font-size: 13px; }
+#wp-task #goal-hud [data-gh="fold"] { display: none; }
+#wp-task #goal-hud.wm-gh-new { animation: wm-gh-new 2.4s ease-out both; }
+body.mobile #wp-task > :is(#goal-hud, #daily-hud, #cp-vil, #cp-qs) { font-size: 14px; }
+#tabs [data-tab="task"] .badge { display: none; }
+#tabs .wp-new, #wp-chip.wp-new { animation: rv-glow 1.2s ease-in-out 3; }
+/* пока цели не открыты игроку (reveal.js) — и вкладки, и значка нет */
+body.rv-on:not(.rv-all):not(.rv-goal) :is(#tabs [data-tab="task"], #wp-chip) { display: none !important; }
+
+/* значок целей на карте (телефон): одна строка, касание — вкладка «Задания» */
+#wp-chip { display: none; }
+body.mobile:not(.land) #wp-chip:not(.wp-none) {
+  display: block; position: absolute; z-index: 20; top: calc(48px + env(safe-area-inset-top)); left: 8px; max-width: 70vw; padding: 5px 11px;
+  font-size: 13px; color: var(--gold, #e4b434); background: rgba(26, 19, 13, .92); border: 1px solid #b8902c; border-radius: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+body.mobile.land #wp-chip:not(.wp-none) { display: block; position: absolute; z-index: 20; top: calc(var(--st, 0px) + 6px); left: calc(var(--left, 60px) + 4px); padding: 4px 10px; font-size: 12px;
+  color: var(--gold, #e4b434); background: rgba(26, 19, 13, .92); border: 1px solid #b8902c; border-radius: 14px; }
+body:is(.wm-sheet, .wp-away, .ui-loading, .ui-modal) #wp-chip { display: none !important; }
+
+/* ================= Герой в походе: деревня уходит, остаётся герой ================= */
+#wp-hero { display: none; }
+body.wp-away #wp-hero { display: block; animation: wp-in .35s ease-out both; }
+@keyframes wp-in { from { opacity: 0; transform: translateY(10px); } }
+body.wp-away:not(.mobile) #panel > :not(#logo):not(.mm-wrap):not(#wp-hero):not(#panel-resize) { display: none !important; }
+body.wp-away:not(.mobile) #wp-hero { padding: 8px; background: rgba(10, 7, 5, .62); border: 2px solid #0a0705; box-shadow: inset 0 0 0 1px var(--line, #8a6a3a); }
+body.wp-away.mobile :is(#tab-area, #info-wrap, #wm-head, #sheet-close) { display: none !important; }
+body.wp-away.mobile #tabs .tab-btn:not([data-tab="menu"]) { display: none !important; }
+body.wp-away.mobile #wp-hero { position: fixed; z-index: 19; top: calc(48px + env(safe-area-inset-top)); left: 8px; right: 8px; padding: 7px 9px;
+  background: rgba(20, 14, 8, .93); border: 2px solid #b8902c; border-radius: 8px; }
+body.wp-away.mobile.land #wp-hero { left: calc(var(--left, 60px) + 4px); right: auto; width: min(320px, 44vw); top: calc(var(--st, 0px) + 6px); }
+body.wp-away :is(#goal-hud, #daily-hud, #wp-chip, #mood-card, #rec-card, #fort-card, #wk-card, #hero-card) { display: none !important; }   /* герой — в панели похода */
+#wp-hero .wp-hh { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+#wp-hero .wp-hh img { width: 40px; height: 40px; image-rendering: pixelated; border: 1px solid #8a6a28; border-radius: 4px; }
+#wp-hero .wp-hh > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#wp-hero .wp-hh b { color: var(--gold, #e4b434); font-size: 15px; }
+#wp-hero .wp-hh small { font-size: 12px; color: var(--text-dim, #c8b890); }
+#wp-hero .wp-hh button { padding: 5px 9px; font-size: 13px; }
+#wp-hero .wp-bar { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-size: 12.5px; }
+#wp-hero .wp-bar > span { width: 74px; flex: none; }
+#wp-hero .wp-bar > div { position: relative; flex: 1; height: 14px; background: #15100a; border: 1px solid #0a0705; border-radius: 3px; overflow: hidden; }
+#wp-hero .wp-bar i { position: absolute; left: 0; top: 0; bottom: 0; }
+#wp-hero .wp-bar b { position: absolute; inset: 0; text-align: center; font-size: 10.5px; line-height: 14px; color: #fff; text-shadow: 0 1px 0 #000; }
+#wp-hero .wp-row { margin: 4px 0; font-size: 13px; }
+#wp-hero .wp-inv { display: flex; flex-wrap: wrap; gap: 4px; }
+#wp-hero .wp-inv span { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 3px; background: #241a0e; border: 1px solid #8a6a28; border-radius: 4px; }
+#wp-hero .wp-inv img { width: 26px; height: 26px; image-rendering: pixelated; }
+#wp-hero .wp-inv em { font-style: normal; font-size: 10px; }
+#wp-hero .wp-inv b { position: absolute; right: 2px; bottom: 0; font-size: 10px; color: #fff; text-shadow: 0 1px 0 #000; }
+body.mobile #wp-hero .wp-inv span { min-width: 28px; height: 28px; }
+body.mobile #wp-hero .wp-bar > span { width: 64px; }
+/* способности — по центру снизу, выезжают */
+body.wp-away #ab-bar { right: auto !important; left: 50% !important; transform: translateX(-50%); align-items: center; animation: wp-ab .45s cubic-bezier(.2, .9, .3, 1.1) both; }
+body.wp-away #ab-bar .ab-tip { right: auto; left: 50%; transform: translateX(-50%); }
+@keyframes wp-ab { from { opacity: 0; transform: translate(-50%, 40px); } to { opacity: 1; transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { body.wp-away #ab-bar, body.wp-away #wp-hero, #wp-pop.on { animation: none; } }
+/* цели в панели видны и во время обучения (на карте их прятали, чтобы не налезали на окно обучения) */
+body.mobile:is(.rv-goal, .rv-all, :not(.rv-on)):has(#tut:not(.hidden)) #wp-task #goal-hud { display: block !important; }
+/* телефон боком: цели прятались при открытой шторке (landscape.css) — теперь они в самой шторке */
+body.mobile.land:is(.sheet-tab, .sheet-info):is(.rv-goal, .rv-all, :not(.rv-on)) #wp-task #goal-hud, body.mobile.land:is(.sheet-tab, .sheet-info) #wp-task #daily-hud:not(.hidden) { display: block !important; }
+
+/* телефон боком: вкладки «Деревни» — строкой над шторкой */
+body.mobile.land.wm-sheet #wm-head[data-mode="vil"] { display: flex; position: absolute; z-index: 7; left: var(--sheet-left, 56px); top: calc(var(--st, 0px) + var(--bar, 0px) + 4px);
+  width: var(--sheet-w); height: 46px; padding: 2px 4px; box-sizing: border-box; background: rgba(14, 10, 6, .98); border: 2px solid #0a0705; }
+body.mobile.land.wm-sheet:has(#wm-head[data-mode="vil"]) #tab-area { top: calc(var(--st, 0px) + var(--bar, 0px) + 52px); }
+/* заглушка «Скоро» в пустых местах ряда плиток стройки */
+#build-cats .bc-soon { flex-direction: column; gap: 1px; min-height: 52px; font-size: 11.5px; opacity: .45; cursor: default; border-style: dashed; }
+#build-cats .bc-soon .bc-lock { font-size: 16px; line-height: 22px; filter: grayscale(1); }
+body.mobile #build-cats .bc-soon { min-height: 62px; font-size: 13px; }

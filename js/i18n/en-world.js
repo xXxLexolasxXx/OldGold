@@ -1061,4 +1061,17 @@ I18N.add('en', {
   "Замёрзли!": "Freezing!",
   "Снегом!": "Snowed on!",
   "Ах так!": "Oh yeah?!",
+  // призраки смертны (ghosts.js, ghostfight.js, 0.11.66)
+  "У-у-у… не надо!": "Oooh… don't!",
+  "Прочь, прочь!": "Away, away!",
+  "Больно… ухожу…": "It hurts… I'm going…",
+  "Отпустили… спасибо…": "Set free… thank you…",
+  "{0} развеял призрака": "{0} dispelled a ghost",
+  "Житель": "Villager",
+  "Бой с призраком": "Fight the ghost",
+  "Улетел…": "Flew off…",
+  "Над деревней бродят призраки. Их можно одолеть: молитва и святые умения снимают половину здоровья, остальное — оружием": "Ghosts roam over the village. They can be defeated: prayer and holy skills take half their health, weapons do the rest",
+  "{0}: свет обжёг духов ({1})": "{0}: the light seared the spirits ({1})",
+  "Свет жжёт духов: {0}": "The light sears spirits: {0}",
+  "{0} обжёг молитвой призраков: {1}": "{0} seared ghosts with a prayer: {1}",
 });

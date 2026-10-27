@@ -1,0 +1,45 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#141c22">
+<canvas id="cv"></canvas>
+<script>var NA_SPEC = {}, NA_PX = {}, PX_FINE = 3;</script>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script src="../../js/world/ghostpx.js"></script>
+<script src="../../js/world/reaperpx.js"></script>
+<script>
+// Лист жнецов: у всех колпак, у каждой формы рогов свой (0 бараньи спирали — мягкий свисающий, 1 винтом вверх — с крюком и помпоном,
+// 2 бычьи с завитком — высокий острый). Крупно ×3, ниже позы всех троих ×2 и масштаб как в игре. Снимок: node tools/pxghost/shot.js out.png reaper.html
+try {
+const HN = ['бараньи спирали', 'винтом вверх', 'бычьи с завитком'];
+const W = 1760, cv = document.getElementById('cv');
+cv.width = W; cv.height = 50 + 360 + 3 * 250 + 330;
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#141c22'; c.fillRect(0, 0, W, cv.height);
+const T = (s, x, y, sz = 20, col = '#e6eef0') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.fillText(s, x, y); };
+const cell = (x, y, w, h) => { c.fillStyle = '#26323a'; c.fillRect(x, y, w, h); c.fillStyle = '#2c3a42'; for (let i = 0; i < 50; i++) c.fillRect(x + (i * 37 % w), y + (i * 53 % h), 3, 2); };
+const put = (spr, x, y, Z, a = 1) => { const [ox, oy, w, h] = spr.fzO; c.save(); c.globalAlpha = a; c.imageSmoothingEnabled = false; c.translate(x, y); c.drawImage(spr, -ox * Z, -oy * Z, w * Z, h * Z); c.restore(); };
+const R = (v, m, f, hv) => reaperPxSprite(v, m, f, RPX_N[m], hv);
+T('Жнецы: у каждой формы рогов свой колпак — лента со стежками, заплаты, складки, потрёпанные поля', 16, 32, 19, '#ffd860');
+[2, 0, 1].forEach((hv, i) => {
+  const x = 10 + i * 584, y = 50;
+  cell(x, y, 578, 354); T(HN[hv], x + 8, y + 20, 15, '#bfd8ff'); put(R('R2', 'idle', 0, hv), x + 289, y + 30 + 43 * 3 + 10, 3);
+});
+const POSES = [['idle', 0, 'парит'], ['idle', 6, 'парит, фаза 6'], ['boo', 3, 'гнев'], ['atk', 2, 'замах'], ['atk', 4, 'удар'], ['atk', 8, 'отдача']];
+[['R2', 2], ['R2', 0], ['R2', 1]].forEach(([v, hv], r) => POSES.forEach(([m, f, n], i) => {
+  const x = 10 + i * 290, y = 420 + r * 250;
+  cell(x, y, 284, 244); T(n, x + 8, y + 20, 14); put(R(v, m, f, hv), x + 142, y + 30 + 43 * 2 + 6, 2);
+}));
+const yb = 420 + 3 * 250 + 10;
+T('Как в игре (×1 и ×2): жнецы рядом с призраками A и B и гномом', 16, yb + 20, 18, '#ffd860');
+c.fillStyle = '#0e1418'; c.fillRect(10, yb + 30, W - 20, 290);
+const gn = (x, yy, Z) => { c.fillStyle = '#7a4a2a'; c.fillRect(x - 4 * Z, yy - 12 * Z, 8 * Z, 12 * Z); c.fillStyle = '#e0b088'; c.fillRect(x - 3 * Z, yy - 17 * Z, 6 * Z, 5 * Z); c.fillStyle = '#c03020'; c.fillRect(x - 4 * Z, yy - 21 * Z, 8 * Z, 4 * Z); };
+let x = 50;
+gn(x, yb + 290, 1); x += 50;
+put(ghostPxSprite('A', 'idle', 0), x, yb + 230, 1, 0.85); x += 60; put(ghostPxSprite('B', 'idle', 0), x, yb + 230, 1, 0.85); x += 80;
+for (const [v, hv] of [['R2', 2], ['R2', 0], ['R2', 1]]) { put(R(v, 'idle', 0, hv), x, yb + 225, 1, 0.9); x += 90; }
+x += 60; gn(x, yb + 300, 2); x += 90;
+put(ghostPxSprite('B', 'idle', 0), x, yb + 170, 2, 0.85); x += 150;
+for (const [v, hv] of [['R2', 2], ['R2', 0], ['R2', 1]]) { put(R(v, 'idle', 0, hv), x, yb + 160, 2, 0.9); x += 210; }
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>

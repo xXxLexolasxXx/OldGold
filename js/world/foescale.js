@@ -4,9 +4,10 @@
 // · Пока P ≤ p0, всё как раньше (слабому герою не хуже). Выше — у нейтралов и врагов больше ХП (урон героя делится
 //   на hpMul), их удары и особые атаки по герою сильнее (dmgMul), скелеты/ходячие деревья/волки держат больше ударов (hitsMul),
 //   а один удар героя снимает не больше oneHit от полного ХП (кроме «добивающих» ультимейтов).
-// · Призраков за ночь меньше; потолок зависит от силы героя и числа павших.
-// · Полоски ХП: одна общая fsBar для всех видов, видна, пока существо ранено или в бою.
-// Все числа — в FOE_SCALE ниже. Подключается после banish.js (обёртки killFoe/drawGhosts/neuHurtUnit).
+// · Призраки (ghosts.js/ghostfight.js): обычные удары героя тоже делятся на hpMul; святая сила по-прежнему снимает ровно половину.
+// · Полоски ХП: одна общая fsBar для нейтралов, врагов, скелетов, деревьев и зверей, видна, пока существо ранено или в бою
+//   (у призраков и жнеца — свои полосы с отметками).
+// Все числа — в FOE_SCALE ниже. Подключается после ghostfight.js (обёртки killFoe/drawGhosts/neuHurtUnit/ghHurt).
 
 const FOE_SCALE = {
   on: true,
@@ -16,7 +17,6 @@ const FOE_SCALE = {
   dmgPer: 0.05, dmgMax: 1.6, // урон врагов по герою: +5% за единицу, не больше ×1,6
   hitsPer: 0.12, hitsMax: 3, // число ударов для скелетов, деревьев, волков: ×(1+0,12·…), не больше ×3
   oneHit: 0.45,             // один удар (или способность) героя снимает не больше 45% полного ХП, когда враги усилены
-  ghost: { base: 1, rnd: 1, lostDiv: 4, capBase: 2, capPw: 5, capLost: 6, capMax: 6 },
 };
 
 const FS = { t: -99, p: 0, mob: null };
@@ -50,14 +50,13 @@ function fsHeroHit(N, u, dmg) {
   return Math.min(dmg / m, N.mhp * FOE_SCALE.oneHit);
 }
 
-// сколько призраков вывести за ночь и сколько их может быть сразу (ghosts.js, night.js, save.js)
-function fsGhostCount() {
-  const G = FOE_SCALE.ghost, lost = Game.lostGnomes || 0;
-  return G.base + Math.floor(Math.random() * (G.rnd + 1)) + Math.floor(lost / G.lostDiv);
-}
-function fsGhostCap() {
-  const G = FOE_SCALE.ghost, lost = Game.lostGnomes || 0;
-  return Math.min(G.capMax, G.capBase + Math.floor(fsHeroPower() / G.capPw) + Math.floor(lost / G.capLost));
+// удар героя по призраку (ghosts.js ghHurt); святая сила (el 'holy', ghHoly) — ровно половина, её не трогаем
+{
+  const _gh = ghHurt;
+  ghHurt = function (g, u, dmg, el, src) {
+    if (el !== 'holy' && g && g.mhp) dmg = fsHeroHit(g, u, dmg);
+    return _gh(g, u, dmg, el, src);
+  };
 }
 
 // ---------- Общая полоска ХП ----------
@@ -115,7 +114,7 @@ function fsEnvHurt(u, n) {
 }
 const fsEnvMul = u => (u && u.hero ? fsDmgMul() : 1);
 
-// ---------- Полоски над скелетами, деревьями, зверями и изгоняемыми призраками ----------
+// ---------- Полоски над скелетами, деревьями и зверями ----------
 {
   const _dg = drawGhosts;
   drawGhosts = function (c) {
@@ -124,12 +123,5 @@ const fsEnvMul = u => (u && u.hero ? fsDmgMul() : 1);
     for (const s of Game.skels || []) if (s.state === 'roam' || s.state === 'fight') nb(s, s.y * TILE - 34);
     for (const e of Game.ents || []) if (ENT_HIT.has(e.state)) nb(e, e.y * TILE - (e.rock ? 44 : 70), 28);
     for (const a of Game.animals || []) if (!a.dead && (a.kind === 'wolf' || a.kind === 'fox')) nb(a, a.y * TILE - 18, 18);
-    // призрак под молитвой героя: полоска тает за время изгнания
-    const fx = typeof HL !== 'undefined' && HL.fx;
-    if (fx) for (const f of fx) {
-      if (f.kind !== 'exo' || !f.g || f.g.exo || !(Game.ghosts || []).includes(f.g)) continue;
-      const k = 1 - (Game.time - f.t0) / f.dur;
-      if (k > 0) fsBar(c, f.g.x * TILE, f.g.y * TILE - 64, k, 24);
-    }
   };
 }

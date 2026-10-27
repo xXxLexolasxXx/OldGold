@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#141c22">
+<canvas id="cv"></canvas>
+<script>var NA_SPEC = {}, NA_PX = {}, PX_FINE = 3; var GH_T, ghPoseAt, ghPoseLerp;</script>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script src="../../js/world/ghostpx.js"></script>
+<script src="../../js/world/reaperpx.js"></script>
+<script>
+// Все анимации пиксельных призраков и жнецов по 12 кадров (раны — одна вспышка): строка — анимация, столбцы — кадры 1..12.
+// Позы похищения — копия GH_POSE из grab.js (там же ghPoseLerp). Снимок: node tools/pxghost/shot.js out.png allanim.html
+try {
+GH_T = [0.2, 0.4, 0.65, 0.9, 1.1, 1.3, 1.55, 1.85, 2.3];
+const GH_POSE = [[[8, -22], [-10, -22], -3, 0, 0], [[17, -10], [3, -17], 3, 0, 0], [[21, 0], [11, -4], 6, 0, 0], [[22, 8], [11, 5], 7, 0.5, 0], [[22, 8], [11, 6], 7, 1, 1],
+  [[22, 2], [11, 0], 5, 1, 1], [[22, -8], [11, -9], 2, 1, 1], [[18, -3], [8, -4], -2, 1, 1], [[16, 2], [6, 1], -3, 1, 1]].map(([hf, hn, lean, k, held]) => ({ hf, hn, lean, k, held }));
+ghPoseAt = i => GH_POSE[Math.max(0, Math.min(8, i))];
+ghPoseLerp = gt => { if (gt <= GH_T[0]) return GH_POSE[0]; for (let i = 0; i < 8; i++) if (gt < GH_T[i + 1]) { const a = GH_POSE[i], b = GH_POSE[i + 1], u = (gt - GH_T[i]) / (GH_T[i + 1] - GH_T[i]), m = (p, q) => p + (q - p) * u; return { hf: [m(a.hf[0], b.hf[0]), m(a.hf[1], b.hf[1])], hn: [m(a.hn[0], b.hn[0]), m(a.hn[1], b.hn[1])], lean: m(a.lean, b.lean), k: m(a.k, b.k) }; } return GH_POSE[8]; };
+const ROWS = [
+  ['Призрак A, полосы: парит', n => ghostPxSprite('A', 'idle', n, 'T1')], ['пугает', n => ghostPxSprite('A', 'boo', n, 'T1')], ['удар', n => ghostPxSprite('A', 'atk', n, 'T1')],
+  ['бежит', n => ghostPxSprite('A', 'flee', n, 'T1')], ['задобрен', n => ghostPxSprite('A', 'calm', n, 'T1')], ['гибель', n => ghostPxSprite('A', 'die', n, 'T1')],
+  ['Призрак B, рваньё: хватает гнома', n => ghostPxSprite('B', 'grab', n, 'T2')], ['уносит', n => ghostPxSprite('B', 'carry', n, 'T2')], ['рана', n => n ? null : ghostPxSprite('B', 'hurt', 0, 'T2')],
+  ['Жнец (бычьи, полосы): парит', n => reaperPxSprite('R2', 'idle', n, 12, 2, 'T1')], ['гнев', n => reaperPxSprite('R2', 'boo', n, 12, 2, 'T1')], ['взмах косой', n => reaperPxSprite('R2', 'atk', n, 12, 2, 'T1')],
+  ['гибель', n => reaperPxSprite('R2', 'die', n, 12, 2, 'T1')], ['Жнец (бараньи, рваньё): рана', n => n ? null : reaperPxSprite('R2', 'hurt', 0, 1, 0, 'T2')],
+];
+const CW = 112, RH = 150, LW = 190, cv = document.getElementById('cv');
+cv.width = LW + 12 * CW + 10; cv.height = 40 + ROWS.length * RH;
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#141c22'; c.fillRect(0, 0, cv.width, cv.height);
+const T = (s, x, y, sz = 16, col = '#e6eef0') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.fillText(s, x, y); };
+T('Все анимации по 12 кадров (10 к/с); рана — одна вспышка', 12, 26, 20, '#ffd860');
+ROWS.forEach(([name, fn], r) => {
+  const y = 40 + r * RH;
+  T(name, 10, y + RH / 2, 14, '#bfd8ff');
+  for (let n = 0; n < 12; n++) {
+    const s = fn(n); if (!s) continue;
+    const x = LW + n * CW;
+    c.fillStyle = '#26323a'; c.fillRect(x, y + 4, CW - 4, RH - 8);
+    const [ox, oy, w, h] = s.fzO, Z = w > 70 ? 1.25 : 1.5;
+    c.drawImage(s, x + CW / 2 - 2 - ox * Z, y + 8 + 45 - oy * Z + (w > 70 ? 10 : 0), w * Z, h * Z);
+  }
+});
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>

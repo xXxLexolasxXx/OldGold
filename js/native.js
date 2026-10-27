@@ -7,7 +7,7 @@
   if (C && C.isNativePlatform && C.isNativePlatform()) {
     document.documentElement.classList.add('native-app', 'native-' + C.getPlatform());
     try { C.Plugins.StatusBar.hide(); } catch (e) { /* плагин не подключён */ }
-    try { C.Plugins.App.addListener('backButton', () => { /* назад не закрывает игру: меню открывается кнопкой в игре */ }); } catch (e) { /* без App */ }
+    try { C.Plugins.App.addListener('backButton', () => { /* назад не закрывает игру: закрывает верхнее окно или шторку (js/winmgr.js) */ if (typeof window.wmBack === 'function') window.wmBack(); }); } catch (e) { /* без App */ }
   }
   if (!N) return;
   document.documentElement.classList.add('native-app');
