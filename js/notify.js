@@ -10,6 +10,7 @@
 //    3 — «Что нового» (только при новой версии, коротко), 4 — задания дня одной строкой, 5 — обучение / подсказка коопа.
 // Другие системы могут встать в общую очередь окон: Notify.modal(id, show, prio) — show() вызовется, когда экран свободен.
 // Окно, которое должно держать очередь, помечается атрибутом data-nq-modal.
+// Между окнами — пауза NQ_MODAL_GAP: следующее не выскакивает в тот же миг, как закрыли предыдущее.
 
 const Notify = {
   mode: 'calm',           // calm — спокойный (по умолчанию), full — подробный
@@ -30,6 +31,7 @@ const Notify = {
 };
 
 const NQ_KEY = 'oldgold.notify';
+const NQ_MODAL_GAP = 1200;      // мс тишины после закрытого окна, прежде чем открыть следующее
 const NQ_BLOCK = '#hero-name, #cp-class, #cp-lost, #cp-admin, #cp-stats, #whatsnew, #goal-modal:not(.hidden), #prof-win:not(.hidden), #help:not(.hidden), #nq-journal, '
   + '#dil-modal:not(.hidden), #guide:not(.hidden), #daily-modal, #chron, #ha-editor, #hh-win, [data-nq-modal]';
 // важное — показываем даже в «тишину»: связь, сохранение, исход игры
@@ -284,8 +286,12 @@ Notify.offer = function (text, onClick, kind) {
   nqPump();
 };
 
+// окно закрыли только что — следующее подождёт (заставки глав goal.js тоже спрашивают)
+function nqModalGap() { return nqNow() - (Notify.busyAt || -1e9) < NQ_MODAL_GAP; }
+Notify.gap = nqModalGap;
+
 function nqModalPump() {
-  if (!Notify.modals.length || nqBusy()) return;
+  if (!Notify.modals.length || nqBusy() || nqModalGap()) return;
   const E = Notify.entry;
   if (E && E.step <= 5 && Notify.modals[0].prio > 0) return;   // сначала вход по шагам
   if (nqTutBusy() && Notify.modals[0].prio > 1) return;
@@ -465,6 +471,7 @@ function nqWatch() {
 function nqTick() {
   try {
     nqWatch();
+    if (nqBusy()) Notify.busyAt = nqNow();
     nqSteps();
     nqQuietEnd();
     nqPump();

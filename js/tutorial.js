@@ -3,6 +3,9 @@
 // мигает нужная кнопка (вкладка → раздел → здание), остальное притушено, стрелка показывает, куда жать,
 // а на карте подсвечено ЛУЧШЕЕ место (рядом с ресурсом и дорогой) и маршрут дороги от «А» до «Б».
 // Реплики шагов — голос старосты Грума; после этапов идут сцены лора (lore.js).
+// Окна не наслаиваются: сцена лора показывается только между шагами (шаг выполнен → сцена → пауза → следующий шаг),
+// а пока открыто любое окно из общей очереди (сцена, заставка главы, дилемма) — панель обучения спрятана.
+// Первый шаг — сложить большой костёр: в новой деревне он стоит фундаментом и ждёт, пока его коснутся.
 // Шаг засчитывается только по действию игрока. Есть «Пропустить», «Повторить шаг» и чек-лист целей.
 // Первая ночь прерывает обучение своим шагом, потом всё продолжается с того же места.
 // В общей деревне — короткий вариант без стройки: меню и здания там общие, хосту не мешаем.
@@ -10,7 +13,11 @@
 const Tut = {
   on: false, i: 0, doneAt: 0, cam0: null, el: null, list: null, dim: null, arrow: null,
   coop: false, ok: [], ret: -1, nightDone: false, cast: false, f: null, camKey: '', spotC: null, roadC: null, fieldC: null, raf: 0,
+  loreSlot: false,
 };
+const TUT_LORE_AT = 1200;     // мс после «✔ Готово»: тут может начаться сцена лора
+const TUT_STEP_AT = 1800;     // мс после «✔ Готово»: следующий шаг (если сцены нет)
+const TUT_LORE_GAP = 1500;    // мс тишины между закрытой сценой и следующим шагом
 
 const isMob = () => typeof Mobile !== 'undefined' && Mobile.on;
 const findB = type => Game.buildings.find(b => b.type === type && !b.removed);
@@ -214,50 +221,82 @@ function tutFireSeen() {
 }
 const heroCmd = () => { const h = Game.hero; return !!(h && h.cmd && h.cmd.kind && h.cmd.kind !== 'move'); };
 
+// Новая деревня: стартовый большой костёр становится фундаментом — его сложат, когда игрок коснётся места.
+// Только свежий одиночный мир (обучение с начала карты); старые деревни и повтор обучения не трогаем.
+function tutFireSite() {
+  if (Tut.coop || (Game.time || 0) > 900) return;
+  const fires = Game.buildings.filter(b => b.type === 'bonfire' && !b.removed);
+  if (fires.length !== 1 || fires[0].state !== 'done') return;
+  const o = fires[0];
+  removeBuilding(o);
+  const b = placeBuilding('bonfire', o.x, o.y, false, o.rot);
+  b.hold = true;
+  if (typeof spawnSpotCache !== 'undefined') spawnSpotCache = null;
+}
+// фундамент выбрали (или послали к нему героя) — строители берутся за дело
+function tutFireTick() {
+  const bf = findB('bonfire'), c = Game.hero && Game.hero.cmd;
+  if (bf && bf.hold && (Game.selected === bf || (c && c.b === bf))) bf.hold = false;
+}
+function tutFireFocus() {
+  const bf = findB('bonfire');
+  if (!bf) return { k: 'none', say: '' };
+  if (bf.hold) return bMap(bf, `${tap('фундаменту костра', 'фундамента костра')} — строители принесут брёвна и камень.`);
+  return { k: 'none', say: 'Строители складывают костёр. Пара минут — и будет огонь.' };
+}
+
 // ---------- Шаги ----------
 // solo — только в своей деревне. События воронки: tut2-step-NN / tut2-ok-NN / tut2-skip-NN (закрыл) / tut2-pass-NN (пропустил шаг)
 const TUT_STEPS = [
   {
-    ph: 'Деревня', title: 'Осмотритесь',
-    text: () => 'Приехали, старейшина. Долина Старого Золота — дом наших прадедов. Оглядитесь, пока гномы распрягают повозки и пока никто ничего не сломал.',
+    id: 'fire', ph: 'Огонь', title: 'Большой костёр', solo: true,
+    text: () => `Первым делом — костёр. Огонь греет: у костра гномы отдыхают и веселеют. Огонь светит: ночью из леса лезет нечисть, а в кольце света она не нападает. И герой у огня встаёт на ноги. Без костра первая ночь станет последней.
+      ${more('Как работает костёр', 'Днём огонь просто горит, а трудяги жгут в нём мусор — пепел удобряет поля. Вечером темнеет: ближе 8 клеток к костру нечисть не нападает, ближе 12 — даже не появляется, а в 5 клетках встаёт павший герой. Выберите костёр — кольца видны на земле. Гномы, застигнутые ночью вдали от огня, боятся и прячутся.')}`,
+    focus: tutFireFocus,
+    done: () => { const b = findB('bonfire'); return !b || b.state === 'done'; },
+  },
+  {
+    id: 'look', ph: 'Деревня', title: 'Осмотритесь',
+    enter: () => { Tut.cam0 = { x: R.cam.x, y: R.cam.y, z: R.cam.z }; },
+    text: () => 'Огонь есть — теперь оглядимся. Долина Старого Золота — дом наших прадедов. Осмотритесь, пока гномы распрягают повозки и пока никто ничего не сломал.',
     focus: () => ({ k: 'none', say: isMob() ? 'Потяните карту пальцем, двумя пальцами — масштаб.' : 'Потяните карту правой кнопкой мыши (или W A S D), колесо — масштаб.' }),
     done: () => Tut.cam0 && (Math.hypot(R.cam.x - Tut.cam0.x, R.cam.y - Tut.cam0.y) > 120 || R.cam.z !== Tut.cam0.z),
   },
   {
-    ph: 'Деревня', title: 'Загляните на склад', solo: true,
+    id: 'store', ph: 'Деревня', title: 'Загляните на склад', solo: true,
     enter: () => { if (Game.selUnit) { Game.selUnit = null; updateUI(true); } },   // выбранный герой ушёл бы к складу вместо окна склада
     text: () => 'Склад — всё, что мы увезли из Подгорья: брёвна, камень, хлеб и золото. Кладовщик пересчитывает их каждую ночь и всё равно недоволен.',
     focus: () => { const s = storeB(); return s ? bMap(s, `${tap('складу', 'склада')} — откроется окно с запасами.`) : { k: 'none', say: '' }; },
     done: () => Game.selected && Game.selected.isStore && Game.selected.isStore(),
   },
   {
-    ph: 'Стройка', title: 'Дом лесоруба', solo: true, chain: ['woodcutter'], enter: () => unlockStage('res', true),
+    id: 'woodcutter', ph: 'Стройка', title: 'Дом лесоруба', solo: true, chain: ['woodcutter'], enter: () => unlockStage('res', true),
     text: () => 'Строить будем из брёвен и камня, как деды. Лесничий рубит лес; лес, как ни странно, против.',
   },
   {
-    ph: 'Стройка', title: 'Каменоломня', solo: true, chain: ['quarry'], enter: () => unlockStage('res', true),
+    id: 'quarry', ph: 'Стройка', title: 'Каменоломня', solo: true, chain: ['quarry'], enter: () => unlockStage('res', true),
     text: () => 'Камень берут у серых валунов. Предки тут уже копали — может, найдём что-нибудь, кроме мозолей.',
   },
   {
-    ph: 'Стройка', title: 'Лесопилка', solo: true, chain: ['sawmill'], enter: () => unlockStage('res', true),
+    id: 'sawmill', ph: 'Стройка', title: 'Лесопилка', solo: true, chain: ['sawmill'], enter: () => unlockStage('res', true),
     text: () => 'Брёвна — в доски. Брёвна подвезёт лесоруб, когда достроится. Терпение — тоже ресурс. У гномов его много, у меня — нет.',
   },
   {
-    ph: 'Хлеб', title: 'Ферма', solo: true, chain: ['farm'], enter: () => unlockStage('grain', true),
+    id: 'farm', ph: 'Хлеб', title: 'Ферма', solo: true, chain: ['farm'], enter: () => unlockStage('grain', true),
     text: () => 'Трактир кормит, а кто-то должен кормить трактир. Ферме нужна трава вокруг — под поле. Зерно у бабушки Яглы, она выдаст. Наверное.',
   },
   {
-    ph: 'Хлеб', title: 'Мельница и пекарня', solo: true, chain: ['mill', 'bakery'], enter: () => unlockStage('grain', true),
+    id: 'bread', ph: 'Хлеб', title: 'Мельница и пекарня', solo: true, chain: ['mill', 'bakery'], enter: () => unlockStage('grain', true),
     text: () => 'Зерно → мука → хлеб. Гномы любят хлеб почти так же сильно, как ворчать. Я — исключение: ворчать я люблю больше.',
   },
   {
-    ph: 'Хозяйство', title: 'Где что не так', grum: false,
+    id: 'econ', ph: 'Хозяйство', title: 'Где что не так', grum: false,
     text: () => 'Значки над домами говорят, чего не хватает: дороги, рабочего, сырья. Все беды разом — во вкладке «Хозяйство». Достроите цепочку — меню само откроет новый раздел.',
     focus: () => uiF(tabSel('overview'), 'Откройте вкладку «Хозяйство» (столбики).'),
     done: () => UI.tab === 'overview' && (!isMob() || document.body.classList.contains('sheet-tab')),
   },
   {
-    ph: 'Герой', title: 'Ваш герой',
+    id: 'hero', ph: 'Герой', title: 'Ваш герой',
     enter: () => { if (isMob()) mobileSheet(null); },
     text: () => Game.buildings.some(x => x.state !== 'done' && !x.isRoad && !x.removed)
       ? 'Рабочие бьются над стройкой, но у них не выходит — то некому, то нечем. Тут нужна рука героя: он сам возьмёт материалы со склада и достроит. Выберите героя и пошлите его на стройку — она подсвечена.'
@@ -266,7 +305,7 @@ const TUT_STEPS = [
     done: heroCmd,
   },
   {
-    ph: 'Бой', title: 'Способности', grum: false,
+    id: 'abil', ph: 'Бой', title: 'Способности', grum: false,
     text: () => `Нечисть — забота героя. В углу экрана — панель способностей: <b>атака</b>${isMob() ? '' : ' (<kbd>Q</kbd>)'} бьёт ближайшего врага, а свои приёмы у каждого класса появятся после учёбы в гильдии${isMob() ? '' : ' (клавиши <kbd>1</kbd>–<kbd>5</kbd>)'}. ${isMob() ? 'Касание — применить, удержание — подсказка.' : 'Наведите — подсказка.'} Днём целей нет — просто попробуйте.`,
     focus: () => heroFocus(() => {
       const b = document.querySelector('#ab-bar [data-abu="u_atk"]');
@@ -276,7 +315,7 @@ const TUT_STEPS = [
     done: () => Tut.cast,
   },
   {
-    ph: 'Ночь', title: 'Первая ночь', night: true,
+    id: 'night', ph: 'Ночь', title: 'Первая ночь', night: true,
     text: () => isEveningNow()
       ? 'Ночь: деревья открывают глаза, скелеты выходят погулять — про это дед на карте не писал. Поставьте героя у большого костра, огонь его бодрит. Испуганные гномы сами спрячутся в трактире: храбрость в зарплату не входит.'
       : 'Скоро стемнеет, и долина покажет, почему предки ушли. К вечеру пусть в трактире будет хлеб, а герой — у костра.',
@@ -291,7 +330,7 @@ const TUT_STEPS = [
     done: () => isEveningNow() && (!findB('bonfire') || (tutFireSeen() && tutHeroNear(findB('bonfire'), 5))),
   },
   {
-    ph: 'Дальше', title: 'Что ещё есть', grum: false,
+    id: 'more', ph: 'Дальше', title: 'Что ещё есть', grum: false,
     text: () => `Это потом — подсказки сами всплывут, когда понадобятся:
       ${more('Гильдии и классы', 'Цепочка «хлеб → пиво → свиньи → ремесло → металл» откроет оружейника, а за ним гильдии. Глава гильдии учит героя классу.')}
       ${more('Праздник и субботник', 'Праздник — кнопка в трактире: все пляшут, потом болеют. Субботник — раз в день с утра: деревня убирает мусор.')}
@@ -299,7 +338,7 @@ const TUT_STEPS = [
       ${more('Справка', 'Меню → «Как играть». Это обучение тоже можно повторить из меню.')}`,
   },
   {
-    ph: 'Финал', title: 'Дальше — сами!', last: true,
+    id: 'last', ph: 'Финал', title: 'Дальше — сами!', last: true,
     text: () => 'Главное: дороги, хлеб, непустой склад, а к ночи — свет и герой на месте. Что там с башней — разберёмся. Потом. Всё, что гномы вспомнят о долине, — в журнале «Лор» (меню). Гномы в вас верят. Ну, некоторые.',
   },
 ];
@@ -307,6 +346,7 @@ const TUT_STEPS = [
 const tutStep = () => TUT_STEPS[Tut.i];
 const stepUsable = s => !(Tut.coop && s.solo);
 const stepHasTask = s => !!(s.chain || s.done);
+const tutStepOk = id => { const k = TUT_STEPS.findIndex(s => s.id === id); return k >= 0 && !!(Tut.ok && Tut.ok[k]); };
 const stepDone = s => s.chain ? chainDone(s.chain) : s.done ? !!s.done() : false;
 function stepFocus(s) {
   const f = s.chain ? chainFocus(s.chain) : s.focus ? s.focus() : null;
@@ -322,6 +362,9 @@ function tutStart(mode) {
   Tut.coop = mode === 'coop' || (typeof Coop !== 'undefined' && !!Coop.on);
   Object.assign(Tut, { on: true, i: 0, doneAt: 0, ok: [], ret: -1, nightDone: false, cast: false, fire: false, camKey: '' });
   Tut.cam0 = { x: R.cam.x, y: R.cam.y, z: R.cam.z };
+  Tut.loreSlot = false;
+  while (Tut.i < TUT_STEPS.length - 1 && !stepUsable(TUT_STEPS[Tut.i])) Tut.i++;   // в общей деревне шаг-костёр пропускается
+  tutFireSite();
   const help = document.getElementById('help'); if (help) help.classList.add('hidden');
   tutRender();
   tutLoop();
@@ -345,8 +388,7 @@ function tutGo(d) {
     while (i > 0 && i < TUT_STEPS.length - 1 && (!stepUsable(TUT_STEPS[i]) || (TUT_STEPS[i].night && Tut.nightDone))) i += d < 0 ? -1 : 1;
     Tut.i = Math.max(0, Math.min(TUT_STEPS.length - 1, i));
   }
-  Tut.doneAt = 0; Tut.camKey = '';
-  if (Tut.i === 0) Tut.cam0 = { x: R.cam.x, y: R.cam.y, z: R.cam.z };
+  Tut.doneAt = 0; Tut.camKey = ''; Tut.loreSlot = false;
   tutRender();
 }
 
@@ -356,7 +398,6 @@ function tutRedo() {
   if (Game.tool) setTool(null);
   if (isMob()) mobileSheet(null);
   Tut.doneAt = 0; Tut.camKey = '';
-  if (Tut.i === 0) Tut.cam0 = { x: R.cam.x, y: R.cam.y, z: R.cam.z };
   tutRender();
 }
 
@@ -379,6 +420,7 @@ function tutEls() {
       track('tut2-pass-' + tutN(Tut.i), 'Обучение 2: пропустил шаг ' + (Tut.i + 1));
       Tut.ok[Tut.i] = 'skip';
       if (tutStep().night) Tut.nightDone = true;
+      if (tutStep().id === 'fire') { const bf = findB('bonfire'); if (bf) bf.hold = false; }
       tutGo(1);
     }
     if (k === 'redo') tutRedo();
@@ -489,7 +531,8 @@ function tutCenter(wx, wy) {
 }
 
 function tutTick() {
-  if (!Tut.on) return;
+  // обучения нет (закрыли, загрузили старый сейв) — фундамент костра не должен ждать вечно; в коопе здания — дело сервера
+  if (!Tut.on) { const bf = Game.buildings && findB('bonfire'); if (bf && bf.hold && !(typeof Coop !== 'undefined' && Coop.on)) bf.hold = false; return; }
   const s = tutStep();
   // первая ночь прерывает любой шаг до неё; после — возвращаемся на тот же шаг
   const ni = TUT_STEPS.findIndex(x => x.night);
@@ -499,8 +542,10 @@ function tutTick() {
     tutRender();
     return;
   }
+  tutFireTick();   // фундамент костра отпускаем на любом шаге: первая ночь могла прервать шаг-костёр
   if (!Tut.doneAt && stepHasTask(s) && stepDone(s)) {
     Tut.doneAt = performance.now();
+    Tut.loreSlot = true;          // между этим шагом и следующим может пройти одна сцена лора
     Tut.ok[Tut.i] = true;
     if (s.night) Tut.nightDone = true;
     if (Game.tool && s.chain) setTool(null);
@@ -508,10 +553,26 @@ function tutTick() {
     tutRender();
     return;
   }
-  if (Tut.doneAt && performance.now() - Tut.doneAt > 1800) { tutGo(1); return; }
+  if (Tut.doneAt && performance.now() - Tut.doneAt > TUT_STEP_AT) { if (!tutLoreHold()) tutGo(1); return; }
   if (s.night && Tut.eve !== isEveningNow()) { tutRender(); return; }   // стемнело — текст шага «ночь» другой
   tutUpdate(false);
   tutListRender();
+}
+
+// Сцена лора между шагами: можно ли ей начаться сейчас (lore.js спрашивает перед показом)
+function tutLoreSlot() {
+  return Tut.on && Tut.loreSlot && Tut.doneAt > 0 && performance.now() - Tut.doneAt > TUT_LORE_AT;
+}
+// Следующий шаг ждёт: сцена в очереди или на экране, только что закрылась, или вот-вот встанет в очередь
+function tutLoreHold() {
+  if (typeof Lore === 'undefined') return false;
+  const now = performance.now();
+  if (Lore.cur || Lore.pend) { Tut.loreSlot = false; return true; }
+  if (Lore.closedAt > Tut.doneAt && now - Lore.closedAt < TUT_LORE_GAP) return true;
+  // сцена готова, а лор ещё не поставил её в очередь (его тик реже) — подождать немного
+  if (Tut.loreSlot && now - Tut.doneAt < TUT_STEP_AT + 1500 && typeof loreTutReady === 'function' && loreTutReady()) return true;
+  Tut.loreSlot = false;
+  return false;
 }
 
 // ---------- Затемнение и стрелка: каждый кадр, чтобы ехали вместе с картой и шторками ----------
@@ -547,9 +608,12 @@ function tutLoop() {
   const step = () => {
     if (!Tut.on) { hide(); return; }
     Tut.raf = requestAnimationFrame(step);
+    // поверх открыто другое окно (сцена лора, глава, дилемма) — панель обучения уходит, чтобы окна не лезли друг на друга
+    const under = typeof nqBusy === 'function' && nqBusy();
+    Tut.el.classList.toggle('under', under);
+    Tut.list.classList.toggle('under', under);
     const r = Tut.doneAt ? null : tutRect();
-    // поверх открыто другое окно (вход, глава, дилемма) — не тушим его своей тенью
-    if (!r || (typeof nqBusy === 'function' && nqBusy())) { hide(); return; }
+    if (!r || under) { hide(); return; }
     Tut.dim.classList.remove('hidden');
     Tut.dim.classList.toggle('map', !r.ui);
     Object.assign(Tut.dim.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
