@@ -84,7 +84,7 @@ function siteWhy(b) {
   const left = k => (b.def.cost[k] || 0) - b.usedOf[k];
   const onSite = SITE_MATS.some(k => b.stock[k] > 0), coming = SITE_MATS.some(k => b.incoming[k] > 0);
   const need = SITE_MATS.filter(k => left(k) > b.stock[k] + b.incoming[k]);
-  const gone = need.filter(k => !storeHaving(b.doorX, b.doorY, k, comp));
+  const gone = need.filter(k => !storeHaving(b.doorX, b.doorY, k, comp, b));
   const people = Game.units.filter(u => !u.dead && !u.teamOf);
   const bTot = people.filter(u => u.type === 'builder').length;
   const bFree = people.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.brk).length;

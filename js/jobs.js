@@ -206,9 +206,9 @@ function* fetchForSiteGen(u, s, force) {
     if (need > 0) { g = k; n = Math.min(want, need); break; }
   }
   if (!g) return false;
-  const st = storeHaving(u.x, u.y, g, comp);
+  const st = storeHaving(u.x, u.y, g, comp, s);
   if (!st) return false;
-  n = Math.min(n, st.offer(g));
+  n = Math.min(n, offerFor(st, g, s));
   st.reserved[g] += n; s.incoming[g] += n;
   u.dlv = { from: st, to: s, g, n, gen: u.proc };   // чтобы учёт «в пути» видел эту ношу
   let ok = yield { walk: [st.doorX, st.doorY] };

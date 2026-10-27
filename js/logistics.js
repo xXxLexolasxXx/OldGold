@@ -223,13 +223,13 @@ function dispatchSerfs() {
     while (need > 0 && idle.length) {
       let src = null, sd = 1e9;
       for (const o of depots) {
-        if ((o === r.d && !(r.d.upg && r.d.isStore())) || compOf.get(o) !== r.comp || o.offer(r.g) <= 0) continue;
+        if ((o === r.d && !(r.d.upg && r.d.isStore())) || compOf.get(o) !== r.comp || offerFor(o, r.g, r.d) <= 0) continue;
         // сперва забираем у мастерской — иначе она встанет с полным складом, а склад опустеет
         const dd = mdist(o.doorX, o.doorY, r.d.doorX, r.d.doorY) + (o.isPile || !o.isStore() ? 0 : 25);
         if (dd < sd) { sd = dd; src = o; }
       }
       if (!src) break;
-      const avail = src.offer(r.g);
+      const avail = offerFor(src, r.g, r.d);
       const u = pickCarrier(idle, src.doorX, src.doorY, r.g, Math.min(need, avail));
       if (!u) break;
       const n = Math.min(need, avail, carryCap(u, r.g));
@@ -273,6 +273,12 @@ function dispatchSerfs() {
   }
 }
 
+// Сколько источник отдаст именно этому адресату: стройке и лесопилке без досок — и брёвна из зимнего запаса склада (season.js)
+function offerFor(o, g, to) {
+  if (g === 'trunk' && to && !o.isPile && o.isStore() && typeof seaWoodFor === 'function' && seaWoodFor(to)) return o.stock.trunk - o.reserved.trunk;
+  return o.offer(g);
+}
+
 // стройка на обрывке дороги без склада: материал к ней несут и по траве (как к стройке дороги)
 function siteOffNet(b) {
   if (!b || b.isPile || b.isRoad || b.state === 'done' || typeof b.isStore !== 'function') return false;
@@ -283,10 +289,10 @@ function siteOffNet(b) {
 // Ближайший склад, где товар g есть в наличии (откуда взять). В отличие от nearestStore, не смотрит на запрет
 // «склад не принимает» и закрытые доставки: они про то, что везут НА склад, а не про то, что с него берут.
 // Раньше стройка проверяла только ближайший склад — пустой ближний склад прятал 131 камень на дальнем.
-function storeHaving(x, y, g, comp = 0) {
+function storeHaving(x, y, g, comp = 0, to = null) {
   let best = null, bd = 1e9;
   for (const b of Game.buildings) {
-    if (!b.isStore() || b.offer(g) <= 0) continue;
+    if (!b.isStore() || offerFor(b, g, to) <= 0) continue;
     if (comp && compAt(b.doorX, b.doorY) !== comp) continue;
     const d = Math.abs(b.doorX - x) + Math.abs(b.doorY - y);
     if (d < bd) { bd = d; best = b; }
@@ -313,7 +319,7 @@ function dispatchBuilders() {
   if (!idle.length) return;
   // стройка без материала и без доставки в пути подождёт: работяга без дела там только стоит
   const matOk = (b, st) => ['trunk', 'timber', 'stone'].some(k => st[k] > 0 || b.incoming[k] > 0 ||
-    (b.demand(k) > 0 && storeHaving(b.doorX, b.doorY, k, compAt(b.doorX, b.doorY))));   // работяга донесёт сам
+    (b.demand(k) > 0 && storeHaving(b.doorX, b.doorY, k, compAt(b.doorX, b.doorY), b)));   // работяга донесёт сам
   const sites = [
     ...Game.buildings.filter(b => b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold && (b.state === 'site' || matOk(b, b.stock))),
     ...Game.buildings.filter(b => b.upg && !b.upg.builder && matOk(b, b.upg.stock)),

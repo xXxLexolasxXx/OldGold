@@ -69,6 +69,7 @@ scriptTest('disaster: стихийные бедствия — знамения, 
 scriptTest('skate: коньки, возврат со льда на свой берег, герой катится по льду', 'skate-test.js');
 scriptTest('heroapp: цвет жилета героя — наряд, фигура, сейв', 'heroapp-test.js');
 scriptTest('urgent: авто-срочность и кнопка «Срочно», старые приоритеты в сейве', 'urgent-test.js');
+scriptTest('woodhold: зимний запас дров не держит стройку и лесопилку без досок', 'woodhold-test.js');
 scriptTest('pc: управление для ПК — переназначение клавиш, обмен, запреты, сохранение, способности героя', 'pc-test.js');
 scriptTest('workers: управление рабочими, пинок, маршруты, сохранение, кооп', 'workers-test.js');
 scriptTest('coop-hire: кооп — обученный специалист занимает здание, клиент видит работника', 'coop-hire-test.js');

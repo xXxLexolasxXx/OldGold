@@ -262,6 +262,7 @@ I18N.add('en', {
   "Рабочие": "Workers",
   "или кнопка времени справа сверху. На паузе можно ставить дороги, здания, поля и сносить, а гномы начнут работать, когда снимете паузу. Что делать первым, гномы решают сами (еда, зимой дрова, к ночи оборона); кнопка": "or the time button at the top right. While paused you can place roads, buildings and fields and demolish, and the gnomes start working once you unpause. Gnomes decide what comes first on their own (food, firewood in winter, defence before night); the",
   "«Срочно»": "“Urgent”",
+  "Перед зимой стройки больше не встают: если им не хватает досок, лесопилка получает брёвна из зимнего запаса, а стройкам брёвна дают всегда. Впрок запас по-прежнему не пилят": "Construction no longer stalls before winter: if sites lack planks, the sawmill gets logs from the winter reserve, and sites always get logs. The reserve is still not sawn up in advance",
   "в окне здания — 20 секунд все свободные носят туда и оттуда.": "button in a building window makes every free gnome carry to and from it for 20 seconds.",
   "Бригадир повесил доску: кто чем занят, кто бездельничает и почему.": "The foreman put up a board: who is busy, who is slacking and why.",
   "Если долго: нажмите «Срочно» — здание получит свободного гнома первым.": "If it takes long: press “Urgent” — the building gets a free gnome first.",
