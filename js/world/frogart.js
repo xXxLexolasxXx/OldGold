@@ -321,7 +321,7 @@ NA_DRAW.ftP = (c, P, f) => drawFrogfolk(c, P, 'P', f);
 NA_DRAW.ftR = (c, P, f) => drawFrogfolk(c, P, 'R', f);
 NA_DRAW.ftQ = (c, P, f) => drawFrogfolk(c, P, 'Q', f);
 NA_DRAW.ftK = (c, P, f) => drawFrogfolk(c, P, 'K', f);
-NA_SPEC.ftZ = { name: 'Жабьен', w: 116, h: 100, ax: 46, ay: 82, sc: 1.24 };
+NA_SPEC.ftZ = { name: 'Жабьен', w: 88, h: 66, ax: 44, ay: 54, sc: 1.24 };   // при мелком пикселе — ручной пиксель (campaign/zhabpx.js)
 NA_DRAW.ftZ = (c, P, f) => drawFrogfolk(c, P, 'Z', f);
 
 // =============== Свайная деревня у воды ===============
