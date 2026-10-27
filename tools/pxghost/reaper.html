@@ -1,0 +1,48 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#141c22">
+<canvas id="cv"></canvas>
+<script>var NA_SPEC = {}, NA_PX = {}, PX_FINE = 3;</script>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script src="../../js/world/ghostpx.js"></script>
+<script src="../../js/world/reaperpx.js"></script>
+<script>
+// Лист согласования жнеца в стилистике пиксельных призраков: три головы (R1 шлем, R2 колпак, R3 капюшон), крупно ×4 и позы ×2,
+// внизу — рядом с призраками A и B и гномом. Снимок: node tools/pxghost/shot.js out.png reaper.html
+try {
+const VS = [['R1', 'R1 — «шлем»: воронёный рогатый шлем, череп в прорези, бараньи рога (как нынешний жнец)'],
+  ['R2', 'R2 — «колпак»: чёрный колпак-жнец с кровавой лентой, заплатой и потрёпанными полями, рожки сквозь колпак'],
+  ['R3', 'R3 — «капюшон»: глубокий капюшон, череп в тени, корона из костяных шипов']];
+const POSES = [['idle', 0, 'парит'], ['idle', 6, 'парит, фаза 6'], ['boo', 3, 'гнев'], ['atk', 2, 'замах косой'], ['atk', 4, 'удар'], ['atk', 7, 'отдача']];
+const W = 1760, RH = 500, cv = document.getElementById('cv');
+cv.width = W; cv.height = 50 + VS.length * RH + 330;
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#141c22'; c.fillRect(0, 0, W, cv.height);
+const T = (s, x, y, sz = 20, col = '#e6eef0') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.fillText(s, x, y); };
+const cell = (x, y, w, h) => { c.fillStyle = '#26323a'; c.fillRect(x, y, w, h); c.fillStyle = '#2c3a42'; for (let i = 0; i < 50; i++) c.fillRect(x + (i * 37 % w), y + (i * 53 % h), 3, 2); };
+const put = (spr, x, y, Z, a = 1) => { const [ox, oy, w, h] = spr.fzO; c.save(); c.globalAlpha = a; c.imageSmoothingEnabled = false; c.translate(x, y); c.drawImage(spr, -ox * Z, -oy * Z, w * Z, h * Z); c.restore(); };
+const R = (v, m, f) => reaperPxSprite(v, m, f, m === 'atk' ? 9 : 12);
+T('Жнец в стилистике пиксельных призраков: одна форма (smin), пиксель ×3 мельче мирового, коса как серп Полудницы. Выберите голову: R1, R2 или R3', 16, 32, 20, '#ffd860');
+VS.forEach(([v, name], r) => {
+  const y0 = 50 + r * RH;
+  T(name, 16, y0 + 26, 19, '#bfd8ff');
+  cell(10, y0 + 36, 440, 454); put(R(v, 'idle', 0), 230, y0 + 36 + 43 * 4 + 20, 4);
+  POSES.forEach(([m, f, n], i) => {
+    const x = 460 + (i % 3) * 430, y = y0 + 36 + Math.floor(i / 3) * 228;
+    cell(x, y, 424, 222); T(n, x + 8, y + 20, 14); put(R(v, m, f), x + 212, y + 20 + 43 * 2 + 4, 2);
+  });
+});
+const yb = 50 + VS.length * RH + 10;
+T('Как в игре (×1 и ×2) ночью: жнецы рядом с призраками A и B и гномом', 16, yb + 20, 18, '#ffd860');
+c.fillStyle = '#0e1418'; c.fillRect(10, yb + 30, W - 20, 290);
+const gn = (x, yy, Z) => { c.fillStyle = '#7a4a2a'; c.fillRect(x - 4 * Z, yy - 12 * Z, 8 * Z, 12 * Z); c.fillStyle = '#e0b088'; c.fillRect(x - 3 * Z, yy - 17 * Z, 6 * Z, 5 * Z); c.fillStyle = '#c03020'; c.fillRect(x - 4 * Z, yy - 21 * Z, 8 * Z, 4 * Z); };
+let x = 50;
+gn(x, yb + 290, 1); x += 50;
+put(ghostPxSprite('A', 'idle', 0), x, yb + 230, 1, 0.85); x += 60; put(ghostPxSprite('B', 'idle', 0), x, yb + 230, 1, 0.85); x += 80;
+for (const [v] of VS) { put(R(v, 'idle', 0), x, yb + 225, 1, 0.9); x += 90; }
+x += 60; gn(x, yb + 300, 2); x += 90;
+put(ghostPxSprite('A', 'idle', 0), x, yb + 170, 2, 0.85); x += 140;
+for (const [v] of VS) { put(R(v, 'idle', 0), x, yb + 160, 2, 0.9); x += 200; }
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>
