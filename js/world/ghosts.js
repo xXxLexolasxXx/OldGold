@@ -7,6 +7,9 @@
 // (меньше 45%) может удрать, вне боя раны затягиваются. Святые силы снимают ровно половину здоровья (ghHoly) — дважды, и он развеян;
 // за победу опыт и иногда монета. Выходят реже и меньше: бывают пустые вечера, одновременно не больше 3 (+1 за четыре потери, до 6).
 // Бой с отрядом, способности и полоса здоровья — ghostfight.js.
+// Банши (kind 'banshee', с 0.11.78): призрак-плакальщица с кладбища. Выходит не каждую ночь (BAN.P), одна; здоровья в BAN.HP раз больше,
+// сама бросается на героев и рекрутов в BAN.SEE клетках, бьёт больнее и воет (пугает всех вокруг). Хлебом не задобрить, гномов не уносит.
+// Изгнание и святые силы снимают половину здоровья, как обычному призраку; убить можно оружием. Рисуется спрайтом из fairy2.js.
 
 const GHOST_SEE = 4.5, GHOST_SEE_ENT = 5.5;
 const GHOST_APPEAR = 0.3;   // проступают, когда потемнело настолько (вечер темнеет до 0.35 — то есть к концу вечера, а не с его начала)
@@ -17,6 +20,7 @@ const GH = {
   FLEE_AT: 0.45, FLEE_P: 0.35, FLEE_SPD: 2.4, FLEE_T: 5,   // раненый ниже 45% удирает с вероятностью 35% (раз за жизнь)
   REGEN: 0.6, CAP: 3, CAP_MAX: 6,
 };
+const BAN = { P: 0.6, HP: 1.6, SEE: 5, SCAN: 1.2, DMG0: 3, DMG1: 3, XP: 1.6 };   // банши: шанс выйти за ночь, множители здоровья/опыта, обзор, урон 3–6
 
 // где появиться: из кладбища, если оно есть, иначе над случайным жителем
 function ghostSpot(gy, live) {
@@ -39,19 +43,24 @@ function ghostsSpawn(n) {
   const live = Game.units.filter(u => !u.dead);
   const gy = graveyardOf(), cap = ghostsCap();
   let made = 0;
-  for (let i = 0; i < n && gs.filter(g => g.kind !== 'reaper' && !g.slain).length < cap; i++, made++) {
+  for (let i = 0; i < n && gs.filter(g => g.kind !== 'reaper' && g.kind !== 'banshee' && !g.slain).length < cap; i++, made++) {
     const sp = ghostSpot(gy, live);
     gs.push(ghInit({ x: sp.x, y: sp.y, hx: sp.x, hy: sp.y, alpha: 0, ph: Math.random() * 9, face: 1, rev: false, fromGy: sp.gy,
       mode: 'drift', modeT: 0, tx: sp.x, ty: sp.y, retarget: 0, scan: Math.random() }));
   }
   if (made > 0) logEvent('night', 'Над деревней поплыли призраки');
+  if (gy && !gs.some(g => g.kind === 'banshee' && !g.slain) && Math.random() < BAN.P) {
+    const sp = ghostSpot(gy, live);
+    gs.push(ghInit({ kind: 'banshee', x: sp.x, y: sp.y, hx: sp.x, hy: sp.y, alpha: 0, ph: Math.random() * 9, face: 1, rev: false, fromGy: true, appear: GHOST_APPEAR + 0.1,
+      mode: 'drift', modeT: 0, tx: sp.x, ty: sp.y, retarget: 0, scan: Math.random() }));
+  }
 }
 
 // ---------- Здоровье, урон, гибель, бегство ----------
 const ghMaxHp = () => Math.min(GH.HP_MAX, GH.HP0 + GH.HP_NIGHT * Math.max(0, nightIndex() - 1));
 function ghInit(g) {
   if (!g || g.kind === 'reaper') return g;
-  if (g.mhp == null) { g.mhp = ghMaxHp(); g.hp = g.mhp; }
+  if (g.mhp == null) { g.mhp = Math.round(ghMaxHp() * (g.kind === 'banshee' ? BAN.HP : 1)); g.hp = g.mhp; }
   if (!g.look) g.look = Math.random() < 0.5 ? 'A' : 'B';          // пиксельный облик (ghostpx.js): колпак или дед — вперемешку
   if (g.rag == null) g.rag = ['', 'T1', 'T2'][(Math.random() * 3) | 0];   // саван: гладкий, полосы или рваньё — вперемешку
   return g;
@@ -96,13 +105,14 @@ function ghFlee(g, u) {
 function ghDie(g, u) {
   g.slain = true; g.hp = 0; g.da = Math.max(0.05, g.alpha); g.exo = Game.time; g.mode = 'leave'; g.modeT = 99;
   g.atkT = 0; g.atkU = null; g.holdUntil = 0; g.tx = g.x; g.ty = g.y;
-  ghostSay(g, ['Свет… наконец-то…', 'Отпустили… спасибо…', 'Я иду домой…'][(Math.random() * 3) | 0]);
+  const ban = g.kind === 'banshee';
+  ghostSay(g, ban ? ['И-и-и… затихаю…', 'Больше не заплачу…', 'Тишина… наконец…'][(Math.random() * 3) | 0] : ['Свет… наконец-то…', 'Отпустили… спасибо…', 'Я иду домой…'][(Math.random() * 3) | 0]);
   fxBurst(g.x * TILE, g.y * TILE - 16, 26, ['#ffffff', '#fff6c0', '#bfffe0', '#6fd0b0'], 110, 70, 1.1, 2.2, -50);
   sfxAt('wail', g.x * TILE, g.y * TILE, 0.6); sfxAt('chime', g.x * TILE, g.y * TILE, 0.9);
   if (Math.random() < 0.4) dropPile(Math.floor(g.x), Math.floor(g.y), 'gold', 1);
-  if (u && typeof neuGiveXp === 'function') neuGiveXp(g, u, GH.XP + GH.XP_NIGHT * Math.min(10, nightIndex()));
+  if (u && typeof neuGiveXp === 'function') neuGiveXp(g, u, Math.round((GH.XP + GH.XP_NIGHT * Math.min(10, nightIndex())) * (ban ? BAN.XP : 1)));
   Game.ghostSlain = (Game.ghostSlain || 0) + 1;
-  logEvent('night', `${ghWho(u)} развеял призрака`, g.x, g.y);
+  logEvent('night', ban ? `${ghWho(u)} упокоил банши` : `${ghWho(u)} развеял призрака`, g.x, g.y);
 }
 
 function ghostSay(g, text) { floater(g.x, g.y - 1.6, text, '#cfe6ff'); }
@@ -146,6 +156,12 @@ function ghostsTick(dt) {
       g.hx = g.x; g.hy = g.y;
       continue;
     }
+    if (g.kind === 'banshee' && !ghProv(g) && !leaving && g.alpha >= 0.3 && (g.aggT = (g.aggT || 0) - dt) <= 0) {   // банши сама ищет, на кого напасть
+      g.aggT = BAN.SCAN;
+      let best = null, bd = BAN.SEE;
+      for (const u of Game.units) { if (!(u.hero || u.rec) || u.dead || u.inside) continue; const d = Math.hypot(u.x - g.x, u.y - g.y); if (d < bd) { bd = d; best = u; } }
+      if (best) { g.tg = best.id; g.prov = Game.time; if (g.mode === 'drift') { g.mode = 'boo'; g.modeT = 1.2; } ghostSay(g, ['И-и-и-и!', 'Ты — следующий!', 'Слышишь мой плач?'][(Math.random() * 3) | 0]); }
+    }
     if (ghProv(g)) {                                              // в бою: бросается на обидчика и бьёт когтями
       const u = ghTarget(g);
       if (u && !leaving && g.alpha >= 0.3) {
@@ -177,7 +193,7 @@ function ghostsTick(dt) {
     for (const u of Game.units) {
       if (u.inside || u.dead || !isPerson(u) || u.type === 'carter' || (u.ghostCD || 0) > Game.time) continue;
       if (Math.hypot(u.x - g.x, u.y - g.y) > GHOST_SEE) continue;
-      if (g.mode === 'drift' && u.carry === 'bread' && Math.random() < 0.6) {
+      if (g.mode === 'drift' && g.kind !== 'banshee' && u.carry === 'bread' && Math.random() < 0.6) {
         u.ghostCD = Game.time + 40;
         u.carryN = (u.carryN || 1) - 1; if (u.carryN <= 0) u.carry = null;
         g.mode = 'calm'; g.modeT = 7; g.tx = g.x; g.ty = g.y;
@@ -185,10 +201,10 @@ function ghostsTick(dt) {
         logEvent('night', `${UNIT_TYPES[u.type].name} угостил призрака хлебом`, u.x, u.y);
         break;
       }
-      if (g.mode === 'drift' && ghCanTake(g, u)) { ghTakes(g, u); break; }   // редко: одинокого гнома хватает и уносит
+      if (g.mode === 'drift' && g.kind !== 'banshee' && ghCanTake(g, u)) { ghTakes(g, u); break; }   // редко: одинокого гнома хватает и уносит
       if (g.mode === 'calm' || !interruptible(u)) continue;      // успокоенный призрак больше не пугает
       u.ghostCD = Game.time + 40;
-      floater(u.x, u.y - 1.2, 'Призрак!', '#dcecff');
+      floater(u.x, u.y - 1.2, g.kind === 'banshee' ? 'Банши!' : 'Призрак!', '#dcecff');
       if (Math.random() < 0.5) { startBreak(u, 'freeze', null); u.proc = freezeGen(u); }
       else { startBreak(u, 'flee', null); u.proc = fleeGen(u); }
       if (g.mode === 'drift') { g.mode = 'boo'; g.modeT = 1.6; sfxAt('wail', g.x * TILE, g.y * TILE, 1); }
@@ -207,7 +223,11 @@ function ghostsTick(dt) {
 }
 
 // Удар: призрак бросается на героя, дерзнувшего его изгонять; на самого гнома он не нападает — только пугает
-function ghostStrike(g, u) { if (!(g.atkT > 0)) { g.atkT = 0.001; g.atkU = u; g.atkHit = false; g.face = u.x >= g.x ? 1 : -1; sfxAt('wail', g.x * TILE, g.y * TILE, 1); } }
+function ghostStrike(g, u) {
+  if (g.atkT > 0) return;
+  g.atkT = 0.001; g.atkU = u; g.atkHit = false; g.face = u.x >= g.x ? 1 : -1; sfxAt('wail', g.x * TILE, g.y * TILE, 1);
+  if (g.kind === 'banshee' && typeof fzScareAround === 'function') fzScareAround(g.x, g.y, 6, 40, 'Банши!', '#dcecff');   // вой пугает всех вокруг
+}
 function ghostStrikeTick(g, dt) {
   g.atkT += dt;
   const u = g.atkU, k = g.atkT / GHOST_ATK_DUR;
@@ -220,11 +240,12 @@ function ghostStrikeTick(g, dt) {
       g.atkHit = true;
       const rp = g.kind === 'reaper';
       if (d < (rp ? REAPER_REACH : 2.4) && u.hero) {
-        hlHurt(u, (rp ? 5 + Math.random() * 3 : 2 + Math.random() * 2) * (typeof fsEnvMul === 'function' ? fsEnvMul(u) : 1), 'ghost');
+        const ban = g.kind === 'banshee';
+        hlHurt(u, (rp ? 5 + Math.random() * 3 : ban ? BAN.DMG0 + Math.random() * BAN.DMG1 : 2 + Math.random() * 2) * (typeof fsEnvMul === 'function' ? fsEnvMul(u) : 1), 'ghost');
         fxBurst(u.x * TILE, u.y * TILE - 14, 8, ['#bfffe0', '#6fd0b0', '#e8fff6'], 40, 50, 0.7, 1.6, -20);
-        floater(u.x, u.y - 2.4, 'Холод пробирает!', '#bfeaff');
+        floater(u.x, u.y - 2.4, ban ? 'Вой леденит кровь!' : 'Холод пробирает!', '#bfeaff');
       } else if (!rp && d < 2.4 && u.rec && typeof neuHurtUnit === 'function') {     // рекрут, что бьётся с призраком, тоже мёрзнет
-        neuHurtUnit(u, 2 + Math.random() * 2);
+        neuHurtUnit(u, g.kind === 'banshee' ? BAN.DMG0 + Math.random() * BAN.DMG1 : 2 + Math.random() * 2);
         floater(u.x, u.y - 2.4, 'Холод!', '#bfeaff');
       }
     }
@@ -434,7 +455,15 @@ function drawGhosts(c) {
     c.translate(px, py); c.scale(g.face, 1);
     c.globalAlpha = A;
     c.imageSmoothingEnabled = true;
-    if (rp && typeof reaperPxFrame === 'function') {
+    if (g.kind === 'banshee' && typeof fzBansheeSprite === 'function') {
+      const k = atk ? g.atkT / GHOST_ATK_DUR : 0;
+      const cv = g.slain && typeof FZ_DIE !== 'undefined' ? FZ_DIE.ban(Math.min(5, Math.floor((1 - g.alpha / (g.da || 1)) * 6)))
+        : fzBansheeSprite(atk ? (k < 0.2 ? 1 : 2) : g.mode === 'boo' ? 2 : 0, Math.floor(t * 4.4 + g.ph) % 12);
+      if (g.slain) c.globalAlpha = Math.min(1, flick);
+      c.imageSmoothingEnabled = false;
+      blitFine(c, cv, -cv.fzO[0], -cv.fzO[1], cv.fzO[2], cv.fzO[3]);
+    }
+    else if (rp && typeof reaperPxFrame === 'function') {
       // пиксельный жнец (reaperpx.js): рога — одна из трёх форм g.var, у каждой свой колпак; ряса — полосы или рваньё (g.rag)
       const rm = g.slain ? 'die' : Game.time - (g.hurtT || -9) < 0.25 ? 'hurt' : atk ? 'atk' : mood === 'boo' ? 'boo' : 'idle';
       const rf = rm === 'die' ? Math.floor((1 - g.alpha / (g.da || 1)) * RPX_N.die) : atk ? Math.floor(g.atkT / GHOST_ATK_DUR * RPX_N.atk) : Math.floor(t * 10 + g.ph * 1.27) % RPX_N[rm];

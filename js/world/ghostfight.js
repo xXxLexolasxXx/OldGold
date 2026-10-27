@@ -69,7 +69,7 @@ const ghAll = () => (Game.ghosts || []).filter(ghLive);
   const _rc = resolveCmd;
   resolveCmd = function (t) {
     const r = _rc(t);
-    if (r && r.kind === 'attack' && GK(r.f)) r.label = 'Бой с призраком';
+    if (r && r.kind === 'attack' && GK(r.f)) r.label = r.f.o.kind === 'banshee' ? 'Бой с банши' : 'Бой с призраком';
     return r;
   };
 
