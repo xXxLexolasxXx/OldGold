@@ -275,6 +275,7 @@ function coopCmd(name, msgJson, admin) {
     case 'trav': if (typeof travCmd === 'function') travCmd(name, m); break;
     case 'wgs': if (typeof wgsCmd === 'function') wgsCmd(name, m); break;
     case 'dp': if (typeof dpDo === 'function') { const r = dpDo(coop.players.get(name), String(m.a || ''), +m.x || 0, typeof m.g === 'string' ? m.g : null); if (r && r.text) coopSay(name, r.text); } break;
+    case 'campaign': coopCamp(name, !!admin, m); break;
     case 'glq': if (m.a === 'wake' && typeof glWake === 'function') glWake(); break;
     case 'dil': if (typeof dilVote === 'function') dilVote(name, !!admin, m.seq, m.i); break;
     case 'rsc': if (typeof rscCmd === 'function' && can('council')) rscCmd(name, m); break;
@@ -373,6 +374,8 @@ function coopQuestHave() { const q = coop.quest; return q ? Math.max(0, (Game.pr
 function coopVillageTick() {
   if (!coop.players.size) return;
   coopParcels();
+  // в акте кампании у деревни сценарий: заказы, задания дня, Совет и серии ночей молчат (посылки идут)
+  if (Game.camp) { coop.quest = null; coop.cn = null; coop.prevNight = isNightNow(); coop.prevEve = isEveningNow(); coop.lostAtEve = null; return; }
   const night = isNightNow(), eve = isEveningNow();
   // вечер: считаем потери с этой точки; заказ, не выполненный за день, сгорает
   if (eve && !coop.prevEve) {
@@ -450,6 +453,8 @@ function coopStateSet(json) {
 // Меню строительства для игроков открывается постепенно (как в одиночной игре), хост видит всё.
 // Стадии считаются по уже построенному: так же и со старым миром.
 function coopInitUnlocks() {
+  // мир акта кампании (перезапуск сервера посреди акта): в акте открыто всё, как при campStart, — иначе гости не строят башни
+  if (Game.camp && typeof allUnlocked === 'function') { Game.unlocked = allUnlocked(); return; }
   Game.unlocked = Game.unlocked && Game.unlocked.sqtGone ? { res: true, sqtGone: true } : { res: true };   // «таверну снесли» — не стадия меню, не сбрасываем
   for (let ch = true; ch;) {
     ch = false;
@@ -531,7 +536,7 @@ function coopTick(dt) {
   coop.vilT = (coop.vilT || 0) + dt;
   if (coop.vilT >= 1) { coop.vilT = 0; coopVillageTick(); }
   coop.lvT += dt;
-  if (coop.lvT >= 2) {
+  if (coop.lvT >= 2 && !Game.camp) {   // в кампании город готовый — уровень героя от него не растёт
     coop.lvT = 0;
     const L = heroLevelAt(heroTownScore());
     for (const u of coop.players.values()) if (L > u.hero.level) { u.hero.level = L; u.hero.maxhp = coopBaseHp(u.hero.clsKey, L); }
@@ -590,7 +595,7 @@ function coopList(arr) {
   }
   return out;
 }
-const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp', 'bah'];
+const COOP_UNIT_EX = ['slip', 'burn', 'lantern', 'knock', 'gest', 'gestFace', 'gestUntil', 'netUntil', 'umbrella', 'fleeUntil', 'panicUntil', 'fun', 'hangUntil', 'gp', 'brawl', 'mdr', 'ill', 'fam', 'kp', 'bah', 'xp'];
 const COOP_WX = ['k', 'target', 'bolt', 'scorch', 'fires', 'rainEnd', 'nextRain'];
 
 // всё, что нечисть, ночь и погода держат вне жителей и клеток
@@ -608,6 +613,7 @@ function coopMirror() {
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,
     lost: Game.lostGnomes || 0, df: Game.diff,
     goal: typeof goalMirrorOut === 'function' ? goalMirrorOut() : null,
+    camp: typeof campMirrorOut === 'function' ? campMirrorOut() : null, campf: Game.camp ? coopPlain(Game.camp.flags, 0, true) : null, cprog: coopCampProg(),
     trade: typeof tradeMirrorOut === 'function' ? tradeMirrorOut() : null,
     dil: typeof dilMirrorOut === 'function' ? dilMirrorOut() : null,
     trav: typeof travMirrorOut === 'function' ? travMirrorOut() : null,
@@ -786,7 +792,7 @@ function coopUnitsFor(name, x0, y0, x1, y1) {
 function coopInitPacket(uid) {
   const s = serializeGame();
   s.units = [];
-  return JSON.stringify({ t: 'init', world: s, ob: coopAllObjs(), uid, time: Game.time, nextId: Game.nextId });
+  return JSON.stringify({ t: 'init', world: s, ob: coopAllObjs(), uid, time: Game.time, nextId: Game.nextId, cc: coop.noCamp ? 0 : 1 });
 }
 
 // Разница мира с прошлой рассылкой: здания, объекты на клетках, дороги, стройки дорог, груды.
@@ -884,7 +890,7 @@ function coopMeData(name) {
   const u = coop.players.get(name);
   if (!u) return null;
   const H = u.hero;
-  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, food: r2(u.food), vil: coopVillageInfo(), qx: coopQuestInfo(name), xp: H.xp || 0, tt: H.title || null });
+  return JSON.stringify({ t: 'me', uid: u.id, cls: H.clsKey, clsName: H.cls, level: H.level, hp: Math.round(H.hp), mhp: H.maxhp, inv: H.inv, food: r2(u.food), vil: Game.camp ? null : coopVillageInfo(), qx: Game.camp ? null : coopQuestInfo(name), xp: H.xp || 0, tt: H.title || null });
 }
 
 function coopDrain() {
@@ -1331,6 +1337,86 @@ function coopAutoFight(u) {
   issueCmd(u, { kind: 'foe', f, tx: Math.floor(f.o.x), ty: Math.floor(f.o.y), label: 'Бой' });
 }
 
+// ---------- Кампания «Исход из Подгорья» в коопе (КАМПАНИЯ_КООП.md) ----------
+// Акт запускает хост: мир сервера пересобирается на месте (без перезапуска), герои игроков встают у склада
+// с прежним уровнем и рюкзаком, server.js рассылает всем новый мир (coop.reinit). Сценарий считает campaign.js
+// на сервере; реплики листаются голосом «Дальше» (C.st.rd), выбор делает хост, контрольная точка — CampSrv.cp.
+
+coop.reinit = false;
+// выключатель кооп-кампании (сервер: OLDGOLD_COOP_CAMPAIGN=0): кнопка у хоста прячется, команда start отклоняется
+coop.noCamp = false;
+function coopCampOff(on) { coop.noCamp = !!on; }
+
+function coopCampStart(n, fromCp) {
+  if (coop.noCamp) return 'Кампания в общей деревне пока недоступна';
+  if (typeof campStart !== 'function') return 'Кампании на этом сервере нет';
+  if (fromCp) { if (!CampSrv.cp) return 'Контрольной точки ещё нет'; }
+  else if (!CAMP_ACTS[n]) return 'Такого акта нет';
+  else if (!campIsOpen(n)) return `Акт ${n} закрыт: сначала пройдите акт ${n - 1}`;
+  const heroes = [...coop.players.keys()].map(nick => [nick, JSON.parse(coopHeroData(nick))]);
+  coopDropHeroes();
+  if (fromCp) applySave(JSON.parse(CampSrv.cp));
+  else {
+    campStart(n);
+    // сложность сервера: стартовые припасы акта, как после выбора сложности в одиночной кампании
+    if (Game.camp && typeof diffApplyStart === 'function') diffApplyStart(Game.diff);
+    CampSrv.cp = null; CampSrv.cpN = 0;
+  }
+  coopDropHeroes();            // герои из сейва контрольной точки — без хозяев; игроки входят заново
+  for (const b of Game.buildings) b.hold = false;
+  for (const [nick, d] of heroes) coopJoin(nick, JSON.stringify(Object.assign(d, { x: null, hp: Math.max(d.hp, 1) })));
+  coop.reinit = true;
+  const A = CAMP_ACTS[fromCp ? Game.camp && Game.camp.act : n];
+  coop.out.push({ msg: { t: 'toast', text: fromCp ? 'Хост вернул отряд к контрольной точке' : `Кампания: акт ${n} «${A ? A.name : ''}»` } });
+  return '';
+}
+
+function coopCamp(name, admin, m) {
+  const C = Game.camp, s = C && C.st, S = C && campStepNow(C);
+  if (m.a === 'start' || m.a === 'cp') {
+    if (!admin) return coopSay(name, 'Акт запускает хост');
+    let err;
+    try { err = coopCampStart(coopInt(m.n) ? m.n : 0, m.a === 'cp'); } catch (e) { err = 'Акт не запустился'; console.error(e); }
+    if (err) coopSay(name, err);
+    return;
+  }
+  if (!C || C.over || !s || !S || m.seq !== C.seq) return;
+  if (m.a === 'next') {
+    // голос за строку: только за ту, что сейчас на экране (нажатие по старой не листает новую)
+    if ((S.k === 'say' || S.k === 'cut') && m.k === (s.k || 0)) (s.rd || (s.rd = {}))[name] = 1;
+    else if (S.k === 'choice' && s.pick >= 0) (s.rd || (s.rd = {}))[name] = 1;
+  } else if (m.a === 'skip') {
+    if (!admin) return coopSay(name, 'Пропустить разговор может только хост');
+    if (S.k === 'say' || S.k === 'cut') s.done = true;
+  } else if (m.a === 'pick') {
+    if (!admin) return coopSay(name, 'Здесь решает хост');
+    if (S.k === 'choice' && s.pick < 0 && coopInt(m.i)) {
+      campChoose(C, m.i);
+      if (s.pick >= 0) coop.out.push({ msg: { t: 'toast', text: `${name}: «${S.opts[m.i].t}»` } });
+    }
+  }
+}
+
+function coopCampTakeReinit() { const r = coop.reinit; coop.reinit = false; return r; }
+function coopUidOf(name) { const u = coop.players.get(name); return u ? u.id : 0; }
+// прогресс кампании сервера — какие акты открыты (меню хоста)
+function coopCampProg() {
+  if (typeof campProg !== 'function') return null;
+  const p = campProg(), done = {};
+  for (const n in p.done) done[n] = p.done[n].stars || 1;
+  return { done, cp: CampSrv.cpN };
+}
+
+// звуки и вспышки сценария (рожок, взрыв, обвал) считаются на сервере — клиентам уходят сообщением
+{
+  if (typeof campSnd === 'function') {
+    const _cs = campSnd;
+    campSnd = function (kind, x, y, v) { if (Game.camp && coop.out.length < 200) coop.out.push({ msg: { t: 'campaign', a: 'snd', k: kind, x: x == null ? null : r2(x), y: r2(y), v } }); return _cs(kind, x, y, v); };
+  }
+  const _fb = fxBurst;
+  // только крупные (взрыв, обвал дома): мелкие искры и пыль жителей клиенты рисуют сами
+  fxBurst = function (...a) { if (Game.camp && a[2] >= 20 && coop.out.length < 200) coop.out.push({ msg: { t: 'campaign', a: 'fx', p: a.map(v => (typeof v === 'number' ? r2(v) : v)) } }); return _fb(...a); };
+}
 
 // ---------- Передача предметов и квесты «Эстафета» и «Передать хлеб» ----------
 // give: из рюкзака в рюкзак другому игроку, только вблизи (COOP_GIVE_R клеток), не чаще coopSlow, не больше

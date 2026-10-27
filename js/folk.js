@@ -25,7 +25,7 @@ const FOLK = {
   FUN_P: 0.2,         // шанс, что свободный гномёнок займётся «взрослым» делом: гуси, волки, школа
 };
 const FOLK_FIELD = new Set(['reap', 'dig', 'hoppick']);
-const FOLK_FIELD_T = new Set(['farmer', 'hopgrower']);
+const FOLK_FIELD_T = new Set(['farmer']);
 const FOLK_COOK_T = new Set(['baker', 'butcher']);
 const BAH_NAME = { ghost: 'призрак', skel: 'скелет', bat: 'летучая мышь', owl: 'сова' };
 const BAH_RUN = {

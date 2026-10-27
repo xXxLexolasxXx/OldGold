@@ -79,7 +79,7 @@ function wkRoute(u, p) {
   const done = b => b.state === 'done' && !b.removed;
   const srcs = p.from === 'store' ? Game.buildings.filter(b => b.isStore()) : typeof p.from === 'number' ? [wkB(p.from)] :
     [...Game.buildings.filter(done), ...Game.piles.values()];
-  const go = (src, dst, g, n) => { n = Math.min(n, src.offer(g), carryCap(u)); if (n > 0) { assignDelivery(u, src, dst, g, n); return true; } return false; };
+  const go = (src, dst, g, n) => { n = Math.min(n, src.offer(g), carryCap(u, g)); if (n > 0) { assignDelivery(u, src, dst, g, n); return true; } return false; };
   // 1) заявки адресата: материалы на стройку, сырьё в цех
   if (p.to !== 'store') {
     const dsts = typeof p.to === 'number' ? [wkB(p.to)] : [...Game.buildings, ...Game.roadSites.values()];
@@ -161,8 +161,9 @@ function wkWhy(u) {
     for (const b of sites) for (const k of ['trunk', 'timber', 'stone']) if (b.demand(k) > 0) need.add(wkGN(k));
     return need.size ? 'стройки ждут материал: ' + [...need].join(', ') : 'ждёт, пока освободится стройка';
   }
-  const bt = Object.keys(BUILDINGS).find(k => BUILDINGS[k].worker === u.type);
-  return bt ? `нет свободного здания: «${BUILDINGS[bt].name}»` : 'нет работы';
+  const bts = Object.keys(BUILDINGS).filter(k => BUILDINGS[k].worker === u.type);
+  if (bts.length > 1) return `все мастерские заняты (${bts.length}) — постройте ещё одну`;   // кузнец: 4 цеха
+  return bts.length ? `нет свободного здания: «${BUILDINGS[bts[0]].name}»` : 'нет работы';
 }
 
 function wkRouteName(p) {
@@ -394,6 +395,11 @@ function wkOpts(cur, list, extra) {
 function wkCardBody(u) {
   const s = wkStatus(u), p = u.wk;
   let h = `<div class="wk-t">Работа · ${wkName(u)}${wkPinLabel(u) ? ' · 📌' : ''}</div>`;
+  if (typeof isProf === 'function' && isProf(u)) {
+    const L = unitLevel(u), M = levelMax(u.type), t = LEVEL_XP[u.type], sp = Math.round((PROF_SPEED[L] - 1) * 100);
+    h += `<div class="wk-hint">Уровень ${L} из ${M}${L < M ? ` · выслуга ${u.xp || 0} из ${t[L]}` : ''}${sp ? ` · быстрее на ${sp}%` : ''}<br>${profPerkText(u.type)}</div>`;
+    if (u.type === 'stonemason' && u.home && u.home.type === 'quarry') h += `<div class="wk-hint">Ходит за камнем до ${quarryReach(u, u.home)} клеток от каменоломни</div>`;
+  }
   h += s.why ? `<div class="wk-st idle">Стоит: <b>${s.why}</b></div>` : `<div class="wk-st">Занят: ${s.doing || 'при деле'}</div>`;
   const cd = Math.max(0, Math.ceil((u.kickAt || -1e9) + WK_KICK_CD - Game.time));
   const kick = wkKickable(u) || (wkMirror() && s.why);

@@ -320,8 +320,7 @@ function* workerGen(u, b) {
     if (typeof injWants === 'function' && (injWants(u) || injCalled(u))) { yield { leave: true }; return; }   // травма или вызов к раненому (sickness.js)
     // здание побито нечистью, а чинить некому (строителей ночью тоже уносят) — через 15 с работник чинит сам:
     // иначе к середине игры стояли 12–16 зданий, и рудник без ремонта не давал золота школе (ДЕФИЦИТЫ.md)
-    // (не в кампании: там темп бегства задан сценарием — акт 2, волна обвала, и работники в побитых зданиях остаются на месте)
-    if (b.dmg >= 0.5 && !b.upg && !Game.camp) {
+    if (b.dmg >= 0.5 && !b.upg) {
       if (b.repairer && !b.repairer.dead) b.dmgWait = 0;
       else if ((b.dmgWait = (b.dmgWait || 0) + 1) > 15) { b.dmgWait = 0; b.repairer = u; yield* repairGen(u, b);
         if (!b.removed && u.home === b && u.inside !== b && !(yield* goHome(u, b))) { yield { wait: 3 }; return; }
@@ -329,8 +328,9 @@ function* workerGen(u, b) {
       }
     }
     if (b.paused || prioOff(b) || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
-    const work = WORK[b.type] || recipeWork;
+    const work = WORK[b.type] || recipeWork, m0 = PROF_MADE.get(b) || 0;
     yield* work(u, b);
+    if ((PROF_MADE.get(b) || 0) > m0 && !b.removed) gainXp(u, 1);   // выслуга мастеру — за цикл, который что-то дал
     if (u.inside !== b && !b.removed && u.home === b) {
       const ok = yield* goHome(u, b);
       if (!ok) { yield { wait: 3 }; return; }
@@ -349,12 +349,32 @@ function* recipeWork(u, b) {
   b.working = false;
   if (b.removed) return;
   recipeProduce(b, r);
+  profMade(b);
+  // мастер 4–5 уровня иногда выжимает из того же сырья ещё одну штуку
+  const ex = PROF_EXTRA[unitLevel(u)] || 0;
+  if (ex && isProf(u) && Math.random() < ex) {
+    const g = Object.keys(r.out)[0];
+    if (g && b.stock[g] + 1 <= b.def.outputs[g]) { b.stock[g]++; Game.produced[g]++; floater(b.doorX + 0.5, b.doorY - 1, 'Мастер выжал лишнюю!', '#ffe7a0'); }
+  }
 }
 
-function gather(b, g) { const n = b.def.gatherMult || 1; b.stock[g] += n; Game.produced[g] += n; }
+// Прокачка мастеров: сколько циклов здание отработало (для выслуги в workerGen) и бонусы профессий по уровню
+const PROF_MADE = new WeakMap();
+function profMade(b) { PROF_MADE.set(b, (PROF_MADE.get(b) || 0) + 1); }
+const PROF_EXTRA = [0, 0, 0, 0, 0.08, 0.15];
+const PROF_PERK = {
+  woodcutter: 'с 3-го уровня рубит всё дальше от дома (+1 клетка за уровень)',
+  stonemason: 'ходит за камнем всё дальше (+2 клетки за уровень и +3 за уровень каменоломни), с 3-го уровня быстрее точит гору',
+  farmer: 'с 3-го уровня лишний сноп с поля, с 5-го — два',
+};
+function profPerkText(type) {
+  return PROF_PERK[type] || 'с 4-го уровня иногда делает лишнюю штуку из того же сырья';
+}
+
+function gather(b, g) { const n = b.def.gatherMult || 1; b.stock[g] += n; Game.produced[g] += n; profMade(b); }
 
 function* woodcutterWork(u, b) {
-  const R = 9;
+  const R = 9, RC = R + Math.max(0, unitLevel(u) - 2);     // сажает рядом, а опытный рубит и подальше
   // бревно от срубленного ходячего дерева — забрать в первую очередь, обтесать и унести
   const lg = !outFull(b, 'trunk') && findObjNear(b.doorX, b.doorY, R + 5, o => o.t === 'log' && !o.res);
   if (lg) {
@@ -369,7 +389,7 @@ function* woodcutterWork(u, b) {
     return;
   }
   if (!outFull(b, 'trunk')) {
-    const t = findObjNear(b.doorX, b.doorY, R, o => o.t === 'tree' && o.g >= 1 && !o.res);
+    const t = findObjNear(b.doorX, b.doorY, RC, o => o.t === 'tree' && o.g >= 1 && !o.res);
     if (t) {
       t.o.res = true;
       const ok = yield { walk: [t.x, t.y] };
@@ -420,13 +440,14 @@ function rockFaceOpen(x, y) {
   return i;
 }
 
-// ближайшая клетка скалы с подходом: { x, y, spot }
-function findRockFace(b) {
+// ближайшая клетка скалы с подходом: { x, y, spot }; bad — клетки, куда недавно не смог дойти
+function findRockFace(b, R = ROCK_FACE_R, bad = null) {
   let best = null, bd = 1e9;
-  for (let y = b.doorY - ROCK_FACE_R; y <= b.doorY + ROCK_FACE_R; y++) for (let x = b.doorX - ROCK_FACE_R; x <= b.doorX + ROCK_FACE_R; x++) {
+  for (let y = b.doorY - R; y <= b.doorY + R; y++) for (let x = b.doorX - R; x <= b.doorX + R; x++) {
     if (rockFaceOpen(x, y) === null) continue;
+    if (bad && bad.get(idx(x, y)) > Game.time) continue;
     const dd = (x - b.doorX) ** 2 + (y - b.doorY) ** 2;
-    if (dd > ROCK_FACE_R * ROCK_FACE_R || dd >= bd) continue;
+    if (dd > R * R || dd >= bd) continue;
     for (const [dx, dy] of DIRS) if (isWalkable(x + dx, y + dy)) { bd = dd; best = { x, y, spot: [x + dx, y + dy] }; break; }
   }
   return best;
@@ -462,16 +483,43 @@ function crumbleRock(x, y) {
   PF.regT = -1e9;                  // проходимость изменилась
 }
 
+// Каменотёс: сперва глыбы и скала рядом с каменоломней; кончились — идёт дальше: радиус растёт с его уровнем
+// (+2 клетки за уровень) и с уровнем каменоломни (+3). Ночью и вечером далеко не ходит — работает у дома.
+// Куда не смог дойти (стройка перегородила, скалу окружили) — минуту туда не рвётся, берёт другое.
+const QUARRY_FAR_MAX = 24;
+const QUARRY_BAD = new WeakMap(), QUARRY_BAD_STONE = new WeakMap();
+function quarryReach(u, b) {
+  return Math.min(QUARRY_FAR_MAX, ROCK_FACE_R + 2 * (unitLevel(u) - 1) + 3 * ((b.level || 1) - 1));
+}
+function quarryBadOf(b) { let m = QUARRY_BAD.get(b); if (!m) QUARRY_BAD.set(b, m = new Map()); return m; }
+// что долбить: { stone } или { face }; ближнее важнее дальнего
+function quarryTarget(u, b) {
+  const bad = quarryBadOf(b), now = Game.time;
+  for (const [i, t] of bad) if (t <= now) bad.delete(i);
+  const okStone = o => o.t === 'stone' && o.n > 0 && !o.res && !(QUARRY_BAD_STONE.get(o) > now);
+  const near = findObjNear(b.doorX, b.doorY, ROCK_FACE_R, okStone);
+  if (near) return { stone: near };
+  const face = findRockFace(b, ROCK_FACE_R, bad);
+  if (face) return { face };
+  const R = quarryReach(u, b);
+  if (R <= ROCK_FACE_R || (typeof isNightNow === 'function' && (isNightNow() || isEveningNow()))) return null;
+  const far = findObjNear(b.doorX, b.doorY, R, okStone);
+  if (far) return { stone: far };
+  const ff = findRockFace(b, R, bad);
+  return ff ? { face: ff } : null;
+}
+
 function* quarryWork(u, b) {
   if (outFull(b, 'stone')) { yield { wait: 3 }; return; }
-  const s = findObjNear(b.doorX, b.doorY, 10, o => o.t === 'stone' && o.n > 0 && !o.res);
+  const tg = quarryTarget(u, b);
+  if (!tg) { yield { wait: 4 }; return; }
+  const s = tg.stone;
   if (!s) {
-    const f = findRockFace(b);
-    if (!f) { yield { wait: 4 }; return; }
+    const f = tg.face;
     const fi = idx(f.x, f.y);
     ROCKMINE.res.add(fi);
     const ok = yield { walk: f.spot };
-    if (!ok) { ROCKMINE.res.delete(fi); yield { wait: 2 }; return; }
+    if (!ok) { ROCKMINE.res.delete(fi); quarryBadOf(b).set(fi, Game.time + 60); yield { wait: 2 }; return; }
     for (let k = 0; k < 5; k++) {
       u.face = f.x + 0.5 > u.x ? 1 : -1; u.vdir = 'E';
       fxLater(0.52, () => rockFaceHit(f.x, f.y, u, k === 4));
@@ -479,7 +527,8 @@ function* quarryWork(u, b) {
     }
     ROCKMINE.res.delete(fi);
     if (World.terrain[fi] === T_ROCK) {
-      const left = (ROCKMINE.hp.get(fi) ?? ROCK_FACE_HP) - 1;
+      const L = unitLevel(u);
+      const left = (ROCKMINE.hp.get(fi) ?? ROCK_FACE_HP) - (L >= 5 ? 3 : L >= 3 ? 2 : 1);   // опытный откалывает гору крупнее
       ROCKMINE.hp.set(fi, left);
       if (left <= 0) crumbleRock(f.x, f.y);
       u.carry = 'stone';
@@ -498,10 +547,10 @@ function* quarryWork(u, b) {
     const d = Math.hypot(x - b.doorX, y - b.doorY);
     if (d < bd) { bd = d; spot = [x, y]; }
   }
-  if (!spot) { yield { wait: 3 }; return; }
+  if (!spot) { QUARRY_BAD_STONE.set(s.o, Game.time + 60); yield { wait: 1 }; return; }
   s.o.res = true;
   const ok = yield { walk: spot };
-  if (!ok) { s.o.res = false; yield { wait: 2 }; return; }
+  if (!ok) { s.o.res = false; QUARRY_BAD_STONE.set(s.o, Game.time + 60); yield { wait: 2 }; return; }
   u.face = s.x + 0.5 > u.x ? 1 : -1;
   // пять ударов киркой: искры и осколки, камень трескается; последним откалывается кусок
   const HITS = 5;
@@ -661,7 +710,7 @@ function* farmWork(u, b) {
       if (!(yield* goHome(u, b))) return;
       if (u.carry) {
         // с поля — 3 снопа, с удобренного пеплом — 5
-        const n = extra ? 5 : 3;
+        const L = unitLevel(u), n = (extra ? 5 : 3) + (L >= 5 ? 2 : L >= 3 ? 1 : 0);   // опытный пахарь ничего не роняет
         const crop = u.carry;
         for (let k = 0; k < n; k++) if (k === 0 || !outFull(b, crop)) gather(b, crop);
         // солома и ботва — сено: с пшеницы больше, с хмеля меньше
@@ -702,6 +751,7 @@ function feedPigs(b) {
   }
   next.push(1);
   b.pigs = next;
+  profMade(b);
 }
 
 // Пастух: идёт к ближайшей дикой козе, приручает её, и коза становится вьючной.
@@ -723,6 +773,7 @@ function* goatpenWork(u, b) {
   removeAnimal(goat);
   const g = spawnUnit('goat', b.doorX, b.doorY);
   g.homePen = b.id;
+  profMade(b);
   logEvent('animal', 'Пастух приручил козу — она будет возить грузы', b.doorX + 0.5, b.doorY);
   toast('Пастух приручил козу — она будет возить грузы', b);
   yield { wait: 2 };
@@ -739,6 +790,7 @@ function* stableWork(u, b) {
   if (b.removed) return;
   const c = spawnUnit('carter', b.doorX, b.doorY);
   c.homeStable = b.id;
+  profMade(b);
   logEvent('people', 'Из конюшни выехал извозчик с телегой', b.doorX + 0.5, b.doorY);
   toast('Из конюшни выехал извозчик с телегой', b);
 }

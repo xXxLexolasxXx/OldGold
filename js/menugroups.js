@@ -1,21 +1,25 @@
 'use strict';
-// Меню игры — четыре кнопки: «Сохранение», «Настройки», «Ещё» и «Выйти в главное меню».
-// Первые три раскрываются плавным списком (открыт только один). Кнопки сюда добавляют разные файлы
-// (profile, perf, notify, landscape, startmenu…) и в разное время, поэтому раскладываем их по группам
-// сами и следим за новыми: что не узнали — уходит в «Ещё». Обработчики кликов не трогаем — кнопки
-// остаются внутри .menu-list, делегирование работает как раньше.
+// Меню игры. Сверху всегда под рукой: «Сохранить» и «Загрузить» в один ряд, «Автосохранение» и «Справка».
+// Ниже две раскрывающиеся группы — «Настройки» и «Ещё» (открыта только одна), в самом низу «Выйти в главное меню».
+// Кнопки сюда добавляют разные файлы (profile, perf, notify, landscape, startmenu…) и в разное время, поэтому
+// раскладываем их по группам сами и следим за новыми: что не узнали — уходит в «Ещё». Обработчики кликов
+// не трогаем — кнопки остаются внутри .menu-list, делегирование работает как раньше.
+// Порядок верхнего уровня задаёт CSS (order), а не перестановка узлов — так наблюдатель не зацикливается.
 
+const MENU_QUICK = '[data-menu="save"], [data-menu="load"]';   // ряд из двух кнопок
+const MENU_TOP = '[data-menu="loadauto"], [data-guide], [data-menu="mainmenu"]';   // всегда на виду
 const MENU_GROUPS = [
-  { k: 'save', icon: 'save', name: 'Сохранение', sel: '[data-menu="save"], [data-menu="load"], [data-menu="loadauto"]' },
-  { k: 'set', icon: 'menu', name: 'Настройки', sel: '[data-land="open"], [data-nq="mode"], [data-menu="lang"], [data-pc], #eco-btn, #spireptr-btn, [data-reveal]' },
+  { k: 'set', icon: 'menu', name: 'Настройки', sel: '[data-menu="lang"], [data-pc], [data-land="open"], [data-nq="mode"], #dz-btn, #eco-btn, #tele-btn' },
   { k: 'more', icon: 'scroll', name: 'Ещё', sel: '*' },
 ];
 
 function menuGroupsSort() {
   const list = document.querySelector('#tab-menu .menu-list');
   if (!list) return;
-  let box = list.querySelector(':scope > .mg');
-  if (!box) {
+  if (!list.querySelector(':scope > .mg-quick')) {
+    const q = document.createElement('div');
+    q.className = 'mg-quick';
+    list.prepend(q);
     for (const g of MENU_GROUPS) {
       const d = document.createElement('div');
       d.className = 'mg'; d.dataset.mg = g.k;
@@ -24,13 +28,13 @@ function menuGroupsSort() {
       try { d.querySelector('img').src = iconURL('ui', g.icon, 2); } catch (e) { /* без иконки */ }
     }
   }
+  const quick = list.querySelector(':scope > .mg-quick');
   for (const el of [...list.children]) {
-    if (el.classList.contains('mg') || el.dataset.menu === 'mainmenu') continue;
+    if (el.classList.contains('mg') || el === quick || el.matches(MENU_TOP)) continue;
+    if (el.matches(MENU_QUICK)) { quick.appendChild(el); continue; }
     const g = MENU_GROUPS.find(x => x.sel === '*' || el.matches(x.sel));
     list.querySelector(`.mg[data-mg="${g.k}"] .mg-body`).appendChild(el);
   }
-  const exit = list.querySelector(':scope > [data-menu="mainmenu"]');
-  if (exit && list.lastElementChild !== exit) list.appendChild(exit);   // всегда последней (без лишних перестановок — иначе наблюдатель зациклится)
   for (const d of list.querySelectorAll(':scope > .mg')) {
     const n = [...d.querySelectorAll('.mg-body > *')].filter(b => getComputedStyle(b).display !== 'none').length;
     d.querySelector('.mg-n').textContent = n ? n : '';

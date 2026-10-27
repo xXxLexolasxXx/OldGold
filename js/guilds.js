@@ -715,7 +715,10 @@ function hireRecruit(b) {
 }
 
 function tryHire(b) {
-  const cls = b.def.guild, C = GCLS[cls], u = freeSerf(b);
+  const cls = b.def.guild, C = GCLS[cls];
+  // мест нет (вернулись прежние рекруты, пока заявки ждали трудягу) — заявки снимаем
+  if (recruitsOf(b).length >= recMaxOf(b)) { if (b.hireQ > 0) gnews(`${b.def.name}: мест нет — заявки на наём сняты`, b); b.hireQ = 0; return true; }
+  const u = freeSerf(b);
   if (!u) return false;
   b.hireQ = Math.max(0, (b.hireQ || 0) - 1);
   if (b.stock[C.weapon] < 1 || b.stock.gold < 1 || (cls === 'mage' && b.stock.mana < 1)) { gnews(`${b.def.name}: заявка снята — не хватает снаряжения`, b); return true; }
@@ -861,6 +864,7 @@ function guildsTick(dt) {
   G.t += dt;
   if (G.t < 1) return;
   G.t = 0;
+  guildAdoptOrphans();
   for (const b of Game.buildings) {
     if (!isGuild(b)) continue;
     if (b.hireQ > 0 && masterOf(b)) tryHire(b);
@@ -871,6 +875,30 @@ function guildsTick(dt) {
   }
   // осиротевшие рекруты: гильдию снесли — охраняют место, где стоят
   for (const u of Game.units) if (u.rec && !guildOf(u) && u.rec.order === 'guard') { u.rec.order = 'hold'; u.rec.pt = [Math.floor(u.x), Math.floor(u.y)]; }
+}
+
+// Гильдию снесли и отстроили заново: прежние глава и рекруты переходят в новую гильдию своего класса, а не висят
+// «свободными» рядом с пустой стройкой (иначе игрок нанимал заново и рекрутов становилось больше лимита: «Разбойник: свободно 11»).
+// Кому не хватило мест — снова трудяги; оружие сдают в гильдию.
+function guildAdoptOrphans() {
+  let guilds = null;
+  const live = () => guilds || (guilds = Game.buildings.filter(isGuild));
+  for (const u of Game.units) {
+    if (u.dead) continue;
+    if (u.rec) {
+      if (guildOf(u)) continue;
+      const same = live().filter(b => guildClasses(b.def.guild).includes(u.rec.cls));
+      if (!same.length) continue;                            // своей гильдии нет вовсе — сторожат место, где стоят
+      const b = same.find(g => recruitsOf(g).length < recMaxOf(g));
+      if (b) { u.rec.guild = b.id; u.rec.order = 'guard'; u.rec.pt = null; floater(u.x, u.y - 1.6, 'Новая гильдия? Я с вами!', '#f6d458'); continue; }
+      u.rec.guild = same[0].id;                              // мест нет: сдаёт снаряжение и идёт в трудяги
+      dismissRecruit(u);
+      logEvent('people', `${same[0].def.name}: мест нет, бывший рекрут вернулся в трудяги`, u.x, u.y);
+    } else if (Object.values(GCLS).some(C => C.gm === u.type) && !Game.buildings.some(b => b.id === u.gm && !b.removed)) {
+      const b = live().find(g => GCLS[g.def.guild].gm === u.type && !masterOf(g));
+      if (b) u.gm = b.id;                                   // глава возвращается в отстроенную гильдию
+    }
+  }
 }
 
 // ================= Интерфейс =================
