@@ -1085,7 +1085,7 @@ const FZ_B4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
 // костлявый локоть и предплечье, бледная кисть с пятью пальцами и тёмными когтями с костяными кончиками.
 // Лицо: светящиеся глаза (в крике красные, брови сведены), нос, сомкнутые губы; в крике пасть с клыками. Рисуется в 3× (192×252).
 function fzBansheePaint(c,cv,lv,fr){
-  const cx=32,TAU=Math.PI*2,wob=Math.sin(fr/12*TAU),wob2=Math.sin(fr/12*TAU+1.3),R=mulberry32(11+fr),wl=lv===1;
+  const cx=32,TAU=Math.PI*2,wob=Math.sin(fr/12*TAU),wob2=Math.sin(fr/12*TAU+1.3),R=mulberry32(11+fr),ar=Math.max(0,Math.min(1,lv)),wl=ar>=0.5;   // ar — руки подняты на долю 0…1 (12 кадров: подъём 6 + опускание 6)
   const sway=t=>wob*(0.5+t*4.5);
   // отдельный слой: зерно распада выедает только его, а не то, что под ним
   const layer=fn=>{const Lc=document.createElement('canvas');Lc.width=c.canvas.width;Lc.height=c.canvas.height;const lc=Lc.getContext('2d');lc.setTransform(c.getTransform());lc.lineJoin='round';lc.lineCap='round';fn(lc);c.save();c.setTransform(1,0,0,1,0,0);c.drawImage(Lc,0,0);c.restore();};
@@ -1107,7 +1107,7 @@ function fzBansheePaint(c,cv,lv,fr){
   });
   // 2) космы позади: тёмная масса, поверх пряди трёх тонов, пара выбившихся волосков
   for(const s of [-1,1]){
-    const tip=64+(wl?4:0);
+    const tip=Math.round(64+4*ar);
     c.fillStyle=lingrad(c,cx,10,cx+s*18,60,[[0,'#7088aa'],[1,'#3f5678']]);
     c.beginPath();c.moveTo(cx+s*5,14);c.bezierCurveTo(cx+s*15,16,cx+s*15.5+wob*s,40,cx+s*(13.5+wob*2),tip);c.lineTo(cx+s*9,tip-2);c.bezierCurveTo(cx+s*10,44,cx+s*8,30,cx+s*5,22);c.closePath();c.fill();
     for(const [k,col,w] of [[0,'#3f5678',1.1],[1,'#566e92',0.9],[2,'#7088aa',0.8],[3,'#8ea4c2',0.6],[4,'#566e92',0.8],[5,'#a9bcd4',0.5]]){
@@ -1190,7 +1190,8 @@ function fzBansheePaint(c,cv,lv,fr){
   //    тощее предплечье с бороздкой между костями, косточка запястья, кисть. Правая рука в своих координатах, левая — зеркало.
   for(const s of [-1,1]){
     c.save();c.translate(cx,0);c.scale(s,1);
-    const S=wl?[9,34.5]:[9,35.5],E=wl?[17.6+wob2*0.3,27+wob*0.6]:[15.8+wob2*0.4,44],W=wl?[16.8+wob*0.4,18.6+wob*1.2]:[15.2+wob*0.6,50.6+wob*0.8];
+    const am=(d,u)=>d.map((v,i)=>v+(u[i]-v)*ar);   // руки плавно между «опущены» и «воздеты»
+    const S=am([9,35.5],[9,34.5]),E=am([15.8+wob2*0.4,44],[17.6+wob2*0.3,27+wob*0.6]),W=am([15.2+wob*0.6,50.6+wob*0.8],[16.8+wob*0.4,18.6+wob*1.2]);
     const tq=(A,B,w0,w1,col)=>{const ang=Math.atan2(B[1]-A[1],B[0]-A[0]),nx=-Math.sin(ang),ny=Math.cos(ang);c.fillStyle=col;c.beginPath();c.moveTo(A[0]+nx*w0,A[1]+ny*w0);c.lineTo(B[0]+nx*w1,B[1]+ny*w1);c.lineTo(B[0]-nx*w1,B[1]-ny*w1);c.lineTo(A[0]-nx*w0,A[1]-ny*w0);c.closePath();c.fill();return [nx,ny];};
     const ln=(A,B,col,w)=>{c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(A[0],A[1]);c.lineTo(B[0],B[1]);c.stroke();};
     const lerp2=(A,B,t)=>[A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t];
@@ -1258,7 +1259,7 @@ function fzBansheeArt(lv,fr,Q,wide=0){
   fzBansheePaint(c,cv,lv,fr);
   const out=toPixelArt(cv,SS,{outline:true,alphaCut:100,punch:0.2,hueShift:1});
   const o=out.getContext('2d'),P=(x,y,col,w=1,h=1)=>{o.fillStyle=col;o.fillRect(x,y,w,h);};
-  const k=Math.max(1,Math.round(Q/2)),fx=32*Q,fy=Math.round(23.5*Q),wl=lv===1;
+  const k=Math.max(1,Math.round(Q/2)),fx=32*Q,fy=Math.round(23.5*Q),wl=lv>=0.5;
   if(Q===1){                                                                                      // мелкий вариант: лицо в несколько пикселей
     for(const sg of [-1,1]){const ex=sg<0?fx-4:fx+2;P(ex,fy-3,'#05090c',2,3);P(ex+(sg<0?0:1),fy-2,wl?'#ff4a2a':'#6fe0b4');P(ex+(sg<0?1:0),fy-3,'#2a3a52');P(ex+(sg<0?0:1),fy,'#4fd9c2');}
     P(fx-1,fy+1,'#2a3a52',2,2);
@@ -1335,7 +1336,8 @@ function fzBansheeArt(lv,fr,Q,wide=0){
   return out;
 }
 // lv — стадия крика: 0 покой, 1 замах, 2 крик (замах и крик — руки воздеты, глаза красные; в крике пасть дышит шире-уже). p — фаза парения 0..11
-function fzBansheePx(lv, p) { return fzBansheeArt(lv ? 1 : 0, p, 3, lv === 2 ? Math.round(1 + Math.sin(p / 12 * Math.PI * 2)) : 0); }
+// lv: 0…1 — руки поднимаются/опускаются (доля), 2 — крик (руки воздеты, пасть дышит)
+function fzBansheePx(lv, p) { return fzBansheeArt(lv === 2 ? 1 : lv, p, 3, lv === 2 ? Math.round(1 + Math.sin(p / 12 * Math.PI * 2)) : 0); }
 function fzBansheeSprite(lv, p) { return fzPxSprite('ban' + lv + '_' + p, 64, 84, 32, 30, () => fzBansheePx(lv, p)); }
 // Призрачный волк: тощий, горбатый, ощеренный — вздыбленный загривок шипами, видны рёбра и впалое брюхо, череп-морда с отвисшей челюстью и клыками,
 // злой прищур с ледяным огоньком. Хвост и лапы рассыпаются в дымку. Пиксель-арт 252×162 (×3 мельче мирового 84×54), рисуется 1:1 в 3× холст.
@@ -2223,7 +2225,7 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
   for (const b of F.ban) if (vis(b.x, b.y) && b.alpha > 0) list.push([b.y + 0.3, () => {
     const dy = -14 + Math.sin(b.ph * 1.7) * 3;
     if (b.dying) fzDrawHi(c, FZ_DIE.ban(fzDieF(b.alpha, b.da)), b.x, b.y, 0.94, b.face, dy);
-    else fzDrawHi(c, fzBansheeSprite(b.wail > 2.1 ? 1 : b.wail > 0.3 ? 2 : b.wail > 0 ? 1 : 0, Math.floor(b.ph * 4.4) % 12), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, dy);
+    else fzDrawHi(c, fzBansheeSprite(b.wail > 2.1 ? Math.min(1, Math.ceil((2.4 - b.wail) / 0.3 * 6) / 6) : b.wail > 0.3 ? 2 : b.wail > 0 ? Math.min(1, Math.ceil(b.wail / 0.3 * 6) / 6) : 0, Math.floor(b.ph * 4.4) % 12), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, dy);
   }]);
   for (const w of F.wolves) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.1, () => {
     const hl = w.howlT > 0 ? fzLv(1 - w.howlT / 1.8, 0.17, 0.83) : 0;   // морда поднимается → вой → опускается
