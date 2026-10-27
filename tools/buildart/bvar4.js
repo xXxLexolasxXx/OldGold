@@ -104,25 +104,40 @@ function buildInn(g, lv, roofs) {
     g.sprite([124, 5, 15], P => Q1.lantern(P)); g.sprite([99, 5, 15], P => Q1.lantern(P));
     bunting(g, [98, 6, 15], [58, 46, 32]);
   }
-  // ---- пивной двор слева спереди
-  if (lv < 3) {
-    fence1(g, 4, 60, 4, 4); fence1(g, 4, 4, 4, 36);
+  // ---- пивной двор слева спереди: 1 — скромно; 2 — три стола, фонари, гирлянда; 3 — длинный пиршественный стол под гирляндами
+  if (lv === 1) {
+    fence1(g, 4, 30, 4, 4); fence1(g, 4, 4, 4, 30);
     g.sprite([14, 20, 0], P => Q1.tree(P, 13));
-    g.sprite([40, 14, 0], P => Q1.table(P, 14)); meta.tables.push([40, 14, 0]);
-    g.sprite([28, 26, 0], P => Q1.bench(P, 10));
+    g.sprite([30, 24, 0], P => Q1.bench(P, 10));
+    g.sprite([8, 30, 0], P => Q1.sunflower(P, 16));
+  } else if (lv === 2) {
+    fence1(g, 4, 60, 4, 4); fence1(g, 4, 4, 4, 36);
+    g.sprite([12, 26, 0], P => Q1.tree(P, 13));
+    for (const [x, y] of [[26, 12], [48, 12], [40, 26]]) { g.sprite([x, y, 0], P => Q1.table(P, 14)); meta.tables.push([x, y, 0]); }
     g.sprite([8, 34, 0], P => Q1.sunflower(P, 18)); g.sprite([4, 38, 0], P => Q1.sunflower(P, 14));
-    if (lv === 2) { lampPost(g, 62, 2); g.sprite([52, 28, 0], P => Q1.table(P, 14)); meta.tables.push([52, 28, 0]); g.sprite([56, 10, 0], P => Q1.barrel(P)); bunting(g, [62, 2, 16], [14, 20, 26]); }
+    lampPost(g, 62, 2); lampPost(g, 4, 2); g.sprite([58, 26, 0], P => Q1.barrel(P));
+    bunting(g, [4, 2, 16], [62, 2, 16]);
   } else {
-    box(g, { x0: 4, x1: 60, y0: 2, y1: 34, h: 1.2, mat: m1Flat(P1.plank[2]), top: deckTop });
-    railing1(g, 4, 48, 2, 2, 1.2, 5); railing1(g, 4, 4, 2, 34, 1.2, 5);
-    S2([[5, 3], [31, 3], [57, 3], [5, 31], [57, 31]], (x, y) => post1(g, x, y, 1.2, 16, 2));
-    beam1(g, 5, 59, 3, 5, 17, 1.2, P1.plank); beam1(g, 5, 59, 31, 33, 17, 1.2, P1.plank);
-    for (let x = 10; x < 58; x += 8) beam1(g, x, x + 1.5, 3, 33, 18.2, 1, P1.plank);
-    g.sprite([18, 12, 1.2], P => Q1.table(P, 14)); g.sprite([44, 12, 1.2], P => Q1.table(P, 14)); g.sprite([30, 26, 1.2], P => Q1.table(P, 14)); meta.tables.push([18, 12, 1.2], [44, 12, 1.2], [30, 26, 1.2]);
-    g.sprite([6, 4, 17], P => Q1.lantern(P)); g.sprite([58, 4, 17], P => Q1.lantern(P)); g.sprite([32, 4, 17], P => Q1.lantern(P));
-    g.sprite([62, 24, 0], P => { Q1.barrel((x, y, c) => P(x, y - 3, c), 11, 13); PR.rect(P, -6, -3, 6, -3, P1.plank[3]); P(-5, -2, P1.plank[3]); P(5, -2, P1.plank[3]); P(-5, -1, P1.plank[3]); P(5, -1, P1.plank[3]); P(7, -9, P1.iron[1]); P(8, -9, P1.iron[0]); });
-    bunting(g, [4, 2, 17], [58, 2, 17]); bunting(g, [58, 2, 17], [98, 6, 15]);
-    lampPost(g, 64, 2);
+    // настил, столбы с фонарями по краю, без перекладин и перил — едоков видно целиком
+    box(g, { x0: 2, x1: 66, y0: 2, y1: 34, h: 1.2, mat: m1Flat(P1.plank[2]), top: deckTop });
+    S2([[3, 31], [33, 31], [63, 31]], (x, y) => post1(g, x, y, 1.2, 18, 2));        // столбы только сзади — спереди ничего не заслоняет едоков
+    for (const [x, y] of [[4, 32], [34, 32], [64, 32]]) g.sprite([x, y, 19], P => Q1.lantern(P));
+    bunting(g, [3, 31, 19], [33, 31, 19]); bunting(g, [33, 31, 19], [63, 31, 19]);
+    lampPost(g, 2, 2);
+    // длинный стол: столешница, ножки, две скамьи; еда и кружки по всей длине
+    const T = { x0: 8, x1: 60, y0: 15, y1: 21 };
+    box(g, { x0: T.x0, x1: T.x1, y0: T.y0, y1: T.y1, z0: 5.5, h: 1.2, mat: (u, v, F) => P1.plank[F.li === 0 ? 1 : 2], top: (u, v) => P1.plank[((u | 0) % 9 === 0) ? 2 : ((v | 0) % 3 === 0 ? 1 : 0)] });
+    for (const x of [T.x0 + 1, (T.x0 + T.x1) / 2, T.x1 - 2]) for (const y of [T.y0 + 1, T.y1 - 2]) box(g, { x0: x, x1: x + 1, y0: y, y1: y + 1, z0: 1.2, h: 4.3, mat: m1Flat(P1.plank[3]) });
+    for (const y of [T.y0 - 4, T.y1 + 2]) { box(g, { x0: T.x0, x1: T.x1, y0: y, y1: y + 2, z0: 3, h: 1, mat: (u, v, F) => P1.plank[F.li === 0 ? 1 : 2], top: m1Flat(P1.plank[0]) }); for (const x of [T.x0 + 1, T.x1 - 2]) box(g, { x0: x, x1: x + 1, y0: y, y1: y + 2, z0: 1.2, h: 1.8, mat: m1Flat(P1.plank[3]) }); }
+    for (let x = T.x0 + 3; x < T.x1 - 2; x += 6) {
+      g.sprite([x, T.y0 + 1, 6.7], P => { P(0, -2, P1.gold[1]); P(0, -1, P1.gold[1]); P(0, -3, P1.white[0]); }, -1);
+      g.sprite([x + 3, T.y1 - 1, 6.7], P => { PR.ell(P, 0, -1, 2, 1.2, (xx, yy, aa, bb) => (bb < 0 ? P1.log[0] : P1.log[2])); }, -1);
+    }
+    g.sprite([(T.x0 + T.x1) / 2, (T.y0 + T.y1) / 2, 6.7], P => Q1.planter(P, 7), -1);
+    meta.feast = []; for (let x = T.x0 + 3; x < T.x1 - 2; x += 6) meta.feast.push([x, T.y0 - 3, 4, 'N'], [x, T.y1 + 3, 4, 'S']);   // места: сидят лицом к столу
+    // бочка-бар на козлах у края террасы
+    g.sprite([68, 26, 0], P => { Q1.barrel((x, y, c) => P(x, y - 3, c), 11, 13); PR.rect(P, -6, -3, 6, -3, P1.plank[3]); P(-5, -2, P1.plank[3]); P(5, -2, P1.plank[3]); P(-5, -1, P1.plank[3]); P(5, -1, P1.plank[3]); P(7, -9, P1.iron[1]); P(8, -9, P1.iron[0]); });
+    lampPost(g, 70, 2);
   }
   inn1Paths(g, lv, ky0);
   innYard(g, lv, meta);
@@ -171,8 +186,9 @@ function innYard(g, lv, meta) {
   // кострище с брёвнами вокруг — главное место сборищ
   g.sprite([86, 54, 0.2], P => Y1.firePit(P));
   meta.fire = [86, 54, 0.6];
-  g.sprite([86, 47, 0.2], P => Y1.logSeat(P, 14)); g.sprite([86, 62, 0.2], P => Y1.logSeat(P, 14)); g.sprite([77, 54, 0.2], P => Y1.logSeat(P, 8)); g.sprite([95, 54, 0.2], P => Y1.logSeat(P, 8));
-  meta.seats = [[80, 47, 3], [92, 47, 3], [80, 62, 3], [92, 62, 3], [77, 54, 3], [95, 54, 3]];
+  g.sprite([86, 47, 0.2], P => Y1.logSeat(P, 14)); g.sprite([86, 62, 0.2], P => Y1.logSeat(P, 14));
+  meta.seats = [[80, 47, 3], [92, 47, 3], [80, 62, 3], [92, 62, 3]];
+  if (lv >= 2) { g.sprite([77, 54, 0.2], P => Y1.logSeat(P, 8)); g.sprite([95, 54, 0.2], P => Y1.logSeat(P, 8)); meta.seats.push([77, 54, 3], [95, 54, 3]); }
   // колода и поленница в глубине
   g.sprite([80, 80, 0.2], P => Y1.chop(P)); meta.chop = [83, 80, 0];
   g.sprite([88, 88, 0.2], P => Q1.logs(P));
