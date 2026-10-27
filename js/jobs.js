@@ -327,7 +327,7 @@ function* workerGen(u, b) {
         continue;
       }
     }
-    if (b.paused || prioOff(b) || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
+    if (b.paused || b.dmg >= 0.5 || b.upg) { yield { wait: 1 }; continue; }
     const work = WORK[b.type] || recipeWork, m0 = PROF_MADE.get(b) || 0;
     yield* work(u, b);
     if ((PROF_MADE.get(b) || 0) > m0 && !b.removed) gainXp(u, 1);   // выслуга мастеру — за цикл, который что-то дал

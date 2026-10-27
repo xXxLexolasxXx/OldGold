@@ -1,169 +1,91 @@
 'use strict';
-// Приоритеты работ: вкладка «Приоритеты» (как в RimWorld, но проще) и пауза с планированием.
-// Уровни: 0 «Выкл» — не занимаются совсем, 1 «Низкий» — в последнюю очередь, 2 «Авто» — как решает игра (прежнее поведение),
-// 3 «Высокий» — в первую очередь. В Game.prio.jobs (профессии) и Game.prio.tasks (задачи) лежит только то, что не «Авто».
-// Читают: logistics.js (кому везти и кого куда ставить), jobs.js и entities.js (здание «выключено» = на паузе),
-// coopsim.js (команда prio), save.js (поле pr в сохранении).
+// Срочность работ и пауза с планированием.
+// Ручных приоритетов (Выкл/Низкий/Авто/Высокий по задачам и профессиям) больше нет: они были костылём и чаще ломали
+// хозяйство, чем чинили. Порядок решает игра (logistics.js), а игроку остаётся кнопка «Срочно» в окне здания:
+// 20 секунд все свободные гномы этой дорожной сети носят в здание и из него, а его отрасль (поставщики сырья,
+// получатели продукции, такие же здания) идёт следом. Без перезарядки: нажали ещё раз — снова 20 секунд.
+// Голод (трактир на исходе) и золото для школы всё равно идут первыми — «Срочно» деревню не заморит.
+// Авто-срочность без игрока: еды мало — пищевая цепочка раньше, дров на зиму мало — лесорубы, вечер и ночь — оборона.
+// Читают: logistics.js (urgLv, autoUrg), ui.js (кнопка), render.js (значок «!»), coopsim.js (bact urgent), save.js (поле urg).
+// Старое поле pr в сохранениях (уровни приоритетов) просто не читается.
 
-const PRIO_NAMES = ['Выкл', 'Низкий', 'Авто', 'Высокий'];
-const PRIO_AUTO = 2;
-const PRIO_TASKS = {
-  food:    { name: 'Еда', icon: ['good', 'bread'], types: ['farm', 'mill', 'bakery', 'swine', 'butchery', 'inn'], safe: ['inn'],
-    hint: 'Фермы, мельница, пекарня, свинарник, бойня и подвоз еды в трактир. Без еды гномы голодают и падают — выключайте, только если еды вдоволь.' },
-  build:   { name: 'Стройка', icon: ['ui', 'build'], types: [],
-    hint: 'Новые здания, дороги и достройка. «Высокий» — стройки получают материалы и работяг раньше хозяйства; «Выкл» — стройка встаёт (ремонт идёт).' },
-  wood:    { name: 'Дрова', icon: ['good', 'timber'], types: ['woodcutter', 'sawmill'],
-    hint: 'Дом лесоруба и лесопилка: брёвна и доски. «Выкл» — рубка и распил стоят, пока не включите.' },
-  haul:    { name: 'Перенос ресурсов', icon: ['good', 'trunk'], types: [],
-    hint: 'Вывоз готовой продукции из мастерских и рассыпанного с земли на склад. «Высокий» — кучи с земли свозят в первую очередь и больше курьеров на здание; «Низкий» — по одному; «Выкл» — не свозят (кроме еды).' },
-  defense: { name: 'Оборона', icon: ['good', 'sword'], types: ['smeltery', 'weaponsmith', 'armory'],
-    hint: 'Плавильня металла, оружейная и мастерская доспехов — снаряжение для героя и бойцов. Нужнее перед ночами.' },
-};
-const PRIO_OF = {};
-for (const k in PRIO_TASKS) for (const t of PRIO_TASKS[k].types) PRIO_OF[t] = k;
-const PRIO_SAFE = new Set(Object.values(PRIO_TASKS).flatMap(t => t.safe || []));
-// перевозчики: у козы и извозчика общая строка
-const PRIO_CARRY = { goat: 'carter' };
-const prioJobKey = u => PRIO_CARRY[u.type || u] || (u.type || u);
-
-function prioState() { return Game.prio || (Game.prio = { jobs: {}, tasks: {} }); }
-function prioLv(kind, key) { const p = Game.prio; const v = p && p[kind] && p[kind][key]; return v === undefined ? PRIO_AUTO : v; }
-const prioJobLv = u => prioLv('jobs', prioJobKey(u));
-
-// Какая задача и какая профессия стоят за зданием, стройкой, дорогой
-function prioTaskOf(d) {
-  if (!d || d.isPile) return null;
-  if (d.isRoad || d.state !== 'done' || d.upg) return 'build';
-  return PRIO_OF[d.type] || null;
+const URG_SEC = 20;
+const urgOn = b => !!b && !b.removed && Game.time < (b.urgUntil || 0);
+const urgLeft = b => Math.max(0, Math.ceil((b.urgUntil || 0) - Game.time));
+// у чего есть смысл торопить: стройка, достройка, ремонт, мастерская, добыча; склад и дом без работы — нет
+function urgCan(b) {
+  if (!b || b.removed || b.isRoad || b.isPile || !b.def) return false;
+  if (b.state !== 'done' || b.upg || b.dmg > 0.05) return true;
+  if (b.isStore()) return false;
+  return !!(b.def.inputs || b.def.outputs || b.def.worker);
 }
-function prioJobOf(d) {
-  if (!d || d.isPile) return null;
-  if (d.isRoad || d.state !== 'done' || d.upg) return 'builder';
-  return (d.def && d.def.worker) || null;
-}
-// Готовое здание «выключено» приоритетами: не работает, как будто на паузе
-function prioOff(b) {
-  if (!Game.prio || !b || b.state !== 'done' || !b.def) return false;
-  if (b.def.worker && prioLv('jobs', b.def.worker) === 0) return true;
-  const t = PRIO_OF[b.type];
-  return !!t && !PRIO_SAFE.has(b.type) && prioLv('tasks', t) === 0;
-}
-// Не возить: адресат (здание, стройка, дорога) выключен
-function prioBlocked(d) {
-  const t = prioTaskOf(d), j = prioJobOf(d);
-  if (t && prioLv('tasks', t) === 0 && !(d.type && PRIO_SAFE.has(d.type) && d.state === 'done')) return true;
-  return !!(j && prioLv('jobs', j) === 0);
-}
-// Насколько адресат важнее обычного: от −2 (оба «Низкий») до +2 (оба «Высокий»)
-function prioScore(d) {
-  const t = prioTaskOf(d), j = prioJobOf(d);
-  return (t ? prioLv('tasks', t) - PRIO_AUTO : 0) + (j ? prioLv('jobs', j) - PRIO_AUTO : 0);
-}
-function prioAny() { const p = Game.prio; return !!p && (Object.keys(p.jobs).length + Object.keys(p.tasks).length) > 0; }
-
-function prioSet(kind, key, v) {
-  if (kind !== 'jobs' && kind !== 'tasks') return false;
-  if (kind === 'tasks' ? !Object.prototype.hasOwnProperty.call(PRIO_TASKS, key) : !prioJobList().includes(key)) return false;
-  if (!Number.isInteger(v) || v < 0 || v > 3) return false;
-  const p = prioState();
-  if (v === PRIO_AUTO) delete p[kind][key]; else p[kind][key] = v;
+function urgPress(b) {
+  if (!urgCan(b)) return false;
+  b.urgUntil = Game.time + URG_SEC;
+  urgT = -1;
   return true;
 }
-function prioReset() { Game.prio = { jobs: {}, tasks: {} }; }
 
-// Профессии: кто выходит из школы и работает в зданиях, плюс работяга и перевозчики
+// Отрасль срочных зданий: само здание — 2, связанные — 1. Пересчёт не чаще раза в полсекунды.
+let urgT = -1, urgMap = null;
+function urgBranch() {
+  if (urgMap && Math.abs(Game.time - urgT) < 0.5) return urgMap;
+  urgT = Game.time; urgMap = new Map();
+  const hot = Game.buildings.filter(urgOn);
+  if (!hot.length) return urgMap;
+  for (const b of hot) {
+    urgMap.set(b, 2);
+    // что зданию нужно (сырьё или материал стройки) и что оно делает
+    const need = new Set(Object.keys(b.state !== 'done' || b.upg ? b.def.cost || {} : b.def.inputs || {}));
+    const make = new Set(b.state === 'done' ? Object.keys(b.def.outputs || {}) : []);
+    for (const o of Game.buildings) {
+      if (o === b || o.removed || urgMap.get(o) === 2 || o.state !== 'done' || o.isStore()) continue;
+      const outs = o.def.outputs || {}, ins = o.def.inputs || {};
+      if (o.type === b.type || Object.keys(outs).some(g => need.has(g)) || Object.keys(ins).some(g => make.has(g))) urgMap.set(o, 1);
+    }
+  }
+  return urgMap;
+}
+const urgLv = d => (!d || d.isPile || d.isRoad) ? 0 : (urgBranch().get(d) || 0);
+
+// Авто-срочность (0…1): чем деревня рискует прямо сейчас. Только переставляет внутри своей очереди — голодный трактир,
+// школа без золота и стройки по-прежнему идут по своим местам (logistics.js reqPri).
+let urgAutoT = -1, urgAutoC = null;
+function urgAutoNow() {
+  if (urgAutoC && Math.abs(Game.time - urgAutoT) < 2) return urgAutoC;
+  let food = 0, ppl = 0;
+  for (const x of Game.buildings) if (x.state === 'done' && !x.removed && (x.type === 'inn' || x.isStore())) for (const g of FOODS) food += x.stock[g] || 0;
+  for (const u of Game.units) if (!u.dead && !u.noFood && isPerson(u)) ppl++;
+  urgAutoT = Game.time;
+  urgAutoC = {
+    food: ppl > 0 && food < Math.max(10, ppl * 2),          // меньше двух обедов на жителя
+    wood: typeof seaWoodRush === 'function' && seaWoodRush(),
+    night: typeof isEveningNow === 'function' && (isEveningNow() || isNightNow()),
+  };
+  return urgAutoC;
+}
+const URG_FOOD = new Set(['farm', 'mill', 'bakery', 'swine', 'butchery', 'inn']);
+const URG_WOOD = new Set(['woodcutter', 'sawmill']);
+const URG_DEF = new Set(['smeltery', 'weaponsmith', 'armory']);
+function autoUrg(d) {
+  if (!d || d.isPile || d.isRoad || !d.def) return 0;
+  const a = urgAutoNow();
+  if (a.food && URG_FOOD.has(d.type)) return 0.6;
+  if (a.wood && URG_WOOD.has(d.type)) return 0.5;
+  if (a.night && (d.def.cat === 'Оборона' || URG_DEF.has(d.type))) return 0.4;
+  return 0;
+}
+
+// Профессии, которые показывает вкладка «Рабочие» (workers.js): кто выходит из школы и работает в зданиях,
+// плюс работяга и перевозчики; у козы и извозчика общая строка
+const PRIO_CARRY = { goat: 'carter' };
+const prioJobKey = u => PRIO_CARRY[u.type || u] || (u.type || u);
 let _prioJobs = null;
 function prioJobList() {
   if (_prioJobs) return _prioJobs;
   const set = new Set(['builder', 'serf', 'carter']);
   for (const k in BUILDINGS) if (BUILDINGS[k].worker) set.add(BUILDINGS[k].worker);
   return (_prioJobs = ALL_UNIT_KEYS.filter(k => set.has(k)));
-}
-const PRIO_JOB_NAME = { carter: 'Извозчики и козы', serf: 'Трудяги (носят грузы)', builder: 'Работяги (стройка)' };
-const PRIO_JOB_HINT = {
-  serf: 'Развозят грузы. «Выкл» — доставки встанут совсем, будьте осторожны.',
-  carter: 'Телеги и вьючные козы: возят большие партии. «Высокий» — их берут первыми.',
-  builder: 'Строят, чинят и вскапывают поля. «Выкл» — стройка и ремонт встают.',
-};
-
-// ---------- Обёртки сохранения и сброса ----------
-{
-  const _rgs = resetGameState;
-  resetGameState = function () { _rgs(); Game.prio = { jobs: {}, tasks: {} }; };
-  const _sg = serializeGame;
-  serializeGame = function () { const s = _sg(); if (prioAny()) s.pr = { jobs: Game.prio.jobs, tasks: Game.prio.tasks }; return s; };
-  const _as = applySave;
-  applySave = function (s) {
-    _as(s);
-    Game.prio = { jobs: {}, tasks: {} };
-    const pr = s.pr;
-    if (pr) {
-      for (const k in pr.jobs || {}) if (prioJobList().includes(k)) prioSet('jobs', k, pr.jobs[k]);
-      for (const k in pr.tasks || {}) prioSet('tasks', k, pr.tasks[k]);
-    }
-  };
-}
-
-// ---------- Вкладка «Приоритеты» ----------
-function prioWarnings() {
-  const out = [];
-  const lv = (k, key) => prioLv(k, key);
-  if (lv('tasks', 'food') === 0) out.push('Еда выключена: фермы и цеха стоят, гномы скоро проголодаются.' + (Game.diff === 'survival' ? ' В «Выживании» голод быстро заканчивается потерями.' : ''));
-  if (lv('jobs', 'serf') === 0) out.push('Трудяги выключены: грузы никто не возит, встанет всё хозяйство.');
-  if (lv('jobs', 'builder') === 0 || lv('tasks', 'build') === 0) out.push('Стройка выключена: новые здания и дороги не строятся.');
-  if (lv('tasks', 'haul') === 0) out.push('Перенос ресурсов выключен: продукция копится в мастерских, и они встают.');
-  return out;
-}
-
-function prioSeg(kind, key, cur) {
-  return '<div class="pr-seg">' + PRIO_NAMES.map((n, i) =>
-    `<button data-pr="${kind}:${key}:${i}" class="pr-${i}${cur === i ? ' on' : ''}" title="${i === 0 ? 'Выключить: не занимаются совсем' : i === 1 ? 'Низкий: в последнюю очередь' : i === 2 ? 'Авто: как решает игра (по умолчанию)' : 'Высокий: в первую очередь'}">${n}</button>`).join('') + '</div>';
-}
-
-function prioHTML() {
-  const wk = typeof wkListHTML === 'function';
-  const tabs = wk ? `<div class="pr-views"><button data-prv="prio" class="${UI.prioView !== 'wk' ? 'on' : ''}">Приоритеты</button><button data-prv="wk" class="${UI.prioView === 'wk' ? 'on' : ''}">Рабочие</button></div>` : '';
-  if (wk && UI.prioView === 'wk') return tabs + wkListHTML();
-  let h = tabs + `<div class="pr-intro">Кто чем займётся в первую очередь. <b>Авто</b> — как решает игра, трогать не обязательно. <b>Высокий</b> — делают первым, <b>Низкий</b> — последним, <b>Выкл</b> — не делают совсем.</div>`;
-  const warn = prioWarnings();
-  if (warn.length) h += `<div class="pr-warn">${warn.map(w => '⚠ ' + w).join('<br>')}</div>`;
-  h += '<h4 class="pr-h">Задачи</h4>';
-  for (const k in PRIO_TASKS) {
-    const t = PRIO_TASKS[k];
-    const n = k === 'build' ? Game.buildings.filter(b => b.state !== 'done').length + Game.roadSites.size : k === 'haul' ? Game.piles.size : Game.buildings.filter(b => b.state === 'done' && PRIO_OF[b.type] === k).length;
-    h += `<div class="pr-row"><div class="pr-name"><img src="${iconURL(t.icon[0], t.icon[1], 2)}" alt=""><b>${t.name}</b><span class="pr-n">${k === 'build' ? n + ' строек' : k === 'haul' ? n + ' куч' : n + ' зд.'}</span></div>${prioSeg('tasks', k, prioLv('tasks', k))}<div class="pr-hint">${t.hint}</div></div>`;
-  }
-  h += '<h4 class="pr-h">Профессии</h4>';
-  for (const k of prioJobList()) {
-    const n = Game.units.filter(u => !u.dead && prioJobKey(u) === k).length;
-    h += `<div class="pr-row pr-job"><div class="pr-name"><b>${PRIO_JOB_NAME[k] || UNIT_TYPES[k].name}</b><span class="pr-n">${n} гн.</span></div>${prioSeg('jobs', k, prioLv('jobs', k))}${PRIO_JOB_HINT[k] ? `<div class="pr-hint">${PRIO_JOB_HINT[k]}</div>` : ''}</div>`;
-  }
-  h += `<div class="pr-foot"><button data-pr="reset" ${prioAny() ? '' : 'disabled'}>Всё на «Авто»</button><span>Пауза — <kbd>Пробел</kbd>, скорость — <kbd>Shift+1…3</kbd>. На паузе можно ставить дороги, здания, поля и сносить.</span></div>`;
-  return h;
-}
-
-function prioClick(e) {
-  const b = e.target.closest('[data-pr]');
-  if (!b || b.disabled) return;
-  if (b.dataset.pr === 'reset') {
-    if (Game.coop) { coopSend({ t: 'prio', reset: true }); return; }
-    prioReset(); updateUI(true); return;
-  }
-  const [kind, key, v] = b.dataset.pr.split(':');
-  if (Game.coop) { coopSend({ t: 'prio', k: kind, key, v: +v }); return; }
-  prioSet(kind, key, +v);
-  updateUI(true);
-}
-
-// Сервер: команда игрока (права «manage») и снимок для рассылки
-function prioCmd(m) {
-  if (m.reset) prioReset(); else prioSet(m.k, m.key, m.v);
-  return { t: 'prio', p: { jobs: Game.prio.jobs, tasks: Game.prio.tasks } };
-}
-function prioApply(p) {
-  Game.prio = { jobs: {}, tasks: {} };
-  for (const k in (p && p.jobs) || {}) prioSet('jobs', k, p.jobs[k]);
-  for (const k in (p && p.tasks) || {}) prioSet('tasks', k, p.tasks[k]);
 }
 
 // ---------- Скорость и пауза ----------
@@ -202,34 +124,32 @@ function tempoShow() {
 }
 
 if (typeof document !== 'undefined' && typeof navigator !== 'undefined' && navigator.userAgent !== 'node' && typeof updateUI === 'function' && document.getElementById && document.getElementById('tab-prio')) {
+  // вкладка «Рабочие» (бывшие «Приоритеты»: id вкладки прежний, на него смотрят обучение и открытие по этапам)
   const _uu = updateUI;
   updateUI = function (force) {
     _uu(force);
-    if (UI.tab === 'prio') setHTML('prio-list', prioHTML());
-    const bd = document.getElementById('prio-badge');
-    if (bd) bd.classList.toggle('hidden', !prioAny());
+    if (UI.tab === 'prio' && typeof wkListHTML === 'function') setHTML('prio-list', wkListHTML());
     tempoShow();
   };
-  const sec = document.getElementById('prio-list');
-  if (sec) sec.addEventListener('click', prioClick);
   if (typeof ICON_GRIDS !== 'undefined') {
-    ICON_GRIDS.ui.prio = { pal: { o: '#2a1e10', g: '#e4b434', G: '#ffe48a', s: '#9a948a', S: '#e4e0d6' }, rows: [
-      '....o...........',
-      '...oGo..........',
-      '..oGggo...ooo...',
-      '.oGggggo.oSsso..',
-      'oGggggggooSsso..',
-      '.ooGggoo.oSsso..',
-      '..oGggo..oSsso..',
-      '..oGggo..oSsso..',
-      '..oGggo..oSsso..',
-      '..oGggo.ooSssoo.',
-      '..oGggooSsssssso',
-      '..oGggo.oSsssso.',
-      '..oGggo..oSsso..',
-      '...ooo....oSo...',
-      '...........o....',
-      '................'] };
+    // значок вкладки: гном в колпаке (раньше — стрелки вверх и вниз)
+    ICON_GRIDS.ui.prio = { pal: { o: '#2a1e10', r: '#c8302a', R: '#7a1a14', s: '#e8bc94', w: '#e4e0d6', W: '#9a948a', b: '#4a6e30' }, rows: [
+      '.......oo.......',
+      '......orRo......',
+      '......orRo......',
+      '.....orrRRo.....',
+      '.....orrRRo.....',
+      '....orrrrRRo....',
+      '...oooooooooo...',
+      '....ossssssso...',
+      '....osossosso...',
+      '....ossssssso...',
+      '...owwwwwwwwwo..',
+      '...owwwWwwWwwo..',
+      '...obwwwwwwwbo..',
+      '..obbbwwwwwbbbo.',
+      '..obbbbwwwbbbbo.',
+      '..ooooooooooooo.'] };
   }
   { const b = document.createElement('div'); b.id = 'pause-banner'; b.className = 'hidden'; (document.getElementById('view') || document.body).appendChild(b); }
 }

@@ -1,6 +1,6 @@
 'use strict';
 // Управление рабочими (по отзыву тестера: «автоматика в лейтгейме подводит, рабочие не хотят работать»).
-//  · вкладка «Приоритеты» → «Рабочие»: кто чем занят, кто стоит и почему, сколько выпускать на работу;
+//  · вкладка «Рабочие»: кто чем занят, кто стоит и почему, сколько выпускать на работу;
 //  · закрепить работягу за стройкой/зданием, курьеру задать маршрут «откуда → куда» (мельница → склад);
 //  · «Отдыхать» — гном не берёт работу; лимит «на работе: N» для работяг, трудяг и извозчиков;
 //  · карточка гнома по тапу: чем занят или почему стоит, кнопка «Пнуть» (герой пинает лентяя, кулдаун).
@@ -54,7 +54,7 @@ function wkPinnedBuilders(idle) {
     const b = wkB(p.b);
     if (!b) { u.wk = null; continue; }            // здание снесли — закрепление снимаем, гном снова на автоматике
     const go = () => { u.idleFlag = false; u.idleStreak = 0; u.proc = null; u.action = null; u.anim = null; };
-    if (b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold && !prioBlocked(b)) { b.builder = u; u.job = b; go(); }
+    if (b.state !== 'done' && !b.builder && !b.selfBuild && !b.hold) { b.builder = u; u.job = b; go(); }
     else if (b.upg && !b.upg.builder) { b.upg.builder = u; u.job = b; go(); }
     else if (b.dmg > 0.05 && !b.repairer) { b.repairer = u; u.repairJob = b; go(); }
   }
@@ -85,7 +85,6 @@ function wkRoute(u, p) {
     const dsts = typeof p.to === 'number' ? [wkB(p.to)] : [...Game.buildings, ...Game.roadSites.values()];
     for (const d of dsts) {
       if (d.isStore && d.isStore() && !d.upg) continue;
-      if (prioBlocked(d)) continue;
       for (const g of GOOD_KEYS) {
         const n = d.demand(g);
         if (n <= 0 || !canCarry(u, g)) continue;
@@ -133,7 +132,6 @@ function wkWhy(u) {
   if (u.dead || u.type === 'hero') return '';
   if (u.brk) return BRK_WHY[u.brk.kind] || 'на перерыве';
   if (u.wk && u.wk.off && !wkBoosted(u)) return 'отдыхает по вашему приказу';
-  if (prioJobLv(u) === 0) return 'профессия выключена в «Приоритетах»';
   const job = wkJob(u);
   if (u.home && !u.home.removed) {
     const p = u.home.problem();
@@ -148,14 +146,12 @@ function wkWhy(u) {
   }
   if (u.isCourier) {
     if (u.wk && (u.wk.from != null || u.wk.to != null)) return 'ждёт груз по маршруту ' + wkRouteName(u.wk);
-    if (prioLv('jobs', job) === 1) return 'приоритет «Низкий»: ждёт, пока разберут другие';
     return 'нечего везти: заявки разобраны (или рядом нет дороги)';
   }
   if (u.type === 'builder') {
     if (u.wk && u.wk.b != null) return `закреплён: ${wkBN(wkB(u.wk.b)).toLowerCase()} — там пока нечего делать`;
     const sites = Game.buildings.filter(b => b.state !== 'done' && !b.selfBuild && !b.hold);
     if (!sites.length && !Game.roadSites.size) return 'нет строек — поставьте здание или дорогу';
-    if (sites.length && sites.every(b => prioBlocked(b))) return 'стройка выключена в «Приоритетах»';
     if (sites.length && sites.every(b => b.builder)) return 'все стройки уже заняты';
     const need = new Set();
     for (const b of sites) for (const k of ['trunk', 'timber', 'stone']) if (b.demand(k) > 0) need.add(wkGN(k));
@@ -531,8 +527,6 @@ if (typeof document !== 'undefined' && typeof navigator !== 'undefined' && navig
   onLeftClickTile = function (t) { if (wkTapUnit(t)) return; _click(t); };
   const sec = document.getElementById('prio-list');
   if (sec) sec.addEventListener('click', e => {
-    const v = e.target.closest('[data-prv]');
-    if (v) { UI.prioView = v.dataset.prv; updateUI(true); return; }
     const el = e.target.closest('[data-wk]');
     if (el && !el.disabled) wkAct(el.dataset.wk);
   });

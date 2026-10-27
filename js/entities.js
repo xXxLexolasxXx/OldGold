@@ -140,7 +140,7 @@ class Building {
   problem() {
     if (this.selfBuild) return null;
     if (this.state !== 'done') return this.roadLinked() ? null : 'noroad';
-    if (this.paused || prioOff(this)) return 'paused';
+    if (this.paused) return 'paused';
     if (this.dmg >= 0.5) return 'damaged';                 // повреждено нечистью — пока не починят, не работает
     if (!this.isStore() && !this.roadLinked()) return 'noroad';
     if (this.def.worker && !(this.worker && this.worker.home === this)) return 'noworker';
@@ -193,7 +193,7 @@ class Building {
     if (this.state !== 'done') return;
     if (this.upg && this.type !== 'school') { this.working = false; return; }          // идёт достройка — производство стоит (школа учит: иначе застрявшая достройка запирала всю деревню без новых жителей)
     if (this.def.auto) {
-      if (!this.autoJob && !this.paused && !prioOff(this)) {
+      if (!this.autoJob && !this.paused) {
         const r = pickRecipe(this);
         if (r) { recipeConsume(this, r); this.autoJob = { r, t: r.time }; }
       }
