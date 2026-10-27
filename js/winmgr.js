@@ -420,6 +420,13 @@ function initWinMgr() {
   // пересчёт сразу после смены вкладки или шторки и 4 раза в секунду (окна, которые прячутся стилем)
   const _ms = mobileSheet;
   mobileSheet = function (kind) { _ms(kind); if (kind) WM.stash = null; try { wmSync(); } catch (e) { /* интерфейс ещё не готов */ } };
+  // клик по зданию на карте — окно целиком переключается на здание (даже если была открыта стройка и это же здание уже выбрано)
+  const _sb = selectBuilding;
+  selectBuilding = function (b) {
+    _sb(b);
+    if (b) { WM.pc = 'info'; WM.selId = b.id; if (typeof wpTipHide === 'function') wpTipHide(); }
+    try { wmSync(); } catch (e) { /* интерфейс ещё не готов */ }
+  };
   const _ot = openTab;
   openTab = function (name) { _ot(name); WM.pc = 'tab'; try { wmSync(); } catch (e) { /* интерфейс ещё не готов */ } };
   window.addEventListener('keydown', e => {

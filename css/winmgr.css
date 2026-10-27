@@ -202,3 +202,7 @@ body.mobile.land:is(.sheet-tab, .sheet-info):is(.rv-goal, .rv-all, :not(.rv-on))
 body.mobile.land.wm-sheet #wm-head[data-mode="vil"] { display: flex; position: absolute; z-index: 7; left: var(--sheet-left, 56px); top: calc(var(--st, 0px) + var(--bar, 0px) + 4px);
   width: var(--sheet-w); height: 46px; padding: 2px 4px; box-sizing: border-box; background: rgba(14, 10, 6, .98); border: 2px solid #0a0705; }
 body.mobile.land.wm-sheet:has(#wm-head[data-mode="vil"]) #tab-area { top: calc(var(--st, 0px) + var(--bar, 0px) + 52px); }
+/* заглушка «Скоро» в пустых местах ряда плиток стройки */
+#build-cats .bc-soon { flex-direction: column; gap: 1px; min-height: 52px; font-size: 11.5px; opacity: .45; cursor: default; border-style: dashed; }
+#build-cats .bc-soon .bc-lock { font-size: 16px; line-height: 22px; filter: grayscale(1); }
+body.mobile #build-cats .bc-soon { min-height: 62px; font-size: 13px; }

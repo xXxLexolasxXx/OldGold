@@ -467,6 +467,14 @@ function renderBuildMenu() {
     box.appendChild(b);                          // повторная вставка выстраивает порядок
   }
   for (const name in UI.catEls) if (!vis.some(k => BUILD_CATS[k] === name)) { UI.catEls[name].remove(); delete UI.catEls[name]; }
+  // плитки рядами по 4: пустые места в последнем ряду — заглушка «Скоро» (разделы открываются по ходу игры)
+  box.querySelectorAll('.bc-soon').forEach(e => e.remove());
+  for (let i = 0; i < (4 - vis.length % 4) % 4; i++) {
+    const s = document.createElement('button');
+    s.className = 'bc-soon'; s.disabled = true; s.title = 'Скоро: новые постройки откроются по ходу игры';
+    s.innerHTML = '<span class="bc-lock">🔒</span><span class="bc-n">Скоро</span>';
+    box.appendChild(s);
+  }
   UI.catsReady = true;
   // инструменты полей
   for (const crop of ['wheat', 'hops']) {
