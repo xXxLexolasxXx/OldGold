@@ -243,6 +243,7 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests, n, hw) {
 function drawInside(c, b, spr, ox, oy) {
   insideScan();
   drawInsideLife(c, b, spr, ox, oy);
+  if (spr.px === 'storehouse') drawStoreYard(c, b, spr, ox, oy);
   if (b.type === 'inn') { if (spr.pxInn) drawInnYard(c, b, spr, ox, oy); drawInnPorch(c, b, spr, ox, oy); drawInnOven(c, b, spr, ox, oy); drawBarmaid(c, b, spr, ox, oy); if (spr.pxInn) drawInnExtraDiners(c, b, spr, ox, oy); }
 }
 
@@ -563,5 +564,36 @@ function drawInnExtraDiners(c, b, spr, ox, oy) {
     const [x, y, face] = s;
     drawFolk(c, { type: u.type, look: u.look, carry: null, injury: u.injury }, ox + x, oy + y + 3, face, 'idle', 0, { gest: 'eat', gf: gestCyc(t * 1.8 + u.id * 0.7) });
   }
+  c.imageSmoothingEnabled = R.smooth;
+}
+
+// ---------- Пиксельный склад (bldpx.js): кучи груза по запасам, мерцание рун и кристаллов ----------
+const STORE_PILE_CAP = 15;   // столько единиц товара — одна полная куча
+function storePileAmount(b, kind) {
+  const st = b.stock || {};
+  if (kind === 'trunk' || kind === 'timber' || kind === 'stone') return st[kind] || 0;
+  let n = 0;
+  for (const g in st) {
+    if (g === 'trunk' || g === 'timber' || g === 'stone' || !GOODS[g]) continue;
+    const food = GOODS[g].group === 'Еда';
+    if ((kind === 'food') === food) n += st[g] || 0;
+  }
+  return n;
+}
+function drawStoreYard(c, b, spr, ox, oy) {
+  if (b.state !== 'done') return;
+  const t = Game.time;
+  c.imageSmoothingEnabled = false;
+  for (const kind in spr.piles || {}) {
+    const spots = spr.piles[kind], total = storePileAmount(b, kind) / STORE_PILE_CAP;
+    for (let i = 0; i < spots.length; i++) {
+      const f = Math.max(0, Math.min(1, total - i));        // кучи заполняются по очереди
+      if (f <= 0) continue;
+      const P = pxPile(kind, f), [x, y] = spots[i];
+      c.drawImage(P.cv, Math.round(ox + x - P.ax), Math.round(oy + y - P.ay), P.w, P.h);
+    }
+  }
+  for (const [x, y] of spr.runes || []) glow(c, ox + x, oy + y - 4, 9, '140,240,220', 0.22 + Math.sin(t * 2.3 + x) * 0.08);
+  if (spr.circle) glow(c, ox + spr.circle[0], oy + spr.circle[1], 16, '120,230,210', 0.16 + Math.sin(t * 1.6) * 0.06);
   c.imageSmoothingEnabled = R.smooth;
 }

@@ -249,7 +249,8 @@ if (typeof infoBuilding === 'function') {
     if (houseMirror()) houseAssign();                        // клиент коопа считает расселение сам (семьи приходят в пакете)
     const rs = houseResidents(b), inside = Game.units.filter(u => u.inside === b).length;
     const nm = u => (u.fam && u.fam.n) || UNIT_TYPES[u.type].name;
-    let x = `<div class="isec">${HOUSE_NAMES[houseVar(b)]} · жильцов ${rs.length} из ${houseCap(b)}</div>`;
+    const hn = typeof PX_HOUSE_NAMES !== 'undefined' ? PX_HOUSE_NAMES[houseVar(b) % PX_HOUSE_NAMES.length] : HOUSE_NAMES[houseVar(b)];   // пиксельные дома (bldpx.js): свои виды
+    let x = `<div class="isec">${hn} · жильцов ${rs.length} из ${houseCap(b)}</div>`;
     x += rs.length ? `<div class="irow small">${rs.map(u => nm(u) + (u.type === 'kid' ? ' (гномёнок)' : '') + (u.inside === b ? ' 💤' : '')).join(', ')}</div>` : '<div class="irow small muted">Пока никто не живёт: все места заняты в других домах или жителей мало</div>';
     x += `<div class="irow small">${inside ? `Дома сейчас: ${inside}` : 'Все на работе'}${(b.dmg || 0) >= HOUSE.BROKEN ? ' · <span class="warn">дом разбит — не защищает, нужен ремонт</span>' : ''}</div>`;
     const i = h.lastIndexOf('<div class="idesc">');

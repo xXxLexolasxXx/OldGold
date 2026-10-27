@@ -68,6 +68,19 @@ function runeGate(g, side, at, a, w, h) {
   elem(g, side, at - 0.4, a, h * 0.45, w, h * 0.35, m1Sprite(w, Math.round(h * 0.35), P => { for (const [x, y] of [[0, -3], [0, -2], [-1, -1], [1, -1], [0, 0], [-2, 1], [2, 1], [0, 2], [0, 3]]) P(x, y, P3.rune[(x + y) & 1 ? 1 : 0]); }));
 }
 
+// Куча груза: на листе рисуется полной, в игре (g.dynPiles) — нет: её рисует inside.js по запасам склада (pxPile)
+const PILE_DRAW = {
+  trunk: f => P => Q2.logStack(P, 2 + Math.round(f * 2), 4 + Math.round(f * 2)),
+  timber: f => P => Q2.planks(P, 2 + Math.round(f * 5), 18),
+  stone: f => P => Q2.stones(P, 5 + Math.round(f * 7)),
+  food: f => P => Q2.sacks(P, 1 + Math.round(f * 5)),
+  goods: f => P => Q2.crates(P, 1 + Math.round(f * 2)),
+};
+function pile(g, kind, pt) {
+  (g.meta.piles[kind] = g.meta.piles[kind] || []).push(pt);
+  if (!g.dynPiles) g.sprite(pt, PILE_DRAW[kind](1));
+}
+
 function buildStore(g, lv, roofs) {
   const meta = g.meta = { piles: {}, wins: [] };
   const WIN = (side, at, a, z, w, h, o = {}) => { elem(g, side, at, a, z, w, h, m1Window(Object.assign({ w, h }, o))); meta.wins.push({ side, at, a, z, w, h }); };
@@ -94,10 +107,9 @@ function buildStore(g, lv, roofs) {
   if (lv >= 3) { beam1(g, W.x0, W.x1, W.y0, W.y1, 10, 1.2, P1.plank); g.sprite([W.x1 - 1, 30, 10], P => Q2.sacks(P, 4), -0.5); beam1(g, W.x1 - 3, W.x1 + 6, 26, 28, wh + 2, 1.5, P3.oak); g.sprite([W.x1 + 5, 27, wh], P => { PR.rect(P, 0, 0, 0, 10, BP.rope[1]); Q1.crate((x, y, c) => P(x - 3, y + 18, c), 6); }, -0.5); }
   roof(g, { x0: W.x0, x1: W.x1, y0: W.y0, y1: W.y1, h: wh - 1 }, { type: 'lean', down: 'E', rise: 6, ov: 2, mat: roofs.wing, cut: roofs.cutW, th: 3 });
   g.sprite([18, 5, 10], P => Q3.herbs(P, 2), -0.5);
-  g.sprite([26, 40, 0], P => Q2.planks(P, lv === 1 ? 4 : 7, 18)); meta.piles.timber = [26, 40, 0];
-  g.sprite([26, 26, 0], P => Q2.sacks(P, lv === 1 ? 3 : 6)); meta.piles.food = [26, 26, 0];
-  if (lv >= 2) { g.sprite([24, 10, 0], P => Q2.crates(P)); meta.piles.goods = [24, 10, 0]; }
-  if (lv >= 3) { g.sprite([36, 12, 0], P => Q2.planks(P, 6, 16)); g.sprite([38, 30, 0], P => Q2.sacks(P, 5)); }
+  pile(g, 'timber', [26, 40, 0]); pile(g, 'food', [26, 26, 0]);
+  if (lv >= 2) pile(g, 'goods', [24, 10, 0]);
+  if (lv >= 3) { pile(g, 'timber', [38, 14, 0]); pile(g, 'food', [38, 30, 0]); }
   // ---- правая пристройка: бревенчатый амбар сзади + навес на столбах с подкосами спереди
   const ax = lv === 1 ? 80 : 58, A = { x0: ax, x1: 126, y0: 80, y1: 92, h: 14 };
   box(g, Object.assign({ mat: m1Logs(P1.log) }, A));
@@ -111,8 +123,7 @@ function buildStore(g, lv, roofs) {
   elem(g, 'S', A.y0, 108, 5, 8, 6, m1Window({ w: 8, h: 6, G: P3.crystal }));
   // ложементы перед навесом: два бруса на столбиках, на них брёвна — видно, сколько леса
   const racks = lv === 1 ? [96] : lv === 2 ? [72, 102] : [66, 88, 110];
-  for (const cx of racks) { for (const x of [cx - 10, cx + 8]) { post1(g, x, 58, 0, 5, 1.5, P3.oak); post1(g, x, 68, 0, 5, 1.5, P3.oak); beam1(g, x - 0.5, x + 2, 58, 69.5, 5, 1.2, P3.oak); } g.sprite([cx, 64, 5], P => Q2.logStack(P, lv === 1 ? 3 : 4, lv === 3 ? 5 : 6)); }
-  meta.piles.trunk = [racks[0], 64, 5]; meta.racks = racks.map(x => [x, 64, 5]);
+  for (const cx of racks) { for (const x of [cx - 10, cx + 8]) { post1(g, x, 58, 0, 5, 1.5, P3.oak); post1(g, x, 68, 0, 5, 1.5, P3.oak); beam1(g, x - 0.5, x + 2, 58, 69.5, 5, 1.2, P3.oak); } pile(g, 'trunk', [cx, 64, 5]); }
   if (lv >= 2) { g.sprite([120, 64, 0], P => Q2.crates(P)); g.sprite([ax + 12, 79, 0], P => Q2.barrels(P, 2)); }
   g.sprite([114, 79, 0], P => Q2.sacks(P, 3));
   // инструменты на стене амбара: топор, пила, мотыга
@@ -121,8 +132,8 @@ function buildStore(g, lv, roofs) {
   // ---- двор и дорожки: от въезда (x 80) к обоим воротам и к навесу
   groundYard(g, 20, 126, 4, 60);
   paveSand(g, 73, 87, 0, 50); paveSand(g, 6, 87, 44, 56); paveSand(g, 87, 98, 46, 56);
-  g.sprite([110, 30, 0], P => Q2.stones(P, lv === 1 ? 8 : 12)); meta.piles.stone = [110, 30, 0];
-  if (lv >= 3) g.sprite([98, 18, 0], P => Q2.stones(P, 9));
+  pile(g, 'stone', [110, 30, 0]);
+  if (lv >= 3) pile(g, 'stone', [98, 18, 0]);
   if (lv >= 2) g.sprite([56, 36, 0], P => Q2.crane(P, 30, 14));
   if (lv >= 3) {   // помост у ворот и рунный круг на земле, где носильщики сгружают ношу
     box(g, { x0: 2, x1: 48, y0: 50, y1: 57, h: 3, mat: m1Stone(P1.stone, 5, 3), top: (u, v) => P1.plank[(v | 0) % 3 === 0 ? 2 : (u | 0) % 11 === 0 ? 1 : 0] });
