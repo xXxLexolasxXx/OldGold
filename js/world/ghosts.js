@@ -434,11 +434,11 @@ function drawGhosts(c) {
     c.globalAlpha = A;
     c.imageSmoothingEnabled = true;
     if (rp && typeof reaperPxFrame === 'function') {
-      // пиксельный жнец (reaperpx.js): рога — одна из трёх форм g.var, у каждой свой колпак
+      // пиксельный жнец (reaperpx.js): рога — одна из трёх форм g.var, у каждой свой колпак; ряса — полосы или рваньё (g.rag)
       const rm = atk ? 'atk' : mood === 'boo' ? 'boo' : 'idle';
       const rf = atk ? Math.floor(g.atkT / GHOST_ATK_DUR * RPX_N.atk) : Math.floor(t * 10 + g.ph * 1.27) % RPX_N[rm];
       c.imageSmoothingEnabled = false;
-      c.drawImage(reaperPxFrame(g, 'R2', rm, rf, (g.var || 0) % 3), -40, -43, 81, 103);
+      c.drawImage(reaperPxFrame(g, 'R2', rm, rf, (g.var || 0) % 3, g.rag === 'T1' || g.rag === 'T2' ? g.rag : (g.var || 0) % 2 ? 'T2' : 'T1'), -40, -43, 81, 103);
     }
     else if (rp) blitFine(c, reaperSprite(mood === 'atk' ? 'atk' : mood === 'boo' ? 'boo' : 'idle', atk ? Math.min(REAPER_ATK_FRAMES - 1, Math.floor(g.atkT / GHOST_ATK_DUR * REAPER_ATK_FRAMES)) : Math.floor(t * 8 + g.ph * 1.27) % REAPER_FRAMES, g.var || 0), -GHOST_OX * REAPER_SC, -GHOST_OY * REAPER_SC, GHOST_W * REAPER_SC, GHOST_H * REAPER_SC);
     else if (typeof GHOST_PX !== 'undefined' && GHOST_PX.length && !grab) {

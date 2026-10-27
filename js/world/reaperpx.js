@@ -301,19 +301,19 @@ function reaperPx(v, mood, p = 0, k = 0, hv = 0, rag = null) {
 }
 // Кадры: парение 12 (10 к/с, как у призраков), гнев 9, взмах косой 9. hv — форма рогов 0..2.
 const RPX_N = { idle: 12, boo: 9, atk: 9 };
-let RPX_RAG = null;      // лохмотья рясы в игре: null — гладкая; 'T1' | 'T2' | 'T3' — после выбора владельца
+let RPX_RAG = null;      // ряса по умолчанию (лист); в игре у каждого жнеца свои лохмотья — g.rag: 'T1' полосы или 'T2' рваньё (выбор владельца)
 function reaperPxSprite(v, mood, f, n = RPX_N[mood], hv = 0, rag = RPX_RAG) {
   f = Math.max(0, Math.min(n - 1, f | 0));
   return fzPxSprite('rp' + v + mood + f + '_' + n + 'h' + hv + (rag || ''), 81, 103, 40, 43, () => reaperPx(v, mood, mood === 'atk' ? 0 : f / n, mood === 'atk' ? f / (n - 1) : 0, hv, rag));
 }
 // кадр для игры по бюджету новых спрайтов (как ghostPxFrame)
 const RPX_LAST = new WeakMap();
-function reaperPxFrame(g, v, mood, f, hv) {
+function reaperPxFrame(g, v, mood, f, hv, rag = RPX_RAG) {
   f = Math.max(0, Math.min(RPX_N[mood] - 1, f | 0));
-  const have = FZ_CVC['rp' + v + mood + f + '_' + RPX_N[mood] + 'h' + hv + (RPX_RAG || '')], last = RPX_LAST.get(g);
+  const have = FZ_CVC['rp' + v + mood + f + '_' + RPX_N[mood] + 'h' + hv + (rag || '')], last = RPX_LAST.get(g);
   if (have) { RPX_LAST.set(g, have); return have; }
   if (last && typeof spriteBudgetOk === 'function' && !spriteBudgetOk(true)) return last;
-  const t0 = performance.now(), cv = reaperPxSprite(v, mood, f, RPX_N[mood], hv);
+  const t0 = performance.now(), cv = reaperPxSprite(v, mood, f, RPX_N[mood], hv, rag);
   if (typeof spriteSpent === 'function') spriteSpent(t0);
   RPX_LAST.set(g, cv);
   return cv;
