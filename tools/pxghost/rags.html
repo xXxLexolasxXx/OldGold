@@ -1,0 +1,35 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#141c22">
+<canvas id="cv"></canvas>
+<script>var NA_SPEC = {}, NA_PX = {}, PX_FINE = 3;</script>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script src="../../js/world/ghostpx.js"></script>
+<script src="../../js/world/reaperpx.js"></script>
+<script>
+// Лист выбора лохмотьев рясы жнеца: сейчас (гладкая) и три варианта T1 полосы, T2 рваньё с дырами, T3 клочья.
+// В строке: крупно ×2,5 (бычьи рога), ×2 бараньи и винтом, удар. Снимок: node tools/pxghost/shot.js out.png rags.html
+try {
+const RS = [[null, 'Сейчас — гладкая ряса («тулуп»)'], ['T1', 'T1 — полосы: низ распущен на рваные полосы разной длины, зазубрины по бокам'],
+  ['T2', 'T2 — рваньё: неровный изодранный край, сквозные дыры в ткани'], ['T3', 'T3 — клочья: край острыми клочьями, подол зубьями, лоскуты летят назад']];
+const W = 1740, RH = 360, cv = document.getElementById('cv');
+cv.width = W; cv.height = 50 + RS.length * RH;
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#141c22'; c.fillRect(0, 0, W, cv.height);
+const T = (s, x, y, sz = 20, col = '#e6eef0') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.fillText(s, x, y); };
+const cell = (x, y, w, h) => { c.fillStyle = '#26323a'; c.fillRect(x, y, w, h); c.fillStyle = '#2c3a42'; for (let i = 0; i < 50; i++) c.fillRect(x + (i * 37 % w), y + (i * 53 % h), 3, 2); };
+const put = (spr, x, y, Z) => { const [ox, oy, w, h] = spr.fzO; c.save(); c.imageSmoothingEnabled = false; c.translate(x, y); c.drawImage(spr, -ox * Z, -oy * Z, w * Z, h * Z); c.restore(); };
+const S = (rag, m, f, hv) => reaperPxSprite('R2', m, f, RPX_N[m], hv, rag);
+T('Ряса жнеца лохмотьями: выберите T1, T2 или T3 (верхняя строка — как сейчас)', 16, 32, 21, '#ffd860');
+RS.forEach(([rag, name], r) => {
+  const y0 = 50 + r * RH;
+  T(name, 16, y0 + 22, 17, rag ? '#bfd8ff' : '#9fb0b8');
+  [['idle', 0, 2, 2.5, 'бычьи'], ['idle', 4, 0, 2, 'бараньи'], ['idle', 8, 1, 2, 'винтом'], ['atk', 4, 2, 2, 'удар']].forEach(([m, f, hv, Z, n], i) => {
+    const x = 10 + i * 432, y = y0 + 30;
+    cell(x, y, 426, RH - 38); T(n, x + 8, y + 18, 13);
+    put(S(rag, m, f, hv), x + 213, y + 14 + 43 * Z + (Z > 2 ? 0 : 20), Z);
+  });
+});
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>

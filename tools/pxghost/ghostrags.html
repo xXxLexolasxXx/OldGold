@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#141c22">
+<canvas id="cv"></canvas>
+<script>var NA_SPEC = {}, NA_PX = {}, PX_FINE = 3;</script>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script src="../../js/world/ghostpx.js"></script>
+<script>
+// Пробный лист: саван обычных призраков (A колпак, B дед) — как сейчас и лохмотьями, как у жнецов: T1 полосы, T2 рваньё.
+// Снимок: node tools/pxghost/shot.js out.png ghostrags.html
+try {
+const RS = [[null, 'Сейчас — саван с тающим хвостом'], ['T1', 'T1 — полосы, как у жнецов'], ['T2', 'T2 — рваньё с дырами, как у жнецов']];
+const W = 1740, RH = 330, cv = document.getElementById('cv');
+cv.width = W; cv.height = 50 + RS.length * RH;
+const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#141c22'; c.fillRect(0, 0, W, cv.height);
+const T = (s, x, y, sz = 20, col = '#e6eef0') => { c.fillStyle = col; c.font = `bold ${sz}px Segoe UI, sans-serif`; c.fillText(s, x, y); };
+const cell = (x, y, w, h) => { c.fillStyle = '#26323a'; c.fillRect(x, y, w, h); c.fillStyle = '#2c3a42'; for (let i = 0; i < 50; i++) c.fillRect(x + (i * 37 % w), y + (i * 53 % h), 3, 2); };
+const put = (spr, x, y, Z) => { const [ox, oy, w, h] = spr.fzO; c.save(); c.imageSmoothingEnabled = false; c.translate(x, y); c.drawImage(spr, -ox * Z, -oy * Z, w * Z, h * Z); c.restore(); };
+const S = (v, m, p, k, rag) => fzPxSprite(['gr', v, m, p, k, rag].join('|'), 60, 76, 30, 32, () => ghostPx(v, m, p, k, { rag }));
+T('Призраки в лохмотьях — как это выглядело бы (в игре пока прежний саван)', 16, 32, 21, '#ffd860');
+RS.forEach(([rag, name], r) => {
+  const y0 = 50 + r * RH;
+  T(name, 16, y0 + 22, 17, rag ? '#bff0dc' : '#9fb0b8');
+  [['A', 'idle', 0, 0, 2.6, 'A — парит'], ['B', 'idle', 0.33, 0, 2.6, 'B — парит'], ['A', 'boo', 0.2, 0, 2.2, 'A — пугает'], ['B', 'atk', 0, 0.5, 2.2, 'B — удар']].forEach(([v, m, p, k, Z, n], i) => {
+    const x = 10 + i * 432, y = y0 + 30;
+    cell(x, y, 426, RH - 38); T(n, x + 8, y + 18, 13);
+    put(S(v, m, p, k, rag), x + 213, y + 22 + 32 * Z, Z);
+  });
+});
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>

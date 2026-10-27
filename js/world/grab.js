@@ -166,6 +166,15 @@ const GH_POSE = [
   { hf: [16, 2], hn: [6, 1], lean: -3, k: 1, held: 1, nm: 'уносит' },
 ];
 function ghPoseAt(i) { return GH_POSE[Math.max(0, Math.min(8, i))]; }
+// поза похищения в момент gt — между ключевыми позами GH_POSE плавно (для 12 кадров пиксельного призрака, ghostpx.js)
+function ghPoseLerp(gt) {
+  if (gt <= GH_T[0]) return GH_POSE[0];
+  for (let i = 0; i < 8; i++) if (gt < GH_T[i + 1]) {
+    const a = GH_POSE[i], b = GH_POSE[i + 1], u = (gt - GH_T[i]) / (GH_T[i + 1] - GH_T[i]), m = (p, q) => p + (q - p) * u;
+    return { hf: [m(a.hf[0], b.hf[0]), m(a.hf[1], b.hf[1])], hn: [m(a.hn[0], b.hn[0]), m(a.hn[1], b.hn[1])], lean: m(a.lean, b.lean), k: m(a.k, b.k), held: u < 0.5 ? a.held : b.held };
+  }
+  return GH_POSE[8];
+}
 function ghGrabIndex(g) {
   if (g._gi !== undefined) return g._gi;
   const i = grabIdx(g.gt || 0, GH_T);
@@ -233,8 +242,8 @@ function ghGrabTick(g, dt) {
 }
 
 // гном и когти внутри перевёрнутой системы призрака (после его спрайта); c уже сдвинут в центр головы и отражён по лицу
-function ghDrawVictim(c, g, gi, alpha, px, py) {
-  const p = ghPoseAt(gi), v = g.vsnap;
+function ghDrawVictim(c, g, gi, alpha, px, py, pose) {
+  const p = pose || ghPoseAt(gi), v = g.vsnap;
   const mx = (p.hf[0] + p.hn[0]) / 2, my = (p.hf[1] + p.hn[1]) / 2 + 1;
   c.save();
   c.globalAlpha = alpha;

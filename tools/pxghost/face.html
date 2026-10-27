@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>…</title>
+<body style="margin:0;background:#26323a">
+<canvas id="cv" width="1500" height="560"></canvas>
+<script>var NA_SPEC = {}, NA_PX = {}, PX_FINE = 3;</script>
+<script src="../../js/world/fairy2.js"></script>
+<script src="../../js/world/pxbeasts.js"></script>
+<script src="../../js/world/ghostpx.js"></script>
+<script>
+// Крупно голова и колпак: облики A, B, C — покой, рот наполовину, рот раскрыт (×5 по сетке). Снимок: node tools/pxghost/shot.js out.png face.html
+try {
+const c = document.getElementById('cv').getContext('2d'); c.imageSmoothingEnabled = false;
+c.fillStyle = '#26323a'; c.fillRect(0, 0, 1500, 560);
+const cols = [['idle', null], ['boo', 0.5], ['boo', 1]];
+['A', 'B', 'C'].forEach((v, r) => cols.forEach(([m, open], i) => {
+  const px = ghostPx(v, m, 0, 0, open == null ? {} : { open });
+  // голова: сетка x −45..45, y −85..45 (от центра головы 90, 96)
+  c.drawImage(px, 90 - 45, 96 - 85, 90, 130, (r * 3 + i) * 166 + 4, 4, 90 * 1.8, 130 * 1.8);
+  c.drawImage(px, 90 - 30, 96 - 20, 60, 60, (r * 3 + i) * 166 + 4, 250, 60 * 2.7, 60 * 2.7);
+}));
+document.title = 'ready';
+} catch (e) { document.title = 'fail ' + e.message + ' ' + e.stack; }
+</script>
