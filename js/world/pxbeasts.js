@@ -326,13 +326,77 @@ function pbTrTip(K, T, kind, e, r) {                                            
   else if (kind === 'trollB') K.path([[e[0], e[1], 1.6], [e[0] + 0.5, e[1] + 6, 1.1], [e[0], e[1] + 10, 0.5]], (tt) => T.slime[tt > 0.5 ? 0 : 1]);
 }
 // клык-бивень: толстый у десны, с кольцами-бороздками, бликом по кромке и тёмным кончиком; mir = −1 — зеркально
-function pbTrTusk(K, T, kind, bx, by, ang, len, w0, curl, mir = 1) {
+function pbTrTusk(K, T, kind, bx, by, ang, len, w0, curl, mir = 1, drool = true) {
   const pts = []; let px = bx, py = by, aa = ang;
   for (let i = 0; i <= 6; i++) { const t = i / 6; pts.push([px, py, w0 * (1 - t * 0.82) + 0.4]); aa += curl / 6; px += Math.cos(aa) * len / 6; py += Math.sin(aa) * len / 6; }
   pbChain(K, pts, T.TK, { amb: 0.55, tex: (t) => (((t * 5.5) % 1) < 0.13 && t < 0.75 ? -0.22 : 0) + (kind === 'trollS' && t > 0.55 && t < 0.62 ? -0.35 : 0) });
   K.path([pts[1], pts[2], pts[4]].map(([x, y, r]) => [x + 0.8 * mir, y - 0.6, Math.max(0.6, r * 0.25)]), () => T.TK[3], false);   // блик по кромке
   const [ex, ey] = pts[6]; K.P(ex, ey, T.TK[0]); K.P(ex - 0.5 * mir, ey + 0.8, T.TK[1]);                                           // потемневший кончик
-  if (kind === 'trollB') K.path([[bx + 2 * mir, by + 1, 1.2], [bx + 2.5 * mir, by + 7, 0.9], [bx + 2 * mir, by + 10, 0.4]], (tt) => T.slime[tt > 0.5 ? 0 : 1]);
+  if (drool && kind === 'trollB') K.path([[bx + 2 * mir, by + 1, 1.2], [bx + 2.5 * mir, by + 7, 0.9], [bx + 2 * mir, by + 10, 0.4]], (tt) => T.slime[tt > 0.5 ? 0 : 1]);
+}
+// набедренная повязка от xl до xr, верх пояса — yt у xl, наклон sl. У каждого вида своя:
+// лесной — шкура зверя лоскутами (пятна, швы, меховая бахрома), пояс — лоза с узлом и листом;
+// каменный — толстая кожа с нашитыми каменными пластинами на заклёпках, пояс — канат с каменными бусинами;
+// болотный — юбка из камыша (стебли, свисающая тина), пояс — скрученный рогоз.
+function pbTrLoin(K, T, kind, xl, xr, yt, sl) {
+  const yb = x => yt + (x - xl) * sl, w = xr - xl;
+  if (kind === 'trollB') {
+    const RE = [[30, 40, 16], [52, 66, 28], [78, 96, 42], [110, 126, 60], [142, 154, 84]];
+    for (let x = xl + 1, i = 0; x <= xr - 1; x += 2.6, i++) {
+      const h = K.hsh(i * 3.7), len = 24 + h * 14 - Math.abs(x - (xl + xr) / 2) / w * 6, sw = (K.hsh(i * 1.3) - 0.5) * 5;
+      K.path([[x, yb(x) + 2, 1.7], [x + sw * 0.4, yb(x) + len * 0.55, 1.5], [x + sw, yb(x) + len, 0.7]], (t) => RE[Math.max(0, Math.min(4, 1 + (i % 3) - (t > 0.7 ? 1 : 0)))]);
+    }
+    for (let i = 0; i < 6; i++) { const x = xl + 6 + K.hsh(i * 9.1) * (w - 12), y = yb(x) + 8 + K.hsh(i * 2.9) * 16; K.path([[x, y, 1.6], [x + 0.6, y + 7, 1.1], [x, y + 13, 0.5]], (t) => T.slime[t > 0.5 ? 0 : 1]); }   // тина
+    const pts = []; for (let i = 0; i <= 10; i++) { const x = xl - 2 + (w + 4) * i / 10; pts.push([x, yb(x) + 1, 3.4]); }
+    pbChain(K, pts, RE.slice(0, 4), { amb: 0.5, tex: (t, sd) => ((((t * 18 + sd * 0.8) % 1) + 1) % 1 < 0.3 ? -0.2 : 0) });                 // скрученный рогоз
+    return;
+  }
+  const CL = [[Math.round(T.CL[0][0] * 0.6), Math.round(T.CL[0][1] * 0.6), Math.round(T.CL[0][2] * 0.6)], ...T.CL, T.CL[2].map(v => Math.min(255, v + 34))];
+  const stone = kind === 'trollS', n = 4, fl = [];
+  for (let i = 0; i < n; i++) {
+    const xa = xl + w * i / n - 2, xb = xl + w * (i + 1) / n + 2, L = (stone ? 34 : 38) + K.hsh(i * 5.3) * 8 - Math.abs(i - 1.5) * 3, mid = (xa + xb) / 2;
+    const bot = stone ? [[xb - 1, yb(xb) + L - 3], [mid + 3, yb(mid) + L], [mid - 3, yb(mid) + L - 1], [xa + 1, yb(xa) + L - 4]]
+      : [[xb - 1, yb(xb) + L - 6], [mid + 6, yb(mid) + L - 1], [mid + 1, yb(mid) + L - 6], [mid - 3, yb(mid) + L + 1], [xa + 2, yb(xa) + L - 5]];   // рваный край шкуры
+    fl.push({ xa, xb, mid, L, poly: [[xa, yb(xa)], [xb, yb(xb)], ...bot] });
+  }
+  // задние лоскуты темнее, передние (чётные) — поверх
+  for (const k of [1, 3, 0, 2]) {
+    const f = fl[k], back = k % 2 ? -0.12 : 0;
+    pbPoly(K, f.poly, (x, y) => {
+      const u = (x - f.mid) / ((f.xb - f.xa) / 2), v = (y - yb(x)) / f.L;
+      let s = 0.55 + back - u * u * 0.22 - v * 0.18 + (u < -0.2 ? -0.06 : 0.04);
+      if (!stone && Math.sin(x * 0.42 + k * 2.1) * Math.sin(y * 0.5 + x * 0.23 + k) > 0.5) s -= 0.26;                  // круглые пятна шкуры
+      if (stone && Math.abs(((y - yb(x)) % 7)) < 0.8) s -= 0.1;                                                            // грубая выделка
+      return pbPick(CL, s, K.dth(x, y));
+    });
+    for (let y = 5; y < f.L - 8; y += 5) K.P(f.xa + 2, yb(f.xa) + y, CL[4], 1, false);                                     // шов по краю лоскута
+    if (stone) {                                                                                                             // каменная пластина на заклёпках
+      const cy = yb(f.mid) + f.L * 0.5;
+      pbBall(K, f.mid, cy, 7, 6, [[64, 62, 58], [100, 96, 90], [140, 136, 126], [176, 172, 160]], { amb: 0.5, tex: (x, y) => (Math.abs(x - f.mid + (y - cy) * 0.6) < 0.6 ? -0.3 : 0) });
+      for (const dx of [-5, 5]) pbDot(K, f.mid + dx, cy - 5, [196, 180, 140], 1.1);
+    } else for (let j = 0; j < 4; j++) {                                                                                    // меховая бахрома снизу
+      const x = f.xa + 4 + j * (f.xb - f.xa - 8) / 3, y = yb(x) + f.L - 6 - K.hsh(k * 7 + j) * 3;
+      K.path([[x, y, 1.6], [x + (K.hsh(j + k) - 0.5) * 3, y + 7, 0.6]], (t) => CL[t > 0.5 ? 3 : 4]);
+    }
+  }
+  // пояс
+  const pts = []; for (let i = 0; i <= 10; i++) { const x = xl - 3 + (w + 6) * i / 10; pts.push([x, yb(x) + 1, stone ? 3.6 : 3]); }
+  if (stone) {
+    pbChain(K, pts, [[70, 58, 40], [110, 94, 66], [150, 132, 98], [186, 170, 132]], { amb: 0.5, tex: (t, sd) => ((((t * 22 + sd) % 1) + 1) % 1 < 0.3 ? -0.18 : 0) });   // канат
+    for (let i = 0; i < 5; i++) { const x = xl + 8 + i * (w - 16) / 4; pbBall(K, x, yb(x) + 2, 4.6, 4, [[60, 58, 54], [96, 92, 86], [136, 132, 122], [172, 168, 156]], { amb: 0.5 }); }
+  } else {
+    pbChain(K, pts, [[30, 44, 18], [52, 72, 30], [78, 102, 44], [108, 132, 62]], { amb: 0.5, tex: (t, sd) => ((((t * 16 + sd * 0.7) % 1) + 1) % 1 < 0.28 ? -0.2 : 0) });   // лоза
+    const kx = xl + w * 0.68; pbBall(K, kx, yb(kx) + 1, 5, 4.4, [[30, 44, 18], [52, 72, 30], [78, 102, 44]], { amb: 0.5 });                                     // узел
+    K.path([[kx, yb(kx) + 4, 1.4], [kx + 2, yb(kx) + 14, 1.1]], () => [52, 72, 30]); K.path([[kx + 2, yb(kx) + 4, 1.2], [kx + 6, yb(kx) + 12, 0.9]], () => [78, 102, 44]);
+    const la = 0.9, lx = kx + 4, ly = yb(kx) + 3, cx = Math.cos(la), cy = Math.sin(la);
+    pbPoly(K, [[lx, ly], [lx + cx * 5 - cy * 3.4, ly + cy * 5 + cx * 3.4], [lx + cx * 12, ly + cy * 12], [lx + cx * 5 + cy * 3.4, ly + cy * 5 - cx * 3.4]], (x, y) => pbPick([[44, 84, 24], [78, 128, 40], [120, 170, 60]], 0.45 + ((x - lx) * cy - (y - ly) * cx > 0 ? 0.25 : 0), K.dth(x, y)));
+  }
+}
+// клип-обёртка: рисует только там, где ok(x, y) (клыки не вылезают ниже губы)
+function pbClip(K, ok) {
+  return { W: K.W, H: K.H, cv: K.cv, hsh: K.hsh, done: K.done, outline: K.outline, dth: K.dth, L: K.L, path: K.path,
+    R(x0, y0, x1, y1, f, sol = true) { K.R(x0, y0, x1, y1, (X, Y) => (ok(X, Y) ? f(X, Y) : null), sol); },
+    P(x, y, col, a = 1, sol = true) { if (ok(x, y)) K.P(x, y, col, a, sol); } };
 }
 // оружие в кулаке (whx, why), направленное под углом wd: дубина / валун / коряга
 function pbTrWeapon(K, T, whx, why, wd) {
@@ -367,7 +431,7 @@ function pbTrWeapon(K, T, whx, why, wd) {
   }
 }
 function pbTroll(K, P, kind) {
-  const T = PBT[kind], SK = T.SK, a = P.a, sw = P.leg, open = P.mouth > 0.3;
+  const T = PBT[kind], SK = T.SK, a = P.a, sw = P.leg, open = P.mouth > 0.3, jd = open ? 4 + P.mouth * 11 : 0;   // jd — насколько опущена челюсть
   const SKD = SK.slice(0, 4), WO = PBC.WO;
   pbShadow(K, 92);
   const texSkin = (x, y) => (K.hsh(x * 0.53 + y * 3.7) > 0.95 ? -0.22 : K.hsh(x * 1.9 + y * 0.37) > 0.97 ? 0.16 : 0) + (kind === 'trollS' ? ((Math.floor(x / 11) + Math.floor(y / 9)) % 3 === 0 ? -0.07 : 0) : 0);
@@ -420,13 +484,12 @@ function pbTroll(K, P, kind) {
     ...legPrims(nearL),
   ], SK, { amb: 0.46, k: 14, depth: 22, tex: texSkin });
   // голова — своя «глина» поверх шеи: череп, челюсть, нос сливаются между собой, но лицо читается
-  pbBlob(K, [{ e: [hx - 4, hy + 2, 32, 28] }, { e: [hx + 12, hy + 16, 24, 13] }, { e: [hx + 31, hy + 4, 13, 12] }, { e: [hx + 8, hy - 10, 17, 7] }], SK, { amb: 0.52, k: 6, depth: 14, tex: texSkin });
+  pbBlob(K, [{ e: [hx - 4, hy + 2, 32, 28] }, { e: [hx + 12, hy + 16 + jd * 0.8, 24, 13] }, { e: [hx + 31, hy + 4, 13, 12] }, { e: [hx + 8, hy - 10, 17, 7] }], SK, { amb: 0.52, k: 6, depth: 14, tex: texSkin });
   // брюхо светлее, вплавлено дизером; складки, пуп
   pbBall(K, 14, -124, 38, 34, T.BE, { amb: 0.42, fade: 0.5, clip: (x, y) => ((x - 2) / 58) ** 2 + ((y + 138) / 50) ** 2 < 0.94, tex: (x, y) => (Math.abs(((y + 124) % 11)) < 1 && x > -16 ? -0.14 : 0) });
   pbDot(K, 20, -116, T.BE[0], 1.4);
   // набедренная повязка поверх бёдер
-  pbPoly(K, [[-50, -104], [44, -108], [40, -78], [24, -70], [10, -80], [-6, -68], [-22, -80], [-40, -72], [-50, -84]], (x, y) => pbPick(T.CL, 0.55 - (y + 104) / 40 * 0.3 + (K.hsh(Math.floor(x / 7) * 1.7) - 0.5) * 0.25, K.dth(x, y)));
-  K.path([[-48, -100, 1.6], [42, -104, 1.6]], () => T.CL[0]);
+  pbTrLoin(K, T, kind, -52, 46, -104, -4 / 98);
   toes(nearL, SK);
   // приметы вида: камни с мхом, космы мха по горбу, тина
   if (kind === 'trollS') for (const [x, y, r] of [[-40, -190, 9], [-20, -176, 6], [30, -150, 7], [-54, -150, 6]]) { pbBall(K, x, y, r + 2, r, [[90, 76, 56], [130, 112, 86], [168, 150, 120]], { amb: 0.5 }); pbBall(K, x - 2, y - 4, r * 0.6, r * 0.5, T.moss, { amb: 0.5, fade: 0.4 }); }
@@ -480,13 +543,14 @@ function pbTroll(K, P, kind) {
   fingers(nearA, SK);
   // ---- лицо: ухо, бровь, глаз, нос, рот, клыки
   // ухо: острое, отогнуто назад-вверх; светлый край, тёмная раковина с хрящевой складкой, мочка, надрывы по краю
+  const er = (x, y) => { const dx = x - hx + 20, dy = y - hy, c = Math.cos(-0.3), sn = Math.sin(-0.3); return [hx - 20 + dx * c - dy * sn, hy + dx * sn + dy * c]; };   // наклон уха назад
   const ear = [[hx - 20, hy - 9], [hx - 29, hy - 14], [hx - 42, hy - 21], [hx - 38, hy - 9], [hx - 37, hy + 1], [hx - 31, hy + 8], [hx - 24, hy + 9], [hx - 20, hy + 7]];
-  pbPoly(K, ear, (x, y) => pbPick(SK, 0.62 - (hx - 20 - x) / 22 * 0.18 + (y < hy - 8 ? 0.08 : 0), K.dth(x, y)));
-  pbPoly(K, [[hx - 23, hy - 6], [hx - 30, hy - 11], [hx - 37, hy - 15], [hx - 34, hy - 6], [hx - 32, hy + 2], [hx - 26, hy + 5]], (x, y) => pbPick(SK, 0.22 + (x - hx + 37) / 14 * 0.16, K.dth(x, y)));   // раковина
-  K.path([[hx - 25, hy - 4, 1.1], [hx - 31, hy - 7, 1], [hx - 33, hy - 1, 0.8]], () => SK[2]);                                   // хрящ
-  K.path([[hx - 21, hy - 10, 0.8], [hx - 30, hy - 15, 0.8], [hx - 41, hy - 21, 0.6]], () => SK[4], false);                     // светлая кромка
-  for (const [nx, ny] of [[hx - 38, hy - 12], [hx - 36, hy + 2]]) K.path([[nx, ny, 1.2], [nx + 3, ny + 1, 0.6]], () => [0, 0, 0, 0], false);   // надрывы
-  pbBall(K, hx - 28, hy + 7, 3.4, 2.6, SK.slice(1, 4), { amb: 0.5 });                                                          // мочка
+  pbPoly(K, ear.map(([x, y]) => er(x, y)), (x, y) => pbPick(SK, 0.62 - (hx - 20 - x) / 22 * 0.18 + (y < hy - 8 ? 0.08 : 0), K.dth(x, y)));
+  pbPoly(K, [[hx - 23, hy - 6], [hx - 30, hy - 11], [hx - 37, hy - 15], [hx - 34, hy - 6], [hx - 32, hy + 2], [hx - 26, hy + 5]].map(([x, y]) => er(x, y)), (x, y) => pbPick(SK, 0.22 + (x - hx + 37) / 14 * 0.16, K.dth(x, y)));   // раковина
+  K.path([[hx - 25, hy - 4, 1.1], [hx - 31, hy - 7, 1], [hx - 33, hy - 1, 0.8]].map(([x, y, r]) => [...er(x, y), r]), () => SK[2]);                                   // хрящ
+  K.path([[hx - 21, hy - 10, 0.8], [hx - 30, hy - 15, 0.8], [hx - 41, hy - 21, 0.6]].map(([x, y, r]) => [...er(x, y), r]), () => SK[4], false);                     // светлая кромка
+  for (const [nx, ny] of [[hx - 38, hy - 12], [hx - 36, hy + 2]]) K.path([[...er(nx, ny), 1.2], [...er(nx + 3, ny + 1), 0.6]], () => [0, 0, 0, 0], false);   // надрывы
+  pbBall(K, ...er(hx - 28, hy + 7), 3.4, 2.6, SK.slice(1, 4), { amb: 0.5 });                                                          // мочка
   // злой глаз: оранжевый, мелкий кровавый зрачок; тяжёлая бровь наискось к носу накрывает верх глаза, мешок под глазом
   pbChain(K, [[hx - 4, hy - 8, 1.6], [hx + 20, hy - 5, 1.4]], SK.slice(0, 2));                    // тень под бровью
   pbEye(K, hx + 12, hy - 1, 3.4, P, [250, 170, 40], [150, 10, 6], SK[0]);
@@ -494,14 +558,20 @@ function pbTroll(K, P, kind) {
   K.path([[hx + 3, hy - 12, 1.2], [hx + 14, hy - 8, 0.8]], () => SK[3], false);                                                // блик на надбровье
   K.path([[hx + 6, hy + 4, 0.8], [hx + 18, hy + 3.4, 0.7]], () => SK[1]);                                                      // мешок под глазом
   pbDot(K, hx + 33, hy + 10, SK[0], 1.8); pbDot(K, hx + 27, hy + 1, SK[3], 1.6);           // ноздря и блик на носу
-  if (open) pbBall(K, hx + 18, hy + 22, 12, 4 + P.mouth * 4, [[30, 8, 6], [60, 18, 14], [90, 30, 22]], { amb: 0.3 });
-  // клыки: нижние бивни — изогнутые вверх-вперёд, толстые у десны, с кольцами-бороздками, сколами и тёмным кончиком; верхний клык — вниз из-под губы
-  const tusk = (...q) => pbTrTusk(K, T, kind, ...q);
-  tusk(hx + 6, hy + 22, -0.8, 19 + (kind === 'trollS' ? -2 : 0), 5.2, -1.2);         // большой бивень
-  tusk(hx + 16, hy + 22, -0.95, 10, 3.4, -0.9);                                              // малый — ближе к носу, кончик ниже носа
-  // губа поверх основания клыков: клык растёт изо рта, а не торчит отдельно
-  for (const [bx, w] of [[hx + 6, 6.2], [hx + 16, 4.4]]) pbBall(K, bx, hy + 24, w, 2.2, SK.slice(1, 4), { amb: 0.5, tex: texSkin });
-  if (!open) K.path([[hx + 2, hy + 21, 1], [hx + 30, hy + 19, 1]], () => SK[0]);
+  // рот: верхняя губа — линия top, нижняя челюсть на петле у угла рта опускается на jd к переду (bot)
+  const mx0 = hx + 2, mxf = hx + 31, top = x => hy + 21 - (x - mx0) / 14, bot = x => top(x) + jd * Math.max(0, Math.min(1, (x - mx0) / (mxf - mx0)));
+  if (open) {                                                                                  // пасть: тёмная глотка, язык, частокол зубов сверху и снизу
+    pbPoly(K, [[mx0, top(mx0)], [mxf, top(mxf)], [mxf - 1, bot(mxf - 1)], [mx0 + 3, bot(mx0 + 3)]], (x, y) => pbPick([[22, 6, 4], [44, 12, 10], [70, 22, 18]], 0.15 + (y - top(x)) / Math.max(1, bot(x) - top(x)) * 0.55, K.dth(x, y)));
+    pbBall(K, hx + 13, bot(hx + 13) - 2, 8, 2.2, [[100, 26, 26], [140, 46, 44], [176, 72, 66]], { amb: 0.5 });
+    for (let x = mx0 + 6; x < mxf - 2; x += 4.4) K.path([[x, top(x) + 0.6, 1.4], [x + 0.6, top(x) + 4, 0.5]], (t) => T.TK[t > 0.5 ? 1 : 2]);
+    for (let x = mx0 + 8; x < mxf - 3; x += 4.4) K.path([[x, bot(x) - 0.6, 1.3], [x - 0.4, bot(x) - 3.4, 0.5]], (t) => T.TK[t > 0.5 ? 1 : 2]);
+    K.path([[mx0, top(mx0), 0.9], [mxf, top(mxf), 0.9]], () => SK[0]);
+  }
+  // бивни растут из нижней челюсти и ездят вместе с ней; ниже губы ничего не торчит
+  const Kc = pbClip(K, (x, y) => y < bot(x) - 0.4);
+  pbTrTusk(Kc, T, kind, hx + 6, bot(hx + 6) + 2, -0.8, 19 + (kind === 'trollS' ? -2 : 0), 5.2, -1.2, 1, false);   // большой бивень
+  pbTrTusk(Kc, T, kind, hx + 16, bot(hx + 16) + 2, -0.95, 10, 3.4, -0.9, 1, false);                            // малый — ближе к носу
+  K.path([[mx0, bot(mx0), 1], [mxf, bot(mxf), 1]], () => SK[0]);                                                // нижняя губа
   if (a > 0.5) for (let i = 0; i < 18; i++) { const t = i / 17, an = -1.4 + t * 1.9; K.P(40 + Math.cos(an) * 150, -100 + Math.sin(an) * 110, [236, 232, 214], 0.65 - t * 0.3, false); }
   K.outline([0, 0, 0], 1, 5);
 }
@@ -532,8 +602,7 @@ function pbTrollF(K0, P, kind) {
   pbBlob(K, [{ e: [0, -104, 46, 28] }, { e: [0, -136, 58, 44] }, { e: [0, -170, 66, 26] }, { c: [[-62, -170, 22], [62, -170, 22]] }, ...L1.prims, ...L2.prims], SK, { amb: 0.46, k: 14, depth: 22, tex: texSkin });
   pbBall(K, 0, -128, 38, 34, T.BE, { amb: 0.42, fade: 0.5, clip: (x, y) => (x / 52) ** 2 + ((y + 134) / 44) ** 2 < 0.9, tex: (x, y) => (Math.abs(((y + 128) % 11)) < 1 && Math.abs(x) < 26 ? -0.14 : 0) });
   pbDot(K, 0, -116, T.BE[0], 1.4);
-  pbPoly(K, [[-50, -110], [50, -110], [46, -82], [30, -72], [14, -84], [0, -70], [-14, -84], [-30, -72], [-46, -82]], (x, y) => pbPick(T.CL, 0.55 - (y + 110) / 40 * 0.3 + (K.hsh(Math.floor(x / 7) * 1.7) - 0.5) * 0.25, K.dth(x, y)));
-  K.path([[-48, -106, 1.6], [48, -106, 1.6]], () => T.CL[0]);
+  pbTrLoin(K, T, kind, -52, 52, -110, 0);
   for (const L of [L1, L2]) for (let t = 0; t < 3; t++) { const tx = L.s * 36 + (t - 1) * 9; pbBall(K, tx, -4 - L.lift, 4.4, 4.6, SK, { amb: 0.5, fade: 0.4 }); K.path([[tx, -1 - L.lift, 1.8], [tx + (t - 1), 3 - L.lift, 0.6]], () => T.NA[t % 2]); }
   // приметы вида на плечах
   if (DR) for (const [x, y, r] of [[-56, -184, 8], [50, -188, 6], [-30, -186, 5], [64, -170, 5]]) { pbBall(K, x, y, r + 2, r, [[90, 76, 56], [130, 112, 86], [168, 150, 120]], { amb: 0.5 }); pbBall(K, x - 2, y - 4, r * 0.6, r * 0.5, T.moss, { amb: 0.5, fade: 0.4 }); }
