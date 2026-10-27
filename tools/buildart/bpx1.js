@@ -208,3 +208,48 @@ const Q1 = {
   bell(P) { PR.rect(P, -1, -4, 1, -2, P1.gold[1]); PR.rect(P, -2, -1, 2, -1, P1.gold[2]); P(0, -5, P1.iron[2]); P(-1, -3, P1.gold[0]); P(0, 0, P1.gold[2]); },
   mushroom(P, r = 3, R = P1.red) { PR.rect(P, -1, -r + 1, 0, 0, P1.cloth[1]); PR.ell(P, 0, -r, r, r * 0.7, (x, y, a, b) => (b > 0.6 ? null : R[a < -0.3 && b < -0.2 ? 0 : a > 0.4 ? 2 : 1])); P(0, -r - 1, P1.white[0]); P(-2, -r, P1.white[0]); },
 };
+
+// --- кровли ×1, уточнение: чёткая черепица (плитка 5×4), дранка, солома своих оттенков ---
+function m1Tile2(R) {
+  return (u, v, F) => {
+    const row = Math.floor(v / 4), st = row % 2 ? 2 : 0, tu = (((u + st) % 5) + 5) % 5, vv = ((v % 4) + 4) % 4, k = L1(F);
+    if (v < 2) return p1(R, 2 + k);                                   // конёк
+    if (tu === 0) return p1(R, 3);                                    // шов между плитками
+    if (vv === 3) return p1(R, 2 + k);                                // тень под рядом
+    if (vv === 0) return p1(R, 0 + k);                                // блик на верхней кромке
+    if (tu === 4 && vv > 0) return p1(R, 1 + k + (k ? 0 : 1) - 1 + 1); // правый край плитки чуть темнее
+    return p1(R, 1 + k);
+  };
+}
+function m1Shingle(R) {
+  return (u, v, F) => {
+    const row = Math.floor(v / 3), st = row % 2 ? 2 : 0, tu = (((u + st) % 4) + 4) % 4, vv = ((v % 3) + 3) % 3, k = L1(F);
+    if (v < 2) return p1(R, 2 + k);
+    const h = bhash(Math.floor((u + st) / 4), row, 251);
+    if (vv === 2) return p1(R, (tu === 0 || tu === 3) ? 2 + k : 3);  // скруглённый низ пластины
+    if (tu === 0) return p1(R, 2 + k);
+    if (vv === 0 && h > 0.5) return p1(R, 0 + k);
+    return p1(R, (h < 0.15 ? 0 : h < 0.93 ? 1 : 2) + k);
+  };
+}
+function m1Straw2(R) {
+  return (u, v, F) => {
+    const k = L1(F), c = Math.floor(u / 2), h = bhash(c, 0, 261), t = v / F.L;
+    if (v > F.L) { if (v > F.L + 1 + (h < 0.5 ? 1 : 0)) return null; return p1(R, 3); }
+    let i = h < 0.25 ? 0 : h < 0.8 ? 1 : 2;
+    const course = (v + Math.floor(h * 3)) % 8;
+    if (course === 0) i += 1; else if (course === 7) i -= 1;        // слои соломы
+    if (bhash(c, 1, 262) < 0.06) i += 1;                            // борозда
+    if (t > 0.78) i += 1; if (t < 0.12) i -= 1;
+    if (F.cap && v < 3) i = v < 1 ? 0 : 2;                          // конёк: валик с прутьями
+    if (F.cap && v < 3 && v >= 1 && ((u % 6) + 6) % 6 === 0) i = 3;
+    return p1(R, i + k);
+  };
+}
+const STRAW1 = {   // солома трактира — четыре своих оттенка (не золотая, как у склада и школы)
+  rye: bramp(['#eab874', '#cc9050', '#a46a32', '#744822']),      // ржаная, рыже-медовая
+  olive: bramp(['#cfc784', '#a8a25c', '#807a3c', '#565226']),    // оливковая, старая
+  wheat: bramp(['#f6e6a6', '#d8c676', '#b09a4c', '#7c6c30']),    // светлая пшеничная
+  reed: bramp(['#c4a070', '#a07c4e', '#7a5c34', '#523c20']),     // камышовая, тёмная
+};
+const SHINGLE1 = bramp(['#b48a5c', '#8e6840', '#6c4c2c', '#48321c']);
