@@ -539,7 +539,7 @@ function pxfZhab(K, f) {
   K.fill(K.E(18, 34.6, 6, 5), K.M(BE, { r: 6 }));
   for (const [x0, y0, x1, y1] of [[32, 64, 36, 69], [40, 64, 36, 69], [36, 69, 36, 72]]) K.line(x0, y0, x1, y1, '#f4f6ea');
   // голова: широкая плоская, глаза-бугры сливаются с ней (smin)
-  const head = K.SM(K.E(18, 19.4, 13.4, 8), K.U(K.E(11.4, 13.8, 4.6, 4.4), K.E(24.6, 13.8, 4.6, 4.4)), 2.4);
+  const head = K.SM(K.E(18, 19.4, 13.4, 8), K.U(K.E(11, 13.4, 5.4, 5), K.E(25, 13.4, 5.4, 5)), 2.4);
   K.fill(head, K.M(SK, { r: 12, bias: 0.1, tex: (x, y) => pxfHash(x >> 1, y >> 1) > 0.88 ? -0.8 : pxfHash(x, y) > 0.97 ? 0.6 : 0 }));
   // рот: низко, во всю ширину, уголки опущены (жабья хмурость); над ним светлая губа
   const mY = x => 45 - Math.sin((x - 10) / 52 * Math.PI) * 2 + (x < 16 || x > 56 ? (Math.min(Math.abs(x - 16), Math.abs(x - 56)) * (x < 16 || x > 56 ? 0.45 : 0)) : 0);
@@ -563,18 +563,18 @@ function pxfZhab(K, f) {
   K.line(13, 34, 15, 39, '#f4f6ea');
   // золотые кольца у левого уголка рта
   for (const [cx, cy] of [[13, 46], [16, 48], [19, 49]]) { K.px(cx, cy - 1, '#ecd282'); K.px(cx - 1, cy, '#ecd282'); K.px(cx + 1, cy, '#b8963a'); K.px(cx, cy + 1, '#b8963a'); }
-  // глаза: золото, поперечный зрачок, блик; моргнул — веко
-  for (const ex of [23, 49]) {
-    const ey = 28;
-    if (f) { for (let x = -5; x <= 5; x++) { K.px(ex + x, ey + 1 + Math.round(Math.abs(x) * 0.25), '#2a1a0a'); for (let y = -4; y <= 0; y++) if (Math.hypot(x, y) < 5) K.px(ex + x, ey + y, pxfH(pxfRamp(SK)[3])); } continue; }
-    for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) {
-      const r = Math.hypot(x, y * 1.05); if (r > 4.4) continue;
-      K.px(ex + x, ey + y, r > 3.5 ? '#9a6414' : y > 1 ? '#d8901c' : y < -1 ? '#ffd860' : '#f2b428');
+  // глаза крупные: золото с тёмным ободком, поперечный зрачок, два блика; моргнул — веко
+  for (const ex of [22, 50]) {
+    const ey = 27, R = 6.2;
+    if (f) { for (let x = -7; x <= 7; x++) { for (let y = -6; y <= 0; y++) if (Math.hypot(x, y) < 6.8) K.px(ex + x, ey + y, pxfH(pxfRamp(SK)[3])); K.px(ex + x, ey + 1 + Math.round(Math.abs(x) * 0.22), '#2a1a0a'); } continue; }
+    for (let y = -7; y <= 7; y++) for (let x = -7; x <= 7; x++) {
+      const r = Math.hypot(x, y * 1.05); if (r > R) continue;
+      K.px(ex + x, ey + y, r > R - 1 ? '#8a5410' : y > 2 ? '#d08a1a' : y < -2 ? '#ffd860' : '#f2b428');
     }
-    K.rect(ex - 3, ey, 7, 1, '#1a0f0a'); K.rect(ex - 2, ey - 1, 5, 3, '#1a0f0a');
-    K.px(ex - 2, ey - 3, '#ffffff'); K.px(ex - 1, ey - 3, '#fff6d0');
-    for (let x = -5; x <= 5; x++) K.px(ex + x, ey - 4 + Math.round(Math.abs(x) * 0.3), pxfH(pxfRamp(SK2)[1]));     // тяжёлое веко
-    for (let x = -4; x <= 4; x++) K.px(ex + x, ey - 5 + Math.round(Math.abs(x) * 0.3), pxfH(pxfRamp(SK)[2]));
+    K.rect(ex - 4, ey, 9, 1, '#1a0f0a'); K.rect(ex - 3, ey - 1, 7, 3, '#1a0f0a');                    // поперечный зрачок
+    K.px(ex - 3, ey - 4, '#ffffff'); K.px(ex - 2, ey - 4, '#ffffff'); K.px(ex - 3, ey - 3, '#fff6d0'); K.px(ex + 3, ey + 3, '#ffe890');
+    for (let x = -7; x <= 7; x++) K.px(ex + x, ey - 6 + Math.round(Math.abs(x) * 0.3), pxfH(pxfRamp(SK2)[1]));     // тяжёлое веко
+    for (let x = -6; x <= 6; x++) K.px(ex + x, ey - 7 + Math.round(Math.abs(x) * 0.3), pxfH(pxfRamp(SK)[2]));
   }
   // капюшон: толстый подшитый край над глазами, складки, лохмотья по бокам
   const rim = K.SUB(K.E(18, 11.4, 15.2, 9.6), K.E(18, 16, 13.4, 8.4));
