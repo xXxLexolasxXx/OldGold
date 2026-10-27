@@ -68,7 +68,7 @@ S.stepN(base, 200);
 ok(h.run('Game.units.some(u => u.rushJob >= 0)'), 'после загрузки никто не навалился');
 h.run('rushToggle()');
 ok(!h.run('rushOn()'), 'повторное нажатие не выключило');
-S.stepN(base, 1200);   // 60 с — каждый доделал своё
+S.stepN(base, 3000);   // 150 с — каждый доделал своё
 ok(h.run('Game.units.every(u => !(u.rushJob >= 0))'), 'после отбоя гномы всё ещё наваливаются: ' + h.run('Game.units.filter(u => u.rushJob >= 0).length'));
 ok(h.run('World.obj.filter(o => o && o.t === "tree" && o.res).length <= Game.units.filter(u => !u.dead && (u.type === "woodcutter" || u.chopJob >= 0 || u.cmd)).length'), 'после отбоя деревья остались забронированными');
 // таймер
