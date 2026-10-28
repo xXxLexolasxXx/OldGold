@@ -820,6 +820,7 @@ function drawNight(c, x0, y0, x1, y1) {
     const asleep = e.state === 'sleep';
     if (!asleep && e.k < 0.4 && !e.rock && !e.water) continue;
     const p = asleep || e.rock || e.water ? entFacePos(e) : entFacePos(e);
+    if (typeof onScreen === 'function' && !onScreen(p.x, p.y, 24)) continue;   // за краем экрана
     c.save();
     c.globalCompositeOperation = 'lighter';
     c.globalAlpha = e.alpha * Math.min(1, n * 1.5) * (asleep ? 0.38 : 0.5);
@@ -1053,7 +1054,7 @@ const ENT_FACE = [
 function makeEntFrame(kind, name) {
   const L = ENT_LOOK[kind], seed = 9000 + Object.keys(ENT_LOOK).indexOf(kind) * 97;
   srand = mulberry32(seed);
-  const F = PX_FINE, [cv, c] = mkSprite(ENT_SW, ENT_SH, F > 1 ? 2 * F : SS);   // мелкий пиксель: F деталей на игровой
+  const F = PX_FINE, [cv, c] = (typeof mkScratch === 'function' ? mkScratch : mkSprite)(ENT_SW, ENT_SH, F > 1 ? 2 * F : SS);   // мелкий пиксель: F деталей на игровой; OffscreenCanvas — чтение пикселей быстрее
   const P = entPose(name, L);
   drawEntBody(c, kind, L, P, seed);
   drawEntCrown(c, kind, L, seed);
@@ -1070,9 +1071,18 @@ function makeEntFrame(kind, name) {
   return { cv: out, eyes: [[x0 + 2, L.faceY + 6], [x0 + 10, L.faceY + 6]], hand: P.arms[1][2] };
 }
 
+// Новый кадр энта строится десятки мс (на телефоне до 100): в кадре игры при готовом кадре того же вида —
+// пока он, новый по бюджету тяжёлых сборок (heavyBuildOk, people.js)
+const ENT_LAST = {};
 function entSprite(kind, name) {
   const key = kind + name;
-  return ENT_SPR[key] || (ENT_SPR[key] = makeEntFrame(kind, name));
+  if (ENT_SPR[key]) return (ENT_LAST[kind] = ENT_SPR[key]);
+  const fb = ENT_LAST[kind];
+  if (fb && typeof heavyBuildOk === 'function' && R.inFrame && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return fb;
+  const t0 = performance.now();
+  ENT_SPR[key] = makeEntFrame(kind, name);
+  if (fb && typeof heavySpent === 'function' && R.inFrame) { spriteSpent(t0); heavySpent(t0); }
+  return (ENT_LAST[kind] = ENT_SPR[key]);
 }
 
 function entBase(e) {

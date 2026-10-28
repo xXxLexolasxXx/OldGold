@@ -433,6 +433,8 @@ function upgradeModel(m) {
 // ---------- Достройка на глазах ----------
 // Поверх старого здания по кирпичику проявляется новое (второй этаж, новая крыша),
 // вокруг стоят леса до достигнутой высоты, на месте удара — вспышка и пыль.
+// кэш неподвижной части строительных лесов по зданию (drawUpgradeLayer)
+const UPG_LAYER = new WeakMap();
 function drawUpgradeLayer(c, b) {
   const spr = buildingSprite(b.type, b.rot || 0, (b.upg && b.upg.to) || nextLevelOf(b), undefined, b.hv || 0);
   const fb = { buildFrac: b.upg.hits / b.upg.maxHits, _site: b._usite };
@@ -460,19 +462,20 @@ function drawUpgradeLayer(c, b) {
   const poleTop = Math.min(fy + fh - 10, topY - 5);
   const gy = fy + fh, t = Game.time;
   const sk = b.type === 'swine' && b.rot ? 0 : SK, dk = DK;
-  const rect = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+  let C = c;   // куда рисуют помощники: холст кадра или кэш лесов
+  const rect = (x, y, w, h, col) => { C.fillStyle = col; C.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
   const tex = PLANK_TEX, seed = b.id * 37;
   // доска из интерфейсной текстуры: горизонтальный кусок len×h (с тёмным нижним краем)
   const plank = (x, y, len, h, n) => {
-    if (tex) c.drawImage(tex, (seed + n * 53) % (tex.width - len - 1), (((seed + n * 7) % 24) * 16) % (tex.height - 16), Math.max(1, len), 12, x, y, len, h);
+    if (tex) C.drawImage(tex, (seed + n * 53) % (tex.width - len - 1), (((seed + n * 7) % 24) * 16) % (tex.height - 16), Math.max(1, len), 12, x, y, len, h);
     else rect(x, y, len, h, '#8a5a34');
     rect(x, y + h - 1, len, 1, '#1a0f08'); rect(x, y, len, 1, 'rgba(255,230,180,0.35)');
   };
   const post = (x, y0, y1) => {                                   // вертикальная стойка из доски, повёрнутой на 90°
     const h = y1 - y0; if (h <= 0) return;
-    c.save(); c.translate(Math.round(x), Math.round(y1)); c.rotate(-Math.PI / 2);
-    if (tex) c.drawImage(tex, (seed * 3) % (tex.width - h - 1), 32, h, 12, 0, 0, h, 4); else rect(0, 0, h, 4, '#8a5a34');
-    c.restore();
+    C.save(); C.translate(Math.round(x), Math.round(y1)); C.rotate(-Math.PI / 2);
+    if (tex) C.drawImage(tex, (seed * 3) % (tex.width - h - 1), 32, h, 12, 0, 0, h, 4); else rect(0, 0, h, 4, '#8a5a34');
+    C.restore();
     rect(x - 1, y0, 1, h, '#1a0f08'); rect(x + 4, y0, 1, h, '#1a0f08');
   };
   const brace = (x0, y0, x1, y1) => {                             // косая связь с тёмной обводкой
@@ -482,37 +485,54 @@ function drawUpgradeLayer(c, b) {
   };
   const decks = [];
   for (let ly = gy - 14; ly > poleTop + 2; ly -= 14) decks.push(ly);
-  // боковая стена: стойки по глубине, настилы-параллелограммы, раскосы
   const sx0 = fx + fw, nSide = Math.max(1, b.h);
-  if (sk > 0) {
-    const sp = [];
-    for (let q = 0; q <= nSide; q++) { const f = q / nSide; sp.push([Math.round(sx0 + f * fh * sk), -f * fh * dk]); }
-    for (const [x, dy] of sp.slice().reverse()) post(x, poleTop + dy, gy + dy);
-    for (let d = 0; d + 1 < decks.length; d++) for (let q = 0; q < nSide; q++) if ((d + q) % 2 === 0) brace(sp[q][0] + 3, decks[d + 1] + sp[q][1] + 2, sp[q + 1][0], decks[d] + sp[q + 1][1]);
-    for (const ly of decks) {
-      c.save(); c.transform(sk, -dk, 0, 1, sx0, ly);
-      if (tex) c.drawImage(tex, (seed * 5 + ly * 11) % (tex.width - fh - 1), ((ly * 3) % 20) * 16 % (tex.height - 16), fh, 12, 0, -2, fh, 6); else { c.fillStyle = '#8a5a34'; c.fillRect(0, -2, fh, 6); }
-      c.fillStyle = '#1a0f08'; c.fillRect(0, 3, fh, 1); c.fillStyle = 'rgba(255,230,180,0.35)'; c.fillRect(0, -2, fh, 1);
-      c.restore();
-    }
-  }
-  // фасад
   const poles = [];
   for (let q = 0; q <= b.w; q++) poles.push(Math.round(fx + 1 + q * (fw - 6) / b.w));
-  for (const lx of poles) post(lx, poleTop, gy);
-  for (let d = 0; d + 1 < decks.length; d++) for (let q = 0; q + 1 < poles.length; q++) {
-    if ((d + q) % 2 === 0) brace(poles[q] + 3, decks[d + 1] + 2, poles[q + 1], decks[d]); else brace(poles[q + 1], decks[d + 1] + 2, poles[q] + 3, decks[d]);
+  // Неподвижная часть лесов (стойки, раскосы попиксельно, настилы, перила — сотни прямоугольников) — в кэш
+  // здания в разрешении экрана; перерисовка, только когда леса подросли (замер 28.10: ~1600 fillRect за кадр)
+  const kk = Math.max(1, devScale());
+  const X0 = Math.floor(fx - 8), Y0 = Math.floor(poleTop - fh * dk - 24), X1 = Math.ceil(fx + fw + 8 + (sk > 0 ? fh * sk + 8 : 0)), Y1 = Math.ceil(gy + 8);
+  const lkey = [poleTop, X0, Y0, X1, Y1, sk, kk, !!tex, b.rot || 0].join();
+  let LY = UPG_LAYER.get(b);
+  if (!LY || LY.key !== lkey) {
+    const W = Math.round((X1 - X0) * kk), H = Math.round((Y1 - Y0) * kk);
+    const cv = LY ? LY.cv : mkCanvas(W, H);
+    cv.width = W; cv.height = H;
+    C = cv.getContext('2d');
+    C.setTransform(kk, 0, 0, kk, -X0 * kk, -Y0 * kk);
+    C.imageSmoothingEnabled = c.imageSmoothingEnabled;
+    // боковая стена: стойки по глубине, настилы-параллелограммы, раскосы
+    if (sk > 0) {
+      const sp = [];
+      for (let q = 0; q <= nSide; q++) { const f = q / nSide; sp.push([Math.round(sx0 + f * fh * sk), -f * fh * dk]); }
+      for (const [x, dy] of sp.slice().reverse()) post(x, poleTop + dy, gy + dy);
+      for (let d = 0; d + 1 < decks.length; d++) for (let q = 0; q < nSide; q++) if ((d + q) % 2 === 0) brace(sp[q][0] + 3, decks[d + 1] + sp[q][1] + 2, sp[q + 1][0], decks[d] + sp[q + 1][1]);
+      for (const ly of decks) {
+        C.save(); C.transform(sk, -dk, 0, 1, sx0, ly);
+        if (tex) C.drawImage(tex, (seed * 5 + ly * 11) % (tex.width - fh - 1), ((ly * 3) % 20) * 16 % (tex.height - 16), fh, 12, 0, -2, fh, 6); else { C.fillStyle = '#8a5a34'; C.fillRect(0, -2, fh, 6); }
+        C.fillStyle = '#1a0f08'; C.fillRect(0, 3, fh, 1); C.fillStyle = 'rgba(255,230,180,0.35)'; C.fillRect(0, -2, fh, 1);
+        C.restore();
+      }
+    }
+    // фасад
+    for (const lx of poles) post(lx, poleTop, gy);
+    for (let d = 0; d + 1 < decks.length; d++) for (let q = 0; q + 1 < poles.length; q++) {
+      if ((d + q) % 2 === 0) brace(poles[q] + 3, decks[d + 1] + 2, poles[q + 1], decks[d]); else brace(poles[q + 1], decks[d + 1] + 2, poles[q] + 3, decks[d]);
+    }
+    decks.forEach((ly, n) => {
+      plank(fx - 2, ly, fw + 4, 5, n);
+      rect(fx - 2, ly + 5, fw + 4, 1, 'rgba(0,0,0,0.3)');
+    });
+    // перила на верхнем настиле
+    if (decks.length) {
+      const ly = decks[decks.length - 1] - 9;
+      plank(fx - 2, ly, fw + 4, 3, 99);
+      for (const lx of poles) rect(lx, ly, 3, 9, '#1a0f08');
+    }
+    C = c;
+    UPG_LAYER.set(b, LY = { key: lkey, cv });
   }
-  decks.forEach((ly, n) => {
-    plank(fx - 2, ly, fw + 4, 5, n);
-    rect(fx - 2, ly + 5, fw + 4, 1, 'rgba(0,0,0,0.3)');
-  });
-  // перила на верхнем настиле
-  if (decks.length) {
-    const ly = decks[decks.length - 1] - 9;
-    plank(fx - 2, ly, fw + 4, 3, 99);
-    for (const lx of poles) rect(lx, ly, 3, 9, '#1a0f08');
-  }
+  c.drawImage(LY.cv, X0, Y0, X1 - X0, Y1 - Y0);
   // полотнища-фартуки на верхних настилах: колышутся, красно-белые
   for (let d = Math.max(0, decks.length - 1); d < decks.length; d++) {
     const ly = decks[d] + 4;

@@ -461,12 +461,9 @@ function drawGhosts(c) {
       // 12 кадров (КАДРЫ.md): гибель — FZ_N, руки при ударе поднимаются 6 ступенями и опускаются в конце удара
       const up = k < 0.2 ? Math.ceil(k / 0.2 * 6) / 6 : k > 0.85 ? Math.max(1 / 6, Math.ceil((1 - k) / 0.15 * 6) / 6) : 2;
       const lv = atk ? Math.min(2, up) : g.mode === 'boo' ? 2 : 0, bp = Math.floor(t * 4.4 + g.ph) % 12;
-      // новый кадр банши строится десятки мс — при готовом прошлом по бюджету тяжёлых сборок (people.js)
-      const wait = !g.slain && g._ban && !FZ_CVC['ban' + lv + '_' + bp] && typeof heavyBuildOk === 'function' && (!heavyBuildOk(true) || !spriteBudgetOk(true));
-      const t0 = performance.now();
-      const cv = g.slain && typeof FZ_DIE !== 'undefined' ? FZ_DIE.ban(Math.min(FZ_N - 1, Math.floor((1 - g.alpha / (g.da || 1)) * FZ_N)))
-        : wait ? g._ban : (g._ban = fzBansheeSprite(lv, bp));
-      if (!wait && performance.now() - t0 > 4 && typeof heavySpent === 'function') { spriteSpent(t0); heavySpent(t0); }
+      // новые кадры (и гибели) — по бюджету тяжёлых сборок, пока прошлый кадр этой банши (fzLive, fairy2.js)
+      const cv = fzLive(g, () => g.slain && typeof FZ_DIE !== 'undefined' ? FZ_DIE.ban(Math.min(FZ_N - 1, Math.floor((1 - g.alpha / (g.da || 1)) * FZ_N)))
+        : fzBansheeSprite(lv, bp));
       if (g.slain) c.globalAlpha = Math.min(1, flick);
       c.imageSmoothingEnabled = false;
       blitFine(c, cv, -cv.fzO[0], -cv.fzO[1], cv.fzO[2], cv.fzO[3]);

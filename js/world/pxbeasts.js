@@ -1520,11 +1520,14 @@ if (typeof SEA_ART !== 'undefined') {
 
 // ---------- поля расстояний ----------
 const DS_smin = (a, b, k) => { if (k <= 0) return Math.min(a, b); const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
+// У капсулы, эллипса и трубки — рамка f.bb = [x0, y0, x1, y1, s, off]: снаружи рамки поле не меньше s × расстояние − off
+// (DS_body пропускает заведомо далёкие части, не меняя результата)
 const DS_cap = (ax, ay, bx, by, ra, rb) => {          // капсула с сужением
-  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
-  return (x, y) => { const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)), ex = x - ax - dx * t, ey = y - ay - dy * t; return Math.sqrt(ex * ex + ey * ey) - (ra + (rb - ra) * t); };   // sqrt, не hypot: в разы быстрее, кадры те же
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1, rm = Math.max(ra, rb);
+  return DS_bb([Math.min(ax, bx) - rm, Math.min(ay, by) - rm, Math.max(ax, bx) + rm, Math.max(ay, by) + rm, 1], (x, y) => { const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)), ex = x - ax - dx * t, ey = y - ay - dy * t; return Math.sqrt(ex * ex + ey * ey) - (ra + (rb - ra) * t); });   // sqrt, не hypot: в разы быстрее, кадры те же
 };
-const DS_ell = (cx, cy, rx, ry) => { const m = Math.min(rx, ry); return (x, y) => { const nx = (x - cx) / rx, ny = (y - cy) / ry; return (Math.sqrt(nx * nx + ny * ny) - 1) * m; }; };
+function DS_bb(bb, f) { f.bb = bb; return f; }
+const DS_ell = (cx, cy, rx, ry) => { const m = Math.min(rx, ry); return DS_bb([cx - rx, cy - ry, cx + rx, cy + ry, m / Math.max(rx, ry)], (x, y) => { const nx = (x - cx) / rx, ny = (y - cy) / ry; return (Math.sqrt(nx * nx + ny * ny) - 1) * m; }); };
 const DS_sst = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const DS_pip = (x, y, poly) => {
   let ins = false;
@@ -1544,7 +1547,7 @@ function DS_bez(pts, n, r0, r1) {
   }
   return out;
 }
-const DS_tube = pts => { const fs = pts.slice(1).map((b, i) => DS_cap(pts[i][0], pts[i][1], b[0], b[1], pts[i][2], b[2])); return (x, y) => { let m = 1e9; for (const f of fs) m = Math.min(m, f(x, y)); return m; }; };
+const DS_tube = pts => { const fs = pts.slice(1).map((b, i) => DS_cap(pts[i][0], pts[i][1], b[0], b[1], pts[i][2], b[2])); return DS_bb([Math.min(...fs.map(f => f.bb[0])), Math.min(...fs.map(f => f.bb[1])), Math.max(...fs.map(f => f.bb[2])), Math.max(...fs.map(f => f.bb[3])), 1], (x, y) => { let m = 1e9; for (const f of fs) m = Math.min(m, f(x, y)); return m; }); };
 const DS_chain = (pts, o = {}) => pts.slice(1).map((b, i) => ({ f: DS_cap(pts[i][0], pts[i][1], b[0], b[1], pts[i][2], b[2]), ...o }));
 const DS_LIGHT = (() => { const l = Math.hypot(-0.45, -0.72, 0.55); return [-0.45 / l, -0.72 / l, 0.55 / l]; })();
 
@@ -1554,10 +1557,27 @@ const DS_LIGHT = (() => { const l = Math.hypot(-0.45, -0.72, 0.55); return [-0.4
 function DS_body(K, parts, mats, o) {
   const { P, dth } = K, [x0, y0, x1, y1] = o.bb, w = x1 - x0 + 1, h = y1 - y0 + 1, N = w * h;
   const D = parts.map(() => new Float32Array(N)), U = new Float32Array(N), OW = new Int16Array(N), Wd = o.W || 7, amb = o.amb ?? 0.2;
+  // Часть с рамкой (DS_cap, DS_ell, DS_tube), до которой от пикселя не меньше SK = max(u + k, k, 12), не считаем:
+  // мягкий минимум от неё не меняется вовсе (h = 0), а её значение дальше нужно только как «снаружи» (d < 0, d < 0.5,
+  // градиент у границы, ближайшая часть внутри тела) — туда кладём нижнюю оценку (≥ 12). Кадры те же бит в бит.
+  const QK = parts.map(q => q.k ?? o.k ?? 4), QB = parts.map(q => q.f.bb || null);
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
     const x = x0 + i, y = y0 + j, id = j * w + i; let u = 1e9;
     let best = 1e9, ow = 0;
-    for (let k = 0; k < parts.length; k++) { const q = parts[k], d = q.f(x, y); D[k][id] = d; if (!q.zone) { u = u === 1e9 ? d : DS_smin(u, d, q.k ?? o.k ?? 4); if (d < best) { best = d; ow = k; } } }
+    for (let k = 0; k < parts.length; k++) {
+      const q = parts[k], bb = QB[k];
+      if (bb) {
+        const ex = Math.max(bb[0] - x, 0, x - bb[2]), ey = Math.max(bb[1] - y, 0, y - bb[3]);
+        if (ex || ey) {
+          // первая часть (u ещё нет): пропуск только заведомо снаружи — тогда и итог снаружи (U > 0), а у границы тела
+          // значения те же: там эта часть дальше прочих на k и мягкий минимум её не видит
+          const lb = Math.sqrt(ex * ex + ey * ey) * bb[4] - (bb[5] || 0), sk = q.zone ? 12 : u === 1e9 ? 12 + QK[k] : Math.max(u + QK[k], QK[k], 12);
+          if (lb >= sk) { D[k][id] = lb; continue; }
+        }
+      }
+      const d = q.f(x, y); D[k][id] = d;
+      if (!q.zone) { u = u === 1e9 ? d : DS_smin(u, d, QK[k]); if (d < best) { best = d; ow = k; } }
+    }
     U[id] = u; OW[id] = ow;
   }
   const nrm = (A, i, j, W) => {
@@ -2144,7 +2164,8 @@ if (typeof naFrame === 'function') {
   const naOld = naFrame;
   naFrame = function (kind, fr) {
     if (kind !== 'spore') return naOld(kind, fr);
-    const m = PXB_SPORE[fr] || PXB_SPORE.i0, cv = fzShroomSprite(m[0], m[1]), [ox, oy, w, h] = cv.fzO;
+    // новый кадр моховика — по бюджету тяжёлых сборок, пока прошлый (fzLive; общий на вид — моховики рисуются одинаково)
+    const m = PXB_SPORE[fr] || PXB_SPORE.i0, cv = fzLive(PXB_SPORE, () => fzShroomSprite(m[0], m[1])), [ox, oy, w, h] = cv.fzO;
     return { cv, ax: ox, ay: oy, w, h, hi: true };      // hi: холст 3×, рисовать в размер w×h (neuDraw)
   };
 }

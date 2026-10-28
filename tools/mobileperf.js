@@ -50,16 +50,17 @@ async function measure(br, port) {
       const names = ['terrDraw', 'drawWaterSparkles', 'nightGroundDraw', 'drawBuilding', 'drawUnit', 'drawCreatureAt', 'drawTree', 'drawRock', 'drawMountain', 'drawStreetObj', 'drawPile', 'drawCrystalTile', 'drawEnt',
         'weatherDrawList', 'festDrawList', 'faunaDrawList', 'fauna2DrawList', 'beastsDrawList', 'seaLifeDrawList', 'chestsDrawList', 'fairyDrawList', 'fairy2DrawList', 'drawSkeletons', 'defDrawList', 'golemDrawList', 'tradeDrawList',
         'drawGamesAir', 'drawOwls', 'drawBats', 'drawGhosts', 'drawFloaters', 'drawClouds', 'drawDusk', 'drawNight', 'nightGroundGlow', 'oceanGlow', 'drawNightFx', 'drawFireflies', 'drawWeather', 'campFogDraw', 'drawStatusIcons', 'drawOverlay',
-        'drawMinimap', 'updateMinimapBase', 'updateUI', 'sfxTick', 'musicTick', 'step', 'render', 'spriteQueueRun', 'rowcPush', 'hpBarsDraw', 'drawHpBars', 'snowDraw', 'drawSnow'];
-      const T = {}, N = {}, saved = {};
-      for (const n of names) { const f = window[n]; if (typeof f !== 'function') continue; saved[n] = f; window[n] = function () { const t = performance.now(); try { return f.apply(this, arguments); } finally { T[n] = (T[n] || 0) + performance.now() - t; N[n] = (N[n] || 0) + 1; } }; }
+        'drawMinimap', 'updateMinimapBase', 'updateUI', 'sfxTick', 'musicTick', 'step', 'render', 'spriteQueueRun', 'rowcPush', 'hpBarsDraw', 'drawHpBars', 'snowDraw', 'drawSnow', 'naFrame', 'fzLive', 'wildSprite', 'neuDraw', 'fzDrawHi', 'blitFine', 'personSprite', 'creatureSprite', 'entSprite', 'ghostPxFrame', 'reaperPxFrame', 'toPixelArt', 'pxSprite', 'buildingSprite', 'beDraw', 'fyBlit'];
+      const T = {}, N = {}, MX = {}, saved = {};
+      for (const n of names) { const f = window[n]; if (typeof f !== 'function') continue; saved[n] = f; window[n] = function () { const t = performance.now(); try { return f.apply(this, arguments); } finally { const d = performance.now() - t; T[n] = (T[n] || 0) + d; N[n] = (N[n] || 0) + 1; if (d > (MX[n] || 0)) MX[n] = d; } }; }
       let fr = 0; const t0 = performance.now();
       await new Promise(res => { const f = () => { fr++; if (performance.now() - t0 < 6000) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
       for (const n in saved) window[n] = saved[n];
-      return { fr, rows: Object.keys(T).map(n => [n, +(T[n] / fr).toFixed(2), Math.round(N[n] / fr)]).sort((a, b) => b[1] - a[1]) };
+      return { fr, rows: Object.keys(T).map(n => [n, +(T[n] / fr).toFixed(2), Math.round(N[n] / fr), Math.round(MX[n])]).sort((a, b) => b[1] - a[1]) };
     });
     console.log('--- слои, мс за кадр (кадров ' + L.fr + ' за 6 с), вызовов за кадр');
-    for (const [n, ms, c] of L.rows.slice(0, 26)) console.log('  ' + n.padEnd(20) + String(ms).padStart(7) + '  ×' + c);
+    if (process.env.BYMAX) L.rows.sort((a, b) => b[3] - a[3]);
+    for (const [n, ms, c, mx] of L.rows.slice(0, 26)) console.log('  ' + n.padEnd(20) + String(ms).padStart(7) + '  ×' + c + '  макс ' + mx);
   }
   const r = await pg.evaluate(async () => {
     // время render и шага симуляции — обёрткой (на месте, без чтения пикселей)

@@ -128,6 +128,10 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
   // саван: гладкий или лохмотья (o.rag, у каждого призрака свой — g.rag): T1 полосы, T2 рваньё с дырами; лист tools/pxghost/ghostrags.html
   const caps0 = DS_chain(spine).map(q => q.f), sho = ell(lean * 0.6, 17, 30, 14);
   const shroud0 = (x, y) => { let u = sho(x, y); for (const f of caps0) u = DS_smin(u, f(x, y), 7); return u; };
+  // рамка савана для DS_body: снаружи поле не меньше расстояния до рамок частей минус сглаживание (k/4 на каждое слияние)
+  // и минус шум лохмотьев T2 (до 4) — далёкие пиксели не считаем
+  const shBB = [sho.bb, ...caps0.map(f => f.bb)];
+  const shroudBB = [Math.min(...shBB.map(b => b[0])), Math.min(...shBB.map(b => b[1])), Math.max(...shBB.map(b => b[2])), Math.max(...shBB.map(b => b[3])), Math.min(...shBB.map(b => b[4])), caps0.length * 7 / 4 + 4];
   const vn = (x, y, sc) => {
     const gx = x / sc, gy = y / sc, ix = Math.floor(gx), iy = Math.floor(gy), fx = gx - ix, fy = gy - iy, h = (a, b) => hsh(a * 57.1 + b * 13.7);
     const u = fx * fx * (3 - 2 * fx), w = fy * fy * (3 - 2 * fy);
@@ -153,6 +157,7 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
     }
     return d;
   } : shroud0;
+  shroud.bb = shroudBB;
   const parts = [
     { f: shroud, mat: 'sh', k: 7 },
     ...armParts(AN, ['sh', 'bo']),
@@ -310,11 +315,18 @@ function ghostPxSprite(v, mood, f, rag = '') {
 // Кадр для игры по общему бюджету новых спрайтов (spriteBudgetOk, people.js): кадр строится десятки миллисекунд,
 // поэтому новый — только если в этом кадре рендера ещё есть время; иначе рисуется прошлый кадр этого призрака.
 const GPX_LAST = new WeakMap();
+function ghostPxNear(v, mood, f, rag) {
+  for (let d = 1; d < 12; d++) for (const k of [f - d, f + d]) { const c = k >= 0 && FZ_CVC['gh' + v + mood + k + rag]; if (c) return c; }
+  for (let k = 0; k < GPX_N.idle; k++) { const c = FZ_CVC['gh' + v + 'idle' + k + rag]; if (c) return c; }
+  return null;
+}
 function ghostPxFrame(g, v, mood, f, rag = '') {
   f = Math.max(0, Math.min(GPX_N[mood] - 1, f | 0));
   const have = FZ_CVC['gh' + v + mood + f + rag], last = GPX_LAST.get(g);
   if (have) { GPX_LAST.set(g, have); return have; }
-  if (last && typeof spriteBudgetOk === 'function' && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return last;
+  // нового призрака (без прошлого кадра) пока рисуем ближайшим готовым кадром того же облика: сборка на телефоне — сотни мс
+  const fb = last || ghostPxNear(v, mood, f, rag);
+  if (fb && typeof spriteBudgetOk === 'function' && (!heavyBuildOk(true) || !spriteBudgetOk(true))) { GPX_LAST.set(g, fb); return fb; }
   const t0 = performance.now(), cv = ghostPxSprite(v, mood, f, rag);
   if (typeof spriteSpent === 'function') { spriteSpent(t0); heavySpent(t0); }
   GPX_LAST.set(g, cv);
