@@ -2,7 +2,7 @@
 // Звери ручным пиксель-артом ×3, тем же методом, что Полудница и нечисть фей (fzPxKit в fairy2.js), но не страшные:
 // сетка втрое мельче мировой, формы — функциями, объём по рампам тонов (свет слева сверху), мех — штрихи и крапины,
 // верхний край шерсти светлее, переходы — дизеринг Байера, крупная голова и глаза с бликом, обводка цветом самого зверя.
-// Кадр — canvas с пометкой fine = 3 (рисуется через afBlit/blitFine в игровом размере). Только при PX_FINE > 1.
+// Кадр — canvas с пометкой fine = 3 (рисуется через afBlit/blitFine в игровом размере). На телефонах (PX_FINE = 1) кадр сводится в ×1 (pxToCoarse).
 
 const AK_TAU = Math.PI * 2;
 const AK_LIGHT = (() => { const v = [-0.5, -0.72, 0.48], l = Math.hypot(...v); return v.map(a => a / l); })();
@@ -92,7 +92,7 @@ function akKit(w, h, ox, oy) {
   };
   // закрытый глаз — дужка
   K.blink = (x, y, r, col) => { for (let k = -r; k <= r; k++) P(x + k, y + (Math.abs(k) >= r ? -1 : 0), col); };
-  K.fin = (outline) => { K.outline(outline, 0.95); const cv = K.done(); cv.fine = 3; return cv; };
+  K.fin = (outline) => { K.outline(outline, 0.95); const cv = K.done(); cv.fine = 3; return pxToCoarse(cv); };
   return K;
 }
 // фаза шага кадра f из N → угол
@@ -375,7 +375,7 @@ AK_CR.goose = (f, load) => {
   K.outline([100, 88, 76], 0.95);                                                                                // вода — поверх обводки: тело под ней не видно
   K.R(g(-9.6), g(-2.8), g(9.6), g(2.6), (x, y) => { const e = Math.hypot((x + 0.5) / g(9.6), (y + 0.5 - g(-0.8)) / g(2.2)); return e > 1 ? null : y < g(-2.2) ? [120, 170, 200] : [44 + (y < g(-1.4) ? 20 : 0), 92 + (y < g(-1.4) ? 24 : 0), 134 + (y < g(-1.4) ? 20 : 0), 1 - akCl(e - 0.7) * 1.6]; }, false);
   akRipple(K, -0.8, 8.6 + st, 1.4, 0.75, [214, 238, 246]); akRipple(K, -0.6, 11.5 + st * 1.4, 2, 0.35, [214, 238, 246]);
-  const cv = K.done(); cv.fine = 3; return cv;
+  const cv = K.done(); cv.fine = 3; return pxToCoarse(cv);
 };
 
 // Утка-кряква: бурая, зелёная голова, белое кольцо, синее «зеркальце»; на воде — в круге ряби
