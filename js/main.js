@@ -214,6 +214,7 @@ function step(dt) {
   for (const b of Game.buildings) b.update(dt);
   Game.growT += dt;
   if (Game.growT >= 1) { updateGrowth(Game.growT); Game.growT = 0; }
+  regrowTick(dt);   // новые глыбы и саженцы у каменоломен и лесорубов (world.js REGROW)
   updateAnimals(dt);
   nightTick(dt);
   festivalTick(dt);

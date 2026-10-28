@@ -612,6 +612,7 @@ function coopMirror() {
     foeZones: typeof foeMirrorZones === 'function' ? foeMirrorZones() : [],
     foe: typeof foeMirror === 'function' ? foeMirror() : null,
     sp: typeof spireMirrorOut === 'function' ? spireMirrorOut() : null,
+    rk: typeof rockMirrorOut === 'function' ? rockMirrorOut() : null,
     glq: Game.glq ? coopPlain(Game.glq, 0, true) : null,
     golem: Game.golem ? coopPlain(Game.golem, 0, true) : null,
     sub: Game.sub ? coopPlain(Game.sub, 0, true) : null,

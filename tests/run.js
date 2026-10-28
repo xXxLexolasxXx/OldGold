@@ -169,6 +169,7 @@ scriptTest('fair: ярмарка — оружейная лавка за золо
 scriptTest('house: жилые дома — виды, семьи, ночёвка, укрытие от нечисти, сейв, кооп, баланс', 'house-test.js', [], 900000);
 scriptTest('perf: бюджет шага симуляции — деревня на 60 жителей', 'perf-test.js');
 scriptTest('late: стройка, логистика и школа в большой деревне', 'lategame-test.js', LONG ? [] : ['--no-big']);
+scriptTest('regrow: глыбы и саженцы возвращаются, зимой лес не в ноль, скала тешется до осыпи', 'regrow-test.js');
 
 // ---------- 2. Симуляция: инварианты
 function simRun(seed, minutes, r, opts = {}) {

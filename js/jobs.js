@@ -405,7 +405,7 @@ function* woodcutterWork(u, b) {
     if (u.carry) { gather(b, 'trunk'); u.carry = null; }
     return;
   }
-  if (!outFull(b, 'trunk')) {
+  if (!outFull(b, 'trunk') && !regrowWinterSpare(b, RC)) {   // зимой последние деревья у дома не трогает (world.js)
     const t = findObjNear(b.doorX, b.doorY, RC, o => o.t === 'tree' && o.g >= 1 && !o.res);
     if (t) {
       t.o.res = true;
@@ -447,7 +447,7 @@ function* woodcutterWork(u, b) {
 // Когда вокруг каменоломни не осталось глыб, каменотёс скалывает саму гору: у каждой клетки скалы
 // свой запас кусков; выработанная клетка рушится — на её месте ровная земля с грудой щебня.
 const ROCKMINE = { hp: new Map(), mined: new Set(), res: new Set() };
-const ROCK_FACE_HP = 60, ROCK_FACE_R = 10;
+const ROCK_FACE_HP = REGROW.rockHp, ROCK_FACE_R = 10;   // запас клетки скалы — в REGROW (world.js)
 
 function rockFaceOpen(x, y) {
   if (!inb(x, y)) return null;
@@ -493,11 +493,42 @@ function crumbleRock(x, y) {
   World.crystal[i] = 0;
   if (!World.obj[i]) setStone(i, 2);
   for (let k = 0; k < 3; k++) fxBurst((x + 0.5) * TILE, (y + 0.7) * TILE, 16, [ROCK_COL.base, ROCK_COL.mid, ROCK_COL.light, 'rgba(200,186,160,0.6)'], 90, 60, 1.0, 3, 200);
+  rockNetNote(i);
   floater(x + 0.5, y - 0.2, 'Гора поддалась!', '#e8dcc0');
   toast('Каменотёсы источили кусок горы — он осыпался грудой щебня');
   sfxAt('thud', x * TILE, y * TILE, 1);
   buildMountains(Game.seed);       // горы пересобираются по новой карте скал
   PF.regT = -1e9;                  // проходимость изменилась
+}
+
+// Кооп: скалу долбит сервер, а горы клиенты строят по сиду — выработку клеток и осыпавшиеся клетки шлём в зеркале ('rk').
+// Осыпавшиеся висят в пакете 20 с (поздно зашедший получает их в сохранении через ROCKMINE.mined)
+const ROCKNET = { rv: 0, cv: [], cvT: -1e9, rvIn: -1, hitT: new Map() };   // hitT: клетка → когда по ней били (полоска запаса)
+function rockNetNote(cell, hit) {
+  ROCKNET.rv++;
+  if (hit !== undefined) ROCKNET.hitT.set(hit, Game.time);
+  if (cell !== undefined) { if (Game.time - ROCKNET.cvT > 20) ROCKNET.cv = []; ROCKNET.cv.push(cell); ROCKNET.cvT = Game.time; }
+}
+function rockMirrorOut() {
+  if (!ROCKNET.rv) return null;
+  const m = { rv: ROCKNET.rv, hp: [...ROCKMINE.hp] };
+  if (ROCKNET.cv.length && Game.time - ROCKNET.cvT < 20) m.cv = ROCKNET.cv;
+  return m;
+}
+function rockMirrorIn(m) {
+  if (!m || m.rv === ROCKNET.rvIn) return;
+  ROCKNET.rvIn = m.rv;
+  const was = new Map(ROCKMINE.hp);
+  ROCKMINE.hp.clear();
+  for (const [i, n] of m.hp || []) { ROCKMINE.hp.set(i, n); if (was.get(i) !== n) ROCKNET.hitT.set(i, Game.time); }
+  let fell = false;
+  for (const i of m.cv || []) {
+    if (World.terrain[i] !== T_ROCK) continue;
+    World.terrain[i] = T_GRASS; World.crystal[i] = 0; ROCKMINE.mined.add(i); fell = true;
+  }
+  if (!fell) return;
+  if (typeof buildMountains === 'function') buildMountains(Game.seed);
+  PF.regT = -1e9;
 }
 
 // Каменотёс: сперва глыбы и скала рядом с каменоломней; кончились — идёт дальше: радиус растёт с его уровнем
@@ -547,7 +578,7 @@ function* quarryWork(u, b) {
       const L = unitLevel(u);
       const left = (ROCKMINE.hp.get(fi) ?? ROCK_FACE_HP) - (L >= 5 ? 3 : L >= 3 ? 2 : 1);   // опытный откалывает гору крупнее
       ROCKMINE.hp.set(fi, left);
-      if (left <= 0) crumbleRock(f.x, f.y);
+      if (left <= 0) crumbleRock(f.x, f.y); else rockNetNote(undefined, fi);
       u.carry = 'stone';
       yield { wait: 0.5, anim: 'duck' };
     }

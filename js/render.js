@@ -1034,6 +1034,13 @@ function render() {
     if (ty < y0 - 1 || ty - 5 > y1 || m.x + S.w / 2 < cam.x || m.x - S.w / 2 > cam.x + vw) continue;
     list.push([ty + 0.12, () => drawMountain(c, m)]);
   }
+  // выработка скалы каменотёсами — поверх гор (mountains.js); клеток в работе обычно единицы
+  if (typeof ROCKMINE !== 'undefined' && ROCKMINE.hp.size) for (const [i, n] of ROCKMINE.hp) {
+    const x = i % MAP_W, y = (i / MAP_W) | 0;
+    if (x < x0 || x > x1 || y < y0 || y > y1 + 1 || World.terrain[i] !== T_ROCK) continue;
+    list.push([y + 1.2, () => drawRockWear(c, x, y, i, n)]);
+    if (Game.time - (ROCKNET.hitT.get(i) ?? -1e9) < 20) list.push([y + 3, () => drawRockWearBar(c, x, y, n)]);   // полоска — пока тешут
+  }
   // кристаллы на скале — выше гор, чтобы было видно, где ставить шахту
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const i = idx(x, y);
