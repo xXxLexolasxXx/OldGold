@@ -200,7 +200,7 @@ function naFrame(kind, fr) {
   if (NA_PX[kind]) out = pxToCoarse(naPxFrame(kind, S, P, fr));   // на телефоне — тот же арт, сведённый в ×1
   else {
     // мелкий пиксель: F деталей на игровой пиксель, сверхвыборка 2 на пиксель арта (при F = 1 — 3, как было)
-    const [cv, c] = (typeof mkScratch === 'function' ? mkScratch : mkSprite)(S.w, S.h, F > 1 ? 2 * F : 3);   // OffscreenCanvas — чтение пикселей быстрее
+    const [cv, c] = mkSprite(S.w, S.h, F > 1 ? 2 * F : 3);
     c.lineCap = 'round'; c.lineJoin = 'round';
     c.save();
     c.translate(S.ax, S.ay);

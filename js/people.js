@@ -1681,9 +1681,65 @@ function personSprite(u, view, pose, frame, opt = {}) {
   cv = toPixelArt(c2, PS / PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
   if (PEOPLE_CACHE.size >= PEOPLE_CACHE_MAX) PEOPLE_CACHE.delete(PEOPLE_CACHE.keys().next().value);
   PEOPLE_CACHE.set(key, cv);
+  if (PSTORE.db && PSTORE.saved < PSTORE.max && look < 0x20000 && !u.type.startsWith('hero')) PSTORE.q.push([key, cv]);   // в постоянный кэш (герой и особые гномы — нет)
   u._spr = cv;
   spriteSpent(t0);
   return cv;
+}
+
+// ---------- Постоянный кэш поз гномов (IndexedDB) ----------
+// Каждая поза строится 1–2 мс на ПК и ~5 мс на телефоне, а при отдалённой камере в кадре сотни разных поз: первые
+// минуты игры на телефоне уходили на их сборку (замер 28.10: ~800 поз за минуту, fps втрое ниже). Собранные позы
+// понемногу сохраняются картинками (PNG) и при следующем запуске подгружаются сразу. Ключ хранилища — версия игры,
+// детализация и шапка/борода наследия (они меняют всех гномов): сменились — старое стирается. feod.sprcache=0 — выкл.
+const PSTORE = { q: [], db: null, prefix: '', saved: 0, max: 4000 };
+function pstoreOn() { try { return typeof indexedDB !== 'undefined' && localStorage.getItem('feod.sprcache') !== '0'; } catch (e) { return false; } }
+function pstorePrefix() {
+  let eq = '';
+  try { if (typeof lgMeta === 'function') { const e = lgMeta().eq || {}; eq = (e.hat || '') + '/' + (e.beard || ''); } } catch (e) { /* без наследия */ }
+  return (typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : '?') + '|' + PX_FINE + '|' + PART + '|' + eq + '|';
+}
+function pstoreOpen() {
+  return new Promise((ok, bad) => {
+    const r = indexedDB.open('oldgold-sprites', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('people');
+    r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error);
+  });
+}
+// при старте игры: подгрузить сохранённые позы своей версии, чужие стереть
+async function peopleStoreLoad() {
+  if (!pstoreOn() || PSTORE.db) return 0;
+  try {
+    const db = PSTORE.db = await pstoreOpen(), prefix = PSTORE.prefix = pstorePrefix();
+    const all = await new Promise((ok, bad) => {
+      const out = [], tx = db.transaction('people', 'readwrite'), st = tx.objectStore('people');
+      st.openCursor().onsuccess = e => { const c = e.target.result; if (!c) return; if (String(c.key).startsWith(prefix)) out.push([c.key, c.value]); else c.delete(); c.continue(); };
+      tx.oncomplete = () => ok(out); tx.onerror = () => bad(tx.error);
+    });
+    PSTORE.saved = all.length;
+    let n = 0;
+    for (const [k, blob] of all) {
+      const key = String(k).slice(prefix.length);
+      if (PEOPLE_CACHE.has(key) || PEOPLE_CACHE.size >= PEOPLE_CACHE_MAX - 500) continue;
+      try { PEOPLE_CACHE.set(key, await createImageBitmap(blob)); n++; } catch (e) { /* битая запись — соберётся заново */ }
+    }
+    return n;
+  } catch (e) { console.warn('peopleStore', e); PSTORE.db = null; return 0; }
+}
+// раз в 3 с: до 150 новых поз — в хранилище (кодирование PNG — асинхронно, кадр не держит)
+function peopleStoreFlush() {
+  const db = PSTORE.db;
+  if (!db || !PSTORE.q.length || PSTORE.saved >= PSTORE.max || (typeof document !== 'undefined' && document.hidden)) { if (PSTORE.saved >= PSTORE.max) PSTORE.q.length = 0; return; }
+  if (PSTORE.prefix !== pstorePrefix()) { PSTORE.q.length = 0; PSTORE.db = null; peopleStoreLoad(); return; }   // наследие сменило шапку/бороду
+  const batch = PSTORE.q.splice(0, 150);
+  for (const [key, cv] of batch) {
+    if (!cv.toBlob) continue;
+    cv.toBlob(blob => {
+      if (!blob || !PSTORE.db) return;
+      try { PSTORE.db.transaction('people', 'readwrite').objectStore('people').put(blob, PSTORE.prefix + key); PSTORE.saved++; } catch (e) { /* место кончилось — не страшно */ }
+    }, 'image/png');
+  }
+  if (PSTORE.q.length > 2000) PSTORE.q.splice(0, PSTORE.q.length - 2000);
 }
 
 // Портрет для интерфейса: голова, уши и колпак крупно.

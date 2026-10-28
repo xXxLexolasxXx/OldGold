@@ -1557,28 +1557,31 @@ const DS_LIGHT = (() => { const l = Math.hypot(-0.45, -0.72, 0.55); return [-0.4
 function DS_body(K, parts, mats, o) {
   const { P, dth } = K, [x0, y0, x1, y1] = o.bb, w = x1 - x0 + 1, h = y1 - y0 + 1, N = w * h;
   const D = parts.map(() => new Float32Array(N)), U = new Float32Array(N), OW = new Int16Array(N), Wd = o.W || 7, amb = o.amb ?? 0.2;
-  // Часть с рамкой (DS_cap, DS_ell, DS_tube), до которой от пикселя не меньше SK = max(u + k, k, 12), не считаем:
-  // мягкий минимум от неё не меняется вовсе (h = 0), а её значение дальше нужно только как «снаружи» (d < 0, d < 0.5,
-  // градиент у границы, ближайшая часть внутри тела) — туда кладём нижнюю оценку (≥ 12). Кадры те же бит в бит.
-  const QK = parts.map(q => q.k ?? o.k ?? 4), QB = parts.map(q => q.f.bb || null);
-  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
-    const x = x0 + i, y = y0 + j, id = j * w + i; let u = 1e9;
-    let best = 1e9, ow = 0;
-    for (let k = 0; k < parts.length; k++) {
-      const q = parts[k], bb = QB[k];
-      if (bb) {
-        const ex = Math.max(bb[0] - x, 0, x - bb[2]), ey = Math.max(bb[1] - y, 0, y - bb[3]);
-        if (ex || ey) {
-          // первая часть (u ещё нет): пропуск только заведомо снаружи — тогда и итог снаружи (U > 0), а у границы тела
-          // значения те же: там эта часть дальше прочих на k и мягкий минимум её не видит
-          const lb = Math.sqrt(ex * ex + ey * ey) * bb[4] - (bb[5] || 0), sk = q.zone ? 12 : u === 1e9 ? 12 + QK[k] : Math.max(u + QK[k], QK[k], 12);
-          if (lb >= sk) { D[k][id] = lb; continue; }
-        }
-      }
-      const d = q.f(x, y); D[k][id] = d;
-      if (!q.zone) { u = u === 1e9 ? d : DS_smin(u, d, QK[k]); if (d < best) { best = d; ow = k; } }
+  // Обход по частям, а не по пикселям: часть с рамкой (DS_cap, DS_ell, DS_tube) считается только в своём
+  // прямоугольнике — там, где её поле может быть меньше T = 12 + 2k. Дальше она не влияет ни на мягкий минимум
+  // у тела (h = 0: её поле больше всего, что рядом, на k), ни на «внутри / снаружи» (d < 0, d < 0.5, градиенты
+  // у границы) — там кладём 1e3. Порядок слияния частей в каждом пикселе прежний; кадры те же бит в бит
+  // (сверка 157 кадров призраков, жнеца, моховика). Первый кадр призрака на телефоне строился ~150 мс.
+  const QK = parts.map(q => q.k ?? o.k ?? 4);
+  U.fill(1e9);
+  const BEST = new Float32Array(N).fill(1e9);
+  for (let k = 0; k < parts.length; k++) {
+    const q = parts[k], bb = q.f.bb, A = D[k], kk = QK[k], zone = !!q.zone;
+    let i0 = 0, i1 = w - 1, j0 = 0, j1 = h - 1;
+    if (bb) {
+      const m = ((zone ? 12 : 12 + 2 * kk) + (bb[5] || 0)) / bb[4];
+      i0 = Math.max(0, Math.floor(bb[0] - m) - x0); i1 = Math.min(w - 1, Math.ceil(bb[2] + m) - x0);
+      j0 = Math.max(0, Math.floor(bb[1] - m) - y0); j1 = Math.min(h - 1, Math.ceil(bb[3] + m) - y0);
+      A.fill(1e3);
     }
-    U[id] = u; OW[id] = ow;
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const id = j * w + i, d = q.f(x0 + i, y0 + j);
+      A[id] = d;
+      if (zone) continue;
+      const u = U[id];
+      U[id] = u === 1e9 ? d : DS_smin(u, d, kk);
+      if (d < BEST[id]) { BEST[id] = d; OW[id] = k; }
+    }
   }
   const nrm = (A, i, j, W) => {
     const ix = Math.max(1, Math.min(w - 2, i)), jy = Math.max(1, Math.min(h - 2, j));

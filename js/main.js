@@ -611,6 +611,7 @@ function startGame() {
   initSfx();
   updateMinimapBase();
   updateUI(true);
+  if (typeof peopleStoreLoad === 'function') { peopleStoreLoad(); setInterval(peopleStoreFlush, 3000); }   // позы гномов с прошлых запусков (people.js)
   requestAnimationFrame(frame);
 }
 

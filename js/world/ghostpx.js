@@ -127,7 +127,16 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
   // ---- одна форма: саван, плечи, ближняя рука, голова, колпак / капюшон, борода
   // саван: гладкий или лохмотья (o.rag, у каждого призрака свой — g.rag): T1 полосы, T2 рваньё с дырами; лист tools/pxghost/ghostrags.html
   const caps0 = DS_chain(spine).map(q => q.f), sho = ell(lean * 0.6, 17, 30, 14);
-  const shroud0 = (x, y) => { let u = sho(x, y); for (const f of caps0) u = DS_smin(u, f(x, y), 7); return u; };
+  // капсула, чья рамка дальше u + 7, мягкий минимум не меняет (h = 0) — её не считаем (кадр тот же)
+  const shroud0 = (x, y) => {
+    let u = sho(x, y);
+    for (const f of caps0) {
+      const bb = f.bb, ex = Math.max(bb[0] - x, 0, x - bb[2]), ey = Math.max(bb[1] - y, 0, y - bb[3]);
+      if ((ex || ey) && Math.sqrt(ex * ex + ey * ey) >= u + 7) continue;
+      u = DS_smin(u, f(x, y), 7);
+    }
+    return u;
+  };
   // рамка савана для DS_body: снаружи поле не меньше расстояния до рамок частей минус сглаживание (k/4 на каждое слияние)
   // и минус шум лохмотьев T2 (до 4) — далёкие пиксели не считаем
   const shBB = [sho.bb, ...caps0.map(f => f.bb)];
@@ -149,9 +158,12 @@ function ghostPx(v, mood, p = 0, k = 0, o = {}) {
     }
     return d;
   } : o.rag === 'T2' ? (x, y) => {
-    let d = shroud0(x, y) + (vn(x + sway(y, 3), y, 6) - 0.45) * 6 + (vn(x * 1.7, y * 1.7, 3.5) - 0.5) * 2.5;
+    const d0 = shroud0(x, y);
+    if (d0 > 40) return d0;   // далеко от савана: шум (±4) и дыры край не сдвинут, считать их незачем
+    let d = d0 + (vn(x + sway(y, 3), y, 6) - 0.45) * 6 + (vn(x * 1.7, y * 1.7, 3.5) - 0.5) * 2.5;
     for (let i = 0; i < 5; i++) {
       const hx = lean * 0.5 + (hsh(i * 7.7 + 1) - 0.5) * 34, hy = 32 + hsh(i * 3.9 + 2) * 52, r = 1.6 + hsh(i * 5.1) * 2.2;                                                                        // дыры небольшие
+      if (Math.abs(x - hx) > 9 || Math.abs(y - hy) > 6) continue;   // дальше 6 px (шум сжимает x не больше чем до 0,7) — дыра сюда не достаёт
       const dh = r - Math.hypot((x - hx) * (1 + (vn(x, y, 3) - 0.5) * 0.6), y - hy);
       if (dh > -2) d = Math.max(d, dh * 1.6);
     }
