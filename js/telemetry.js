@@ -236,7 +236,7 @@ function teleShot() {
 function teleReportBody(text, withSave, shot) {
   const d = teleDev();
   let save = '';
-  if (withSave && teleMode() === 'solo' && typeof serializeGame === 'function') {
+  if (withSave && typeof serializeGame === 'function') {   // в коопе — копия общего мира, как в coopSaveCopy (отчёт 261027-1836-5657: на ПК галочка была выключена)
     try { save = JSON.stringify(serializeGame()); } catch (e) { save = ''; }
     if (save.length > 6e6) save = '';
   }
@@ -259,7 +259,7 @@ function teleReport() {
     + '<b>Сообщить о проблеме</b><div class="small" style="margin:4px 0 8px;opacity:.85">Что случилось? Вместе с текстом уйдут снимок экрана, журнал ошибок и консоли, версия и устройство. Без ника и пароля.</div>'
     + '<textarea id="tele-rep-t" maxlength="1000" rows="3" style="width:100%;box-sizing:border-box;font:14px sans-serif" placeholder="Например: гномы перестали носить камень"></textarea>'
     + (shot ? `<img src="${shot}" alt="" style="display:block;max-width:100%;max-height:120px;margin:8px auto;border:1px solid #a8743a">` : '')
-    + `<label style="display:flex;gap:6px;align-items:center;margin:6px 0"><input type="checkbox" id="tele-rep-s"${teleMode() === 'solo' ? '' : ' disabled'}> Приложить сохранение (поможет повторить)</label>`
+    + `<label style="display:flex;gap:6px;align-items:center;margin:6px 0"><input type="checkbox" id="tele-rep-s"> ${teleMode() === 'coop' ? 'Приложить копию общего мира' : 'Приложить сохранение'} (поможет повторить)</label>`
     + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button data-a="x" style="padding:6px 12px">Отмена</button><button data-a="send" style="padding:6px 12px;font-weight:bold">Отправить</button></div></div>';
   if (typeof Game !== 'undefined') Game.paused = true;
   const close = () => { box.remove(); if (typeof Game !== 'undefined') Game.paused = wasPaused; };

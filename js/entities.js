@@ -401,6 +401,7 @@ function checkPlacement(type, x, y, rot = 0, quick = false) {
     if (World.road[i] || Game.roadSites.has(i)) return 'Мешает дорога';
     if (World.obj[i] && !isStreetObj(World.obj[i])) treeBlock = true;
   }
+  if (typeof neuLairHits === 'function' && (Game.lairs || []).some(L => neuLairHits(L, x, y, x + def.w - 1, y + def.h - 1))) return 'Здесь логово нейтралов';
   const dx = x + def.dx, dy = y + def.dy;
   if (!inb(dx, dy)) return 'Вход за краем карты';
   const di = idx(dx, dy);
