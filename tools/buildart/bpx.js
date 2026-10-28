@@ -6,6 +6,7 @@
 // В конце — обводка по маске твёрдых пикселей и тёмные линии на стыках граней (дальняя грань темнеет у ближней).
 
 let BK = 3; const BSK = 0.5, BDK = 0.78;
+let FINE = 1;   // мелкий растр: геометрия и обводка в FINE раз мельче, узоры материалов — в прежних пикселях (u, v целые)
 const BRAY = [-0.5, 1, -0.78];                           // направление взгляда вглубь (ось проекции)
 const BLIGHT = (() => { const v = [-0.45, -0.62, 0.65], l = Math.hypot(...v); return v.map(a => a / l); })();
 const bhex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -69,8 +70,8 @@ class BGrid {
   }
   // локальные координаты модели → мир (как toW в bmodels.js: при rot=1 фасад смотрит на восток)
   W3(p) { return this.rot ? [this.LD - p[1], p[0], p[2]] : p; }
-  sx(X, Y) { return this.ox + (X + Y * BSK) * BK; }
-  sy(Y, Z) { return this.oy - (Y * BDK + Z) * BK; }
+  sx(X, Y) { return this.ox + (X + Y * BSK) * BK * FINE; }
+  sy(Y, Z) { return this.oy - (Y * BDK + Z) * BK * FINE; }
   depth(X, Y, Z) { return -0.5 * X + Y - 0.78 * Z; }
   put(x, y, c, z, f) {
     if (x < 0 || y < 0 || x >= this.W || y >= this.H) return;
@@ -89,8 +90,8 @@ class BGrid {
     if (v3.dot(n, BRAY) > 0) n = [-n[0], -n[1], -n[2]];
     const nl = v3.dot(n, BLIGHT);
     const li = o.li != null ? o.li : nl > 0.55 ? 0 : nl > 0.25 ? 1 : nl > -0.5 ? 2 : 3;
-    const Mu = [(Uw[0] + Uw[1] * BSK) * BK, -(Uw[1] * BDK + Uw[2]) * BK];
-    const Mv = [(Vw[0] + Vw[1] * BSK) * BK, -(Vw[1] * BDK + Vw[2]) * BK];
+    const Mu = [(Uw[0] + Uw[1] * BSK) * BK * FINE, -(Uw[1] * BDK + Uw[2]) * BK * FINE];
+    const Mv = [(Vw[0] + Vw[1] * BSK) * BK * FINE, -(Vw[1] * BDK + Vw[2]) * BK * FINE];
     const det = Mu[0] * Mv[1] - Mu[1] * Mv[0];
     if (Math.abs(det) < 1e-6) return;
     let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
@@ -113,9 +114,12 @@ class BGrid {
         if (!inside) continue;
         const dx = cx - S[0][0], dy = cy - S[0][1];
         const a = (dx * Mv[1] - dy * Mv[0]) / det, b = (Mu[0] * dy - Mu[1] * dx) / det;
-        const c = mat(a * BK, b * BK, F);
+        let c;
+        if (FINE === 1) c = mat(a * BK, b * BK, F);
+        else { const ua = a * BK, vb = b * BK, uf = Math.floor(ua), vf = Math.floor(vb); F.fu = ua - uf; F.fv = vb - vf; F.fx = px; F.fy = py; c = mat(uf, vf, F); }   // fu, fv — доля внутри мирового пикселя: материалы рисуют по ней мелкую фактуру
         if (!c) continue;
         const X = O[0] + a * Uw[0] + b * Vw[0], Y = O[1] + a * Uw[1] + b * Vw[1], Z = O[2] + a * Uw[2] + b * Vw[2];
+        const L = this.lot; if (L && (X < -L[2] || Y < -L[2] || X > L[0] + L[2] || Y > L[1] + L[2])) continue;   // за границей участка — к соседу не лезем
         this.put(px, py, c, this.depth(X, Y, Z) + dz, fid);
       }
     }
@@ -124,8 +128,11 @@ class BGrid {
   // «плакат»: рисунок в экранных пикселях с одной глубиной (реквизит); draw(P) где P(x, y, col)
   sprite(at, draw, dz = 0) {
     const p = this.W3(at), z = this.depth(p[0], p[1], p[2]) + dz, fid = this.nf++;
+    const L = this.lot; if (L && (p[0] < -L[2] || p[1] < -L[2] || p[0] > L[0] + L[2] || p[1] > L[1] + L[2])) return;   // реквизит за участком не ставим
     const bx = Math.round(this.sx(p[0], p[1])), by = Math.round(this.sy(p[1], p[2]));
-    draw((x, y, c) => c && this.put(bx + x, by + y, c, z, fid), bx, by);
+    const k = (this.spk || 1) * FINE;   // мелкий шаг пикселя (BK > 1): реквизит, нарисованный в пикселях ×1, ставим блоками k×k — размер тот же
+    if (k === 1) draw((x, y, c) => c && this.put(bx + x, by + y, c, z, fid), bx, by);
+    else draw((x, y, c) => { if (c) for (let j = 0; j < k; j++) for (let i = 0; i < k; i++) this.put(bx + x * k + i, by + y * k + j, c, z, fid); }, bx, by);
   }
   // обводка снаружи (тёплый тёмный) и тёмные линии на стыках: дальний пиксель рядом с ближней чужой гранью темнеет
   finish(o = {}) {

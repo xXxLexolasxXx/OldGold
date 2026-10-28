@@ -71,11 +71,14 @@ function buildBakery(g, lv) {
   elem(g, 'S', M.y0, 6, 0, 10, 12, m1Door({ w: 10, h: 12, arch: true, col: BLUE_TRIM })); g.meta.doorPt = [11, M.y0, 0];
   for (const x of [24, 46]) elem(g, 'S', M.y0, x, 4, 9, 7, m1Window({ w: 9, h: 7, sill: true, frameR: BLUE_TRIM }));
   chimney1(g, 52, 50, M.h + 8, 8, { brick: true, w: 4, d: 4 });
-  g.sprite([32, 16, 0], P => QB.bigOven(P, lv >= 3 ? 1.15 : 1)); g.meta.oven = [32, 13, 0];
+  g.sprite([32, 10, 0], P => QB.bigOven(P, lv >= 3 ? 1.15 : 1)); g.meta.oven = [32, 7, 0];   // печь отодвинута от дома
   g.sprite([54, 10, 0], P => QF.loaves(P)); g.sprite([10, 16, 0], P => Q1.logs(P));
-  if (lv >= 2) g.sprite([58, 26, 0], P => QF.sacksFlour(P));
-  if (lv >= 3) { g.sprite([4, 28, 0], P => Q1.planter(P, 9)); g.sprite([20, 4, 0], P => QB.peel(P)); }
-  g.meta.baker = [20, 12, 0];
+  g.meta.baker = [12, 6, 0];   // пекарь сбоку от печи, не заслоняет устье
+  if (lv >= 2) {   // ур. 2: стол для теста — подмастерье месит; мешки муки
+    g.sprite([60, 26, 0], P => QF.sacksFlour(P));
+    box(g, { x0: 42, x1: 54, y0: 20, y1: 26, h: 5, mat: m1Plank(P1.plank, 3), top: (u, v) => (u > 3 && u < 9 && v > 1 && v < 5 ? bhex('#f0e0c0') : P1.plank[0]) }); g.meta.knead = [48, 16, 0];
+  }
+  if (lv >= 3) { g.sprite([4, 28, 0], P => Q1.planter(P, 9)); g.sprite([58, 2, 0], P => QB.peel(P)); g.meta.buyer = [[60, 2, 0], [54, 6, 0]]; g.meta.cat = [6, 6, 0]; }   // ур. 3: покупатель за хлебом, кот у печного тепла
 }
 
 // =================== ХМЕЛЬНИК 3×2: сушильня-башенка + здание на половину, без хмеля ===================
@@ -89,9 +92,10 @@ function buildHop(g, lv) {
   cyl(g, 84, 46, 11, 0, 26, m1Brick(P1.brick), 22); cone(g, 84, 46, 13, 25, 20, R.mat, R.cut, 22, 2);
   g.sprite([84, 46, 46], P => { PR.rect(P, -2, -4, 2, 0, P1.white[1]); PR.line(P, 2, -2, 6, -6, P1.white[1]); }, -0.5);   // флюгер-вытяжка
   elem(g, 'S', 35.4, 80, 0, 8, 10, m1Door({ w: 8, h: 10, col: P1.dark }));
-  g.sprite([20, 18, 0], P => QW.rack(P)); g.sprite([54, 18, 0], P => Q2.sacks(P, 3)); g.sprite([84, 18, 0], P => Q1.barrel(P));
-  if (lv >= 2) g.sprite([38, 14, 0], P => QW.rack(P));
-  if (lv >= 3) g.sprite([70, 10, 0], P => QW.cart(P));
+  g.sprite([22, 18, 0], P => QW.rack(P)); g.sprite([64, 18, 0], P => Q2.sacks(P, 3)); g.sprite([84, 18, 0], P => Q1.barrel(P));
+  g.meta.vent = [84, 46, 50]; g.meta.racks = [[4, 14, 0]];   // дым сушильни; хмелевод развешивает шишки — сбоку от сушилки, не перед ней
+  if (lv >= 2) { g.sprite([46, 14, 0], P => QW.rack(P)); g.meta.racks.push([28, 10, 0]); }
+  if (lv >= 3) { g.sprite([70, 10, 0], P => QW.cart(P)); g.meta.cart = [70, 10, 0]; }
 }
 
 // =================== ПИВОВАРНЯ 3×2: большое здание, большой медный чан ===================
@@ -135,7 +139,10 @@ const SWINE2_VARS = [
     for (const x of [40, 80]) g.sprite([x, 56, 0], P => QW.trough(P, 18)); g.sprite([66, 24, 0.2], P => QF.mud(P, 28)); } },
   { name: 'С-4. Фахверковый свинарник с поросячьим домиком-будкой в загоне', make(g, lv) { g.meta = {}; swineBase(g, lv, m1Plaster(P1.plaster, { frame: true, bay: 12, braceOdd: true, low: 4 }), STRS(lv, STRAW_F.sun, P1.tileR), m1Plaster(P1.plaster));
     box(g, { x0: 92, x1: 112, y0: 20, y1: 36, h: 7, mat: m1Plank(P1.plank, 3) }); roof(g, { x0: 92, x1: 112, y0: 20, y1: 36, h: 7 }, { type: 'gable', axis: 'X', rise: 5, ov: 2, mat: m1Straw3(STRAW_F.sun), cut: m1StrawCut(STRAW_F.sun), th: 2 });
-    g.sprite([46, 28, 0.2], P => QF.mud(P, 28)); g.sprite([24, 12, 0], P => QW.trough(P, 14)); } },
+    g.sprite([46, 28, 0.2], P => QF.mud(P, 28)); g.sprite([24, 12, 0], P => QW.trough(P, 14));
+    g.meta.trough = [24, 12, 0]; g.meta.mud = [46, 28, 0];
+    if (lv >= 2) { g.sprite([70, 12, 0], P => QW.trough(P, 14)); g.meta.feed = [[13, 62, 0], [24, 16, 0], [70, 16, 0]]; }   // ур. 2: второе корыто, свинопас носит ведро
+    if (lv >= 3) { g.sprite([116, 48, 0], P => Q1.tree(P, 10)); g.sprite([102, 36, 7], P => Q1.lantern(P), -0.5); g.meta.lamp = [102, 36, 6]; } } },   // ур. 3: дубок с желудями, фонарь у будки
 ];
 
 // =================== БОЙНЯ 2×2: дом во всю ширину, в половину глубины; стенд с тушами ===================

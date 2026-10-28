@@ -104,6 +104,12 @@ function neuAddLair(k, site, minStart) {
   const { x, y, ds } = site;
   const far = Math.min(1, Math.max(0, (ds - minStart) / 40));
   const lair = { id: Game.nextId++, k, x, y, lv: k === 'pixie' ? 1 : Math.round((1 + far * 0.45) * 100) / 100, respawn: 0, alive: 0, fr: 0 };
+  neuClearGlade(x, y);
+  Game.lairs.push(lair);
+  neuFillLair(lair);
+  return lair;
+}
+function neuClearGlade(x, y) {
   // полянка: вырубаем деревья вокруг, чтобы было где жить и драться (к югу шире: кроны южных деревьев иначе закрывают логово)
   for (let yy = y - 3; yy <= y + 5; yy++) for (let xx = x - 4; xx <= x + 4; xx++) {
     const ex = (xx - x) / 3.4, ey = (yy - y) / (yy >= y ? 4.2 : 2.6);
@@ -111,9 +117,26 @@ function neuAddLair(k, site, minStart) {
     const o = World.obj[idx(xx, yy)];
     if (o && (o.t === 'tree' || o.t === 'stump')) { World.obj[idx(xx, yy)] = null; World.growing.delete(idx(xx, yy)); }
   }
-  Game.lairs.push(lair);
-  neuFillLair(lair);
-  return lair;
+}
+
+// Клетки, которые занимает рисунок логова: на них не строят (entities.js, checkPlacement)
+const neuLairHits = (L, x0, y0, x1, y1) => x0 <= L.x + 2 && x1 >= L.x - 2 && y0 <= L.y + 1 && y1 >= L.y - 2;
+// Логово под зданием (построили поверх раньше запрета; отчёт 261027-2250-1c35: костёр на дупле лешего,
+// рисунки наслаивались) — переезжает с жильцами на новую поляну
+function neuMoveBuried(seed) {
+  const bad = Game.lairs.filter(L => Game.buildings.some(b => !b.removed && neuLairHits(L, b.x, b.y, b.x + b.w - 1, b.y + b.h - 1)));
+  if (!bad.length) return;
+  const rng = mulberry32((((seed | 0) ^ 0x51ED) + Game.lairs.length * 97) >>> 0);
+  const stamp = floodFrom(MAP_W >> 1, MAP_H >> 1), minStart = mapIsLegacy() ? 20 : 24;
+  for (const L of bad) for (let t = 0; t < 6000; t++) {
+    const site = neuTrySite(rng, stamp, minStart);
+    if (!site) continue;
+    const dx = site.x - L.x, dy = site.y - L.y;
+    L.x = site.x; L.y = site.y;
+    neuClearGlade(L.x, L.y);
+    for (const N of Game.neutrals) if (N.lair === L.id) { N.x += dx; N.y += dy; N.hx += dx; N.hy += dy; if (N.st !== 'die') N.st = 'idle'; N.tg = 0; }
+    break;
+  }
 }
 
 const NEU_MIN_PIXIE = 1;   // на каждой карте есть хотя бы одно селение цветочных фей
@@ -583,7 +606,7 @@ function neuTick(dt) {
       Game.neutrals.push(N); lair.alive++;
     }
     for (const l of Game.lairs) if (!l.alive && !l.respawn) l.respawn = Game.time + 30;
-    if (!isMirror()) { neuTrimFairies(); neuEnsurePixies(s.seed); }
+    if (!isMirror()) { neuTrimFairies(); neuEnsurePixies(s.seed); neuMoveBuried(s.seed); }
   };
   const _step = step;
   step = function (dt) { _step(dt); if (!isMirror()) neuTick(dt); };
