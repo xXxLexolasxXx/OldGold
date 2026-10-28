@@ -670,7 +670,7 @@ function collectAlerts() {
     const p = b.problem();
     if (!p || p === 'paused' || p === 'enough') continue;
     if (p === 'noroad') { out.push({ b, icon: ['ui', 'road'], text: `${b.def.name}: нет дороги к складу` }); continue; }
-    if (p === 'damaged') { out.push({ b, icon: ['ui', 'warn'], text: `${b.def.name}: повреждено нечистью, ждёт ремонта` }); continue; }
+    if (p === 'damaged') { out.push({ b, icon: ['ui', 'warn'], text: `${b.def.name}: повреждено — ${repairWhy(b) || 'ждёт ремонта'}` }); continue; }
     if (p === 'noworker') out.push({ b, icon: ['ui', 'noworker'], text: `${b.def.name}: нужен ${UNIT_TYPES[b.def.worker].name.toLowerCase()}` });
     else if (p === 'full') out.push({ b, icon: ['ui', 'full'], text: `${b.def.name}: всё заполнено` });
     else if (p.startsWith('need:')) out.push({ b, icon: ['good', p.slice(5)], text: `${b.def.name}: нет «${GOODS[p.slice(5)].name}»` });
@@ -719,7 +719,7 @@ function statusChip(b) {
   if (p === 'noroad') return '<span class="chip bad">Нет дороги к складу</span>';
   if (p === 'paused') return '<span class="chip off">На паузе</span>';
   if (p === 'noworker') return '<span class="chip bad">Нет рабочего</span>';
-  if (p === 'damaged') return '<span class="chip bad">Повреждено — ждёт ремонта</span>';
+  if (p === 'damaged') return `<span class="chip bad">Повреждено — ${repairWhy(b) || 'ждёт ремонта'}</span>`;
   if (p === 'full') return '<span class="chip wait">Всё заполнено</span>';
   if (p === 'enough') return '<span class="chip off">Отдыхает: еды на складе вдоволь</span>';
   return `<span class="chip bad">Нет: ${GOODS[p.slice(5)].name}</span>`;

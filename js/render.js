@@ -484,6 +484,37 @@ function drawPigs(c, b, spr, ox, oy) {
 
 // ---------- Здания ----------
 
+// Точка мира (px) на экране с запасом m px мира — отсечение того, что рисуется мимо общего списка
+// (призраки, мыши, совы): за краем экрана такое не только рисовалось, но и строило себе новые кадры
+function onScreen(px, py, m = 64) {
+  const z = devScale(), cv = R.canvas, cam = R.cam;
+  return px > cam.x - m && py > cam.y - m && px < cam.x + cv.width / z + m && py < cam.y + cv.height / z + m;
+}
+
+// Крупный спрайт (здание: 3× деталей) в игровом размере. При devScale() <= 1 — заранее уменьшенная под экран копия:
+// сглаживание 'high' заново уменьшает огромный холст на каждом кадре, и на отдалении 40 зданий съедали треть кадра
+// (замер 27.10, сейв 261023-2109-e00a). Копия считается тем же фильтром один раз — на экране то же самое.
+// Спрайты зданий после сборки не меняются (как и для COLD_FX_CACHE), поэтому ключ — сам холст.
+const HQ_CACHE = new WeakMap();
+function blitHQ(c, src, x, y, w, h) {
+  const k = devScale();
+  if (k > 1 || !src || !src.width) { if (src) c.drawImage(src, x, y, w, h); return; }
+  const W = Math.max(1, Math.round(w * k)), H = Math.max(1, Math.round(h * k));
+  let e = HQ_CACHE.get(src);
+  if (!e || e.cv.width !== W || e.cv.height !== H) {
+    const cv = e ? e.cv : mkCanvas(W, H);
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    g.drawImage(src, 0, 0, W, H);
+    HQ_CACHE.set(src, e = { cv });
+  }
+  const sm = c.imageSmoothingEnabled;
+  c.imageSmoothingEnabled = false;
+  c.drawImage(e.cv, x, y, w, h);
+  c.imageSmoothingEnabled = sm;
+}
+
 function drawBuilding(c, b, ghost) {
   if (b.eraFx && Game.time - b.eraFx.t0 > ERA_FX.dur) b.eraFx = null;   // перестройка кончилась, пока здание было за кадром
   const eraFx = !ghost && b.eraFx && !b.upg && b.state === 'done';
@@ -500,8 +531,8 @@ function drawBuilding(c, b, ghost) {
     return;
   }
   if (b._gnd) b._gnd = null;     // достроено — холст земли больше не нужен
-  c.drawImage(spr.shadow, ox, oy, spr.w, spr.h);
-  c.drawImage(spr.canvas, ox, oy, spr.w, spr.h);
+  blitHQ(c, spr.shadow, ox, oy, spr.w, spr.h);
+  blitHQ(c, spr.canvas, ox, oy, spr.w, spr.h);
   if (eraFx) eraDrawFx(c, b, spr, ox, oy);
   if (!ghost && b.upg) drawUpgradeLayer(c, b);
   if (!ghost && b.dmg > 0) drawDamage(c, b, ox, oy, spr);
@@ -854,8 +885,103 @@ function drawStatusIcons(c, x0, y0, x1, y1) {
 
 // ---------- Кадр ----------
 
+// ---------- Отдалённая камера: деревья, камни, пни и брёвна куском ряда ----------
+// При отдалении в кадре тысяча с лишним деревьев, у каждого блит и тень, и Chrome тратит на каждый мелкий блит
+// десятки микросекунд — кадр падал до 5 к/с. Поэтому объекты одного ряда клеток рисуются заранее в холст-кусок
+// (CW клеток в ширину) в разрешении экрана, а в кадре кусок — один блит на месте дерева ряда в порядке глубины:
+// гномы за деревьями остаются за ними. Кусок перерисовывается, когда в нём что-то поменялось (подпись по клеткам).
+// Только при devScale() <= 1 (на экране пиксель мира не крупнее физического) — вблизи объектов мало.
+const ROWC = { k: 0, trees: null, map: new Map(), frame: 0, px: 0 };
+const ROWC_UP = 64, ROWC_DN = 40, ROWC_PAD = 40;   // запас холста над рядом (кроны), под ним (тени) и по бокам
+const ROWC_BUDGET_MS = 5, ROWC_MAX_PX = 16e6;        // перерисовка кусков за кадр; предел памяти кусков (~64 МБ, в экономном режиме ~24)
+function rowcFree() { for (const e of ROWC.map.values()) e.cv.width = e.cv.height = 0; ROWC.map.clear(); ROWC.px = 0; }
+function rowcMB() { return ROWC.px * 4 / 1048576; }
+// клетка рисуется куском: дерево и камень не проснулись, камень не вздрагивает от удара
+function rowcKind(o) {
+  if (!o) return 0;
+  if (o.t === 'tree') return o.awake ? 0 : 3;
+  if (o.t === 'stone') return o.awake || (o.hitT && Game.time - o.hitT < 0.18) ? 0 : 2;
+  if (o.t === 'stump' || o.t === 'log') return 1;
+  return 0;
+}
+function rowcPaint(e, y, cx0, cx1, k) {
+  const X0 = cx0 * TILE - ROWC_PAD, Y0 = y * TILE - ROWC_UP;
+  const w = Math.round(((cx1 - cx0 + 1) * TILE + 2 * ROWC_PAD) * k), h = Math.round((ROWC_UP + ROWC_DN) * k);
+  if (!e.cv) { e.cv = mkCanvas(w, h); ROWC.px += w * h; }
+  else if (e.cv.width !== w || e.cv.height !== h) { ROWC.px += w * h - e.cv.width * e.cv.height; e.cv.width = w; e.cv.height = h; }
+  const g = e.cv.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
+  g.setTransform(k, 0, 0, k, -X0 * k, -Y0 * k);
+  g.imageSmoothingEnabled = R.smooth; g.imageSmoothingQuality = 'low';
+  // порядок как в общем списке: пни и брёвна (y+0.7), камни (y+0.8), деревья (y+0.9), внутри — слева направо
+  for (let pass = 1; pass <= 3; pass++) for (let x = cx0; x <= cx1; x++) {
+    const i = idx(x, y), o = World.obj[i];
+    if (rowcKind(o) !== pass) continue;
+    if (pass === 1) { if (o.t === 'log') drawLog(g, x, y); else drawStump(g, x, y); }
+    else if (pass === 2) drawRock(g, x, y, o, i);
+    else drawTree(g, x, y, o, i);
+  }
+  e.X0 = X0; e.Y0 = Y0; e.w = w / k; e.h = h / k;
+}
+// Подпись куска: что и как нарисовано в его клетках
+function rowcSig(y, cx0, cx1) {
+  let s = 0x811c9dc5;
+  for (let x = cx0; x <= cx1; x++) {
+    const o = World.obj[idx(x, y)], kd = rowcKind(o);
+    if (!kd) continue;
+    let v = x * 8 + kd + (o.t === 'log' ? 4 : 0);
+    if (kd === 3) v = v * 64 + (o.g >= 1 ? 63 : Math.round((0.35 + 0.55 * o.g) * 62));
+    else if (kd === 2) v = (v * 16 + (o.n | 0)) * 128 + Math.round((o.dmg || 0) * 100);
+    s = Math.imul(s ^ v, 16777619);
+  }
+  return s;
+}
+// Кладёт в список отрисовки куски рядов y0..y1, перекрывающие x0..x1. Возвращает false — кэш не используется
+// (камера близко или кадр слишком большой для памяти): тогда объекты кладутся по одному, как раньше.
+function rowcPush(list, c, x0, y0, x1, y1) {
+  const k = devScale();
+  if (k > 1 || R.noFarCache) { if (ROWC.map.size) rowcFree(); return false; }   // R.noFarCache — для замеров
+  const CW = Math.round(16 / k);
+  const cA = Math.floor(x0 / CW), cB = Math.floor(x1 / CW);
+  const maxPx = typeof Fps !== 'undefined' && Fps.eco ? ROWC_MAX_PX * 0.375 : ROWC_MAX_PX;
+  if ((cB - cA + 1) * (CW * TILE + 2 * ROWC_PAD) * (ROWC_UP + ROWC_DN) * k * k * (y1 - y0 + 1) > maxPx) { if (ROWC.map.size) rowcFree(); return false; }
+  if (ROWC.k !== k || ROWC.trees !== SPR.trees) { rowcFree(); ROWC.k = k; ROWC.trees = SPR.trees; }
+  const fr = ++ROWC.frame, t0 = performance.now();
+  for (let y = y0; y <= y1; y++) for (let cx = cA; cx <= cB; cx++) {
+    const ax = cx * CW, bx = Math.min(MAP_W - 1, ax + CW - 1), key = y * 4096 + cx;
+    const sig = rowcSig(y, ax, bx);
+    let e = ROWC.map.get(key);
+    if (!e || e.sig !== sig) {
+      if (sig === 0x811c9dc5) { if (e) { ROWC.px -= e.cv.width * e.cv.height; e.cv.width = e.cv.height = 0; ROWC.map.delete(key); } continue; }   // пустой кусок
+      if (performance.now() - t0 > ROWC_BUDGET_MS && (e || ROWC.map.size)) {
+        // бюджет кадра исчерпан — в этот раз клетки куска по одному, кусок дорисуется в следующих кадрах
+        for (let x = Math.max(ax, x0); x <= Math.min(bx, x1); x++) {
+          const i = idx(x, y), o = World.obj[i], kd = rowcKind(o);
+          if (kd === 3) list.push([y + 0.9, () => drawTree(c, x, y, o, i)]);
+          else if (kd === 2) list.push([y + 0.8, () => drawRock(c, x, y, o, i)]);
+          else if (kd === 1) list.push([y + 0.7, o.t === 'log' ? () => drawLog(c, x, y) : () => drawStump(c, x, y)]);
+        }
+        continue;
+      }
+      if (!e) { e = { cv: null, sig: 0 }; ROWC.map.set(key, e); }
+      rowcPaint(e, y, ax, bx, k);
+      e.sig = sig;
+    }
+    e.fr = fr;
+    const E = e;
+    list.push([y + 0.9, () => { const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false; c.drawImage(E.cv, E.X0, E.Y0, E.w, E.h); c.imageSmoothingEnabled = sm; }]);
+  }
+  // куски, давно не попадавшие в кадр, выгружаем
+  if (ROWC.map.size > (y1 - y0 + 1) * (cB - cA + 1) * 1.5 + 64) {
+    for (const [key, e] of ROWC.map) if (fr - e.fr > 90) { ROWC.px -= e.cv.width * e.cv.height; e.cv.width = e.cv.height = 0; ROWC.map.delete(key); }
+  }
+  return true;
+}
+
 function render() {
   R.newSprites = 0;
+  if (typeof spriteQueueRun === 'function') spriteQueueRun();   // новые кадры гномов — до рисования (people.js)
+  R.inFrame = true;
   const { ctx: c, cam, canvas } = R;
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.fillStyle = '#100c08';
@@ -888,9 +1014,11 @@ function render() {
   drawGamesGround(c, x0, y0, x1, y1);      // чертёж, карты и круг ножичков на земле (games.js)
 
   const list = [];
+  const rows = rowcPush(list, c, x0, y0, x1, y1);   // отдалённая камера: деревья, камни, пни — кусками рядов
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const i = idx(x, y), o = World.obj[i];
     if (!o) continue;
+    if (rows && rowcKind(o)) continue;
     if (o.t === 'tree') { if (!o.awake) list.push([y + 0.9, () => drawTree(c, x, y, o, i)]); }   // проснувшееся рисуется само
     else if (o.t === 'log') list.push([y + 0.7, () => drawLog(c, x, y)]);
     else if (o.t === 'stone') { if (!o.awake) list.push([y + 0.8, () => drawRock(c, x, y, o, i)]); }   // проснувшийся рисуется сам
@@ -968,6 +1096,7 @@ function render() {
   drawLogMark(c);
   drawTutMarks(c);
   drawOverlay(c);
+  R.inFrame = false;
 }
 
 // Радиусы большого костра: кольца с подписями (выбран костёр, ставится новый или ?rings=1)

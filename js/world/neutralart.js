@@ -185,6 +185,14 @@ function naFrame(kind, fr) {
   const key = kind + '|' + fr;
   let s = naCache.get(key);
   if (s) { naCache.delete(key); naCache.set(key, s); return s; }
+  // ручной ×3-арт строится десятки мс (на телефоне — сотни): в кадре игры при готовом соседнем кадре той же
+  // анимации (или любом этого вида) — пока он, новый позже, по бюджету тяжёлых сборок (heavyBuildOk, people.js)
+  const heavy = !!NA_PX[kind] && typeof heavyBuildOk === 'function' && typeof R !== 'undefined' && R.inFrame;
+  if (heavy) {
+    const fb = naNear(kind, fr);
+    if (fb && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return fb;
+  }
+  const t0 = performance.now();
   const S = NA_SPEC[kind], F = PX_FINE;
   const P = naPose(fr);
   P.pal = S.pal || null;
@@ -219,7 +227,17 @@ function naFrame(kind, fr) {
     naCachePx -= c0.width * c0.height; naCache.delete(k0);
   }
   naCache.set(key, s);
+  if (heavy) { spriteSpent(t0); heavySpent(t0); }
   return s;
+}
+// Готовый кадр того же вида: ближайший номер той же анимации, иначе покой, иначе любой
+function naNear(kind, fr) {
+  const m = /^([a-z]+)(\d+)$/.exec(fr || '');
+  if (m) for (let d = 1; d <= 12; d++) for (const n of [+m[2] - d, +m[2] + d]) { const s = n >= 0 && naCache.get(kind + '|' + m[1] + n); if (s) return s; }
+  const i0 = naCache.get(kind + '|i0');
+  if (i0) return i0;
+  for (const [k, s] of naCache) if (k.startsWith(kind + '|')) return s;
+  return null;
 }
 
 // ---------- общие помощники ----------

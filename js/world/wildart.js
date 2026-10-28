@@ -529,7 +529,7 @@ function wildSprite(key, view, pose, frame, opt = {}) {
   let cv = WILD_CACHE.get(ck);
   if (cv) { WILD_CACHE.delete(ck); WILD_CACHE.set(ck, cv); return cv; }
   if (typeof R !== 'undefined' && typeof spriteBudgetOk === 'function' && !spriteBudgetOk(!!WILD_LAST[key])) return WILD_LAST[key];
-  if (!PEOPLE_SCRATCH) PEOPLE_SCRATCH = mkSprite(PW, PH, PS);
+  if (!PEOPLE_SCRATCH) PEOPLE_SCRATCH = mkScratch(PW, PH, PS);
   const [c2, ctx] = PEOPLE_SCRATCH;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c2.width, c2.height);
   ctx.setTransform(PS, 0, 0, PS, 0, 0); ctx.globalAlpha = 1;

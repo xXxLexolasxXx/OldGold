@@ -318,8 +318,8 @@ function dispatchBuilders() {
   // продолжает прерванное перекуром дело, как будто ничего не было
   let idle = Game.units.filter(u => u.type === 'builder' && u.idleFlag && !u.inside && !u.teamOf && !u.dead && !u.brk && wkMay(u));
   wkPinnedBuilders(idle);              // закреплённые за зданием (workers.js) — только его стройка, достройка, ремонт
+  dispatchRepairs(idle);               // ремонт — до лимита «на работе»: из-за лимита повреждённое здание ждало, пока свободные гуляли
   idle = wkTrim(idle);                 // лимит «на работе»
-  dispatchRepairs(idle);
   if (!idle.length) return;
   // стройка без материала и без доставки в пути подождёт: работяга без дела там только стоит
   const matOk = (b, st) => ['trunk', 'timber', 'stone'].some(k => st[k] > 0 || b.incoming[k] > 0 ||
@@ -385,16 +385,44 @@ function dispatchRepairs(idleBuilders) {
     if (b.dmg > 0.05 && !b.repairer && !b.removed) (todo || (todo = [])).push(b);
   }
   if (!todo) return;
-  todo.sort((a, b) => urgLv(b) - urgLv(a));         // срочное («Срочно» в окне здания) чинят первым
+  // «Срочно» из окна здания — первым, потом разбитые (от 0.5 здание стоит), потом самые побитые
+  todo.sort((a, b) => urgLv(b) - urgLv(a) || (b.dmg >= 0.5) - (a.dmg >= 0.5) || b.dmg - a.dmg);
   const free = Game.units.filter(u => u.idleFlag && !u.inside && !u.dead && !u.brk && u.type !== 'builder' && !u.isCourier &&
     u.type !== 'hero' && !u.teamOf && !UNIT_TYPES[u.type].animal && !u.home && u.type !== 'carter');
+  let busy = null;
   for (const b of todo) {
-    const u = takeNearest(idleBuilders, b.doorX, b.doorY) || takeNearest(free, b.doorX, b.doorY);
-    if (!u) break;
-    b.repairer = u; u.repairJob = b;
-    u.idleFlag = false; u.idleStreak = 0;
-    u.proc = null; u.action = null; u.anim = null;
+    let u = takeNearest(idleBuilders, b.doorX, b.doorY) || takeNearest(free, b.doorX, b.doorY);
+    if (u) {
+      b.repairer = u; u.repairJob = b;
+      u.idleFlag = false; u.idleStreak = 0;
+      u.proc = null; u.action = null; u.anim = null;
+      continue;
+    }
+    // Свободных нет, а здание разбито (не работает): зовём ближайшего работягу с несрочной стройки.
+    // Стройку он бросает мягко — доделывает текущий удар и уходит; стройку потом возьмёт другой.
+    // Раньше после налёта все работяги сидели на стройках, и разбитое здание ждало часами.
+    if (b.dmg < 0.5) continue;
+    if (!busy) busy = Game.units.filter(w => w.type === 'builder' && !w.idleFlag && !w.dead && !w.inside && !w.teamOf && !w.brk &&
+      !w.repairJob && !w.carry && !(w.wk && w.wk.b != null) && w.job && !w.job.removed && !urgLv(w.job) && wkMay(w));
+    u = takeNearest(busy, b.doorX, b.doorY);
+    if (!u) continue;
+    b.repairer = u; u.repairJob = b; u.job = null;   // цикл стройки сам кончится (u.job !== s), think() начнёт с ремонта
   }
+}
+
+// Почему повреждённое здание ещё не чинят — для подсказок: честно, без «скоро подойдут»
+function repairWhy(b) {
+  if (!b || !(b.dmg > 0.05)) return '';
+  const r = b.repairer;
+  if (r && !r.dead) return r.repairBusy === b ? 'чинят' : 'гном идёт чинить';
+  if (b.dzFix && typeof dzFixCost === 'function') {
+    const c = dzFixCost(b);
+    if (dzLack(c)) return 'нет материалов на ремонт: ' + dzCostText(c);
+  }
+  const bs = Game.units.filter(u => u.type === 'builder' && !u.dead && !u.teamOf);
+  if (!bs.length) return 'нет работяг — некому чинить';
+  if (!bs.some(u => !u.brk && !(u.wk && u.wk.off))) return 'работяги отдыхают — починят после';
+  return b.dmg >= 0.5 ? 'зовут ближайшего работягу' : 'починят, когда освободится работяга';
 }
 
 function dispatchWorkers() {

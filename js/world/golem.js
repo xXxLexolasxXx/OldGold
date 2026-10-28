@@ -258,7 +258,7 @@ function golemSprite(view, pose, f, force) {
   if (cv) return cv;
   if (!force && !spriteBudgetOk(true)) return null;   // у голема всегда есть запасной кадр (g.last)
   const t0 = performance.now();
-  if (!GL_SCRATCH) GL_SCRATCH = mkSprite(GL_W, GL_H, PS);
+  if (!GL_SCRATCH) GL_SCRATCH = mkScratch(GL_W, GL_H, PS);
   const [c2, ctx] = GL_SCRATCH;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c2.width, c2.height);
   ctx.setTransform(PS, 0, 0, PS, 0, 0);

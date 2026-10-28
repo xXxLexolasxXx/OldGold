@@ -1608,6 +1608,40 @@ function spriteBudgetOk(hasFallback) {
 }
 function spriteSpent(t0) { R.sprMs = (R.sprMs || 0) + performance.now() - t0; }
 
+// Тяжёлые кадры нечисти ×3 (тролль ~65 мс, призрак ~40 мс на ПК; на телефоне в 4–6 раз дольше): если есть
+// чем подменить, новый строится не раньше, чем через 2× времени прошлой такой сборки, — сборки занимают не больше
+// трети времени, а не каждый кадр подряд (на телефоне 0.11.71 это и были секундные заморозки).
+let HEAVY_NEXT = 0;
+function heavyBuildOk(hasFallback) { return !hasFallback || performance.now() >= HEAVY_NEXT; }
+function heavySpent(t0) { const t = performance.now(); HEAVY_NEXT = t + (t - t0) * 2; }
+
+// Новый кадр, понадобившийся посреди отрисовки, строится в начале следующего кадра, до рисования мира, а пока
+// рисуется прошлый кадр этого гнома. Чтение пикселей чернового холста (toPixelArt) посреди кадра в Chrome часто ждёт
+// сброса нарисованного на главном холсте: 50–100 мс вместо 1–2 (замер 27.10, сейв 261023-2109-e00a: при отдалении
+// в кадре много новых поз — сборки съедали больше половины времени, 5 к/с).
+const SPR_QUEUE = new Map(), SPR_QUEUE_MAX = 256, SPR_QUEUE_MS = 8;
+function spriteDefer(key, build) {
+  if (!R.inFrame) return false;
+  if (!SPR_QUEUE.has(key)) {
+    if (SPR_QUEUE.size >= SPR_QUEUE_MAX) SPR_QUEUE.delete(SPR_QUEUE.keys().next().value);
+    SPR_QUEUE.set(key, build);
+  }
+  return true;
+}
+// render() зовёт в самом начале кадра: очередь по бюджету времени, недостроенное — в следующий раз
+function spriteQueueRun() {
+  R.inFrame = false;
+  if (!SPR_QUEUE.size) return;
+  const t0 = performance.now();
+  let n = 0;
+  for (const [key, build] of SPR_QUEUE) {
+    SPR_QUEUE.delete(key);
+    try { build(); } catch (e) { console.warn('spriteQueue', e); }
+    if (performance.now() - t0 > SPR_QUEUE_MS || (R.smooth && ++n >= 2)) break;   // отдалено: гномы мелкие — по 2 новых кадра
+  }
+  R.newSprites = 0;   // бюджет новых спрайтов в самом кадре — заново
+}
+
 // пол для рисования: семья (family.js), героиня (u.hero.sx), снимок жертвы нечисти или кооп-пакет (u.sx)
 function personSex(u) {
   if (!u) return '';
@@ -1616,12 +1650,14 @@ function personSex(u) {
   return ap && ap[10] === 1 ? 'f' : '';
 }
 function personSprite(u, view, pose, frame, opt = {}) {
+  // сильно отдалено (R.smooth): жест — пара пикселей, а каждая его фаза — новый кадр; рисуем без жеста
+  if (R.inFrame && R.smooth && opt.gest) opt = { ...opt, gest: '', gf: 0 };
   const sx = u.type === 'waitress' ? '' : personSex(u);
   const look = (u.look >>> 0) >= 0x20000 ? u.look : LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length];   // 0x20000+ — особые гномы наследия (legacy.js)
   const fkey = pose === 'work' ? `${frame.anim}${frame.f}` : frame;
   const lvl = (u.type === 'serf' || u.type === 'builder') ? unitLevel(u) : 1;
   const carryN = u.carry ? Math.min(3, Math.max(1, u.carryN || 1)) : 0;
-  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gest === 'five' ? (opt.gf || 0) : gestK(opt.gf || 0)) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}${opt.wpn ? 'W' + opt.wpn : ''}${opt.nohat ? 'H0' : ''}`;
+  const okey = `${opt.gait || ''}${opt.gest ? opt.gest + (opt.gest === 'five' ? (opt.gf || 0) : Math.round(gestK(opt.gf || 0) * 1000)) : ''}${lvl > 1 ? 'L' + lvl : ''}${carryN > 1 ? 'x' + carryN : ''}${opt.wpn ? 'W' + opt.wpn : ''}${opt.nohat ? 'H0' : ''}`;
   const key = `${u.type}|${look}${sx}|${view}${pose}${fkey}|${u.carry || ''}|${u.injury || ''}|${okey}`;
   let cv = PEOPLE_CACHE.get(key);
   if (cv) {
@@ -1630,11 +1666,13 @@ function personSprite(u, view, pose, frame, opt = {}) {
     u._spr = cv;
     return cv;
   }
+  // есть прошлый кадр — новый строится в начале следующего кадра (spriteDefer)
+  if (u._spr && spriteDefer(key, () => { const v = u._spr; personSprite(u, view, pose, frame, opt); u._spr = v; })) return u._spr;
   // не больше 8 новых кадров за кадр отрисовки: иначе толпа на экране даёт рывок
   if (!spriteBudgetOk(!!u._spr)) return u._spr;
   const t0 = performance.now();
   // один черновой холст на всех: меньше мусора в памяти — меньше подвисаний на сборке
-  if (!PEOPLE_SCRATCH) PEOPLE_SCRATCH = mkSprite(PW, PH, PS);
+  if (!PEOPLE_SCRATCH) PEOPLE_SCRATCH = mkScratch(PW, PH, PS);
   const [c2, ctx] = PEOPLE_SCRATCH;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c2.width, c2.height);
   ctx.setTransform(PS, 0, 0, PS, 0, 0); ctx.globalAlpha = 1;

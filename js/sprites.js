@@ -20,6 +20,19 @@ function mkSprite(w, h, s = SS) {
   return [cv, c];
 }
 
+// Черновой холст сборки кадров (рисуем крупно, toPixelArt читает пиксели). OffscreenCanvas, где он есть:
+// обычный <canvas> в Chrome даже с willReadFrequently читается заметно медленнее.
+function mkScratch(w, h, s = SS) {
+  try {
+    if (typeof OffscreenCanvas === 'function') {
+      const cv = new OffscreenCanvas(Math.ceil(w * s), Math.ceil(h * s));
+      const c = cv.getContext('2d', { willReadFrequently: true });
+      if (c) { c.scale(s, s); c.lineJoin = 'round'; return [cv, c]; }
+    }
+  } catch (e) { /* старый браузер — обычный холст */ }
+  return mkSprite(w, h, s);
+}
+
 function hexToRgb(h) {
   if (h.startsWith('rgb')) return h.match(/\d+/g).slice(0, 3).map(Number);
   h = h.replace('#', '');

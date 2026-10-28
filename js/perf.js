@@ -19,7 +19,7 @@ try {
 function perfCanvasMB() {
   let px = 0;
   for (const c of [R.canvas, typeof NIGHT !== 'undefined' && NIGHT.cv, MINI && MINI.base]) if (c) px += c.width * c.height;
-  return px * 4 / 1048576 + terrCanvasMB();
+  return px * 4 / 1048576 + terrCanvasMB() + (typeof rowcMB === 'function' ? rowcMB() : 0);
 }
 
 // Сброс кэшей, которые пересоздаются сами; вызывается при нехватке памяти и когда вкладка уходит в фон
@@ -28,6 +28,8 @@ function perfTrim(hard) {
     if (typeof NIGHT !== 'undefined' && NIGHT.cv) { NIGHT.cv.width = NIGHT.cv.height = 1; }
     if (typeof RAMP_CACHE !== 'undefined') RAMP_CACHE.clear();
     if (window.LOAD_SPR) LOAD_SPR.clear();
+    if (typeof rowcFree === 'function') rowcFree();             // куски рядов деревьев при отдалении (render.js)
+    if (typeof ocCacheFree === 'function') ocCacheFree();       // кэш волн (ocean.js)
     for (const b of Game.buildings || []) { if (b._site) { b._site.cv.width = b._site.cv.height = 1; b._site = null; } b._gnd = null; }
     if (Game.floaters && Game.floaters.length > 20) Game.floaters.length = 0;
     if (Game.log && Game.log.length > 80) Game.log.splice(0, Game.log.length - 80);

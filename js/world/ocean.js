@@ -316,40 +316,55 @@ function oceanDraw(c, x0, y0, x1, y1) {
   const vis = 1 - ice;
   if (vis < 0.03) { ocCacheFree(); return; }
   const eco = ocEco(), storm = oceanStorm();
-  const ft = Game.time * OC_FPS * (1 + storm * 0.9);
-  const nF = eco ? 4 : OC_FR, step = OC_FR / nF;
-  const fi = Math.floor(ft / step), a = eco ? 0 : ft / step - fi;
-  const f0 = (fi % nF) * step, f1 = ((fi + 1) % nF) * step;
-  const night = typeof nightAmt === 'function' ? nightAmt() : 0;
-  const ga = c.globalAlpha;
   // окно кэша: клетки камеры с запасом, выровнено по OC_WIN_STEP — при прокрутке перерисовка редкая
   const S = OC_WIN_STEP;
   const wx0 = Math.max(0, Math.floor((x0 - 2) / S) * S), wy0 = Math.max(0, Math.floor((y0 - 2) / S) * S);
   const wx1 = Math.min(MAP_W - 1, Math.ceil((x1 + 3) / S) * S), wy1 = Math.min(MAP_H - 1, Math.ceil((y1 + 3) / S) * S);
   const pw = (wx1 - wx0 + 1) * TILE, ph = (wy1 - wy0 + 1) * TILE;
-  if (pw * ph > OC_WIN_MAXPX) {   // камера очень высоко — рисуем по клеткам, без кэша
+  // Отдалённая камера: окно в полный размер не влезает — кэш в разрешении экрана (k физических пикселей
+  // на пиксель мира, картинка та же). Раньше здесь рисовали по клеткам: ~2000 мелких блитов за кадр, 5 к/с при отдалении.
+  // Окно огромное, поэтому 4 кадра волны (как в эко) держим все и дорисовываем не больше одного за кадр.
+  const dev = typeof devScale === 'function' ? devScale() : 1;
+  const k = pw * ph > OC_WIN_MAXPX && dev < 1 && !(typeof R !== 'undefined' && R.noFarCache) ? dev : 1, far = k < 1;
+  const ft = Game.time * OC_FPS * (1 + storm * 0.9);
+  const nF = eco || far ? 4 : OC_FR, step = OC_FR / nF;
+  const fi = Math.floor(ft / step), a = eco ? 0 : ft / step - fi;
+  const f0 = (fi % nF) * step, f1 = ((fi + 1) % nF) * step;
+  const night = typeof nightAmt === 'function' ? nightAmt() : 0;
+  const ga = c.globalAlpha;
+  if (pw * ph * k * k > OC_WIN_MAXPX) {   // камера очень высоко — рисуем по клеткам, без кэша
     ocCacheFree();
     c.globalAlpha = ga * vis * (1 - a); ocPaintTilesDirect(c, O, f0, x0, y0, x1, y1, eco);
     if (a > 0.02) { c.globalAlpha = ga * vis * a; ocPaintTilesDirect(c, O, f1, x0, y0, x1, y1, eco); }
   } else {
-    const key = wx0 + ',' + wy0 + ',' + wx1 + ',' + wy1 + ',' + (eco ? 1 : 0) + ',' + O.ver;
-    const C = OCN.cache || (OCN.cache = { cv: [null, null], key: '', f: [-1, -1] });
-    if (C.key !== key) { C.key = key; C.f[0] = C.f[1] = -1; }
+    const nS = far ? 4 : 2;
+    if (OCN.cache && OCN.cache.cv.length !== nS) ocCacheFree();
+    const C = OCN.cache || (OCN.cache = { cv: Array(nS).fill(null), key: '', f: Array(nS).fill(-1) });
+    const key = wx0 + ',' + wy0 + ',' + wx1 + ',' + wy1 + ',' + (eco ? 1 : 0) + ',' + O.ver + ',' + k;
+    if (C.key !== key) { C.key = key; C.f.fill(-1); }
     const ox = wx0 * TILE, oy = wy0 * TILE;
     const need = eco ? [f0] : [f0, f1];
+    let painted = 0;
     for (const f of need) {
-      if (C.f[0] === f || C.f[1] === f) continue;
-      const slot = C.f[0] !== f0 && C.f[0] !== f1 ? 0 : 1;   // занимаем холст с ненужным кадром
-      const cv = ocCacheCv(slot, pw, ph), g = cv.getContext('2d');
-      g.clearRect(0, 0, pw, ph);
+      if (C.f.includes(f)) continue;
+      if (far && painted) continue;   // второй новый кадр — в следующий раз, пока смешиваем с тем, что есть
+      let slot = C.f.indexOf(-1);
+      if (slot < 0) slot = C.f.findIndex(v => v !== f0 && v !== f1);   // занимаем холст с ненужным кадром
+      const cv = ocCacheCv(slot, Math.round(pw * k), Math.round(ph * k)), g = cv.getContext('2d');
+      g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
+      g.setTransform(k, 0, 0, k, 0, 0); g.imageSmoothingEnabled = far;
       ocPaintTiles(g, O, f, wx0, wy0, wx1, wy1, eco, ox, oy);
-      C.f[slot] = f;
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      C.f[slot] = f; painted++;
     }
-    const cvOf = f => C.cv[C.f[0] === f ? 0 : 1];
+    const has = f => C.f.indexOf(f) >= 0, cvOf = f => C.cv[C.f.indexOf(f)];
+    let A = f0, aa = a;
+    if (!has(A)) { A = has(f1) ? f1 : C.f.find(v => v >= 0); aa = 0; }
+    if (!has(f1)) aa = 0;
     c.imageSmoothingEnabled = false;
-    if (eco || a < 0.04) { c.globalAlpha = ga * vis; c.drawImage(cvOf(f0), ox, oy); }
-    else if (a > 0.96) { c.globalAlpha = ga * vis; c.drawImage(cvOf(f1), ox, oy); }
-    else { c.globalAlpha = ga * vis * (1 - a); c.drawImage(cvOf(f0), ox, oy); c.globalAlpha = ga * vis * a; c.drawImage(cvOf(f1), ox, oy); }
+    if (eco || aa < 0.04) { c.globalAlpha = ga * vis; c.drawImage(cvOf(A), ox, oy, pw, ph); }
+    else if (aa > 0.96) { c.globalAlpha = ga * vis; c.drawImage(cvOf(f1), ox, oy, pw, ph); }
+    else { c.globalAlpha = ga * vis * (1 - aa); c.drawImage(cvOf(A), ox, oy, pw, ph); c.globalAlpha = ga * vis * aa; c.drawImage(cvOf(f1), ox, oy, pw, ph); }
     c.imageSmoothingEnabled = R.smooth;
   }
   c.globalAlpha = ga;

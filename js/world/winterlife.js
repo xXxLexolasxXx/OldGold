@@ -160,7 +160,9 @@ function* skateGen(u, shore) {
   if (!(yield* toShore(u, shore))) return;
   const [sx, sy] = shore.stand, [dx, dy] = shore.dir, n = Math.min(shore.water, 7) - 0.6;
   const px = -dy, py = dx;           // поперёк движения
-  u.skateHome = [sx, sy];            // свой берег: если катание оборвут, вернём именно сюда, а не на чужой
+  // свой берег: если катание оборвут, вернём именно сюда, а не на чужой; уже застрявший за рекой помнит прежний
+  const home0 = u.skateHome;
+  u.skateHome = home0 || [sx, sy];
   floater(u.x, u.y - 1.4, 'На каток!', '#cfeaff');
   yield { wait: 0.5, anim: 'duck' };
   for (let lap = 0; lap < 2 + ((Math.random() * 2) | 0); lap++) {
@@ -179,7 +181,7 @@ function* skateGen(u, shore) {
     }
     if (Math.random() < 0.3) { floater(u.x, u.y - 1.4, 'Ух ты!', '#cfeaff'); u.gest = 'fist'; u.gestUntil = Game.time + 1; }
   }
-  u.x = sx + 0.5; u.y = sy + 0.5; u.fun = null; u.skateHome = null;
+  u.x = sx + 0.5; u.y = sy + 0.5; u.fun = null; u.skateHome = home0 || null;   // катался на чужом берегу — wfxStrandCheck вернёт домой
   yield { wait: 0.6 };
 }
 

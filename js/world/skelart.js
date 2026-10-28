@@ -27,7 +27,7 @@ function skelSprite(s, view, pose, frame) {
   const hasFb = !!s._spr;
   if (typeof spriteBudgetOk === 'function' && !spriteBudgetOk(hasFb)) return s._spr;
   const t0 = performance.now();
-  if (!SKA_SCRATCH) SKA_SCRATCH = mkSprite(SKA.W, SKA.H, SKA.PS);
+  if (!SKA_SCRATCH) SKA_SCRATCH = mkScratch(SKA.W, SKA.H, SKA.PS);
   const [cv, c] = SKA_SCRATCH;
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
   c.setTransform(SKA.PS, 0, 0, SKA.PS, 0, 0); c.globalAlpha = 1;

@@ -335,9 +335,9 @@ function reaperPxFrame(g, v, mood, f, hv, rag = RPX_RAG) {
   f = Math.max(0, Math.min(RPX_N[mood] - 1, f | 0));
   const have = FZ_CVC['rp' + v + mood + f + '_' + RPX_N[mood] + 'h' + hv + (rag || '')], last = RPX_LAST.get(g);
   if (have) { RPX_LAST.set(g, have); return have; }
-  if (last && typeof spriteBudgetOk === 'function' && !spriteBudgetOk(true)) return last;
+  if (last && typeof spriteBudgetOk === 'function' && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return last;
   const t0 = performance.now(), cv = reaperPxSprite(v, mood, f, RPX_N[mood], hv, rag);
-  if (typeof spriteSpent === 'function') spriteSpent(t0);
+  if (typeof spriteSpent === 'function') { spriteSpent(t0); heavySpent(t0); }
   RPX_LAST.set(g, cv);
   return cv;
 }
