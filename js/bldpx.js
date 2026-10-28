@@ -3466,14 +3466,26 @@ const CRYT = bramp(['#e8fffa', '#9af0e0', '#40c0b0', '#1a7a72']);
 
 // природный камень плитами (как matRock), своя палитра R и жилы V; сверху мох
 const matRockT = (R, V, vk, moss = P1.ivy) => (u, v, F) => {
-  const k = L1(F), cx = Math.floor(u / 11), cy = Math.floor(v / 8);
+  const fine = F.fu != null, su = fine ? u + F.fu : u, sv = fine ? v + F.fv : v;
+  const k = L1(F), cx = Math.floor(su / 11), cy = Math.floor(sv / 8);
   let best = 1e9, sec = 1e9, id = 0;
-  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const gx = cx + i, gy = cy + j, px = (gx + bhash(gx, gy, 1011)) * 11, py = (gy + bhash(gx, gy, 1012)) * 8, d = Math.hypot(u - px, (v - py) * 1.3); if (d < best) { sec = best; best = d; id = gx * 31 + gy; } else if (d < sec) sec = d; }
-  if (sec - best < 1.2) return R[3];
-  if (V && bhash(Math.floor(u / 2) + id * 3, Math.floor(v / 2), 1802) < vk) return p1(V, (u + v) % 3 ? 1 : 0);   // жила
-  if (moss && F.L && v / F.L < 0.22 && bhash(u, v, 1013) < 0.55) return moss[bcl(k + 1, 3)];
-  const h = bhash(id, 0, 1014);
-  return p1(R, (h < 0.3 ? 0 : h < 0.8 ? 1 : 2) + k);
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const gx = cx + i, gy = cy + j, px = (gx + bhash(gx, gy, 1011)) * 11, py = (gy + bhash(gx, gy, 1012)) * 8, d = Math.hypot(su - px, (sv - py) * 1.3); if (d < best) { sec = best; best = d; id = gx * 31 + gy; } else if (d < sec) sec = d; }
+  if (sec - best < (fine ? 0.45 : 1.2)) return R[3];                                     // трещина между плитами (на мелком растре — тонкая)
+  if (fine && sec - best < 0.9) return fShade(p1(R, 2), 1);                               // скол-тень вдоль трещины
+  if (V) {
+    if (fine) {   // жилы: тонкие извилистые линии через плиты, с искрами
+      for (let n = 0; n < 2; n++) {
+        const ph = bhash(id, n, 1880) * 6.28, base = 2 + bhash(id, n + 2, 1881) * 4, cur = base + Math.sin(su * (0.35 + n * 0.2) + ph) * 1.6 + Math.sin(su * 1.3 + ph * 2) * 0.4;
+        if (bhash(id, n + 4, 1882) < vk * 9 && Math.abs(((sv % 8) + 8) % 8 - cur) < 0.34 + (n === 0 ? 0.12 : 0)) return bhash(F.fx, F.fy, 1883) < 0.12 ? V[0] : V[1 + (bhash(F.fx, 0, 1884) < 0.3 ? 1 : 0)];
+      }
+      if (bhash(F.fx, F.fy, 1885) < vk * 0.25) return V[0];                                 // одиночная искра в породе
+    } else if (bhash(Math.floor(u / 2) + id * 3, Math.floor(v / 2), 1802) < vk) return p1(V, (u + v) % 3 ? 1 : 0);
+  }
+  if (moss && F.L && sv / F.L < 0.22 && bhash(Math.floor(su * (fine ? 2 : 1)), Math.floor(sv * (fine ? 2 : 1)), 1013) < 0.55) return moss[bcl(k + 1, 3)];
+  const h = bhash(id, 0, 1014), c = p1(R, (h < 0.3 ? 0 : h < 0.8 ? 1 : 2) + k);
+  if (!fine) return c;
+  if (best < 1.2 && bhash(id, 5, 1886) < 0.5) return fShade(c, 1.12);                     // светлый скол у центра плиты
+  return fShade(c, fGrain(F, 1887, 0.14));
 };
 // скальный хребет за рудником: два ряда валунов разной высоты (неровный силуэт), передний край — y0
 function mineCliff(g, x0, x1, y0, y1, h, R, V, vk = 0.05, moss = P1.ivy, gap = null) {   // gap = [xa, xb] — проём в переднем ряду под устье штольни
@@ -3546,8 +3558,44 @@ const crysMat = R => (u, v, F) => { const i = F.li === 0 ? 0 : F.li === 1 ? 1 : 
 function crystal3(g, x, y, h, r, R = CRYV, z0 = 0) { cyl(g, x, y, r, z0, z0 + h * 0.72, crysMat(R), 6); cone(g, x, y, r, z0 + h * 0.72, h * 0.28, crysMat(R), m1Flat(R[3]), 6, 0.5); }
 function cluster3(g, x, y, s = 1, R = CRYV, z0 = 0) { crystal3(g, x, y, 18 * s, 2.6 * s, R, z0); crystal3(g, x - 4.5 * s, y + 1.5, 12 * s, 1.9 * s, R, z0); crystal3(g, x + 4.5 * s, y + 1, 10 * s, 1.7 * s, R, z0); crystal3(g, x - 2 * s, y - 3 * s, 6 * s, 1.3 * s, R, z0); }
 
-function portal(g, x0, x1, y, h, R = P3.oak) {   // крепь у входа в штольню: стойки и перемычка (грани — в боковом виде ровно)
+// кучка самородков: каждый — своя капля (купол) с бликом; чем больше f, тем больше и выше кучка
+const matGold = (u, v, F) => { const c = GOLDV[Math.min(3, F.li === 0 ? 0 : F.li === 1 ? 1 : 2)]; return F.fu != null && bhash(F.fx, F.fy, 1870) < 0.06 ? GOLDV[0] : c; };
+function nuggets3(g, x, y, f = 1) {
+  const n = 3 + Math.round(f * 7);
+  for (let k = 0; k < n; k++) {
+    const a = bhash(k, 0, 1871) * Math.PI * 2, rr = Math.sqrt(bhash(k, 1, 1872)) * (2 + f * 2.5), r = 0.9 + bhash(k, 2, 1873) * 0.9, z = (1 - rr / (2 + f * 2.5)) * f * 2.2;
+    dome(g, x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.8, r, z, r * 0.9, matGold, m1Flat(GOLDV[2]), 10, 3, 0.4);
+  }
+}
+
+function portal(g, x0, x1, y, h, R = P3.oak) {   // простая крепь: стойки и перемычка
   post1(g, x0 - 2, y - 2, 0, h, 2.5, R); post1(g, x1, y - 2, 0, h, 2.5, R); beam1(g, x0 - 3, x1 + 3, y - 3, y + 0.5, h, 2.5, R);
+}
+// тамбур штольни: три рамы крепи выступают из скалы к зрителю, сверху дощатая кровля, по бокам обшивка,
+// стойки на каменных пятах; style: 'gold' — позолоченные скобы, 'iron' — закопчено, оковки с заклёпками
+function entry(g, x0, x1, y, h, R, style) {
+  const trim = style === 'gold' ? GOLDV : P1.iron, plank = style === 'iron' ? SOOT : P1.plank;
+  for (const [k, yy] of [[0, y - 1], [1, y - 5], [2, y - 9]]) {
+    for (const x of [x0 - 2.5, x1]) {
+      box(g, { x0: x - 0.6, x1: x + 3.1, y0: yy - 0.6, y1: yy + 3.1, h: 1.5, mat: m1Stone(P1.stoneB, 3, 2), top: m1Flat(P1.stoneB[0]) });   // каменная пята
+      post1(g, x, yy, 1.5, h - 1.5 - k * 0.6, 2.5, R);
+      box(g, { x0: x - 0.2, x1: x + 2.7, y0: yy - 0.2, y1: yy + 2.7, z0: h - 4 - k * 0.6, h: 0.8, mat: (u, v, F) => (F.fu != null && Math.abs(u - (F.w || 2) / 2) < 0.3 ? trim[0] : trim[1 + (F.li > 1 ? 1 : 0)]), top: m1Flat(trim[1]) });   // скоба/оковка
+    }
+    beam1(g, x0 - 3.5, x1 + 3.5, yy - 0.5, yy + 3, h - k * 0.6, 2.4, R);   // перемычка
+    for (const x of [x0 - 3.5, x1 + 2.3]) box(g, { x0: x, x1: x + 1.2, y0: yy - 0.5, y1: yy + 3, z0: h - k * 0.6 - 0.5, h: 3.4, mat: (u, v, F) => P3.oak[F.li > 1 ? 3 : 2], top: (u, v) => (Math.hypot(u - 0.6, v - 1.7) < 0.5 ? P3.oak[3] : P3.oak[1]) });   // торцы перемычки
+    if (style === 'iron') for (const x of [x0 + 2, (x0 + x1) / 2, x1 - 2]) box(g, { x0: x - 0.4, x1: x + 0.4, y0: yy - 0.8, y1: yy - 0.5, z0: h - k * 0.6 + 0.8, h: 0.8, mat: m1Flat(P1.iron[0]), top: m1Flat(P1.iron[0]) });   // заклёпки
+  }
+  // кровля тамбура: доски поперёк, с напуском; по бокам обшивка между рамами
+  box(g, { x0: x0 - 4, x1: x1 + 4, y0: y - 10, y1: y + 2, z0: h + 2.2, h: 1, mat: (u, v, F) => plank[2 + (F.li > 1 ? 1 : 0)], top: (u, v, F) => { const c = m1Plank(plank, 2.2, false)(u, v, F); return F.fu != null && ((v % 4) + 4) % 4 < 0.4 ? fShade(c, 0.8) : c; } });
+  for (const x of [x0 - 2.6, x1 + 2.2]) box(g, { x0: x, x1: x + 0.5, y0: y - 9, y1: y + 1, z0: 2, h: h - 4, mat: (u, v, F) => m1Plank(plank, 2.2, false)(u, v, F), top: m1Flat(plank[1]) });
+}
+// каменная арка с рунами: блоки из светлого камня, руны светятся бирюзой, на замке — кристалл
+function runeArch3(g, x0, x1, y, h) {
+  const mat = (u, v, F) => { const c = m1Stone(P1.stoneW, 4, 3)(u, v, F); if (F.fu != null && ((Math.floor(v) % 4) === 2) && Math.abs(u - (F.w || 3) / 2) < 0.6 && bhash(Math.floor(v / 4), Math.floor(u), 1890) < 0.8) return P3.rune[(Math.floor(v) + Math.floor(u)) % 2]; return c; };
+  for (const x of [x0 - 4, x1 + 0.5]) { box(g, { x0: x - 0.5, x1: x + 4, y0: y - 3.5, y1: y + 1, h: 2, mat: m1Stone(P1.stoneB, 4, 2), top: m1Flat(P1.stoneB[0]) }); box(g, { x0: x, x1: x + 3.5, y0: y - 3, y1: y + 0.5, z0: 2, h: h - 2, mat, top: m1Flat(P1.stoneW[0]) }); }
+  box(g, { x0: x0 - 5, x1: x1 + 5, y0: y - 3.5, y1: y + 1, z0: h, h: 3.2, mat, top: m1Flat(P1.stoneW[0]) });
+  box(g, { x0: (x0 + x1) / 2 - 2.5, x1: (x0 + x1) / 2 + 2.5, y0: y - 4, y1: y + 1.5, z0: h + 3.2, h: 2.5, mat: m1Stone(P1.stoneW, 3, 2), top: m1Flat(P1.stoneW[1]) });   // замковый камень
+  crystal3(g, (x0 + x1) / 2, y - 1.2, 9, 1.6, CRYT, h + 5.7);
 }
 
 // устье штольни на срезе скалы: рамы крепи уходят вглубь, рельсы сходятся, в глубине теплится фонарь
@@ -3569,16 +3617,16 @@ const GOLD_VARS = [
     g.meta = { piles: {} };
     const MG = mineCliff(g, 0, 96, 42, 64, 28, P1.stoneW, GOLDV, 0.07, P1.ivy, [30, 54]); rockFace(g, 30, 54, 44, 8, 20, MG);
     adit(g, 44, 34, 16, 14); g.meta.doorPt = [42, 44, 0];
-    portal(g, 34, 50, 44, 15); g.sprite([42, 43, 16], P => QM.goldSign(P), -0.5);
+    entry(g, 34, 50, 44, 15, P3.oak, 'gold');
     rails(g, 37, 47, 4, 44);
     if (!g.dynPiles) cart3(g, 42, 24, GOLDV, P1.stoneW); g.meta.cart = [[42, 38, 0.4], [42, 8, 0.4]]; g.meta.cartLoad = 'gold';   // в игре вагонетка ездит (inside.js)
     // промывочный жёлоб на козлах, справа — колесо, внизу лоток
-    for (const [x, y] of [[60, 28], [78, 22]]) post1(g, x, y, 0, 6, 2, P1.plank);
+    for (const [x, y] of [[58.5, 22.5], [79.5, 22.5], [58.5, 27.5], [79.5, 27.5]]) post1(g, x, y, 0, 6, 2, P1.plank);   // четыре ноги по углам жёлоба
     box(g, { x0: 58, x1: 82, y0: 22, y1: 30, z0: 6, h: 2, mat: m1Plank(P1.plank, 3), top: (u, v) => (v > 1 && v < 6 ? (bhash(u, v, 1810) < 0.1 ? P1.white[0] : bhex('#6aa6d8')) : P1.plank[1]) });
     g.sprite([90, 26, 2], P => QS.wheel(P, 9)); g.meta.wheel = [90, 26, 11];   // колесо в конце жёлоба, не на нём
     g.sprite([70, 12, 0], P => QM.pan(P));
-    g.meta.piles.goldore = [[32, 30, 0], [32, 18, 0], [54, 8, 0]].slice(0, lv + 1);
-    if (!g.dynPiles) for (const p of g.meta.piles.goldore) g.sprite(p, P => QM.nuggets(P, 8));
+    g.meta.piles.goldore = [[54, 3, 0], [62, 3, 0], [70, 3, 0], [78, 3, 0]].slice(0, lv + 1);   // ровным рядом по передней кромке, справа от рельсов
+    if (!g.dynPiles) for (const p of g.meta.piles.goldore) nuggets3(g, p[0], p[1], 1);
     g.meta.miner = [42, 46, 0]; g.meta.panner = [72, 14, 0];
     const R = STRS(lv, STRAW_F.amber, P1.tileR), H = { x0: 2, x1: 28, y0: 4, y1: 22, h: 12 };   // будка учётчика
     box(g, Object.assign({ mat: m1Plank(P1.plank, 3) }, H)); roof(g, H, { type: 'gable', axis: 'X', rise: 9, ov: 2, ovg: 2, mat: R.mat, cut: R.cut, th: R.th, gable: m1Plank(P1.plank, 3) });
@@ -3610,7 +3658,7 @@ const IRON_VARS = [
   { name: 'Ж-1. Железная шахта с копром: штольня в скале, копёр с колесом над стволом, ржавые отвалы, обжиговая печь дымит', make(g, lv) {
     g.meta = { piles: {} };
     const MI = mineCliff(g, 0, 96, 44, 64, 30, SOOT, RUST, 0.08, null, [6, 30]); rockFace(g, 6, 30, 46, 8, 20, MI);
-    adit(g, 46, 10, 15, 14); portal(g, 10, 25, 46, 15, SOOT); g.meta.doorPt = [17, 46, 0];
+    adit(g, 46, 10, 15, 14); entry(g, 10, 25, 46, 15, SOOT, 'iron'); g.meta.doorPt = [17, 46, 0];
     rails(g, 13, 22, 2, 46); if (!g.dynPiles) cart3(g, 17.5, 20, RUST, SOOT); g.meta.cart = [[17.5, 40, 0.4], [17.5, 6, 0.4]]; g.meta.cartLoad = 'iron';
     // копёр: четыре стойки, перемычки, площадка, колесо наверху; под ним — устье ствола
     const cx = 48, cy = 36;   // копёр ровный: прямоугольная башня, неглубокая (вид спереди без перекоса), колесо по центру
@@ -3661,7 +3709,7 @@ function crysBase(g, lv) {
   g.meta = { piles: {} };
   const MC = mineCliff(g, 0, 96, 42, 64, 30, SLATE, CRYV, 0.06, P1.ivy, [34, 60]); rockFace(g, 34, 60, 44, 8, 22, MC);
   adit(g, 44, 38, 18, 16); g.meta.doorPt = [47, 44, 0];
-  g.sprite([47, 42, 0], P => QM.runeArch(P, 11, 20), -20);   // высокий плакат у стены: глубину берём с запасом, иначе верх уходит за скалу
+  runeArch3(g, 38, 56, 43, 18);
   for (const [x, y, s, R] of [[12, 38, 1.2, CRYV], [24, 44, 0.9, CRYT], [72, 38, 1.3, CRYV], [86, 44, 1, CRYT]]) cluster3(g, x, y, s, R);   // друзы растут из подножия скалы
   g.meta.glow = [[10, 38, 14], [72, 38, 16], [88, 44, 12], [47, 42, 10]];
   g.meta.miner = [47, 46, 0];
@@ -3723,6 +3771,7 @@ const CRYS_VARS = [
 PILE_DRAW.goldore = f => P => QM.nuggets(P, 3 + Math.round(f * 7));
 PILE_DRAW.ironore = f => P => QM.oreChunks(P, 3 + Math.round(f * 4));
 PILE_DRAW.magicstone = f => P => QM.cluster(P, 0.3 + f * 0.3, f > 0.5 ? CRYV : CRYT);
+const PILE3D = { goldore: (g, f) => nuggets3(g, 0, 0, f) };   // объёмные кучки для игры (px-runtime pxPile)
 
 // ======== px-runtime.js ========
 // Игровая часть пиксельных зданий (трактир, склад, дома): из модели собирает объект спрайта в формате buildingSprite
@@ -3862,9 +3911,18 @@ const innPxSprite = (rot, lv) => pxSprite('inn', rot, lv);
 
 // Картинка кучи груза для склада (в пикселях мира): kind — trunk/timber/stone/food/goods, f — заполнение 0..1 (4 ступени)
 const PILE_CACHE = new Map();
+
 function pxPile(kind, f) {
   const st = Math.max(1, Math.min(4, Math.ceil(f * 4))), key = kind + st;
   if (PILE_CACHE.has(key)) return PILE_CACHE.get(key);
+  if (PILE3D[kind]) {   // объёмная кучка (грани растеризатора, растр ×3 — как у зданий)
+    const S = 24; BK = 1; FINE = PX_FINE;
+    const g = new BGrid(S * FINE, S * FINE, (S / 2) * FINE, (S - 4) * FINE);
+    PILE3D[kind](g, st / 4); g.finish({ step: 1.6, ink: P1.ink }); FINE = 1;
+    const r = { cv: g.toCanvas(), w: S, h: S, ax: S / 2, ay: S - 4 };
+    PILE_CACHE.set(key, r);
+    return r;
+  }
   const S = 48, buf = new Map();
   PILE_DRAW[kind](st / 4)((x, y, c) => { if (c) buf.set(x + ',' + y, c); });
   const tmp = mkCanvas(S, S), tc = tmp.getContext('2d'), im = tc.createImageData(S, S), d = im.data;

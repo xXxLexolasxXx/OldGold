@@ -135,9 +135,18 @@ const innPxSprite = (rot, lv) => pxSprite('inn', rot, lv);
 
 // Картинка кучи груза для склада (в пикселях мира): kind — trunk/timber/stone/food/goods, f — заполнение 0..1 (4 ступени)
 const PILE_CACHE = new Map();
+
 function pxPile(kind, f) {
   const st = Math.max(1, Math.min(4, Math.ceil(f * 4))), key = kind + st;
   if (PILE_CACHE.has(key)) return PILE_CACHE.get(key);
+  if (PILE3D[kind]) {   // объёмная кучка (грани растеризатора, растр ×3 — как у зданий)
+    const S = 24; BK = 1; FINE = PX_FINE;
+    const g = new BGrid(S * FINE, S * FINE, (S / 2) * FINE, (S - 4) * FINE);
+    PILE3D[kind](g, st / 4); g.finish({ step: 1.6, ink: P1.ink }); FINE = 1;
+    const r = { cv: g.toCanvas(), w: S, h: S, ax: S / 2, ay: S - 4 };
+    PILE_CACHE.set(key, r);
+    return r;
+  }
   const S = 48, buf = new Map();
   PILE_DRAW[kind](st / 4)((x, y, c) => { if (c) buf.set(x + ',' + y, c); });
   const tmp = mkCanvas(S, S), tc = tmp.getContext('2d'), im = tc.createImageData(S, S), d = im.data;
