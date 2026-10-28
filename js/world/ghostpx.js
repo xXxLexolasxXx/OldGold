@@ -310,11 +310,18 @@ function ghostPxSprite(v, mood, f, rag = '') {
 // Кадр для игры по общему бюджету новых спрайтов (spriteBudgetOk, people.js): кадр строится десятки миллисекунд,
 // поэтому новый — только если в этом кадре рендера ещё есть время; иначе рисуется прошлый кадр этого призрака.
 const GPX_LAST = new WeakMap();
+function ghostPxNear(v, mood, f, rag) {
+  for (let d = 1; d < 12; d++) for (const k of [f - d, f + d]) { const c = k >= 0 && FZ_CVC['gh' + v + mood + k + rag]; if (c) return c; }
+  for (let k = 0; k < GPX_N.idle; k++) { const c = FZ_CVC['gh' + v + 'idle' + k + rag]; if (c) return c; }
+  return null;
+}
 function ghostPxFrame(g, v, mood, f, rag = '') {
   f = Math.max(0, Math.min(GPX_N[mood] - 1, f | 0));
   const have = FZ_CVC['gh' + v + mood + f + rag], last = GPX_LAST.get(g);
   if (have) { GPX_LAST.set(g, have); return have; }
-  if (last && typeof spriteBudgetOk === 'function' && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return last;
+  // нового призрака (без прошлого кадра) пока рисуем ближайшим готовым кадром того же облика: сборка на телефоне — сотни мс
+  const fb = last || ghostPxNear(v, mood, f, rag);
+  if (fb && typeof spriteBudgetOk === 'function' && (!heavyBuildOk(true) || !spriteBudgetOk(true))) { GPX_LAST.set(g, fb); return fb; }
   const t0 = performance.now(), cv = ghostPxSprite(v, mood, f, rag);
   if (typeof spriteSpent === 'function') { spriteSpent(t0); heavySpent(t0); }
   GPX_LAST.set(g, cv);

@@ -552,7 +552,7 @@ function scrollByKeys(dt) {
 
 // ---------- Цикл ----------
 
-let lastT = performance.now(), acc = 0, uiT = 0, miniT = 0, autoT = 0;
+let lastT = performance.now(), acc = 0, uiT = 0, miniT = 0, autoT = 0, miniDT = 0, miniCam = '';
 
 function frame(now) {
   requestAnimationFrame(frame);   // сразу: исключение ниже не должно навсегда останавливать цикл (чёрный экран/зависание)
@@ -574,9 +574,14 @@ function frame(now) {
     perfFrame(dt * 1000, performance.now() - s0);
     render();
     uiT += dt; miniT += dt;
-    if (uiT > 0.25) { updateUI(); uiT = 0; }
-    if (miniT > 1) { updateMinimapBase(); miniT = 0; }
-    drawMinimap();
+    if (uiT > 0.25) { updateUI(); uiT = 0; MINI.vis = MINI.canvas.offsetParent !== null && MINI.canvas.clientWidth > 0; }
+    // миникарта: спрятана (на телефоне чаще всего) — не рисуем; иначе ~15 раз в секунду и сразу, когда двигают камеру
+    if (MINI.vis !== false) {
+      if (miniT > 1) { updateMinimapBase(); miniT = 0; }
+      miniDT += dt;
+      const camK = R.cam.x + ',' + R.cam.y + ',' + R.cam.z;
+      if (miniDT > 0.066 || camK !== miniCam) { drawMinimap(); miniDT = 0; miniCam = camK; }
+    }
   } catch (e) { if (!frame.errR || now - frame.errR > 5000) { console.error(e); frame.errR = now; } }
 }
 

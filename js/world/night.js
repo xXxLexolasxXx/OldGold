@@ -820,6 +820,7 @@ function drawNight(c, x0, y0, x1, y1) {
     const asleep = e.state === 'sleep';
     if (!asleep && e.k < 0.4 && !e.rock && !e.water) continue;
     const p = asleep || e.rock || e.water ? entFacePos(e) : entFacePos(e);
+    if (typeof onScreen === 'function' && !onScreen(p.x, p.y, 24)) continue;   // за краем экрана
     c.save();
     c.globalCompositeOperation = 'lighter';
     c.globalAlpha = e.alpha * Math.min(1, n * 1.5) * (asleep ? 0.38 : 0.5);

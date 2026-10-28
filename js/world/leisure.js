@@ -635,6 +635,7 @@ function drawOwls(c) {
     if (o.state === 'grab') { drawOwlGrab(c, o); continue; }
     if (o.state === 'away') continue;
     const x = o.x, y = o.y;
+    if (typeof onScreen === 'function' && !onScreen(x, y, 80)) continue;   // сова за краем экрана
     if (o.state === 'fly') {
       // тень скользит по земле под совой
       const gy = o.to[1] + (o.from[1] - o.to[1]) * (1 - o.f) + 34;

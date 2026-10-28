@@ -1004,14 +1004,29 @@ function fzSelfStep(F, dt) {
 
 // ---------- Банши и волк: рисуются «призрачно» (мягкая кисть, как призраки в ghosts.js) один раз в 3× холсты ----------
 const FZ_SS = 3, FZ_CVC = {};
+// Предел кэша кадров (холсты 3×: кадр призрака ~160 КБ). Без него за полчаса ночей кэш дорастал до сотен МБ
+// (замер 28.10: 900+ кадров и рост дальше) — на телефоне это вылет вкладки. Давние кадры уходят первыми;
+// понадобятся снова — построятся заново по бюджету (fzLive и прошлые кадры в WeakMap держат то, что на экране).
+const FZ_ORD = new Map();
+let FZ_PX = 0;
+const fzMaxPx = () => (typeof PX_FINE !== 'undefined' && PX_FINE === 1) || (typeof Fps !== 'undefined' && Fps.eco) ? 8e6 : 16e6;
+function fzTouch(key) { const n = FZ_ORD.get(key); if (n !== undefined) { FZ_ORD.delete(key); FZ_ORD.set(key, n); } }
+function fzCacheTrim(max = fzMaxPx()) {
+  while (FZ_PX > max && FZ_ORD.size > 1) {
+    const [k, n] = FZ_ORD.entries().next().value;
+    FZ_ORD.delete(k); FZ_PX -= n; delete FZ_CVC[k];
+  }
+}
 function fzCanvas(key, w, h, ox, oy, draw) {
   let cv = FZ_CVC[key];
-  if (cv) return cv;
+  if (cv) { fzTouch(key); return cv; }
   cv = FZ_CVC[key] = document.createElement('canvas');
   cv.width = w * FZ_SS; cv.height = h * FZ_SS; cv.fzO = [ox, oy, w, h];
   const c = cv.getContext('2d');
   c.scale(FZ_SS, FZ_SS); c.translate(ox, oy); c.lineJoin = 'round'; c.lineCap = 'round';
   draw(c);
+  FZ_ORD.set(key, cv.width * cv.height); FZ_PX += cv.width * cv.height;
+  fzCacheTrim();
   return cv;
 }
 // Набор для ручного пиксель-арта нечисти на сетке W×H (начало координат — OX, OY): пиксель с альфой и маской «твёрдого»,
@@ -1071,8 +1086,28 @@ function fzPxKit(W, H, OX, OY) {
   return K;
 }
 // Пиксельный спрайт сетки (×3 мельче мирового) → 3× холст 1:1 без сглаживания
+// Кадр существа по бюджету тяжёлых сборок (heavyBuildOk, people.js): новый кадр ×3-арта строится десятки мс
+// (на телефоне сотни), поэтому при готовом прошлом кадре этого существа новый — только когда бюджет позволяет,
+// иначе пока прошлый. get() — обычный вызов спрайта (fzWolfSprite, FZ_DIE.wolf…). Прошлые кадры — в WeakMap,
+// не на самом существе: существа лесной нечисти уходят в сейв.
+let FZ_DEFER = false;
+const FZ_LAST = new WeakMap();
+function fzLive(o, get) {
+  FZ_DEFER = true;
+  let cv;
+  try { cv = get(); } finally { FZ_DEFER = false; }
+  if (cv) { FZ_LAST.set(o, cv); return cv; }
+  const last = FZ_LAST.get(o);
+  if (last && typeof heavyBuildOk === 'function' && typeof R !== 'undefined' && R.inFrame && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return last;
+  const t0 = performance.now();
+  cv = get();
+  if (typeof heavySpent === 'function') { spriteSpent(t0); heavySpent(t0); }
+  FZ_LAST.set(o, cv);
+  return cv;
+}
 function fzPxSprite(key, w, h, ox, oy, make) {
-  if (FZ_CVC[key]) return FZ_CVC[key];
+  if (FZ_CVC[key]) { fzTouch(key); return FZ_CVC[key]; }
+  if (FZ_DEFER) return null;   // fzLive: готового кадра нет, строить сейчас нельзя
   const px = make();
   const cv = fzCanvas(key, w, h, ox, oy, c => { c.imageSmoothingEnabled = false; c.drawImage(px, -ox, -oy, w, h); });
   cv.fzPx = true;
@@ -2172,10 +2207,10 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
   if (L && vis(L.x, L.y)) {
     list.push([L.y + 0.05, () => {
       fzShadow(c, L.x, L.y, 14, 0.3 * L.alpha);
-      if (L.dying) fzDrawHi(c, FZ_DIE.les(fzDieF(L.alpha, L.da)), L.x, L.y + 0.1, 1, 1, 4);
+      if (L.dying) fzDrawHi(c, fzLive(L, () => FZ_DIE.les(fzDieF(L.alpha, L.da))), L.x, L.y + 0.1, 1, 1, 4);
       else {
         const lv = L.state === 'angry' ? fzQ(1 - Math.cos((Math.floor(L.ph * 9) % FZ_N) / FZ_N * Math.PI * 2)) : 0;     // гнев: 12 кадров — замах → руки вскинуты → опускает
-        fzDrawHi(c, fzLeshySprite(lv, (Math.floor(L.ph * 4) % FZ_N) / 2, L.mv ? (Math.floor(L.ph * 12) % FZ_N) / 2 : -1), L.x, L.y + 0.1, L.alpha, 1, 4 + (!L.mv && Math.sin(L.ph * 2) > 0.7 ? 1 : 0));
+        fzDrawHi(c, fzLive(L, () => fzLeshySprite(lv, (Math.floor(L.ph * 4) % FZ_N) / 2, L.mv ? (Math.floor(L.ph * 12) % FZ_N) / 2 : -1)), L.x, L.y + 0.1, L.alpha, 1, 4 + (!L.mv && Math.sin(L.ph * 2) > 0.7 ? 1 : 0));
       }
       if (L.gift) fzDraw(c, S.bread, L.gift.x, L.gift.y, { a: 1, dy: 2 });
     }]);
@@ -2193,10 +2228,10 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
       } else {
         const walk = k.state === 'chase' || k.state === 'drag', dy = 4 + (k.state === 'rest' ? 3 : 0);
         fzShadow(c, k.x, k.y, 8, 0.25 * a);
-        if (k.dying) fzDrawHi(c, FZ_DIE.kik(fzDieF(a, k.da)), k.x, k.y, 1, k.face, dy);
+        if (k.dying) fzDrawHi(c, fzLive(k, () => FZ_DIE.kik(fzDieF(a, k.da))), k.x, k.y, 1, k.face, dy);
         else {
           const lv = k.state === 'chase' ? fzQ(1 - Math.cos((Math.floor(k.ph * 15) % FZ_N) / FZ_N * Math.PI * 2)) : k.state === 'drag' ? 1 : 0;   // рывок с замахом (12 кадров); тащит — когти вперёд
-          fzDrawHi(c, fzKikSprite(lv, (Math.floor(k.ph * 9) % FZ_N) / 3, walk ? (Math.floor(k.ph * 16) % FZ_N) / 2 : -1), k.x, k.y, a, k.face, dy);
+          fzDrawHi(c, fzLive(k, () => fzKikSprite(lv, (Math.floor(k.ph * 9) % FZ_N) / 3, walk ? (Math.floor(k.ph * 16) % FZ_N) / 2 : -1)), k.x, k.y, a, k.face, dy);
         }
         if (k.state === 'rest') fzReeds(c, k.x, k.y, k.ph, a * 0.8);
       }
@@ -2208,29 +2243,29 @@ function fairy2DrawList(list, c, x0, y0, x1, y1) {
     list.push([v.y + 0.9, () => {
       fzRipple(c, v.x, v.y, v.ph, v.alpha, 14);
       const lv = v.state === 'grab' ? fzLv(Math.min(1, v.t / 1.8), 0.17, 0.8) : 0, vy = v.y + (lv ? 0.05 : 0.18 + Math.sin(v.ph * 2) * 0.03);   // замах → схватка → лапы опускаются
-      if (v.dying) fzDrawHi(c, FZ_DIE.vod(fzDieF(v.alpha, v.da)), v.x, vy, 1, v.face, 4);
-      else fzDrawHi(c, fzVodSprite(lv, (Math.floor(v.ph * 6) % FZ_N) / 3), v.x, vy, v.alpha, v.face, 4);
+      if (v.dying) fzDrawHi(c, fzLive(v, () => FZ_DIE.vod(fzDieF(v.alpha, v.da))), v.x, vy, 1, v.face, 4);
+      else fzDrawHi(c, fzLive(v, () => fzVodSprite(lv, (Math.floor(v.ph * 6) % FZ_N) / 3)), v.x, vy, v.alpha, v.face, 4);
     }]);
     list.push([r.y + 0.2, () => {
       c.fillStyle = '#7a7872'; c.beginPath(); c.ellipse(Math.round(r.x * TILE), Math.round(r.y * TILE + 3), 9, 3, 0, 0, 7); c.fill();       // камень
-      if (r.dying) fzDrawHi(c, FZ_DIE.rus(fzDieF(r.alpha, r.da)), r.x, r.y, 1, 1, 3);
-      else fzDrawHi(c, fzRusSprite(r.state === 'sing' ? fzLv(Math.min(1, r.t / 6), 0.09, 0.91) : 0, (Math.floor(r.ph * 6) % FZ_N) / 3), r.x, r.y, r.alpha, 1, 3);   // вдох → песня → выдох
+      if (r.dying) fzDrawHi(c, fzLive(r, () => FZ_DIE.rus(fzDieF(r.alpha, r.da))), r.x, r.y, 1, 1, 3);
+      else fzDrawHi(c, fzLive(r, () => fzRusSprite(r.state === 'sing' ? fzLv(Math.min(1, r.t / 6), 0.09, 0.91) : 0, (Math.floor(r.ph * 6) % FZ_N) / 3)), r.x, r.y, r.alpha, 1, 3);   // вдох → песня → выдох
     }]);
   }
   for (const w of F.wisps || []) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.5, () => fzWispDraw(c, w)]);
   const N = F.noon;
   if (N && vis(N.x, N.y) && N.alpha > 0) list.push([N.y + 0.2, () => N.dying
-    ? fzDrawHi(c, FZ_DIE.noon(fzDieF(N.alpha, N.da)), N.x, N.y, 0.9, N.face, 6)
-    : fzDrawHi(c, fzNoonSprite(N.state === 'haunt' ? fzNoonLv(N.t) : 0, (Math.floor(N.ph * 6) % FZ_N) / 2), N.x, N.y, N.alpha, N.face, 6)]);
+    ? fzDrawHi(c, fzLive(N, () => FZ_DIE.noon(fzDieF(N.alpha, N.da))), N.x, N.y, 0.9, N.face, 6)
+    : fzDrawHi(c, fzLive(N, () => fzNoonSprite(N.state === 'haunt' ? fzNoonLv(N.t) : 0, (Math.floor(N.ph * 6) % FZ_N) / 2)), N.x, N.y, N.alpha, N.face, 6)]);
   for (const b of F.ban) if (vis(b.x, b.y) && b.alpha > 0) list.push([b.y + 0.3, () => {
     const dy = -14 + Math.sin(b.ph * 1.7) * 3;
-    if (b.dying) fzDrawHi(c, FZ_DIE.ban(fzDieF(b.alpha, b.da)), b.x, b.y, 0.94, b.face, dy);
-    else fzDrawHi(c, fzBansheeSprite(b.wail > 2.1 ? Math.min(1, Math.ceil((2.4 - b.wail) / 0.3 * 6) / 6) : b.wail > 0.3 ? 2 : b.wail > 0 ? Math.min(1, Math.ceil(b.wail / 0.3 * 6) / 6) : 0, Math.floor(b.ph * 4.4) % 12), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, dy);
+    if (b.dying) fzDrawHi(c, fzLive(b, () => FZ_DIE.ban(fzDieF(b.alpha, b.da))), b.x, b.y, 0.94, b.face, dy);
+    else fzDrawHi(c, fzLive(b, () => fzBansheeSprite(b.wail > 2.1 ? Math.min(1, Math.ceil((2.4 - b.wail) / 0.3 * 6) / 6) : b.wail > 0.3 ? 2 : b.wail > 0 ? Math.min(1, Math.ceil(b.wail / 0.3 * 6) / 6) : 0, Math.floor(b.ph * 4.4) % 12)), b.x, b.y, Math.min(1, b.alpha * 1.25), b.face, dy);
   }]);
   for (const w of F.wolves) if (vis(w.x, w.y) && w.alpha > 0) list.push([w.y + 0.1, () => {
     const hl = w.howlT > 0 ? fzLv(1 - w.howlT / 1.8, 0.17, 0.83) : 0;   // морда поднимается → вой → опускается
-    if (w.dying) fzDrawHi(c, FZ_DIE.wolf(fzDieF(w.alpha, w.da)), w.x, w.y, 0.87, w.face, 4);
-    else fzDrawHi(c, fzWolfSprite((Math.floor(w.ph * 3) % FZ_N) / 3, hl), w.x, w.y, Math.min(1, w.alpha * 1.4), w.face, 4);
+    if (w.dying) fzDrawHi(c, fzLive(w, () => FZ_DIE.wolf(fzDieF(w.alpha, w.da))), w.x, w.y, 0.87, w.face, 4);
+    else fzDrawHi(c, fzLive(w, () => fzWolfSprite((Math.floor(w.ph * 3) % FZ_N) / 3, hl)), w.x, w.y, Math.min(1, w.alpha * 1.4), w.face, 4);
     if (w.stole) { c.save(); c.globalAlpha *= w.alpha + 0.3; c.fillStyle = '#ffd880'; c.fillRect(Math.round(w.x * TILE + w.face * 14), Math.round(w.y * TILE - 6), 3, 4); c.restore(); }
   }]);
 }

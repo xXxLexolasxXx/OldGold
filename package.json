@@ -8,6 +8,7 @@
     "test:ci": "node tests/run.js --quick --retry 1",
     "check": "node tests/check-load.js",
     "test:maps": "node tests/maps-test.js",
+    "test:render": "node tests/render-budget-test.js",
     "test:visual": "node tests/visual-test.js"
   },
   "engines": { "node": ">=18" }
