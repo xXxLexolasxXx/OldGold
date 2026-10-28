@@ -95,11 +95,24 @@ function snowRoadDraw(c, x, y, snow) {
       if (h < 0.16) { a[k] = Math.max(0, a[k] - 22); a[k + 1] = Math.max(0, a[k + 1] - 24); a[k + 2] = Math.max(0, a[k + 2] - 30); }
     }
     g.putImageData(d, 0, 0);
-    e.lvl = lvl; e.ver = ver; SNOWROAD.set(i, e);
+    let any = false;
+    for (let k = 3; k < a.length; k += 4) if (a[k]) { any = true; break; }
+    if (!any) cv.width = 0;   // пустая клетка рядом с дорогой — холст не держим
+    e.lvl = lvl; e.ver = ver; e.empty = !any; SNOWROAD.set(i, e);
   }
+  if (e.empty) return;
   c.globalAlpha = 1;
   c.drawImage(e.cv, x * TILE, y * TILE);
 }
+
+const snowNearRoad = (x, y) => {
+  const R = World.road, W = MAP_W;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const nx = x + dx, ny = y + dy;
+    if (nx >= 0 && ny >= 0 && nx < W && ny < MAP_H && R[ny * W + nx]) return true;
+  }
+  return false;
+};
 
 function snowDrawGround(c, x0, y0, x1, y1) {
   const S = SEA();
@@ -123,7 +136,8 @@ function snowDrawGround(c, x0, y0, x1, y1) {
       c.globalAlpha = Math.min(1, S.snow) * 0.93;
       const m = typeof OCN !== 'undefined' && OCN.on && OCN.m9 && S.ice > 0.5 ? OCN.m9[i] : 0;
       c.drawImage(m ? oceanIceTile(snowTile(e & 15, v, false), snowTile(0, v, true), m, false, 'l' + (e & 15) + ':' + v + ':' + m) : snowTile(e, v, false), x * TILE, y * TILE);
-      if (World.road[i]) snowRoadDraw(c, x, y, S.snow);
+      // мостовая и на соседних клетках: диагональные связки и скосы поворотов заходят на них (terrain.js)
+      if (World.road[i] || snowNearRoad(x, y)) snowRoadDraw(c, x, y, S.snow);
     }
   }
   c.globalAlpha = 1;
