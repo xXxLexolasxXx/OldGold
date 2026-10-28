@@ -185,9 +185,9 @@ function naFrame(kind, fr) {
   const key = kind + '|' + fr;
   let s = naCache.get(key);
   if (s) { naCache.delete(key); naCache.set(key, s); return s; }
-  // ручной ×3-арт строится десятки мс (на телефоне — сотни): в кадре игры при готовом соседнем кадре той же
+  // кадр строится десятки мс (ручной ×3-арт — на телефоне сотни): в кадре игры при готовом соседнем кадре той же
   // анимации (или любом этого вида) — пока он, новый позже, по бюджету тяжёлых сборок (heavyBuildOk, people.js)
-  const heavy = !!NA_PX[kind] && typeof heavyBuildOk === 'function' && typeof R !== 'undefined' && R.inFrame;
+  const heavy = typeof heavyBuildOk === 'function' && typeof R !== 'undefined' && R.inFrame;
   if (heavy) {
     const fb = naNear(kind, fr);
     if (fb && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return fb;
@@ -200,7 +200,7 @@ function naFrame(kind, fr) {
   if (NA_PX[kind]) out = pxToCoarse(naPxFrame(kind, S, P, fr));   // на телефоне — тот же арт, сведённый в ×1
   else {
     // мелкий пиксель: F деталей на игровой пиксель, сверхвыборка 2 на пиксель арта (при F = 1 — 3, как было)
-    const [cv, c] = mkSprite(S.w, S.h, F > 1 ? 2 * F : 3);
+    const [cv, c] = (typeof mkScratch === 'function' ? mkScratch : mkSprite)(S.w, S.h, F > 1 ? 2 * F : 3);   // OffscreenCanvas — чтение пикселей быстрее
     c.lineCap = 'round'; c.lineJoin = 'round';
     c.save();
     c.translate(S.ax, S.ay);
