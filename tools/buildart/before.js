@@ -10,6 +10,7 @@ const types = (process.argv[2] || 'storehouse,inn,house,well,school,infirmary,ca
   await pg.waitForTimeout(6000);
   const res = await pg.evaluate((types) => {
     const out = {};
+    for (const t of types) if (typeof PX_TYPES !== 'undefined') PX_TYPES.delete(t);   // «было» — старый рисунок
     for (const t of types) { try { if (!BUILDINGS[t]) { out[t] = 'нет'; continue; } const s = buildingSprite(t, 0, 1); out[t] = { url: s.canvas.toDataURL(), w: s.canvas.width, h: s.canvas.height, sw: s.w, sh: s.h }; } catch (e) { out[t] = 'ERR ' + e.message; } }
     out._all = Object.keys(BUILDINGS).join(',');
     return out;
