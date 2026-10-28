@@ -3570,12 +3570,12 @@ const GOLD_VARS = [
     box(g, { x0: 58, x1: 82, y0: 22, y1: 30, z0: 6, h: 2, mat: m1Plank(P1.plank, 3), top: (u, v) => (v > 1 && v < 6 ? (bhash(u, v, 1810) < 0.1 ? P1.white[0] : bhex('#6aa6d8')) : P1.plank[1]) });
     g.sprite([90, 26, 2], P => QS.wheel(P, 9)); g.meta.wheel = [90, 26, 11];   // колесо в конце жёлоба, не на нём
     g.sprite([70, 12, 0], P => QM.pan(P));
-    g.meta.piles.goldore = [[16, 30, 0], [26, 32, 0], [20, 22, 0]].slice(0, lv + 1);
+    g.meta.piles.goldore = [[32, 30, 0], [32, 18, 0], [54, 8, 0]].slice(0, lv + 1);
     if (!g.dynPiles) for (const p of g.meta.piles.goldore) g.sprite(p, P => QM.nuggets(P, 8));
     g.meta.miner = [42, 46, 0]; g.meta.panner = [72, 14, 0];
-    const R = STRS(lv, STRAW_F.amber, P1.tileR), H = { x0: 4, x1: 26, y0: 4, y1: 18, h: 9 };   // будка учётчика
-    box(g, Object.assign({ mat: m1Plank(P1.plank, 3) }, H)); roof(g, H, { type: 'gable', axis: 'X', rise: 7, ov: 2, ovg: 2, mat: R.mat, cut: R.cut, th: R.th, gable: m1Plank(P1.plank, 3) });
-    elem(g, 'S', H.y0, 12, 0, 6, 8, m1Door({ w: 6, h: 8, col: P1.red }));
+    const R = STRS(lv, STRAW_F.amber, P1.tileR), H = { x0: 2, x1: 28, y0: 4, y1: 22, h: 12 };   // будка учётчика
+    box(g, Object.assign({ mat: m1Plank(P1.plank, 3) }, H)); roof(g, H, { type: 'gable', axis: 'X', rise: 9, ov: 2, ovg: 2, mat: R.mat, cut: R.cut, th: R.th, gable: m1Plank(P1.plank, 3) });
+    elem(g, 'S', H.y0, 11, 0, 8, 10, m1Door({ w: 8, h: 10, col: P1.red })); elem(g, 'S', H.y0, 21, 4, 5, 5, m1Window({ w: 5, h: 5 }));
     if (lv >= 2) { g.sprite([30, 10, 0], P => Q2.scale(P)); g.sprite([56, 40, 0], P => Q1.lantern(P), -1); }
     if (lv >= 3) { g.sprite([92, 8, 0], P => Q1.streetLamp(P, 14)); crate3(g, 8, 36); crate3(g, 15, 37); crate3(g, 11.5, 36.5, 6, 6); }
   } },

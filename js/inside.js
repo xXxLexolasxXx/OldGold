@@ -501,16 +501,17 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
 
 const INN_YARD_REG = [0, 1, 2, 3];          // завсегдатаев у костра по уровню (больше — толпа у огня)
 function innFolk(b, k) { return { type: 'farmer', look: (b.id * 97 + k * 31) >>> 0, carry: null }; }
+const YARD_K = 0.78;   // гномы во дворах зданий чуть мельче: рядом с пиксельными домами в полный рост они выглядят великанами
 function drawFolk(c, u, x, y, view, pose, frame, opt, flip) {
-  const sp = personSprite(u, view, pose, frame, opt || {});
-  if (flip) { c.save(); c.translate(Math.round(x), Math.round(y)); c.scale(-1, 1); c.drawImage(sp, -PFX, -PFY, PW, PH); c.restore(); }
-  else c.drawImage(sp, Math.round(x) - PFX, Math.round(y) - PFY, PW, PH);
+  const sp = personSprite(u, view, pose, frame, opt || {}), k = YARD_K;
+  if (flip) { c.save(); c.translate(Math.round(x), Math.round(y)); c.scale(-k, k); c.drawImage(sp, -PFX, -PFY, PW, PH); c.restore(); }
+  else c.drawImage(sp, x - PFX * k, y - PFY * k, PW * k, PH * k);
 }
 
 // место во дворе свободно? фигурки гномов ~12×24 мировых px: не ставим вторую ближе, чем на 11 по x и 9 по y (иначе куча)
 function yardFree(b, x, y) {
   const L = b._occ || (b._occ = []);
-  for (const [px, py] of L) if (Math.abs(px - x) < 11 && Math.abs(py - y) < 9) return false;
+  for (const [px, py] of L) if (Math.abs(px - x) < 9 && Math.abs(py - y) < 8) return false;
   L.push([x, y]); return true;
 }
 
@@ -625,7 +626,7 @@ function drawStoreYard(c, b, spr, ox, oy) {
 function kidFolk(b, k) { return { type: 'kid', look: (b.id * 131 + k * 47) >>> 0, carry: null }; }
 // гномёнок мельче взрослого (×0.7), ноги — в точке (x, y)
 function drawKid(c, b, k, x, y, view, pose, frame, opt) {
-  const sp = personSprite(kidFolk(b, k), view, pose, frame, opt || {}), s = 0.7;
+  const sp = personSprite(kidFolk(b, k), view, pose, frame, opt || {}), s = 0.55;   // дети мельче взрослых во дворе (YARD_K)
   c.drawImage(sp, Math.round(x - PFX * s), Math.round(y - PFY * s), Math.round(PW * s), Math.round(PH * s));
 }
 function drawSchoolYard(c, b, spr, ox, oy) {
