@@ -119,6 +119,7 @@ class BGrid {
         else { const ua = a * BK, vb = b * BK, uf = Math.floor(ua), vf = Math.floor(vb); F.fu = ua - uf; F.fv = vb - vf; F.fx = px; F.fy = py; c = mat(uf, vf, F); }   // fu, fv — доля внутри мирового пикселя: материалы рисуют по ней мелкую фактуру
         if (!c) continue;
         const X = O[0] + a * Uw[0] + b * Vw[0], Y = O[1] + a * Uw[1] + b * Vw[1], Z = O[2] + a * Uw[2] + b * Vw[2];
+        const L = this.lot; if (L && (X < -L[2] || Y < -L[2] || X > L[0] + L[2] || Y > L[1] + L[2])) continue;   // за границей участка — к соседу не лезем
         this.put(px, py, c, this.depth(X, Y, Z) + dz, fid);
       }
     }
@@ -127,6 +128,7 @@ class BGrid {
   // «плакат»: рисунок в экранных пикселях с одной глубиной (реквизит); draw(P) где P(x, y, col)
   sprite(at, draw, dz = 0) {
     const p = this.W3(at), z = this.depth(p[0], p[1], p[2]) + dz, fid = this.nf++;
+    const L = this.lot; if (L && (p[0] < -L[2] || p[1] < -L[2] || p[0] > L[0] + L[2] || p[1] > L[1] + L[2])) return;   // реквизит за участком не ставим
     const bx = Math.round(this.sx(p[0], p[1])), by = Math.round(this.sy(p[1], p[2]));
     const k = (this.spk || 1) * FINE;   // мелкий шаг пикселя (BK > 1): реквизит, нарисованный в пикселях ×1, ставим блоками k×k — размер тот же
     if (k === 1) draw((x, y, c) => c && this.put(bx + x, by + y, c, z, fid), bx, by);

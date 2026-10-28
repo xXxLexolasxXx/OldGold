@@ -42,6 +42,7 @@ function pxBuild(type, rot, lv, vr) {
   BK = 1; FINE = PX_FINE;   // растр ×3 — как у гномов; узоры материалов в мировых пикселях
   const g = new BGrid(W * FINE, H * FINE, BPADX * FINE, (top + FD) * FINE);
   g.LD = type === 'inn' ? FD : def.h * TILE; g.noSmoke = true;
+  g.lot = [FW, FD, 3];   // участок в мире (после поворота) + запас под свес крыши
   pxModel(type, g, d, lv, vr);
   g.finish({ step: 1.6, ink: P1.ink });
   const M = g.meta || {};

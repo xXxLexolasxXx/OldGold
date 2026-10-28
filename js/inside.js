@@ -170,6 +170,7 @@ function drawInnPorch(c, b, spr, ox, oy) {
   };
   // ближние места занимаем по очереди: новый едок садится на ту скамью, где меньше народу
   const seats = diners.slice(0, cap).map((u, i) => seat(u, i % 2 ? DS.length / 2 + (i >> 1) : i >> 1));
+  for (const s of seats) (b._occ || (b._occ = [])).push([tx - ox + s.dx, ty - oy + (s.row < 0 ? 1 : 9)]);   // места за столом заняты — лишние едоки и двор их обходят
   for (const s of seats) if (s.row < 0) {
     c.drawImage(s.sp, tx + s.dx - PFX, ty + 1 - PFY, PW, PH);
   }
@@ -498,7 +499,7 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
 // Костёр с вертелом, завсегдатаи на брёвнах, гном у колоды, метатель дротиков, музыкант на сцене —
 // декоративная жизнь двора, её больше на каждом уровне. Запасы на полках кухни полнеют и пустеют по b.stock.
 
-const INN_YARD_REG = [0, 1, 3, 4];          // завсегдатаев у костра по уровню
+const INN_YARD_REG = [0, 1, 2, 3];          // завсегдатаев у костра по уровню (больше — толпа у огня)
 function innFolk(b, k) { return { type: 'farmer', look: (b.id * 97 + k * 31) >>> 0, carry: null }; }
 function drawFolk(c, u, x, y, view, pose, frame, opt, flip) {
   const sp = personSprite(u, view, pose, frame, opt || {});
@@ -506,9 +507,17 @@ function drawFolk(c, u, x, y, view, pose, frame, opt, flip) {
   else c.drawImage(sp, Math.round(x) - PFX, Math.round(y) - PFY, PW, PH);
 }
 
+// место во дворе свободно? фигурки гномов ~12×24 мировых px: не ставим вторую ближе, чем на 11 по x и 9 по y (иначе куча)
+function yardFree(b, x, y) {
+  const L = b._occ || (b._occ = []);
+  for (const [px, py] of L) if (Math.abs(px - x) < 11 && Math.abs(py - y) < 9) return false;
+  L.push([x, y]); return true;
+}
+
 function drawInnYard(c, b, spr, ox, oy) {
   if (b.state !== 'done') return;
   const t = Game.time, lv = spr.pxInn;
+  b._occ = [];   // занятые места двора на этот кадр
   c.imageSmoothingEnabled = false;
   // запасы на полках кухни: доля заполнения склада трактира → сколько слотов занято
   const inp = b.def.inputs || {}, keys = Object.keys(inp).filter(k => k !== 'beer' && k !== 'darkbeer');
@@ -539,19 +548,23 @@ function drawInnYard(c, b, spr, ox, oy) {
   const reg = Math.min(INN_YARD_REG[lv] || 0, (spr.seats || []).length), fx = spr.fire ? spr.fire[0] : 0, fy = spr.fire ? spr.fire[1] : 0;
   for (let k = 0; k < reg; k++) {
     const [x, y] = spr.seats[k], cyc = (t * 0.5 + k * 1.7 + b.id) % 6;
+    if (!yardFree(b, x, y + 2)) continue;
     const gest = cyc < 1.4 ? 'drink' : cyc < 2.2 ? 'clap' : '';
-    drawFolk(c, innFolk(b, k), ox + x, oy + y + 2, y < fy ? 'S' : 'N', 'idle', Math.floor(t * 6 + k) % 6, { gest, gf: gestCyc(t * 1.6 + k) }, x > fx);
+    // сидят на чурбаках: ноги прячем, фигура ниже на 4 px
+    c.save(); c.beginPath(); c.rect(ox + x - 14, oy + y - 40, 28, 41); c.clip();
+    drawFolk(c, innFolk(b, k), ox + x, oy + y + 5, y < fy ? 'S' : 'N', 'idle', 0, { gest, gf: gestCyc(t * 1.6 + k) }, x > fx);
+    c.restore();
   }
   // колка дров
-  if (spr.chop) { const [x, y] = spr.chop; drawFolk(c, innFolk(b, 7), ox + x + 5, oy + y + 1, 'E', 'work', { anim: 'chop', f: Math.floor(t * 8 + b.id) % 8 }, {}, true); }
+  if (spr.chop && yardFree(b, spr.chop[0] + 5, spr.chop[1] + 1)) { const [x, y] = spr.chop; drawFolk(c, innFolk(b, 7), ox + x + 5, oy + y + 1, 'E', 'work', { anim: 'chop', f: Math.floor(t * 8 + b.id) % 8 }, {}, true); }
   // дротики: бросок, полёт к мишени
-  if (spr.darts && lv >= 2) {
+  if (spr.darts && lv >= 2 && yardFree(b, spr.darts[0] - 18, spr.darts[1] + 20)) {
     const [x, y] = spr.darts, sx = ox + x - 18, sy = oy + y + 20, cyc = (t * 0.6 + b.id) % 3;
     drawFolk(c, innFolk(b, 8), sx, sy, 'E', 'idle', 0, { gest: cyc < 0.5 ? 'chest' : '', gf: gestCyc(t * 2) });
     if (cyc > 0.5 && cyc < 0.9) { const f = (cyc - 0.5) / 0.4; c.fillStyle = '#3c3c44'; c.fillRect(Math.round(sx + 4 + f * 14), Math.round(sy - 18 - Math.sin(f * Math.PI) * 4 - f * 2), 2, 1); }
   }
   // музыкант на сцене (3-й уровень): притопывает, ноты всплывают
-  if (spr.stage && lv >= 3) {
+  if (spr.stage && lv >= 3 && yardFree(b, spr.stage[0], spr.stage[1])) {
     const [x, y] = spr.stage;
     drawFolk(c, innFolk(b, 9), ox + x, oy + y, 'S', 'idle', Math.floor(t * 8) % 6, { gest: 'clap', gf: gestCyc(t * 3) });
     for (let n = 0; n < 2; n++) { const f = (t * 0.7 + n * 0.5) % 1; c.globalAlpha = 1 - f; c.fillStyle = '#2a1a24'; c.fillRect(Math.round(ox + x + 6 + f * 6 + n * 3), Math.round(oy + y - 30 - f * 12), 2, 2); c.fillRect(Math.round(ox + x + 7 + f * 6 + n * 3), Math.round(oy + y - 34 - f * 12), 1, 4); c.globalAlpha = 1; }
@@ -564,11 +577,12 @@ function drawInnExtraDiners(c, b, spr, ox, oy) {
   const diners = (INS_DINE.get(b) || []).slice(innSeats(b).length);
   if (!diners.length || !(spr.tables || []).length) return;
   const t = Game.time, seats = [];
-  for (const [x, y] of spr.tables) seats.push([x - 4, y - 5, 'S'], [x + 4, y - 5, 'S'], [x - 4, y + 3, 'N'], [x + 4, y + 3, 'N']);
+  for (const [x, y] of spr.tables) seats.push([x - 10, y, 'E'], [x + 10, y, 'W']);   // по краям стола, лицом к нему: вплотную вчетвером — куча
   c.imageSmoothingEnabled = false;
   const list = diners.slice(0, seats.length).map((u, i) => ({ u, s: seats[i] })).sort((p, q) => p.s[1] - q.s[1]);
   for (const { u, s } of list) {
     const [x, y, face] = s;
+    if (!yardFree(b, x, y + 3)) continue;
     drawFolk(c, { type: u.type, look: u.look, carry: null, injury: u.injury }, ox + x, oy + y + 3, face, 'idle', 0, { gest: 'eat', gf: gestCyc(t * 1.8 + u.id * 0.7) });
   }
   c.imageSmoothingEnabled = R.smooth;
