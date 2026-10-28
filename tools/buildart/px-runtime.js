@@ -12,7 +12,7 @@ const PX_HOUSE_KINDS = PX_HOUSES.map((f, i) => i);
 const PX_HOUSE_NAMES = ['Белёный коттедж', 'Высокий фахверк', 'Изба с крыльцом', 'Каменный домик', 'Круглый домик', 'Г-образный дом', 'Дом на сваях', 'Дом в старом дубе'];
 
 const PX_FINE = 3;
-const PX_FOOD = new Set(['farm', 'bakery', 'hopfarm', 'brewery', 'swine', 'butchery']);
+const PX_FOOD = new Set(['farm', 'bakery', 'hopfarm', 'brewery', 'swine', 'butchery', 'goldmine', 'ironmine', 'crystalmine']);   // здания с точками двора spr.pt
 function pxModel(type, g, d, lv, vr) {
   if (type === 'inn') { g.rot = 0; (d.rot ? buildInnProfile : buildInn)(g, lv, ROOF_LV[lv](STRAW1.olive)); return; }
   g.rot = d.rot ? 1 : 0;
@@ -32,6 +32,9 @@ function pxModel(type, g, d, lv, vr) {
   if (type === 'brewery') { g.dynPiles = true; buildBrew(g, lv); return; }
   if (type === 'swine') { buildSwine(g, lv); return; }
   if (type === 'butchery') { buildButch(g, lv); return; }
+  if (type === 'goldmine') { g.rot = 0; g.dynPiles = true; GOLD_VARS[0].make(g, lv); return; }      // штольня, рельсы, промывка с колесом
+  if (type === 'ironmine') { g.rot = 0; g.dynPiles = true; IRON_VARS[0].make(g, lv); return; }      // штольня, ровный копёр, обжиговая печь
+  if (type === 'crystalmine') { g.rot = 0; g.dynPiles = true; CRYS_VARS[1].make(g, lv); return; }   // грот в рунной арке, кристальный сад
   PX_HOUSES[vr](g, lv);
 }
 
@@ -85,9 +88,9 @@ function pxBuild(type, rot, lv, vr) {
   if (type === 'tradepost') { spr.cartSpot = opt(M.cartSpot); spr.loadFrom = opt(M.loadFrom); }
   if (type === 'well') spr.bucket = opt(M.bucket);
   if (type === 'infirmary') { spr.beds = (M.beds || []).map(([a, b]) => [scr(a), scr(b)]); spr.rack = opt(M.rack); spr.cauldron = opt(M.cauldron); spr.cots = arr(M.cots); }
-  if (type === 'farm' || type === 'brewery') { spr.piles = {}; for (const k in M.piles || {}) spr.piles[k] = M.piles[k].map(scr); }
+  if (type === 'farm' || type === 'brewery' || /mine$/.test(type)) { spr.piles = {}; for (const k in M.piles || {}) spr.piles[k] = M.piles[k].map(scr); }
   if (PX_FOOD.has(type)) {   // точки анимаций двора (inside.js): одиночные [x,y,z] и списки точек → экранные координаты
-    spr.pt = {};
+    spr.pt = {}; spr.cartLoad = M.cartLoad;
     for (const k in M) { const v = M[k]; if (k === 'piles' || k === 'pen' || k === 'wins' || !Array.isArray(v) || !v.length) continue; spr.pt[k] = Array.isArray(v[0]) ? v.map(scr) : typeof v[0] === 'number' ? scr(v) : null; }
   }
   if (type === 'swine' && M.pen) {   // загон для игровых свиней (render.js drawPigs): углы в экранных координатах
@@ -145,5 +148,18 @@ function pxPile(kind, f) {
   tc.putImageData(im, 0, 0);
   const r = { cv: pxUp(tmp, 3), w: S, h: S, ax: S / 2, ay: S - 4 };
   PILE_CACHE.set(key, r);
+  return r;
+}
+
+// вагонетка для анимации рудников: объёмная модель (как у зданий, растр ×3), едет вдоль рельсов к зрителю
+const CART_CACHE = new Map();
+function pxCart(load) {
+  if (CART_CACHE.has(load)) return CART_CACHE.get(load);
+  const L = { gold: [GOLDV, P1.stoneW], iron: [RUST, SOOT], crystal: [CRYV, SLATE] }[load] || [null, P1.stone];
+  const W = 24, H = 26; BK = 1; FINE = PX_FINE;
+  const g = new BGrid(W * FINE, H * FINE, 12 * FINE, 20 * FINE);
+  cart3(g, 0, 0, L[0], L[1], 0); g.finish({ step: 1.6, ink: P1.ink }); FINE = 1;
+  const r = { cv: g.toCanvas(), w: W, h: H, ax: 12, ay: 20 };
+  CART_CACHE.set(load, r);
   return r;
 }

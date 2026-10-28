@@ -51,9 +51,10 @@ fs.mkdirSync(OUT, { recursive: true });
     for (let y = Y0 - 1; y < Y0 + 13; y++) for (let x = X0 - 1; x < X0 + 27; x++) if (inb(x, y)) { World.obj[idx(x, y)] = 0; World.road[idx(x, y)] = 0; }
   `;
   // чистый рендер: здание + двор (drawInside/drawPigs) на отдельном холсте ×3, два момента анимации
+  await pg.evaluate(t => { window._TYPES = t; }, process.env.TYPES || 'farm,swine,brewery,hopfarm,bakery,butchery');
   const shots = await pg.evaluate(() => {
     const out = {}, B0 = Game.buildings[0];
-    for (const type of ['farm', 'swine', 'brewery', 'hopfarm', 'bakery', 'butchery']) for (const lv of [1, 2, 3]) for (const rot of [0, 1]) {
+    for (const type of window._TYPES.split(',')) for (const lv of [1, 2, 3]) for (const rot of [0, 1]) {
       const d = BUILDINGS[type], b = Object.assign(Object.create(Object.getPrototypeOf(B0)), { id: 7, type, def: d, rot, level: lv, state: 'done', working: true, x: 0, y: 0, w: rot ? d.h : d.w, h: rot ? d.w : d.h, stock: {}, pigs: [] });
       for (const g in d.outputs || {}) b.stock[g] = Math.round(d.outputs[g] * [0.4, 0.7, 1][lv - 1]);
       for (const g in d.inputs || {}) b.stock[g] = d.inputs[g];

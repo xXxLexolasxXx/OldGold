@@ -22,14 +22,15 @@ const parts = [
   ['bvar15.js (реквизит блока 2)', R('bvar15.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
   ['bvar16.js (пекарня, хмельник, свинарник)', R('bvar16.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
   ['bvar17.js (ферма, пивоварня, бойня)', R('bvar17.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
+  ['bvar18.js (рудники)', R('bvar18.js').split(/\r?\n/).filter(l => !l.startsWith('BDEFS.')).join('\n')],
   ['px-runtime.js', R('px-runtime.js')],
 ];
 const out = `'use strict';
 // СОБРАНО АВТОМАТИЧЕСКИ из tools/buildart (node tools/buildart/build-runtime.js) — правьте исходники там.
 // Пиксельные здания ×1 (1 px арта = 1 мировой px): трактир, склад, дома — растеризатор граней, материалы, модели по уровням, адаптер к buildingSprite.
-const { innPxSprite, pxSprite, pxPile, PX_HOUSE_NAMES } = (() => {
+const { innPxSprite, pxSprite, pxPile, pxCart, PX_HOUSE_NAMES } = (() => {
 ${parts.map(([n, s]) => `// ======== ${n} ========\n${s}`).join('\n')}
-return { innPxSprite, pxSprite, pxPile, PX_HOUSE_NAMES };
+return { innPxSprite, pxSprite, pxPile, pxCart, PX_HOUSE_NAMES };
 })();
 `;
 fs.writeFileSync(path.join(__dirname, '../../js/bldpx.js'), out);

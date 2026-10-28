@@ -870,5 +870,29 @@ function drawFoodYard(c, b, spr, ox, oy) {
     }
     pxLamp(c, P, ox, oy);
   }
+  if (/mine$/.test(spr.px)) {
+    const f = Math.floor(t * 7) % 8;
+    if (P.cart) {   // вагонетка: выезжает из штольни к зрителю, стоит (разгрузка), возвращается; рядом её толкает шахтёр
+      const T = 14, u = (t % T) / T, k = u < 0.4 ? u / 0.4 : u < 0.55 ? 1 : u < 0.95 ? 1 - (u - 0.55) / 0.4 : 0;
+      const [x0, y0] = P.cart[0], [x1, y1] = P.cart[1], x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k, C = pxCart(spr.cartLoad || 'gold');
+      const moving = (u < 0.4) || (u >= 0.55 && u < 0.95), out = u < 0.55;
+      // толкающий идёт за вагонеткой: на выезде он дальше от зрителя (рисуем до неё), на въезде — ближе (после)
+      const push = () => drawFolk(c, { type: 'miner', look: b.id * 71 + 2 }, ox + x + 1, oy + y + (out ? -7 : 9), out ? 'S' : 'N', moving ? 'walk' : 'idle', Math.floor(t * 9) & 7, {});
+      if (out) push();
+      c.drawImage(C.cv, Math.round((ox + x - C.ax) * 3) / 3, Math.round((oy + y - C.ay) * 3) / 3, C.w, C.h);
+      if (!out) push();
+    }
+    if (P.miner && on) drawFolk(c, { type: 'miner', look: b.id * 71 + 5 }, ox + P.miner[0] + 14, oy + P.miner[1] + 3, 'W', 'work', { anim: 'mine', f }, {});   // долбит скалу сбоку от устья, не на рельсах
+    if (P.wheel) {   // водяное колесо: брызги стекают с лопастей
+      for (let k = 0; k < 4; k++) { const p = (t * 1.4 + k / 4) % 1; c.fillStyle = '#a8d8ff'; c.fillRect(Math.round(ox + P.wheel[0] - 6 + k * 4), Math.round(oy + P.wheel[1] + p * 12), 1, 1); }
+    }
+    if (P.panner) drawFolk(c, { type: 'miner', look: b.id * 71 + 9 }, ox + P.panner[0], oy + P.panner[1], 'N', 'work', { anim: 'pat', f }, {});   // моет золото в лотке
+    if (P.kiln) { glow(c, ox + P.kiln[0], oy + P.kiln[1] - 3, 12, '255,140,40', 0.3 + Math.sin(t * 6) * 0.08); drawFire(c, ox + P.kiln[0], oy + P.kiln[1], 'tiny', t, b.id + 7, { glow: 0 }); }
+    if (P.smoke) pxSmoke(c, ox + P.smoke[0], oy + P.smoke[1], t, 6, '#8a8690');
+    if (P.stoker) drawFolk(c, { type: 'miner', look: b.id * 71 + 13 }, ox + P.stoker[0], oy + P.stoker[1], 'E', 'work', { anim: 'dig', f: Math.floor(t * 5) % 8 }, {});   // подбрасывает руду в печь
+    if (P.pulley) { const a = t * 2.5, X = ox + P.pulley[0], Y = oy + P.pulley[1]; c.strokeStyle = 'rgba(200,200,210,0.8)'; c.lineWidth = 0.6; c.beginPath(); for (let k = 0; k < 3; k++) { const an = a + k * Math.PI / 3; c.moveTo(X - Math.cos(an) * 6, Y - Math.sin(an) * 6); c.lineTo(X + Math.cos(an) * 6, Y + Math.sin(an) * 6); } c.stroke(); }   // колесо копра вращается
+    if (P.glow) P.glow.forEach(([x, y], i) => glow(c, ox + x, oy + y, 14, i % 2 ? '120,240,220' : '190,150,255', 0.18 + Math.sin(t * 1.8 + i * 1.3) * 0.08));   // друзы мерцают
+    if (P.sorter) drawFolk(c, { type: 'miner', look: b.id * 71 + 17 }, ox + P.sorter[0], oy + P.sorter[1], 'N', 'work', { anim: 'pat', f }, {});   // сортирует кристаллы
+  }
   c.imageSmoothingEnabled = R.smooth;
 }

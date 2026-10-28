@@ -12,8 +12,20 @@ function chimney1(g, x, y, z0, h, o = {}) {
   (g.chim = g.chim || []).push([x + w / 2, y + d / 2, z0 + h + 2]);
   if (o.smoke !== false && !g.noSmoke) g.sprite([x + w / 2, y + d / 2, z0 + h + 2], P => Q1.smoke(P), -3);   // в игре дым рисует render.js по spr.chimneys
 }
-function post1(g, x, y, z0, h, s = 2, R = P1.beam) { box(g, { x0: x, x1: x + s, y0: y, y1: y + s, z0, h, mat: (u, v, F) => R[F.li === 0 ? 1 : 2], top: m1Flat(R[1]) }); }
-function beam1(g, x0, x1, y0, y1, z0, h, R = P1.beam) { box(g, { x0, x1, y0, y1, z0, h, mat: (u, v, F) => R[F.li === 0 ? 1 : 2], top: m1Flat(R[0]) }); }
+// брус: на мелком растре — волокна вдоль бруса, светлая кромка на ребре, редкие трещины и сучки
+const woodBeam = (R, along) => (u, v, F) => {
+  const c = R[F.li === 0 ? 1 : 2];
+  if (F.fu == null) return c;
+  const a = along === 'v' ? v + F.fv : u + F.fu, x = along === 'v' ? u + F.fu : v + F.fv, W = along === 'v' ? F.w : F.h;
+  if (x < 0.34) return fShade(c, 1.14);                                            // кромка на свету
+  if (W && x > W - 0.34) return fShade(c, 0.8);                                    // кромка в тени
+  const line = bhash(Math.floor(x * 3), Math.floor(a / 5), 1901);
+  if (line < 0.18) return fShade(c, 0.86);                                         // волокно
+  if (bhash(Math.floor(a / 7), Math.floor(x), 1902) < 0.06 && Math.abs((a % 7) - 3.5) < 0.6) return fShade(c, 0.7);   // трещина/сучок
+  return fShade(c, fGrain(F, 1903, 0.08));
+};
+function post1(g, x, y, z0, h, s = 2, R = P1.beam) { box(g, { x0: x, x1: x + s, y0: y, y1: y + s, z0, h, mat: woodBeam(R, 'v'), top: m1Flat(R[1]) }); }
+function beam1(g, x0, x1, y0, y1, z0, h, R = P1.beam) { box(g, { x0, x1, y0, y1, z0, h, mat: woodBeam(R, 'u'), top: m1Flat(R[0]) }); }
 function fence1(g, x0, x1, y0, y1, h = 6) {
   const L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.round(L / 8));
   for (let k = 0; k <= n; k++) post1(g, x0 + (x1 - x0) * k / n - 1, y0 + (y1 - y0) * k / n - 1, 0, h, 2, P1.plank);
