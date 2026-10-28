@@ -893,6 +893,10 @@ function drawFoodYard(c, b, spr, ox, oy) {
     if (P.stoker) drawFolk(c, { type: 'miner', look: b.id * 71 + 13 }, ox + P.stoker[0], oy + P.stoker[1], 'E', 'work', { anim: 'dig', f: Math.floor(t * 5) % 8 }, {});   // подбрасывает руду в печь
     if (P.pulley) { const a = t * 2.5, X = ox + P.pulley[0], Y = oy + P.pulley[1]; c.strokeStyle = 'rgba(200,200,210,0.8)'; c.lineWidth = 0.6; c.beginPath(); for (let k = 0; k < 3; k++) { const an = a + k * Math.PI / 3; c.moveTo(X - Math.cos(an) * 6, Y - Math.sin(an) * 6); c.lineTo(X + Math.cos(an) * 6, Y + Math.sin(an) * 6); } c.stroke(); }   // колесо копра вращается
     if (P.glow) P.glow.forEach(([x, y], i) => glow(c, ox + x, oy + y, 14, i % 2 ? '120,240,220' : '190,150,255', 0.18 + Math.sin(t * 1.8 + i * 1.3) * 0.08));   // друзы мерцают
+    if (P.stamp) {   // рудодробилка: песты бьют по очереди — из-под бойков летит рыжая пыль и крошка
+      for (let k = 0; k < 3; k++) { const ph = (t * 1.6 + k / 3) % 1; if (ph < 0.25) for (let j = 0; j < 3; j++) { c.fillStyle = j % 2 ? '#a85230' : '#8a8690'; c.fillRect(Math.round(ox + P.stamp[0] - 5 + k * 4 + (j - 1) * ph * 8), Math.round(oy + P.stamp[1] - 3 - ph * 6 - j), 1, 1); } }
+    }
+    if (P.crusher && on) drawFolk(c, { type: 'miner', look: b.id * 71 + 21 }, ox + P.crusher[0], oy + P.crusher[1], 'W', 'work', { anim: 'dig', f: Math.floor(t * 5) % 8 }, {});   // подбрасывает руду под песты
     if (P.sorter) drawFolk(c, { type: 'miner', look: b.id * 71 + 17 }, ox + P.sorter[0], oy + P.sorter[1], 'N', 'work', { anim: 'pat', f }, {});   // сортирует кристаллы
   }
   c.imageSmoothingEnabled = R.smooth;

@@ -3507,6 +3507,13 @@ const QM = {
   },
   cluster(P, s = 1, R = CRYV) { QM.crystal(P, 18 * s, Math.max(2, 3.5 * s | 0), R); QM.crystal((x, y, c) => P(x - 6 * s, y + 1, c), 12 * s, 3, R); QM.crystal((x, y, c) => P(x + 6 * s, y + 1, c), 10 * s, 3, R); QM.crystal((x, y, c) => P(x + 2 - 9 * s, y + 2, c), 6 * s, 2, R); },
   nuggets(P, n = 6) { for (let k = 0; k < n; k++) { const x = Math.round((bhash(k, 0, 1807) - 0.5) * 12), y = -Math.round(bhash(k, 1, 1808) * 4); PR.ell(P, x, y, 1.6, 1.2, () => GOLDV[1]); P(x - 1, y - 1, GOLDV[0]); } },
+  oreChunks(P, w = 9, R = RUST, S = SOOT) {   // куча рубленой руды: угловатые куски, ржавый блик сверху-слева, тень снизу-справа
+    const n = Math.round(w * 2.2);
+    for (let k = 0; k < n; k++) {
+      const a = bhash(k, 0, 1850) * Math.PI * 2, rr = Math.sqrt(bhash(k, 1, 1851)), x = Math.round(Math.cos(a) * rr * w), y = -Math.round((1 - rr) * w * 0.55 + bhash(k, 2, 1852) * 2), s = 1 + (bhash(k, 3, 1853) * 2 | 0), C = bhash(k, 4, 1854) < 0.35 ? S : R;
+      for (let j = -s; j <= s; j++) for (let i = -s + Math.abs(j); i <= s - Math.abs(j) + (j < 0 ? 1 : 0); i++) P(x + i, y + j, i + j < -s / 2 ? C[0] : i + j > s / 2 ? C[3] : C[1 + (j > 0 ? 1 : 0)]);
+    }
+  },
   oreHeap(P, w = 10, R = RUST) { PR.ell(P, 0, -w * 0.4, w, w * 0.5, (x, y, a, b) => (b > 0.55 ? null : bhash(x, y, 1809) < 0.2 ? R[3] : b < -0.3 ? R[0] : R[1 + (a > 0.3 ? 1 : 0)])); },
   pulley(P, r = 7) {   // колесо копра: обод, спицы, ступица
     PR.ell(P, 0, -r, r, r, (x, y, a, b) => { const d = Math.hypot(a, b); if (d > 0.82) return SOOT[1]; if (d < 0.2) return P1.iron[0]; const an = Math.atan2(b, a); return Math.abs(Math.sin(an * 3)) < 0.18 ? SOOT[2] : null; });
@@ -3598,6 +3605,7 @@ const GOLD_VARS = [
 ];
 
 // =================== ЖЕЛЕЗО ===================
+let IRON_ORE_LAYOUT = 'row';   // выбор владельца: рядок кучек слева от рельсов ('heap' — одной кучей)
 const IRON_VARS = [
   { name: 'Ж-1. Железная шахта с копром: штольня в скале, копёр с колесом над стволом, ржавые отвалы, обжиговая печь дымит', make(g, lv) {
     g.meta = { piles: {} };
@@ -3615,12 +3623,18 @@ const IRON_VARS = [
     // обжиговая печь: каменная башенка, конус в саже, жерло с жаром
     cyl(g, 80, 30, 9, 0, 14, m1Stone(P1.stoneB, 4, 3), 20); cone(g, 80, 30, 7, 14, 10, m1Stone(SOOT, 4, 3), m1Flat(SOOT[2]), 18, 1);
     elem(g, 'S', 21.5, 76, 0, 8, 6, (u, v) => (v > 5 ? null : v < 3 ? bhex('#ff9a30') : bhex('#c04818'))); g.meta.kiln = [80, 21, 3]; g.meta.smoke = [80, 30, 26];
-    g.meta.piles.ironore = [[30, 26, 0], [6, 22, 0], [30, 14, 0]].slice(0, lv + 1);
-    if (!g.dynPiles) for (const p of g.meta.piles.ironore) g.sprite(p, P => QM.oreHeap(P, 8));
-    g.sprite([66, 8, 0], P => QM.oreHeap(P, 7, SOOT));   // шлак у печи
-    g.meta.miner = [17, 48, 0]; g.meta.stoker = [70, 18, 0];
+    g.meta.piles.ironore = (IRON_ORE_LAYOUT === 'heap' ? [[6, 36, 0], [9, 31, 0], [4, 28, 0], [8, 25, 0]] : [[8, 40, 0], [8, 32, 0], [8, 24, 0], [8, 16, 0]]).slice(0, lv + 1);   // одной кучей между рельсами и скалой — или рядком слева от рельсов
+    if (!g.dynPiles) for (const p of g.meta.piles.ironore) g.sprite(p, P => QM.oreChunks(P, IRON_ORE_LAYOUT === 'heap' ? 7 : 5));
+    g.sprite([66, 8, 0], P => QM.oreChunks(P, 6, SOOT, SOOT));   // шлак у печи
+    // передний двор: рудодробилка — каменная плита, рама из бруса, три песта с бойками; руду дробят перед печью
+    box(g, { x0: 28, x1: 46, y0: 6, y1: 16, h: 3, mat: m1Stone(P1.stoneB, 5, 3), top: (u, v) => (bhash(Math.floor(u * 2), Math.floor(v * 2), 1860) < 0.25 ? RUST[1] : P1.stoneB[1]) });
+    for (const x of [29, 43]) post1(g, x, 10, 3, 16, 2, P3.oak);
+    beam1(g, 28.5, 45.5, 10, 12, 19, 2, P3.oak); beam1(g, 28.5, 45.5, 10, 12, 12, 1.2, P3.oak);
+    for (const [k, x] of [[0, 32.5], [1, 36.5], [2, 40.5]]) { const lift = [3, 0, 1.5][k]; box(g, { x0: x - 0.5, x1: x + 0.5, y0: 10.5, y1: 11.5, z0: 6 + lift, h: 13 - lift, mat: m1Flat(P1.iron[1]), top: m1Flat(P1.iron[0]) }); box(g, { x0: x - 1.4, x1: x + 1.4, y0: 9.6, y1: 12.4, z0: 3 + lift, h: 3, mat: (u, v, F) => P1.iron[F.li === 0 ? 1 : 2], top: m1Flat(P1.iron[0]) }); }
+    g.meta.stamp = [37, 11, 3]; g.meta.crusher = [50, 8, 0];
+    g.meta.miner = [17, 48, 0]; g.meta.stoker = [70, 18, 0];   // кочегар у печи
     if (lv >= 2) barrel3(g, 92, 14);
-    if (lv >= 3) { g.sprite([62, 40, 0], P => Q1.streetLamp(P, 14)); crate3(g, 4, 8); }
+    if (lv >= 3) { g.sprite([62, 40, 0], P => Q1.streetLamp(P, 14)); crate3(g, 66, 16); }
   } },
   { name: 'Ж-2. Рудник-бастион: каменный корпус в скале, окованные ворота, жёлоб для руды в бункеры, две трубы', make(g, lv) {
     g.meta = { piles: {} };
@@ -3707,7 +3721,7 @@ const CRYS_VARS = [
 
 
 PILE_DRAW.goldore = f => P => QM.nuggets(P, 3 + Math.round(f * 7));
-PILE_DRAW.ironore = f => P => QM.oreHeap(P, 4 + Math.round(f * 5));
+PILE_DRAW.ironore = f => P => QM.oreChunks(P, 3 + Math.round(f * 4));
 PILE_DRAW.magicstone = f => P => QM.cluster(P, 0.3 + f * 0.3, f > 0.5 ? CRYV : CRYT);
 
 // ======== px-runtime.js ========
