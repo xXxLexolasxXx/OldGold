@@ -233,6 +233,105 @@ function updateGrowth(dt) {
   }
 }
 
+// ---------- Возобновление ресурсов ----------
+// Все ручки баланса здесь. Сутки ≈ 565 с, сезон — 8 суток. Природа «делает ход» раз в every с:
+// у каждой готовой каменоломни может вырасти глыба, у каждого дома лесоруба — саженец (до потолка в округе).
+// Растёт только на свободной траве, не вплотную к зданиям, входам, дорогам и полям. Скалы (клетки гор) не отрастают.
+const REGROW = {
+  every: 6,                    // с между ходами природы (ход — пара сотен клеток вокруг здания, дёшево)
+  margin: 1,                   // не ближе стольких клеток к зданию, входу, дороге, стройке дороги, полю
+  // глыбы — вокруг каменоломен
+  stoneR: 10,                  // радиус от входа каменоломни (там каменотёс ищет в первую очередь)
+  stoneCap: 5,                 // столько глыб держит округа одной каменоломни, больше не вырастает
+  stoneChance: 0.05,           // шанс новой глыбы за ход: в среднем раз в 2 минуты, ~4–5 за сутки
+  stoneN: [2, 4],              // запас новой глыбы, кусков (на старте карты у глыб 3–7)
+  // деревья — вокруг домов лесоруба (лесничий сам досаживает до 16 в 9 клетках; природа добавляет поверх)
+  treeR: 11,                   // радиус от входа дома лесоруба
+  treeCap: 20,                 // деревьев любого роста в округе — дальше не растёт
+  treeChance: [0.06, 0.03, 0, 0.15],   // шанс саженца за ход: лето, осень, зима, весна
+  springBurst: 4,              // в первый ход весны сразу столько саженцев у каждого дома лесоруба
+  winterKeep: 5,               // зимой лесоруб не рубит последние столько взрослых деревьев у своего дома
+  // скалы: каменотёс скалывает клетку горы по куску; выработанная осыпается щебнем и не отрастает
+  rockHp: 60,                  // кусков камня в одной клетке скалы
+};
+const RG = { t: 0, sea: -1 };
+
+// клетка годится под новую глыбу/саженец; глыба ещё и не должна запирать проход (все 8 соседей проходимы)
+function regrowSpotOk(x, y, stone) {
+  if (!isFreeGrass(x, y)) return false;
+  const m = REGROW.margin;
+  for (let yy = y - m; yy <= y + m; yy++) for (let xx = x - m; xx <= x + m; xx++) {
+    if (!inb(xx, yy)) continue;
+    const i = idx(xx, yy), o = World.obj[i];
+    if (World.bmap[i] || World.door[i] || World.road[i] || Game.roadSites.has(i)) return false;
+    if (o && (o.t === 'field' || (typeof isStreetObj === 'function' && isStreetObj(o)))) return false;
+    if (stone && (xx !== x || yy !== y) && !isWalkable(xx, yy)) return false;
+  }
+  for (const u of Game.units) if (!u.dead && Math.floor(u.x) === x && Math.floor(u.y) === y) return false;
+  return true;
+}
+
+// вырастить до n штук t ('stone' | 'tree') в круге R у входа здания, если их там меньше cap
+function regrowAt(b, t, R, cap, n) {
+  const cx = b.doorX, cy = b.doorY, free = [];
+  let have = 0;
+  for (let y = cy - R; y <= cy + R; y++) for (let x = cx - R; x <= cx + R; x++) {
+    if (!inb(x, y)) continue;
+    const d2 = (x - cx) ** 2 + (y - cy) ** 2;
+    if (d2 > R * R) continue;
+    const i = idx(x, y), o = World.obj[i];
+    if (o) { if (o.t === t) have++; }
+    else if (d2 >= 9 && World.terrain[i] === T_GRASS) free.push(i);
+  }
+  n = Math.min(n, cap - have);
+  let made = 0;
+  for (let k = 0; k < 12 * n && made < n && free.length; k++) {
+    const j = Math.random() * free.length | 0, i = free[j];
+    free[j] = free[free.length - 1]; free.pop();
+    const x = i % MAP_W, y = (i / MAP_W) | 0;
+    if (!regrowSpotOk(x, y, t === 'stone')) continue;
+    if (t === 'stone') {
+      const [a, z] = REGROW.stoneN;
+      setStone(i, a + (Math.random() * (z - a + 1) | 0));
+      if (typeof PF !== 'undefined') PF.regT = -1e9;   // глыба непроходима
+    } else setTree(i, 0);
+    made++;
+  }
+  return made;
+}
+
+function regrowTick(dt) {
+  RG.t += dt;
+  if (RG.t < REGROW.every) return;
+  RG.t = 0;
+  if (Game.camp || Game.stress) return;   // в кампании цели считают глыбы поштучно; стресс-карта — замеры
+  // для деревьев зима длится, пока лежит снег (season.js seaFrozen); весна — первый ход после схода снега
+  const si = typeof seaIdx !== 'function' ? 0 : seaFrozen() ? 2 : seaIdx();
+  const spring = si === 3 && RG.sea >= 0 && RG.sea !== 3;
+  RG.sea = si;
+  for (const b of Game.buildings) {
+    if (b.state !== 'done' || b.removed) continue;
+    if (b.type === 'quarry') {
+      if (Math.random() < REGROW.stoneChance) regrowAt(b, 'stone', REGROW.stoneR, REGROW.stoneCap, 1);
+    } else if (b.type === 'woodcutter') {
+      const n = spring ? REGROW.springBurst : Math.random() < REGROW.treeChance[si] ? 1 : 0;
+      if (n) regrowAt(b, 'tree', REGROW.treeR, REGROW.treeCap, n);
+    }
+  }
+}
+
+// зимой лесоруб оставляет у дома последние REGROW.winterKeep взрослых деревьев
+function regrowWinterSpare(b, R) {
+  if (typeof isWinter !== 'function' || !isWinter()) return false;
+  let n = 0;
+  for (let y = b.doorY - R; y <= b.doorY + R; y++) for (let x = b.doorX - R; x <= b.doorX + R; x++) {
+    if (!inb(x, y) || (x - b.doorX) ** 2 + (y - b.doorY) ** 2 > R * R) continue;
+    const o = World.obj[idx(x, y)];
+    if (o && o.t === 'tree' && o.g >= 1 && !o.awake && ++n > REGROW.winterKeep) return false;
+  }
+  return true;
+}
+
 // Найти ближайший объект, подходящий под условие, в квадрате радиуса r.
 function findObjNear(cx, cy, r, test) {
   let best = null, bd = 1e9;

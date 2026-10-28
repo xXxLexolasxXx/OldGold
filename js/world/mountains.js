@@ -185,6 +185,59 @@ function drawMountain(c, m) {
   c.drawImage(spr, Math.round(m.x - S.w / 2), Math.round(m.y - (S.h - 9)), S.w, S.h);
 }
 
+// Выработка: клетка скалы, которую долбят каменотёсы, — выбоина растёт с каждым куском (4 стадии), у подножия
+// щебень, под ней полоска оставшегося запаса. Спрайты кэшируются: 4 стадии × 3 вида на всю игру.
+const MT_WEAR = {};
+function mtWearSprite(st, v) {
+  const key = st * 4 + v;
+  if (MT_WEAR[key]) return MT_WEAR[key];
+  const W = 40, H = 40, [cv, c] = mkSprite(W, H);
+  srand = mulberry32(9100 + key * 17);
+  const cx = W / 2, by = H - 6, k = st / 4;
+  const rw = 7 + k * 9, rh = 5 + k * 13;     // выбоина шире и выше с каждой стадией
+  // свежие светлые сколы по краю и тень в глубине
+  const pts = [];
+  for (let a = 0; a <= 12; a++) {
+    const t = Math.PI + a / 12 * Math.PI, r = 1 + (a % 2 ? rnd(-0.18, 0.05) : rnd(-0.06, 0.1));
+    pts.push([cx + Math.cos(t) * rw * r, by - 1 + Math.sin(t) * rh * r]);
+  }
+  poly(c, pts.map(([x, y]) => [x + 0.8, y - 0.8]), '#f0e2c0');
+  poly(c, pts, '#6e6252');
+  poly(c, pts.map(([x, y]) => [cx + (x - cx) * 0.72, by - 1 + (y - by + 1) * 0.7]), '#3c3228');
+  poly(c, pts.map(([x, y]) => [cx + (x - cx) * 0.38, by - 1 + (y - by + 1) * 0.42]), '#241d17');
+  // трещины от выбоины
+  for (let j = 0; j < 1 + st; j++) {
+    const t = Math.PI * (1.1 + srand() * 0.8);
+    let x = cx + Math.cos(t) * rw, y = by - 1 + Math.sin(t) * rh;
+    c.strokeStyle = 'rgba(40,30,22,0.6)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x, y);
+    for (let s = 0; s < 2; s++) { x += Math.cos(t) * 3 + rnd(-1.5, 1.5); y += Math.sin(t) * 3 + rnd(-1.5, 1.5); c.lineTo(x, y); }
+    c.stroke();
+  }
+  // щебень у подножия
+  for (let j = 0; j < 3 + st * 2; j++) {
+    const x = cx + rnd(-rw - 3, rw + 3), y = by + rnd(0, 4), r = rnd(0.9, 1.6 + k);
+    ellipse(c, x + 0.4, y + 0.5, r, r * 0.6, 'rgba(44,36,26,0.5)');
+    ellipse(c, x, y, r, r * 0.65, srand() < 0.5 ? '#b9a884' : '#80745f');
+    ellipse(c, x - r * 0.3, y - r * 0.25, r * 0.5, r * 0.3, '#e8d9b4');
+  }
+  const out = toPixelArt(cv, SS, { outline: false, alphaCut: 90 });
+  MT_WEAR[key] = out;
+  return out;
+}
+function drawRockWear(c, x, y, i, left) {
+  const k = 1 - left / ROCK_FACE_HP;                       // 0 — цела, 1 — вот-вот осыплется
+  const st = Math.min(4, 1 + (k * 4 | 0)), spr = mtWearSprite(st, i % 3);
+  const px = x * TILE + TILE / 2, py = (y + 1) * TILE;
+  c.drawImage(spr, Math.round(px - spr.width / 2), Math.round(py - spr.height + 4));
+}
+// полоска оставшегося запаса — отдельным слоем поверх гор переднего ряда
+function drawRockWearBar(c, x, y, left) {
+  const px = x * TILE + TILE / 2, py = (y + 1) * TILE - 2;
+  const w = 20, f = Math.max(0, Math.min(1, left / ROCK_FACE_HP));
+  c.fillStyle = 'rgba(20,14,8,0.7)'; c.fillRect(Math.round(px - w / 2) - 1, py + 3, w + 2, 4);
+  c.fillStyle = f > 0.5 ? '#c9b98e' : f > 0.25 ? '#d9a050' : '#d06a40'; c.fillRect(Math.round(px - w / 2), py + 4, Math.max(1, Math.round(w * f)), 2);
+}
+
 // кристаллы на скале рисуются поверх гор — они нужны для постройки шахты
 function drawCrystalTile(c, x, y, i) {
   const r = mulberry32(i * 31 + 7), px = x * TILE, py = y * TILE;

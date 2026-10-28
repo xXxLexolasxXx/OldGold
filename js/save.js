@@ -12,7 +12,7 @@ function resetGameState() {
   Game.piles.clear();
   Game.animals = [];
   Game.critters = []; Game.floaters = []; Game.owls = []; Game.falling = [];
-  ROCKMINE.hp.clear(); ROCKMINE.mined.clear(); ROCKMINE.res.clear();
+  ROCKMINE.hp.clear(); ROCKMINE.mined.clear(); ROCKMINE.res.clear(); ROCKNET.rvIn = -1; ROCKNET.hitT.clear(); RG.t = 0; RG.sea = -1;
   Game.ents = []; Game.ghosts = []; Game.sub = null; Game.subDay = -1; Game.skels = []; Game.lostGnomes = 0; Game.gyNext = 0; Game.entNight = null; Game.wasNight = false; Game.log = []; Game.builtN = 0; Game.festival = null; Game.festNext = undefined; Game.festWish = false; Game.brawl = null; Game.brawlNext = undefined; Game.brawlN = 0;
   Game.bats = []; Game.batAway = 0; Game.batHint = false;
   Game.crows = []; Game.frogs = []; Game.worms = []; Game.chests = null; Game.fairy = null; Game.flies = []; Game.mice = []; Game.badger = null; Game.squirrels = []; Game.peckers = []; Game.hills = []; Game.hedgehogs = []; Game.holes = []; Game.dirt = []; Game.faunaStat = {}; Game.flyNight = -1; resetFairy();

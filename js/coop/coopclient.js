@@ -341,6 +341,7 @@ function coopMirror(m) {
   for (const k of COOP_LISTS) coopSyncList(k, m[k] || []);
   if (m.foe !== undefined) Game.foe = m.foe ? Object.assign(Game.foe || {}, m.foe) : null;     // шпиль Малгора (enemy.js)
   if (typeof spireMirrorIn === 'function') spireMirrorIn(m.sp);     // тропа к шпилю: рубит сервер (spire.js)
+  if (typeof rockMirrorIn === 'function') rockMirrorIn(m.rk);       // выработка скалы каменотёсами (jobs.js)
   Game.glq = m.glq || null;      // руны и пробуждение голема (golemlife.js)
   if (Game.glq && Array.isArray(Game.glq.runes)) Game.glq.runes = Game.glq.runes.filter(Boolean);
   Game.golem = m.golem ? Object.assign(Game.golem || {}, coopResolve(m.golem)) : null;
