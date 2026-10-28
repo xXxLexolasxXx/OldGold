@@ -228,6 +228,7 @@ function naFrame(kind, fr) {
   }
   naCache.set(key, s);
   if (heavy) { spriteSpent(t0); heavySpent(t0); }
+  if (NA_PX[kind] && typeof artStorePush === 'function') artStorePush('na:', key, out, { ax: S.ax, ay: S.ay, w: S.w, h: S.h, fine: out.fine });   // ×3-арт — в постоянный кэш (people.js)
   return s;
 }
 // Готовый кадр того же вида: ближайший номер той же анимации, иначе покой, иначе любой

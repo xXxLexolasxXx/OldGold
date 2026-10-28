@@ -165,7 +165,7 @@ function drawInnPorch(c, b, spr, ox, oy) {
     const [dx, row] = DS[i];
     const view = row < 0 ? 'S' : 'N';
     const opt = { gait: '', gest: 'eat', gf: gestCyc(t * 1.8 + u.id * 0.7) };
-    const sp = personSprite({ type: u.type, look: u.look, carry: null, injury: u.injury }, view, 'idle', 0, opt);
+    const sp = folkSprite({ type: u.type, look: u.look, carry: null, injury: u.injury }, view, 'idle', 0, opt);
     return { dx, row, sp, u };
   };
   // ближние места занимаем по очереди: новый едок садится на ту скамью, где меньше народу
@@ -234,7 +234,7 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests, n, hw) {
   }
   if (!vis) return;
   if (w.st === 'serve') carry = w.t > 1 ? 'tray:' + (w.food || 'bread') : null;
-  const sp = personSprite({ type: 'waitress', look: b.id * 37 + 5, carry }, view, pose, pose === 'walk' ? (Math.floor(w.f * 1.5) % WALK_FRAMES) : 0, {});
+  const sp = folkSprite({ type: 'waitress', look: b.id * 37 + 5, carry }, view, pose, pose === 'walk' ? (Math.floor(w.f * 1.5) % WALK_FRAMES) : 0, {});
   const px = Math.round(w.x), py = Math.round(w.y);
   c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(px + 1, py, 5.5, 2, 0, 0, 7); c.fill();
   if (w.face < 0 && view === 'E') { c.save(); c.translate(px, py); c.scale(-1, 1); c.drawImage(sp, -PFX, -PFY, PW, PH); c.restore(); }
@@ -502,8 +502,19 @@ function drawSlapScene(c, b, spr, tx, ty, ox, oy) {
 const INN_YARD_REG = [0, 1, 2, 3];          // завсегдатаев у костра по уровню (больше — толпа у огня)
 function innFolk(b, k) { return { type: 'farmer', look: (b.id * 97 + k * 31) >>> 0, carry: null }; }
 const YARD_K = 0.78;   // гномы во дворах зданий чуть мельче: рядом с пиксельными домами в полный рост они выглядят великанами
+// Дворовые гномы создаются заново каждый кадр — без «прошлого кадра» новая поза собиралась прямо посреди отрисовки
+// (на телефоне двор трактира и лавок — ~6 мс за кадр). Помним прошлый кадр по виду и облику: тогда новая поза
+// уходит в общую очередь (spriteDefer, people.js), а пока рисуется прошлая.
+const FOLK_LAST = new Map();
+function folkSprite(u, view, pose, frame, opt) {
+  const fk = u.type + '|' + u.look;
+  if (!u._spr) u._spr = FOLK_LAST.get(fk) || null;
+  const sp = personSprite(u, view, pose, frame, opt || {});
+  if (sp) { if (FOLK_LAST.size > 400) FOLK_LAST.clear(); FOLK_LAST.set(fk, sp); }
+  return sp;
+}
 function drawFolk(c, u, x, y, view, pose, frame, opt, flip) {
-  const sp = personSprite(u, view, pose, frame, opt || {}), k = YARD_K;
+  const sp = folkSprite(u, view, pose, frame, opt), k = YARD_K;
   if (flip) { c.save(); c.translate(Math.round(x), Math.round(y)); c.scale(-k, k); c.drawImage(sp, -PFX, -PFY, PW, PH); c.restore(); }
   else c.drawImage(sp, x - PFX * k, y - PFY * k, PW * k, PH * k);
 }
@@ -626,7 +637,7 @@ function drawStoreYard(c, b, spr, ox, oy) {
 function kidFolk(b, k) { return { type: 'kid', look: (b.id * 131 + k * 47) >>> 0, carry: null }; }
 // гномёнок мельче взрослого (×0.7), ноги — в точке (x, y)
 function drawKid(c, b, k, x, y, view, pose, frame, opt) {
-  const sp = personSprite(kidFolk(b, k), view, pose, frame, opt || {}), s = 0.55;   // дети мельче взрослых во дворе (YARD_K)
+  const sp = folkSprite(kidFolk(b, k), view, pose, frame, opt), s = 0.55;   // дети мельче взрослых во дворе (YARD_K)
   c.drawImage(sp, Math.round(x - PFX * s), Math.round(y - PFY * s), Math.round(PW * s), Math.round(PH * s));
 }
 function drawSchoolYard(c, b, spr, ox, oy) {

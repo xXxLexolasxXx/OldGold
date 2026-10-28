@@ -432,6 +432,7 @@ function paintGhost(c, p, mood, k) {
 
 function drawGhosts(c) {
   const t = Game.time;
+  if (typeof ghostPxWarm === 'function' && typeof GHOST_PX !== 'undefined') ghostPxWarm();   // кадры к ночи (ghostpx.js)
   for (const g of Game.ghosts || []) {
     if (g.alpha <= 0.01) continue;
     const bob = Math.sin(g.ph) * 2.4, px = Math.round(g.x * TILE), py = Math.round(g.y * TILE - 17 - bob);

@@ -327,6 +327,19 @@ function ghostPxSprite(v, mood, f, rag = '') {
 // Кадр для игры по общему бюджету новых спрайтов (spriteBudgetOk, people.js): кадр строится десятки миллисекунд,
 // поэтому новый — только если в этом кадре рендера ещё есть время; иначе рисуется прошлый кадр этого призрака.
 const GPX_LAST = new WeakMap();
+// Прогрев к ночи: по кадру покоя на каждый облик и вид савана, по бюджету тяжёлых сборок, пока призраков ещё нет —
+// у первого же призрака ночи будет готовый запасной кадр (иначе первый кадр собирался сразу: на телефоне ~80 мс)
+function ghostPxWarm() {
+  if (typeof nightAmt !== 'function' || nightAmt() < 0.1) return;   // днём призраков нет
+  for (const v of GHOST_PX) for (const rag of ['', 'T1', 'T2']) {
+    if (FZ_CVC['gh' + v + 'idle0' + rag]) continue;
+    if (typeof heavyBuildOk === 'function' && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return;
+    const t0 = performance.now();
+    ghostPxSprite(v, 'idle', 0, rag);
+    if (typeof heavySpent === 'function') { spriteSpent(t0); heavySpent(t0); }
+    return;   // по одному за кадр
+  }
+}
 function ghostPxNear(v, mood, f, rag) {
   for (let d = 1; d < 12; d++) for (const k of [f - d, f + d]) { const c = k >= 0 && FZ_CVC['gh' + v + mood + k + rag]; if (c) return c; }
   for (let k = 0; k < GPX_N.idle; k++) { const c = FZ_CVC['gh' + v + 'idle' + k + rag]; if (c) return c; }

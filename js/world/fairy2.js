@@ -1111,6 +1111,7 @@ function fzPxSprite(key, w, h, ox, oy, make) {
   const px = make();
   const cv = fzCanvas(key, w, h, ox, oy, c => { c.imageSmoothingEnabled = false; c.drawImage(px, -ox, -oy, w, h); });
   cv.fzPx = true;
+  if (typeof artStorePush === 'function') artStorePush('fz:', key, cv, { fzO: cv.fzO });   // в постоянный кэш (people.js)
   return cv;
 }
 const FZ_B4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
