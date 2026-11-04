@@ -1,0 +1,165 @@
+/* Published 0.11.99: cosmetic wood/brass port. Native menu and layout callbacks remain. */
+:root { --gold:#c9aa68; --gold-hi:#f0d49a; --line:#7b6040; --line-hi:#b29460; --text:#eee1c4; --text-dim:#b8a78a; }
+#start-menu { background:linear-gradient(#152b2500,#13251edb 65%); }
+/* OldGold UI finish. Load after fantasy-ui.css. No start-menu/loading selectors. */
+#panel, #topbar, #tool-hint, #mtool, #help {
+  --ui-brass: #ae8954;
+  --ui-rim: #d0af74;
+  --text: #f0e5cd;
+  --text-dim: #c3b398;
+  --gold: #d5b477;
+  --gold-hi: #f3d99f;
+  --ui-wood: url("../assets/fantasy/ui-rough-wood-v3.png"); --ui-board: var(--ui-wood) 0 0 / 384px 384px repeat;
+  color: var(--text);
+}
+#panel {
+  background: var(--ui-board);
+  border-right-color: #a17c49;
+  box-shadow: inset -2px 0 #201810, inset -3px 0 #c6a36a55, 4px 0 14px #100c0970;
+}
+#panel #logo { font-size: 25px; letter-spacing: 3px; margin: 2px 0; filter: drop-shadow(0 2px #1d140e); }
+#panel .mm-wrap { border-color: #20170f; background: linear-gradient(#a08050, #654a30); box-shadow: inset 0 0 0 1px #c6a16b, 0 2px 4px #110c0980; }
+#panel #tab-area { background: #1e1814ed; border-color: #83613f; border-radius: 3px; box-shadow: inset 0 1px 5px #100b0966; }
+#panel button, #topbar button, #mtool button, #help button {
+  color: #f0e5cd; border: 1px solid #927047; border-radius: 3px;
+  background: linear-gradient(#bc95551a, #130e1240), var(--ui-board);
+  box-shadow: inset 0 1px #e7c68830, inset 0 -1px #160f0c80, 0 1px 2px #100c0966;
+  text-shadow: 0 1px #18120d;
+}
+#panel button:hover, #topbar button:hover, #mtool button:hover, #help button:hover { border-color: #d0af74; filter: brightness(1.12); }
+#panel button.active, #topbar button.active, #panel button:active {
+  color: #ffe9b5; border-color: #d0af74;
+  background: linear-gradient(#ad864b45, #bd914511), #3c3022;
+  box-shadow: inset 0 0 0 1px #f4d9a126, inset 0 -2px #d0af74, 0 1px 3px #100c0980;
+}
+#panel button:focus-visible, #topbar button:focus-visible, #mtool button:focus-visible, #help button:focus-visible { outline: 2px solid #f4d596; outline-offset: 2px; }
+#panel button:disabled { filter: saturate(.45); }
+#panel #tabs { gap: 5px; }
+#panel .tab-btn { border-radius: 4px 4px 2px 2px; }
+#panel .tab-btn img { filter: drop-shadow(0 1px #17110c); }
+#panel #build-cats { gap: 3px; margin: 8px 0; }
+#panel #build-cats button { line-height: 1.3; min-height: 29px; }
+#panel .tools button { min-height: 29px; }
+#panel #build-list { gap: 5px; }
+#panel .bbtn { min-height: 102px; padding: 5px 2px; gap: 3px; background: linear-gradient(#a98b5920, #1b1510a0), #30261d; border-color: #70553b; }
+#panel .bbtn .bimg { image-rendering: pixelated; filter: drop-shadow(0 2px 1px #100b09); }
+#panel .bbtn .bname { color: #f3e6c9; font-size: 11.5px; line-height: 1.22; min-height: 28px; }
+#panel .cost { color: #d7bd8d; font-variant-numeric: tabular-nums; }
+#panel #info-wrap { background: linear-gradient(#211a1599, #1e1814eb), var(--ui-board); border: 1px solid #9d794b; border-radius: 4px; box-shadow: inset 0 0 0 1px #20180f, 0 2px 5px #100c0966; }
+#panel #info-bar { color: #d0b78c; border-bottom-color: #82623b; background: linear-gradient(#b8955526, #17110d30); padding-top: 5px; padding-bottom: 5px; font-size: 11px; }
+#panel #info { line-height: 1.4; padding: 8px 9px 10px; }
+#panel .ihead { gap: 9px; padding-bottom: 7px; border-bottom: 1px solid #9c784433; }
+#panel .ihead h3 { line-height: 1.2; color: #f3d99f; }
+#panel .ihead .bpic { background: #201b16; border: 1px solid #9c7844; border-radius: 3px; image-rendering: pixelated; }
+#panel .group-title, #panel .isec { color: #d9ba80; letter-spacing: .065em; border-bottom: 1px solid #94704855; padding-bottom: 3px; }
+#panel .recipe, #panel .slot { background: #181410b3; border-color: #665039; border-radius: 3px; box-shadow: inset 0 1px #d2b4770d; }
+#panel .recipe { padding: 5px; }
+#panel .stat-row { padding: 3px 0; border-bottom: 1px solid #a7834930; }
+#panel .stat-row .v, #panel .slot .n { font-variant-numeric: tabular-nums; }
+#panel .tip, #panel .idesc, #panel .hotkeys { color: #c3b398; line-height: 1.45; }
+#panel .chip { border-radius: 2px; border-color: #bda06a55; }
+#panel .iactions { flex-wrap: wrap; gap: 4px; }
+#panel .iactions button { min-height: 27px; }
+#panel #split::after { height: 2px; background: #b08b54; box-shadow: 0 1px #1b130e; }
+#panel :is(#info, #tab-area) { scrollbar-width: thin; scrollbar-color: #9b794c #1e1813; }
+#topbar :is(.speed, #clock, .dd-t, .dd-menu) { background: var(--ui-board); border: 1px solid #a27e4d; border-radius: 3px; box-shadow: inset 0 1px #ddbb7a30, 0 2px 4px #100c0980; }
+#topbar #clock { color: #e0c799; font-variant-numeric: tabular-nums; }
+#topbar .dd-menu { padding: 8px; }
+#tool-hint, #mtool, #help { background: linear-gradient(#1f1913e8, #1f1913f5), var(--ui-board); border: 1px solid #b28d56; border-radius: 4px; color: #f0e5cd; box-shadow: inset 0 1px #ddbb7a30, 0 3px 12px #100c0980; line-height: 1.45; }
+body.mobile #panel { border-top: 2px solid #b08b54; border-right: none; box-shadow: inset 0 1px #ead3a233, 0 -3px 12px #100c0980; }
+body.mobile #panel #sheet-close { color: #d8c197; min-height: 29px; }
+body.mobile #panel .bbtn { min-height: 107px; }
+body.mobile #panel .bbtn .bname { font-size: 12px; }
+body.mobile #panel #tabs { gap: 4px; }
+body.mobile #panel .tab-btn { height: 46px; }
+body.mobile #panel #info { font-size: 14px; }
+body.mobile #panel .tip { font-size: 13px; }
+/* Categories keep readable labels and scroll within the existing tab. */
+#panel #build-cats { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #9b794c #1e1813; padding-bottom: 3px; }
+#panel #build-cats button { flex: 1 0 auto; padding-left: 5px; padding-right: 5px; }
+
+/* Rough workshop boards: actual grain, damaged edges and raised nail heads. */
+
+#panel { background: linear-gradient(90deg, #130d0944, transparent 15%, transparent 86%, #130d0944), var(--ui-board); }
+#panel .mm-wrap { background: linear-gradient(#21181022, #21181044), var(--ui-board); padding: 7px; }
+#panel #tab-area { background: linear-gradient(#100d094a, #100d094a), var(--ui-wood) 23px 7px / 384px 384px repeat; border-color: #322217; box-shadow: inset 0 0 0 1px #a6804b77, inset 0 0 10px #120d0944; }
+#panel #info-wrap { background: linear-gradient(#100d0944, #100d0944), var(--ui-wood) 0 37px / 384px 384px repeat; }
+#panel #info-bar { background: linear-gradient(#21181033, #21181066), var(--ui-wood) 0 84px / 384px 384px repeat; }
+#panel button, #topbar button, #mtool button, #help button {
+  background: linear-gradient(#9e793814, #160e0b55), var(--ui-wood) 14px 12px / 320px 320px repeat;
+  border: 1px solid #302116; border-radius: 2px;
+  box-shadow: inset 0 1px #d3ac6c77, inset 1px 0 #c0985b44, inset -1px -2px #120d09aa, 0 1px 2px #0e0b0980;
+}
+#panel button:nth-child(2n) { background-position: 0 0, 92px 57px; }
+#panel button.active, #topbar button.active, #panel button:active {
+  background: linear-gradient(#d9ab3b22, #120d0955), var(--ui-wood) 14px 12px / 320px 320px repeat;
+  border-color: #ddba72; box-shadow: inset 0 0 0 1px #24190e, inset 0 -2px #d2ab63, 0 1px 3px #0e0b09;
+}
+#panel .bbtn { background: linear-gradient(#1b120b33, #1b120b66), var(--ui-wood) 0 2px / 384px 384px repeat; border-color: #37271a; }
+#panel .bbtn:nth-child(2n) { background-position: 0 0, 87px 48px; }
+#panel .bbtn:nth-child(3n) { background-position: 0 0, 140px 96px; }
+#panel .bbtn .bname, #panel .cost, #panel .tip, #panel .idesc, #panel .irow, #panel .isec, #panel .group-title { text-shadow: 0 1px 1px #160d06, 1px 0 2px #160d06, -1px 0 2px #160d06; }
+#panel .recipe, #panel .slot { background: linear-gradient(#17120e88, #17120ea0), var(--ui-wood) 0 0 / 320px 320px repeat; border-color: #9c784866; }
+#panel .tab-btn img { width: 32px; height: 32px; filter: drop-shadow(0 2px #19130e); }
+#topbar :is(.speed, #clock, .dd-t, .dd-menu) { background: linear-gradient(#1a130b44, #1a130b66), var(--ui-board); border-color: #9e7c4b; }
+#panel .tab-btn { min-width: 0; }
+/* Darkened boards behind long prose; grain and damage remain visible. */
+#panel #info-wrap { background: linear-gradient(#100d0977, #100d0977), var(--ui-wood) 0 37px / 384px 384px repeat; }
+
+
+/* Short tactile motion, isolated from world sprites and mobile sheet transforms. */
+@media (prefers-reduced-motion: no-preference) {
+  #panel button, #topbar button, #mtool button, #help button {
+    transition: filter 120ms ease-out, border-color 120ms ease-out, box-shadow 90ms ease-out;
+  }
+  #panel button:active:not(:disabled), #topbar button:active:not(:disabled), #mtool button:active:not(:disabled) {
+    translate: 0 1px;
+  }
+  #panel .tab.active { animation: og-ui-reveal 150ms ease-out both; }
+  #panel .tab-btn.active img { animation: og-ui-icon-settle 180ms steps(4, end) both; }
+}
+@keyframes og-ui-reveal { from { opacity: .7; } to { opacity: 1; } }
+@keyframes og-ui-icon-settle { 0% { translate: 0 2px; } 60% { translate: 0 -1px; } 100% { translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  #panel button, #topbar button, #mtool button, #help button { transition: none; }
+  #panel .tab.active, #panel .tab-btn.active img { animation: none; }
+}
+/* Main menu: same worn workshop boards as the in-game interface. */
+#start-menu, #sm-music {
+  --menu-wood: url('../assets/fantasy/ui-rough-wood-v3.png');
+}
+#start-menu .sm-btn, #start-menu .sm-btn.ghost, #start-menu .sm-panel button, #sm-music {
+  background: linear-gradient(#20140b25, #160e0966), var(--menu-wood) 14px 12px / 384px 384px repeat;
+  color: #f4e5c6; border: 1px solid #a17b47; border-radius: 2px;
+  box-shadow: inset 0 1px #d4ac6c77, inset -1px -2px #160d09, 0 3px 0 #17100c, 0 5px 8px #100b0966;
+  text-shadow: 0 1px 2px #100904, 1px 0 2px #100904, -1px 0 2px #100904;
+  overflow: visible;
+}
+#start-menu .sm-btn:nth-child(2n) { background-position: 0 0, 95px 60px; }
+#start-menu .sm-btn:nth-child(3n) { background-position: 0 0, 155px 110px; }
+#start-menu .sm-btn.primary { background: linear-gradient(#d5a64c18, #20140b55), var(--menu-wood) 40px 48px / 384px 384px repeat; border-color: #d4b273; }
+#start-menu .sm-btn small { color: #dfceb0; opacity: 1; }
+#start-menu .sm-btn:disabled { opacity: .55; filter: saturate(.6); }
+#start-menu .sm-btn.sm-picked { border-color: #e3c68d; filter: brightness(1.13); box-shadow: inset 0 1px #d4ac6c88, inset 0 -2px #17100c, 0 2px 0 #17100c, 0 0 12px #cba65a44; }
+#start-menu .sm-sub, #start-menu .sm-help {
+  background: linear-gradient(#130f0bb8, #130f0bb8), var(--menu-wood) 0 0 / 384px 384px repeat;
+  color: #efdfc1; border: 1px solid #a17b47; border-radius: 3px;
+  box-shadow: inset 0 1px #d4ac6c33, 0 5px 14px #100b0980;
+}
+#start-menu .sm-panel input { background: linear-gradient(#100c09b8, #100c09b8), var(--menu-wood) 24px 12px / 384px 384px repeat; color: #f4e5c6; border-color: #997345; border-radius: 2px; box-shadow: inset 0 2px 4px #100b0977; }
+#start-menu .sm-panel label { color: #e0c99f; text-shadow: 0 1px 2px #160e08; }
+#start-menu .sm-btn:focus-visible, #start-menu input:focus-visible, #sm-music:focus-visible { outline: 2px solid #e9cb8e; outline-offset: 3px; }
+#start-menu canvas.sm-vine { image-rendering: pixelated; filter: drop-shadow(0 1px #1a190c); }
+@media (prefers-reduced-motion: no-preference) {
+  #start-menu .sm-btn { transition: filter 120ms ease-out, border-color 120ms ease-out, box-shadow 100ms ease-out; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #start-menu .sm-btn, #start-menu canvas.sm-vine { animation: none !important; transition: none !important; }
+}
+/* Nearest-neighbor bitmap presentation, consistent with new building sprites. */
+#start-menu .sm-btn, #start-menu .sm-sub, #start-menu .sm-help,
+#start-menu input, #sm-music, #panel button, #topbar button {
+  image-rendering: pixelated;
+}
+#start-menu canvas.sm-vine { filter: none; }
+

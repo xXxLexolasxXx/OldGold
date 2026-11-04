@@ -1,0 +1,205 @@
+{
+  "tileWorld": 32,
+  "buildingRasterScale": 2,
+  "dpr": 1,
+  "zooms": [
+    {
+      "zoom": 0.5,
+      "deviceScale": 0.5,
+      "cssScale": 0.5,
+      "smoothing": true,
+      "buildingRasterPixelInCSS": 0.25
+    },
+    {
+      "zoom": 1,
+      "deviceScale": 1,
+      "cssScale": 1,
+      "smoothing": false,
+      "buildingRasterPixelInCSS": 0.5
+    },
+    {
+      "zoom": 2,
+      "deviceScale": 2,
+      "cssScale": 2,
+      "smoothing": false,
+      "buildingRasterPixelInCSS": 1
+    },
+    {
+      "zoom": 3,
+      "deviceScale": 3,
+      "cssScale": 3,
+      "smoothing": false,
+      "buildingRasterPixelInCSS": 1.5
+    },
+    {
+      "zoom": 4,
+      "deviceScale": 4,
+      "cssScale": 4,
+      "smoothing": false,
+      "buildingRasterPixelInCSS": 2
+    }
+  ],
+  "people": {
+    "canvasWorld": [
+      26,
+      38
+    ],
+    "rasterScale": 2,
+    "displayScale": 0.6666666666666666,
+    "displayWorld": [
+      17.333333333333332,
+      25.333333333333332
+    ],
+    "finalWorldRasterScale": 2
+  },
+  "references": [
+    {
+      "type": "school",
+      "source": [
+        1214,
+        1295
+      ],
+      "alphaCrop": [
+        137,
+        81,
+        941,
+        1132
+      ],
+      "footprintWorld": [
+        96,
+        96
+      ],
+      "facadeWorld": {
+        "x": 44,
+        "ground": 149,
+        "w": 84,
+        "h": 101
+      },
+      "canvasPixels": [
+        440,
+        412
+      ],
+      "canvasWorld": [
+        220,
+        206
+      ],
+      "rasterPixelsPerWorldPixel": 2,
+      "sourcePixelsPerWorldPixel": [
+        11.202380952380953,
+        11.207920792079207
+      ],
+      "smoothingAtImport": false
+    },
+    {
+      "type": "inn",
+      "source": [
+        1303,
+        1207
+      ],
+      "alphaCrop": [
+        86,
+        75,
+        1133,
+        1037
+      ],
+      "footprintWorld": [
+        128,
+        96
+      ],
+      "facadeWorld": {
+        "x": 42,
+        "ground": 142,
+        "w": 81,
+        "h": 74
+      },
+      "canvasPixels": [
+        504,
+        392
+      ],
+      "canvasWorld": [
+        252,
+        196
+      ],
+      "rasterPixelsPerWorldPixel": 2,
+      "sourcePixelsPerWorldPixel": [
+        13.987654320987655,
+        14.013513513513514
+      ],
+      "smoothingAtImport": false
+    },
+    {
+      "type": "storehouse",
+      "source": [
+        1293,
+        1217
+      ],
+      "alphaCrop": [
+        66,
+        136,
+        1175,
+        973
+      ],
+      "footprintWorld": [
+        128,
+        96
+      ],
+      "facadeWorld": {
+        "x": 46,
+        "ground": 154,
+        "w": 112,
+        "h": 93
+      },
+      "canvasPixels": [
+        504,
+        360
+      ],
+      "canvasWorld": [
+        252,
+        180
+      ],
+      "rasterPixelsPerWorldPixel": 2,
+      "sourcePixelsPerWorldPixel": [
+        10.491071428571429,
+        10.46236559139785
+      ],
+      "smoothingAtImport": false
+    },
+    {
+      "type": "quarry",
+      "source": [
+        1310,
+        1200
+      ],
+      "alphaCrop": [
+        127,
+        110,
+        1085,
+        997
+      ],
+      "footprintWorld": [
+        64,
+        64
+      ],
+      "facadeWorld": {
+        "x": 44,
+        "ground": 87,
+        "w": 52,
+        "h": 48
+      },
+      "canvasPixels": [
+        344,
+        256
+      ],
+      "canvasWorld": [
+        172,
+        128
+      ],
+      "rasterPixelsPerWorldPixel": 2,
+      "sourcePixelsPerWorldPixel": [
+        20.865384615384617,
+        20.770833333333332
+      ],
+      "smoothingAtImport": false
+    }
+  ]
+}
