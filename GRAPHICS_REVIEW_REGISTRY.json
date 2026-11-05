@@ -91,5 +91,14 @@
     "One representative: send five separate views, native animation extremes/intermediates, enlarged detail and literal 1:1 plus shared actual game scene. Receive specific peer findings and resolve them BEFORE batch expansion.",
     "Final: manifest and exact SHA, covered states/views, limits and visual/technical proofs. Independent peer must review THAT SAME SHA. Any subsequent source change invalidates matching final approval."
   ],
-  "releaseGate": "Owner self-QA + concrete independent visual and technical review + lead acceptance at identical SHA. Inspector audits evidence. Pending disagreements stay WIP; no automatic deletion, rollback or publication."
+  "releaseGate": "Owner self-QA + concrete independent visual and technical review + lead acceptance at identical SHA. Inspector audits evidence. Pending disagreements stay WIP; no automatic deletion, rollback or publication.",
+  "latestUserInstruction": "Close all OldGold sessions and publish accepted work to main; allow current non-animal neutrals to finish. No animal restart.",
+  "acceptedCourt": {
+    "rendererSHA256": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b",
+    "portraitSHA256": "2b320f632ec16c9ae75ddf144a83cc38d3cf144473da2c8159a8727368359dc0",
+    "leadDecision": "Accepted for main after bounded independent reviews; per-model scale fixed, width differences reflect authored projection and anatomy, not bbox identity.",
+    "ownerQA": "5544 phases; 32 FX; cache; 880 immutable native callbacks per desktop/mobile",
+    "independent": "Baganet55idle bbox/anchors+school/static views; forest representative static visual review; UI2body-portrait crops; pages_editor_adapter targeted48frames/48contacts/55cache aliases/mirrors/NPC-clock/2portrait crops on desktop/mobile",
+    "limitations": "Independent checks are bounded; do not claim all5544 phases were independently rerun. Old v5 overscale remains invalid."
+  }
 }
