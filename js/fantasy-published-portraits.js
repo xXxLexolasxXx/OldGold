@@ -57,6 +57,7 @@
   if(who==='zhab'&&globalThis.FantasyPublishedFrogs?.enabled){const sp=naFrame('ftZF',fr),S=NA_SPEC.ftZ,P=naPose(fr),sq=P.sq||1,z=Math.sqrt(sq),sc=S.sc;return{sp,box:[sp.ax+(P.x||0)*sc-14*sc/z,sp.ay+(P.y||0)*sc+(-22.4-12)*sc*sq,28*sc/z,29*sc*sq],renderer:'naFrame(ftZF)',frame:fr};}
   const court=globalThis.FantasyDarkCourtPolish;
   if(who==='mrak'&&court?.assets?.ready&&typeof court.portrait==='function'){const phase=f?8:0,frame='i'+phase,sp=court.portrait('fMalgor1',phase),Q=court.pose(frame),z=(FPX_BOX.fMalgor1[4]||1)/3,dy=(Q.bob+Q.br*.8)*z;return{sp,box:[sp.ax-15,sp.ay-84+dy,30,33],renderer:'FantasyDarkCourtPolish.portrait(fMalgor1,S)',frame,direction:'S'};}
+  if(who==='mrak'&&typeof foePxFrame==='function'){const sp=foePxFrame('fMalgor1',fr);if(sp){const Q=fpxPose(fr),dy=Q.br*2/3;return{sp,box:[sp.ax-11,sp.ay-70+dy,24,27],renderer:'foePxFrame(fMalgor1) native pending court scale review',frame:fr};}}
   if(who==='golem'&&globalThis.FantasyPublishedGolem){const frame=f?9:0,cv=golemSprite('S','idle',frame,true),P=golemPose('S','idle',frame),hx=P.sx+P.head.dx,hy=-67-P.up+P.head.dy;return{sp:{cv,w:GL_W,h:GL_H,ax:GL_AX,ay:GL_AY},box:[GL_AX+hx-25,GL_AY+hy-23,50,50],renderer:'golemSprite(S,idle) peaceful',frame,season:golemSea()};}
   return null;
  }

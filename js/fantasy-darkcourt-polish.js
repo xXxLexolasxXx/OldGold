@@ -2,6 +2,9 @@
  * No AI/state/registry changes. Half-world-pixel output, crisp alpha. */
 'use strict';
 (()=>{
+ // Late cold-native audit found enlarged silhouettes. Keep the unfinished
+ // directional pass available for review, outside the normal game.
+ if(new URLSearchParams(location.search).get('courtPreview')!=='1')return;
  if(window.FantasyDarkCourtPolish)return;
  class PixelCache extends Map{
  constructor(){super();this.bytes=0;this.maxBytes=32*1024*1024;this.maxEntries=1200;this.hits=0;this.misses=0;}
