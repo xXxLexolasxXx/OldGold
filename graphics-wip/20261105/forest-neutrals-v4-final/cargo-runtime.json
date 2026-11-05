@@ -1,0 +1,248 @@
+{
+  "checks": 40,
+  "rows": [
+    {
+      "dir": "S",
+      "label": "canopyTop",
+      "x": -13,
+      "y": -95
+    },
+    {
+      "dir": "S",
+      "label": "soil",
+      "x": 12,
+      "y": -20
+    },
+    {
+      "dir": "S",
+      "label": "root",
+      "x": 4.799999999999997,
+      "y": -12
+    },
+    {
+      "dir": "S",
+      "label": "root",
+      "x": 12,
+      "y": -12
+    },
+    {
+      "dir": "S",
+      "label": "root",
+      "x": 19.200000000000003,
+      "y": -12
+    },
+    {
+      "dir": "SE",
+      "label": "canopyTop",
+      "x": -13,
+      "y": -95
+    },
+    {
+      "dir": "SE",
+      "label": "soil",
+      "x": 12,
+      "y": -20
+    },
+    {
+      "dir": "SE",
+      "label": "root",
+      "x": 4.799999999999997,
+      "y": -12
+    },
+    {
+      "dir": "SE",
+      "label": "root",
+      "x": 12,
+      "y": -12
+    },
+    {
+      "dir": "SE",
+      "label": "root",
+      "x": 19.200000000000003,
+      "y": -12
+    },
+    {
+      "dir": "E",
+      "label": "canopyTop",
+      "x": -13,
+      "y": -95
+    },
+    {
+      "dir": "E",
+      "label": "soil",
+      "x": 12,
+      "y": -20
+    },
+    {
+      "dir": "E",
+      "label": "root",
+      "x": 4.799999999999997,
+      "y": -12
+    },
+    {
+      "dir": "E",
+      "label": "root",
+      "x": 12,
+      "y": -12
+    },
+    {
+      "dir": "E",
+      "label": "root",
+      "x": 19.200000000000003,
+      "y": -12
+    },
+    {
+      "dir": "NE",
+      "label": "canopyTop",
+      "x": -13,
+      "y": -95
+    },
+    {
+      "dir": "NE",
+      "label": "soil",
+      "x": 12,
+      "y": -20
+    },
+    {
+      "dir": "NE",
+      "label": "root",
+      "x": 4.799999999999997,
+      "y": -12
+    },
+    {
+      "dir": "NE",
+      "label": "root",
+      "x": 12,
+      "y": -12
+    },
+    {
+      "dir": "NE",
+      "label": "root",
+      "x": 19.200000000000003,
+      "y": -12
+    },
+    {
+      "dir": "N",
+      "label": "canopyTop",
+      "x": -13,
+      "y": -95
+    },
+    {
+      "dir": "N",
+      "label": "soil",
+      "x": 12,
+      "y": -20
+    },
+    {
+      "dir": "N",
+      "label": "root",
+      "x": 4.799999999999997,
+      "y": -12
+    },
+    {
+      "dir": "N",
+      "label": "root",
+      "x": 12,
+      "y": -12
+    },
+    {
+      "dir": "N",
+      "label": "root",
+      "x": 19.200000000000003,
+      "y": -12
+    },
+    {
+      "dir": "NW",
+      "label": "canopyTop",
+      "x": 13,
+      "y": -95
+    },
+    {
+      "dir": "NW",
+      "label": "soil",
+      "x": -12,
+      "y": -20
+    },
+    {
+      "dir": "NW",
+      "label": "root",
+      "x": -4.799999999999997,
+      "y": -12
+    },
+    {
+      "dir": "NW",
+      "label": "root",
+      "x": -12,
+      "y": -12
+    },
+    {
+      "dir": "NW",
+      "label": "root",
+      "x": -19.2,
+      "y": -12
+    },
+    {
+      "dir": "W",
+      "label": "canopyTop",
+      "x": 13,
+      "y": -95
+    },
+    {
+      "dir": "W",
+      "label": "soil",
+      "x": -12,
+      "y": -20
+    },
+    {
+      "dir": "W",
+      "label": "root",
+      "x": -4.799999999999997,
+      "y": -12
+    },
+    {
+      "dir": "W",
+      "label": "root",
+      "x": -12,
+      "y": -12
+    },
+    {
+      "dir": "W",
+      "label": "root",
+      "x": -19.2,
+      "y": -12
+    },
+    {
+      "dir": "SW",
+      "label": "canopyTop",
+      "x": 13,
+      "y": -95
+    },
+    {
+      "dir": "SW",
+      "label": "soil",
+      "x": -12,
+      "y": -20
+    },
+    {
+      "dir": "SW",
+      "label": "root",
+      "x": -4.799999999999997,
+      "y": -12
+    },
+    {
+      "dir": "SW",
+      "label": "root",
+      "x": -12,
+      "y": -12
+    },
+    {
+      "dir": "SW",
+      "label": "root",
+      "x": -19.2,
+      "y": -12
+    }
+  ],
+  "failures": [],
+  "method": "Actual cargo draw operations transformed to world units; native soil80-100=-20, lowest root88-100=-12; visible tree bounds explicitly cropped to canopy top-95.",
+  "sha": "736b1e33603165a6bd4ef50fdb3e93bbf042fb7c735f832dc2d9e20ed82fc31e"
+}

@@ -1,0 +1,65 @@
+{
+  "ready": true,
+  "assetErrors": [],
+  "coverage": [
+    {
+      "kind": "fairy",
+      "frames": 129,
+      "directions": 8,
+      "total": 1032
+    },
+    {
+      "kind": "leshy",
+      "frames": 93,
+      "directions": 8,
+      "total": 744
+    },
+    {
+      "kind": "leprechaun",
+      "frames": 56,
+      "directions": 8,
+      "total": 448
+    },
+    {
+      "kind": "native leprechaun sequence blends",
+      "total": 480
+    },
+    {
+      "kind": "brownie",
+      "total": 8
+    },
+    {
+      "kind": "enderman and cargo",
+      "total": 16
+    },
+    {
+      "kind": "gargoyles 3 styles 8 flaps 4 eye levels",
+      "total": 768
+    }
+  ],
+  "total": 3496,
+  "clipped": [],
+  "empty": [],
+  "nonBinaryAlpha": [],
+  "mutations": [],
+  "repeats": {
+    "fairy": true,
+    "leshy": true,
+    "leprechaun": true,
+    "brownie": true,
+    "enderman": true
+  },
+  "stats": {
+    "entries": 309,
+    "rgbaBytes": 50274560,
+    "maxEntries": 512,
+    "maxRgbaBytes": 50331648,
+    "staticBytes": 77858784,
+    "maxStaticBytes": 100663296,
+    "hits": 165,
+    "misses": 3345
+  },
+  "errors": [],
+  "pageErrors": [],
+  "sha": "736b1e33603165a6bd4ef50fdb3e93bbf042fb7c735f832dc2d9e20ed82fc31e"
+}

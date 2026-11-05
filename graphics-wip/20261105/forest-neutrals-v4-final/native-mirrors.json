@@ -1,0 +1,6 @@
+{
+  "checks": 96,
+  "failures": [],
+  "method": "Actual native lepDraw/endermanDraw body canvas + actual caller mirror compared pixel-for-pixel to directional frame at native resolution",
+  "sha": "736b1e33603165a6bd4ef50fdb3e93bbf042fb7c735f832dc2d9e20ed82fc31e"
+}

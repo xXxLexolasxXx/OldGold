@@ -1,0 +1,173 @@
+{
+  "states": [
+    {
+      "style": "A",
+      "phase": 0,
+      "desiredFlap": 0,
+      "ph": -306,
+      "nightEyeK": 1
+    },
+    {
+      "style": "A",
+      "phase": 1,
+      "desiredFlap": 0.14285714285714285,
+      "ph": -305.1918360127542,
+      "nightEyeK": 1
+    },
+    {
+      "style": "A",
+      "phase": 2,
+      "desiredFlap": 0.2857142857142857,
+      "ph": -305.05317846490067,
+      "nightEyeK": 1
+    },
+    {
+      "style": "A",
+      "phase": 3,
+      "desiredFlap": 0.42857142857142855,
+      "ph": -304.94823221370814,
+      "nightEyeK": 1
+    },
+    {
+      "style": "A",
+      "phase": 4,
+      "desiredFlap": 0.5714285714285714,
+      "ph": -304.8544233085677,
+      "nightEyeK": 1
+    },
+    {
+      "style": "A",
+      "phase": 5,
+      "desiredFlap": 0.7142857142857143,
+      "ph": -304.76098161443076,
+      "nightEyeK": 1
+    },
+    {
+      "style": "A",
+      "phase": 6,
+      "desiredFlap": 0.8571428571428571,
+      "ph": -304.6549137196071,
+      "nightEyeK": 1
+    },
+    {
+      "style": "A",
+      "phase": 7,
+      "desiredFlap": 1,
+      "ph": -304.4292036732051,
+      "nightEyeK": 1
+    },
+    {
+      "style": "B",
+      "phase": 0,
+      "desiredFlap": 0,
+      "ph": -272,
+      "nightEyeK": 1
+    },
+    {
+      "style": "B",
+      "phase": 1,
+      "desiredFlap": 0.14285714285714285,
+      "ph": -271.1918360127542,
+      "nightEyeK": 1
+    },
+    {
+      "style": "B",
+      "phase": 2,
+      "desiredFlap": 0.2857142857142857,
+      "ph": -271.05317846490067,
+      "nightEyeK": 1
+    },
+    {
+      "style": "B",
+      "phase": 3,
+      "desiredFlap": 0.42857142857142855,
+      "ph": -270.94823221370814,
+      "nightEyeK": 1
+    },
+    {
+      "style": "B",
+      "phase": 4,
+      "desiredFlap": 0.5714285714285714,
+      "ph": -270.8544233085677,
+      "nightEyeK": 1
+    },
+    {
+      "style": "B",
+      "phase": 5,
+      "desiredFlap": 0.7142857142857143,
+      "ph": -270.76098161443076,
+      "nightEyeK": 1
+    },
+    {
+      "style": "B",
+      "phase": 6,
+      "desiredFlap": 0.8571428571428571,
+      "ph": -270.6549137196071,
+      "nightEyeK": 1
+    },
+    {
+      "style": "B",
+      "phase": 7,
+      "desiredFlap": 1,
+      "ph": -270.4292036732051,
+      "nightEyeK": 1
+    },
+    {
+      "style": "C",
+      "phase": 0,
+      "desiredFlap": 0,
+      "ph": -375.57079632679495,
+      "nightEyeK": 1
+    },
+    {
+      "style": "C",
+      "phase": 1,
+      "desiredFlap": 0.14285714285714285,
+      "ph": -374.7956029534846,
+      "nightEyeK": 1
+    },
+    {
+      "style": "C",
+      "phase": 2,
+      "desiredFlap": 0.2857142857142857,
+      "ph": -374.4429110440737,
+      "nightEyeK": 1
+    },
+    {
+      "style": "C",
+      "phase": 3,
+      "desiredFlap": 0.42857142857142855,
+      "ph": -374.1433475689054,
+      "nightEyeK": 1
+    },
+    {
+      "style": "C",
+      "phase": 4,
+      "desiredFlap": 0.5714285714285714,
+      "ph": -373.8566524310947,
+      "nightEyeK": 1
+    },
+    {
+      "style": "C",
+      "phase": 5,
+      "desiredFlap": 0.7142857142857143,
+      "ph": -373.5570889559264,
+      "nightEyeK": 1
+    },
+    {
+      "style": "C",
+      "phase": 6,
+      "desiredFlap": 0.8571428571428571,
+      "ph": -373.2043970465155,
+      "nightEyeK": 1
+    },
+    {
+      "style": "C",
+      "phase": 7,
+      "desiredFlap": 1,
+      "ph": -372.42920367320517,
+      "nightEyeK": 1
+    }
+  ],
+  "sha": "736b1e33603165a6bd4ef50fdb3e93bbf042fb7c735f832dc2d9e20ed82fc31e"
+}

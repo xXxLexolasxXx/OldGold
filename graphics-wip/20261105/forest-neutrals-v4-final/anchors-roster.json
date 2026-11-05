@@ -1,0 +1,8 @@
+{
+  "toleranceWorldPixels": 0.00001,
+  "checks": 456,
+  "maxError": 0.0000025943646502135086,
+  "failures": [],
+  "method": "Actual cold native naArm/ellipse points against actual bitmap hand drawImage origins and wand/staff effect centres; five independent surfaces/eight headings.",
+  "sha": "736b1e33603165a6bd4ef50fdb3e93bbf042fb7c735f832dc2d9e20ed82fc31e"
+}

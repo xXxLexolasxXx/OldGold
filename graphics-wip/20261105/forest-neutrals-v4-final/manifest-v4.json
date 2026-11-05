@@ -1,0 +1,79 @@
+{
+  "status": "final owner checks passed; awaiting independent targeted confirmation and lead production deploy",
+  "files": [
+    {
+      "path": "js/fantasy-published-forest-neutrals-v4.js",
+      "sha256": "a99090b927974effbdbd3b57e1ca40516fe92beb9449414f68a552d82cc9d41d",
+      "bytes": 13316
+    },
+    {
+      "path": "js/fantasy-published-forest-roster-v4.js",
+      "sha256": "736b1e33603165a6bd4ef50fdb3e93bbf042fb7c735f832dc2d9e20ed82fc31e",
+      "bytes": 27915
+    },
+    {
+      "path": "assets/fantasy/forest-neutrals-v4/pixie-rig-source-v2.png",
+      "sha256": "f843175868d2acbb9ac33e1de7874ced5e74ecd303786ae720cc9efde4b98a06",
+      "bytes": 2181677
+    },
+    {
+      "path": "assets/fantasy/forest-neutrals-v4/fairy-rig-source-v2.png",
+      "sha256": "486bf6c98f4ceac409afc6933cb310d4a23ddccfb85483afc31d320d5067dc0b",
+      "bytes": 2393344
+    },
+    {
+      "path": "assets/fantasy/forest-neutrals-v4/leshy-pixel.png",
+      "sha256": "73ab68527a920c05a172c4a03a3421abbf4ae875f191a1b5e505032e0df56f2a",
+      "bytes": 2757116
+    },
+    {
+      "path": "assets/fantasy/forest-neutrals-v4/leprechaun-pixel.png",
+      "sha256": "d131881addb977b8061b248d33fd6ab83e5c7960bb0da1b137733d29f025bf68",
+      "bytes": 2403605
+    },
+    {
+      "path": "assets/fantasy/forest-neutrals-v4/brownie-pixel.png",
+      "sha256": "bfed75fa02b22f42c519df461e098c1b28aa8e15edef898081427ca8b982faa4",
+      "bytes": 2171282
+    },
+    {
+      "path": "assets/fantasy/forest-neutrals-v4/enderman-pixel.png",
+      "sha256": "e9ada9d732988bfae29acdc60f7b636743a16472771df2ab17e672472720b6e1",
+      "bytes": 1748865
+    },
+    {
+      "path": "assets/fantasy/forest-neutrals-v4/gargoyles-pixel.png",
+      "sha256": "9489a015baa20940efebb07d8ac21758b8060892bdc09894c8851e6d11a6133b",
+      "bytes": 2683845
+    }
+  ],
+  "kinds": [
+    "pixie",
+    "fairy",
+    "NA leshy",
+    "leprechaun",
+    "brownie",
+    "enderman",
+    "gargoyle A",
+    "gargoyle B",
+    "gargoyle C"
+  ],
+  "directions": 8,
+  "authoredViews": [
+    "S",
+    "SE",
+    "E",
+    "NE",
+    "N"
+  ],
+  "productionIndexChanged": false,
+  "ownerTests": [
+    "qa-pixie.json",
+    "qa-roster.json",
+    "anchors-roster.json",
+    "native-mirrors.json",
+    "cargo-runtime.json",
+    "owner-targeted-contracts.json"
+  ],
+  "handoff": "HANDOFF_V4.md"
+}
