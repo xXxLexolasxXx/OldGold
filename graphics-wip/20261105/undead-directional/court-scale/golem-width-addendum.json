@@ -1,0 +1,65 @@
+{
+  "sourceSha256": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b",
+  "nativeFixedView": {
+    "x0": -25.666666666666668,
+    "y0": -68.33333333333334,
+    "x1": 27.33333333333333,
+    "y1": 1.6666666666666572,
+    "width": 53,
+    "height": 70
+  },
+  "currentViews": {
+    "S": {
+      "x0": -25.5,
+      "y0": -68.5,
+      "x1": 23,
+      "y1": 1,
+      "width": 48.5,
+      "height": 69.5
+    },
+    "SE": {
+      "x0": -25.5,
+      "y0": -68.5,
+      "x1": 23.5,
+      "y1": 1,
+      "width": 49,
+      "height": 69.5
+    },
+    "E": {
+      "x0": -25,
+      "y0": -68.5,
+      "x1": 23,
+      "y1": 1,
+      "width": 48,
+      "height": 69.5
+    },
+    "NE": {
+      "x0": -25.5,
+      "y0": -68.5,
+      "x1": 23,
+      "y1": 1,
+      "width": 48.5,
+      "height": 69.5
+    },
+    "N": {
+      "x0": -25.5,
+      "y0": -68.5,
+      "x1": 23,
+      "y1": 1,
+      "width": 48.5,
+      "height": 69.5
+    }
+  },
+  "nativeDirectionalApi": false,
+  "fullProfileWidthRatio": 0.9056603773584906,
+  "nativeChestSketchDiameterWorld": 34.666666666666664,
+  "currentAuthoredFrontBodyWidthWorld": 36.66666666664879,
+  "currentAuthoredProfileBodyWidthWorld": 23.83333333332171,
+  "sameModelScaleAllFive": 0.8333333333329269,
+  "footAnchor": [
+    0,
+    0
+  ],
+  "handAndFxAnchors": "unchanged, all5544frame/view proof checks.json",
+  "explanation": "Native has one fixed broad/front-quarter projection, no E argument. New E is a separately authored profile. Full alpha width is48 vs53 world units (-9.43%); front/SE are48.5/49. Front torso target36.67 is close to native chest sketch diameter34.67. Total width difference includes narrower restyled hands/fingers and silhouette. This is a disclosed shape/projection difference, not proof of identical width; no horizontal bbox fit has been applied."
+}

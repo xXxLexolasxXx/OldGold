@@ -2,9 +2,6 @@
  * No AI/state/registry changes. Half-world-pixel output, crisp alpha. */
 'use strict';
 (()=>{
- // Late cold-native audit found enlarged silhouettes. Keep the unfinished
- // directional pass available for review, outside the normal game.
- if(new URLSearchParams(location.search).get('courtPreview')!=='1')return;
  if(window.FantasyDarkCourtPolish)return;
  class PixelCache extends Map{
  constructor(){super();this.bytes=0;this.maxBytes=32*1024*1024;this.maxEntries=1200;this.hits=0;this.misses=0;}
@@ -26,6 +23,17 @@
   fG_shadow:{cell:9,w:29,h:55,robe:true},
   fG_golem:{cell:10,w:44,h:82,hip:.67,leg:[.28,.75],legw:.37}
  };
+ // Cold original foePxFrame i0 visible crown/sole reference, in world units.
+ // This table is per MODEL, never per view or buffer. Do not scale hand/FX rig.
+ const worldScale={
+  fThrall:{height:35,base:43},fKnight:{height:48,base:58},
+  fMalgor1:{height:68.6666666667,base:84},fMalgor3:{height:72.6666666667,base:84},
+  fBone:{height:21.3333333333,base:26},fRock:{height:29,base:34},
+  fG_fire:{height:45.6666666667,base:55},fG_ice:{height:45.6666666667,base:55},
+  fG_bone:{height:42,base:55},fG_shadow:{height:42.6666666667,base:55},
+  fG_golem:{height:68.3333333333,base:82}
+ };
+ for(const [kind,S]of Object.entries(specs)){const M=worldScale[kind];S.scale=M.height/M.base;S.h=M.height;S.w*=S.scale;}
  const assets={bodies:'assets/fantasy/court-bodies-v4-pixel.png',arms:'assets/fantasy/court-arms-v4-pixel.png',errors:[],parts:{},views:{},viewSources:{S:'assets/fantasy/court-bodies-v5-S.png',E:'assets/fantasy/court-bodies-v5-E.png',NE:'assets/fantasy/court-bodies-v5-NE.png',N:'assets/fantasy/court-bodies-v5-N.png'},ready:false};
  let activeView='SE';
  const partsFor=k=>assets.views[activeView]?.[k]||assets.parts[k],specFor=k=>partsFor(k).spec||specs[k];
@@ -73,7 +81,7 @@
    if(kind==='fG_golem'){const hip=-64+Q.bob,ux=Q.lean*1.8,lf=s<0?Q.lfF:Q.lfN;a=[(s*20+ux*.3)*z,hip*z];f=[(s*18+s*Q.sw*12)*z,(-9-lf)*z];b=[(a[0]+f[0])/2,(a[1]+f[1])/2];width=12;}
    else if(kind==='fBone'){const hip=-26+Q.bob*.5,ux=Q.lean*.6,lf=s<0?Q.lfF:Q.lfN;a=[(s*3+ux*.2)*z,hip*z];f=[(s*2+s*Q.sw*7)*z,-lf*.6*z];b=[(a[0]+f[0])/2+2.5*z,(a[1]+f[1])/2];width=2.3;}
    else{const bk=FPX_WAR[kind]?.bulk||1,hip=-46+Q.bob*.6,lf=s<0?Q.lfF:Q.lfN;a=[(s*6*bk+Q.lean*.25)*z,hip*z];f=[(s*3+s*Q.sw*12)*z,-lf*z];b=[(a[0]+f[0])/2+4*z,(a[1]+f[1])/2-2*z+lf*.3*z];width=5.7*bk*z*3;}
-   if(activeView==='E'){a[0]*=.25;b[0]=b[0]*.8;f[0]=f[0]*.9;width*=.78;}else if(activeView==='S'||activeView==='N'){const sign=activeView==='S'?1:-1;a[0]=s*S.w*.11;b[0]=s*S.w*.13+(b[0]-a[0])*.12;f[0]=s*S.w*.14+Q.sw*s*.45;f[1]+=sign*Q.sw*s*1.1;width*=.86;}const p=parts.legs[i];segment(c,p.upper,a,b,width*.8,s<0);segment(c,p.lower,b,[f[0]+.8,f[1]],width,s<0);
+   if(activeView==='E'){a[0]*=.25;b[0]=b[0]*.8;f[0]=f[0]*.9;width*=.78;}else if(activeView==='S'||activeView==='N'){const sign=activeView==='S'?1:-1;a[0]=s*S.w*.11;b[0]=s*S.w*.13+(b[0]-a[0])*.12;f[0]=s*S.w*.14+Q.sw*s*.45;f[1]+=sign*Q.sw*s*1.1;width*=.86;}if(kind==='fG_golem')f[1]+=3.5;if(kind==='fG_ice')f[1]+=1;width*=S.scale;const p=parts.legs[i];segment(c,p.upper,a,b,width*.8,s<0);segment(c,p.lower,b,[f[0]+.8,f[1]],width,s<0);
   }
  }
  function rig(kind,Q,s){const z=(FPX_BOX[kind][4]||1)/3;
@@ -86,11 +94,11 @@
  function arm(c,kind,Q,s,capOnly=false){const R=rig(kind,Q,s),A=partsFor(kind),S=specFor(kind),t=kind==='fMalgor3'?.42:kind==='fMalgor1'?.30:kind==='fBone'?.25:kind==='fG_golem'?.31:.35;
   // Texture sockets belong to the new silhouette. Retarget the upper arm to
   // those sockets while preserving the native animated hand coordinates.
-  const sy=S.hip?-S.h+(S.h+S.cut)*t/S.hip:-S.h*(1-t),a=[(activeView==='E'?-S.w*.12+(s<0?.6:0):s*S.w*.30)+Q.lean*(FPX_BOX[kind][4]||1)/3,sy+(Q.bob+Q.br*.8)*(FPX_BOX[kind][4]||1)/3],b=[R.b[0]+(a[0]-R.a[0])*.5,R.b[1]+(a[1]-R.a[1])*.5];R.a=a;R.b=b;if(activeView==='E')R.w*=.83;else if(activeView==='S'||activeView==='N'){const sign=activeView==='S'?1:-1,dx=R.h[0]-R.a[0];R.b=[(R.a[0]+R.h[0])*.5,(R.a[1]+R.h[1])*.5+1];R.angle=sign*Math.PI/2+R.angle*.22;}else if(activeView==='NE'){R.b[1]-=.7;}
+  const sy=S.hip?-S.h+(S.h+S.cut)*t/S.hip:-S.h*(1-t),a=[(activeView==='E'?-S.w*.12+(s<0?.6:0):s*S.w*.30)+Q.lean*(FPX_BOX[kind][4]||1)/3,sy+(Q.bob+Q.br*.8)*(FPX_BOX[kind][4]||1)/3],b=[R.b[0]+(a[0]-R.a[0])*.5,R.b[1]+(a[1]-R.a[1])*.5];R.a=a;R.b=b;R.w*=S.scale;if(activeView==='E')R.w*=.83;else if(activeView==='S'||activeView==='N'){const sign=activeView==='S'?1:-1,dx=R.h[0]-R.a[0];R.b=[(R.a[0]+R.h[0])*.5,(R.a[1]+R.h[1])*.5+1];R.angle=sign*Math.PI/2+R.angle*.22;}else if(activeView==='NE'){R.b[1]-=.7;}
   if(capOnly){c.save();c.translate(...a);if(s<0)c.scale(-1,1);c.drawImage(A.upper,0,0,A.upper.width,A.upper.height*.22,-R.w*.45,-R.w*.32,R.w*.9,R.w*.8);c.restore();return R;}
   segment(c,A.upper,R.a,R.b,R.w,s<0);segment(c,A.lower,R.b,R.h,R.w*.9,s<0);c.save();c.translate(...R.h);c.rotate(Math.atan2(R.h[1]-R.b[1],R.h[0]-R.b[0])-Math.PI/2);if(s<0)c.scale(-1,1);c.drawImage(A.hand,-R.w*.52,-R.w*.12,R.w*1.05,R.w*(kind==='fG_golem'?.9:1.1));c.restore();return R;}
  function weapon(c,kind,Q,R){const P=(p,col)=>{c.fillStyle=col;c.beginPath();p.forEach(([x,y],i)=>c[i?'lineTo':'moveTo'](x,y));c.closePath();c.fill();},L=(x,y,xx,yy,w,col)=>{c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(x,y);c.lineTo(xx,yy);c.stroke();};
-  if(kind.startsWith('fMalgor')){const cast=Q.st==='cast',top=-84+(cast?-1:0)+Q.br*.33,at=y=>R.h[0]-(y-R.h[1])*.08,x=at(top);
+  if(kind.startsWith('fMalgor')){const cast=Q.st==='cast',top=-68+(cast?-4:0)+Q.br*.33,at=y=>R.h[0]-(y-R.h[1])*.08,x=at(top);
    L(at(-2),-2,at(top+3),top+3,2.7,'#382b2b');L(at(-2)-.25,-2,at(top+3)-.25,top+3,1.7,'#8f593d');L(at(-4)-.65,-4,at(top+4)-.65,top+4,.45,'#cc9c65');for(let i=0;i<7;i++){const y=-15-i*9;L(at(y)-.9,y,at(y)+.8,y-1.5,.65,'#d4bb86');}
    P([[x-3.2,top],[x,top-5],[x+3.3,top],[x,top+4]],'#624684');P([[x-2.4,top],[x,top-4],[x,top+2.5]],'#c3a0e4');P([[x+.2,top-3.5],[x+2.6,top],[x,top+3]],'#9365c2');L(x-1.1,top-1.8,x-.5,top+.6,.5,'#f0d8f4');for(const s of[-1,1]){L(x+s*3,top+3,x+s*4,top-2,.8,'#997643');L(x+s*4,top-2,x+s*2,top-4,.6,'#d5b26b');}return;}
   if(kind==='fG_golem'||kind==='fRock')return;
@@ -147,5 +155,5 @@
   try{return nativeRaider(c,N);}finally{renderView=previous;mirrorCorrection=previousMirror;}
  };
  if(typeof foeDrawMalgor==='function'){const bossDraw=foeDrawMalgor,casts=new WeakMap();foeDrawMalgor=function(c,N){let phase=null;if(N.castT>0){let r=casts.get(N);if(!r||N.castT>r.last+.001)r={duration:N.castT,last:N.castT};phase=Math.min(11,Math.max(0,Math.round((1-N.castT/Math.max(.001,r.duration))*11)));r.last=N.castT;casts.set(N,r);}else casts.delete(N);const previous=activeBossFrame;activeBossFrame=phase;const reflect=mirrorCorrection;if(reflect){c.save();c.scale(-1,1);mirrorCorrection=false;}try{return bossDraw(c,N);}finally{if(reflect){mirrorCorrection=true;c.restore();}activeBossFrame=previous;}};}
- window.FantasyDarkCourtPolish={version:'court-v5-eight-directions',kinds,ratio:2,originalFrame:original,paint,cache,assets,ready,rig,pose,frame:directionFrame,headingOf,headings:headings8,anchors:(kind,fr,dir='SE')=>{const before=activeView,i=headings8.indexOf(dir);activeView=i>=0?headings[i]:dir;try{const q=pose(fr),cc=anchorContext,near=arm(cc,kind,q,1,true).h,far=arm(cc,kind,q,-1,true).h;return{view:activeView,mirror:i>=5,nativeNear:rig(kind,q,1).h,nativeFar:rig(kind,q,-1).h,near,far,foot:[0,0],castFX:rig(kind,q,-1).h};}finally{activeView=before;}},portrait:(kind='fMalgor1',phase=0)=>directionFrame(kind,'i'+((Math.floor(Number(phase)||0)%12+12)%12),'S'),cacheStats:()=>({entries:cache.size,rgbaBytes:cache.bytes,maxEntries:cache.maxEntries,maxRgbaBytes:cache.maxBytes,hits:cache.hits,misses:cache.misses}),setHeading:(n,d)=>{const i=headings8.indexOf(d);if(i<0)previewViews.delete(n);else previewViews.set(n,i);}};
+ window.FantasyDarkCourtPolish={version:'court-v6-native-scale',kinds,ratio:2,originalFrame:original,paint,cache,assets,ready,rig,pose,frame:directionFrame,headingOf,headings:headings8,worldScale,anchors:(kind,fr,dir='SE')=>{const before=activeView,i=headings8.indexOf(dir);activeView=i>=0?headings[i]:dir;try{const q=pose(fr),cc=anchorContext,near=arm(cc,kind,q,1,true).h,far=arm(cc,kind,q,-1,true).h;return{view:activeView,mirror:i>=5,nativeNear:rig(kind,q,1).h,nativeFar:rig(kind,q,-1).h,near,far,foot:[0,0],castFX:rig(kind,q,-1).h};}finally{activeView=before;}},portrait:(kind='fMalgor1',phase=0)=>directionFrame(kind,'i'+((Math.floor(Number(phase)||0)%12+12)%12),'S'),cacheStats:()=>({entries:cache.size,rgbaBytes:cache.bytes,maxEntries:cache.maxEntries,maxRgbaBytes:cache.maxBytes,hits:cache.hits,misses:cache.misses}),setHeading:(n,d)=>{const i=headings8.indexOf(d);if(i<0)previewViews.delete(n);else previewViews.set(n,i);}};
 })();

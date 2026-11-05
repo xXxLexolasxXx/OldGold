@@ -1,0 +1,291 @@
+{
+  "scope": "Independent targeted technical review ONLY, not repeated 5544 frame regression or artistic acceptance",
+  "sourceBefore": {
+    "court": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b",
+    "portraits": "2b320f632ec16c9ae75ddf144a83cc38d3cf144473da2c8159a8727368359dc0"
+  },
+  "sourceAfter": {
+    "court": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b",
+    "portraits": "2b320f632ec16c9ae75ddf144a83cc38d3cf144473da2c8159a8727368359dc0"
+  },
+  "stable": true,
+  "runs": [
+    {
+      "width": 1366,
+      "version": "court-v6-native-scale",
+      "models": 11,
+      "sourceViews": [
+        "SE",
+        "S",
+        "E",
+        "NE",
+        "N"
+      ],
+      "viewSourcePaths": {
+        "S": "assets/fantasy/court-bodies-v5-S.png",
+        "E": "assets/fantasy/court-bodies-v5-E.png",
+        "NE": "assets/fantasy/court-bodies-v5-NE.png",
+        "N": "assets/fantasy/court-bodies-v5-N.png"
+      },
+      "assetsReady": true,
+      "assetErrors": [],
+      "commonScales": [
+        {
+          "kind": "fThrall",
+          "scale": 0.813953488372093,
+          "worldHeight": 35
+        },
+        {
+          "kind": "fKnight",
+          "scale": 0.8275862068965517,
+          "worldHeight": 48
+        },
+        {
+          "kind": "fMalgor1",
+          "scale": 0.8174603174607142,
+          "worldHeight": 68.6666666667
+        },
+        {
+          "kind": "fMalgor3",
+          "scale": 0.8650793650797619,
+          "worldHeight": 72.6666666667
+        },
+        {
+          "kind": "fBone",
+          "scale": 0.8205128205115385,
+          "worldHeight": 21.3333333333
+        },
+        {
+          "kind": "fRock",
+          "scale": 0.8529411764705882,
+          "worldHeight": 29
+        },
+        {
+          "kind": "fG_fire",
+          "scale": 0.8303030303036364,
+          "worldHeight": 45.6666666667
+        },
+        {
+          "kind": "fG_ice",
+          "scale": 0.8303030303036364,
+          "worldHeight": 45.6666666667
+        },
+        {
+          "kind": "fG_bone",
+          "scale": 0.7636363636363637,
+          "worldHeight": 42
+        },
+        {
+          "kind": "fG_shadow",
+          "scale": 0.7757575757581818,
+          "worldHeight": 42.6666666667
+        },
+        {
+          "kind": "fG_golem",
+          "scale": 0.8333333333329269,
+          "worldHeight": 68.3333333333
+        }
+      ],
+      "normalizedCacheAliases": 55,
+      "frameChecks": 48,
+      "anchorChecks": 48,
+      "headingNpcAndClockUnchanged": true,
+      "portraits": [
+        {
+          "f": 0,
+          "source": "FantasyDarkCourtPolish.portrait(fMalgor1,S)",
+          "frame": "i0",
+          "direction": "S",
+          "expectedHash": "fea7823a8e1762bd9f548e55e1758c52047053d464b7f4c41fbc1cd161139e28",
+          "actualHash": "fea7823a8e1762bd9f548e55e1758c52047053d464b7f4c41fbc1cd161139e28"
+        },
+        {
+          "f": 1,
+          "source": "FantasyDarkCourtPolish.portrait(fMalgor1,S)",
+          "frame": "i8",
+          "direction": "S",
+          "expectedHash": "acf1905f653b344f0ceff3b0518a0e43f1096c65c38d32ec419c9ea9b71fc0c0",
+          "actualHash": "acf1905f653b344f0ceff3b0518a0e43f1096c65c38d32ec419c9ea9b71fc0c0"
+        }
+      ],
+      "cache": {
+        "entries": 105,
+        "rgbaBytes": 12103616,
+        "maxEntries": 1200,
+        "maxRgbaBytes": 33554432,
+        "hits": 96,
+        "misses": 105
+      },
+      "failures": [],
+      "injectedRuntimeScripts": 0,
+      "errors": [],
+      "resources": [],
+      "optionalCoopProbes": [
+        {
+          "url": "http://127.0.0.1:59644/coop-info",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "version": "court-v6-native-scale",
+      "models": 11,
+      "sourceViews": [
+        "SE",
+        "S",
+        "E",
+        "NE",
+        "N"
+      ],
+      "viewSourcePaths": {
+        "S": "assets/fantasy/court-bodies-v5-S.png",
+        "E": "assets/fantasy/court-bodies-v5-E.png",
+        "NE": "assets/fantasy/court-bodies-v5-NE.png",
+        "N": "assets/fantasy/court-bodies-v5-N.png"
+      },
+      "assetsReady": true,
+      "assetErrors": [],
+      "commonScales": [
+        {
+          "kind": "fThrall",
+          "scale": 0.813953488372093,
+          "worldHeight": 35
+        },
+        {
+          "kind": "fKnight",
+          "scale": 0.8275862068965517,
+          "worldHeight": 48
+        },
+        {
+          "kind": "fMalgor1",
+          "scale": 0.8174603174607142,
+          "worldHeight": 68.6666666667
+        },
+        {
+          "kind": "fMalgor3",
+          "scale": 0.8650793650797619,
+          "worldHeight": 72.6666666667
+        },
+        {
+          "kind": "fBone",
+          "scale": 0.8205128205115385,
+          "worldHeight": 21.3333333333
+        },
+        {
+          "kind": "fRock",
+          "scale": 0.8529411764705882,
+          "worldHeight": 29
+        },
+        {
+          "kind": "fG_fire",
+          "scale": 0.8303030303036364,
+          "worldHeight": 45.6666666667
+        },
+        {
+          "kind": "fG_ice",
+          "scale": 0.8303030303036364,
+          "worldHeight": 45.6666666667
+        },
+        {
+          "kind": "fG_bone",
+          "scale": 0.7636363636363637,
+          "worldHeight": 42
+        },
+        {
+          "kind": "fG_shadow",
+          "scale": 0.7757575757581818,
+          "worldHeight": 42.6666666667
+        },
+        {
+          "kind": "fG_golem",
+          "scale": 0.8333333333329269,
+          "worldHeight": 68.3333333333
+        }
+      ],
+      "normalizedCacheAliases": 55,
+      "frameChecks": 48,
+      "anchorChecks": 48,
+      "headingNpcAndClockUnchanged": true,
+      "portraits": [
+        {
+          "f": 0,
+          "source": "FantasyDarkCourtPolish.portrait(fMalgor1,S)",
+          "frame": "i0",
+          "direction": "S",
+          "expectedHash": "fea7823a8e1762bd9f548e55e1758c52047053d464b7f4c41fbc1cd161139e28",
+          "actualHash": "fea7823a8e1762bd9f548e55e1758c52047053d464b7f4c41fbc1cd161139e28"
+        },
+        {
+          "f": 1,
+          "source": "FantasyDarkCourtPolish.portrait(fMalgor1,S)",
+          "frame": "i8",
+          "direction": "S",
+          "expectedHash": "acf1905f653b344f0ceff3b0518a0e43f1096c65c38d32ec419c9ea9b71fc0c0",
+          "actualHash": "acf1905f653b344f0ceff3b0518a0e43f1096c65c38d32ec419c9ea9b71fc0c0"
+        }
+      ],
+      "cache": {
+        "entries": 105,
+        "rgbaBytes": 12103616,
+        "maxEntries": 1200,
+        "maxRgbaBytes": 33554432,
+        "hits": 96,
+        "misses": 105
+      },
+      "failures": [],
+      "injectedRuntimeScripts": 0,
+      "errors": [],
+      "resources": [],
+      "optionalCoopProbes": [
+        {
+          "url": "http://127.0.0.1:59644/coop-info",
+          "status": 404
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Complete native cycles rely on owner 5544-case proofs plus separate visual peers; this independent fixture samples48 edge/action frames/context.",
+    "Cold scale already independently reviewed by inspector; no second55bbox sweep.",
+    "No publication/index/renderer edits; no fauna or forestfolk/golem work."
+  ],
+  "assetManifestCheck": [
+    {
+      "path": "assets/fantasy/court-bodies-v4-pixel.png",
+      "expected": "479a014c3f44c3adfee827215446a4055af6e9f10d6893d527337966d40f6856",
+      "actual": "479a014c3f44c3adfee827215446a4055af6e9f10d6893d527337966d40f6856"
+    },
+    {
+      "path": "assets/fantasy/court-arms-v4-pixel.png",
+      "expected": "00df6b91b004fcbcfea0b048e8d85c3f707f5f81f45068cd4291eaf0cd3477d6",
+      "actual": "00df6b91b004fcbcfea0b048e8d85c3f707f5f81f45068cd4291eaf0cd3477d6"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-S.png",
+      "expected": "d42a0522a3829cad098a2fa57dbe730dc96a998eaa0deda0f12d707862698cff",
+      "actual": "d42a0522a3829cad098a2fa57dbe730dc96a998eaa0deda0f12d707862698cff"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-E.png",
+      "expected": "dabca1b470be219cd21c99284cdd3bfbe97a42315f02ec1678583074bf3ccd00",
+      "actual": "dabca1b470be219cd21c99284cdd3bfbe97a42315f02ec1678583074bf3ccd00"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-NE.png",
+      "expected": "e53423d3f759c36b72578f46f33eed40ed47c54cafdddd3ff7210388f67c0f33",
+      "actual": "e53423d3f759c36b72578f46f33eed40ed47c54cafdddd3ff7210388f67c0f33"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-N.png",
+      "expected": "835eeb3c1be1f0508427370a6d615ef74e3334c1cc7fa904bfd8c478310da2fa",
+      "actual": "835eeb3c1be1f0508427370a6d615ef74e3334c1cc7fa904bfd8c478310da2fa"
+    }
+  ],
+  "pinnedSchool": {
+    "path": "assets/fantasy/school-v1.png",
+    "expected": "4fd9c9f7d50838cd6e73b961c5f978e7129d7fda17a9d61402534a8fcd5cd4eb",
+    "actual": "4fd9c9f7d50838cd6e73b961c5f978e7129d7fda17a9d61402534a8fcd5cd4eb"
+  },
+  "assetManifestStable": true
+}

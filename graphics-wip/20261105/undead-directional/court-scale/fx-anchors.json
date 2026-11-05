@@ -1,0 +1,549 @@
+{
+  "checks": [
+    {
+      "direction": "S",
+      "face": -1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "S",
+      "face": -1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "S",
+      "face": 1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "S",
+      "face": 1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "SE",
+      "face": -1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "SE",
+      "face": -1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "SE",
+      "face": 1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "SE",
+      "face": 1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "E",
+      "face": -1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "E",
+      "face": -1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "E",
+      "face": 1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "E",
+      "face": 1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "NE",
+      "face": -1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "NE",
+      "face": -1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "NE",
+      "face": 1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "NE",
+      "face": 1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "N",
+      "face": -1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "N",
+      "face": -1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "N",
+      "face": 1,
+      "cast": false,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "N",
+      "face": 1,
+      "cast": true,
+      "expected": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": 12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "NW",
+      "face": -1,
+      "cast": false,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "NW",
+      "face": -1,
+      "cast": true,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "NW",
+      "face": 1,
+      "cast": false,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "NW",
+      "face": 1,
+      "cast": true,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "W",
+      "face": -1,
+      "cast": false,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "W",
+      "face": -1,
+      "cast": true,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "W",
+      "face": 1,
+      "cast": false,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "W",
+      "face": 1,
+      "cast": true,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "SW",
+      "face": -1,
+      "cast": false,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "SW",
+      "face": -1,
+      "cast": true,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "SW",
+      "face": 1,
+      "cast": false,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 18
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    },
+    {
+      "direction": "SW",
+      "face": 1,
+      "cast": true,
+      "expected": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "actual": {
+        "x": -12,
+        "y": -73.97167691983134,
+        "r": 30
+      },
+      "aligned": true,
+      "stateUnchanged": true
+    }
+  ],
+  "errors": []
+}

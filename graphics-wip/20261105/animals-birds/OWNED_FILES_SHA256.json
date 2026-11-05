@@ -1,0 +1,1062 @@
+{
+  "status": "HOLD / WIP_NOT_FOR_LIVE",
+  "lastDirectUserMessage": "заканчивай",
+  "ownCommitCreated": false,
+  "observedSharedBranch": "graphics/wip-20261105",
+  "observedSharedHead": "072dcd090d676c3b174dc77eea6e4fc913e7cb66",
+  "moduleSHA256": "365417bcf8f382220c7b942e8342b3d76c25f97b10753d064dd0ac8bae6ebb53",
+  "productionIndexChanged": false,
+  "independentReview": "NOT obtained",
+  "requiredAssets": [
+    "assets/fantasy-birds/owl-flight-runtime-v2.png",
+    "assets/fantasy-birds/owl-perch-runtime-v2.png",
+    "assets/fantasy-birds/owl-flight-runtime-v2.json",
+    "assets/fantasy-birds/owl-perch-runtime-v2.json",
+    "assets/fantasy-birds/chicken-runtime-v2.png",
+    "assets/fantasy-birds/chicken-runtime-v2.json",
+    "assets/fantasy-birds/extra-packs.json",
+    "assets/fantasy-birds/goose-runtime-v1.png",
+    "assets/fantasy-birds/goose-runtime-v1.json",
+    "assets/fantasy-birds/duck-runtime-v1.png",
+    "assets/fantasy-birds/duck-runtime-v1.json",
+    "assets/fantasy-birds/henbuff-runtime-v1.png",
+    "assets/fantasy-birds/henbuff-runtime-v1.json",
+    "assets/fantasy-birds/woodpecker-runtime-v1.png",
+    "assets/fantasy-birds/woodpecker-runtime-v1.json",
+    "assets/fantasy-birds/gold-goose-runtime-v1.png",
+    "assets/fantasy-birds/gold-goose-runtime-v1.json"
+  ],
+  "fixedDecodedAtlasRGBABytes": 6929440,
+  "cacheLimits": {
+    "entries": 1800,
+    "rgbaBytes": 25165824
+  },
+  "rendererScope": [
+    "owl",
+    "chicken",
+    "henbuff",
+    "goose",
+    "duck",
+    "woodpecker",
+    "goldGoose"
+  ],
+  "remainingRendererScope": [
+    "crow",
+    "stork",
+    "stork chicks",
+    "heron",
+    "pichugi",
+    "winter pichugi",
+    "pheasant",
+    "gull",
+    "corm",
+    "fRaven",
+    "bats"
+  ],
+  "runtimeFiles": [
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/js/fantasy-published-birds.js",
+      "bytes": 16081,
+      "sha256": "365417bcf8f382220c7b942e8342b3d76c25f97b10753d064dd0ac8bae6ebb53",
+      "role": "WIP renderer; DO NOT add to live index",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/chicken-runtime-v2.json",
+      "bytes": 5820,
+      "sha256": "b8799e13cd4d33bb5d26fe1bee83bd3c9fef5d24a4e595c3a407de3b1e1b1ff2",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/chicken-runtime-v2.png",
+      "bytes": 114983,
+      "sha256": "29268d9ad5909c04fae290a2940449cfbedbb63e7c0ffaec426271c36b531187",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/chicken-v1.json",
+      "bytes": 6044,
+      "sha256": "552bf4c0171b9ac90bfb19add9143a5fcd8ebcc5d22ae4b59519b444743eeff7",
+      "role": "unused source/history; NOT runtime required",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/chicken-v1.png",
+      "bytes": 2197253,
+      "sha256": "24c00bea2cc84df416c70f174c35016985bf4c231afb2e22bc70ef4fe78274af",
+      "role": "unused source/history; NOT runtime required",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/duck-runtime-v1.json",
+      "bytes": 5816,
+      "sha256": "5022fc2ed68b422a6df38b9ecaeec9789e713a98586f0775196be9c17516c622",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/duck-runtime-v1.png",
+      "bytes": 138424,
+      "sha256": "b02f14fbb885dff4ddb72686ab28eece75a2f68283f7213e8465429440628d7d",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/extra-packs.json",
+      "bytes": 2088,
+      "sha256": "bc68c394c4fb3057e7a1e29a36164f4ca2caa1b7e261040760e1cd4d1de83893",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/gold-goose-runtime-v1.json",
+      "bytes": 4513,
+      "sha256": "e699242282d3bd0957d7c2dedc4f36d5782cc9fb0f371e777ce10f148c64eba1",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/gold-goose-runtime-v1.png",
+      "bytes": 123709,
+      "sha256": "f30ee6582a06b01dc8a4681ae43b216d90007367665f72182ceb2e15ed19d9fa",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/goose-runtime-v1.json",
+      "bytes": 9838,
+      "sha256": "abe81be946a559d226270de839145940c056b99ae430a472274e7370d3467306",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/goose-runtime-v1.png",
+      "bytes": 276813,
+      "sha256": "a68465f4d47a68f671b277f01d055069bab5a9bcef92729300e1f9529885260b",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/henbuff-runtime-v1.json",
+      "bytes": 4510,
+      "sha256": "4641cbe1bb98e5897fb58b4a51348782ab0cd2eab6f7698e654b2d253052fbb3",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/henbuff-runtime-v1.png",
+      "bytes": 126022,
+      "sha256": "054b659788d8acc3772b7bd6cf1fbf63ad6cef572d11b483e32ce48fe3c3c886",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/owl-flight-runtime-v2.json",
+      "bytes": 4503,
+      "sha256": "8c07cbf6ea564d67ed5cd12c890c0bef3bea217ed2fb6d4f69abea83c8238d8c",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/owl-flight-runtime-v2.png",
+      "bytes": 145593,
+      "sha256": "abcd436f7e846333b9110e0464133c120c0210d3b433ec52737075e99fecffea",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/owl-flight-v2.json",
+      "bytes": 4614,
+      "sha256": "85ee3a023192e78f076c1b4b1b0fc5e4eda52460f3004cd94274c2505ece4587",
+      "role": "unused source/history; NOT runtime required",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/owl-flight-v2.png",
+      "bytes": 2043373,
+      "sha256": "03c3bbd11e418ab623454342d00f35e5b4dca282f93403b6ef341f3015ef5182",
+      "role": "unused source/history; NOT runtime required",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/owl-perch-runtime-v2.json",
+      "bytes": 2548,
+      "sha256": "74e05fc6c324f22618a61359c9eb2d25f6dcd17ff1bb3b65e5dda4c23282fa24",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/owl-perch-runtime-v2.png",
+      "bytes": 69924,
+      "sha256": "1f2a7fd375d19c5100c0beb639abe8018d3c9a815be861aba5db3baa0bb3836e",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/owl-perch-source-v1.png",
+      "bytes": 1793665,
+      "sha256": "58a13938540543cfb781acd09cdf0ca9e63b81118b2cb78d6a58de8a125776a3",
+      "role": "unused source/history; NOT runtime required",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/owl-perch-v2.json",
+      "bytes": 2399,
+      "sha256": "2994ee6cd04f5c0dac32538f055e8abe6a86793c46ab9144e2105df188977db4",
+      "role": "unused source/history; NOT runtime required",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/owl-perch-v2.png",
+      "bytes": 1652731,
+      "sha256": "725def149465b1516768b818a210e0ce903c67d3c17c6d1c5318821e1d83bd74",
+      "role": "unused source/history; NOT runtime required",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/woodpecker-runtime-v1.json",
+      "bytes": 1251,
+      "sha256": "523147adb2fb0fc871e088b03dd614672fc77e46e8210e6789fe2573efa48be3",
+      "role": "required WIP asset",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/assets/fantasy-birds/woodpecker-runtime-v1.png",
+      "bytes": 6145,
+      "sha256": "459e17bb941724aa4263d160eb8cd9e3bff6430c94b5a55e5c8520ab78742753",
+      "role": "required WIP asset",
+      "publishReady": false
+    }
+  ],
+  "reportFiles": [
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/atlas-inspect.py",
+      "bytes": 1239,
+      "sha256": "9f2a28b9d1d26a3a75974509c2e37586064b1651071ca625bc48cb4cb927d9c6",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/atlas-inspection.json",
+      "bytes": 3153,
+      "sha256": "3c0dda197af1f279ff7e4a045ef244de04d721a350de1b282736045c360b44de",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/bat-flight-v1.json",
+      "bytes": 3493,
+      "sha256": "c81ce1235b792cdb7150db79fd288b29f15a8ab58b5f397d4ba49e6b794c90d3",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/bat-flight-v1.png",
+      "bytes": 1427092,
+      "sha256": "38528f744476727b215c003113bd179257d6fec9811e48b72ec0cc2ce1b15f76",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/bat-grab-v1.png",
+      "bytes": 1758126,
+      "sha256": "5739840b4ed1c0fc933c93070c8951e76eda9f1bf7b49561ce195530fdc6dc6b",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/chicken-v1.json",
+      "bytes": 6044,
+      "sha256": "552bf4c0171b9ac90bfb19add9143a5fcd8ebcc5d22ae4b59519b444743eeff7",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/chicken-v1.png",
+      "bytes": 2197253,
+      "sha256": "24c00bea2cc84df416c70f174c35016985bf4c231afb2e22bc70ef4fe78274af",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/corm-dive-v1.png",
+      "bytes": 1201279,
+      "sha256": "23799c4540d2eb7293800dbf78fc52fb35c38a8d05f1f64c27215426735f5c59",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/corm-flight-v1.json",
+      "bytes": 4573,
+      "sha256": "25d02497627411260ec749895d938156ff2281d6f8c508d7920fd0e867b40c9e",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/corm-flight-v1.png",
+      "bytes": 1020921,
+      "sha256": "86eac7125f5659baf606781cdd3b5009cd47dcb5c0fd3afaa17f960844d4a011",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/corm-idle-v1.json",
+      "bytes": 4633,
+      "sha256": "507c4734bb6824152568a989136ccbb4c3c97bc153424538283229f7ed0c66a4",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/corm-idle-v1.png",
+      "bytes": 1527698,
+      "sha256": "84c7e33e9cbc82537e072f2e35bca359026eacdfb718e9b96534ad2285a0ec3c",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/crow-flight-v1.png",
+      "bytes": 1536441,
+      "sha256": "0bd2e1920d719db0e735c9839ed4304eac4d6d0d0138194458e5117e7692f7ad",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/crow-flight-v2.png",
+      "bytes": 1695984,
+      "sha256": "2db16b179c481301dd22bdca0e3d2fcfae9cae3a7b93f2245277f6cdc78a1f55",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/crow-ground-v1.json",
+      "bytes": 5350,
+      "sha256": "5dbd175da1b736a0fb9d81f22f62f59ebb71735fd6d3b6c1f586480ffef3916b",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/crow-ground-v1.png",
+      "bytes": 1765645,
+      "sha256": "8307894e4488a32f0608533a519ad685259c1df8a77fc4e0e6016b120d5ba59d",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/duck-v1-rejected.png",
+      "bytes": 1776976,
+      "sha256": "36d40cec7ef99c235bc95e93cd138de07f181c5102c34b27f412b12a8cd5f980",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/duck-v2.json",
+      "bytes": 6058,
+      "sha256": "3319dea3460e0adc2c10076f1566d5f2ea3e113478d4957344caa089d5b0ac6e",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/duck-v2.png",
+      "bytes": 1791583,
+      "sha256": "f3ae9e2a1872f8013c8ec1047d4a8a113c69f0759f86b6a3d5b8a0ef094f9c72",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/final-pending-registry.json",
+      "bytes": 553,
+      "sha256": "9be6a61d9c514ef30176b615ba60b5c75d214d4544b9f5b4d4a8d4a1895a6a9e",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/fRaven-flight-v1.png",
+      "bytes": 3447791,
+      "sha256": "39480156b39f9fb088005a98e544ec564a83d2c67bc1fc693e90405364f308d6",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/fRaven-flight-v2.png",
+      "bytes": 1848823,
+      "sha256": "cbcb6c069c84ac6204f946927a3d751dc58d1c33dacb14a69a7d3af0fe218ff6",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/goldGoose-v1.json",
+      "bytes": 4600,
+      "sha256": "50de38d67105d2041fdcae8eadbc48f6a781c7aee067c6da6a47989ca9e9f7f4",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/goldGoose-v1.png",
+      "bytes": 1562015,
+      "sha256": "ae636a14a1bb4afebd295b22e8ca97a1b8274480d245a895f4686042cb6ee12b",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/goose-v1-rejected.png",
+      "bytes": 4179344,
+      "sha256": "8f7617a06440b63fb7678208b786365429d29635b1ed7e5598a729efee9a1a21",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/goose-v2.json",
+      "bytes": 6052,
+      "sha256": "cbff054e679a50bb53f93a5245f373f44643d9904ee0f3529a11ac55beb27bfa",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/goose-v2.png",
+      "bytes": 1984190,
+      "sha256": "52dff74523c0c3268a5a7db7249181f0a9c4303ef9f55d88e84ea09b8470effe",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/gull-atk-v1.png",
+      "bytes": 1755694,
+      "sha256": "d0ec0fca9ee06b3826ef4f6de52ac308f7a432bbbfa16ddaaf35d900f65f4c74",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/gull-die-v1.png",
+      "bytes": 1395149,
+      "sha256": "9b6d67f11d35ad8de03469b4caa1518ea03d3988f91bf1f166df86019a29758d",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/gull-flight-v1.json",
+      "bytes": 4581,
+      "sha256": "1776469587ed691ef18127303ba3b216a8de7958c25670e394b7ee82a18bf47d",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/gull-flight-v1.png",
+      "bytes": 1395794,
+      "sha256": "bb6af354d0e73705f4b0987d6a2f4a573d71ca3e2aa3577f1cf7e762c631c03f",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/gull-idle-v1.json",
+      "bytes": 4599,
+      "sha256": "228be447a8d01b929324387cae09f8648e5c32bc7ffaa836dda5060fa7f86761",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/gull-idle-v1.png",
+      "bytes": 1540096,
+      "sha256": "18f9910ed19e710c8c413dff6edf96ed48621b4300781bbe8e709762d22f04f4",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/henbuff-v1.json",
+      "bytes": 4582,
+      "sha256": "5c93d1616c4155b4fc5489de13d4af4af87cbf9c7e331e6b218b23a29cc9596a",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/henbuff-v1.png",
+      "bytes": 1868589,
+      "sha256": "03fd07793f946bac081a3ab90792ace9cd44b7eac954a5baa8974b04cf2a7f59",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/heron-flight-v1.json",
+      "bytes": 4592,
+      "sha256": "5409c214385f434dc8fedae5219423a16a678f262d0273752b6de73656aa1369",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/heron-flight-v1.png",
+      "bytes": 1780385,
+      "sha256": "7551be7a58a69529ed57e3e965fc631e25ad3172739c956e68eeef4a0ac3c26a",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/heron-ground-v1.json",
+      "bytes": 924,
+      "sha256": "4df39bd06b43a1ab04ad66641739c36af3c528f9198864f1717bcc48625a30e4",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/heron-ground-v1.png",
+      "bytes": 1802686,
+      "sha256": "ed1e78bf9c5b4707ea80ba4d5fd973dc9e20cd8b865060309dde661c067a1374",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/owl-flight-v3.json",
+      "bytes": 4571,
+      "sha256": "207b2f90e1e022784177fb9a5f6a92fd1d162936986b887019a50522b560f547",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/owl-flight-v3.png",
+      "bytes": 1282550,
+      "sha256": "b10b543e0278fcf1c902ea9453fa00f483043d7f0e429a00431130b977d4221e",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/owl-perch-source-v2.json",
+      "bytes": 2399,
+      "sha256": "2994ee6cd04f5c0dac32538f055e8abe6a86793c46ab9144e2105df188977db4",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/owl-perch-source-v2.png",
+      "bytes": 1652731,
+      "sha256": "725def149465b1516768b818a210e0ce903c67d3c17c6d1c5318821e1d83bd74",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/pending-registry.json",
+      "bytes": 1279,
+      "sha256": "6dc5a4ec7a171bec0c4fb0ccccd1234e9e3a6978fe28dcc50c25482670edf2e3",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/pheasant-ground-v1.png",
+      "bytes": 1554775,
+      "sha256": "9ddfe11eb6dcbb4d40466ab2442308694d7c750c4daf8b206a80a367f23e9a50",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/pheasant-ground-v2.png",
+      "bytes": 1531691,
+      "sha256": "f6ce29dd81a942ff3700b652ff006224e751c7a91b2dfff8cc336588b9b85663",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/pichugi-flight-v1.png",
+      "bytes": 1576635,
+      "sha256": "99fa4991ab554291366161820fd667190efc6312883f31581219bfb2dd7793c6",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/pichugi-ground-v1.png",
+      "bytes": 1755341,
+      "sha256": "87eb8f8d7abf6e046f58ca6dd256cc2f010ef7bfdb61c00ea7a1694a5b7b7dfd",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/pichugiWinter-flight-v1.json",
+      "bytes": 4588,
+      "sha256": "2f2ec6b65348b2292b4b760f9c57ede1f4cceafd8bce277ea50cc60a44d07f7e",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/pichugiWinter-flight-v1.png",
+      "bytes": 1398594,
+      "sha256": "d27d9e893d8aa563144a0cfc6552ae051bb1ae76d4ac68e24ce0fa0594aff7e7",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/pichugiWinter-ground-v1.png",
+      "bytes": 1557914,
+      "sha256": "14bd588989107008466f11e61072921fb392360b4c9f49432dfccd2c8020c292",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/stork-flight-v1.json",
+      "bytes": 4584,
+      "sha256": "5f13c81074db1e945ed9b95a52799b2df820546828e7d5df69b36847bec86118",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/stork-flight-v1.png",
+      "bytes": 1600307,
+      "sha256": "223242dc429909f6598621209d78df9777d592b047d9737122be647eebc4ea3c",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/stork-ground-v1.json",
+      "bytes": 1295,
+      "sha256": "dcf32614c5607c366d0ddf5ac657edefa2bca6ba2a56b4fc3499ffe3e3a845d1",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/stork-ground-v1.png",
+      "bytes": 874785,
+      "sha256": "6f61423fa37ac3d878002bd22ea5a6904a9bc526b1e23ca979b252fe95acd9b7",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/woodpecker-v1.json",
+      "bytes": 925,
+      "sha256": "38b4bc232ef2453c98911a5c6d5112f12a567dadcd95dc38bac33684d2218aaa",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/candidates/woodpecker-v1.png",
+      "bytes": 1556342,
+      "sha256": "ae1ddb6350d8d6bcf0ea8b3e495787787c53394bf6bead73ba171482d432755d",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/clean-adapter.py",
+      "bytes": 733,
+      "sha256": "266abc16a6906e661c37d88353ee5d8f67725b15066205de40d3c66a9cab273e",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/bat.png",
+      "bytes": 636,
+      "sha256": "46ff504927834adb435ffca62e11442c8d9e33f2e07d12ac6ad823dfffd85baf",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/chicken.png",
+      "bytes": 836,
+      "sha256": "fd6e5d5bb3ac61811ba28a1dc4cdefa080cae8784e52812b9fda4a71ca4e974c",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/corm.png",
+      "bytes": 541,
+      "sha256": "8b09cd9a8aca63f3b84495f0a02b5ea253c2e32160b4382a503f100ec2f8db40",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/crow-flight.png",
+      "bytes": 811,
+      "sha256": "e8f24820b77dccde060d8dbe6d6a78e37e12ad6848cdcec038578ccfbc91cf30",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/crow-ground.png",
+      "bytes": 782,
+      "sha256": "620c198649769aaa29711ff81431ef68db81989a5c3caa245a67f8aa695223b1",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/duck.png",
+      "bytes": 1026,
+      "sha256": "fbe1b47b0d029cb0e70b4d92e83fb8837d584042d91010de4cc4848315d0719f",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/fRaven.png",
+      "bytes": 1430,
+      "sha256": "3ef764c3e061d07ecf9ba386de69668db363e92d4ff9a910525cdd0f3c515329",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/goldGoose.png",
+      "bytes": 378,
+      "sha256": "0641af6bf6e2602e6a17f0233b48305de47a01f59c11c0a097dafecc54e1957d",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/goose.png",
+      "bytes": 1142,
+      "sha256": "ce1f36eca069f3afe0b00234e9074cbfdf6c9d45626326d9fc87866ca7fb0307",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/gull.png",
+      "bytes": 394,
+      "sha256": "c2e9d66f2217d8d8ceab3448600bba99d7a5bf815a29dc82a37388b7ed02a07e",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/henbuff.png",
+      "bytes": 1519,
+      "sha256": "895346e16a26c404f8825ccd536e54b07a0dd82643adf9e2c740ce90c5892b53",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/heron-flight.png",
+      "bytes": 1218,
+      "sha256": "aada7f1b54e97dc5bb8b2f3db1cf3dc3e7676eecad8b671de1113aa380d1d2fc",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/heron-ground.png",
+      "bytes": 781,
+      "sha256": "e3ac095a25cc2bebad1fd79ed6d1e77b4c18ad8ac1891d937162fea3e16f7a50",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/owl-flight.png",
+      "bytes": 1301,
+      "sha256": "90298b1fb6ec430541fda9f25524f88627bedd503ac819783a7b1f6e32b737d2",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/owl-perch.png",
+      "bytes": 1840,
+      "sha256": "e8d398265f1a359c361e46e6df57b345f892b962d4b2ebd806030ccd5252df1c",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/pheasant.png",
+      "bytes": 682,
+      "sha256": "6f23c5920cb3a637b161616ea7f4409930e96fa5da803ff6e2896f7170b9d8fe",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/pichugi.png",
+      "bytes": 348,
+      "sha256": "4131df98f38e5170f0143ef5e23d65047c0ea81b405ab92373553603d27cf8fe",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/stork-flight.png",
+      "bytes": 1194,
+      "sha256": "58cf4b8cf65cd12b0323c0fc2ddcd20d3df427594817990a335976c1e279e38f",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/stork-ground.png",
+      "bytes": 872,
+      "sha256": "b457dbf3b884212ea5e127bcce5cc19d0306f9789636b1477e1e1db06d00203f",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native/woodpecker.png",
+      "bytes": 513,
+      "sha256": "f5fb0dcce78886396b05d018bd3c105fb2299275960fea3b223000efd9c3f74e",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native.cjs",
+      "bytes": 3390,
+      "sha256": "97895ae281d7ab525b4839dc566a355b36dbe369a7b9876fa50e12831c335473",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-native.json",
+      "bytes": 5113,
+      "sha256": "ea7270a02fe03a5a476ca2af17b8cabbcaca91eaf8101f5725bb4ba1f8fe6108",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/cold-scale-1to1.png",
+      "bytes": 265747,
+      "sha256": "7a81f86b6d26ee6c7425f78e6e9fca6f169ea3e4d41dd76a8d3d0e29f874681f",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/compile-current.cjs",
+      "bytes": 2124,
+      "sha256": "31563bc4a8239a168bd45a3895c28c09ecd41709a7ec97916cc2e1d3df288867",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/extend-adapter.py",
+      "bytes": 3422,
+      "sha256": "8d78b60dd717ab79406e8ed69a45b10f258e341ee94925b209a32a273f93d5b8",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/finish-inspect.py",
+      "bytes": 418,
+      "sha256": "aab66c159db2c868aae192ca884f2675bf4f112010b33057c64e00b1a9c1537d",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/HANDOFF.md",
+      "bytes": 12199,
+      "sha256": "fe77c3db107755be3f659845e9de6bc46d4660fb7dcf7c90809bd08c52abf051",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/harden-qa.py",
+      "bytes": 1363,
+      "sha256": "9177b534a36a5577b9e3d8626987c21015af2dbf2c106ab88b40e32d86722838",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/inspect-batch.py",
+      "bytes": 922,
+      "sha256": "b60a086d6d8cb61cade40d8f0527846695e8c2136e20d082bd5d82a309fdb2a6",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/inspect.cjs",
+      "bytes": 4065,
+      "sha256": "b1c3cb7cbe1bc289196707a9e1a032b6a8130dbf43ff290ff34f71a104dda4c1",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/native-all.png",
+      "bytes": 68631,
+      "sha256": "14b595cd26d026b226b07dc1078f90d76681b1ae528daf0e815c91861e8fa431",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/native-roster.json",
+      "bytes": 2583,
+      "sha256": "7f90cccac66896bbc30ebbac06bc16fde16cd43ba583bd503c97c7ac41f4563f",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/owl-atlas-source.png",
+      "bytes": 1793665,
+      "sha256": "58a13938540543cfb781acd09cdf0ca9e63b81118b2cb78d6a58de8a125776a3",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/owl-before-after.png",
+      "bytes": 41784,
+      "sha256": "d94201f8a4ef705f359358b48dff319fc8669792dd9420f71ae3026acbea5bb6",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/owl-before.png",
+      "bytes": 20829,
+      "sha256": "6ea187de0de22406c09eb1852c931086381ac1471100043495b11ac8d0ad32ff",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/owl-directional.png",
+      "bytes": 198273,
+      "sha256": "2664826e67d571ff9cf85e823d810e9d1a4b51152499185e7c35cb5fa07ea63b",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/owl-native-animation.webm",
+      "bytes": 721861,
+      "sha256": "175a2da9d596c90a57f82917ab29a0a9a48150134458f7928ba49fea9c9b0e90",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/owl-native-capture.png",
+      "bytes": 72459,
+      "sha256": "8c9186a7f8d4b8bf1235f447ffcfb37d27f7dff12ead9686c8dab6b5f7a27662",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/pack-atlases-v2.cjs",
+      "bytes": 5324,
+      "sha256": "9f32386d0b837f5899c817fd85e2f74b3d7c03f6d3f3f3f6fb04f80f584aee25",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/pack-atlases-v3.cjs",
+      "bytes": 6708,
+      "sha256": "e0c9240fd4a6e6d66519346f969ea868075db0040ac4fda5b05d6bd60fe2547d",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/pack-atlases.cjs",
+      "bytes": 2540,
+      "sha256": "2d46921cf9c9bb49975375dc0ea6783580bcc967b2c908b28e209bb76be47db9",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/pack-plan.json",
+      "bytes": 1475,
+      "sha256": "d32a21a37c870fb88958906b0ec54c3efe81229141ec1e2db0c46f1dc6f297bf",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/prompts-corrections.json",
+      "bytes": 4134,
+      "sha256": "8416246fb4e1d33e3d4d447e953fdacfe10bf76b44d9cc2d9ddebcb234a7c551",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/prompts-native-specials.json",
+      "bytes": 5343,
+      "sha256": "38af3e983f63ac5a66d999523e1425ebf3205394e6543fd7bce4719ae27ad7e9",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/qa-animation.cjs",
+      "bytes": 5165,
+      "sha256": "a02281da254426aad6ae0f982b20ed51a1f908dd780d815a15f109493f97abcc",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/qa-animation.json",
+      "bytes": 384,
+      "sha256": "e8aa422f47ab76ed554c5ae5466a00fa80e853570a73270c0b5fdd00f8c52074",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/qa-contract.cjs",
+      "bytes": 2499,
+      "sha256": "24759c85cd7ba36c1626e3e60a5cdc9e6d9805b6a1017187a7f52db18e6caddb",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/qa-contract.json",
+      "bytes": 2590,
+      "sha256": "de2b27595d652e7a3e944b89defd8402e727163dd3fdbcf835e7fdc3a7d18993",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/qa.cjs",
+      "bytes": 2740,
+      "sha256": "b66220a4573eb8ff5bdf9cf2326e964b0bd78b2bc3c7a18e9e72eb88645dfbf8",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/qa.json",
+      "bytes": 560,
+      "sha256": "cc6eb39c4e6757da792aa18e78754986d6698f7483398bceff740fa08bcd52f1",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/ROSTER.md",
+      "bytes": 5606,
+      "sha256": "c0f38d6ca0a4617534ac7ab3eceb566a45b7454f957181b89d6e356f82f356a9",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/save-candidates.py",
+      "bytes": 1585,
+      "sha256": "846dd98304a98661b5a7621299a982b82989a17d5bb46ab619f5f58ad616e4c0",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/save-final-pending.py",
+      "bytes": 918,
+      "sha256": "42fb21739378e2219643b9769002e1c7a5d126f48a2c8697ccd573e024a169d0",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/scale-audit.cjs",
+      "bytes": 5021,
+      "sha256": "f84eebba0355193267bcbd9630c61ecdcee0acafdf4d84e240a51affc3abc2ea",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/scale-audit.json",
+      "bytes": 5287,
+      "sha256": "ba276f131c7258be34933034783f55f377140905e4b2cb3b487930983cee0492",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/SCOPE_AUTHORIZATION.md",
+      "bytes": 1798,
+      "sha256": "d8ae6d7fbd924c0886edf3811a86b3a3cf578e6b27daf005da7bd491ef4b0caf",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/SELF_AUDIT_2026-11-05.md",
+      "bytes": 6957,
+      "sha256": "3dc639c9e22e34deaeecce1fae18f8fb00ed7d80227faa09a529e2faa64d9c3e",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/update-qa-padding.py",
+      "bytes": 1290,
+      "sha256": "9a5359bc54fb7bfd21aa070b9ce0e522658979dfa4acfd6b6ee30631052ce726",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/validate-adapter.py",
+      "bytes": 1000,
+      "sha256": "db784fb3c7f8ddbdccbb95ad599c5749c278023a45058052fd90cd288abbd975",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    },
+    {
+      "path": "D:/для игры/feod/output/fantasy/animals-birds/write-handoff-manifest.py",
+      "bytes": 2675,
+      "sha256": "8a6594d9cd4de0528b0e9193e597d6c24a85f89370e2d488223b278b52bea245",
+      "role": "saved raw source / tool / report; NOT artistic acceptance",
+      "publishReady": false
+    }
+  ],
+  "manifestExcludesItself": true
+}

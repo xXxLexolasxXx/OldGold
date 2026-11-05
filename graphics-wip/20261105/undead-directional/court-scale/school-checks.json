@@ -1,0 +1,20 @@
+{
+  "setup": {
+    "seed": 138832137,
+    "camera": {
+      "x": 1876.4,
+      "y": 1402,
+      "z": 1.2
+    },
+    "actors": 11,
+    "version": "0.11.99"
+  },
+  "frames": 1,
+  "fps": 8,
+  "directionsObserved": [
+    "SE"
+  ],
+  "errors": [],
+  "injectedScripts": 0,
+  "description": "Controlled actors in canonical production depth list; movement chooses view automatically, no setHeading preview lock."
+}

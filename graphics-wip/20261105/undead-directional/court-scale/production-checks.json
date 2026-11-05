@@ -1,0 +1,88 @@
+{
+  "reports": [
+    {
+      "mode": "desktop",
+      "checks": {
+        "version": "court-v6-native-scale",
+        "models": 11,
+        "directions": [
+          "S",
+          "SE",
+          "E",
+          "NE",
+          "N",
+          "NW",
+          "W",
+          "SW"
+        ],
+        "totalFrames": 5544,
+        "anchorChecks": 5544,
+        "nativeCallbacks": 880,
+        "unchangedNpcObjects": 880,
+        "assetsReady": true,
+        "assetsErrors": [],
+        "cache": {
+          "entries": 207,
+          "rgbaBytes": 33509568,
+          "maxEntries": 1200,
+          "maxRgbaBytes": 33554432,
+          "hits": 768,
+          "misses": 5668
+        },
+        "injectedScripts": 0,
+        "allSixLoaded": true,
+        "description": "Canonical index only; private presentation preview pins for inspection, no new saved NPC properties, QA depth-list entries only."
+      },
+      "errors": [],
+      "failedAssets": [],
+      "serviceProbes": [
+        {
+          "url": "http://127.0.0.1:8897/coop-info",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "mode": "mobile",
+      "checks": {
+        "version": "court-v6-native-scale",
+        "models": 11,
+        "directions": [
+          "S",
+          "SE",
+          "E",
+          "NE",
+          "N",
+          "NW",
+          "W",
+          "SW"
+        ],
+        "totalFrames": 5544,
+        "anchorChecks": 5544,
+        "nativeCallbacks": 880,
+        "unchangedNpcObjects": 880,
+        "assetsReady": true,
+        "assetsErrors": [],
+        "cache": {
+          "entries": 207,
+          "rgbaBytes": 33509568,
+          "maxEntries": 1200,
+          "maxRgbaBytes": 33554432,
+          "hits": 768,
+          "misses": 5668
+        },
+        "injectedScripts": 0,
+        "allSixLoaded": true,
+        "description": "Canonical index only; private presentation preview pins for inspection, no new saved NPC properties, QA depth-list entries only."
+      },
+      "errors": [],
+      "failedAssets": [],
+      "serviceProbes": [
+        {
+          "url": "http://127.0.0.1:8897/coop-info",
+          "status": 404
+        }
+      ]
+    }
+  ]
+}

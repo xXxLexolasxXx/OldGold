@@ -1,0 +1,192 @@
+{
+  "at": "2026-11-05T01:29:36.512326+00:00",
+  "status": "ACCEPTED frozen current11court scale fix + related portrait crop; centralized main commit pending",
+  "version": "court-v6-native-scale",
+  "scope": "Current 11 court models + one related mrak portrait crop; no new families or animals",
+  "runtimeFiles": [
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-darkcourt-polish.js",
+      "relativePath": "js/fantasy-darkcourt-polish.js",
+      "sha256": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-published-portraits.js",
+      "relativePath": "js/fantasy-published-portraits.js",
+      "sha256": "2b320f632ec16c9ae75ddf144a83cc38d3cf144473da2c8159a8727368359dc0"
+    }
+  ],
+  "unchangedRequiredAssets": [
+    {
+      "path": "assets/fantasy/court-bodies-v4-pixel.png",
+      "sha256": "479a014c3f44c3adfee827215446a4055af6e9f10d6893d527337966d40f6856"
+    },
+    {
+      "path": "assets/fantasy/court-arms-v4-pixel.png",
+      "sha256": "00df6b91b004fcbcfea0b048e8d85c3f707f5f81f45068cd4291eaf0cd3477d6"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-S.png",
+      "sha256": "d42a0522a3829cad098a2fa57dbe730dc96a998eaa0deda0f12d707862698cff"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-E.png",
+      "sha256": "dabca1b470be219cd21c99284cdd3bfbe97a42315f02ec1678583074bf3ccd00"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-NE.png",
+      "sha256": "e53423d3f759c36b72578f46f33eed40ed47c54cafdddd3ff7210388f67c0f33"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-N.png",
+      "sha256": "835eeb3c1be1f0508427370a6d615ef74e3334c1cc7fa904bfd8c478310da2fa"
+    }
+  ],
+  "models": [
+    "fThrall",
+    "fKnight",
+    "fMalgor1",
+    "fMalgor3",
+    "fBone",
+    "fRock",
+    "fG_fire",
+    "fG_ice",
+    "fG_bone",
+    "fG_shadow",
+    "fG_golem"
+  ],
+  "projections": [
+    "S front",
+    "SE front quarter",
+    "E profile",
+    "NE rear quarter",
+    "N back"
+  ],
+  "headings": 8,
+  "scale": {
+    "oneModelScaleForAllViews": true,
+    "nativeHeightMaxRelativeError": 0.03409090909090906,
+    "crownMaxWorldError": 0.1666666666666714,
+    "footOrigin": [
+      0,
+      0
+    ],
+    "physicalFootVisibleEdgeMaxError": 0.6666666666666666,
+    "robeMistAlphaFringeMaxError": 1.3333333333333333,
+    "outputPixelStep": 0.5,
+    "smoothing": false
+  },
+  "nativeAnchors": "All 5544 actual arm/cast near/far hand points match approved native rig; 32 native glow transforms unchanged; no global model transform of hand/FX coordinates",
+  "validated": {
+    "frameViews": 5544,
+    "nativeCallbacksPerViewport": 880,
+    "unchangedNpcObjectsPerViewport": 880,
+    "fx": 32,
+    "quarterNativeCallbacks": 78,
+    "desktopMobile": true,
+    "graphicsErrors": 0,
+    "canonicalIndexWithoutInjection": true,
+    "cacheEntryCap": 1200,
+    "cacheRgbaByteCap": 33554432,
+    "nativeStatesInEachGif": [
+      "idle",
+      "walk",
+      "attack",
+      "cast",
+      "hurt",
+      "native named fight phases",
+      "native death callback"
+    ]
+  },
+  "review": {
+    "portrait": {
+      "status": "APPROVED narrow crop-only review",
+      "reviewerThread": "01a1a35d-b114-75d2-9703-6c6079ac42d1",
+      "sourceSha256": "2b320f632ec16c9ae75ddf144a83cc38d3cf144473da2c8159a8727368359dc0",
+      "findings": "Both72x72 phases readable, hood top padding/face correct, no extra head; actual frontal body source retained; no concurrent edits. Does not approve entire court or other portraits."
+    },
+    "forestPeer": {
+      "status": "PASS representative Malgor I/III visual peer on exact court SHA",
+      "thread": "01a1a8f8-afcc-7980-82aa-33983be85082",
+      "sourceSha256": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b",
+      "report": "../../forest-neutrals/v4/peer-review-court-d7ab.md",
+      "scope": "Pixel clusters/stepped light/material, five distinct static views, front/rear3/4, no face/front ornaments on N, no visible detached hand/duplicate weapon/clipped hood or feet in reviewed frames; genuine same-camera school+dwarves scene.",
+      "limits": "Not independent rerun of owner5544phases/32FX; no full-width-identical claim for golem.",
+      "golemWidth": "Clarification only, not blocking or a request to stretch views; cold/new fullbbox and projection/core geometry disclosed in golem-width-addendum.json."
+    },
+    "independentAudit": {
+      "status": "PASS: independent55idle bbox/anchor cases, 5views and actual school+dwarf+Malgor reference scene",
+      "thread": "01a1a35e-054d-7e90-a775-88e1029b115b",
+      "sourceSha256": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b",
+      "report": "../../audit-baganet/court-scale-review.md",
+      "probe": "../../audit-baganet/court-scale-independent.json",
+      "limits": "Full5544frame/32FX/desktop-mobile880callbacks remain owner proofs, not independently rerun by this reviewer."
+    },
+    "leadingAcceptance": {
+      "status": "ACCEPTED for main by leading thread",
+      "thread": "01a1a2b3-2a33-73b3-8aab-6f77e1d39b63",
+      "sourceSha256": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b",
+      "portraitSha256": "2b320f632ec16c9ae75ddf144a83cc38d3cf144473da2c8159a8727368359dc0",
+      "scope": "Leading also visually inspected all11fiveviews/commonworld; golem -9.43% full profile width vs native fixed view accepted as non-blocking anatomy/projection difference; no width-identical claim or bbox-stretch."
+    },
+    "leadingTechnical": {
+      "status": "PASS targeted independent technical review; BLOCKERS0",
+      "reviewer": "pages_editor_adapter via leading thread 01a1a2b3-2a33-73b3-8aab-6f77e1d39b63",
+      "sourceSha256": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b",
+      "portraitSha256": "2b320f632ec16c9ae75ddf144a83cc38d3cf144473da2c8159a8727368359dc0",
+      "scope": "Canonical desktop/mobile48frames+48contacts,55cachealiases, exact mirrors/root, NPC/clock preservation,2bodyportraitcrops, all assets and SHA exact",
+      "limits": "Targeted independent review; not a second exhaustive5544frame run."
+    }
+  },
+  "readyForCombinedQA": true,
+  "readyForLive": true,
+  "published": false,
+  "pushed": false,
+  "ownerCommitPerformed": false,
+  "commitProtocol": "Latest user coordination requires leading session to commit the two named runtime files sequentially in shared publication clone; owner does not touch shared git index.",
+  "sourceChanges": "Per-kind uniform authored body/limb thickness calibration shared by all5views; original golem/ice sole level; original Malgor staff length/lift; native rig unchanged; ordinary-game preview gate removed after scale fix; portrait crop derives from current model height.",
+  "knownLimits": [
+    "World video is a controlled renderer demonstration in the canonical depth list, not naturally occurring combat.",
+    "Artwork differs in shape/material from native; size proof uses visible silhouette and independent body crown, not exact old pigment pixels.",
+    "Independent court visual/technical review and leading acceptance are pending, cannot be replaced by self-QA.",
+    "Golem full profile alpha width48 vs native fixed-view53worldunits (-9.43%), front48.5/SE49. New authored projection and restyled finger/hand edges differ in shape. This is disclosed, not an assertion of identical width; peer clarification is non-blocking."
+  ],
+  "remainingOtherScope": "Skeleton/echo/barrow/mimic/spectral/FZ redesign not started in this resumed scale-fix; no completion claimed. Animals/owls/raven excluded by latest rules.",
+  "evidence": [
+    "comparison-1to1.png",
+    "comparison-x2.png",
+    "five-views.png",
+    "court-both-three-quarters.png",
+    "in-game-with-dwarves.mp4",
+    "world-0.png",
+    "world-40.png",
+    "school-scene.png",
+    "court-native-scale.json",
+    "crown-checks.json",
+    "checks.json",
+    "cache-checks.json",
+    "fx-anchors.json",
+    "production-checks.json",
+    "portrait-checks.json",
+    "portrait-front.png",
+    "cycles/manifest.json",
+    "three-quarter-proof.json",
+    "world-checks.json",
+    "school-checks.json",
+    "golem-width-addendum.json"
+  ],
+  "shownToUserBeforePublication": [
+    "comparison-1to1.png",
+    "school-scene.png"
+  ],
+  "referenceRendererFiles": [
+    {
+      "path": "js/fantasy-published-art.js",
+      "sha256": "1f119778970a9b8a1c6ad3a9dafdf8868b8a7837f1ead9ee14ba4881b362ccc4"
+    },
+    {
+      "path": "js/fantasy-published-appearance.js",
+      "sha256": "eab531706913731c433d1454afd770f410dc43bf4435033694ba1b12e6f2436a"
+    }
+  ],
+  "centralCommitStatus": "PENDING leading main assembly with other neutral branch; owner instructed to stop after handoff, no shared-index writes."
+}

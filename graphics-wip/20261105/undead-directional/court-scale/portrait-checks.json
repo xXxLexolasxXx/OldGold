@@ -1,0 +1,30 @@
+{
+  "courtVersion": "court-v6-native-scale",
+  "roles": 16,
+  "pending": [],
+  "assetErrors": [],
+  "rows": [
+    {
+      "frame": "i0",
+      "direction": "S",
+      "usesFrontSource": true,
+      "frontDiffersFromDefaultSE": true,
+      "cropMatches": true,
+      "width": 72,
+      "height": 72,
+      "sha256": "fea7823a8e1762bd9f548e55e1758c52047053d464b7f4c41fbc1cd161139e28"
+    },
+    {
+      "frame": "i8",
+      "direction": "S",
+      "usesFrontSource": true,
+      "frontDiffersFromDefaultSE": true,
+      "cropMatches": true,
+      "width": 72,
+      "height": 72,
+      "sha256": "acf1905f653b344f0ceff3b0518a0e43f1096c65c38d32ec419c9ea9b71fc0c0"
+    }
+  ],
+  "errors": [],
+  "portraitsSha256": "2b320f632ec16c9ae75ddf144a83cc38d3cf144473da2c8159a8727368359dc0"
+}

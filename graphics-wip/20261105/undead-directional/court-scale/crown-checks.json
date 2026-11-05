@@ -1,0 +1,302 @@
+{
+  "records": [
+    {
+      "kind": "fThrall",
+      "nativeCrown": -35,
+      "views": {
+        "S": {
+          "crown": -35,
+          "delta": 0
+        },
+        "SE": {
+          "crown": -35,
+          "delta": 0
+        },
+        "E": {
+          "crown": -35,
+          "delta": 0
+        },
+        "NE": {
+          "crown": -35,
+          "delta": 0
+        },
+        "N": {
+          "crown": -35,
+          "delta": 0
+        }
+      },
+      "method": "Cold original silhouette crown; idle weapon stays below head"
+    },
+    {
+      "kind": "fKnight",
+      "nativeCrown": -48,
+      "views": {
+        "S": {
+          "crown": -48,
+          "delta": 0
+        },
+        "SE": {
+          "crown": -48,
+          "delta": 0
+        },
+        "E": {
+          "crown": -48,
+          "delta": 0
+        },
+        "NE": {
+          "crown": -48,
+          "delta": 0
+        },
+        "N": {
+          "crown": -48,
+          "delta": 0
+        }
+      },
+      "method": "Cold original silhouette crown; idle weapon stays below head"
+    },
+    {
+      "kind": "fMalgor1",
+      "nativeCrown": -68.66666666666667,
+      "views": {
+        "S": {
+          "crown": -68.5,
+          "delta": 0.1666666666666714
+        },
+        "SE": {
+          "crown": -68.5,
+          "delta": 0.1666666666666714
+        },
+        "E": {
+          "crown": -68.5,
+          "delta": 0.1666666666666714
+        },
+        "NE": {
+          "crown": -68.5,
+          "delta": 0.1666666666666714
+        },
+        "N": {
+          "crown": -68.5,
+          "delta": 0.1666666666666714
+        }
+      },
+      "method": "Cold original fpxMalgor closure with staff drawing omitted only in this QA fixture; body/hood/flames/arms unchanged"
+    },
+    {
+      "kind": "fMalgor3",
+      "nativeCrown": -72.66666666666667,
+      "views": {
+        "S": {
+          "crown": -72.5,
+          "delta": 0.1666666666666714
+        },
+        "SE": {
+          "crown": -72.5,
+          "delta": 0.1666666666666714
+        },
+        "E": {
+          "crown": -72.5,
+          "delta": 0.1666666666666714
+        },
+        "NE": {
+          "crown": -72.5,
+          "delta": 0.1666666666666714
+        },
+        "N": {
+          "crown": -72.5,
+          "delta": 0.1666666666666714
+        }
+      },
+      "method": "Cold original fpxMalgor closure with staff drawing omitted only in this QA fixture; body/hood/flames/arms unchanged"
+    },
+    {
+      "kind": "fBone",
+      "nativeCrown": -21.333333333333332,
+      "views": {
+        "S": {
+          "crown": -21.5,
+          "delta": -0.16666666666666785
+        },
+        "SE": {
+          "crown": -21.5,
+          "delta": -0.16666666666666785
+        },
+        "E": {
+          "crown": -21.5,
+          "delta": -0.16666666666666785
+        },
+        "NE": {
+          "crown": -21.5,
+          "delta": -0.16666666666666785
+        },
+        "N": {
+          "crown": -21.5,
+          "delta": -0.16666666666666785
+        }
+      },
+      "method": "Cold original silhouette crown; idle weapon stays below head"
+    },
+    {
+      "kind": "fRock",
+      "nativeCrown": -29,
+      "views": {
+        "S": {
+          "crown": -29,
+          "delta": 0
+        },
+        "SE": {
+          "crown": -29,
+          "delta": 0
+        },
+        "E": {
+          "crown": -29,
+          "delta": 0
+        },
+        "NE": {
+          "crown": -29,
+          "delta": 0
+        },
+        "N": {
+          "crown": -29,
+          "delta": 0
+        }
+      },
+      "method": "Cold original silhouette crown; idle weapon stays below head"
+    },
+    {
+      "kind": "fG_fire",
+      "nativeCrown": -45.66666666666667,
+      "views": {
+        "S": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        },
+        "SE": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        },
+        "E": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        },
+        "NE": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        },
+        "N": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        }
+      },
+      "method": "Cold original silhouette crown; idle weapon stays below head"
+    },
+    {
+      "kind": "fG_ice",
+      "nativeCrown": -45.66666666666667,
+      "views": {
+        "S": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        },
+        "SE": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        },
+        "E": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        },
+        "NE": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        },
+        "N": {
+          "crown": -45.5,
+          "delta": 0.1666666666666714
+        }
+      },
+      "method": "Cold original silhouette crown; idle weapon stays below head"
+    },
+    {
+      "kind": "fG_bone",
+      "nativeCrown": -42,
+      "views": {
+        "S": {
+          "crown": -42,
+          "delta": 0
+        },
+        "SE": {
+          "crown": -42,
+          "delta": 0
+        },
+        "E": {
+          "crown": -42,
+          "delta": 0
+        },
+        "NE": {
+          "crown": -42,
+          "delta": 0
+        },
+        "N": {
+          "crown": -42,
+          "delta": 0
+        }
+      },
+      "method": "Cold original silhouette crown; idle weapon stays below head"
+    },
+    {
+      "kind": "fG_shadow",
+      "nativeCrown": -42.66666666666667,
+      "views": {
+        "S": {
+          "crown": -42.5,
+          "delta": 0.1666666666666714
+        },
+        "SE": {
+          "crown": -42.5,
+          "delta": 0.1666666666666714
+        },
+        "E": {
+          "crown": -42.5,
+          "delta": 0.1666666666666714
+        },
+        "NE": {
+          "crown": -42.5,
+          "delta": 0.1666666666666714
+        },
+        "N": {
+          "crown": -42.5,
+          "delta": 0.1666666666666714
+        }
+      },
+      "method": "Cold original silhouette crown; idle weapon stays below head"
+    },
+    {
+      "kind": "fG_golem",
+      "nativeCrown": -68.33333333333333,
+      "views": {
+        "S": {
+          "crown": -68.5,
+          "delta": -0.1666666666666714
+        },
+        "SE": {
+          "crown": -68.5,
+          "delta": -0.1666666666666714
+        },
+        "E": {
+          "crown": -68.5,
+          "delta": -0.1666666666666714
+        },
+        "NE": {
+          "crown": -68.5,
+          "delta": -0.1666666666666714
+        },
+        "N": {
+          "crown": -68.5,
+          "delta": -0.1666666666666714
+        }
+      },
+      "method": "Cold original silhouette crown; idle weapon stays below head"
+    }
+  ],
+  "description": "Independent body crown gate: no staff can mask hood/fire-crown size. Same model scale for all views."
+}

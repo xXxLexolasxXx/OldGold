@@ -1,0 +1,901 @@
+{
+  "sourceSHA256": "d7ab7987e1383e5cc79105479ad7d9ba4d75ff45688451fb8d0d30aaffaa253b",
+  "rows": [
+    {
+      "kind": "fThrall",
+      "dir": "S",
+      "old": {
+        "top": -35,
+        "bottom": 0.6666666666666643,
+        "height": 35.666666666666664
+      },
+      "box": {
+        "top": -35,
+        "bottom": 0.5,
+        "height": 35.5
+      },
+      "ratio": 0.9953271028037384,
+      "anchorSame": true
+    },
+    {
+      "kind": "fThrall",
+      "dir": "SE",
+      "old": {
+        "top": -35,
+        "bottom": 0.6666666666666643,
+        "height": 35.666666666666664
+      },
+      "box": {
+        "top": -35,
+        "bottom": 0.5,
+        "height": 35.5
+      },
+      "ratio": 0.9953271028037384,
+      "anchorSame": true
+    },
+    {
+      "kind": "fThrall",
+      "dir": "E",
+      "old": {
+        "top": -35,
+        "bottom": 0.6666666666666643,
+        "height": 35.666666666666664
+      },
+      "box": {
+        "top": -35,
+        "bottom": 0.5,
+        "height": 35.5
+      },
+      "ratio": 0.9953271028037384,
+      "anchorSame": true
+    },
+    {
+      "kind": "fThrall",
+      "dir": "NE",
+      "old": {
+        "top": -35,
+        "bottom": 0.6666666666666643,
+        "height": 35.666666666666664
+      },
+      "box": {
+        "top": -35,
+        "bottom": 0.5,
+        "height": 35.5
+      },
+      "ratio": 0.9953271028037384,
+      "anchorSame": true
+    },
+    {
+      "kind": "fThrall",
+      "dir": "N",
+      "old": {
+        "top": -35,
+        "bottom": 0.6666666666666643,
+        "height": 35.666666666666664
+      },
+      "box": {
+        "top": -35,
+        "bottom": 0.5,
+        "height": 35.5
+      },
+      "ratio": 0.9953271028037384,
+      "anchorSame": true
+    },
+    {
+      "kind": "fKnight",
+      "dir": "S",
+      "old": {
+        "top": -48,
+        "bottom": 0.6666666666666714,
+        "height": 48.666666666666664
+      },
+      "box": {
+        "top": -48,
+        "bottom": 0.5,
+        "height": 48.5
+      },
+      "ratio": 0.9965753424657535,
+      "anchorSame": true
+    },
+    {
+      "kind": "fKnight",
+      "dir": "SE",
+      "old": {
+        "top": -48,
+        "bottom": 0.6666666666666714,
+        "height": 48.666666666666664
+      },
+      "box": {
+        "top": -48,
+        "bottom": 0.5,
+        "height": 48.5
+      },
+      "ratio": 0.9965753424657535,
+      "anchorSame": true
+    },
+    {
+      "kind": "fKnight",
+      "dir": "E",
+      "old": {
+        "top": -48,
+        "bottom": 0.6666666666666714,
+        "height": 48.666666666666664
+      },
+      "box": {
+        "top": -48,
+        "bottom": 0.5,
+        "height": 48.5
+      },
+      "ratio": 0.9965753424657535,
+      "anchorSame": true
+    },
+    {
+      "kind": "fKnight",
+      "dir": "NE",
+      "old": {
+        "top": -48,
+        "bottom": 0.6666666666666714,
+        "height": 48.666666666666664
+      },
+      "box": {
+        "top": -48,
+        "bottom": 0.5,
+        "height": 48.5
+      },
+      "ratio": 0.9965753424657535,
+      "anchorSame": true
+    },
+    {
+      "kind": "fKnight",
+      "dir": "N",
+      "old": {
+        "top": -48,
+        "bottom": 0.6666666666666714,
+        "height": 48.666666666666664
+      },
+      "box": {
+        "top": -48,
+        "bottom": 0.5,
+        "height": 48.5
+      },
+      "ratio": 0.9965753424657535,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "S",
+      "old": {
+        "top": -72.33333333333333,
+        "bottom": 1,
+        "height": 73.33333333333333
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9954545454545455,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "SE",
+      "old": {
+        "top": -72.33333333333333,
+        "bottom": 1,
+        "height": 73.33333333333333
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9954545454545455,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "E",
+      "old": {
+        "top": -72.33333333333333,
+        "bottom": 1,
+        "height": 73.33333333333333
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9954545454545455,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "NE",
+      "old": {
+        "top": -72.33333333333333,
+        "bottom": 1,
+        "height": 73.33333333333333
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9954545454545455,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "N",
+      "old": {
+        "top": -72.33333333333333,
+        "bottom": 1,
+        "height": 73.33333333333333
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9954545454545455,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "S",
+      "old": {
+        "top": -72.66666666666667,
+        "bottom": 1,
+        "height": 73.66666666666667
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9909502262443438,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "SE",
+      "old": {
+        "top": -72.66666666666667,
+        "bottom": 1,
+        "height": 73.66666666666667
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9909502262443438,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "E",
+      "old": {
+        "top": -72.66666666666667,
+        "bottom": 1,
+        "height": 73.66666666666667
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9909502262443438,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "NE",
+      "old": {
+        "top": -72.66666666666667,
+        "bottom": 1,
+        "height": 73.66666666666667
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9909502262443438,
+      "anchorSame": true
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "N",
+      "old": {
+        "top": -72.66666666666667,
+        "bottom": 1,
+        "height": 73.66666666666667
+      },
+      "box": {
+        "top": -73,
+        "bottom": 0,
+        "height": 73
+      },
+      "ratio": 0.9909502262443438,
+      "anchorSame": true
+    },
+    {
+      "kind": "fBone",
+      "dir": "S",
+      "old": {
+        "top": -21.333333333333332,
+        "bottom": 0.6666666666666679,
+        "height": 22
+      },
+      "box": {
+        "top": -21.5,
+        "bottom": 0.5,
+        "height": 22
+      },
+      "ratio": 1,
+      "anchorSame": true
+    },
+    {
+      "kind": "fBone",
+      "dir": "SE",
+      "old": {
+        "top": -21.333333333333332,
+        "bottom": 0.6666666666666679,
+        "height": 22
+      },
+      "box": {
+        "top": -21.5,
+        "bottom": 0.5,
+        "height": 22
+      },
+      "ratio": 1,
+      "anchorSame": true
+    },
+    {
+      "kind": "fBone",
+      "dir": "E",
+      "old": {
+        "top": -21.333333333333332,
+        "bottom": 0.6666666666666679,
+        "height": 22
+      },
+      "box": {
+        "top": -21.5,
+        "bottom": 0.5,
+        "height": 22
+      },
+      "ratio": 1,
+      "anchorSame": true
+    },
+    {
+      "kind": "fBone",
+      "dir": "NE",
+      "old": {
+        "top": -21.333333333333332,
+        "bottom": 0.6666666666666679,
+        "height": 22
+      },
+      "box": {
+        "top": -21.5,
+        "bottom": 0.5,
+        "height": 22
+      },
+      "ratio": 1,
+      "anchorSame": true
+    },
+    {
+      "kind": "fBone",
+      "dir": "N",
+      "old": {
+        "top": -21.333333333333332,
+        "bottom": 0.6666666666666679,
+        "height": 22
+      },
+      "box": {
+        "top": -21.5,
+        "bottom": 0.5,
+        "height": 22
+      },
+      "ratio": 1,
+      "anchorSame": true
+    },
+    {
+      "kind": "fRock",
+      "dir": "S",
+      "old": {
+        "top": -29,
+        "bottom": 0.6666666666666643,
+        "height": 29.666666666666668
+      },
+      "box": {
+        "top": -29,
+        "bottom": 0,
+        "height": 29
+      },
+      "ratio": 0.9775280898876404,
+      "anchorSame": true
+    },
+    {
+      "kind": "fRock",
+      "dir": "SE",
+      "old": {
+        "top": -29,
+        "bottom": 0.6666666666666643,
+        "height": 29.666666666666668
+      },
+      "box": {
+        "top": -29,
+        "bottom": 0,
+        "height": 29
+      },
+      "ratio": 0.9775280898876404,
+      "anchorSame": true
+    },
+    {
+      "kind": "fRock",
+      "dir": "E",
+      "old": {
+        "top": -29,
+        "bottom": 0.6666666666666643,
+        "height": 29.666666666666668
+      },
+      "box": {
+        "top": -29,
+        "bottom": 0,
+        "height": 29
+      },
+      "ratio": 0.9775280898876404,
+      "anchorSame": true
+    },
+    {
+      "kind": "fRock",
+      "dir": "NE",
+      "old": {
+        "top": -29,
+        "bottom": 0.6666666666666643,
+        "height": 29.666666666666668
+      },
+      "box": {
+        "top": -29,
+        "bottom": 0,
+        "height": 29
+      },
+      "ratio": 0.9775280898876404,
+      "anchorSame": true
+    },
+    {
+      "kind": "fRock",
+      "dir": "N",
+      "old": {
+        "top": -29,
+        "bottom": 0.6666666666666643,
+        "height": 29.666666666666668
+      },
+      "box": {
+        "top": -29,
+        "bottom": 0,
+        "height": 29
+      },
+      "ratio": 0.9775280898876404,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "S",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1,
+        "height": 46.666666666666664
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 0.5,
+        "height": 46
+      },
+      "ratio": 0.9857142857142858,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "SE",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1,
+        "height": 46.666666666666664
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 0.5,
+        "height": 46
+      },
+      "ratio": 0.9857142857142858,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "E",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1,
+        "height": 46.666666666666664
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 0.5,
+        "height": 46
+      },
+      "ratio": 0.9857142857142858,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "NE",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1,
+        "height": 46.666666666666664
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 0.5,
+        "height": 46
+      },
+      "ratio": 0.9857142857142858,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "N",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1,
+        "height": 46.666666666666664
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 0.5,
+        "height": 46
+      },
+      "ratio": 0.9857142857142858,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "S",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1.6666666666666643,
+        "height": 47.333333333333336
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 1.5,
+        "height": 47
+      },
+      "ratio": 0.9929577464788731,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "SE",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1.6666666666666643,
+        "height": 47.333333333333336
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 1.5,
+        "height": 47
+      },
+      "ratio": 0.9929577464788731,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "E",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1.6666666666666643,
+        "height": 47.333333333333336
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 1.5,
+        "height": 47
+      },
+      "ratio": 0.9929577464788731,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "NE",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1.6666666666666643,
+        "height": 47.333333333333336
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 1.5,
+        "height": 47
+      },
+      "ratio": 0.9929577464788731,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "N",
+      "old": {
+        "top": -45.66666666666667,
+        "bottom": 1.6666666666666643,
+        "height": 47.333333333333336
+      },
+      "box": {
+        "top": -45.5,
+        "bottom": 1.5,
+        "height": 47
+      },
+      "ratio": 0.9929577464788731,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "S",
+      "old": {
+        "top": -42,
+        "bottom": 0.3333333333333357,
+        "height": 42.333333333333336
+      },
+      "box": {
+        "top": -42,
+        "bottom": 0.5,
+        "height": 42.5
+      },
+      "ratio": 1.0039370078740157,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "SE",
+      "old": {
+        "top": -42,
+        "bottom": 0.3333333333333357,
+        "height": 42.333333333333336
+      },
+      "box": {
+        "top": -42,
+        "bottom": 0.5,
+        "height": 42.5
+      },
+      "ratio": 1.0039370078740157,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "E",
+      "old": {
+        "top": -42,
+        "bottom": 0.3333333333333357,
+        "height": 42.333333333333336
+      },
+      "box": {
+        "top": -42,
+        "bottom": 0.5,
+        "height": 42.5
+      },
+      "ratio": 1.0039370078740157,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "NE",
+      "old": {
+        "top": -42,
+        "bottom": 0.3333333333333357,
+        "height": 42.333333333333336
+      },
+      "box": {
+        "top": -42,
+        "bottom": 0.5,
+        "height": 42.5
+      },
+      "ratio": 1.0039370078740157,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "N",
+      "old": {
+        "top": -42,
+        "bottom": 0.3333333333333357,
+        "height": 42.333333333333336
+      },
+      "box": {
+        "top": -42,
+        "bottom": 0.5,
+        "height": 42.5
+      },
+      "ratio": 1.0039370078740157,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "S",
+      "old": {
+        "top": -42.66666666666667,
+        "bottom": 1.3333333333333357,
+        "height": 44
+      },
+      "box": {
+        "top": -42.5,
+        "bottom": 0,
+        "height": 42.5
+      },
+      "ratio": 0.9659090909090909,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "SE",
+      "old": {
+        "top": -42.66666666666667,
+        "bottom": 1.3333333333333357,
+        "height": 44
+      },
+      "box": {
+        "top": -42.5,
+        "bottom": 0,
+        "height": 42.5
+      },
+      "ratio": 0.9659090909090909,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "E",
+      "old": {
+        "top": -42.66666666666667,
+        "bottom": 1.3333333333333357,
+        "height": 44
+      },
+      "box": {
+        "top": -42.5,
+        "bottom": 0,
+        "height": 42.5
+      },
+      "ratio": 0.9659090909090909,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "NE",
+      "old": {
+        "top": -42.66666666666667,
+        "bottom": 1.3333333333333357,
+        "height": 44
+      },
+      "box": {
+        "top": -42.5,
+        "bottom": 0,
+        "height": 42.5
+      },
+      "ratio": 0.9659090909090909,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "N",
+      "old": {
+        "top": -42.66666666666667,
+        "bottom": 1.3333333333333357,
+        "height": 44
+      },
+      "box": {
+        "top": -42.5,
+        "bottom": 0,
+        "height": 42.5
+      },
+      "ratio": 0.9659090909090909,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "S",
+      "old": {
+        "top": -68.33333333333333,
+        "bottom": 1.6666666666666714,
+        "height": 70
+      },
+      "box": {
+        "top": -68.5,
+        "bottom": 1,
+        "height": 69.5
+      },
+      "ratio": 0.9928571428571429,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "SE",
+      "old": {
+        "top": -68.33333333333333,
+        "bottom": 1.6666666666666714,
+        "height": 70
+      },
+      "box": {
+        "top": -68.5,
+        "bottom": 1,
+        "height": 69.5
+      },
+      "ratio": 0.9928571428571429,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "E",
+      "old": {
+        "top": -68.33333333333333,
+        "bottom": 1.6666666666666714,
+        "height": 70
+      },
+      "box": {
+        "top": -68.5,
+        "bottom": 1,
+        "height": 69.5
+      },
+      "ratio": 0.9928571428571429,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "NE",
+      "old": {
+        "top": -68.33333333333333,
+        "bottom": 1.6666666666666714,
+        "height": 70
+      },
+      "box": {
+        "top": -68.5,
+        "bottom": 1,
+        "height": 69.5
+      },
+      "ratio": 0.9928571428571429,
+      "anchorSame": true
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "N",
+      "old": {
+        "top": -68.33333333333333,
+        "bottom": 1.6666666666666714,
+        "height": 70
+      },
+      "box": {
+        "top": -68.5,
+        "bottom": 1,
+        "height": 69.5
+      },
+      "ratio": 0.9928571428571429,
+      "anchorSame": true
+    }
+  ],
+  "apiKinds": [
+    "fThrall",
+    "fKnight",
+    "fMalgor1",
+    "fMalgor3",
+    "fBone",
+    "fRock",
+    "fG_fire",
+    "fG_ice",
+    "fG_bone",
+    "fG_shadow",
+    "fG_golem"
+  ],
+  "errors": [],
+  "scaleViolations": [],
+  "scope": "Independent idle visible-bbox/anchor probe 11 kinds x 5 authored views, not exhaustive native cycle rerun. Visual evidence separately inspected."
+}

@@ -1,0 +1,135 @@
+{
+  "checks": [
+    {
+      "kind": "fThrall",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fKnight",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fMalgor1",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fMalgor3",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fBone",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fRock",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fG_fire",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fG_ice",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fG_bone",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fG_shadow",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    },
+    {
+      "kind": "fG_golem",
+      "directions": 8,
+      "framesPerDirection": 63,
+      "total": 504,
+      "dimensions": true,
+      "partialAlpha": 0,
+      "clipped": [],
+      "anchorErrors": 0,
+      "distinctIdleDirections": 8
+    }
+  ],
+  "turn": [
+    "SE",
+    "S",
+    "SW",
+    "W",
+    "W"
+  ],
+  "assetsErrors": [],
+  "version": "court-v6-native-scale",
+  "errors": []
+}
