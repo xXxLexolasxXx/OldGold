@@ -1,0 +1,81 @@
+{
+  "ready": true,
+  "assetErrors": [],
+  "nativeBounds": {
+    "left": -22.666666666666664,
+    "top": -61.66666666666667,
+    "right": 15.666666666666671,
+    "bottom": -9.666666666666671,
+    "width": 38.333333333333336,
+    "height": 52,
+    "pixels": 5938,
+    "edge": 0
+  },
+  "viewBounds": {
+    "S": {
+      "left": -11,
+      "top": -61.5,
+      "right": 11.5,
+      "bottom": -9.5,
+      "width": 22.5,
+      "height": 52,
+      "pixels": 2504,
+      "edge": 0
+    },
+    "SE": {
+      "left": -11,
+      "top": -61.5,
+      "right": 11.5,
+      "bottom": -9.5,
+      "width": 22.5,
+      "height": 52,
+      "pixels": 2269,
+      "edge": 0
+    },
+    "E": {
+      "left": -11.5,
+      "top": -61.5,
+      "right": 11.5,
+      "bottom": -9.5,
+      "width": 23,
+      "height": 52,
+      "pixels": 1967,
+      "edge": 0
+    },
+    "NE": {
+      "left": -12.5,
+      "top": -61.5,
+      "right": 11.5,
+      "bottom": -9.5,
+      "width": 24,
+      "height": 52,
+      "pixels": 2305,
+      "edge": 0
+    },
+    "N": {
+      "left": -11.5,
+      "top": -61.5,
+      "right": 11.5,
+      "bottom": -10,
+      "width": 23,
+      "height": 51.5,
+      "pixels": 2641,
+      "edge": 0
+    }
+  },
+  "mutated": false,
+  "stats": {
+    "entries": 50,
+    "rgbaBytes": 32000000,
+    "maxEntries": 96,
+    "maxRgbaBytes": 33554432,
+    "staticBytes": 21145832,
+    "maxStaticBytes": 33554432,
+    "hits": 14,
+    "misses": 50
+  },
+  "courtIncluded": true,
+  "scene": "Actual depth-list neuDraw + foeDrawRaider, same pinned school-v1 and camera; controlled specimens do not enter Game NPCs",
+  "pageErrors": [],
+  "moduleSHA": "a99090b927974effbdbd3b57e1ca40516fe92beb9449414f68a552d82cc9d41d"
+}

@@ -1,0 +1,21 @@
+{
+  "status": "FIRST REPRESENTATIVE WIP ONLY; NOT FOR LIVE; owner continues permitted neutral finishing separately",
+  "records": [
+    {
+      "file": "js/fantasy-published-forest-neutrals-v4.js",
+      "sha256": "a99090b927974effbdbd3b57e1ca40516fe92beb9449414f68a552d82cc9d41d"
+    },
+    {
+      "file": "assets/fantasy/forest-neutrals-v4/pixie-rig-source-v2.png",
+      "sha256": "f843175868d2acbb9ac33e1de7874ced5e74ecd303786ae720cc9efde4b98a06"
+    }
+  ],
+  "pending": [
+    "sleep eyes",
+    "wing cycle",
+    "head/body/hover-foot cold landmarks",
+    "all-state and integration QA"
+  ],
+  "reviewedEarlierSource": "b4a29e881ee320d77ebc3dd5741b2b2c074e5a2ac2fbc037687e8e0a2a49cecc",
+  "warning": "Owner continued permitted fixes while snapshot was copied. Current source hash is recorded above; b4a29e88 images/peer review do NOT certify this later source. WIP only, no live integration."
+}

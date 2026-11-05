@@ -9,6 +9,7 @@
   "courtErrors": [],
   "modules": [
     "FantasyBarrowPolish",
+    "FantasyDarkCourtPolish",
     "FantasyEchoPolish",
     "FantasyGroundCover",
     "FantasyLeshyPolish",
