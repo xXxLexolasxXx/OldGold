@@ -1,0 +1,241 @@
+{
+  "base": "https://xxxlexolasxxx.github.io/OldGold/",
+  "version": "0.11.99",
+  "mainAssets": 44,
+  "buildings": 41,
+  "missingBuildings": [],
+  "artErrors": [],
+  "hauntsErrors": [],
+  "courtErrors": [],
+  "modules": [
+    "FantasyBarrowPolish",
+    "FantasyEchoPolish",
+    "FantasyGroundCover",
+    "FantasyLeshyPolish",
+    "FantasyMimicPolish",
+    "FantasyNeutralPolish",
+    "FantasyPublishedAnomalies",
+    "FantasyPublishedAppearance",
+    "FantasyPublishedAppearanceArt",
+    "FantasyPublishedArt",
+    "FantasyPublishedDecor",
+    "FantasyPublishedElementals",
+    "FantasyPublishedEnvironment",
+    "FantasyPublishedForestfolk",
+    "FantasyPublishedFrogs",
+    "FantasyPublishedGolem",
+    "FantasyPublishedGround",
+    "FantasyPublishedHaunts",
+    "FantasyPublishedIcons",
+    "FantasyPublishedMachinery",
+    "FantasyPublishedNightDecor",
+    "FantasyPublishedObelisk",
+    "FantasyPublishedOwls",
+    "FantasyPublishedPortraits",
+    "FantasyPublishedSpectral",
+    "FantasyPublishedWildfolk",
+    "FantasyPublishedYard",
+    "FantasyRoadArt",
+    "FantasySplash",
+    "FantasyStreetArt",
+    "FantasySurfacesPolish",
+    "FantasyTreesPolish",
+    "FantasyUndeadPolish"
+  ],
+  "checks": [
+    {
+      "file": "index.html",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "sw.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/changelog.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "css/fantasy-published-ui.css",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-gallery.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-art.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-editor.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-icons.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-streets.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-obelisk.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-nightdecor.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-decor.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-surfaces-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-trees-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-environment.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-neutral-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-leshy-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-goblin-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-splash.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-spectral.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-elementals.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-anomalies.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-forestfolk.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-frogs.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-wildfolk.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-undead-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-darkcourt-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-echo-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-barrow-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-mimic-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-owls.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-haunts.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-appearance.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-yard-polish.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-machinery.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-golem.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-portraits.js",
+      "status": 200,
+      "exact": true
+    },
+    {
+      "file": "js/fantasy-published-ground.js",
+      "status": 200,
+      "exact": true
+    }
+  ],
+  "errors": [],
+  "requests": [],
+  "optionalCoopRequests": [],
+  "blockingRequests": []
+}
