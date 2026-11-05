@@ -5,7 +5,11 @@
 'use strict';
 (()=>{
  if(window.FantasyPublishedBirds)return;
- const cache=new Map(),errors=[],history=new WeakMap(),MAX_ENTRIES=1800,MAX_BYTES=24*1024*1024;
+ const cache=new Map(),errors=[],history=new WeakMap(),ownedFrames=new WeakMap(),MAX_ENTRIES=1800,MAX_BYTES=24*1024*1024;
+ const beforeAfBlit=afBlit,beforeFineBlit=blitFine;
+ function ownedBlit(c,s,x,y,w,h){const m=ownedFrames.get(s);if(!m)return beforeAfBlit(c,s,x,y,w,h);w=w??m.box[0];h=h??m.box[1];const sx=w/m.box[0],sy=h/m.box[1],sm=c.imageSmoothingEnabled;c.imageSmoothingEnabled=false;c.drawImage(s,x-m.padding[0]*sx,y-m.padding[1]*sy,s.width/2*sx,s.height/2*sy);c.imageSmoothingEnabled=sm;}
+ afBlit=function(c,s,x,y,w,h){if(ownedFrames.has(s))return ownedBlit(c,s,x,y,w,h);return beforeAfBlit(c,s,x,y,w,h);};
+ blitFine=function(c,s,x,y,w,h){const m=ownedFrames.get(s);if(!m)return beforeFineBlit(c,s,x,y,w,h);if(w===undefined||h===undefined||w===s.width/2&&h===s.height/2){const sm=c.imageSmoothingEnabled;c.imageSmoothingEnabled=false;c.drawImage(s,x,y,w??s.width/2,h??s.height/2);c.imageSmoothingEnabled=sm;return;}return ownedBlit(c,s,x,y,w,h);};
  const moduleURL=document.currentScript?.src||new URL('js/fantasy-published-birds.js',document.baseURI).href;
  const requiredAssets=['assets/fantasy-birds/owl-flight-runtime-v2.png','assets/fantasy-birds/owl-perch-runtime-v2.png','assets/fantasy-birds/owl-flight-runtime-v2.json','assets/fantasy-birds/owl-perch-runtime-v2.json','assets/fantasy-birds/chicken-runtime-v2.png','assets/fantasy-birds/chicken-runtime-v2.json'];
  const images=[],metadata=[],extraPacks=[],supportedKinds=['owl','chicken'];let loaded=false;
@@ -29,13 +33,13 @@
  const mod=(n,d)=>((n%d)+d)%d;
  function kit(w,h){const cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;cv.fine=2;return{cv,c:cv.getContext('2d')};}
  function duckGear(K,box,tame,cargo,swim){
-  const [w,h,ax]=box,oy=4+(swim?2.4:0),g=K.c;g.save();g.scale(2,2);g.translate(ax,oy);
+  const [w,h,ax]=box,oy=4+(swim?2.4:0),g=K.c;g.save();g.translate((K.padding?.[0]||0)*2,(K.padding?.[1]||0)*2);g.scale(2,2);g.translate(ax,oy);
   const pixel=(x,y,color)=>{g.fillStyle=color;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,.5,.5);};
   if(cargo){for(let y=-1.7;y<=1.7;y+=.5)for(let x=-2.5;x<=2.5;x+=.5)if((x/2.5)**2+(y/1.7)**2<=1)pixel(-1+x,5+y,y<-.5?'#e4d3a5':x<0?'#b29b6e':'#8e7652');for(let j=0;j<3;j++)pixel(-1.5+j*.5,4.3,'#74603e');g.save();g.translate(-1,5.2-2.6);g.scale(.34,.34);drawLoad(g,cargo);g.restore();}
   if(tame){for(let s of [-1,1])for(let x=.5;x<=2;x+=.5)for(let y=-1;y<=1;y+=.5)if(Math.abs(y)<=x*.65)pixel(3.2+s*x,5.4+y,s<0?'#9e3036':y<0?'#ed7760':'#c44b43');pixel(3,5.2,'#f3d080');pixel(3.5,5.2,'#b18740');}
   g.restore();
  }
- function birdWater(K,kind,box,f){const g=K.c,st=Math.sin(f/12*Math.PI*2);g.save();g.scale(2,2);g.translate(box[2],box[3]);if(kind==='goose'){g.fillStyle='rgba(44,92,134,.72)';g.beginPath();g.ellipse(0,-.8,9.6,2.2,0,0,7);g.fill();}for(const [rx,ry,alpha] of kind==='goose'?[[8.6+st,1.4,.75],[11.5+st*1.4,2,.35]]:[[8+st*.6,2.3,.6],[5.6,1.5,.55]]){g.strokeStyle='rgba(214,238,246,'+alpha+')';g.lineWidth=.5;g.beginPath();g.ellipse(0,kind==='goose'?-.8:-.4,rx,ry,0,0,7);g.stroke();}g.restore();}
+ function birdWater(K,kind,box,f){const g=K.c,st=Math.sin(f/12*Math.PI*2);g.save();g.translate((K.padding?.[0]||0)*2,(K.padding?.[1]||0)*2);g.scale(2,2);g.translate(box[2],box[3]);if(kind==='goose'){g.fillStyle='rgba(44,92,134,.72)';g.beginPath();g.ellipse(0,-.8,9.6,2.2,0,0,7);g.fill();}for(const [rx,ry,alpha] of kind==='goose'?[[8.6+st,1.4,.75],[11.5+st*1.4,2,.35]]:[[8+st*.6,2.3,.6],[5.6,1.5,.55]]){g.strokeStyle='rgba(214,238,246,'+alpha+')';g.lineWidth=.5;g.beginPath();g.ellipse(0,kind==='goose'?-.8:-.4,rx,ry,0,0,7);g.stroke();}g.restore();}
  function cached(kind,view,anim,f,box,opts={}){
   const extra=extraPacks.find(d=>d.kind===kind&&d.states[anim]);
   if(!['owl','chicken'].includes(kind)&&!extra)throw new Error('Birds atlas is not implemented for: '+kind);
@@ -43,7 +47,7 @@
   else f=anim==='fly'||anim==='walk'?mod(Math.floor(Number(f)||0),12):0;view=['S','SE','E','NE','N'].includes(view)?view:'E';
   const key=[kind,view,anim,f,!!opts.blink,Math.sign(opts.look||0),!!opts.mirror,box.join(','),extra?.id||'',!!opts.tame,opts.cargo||''].join('|');
   if(cache.has(key)){const v=cache.get(key);cache.delete(key);cache.set(key,v);return v;}
-  const K=kit(...box);if(kind==='owl'){
+  const frameMeta=metadata[kind==='owl'?(anim==='fly'?0:1):kind==='chicken'?2:extra.slot],renderBox=frameMeta?.renderBox||box,K=kit(...renderBox);K.padding=frameMeta?.padding||[0,0,0,0];ownedFrames.set(K.cv,{box:[...box],padding:K.padding});if(kind==='owl'){
    if(loaded){
     const row=['S','SE','E','NE','N'].indexOf(view),fly=anim==='fly',im=images[fly?0:1],meta=metadata[fly?0:1],col=fly?f:(Math.sign(opts.look||0)+1)*2+(opts.blink?1:0);
     const [sx,sy,sw,sh]=meta.rows[row][col];
@@ -57,7 +61,7 @@
     K.c.drawImage(im,sx,sy,sw,sh,box[2]*2+(sx-bodyX)*scaleX*2,box[3]*2+(sy-bodyY)*scaleY*2,sw*scaleX*2,sh*scaleY*2);
     const data=K.c.getImageData(0,0,K.cv.width,K.cv.height);for(let i=3;i<data.data.length;i+=4)data.data[i]=data.data[i]>=96?255:0;K.c.putImageData(data,0,0);
     }
-    if(opts.mirror){const copy=document.createElement('canvas');copy.width=K.cv.width;copy.height=K.cv.height;copy.getContext('2d').drawImage(K.cv,0,0);K.c.clearRect(0,0,K.cv.width,K.cv.height);K.c.save();K.c.translate(box[2]*4,0);K.c.scale(-1,1);K.c.drawImage(copy,0,0);K.c.restore();}
+    if(opts.mirror){const copy=document.createElement('canvas');copy.width=K.cv.width;copy.height=K.cv.height;copy.getContext('2d').drawImage(K.cv,0,0);K.c.clearRect(0,0,K.cv.width,K.cv.height);K.c.save();K.c.translate((box[2]+K.padding[0])*4,0);K.c.scale(-1,1);K.c.drawImage(copy,0,0);K.c.restore();}
    }else return beforeOwl(anim==='fly'?'fly':'perch',opts.look||0,!!opts.blink,anim==='fly'?10+f:0);
   }
   if(kind==='chicken'){
@@ -111,10 +115,10 @@
   return withContext(o,()=>beforeCreatureAt(c,kind,px,py,face,moving,phase,load,n,view),o?undefined:view);
  };
  const beforePecker=drawPecker;
- drawPecker=function(c,p){if(!loaded)return beforePecker(c,p);if(p.state!=='peck')return;return withContext(p,()=>{const spr=cached('woodpecker','E','peck',Math.floor(p.ph*7)&1,[6,11,3,10]),w=afW(spr),h=afH(spr),x=(p.tree[0]+.5)*TILE+p.face*4,y=(p.tree[1]+.5)*TILE-3;c.imageSmoothingEnabled=false;c.save();c.translate(Math.round(x),Math.round(y-h-8+1));if(p.face<0)c.scale(-1,1);afBlit(c,spr,-Math.round(w/2),0);c.restore();c.imageSmoothingEnabled=R.smooth;},'E');};
+ drawPecker=function(c,p){if(!loaded)return beforePecker(c,p);if(p.state!=='peck')return;return withContext(p,()=>{const spr=cached('woodpecker','E','peck',Math.floor(p.ph*7)&1,[6,11,3,10]),w=6,h=11,x=(p.tree[0]+.5)*TILE+p.face*4,y=(p.tree[1]+.5)*TILE-3;c.imageSmoothingEnabled=false;c.save();c.translate(Math.round(x),Math.round(y-h-8+1));if(p.face<0)c.scale(-1,1);afBlit(c,spr,-Math.round(w/2),0,w,h);c.restore();c.imageSmoothingEnabled=R.smooth;},'E');};
  const beforeGold=sprGoose,beforeGoldDraw=goldGooseDraw;
  sprGoose=function(fr){if(!loaded)return beforeGold(fr);const f=fr>=30?fr-30:fr>=20?(fr-20)*2:fr>=10?(fr-10)*1.5:fr*6;return cached('goldGoose',context?.view||'E',fr?'walk':'idle',f,[20,18,10,18]);};
- goldGooseDraw=function(list,c,F,...bounds){const start=list.length;beforeGoldDraw(list,c,F,...bounds);for(let i=start;i<list.length;i++){const native=list[i][1];list[i][1]=()=>withContext(F.gg,native);}};
+ goldGooseDraw=function(list,c,F,x0,y0,x1,y1){if(!loaded)return beforeGoldDraw(list,c,F,x0,y0,x1,y1);const g=F.gg;if(!g||!FY_SEE(g.x,g.y,x0,y0,x1,y1))return;list.push([g.y+.15,()=>withContext(g,()=>{const px=g.x*TILE,py=g.y*TILE+4;fyShadow(c,px,py,8);c.save();c.globalAlpha=1;c.translate(Math.round(px),Math.round(py));if(g.face<0)c.scale(-1,1);afBlit(c,sprGoose(g.mv?fyCyc6(g.ph*18):0),-10,-18,20,18);c.restore();c.imageSmoothingEnabled=R.smooth;if(Math.floor(g.ph*6)%5===0){c.fillStyle='#fffbd0';c.fillRect(Math.round(px+Math.sin(g.ph*5)*8),Math.round(py-12+Math.cos(g.ph*3)*5),1,1);}})]);};
  owlSprite=function(kind,look,blink,frame){if(!loaded)return beforeOwl(kind,look,blink,frame);const fly=kind==='fly',view=context?.view||(fly?'E':'S');let f=fly?(frame>=10?frame-10:[0,3,6][mod(frame||0,3)]):0;return cached('owl',view,fly?'fly':'perch',f,fly?[OWLF_W,OWLF_H,OWLF_FX,OWLF_FY]:[OWL_W,OWL_H,OWL_FX,OWL_FY],{blink,look,mirror:!fly&&context?.o?.face<0});};
  const beforeGrab=drawOwlGrab;
  drawOwlGrab=function(c,o){return withContext(o,()=>{
@@ -126,5 +130,6 @@
  const beforeOwls=drawOwls;
  // Native implementation retained verbatim except scoped sprite selection per owl.
  drawOwls=function(c){const smooth=c.imageSmoothingEnabled;c.imageSmoothingEnabled=R.smooth;c.imageSmoothingQuality='low';for(const o of Game.owls||[]){if(o.state==='grab'){drawOwlGrab(c,o);continue;}if(o.state==='away')continue;const x=o.x,y=o.y;if(typeof onScreen==='function'&&!onScreen(x,y,80))continue;withContext(o,()=>{if(o.state==='fly'){const gy=o.to[1]+(o.from[1]-o.to[1])*(1-o.f)+34;c.fillStyle='rgba(10,8,4,0.18)';c.beginPath();c.ellipse(x,gy,8,2,0,0,7);c.fill();const s=owlSprite('fly',0,0,10+mod(Math.floor(o.ph*30),12));c.save();c.translate(x,y);if(o.face<0)c.scale(-1,1);if(o.item){c.save();c.translate(0,6);c.scale(.4,.4);drawLoad(c,o.item);c.restore();}afBlit(c,s,-OWLF_FX,-OWLF_FY,OWLF_W,OWLF_H);c.restore();}else{if(o.item){c.save();c.translate(x+.5,y+.6);c.scale(.38,.38);drawLoad(c,o.item);c.restore();}afBlit(c,owlSprite('perch',o.look,o.blink>0,0),x-OWL_FX,y-OWL_FY,OWL_W,OWL_H);}},undefined);}for(const f of Game.falling||[]){c.save();c.translate(f.x,f.y);c.rotate(f.rot);c.scale(.45,.45);drawLoad(c,f.g);c.restore();}c.imageSmoothingEnabled=smooth;c.imageSmoothingQuality='low';};
- window.FantasyPublishedBirds={ready,errors,requiredAssets,supportedKinds,packs:extraPacks,pixelRatio:2,views:['S','SE','E','NE','N'],sprite:cached,before:{owlSprite:beforeOwl,drawOwls:beforeOwls,creatureSprite:beforeCreature,drawCreatureAt:beforeCreatureAt},cacheStats:()=>({entries:cache.size,bytes,maxEntries:MAX_ENTRIES,maxBytes:MAX_BYTES}),withContext};
+ window.FantasyPublishedBirds={ready,errors,requiredAssets,supportedKinds,packs:extraPacks,pixelRatio:2,views:['S','SE','E','NE','N'],sprite:cached,drawFrame:ownedBlit,frameInfo:s=>ownedFrames.get(s),before:{owlSprite:beforeOwl,drawOwls:beforeOwls,creatureSprite:beforeCreature,drawCreatureAt:beforeCreatureAt},cacheStats:()=>({entries:cache.size,bytes,maxEntries:MAX_ENTRIES,maxBytes:MAX_BYTES}),withContext};
 })();
+

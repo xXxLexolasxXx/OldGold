@@ -24,13 +24,13 @@
       },
       "new": {
         "bbox": [
-          2,
+          1.5,
           0,
           11,
           20
         ],
         "support": [
-          8.15,
+          8.05,
           20
         ]
       },
@@ -66,23 +66,23 @@
       },
       "new": {
         "bbox": [
-          3.5,
-          1,
-          20.5,
-          13.5
+          0,
+          4.5,
+          32.5,
+          12
         ],
         "support": [
-          16,
-          14.5
+          16.75,
+          16.5
         ]
       },
       "delta": {
-        "width": -12.5,
-        "height": 1.5,
-        "headY": -3.5,
-        "supportY": -2
+        "width": -0.5,
+        "height": 0,
+        "headY": 0,
+        "supportY": 0
       },
-      "referenceWithinHalfPixel": false
+      "referenceWithinHalfPixel": true
     },
     {
       "id": "chicken",
@@ -150,18 +150,18 @@
       },
       "new": {
         "bbox": [
-          4.5,
+          5,
           0.5,
-          19.5,
+          20,
           21
         ],
         "support": [
-          15,
+          16,
           21.5
         ]
       },
       "delta": {
-        "width": -0.5,
+        "width": 0,
         "height": 0,
         "headY": 0,
         "supportY": 0
@@ -192,13 +192,13 @@
       },
       "new": {
         "bbox": [
-          0,
+          2,
           4.5,
           17,
           13
         ],
         "support": [
-          8.958333333333334,
+          10.98076923076923,
           17.5
         ]
       },
@@ -234,13 +234,13 @@
       },
       "new": {
         "bbox": [
-          6.5,
+          6,
           7,
           12.5,
           21
         ],
         "support": [
-          11.75,
+          11,
           28
         ]
       },
@@ -278,7 +278,7 @@
         "bbox": [
           1,
           0,
-          5,
+          5.5,
           10.5
         ],
         "support": [
@@ -287,7 +287,7 @@
         ]
       },
       "delta": {
-        "width": -0.5,
+        "width": 0,
         "height": -0.5,
         "headY": 0,
         "supportY": -0.5
@@ -318,13 +318,13 @@
       },
       "new": {
         "bbox": [
-          1.5,
+          1,
           0,
           18.5,
           17
         ],
         "support": [
-          7.5,
+          6.75,
           17
         ]
       },
@@ -339,7 +339,7 @@
   ],
   "cache": {
     "entries": 40,
-    "bytes": 271200,
+    "bytes": 424320,
     "maxEntries": 1800,
     "maxBytes": 25165824
   },

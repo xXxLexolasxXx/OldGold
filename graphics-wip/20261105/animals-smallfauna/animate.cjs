@@ -2,8 +2,8 @@ const fs=require('fs'),path=require('path');
 const {chromium}=require('D:/для игры/feod/tools/browsers/node_modules/playwright-core');
 const serve=require('../pages-compat/qa-static-server.cjs');
 (async()=>{const srv=await serve('D:/для игры/feod/output/publish/oldgold-pages-20261104'),browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{
- const page=await browser.newPage({viewport:{width:1440,height:960},serviceWorkers:'block'});await page.goto(srv.url,{waitUntil:'load'});await page.addScriptTag({url:srv.url+'/js/fantasy-published-smallfauna.js'});await page.evaluate(()=>FantasyPublishedSmallfauna.readyPromise);
- const frames=await page.evaluate(()=>{const A=FantasyPublishedSmallfauna,cv=document.createElement('canvas');cv.width=1150;cv.height=920;const c=cv.getContext('2d'),images=[],oldT=Game.time,oldFl=Game.flies,coverage={frog:new Set(),snail:new Set(),newt:new Set(),moth:new Set()};let nightT=0;for(let tt=0;tt<2000;tt+=5){Game.time=tt;if(nightAmt()>.8){nightT=tt;break;}}Game.time=oldT;
+ const page=await browser.newPage({viewport:{width:1440,height:960},serviceWorkers:'block'});await page.goto(srv.url,{waitUntil:'load'});await page.waitForFunction(()=>!!window.FantasyPublishedSmallfauna);await page.evaluate(()=>FantasyPublishedSmallfauna.readyPromise);
+ const frames=await page.evaluate(()=>{Game.paused=true;WX.k=0;WX.target=0;const A=FantasyPublishedSmallfauna,cv=document.createElement('canvas');cv.width=1150;cv.height=920;const c=cv.getContext('2d'),images=[],oldT=Game.time,oldFl=Game.flies,coverage={frog:new Set(),snail:new Set(),newt:new Set(),moth:new Set()};let nightT=0;for(let tt=0;tt<2000;tt+=5){Game.time=tt;if(nightAmt()>.8){nightT=tt;break;}}Game.time=oldT;
  const pick=(d,ratio,factor)=>{for(let a=0;a<Math.PI*8;a+=.01)if((Math.round(Math.atan2(-Math.sin(a),Math.cos(a*ratio)*factor)/(Math.PI/4))+8)%8===d)return a;return 0;},mothAngles=Array.from({length:8},(_,d)=>pick(d,1.4,.84)),flyAngles=Array.from({length:8},(_,d)=>pick(d,1.3,.78));
  const frogs=Array.from({length:8},(_,d)=>({x:0,y:0,id:0,ph:0,hop:.01,face:d>4?-1:1,fx:0,fy:0,tx:Math.sin(d*Math.PI/4),ty:Math.cos(d*Math.PI/4)}));
  const critters=Array.from({length:8},(_,d)=>({x:0,y:0,ph:0,tx:Math.sin(d*Math.PI/4),ty:Math.cos(d*Math.PI/4),col:'#e9bb61'}));
@@ -26,3 +26,5 @@ const serve=require('../pages-compat/qa-static-server.cjs');
  const dir=path.join(__dirname,'animation-frames');fs.mkdirSync(dir,{recursive:true});frames.images.forEach((s,n)=>fs.writeFileSync(path.join(dir,String(n).padStart(3,'0')+'.png'),Buffer.from(s.split(',')[1],'base64')));fs.writeFileSync(path.join(__dirname,'animation-coverage.json'),JSON.stringify({frames:frames.images.length,fps:12,views:8,coverage:frames.coverage},null,2));
  await page.screenshot({path:path.join(__dirname,'production-isolated-module-desktop.png')});console.log('Saved '+frames.images.length+' renderer animation frames.');
  }finally{await browser.close();await srv.close();}})().catch(e=>{console.error(e);process.exitCode=1});
+
+

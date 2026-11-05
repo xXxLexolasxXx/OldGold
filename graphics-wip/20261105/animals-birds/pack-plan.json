@@ -5,5 +5,6 @@
  {"id":"woodpecker","kind":"woodpecker","source":"woodpecker-v1","box":[6,11,3,10],"columns":2,"coldId":"woodpecker","states":{"peck":[0,2]}},
  {"id":"gold-goose","kind":"goldGoose","source":"goldGoose-v1","box":[20,18,10,18],"columns":12,"coldId":"goldGoose","states":{"walk":[0,12],"idle":[0,1]}},
  {"id":"owl-perch","kind":"owl","source":"owl-perch-source-v2","box":[16,20,8,19],"columns":6,"referenceColumn":2,"coldId":"owl-perch","version":2,"inManifest":false,"states":{"perch":[0,6]}},
- {"id":"chicken","kind":"chicken","source":"chicken-v1","box":[16,15,8,13],"columns":16,"referenceColumn":12,"coldId":"chicken","version":2,"inManifest":false,"states":{"walk":[0,12],"idle":[12,1],"peck":[13,1]}}
+ {"id":"chicken","kind":"chicken","source":"chicken-v1","box":[16,15,8,13],"columns":16,"referenceColumn":12,"coldId":"chicken","version":2,"inManifest":false,"states":{"walk":[0,12],"idle":[12,1],"peck":[13,1]}},
+ {"id":"owl-flight","kind":"owl","source":"owl-flight-v3","box":[34,20,17,11],"columns":12,"coldId":"owl-flight","version":2,"inManifest":false,"flight":true,"states":{"fly":[0,12]}}
 ]

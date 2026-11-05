@@ -1,0 +1,11 @@
+{
+  "repository": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104",
+  "branch": "hold/smallfauna-20261105-d97cb4d6",
+  "commit": "572d94d504ca2497a29485e8c78f7ab9cce4307a",
+  "parent": "d2f1c98d913a22f5b34abf756fa2cdd6b11ef7e2",
+  "files": [
+    "js/fantasy-published-smallfauna.js"
+  ],
+  "sharedIndexUnchanged": true,
+  "currentHeadUnchanged": true
+}

@@ -1,15 +1,15 @@
-const fs=require('fs'),path=require('path');
+const fs=require('fs'),path=require('path'),assert=require('assert');
 const {chromium}=require('D:/для игры/feod/tools/browsers/node_modules/playwright-core');
 const serve=require('../pages-compat/qa-static-server.cjs');
 const root='D:/для игры/feod/output/publish/oldgold-pages-20261104';
-(async()=>{const srv=await serve(root),browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const report={scope:'Production index + isolated module injection. Full production-index integration remains pending owner.',profiles:[]};try{
+(async()=>{const srv=await serve(root),browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const report={scope:'Full production index without module reinjection; cold-native scale reference captured separately.',profiles:[]};try{
  for(const mobile of [false,true]){
   const page=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1440,height:960},isMobile:mobile,deviceScaleFactor:mobile?2:1,serviceWorkers:'block'}),errors=[],requests=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>{if(r.url().startsWith(srv.url))requests.push(r.url()+': '+r.failure()?.errorText)});
   await page.goto(srv.url,{waitUntil:'load'});await page.waitForTimeout(600);
-  await page.addScriptTag({url:srv.url+'/js/fantasy-published-smallfauna.js'});await page.evaluate(()=>FantasyPublishedSmallfauna.readyPromise);
+  await page.waitForFunction(()=>!!window.FantasyPublishedSmallfauna);await page.evaluate(()=>FantasyPublishedSmallfauna.readyPromise);
   const out=await page.evaluate(()=>{
-   const A=FantasyPublishedSmallfauna,imgs={},checks={ready:A.ready,assets:A.requiredAssets,errors:A.errors},names=['Покой','Моргание','Кваканье','Присела','Толчок','Полёт','Посадка'];
+   Game.paused=true;WX.k=0;WX.target=0;const A=FantasyPublishedSmallfauna,imgs={},checks={ready:A.ready,assets:A.requiredAssets,errors:A.errors,scriptCount:[...document.scripts].filter(s=>s.src.includes('fantasy-published-smallfauna.js')).length},names=['Покой','Моргание','Кваканье','Присела','Толчок','Полёт','Посадка'];
    const C=(w,h,title)=>{const cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d');c.fillStyle='#242e2c';c.fillRect(0,0,w,h);c.fillStyle='#eee1bc';c.font='bold 23px sans-serif';c.fillText(title,24,34);c.font='14px sans-serif';c.fillStyle='#b4c7b6';c.fillText('Увеличено для сравнения; масштаб в игре сохранён',24,58);c.imageSmoothingEnabled=false;return [cv,c];};
    const [cv,c]=C(1000,790,'Лягушка — полное тело, пять самостоятельных ракурсов');
    A.views.forEach((s,i)=>{c.fillStyle='#e9d3a4';c.fillText(s,155+i*165,94)});
@@ -36,5 +36,7 @@ const root='D:/для игры/feod/output/publish/oldgold-pages-20261104';
   if(!mobile)for(const [name,data]of Object.entries(out.imgs))fs.writeFileSync(path.join(__dirname,name+'.png'),Buffer.from(data.split(',')[1],'base64'));
   report.profiles.push({mobile,checks:out.checks,pageErrors:errors,failedLocalRequests:requests});await page.close();
  }
- fs.writeFileSync(path.join(__dirname,'qa-results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+ fs.writeFileSync(path.join(__dirname,'qa-results.json'),JSON.stringify(report,null,2));for(const p of report.profiles){const c=p.checks;assert(c.ready&&c.scriptCount===1&&c.errors.length===0&&c.emptyFrames===0&&c.tinyEmpty===0&&c.edgeTouchingFrames===0&&c.partialAlpha===0&&!c.entityMutation&&c.reuse&&c.stats.entries<=c.stats.maxEntries&&c.stats.rgbaBytes<=c.stats.maxRGBABytes&&p.pageErrors.length===0&&p.failedLocalRequests.length===0,'Production directional QA failed');}console.log(JSON.stringify(report,null,2));
  }finally{await browser.close();await srv.close();}})().catch(e=>{console.error(e);process.exitCode=1});
+
+

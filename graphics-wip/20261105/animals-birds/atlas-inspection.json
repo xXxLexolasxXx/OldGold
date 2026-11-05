@@ -1,0 +1,100 @@
+[
+  {
+    "source": "stork-flight-v1",
+    "expectedColumns": 12,
+    "ok": true,
+    "output": "60 isolated sprites, 1942x809",
+    "error": ""
+  },
+  {
+    "source": "heron-flight-v1",
+    "expectedColumns": 12,
+    "ok": true,
+    "output": "60 isolated sprites, 1920x819",
+    "error": ""
+  },
+  {
+    "source": "bat-flight-v1",
+    "expectedColumns": 9,
+    "ok": true,
+    "output": "45 isolated sprites, 1681x935",
+    "error": ""
+  },
+  {
+    "source": "crow-ground-v1",
+    "expectedColumns": 14,
+    "ok": true,
+    "output": "70 isolated sprites, 2098x750",
+    "error": ""
+  },
+  {
+    "source": "stork-ground-v1",
+    "expectedColumns": 3,
+    "ok": true,
+    "output": "15 isolated sprites, 1122x1402",
+    "error": ""
+  },
+  {
+    "source": "heron-ground-v1",
+    "expectedColumns": 2,
+    "ok": true,
+    "output": "10 isolated sprites, 1024x1536",
+    "error": ""
+  },
+  {
+    "source": "pichugi-ground-v1",
+    "expectedColumns": 22,
+    "ok": false,
+    "output": "",
+    "error": "Traceback (most recent call last):\n  File \"D:\\для игры\\feod\\output\\fantasy\\animals-birds\\atlas-inspect.py\", line 18, in <module>\n    if len(group)!=cols: raise ValueError(f'row {r}: {len(group)}, expected {cols}')\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: row 0: 21, expected 22"
+  },
+  {
+    "source": "pichugi-flight-v1",
+    "expectedColumns": 12,
+    "ok": false,
+    "output": "",
+    "error": "Traceback (most recent call last):\n  File \"D:\\для игры\\feod\\output\\fantasy\\animals-birds\\atlas-inspect.py\", line 18, in <module>\n    if len(group)!=cols: raise ValueError(f'row {r}: {len(group)}, expected {cols}')\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: row 0: 11, expected 12"
+  },
+  {
+    "source": "pichugiWinter-ground-v1",
+    "expectedColumns": 22,
+    "ok": false,
+    "output": "",
+    "error": "Traceback (most recent call last):\n  File \"D:\\для игры\\feod\\output\\fantasy\\animals-birds\\atlas-inspect.py\", line 18, in <module>\n    if len(group)!=cols: raise ValueError(f'row {r}: {len(group)}, expected {cols}')\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: row 0: 21, expected 22"
+  },
+  {
+    "source": "pichugiWinter-flight-v1",
+    "expectedColumns": 12,
+    "ok": true,
+    "output": "60 isolated sprites, 1942x809",
+    "error": ""
+  },
+  {
+    "source": "gull-flight-v1",
+    "expectedColumns": 12,
+    "ok": true,
+    "output": "60 isolated sprites, 1942x809",
+    "error": ""
+  },
+  {
+    "source": "gull-idle-v1",
+    "expectedColumns": 12,
+    "ok": true,
+    "output": "60 isolated sprites, 1942x809",
+    "error": ""
+  },
+  {
+    "source": "corm-flight-v1",
+    "expectedColumns": 12,
+    "ok": true,
+    "output": "60 isolated sprites, 1942x809",
+    "error": ""
+  },
+  {
+    "source": "corm-idle-v1",
+    "expectedColumns": 12,
+    "ok": true,
+    "output": "60 isolated sprites, 1942x809",
+    "error": ""
+  }
+]

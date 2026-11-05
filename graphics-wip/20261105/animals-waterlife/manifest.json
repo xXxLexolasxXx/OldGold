@@ -17,10 +17,11 @@
   },
   "integration": "DO NOT CONNECT OR PUBLISH. Last functionally tested revision retained at its requested JS path; worldscale corrections remain pending. Unfinished candidate saved only under output/fantasy/animals-waterlife/worldscale-wip.js.",
   "pendingQA": [
-    "Finish cold-native visible-scale calibration, unchanged world roots and common physical scale across all 5/8 views",
-    "Validate WIP without clipping and exact native fish jump roots",
-    "Then repeat relevant complete cycles, mobile and frozen-object checks",
-    "Only after lead review connect production index and run live world/FX/combat checks without injection"
+    "No further animal redesign under current scope",
+    "Agree exact non-animal roster, ownership, separate files, reviewer and accepted reference SHA with lead before edits",
+    "Maintain end-of-day stop until explicitly resumed",
+    "For an authorized non-animal sample: 5 views/8 headings/native cycles + actual common game frame with accepted reference; independent review before multiplication",
+    "Final visual and technical review and lead acceptance must refer to the same SHA; no live readiness until then"
   ],
   "requiredFiles": [
     {
@@ -398,7 +399,7 @@
     "worldscale": "worldscale-qa.json / worldscale-1to1.png; failures, not PASS"
   },
   "referenceExamined": "output/fantasy/undead-01199/directions/fMalgor1-directions.png",
-  "status": "PENDING_WORLDSCALE_STOPPED_FOR_DAY",
+  "status": "HOLD_CONFIRMED_BY_LEAD_NO_EXTRACTION",
   "releaseReady": false,
   "includeInLive": false,
   "worldscaleWIP": {
@@ -411,5 +412,66 @@
     "No verified same-scale physical calibration for all views; previous preserved-scale captions on PNGs are superseded and must not be treated as acceptance.",
     "Full integrated production-index and live world/combat/FX QA not performed.",
     "WIP transparent render margins and padded fish-root blits are not yet browser-tested."
-  ]
+  ],
+  "previousStatus": "PENDING_WORLDSCALE_STOPPED_FOR_DAY",
+  "scopeUpdate": {
+    "animalRedesign": "excluded by latest direct instruction; preserve existing artifacts without rollback/publication",
+    "excluded": [
+      "shoal/sprat",
+      "salmon",
+      "crab",
+      "star",
+      "urchin",
+      "jelly",
+      "turtle/hatch",
+      "shell",
+      "dolphin",
+      "whale",
+      "octo",
+      "inland fish",
+      "fairy1 gold/red/blue/amber/pink/teal"
+    ],
+    "classificationHold": [
+      "serpent",
+      "kraken tent/kraeye"
+    ],
+    "possibleNonAnimalPendingCoordination": [
+      "friendly SEA_ART.mermaid",
+      "friendly SEA_ART.vodyanoy"
+    ],
+    "document": "COORDINATION_HANDOFF.md"
+  },
+  "historicalPendingQA": [
+    "Finish cold-native visible-scale calibration, unchanged world roots and common physical scale across all 5/8 views",
+    "Validate WIP without clipping and exact native fish jump roots",
+    "Then repeat relevant complete cycles, mobile and frozen-object checks",
+    "Only after lead review connect production index and run live world/FX/combat checks without injection"
+  ],
+  "coordination": {
+    "policy": "D:/для игры/GRAPHICS_COORDINATION.md",
+    "independentReview": "not launched; HOLD only",
+    "assignedReviewer": "not yet designated for the mixed non-animal subset",
+    "acceptedReferenceSHA": "not supplied by lead",
+    "sameSHAReviewRequired": true,
+    "dayStopStillActive": true,
+    "leadNotified": true,
+    "leadThreadId": "01a1a2b3-2a33-73b3-8aab-6f77e1d39b63",
+    "messageStatus": "sent successfully under new explicit user authorization; awaiting future classification/reviewer/reference, no redesign resumed",
+    "registry": "D:/для игры/GRAPHICS_REVIEW_REGISTRY.json",
+    "registrySHA256": "1eaf1b1e2acef8882bcbcc8fdc50f97d1b534eeef0770955bd4eaad00eef4fce",
+    "pinnedReferences": {
+      "school": {
+        "file": "assets/fantasy/school-v1.png",
+        "sha256": "4fd9c9f7d50838cd6e73b961c5f978e7129d7fda17a9d61402534a8fcd5cd4eb"
+      },
+      "creatureMaterial": {
+        "file": "assets/fantasy/court-bodies-v4-pixel.png",
+        "sha256": "479a014c3f44c3adfee827215446a4055af6e9f10d6893d527337966d40f6856",
+        "scope": "Previously accepted pixel clusters, contour, volume and material only. Court prototype scale is invalid and MUST NOT be copied."
+      },
+      "worldScale": "Cold native renderer at identical pose/phase/root, actual 1:1 comparison. One shared scale for five authored views. Reserved canvas does not prove visible size.",
+      "scene": "Each representative must be shown in the real game beside the pinned school/building reference at the same camera scale; a montage alone is insufficient."
+    },
+    "leadScopeConfirmation": "All fauna stopped; serpent/kraken HOLD; friendly seafolk future scope only, no extraction now"
+  }
 }

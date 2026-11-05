@@ -1,0 +1,43 @@
+{
+  "status": "HOLD_BY_REVIEW_REGISTRY",
+  "scope": [
+    "unicorn",
+    "forest/fire/ice/swamp dragon babies",
+    "adult dragon",
+    "griffin",
+    "salamander"
+  ],
+  "ruleSources": [
+    "D:/для игры/GRAPHICS_RULES.md",
+    "D:/для игры/GRAPHICS_COORDINATION.md"
+  ],
+  "moduleSHA256": "b8aca99fcb4bb64e6eacf1008a360475aae0155568d5a7361f2a7b208ba437bb",
+  "preserveAllExistingResults": true,
+  "automaticRollbackOrPublication": false,
+  "todayWorkResumed": false,
+  "independentReview": "NOT OBTAINED; no release readiness claimed",
+  "beforeAnyFutureAllowedChange": [
+    "Leader classifies each exact species; ambiguous magical beasts stay unchanged",
+    "Leader assigns concrete neighboring reviewer and approved reference files/SHA",
+    "Send species/files/current SHA/reference before mutation",
+    "Share one complete sample, five separate views and real common map frame with approved reference; fix specific review findings before replication",
+    "Obtain independent visual and technical review on exact final SHA, then leader acceptance"
+  ],
+  "existingPending": [
+    "visible native world bbox proportions mismatch",
+    "front/back breath-to-muzzle mismatch",
+    "pet beam layering",
+    "held animation key poses and 3/4 art acceptance",
+    "production-index integration QA"
+  ],
+  "noChanges": [
+    "production module",
+    "assets",
+    "index/sw/version",
+    "neighbor renderers",
+    "shared git index"
+  ],
+  "registry": "D:/для игры/GRAPHICS_REVIEW_REGISTRY.json",
+  "classification": "Registry explicitly includes magical beasts in fauna HOLD; whole assigned roster held",
+  "noNewRunsOrEdits": true
+}

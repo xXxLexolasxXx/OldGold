@@ -1,62 +1,62 @@
 {
   "recipientThread": "01a1a2b3-2a33-73b3-8aab-6f77e1d39b63",
-  "status": "STOPPED_FOR_TODAY; SNAPSHOT_ONLY; DO_NOT_ENABLE_IN_LIVE",
+  "status": "STOPPED; WIP/HOLD; CENTRALIZED MAIN SNAPSHOT ONLY",
   "sharedCheckout": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104",
-  "gitCommit": "Not performed: shared publication clone; leader commits snapshot sequentially. Only own scoped git status read; no index/stage/global config changes.",
+  "gitCommit": "None: shared publication clone; no concurrent add/commit. No subagents.",
   "productionFiles": [
     {
       "path": "js/fantasy-published-magicbeasts.js",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-published-magicbeasts.js",
       "bytes": 11114,
-      "sha256": "b8aca99fcb4bb64e6eacf1008a360475aae0155568d5a7361f2a7b208ba437bb",
-      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-published-magicbeasts.js"
+      "sha256": "b8aca99fcb4bb64e6eacf1008a360475aae0155568d5a7361f2a7b208ba437bb"
     },
     {
       "path": "assets/fantasy/magicbeasts/adult.png",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\adult.png",
       "bytes": 2696780,
-      "sha256": "c8e26c4774403e585478c434922b55bcc8c9c83bfea77098792ff31eeaca35f7",
-      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\adult.png"
+      "sha256": "c8e26c4774403e585478c434922b55bcc8c9c83bfea77098792ff31eeaca35f7"
     },
     {
       "path": "assets/fantasy/magicbeasts/fire.png",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\fire.png",
       "bytes": 2643331,
-      "sha256": "3923f2af487ffbc3b4e5c0471b2c27eadd14cc00a13d40565d4b1ccd0eb0855a",
-      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\fire.png"
+      "sha256": "3923f2af487ffbc3b4e5c0471b2c27eadd14cc00a13d40565d4b1ccd0eb0855a"
     },
     {
       "path": "assets/fantasy/magicbeasts/forest.png",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\forest.png",
       "bytes": 2582764,
-      "sha256": "fc6efc0f58c59ad8eef08a26d6f5018f42395d73cc3a25a06a74d5e1233264b9",
-      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\forest.png"
+      "sha256": "fc6efc0f58c59ad8eef08a26d6f5018f42395d73cc3a25a06a74d5e1233264b9"
     },
     {
       "path": "assets/fantasy/magicbeasts/griffin.png",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\griffin.png",
       "bytes": 2817704,
-      "sha256": "d8297716de5e9347d965be8da5f7ec75cde42ce962929bdd2e873331e2e9514d",
-      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\griffin.png"
+      "sha256": "d8297716de5e9347d965be8da5f7ec75cde42ce962929bdd2e873331e2e9514d"
     },
     {
       "path": "assets/fantasy/magicbeasts/ice.png",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\ice.png",
       "bytes": 2530459,
-      "sha256": "5a9b6667fb6bef11ad454e7b230ee8700bfb7d24847d4c02eb2b58553f641ff7",
-      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\ice.png"
+      "sha256": "5a9b6667fb6bef11ad454e7b230ee8700bfb7d24847d4c02eb2b58553f641ff7"
     },
     {
       "path": "assets/fantasy/magicbeasts/salamander.png",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\salamander.png",
       "bytes": 1986752,
-      "sha256": "8c9082e132328a16de57b421af6a85d86ad9e908c3e31afadd957db288966398",
-      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\salamander.png"
+      "sha256": "8c9082e132328a16de57b421af6a85d86ad9e908c3e31afadd957db288966398"
     },
     {
       "path": "assets/fantasy/magicbeasts/swamp.png",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\swamp.png",
       "bytes": 2738604,
-      "sha256": "243a96f30cfddd12de76afe6694cf79d93d9612acb17e613d2beca2010139a89",
-      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\swamp.png"
+      "sha256": "243a96f30cfddd12de76afe6694cf79d93d9612acb17e613d2beca2010139a89"
     },
     {
       "path": "assets/fantasy/magicbeasts/unicorn.png",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\unicorn.png",
       "bytes": 2312536,
-      "sha256": "97bfb27a694cff9c189ec5536477721f607dd77f0ddbc7150f8bdf15d4e36da6",
-      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\unicorn.png"
+      "sha256": "97bfb27a694cff9c189ec5536477721f607dd77f0ddbc7150f8bdf15d4e36da6"
     }
   ],
   "reportFiles": [
@@ -134,6 +134,11 @@
       "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\compliance-report.txt",
       "bytes": 5170,
       "sha256": "d3ef2b362bacec89f35930d1ca8c0ac1fdfd104b4c0ee608fbfaa6a5bc34bb50"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\coordination-freeze.json",
+      "bytes": 1699,
+      "sha256": "ada5889a5eb96045df24e852a39650c4072647cd43c7ca872a2b7fbddfc363cd"
     },
     {
       "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\handoff.txt",
@@ -270,5 +275,11 @@
     "mechanics AI timings footprint saves unchanged",
     "dwarf heads unchanged"
   ],
-  "latestReport": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\compliance-report.txt"
+  "latestReport": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\compliance-report.txt",
+  "latestScopeStatus": "HOLD_BY_REVIEW_REGISTRY",
+  "coordinationPolicy": "coordination-freeze.json",
+  "independentReview": "NOT OBTAINED",
+  "registry": "D:/для игры/GRAPHICS_REVIEW_REGISTRY.json",
+  "instruction": "Preserve only; no redesign, tests, rollback, automatic integration or publication",
+  "mainIntegration": "Leader only; preserve WIP snapshot, do not enable animal adapter automatically"
 }

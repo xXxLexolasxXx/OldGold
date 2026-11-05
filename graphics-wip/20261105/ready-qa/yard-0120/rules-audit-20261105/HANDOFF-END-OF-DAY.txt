@@ -39,3 +39,17 @@ Do NOT put into live runtime:
 QA scripts, dependency-negative VM fixtures, comparison raw dumps, archived old head source copies, diagnostics, or obsolete broad-eye detector results. Only the2production JS files are runtime changes from this audit. Comparison/worldPNG artifacts may be selected by leading for graphics.html; no index/publication edits made here.
 
 Known own blocking defects after tests:none found. Nothing partial is inserted into live source. Remaining global design work is assigned elsewhere, not a reason to call all OldGold directional work complete. Stopping for the day as requested; no new passes/families started.
+LATER COORDINATION UPDATE — precedence over earlier READY wording:
+Read the latest D:/для игры/GRAPHICS_RULES.md and GRAPHICS_COORDINATION.md.
+Further animal redesign is now excluded (birds/frogs/other fauna); previous inclusion is superseded. Do not delete/rollback stored work or change published material automatically. Accepted gnome low-cap heads stay unchanged.
+Today's stop remains in force. No renderer edits, new models or long series started for this update.
+
+Status of the2saved adapter files: technical self-tests PASS on the recorded621ef5c2/58d60bb2 SHA, but final graphic READY under the new process is PENDING a concrete independent neighboring review and leading acceptance on those same SHAs. Prior self-PASS is not the independent review and does not authorize automatic live publication. Keep the work in the shared snapshot; do not reset/clean/revert it.
+
+Next explicitly resumed step, before any change:
+- Send leading and assigned environment/surfaces reviewer the exact species/element scope, filenames, sourceSHA, accepted reference snapshot and overlap boundaries.
+- For one representative element, exchange separate native views and a real common game frame alongside accepted buildings/reference at the same camera/world scale. Obtain concrete cluster/outline/light/material/occlusion/anchor feedback before propagation.
+- Final handoff requires manifest, native pose/state coverage, cold native visible E/worldbbox and foot/head anchors, actual1:1 old/new with matched pose/phase/anchor, bounded cache/production/mobile/state proofs, and specific independent review on the finalSHA.
+- Existing6px/world common-column sheets are enlarged equal-scale evidence, not the newly required literal actual1:1 native-scale proof. That additional literal1:1 comparison remains pending for the resumed review; do not claim it exists.
+- Static workplace4rot and protected gnomeS/E/N/W are not a non-gnome five-view/eight-direction completion claim. Animals, other creatures, roads and UI portrait owners remain coordinated by leading; no mixed-file scope expansion.
+No new commit/staging/publication performed here. Stop for the day continues.

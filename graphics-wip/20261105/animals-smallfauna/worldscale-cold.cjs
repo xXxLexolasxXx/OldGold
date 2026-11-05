@@ -2,7 +2,7 @@ const fs=require('fs'),path=require('path');
 const {chromium}=require('D:/для игры/feod/tools/browsers/node_modules/playwright-core');
 const serve=require('../pages-compat/qa-static-server.cjs');
 (async()=>{const srv=await serve('D:/для игры/feod/output/publish/oldgold-pages-20261104'),browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{const page=await browser.newPage({serviceWorkers:'block',deviceScaleFactor:1});await page.goto(srv.url,{waitUntil:'load'});const out=await page.evaluate(()=>{
- if(window.FantasyPublishedSmallfauna)throw Error('Cold native baseline must be captured before the smallfauna adapter');
+ Game.paused=true;WX.k=0;WX.target=0;Game.time=0; if(window.FantasyPublishedSmallfauna)throw Error('Cold native baseline must be captured before the smallfauna adapter');
  const bbox=(cv,fine=1,cut=200)=>{const a=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data;let x0=cv.width,y0=cv.height,x1=-1,y1=-1;for(let y=0;y<cv.height;y++)for(let x=0;x<cv.width;x++)if(a[(y*cv.width+x)*4+3]>=cut){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}return{x0:x0/fine,y0:y0/fine,x1:(x1+1)/fine,y1:(y1+1)/fine,w:(x1-x0+1)/fine,h:(y1-y0+1)/fine};};
  const frogFrames=Object.fromEntries(['sit','blink','croak','crouch','launch','air','land'].map(fr=>{const s=frogSprite(fr);return[fr,{canvas:[afW(s),afH(s)],fine:s.fine||1,visible:bbox(s,s.fine||1),nativeDrawAnchor:{x:Math.round(afW(s)/2),y:afH(s)},bodyFootWorldY:4}];}));
  const na=Object.fromEntries(['snail','newt','moth'].map(k=>{const s=naFrame(k,'i0');return[k,{spec:{...NA_SPEC[k]},visible:bbox(s.cv,s.cv.fine||1),nativeBodyAnchor:{x:s.ax,y:s.ay},groundWorldY:6}];}));
@@ -12,4 +12,5 @@ const serve=require('../pages-compat/qa-static-server.cjs');
  return{frames,meta,frogFrames,na};});
  const dir=path.join(__dirname,'cold-native');fs.mkdirSync(dir,{recursive:true});for(const[k,s]of Object.entries(out.frames))fs.writeFileSync(path.join(dir,k+'.png'),Buffer.from(s.split(',')[1],'base64'));delete out.frames;out.scope='Fresh production index before any smallfauna injection; native face=+1 / E convention. Legacy frog art itself is frontal. 1 canvas pixel = 1 world pixel, alpha>=200 measures opaque body, not reserved buffer.';fs.writeFileSync(path.join(__dirname,'worldscale-cold-baseline.json'),JSON.stringify(out,null,2));console.log(JSON.stringify(out,null,2));
  }finally{await browser.close();await srv.close();}})().catch(e=>{console.error(e);process.exitCode=1});
+
 

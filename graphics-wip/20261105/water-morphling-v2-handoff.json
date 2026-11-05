@@ -1,0 +1,59 @@
+{
+  "status": "local opt-in WIP; user approved new visual direction; not published",
+  "request": "водяной ужасный, посмотри референсы на morphling из доты и переделай водяного; вот, отлично, делай его",
+  "preview": "http://127.0.0.1:8795/?elementalPreview=1",
+  "reference": [
+    "https://www.dota2.com/hero/morphling",
+    "https://www.somuchmonsters.com/morphling"
+  ],
+  "tool": "built-in image_gen",
+  "prompt": "Five independently authored pixel-art pure blue muscular water elemental torso/head/vortex rig bodies S SE E NE N, Morphling-inspired, luminous green eyes, no robe/hood/gold/feet; correct rear view to remove eye; separate organic blue water upper arm and forearm rig segments. Transparent background.",
+  "files": {
+    "js/fantasy-published-elementals.js": "653113afbb5b14d2aaeb00872bc839f3c0ed4a3d26c25614b372c248871e62f5",
+    "assets/fantasy/water-morphling-body-v2.png": "601e8bb2f7e336d7b7b408ff73a0b13c3438223e24fde02b00e52f2ad8eec432",
+    "assets/fantasy/water-arm-v2-0.png": "5e732e8ba6b3dd507a07e5dbab42a802741a3282bd300c603dbe153c1bb17e41",
+    "assets/fantasy/water-arm-v2-1.png": "4a061887f69ef8ce5795ddf17de91c9043204dc596430337cfe54c9b7509a1f9"
+  },
+  "validation": [
+    "full production preview desktop/mobile",
+    "176 native grip anchor cases",
+    "2112 native state/direction/time draws",
+    "8 direction selection",
+    "bounded 64 frames / 10 MiB RGBA",
+    "no saved entity/world mutation",
+    "default runtime unchanged; preview only"
+  ],
+  "limitations": [
+    "Other elementals/anomalies/night creeps remain pending.",
+    "No git staging/commit/deploy performed in shared checkout.",
+    "Final visual review of arm perspective and native bbox comparison still advisable before live integration."
+  ],
+  "coordination": {
+    "rules": "D:/для игры/GRAPHICS_RULES.md",
+    "workflow": "D:/для игры/GRAPHICS_COORDINATION.md",
+    "status": "WIP; independent visual and technical review plus lead acceptance on same SHA required",
+    "scope": "hostile water elemental only; no animals; no new series; no automatic publication",
+    "pending_evidence": [
+      "common actual game frame next to accepted reference at same camera scale",
+      "cold native visible bbox and anchor comparison",
+      "independent review of pixel clusters, arm perspective/layers and all five views"
+    ],
+    "note": "Self-test PASS is technical evidence only; visual direction approval does not replace final independent review.",
+    "registry": "D:/для игры/GRAPHICS_REVIEW_REGISTRY.json",
+    "visual_peer": "01a1a35d-c6d6-7353-8b9b-828c8bc3104e",
+    "material_reference": {
+      "file": "assets/fantasy/court-bodies-v4-pixel.png",
+      "sha256": "479a014c3f44c3adfee827215446a4055af6e9f10d6893d527337966d40f6856",
+      "role": "materials only; not scale"
+    },
+    "building_reference": {
+      "file": "school-v1.png",
+      "sha256": "4fd9c9f7d50838cd6e73b961c5f978e7129d7fda17a9d61402534a8fcd5cd4eb"
+    },
+    "next_resumed_step": "Send peer five views and a common actual game frame with pinned school; measure cold native 1:1 visible bbox. No new pass today."
+  },
+  "session_status": "STOPPED at user end-of-day instruction; integration main centralized; no own commit",
+  "other_owned_sources": {
+    "js/fantasy-published-anomalies.js": "8eae17130e911a2014db71fb6ce2aaba9035d461456b29f9452e806c990cc7db"
+  }
+}

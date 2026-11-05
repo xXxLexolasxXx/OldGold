@@ -1,88 +1,11 @@
 [
   {
     "mobile": false,
-    "scope": "Production index with a single explicitly injected smallfauna module. Native Game.step / fwThink / renderer, disposable seeded world.",
+    "scope": "Full production index without module reinjection. Native Game.step / fwThink / renderer, disposable seeded world.",
     "seeded": {
       "place": [
-        85,
-        50
-      ],
-      "ids": [
-        145,
-        146,
-        147
-      ],
-      "ready": true,
-      "errors": []
-    },
-    "before": [
-      {
-        "id": 145,
-        "x": 86,
-        "y": 51,
-        "fr": "w0"
-      },
-      {
-        "id": 146,
-        "x": 88,
-        "y": 51,
-        "fr": "w1"
-      },
-      {
-        "id": 147,
-        "x": 90,
-        "y": 51,
-        "fr": "w3"
-      }
-    ],
-    "after": {
-      "animals": [
-        {
-          "id": 145,
-          "x": 86.45791908416292,
-          "y": 51.28619942760178,
-          "fr": "w5"
-        },
-        {
-          "id": 146,
-          "x": 89.25927748144758,
-          "y": 50.21295157409525,
-          "fr": "w9"
-        },
-        {
-          "id": 147,
-          "x": 91.14479771040673,
-          "y": 51.71549856900424,
-          "fr": "w11"
-        }
-      ],
-      "stats": {
-        "entries": 121,
-        "rgbaBytes": 1894480,
-        "maxEntries": 768,
-        "maxRGBABytes": 16777216,
-        "hits": 910,
-        "misses": 121
-      }
-    },
-    "errors": [
-      "Failed to load resource: the server responded with a status of 404 (Not Found)"
-    ],
-    "httpErrors": [
-      {
-        "url": "http://127.0.0.1:58346/coop-info",
-        "status": 404
-      }
-    ],
-    "video": "game-desktop.webm"
-  },
-  {
-    "mobile": true,
-    "scope": "Production index with a single explicitly injected smallfauna module. Native Game.step / fwThink / renderer, disposable seeded world.",
-    "seeded": {
-      "place": [
-        83,
-        52
+        86,
+        51
       ],
       "ids": [
         125,
@@ -95,20 +18,20 @@
     "before": [
       {
         "id": 125,
-        "x": 84,
-        "y": 53,
+        "x": 87,
+        "y": 52,
         "fr": "w0"
       },
       {
         "id": 126,
-        "x": 86,
-        "y": 53,
+        "x": 89,
+        "y": 52,
         "fr": "w1"
       },
       {
         "id": 127,
-        "x": 88,
-        "y": 53,
+        "x": 91,
+        "y": 52,
         "fr": "w7"
       }
     ],
@@ -116,30 +39,30 @@
       "animals": [
         {
           "id": 125,
-          "x": 84.62751874496401,
-          "y": 53.39219921560244,
+          "x": 87.59359881280379,
+          "y": 52.37099925800231,
           "fr": "w7"
         },
         {
           "id": 126,
-          "x": 87.53911692176928,
-          "y": 52.038051923894194,
-          "fr": "i0"
+          "x": 90.53911692176928,
+          "y": 51.038051923894194,
+          "fr": "i11"
         },
         {
           "id": 127,
-          "x": 89.56879686240924,
-          "y": 53.98049803900578,
-          "fr": "i5"
+          "x": 92.48399703200873,
+          "y": 52.92749814500547,
+          "fr": "w9"
         }
       ],
       "stats": {
-        "entries": 156,
-        "rgbaBytes": 1541952,
+        "entries": 155,
+        "rgbaBytes": 2263784,
         "maxEntries": 768,
         "maxRGBABytes": 16777216,
-        "hits": 1110,
-        "misses": 156
+        "hits": 1109,
+        "misses": 155
       }
     },
     "errors": [
@@ -147,7 +70,84 @@
     ],
     "httpErrors": [
       {
-        "url": "http://127.0.0.1:58346/coop-info",
+        "url": "http://127.0.0.1:63404/coop-info",
+        "status": 404
+      }
+    ],
+    "video": "game-desktop.webm"
+  },
+  {
+    "mobile": true,
+    "scope": "Full production index without module reinjection. Native Game.step / fwThink / renderer, disposable seeded world.",
+    "seeded": {
+      "place": [
+        83,
+        53
+      ],
+      "ids": [
+        124,
+        125,
+        126
+      ],
+      "ready": true,
+      "errors": []
+    },
+    "before": [
+      {
+        "id": 124,
+        "x": 84,
+        "y": 54,
+        "fr": "w0"
+      },
+      {
+        "id": 125,
+        "x": 86,
+        "y": 54,
+        "fr": "w1"
+      },
+      {
+        "id": 126,
+        "x": 88,
+        "y": 54,
+        "fr": "w6"
+      }
+    ],
+    "after": {
+      "animals": [
+        {
+          "id": 124,
+          "x": 84.84799830400536,
+          "y": 54.529998940003296,
+          "fr": "w10"
+        },
+        {
+          "id": 125,
+          "x": 87.53911692176928,
+          "y": 53.038051923894194,
+          "fr": "i6"
+        },
+        {
+          "id": 126,
+          "x": 89.56879686240924,
+          "y": 54.98049803900578,
+          "fr": "i0"
+        }
+      ],
+      "stats": {
+        "entries": 220,
+        "rgbaBytes": 3959784,
+        "maxEntries": 768,
+        "maxRGBABytes": 16777216,
+        "hits": 1529,
+        "misses": 220
+      }
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "httpErrors": [
+      {
+        "url": "http://127.0.0.1:63404/coop-info",
         "status": 404
       }
     ],

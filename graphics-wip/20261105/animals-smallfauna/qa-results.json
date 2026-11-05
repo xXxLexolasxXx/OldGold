@@ -1,16 +1,17 @@
 {
-  "scope": "Production index + isolated module injection. Full production-index integration remains pending owner.",
+  "scope": "Full production index without module reinjection; cold-native scale reference captured separately.",
   "profiles": [
     {
       "mobile": false,
       "checks": {
         "ready": true,
         "assets": [
-          "http://127.0.0.1:54151/assets/fantasy-smallfauna/palettes.json",
-          "http://127.0.0.1:54151/assets/fantasy-smallfauna/frog-atlas.json",
-          "http://127.0.0.1:54151/assets/fantasy-smallfauna/frog-directions.png"
+          "http://127.0.0.1:50911/assets/fantasy-smallfauna/palettes.json",
+          "http://127.0.0.1:50911/assets/fantasy-smallfauna/frog-atlas.json",
+          "http://127.0.0.1:50911/assets/fantasy-smallfauna/frog-directions.png"
         ],
         "errors": [],
+        "scriptCount": 1,
         "tinyFrames": 696,
         "tinyEmpty": 0,
         "partialAlpha": 0,
@@ -45,7 +46,7 @@
             ],
             "after": [
               35,
-              23
+              24.5
             ]
           }
         ],
@@ -57,7 +58,7 @@
         "reuse": true,
         "stats": {
           "entries": 768,
-          "rgbaBytes": 4821248,
+          "rgbaBytes": 4911616,
           "maxEntries": 768,
           "maxRGBABytes": 16777216,
           "hits": 89,
@@ -101,11 +102,12 @@
       "checks": {
         "ready": true,
         "assets": [
-          "http://127.0.0.1:54151/assets/fantasy-smallfauna/palettes.json",
-          "http://127.0.0.1:54151/assets/fantasy-smallfauna/frog-atlas.json",
-          "http://127.0.0.1:54151/assets/fantasy-smallfauna/frog-directions.png"
+          "http://127.0.0.1:50911/assets/fantasy-smallfauna/palettes.json",
+          "http://127.0.0.1:50911/assets/fantasy-smallfauna/frog-atlas.json",
+          "http://127.0.0.1:50911/assets/fantasy-smallfauna/frog-directions.png"
         ],
         "errors": [],
+        "scriptCount": 1,
         "tinyFrames": 696,
         "tinyEmpty": 0,
         "partialAlpha": 0,
@@ -140,7 +142,7 @@
             ],
             "after": [
               35,
-              23
+              24.5
             ]
           }
         ],
@@ -152,7 +154,7 @@
         "reuse": true,
         "stats": {
           "entries": 768,
-          "rgbaBytes": 4821248,
+          "rgbaBytes": 4911616,
           "maxEntries": 768,
           "maxRGBABytes": 16777216,
           "hits": 89,

@@ -15,7 +15,9 @@ for y in range(h):
 cols=int(sys.argv[3]);rows=[]
 for r in range(5):
  group=sorted([b for b in parts if int((b[1]+b[3]*.5)/h*5)==r],key=lambda b:b[0])
- if len(group)!=cols: raise ValueError(f'row {r}: {len(group)}, expected {cols}')
+ if len(group)!=cols:
+  print(json.dumps({'row':r,'expected':cols,'found':len(group),'boxes':group}),flush=True)
+  raise ValueError(f'row {r}: {len(group)}, expected {cols}')
  rows.append([b[:4] for b in group])
 out={'width':w,'height':h,'columns':cols,'rows':rows,'alphaCut':96,'components':len(parts)}
 with open(sys.argv[2],'w',encoding='utf-8') as f:json.dump(out,f,indent=2)

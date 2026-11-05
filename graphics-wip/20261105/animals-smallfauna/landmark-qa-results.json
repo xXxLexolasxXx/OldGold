@@ -1,0 +1,9 @@
+{
+  "ready": true,
+  "scriptCount": 1,
+  "checks": 378,
+  "maxError": 8.881784197001252e-16,
+  "failures": [],
+  "errors": [],
+  "note": "Anatomical head centers and native lantern FX point in E, all 42 native poses per kind; native ground anchor in all 8 headings. Highest/lowest mask pixels are separate silhouette metrics."
+}

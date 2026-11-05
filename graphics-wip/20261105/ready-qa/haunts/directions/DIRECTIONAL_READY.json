@@ -1,5 +1,5 @@
 {
-  "status": "READY: source frozen, art accepted by leading chat, canonical production QA PASS; not published by this chat",
+  "status": "SAVED: self-QA PASS; independent review on final SHA and shared gameplay frame with fixed reference PENDING under GRAPHICS_COORDINATION.md; stopped for today",
   "version": 4,
   "scope": [
     "Полудница",
@@ -244,5 +244,6 @@
   "allFourBorders": {
     "samples": 1152,
     "bad": []
-  }
+  },
+  "coordination": "No new edits or animal redesign. Prior art acceptance does not replace independent review on final SHA. See HANDOFF.md final coordination addendum."
 }
