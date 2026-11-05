@@ -1,22 +1,38 @@
 'use strict';
-// Rendering only: street objects keep their native jobs, seats and night states.
-// Narrow only the painted footprint. World.road and routing retain native cells.
-const faNativeRoadShape = roadShape;
-roadShape = function(c,x,y,px,py,grow,bands,chamfers) {
-  return faNativeRoadShape(c,x,y,px,py,grow-3,bands,chamfers);
-};
-const faRoadMask = roadMaskCanvas;
-roadMaskCanvas = function (x, y, grow, cobbles) {
-  const cv = faRoadMask(x, y, grow * 0.6, cobbles);
-  if (!cobbles) {
-    const c = cv.getContext('2d'), im = c.getImageData(0, 0, cv.width, cv.height);
-    for (let i = 0; i < im.data.length; i += 4) if (im.data[i + 3]) {
-      im.data[i] = 78; im.data[i + 1] = 91; im.data[i + 2] = 58; im.data[i + 3] = 110;
-    }
-    c.putImageData(im, 0, 0);
-  }
-  return cv;
-};
+// Road presentation only. Native road cells, routing, anchors and decor stay native.
+(() => {
+ const native={shape:roadShape,mask:roadMaskCanvas,tile:drawRoadTile},cache=new Map(),RADIUS=7,EDGE=1,S=TILE+ROAD_M*2;
+ const names=['Ровная мостовая','Мягкий скол','Мох в швах','Старая трещинка','Тёплый камень','Резная метка','Земляной шов','Лист у обочины'];
+ const api=window.FantasyRoadArt={version:2,rasterScale:2,paintedWidth:16,coreWidth:14,variantNames:names,cache,native,ready:Promise.resolve(),errors:[],variantAt:(x,y)=>variant(x*TILE+16,y*TILE+16)};
+ const hash2=(x,y,s=0)=>{let n=Math.imul(x|0,73856093)^Math.imul(y|0,19349663)^(Game.seed|0)^s;n=Math.imul(n^(n>>>16),0x45d9f3b);return(n^(n>>>16))>>>0;};
+ const variant=(x,y)=>hash2(Math.floor(x/64),Math.floor(y/64),871)&7;
+ function graph(x,y){const a=[];for(let yy=y-1;yy<=y+1;yy++)for(let xx=x-1;xx<=x+1;xx++){if(!isRoadAt(xx,yy))continue;const px=(xx+.5)*TILE,py=(yy+.5)*TILE;a.push([px,py,0,0,0]);for(const[dx,dy]of[[1,0],[0,1],[1,1],[1,-1]]){if(!isRoadAt(xx+dx,yy+dy))continue;if(dx&&dy&&(isRoadAt(xx+dx,yy)||isRoadAt(xx,yy+dy)))continue;const vx=dx*TILE,vy=dy*TILE;a.push([px,py,vx,vy,vx*vx+vy*vy]);}}return a;}
+ function distance2(px,py,segments){let best=1e9;for(const[x,y,dx,dy,L]of segments){const t=L?Math.max(0,Math.min(1,((px-x)*dx+(py-y)*dy)/L)):0,X=px-x-t*dx,Y=py-y-t*dy;best=Math.min(best,X*X+Y*Y);}return best;}
+ roadShape=function(c,x,y,px,py,grow,bands,chamfers){const r=RADIUS+(grow||0)*.5;c.beginPath();for(const[ax,ay,dx,dy,L]of graph(x,y)){const X=ax+px-x*TILE,Y=ay+py-y*TILE;if(!L){octPath(c,X,Y,r);continue;}const len=Math.sqrt(L),nx=-dy/len*r,ny=dx/len*r;pathPolyCW(c,[[X+nx,Y+ny],[X+dx+nx,Y+dy+ny],[X+dx-nx,Y+dy-ny],[X-nx,Y-ny]]);}return undefined;};
+ const stoneSeeds=new Map();let stoneSeedTag=null;
+ function stone(col,row){if(stoneSeedTag!==Game.seed){stoneSeedTag=Game.seed;stoneSeeds.clear();}const key=col+':'+row;if(stoneSeeds.has(key))return stoneSeeds.get(key);const h=hash2(col,row,493),p={x:col*12+(row&1)*6+6+((h&255)/255-.5)*3,y:row*10+5+(((h>>>8)&255)/255-.5)*2.5,h};stoneSeeds.set(key,p);if(stoneSeeds.size>4096)stoneSeeds.delete(stoneSeeds.keys().next().value);return p;}
+ function texture(wx,wy,dist,forced){const row=Math.floor(wy/10);let first=1e9,second=1e9,A=null,B=null;for(let r=row-1;r<=row+1;r++){const col=Math.floor((wx-(r&1)*6)/12);for(let k=col-1;k<=col+1;k++){const p=stone(k,r),dx=wx-p.x,dy=wy-p.y,d=dx*dx+dy*dy;if(d<first){second=first;B=A;first=d;A=p;}else if(d<second){second=d;B=p;}}}const edge=(second-first)/(2*Math.hypot(A.x-B.x,A.y-B.y)),dx=wx-A.x,dy=wy-A.y,h=A.h,v=forced==null?variant(A.x,A.y):forced;
+  if(edge<.65)return v===2&&h%3===0?[83,98,61]:[99,93,72];
+  const t=((h>>>2)%3-1)*2,warm=v===4&&h%4===0?4:0;let p=[129+t+warm,121+t,95+t-warm];
+  if(edge<1.3)p=dx+dy<0?[151+t,141+t,111+t]:[110+t,104+t,82+t];else if(dy<-1.2&&dx<2.8)p=[141+t+warm,132+t,103+t];else if(dy>1.7)p=[123+t+warm,116+t,92+t];
+  if(v===1&&h%3===0&&edge<1.65&&dx>1&&dy>1)p=[103,96,74];
+  if(v===2&&h%3===0&&edge<1.4&&dy>0)p=[88,103,64];
+  if(v===3&&h%3===0&&((dx>-.8&&dx<-.15&&dy>-2&&dy<1)||(dx>-.4&&dx<1.5&&dy>.5&&dy<1.2)))p=[111,104,81];
+  if(v===5&&h%5===0&&Math.abs(dx)+Math.abs(dy)<1.65&&Math.abs(dx)+Math.abs(dy)>.85)p=[130,112,73];
+  if(v===6&&h%3===0&&edge<1.5&&dy>1)p=[106,97,72];
+  if(v===7&&h%3===0&&dist>RADIUS-1.3&&Math.abs(dx)<1.2&&Math.abs(dy)<1.2)p=[91,106,66];
+  return p;
+ }
+ function pair(x,y,forced){let neighbors='';for(let yy=y-2;yy<=y+2;yy++)for(let xx=x-2;xx<=x+2;xx++)neighbors+=isRoadAt(xx,yy)?'1':'0';const key=[Game.seed,x,y,neighbors,forced??'world'].join(':');if(cache.has(key))return cache.get(key);const segments=graph(x,y),fine=[mkCanvas(S*2,S*2),mkCanvas(S*2,S*2)],ox=x*TILE-ROAD_M,oy=y*TILE-ROAD_M;
+  const contexts=fine.map(cv=>cv.getContext('2d')),images=contexts.map(c=>c.createImageData(S*2,S*2));
+  for(let py=0;py<S*2;py++)for(let px=0;px<S*2;px++){const wx=ox+(px+.5)/2,wy=oy+(py+.5)/2,d2=distance2(wx,wy,segments);if(d2>(RADIUS+EDGE)**2)continue;const d=Math.sqrt(d2),o=(py*S*2+px)*4;let rgb;if(d2<=RADIUS*RADIUS){rgb=texture(wx,wy,d,forced);for(let k=0;k<3;k++)images[1].data[o+k]=rgb[k];images[1].data[o+3]=255;}else{const h=hash2(Math.floor(wx/5),Math.floor(wy/5),61);rgb=h%5===0?[82,94,59]:[89,84,63];for(let k=0;k<3;k++)images[0].data[o+k]=rgb[k];images[0].data[o+3]=255;}}
+  const output=fine.map((cv,i)=>{contexts[i].putImageData(images[i],0,0);const out=mkCanvas(S,S),c=out.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(cv,0,0,S,S);return out;});cache.set(key,output);if(cache.size>384)cache.delete(cache.keys().next().value);return output;
+ }
+ roadMaskCanvas=function(x,y,grow,cobbles){return pair(x,y)[cobbles?1:0];};
+ // Keep native dirty regions/rver/lazy state; replace only its dithered paint.
+ drawRoadTile=function(x,y){const result=native.tile(x,y);if(!TERR.ready||(!World.road[idx(x,y)]&&!diagBands(x,y).length&&!roadChamfers(x,y).length))return result;const bi=Math.floor(y/TBAND),b=TERR.rb[bi];if(!b)return result;const c=b.cv.getContext('2d'),px=x*TILE,py=y*TILE-b.y0;c.save();c.beginPath();c.rect(px,py,TILE,TILE);c.clip();c.clearRect(px,py,TILE,TILE);const p=pair(x,y);c.imageSmoothingEnabled=false;c.drawImage(p[0],px-ROAD_M,py-ROAD_M);c.drawImage(p[1],px-ROAD_M,py-ROAD_M);c.restore();return result;};
+ api.sample=(x,y,v)=>pair(x,y,v);api.clear=()=>cache.clear();
+})();
 
 function faStoneFoot(c, x, y, w = 8) {
   poly(c, [[x-w/2,y-3],[x+w/2-1,y-4],[x+w/2+1,y],[x-1,y+2],[x-w/2-1,y]], '#676d61');
@@ -151,4 +167,5 @@ drawFenceObj = function(c,px,py,o) {
   drawMagicObj=function(c,x,y,o){output(c,x,y,null,g=>magic(g,x,y,o));};
   window.FantasyStreetArt={rasterScale:2,worldBounds:[-OX,-OY,W,H],cache,clear:()=>cache.clear()};
 })();
+
 

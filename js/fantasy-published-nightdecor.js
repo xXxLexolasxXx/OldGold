@@ -1,0 +1,32 @@
+'use strict';
+// Night overlays only. Native morph selection/chance, light-map metadata, object
+// variants, growth and all finished daytime street painters remain untouched.
+(() => {
+ if(window.FantasyPublishedNightDecor||typeof drawMorph!=='function')return;
+ const native=drawMorph,K=2,W=80,H=92,OX=24,OY=56,scratch=mkCanvas(W*K,H*K),g=scratch.getContext('2d');
+ const info=window.FantasyPublishedNightDecor={version:1,native,rasterScale:K,bounds:[-OX,-OY,W,H],drawn:0,ids:Array.from({length:15},(_,i)=>i+1)};
+ function rect(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.round(w*2)/2,Math.round(h*2)/2);}
+ function oval(c,x,y,rx,ry,col){c.fillStyle=col;for(let yy=Math.floor((y-ry)*2)/2;yy<y+ry;yy+=.5){const q=(yy+.25-y)/ry;if(Math.abs(q)>=1)continue;const w=Math.sqrt(1-q*q)*rx,a=Math.ceil((x-w)*2)/2,z=Math.floor((x+w)*2)/2;if(z>a)c.fillRect(a,yy,z-a,.5);}}
+ function line(c,x,y,xx,yy,w,col){const n=Math.max(1,Math.ceil(Math.hypot(xx-x,yy-y)*2));for(let i=0;i<=n;i++)rect(c,x+(xx-x)*i/n-w/2,y+(yy-y)*i/n-w/2,w,w,col);}
+ function shape(c,p,col){c.fillStyle=col;for(let y=Math.floor(Math.min(...p.map(a=>a[1]))*2)/2;y<Math.max(...p.map(a=>a[1]));y+=.5){const h=[];for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length],q=y+.25;if((a[1]<=q&&b[1]>q)||(b[1]<=q&&a[1]>q))h.push(a[0]+(q-a[1])*(b[0]-a[0])/(b[1]-a[1]));}h.sort((a,b)=>a-b);for(let i=0;i+1<h.length;i+=2){const x=Math.ceil(h[i]*2)/2,z=Math.ceil(h[i+1]*2)/2;if(z>x)c.fillRect(x,y,z-x,.5);}}}
+ const phase=x=>(x%1+1)%1;
+ function paint(c,id,px,py,o,k){const t=Game.time,cx=16,by=25,pulse=.6+.4*Math.sin(t*3+px),tint=EYE_TINT[MORPH_EYE[id]]||EYE_TINT.g,blink=Math.sin(t*1.7+px*.9)>.93;
+  function eye(x,y,r=1){if(blink){rect(c,x-r,y,r*2,.5,tint[0]);return;}glow(c,x,y,r*3.4,tint[1],.20);oval(c,x,y,r+.5,r*.9,'#4a5c47');oval(c,x,y-.2,r,r*.65,tint[0]);rect(c,x-.25,y-r*.65,.5,r*1.3,'#263e33');rect(c,x-r*.45,y-r*.4,.5,.5,'#f1e7b4');}
+  if(id===1){const seats=typeof benchSeats==='function'?benchSeats(o):2,w=[12,20,29][seats-1]||20;for(let j=0;j<seats;j++){const x=16-w/2+(j+.5)*w/seats;eye(x-1.8,13,1);eye(x+1.8,13,1);}rect(c,12,15,8,.5,'#c5ad78');}
+  else if(id===2){eye(13,17,1.5);eye(19,17,1.5);shape(c,[[11,20],[14,20.5],[16,20],[19,20.5],[21,20],[20,23],[12,23]],'#382c28');for(let j=0;j<4;j++)shape(c,[[12+j*2,20.5],[13+j*2,20.5],[12.5+j*2,22]],'#e2c89a');rect(c,12,23,8,.5,'#a77f51');}
+  else if(id===3){for(let i=0;i<6;i++){const lean=Math.sin(t+i)*1.4+2,x=6+i*4+lean,y=15-(i%3)*2;line(c,x,23,x,y,1,'#4e6a48');oval(c,x-1,y+2,1.5,.7,'#799264');oval(c,x,y,2,1.6,'#96515e');oval(c,x-.6,y-.5,.8,.6,'#d17d83');glow(c,x,y,5,'190,88,110',.08+.02*pulse);const q=phase(t*.8+i*.3);rect(c,x,18+q*5,.5,1,'#be7c80');}}
+  else if(id===4){for(let i=0;i<7;i++){const x=5+i*3.6,y=18-(i%3)*3,col=i%2?'#a9d9d1':'#d5b8cf';glow(c,x,y,6,i%2?'137,204,192':'206,154,193',.12+.06*Math.sin(t*2+i));rect(c,x-.5,y-1,1,2,col);rect(c,x-1,y-.5,2,1,col);rect(c,x,y-.5,.5,.5,'#f0e4bc');}}
+  else if(id===5){const j=Math.sin(t*40)*.8;line(c,10+j,13,24+j,13,.7,'#554a35');rect(c,10+j,14,15,1,'#8fc59a');rect(c,12+j,14,2,.5,'#c2d5a6');rect(c,21+j,14,2,.5,'#c2d5a6');glow(c,16,15,11,'137,201,143',.11+.04*pulse);}
+  else if(id===6){for(let i=0;i<4;i++){const q=phase(t*.6+i*.27),x=9+i*4.6;rect(c,x,13+q*10,1,1.5+q*2,'#8bc48e');oval(c,x+.5,15+q*10,1,1.5,'#aed0a1');}oval(c,16,25,9,1.8,'rgba(109,165,113,.42)');glow(c,16,23,12,'137,201,143',.13);}
+  else if(id===7){const ix=Math.floor(px/TILE),iy=Math.floor(py/TILE),v=hash(idx(ix,iy))%7,lx=22+(v%2?-7:7),ly=0;glow(c,lx,ly,20,'140,213,186',.20+.06*pulse);oval(c,lx,ly+1,2.5,4,'rgba(176,218,193,.45)');eye(lx-1.3,ly, .8);eye(lx+1.3,ly,.8);rect(c,lx-.5,ly+2,1,1.5,'#446d5c');rect(c,lx-2.5,ly+4,5,.5,'#c3b683');}
+  else if(id===8){const pts=[[14,9],[17,11],[14,13],[17,15]];for(let i=1;i<pts.length;i++){line(c,...pts[i-1],...pts[i],1,'#8b3f3f');line(c,...pts[i-1],...pts[i],.5,'#e79c83');}line(c,18.5,8,16,6.5,.5,'#d77b6f');glow(c,16,11,17,'206,101,82',.13+.05*pulse);}
+  else if(id===9){for(let i=0;i<3;i++){const q=phase(t*.45+i*.33),x=16+Math.sin(q*5+i)*1.5,y=14-q*22; c.save();c.globalAlpha*=1-q*.7;oval(c,x,y,5-q*2,1.6-q*.5,'#85b8bb');oval(c,x,y-.3,3.8-q,1,'#bfd5cb');rect(c,x-1,y-.5,2,.5,'#ede2ba');c.restore();}glow(c,16,11,18,'134,187,192',.14);}
+  else if(id===10){eye(14.6,3,1);eye(18,3,1);line(c,13,6,19,6,.6,'#785446');rect(c,15,5.5,1,.5,'#eaa284');}
+  else if(id===11){for(let i=0;i<8;i++){const a=i/8*6.28,x=16+Math.cos(a)*12,y=22+Math.sin(a)*4.7,q=phase(t*.5+i*.13);glow(c,x,y-3,6,i%2?'153,210,183':'216,170,183',.16);oval(c,x,y-3.5,1.5,1,i%2?'#c3e0c2':'#e2c2b8');rect(c,x+Math.sin(q*8+i)*1.5,y-5-q*15,.5,1,'#d6dfbb');}}
+  else if(id===12){eye(14.6,7.4,.9);eye(17.6,7.4,.9);for(const dx of [-1.4,1.6]){const q=phase(t*.7+dx);rect(c,16+dx-.3,8.4+q*9,.7,2,'#3d4e42');rect(c,16+dx-.3,9.4+q*9,.5,.5,'#8c9c7d');}}
+  else if(id===13){const q=phase(t*.5),y=-5-q*6;c.save();c.globalAlpha*=.6*(1-q*.6);shape(c,[[10,y+4],[10,y-2],[12,y-6],[16,y-8],[20,y-6],[22,y-2],[22,y+4],[20,y+3],[18,y+5],[16,y+3],[13,y+5]],'#7fa98f');oval(c,15,y-2,5,5,'#bdd1b2');oval(c,13.8,y-2,1,1.4,'#426654');oval(c,18,y-2,1,1.4,'#426654');oval(c,16,y+2,1.3,1.7+Math.sin(t*5)*.4,'#678a6b');rect(c,12,y-4,1,.5,'#e4dfbb');c.restore();glow(c,16,9,14,'147,202,155',.13);}
+  else if(id===14){if(Math.sin(t*9)>.3){const p=[[12,11],[15,8],[16,5],[18,11],[20,13]];for(let i=1;i<p.length;i++){line(c,...p[i-1],...p[i],1,'#719da0');line(c,...p[i-1],...p[i],.5,'#e7dfc3');}}glow(c,16,10,18,'166,198,206',.16+.08*Math.sin(t*7));}
+  else if(id===15){const x=5+hash(px*3+py)%6,up=5+Math.sin(t*1.3+px)*1.6;oval(c,x,28,3.5,1.3,'#514c36');oval(c,x,27.5,2,1,'#383e30');line(c,x,28,x,28-up,1.2,'#c8c6a4');line(c,x-.5,27,x-.5,29-up,.5,'#e4ddba');oval(c,x,27-up,1.8,1.4,'#d8d1b0');rect(c,x-1,25.5-up,2,.5,'#f0e3ba');rect(c,x-1,28.5-up,2,.5,'#ac9561');for(let i=-1;i<=1;i++){const xx=x+i*1.7+Math.sin(t*3+i)*.8,y=26-up-3+(i===0?-1:0);line(c,x+i,27-up,xx,y,.7,'#c9c7a6');oval(c,xx,y,.6,.6,'#e6ddba');}line(c,x+1,27-up,x+3,25-up,.8,'#d4cdaa');glow(c,x,24,8,'152,197,153',.1);}
+ }
+ drawMorph=function(c,id,px,py,o,k){if(id<1||id>15)return native(c,id,px,py,o,k);g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,scratch.width,scratch.height);g.setTransform(K,0,0,K,OX*K,OY*K);g.imageSmoothingEnabled=false;g.globalAlpha=k;paint(g,id,px,py,o,k);g.globalAlpha=1;c.save();c.imageSmoothingEnabled=R.smooth;c.drawImage(scratch,px-OX,py-OY,W,H);c.restore();info.drawn++;};
+})();

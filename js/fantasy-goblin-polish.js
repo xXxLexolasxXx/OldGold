@@ -235,7 +235,7 @@
       const corner=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
       for(let i=0;i<pts.length;i++){
         const p=pts[i],prev=pts[(i+pts.length-1)%pts.length],next=pts[(i+1)%pts.length];
-        const r=Math.min(0.55,Math.hypot(p[0]-prev[0],p[1]-prev[1])*0.22,Math.hypot(p[0]-next[0],p[1]-next[1])*0.22);
+        const r=Math.min(1.15,Math.hypot(p[0]-prev[0],p[1]-prev[1])*0.3,Math.hypot(p[0]-next[0],p[1]-next[1])*0.3);
         const a=corner(p,prev,r/(Math.hypot(p[0]-prev[0],p[1]-prev[1])||1)),b=corner(p,next,r/(Math.hypot(p[0]-next[0],p[1]-next[1])||1));
         if(!i)c.moveTo(...a);else c.lineTo(...a);c.quadraticCurveTo(...p,...b);
       }c.closePath();c.fill();
@@ -244,6 +244,15 @@
     const box = (x,y,w,h,color) => {c.fillStyle=color;c.fillRect(x,y,w,h)};
     const line = (x,y,xx,yy,w,color) => naLimb(c,x,y,xx,yy,w,color);
     const ball = (x,y,rx,ry,color) => ellipse(c,x,y,rx,ry,color);
+    // Rolled breastplate edges follow the belly instead of forming flat slabs.
+    const plate = (y,inset,color) => {
+      const left=-4.7*B+inset,right=4.5*B-inset;
+      c.fillStyle=color;c.beginPath();c.moveTo(left+0.7,y+inset);
+      c.bezierCurveTo(-2*B,y-0.5+inset,2*B,y-0.8+inset,right-0.8,y-0.4+inset);
+      c.quadraticCurveTo(right,y+0.4,right-0.2,y+1.7-inset);
+      c.bezierCurveTo(2*B,y+2.7-inset,-2*B,y+3-inset,left+0.4,y+2.6-inset);
+      c.quadraticCurveTo(left-0.3,y+1.5,left+0.7,y+inset);c.closePath();c.fill();
+    };
     const rivet = (x,y) => {ball(x,y,0.28,0.28,C.ink);box(x-0.14,y-0.18,0.27,0.23,C.silver)};
     const tall = king ? 1 : 1.3, B = king ? 1.35 : 1.5, sw = P.leg;
     naShadow(c, king ? 8 : 10);
@@ -286,9 +295,8 @@
     for(let j=0;j<5;j++){const x=-4.2*B+j*2.3;polyK([[x,-9*tall],[x+1.9,-9*tall],[x+2+sway*0.4,-6.5*tall],[x+0.2+sway*0.4,-6.1*tall]],j%2?C.fold:C.wine);rivet(x+0.7,-8.4*tall)}
     if(!king){
       for(let j=0;j<3;j++) {const y=(-16+j*2.4)*tall;
-        polyK([[-4.7*B,y],[3.9*B,y-0.4],[4.5*B,y+2.2],[-4.3*B,y+2.6]],C.ink);
-        polyK([[-4.2*B,y+0.3],[3.5*B,y-0.05],[4*B,y+1.7],[-3.9*B,y+2]],j===1?C.steel:C.iron);
-        line(-4*B,y+0.4,3.3*B,y+0.1,0.4,C.silver);
+        plate(y,0,C.ink);plate(y,0.4,j===1?C.steel:C.iron);
+        c.strokeStyle=C.silver;c.lineWidth=0.4;c.beginPath();c.moveTo(-4*B,y+0.5);c.quadraticCurveTo(0,y-0.1,3.3*B,y+0.2);c.stroke();
         rivet(-3.5*B,y+1.3);rivet(3.3*B,y+1);
         line(0.7,y+0.5,1.7,y+1.2,0.35,C.dark);box(2,y+1,0.6,0.5,C.leather);
         // Broad bevels first, small wear marks second: legible at game scale.
@@ -321,8 +329,8 @@
     line(-6.5,-2.4,-3.4,-0.6,0.6,C.shade);
     ball(-5.6,-1.2,0.55,0.7,C.gold);ball(-5.6,-1.2,0.25,0.38,C.ink);
     ball(0,0,3.8,3.7,C.ink);ball(0.2,0,3.3,3.2,C.shade);ball(0.9,-0.3,2.6,2.5,C.skin);
-    polyK([[2,-0.6],[7.6,1.5],[6.7,2.3],[2.3,1.8]],C.ink);
-    polyK([[2.2,-0.1],[6.6,1.4],[5.8,1.7],[2.5,1.2]],C.skin);line(2.5,0,5.4,1,0.45,C.light);box(5.3,1.4,0.5,0.3,C.deep);
+    c.fillStyle=C.ink;c.beginPath();c.moveTo(2,-0.6);c.bezierCurveTo(3.7,-0.5,6.8,0.7,7.6,1.5);c.quadraticCurveTo(7.7,2.7,5.8,2.3);c.quadraticCurveTo(3.7,2.4,2.3,1.8);c.closePath();c.fill();
+    c.fillStyle=C.skin;c.beginPath();c.moveTo(2.2,-0.1);c.quadraticCurveTo(4.6,0.1,6.6,1.4);c.quadraticCurveTo(5.3,2,2.5,1.2);c.closePath();c.fill();line(2.5,0,5.4,1,0.45,C.light);box(5.3,1.4,0.5,0.3,C.deep);
     if(P.eye<2){ball(1.5,-0.9,1.15,0.85,C.gleam);box(1.8,-1.4,0.55,1,C.ink);line(0,-2.1,2.7,-1.4,0.7,C.deep)}else naEye(c,1.5,-0.9,P);
     line(-0.7,0.4,-0.3,1.5,0.4,C.light);
     line(-1.2,-1.2,-0.5,0.4,0.35,k('#b8804e'));

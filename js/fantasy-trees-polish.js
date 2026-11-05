@@ -57,12 +57,12 @@
       }
     }
     if(!evergreen){
-      if(birch){crown(31,43,14,16,1);crown(34,28,13,17,2);crown(29,18,10,12,3);}
+      if(birch){crown(29,44,12,16,1);crown(35,32,13,17,2);crown(28,20,11,14,3);crown(34,14,8,10,4);}
       else {
         const shift=seed%5-2;
-        crown(21,43,15,14,1);crown(43,43,15,15,2);
-        crown(31+shift,29,20,18,3);crown(20,29,12,12,4);crown(40,22,13,13,5);
-        crown(29+shift,17,13,11,6);
+        crown(20,45,16,13,1);crown(43,41,16,15,2);
+        crown(31+shift,32,20,18,3);crown(18,31,12,15,4);crown(43,25,12,15,5);
+        crown(29+shift,19,15,15,6);
       }
     } else {
       const tiers=kind==='fir'?6:5;
@@ -108,7 +108,7 @@
     c.putImageData(image,0,0);return cv;
   }
   const legacy=drawTree;
-  const info=window.FantasyTreesPolish={version:1,kinds:kinds.slice(),base,cache,drawn:0};
+  const info=window.FantasyTreesPolish={version:2,kinds:kinds.slice(),base,cache,drawn:0};
   drawTree=function(c,x,y,o,i){
     if(o.awake)return legacy(c,x,y,o,i);
     const mode=typeof seaVisMode==='function'?seaVisMode():'base';
