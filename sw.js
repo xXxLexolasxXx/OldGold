@@ -1,7 +1,7 @@
 'use strict';
 // Офлайн-кэш OldGold. Сеть в приоритете (чтобы не залипали старые js после обновления), при обрыве — кэш.
 // Предзагрузка: index.html + все его скрипты/стили + шрифты + иконки. Кооп (/coop, /e, ws) и чужие домены не кэшируются.
-const CACHE = 'oldgold-fantasy-20261105-r1';
+const CACHE = 'oldgold-fantasy-20261105-r2';
 const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kurale-Regular.ttf', 'fonts/RuslanDisplay-Regular.ttf',
   'icons/icon-192.png', 'icons/icon-512.png'];
 

@@ -1,0 +1,95 @@
+{
+  "updated": "2026-11-05",
+  "status": "Coordination only; end-of-day stop remains. No automatic redesign or publication.",
+  "rules": [
+    "GRAPHICS_RULES.md",
+    "GRAPHICS_COORDINATION.md"
+  ],
+  "lead": "01a1a2b3-2a33-73b3-8aab-6f77e1d39b63",
+  "independentInspector": "01a1a35e-054d-7e90-a775-88e1029b115b",
+  "fauna": {
+    "status": "HOLD by latest direct user instruction; supersedes earlier permission and bird continuation",
+    "includes": "birds, ordinary frogs, mammals, small fauna, water animals, magical beasts; ambiguous mixed species held pending classification",
+    "preserve": "Keep saved files and published game; do not delete, revert or publish automatically. Humanoid frogfolk are separate named characters; confirm their exact roster with lead before edits.",
+    "birdException": {
+      "status": "NO NEW EXCEPTION: earlier bird permission superseded by later direct user HOLD",
+      "latestUserHold": {
+        "threadId": "01a1a35e-054d-7e90-a775-88e1029b115b",
+        "messageId": "01a1a942-5e3b-7ee3-823b-ab962f7205f1",
+        "text": "живность не трогай, птицы лягушки и прочие",
+        "timeFromUUIDv7": "2026-11-05T01:11:01.435Z"
+      },
+      "evidence": "Bird owner confirmed same earlier local quotes; those were already reported to lead before global HOLD. No later human instruction identified. Owner notified to preserve WIP and stop, without editing files or live."
+    }
+  },
+  "reference": {
+    "school": {
+      "file": "assets/fantasy/school-v1.png",
+      "sha256": "4fd9c9f7d50838cd6e73b961c5f978e7129d7fda17a9d61402534a8fcd5cd4eb"
+    },
+    "creatureMaterial": {
+      "file": "assets/fantasy/court-bodies-v4-pixel.png",
+      "sha256": "479a014c3f44c3adfee827215446a4055af6e9f10d6893d527337966d40f6856",
+      "scope": "Previously accepted pixel clusters, contour, volume and material only. Court prototype scale is invalid and MUST NOT be copied."
+    },
+    "worldScale": "Cold native renderer at identical pose/phase/root, actual 1:1 comparison. One shared scale for five authored views. Reserved canvas does not prove visible size.",
+    "scene": "Each representative must be shown in the real game beside the pinned school/building reference at the same camera scale; a montage alone is insufficient."
+  },
+  "assignments": [
+    {
+      "owner": "01a1a35d-db56-77b2-86f9-319a89bac78a",
+      "scope": "Malgor court and undead, fauna excluded",
+      "visualPeer": "01a1a8f8-afcc-7980-82aa-33983be85082",
+      "technicalPeer": "lead via pages_editor_adapter when resumed"
+    },
+    {
+      "owner": "01a1a8f8-afcc-7980-82aa-33983be85082",
+      "scope": "Named non-animal forest neutrals; mixed roster must be confirmed",
+      "visualPeer": "01a1a35d-db56-77b2-86f9-319a89bac78a",
+      "technicalPeer": "lead via pages_editor_adapter when resumed"
+    },
+    {
+      "owner": "01a1a35d-ef96-7103-b153-014d3f8a08b9",
+      "scope": "Goblins and individually agreed humanoid frogfolk; no boars or other fauna",
+      "visualPeer": "01a1a8f8-afcc-7980-82aa-33983be85082",
+      "technicalPeer": "lead via pages_editor_adapter when resumed"
+    },
+    {
+      "owner": "01a1a35d-b114-75d2-9703-6c6079ac42d1",
+      "scope": "Six named haunts and UI; animal-shaped members require explicit classification first",
+      "visualPeer": "01a1a35d-db56-77b2-86f9-319a89bac78a",
+      "portraitPeers": "Actual body owner of each portrait",
+      "technicalPeer": "lead via pages_editor_adapter when resumed",
+      "savedHauntsSHA": "39cd99385ebcb6a12a730da9722ebf6f38124f5406706e86260b9e5faf9fcadc",
+      "newIndependentReview": "PENDING; self-QA is not new independent acceptance"
+    },
+    {
+      "owner": "01a1a35d-c6d6-7353-8b9b-828c8bc3104e",
+      "scope": "Buildings, yards and work animations; frozen dwarf heads preserved",
+      "visualPeer": "01a1a35d-9aad-7b33-b1aa-b4aaa777fd46",
+      "technicalPeer": "lead via pages_environment_adapter when resumed"
+    },
+    {
+      "owner": "01a1a35d-9aad-7b33-b1aa-b4aaa777fd46",
+      "scope": "Environment and individually agreed non-animal elementals/anomalies/night models",
+      "visualPeer": "01a1a35d-c6d6-7353-8b9b-828c8bc3104e",
+      "technicalPeer": "lead via pages_environment_adapter when resumed"
+    },
+    {
+      "owner": "lead via pages_editor_adapter",
+      "scope": "Forestfolk and peaceful golem prototypes only when resumed",
+      "visualPeer": "01a1a35d-db56-77b2-86f9-319a89bac78a",
+      "technicalPeer": "lead; inspector independently checks evidence"
+    },
+    {
+      "owner": "lead via pages_art_adapter",
+      "scope": "Animal work HOLD; no new action"
+    }
+  ],
+  "gates": [
+    "Before edits: send concrete species, owned files, starting SHA, reference and overlaps to lead AND assigned peer.",
+    "One representative: send five separate views, native animation extremes/intermediates, enlarged detail and literal 1:1 plus shared actual game scene. Receive specific peer findings and resolve them BEFORE batch expansion.",
+    "Final: manifest and exact SHA, covered states/views, limits and visual/technical proofs. Independent peer must review THAT SAME SHA. Any subsequent source change invalidates matching final approval."
+  ],
+  "releaseGate": "Owner self-QA + concrete independent visual and technical review + lead acceptance at identical SHA. Inspector audits evidence. Pending disagreements stay WIP; no automatic deletion, rollback or publication."
+}
