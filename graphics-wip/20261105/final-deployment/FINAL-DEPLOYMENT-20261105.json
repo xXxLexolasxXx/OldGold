@@ -1,0 +1,20 @@
+{
+  "main": "ee00f93ad38130c747ddb346a05128424f257623",
+  "url": "https://xxxlexolasxxx.github.io/OldGold/",
+  "pages": "built",
+  "version": "0.11.99",
+  "desktop": "new-game/editor and both forest ready PASS",
+  "mobile": "new-game/editor and both forest ready PASS",
+  "buildingTypes": 41,
+  "primaryPNG": 44,
+  "forestPNG": 7,
+  "portraits": 16,
+  "publicFilesExactToGitMain": 47,
+  "errors": 0,
+  "source": {
+    "pixie": "a99090b927974effbdbd3b57e1ca40516fe92beb9449414f68a552d82cc9d41d",
+    "roster": "736b1e33603165a6bd4ef50fdb3e93bbf042fb7c735f832dc2d9e20ed82fc31e"
+  },
+  "fauna": "HOLD; no new fauna modules connected",
+  "validationNote": "First asset-report context had guild_archer load error. Separate desktop/mobile44core tests passed and fresh final47-file/44core/7forest run passed. Failed first report preserved, no source change needed."
+}
