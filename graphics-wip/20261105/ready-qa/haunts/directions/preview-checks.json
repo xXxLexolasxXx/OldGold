@@ -1,0 +1,318 @@
+{
+  "checks": [
+    {
+      "kind": "noon",
+      "d": "S",
+      "anchorMatch": true,
+      "size": [
+        120,
+        176
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "noon",
+      "d": "SE",
+      "anchorMatch": true,
+      "size": [
+        120,
+        176
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "noon",
+      "d": "E",
+      "anchorMatch": true,
+      "size": [
+        120,
+        176
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "noon",
+      "d": "NE",
+      "anchorMatch": true,
+      "size": [
+        120,
+        176
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "noon",
+      "d": "N",
+      "anchorMatch": true,
+      "size": [
+        120,
+        176
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "ban",
+      "d": "S",
+      "anchorMatch": true,
+      "size": [
+        128,
+        168
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "ban",
+      "d": "SE",
+      "anchorMatch": true,
+      "size": [
+        128,
+        168
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "ban",
+      "d": "E",
+      "anchorMatch": true,
+      "size": [
+        128,
+        168
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "ban",
+      "d": "NE",
+      "anchorMatch": true,
+      "size": [
+        128,
+        168
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "ban",
+      "d": "N",
+      "anchorMatch": true,
+      "size": [
+        128,
+        168
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "les",
+      "d": "S",
+      "anchorMatch": true,
+      "size": [
+        72,
+        100
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "les",
+      "d": "SE",
+      "anchorMatch": true,
+      "size": [
+        72,
+        100
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "les",
+      "d": "E",
+      "anchorMatch": true,
+      "size": [
+        72,
+        100
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "les",
+      "d": "NE",
+      "anchorMatch": true,
+      "size": [
+        72,
+        100
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "les",
+      "d": "N",
+      "anchorMatch": true,
+      "size": [
+        72,
+        100
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "kik",
+      "d": "S",
+      "anchorMatch": true,
+      "size": [
+        52,
+        64
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "kik",
+      "d": "SE",
+      "anchorMatch": true,
+      "size": [
+        52,
+        64
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "kik",
+      "d": "E",
+      "anchorMatch": true,
+      "size": [
+        52,
+        64
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "kik",
+      "d": "NE",
+      "anchorMatch": true,
+      "size": [
+        52,
+        64
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "kik",
+      "d": "N",
+      "anchorMatch": true,
+      "size": [
+        52,
+        64
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "vod",
+      "d": "S",
+      "anchorMatch": true,
+      "size": [
+        60,
+        56
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "vod",
+      "d": "SE",
+      "anchorMatch": true,
+      "size": [
+        60,
+        56
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "vod",
+      "d": "E",
+      "anchorMatch": true,
+      "size": [
+        60,
+        56
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "vod",
+      "d": "NE",
+      "anchorMatch": true,
+      "size": [
+        60,
+        56
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "vod",
+      "d": "N",
+      "anchorMatch": true,
+      "size": [
+        60,
+        56
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "rus",
+      "d": "S",
+      "anchorMatch": true,
+      "size": [
+        44,
+        60
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "rus",
+      "d": "SE",
+      "anchorMatch": true,
+      "size": [
+        44,
+        60
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "rus",
+      "d": "E",
+      "anchorMatch": true,
+      "size": [
+        44,
+        60
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "rus",
+      "d": "NE",
+      "anchorMatch": true,
+      "size": [
+        44,
+        60
+      ],
+      "sameCache": true
+    },
+    {
+      "kind": "rus",
+      "d": "N",
+      "anchorMatch": true,
+      "size": [
+        44,
+        60
+      ],
+      "sameCache": true
+    }
+  ],
+  "errors": [],
+  "cache": {
+    "entries": 30,
+    "rgbaBytes": 4510340,
+    "maxEntries": 512,
+    "maxRgbaBytes": 25165824,
+    "hits": 0,
+    "misses": 30,
+    "displayEntries": 30,
+    "displayRgbaBytes": 1183040,
+    "displayMaxEntries": 256,
+    "displayMaxRgbaBytes": 8388608
+  },
+  "pageErrors": []
+}

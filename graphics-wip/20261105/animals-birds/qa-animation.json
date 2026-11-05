@@ -1,0 +1,27 @@
+{
+  "mutation": false,
+  "boundary": [],
+  "scenarios": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "cache": {
+    "entries": 63,
+    "bytes": 665600,
+    "maxEntries": 1800,
+    "maxBytes": 25165824
+  },
+  "pageErrors": [],
+  "scope": "Controlled actual renderer calls; production index has NOT been modified or integrated"
+}

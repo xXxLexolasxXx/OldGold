@@ -1,0 +1,12 @@
+{
+  "species": 17,
+  "shots": [
+    "crab",
+    "mermaid",
+    "serpent",
+    "tent",
+    "kraeye"
+  ],
+  "errors": [],
+  "mode": "interactive native-runtime artwork preview; staged adapter, not published-index acceptance"
+}

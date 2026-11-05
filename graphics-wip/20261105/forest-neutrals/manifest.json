@@ -1,0 +1,44 @@
+{
+  "status": "candidate-awaiting-production-index-integration",
+  "module": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-published-forest-neutrals.js",
+  "sha256": "9A4EE223FCC69988B58A315FBC5D05502203B35BD166D880F29CB983C76475A3",
+  "scriptTag": "<script src=\"js/fantasy-published-forest-neutrals.js\"></script>",
+  "loadAfter": "other fantasy modules including portraits",
+  "requiredAssets": [],
+  "roster": [
+    "pixie",
+    "fairy",
+    "leshy",
+    "leprechaun",
+    "fairy.bw / sprBrownie",
+    "fairy.end / sprEnder(carry)",
+    "gargoyle A",
+    "gargoyle B",
+    "gargoyle C"
+  ],
+  "runtimeReady": "FantasyForestNeutrals.ready",
+  "runtimeAssetErrors": "FantasyForestNeutrals.assetErrors",
+  "productionIndexModified": false,
+  "beforeHashes": [
+    {
+      "file": "fairy1.js",
+      "sha256": "9E8350F284EF0B3D9259554A3293C0E7163F70EE745769450FF9FC5E0A712AA3"
+    },
+    {
+      "file": "fantasy-leshy-polish.js",
+      "sha256": "397840A9C18F53A33B3456955443F490D6375C2DDA90B76E38D54681C48C3C71"
+    },
+    {
+      "file": "fantasy-neutral-polish.js",
+      "sha256": "E7AE71767391795B797F77F3136823A5EEB5D66D4A6FD5688622C7793D8B39E9"
+    },
+    {
+      "file": "gargoyle.js",
+      "sha256": "F510B85196B9CADA56C87B5292DD64AFF5C29825CD914BBC982609F1213086C4"
+    },
+    {
+      "file": "leprechaunart.js",
+      "sha256": "94CD8CA9F51EAEB11CDDA167FD69908E9204EF07C4A128C19C40EA04D51B010B"
+    }
+  ]
+}

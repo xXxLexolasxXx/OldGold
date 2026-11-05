@@ -103,7 +103,7 @@
  function poly(c,pts,color){c.fillStyle=color;for(let y=Math.floor(Math.min(...pts.map(p=>p[1]))*2)/2;y<Math.max(...pts.map(p=>p[1]));y+=.5){const hits=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length],q=y+.25;if((a[1]<=q&&b[1]>q)||(b[1]<=q&&a[1]>q))hits.push(a[0]+(q-a[1])*(b[0]-a[0])/(b[1]-a[1]));}hits.sort((a,b)=>a-b);for(let i=0;i+1<hits.length;i+=2){const x=Math.ceil(hits[i]*2)/2,z=Math.ceil(hits[i+1]*2)/2;if(z>x)c.fillRect(x,y,z-x,.5);}}}
  function line(c,pts,color,width=1){for(let k=1;k<pts.length;k++){const a=pts[k-1],b=pts[k],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])*2));for(let j=0;j<=n;j++)rect(c,a[0]+(b[0]-a[0])*j/n-width/2,a[1]+(b[1]-a[1])*j/n-width/2,width,width,color);}}
  function oval(c,x,y,rx,ry,color){c.fillStyle=color;for(let yy=Math.floor((y-ry)*2)/2;yy<y+ry;yy+=.5){const q=(yy+.25-y)/ry;if(Math.abs(q)>=1)continue;const r=Math.sqrt(1-q*q)*rx,a=Math.ceil((x-r)*2)/2,z=Math.floor((x+r)*2)/2;if(z>a)c.fillRect(a,yy,z-a,.5);}}
- const P={ink:'#20343b',deep:'#2f5967',shade:'#427b88',mid:'#65a3aa',light:'#9acac1',foam:'#d5e4ca',crest:'#e8ebce',gold:'#b9a16d',goldLight:'#ddc998',weed:'#4e7566'};
+ const P={ink:'#062a51',deep:'#06447c',shade:'#086ca4',mid:'#129ed0',light:'#3ed3ee',foam:'#8feafa',crest:'#defbff',gold:'#b9a16d',goldLight:'#ddc998',weed:'#4e7566'};
  function direction(e){
    const old=headings.get(e);let dx=0,dy=0;
    if(e.moving&&old){dx=e.x-old.x;dy=e.y-old.y;}
@@ -116,90 +116,14 @@
    headings.set(e,{x:e.x,y:e.y,dir});return dir;
  }
  const viewOf=dir=>({SW:'SE',W:'E',NW:'NE'})[dir]||dir;
+ const atlas=new Image(),parts=[];
+ info.ready=new Promise(resolve=>{atlas.onload=()=>{for(let i=0;i<5;i++){const cell=document.createElement('canvas');cell.width=Math.floor(atlas.width/5);cell.height=atlas.height;const q=cell.getContext('2d');q.drawImage(atlas,i*atlas.width/5,0,atlas.width/5,atlas.height,0,0,cell.width,cell.height);const d=q.getImageData(0,0,cell.width,cell.height);let x0=cell.width,y0=cell.height,x1=0,y1=0;for(let y=0;y<cell.height;y++)for(let x=0;x<cell.width;x++){const n=(y*cell.width+x)*4;d.data[n+3]=d.data[n+3]>=160?255:0;if(d.data[n+3]){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}}q.putImageData(d,0,0);parts.push({image:cell,x:x0,y:y0,w:x1-x0+1,h:y1-y0+1});}cache.clear();info.bytes=0;resolve();};atlas.onerror=()=>{info.errors.push('water-morphling-body-v2.png failed');resolve();};});
+ atlas.src='assets/fantasy/water-morphling-body-v2.png';info.asset=atlas.src;info.version=2;
  function frame(view,phase,rage=false){
-   view=viewOf(view);if(!info.views.includes(view))view='S';phase=((phase|0)%12+12)%12;
-   const key=view+'|'+phase+'|'+Number(rage);if(cache.has(key)){const f=cache.get(key);cache.delete(key);cache.set(key,f);return f;}
-   const cv=document.createElement('canvas');cv.width=220;cv.height=164;const c=cv.getContext('2d');c.scale(2,2);c.translate(55,67);c.imageSmoothingEnabled=false;
-   const flow=phase/12*Math.PI*2,wave=Math.sin(flow)*.75;
-   // Five independent body/crest outlines. Back surfaces have no front facial marks.
-   const bodies={
-    S:[[-18,0],[-13,-11],[-16,-24],[-19,-30],[-13,-35],[-11,-45],[-5,-49],[4,-50],[12,-44],[13,-36],[19,-30],[15,-23],[11,-13],[18,0],[7,4],[-5,4]],
-    SE:[[-17,0],[-12,-14],[-18,-25],[-17,-33],[-8,-37],[-6,-46],[2,-51],[11,-47],[16,-40],[16,-31],[19,-26],[12,-14],[19,0],[7,4],[-8,3]],
-    E:[[-18,0],[-12,-14],[-16,-24],[-13,-32],[-7,-37],[-7,-45],[1,-51],[10,-47],[15,-40],[18,-37],[14,-33],[13,-26],[8,-14],[17,0],[5,4],[-9,3]],
-    NE:[[-18,0],[-11,-14],[-18,-27],[-16,-34],[-9,-38],[-8,-47],[0,-52],[11,-48],[15,-39],[12,-33],[17,-28],[11,-14],[17,0],[6,4],[-7,4]],
-    N:[[-17,0],[-12,-13],[-18,-26],[-19,-32],[-12,-38],[-9,-47],[-2,-51],[7,-49],[12,-41],[12,-36],[19,-31],[15,-23],[11,-13],[18,0],[6,4],[-5,4]]
-   };
-   poly(c,bodies[view],P.ink);
-   const interior=bodies[view].map(([x,y])=>[x*.9,y>-5?y-1:y+1]);poly(c,interior,P.mid);
-   if(view==='S'){
-     poly(c,[[-13,-30],[-8,-43],[-1,-47],[7,-43],[8,-30],[3,-21],[-1,-9],[-9,-3],[-11,-15]],P.light);
-     poly(c,[[4,-45],[10,-39],[12,-26],[7,-18],[8,-6],[14,0],[5,1],[1,-10],[1,-25]],P.shade);
-     poly(c,[[-9,-26],[-2,-29],[7,-26],[7,-19],[1,-15],[-6,-19]],P.deep);
-     poly(c,[[-6,-25],[-1,-27],[5,-24],[4,-21],[-1,-19],[-4,-21]],P.mid);
-   }else if(view==='SE'){
-     poly(c,[[-10,-31],[-4,-43],[3,-47],[10,-42],[9,-32],[4,-23],[3,-11],[-7,-2],[-10,-16]],P.light);
-     poly(c,[[11,-40],[14,-31],[12,-23],[9,-13],[15,0],[7,2],[3,-9],[4,-23]],P.deep);
-     poly(c,[[-8,-25],[-1,-30],[7,-27],[5,-20],[-3,-17],[-9,-20]],P.shade);
-     line(c,[[-9,-32],[-12,-24],[-8,-15],[-10,-7]],P.foam,1);
-   }else if(view==='E'){
-     poly(c,[[-9,-32],[-4,-43],[2,-47],[9,-43],[11,-38],[9,-30],[4,-22],[1,-10],[-9,-1],[-11,-15]],P.light);
-     poly(c,[[-12,-29],[-8,-21],[-6,-10],[-11,0],[-3,2],[4,-12],[7,-24],[3,-32]],P.shade);
-     poly(c,[[10,-40],[15,-37],[12,-35],[13,-32],[8,-29],[7,-34]],P.foam);
-     line(c,[[-12,-39],[-15,-32],[-12,-23],[-13,-15]],P.deep,2);
-   }else if(view==='NE'){
-     poly(c,[[-13,-32],[-7,-44],[0,-49],[7,-45],[8,-34],[3,-28],[2,-14],[-7,-2],[-13,-12]],P.light);
-     poly(c,[[3,-44],[10,-42],[12,-34],[9,-25],[8,-12],[13,0],[4,2],[-1,-14],[-2,-31]],P.shade);
-     poly(c,[[-10,-36],[-5,-32],[0,-34],[5,-41],[3,-31],[-1,-25],[-7,-28]],P.deep);
-     line(c,[[-4,-41],[-3,-33],[-4,-25],[-1,-16],[-4,-8]],P.foam,1.2);
-   }else{
-     poly(c,[[-12,-32],[-7,-44],[-1,-48],[6,-45],[8,-35],[4,-27],[4,-13],[-4,-1],[-11,-13]],P.light);
-     poly(c,[[1,-46],[9,-39],[10,-28],[7,-17],[12,-2],[6,2],[0,-10],[-1,-28]],P.shade);
-     // Dorsal foam seam and side fins replace the face/chest on the rear.
-     poly(c,[[-3,-44],[1,-40],[3,-32],[0,-26],[2,-18],[-2,-10],[-5,-19],[-3,-27],[-5,-34]],P.deep);
-     line(c,[[-2,-43],[0,-35],[-1,-28],[0,-21],[-2,-13]],P.foam,1.2);
-   }
-   // Sculpted crest of foam and kelp. Different authored ridge for each view.
-   const crests={S:[[-17,-33],[-20,-40],[-14,-43],[-9,-50],[-3,-53],[4,-50],[9,-46],[16,-42],[20,-35]],SE:[[-17,-35],[-16,-43],[-8,-45],[-3,-53],[5,-54],[12,-49],[18,-42],[17,-35]],E:[[-15,-35],[-15,-44],[-7,-48],[-3,-54],[5,-54],[11,-49],[12,-45],[8,-46]],NE:[[-16,-34],[-15,-43],[-8,-47],[-2,-55],[6,-54],[13,-49],[15,-41],[11,-36]],N:[[-18,-34],[-19,-42],[-11,-45],[-7,-52],[0,-55],[8,-51],[12,-45],[19,-41],[18,-34]]};
-   line(c,crests[view],P.ink,4);line(c,crests[view],P.light,2.5);line(c,crests[view].map(([x,y])=>[x-.5,y-.75]),P.crest,1);
-   const crest=crests[view];for(let k=1;k<crest.length-1;k++){
-     const [x,y]=crest[k],r=k%2?2.3:2.8;
-     oval(c,x+.5,y+1,r+1,r*.58,P.shade);oval(c,x,y-.2,r,r*.65,P.light);oval(c,x-.6,y-.8,r*.65,r*.38,P.crest);
-     rect(c,x+r*.4,y+.6,1.5,.5,P.deep);rect(c,x-r*.65,y-.9,1,.5,'#f3edcf');
-   }
-   for(let k=0;k<5;k++){const x=-12+k*6,y=-36+(k%2)*2;poly(c,[[x-2,y],[x-1,y-3],[x+1,y-4],[x+2,y-1],[x+1,y+2]],P.weed);line(c,[[x-1,y-2],[x,y]],P.light,.5);}
-   // Front only: separate eye spacing and mouth placement per authored angle.
-   const faces={S:{eyes:[[-5,-35],[3,-35]],mouth:[[-4,-29],[0,-27],[5,-29]]},SE:{eyes:[[1,-35],[7,-34]],mouth:[[2,-29],[6,-28],[10,-30]]},E:{eyes:[[9,-35]],mouth:[[10,-30],[13,-31],[14,-32]]}};
-   if(faces[view]){
-     const f=faces[view];for(const [x,y]of f.eyes){poly(c,[[x-2,y-1],[x+2,y-2],[x+3,y+1],[x+1,y+2],[x-2,y+1]],P.deep);rect(c,x-1,y,2,1.5,rage?'#e9cc83':'#dce7bd');rect(c,x,y,.5,1.5,P.ink);line(c,[[x-3,y-2],[x+1,y-3],[x+3,y-1]],P.foam,1);}
-     line(c,f.mouth,P.deep,1.5);const [mx,my]=f.mouth[1];rect(c,mx-1,my-.5,1,1.5,P.crest);
-   }
-   // Fine carved-water clusters and collar shells, following each surface.
-   for(let k=0;k<9;k++){
-     const x=-10+(k%3)*7+(view==='E'?2:0),y=-29+Math.floor(k/3)*7;
-     if(view==='N'&&Math.abs(x)<4)continue;
-     line(c,[[x-1,y],[x+1,y-1],[x+2,y]],k%3===0?P.foam:P.light,.5);
-     rect(c,x+2,y+1,1,.5,P.shade);
-   }
-   for(let k=0;k<5;k++){const x=-9+k*4.5,y=-27+Math.abs(k-2)*1.2;if(view==='N'||view==='NE'){line(c,[[x,y],[x-1,y+3]],P.light,.7);}else{oval(c,x,y,1.2,1.7,P.gold);line(c,[[x-.5,y-1],[x,y]],P.goldLight,.5);}}
-   for(let j=0;j<5;j++){
-     const y=-9+j*2.4,x=Math.sin(flow+j*.8)*1.5,r=13-j*.7;
-     poly(c,[[x-r,y],[x-r*.4,y-2],[x+r*.65,y-1],[x+r,y+1],[x+r*.3,y+3],[x-r*.6,y+2]],j%2?P.shade:P.mid);
-     line(c,[[x-r*.65,y],[x-r*.2,y-1],[x+r*.45,y]],j%2?P.light:P.foam,.7);
-   }
-   // Small eddies carry volume through the long water surfaces. All marks are
-   // half-world-pixel clusters, not antialiased strokes or smooth gradients.
-   for(let row=0;row<5;row++)for(let side=0;side<2;side++){
-     const x=-9+side*15+(view==='E'?1:0),y=-24+row*4.5,lean=(row%2?1:-1)*.5;
-     if(view==='N'&&side===0&&row<2)continue;
-     poly(c,[[x-2,y],[x-1,y-2],[x+1,y-2.5],[x+3,y-1],[x+2,y+1],[x,y+1.5]],side?P.shade:P.mid);
-     line(c,[[x-1.5,y-.5],[x-1,y-1.5],[x+.5,y-2],[x+2,y-1+lean]],side?P.light:P.foam,.5);
-     rect(c,x+1,y+1,1.5,.5,P.deep);
-   }
-   // Detached droplets never exceed native 110x82 envelope.
-   for(let k=0;k<4;k++){const a=flow+k*1.7;rect(c,-14+k*9+Math.sin(a),-55-(phase+k*3)%7,1,1.5,P.foam);}
-   cache.set(key,cv);info.bytes+=cv.width*cv.height*4;
-   while(cache.size>info.maxEntries||info.bytes>info.maxBytes){const first=cache.keys().next().value,f=cache.get(first);info.bytes-=f.width*f.height*4;cache.delete(first);}
-   return cv;
+ view=viewOf(view);if(!info.views.includes(view))view='S';phase=((phase|0)%12+12)%12;const key=view+'|'+phase+'|'+Number(rage);if(cache.has(key)){const f=cache.get(key);cache.delete(key);cache.set(key,f);return f;}
+ const cv=document.createElement('canvas');cv.width=220;cv.height=164;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
+ const p=parts[info.views.indexOf(view)];if(p){const scale=110/Math.max(...parts.map(p=>p.h)),w=p.w*scale,h=p.h*scale;for(let y=0;y<110;y++){const dy=y/110,flow=phase*Math.PI/6,shift=Math.round(Math.sin(flow+dy*9)*(dy>.48?1.5:.35));c.drawImage(p.image,p.x,p.y+y/110*p.h,p.w,p.h/110,-w/2+110+shift,24+y,w,1);}}
+ cache.set(key,cv);info.bytes+=cv.width*cv.height*4;while(cache.size>info.maxEntries||info.bytes>info.maxBytes){const first=cache.keys().next().value,f=cache.get(first);info.bytes-=f.width*f.height*4;cache.delete(first);}return cv;
  }
  function hands(e){
    const t=Game.time,swing=e.moving?Math.sin(e.phase*.9):Math.sin(t*1.6+e.i)*.4;let front=[19,-8+swing*3],back=[-19,-9-swing*3];
@@ -207,11 +131,14 @@
    if(e.state==='fight'||e.state==='smash'){const atk=e.atk?t-e.atk:9;if(atk<.35){front=[9,-50];back=[-12,-40];}else if(atk<.8){front=[24,-2];back=[-14,-16];}else{const speed=5.5;front=[20,-22+Math.sin(t*speed)*3];back=[-17,-14+Math.sin(t*speed+2)*3];}}
    if(e.state==='drag')front=waterGrabHand(e).slice();return{front,back};
  }
+ const armImages=[new Image(),new Image()];
+ const bodyReady=info.ready;info.ready=Promise.all([bodyReady,...armImages.map((im,i)=>new Promise(resolve=>{im.onload=resolve;im.onerror=()=>{info.errors.push('water arm '+i+' failed');resolve();};im.src='assets/fantasy/water-arm-v2-'+i+'.png';}))]);
  function arm(c,start,hand,far){
-   const elbow=[(start[0]+hand[0])/2+(far?-5:5),(start[1]+hand[1])/2+4],points=[start,elbow,hand];
-   line(c,points,P.ink,9);line(c,points.map(([x,y])=>[x-.5,y-.25]),far?P.shade:P.mid,6.5);line(c,points.map(([x,y])=>[x-1.5,y-.75]),P.light,2);line(c,points.map(([x,y])=>[x-2,y-1]),P.foam,.7);
-   poly(c,[[hand[0]-3,hand[1]-2],[hand[0]+2,hand[1]-3],[hand[0]+5,hand[1]-1],[hand[0]+4,hand[1]+2],[hand[0],hand[1]+3],[hand[0]-3,hand[1]+1]],P.mid);
-   for(let k=0;k<3;k++){const x=hand[0]+1+k,y=hand[1]-1+k*1.2;line(c,[[x,y],[x+3,y-2+k]],P.foam,.8);}rect(c,hand[0]-1.5,hand[1]-1,2,.7,P.crest);
+ const elbow=[(start[0]+hand[0])/2+(far?-4:4),(start[1]+hand[1])/2+3];
+ const segment=(a,b,index,width)=>{const im=armImages[index];if(!im.complete||!im.naturalWidth)return;const dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);c.save();c.translate(snap(a[0]),snap(a[1]));c.rotate(Math.atan2(dy,dx)-Math.PI/2);c.imageSmoothingEnabled=false;c.drawImage(im,-width/2,-2,width,len+4);c.restore();};
+ segment(start,elbow,0,far?8:10);segment(elbow,hand,1,far?6:8);
+ oval(c,hand[0],hand[1],3.1,2.5,P.mid);line(c,[[hand[0]-2,hand[1]-1],[hand[0]+1,hand[1]-1.5]],P.foam,.7);
+ for(let k=0;k<3;k++){const x=hand[0]+1+k*.6,y=hand[1]-1+k*1.2;line(c,[[x,y],[x+3,y-2+k],[x+4,y-1+k]],P.mid,1.4);line(c,[[x,y],[x+3,y-2+k]],P.foam,.5);}
  }
  function sleepEyes(c,e,a){
    if(a<=.01)return;const t=Game.time,px=e.wx*TILE+16,py=e.wy*TILE+18+Math.sin(t*1.4+e.i)*1.2,blink=(t*.31+e.i*.17)%1<.05,rr=4+(t*3+e.i)%5;
@@ -221,6 +148,7 @@
    c.restore();
  }
  function draw(c,e,forced){
+   if(!parts.length)return owner.native.drawWaterEnt(c,e);
    const {bx,by,H}=waterGeom(e),k=e.k,t=Game.time;
    if(k<.3)sleepEyes(c,e,e.alpha*(1-k/.3)*Math.min(1,nightAmt()*4));
    c.save();c.globalAlpha=e.alpha;

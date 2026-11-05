@@ -1,0 +1,174 @@
+{
+  "date": "2026-11-05T00:44:51.211Z",
+  "status": "STOPPED per explicit user end-of-day instruction. WIP preserved; do not connect prototype live.",
+  "scope": [
+    "forestfolk12keys",
+    "peaceful Game.golem"
+  ],
+  "productionForToday": {
+    "forestfolk": {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/js/fantasy-published-forestfolk.js",
+      "sha256": "fb75d6a02d4628e57e184de4433ca6a1267a293e9bdc5962ed921a1287815a05",
+      "currentEqualsBefore": true
+    },
+    "golem": {
+      "path": "D:/для игры/feod/output/publish/oldgold-pages-20261104/js/fantasy-published-golem.js",
+      "sha256": "051fb98dac9f78212597496b09d0702f22b299def10c9d68282f62c7b35ccaeb",
+      "currentEqualsBefore": true
+    },
+    "note": "Previous approved canonical versions remain byte-identical. New directional prototype has NOT replaced either file and has NO index entry. Root commits/publishes sequentially."
+  },
+  "styleApprovedByRoot": {
+    "models": [
+      "forest troll",
+      "peaceful golem"
+    ],
+    "evidence": [
+      "prototype-actual-sprites-v1.png",
+      "prototype-world-1366-SE.png",
+      "prototype-world-390-S.png"
+    ],
+    "accepted": "Whole-body character/volume/materials/five authored directions/readability; NOT final cold-scale or complete family acceptance.",
+    "warning": "These image files precede latest narrow head/sole calibration. Their old caption is not proof that final visible scale is preserved; DO NOT publish them as final scale evidence."
+  },
+  "actualPrototype": {
+    "js": "prototype-forest-golem.js",
+    "sha256": "3319b7748b851d9e8f3b51c318bfe9750e61ba465005ef27d0377f853ad5d9c7",
+    "supportedKeys": [
+      "troll",
+      "trollF",
+      "Game.golem"
+    ],
+    "notSupportedYet": [
+      "spore",
+      "trollS",
+      "trollB",
+      "trollSF",
+      "trollBF",
+      "frost",
+      "frostA",
+      "frostB",
+      "gtSpear",
+      "gtBow"
+    ],
+    "clarification": "trollF/trollSF/trollBF are native FRONT-view aliases, not three invented female species.",
+    "API": "ForestGolemDirectionalPrototype.ready/frame/install/setHeading; explicit output-only script injection required for prototype QA.",
+    "assets": [
+      "golem-rig-parts-pixel.png",
+      "golem-rig-parts.json",
+      "troll-rig-parts-pixel.png",
+      "troll-rig-parts.json"
+    ],
+    "noLiveStatus": "DO NOT COPY OR LINK LIVE; raw prototype includes unused earlier segmentation code, pending cleanup and all-state visual verification."
+  },
+  "lastCompletedSmallStep": {
+    "report": "prototype-native-rig-contract.json",
+    "golemNativeFrames": 156,
+    "trollNativeFrames": 186,
+    "actualDirectionalFrames": 1608,
+    "failures": [],
+    "errors": [],
+    "caches": {
+      "troll": {
+        "entries": 72,
+        "bytes": 33177600,
+        "limit": 33554432,
+        "hits": 744
+      },
+      "golem": {
+        "entries": 93,
+        "bytes": 33521664,
+        "limit": 33554432,
+        "hits": 864
+      }
+    },
+    "fixes": [
+      "Front troll weapon grip uses native hy+2 normally, hy-4 only raised.",
+      "Front troll death derives native fall, clears native rotation/translation and applies collapse.",
+      "Head/sole mapping adjusted from cold native evidence; numerical skeletal joint coordinates remain exact."
+    ]
+  },
+  "pending": [
+    "Re-run cold-native-1to1 after latest calibration and inspect visible E bbox/eye level/visible sole, not reserved canvas. Existing cold JSON is BEFORE calibration.",
+    "Re-render actual 8direction sheet and nativeworld screenshots after head/sole calibration; root narrow final review.",
+    "Finish seasonal semantic decor/sleep/face/mouth/FX visual fidelity; current prototype has basic colour/dormant processing, not final native decoration parity.",
+    "Actual layer/clip edge review all extreme/intermediate poses and mirrors; joints/cache proof alone is not visual acceptance.",
+    "Explicit render-only no-serialized-state-mutation trace and actual scene turn/carry/victim regression checks.",
+    "Only then migrate clearly supported partial set OR full forestfolk batch into owned production modules under root coordination; update portrait source hook for new golem/troll.",
+    "Continue remaining forestfolk models only on user resume, using approved design/paper-doll pipeline."
+  ],
+  "protectedUnchanged": [
+    "ordinary gnome personSprite/accepted eab heads",
+    "animals",
+    "court/haunts",
+    "roads",
+    "nativeAI/stats/physics/save",
+    "production index/version"
+  ],
+  "git": "No add/commit/push performed. Parent owns sequential save/commit/publication.",
+  "manifest": {
+    "add-native-season-expression.cjs": "e6de7f50d205e48bbcba79d915ac69b1eab8ecfee4b743f44c493e00b9a97c92",
+    "authored-five-view-source-v1.png": "522b4dbd08bcae74e4e404a6f2213ffa3e3aef26b03baac8042d94a8cdc49db8",
+    "before-forestfolk.js": "fb75d6a02d4628e57e184de4433ca6a1267a293e9bdc5962ed921a1287815a05",
+    "before-golem.js": "051fb98dac9f78212597496b09d0702f22b299def10c9d68282f62c7b35ccaeb",
+    "calibrate-cold-native-anchors.cjs": "5c456c475c935c5e668d067072788c64ac2ee751030381baf5a2474444ce19d1",
+    "cold-native-1to1.json": "c494a8499bb8fa04c669ca2598841faba72e132934fcf58c4220e9a5cf66d2d4",
+    "cold-native-1to1.png": "6f9cb33c1b1fd8fcc2f4d8efaaf04a5fb7684af714721ec232070baf75d6253c",
+    "compare-cold-native-scale.cjs": "0efc5c4d8768222152e6693302b17edd61c51047b664bdbb36cb92c225eea1ef",
+    "component-bounds.json": "011bf635d048f974fd3de8c08f4f7f2bcb2f71d6ec862ade5620f972f498dadd",
+    "extract-authored-parts.py": "bfde677fa77c36f2e954f348d673b805f8233c13ac74bd7309c28cf445a87eda",
+    "generation-provenance.json": "301e4680beb20288d12f8abee4821d77b517caf6fafa517a0843f381cb5c3ac2",
+    "golem-authored-parts-v1.png": "6115da5e65087d09bd7ad38ed23928f5f74e1e5ddf422199007afcbe07505840",
+    "golem-E-pixel.png": "33c94e8914e53ae91c48016c1452207fe01c9c10f5c8ef31f11b99cdbf667312",
+    "golem-N-pixel.png": "8aa418c59140e9994b285bd0dfc974cecddcf23958aef8c8b3fb2e5a2d4e5e9a",
+    "golem-NE-pixel.png": "91343a65ba5cdb5be63f8c6a4ba3bb43d04bfa7ea3b32d807e34cb8984ef4c94",
+    "golem-rig-parts-pixel.png": "4818ead6ee4597128505c4dec7b2fd9fe1fb57347666912f9fe5817e150b86ce",
+    "golem-rig-parts.json": "80370973ec02a7f46de59e13a3a688c5801c2ab6c527822631e01dbd57d67373",
+    "golem-S-pixel.png": "1277a4ab2e1c3651a13cd04cdcfabc5f8aebdfe447ccdf20cdea27e2c4e9be72",
+    "golem-SE-pixel.png": "4ed940f76c134b960738626f8fb08fb223c0f88e98df66bbed64c028426add43",
+    "golem-source-E.png": "c62d6a84dade4e51fda89934969cde9b0f0368354b020e02d9dfba4703abfa97",
+    "golem-source-N.png": "998a871b77aa0d468536f390aa4ae31027771cc07ca5ea52116949b5e1d2a566",
+    "golem-source-NE.png": "0ed6f17949476389e740fe5b6399087efe920b1313af3fb326c2feaa30ee1e54",
+    "golem-source-S.png": "3963269133e75572c275cff06b161cf800fc2cd0aeba214c9949d4bb49392d6e",
+    "golem-source-SE.png": "82c3d69b082f3b319712a2745375d8f4df173c97a3742cadcc8fcbcb7921eec4",
+    "measure-head-landmarks.py": "b111594d48d46a48c73900d1efd19d9034c1b2aa51a84096003af253384da12f",
+    "normalize-native-frame-contract.cjs": "746a70efabff148ad1372b576c96edbd3272515d211cff65605bf9b1913d3c9f",
+    "prepare-pixel-cutouts.py": "811d06492ef938c0a6cf902530b6e229d3bdcc22c8d82630221d84a70c1513fa",
+    "prepare-source.py": "c78b75c3d22b0d1de461ed5ca3fe5d945004b4de1233c9c856d816ca8ca23c18",
+    "prototype-actual-sprites-v1.json": "e61f9d05d141fd2436eacd272cc4ea7546f0c45353d944095a44ef2c99ab985a",
+    "prototype-actual-sprites-v1.png": "ac345c9dd3e2fd4fd58824f70c98a297142a5013ff20a008f5384c3ab711ab30",
+    "prototype-forest-golem.js": "3319b7748b851d9e8f3b51c318bfe9750e61ba465005ef27d0377f853ad5d9c7",
+    "prototype-native-rig-contract.json": "498e30c927182a486a0423b204f3c45a3d6f0d2913bdba164e53c9bd41d7a000",
+    "prototype-world-1366-E.png": "adc061390d9bc5c05e60251c0670ca5d2fb83639c686c9e4b04573447f82aad2",
+    "prototype-world-1366-N.png": "aa6bb5dd8523b683a418a00ee853c5d4c08f1bfe50985a6588117d39d6381eaf",
+    "prototype-world-1366-NE.png": "186fae02e317ace6a50a5e4654338f230ad06f98782ae0fe958e5a67e5fd63b0",
+    "prototype-world-1366-S.png": "6e010e3b29eab4f28de103f8f9b7d999d057678f3c7bf0f1241da088e271e819",
+    "prototype-world-1366-SE.png": "ca4263ef2a66e81a7e5abf7863cb1067ea9a185c2b45c98748213ceae4dc96c0",
+    "prototype-world-390-E.png": "a6c6236dd03930c09db770a0d668853eb1696f55914e6e9bae2308aff44c51ab",
+    "prototype-world-390-N.png": "0e57379d3d033b9dce8522bce7a923763db9fea5eb8e9ad07fcc640c82add234",
+    "prototype-world-390-NE.png": "6dfdcd14bdccc9c563aad1eb8e40cabb96ea2ea615cdc2f24e2afc39443041f7",
+    "prototype-world-390-S.png": "12190ff85882e2b955b251061b0420ba9265d24ee1b7ce0de02866bb06259c19",
+    "prototype-world-390-SE.png": "b827d72f265b524c2cd13d73e1c62579e04a7d777f0a73bf4ff0c77fbdd6d730",
+    "prototype-world-report.json": "0de873a375249640b3ee45628fe5b9d61c50607910fe348283639aec6d83491b",
+    "refine-heading-context.cjs": "db44b1673544eb8fbd003a00b43ae6abf4ca6f5d3f0fef73f098c91f360e5d8a",
+    "refine-rig-joints.cjs": "c30e1d62f2ba9d7789ec1ab3e51c696811bfd4509a434b9bc7f0217b2e19c445",
+    "render-prototype.cjs": "2e14d0e1fb84625ebf94bfb2fa78e40329144ca549c48db8a67f89db9105f167",
+    "render-world-prototype.cjs": "00d120ee7911712dce31090315a3f41cc5c7eef943cbfea3a845fc0c7ecd2224",
+    "save-stop-handoff.cjs": "babaa3aa760ff5d461c05f76b5beb738274a5fbd892fdbc228c5bc59f164f450",
+    "test-prototype-native-rig.cjs": "71e924b0554d09b98b70fec5dd68256f37bcdcb5f8eb5599c2cb518465aa06f8",
+    "troll-authored-parts-v1.png": "6d5fdd95557564f858159568868f5b47d2d63229a66b753d5d2eec6e4986ad41",
+    "troll-E-pixel.png": "2570b6a78a1dd60b69dc13bf6c7996957b69566150ad91213d9d7a38638d82fd",
+    "troll-N-pixel.png": "93e25f623e1fe3b30f3bdc303fa41cb18b5b16667968b672a22090573651cd69",
+    "troll-NE-pixel.png": "2ba53a66f83f8c5d41889f4494359597dbb7dfdef5c9e90a0bc223fe16364b25",
+    "troll-rig-parts-pixel.png": "fa8691da2a8682a0d74f808808bcda5ce58906587d3ce543fef65c6ba213cf8c",
+    "troll-rig-parts.json": "6da188326b4ca518301230fb4dd5cd16f77c756b5503a3cb93513eed176690a7",
+    "troll-S-pixel.png": "5227ff2e9dbf5a2130c265a06e0a51fb1d7a36f3d7b387f17d207f963d6ead76",
+    "troll-SE-pixel.png": "64266bf311f1b00ca1d34a7dae0d1e93f4e07333e6d1f74ea0c0ee650dcc64fc",
+    "troll-source-E.png": "be7f76e650688fad6470cb15212767f7b770a225e5a369d7a4265f7a62211557",
+    "troll-source-N.png": "b0ef2d3f3684cd9176245e56152d6203d802dc6e923f80f2fde12382e16e6170",
+    "troll-source-NE.png": "a7117f5add599f1def3f81c8e0e6e1c1b2aafd5fc7e698df2031824ce340a0f9",
+    "troll-source-S.png": "83cbc48ee8f890140c271bf2446d58e3fb256f13d65f06fda60a3424cdfeb9c4",
+    "troll-source-SE.png": "7717955c3bfe03b1422646dc49408c0c09da679a50c38462760c7a881383d82a",
+    "use-authored-part-atlas.cjs": "a42529c79a43b10e9b6645ebfb5acfc0328d68816b6d5bae33b945b35d3200ac"
+  }
+}

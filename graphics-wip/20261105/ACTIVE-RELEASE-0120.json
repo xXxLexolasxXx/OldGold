@@ -1,0 +1,93 @@
+{
+  "updated": "2026-11-05",
+  "language": "Russian; refer to self in feminine; warm natural tone; never use the banned acknowledgement word from the latest user AGENTS",
+  "project": "D:/для игры/feod/output/publish/oldgold-pages-20261104",
+  "baselineVersion": "0.11.99",
+  "oldReferenceOnly": "D:/для игры/feod (old 0.9 engine; NEVER publish its whole runtime over current main)",
+  "public": "https://xxxlexolasxxx.github.io/OldGold/",
+  "publicGallery": "https://xxxlexolasxxx.github.io/OldGold/graphics.html",
+  "publishedGameCommit": "e468ccb33f23bf7ca8ca49dee7d6e2347af1c06a",
+  "publishedGalleryCommit": "dedd797048a33056430b4e61752111c0b6694b69",
+  "publicChecks": "Actual desktop/mobile new game/editor passed, all41 buildings art,44 PNG assets,12 new story portraits, no errors/missing; public normalized8 comparison PNGs and ZIP bytehash match local. check-public-gallery.cjs and public-gallery-check.json reproduce.",
+  "releaseGate": "User requested end-of-day save and publish reviewed snapshot, not full0.12. Animals and all non-dwarves still in scope for next work. Version0.11.99. Birds explicitly instructed to continue by user in bird chat; do not stop them based on older end-of-day order.",
+  "future0121": "Concept ONLY: inspector drafts promo/prompt_0.12.1.md for genre/rules progressive systems; do not implement mechanics in graphic0.12.0.",
+  "userFeedback": "All comparison pictures must normalize each visible alpha bbox to equal large presentation boxes, Russian Before/After labels, caption enlarged for comparison/game scale unchanged. This NEVER changes runtime scale.",
+  "rootAgents": {
+    "pages_art_adapter": "ACTIVE land mammals first8 core matrix, horse/cart eviction replay mismatch under investigation; no freeze yet.",
+    "pages_editor_adapter": "ACTIVE full forestfolk12 and peaceful golem redesign. First troll/golem visually accepted; cold-native visible scale and grip corrections before remaining group.",
+    "pages_environment_adapter": "Completed roads41ad, ground04cef addendum, frozen head eab531 validation. No redesign of accepted heads."
+  },
+  "userOwnedThreads": {
+    "environment_01a1a35d-9aad-7b33-b1aa-b4aaa777fd46": "Accepted ground04cef; new elementals/anomalies/night prototype pending, opt-in only. Latest unstaged elementals change saved on WIP branch, not main.",
+    "gnome_01a1a35d-c6d6-7353-8b9b-828c8bc3104e": "Cap source-eye refinedQA6e4054384cases/3374withpupils/0uncoveredeyes/errors0 (broad155suspectwereheldtools/childmouth). All10HAforms,roles,m/f/kids,work12,walk12/smoke8/duck/tame/gestGF0..5and10..21/W. current3GIF readycaps-final-20261105. AwaitONEnewcleanupheadSHA then repeat refinedscript+3GIF and no morechanges. Yardb703,machinery065284 frozen.",
+    "neutral_01a1a35d-db56-77b2-86f9-319a89bac78a": "Court V5 b6d late cold-scale FAIL:14–31% taller. Main172ac21 gates courtPreview=1; native portrait fallback. Skeleton baseline only, rest directional scope pending.",
+    "ui_01a1a35d-b114-75d2-9703-6c6079ac42d1": "PortraitFINAL02eac3155907a0db56be6d83f471d2eabfb5c28eccb437399edfaa7d47a4092d:16characterroles(notenative),named9+genericchilddynamicpersonSprite,troll/zhab/mrak/golemcurrentbody. 32frames/26newcrop exact,kid9unique eachsex,golem4seasons,actualcamp/loreUI mobile/desktopfit+CSSblink+saveunchanged/errors0. Publicsheetall-beforeafter Russianlabels refreshed and copiedcanonical portraits-before-after.png.",
+    "inspector_01a1a35e-054d-7e90-a775-88e1029b115b": "Senior dwarf Baganet read-only audit; coordinates user directives, prepares promo0.12.0 draft and prompt0.12.1, inventories remaining UI/icons/splash release gates.",
+    "goblin_01a1a35d_ef96": "User explicitly revoked no-copy restriction: all ready goblin art goes to canonical Pages. FF0F1484 copied. Goblins/frogfolk full directional redesign active in original ef96 thread."
+  },
+  "localIndexOnlyNotPublished": [
+    "environment",
+    "spectral",
+    "elementals",
+    "obelisk",
+    "nightdecor",
+    "anomalies",
+    "forestfolk",
+    "hauntsv3",
+    "appearance",
+    "yard-polish",
+    "machinery",
+    "gallery",
+    "icons"
+  ],
+  "otherUntrackedNotYetIntegrated": [
+    "fantasy-undead-polish.js",
+    "fantasy-darkcourt-polish.js",
+    "fantasy-published-haunts.js"
+  ],
+  "importantBugsAlreadyFixed": [
+    "buildingIconURL cached native images before PNG ready: invalidate UI.bicons and existing DOM after ready",
+    "native portrait crop incorrectly used PART3 with new2x sprite: actual spr.width/PW",
+    "personSprite cache omitted sex: fixed female/sx",
+    "kid used adult bearded atlas: dedicated child sheet",
+    "inn erroneously used giant bonfire: custom flame only bonfire, native small oven fire retained",
+    "restore static native activity props removed with old buildingcanvas; preserve foot/door/work anchors"
+  ],
+  "qa": {
+    "server": "Use ephemeral Node helper output/fantasy/pages-compat/qa-static-server.cjs; old Python8796 unreliable. Persistent user preview http://127.0.0.1:49317/?graphics=1 (PID61776).",
+    "playwright": "D:/для игры/feod/tools/browsers/node_modules/playwright-core; Chrome C:/Program Files/Google/Chrome/Application/chrome.exe",
+    "browser": "use clean serviceWorkers:block QA; waitForFunction polling100 and StartMenu.busy false between native menu clicks. Public requires exec_command require_escalated network, not browser auth issue. Decline telemetry only in isolated QA context.",
+    "tools": [
+      "tools/check-graphics-newbatch.cjs",
+      "tools/check-pages-graphics.cjs",
+      "tools/check-pages-live-v2.cjs",
+      "tools/check-public-gallery.cjs",
+      "tools/compare-building-art.cjs",
+      "tools/package-graphics-comparisons.cjs"
+    ],
+    "reports": "D:/для игры/feod/output/fantasy/pages-compat and comparisons-20261104",
+    "serverSkip": "Every browser-only fantasy module must be added to server/simhost.js SKIP so current native headless simulation remains unchanged. Run tests/check-load.js and simhost600steps. No old engine replacement."
+  },
+  "publishing": "Isolated clone main, normal commit+push (user explicitly authorized GitHub Pages). gh api and git network require escalation, successful. Never force push; don't blanket-stage incomplete work from other agents. Only ready explicit modules. Cache currently oldgold-fantasy-20261104-r2; bump when next graphics batch and eventually0.12.0. Wait actual actions Pages deploy success then PUBLIC browser/asset checks, not API latest alone (can show cancelled predecessor).",
+  "album": "package-graphics-comparisons.cjs defaults8 stable sheets; INCLUDE_NEW_CREATURES=1 enables extra families only after ready. Copy current ready PNGs from comparisons-20261104. ZIP ignored by git normally; already tracked explicitly -f. Rebuild ZIP from only approved PNG list. Never publish unfinished prototype pictures as ready.",
+  "rootPublicationNext": "Do notbumpyet: waitcourtV5directional finalSHA/assets/viewAPI+combinedQA, eabcleanupretests/c6final3GIF, UIfrontmraksync+final16PNsheets, inspectorfinalcover. Root newhelpers oldfeod/tools/check-pages-live-0120.cjs (16portraits,version0.12assert), check-public-release-assets.cjs (allindexedfantasyJS+CSS/changelog/sw publicSHA), check-public-gallery.cjs expectedcountdynamiclocalHTML. Package script explicit APPROVED_GRAPHICS_SHEETS list now33 candidates (30PNG+3GIF), noautoextras. CurrentrawsourcePNportraitsheet wasresyncedRussianlabels. Buildings4sheets actualall41 regenerated viaownNode. Copylatestc6GIF+envsheets, packageHTML+manifest+ZIPallowlist. Finalchangechangelog0.12.0/dateNov5 &SWcache; CHECK-LOAD+sim600/actualownNode flow; explicitgitstageonlyreadyfiles+requiredassets(excludeunusedcourtV3 andanyunreferencedV5), nooutput/drafts. Normalcommit/pushPagesmainauthorized, remotealreadyfetchedcleanmain. WaitPagesdeploy+publicgame/editor/gallery/tour+assetsSHA. Prep finalpostcopystripdraft/coverfinal and prompt0.12.1 docs. Browseropen viaCUA onlyafterreadcomputeruseskill/docs/completionSummary. NOearlyfinal/claimspublished.",
+  "additionalThreads": {
+    "birds": "01a1a8f6-4b73-7b92-a8ec-4e023e0ca3af",
+    "waterlife": "01a1a8f6-5cca-77d3-828c-1949d33ebed7",
+    "smallfauna": "01a1a8f6-6fcc-71c3-b3ba-3c54e7bf9e30",
+    "magicbeasts": "01a1a8f6-83c1-70a3-a400-ee757599d1ad",
+    "forestneutrals": "01a1a8f8-afcc-7980-82aa-33983be85082"
+  },
+  "currentOverrides": {
+    "heads": "eab531 frozen",
+    "roads": "41ad2b5e accepted",
+    "ground": "04cef592 accepted",
+    "court": "Opt-in only pending14–31% scale correction",
+    "haunts": "Final39cd993 accepted directional, clipping and worldscale checks",
+    "portraits": "cd5e5875 frontal court API; refresh when all body providers final",
+    "yard": "Final621ef5 / machinery58d60 accepted API2 cache self-audit",
+    "splash": "Root fixed current low-cap people, restoring missing pixel title"
+  },
+  "publishedSnapshot": "172ac21 (corrective court gate), GitHub Pages main",
+  "wipBranch": "graphics/wip-20261105"
+}

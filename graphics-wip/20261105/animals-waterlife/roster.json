@@ -1,0 +1,599 @@
+{
+  "marine": {
+    "sprat": {
+      "w": 7,
+      "h": 4,
+      "ax": 3,
+      "ay": 3,
+      "anims": {
+        "swim": 4
+      },
+      "frames": null,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "swim": 4
+      },
+      "nativeMobileSizeAnchor": [
+        7,
+        4,
+        3,
+        3
+      ],
+      "nativeDesktopSizeAnchor": [
+        7,
+        4,
+        3,
+        3
+      ]
+    },
+    "salmon": {
+      "w": 16,
+      "h": 14,
+      "ax": 8,
+      "ay": 12,
+      "anims": {
+        "swim": 8,
+        "jump": 6
+      },
+      "frames": 12,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "swim": 12,
+        "jump": 12
+      },
+      "nativeMobileSizeAnchor": [
+        16,
+        14,
+        8,
+        12
+      ],
+      "nativeDesktopSizeAnchor": [
+        16,
+        14,
+        8,
+        12
+      ]
+    },
+    "crab": {
+      "w": 17,
+      "h": 14,
+      "ax": 8,
+      "ay": 12,
+      "pad": [
+        1,
+        3
+      ],
+      "anims": {
+        "idle": 6,
+        "walk": 8,
+        "atk": 9,
+        "die": 6,
+        "hide": 6
+      },
+      "frames": 12,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "idle": 12,
+        "walk": 12,
+        "atk": 12,
+        "die": 12,
+        "hide": 12
+      },
+      "nativeMobileSizeAnchor": [
+        17,
+        14,
+        8,
+        12
+      ],
+      "nativeDesktopSizeAnchor": [
+        17,
+        14,
+        8,
+        12
+      ]
+    },
+    "star": {
+      "w": 9,
+      "h": 8,
+      "ax": 4,
+      "ay": 7,
+      "anims": {
+        "idle": 6
+      },
+      "frames": null,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "idle": 6
+      },
+      "nativeMobileSizeAnchor": [
+        9,
+        8,
+        4,
+        7
+      ],
+      "nativeDesktopSizeAnchor": [
+        9,
+        8,
+        4,
+        7
+      ]
+    },
+    "urchin": {
+      "w": 9,
+      "h": 7,
+      "ax": 4,
+      "ay": 6,
+      "anims": {
+        "idle": 6
+      },
+      "frames": null,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "idle": 6
+      },
+      "nativeMobileSizeAnchor": [
+        9,
+        7,
+        4,
+        6
+      ],
+      "nativeDesktopSizeAnchor": [
+        9,
+        7,
+        4,
+        6
+      ]
+    },
+    "jelly": {
+      "w": 13,
+      "h": 16,
+      "ax": 6,
+      "ay": 12,
+      "anims": {
+        "swim": 8,
+        "atk": 9,
+        "die": 6
+      },
+      "frames": 12,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "swim": 12,
+        "atk": 12,
+        "die": 12
+      },
+      "nativeMobileSizeAnchor": [
+        13,
+        16,
+        6,
+        12
+      ],
+      "nativeDesktopSizeAnchor": [
+        13,
+        16,
+        6,
+        12
+      ]
+    },
+    "turtle": {
+      "w": 20,
+      "h": 13,
+      "ax": 10,
+      "ay": 11,
+      "anims": {
+        "idle": 6,
+        "swim": 8,
+        "walk": 8
+      },
+      "frames": 12,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "idle": 12,
+        "swim": 12,
+        "walk": 12
+      },
+      "nativeMobileSizeAnchor": [
+        20,
+        13,
+        10,
+        11
+      ],
+      "nativeDesktopSizeAnchor": [
+        20,
+        13,
+        10,
+        11
+      ]
+    },
+    "hatch": {
+      "w": 7,
+      "h": 5,
+      "ax": 3,
+      "ay": 4,
+      "anims": {
+        "walk": 6
+      },
+      "frames": null,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "walk": 6
+      },
+      "nativeMobileSizeAnchor": [
+        7,
+        5,
+        3,
+        4
+      ],
+      "nativeDesktopSizeAnchor": [
+        7,
+        5,
+        3,
+        4
+      ]
+    },
+    "dolphin": {
+      "w": 26,
+      "h": 22,
+      "ax": 13,
+      "ay": 18,
+      "anims": {
+        "swim": 8,
+        "jump": 9
+      },
+      "frames": 12,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "swim": 12,
+        "jump": 12
+      },
+      "nativeMobileSizeAnchor": [
+        26,
+        22,
+        13,
+        18
+      ],
+      "nativeDesktopSizeAnchor": [
+        26,
+        22,
+        13,
+        18
+      ]
+    },
+    "whale": {
+      "w": 52,
+      "h": 26,
+      "ax": 26,
+      "ay": 22,
+      "anims": {
+        "swim": 8,
+        "spout": 6
+      },
+      "frames": 12,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "swim": 12,
+        "spout": 12
+      },
+      "nativeMobileSizeAnchor": [
+        52,
+        26,
+        26,
+        22
+      ],
+      "nativeDesktopSizeAnchor": [
+        52,
+        26,
+        26,
+        22
+      ]
+    },
+    "octo": {
+      "w": 22,
+      "h": 20,
+      "ax": 11,
+      "ay": 16,
+      "anims": {
+        "idle": 6,
+        "swim": 8,
+        "atk": 9,
+        "die": 6
+      },
+      "frames": 12,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "idle": 12,
+        "swim": 12,
+        "atk": 12,
+        "die": 12
+      },
+      "nativeMobileSizeAnchor": [
+        22,
+        20,
+        11,
+        16
+      ],
+      "nativeDesktopSizeAnchor": [
+        22,
+        20,
+        11,
+        16
+      ]
+    },
+    "serpent": {
+      "w": 44,
+      "h": 26,
+      "ax": 22,
+      "ay": 20,
+      "anims": {
+        "swim": 8,
+        "atk": 9,
+        "die": 6
+      },
+      "frames": 12,
+      "pw": 124,
+      "ph": 72,
+      "pax": 60,
+      "pay": 50,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/pxbeasts.js",
+      "newNormalizedFrames": {
+        "swim": 12,
+        "atk": 12,
+        "die": 12
+      },
+      "nativeMobileSizeAnchor": [
+        44,
+        26,
+        22,
+        20
+      ],
+      "nativeDesktopSizeAnchor": [
+        124,
+        72,
+        60,
+        50
+      ]
+    },
+    "tent": {
+      "w": 18,
+      "h": 46,
+      "ax": 9,
+      "ay": 44,
+      "anims": {
+        "idle": 6,
+        "atk": 9,
+        "die": 9,
+        "rise": 6
+      },
+      "frames": 12,
+      "pw": 64,
+      "ph": 100,
+      "pax": 24,
+      "pay": 92,
+      "renderer": "js/world/seafauna.js → slDrawKraken → seaBlit → seaSprite",
+      "art": "js/world/pxbeasts.js",
+      "newNormalizedFrames": {
+        "idle": 12,
+        "atk": 12,
+        "die": 12,
+        "rise": 12
+      },
+      "nativeMobileSizeAnchor": [
+        18,
+        46,
+        9,
+        44
+      ],
+      "nativeDesktopSizeAnchor": [
+        64,
+        100,
+        24,
+        92
+      ]
+    },
+    "kraeye": {
+      "w": 26,
+      "h": 16,
+      "ax": 13,
+      "ay": 14,
+      "anims": {
+        "idle": 6
+      },
+      "frames": 12,
+      "pw": 68,
+      "ph": 40,
+      "pax": 34,
+      "pay": 34,
+      "renderer": "js/world/seafauna.js → slDrawKraken → seaBlit → seaSprite",
+      "art": "js/world/pxbeasts.js",
+      "newNormalizedFrames": {
+        "idle": 12
+      },
+      "nativeMobileSizeAnchor": [
+        26,
+        16,
+        13,
+        14
+      ],
+      "nativeDesktopSizeAnchor": [
+        68,
+        40,
+        34,
+        34
+      ]
+    },
+    "shell": {
+      "w": 7,
+      "h": 5,
+      "ax": 3,
+      "ay": 4,
+      "anims": {
+        "idle": 2
+      },
+      "frames": null,
+      "renderer": "js/world/seafauna.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seaart.js",
+      "newNormalizedFrames": {
+        "idle": 2
+      },
+      "nativeMobileSizeAnchor": [
+        7,
+        5,
+        3,
+        4
+      ],
+      "nativeDesktopSizeAnchor": [
+        7,
+        5,
+        3,
+        4
+      ]
+    },
+    "mermaid": {
+      "w": 16,
+      "h": 20,
+      "ax": 8,
+      "ay": 17,
+      "anims": {
+        "sit": 6,
+        "dive": 6
+      },
+      "frames": null,
+      "renderer": "js/world/seafolk.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seafolk.js",
+      "newNormalizedFrames": {
+        "sit": 12,
+        "dive": 12
+      },
+      "nativeMobileSizeAnchor": [
+        16,
+        20,
+        8,
+        17
+      ],
+      "nativeDesktopSizeAnchor": [
+        16,
+        20,
+        8,
+        17
+      ]
+    },
+    "vodyanoy": {
+      "w": 16,
+      "h": 18,
+      "ax": 8,
+      "ay": 15,
+      "anims": {
+        "idle": 6,
+        "dive": 6
+      },
+      "frames": null,
+      "renderer": "js/world/seafolk.js → slDraw → seaBlit → seaSprite",
+      "art": "js/world/seafolk.js",
+      "newNormalizedFrames": {
+        "idle": 12,
+        "dive": 12
+      },
+      "nativeMobileSizeAnchor": [
+        16,
+        18,
+        8,
+        15
+      ],
+      "nativeDesktopSizeAnchor": [
+        16,
+        18,
+        8,
+        15
+      ]
+    }
+  },
+  "additionalFish": {
+    "inland": {
+      "renderer": "js/world/beasts.js → beDrawFish → beSpr(BE_FISH)",
+      "states": [
+        "underwater",
+        "jump (0.85 seconds)"
+      ],
+      "nativeBitmap": [
+        10,
+        5
+      ],
+      "nativeBodyOrigin": [
+        -5,
+        -2
+      ],
+      "nativeJump": "translate(x*TILE,y*TILE-sin(j*pi)*13-3), face mirror, rotate((j-.5)*1.5)",
+      "newNormalizedFrames": 12
+    },
+    "fairyFish": {
+      "renderer": "js/world/fairy1.js → fishDraw → sprFish → fyBlit",
+      "species": [
+        "gold",
+        "red",
+        "blue"
+      ],
+      "states": [
+        "swim",
+        "caught"
+      ],
+      "size": [
+        28,
+        16
+      ],
+      "blitScale": 0.8,
+      "nativeAnchor": [
+        14,
+        16
+      ],
+      "spriteBodyWaterline": 12,
+      "newNormalizedFrames": 12,
+      "nativeFrame": "fyCyc6(ph*18) → 30..41"
+    },
+    "fairyNarrowFish": {
+      "renderer": "js/world/fairy1.js → fishyDraw → sprFishN → fyBlit / native jump transform",
+      "species": [
+        "amber",
+        "pink",
+        "teal"
+      ],
+      "states": [
+        "swim",
+        "jump"
+      ],
+      "size": [
+        34,
+        14
+      ],
+      "blitScale": 0.75,
+      "swimAnchor": [
+        17,
+        14
+      ],
+      "jumpAnchor": [
+        17,
+        8
+      ],
+      "newNormalizedFrames": 12,
+      "nativeFrame": "fyCyc6(ph*(jump?12:5)*3) → 30..41",
+      "note": "Native jump reads raw bitmap size. Adapter caches a 34×14 nearest-neighbor raster for this native contract."
+    }
+  },
+  "excluded": [
+    "gull",
+    "corm",
+    "pearl (loot)",
+    "ship",
+    "fairy2 rus/vod"
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "reason": "New global GRAPHICS_RULES explicitly excludes front necklaces/medallions from backs",
+  "editedCells": [
+    2,
+    3
+  ],
+  "otherTenCellsUnchanged": true,
+  "checks": [
+    {
+      "cell": 0,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 1,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 2,
+      "unchanged": false,
+      "expectedEdited": true
+    },
+    {
+      "cell": 3,
+      "unchanged": false,
+      "expectedEdited": true
+    },
+    {
+      "cell": 4,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 5,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 6,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 7,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 8,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 9,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 10,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 11,
+      "unchanged": true,
+      "expectedEdited": false
+    }
+  ],
+  "sourceSha": "835eeb3c1be1f0508427370a6d615ef74e3334c1cc7fa904bfd8c478310da2fa"
+}

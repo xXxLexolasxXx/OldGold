@@ -1,0 +1,65 @@
+{
+  "status":"STOPPED FOR TODAY by direct user instruction. Save WIP; DO NOT LINK ANIMALS MODULE IN LIVE INDEX.",
+  "clone":"D:/для игры/feod/output/publish/oldgold-pages-20261104",
+  "module":"js/fantasy-published-animals.js",
+  "moduleSHA256":"a2913b38b6ed93b5e5a670ba66b4285fd534335441e4f4105d0fa3ca6c554862",
+  "syntaxCheck":"node --check PASS",
+  "git":"No git add/commit/push/index/version changes by animal owner. Leading session saves shared clone sequentially.",
+  "cloneFilesCurrent":[
+    "js/fantasy-published-animals.js",
+    "assets/fantasy/animal-rabbit-views-v2.png",
+    "assets/fantasy/animal-deer-views-v1.png",
+    "assets/fantasy/animal-goat-views-v1.png",
+    "assets/fantasy/animal-wolf-views-v1.png",
+    "assets/fantasy/animal-fox-views-v1.png",
+    "assets/fantasy/animal-elk-views-v1.png",
+    "assets/fantasy/animal-horse-views-v1.png",
+    "assets/fantasy/animal-pig-views-v1.png"
+  ],
+  "cloneFileUnusedRejected":"assets/fantasy/animal-rabbit-views-v1.png: first upright mascot rabbit, rejected and superseded by v2. NOT referenced by loader. Retained as WIP provenance only, not current animal design.",
+  "scope":{
+    "assigned":"21 terrestrial species + armad/armadillo, boarGuardian, spectral wolf. Packgoat/cart/pig-growth/cat-colours/winter-hare are variants.",
+    "implementedWIP":"First eight biological species: rabbit/deer/goat/wolf/fox/elk/horse/pig. New packgoat equipment, cart rig/current approved dwarf driver, pig three growth scales and two native phases. Five authored views S/SE/E/NE/N; SW/W/NW mirrored. New articulated raster body/legs/head; no old native animal body under new head.",
+    "notStarted":"Remaining13 terrestrial: ordinary boar,bear,cat,mouse,badger,squirrel,hedgehog,mole,hare,marmot,otter,stag,starfox. Assigned armad/boarGuardian/spectralwolf not started. Birds/water/tinyfauna/magical fairy1 are other owners; do not absorb them.",
+    "roster":"animals-roster-20261105.json contains native draw paths, state/frame inventory, portrait and ownership boundaries."
+  },
+  "review":{
+    "rootAccepted":"Materials and five-view direction design of first rabbit/deer/wolf/goat; revised low quadruped rabbit with no face on rear3/4; native visible-bbox scale correction.",
+    "rabbitScaleNote":"E visible width native12.67/new12.5 world px; visible height native11.67/new8.5 due folded ears and low four-legged posture, explicitly accepted by leading session. Feet/meta anchors unchanged.",
+    "scale":"Source scale shared across all five views, fitted using cold native visible E bbox rather than reserved buffer. No independent per-view inflation. Updated GRAPHICS_RULES.md read.",
+    "notFinalArtAccepted":"Full first8/pack/cart/pig and loaded native world scenes still need review. No 1:1 actual world-scale comparison PNG yet; this is an outstanding mandatory check, not a PASS."
+  },
+  "verified":{
+    "currentProofFolder":"D:/для игры/feod/output/fantasy/comparisons-20261104/mammals-core-20261105",
+    "matrix":"animals-core-matrix.json:984 native phase/view/growth cases +560 cargo/pet cases,0 dimension/anchor/metadata failures,0 load errors,0 page errors.",
+    "contracts":"Native CR_SIZE/CR_FRAMES, animalGo/animalStep/updateAnimal, original drawPigs implementation and serializeGame function unchanged. serializeGame output and localStorage unchanged through pure render matrix.",
+    "orientation":"Eight heading fixtures match exactly and do not add saved NPC fields. Uses transient WeakMap/context for world animals, carrier units and native pen actors. Pig heading derives native pen trajectory through render context and compensates original outer mirror exactly once.",
+    "cache":"1024 entries maximum,32MiB maximum final RGBA. Stress ended1024 entries/20,566,464 bytes;45 fixed prepared part sets. No raw timestamp cache keys.",
+    "evictionMismatch":"Initial prototype had six sampled horse/cart hash mismatches after eviction. RESOLVED IN CURRENT SHA by CPU-backed final small canvases via willReadFrequently:true. Same sampled52 replay cases now exactRGBA PASS. Do not report old failure as still present, but extend to full-case replay in next QA.",
+    "frames":"All twelve native phases sampled in all8 directions. Some tiny frontal S/N projections have8 distinct raster poses, rabbitS11; E/quarters generally12. Do not substitute hash count for required future visual overlap review.",
+    "cycleSheet":"animals-core-cycles.png shows current actual sprite buffers for rabbit E/S,deerE,wolfSE,goatE,cartE/N. Owner viewed it; no final comprehensive world contact approval."
+  },
+  "remainingBeforeAnyLiveLink":[
+    "Create required literal1:1 old/new native-world-scale sheet alongside enlarged five-view comparison for ALL first8 and pack/cart/pig-growth.",
+    "Capture real native game/map/pen animations on desktop/mobile; verify8-direction selection through actual draw paths, not only helper fixtures.",
+    "Complete overlap/contact and extended clipping audit at extreme/intermediate phases, cargo5 cart, pack load, pet ribbon/package and owl held-prey anchor.",
+    "Native horse has legacy actual E body bottom at30 while CR_SIZE AY25; current fitting preserves that actual bottom/headtop. Old native frame already reaches buffer edge. No native canvas/footprint/physics change made; discuss only transparent padding if a concrete new clipping case is proved.",
+    "Check exact native drawLoad/cargo anchors independently, especially cart S/N and packgoat. Constants were carried across, but full native transform trace still pending.",
+    "Production index currently DOES NOT load this adapter. Root must link only after review, then run actual full production index without reinjection and verify readiness/errors/default save/mobile cache performance.",
+    "A.ready covers8 PNG assets; consider coordinating startup readiness with root. Do not quietly alter shared art/appearance/head module readiness.",
+    "A.sprite supports CR kinds +cart; pig uses A.pigSprite(stage,f,view) or native pigSpriteHR. Do not call generic A.sprite('pig') because native CR_SIZE has no pig entry.",
+    "No additional animal species work today. Resume remaining13+assigned3 only after first batch review and fresh user continuation."
+  ],
+  "QAfilesOutsideClone":[
+    "animals-roster-20261105.json",
+    "animals-core-preview.cjs",
+    "animals-preview-server.cjs",
+    "animals-core-matrix.cjs",
+    "animals-core-server.cjs",
+    "gallery-final-20261105/animals-core-preview.png",
+    "gallery-final-20261105/animals-core-preview.json",
+    "gallery-final-20261105/animals-worldbounds-before-fit.json",
+    "mammals-core-20261105/animals-core-matrix.json",
+    "mammals-core-20261105/animals-core-cycles.png"
+  ]
+}

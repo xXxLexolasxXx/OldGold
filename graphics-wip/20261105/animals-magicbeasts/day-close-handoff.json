@@ -1,0 +1,274 @@
+{
+  "recipientThread": "01a1a2b3-2a33-73b3-8aab-6f77e1d39b63",
+  "status": "STOPPED_FOR_TODAY; SNAPSHOT_ONLY; DO_NOT_ENABLE_IN_LIVE",
+  "sharedCheckout": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104",
+  "gitCommit": "Not performed: shared publication clone; leader commits snapshot sequentially. Only own scoped git status read; no index/stage/global config changes.",
+  "productionFiles": [
+    {
+      "path": "js/fantasy-published-magicbeasts.js",
+      "bytes": 11114,
+      "sha256": "b8aca99fcb4bb64e6eacf1008a360475aae0155568d5a7361f2a7b208ba437bb",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-published-magicbeasts.js"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/adult.png",
+      "bytes": 2696780,
+      "sha256": "c8e26c4774403e585478c434922b55bcc8c9c83bfea77098792ff31eeaca35f7",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\adult.png"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/fire.png",
+      "bytes": 2643331,
+      "sha256": "3923f2af487ffbc3b4e5c0471b2c27eadd14cc00a13d40565d4b1ccd0eb0855a",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\fire.png"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/forest.png",
+      "bytes": 2582764,
+      "sha256": "fc6efc0f58c59ad8eef08a26d6f5018f42395d73cc3a25a06a74d5e1233264b9",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\forest.png"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/griffin.png",
+      "bytes": 2817704,
+      "sha256": "d8297716de5e9347d965be8da5f7ec75cde42ce962929bdd2e873331e2e9514d",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\griffin.png"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/ice.png",
+      "bytes": 2530459,
+      "sha256": "5a9b6667fb6bef11ad454e7b230ee8700bfb7d24847d4c02eb2b58553f641ff7",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\ice.png"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/salamander.png",
+      "bytes": 1986752,
+      "sha256": "8c9082e132328a16de57b421af6a85d86ad9e908c3e31afadd957db288966398",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\salamander.png"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/swamp.png",
+      "bytes": 2738604,
+      "sha256": "243a96f30cfddd12de76afe6694cf79d93d9612acb17e613d2beca2010139a89",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\swamp.png"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/unicorn.png",
+      "bytes": 2312536,
+      "sha256": "97bfb27a694cff9c189ec5536477721f607dd77f0ddbc7150f8bdf15d4e36da6",
+      "absolutePath": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\magicbeasts\\unicorn.png"
+    }
+  ],
+  "reportFiles": [
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\all-beasts-review.png",
+      "bytes": 1035792,
+      "sha256": "7709fa7e75ba3240406f6f30e2cb0dbbf9a99ae67d0222ab4c05d30e228484de"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\animation-adult-atk.png",
+      "bytes": 223997,
+      "sha256": "0245bc36fea7273957c4c535a5c758ecd54a5b1938502fb64af8099f15ee5b37"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\animation-fire-atk.png",
+      "bytes": 76116,
+      "sha256": "96655bb368b33a0cbd5b47deab0b502ae6da1cf112dee201f4ca710d41950d04"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\animation-forest-fly.png",
+      "bytes": 77899,
+      "sha256": "067f9e930525de144d81a5949bcdd18d85511e46da50fb89fdd1a71a531ed294"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\animation-griffin-die.png",
+      "bytes": 96744,
+      "sha256": "3241fcdb7bbed23da7bdaf4abc5d539728c2fef8a86ca7e26bf55bf4c642f4e9"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\animation-ice-sleep.png",
+      "bytes": 62929,
+      "sha256": "253e9d2e63930adb658c0b8c9ac386b3e2c0dd4db199aaa882824b5e07dcd3e8"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\animation-review.html",
+      "bytes": 4461,
+      "sha256": "abff6560e2ef8fcec93ecf9e87ef1ff25de214879c679ea8e9b5f60f6165ef66"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\animation-salamander-atk.png",
+      "bytes": 76806,
+      "sha256": "3552344de7c4a57411aa6ecf802b7af61d162ade2f113c1b1bbdf6ca9d7e8874"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\animation-swamp-fly.png",
+      "bytes": 70121,
+      "sha256": "44f0214bc019f15b025124f5445c604177c5195c2299ae4b007c1b0ed3f13ce5"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\animation-unicorn-walk.png",
+      "bytes": 92006,
+      "sha256": "617d7695d39f012c5630d71199e26f14c3bc3c3051c55dba6671dc2f0aac5f63"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\beasts-in-game-flight.png",
+      "bytes": 1345843,
+      "sha256": "ebe00b7ecf10cfe018d50e944e3cabf5b42efb2223b085810ee3d9845fe262bf"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\beasts-in-game.png",
+      "bytes": 1348218,
+      "sha256": "5a3c5f2c63d504f56ec36c335d255be76b71d4498fc60c5b8d96aa5dbaf9a31b"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\capture-map.cjs",
+      "bytes": 4705,
+      "sha256": "c4b03ddfd4c990be7661d93919075230fc0b709c538e1eccba20899c87eb737e"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\check-review.cjs",
+      "bytes": 1456,
+      "sha256": "595d9e6f6da1f7c680d7c7d5e6b10c630bae8adb7da4bb1b916349ff031c545c"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\compliance-report.txt",
+      "bytes": 5170,
+      "sha256": "d3ef2b362bacec89f35930d1ca8c0ac1fdfd104b4c0ee608fbfaa6a5bc34bb50"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\handoff.txt",
+      "bytes": 9915,
+      "sha256": "0060f3b275e5cd6e971673b7e7f82f1f455b4c5e6dc682f90772d0dda7eb8dfe"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\imagegen-prompts.json",
+      "bytes": 3739,
+      "sha256": "7b9aa650e15740edde80ae8a264630efd8de05a596a34f26328dcdb31f55dd1b"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\manifest.json",
+      "bytes": 2578,
+      "sha256": "0f6e1c89ffd1014412c3cb8ef14f2bc7ba3e23b75b9713455b9524e4051ecf71"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\map-preview-result.json",
+      "bytes": 97,
+      "sha256": "d708ef91624c481d75560531af5fccb9cab0acafdbf53b0d6849388c355ea9f3"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\qa-full-result.json",
+      "bytes": 55707,
+      "sha256": "d95423d4ebf672f3047f70a9a25176595e842d1fd2f54ec2f3ea8352406dab80"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\qa-full.cjs",
+      "bytes": 6825,
+      "sha256": "382e1f7405ed6a2485d94da805ed6439e4502ca599c365cd98be5881aa037269"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\qa-result.json",
+      "bytes": 207,
+      "sha256": "7e762f00051d316ca7c4de7114ec85292ef7fb7a55fc4c2d78d85338ef91aa0e"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\qa-worldscale.cjs",
+      "bytes": 4728,
+      "sha256": "c52b202277c16cd99a28dea2f3442acaa29801b69df8c87769fc735c15752827"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\qa.cjs",
+      "bytes": 3153,
+      "sha256": "a58411c48ac9d9b725093a75986c71bf7f88283a7f1313feb32c6a240f468551"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\review-check.json",
+      "bytes": 494,
+      "sha256": "ea53670182fd015415b53c2b44321f54ad01aa3259c92e273f0aff5251f648aa"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\roster.json",
+      "bytes": 2549,
+      "sha256": "b45d0a34f06f19dce07f4036d1347d93bce83be999edbfba3297dc7f428b690a"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\rules-self-audit.json",
+      "bytes": 3464,
+      "sha256": "eb9e4e0ba32c756dba2abfae2c697017852d6930edb01cd0751d23c36b6727e6"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\unicorn-review.png",
+      "bytes": 314394,
+      "sha256": "58ea47da4753f2cee34fa5ae8c3fba5464930121d7eb4e64edd1f1e3a2c726dd"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\worldscale-1to1-and-4x.png",
+      "bytes": 379678,
+      "sha256": "0dd82fe0cc19a6f919fa6b01825ee94d4685f7763b4388e22c1e9bb002fbbb35"
+    },
+    {
+      "absolutePath": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\worldscale-result.json",
+      "bytes": 5004,
+      "sha256": "4465cb8b834d7d8609013510d61a253f69a737783cce9381f624b0c2d301c628"
+    }
+  ],
+  "checks": [
+    {
+      "mobile": false,
+      "nativeCases": 7392,
+      "nativeErrors": 0,
+      "directionFailures": 0,
+      "mutations": 0,
+      "canvasEdgeContacts": 0,
+      "cache": {
+        "entries": 512,
+        "rgbaBytes": 23537920,
+        "limit": 512,
+        "byteLimit": 25165824
+      },
+      "pageErrors": []
+    },
+    {
+      "mobile": true,
+      "nativeCases": 7392,
+      "nativeErrors": 0,
+      "directionFailures": 0,
+      "mutations": 0,
+      "canvasEdgeContacts": 0,
+      "cache": {
+        "entries": 512,
+        "rgbaBytes": 23537920,
+        "limit": 512,
+        "byteLimit": 25165824
+      },
+      "pageErrors": []
+    }
+  ],
+  "ready": [
+    "8 local raster atlases",
+    "presentation module readyPromise/errors",
+    "native selectors and 8-heading plumbing",
+    "measured common scale per species across all authored views",
+    "cold E idle/0 support alignment for all 8",
+    "cold-native 1:1 plus 4x evidence"
+  ],
+  "pending": [
+    "visible proportions/size mismatch; see worldscale-result.json",
+    "directional wild breath detached from muzzle in front/back views",
+    "pet beam alignment and layering visual acceptance",
+    "authored intermediate animation poses and both 3/4 art acceptance",
+    "production index without injection and portrait acceptance after coordinated integration"
+  ],
+  "doNotIncludeInLive": [
+    "js/fantasy-published-magicbeasts.js as enabled script",
+    "No claim of saved visible scale",
+    "No old QA or front-only PASS as release proof"
+  ],
+  "preserved": [
+    "index.html untouched",
+    "sw.js and version/changelog untouched",
+    "no neighboring renderers edited",
+    "mechanics AI timings footprint saves unchanged",
+    "dwarf heads unchanged"
+  ],
+  "latestReport": "D:\\для игры\\feod\\output\\fantasy\\animals-magicbeasts\\compliance-report.txt"
+}

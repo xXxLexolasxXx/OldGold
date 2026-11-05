@@ -1,0 +1,633 @@
+{
+  "checks": [
+    {
+      "kind": "fThrall",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 2484,
+      "edge": 0
+    },
+    {
+      "kind": "fThrall",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 2529,
+      "edge": 0
+    },
+    {
+      "kind": "fThrall",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 2484,
+      "edge": 0
+    },
+    {
+      "kind": "fThrall",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 2336,
+      "edge": 0
+    },
+    {
+      "kind": "fThrall",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 2373,
+      "edge": 0
+    },
+    {
+      "kind": "fThrall",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 2336,
+      "edge": 0
+    },
+    {
+      "kind": "fKnight",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 5261,
+      "edge": 0
+    },
+    {
+      "kind": "fKnight",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 5430,
+      "edge": 0
+    },
+    {
+      "kind": "fKnight",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 5261,
+      "edge": 0
+    },
+    {
+      "kind": "fKnight",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 4691,
+      "edge": 0
+    },
+    {
+      "kind": "fKnight",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 4842,
+      "edge": 0
+    },
+    {
+      "kind": "fKnight",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 4691,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 11629,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 11629,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 16489,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 10917,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 10917,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 16058,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 12001,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 12001,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 16619,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 10971,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 10971,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 16029,
+      "edge": 0
+    },
+    {
+      "kind": "fBone",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 829,
+      "edge": 0
+    },
+    {
+      "kind": "fBone",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 837,
+      "edge": 0
+    },
+    {
+      "kind": "fBone",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 762,
+      "edge": 0
+    },
+    {
+      "kind": "fBone",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 791,
+      "edge": 0
+    },
+    {
+      "kind": "fBone",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 799,
+      "edge": 0
+    },
+    {
+      "kind": "fBone",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 702,
+      "edge": 0
+    },
+    {
+      "kind": "fRock",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 3682,
+      "edge": 0
+    },
+    {
+      "kind": "fRock",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 3781,
+      "edge": 0
+    },
+    {
+      "kind": "fRock",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 3682,
+      "edge": 0
+    },
+    {
+      "kind": "fRock",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 3536,
+      "edge": 0
+    },
+    {
+      "kind": "fRock",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 3665,
+      "edge": 0
+    },
+    {
+      "kind": "fRock",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 3536,
+      "edge": 0
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 5386,
+      "edge": 0
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 5423,
+      "edge": 0
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 9017,
+      "edge": 0
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 5120,
+      "edge": 0
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 5149,
+      "edge": 0
+    },
+    {
+      "kind": "fG_fire",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 8964,
+      "edge": 0
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 4773,
+      "edge": 0
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 4810,
+      "edge": 0
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 8920,
+      "edge": 0
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 4760,
+      "edge": 0
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 4798,
+      "edge": 0
+    },
+    {
+      "kind": "fG_ice",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 8946,
+      "edge": 0
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 5298,
+      "edge": 0
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 5330,
+      "edge": 0
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 9006,
+      "edge": 0
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 5155,
+      "edge": 0
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 5187,
+      "edge": 0
+    },
+    {
+      "kind": "fG_bone",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 9016,
+      "edge": 0
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 5738,
+      "edge": 0
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 5781,
+      "edge": 0
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 9052,
+      "edge": 0
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 5780,
+      "edge": 0
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 5812,
+      "edge": 0
+    },
+    {
+      "kind": "fG_shadow",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 9097,
+      "edge": 0
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 12580,
+      "edge": 0
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 12557,
+      "edge": 0
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 13971,
+      "edge": 0
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 11242,
+      "edge": 0
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 11233,
+      "edge": 0
+    },
+    {
+      "kind": "fG_golem",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 13610,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 11629,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 11629,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 16489,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 10917,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 10917,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor1",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 16058,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "SE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 12001,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "SE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 12001,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "SE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 16619,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "NE",
+      "state": "idle",
+      "unchanged": true,
+      "visible": 10971,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "NE",
+      "state": "chase",
+      "unchanged": true,
+      "visible": 10971,
+      "edge": 0
+    },
+    {
+      "kind": "fMalgor3",
+      "dir": "NE",
+      "state": "cast",
+      "unchanged": true,
+      "visible": 16029,
+      "edge": 0
+    }
+  ],
+  "version": "court-v5-eight-directions",
+  "assetsErrors": [],
+  "pageErrors": [],
+  "sourceSha256": "b6d63620aba06e378a2a88e26ef71b7f094edde4e8e67edc3c99defb0083d077",
+  "source": "Canonical index, actual foeDrawRaider callbacks, private preview heading pins only; no script injection or per-view resizing."
+}

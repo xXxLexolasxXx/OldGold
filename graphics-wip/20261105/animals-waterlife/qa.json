@@ -1,0 +1,330 @@
+{
+  "serializedStateUnchanged": true,
+  "checked": 3360,
+  "fishRenders": 1152,
+  "inlandRenders": 96,
+  "contracts": [
+    {
+      "k": "sprat",
+      "a": "swim",
+      "n": 4,
+      "oldN": 4
+    },
+    {
+      "k": "salmon",
+      "a": "swim",
+      "n": 12,
+      "oldN": 8
+    },
+    {
+      "k": "salmon",
+      "a": "jump",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "crab",
+      "a": "idle",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "crab",
+      "a": "walk",
+      "n": 12,
+      "oldN": 8
+    },
+    {
+      "k": "crab",
+      "a": "atk",
+      "n": 12,
+      "oldN": 9
+    },
+    {
+      "k": "crab",
+      "a": "die",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "crab",
+      "a": "hide",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "star",
+      "a": "idle",
+      "n": 6,
+      "oldN": 6
+    },
+    {
+      "k": "urchin",
+      "a": "idle",
+      "n": 6,
+      "oldN": 6
+    },
+    {
+      "k": "jelly",
+      "a": "swim",
+      "n": 12,
+      "oldN": 8
+    },
+    {
+      "k": "jelly",
+      "a": "atk",
+      "n": 12,
+      "oldN": 9
+    },
+    {
+      "k": "jelly",
+      "a": "die",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "turtle",
+      "a": "idle",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "turtle",
+      "a": "swim",
+      "n": 12,
+      "oldN": 8
+    },
+    {
+      "k": "turtle",
+      "a": "walk",
+      "n": 12,
+      "oldN": 8
+    },
+    {
+      "k": "hatch",
+      "a": "walk",
+      "n": 6,
+      "oldN": 6
+    },
+    {
+      "k": "shell",
+      "a": "idle",
+      "n": 2,
+      "oldN": 2
+    },
+    {
+      "k": "dolphin",
+      "a": "swim",
+      "n": 12,
+      "oldN": 8
+    },
+    {
+      "k": "dolphin",
+      "a": "jump",
+      "n": 12,
+      "oldN": 9
+    },
+    {
+      "k": "whale",
+      "a": "swim",
+      "n": 12,
+      "oldN": 8
+    },
+    {
+      "k": "whale",
+      "a": "spout",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "octo",
+      "a": "idle",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "octo",
+      "a": "swim",
+      "n": 12,
+      "oldN": 8
+    },
+    {
+      "k": "octo",
+      "a": "atk",
+      "n": 12,
+      "oldN": 9
+    },
+    {
+      "k": "octo",
+      "a": "die",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "serpent",
+      "a": "swim",
+      "n": 12,
+      "oldN": 8
+    },
+    {
+      "k": "serpent",
+      "a": "atk",
+      "n": 12,
+      "oldN": 9
+    },
+    {
+      "k": "serpent",
+      "a": "die",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "tent",
+      "a": "idle",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "tent",
+      "a": "atk",
+      "n": 12,
+      "oldN": 9
+    },
+    {
+      "k": "tent",
+      "a": "die",
+      "n": 12,
+      "oldN": 9
+    },
+    {
+      "k": "tent",
+      "a": "rise",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "kraeye",
+      "a": "idle",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "mermaid",
+      "a": "sit",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "mermaid",
+      "a": "dive",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "vodyanoy",
+      "a": "idle",
+      "n": 12,
+      "oldN": 6
+    },
+    {
+      "k": "vodyanoy",
+      "a": "dive",
+      "n": 12,
+      "oldN": 6
+    }
+  ],
+  "distinct": {
+    "sprat:swim": 3,
+    "salmon:swim": 7,
+    "salmon:jump": 12,
+    "crab:idle": 7,
+    "crab:walk": 12,
+    "crab:atk": 6,
+    "crab:die": 12,
+    "crab:hide": 12,
+    "star:idle": 3,
+    "urchin:idle": 6,
+    "jelly:swim": 12,
+    "jelly:atk": 11,
+    "jelly:die": 12,
+    "turtle:idle": 5,
+    "turtle:swim": 7,
+    "turtle:walk": 7,
+    "hatch:walk": 3,
+    "shell:idle": 2,
+    "dolphin:swim": 7,
+    "dolphin:jump": 12,
+    "whale:swim": 7,
+    "whale:spout": 12,
+    "octo:idle": 12,
+    "octo:swim": 12,
+    "octo:atk": 11,
+    "octo:die": 12,
+    "serpent:swim": 12,
+    "serpent:atk": 11,
+    "serpent:die": 12,
+    "tent:idle": 12,
+    "tent:atk": 12,
+    "tent:die": 12,
+    "tent:rise": 12,
+    "kraeye:idle": 12,
+    "mermaid:sit": 12,
+    "mermaid:dive": 12,
+    "vodyanoy:idle": 8,
+    "vodyanoy:dive": 11
+  },
+  "stats": {
+    "entries": 768,
+    "bytes": 17611168,
+    "hits": 1865,
+    "misses": 4217,
+    "maxEntries": 768,
+    "maxBytes": 25165824
+  },
+  "readiness": true,
+  "errors": [],
+  "directions": [
+    [
+      "Анфас",
+      2
+    ],
+    [
+      "Передний ¾",
+      1
+    ],
+    [
+      "Профиль",
+      0
+    ],
+    [
+      "Задний ¾",
+      7
+    ],
+    [
+      "Спина",
+      6
+    ]
+  ],
+  "names": {
+    "sprat": "Килька",
+    "salmon": "Лосось",
+    "crab": "Краб",
+    "star": "Морская звезда",
+    "urchin": "Морской ёж",
+    "jelly": "Медуза",
+    "turtle": "Черепаха",
+    "hatch": "Черепашонок",
+    "shell": "Раковина",
+    "dolphin": "Дельфин",
+    "whale": "Кит",
+    "octo": "Осьминог",
+    "serpent": "Морской змей",
+    "tent": "Щупальце кракена",
+    "kraeye": "Голова кракена",
+    "mermaid": "Морская русалка",
+    "vodyanoy": "Озёрный водяной"
+  },
+  "moduleSHA256": "dcd1bfd30b008c863c86ab8ceb7d1873cc650b3d251902096bed2b3b82b7bac3",
+  "pageErrors": [],
+  "mode": "production index + exactly one staged adapter injection (not integrated-index acceptance)"
+}

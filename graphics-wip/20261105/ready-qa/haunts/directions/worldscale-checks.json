@@ -1,0 +1,803 @@
+{
+  "metrics": [
+    {
+      "kind": "noon",
+      "column": "Нативная графика",
+      "visibleWorldBbox": [
+        -20.666666666666664,
+        -73.33333333333333,
+        44,
+        76
+      ],
+      "worldCanvas": [
+        60,
+        88
+      ],
+      "anchor": [
+        30,
+        80
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "noon",
+      "column": "Принятый анфас v3",
+      "visibleWorldBbox": [
+        -17,
+        -74.5,
+        39,
+        75.5
+      ],
+      "worldCanvas": [
+        60,
+        88
+      ],
+      "anchor": [
+        30,
+        80
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "noon",
+      "column": "Сейчас: анфас",
+      "visibleWorldBbox": [
+        -17,
+        -74.5,
+        39,
+        75.5
+      ],
+      "worldCanvas": [
+        60,
+        88
+      ],
+      "anchor": [
+        30,
+        80
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "noon",
+      "column": "3/4 спереди",
+      "visibleWorldBbox": [
+        -17,
+        -74.5,
+        36,
+        75.5
+      ],
+      "worldCanvas": [
+        60,
+        88
+      ],
+      "anchor": [
+        30,
+        80
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "noon",
+      "column": "Профиль",
+      "visibleWorldBbox": [
+        -17,
+        -74.5,
+        36.5,
+        75.5
+      ],
+      "worldCanvas": [
+        60,
+        88
+      ],
+      "anchor": [
+        30,
+        80
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "noon",
+      "column": "3/4 сзади",
+      "visibleWorldBbox": [
+        -17,
+        -74.5,
+        38.5,
+        75.5
+      ],
+      "worldCanvas": [
+        60,
+        88
+      ],
+      "anchor": [
+        30,
+        80
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "noon",
+      "column": "Спина",
+      "visibleWorldBbox": [
+        -17,
+        -74.5,
+        39,
+        75.5
+      ],
+      "worldCanvas": [
+        60,
+        88
+      ],
+      "anchor": [
+        30,
+        80
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "ban",
+      "column": "Нативная графика",
+      "visibleWorldBbox": [
+        -22.666666666666664,
+        -23,
+        45.333333333333336,
+        77
+      ],
+      "worldCanvas": [
+        64,
+        84
+      ],
+      "anchor": [
+        32,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "ban",
+      "column": "Принятый анфас v3",
+      "visibleWorldBbox": [
+        -18.5,
+        -22.5,
+        37,
+        73.5
+      ],
+      "worldCanvas": [
+        64,
+        84
+      ],
+      "anchor": [
+        32,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "ban",
+      "column": "Сейчас: анфас",
+      "visibleWorldBbox": [
+        -18.5,
+        -22.5,
+        37,
+        73.5
+      ],
+      "worldCanvas": [
+        64,
+        84
+      ],
+      "anchor": [
+        32,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "ban",
+      "column": "3/4 спереди",
+      "visibleWorldBbox": [
+        -20.5,
+        -26.5,
+        40,
+        77.5
+      ],
+      "worldCanvas": [
+        64,
+        84
+      ],
+      "anchor": [
+        32,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "ban",
+      "column": "Профиль",
+      "visibleWorldBbox": [
+        -20,
+        -25,
+        39.5,
+        76
+      ],
+      "worldCanvas": [
+        64,
+        84
+      ],
+      "anchor": [
+        32,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "ban",
+      "column": "3/4 сзади",
+      "visibleWorldBbox": [
+        -18,
+        -26,
+        36,
+        77
+      ],
+      "worldCanvas": [
+        64,
+        84
+      ],
+      "anchor": [
+        32,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "ban",
+      "column": "Спина",
+      "visibleWorldBbox": [
+        -18.5,
+        -26,
+        37,
+        77
+      ],
+      "worldCanvas": [
+        64,
+        84
+      ],
+      "anchor": [
+        32,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "les",
+      "column": "Нативная графика",
+      "visibleWorldBbox": [
+        -13,
+        -46.666666666666664,
+        26.666666666666668,
+        48.333333333333336
+      ],
+      "worldCanvas": [
+        36,
+        50
+      ],
+      "anchor": [
+        18,
+        48
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "les",
+      "column": "Принятый анфас v3",
+      "visibleWorldBbox": [
+        -12.5,
+        -42,
+        25,
+        43
+      ],
+      "worldCanvas": [
+        36,
+        50
+      ],
+      "anchor": [
+        18,
+        48
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "les",
+      "column": "Сейчас: анфас",
+      "visibleWorldBbox": [
+        -12.5,
+        -42,
+        25,
+        43
+      ],
+      "worldCanvas": [
+        36,
+        50
+      ],
+      "anchor": [
+        18,
+        48
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "les",
+      "column": "3/4 спереди",
+      "visibleWorldBbox": [
+        -13.5,
+        -45,
+        26.5,
+        46
+      ],
+      "worldCanvas": [
+        36,
+        50
+      ],
+      "anchor": [
+        18,
+        48
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "les",
+      "column": "Профиль",
+      "visibleWorldBbox": [
+        -13,
+        -44.5,
+        26,
+        45.5
+      ],
+      "worldCanvas": [
+        36,
+        50
+      ],
+      "anchor": [
+        18,
+        48
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "les",
+      "column": "3/4 сзади",
+      "visibleWorldBbox": [
+        -12,
+        -44.5,
+        24,
+        45.5
+      ],
+      "worldCanvas": [
+        36,
+        50
+      ],
+      "anchor": [
+        18,
+        48
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "les",
+      "column": "Спина",
+      "visibleWorldBbox": [
+        -12.5,
+        -44.5,
+        25,
+        45.5
+      ],
+      "worldCanvas": [
+        36,
+        50
+      ],
+      "anchor": [
+        18,
+        48
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "kik",
+      "column": "Нативная графика",
+      "visibleWorldBbox": [
+        -8.333333333333332,
+        -24,
+        17.333333333333332,
+        25.666666666666668
+      ],
+      "worldCanvas": [
+        26,
+        32
+      ],
+      "anchor": [
+        13,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "kik",
+      "column": "Принятый анфас v3",
+      "visibleWorldBbox": [
+        -7,
+        -27.5,
+        13.5,
+        28.5
+      ],
+      "worldCanvas": [
+        26,
+        32
+      ],
+      "anchor": [
+        13,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "kik",
+      "column": "Сейчас: анфас",
+      "visibleWorldBbox": [
+        -7,
+        -27.5,
+        13.5,
+        28.5
+      ],
+      "worldCanvas": [
+        26,
+        32
+      ],
+      "anchor": [
+        13,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "kik",
+      "column": "3/4 спереди",
+      "visibleWorldBbox": [
+        -7.5,
+        -27.5,
+        14.5,
+        28.5
+      ],
+      "worldCanvas": [
+        26,
+        32
+      ],
+      "anchor": [
+        13,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "kik",
+      "column": "Профиль",
+      "visibleWorldBbox": [
+        -7,
+        -28,
+        14,
+        29
+      ],
+      "worldCanvas": [
+        26,
+        32
+      ],
+      "anchor": [
+        13,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "kik",
+      "column": "3/4 сзади",
+      "visibleWorldBbox": [
+        -8,
+        -28,
+        14.5,
+        29
+      ],
+      "worldCanvas": [
+        26,
+        32
+      ],
+      "anchor": [
+        13,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "kik",
+      "column": "Спина",
+      "visibleWorldBbox": [
+        -6.5,
+        -28,
+        13,
+        29
+      ],
+      "worldCanvas": [
+        26,
+        32
+      ],
+      "anchor": [
+        13,
+        30
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "vod",
+      "column": "Нативная графика",
+      "visibleWorldBbox": [
+        -12.666666666666666,
+        -22,
+        25.333333333333332,
+        24
+      ],
+      "worldCanvas": [
+        30,
+        28
+      ],
+      "anchor": [
+        15,
+        26
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "vod",
+      "column": "Принятый анфас v3",
+      "visibleWorldBbox": [
+        -12,
+        -23,
+        24.5,
+        24
+      ],
+      "worldCanvas": [
+        30,
+        28
+      ],
+      "anchor": [
+        15,
+        26
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "vod",
+      "column": "Сейчас: анфас",
+      "visibleWorldBbox": [
+        -12,
+        -23,
+        24.5,
+        24
+      ],
+      "worldCanvas": [
+        30,
+        28
+      ],
+      "anchor": [
+        15,
+        26
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "vod",
+      "column": "3/4 спереди",
+      "visibleWorldBbox": [
+        -12.5,
+        -22,
+        25,
+        23
+      ],
+      "worldCanvas": [
+        30,
+        28
+      ],
+      "anchor": [
+        15,
+        26
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "vod",
+      "column": "Профиль",
+      "visibleWorldBbox": [
+        -12,
+        -21.5,
+        24.5,
+        22.5
+      ],
+      "worldCanvas": [
+        30,
+        28
+      ],
+      "anchor": [
+        15,
+        26
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "vod",
+      "column": "3/4 сзади",
+      "visibleWorldBbox": [
+        -11,
+        -22.5,
+        23.5,
+        23.5
+      ],
+      "worldCanvas": [
+        30,
+        28
+      ],
+      "anchor": [
+        15,
+        26
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "vod",
+      "column": "Спина",
+      "visibleWorldBbox": [
+        -12,
+        -22,
+        24.5,
+        23
+      ],
+      "worldCanvas": [
+        30,
+        28
+      ],
+      "anchor": [
+        15,
+        26
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "rus",
+      "column": "Нативная графика",
+      "visibleWorldBbox": [
+        -6.333333333333333,
+        -26.333333333333332,
+        16,
+        27.666666666666668
+      ],
+      "worldCanvas": [
+        22,
+        30
+      ],
+      "anchor": [
+        11,
+        28
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "rus",
+      "column": "Принятый анфас v3",
+      "visibleWorldBbox": [
+        -7,
+        -26,
+        16,
+        27
+      ],
+      "worldCanvas": [
+        22,
+        30
+      ],
+      "anchor": [
+        11,
+        28
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "rus",
+      "column": "Сейчас: анфас",
+      "visibleWorldBbox": [
+        -7,
+        -26,
+        16,
+        27
+      ],
+      "worldCanvas": [
+        22,
+        30
+      ],
+      "anchor": [
+        11,
+        28
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "rus",
+      "column": "3/4 спереди",
+      "visibleWorldBbox": [
+        -7,
+        -27.5,
+        17.5,
+        28.5
+      ],
+      "worldCanvas": [
+        22,
+        30
+      ],
+      "anchor": [
+        11,
+        28
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "rus",
+      "column": "Профиль",
+      "visibleWorldBbox": [
+        -7,
+        -27,
+        17,
+        28
+      ],
+      "worldCanvas": [
+        22,
+        30
+      ],
+      "anchor": [
+        11,
+        28
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "rus",
+      "column": "3/4 сзади",
+      "visibleWorldBbox": [
+        -7,
+        -27,
+        16.5,
+        28
+      ],
+      "worldCanvas": [
+        22,
+        30
+      ],
+      "anchor": [
+        11,
+        28
+      ],
+      "drawScaleWorld": 1
+    },
+    {
+      "kind": "rus",
+      "column": "Спина",
+      "visibleWorldBbox": [
+        -7,
+        -27.5,
+        16,
+        28.5
+      ],
+      "worldCanvas": [
+        22,
+        30
+      ],
+      "anchor": [
+        11,
+        28
+      ],
+      "drawScaleWorld": 1
+    }
+  ],
+  "note": "Cold native fairy2 has front/mirror only, no native E. Every column is drawn at one shared world scale, not separately fitted to visible bbox. Bboxes are measurements, not an assertion that redesigned silhouettes are identical."
+}

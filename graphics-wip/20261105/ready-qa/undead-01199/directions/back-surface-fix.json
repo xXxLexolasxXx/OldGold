@@ -1,0 +1,70 @@
+{
+  "editedCells": [
+    5,
+    10
+  ],
+  "otherNineCreaturesAndEmptyCellUnchanged": true,
+  "checks": [
+    {
+      "cell": 0,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 1,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 2,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 3,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 4,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 5,
+      "unchanged": false,
+      "expectedEdited": true
+    },
+    {
+      "cell": 6,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 7,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 8,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 9,
+      "unchanged": true,
+      "expectedEdited": false
+    },
+    {
+      "cell": 10,
+      "unchanged": false,
+      "expectedEdited": true
+    },
+    {
+      "cell": 11,
+      "unchanged": true,
+      "expectedEdited": false
+    }
+  ],
+  "sourceSha": "73075a9b009dc7f5d3d4584d6d23a9433f5f0f51944ef2c39d9f5b6c09f239d1"
+}

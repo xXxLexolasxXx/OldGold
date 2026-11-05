@@ -1,0 +1,39 @@
+{
+  "native": {
+    "x0": -8.333333333333334,
+    "y0": -41.666666666666664,
+    "x1": 20.333333333333336,
+    "y1": 1.6666666666666643,
+    "width": 28.666666666666668,
+    "height": 43.333333333333336
+  },
+  "previous": {
+    "x0": -7.5,
+    "y0": -43,
+    "x1": 19.5,
+    "y1": 1,
+    "width": 27,
+    "height": 44
+  },
+  "contract": {
+    "PS": 6,
+    "PART": 3,
+    "W": 52,
+    "H": 56,
+    "AX": 22,
+    "AY": 50,
+    "FR": {
+      "idle": 12,
+      "walk": 12,
+      "atk": 12,
+      "hit": 6,
+      "die": 12,
+      "grab": 13
+    },
+    "ATK_DUR": 0.72,
+    "HIT_DUR": 0.3,
+    "DIE_DUR": 0.9,
+    "MAX": 600
+  },
+  "description": "Original skelSprite from FantasyUndeadPolish.originalSkeleton, fresh actor/cache cold E idle0. 1:1 above and uniform x3 below."
+}

@@ -1,0 +1,926 @@
+{
+  "coverage": [
+    {
+      "kind": "pixie",
+      "frames": 129,
+      "directions": 8,
+      "count": 1032
+    },
+    {
+      "kind": "fairy",
+      "frames": 129,
+      "directions": 8,
+      "count": 1032
+    },
+    {
+      "kind": "leshy",
+      "frames": 93,
+      "directions": 8,
+      "count": 744
+    },
+    {
+      "kind": "leprechaun",
+      "frames": 56,
+      "directions": 8,
+      "count": 448
+    },
+    {
+      "kind": "brownie",
+      "frames": 1,
+      "directions": 8,
+      "count": 8
+    },
+    {
+      "kind": "enderman",
+      "frames": 2,
+      "directions": 8,
+      "count": 16
+    },
+    {
+      "kind": "gargoyle A/B/C",
+      "frames": 8,
+      "eyeLevelsTested": 2,
+      "directions": 8,
+      "count": 384
+    }
+  ],
+  "errors": [],
+  "clipped": [],
+  "empty": [],
+  "orientationChecks": [
+    {
+      "expected": "S",
+      "actual": "S"
+    },
+    {
+      "expected": "SE",
+      "actual": "SE"
+    },
+    {
+      "expected": "E",
+      "actual": "E"
+    },
+    {
+      "expected": "NE",
+      "actual": "NE"
+    },
+    {
+      "expected": "N",
+      "actual": "N"
+    },
+    {
+      "expected": "NW",
+      "actual": "NW"
+    },
+    {
+      "expected": "W",
+      "actual": "W"
+    },
+    {
+      "expected": "SW",
+      "actual": "SW"
+    }
+  ],
+  "runtimeDrawChecks": [
+    {
+      "kind": "leprechaun",
+      "dir": "S",
+      "face": -1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "S",
+      "face": -1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "S",
+      "face": -1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "S",
+      "face": -1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "S",
+      "face": -1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "S",
+      "face": -1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "S",
+      "face": 1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "S",
+      "face": 1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "S",
+      "face": 1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "S",
+      "face": 1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "S",
+      "face": 1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "S",
+      "face": 1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SE",
+      "face": -1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SE",
+      "face": -1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SE",
+      "face": -1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SE",
+      "face": -1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "SE",
+      "face": -1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "SE",
+      "face": -1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SE",
+      "face": 1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SE",
+      "face": 1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SE",
+      "face": 1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SE",
+      "face": 1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "SE",
+      "face": 1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "SE",
+      "face": 1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "E",
+      "face": -1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "E",
+      "face": -1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "E",
+      "face": -1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "E",
+      "face": -1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "E",
+      "face": -1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "E",
+      "face": -1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "E",
+      "face": 1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "E",
+      "face": 1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "E",
+      "face": 1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "E",
+      "face": 1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "E",
+      "face": 1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "E",
+      "face": 1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NE",
+      "face": -1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NE",
+      "face": -1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NE",
+      "face": -1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NE",
+      "face": -1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "NE",
+      "face": -1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "NE",
+      "face": -1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NE",
+      "face": 1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NE",
+      "face": 1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NE",
+      "face": 1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NE",
+      "face": 1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "NE",
+      "face": 1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "NE",
+      "face": 1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "N",
+      "face": -1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "N",
+      "face": -1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "N",
+      "face": -1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "N",
+      "face": -1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "N",
+      "face": -1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "N",
+      "face": -1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "N",
+      "face": 1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "N",
+      "face": 1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "N",
+      "face": 1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "N",
+      "face": 1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "N",
+      "face": 1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "N",
+      "face": 1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NW",
+      "face": -1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NW",
+      "face": -1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NW",
+      "face": -1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NW",
+      "face": -1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "NW",
+      "face": -1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "NW",
+      "face": -1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NW",
+      "face": 1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NW",
+      "face": 1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NW",
+      "face": 1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "NW",
+      "face": 1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "NW",
+      "face": 1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "NW",
+      "face": 1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "W",
+      "face": -1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "W",
+      "face": -1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "W",
+      "face": -1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "W",
+      "face": -1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "W",
+      "face": -1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "W",
+      "face": -1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "W",
+      "face": 1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "W",
+      "face": 1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "W",
+      "face": 1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "W",
+      "face": 1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "W",
+      "face": 1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "W",
+      "face": 1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SW",
+      "face": -1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SW",
+      "face": -1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SW",
+      "face": -1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SW",
+      "face": -1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "SW",
+      "face": -1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "SW",
+      "face": -1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SW",
+      "face": 1,
+      "fr": "i0",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SW",
+      "face": 1,
+      "fr": "w3",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SW",
+      "face": 1,
+      "fr": "t2",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "leprechaun",
+      "dir": "SW",
+      "face": 1,
+      "fr": "l1",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "SW",
+      "face": 1,
+      "carry": 0,
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "enderman",
+      "dir": "SW",
+      "face": 1,
+      "carry": 1,
+      "ok": true,
+      "different": 0
+    }
+  ],
+  "specialStateChecks": [
+    {
+      "kind": "ender dig",
+      "dir": "S",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "ender dig",
+      "dir": "SE",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "ender dig",
+      "dir": "E",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "ender dig",
+      "dir": "NE",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "ender dig",
+      "dir": "N",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "ender dig",
+      "dir": "NW",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "ender dig",
+      "dir": "W",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "ender dig",
+      "dir": "SW",
+      "ok": true,
+      "different": 0
+    },
+    {
+      "kind": "death orientation retained",
+      "ok": true,
+      "different": 0
+    }
+  ],
+  "stats": {
+    "entries": 262,
+    "rgba": 50283776,
+    "hits": 462,
+    "misses": 4990
+  },
+  "ready": true,
+  "assetErrors": [],
+  "moduleSHA256": "044c8a832d526028ca469e65cc8d9fbd6d8db852c0c08c353a2911e82ea5877c",
+  "productionInfo": {
+    "forestConnected": false,
+    "scripts": [
+      "js/fantasy-neutral-polish.js",
+      "js/fantasy-leshy-polish.js"
+    ]
+  },
+  "pageErrors": []
+}

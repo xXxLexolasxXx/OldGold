@@ -1,0 +1,67 @@
+{
+  "status": "NOT RELEASE PASS",
+  "rulesReread": [
+    "D:/для игры/AGENTS.md",
+    "D:/для игры/GRAPHICS_RULES.md"
+  ],
+  "scope": "magical fairy1 beasts only; animals explicitly included",
+  "matches": [
+    "Full new raster bodies, not hue-only replacements; x2 backing and nearest-neighbour presentation",
+    "Five separately drawn atlas columns and paired mirrors for eight directions",
+    "Actual native roster and growth/species distinction recorded in roster.json",
+    "Original controller states, durations, footprints, world support anchors and saved data retained",
+    "Motion and target direction kept in WeakMap; native callbacks and overlays retained",
+    "Cache uses kind/view/state/normalized native frame, bounded entries and RGBA bytes; asset readiness and errors explicit",
+    "7392 native state cases each desktop/mobile; zero exceptions, mutations and direction failures in qa-full-result.json",
+    "Russian labels and required comparison enlargement caption in overview sheets"
+  ],
+  "fixedDuringAudit": [
+    "Atlas row cuts measured from actual transparent gutters to prevent pieces from adjacent animation rows",
+    "Isolated generated miniature/debris excluded from runtime atlas cells",
+    "Griffin treasure callback no longer recalculates direction before body callback",
+    "Incorrectly mirrored sleep cells normalized without inventing missing views",
+    "Native wild-dragon fire primitive restored after new body substitution",
+    "Cold-native E baseline support aligned for all eight models; transparent reserve padded with compensated presentation origin, same world anchors"
+  ],
+  "doesNotYetConform": [
+    "Native profile breath start/trajectory does not follow muzzle in front/back views; requires directional visual anchor work without damage/target/timing changes",
+    "Pet beam/muzzle connection and occlusion across all views not visually accepted",
+    "Only 2-3 authored key poses per cycle plus native sample holds; additional in-betweens and stronger three-quarter distinction may be needed after artist review",
+    "Canvas and support anchors preserved, but equal visible size versus native must be measured across every species and state",
+    "Native-index desktop/mobile after leader integration and actual UI portrait coverage still pending"
+  ],
+  "evidence": [
+    "roster.json",
+    "qa-full-result.json",
+    "qa-result.json",
+    "review-check.json",
+    "all-beasts-review.png",
+    "unicorn-review.png",
+    "animation-review.html",
+    "animation-fire-atk.png",
+    "animation-adult-atk.png",
+    "map-preview-result.json",
+    "beasts-in-game.png",
+    "beasts-in-game-flight.png"
+  ],
+  "notTouched": [
+    "neighbor renderer files",
+    "index.html",
+    "sw.js",
+    "mechanics",
+    "AI",
+    "durations",
+    "footprint",
+    "serialization",
+    "dwarf low-cap heads",
+    "roads"
+  ],
+  "conclusion": "Technical directional coverage is not an art/FX release pass. The exact unresolved items remain documented in handoff.txt. No old frontal pass is reused.",
+  "latestComplianceReport": "compliance-report.txt",
+  "worldscaleEvidence": [
+    "worldscale-result.json",
+    "worldscale-1to1-and-4x.png"
+  ],
+  "worldscaleStatus": "FAIL visible proportions; measured support delta zero in cold E idle/0 for all 8",
+  "captionCorrection": "Earlier saved-scale captions revoked; see current 1:1 evidence"
+}

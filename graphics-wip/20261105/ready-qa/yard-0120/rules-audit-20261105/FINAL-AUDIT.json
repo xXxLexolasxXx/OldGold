@@ -1,0 +1,65 @@
+{
+  "sourceSHA": {
+    "yard-polish": "621ef5c2d2daf3de6de7a7c871b997cfc153a0b6bd6244107014bd650511651c",
+    "machinery": "58d60bb231c39a07aadda52f7d83515a24f7290041e7ae2b15d08e26fcc3da67",
+    "appearance": "eab531706913731c433d1454afd770f410dc43bf4435033694ba1b12e6f2436a"
+  },
+  "devices": [
+    {
+      "device": "desktop",
+      "yardSHAExact": true,
+      "machinerySHAExact": true,
+      "headSHAExact": true,
+      "ready": [
+        true,
+        true
+      ],
+      "pixelEviction": [
+        {
+          "type": "inn",
+          "pixelsExact": true,
+          "metadataExact": true
+        },
+        {
+          "type": "bakery",
+          "pixelsExact": true,
+          "metadataExact": true
+        }
+      ],
+      "all276Refs": true,
+      "bounded": true,
+      "reuse": true,
+      "noTimeKey": true,
+      "pageErrors": [],
+      "jsFailures": []
+    },
+    {
+      "device": "mobile",
+      "yardSHAExact": true,
+      "machinerySHAExact": true,
+      "headSHAExact": true,
+      "ready": [
+        true,
+        true
+      ],
+      "pixelEviction": [
+        {
+          "type": "inn",
+          "pixelsExact": true,
+          "metadataExact": true
+        },
+        {
+          "type": "bakery",
+          "pixelsExact": true,
+          "metadataExact": true
+        }
+      ],
+      "all276Refs": true,
+      "bounded": true,
+      "reuse": true,
+      "noTimeKey": true,
+      "pageErrors": [],
+      "jsFailures": []
+    }
+  ]
+}

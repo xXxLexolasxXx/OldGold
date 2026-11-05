@@ -1,0 +1,195 @@
+{
+  "scope": "Production index + isolated module injection. Full production-index integration remains pending owner.",
+  "profiles": [
+    {
+      "mobile": false,
+      "checks": {
+        "ready": true,
+        "assets": [
+          "http://127.0.0.1:54151/assets/fantasy-smallfauna/palettes.json",
+          "http://127.0.0.1:54151/assets/fantasy-smallfauna/frog-atlas.json",
+          "http://127.0.0.1:54151/assets/fantasy-smallfauna/frog-directions.png"
+        ],
+        "errors": [],
+        "tinyFrames": 696,
+        "tinyEmpty": 0,
+        "partialAlpha": 0,
+        "profileVisibleSize": [
+          {
+            "kind": "snail",
+            "before": [
+              43,
+              24.666666666666668
+            ],
+            "after": [
+              42.5,
+              25.5
+            ]
+          },
+          {
+            "kind": "newt",
+            "before": [
+              40.333333333333336,
+              17
+            ],
+            "after": [
+              41.5,
+              15.5
+            ]
+          },
+          {
+            "kind": "moth",
+            "before": [
+              37.333333333333336,
+              24
+            ],
+            "after": [
+              35,
+              23
+            ]
+          }
+        ],
+        "entityMutation": false,
+        "renderedNativeFrames": 1008,
+        "emptyFrames": 0,
+        "edgeTouchingFrames": 0,
+        "edgeKeys": [],
+        "reuse": true,
+        "stats": {
+          "entries": 768,
+          "rgbaBytes": 4821248,
+          "maxEntries": 768,
+          "maxRGBABytes": 16777216,
+          "hits": 89,
+          "misses": 1802
+        },
+        "nativeAnchors": [
+          {
+            "k": "snail",
+            "name": "Болотная улитка-тяжеловоз",
+            "w": 60,
+            "h": 44,
+            "ax": 28,
+            "ay": 36,
+            "sc": 1.2
+          },
+          {
+            "k": "newt",
+            "name": "Водяной тритон",
+            "w": 64,
+            "h": 40,
+            "ax": 28,
+            "ay": 32,
+            "sc": 1.2
+          },
+          {
+            "k": "moth",
+            "name": "Мотылёк-фонарик",
+            "w": 64,
+            "h": 62,
+            "ax": 30,
+            "ay": 48,
+            "sc": 1.2
+          }
+        ]
+      },
+      "pageErrors": [],
+      "failedLocalRequests": []
+    },
+    {
+      "mobile": true,
+      "checks": {
+        "ready": true,
+        "assets": [
+          "http://127.0.0.1:54151/assets/fantasy-smallfauna/palettes.json",
+          "http://127.0.0.1:54151/assets/fantasy-smallfauna/frog-atlas.json",
+          "http://127.0.0.1:54151/assets/fantasy-smallfauna/frog-directions.png"
+        ],
+        "errors": [],
+        "tinyFrames": 696,
+        "tinyEmpty": 0,
+        "partialAlpha": 0,
+        "profileVisibleSize": [
+          {
+            "kind": "snail",
+            "before": [
+              43,
+              24.666666666666668
+            ],
+            "after": [
+              42.5,
+              25.5
+            ]
+          },
+          {
+            "kind": "newt",
+            "before": [
+              40.333333333333336,
+              17
+            ],
+            "after": [
+              41.5,
+              15.5
+            ]
+          },
+          {
+            "kind": "moth",
+            "before": [
+              37.333333333333336,
+              24
+            ],
+            "after": [
+              35,
+              23
+            ]
+          }
+        ],
+        "entityMutation": false,
+        "renderedNativeFrames": 1008,
+        "emptyFrames": 0,
+        "edgeTouchingFrames": 0,
+        "edgeKeys": [],
+        "reuse": true,
+        "stats": {
+          "entries": 768,
+          "rgbaBytes": 4821248,
+          "maxEntries": 768,
+          "maxRGBABytes": 16777216,
+          "hits": 89,
+          "misses": 1802
+        },
+        "nativeAnchors": [
+          {
+            "k": "snail",
+            "name": "Болотная улитка-тяжеловоз",
+            "w": 60,
+            "h": 44,
+            "ax": 28,
+            "ay": 36,
+            "sc": 1.2
+          },
+          {
+            "k": "newt",
+            "name": "Водяной тритон",
+            "w": 64,
+            "h": 40,
+            "ax": 28,
+            "ay": 32,
+            "sc": 1.2
+          },
+          {
+            "k": "moth",
+            "name": "Мотылёк-фонарик",
+            "w": 64,
+            "h": 62,
+            "ax": 30,
+            "ay": 48,
+            "sc": 1.2
+          }
+        ]
+      },
+      "pageErrors": [],
+      "failedLocalRequests": []
+    }
+  ]
+}

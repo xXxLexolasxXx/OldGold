@@ -1,0 +1,16 @@
+{
+  "expectedFailure": true,
+  "ready": false,
+  "errors": [
+    "Error: Image load: http://127.0.0.1:63104/assets/fantasy-smallfauna/frog-directions.png"
+  ],
+  "nativeFallbackIdentical": true,
+  "cache": {
+    "entries": 0,
+    "rgbaBytes": 0,
+    "maxEntries": 768,
+    "maxRGBABytes": 16777216,
+    "hits": 0,
+    "misses": 0
+  }
+}

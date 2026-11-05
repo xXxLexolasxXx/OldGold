@@ -1,0 +1,180 @@
+{
+  "data": {
+    "creatures": {
+      "chicken": {
+        "box": [
+          16,
+          15,
+          8,
+          13
+        ],
+        "frames": 12
+      },
+      "henbuff": {
+        "box": [
+          22,
+          30,
+          11,
+          28
+        ],
+        "frames": 12
+      },
+      "goose": {
+        "box": [
+          26,
+          24,
+          12,
+          21
+        ],
+        "frames": 12
+      },
+      "duck": {
+        "box": [
+          22,
+          20,
+          11,
+          17
+        ],
+        "frames": 12
+      }
+    },
+    "crow": {
+      "stand": [
+        18,
+        13
+      ],
+      "fly": [
+        22,
+        15
+      ],
+      "walk": 12,
+      "flight": 12
+    },
+    "owl": {
+      "perch": [
+        16,
+        20,
+        8,
+        19
+      ],
+      "fly": [
+        34,
+        20,
+        17,
+        11
+      ],
+      "flightFrames": 12,
+      "grabPoses": 13
+    },
+    "wildlife": {
+      "bird": [
+        7,
+        5
+      ],
+      "pheasant": [
+        16,
+        10
+      ]
+    },
+    "stork": {
+      "stand": [
+        16,
+        19
+      ],
+      "nest": [
+        16,
+        13
+      ],
+      "fly": [
+        30,
+        20
+      ]
+    },
+    "heron": {
+      "stand": [
+        12,
+        19
+      ],
+      "strike": [
+        12,
+        19
+      ],
+      "fly": [
+        30,
+        20
+      ]
+    },
+    "woodpecker": {
+      "A": [
+        6,
+        11
+      ],
+      "B": [
+        6,
+        11
+      ]
+    },
+    "raven": [
+      32,
+      28,
+      15,
+      15,
+      1
+    ],
+    "bat": {
+      "box": [
+        18,
+        14,
+        9,
+        8
+      ],
+      "flightPoses": 9,
+      "grabPoses": 13
+    },
+    "sea": {
+      "gull": {
+        "box": [
+          22,
+          16,
+          11,
+          14
+        ],
+        "anims": {
+          "fly": 8,
+          "idle": 6,
+          "atk": 9,
+          "die": 6
+        },
+        "px": false,
+        "normalized12": true
+      },
+      "corm": {
+        "box": [
+          22,
+          18,
+          11,
+          16
+        ],
+        "anims": {
+          "idle": 6,
+          "fly": 8,
+          "dive": 9
+        },
+        "px": false,
+        "normalized12": true
+      }
+    },
+    "goldGoose": {
+      "size": [
+        20,
+        18
+      ],
+      "anchor": [
+        10,
+        18
+      ],
+      "nativeScale": 0.9
+    }
+  },
+  "errors": []
+}

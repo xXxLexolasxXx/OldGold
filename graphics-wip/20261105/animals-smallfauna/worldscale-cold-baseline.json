@@ -1,0 +1,407 @@
+{
+  "meta": {
+    "frog": {
+      "bodyCoverageAlphaCut": 50,
+      "opaqueWorldBBox": {
+        "x0": -6,
+        "y0": -3,
+        "x1": 5,
+        "y1": 4,
+        "w": 11,
+        "h": 7
+      },
+      "origin": [
+        80,
+        80
+      ],
+      "groundAnchor": [
+        0,
+        4
+      ],
+      "opaqueMaskTop": -3,
+      "lowestCoveragePixelY": 4
+    },
+    "butterfly": {
+      "bodyCoverageAlphaCut": 50,
+      "opaqueWorldBBox": {
+        "x0": -4,
+        "y0": -13,
+        "x1": 4,
+        "y1": -10,
+        "w": 8,
+        "h": 3
+      },
+      "origin": [
+        80,
+        80
+      ],
+      "groundAnchor": [
+        0,
+        0
+      ],
+      "opaqueMaskTop": -13,
+      "lowestCoveragePixelY": -10
+    },
+    "worm": {
+      "bodyCoverageAlphaCut": 50,
+      "opaqueWorldBBox": {
+        "x0": -3,
+        "y0": -1,
+        "x1": 4,
+        "y1": 3,
+        "w": 7,
+        "h": 4
+      },
+      "origin": [
+        80,
+        80
+      ],
+      "groundAnchor": [
+        0,
+        0
+      ],
+      "opaqueMaskTop": -1,
+      "lowestCoveragePixelY": 3
+    },
+    "snail": {
+      "bodyCoverageAlphaCut": 50,
+      "opaqueWorldBBox": {
+        "x0": -19,
+        "y0": -18,
+        "x1": 24,
+        "y1": 10,
+        "w": 43,
+        "h": 28
+      },
+      "origin": [
+        80,
+        80
+      ],
+      "groundAnchor": [
+        0,
+        6
+      ],
+      "opaqueMaskTop": -18,
+      "lowestCoveragePixelY": 10
+    },
+    "newt": {
+      "bodyCoverageAlphaCut": 50,
+      "opaqueWorldBBox": {
+        "x0": -16,
+        "y0": -6,
+        "x1": 24,
+        "y1": 11,
+        "w": 40,
+        "h": 17
+      },
+      "origin": [
+        80,
+        80
+      ],
+      "groundAnchor": [
+        0,
+        6
+      ],
+      "opaqueMaskTop": -6,
+      "lowestCoveragePixelY": 11
+    },
+    "moth-large": {
+      "bodyCoverageAlphaCut": 50,
+      "opaqueWorldBBox": {
+        "x0": -22,
+        "y0": -31,
+        "x1": 15,
+        "y1": -7,
+        "w": 37,
+        "h": 24
+      },
+      "origin": [
+        80,
+        80
+      ],
+      "groundAnchor": [
+        0,
+        6
+      ],
+      "opaqueMaskTop": -31,
+      "lowestCoveragePixelY": -7
+    },
+    "moth": {
+      "bodyCoverageAlphaCut": 50,
+      "opaqueWorldBBox": {
+        "x0": 1,
+        "y0": -13,
+        "x1": 5,
+        "y1": -11,
+        "w": 4,
+        "h": 2
+      },
+      "origin": [
+        80,
+        80
+      ],
+      "groundAnchor": [
+        0,
+        0
+      ],
+      "opaqueMaskTop": -13,
+      "lowestCoveragePixelY": -11
+    },
+    "bee": {
+      "bodyCoverageAlphaCut": 50,
+      "opaqueWorldBBox": {
+        "x0": 0,
+        "y0": -5,
+        "x1": 3,
+        "y1": -2,
+        "w": 3,
+        "h": 3
+      },
+      "origin": [
+        80,
+        80
+      ],
+      "groundAnchor": [
+        0,
+        0
+      ],
+      "opaqueMaskTop": -5,
+      "lowestCoveragePixelY": -2
+    },
+    "firefly": {
+      "bodyCoverageAlphaCut": 50,
+      "opaqueWorldBBox": {
+        "x0": 4,
+        "y0": -4,
+        "x1": 9,
+        "y1": 1,
+        "w": 5,
+        "h": 5
+      },
+      "origin": [
+        80,
+        80
+      ],
+      "groundAnchor": [
+        0,
+        0
+      ],
+      "opaqueMaskTop": -4,
+      "lowestCoveragePixelY": 1
+    }
+  },
+  "frogFrames": {
+    "sit": {
+      "canvas": [
+        11,
+        7
+      ],
+      "fine": 3,
+      "visible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 6.666666666666667,
+        "w": 11,
+        "h": 6.666666666666667
+      },
+      "nativeDrawAnchor": {
+        "x": 6,
+        "y": 7
+      },
+      "bodyFootWorldY": 4
+    },
+    "blink": {
+      "canvas": [
+        11,
+        7
+      ],
+      "fine": 3,
+      "visible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 6.666666666666667,
+        "w": 11,
+        "h": 6.666666666666667
+      },
+      "nativeDrawAnchor": {
+        "x": 6,
+        "y": 7
+      },
+      "bodyFootWorldY": 4
+    },
+    "croak": {
+      "canvas": [
+        11,
+        7
+      ],
+      "fine": 3,
+      "visible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 6.666666666666667,
+        "w": 11,
+        "h": 6.666666666666667
+      },
+      "nativeDrawAnchor": {
+        "x": 6,
+        "y": 7
+      },
+      "bodyFootWorldY": 4
+    },
+    "crouch": {
+      "canvas": [
+        11,
+        5
+      ],
+      "fine": 3,
+      "visible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 5,
+        "w": 11,
+        "h": 5
+      },
+      "nativeDrawAnchor": {
+        "x": 6,
+        "y": 5
+      },
+      "bodyFootWorldY": 4
+    },
+    "launch": {
+      "canvas": [
+        11,
+        6
+      ],
+      "fine": 3,
+      "visible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 6,
+        "w": 11,
+        "h": 6
+      },
+      "nativeDrawAnchor": {
+        "x": 6,
+        "y": 6
+      },
+      "bodyFootWorldY": 4
+    },
+    "air": {
+      "canvas": [
+        12,
+        6
+      ],
+      "fine": 3,
+      "visible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11.333333333333334,
+        "y1": 6,
+        "w": 11.333333333333334,
+        "h": 6
+      },
+      "nativeDrawAnchor": {
+        "x": 6,
+        "y": 6
+      },
+      "bodyFootWorldY": 4
+    },
+    "land": {
+      "canvas": [
+        11,
+        6
+      ],
+      "fine": 3,
+      "visible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 5.666666666666667,
+        "w": 11,
+        "h": 5.666666666666667
+      },
+      "nativeDrawAnchor": {
+        "x": 6,
+        "y": 6
+      },
+      "bodyFootWorldY": 4
+    }
+  },
+  "na": {
+    "snail": {
+      "spec": {
+        "name": "Болотная улитка-тяжеловоз",
+        "w": 60,
+        "h": 44,
+        "ax": 28,
+        "ay": 36,
+        "sc": 1.2
+      },
+      "visible": {
+        "x0": 8.666666666666666,
+        "y0": 12,
+        "x1": 51.666666666666664,
+        "y1": 36.666666666666664,
+        "w": 43,
+        "h": 24.666666666666668
+      },
+      "nativeBodyAnchor": {
+        "x": 28,
+        "y": 36
+      },
+      "groundWorldY": 6
+    },
+    "newt": {
+      "spec": {
+        "name": "Водяной тритон",
+        "w": 64,
+        "h": 40,
+        "ax": 28,
+        "ay": 32,
+        "sc": 1.2
+      },
+      "visible": {
+        "x0": 11.666666666666666,
+        "y0": 19.666666666666668,
+        "x1": 52,
+        "y1": 36.666666666666664,
+        "w": 40.333333333333336,
+        "h": 17
+      },
+      "nativeBodyAnchor": {
+        "x": 28,
+        "y": 32
+      },
+      "groundWorldY": 6
+    },
+    "moth": {
+      "spec": {
+        "name": "Мотылёк-фонарик",
+        "w": 64,
+        "h": 62,
+        "ax": 30,
+        "ay": 48,
+        "sc": 1.2
+      },
+      "visible": {
+        "x0": 8,
+        "y0": 10.666666666666666,
+        "x1": 45.333333333333336,
+        "y1": 34.666666666666664,
+        "w": 37.333333333333336,
+        "h": 24
+      },
+      "nativeBodyAnchor": {
+        "x": 30,
+        "y": 48
+      },
+      "groundWorldY": 6
+    }
+  },
+  "scope": "Fresh production index before any smallfauna injection; native face=+1 / E convention. Legacy frog art itself is frontal. 1 canvas pixel = 1 world pixel, alpha>=200 measures opaque body, not reserved buffer."
+}

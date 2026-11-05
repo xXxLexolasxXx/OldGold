@@ -1,0 +1,28 @@
+[
+  {
+    "case": "yard-polish missing dependency",
+    "available": false,
+    "ready": false,
+    "errors": [
+      "Missing FantasyPublishedArt"
+    ],
+    "pass": true
+  },
+  {
+    "case": "machinery missing dependency",
+    "available": false,
+    "ready": false,
+    "errors": [
+      "Missing FantasyPublishedYard renderer"
+    ],
+    "pass": true
+  },
+  {
+    "case": "missing accepted head helper is explicit",
+    "ready": false,
+    "errors": [
+      "Missing FantasyPublishedAppearanceArt.removeHat"
+    ],
+    "pass": true
+  }
+]

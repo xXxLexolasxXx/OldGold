@@ -1,0 +1,30 @@
+{
+  "motion": {
+    "walk": 4,
+    "atk": 4,
+    "idle": 4,
+    "hurt": 3,
+    "parry": 4,
+    "roar": 4,
+    "win": 3,
+    "jump": 4,
+    "throwd": 4,
+    "cast": 4,
+    "sleep": 4,
+    "die": 4
+  },
+  "headingTest": [
+    "S",
+    "SE",
+    "E",
+    "NE",
+    "N",
+    "NW",
+    "W",
+    "SW"
+  ],
+  "overlapSorted": true,
+  "simulationUnchanged": true,
+  "manualScriptInjection": false,
+  "errors": []
+}

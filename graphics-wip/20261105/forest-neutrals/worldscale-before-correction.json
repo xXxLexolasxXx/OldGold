@@ -1,0 +1,220 @@
+{
+  "metrics": {
+    "pixie": {
+      "native": {
+        "left": -22.666666666666664,
+        "top": -61.66666666666667,
+        "right": 15.666666666666671,
+        "bottom": -9.666666666666671,
+        "width": 38.333333333333336,
+        "height": 52
+      },
+      "current": {
+        "left": -8.5,
+        "top": -26,
+        "right": 5,
+        "bottom": -4,
+        "width": 13.5,
+        "height": 22
+      },
+      "heightRatio": 0.4230769230769231,
+      "widthRatio": 0.3521739130434782,
+      "fixtureIncluded": false
+    },
+    "fairy": {
+      "native": {
+        "left": -22.666666666666664,
+        "top": -61.66666666666667,
+        "right": 15.666666666666671,
+        "bottom": -9.666666666666671,
+        "width": 38.333333333333336,
+        "height": 52
+      },
+      "current": {
+        "left": -8.5,
+        "top": -26,
+        "right": 5,
+        "bottom": -4,
+        "width": 13.5,
+        "height": 22
+      },
+      "heightRatio": 0.4230769230769231,
+      "widthRatio": 0.3521739130434782,
+      "fixtureIncluded": false
+    },
+    "leshy": {
+      "native": {
+        "left": -14,
+        "top": -66.33333333333333,
+        "right": 20,
+        "bottom": 1.6666666666666714,
+        "width": 34,
+        "height": 68
+      },
+      "current": {
+        "left": -5.5,
+        "top": -28.5,
+        "right": 10,
+        "bottom": 0.5,
+        "width": 15.5,
+        "height": 29
+      },
+      "heightRatio": 0.4264705882352941,
+      "widthRatio": 0.45588235294117646,
+      "fixtureIncluded": false
+    },
+    "leprechaun": {
+      "native": {
+        "left": -5.333333333333336,
+        "top": -31,
+        "right": 6.333333333333336,
+        "bottom": 1.3333333333333286,
+        "width": 11.666666666666666,
+        "height": 32.333333333333336
+      },
+      "current": {
+        "left": -5,
+        "top": -30.5,
+        "right": 5.5,
+        "bottom": 1,
+        "width": 10.5,
+        "height": 31.5
+      },
+      "heightRatio": 0.9742268041237113,
+      "widthRatio": 0.9,
+      "fixtureIncluded": false
+    },
+    "enderman0": {
+      "native": {
+        "left": -12.573333333333332,
+        "top": -48.65333333333333,
+        "right": 6.833333333333332,
+        "bottom": -1.0933333333333353,
+        "width": 19.406666666666666,
+        "height": 47.559999999999995
+      },
+      "current": {
+        "left": -12.709999999999999,
+        "top": -47.559999999999995,
+        "right": 6.97,
+        "bottom": -0.41,
+        "width": 19.68,
+        "height": 47.15
+      },
+      "heightRatio": 0.9913793103448276,
+      "widthRatio": 1.0140845070422535,
+      "fixtureIncluded": false
+    },
+    "enderman1": {
+      "native": {
+        "left": -12.573333333333332,
+        "top": -78.17333333333332,
+        "right": 31.159999999999997,
+        "bottom": -1.0933333333333295,
+        "width": 43.733333333333334,
+        "height": 77.08
+      },
+      "current": {
+        "left": -6.97,
+        "top": -70.52,
+        "right": 26.24,
+        "bottom": -0.41,
+        "width": 33.21,
+        "height": 70.11
+      },
+      "heightRatio": 0.9095744680851064,
+      "widthRatio": 0.759375,
+      "fixtureIncluded": false
+    },
+    "brownie": {
+      "native": {
+        "left": -12,
+        "top": -40,
+        "right": 14,
+        "bottom": 0,
+        "width": 26,
+        "height": 40
+      },
+      "current": {
+        "left": -6.5,
+        "top": -38,
+        "right": 9.5,
+        "bottom": -1,
+        "width": 16,
+        "height": 37
+      },
+      "heightRatio": 0.925,
+      "widthRatio": 0.6153846153846154,
+      "fixtureIncluded": false
+    },
+    "gargoyleA": {
+      "native": {
+        "left": -15,
+        "top": -46,
+        "right": 15,
+        "bottom": -5,
+        "width": 30,
+        "height": 41
+      },
+      "current": {
+        "left": -17,
+        "top": -45,
+        "right": 17,
+        "bottom": -5,
+        "width": 34,
+        "height": 40
+      },
+      "heightRatio": 0.975609756097561,
+      "widthRatio": 1.1333333333333333,
+      "fixtureIncluded": true
+    },
+    "gargoyleB": {
+      "native": {
+        "left": -11,
+        "top": -35,
+        "right": 18,
+        "bottom": -5,
+        "width": 29,
+        "height": 30
+      },
+      "current": {
+        "left": -10,
+        "top": -33,
+        "right": 18,
+        "bottom": -5,
+        "width": 28,
+        "height": 28
+      },
+      "heightRatio": 0.9333333333333333,
+      "widthRatio": 0.9655172413793104,
+      "fixtureIncluded": true
+    },
+    "gargoyleC": {
+      "native": {
+        "left": -18,
+        "top": -66,
+        "right": 18,
+        "bottom": -5,
+        "width": 36,
+        "height": 61
+      },
+      "current": {
+        "left": -19,
+        "top": -66,
+        "right": 19,
+        "bottom": -5,
+        "width": 38,
+        "height": 61
+      },
+      "heightRatio": 1,
+      "widthRatio": 1.0555555555555556,
+      "fixtureIncluded": true
+    }
+  },
+  "ready": true,
+  "assetErrors": [],
+  "phase": "i0 / native static variants; gargoyle Game.time unchanged, ph=0",
+  "directionsUseOneScale": true,
+  "pageErrors": [],
+  "moduleSHA256": "45bb24b3838e41bf273cdb4835bce9dc0d567027c0cec03c14e5b7903ef79489"
+}

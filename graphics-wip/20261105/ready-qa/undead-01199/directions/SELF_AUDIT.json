@@ -1,0 +1,219 @@
+{
+  "auditedAt": "2026-11-05T00:24:42.451549+00:00",
+  "rules": [
+    "D:/для игры/AGENTS.md",
+    "D:/для игры/GRAPHICS_RULES.md"
+  ],
+  "currentOwnedScope": "11 Malgor court models; accepted legacy five-family package is explicitly not a complete directional package",
+  "courtStatus": "Directional/frame/anchor PASS; newer cold native visible scale gate FAIL/PENDING; previous general compliance wording superseded",
+  "hashes": [
+    {
+      "path": "js/fantasy-darkcourt-polish.js",
+      "sha256": "b6d63620aba06e378a2a88e26ef71b7f094edde4e8e67edc3c99defb0083d077",
+      "matches": true
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v4-pixel.png",
+      "sha256": "479a014c3f44c3adfee827215446a4055af6e9f10d6893d527337966d40f6856",
+      "matches": true
+    },
+    {
+      "path": "assets/fantasy/court-arms-v4-pixel.png",
+      "sha256": "00df6b91b004fcbcfea0b048e8d85c3f707f5f81f45068cd4291eaf0cd3477d6",
+      "matches": true
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-S.png",
+      "sha256": "d42a0522a3829cad098a2fa57dbe730dc96a998eaa0deda0f12d707862698cff",
+      "matches": true
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-E.png",
+      "sha256": "dabca1b470be219cd21c99284cdd3bfbe97a42315f02ec1678583074bf3ccd00",
+      "matches": true
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-NE.png",
+      "sha256": "e53423d3f759c36b72578f46f33eed40ed47c54cafdddd3ff7210388f67c0f33",
+      "matches": true
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-N.png",
+      "sha256": "835eeb3c1be1f0508427370a6d615ef74e3334c1cc7fa904bfd8c478310da2fa",
+      "matches": true
+    }
+  ],
+  "production": {
+    "reports": [
+      {
+        "mode": "desktop",
+        "checks": {
+          "version": "court-v5-eight-directions",
+          "models": 11,
+          "directions": [
+            "S",
+            "SE",
+            "E",
+            "NE",
+            "N",
+            "NW",
+            "W",
+            "SW"
+          ],
+          "totalFrames": 5544,
+          "anchorChecks": 5544,
+          "nativeCallbacks": 880,
+          "unchangedNpcObjects": 880,
+          "assetsReady": true,
+          "assetsErrors": [],
+          "cache": {
+            "entries": 207,
+            "rgbaBytes": 33509568,
+            "maxEntries": 1200,
+            "maxRgbaBytes": 33554432,
+            "hits": 768,
+            "misses": 5668
+          },
+          "injectedScripts": 0,
+          "allSixLoaded": true,
+          "description": "Canonical index only; private presentation preview pins for inspection, no new saved NPC properties, QA depth-list entries only."
+        },
+        "errors": [],
+        "failedAssets": [],
+        "serviceProbes": [
+          {
+            "url": "http://127.0.0.1:8897/coop-info",
+            "status": 404
+          }
+        ]
+      },
+      {
+        "mode": "mobile",
+        "checks": {
+          "version": "court-v5-eight-directions",
+          "models": 11,
+          "directions": [
+            "S",
+            "SE",
+            "E",
+            "NE",
+            "N",
+            "NW",
+            "W",
+            "SW"
+          ],
+          "totalFrames": 5544,
+          "anchorChecks": 5544,
+          "nativeCallbacks": 880,
+          "unchangedNpcObjects": 880,
+          "assetsReady": true,
+          "assetsErrors": [],
+          "cache": {
+            "entries": 207,
+            "rgbaBytes": 33509568,
+            "maxEntries": 1200,
+            "maxRgbaBytes": 33554432,
+            "hits": 768,
+            "misses": 5668
+          },
+          "injectedScripts": 0,
+          "allSixLoaded": true,
+          "description": "Canonical index only; private presentation preview pins for inspection, no new saved NPC properties, QA depth-list entries only."
+        },
+        "errors": [],
+        "failedAssets": [],
+        "serviceProbes": [
+          {
+            "url": "http://127.0.0.1:8897/coop-info",
+            "status": 404
+          }
+        ]
+      }
+    ]
+  },
+  "coverage": {
+    "models": 11,
+    "independentDrawings": [
+      "S",
+      "SE",
+      "E",
+      "NE",
+      "N"
+    ],
+    "headings": 8,
+    "nativeFrameKeys": 63,
+    "frameViewCombinations": 5544,
+    "nativeDrawCallbacksPerViewport": 880,
+    "nativeFxTransformChecks": 32
+  },
+  "compliant": [
+    "Full body/material/limb/weapon redesign",
+    "backing x2 / world pixel step 0.5",
+    "separately authored front/front-quarter/profile/rear-quarter/back",
+    "native state and frame selectors retained",
+    "automatic movement/target heading with private WeakMap",
+    "layer order per view; far limb and rear weapon occlusion",
+    "faceless backs and no front mage medallions or golem chest core",
+    "native size/feet/hands/cast and glow anchors",
+    "finite normalized frame/view keys, 1200 entries and 32 MiB RGBA limit",
+    "frontal UI portrait API derives from actual body frame",
+    "same-state reuse, unique view pixels, byte accounting reset",
+    "no actor JSON mutation in 880 production callbacks per viewport"
+  ],
+  "fixedInThisAudit": [
+    "Marked historical package acceptance as insufficient for expanded directional rules",
+    "Removed obsolete animal exclusion as an active instruction in legacy manifests; all animals included and assigned by leading session"
+  ],
+  "previousVisualFixesVerified": [
+    "N rockling/golem faceless rear plates",
+    "N mage back necklaces removed",
+    "N rockling amber arm marks replaced",
+    "explicit front/rear three-quarter labels"
+  ],
+  "remainingLegacyGaps": [
+    {
+      "module": "fantasy-undead-polish.js",
+      "finding": "Only S/E/N native projections; no independently drawn front/rear three-quarter. Existing sprite field behaviour and cache byte accounting require a fresh directional audit.",
+      "status": "Not compliant with expanded directional standard; previous style acceptance only."
+    },
+    {
+      "module": "fantasy-echo-polish.js",
+      "finding": "No five-view/eight-heading directional API or separately drawn rear projections in this accepted legacy adapter. Cache byte cap/readiness contract need new pass.",
+      "status": "Not compliant with expanded directional standard; previous style acceptance only."
+    },
+    {
+      "module": "fantasy-barrow-polish.js",
+      "finding": "Native frame/phase cache, no five-view/eight-heading adapter. Count bound exists; explicit RGBA byte accounting and directional proof missing.",
+      "status": "Not compliant with expanded directional standard; previous style acceptance only."
+    },
+    {
+      "module": "fantasy-mimic-polish.js",
+      "finding": "Native chest state adapter lacks five independent projections and eight-heading selection. Map cache needs explicit count/byte limits and normalized public argument keys.",
+      "status": "Not compliant with expanded directional standard; previous style acceptance only."
+    },
+    {
+      "module": "fantasy-published-owls.js",
+      "finding": "Legacy owl adapter is not the new directional owl. Current owl work belongs to birds owner in fantasy-published-birds.js and must be checked there after integration.",
+      "status": "Superseded ownership: do not overwrite concurrent owl work."
+    }
+  ],
+  "coordination": "Legacy four non-owl source modules remain under earlier leading-session freeze pending ownership coordination; gaps are reported, not represented as fixed. Concurrent fairy/leshy/owl owners are not overwritten.",
+  "mechanics": "This audit changes reports only; no renderer, AI, balance, timing, save, index or deployment mutation.",
+  "animalRule": "All animals included by latest direct user instruction; obsolete exclusion cancelled.",
+  "artifacts": [
+    "court-directions.png",
+    "court-turns.gif",
+    "cycles/manifest.json",
+    "eight-directions-in-game.mp4",
+    "checks.json",
+    "cache-checks.json",
+    "fx-anchors.json",
+    "production-checks.json",
+    "back-surface-fix.json",
+    "mage-back-surface-fix.json"
+  ],
+  "subordinateAgents": [],
+  "coldNativeScaleGate": "PENDING / FAIL: cold original visible profile height differs by 14–31%; see court-native-scale.json",
+  "readyForLive": false,
+  "dayClose": "Stopped after current measurement step by direct user instruction; no art, runtime, engine, index, version or deployment edits in this close-out."
+}

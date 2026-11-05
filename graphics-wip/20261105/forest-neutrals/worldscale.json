@@ -1,0 +1,398 @@
+{
+  "metrics": {
+    "pixie": {
+      "native": {
+        "left": -22.666666666666664,
+        "top": -61.66666666666667,
+        "right": 15.666666666666671,
+        "bottom": -9.666666666666671,
+        "width": 38.333333333333336,
+        "height": 52
+      },
+      "current": {
+        "left": -20,
+        "top": -62,
+        "right": 12,
+        "bottom": -10,
+        "width": 32,
+        "height": 52
+      },
+      "heightRatio": 1,
+      "widthRatio": 0.8347826086956521,
+      "fixtureIncluded": false,
+      "views": {
+        "S": {
+          "left": -20.5,
+          "top": -62,
+          "right": 20.5,
+          "bottom": -10,
+          "width": 41,
+          "height": 52
+        },
+        "SE": {
+          "left": -14.5,
+          "top": -62,
+          "right": 19,
+          "bottom": -10,
+          "width": 33.5,
+          "height": 52
+        },
+        "E": {
+          "left": -20,
+          "top": -62,
+          "right": 12,
+          "bottom": -10,
+          "width": 32,
+          "height": 52
+        },
+        "NE": {
+          "left": -14.5,
+          "top": -62,
+          "right": 19,
+          "bottom": -10,
+          "width": 33.5,
+          "height": 52
+        },
+        "N": {
+          "left": -20.5,
+          "top": -62,
+          "right": 20.5,
+          "bottom": -10,
+          "width": 41,
+          "height": 52
+        }
+      },
+      "nativeHeadY": -44.949999999999996,
+      "currentHeadY": -44.944884848484854,
+      "headDifference": 0.005115151515141747
+    },
+    "fairy": {
+      "native": {
+        "left": -22.666666666666664,
+        "top": -61.66666666666667,
+        "right": 15.666666666666671,
+        "bottom": -9.666666666666671,
+        "width": 38.333333333333336,
+        "height": 52
+      },
+      "current": {
+        "left": -20,
+        "top": -62,
+        "right": 12,
+        "bottom": -10,
+        "width": 32,
+        "height": 52
+      },
+      "heightRatio": 1,
+      "widthRatio": 0.8347826086956521,
+      "fixtureIncluded": false,
+      "views": {
+        "S": {
+          "left": -20.5,
+          "top": -62,
+          "right": 20.5,
+          "bottom": -10,
+          "width": 41,
+          "height": 52
+        },
+        "SE": {
+          "left": -14.5,
+          "top": -62,
+          "right": 19,
+          "bottom": -10,
+          "width": 33.5,
+          "height": 52
+        },
+        "E": {
+          "left": -20,
+          "top": -62,
+          "right": 12,
+          "bottom": -10,
+          "width": 32,
+          "height": 52
+        },
+        "NE": {
+          "left": -14.5,
+          "top": -62,
+          "right": 19,
+          "bottom": -10,
+          "width": 33.5,
+          "height": 52
+        },
+        "N": {
+          "left": -20.5,
+          "top": -62,
+          "right": 20.5,
+          "bottom": -10,
+          "width": 41,
+          "height": 52
+        }
+      },
+      "nativeHeadY": -44.949999999999996,
+      "currentHeadY": -44.944884848484854,
+      "headDifference": 0.005115151515141747
+    },
+    "leshy": {
+      "native": {
+        "left": -14,
+        "top": -66.33333333333333,
+        "right": 20,
+        "bottom": 1.6666666666666714,
+        "width": 34,
+        "height": 68
+      },
+      "current": {
+        "left": -12.5,
+        "top": -66,
+        "right": 19.5,
+        "bottom": 2,
+        "width": 32,
+        "height": 68
+      },
+      "heightRatio": 1,
+      "widthRatio": 0.9411764705882353,
+      "fixtureIncluded": false,
+      "views": {
+        "S": {
+          "left": -12.5,
+          "top": -66.5,
+          "right": 19.5,
+          "bottom": 1.5,
+          "width": 32,
+          "height": 68
+        },
+        "SE": {
+          "left": -12.5,
+          "top": -66.5,
+          "right": 19.5,
+          "bottom": 1.5,
+          "width": 32,
+          "height": 68
+        },
+        "E": {
+          "left": -12.5,
+          "top": -66,
+          "right": 19.5,
+          "bottom": 2,
+          "width": 32,
+          "height": 68
+        },
+        "NE": {
+          "left": -12.5,
+          "top": -66.5,
+          "right": 19.5,
+          "bottom": 1.5,
+          "width": 32,
+          "height": 68
+        },
+        "N": {
+          "left": -12.5,
+          "top": -66.5,
+          "right": 19.5,
+          "bottom": 1.5,
+          "width": 32,
+          "height": 68
+        }
+      },
+      "nativeHeadY": -46,
+      "currentHeadY": -45.9919540229885,
+      "headDifference": 0.00804597701149845
+    },
+    "leprechaun": {
+      "native": {
+        "left": -5.333333333333336,
+        "top": -31,
+        "right": 6.333333333333336,
+        "bottom": 1.3333333333333286,
+        "width": 11.666666666666666,
+        "height": 32.333333333333336
+      },
+      "current": {
+        "left": -5,
+        "top": -30.5,
+        "right": 5.5,
+        "bottom": 1,
+        "width": 10.5,
+        "height": 31.5
+      },
+      "heightRatio": 0.9742268041237113,
+      "widthRatio": 0.9,
+      "fixtureIncluded": false
+    },
+    "enderman0": {
+      "native": {
+        "left": -12.573333333333332,
+        "top": -48.65333333333333,
+        "right": 6.833333333333332,
+        "bottom": -1.0933333333333353,
+        "width": 19.406666666666666,
+        "height": 47.559999999999995
+      },
+      "current": {
+        "left": -12.709999999999999,
+        "top": -48.379999999999995,
+        "right": 6.97,
+        "bottom": -0.82,
+        "width": 19.68,
+        "height": 47.559999999999995
+      },
+      "heightRatio": 1,
+      "widthRatio": 1.0140845070422535,
+      "fixtureIncluded": false,
+      "nativeHeadY": -44.11599999999999,
+      "currentHeadY": -44.14333333333333,
+      "headDifference": -0.027333333333338317
+    },
+    "enderman1": {
+      "native": {
+        "left": -12.573333333333332,
+        "top": -78.17333333333332,
+        "right": 31.159999999999997,
+        "bottom": -1.0933333333333295,
+        "width": 43.733333333333334,
+        "height": 77.08
+      },
+      "current": {
+        "left": -11.479999999999999,
+        "top": -78.31,
+        "right": 32.39,
+        "bottom": -0.82,
+        "width": 43.87,
+        "height": 77.49
+      },
+      "heightRatio": 1.0053191489361701,
+      "widthRatio": 1.0031249999999998,
+      "fixtureIncluded": false,
+      "nativeHeadY": -44.11599999999999,
+      "currentHeadY": -44.14333333333333,
+      "headDifference": -0.027333333333338317
+    },
+    "brownie": {
+      "native": {
+        "left": -12,
+        "top": -40,
+        "right": 14,
+        "bottom": 0,
+        "width": 26,
+        "height": 40
+      },
+      "current": {
+        "left": -7.5,
+        "top": -40.5,
+        "right": 10,
+        "bottom": -0.5,
+        "width": 17.5,
+        "height": 40
+      },
+      "heightRatio": 1,
+      "widthRatio": 0.6730769230769231,
+      "fixtureIncluded": false,
+      "nativeHeadY": -24,
+      "currentHeadY": -24.502702702702706,
+      "headDifference": -0.502702702702706
+    },
+    "gargoyleA": {
+      "native": {
+        "left": -15,
+        "top": -46,
+        "right": 15,
+        "bottom": -5,
+        "width": 30,
+        "height": 41
+      },
+      "current": {
+        "left": -17,
+        "top": -46,
+        "right": 17,
+        "bottom": -5,
+        "width": 34,
+        "height": 41
+      },
+      "heightRatio": 1,
+      "widthRatio": 1.1333333333333333,
+      "fixtureIncluded": true
+    },
+    "gargoyleB": {
+      "native": {
+        "left": -11,
+        "top": -35,
+        "right": 18,
+        "bottom": -5,
+        "width": 29,
+        "height": 30
+      },
+      "current": {
+        "left": -10,
+        "top": -35,
+        "right": 18,
+        "bottom": -5,
+        "width": 28,
+        "height": 30
+      },
+      "heightRatio": 1,
+      "widthRatio": 0.9655172413793104,
+      "fixtureIncluded": true
+    },
+    "gargoyleC": {
+      "native": {
+        "left": -18,
+        "top": -66,
+        "right": 18,
+        "bottom": -5,
+        "width": 36,
+        "height": 61
+      },
+      "current": {
+        "left": -19,
+        "top": -66,
+        "right": 19,
+        "bottom": -5,
+        "width": 38,
+        "height": 61
+      },
+      "heightRatio": 1,
+      "widthRatio": 1.0555555555555556,
+      "fixtureIncluded": true
+    }
+  },
+  "brownieEdges": [
+    {
+      "dir": "S",
+      "edgePixels": 0
+    },
+    {
+      "dir": "SE",
+      "edgePixels": 0
+    },
+    {
+      "dir": "E",
+      "edgePixels": 0
+    },
+    {
+      "dir": "NE",
+      "edgePixels": 0
+    },
+    {
+      "dir": "N",
+      "edgePixels": 0
+    },
+    {
+      "dir": "NW",
+      "edgePixels": 0
+    },
+    {
+      "dir": "W",
+      "edgePixels": 0
+    },
+    {
+      "dir": "SW",
+      "edgePixels": 0
+    }
+  ],
+  "ready": true,
+  "assetErrors": [],
+  "phase": "i0 / native static variants; gargoyle Game.time unchanged, ph=0",
+  "directionsUseOneScale": true,
+  "pageErrors": [],
+  "moduleSHA256": "044c8a832d526028ca469e65cc8d9fbd6d8db852c0c08c353a2911e82ea5877c"
+}

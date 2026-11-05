@@ -1,0 +1,152 @@
+{
+  "status": "Directional/frame/anchor QA passed; native visible scale gate unresolved; NOT ready for live",
+  "baseline": "0.11.99",
+  "target": "0.12 graphics",
+  "scope": "11 Malgor court models only; this supersedes their prior frontal approval",
+  "globalRequirement": "All non-dwarf families require equivalent directional completion; other five accepted families remain frozen for leading-session coordination, not claimed complete by this handoff.",
+  "version": "court-v5-eight-directions",
+  "kinds": [
+    "fThrall",
+    "fKnight",
+    "fMalgor1",
+    "fMalgor3",
+    "fBone",
+    "fRock",
+    "fG_fire",
+    "fG_ice",
+    "fG_bone",
+    "fG_shadow",
+    "fG_golem"
+  ],
+  "independentViews": [
+    "S front",
+    "SE front three-quarter",
+    "E profile",
+    "NE rear three-quarter",
+    "N back"
+  ],
+  "headings": [
+    "S",
+    "SE",
+    "E",
+    "NE",
+    "N",
+    "NW",
+    "W",
+    "SW"
+  ],
+  "mirroredPartners": {
+    "NW": "NE",
+    "W": "E",
+    "SW": "SE"
+  },
+  "nativeFramesPerDirection": 63,
+  "verifiedFrameViewCombinations": 5544,
+  "requiredFiles": [
+    {
+      "path": "js/fantasy-darkcourt-polish.js",
+      "sha256": "b6d63620aba06e378a2a88e26ef71b7f094edde4e8e67edc3c99defb0083d077"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v4-pixel.png",
+      "sha256": "479a014c3f44c3adfee827215446a4055af6e9f10d6893d527337966d40f6856"
+    },
+    {
+      "path": "assets/fantasy/court-arms-v4-pixel.png",
+      "sha256": "00df6b91b004fcbcfea0b048e8d85c3f707f5f81f45068cd4291eaf0cd3477d6"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-S.png",
+      "sha256": "d42a0522a3829cad098a2fa57dbe730dc96a998eaa0deda0f12d707862698cff"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-E.png",
+      "sha256": "dabca1b470be219cd21c99284cdd3bfbe97a42315f02ec1678583074bf3ccd00"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-NE.png",
+      "sha256": "e53423d3f759c36b72578f46f33eed40ed47c54cafdddd3ff7210388f67c0f33"
+    },
+    {
+      "path": "assets/fantasy/court-bodies-v5-N.png",
+      "sha256": "835eeb3c1be1f0508427370a6d615ef74e3334c1cc7fa904bfd8c478310da2fa"
+    }
+  ],
+  "publicArtifacts": [
+    "court-directions.png",
+    "court-turns.gif",
+    "eight-directions-in-game.mp4",
+    "review.html",
+    "cycles/fThrall.gif",
+    "cycles/fKnight.gif",
+    "cycles/fMalgor1.gif",
+    "cycles/fMalgor3.gif",
+    "cycles/fBone.gif",
+    "cycles/fRock.gif",
+    "cycles/fG_fire.gif",
+    "cycles/fG_ice.gif",
+    "cycles/fG_bone.gif",
+    "cycles/fG_shadow.gif",
+    "cycles/fG_golem.gif"
+  ],
+  "proofs": [
+    "checks.json",
+    "cache-checks.json",
+    "fx-anchors.json",
+    "production-checks.json",
+    "world-checks.json",
+    "back-surface-fix.json",
+    "mage-back-surface-fix.json",
+    "cycles/manifest.json"
+  ],
+  "frontalPortraitApi": "await FantasyDarkCourtPolish.ready; FantasyDarkCourtPolish.portrait('fMalgor1', nativeIdlePhase0to11)",
+  "phaseIII": "FantasyDarkCourtPolish.portrait('fMalgor3', nativeIdlePhase0to11)",
+  "cache": {
+    "portraitMatches": true,
+    "invalidInputMissDelta": 0,
+    "sameStateIdentity": true,
+    "sameStateMissDelta": 0,
+    "sameStateHitDelta": 1000,
+    "distinctViewObjects": 4,
+    "distinctViewPixels": 4,
+    "unusedGfMissDelta": 0,
+    "unusedGfHitDelta": 300,
+    "maxEntriesObserved": 1114,
+    "maxRgbaBytesObserved": 33554432,
+    "limits": {
+      "entries": 1200,
+      "rgbaBytes": 33554432
+    },
+    "keySchema": "kind|nativeFrame|canonicalView|booleanMirror; turn is quantized into canonical view/mirror, no raw Game.time or gf",
+    "badKeySchema": false,
+    "clearResetsBytes": true
+  },
+  "nativeFxChecks": 32,
+  "nativeCallbacksPerViewport": 880,
+  "saveState": "880/880 native draw callbacks leave actor JSON unchanged per viewport; turns use private WeakMap only",
+  "pixelGrid": "backing x2, 0.5 world pixel; binary sprite alpha; native size/foot/hand/FX anchors retained",
+  "backFixes": "Only N atlas cells 5,10 then 2,3 composited; other cells verified byte-identical at each stage. N rockling upper-arm material uses lower-stone piece to prevent rear amber eye-like marks.",
+  "worldVideo": "Controlled QA actors in canonical native depth list, movement-derived headings; does not claim naturally occurring combat.",
+  "frozenOtherModules": {
+    "fantasy-undead-polish.js": "f5776044f0358523439a47f4f2843b129ef564c85d9c027afca68df825d8ee86",
+    "fantasy-echo-polish.js": "d9ca844300ecb53794dfa26d0c4ad320b780e230f93f8dddb2c5bc8d83377584",
+    "fantasy-barrow-polish.js": "079c85870fc624517bad8899d6913aa30fdced831278efa244ff561bfc1ae28c",
+    "fantasy-mimic-polish.js": "7aa79af268dc16339892443068225dfd6fbc1c7258ca8a4ebb7a513bfcc87305",
+    "fantasy-published-owls.js": "c88b02bfd1665ce05315e73af76c129d9a04f1c68e65a9769e8e2ffbfb057c2a"
+  },
+  "canonicalIndexEdited": false,
+  "published": false,
+  "staticServiceProbe": "/coop-info 404 is an expected unmocked static-preview backend probe, not a missing graphics asset.",
+  "threeQuarterVisualProof": {
+    "sheet": "court-both-three-quarters.png",
+    "malgorCloseup": "malgor-both-three-quarters.png",
+    "report": "three-quarter-proof.json",
+    "nativeCallbacks": 78,
+    "zoom": 2,
+    "perViewFit": false,
+    "note": "Malgor native chase uses its existing hover/idle selector; retained without new mechanics."
+  },
+  "coldNativeScaleGate": "PENDING / FAIL: cold original visible profile height differs by 14–31%; see court-native-scale.json",
+  "readyForLive": false,
+  "dayClose": "Stopped after current measurement step by direct user instruction; no art, runtime, engine, index, version or deployment edits in this close-out."
+}

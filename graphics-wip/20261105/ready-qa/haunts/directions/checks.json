@@ -1,0 +1,3530 @@
+[
+  {
+    "stats": [
+      {
+        "kind": "noon",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      }
+    ],
+    "bad": [],
+    "edge": [],
+    "families": [
+      {
+        "kind": "noon",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "ban",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "les",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "kik",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "vod",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "rus",
+        "uniqueViews": 8
+      }
+    ],
+    "identity": true,
+    "invalidMissDelta": 0,
+    "nativeComposition": [
+      {
+        "kind": "noon",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "matches": true
+      }
+    ],
+    "assets": [
+      "assets/fantasy/haunt-bodies-v3.png",
+      "assets/fantasy/haunt-busts-v2.png",
+      "assets/fantasy/haunt-bodies-v4-SE.png",
+      "assets/fantasy/haunt-bodies-v4-E.png",
+      "assets/fantasy/haunt-bodies-v4-NE.png",
+      "assets/fantasy/haunt-bodies-v4-N.png"
+    ],
+    "assetErrors": [],
+    "cache": {
+      "entries": 411,
+      "rgbaBytes": 25133464,
+      "maxEntries": 512,
+      "maxRgbaBytes": 25165824,
+      "hits": 1818,
+      "misses": 4949,
+      "displayEntries": 256,
+      "displayRgbaBytes": 5475328,
+      "displayMaxEntries": 256,
+      "displayMaxRgbaBytes": 8388608
+    },
+    "cacheBounded": true,
+    "saveUnchanged": true,
+    "simulationUnchanged": true,
+    "wolfUnchanged": true,
+    "wispsUnchanged": true,
+    "viewport": [
+      1440,
+      1000
+    ],
+    "errors": [],
+    "missing": []
+  },
+  {
+    "stats": [
+      {
+        "kind": "noon",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 156,
+        "unique": 108
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "walk",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 108
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "action": "idle",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "action": "action",
+        "samples": 12,
+        "unique": 12
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "action": "transitions",
+        "samples": 108,
+        "unique": 84
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "action": "death",
+        "samples": 12,
+        "unique": 12
+      }
+    ],
+    "bad": [],
+    "edge": [],
+    "families": [
+      {
+        "kind": "noon",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "ban",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "les",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "kik",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "vod",
+        "uniqueViews": 8
+      },
+      {
+        "kind": "rus",
+        "uniqueViews": 8
+      }
+    ],
+    "identity": true,
+    "invalidMissDelta": 0,
+    "nativeComposition": [
+      {
+        "kind": "noon",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "noon",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "ban",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "les",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "kik",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "vod",
+        "d": "SW",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "S",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "SE",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "E",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "NE",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "N",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "NW",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "W",
+        "matches": true
+      },
+      {
+        "kind": "rus",
+        "d": "SW",
+        "matches": true
+      }
+    ],
+    "assets": [
+      "assets/fantasy/haunt-bodies-v3.png",
+      "assets/fantasy/haunt-busts-v2.png",
+      "assets/fantasy/haunt-bodies-v4-SE.png",
+      "assets/fantasy/haunt-bodies-v4-E.png",
+      "assets/fantasy/haunt-bodies-v4-NE.png",
+      "assets/fantasy/haunt-bodies-v4-N.png"
+    ],
+    "assetErrors": [],
+    "cache": {
+      "entries": 411,
+      "rgbaBytes": 25133464,
+      "maxEntries": 512,
+      "maxRgbaBytes": 25165824,
+      "hits": 1818,
+      "misses": 4949,
+      "displayEntries": 256,
+      "displayRgbaBytes": 5475328,
+      "displayMaxEntries": 256,
+      "displayMaxRgbaBytes": 8388608
+    },
+    "cacheBounded": true,
+    "saveUnchanged": true,
+    "simulationUnchanged": true,
+    "wolfUnchanged": true,
+    "wispsUnchanged": true,
+    "viewport": [
+      390,
+      844
+    ],
+    "errors": [],
+    "missing": []
+  }
+]

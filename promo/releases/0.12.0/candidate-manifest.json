@@ -1,0 +1,64 @@
+{
+  "status": "FINAL_CANDIDATE_NOT_PUBLISHED",
+  "createdUTC": "2026-11-04T23:15:20.806370+00:00",
+  "method": "Current game renderer via own ephemeral qa-static-server; serviceWorkers blocked. Native/current alpha boxes fitted individually for presentation. New buildings on cover use actual loaded production images, characters use current personSprite incl appearance.",
+  "sourceSHA256": {
+    "art": "1f119778970a9b8a1c6ad3a9dafdf8868b8a7837f1ead9ee14ba4881b362ccc4",
+    "appearance": "eab531706913731c433d1454afd770f410dc43bf4435033694ba1b12e6f2436a",
+    "editor": "4e6adcc6390d84b1a273ad846546b27408df0b6e0c6b35de75ba8fca1106198a",
+    "yard-polish": "b703a5cc82d9b3323fda8d3ebdc93fb9690eafc379d3fb2eea2cc6cecb77c5db",
+    "portraits": "02eac3155907a0db56be6d83f471d2eabfb5c28eccb437399edfaa7d47a4092d"
+  },
+  "files": [
+    {
+      "path": "promo/releases/0.12.0/post-final-candidate.md",
+      "bytes": 3321,
+      "sha256": "359bcc7a8414dbba68a028417e6a452ffb8ec09891ebd32a1354bace0805461e"
+    },
+    {
+      "path": "promo/releases/0.12.0/cover-final-candidate.png",
+      "bytes": 541873,
+      "sha256": "f6cbd9fff78b97768f61be26ce458bade06306dfe0fab72287a3113eeec8984f"
+    },
+    {
+      "path": "promo/releases/0.12.0/remaining-gate.md",
+      "bytes": 2892,
+      "sha256": "307d6e64424b6d2a0af111bc7311cb5f23b94fc66b992a599ae1708d254c7730"
+    },
+    {
+      "path": "promo/prompt_0.12.1.md",
+      "bytes": 7721,
+      "sha256": "c4c2f67ae3f480767f81646faa6fd41b404b368c559acb2a536b1f2cda0b2a69"
+    },
+    {
+      "path": "promo/releases/0.12.0/attachments/buildings-before-after-1.png",
+      "bytes": 1531979,
+      "sha256": "ac07fa01741991714961b26169bb04aa5dcc704aea103252824e0a28a1e8842f"
+    },
+    {
+      "path": "promo/releases/0.12.0/attachments/buildings-before-after-2.png",
+      "bytes": 1303356,
+      "sha256": "e7cb49d69c095d69a9e78f2ec555182ea92d27b9642818a0871300c01e5f1780"
+    },
+    {
+      "path": "promo/releases/0.12.0/attachments/buildings-before-after-3.png",
+      "bytes": 1219287,
+      "sha256": "8d920548adbecb794d1916250ed1e3b0ce3c33a193d15921aa0ae52dea27dc8d"
+    },
+    {
+      "path": "promo/releases/0.12.0/attachments/dwarves-before-after.png",
+      "bytes": 128497,
+      "sha256": "6761b3acebaa2fa89ae3fb3240ed1312d09e7c6f4f23bbe23ef16e0074296654"
+    },
+    {
+      "path": "promo/releases/0.12.0/attachments/neutrals-before-after.png",
+      "bytes": 183429,
+      "sha256": "135c81d7bd0d2ca1a0653ec461996742a8c8b30112795f15a3061e95fd23956c"
+    }
+  ],
+  "remainingGate": "remaining-gate.md",
+  "gameVersionUnchanged": true,
+  "headCleanupFrozenSHA256": "eab531706913731c433d1454afd770f410dc43bf4435033694ba1b12e6f2436a",
+  "visualReview": "Cover and enlarged dwarf sheet inspected after final residue cleanup; no remaining detached head specks seen.",
+  "pending": "Court v5 directional QA, release version/deploy/public verification are owned by lead. Cover contains no court actors."
+}

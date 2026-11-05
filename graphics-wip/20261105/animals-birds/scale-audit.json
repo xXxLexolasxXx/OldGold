@@ -1,0 +1,348 @@
+{
+  "results": [
+    {
+      "id": "owl-perch",
+      "old": {
+        "box": [
+          16,
+          20,
+          8,
+          19
+        ],
+        "bbox": [
+          2.5,
+          0,
+          11,
+          20
+        ],
+        "relative": [
+          -5.5,
+          -19,
+          5.5,
+          1
+        ]
+      },
+      "new": {
+        "bbox": [
+          2,
+          0,
+          11,
+          20
+        ],
+        "support": [
+          8.15,
+          20
+        ]
+      },
+      "delta": {
+        "width": 0,
+        "height": 0,
+        "headY": 0,
+        "supportY": 0
+      },
+      "referenceWithinHalfPixel": true
+    },
+    {
+      "id": "owl-flight",
+      "old": {
+        "box": [
+          34,
+          20,
+          17,
+          11
+        ],
+        "bbox": [
+          0.5,
+          4.5,
+          33,
+          12
+        ],
+        "relative": [
+          -16.5,
+          -6.5,
+          16.5,
+          5.5
+        ]
+      },
+      "new": {
+        "bbox": [
+          3.5,
+          1,
+          20.5,
+          13.5
+        ],
+        "support": [
+          16,
+          14.5
+        ]
+      },
+      "delta": {
+        "width": -12.5,
+        "height": 1.5,
+        "headY": -3.5,
+        "supportY": -2
+      },
+      "referenceWithinHalfPixel": false
+    },
+    {
+      "id": "chicken",
+      "old": {
+        "box": [
+          16,
+          15,
+          8,
+          13
+        ],
+        "bbox": [
+          1,
+          0.5,
+          12.5,
+          13
+        ],
+        "relative": [
+          -7,
+          -12.5,
+          5.5,
+          0.5
+        ]
+      },
+      "new": {
+        "bbox": [
+          2,
+          0.5,
+          12.5,
+          13
+        ],
+        "support": [
+          8.25,
+          13.5
+        ]
+      },
+      "delta": {
+        "width": 0,
+        "height": 0,
+        "headY": 0,
+        "supportY": 0
+      },
+      "referenceWithinHalfPixel": true
+    },
+    {
+      "id": "goose",
+      "old": {
+        "box": [
+          26,
+          24,
+          12,
+          21
+        ],
+        "bbox": [
+          3,
+          0.5,
+          20,
+          21
+        ],
+        "relative": [
+          -9,
+          -20.5,
+          11,
+          0.5
+        ]
+      },
+      "new": {
+        "bbox": [
+          4.5,
+          0.5,
+          19.5,
+          21
+        ],
+        "support": [
+          15,
+          21.5
+        ]
+      },
+      "delta": {
+        "width": -0.5,
+        "height": 0,
+        "headY": 0,
+        "supportY": 0
+      },
+      "referenceWithinHalfPixel": true
+    },
+    {
+      "id": "duck",
+      "old": {
+        "box": [
+          22,
+          20,
+          11,
+          17
+        ],
+        "bbox": [
+          3,
+          4.5,
+          17,
+          13
+        ],
+        "relative": [
+          -8,
+          -12.5,
+          9,
+          0.5
+        ]
+      },
+      "new": {
+        "bbox": [
+          0,
+          4.5,
+          17,
+          13
+        ],
+        "support": [
+          8.958333333333334,
+          17.5
+        ]
+      },
+      "delta": {
+        "width": 0,
+        "height": 0,
+        "headY": 0,
+        "supportY": 0
+      },
+      "referenceWithinHalfPixel": true
+    },
+    {
+      "id": "henbuff",
+      "old": {
+        "box": [
+          22,
+          30,
+          11,
+          28
+        ],
+        "bbox": [
+          4,
+          7,
+          12.5,
+          21
+        ],
+        "relative": [
+          -7,
+          -21,
+          5.5,
+          0
+        ]
+      },
+      "new": {
+        "bbox": [
+          6.5,
+          7,
+          12.5,
+          21
+        ],
+        "support": [
+          11.75,
+          28
+        ]
+      },
+      "delta": {
+        "width": 0,
+        "height": 0,
+        "headY": 0,
+        "supportY": 0
+      },
+      "referenceWithinHalfPixel": true
+    },
+    {
+      "id": "woodpecker",
+      "old": {
+        "box": [
+          6,
+          11,
+          3,
+          10
+        ],
+        "bbox": [
+          0.5,
+          0,
+          5.5,
+          11
+        ],
+        "relative": [
+          -2.5,
+          -10,
+          3,
+          1
+        ]
+      },
+      "new": {
+        "bbox": [
+          1,
+          0,
+          5,
+          10.5
+        ],
+        "support": [
+          2.5,
+          10.5
+        ]
+      },
+      "delta": {
+        "width": -0.5,
+        "height": -0.5,
+        "headY": 0,
+        "supportY": -0.5
+      },
+      "referenceWithinHalfPixel": true
+    },
+    {
+      "id": "goldGoose",
+      "old": {
+        "box": [
+          20,
+          18,
+          10,
+          18
+        ],
+        "bbox": [
+          0,
+          0,
+          19,
+          17
+        ],
+        "relative": [
+          -10,
+          -18,
+          9,
+          -1
+        ]
+      },
+      "new": {
+        "bbox": [
+          1.5,
+          0,
+          18.5,
+          17
+        ],
+        "support": [
+          7.5,
+          17
+        ]
+      },
+      "delta": {
+        "width": -0.5,
+        "height": 0,
+        "headY": 0,
+        "supportY": 0
+      },
+      "referenceWithinHalfPixel": true
+    }
+  ],
+  "cache": {
+    "entries": 40,
+    "bytes": 271200,
+    "maxEntries": 1800,
+    "maxBytes": 25165824
+  },
+  "pageErrors": [],
+  "productionIntegrated": false
+}

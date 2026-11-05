@@ -1,0 +1,74 @@
+{
+  "status": "candidate-not-release-pass",
+  "loadAfter": [
+    "js/world/fairy1.js",
+    "js/world/dragonpet.js",
+    "js/world/pxbeasts.js"
+  ],
+  "files": [
+    {
+      "path": "js/fantasy-published-magicbeasts.js",
+      "bytes": 11114,
+      "sha256": "b8aca99fcb4bb64e6eacf1008a360475aae0155568d5a7361f2a7b208ba437bb"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/adult.png",
+      "bytes": 2696780,
+      "sha256": "c8e26c4774403e585478c434922b55bcc8c9c83bfea77098792ff31eeaca35f7"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/fire.png",
+      "bytes": 2643331,
+      "sha256": "3923f2af487ffbc3b4e5c0471b2c27eadd14cc00a13d40565d4b1ccd0eb0855a"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/forest.png",
+      "bytes": 2582764,
+      "sha256": "fc6efc0f58c59ad8eef08a26d6f5018f42395d73cc3a25a06a74d5e1233264b9"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/griffin.png",
+      "bytes": 2817704,
+      "sha256": "d8297716de5e9347d965be8da5f7ec75cde42ce962929bdd2e873331e2e9514d"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/ice.png",
+      "bytes": 2530459,
+      "sha256": "5a9b6667fb6bef11ad454e7b230ee8700bfb7d24847d4c02eb2b58553f641ff7"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/salamander.png",
+      "bytes": 1986752,
+      "sha256": "8c9082e132328a16de57b421af6a85d86ad9e908c3e31afadd957db288966398"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/swamp.png",
+      "bytes": 2738604,
+      "sha256": "243a96f30cfddd12de76afe6694cf79d93d9612acb17e613d2beca2010139a89"
+    },
+    {
+      "path": "assets/fantasy/magicbeasts/unicorn.png",
+      "bytes": 2312536,
+      "sha256": "97bfb27a694cff9c189ec5536477721f607dd77f0ddbc7150f8bdf15d4e36da6"
+    }
+  ],
+  "requiredAssets": [
+    "assets/fantasy/magicbeasts/adult.png",
+    "assets/fantasy/magicbeasts/fire.png",
+    "assets/fantasy/magicbeasts/forest.png",
+    "assets/fantasy/magicbeasts/griffin.png",
+    "assets/fantasy/magicbeasts/ice.png",
+    "assets/fantasy/magicbeasts/salamander.png",
+    "assets/fantasy/magicbeasts/swamp.png",
+    "assets/fantasy/magicbeasts/unicorn.png"
+  ],
+  "pending": [
+    "directional breath/muzzle visual anchoring",
+    "pet beam/muzzle visual anchoring",
+    "artist review of 3/4 and held keyframes",
+    "live-map visible size comparisons",
+    "production-index desktop/mobile after integration",
+    "Cold-native visible proportions mismatch confirmed by worldscale-result.json"
+  ],
+  "complianceReport": "compliance-report.txt"
+}

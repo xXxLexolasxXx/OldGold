@@ -1,0 +1,12 @@
+{
+  "productionRoot": "D:/для игры/feod/output/publish/oldgold-pages-20261104",
+  "scope": "presentation only; no controller edits",
+  "families": [
+    {"name":"Единорог","controller":"js/world/fairy1.js:592","draw":"unicornDraw:661","sprite":"sprUnicorn:134","canvas":[48,44],"anchor":[24,44],"scale":1,"states":["graze","flee"],"frames":{"idle":1,"walk":12,"flee":12},"notes":"heal is controller pulse, no native heal pose; disappearance alpha life/3; no damage/death state"},
+    {"name":"Дикий дракон","controller":"js/world/fairy1.js:735","draw":"dragonDraw:842","species":["forest","fire","ice","swamp"],"growthStages":[0,1],"notes":"stage 0 baby, stage 1 adult; species are not growth stages; adult native renderer ignores sp","spriteBaby":"js/world/pxbeasts.js:fzBabyDragonSprite/pxbBaby","spriteAdult":"js/world/pxbeasts.js:fzDragonSprite","babyCanvas":[44,40],"babyAnchor":[21,37],"adultCanvas":[100,60],"adultAnchor":[42,57],"states":["nest","out","land","fire","back","pet","gone"],"frames":{"sleep":12,"fly":12,"flyatk":6,"idle":12},"anchors":{"ground":"x*TILE,y*TILE+4","air":"groundY-z","loot":"x+face*6,groundY-z+2"}},
+    {"name":"Дракончики-питомцы","controller":"js/world/dragonpet.js:dpTick","draw":"dpDraw:446","species":["forest","fire","ice","swamp"],"levels":[1,8],"scale":"0.8+min(8,lv)*0.03","canvas":[44,40],"anchor":[21,37],"states":["home","with","away"],"frames":{"idle":12,"fly":12},"overlays":["sick alpha 0.75","spark","shot 0.35 seconds"],"shotAnchor":"groundX+face*8,groundY-z-12; target x*TILE,y*TILE-10","notes":"No death; leaves temporarily. Native shot overlay independent of body state."},
+    {"name":"Грифон","controller":"js/world/fairy1.js:879","draw":"griffinDraw:956","sprite":"sprGriffin:258","canvas":[62,60],"anchor":[31,60],"scale":0.8,"poses":{"idle":12,"walk":12,"fly":12,"take":12,"atk":12,"die":12},"notes":"Native griParams determines durations and take/perch/reverse; dying fade is native. Treasure draw is separate callback."},
+    {"name":"Саламандра","controller":"js/world/fairy1.js:979","draw":"salamanderDraw:1011","sprite":"sprSalamander:397","canvas":[64,34],"anchor":[32,34],"scale":0.9,"frames":{"idle":1,"working":12},"orientation":"stationary building door: building rot; no locomotion or death controller","notes":"Native additive glow and sparks retained; actual amphibian has four splayed legs, broad head, tail, no wings/horns."}
+  ],
+  "excluded":["GoldGoose","fairy1 fish","spectral wolf","boarGuardian","armad"]
+}

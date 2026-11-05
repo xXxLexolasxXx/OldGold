@@ -1,0 +1,37 @@
+{
+  "checks": [
+    {
+      "kind": "unicorn",
+      "pose": "walk"
+    },
+    {
+      "kind": "forest",
+      "pose": "fly"
+    },
+    {
+      "kind": "fire",
+      "pose": "atk"
+    },
+    {
+      "kind": "ice",
+      "pose": "sleep"
+    },
+    {
+      "kind": "swamp",
+      "pose": "fly"
+    },
+    {
+      "kind": "adult",
+      "pose": "atk"
+    },
+    {
+      "kind": "griffin",
+      "pose": "die"
+    },
+    {
+      "kind": "salamander",
+      "pose": "atk"
+    }
+  ],
+  "errors": []
+}

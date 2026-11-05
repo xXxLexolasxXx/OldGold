@@ -1,0 +1,7 @@
+{
+  "directions": 8,
+  "drawCalls": 192,
+  "entityMutation": false,
+  "errors": [],
+  "nativeAnchorLimitation": "Cargo/tether coordinates are preserved literally; the legacy lateral cart is not moved to new directional anchors."
+}

@@ -1,0 +1,10 @@
+{
+  "status": "Saved for day close; native scale correction pending",
+  "readyForCombinedQA": true,
+  "published": false,
+  "manifest": "DIRECTIONAL_READY.json",
+  "remainingGlobalScope": "Other non-dwarf families coordinated by leading session; not silently changed here.",
+  "coldNativeScaleGate": "PENDING / FAIL: cold original visible profile height differs by 14–31%; see court-native-scale.json",
+  "readyForLive": false,
+  "dayClose": "Stopped after current measurement step by direct user instruction; no art, runtime, engine, index, version or deployment edits in this close-out."
+}

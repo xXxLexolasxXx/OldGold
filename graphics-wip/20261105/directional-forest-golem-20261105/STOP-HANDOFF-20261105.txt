@@ -1,0 +1,9 @@
+РАБОТА ОСТАНОВЛЕНА ПО РАСПОРЯЖЕНИЮ ПОЛЬЗОВАТЕЛЯ
+
+Production forestfolk/golem НЕ заменены. Для сегодняшней публикации остаются прежние canonical версии.
+Новые модели/style приняты как WIP, но prototype-forest-golem.js и его assets НЕ ПОДКЛЮЧАТЬ LIVE.
+
+Последний узкий QA:156 native golem +186 native troll pose traces;1608 directional frames;0 failures/errors; cache<=32MiB/family.
+После последней head/sole калибровки ещё нужны cold-scale и визуальный повтор. Текущие PNG — до этой узкой калибровки, не итоговое доказательство масштаба. Сезонный декор/слои/serialized-state QA не финальны.
+Полный точный список файлов, SHA, поддержанных keys и дальнейших шагов: STOP-HANDOFF-20261105.json.
+Новые виды не начинались. Git add/commit/push не выполнялись.

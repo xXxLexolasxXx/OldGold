@@ -1,0 +1,13 @@
+{
+  "ready": true,
+  "errors": [],
+  "immutable": true,
+  "stats": {
+    "entries": 53,
+    "rgbaBytes": 1790976,
+    "limit": 512,
+    "byteLimit": 25165824
+  },
+  "nativeCallbacks": 1,
+  "pageErrors": []
+}

@@ -1,0 +1,415 @@
+{
+  "module": "js/fantasy-published-waterlife.js",
+  "sha256": "dcd1bfd30b008c863c86ab8ceb7d1873cc650b3d251902096bed2b3b82b7bac3",
+  "requiredAssets": [],
+  "artImplementation": "Independent anatomical mesh assets embedded in the module, scanline rasterized at backing x2. ImageGen reference is optional artistic evidence, not an uncopied runtime sprite dependency.",
+  "optionalReference": "output/fantasy/animals-waterlife/crab-imagegen-reference.png",
+  "nativeSourceSHA256": {
+    "js/world/seaart.js": "7d87b05e87b359b553fec325ec75d2694d7f5b23f5b616e55de9c7e8f90b8b5c",
+    "js/world/seafauna.js": "fc2fa5bdf64cc9410937844e2cb36f18fbc044a5d6616e42cae8f38c519a1bbf",
+    "js/world/seafolk.js": "a6a8d079da653bf4aad5edb771d193450faeabfa42307faebe2f87c28c3b9353",
+    "js/world/beasts.js": "d1e14b50886d70b18c3251d657c2c56961922bf902668cfa263d25566af50361",
+    "js/world/fairy1.js": "9e8350f284ef0b3d9259554a3293c0e7163f70ee745769450ff9fc5e0a712aa3",
+    "js/world/pxbeasts.js": "8647e37ce1180dd3b2df07ad65d33eba2ebd504205311570dc3dad24fdd90f22",
+    "js/pixel.js": "51ab9c38db1d039d50dcbfe8e4468a2293e2e8a161d4ba928948763702005a8a",
+    "js/world/animalart.js": "053e0da31c8b60c41ba5b1e4bc5d842b8ef846b37820410641a0d7d1955418de",
+    "js/world/animalpx.js": "5bee4c010470521208350cbe1e3e29f345a5837915cca57c59d8aca1c30db545"
+  },
+  "integration": "DO NOT CONNECT OR PUBLISH. Last functionally tested revision retained at its requested JS path; worldscale corrections remain pending. Unfinished candidate saved only under output/fantasy/animals-waterlife/worldscale-wip.js.",
+  "pendingQA": [
+    "Finish cold-native visible-scale calibration, unchanged world roots and common physical scale across all 5/8 views",
+    "Validate WIP without clipping and exact native fish jump roots",
+    "Then repeat relevant complete cycles, mobile and frozen-object checks",
+    "Only after lead review connect production index and run live world/FX/combat checks without injection"
+  ],
+  "requiredFiles": [
+    {
+      "path": "feod/output/publish/oldgold-pages-20261104/js/fantasy-published-waterlife.js",
+      "sha256": "dcd1bfd30b008c863c86ab8ceb7d1873cc650b3d251902096bed2b3b82b7bac3"
+    }
+  ],
+  "qa": {
+    "desktop": {
+      "serializedStateUnchanged": true,
+      "checked": 3360,
+      "fishRenders": 1152,
+      "inlandRenders": 96,
+      "contracts": [
+        {
+          "k": "sprat",
+          "a": "swim",
+          "n": 4,
+          "oldN": 4
+        },
+        {
+          "k": "salmon",
+          "a": "swim",
+          "n": 12,
+          "oldN": 8
+        },
+        {
+          "k": "salmon",
+          "a": "jump",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "crab",
+          "a": "idle",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "crab",
+          "a": "walk",
+          "n": 12,
+          "oldN": 8
+        },
+        {
+          "k": "crab",
+          "a": "atk",
+          "n": 12,
+          "oldN": 9
+        },
+        {
+          "k": "crab",
+          "a": "die",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "crab",
+          "a": "hide",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "star",
+          "a": "idle",
+          "n": 6,
+          "oldN": 6
+        },
+        {
+          "k": "urchin",
+          "a": "idle",
+          "n": 6,
+          "oldN": 6
+        },
+        {
+          "k": "jelly",
+          "a": "swim",
+          "n": 12,
+          "oldN": 8
+        },
+        {
+          "k": "jelly",
+          "a": "atk",
+          "n": 12,
+          "oldN": 9
+        },
+        {
+          "k": "jelly",
+          "a": "die",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "turtle",
+          "a": "idle",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "turtle",
+          "a": "swim",
+          "n": 12,
+          "oldN": 8
+        },
+        {
+          "k": "turtle",
+          "a": "walk",
+          "n": 12,
+          "oldN": 8
+        },
+        {
+          "k": "hatch",
+          "a": "walk",
+          "n": 6,
+          "oldN": 6
+        },
+        {
+          "k": "shell",
+          "a": "idle",
+          "n": 2,
+          "oldN": 2
+        },
+        {
+          "k": "dolphin",
+          "a": "swim",
+          "n": 12,
+          "oldN": 8
+        },
+        {
+          "k": "dolphin",
+          "a": "jump",
+          "n": 12,
+          "oldN": 9
+        },
+        {
+          "k": "whale",
+          "a": "swim",
+          "n": 12,
+          "oldN": 8
+        },
+        {
+          "k": "whale",
+          "a": "spout",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "octo",
+          "a": "idle",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "octo",
+          "a": "swim",
+          "n": 12,
+          "oldN": 8
+        },
+        {
+          "k": "octo",
+          "a": "atk",
+          "n": 12,
+          "oldN": 9
+        },
+        {
+          "k": "octo",
+          "a": "die",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "serpent",
+          "a": "swim",
+          "n": 12,
+          "oldN": 8
+        },
+        {
+          "k": "serpent",
+          "a": "atk",
+          "n": 12,
+          "oldN": 9
+        },
+        {
+          "k": "serpent",
+          "a": "die",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "tent",
+          "a": "idle",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "tent",
+          "a": "atk",
+          "n": 12,
+          "oldN": 9
+        },
+        {
+          "k": "tent",
+          "a": "die",
+          "n": 12,
+          "oldN": 9
+        },
+        {
+          "k": "tent",
+          "a": "rise",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "kraeye",
+          "a": "idle",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "mermaid",
+          "a": "sit",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "mermaid",
+          "a": "dive",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "vodyanoy",
+          "a": "idle",
+          "n": 12,
+          "oldN": 6
+        },
+        {
+          "k": "vodyanoy",
+          "a": "dive",
+          "n": 12,
+          "oldN": 6
+        }
+      ],
+      "distinct": {
+        "sprat:swim": 3,
+        "salmon:swim": 7,
+        "salmon:jump": 12,
+        "crab:idle": 7,
+        "crab:walk": 12,
+        "crab:atk": 6,
+        "crab:die": 12,
+        "crab:hide": 12,
+        "star:idle": 3,
+        "urchin:idle": 6,
+        "jelly:swim": 12,
+        "jelly:atk": 11,
+        "jelly:die": 12,
+        "turtle:idle": 5,
+        "turtle:swim": 7,
+        "turtle:walk": 7,
+        "hatch:walk": 3,
+        "shell:idle": 2,
+        "dolphin:swim": 7,
+        "dolphin:jump": 12,
+        "whale:swim": 7,
+        "whale:spout": 12,
+        "octo:idle": 12,
+        "octo:swim": 12,
+        "octo:atk": 11,
+        "octo:die": 12,
+        "serpent:swim": 12,
+        "serpent:atk": 11,
+        "serpent:die": 12,
+        "tent:idle": 12,
+        "tent:atk": 12,
+        "tent:die": 12,
+        "tent:rise": 12,
+        "kraeye:idle": 12,
+        "mermaid:sit": 12,
+        "mermaid:dive": 12,
+        "vodyanoy:idle": 8,
+        "vodyanoy:dive": 11
+      },
+      "stats": {
+        "entries": 768,
+        "bytes": 17611168,
+        "hits": 1865,
+        "misses": 4217,
+        "maxEntries": 768,
+        "maxBytes": 25165824
+      },
+      "readiness": true,
+      "errors": [],
+      "directions": [
+        [
+          "Анфас",
+          2
+        ],
+        [
+          "Передний ¾",
+          1
+        ],
+        [
+          "Профиль",
+          0
+        ],
+        [
+          "Задний ¾",
+          7
+        ],
+        [
+          "Спина",
+          6
+        ]
+      ],
+      "names": {
+        "sprat": "Килька",
+        "salmon": "Лосось",
+        "crab": "Краб",
+        "star": "Морская звезда",
+        "urchin": "Морской ёж",
+        "jelly": "Медуза",
+        "turtle": "Черепаха",
+        "hatch": "Черепашонок",
+        "shell": "Раковина",
+        "dolphin": "Дельфин",
+        "whale": "Кит",
+        "octo": "Осьминог",
+        "serpent": "Морской змей",
+        "tent": "Щупальце кракена",
+        "kraeye": "Голова кракена",
+        "mermaid": "Морская русалка",
+        "vodyanoy": "Озёрный водяной"
+      },
+      "moduleSHA256": "dcd1bfd30b008c863c86ab8ceb7d1873cc650b3d251902096bed2b3b82b7bac3",
+      "pageErrors": [],
+      "mode": "production index + exactly one staged adapter injection (not integrated-index acceptance)"
+    },
+    "mobile": {
+      "checked": 304,
+      "PX_FINE": 1,
+      "stats": {
+        "entries": 304,
+        "bytes": 2209152,
+        "hits": 0,
+        "misses": 304,
+        "maxEntries": 768,
+        "maxBytes": 25165824
+      },
+      "ready": true,
+      "errors": [],
+      "mode": "mobile production index + one staged injection; first frame of each animation/octant; full 3360 normalized frames checked separately on desktop",
+      "pageErrors": []
+    },
+    "preview": {
+      "species": 17,
+      "shots": [
+        "crab",
+        "mermaid",
+        "serpent",
+        "tent",
+        "kraeye"
+      ],
+      "errors": [],
+      "mode": "interactive native-runtime artwork preview; staged adapter, not published-index acceptance"
+    },
+    "kraken": {
+      "callbacks": 192,
+      "frozenKrakenUnchanged": true,
+      "nativeDepthOrderUnchanged": true,
+      "errors": [],
+      "pageErrors": [],
+      "moduleSHA256": "dcd1bfd30b008c863c86ab8ceb7d1873cc650b3d251902096bed2b3b82b7bac3"
+    },
+    "worldscale": "worldscale-qa.json / worldscale-1to1.png; failures, not PASS"
+  },
+  "referenceExamined": "output/fantasy/undead-01199/directions/fMalgor1-directions.png",
+  "status": "PENDING_WORLDSCALE_STOPPED_FOR_DAY",
+  "releaseReady": false,
+  "includeInLive": false,
+  "worldscaleWIP": {
+    "path": "output/fantasy/animals-waterlife/worldscale-wip.js",
+    "sha256": "5394f7ffa5b1f24b29831387d777aa0eecaec311b843d5405022a5a411415fee",
+    "status": "Syntax checked only; not browser tested, no final calibration, do not load in production"
+  },
+  "knownBlockers": [
+    "Cold-native visible E measurements show substantial silhouette size differences despite matching canvas/anchors (worldscale-qa.json).",
+    "No verified same-scale physical calibration for all views; previous preserved-scale captions on PNGs are superseded and must not be treated as acceptance.",
+    "Full integrated production-index and live world/combat/FX QA not performed.",
+    "WIP transparent render margins and padded fish-root blits are not yet browser-tested."
+  ]
+}

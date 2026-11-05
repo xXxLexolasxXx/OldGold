@@ -1,0 +1,1546 @@
+{
+  "scope": "Cold baseline captured in a separate fresh production page without smallfauna; new body at actual 1:1 and common pose scale in five views. Worm non-E views are anatomical preview only.",
+  "results": {
+    "frog": {
+      "cold": {
+        "bodyCoverageAlphaCut": 50,
+        "opaqueWorldBBox": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 5,
+          "y1": 4,
+          "w": 11,
+          "h": 7
+        },
+        "origin": [
+          80,
+          80
+        ],
+        "groundAnchor": [
+          0,
+          4
+        ],
+        "opaqueMaskTop": -3,
+        "lowestCoveragePixelY": 4
+      },
+      "newReferenceAt1to1": {
+        "bbox": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 5,
+          "y1": 4,
+          "w": 11,
+          "h": 7
+        },
+        "opaqueMaskTop": -3,
+        "lowestCoveragePixelY": 4,
+        "groundAnchor": [
+          0,
+          4
+        ]
+      },
+      "views": [
+        {
+          "d": 0,
+          "bbox": {
+            "x0": -6,
+            "y0": -3,
+            "x1": 5,
+            "y1": 4,
+            "w": 11,
+            "h": 7
+          }
+        },
+        {
+          "d": 1,
+          "bbox": {
+            "x0": -5,
+            "y0": -3,
+            "x1": 5,
+            "y1": 4,
+            "w": 10,
+            "h": 7
+          }
+        },
+        {
+          "d": 2,
+          "bbox": {
+            "x0": -6,
+            "y0": -3,
+            "x1": 5,
+            "y1": 4,
+            "w": 11,
+            "h": 7
+          }
+        },
+        {
+          "d": 3,
+          "bbox": {
+            "x0": -5,
+            "y0": -3,
+            "x1": 5,
+            "y1": 4,
+            "w": 10,
+            "h": 7
+          }
+        },
+        {
+          "d": 4,
+          "bbox": {
+            "x0": -5,
+            "y0": -3,
+            "x1": 5,
+            "y1": 4,
+            "w": 10,
+            "h": 7
+          }
+        }
+      ]
+    },
+    "butterfly": {
+      "cold": {
+        "bodyCoverageAlphaCut": 50,
+        "opaqueWorldBBox": {
+          "x0": -4,
+          "y0": -13,
+          "x1": 4,
+          "y1": -10,
+          "w": 8,
+          "h": 3
+        },
+        "origin": [
+          80,
+          80
+        ],
+        "groundAnchor": [
+          0,
+          0
+        ],
+        "opaqueMaskTop": -13,
+        "lowestCoveragePixelY": -10
+      },
+      "newReferenceAt1to1": {
+        "bbox": {
+          "x0": -1,
+          "y0": -14,
+          "x1": 2,
+          "y1": -11,
+          "w": 3,
+          "h": 3
+        },
+        "opaqueMaskTop": -14,
+        "lowestCoveragePixelY": -11,
+        "groundAnchor": [
+          0,
+          0
+        ]
+      },
+      "views": [
+        {
+          "d": 0,
+          "bbox": {
+            "x0": -2,
+            "y0": -14,
+            "x1": 2,
+            "y1": -11,
+            "w": 4,
+            "h": 3
+          }
+        },
+        {
+          "d": 1,
+          "bbox": {
+            "x0": -1,
+            "y0": -14,
+            "x1": 2,
+            "y1": -11,
+            "w": 3,
+            "h": 3
+          }
+        },
+        {
+          "d": 2,
+          "bbox": {
+            "x0": -1,
+            "y0": -14,
+            "x1": 2,
+            "y1": -11,
+            "w": 3,
+            "h": 3
+          }
+        },
+        {
+          "d": 3,
+          "bbox": {
+            "x0": -1,
+            "y0": -14,
+            "x1": 3,
+            "y1": -11,
+            "w": 4,
+            "h": 3
+          }
+        },
+        {
+          "d": 4,
+          "bbox": {
+            "x0": -2,
+            "y0": -14,
+            "x1": 3,
+            "y1": -11,
+            "w": 5,
+            "h": 3
+          }
+        }
+      ]
+    },
+    "worm": {
+      "cold": {
+        "bodyCoverageAlphaCut": 50,
+        "opaqueWorldBBox": {
+          "x0": -3,
+          "y0": -1,
+          "x1": 4,
+          "y1": 3,
+          "w": 7,
+          "h": 4
+        },
+        "origin": [
+          80,
+          80
+        ],
+        "groundAnchor": [
+          0,
+          0
+        ],
+        "opaqueMaskTop": -1,
+        "lowestCoveragePixelY": 3
+      },
+      "newReferenceAt1to1": {
+        "bbox": {
+          "x0": -3,
+          "y0": -2,
+          "x1": 4,
+          "y1": 3,
+          "w": 7,
+          "h": 5
+        },
+        "opaqueMaskTop": -2,
+        "lowestCoveragePixelY": 3,
+        "groundAnchor": [
+          0,
+          0
+        ]
+      },
+      "views": [
+        {
+          "d": 0,
+          "bbox": {
+            "x0": -3,
+            "y0": -2,
+            "x1": 4,
+            "y1": 3,
+            "w": 7,
+            "h": 5
+          }
+        },
+        {
+          "d": 1,
+          "bbox": {
+            "x0": -3,
+            "y0": -2,
+            "x1": 4,
+            "y1": 3,
+            "w": 7,
+            "h": 5
+          }
+        },
+        {
+          "d": 2,
+          "bbox": {
+            "x0": -3,
+            "y0": -2,
+            "x1": 4,
+            "y1": 3,
+            "w": 7,
+            "h": 5
+          }
+        },
+        {
+          "d": 3,
+          "bbox": {
+            "x0": -3,
+            "y0": -1,
+            "x1": 4,
+            "y1": 3,
+            "w": 7,
+            "h": 4
+          }
+        },
+        {
+          "d": 4,
+          "bbox": {
+            "x0": -3,
+            "y0": -1,
+            "x1": 4,
+            "y1": 3,
+            "w": 7,
+            "h": 4
+          }
+        }
+      ]
+    },
+    "snail": {
+      "cold": {
+        "bodyCoverageAlphaCut": 50,
+        "opaqueWorldBBox": {
+          "x0": -19,
+          "y0": -18,
+          "x1": 24,
+          "y1": 10,
+          "w": 43,
+          "h": 28
+        },
+        "origin": [
+          80,
+          80
+        ],
+        "groundAnchor": [
+          0,
+          6
+        ],
+        "opaqueMaskTop": -18,
+        "lowestCoveragePixelY": 10
+      },
+      "newReferenceAt1to1": {
+        "bbox": {
+          "x0": -22,
+          "y0": -18,
+          "x1": 20,
+          "y1": 10,
+          "w": 42,
+          "h": 28
+        },
+        "opaqueMaskTop": -18,
+        "lowestCoveragePixelY": 10,
+        "groundAnchor": [
+          0,
+          6
+        ]
+      },
+      "views": [
+        {
+          "d": 0,
+          "bbox": {
+            "x0": -10,
+            "y0": -18,
+            "x1": 10,
+            "y1": 10,
+            "w": 20,
+            "h": 28
+          }
+        },
+        {
+          "d": 1,
+          "bbox": {
+            "x0": -16,
+            "y0": -18,
+            "x1": 17,
+            "y1": 10,
+            "w": 33,
+            "h": 28
+          }
+        },
+        {
+          "d": 2,
+          "bbox": {
+            "x0": -22,
+            "y0": -18,
+            "x1": 20,
+            "y1": 10,
+            "w": 42,
+            "h": 28
+          }
+        },
+        {
+          "d": 3,
+          "bbox": {
+            "x0": -16,
+            "y0": -17,
+            "x1": 18,
+            "y1": 10,
+            "w": 34,
+            "h": 27
+          }
+        },
+        {
+          "d": 4,
+          "bbox": {
+            "x0": -10,
+            "y0": -17,
+            "x1": 10,
+            "y1": 12,
+            "w": 20,
+            "h": 29
+          }
+        }
+      ]
+    },
+    "newt": {
+      "cold": {
+        "bodyCoverageAlphaCut": 50,
+        "opaqueWorldBBox": {
+          "x0": -16,
+          "y0": -6,
+          "x1": 24,
+          "y1": 11,
+          "w": 40,
+          "h": 17
+        },
+        "origin": [
+          80,
+          80
+        ],
+        "groundAnchor": [
+          0,
+          6
+        ],
+        "opaqueMaskTop": -6,
+        "lowestCoveragePixelY": 11
+      },
+      "newReferenceAt1to1": {
+        "bbox": {
+          "x0": -23,
+          "y0": -4,
+          "x1": 19,
+          "y1": 11,
+          "w": 42,
+          "h": 15
+        },
+        "opaqueMaskTop": -4,
+        "lowestCoveragePixelY": 11,
+        "groundAnchor": [
+          0,
+          6
+        ]
+      },
+      "views": [
+        {
+          "d": 0,
+          "bbox": {
+            "x0": -10,
+            "y0": -9,
+            "x1": 10,
+            "y1": 12,
+            "w": 20,
+            "h": 21
+          }
+        },
+        {
+          "d": 1,
+          "bbox": {
+            "x0": -17,
+            "y0": -6,
+            "x1": 15,
+            "y1": 13,
+            "w": 32,
+            "h": 19
+          }
+        },
+        {
+          "d": 2,
+          "bbox": {
+            "x0": -23,
+            "y0": -4,
+            "x1": 19,
+            "y1": 11,
+            "w": 42,
+            "h": 15
+          }
+        },
+        {
+          "d": 3,
+          "bbox": {
+            "x0": -16,
+            "y0": -7,
+            "x1": 15,
+            "y1": 11,
+            "w": 31,
+            "h": 18
+          }
+        },
+        {
+          "d": 4,
+          "bbox": {
+            "x0": -10,
+            "y0": -9,
+            "x1": 10,
+            "y1": 12,
+            "w": 20,
+            "h": 21
+          }
+        }
+      ]
+    },
+    "moth-large": {
+      "cold": {
+        "bodyCoverageAlphaCut": 50,
+        "opaqueWorldBBox": {
+          "x0": -22,
+          "y0": -31,
+          "x1": 15,
+          "y1": -7,
+          "w": 37,
+          "h": 24
+        },
+        "origin": [
+          80,
+          80
+        ],
+        "groundAnchor": [
+          0,
+          6
+        ],
+        "opaqueMaskTop": -31,
+        "lowestCoveragePixelY": -7
+      },
+      "newReferenceAt1to1": {
+        "bbox": {
+          "x0": -26,
+          "y0": -27,
+          "x1": 9,
+          "y1": -5,
+          "w": 35,
+          "h": 22
+        },
+        "opaqueMaskTop": -27,
+        "lowestCoveragePixelY": -5,
+        "groundAnchor": [
+          0,
+          6
+        ]
+      },
+      "views": [
+        {
+          "d": 0,
+          "bbox": {
+            "x0": -5,
+            "y0": -21,
+            "x1": 6,
+            "y1": -10,
+            "w": 11,
+            "h": 11
+          }
+        },
+        {
+          "d": 1,
+          "bbox": {
+            "x0": -14,
+            "y0": -22,
+            "x1": 9,
+            "y1": -9,
+            "w": 23,
+            "h": 13
+          }
+        },
+        {
+          "d": 2,
+          "bbox": {
+            "x0": -26,
+            "y0": -27,
+            "x1": 9,
+            "y1": -5,
+            "w": 35,
+            "h": 22
+          }
+        },
+        {
+          "d": 3,
+          "bbox": {
+            "x0": -14,
+            "y0": -25,
+            "x1": 9,
+            "y1": -7,
+            "w": 23,
+            "h": 18
+          }
+        },
+        {
+          "d": 4,
+          "bbox": {
+            "x0": -5,
+            "y0": -25,
+            "x1": 6,
+            "y1": -9,
+            "w": 11,
+            "h": 16
+          }
+        }
+      ]
+    },
+    "moth": {
+      "cold": {
+        "bodyCoverageAlphaCut": 50,
+        "opaqueWorldBBox": {
+          "x0": 1,
+          "y0": -13,
+          "x1": 5,
+          "y1": -11,
+          "w": 4,
+          "h": 2
+        },
+        "origin": [
+          80,
+          80
+        ],
+        "groundAnchor": [
+          0,
+          0
+        ],
+        "opaqueMaskTop": -13,
+        "lowestCoveragePixelY": -11
+      },
+      "newReferenceAt1to1": {
+        "bbox": {
+          "x0": 2,
+          "y0": -14,
+          "x1": 4,
+          "y1": -12,
+          "w": 2,
+          "h": 2
+        },
+        "opaqueMaskTop": -14,
+        "lowestCoveragePixelY": -12,
+        "groundAnchor": [
+          0,
+          0
+        ]
+      },
+      "views": [
+        {
+          "d": 0,
+          "bbox": {
+            "x0": 2,
+            "y0": -14,
+            "x1": 4,
+            "y1": -12,
+            "w": 2,
+            "h": 2
+          }
+        },
+        {
+          "d": 1,
+          "bbox": {
+            "x0": 2,
+            "y0": -14,
+            "x1": 4,
+            "y1": -12,
+            "w": 2,
+            "h": 2
+          }
+        },
+        {
+          "d": 2,
+          "bbox": {
+            "x0": 2,
+            "y0": -14,
+            "x1": 4,
+            "y1": -12,
+            "w": 2,
+            "h": 2
+          }
+        },
+        {
+          "d": 3,
+          "bbox": {
+            "x0": 2,
+            "y0": -14,
+            "x1": 4,
+            "y1": -12,
+            "w": 2,
+            "h": 2
+          }
+        },
+        {
+          "d": 4,
+          "bbox": {
+            "x0": 2,
+            "y0": -14,
+            "x1": 4,
+            "y1": -12,
+            "w": 2,
+            "h": 2
+          }
+        }
+      ]
+    },
+    "bee": {
+      "cold": {
+        "bodyCoverageAlphaCut": 50,
+        "opaqueWorldBBox": {
+          "x0": 0,
+          "y0": -5,
+          "x1": 3,
+          "y1": -2,
+          "w": 3,
+          "h": 3
+        },
+        "origin": [
+          80,
+          80
+        ],
+        "groundAnchor": [
+          0,
+          0
+        ],
+        "opaqueMaskTop": -5,
+        "lowestCoveragePixelY": -2
+      },
+      "newReferenceAt1to1": {
+        "bbox": {
+          "x0": 0,
+          "y0": -4,
+          "x1": 3,
+          "y1": -2,
+          "w": 3,
+          "h": 2
+        },
+        "opaqueMaskTop": -4,
+        "lowestCoveragePixelY": -2,
+        "groundAnchor": [
+          0,
+          0
+        ]
+      },
+      "views": [
+        {
+          "d": 0,
+          "bbox": {
+            "x0": 0,
+            "y0": -4,
+            "x1": 3,
+            "y1": -2,
+            "w": 3,
+            "h": 2
+          }
+        },
+        {
+          "d": 1,
+          "bbox": {
+            "x0": 0,
+            "y0": -4,
+            "x1": 3,
+            "y1": -2,
+            "w": 3,
+            "h": 2
+          }
+        },
+        {
+          "d": 2,
+          "bbox": {
+            "x0": 0,
+            "y0": -4,
+            "x1": 3,
+            "y1": -2,
+            "w": 3,
+            "h": 2
+          }
+        },
+        {
+          "d": 3,
+          "bbox": {
+            "x0": 0,
+            "y0": -4,
+            "x1": 3,
+            "y1": -2,
+            "w": 3,
+            "h": 2
+          }
+        },
+        {
+          "d": 4,
+          "bbox": {
+            "x0": 0,
+            "y0": -4,
+            "x1": 3,
+            "y1": -2,
+            "w": 3,
+            "h": 2
+          }
+        }
+      ]
+    },
+    "firefly": {
+      "cold": {
+        "bodyCoverageAlphaCut": 50,
+        "opaqueWorldBBox": {
+          "x0": 4,
+          "y0": -4,
+          "x1": 9,
+          "y1": 1,
+          "w": 5,
+          "h": 5
+        },
+        "origin": [
+          80,
+          80
+        ],
+        "groundAnchor": [
+          0,
+          0
+        ],
+        "opaqueMaskTop": -4,
+        "lowestCoveragePixelY": 1
+      },
+      "newReferenceAt1to1": {
+        "bbox": {
+          "x0": 4,
+          "y0": -4,
+          "x1": 9,
+          "y1": 1,
+          "w": 5,
+          "h": 5
+        },
+        "opaqueMaskTop": -4,
+        "lowestCoveragePixelY": 1,
+        "groundAnchor": [
+          0,
+          0
+        ]
+      },
+      "views": [
+        {
+          "d": 0,
+          "bbox": {
+            "x0": 4,
+            "y0": -4,
+            "x1": 9,
+            "y1": 1,
+            "w": 5,
+            "h": 5
+          }
+        },
+        {
+          "d": 1,
+          "bbox": {
+            "x0": 4,
+            "y0": -4,
+            "x1": 9,
+            "y1": 1,
+            "w": 5,
+            "h": 5
+          }
+        },
+        {
+          "d": 2,
+          "bbox": {
+            "x0": 4,
+            "y0": -4,
+            "x1": 9,
+            "y1": 1,
+            "w": 5,
+            "h": 5
+          }
+        },
+        {
+          "d": 3,
+          "bbox": {
+            "x0": 4,
+            "y0": -4,
+            "x1": 9,
+            "y1": 1,
+            "w": 5,
+            "h": 5
+          }
+        },
+        {
+          "d": 4,
+          "bbox": {
+            "x0": 4,
+            "y0": -4,
+            "x1": 9,
+            "y1": 1,
+            "w": 5,
+            "h": 5
+          }
+        }
+      ]
+    }
+  },
+  "frogPoses": {
+    "sit": [
+      {
+        "d": 0,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 4.5,
+          "y1": 3.5,
+          "w": 10.5,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      },
+      {
+        "d": 1,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -3.5,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 10.5,
+          "h": 7
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      },
+      {
+        "d": 2,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      },
+      {
+        "d": 3,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -3.5,
+          "x1": 4.5,
+          "y1": 3.5,
+          "w": 10,
+          "h": 7
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      },
+      {
+        "d": 4,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -3,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 10.5,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      }
+    ],
+    "blink": [
+      {
+        "d": 0,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 4.5,
+          "y1": 3.5,
+          "w": 10.5,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      },
+      {
+        "d": 1,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -3,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 10.5,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      },
+      {
+        "d": 2,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      },
+      {
+        "d": 3,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -4,
+          "x1": 4.5,
+          "y1": 3.5,
+          "w": 10,
+          "h": 7.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      },
+      {
+        "d": 4,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -3,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 10.5,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.06349206349206349
+        ]
+      }
+    ],
+    "croak": [
+      {
+        "d": 0,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 4.5,
+          "y1": 3.5,
+          "w": 10.5,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.0617283950617284
+        ]
+      },
+      {
+        "d": 1,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.0617283950617284
+        ]
+      },
+      {
+        "d": 2,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.0617283950617284
+        ]
+      },
+      {
+        "d": 3,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3.5,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 7
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.0617283950617284
+        ]
+      },
+      {
+        "d": 4,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -3,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 10.5,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.0728476821192053,
+          0.0617283950617284
+        ]
+      }
+    ],
+    "crouch": [
+      {
+        "d": 0,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -1.5,
+          "x1": 4.5,
+          "y1": 4,
+          "w": 10,
+          "h": 5.5
+        },
+        "sharedNativePoseScale": [
+          0.07142857142857142,
+          0.0641025641025641
+        ]
+      },
+      {
+        "d": 1,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -1.5,
+          "x1": 5,
+          "y1": 4,
+          "w": 10.5,
+          "h": 5.5
+        },
+        "sharedNativePoseScale": [
+          0.07142857142857142,
+          0.0641025641025641
+        ]
+      },
+      {
+        "d": 2,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -1,
+          "x1": 5,
+          "y1": 4,
+          "w": 11,
+          "h": 5
+        },
+        "sharedNativePoseScale": [
+          0.07142857142857142,
+          0.0641025641025641
+        ]
+      },
+      {
+        "d": 3,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -2,
+          "x1": 4.5,
+          "y1": 4,
+          "w": 10,
+          "h": 6
+        },
+        "sharedNativePoseScale": [
+          0.07142857142857142,
+          0.0641025641025641
+        ]
+      },
+      {
+        "d": 4,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -1.5,
+          "x1": 4.5,
+          "y1": 4,
+          "w": 10,
+          "h": 5.5
+        },
+        "sharedNativePoseScale": [
+          0.07142857142857142,
+          0.0641025641025641
+        ]
+      }
+    ],
+    "launch": [
+      {
+        "d": 0,
+        "visibleWorld": {
+          "x0": -5,
+          "y0": -1.5,
+          "x1": 4,
+          "y1": 4,
+          "w": 9,
+          "h": 5.5
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.05
+        ]
+      },
+      {
+        "d": 1,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -1.5,
+          "x1": 5,
+          "y1": 4,
+          "w": 11,
+          "h": 5.5
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.05
+        ]
+      },
+      {
+        "d": 2,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -2,
+          "x1": 5,
+          "y1": 4,
+          "w": 11,
+          "h": 6
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.05
+        ]
+      },
+      {
+        "d": 3,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -2.5,
+          "x1": 4.5,
+          "y1": 4,
+          "w": 10,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.05
+        ]
+      },
+      {
+        "d": 4,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -2,
+          "x1": 4.5,
+          "y1": 4,
+          "w": 10,
+          "h": 6
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.05
+        ]
+      }
+    ],
+    "air": [
+      {
+        "d": 0,
+        "visibleWorld": {
+          "x0": -4.5,
+          "y0": -2,
+          "x1": 3.5,
+          "y1": 4,
+          "w": 8,
+          "h": 6
+        },
+        "sharedNativePoseScale": [
+          0.05964912280701755,
+          0.04838709677419355
+        ]
+      },
+      {
+        "d": 1,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -2,
+          "x1": 5,
+          "y1": 4,
+          "w": 10.5,
+          "h": 6
+        },
+        "sharedNativePoseScale": [
+          0.05964912280701755,
+          0.04838709677419355
+        ]
+      },
+      {
+        "d": 2,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -2,
+          "x1": 5.5,
+          "y1": 4,
+          "w": 11.5,
+          "h": 6
+        },
+        "sharedNativePoseScale": [
+          0.05964912280701755,
+          0.04838709677419355
+        ]
+      },
+      {
+        "d": 3,
+        "visibleWorld": {
+          "x0": -5.5,
+          "y0": -2.5,
+          "x1": 5,
+          "y1": 4,
+          "w": 10.5,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.05964912280701755,
+          0.04838709677419355
+        ]
+      },
+      {
+        "d": 4,
+        "visibleWorld": {
+          "x0": -4,
+          "y0": -2.5,
+          "x1": 4,
+          "y1": 4,
+          "w": 8,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.05964912280701755,
+          0.04838709677419355
+        ]
+      }
+    ],
+    "land": [
+      {
+        "d": 0,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -2,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 5.5
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.06367041198501873
+        ]
+      },
+      {
+        "d": 1,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 6.5
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.06367041198501873
+        ]
+      },
+      {
+        "d": 2,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -2,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 5.5
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.06367041198501873
+        ]
+      },
+      {
+        "d": 3,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -3.5,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 7
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.06367041198501873
+        ]
+      },
+      {
+        "d": 4,
+        "visibleWorld": {
+          "x0": -6,
+          "y0": -2.5,
+          "x1": 5,
+          "y1": 3.5,
+          "w": 11,
+          "h": 6
+        },
+        "sharedNativePoseScale": [
+          0.07051282051282051,
+          0.06367041198501873
+        ]
+      }
+    ]
+  },
+  "calibration": {
+    "sit": {
+      "scaleX": 0.0728476821192053,
+      "scaleY": 0.06349206349206349,
+      "centerX": -0.5,
+      "bottom": -0.33333333333333304,
+      "nativeVisible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 6.666666666666667,
+        "w": 11,
+        "h": 6.666666666666667
+      },
+      "nativeCanvas": [
+        11,
+        7
+      ],
+      "nativeReferenceView": "E / legacy face=+1"
+    },
+    "blink": {
+      "scaleX": 0.0728476821192053,
+      "scaleY": 0.06349206349206349,
+      "centerX": -0.5,
+      "bottom": -0.33333333333333304,
+      "nativeVisible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 6.666666666666667,
+        "w": 11,
+        "h": 6.666666666666667
+      },
+      "nativeCanvas": [
+        11,
+        7
+      ],
+      "nativeReferenceView": "E / legacy face=+1"
+    },
+    "croak": {
+      "scaleX": 0.0728476821192053,
+      "scaleY": 0.0617283950617284,
+      "centerX": -0.5,
+      "bottom": -0.33333333333333304,
+      "nativeVisible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 6.666666666666667,
+        "w": 11,
+        "h": 6.666666666666667
+      },
+      "nativeCanvas": [
+        11,
+        7
+      ],
+      "nativeReferenceView": "E / legacy face=+1"
+    },
+    "crouch": {
+      "scaleX": 0.07142857142857142,
+      "scaleY": 0.0641025641025641,
+      "centerX": -0.5,
+      "bottom": 0,
+      "nativeVisible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 5,
+        "w": 11,
+        "h": 5
+      },
+      "nativeCanvas": [
+        11,
+        5
+      ],
+      "nativeReferenceView": "E / legacy face=+1"
+    },
+    "launch": {
+      "scaleX": 0.07051282051282051,
+      "scaleY": 0.05,
+      "centerX": -0.5,
+      "bottom": 0,
+      "nativeVisible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 6,
+        "w": 11,
+        "h": 6
+      },
+      "nativeCanvas": [
+        11,
+        6
+      ],
+      "nativeReferenceView": "E / legacy face=+1"
+    },
+    "air": {
+      "scaleX": 0.05964912280701755,
+      "scaleY": 0.04838709677419355,
+      "centerX": -0.33333333333333304,
+      "bottom": 0,
+      "nativeVisible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11.333333333333334,
+        "y1": 6,
+        "w": 11.333333333333334,
+        "h": 6
+      },
+      "nativeCanvas": [
+        12,
+        6
+      ],
+      "nativeReferenceView": "E / legacy face=+1"
+    },
+    "land": {
+      "scaleX": 0.07051282051282051,
+      "scaleY": 0.06367041198501873,
+      "centerX": -0.5,
+      "bottom": -0.33333333333333304,
+      "nativeVisible": {
+        "x0": 0,
+        "y0": 0,
+        "x1": 11,
+        "y1": 5.666666666666667,
+        "w": 11,
+        "h": 5.666666666666667
+      },
+      "nativeCanvas": [
+        11,
+        6
+      ],
+      "nativeReferenceView": "E / legacy face=+1"
+    }
+  },
+  "perViewFit": false
+}

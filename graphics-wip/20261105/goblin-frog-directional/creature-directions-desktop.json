@@ -1,0 +1,3224 @@
+{
+  "frames": 8235,
+  "nativeDraws": 13176,
+  "frogHandChecks": 1524,
+  "cycles": {
+    "ftG|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftG|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftG|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftG|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftG|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftG|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftG|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftG|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftG|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftG|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftG|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftG|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftG|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftG|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftG|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftG|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftG|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftG|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftG|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftG|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftG|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftG|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftG|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftG|S|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|SE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|E|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|NE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|N|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftG|S|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|SE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|E|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|NE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftG|N|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftB|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftB|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftB|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftB|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftB|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftB|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftB|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftB|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftB|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftB|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftB|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftB|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftB|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftB|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftB|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftB|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftB|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftB|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftB|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftB|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftB|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftB|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftB|S|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|SE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|E|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|NE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|N|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|S|t": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|SE|t": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|E|t": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|NE|t": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|N|t": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftB|S|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|SE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|E|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|NE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftB|N|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftP|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftP|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftP|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftP|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftP|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftP|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftP|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftP|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftP|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftP|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftP|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftP|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftP|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftP|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftP|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftP|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftP|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftP|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftP|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftP|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftP|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftP|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftP|S|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|SE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|E|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|NE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|N|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|S|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|SE|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|E|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|NE|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|N|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftP|S|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|SE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|E|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|NE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftP|N|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftR|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftR|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftR|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftR|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftR|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftR|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftR|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftR|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftR|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftR|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftR|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftR|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftR|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftR|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftR|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftR|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftR|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftR|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftR|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftR|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftR|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftR|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftR|S|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|SE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|E|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|NE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|N|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|S|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|SE|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|E|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|NE|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|N|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftR|S|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|SE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|E|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|NE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftR|N|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftK|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftK|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftK|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftK|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftK|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftK|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftK|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftK|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftK|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftK|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftK|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftK|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftK|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftK|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftK|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftK|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftK|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftK|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftK|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftK|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftK|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftK|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftK|S|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|SE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|E|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|NE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|N|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|S|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|SE|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|E|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|NE|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|N|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftK|S|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|SE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|E|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|NE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftK|N|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftQ|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftQ|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftQ|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftQ|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftQ|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftQ|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftQ|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftQ|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftQ|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftQ|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftQ|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftQ|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftQ|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftQ|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftQ|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftQ|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftQ|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftQ|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftQ|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftQ|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftQ|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftQ|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftQ|S|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|SE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|E|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|NE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|N|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|S|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|SE|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|E|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|NE|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|N|c": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftQ|S|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|SE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|E|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|NE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftQ|N|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftZ|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftZ|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "ftZ|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZ|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZ|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZ|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZ|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZ|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZ|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZ|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZ|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZ|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZ|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZ|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZ|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZ|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZ|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZ|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZ|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZ|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZ|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZ|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZ|S|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|SE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|E|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|NE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|N|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZ|S|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|SE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|E|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|NE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZ|N|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|S|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|SE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|E|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|NE|i": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZF|N|i": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZF|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZF|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZF|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZF|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZF|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "ftZF|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZF|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZF|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZF|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZF|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "ftZF|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZF|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZF|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZF|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZF|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "ftZF|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZF|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZF|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZF|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZF|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "ftZF|S|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|SE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|E|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|NE|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|N|j": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "ftZF|S|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|SE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|E|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|NE|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "ftZF|N|z": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "troll|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "troll|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "troll|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "troll|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "troll|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "troll|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "troll|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "troll|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "troll|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "troll|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "troll|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "troll|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "troll|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "troll|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "troll|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "troll|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "troll|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "troll|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "troll|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "troll|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "troll|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "troll|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "troll|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "troll|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollS|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollS|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollS|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollS|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollS|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollS|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollS|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollS|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollS|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollS|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollS|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollS|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollS|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollS|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollS|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollS|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollS|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollS|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollS|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollS|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollS|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollS|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollS|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollS|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollS|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollB|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollB|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollB|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollB|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollB|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollB|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollB|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollB|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollB|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollB|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollB|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollB|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollB|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollB|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollB|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollB|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollB|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollB|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollB|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollB|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollB|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollB|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollB|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollB|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollB|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollF|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollF|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollF|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollF|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollF|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollF|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollF|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollF|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollF|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollF|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollF|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollF|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollF|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollF|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollF|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollF|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollF|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollF|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollF|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollF|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollF|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollF|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollF|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollF|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollF|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollSF|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollSF|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollSF|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollSF|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollSF|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollSF|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollSF|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollSF|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollSF|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollSF|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollSF|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollSF|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollSF|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollSF|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollSF|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollSF|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollSF|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollSF|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollSF|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollSF|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollSF|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollSF|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollSF|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollSF|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollSF|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollBF|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollBF|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollBF|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "trollBF|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollBF|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollBF|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollBF|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollBF|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "trollBF|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollBF|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollBF|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollBF|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollBF|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "trollBF|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "trollBF|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "trollBF|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollBF|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollBF|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollBF|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollBF|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "trollBF|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollBF|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollBF|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollBF|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "trollBF|N|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "boar|S|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "boar|SE|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "boar|E|i": {
+      "frames": 12,
+      "distinct": 8
+    },
+    "boar|NE|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|N|i": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|S|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|SE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|E|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|NE|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|N|w": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|S|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "boar|SE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "boar|E|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "boar|NE|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "boar|N|fight": {
+      "frames": 9,
+      "distinct": 9
+    },
+    "boar|S|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|SE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|E|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|NE|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|N|a": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|S|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "boar|SE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "boar|E|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "boar|NE|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "boar|N|h": {
+      "frames": 6,
+      "distinct": 6
+    },
+    "boar|S|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|SE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|E|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|NE|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|N|d": {
+      "frames": 12,
+      "distinct": 12
+    },
+    "boar|S|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|SE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|E|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|NE|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|N|v": {
+      "frames": 12,
+      "distinct": 7
+    },
+    "boar|S|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "boar|SE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "boar|E|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "boar|NE|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "boar|N|p": {
+      "frames": 6,
+      "distinct": 5
+    },
+    "boar|S|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "boar|SE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "boar|E|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "boar|NE|r": {
+      "frames": 12,
+      "distinct": 6
+    },
+    "boar|N|r": {
+      "frames": 12,
+      "distinct": 6
+    }
+  },
+  "details": {
+    "ftG": {
+      "frames": 585,
+      "states": 117,
+      "edge": []
+    },
+    "ftB": {
+      "frames": 645,
+      "states": 129,
+      "edge": []
+    },
+    "ftP": {
+      "frames": 645,
+      "states": 129,
+      "edge": []
+    },
+    "ftR": {
+      "frames": 645,
+      "states": 129,
+      "edge": []
+    },
+    "ftK": {
+      "frames": 645,
+      "states": 129,
+      "edge": []
+    },
+    "ftQ": {
+      "frames": 645,
+      "states": 129,
+      "edge": []
+    },
+    "ftZ": {
+      "frames": 585,
+      "states": 117,
+      "edge": []
+    },
+    "ftZF": {
+      "frames": 585,
+      "states": 117,
+      "edge": []
+    },
+    "troll": {
+      "frames": 465,
+      "states": 93,
+      "edge": []
+    },
+    "trollS": {
+      "frames": 465,
+      "states": 93,
+      "edge": []
+    },
+    "trollB": {
+      "frames": 465,
+      "states": 93,
+      "edge": []
+    },
+    "trollF": {
+      "frames": 465,
+      "states": 93,
+      "edge": []
+    },
+    "trollSF": {
+      "frames": 465,
+      "states": 93,
+      "edge": []
+    },
+    "trollBF": {
+      "frames": 465,
+      "states": 93,
+      "edge": []
+    },
+    "boar": {
+      "frames": 465,
+      "states": 93,
+      "edge": []
+    }
+  },
+  "boarDraws": 16,
+  "cache": {
+    "frogs": {
+      "entries": 301,
+      "rgbaBytes": 33463424,
+      "maxEntries": 1100,
+      "maxRgbaBytes": 33554432,
+      "hits": 7970
+    },
+    "others": {
+      "entries": 354,
+      "rgbaBytes": 33474560,
+      "maxEntries": 1100,
+      "maxRgbaBytes": 33554432,
+      "hits": 3819
+    }
+  },
+  "protectedStateUnchanged": true,
+  "errors": [],
+  "pageErrors": []
+}

@@ -1,0 +1,2014 @@
+{
+  "checks": {
+    "readyErrors": {
+      "available": [
+        true,
+        true
+      ],
+      "errors": [
+        [],
+        []
+      ]
+    },
+    "metadata": [
+      {
+        "type": "inn",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "inn",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "school",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "sawmill",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "quarry",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "woodcutter",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "goldmine",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "ironmine",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "crystalmine",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "metallurgist",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "smeltery",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "weaponsmith",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "armory",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "farm",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "hopfarm",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "brewery",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "mill",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "bakery",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "butchery",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "tannery",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "magicworkshop",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "storehouse",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "infirmary",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 1,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 1,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 1,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 1,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 2,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 2,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 2,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 2,
+        "rot": 3,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 3,
+        "rot": 0,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 3,
+        "rot": 1,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 3,
+        "rot": 2,
+        "refs": true
+      },
+      {
+        "type": "fisherhut",
+        "lv": 3,
+        "rot": 3,
+        "refs": true
+      }
+    ],
+    "reuse": true,
+    "noTimeKey": true,
+    "eviction": {
+      "pixelsExact": true,
+      "metadataExact": true,
+      "byType": [
+        {
+          "type": "inn",
+          "pixelsExact": true,
+          "metadataExact": true
+        },
+        {
+          "type": "bakery",
+          "pixelsExact": true,
+          "metadataExact": true
+        }
+      ],
+      "yard": {
+        "entries": 64,
+        "bytes": 2814336,
+        "maxEntries": 64,
+        "maxBytes": 67108864,
+        "hits": 62,
+        "misses": 54,
+        "stores": 154,
+        "evictions": 90,
+        "skipped": 0
+      },
+      "machinery": {
+        "entries": 64,
+        "bytes": 1501824,
+        "maxEntries": 64,
+        "maxBytes": 67108864,
+        "hits": 3,
+        "misses": 237,
+        "stores": 337,
+        "evictions": 273,
+        "skipped": 0
+      }
+    },
+    "bounded": true,
+    "lru": true,
+    "oversized": true,
+    "testCache": {
+      "entries": 3,
+      "bytes": 2304,
+      "maxEntries": 3,
+      "maxBytes": 4096,
+      "hits": 2,
+      "misses": 1,
+      "stores": 5,
+      "evictions": 1,
+      "skipped": 1
+    },
+    "errorPropagation": true,
+    "errorsRestored": true
+  },
+  "viewport": {
+    "innerWidth": 412,
+    "innerHeight": 915,
+    "canvas": [
+      412,
+      915
+    ]
+  },
+  "versions": {
+    "yard": 2,
+    "machinery": 2,
+    "head": 3
+  },
+  "ready": [
+    true,
+    true
+  ],
+  "pageErrors": [],
+  "jsFailures": [],
+  "servedSHA": {
+    "/js/fantasy-published-gallery.js": "2b112a95241ba1dc0198b4bd1b1e1c0394293013b61221d1d3af8d29a8d75db5",
+    "/js/i18n.js": "676eab2c6c77db0c7e88669c050de43fe39dab5ee59d64f975ec033db354ac5e",
+    "/js/crashlog.js": "3b4329969ac1919841aa843d830eb397be927a50ade1ec73168e3adddbcdab80",
+    "/js/telemetry.js": "25900d0955daf7c49e6b04801a74af8059c4b6be0a3f776dcd352ff6e1f2105c",
+    "/js/world/fire.js": "7aef296d6039d48d2e7f4a2e2d82758d8d3a6bc5dfb9c7052c29965b475660be",
+    "/js/loading.js": "a6d9535606fcf4988b8da8a71352cae9939bbdb94446f363492e4aca2e1369a2",
+    "/js/uilayers.js": "c63b20d8360e3f572ebc049a1706f40a9dbbe54a13580b93f0df4866d490c372",
+    "/js/sound/mute.js": "aba2d590a10e00e41099b468d2c8b5a4d469217f1369c0c1463fc882bae6e177",
+    "/js/difficulty.js": "251887f437da8706cfd136ad45df1aa1ee56d7a9a23b170e67c530f7db4dec39",
+    "/js/config.js": "5d4aa010f51546acac836c62356bbd6d86fd1c4fee8100761f941a902321ea5e",
+    "/js/mapgen.js": "98ee0c11eb421cad4943f30c92090c2198ad9a54fdd3c9e39d47e5e6c2b30022",
+    "/js/world.js": "e053da4e892730e520dbe5a1f7659957de2624ee6930c9da6719c123b83a2f5d",
+    "/js/path.js": "65ee8707d85bfc32be6452c6c64d670786e1efe2020f18863dd1c4b24bc10c5e",
+    "/js/entities.js": "9281bd5631af5b06c2b56057cf2b28b2ad58545d4ab74138e59855310b341807",
+    "/js/jobs.js": "42865ceb8915d559f448e2c58a29c39fc666eaa1a7356ea05f0d30f0d096dfd9",
+    "/js/events.js": "af2d46edcfcf744403c371a6d9e882c9308936d3a9d177920c2950a17b1eb9e4",
+    "/js/levels.js": "7968d682552abb235e1c103c8ccfbcf1b8d6e5a6371da1ff7a0b428be16f6d9e",
+    "/js/life.js": "40cef8132078e676020a9416c14692206f41b2bb6cbad9744ecbdbe8faf17dc7",
+    "/js/world/leisure.js": "924f1ec6ed011b6cd2f04c98dea294a3966ea9e3e11063a4890051479d7ae768",
+    "/js/world/animals.js": "8ef3e1cc5136feafe64bdf11a17b05fb40dbd9403004d7557861367eb85e080a",
+    "/js/world/streets.js": "4c18cb6b91de018a051db0cb85a7a2c953ad4a028496cafd1a42de25016421a0",
+    "/js/world/night.js": "1dc3680d40c58be511de9025d3df57235c0788debba926d3e016f9bfe1bd376c",
+    "/js/world/rocks.js": "5e4a574984788fd469e67d20b3a3323c1a1dfed243aebd363db347365bcf36dd",
+    "/js/world/nechist.js": "7c22612b97f80d97446c6fd0b983c4b502718e5da83407845b249b1933274f2c",
+    "/js/world/ghosts.js": "a60d2b1354e061fd07f0e833b589ed9e0d9c9bf0d9aa20ebcb00f951d6a40186",
+    "/js/world/reaper.js": "b5f15968ba4252af3beec7243789c539f6111634015919538677ce21d7bb86ad",
+    "/js/world/skeletons.js": "bf863360230e64f73d8abddc9855fb59c816f669d8002be871ebba20efde1ee1",
+    "/js/world/mountains.js": "48fe11334371c5777e0da7a83c12f9e61dc34919c784ea7cb7fb7dba10982eb0",
+    "/js/logistics.js": "08356f056a4426d6757f0392c914811323dd4bbb5e3065ebdce186a9d0999ccc",
+    "/js/world/grab.js": "41a26d63e98d28af06df63fd76866c4ee54b68062dc64017a81c71488abd260d",
+    "/js/sprites.js": "a7777195b5f5283798ed1f9f3f45252a30231afb3089984f2ce2bb3fa7d809e8",
+    "/js/buildings.js": "4f77f060db78f15b32ff3e54dcb6c0cad8c30e2832a4533ae9035fd298deb05d",
+    "/js/bmodels.js": "84b418c1b1cb66af5335983b3f461a422c25d5e27cb6e5cce15d78376d3dedc2",
+    "/js/bldpx.js": "504d9e6199060387273bf8dbe2fb75b08e0f76fdb500bfefcdf3ca74c39e8b7c",
+    "/js/world/graveyard.js": "70c0c5e64db177a4bb8871b5ae9c297467a59e9847a0154d2c318ce06b71f2a5",
+    "/js/world/decor.js": "394aad25f7becda45d9024feb37aee676ea8bb2caa0f756ab30789f2482f1469",
+    "/js/world/subbotnik.js": "b4b0ac6a5950f7d43b7d2dc10df3e11f46788cabdf114151ee1d03132714885e",
+    "/js/pixel.js": "51ab9c38db1d039d50dcbfe8e4468a2293e2e8a161d4ba928948763702005a8a",
+    "/js/world/animalart.js": "053e0da31c8b60c41ba5b1e4bc5d842b8ef846b37820410641a0d7d1955418de",
+    "/js/world/animalpx.js": "5bee4c010470521208350cbe1e3e29f345a5837915cca57c59d8aca1c30db545",
+    "/js/pixelart.js": "f6b5211c1dcfd7f2788fa565be237707e92a443ab39a8fc4b103f47a146588ba",
+    "/js/pixelart2.js": "a15b7f8c528d6f1eff0e8b5103398f1833f2a188e26d6a7ddf44e8d79bfa0654",
+    "/js/pixelart3.js": "950d971477d50abfc5e3a500e09cb3c05241094e26cbac7e7ae2865408aa5dcb",
+    "/js/pixelstyle.js": "4f0c5b17f2a06f4af15ebc52f24dee103bbce6c92a529f495c8cdf03e8309929",
+    "/js/smoking.js": "44fa96131838e5a1efc0d228330c4c529b9223897c41816103c512f04fcb38e0",
+    "/js/icons.js": "b1376871ab6ebc1e82a63df5022cd5df3b12bf547ed7409334550d0564afd271",
+    "/js/people.js": "441cfc019478f0073f9e0fef5acbade6c1895b8dad4bcdf1ae7cdeb8bfeaf863",
+    "/js/world/skelart.js": "8c4fce100e070b788973f8523d2a081aaa7beb9308c27f39c8efffa920133c6c",
+    "/js/world/wildart.js": "bb7a7785c2df5e886256948947bad1508ad359e44e929bbaa5cbc66a10a377fa",
+    "/js/world/creatures.js": "15005de5910b9da8baf63fe1265e1e90f255e69f8907754ee77a4e101829c996",
+    "/js/world/groundstyle.js": "7aa33d60a49a5215e477d858f73b7e15fb9a2623f13657446d9c085923b5f49e",
+    "/js/world/groundsets.js": "bee488ff41d016b6f22adfdf1bbec2de6adfd94ff42fe787271e3ace19c6c797",
+    "/js/world/nightground.js": "d22d8c5ba3382007fea8efb2eb81346ff41ee3733f908ec8463c91289805f256",
+    "/js/world/gargoyle.js": "f510b85196b9cada56c87b5292dd64aff5c29825cd914bbc982609f1213086c4",
+    "/js/world/terrain.js": "92c1231f1a59b5276c2a778749f6bde49031223c1220271465c8d5f65036d8da",
+    "/js/render.js": "4ee1b3cb15d57351b7d2bb9f4903e28de93718c1fcb764f4f43b53045168077c",
+    "/js/inside.js": "e4168aaf301192c1768ecb2684df9598e2bcada2412e631ffdcc495529727db0",
+    "/js/save.js": "b2ace8dcd0568eebe1e491dccea148ab90e98e0d779d44d200ff929085173a56",
+    "/js/sound/music.js": "ccf9e03e0b85bbfcf7eea07b1c60a91f6da387a5119dbc47636829581930fe66",
+    "/js/sound/music2.js": "a961818b2cfb7bcc1e03d53f1a93fd2448d365a12832746b70954c1e4e149c0a",
+    "/js/sound/sfx.js": "5516eb17ca68a3134bef1ff7aff256901c2e0dcdc3e9b76efe2fa91b24efeba8",
+    "/js/ui.js": "e26e2fb16b77a8683ebd2c73383a5faf99e897871a43722c83087a73eb7157b5",
+    "/js/world/fauna.js": "0bd8e8286e284e8f5bb3ce49cee6825b8d42d3d40e637c5d0464809e5a47e862",
+    "/js/world/fauna2.js": "d0c271d3b2c42d6366b7463746b2a39e06ba27e1668c0de87a2fb4ddb391bf67",
+    "/js/world/mimics.js": "e7272e68c0c5190dca2788542b845c6ea1ed78c0cbf5841ac4d58458f10fe5c4",
+    "/js/world/strange.js": "a0360b53f313c447c75565b7c9e29a361f92959997a7ef38914782e007ecd5f4",
+    "/js/world/beasts.js": "d1e14b50886d70b18c3251d657c2c56961922bf902668cfa263d25566af50361",
+    "/js/world/fairy1.js": "9e8350f284ef0b3d9259554a3293c0e7163f70ee745769450ff9fc5e0a712aa3",
+    "/js/world/nechistart.js": "afa9f49a398375043a08498f13ffa54cbc2524789f98150a02f7a9a1abc11553",
+    "/js/sound/sfx3.js": "cb671f134248db3e5ed9c956c6cc6023619de4e36aaabb914ba6ca4c94d0d653",
+    "/js/world/fairy2.js": "d4d7913fa61323dc8281648dbecea3ff3017e2cf7dce11933af9c71673920fb2",
+    "/js/world/weather.js": "67b8af8efbfd8c4781b36cb441af9dcde4e306c075e44b436108c62262a884e2",
+    "/js/sound/sfx2.js": "dbadc8a29c120ce384398ad5bc9ed12e27d7fd62dcac53d1e190bf582c744f2e",
+    "/js/sound/ambience.js": "5bbbc76891b5c1732d55bb7a42fbf781dc8751a3d43a1e769e425e2ae8755c53",
+    "/js/stress.js": "8c3effe51a8d1af6169457f315d21a3973f2c6c131d18f9b8858ff5700afc5d5",
+    "/js/sound/seasfx.js": "4c895f23bb93c4bdf736fb533a99b5302073023d3ea8766c987fce352642ab1c",
+    "/js/stats.js": "65a22ba505aad6fd4e6d8040900a93a60b93efaa034a0f59b6c58546a3b45afd",
+    "/js/tutorial.js": "1175f83166ee388a363e3ba0e6a9913a0b9274c2246bfaebe2012bb928cf7ffd",
+    "/js/mobile.js": "650d10104f01b704a2d1a488d213f7b1862176a84318465ca46415ee2f4ab761",
+    "/js/layout.js": "1636c7de1f3ea4eaa38201f69c2b608a7acc2905c922999d3b8e4f338a0c7b69",
+    "/js/landscape.js": "18a908bfb9fa2ded7a380d87bb3b1b917643934e6441781076404f8efbabd80e",
+    "/js/main.js": "fb772f32c8b8da8c67bb10b362093ba1260c804c40a0651e7f38e36849c4c7ce",
+    "/js/herolife.js": "b056428ed1873d24f84ea87884051c4af0460993ad62561af9710e6952605480",
+    "/js/hero.js": "74a9b566e016745474f9d29af8f77d46a1eea4371e8deffbf47f8b833e389689",
+    "/js/herochain.js": "10217e2211e61ed1d5da730d0e4d01938fd2403b89280ab8c6ce8befd701126e",
+    "/js/flask.js": "f2ca5fa44adc7f7e65196bae21d0b389e76cc6dfc5562ec51695e5dba1d81676",
+    "/js/world/neutralart.js": "b96b2c40e5771f0e35ba8ced6366dfd92b6198571161aaeb275e2f8088e818fc",
+    "/js/guilds.js": "897b4a5b7a9ece1e5c0477483d21df3b972a08bf6e5eed04d773c2f40fe62a86",
+    "/js/world/neutrals.js": "e52aa6e410cf8737cf02b316f9d1e37f088d1e29d840fb0c621a3d9c67ec0d6f",
+    "/js/world/leprechaunart.js": "94cd8ca9f51eaeb11cdda167fd69908e9204ef07c4a128c19c40ea04d51b010b",
+    "/js/world/leprechaun.js": "56cf04943682458e0b338dff1394de31158ec8e1419600aa3b9492c99a0a9deb",
+    "/js/herokit.js": "21dd26a80c498f337b9bc56c8daa8550b6c96509bdb7a017583584356806eb27",
+    "/js/combat.js": "2db0fa563f98b2572f5c35c640236449b478779a55709c33047011db7f0bb72e",
+    "/js/world/neutralart2.js": "13c8bb71b87503af03d2f56fffdcc8031ceac093d248f163ac3f8b0460004f47",
+    "/js/heromana.js": "d6fc9e11b84991cc10805146803d5b84b68d72db9d9538ffd9f80053f4aa9034",
+    "/js/world/goblinart.js": "1a5d49d9641621a80d94c629456dc47b98dc2f1eb82ba9ee700135bc20776f2b",
+    "/js/world/neutrals2.js": "423bfa42c88bfed7fdc4271f5b3992a445f741ae041346e1e093566df830b1d6",
+    "/js/world/frogart2.js": "30d423b833697f944a207df10b5f6688671bbfa736394533b22b0e224a072cdd",
+    "/js/world/frogart.js": "1a16582619c3cdf35b7c85f856e66ab716eff3be04830649f3bd67b1d4ae5cf2",
+    "/js/combatfield.js": "835831ba6af48b231e34706440d2cec7389f5999475896a764764c7bb3e73d3b",
+    "/js/herocard.js": "943c9f6ae61bd5fe396ccc87947bf3c2a27702beef3a3e9319e1f0394acc20a1",
+    "/js/guildpath.js": "464c1c03188e58f2e42626495507f2a29398b48ea12391ba3e00d168f86b0f02",
+    "/js/goal.js": "4c232be00ebeae8585aa0fd3d9c572421c88a7d5f282173d75d365346ee3639f",
+    "/js/eras.js": "e14d32e482c8a295f838446109212a788bbbadb2cccaeebef85456b48ad580bc",
+    "/js/mapedit.js": "0f4686768cfae8dbef46733bd44eac78f409e4e72a3cf27d179b29eeaee254ec",
+    "/js/trade.js": "71e9411c8fda89a35cdd1669f69186c8005b45d8e32188d4ccf0e97680e7ec86",
+    "/js/prio.js": "cc092bb5a47cc5266a6586e19cff733b648ee61d09e9a5cc8d9caf7f1f93ef25",
+    "/js/workers.js": "b24007647798e6c585bdb0fd920851a3fbdd60eaeeed8d4bbf9b1b4389ccef9b",
+    "/js/hire.js": "050c3689b29fc8d362f61e3f30766564613b080997628b9d5389c1bbdaab2510",
+    "/js/startmenu.js": "3af006c7219ea0275dbde7ff7371a385d8a73d052f3f6793e76d1314f3537e69",
+    "/js/rush.js": "67b9d47bed2260821e84a07322ad6713ef33388037c56ea8bea85693738769d4",
+    "/js/dilemma.js": "6b01f4e2f0ad7b2b8537d5ccd71bbf0b41ebc5e8298b80216ada50a6f378c3bc",
+    "/js/savefile.js": "6df34239e554a2238a90c053190a747e8db9d0ca7c11b13be4b987518437f7ee",
+    "/js/mapeditui.js": "84c700ee62cbe001fa3e7c4aad578e86d7414189737ffeaf2ffd7bdc67cd8956",
+    "/js/perf.js": "c644497e3c1da72f88f1d9d24befcece3576e5abe8cbe95109d476a5e1826e7e",
+    "/js/profile.js": "4c4c254886a6db7d2e939c35bea9e5676788022d8f397bf7141d102629118458",
+    "/js/world/golem.js": "159a0539538b69fdf1b4751670b6ed92b1bfe01267258ff47b35105f2112bd14",
+    "/js/legacy.js": "8e785d34e52c63bd68b990bf9bc4ca7d8c4ef53bda84dde2c1bd0179230c6091",
+    "/js/world/festival.js": "bfa69b04236ef3668c0cb6d114dda7290a77d5d6050bba99abd4b93204f641b5",
+    "/js/world/pets.js": "70b0d99452ab8d117a1e2e7ee026418774af1d774a0ce73c12fcf0a4ac16c752",
+    "/js/world/snow.js": "d877996dbc78c188a22cd88cba63938232e66e2f64a3c1cdcc294978412e6042",
+    "/js/world/season.js": "eaae10ccfd8e6cf2a8fc457884657c633605df799a4dcbc0604929557807dad1",
+    "/js/world/frostart.js": "80ca987a22e3f62f7a2fab6d7e03e1520550dfabb7e92a32462d21f0990db162",
+    "/js/world/winterlife.js": "38ce41ce3de1c9c7131c2d55d83a6ba8f2e1b129f4599ed9fa7084a979554ce3",
+    "/js/world/ocean.js": "8950d1b9871136e32d9d1b917d5fabdf53f185d57bbbaa871b0d5e7f6370e0a7",
+    "/js/world/seaart.js": "7d87b05e87b359b553fec325ec75d2694d7f5b23f5b616e55de9c7e8f90b8b5c",
+    "/js/world/seafauna.js": "fc2fa5bdf64cc9410937844e2cb36f18fbc044a5d6616e42cae8f38c519a1bbf",
+    "/js/world/seawork.js": "ca5f91505b68d5db2a7edf34ff55a3b7710a951053db995fb1f8ab90c52149b4",
+    "/js/world/seafolk.js": "a6a8d079da653bf4aad5edb771d193450faeabfa42307faebe2f87c28c3b9353",
+    "/js/world/wildlife.js": "6d3f12a067e9a443b50e4a2d3c0909fa2a45b06affc6f3f04e494161651ffea9",
+    "/js/world/brawl.js": "838225aaeba712080b9bb3a1f3c7000a09db14b41f0ec5bd01e06d1fe5436b33",
+    "/js/world/games.js": "4263f6422cdfcb8705b51d02bfd09d407dcd162f5be478e8a695e5554c1d0c34",
+    "/js/world/memes.js": "9ad84b90eb6fe19d00491c3e1cf7496b1184314cebf042cf964ec7752672abb4",
+    "/js/mood.js": "95edf46c386cc3e7217526d06404ee7c40c1fd8cd37b7c5d51d8f8f9475cc7a0",
+    "/js/laws.js": "9be0614b334d8daf2f321518998bf118bd4d214d77f8c8173b515958d9896e0b",
+    "/js/council.js": "29f41ea27d708effb67400e9b7595ade9bcf9539dfb443ed869adaf34e28bcb0",
+    "/js/sickness.js": "15e49f3878ab7eb7e758c2e04a77c44699e3ae8cb2081f907e18ece04753ae31",
+    "/js/world/dragonpet.js": "cf25256f66d5f7ec299f2dc35e280e8014b2f2bc1de49103a36b29bb549fff9c",
+    "/js/world/frogs.js": "be08ee1d49cda46dfe6b0b20220cf6a7212b9e49aa27de0a7759529d013ef3b1",
+    "/js/research.js": "a5e5a3a579f9f022a6c236557dab7d50ecd65bdb645dd53d507c9cdcc98e1add",
+    "/js/family.js": "d60f6abc0fadf836f9b36d34576666c2b41b5c98d187cf26ba1cb54b2cf0f70a",
+    "/js/villdecor.js": "67b42d67f2b0040ad2db16f7e8182483bc0597212db6a4c07e8317e72e73ba7c",
+    "/js/world/kidsplay.js": "2fb54eded95c50a09b2f88002373fee3333ed067b585d6e817c63233786efdbe",
+    "/js/district.js": "e9eccff108c328fbb2297c868a18b53fa9d7e05ba339de0449c62bf2d63a05f9",
+    "/js/folk.js": "fe0db036de71532cb10027cc7766537dbdfb4759bbcc842ae4f25561dd7b6d68",
+    "/js/world/frogwild.js": "6ea6243a9ffb4808e554ba312c882c5300cec1bc1e18f9a8207003eb231cb70c",
+    "/js/world/zemelka.js": "33317bea4b19430c98fffe85f3f3ebf89fa3e044c4946ead8e369229ac1a7d29",
+    "/js/world/kurganart.js": "4614f931fca595a7af98e16ea1ce5737e6c1a1e011e0ee89ffe38fa672f80e64",
+    "/js/world/raid.js": "abec51d3b43319724e5ceea19572926607de5eeb715a0a5936b15bba340204f2",
+    "/js/world/fair.js": "64463ef30eabb22453283706165927047f2f4cea286f69d0fdf66dfb32a51333",
+    "/js/world/spire.js": "a7edc6d1d64127770c186c1e9f6def7d464175105c1239f0579906a72e244677",
+    "/js/world/enemy.js": "5e7d76be1137d1fbe2414be15053b4d47b1c0c11dd98f7e1daac55369c1ee9ca",
+    "/js/world/golemart.js": "c4b99dc865a677b9b2b99a6534fc502fb8e6ac8fe1f4a02d8340d816e229041a",
+    "/js/world/golemlife.js": "11743000e099f0b343cfbbaaaa805acbfeb4bb516363b731e0d400479750b04d",
+    "/js/world/guards.js": "f415848c14564ad289c9fe8606d25e06323f833414dc3ca815515b0e3ffbb19d",
+    "/js/world/ascent.js": "afdde9a79fda7db1f3cc539432252cfd572c60cb5ea4c185ca3eae1bdbe82e74",
+    "/js/world/spirelive.js": "66d102fdd86ae0536af63e29c3db4f6b5f29c59ae39122009ea871b9889aee84",
+    "/js/world/traitor.js": "d63376fd8a1c2bbc0cc6e8362db6fd04bbd713c257186c3f3e198033e5fe677e",
+    "/js/world/travelers.js": "34a9c1b91aca67fb40f97e8e4b9b0817cf7cae63681adf23afb915596b596610",
+    "/js/world/wildgnomes.js": "da42f1359c593bbc09c740f2f315286ccc31e99b03ada7e5b9e596e50f1b3d0b",
+    "/js/world/echoart.js": "77c725e31610475adc5506ff5514eaae6713eab8d70f7992fc0ff96d709e83ad",
+    "/js/defense.js": "3d0938060c7c592c6d314c22f8845d9a4f1597a8da537884632d29bbc162cf99",
+    "/js/defensewar.js": "b5b842a674a555ff9907f074c0931223efe378536442fa95aebe937890ebc836",
+    "/js/defenseart.js": "4c5c44ff03bfd9527ccab5bae3d19a98793d324ad0343d41ff9a248864e86705",
+    "/js/defenseui.js": "60bcea8f4c3f0b57889ba1ec3188fa3b8282245728493ded71cd2b95e8aa0d72",
+    "/js/run/runsfx.js": "5c6824e1b0f68627b1b2b0c58ffb18a727e0ff3fc3b22d13ad216783c001701d",
+    "/js/run/runsim.js": "adaab939313c2b9c41560027f783f48fa7bc269c6d5e3002ebeeca9b76d0ccb1",
+    "/js/run/tavern.js": "d6936514262dcf80e3c90e44f81b73cd71e73db3b44fc76c44a3f8a8dfb0e4ef",
+    "/js/run/dungeon.js": "6f0ea6cbbd7497f30d14367b95659f84d4dfa98a134421ee4e9b57e442562215",
+    "/js/run/runboard.js": "1942b4cde15479ff925fbc3a922f18a3bf678c490a83afc17c36ef0da0b1f8fd",
+    "/js/run/runnet.js": "9633f347ea1eb7261eb6f99211fc656116619a473dcca198ed3a34b5e194b3af",
+    "/js/world/herohall.js": "83801b7a4e7b4a648f58dd623851b05ef86b41b9b175e983e4c8de77e48aac2b",
+    "/js/heroapp.js": "3eef6aca1320d319bebb9e077eaaa029b238350a713d0ca2af36df5c30b0d0d2",
+    "/js/run/skins.js": "073f10cd9bc37969028c1defa52ce1daaedd8c70e6d9369739c715b358ffc183",
+    "/js/oaths.js": "280aaf2e10aeb4c4b972f3b3e96993c6d8be34c73cb8df4b37b9f5e23da0f24b",
+    "/js/changelog.js": "32de83e909b00f81008341337b8bc6b32878f077fccf2b9caa9cc38a2b11bd44",
+    "/js/guide.js": "b81f87b3a5c6f3aa3ef0831d56789219e64a31cce3303784b2eb4a0574f6c945",
+    "/js/chronicle.js": "39976b58fdc65ac596b066c43496adb17bea47adb13a86398a750a0e1126443f",
+    "/js/photo.js": "a94f8d1bf5833789816aa93626bb6613611dd43f7b62bdf984b621bf62eb01dd",
+    "/js/daily.js": "33bc3d09e933afc52d7c0db1bcbd138b1b8a2dd01d6e2726ff72176e92968352",
+    "/js/pwa.js": "342e29dd897fdeb95ef4f4a44bf7657f15bde51e569f7940d43a28f0564b1e99",
+    "/js/native.js": "9400b5eef98fb6933463745e79e7fd76c63bec2c34110fe76206ed9321250846",
+    "/js/heroabil.js": "501eafcd02ef2b3782fab8fe87d1000c7a3e9842d474c62b9808d23fb25ee91c",
+    "/js/durability.js": "9b778bf576c6646a6cd25cd10c5968831544a8ca6f57bb49a815704e576f0f9c",
+    "/js/coop/coopclient.js": "10c48dcae50f0d5504cb8afafd75ecdfeee74e7178de21cdd90871c257d56f17",
+    "/js/arms.js": "8f1cfa24bfbd0253636b2b1516871eab6f02edbb60258b86c4607482d61a06fb",
+    "/js/world/reaperfight.js": "7b71539c9cf1f52ba1b198dcaffce06bbaf2ae467e86d296f34d752ba12f2817",
+    "/js/heroult.js": "0d408cb61d50ba07916cd21720fca64d022693c29b23a9cd96a62d03d78d67f4",
+    "/js/world/banish.js": "5c8e64075f9e19caa8ea28558522267f643e66b36f130f4e7f5d9ed56d889f64",
+    "/js/world/ghostfight.js": "ecb30590f1cdc26ae290aa690f0ff48c104b20db4c2aafb9e8ede78a1ac47c84",
+    "/js/world/foescale.js": "4a640b195cc648a24e7f29e88d4f44744796c9b4beae4ce0ba9d4ab23aafc87f",
+    "/js/world/haunts.js": "081ffbd8defc51cd67bb62188c76ef342373763b203878c21cc6e68f4c895f55",
+    "/js/arena/arenasim.js": "4e502b4650cdee6296bbe11619cecde00d2348f3535edf0746abd0b7ab962c13",
+    "/js/arena/arenaart.js": "a3fc2411d99afbab55fbd0d60ba775a57abe037ac1f3014989608da797f3a193",
+    "/js/arena/arenasfx.js": "373d931422dc97265dd6b934e86f4c37031d80cdbb0d77fa61f5bbe36ca61957",
+    "/js/arena/arenanet.js": "d4d0b1a9882ffd93a219b3ade1e2f2a1fa11b23c483caf6511e574224be820c8",
+    "/js/arena/arena.js": "037d90811f5f7630ae162382ac3cf1e9e61c96236e71362a817642ae64f93767",
+    "/js/gearpick.js": "71b48a740718c54aee82a0c03fb91afc3d4b2fa147d1190c3dddfce8dd3a2859",
+    "/js/notify.js": "06c021d3bf318ed90f677b96e51ab8cc182ed5a3ebf9da1bba5be9b8f7431590",
+    "/js/unions.js": "a30e56a64a0eedbf18d25907381501c55ec5887e3f64db5225288285a2514d5c",
+    "/js/pins.js": "3e731727deedab3b0a6d20ed9ba76ddde1f8d223acf69108e3a08a48e126c32d",
+    "/js/restip.js": "6a2dc633e70012185f44514217b42f206b6f9c164c2e6bb19c89755cefcbcdd1",
+    "/js/lore.js": "fd7f6ec33087aca883c45c3b684ae08ba30366160d6c0c2dc8c905f517e3a849",
+    "/js/menugroups.js": "b2e2f89dbf81f9aeea8ab851a6a0e0f731b51d19c6c7c47f75ef9fe86349f34b",
+    "/js/world/wildfire.js": "d28f641d8d4a576552c06839118d5aa26d5200fa5c1d1cb653e3409f482d1728",
+    "/js/world/disasters.js": "4f236515b757d8d44de558f68a5ca14d31b40d0101e1b8d69d18e198d3ca3f17",
+    "/js/winmgr.js": "c909079f8bf01e48834cc40eef9b1f29fc242e732203d0ac3896167f53dcdb4b",
+    "/js/reveal.js": "b478f8c69ddc4333af85c2dc589a191e020ab1df1ee491adb59996c5524beb23",
+    "/js/winpanel.js": "957267c687119ec66b318728843ac5d2d68197ca4363daf16a3879059fc68f6e",
+    "/js/intro.js": "bf8d3afdbb480ccb4e905b30c18a8b0bfdc66bbcbba04b3693620c5ef2ec2359",
+    "/js/house.js": "eb82c9d3db1f8407860ed69a9bf6267fae00f73681b1182c13b7900b5a6dae6d",
+    "/js/campaign.js": "fe445f8a68bae28eb9394f14a730d86567c569788edc3e486bff7f1079883e0d",
+    "/js/campaign/cavern.js": "6f67e0f035ddbfbf834c1895483282f1e1ba6c1c268d4b845895aa53fb78bdf4",
+    "/js/campaign/art.js": "434490de70296f0f2c45bbcaab6afc53ab800520c5a3cef3705404f78f534e34",
+    "/js/campaign/faces.js": "acfaac81264d6041649c4dff55877f231c928b0e67f681ea11ff580a222860c0",
+    "/js/campaign/facespx.js": "286458c24b98250f1c1795fcdd82cd8c1e3069ff88d93c2faed30179fb00bea5",
+    "/js/campaign/sound.js": "0bd9724ec8c786fcf44d03d6e8688fd62be4f75606154e557a54804057729957",
+    "/js/campaign/props.js": "80d579adb3001dcde9e0f4cc473dd45f1abb8f4d34613ddf83bbd050a7d8017b",
+    "/js/campaign/fog.js": "6f8f5d9bb2466797ca254e96f83ce9db5e3d7c10b57ed723471d202ea8c72974",
+    "/js/campaign/zhabyen.js": "014b966ae1ef7e713835fb99134499fb14b0fb5510edf27db963b73388217678",
+    "/js/campaign/act3.js": "a71d73e4a6b2829728438a2a46689eed5b6b292a540a8cf606ece41d4ef66acb",
+    "/js/campaign/act2.js": "51cdbf35c2e937bf2fc23706dd560a4e7c3437d09a3011296c1f47aae5102339",
+    "/js/campaign/act1.js": "d1064a998321f2391d694b2238cfc3744d29b22e74be39f27777b15d147fc166",
+    "/js/campaign/act4.js": "a2425c13c6ee0df40b5a370847df80d7df2f1faa3d9222398ea172627b7f702a",
+    "/js/campaign/act5.js": "ef9639b57dd7a081f9055d9898378e6bf1ee5ee53e65827525f732b55bed30ed",
+    "/js/world/foeart.js": "4274b43f550714a9e6d628965da97f7b2f28d755663345404950119717c1f3eb",
+    "/js/world/foepx.js": "8b8868bd982a0988e5b206a13eacd0e7c9faeb2f77226aca491a2ca1c7700751",
+    "/js/world/pxbeasts.js": "8647e37ce1180dd3b2df07ad65d33eba2ebd504205311570dc3dad24fdd90f22",
+    "/js/campaign/zhabpx.js": "d4ab4105a830360c9b6cfbb5c74580ee67c9a9d8c17ee65f24416a471720544f",
+    "/js/world/ghostpx.js": "c166651432decfd12c86750434a040448d62e87792e156aa1f68d130f4ae8d59",
+    "/js/world/reaperpx.js": "98e8df324d8fa9a86f97b9e0a71a3dcb47977b9e03cdb94295a5f396eebb1070",
+    "/js/pccontrols.js": "a530854281ca03bde5709f53b3dcf4669a05cae54e97d970482f7117ab1ebfc4",
+    "/js/fantasy-published-art.js": "1f119778970a9b8a1c6ad3a9dafdf8868b8a7837f1ead9ee14ba4881b362ccc4",
+    "/js/fantasy-published-editor.js": "4e6adcc6390d84b1a273ad846546b27408df0b6e0c6b35de75ba8fca1106198a",
+    "/js/fantasy-published-icons.js": "4a9a4fd7e91103d3eac79c35b7d2bbd6226fd8eb53fca67f8d1574870e23b64c",
+    "/js/fantasy-streets.js": "41ad2b5e224006c27052f81464c97a5eaf124a92cb9217e88f9511602d429931",
+    "/js/fantasy-published-obelisk.js": "fdb9c0f3923f571de1c04c2638c9f43c2a153df014aa42ca5084314ea8532179",
+    "/js/fantasy-published-nightdecor.js": "a9ee4cff06a9148f9c2d1fcb11279763e2369af704a95c3cad760c8b9f49e802",
+    "/js/fantasy-published-decor.js": "c2fc6c6eebb95841b7939c38a623e8be55092623a6427900aef14faacdb2093d",
+    "/js/fantasy-surfaces-polish.js": "f5844eb19e68af90ddc18e6dcd163f040dab3daa0f0d298ff439f1c20c0bb4ab",
+    "/js/fantasy-trees-polish.js": "c0a8a40765c19223ce02921de83a7b18736de951ca5858cc875474e0c4796a48",
+    "/js/fantasy-published-environment.js": "a93e64289f4b18d617b1a792e15c220331a0f97311800d812f3a4e7f3737c54b",
+    "/js/fantasy-neutral-polish.js": "e7ae71767391795b797f77f3136823a5eeb5d66d4a6fd5688622c7793d8b39e9",
+    "/js/fantasy-leshy-polish.js": "397840a9c18f53a33b3456955443f490d6375c2dda90b76e38d54681c48c3c71",
+    "/js/fantasy-goblin-polish.js": "ff0f1484b161364b1d4886e272abd22abe6a08b3a0925d01f521d2051d6dba3a",
+    "/js/fantasy-splash.js": "d57dafbf4e0312717ce0def31c7fba944d44193abbc713e382e752d220759b0f",
+    "/js/fantasy-published-spectral.js": "cf92e78f8312eb829f1835cb2a6c0bc70493aba7f8a676e9fc98c26d30addabc",
+    "/js/fantasy-published-elementals.js": "fa73bdd6f129c190d2031926a28209441c2d401226da5ddaa52255864b222fc7",
+    "/js/fantasy-published-forestfolk.js": "fb75d6a02d4628e57e184de4433ca6a1267a293e9bdc5962ed921a1287815a05",
+    "/js/fantasy-published-anomalies.js": "8eae17130e911a2014db71fb6ce2aaba9035d461456b29f9452e806c990cc7db",
+    "/js/fantasy-published-frogs.js": "39bd5dbde840bb4889b9e8a46c6e06bb9ef16129ea72787d798339b31db6caea",
+    "/js/fantasy-published-wildfolk.js": "d953fcdb1fe71d89013fbc86eacaf8f342c42ebb7914643aaf397b2659fd9c1e",
+    "/js/fantasy-darkcourt-polish.js": "b6d63620aba06e378a2a88e26ef71b7f094edde4e8e67edc3c99defb0083d077",
+    "/js/fantasy-echo-polish.js": "d9ca844300ecb53794dfa26d0c4ad320b780e230f93f8dddb2c5bc8d83377584",
+    "/js/fantasy-mimic-polish.js": "7aa79af268dc16339892443068225dfd6fbc1c7258ca8a4ebb7a513bfcc87305",
+    "/js/fantasy-barrow-polish.js": "079c85870fc624517bad8899d6913aa30fdced831278efa244ff561bfc1ae28c",
+    "/js/fantasy-undead-polish.js": "f5776044f0358523439a47f4f2843b129ef564c85d9c027afca68df825d8ee86",
+    "/js/fantasy-published-owls.js": "c88b02bfd1665ce05315e73af76c129d9a04f1c68e65a9769e8e2ffbfb057c2a",
+    "/js/fantasy-published-appearance.js": "eab531706913731c433d1454afd770f410dc43bf4435033694ba1b12e6f2436a",
+    "/js/fantasy-published-haunts.js": "39cd99385ebcb6a12a730da9722ebf6f38124f5406706e86260b9e5faf9fcadc",
+    "/js/fantasy-published-yard-polish.js": "621ef5c2d2daf3de6de7a7c871b997cfc153a0b6bd6244107014bd650511651c",
+    "/js/fantasy-published-machinery.js": "58d60bb231c39a07aadda52f7d83515a24f7290041e7ae2b15d08e26fcc3da67",
+    "/js/fantasy-published-golem.js": "051fb98dac9f78212597496b09d0702f22b299def10c9d68282f62c7b35ccaeb",
+    "/js/fantasy-published-portraits.js": "cd5e5875d9feec458ac9737278beb584474fff5c1e8a0b8e6d70dcf372eb66fd",
+    "/js/fantasy-published-ground.js": "04cef59223f5752630ab6945044b52a9b97ebe86e5a98a49bde4c759c4c4de82"
+  }
+}

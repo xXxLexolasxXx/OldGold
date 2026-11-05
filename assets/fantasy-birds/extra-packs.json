@@ -1,0 +1,137 @@
+{
+  "packs": [
+    {
+      "id": "goose",
+      "kind": "goose",
+      "box": [
+        26,
+        24,
+        12,
+        21
+      ],
+      "columns": 28,
+      "referenceColumn": 12,
+      "coldId": "goose",
+      "appendAttackWalkFeet": true,
+      "states": {
+        "walk": [
+          0,
+          12
+        ],
+        "idle": [
+          12,
+          1
+        ],
+        "attack": [
+          16,
+          12
+        ],
+        "swim": [
+          14,
+          2,
+          12
+        ]
+      },
+      "file": "goose-runtime-v1"
+    },
+    {
+      "id": "duck",
+      "kind": "duck",
+      "box": [
+        22,
+        20,
+        11,
+        17
+      ],
+      "columns": 16,
+      "referenceColumn": 12,
+      "coldId": "duck",
+      "states": {
+        "walk": [
+          0,
+          12
+        ],
+        "idle": [
+          12,
+          1
+        ],
+        "swim": [
+          13,
+          2,
+          12
+        ]
+      },
+      "file": "duck-runtime-v1"
+    },
+    {
+      "id": "henbuff",
+      "kind": "henbuff",
+      "box": [
+        22,
+        30,
+        11,
+        28
+      ],
+      "columns": 12,
+      "referenceColumn": 10,
+      "coldId": "henbuff",
+      "states": {
+        "grow": [
+          0,
+          4
+        ],
+        "kick": [
+          4,
+          6
+        ],
+        "idle": [
+          10,
+          1
+        ]
+      },
+      "file": "henbuff-runtime-v1"
+    },
+    {
+      "id": "woodpecker",
+      "kind": "woodpecker",
+      "box": [
+        6,
+        11,
+        3,
+        10
+      ],
+      "columns": 2,
+      "coldId": "woodpecker",
+      "states": {
+        "peck": [
+          0,
+          2
+        ]
+      },
+      "file": "woodpecker-runtime-v1"
+    },
+    {
+      "id": "gold-goose",
+      "kind": "goldGoose",
+      "box": [
+        20,
+        18,
+        10,
+        18
+      ],
+      "columns": 12,
+      "coldId": "goldGoose",
+      "states": {
+        "walk": [
+          0,
+          12
+        ],
+        "idle": [
+          0,
+          1
+        ]
+      },
+      "file": "gold-goose-runtime-v1"
+    }
+  ]
+}

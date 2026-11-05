@@ -1,0 +1,211 @@
+{
+  "status": "ready in feod-t1027; canonical integration pending owner",
+  "date": "2026-11-05T00:47:06.812Z",
+  "rules": [
+    "D:/для игры/AGENTS.md",
+    "D:/для игры/GRAPHICS_RULES.md"
+  ],
+  "modules": [
+    {
+      "path": "js/fantasy-goblin-polish.js",
+      "sha256": "ff0f1484b161364b1d4886e272abd22abe6a08b3a0925d01f521d2051d6dba3a",
+      "canonicalEligible": false
+    },
+    {
+      "path": "js/fantasy-goblin-gallery.js",
+      "sha256": "27f5e9c521b3b812894a9ca530d67eb7e39a874da50774baf34ef20818cfbdd5",
+      "canonicalEligible": false
+    },
+    {
+      "path": "js/fantasy-goblin-directions.js",
+      "sha256": "dc7081ca6f517039a7f5c8b0cffdeb7d62d239fb9ca0e7452efb9b7921c3fe09",
+      "canonicalEligible": true
+    },
+    {
+      "path": "js/fantasy-frog-directions.js",
+      "sha256": "a9a1493395785391c8530e69652eeedf9f0308d71bd0dcd3576e1e39326a4d63",
+      "canonicalEligible": true
+    },
+    {
+      "path": "js/fantasy-creature-directions.js",
+      "sha256": "a478d896b86a327df543ab6c3243f72b893ea6e54c5fc7d41043da90065c9131",
+      "canonicalEligible": false
+    },
+    {
+      "path": "js/fantasy-direction-yard.js",
+      "sha256": "39f34df9dc6b4595c7350961cdb2665500679b99200c9fcd5508a7d97d1add40",
+      "canonicalEligible": true
+    }
+  ],
+  "readyRoster": {
+    "goblins": [
+      "goblin",
+      "goblinB",
+      "goblinChamp",
+      "goblinKing",
+      "shnyrKing"
+    ],
+    "humanoidFrogs": [
+      "ftG",
+      "ftB",
+      "ftP",
+      "ftR",
+      "ftK",
+      "ftQ",
+      "ftZ",
+      "ftZF"
+    ]
+  },
+  "localOnlyPendingOwnership": {
+    "path": "js/fantasy-creature-directions.js",
+    "kinds": [
+      "troll",
+      "trollS",
+      "trollB",
+      "trollF",
+      "trollSF",
+      "trollBF",
+      "boar",
+      "Game.boars via beDrawBoar"
+    ],
+    "doNotIncludeInLive": true,
+    "reason": "Animal/troll integration belongs to coordinated owners; this prototype is enabled only in this separate checkout."
+  },
+  "views": [
+    "анфас",
+    "передний 3/4",
+    "профиль",
+    "задний 3/4",
+    "спина"
+  ],
+  "headings": [
+    "S",
+    "SE",
+    "E",
+    "NE",
+    "N",
+    "NW",
+    "W",
+    "SW"
+  ],
+  "reports": {
+    "desktop": {
+      "frames": 10560,
+      "goblinFrames": 2325,
+      "frogFrames": 4980,
+      "nativeCalls": 13512,
+      "nativeGoblinHandChecks": 465,
+      "nativeOtherFrogHandChecks": 1524,
+      "cycles": 780,
+      "frozenCycles": [],
+      "boundaryContacts": 0,
+      "errors": []
+    },
+    "mobile": {
+      "frames": 10560,
+      "goblinFrames": 2325,
+      "frogFrames": 4980,
+      "nativeCalls": 13512,
+      "nativeGoblinHandChecks": 465,
+      "nativeOtherFrogHandChecks": 1524,
+      "cycles": 780,
+      "frozenCycles": [],
+      "boundaryContacts": 0,
+      "errors": []
+    }
+  },
+  "ruleAudit": {
+    "fullBodyModels": true,
+    "backHasNoFaceOrChestOrnament": true,
+    "allNativeFrameFamilies": true,
+    "nativeDimensionsAndAnchorMetadataUnchanged": true,
+    "nativeStateTablesAndTimingFunctionsUnchanged": true,
+    "GameRecordsUnchanged": true,
+    "AIReferencesUnchanged": true,
+    "transientHeadingWeakMaps": true,
+    "cacheKeys": "kind + canonical view + normalized native frame; mirrored counterparts reuse the source canvas",
+    "cacheBudgets": {
+      "goblins": {
+        "entries": 900,
+        "rgbaMiB": 24
+      },
+      "frogs": {
+        "entries": 1100,
+        "rgbaMiB": 32
+      },
+      "localTrollBoar": {
+        "entries": 1100,
+        "rgbaMiB": 32
+      }
+    },
+    "portraitUsesActualBodyRenderer": true,
+    "readiness": "Each adapter has ready:true and errors:[]; all assets are code-native in these module files.",
+    "layers": "Far/near arms and rear cloth separated, rear weapon pass occluded by body; Y-sorted overlap yard screenshot and check.",
+    "raster": "backing x2, 0.5 world pixel; R.smooth consistent with buildings"
+  },
+  "canonical": {
+    "root": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104",
+    "newFilesOnly": [
+      "js/fantasy-goblin-directions.js",
+      "js/fantasy-frog-directions.js",
+      "js/fantasy-direction-yard.js"
+    ],
+    "indexLinked": false,
+    "indexAndVersionAndPublishOwner": "leading session",
+    "loadOrder": [
+      "js/fantasy-goblin-polish.js",
+      "js/fantasy-goblin-directions.js",
+      "js/fantasy-published-frogs.js",
+      "js/fantasy-frog-directions.js",
+      "js/fantasy-direction-yard.js (optional ?directionYard=1)"
+    ],
+    "portraitAPIs": [
+      "GoblinDirections.portrait(spriteKind)",
+      "FrogDirections.portrait(spriteKind)"
+    ],
+    "important": "Current reports are ordinary feod-t1027 index without addScriptTag. Do not call them canonical production PASS before integration and rerun.",
+    "sourceEquality": [
+      {
+        "path": "js/fantasy-goblin-directions.js",
+        "sha256": "dc7081ca6f517039a7f5c8b0cffdeb7d62d239fb9ca0e7452efb9b7921c3fe09",
+        "matchesLocal": true
+      },
+      {
+        "path": "js/fantasy-frog-directions.js",
+        "sha256": "a9a1493395785391c8530e69652eeedf9f0308d71bd0dcd3576e1e39326a4d63",
+        "matchesLocal": true
+      },
+      {
+        "path": "js/fantasy-direction-yard.js",
+        "sha256": "39f34df9dc6b4595c7350961cdb2665500679b99200c9fcd5508a7d97d1add40",
+        "matchesLocal": true
+      }
+    ]
+  },
+  "knownDefects": [],
+  "remaining": [
+    "Canonical index integration, combined canonical desktop/mobile smoke and UI portrait-owner consumption of actual body APIs.",
+    "Animal/troll owners must decide on the separate local prototype; do not auto-copy that module into live.",
+    "No simulated combat, network/co-op sessions or save-file migration was exercised; rendering tests verify existing in-memory records and callback references."
+  ],
+  "artifacts": [
+    "goblin-directions-desktop.png",
+    "frog-directions-desktop.png",
+    "troll-boar-directions-desktop.png",
+    "direction-yard.gif",
+    "direction-yard.webm",
+    "direction-yard.png",
+    "direction-yard-overlap.png",
+    "goblin-directions-desktop.json",
+    "goblin-directions-mobile.json",
+    "creature-directions-desktop.json",
+    "creature-directions-mobile.json",
+    "frog-direction-padding-desktop.json",
+    "frog-direction-padding-mobile.json",
+    "direction-yard-verification.json"
+  ],
+  "published": false,
+  "localCommit": "c0566d03b09b52c1ad601913104463c703c8f95b",
+  "localCheckoutClean": true,
+  "dayWrapUp": "Own separate-worktree commit complete. Shared canonical files left for leading session to commit in sequence; no publish."
+}

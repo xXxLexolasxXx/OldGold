@@ -1,0 +1,71 @@
+{
+  "scope": "Inventory before implementation; current native 0.11.99 actual draw paths. Counts denote render families, not zoological taxonomy.",
+  "rulesRead": ["D:/для игры/AGENTS.md", "D:/для игры/GRAPHICS_RULES.md"],
+  "proposedTerrestrialMammalSpeciesCount": 21,
+  "terrestrialMammals": [
+    {"kind":"deer","name":"Олень","path":"render -> drawCreatureAt -> creatureSprite -> AK_CR.deer / drawCreature","frames":{"idle":1,"walk":12}},
+    {"kind":"rabbit","name":"Кролик","path":"render / owl held prey -> drawCreatureAt -> creatureSprite -> AK_CR.rabbit","frames":{"idle":1,"walk":12},"extras":["pet T/c: gear", "owl prey scale and anchor"]},
+    {"kind":"goat","name":"Коза","path":"render / inside.drawPenLife -> drawCreatureAt -> creatureSprite -> AK_CR.goat","frames":{"idle":1,"walk":12},"variants":["packgoat unit/pen variant"],"extras":["packgoat cargo exact load+n", "native UNIT_TYPES.goat portrait via creatureSprite(packgoat)"]},
+    {"kind":"wolf","name":"Волк","path":"render -> drawCreatureAt -> creatureSprite -> AK_CR.wolf","frames":{"idle":1,"walk":12},"extras":["native mouth loot anchor", "tamed wolf pet variant"]},
+    {"kind":"fox","name":"Лиса","path":"render -> drawCreatureAt -> creatureSprite -> AK_CR.fox","frames":{"idle":1,"walk":12},"extras":["native mouth loot anchor", "tamed fox pet variant"]},
+    {"kind":"elk","name":"Лось","path":"render -> drawCreatureAt -> creatureSprite -> AK_CR.elk","frames":{"idle":1,"walk":12},"extras":["native mouth loot"]},
+    {"kind":"horse","name":"Лошадь","path":"inside stable -> drawCreatureAt(horse); carter unit/yard -> drawCreatureAt(cart) -> creatureSprite -> drawCartRig/Front","frames":{"idle":1,"walk":12},"variants":["horse only", "horse+cart+native driver/cargo/wheels"],"nativeViews":["horse E","cart E/S/N"]},
+    {"kind":"pig","name":"Свинья","path":"render.drawPigs -> pigSpriteHR -> akPig","frames":{"step":2},"variants":["growth1","growth2","growth3"],"extras":["native pen bilinear placement and direction"]},
+    {"kind":"boar","name":"Кабан","path":"beastsDrawList -> beDrawBoar -> beDraw -> afSprite -> animalpx afHand(boar)","frames":{"idle":1,"walk":12,"root":1},"exclude":"Magical neutral boar-guardian in neutralart/neutrals is another owner"},
+    {"kind":"bear","name":"Медведь","path":"beastsDrawList -> beDrawBear -> beDraw -> afSprite -> animalpx afHand(bear)","frames":{"idle":1,"walk":12,"eat":1},"extras":["native eat lift and bee positions"]},
+    {"kind":"cat","name":"Кот","path":"beastsDrawList -> beDrawCat -> beDraw -> afSprite -> animalpx afHand(cat)","frames":{"sit":1,"walk":12,"sleep":1},"colourVariants":4},
+    {"kind":"mouse","name":"Мышь","path":"fauna2DrawList -> drawMouse -> f2draw/f2sprite -> afSprite -> animalpx mouse","frames":{"idle":1,"walk":6},"extras":["native carried food anchor"]},
+    {"kind":"badger","name":"Барсук","path":"fauna2DrawList -> drawBadger -> f2draw/f2sprite -> afSprite -> animalpx badger","frames":{"idle":1,"walk":12,"dig":1},"extras":["away hidden", "native carried food anchor"]},
+    {"kind":"squirrel","name":"Белка","path":"fauna2DrawList -> drawSquirrel -> f2draw/f2sprite -> afSprite -> animalpx sq","frames":{"sit":1,"hop":12},"extras":["hide hidden", "native hop lift"]},
+    {"kind":"hedgehog","name":"Ёж","path":"fauna2DrawList -> drawHedgehog -> f2draw/f2sprite -> afSprite -> animalpx hg","frames":{"idle":1,"walk":4,"ball":1}},
+    {"kind":"mole","name":"Крот","path":"fauna2DrawList -> drawHill -> f2sprite(mole1/mole2)","frames":{"head":2},"extras":["native burrow/hill reveal crop and rise"]},
+    {"kind":"hare","name":"Заяц","path":"wlDrawList -> wlDraw -> wlFrame -> wlSprite -> animalpx wl:hare","frames":{"idle":6,"walk":12,"react":4},"variants":["summer","winter"],"extras":["native flee rate and hop lift"]},
+    {"kind":"marmot","name":"Сурок","path":"wlDrawList -> wlDraw -> wlFrame -> wlSprite -> animalpx wl:marmot","frames":{"idle":6,"walk":12,"react":4}},
+    {"kind":"otter","name":"Выдра","path":"wlDrawList -> wlDraw -> wlFrame -> wlSprite -> animalpx wl:otter","frames":{"idle":6,"walk":12,"react":4,"swim":6}},
+    {"kind":"stag","name":"Мшистый олень","path":"wlDrawList -> wlDraw -> wlFrame -> wlSprite -> animalpx wl:stag","frames":{"idle":6,"walk":12,"react":4},"extras":["native grazing head phases and flee hop"]},
+    {"kind":"starfox","name":"Звёздный лис","path":"wlDrawList -> wlDraw -> wlFrame -> wlSprite -> animalpx wl:starfox","frames":{"idle":6,"walk":12,"react":4},"extras":["native tail glow phases"]}
+  ],
+  "birds": {
+    "count":12,
+    "kinds":["chicken (+henbuff)","goose","duck","crow","owl","stork","heron","woodpecker","small bird flock","pheasant","gull","cormorant"],
+    "paths":["drawCreatureAt/creatureSprite for chicken/goose/duck/henbuff", "fauna.drawCrow -> crowSprite/crowFlySprite", "leisure.drawOwls/ grab.drawOwlGrab -> owlSprite", "beasts beDrawStork/beDrawHeron/beDrawFlock -> beFlySprite/beDraw", "fauna2.drawPecker -> f2sprite", "wildlife.wlDraw -> wlFrame/wlSprite bird/pheasant", "seafauna.slDraw -> seaart sprites gull/corm"],
+    "requiredStates":["native ground idle/step/peck", "flight cycles", "takeoff/land", "perch/blink/look", "owl grab+prey", "heron strike+fish", "stork nest", "goose attack/swim", "duck pet/swim", "henbuff grow4/kick6/stand"],
+    "exclude":"Enemy magical fRaven uses foeDrawRaven -> naFrame(fRaven), assigned enemy/court owner; not ordinary crow. Bat and bat grab assigned haunts owner."
+  },
+  "aquatic": {
+    "seaLifeFamilies15":["shoal","salmon","crab","star","urchin","jelly","turtle","gull","corm","shell","dolphin","whale","octo","serpent","kraken"],
+    "overlap":"gull/corm belong to bird owner OR aquatic owner, one owner only; dolphin/whale are marine mammals and excluded from terrestrial21",
+    "additionalPaths":["beasts beDrawFish generic inland fish", "fairy1 sprFish/sprFishN gold/red/blue magical fish"],
+    "nativePaths":["seaLifeDrawList -> slDraw/slDrawKraken -> seaart renderer", "beastsDrawList -> beDrawFish -> beDraw/afSprite fish"]
+  },
+  "tinyFauna": {
+    "count":6,
+    "kinds":["ordinary frog","butterfly","moth","bee","firefly","worm"],
+    "paths":["fauna.drawFrog -> frogSprite/frogFrame", "leisure.drawButterfly", "wildlife.wlDraw moth branch", "beasts.beDrawBees", "fauna.drawFireflies", "fauna.drawWorm"],
+    "exclude":"Frogfolk/frogwild humanoid families already own another adapter; ordinary frog is a separate real animal."
+  },
+  "additionalAssignedMammals": {
+    "count":3,
+    "armad":"Game.neutrals -> drawSkeletons/neuDraw -> naFrame('armad',fr) -> naPxFrame/NA_PX.armad or NA_DRAW.armad(drawArmad), NA_FRAMES/naPose native action table; neutralart2.js161 and NA_DRAW.armad358. Intercept only armad key, never replace whole NA registry.",
+    "boarGuardian":"Game.neutrals -> neuDraw -> naFrame('boar',fr) -> NA_PX.boar / NA_DRAW.boar(drawBoar); independent from Game.boars ordinary boar. Native NA_FRAMES state/strike/hurt/death poses and boar lair remain native.",
+    "spectralWolf":"Game fairy2 wolf list -> fzDrawList/fzDrawHi -> fzLive -> fzWolfSprite((floor(w.ph*3)%FZ_N)/3,hl) -> fzWolfPx; dying -> FZ_DIE.wolf(fzDieF) -> fzWolfDiePx. FZ_N12,84x54,ax42ay46. Actual fairy2.js2268/2269 draws. Preserve alpha/howl/lantern item and death timing.",
+    "rootAssignment":"Explicitly assigned to animal owner after initial roster. Ordinary terrestrial21 + these3; aquatic mammals still another owner."
+  },
+  "magicalAnimalShapedPendingOwner": {
+    "notIncludedInTerrestrial21": true,
+    "fairy1":["unicorn -> unicornDraw/sprUnicorn", "adult dragon -> dragonDraw/sprDragon", "baby dragon -> sprBabyDragon", "dragon DP variants require dragon-kind registry confirmation", "griffin -> griffinDraw/sprGriffin", "salamander -> salamanderDraw/sprSalamander", "golden goose -> goldGooseDraw/sprGoose", "gold/red/blue fish -> fishyDraw/sprFish and fishDraw/sprFishN"],
+    "fairy2":[],
+    "neutralArt":["snail", "moth", "newt", "enemy fRaven"],
+    "assignment":"Leading session assigns these separately: shared NA/fairy renderer ownership must not be silently duplicated inside ordinary animal adapter."
+  },
+  "portraitAudit": {
+    "nativeAnimalUnit":"people.portraitURL(goat) -> creatureSprite(packgoat,0,null); worker/hire/training UI calls portraitURL",
+    "namedAnimalCards":"No dedicated ordinary mammal portrait API found in current paths; animal inspect panels are text/icon based. Any new portrait must crop actual new sprite, never separate artwork.",
+    "doNotTreatAsAnimal":"UNIT_TYPES.sentry animal:true is a journal-label implementation detail, not an animal model. carter is a dwarf driver rendered inside cart rig; dwarf head/appearance remains protected."
+  },
+  "directionContract": {
+    "current":"Most animal sprites are E mirrored; wild render callback passes no entity/view; cart alone has native S/N. Existing native model does not supply eight drawn views.",
+    "required":"Five authored canonical views S/SE/E/NE/N, mirrored SW/W/NW. Runtime movement/target sampling through transient WeakMap/render context; no new saved fields or AI writes.",
+    "anchors":"CR_SIZE and native pen/feet/hand/prey/cargo anchors stay unchanged. New atlas/frame cache normalizes native state and frame, bounded entries AND RGBA bytes."
+  }
+}

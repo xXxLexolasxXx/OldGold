@@ -1,0 +1,241 @@
+{
+  "rows": [
+    {
+      "kind": "unicorn",
+      "nativeColdE": {
+        "x0": -24,
+        "y0": -43,
+        "x1": 21,
+        "y1": 0,
+        "width": 45,
+        "height": 43
+      },
+      "newE": {
+        "x0": -21,
+        "y0": -40.5,
+        "x1": 20.5,
+        "y1": 0,
+        "width": 41.5,
+        "height": 40.5
+      },
+      "ratioHeight": 0.9418604651162791,
+      "ratioWidth": 0.9222222222222223,
+      "baselineDelta": 0,
+      "headDelta": 2.5
+    },
+    {
+      "kind": "forest",
+      "nativeColdE": {
+        "x0": -14.5,
+        "y0": -29.5,
+        "x1": 15.5,
+        "y1": 0.5,
+        "width": 30,
+        "height": 30
+      },
+      "newE": {
+        "x0": -19,
+        "y0": -28.5,
+        "x1": 21.5,
+        "y1": 0.5,
+        "width": 40.5,
+        "height": 29
+      },
+      "ratioHeight": 0.9666666666666667,
+      "ratioWidth": 1.35,
+      "baselineDelta": 0,
+      "headDelta": 1
+    },
+    {
+      "kind": "fire",
+      "nativeColdE": {
+        "x0": -14.5,
+        "y0": -29.5,
+        "x1": 15.5,
+        "y1": 0.5,
+        "width": 30,
+        "height": 30
+      },
+      "newE": {
+        "x0": -19,
+        "y0": -26,
+        "x1": 21,
+        "y1": 0.5,
+        "width": 40,
+        "height": 26.5
+      },
+      "ratioHeight": 0.8833333333333333,
+      "ratioWidth": 1.3333333333333333,
+      "baselineDelta": 0,
+      "headDelta": 3.5
+    },
+    {
+      "kind": "ice",
+      "nativeColdE": {
+        "x0": -14.5,
+        "y0": -29.5,
+        "x1": 15.5,
+        "y1": 0.5,
+        "width": 30,
+        "height": 30
+      },
+      "newE": {
+        "x0": -18,
+        "y0": -28,
+        "x1": 19.5,
+        "y1": 0.5,
+        "width": 37.5,
+        "height": 28.5
+      },
+      "ratioHeight": 0.95,
+      "ratioWidth": 1.25,
+      "baselineDelta": 0,
+      "headDelta": 1.5
+    },
+    {
+      "kind": "swamp",
+      "nativeColdE": {
+        "x0": -14.5,
+        "y0": -29.5,
+        "x1": 15.5,
+        "y1": 0.5,
+        "width": 30,
+        "height": 30
+      },
+      "newE": {
+        "x0": -20,
+        "y0": -23,
+        "x1": 22,
+        "y1": 0.5,
+        "width": 42,
+        "height": 23.5
+      },
+      "ratioHeight": 0.7833333333333333,
+      "ratioWidth": 1.4,
+      "baselineDelta": 0,
+      "headDelta": 6.5
+    },
+    {
+      "kind": "adult",
+      "nativeColdE": {
+        "x0": -40.5,
+        "y0": -49.5,
+        "x1": 36,
+        "y1": 1,
+        "width": 76.5,
+        "height": 50.5
+      },
+      "newE": {
+        "x0": -30,
+        "y0": -51.5,
+        "x1": 46.5,
+        "y1": 1,
+        "width": 76.5,
+        "height": 52.5
+      },
+      "ratioHeight": 1.0396039603960396,
+      "ratioWidth": 1,
+      "baselineDelta": 0,
+      "headDelta": -2
+    },
+    {
+      "kind": "griffin",
+      "nativeColdE": {
+        "x0": -25,
+        "y0": -36.5,
+        "x1": 15,
+        "y1": -1.5,
+        "width": 40,
+        "height": 35
+      },
+      "newE": {
+        "x0": -19.5,
+        "y0": -39,
+        "x1": 20,
+        "y1": -1.5,
+        "width": 39.5,
+        "height": 37.5
+      },
+      "ratioHeight": 1.0714285714285714,
+      "ratioWidth": 0.9875,
+      "baselineDelta": 0,
+      "headDelta": -2.5
+    },
+    {
+      "kind": "salamander",
+      "nativeColdE": {
+        "x0": -29,
+        "y0": -21.5,
+        "x1": 25,
+        "y1": 0,
+        "width": 54,
+        "height": 21.5
+      },
+      "newE": {
+        "x0": -19,
+        "y0": -21.5,
+        "x1": 18.5,
+        "y1": 0,
+        "width": 37.5,
+        "height": 21.5
+      },
+      "ratioHeight": 1,
+      "ratioWidth": 0.6944444444444444,
+      "baselineDelta": 0,
+      "headDelta": 0
+    }
+  ],
+  "geometry": {
+    "ice": {
+      "worldPixelsPerSourcePixel": 0.14583333333333334,
+      "authorViews": 5,
+      "cells": 25,
+      "supportOffsetBackingPixels": -3
+    },
+    "unicorn": {
+      "worldPixelsPerSourcePixel": 0.13504823151125403,
+      "authorViews": 5,
+      "cells": 15,
+      "supportOffsetBackingPixels": 2
+    },
+    "fire": {
+      "worldPixelsPerSourcePixel": 0.1414141414141414,
+      "authorViews": 5,
+      "cells": 25,
+      "supportOffsetBackingPixels": -3
+    },
+    "forest": {
+      "worldPixelsPerSourcePixel": 0.14893617021276595,
+      "authorViews": 5,
+      "cells": 25,
+      "supportOffsetBackingPixels": -3
+    },
+    "adult": {
+      "worldPixelsPerSourcePixel": 0.28292682926829266,
+      "authorViews": 5,
+      "cells": 25,
+      "supportOffsetBackingPixels": -2
+    },
+    "griffin": {
+      "worldPixelsPerSourcePixel": 0.25327510917030566,
+      "authorViews": 5,
+      "cells": 35,
+      "supportOffsetBackingPixels": -2
+    },
+    "salamander": {
+      "worldPixelsPerSourcePixel": 0.14349775784753363,
+      "authorViews": 5,
+      "cells": 15,
+      "supportOffsetBackingPixels": 2
+    },
+    "swamp": {
+      "worldPixelsPerSourcePixel": 0.1390728476821192,
+      "authorViews": 5,
+      "cells": 25,
+      "supportOffsetBackingPixels": -3
+    }
+  },
+  "ready": true,
+  "errors": [],
+  "pageErrors": []
+}

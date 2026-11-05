@@ -1,0 +1,752 @@
+[
+  {
+    "version": 4,
+    "scriptCount": 1,
+    "views": [
+      "S",
+      "SE",
+      "E",
+      "NE",
+      "N"
+    ],
+    "directions": [
+      {
+        "kind": "noon",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      }
+    ],
+    "noMutation": true,
+    "assetErrors": [],
+    "cache": {
+      "entries": 0,
+      "rgbaBytes": 0,
+      "maxEntries": 512,
+      "maxRgbaBytes": 25165824,
+      "hits": 0,
+      "misses": 0,
+      "displayEntries": 0,
+      "displayRgbaBytes": 0,
+      "displayMaxEntries": 256,
+      "displayMaxRgbaBytes": 8388608
+    },
+    "stagedScene": {
+      "x": 142,
+      "y": 82,
+      "emptyScore": 160,
+      "note": "Private staged actors rendered by real fairy2DrawList, not a natural AI encounter"
+    },
+    "viewport": [
+      1440,
+      1000
+    ],
+    "errors": [],
+    "missing": []
+  },
+  {
+    "version": 4,
+    "scriptCount": 1,
+    "views": [
+      "S",
+      "SE",
+      "E",
+      "NE",
+      "N"
+    ],
+    "directions": [
+      {
+        "kind": "noon",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "noon",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "ban",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "les",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "les-gift",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "kik",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "vod",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "S",
+        "actual": "S",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "SE",
+        "actual": "SE",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "E",
+        "actual": "E",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "NE",
+        "actual": "NE",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "N",
+        "actual": "N",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "NW",
+        "actual": "NW",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "W",
+        "actual": "W",
+        "match": true
+      },
+      {
+        "kind": "rus",
+        "expected": "SW",
+        "actual": "SW",
+        "match": true
+      }
+    ],
+    "noMutation": true,
+    "assetErrors": [],
+    "cache": {
+      "entries": 0,
+      "rgbaBytes": 0,
+      "maxEntries": 512,
+      "maxRgbaBytes": 25165824,
+      "hits": 0,
+      "misses": 0,
+      "displayEntries": 0,
+      "displayRgbaBytes": 0,
+      "displayMaxEntries": 256,
+      "displayMaxRgbaBytes": 8388608
+    },
+    "stagedScene": {
+      "x": 66,
+      "y": 22,
+      "emptyScore": 168,
+      "note": "Private staged actors rendered by real fairy2DrawList, not a natural AI encounter"
+    },
+    "viewport": [
+      390,
+      844
+    ],
+    "errors": [],
+    "missing": []
+  }
+]

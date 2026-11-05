@@ -1,0 +1,248 @@
+{
+  "status": "READY: source frozen, art accepted by leading chat, canonical production QA PASS; not published by this chat",
+  "version": 4,
+  "scope": [
+    "Полудница",
+    "Банши",
+    "Враждебный лесной дух fairy2",
+    "Кикимора",
+    "Водяной fairy2",
+    "Русалка"
+  ],
+  "independentViews": [
+    "Анфас",
+    "Передний 3/4",
+    "Профиль",
+    "Задний 3/4",
+    "Спина"
+  ],
+  "headings": [
+    "S",
+    "SE",
+    "E",
+    "NE",
+    "N",
+    "NW",
+    "W",
+    "SW"
+  ],
+  "requiredFiles": [
+    {
+      "path": "js/fantasy-published-haunts.js",
+      "sha256": "39cd99385ebcb6a12a730da9722ebf6f38124f5406706e86260b9e5faf9fcadc",
+      "bytes": 31541
+    },
+    {
+      "path": "assets/fantasy/haunt-bodies-v3.png",
+      "sha256": "151fe82f2a343c8219b8e3c5ede4f638e06b73fa2c5b41c6fb51eeeb2a9d1ccd",
+      "bytes": 3032084
+    },
+    {
+      "path": "assets/fantasy/haunt-busts-v2.png",
+      "sha256": "370b742dd8f5196eae97bc72da62a2090a007e1f989283d60de537698a35d4e4",
+      "bytes": 2996547
+    },
+    {
+      "path": "assets/fantasy/haunt-bodies-v4-SE.png",
+      "sha256": "dccab026170f44a7ec65073ce39786935aecd7a7744df20c2eafb18db946793c",
+      "bytes": 2997983
+    },
+    {
+      "path": "assets/fantasy/haunt-bodies-v4-E.png",
+      "sha256": "5bd3502ceb1dfd585ab441f774805df0fa6b5814372fa6a011269dd1c9ce7c26",
+      "bytes": 2884956
+    },
+    {
+      "path": "assets/fantasy/haunt-bodies-v4-NE.png",
+      "sha256": "1481811069dd0798c47049c092b419a6c1c89f86b4cea8c280d5af174587ad6d",
+      "bytes": 3118973
+    },
+    {
+      "path": "assets/fantasy/haunt-bodies-v4-N.png",
+      "sha256": "d5f0735b898e29a5344c631ae96b5871d4d36591d27fbafac03d61f55951e279",
+      "bytes": 3000786
+    }
+  ],
+  "commands": [
+    "node output/fantasy/haunts/directions/verify-v4.cjs --production",
+    "node output/fantasy/haunts/directions/verify-production-v4.cjs"
+  ],
+  "matrix": [
+    {
+      "viewport": [
+        1440,
+        1000
+      ],
+      "samples": 7488,
+      "allViews": [
+        {
+          "kind": "noon",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "ban",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "les",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "kik",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "vod",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "rus",
+          "uniqueViews": 8
+        }
+      ],
+      "bad": [],
+      "edge": [],
+      "cacheBounded": true,
+      "repeatIdentity": true,
+      "invalidMissDelta": 0,
+      "compositionCases": 48,
+      "compositionPass": true,
+      "saveUnchanged": true,
+      "simulationUnchanged": true,
+      "wolfUnchanged": true,
+      "wispsUnchanged": true,
+      "errors": [],
+      "missing": [],
+      "assetErrors": []
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "samples": 7488,
+      "allViews": [
+        {
+          "kind": "noon",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "ban",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "les",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "kik",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "vod",
+          "uniqueViews": 8
+        },
+        {
+          "kind": "rus",
+          "uniqueViews": 8
+        }
+      ],
+      "bad": [],
+      "edge": [],
+      "cacheBounded": true,
+      "repeatIdentity": true,
+      "invalidMissDelta": 0,
+      "compositionCases": 48,
+      "compositionPass": true,
+      "saveUnchanged": true,
+      "simulationUnchanged": true,
+      "wolfUnchanged": true,
+      "wispsUnchanged": true,
+      "errors": [],
+      "missing": [],
+      "assetErrors": []
+    }
+  ],
+  "production": [
+    {
+      "viewport": [
+        1440,
+        1000
+      ],
+      "version": 4,
+      "scriptCount": 1,
+      "headingCases": 56,
+      "headingPass": true,
+      "giftCases": 8,
+      "noMutation": true,
+      "stagedScene": {
+        "x": 142,
+        "y": 82,
+        "emptyScore": 160,
+        "note": "Private staged actors rendered by real fairy2DrawList, not a natural AI encounter"
+      },
+      "errors": [],
+      "missing": [],
+      "assetErrors": []
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "version": 4,
+      "scriptCount": 1,
+      "headingCases": 56,
+      "headingPass": true,
+      "giftCases": 8,
+      "noMutation": true,
+      "stagedScene": {
+        "x": 66,
+        "y": 22,
+        "emptyScore": 168,
+        "note": "Private staged actors rendered by real fairy2DrawList, not a natural AI encounter"
+      },
+      "errors": [],
+      "missing": [],
+      "assetErrors": []
+    }
+  ],
+  "pixelContract": "Final world canvas x2, half-world-pixel grid, binary normal alpha, discrete palettes; native dimensions/fzO/feet/wrist-victim-FX positions retained. Native 3x death masks/maps and duration tables unchanged.",
+  "cache": "LRU material up to512 entries/24MiB (includes3x RGBA, solid mask,2x live); display up to256 entries/8MiB. Existing native FZ cache remains independently bounded by its unmodified native limits. Key is kind/canonical view/native-mirror correction/normalized native pose-phase/noout, never raw time.",
+  "heading": "Presentation-only WeakMaps. Existing movement, target/waypoint, affected lure listener or affected cutter, and native calm gift determine orientation. No new AI targets or saved properties.",
+  "frameContract": "All native idle/action/death phases; walk only where native (les/kik). Native quarter-step lv plus banshee sixth-step transitions. Native left/right post-render mirror is compensated without moving hand/victim anchors.",
+  "artGeneration": {
+    "mode": "built-in image_gen",
+    "transparentBackground": true,
+    "reference": "assets/fantasy/haunt-bodies-v3.png",
+    "prompts": "imagegen-prompts.txt",
+    "sourceMapping": "install-assets.cjs lists generated source files; original generated images retained"
+  },
+  "artifacts": [
+    "five-views-preview.png",
+    "all-cycles-eight-directions.gif",
+    "all-cycles-eight-directions.mp4",
+    "production-{1440,390}-{0..7}.png",
+    "native-worldscale-1to1.png",
+    "worldscale-and-enlarged.png"
+  ],
+  "proofs": [
+    "checks.json",
+    "production-checks.json",
+    "preview-checks.json",
+    "all-borders-checks.json",
+    "worldscale-checks.json"
+  ],
+  "notChanged": [
+    "index.html",
+    "game version/publication",
+    "native simulation/AI/durations/balance/save schema",
+    "wolves/wisps/other family owner renderers",
+    "frozen dwarf heads"
+  ],
+  "otherFamilies": "Other non-dwarf/animal families are separately assigned by the leading chat; this handoff claims completion only of the six listed fairy2 families.",
+  "allFourBorders": {
+    "samples": 1152,
+    "bad": []
+  }
+}

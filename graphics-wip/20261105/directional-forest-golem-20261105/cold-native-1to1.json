@@ -1,0 +1,449 @@
+{
+  "report": [
+    {
+      "family": "golem",
+      "nativeE": {
+        "alpha32": {
+          "backing": 2,
+          "bboxPx": [
+            104,
+            64,
+            145,
+            175
+          ],
+          "bboxWorld": [
+            -36,
+            -84,
+            72.5,
+            87.5
+          ],
+          "lowestPixelWorld": 3.5,
+          "headTopWorld": -84
+        },
+        "alpha128": {
+          "backing": 2,
+          "bboxPx": [
+            104,
+            64,
+            145,
+            175
+          ],
+          "bboxWorld": [
+            -36,
+            -84,
+            72.5,
+            87.5
+          ],
+          "lowestPixelWorld": 3.5,
+          "headTopWorld": -84
+        }
+      },
+      "newViews": {
+        "S": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              85,
+              72,
+              182,
+              160
+            ],
+            "bboxWorld": [
+              -45.5,
+              -80,
+              91,
+              80
+            ],
+            "lowestPixelWorld": 0,
+            "headTopWorld": -80
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              85,
+              72,
+              182,
+              160
+            ],
+            "bboxWorld": [
+              -45.5,
+              -80,
+              91,
+              80
+            ],
+            "lowestPixelWorld": 0,
+            "headTopWorld": -80
+          }
+        },
+        "SE": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              85,
+              72,
+              182,
+              160
+            ],
+            "bboxWorld": [
+              -45.5,
+              -80,
+              91,
+              80
+            ],
+            "lowestPixelWorld": 0,
+            "headTopWorld": -80
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              85,
+              72,
+              182,
+              160
+            ],
+            "bboxWorld": [
+              -45.5,
+              -80,
+              91,
+              80
+            ],
+            "lowestPixelWorld": 0,
+            "headTopWorld": -80
+          }
+        },
+        "E": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              108,
+              72,
+              128,
+              161
+            ],
+            "bboxWorld": [
+              -34,
+              -80,
+              64,
+              80.5
+            ],
+            "lowestPixelWorld": 0.5,
+            "headTopWorld": -80
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              108,
+              72,
+              128,
+              161
+            ],
+            "bboxWorld": [
+              -34,
+              -80,
+              64,
+              80.5
+            ],
+            "lowestPixelWorld": 0.5,
+            "headTopWorld": -80
+          }
+        },
+        "NE": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              83,
+              72,
+              186,
+              161
+            ],
+            "bboxWorld": [
+              -46.5,
+              -80,
+              93,
+              80.5
+            ],
+            "lowestPixelWorld": 0.5,
+            "headTopWorld": -80
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              83,
+              72,
+              186,
+              161
+            ],
+            "bboxWorld": [
+              -46.5,
+              -80,
+              93,
+              80.5
+            ],
+            "lowestPixelWorld": 0.5,
+            "headTopWorld": -80
+          }
+        },
+        "N": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              85,
+              72,
+              182,
+              161
+            ],
+            "bboxWorld": [
+              -45.5,
+              -80,
+              91,
+              80.5
+            ],
+            "lowestPixelWorld": 0.5,
+            "headTopWorld": -80
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              85,
+              72,
+              182,
+              161
+            ],
+            "bboxWorld": [
+              -45.5,
+              -80,
+              91,
+              80.5
+            ],
+            "lowestPixelWorld": 0.5,
+            "headTopWorld": -80
+          }
+        }
+      }
+    },
+    {
+      "family": "troll",
+      "nativeE": {
+        "alpha32": {
+          "backing": 3,
+          "bboxPx": [
+            208,
+            149,
+            203,
+            271
+          ],
+          "bboxWorld": [
+            -30.66666666666667,
+            -82.33333333333334,
+            67.66666666666667,
+            90.33333333333333
+          ],
+          "lowestPixelWorld": 8,
+          "headTopWorld": -82.33333333333334
+        },
+        "alpha128": {
+          "backing": 3,
+          "bboxPx": [
+            237,
+            149,
+            174,
+            258
+          ],
+          "bboxWorld": [
+            -21,
+            -82.33333333333334,
+            58,
+            86
+          ],
+          "lowestPixelWorld": 3.666666666666657,
+          "headTopWorld": -82.33333333333334
+        }
+      },
+      "newViews": {
+        "S": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              129,
+              116,
+              189,
+              159
+            ],
+            "bboxWorld": [
+              -35.5,
+              -74,
+              94.5,
+              79.5
+            ],
+            "lowestPixelWorld": 5.5,
+            "headTopWorld": -74
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              129,
+              116,
+              189,
+              159
+            ],
+            "bboxWorld": [
+              -35.5,
+              -74,
+              94.5,
+              79.5
+            ],
+            "lowestPixelWorld": 5.5,
+            "headTopWorld": -74
+          }
+        },
+        "SE": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              137,
+              108,
+              140,
+              160
+            ],
+            "bboxWorld": [
+              -31.5,
+              -78,
+              70,
+              80
+            ],
+            "lowestPixelWorld": 2,
+            "headTopWorld": -78
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              137,
+              108,
+              140,
+              160
+            ],
+            "bboxWorld": [
+              -31.5,
+              -78,
+              70,
+              80
+            ],
+            "lowestPixelWorld": 2,
+            "headTopWorld": -78
+          }
+        },
+        "E": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              146,
+              108,
+              131,
+              159
+            ],
+            "bboxWorld": [
+              -27,
+              -78,
+              65.5,
+              79.5
+            ],
+            "lowestPixelWorld": 1.5,
+            "headTopWorld": -78
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              146,
+              108,
+              131,
+              159
+            ],
+            "bboxWorld": [
+              -27,
+              -78,
+              65.5,
+              79.5
+            ],
+            "lowestPixelWorld": 1.5,
+            "headTopWorld": -78
+          }
+        },
+        "NE": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              137,
+              108,
+              140,
+              160
+            ],
+            "bboxWorld": [
+              -31.5,
+              -78,
+              70,
+              80
+            ],
+            "lowestPixelWorld": 2,
+            "headTopWorld": -78
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              137,
+              108,
+              140,
+              160
+            ],
+            "bboxWorld": [
+              -31.5,
+              -78,
+              70,
+              80
+            ],
+            "lowestPixelWorld": 2,
+            "headTopWorld": -78
+          }
+        },
+        "N": {
+          "alpha32": {
+            "backing": 2,
+            "bboxPx": [
+              130,
+              116,
+              188,
+              159
+            ],
+            "bboxWorld": [
+              -35,
+              -74,
+              94,
+              79.5
+            ],
+            "lowestPixelWorld": 5.5,
+            "headTopWorld": -74
+          },
+          "alpha128": {
+            "backing": 2,
+            "bboxPx": [
+              130,
+              116,
+              188,
+              159
+            ],
+            "bboxWorld": [
+              -35,
+              -74,
+              94,
+              79.5
+            ],
+            "lowestPixelWorld": 5.5,
+            "headTopWorld": -74
+          }
+        }
+      }
+    }
+  ],
+  "baseline": "Native index with only forestfolk+golem cosmetic modules omitted; caches cold, budget bypass only for deterministic render; same nativepose/time/season/worldfeet; no display bbox normalization",
+  "scaleClaim": "Pending evaluation from actual bbox and native head/foot anchors; reserved canvas size alone is not evidence",
+  "errors": []
+}

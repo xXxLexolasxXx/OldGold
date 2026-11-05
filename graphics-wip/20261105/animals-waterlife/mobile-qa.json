@@ -1,0 +1,16 @@
+{
+  "checked": 304,
+  "PX_FINE": 1,
+  "stats": {
+    "entries": 304,
+    "bytes": 2209152,
+    "hits": 0,
+    "misses": 304,
+    "maxEntries": 768,
+    "maxBytes": 25165824
+  },
+  "ready": true,
+  "errors": [],
+  "mode": "mobile production index + one staged injection; first frame of each animation/octant; full 3360 normalized frames checked separately on desktop",
+  "pageErrors": []
+}

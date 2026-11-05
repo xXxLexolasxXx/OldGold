@@ -1,0 +1,22 @@
+[
+  {
+    "path": "js/fantasy-published-smallfauna.js",
+    "bytes": 18084,
+    "sha256": "02ff17bc2265c3ff14482770bfe770ab48eb9e4bc115729f6b2b7f6133a02f68"
+  },
+  {
+    "path": "assets/fantasy-smallfauna/palettes.json",
+    "bytes": 650,
+    "sha256": "2bd20017a3ccf2673c4729cecfbfdb4b2e71a608806662234c2d3d85b734c86e"
+  },
+  {
+    "path": "assets/fantasy-smallfauna/frog-atlas.json",
+    "bytes": 5276,
+    "sha256": "56d43e7efd5382c47e5c63c78359fbd368ce8dd3f2aea5b46376dc9d823997b9"
+  },
+  {
+    "path": "assets/fantasy-smallfauna/frog-directions.png",
+    "bytes": 1173779,
+    "sha256": "4ce8bd580e5ee79a13b3ebdde3096e507d7aaed5d99914f9630199813336bef5"
+  }
+]

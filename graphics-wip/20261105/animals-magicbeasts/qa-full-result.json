@@ -1,0 +1,2596 @@
+[
+  {
+    "ready": true,
+    "errors": [],
+    "coverage": {
+      "unicorn": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "walk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ]
+      },
+      "forest": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "fire": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "ice": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "swamp": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "adult": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "griffin": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "walk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "take": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "atk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "die": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ]
+      },
+      "salamander": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "work": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ]
+      }
+    },
+    "clipped": [],
+    "mutation": [],
+    "nativeErrors": [],
+    "directionFailures": [],
+    "nativeCases": 7392,
+    "nativeCallbacks": 7392,
+    "repeat": true,
+    "stats": {
+      "entries": 512,
+      "rgbaBytes": 23537920,
+      "limit": 512,
+      "byteLimit": 25165824
+    },
+    "mobile": false,
+    "pageErrors": []
+  },
+  {
+    "ready": true,
+    "errors": [],
+    "coverage": {
+      "unicorn": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "walk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ]
+      },
+      "forest": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "fire": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "ice": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "swamp": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "adult": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "sleep": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "flyatk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 1
+          }
+        ]
+      },
+      "griffin": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "walk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "fly": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ],
+        "take": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "atk": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "die": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ]
+      },
+      "salamander": {
+        "idle": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 3
+          }
+        ],
+        "work": [
+          {
+            "dir": 0,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 1,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 2,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 3,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 4,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 5,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 6,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          },
+          {
+            "dir": 7,
+            "samples": 12,
+            "uniqueRasterFrames": 2
+          }
+        ]
+      }
+    },
+    "clipped": [],
+    "mutation": [],
+    "nativeErrors": [],
+    "directionFailures": [],
+    "nativeCases": 7392,
+    "nativeCallbacks": 7392,
+    "repeat": true,
+    "stats": {
+      "entries": 512,
+      "rgbaBytes": 23537920,
+      "limit": 512,
+      "byteLimit": 25165824
+    },
+    "mobile": true,
+    "pageErrors": []
+  }
+]

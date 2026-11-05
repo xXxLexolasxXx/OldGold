@@ -1,0 +1,214 @@
+{
+  "at": "2026-11-05T00:44:04.557127+00:00",
+  "status": "STOPPED FOR DAY by direct user instruction; all current results saved; shared publication checkout, no parallel git add/commit",
+  "runtimeFiles": [
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-darkcourt-polish.js",
+      "sha256": "b6d63620aba06e378a2a88e26ef71b7f094edde4e8e67edc3c99defb0083d077"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-undead-polish.js",
+      "sha256": "f5776044f0358523439a47f4f2843b129ef564c85d9c027afca68df825d8ee86"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-echo-polish.js",
+      "sha256": "d9ca844300ecb53794dfa26d0c4ad320b780e230f93f8dddb2c5bc8d83377584"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-barrow-polish.js",
+      "sha256": "079c85870fc624517bad8899d6913aa30fdced831278efa244ff561bfc1ae28c"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\js\\fantasy-mimic-polish.js",
+      "sha256": "7aa79af268dc16339892443068225dfd6fbc1c7258ca8a4ebb7a513bfcc87305"
+    }
+  ],
+  "courtAssets": [
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\court-bodies-v4-pixel.png",
+      "sha256": "479a014c3f44c3adfee827215446a4055af6e9f10d6893d527337966d40f6856"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\court-arms-v4-pixel.png",
+      "sha256": "00df6b91b004fcbcfea0b048e8d85c3f707f5f81f45068cd4291eaf0cd3477d6"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\court-bodies-v5-S.png",
+      "sha256": "d42a0522a3829cad098a2fa57dbe730dc96a998eaa0deda0f12d707862698cff"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\court-bodies-v5-E.png",
+      "sha256": "dabca1b470be219cd21c99284cdd3bfbe97a42315f02ec1678583074bf3ccd00"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\court-bodies-v5-NE.png",
+      "sha256": "e53423d3f759c36b72578f46f33eed40ed47c54cafdddd3ff7210388f67c0f33"
+    },
+    {
+      "path": "D:\\для игры\\feod\\output\\publish\\oldgold-pages-20261104\\assets\\fantasy\\court-bodies-v5-N.png",
+      "sha256": "835eeb3c1be1f0508427370a6d615ef74e3334c1cc7fa904bfd8c478310da2fa"
+    }
+  ],
+  "court": "b6d63620aba06e378a2a88e26ef71b7f094edde4e8e67edc3c99defb0083d077; five projections/eight headings/native actions exist and passed QA, but native visible scale gate unresolved, not ready for live",
+  "passed": [
+    "5544 frame/view combinations, no partial sprite alpha/clipping/hand anchor error",
+    "desktop/mobile canonical index, no injection, 880 unchanged NPC JSON callbacks each",
+    "32 native glow transform checks",
+    "finite cache, max1200 entries/32MiB, repeated state reuse",
+    "78 actual native callbacks for explicit front/rear three-quarter sheet without clipped FX or state mutation"
+  ],
+  "knownDefects": [
+    {
+      "kind": "fThrall",
+      "heightRatio": 1.2196261682242993,
+      "topDelta": -8,
+      "bottomDelta": -0.1666666666666643
+    },
+    {
+      "kind": "fKnight",
+      "heightRatio": 1.202054794520548,
+      "topDelta": -10,
+      "bottomDelta": -0.1666666666666572
+    },
+    {
+      "kind": "fMalgor1",
+      "heightRatio": 1.2136363636363636,
+      "topDelta": -16.666666666666657,
+      "bottomDelta": -1
+    },
+    {
+      "kind": "fMalgor3",
+      "heightRatio": 1.2081447963800906,
+      "topDelta": -16.33333333333333,
+      "bottomDelta": -1
+    },
+    {
+      "kind": "fBone",
+      "heightRatio": 1.2045454545454546,
+      "topDelta": -4.666666666666664,
+      "bottomDelta": -0.1666666666666643
+    },
+    {
+      "kind": "fRock",
+      "heightRatio": 1.1460674157303372,
+      "topDelta": -5,
+      "bottomDelta": -0.6666666666666643
+    },
+    {
+      "kind": "fG_fire",
+      "heightRatio": 1.1892857142857143,
+      "topDelta": -9.333333333333329,
+      "bottomDelta": -0.5
+    },
+    {
+      "kind": "fG_ice",
+      "heightRatio": 1.1725352112676057,
+      "topDelta": -9.333333333333329,
+      "bottomDelta": -1.1666666666666643
+    },
+    {
+      "kind": "fG_bone",
+      "heightRatio": 1.3110236220472442,
+      "topDelta": -13,
+      "bottomDelta": 0.1666666666666714
+    },
+    {
+      "kind": "fG_shadow",
+      "heightRatio": 1.25,
+      "topDelta": -12.333333333333329,
+      "bottomDelta": -1.3333333333333286
+    },
+    {
+      "kind": "fG_golem",
+      "heightRatio": 1.1428571428571428,
+      "topDelta": -13.666666666666657,
+      "bottomDelta": -3.666666666666657
+    }
+  ],
+  "pending": [
+    "Court: correct uniform world size using cold native visible body/head/foot reference; preserve native hand/FX points, all five views use one scale. No redraw done today.",
+    "Skeleton prototype: only cold native capture and prior source backup; no new directional runtime authored or integrated.",
+    "Four skeleton looks, 42 echoes, 3 barrow forms, 10 mimics, spectral ghosts/reaper and FZ wisps remain a new directional scope. Previous frontal PASS is insufficient."
+  ],
+  "skeletonPrototypeFiles": [
+    "D:\\для игры\\feod\\output\\fantasy\\undead-directional\\skeleton-prototype\\baseline.js",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-directional\\skeleton-prototype\\cold-native.cjs",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-directional\\skeleton-prototype\\cold-native.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-directional\\skeleton-prototype\\cold-native.png"
+  ],
+  "skeletonColdNative": {
+    "native": {
+      "x0": -8.333333333333334,
+      "y0": -41.666666666666664,
+      "x1": 20.333333333333336,
+      "y1": 1.6666666666666643,
+      "width": 28.666666666666668,
+      "height": 43.333333333333336
+    },
+    "previous": {
+      "x0": -7.5,
+      "y0": -43,
+      "x1": 19.5,
+      "y1": 1,
+      "width": 27,
+      "height": 44
+    },
+    "contract": {
+      "PS": 6,
+      "PART": 3,
+      "W": 52,
+      "H": 56,
+      "AX": 22,
+      "AY": 50,
+      "FR": {
+        "idle": 12,
+        "walk": 12,
+        "atk": 12,
+        "hit": 6,
+        "die": 12,
+        "grab": 13
+      },
+      "ATK_DUR": 0.72,
+      "HIT_DUR": 0.3,
+      "DIE_DUR": 0.9,
+      "MAX": 600
+    },
+    "description": "Original skelSprite from FantasyUndeadPolish.originalSkeleton, fresh actor/cache cold E idle0. 1:1 above and uniform x3 below."
+  },
+  "savedEvidenceFiles": [
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\DIRECTIONAL_READY.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\STATUS.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\SELF_AUDIT.md",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\SELF_AUDIT.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\HANDOFF.md",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\API_READY.md",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\IMAGEGEN_PROMPTS.md",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\checks.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\cache-checks.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\fx-anchors.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\production-checks.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\world-checks.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\court-directions.png",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\court-turns.gif",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\court-both-three-quarters.png",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\malgor-both-three-quarters.png",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\three-quarter-proof.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\cold-native-scale.cjs",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\court-native-scale.json",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\court-native-1to1.png",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\court-native-x2.png",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\review.html",
+    "D:\\для игры\\feod\\output\\fantasy\\undead-01199\\directions\\eight-directions-in-game.mp4"
+  ],
+  "doNotIncludeInLive": [
+    "Uncorrected court v5 native-size gate as a final release",
+    "Skeleton prototype/cold captures/baseline backup as runtime",
+    "Raw QA frames, scripts, reports, generated source images, review zips as live game assets",
+    "Any claim legacy skeleton/echo/barrow/mimic adapters meet expanded directional rules"
+  ],
+  "separateOwners": "Owls and enemy raven owned by birds branch; fairies/leshy owned elsewhere; no edits to those concurrent source files.",
+  "commit": "No own commit SHA: shared publication checkout. Leading thread 01a1a2b3-2a33-73b3-8aab-6f77e1d39b63 to save own listed files sequentially. Files remain on disk; no reset/clean/forcepush.",
+  "indexVersionEngineDeploymentChanged": false,
+  "archiveWarning": "Existing court-directional-review.zip predates this cold-scale addendum; retain as historical evidence, do not use its READY as current release gate.",
+  "subagents": []
+}

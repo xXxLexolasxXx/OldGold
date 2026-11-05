@@ -1,0 +1,14 @@
+{
+  "assetErrors": [],
+  "cache": {
+    "troll": {
+      "entries": 12,
+      "bytes": 5529600
+    },
+    "golem": {
+      "entries": 12,
+      "bytes": 4325376
+    }
+  },
+  "errors": []
+}

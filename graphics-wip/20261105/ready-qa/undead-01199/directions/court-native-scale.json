@@ -1,0 +1,792 @@
+{
+  "records": [
+    {
+      "kind": "fThrall",
+      "native": {
+        "x0": -9.666666666666668,
+        "y0": -35,
+        "x1": 12.333333333333329,
+        "y1": 0.6666666666666643,
+        "width": 22,
+        "height": 35.666666666666664
+      },
+      "views": {
+        "S": {
+          "x0": -9.5,
+          "y0": -43,
+          "x1": 10,
+          "y1": 0.5,
+          "width": 19.5,
+          "height": 43.5
+        },
+        "SE": {
+          "x0": -9.5,
+          "y0": -43,
+          "x1": 12,
+          "y1": 0.5,
+          "width": 21.5,
+          "height": 43.5
+        },
+        "E": {
+          "x0": -7.5,
+          "y0": -43,
+          "x1": 12,
+          "y1": 0.5,
+          "width": 19.5,
+          "height": 43.5
+        },
+        "NE": {
+          "x0": -9,
+          "y0": -43,
+          "x1": 12,
+          "y1": 0.5,
+          "width": 21,
+          "height": 43.5
+        },
+        "N": {
+          "x0": -9.5,
+          "y0": -43,
+          "x1": 9.5,
+          "y1": 0.5,
+          "width": 19,
+          "height": 43.5
+        }
+      },
+      "profileHeightRatio": 1.2196261682242993,
+      "profileTopDelta": -8,
+      "profileBottomDelta": -0.1666666666666643,
+      "anchorNative": [
+        20,
+        48
+      ],
+      "anchorCurrent": [
+        20,
+        48
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fKnight",
+      "native": {
+        "x0": -14,
+        "y0": -48,
+        "x1": 22,
+        "y1": 0.6666666666666572,
+        "width": 36,
+        "height": 48.666666666666664
+      },
+      "views": {
+        "S": {
+          "x0": -14.5,
+          "y0": -58,
+          "x1": 16,
+          "y1": 0.5,
+          "width": 30.5,
+          "height": 58.5
+        },
+        "SE": {
+          "x0": -14.5,
+          "y0": -58,
+          "x1": 20,
+          "y1": 1,
+          "width": 34.5,
+          "height": 59
+        },
+        "E": {
+          "x0": -11.5,
+          "y0": -58,
+          "x1": 20,
+          "y1": 0.5,
+          "width": 31.5,
+          "height": 58.5
+        },
+        "NE": {
+          "x0": -13.5,
+          "y0": -57.5,
+          "x1": 20,
+          "y1": 1,
+          "width": 33.5,
+          "height": 58.5
+        },
+        "N": {
+          "x0": -14.5,
+          "y0": -58,
+          "x1": 14.5,
+          "y1": 0.5,
+          "width": 29,
+          "height": 58.5
+        }
+      },
+      "profileHeightRatio": 1.202054794520548,
+      "profileTopDelta": -10,
+      "profileBottomDelta": -0.1666666666666572,
+      "anchorNative": [
+        29,
+        64
+      ],
+      "anchorCurrent": [
+        29,
+        64
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fMalgor1",
+      "native": {
+        "x0": -16.666666666666668,
+        "y0": -72.33333333333334,
+        "x1": 17,
+        "y1": 1,
+        "width": 33.666666666666664,
+        "height": 73.33333333333333
+      },
+      "views": {
+        "S": {
+          "x0": -18,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 37,
+          "height": 89
+        },
+        "SE": {
+          "x0": -18,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 37,
+          "height": 89
+        },
+        "E": {
+          "x0": -16,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 35,
+          "height": 89
+        },
+        "NE": {
+          "x0": -17,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 36,
+          "height": 89
+        },
+        "N": {
+          "x0": -18,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 37,
+          "height": 89
+        }
+      },
+      "profileHeightRatio": 1.2136363636363636,
+      "profileTopDelta": -16.666666666666657,
+      "profileBottomDelta": -1,
+      "anchorNative": [
+        38,
+        92
+      ],
+      "anchorCurrent": [
+        38,
+        92
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fMalgor3",
+      "native": {
+        "x0": -16.666666666666668,
+        "y0": -72.66666666666667,
+        "x1": 17,
+        "y1": 1,
+        "width": 33.666666666666664,
+        "height": 73.66666666666666
+      },
+      "views": {
+        "S": {
+          "x0": -18,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 37,
+          "height": 89
+        },
+        "SE": {
+          "x0": -17.5,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 36.5,
+          "height": 89
+        },
+        "E": {
+          "x0": -16,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 35,
+          "height": 89
+        },
+        "NE": {
+          "x0": -17,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 36,
+          "height": 89
+        },
+        "N": {
+          "x0": -18,
+          "y0": -89,
+          "x1": 19,
+          "y1": 0,
+          "width": 37,
+          "height": 89
+        }
+      },
+      "profileHeightRatio": 1.2081447963800906,
+      "profileTopDelta": -16.33333333333333,
+      "profileBottomDelta": -1,
+      "anchorNative": [
+        38,
+        92
+      ],
+      "anchorCurrent": [
+        38,
+        92
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fBone",
+      "native": {
+        "x0": -4.333333333333334,
+        "y0": -21.333333333333336,
+        "x1": 8.666666666666664,
+        "y1": 0.6666666666666643,
+        "width": 13,
+        "height": 22
+      },
+      "views": {
+        "S": {
+          "x0": -6,
+          "y0": -26,
+          "x1": 6.5,
+          "y1": 0.5,
+          "width": 12.5,
+          "height": 26.5
+        },
+        "SE": {
+          "x0": -5.5,
+          "y0": -26,
+          "x1": 7.5,
+          "y1": 0.5,
+          "width": 13,
+          "height": 26.5
+        },
+        "E": {
+          "x0": -4,
+          "y0": -26,
+          "x1": 7.5,
+          "y1": 0.5,
+          "width": 11.5,
+          "height": 26.5
+        },
+        "NE": {
+          "x0": -4,
+          "y0": -26,
+          "x1": 7.5,
+          "y1": 0.5,
+          "width": 11.5,
+          "height": 26.5
+        },
+        "N": {
+          "x0": -4.5,
+          "y0": -26,
+          "x1": 6,
+          "y1": 0.5,
+          "width": 10.5,
+          "height": 26.5
+        }
+      },
+      "profileHeightRatio": 1.2045454545454546,
+      "profileTopDelta": -4.666666666666664,
+      "profileBottomDelta": -0.1666666666666643,
+      "anchorNative": [
+        16,
+        29
+      ],
+      "anchorCurrent": [
+        16,
+        29
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fRock",
+      "native": {
+        "x0": -13,
+        "y0": -29,
+        "x1": 12,
+        "y1": 0.6666666666666643,
+        "width": 25,
+        "height": 29.666666666666664
+      },
+      "views": {
+        "S": {
+          "x0": -17,
+          "y0": -34,
+          "x1": 17,
+          "y1": 0,
+          "width": 34,
+          "height": 34
+        },
+        "SE": {
+          "x0": -16.5,
+          "y0": -34,
+          "x1": 16.5,
+          "y1": 0,
+          "width": 33,
+          "height": 34
+        },
+        "E": {
+          "x0": -17,
+          "y0": -34,
+          "x1": 17.5,
+          "y1": 0,
+          "width": 34.5,
+          "height": 34
+        },
+        "NE": {
+          "x0": -16.5,
+          "y0": -34,
+          "x1": 16.5,
+          "y1": 0,
+          "width": 33,
+          "height": 34
+        },
+        "N": {
+          "x0": -17,
+          "y0": -34,
+          "x1": 17,
+          "y1": 0,
+          "width": 34,
+          "height": 34
+        }
+      },
+      "profileHeightRatio": 1.1460674157303372,
+      "profileTopDelta": -5,
+      "profileBottomDelta": -0.6666666666666643,
+      "anchorNative": [
+        22,
+        36
+      ],
+      "anchorCurrent": [
+        22,
+        36
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fG_fire",
+      "native": {
+        "x0": -10,
+        "y0": -45.66666666666667,
+        "x1": 16,
+        "y1": 1,
+        "width": 26,
+        "height": 46.666666666666664
+      },
+      "views": {
+        "S": {
+          "x0": -15,
+          "y0": -55,
+          "x1": 19,
+          "y1": 0.5,
+          "width": 34,
+          "height": 55.5
+        },
+        "SE": {
+          "x0": -15,
+          "y0": -55,
+          "x1": 17.5,
+          "y1": 0.5,
+          "width": 32.5,
+          "height": 55.5
+        },
+        "E": {
+          "x0": -9.5,
+          "y0": -55,
+          "x1": 17.5,
+          "y1": 0.5,
+          "width": 27,
+          "height": 55.5
+        },
+        "NE": {
+          "x0": -14,
+          "y0": -55,
+          "x1": 17.5,
+          "y1": 0.5,
+          "width": 31.5,
+          "height": 55.5
+        },
+        "N": {
+          "x0": -15,
+          "y0": -55,
+          "x1": 15,
+          "y1": 0.5,
+          "width": 30,
+          "height": 55.5
+        }
+      },
+      "profileHeightRatio": 1.1892857142857143,
+      "profileTopDelta": -9.333333333333329,
+      "profileBottomDelta": -0.5,
+      "anchorNative": [
+        27,
+        62
+      ],
+      "anchorCurrent": [
+        27,
+        62
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fG_ice",
+      "native": {
+        "x0": -12,
+        "y0": -45.66666666666667,
+        "x1": 16.666666666666664,
+        "y1": 1.6666666666666643,
+        "width": 28.666666666666664,
+        "height": 47.33333333333333
+      },
+      "views": {
+        "S": {
+          "x0": -12.5,
+          "y0": -55,
+          "x1": 12.5,
+          "y1": 0.5,
+          "width": 25,
+          "height": 55.5
+        },
+        "SE": {
+          "x0": -12.5,
+          "y0": -55,
+          "x1": 15.5,
+          "y1": 0.5,
+          "width": 28,
+          "height": 55.5
+        },
+        "E": {
+          "x0": -9,
+          "y0": -55,
+          "x1": 15.5,
+          "y1": 0.5,
+          "width": 24.5,
+          "height": 55.5
+        },
+        "NE": {
+          "x0": -11.5,
+          "y0": -55,
+          "x1": 15.5,
+          "y1": 0.5,
+          "width": 27,
+          "height": 55.5
+        },
+        "N": {
+          "x0": -12.5,
+          "y0": -55,
+          "x1": 12.5,
+          "y1": 0.5,
+          "width": 25,
+          "height": 55.5
+        }
+      },
+      "profileHeightRatio": 1.1725352112676057,
+      "profileTopDelta": -9.333333333333329,
+      "profileBottomDelta": -1.1666666666666643,
+      "anchorNative": [
+        27,
+        62
+      ],
+      "anchorCurrent": [
+        27,
+        62
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fG_bone",
+      "native": {
+        "x0": -12,
+        "y0": -42,
+        "x1": 16,
+        "y1": 0.3333333333333286,
+        "width": 28,
+        "height": 42.33333333333333
+      },
+      "views": {
+        "S": {
+          "x0": -14.5,
+          "y0": -55,
+          "x1": 14.5,
+          "y1": 0.5,
+          "width": 29,
+          "height": 55.5
+        },
+        "SE": {
+          "x0": -14.5,
+          "y0": -55,
+          "x1": 17,
+          "y1": 0.5,
+          "width": 31.5,
+          "height": 55.5
+        },
+        "E": {
+          "x0": -10,
+          "y0": -55,
+          "x1": 17,
+          "y1": 0.5,
+          "width": 27,
+          "height": 55.5
+        },
+        "NE": {
+          "x0": -13.5,
+          "y0": -55,
+          "x1": 17,
+          "y1": 0.5,
+          "width": 30.5,
+          "height": 55.5
+        },
+        "N": {
+          "x0": -14.5,
+          "y0": -55,
+          "x1": 14.5,
+          "y1": 0.5,
+          "width": 29,
+          "height": 55.5
+        }
+      },
+      "profileHeightRatio": 1.3110236220472442,
+      "profileTopDelta": -13,
+      "profileBottomDelta": 0.1666666666666714,
+      "anchorNative": [
+        27,
+        62
+      ],
+      "anchorCurrent": [
+        27,
+        62
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fG_shadow",
+      "native": {
+        "x0": -12,
+        "y0": -42.66666666666667,
+        "x1": 21,
+        "y1": 1.3333333333333286,
+        "width": 33,
+        "height": 44
+      },
+      "views": {
+        "S": {
+          "x0": -14,
+          "y0": -55,
+          "x1": 16,
+          "y1": 0,
+          "width": 30,
+          "height": 55
+        },
+        "SE": {
+          "x0": -14.5,
+          "y0": -55,
+          "x1": 20,
+          "y1": 0,
+          "width": 34.5,
+          "height": 55
+        },
+        "E": {
+          "x0": -9.5,
+          "y0": -55,
+          "x1": 20,
+          "y1": 0,
+          "width": 29.5,
+          "height": 55
+        },
+        "NE": {
+          "x0": -13.5,
+          "y0": -55,
+          "x1": 20,
+          "y1": 0,
+          "width": 33.5,
+          "height": 55
+        },
+        "N": {
+          "x0": -14.5,
+          "y0": -55,
+          "x1": 14.5,
+          "y1": 0,
+          "width": 29,
+          "height": 55
+        }
+      },
+      "profileHeightRatio": 1.25,
+      "profileTopDelta": -12.333333333333329,
+      "profileBottomDelta": -1.3333333333333286,
+      "anchorNative": [
+        27,
+        62
+      ],
+      "anchorCurrent": [
+        27,
+        62
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    },
+    {
+      "kind": "fG_golem",
+      "native": {
+        "x0": -25.666666666666668,
+        "y0": -68.33333333333334,
+        "x1": 27.33333333333333,
+        "y1": 1.6666666666666572,
+        "width": 53,
+        "height": 70
+      },
+      "views": {
+        "S": {
+          "x0": -26.5,
+          "y0": -82,
+          "x1": 24.5,
+          "y1": -2,
+          "width": 51,
+          "height": 80
+        },
+        "SE": {
+          "x0": -26.5,
+          "y0": -82,
+          "x1": 24.5,
+          "y1": -2,
+          "width": 51,
+          "height": 80
+        },
+        "E": {
+          "x0": -25.5,
+          "y0": -82,
+          "x1": 24,
+          "y1": -2,
+          "width": 49.5,
+          "height": 80
+        },
+        "NE": {
+          "x0": -26.5,
+          "y0": -82,
+          "x1": 24.5,
+          "y1": -2,
+          "width": 51,
+          "height": 80
+        },
+        "N": {
+          "x0": -26.5,
+          "y0": -82,
+          "x1": 24.5,
+          "y1": -2,
+          "width": 51,
+          "height": 80
+        }
+      },
+      "profileHeightRatio": 1.1428571428571428,
+      "profileTopDelta": -13.666666666666657,
+      "profileBottomDelta": -3.666666666666657,
+      "anchorNative": [
+        48,
+        90
+      ],
+      "anchorCurrent": [
+        48,
+        90
+      ],
+      "description": "Cold original foePxFrame i0, fresh page; native renderer has no direction argument. Visible extents include weapons/hat, not an isolated head landmark."
+    }
+  ],
+  "nativeHeadLandmarkVerified": false,
+  "note": "Do not infer isolated head/foot landmarks from full visible sprite bbox. Any size divergence is an unresolved scale gate, not an automatic art change.",
+  "pageErrors": [],
+  "sourceSha256": "b6d63620aba06e378a2a88e26ef71b7f094edde4e8e67edc3c99defb0083d077",
+  "findings": [
+    {
+      "kind": "fThrall",
+      "heightRatio": 1.2196261682242993,
+      "topDelta": -8,
+      "bottomDelta": -0.1666666666666643
+    },
+    {
+      "kind": "fKnight",
+      "heightRatio": 1.202054794520548,
+      "topDelta": -10,
+      "bottomDelta": -0.1666666666666572
+    },
+    {
+      "kind": "fMalgor1",
+      "heightRatio": 1.2136363636363636,
+      "topDelta": -16.666666666666657,
+      "bottomDelta": -1
+    },
+    {
+      "kind": "fMalgor3",
+      "heightRatio": 1.2081447963800906,
+      "topDelta": -16.33333333333333,
+      "bottomDelta": -1
+    },
+    {
+      "kind": "fBone",
+      "heightRatio": 1.2045454545454546,
+      "topDelta": -4.666666666666664,
+      "bottomDelta": -0.1666666666666643
+    },
+    {
+      "kind": "fRock",
+      "heightRatio": 1.1460674157303372,
+      "topDelta": -5,
+      "bottomDelta": -0.6666666666666643
+    },
+    {
+      "kind": "fG_fire",
+      "heightRatio": 1.1892857142857143,
+      "topDelta": -9.333333333333329,
+      "bottomDelta": -0.5
+    },
+    {
+      "kind": "fG_ice",
+      "heightRatio": 1.1725352112676057,
+      "topDelta": -9.333333333333329,
+      "bottomDelta": -1.1666666666666643
+    },
+    {
+      "kind": "fG_bone",
+      "heightRatio": 1.3110236220472442,
+      "topDelta": -13,
+      "bottomDelta": 0.1666666666666714
+    },
+    {
+      "kind": "fG_shadow",
+      "heightRatio": 1.25,
+      "topDelta": -12.333333333333329,
+      "bottomDelta": -1.3333333333333286
+    },
+    {
+      "kind": "fG_golem",
+      "heightRatio": 1.1428571428571428,
+      "topDelta": -13.666666666666657,
+      "bottomDelta": -3.666666666666657
+    }
+  ],
+  "scaleGate": "PENDING: measurable native/current visible scale divergence; do not treat previous canvas checks as size approval"
+}

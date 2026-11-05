@@ -1,0 +1,93 @@
+{
+  "frames": 2325,
+  "nativeDraws": 320,
+  "handChecks": 465,
+  "edge": [],
+  "baselineBoundaryFrames": {
+    "goblin": [
+      "d3",
+      "d4",
+      "d5",
+      "d6",
+      "d7",
+      "d8",
+      "d9",
+      "d10",
+      "d11"
+    ],
+    "goblinB": [
+      "strike",
+      "a6",
+      "d3",
+      "d4",
+      "d5",
+      "d6",
+      "d7",
+      "d8",
+      "d9",
+      "d10",
+      "d11"
+    ],
+    "goblinChamp": [
+      "roar",
+      "d3",
+      "d4",
+      "d5",
+      "d6",
+      "d7",
+      "d8",
+      "d9",
+      "d10",
+      "d11",
+      "r2",
+      "r3",
+      "r4",
+      "r5",
+      "r6",
+      "r7",
+      "r8",
+      "r9"
+    ],
+    "goblinKing": [
+      "strike",
+      "a6",
+      "d3",
+      "d4",
+      "d5",
+      "d6",
+      "d7",
+      "d8",
+      "d9",
+      "d10",
+      "d11"
+    ],
+    "shnyrKing": [
+      "strike",
+      "a6",
+      "a7",
+      "d2",
+      "d3",
+      "d4",
+      "d5",
+      "d6",
+      "d7",
+      "d8",
+      "d9",
+      "d10",
+      "d11",
+      "v2",
+      "v10"
+    ]
+  },
+  "introducedBoundaryContacts": [],
+  "cache": {
+    "entries": 201,
+    "rgbaBytes": 25149696,
+    "maxEntries": 900,
+    "maxRgbaBytes": 25165824,
+    "hits": 173
+  },
+  "protectedStateUnchanged": true,
+  "errors": [],
+  "pageErrors": []
+}

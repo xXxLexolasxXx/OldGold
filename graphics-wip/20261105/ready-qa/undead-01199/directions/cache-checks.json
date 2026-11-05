@@ -1,0 +1,20 @@
+{
+  "portraitMatches": true,
+  "invalidInputMissDelta": 0,
+  "sameStateIdentity": true,
+  "sameStateMissDelta": 0,
+  "sameStateHitDelta": 1000,
+  "distinctViewObjects": 4,
+  "distinctViewPixels": 4,
+  "unusedGfMissDelta": 0,
+  "unusedGfHitDelta": 300,
+  "maxEntriesObserved": 1114,
+  "maxRgbaBytesObserved": 33554432,
+  "limits": {
+    "entries": 1200,
+    "rgbaBytes": 33554432
+  },
+  "keySchema": "kind|nativeFrame|canonicalView|booleanMirror; turn is quantized into canonical view/mirror, no raw Game.time or gf",
+  "badKeySchema": false,
+  "clearResetsBytes": true
+}

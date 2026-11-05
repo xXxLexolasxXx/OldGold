@@ -1,0 +1,151 @@
+[
+  {
+    "device": "desktop",
+    "ready": true,
+    "errors": [],
+    "directions": [
+      {
+        "dx": 0,
+        "dy": 1,
+        "v": "S",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": 1,
+        "dy": 1,
+        "v": "SE",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": 1,
+        "dy": 0,
+        "v": "E",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": 1,
+        "dy": -1,
+        "v": "NE",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": 0,
+        "dy": -1,
+        "v": "N",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": -1,
+        "dy": -1,
+        "v": "NE",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": -1,
+        "dy": 0,
+        "v": "E",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": -1,
+        "dy": 1,
+        "v": "SE",
+        "match": true,
+        "mutation": false
+      }
+    ],
+    "cache": {
+      "entries": 16,
+      "bytes": 174080,
+      "maxEntries": 1800,
+      "maxBytes": 25165824
+    },
+    "pageErrors": []
+  },
+  {
+    "device": "mobile",
+    "ready": true,
+    "errors": [],
+    "directions": [
+      {
+        "dx": 0,
+        "dy": 1,
+        "v": "S",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": 1,
+        "dy": 1,
+        "v": "SE",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": 1,
+        "dy": 0,
+        "v": "E",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": 1,
+        "dy": -1,
+        "v": "NE",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": 0,
+        "dy": -1,
+        "v": "N",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": -1,
+        "dy": -1,
+        "v": "NE",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": -1,
+        "dy": 0,
+        "v": "E",
+        "match": true,
+        "mutation": false
+      },
+      {
+        "dx": -1,
+        "dy": 1,
+        "v": "SE",
+        "match": true,
+        "mutation": false
+      }
+    ],
+    "cache": {
+      "entries": 16,
+      "bytes": 174080,
+      "maxEntries": 1800,
+      "maxBytes": 25165824
+    },
+    "pageErrors": []
+  },
+  {
+    "device": "missing-asset",
+    "ready": false,
+    "errors": [
+      "Не загружен ассет: assets/fantasy-birds/owl-flight-v2.png"
+    ],
+    "fallback": true,
+    "pageErrors": []
+  }
+]
