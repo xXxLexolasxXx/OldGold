@@ -31,6 +31,29 @@ class FPABuildingArtCache extends Map {
 }
 const FantasyPublishedArt = {images:{},errors:[],cache:new FPABuildingArtCache(),people:new Map(),version:1};
 const FantasyArt = FantasyPublishedArt;
+const FPAYardBank = { ready: null, errors: [] };
+const fpaYardBankURL = new URL('../assets/fantasy/school-inn-bank.json', document.currentScript.src);
+FPAYardBank.ready = (async () => {
+  const load = async url => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Yard bank HTTP ' + response.status);
+    return response;
+  };
+  const { width, height, entries } = await (await load(fpaYardBankURL)).json();
+  const atlas = await createImageBitmap(await (await load(new URL('school-inn-bank.png', fpaYardBankURL))).blob());
+  try {
+    if (atlas.width !== width || atlas.height !== height) throw new Error('Unexpected yard bank size');
+    const extract = ([x,y,w,h]) => {
+      const canvas = mkCanvas(w,h);
+      canvas.getContext('2d').drawImage(atlas,x,y,w,h,0,0,w,h);
+      return canvas;
+    };
+    for (const [key, { meta, regions }] of Object.entries(entries)) {
+      if (!SPR.buildings[key]) SPR.buildings[key] = { ...meta, canvas: extract(regions[0]), shadow: extract(regions[1]) };
+    }
+    return true;
+  } finally { atlas.close(); }
+})().catch(error => { FPAYardBank.errors.push(error.message); return false; });
 function faRect(c,x,y,w,h,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),Math.max(.5,w),Math.max(.5,h));}
 function fpaBounds(cv){const d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data;let x0=cv.width,y0=cv.height,x1=-1,y1=-1;for(let y=0;y<cv.height;y++)for(let x=0;x<cv.width;x++)if(d[(y*cv.width+x)*4+3]>=96){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}return x1<0?[0,0,1,1]:[x0,y0,x1-x0+1,y1-y0+1];}
 FantasyPublishedArt.ready=Promise.all(["house","well","tradepost","infirmary","pier","fisherhut","library","herohall","watchtower","armory", "bakery", "bonfire-flames", "bonfire-hearth", "brewery", "butchery", "crystalmine", "farm", "gnome-child", "gnome-walk", "gnome-woman-walk", "goatpen", "goldmine", "graveyard", "guild_archer", "guild_mage", "guild_rogue", "guild_warrior", "hopfarm", "inn", "ironmine", "magicworkshop", "metallurgist", "mill", "quarry", "sawmill", "school", "smeltery", "squadtavern", "stable", "storehouse", "swine", "tannery", "weaponsmith", "woodcutter"].map(type=>new Promise(resolve=>{const im=new Image();im.onload=()=>{const cv=mkCanvas(im.width,im.height),c=cv.getContext('2d',{willReadFrequently:true});c.drawImage(im,0,0);const d=c.getImageData(0,0,cv.width,cv.height);if(type.startsWith('gnome-')){for(let i=3;i<d.data.length;i+=4)d.data[i]=d.data[i]>=220?255:0;c.putImageData(d,0,0);}const a={image:cv,bounds:fpaBounds(cv)};if(type.startsWith('gnome-')||type==='bonfire-flames')faSliceFrames(a,d.data,cv.width,cv.height,type==='gnome-child'||type==='bonfire-flames'?4:8,type==='gnome-child'||type==='bonfire-flames'?2:3);FantasyPublishedArt.images[type]=a;FantasyPublishedArt.cache.clear();FantasyPublishedArt.people.clear();resolve();};im.onerror=()=>{FantasyPublishedArt.errors.push(type);resolve();};im.src='assets/fantasy/'+type+'-v1.png';})));
