@@ -224,11 +224,15 @@ function resolveFight(e) {
 
 // ---------- Щепки, пыль, листья ----------
 
-function fxBurst(x, y, n, cols, sp, up, life, size, grav = 260) {
+const fxGridParticles = new WeakSet();
+const fxSnap = value => Math.round(value * 2) / 2;
+function fxBurst(x, y, n, cols, sp, up, life, size, grav = 260, pixelGrid = false) {
   const fx = Game.fx || (Game.fx = []);
   for (let k = 0; k < n; k++) {
     const a = Math.random() * Math.PI * 2, v = sp * (0.4 + Math.random() * 0.6);
-    fx.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.5 - up * (0.5 + Math.random() * 0.5), g: grav, t: 0, life: life * (0.6 + Math.random() * 0.4), col: cols[k % cols.length], s: size * (0.6 + Math.random() * 0.6) });
+    const p={ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.5 - up * (0.5 + Math.random() * 0.5), g: grav, t: 0, life: life * (0.6 + Math.random() * 0.4), col: cols[k % cols.length], s: size * (0.6 + Math.random() * 0.6) };
+    if(pixelGrid===true)fxGridParticles.add(p);
+    fx.push(p);
   }
 }
 
@@ -264,7 +268,11 @@ function drawNightFx(c) {
   for (const p of fx) {
     c.globalAlpha = Math.max(0, 1 - p.t / p.life);
     c.fillStyle = p.col;
-    c.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s * 0.8);
+    if (fxGridParticles.has(p)) {
+      c.fillRect(fxSnap(p.x),fxSnap(p.y),Math.max(.5,fxSnap(p.s)),Math.max(.5,fxSnap(p.s*.8)));
+    } else {
+      c.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s * 0.8);
+    }
   }
   c.globalAlpha = 1;
 }

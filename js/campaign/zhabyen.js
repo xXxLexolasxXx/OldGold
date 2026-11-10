@@ -67,16 +67,20 @@ function campZbTick(C, dt) {
 const campZbViews = ['S','SE','E','NE','N','NW','W','SW'];
 const campZbFacing = new WeakMap();
 
-function campZbDirection(Z, attackAge) {
+function campZbShot(Z) {
+  const shots=Game.dshots||[];
+  for(let i=shots.length-1;i>=0;i--){
+    const s=shots[i],age=Game.time-s.born;
+    if(s.k==='dart'&&Math.abs(s.dur-ZB.shotDur)<.01&&age>=0&&age<ZB.shotDur&&Math.hypot(s.x-Z.x,s.y+.5-Z.y)<=1.65)return s;
+  }
+  return null;
+}
+
+function campZbDirection(Z, key, firing, shot) {
   let dx=0,dy=0;
-  if (attackAge>=0 && attackAge<ZB.shotDur) {
-    const shots=Game.dshots||[];
-    for(let i=shots.length-1;i>=0;i--){
-      const s=shots[i];
-      if(s.k!=='dart'||Math.abs(Game.time-s.born-attackAge)>.06||Math.hypot(s.x-Z.x,s.y+.5-Z.y)>1.65)continue;
-      dx=s.gx-s.x;dy=s.gy-s.y;break;
-    }
-    if(!dx&&!dy)dx=Z.face||1;
+  if (firing) {
+    dx=shot?shot.gx-shot.x:Z.face||1;
+    dy=shot?shot.gy-shot.y:0;
   } else if (Z.mv) {
     const hero=campHero();
     if(hero&&!hero.inside){
@@ -84,11 +88,11 @@ function campZbDirection(Z, attackAge) {
       dy=hero.y+.6-Z.y;
     }
   }
-  const old=campZbFacing.get(Z);
+  const old=campZbFacing.get(key);
   const heading=Math.hypot(dx,dy)>.001
     ? campZbViews[(Math.round(Math.atan2(dx,dy)/(Math.PI/4))+8)%8]
     : old||(Z.vf?'S':Z.face<0?'W':'E');
-  campZbFacing.set(Z,heading);
+  campZbFacing.set(key,heading);
   return heading;
 }
 
@@ -98,12 +102,13 @@ function campZbDraw(list, c, x0, y0, x1, y1, Zo) {
   if (!Z || typeof neuDraw !== 'function' || typeof NSPEC === 'undefined' || !NSPEC.ftZ) return;
   if (Z.x < x0 - 2 || Z.x > x1 + 2 || Z.y < y0 - 2 || Z.y > y1 + 3) return;
   list.push([Z.y + 0.1, () => {
-    const age=ZB.cd-Z.cd, firing=age>=0&&age<ZB.shotDur;
+    const shot=campZbShot(Z), age=shot?Game.time-shot.born:ZB.cd-Z.cd;
+    const firing=age>=0&&age<ZB.shotDur;
     const N = { k: 'ftZ', id: 7707, x: Z.x, y: Z.y, face: Z.face, vf: Z.vf || 0, st: firing?'atk':Z.mv?'roam':'idle', ph: Z.ph || 0, hp: 1, mhp: 1, dt: 0, winT: 0 };
     N.fr = firing ? naAtkFr(.26+age) : typeof neuFrame === 'function' ? neuFrame(N) : 'i0';
     const directions=globalThis.FrogDirections;
     if(directions?.setHeading&&globalThis.FantasyPublishedFrogs?.enabled!==false){
-      const direction=campZbDirection(Z,age);
+      const direction=campZbDirection(Z,Zo||Game.camp,firing,shot);
       N.face=direction.endsWith('W')?-1:1;
       N.vf=direction==='S'?1:0;
       directions.setHeading(N,direction);

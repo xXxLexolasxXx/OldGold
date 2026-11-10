@@ -8,6 +8,9 @@
 // Подключается после neutrals2.js; чужие файлы не правятся — только обёртки (neuThink, neuHit, neuStrike, neuDraw…).
 
 const FT_KINDS = { ftG: 1, ftB: 1, ftP: 1, ftR: 1, ftK: 1, ftQ: 1 };
+function ftBurst(x, y, count, colors, speed, up, life, size, gravity) {
+  fxBurst(x,y,count,colors,speed,up,life,size,gravity,true);
+}
 const FT = { rng: null, sec: 0, q: 0, t5: 0, mul: 1, src: null, hinted: false, hint0: 0 };
 const ftRand = () => (FT.rng || (FT.rng = mulberry32(0x7F0A91)))();
 const ftIs = N => !!(N && FT_KINDS[N.k]);
@@ -168,8 +171,8 @@ function ftJumpThink(N, dt) {
       J.ph = 'land'; J.t = 0; N.x = J.tx; N.y = J.ty;
       if (J.perch) { N.pch = { x: N.x, y: N.y, until: ftNow() + 22 + ftRand() * 22 }; sfxAt('frogHop', N.x * TILE, N.y * TILE, 0.5); }
       else {
-        if (ftWaterNear(N.x, N.y, 2.2)) { sfxAt('ftSplash', N.x * TILE, N.y * TILE, 0.6); fxBurst(N.x * TILE, N.y * TILE - 4, 8, ['#cfeaf0', '#8ac8d8'], 45, 40, 0.5, 1.4, 140); }
-        else fxBurst(N.x * TILE, N.y * TILE - 2, 6, ['#a89870', '#d8c8a0'], 40, 30, 0.4, 1.3, 160);
+        if (ftWaterNear(N.x, N.y, 2.2)) { sfxAt('ftSplash', N.x * TILE, N.y * TILE, 0.6); ftBurst(N.x * TILE, N.y * TILE - 4, 8, ['#bed4c2', '#789e9a'], 45, 40, 0.5, 1.4, 140); }
+        else ftBurst(N.x * TILE, N.y * TILE - 2, 6, ['#9d8b63', '#c5b486'], 40, 30, 0.4, 1.3, 160);
         const tg = neuUnit(N.tg);
         if (J.strike && tg && !neuUnitOut(tg) && !ftKid(tg) && Math.hypot(tg.x - N.x, tg.y - N.y) <= S.rng + 1.1) {
           if (tg.hero && tg.hero.rollT > ftNow()) floater(tg.x, tg.y - 1.9, 'Перекат!', '#cfe8ff');
@@ -306,7 +309,7 @@ function ftAfter(N, tg) {
     if (low) {
       const h = Math.round(low.mhp * 0.22); low.hp = Math.min(low.mhp, low.hp + h);
       N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065; N.face = low.x >= N.x ? 1 : -1;
-      fxBurst(low.x * TILE, low.y * TILE - 14, 14, ['#9af0a0', '#d8ffd8', '#ffe070'], 60, 60, 0.9, 1.6, -30);
+      ftBurst(low.x * TILE, low.y * TILE - 14, 14, ['#8ab38b', '#c4d8ad', '#ebc977'], 60, 60, 0.9, 1.6, -30);
       floater(low.x, low.y - 2, '+' + h, '#8af070'); floater(N.x, N.y - 2.3, 'Водное исцеление', '#9af0a0');
       sfxAt('ftHeal', low.x * TILE, low.y * TILE, 0.8);
       return;
@@ -337,7 +340,7 @@ function ftAfter(N, tg) {
       ftShock(N, tg);
       N.zap = { t: Math.round(now * 100) / 100, p: pts.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]) };
       floater(N.x, N.y - 2.4, 'Молния!', '#bfe8ff'); sfxAt('ftZap', tg.x * TILE, tg.y * TILE, 1);
-      fxBurst(tg.x * TILE, tg.y * TILE - 12, 14, ['#ffffff', '#9ae0ff', '#ffffa0'], 80, 60, 0.5, 1.6, 100);
+      ftBurst(tg.x * TILE, tg.y * TILE - 12, 14, ['#dce6cf', '#82adb1', '#d6cd8e'], 80, 60, 0.5, 1.6, 100);
     }
   }
   if (N.k === 'ftR' && !(N.abT > now) && N.st !== 'atk') {
@@ -352,7 +355,7 @@ function ftAfter(N, tg) {
       u.brnUntil = now + 4; u.ouchUntil = now + 0.5;
       if (u.hero && u.hero.hp <= 0) neuHeroDown(N, u);
     }
-    fxBurst(tg.x * TILE, tg.y * TILE - 8, 26, ['#fff0a0', '#ff9a30', '#e04a18'], 100, 70, 0.8, 2.2, 140);
+    ftBurst(tg.x * TILE, tg.y * TILE - 8, 26, ['#fae0a3', '#df9955', '#ad6038'], 100, 70, 0.8, 2.2, 140);
     floater(tg.x, tg.y - 2, 'Горит!', '#ff9a40');
   }
   if (N.k === 'ftQ' && N.st !== 'atk') {
@@ -363,7 +366,7 @@ function ftAfter(N, tg) {
       if (hurt.length && !(N.healT > now)) {
         N.healT = now + 9;
         N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065;
-        for (const M of hurt.slice(0, 6)) { const h = Math.round(M.mhp * 0.2); M.hp = Math.min(M.mhp, M.hp + h); floater(M.x, M.y - 2, '+' + h, '#8af070'); fxBurst(M.x * TILE, M.y * TILE - 14, 10, ['#9af0a0', '#d8ffd8', '#ffe070'], 60, 60, 0.9, 1.6, -30); }
+        for (const M of hurt.slice(0, 6)) { const h = Math.round(M.mhp * 0.2); M.hp = Math.min(M.mhp, M.hp + h); floater(M.x, M.y - 2, '+' + h, '#8af070'); ftBurst(M.x * TILE, M.y * TILE - 14, 10, ['#8ab38b', '#c4d8ad', '#ebc977'], 60, 60, 0.9, 1.6, -30); }
         floater(N.x, N.y - 3.4, 'Королевское исцеление!', '#9af0a0'); sfxAt('ftHeal', N.x * TILE, N.y * TILE, 1);
         return;
       }
@@ -388,7 +391,7 @@ function ftAfter(N, tg) {
         N.zap = { t: Math.round(now * 100) / 100, p: pts.map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]) };
         for (const u of [tg]) { u.brnUntil = now + 4; }
         floater(N.x, N.y - 3.4, 'Королевская гроза!', '#bfe8ff'); sfxAt('ftZap', tg.x * TILE, tg.y * TILE, 1);
-        fxBurst(tg.x * TILE, tg.y * TILE - 12, 22, ['#ffffff', '#9ae0ff', '#ff9a30'], 90, 70, 0.6, 1.8, 100);
+        ftBurst(tg.x * TILE, tg.y * TILE - 12, 22, ['#dce6cf', '#82adb1', '#df9955'], 90, 70, 0.6, 1.8, 100);
       }
     }
   }
@@ -398,7 +401,7 @@ function ftAfter(N, tg) {
     let n = 0;
     for (const M of Game.neutrals) if (neuAlive(M) && ftIs(M) && Math.hypot(M.x - N.x, M.y - N.y) < 8) { M.rage = now + 10; n++; }
     floater(N.x, N.y - 3, 'Боевой клич!', '#ffd040'); sfxAt('ftCroakLow', N.x * TILE, N.y * TILE, 1);
-    fxBurst(N.x * TILE, N.y * TILE - 20, 16, ['#ffd040', '#fff0a0', '#e84a38'], 70, 60, 0.9, 1.8, -20);
+    ftBurst(N.x * TILE, N.y * TILE - 20, 16, ['#d9af62', '#efd193', '#a7624d'], 70, 60, 0.9, 1.8, -20);
     if (n > 1) logEvent('animal', 'Вождь жаболюдов издал боевой клич', N.x, N.y);
   }
   if (N.k === 'ftK' && N.cried && now - N.cried > 40 && !tg) N.cried = 0;
@@ -412,7 +415,7 @@ function ftPoison(u, N, dur, label) {
   u.pzUntil = Math.max(u.pzUntil || 0, now + dur);
   if (!had) {
     floater(u.x, u.y - 2.1, label || 'Яд!', '#9ae040');
-    fxBurst(u.x * TILE, u.y * TILE - 10, 8, ['#9ae040', '#5aa020', '#d8ff90'], 45, 40, 0.6, 1.4, -10);
+    ftBurst(u.x * TILE, u.y * TILE - 10, 8, ['#a8bb72', '#6f8a4a', '#d8d39b'], 45, 40, 0.6, 1.4, -10);
     if (!(u.pzLog > now - 40)) { u.pzLog = now; logEvent('animal', `${neuName(u)} отравлен ядом жаболюдов`, u.x, u.y); }
   }
 }
@@ -664,14 +667,14 @@ function ftTick(dt) {
     if (ftWaterNear(u.x, u.y, 1.8)) { u.pzUntil = 0; floater(u.x, u.y - 2, 'Вода смыла яд', '#bfe8ff'); continue; }
     if (u.hero && u.hero.hp > 1) u.hero.hp = Math.max(1, u.hero.hp - 1.2 * q);
     else if (u.rec) { const R = u.rec; if (R.hp == null) R.hp = 30 + 8 * R.lvl; if (R.hp > 1) R.hp = Math.max(1, R.hp - 1.2 * q); }
-    if (Math.floor(now * 2) % 4 === 0 && !(u._pzFx > now - 0.9)) { u._pzFx = now; fxBurst(u.x * TILE, u.y * TILE - 12, 2, ['#9ae040', '#5aa020'], 20, 20, 0.5, 1.2, -10); }
+    if (Math.floor(now * 2) % 4 === 0 && !(u._pzFx > now - 0.9)) { u._pzFx = now; ftBurst(u.x * TILE, u.y * TILE - 12, 2, ['#a8bb72', '#6f8a4a'], 20, 20, 0.5, 1.2, -10); }
   }
   for (const u of Game.units) {
     if (!(u.brnUntil > now) || u.dead || u.inside) continue;
     if (ftWaterNear(u.x, u.y, 1.8)) { u.brnUntil = 0; floater(u.x, u.y - 2, 'Вода погасила огонь', '#bfe8ff'); continue; }
     if (u.hero && u.hero.hp > 1) u.hero.hp = Math.max(1, u.hero.hp - 1.5 * q);
     else if (u.rec) { const R = u.rec; if (R.hp == null) R.hp = 30 + 8 * R.lvl; if (R.hp > 1) R.hp = Math.max(1, R.hp - 1.5 * q); }
-    if (!(u._brFx > now - 0.7)) { u._brFx = now; fxBurst(u.x * TILE, u.y * TILE - 14, 3, ['#ff9a30', '#ffe070'], 25, 25, 0.5, 1.2, -30); }
+    if (!(u._brFx > now - 0.7)) { u._brFx = now; ftBurst(u.x * TILE, u.y * TILE - 14, 3, ['#df9955', '#ebc977'], 25, 25, 0.5, 1.2, -30); }
   }
   // туман (замедление чужих; громовик — после молнии)
   for (const M of Game.neutrals) {
@@ -795,7 +798,7 @@ function* ftGiftGen(u, c) {
   s.n--; if (s.n <= 0) H.inv[slot] = null;
   L.fr = Math.min(100, (L.fr || 0) + FT_GIFT[k]);
   N.winT = 2; N.tor = 0;
-  fxBurst(N.x * TILE, N.y * TILE - 14, 14, ['#9ae040', '#ffe070', '#d8ffd8'], 60, 60, 0.9, 1.6, -30);
+  ftBurst(N.x * TILE, N.y * TILE - 14, 14, ['#a8bb72', '#ebc977', '#c4d8ad'], 60, 60, 0.9, 1.6, -30);
   sfxAt('ftCroak', N.x * TILE, N.y * TILE, 0.6);
   if (L.fr < 50) { floater(N.x, N.y - 2, `Ква! Спасибо (дружба ${L.fr}/50)`, '#9ae040'); return; }
   if (!L.friend) {
