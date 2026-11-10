@@ -18,6 +18,11 @@ const ftSummer = () => typeof seaIdx === 'function' && seaIdx() === 0;
 const FT_LAIR = 'ftvil';
 const FT_CALL_R = 18;            // кваканье шамана слышно на столько клеток
 const FT_TERR_R = 4.5;           // территория поселения
+const FT_BASE_MAX = 3;
+const FT_BASE_DAYS = [0, 2, 3];
+const FT_BASE_NAMES = ['', 'Свайный лагерь', 'Свайная деревня', 'Болотная крепость'];
+const FT_BASE_AREA = [-8, -6, 8, 3];
+const FT_BASE_CLEAR = new Set(['tree', 'stump', 'log']);
 
 // ---------- Виды, логово, товары ----------
 if (typeof NSPEC !== 'undefined') {
@@ -495,13 +500,72 @@ if (typeof cbPlan === 'function') {
 }
 
 // ---------- Наполнение логова и создание существ ----------
+function ftBaseTier(L) { return Math.max(1, Math.min(FT_BASE_MAX, L.ftTier | 0 || 2)); }
+
+function ftBaseOverlaps(L, x0, y0, x1, y1) {
+  const [left, top, right, bottom] = FT_BASE_AREA;
+  return x0 <= L.x + right && x1 >= L.x + left && y0 <= L.y + bottom && y1 >= L.y + top;
+}
+
+function ftBaseSpace(L) {
+  const [left, top, right, bottom] = FT_BASE_AREA;
+  if (!inb(L.x + left, L.y + top) || !inb(L.x + right, L.y + bottom)) return false;
+  if (Game.lairs.some(other => {
+    if (other === L) return false;
+    const [a, b, c, d] = other.k === FT_LAIR ? FT_BASE_AREA : [-2, -2, 2, 1];
+    return ftBaseOverlaps(L, other.x + a, other.y + b, other.x + c, other.y + d);
+  })) return false;
+  for (let y = L.y + top; y <= L.y + bottom; y++) for (let x = L.x + left; x <= L.x + right; x++) {
+    const i = idx(x, y), obj = World.obj[i];
+    if (World.terrain[i] === T_ROCK || World.bmap[i] || World.door[i] || World.road[i] || Game.roadSites.has(i)) return false;
+    if (obj && !FT_BASE_CLEAR.has(obj.t)) return false;
+  }
+  return true;
+}
+
+function ftBaseClear(L) {
+  const [left, top, right, bottom] = FT_BASE_AREA;
+  for (let y = L.y + top; y <= L.y + bottom; y++) for (let x = L.x + left; x <= L.x + right; x++) {
+    const i = idx(x, y);
+    if (!FT_BASE_CLEAR.has(World.obj[i]?.t)) continue;
+    World.obj[i] = null;
+    World.growing.delete(i);
+  }
+}
+
+function ftBaseGrow(L, mem, day, winter) {
+  const tier = ftBaseTier(L);
+  if (tier === FT_BASE_MAX || day <= (L.ftBuildDay ?? day)) return;
+  L.ftBuildDay = day;
+  if (winter || mem.length < 4 || mem.some(N => N.tg || N.st === 'atk')) return;
+  const progress = (L.ftBuildDays || 0) + 1;
+  if (progress < FT_BASE_DAYS[tier]) { L.ftBuildDays = progress; return; }
+  if (tier + 1 === FT_BASE_MAX) {
+    if (!ftBaseSpace(L)) return;
+    ftBaseClear(L);
+  }
+  L.ftTier = tier + 1;
+  L.ftBuildDays = 0;
+  if (mem.length < 8) {
+    const kind = L.ftTier === FT_BASE_MAX && !mem.some(N => N.k === 'ftK') ? 'ftK' : 'ftG';
+    Game.neutrals.push(neuMake(kind, L, mem.length));
+    L.alive++;
+  }
+  logEvent('animal', `Жаболюды расширили поселение: ${FT_BASE_NAMES[L.ftTier]}`, L.x + 0.5, L.y + 0.5);
+}
+
 {
   const _fl = neuFillLair;
   neuFillLair = function (lair) {
     if (lair.k !== FT_LAIR) return _fl(lair);
+    if (lair.ftTier == null) {
+      lair.ftTier = 1;
+      lair.ftBuildDays = 0;
+      lair.ftBuildDay = cycleAt(Game.time).k;
+    }
     const nights = Game.ft ? Game.ft.nt : 0;
     const ks = ['ftG', 'ftG', 'ftB', 'ftB', 'ftP'];
-    const extra = Math.min(3, (ftRand() * 3) | 0);                         // 5…8 жителей
+    const extra = Math.min(3, ((ftRand() * 3) | 0) + ftBaseTier(lair) - 1); // 5…8 жителей
     for (let i = 0; i < extra; i++) ks.push(i === 0 && (lair.lv > 1.25 || nights >= 4) ? 'ftK' : i === 1 ? 'ftB' : 'ftG');
     if (ks.length < 8 && !ks.includes('ftK') && (lair.lv > 1.25 || nights >= 4) && ks.length >= 6) ks[ks.length - 1] = 'ftK';
     if (ks.length >= 6 && (nights >= 2 || lair.lv > 1.15)) ks[ks.indexOf('ftG')] = 'ftR';       // огнемаг приходит со 2-й ночи
@@ -528,6 +592,7 @@ const ftWant = n => { const q = ftQuota(); return Math.min(q, Math.ceil(q / 2) +
 
 function ftSite(stamp, relax) {
   const cx = MAP_W >> 1, cy = MAP_H >> 1, minStart = mapIsLegacy() ? 20 : 24;
+  let fallback = null;
   for (let t = 0; t < 3500; t++) {
     const x = 6 + ((ftRand() * (MAP_W - 12)) | 0), y = 6 + ((ftRand() * (MAP_H - 12)) | 0), i = idx(x, y);
     if (World.terrain[i] !== T_GRASS || World.bmap[i] || World.road[i] || !reachedIn(stamp, x, y)) continue;
@@ -544,9 +609,11 @@ function ftSite(stamp, relax) {
     if (relax && nearW < 3.2) continue;
     if (neuVillageDist(x, y) < neuHostileGap() + (relax ? 0 : 2)) continue;   // свайная деревня широкая: в первый проход — с запасом
     if (Game.lairs.some(l => Math.hypot(l.x - x, l.y - y) < 13)) continue;
-    return { x, y, ds: Math.hypot(x - cx, y - cy), minStart };
+    const site = { x, y, ds: Math.hypot(x - cx, y - cy), minStart };
+    if (ftBaseSpace(site)) return { ...site, expandable: true };
+    if (!fallback) fallback = site;
   }
-  return null;
+  return fallback;
 }
 // спавн идёт на своём генераторе: общий Math.random не сдвигается (детерминизм и чужие тесты по сиду не зависят от жаболюдов)
 function ftSpawnLair(announce) {
@@ -556,7 +623,11 @@ function ftSpawnLair(announce) {
 function ftSpawnLair0(announce) {
   if (!Game.ft) return null;
   const stamp = FT.stamp || (FT.stamp = floodFrom(MAP_W >> 1, MAP_H >> 1));
-  const site = ftSite(stamp, false) || ftSite(stamp, true);
+  let site = ftSite(stamp, false);
+  if (!site?.expandable) {
+    const open = ftSite(stamp, true);
+    if (open?.expandable || !site) site = open;
+  }
   if (!site) return null;
   const cap = typeof n2Cap === 'function' ? n2Cap(Game.ft.nt) : 1;
   if (typeof N2 !== 'undefined') N2.rk0 = Game.ft.nt >= 1 ? Math.max(1, cap - 2) : 0;
@@ -613,8 +684,9 @@ FT.fails = 0;
 
 function ftLairTick(L, now) {
   const mem = Game.neutrals.filter(N => N.lair === L.id && neuAlive(N));
-  if (!mem.length) return;
   const cx = L.x + 0.5, cy = L.y + 0.5, winter = ftWinter();
+  if (startOpen('neutrals')) ftBaseGrow(L, mem, cycleAt(now).k, winter);
+  if (!mem.length) return;
   const near = Game.units.filter(u => !u.dead && !u.inside && Math.hypot(u.x - cx, u.y - cy) < FT_TERR_R);
   const hero = Game.hero;
   // подсказка при первой встрече
@@ -756,6 +828,14 @@ function ftReward(u, L, N) {
 
 // ---------- Тик, старт, сохранение, зеркало ----------
 {
+  const _placement = checkPlacement, _road = canPlaceRoad;
+  const occupied = (x0, y0, x1, y1) => Game.lairs.some(L => L.k === FT_LAIR && ftBaseTier(L) === FT_BASE_MAX && ftBaseOverlaps(L, x0, y0, x1, y1));
+  checkPlacement = function (type, x, y, rot = 0, quick = false) {
+    const { w, h } = bDims(type, rot);
+    if (occupied(x, y, x + w - 1, y + h - 1)) return 'Здесь болотная крепость';
+    return _placement(type, x, y, rot, quick);
+  };
+  canPlaceRoad = function (x, y) { return !occupied(x, y, x, y) && _road(x, y); };
   const _step = step;
   step = function (dt) { _step(dt); if (!isMirror()) ftTick(dt); };
   const _setup = setupStart;
@@ -772,7 +852,10 @@ function ftReward(u, L, N) {
   const _ser = serializeGame;
   serializeGame = function () {
     const s = _ser();
-    if (s.nt && Game.ft) s.nt.ft = { nt: Game.ft.nt, sp: Game.ft.sp, k: Game.ft.king ? 1 : 0, kd: Game.ft.kd };
+    if (s.nt && Game.ft) s.nt.ft = {
+      nt: Game.ft.nt, sp: Game.ft.sp, k: Game.ft.king ? 1 : 0, kd: Game.ft.kd,
+      bases: Game.lairs.filter(L => L.k === FT_LAIR).map(L => [L.id, ftBaseTier(L), L.ftBuildDay, L.ftBuildDays]),
+    };
     return s;
   };
   const _apply = applySave;
@@ -783,6 +866,14 @@ function ftReward(u, L, N) {
     if (isMirror()) { Game.ft = null; return; }
     if (nt && nt.ft) Game.ft = { nt: nt.ft.nt | 0, sp: nt.ft.sp | 0, king: nt.ft.k ? 1 : 0, kd: nt.ft.kd };
     else Game.ft = { nt: startNights(), sp: Game.lairs.filter(l => l.k === FT_LAIR).length };       // старый сейв: колонии придут на ближайших ночах
+    const day = cycleAt(Game.time).k;
+    const bases = new Map((nt?.ft?.bases || []).map(([id, ...base]) => [id, base]));
+    for (const L of Game.lairs) if (L.k === FT_LAIR) {
+      const [tier = 2, built = day, progress = 0] = bases.get(L.id) || [];
+      L.ftTier = ftBaseTier({ftTier:tier});
+      L.ftBuildDay = Math.min(day, Number.isInteger(built) ? built : day);
+      L.ftBuildDays = Math.max(0, Math.min(progress | 0, (FT_BASE_DAYS[L.ftTier] || 1) - 1));
+    }
     for (const N of Game.neutrals) if (ftIs(N)) N.wet = 1;
   };
   const _nm = neuMirror;
@@ -799,6 +890,12 @@ function ftReward(u, L, N) {
       if (N.zap && now - N.zap.t < 0.5) d.zap = N.zap;
     }
     return a;
+  };
+  const _nl = neuMirrorLairs;
+  neuMirrorLairs = function () {
+    const out = _nl();
+    for (let i = 0; i < out.length; i++) if (out[i].k === FT_LAIR) out[i].ftTier = ftBaseTier(Game.lairs[i]);
+    return out;
   };
 }
 
