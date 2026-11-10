@@ -73,8 +73,19 @@ if (typeof drawGoodIcon === 'function') {
   drawGoodIcon = function (c, g, x, y) {
     if (g !== 'venom' && g !== 'slime') return _gi(c, g, x, y);
     const P = (a, b, w, h, col) => px(c, x + a, y + b, w, h, col);
-    if (g === 'venom') { P(6, 2, 4, 2, '#8a6a3a'); P(5, 4, 6, 1, '#e8e0c8'); P(3, 5, 10, 9, '#e8e0c8'); P(4, 7, 8, 6, '#7ad030'); P(5, 7, 2, 2, '#c8f870'); P(9, 10, 2, 2, '#4a9a1a'); }
-    else { P(3, 8, 10, 6, '#8ad0a8'); P(4, 6, 8, 3, '#8ad0a8'); P(6, 4, 4, 3, '#8ad0a8'); P(5, 7, 2, 2, '#d8fff0'); P(9, 11, 3, 2, '#5aa078'); P(7, 13, 2, 2, '#8ad0a8'); }
+    if (g === 'venom') {
+      P(6, 1, 5, 3, '#50382b'); P(6, 1, 4, 1, '#c4a06d'); P(7, 2, 3, 1, '#91724c');
+      P(6, 4, 5, 2, '#5c7665'); P(4, 6, 9, 2, '#3d5647');
+      P(3, 8, 11, 5, '#273c30'); P(4, 13, 9, 1, '#273c30'); P(5, 14, 7, 1, '#273c30');
+      P(4, 8, 9, 4, '#597e3b'); P(5, 9, 6, 4, '#7da652'); P(4, 8, 2, 2, '#bfc979');
+      P(4, 7, 2, 1, '#b1bd94'); P(7, 5, 2, 1, '#c7ccad'); P(8, 11, 3, 1, '#bdce70');
+    } else {
+      P(6, 4, 4, 1, '#3a5748'); P(5, 5, 6, 2, '#3a5748');
+      P(3, 7, 10, 2, '#3a5748'); P(2, 9, 12, 4, '#293d34'); P(4, 13, 9, 1, '#293d34');
+      P(6, 5, 3, 2, '#8ab099'); P(4, 7, 8, 4, '#719d83'); P(3, 10, 9, 2, '#58806b');
+      P(6, 6, 2, 1, '#c5d3aa'); P(5, 7, 2, 1, '#adc6a2'); P(5, 9, 3, 1, '#8ab099');
+      P(9, 11, 3, 1, '#385e51'); P(11, 9, 1, 2, '#a6bfa1');
+    }
   };
 }
 
@@ -900,6 +911,70 @@ function ftReward(u, L, N) {
 }
 
 // ---------- Рисование: дерево, дротик, туман ----------
+const ftSnap = v => Math.round(v * 2) / 2;
+function ftFxPixel(c, x, y, w, h, color) {
+  c.fillStyle = color;
+  c.fillRect(ftSnap(x), ftSnap(y), w, h);
+}
+
+function ftFxLine(c, x, y, u, v, width, color) {
+  if (!Number.isFinite(x+y+u+v)) return;
+  let ix = Math.round(x * 2), iy = Math.round(y * 2);
+  const tx = Math.round(u * 2), ty = Math.round(v * 2);
+  const dx = Math.abs(tx - ix), dy = -Math.abs(ty - iy);
+  const sx = ix < tx ? 1 : -1, sy = iy < ty ? 1 : -1;
+  const offset = Math.floor(width) / 2;
+  let error = dx + dy;
+  c.fillStyle = color;
+  for (;;) {
+    c.fillRect(ix / 2 - offset, iy / 2 - offset, width, width);
+    if (ix === tx && iy === ty) break;
+    const e = error * 2;
+    if (e >= dy) { error += dy; ix += sx; }
+    if (e <= dx) { error += dx; iy += sy; }
+  }
+}
+
+function ftDrawDart(c, x, y, ux, uy) {
+  ftFxLine(c,x-5*ux,y-5*uy,x+2*ux,y+2*uy,1,'#352d25');
+  ftFxLine(c,x-4.5*ux,y-4.5*uy,x+1.5*ux,y+1.5*uy,.5,'#bc9961');
+  ftFxLine(c,x+1.5*ux,y+1.5*uy,x+3*ux,y+3*uy,1,'#8eac60');
+  ftFxPixel(c,x+3*ux,y+3*uy,.5,.5,'#d5d496');
+  ftFxLine(c,x-5*ux-uy,y-5*uy+ux,x-5*ux+uy,y-5*uy-ux,.5,'#9a6b7d');
+}
+
+function ftDrawOrb(c, x, y, hot) {
+  const ramp = hot ? ['#733f2d','#ad6038','#df9955','#fae0a3'] : ['#3a5961','#567c87','#8fb2b5','#dce5ca'];
+  const size = hot ? 5 : 4;
+  for (const [w,h,col] of [[size*2-3,size*2,ramp[0]],[size*2,size*2-3,ramp[1]],[size*2-2,size*2-2,ramp[2]],[3,3,ramp[3]]]) {
+    ftFxPixel(c,x-w/2,y-h/2,w,h,col);
+  }
+  ftFxPixel(c,x-size-1.5,y+.5,1,.5,ramp[1]);
+  ftFxPixel(c,x+size+.5,y-2,.5,1,ramp[2]);
+}
+
+function ftDrawFog(c, F, t) {
+  const opacity = Math.min(1, (F.u - t) / 1.5) * 0.9;
+  const layerAlpha = c.globalAlpha;
+  const radius = F.r * TILE;
+  c.save();
+  for (let i=0;i<9;i++) {
+    const phase=t*.35+i*1.9, size=radius*(.35+.05*(i*37%10));
+    const x=F.x*TILE+Math.cos(phase+i)*radius*.55;
+    const y=F.y*TILE-8+Math.sin(phase*.8+i)*radius*.3;
+    const bands=[.53,.79,.94,1,.91,.69,.38];
+    const h=Math.max(.5,ftSnap(size/7));
+    c.globalAlpha=layerAlpha*opacity*.13;
+    for (const [j,width] of bands.entries()) {
+      const w=Math.max(.5,ftSnap(2*size*width));
+      ftFxPixel(c,x-w/2+(j%2?1.5:0),y+(j-3)*h,w,h,j<2?'#b3cab0':'#adc8bc');
+    }
+    c.globalAlpha=layerAlpha*opacity*.19;
+    ftFxPixel(c,x-size*.32,y-h,Math.max(.5,ftSnap(size*.42)),.5,'#c7d6b6');
+  }
+  c.restore();
+}
+
 {
   const _nd = neuDraw;
   neuDraw = function (c, N) {
@@ -919,50 +994,44 @@ function ftReward(u, L, N) {
       if (k >= 0 && k < 1) {
         const x0 = N.x * TILE + N.face * 12, y0 = N.y * TILE - 24 - (N.pch ? 20 : 0), x1 = A.x * TILE, y1 = A.y * TILE - 14;
         const x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k - Math.sin(k * Math.PI) * 7;
-        c.save(); c.translate(Math.round(x), Math.round(y));
-        if (A.o) {
-          c.globalCompositeOperation = 'lighter';
-          c.fillStyle = A.o === 2 ? 'rgba(255,140,40,0.55)' : 'rgba(130,210,255,0.5)'; c.beginPath(); c.arc(0, 0, A.o === 2 ? 5 : 4, 0, 7); c.fill();
-          c.fillStyle = A.o === 2 ? 'rgba(255,240,150,0.95)' : 'rgba(255,255,255,0.9)'; c.fillRect(-1, -1, 2, 2);
-        } else {
-          c.rotate(Math.atan2(y1 - y0, x1 - x0));
-          c.fillStyle = '#8a6a3a'; c.fillRect(-5, -0.4, 7, 0.8); c.fillStyle = '#7ad830'; c.fillRect(2, -0.8, 3, 1.6); c.fillStyle = '#c04aa0'; c.fillRect(-6, -1.2, 2, 2.4);
+        if (A.o) ftDrawOrb(c,x,y,A.o===2);
+        else {
+          const dx=x1-x0,dy=y1-y0-Math.cos(k*Math.PI)*7*Math.PI,d=Math.hypot(dx,dy)||1;
+          ftDrawDart(c,x,y,dx/d,dy/d);
         }
-        c.restore();
       }
     }
     // молния громовика: ломаная от посоха к цели и по цепи
     const Z = N.zap;
     if (Z && t - Z.t < 0.3 && t - Z.t >= 0) {
-      c.save(); c.globalCompositeOperation = 'lighter'; c.lineJoin = 'round';
       let ox = N.x * TILE + N.face * 12, oy = N.y * TILE - 32 - (N.pch ? 20 : 0);
       for (const [tx, ty] of Z.p) {
         const x1 = tx * TILE, y1 = ty * TILE - 14, n = 6;
-        for (const [w, col] of [[3, 'rgba(120,200,255,0.5)'], [1, 'rgba(255,255,255,0.95)']]) {
-          c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(ox, oy);
-          for (let i = 1; i < n; i++) { const f = i / n, jr = Math.sin(i * 9.7 + Math.floor(t * 40)) * 5; c.lineTo(ox + (x1 - ox) * f + jr, oy + (y1 - oy) * f - jr * 0.6); }
-          c.lineTo(x1, y1); c.stroke();
+        const points=[[ox,oy]];
+        for (let i=1;i<n;i++) {
+          const f=i/n,jr=Math.sin(i*9.7+Math.floor(t*40))*5;
+          points.push([ox+(x1-ox)*f+jr,oy+(y1-oy)*f-jr*.6]);
+        }
+        points.push([x1,y1]);
+        for (const [w,col] of [[2,'#4c6b7a'],[1,'#82adb1'],[.5,'#dce6cf']]) {
+          for(let i=1;i<points.length;i++)ftFxLine(c,...points[i-1],...points[i],w,col);
         }
         ox = x1; oy = y1;
       }
-      c.restore();
     }
     // туман
     const F = N.fg;
-    if (F && F.u > t) {
-      c.save();
-      const a = Math.min(1, (F.u - t) / 1.5) * 0.9;
-      for (let i = 0; i < 9; i++) {
-        const ph = t * 0.35 + i * 1.9, rr = (F.r * TILE) * (0.35 + 0.5 * ((i * 37 % 10) / 10));
-        const x = F.x * TILE + Math.cos(ph + i) * F.r * TILE * 0.55, y = F.y * TILE - 8 + Math.sin(ph * 0.8 + i) * F.r * TILE * 0.3;
-        c.fillStyle = `rgba(205,230,215,${0.16 * a})`; c.beginPath(); c.ellipse(Math.round(x), Math.round(y), rr, rr * 0.5, 0, 0, 7); c.fill();
-      }
-      c.restore();
-    }
+    if (F && F.u > t) ftDrawFog(c,F,t);
     // высох: жёлтая капля над головой
     if (N.wet < 0.3 && N.st !== 'die') {
       const px = Math.round(N.x * TILE), top = Math.round(N.y * TILE + 6 - (N2_TOP[N.k] || 40) - 8);
-      c.fillStyle = '#1a1008'; c.fillRect(px + 10, top - 1, 6, 7); c.fillStyle = '#e8d070'; c.fillRect(px + 11, top + 1, 4, 4); c.fillRect(px + 12, top, 2, 1);
+      ftFxPixel(c,px+12,top-1,2,2,'#342e25');
+      ftFxPixel(c,px+11,top+1,4,1.5,'#342e25');
+      ftFxPixel(c,px+10.5,top+2.5,5,2.5,'#342e25');
+      ftFxPixel(c,px+11.5,top+5,3,1,'#342e25');
+      ftFxPixel(c,px+12.5,top+.5,1,2,'#c8a65f');
+      ftFxPixel(c,px+11.5,top+2.5,3,2.5,'#c8a65f');
+      ftFxPixel(c,px+12,top+2.5,1,1.5,'#ebd296');
     }
   };
 }

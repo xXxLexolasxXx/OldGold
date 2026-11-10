@@ -697,6 +697,13 @@ function neuPanelRow() {
     for (const L of Game.lairs || []) {
       const live = Game.neutrals.some(N => N.lair === L.id && N.st !== 'die');
       const px = (L.x + 0.5) * kx - s / 2, py = (L.y + 0.5) * ky - s / 2;
+      if (L.k === 'ftvil') {
+        const x=Math.round(px+s/2), y=Math.round(py+s/2), u=Math.max(1,Math.round(s/3)), h=Math.round(u/2);
+        c.fillStyle='#29372e';c.fillRect(x-2*u,y-u,4*u,3*u);c.fillRect(x-u,y-2*u,2*u,u);
+        c.fillStyle=live?'#99ab6c':'#8d8872';c.fillRect(x-u,y-u,2*u,u);c.fillRect(x-u-h,y,3*u,u);
+        c.fillStyle=live?'#d3af6d':'#67675b';c.fillRect(x-u,y+u,u,u);c.fillRect(x+h,y+u,u,u);
+        continue;
+      }
       c.fillStyle = 'rgba(8,6,4,0.85)'; c.fillRect(px - 0.8, py - 0.8, s + 1.6, s + 1.6);
       c.fillStyle = live ? '#f0b030' : '#8a8478'; c.fillRect(px, py, s, s);
     }

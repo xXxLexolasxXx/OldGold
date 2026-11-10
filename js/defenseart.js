@@ -533,6 +533,7 @@ function defShotsDraw(c) {
     if (q < 0 || q > 1) continue;
     const x = (s.x + (s.gx - s.x) * q) * TILE, y = (s.y + (s.gy - s.y) * q) * TILE - Math.sin(q * Math.PI) * 10;
     const dx = (s.gx - s.x) * TILE, dy = (s.gy - s.y) * TILE - Math.cos(q * Math.PI) * 10, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+    if (s.k === 'dart' && typeof ftDrawDart === 'function') { ftDrawDart(c,x,y,ux,uy); continue; }
     const len = s.k === 'spear' ? 9 : 6;
     c.strokeStyle = s.k === 'spear' ? '#8a6a3a' : '#e8d8b0'; c.lineWidth = s.k === 'spear' ? 1.6 : 1;
     c.beginPath(); c.moveTo(x - ux * len, y - uy * len); c.lineTo(x, y); c.stroke();

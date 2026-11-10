@@ -10,7 +10,7 @@ if (typeof CAMP_WHO !== 'undefined') CAMP_WHO.zhab = { name: 'Жабьен', ch:
 // свой вид для рисунка: как охотник по размеру тени, но кадры — свои (frogart.js, каста Z: капюшон, посох, обмотки)
 if (typeof NSPEC !== 'undefined' && NSPEC.ftB && !NSPEC.ftZ) NSPEC.ftZ = Object.assign({}, NSPEC.ftB, { name: 'Жабьен' });
 
-const ZB = { spd: 3.4, near: 2.2, rng: 6.5, cd: 2.1, dmg: [4, 7] };
+const ZB = { spd: 3.4, near: 2.2, rng: 6.5, cd: 2.1, shotDur: 0.28, dmg: [4, 7] };
 const ZB_BARK = ['Ква! Дротик — в цель!', 'Это за болото!', 'Мокро тебе? Будет мокрее!', 'Ква-ква — и мимо… шучу, в лоб.', 'Порох — громче. Дротик — точнее!'];
 
 function campZbJoin(C, x, y) {
@@ -55,7 +55,7 @@ function campZbTick(C, dt) {
   if (!tg) { Z.cd = 0.4; return; }
   Z.cd = ZB.cd;
   Z.face = tg.x >= Z.x ? 1 : -1; Z.vf = 0;
-  if (Game.dshots) Game.dshots.push({ x: Z.x, y: Z.y - 0.5, gx: tg.x, gy: tg.y - 0.5, born: now, dur: 0.28, k: 'dart' });
+  if (Game.dshots) Game.dshots.push({ x: Z.x, y: Z.y - 0.5, gx: tg.x, gy: tg.y - 0.5, born: now, dur: ZB.shotDur, k: 'dart' });
   if (typeof sfxAt === 'function') sfxAt('ftDart', Z.x * TILE, Z.y * TILE, 0.6);
   if (typeof DEF_KILLER !== 'undefined' && typeof foeHit === 'function') {
     DEF_KILLER.x = Z.x; DEF_KILLER.y = Z.y;
@@ -64,14 +64,50 @@ function campZbTick(C, dt) {
   if (!(Z.said > now - 14)) { Z.said = now; floater(Z.x, Z.y - 2.2, ZB_BARK[(Math.random() * ZB_BARK.length) | 0], '#8ad0f0'); }
 }
 
-// рисунок: жаболюд Жабьен (frogart.js, вид ftZ) с подписью-именем; Zo — другой Жабьен (сидит в камышах до встречи)
+const campZbViews = ['S','SE','E','NE','N','NW','W','SW'];
+const campZbFacing = new WeakMap();
+
+function campZbDirection(Z, attackAge) {
+  let dx=0,dy=0;
+  if (attackAge>=0 && attackAge<ZB.shotDur) {
+    const shots=Game.dshots||[];
+    for(let i=shots.length-1;i>=0;i--){
+      const s=shots[i];
+      if(s.k!=='dart'||Math.abs(Game.time-s.born-attackAge)>.06||Math.hypot(s.x-Z.x,s.y+.5-Z.y)>1.65)continue;
+      dx=s.gx-s.x;dy=s.gy-s.y;break;
+    }
+    if(!dx&&!dy)dx=Z.face||1;
+  } else if (Z.mv) {
+    const hero=campHero();
+    if(hero&&!hero.inside){
+      dx=hero.x-(hero.face||1)*1.4-Z.x;
+      dy=hero.y+.6-Z.y;
+    }
+  }
+  const old=campZbFacing.get(Z);
+  const heading=Math.hypot(dx,dy)>.001
+    ? campZbViews[(Math.round(Math.atan2(dx,dy)/(Math.PI/4))+8)%8]
+    : old||(Z.vf?'S':Z.face<0?'W':'E');
+  campZbFacing.set(Z,heading);
+  return heading;
+}
+
+// Zo is the stationary actor in the reeds before recruitment.
 function campZbDraw(list, c, x0, y0, x1, y1, Zo) {
   const Z = Zo || (Game.camp && Game.camp.zb);
   if (!Z || typeof neuDraw !== 'function' || typeof NSPEC === 'undefined' || !NSPEC.ftZ) return;
   if (Z.x < x0 - 2 || Z.x > x1 + 2 || Z.y < y0 - 2 || Z.y > y1 + 3) return;
   list.push([Z.y + 0.1, () => {
-    const N = { k: 'ftZ', id: 7707, x: Z.x, y: Z.y, face: Z.face, vf: Z.vf || 0, st: Z.mv ? 'roam' : 'idle', ph: Z.ph || 0, hp: 1, mhp: 1, dt: 0, winT: 0 };
-    N.fr = typeof neuFrame === 'function' ? neuFrame(N) : 'i0';
+    const age=ZB.cd-Z.cd, firing=age>=0&&age<ZB.shotDur;
+    const N = { k: 'ftZ', id: 7707, x: Z.x, y: Z.y, face: Z.face, vf: Z.vf || 0, st: firing?'atk':Z.mv?'roam':'idle', ph: Z.ph || 0, hp: 1, mhp: 1, dt: 0, winT: 0 };
+    N.fr = firing ? naAtkFr(.26+age) : typeof neuFrame === 'function' ? neuFrame(N) : 'i0';
+    const directions=globalThis.FrogDirections;
+    if(directions?.setHeading&&globalThis.FantasyPublishedFrogs?.enabled!==false){
+      const direction=campZbDirection(Z,age);
+      N.face=direction.endsWith('W')?-1:1;
+      N.vf=direction==='S'?1:0;
+      directions.setHeading(N,direction);
+    }
     neuDraw(c, N);
     c.save();
     c.font = 'bold 9px sans-serif'; c.textAlign = 'center';

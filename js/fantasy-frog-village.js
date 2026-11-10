@@ -71,7 +71,7 @@
     }
     atlasReady = true;
   }
-  const assetPath = 'assets/fantasy/frog-village-atlas.png';
+  const assetPath = 'assets/fantasy/frog-village-v2.png';
   const scriptURL = document.currentScript?.src;
   loadLayers(scriptURL?new URL('../'+assetPath,scriptURL).href:new URL(assetPath,document.baseURI).href).catch(error=>{
     bakedLayers.clear();
