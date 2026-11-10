@@ -36,7 +36,7 @@
  function lowBrim(c,q,G,view){const H=capLayout(q,G,view),x=H.x,y=H.eyeY,col=q.cap,back=view==='N'&&!G.child,profile=H.profile;const outer=profile?(G.child?[[-6,-1.05],[-2,-1.1],[3,-.9],[6.6,-.35],[7.1,.25],[6.8,1.1],[3,1.2],[-3,1.05],[-5.9,.5]]:[[-6,-1.05],[-2,-1.1],[3,-.9],[7.6,-.35],[8.25,.25],[7.7,1.1],[3,1.2],[-3,1.05],[-5.9,.5]]):back?[[-6.2,-.9],[-3,-.55],[3,-.55],[6.2,-.9],[6,1],[3,1.2],[-3,1.2],[-6,1]]:[[-6.2,-1.05],[-3,-.7],[2,-.7],[6.2,-1.05],[6,1],[3,1.2],[-3,1.2],[-6,1]];const pts=outer.map(([a,b])=>[x+a,y+b]);shape(c,pts,shade(col,-.48));shape(c,outer.map(([a,b])=>[x+a*.95,y+b*.6-.25]),shade(col,-.08));shape(c,outer.slice(0,profile?6:4).map(([a,b])=>[x+a*.92,y+b*.45-.6]).concat([[x+4,y-.15],[x-4,y-.15]]),shade(col,.19));rect(c,x-4.5,y-.5,2,.5,shade(col,.31));rect(c,x+.5,y-.5,2.5,.5,shade(col,.22));if(profile)rect(c,x+5,y-.25,1.5,.5,shade(col,.17));if(q.O.cap==='waitress'){pline(c,x-4.8,y-.65,x-3.4,y+.45,'#b4a180',.5);pline(c,x+3.2,y+.45,x+4.7,y-.65,'#b4a180',.5);rect(c,x-2.5,y+.55,5,.5,'#c3b18c');rect(c,x-2,y-.9,2,.5,'#fff7df');for(const dx of[-3,-1,1,3])rect(c,x+dx,y+.2,.5,.5,'#d3c4a2');}if(q.O.rivets||q.O.cap==='cls:warrior'||q.O.cap==='cls:paladin'){rect(c,x-3.5,y+.25,.5,.5,'#d8ba78');rect(c,x+3.5,y+.25,.5,.5,'#d8ba78');}}
  function childCapNose(c,q,G,view){const H=capLayout(q,G,view),sk=SKINS[q.L.skin%3],x=H.x+6.9,y=H.bottom+.45;oval(c,x,y,1.65,1.1,sk[2]);oval(c,x+.15,y-.2,1.35,.85,sk[0]);rect(c,x+.3,y-.75,.7,.5,shade(sk[0],.15));rect(c,x-.8,y+.55,1,.5,sk[1]);}
  function cropCapBelow(cv,info,bottom){const c=cv.getContext('2d'),im=c.getImageData(0,0,cv.width,cv.height);for(let i=0;i<info.M.face.length;i++)if(info.pos(i).y>bottom)im.data[i*4+3]=0;c.putImageData(im,0,0);}
- function drawHeadForeground(c,fore,head){const w=fore.width,h=fore.height,cv=mkCanvas(w,h),o=cv.getContext('2d'),f=fore.getContext('2d').getImageData(0,0,w,h),a=head.getContext('2d').getImageData(0,0,w,h).data;for(let i=0;i<w*h;i++)if(!a[i*4+3])f.data[i*4+3]=0;o.putImageData(f,0,0);c.drawImage(cv,0,0,PW,PH);}
+ function drawHeadForeground(c,head,foreground){const w=head.width,h=head.height,cv=mkCanvas(w,h),o=cv.getContext('2d'),f=new ImageData(foreground,w,h),a=head.getContext('2d').getImageData(0,0,w,h).data;for(let i=0;i<w*h;i++)if(!a[i*4+3])f.data[i*4+3]=0;o.putImageData(f,0,0);c.drawImage(cv,0,0,PW,PH);}
  function cap(c,q,G,view,frame){const O=q.O,L=q.L,x=PFX+(G.child?1.1:0),y=G.capY,cap=q.cap,sway=Math.sin((Number(frame)||0)*.8)*.3;
   const cls=typeof O.cap==='string'&&O.cap.startsWith('cls:')?O.cap.slice(4):'',rise=O.skHat>=0?(O.skHat===0?14:O.skHat===4?10:O.skHat===5?12:11):cls?({mage:16,priest:14,warrior:12,barbarian:10,archer:12,druid:14,rogue:11,monk:4,bard:13,paladin:13}[cls]||14):O.cap==='baker'?14:q.sex==='f'&&(L.hs===2||L.hs===3)?8:(O.cap==='wizard'?15:CAP_TALL[L.capStyle||0]+(L.capStyle===9?4:2));
   const ys=Math.min(1.05,Math.max(.4,(y+Math.min(0,G.dip)-1.3)/rise));c.save();c.translate(x,y);c.scale(G.child?1.42:1.28,ys);
@@ -112,19 +112,20 @@
   const fallback=canDefer?cache.get(lastFrame.get(motion)):null;
   // A queued frame can reuse another phase of the same action and costume.
   // It never substitutes idle for a swing or a different tool/view.
-  if(R.inFrame&&!spriteBudgetOk(!!fallback)){
+  if(R.inFrame&&fallback){
    const snapshot={...u,_spr:null};
    if(spriteDefer('fpa:'+key,()=>render(snapshot,view,pose,frame,opt)))return fallback;
   }
+  if(R.inFrame)spriteBudgetOk(false);
   const t0=performance.now();
   const source=previous({...u,_spr:null},view,pose,frame,{...opt,nohat:false}),info=cachedMask(q,G,view),fore=makeParts(q,view,pose,frame,opt),paint=colour(q,G,view,source,info,fore);let out=paint.cv;
   if(special){if(beardChange)q.beardTexture=texture(info,paint,info.M.beard);if(!opt.nohat)q.capTexture=texture(info,paint,info.capCloth);if(capChange){clearComponent(paint,info,info.M.cap,false);if(!opt.nohat)cleanupOldCapOutline(paint,info,G);}if(beardChange)clearComponent(paint,info,info.M.beard,true);if(hairChange){const removeHair=info.M.hair.map((v,i)=>v&&info.pos(i).y>G.headY+5.2?1:0);clearComponent(paint,info,removeHair,true,q);}out=mkCanvas(PW*K,PH*K);const c=out.getContext('2d');c.scale(K,K);c.imageSmoothingEnabled=false;
    if(capeChange&&view!=='N'){c.save();c.translate(PFX,PFY);c.scale(1.75,1);skinCape(c,q.O.skCape,view,-13,-6,false);c.restore();}c.drawImage(paint.cv,0,0,PW,PH);
    const layer=mkCanvas(PW*K,PH*K),l=layer.getContext('2d');l.scale(K,K);l.imageSmoothingEnabled=false;
-   if(capChange){const crown=mkCanvas(PW*K,PH*K),cc=crown.getContext('2d');cc.scale(K,K);transformed(cc,G,()=>bareCrown(cc,q,G,view));cc.setTransform(1,0,0,1,0,0);cc.globalCompositeOperation='destination-in';cc.drawImage(maskCanvas(info,info.M.cap),0,0);l.drawImage(crown,0,0,PW,PH);}
+   if(capChange){const crown=mkCanvas(PW*K,PH*K),cc=crown.getContext('2d');cc.scale(K,K);transformed(cc,G,()=>bareCrown(cc,q,G,view));cc.setTransform(1,0,0,1,0,0);cc.globalCompositeOperation='destination-in';cc.drawImage(info.capMaskCanvas??=maskCanvas(info,info.M.cap),0,0);l.drawImage(crown,0,0,PW,PH);}
    transformed(l,G,()=>{if(hairChange)hair(l,q,G,view);if(beardChange){beard(l,q,G,view);moustache(l,q,G,view);}});eraseProtected(layer,info);c.drawImage(layer,0,0,PW,PH);
    let capLayer=null;if(capChange&&!opt.nohat){const H=capLayout(q,G,view);capLayer=mkCanvas(PW*K,PH*K);const hc=capLayer.getContext('2d');hc.scale(K,K);hc.imageSmoothingEnabled=false;transformed(hc,G,()=>{cap(hc,q,{...G,capY:H.anchor},H.view,frame);lowBrim(hc,q,G,view);});cropCapBelow(capLayer,info,H.bottom);if(G.child)transformed(hc,G,()=>childCapNose(hc,q,G,view));c.drawImage(capLayer,0,0,PW,PH);}
-   if(capeChange&&view==='N'){c.save();c.translate(PFX,PFY);c.scale(1.6,1);skinCape(c,q.O.skCape,view,-13,-6,true);c.restore();}if(!ap&&!opt.nohat&&!cls){if(capLayer)drawHeadForeground(c,fore,capLayer);}else c.drawImage(fore,0,0,PW,PH);
+   if(capeChange&&view==='N'){c.save();c.translate(PFX,PFY);c.scale(1.6,1);skinCape(c,q.O.skCape,view,-13,-6,true);c.restore();}if(!ap&&!opt.nohat&&!cls){if(capLayer)drawHeadForeground(c,capLayer,paint.fore);}else c.drawImage(fore,0,0,PW,PH);
   }
   out._fantasyAppearance=true;out._fpaNoHat=!!opt.nohat;out._fpaColourOnly=!special;cache.set(key,out);if(cache.size>800)cache.delete(cache.keys().next().value);
   lastFrame.delete(motion);lastFrame.set(motion,key);if(lastFrame.size>800)lastFrame.delete(lastFrame.keys().next().value);
