@@ -76,24 +76,26 @@ function drawFrost(c, P) {
 
 NA_SPEC.frost = { name: 'Ледяной элементаль', w: 100, h: 96, ax: 56, ay: 82, sc: 1.4 };
 NA_DRAW.frost = drawFrost;
-NA_LAIR.frost = { name: 'Ледяной шпиль', w: 92, h: 92, ax: 46, ay: 70 };
+NA_LAIR.frost = { name: 'Ледяной шпиль', w: 92, h: 92, ax: 46, ay: 70, fine: 2 };
 
 {
   const _lair = naLairDraw;
   naLairDraw = function (c, kind, v) {
     if (kind !== 'frost') return _lair(c, kind, v);
     const dead = v === 'd', f = v === '1' ? 1 : 0;
-    // снежная проплешина
-    c.fillStyle = '#dfe9f4'; c.beginPath(); c.ellipse(0, 2, 34, 9.5, 0, 0, 7); c.fill();
-    c.fillStyle = '#bcd0e6'; c.beginPath(); c.ellipse(5, 4, 26, 6, 0, 0, 7); c.fill();
-    c.fillStyle = '#f6fbff'; c.beginPath(); c.ellipse(-8, 0, 18, 5, 0, 0, 7); c.fill();
-    const col = dead ? ['#8aa0b4', '#6a8096', '#4a6074'] : [ICE.lt, ICE.md, ICE.dk];
+    poly(c, [[-34,2],[-26,-3],[-10,-7],[10,-6],[25,-4],[34,1],[29,8],[12,11],[-12,10],[-28,7]], '#657f8e');
+    poly(c, [[-31,2],[-23,-3],[-6,-6],[16,-4],[28,0],[24,4],[12,5],[6,3],[-10,7],[-24,5]], '#8daab5');
+    poly(c, [[-26,0],[-20,-3],[-8,-5],[4,-4],[2,-2],[-8,-1],[-15,2]], '#c5d7da');
+    poly(c, [[-5,0],[4,-4],[16,-4],[26,0],[20,2],[12,1],[8,4],[-1,4]], '#547183');
+    const col = dead ? ['#8aa0a3', '#657b88', '#4b6274'] : ['#9dbbc2','#6693a1','#486779'];
     const spike = (x, w, h, lean, shade0) => {
       const tipx = x + lean, tipy = -h;
       poly(c, [[x - w, 0], [x - w * 0.8, -h * 0.55], [tipx, tipy], [x + w * 0.8, -h * 0.5], [x + w, 0]], col[shade0]);
       poly(c, [[x - w, 0], [x - w * 0.8, -h * 0.55], [tipx, tipy], [x - w * 0.1, -h * 0.4], [x - w * 0.2, 0]], shade(col[shade0], 0.22));
       poly(c, [[x + w * 0.35, 0], [x + w * 0.2, -h * 0.4], [tipx, tipy], [x + w * 0.8, -h * 0.5], [x + w, 0]], shade(col[shade0], -0.24));
-      c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x - w * 0.5, -3); c.lineTo(x - w * 0.55, -h * 0.55); c.stroke();
+      poly(c, [[x-w*.6,-3],[x-w*.66,-h*.35],[x-w*.57,-h*.44],[x-w*.57,-h*.51],[tipx,tipy],[x-w*.42,-h*.48],[x-w*.42,-h*.37],[x-w*.32,-h*.29],[x-w*.36,-4]], '#bad1d4');
+      poly(c, [[x+w*.25,-h*.26],[x+w*.55,-h*.46],[x+w*.66,-h*.39],[x+w*.45,-h*.23],[x+w*.61,-h*.16],[x+w*.61,-h*.11]], '#537789');
+      poly(c, [[x-w*.33,-h*.21],[x+w*.05,-h*.28],[x+w*.32,-h*.42],[x+w*.08,-h*.25]], '#405e6b');
     };
     if (dead) {
       spike(-16, 5, 14, -3, 1); spike(10, 6, 12, 5, 2);
@@ -102,10 +104,9 @@ NA_LAIR.frost = { name: 'Ледяной шпиль', w: 92, h: 92, ax: 46, ay: 7
     }
     spike(-18, 5.5, 26, -4, 1); spike(16, 6, 30, 5, 2); spike(-6, 7, 40, -2, 0); spike(6, 5, 22, 4, 1);
     // сердце шпиля
-    const g = f ? 0.9 : 0.55;
-    c.fillStyle = `rgba(150,240,255,${g * 0.5})`; c.beginPath(); c.arc(-6, -18, 10, 0, 7); c.fill();
-    poly(c, [[-6, -26], [-3, -18], [-6, -10], [-9, -18]], '#e8ffff');
-    poly(c, [[-6, -23], [-4.4, -18], [-6, -13], [-7.6, -18]], ICE.glow);
+    poly(c, [[-6,-27],[-2,-18],[-6,-10],[-10,-18]], '#395b67');
+    poly(c, [[-6,-24],[-3,-18],[-6,-12],[-8,-18]], f ? '#d8ffed' : '#91c5bd');
+    c.fillStyle = '#eef5d8'; c.fillRect(-6,-20,1,3);
     // инеевые искры
     for (const [x, y, p] of [[-20, -30, 0], [0, -46, 1], [18, -36, 2], [-12, -8, 3], [24, -14, 4]]) { c.fillStyle = (f + p) % 2 ? '#ffffff' : '#bfefff'; c.fillRect(x - 0.8, y - 0.8, 1.6, 1.6); }
   };

@@ -447,3 +447,20 @@ function campFaceUrl(who, f) {
   } catch (e) { CAMP_FACE[key] = ''; }
   return CAMP_FACE[key];
 }
+
+function campPortraitFrames(who) {
+  const base = campFaceUrl(who, 0);
+  if (!base) return '';
+  const blink = campFaceUrl(who, 1);
+  if (!blink || blink === base) return `<img src="${base}" alt="">`;
+  return `<img class="portrait-frame-main" src="${base}" alt=""><img class="portrait-frame-blink" src="${blink}" alt="">`;
+}
+
+if (typeof document !== 'undefined') {
+  const updateBlinkReadiness = ({target}) => {
+    if (!target.classList?.contains('portrait-frame-blink')) return;
+    target.parentElement?.classList.toggle('portrait-blink-ready', target.naturalWidth > 0);
+  };
+  document.addEventListener?.('load', updateBlinkReadiness, true);
+  document.addEventListener?.('error', updateBlinkReadiness, true);
+}

@@ -253,7 +253,6 @@
     c.putImageData(im,0,0);
     if(TERR.mini&&TERR.mini.width){
       TERR.mini.getContext('2d').drawImage(cv,0,b.y0/TILE*3,MAP_W*3,H/TILE*3);
-      if(typeof updateMinimapBase==='function'&&typeof MINI!=='undefined'&&MINI.base)updateMinimapBase();
     }
     marks.set(cv,TERR.gen);baked.add(bi);
   }

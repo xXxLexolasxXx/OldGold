@@ -62,7 +62,7 @@
 #panel .iactions button { min-height: 27px; }
 #panel #split::after { height: 2px; background: #b08b54; box-shadow: 0 1px #1b130e; }
 #panel :is(#info, #tab-area) { scrollbar-width: thin; scrollbar-color: #9b794c #1e1813; }
-#topbar :is(.speed, #clock, .dd-t, .dd-menu) { background: var(--ui-board); border: 1px solid #a27e4d; border-radius: 3px; box-shadow: inset 0 1px #ddbb7a30, 0 2px 4px #100c0980; }
+#topbar :is(.speed, #clock, .dd-t, .dd-menu):not(button) { background: var(--ui-board); border: 1px solid #a27e4d; border-radius: 3px; box-shadow: inset 0 1px #ddbb7a30, 0 2px 4px #100c0980; }
 #topbar #clock { color: #e0c799; font-variant-numeric: tabular-nums; }
 #topbar .dd-menu { padding: 8px; }
 #tool-hint, #mtool, #help { background: linear-gradient(#1f1913e8, #1f1913f5), var(--ui-board); border: 1px solid #b28d56; border-radius: 4px; color: #f0e5cd; box-shadow: inset 0 1px #ddbb7a30, 0 3px 12px #100c0980; line-height: 1.45; }
@@ -85,24 +85,42 @@ body.mobile #panel .tip { font-size: 13px; }
 #panel #tab-area { background: linear-gradient(#100d094a, #100d094a), var(--ui-wood) 23px 7px / 384px 384px repeat; border-color: #322217; box-shadow: inset 0 0 0 1px #a6804b77, inset 0 0 10px #120d0944; }
 #panel #info-wrap { background: linear-gradient(#100d0944, #100d0944), var(--ui-wood) 0 37px / 384px 384px repeat; }
 #panel #info-bar { background: linear-gradient(#21181033, #21181066), var(--ui-wood) 0 84px / 384px 384px repeat; }
-#panel button, #topbar button, #mtool button, #help button {
-  background: linear-gradient(#9e793814, #160e0b55), var(--ui-wood) 14px 12px / 320px 320px repeat;
-  border: 1px solid #302116; border-radius: 2px;
-  box-shadow: inset 0 1px #d3ac6c77, inset 1px 0 #c0985b44, inset -1px -2px #120d09aa, 0 1px 2px #0e0b0980;
+#panel button, #panel .bbtn, #topbar button, #mtool button, #help button {
+  background: linear-gradient(#43575a, #293a40);
+  border: 1px solid #a68b58; border-radius: 3px;
+  box-shadow: inset 0 1px #9baaa1, inset 0 -2px #19262a, 0 2px 3px #120d09c0;
+  color: #fff0d4;
 }
-#panel button:nth-child(2n) { background-position: 0 0, 92px 57px; }
-#panel button.active, #topbar button.active, #panel button:active {
-  background: linear-gradient(#d9ab3b22, #120d0955), var(--ui-wood) 14px 12px / 320px 320px repeat;
-  border-color: #ddba72; box-shadow: inset 0 0 0 1px #24190e, inset 0 -2px #d2ab63, 0 1px 3px #0e0b09;
+#panel button:not(:disabled):hover, #topbar button:not(:disabled):hover, #mtool button:not(:disabled):hover, #help button:not(:disabled):hover {
+  border-color: #e3c58a;
+  filter: brightness(1.14);
 }
-#panel .bbtn { background: linear-gradient(#1b120b33, #1b120b66), var(--ui-wood) 0 2px / 384px 384px repeat; border-color: #37271a; }
-#panel .bbtn:nth-child(2n) { background-position: 0 0, 87px 48px; }
-#panel .bbtn:nth-child(3n) { background-position: 0 0, 140px 96px; }
+#panel button.active, #topbar button.active, #mtool button.active,
+#panel button[aria-pressed="true"], #topbar button[aria-pressed="true"],
+#panel button:active:not(:disabled), #topbar button:active:not(:disabled), #mtool button:active:not(:disabled) {
+  background: linear-gradient(#76603c, #514027);
+  border-color: #f5d69a;
+  box-shadow: inset 0 1px #d9bd81, inset 0 -3px #d7ae60, 0 2px 3px #120d09c0;
+}
+#panel button:disabled, #topbar button:disabled, #mtool button:disabled {
+  background: #303737; border-color: #776b55; color: #c2b8a4;
+  filter: none;
+}
+#panel .bbtn .bimg {
+  background: #1b292c;
+  border: 1px solid #63736d;
+  border-radius: 3px;
+  padding: 2px;
+  box-shadow: inset 0 -1px #101a1b;
+  box-sizing: border-box;
+}
 #panel .bbtn .bname, #panel .cost, #panel .tip, #panel .idesc, #panel .irow, #panel .isec, #panel .group-title { text-shadow: 0 1px 1px #160d06, 1px 0 2px #160d06, -1px 0 2px #160d06; }
 #panel .recipe, #panel .slot { background: linear-gradient(#17120e88, #17120ea0), var(--ui-wood) 0 0 / 320px 320px repeat; border-color: #9c784866; }
 #panel .tab-btn img { width: 32px; height: 32px; filter: drop-shadow(0 2px #19130e); }
-#topbar :is(.speed, #clock, .dd-t, .dd-menu) { background: linear-gradient(#1a130b44, #1a130b66), var(--ui-board); border-color: #9e7c4b; }
+#topbar :is(.speed, #clock, .dd-t, .dd-menu):not(button) { background: linear-gradient(#1a130b44, #1a130b66), var(--ui-board); border-color: #9e7c4b; }
 #panel .tab-btn { min-width: 0; }
+#panel .mm-wrap { background: #223236; border-color: #b69a65; box-shadow: inset 0 0 0 2px #142023, 0 3px 5px #120d09a0; }
+#minimap { border-color: #bca275; }
 /* Darkened boards behind long prose; grain and damage remain visible. */
 #panel #info-wrap { background: linear-gradient(#100d0977, #100d0977), var(--ui-wood) 0 37px / 384px 384px repeat; }
 

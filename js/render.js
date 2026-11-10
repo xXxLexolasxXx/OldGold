@@ -190,6 +190,12 @@ function drawUnit(c, u) {
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
   // походка и жесты
   const opt = { gait: u.drunkAt ? 'drunk' : u.food <= 0 || u.hangUntil > Game.time ? 'tired' : '', gest: '', gf: gestCyc(Game.time * 4 + u.id) };
+  if (pose === 'duck' || pose === 'tame') {
+    if (u.anim === 'sit' || u.anim === 'forage') opt.posture = u.anim;
+    if (u.anim === 'sit') frame = Math.floor(Game.time * 3 + u.id) % 6;
+    else if (a && a.T > 0)
+      frame = Math.max(0, Math.min(5, Math.floor((1 - a.t / a.T) * 6)));
+  }
   if ((u.type === 'hero' || u.rec || u.gx || u.gm) && typeof heroWpnOf === 'function') opt.wpn = heroWpnOf(u);   // оружие героя, рекрутов и глав гильдий (herokit.js)
   if ((u.anim === 'flaskout' || u.anim === 'drink') && pose === 'idle') {
     opt.gest = u.anim === 'drink' ? 'drink' : 'chest';
@@ -337,16 +343,21 @@ function drawUnitFx(c, u, px, py, moving) {
 // Корыто дороги повторяет форму будущей мостовой: круг в клетке, перемычки к соседям
 // (готовая дорога или другая стройка) и косые ленты к диагональным соседям
 function isRoadOrSite(x, y) { return inb(x, y) && (World.road[idx(x, y)] || Game.roadSites.has(idx(x, y))); }
-function siteShape(c, s, k) {
-  const px = s.x * TILE, py = s.y * TILE, cx = px + TILE / 2, cy = py + TILE / 2, w = (11.5) * (0.45 + 0.55 * k);
+function siteShape(c, s, k, connected = isRoadOrSite) {
+  const px = s.x * TILE, py = s.y * TILE, cx = px + TILE / 2, cy = py + TILE / 2;
+  const w = (window.FantasyRoadArt ? FantasyRoadArt.coreWidth / 2 : 11.5) * (0.45 + 0.55 * k);
   c.beginPath();
   c.arc(cx, cy, w, 0, Math.PI * 2);
-  if (isRoadOrSite(s.x - 1, s.y)) c.rect(px, cy - w, TILE / 2, w * 2);
-  if (isRoadOrSite(s.x + 1, s.y)) c.rect(cx, cy - w, TILE / 2, w * 2);
-  if (isRoadOrSite(s.x, s.y - 1)) c.rect(cx - w, py, w * 2, TILE / 2);
-  if (isRoadOrSite(s.x, s.y + 1)) c.rect(cx - w, cy, w * 2, TILE / 2);
+  if (connected(s.x - 1, s.y)) c.rect(px, cy - w, TILE / 2, w * 2);
+  if (connected(s.x + 1, s.y)) c.rect(cx, cy - w, TILE / 2, w * 2);
+  if (connected(s.x, s.y - 1)) c.rect(cx - w, py, w * 2, TILE / 2);
+  if (connected(s.x, s.y + 1)) c.rect(cx - w, cy, w * 2, TILE / 2);
   for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-    if (!isRoadOrSite(s.x + dx, s.y + dy) || isRoadOrSite(s.x + dx, s.y) || isRoadOrSite(s.x, s.y + dy)) continue;
+    if (!connected(s.x + dx, s.y + dy)) continue;
+    if (connected(s.x + dx, s.y) && connected(s.x, s.y + dy)) {
+      c.rect(dx < 0 ? px : cx, dy < 0 ? py : cy, TILE / 2, TILE / 2);
+      continue;
+    }
     // половина ленты до угла клетки: вторая половина дорисуется в соседней клетке
     const x1 = cx + dx * TILE / 2, y1 = cy + dy * TILE / 2, L = Math.SQRT2 * TILE / 2;
     const nx = -(dy) / Math.SQRT2 * w, ny = dx / Math.SQRT2 * w;
@@ -496,9 +507,12 @@ function onScreen(px, py, m = 64) {
 // (замер 27.10, сейв 261023-2109-e00a). Копия считается тем же фильтром один раз — на экране то же самое.
 // Спрайты зданий после сборки не меняются (как и для COLD_FX_CACHE), поэтому ключ — сам холст.
 const HQ_CACHE = new WeakMap();
+// Повторно используем копии при небольших изменениях масштаба камеры.
+function farRasterScale(k) { return Math.max(0.25, Math.round(k * 4) / 4); }
 function blitHQ(c, src, x, y, w, h) {
-  const k = devScale();
-  if (k > 1 || !src || !src.width) { if (src) c.drawImage(src, x, y, w, h); return; }
+  const scale = devScale();
+  if (scale > 1 || !src || !src.width) { if (src) c.drawImage(src, x, y, w, h); return; }
+  const k = farRasterScale(scale);
   const W = Math.max(1, Math.round(w * k)), H = Math.max(1, Math.round(h * k));
   let e = HQ_CACHE.get(src);
   if (!e || e.cv.width !== W || e.cv.height !== H) {
@@ -510,9 +524,12 @@ function blitHQ(c, src, x, y, w, h) {
     HQ_CACHE.set(src, e = { cv });
   }
   const sm = c.imageSmoothingEnabled;
-  c.imageSmoothingEnabled = false;
+  const quality = c.imageSmoothingQuality;
+  c.imageSmoothingEnabled = k !== scale;
+  c.imageSmoothingQuality = 'low';
   c.drawImage(e.cv, x, y, w, h);
   c.imageSmoothingEnabled = sm;
+  c.imageSmoothingQuality = quality;
 }
 
 function drawBuilding(c, b, ghost) {
@@ -939,12 +956,14 @@ function rowcSig(y, cx0, cx1) {
 // Кладёт в список отрисовки куски рядов y0..y1, перекрывающие x0..x1. Возвращает false — кэш не используется
 // (камера близко или кадр слишком большой для памяти): тогда объекты кладутся по одному, как раньше.
 function rowcPush(list, c, x0, y0, x1, y1) {
-  const k = devScale();
-  if (k > 1 || R.noFarCache) { if (ROWC.map.size) rowcFree(); return false; }   // R.noFarCache — для замеров
+  const scale = devScale();
+  if (scale > 1 || R.noFarCache) return false;   // R.noFarCache — для замеров
+  const k = farRasterScale(scale);
   const CW = Math.round(16 / k);
   const cA = Math.floor(x0 / CW), cB = Math.floor(x1 / CW);
   const maxPx = typeof Fps !== 'undefined' && Fps.eco ? ROWC_MAX_PX * 0.375 : ROWC_MAX_PX;
-  if ((cB - cA + 1) * (CW * TILE + 2 * ROWC_PAD) * (ROWC_UP + ROWC_DN) * k * k * (y1 - y0 + 1) > maxPx) { if (ROWC.map.size) rowcFree(); return false; }
+  const chunkPx = Math.round((CW * TILE + 2 * ROWC_PAD) * k) * Math.round((ROWC_UP + ROWC_DN) * k);
+  if ((cB - cA + 1) * chunkPx * (y1 - y0 + 1) > maxPx) { if (ROWC.map.size) rowcFree(); return false; }
   if (ROWC.k !== k || ROWC.trees !== SPR.trees) { rowcFree(); ROWC.k = k; ROWC.trees = SPR.trees; }
   const fr = ++ROWC.frame, t0 = performance.now();
   for (let y = y0; y <= y1; y++) for (let cx = cA; cx <= cB; cx++) {
@@ -969,11 +988,11 @@ function rowcPush(list, c, x0, y0, x1, y1) {
     }
     e.fr = fr;
     const E = e;
-    list.push([y + 0.9, () => { const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false; c.drawImage(E.cv, E.X0, E.Y0, E.w, E.h); c.imageSmoothingEnabled = sm; }]);
+    list.push([y + 0.9, () => { const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = k !== scale; c.drawImage(E.cv, E.X0, E.Y0, E.w, E.h); c.imageSmoothingEnabled = sm; }]);
   }
   // куски, давно не попадавшие в кадр, выгружаем
-  if (ROWC.map.size > (y1 - y0 + 1) * (cB - cA + 1) * 1.5 + 64) {
-    for (const [key, e] of ROWC.map) if (fr - e.fr > 90) { ROWC.px -= e.cv.width * e.cv.height; e.cv.width = e.cv.height = 0; ROWC.map.delete(key); }
+  if (ROWC.px > maxPx || ROWC.map.size > (y1 - y0 + 1) * (cB - cA + 1) * 1.5 + 64) {
+    for (const [key, e] of ROWC.map) if (fr - e.fr > 90 || (e.fr !== fr && ROWC.px > maxPx)) { ROWC.px -= e.cv.width * e.cv.height; e.cv.width = e.cv.height = 0; ROWC.map.delete(key); }
   }
   return true;
 }
@@ -1053,7 +1072,12 @@ function render() {
   for (const u of Game.units) {
     if (u.inside) continue;
     if (u.x < x0 - 1 || u.x > x1 + 1 || u.y < y0 - 1 || u.y > y1 + 2) continue;
-    list.push([u.y + 0.2, () => drawUnit(c, u)]);
+    // Woodcutters work on the tree's own tile. Draw their swing in front of
+    // that trunk, including when the forest is rendered as cached rows.
+    const tx=Math.floor(u.x),ty=Math.floor(u.y);
+    const tree=u.anim==='chop'&&inb(tx,ty)?World.obj[idx(tx,ty)]:null;
+    const depth=tree?.t==='tree'&&!tree.awake?Math.max(u.y+0.2,ty+0.91):u.y+0.2;
+    list.push([depth, () => drawUnit(c, u)]);
   }
   for (const a of Game.animals) {
     if (a.x < x0 - 1 || a.x > x1 + 1 || a.y < y0 - 1 || a.y > y1 + 2) continue;
@@ -1186,6 +1210,8 @@ function drawOverlay(c) {
   } else if (tool.kind === 'road') {
     const cells = R.roadDrag || [h];
     const single = cells.length === 1;
+    const preview = new Set(cells.filter(([x, y]) => canPlaceRoad(x, y)).map(([x, y]) => idx(x, y)));
+    const connected = (x, y) => isRoadOrSite(x, y) || (inb(x, y) && preview.has(idx(x, y)));
     for (const [x, y] of cells) {
       const px = x * TILE, py = y * TILE;
       const exists = inb(x, y) && (World.road[idx(x, y)] || Game.roadSites.has(idx(x, y)));
@@ -1197,10 +1223,11 @@ function drawOverlay(c) {
         c.fillStyle = '#e04030';
         for (let k = 0; k < 14; k++) { c.fillRect(px + 9 + k, py + 9 + k, 2, 2); c.fillRect(px + 22 - k, py + 9 + k, 2, 2); }
       } else if (exists) {
-        c.fillStyle = 'rgba(200,190,170,0.22)'; c.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);     // уже дорога — просто проходим
+        siteShape(c, { x, y }, 1, connected);
+        c.fillStyle = 'rgba(200,190,170,0.22)'; c.fill();
       } else if (ok) {
-        c.fillStyle = 'rgba(214,200,170,0.4)'; c.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
-        c.strokeStyle = '#e0d2a8'; c.lineWidth = 1.2; c.strokeRect(px + 2.5, py + 2.5, TILE - 5, TILE - 5);
+        siteShape(c, { x, y }, 1, connected);
+        c.fillStyle = 'rgba(214,200,170,0.4)'; c.fill();
         if (single) {   // значок: три булыжника
           for (const [dx, dy, r] of [[11, 18, 4.4], [20, 17, 4], [16, 11, 4.2]]) {
             ellipse(c, px + dx + 0.6, py + dy + 0.8, r, r * 0.7, '#2e2822');
@@ -1247,19 +1274,21 @@ function updateMinimapBase() {
   if (MINI.base.width !== MAP_W * 3 || MINI.base.height !== MAP_H * 3) { MINI.base.width = MAP_W * 3; MINI.base.height = MAP_H * 3; }
   const c = MINI.base.getContext('2d');
   c.drawImage(TERR.mini, 0, 0);
+  c.fillStyle = 'rgba(14,27,30,0.22)';
+  c.fillRect(0, 0, MINI.base.width, MINI.base.height);
   for (let i = 0; i < N_TILES; i++) {
     const x = (i % MAP_W) * 3, y = ((i / MAP_W) | 0) * 3, o = World.obj[i];
-    if (World.road[i]) { c.fillStyle = '#cc9a64'; c.fillRect(x, y, 3, 3); }
-    if (World.crystal[i]) { c.fillStyle = '#9c7ae6'; c.fillRect(x + 1, y + 1, 2, 2); }
+    if (World.road[i]) { c.fillStyle = '#dbba7d'; c.fillRect(x, y, 3, 3); }
+    if (World.crystal[i]) { c.fillStyle = '#beabf0'; c.fillRect(x + 1, y + 1, 2, 2); }
     if (o) {
-      if (o.t === 'tree') { c.fillStyle = o.g >= 1 ? '#1c2818' : '#3a5a2a'; c.fillRect(x, y, 3, 3); }
+      if (o.t === 'tree') { c.fillStyle = o.g >= 1 ? '#223a31' : '#41624b'; c.fillRect(x, y, 3, 3); }
       else if (o.t === 'stone') { c.fillStyle = '#cec6ba'; c.fillRect(x + 1, y + 1, 2, 2); }
       else if (o.t === 'field') { c.fillStyle = '#c89226'; c.fillRect(x, y, 3, 3); }
     }
   }
   for (const b of Game.buildings) {
     c.fillStyle = '#160e0a'; c.fillRect(b.x * 3 - 1, b.y * 3 - 1, b.w * 3 + 2, b.h * 3 + 2);
-    c.fillStyle = b.state === 'done' ? '#e07a50' : '#cc9a64';
+    c.fillStyle = b.state === 'done' ? '#eb986c' : '#c39158';
     c.fillRect(b.x * 3, b.y * 3, b.w * 3, b.h * 3);
   }
 }
@@ -1271,9 +1300,10 @@ function drawMinimap() {
   if (typeof campFogMini === 'function') campFogMini(c, cv);
   const sx = cv.width / (MAP_W * TILE), sy = cv.height / (MAP_H * TILE);
   const s = camScale();
-  c.strokeStyle = '#f6f2ea'; c.lineWidth = 2;
   drawMinimapUnits();
-  c.strokeRect(R.cam.x * sx, R.cam.y * sy, R.canvas.clientWidth / s * sx, R.canvas.clientHeight / s * sy);
+  const view = [R.cam.x * sx, R.cam.y * sy, R.canvas.clientWidth / s * sx, R.canvas.clientHeight / s * sy];
+  c.strokeStyle = '#18252a'; c.lineWidth = 4; c.strokeRect(...view);
+  c.strokeStyle = '#fff1bc'; c.lineWidth = 2; c.strokeRect(...view);
 }
 
 // Персонажи на миникарте: свои гномы — зелёные, звери — серые, нечисть — красная
@@ -1290,7 +1320,7 @@ function drawMinimapUnits() {
   for (const u of Game.units) {
     if (u.inside || u.dead) continue;
     if (UNIT_TYPES[u.type].animal) dot(u.x, u.y, '#b4b4b4', 2);          // вьючные козы
-    else dot(u.x, u.y, '#5ee05e', u.hero ? 3.6 : 2.4);
+    else dot(u.x, u.y, u.hero ? '#ffe582' : '#86e3a4', u.hero ? 3.6 : 2.4);
   }
   for (const e of Game.ents || []) if (e.k > 0.3 && e.state !== 'sleep' && e.state !== 'done' && e.state !== 'gone' && e.state !== 'root') dot(e.x, e.y, '#ff3a30', 3);
   for (const s of Game.skels || []) if (s.k > 0.3 && s.state !== 'dead') dot(s.x, s.y, '#ff3a30', 2.6);

@@ -637,7 +637,8 @@ function neuDrawLair(c, L) {
   const t = Game.time, live = Game.neutrals.some(N => N.lair === L.id && N.st !== 'die');
   const s = naLairSprite(L.k, live ? String(Math.floor(t * 1.8 + L.id) % 2) : 'd');
   const px = Math.round(L.x * TILE + 16), py = Math.round(L.y * TILE + 22);
-  c.drawImage(s.cv, px - s.ax, py - s.ay);
+  if (s.cv.fine) blitFine(c, s.cv, px - s.ax, py - s.ay);
+  else c.drawImage(s.cv, px - s.ax, py - s.ay);
   if (live && (L.k === 'fairy' || L.k === 'spore' || L.k === 'pixie')) {
     // плавающие огоньки над логовом (сверх запечённых в кадры)
     c.save(); c.globalCompositeOperation = 'lighter';

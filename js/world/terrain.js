@@ -55,9 +55,21 @@ function terrFree() {
 // Земля и дороги в кадре: cam — {x,y}, vw/vh — размер кадра в мировых пикселях
 function terrDraw(c, cam, vw, vh) {
   const n = Math.max(TERR.bands.length, TERR.job ? TERR.job.done.length : 0), BH = TBAND * TILE;
+  const overview = devScale() <= 1 && TERR.mini;
   for (let i = 0; i < n; i++) {
     if (i * BH + BH < cam.y - 2 || i * BH > cam.y + vh + 2) continue;
-    if (!TERR.bands[i]) terrRunBand(i);   // полоса в кадре, а её ещё не успели построить — достраиваем сейчас
+    if (!TERR.bands[i]) {
+      if (overview) {
+        // Keep the world visible while terrStep builds the detailed band in
+        // budgeted chunks. A zoom-out can expose many unfinished bands at once.
+        const row = i * TBAND, rows = Math.min(TBAND, MAP_H - row);
+        c.drawImage(TERR.mini, 0, row * 3, MAP_W * 3, rows * 3,
+          0, row * TILE, MAP_W * TILE, rows * TILE);
+        terrKick();
+        continue;
+      }
+      terrRunBand(i);
+    }
     const b = TERR.bands[i];
     if (!b) continue;
     c.drawImage(b.cv, 0, b.y0);
@@ -260,6 +272,19 @@ function buildTerrain(seed) {
   const gst0 = terrGroundOn();
   TERR.mini = mkCanvas(MAP_W * 3, MAP_H * 3);
   const mctx = TERR.mini.getContext('2d');
+  // Seed the preview before the first detailed band finishes. Finished and
+  // compressed bands already keep their detailed thumbnails in this canvas.
+  const preview = mkCanvas(MAP_W, MAP_H), pc = preview.getContext('2d');
+  const image = pc.createImageData(MAP_W, MAP_H);
+  const colors = [P.g0.map((v, i) => (v + P.g1[i]) / 2), P.w0, P.rk.map((v, i) => v * [102, 94, 83][i]), P.sand];
+  for (let i = 0; i < World.terrain.length; i++) {
+    const color = colors[World.terrain[i]] || colors[0], offset = i * 4;
+    image.data[offset] = color[0]; image.data[offset + 1] = color[1]; image.data[offset + 2] = color[2]; image.data[offset + 3] = 255;
+  }
+  pc.putImageData(image, 0, 0);
+  mctx.imageSmoothingEnabled = false;
+  mctx.drawImage(preview, 0, 0, TERR.mini.width, TERR.mini.height);
+  mctx.imageSmoothingEnabled = true;
   const bandGen = function* (bi) {
   const bty0 = bi * TBAND, bty1 = Math.min(MAP_H, bty0 + TBAND), y0px = bty0 * TILE, bh = (bty1 - bty0) * TILE;
   const GRASS = new Uint8Array(PW * bh);

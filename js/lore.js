@@ -473,9 +473,9 @@ function loreWho(k) {
 function loreFace(w, who) {
   const heroF = who === 'hero' && typeof haOf === 'function' && Game.hero && (haOf(Game.hero) || [])[10] === 1;
   const key = heroF ? 'heroF' : who;
-  const a = typeof campFaceUrl === 'function' ? campFaceUrl(key, 0) : '';
-  if (!a) return `<div class="lc-face" style="background:${w.bg};color:${w.col};border-color:${w.col}">${w.ch}</div>`;
-  return `<span class="lc-pt" style="border-color:${w.col};background-color:${w.bg}"><img src="${a}" alt=""><img class="lc-blink" src="${campFaceUrl(key, 1)}" alt="" style="animation-delay:-${(Math.random() * 4).toFixed(1)}s"></span>`;
+  const frames = typeof campPortraitFrames === 'function' ? campPortraitFrames(key) : '';
+  if (!frames) return `<div class="lc-face" style="background:${w.bg};color:${w.col};border-color:${w.col}">${w.ch}</div>`;
+  return `<span class="lc-pt" style="border-color:${w.col};background-color:${w.bg};--portrait-blink-delay:-${(Math.random() * 4).toFixed(1)}s">${frames}</span>`;
 }
 
 function loreRender() {

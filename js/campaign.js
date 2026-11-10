@@ -626,11 +626,11 @@ function campRestart() {
   if (typeof updateUI === 'function') updateUI(true);
 }
 
-// портрет собеседника (js/campaign/faces.js): два кадра, второй (моргание) поверх по CSS; без портрета — буква в круге
+// Портрет собеседника. Если изображения нет, показываем букву.
 function campFace(w, who) {
-  const a = typeof campFaceUrl === 'function' ? campFaceUrl(who, 0) : '';
-  if (!a) return `<span class="cd-ch" style="color:${w.col};background:${w.bg}">${campEsc(w.ch)}</span>`;
-  return `<span class="cd-pt" style="border-color:${w.col};background-color:${w.bg}"><img src="${a}" alt=""><img class="cd-blink" src="${campFaceUrl(who, 1)}" alt="" style="animation-delay:-${(Math.random() * 4).toFixed(1)}s"></span>`;
+  const frames = typeof campPortraitFrames === 'function' ? campPortraitFrames(who) : '';
+  if (!frames) return `<span class="cd-ch" style="color:${w.col};background:${w.bg}">${campEsc(w.ch)}</span>`;
+  return `<span class="cd-pt" style="border-color:${w.col};background-color:${w.bg};--portrait-blink-delay:-${(Math.random() * 4).toFixed(1)}s">${frames}</span>`;
 }
 // портрет меняется только при смене собеседника — иначе моргание сбивалось бы на каждой реплике
 function campSetFace(E, w, who) {

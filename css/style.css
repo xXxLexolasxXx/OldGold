@@ -99,6 +99,16 @@ kbd {
   box-shadow: inset 0 0 0 1px #a07a48, 0 3px 6px rgba(0,0,0,0.6);
 }
 #minimap { width: 100%; height: auto; aspect-ratio: 4 / 3; display: block; cursor: pointer; image-rendering: pixelated; border: 1px solid #0a0705; }
+.portrait-frame-blink { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .portrait-blink-ready > .portrait-frame-main,
+  .portrait-blink-ready > .portrait-frame-blink {
+    animation: portrait-blink-main var(--portrait-blink-period, 4.2s) steps(1, end) var(--portrait-blink-delay, 0s) infinite;
+  }
+  .portrait-blink-ready > .portrait-frame-blink { animation-name: portrait-blink-alt; }
+}
+@keyframes portrait-blink-main { 0%, 100% { opacity: 1; } 96% { opacity: 0; } }
+@keyframes portrait-blink-alt { 0%, 100% { opacity: 0; } 96% { opacity: 1; } }
 
 /* ---------- Кнопки ---------- */
 

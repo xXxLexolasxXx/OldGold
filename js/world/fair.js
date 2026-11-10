@@ -351,25 +351,62 @@ function* fairBrowseGen(u) {
 
 // ================= Рисование: лавки, флажки, реквизит конкурса =================
 
-function fairStall(c, x, y, S, seed) {
-  const P = (a, b, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x + a), Math.round(y + b), w, h); };
-  c.fillStyle = 'rgba(10,8,4,0.3)'; c.beginPath(); c.ellipse(x, y + 1, 15, 4, 0, 0, 7); c.fill();
-  // стойки и прилавок
-  P(-13, -26, 2, 27, '#3a2414'); P(11, -26, 2, 27, '#3a2414');
-  P(-14, -10, 28, 10, '#1a100a'); P(-13, -9, 26, 8, '#8a5a30'); P(-13, -9, 26, 2, '#b07a44'); P(-13, -3, 26, 1, '#5a3a1e');
-  for (let k = -10; k < 12; k += 6) P(k, -6, 1, 4, '#6a4424');
-  // товар на прилавке — значки товаров игры
-  const ic = typeof iconCanvas === 'function' ? S.goods.map(g => iconCanvas('good', g)) : [];
-  c.imageSmoothingEnabled = false;
-  ic.forEach((cv, i) => { if (cv) c.drawImage(cv, Math.round(x - 11 + i * 11), Math.round(y - 19), 10, 10); });
-  // навес в полоску с фестонами
-  P(-16, -33, 32, 8, '#1a100a');
-  for (let k = 0; k < 8; k++) P(-15 + k * 4, -32, 4, 6, k % 2 ? '#f0e6d0' : S.col);
-  for (let k = 0; k < 8; k++) { c.fillStyle = k % 2 ? '#f0e6d0' : S.col; c.beginPath(); c.arc(Math.round(x - 13 + k * 4), Math.round(y - 26), 2, 0, Math.PI); c.fill(); }
-  P(-15, -33, 30, 1, shade(S.col, 0.3));
-  // флажок на макушке
-  const sw = Math.sin(Game.time * 3 + seed) * 1.5;
-  P(-1, -40, 1, 7, '#3a2414'); c.fillStyle = S.col; c.beginPath(); c.moveTo(x, y - 40); c.lineTo(x + 6 + sw, y - 38); c.lineTo(x, y - 36); c.closePath(); c.fill();
+const FAIR_STALL_ART = new WeakMap();
+
+function fairStallArt(stall) {
+  if (FAIR_STALL_ART.has(stall)) return FAIR_STALL_ART.get(stall);
+  const cv = mkCanvas(84, 92), c = cv.getContext('2d');
+  c.scale(2, 2); c.translate(21, 40); c.imageSmoothingEnabled = false;
+  const snap = n => Math.round(n * 2) / 2;
+  const P = (x, y, w, h, color) => {
+    c.fillStyle = color;
+    c.fillRect(snap(x), snap(y), snap(x+w)-snap(x), snap(y+h)-snap(y));
+  };
+  P(-16, 0, 32, 3, 'rgba(10,8,4,.28)');
+  P(-13, -26, 26, 20, '#35291d');
+  for (const x of [-15, 12]) {
+    P(x, -27, 3, 28, '#2a2018');
+    P(x + .5, -26, 1.5, 26, '#aa7649');
+    P(x + 1, -13, 2, 2, '#bfa168');
+  }
+  P(-15, -10, 30, 10, '#2b2119');
+  for (let i = 0; i < 5; i++) {
+    const x = -13.5 + i * 5.5;
+    P(x, -8, 5, 7, i % 2 ? '#92633e' : '#a77449');
+    P(x, -7.5, .5, 6, '#c18a55');
+    P(x + 2, -4, 2, .5, '#68452f');
+  }
+  P(-17, -11, 34, 3, '#523725'); P(-16, -11, 32, 1, '#d0a571');
+  P(-18, -28, 36, 4, '#2b2119');
+  for (let row = 0; row < 6; row++) {
+    const inset = (5 - row) * 1.5;
+    for (let band = 0; band < 6; band++) {
+      const color = band % 2 ? '#ddca9f' : stall.col;
+      P(-17 + inset + band * (34 - inset * 2) / 6, -33 + row, (34 - inset * 2) / 6, 1, shade(color, .12 - row * .035));
+    }
+  }
+  for (let band = 0; band < 6; band++) {
+    const x = -17 + band * 5.5, color = band % 2 ? '#d9c49d' : stall.col;
+    P(x, -27, 5.5, 3, color); P(x + .5, -24, 4.5, 1, shade(color, -.22));
+  }
+  P(-5, -26, 10, 6, '#211c15'); P(-4.5, -25.5, 9, 5, '#ae9058');
+  P(-3.5, -24.5, 7, 3, '#293d3b');
+  const icons = typeof iconCanvas === 'function' ? stall.goods.map(g => iconCanvas('good', g)) : [];
+  if (icons[0]) c.drawImage(icons[0], -2, -25, 4, 4);
+  icons.forEach((image, i) => { if (image) c.drawImage(image, -12 + i * 12, -20, 12, 11); });
+  FAIR_STALL_ART.set(stall, cv);
+  return cv;
+}
+
+function fairStall(c, x, y, stall, seed) {
+  c.save();
+  c.imageSmoothingEnabled = R.smooth;
+  c.drawImage(fairStallArt(stall), x - 21, y - 40, 42, 46);
+  const wave = Math.round(Math.sin(Game.time * 3 + seed) * 2) / 2;
+  c.fillStyle = '#583b27'; c.fillRect(x - .5, y - 40, 1, 7);
+  c.fillStyle = stall.col; c.fillRect(x + .5, y - 40, 5 + wave, 2.5);
+  c.fillStyle = '#d0a571'; c.fillRect(x + .5, y - 40, 4 + wave, .5);
+  c.restore();
 }
 
 function fairProp(c, x, y, k) {

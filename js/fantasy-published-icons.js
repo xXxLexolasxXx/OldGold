@@ -65,9 +65,28 @@
       r(5,25,9,1,'paperHi');r(18,25,9,1,'paper');r(4,27,24,1,'woodHi');
     } else if(name==='menu') {
       for(let j=0;j<3;j++) {
-        const y=5+j*9;r(3,y,26,7,'ink');r(4,y+1,24,4,'wood');r(5,y+1,22,1,'woodHi');r(7,y+3,15-j*3,1,'shadow');
-        r(4,y+5,24,1,'shadow');r(24-j*3,y+3,2,1,'ink');
+        const y=5+j*8;r(3,y,26,6,'ink');r(4,y+1,24,4,'iron');r(5,y+1,22,1,'ironHi');
+        r(6,y+2,3,2,'gold');r(12,y+2,14-j*2,2,'gleam');
       }
+    } else if(name==='trade') {
+      for(const [x,y] of [[3,15],[14,5]]){
+        rows(x,y,['  ########  ',' ########## ','############','############','############','############','############',' ########## ','  ########  '],'ink');
+        r(x+2,y+2,8,5,'brass');r(x+2,y+2,8,2,'gold');r(x+3,y+1,6,1,'paperHi');
+        r(x+5,y+3,2,4,'paperHi');r(x+3,y+7,6,1,'shadow');
+      }
+      line(3,8,10,8,'greenHi',2);line(7,4,11,8,'greenHi',2);line(7,12,11,8,'greenHi',2);
+      line(22,22,28,22,'ironHi',2);line(21,22,25,18,'ironHi',2);line(21,22,25,26,'ironHi',2);
+    } else if(name==='prio') {
+      for(const [y,x,col] of [[5,19,'gold'],[13,10,'greenHi'],[21,23,'paperHi']]){
+        r(3,y,26,6,'ink');r(4,y+2,24,2,'iron');
+        r(x-2,y-1,5,8,'ink');r(x-1,y,3,6,col);r(x-1,y,3,1,'gleam');
+      }
+    } else if(name==='council') {
+      rows(4,3,['      ############      ','   ##################   ',' ###################### ','########################'],'ink');
+      r(6,7,20,4,'brass');r(7,7,18,1,'paperHi');r(4,10,24,3,'gold');
+      for(const x of [6,14,22]){r(x,13,4,12,'ink');r(x+1,13,2,11,'ironHi');}
+      r(4,24,24,4,'ink');r(5,24,22,2,'brass');r(6,24,20,1,'gold');
+      r(14,8,4,2,'ink');
     } else if(name==='road') {
       for(let j=0;j<4;j++)for(let k=0;k<3;k++){const x=3+k*9+(j%2?2:0),y=3+j*7;r(x,y,8,6,'ink');r(x+1,y+1,6,4,'iron');r(x+1,y+1,5,1,'ironHi');r(x+5,y+3,2,2,'#4a5650');}
     } else if(name==='erase') {
@@ -77,7 +96,7 @@
     return cv;
   }
 
- const names=['build','store','people','scroll','log','menu','road','erase'];
+ const names=['build','store','people','scroll','log','menu','road','erase','trade','prio','council'];
  const models=Object.fromEntries(names.map(n=>[n,icon(n)]));models.quill=models.log;models.overview=models.scroll;
  const oldURL=iconURL,oldCanvas=iconCanvas,oldDraw=drawUiIcon,urls=new Map(),canvases=new Map();
  drawUiIcon=function(c,name){const cv=models[name];if(!cv)return oldDraw(c,name);c.save();c.imageSmoothingEnabled=false;c.drawImage(cv,0,0,16,16);c.restore();};

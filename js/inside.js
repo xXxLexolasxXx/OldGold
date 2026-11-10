@@ -865,7 +865,18 @@ function drawFoodYard(c, b, spr, ox, oy) {
     if (P.feed) {   // свинопас носит корм от хлева к корытам
       const path = P.feed, n = path.length - 1, u = (t % 16) / 16, back = u >= 0.5, k = Math.min(n - 1, Math.floor(((u * 2) % 1) * n)), f = (((u * 2) % 1) * n) % 1;
       const a = back ? path[n - k] : path[k], q = back ? path[n - k - 1] : path[k + 1], stop = f > 0.7 && !back, p = stop ? q : pxLerp(a, q, f / 0.7);
-      drawFolk(c, { type: 'herder', look: b.id * 19 + 2, carry: back ? null : 'hay' }, ox + p[0], oy + p[1], q[0] >= a[0] ? 'E' : 'W', stop ? 'work' : 'walk', stop ? { anim: 'pat', f: Math.floor(t * 7) % 8 } : Math.floor(t * 9) & 7, {});
+      // Feed moves from the actor's carry layer to the trough. Paint it behind
+      // the working hands so the empty carry pose cannot add a second grip.
+      for (let j = 1; j <= n; j++) {
+        if (!back && k + (stop ? 1 : 0) < j) break;
+        const drop = !back && k + 1 === j ? (f - 0.7) / 0.3 : 1;
+        c.save();
+        c.translate(ox + path[j][0], oy + path[j][1] - 6 + 2 * drop);
+        c.scale(.55, .55);
+        drawLoad(c, 'hay');
+        c.restore();
+      }
+      drawFolk(c, { type: 'herder', look: b.id * 19 + 2, carry: back || stop ? null : 'hay' }, ox + p[0], oy + p[1], q[0] >= a[0] ? 'E' : 'W', stop ? 'work' : 'walk', stop ? { anim: 'pat', f: Math.floor(t * 7) % 8 } : Math.floor(t * 9) & 7, {});
     }
     pxLamp(c, P, ox, oy);
   }

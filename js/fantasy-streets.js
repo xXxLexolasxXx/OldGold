@@ -6,9 +6,54 @@
  const api=window.FantasyRoadArt={version:2,rasterScale:2,paintedWidth:16,coreWidth:14,variantNames:names,cache,native,ready:Promise.resolve(),errors:[],variantAt:(x,y)=>variant(x*TILE+16,y*TILE+16)};
  const hash2=(x,y,s=0)=>{let n=Math.imul(x|0,73856093)^Math.imul(y|0,19349663)^(Game.seed|0)^s;n=Math.imul(n^(n>>>16),0x45d9f3b);return(n^(n>>>16))>>>0;};
  const variant=(x,y)=>hash2(Math.floor(x/64),Math.floor(y/64),871)&7;
- function graph(x,y){const a=[];for(let yy=y-1;yy<=y+1;yy++)for(let xx=x-1;xx<=x+1;xx++){if(!isRoadAt(xx,yy))continue;const px=(xx+.5)*TILE,py=(yy+.5)*TILE;a.push([px,py,0,0,0]);for(const[dx,dy]of[[1,0],[0,1],[1,1],[1,-1]]){if(!isRoadAt(xx+dx,yy+dy))continue;if(dx&&dy&&(isRoadAt(xx+dx,yy)||isRoadAt(xx,yy+dy)))continue;const vx=dx*TILE,vy=dy*TILE;a.push([px,py,vx,vy,vx*vx+vy*vy]);}}return a;}
- function distance2(px,py,segments){let best=1e9;for(const[x,y,dx,dy,L]of segments){const t=L?Math.max(0,Math.min(1,((px-x)*dx+(py-y)*dy)/L)):0,X=px-x-t*dx,Y=py-y-t*dy;best=Math.min(best,X*X+Y*Y);}return best;}
- roadShape=function(c,x,y,px,py,grow,bands,chamfers){const r=RADIUS+(grow||0)*.5;c.beginPath();for(const[ax,ay,dx,dy,L]of graph(x,y)){const X=ax+px-x*TILE,Y=ay+py-y*TILE;if(!L){octPath(c,X,Y,r);continue;}const len=Math.sqrt(L),nx=-dy/len*r,ny=dx/len*r;pathPolyCW(c,[[X+nx,Y+ny],[X+dx+nx,Y+dy+ny],[X+dx-nx,Y+dy-ny],[X-nx,Y-ny]]);}return undefined;};
+ function graph(x,y){
+  const segments=[],fills=[];
+  for(let yy=y-1;yy<=y+1;yy++)for(let xx=x-1;xx<=x+1;xx++){
+   const px=(xx+.5)*TILE,py=(yy+.5)*TILE;
+   const corners=[[0,0],[1,0],[1,1],[0,1]];
+   const present=corners.filter(([dx,dy])=>isRoadAt(xx+dx,yy+dy));
+   if(present.length>=3)fills.push({x:px,y:py,corners:present});
+   if(!isRoadAt(xx,yy))continue;
+   segments.push([px,py,0,0,0]);
+   for(const[dx,dy]of[[1,0],[0,1],[1,1],[1,-1]]){
+    if(!isRoadAt(xx+dx,yy+dy))continue;
+    // Keep diagonal shortcuts inside the stone at bends. A full two-lane
+    // junction already covers the diagonal with the shared square.
+    if(dx&&dy&&isRoadAt(xx+dx,yy)&&isRoadAt(xx,yy+dy))continue;
+    const vx=dx*TILE,vy=dy*TILE;
+    segments.push([px,py,vx,vy,vx*vx+vy*vy]);
+   }
+  }
+  return {segments,fills};
+ }
+ function distance2(px,py,{segments,fills}){
+  let best=Infinity;
+  for(const{x,y,corners}of fills){
+   const lx=(px-x)/TILE,ly=(py-y)/TILE;
+   if(lx<0||lx>1||ly<0||ly>1)continue;
+   if(corners.every(([ax,ay],i)=>{
+    const[bx,by]=corners[(i+1)%corners.length];
+    return (bx-ax)*(ly-ay)-(by-ay)*(lx-ax)>=0;
+   }))return 0;
+  }
+  for(const[x,y,dx,dy,L]of segments){
+   const t=L?Math.max(0,Math.min(1,((px-x)*dx+(py-y)*dy)/L)):0;
+   const X=px-x-t*dx,Y=py-y-t*dy;
+   best=Math.min(best,X*X+Y*Y);
+  }
+  return best;
+ }
+ roadShape=function(c,x,y,px,py,grow,bands,chamfers){
+  const r=RADIUS+(grow||0)*.5,{segments,fills}=graph(x,y);
+  c.beginPath();
+  for(const f of fills)pathPolyCW(c,f.corners.map(([dx,dy])=>[f.x+px+(dx-x)*TILE,f.y+py+(dy-y)*TILE]));
+  for(const[ax,ay,dx,dy,L]of segments){
+   const X=ax+px-x*TILE,Y=ay+py-y*TILE;
+   if(!L){octPath(c,X,Y,r);continue;}
+   const len=Math.sqrt(L),nx=-dy/len*r,ny=dx/len*r;
+   pathPolyCW(c,[[X+nx,Y+ny],[X+dx+nx,Y+dy+ny],[X+dx-nx,Y+dy-ny],[X-nx,Y-ny]]);
+  }
+ };
  const stoneSeeds=new Map();let stoneSeedTag=null;
  function stone(col,row){if(stoneSeedTag!==Game.seed){stoneSeedTag=Game.seed;stoneSeeds.clear();}const key=col+':'+row;if(stoneSeeds.has(key))return stoneSeeds.get(key);const h=hash2(col,row,493),p={x:col*12+(row&1)*6+6+((h&255)/255-.5)*3,y:row*10+5+(((h>>>8)&255)/255-.5)*2.5,h};stoneSeeds.set(key,p);if(stoneSeeds.size>4096)stoneSeeds.delete(stoneSeeds.keys().next().value);return p;}
  function texture(wx,wy,dist,forced){const row=Math.floor(wy/10);let first=1e9,second=1e9,A=null,B=null;for(let r=row-1;r<=row+1;r++){const col=Math.floor((wx-(r&1)*6)/12);for(let k=col-1;k<=col+1;k++){const p=stone(k,r),dx=wx-p.x,dy=wy-p.y,d=dx*dx+dy*dy;if(d<first){second=first;B=A;first=d;A=p;}else if(d<second){second=d;B=p;}}}const edge=(second-first)/(2*Math.hypot(A.x-B.x,A.y-B.y)),dx=wx-A.x,dy=wy-A.y,h=A.h,v=forced==null?variant(A.x,A.y):forced;
@@ -23,9 +68,9 @@
   if(v===7&&h%3===0&&dist>RADIUS-1.3&&Math.abs(dx)<1.2&&Math.abs(dy)<1.2)p=[91,106,66];
   return p;
  }
- function pair(x,y,forced){let neighbors='';for(let yy=y-2;yy<=y+2;yy++)for(let xx=x-2;xx<=x+2;xx++)neighbors+=isRoadAt(xx,yy)?'1':'0';const key=[Game.seed,x,y,neighbors,forced??'world'].join(':');if(cache.has(key))return cache.get(key);const segments=graph(x,y),fine=[mkCanvas(S*2,S*2),mkCanvas(S*2,S*2)],ox=x*TILE-ROAD_M,oy=y*TILE-ROAD_M;
+ function pair(x,y,forced){let neighbors='';for(let yy=y-2;yy<=y+2;yy++)for(let xx=x-2;xx<=x+2;xx++)neighbors+=isRoadAt(xx,yy)?'1':'0';const key=[Game.seed,x,y,neighbors,forced??'world'].join(':');if(cache.has(key))return cache.get(key);const geometry=graph(x,y),fine=[mkCanvas(S*2,S*2),mkCanvas(S*2,S*2)],ox=x*TILE-ROAD_M,oy=y*TILE-ROAD_M;
   const contexts=fine.map(cv=>cv.getContext('2d')),images=contexts.map(c=>c.createImageData(S*2,S*2));
-  for(let py=0;py<S*2;py++)for(let px=0;px<S*2;px++){const wx=ox+(px+.5)/2,wy=oy+(py+.5)/2,d2=distance2(wx,wy,segments);if(d2>(RADIUS+EDGE)**2)continue;const d=Math.sqrt(d2),o=(py*S*2+px)*4;let rgb;if(d2<=RADIUS*RADIUS){rgb=texture(wx,wy,d,forced);for(let k=0;k<3;k++)images[1].data[o+k]=rgb[k];images[1].data[o+3]=255;}else{const h=hash2(Math.floor(wx/5),Math.floor(wy/5),61);rgb=h%5===0?[82,94,59]:[89,84,63];for(let k=0;k<3;k++)images[0].data[o+k]=rgb[k];images[0].data[o+3]=255;}}
+  for(let py=0;py<S*2;py++)for(let px=0;px<S*2;px++){const wx=ox+(px+.5)/2,wy=oy+(py+.5)/2,d2=distance2(wx,wy,geometry);if(d2>(RADIUS+EDGE)**2)continue;const d=Math.sqrt(d2),o=(py*S*2+px)*4;let rgb;if(d2<=RADIUS*RADIUS){rgb=texture(wx,wy,d,forced);for(let k=0;k<3;k++)images[1].data[o+k]=rgb[k];images[1].data[o+3]=255;}else{const h=hash2(Math.floor(wx/5),Math.floor(wy/5),61);rgb=h%5===0?[82,94,59]:[89,84,63];for(let k=0;k<3;k++)images[0].data[o+k]=rgb[k];images[0].data[o+3]=255;}}
   const output=fine.map((cv,i)=>{contexts[i].putImageData(images[i],0,0);const out=mkCanvas(S,S),c=out.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(cv,0,0,S,S);return out;});cache.set(key,output);if(cache.size>384)cache.delete(cache.keys().next().value);return output;
  }
  roadMaskCanvas=function(x,y,grow,cobbles){return pair(x,y)[cobbles?1:0];};
@@ -40,7 +85,7 @@ function faStoneFoot(c, x, y, w = 8) {
   faRect(c, x-w/2, y, 3, 1, '#718651');
 }
 
-drawGothicLamp = function (c, x, y, v, lit, ph) {
+drawGothicLamp = function (c, x, y, v, lit, ph, glowStep) {
   c.save(); c.imageSmoothingEnabled = false;
   shadowAt(c, x+2, y, 5); faStoneFoot(c, x, y);
   const side = v % 2 ? -1 : 1, lx = x+side*7, ly = y-28;
@@ -49,7 +94,7 @@ drawGothicLamp = function (c, x, y, v, lit, ph) {
   poly(c, [[x-4,y-31],[x,y-36],[x+4,y-31]], '#567867');
   pline(c, x, y-30, lx, y-33, '#473d2e', 2); pline(c, lx, y-33, lx, ly-3, '#bf9c58', 1);
   // Copper roof, amber glass, visible metal frame; extinguishing remains native.
-  if (lit) glow(c, lx, ly+3, 15, '255,191,92', 0.16+Math.sin(Game.time*5+ph)*0.025);
+  if (lit) glow(c, lx, ly+3, 15, '255,191,92', 0.16+(glowStep??Math.sin(Game.time*5+ph)*5)*0.005);
   poly(c, [[lx-5,ly],[lx,ly-5],[lx+5,ly],[lx+4,ly+1],[lx-4,ly+1]], '#52796e');
   pline(c, lx-4, ly, lx, ly-4, '#a8b39b', 1);
   faRect(c,lx-4,ly+1,8,9,'#493d2c'); faRect(c,lx-3,ly+2,6,6,lit?'#dba34d':'#68766c');
@@ -157,13 +202,20 @@ drawFenceObj = function(c,px,py,o) {
     fence(g,x,y,o);for(const dx of [4,27]){fine(g,x+dx,y+13,.5,1,'#d7bd83');fine(g,x+dx,y+19,.5,1,'#ccb17a');}
     fine(g,x+6,y+12.5,19,.5,'#c5a86f');
   });};
-  drawGothicLamp=function(c,bx,by,v,lit,ph){output(c,bx-22,by-24,null,g=>{
-    lamp(g,bx,by,v,lit,ph);
-    for(const dy of [-24.5,-6.5]){fine(g,bx-2,by+dy,.5,.5,'#c3bf9a');fine(g,bx+2,by+dy,.5,.5,'#c3bf9a');}
-    fine(g,bx-.5,by-22,.5,10,'#886b46');
-    const lx=bx+(v%2?-7:7),ly=by-28;
-    fine(g,lx-2.5,ly+2,.5,4,lit?'#f7df9d':'#a2afa0');
-  });};
+  drawGothicLamp=function(c,bx,by,v,lit,ph){
+    const side=v%2?1:0,glowStep=lit?Math.round(Math.sin(Game.time*5+ph)*5):0;
+    const glint=lit&&Math.sin(Game.time*6+ph)>0?1:0;
+    // Share the two unlit sprites and the bounded set of lit phases across
+    // all lamps. Repainting a shared scratch canvas forced a flush per lamp.
+    const key=lit?`lamp:${side}:${glowStep}:${glint}`:`lamp:${side}:off`;
+    output(c,bx-22,by-24,key,g=>{
+      lamp(g,bx,by,side,lit,ph,glowStep);
+      for(const dy of [-24.5,-6.5]){fine(g,bx-2,by+dy,.5,.5,'#c3bf9a');fine(g,bx+2,by+dy,.5,.5,'#c3bf9a');}
+      fine(g,bx-.5,by-22,.5,10,'#886b46');
+      const lx=bx+(side?-7:7),ly=by-28;
+      fine(g,lx-2.5,ly+2,.5,4,lit?'#f7df9d':'#a2afa0');
+    });
+  };
   drawMagicObj=function(c,x,y,o){output(c,x,y,null,g=>magic(g,x,y,o));};
   window.FantasyStreetArt={rasterScale:2,worldBounds:[-OX,-OY,W,H],cache,clear:()=>cache.clear()};
 })();

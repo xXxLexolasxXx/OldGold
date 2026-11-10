@@ -396,13 +396,23 @@
       box(7.2,-2,0.7,4,C.gold);box(9.7,-2,0.6,4,C.gold);line(8.1,-1.7,9.2,-1.7,0.4,C.gleam);
       for(const yy of [-1,1])polyK([[9,yy*1.4],[10.5,yy*3.1],[10.4,yy*1.2]],C.silver);
     }else{
-      box(0,-3,1.2,6,C.iron);line(0.2,-2.6,0.2,2.6,0.4,C.silver);
       polyK([[1.2,-1.6],[15,-1.3],[18,0],[15,1.4],[12,0.9],[10.5,1.7],[8,1.1],[6,1.7],[1.2,1.7]],C.ink);
       polyK([[1.6,-1.1],[14.8,-0.8],[17,0],[14.5,0.8],[12,0.4],[10.2,1.1],[7.8,0.5],[6,1.1],[1.6,1.1]],C.steel);
       line(2,-0.9,14,-0.7,0.45,C.silver);line(3,0,13,0,0.25,C.iron);
       for(const x of [4,8,12]){box(x,0.4,0.8,0.5,C.leather);box(x+0.4,0.6,0.5,0.4,k('#b8804e'))}
+      // The wrist stays at (0, 0). The fingers wrap the grip behind the guard.
+      box(-2,-0.75,0.45,1.5,C.iron);
+      box(-2,-0.55,0.22,0.55,C.steel);
+      polyK([[-1.65,-0.9],[-0.95,-1.18],[0.45,-0.8],[0.65,0.45],[-0.05,1.16],[-1.4,0.91]],C.ink);
+      polyK([[-1.38,-0.68],[-0.82,-0.94],[0.38,-0.56],[0.38,0.49],[-0.22,0.89],[-1.23,0.61]],C.skin);
+      line(-1.18,-0.63,-0.67,-0.74,0.32,C.light);
+      line(-1.11,0.17,-0.58,0.31,0.23,C.deep);
+      line(-0.79,-0.18,-0.21,-0.11,0.28,C.light);
+      box(0,-3,1.2,6,C.iron);
+      line(0.2,-2.6,0.2,2.6,0.4,C.silver);
     }
-    c.restore();ball(ax,ay,king?1:1.3,king?0.9:1.2,C.skin);
+    c.restore();
+    if(king)ball(ax,ay,1,0.9,C.skin);
     if(P.a>0.6){c.strokeStyle='rgba(255,242,190,0.65)';c.lineWidth=0.5;c.beginPath();c.arc(ax,ay,king?10:16,ang-1.2,ang-0.2);c.stroke()}
     c.restore();
   }

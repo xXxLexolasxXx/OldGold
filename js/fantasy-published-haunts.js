@@ -181,7 +181,16 @@
    oval(c,b[0],b[1],r*.85,r*.8,skin[1]);oval(c,b[0]-.22,b[1]-.25,r*.55,r*.5,skin[3]);
    segment(c,b,h,r*.75,r*.48,skin,kind==='les');
    if(sleeved){const u=.72,ex=a[0]+(b[0]-a[0])*u,ey=a[1]+(b[1]-a[1])*u;line(c,[[ex-r*.7,ey-.2],[ex+r*.7,ey+.4]],kind==='noon'?'#b45a3c':cloth[4],.6);}
-   // Palm stays exactly on the native victim anchor. Every finger has two joints.
+   // The weapon hand has a closed grip around the existing wrist/contact point.
+   if(kind==='noon'&&idx===1){
+    line(c,[[b[0]-.3,b[1]-.2],[h[0]-.3,h[1]-.2]],skin[1],.35);
+    oval(c,h[0],h[1],1.05,.89,skin[0]);
+    oval(c,h[0]-.15,h[1]-.2,.82,.71,skin[2]);
+    const angle=sickle(c,b,h);
+    sickleGrip(c,h,angle,skin);
+    return;
+   }
+   // The other hands keep their existing native contact and articulated fingers.
    const palm=kind==='vod'?1.6:kind==='ban'?1.7:kind==='les'?1.35:kind==='noon'?1.05:.8;
    oval(c,h[0],h[1],palm,palm*.85,skin[0]);oval(c,h[0]-.15,h[1]-.2,palm*.78,palm*.68,skin[3]);
    const tips=[];
@@ -197,7 +206,6 @@
    line(c,[[b[0]-.3,b[1]-.2],[h[0]-.3,h[1]-.2]],skin[1],.35);
    if(kind==='les'){for(let j=0;j<3;j++){const u=.25+j*.25,x=a[0]+(b[0]-a[0])*u,y=a[1]+(b[1]-a[1])*u;oval(c,x-side*r*.8,y,.8,.5,cloth[1+j%3]);}}
    if(kind==='kik'||kind==='vod'){for(let j=0;j<2;j++){const x=a[0]+side*j*.6,y=a[1]+j;line(c,[[x,y],[x+Math.sin(ph+j)*.5,y+2+j]],cloth[j+1],.45);}}
-   if(kind==='noon'&&idx===1)sickle(c,b,h,skin);
   });
  }
  function sickle(c,b,h){
@@ -207,6 +215,17 @@
   const sign=-Math.sin(ang+Math.PI/2)>-Math.sin(ang-Math.PI/2)?1:-1,pts=[end];let[x,y]=end,d=ang;
   for(let i=0;i<27;i++){d+=sign*.10;x+=Math.cos(d)*.55;y+=Math.sin(d)*.55;pts.push([x,y]);}
   line(c,pts,'#30362e',1.25);line(c,pts,'#9dada0',.8);line(c,pts.slice(4),'#dfe2c9',.35);
+  return ang;
+ }
+ function sickleGrip(c,hand,angle,skin){
+  const ux=Math.cos(angle),uy=Math.sin(angle);
+  const point=(along,across)=>[hand[0]+ux*along-uy*across,hand[1]+uy*along+ux*across];
+  // Dark knuckle mass covers the middle of the shaft, leaving both ends visible.
+  poly(c,[point(-1.25,-.48),point(.94,-.60),point(1.2,.3),point(.74,1),point(-1.04,.89)],skin[0]);
+  for(const along of[-.86,-.31,.24,.79]){
+   segment(c,point(along,.73),point(along+.13,-.30),.30,.25,skin);
+  }
+  segment(c,point(-1.05,-.57),point(-.29,-.33),.33,.24,skin);
  }
  function body(c,kind,args){
   const S=sizes[kind],lv=Number(args[0])||0,p=Number(args[1])||0,walk=args[2]??-1,ph=p/(kind==='ban'?12:kind==='noon'||kind==='les'?6:4)*TAU,wp=walk/6*TAU,row=lv>=(kind==='ban'?.35:.8)?1:0,src=assets.views[activeView]?.[kind]?.[row];if(!src)return;

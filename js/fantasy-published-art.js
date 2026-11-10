@@ -105,11 +105,11 @@ buildingSprite=function(type,rot=0,level=1,settle,vr=0){
  // Match the native architecture envelope: activities retain every native anchor.
  const depth=bDims(type,rot).h*TILE, special=['bonfire','pier','well','magiccircle'].includes(type);
  const yard=type==='inn'?40:type==='school'?38:25;
- const sourceBox=fpaBounds(base.canvas).map(v=>v*(2/(base.canvas.width/base.w))),b=a.bounds;
+ const b=a.bounds;
  const worldW=base.fw||bDims(type,rot).w*TILE;
  const artW=(type==='inn'?worldW*.63:type==='farm'?worldW*.72:type==='sawmill'||type==='brewery'?worldW*.60:worldW-12)*k;
  const artH=(type==='inn'?92:type==='school'?106:type==='farm'?85:type==='sawmill'||type==='brewery'?80:Math.min(110,(BUILDINGS[type].top||70)+16))*k;
- const box=special?sourceBox:[(base.padx+5)*k,(base.top+depth-yard)*k-artH,Math.max(12*k,artW),artH];
+ const box=special?fpaBounds(base.canvas).map(v=>v*(2/(base.canvas.width/base.w))):[(base.padx+5)*k,(base.top+depth-yard)*k-artH,Math.max(12*k,artW),artH];
  const scale=Math.min(box[2]/b[2],box[3]/b[3]),w=b[2]*scale,h=b[3]*scale,x=box[0]+(box[2]-w)/2,y=box[1]+box[3]-h;
 
  c.imageSmoothingEnabled=false;c.save();if(rot===1||rot===2){c.translate(x*2+w,0);c.scale(-1,1);}c.drawImage(a.image,...b,x,y,w,h);c.restore();
@@ -165,6 +165,26 @@ function faSliceFrames(art, pixels, width, height, cols, rows) {
 
 const faNativePersonSprite = personSprite;
 const FA_RENDER_CACHE = FantasyPublishedArt.people;
+// The infirmary's yard worker is a presentation role, not a simulation job.
+OUTFIT.healer = { ...OUTFIT.serf, cap: '#739887', coat: '#3e675a' };
+const FPA_WORK_ARC = {chop:-.48,mine:-.13,build:.42,reap:.12,dig:.34,hoppick:-.28,douse:.26};
+function fpaBodyMotion(view,pose,frame,opt) {
+  if(pose==='fight'){const f=FIGHT_BODY[frame]||FIGHT_BODY.ready;return [f[0]*.42,f[1]];}
+  if(pose==='idle')return [0,-(IDLE_BREATH[Number(frame)%IDLE_FRAMES]||0)];
+  if(view!=='E'&&view!=='W')return [0,pose==='duck'||pose==='tame'?2:0];
+  if(pose==='work'){
+    const f=frame.f|0;
+    if(frame.anim==='toss')return [-(TOSS_DIP[f]||0)*.23,0];
+    if(frame.anim==='pat')return [-.1-((PAT_A[f]??1.8)-1.8)*.12,0];
+    const angle=SWING_A[f]??SWING_A[SWING_A.length-1];
+    return [(1.14-angle)*.12+(FPA_WORK_ARC[frame.anim]||0)*.19,0];
+  }
+  if(pose==='duck'||pose==='tame'){
+    const phase=[0,.35,.8,1,.62,.2][Number(frame)]||0;
+    return [-phase*(opt.posture==='forage'?.22:pose==='tame'?.12:.16),2];
+  }
+  return [0,0];
+}
 personSprite = function (u, view, pose, frame, opt = {}) {
   if(pose==='work'&&!Object.prototype.hasOwnProperty.call(ANIM_TOOL,frame?.anim))return faNativePersonSprite(u,view,pose,frame,opt);
   if(window.FantasyPublishedAppearance)u=FantasyPublishedAppearance.resolve(u).holder||u;
@@ -182,17 +202,16 @@ personSprite = function (u, view, pose, frame, opt = {}) {
   // Cache the phase actually consumed by the pose helpers. Atlas frame zero
   // alone cannot distinguish breathing or the named native fight states.
   const phaseKey=pose==='idle'?(Number(frame)||0)%IDLE_FRAMES:pose==='walk'?(Number(frame)||0)%WALK_FRAMES:pose==='fight'?String(frame):pose==='work'?`${frame.anim}:${frame.f}`:frame;
-  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, u.injury].join('|');
+  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, u.injury].join('|');
   if (FA_RENDER_CACHE.has(key)) return FA_RENDER_CACHE.get(key);
   const cv = mkCanvas(PW * PART, PH * PART), c = cv.getContext('2d', { willReadFrequently: true });
   c.imageSmoothingEnabled = false; c.scale(PART, PART);
   const src = art.frames[child?((pose==='work'?4:0)+(pose==='walk'?Math.floor((frame%WALK_FRAMES)*4/WALK_FRAMES):pose==='work'?Math.floor((frame.f%WORK_FRAMES)*4/WORK_FRAMES):0)):row*8+f];
   const scale = Math.min((child?21:25) / art.maxW, (child?27:33) / art.maxH);
   const dw = src[2] * scale, dh = src[3] * scale;
-  const fight=pose==='fight'?(FIGHT_BODY[frame]||FIGHT_BODY.ready):null;
-  const dip=fight?fight[1]:pose==='duck'||pose==='tame'?2:pose==='idle'?-(IDLE_BREATH[(Number(frame)||0)%IDLE_FRAMES]||0):pose==='work'?Math.sin((frame.f||0)*Math.PI/4):0;
-  c.save();c.translate(PFX,PFY);c.transform(1,0,fight?fight[0]*.42:0,1,0,dip);c.drawImage(art.image,...src,Math.round(-dw/2),Math.round(-dh),Math.round(dw),Math.round(dh));c.restore();
-  fpaCleanAtlasArms(cv,u,view,pose,frame,opt,{dw,dh,dip,shear:fight?fight[0]*.42:0});
+  const [shear,dip]=fpaBodyMotion(view,pose,frame,opt);
+  c.save();c.translate(PFX,PFY);c.transform(1,0,shear,1,0,dip);c.drawImage(art.image,...src,Math.round(-dw/2),Math.round(-dh),Math.round(dw),Math.round(dh));c.restore();
+  fpaCleanAtlasArms(cv,u,view,pose,frame,opt,{dw,dh,dip,shear});
   // Preserve value ramps while mapping the source green uniform to the exact
   // profession colors already defined by this game (hat and coat separately).
   if (!female&&!child) {
@@ -233,7 +252,7 @@ function fpaSmokingRig(u,view,frame){const v=view==='E'?'E':'S';return {hand:SMO
 // Ordinary idle/walk and carriers take the no-op path before reading any pixels.
 function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
  if(u.carry||u.type==='kid')return {removed:0,filled:0,components:0};
- const W=opt.wpn?wpnParse(opt.wpn):null,both=pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke');
+ const W=opt.wpn?wpnParse(opt.wpn):null,both=pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
  if(!both&&!one)return {removed:0,filled:0,components:0};
  const c=cv.getContext('2d'),im=c.getImageData(0,0,cv.width,cv.height),src=new Uint8ClampedArray(im.data),d=im.data,k=cv.width/PW,w=cv.width,h=cv.height,dh=geometry.dh||33,dw=geometry.dw||25,dip=geometry.dip||0,shear=geometry.shear||0,top=PFY-dh;
  const mask=new Uint8Array(w*h),visited=new Uint8Array(w*h),skin=i=>src[i+3]>=160&&src[i]>140&&src[i+1]>95&&src[i+2]>69&&src[i]>src[i+1]*1.08&&src[i+1]>src[i+2]*1.08;
@@ -255,7 +274,10 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  const tool=ANIM_TOOL[frame?.anim],known=['axe','pick','hammer','sickle','spade','hook','toss','pat','bucket'].includes(tool);
  if(!known)return {known:false,drawn:false};
  const angles=tool==='toss'?TOSS_A:tool==='pat'?PAT_A:tool==='sickle'||tool==='spade'?SWING_SICKLE:SWING_A;
- const f=Math.max(0,Math.min(angles.length-1,frame.f|0)),a=angles[f],fr={anim:frame.anim,f},dip=swingDip(fr),lean=frame.anim==='reap'||frame.anim==='dig'?.28:frame.anim==='pat'?.42:0,hip=-6.2+dip,sh=-12+dip;
+ const f=Math.max(0,Math.min(angles.length-1,frame.f|0)),fr={anim:frame.anim,f};
+ // Vary the wind-up without moving the grip during contact and recovery.
+ const windup=f<8?Math.sin(f/8*Math.PI):0;
+ const a=angles[f]+(FPA_WORK_ARC[frame.anim]||0)*windup,dip=swingDip(fr),lean=frame.anim==='reap'||frame.anim==='dig'?.28:frame.anim==='pat'?.42:0,hip=-6.2+dip,sh=-12+dip;
  const O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),skin=SKINS[L.skin%SKINS.length],coat=O.coat||L.green||'#66863d';
  const profile=view==='E'||view==='W';
  c.save();c.translate(PFX,PFY);
@@ -270,10 +292,17 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
   }
   c.restore();return{known:true,drawn:true,projection:'front-working-hands',tool,frame:f,frames:angles.length,hand:hands[1],hands,tip:null};
  }
- if(!profile){const front=view==='S';c.translate(0,lean*2.4);for(const side of [-1,1]){const hx=side*5.1,hy=hip+.3;smoothLimb(c,[side*4.2,sh+.6],[side*5.4,(sh+hy)/2],[side*5,hy-.5],2.3,side>0===front?shade(coat,-.25):coat);hand(c,hx,hy,skin[0]);}c.restore();return{known:true,drawn:false,projection:'native-front',tool,frame:f,frames:angles.length,hand:[PFX+5.1,PFY+hip+.3+lean*2.4],tip:null};}
+ // The forward/back views keep the working hand on the actor's right.
+ // Foreshorten the swing without changing the native phase or side grip.
+ if(!profile&&view==='N')c.scale(-1,1);
+ const offset=profile?0:4, reach=profile?1:.68;
+ if(!profile){
+  smoothLimb(c,[-4.2,sh+.6],[-5.4,(sh+hip)/2],[-4.8,hip-.4],2.1,shade(coat,-.25));
+  hand(c,-4.8,hip-.4,skin[0]);
+ }
  c.translate(0,hip);c.rotate(lean);c.translate(0,-hip);
- const hx=.4+Math.sin(a)*3.8,hy=sh-Math.cos(a)*3.8,tx=hx+Math.sin(a)*6.5,ty=hy-Math.cos(a)*6.5,nx=-(ty-hy)/6.5,ny=(tx-hx)/6.5;
- smoothLimb(c,[.4,sh+.4],[(.4+hx)/2+.6,(sh+hy)/2+.5],[hx,hy],2.1,coat);
+ const hx=offset+.4+Math.sin(a)*3.8*reach,hy=sh-Math.cos(a)*3.8,tx=hx+Math.sin(a)*6.5*reach,ty=hy-Math.cos(a)*6.5,nx=-(ty-hy)/6.5,ny=(tx-hx)/6.5;
+ smoothLimb(c,[offset+.4,sh+.4],[(offset+.4+hx)/2+.6,(sh+hy)/2+.5],[hx,hy],2.1,coat);
  if(!['toss','pat','bucket'].includes(tool))line(c,hx-(tx-hx)*.25,hy-(ty-hy)*.25,tx,ty,'#6e4428',.9);
  switch(tool){
  case 'toss':case 'pat':break; // Native bare hands; projectile belongs to its native effect.
@@ -286,8 +315,8 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  case 'spade':c.save();c.translate(tx,ty);c.rotate(Math.atan2(ty-hy,tx-hx));c.fillStyle='#9e958a';c.fillRect(0,-1.2,2.4,2.4);c.restore();break;
  }
  hand(c,hx,hy,skin[1]);c.restore();
- const world=(x,y)=>[PFX+x*Math.cos(lean)-(y-hip)*Math.sin(lean),PFY+hip+x*Math.sin(lean)+(y-hip)*Math.cos(lean)];
- return{known:true,drawn:true,projection:'native-profile',tool,frame:f,frames:angles.length,hand:world(hx,hy),tip:world(tx,ty)};
+ const world=(x,y)=>[PFX+(view==='N'?-1:1)*(x*Math.cos(lean)-(y-hip)*Math.sin(lean)),PFY+hip+x*Math.sin(lean)+(y-hip)*Math.cos(lean)];
+ return{known:true,drawn:true,projection:profile?'native-profile':'front-working-tool',tool,frame:f,frames:angles.length,hand:world(hx,hy),tip:world(tx,ty)};
 }
 // Weapon-only native pose projection. The atlas body and all hitboxes stay fixed.
 function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
@@ -326,9 +355,9 @@ function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
 function fpaDrawGestureProps(c,u,view,pose,frame,opt={}){
  const gest=opt.gest;if(!gest||u.carry)return {drawn:false};const W=opt.wpn?wpnParse(opt.wpn):null;if(pose==='fight'||W?.out&&(pose==='idle'||pose==='walk'))return {drawn:false};
  const v=view==='W'?'E':view,profile=v==='E',child=u.type==='kid',female=personSex(u)==='f'||OUTFIT[u.type]?.fem||u.type==='waitress',art=FantasyArt.images[child?'gnome-child':female?'gnome-woman-walk':'gnome-walk'];
- let head=PFY-20,dip=pose==='duck'||pose==='tame'?2:pose==='idle'?-(IDLE_BREATH[(Number(frame)||0)%IDLE_FRAMES]||0):pose==='work'?Math.sin((frame.f||0)*Math.PI/4):0;
+ let head=PFY-20;const [,dip]=fpaBodyMotion(v,pose,frame,opt);
  if(art){const row=profile?1:v==='N'?2:0,f=pose==='walk'?Math.floor((Number(frame)%WALK_FRAMES)*8/WALK_FRAMES):0,src=art.frames[child?(pose==='walk'?Math.floor((Number(frame)%WALK_FRAMES)*4/WALK_FRAMES):0):row*8+f],sc=Math.min((child?21:25)/art.maxW,(child?27:33)/art.maxH),dh=src[3]*sc;head=PFY-Math.round(dh)+dh*.30;}
- const sh=PFY-14+dip,headY=head+dip,O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),coat=O.coat||L.green||'#66863d',skin=SKINS[L.skin%SKINS.length],raw=Number(opt.gf)||0,gf=gest==='five'?raw:gestK(raw),sides=['clap','stretch','panic','five'].includes(gest)?[1,-1]:[v==='N'?-1:1],joints=[];
+ const sh=PFY-14+dip,headY=head+dip,O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),coat=O.coat||L.green||'#66863d',skin=SKINS[L.skin%SKINS.length],raw=Number(opt.gf)||0,gf=['five','flirt','wslap','cheek'].includes(gest)?raw:gestK(raw),sides=['clap','stretch','panic','five','six7'].includes(gest)?[1,-1]:[v==='N'?-1:1],joints=[];
  for(const side of sides){const q=gestPts(gest,gf,side,sh,headY,v),S=[PFX+(profile?.4:side*4.2),sh+.5],E=[PFX+q[0][0],q[0][1]],H=[PFX+q[1][0],q[1][1]],raised=H[1]<sh+1;
   c.save();if(raised){c.beginPath();c.rect(-80,-80,180,240);c.moveTo(PFX+(profile?1:0)+5.8,headY+3.3);c.ellipse(PFX+(profile?1:0),headY+3.3,5.8,7.3,0,0,Math.PI*2);c.clip('evenodd');}
   smoothLimb(c,S,E,H,2.1,side>0?coat:shade(coat,-.12));c.restore();hand(c,H[0],H[1],skin[0]);
@@ -340,9 +369,16 @@ function fpaDrawGestureProps(c,u,view,pose,frame,opt={}){
 }
 function fpaAction(c,u,view,pose,frame,opt){
  const O=OUTFIT[u.type],L=lookOf(u),coat=O.coat||L.green||'#66863d';
- const arm=(hx,hy,s=1)=>{pline(c,PFX+s*4,PFY-16,hx,hy,'#44362b',3);pline(c,PFX+s*4,PFY-16,hx,hy,coat,2);faRect(c,hx-.5,hy,2,2,SKINS[L.skin%SKINS.length][0]);};
  if(opt.gest)fpaDrawGestureProps(c,u,view,pose,frame,opt);
- if(pose==='duck'||pose==='tame'){const f=Number(frame)||0;arm(PFX+6+(f%3),PFY-5);}
+ if(pose==='duck'||pose==='tame'){
+  const phase=[0,.35,.8,1,.62,.2][Number(frame)]||0,side=view==='N'?-1:1,profile=view==='E'||view==='W';
+  const shoulder=[PFX+(profile?.4:side*4.2),PFY-11];
+  const reach=pose==='tame'?6.1+phase*2.3:opt.posture==='forage'?4.4+phase*4:opt.posture==='sit'?4:5.8-phase*3;
+  const hy=PFY-(pose==='tame'?7.8+phase:opt.posture==='forage'?6.4-phase*3.8:opt.posture==='sit'?5+phase*1.4:6.8+phase*5.1);
+  const hx=PFX+side*reach;
+  smoothLimb(c,shoulder,[(shoulder[0]+hx)/2+side,PFY-8], [hx,hy],2.1,coat);
+  hand(c,hx,hy,SKINS[L.skin%SKINS.length][0]);
+ }
  fpaDrawWeaponProps(c,u,view,pose,frame,opt);
 }
 window.FantasyPublishedArt=FantasyPublishedArt;
