@@ -1,7 +1,8 @@
 /* Humanoid frogfolk only. Artwork and transient direction context only. */
 (() => {
  'use strict';if(window.FrogDirections)return;
- const kinds=['ftG','ftB','ftP','ftR','ftK','ftQ','ftZ','ftZF'].filter(k=>NA_SPEC[k]);
+ const frogKinds=['ftG','ftB','ftP','ftR','ftK','ftQ','ftZ','ftZF'];
+ const kinds=frogKinds.filter(k=>NA_SPEC[k]);
  const headings=['S','SE','E','NE','N','NW','W','SW'],views=['S','SE','E','NE','N','NE','E','SE'];
  const oldFrame=naFrame,oldDraw=neuDraw,oldBlit=blitFine;
  const facing=new WeakMap(),forced=new WeakMap();
@@ -18,14 +19,92 @@
   facing.set(n,{x:n.x,y:n.y,face:n.face,h});
   return headings[h];
  }
- const cache=new Map();let active='E',bytes=0,hits=0;const maxBytes=32*1024*1024,maxEntries=1100;
+ const cache=new Map(),publicFrames=new WeakMap(),lastWorldFrame=new WeakMap();
+ const errors=[];
+ const startup=window.FrogStartFrames;
+ let frequent,rare,activeActor=null,proceduralBuilds=0,pendingHolds=0,fullMaterializations=0;
+ const script=document.currentScript;
+ const frequentFile=script?.dataset.frequentFrames,rareFile=script?.dataset.rareFrames;
+ const gzipAvailable=typeof DecompressionStream==='function';
+ let frequentPending=!!(frequentFile&&gzipAvailable&&startup),rarePending=!!(rareFile&&gzipAvailable&&startup);
+ if((frequentFile||rareFile)&&!startup)errors.push('Frog startup poses missing');
+ const frequentReady=loadBank(frequentFile,readFrequentFrames).then(bank=>{
+  frequent=bank;frequentPending=false;return !!bank;
+ });
+ const rareReady=loadBank(rareFile,readRareFrames).then(bank=>{
+  rare=bank;rarePending=false;return !!bank;
+ });
+ const bakedReady=Promise.all([frequentReady,rareReady]).then(results=>results.every(Boolean));
+ async function loadBank(file,read){
+  if(!file)return;
+  if(!gzipAvailable){errors.push('Frog frame bank: gzip unavailable');return;}
+  try{
+   const response=await fetch(new URL(file,script.src));
+   if(!response.ok||!response.body)throw Error('HTTP '+response.status);
+   const bytes=new Uint8Array(await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+   const {frames,unique}=read(bytes,new DataView(bytes.buffer));
+   return {frames,unique,bytes:bytes.byteLength};
+  }catch(e){errors.push('Frog frame bank '+file+': '+e.message);}
+ }
+ function readPayload(bytes,view,p){
+  const x=view.getUint16(p,true),y=view.getUint16(p+2,true),w=view.getUint16(p+4,true),h=view.getUint16(p+6,true);
+  const size=view.getUint32(p+8,true),start=p+12,end=start+size;
+  if(!w||!h||size<2||end>bytes.length)throw Error('Invalid frame record');
+  return {record:[x,y,w,h,bytes.subarray(start,end)],end};
+ }
+ function readFrequentFrames(bytes,view){
+  const frames=new Map();
+  if(view.getUint32(0)!==0x46524731||view.getUint16(4,true)!==1440)throw Error('Invalid frequent header');
+  let p=6;
+  for(let i=0;i<1440;i++){
+   const kind=frogKinds[bytes[p]],direction=views[bytes[p+1]],tick=bytes[p+2];
+   if(!kind||!direction||bytes[p+1]>=5||tick>=36)throw Error('Invalid frequent key');
+   const {record,end}=readPayload(bytes,view,p+3);
+   const key=kind+'|'+direction+'|'+'iwa'[Math.floor(tick/12)]+tick%12;
+   frames.set(key,record);p=end;
+  }
+  if(p!==bytes.length||frames.size!==1440)throw Error('Invalid frequent table');
+  return {frames,unique:frames.size};
+ }
+ function readRareFrames(bytes,view){
+  const size=view.getUint16(4,true),count=view.getUint16(6,true),data=[];
+  if(view.getUint32(0)!==0x46524732||size!==3540||!count||count>size)throw Error('Invalid rare header');
+  let p=8+size*6;
+  for(let i=0;i<count;i++){
+   const {record,end}=readPayload(bytes,view,p);
+   data.push(record);p=end;
+  }
+  const frames=new Map();
+  for(let i=8;i<8+size*6;i+=6){
+   const kind=frogKinds[bytes[i]],direction=views[bytes[i+1]],prefix=bytes[i+2];
+   const fr=prefix?String.fromCharCode(prefix)+bytes[i+3]:NA_FRAMES.fight[bytes[i+3]];
+   const record=data[view.getUint16(i+4,true)];
+   if(!kind||!direction||bytes[i+1]>=5||!record||!statesByKind.get(kind)?.has(fr)||isFrequent(fr))throw Error('Invalid rare key');
+   frames.set(kind+'|'+direction+'|'+fr,record);
+  }
+  if(p!==bytes.length||frames.size!==size)throw Error('Invalid rare table');
+  return {frames,unique:count};
+ }
+ function isFrequent(fr){return /^[iwa]\d+$/.test(fr);}
+ let active='E',bytes=0,hits=0;const maxBytes=32*1024*1024,maxEntries=1100;
+ function stateSet(kind){return new Set([...NA_ALL,...NA_FRAMES.parry,...NA_FRAMES.roar,...(NA_EXTRA[kind==='ftZF'?'ftZ':kind]||[]).flatMap(s=>NA_FRAMES[s]||[])])}
+ const statesByKind=new Map(kinds.map(kind=>[kind,stateSet(kind)]));
  const clamp=x=>Math.max(0,Math.min(1,x)),lerp=(a,b,t)=>a+(b-a)*t;
  function tools(c,P){const K=x=>naK(P,x);
-  const point=(x,y,width=0)=>{if(!c.directionWeaponFit)return[x,y];let m=c.getTransform();if(c.directionPost)m=c.directionPost.multiply(m);const p=m.transformPoint({x,y}),margin=4+width*Math.max(Math.hypot(m.a,m.b),Math.hypot(m.c,m.d))*.5,q={x:Math.max(margin,Math.min(c.canvas.width-margin,p.x)),y:Math.max(margin,Math.min(c.canvas.height-margin,p.y))},r=m.inverse().transformPoint(q);return[r.x,r.y]};
+  let matrix,inverse,radius;
+  const fitWeapon=enabled=>{
+   c.directionWeaponFit=enabled;
+   if(!enabled)return;
+   matrix=c.getTransform();
+   if(c.directionPost)matrix=c.directionPost.multiply(matrix);
+   inverse=matrix.inverse();
+   radius=Math.max(Math.hypot(matrix.a,matrix.b),Math.hypot(matrix.c,matrix.d))*.5;
+  };
+  const point=(x,y,width=0)=>{if(!c.directionWeaponFit)return[x,y];const p=matrix.transformPoint({x,y}),margin=4+width*radius,q={x:Math.max(margin,Math.min(c.canvas.width-margin,p.x)),y:Math.max(margin,Math.min(c.canvas.height-margin,p.y))},r=inverse.transformPoint(q);return[r.x,r.y]};
   const poly=(p,col)=>{c.fillStyle=col;c.beginPath();c.moveTo(...point(...p[0]));for(const a of p.slice(1))c.lineTo(...point(...a));c.closePath();c.fill()};return{K,
    dot:(x,y,w,h,col)=>c.directionWeaponFit?poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]],col):(c.fillStyle=col,c.fillRect(x,y,w,h)),
    ell:(x,y,w,h,col)=>{if(!c.directionWeaponFit)return ellipse(c,x,y,w,h,col);poly(Array.from({length:20},(_,i)=>[x+Math.cos(i*Math.PI/10)*w,y+Math.sin(i*Math.PI/10)*h]),col)},
-   line:(x,y,X,Y,w,col)=>{c.lineCap='round';naLimb(c,...point(x,y,w),...point(X,Y,w),w,col)},poly
+   line:(x,y,X,Y,w,col)=>{c.lineCap='round';naLimb(c,...point(x,y,w),...point(X,Y,w),w,col)},poly,fitWeapon
   }
  }
  function frogRig(kind,P,front=false){const role=kind==='ftZF'?'Z':kind.slice(2),cr=P.sleep?1:P.crouch||0,air=P.air||0,dy=cr*3.2,norm=3*NA_SPEC.ftZ.sc,sx=front?-36/norm:role==='Z'?14/norm:3.2+(P.x>0?.4:0),sy=front?-60/norm:role==='Z'?(-58+cr*7)/norm:-17+dy,pipe=P.pipe||0,hx=9.4+(P.a>.5&&role!=='P'?1.2:0)-(P.hurt>.5?1.4:0),hy=-22.4+dy*.8+(P.hurt>.5?1:0)+(P.sleep?1.6:0);let H,phi;
@@ -45,7 +124,7 @@
   Q:{cloth:'#523353',fold:'#302436',seam:'#a07891',plane:'#78516f',rim:'#d4a9b2',metal:'#a07947',edge:'#f2ce83'},
   Z:{cloth:'#503450',fold:'#302537',seam:'#907090',plane:'#715477',rim:'#c9a8b0',metal:'#80583b',edge:'#e4bd70'},
  };
- function frog(c,kind,P,v,fr){const {K,dot,ell,line,poly}=tools(c,P),role=kind==='ftZF'?'Z':kind.slice(2),T=FT_PAL[role],back=v==='N'||v==='NE',quarter=v==='SE'||v==='NE',side=v==='E',royal=role==='K'||role==='Q',mage=role==='P'||role==='R',norm=3*NA_SPEC.ftZ.sc,nativeFront=kind==='ftZF'&&/^[iw]/.test(fr);
+ function frog(c,kind,P,v,fr){const {K,dot,ell,line,poly,fitWeapon}=tools(c,P),role=kind==='ftZF'?'Z':kind.slice(2),T=FT_PAL[role],back=v==='N'||v==='NE',quarter=v==='SE'||v==='NE',side=v==='E',royal=role==='K'||role==='Q',mage=role==='P'||role==='R',norm=3*NA_SPEC.ftZ.sc,nativeFront=kind==='ftZF'&&/^[iw]/.test(fr);
   const M=materials[role],hood=role==='G'||mage||role==='Z';
   const ink=K('#2d3026'),skin=K(T.skin),deep=K(T.skin2),lit=K(shade(T.skin,.25)),cloth=K(M.cloth),fold=K(M.fold),seam=K(M.seam),tan=K(T.belly2),cream=K(T.belly),gold=K('#c39a4f');
   const bronze=K(M.metal),gilt=K(M.edge),rim=K(M.rim),plane=K(M.plane);
@@ -105,7 +184,7 @@
    line(x-1.64,y-.11,x-.83,y-.2,.4,deep);
    line(x-1.46,y+.45,x-.7,y+.32,.37,deep);
   }
-  function weapon(){const H=R.hand;limb(R.shoulder,R.elbow,2.7,skin);limb(R.elbow,H,2.3,skin);line(...R.elbow,...H,1.5,fold);c.directionWeaponFit=true;c.save();c.translate(...H);c.rotate(R.angle);
+  function weapon(){const H=R.hand;limb(R.shoulder,R.elbow,2.7,skin);limb(R.elbow,H,2.3,skin);line(...R.elbow,...H,1.5,fold);c.save();c.translate(...H);c.rotate(R.angle);fitWeapon(true);
    const shaft=(lo,hi,w=1.4)=>{line(lo,0,hi,0,w+.65,ink);line(lo,0,hi,0,w,K('#8e704a'));line(lo,-.3,hi,-.3,.4,K('#cfb27a'));for(const x of[-2,-1,0,1,2])line(x,-.8,x+.4,.8,.3,tan)};
    if(nativeFront){/* Native straight staff is placed below in body coordinates. */}
    else if(role==='B'){
@@ -161,6 +240,7 @@
     }
    }
    c.restore();
+   fitWeapon(true);
    // Keep the strike marks and the upright flame at their original reach.
    if(side){
     const tip=length=>[H[0]+Math.cos(R.angle)*length,H[1]+Math.sin(R.angle)*length];
@@ -193,7 +273,7 @@
      }
     });
    }
-   c.directionWeaponFit=false;
+   fitWeapon(false);
    // Closed fingers overlap the wood. H remains the native wrist point.
    if(nativeFront)grip(...H);
    else if(role==='B'&&P.pipe)hand(...H);
@@ -202,7 +282,7 @@
     grip(0,0);c.restore();
    }
   }
-  if(role==='Z'&&!P.dead){c.directionWeaponFit=true;line(3,-11+dy,-7,-36+dy,1.55,staffDark);line(-7,-36+dy,-9.4,-39+dy,.9,staffLight);line(-5.6,-32.4+dy,-3.4,-28+dy,.45,tan);ell(-3.4,-27.4+dy,.55,.65,deep);ell(-2.4,-26.6+dy,.55,.65,staffDark);c.directionWeaponFit=false}
+  if(role==='Z'&&!P.dead){fitWeapon(true);line(3,-11+dy,-7,-36+dy,1.55,staffDark);line(-7,-36+dy,-9.4,-39+dy,.9,staffLight);line(-5.6,-32.4+dy,-3.4,-28+dy,.45,tan);ell(-3.4,-27.4+dy,.55,.65,deep);ell(-2.4,-26.6+dy,.55,.65,staffDark);fitWeapon(false)}
   limb(R.far.shoulder,R.far.elbow,2.5,deep);limb(R.far.elbow,R.far.hand,2.1,deep);hand(...R.far.hand,true);
   if(back)weapon();
   // Separate leg projections: paired spread toes in front/back, long tarsus in profile.
@@ -373,21 +453,140 @@
   }
  }
  function pose(kind,fr){const P=naPose(fr);if(/^ft/.test(kind)&&typeof FT_DEAD!=='undefined'&&FT_DEAD[fr])Object.assign(P,FT_DEAD[fr],/^ftZ/.test(kind)?{x:6,y:0}:{});if(/^z\d+$/.test(fr))P.sq=(P.sq||1)*(1+.012*(1-Math.cos(+fr.slice(1)/12*Math.PI*2)));return P}
- function frame(kind,fr,direction='E'){
-  if(!kinds.includes(kind)||window.FantasyPublishedFrogs?.enabled===false)return oldFrame(kind,fr);let i=headings.indexOf(direction);if(i<0)i=2;const view=views[i];
-  const allowed=new Set([...NA_ALL,...NA_FRAMES.parry,...NA_FRAMES.roar,...(NA_EXTRA[kind==='ftZF'?'ftZ':kind]||[]).flatMap(s=>NA_FRAMES[s]||[])]);if(!allowed.has(fr))fr='i0';
-  const key=kind+'|'+view+'|'+fr;if(cache.has(key)){hits++;const s=cache.get(key);cache.delete(key);cache.set(key,s);return s}
-  const S=NA_SPEC[kind],P=pose(kind,fr),z=/^ftZ/.test(kind),frogfolk=/^ft/.test(kind),[cv,c]=mkSprite(S.w,S.h,4);c.translate(S.ax,S.ay);c.scale(S.sc||1,S.sc||1);
+ const quantized=Uint8Array.from({length:256},(_,i)=>Math.min(255,Math.round(i/16)*16));
+ const rgb=new Uint8ClampedArray(3);
+ function reduce2x(c,w,h){
+  const stride=w*8,src=c.getImageData(0,0,w*2,h*2).data;
+  const img=new ImageData(w,h),dst=img.data;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   const a=y*stride*2+x*8,b=a+4,d=a+stride,e=d+4;
+   const A=src[a+3],B=src[b+3],D=src[d+3],E=src[e+3],sum=A+B+D+E;
+   if(sum<400)continue;
+   for(let ch=0;ch<3;ch++)rgb[ch]=(src[a+ch]*A+src[b+ch]*B+src[d+ch]*D+src[e+ch]*E)/sum;
+   const i=(y*w+x)*4;
+   dst[i]=quantized[rgb[0]];dst[i+1]=quantized[rgb[1]];dst[i+2]=quantized[rgb[2]];dst[i+3]=255;
+  }
+  return img;
+ }
+ function compact(img,fade){
+  const {data,width:w,height:h}=img;
+  let left=w,right=0,top=h,bottom=0;
+  for(let y=0,i=3;y<h;y++)for(let x=0;x<w;x++,i+=4){
+   if(!data[i])continue;
+   if(fade>0&&naHash(x,y)<fade){data[i]=0;continue;}
+   left=Math.min(left,x);right=Math.max(right,x+1);
+   top=Math.min(top,y);bottom=Math.max(bottom,y+1);
+  }
+  // Keep transparent sampling neighbors when the camera uses linear filtering.
+  left=Math.max(0,(left-2)&~1);top=Math.max(0,(top-2)&~1);
+  right=Math.min(w,(right+3)&~1);bottom=Math.min(h,(bottom+3)&~1);
+  const cv=mkCanvas(Math.max(1,right-left),Math.max(1,bottom-top));
+  if(right>left&&bottom>top)cv.getContext('2d').putImageData(img,-left,-top,left,top,right-left,bottom-top);
+  cv.fine=2;cv.creatureDirections=true;cv.directionCrop={left,top,w,h};
+  return cv;
+ }
+ function buildFrame(kind,fr,view){
+  const S=NA_SPEC[kind],P=pose(kind,fr),z=/^ftZ/.test(kind),[,c]=mkScratch(S.w,S.h,4);c.translate(S.ax,S.ay);c.scale(S.sc||1,S.sc||1);
   if(z){const ax=S.ax*4,ay=S.ay*4;c.directionPost=new DOMMatrix().translate(ax+Math.round(P.x*(S.sc||1)*2)*2,ay+Math.round(P.y*(S.sc||1)*2)*2).rotate((P.rot||0)*180/Math.PI).scale(1/Math.sqrt(P.sq||1),P.sq||1).translate(-ax,-ay)}
   if(!z){c.translate(P.sleep?0:P.x,P.sleep?0:P.y);c.rotate(P.sleep?0:P.rot);c.scale(1,P.sq)}
   frog(c,kind,P,view,fr);
-  let out=toPixelArt(cv,2,{outline:false,alphaCut:100,quant:d=>{for(let i=0;i<d.length;i+=4)if(d[i+3])for(let j=0;j<3;j++)d[i+j]=Math.round(d[i+j]/16)*16}});if(z){const base=out;base.getContext('2d').clearRect(0,0,base.width,2);out=mkCanvas(S.w*2,S.h*2);const q=out.getContext('2d');q.imageSmoothingEnabled=false;q.translate(S.ax*2+Math.round(P.x*(S.sc||1)*2),S.ay*2+Math.round(P.y*(S.sc||1)*2));q.rotate(P.rot||0);q.scale(1/Math.sqrt(P.sq||1),P.sq||1);q.drawImage(base,-S.ax*2,-S.ay*2)}out.fine=2;out.creatureDirections=true;
-  if(P.fade>0){const q=out.getContext('2d'),im=q.getImageData(0,0,out.width,out.height);for(let y=0;y<out.height;y++)for(let x=0;x<out.width;x++)if(naHash(x,y)<P.fade)im.data[(y*out.width+x)*4+3]=0;q.putImageData(im,0,0)}
-  const s={cv:out,w:S.w,h:S.h,ax:S.ax,ay:S.ay,view};bytes+=out.width*out.height*4;cache.set(key,s);while(bytes>maxBytes||cache.size>maxEntries){const k=cache.keys().next().value,v=cache.get(k);bytes-=v.cv.width*v.cv.height*4;cache.delete(k)}return s;
+  const w=S.w*2,h=S.h*2;
+  let img=reduce2x(c,w,h);
+  if(z){
+   const base=mkCanvas(w,h),bc=base.getContext('2d');
+   img.data.fill(0,0,w*8);
+   bc.putImageData(img,0,0);
+   const q=mkCanvas(w,h).getContext('2d');
+   q.imageSmoothingEnabled=false;
+   q.translate(S.ax*2+Math.round(P.x*(S.sc||1)*2),S.ay*2+Math.round(P.y*(S.sc||1)*2));
+   q.rotate(P.rot||0);q.scale(1/Math.sqrt(P.sq||1),P.sq||1);q.drawImage(base,-S.ax*2,-S.ay*2);
+   img=q.getImageData(0,0,w,h);
+  }
+  return compact(img,P.fade);
  }
- naFrame=function(kind,fr){return kinds.includes(kind)?frame(kind,fr,active):oldFrame(kind,fr)};
+ function decodeBaked(record){
+  const [x,y,width,height,payload]=record;
+  let data=payload;
+  if(typeof payload==='string'){
+   const decoded=atob(payload);
+   data=new Uint8Array(decoded.length);
+   for(let i=0;i<decoded.length;i++)data[i]=decoded.charCodeAt(i);
+  }
+  const count=data[0]+data[1]*256,colors=new Uint32Array(count+1),rgba=new Uint8Array(colors.buffer);
+  let pos=2;
+  for(let i=4;i<rgba.length;i++)rgba[i]=data[pos++];
+  const img=new ImageData(width,height),pixels=new Uint32Array(img.data.buffer);
+  let offset=0;
+  while(pos<data.length){
+   const length=data[pos++]+1,end=offset+length;
+   let index=data[pos++];
+   if(count>255)index+=data[pos++]*256;
+   if(length===1)pixels[offset]=colors[index];
+   else pixels.fill(colors[index],offset,end);
+   offset=end;
+  }
+  return {img,x,y};
+ }
+ const frameKey=(kind,view,fr)=>kind+'|'+view+'|'+fr;
+ const bakedRecord=key=>frequent?.frames.get(key)||rare?.frames.get(key)||startup?.[key];
+ const available=key=>cache.has(key)||!!bakedRecord(key);
+ function cachedFrame(kind,fr,view){
+  const key=frameKey(kind,view,fr);
+  let s=cache.get(key);
+  if(s){hits++;cache.delete(key);cache.set(key,s);return s;}
+  const S=NA_SPEC[kind],record=bakedRecord(key);
+  s={w:S.w,h:S.h,ax:S.ax,ay:S.ay,view};
+  if(record){
+   s.pixels=decodeBaked(record);s.bytes=s.pixels.img.data.byteLength;
+  }else{
+   proceduralBuilds++;s.cv=buildFrame(kind,fr,view);s.bytes=s.cv.width*s.cv.height*4;
+  }
+  bytes+=s.bytes;cache.set(key,s);
+  while(bytes>maxBytes||cache.size>maxEntries){const k=cache.keys().next().value,v=cache.get(k);bytes-=v.bytes;cache.delete(k)}
+  return s;
+ }
+ function fullFrame(s){
+  const existing=s.full?.deref();
+  if(existing)return existing;
+  fullMaterializations++;
+  const cv=mkCanvas(s.w*2,s.h*2),c=cv.getContext('2d');
+  if(s.pixels){const {img,x,y}=s.pixels;c.putImageData(img,x,y);}
+  else{const {left,top}=s.cv.directionCrop;c.drawImage(s.cv,left,top);}
+  cv.fine=2;cv.creatureDirections=true;
+  const full={cv,w:s.w,h:s.h,ax:s.ax,ay:s.ay,view:s.view};
+  if(typeof WeakRef==='function'){
+   s.full=new WeakRef(full);
+   publicFrames.set(cv,full);
+  }
+  return full;
+ }
+ function resolvedFrame(kind,fr,direction,actor){
+  if(!statesByKind.has(kind)||window.FantasyPublishedFrogs?.enabled===false)return oldFrame(kind,fr);
+  if(!statesByKind.get(kind).has(fr))fr='i0';
+  const view=views[headings.indexOf(direction)]||'E';
+  if(actor){
+   const last=lastWorldFrame.get(actor);
+   if((isFrequent(fr)?frequentPending:rarePending)&&!available(frameKey(kind,view,fr))){
+    fr=last?.kind===kind&&last.view===view&&available(frameKey(kind,view,last.fr))?last.fr:'i0';
+    pendingHolds++;
+   }
+   if(last?.full&&last.kind===kind&&last.view===view&&last.fr===fr)return last.full;
+   if(last?.kind!==kind||last.view!==view||last.fr!==fr)lastWorldFrame.set(actor,{kind,view,fr});
+  }
+  const full=fullFrame(cachedFrame(kind,fr,view));
+  if(actor)lastWorldFrame.get(actor).full=full;
+  return full;
+ }
+ function frame(kind,fr,direction='E'){return resolvedFrame(kind,fr,direction,null);}
+ naFrame=function(kind,fr){return kinds.includes(kind)?resolvedFrame(kind,fr,active,activeActor):oldFrame(kind,fr)};
  blitFine=function(c,cv,x,y,w,h){if(!cv.creatureDirections)return oldBlit(c,cv,x,y,w,h);const smooth=c.imageSmoothingEnabled;c.imageSmoothingEnabled=R.smooth;c.drawImage(cv,x,y,w??cv.width/2,h??cv.height/2);c.imageSmoothingEnabled=smooth};
- neuDraw=function(c,N){const prev=active;if(kinds.includes(N.k))active=headingOf(N);try{return oldDraw(c,N)}finally{active=prev}};
+ neuDraw=function(c,N){
+  const prev=active,prevActor=activeActor;
+  activeActor=kinds.includes(N.k)?N:null;
+  if(activeActor)active=headingOf(N);
+  try{return oldDraw(c,N)}finally{active=prev;activeActor=prevActor;}
+ };
 
- window.FrogDirections={ready:true,errors:[],kinds,headings,frame,headingOf,rig:(kind,fr)=>frogRig(kind,pose(kind,fr),kind==='ftZF'&&/^[iw]/.test(fr)),portrait:(kind,fr='i0')=>frame(kind,fr,'S'),setHeading:(n,d)=>headings.includes(d)?forced.set(n,d):forced.delete(n),cacheStats:()=>({entries:cache.size,rgbaBytes:bytes,maxEntries,maxRgbaBytes:maxBytes,hits}),states:kind=>[...new Set([...NA_ALL,...NA_FRAMES.parry,...NA_FRAMES.roar,...(NA_EXTRA[kind==='ftZF'?'ftZ':kind]||[]).flatMap(s=>NA_FRAMES[s]||[])])]};
+ const stats=bank=>bank?{frames:bank.frames.size,unique:bank.unique,bytes:bank.bytes}:null;
+ window.FrogDirections={ready:true,frequentReady,rareReady,bakedReady,errors,kinds,headings,frame,headingOf,rig:(kind,fr)=>frogRig(kind,pose(kind,fr),kind==='ftZF'&&/^[iw]/.test(fr)),portrait:(kind,fr='i0')=>frame(kind,fr,'S'),setHeading:(n,d)=>headings.includes(d)?forced.set(n,d):forced.delete(n),cacheStats:()=>({entries:cache.size,rgbaBytes:bytes,maxEntries,maxRgbaBytes:maxBytes,hits}),bankStats:()=>({frequent:stats(frequent),rare:stats(rare),frequentPending,rarePending,proceduralBuilds,pendingHolds,fullMaterializations}),states:kind=>[...(statesByKind.get(kind)||stateSet(kind))]};
 })();

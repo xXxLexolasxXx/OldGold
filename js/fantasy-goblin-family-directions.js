@@ -9,6 +9,34 @@
  const maxBytes=24*1024*1024,maxEntries=900;
  const frameNames=new Set([...NA_ALL,...NA_FRAMES.parry,...NA_FRAMES.roar]);
  const normalized=fr=>frameNames.has(fr)?fr:'i0';
+ const bank=new Map(),bankErrors=[];
+ let bankLoading=true;
+ const bankURL=new URL('../assets/fantasy/goblin-family-frame-bank.json',document.currentScript?.src||new URL('js/fantasy-goblin-family-directions.js',document.baseURI));
+ async function loadBank(){
+  const response=await fetch(bankURL);
+  if(!response.ok)throw Error('Goblin frame bank HTTP '+response.status);
+  const manifest=await response.json();
+  const results=await Promise.allSettled(kinds.map(async kind=>{
+   const entry=manifest[kind],r=await fetch(new URL(entry.name,bankURL));
+   if(!r.ok)throw Error('Goblin atlas HTTP '+r.status);
+   const atlas=await createImageBitmap(await r.blob());
+   if(atlas.width!==entry.width||atlas.height!==entry.height){
+    atlas.close();throw Error('Unexpected goblin atlas size for '+kind);
+   }
+   bank.set(kind,{atlas,entries:entry.entries});
+  }));
+  for(const result of results){
+   if(result.status==='rejected')bankErrors.push(result.reason.message);
+  }
+ }
+ loadBank().catch(error=>bankErrors.push(error.message)).finally(()=>{bankLoading=false;});
+ function bankFrame(kind,fr,view,S){
+  const sheet=bank.get(kind),entry=sheet?.entries[view+'|'+fr];
+  if(!entry)return null;
+  const [x,y,w,h,left,top]=entry,cv=mkCanvas(S.w*2,S.h*2);
+  if(w)cv.getContext('2d').drawImage(sheet.atlas,x,y,w,h,left,top,w,h);
+  return cv;
+ }
  const heading=GoblinChampionDirections.headingOf;
  const raised=P=>Math.max(0,Math.min(1,P.up||0));
  const theta=P=>naTheta({...P,up:0})*(1-raised(P))-3*raised(P);
@@ -177,18 +205,26 @@
   const special={moveTo:(x,y)=>c.moveTo(...point(x,y)),lineTo:(x,y)=>c.lineTo(...point(x,y)),quadraticCurveTo:(x,y,X,Y)=>c.quadraticCurveTo(...point(x,y),...point(X,Y)),bezierCurveTo:(x,y,X,Y,xx,yy)=>c.bezierCurveTo(...point(x,y),...point(X,Y),...point(xx,yy)),fillRect:(x,y,w,h)=>{if(c.nativeFX)return c.fillRect(x,y,w,h);const raw=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]],pts=raw.map(p=>point(...p));if(pts.every((p,i)=>p[0]===raw[i][0]&&p[1]===raw[i][1]))return c.fillRect(x,y,w,h);const p=new Path2D();p.moveTo(...pts[0]);for(const a of pts.slice(1))p.lineTo(...a);p.closePath();c.fill(p)},ellipse:(...a)=>oval(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],c.ellipse,a),arc:(...a)=>oval(a[0],a[1],a[2],a[2],0,a[3],a[4],a[5],c.arc,a)};
   return new Proxy(c,{get:(t,k)=>special[k]||(typeof t[k]==='function'?t[k].bind(t):Reflect.get(t,k,t)),set:(t,k,v)=>Reflect.set(t,k,v,t)});
  }
+ function paintFrame(kind,fr,view){
+  const S=NA_SPEC[kind],P=naPose(fr);P.pal=S.pal||null;
+  const [cv,c]=mkSprite(S.w,S.h,4);c.lineCap='round';c.lineJoin='round';c.translate(S.ax,S.ay);if(S.sc)c.scale(S.sc,S.sc);if(view==='E'&&kind!=='shnyrKing')NA_DRAW[kind](boundedContext(c),P,fr);else paint(boundedContext(c),kind,P,view);
+  const out=toPixelArt(cv,2,{outline:false,alphaCut:100});
+  if(P.fade>0){const q=out.getContext('2d'),im=q.getImageData(0,0,out.width,out.height);for(let y=0;y<out.height;y++)for(let x=0;x<out.width;x++){const i=(y*out.width+x)*4;if(!im.data[i+3])continue;if(naHash(x,y)<P.fade)im.data[i+3]=0;else{im.data[i]+=(230-im.data[i])*P.fade*.4;im.data[i+1]+=(240-im.data[i+1])*P.fade*.4;im.data[i+2]+=(200-im.data[i+2])*P.fade*.4}}q.putImageData(im,0,0)}
+  return out;
+ }
  function frame(kind,fr,direction='E'){
   if(!kinds.includes(kind)||window.GoblinPolish?.enabled===false)return oldFrame(kind,fr);
   fr=normalized(fr);let i=headings.indexOf(direction);if(i<0)i=2;const view=views[i];
-
   const key=kind+'|'+view+'|'+fr;if(cache.has(key)){hits++;const s=cache.get(key);cache.delete(key);cache.set(key,s);return s}
-  const S=NA_SPEC[kind],P=naPose(fr);P.pal=S.pal||null;
-  const [cv,c]=mkSprite(S.w,S.h,4);c.lineCap='round';c.lineJoin='round';c.translate(S.ax,S.ay);if(S.sc)c.scale(S.sc,S.sc);if(view==='E'&&kind!=='shnyrKing')NA_DRAW[kind](boundedContext(c),P,fr);else paint(boundedContext(c),kind,P,view);
-  const out=toPixelArt(cv,2,{outline:false,alphaCut:100});out.fine=2;out.fantasyGoblin=true;
-  if(P.fade>0){const q=out.getContext('2d'),im=q.getImageData(0,0,out.width,out.height);for(let y=0;y<out.height;y++)for(let x=0;x<out.width;x++){const i=(y*out.width+x)*4;if(!im.data[i+3])continue;if(naHash(x,y)<P.fade)im.data[i+3]=0;else{im.data[i]+=(230-im.data[i])*P.fade*.4;im.data[i+1]+=(240-im.data[i+1])*P.fade*.4;im.data[i+2]+=(200-im.data[i+2])*P.fade*.4}}q.putImageData(im,0,0)}
+  const S=NA_SPEC[kind],out=bankFrame(kind,fr,view,S)||paintFrame(kind,fr,view);
+  out.fine=2;out.fantasyGoblin=true;
   const s={cv:out,w:S.w,h:S.h,ax:S.ax,ay:S.ay,view};bytes+=out.width*out.height*4;cache.set(key,s);while(bytes>maxBytes||cache.size>maxEntries){const k=cache.keys().next().value,v=cache.get(k);bytes-=v.cv.width*v.cv.height*4;cache.delete(k)}return s;
  }
- naFrame=function(kind,fr){return kinds.includes(kind)?frame(kind,fr,active):oldFrame(kind,fr)};
+ naFrame=function(kind,fr){
+  if(!kinds.includes(kind))return oldFrame(kind,fr);
+  if(R.inFrame&&bankLoading&&!bank.has(kind))return frame(kind,'i0','E');
+  return frame(kind,fr,active);
+ };
  neuDraw=function(c,N){
   if(!kinds.includes(N.k))return oldNeu(c,N);
   const previous=active;active=heading(N);
@@ -199,5 +235,7 @@
   const previous=active;active=heading(N);
   try{return oldCamp(c,N,art)}finally{active=previous}
  };
- window.GoblinFamilyDirections={ready:true,errors:[],kinds,headings,frame,headingOf:heading,rig,portrait:(kind,fr='i0')=>frame(kind,fr,'S'),cacheStats:()=>({entries:cache.size,rgbaBytes:bytes,maxEntries,maxRgbaBytes:maxBytes,hits})};
+ window.GoblinFamilyDirections={ready:true,errors:[],kinds,headings,frame,headingOf:heading,rig,portrait:(kind,fr='i0')=>frame(kind,fr,'S'),cacheStats:()=>({entries:cache.size,rgbaBytes:bytes,maxEntries,maxRgbaBytes:maxBytes,hits}),
+  get bankReady(){return bank.size===kinds.length;},bankErrors,
+  authorFrame:(kind,fr,view)=>({cv:paintFrame(kind,normalized(fr),view)})};
 })();
