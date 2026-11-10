@@ -54,7 +54,15 @@
  function creatureSource(who,f){
   const fr=f?'i8':'i0';
   if(who==='troll'&&globalThis.FantasyPublishedForestfolk){const sp=naFrame('troll',fr),S=NA_SPEC.troll,P=naPose(fr),rig=FantasyPublishedForestfolk.trollRig(P,false),sq=P.sq||1,z=Math.sqrt(sq);return{sp,box:[sp.ax+(P.x||0)*S.sc+(rig.hx/3-18)/z,sp.ay+(P.y||0)*S.sc+(rig.hy/3-15)*sq,36/z,36*sq],renderer:'naFrame(troll)',frame:fr};}
-  if(who==='zhab'&&globalThis.FantasyPublishedFrogs?.enabled){const sp=naFrame('ftZF',fr),S=NA_SPEC.ftZ,P=naPose(fr),sq=P.sq||1,z=Math.sqrt(sq),sc=S.sc;return{sp,box:[sp.ax+(P.x||0)*sc-14*sc/z,sp.ay+(P.y||0)*sc+(-22.4-12)*sc*sq,28*sc/z,29*sc*sq],renderer:'naFrame(ftZF)',frame:fr};}
+  if(who==='zhab'&&globalThis.FantasyPublishedFrogs?.enabled){
+   const frogs=globalThis.FrogDirections;
+   const directional=frogs?.ready&&typeof frogs.frame==='function'&&frogs.kinds?.includes('ftZF');
+   const sp=directional?frogs.frame('ftZF',fr,'S'):naFrame('ftZF',fr);
+   const S=NA_SPEC.ftZ,P=naPose(fr),sq=P.sq||1,z=Math.sqrt(sq),sc=S.sc;
+   const dx=directional?Math.round((P.x||0)*sc*2)/2:(P.x||0)*sc;
+   const dy=directional?Math.round((P.y||0)*sc*2)/2:(P.y||0)*sc;
+   return{sp,box:[sp.ax+dx-14*sc/z,sp.ay+dy+(-22.4-12)*sc*sq,28*sc/z,29*sc*sq],renderer:directional?'FrogDirections.frame(ftZF,S)':'naFrame(ftZF)',frame:fr,direction:'S'};
+  }
   const court=globalThis.FantasyDarkCourtPolish;
   if(who==='mrak'&&court?.assets?.ready&&typeof court.portrait==='function'){const phase=f?8:0,frame='i'+phase,sp=court.portrait('fMalgor1',phase),Q=court.pose(frame),z=(FPX_BOX.fMalgor1[4]||1)/3,dy=(Q.bob+Q.br*.8)*z,H=court.worldScale?.fMalgor1?.height||84,scale=H/84;return{sp,box:[sp.ax-15*scale,sp.ay-H+dy,30*scale,33*scale],renderer:'FantasyDarkCourtPolish.portrait(fMalgor1,S)',frame,direction:'S'};}
   if(who==='mrak'&&typeof foePxFrame==='function'){const sp=foePxFrame('fMalgor1',fr);if(sp){const Q=fpxPose(fr),dy=Q.br*2/3;return{sp,box:[sp.ax-11,sp.ay-70+dy,24,27],renderer:'foePxFrame(fMalgor1) native pending court scale review',frame:fr};}}
