@@ -586,7 +586,7 @@ function frame(now) {
   } catch (e) { if (!frame.errR || now - frame.errR > 5000) { console.error(e); frame.errR = now; } }
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('DOMContentLoaded', () => {
   // даём браузеру показать экран загрузки, затем строим мир
   setTimeout(startGame, 30);
 });
@@ -600,7 +600,7 @@ function startGame() {
   const seed = (Math.random() * 1e9) | 0;
   setupStart(seed);
   buildTerrain(seed);
-  document.getElementById('loading').classList.add('hidden');
+  if (typeof StartMenu === 'undefined' || !StartMenu.open) document.getElementById('loading').classList.add('hidden');
   initUI();
   initInput();
   initMobile();

@@ -19,6 +19,7 @@ function blurDraw(dst, src, w, h, px) {
 // экрана (с учётом devicePixelRatio), объёмно: градиенты, обводка, отсветы огня.
 
 (function () {
+  if (document.getElementById('loading')?.dataset.scene === 'fantasy') return;
   const cv = document.getElementById('load-cv');
   if (!cv) return;
   // Сцена рисуется в крошечный холст (lo) и потом укрупняется без сглаживания: палитра + дизеринг = пиксель-арт

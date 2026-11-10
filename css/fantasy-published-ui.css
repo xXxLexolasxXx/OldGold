@@ -1,6 +1,27 @@
 /* Published 0.11.99: cosmetic wood/brass port. Native menu and layout callbacks remain. */
 :root { --gold:#c9aa68; --gold-hi:#f0d49a; --line:#7b6040; --line-hi:#b29460; --text:#eee1c4; --text-dim:#b8a78a; }
-#start-menu { background:linear-gradient(#152b2500,#13251edb 65%); }
+#loading[data-scene="fantasy"] {
+  background: linear-gradient(#192e3c 0 18%, #294553 18% 34%, #395958 34% 49%, #435e4e 49% 66%, #2e4638 66% 82%, #1a2c25 82%);
+}
+#fantasy-load-cv {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  image-rendering: pixelated; pointer-events: none;
+}
+#loading[data-scene="fantasy"] .load-title { z-index: 1; }
+#loading[data-scene="fantasy"] h1 { opacity: 1; font-size: clamp(62px, 11vw, 148px); }
+#loading[data-scene="fantasy"] .fantasy-subtitle {
+  margin: 0 16px; color: #f0d8a5; font-size: clamp(14px, 2vw, 22px);
+  text-shadow: 0 2px #17221f, 0 3px 10px #101a17;
+}
+#start-menu { background: linear-gradient(#1a302500, #17291fe0 58%, #111d17f5); }
+#start-menu .sm-boot-status {
+  position: absolute; bottom: calc(100% - 22px); margin: 0; color: #f0d8a5;
+  text-shadow: 0 2px #1a140b; font-size: 14px;
+}
+#start-menu .sm-boot-status:empty { display: none; }
+@media (orientation: landscape) and (max-height: 520px) {
+  #loading[data-scene="fantasy"] h1 { font-size: min(13vw, 22vh); }
+}
 /* OldGold UI finish. Load after fantasy-ui.css. No start-menu/loading selectors. */
 #panel, #topbar, #tool-hint, #mtool, #help {
   --ui-brass: #ae8954;

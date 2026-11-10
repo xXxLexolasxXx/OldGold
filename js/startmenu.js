@@ -217,25 +217,9 @@ function smMusicBtnInit() {
 if (typeof document !== 'undefined' && document.getElementById && typeof Music !== 'undefined') try { smMusicBtnInit(); } catch (e) { /* без интерфейса */ }
 
 function initStartMenu() {
-  const box = document.getElementById('loading');
-  if (!box || document.getElementById('start-menu')) return;
-  const root = document.createElement('div');
-  root.id = 'start-menu';
-  root.innerHTML = `
-    <div class="sm-panel" data-panel="main">
-      <button class="sm-btn primary" data-sm="continue"><b>Продолжить</b><small></small></button>
-      <button class="sm-btn" data-sm="new"><b>Новая игра</b><small>новый мир, назвать героя</small></button>
-      <button class="sm-btn" data-sm="mp"><b>Мультиплеер</b><small>играть с друзьями</small></button>
-      <button class="sm-btn" data-sm="arena"><b>Арена</b><small>бой с ботом: попробуйте любой класс</small></button>
-      <button class="sm-btn ghost" data-sm="help"><b>Как играть</b></button>
-      <button class="sm-btn ghost" data-sm="lang"><b class="lang-name">${I18N.other}</b></button>
-      <button class="sm-btn ghost" data-sm="more"><b>Ещё</b><small>вызов дня, редактор, ачивки</small></button>
-    </div>
-    <div class="sm-panel hidden" data-panel="mode">
-      <button class="sm-btn primary" data-sm="mode-scenario"><b>Сценарий</b><small>«Тишина дороже золота»: 6 глав, тёмный маг</small></button>
-      <button class="sm-btn" data-sm="mode-free"><b>Свободная игра</b><small>без сюжета: от поселения до города</small></button>
-      <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
-    </div>
+  const root = document.getElementById('start-menu');
+  if (!root || root.dataset.ready) return;
+  root.insertAdjacentHTML('beforeend', `
     <div class="sm-panel hidden" data-panel="map">
       <div class="sm-title">Карта</div>
       <div class="sm-grid">${BIOME_ORDER.map(k => `<button class="sm-btn sm-chip" data-sm="bio:${k}" data-bio="${k}"><b>${BIOMES[k].icon} ${BIOMES[k].name}</b></button>`).join('')}</div>
@@ -264,8 +248,7 @@ function initStartMenu() {
         <li>Следите за вкладкой «Хозяйство»: там все проблемы деревни.</li>
       </ul>
       <button class="sm-btn ghost" data-sm="back"><b>Назад</b></button>
-    </div>`;
-  box.appendChild(root);
+    </div>`);
   smMusicBtnInit();
   root.addEventListener('click', e => { const b = e.target.closest('[data-sm]'); if (b && !b.disabled) smAction(b.dataset.sm); });
   window.addEventListener('keydown', e => {
@@ -280,14 +263,18 @@ function initStartMenu() {
 {
   const _start = startGame;
   startGame = function () {
-    _start();
-    initStartMenu();
-    const box = document.getElementById('loading');
-    box.classList.remove('hidden');
-    box.classList.add('with-menu');
     StartMenu.open = true;
+    _start();
+    document.getElementById('loading').classList.remove('hidden');
+    initStartMenu();
     Game.paused = true;
-    smRender(); smShow('main');
+    smRender();
+    const menu = document.getElementById('start-menu');
+    const action = menu.dataset.pending;
+    delete menu.dataset.pending;
+    menu.dataset.ready = 'true';
+    menu.querySelector('.sm-boot-status').textContent = '';
+    if (action) setTimeout(() => { if (StartMenu.open) smAction(action); }, 0);
   };
 }
 
@@ -480,7 +467,12 @@ let smVineShift = 0, smSlide = false;
 
 {
   const _show = smShow;
-  smShow = function (p) { _show(p); smSlide = true; requestAnimationFrame(() => { decorateVines(); smSlide = false; }); };
+  smShow = function (p) {
+    const panel = [...document.querySelectorAll('#start-menu .sm-panel')].find(el => el.dataset.panel === p);
+    const animate = !!panel?.classList.contains('hidden');
+    _show(p);
+    requestAnimationFrame(() => { smSlide = animate; decorateVines(); smSlide = false; });
+  };
   const _render = smRender;
   smRender = function () { _render(); requestAnimationFrame(decorateVines); };
   let rt = 0;

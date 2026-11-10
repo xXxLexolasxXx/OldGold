@@ -11,10 +11,10 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="preload" as="image" href="assets/fantasy/menu-village.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OldGold">
 <script src="js/fantasy-published-gallery.js"></script>
-<script src="js/i18n.js"></script>
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/profile.css">
 <link rel="stylesheet" href="css/legacy.css">
@@ -154,7 +154,63 @@
     </div>
   </main>
 </div>
-<div id="loading"><canvas id="load-cv"></canvas><div class="load-title"><h1>OldGold</h1></div><span class="load-msg">Создаём мир…</span></div>
+<div id="loading" class="with-menu" data-scene="fantasy">
+  <canvas id="fantasy-load-cv" aria-hidden="true"></canvas>
+  <div class="load-title"><h1>OldGold</h1><p class="fantasy-subtitle">У каждого очага начинается история</p></div>
+  <div id="start-menu">
+    <div class="sm-panel" data-panel="main">
+      <button type="button" class="sm-btn primary" data-sm="continue" disabled><b>Продолжить</b><small>сохранений пока нет</small></button>
+      <button type="button" class="sm-btn" data-sm="camp"><b>Кампания</b><small>«Исход из Подгорья»: сюжет по актам</small></button>
+      <button type="button" class="sm-btn" data-sm="new"><b>Новая игра</b><small>новый мир, назвать героя</small></button>
+      <button type="button" class="sm-btn" data-sm="mp"><b>Мультиплеер</b><small>играть с друзьями</small></button>
+      <button type="button" class="sm-btn" data-sm="arena"><b>Арена</b><small>бой с ботом: попробуйте любой класс</small></button>
+      <button type="button" class="sm-btn ghost" data-sm="help"><b>Как играть</b></button>
+      <button type="button" class="sm-btn ghost" data-sm="lang"><b class="lang-name">English</b></button>
+      <button type="button" class="sm-btn ghost" data-sm="more"><b>Ещё</b><small>вызов дня, редактор, ачивки</small></button>
+    </div>
+    <div class="sm-panel hidden" data-panel="camp"></div>
+    <div class="sm-panel hidden" data-panel="mode">
+      <button type="button" class="sm-btn primary" data-sm="mode-scenario"><b>Сценарий</b><small>«Тишина дороже золота»: 6 глав, тёмный маг</small></button>
+      <button type="button" class="sm-btn" data-sm="mode-free"><b>Свободная игра</b><small>без сюжета: от поселения до города</small></button>
+      <button type="button" class="sm-btn ghost sm-wide" data-sm="back"><b>Назад</b></button>
+    </div>
+    <p class="sm-boot-status" role="status"></p>
+  </div>
+</div>
+<script>
+(() => {
+  const menu = document.getElementById('start-menu');
+  const resume = menu.querySelector('[data-sm="continue"]');
+  try {
+    const manual = JSON.parse(localStorage.getItem('feod.save.manual.meta'));
+    const auto = JSON.parse(localStorage.getItem('feod.save.auto.meta'));
+    if (manual || auto) {
+      resume.disabled = false;
+      resume.querySelector('small').textContent = 'Открыть последнее сохранение';
+    }
+  } catch (error) { /* сохранения уточнит игровой загрузчик */ }
+  menu.addEventListener('click', event => {
+    if (menu.dataset.ready) return;
+    const button = event.target.closest('[data-sm]');
+    if (!button || button.disabled) return;
+    const action = button.dataset.sm;
+    const status = menu.querySelector('.sm-boot-status');
+    if (action === 'new' || action === 'back') {
+      const openMode = action === 'new';
+      menu.querySelector('[data-panel="main"]').classList.toggle('hidden', openMode);
+      menu.querySelector('[data-panel="mode"]').classList.toggle('hidden', !openMode);
+      status.textContent = '';
+      if (openMode) menu.dataset.pending = action;
+      else delete menu.dataset.pending;
+      return;
+    }
+    menu.dataset.pending = action;
+    status.textContent = 'Подготавливаем игру…';
+  });
+})();
+</script>
+<script src="js/i18n.js"></script>
+<script src="js/fantasy-start-screen.js" async></script>
 <script src="js/crashlog.js"></script>
 <script src="js/telemetry.js"></script>
 <script src="js/world/fire.js"></script>
@@ -389,7 +445,6 @@
 <script src="js/fantasy-leshy-polish.js"></script>
 <script src="js/fantasy-goblin-polish.js"></script>
 <script src="js/fantasy-goblin-champion-directions.js"></script>
-<script src="js/fantasy-splash.js"></script>
 <script src="js/fantasy-published-spectral.js"></script>
 <script src="js/fantasy-published-elementals.js"></script>
 <script src="js/fantasy-published-anomalies.js"></script>
