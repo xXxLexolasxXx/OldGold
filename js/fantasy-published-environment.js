@@ -9,7 +9,7 @@
   function scan(){
     const sig=MOUNTS.length;
     if(source===MOUNTS&&sig===signature)return;
-    source=MOUNTS;signature=sig;lookup=new WeakMap();info.cache.clear();
+    source=MOUNTS;signature=sig;lookup=new WeakMap();info.cache.clear();queue.clear();
     const pending=new Set(MOUNTS),groups=[];
     // Only close, similarly grounded neighbours. Every original foot remains a render entry.
     for(const m of MOUNTS){if(!pending.delete(m))continue;const members=[m];
@@ -26,11 +26,12 @@
     if(biome==='winter')return ['#303a40','#58646a','#809090','#a7b3ad','#d1d7c5'];
     return v%3===2?['#44372c','#73604b','#a78f6b','#c8b38c','#e5d4aa']:['#3b352e','#6c6253','#a09277','#c1b290','#e4d3ab'];
   }
+  function groupKey(g,level){return (typeof MapOpt==='undefined'?'meadow':MapOpt.biome)+':'+level+':'+g.members.map(m=>[m.x,m.y,m.size,m.v]).join('|');}
   function paintGroup(g,level){
-    const key=(typeof MapOpt==='undefined'?'meadow':MapOpt.biome)+':'+level+':'+g.members.map(m=>[m.x,m.y,m.size,m.v]).join('|');
+    const key=groupKey(g,level);
     if(info.cache.has(key)){const hit=info.cache.get(key);info.cache.delete(key);info.cache.set(key,hit);return hit;}
     const bounds=g.members.map(box),x0=Math.min(...bounds.map(b=>b.x)),y0=Math.min(...bounds.map(b=>b.y)),x1=Math.max(...bounds.map(b=>b.x+b.w)),y1=Math.max(...bounds.map(b=>b.y+b.h));
-    const w=x1-x0,h=y1-y0,cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;const c=cv.getContext('2d');c.scale(2,2);c.imageSmoothingEnabled=false;
+    const w=x1-x0,h=y1-y0,cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;const c=cv.getContext('2d',{willReadFrequently:true});c.scale(2,2);c.imageSmoothingEnabled=false;
     const p=rockPalette(g.members[0].v),rng=mulberry32((Math.round(x0)*17+Math.round(y0)*31+g.members.length*97)>>>0),base=h-9;
     // A shared shoulder, ridge and continuous foot, rather than stacked copies of a peak.
     const count=g.members.length===1?3:g.members.length+1,peaks=[];
@@ -132,13 +133,42 @@
     const result={slices,members:g.members.length};info.cache.set(key,result);while(info.cache.size>128)info.cache.delete(info.cache.keys().next().value);return result;
   }
   info.compose=members=>{const g={members:members.slice().sort((a,b)=>a.x-b.x)};return paintGroup(g,typeof mtCapLevel==='function'?mtCapLevel():0);};
+  const queue=new Map();
+  let queued=false;
+  function warmGroups(){
+    queued=false;
+    const next=queue.entries().next();
+    if(next.done)return;
+    const [key,job]=next.value;
+    queue.delete(key);
+    if(job.source===MOUNTS)paintGroup(job.group,job.level);
+    if(queue.size)scheduleGroups();
+  }
+  function scheduleGroups(){
+    if(queued)return;
+    queued=true;
+    if(typeof requestIdleCallback==='function')requestIdleCallback(warmGroups,{timeout:100});
+    else setTimeout(warmGroups,16);
+  }
+  function drawMountainFallback(c,m,level){
+    const {x,y,w,h}=box(m);
+    const cap=typeof MT_CAP==='undefined'?null:MT_CAP[m.size+m.v+'_'+level];
+    c.drawImage(cap||mtSprite(m.size,m.v),x,y,w,h);
+  }
   const oldMountain=drawMountain;
   drawMountain=function(c,m){scan();const g=lookup.get(m)||{members:[m]};const level=typeof mtCapLevel==='function'?mtCapLevel():0;
-    const entry=paintGroup(g,level).slices.get(m);if(!entry)return oldMountain(c,m);
+    const key=groupKey(g,level),cached=info.cache.get(key);
+    if(!cached){
+      if(!queue.has(key))queue.set(key,{source:MOUNTS,group:g,level});
+      scheduleGroups();
+      return drawMountainFallback(c,m,level);
+    }
+    info.cache.delete(key);info.cache.set(key,cached);
+    const entry=cached.slices.get(m);if(!entry)return oldMountain(c,m);
     c.save();c.imageSmoothingEnabled=R.smooth;c.drawImage(entry.cv,entry.b.x,entry.b.y,entry.b.w,entry.b.h);c.restore();
   };
   // Rebuild only visual lookup when native mining/disaster code rebuilds mountains.
-  const oldBuild=buildMountains;buildMountains=function(...args){const result=oldBuild.apply(this,args);source=null;return result;};
+  const oldBuild=buildMountains;buildMountains=function(...args){const result=oldBuild.apply(this,args);source=null;scan();return result;};
   function stone(v,mode){const key=v+':'+mode;if(info.stoneCache.has(key))return info.stoneCache.get(key);
     const cv=document.createElement('canvas');cv.width=52;cv.height=40;const c=cv.getContext('2d');c.scale(2,2);const p=rockPalette(v),dx=v%2;
     polygon(c,[[2,12],[5+dx,6],[11,3],[18,4],[23,10],[24,15],[19,18],[7,18],[2,15]],p[0]);

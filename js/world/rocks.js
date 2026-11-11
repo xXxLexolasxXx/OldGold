@@ -20,7 +20,7 @@ function rockSprite(size, variant, body = false) {
   if (ROCK_SPR[key]) return ROCK_SPR[key];
   const S = ROCK_SIZES[size], K = 2;                 // рисуем вдвое подробнее, чем клетка мира
   let cv = mkCanvas(S.w * K, S.h * K);
-  const c = cv.getContext('2d');
+  const c = cv.getContext('2d', { willReadFrequently: true });
   c.scale(K, K);
   c.lineJoin = 'round'; c.lineCap = 'round';
   srand = mulberry32(4100 + variant * 131 + size.charCodeAt(0) * 7);
@@ -169,7 +169,10 @@ function drawRock(c, x, y, o, i) {
   let size = rockSizeOf(o.n);
   if (((h >>> 17) % 3) === 0) size = size === 'L' ? 'M' : 'S';
   const S = ROCK_SIZES[size];
-  const spr = rockSprite(size, h % ROCK_VARIANTS);
+  const variant = h % ROCK_VARIANTS, key = size + variant;
+  const cached = ROCK_SPR[key];
+  if (!cached && R.inFrame && R.cam.z <= 1 && spriteDefer('rock:' + key, () => rockSprite(size, variant))) return false;
+  const spr = cached || rockSprite(size, variant);
   // родной пиксельный масштаб, без сглаживания: дробный масштаб 0,82–1,11 со сглаживанием мылил грани (разнообразие — размеры, варианты, отражение)
   const sc = 1;
   let bx = x * TILE + 16 + ((h >>> 5) % 15) - 7, by = y * TILE + 26 + ((h >>> 9) % 11) - 5;

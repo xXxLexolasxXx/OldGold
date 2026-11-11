@@ -326,8 +326,11 @@ const CR_FRAMES = {};
 let CR_N = 12;
 const crFrames = kind => CR_FRAMES[kind] || 12;
 
+function creatureKey(kind, f, load, n = 1, view = 'E') {
+  return kind + '|' + f + '|' + (load || '') + '|' + n + '|' + view;
+}
 function creatureSprite(kind, f, load, n = 1, view = 'E') {
-  const key = kind + '|' + f + '|' + (load || '') + '|' + n + '|' + view;
+  const key = creatureKey(kind, f, load, n, view);
   let cv = CR_CACHE.get(key);
   if (cv) return cv;
   const [w, h, ax, ay] = CR_SIZE[kind];
@@ -345,7 +348,15 @@ function creatureSprite(kind, f, load, n = 1, view = 'E') {
 function drawCreatureAt(c, kind, px, py, face, moving, phase, load, n, view = 'E') {
   if (kind === 'chicken' && load && load[0] === 'B') { kind = 'henbuff'; load = load.slice(1); moving = false; }   // месть кур: на накачанных ногах
   const f = moving ? Math.floor(phase * crFrames(kind) / 4) % crFrames(kind) : null;   // период шага прежний (4), кадров больше
-  const spr = creatureSprite(kind, f, load, n, view);
+  const key = creatureKey(kind, f, load, n, view);
+  let spr = CR_CACHE.get(key);
+  if (kind !== 'wolf' && !spr && R.inFrame && R.cam.z <= 1 && spriteDefer('creature:' + key, () => creatureSprite(kind, f, load, n, view))) {
+    for (let phase = 0; phase < crFrames(kind) && !spr && f !== null; phase++) {
+      spr = CR_CACHE.get(creatureKey(kind, phase, load, n, view));
+    }
+    if (!spr) return;
+  }
+  spr ||= creatureSprite(kind, f, load, n, view);
   const [w, h, ax, ay] = CR_SIZE[kind];
   c.fillStyle = 'rgba(10,8,4,0.3)';
   c.beginPath(); c.ellipse(px + 1, py, w * 0.32, 2.2, 0, 0, 7); c.fill();

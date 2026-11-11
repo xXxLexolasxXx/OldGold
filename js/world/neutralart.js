@@ -181,6 +181,8 @@ const NA_CACHE_PX = 24e6;          // предел пикселей в кэше 
 let naCachePx = 0;
 function naHash(a, b) { const n = Math.sin(a * 127.1 + b * 311.7 + 374.5) * 43758.5453; return n - Math.floor(n); }
 
+const pendingNeutralFrame = document.createElement('canvas');
+pendingNeutralFrame.width = pendingNeutralFrame.height = 1;
 function naFrame(kind, fr) {
   const key = kind + '|' + fr;
   let s = naCache.get(key);
@@ -190,6 +192,10 @@ function naFrame(kind, fr) {
   const heavy = typeof heavyBuildOk === 'function' && typeof R !== 'undefined' && R.inFrame;
   if (heavy) {
     const fb = naNear(kind, fr);
+    if (R.cam.z <= 1 && spriteDefer('neutral:' + key, () => naFrame(kind, fr))) {
+      const {w, h, ax, ay} = NA_SPEC[kind];
+      return fb || { cv: pendingNeutralFrame, w, h, ax, ay, hi: true };
+    }
     if (fb && (!heavyBuildOk(true) || !spriteBudgetOk(true))) return fb;
   }
   const t0 = performance.now();
@@ -754,6 +760,11 @@ function naLairSprite(kind, v = '0') {
   const key = kind + v;
   let s = naLairCache.get(key);
   if (s) return s;
+  if (typeof R !== 'undefined' && R.inFrame && R.cam.z <= 1 &&
+      spriteDefer('lair:' + key, () => naLairSprite(kind, v))) {
+    const alternate = v === '0' ? '1' : v === '1' ? '0' : v;
+    return naLairCache.get(kind + alternate) || { cv: pendingNeutralFrame, ax: 0, ay: 0 };
+  }
   const S = NA_LAIR[kind], sample = S.fine ? 2 : 3;
   const [cv, c] = mkSprite(S.w, S.h, (S.fine || 1) * sample);
   c.lineCap = 'round'; c.lineJoin = 'round';

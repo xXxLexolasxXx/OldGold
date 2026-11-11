@@ -507,10 +507,11 @@ const YARD_K = 0.78;   // гномы во дворах зданий чуть м�
 // уходит в общую очередь (spriteDefer, people.js), а пока рисуется прошлая.
 const FOLK_LAST = new Map();
 function folkSprite(u, view, pose, frame, opt) {
+  u._decorativeSprite = true;
   const fk = u.type + '|' + u.look;
   if (!u._spr) u._spr = FOLK_LAST.get(fk) || null;
   const sp = personSprite(u, view, pose, frame, opt || {});
-  if (sp) { if (FOLK_LAST.size > 400) FOLK_LAST.clear(); FOLK_LAST.set(fk, sp); }
+  if (sp && !sp._pendingSprite) { if (FOLK_LAST.size > 400) FOLK_LAST.clear(); FOLK_LAST.set(fk, sp); }
   return sp;
 }
 function drawFolk(c, u, x, y, view, pose, frame, opt, flip) {

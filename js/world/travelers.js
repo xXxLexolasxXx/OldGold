@@ -663,6 +663,7 @@ function tvWildKey(T) { return T.wk || (T.k.startsWith('wt_') ? 'wt:' + T.k.slic
 function tvEmoCanvas(k, key) {
   const ck = k + '|' + key;
   if (TV_EMO_CV[ck]) return TV_EMO_CV[ck];
+  if (R.inFrame && R.cam.z <= 1 && spriteDefer('wild-portrait:' + ck, () => tvEmoCanvas(k, key))) return null;
   const E = TV_EMO[k], cv = document.createElement('canvas'), W = 34, M = W / 2;
   cv.width = W; cv.height = W;
   const c = cv.getContext('2d');
@@ -687,7 +688,8 @@ function tvDrawEmo(c, k, X, Y, big, key) {
   const bob = Math.round(Math.sin(Game.time * 3 + X * 0.1) * 1.5);
   c.save();
   c.imageSmoothingEnabled = true;
-  c.drawImage(tvEmoCanvas(k, key || 'wanderer'), Math.round(X - w / 2), Math.round(Y - w / 2 + bob), w, w);
+  const portrait = tvEmoCanvas(k, key || 'wanderer');
+  if (portrait) c.drawImage(portrait, Math.round(X - w / 2), Math.round(Y - w / 2 + bob), w, w);
   c.restore();
 }
 

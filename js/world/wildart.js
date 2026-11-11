@@ -524,10 +524,16 @@ function wildLook(D) {
   };
 }
 // view: S/N/E; pose: idle (0..5) | walk (0..7) | fight (кадры FIGHT_FRAMES); opt: gest/gf/wpn. Холст — как у personSprite (26×38 мировых px, ступни в 13,35)
+const wildMotionFrames = new Map();
 function wildSprite(key, view, pose, frame, opt = {}) {
   const D = wildDesc(key), ck = `${key}|${view}${pose}${frame}|${opt.gest || ''}${opt.gf || ''}|${opt.wpn === undefined ? '' : opt.wpn}|${opt.gait || ''}`;
   let cv = WILD_CACHE.get(ck);
   if (cv) { WILD_CACHE.delete(ck); WILD_CACHE.set(ck, cv); return cv; }
+  const motion = [key,view,pose,opt.gest,opt.wpn,opt.gait,WILD_STYLE].join('|');
+  if (R.inFrame && R.cam.z <= 1 && pose !== 'fight' &&
+      spriteDefer('wild:' + ck, () => wildSprite(key, view, pose, frame, opt))) {
+    return WILD_CACHE.get(wildMotionFrames.get(motion)) || null;
+  }
   if (typeof R !== 'undefined' && typeof spriteBudgetOk === 'function' && !spriteBudgetOk(!!WILD_LAST[key])) return WILD_LAST[key];
   if (!PEOPLE_SCRATCH) PEOPLE_SCRATCH = mkScratch(PW, PH, PS);
   const [c2, ctx] = PEOPLE_SCRATCH;
@@ -541,6 +547,8 @@ function wildSprite(key, view, pose, frame, opt = {}) {
   cv = toPixelArt(c2, PS / PART, { outline: true, outlineDark: 0.36, alphaCut: 105 });
   if (WILD_CACHE.size >= WILD_CACHE_MAX) WILD_CACHE.delete(WILD_CACHE.keys().next().value);
   WILD_CACHE.set(ck, cv);
+  if (wildMotionFrames.size >= WILD_CACHE_MAX) wildMotionFrames.delete(wildMotionFrames.keys().next().value);
+  wildMotionFrames.set(motion, ck);
   WILD_LAST[key] = cv;
   return cv;
 }

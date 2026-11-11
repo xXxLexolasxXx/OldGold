@@ -195,6 +195,12 @@ function ocShoreStrip(k, m) {
   const c0 = (b(-1, -1) + b(0, -1) + b(-1, 0) + b(0, 0)) / 4, c1 = (b(0, -1) + b(1, -1) + b(0, 0) + b(1, 0)) / 4;
   const c2 = (b(-1, 0) + b(0, 0) + b(-1, 1) + b(0, 1)) / 4, c3 = (b(0, 0) + b(1, 0) + b(0, 1) + b(1, 1)) / 4;
   const put = (o, c, a = 255) => { D[o] = c[0]; D[o + 1] = c[1]; D[o + 2] = c[2]; D[o + 3] = a; };
+  const fronts = Array.from({length: OC_FR}, (_, f) => {
+    const phase = 0.5 + 0.5 * Math.sin(f / OC_FR * Math.PI * 2);
+    const front = 0.48 - 0.08 * phase;
+    return [front, front - 0.05 - 0.06 * (1 - phase)];
+  });
+  const wetAlpha = Math.round(wet[3] * 255);
   for (let py = 0; py < TILE; py++) for (let px = 0; px < TILE; px++) {
     const fx = (px + 0.5) / TILE, fy = (py + 0.5) / TILE;
     const w = (c0 + (c1 - c0) * fx) * (1 - fy) + (c2 + (c3 - c2) * fx) * fy + (ocH(px * 3 + (m & 511), py) - 0.5) * 0.05;
@@ -202,8 +208,7 @@ function ocShoreStrip(k, m) {
     const peb = sand && w > 0.27 && w < 0.43 && hh < 0.05;      // галька на сухом песке — во всех кадрах
     for (let f = 0; f < OC_FR; f++) {
       const o = (py * TILE * OC_FR + f * TILE + px) * 4;
-      const s = 0.5 + 0.5 * Math.sin(f / OC_FR * Math.PI * 2);   // накат 0..1
-      const front = 0.48 - 0.08 * s;                              // кромка пены заходит на песок и отступает
+      const [front, wetEdge] = fronts[f];
       if (w >= front && w < front + 0.045) { put(o, FOAM); continue; }
       if (w >= front + 0.045 && w < front + 0.09) { if (hh < 0.55) put(o, FOAM2); continue; }
       if (w >= 0.56 && w < 0.95) {                                 // рябь бежит к берегу: светлые штрихи
@@ -211,7 +216,7 @@ function ocShoreStrip(k, m) {
         if (r < 0.1 && hh > 0.25) put(o, w < 0.68 ? HI : RIM);
         continue;
       }
-      if (w < front && w > front - 0.05 - 0.06 * (1 - s) && sand) { put(o, [wet[0], wet[1], wet[2]], Math.round(wet[3] * 255)); continue; }   // мокрый песок за отступившей волной
+      if (w < front && w > wetEdge && sand) { put(o, wet, wetAlpha); continue; }   // мокрый песок за отступившей волной
       if (peb) put(o, PEB[Math.floor(hh * 60) % 3]);
     }
   }
@@ -278,6 +283,30 @@ const oceanStorm = () => (typeof WX !== 'undefined' ? Math.max(0, (WX.k - 0.55) 
 // на окно клеток вокруг камеры; каждый кадр — два больших блита со смешением по альфе. Окно перерисовывается при
 // смене кадра (один холст) или когда камера ушла за его край (оба). Совсем отдалённая камера (огромное окно) — по клеткам.
 const OC_WIN_STEP = 4, OC_WIN_MAXPX = 2600000;
+const OC_SHORE_PENDING = new Map();
+let ocShoreScheduled = false;
+function ocShoreReady(k, m) {
+  const key = k * 4096 + m;
+  const tile = OCN.shore.get(key);
+  if (tile) return tile;
+  OC_SHORE_PENDING.set(key, [k, m]);
+  if (!ocShoreScheduled) {
+    ocShoreScheduled = true;
+    setTimeout(ocWarmShore, 16);
+  }
+  return null;
+}
+function ocWarmShore() {
+  const end = performance.now() + 4;
+  for (const [key, [k, m]] of OC_SHORE_PENDING) {
+    OC_SHORE_PENDING.delete(key);
+    ocShoreStrip(k, m);
+    if (performance.now() >= end) break;
+  }
+  if (OCN.cache) OCN.cache.f.fill(-1);
+  if (OC_SHORE_PENDING.size) setTimeout(ocWarmShore, 16);
+  else ocShoreScheduled = false;
+}
 function ocPaintTiles(c, O, f, wx0, wy0, wx1, wy1, eco, ox, oy) {
   const W = MAP_W, kind = O.kind, dep = O.dep, m9 = O.m9;
   for (let y = wy0; y <= wy1; y++) for (let x = wx0; x <= wx1; x++) {
@@ -287,7 +316,7 @@ function ocPaintTiles(c, O, f, wx0, wy0, wx1, wy1, eco, ox, oy) {
       c.globalAlpha = k === OC_SWAMP ? 0.6 : 0.9;
       c.drawImage(ocWaveStrip(k, layer, (x * 7 + y * 13) & 3), f * TILE, 0, TILE, TILE, x * TILE - ox, y * TILE - oy, TILE, TILE);
     }
-    if (m && !(eco && ((x + y) & 1) && !k)) { c.globalAlpha = 1; c.drawImage(ocShoreStrip(k || O.near[i] || OC_LAKE, m), f * TILE, 0, TILE, TILE, x * TILE - ox, y * TILE - oy, TILE, TILE); }
+    if (m && !(eco && ((x + y) & 1) && !k)) { c.globalAlpha = 1; const shore = ocShoreReady(k || O.near[i] || OC_LAKE, m); if (shore) c.drawImage(shore, f * TILE, 0, TILE, TILE, x * TILE - ox, y * TILE - oy, TILE, TILE); }
   }
   c.globalAlpha = 1;
 }
@@ -297,7 +326,7 @@ function ocPaintTilesDirect(c, O, f, x0, y0, x1, y1, eco) {
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const i = y * W + x, k = kind[i], m = m9[i];
     if (k && dep[i] >= 2) { c.globalAlpha = base * (k === OC_SWAMP ? 0.6 : 0.9); c.drawImage(ocWaveStrip(k, dep[i] >= 4 && k !== OC_RIVER && k !== OC_POND ? 2 : 1, (x * 7 + y * 13) & 3), f * TILE, 0, TILE, TILE, x * TILE, y * TILE, TILE, TILE); }
-    if (m && !(eco && ((x + y) & 1) && !k)) { c.globalAlpha = base; c.drawImage(ocShoreStrip(k || O.near[i] || OC_LAKE, m), f * TILE, 0, TILE, TILE, x * TILE, y * TILE, TILE, TILE); }
+    if (m && !(eco && ((x + y) & 1) && !k)) { c.globalAlpha = base; const shore = ocShoreReady(k || O.near[i] || OC_LAKE, m); if (shore) c.drawImage(shore, f * TILE, 0, TILE, TILE, x * TILE, y * TILE, TILE, TILE); }
   }
   c.globalAlpha = base;
 }
@@ -347,7 +376,7 @@ function oceanDraw(c, x0, y0, x1, y1) {
     let painted = 0;
     for (const f of need) {
       if (C.f.includes(f)) continue;
-      if (far && painted) continue;   // второй новый кадр — в следующий раз, пока смешиваем с тем, что есть
+      if (painted) continue;   // второй новый кадр — в следующий раз, пока смешиваем с тем, что есть
       let slot = C.f.indexOf(-1);
       if (slot < 0) slot = C.f.findIndex(v => v !== f0 && v !== f1);   // занимаем холст с ненужным кадром
       const cv = ocCacheCv(slot, Math.round(pw * k), Math.round(ph * k)), g = cv.getContext('2d');

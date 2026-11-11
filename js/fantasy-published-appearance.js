@@ -101,6 +101,7 @@
   masks.set(key,info);
   return info;
  }
+ const pendingDecorativeSprite=mkCanvas(1,1);pendingDecorativeSprite._pendingSprite=true;
  function render(u,view='S',pose='idle',frame=0,opt={}){if(view==='W')view='E';if(!u||!OUTFIT[u.type])return previous(u,view,pose,frame,opt);const q=resolve(u),G=geometry(q,view,pose,frame,opt);if(!G)return previous(u,view,pose,frame,opt);const ap=q.app,explicit=i=>!!ap&&ap[i]>=0,cls=typeof q.O.cap==='string'&&q.O.cap.startsWith('cls:'),hairChange=q.sex==='f'&&explicit(11),beardChange=q.sex!=='f'&&!q.L.noBeard&&(explicit(3)||explicit(4)||explicit(5)||explicit(13)),capChange=true,capeChange=explicit(14),special=capChange||beardChange||hairChange||capeChange;
   const {gf,...options}=opt,candle=capChange&&q.O.candle?Math.floor(Game.time*5)%4:0;
   const motion=JSON.stringify([q.holder.type,q.look,q.sex,view,pose,frame?.anim,options,u.carry,u.carryN,u.injury,candle]);
@@ -112,9 +113,9 @@
   const fallback=canDefer?cache.get(lastFrame.get(motion)):null;
   // A queued frame can reuse another phase of the same action and costume.
   // It never substitutes idle for a swing or a different tool/view.
-  if(R.inFrame&&fallback){
+  if(R.inFrame&&(fallback||u._decorativeSprite||(R.cam.z<=1&&canDefer))){
    const snapshot={...u,_spr:null};
-   if(spriteDefer('fpa:'+key,()=>render(snapshot,view,pose,frame,opt)))return fallback;
+   if(spriteDefer('fpa:'+key,()=>render(snapshot,view,pose,frame,opt)))return fallback||pendingDecorativeSprite;
   }
   if(R.inFrame)spriteBudgetOk(false);
   const t0=performance.now();

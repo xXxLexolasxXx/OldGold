@@ -4,12 +4,14 @@
 (() => {
  'use strict';
  if(window.FantasyPublishedWildfolk)return;
- const nativeSprite=wildSprite,cache=new Map();let enabled=true;
+ const nativeSprite=wildSprite,cache=new Map(),lastMotion=new Map();let enabled=true;
  const accepts=key=>key==='brigand'||key==='brigand!'||key.startsWith('chief:');
  const clamp=t=>Math.max(0,Math.min(1,t));
  const blend=(a,b,t)=>{const x=hexToRgb(a),y=hexToRgb(b);return '#'+x.map((v,i)=>Math.round(v+(y[i]-v)*t).toString(16).padStart(2,'0')).join('')};
  function sprite(key,view,pose,frame,opt={}){
   const ck=[key,view,pose,JSON.stringify(frame),opt.gest,opt.gf,opt.wpn,opt.gait,WILD_STYLE].join('|');if(cache.has(ck))return cache.get(ck);
+  const motion=[key,view,pose,opt.gest,opt.wpn,opt.gait,WILD_STYLE].join('|');
+  if(R.inFrame&&R.cam.z<=1&&pose!=='fight'&&spriteDefer('wild-fantasy:'+ck,()=>sprite(key,view,pose,frame,opt)))return cache.get(lastMotion.get(motion))||null;
   const D=wildDesc(key),chief=!!D.chief,back=view==='N',side=view==='E',evil=!!D.evil;
   const [cv,c]=mkSprite(PW,PH,4);c.translate(PFX,PFY);c.lineCap='round';c.lineJoin='round';
   const ink='#302b25',skin=SKINS[D.skin]||SKINS[3],coat=blend(D.coat,'#8a7353',.15),coatD=shade(coat,-.3),coatL=shade(coat,.23),beard=D.bcol,beardD=shade(beard,-.35),beardL=blend(beard,'#f0d8aa',.25),leather=D.strap||'#5b3e29',gold=chief?'#c6a05b':'#a58b64',shine='#e8d3a1';
@@ -89,7 +91,7 @@
   if(parts[1]==='wshield'){const x=backHand[0],y=backHand[1];volume(x,y,2.6,3.1,leather);for(const dx of[-1,0,1])line(x+dx,y-2.3,x+dx,y+2.3,.25,shade(leather,-.4));line(x-2,y-1,x+2,y-1,.6,'#8f958c');volume(x,y,.7,.7,'#afb2a0')}
   if(fighting&&fightKey(frame)==='hurt'){c.globalCompositeOperation='source-atop';c.fillStyle='rgba(255,233,193,.2)';c.fillRect(-PFX,-PFY,PW,PH);c.globalCompositeOperation='source-over'}
   c.restore();
-  const out=toPixelArt(cv,2,{outline:false,alphaCut:105});out.fine=2;out.fantasyWildfolk=true;if(cache.size>=700)cache.delete(cache.keys().next().value);cache.set(ck,out);return out;
+  const out=toPixelArt(cv,2,{outline:false,alphaCut:105});out.fine=2;out.fantasyWildfolk=true;if(cache.size>=700)cache.delete(cache.keys().next().value);cache.set(ck,out);if(lastMotion.size>=700)lastMotion.delete(lastMotion.keys().next().value);lastMotion.set(motion,ck);return out;
  }
  wildSprite=function(key,view,pose,frame,opt){return enabled&&accepts(key)?sprite(key,view,pose,frame,opt):nativeSprite(key,view,pose,frame,opt)};
  window.FantasyPublishedWildfolk={version:1,nativeSprite,sprite,accepts,cache,setEnabled(value){enabled=!!value},get enabled(){return enabled},settings:{fine:2,worldPixelStep:.5,logical:[PW,PH],anchor:[PFX,PFY]}};

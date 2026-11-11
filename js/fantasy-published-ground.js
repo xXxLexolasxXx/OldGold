@@ -4,7 +4,7 @@
 (() => {
   if (window.FantasyPublishedGround) return;
   const finished = new WeakMap();
-  let generation=-1, baked=new Set(), shore=new Map();
+  let generation=-1, shore=new Map();
   const info = window.FantasyPublishedGround = {version:1,bands:0,pixels:0,finished};
   // Carry the approved old village's warm sand and restrained shoreline foam into
   // native biome palettes. Winter keeps its snow/ice ramp; coastal ocean survives.
@@ -14,45 +14,42 @@
     p.sand = p.sand.map((v,i)=>Math.round(v*(1-amount)+[183,166,119][i]*amount));
     p.foamK *= .55;
   }
-  function finish(b,bi,fresh=false) {
+  // Let terrain generation yield between batches before the finished band becomes visible.
+  function* finish(b) {
     if (!b || !b.cv.width || finished.get(b.cv)===TERR.gen) return;
-    if(generation!==TERR.gen){generation=TERR.gen;baked=new Set();shore=new Map();}
-    if(!fresh&&baked.has(bi)){finished.set(b.cv,TERR.gen);return;}
+    if(generation!==TERR.gen){generation=TERR.gen;shore=new Map();}
+
     const cv=b.cv,c=cv.getContext('2d',{willReadFrequently:true}),im=c.getImageData(0,0,cv.width,cv.height),d=im.data;
     let n=0,wet=0;
     const width=cv.width, snow=biomePal().snow;
     function nearby(tx,ty){const key=idx(tx,ty);if(shore.has(key))return shore.get(key);const out=[];for(let yy=ty-1;yy<=ty+1;yy++)for(let xx=tx-1;xx<=tx+1;xx++)if(inb(xx,yy)&&World.terrain[idx(xx,yy)]===T_WATER)out.push([xx*TILE,yy*TILE]);shore.set(key,out);return out;}
     // Compress the old electric green ramp into quiet moss/fern colours. Keep
     // native biome patches, flowers, rock, ocean water and snow recognisable.
-    for(let i=0;i<d.length;i+=4) {
-      const r=d[i],g=d[i+1],bl=d[i+2];
-      if(g>r*1.13 && g>bl*1.18 && g>42 && bl<145) {
-        d[i]=Math.round((r*.72+13)/6)*6;
-        d[i+1]=Math.round((g*.72+20)/6)*6;
-        d[i+2]=Math.round((bl*.72+13)/6)*6;n++;
-      } else if(!snow&&r>g*1.04&&g>bl*1.16&&r>100&&r<236){
-        // Damp sand follows the real shoreline and fades inland. It uses only
-        // the painted beach ramp; geography and water/ecology arrays are read-only.
-        const px=(i/4)%width,py=Math.floor(i/4/width)+b.y0,tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
-        let dist=1e9;for(const [wx,wy]of nearby(tx,ty)){const dx=Math.max(wx-px,0,px-wx-TILE),dy=Math.max(wy-py,0,py-wy-TILE);dist=Math.min(dist,Math.hypot(dx,dy));}
-        const amount=(1-smoothstep(0,22,dist))*.26;
-        if(amount>0){d[i]=Math.round((r+(139-r)*amount)/6)*6;d[i+1]=Math.round((g+(128-g)*amount)/6)*6;d[i+2]=Math.round((bl+(94-bl)*amount)/6)*6;wet++;}
+    const chunk = width * 4 * 8;
+    for(let start=0;start<d.length;start+=chunk) {
+      yield;
+      for(let i=start;i<Math.min(start+chunk,d.length);i+=4) {
+        const r=d[i],g=d[i+1],bl=d[i+2];
+        if(g>r*1.13 && g>bl*1.18 && g>42 && bl<145) {
+          d[i]=Math.round((r*.72+13)/6)*6;
+          d[i+1]=Math.round((g*.72+20)/6)*6;
+          d[i+2]=Math.round((bl*.72+13)/6)*6;n++;
+        } else if(!snow&&r>g*1.04&&g>bl*1.16&&r>100&&r<236){
+          // Damp sand follows the real shoreline and fades inland. It uses only
+          // the painted beach ramp; geography and water/ecology arrays are read-only.
+          const px=(i/4)%width,py=Math.floor(i/4/width)+b.y0,tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
+          let dist=1e9;for(const [wx,wy]of nearby(tx,ty)){const dx=Math.max(wx-px,0,px-wx-TILE),dy=Math.max(wy-py,0,py-wy-TILE);dist=Math.min(dist,Math.hypot(dx,dy));}
+          const amount=(1-smoothstep(0,22,dist))*.26;
+          if(amount>0){d[i]=Math.round((r+(139-r)*amount)/6)*6;d[i+1]=Math.round((g+(128-g)*amount)/6)*6;d[i+2]=Math.round((bl+(94-bl)*amount)/6)*6;wet++;}
+        }
       }
     }
+    yield;
     info.shorePixels=(info.shorePixels||0)+wet;
     if(n||wet)c.putImageData(im,0,0);
-    finished.set(cv,TERR.gen);baked.add(bi);info.bands++;info.pixels+=n;
+    finished.set(cv,TERR.gen);info.bands++;info.pixels+=n;
   }
-  const done=terrBandDone;
-  terrBandDone=function(j,bi){const result=done(j,bi);finish(TERR.bands[bi],bi,true);return result;};
-  // Compressed PNG restore bypasses terrBandDone; a restored canvas is new and
-  // finishes once here. This also supports injecting the art into an open game.
-  const draw=terrDraw;
-  terrDraw=function(c,cam,vw,vh){
-    const bh=TBAND*TILE,a=Math.max(0,Math.floor(cam.y/bh)-1),z=Math.min(TERR.bands.length-1,Math.ceil((cam.y+vh)/bh)+1);
-    for(let i=a;i<=z;i++)finish(TERR.bands[i],i);
-    return draw(c,cam,vw,vh);
-  };
+  info.finishBand=finish;
 })();
 
 // 0.12 ground-cover pass. World terrain/resources/biome assignment are read-only.
@@ -145,14 +142,14 @@
 
 // New hand-clustered ground carpet. Replaces the previous flat field/soil finish.
 (() => {
-  const marks=new WeakMap();let generation=-1,baked=new Set();
+  const marks=new WeakMap();
   const clamp=v=>Math.max(0,Math.min(255,Math.round(v)));
-  function material(b,bi,fresh=false){
+  function* material(b){
     if(!b||!b.cv.width||marks.get(b.cv)===TERR.gen)return;
-    if(generation!==TERR.gen){generation=TERR.gen;baked=new Set();}
-    if(!fresh&&baked.has(bi)){marks.set(b.cv,TERR.gen);return;}
+
+
     const cv=b.cv,w=cv.width,H=cv.height,c=cv.getContext('2d',{willReadFrequently:true});
-    if(biomePal().snow){marks.set(cv,TERR.gen);baked.add(bi);return;}
+    if(biomePal().snow){marks.set(cv,TERR.gen);return;}
     const im=c.getImageData(0,0,w,H),d=im.data,seed=Game.seed|0;
     const themes={meadow:[73,109,57],forest:[49,83,44],steppe:[142,132,78],mountain:[82,98,66],swamp:[57,77,47],coast:[78,115,60]};
     const center=themes[MapOpt.biome]||themes.meadow;
@@ -161,21 +158,25 @@
     function pigment(x,y){const ix=x>>3,iy=y>>3,fx=(x&7)/8,fy=(y&7)/8,i=iy*gw+ix;return (field[i]*(1-fx)+field[i+1]*fx)*(1-fy)+(field[i+gw]*(1-fx)+field[i+gw+1]*fx)*fy;}
     const alpha=new Uint8Array(w*H);
     // The cell map is read-only. Native coast/rock blends survive at their borders.
-    for(let y=0;y<H;y++)for(let x=0;x<w;x++){
-      const wy=y+b.y0,tx=x>>5,ty=wy>>5,i=idx(tx,ty);if(World.terrain[i]!==T_GRASS)continue;
-      let a=1;const px=x&31,py=wy&31;
-      if(ty>0&&World.terrain[i-MAP_W]!==T_GRASS)a=Math.min(a,smoothstep(1,13,py));
-      if(ty<MAP_H-1&&World.terrain[i+MAP_W]!==T_GRASS)a=Math.min(a,smoothstep(1,13,31-py));
-      if(tx>0&&World.terrain[i-1]!==T_GRASS)a=Math.min(a,smoothstep(1,13,px));
-      if(tx<MAP_W-1&&World.terrain[i+1]!==T_GRASS)a=Math.min(a,smoothstep(1,13,31-px));
-      alpha[y*w+x]=Math.round(a*255);if(!a)continue;
-      const tone=pigment(x&~1,y&~1),o=(y*w+x)*4;
-      for(let q=0;q<3;q++){const v=center[q]+tone*(q===1?1:.7);d[o+q]=clamp(d[o+q]*(1-a)+v*a);}
+    for(let y=0;y<H;y++){
+      if((y&7)===0)yield;
+      for(let x=0;x<w;x++){
+        const wy=y+b.y0,tx=x>>5,ty=wy>>5,i=idx(tx,ty);if(World.terrain[i]!==T_GRASS)continue;
+        let a=1;const px=x&31,py=wy&31;
+        if(ty>0&&World.terrain[i-MAP_W]!==T_GRASS)a=Math.min(a,smoothstep(1,13,py));
+        if(ty<MAP_H-1&&World.terrain[i+MAP_W]!==T_GRASS)a=Math.min(a,smoothstep(1,13,31-py));
+        if(tx>0&&World.terrain[i-1]!==T_GRASS)a=Math.min(a,smoothstep(1,13,px));
+        if(tx<MAP_W-1&&World.terrain[i+1]!==T_GRASS)a=Math.min(a,smoothstep(1,13,31-px));
+        alpha[y*w+x]=Math.round(a*255);if(!a)continue;
+        const tone=pigment(x&~1,y&~1),o=(y*w+x)*4;
+        for(let q=0;q<3;q++){const v=center[q]+tone*(q===1?1:.7);d[o+q]=clamp(d[o+q]*(1-a)+v*a);}
+      }
     }
     const ink=(x,y,rgb)=>{x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=w||y>=H)return;const a=alpha[y*w+x]/255;if(a<.9)return;const o=(y*w+x)*4;for(let q=0;q<3;q++)d[o+q]=clamp(d[o+q]*(1-a)+rgb[q]*a);};
     const shift=(base,r,g,b)=>[base[0]+r,base[1]+g,base[2]+b];
     // Every tile has its own deterministic brush seed; borders do not repeat.
     for(let ty=Math.max(0,Math.floor(b.y0/TILE)-1);ty<=Math.min(MAP_H-1,Math.floor((b.y0+H)/TILE));ty++)for(let tx=0;tx<MAP_W;tx++){
+      if((tx&15)===0)yield;
       const i=idx(tx,ty);if(World.terrain[i]!==T_GRASS)continue;
       const r=mulberry32((hash(i+seed)^0x6e31)>>>0),ox=tx*TILE,oy=ty*TILE-b.y0;
       const base=shift(center,pigment(ox+15,Math.max(0,Math.min(H-1,oy+16)))*.7,pigment(ox+15,Math.max(0,Math.min(H-1,oy+16))),0);
@@ -250,12 +251,17 @@
       // Rare little seed/flower heads are grouped accents, not confetti.
       if(r()<.055){const x=ox+5+r()*21,y=oy+6+r()*21;ink(x,y+1,shift(base,-9,-9,-4));ink(x,y,[205,195,129]);ink(x-1,y-1,[227,218,166]);ink(x,y-1,[238,226,174]);}
     }
+    yield;
     c.putImageData(im,0,0);
     if(TERR.mini&&TERR.mini.width){
       TERR.mini.getContext('2d').drawImage(cv,0,b.y0/TILE*3,MAP_W*3,H/TILE*3);
     }
-    marks.set(cv,TERR.gen);baked.add(bi);
+    marks.set(cv,TERR.gen);
   }
-  const done=terrBandDone;terrBandDone=function(j,bi){const result=done(j,bi);material(TERR.bands[bi],bi,true);return result;};
-  const draw=terrDraw;terrDraw=function(c,cam,vw,vh){const bh=TBAND*TILE;for(let i=Math.max(0,Math.floor(cam.y/bh)-1);i<=Math.min(TERR.bands.length-1,Math.ceil((cam.y+vh)/bh)+1);i++)material(TERR.bands[i],i);return draw(c,cam,vw,vh);};
+  const ground = window.FantasyPublishedGround;
+  const finish = ground.finishBand;
+  ground.finishBand = function* (band) {
+    yield* finish(band);
+    yield* material(band);
+  };
 })();

@@ -3,6 +3,7 @@
  const K=2, VIEWS=['S','SE','E','NE','N'];
  const previousSprite=creatureSprite, previousAt=drawCreatureAt;
  const cache=new Map(), parts=new Map(), facing=new WeakMap();
+ const pendingFrame=mkCanvas(1,1);
  const cargoCache=new Map();
  const cargoWidth=8, maxCargoEntries=64, maxSpriteEntries=256;
  const [w,h,ax,ay]=CR_SIZE.wolf;
@@ -169,6 +170,14 @@
    const [v,flip]=canonical(view), frame=f==null?null:((f|0)%12+12)%12;
    const key=[v,flip,frame,load||''].join('|');
    if(cache.has(key)){const hit=cache.get(key);cache.delete(key);cache.set(key,hit);return hit;}
+   if(R.inFrame&&R.cam.z<=1&&spriteDefer('wolf:'+key,()=>sprite(f,load,view))){
+     const suffix='|'+(load||'');
+     for(const phase of [null,0,1,2,3,4,5,6,7,8,9,10,11]){
+       const previous=cache.get([v,flip,phase].join('|')+suffix);
+       if(previous)return previous;
+     }
+     return pendingFrame;
+   }
    const cv=mkCanvas(w*K,h*K);
    const c=cv.getContext('2d',{willReadFrequently:true});
    c.scale(K,K);c.imageSmoothingEnabled=false;
@@ -196,8 +205,10 @@
    const dir=heading(entity,face,view);
    const [v,flip]=canonical(dir);
    const result=previousAt(c,kind,x,y,flip?-1:1,moving,phase,load,n,v);
-   if(v==='E'&&load){
-     const strip=cargoOverflow(load);
+   const frame=moving?Math.floor(phase*crFrames(kind)/4)%crFrames(kind):null;
+   if(v==='E'&&load&&sprite(frame,load,v)!==pendingFrame){
+     const strip=cargoCache.get(load)||(R.inFrame&&R.cam.z<=1&&spriteDefer('wolf-cargo:'+load,()=>cargoOverflow(load))?null:cargoOverflow(load));
+     if(!strip)return result;
      c.save();
      c.translate(x,y);
      if(flip)c.scale(-1,1);

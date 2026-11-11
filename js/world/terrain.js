@@ -55,7 +55,7 @@ function terrFree() {
 // Земля и дороги в кадре: cam — {x,y}, vw/vh — размер кадра в мировых пикселях
 function terrDraw(c, cam, vw, vh) {
   const n = Math.max(TERR.bands.length, TERR.job ? TERR.job.done.length : 0), BH = TBAND * TILE;
-  const overview = devScale() <= 1 && TERR.mini;
+  const overview = R.cam.z <= 1 && TERR.mini;
   for (let i = 0; i < n; i++) {
     if (i * BH + BH < cam.y - 2 || i * BH > cam.y + vh + 2) continue;
     if (!TERR.bands[i]) {
@@ -289,7 +289,7 @@ function buildTerrain(seed) {
   const bty0 = bi * TBAND, bty1 = Math.min(MAP_H, bty0 + TBAND), y0px = bty0 * TILE, bh = (bty1 - bty0) * TILE;
   const GRASS = new Uint8Array(PW * bh);
   const cv = mkCanvas(PW, bh);
-  const ctx = cv.getContext('2d');
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
   let img = ctx.createImageData(PW, bh);
   let D = img.data;
   // биомы земли: вид и тон травы считаются по полосе заранее, цикл ниже берёт готовый цвет
@@ -404,9 +404,11 @@ function buildTerrain(seed) {
     yield* gsDecorGen(gst, D, 0, MAP_W - 1, Math.max(0, bty0 - 1), Math.min(MAP_H - 1, bty1), (tx, ty) => World.terrain[idx(tx, ty)] === T_GRASS);
     gst = null;
   } else yield* stampLeavesGen(D, PW, bh, seed + bi * 977, GRASS);
-  ctx.putImageData(img, 0, 0);
+  for (let row = 0; row < bh; row += 16) {
+    ctx.putImageData(img, 0, 0, 0, row, PW, Math.min(16, bh - row));
+    yield;
+  }
   img = null; D = null;
-  yield;
   // кусты и цветы соседних рядов заходят в полосу; у каждой клетки свой генератор — можно по ряду за раз
   for (let y = Math.max(0, bty0 - 1); y < Math.min(MAP_H, bty1 + 1); y++) {
     ctx.save(); ctx.translate(0, -y0px);
@@ -415,19 +417,24 @@ function buildTerrain(seed) {
     yield;
   }
   // палитра и дизеринг — пиксельный вид (рисунок дизера зависит от координат: полоса кратна 4 пикселям)
-  const q = ctx.getImageData(0, 0, PW, bh);
   for (let r0 = 0; r0 < bh; r0 += 4) {   // по 4 строки: рисунок дизера тот же, он считается от координат
     const rows = Math.min(4, bh - r0);
-    const qd = q.data.subarray(r0 * PW * 4, (r0 + rows) * PW * 4);
+    const q = ctx.getImageData(0, r0, PW, rows), qd = q.data;
     if (ocOn) ocQuantize(qd, PW, rows, gst0 ? 0 : 9, y0px + r0);
     else quantizeData(qd, PW, rows, gst0 ? 0 : P.snow ? 3 : 9, 0, y0px + r0);   // снег — почти без дизеринга, иначе рябит
+    ctx.putImageData(q, 0, r0);
     yield;
   }
-  ctx.putImageData(q, 0, 0);
-  TERR.bands[bi] = { cv, y0: y0px, h: bh };
+  const band = { cv, y0: y0px, h: bh };
+  const ground = globalThis.FantasyPublishedGround;
+  if (ground?.finishBand) yield* ground.finishBand(band);
+  TERR.bands[bi] = band;
   mctx.drawImage(cv, 0, bty0 * 3, MAP_W * 3, (bty1 - bty0) * 3);
   if (TERR.lazy) { const [w0, w1] = terrWindow(1); if (bi < w0 || bi > w1) { terrFreeBand(bi, true); return; } }   // миникарта уже нарисована — полоса вне кадра не нужна
-  for (let y = bty0; y < bty1; y++) for (let x = 0; x < MAP_W; x++) drawRoadTile(x, y);   // дороги этой полосы
+  for (let y = bty0; y < bty1; y++) {
+    for (let x = 0; x < MAP_W; x++) drawRoadTile(x, y);
+    yield;
+  }
   };
   buildMountains(seed);
 

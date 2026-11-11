@@ -931,14 +931,16 @@ function rowcPaint(e, y, cx0, cx1, k) {
   g.setTransform(k, 0, 0, k, -X0 * k, -Y0 * k);
   g.imageSmoothingEnabled = R.smooth; g.imageSmoothingQuality = 'low';
   // порядок как в общем списке: пни и брёвна (y+0.7), камни (y+0.8), деревья (y+0.9), внутри — слева направо
+  let ready = true;
   for (let pass = 1; pass <= 3; pass++) for (let x = cx0; x <= cx1; x++) {
     const i = idx(x, y), o = World.obj[i];
     if (rowcKind(o) !== pass) continue;
     if (pass === 1) { if (o.t === 'log') drawLog(g, x, y); else drawStump(g, x, y); }
-    else if (pass === 2) drawRock(g, x, y, o, i);
+    else if (pass === 2) { if (drawRock(g, x, y, o, i) === false) ready = false; }
     else drawTree(g, x, y, o, i);
   }
   e.X0 = X0; e.Y0 = Y0; e.w = w / k; e.h = h / k;
+  return ready;
 }
 // Подпись куска: что и как нарисовано в его клетках
 function rowcSig(y, cx0, cx1) {
@@ -983,8 +985,7 @@ function rowcPush(list, c, x0, y0, x1, y1) {
         continue;
       }
       if (!e) { e = { cv: null, sig: 0 }; ROWC.map.set(key, e); }
-      rowcPaint(e, y, ax, bx, k);
-      e.sig = sig;
+      e.sig = rowcPaint(e, y, ax, bx, k) ? sig : 0;
     }
     e.fr = fr;
     const E = e;

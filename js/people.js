@@ -1629,9 +1629,27 @@ function spriteDefer(key, build) {
   return true;
 }
 // render() зовёт в самом начале кадра: очередь по бюджету времени, недостроенное — в следующий раз
+let spriteIdleScheduled = false;
+function spriteQueueIdle() {
+  spriteIdleScheduled = false;
+  if (!SPR_QUEUE.size || R.cam.z > 1) return;
+  const [key, build] = SPR_QUEUE.entries().next().value;
+  SPR_QUEUE.delete(key);
+  try { build(); } catch (e) { console.warn('spriteQueue', e); }
+  if (SPR_QUEUE.size) scheduleSpriteQueueIdle();
+}
+function scheduleSpriteQueueIdle() {
+  if (spriteIdleScheduled) return;
+  spriteIdleScheduled = true;
+  setTimeout(() => {
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(spriteQueueIdle, { timeout: 100 });
+    else spriteQueueIdle();
+  }, 16);
+}
 function spriteQueueRun() {
   R.inFrame = false;
   if (!SPR_QUEUE.size) return;
+  if (R.cam.z <= 1) { scheduleSpriteQueueIdle(); return; }
   const t0 = performance.now();
   let n = 0;
   for (const [key, build] of SPR_QUEUE) {

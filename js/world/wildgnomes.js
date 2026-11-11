@@ -704,6 +704,21 @@ function wgDrawChiefNeu(c, N) {
   c.fillStyle = '#ffe070'; c.fillRect(X - w / 2 + Math.round(w * 0.15), hy - 1, 1, 5);      // метка «сдастся здесь»
 }
 
+const wgBuildingSprites = new Map();
+function wgBuildingSprite(type) {
+  const art = globalThis.FantasyPublishedArt;
+  const source = art?.images[type === 'bonfire' ? 'bonfire-hearth' : type];
+  const key = type + '|' + buildingEra(type, 1);
+  const cached = wgBuildingSprites.get(key);
+  if (cached && cached.source === source) return cached.sprite;
+  const build = () => {
+    const sprite = buildingSprite(type, 0, 1);
+    wgBuildingSprites.set(key, {source, sprite});
+    return sprite;
+  };
+  if (R.inFrame && R.cam.z <= 1 && spriteDefer('wild-building:' + key, build)) return cached?.sprite;
+  return build();
+}
 function wgDrawList(list, c, x0, y0, x1, y1) {
   const W = Game.wgs;
   if (!W) return;
@@ -713,7 +728,9 @@ function wgDrawList(list, c, x0, y0, x1, y1) {
     for (const [t, dx, dy] of K.b) {
       const B = BUILDINGS[t], bx = S.x + dx, by = S.y + dy;
       list.push([by + B.h - 0.05, () => {
-        const spr = buildingSprite(t, 0, 1), ox = bx * TILE - spr.padx, oy = by * TILE - spr.top;
+        const spr = wgBuildingSprite(t);
+        if (!spr) return;
+        const ox = bx * TILE - spr.padx, oy = by * TILE - spr.top;
         c.drawImage(spr.shadow, ox, oy, spr.w, spr.h);
         c.drawImage(spr.canvas, ox, oy, spr.w, spr.h);
         if (spr.fire && typeof drawBonfireFlames === 'function') drawBonfireFlames(c, ox + spr.fire[0], oy + spr.fire[1], true, S.id + dx);
