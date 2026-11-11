@@ -57,7 +57,24 @@
  function arm(c,M,P,near,carry){const r=armRig(M,P,near,carry),s=M.sockets[near?1:0],im=M.limbs[near?1:0],width=M.kind==='leshy'?4.8:M.kind==='leprechaun'?3:M.kind==='brownie'?2.8:M.kind==='enderman'?2.2:2.5;segment(c,im.upper,s,r.e,width);segment(c,im.lower,r.e,r.h,width*.85);
   if(near&&M.kind==='fairy'){const sc=NA_SPEC.fairy.sc||1,a=r.angle+.2,tip=[r.h[0]+Math.sin(a)*7.3*sc,r.h[1]+Math.cos(a)*7.3*sc];c.strokeStyle='#846744';c.lineWidth=1;c.beginPath();c.moveTo(...r.h);c.lineTo(...tip);c.stroke();c.fillStyle=P.dark?'#ac80c0':'#e5ddac';c.fillRect(tip[0]-1,tip[1]-1,2,2);if(P.cast){c.strokeStyle=c.fillStyle;c.lineWidth=.5;c.beginPath();c.ellipse(...tip,3+P.cast*7,(3+P.cast*7)*.8,0,0,7);c.stroke();}}
   if(near&&M.kind==='leshy'){const dx=Math.sin(r.angle+.15),dy=Math.cos(r.angle+.15),top=r.fighting?[r.h[0]+dx*20,r.h[1]+dy*20]:[r.h[0]+.4,r.h[1]-13],bottom=r.fighting?[r.h[0]-dx*6,r.h[1]-dy*6]:[r.h[0]+1.4+P.leg,-.4];c.strokeStyle='#60472f';c.lineWidth=2.8;c.beginPath();c.moveTo(...bottom);c.lineTo((bottom[0]+top[0])*.5+1.2,(bottom[1]+top[1])*.5);c.lineTo(...top);c.stroke();c.strokeStyle='#bc9a64';c.lineWidth=.7;c.stroke();c.fillStyle='#adc07c';c.fillRect(top[0]+.35,top[1]-2.05,2.5,2.5);}
+  if (M.kind === 'enderman' && M === models.enderman.E && carry && near) {
+    // Profile grip. The wrist origin stays at the native carry anchor.
+    c.save();
+    c.translate(...r.h);
+    c.fillStyle = '#352538';
+    c.fillRect(-1, -.5, 3.5, 2);
+    c.fillRect(0, 1.5, 2, .5);
+    c.fillStyle = '#6d5277';
+    c.fillRect(-.5, -.5, 1.5, 1.5);
+    c.fillStyle = '#a381ad';
+    c.fillRect(.5, -.5, 2, .5);
+    c.fillStyle = '#89688f';
+    c.fillRect(1, .5, 1.5, .5);
+    c.fillRect(1, 1.5, 1, .5);
+    c.restore();
+  } else {
   c.save();c.translate(...r.h);c.rotate(-r.angle);c.drawImage(im.hand,-width/2,-.6,width,width*im.hand.height/im.hand.width);c.restore();
+  }
   if(near&&M.kind==='leprechaun'&&P.ingot)lepIngot(c,r.h[0]+(P.ingot===1?1.6:1.4),r.h[1]+(P.ingot===1?-.2:-2.6),P.ingot===1?-.3:-.4,P.ingot===1?.9:1);
  }
  function leg(c,M,P,near,view){const im=M.legs[near?1:0],kind=M.kind;let f;

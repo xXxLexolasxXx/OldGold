@@ -1,12 +1,12 @@
 'use strict';
 // Офлайн-кэш OldGold. Сеть в приоритете (чтобы не залипали старые js после обновления), при обрыве — кэш.
 // Предзагрузка: index.html + все его скрипты/стили + шрифты + иконки. Кооп (/coop, /e, ws) и чужие домены не кэшируются.
-const CACHE = 'oldgold-fantasy-20261111-r5';
+const CACHE = 'oldgold-fantasy-20261111-r6';
 const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kurale-Regular.ttf', 'fonts/RuslanDisplay-Regular.ttf',
   'icons/icon-192.png', 'icons/icon-512.png', 'assets/fantasy/menu-village.png', 'assets/fantasy/frog-village-v2.png',
   'js/fantasy-frog-frequent-frames.bin.gz', 'js/fantasy-frog-rare-frames.bin.gz', 'assets/fantasy/goblin-family-frame-bank.json',
   'assets/fantasy/goblin-family-goblin.png', 'assets/fantasy/goblin-family-goblinB.png', 'assets/fantasy/goblin-family-goblinKing.png',
-  'assets/fantasy/school-inn-bank.json', 'assets/fantasy/school-inn-bank.png'];
+  'assets/fantasy/school-inn-bank.json', 'assets/fantasy/school-inn-bank.png', 'assets/fantasy/fairy-ring.png', 'assets/fantasy/leshy-stump.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil((async () => {
