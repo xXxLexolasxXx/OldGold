@@ -332,7 +332,13 @@ function fpaCarryLoad(c,u,view,pose,opt){
  }
  for(const {shoulder,grip,shade:shadow} of arms){
    const elbow=[shoulder[0]+Math.sign(grip[0])*1,shoulder[1]+2.5];
-   smoothLimb(c,shoulder,elbow,grip,2.1,shade(coat,shadow));
+   if(crop)smoothLimb(c,shoulder,elbow,grip,2.1,shade(coat,shadow));
+   else{
+     fpaSowBand(c,shoulder,elbow,5.5,'#302923');
+     fpaSowBand(c,elbow,grip,4.5,'#302923');
+     fpaSowBand(c,shoulder,elbow,4.5,shade(coat,shadow));
+     fpaSowBand(c,elbow,grip,3.5,shade(coat,shadow+.12));
+   }
  }
  c.save();
  c.translate(profile?1:back?-2.2:0,crop?24.7:25.5);
@@ -557,21 +563,26 @@ function fpaSowFist(c,grip,angle,skin,far){
  form([[-.5,.5],[1,-.25],[2,.5],[1.5,1.5],[0,1.5],[-1,1]],far?shade(skin[1],-.2):skin[1]);
 }
 function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
- return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,false,1);
+ return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,'spade',1);
 }
 const FPA_MINE_POSE_KEYS=[
  [0,0,0,3.5,-12,.55],[.21,-1,-.5,2,-15,-.45],[.43,-2,-1,1,-17,-1.25],
  [.50,2,1.5,6.5,-12,0],[.56,2,1.5,6.5,-12,0],
  [.73,1,1,4.5,-11,.75],[1,0,0,3.5,-12,.55],
 ];
-function fpaMineRig(targetX,targetY,progress){
- const keys=FPA_MINE_POSE_KEYS,index=keys.findIndex(key=>key[0]>progress);
+const FPA_AXE_POSE_KEYS=[
+ [0,0,0,3.5,-13,.45],[.20,-1,-.5,1,-16,-.9],[.43,-2,-1,-2,-18,-2.75],
+ [.50,2,1.5,3.5,-15,0],[.56,2,1.5,3.5,-15,0],
+ [.74,.5,1,4,-12,.65],[1,0,0,3.5,-13,.45],
+];
+function fpaStrikeRig(targetX,targetY,progress,keys,edgeSize){
+ const index=keys.findIndex(key=>key[0]>progress);
  const next=index<0?keys.length-1:index,a=keys[next-1],b=keys[next];
  const t=(progress-a[0])/(b[0]-a[0]),s=t*t*(3-2*t);
  const [dx,dy,hx,hy,sweep]=a.slice(1).map((v,i)=>v+(b[i+1]-v)*s);
  const [, , ,strikeX,strikeY]=keys[3];
  const reach=Math.hypot(targetX-strikeX,targetY-strikeY);
- const edge=Math.min(4.5,reach*.72),shaft=Math.sqrt(reach*reach-edge*edge);
+ const edge=Math.min(edgeSize,reach*.72),shaft=Math.sqrt(reach*reach-edge*edge);
  const swing=Math.atan2(targetY-strikeY,targetX-strikeX)-Math.atan2(edge,shaft)+sweep;
  const ux=Math.cos(swing),uy=Math.sin(swing);
  const near=[hx,hy],far=[hx-ux*5,hy-uy*5];
@@ -580,10 +591,13 @@ function fpaMineRig(targetX,targetY,progress){
  return {dx,dy,near,far,handle,socket,tip,angle:Math.atan2(ux,uy),edge,shaft};
 }
 function fpaDrawMinePose(world,u,source,px,py,face,target,progress,scale=1){
- return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,true,scale);
+ return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,'pick',scale);
 }
-let fpaMineCanvas;
-function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,mining,scale){
+function fpaDrawAxePose(world,u,source,px,py,face,target,progress){
+ return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,'axe',1);
+}
+let fpaStrikeCanvas;
+function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale){
  const snap=n=>Math.round(n*2)/2;
  const end=FPA_SOW_KEYS.findIndex(key=>key[0]>progress);
  const next=end<0?FPA_SOW_KEYS.length-1:end;
@@ -591,23 +605,25 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,mining,sca
  const t=(progress-a[0])/(b[0]-a[0]),mix=t*t*(3-2*t);
  let [dx,dy,tipX,tipY]=a.slice(1).map((v,i)=>v+(b[i+1]-v)*mix);
  const targetX=(target[0]-px)*face/scale,targetY=(target[1]-py)/scale;
- const mine=mining?fpaMineRig(targetX,targetY,progress):null;
- if(mine){dx=mine.dx;dy=mine.dy;}
+ const strike=tool==='spade'?null:tool==='pick'
+   ?fpaStrikeRig(targetX,targetY,progress,FPA_MINE_POSE_KEYS,4.5)
+   :fpaStrikeRig(targetX,targetY,progress,FPA_AXE_POSE_KEYS,3.5);
+ if(strike){dx=strike.dx;dy=strike.dy;}
  const gripLean=[snap(dx),snap(dy)];
  const lean=[snap(dx*1.65),snap(dy*1.2)];
  const aim=Math.max(0,Math.min(1,(progress-.42)/.08,(.73-progress)/.17));
- const tip=mine?.tip||[snap(tipX+(targetX-8)*aim),snap(tipY+(targetY-4.5)*aim)];
- const near=mine?.near||[snap(1.5+gripLean[0]+aim),snap(-12.5+gripLean[1]+aim)];
- const angle=mine?.angle??Math.atan2(tip[0]-near[0],tip[1]-near[1]);
+ const tip=strike?.tip||[snap(tipX+(targetX-8)*aim),snap(tipY+(targetY-4.5)*aim)];
+ const near=strike?.near||[snap(1.5+gripLean[0]+aim),snap(-12.5+gripLean[1]+aim)];
+ const angle=strike?.angle??Math.atan2(tip[0]-near[0],tip[1]-near[1]);
  const along=(point,distance)=>[snap(point[0]-distance*Math.sin(angle)),
    snap(point[1]-distance*Math.cos(angle))];
  const spacing=5+aim*1.5;
- const far=mine?.far||along(near,spacing),handle=mine?.handle||along(near,spacing+2),socket=mine?.socket||along(tip,2);
- const farBehind=far[0]<(mine?-3:-1)+gripLean[0];
- const cloth=OUTFIT[u.type].coat,leather=mine?OUTFIT[u.type].apron:'#765232',outline='#32271e';
+ const far=strike?.far||along(near,spacing),handle=strike?.handle||along(near,spacing+2),socket=strike?.socket||along(tip,2);
+ const farBehind=far[0]<(strike?-3:-1)+gripLean[0];
+ const cloth=OUTFIT[u.type].coat,leather=(strike&&OUTFIT[u.type].apron)||'#765232',outline='#32271e';
  const skin=SKINS[lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]}).skin%SKINS.length];
- const cv=mine?(fpaMineCanvas??=mkCanvas(160,130)):(fpaSowCanvas??=mkCanvas(96,90));
- const c=cv.getContext('2d'),left=mine?32:19,top=mine?54:37;
+ const cv=strike?(fpaStrikeCanvas??=mkCanvas(160,130)):(fpaSowCanvas??=mkCanvas(96,90));
+ const c=cv.getContext('2d'),left=strike?32:19,top=strike?54:37;
  c.setTransform(1,0,0,1,0,0);
  c.clearRect(0,0,cv.width,cv.height);
  c.setTransform(2,0,0,2,left*2,top*2);
@@ -625,7 +641,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,mining,sca
  const garment=(points,color)=>fpaSowPolygon(c,points.map(([x,y])=>torso(x,y)),color);
  const arm=(start,grip,dark)=>{
    const elbow=dark?[snap((start[0]+grip[0])/2-1),snap((start[1]+grip[1])/2+1)]
-     :mine?[snap((start[0]+grip[0])/2-1.6),snap((start[1]+grip[1])/2+2.5)]
+     :strike?[snap((start[0]+grip[0])/2-1.6),snap((start[1]+grip[1])/2+2.5)]
      :torso(-3.5,-11.5);
    const wrist=[snap(grip[0]+(elbow[0]-grip[0])*.43),snap(grip[1]+(elbow[1]-grip[1])*.43)];
    const hem=[start[0]+(elbow[0]-start[0])*.68,start[1]+(elbow[1]-start[1])*.68];
@@ -645,14 +661,14 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,mining,sca
    // Profile widths and half-pixel cloth clusters sampled from the standing
    // farmer. Both sleeves bend at the same elbow that drives the wrist.
    profile(dark?[6,5.5,4.5]:[6.5,6,5],'#28160c');
-   profile(dark?[5,4.5,3.5]:[5.5,5,4],mine?shade(cloth,dark?-.32:-.14):dark?'#37461d':'#566f2d');
-   const sleeveLight=mine?shade(cloth,dark?-.08:.16):dark?'#4a5f27':'#627e34';
+   profile(dark?[5,4.5,3.5]:[5.5,5,4],strike?shade(cloth,dark?-.32:-.14):dark?'#37461d':'#566f2d');
+   const sleeveLight=strike?shade(cloth,dark?-.08:.16):dark?'#4a5f27':'#627e34';
    fpaSowPolygon(c,[edge(elbow,n1,1.75),edge(wrist,n1,1.5),
      edge(wrist,n1,.5),edge(elbow,n1,.5)],sleeveLight);
    fpaSowPolygon(c,[edge(start,n0,2.5),edge(hem,n0,2.25),
-     edge(hem,n0,-2),edge(start,n0,-2.5)],mine?shade(leather,dark?-.28:0):dark?'#5c4026':'#69482b');
+     edge(hem,n0,-2),edge(start,n0,-2.5)],strike?shade(leather,dark?-.28:0):dark?'#5c4026':'#69482b');
    fpaSowPolygon(c,[edge(start,n0,2),edge(hem,n0,1.5),
-     edge(hem,n0,.5),edge(start,n0,.5)],mine?shade(leather,dark?-.1:.24):dark?'#69482b':'#714e2e');
+     edge(hem,n0,.5),edge(start,n0,.5)],strike?shade(leather,dark?-.1:.24):dark?'#69482b':'#714e2e');
    fpaSowBand(c,[hem[0]-.5,hem[1]-.5],hem,4,'#5c4026');
    const cuff=[wrist[0]+(elbow[0]-wrist[0])*.32,wrist[1]+(elbow[1]-wrist[1])*.32];
    const cuffColor=shade(cloth,dark?-.04:.34);
@@ -698,19 +714,35 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,mining,sca
  part(.5,-17.5,10,5,.5+lx,-17.5+ly);
  if(farArm)fpaSowBand(c,farArm.cuff,farArm.wrist,2.5,farArm.cuffColor);
  arm(torso(-3,-15),near,false);
- fpaSowBand(c,handle,socket,mine?2:1.5,outline);
+ fpaSowBand(c,handle,socket,strike?2:1.5,outline);
  fpaSowBand(c,handle,socket,.5,'#b58a57');
  fpaSowBand(c,near,far,.75,'#d4a775');
- if(mine)fpaMiningHead(c,socket,angle,mine.edge);
+ if(tool==='pick')fpaMiningHead(c,socket,angle,strike.edge);
+ else if(tool==='axe')fpaFellingHead(c,socket,angle,strike.edge);
  else fpaSpadeHead(c,near[0],near[1],tip[0],tip[1]);
  if(!farBehind)fpaSowFist(c,far,angle,skin,true);
  fpaSowFist(c,near,angle,skin,false);
  world.save();
+ world.imageSmoothingEnabled=false;
  world.translate(px,py);
  world.scale(face*scale,scale);
  world.drawImage(cv,-left,-top,cv.width/2,cv.height/2);
  world.restore();
- return {tip:[px+tip[0]*face*scale,py+tip[1]*scale],near,far,shoulder,lean,shaft:mine?.shaft};
+ return {tip:[px+tip[0]*face*scale,py+tip[1]*scale],near,far,shoulder,lean,shaft:strike?.shaft};
+}
+function fpaFellingHead(c,[x,y],angle,edge){
+ const ux=Math.sin(angle),uy=Math.cos(angle);
+ const shape=(points,color)=>fpaSowPolygon(c,points.map(([along,side])=>[
+   x+ux*along-uy*side,y+uy*along+ux*side
+ ]),color);
+ shape([[1.25,-1.3],[1.75,.3],[.95,1.65],[.5,edge-.35],[0,edge],
+   [-1.7,edge+.2],[-3.25,edge-.55],[-2.6,1.35],[-1.3,.3],[-1.55,-1.25]],'#303930');
+ shape([[1,.15],[.45,1.55],[0,edge-.4],[-1.6,edge-.15],
+   [-2.65,edge-.65],[-2.15,1.35],[-1,.5]],'#879e94');
+ shape([[0,edge],[-1.7,edge+.2],[-3.25,edge-.55],[-2.55,edge-.8],
+   [-1.6,edge-.35],[0,edge-.45]],'#dce7d3');
+ shape([[-1.1,-1.2],[.9,-1.2],[1.1,-.45],[.75,.75],[-1.1,.8]],'#573b2b');
+ shape([[-.75,-1],[.55,-1],[.7,-.55],[.5,.5],[-.75,.55]],'#c39958');
 }
 function fpaMiningHead(c,[x,y],angle,edge){
  const ux=Math.sin(angle),uy=Math.cos(angle);

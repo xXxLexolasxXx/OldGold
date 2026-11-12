@@ -231,6 +231,24 @@ function drawUnit(c, u) {
     flyP = 1 - Math.max(0, a.t) / a.T;
     px = Math.round((u.knock.x0 + u.knock.dx * flyP) * TILE); py = Math.round((u.knock.y0 + u.knock.dy * flyP) * TILE + 6);
   }
+  const woodcut=!wp&&pose==='work'&&frame.anim==='chop'&&typeof fpaDrawWoodcutAxe==='function'&&OUTFIT[u.type]?activeWoodcutContact(a):null;
+  const axeRig=woodcut&&u.type==='woodcutter'&&view==='E'&&typeof fpaDrawAxePose==='function'&&
+    window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
+  let axeGoal;
+  if(woodcut){
+    opt.woodcutting=woodcut.target.o.t;
+    face=woodcut.point[0]<px?-1:1;
+    if(axeRig){
+      const dx=-face*6,dy=opt.woodcutting==='tree'?1:5;
+      const phase=Math.max(0,Math.min(1,(a.T-a.t)/.18,a.t/.22));
+      const blend=phase*phase*(3-2*phase);
+      const sx=Math.round(dx*blend*2)/2,sy=Math.round(dy*blend*2)/2;
+      px+=sx;py+=sy;
+      // Ease into the visual stance and back to the native pickup position.
+      // The pick-up route and the length of the axe shaft stay fixed.
+      axeGoal=[woodcut.point[0]+sx-dx,woodcut.point[1]+sy-dy];
+    }
+  }
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, lying ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
   if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 12 тактов, позы по высоте груди
@@ -256,19 +274,16 @@ function drawUnit(c, u) {
     window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
   if(mineRig)face=mineContact.point[0]<px?-1:1;
   const pickTarget=!mineRig&&pickProgress<.86&&typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
-  const woodcut=!wp&&pose==='work'&&frame.anim==='chop'&&typeof fpaDrawWoodcutAxe==='function'&&OUTFIT[u.type]?activeWoodcutContact(a):null;
   const axeProgress=woodcut&&frame.f>=8?swingProgress(u):1;
-  if(woodcut){
-    opt.woodcutting=woodcut.target.o.t;
-    face=woodcut.point[0]<px?-1:1;
-  }
-  const axeTarget=axeProgress<.86?woodcut.point:null;
+  const axeTarget=!axeRig&&axeProgress<.86?woodcut.point:null;
   if(pickTarget||axeTarget||fieldTarget)opt.externalWorkTool=true;
-  const spr = sowRig||mineRig
+  const spr = sowRig||mineRig||axeRig
     ?personSprite(u,view,pose,{...frame,f:9},{...opt,sowRigBase:true})
     :personSprite(u,view,pose,frame,opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
-  if (mineRig&&spr._fantasyAppearance&&flyP<0) {
+  if (axeRig&&spr._fantasyAppearance&&flyP<0) {
+    fpaDrawAxePose(c,u,spr,px,py,face,axeGoal,swingProgress(u));
+  } else if (mineRig&&spr._fantasyAppearance&&flyP<0) {
     fpaDrawMinePose(c,u,spr,px,py,face,mineContact.point,swingProgress(u));
   } else if (sowRig&&spr._fantasyAppearance&&flyP<0) {
     fpaDrawSowPose(c,u,spr,px,py,face,field.point,fieldProgress);
