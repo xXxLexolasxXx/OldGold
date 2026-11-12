@@ -599,6 +599,8 @@ const FPA_HARVEST_POSE_KEYS={
    [.56,2,1.5,4,-12,0],[.76,1,.7,3,-12,.75],[1,0,0,3,-12,.65]],
 };
 const FPA_HARVEST_SUPPORTS=new WeakMap();
+const FPA_HARVEST_FRAMES=new Map(),FPA_HARVEST_SOURCES=new WeakMap();
+let fpaHarvestSourceId=0;
 function fpaStrikeRig(targetX,targetY,progress,keys,edgeSize){
  const index=keys.findIndex(key=>key[0]>progress);
  const next=index<0?keys.length-1:index,a=keys[next-1],b=keys[next];
@@ -624,7 +626,30 @@ function fpaDrawHammerPose(world,u,source,px,py,face,target,progress){
  return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,'hammer',1);
 }
 function fpaDrawHarvestPose(world,u,source,px,py,face,target,progress,kind,scale=1){
- return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,kind,scale);
+ let id=FPA_HARVEST_SOURCES.get(source);
+ if(!id){id=++fpaHarvestSourceId;FPA_HARVEST_SOURCES.set(source,id);}
+ const phase=scale===1?(progress>=.49&&progress<=.56?.52:Math.round(progress*40)/40):progress;
+ const local=point=>[(point[0]-px)*face/scale,(point[1]-py)/scale];
+ const goal=local(target),hold=FPA_HARVEST_SUPPORTS.get(target);
+ const support=hold?local(hold):null;
+ const key=[id,kind,phase,scale,...goal,...(support||[])].join('|');
+ let frame=FPA_HARVEST_FRAMES.get(key);
+ if(!frame){
+   if(support)FPA_HARVEST_SUPPORTS.set(goal,support);
+   const cv=mkCanvas(104,100),c=cv.getContext('2d');
+   c.setTransform(2,0,0,2,52,84);c.imageSmoothingEnabled=false;
+   const rig=fpaDrawTwoHandWork(c,u,source,0,0,1,goal,phase,kind,1);
+   frame={cv,rig};
+   if(FPA_HARVEST_FRAMES.size>=128)FPA_HARVEST_FRAMES.delete(FPA_HARVEST_FRAMES.keys().next().value);
+   FPA_HARVEST_FRAMES.set(key,frame);
+ }
+ world.save();
+ world.imageSmoothingEnabled=false;
+ world.translate(px,py);world.scale(face*scale,scale);
+ world.drawImage(frame.cv,-26,-42,52,50);
+ world.restore();
+ const {rig}=frame;
+ return {...rig,tip:[px+rig.tip[0]*face*scale,py+rig.tip[1]*scale]};
 }
 let fpaStrikeCanvas;
 function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale){
