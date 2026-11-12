@@ -44,7 +44,7 @@
  }
  if(type==='brewery'&&Q.brewer){if(Q.vat)copper(c,...Q.vat);const[x,y]=Q.brewer;barrel(c,x+mash.x,y,mash.w,-mash.y,true);barrel(c,x+19,y+3,9,9);if(lv>1)crate(c,x+24,y-8,10,6)}
  if(type==='butchery'&&Q.block){const[x,y]=Q.block;beam(c,x-5,y+1,11,7);oval(c,x+.5,y+1,6,1.8,P.hi);for(const dx of[-3,0,3])ln(c,x+dx,y+.5,x+dx+1,y+1.5,P.deep);oval(c,x+2,y-.2,3.5,1.7,'#8d5139');oval(c,x+1.5,y-.5,2.3,1,'#c9906c');r(c,x+2,y-1,1.5,.5,'#ead2a6');if(Q.hooks){const a=Q.hooks[0],z=Q.hooks[Q.hooks.length-1];beam(c,a[0]-2,a[1]-5,z[0]-a[0]+4,2);for(const p of Q.hooks){ln(c,p[0],p[1]-3,p[0],p[1]+1,P.silver);oval(c,p[0],p[1]+3,1.8,3,'#ad7954')}}}
- if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=Q.panner;bench(c,x+3,y-6,17);oval(c,x+3,y-6.5,5,1.4,P.iron);oval(c,x+3,y-7,4,1,'#89aaa0');for(const dx of[-1,2,4])r(c,x+dx,y-7,1,.5,'#dac575')}if(Q.sorter){const[x,y]=Q.sorter;bench(c,x+3,y-7,18);for(const dx of[-2,2,5]){poly(c,[[x+dx,y-7],[x+dx+1,y-10],[x+dx+2,y-7]],'#a3c5bc');r(c,x+dx+1,y-9,.5,1,'#dbe0c1')}}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.stamp){const[x,y]=Q.stamp;masonry(c,x-9,y-2,19,5);for(const dx of[-8,8])beam(c,x+dx,y-20,2,20);beam(c,x-10,y-21,22,3);for(const dx of[-5,0,5]){beam(c,x+dx,y-17,1.5,13);r(c,x+dx-1,y-5,3,3,P.iron);r(c,x+dx-1,y-5,3,.5,P.silver)}bolt(c,x-8,y-20);bolt(c,x+8,y-20)}if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
+ if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=goldWashBench(Q.panner);bench(c,x,y,16);for(const dx of[-6,6])bolt(c,x+dx,y+.4)}if(Q.sorter){const[x,y]=Q.sorter;bench(c,x+3,y-7,18);for(const dx of[-2,2,5]){poly(c,[[x+dx,y-7],[x+dx+1,y-10],[x+dx+2,y-7]],'#a3c5bc');r(c,x+dx+1,y-9,.5,1,'#dbe0c1')}}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.stamp){const[x,y]=Q.stamp;masonry(c,x-9,y-2,19,5);for(const dx of[-8,8])beam(c,x+dx,y-20,2,20);beam(c,x-10,y-21,22,3);for(const dx of[-5,0,5]){beam(c,x+dx,y-17,1.5,13);r(c,x+dx-1,y-5,3,3,P.iron);r(c,x+dx-1,y-5,3,.5,P.silver)}bolt(c,x-8,y-20);bolt(c,x+8,y-20)}if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
  if(['metallurgist','smeltery','weaponsmith','armory'].includes(type)){const[x,y]=s.glow||[s.padx+s.fw*.78,s.baseY-15];if(type!=='armory')forge(c,x,y+2,19);if(type==='smeltery'){masonry(c,x+11,y-4,10,8);r(c,x+12,y-3,8,2,'#7e4b32');r(c,x+12,y-3,6,.5,'#e0aa58');for(const dx of[-4,1,6]){r(c,x+dx,y+8,4,1.5,'#926c3a');r(c,x+dx,y+8,4,.5,'#ddbb76')}}else{anvil(c,x-17,y+4,.9);bellows(c,x+14,y+1);if(type==='armory'){bench(c,x+3,y+1,21);poly(c,[[x,y-5],[x+6,y-5],[x+6,y-1],[x+3,y+1],[x,y-1]],P.iron);ln(c,x+3,y-4,x+3,y,P.silver);ln(c,x+1,y-2,x+5,y-2,P.mid)}}}
  if(type==='mill'){const[x,y]=[s.padx+s.fw*.78,s.baseY-9];millstone(c,x,y-2);sack(c,x-11,y+4);if(lv>1)sack(c,x+11,y+4);beam(c,x+4,y-20,8,2);poly(c,[[x+3,y-19],[x+13,y-19],[x+10,y-12],[x+6,y-12]],P.ink);poly(c,[[x+4,y-18],[x+12,y-18],[x+9,y-13],[x+7,y-13]],P.mid);for(const dx of[5,7,9])r(c,x+dx,y-18,1,.5,'#e2c47c');beam(c,x+7,y-13,2,5)}
  if(type==='tannery'){const x=s.padx+s.fw*.78,y=s.baseY-9;for(const dx of[-9,9])beam(c,x+dx,y-23,2,24);beam(c,x-10,y-24,22,2);beam(c,x-10,y-3,22,2);hide(c,x,y-3,15,19);for(const dx of[-6,6])for(const dy of[-20,-14,-7])ln(c,x+dx,y+dy,x+(dx<0?-9:9),y+dy-1,'#c5b37e');barrel(c,x+19,y+3,11,8,true);const [bx,by]=tanneryBench(s);bench(c,bx,by,13);hide(c,bx,by+.45,9,3)}
@@ -92,19 +92,19 @@
  const peelTravel=[0,.5,2.5,5,6.5,5,2.5,.5];
  const kneadPress=[0,.25,.65,1,.8,.5,.2,0];
  const stirOffsets=[[-1,-.5],[-.5,-1],[.5,-1],[1,-.5],[1,.5],[.5,1],[-.5,1],[-1,.5]];
- function workBody(actor,cloth){
-   const source=personSprite({...actor,_exactYardPose:true},'E','idle',0,{});
+ function workBody(actor,cloth,view){
+   const source=personSprite({...actor,_exactYardPose:true},view,'idle',0,{});
    let body=yardBodies.get(source);
    if(body)return body;
    body=mkCanvas(source.width,source.height);
    const c=body.getContext('2d',{willReadFrequently:true});
    c.drawImage(source,0,0);
-   fpaCleanAtlasArms(body,actor,'E','yardGrip',0);
+   fpaCleanAtlasArms(body,actor,view,'yardGrip',0);
    // The idle profile has a wrist tucked inside the front of the coat.
    // Replace that strip before laying either working sleeve over the torso.
    c.scale(body.width/PW,body.height/PH);
    c.translate(PFX,PFY);
-   if(actor.type==='butcher'||actor.type==='tanner'){
+   if(view!=='E'||actor.type==='butcher'||actor.type==='tanner'){
      c.clearRect(-13,-15,26,10);
      fpaSowPolygon(c,[[-5.5,-14.5],[-2.5,-15],[4.5,-14],[5.5,-10],[4.5,-5],[-4.5,-5],[-5.5,-8]],'#352722');
      fpaSowPolygon(c,[[-4.5,-14],[-2,-14.5],[4,-13.5],[4.5,-10],[3.8,-6],[-4,-6],[-5,-8.5]],shade(cloth,-.2));
@@ -121,9 +121,9 @@
    yardBodies.set(source,body);
    return body;
  }
- function workScene(c,actor,x,y,paintPose,lean=0,face=1){
+ function workScene(c,actor,x,y,paintPose,lean=0,face=1,view='E'){
    const outfit=OUTFIT[actor.type],look=lookOf({...actor,look:LOOK_POOL[(actor.look>>>0)%LOOK_POOL.length]});
-   const cloth=outfit.coat||look.green,body=workBody(actor,cloth),scale=YARD_K*FantasyPublishedYard.scale;
+   const cloth=outfit.coat||look.green,body=workBody(actor,cloth,view),scale=YARD_K*FantasyPublishedYard.scale;
    c.save();
    c.imageSmoothingEnabled=false;
    c.translate(x,y);
@@ -263,6 +263,38 @@
      workHands(c,near,far,skin);
    },lean);
  }
+ const washTilt=[0,-.55,-1,-.6,0,.6,1,.55];
+ function goldWashBench([x,y]){return [x+3,y-6];}
+ function drawGoldWashCycle(c,b,x,y,t){
+   const actor={type:'miner',look:b.id*71+9},[bx,by]=goldWashBench([x,y]),foot=5.5;
+   const rock=washTilt[Math.floor(t*7)%washTilt.length],angle=rock*.18;
+   const cs=Math.cos(angle),sn=Math.sin(angle);
+   const at=(u,v)=>[u*cs-v*sn,u*sn+v*cs-foot-.75];
+   const circle=(rx,ry,dy)=>Array.from({length:16},(_,i)=>{
+     const a=i*Math.PI/8;
+     return at(Math.cos(a)*rx,Math.sin(a)*ry+dy);
+   });
+   workScene(c,actor,bx,by+foot,(cloth,skin)=>{
+     beam(c,-8,-foot,16,2);
+     const left=at(-4.4,.35),right=at(4.4,.35);
+     workSleeve(c,[-2.45,-7.4],left,shade(cloth,-.18));
+     workSleeve(c,[2.45,-7.4],right,cloth);
+     fpaSowPolygon(c,circle(5.2,1.9,.55),'#363c38');
+     fpaSowPolygon(c,circle(5.15,1.8,0),'#727d74');
+     fpaSowPolygon(c,circle(4.5,1.4,-.1),'#c8c5a8');
+     fpaSowPolygon(c,circle(3.9,1.05,-.02),'#36535b');
+     fpaSowPolygon(c,circle(3.65,.75,.12),'#679399');
+     fpaSowBand(c,at(-2.75+rock*.35,-.2),at(.4+rock*.35,-.22),.55,'#a6c7ba');
+     fpaSowBand(c,at(.5+rock*.5,.46),at(2.75+rock*.5,.35),.5,'#c9dad0');
+     for(const [u,v] of [[-.65,.42],[.5,.2],[1.65,.54]]){
+       const a=u+rock*.65;
+       fpaSowPolygon(c,[at(a-.35,v),at(a,v-.3),at(a+.45,v-.04),
+         at(a+.2,v+.25),at(a-.2,v+.28)],'#e7b254');
+       fpaSowBand(c,at(a-.18,v-.2),at(a+.22,v-.21),.5,'#f6dc83');
+     }
+     workHands(c,left,right,skin);
+   },0,1,'S');
+ }
  drawFoodYard=function(c,b,s,ox,oy){
    const P=s.pt,t=Game.time+b.id*5;
    if(b.state!=='done'||!P)return M.native.drawFoodYard(c,b,s,ox,oy);
@@ -274,6 +306,9 @@
      const world=([x,y])=>[ox+x,oy+y];
      drawCleaverCycle(c,b,world(P.block),world(P.butcher),t);
      M.native.drawFoodYard(c,b,{...s,pt:{...P,butcher:null}},ox,oy);
+   }else if(s.px==='goldmine'&&s._publishedMachinery&&P.panner){
+     M.native.drawFoodYard(c,b,{...s,pt:{...P,panner:null}},ox,oy);
+     drawGoldWashCycle(c,b,ox+P.panner[0],oy+P.panner[1],t);
    }else if(s.px==='brewery'&&s._publishedMachinery&&b.working&&P.brewer){
      M.native.drawFoodYard(c,b,{...s,pt:{...P,brewer:null}},ox,oy);
      drawMashCycle(c,b,ox+P.brewer[0],oy+P.brewer[1],t);
