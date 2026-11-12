@@ -1038,15 +1038,15 @@ function drawBreweryTaster(c,b,x,y,t){
   c.restore();
 }
 
-const GOLD_MINE_RAILS=new WeakMap();
-let goldMineCartLayer;
+const MINE_CART_RAILS=new WeakMap();
+let mineCartLayer;
 // The unmirrored published arch sits left of the native rail path.
 function goldMineTrackOffset(rot){return rot===1||rot===2?0:-22.5;}
-function goldMineCartPoint(points,offset,k){
+function mineCartPoint(points,offset,k){
   const [x,y]=pxLerp(points[0],points[1],k);
   return [x+offset,y];
 }
-function goldMineFacadeMask(s,entry,left,top,width,height){
+function mineCartFacadeMask(s,entry,left,top,width,height){
   const cv=mkCanvas(width*2,height*2),ctx=cv.getContext('2d',{willReadFrequently:true});
   ctx.imageSmoothingEnabled=false;ctx.setTransform(2,0,0,2,-2*left,-2*top);
   ctx.drawImage(s.canvas,0,0,s.w,s.h);
@@ -1062,11 +1062,11 @@ function goldMineFacadeMask(s,entry,left,top,width,height){
   ctx.putImageData(pixels,0,0);
   return {cv,floor};
 }
-function drawGoldMineRails(c,s,ox,oy,offset){
-  let track=GOLD_MINE_RAILS.get(s.canvas);
+function drawMineRails(c,s,ox,oy,offset){
+  let track=MINE_CART_RAILS.get(s.canvas);
   if(!track){
     const points=s.pt.cart,[a,b]=points,length=Math.hypot(b[0]-a[0],b[1]-a[1]);
-    const pad=4.5/length,start=goldMineCartPoint(points,offset,-pad),end=goldMineCartPoint(points,offset,1+pad);
+    const pad=4.5/length,start=mineCartPoint(points,offset,-pad),end=mineCartPoint(points,offset,1+pad);
     const left=Math.floor(Math.min(start[0],end[0])-24),top=Math.floor(Math.min(start[1],end[1])-28);
     const width=Math.ceil(Math.max(start[0],end[0])+25)-left,height=Math.ceil(Math.max(start[1],end[1])+16)-top;
     const cv=mkCanvas(width*2,height*2),ctx=cv.getContext('2d');
@@ -1084,18 +1084,18 @@ function drawGoldMineRails(c,s,ox,oy,offset){
     }
     ctx.globalCompositeOperation='destination-out';
     ctx.drawImage(s.canvas,0,0,s.w,s.h);
-    const mask=goldMineFacadeMask(s,goldMineCartPoint(points,offset,0),left,top,width,height);
+    const mask=mineCartFacadeMask(s,mineCartPoint(points,offset,0),left,top,width,height);
     track={cv,mask,left,top,width,height};
-    GOLD_MINE_RAILS.set(s.canvas,track);
+    MINE_CART_RAILS.set(s.canvas,track);
   }
   c.save();c.imageSmoothingEnabled=false;
   c.drawImage(track.cv,ox+track.left,oy+track.top,track.width,track.height);
   c.restore();
   return track;
 }
-function drawGoldMineCartLayer(c,track,ox,oy,x,y,paint){
+function drawMineCartLayer(c,track,ox,oy,x,y,paint){
   const w=76,h=54,left=Math.floor(x-w/2),top=Math.floor(y-35);
-  const cv=goldMineCartLayer??=mkCanvas(w*2,h*2),ctx=cv.getContext('2d');
+  const cv=mineCartLayer??=mkCanvas(w*2,h*2),ctx=cv.getContext('2d');
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
   ctx.imageSmoothingEnabled=false;
   ctx.setTransform(2,0,0,2,-left*2,-top*2);
@@ -1108,13 +1108,13 @@ function drawGoldMineCartLayer(c,track,ox,oy,x,y,paint){
   c.restore();
 }
 
-function goldMineCartLayerAt(c,track,ox,oy,x,y,worldX,worldY,paint){
+function mineCartLayerAt(c,track,ox,oy,x,y,worldX,worldY,paint){
   const column=Math.round((worldX-ox-track.left)*2),{floor}=track.mask;
   let depth=-Infinity;
   for(let i=Math.max(0,column-6);i<=Math.min(floor.length-1,column+6);i++)
     depth=Math.max(depth,floor[i]);
   if(worldY-oy>depth+1)paint(c);
-  else drawGoldMineCartLayer(c,track,ox,oy,x,y,paint);
+  else drawMineCartLayer(c,track,ox,oy,x,y,paint);
 }
 
 const MINE_CART_REAR=[4.7,-6.5],MINE_CART_FRONT=[-4.2,9.1];
@@ -1126,6 +1126,8 @@ function mineCartRoute(points){
   return {segments,length:segments.reduce((sum,segment)=>sum+segment.length,0)};
 }
 const MINE_CART_PARK_ROUTE=mineCartRoute([MINE_CART_REAR,[10.5,-7.5],[10.5,9.1],MINE_CART_FRONT]);
+// The iron stamp frame stands to the right of the track.
+const IRON_CART_PARK_ROUTE=mineCartRoute([MINE_CART_REAR,[-5,-7.5],[-10,4],MINE_CART_FRONT]);
 function mineCartWalk(route,progress){
   let left=progress*route.length;
   for(const {a,b,dx,dy,length} of route.segments){
@@ -1139,14 +1141,14 @@ function mineCartGrip(out){
   const [x,y]=out?[2.75,-10]:[-2.75,-1.4];
   return [[x-2.3,y],[x+2.3,y]];
 }
-function drawGoldMineCart(b,C,x,y,t,u,moving,out,paintAt){
+function drawMineCart(b,C,x,y,t,u,moving,out,paintAt,route=MINE_CART_PARK_ROUTE){
   const actor={type:'miner',look:b.id*71+2,_exactYardPose:true};
   const left=Math.round((x-C.ax)*3)/3,top=Math.round((y-C.ay)*3)/3;
   x=left+C.ax;y=top+C.ay;
   const drawCart=()=>paintAt(x,y,c=>c.drawImage(C.cv,left,top,C.w,C.h));
   const frame=Math.floor(t*9)&7;
   if(!moving){
-    const {foot:[px,py],dx,dy}=mineCartWalk(MINE_CART_PARK_ROUTE,out?(u-.4)/.15:(1-u)/.05);
+    const {foot:[px,py],dx,dy}=mineCartWalk(route,out?(u-.4)/.15:(1-u)/.05);
     const headingX=out?dx:-dx,headingY=out?dy:-dy;
     const view=Math.abs(headingX)>Math.abs(headingY)?(headingX<0?'W':'E'):(headingY<0?'N':'S');
     if(py>=0)drawCart();
@@ -1272,13 +1274,14 @@ function drawFoodYard(c, b, spr, ox, oy) {
       const T = 14, u = (t % T) / T, k = u < 0.4 ? u / 0.4 : u < 0.55 ? 1 : u < 0.95 ? 1 - (u - 0.55) / 0.4 : 0;
       const [x0, y0] = P.cart[0], [x1, y1] = P.cart[1], x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k, C = pxCart(spr.cartLoad || 'gold');
       const moving = (u < 0.4) || (u >= 0.55 && u < 0.95), out = u < 0.55;
-      if(spr.px==='goldmine'&&window.FantasyPublishedYard?.paint&&window.FantasyPublishedAppearanceArt&&
+      if(window.FantasyPublishedYard?.paint&&window.FantasyPublishedAppearanceArt&&
         FantasyArt.images['gnome-walk']&&FantasyArt.images['gnome-woman-walk']){
-        const offset=goldMineTrackOffset(b.rot);
-        const track=drawGoldMineRails(c,spr,ox,oy,offset);
-        const [cx,cy]=goldMineCartPoint(P.cart,offset,k);
-        const paintAt=(px,py,paint)=>goldMineCartLayerAt(c,track,ox,oy,ox+cx,oy+cy,px,py,paint);
-        drawGoldMineCart(b,C,ox+cx,oy+cy,t,u,moving,out,paintAt);
+        const offset=spr.px==='goldmine'?goldMineTrackOffset(b.rot):0;
+        const track=drawMineRails(c,spr,ox,oy,offset);
+        const [cx,cy]=mineCartPoint(P.cart,offset,k);
+        const paintAt=(px,py,paint)=>mineCartLayerAt(c,track,ox,oy,ox+cx,oy+cy,px,py,paint);
+        const route=spr.px==='ironmine'?IRON_CART_PARK_ROUTE:MINE_CART_PARK_ROUTE;
+        drawMineCart(b,C,ox+cx,oy+cy,t,u,moving,out,paintAt,route);
       }else{
         // толкающий идёт за вагонеткой: на выезде он дальше от зрителя (рисуем до неё), на въезде — ближе (после)
         const push = () => drawFolk(c, { type: 'miner', look: b.id * 71 + 2 }, ox + x + 1, oy + y + (out ? -7 : 9), out ? 'S' : 'N', moving ? 'walk' : 'idle', Math.floor(t * 9) & 7, {});
