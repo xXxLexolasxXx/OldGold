@@ -537,18 +537,18 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  const a=FPA_SOW_KEYS[next-1],b=FPA_SOW_KEYS[next];
  const t=(progress-a[0])/(b[0]-a[0]),mix=t*t*(3-2*t);
  const [dx,dy,tipX,tipY]=a.slice(1).map((v,i)=>v+(b[i+1]-v)*mix);
- const lean=[snap(dx),snap(dy)];
+ const gripLean=[snap(dx),snap(dy)];
+ const lean=[snap(dx*1.65),snap(dy*1.2)];
  const aim=Math.max(0,Math.min(1,(progress-.42)/.08,(.73-progress)/.17));
  const targetX=(target[0]-px)*face,targetY=target[1]-py;
  const tip=[snap(tipX+(targetX-8)*aim),snap(tipY+(targetY-4.5)*aim)];
- const shoulder=[-1+lean[0],-15+lean[1]];
- const near=[snap(shoulder[0]+2.5+aim),snap(shoulder[1]+2.5+aim)];
+ const near=[snap(1.5+gripLean[0]+aim),snap(-12.5+gripLean[1]+aim)];
  const angle=Math.atan2(tip[0]-near[0],tip[1]-near[1]);
  const along=(point,distance)=>[snap(point[0]-distance*Math.sin(angle)),
    snap(point[1]-distance*Math.cos(angle))];
  const spacing=5+aim*1.5;
  const far=along(near,spacing),handle=along(near,spacing+2),socket=along(tip,2);
- const farBehind=far[0]<shoulder[0];
+ const farBehind=far[0]<-1+gripLean[0];
  const cloth=OUTFIT[u.type].coat,leather='#765232',outline='#32271e';
  const skin=SKINS[lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]}).skin%SKINS.length];
  const cv=fpaSowCanvas??=mkCanvas(96,90),c=cv.getContext('2d');
@@ -557,26 +557,53 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  c.setTransform(2,0,0,2,38,74);
  c.imageSmoothingEnabled=false;
  const part=(x,y,w,h,tx=x,ty=y)=>c.drawImage(source,(PFX+x)*2,(PFY+y)*2,w*2,h*2,tx,ty,w,h);
- const garment=(points,color)=>fpaSowPolygon(c,points.map(([x,y])=>[x+lean[0],y+lean[1]]),color);
+ // The torso leans over a smaller hip shift. Keep the upper legs joined to
+ // that pivot while the original soles stay planted.
+ const hipShift=[snap(dx*.55),snap(Math.max(0,dy)*.65)];
+ const torso=(x,y)=>{
+   const weight=Math.max(0,Math.min(1,(-y-8)/8));
+   return [snap(x+hipShift[0]+(lean[0]-hipShift[0])*weight),
+     snap(y+hipShift[1]+(lean[1]-hipShift[1])*weight)];
+ };
+ const shoulder=torso(-1,-15);
+ const garment=(points,color)=>fpaSowPolygon(c,points.map(([x,y])=>torso(x,y)),color);
  const arm=(start,grip,dark)=>{
    const elbow=dark?[snap((start[0]+grip[0])/2-1),snap((start[1]+grip[1])/2+1)]
-     :[start[0]-.5,start[1]+3.5];
+     :torso(-3.5,-11.5);
    const wrist=[snap(grip[0]+(elbow[0]-grip[0])*.43),snap(grip[1]+(elbow[1]-grip[1])*.43)];
-   const upper=shade(leather,dark?-.26:.06),sleeve=shade(cloth,dark?-.2:0);
-   const hem=[start[0]+(elbow[0]-start[0])*.75,start[1]+(elbow[1]-start[1])*.75];
-   fpaSowBand(c,start,elbow,4,outline);
-   fpaSowBand(c,elbow,wrist,4,outline);
-   fpaSowBand(c,start,elbow,3,sleeve);
-   fpaSowBand(c,elbow,wrist,3,sleeve);
-   fpaSowBand(c,start,hem,3,upper);
-   fpaSowBand(c,[hem[0]-.5,hem[1]-.5],hem,3,shade(upper,-.27));
+   const hem=[start[0]+(elbow[0]-start[0])*.68,start[1]+(elbow[1]-start[1])*.68];
+   const normal=(a,b)=>{
+     const x=b[0]-a[0],y=b[1]-a[1],length=Math.hypot(x,y)||1;
+     return [y/length,-x/length];
+   };
+   const n0=normal(start,elbow),n1=normal(elbow,wrist);
+   const turn=normal([0,0],[-n0[1]-n1[1],n0[0]+n1[0]]);
+   const edge=(point,n,d)=>[point[0]+n[0]*d,point[1]+n[1]*d];
+   const profile=(width,color)=>{
+     const [s,e,w]=width.map(v=>v/2);
+     fpaSowPolygon(c,[edge(start,n0,s),edge(elbow,n0,e),edge(elbow,turn,e),edge(elbow,n1,e),
+       edge(wrist,n1,w),edge(wrist,n1,-w),edge(elbow,n1,-e),edge(elbow,turn,-e),
+       edge(elbow,n0,-e),edge(start,n0,-s)],color);
+   };
+   // Profile widths and half-pixel cloth clusters sampled from the standing
+   // farmer. Both sleeves bend at the same elbow that drives the wrist.
+   profile(dark?[6,5.5,4.5]:[6.5,6,5],'#28160c');
+   profile(dark?[5,4.5,3.5]:[5.5,5,4],dark?'#37461d':'#566f2d');
+   const sleeveLight=dark?'#4a5f27':'#627e34';
+   fpaSowPolygon(c,[edge(elbow,n1,1.75),edge(wrist,n1,1.5),
+     edge(wrist,n1,.5),edge(elbow,n1,.5)],sleeveLight);
+   fpaSowPolygon(c,[edge(start,n0,2.5),edge(hem,n0,2.25),
+     edge(hem,n0,-2),edge(start,n0,-2.5)],dark?'#5c4026':'#69482b');
+   fpaSowPolygon(c,[edge(start,n0,2),edge(hem,n0,1.5),
+     edge(hem,n0,.5),edge(start,n0,.5)],dark?'#69482b':'#714e2e');
+   fpaSowBand(c,[hem[0]-.5,hem[1]-.5],hem,4,'#5c4026');
    const cuff=[wrist[0]+(elbow[0]-wrist[0])*.32,wrist[1]+(elbow[1]-wrist[1])*.32];
-   const cuffColor=shade(sleeve,dark?.2:.34);
+   const cuffColor=shade(cloth,dark?-.04:.34);
    fpaSowBand(c,cuff,wrist,3.25,cuffColor);
    return {cuff,wrist,cuffColor};
  };
  part(-PFX,-6,PW,6);
- const hip=(x,y)=>[x+snap(lean[0]*.65),y+snap(lean[1]*.65)];
+ const hip=(x,y)=>[x+hipShift[0],y+hipShift[1]];
  fpaSowPolygon(c,[[-6,-5.5],hip(-5.5,-10.5),hip(4,-11),[5.5,-5.5]],outline);
  fpaSowPolygon(c,[[-5,-6],hip(-4.5,-10),hip(.5,-9.5),[.5,-6]],'#624a34');
  fpaSowPolygon(c,[[1,-6],hip(0,-10),hip(3.5,-10),[5,-6]],'#483626');
@@ -613,7 +640,7 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  part(-PFX,-PFY,PW,17.5,-PFX+lx,-PFY+ly);
  part(.5,-17.5,10,5,.5+lx,-17.5+ly);
  if(farArm)fpaSowBand(c,farArm.cuff,farArm.wrist,2.5,farArm.cuffColor);
- arm([shoulder[0]-2,shoulder[1]],near,false);
+ arm(torso(-3,-15),near,false);
  fpaSowBand(c,handle,socket,1.5,outline);
  fpaSowBand(c,handle,socket,.5,'#b58a57');
  fpaSowBand(c,near,far,.75,'#d4a775');
