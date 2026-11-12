@@ -430,13 +430,18 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  case 'toss':case 'pat':break; // Native bare hands; projectile belongs to its native effect.
  case 'bucket':{const bx=hx+Math.sin(a)*2.2,by=hy-Math.cos(a)*2.2;c.fillStyle='#5a3a1e';c.fillRect(Math.round(bx-2),Math.round(by-1),4,3);c.fillStyle='#9a6a3a';c.fillRect(Math.round(bx-2),Math.round(by-1),4,1);c.fillStyle='#3a3a3e';c.fillRect(Math.round(bx-2),Math.round(by),4,1);if(f<5){c.fillStyle='#6ab8ff';c.fillRect(Math.round(bx-1),Math.round(by-2),2,1);}break;}
  case 'axe':{
+   const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,ux=dx/length,uy=dy/length;
    if(opt.woodcutting){
-     const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,ux=dx/length,uy=dy/length;
      line(c,hx-ux,hy-uy,tx,ty,'#372723',1.45);
      line(c,hx-ux,hy-uy-.25,tx,ty-.25,'#b58352',.65);
-     poly(c,[[tx+ux,ty+uy],[tx+nx*edge,ty+ny*edge],[tx+nx*2.4-ux*3,ty+ny*2.4-uy*3],[tx-ux*1.1,ty-uy*1.1]],'#aeb9b7','#292b27',.6);
-     line(c,tx+nx*edge,ty+ny*edge,tx+nx*2.4-ux*2.4,ty+ny*2.4-uy*2.4,'#e3e4cf',.65);
-   }else poly(c,[[tx,ty],[tx+nx*2.4,ty+ny*2.4],[tx+nx*2.2-(tx-hx)*.22,ty+ny*2.2-(ty-hy)*.22],[tx-(tx-hx)*.15,ty-(ty-hy)*.15]],'#b8bcc0','#3a3a3e',.3);
+   }
+   const at=(along,across)=>[tx+ux*along+nx*across,ty+uy*along+ny*across];
+   fpaSowPolygon(c,[at(.75,-.8),at(1,.65),at(.45,1.4),at(0,edge),
+     at(-1.25,edge+.2),at(-2.6,edge),at(-2.35,1.35),at(-1.2,.35),at(-1.1,-.8)],'#303930');
+   fpaSowPolygon(c,[at(.5,.5),at(0,edge-.2),at(-1.3,edge),at(-2.3,edge-.25),
+     at(-1.9,1.55),at(-1,.9)],'#869c94');
+   line(c,...at(0,edge),...at(-2.1,edge), '#dde5cb',.55);
+   line(c,...at(-.65,-.6),...at(-.65,.7),'#c49559',.65);
    break;
  }
  case 'pick':{
@@ -454,11 +459,23 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
    c.strokeStyle='#cdd8d1';
    c.lineWidth=1.1;
    c.stroke();
-   c.fillStyle='#ecf1d9';
-   c.fillRect(Math.round(tx*2)/2-.5,Math.round(ty*2)/2-.5,1,1);
+   const at=(along,across)=>[tx+dx/length*along+nx*across,ty+dy/length*along+ny*across];
+   fpaSowPolygon(c,[at(-1.45,-1.15),at(.9,-1.25),at(1.15,.5),at(.3,1.3),
+     at(-1.25,1.05)],'#543c2b');
+   fpaSowPolygon(c,[at(-1,-.9),at(.65,-.85),at(.85,.45),at(.15,.95),at(-.9,.7)],'#c49559');
+   fpaSowPolygon(c,[at(-.75,0),at(-.1,-.7),at(.62,-.2),at(.25,.65),at(-.35,.65)],'#4d9b93');
+   fpaSowPolygon(c,[at(-.6,-.1),at(-.1,-.55),at(.35,-.2),at(-.3,.2)],'#c1ebe0');
    break;
  }
- case 'hammer':c.save();c.translate(tx,ty);c.rotate(Math.atan2(ty-hy,tx-hx));c.fillStyle='#5c564f';c.fillRect(-.8,-1.7,2,3.4);c.fillStyle='#9e958a';c.fillRect(-.8,-1.7,2,.6);c.restore();break;
+ case 'hammer':{
+   c.save();c.translate(tx,ty);c.rotate(Math.atan2(ty-hy,tx-hx));
+   fpaSowPolygon(c,[[-1,-1.5],[-.5,-2],[1,-2],[1.25,-1.5],
+     [1.25,1.5],[.75,2],[-.75,2],[-1,1.5]],'#303930');
+   fpaSowPolygon(c,[[-.5,-1.5],[.75,-1.5],[.75,1.5],[-.5,1.5]],'#879790');
+   c.fillStyle='#d9e2ca';c.fillRect(-.5,-1.5,1.25,.5);
+   c.fillStyle='#c49559';c.fillRect(-.75,-.5,1,.5);
+   c.restore();break;
+ }
  case 'hook':{c.strokeStyle='#6e4428';c.lineWidth=.9;c.beginPath();c.moveTo(tx,ty);c.lineTo(tx+(tx-hx)*.9,ty+(ty-hy)*.9);c.stroke();const kx=tx+(tx-hx)*.9,ky=ty+(ty-hy)*.9;c.strokeStyle='#2a1c10';c.lineWidth=.8;c.beginPath();c.arc(kx+nx*1.4,ky+ny*1.4,1.5,0,Math.PI*1.5);c.stroke();ellipse(c,kx+nx*2.2,ky+ny*2.2,1,1.3,'#a8d860');break;}
  case 'sickle':c.strokeStyle='#d0d4d8';c.lineWidth=.8;c.beginPath();c.arc(tx+nx*1.6,ty+ny*1.6,2,Math.atan2(ny,nx)+Math.PI*.2,Math.atan2(ny,nx)+Math.PI*1.2);c.stroke();break;
  case 'spade':{

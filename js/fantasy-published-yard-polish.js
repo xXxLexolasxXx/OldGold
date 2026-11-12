@@ -23,7 +23,27 @@
  function bolt(c,x,y){r(c,x-.5,y-.5,1.5,1.5,P.ink);r(c,x-.5,y-.5,1,1,P.steel);r(c,x-.5,y-.5,.5,.5,P.shine)}
  function beam(c,x,y,w,h){r(c,x-.5,y-.5,w+1,h+1,P.ink);r(c,x,y,w,h,P.wood);r(c,x,y,w,.5,P.hi);r(c,x+w-1,y+.5,1,h-1,P.deep);for(let j=1;j<h-1;j+=1.5)for(let k=2;k<w-2;k+=7)ln(c,x+k,y+j,x+k+3,y+j+(k%2)*.5,j%3?P.mid:P.deep,.5)}
  function board(c,x,y,w=24){beam(c,x,y,w,2);for(const dx of [2,w-3]){beam(c,x+dx,y+2,2,8);bolt(c,x+dx+.5,y+1)}ln(c,x+3,y+7,x+w-3,y+7,P.mid,1)}
- function disc(c,x,y,radius,rotation=0,aspect=1){for(let yy=-radius-1.5;yy<=radius+1.5;yy+=.5)for(let xx=-radius-1.5;xx<=radius+1.5;xx+=.5){const d=Math.hypot(xx/aspect,yy),a=Math.atan2(yy,xx/aspect),phase=(((a-rotation)*20/(Math.PI*2))%1+1)%1,tooth=phase<.24?.2+phase/.24:phase<.62?1.2-(phase-.24)/.38:.2,limit=radius+tooth;if(d>limit)continue;let col=d>limit-.55?P.ink:d>radius-.4?xx+yy<0?P.shine:P.iron:d>radius-1.3?P.silver:xx*.45+yy*.7<-radius*.35?'#bcc9b6':xx*.45+yy*.7>radius*.35?'#71877f':'#96aaa0';if(Math.abs(d-radius*.49)<.3)col='#758d83';if(d<2.2)col=d<.7?P.ink:d<1.5?P.steel:P.iron;r(c,x+xx,y+yy,.5,.5,col)}for(const q of [-2.4,-1.8,.4]){const a=q+rotation;ln(c,x+Math.cos(a)*3*aspect,y+Math.sin(a)*3,x+Math.cos(a)*6*aspect,y+Math.sin(a)*6,'#cad4bd',.5)}for(let i=0;i<4;i++){const a=rotation+i*Math.PI/2+.35,px=Math.cos(a)*aspect,py=Math.sin(a);ln(c,x+px*radius*.65,y+py*radius*.65,x+px*radius*.93,y+py*radius*.93,P.iron,.5);oval(c,x+px*radius*.65,y+py*radius*.65,.45,.45,P.iron);r(c,x+px*radius*.65-.5,y+py*radius*.65-.5,.5,.5,P.shine)}bolt(c,x-.5,y-.5)}
+ function disc(c,x,y,radius,rotation=0,aspect=1){
+   for(let yy=-radius-1.5;yy<=radius+1.5;yy+=.5)for(let xx=-radius-1.5;xx<=radius+1.5;xx+=.5){
+     const dx=xx/aspect,d=Math.hypot(dx,yy),a=Math.atan2(yy,dx);
+     const phase=(((a-rotation)*20/(Math.PI*2))%1+1)%1;
+     const tooth=phase<.24?.2+phase/.24:phase<.62?1.2-(phase-.24)/.38:.2,limit=radius+tooth;
+     if(d>limit)continue;
+     const light=dx*.45+yy*.7;
+     let color=light<-radius*.28?'#aabeb1':light>radius*.28?'#6d8179':'#8c9f93';
+     if(d>limit-.55)color=P.ink;
+     else if(d>radius-.55)color=light<0?'#dbe2c8':'#788e84';
+     else if(d>radius-1.15)color='#52685f';
+     else if(d>radius-1.65)color='#b5c3ac';
+     else if(d<2.8)color=d>2.25?P.ink:d>1.25?light<0?'#d6ac64':'#946638':d>.55?P.silver:P.ink;
+     r(c,x+xx,y+yy,.5,.5,color);
+   }
+   for(let i=0;i<4;i++){
+     const a=rotation+i*Math.PI/2+.35,dx=Math.cos(a)*aspect,dy=Math.sin(a);
+     ln(c,x+dx*3,y+dy*3,x+dx*(radius-1.7),y+dy*(radius-1.7),P.iron,.5);
+     r(c,x+dx*radius*.64,y+dy*radius*.64,.5,.5,P.shine);
+   }
+ }
  function eraseFlat(cv,box,colors){const c=cv.getContext('2d'),k=cv.width/box.worldWidth,x=Math.max(0,Math.floor(box.x*k)),y=Math.max(0,Math.floor(box.y*k)),w=Math.min(cv.width-x,Math.ceil(box.w*k)),h=Math.min(cv.height-y,Math.ceil(box.h*k));if(w<=0||h<=0)return;const d=c.getImageData(x,y,w,h),set=new Set(colors);for(let i=0;i<d.data.length;i+=4){const p=d.data;if(set.has((p[i]<<16)|(p[i+1]<<8)|p[i+2]))p[i+3]=0}c.putImageData(d,x,y)}
  function props(c,s,type){
   if(type==='sawmill'&&s.saw){const[x,y]=s.saw,R=s.sawR;
