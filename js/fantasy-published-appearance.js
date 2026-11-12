@@ -49,7 +49,7 @@
   if(O.candle&&view!=='N'){rect(c,-1,-3.8,2,3.5,'#d9d2ac');rect(c,-1,-1,2,1,'#967344');const f=Math.floor(Game.time*5)%4;shape(c,[[-.8,-4],[Math.sin(f)*.6,-7-f*.3],[1,-4]],f%2?'#eabf71':'#e0a254');rect(c,0,-5,.5,1,'#f3ddb0');}
   c.restore();
  }
- function foreground(c,q,view,pose,frame,opt){const u=q.holder;if(u.carry){c.save();c.translate(PFX,u.carry==='trunk'?13:23);if(u.carry==='trunk')c.scale(1.4,1.2);drawLoads(c,u.carry,opt.carryN||u.carryN||1);c.restore();}
+ function foreground(c,q,view,pose,frame,opt){const u=q.holder;if(u.carry)fpaCarryLoad(c,u,view,pose,opt);
   if(pose==='work'&&typeof fpaDrawWorkTool==='function')fpaDrawWorkTool(c,u,view,frame,opt);
   if(pose==='smoke'){const r=fpaSmokingRig(u,view,frame),hx=PFX+r.hand[0],hy=PFY+r.hand[1];pline(c,PFX+4,PFY-12,hx,hy,'#3e2c20',3);pline(c,PFX+4,PFY-12,hx,hy,q.coat,2);rect(c,hx,hy,2,2,SKINS[q.L.skin%3][0]);}
 
@@ -139,7 +139,7 @@
   const fallback=canDefer?cache.get(lastFrame.get(motion)):null;
   // A queued frame can reuse another phase of the same action and costume.
   // It never substitutes idle for a swing or a different tool/view.
-  if(R.inFrame&&(fallback||u._decorativeSprite||(R.cam.z<=1&&canDefer))){
+  if(R.inFrame&&(fallback||u._decorativeSprite||(R.cam.z<=1&&canDefer&&!fpaTrunkGrip(q.holder,pose)))){
    const snapshot={...u,_spr:null};
    if(spriteDefer('fpa:'+key,()=>render(snapshot,view,pose,frame,opt)))return fallback||pendingDecorativeSprite;
   }

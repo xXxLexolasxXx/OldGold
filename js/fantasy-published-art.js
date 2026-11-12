@@ -267,11 +267,7 @@ personSprite = function (u, view, pose, frame, opt = {}) {
     }
     c.putImageData(data, 0, 0);
   }
-  if (u.carry) {
-    c.save(); c.translate(PFX, u.carry === 'trunk' ? 13 : 23);
-    if (u.carry === 'trunk') c.scale(1.4, 1.2);
-    drawLoads(c, u.carry, opt.carryN || u.carryN || 1); c.restore();
-  }
+  if (u.carry)fpaCarryLoad(c,u,view,pose,opt);
   if (pose === 'work'&&!opt.externalWorkTool) fpaDrawWorkTool(c,{...u,look:normalizedLook},view,frame,opt);
   if (pose === 'smoke') {
     const rig = fpaSmokingRig(u, view, frame), O = OUTFIT[u.type];
@@ -287,11 +283,57 @@ personSprite = function (u, view, pose, frame, opt = {}) {
 };
 
 function fpaSmokingRig(u,view,frame){const v=view==='E'?'E':'S';return {hand:SMOKE_ARM[v].hand[Number(frame)%SMOKE_ARM[v].hand.length],mouth:SMOKE_MOUTH[v]};}
+function fpaTrunkGrip(u,pose){
+ return u.type==='woodcutter'&&u.carry==='trunk'&&(pose==='idle'||pose==='walk');
+}
+function fpaCarryLoad(c,u,view,pose,opt){
+ const n=opt.carryN||u.carryN||1;
+ if(!fpaTrunkGrip(u,pose)){
+   c.save();
+   c.translate(PFX,u.carry==='trunk'?13:23);
+   if(u.carry==='trunk')c.scale(1.4,1.2);
+   drawLoads(c,u.carry,n);
+   c.restore();
+   return;
+ }
+ const profile=view==='E'||view==='W',back=view==='N';
+ const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
+ const skin=SKINS[lookOf({...u,look}).skin%SKINS.length][0],coat=OUTFIT.woodcutter.coat;
+ const arms=profile?[
+   {shoulder:[1.5,22.5],grip:[6,25],shade:-.22},
+   {shoulder:[-3,22],grip:[-2,26.5],shade:0}
+ ]:[
+   {shoulder:[-4.5,22],grip:[back?-6:-5.5,26],shade:-.12},
+   {shoulder:[4.5,22],grip:[back?4.2:5.5,back?26.5:25.5],shade:0}
+ ];
+ c.save();
+ c.translate(PFX,0);
+ if(back){
+   // From behind, the torso covers the log held in front of the body.
+   c.beginPath();
+   c.rect(-PFX,18,PFX-5.2,16);
+   c.rect(5.2,18,PFX-5.2,16);
+   c.clip();
+ }
+ for(const {shoulder,grip,shade:shadow} of arms){
+   const elbow=[shoulder[0]+Math.sign(grip[0])*1,shoulder[1]+2.5];
+   smoothLimb(c,shoulder,elbow,grip,2.1,shade(coat,shadow));
+ }
+ c.save();
+ c.translate(profile?1:back?-2.2:0,25.5);
+ c.rotate(profile?-.08:back?.09:-.09);
+ c.scale(profile?1.23:back?-.94:.94,1.03);
+ drawLoads(c,'trunk',n);
+ c.restore();
+ for(const {grip} of arms)hand(c,grip[0],grip[1],skin);
+ c.restore();
+}
 // Remove only the atlas's static skin/sleeve components for actively posed arms.
-// Ordinary idle/walk and carriers take the no-op path before reading any pixels.
+// Ordinary idle/walk and other carriers take the no-op path.
 function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
- if(u.carry||u.type==='kid')return {removed:0,filled:0,components:0};
- const W=opt.wpn?wpnParse(opt.wpn):null,both=pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
+ const trunkGrip=fpaTrunkGrip(u,pose);
+ if((u.carry&&!trunkGrip)||u.type==='kid')return {removed:0,filled:0,components:0};
+ const W=opt.wpn?wpnParse(opt.wpn):null,both=trunkGrip||pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
  if(!both&&!one)return {removed:0,filled:0,components:0};
  const c=cv.getContext('2d'),im=c.getImageData(0,0,cv.width,cv.height),src=new Uint8ClampedArray(im.data),d=im.data,k=cv.width/PW,w=cv.width,h=cv.height,dh=geometry.dh||33,dw=geometry.dw||25,dip=geometry.dip||0,shear=geometry.shear||0,top=PFY-dh;
  const mask=new Uint8Array(w*h),visited=new Uint8Array(w*h),skin=i=>src[i+3]>=160&&src[i]>140&&src[i+1]>95&&src[i+2]>69&&src[i]>src[i+1]*1.08&&src[i+1]>src[i+2]*1.08;
