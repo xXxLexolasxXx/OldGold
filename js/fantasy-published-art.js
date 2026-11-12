@@ -193,7 +193,7 @@ OUTFIT.healer = { ...OUTFIT.serf, cap: '#739887', coat: '#3e675a' };
 const FPA_WORK_ARC = {chop:-.48,mine:-.13,build:.42,reap:.12,dig:.34,hoppick:-.28,douse:.26};
 // The quarry yard emits its first chips on frame 4. Both clocks use the same strike pose.
 const FPA_MINE_ANGLES=[1.2,1,.8,.55,.22,-.12,-.4,-.52,.49,2.28,2.4,1.68];
-const FPA_YARD_MINE_ANGLES=[1.2,1,.8,.55,.22,-.12,-.4,-.52,.49,1.38,1.64,1.4];
+const FPA_YARD_MINE_ANGLES=[1.2,1,.8,.55,.22,-.12,-.4,-.52,.49,1.38,.96,1.2];
 const FPA_YARD_MINE_PHASES=[0,2,5,7,9,10,11,1];
 function fpaMinePhase(frame) {
   return Math.max(0,Math.min(11,frame.f|0));
@@ -347,7 +347,7 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  if(tool==='pick'&&opt.pickContact){
    const [x,y]=opt.pickContact,co=Math.cos(lean),si=Math.sin(lean);
    const cx=x*co+(y-hip)*si,cy=hip-x*si+(y-hip)*co;
-   const aim=f===8?.45:f===10?.83:1;
+   const aim=opt.pickAim;
    const dx=cx-hx,dy=cy-hy,length=Math.hypot(dx,dy)||1;
    const targetNX=-dy/length,targetNY=dx/length;
    tx+=(cx-targetNX*3.2-tx)*aim;
@@ -356,12 +356,30 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
    ny+=(targetNY-ny)*aim;
  }
  smoothLimb(c,[offset+.4,sh+.4],[(offset+.4+hx)/2+.6,(sh+hy)/2+.5],[hx,hy],2.1,coat);
- if(!['toss','pat','bucket'].includes(tool))line(c,hx-(tx-hx)*.25,hy-(ty-hy)*.25,tx,ty,'#6e4428',.9);
+ if(!['toss','pat','bucket','pick'].includes(tool))line(c,hx-(tx-hx)*.25,hy-(ty-hy)*.25,tx,ty,'#6e4428',.9);
  switch(tool){
  case 'toss':case 'pat':break; // Native bare hands; projectile belongs to its native effect.
  case 'bucket':{const bx=hx+Math.sin(a)*2.2,by=hy-Math.cos(a)*2.2;c.fillStyle='#5a3a1e';c.fillRect(Math.round(bx-2),Math.round(by-1),4,3);c.fillStyle='#9a6a3a';c.fillRect(Math.round(bx-2),Math.round(by-1),4,1);c.fillStyle='#3a3a3e';c.fillRect(Math.round(bx-2),Math.round(by),4,1);if(f<5){c.fillStyle='#6ab8ff';c.fillRect(Math.round(bx-1),Math.round(by-2),2,1);}break;}
  case 'axe':poly(c,[[tx,ty],[tx+nx*2.4,ty+ny*2.4],[tx+nx*2.2-(tx-hx)*.22,ty+ny*2.2-(ty-hy)*.22],[tx-(tx-hx)*.15,ty-(ty-hy)*.15]],'#b8bcc0','#3a3a3e',.3);break;
- case 'pick':c.strokeStyle='#8a8e92';c.lineWidth=.9;c.beginPath();c.moveTo(tx-nx*3.2,ty-ny*3.2);c.quadraticCurveTo(tx+(tx-hx)*.08,ty+(ty-hy)*.08,tx+nx*3.2,ty+ny*3.2);c.stroke();break;
+ case 'pick':{
+   const sx=hx-(tx-hx)*.18,sy=hy-(ty-hy)*.18;
+   line(c,sx,sy,tx,ty,'#302621',1.55);
+   line(c,sx,sy-.25,tx,ty-.25,'#a97a4d',.7);
+   const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1;
+   const cx=tx+dx/length*.8,cy=ty+dy/length*.8;
+   c.beginPath();
+   c.moveTo(tx-nx*3.2,ty-ny*3.2);
+   c.quadraticCurveTo(cx,cy,tx+nx*3.2,ty+ny*3.2);
+   c.strokeStyle='#252b29';
+   c.lineWidth=2;
+   c.stroke();
+   c.strokeStyle='#cdd8d1';
+   c.lineWidth=1.1;
+   c.stroke();
+   c.fillStyle='#ecf1d9';
+   c.fillRect(Math.round(tx*2)/2-.5,Math.round(ty*2)/2-.5,1,1);
+   break;
+ }
  case 'hammer':c.save();c.translate(tx,ty);c.rotate(Math.atan2(ty-hy,tx-hx));c.fillStyle='#5c564f';c.fillRect(-.8,-1.7,2,3.4);c.fillStyle='#9e958a';c.fillRect(-.8,-1.7,2,.6);c.restore();break;
  case 'hook':{c.strokeStyle='#6e4428';c.lineWidth=.9;c.beginPath();c.moveTo(tx,ty);c.lineTo(tx+(tx-hx)*.9,ty+(ty-hy)*.9);c.stroke();const kx=tx+(tx-hx)*.9,ky=ty+(ty-hy)*.9;c.strokeStyle='#2a1c10';c.lineWidth=.8;c.beginPath();c.arc(kx+nx*1.4,ky+ny*1.4,1.5,0,Math.PI*1.5);c.stroke();ellipse(c,kx+nx*2.2,ky+ny*2.2,1,1.3,'#a8d860');break;}
  case 'sickle':c.strokeStyle='#d0d4d8';c.lineWidth=.8;c.beginPath();c.arc(tx+nx*1.6,ty+ny*1.6,2,Math.atan2(ny,nx)+Math.PI*.2,Math.atan2(ny,nx)+Math.PI*1.2);c.stroke();break;
@@ -371,13 +389,15 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  const world=(x,y)=>[PFX+(view==='N'?-1:1)*(x*Math.cos(lean)-(y-hip)*Math.sin(lean)),PFY+hip+x*Math.sin(lean)+(y-hip)*Math.cos(lean)];
  return{known:true,drawn:true,projection:profile?'native-profile':'front-working-tool',tool,frame:f,frames:angles.length,hand:world(hx,hy),tip:world(tool==='pick'?tx+nx*3.2:tx,tool==='pick'?ty+ny*3.2:ty)};
 }
-function fpaDrawQuarryPick(c,u,frame,px,py,face,target){
+function fpaDrawQuarryPick(c,u,frame,px,py,face,target,progress){
  const side=face<0?-1:1;
  const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
+ const t=Math.max(0,Math.min(1,progress<.5?(progress-.46)/.04:(.86-progress)/.32));
+ const aim=t*t*(3-2*t);
  c.save();
  c.translate(px-side*PFX,py-PFY);
  c.scale(side,1);
- const rig=fpaDrawWorkTool(c,{...u,look},'E',frame,{pickContact:[(target[0]-px)*side,target[1]-py]});
+ const rig=fpaDrawWorkTool(c,{...u,look},'E',frame,{pickContact:[(target[0]-px)*side,target[1]-py],pickAim:aim});
  c.restore();
  return rig;
 }

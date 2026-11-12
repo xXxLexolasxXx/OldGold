@@ -139,11 +139,14 @@ function fieldStage(g) {
 
 // Один удар на действие: замах вверх, удар, инструмент остаётся внизу до следующего
 // действия — никакого непрерывного махания по кругу.
-function swingFrame(u) {
+function swingProgress(u) {
   const a = u.action;
   // долгое действие (жатва, рубка) — несколько отдельных ударов с паузами, по ~0.9 с на удар
   const n = a && a.T ? Math.max(1, Math.round(a.T / 0.9)) : 1;
-  const p = a && a.T ? ((1 - Math.max(0, a.t) / a.T) * n) % 1 : 1;
+  return a && a.T ? ((1 - Math.max(0, a.t) / a.T) * n) % 1 : 1;
+}
+function swingFrame(u) {
+  const p=swingProgress(u);
   // 12 кадров (SWING_A в people.js): подъём 0–6, назад 7, разгон 8, удар 9, низ 10, возврат 11
   if (p < 0.4) return Math.floor(p / 0.4 * 7);
   if (p < 0.46) return 7;
@@ -231,8 +234,8 @@ function drawUnit(c, u) {
   if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 12 тактов, позы по высоте груди
   // жест и так движется: в покое без дыхания, на ходу — две опорные позы (шаг уже даёт 8 кадров), чтобы не множить спрайты
   if (opt.gest && opt.gest !== 'five') { if (pose === 'idle') frame = 0; else if (pose === 'walk') opt.gf = gestK(opt.gf) >= 0.5 ? 1 : 0; }
-  const pickTarget=!wp&&pose==='work'&&frame.anim==='mine'&&frame.f>=8&&frame.f<=10&&
-    typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
+  const pickProgress=!wp&&pose==='work'&&frame.anim==='mine'&&frame.f>=8?swingProgress(u):1;
+  const pickTarget=pickProgress<.86&&typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
   if(pickTarget)opt.externalPick=true;
   const spr = personSprite(u, view, pose, frame, opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
@@ -279,7 +282,7 @@ function drawUnit(c, u) {
     c.drawImage(spr, -PFX, py - PFY, PW, PH);
     c.restore();
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
-  if(pickTarget&&spr._fantasyAppearance)fpaDrawQuarryPick(c,u,frame,px,py,face,pickTarget);
+  if(pickTarget&&spr._fantasyAppearance)fpaDrawQuarryPick(c,u,frame,px,py,face,pickTarget,pickProgress);
   c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
   if (bw && typeof brawlFx === 'function') brawlFx(c, u, bw, px, py);
