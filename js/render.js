@@ -236,7 +236,14 @@ function drawUnit(c, u) {
   if (opt.gest && opt.gest !== 'five') { if (pose === 'idle') frame = 0; else if (pose === 'walk') opt.gf = gestK(opt.gf) >= 0.5 ? 1 : 0; }
   const pickProgress=!wp&&pose==='work'&&frame.anim==='mine'&&frame.f>=8?swingProgress(u):1;
   const pickTarget=pickProgress<.86&&typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
-  if(pickTarget)opt.externalPick=true;
+  const woodcut=!wp&&pose==='work'&&frame.anim==='chop'&&typeof fpaDrawWoodcutAxe==='function'&&OUTFIT[u.type]?activeWoodcutContact(a):null;
+  const axeProgress=woodcut&&frame.f>=8?swingProgress(u):1;
+  if(woodcut){
+    opt.woodcutting=woodcut.target.o.t;
+    face=woodcut.point[0]<px?-1:1;
+  }
+  const axeTarget=axeProgress<.86?woodcut.point:null;
+  if(pickTarget||axeTarget)opt.externalWorkTool=true;
   const spr = personSprite(u, view, pose, frame, opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
   if (flyP >= 0) {
@@ -283,6 +290,7 @@ function drawUnit(c, u) {
     c.restore();
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
   if(pickTarget&&spr._fantasyAppearance)fpaDrawQuarryPick(c,u,frame,px,py,face,pickTarget,pickProgress);
+  if(axeTarget&&spr._fantasyAppearance)fpaDrawWoodcutAxe(c,u,frame,px,py,face,axeTarget,axeProgress,opt.woodcutting);
   c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
   if (bw && typeof brawlFx === 'function') brawlFx(c, u, bw, px, py);

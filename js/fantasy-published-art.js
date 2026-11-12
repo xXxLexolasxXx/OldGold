@@ -195,6 +195,7 @@ const FPA_WORK_ARC = {chop:-.48,mine:-.13,build:.42,reap:.12,dig:.34,hoppick:-.2
 const FPA_MINE_ANGLES=[1.2,1,.8,.55,.22,-.12,-.4,-.52,.49,2.28,2.4,1.68];
 const FPA_YARD_MINE_ANGLES=[1.2,1,.8,.55,.22,-.12,-.4,-.52,.49,1.38,.96,1.2];
 const FPA_YARD_MINE_PHASES=[0,2,5,7,9,10,11,1];
+const FPA_WOODCUT_ANGLES=[1.45,1.15,.8,.38,.02,-.32,-.71,-.94,.46,2.12,2.4,1.91];
 function fpaMinePhase(frame) {
   return Math.max(0,Math.min(11,frame.f|0));
 }
@@ -209,6 +210,10 @@ function fpaBodyMotion(view,pose,frame,opt) {
     if(frame.anim==='mine'){
       const angles=opt.yardMining?FPA_YARD_MINE_ANGLES:FPA_MINE_ANGLES;
       return [(1.14-angles[fpaMinePhase(frame)])*.12+.025,0];
+    }
+    if(frame.anim==='chop'&&opt.woodcutting){
+      const angle=FPA_WOODCUT_ANGLES[fpaMinePhase(frame)];
+      return [opt.woodcutting==='tree'?.14+(1.14-angle)*.025:(1.14-angle)*.12,0];
     }
     const angle=SWING_A[f]??SWING_A[SWING_A.length-1];
     return [(1.14-angle)*.12+(FPA_WORK_ARC[frame.anim]||0)*.19,0];
@@ -236,7 +241,7 @@ personSprite = function (u, view, pose, frame, opt = {}) {
   // Cache the phase actually consumed by the pose helpers. Atlas frame zero
   // alone cannot distinguish breathing or the named native fight states.
   const phaseKey=pose==='idle'?(Number(frame)||0)%IDLE_FRAMES:pose==='walk'?(Number(frame)||0)%WALK_FRAMES:pose==='fight'?String(frame):pose==='work'?`${frame.anim}:${frame.f}`:frame;
-  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, opt.yardMining, opt.externalPick, u.injury].join('|');
+  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, opt.yardMining, opt.woodcutting, opt.externalWorkTool, u.injury].join('|');
   if (FA_RENDER_CACHE.has(key)) return FA_RENDER_CACHE.get(key);
   const cv = mkCanvas(PW * PART, PH * PART), c = cv.getContext('2d', { willReadFrequently: true });
   c.imageSmoothingEnabled = false; c.scale(PART, PART);
@@ -267,7 +272,7 @@ personSprite = function (u, view, pose, frame, opt = {}) {
     if (u.carry === 'trunk') c.scale(1.4, 1.2);
     drawLoads(c, u.carry, opt.carryN || u.carryN || 1); c.restore();
   }
-  if (pose === 'work'&&!opt.externalPick) fpaDrawWorkTool(c,{...u,look:normalizedLook},view,frame,opt);
+  if (pose === 'work'&&!opt.externalWorkTool) fpaDrawWorkTool(c,{...u,look:normalizedLook},view,frame,opt);
   if (pose === 'smoke') {
     const rig = fpaSmokingRig(u, view, frame), O = OUTFIT[u.type];
     const coat = O.coat || '#66863d', hx = PFX + rig.hand[0], hy = PFY + rig.hand[1];
@@ -308,10 +313,10 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  const tool=ANIM_TOOL[frame?.anim],known=['axe','pick','hammer','sickle','spade','hook','toss','pat','bucket'].includes(tool);
  if(!known)return {known:false,drawn:false};
  const mineAngles=opt.yardMining?FPA_YARD_MINE_ANGLES:FPA_MINE_ANGLES;
- const angles=tool==='pick'?mineAngles:tool==='toss'?TOSS_A:tool==='pat'?PAT_A:tool==='sickle'||tool==='spade'?SWING_SICKLE:SWING_A;
+ const angles=tool==='pick'?mineAngles:tool==='axe'&&opt.woodcutting?FPA_WOODCUT_ANGLES:tool==='toss'?TOSS_A:tool==='pat'?PAT_A:tool==='sickle'||tool==='spade'?SWING_SICKLE:SWING_A;
  const f=Math.max(0,Math.min(angles.length-1,frame.f|0));
  const fr={anim:frame.anim,f};
- const windup=tool!=='pick'&&f<8?Math.sin(f/8*Math.PI):0;
+ const windup=tool!=='pick'&&!opt.woodcutting&&f<8?Math.sin(f/8*Math.PI):0;
  const a=angles[f]+(FPA_WORK_ARC[frame.anim]||0)*windup,dip=swingDip(fr);
  const lean=tool==='pick'?.1:frame.anim==='reap'||frame.anim==='dig'?.28:frame.anim==='pat'?.42:0,hip=-6.2+dip,sh=-12+dip;
  const O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),skin=SKINS[L.skin%SKINS.length],coat=O.coat||L.green||'#66863d';
@@ -331,7 +336,7 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  // The forward/back views keep the working hand on the actor's right.
  // Foreshorten the swing without changing the native phase or side grip.
  if(!profile&&view==='N')c.scale(-1,1);
- const offset=profile?0:4, reach=profile?1:.68;
+ const offset=profile?(opt.woodcutting==='tree'?-1.6:0):4, reach=profile?1:.68;
  if(!profile){
   smoothLimb(c,[-4.2,sh+.6],[-5.4,(sh+hip)/2],[-4.8,hip-.4],2.1,shade(coat,-.25));
   hand(c,-4.8,hip-.4,skin[0]);
@@ -344,14 +349,15 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  const hx=offset+.4+Math.sin(a)*arm*reach,hy=sh-Math.cos(a)*arm;
  let tx=hx+Math.sin(a)*shaft*reach,ty=hy-Math.cos(a)*shaft;
  let nx=-(ty-hy)/shaft,ny=(tx-hx)/shaft;
- if(tool==='pick'&&opt.pickContact){
-   const [x,y]=opt.pickContact,co=Math.cos(lean),si=Math.sin(lean);
+ const edge=tool==='pick'?3.2:2.4;
+ if(opt.workContact){
+   const [x,y]=opt.workContact,co=Math.cos(lean),si=Math.sin(lean);
    const cx=x*co+(y-hip)*si,cy=hip-x*si+(y-hip)*co;
-   const aim=opt.pickAim;
+   const aim=opt.workAim;
    const dx=cx-hx,dy=cy-hy,length=Math.hypot(dx,dy)||1;
    const targetNX=-dy/length,targetNY=dx/length;
-   tx+=(cx-targetNX*3.2-tx)*aim;
-   ty+=(cy-targetNY*3.2-ty)*aim;
+   tx+=(cx-targetNX*edge-tx)*aim;
+   ty+=(cy-targetNY*edge-ty)*aim;
    nx+=(targetNX-nx)*aim;
    ny+=(targetNY-ny)*aim;
  }
@@ -360,7 +366,16 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  switch(tool){
  case 'toss':case 'pat':break; // Native bare hands; projectile belongs to its native effect.
  case 'bucket':{const bx=hx+Math.sin(a)*2.2,by=hy-Math.cos(a)*2.2;c.fillStyle='#5a3a1e';c.fillRect(Math.round(bx-2),Math.round(by-1),4,3);c.fillStyle='#9a6a3a';c.fillRect(Math.round(bx-2),Math.round(by-1),4,1);c.fillStyle='#3a3a3e';c.fillRect(Math.round(bx-2),Math.round(by),4,1);if(f<5){c.fillStyle='#6ab8ff';c.fillRect(Math.round(bx-1),Math.round(by-2),2,1);}break;}
- case 'axe':poly(c,[[tx,ty],[tx+nx*2.4,ty+ny*2.4],[tx+nx*2.2-(tx-hx)*.22,ty+ny*2.2-(ty-hy)*.22],[tx-(tx-hx)*.15,ty-(ty-hy)*.15]],'#b8bcc0','#3a3a3e',.3);break;
+ case 'axe':{
+   if(opt.woodcutting){
+     const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,ux=dx/length,uy=dy/length;
+     line(c,hx-ux,hy-uy,tx,ty,'#372723',1.45);
+     line(c,hx-ux,hy-uy-.25,tx,ty-.25,'#b58352',.65);
+     poly(c,[[tx+ux,ty+uy],[tx+nx*edge,ty+ny*edge],[tx+nx*2.4-ux*3,ty+ny*2.4-uy*3],[tx-ux*1.1,ty-uy*1.1]],'#aeb9b7','#292b27',.6);
+     line(c,tx+nx*edge,ty+ny*edge,tx+nx*2.4-ux*2.4,ty+ny*2.4-uy*2.4,'#e3e4cf',.65);
+   }else poly(c,[[tx,ty],[tx+nx*2.4,ty+ny*2.4],[tx+nx*2.2-(tx-hx)*.22,ty+ny*2.2-(ty-hy)*.22],[tx-(tx-hx)*.15,ty-(ty-hy)*.15]],'#b8bcc0','#3a3a3e',.3);
+   break;
+ }
  case 'pick':{
    const sx=hx-(tx-hx)*.18,sy=hy-(ty-hy)*.18;
    line(c,sx,sy,tx,ty,'#302621',1.55);
@@ -387,9 +402,10 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  }
  hand(c,hx,hy,skin[1]);c.restore();
  const world=(x,y)=>[PFX+(view==='N'?-1:1)*(x*Math.cos(lean)-(y-hip)*Math.sin(lean)),PFY+hip+x*Math.sin(lean)+(y-hip)*Math.cos(lean)];
- return{known:true,drawn:true,projection:profile?'native-profile':'front-working-tool',tool,frame:f,frames:angles.length,hand:world(hx,hy),tip:world(tool==='pick'?tx+nx*3.2:tx,tool==='pick'?ty+ny*3.2:ty)};
+ const blade=tool==='pick'||tool==='axe';
+ return{known:true,drawn:true,projection:profile?'native-profile':'front-working-tool',tool,frame:f,frames:angles.length,hand:world(hx,hy),tip:world(blade?tx+nx*edge:tx,blade?ty+ny*edge:ty)};
 }
-function fpaDrawQuarryPick(c,u,frame,px,py,face,target,progress){
+function fpaDrawContactTool(c,u,frame,px,py,face,target,progress,woodcutting){
  const side=face<0?-1:1;
  const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
  const t=Math.max(0,Math.min(1,progress<.5?(progress-.46)/.04:(.86-progress)/.32));
@@ -397,9 +413,41 @@ function fpaDrawQuarryPick(c,u,frame,px,py,face,target,progress){
  c.save();
  c.translate(px-side*PFX,py-PFY);
  c.scale(side,1);
- const rig=fpaDrawWorkTool(c,{...u,look},'E',frame,{pickContact:[(target[0]-px)*side,target[1]-py],pickAim:aim});
+ const rig=fpaDrawWorkTool(c,{...u,look},'E',frame,{workContact:[(target[0]-px)*side,target[1]-py],workAim:aim,woodcutting});
  c.restore();
  return rig;
+}
+function fpaDrawQuarryPick(c,u,frame,px,py,face,target,progress){
+ return fpaDrawContactTool(c,u,frame,px,py,face,target,progress,false);
+}
+function fpaDrawWoodcutAxe(c,u,frame,px,py,face,target,progress,kind){
+ return fpaDrawContactTool(c,u,frame,px,py,face,target,progress,kind);
+}
+let fpaWoodcutSample;
+function fpaWoodcutSurface(u,{x,y,o}){
+ if(!R.canvas||o.awake)return null;
+ const px=Math.round(u.x*TILE),py=Math.round(u.y*TILE+6),left=px-13,top=py-14;
+ const w=27,h=24;
+ if(!fpaWoodcutSample)fpaWoodcutSample=mkCanvas(w,h).getContext('2d',{willReadFrequently:true});
+ const c=fpaWoodcutSample,log=o.t==='log';
+ c.clearRect(0,0,w,h);
+ c.save();
+ c.translate(-left,-top);
+ if(log)drawLog(c,x,y);
+ else drawTree(c,x,y,o,idx(x,y));
+ c.restore();
+ const pixels=c.getImageData(0,0,w,h).data;
+ const side=u.face<0?-1:1;
+ let point=null,best=Infinity;
+ for(let j=1;j<h-1;j++)for(let i=1;i<w-1;i++){
+   const wx=left+i+.5,wy=top+j+.5,dx=wx-px;
+   if(Math.abs(dx)<4.5)continue;
+   const at=(j*w+i)*4,r=pixels[at],g=pixels[at+1],b=pixels[at+2];
+   if(pixels[at+3]<244||r<44||r<g*1.01||g<b*1.09)continue;
+   const distance=(Math.abs(dx)-(log?9:7))**2+(wy-(py+(log?-2:-7)))**2+(dx*side<0?2:0);
+   if(distance<best){point=[wx,wy];best=distance;}
+ }
+ return point;
 }
 // Sample a small world-space patch once per target. The gameplay tile can
 // extend past the visible rock, particularly on its eastern edge.

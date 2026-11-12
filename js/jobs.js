@@ -390,6 +390,20 @@ function profPerkText(type) {
 
 function gather(b, g) { const n = b.def.gatherMult || 1; b.stock[g] += n; Game.produced[g] += n; profMade(b); }
 
+const WOODCUT_VISUAL_TARGETS=new WeakMap();
+function woodcutWait(u,target,wait) {
+  const action={wait,anim:'chop'};
+  const point=typeof fpaWoodcutSurface==='function'&&fpaWoodcutSurface(u,target);
+  if(point)WOODCUT_VISUAL_TARGETS.set(action,{target,point});
+  return action;
+}
+function activeWoodcutContact(action) {
+  const contact=WOODCUT_VISUAL_TARGETS.get(action);
+  if(!contact)return null;
+  const {x,y,o}=contact.target;
+  return World.obj[idx(x,y)]===o?contact:null;
+}
+
 function* woodcutterWork(u, b) {
   const R = 9, RC = R + Math.max(0, unitLevel(u) - 2);     // сажает рядом, а опытный рубит и подальше
   // бревно от срубленного ходячего дерева — забрать в первую очередь, обтесать и унести
@@ -398,7 +412,7 @@ function* woodcutterWork(u, b) {
     lg.o.res = true;
     const ok = yield { walk: [lg.x, lg.y] };
     if (!ok) { lg.o.res = false; yield { wait: 2 }; return; }
-    yield { wait: 2, anim: 'chop' };
+    yield woodcutWait(u,lg,2);
     const i = idx(lg.x, lg.y);
     if (World.obj[i] === lg.o) { World.obj[i] = null; u.carry = 'trunk'; }
     if (!(yield* goHome(u, b))) return;
@@ -411,7 +425,7 @@ function* woodcutterWork(u, b) {
       t.o.res = true;
       const ok = yield { walk: [t.x, t.y] };
       if (!ok) { t.o.res = false; yield { wait: 2 }; return; }
-      yield { wait: typeof seaRush === 'function' && seaRush(b) ? 3.2 : 4.5, anim: 'chop' };   // дров мало перед зимой — рубят быстрее
+      yield woodcutWait(u,t,typeof seaRush === 'function' && seaRush(b) ? 3.2 : 4.5);   // дров мало перед зимой — рубят быстрее
       const i = idx(t.x, t.y);
       if (World.obj[i] === t.o) {
         World.obj[i] = { t: 'stump', g: 0 };
