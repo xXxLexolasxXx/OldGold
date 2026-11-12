@@ -102,6 +102,32 @@
   return info;
  }
  const pendingDecorativeSprite=mkCanvas(1,1);pendingDecorativeSprite._pendingSprite=true;
+ // Add the intermediate weight shifts at the final raster scale. The atlas
+ // keeps both boots and the coat hem together, including carried objects.
+ const WALK_WEIGHT = [
+  [0,0],[.5,-.5],[1,-1],[1,-.5],[.5,0],[0,.5],
+  [0,-.5],[-.5,-.5],[-1,-1],[-1,-.5],[-.5,0],[0,.5]
+ ];
+ function walkWeight(source,q,view,frame,opt){
+  if(q.holder.type==='kid')return source;
+  const [shift,rise]=WALK_WEIGHT[(Number(frame)||0)%WALK_WEIGHT.length];
+  if(!shift&&!rise)return source;
+  const cv=mkCanvas(source.width,source.height),c=cv.getContext('2d');
+  c.imageSmoothingEnabled=false;
+  const dx=Math.round(shift*K*(view==='N'?-1:1)*(view==='E'?.65:1));
+  const dy=Math.round(rise*K*(opt.gait==='tired'?.5:1));
+  const pivot=(PFY-6)*K, blend=4*K;
+  c.drawImage(source,0,0,source.width,pivot,dx,dy,source.width,pivot);
+  // The shift decreases to zero at the boots so ground contact stays fixed.
+  for(let row=0;row<blend;row++){
+   const weight=1-row/blend;
+   const top=pivot+row+Math.round(dy*weight);
+   const next=pivot+row+1+Math.round(dy*(1-(row+1)/blend));
+   if(next>top)c.drawImage(source,0,pivot+row,source.width,1,Math.round(dx*weight),top,source.width,next-top);
+  }
+  c.drawImage(source,0,pivot+blend,source.width,source.height-pivot-blend,0,pivot+blend,source.width,source.height-pivot-blend);
+  return cv;
+ }
  function render(u,view='S',pose='idle',frame=0,opt={}){if(view==='W')view='E';if(!u||!OUTFIT[u.type])return previous(u,view,pose,frame,opt);const q=resolve(u),G=geometry(q,view,pose,frame,opt);if(!G)return previous(u,view,pose,frame,opt);const ap=q.app,explicit=i=>!!ap&&ap[i]>=0,cls=typeof q.O.cap==='string'&&q.O.cap.startsWith('cls:'),hairChange=q.sex==='f'&&explicit(11),beardChange=q.sex!=='f'&&!q.L.noBeard&&(explicit(3)||explicit(4)||explicit(5)||explicit(13)),capChange=true,capeChange=explicit(14),special=capChange||beardChange||hairChange||capeChange;
   const {gf,...options}=opt,candle=capChange&&q.O.candle?Math.floor(Game.time*5)%4:0;
   const motion=JSON.stringify([q.holder.type,q.look,q.sex,view,pose,frame?.anim,options,u.carry,u.carryN,u.injury,candle]);
@@ -128,6 +154,7 @@
    let capLayer=null;if(capChange&&!opt.nohat){const H=capLayout(q,G,view);capLayer=mkCanvas(PW*K,PH*K);const hc=capLayer.getContext('2d');hc.scale(K,K);hc.imageSmoothingEnabled=false;transformed(hc,G,()=>{cap(hc,q,{...G,capY:H.anchor},H.view,frame);lowBrim(hc,q,G,view);});cropCapBelow(capLayer,info,H.bottom);if(G.child)transformed(hc,G,()=>childCapNose(hc,q,G,view));c.drawImage(capLayer,0,0,PW,PH);}
    if(capeChange&&view==='N'){c.save();c.translate(PFX,PFY);c.scale(1.6,1);skinCape(c,q.O.skCape,view,-13,-6,true);c.restore();}if(!ap&&!opt.nohat&&!cls){if(capLayer)drawHeadForeground(c,capLayer,paint.fore);}else c.drawImage(fore,0,0,PW,PH);
   }
+  if(pose==='walk')out=walkWeight(out,q,view,frame,opt);
   out._fantasyAppearance=true;out._fpaNoHat=!!opt.nohat;out._fpaColourOnly=!special;cache.set(key,out);if(cache.size>800)cache.delete(cache.keys().next().value);
   lastFrame.delete(motion);lastFrame.set(motion,key);if(lastFrame.size>800)lastFrame.delete(lastFrame.keys().next().value);
   if(R.inFrame)spriteSpent(t0);
