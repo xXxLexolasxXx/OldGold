@@ -745,6 +745,12 @@ function siteGround(b, fw, fh) {
 function siteHammerPoint(b){
   return [(b.doorX+.5)*TILE+13,(b.doorY+.5)*TILE-3];
 }
+function sitePropShadow(c,x,y,width){
+  c.fillStyle='rgba(39,33,23,0.44)';
+  c.fillRect(x-width/2+.5,y-.5,width-1,.5);
+  c.fillRect(x-width/2,y,width,1);
+  c.fillRect(x-width/2+1,y+1,width-2,.5);
+}
 function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
   c.imageSmoothingEnabled = R.smooth;
   c.drawImage(siteGround(b, fw, fh), fx, fy);
@@ -757,6 +763,7 @@ function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
     // The entry peg is the first of the four marks while the site is laid out.
     stakes.splice(stakes[2][0]+fw/2<hx?3:2,1);
     stakes.unshift([hx-1,hy+6]);
+    sitePropShadow(c,hx,hy+7,4);
   }
   for (const [sx, sy] of stakes.slice(0, nStakes)) {
     c.fillStyle = '#583522'; c.fillRect(sx, sy - 6, 2, 7);
@@ -802,6 +809,7 @@ function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
     }
   }
   if(b.state==='build'){
+    sitePropShadow(c,hx,hy+6,13);
     c.fillStyle='#34291e';c.fillRect(hx-5.5,hy,11,6);
     c.fillStyle='#795133';c.fillRect(hx-5,hy+1,10,4);
     c.fillStyle='#b48757';c.fillRect(hx-4.5,hy+1.5,9,1);
