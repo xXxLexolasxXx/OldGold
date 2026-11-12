@@ -892,7 +892,7 @@ function pxSmoke(c, X, Y, t, n, col) {
   c.globalAlpha = 1;
 }
 function pxLamp(c, P, ox, oy) { if (P.lamp) glow(c, ox + P.lamp[0], oy + P.lamp[1], 12, '255,210,120', 0.2); }
-let breweryPoseBodies;
+let yardContactBodies;
 const breweryYardClearance=new WeakMap();
 function breweryOpenGround(s){
   const prior=breweryYardClearance.get(s.canvas);
@@ -922,10 +922,10 @@ function breweryOpenGround(s){
   breweryYardClearance.set(cv,result);
   return result;
 }
-function breweryPoseBody(actor,view,pose,frame,grip){
+function yardContactBody(actor,view,pose,frame,grip){
   const source=personSprite({...actor,_exactYardPose:true},view,pose,frame,{});
-  breweryPoseBodies??=new FantasyPublishedYard.CanvasCache(32,2*1024*1024);
-  let body=breweryPoseBodies.get(source);
+  yardContactBodies??=new FantasyPublishedYard.CanvasCache(32,2*1024*1024);
+  let body=yardContactBodies.get(source);
   if(body)return body;
   body=mkCanvas(source.width,source.height);
   const c=body.getContext('2d',{willReadFrequently:true});
@@ -941,10 +941,10 @@ function breweryPoseBody(actor,view,pose,frame,grip){
     fpaSowPolygon(c,[[-4.5,-13],[1.5,-13.5],[3.5,-12],[3.5,-9],[-4,-9]],coat);
     fpaSowBand(c,[-4,-8],[3.5,-8],1,'#745138');
   }
-  breweryPoseBodies.set(source,body);
+  yardContactBodies.set(source,body);
   return body;
 }
-function breweryBodyAt(c,body,x,y,flip){
+function yardContactBodyAt(c,body,x,y,flip){
   const scale=YARD_K*FantasyPublishedYard.scale;
   c.save();c.translate(x,y);
   if(flip)c.scale(-1,1);
@@ -952,13 +952,13 @@ function breweryBodyAt(c,body,x,y,flip){
   c.drawImage(body,-PFX*scale,-PFY*scale,PW*scale,PH*scale);
   c.restore();
 }
-function brewerySleeve(c,shoulder,elbow,grip,coat){
+function yardContactSleeve(c,shoulder,elbow,grip,coat){
   for(const [a,z,width] of [[shoulder,elbow,2.6],[elbow,grip,2.1]]){
     fpaSowBand(c,a,z,width,'#322823');
     fpaSowBand(c,a,z,width-.9,coat);
   }
 }
-function breweryHand(c,[x,y],skin){
+function yardContactHand(c,[x,y],skin){
   const {r}=FantasyPublishedYard.paint;
   r(c,x-1,y-.75,2,1.5,'#664735');
   r(c,x-.65,y-.75,1.3,1.1,skin);
@@ -999,15 +999,15 @@ function drawBreweryRoll(c,b,points,clearance,ox,oy,t){
     return drawFolk(c,{...actor,_exactYardPose:phase<5.8},ox+x,oy+y,s.view,s.pose,s.fr,{});
   }
   const {coat,L}=FantasyPublishedAppearanceArt.resolve(actor),skin=SKINS[L.skin%SKINS.length];
-  breweryBodyAt(c,breweryPoseBody(actor,'E','walk',s.fr,false),ox+x,oy+y,bearing<0);
+  yardContactBodyAt(c,yardContactBody(actor,'E','walk',s.fr,false),ox+x,oy+y,bearing<0);
   c.save();c.translate(ox+x,oy+y);c.scale(bearing,1);
   const far=[3.25,-5.4],near=[3.4,-3.6];
-  brewerySleeve(c,[.9,-8.1],[1.9,-6.6],far,shade(coat,-.2));
-  brewerySleeve(c,[-1,-7.7],[1.35,-5.1],near,coat);
+  yardContactSleeve(c,[.9,-8.1],[1.9,-6.6],far,shade(coat,-.2));
+  yardContactSleeve(c,[-1,-7.7],[1.35,-5.1],near,coat);
   c.restore();
   breweryBarrel(c,bx,by,spin);
   c.save();c.translate(ox+x,oy+y);c.scale(bearing,1);
-  breweryHand(c,far,skin[1]);breweryHand(c,near,skin[0]);
+  yardContactHand(c,far,skin[1]);yardContactHand(c,near,skin[0]);
   c.restore();
 }
 function drawBreweryTaster(c,b,x,y,t){
@@ -1019,9 +1019,9 @@ function drawBreweryTaster(c,b,x,y,t){
   const rim=[4.3-3.85*f,-7.7+(mouthY+7.7)*f];
   const angle=-.48*f,cos=Math.cos(angle),sin=Math.sin(angle);
   const grip=[rim[0]+1.85*cos-1.55*sin,rim[1]+1.85*sin+1.55*cos];
-  breweryBodyAt(c,breweryPoseBody(actor,'S','idle',0,true),x,y,false);
+  yardContactBodyAt(c,yardContactBody(actor,'S','idle',0,true),x,y,false);
   c.save();c.translate(x,y);
-  brewerySleeve(c,[2.4,-7.6],[4.3,-5.6-2.4*f],grip,q.coat);
+  yardContactSleeve(c,[2.4,-7.6],[4.3,-5.6-2.4*f],grip,q.coat);
   c.save();c.translate(...rim);c.rotate(angle);
   const {r,oval,poly}=FantasyPublishedYard.paint;
   poly(c,[[-1.7,0],[1.6,0],[1.7,3.1],[1.1,3.6],[-1.1,3.6],[-1.7,3]],'#3d2c22');
@@ -1034,8 +1034,147 @@ function drawBreweryTaster(c,b,x,y,t){
   oval(c,0,.2,1.6,.6,'#e4d0a0');
   r(c,-.65,0,1,.5,'#f5e8bc');
   c.restore();
-  breweryHand(c,grip,SKINS[q.L.skin%SKINS.length][0]);
+  yardContactHand(c,grip,SKINS[q.L.skin%SKINS.length][0]);
   c.restore();
+}
+
+const GOLD_MINE_RAILS=new WeakMap();
+let goldMineCartLayer;
+// The unmirrored published arch sits left of the native rail path.
+function goldMineTrackOffset(rot){return rot===1||rot===2?0:-22.5;}
+function goldMineCartPoint(points,offset,k){
+  const [x,y]=pxLerp(points[0],points[1],k);
+  return [x+offset,y];
+}
+function goldMineFacadeMask(s,entry,left,top,width,height){
+  const cv=mkCanvas(width*2,height*2),ctx=cv.getContext('2d',{willReadFrequently:true});
+  ctx.imageSmoothingEnabled=false;ctx.setTransform(2,0,0,2,-2*left,-2*top);
+  ctx.drawImage(s.canvas,0,0,s.w,s.h);
+  const pixels=ctx.getImageData(0,0,cv.width,cv.height),data=pixels.data;
+  const floor=new Float32Array(cv.width).fill(-Infinity);
+  for(let y=0;y<cv.height;y++)for(let x=0;x<cv.width;x++){
+    const dx=left+x/2-entry[0],dy=top+y/2-entry[1],i=(y*cv.width+x)*4;
+    // Dark pixels inside the opening are background. The surrounding
+    // rock and timber remain in front of the cart and its worker.
+    if(Math.abs(dx)<9&&dy>-22&&dy<3&&data[i]<66&&data[i+1]<57&&data[i+2]<55)data[i+3]=0;
+    if(data[i+3]>220&&dy>-18&&dy<9)floor[x]=top+y/2;
+  }
+  ctx.putImageData(pixels,0,0);
+  return {cv,floor};
+}
+function drawGoldMineRails(c,s,ox,oy,offset){
+  let track=GOLD_MINE_RAILS.get(s.canvas);
+  if(!track){
+    const points=s.pt.cart,[a,b]=points,length=Math.hypot(b[0]-a[0],b[1]-a[1]);
+    const pad=4.5/length,start=goldMineCartPoint(points,offset,-pad),end=goldMineCartPoint(points,offset,1+pad);
+    const left=Math.floor(Math.min(start[0],end[0])-24),top=Math.floor(Math.min(start[1],end[1])-28);
+    const width=Math.ceil(Math.max(start[0],end[0])+25)-left,height=Math.ceil(Math.max(start[1],end[1])+16)-top;
+    const cv=mkCanvas(width*2,height*2),ctx=cv.getContext('2d');
+    ctx.imageSmoothingEnabled=false;ctx.setTransform(2,0,0,2,-2*left,-2*top);
+    for(let t=.75;t<length+9;t+=3.25){
+      const [x,y]=pxLerp(start,end,t/(length+9));
+      fpaSowBand(ctx,[x-6.4,y],[x+6.4,y],2,'#352c21');
+      fpaSowBand(ctx,[x-5.9,y-.35],[x+5.9,y-.35],.75,'#8d6844');
+    }
+    for(const side of [-4.1,4.1]){
+      for(const [highlight,w,color] of [[0,1.8,'#333a37'],[0,.95,'#737e77'],[-.3,.5,'#b6baa4']]){
+        const x=side+highlight;
+        fpaSowBand(ctx,[start[0]+x,start[1]],[end[0]+x,end[1]],w,color);
+      }
+    }
+    ctx.globalCompositeOperation='destination-out';
+    ctx.drawImage(s.canvas,0,0,s.w,s.h);
+    const mask=goldMineFacadeMask(s,goldMineCartPoint(points,offset,0),left,top,width,height);
+    track={cv,mask,left,top,width,height};
+    GOLD_MINE_RAILS.set(s.canvas,track);
+  }
+  c.save();c.imageSmoothingEnabled=false;
+  c.drawImage(track.cv,ox+track.left,oy+track.top,track.width,track.height);
+  c.restore();
+  return track;
+}
+function drawGoldMineCartLayer(c,track,ox,oy,x,y,paint){
+  const w=76,h=54,left=Math.floor(x-w/2),top=Math.floor(y-35);
+  const cv=goldMineCartLayer??=mkCanvas(w*2,h*2),ctx=cv.getContext('2d');
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.imageSmoothingEnabled=false;
+  ctx.setTransform(2,0,0,2,-left*2,-top*2);
+  paint(ctx);
+  ctx.globalCompositeOperation='destination-out';
+  ctx.drawImage(track.mask.cv,ox+track.left,oy+track.top,track.width,track.height);
+  ctx.globalCompositeOperation='source-over';
+  c.save();c.imageSmoothingEnabled=false;
+  c.drawImage(cv,left,top,w,h);
+  c.restore();
+}
+
+function goldMineCartLayerAt(c,track,ox,oy,x,y,worldX,worldY,paint){
+  const column=Math.round((worldX-ox-track.left)*2),{floor}=track.mask;
+  let depth=-Infinity;
+  for(let i=Math.max(0,column-6);i<=Math.min(floor.length-1,column+6);i++)
+    depth=Math.max(depth,floor[i]);
+  if(worldY-oy>depth+1)paint(c);
+  else drawGoldMineCartLayer(c,track,ox,oy,x,y,paint);
+}
+
+const MINE_CART_REAR=[4.7,-6.5],MINE_CART_FRONT=[-4.2,9.1];
+function mineCartRoute(points){
+  const segments=points.slice(1).map((b,i)=>{
+    const a=points[i],dx=b[0]-a[0],dy=b[1]-a[1];
+    return {a,b,dx,dy,length:Math.hypot(dx,dy)};
+  });
+  return {segments,length:segments.reduce((sum,segment)=>sum+segment.length,0)};
+}
+const MINE_CART_PARK_ROUTE=mineCartRoute([MINE_CART_REAR,[10.5,-7.5],[10.5,9.1],MINE_CART_FRONT]);
+function mineCartWalk(route,progress){
+  let left=progress*route.length;
+  for(const {a,b,dx,dy,length} of route.segments){
+    if(left<=length)return {foot:pxLerp(a,b,Math.max(0,left/length)),dx,dy};
+    left-=length;
+  }
+  const {b,dx,dy}=route.segments[route.segments.length-1];
+  return {foot:b,dx,dy};
+}
+function mineCartGrip(out){
+  const [x,y]=out?[2.75,-10]:[-2.75,-1.4];
+  return [[x-2.3,y],[x+2.3,y]];
+}
+function drawGoldMineCart(b,C,x,y,t,u,moving,out,paintAt){
+  const actor={type:'miner',look:b.id*71+2,_exactYardPose:true};
+  const left=Math.round((x-C.ax)*3)/3,top=Math.round((y-C.ay)*3)/3;
+  x=left+C.ax;y=top+C.ay;
+  const drawCart=()=>paintAt(x,y,c=>c.drawImage(C.cv,left,top,C.w,C.h));
+  const frame=Math.floor(t*9)&7;
+  if(!moving){
+    const {foot:[px,py],dx,dy}=mineCartWalk(MINE_CART_PARK_ROUTE,out?(u-.4)/.15:(1-u)/.05);
+    const headingX=out?dx:-dx,headingY=out?dy:-dy;
+    const view=Math.abs(headingX)>Math.abs(headingY)?(headingX<0?'W':'E'):(headingY<0?'N':'S');
+    if(py>=0)drawCart();
+    paintAt(x+px,y+py,ctx=>drawFolk(ctx,actor,x+px,y+py,view,'walk',frame,{}));
+    if(py<0)drawCart();
+    return;
+  }
+  const [px,py]=out?MINE_CART_REAR:MINE_CART_FRONT,view=out?'S':'N';
+  const rim=mineCartGrip(out);
+  const {coat,L}=FantasyPublishedAppearanceArt.resolve(actor);
+  const skin=SKINS[L.skin%SKINS.length];
+  if(!out)drawCart();
+  paintAt(x+px,y+py,c=>{
+    yardContactBodyAt(c,yardContactBody(actor,view,'walk',frame,false),x+px,y+py,false);
+    c.save();c.translate(x,y);
+    for(let i=0;i<2;i++){
+      const grip=rim[i],shoulder=[px+(i?2.45:-2.45),py-7.5];
+      const elbow=[(shoulder[0]+grip[0])*.5,(shoulder[1]+grip[1])*.5+.9];
+      yardContactSleeve(c,shoulder,elbow,grip,i?coat:shade(coat,-.18));
+    }
+    c.restore();
+  });
+  if(out)drawCart();
+  paintAt(x+px,y+py,c=>{
+    c.save();c.translate(x,y);
+    for(let i=0;i<2;i++)yardContactHand(c,rim[i],skin[i?0:1]);
+    c.restore();
+  });
 }
 
 function drawFoodYard(c, b, spr, ox, oy) {
@@ -1133,11 +1272,20 @@ function drawFoodYard(c, b, spr, ox, oy) {
       const T = 14, u = (t % T) / T, k = u < 0.4 ? u / 0.4 : u < 0.55 ? 1 : u < 0.95 ? 1 - (u - 0.55) / 0.4 : 0;
       const [x0, y0] = P.cart[0], [x1, y1] = P.cart[1], x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k, C = pxCart(spr.cartLoad || 'gold');
       const moving = (u < 0.4) || (u >= 0.55 && u < 0.95), out = u < 0.55;
-      // толкающий идёт за вагонеткой: на выезде он дальше от зрителя (рисуем до неё), на въезде — ближе (после)
-      const push = () => drawFolk(c, { type: 'miner', look: b.id * 71 + 2 }, ox + x + 1, oy + y + (out ? -7 : 9), out ? 'S' : 'N', moving ? 'walk' : 'idle', Math.floor(t * 9) & 7, {});
-      if (out) push();
-      c.drawImage(C.cv, Math.round((ox + x - C.ax) * 3) / 3, Math.round((oy + y - C.ay) * 3) / 3, C.w, C.h);
-      if (!out) push();
+      if(spr.px==='goldmine'&&window.FantasyPublishedYard?.paint&&window.FantasyPublishedAppearanceArt&&
+        FantasyArt.images['gnome-walk']&&FantasyArt.images['gnome-woman-walk']){
+        const offset=goldMineTrackOffset(b.rot);
+        const track=drawGoldMineRails(c,spr,ox,oy,offset);
+        const [cx,cy]=goldMineCartPoint(P.cart,offset,k);
+        const paintAt=(px,py,paint)=>goldMineCartLayerAt(c,track,ox,oy,ox+cx,oy+cy,px,py,paint);
+        drawGoldMineCart(b,C,ox+cx,oy+cy,t,u,moving,out,paintAt);
+      }else{
+        // толкающий идёт за вагонеткой: на выезде он дальше от зрителя (рисуем до неё), на въезде — ближе (после)
+        const push = () => drawFolk(c, { type: 'miner', look: b.id * 71 + 2 }, ox + x + 1, oy + y + (out ? -7 : 9), out ? 'S' : 'N', moving ? 'walk' : 'idle', Math.floor(t * 9) & 7, {});
+        if (out) push();
+        c.drawImage(C.cv, Math.round((ox + x - C.ax) * 3) / 3, Math.round((oy + y - C.ay) * 3) / 3, C.w, C.h);
+        if (!out) push();
+      }
     }
     if (P.miner && on) drawFolk(c, { type: 'miner', look: b.id * 71 + 5 }, ox + P.miner[0] + 14, oy + P.miner[1] + 3, 'W', 'work', { anim: 'mine', f }, {});   // долбит скалу сбоку от устья, не на рельсах
     if (P.wheel) {   // водяное колесо: брызги стекают с лопастей
