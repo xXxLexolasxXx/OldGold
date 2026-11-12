@@ -575,6 +575,11 @@ const FPA_AXE_POSE_KEYS=[
  [.50,2,1.5,3.5,-15,0],[.56,2,1.5,3.5,-15,0],
  [.74,.5,1,4,-12,.65],[1,0,0,3.5,-13,.45],
 ];
+const FPA_HAMMER_POSE_KEYS=[
+ [0,0,0,3.5,-13,.35],[.20,-.75,-.5,2,-16,-.75],[.43,-1.5,-1,.5,-18,-2.25],
+ [.50,1.5,1.5,4,-15,0],[.56,1.5,1.5,4,-15,0],
+ [.74,.5,1,4,-12,.6],[1,0,0,3.5,-13,.35],
+];
 function fpaStrikeRig(targetX,targetY,progress,keys,edgeSize){
  const index=keys.findIndex(key=>key[0]>progress);
  const next=index<0?keys.length-1:index,a=keys[next-1],b=keys[next];
@@ -596,6 +601,9 @@ function fpaDrawMinePose(world,u,source,px,py,face,target,progress,scale=1){
 function fpaDrawAxePose(world,u,source,px,py,face,target,progress){
  return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,'axe',1);
 }
+function fpaDrawHammerPose(world,u,source,px,py,face,target,progress){
+ return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,'hammer',1);
+}
 let fpaStrikeCanvas;
 function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale){
  const snap=n=>Math.round(n*2)/2;
@@ -607,7 +615,8 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const targetX=(target[0]-px)*face/scale,targetY=(target[1]-py)/scale;
  const strike=tool==='spade'?null:tool==='pick'
    ?fpaStrikeRig(targetX,targetY,progress,FPA_MINE_POSE_KEYS,4.5)
-   :fpaStrikeRig(targetX,targetY,progress,FPA_AXE_POSE_KEYS,3.5);
+   :tool==='axe'?fpaStrikeRig(targetX,targetY,progress,FPA_AXE_POSE_KEYS,3.5)
+   :fpaStrikeRig(targetX,targetY,progress,FPA_HAMMER_POSE_KEYS,2.5);
  if(strike){dx=strike.dx;dy=strike.dy;}
  const gripLean=[snap(dx),snap(dy)];
  const lean=[snap(dx*1.65),snap(dy*1.2)];
@@ -719,6 +728,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  fpaSowBand(c,near,far,.75,'#d4a775');
  if(tool==='pick')fpaMiningHead(c,socket,angle,strike.edge);
  else if(tool==='axe')fpaFellingHead(c,socket,angle,strike.edge);
+ else if(tool==='hammer')fpaBuildingHammerHead(c,socket,angle,strike.edge);
  else fpaSpadeHead(c,near[0],near[1],tip[0],tip[1]);
  if(!farBehind)fpaSowFist(c,far,angle,skin,true);
  fpaSowFist(c,near,angle,skin,false);
@@ -729,6 +739,20 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  world.drawImage(cv,-left,-top,cv.width/2,cv.height/2);
  world.restore();
  return {tip:[px+tip[0]*face*scale,py+tip[1]*scale],near,far,shoulder,lean,shaft:strike?.shaft};
+}
+function fpaBuildingHammerHead(c,[x,y],angle,edge){
+ const ux=Math.sin(angle),uy=Math.cos(angle);
+ const shape=(points,color)=>fpaSowPolygon(c,points.map(([along,side])=>[
+   x+ux*along-uy*side,y+uy*along+ux*side
+ ]),color);
+ shape([[-1.55,-2.9],[.95,-2.9],[1.85,-2.1],[1.85,edge-.6],
+   [1.25,edge],[-1.2,edge],[-1.8,edge-.55],[-1.8,-2.35]],'#323730');
+ shape([[-1.15,-2.4],[.8,-2.4],[1.3,-1.8],[1.3,edge-.55],
+   [-1.15,edge-.55]],'#86998d');
+ shape([[-1.2,edge-.5],[1.2,edge-.5],[.85,edge],[-.85,edge]],'#d9e4cb');
+ shape([[-1.4,-2.35],[-.8,-2.35],[-.8,edge-.65],[-1.4,edge-.65]],'#aebdaf');
+ shape([[-1.4,-.8],[1.45,-.8],[1.45,.55],[-1.4,.55]],'#63492e');
+ shape([[-1,-.55],[.95,-.55],[.95,.3],[-1,.3]],'#cb9b56');
 }
 function fpaFellingHead(c,[x,y],angle,edge){
  const ux=Math.sin(angle),uy=Math.cos(angle);

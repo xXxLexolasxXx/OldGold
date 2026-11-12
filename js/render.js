@@ -274,14 +274,23 @@ function drawUnit(c, u) {
     window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
   if(mineRig)face=mineContact.point[0]<px?-1:1;
   const pickTarget=!mineRig&&pickProgress<.86&&typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
+  const buildJob=u.job;
+  const hammerRig=!wp&&pose==='work'&&frame.anim==='build'&&u.type==='builder'&&a?.T&&
+    buildJob&&!buildJob.removed&&!buildJob.isRoad&&!buildJob.selfBuild&&
+    (buildJob.state==='site'||buildJob.state==='build')&&typeof fpaDrawHammerPose==='function'&&
+    window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
+  const hammerTarget=hammerRig?siteHammerPoint(buildJob):null;
+  if(hammerTarget)face=hammerTarget[0]<px?-1:1;
   const axeProgress=woodcut&&frame.f>=8?swingProgress(u):1;
   const axeTarget=!axeRig&&axeProgress<.86?woodcut.point:null;
   if(pickTarget||axeTarget||fieldTarget)opt.externalWorkTool=true;
-  const spr = sowRig||mineRig||axeRig
+  const spr = sowRig||mineRig||axeRig||hammerRig
     ?personSprite(u,view,pose,{...frame,f:9},{...opt,sowRigBase:true})
     :personSprite(u,view,pose,frame,opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
-  if (axeRig&&spr._fantasyAppearance&&flyP<0) {
+  if (hammerRig&&spr._fantasyAppearance&&flyP<0) {
+    fpaDrawHammerPose(c,u,spr,px,py,face,hammerTarget,swingProgress(u));
+  } else if (axeRig&&spr._fantasyAppearance&&flyP<0) {
     fpaDrawAxePose(c,u,spr,px,py,face,axeGoal,swingProgress(u));
   } else if (mineRig&&spr._fantasyAppearance&&flyP<0) {
     fpaDrawMinePose(c,u,spr,px,py,face,mineContact.point,swingProgress(u));
@@ -733,6 +742,9 @@ function siteGround(b, fw, fh) {
   return cv;
 }
 
+function siteHammerPoint(b){
+  return [(b.doorX+.5)*TILE+13,(b.doorY+.5)*TILE-3];
+}
 function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
   c.imageSmoothingEnabled = R.smooth;
   c.drawImage(siteGround(b, fw, fh), fx, fy);
@@ -740,6 +752,12 @@ function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
   // колышки забиваются по одному на каждый удар разметки
   const stakes = [[fx + 3, fy + 3], [fx + fw - 5, fy + 3], [fx + 3, fy + fh - 5], [fx + fw - 5, fy + fh - 5]];
   const nStakes = b.state === 'site' ? Math.min(4, 1 + b.hits) : 4;
+  const [hx,hy]=siteHammerPoint(b);
+  if(b.state==='site'){
+    // The entry peg is the first of the four marks while the site is laid out.
+    stakes.splice(stakes[2][0]+fw/2<hx?3:2,1);
+    stakes.unshift([hx-1,hy+6]);
+  }
   for (const [sx, sy] of stakes.slice(0, nStakes)) {
     c.fillStyle = '#583522'; c.fillRect(sx, sy - 6, 2, 7);
     c.fillStyle = '#e0b882'; c.fillRect(sx, sy - 6, 2, 1);
@@ -782,6 +800,15 @@ function drawSite(c, b, spr, ox, oy, fx, fy, fw, fh) {
       c.fillStyle = '#45291a'; c.fillRect(fx, ly + 2, fw, 1);
       c.fillStyle = '#cc9a64'; c.fillRect(fx, ly, fw, 2);
     }
+  }
+  if(b.state==='build'){
+    c.fillStyle='#34291e';c.fillRect(hx-5.5,hy,11,6);
+    c.fillStyle='#795133';c.fillRect(hx-5,hy+1,10,4);
+    c.fillStyle='#b48757';c.fillRect(hx-4.5,hy+1.5,9,1);
+    c.fillStyle='#5b3c29';c.fillRect(hx-4,hy+3,5.5,.5);
+    c.fillStyle='#627269';c.fillRect(hx-3,hy,6,1.5);
+    c.fillStyle='#c2c6ac';c.fillRect(hx-2.5,hy,5,.5);
+    c.fillRect(hx-4.5,hy+3.5,.5,.5);c.fillRect(hx+4,hy+3.5,.5,.5);
   }
   let mx = fx + 4;
   const my = fy + fh - 3;
