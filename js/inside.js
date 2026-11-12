@@ -913,8 +913,12 @@ function breweryOpenGround(s){
   }
   const roll=a?Math.max(0,rightEdge(Math.min(a[1],b[1])-17,Math.max(a[1],b[1])+1)+5-
     Math.min(a[0],b[0])-(b[0]>=a[0]?7:-7)):0;
-  const taste=taster?Math.max(0,rightEdge(taster[1]-17,taster[1]+1)+5-taster[0]):0;
-  const result={roll,taste};
+  let taste=taster?Math.max(0,rightEdge(taster[1]-17,taster[1]+1)+5-taster[0]):0;
+  const barrelEnd=b?b[0]+roll+(b[0]>=a[0]?7:-7):null;
+  const tasteY=taster&&b&&Math.abs(taster[0]+taste-barrelEnd)<9
+    ?Math.max(0,b[1]+22-taster[1]):0;
+  if(tasteY)taste=Math.max(taste,rightEdge(taster[1]+tasteY-17,taster[1]+tasteY+1)+5-taster[0]);
+  const result={roll,taste,tasteY};
   breweryYardClearance.set(cv,result);
   return result;
 }
@@ -1085,7 +1089,7 @@ function drawFoodYard(c, b, spr, ox, oy) {
     }
     if(P.taster){
       const [x,y]=P.taster;
-      if(ground)drawBreweryTaster(c,b,ox+x+ground.taste,oy+y,t);
+      if(ground)drawBreweryTaster(c,b,ox+x+ground.taste,oy+y+ground.tasteY,t);
       else drawFolk(c,{type:'serf',look:b.id*13+6},ox+x,oy+y,'S','idle',0,{gest:'drink',gf:gestCyc(t)});
     }
     pxLamp(c, P, ox, oy);
