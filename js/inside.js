@@ -892,6 +892,148 @@ function pxSmoke(c, X, Y, t, n, col) {
   c.globalAlpha = 1;
 }
 function pxLamp(c, P, ox, oy) { if (P.lamp) glow(c, ox + P.lamp[0], oy + P.lamp[1], 12, '255,210,120', 0.2); }
+let breweryPoseBodies;
+const breweryYardClearance=new WeakMap();
+function breweryOpenGround(s){
+  const prior=breweryYardClearance.get(s.canvas);
+  if(prior)return prior;
+  const [a,b]=s.pt.roll||[null,null],taster=s.pt.taster,cv=s.canvas,k=cv.width/s.w;
+  const c=cv.getContext('2d');
+  // Work anchors rotate with the native yard. The published façade can
+  // project beyond those anchors, so use its opaque edge in each lane.
+  function rightEdge(top,bottom){
+    const first=Math.max(0,Math.floor(top*k)),last=Math.min(cv.height,Math.ceil(bottom*k));
+    if(last<=first)return 0;
+    const pixels=c.getImageData(0,first,cv.width,last-first).data;
+    let right=0;
+    for(let row=0;row<last-first;row++){
+      for(let x=cv.width-1;x>=right;x--)if(pixels[(row*cv.width+x)*4+3]>220){right=x+1;break;}
+    }
+    return right/k;
+  }
+  const roll=a?Math.max(0,rightEdge(Math.min(a[1],b[1])-17,Math.max(a[1],b[1])+1)+5-
+    Math.min(a[0],b[0])-(b[0]>=a[0]?7:-7)):0;
+  const taste=taster?Math.max(0,rightEdge(taster[1]-17,taster[1]+1)+5-taster[0]):0;
+  const result={roll,taste};
+  breweryYardClearance.set(cv,result);
+  return result;
+}
+function breweryPoseBody(actor,view,pose,frame,grip){
+  const source=personSprite({...actor,_exactYardPose:true},view,pose,frame,{});
+  breweryPoseBodies??=new FantasyPublishedYard.CanvasCache(32,2*1024*1024);
+  let body=breweryPoseBodies.get(source);
+  if(body)return body;
+  body=mkCanvas(source.width,source.height);
+  const c=body.getContext('2d',{willReadFrequently:true});
+  c.drawImage(source,0,0);
+  fpaCleanAtlasArms(body,actor,view,grip?'idle':'yardGrip',frame,grip?{gest:'drink'}:{});
+  if(!grip){
+    // The profile walk wrist overlaps the coat in the atlas.
+    const {coat}=FantasyPublishedAppearanceArt.resolve(actor);
+    c.scale(body.width/PW,body.height/PH);c.translate(PFX,PFY);
+    c.clearRect(-13,-15,26,9);
+    fpaSowPolygon(c,[[-5.5,-14.5],[-2.5,-15],[4.5,-14],[5.5,-10],[4.5,-6],[-4.5,-6],[-5.5,-8]],'#352722');
+    fpaSowPolygon(c,[[-4.5,-14],[-2,-14.5],[4,-13.5],[4.5,-10],[3.8,-7],[-4,-7],[-5,-8.5]],shade(coat,-.2));
+    fpaSowPolygon(c,[[-4.5,-13],[1.5,-13.5],[3.5,-12],[3.5,-9],[-4,-9]],coat);
+    fpaSowBand(c,[-4,-8],[3.5,-8],1,'#745138');
+  }
+  breweryPoseBodies.set(source,body);
+  return body;
+}
+function breweryBodyAt(c,body,x,y,flip){
+  const scale=YARD_K*FantasyPublishedYard.scale;
+  c.save();c.translate(x,y);
+  if(flip)c.scale(-1,1);
+  c.imageSmoothingEnabled=false;
+  c.drawImage(body,-PFX*scale,-PFY*scale,PW*scale,PH*scale);
+  c.restore();
+}
+function brewerySleeve(c,shoulder,elbow,grip,coat){
+  for(const [a,z,width] of [[shoulder,elbow,2.6],[elbow,grip,2.1]]){
+    fpaSowBand(c,a,z,width,'#322823');
+    fpaSowBand(c,a,z,width-.9,coat);
+  }
+}
+function breweryHand(c,[x,y],skin){
+  const {r}=FantasyPublishedYard.paint;
+  r(c,x-1,y-.75,2,1.5,'#664735');
+  r(c,x-.65,y-.75,1.3,1.1,skin);
+}
+function breweryBarrel(c,x,y,turn){
+  const {r,ln,oval,poly,bolt}=FantasyPublishedYard.paint;
+  c.save();c.translate(x,y);
+  oval(c,0,.1,4.6,1.05,'#3a412b');
+  poly(c,[[-4,-5.5],[-2.5,-7],[2.8,-7],[4,-5.5],[4,-1.5],[2.5,0],[-2.7,0],[-4,-1.6]],'#3a2920');
+  poly(c,[[-2.8,-6.4],[2.5,-6.4],[3.5,-5.2],[3.5,-1.7],[2.2,-.5],[-2.7,-.5]],'#956337');
+  for(let i=0;i<4;i++){
+    const row=-6.15+i*1.4+(turn%1)*.9;
+    r(c,-2.5,row,5.5,.65,i===1?'#c28f54':'#805331');
+  }
+  for(const band of [-1.5,2.3]){
+    r(c,band,-6.1,.8,5.4,'#4d5350');
+    r(c,band,-5.6,.5,4.1,'#9a9b82');
+    bolt(c,band+.4,-4.6);
+  }
+  oval(c,-2.65,-3.5,1.6,3.2,'#49392c');
+  oval(c,-2.65,-3.5,1.2,2.65,'#ae7d4a');
+  ln(c,-2.65,-3.5,-2.65+Math.sin(turn)*.75,-3.5+Math.cos(turn)*2.2,'#63462f');
+  r(c,-3,-3.8,.5,.5,'#d4aa70');
+  c.restore();
+}
+function drawBreweryRoll(c,b,points,clearance,ox,oy,t){
+  const bearing=points[1][0]>=points[0][0]?1:-1;
+  const route=clearance?points.map(([x,y])=>[x+clearance,y]):points;
+  const s=pxShuttle(t,route[0],route[1],4,1.5,null,null);
+  const phase=t%11,rolling=phase<4,actor={type:'brewer',look:b.id*37+8};
+  const [x,y]=s.p;
+  const distance=Math.hypot(points[1][0]-points[0][0],points[1][1]-points[0][1]);
+  const barrel=rolling?s.p:route[1];
+  const spin=Math.floor(Math.min(phase,4)*8)/32*distance/3.5;
+  const bx=ox+barrel[0]+bearing*7,by=oy+barrel[1];
+  if(!rolling){
+    breweryBarrel(c,bx,by,spin);
+    return drawFolk(c,{...actor,_exactYardPose:phase<5.8},ox+x,oy+y,s.view,s.pose,s.fr,{});
+  }
+  const {coat,L}=FantasyPublishedAppearanceArt.resolve(actor),skin=SKINS[L.skin%SKINS.length];
+  breweryBodyAt(c,breweryPoseBody(actor,'E','walk',s.fr,false),ox+x,oy+y,bearing<0);
+  c.save();c.translate(ox+x,oy+y);c.scale(bearing,1);
+  const far=[3.25,-5.4],near=[3.4,-3.6];
+  brewerySleeve(c,[.9,-8.1],[1.9,-6.6],far,shade(coat,-.2));
+  brewerySleeve(c,[-1,-7.7],[1.35,-5.1],near,coat);
+  c.restore();
+  breweryBarrel(c,bx,by,spin);
+  c.save();c.translate(ox+x,oy+y);c.scale(bearing,1);
+  breweryHand(c,far,skin[1]);breweryHand(c,near,skin[0]);
+  c.restore();
+}
+function drawBreweryTaster(c,b,x,y,t){
+  const actor={type:'serf',look:b.id*13+6};
+  const appearance=FantasyPublishedAppearanceArt,q=appearance.resolve(actor);
+  const G=appearance.geometry(q,'S','idle',0),scale=YARD_K*FantasyPublishedYard.scale;
+  if(!G)return drawFolk(c,actor,x,y,'S','idle',0,{gest:'drink',gf:gestCyc(t)});
+  const f=gestK(gestCyc(t)),mouthY=(G.headY+3.9-PFY)*scale;
+  const rim=[4.3-3.85*f,-7.7+(mouthY+7.7)*f];
+  const angle=-.48*f,cos=Math.cos(angle),sin=Math.sin(angle);
+  const grip=[rim[0]+1.85*cos-1.55*sin,rim[1]+1.85*sin+1.55*cos];
+  breweryBodyAt(c,breweryPoseBody(actor,'S','idle',0,true),x,y,false);
+  c.save();c.translate(x,y);
+  brewerySleeve(c,[2.4,-7.6],[4.3,-5.6-2.4*f],grip,q.coat);
+  c.save();c.translate(...rim);c.rotate(angle);
+  const {r,oval,poly}=FantasyPublishedYard.paint;
+  poly(c,[[-1.7,0],[1.6,0],[1.7,3.1],[1.1,3.6],[-1.1,3.6],[-1.7,3]],'#3d2c22');
+  r(c,-1.2,.6,2.4,2.5,'#a46b3e');
+  r(c,-1.2,.75,.5,2.2,'#d19b59');
+  r(c,-1.35,2.5,2.65,.5,'#62695b');
+  r(c,1.45,.9,1.2,.55,'#745132');
+  r(c,2,1.35,.6,1.1,'#745132');
+  r(c,1.45,2.1,1.15,.55,'#745132');
+  oval(c,0,.2,1.6,.6,'#e4d0a0');
+  r(c,-.65,0,1,.5,'#f5e8bc');
+  c.restore();
+  breweryHand(c,grip,SKINS[q.L.skin%SKINS.length][0]);
+  c.restore();
+}
+
 function drawFoodYard(c, b, spr, ox, oy) {
   if (b.state !== 'done' || !spr.pt) return;
   const P = spr.pt, t = Game.time + b.id * 5, on = !!b.working;
@@ -934,12 +1076,18 @@ function drawFoodYard(c, b, spr, ox, oy) {
       c.globalAlpha = 1;
     }
     if (P.brewer) drawFolk(c, { type: 'brewer', look: b.id * 37 + 3 }, ox + P.brewer[0], oy + P.brewer[1], 'E', on ? 'work' : 'idle', on ? { anim: 'dig', f: Math.floor(t * 4) % 8 } : 0, {});   // мешает сусло
-    if (P.roll) {   // подмастерье катит бочку из ворот к помосту
-      const s = pxShuttle(t, P.roll[0], P.roll[1], 4, 1.5, null, null);
-      if (t % 11 < 4) { const X = Math.round(ox + s.p[0] - 7), Y = Math.round(oy + s.p[1]), ph = Math.floor(t * 8) % 3; c.fillStyle = '#7a4e2c'; c.fillRect(X - 3, Y - 5, 6, 5); c.fillStyle = '#4a4e58'; c.fillRect(X - 3 + ph * 2, Y - 5, 1, 5); }
-      pxFolk(c, 'brewer', b.id * 37 + 8, s, ox, oy);
+    const yardPose=window.FantasyPublishedYard?.paint&&window.FantasyPublishedAppearanceArt?.geometry&&
+      FantasyArt.images['gnome-walk']&&FantasyArt.images['gnome-woman-walk'];
+    const ground=yardPose&&(P.roll||P.taster)?breweryOpenGround(spr):null;
+    if(P.roll){
+      if(ground)drawBreweryRoll(c,b,P.roll,ground.roll,ox,oy,t);
+      else pxFolk(c,'brewer',b.id*37+8,pxShuttle(t,P.roll[0],P.roll[1],4,1.5,null,null),ox,oy);
     }
-    if (P.taster) drawFolk(c, { type: 'serf', look: b.id * 13 + 6 }, ox + P.taster[0], oy + P.taster[1], 'S', 'idle', 0, { gest: 'drink', gf: gestCyc(t) });   // гость пробует пиво
+    if(P.taster){
+      const [x,y]=P.taster;
+      if(ground)drawBreweryTaster(c,b,ox+x+ground.taste,oy+y,t);
+      else drawFolk(c,{type:'serf',look:b.id*13+6},ox+x,oy+y,'S','idle',0,{gest:'drink',gf:gestCyc(t)});
+    }
     pxLamp(c, P, ox, oy);
   }
   if (spr.px === 'swine') {
