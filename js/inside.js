@@ -916,7 +916,7 @@ function breweryOpenGround(s){
   let taste=taster?Math.max(0,rightEdge(taster[1]-17,taster[1]+1)+5-taster[0]):0;
   const barrelEnd=b?b[0]+roll+(b[0]>=a[0]?7:-7):null;
   const tasteY=taster&&b&&Math.abs(taster[0]+taste-barrelEnd)<9
-    ?Math.max(0,b[1]+22-taster[1]):0;
+    ?Math.max(0,b[1]+19-taster[1]):0;
   if(tasteY)taste=Math.max(taste,rightEdge(taster[1]+tasteY-17,taster[1]+tasteY+1)+5-taster[0]);
   const result={roll,taste,tasteY};
   breweryYardClearance.set(cv,result);
