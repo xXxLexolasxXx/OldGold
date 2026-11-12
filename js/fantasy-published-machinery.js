@@ -44,7 +44,7 @@
  }
  if(type==='brewery'&&Q.brewer){if(Q.vat)copper(c,...Q.vat);const[x,y]=Q.brewer;barrel(c,x+mash.x,y,mash.w,-mash.y,true);barrel(c,x+19,y+3,9,9);if(lv>1)crate(c,x+24,y-8,10,6)}
  if(type==='butchery'&&Q.block){const[x,y]=Q.block;beam(c,x-5,y+1,11,7);oval(c,x+.5,y+1,6,1.8,P.hi);for(const dx of[-3,0,3])ln(c,x+dx,y+.5,x+dx+1,y+1.5,P.deep);oval(c,x+2,y-.2,3.5,1.7,'#8d5139');oval(c,x+1.5,y-.5,2.3,1,'#c9906c');r(c,x+2,y-1,1.5,.5,'#ead2a6');if(Q.hooks){const a=Q.hooks[0],z=Q.hooks[Q.hooks.length-1];beam(c,a[0]-2,a[1]-5,z[0]-a[0]+4,2);for(const p of Q.hooks){ln(c,p[0],p[1]-3,p[0],p[1]+1,P.silver);oval(c,p[0],p[1]+3,1.8,3,'#ad7954')}}}
- if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=goldWashBench(Q.panner);bench(c,x,y,16);for(const dx of[-6,6])bolt(c,x+dx,y+.4)}if(Q.sorter){const[x,y]=Q.sorter;bench(c,x+3,y-7,18);for(const dx of[-2,2,5]){poly(c,[[x+dx,y-7],[x+dx+1,y-10],[x+dx+2,y-7]],'#a3c5bc');r(c,x+dx+1,y-9,.5,1,'#dbe0c1')}}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
+ if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=goldWashBench(Q.panner);bench(c,x,y,16);for(const dx of[-6,6])bolt(c,x+dx,y+.4)}if(Q.sorter){const[x,y]=crystalSortBench(Q.sorter);bench(c,x,y,18);for(const dx of[-7,7])bolt(c,x+dx,y+.4)}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
  if(['metallurgist','smeltery','weaponsmith','armory'].includes(type)){const[x,y]=s.glow||[s.padx+s.fw*.78,s.baseY-15];if(type!=='armory')forge(c,x,y+2,19);if(type==='smeltery'){masonry(c,x+11,y-4,10,8);r(c,x+12,y-3,8,2,'#7e4b32');r(c,x+12,y-3,6,.5,'#e0aa58');for(const dx of[-4,1,6]){r(c,x+dx,y+8,4,1.5,'#926c3a');r(c,x+dx,y+8,4,.5,'#ddbb76')}}else{anvil(c,x-17,y+4,.9);bellows(c,x+14,y+1);if(type==='armory'){bench(c,x+3,y+1,21);poly(c,[[x,y-5],[x+6,y-5],[x+6,y-1],[x+3,y+1],[x,y-1]],P.iron);ln(c,x+3,y-4,x+3,y,P.silver);ln(c,x+1,y-2,x+5,y-2,P.mid)}}}
  if(type==='mill'){const[x,y]=[s.padx+s.fw*.78,s.baseY-9];millstone(c,x,y-2);sack(c,x-11,y+4);if(lv>1)sack(c,x+11,y+4);beam(c,x+4,y-20,8,2);poly(c,[[x+3,y-19],[x+13,y-19],[x+10,y-12],[x+6,y-12]],P.ink);poly(c,[[x+4,y-18],[x+12,y-18],[x+9,y-13],[x+7,y-13]],P.mid);for(const dx of[5,7,9])r(c,x+dx,y-18,1,.5,'#e2c47c');beam(c,x+7,y-13,2,5)}
  if(type==='tannery'){const x=s.padx+s.fw*.78,y=s.baseY-9;for(const dx of[-9,9])beam(c,x+dx,y-23,2,24);beam(c,x-10,y-24,22,2);beam(c,x-10,y-3,22,2);hide(c,x,y-3,15,19);for(const dx of[-6,6])for(const dy of[-20,-14,-7])ln(c,x+dx,y+dy,x+(dx<0?-9:9),y+dy-1,'#c5b37e');barrel(c,x+19,y+3,11,8,true);const [bx,by]=tanneryBench(s);bench(c,bx,by,13);hide(c,bx,by+.45,9,3)}
@@ -402,6 +402,55 @@
      drawIronFeed(c,{type:'miner',look:b.id*71+21},x+17,y+5.6,[11.5,-8.4],t,-1);
    }
  }
+ const crystalSortMotion=[[0,0],[0,0],[.13,1.45],[.38,2.75],[.74,2.25],[.95,.9],[1,0],[1,0]];
+ const crystalSortPalette=[
+   ['#334b53','#559c9a','#8fd3c6','#d6f0d6'],
+   ['#453656','#876ca8','#baa2d6','#eee1f8'],
+ ];
+ function crystalSortBench([x,y]){return [x+3,y-7];}
+ function crystalSortTray(c,x,y,w){
+   poly(c,[[x-w/2,y-.7],[x+w/2,y-.7],[x+w/2+.4,y+1.4],
+     [x-w/2-.4,y+1.4]],'#3e2f25');
+   r(c,x-w/2+.5,y-.35,w-1,1.15,'#514750');
+   r(c,x-w/2+.3,y+.8,w-.6,.55,'#b58e58');
+   r(c,x-w/2+.3,y-.65,.6,1.75,'#84694a');
+   r(c,x+w/2-.9,y-.65,.6,1.75,'#84694a');
+ }
+ function crystalSortShard(c,x,y,palette){
+   const [ink,shadow,face,shine]=palette;
+   fpaSowPolygon(c,[[x-1.35,y-.25],[x-1.12,y-2.5],[x-.2,y-4.05],
+     [x+.95,y-2.8],[x+1.3,y-.75],[x+.75,y],[x-.85,y]],ink);
+   fpaSowPolygon(c,[[x-.95,y-.45],[x-.84,y-2.45],[x-.2,y-3.6],
+     [x+.63,y-2.6],[x+.92,y-.68],[x+.54,y-.28]],shadow);
+   fpaSowPolygon(c,[[x-.8,y-2.35],[x-.2,y-3.56],[x+.22,y-2.48],
+     [x+.05,y-.53],[x-.69,y-.75]],face);
+   fpaSowBand(c,[x-.24,y-3.03],[x-.34,y-1.77],.5,shine);
+ }
+ function drawCrystalSort(c,b,x,y,t){
+   const [bx,by]=crystalSortBench([x,y]),foot=5.5,seat=-foot-.45;
+   const step=Math.floor(t*7),f=step%crystalSortMotion.length;
+   const color=Math.floor(step/crystalSortMotion.length)%crystalSortPalette.length;
+   const [progress,lift]=crystalSortMotion[f];
+   const source=-4.35,slots=[2.7,5.2],destination=slots[color],previous=slots[1-color];
+   const itemX=source+(destination-source)*progress,itemY=seat-lift;
+   const grip=f===0?[-1.9,seat-1.1]:f===7?[.2,seat-1.1]:[itemX+.68,itemY-1.58];
+   const steady=[-6.6,seat+.15],actor={type:'miner',look:b.id*71+17};
+   workScene(c,actor,bx,by+foot,(cloth,skin)=>{
+     beam(c,-9,-foot,18,2);
+     crystalSortTray(c,-4.4,seat,6.9);
+     crystalSortTray(c,4.2,seat,7.4);
+     workSleeve(c,[-2.4,-7.4],steady,shade(cloth,-.18));
+     workSleeve(c,[1.5,-7.4],grip,cloth);
+     // The completed piece stays in its slot as the next cycle begins.
+     crystalSortShard(c,previous,seat,crystalSortPalette[1-color]);
+     crystalSortShard(c,itemX,itemY,crystalSortPalette[color]);
+     if(lift===0){
+       const left=progress===0;
+       ln(c,left?-7.25:.8,seat+.65,left?-1.45:7.6,seat+.65,'#c29d65');
+     }
+     workHands(c,steady,grip,skin);
+   },0,1,'S');
+ }
  drawFoodYard=function(c,b,s,ox,oy){
    const P=s.pt,t=Game.time+b.id*5;
    if(b.state!=='done'||!P)return M.native.drawFoodYard(c,b,s,ox,oy);
@@ -413,6 +462,9 @@
      const world=([x,y])=>[ox+x,oy+y];
      drawCleaverCycle(c,b,world(P.block),world(P.butcher),t);
      M.native.drawFoodYard(c,b,{...s,pt:{...P,butcher:null}},ox,oy);
+   }else if(s.px==='crystalmine'&&s._publishedMachinery&&P.sorter){
+     M.native.drawFoodYard(c,b,{...s,pt:{...P,sorter:null}},ox,oy);
+     drawCrystalSort(c,b,ox+P.sorter[0],oy+P.sorter[1],t);
    }else if(s.px==='ironmine'&&s._publishedMachinery&&(P.kiln||P.stamp)){
      drawIronYard(c,b,s,ox,oy,t);
    }else if(s.px==='goldmine'&&s._publishedMachinery&&P.panner){
