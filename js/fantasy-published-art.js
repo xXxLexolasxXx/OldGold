@@ -332,13 +332,11 @@ function fpaCarryLoad(c,u,view,pose,opt){
  }
  for(const {shoulder,grip,shade:shadow} of arms){
    const elbow=[shoulder[0]+Math.sign(grip[0])*1,shoulder[1]+2.5];
-   if(crop)smoothLimb(c,shoulder,elbow,grip,2.1,shade(coat,shadow));
-   else{
-     fpaSowBand(c,shoulder,elbow,5.5,'#302923');
-     fpaSowBand(c,elbow,grip,4.5,'#302923');
-     fpaSowBand(c,shoulder,elbow,4.5,shade(coat,shadow));
-     fpaSowBand(c,elbow,grip,3.5,shade(coat,shadow+.12));
-   }
+   const width=crop?4.5:5.5;
+   fpaSowBand(c,shoulder,elbow,width,'#302923');
+   fpaSowBand(c,elbow,grip,width-1,'#302923');
+   fpaSowBand(c,shoulder,elbow,width-1,shade(coat,shadow));
+   fpaSowBand(c,elbow,grip,width-2,shade(coat,shadow+.12));
  }
  c.save();
  c.translate(profile?1:back?-2.2:0,crop?24.7:25.5);
@@ -590,6 +588,17 @@ const FPA_HAMMER_POSE_KEYS=[
  [.50,1.5,1.5,4,-15,0],[.56,1.5,1.5,4,-15,0],
  [.74,.5,1,4,-12,.6],[1,0,0,3.5,-13,.35],
 ];
+const FPA_HARVEST_POSE_KEYS={
+ wheat:[[0,0,0,3,-12,.65],[.39,-1.3,-.5,1,-15,-1.1],[.49,1.2,1.1,4,-12,0],
+   [.56,1.6,1.5,4,-12,0],[.76,.6,.5,3,-12,.85],[1,0,0,3,-12,.65]],
+ hay:[[0,0,0,3,-12,.65],[.39,-1,-.6,1,-15,-1.25],[.49,1.8,1.6,4,-12,0],
+   [.56,1.8,1.6,4,-12,0],[.76,.7,.5,3,-12,.9],[1,0,0,3,-12,.65]],
+ hops:[[0,0,0,3,-13,.65],[.39,-.8,-.7,1,-16,-.85],[.49,1.6,-.8,4,-14,0],
+   [.56,1.6,-.8,4,-14,0],[.76,.6,0,3,-13,.8],[1,0,0,3,-13,.65]],
+ fork:[[0,0,0,3,-12,.65],[.39,-1.5,-1,1,-17,-1.15],[.49,2,1.5,4,-12,0],
+   [.56,2,1.5,4,-12,0],[.76,1,.7,3,-12,.75],[1,0,0,3,-12,.65]],
+};
+const FPA_HARVEST_SUPPORTS=new WeakMap();
 function fpaStrikeRig(targetX,targetY,progress,keys,edgeSize){
  const index=keys.findIndex(key=>key[0]>progress);
  const next=index<0?keys.length-1:index,a=keys[next-1],b=keys[next];
@@ -614,6 +623,9 @@ function fpaDrawAxePose(world,u,source,px,py,face,target,progress){
 function fpaDrawHammerPose(world,u,source,px,py,face,target,progress){
  return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,'hammer',1);
 }
+function fpaDrawHarvestPose(world,u,source,px,py,face,target,progress,kind,scale=1){
+ return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,kind,scale);
+}
 let fpaStrikeCanvas;
 function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale){
  const snap=n=>Math.round(n*2)/2;
@@ -623,7 +635,10 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const t=(progress-a[0])/(b[0]-a[0]),mix=t*t*(3-2*t);
  let [dx,dy,tipX,tipY]=a.slice(1).map((v,i)=>v+(b[i+1]-v)*mix);
  const targetX=(target[0]-px)*face/scale,targetY=(target[1]-py)/scale;
- const strike=tool==='spade'?null:tool==='pick'
+ const fieldKeys=FPA_HARVEST_POSE_KEYS[tool==='rack'?'hops':tool];
+ const single=fieldKeys&&tool!=='fork';
+ const strike=fieldKeys?fpaStrikeRig(targetX,targetY,progress,fieldKeys,0)
+   :tool==='spade'?null:tool==='pick'
    ?fpaStrikeRig(targetX,targetY,progress,FPA_MINE_POSE_KEYS,4.5)
    :tool==='axe'?fpaStrikeRig(targetX,targetY,progress,FPA_AXE_POSE_KEYS,3.5)
    :fpaStrikeRig(targetX,targetY,progress,FPA_HAMMER_POSE_KEYS,2.5);
@@ -632,12 +647,20 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const lean=[snap(dx*1.65),snap(dy*1.2)];
  const aim=Math.max(0,Math.min(1,(progress-.42)/.08,(.73-progress)/.17));
  const tip=strike?.tip||[snap(tipX+(targetX-8)*aim),snap(tipY+(targetY-4.5)*aim)];
- const near=strike?.near||[snap(1.5+gripLean[0]+aim),snap(-12.5+gripLean[1]+aim)];
+ const reach=single?Math.max(0,Math.min(1,(progress-.28)/.21,(.86-progress)/.30)):0;
+ const near=tool==='rack'?[3+(targetX-3)*reach,-13+(targetY+13)*reach]
+   :strike?.near||[snap(1.5+gripLean[0]+aim),snap(-12.5+gripLean[1]+aim)];
  const angle=strike?.angle??Math.atan2(tip[0]-near[0],tip[1]-near[1]);
  const along=(point,distance)=>[snap(point[0]-distance*Math.sin(angle)),
    snap(point[1]-distance*Math.cos(angle))];
  const spacing=5+aim*1.5;
- const far=strike?.far||along(near,spacing),handle=strike?.handle||along(near,spacing+2.75),socket=strike?.socket||along(tip,2);
+ const support=single&&FPA_HARVEST_SUPPORTS.get(target);
+ const supportX=support?(support[0]-px)*face/scale:targetX-(tool==='rack'?2.5:1.5);
+ const supportY=support?(support[1]-py)/scale:targetY-(tool==='rack'?1:3);
+ const far=single?[1+(supportX-1)*reach,-11+(supportY+11)*reach]
+   :strike?.far||along(near,spacing);
+ const handle=single?along(near,1.5):strike?.handle||along(near,spacing+2.75);
+ const socket=fieldKeys?along(tip,tool==='fork'?2.45:2.75):strike?.socket||along(tip,2);
  const farBehind=far[0]<(strike?-3:-1)+gripLean[0];
  const outfit=OUTFIT[u.type];
  const look=lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]});
@@ -735,12 +758,20 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  part(.5,-17.5,10,5,.5+lx,-17.5+ly);
  if(farArm)fpaSowBand(c,farArm.cuff,farArm.wrist,2.5,farArm.cuffColor);
  arm(torso(-3,-15),near,false);
- fpaSowBand(c,handle,socket,strike?2.5:2.25,outline);
- fpaSowBand(c,handle,socket,1,'#b58a57');
- fpaSowBand(c,near,far,.9,'#d4a775');
+ if(tool!=='rack'){
+   fpaSowBand(c,handle,socket,single?1.8:strike?2.5:2.25,outline);
+   fpaSowBand(c,handle,socket,single?.75:1,'#b58a57');
+   if(!single)fpaSowBand(c,near,far,.9,'#d4a775');
+ }
  if(tool==='pick')fpaMiningHead(c,socket,angle,strike.edge);
  else if(tool==='axe')fpaFellingHead(c,socket,angle,strike.edge);
  else if(tool==='hammer')fpaBuildingHammerHead(c,socket,angle,strike.edge);
+ else if(tool==='rack'){
+   const [x,y]=near;
+   fpaSowPolygon(c,[[x-.5,y-1],[x+.5,y-3.5],[x+2,y-3],[x+2.5,y-1],[x+1.5,y+.5]],'#4b632c');
+   c.fillStyle='#a9bd62';c.fillRect(snap(x+.5),snap(y-2.5),1,.5);
+   c.fillRect(snap(x+1),snap(y-1.5),1,.5);
+ }else if(fieldKeys)fpaFieldHead(c,tool==='fork'?'fork':tool==='hops'?'hook':'sickle',near[0],near[1],tip[0],tip[1]);
  else fpaSpadeHead(c,near[0],near[1],tip[0],tip[1]);
  if(!farBehind)fpaSowFist(c,far,angle,skin,true);
  fpaSowFist(c,near,angle,skin,false);
@@ -750,7 +781,8 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  world.scale(face*scale,scale);
  world.drawImage(cv,-left,-top,cv.width/2,cv.height/2);
  world.restore();
- return {tip:[px+tip[0]*face*scale,py+tip[1]*scale],near,far,shoulder,lean,shaft:strike?.shaft};
+ const contact=tool==='rack'?near:tip;
+ return {tip:[px+contact[0]*face*scale,py+contact[1]*scale],near,far,shoulder,lean,shaft:strike?.shaft};
 }
 function fpaHeavyHeadLayer(c,[x,y],angle,edge,width,depth){
  const ux=Math.sin(angle),uy=Math.cos(angle);
@@ -852,15 +884,13 @@ function fpaFieldHead(c,tool,hx,hy,tx,ty){
    fpaSpadeHead(c,hx,hy,tx,ty);
  }else{
    const short=tool==='hook';
-   c.beginPath();
-   c.moveTo(...p(-2.3,0));
-   c.quadraticCurveTo(...p(-1.5,short?2.5:4),...p(0,0));
-   c.lineWidth=short?1.9:2.45;
-   c.strokeStyle='#343c33';
-   c.stroke();
-   c.lineWidth=short?.85:1.25;
-   c.strokeStyle='#d1ddc8';
-   c.stroke();
+   const sweep=short?2.6:3.75;
+   const blade=(points,color)=>fpaSowPolygon(c,points.map(([along,across])=>p(along,across)),color);
+   blade([[-2.55,-.65],[-2.9,.4],[-2.35,sweep-.4],[-1.3,sweep],
+     [-.25,sweep-.85],[0,0],[-.7,.7],[-1.25,sweep-1.25],[-1.8,sweep-1.4],[-2,0]],'#27342d');
+   blade([[-2.55,.35],[-2.1,sweep-.55],[-1.3,sweep-.45],[-.5,sweep-.9],
+     [0,0],[-.95,1.05],[-1.3,sweep-1.15],[-2,sweep-1.35]],'#b9c9b9');
+   fpaSowBand(c,p(-2.65,-.45),p(-2.15,.25),.75,'#c19257');
  }
 }
 let fpaFieldSample;
@@ -876,14 +906,32 @@ function fpaFieldSurface(u,x,y,o,kind){
  c.drawImage(sprite,0,0,TILE,TILE);
  const data=c.getImageData(0,0,TILE,TILE).data;
  const hops=kind==='hops',targetX=footX+side*(hops?10:8),targetY=footY-(hops?14:6);
+ const cropPixel=(i,j)=>{
+   const at=(j*TILE+i)*4,r=data[at],g=data[at+1],b=data[at+2];
+   return hops?g>=103&&g>=r*1.06&&g>=b*1.19:r>=132&&g>=121&&g>=b*1.15;
+ };
  let point=null,best=Infinity;
  for(let j=1;j<TILE-1;j++)for(let i=1;i<TILE-1;i++){
-   const at=(j*TILE+i)*4,r=data[at],g=data[at+1],b=data[at+2];
-   if(hops?g<103||g<r*1.06||g<b*1.19:r<132||g<121||g<b*1.15)continue;
+   if(!cropPixel(i,j))continue;
    const px=x*TILE+i+.5,py=y*TILE+j+.5;
    if(Math.abs(px-footX)<5)continue;
    const d=(px-targetX)**2+1.3*(py-targetY)**2;
    if(d<best){best=d;point=[px,py];}
+ }
+ if(point){
+   let support=null,score=Infinity;
+   const i0=point[0]-x*TILE-.5,j0=point[1]-y*TILE-.5;
+   const rise=hops?4:8;
+   const [, , ,gripX,gripY]=FPA_HARVEST_POSE_KEYS[kind][3];
+   for(let j=Math.max(1,j0-rise-3);j<=Math.min(TILE-2,j0-2);j++)
+     for(let i=Math.max(1,i0-5);i<=Math.min(TILE-2,i0+5);i++){
+       if(!cropPixel(i,j))continue;
+       const px=x*TILE+i+.5,py=y*TILE+j+.5;
+       const gap=Math.hypot(px-footX-side*gripX,py-footY-gripY);
+       const distance=(i-i0+side*1.5)**2+(j-j0+rise)**2+6*Math.max(0,4.75-gap)**2;
+       if(distance<score){score=distance;support=[px,py];}
+     }
+   if(support)FPA_HARVEST_SUPPORTS.set(point,support);
  }
  return point;
 }

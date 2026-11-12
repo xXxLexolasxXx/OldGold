@@ -279,12 +279,22 @@ function drawUnit(c, u) {
       axeGoal=[woodcut.point[0]+sx-dx,woodcut.point[1]+sy-dy];
     }
   }
+  const field=!wp&&pose==='work'&&typeof fpaDrawFieldTool==='function'&&OUTFIT[u.type]?activeFieldContact(a):null;
+  const harvestRig=field&&['wheat','hay','hops'].includes(field.kind)&&view==='E'&&
+    typeof fpaDrawHarvestPose==='function'&&window.FantasyPublishedAppearanceArt&&
+    FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
+  if(harvestRig&&a?.T){
+    const side=field.point[0]<px?-1:1;
+    const phase=Math.max(0,Math.min(1,(a.T-a.t)/.16,a.t/.2));
+    const blend=phase*phase*(3-2*phase);
+    px-=side*Math.round(5*blend)/2;
+    py+=Math.round(2*blend)/2;
+  }
   c.beginPath(); c.ellipse(px + 1.5, py - 0.2, lying ? 10 : 5.5, 2, 0, 0, 7); c.fill();
   if (moving) drawStepDust(c, u, px, py, view);
   if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 12 тактов, позы по высоте груди
   // жест и так движется: в покое без дыхания, на ходу — две опорные позы (шаг уже даёт 8 кадров), чтобы не множить спрайты
   if (opt.gest && opt.gest !== 'five') { if (pose === 'idle') frame = 0; else if (pose === 'walk') opt.gf = gestK(opt.gf) >= 0.5 ? 1 : 0; }
-  const field=!wp&&pose==='work'&&typeof fpaDrawFieldTool==='function'&&OUTFIT[u.type]?activeFieldContact(a):null;
   let fieldProgress=1;
   if(field){
     // Existing harvest FX fire at .45 + .95*k. Hold the visual strike over
@@ -297,7 +307,7 @@ function drawUnit(c, u) {
   }
   const sowRig=field?.kind==='sow'&&view==='E'&&typeof fpaDrawSowPose==='function'&&
     window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
-  const fieldTarget=field&&!sowRig&&frame.f>=8&&fieldProgress<.86;
+  const fieldTarget=field&&!sowRig&&!harvestRig&&frame.f>=8&&fieldProgress<.86;
   const pickProgress=!wp&&pose==='work'&&frame.anim==='mine'&&frame.f>=8?swingProgress(u):1;
   const mineContact=!wp&&pose==='work'&&frame.anim==='mine'&&u.type==='stonemason'?activeQuarryContact(a):null;
   const mineRig=mineContact&&view==='E'&&typeof fpaDrawMinePose==='function'&&
@@ -316,7 +326,7 @@ function drawUnit(c, u) {
   const axeTarget=!axeRig&&axeProgress<.86?woodcut.point:null;
   if(pickTarget||axeTarget||fieldTarget)opt.externalWorkTool=true;
   const spr = repairStep!==undefined?personSprite(u,view,'walk',repairStep,{})
-    :sowRig||mineRig||axeRig||hammerTarget
+    :sowRig||harvestRig||mineRig||axeRig||hammerTarget
     ?personSprite(u,view,pose,{...frame,f:9},{...opt,sowRigBase:true})
     :personSprite(u,view,pose,frame,opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
@@ -326,6 +336,8 @@ function drawUnit(c, u) {
     fpaDrawAxePose(c,u,spr,px,py,face,axeGoal,swingProgress(u));
   } else if (mineRig&&spr._fantasyAppearance&&flyP<0) {
     fpaDrawMinePose(c,u,spr,px,py,face,mineContact.point,swingProgress(u));
+  } else if (harvestRig&&spr._fantasyAppearance&&flyP<0) {
+    fpaDrawHarvestPose(c,u,spr,px,py,face,field.point,fieldProgress,field.kind);
   } else if (sowRig&&spr._fantasyAppearance&&flyP<0) {
     fpaDrawSowPose(c,u,spr,px,py,face,field.point,fieldProgress);
   } else if (flyP >= 0) {

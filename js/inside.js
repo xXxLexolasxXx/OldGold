@@ -828,9 +828,10 @@ function pxShuttle(t, a, q, go, wk, anim, carry) {
   return Object.assign({ p: a, view: 'S' }, work());
 }
 function pxFolk(c, type, look, s, ox, oy, opt) { drawFolk(c, { type, look, carry: s.carry || null }, ox + s.p[0], oy + s.p[1], s.view, s.pose, s.fr, opt || {}); }
-const FIELD_YARD_PHASES=[0,2,5,7,9,10,11,1];
+const FIELD_YARD_PHASES=[0,.13,.3,.43,.52,.56,.75,.91];
 function fieldYardWorker(c,look,state,ox,oy,kind){
-  if(state.pose!=='work'||typeof fpaDrawFieldTool!=='function')return pxFolk(c,'farmer',look,state,ox,oy);
+  if(state.pose!=='work'||typeof fpaDrawHarvestPose!=='function'||!window.FantasyPublishedYard)
+    return pxFolk(c,'farmer',look,state,ox,oy);
   const [x,y]=state.p,px=ox+x,py=oy+y,target=[px+5,py-4];
   const {ln,r,oval}=FantasyPublishedYard.paint;
   // The tines land in loose hay. The second worker cuts upright stems.
@@ -846,31 +847,18 @@ function fieldYardWorker(c,look,state,ox,oy,kind){
       r(c,sx+.5,target[1]-2-(j%2),.5,1,'#edcd73');
     }
   }
-  const actor={type:'farmer',look},f=FIELD_YARD_PHASES[state.fr.f],frame={...state.fr,f};
-  const progress=f===9?.52:f===10?.61:f===11?.76:1;
-  const opt={fieldWork:kind,externalWorkTool:progress<1};
-  personSprite(actor,'E','work',frame,opt);
-  drawFolk(c,actor,px,py,'E','work',frame,opt);
-  if(progress===1)return;
+  const actor={type:'farmer',look};
+  const source=personSprite(actor,'E','work',{...state.fr,f:9},{sowRigBase:true});
+  if(!source._fantasyAppearance)return pxFolk(c,'farmer',look,state,ox,oy);
   const scale=YARD_K*FantasyPublishedYard.scale;
-  c.save();
-  c.translate(px,py);
-  c.scale(scale,scale);
-  fpaDrawFieldTool(c,actor,frame,0,0,1,[(target[0]-px)/scale,(target[1]-py)/scale],progress,kind);
-  c.restore();
+  fpaDrawHarvestPose(c,actor,source,px,py,1,target,FIELD_YARD_PHASES[state.fr.f],kind,scale);
 }
 function hopRackWorker(c,look,x,y,t){
-  if(typeof fpaFieldHead!=='function')return drawFolk(c,{type:'hopgrower',look},x,y,'E','work',{anim:'reap',f:Math.floor(t*6)%8},{});
   const actor={type:'hopgrower',look},f=Math.floor(t*6)%8;
-  const {ln,r,oval,P}=FantasyPublishedYard.paint;
-  const hx=x+4+(f>=3&&f<=5?1:0),hy=y-7-(f>=2&&f<=5?1:0);
-  personSprite(actor,'E','yardGrip',0,{});
-  drawFolk(c,actor,x,y,'E','yardGrip',0,{});
-  ln(c,x+.5,y-7,hx-1,hy+.5,P.ink,1.55);
-  ln(c,hx-1,hy+.5,hx,hy,P.ink,1.55);
-  ln(c,x+.5,y-7,hx,hy,OUTFIT.hopgrower.coat,.85);
-  oval(c,hx+.6,hy-.8,.8,1,'#83a44c');
-  r(c,hx-.45,hy-.45,1.25,1.1,SKINS[lookOf(actor).skin%SKINS.length][0]);
+  const frame={anim:'reap',f:9},source=personSprite(actor,'E','work',frame,{sowRigBase:true});
+  if(typeof fpaDrawHarvestPose!=='function'||!source._fantasyAppearance||!window.FantasyPublishedYard)
+    return drawFolk(c,actor,x,y,'E','work',{...frame,f},{});
+  fpaDrawHarvestPose(c,actor,source,x,y,1,[x+5,y-8],FIELD_YARD_PHASES[f],'rack',YARD_K*FantasyPublishedYard.scale);
 }
 function pxSmoke(c, X, Y, t, n, col) {
   for (let k = 0; k < n; k++) { const p = (t * 0.3 + k / n) % 1; c.globalAlpha = 0.5 * (1 - p); c.fillStyle = col || '#d8d4cc'; c.fillRect(Math.round(X - 1 + Math.sin(p * 5 + k) * 2 + p * 4), Math.round(Y - p * 18), 2 + Math.round(p * 2), 2); }
