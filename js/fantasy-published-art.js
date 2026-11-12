@@ -420,6 +420,9 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
    nx+=(targetNX-nx)*aim;
    ny+=(targetNY-ny)*aim;
  }
+ if(tool==='spade'&&!opt.fieldWork&&u.type!=='baker'){
+   [tx,ty]=fpaFitSpadeToSprite(c,hx,hy,tx,ty);
+ }
  smoothLimb(c,[offset+.4,sh+.4],[(offset+.4+hx)/2+.6,(sh+hy)/2+.5],[hx,hy],2.1,coat);
  if(!['toss','pat','bucket','pick'].includes(tool))line(c,hx-(tx-hx)*.25,hy-(ty-hy)*.25,tx,ty,'#6e4428',.9);
  if(opt.fieldWork)fpaFieldHead(c,opt.fieldWork==='fork'?'fork':tool,hx,hy,tx,ty);
@@ -458,7 +461,13 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  case 'hammer':c.save();c.translate(tx,ty);c.rotate(Math.atan2(ty-hy,tx-hx));c.fillStyle='#5c564f';c.fillRect(-.8,-1.7,2,3.4);c.fillStyle='#9e958a';c.fillRect(-.8,-1.7,2,.6);c.restore();break;
  case 'hook':{c.strokeStyle='#6e4428';c.lineWidth=.9;c.beginPath();c.moveTo(tx,ty);c.lineTo(tx+(tx-hx)*.9,ty+(ty-hy)*.9);c.stroke();const kx=tx+(tx-hx)*.9,ky=ty+(ty-hy)*.9;c.strokeStyle='#2a1c10';c.lineWidth=.8;c.beginPath();c.arc(kx+nx*1.4,ky+ny*1.4,1.5,0,Math.PI*1.5);c.stroke();ellipse(c,kx+nx*2.2,ky+ny*2.2,1,1.3,'#a8d860');break;}
  case 'sickle':c.strokeStyle='#d0d4d8';c.lineWidth=.8;c.beginPath();c.arc(tx+nx*1.6,ty+ny*1.6,2,Math.atan2(ny,nx)+Math.PI*.2,Math.atan2(ny,nx)+Math.PI*1.2);c.stroke();break;
- case 'spade':c.save();c.translate(tx,ty);c.rotate(Math.atan2(ty-hy,tx-hx));c.fillStyle='#9e958a';c.fillRect(0,-1.2,2.4,2.4);c.restore();break;
+ case 'spade':{
+   if(u.type!=='baker'){fpaSpadeHead(c,hx,hy,tx,ty);break;}
+   // The bakery reuses the dig animation for its flat oven peel.
+   c.save();c.translate(tx,ty);c.rotate(Math.atan2(ty-hy,tx-hx));
+   c.fillStyle='#9e958a';c.fillRect(0,-1.2,2.4,2.4);c.restore();
+   break;
+ }
  }
  hand(c,hx,hy,skin[1]);c.restore();
  const world=(x,y)=>[PFX+(view==='N'?-1:1)*(x*Math.cos(lean)-(y-hip)*Math.sin(lean)),PFY+hip+x*Math.sin(lean)+(y-hip)*Math.cos(lean)];
@@ -644,14 +653,7 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  fpaSowBand(c,handle,socket,1.5,outline);
  fpaSowBand(c,handle,socket,.5,'#b58a57');
  fpaSowBand(c,near,far,.75,'#d4a775');
- const bladePoint=(distance,side)=>{
-   const [x,y]=along(tip,distance);
-   return [x+side*Math.cos(angle),y-side*Math.sin(angle)];
- };
- fpaSowPolygon(c,[bladePoint(0,-.8),bladePoint(0,.8),bladePoint(1.3,1.65),
-   bladePoint(3,1.2),bladePoint(3,-1.2),bladePoint(1.3,-1.65)],'#384039');
- fpaSowPolygon(c,[bladePoint(.5,-.65),bladePoint(.5,.65),bladePoint(1.4,1.1),
-   bladePoint(2.6,.75),bladePoint(2.6,-.75),bladePoint(1.4,-1.1)],'#b2bcb2');
+ fpaSpadeHead(c,near[0],near[1],tip[0],tip[1]);
  if(!farBehind)fpaSowFist(c,far,angle,skin,true);
  fpaSowFist(c,near,angle,skin,false);
  world.save();
@@ -661,6 +663,44 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  world.restore();
  return {tip:[px+tip[0]*face,py+tip[1]],near,far,shoulder,lean};
 }
+const FPA_SPADE_OUTLINE=[[0,-.9],[0,.9],[.5,1.6],[1,2.15],[2.65,2.15],[2.65,1.75],
+ [3.25,1.75],[3.75,.9],[4.8,.9],[4.8,-.9],[3.75,-.9],[3.25,-1.75],[2.65,-1.75],
+ [2.65,-2.15],[1,-2.15],[.5,-1.6]];
+function fpaFitSpadeToSprite(c,hx,hy,tx,ty){
+ const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,x=dx/length,y=dy/length;
+ const m=c.getTransform(),vx=m.a*x+m.c*y,vy=m.b*x+m.d*y;
+ // Leave room for the half-pixel scan rows after rotation and resampling.
+ const inset=Math.hypot(m.a,m.b)*1.25;
+ let pull=0;
+ for(const [depth,side] of FPA_SPADE_OUTLINE){
+   const px=tx-depth*x-side*y,py=ty-depth*y+side*x;
+   const xx=m.a*px+m.c*py+m.e,yy=m.b*px+m.d*py+m.f;
+   if(vx>0)pull=Math.max(pull,(xx-c.canvas.width+inset)/vx);
+   if(vx<0)pull=Math.max(pull,(xx-inset)/vx);
+   if(vy>0)pull=Math.max(pull,(yy-c.canvas.height+inset)/vy);
+   if(vy<0)pull=Math.max(pull,(yy-inset)/vy);
+ }
+ pull=Math.min(pull,length-1);
+ return [tx-pull*x,ty-pull*y];
+}
+function fpaSpadeHead(c,hx,hy,tx,ty){
+ const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1;
+ const x=dx/length,y=dy/length;
+ // The middle of the cutting edge is the existing contact coordinate.
+ const layer=(points,color)=>fpaSowPolygon(c,points.map(([depth,side])=>[
+   tx-depth*x-side*y,ty-depth*y+side*x
+ ]),color);
+ layer(FPA_SPADE_OUTLINE,'#303930');
+ layer([[.35,-.9],[.35,.9],[1.1,1.65],[2.45,1.65],[3.2,1.25],
+   [3.65,.5],[3.65,-.5],[3.2,-1.25],[2.45,-1.65],[1.1,-1.65]],'#7c928d');
+ layer([[.45,-.85],[1.1,-1.6],[2.45,-1.6],[3.1,-1.15],
+   [2.45,-.65],[1.25,-.4]],'#a6b9af');
+ layer([[0,-.85],[0,.85],[.5,1.55],[1.1,1.9],[1.1,1.4],
+   [.55,.65],[.55,-.65],[1.1,-1.4],[1.1,-1.9],[.5,-1.55]],'#dde5cb');
+ layer([[2.15,-.3],[2.9,-.55],[4.55,-.55],[4.55,.55],[2.9,.55],
+   [2.15,.3]],'#a47144');
+ layer([[3.85,-.65],[4.35,-.65],[4.35,.65],[3.85,.65]],'#d8ad68');
+}
 function fpaFieldHead(c,tool,hx,hy,tx,ty){
  const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,ux=dx/length,uy=dy/length;
  const p=(along,across)=>[tx+ux*along-uy*across,ty+uy*along+ux*across];
@@ -668,8 +708,7 @@ function fpaFieldHead(c,tool,hx,hy,tx,ty){
    line(c,...p(-2,-1.5),...p(-2,1.5),'#4f5b51',.9);
    for(const tine of [-1.5,0,1.5])line(c,...p(-2,tine),...p(0,tine),'#c7d0bb',.7);
  }else if(tool==='spade'){
-   poly(c,[p(0,-.65),p(0,.65),p(-1.2,1.65),p(-3,1.2),p(-3,-1.2),p(-1.2,-1.65)],'#9ba9a2','#313b36',.55);
-   line(c,...p(0,-.6),...p(0,.6),'#dfe7d3',.65);
+   fpaSpadeHead(c,hx,hy,tx,ty);
  }else{
    const short=tool==='hook';
    c.beginPath();
