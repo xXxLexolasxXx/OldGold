@@ -478,8 +478,64 @@
      drawMashCycle(c,b,ox+P.brewer[0],oy+P.brewer[1],t);
    }else M.native.drawFoodYard(c,b,s,ox,oy);
  };
+ function drawSmelteryWindow(c,x,y,w,h,round,t,phase,working){
+   c.save();c.translate(x,y);c.beginPath();
+   if(round)c.arc(0,0,Math.min(w,h)/2,0,Math.PI*2);
+   else c.rect(-w/2,-h/2,w,h);
+   c.clip();
+   c.fillStyle=`rgb(255,${190+Math.round(Math.sin(t*9+phase)*18)},96)`;
+   c.fillRect(-w/2,-h/2,w,h);
+   const wave=(1+Math.sin(t*8+phase))/2;
+   const reach=working?Math.min(1,wave/.72):0;
+   const hold=working&&wave>=.84;
+   const rise=hold?Math.min(1,(wave-.84)/.16):0;
+   const lift=.8*rise*rise*(3-2*rise);
+   const jaw=[.55+1.45*reach,1.3+.68*reach-lift];
+   const angle=.48-.23*reach,ux=Math.cos(angle),uy=Math.sin(angle);
+   const grip=working?[jaw[0]-1.9*ux,jaw[1]-1.9*uy]:[-1.45,2.35];
+   const elbow=working?[-.85+(grip[0]+1.45)*.25,1.1+grip[1]*.25]:[-1.75,1.55];
+   fpaSowPolygon(c,[[-3.1,3.7],[-2.9,.65],[-2.15,-.1],[-.9,.05],
+     [-.5,1.55],[-.9,3.7]],'#2b1c17');
+   fpaSowPolygon(c,[[-2.75,.65],[-2.1,.15],[-1.4,.45],[-1.2,2.5],
+     [-2.25,3],[-2.65,2.3]],'#664438');
+   fpaSowPolygon(c,[[-2.9,-.55],[-2.55,-1.65],[-1.8,-3.1],[-1.3,-2.85],
+     [-.65,-.9],[-.6,-.45],[-2.6,-.37]],'#321e19');
+   fpaSowBand(c,[-2.85,-.55],[-.55,-.55],.55,'#502d22');
+   r(c,-2.35,-.45,1.45,.9,'#8d5e3d');
+   r(c,-2.1,.1,1.1,.55,'#594134');
+   fpaSowBand(c,[-1.6,.55],elbow,1.05,'#342219');
+   fpaSowBand(c,elbow,grip,.9,'#342219');
+   fpaSowBand(c,[-1.55,.55],elbow,.5,'#986c50');
+   fpaSowBand(c,elbow,grip,.5,'#986c50');
+   fpaSowPolygon(c,[[.65,2.55],[3.4,2.55],[3.1,3.25],[1.1,3.25]],'#4b3b31');
+   fpaSowBand(c,[.65,2.55],[3.4,2.55],.5,'#aa8a63');
+   const ingotY=hold?jaw[1]+.45:2.43,ingotX=hold?jaw[0]:2;
+   fpaSowPolygon(c,[[ingotX-1,ingotY-.6],[ingotX+.62,ingotY-.6],
+     [ingotX+.93,ingotY-.2],[ingotX+.67,ingotY+.1],[ingotX-.8,ingotY+.1]],working?'#bc6938':'#655d4e');
+   r(c,ingotX-.58,ingotY-.6,1.1,.5,working?'#f5b35e':'#aa9882');
+   if(working){
+     const pivot=[jaw[0]-.58*ux,jaw[1]-.58*uy],gap=hold?.16:.47;
+     fpaSowBand(c,grip,pivot,.68,'#3d3f3b');
+     fpaSowBand(c,[grip[0],grip[1]-.2],[pivot[0],pivot[1]-.2],.5,'#87877c');
+     fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]-gap],.5,'#595e57');
+     fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]+gap],.5,'#595e57');
+   }else{
+     fpaSowBand(c,[.4,2.55],[1.3,2.35],.5,'#535751');
+   }
+   r(c,grip[0]-.35,grip[1]-.33,.7,.65,'#cf9b70');
+   c.restore();
+ }
+ function drawSmelteryWindows(c,b,s,ox,oy){
+   const occ=INS_CNT.get(b)||0;
+   if(!b.working&&!occ)return;
+   const count=b.working?1+(occ>1?1:0):Math.min(occ,2);
+   const windows=s.wins.map((w,i)=>({w,i})).filter(({w})=>w[2]>=5)
+     .sort((p,q)=>((p.i*7+b.id*13)%17)-((q.i*7+b.id*13)%17)||p.i-q.i);
+   for(const {w:[x,y,width,height,round],i} of windows.slice(0,count))
+     drawSmelteryWindow(c,ox+x,oy+y,width,height,round,Game.time,i*1.7+b.id,b.working);
+ }
  // The existing small window actor keeps the same hand motion; its material is now visible.
- drawInsideLife=function(c,b,s,ox,oy){M.native.drawInsideLife(c,b,s,ox,oy);if(b.type==='tannery'&&s._publishedMachinery&&b.state==='done'&&b.working)drawLeatherCycle(c,b,s,ox,oy);if(!types.has(b.type)||(!b.working&&!(INS_CNT.get(b)||0)))return;const wins=s.wins||[],n=Math.min(wins.length,Math.max(1,b.working?1+((INS_CNT.get(b)||0)>1?1:0):Math.min(INS_CNT.get(b)||0,2))),order=wins.map((w,i)=>i).sort((p,q)=>((p*7+b.id*13)%17)-((q*7+b.id*13)%17)||p-q);let shown=0;for(const i of order){const[wx,wy,ww,wh,round]=wins[i];if(ww<5)continue;if(shown++>=n)break;const x=ox+wx,y=oy+wy,ph=i*1.7+b.id,sx=x+Math.sin(Game.time*.9+ph)*ww*.16;c.save();c.beginPath();if(round)c.arc(x,y,Math.min(ww,wh)/2,0,Math.PI*2);else c.rect(x-ww/2,y-wh/2,ww,wh);c.clip();if(['metallurgist','smeltery','weaponsmith','armory'].includes(b.type)){poly(c,[[sx,y+2.5],[sx+4,y+2.5],[sx+3,y+3.5],[sx+1,y+3.5]],P.steel);r(c,sx+1.5,y+3,1.5,2,P.iron);r(c,sx+2,y+2,1,.5,'#e4b96a')}else if(['brewery','mill','bakery','hopfarm','magicworkshop'].includes(b.type)){oval(c,sx+2,y+3.5,2.5,1.2,P.wood);oval(c,sx+2,y+3,2.3,.6,'#c5b27c')}else{r(c,sx-.5,y+3.5,5,.8,P.wood);r(c,sx,y+3.5,4,.5,P.hi);r(c,sx+2,y+3,1.5,.5,'#c8b88d')}c.restore()}};
+ drawInsideLife=function(c,b,s,ox,oy){if(b.type==='smeltery'&&s._publishedMachinery&&s.wins?.some(w=>w[2]>=5))return drawSmelteryWindows(c,b,s,ox,oy);M.native.drawInsideLife(c,b,s,ox,oy);if(b.type==='tannery'&&s._publishedMachinery&&b.state==='done'&&b.working)drawLeatherCycle(c,b,s,ox,oy);if(!types.has(b.type)||(!b.working&&!(INS_CNT.get(b)||0)))return;const wins=s.wins||[],n=Math.min(wins.length,Math.max(1,b.working?1+((INS_CNT.get(b)||0)>1?1:0):Math.min(INS_CNT.get(b)||0,2))),order=wins.map((w,i)=>i).sort((p,q)=>((p*7+b.id*13)%17)-((q*7+b.id*13)%17)||p-q);let shown=0;for(const i of order){const[wx,wy,ww,wh,round]=wins[i];if(ww<5)continue;if(shown++>=n)break;const x=ox+wx,y=oy+wy,ph=i*1.7+b.id,sx=x+Math.sin(Game.time*.9+ph)*ww*.16;c.save();c.beginPath();if(round)c.arc(x,y,Math.min(ww,wh)/2,0,Math.PI*2);else c.rect(x-ww/2,y-wh/2,ww,wh);c.clip();if(['metallurgist','smeltery','weaponsmith','armory'].includes(b.type)){poly(c,[[sx,y+2.5],[sx+4,y+2.5],[sx+3,y+3.5],[sx+1,y+3.5]],P.steel);r(c,sx+1.5,y+3,1.5,2,P.iron);r(c,sx+2,y+2,1,.5,'#e4b96a')}else if(['brewery','mill','bakery','hopfarm','magicworkshop'].includes(b.type)){oval(c,sx+2,y+3.5,2.5,1.2,P.wood);oval(c,sx+2,y+3,2.3,.6,'#c5b27c')}else{r(c,sx-.5,y+3.5,5,.8,P.wood);r(c,sx,y+3.5,4,.5,P.hi);r(c,sx+2,y+3,1.5,.5,'#c8b88d')}c.restore()}};
 })();
 
 
