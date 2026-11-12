@@ -47,7 +47,7 @@
  if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=Q.panner;bench(c,x+3,y-6,17);oval(c,x+3,y-6.5,5,1.4,P.iron);oval(c,x+3,y-7,4,1,'#89aaa0');for(const dx of[-1,2,4])r(c,x+dx,y-7,1,.5,'#dac575')}if(Q.sorter){const[x,y]=Q.sorter;bench(c,x+3,y-7,18);for(const dx of[-2,2,5]){poly(c,[[x+dx,y-7],[x+dx+1,y-10],[x+dx+2,y-7]],'#a3c5bc');r(c,x+dx+1,y-9,.5,1,'#dbe0c1')}}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.stamp){const[x,y]=Q.stamp;masonry(c,x-9,y-2,19,5);for(const dx of[-8,8])beam(c,x+dx,y-20,2,20);beam(c,x-10,y-21,22,3);for(const dx of[-5,0,5]){beam(c,x+dx,y-17,1.5,13);r(c,x+dx-1,y-5,3,3,P.iron);r(c,x+dx-1,y-5,3,.5,P.silver)}bolt(c,x-8,y-20);bolt(c,x+8,y-20)}if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
  if(['metallurgist','smeltery','weaponsmith','armory'].includes(type)){const[x,y]=s.glow||[s.padx+s.fw*.78,s.baseY-15];if(type!=='armory')forge(c,x,y+2,19);if(type==='smeltery'){masonry(c,x+11,y-4,10,8);r(c,x+12,y-3,8,2,'#7e4b32');r(c,x+12,y-3,6,.5,'#e0aa58');for(const dx of[-4,1,6]){r(c,x+dx,y+8,4,1.5,'#926c3a');r(c,x+dx,y+8,4,.5,'#ddbb76')}}else{anvil(c,x-17,y+4,.9);bellows(c,x+14,y+1);if(type==='armory'){bench(c,x+3,y+1,21);poly(c,[[x,y-5],[x+6,y-5],[x+6,y-1],[x+3,y+1],[x,y-1]],P.iron);ln(c,x+3,y-4,x+3,y,P.silver);ln(c,x+1,y-2,x+5,y-2,P.mid)}}}
  if(type==='mill'){const[x,y]=[s.padx+s.fw*.78,s.baseY-9];millstone(c,x,y-2);sack(c,x-11,y+4);if(lv>1)sack(c,x+11,y+4);beam(c,x+4,y-20,8,2);poly(c,[[x+3,y-19],[x+13,y-19],[x+10,y-12],[x+6,y-12]],P.ink);poly(c,[[x+4,y-18],[x+12,y-18],[x+9,y-13],[x+7,y-13]],P.mid);for(const dx of[5,7,9])r(c,x+dx,y-18,1,.5,'#e2c47c');beam(c,x+7,y-13,2,5)}
- if(type==='tannery'){const x=s.padx+s.fw*.78,y=s.baseY-9;for(const dx of[-9,9])beam(c,x+dx,y-23,2,24);beam(c,x-10,y-24,22,2);beam(c,x-10,y-3,22,2);hide(c,x,y-3,15,19);for(const dx of[-6,6])for(const dy of[-20,-14,-7])ln(c,x+dx,y+dy,x+(dx<0?-9:9),y+dy-1,'#c5b37e');barrel(c,x+19,y+3,11,8,true);bench(c,x-17,y+1,13);hide(c,x-17,y,9,5)}
+ if(type==='tannery'){const x=s.padx+s.fw*.78,y=s.baseY-9;for(const dx of[-9,9])beam(c,x+dx,y-23,2,24);beam(c,x-10,y-24,22,2);beam(c,x-10,y-3,22,2);hide(c,x,y-3,15,19);for(const dx of[-6,6])for(const dy of[-20,-14,-7])ln(c,x+dx,y+dy,x+(dx<0?-9:9),y+dy-1,'#c5b37e');barrel(c,x+19,y+3,11,8,true);const [bx,by]=tanneryBench(s);bench(c,bx,by,13);hide(c,bx,by+.45,9,3)}
  if(type==='magicworkshop'){if(s.cauldron){const[x,y]=s.cauldron;cauldron(c,x,y);alchemy(c,x+23,y-3)} }
  if(type==='storehouse'){for(const [kind,pts]of Object.entries(s.piles||{}))for(let i=0;i<pts.length;i++){const[x,y]=pts[i];if(kind==='goods'||kind==='food'){crate(c,x,y,11,7);if(lv>1&&i===0)crate(c,x+1,y-7,9,6)}else if(kind==='timber'){beam(c,x-7,y-2,15,2);for(const dx of[-5,4])r(c,x+dx,y-2,1,2,P.iron)}}}
  if(type==='woodcutter'){const x=s.padx+s.fw*.76,y=s.baseY-8;for(const dx of[-10,10]){ln(c,x+dx-3,y+2,x+dx+2,y-8,P.ink,2.5);ln(c,x+dx+3,y+2,x+dx-2,y-8,P.ink,2.5);ln(c,x+dx-3,y+1.5,x+dx+2,y-8,P.mid,1.5);ln(c,x+dx+3,y+1.5,x+dx-2,y-8,P.wood,1.5);bolt(c,x+dx-.5,y-4)}log(c,x,y-7,23);log(c,x+15,y+1,10);log(c,x+16,y-2,9);oval(c,x,y+1,5,2,P.ink);for(let i=0;i<8;i++){r(c,x-4+i,y-7,1,8,[P.deep,P.wood,P.mid,P.wood,P.hi,P.mid,P.wood,P.deep][i]);if(i%2)ln(c,x-4+i,y-4,x-3.5+i,y-1,P.deep)}oval(c,x,y-7,5,2,P.ink);oval(c,x,y-7.3,4.5,1.6,'#cfac70');oval(c,x-.5,y-7.3,3,1.1,'#9c7646');oval(c,x-.5,y-7.3,2.2,.7,'#d7b880');oval(c,x-.5,y-7.3,1,.4,'#9c7646');ln(c,x+1,y-8,x+.5,y-6.5,P.deep);ln(c,x-.5,y-15,x+.5,y-8,P.ink,1.5);ln(c,x-.5,y-15,x+.5,y-8,P.mid,.8);poly(c,[[x-.5,y-10],[x+3,y-10],[x+3.5,y-7],[x-.5,y-7.5]],P.ink);poly(c,[[x,y-9.5],[x+2.5,y-9.5],[x+3,y-7.5],[x,y-8]],P.steel);ln(c,x+2.5,y-9.5,x+3,y-7.5,P.shine)}
@@ -56,7 +56,35 @@
  if(type==='infirmary'){if(s.cauldron)cauldron(c,...s.cauldron);if(s.rack){const[x,y]=s.rack;for(const dx of[-8,8])beam(c,x+dx,y-14,1.5,16);beam(c,x-9,y-15,19,2);for(let j=0;j<5;j++){const X=x-6+j*3;ln(c,X,y-13,X,y-8,'#bba273');for(const dx of[-1,0,1])ln(c,X,y-10,X+dx,y-5,'#759064')}}}
  if(type==='fisherhut'){const x=s.padx+s.fw*.8,y=s.baseY-6;bench(c,x,y-3,20);for(let j=0;j<3;j++){const X=x-5+j*4;poly(c,[[X-2,y-4],[X,y-5],[X+2,y-4],[X+3,y-5],[X+3,y-3],[X+2,y-4],[X,y-3]],'#9bb4aa');r(c,X-1,y-4,.5,.5,P.ink)}barrel(c,x+13,y+2,9,9)}
  }
- buildingSprite=function(type,...args){const s=M.native.buildingSprite(type,...args);if(!types.has(type)||!s._publishedArt)return s;let out=M.cache.get(s.canvas);if(out)return out;const cv=mkCanvas(s.canvas.width,s.canvas.height),c=cv.getContext('2d'),k=cv.width/s.w;c.imageSmoothingEnabled=false;c.drawImage(s.canvas,0,0);out={...s,canvas:cv,_publishedMachinery:true,_machineryLevel:args[1]||1};c.save();c.scale(k,k);paint(c,out,type);c.restore();M.cache.set(s.canvas,out);return out};
+ function placeButcheryBlock(c,s,k){
+   const P=s.pt;
+   if(!P?.block||!P.butcher)return;
+   const [x,y]=P.block,face=P.butcher[0]<x?1:-1;
+   const footX=x+2-face*8,footOffset=7.85;
+   const left=Math.max(0,Math.floor((Math.min(x-7,footX-4))*k));
+   const right=Math.min(c.canvas.width,Math.ceil((Math.max(x+7,footX+4))*k));
+   const top=Math.max(0,Math.floor((y+5)*k));
+   let floor=y+footOffset;
+   if(right>left&&top<c.canvas.height){
+     const w=right-left,h=c.canvas.height-top,data=c.getImageData(left,top,w,h).data;
+     for(let row=h-1;row>=0;row--){
+       let solid=false;
+       for(let col=0;col<w;col++)if(data[(row*w+col)*4+3]>220){solid=true;break;}
+       if(solid){floor=Math.max(floor,(top+row+1)/k+2);break;}
+     }
+   }
+   // On the turned façade the decorative dog's layer crosses the original
+   // shoulder height. Shift the whole station and keep the original animal.
+   if(P.dog&&Math.abs(P.dog[0]-footX)<10&&P.dog[1]>floor-17&&P.dog[1]<floor-1)
+     floor=P.dog[1]+18.5;
+   const blockY=floor-footOffset;
+   const carry=P.carry;
+   const crosses=carry&&Math.min(carry[0][1],carry[1][1])<floor+7&&
+     Math.max(carry[0][1],carry[1][1])>blockY-7&&
+     Math.min(carry[0][0],carry[1][0])<x+14&&Math.max(carry[0][0],carry[1][0])>x-13;
+   s.pt={...P,block:[x,blockY],carry:crosses?carry.map(([px,py])=>[Math.min(px,x-13),py]):carry};
+ }
+ buildingSprite=function(type,...args){const s=M.native.buildingSprite(type,...args);if(!types.has(type)||!s._publishedArt)return s;let out=M.cache.get(s.canvas);if(out)return out;const cv=mkCanvas(s.canvas.width,s.canvas.height),c=cv.getContext('2d'),k=cv.width/s.w;c.imageSmoothingEnabled=false;c.drawImage(s.canvas,0,0);out={...s,canvas:cv,_publishedMachinery:true,_machineryLevel:args[1]||1};if(type==='butchery')placeButcheryBlock(c,out,k);c.save();c.scale(k,k);paint(c,out,type);c.restore();M.cache.set(s.canvas,out);return out};
  // These offsets are shared by the painted work surfaces and their contacts.
  const ovenMouthY=-5.5;
  const dough={x:15.5,y:-8};
@@ -76,20 +104,30 @@
    // Replace that strip before laying either working sleeve over the torso.
    c.scale(body.width/PW,body.height/PH);
    c.translate(PFX,PFY);
-   c.clearRect(-13,-15,11,9);
-   fpaSowPolygon(c,[[-5.5,-15],[-2,-15],[-2,-6],[-4.5,-6],[-5.5,-8]],'#352722');
-   fpaSowPolygon(c,[[-4.5,-14.5],[-2,-14.5],[-2,-7],[-4,-7],[-5,-8.5]],shade(cloth,-.2));
-   fpaSowPolygon(c,[[-4.5,-13],[-2,-13.5],[-2,-9],[-4,-9]],cloth);
-   fpaSowBand(c,[-4.5,-8],[-2,-8],.7,'#715039');
+   if(actor.type==='butcher'||actor.type==='tanner'){
+     c.clearRect(-13,-15,26,10);
+     fpaSowPolygon(c,[[-5.5,-14.5],[-2.5,-15],[4.5,-14],[5.5,-10],[4.5,-5],[-4.5,-5],[-5.5,-8]],'#352722');
+     fpaSowPolygon(c,[[-4.5,-14],[-2,-14.5],[4,-13.5],[4.5,-10],[3.8,-6],[-4,-6],[-5,-8.5]],shade(cloth,-.2));
+     fpaSowPolygon(c,[[-4.5,-13],[1.5,-13.5],[3.5,-12],[3.5,-9],[-4,-9]],cloth);
+     fpaSowBand(c,[-4,-8],[3.5,-8],1,'#765438');
+     fpaSowBand(c,[0,-7],[3.5,-7],1,'#503c30');
+   }else{
+     c.clearRect(-13,-15,11,9);
+     fpaSowPolygon(c,[[-5.5,-15],[-2,-15],[-2,-6],[-4.5,-6],[-5.5,-8]],'#352722');
+     fpaSowPolygon(c,[[-4.5,-14.5],[-2,-14.5],[-2,-7],[-4,-7],[-5,-8.5]],shade(cloth,-.2));
+     fpaSowPolygon(c,[[-4.5,-13],[-2,-13.5],[-2,-9],[-4,-9]],cloth);
+     fpaSowBand(c,[-4.5,-8],[-2,-8],.7,'#715039');
+   }
    yardBodies.set(source,body);
    return body;
  }
- function workScene(c,actor,x,y,paintPose,lean=0){
+ function workScene(c,actor,x,y,paintPose,lean=0,face=1){
    const outfit=OUTFIT[actor.type],look=lookOf({...actor,look:LOOK_POOL[(actor.look>>>0)%LOOK_POOL.length]});
    const cloth=outfit.coat||look.green,body=workBody(actor,cloth),scale=YARD_K*FantasyPublishedYard.scale;
    c.save();
    c.imageSmoothingEnabled=false;
    c.translate(x,y);
+   if(face<0)c.scale(-1,1);
    const left=-PFX*scale,top=-PFY*scale,width=PW*scale,height=PH*scale;
    if(lean){
      const pivot=PFY-5,split=body.height*pivot/PH;
@@ -176,6 +214,55 @@
      ln(c,mash.x-3.5,mash.y+1.3,mash.x+3.5,mash.y+1.3,'#9c743e');
    });
  }
+ const cleaverSwing=[.4,-.35,-1.15,-.68,0,0,0,.28];
+ const leatherStroke=[0,.15,.4,.78,1,.76,.4,.15];
+ function drawCleaverCycle(c,b,block,butcher,t){
+   const face=butcher[0]<block[0]?1:-1;
+   const contact=[block[0]+2,block[1]-.65];
+   const x=contact[0]-face*8,y=contact[1]+8.5;
+   const actor={type:'butcher',look:b.id*47+1};
+   const angle=cleaverSwing[Math.floor(t*7)%cleaverSwing.length];
+   const rise=Math.max(0,-angle),near=[3.2-rise*.85,-9.8-rise*1.25];
+   const cos=Math.cos(angle),sin=Math.sin(angle);
+   const at=(u,v)=>[near[0]+u*cos-v*sin,near[1]+u*sin+v*cos];
+   const far=at(1.8,0);
+   workScene(c,actor,x,y,(cloth,skin)=>{
+     workSleeve(c,[1.6,-8.1],far,shade(cloth,-.23));
+     workSleeve(c,[-1.1,-7.7],near,cloth);
+     fpaSowBand(c,at(-1.7,0),at(3.1,0),1.15,'#4c3224');
+     fpaSowBand(c,at(-1.7,-.25),at(2.8,-.25),.5,'#c99d68');
+     fpaSowPolygon(c,[at(2.55,-1.7),at(4.55,-2.4),at(5.55,-1.35),
+       at(5.25,.7),at(4.8,1.3),at(2.55,1)],'#343738');
+     fpaSowPolygon(c,[at(3,-1.35),at(4.55,-1.9),at(5.05,-1.1),
+       at(4.8,.65),at(3,1)],'#87998f');
+     fpaSowBand(c,at(3.3,.75),at(4.8,1.05),.55,'#e1e0ba');
+     fpaSowBand(c,at(2.85,-.6),at(2.85,.7),.55,'#a77d50');
+     workHands(c,near,far,skin);
+   },0,face);
+ }
+ function tanneryBench(s){return [s.padx+s.fw*.78-17,s.baseY-8];}
+ function drawLeatherCycle(c,b,s,ox,oy){
+   const [benchX,benchY]=tanneryBench(s);
+   const worker=b.worker,actor={type:'tanner',look:worker?.look??b.id*43+1,sx:worker?personSex(worker):''};
+   const action=worker?.action;
+   const elapsed=action?.T?Math.max(0,action.T-action.t):Game.time+b.id*.31;
+   const press=leatherStroke[Math.floor(elapsed*7)%leatherStroke.length];
+   const lean=.65*press;
+   const x=ox+benchX-6.3,y=oy+benchY+8.5;
+   workScene(c,actor,x,y,(cloth,skin)=>{
+     const u=3.4+press*1.35,v=-9+press*.35;
+     const near=[u,v],far=[u+1.9,v-.5];
+     workSleeve(c,[1.6+lean*.45,-8.1],far,shade(cloth,-.23));
+     workSleeve(c,[-1.1+lean*.45,-7.7],near,cloth);
+     fpaSowBand(c,[u-.95,v+.3],[u+3.6,v-1.05],1.1,'#513b28');
+     fpaSowBand(c,[u-1,v+.1],[u+3.5,v-1.25],.5,'#c19255');
+     fpaSowPolygon(c,[[u+2.65,v-2.3],[u+4.6,v-2.15],[u+4.3,v-.65],
+       [u+2.85,v+.25],[u+2.1,v+.15]],'#48534d');
+     fpaSowPolygon(c,[[u+2.8,v-1.9],[u+4.25,v-1.8],[u+4.05,v-.85],[u+2.7,v-.05]],'#899b91');
+     fpaSowBand(c,[u+2.85,v+.08],[u+4.15,v-.68],.55,'#e2dfbd');
+     workHands(c,near,far,skin);
+   },lean);
+ }
  drawFoodYard=function(c,b,s,ox,oy){
    const P=s.pt,t=Game.time+b.id*5;
    if(b.state!=='done'||!P)return M.native.drawFoodYard(c,b,s,ox,oy);
@@ -183,13 +270,17 @@
      M.native.drawFoodYard(c,b,{...s,pt:{...P,baker:null,knead:null}},ox,oy);
      if(P.oven&&P.baker)drawPeelCycle(c,b,ox+P.oven[0],oy+P.oven[1],t);
      if(P.knead)drawKneadCycle(c,b,ox+P.knead[0],oy+P.knead[1],t);
+   }else if(s.px==='butchery'&&s._publishedMachinery&&P.block&&P.butcher){
+     const world=([x,y])=>[ox+x,oy+y];
+     drawCleaverCycle(c,b,world(P.block),world(P.butcher),t);
+     M.native.drawFoodYard(c,b,{...s,pt:{...P,butcher:null}},ox,oy);
    }else if(s.px==='brewery'&&s._publishedMachinery&&b.working&&P.brewer){
      M.native.drawFoodYard(c,b,{...s,pt:{...P,brewer:null}},ox,oy);
      drawMashCycle(c,b,ox+P.brewer[0],oy+P.brewer[1],t);
    }else M.native.drawFoodYard(c,b,s,ox,oy);
  };
  // The existing small window actor keeps the same hand motion; its material is now visible.
- drawInsideLife=function(c,b,s,ox,oy){M.native.drawInsideLife(c,b,s,ox,oy);if(!types.has(b.type)||(!b.working&&!(INS_CNT.get(b)||0)))return;const wins=s.wins||[],n=Math.min(wins.length,Math.max(1,b.working?1+((INS_CNT.get(b)||0)>1?1:0):Math.min(INS_CNT.get(b)||0,2))),order=wins.map((w,i)=>i).sort((p,q)=>((p*7+b.id*13)%17)-((q*7+b.id*13)%17)||p-q);let shown=0;for(const i of order){const[wx,wy,ww,wh,round]=wins[i];if(ww<5)continue;if(shown++>=n)break;const x=ox+wx,y=oy+wy,ph=i*1.7+b.id,sx=x+Math.sin(Game.time*.9+ph)*ww*.16;c.save();c.beginPath();if(round)c.arc(x,y,Math.min(ww,wh)/2,0,Math.PI*2);else c.rect(x-ww/2,y-wh/2,ww,wh);c.clip();if(['metallurgist','smeltery','weaponsmith','armory'].includes(b.type)){poly(c,[[sx,y+2.5],[sx+4,y+2.5],[sx+3,y+3.5],[sx+1,y+3.5]],P.steel);r(c,sx+1.5,y+3,1.5,2,P.iron);r(c,sx+2,y+2,1,.5,'#e4b96a')}else if(['brewery','mill','bakery','hopfarm','magicworkshop'].includes(b.type)){oval(c,sx+2,y+3.5,2.5,1.2,P.wood);oval(c,sx+2,y+3,2.3,.6,'#c5b27c')}else{r(c,sx-.5,y+3.5,5,.8,P.wood);r(c,sx,y+3.5,4,.5,P.hi);r(c,sx+2,y+3,1.5,.5,'#c8b88d')}c.restore()}};
+ drawInsideLife=function(c,b,s,ox,oy){M.native.drawInsideLife(c,b,s,ox,oy);if(b.type==='tannery'&&s._publishedMachinery&&b.state==='done'&&b.working)drawLeatherCycle(c,b,s,ox,oy);if(!types.has(b.type)||(!b.working&&!(INS_CNT.get(b)||0)))return;const wins=s.wins||[],n=Math.min(wins.length,Math.max(1,b.working?1+((INS_CNT.get(b)||0)>1?1:0):Math.min(INS_CNT.get(b)||0,2))),order=wins.map((w,i)=>i).sort((p,q)=>((p*7+b.id*13)%17)-((q*7+b.id*13)%17)||p-q);let shown=0;for(const i of order){const[wx,wy,ww,wh,round]=wins[i];if(ww<5)continue;if(shown++>=n)break;const x=ox+wx,y=oy+wy,ph=i*1.7+b.id,sx=x+Math.sin(Game.time*.9+ph)*ww*.16;c.save();c.beginPath();if(round)c.arc(x,y,Math.min(ww,wh)/2,0,Math.PI*2);else c.rect(x-ww/2,y-wh/2,ww,wh);c.clip();if(['metallurgist','smeltery','weaponsmith','armory'].includes(b.type)){poly(c,[[sx,y+2.5],[sx+4,y+2.5],[sx+3,y+3.5],[sx+1,y+3.5]],P.steel);r(c,sx+1.5,y+3,1.5,2,P.iron);r(c,sx+2,y+2,1,.5,'#e4b96a')}else if(['brewery','mill','bakery','hopfarm','magicworkshop'].includes(b.type)){oval(c,sx+2,y+3.5,2.5,1.2,P.wood);oval(c,sx+2,y+3,2.3,.6,'#c5b27c')}else{r(c,sx-.5,y+3.5,5,.8,P.wood);r(c,sx,y+3.5,4,.5,P.hi);r(c,sx+2,y+3,1.5,.5,'#c8b88d')}c.restore()}};
 })();
 
 
