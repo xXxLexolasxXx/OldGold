@@ -94,7 +94,93 @@
   c.save();c.setTransform(k,0,0,k,0,0);props(c,copy,type);c.restore();A.cache.set(s.canvas,copy);return copy};
  // W is a mirrored E row, never a front-facing fallback. Existing flip composes XOR.
  drawFolk=function(c,u,x,y,view,pose,frame,opt,flip){return view==='W'&&OUTFIT[u.type]?A.native.drawFolk(c,u,x,y,'E',pose,frame,opt,!flip):A.native.drawFolk(c,u,x,y,view,pose,frame,opt,flip)};
- drawSawYard=function(c,b,s,ox,oy){if(s._publishedYard&&s.saw&&b.state==='done'){const[x,y]=s.saw,rad=s.sawR,X=ox+x,Y=oy+y;c.save();c.beginPath();c.rect(X-rad-2,Y-rad-2,2*rad+4,rad+9);c.clip();disc(c,X,Y,rad,b.working?Game.time*14:0,s.sawSide?.45:1);c.restore();for(const dx of(s.sawSide?[]:[-6,8])){r(c,X+dx,Y+4,1.5,3,P.iron);r(c,X+dx,Y+4,1.5,.5,P.silver);bolt(c,X+dx,Y+5.5)}}return A.native.drawSawYard(c,b,s,ox,oy)};
+ const sawFeedTime=8/6,sawTakeTime=8/5;
+ function sawmillCycle(s,time){
+   const [feed,receiver]=s.workers;
+   const joint=[s.saw[0],s.saw[1]+(s.sawSide?6:5)];
+   const seat=foot=>[foot[0]+(joint[0]<foot[0]?-4:4),foot[1]-8];
+   const start=seat(feed),end=seat(receiver),duration=sawFeedTime+sawTakeTime;
+   const phase=((time%duration)+duration)%duration,raw=phase<sawFeedTime;
+   const a=raw?start:joint,b=raw?joint:end,p=raw?phase/sawFeedTime:(phase-sawFeedTime)/sawTakeTime;
+   const dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy)||1;
+   const center=[a[0]+dx*p,a[1]+dy*p],axis=[dx/length,dy/length];
+   const grip=raw&&p<.2?0:!raw&&p>.8?1:-1;
+   const target=grip<0?null:[center[0]+axis[0]*(raw?-2:2),center[1]+axis[1]*(raw?-2:2)];
+   return {center,axis,raw,grip,target,cut:Math.hypot(center[0]-joint[0],center[1]-joint[1])<4.5};
+ }
+ A.sawmillCycle=sawmillCycle;
+ function sawWood(c,{center:[x,y],axis:[dx,dy],raw}){
+   const point=(along,across)=>[x+dx*along-dy*across,y+dy*along+dx*across];
+   function piece(lo,hi,halfWidth,edge,body,light){
+     poly(c,[point(-4.5,lo-.5),point(4.5,lo-.5),point(4.5,hi+.5),point(-4.5,hi+.5)],edge);
+     poly(c,[point(-4.5,lo),point(4.5,lo),point(4.5,hi),point(-4.5,hi)],body);
+     ln(c,...point(-4,lo),...point(4,lo),light,.5);
+     ln(c,...point(-3,halfWidth),...point(1.5,halfWidth+.3),raw?'#69482f':'#af8252',.5);
+   }
+   if(raw){
+     piece(-1.8,1.8,.5,P.deep,'#a87645','#cda471');
+     const [ex,ey]=point(4.5,0);
+     oval(c,ex,ey,1.6,1.7,P.deep);
+     oval(c,ex,ey,1.2,1.25,'#ddb880');
+     oval(c,ex,ey,.65,.75,'#ab7949');
+   }else{
+     piece(-2.1,-.5,-1.4,P.deep,'#c4955b','#eed19c');
+     piece(.5,2.1,1.3,P.deep,'#b6854f','#e8ba81');
+   }
+ }
+ function sawWorker(c,b,s,ox,oy,i,cycle){
+   const foot=s.workers[i],face=s.saw[0]<foot[0]?-1:1;
+   const actor={type:'woodcutter',look:b.id*53+i+1},view=face<0?'W':'E';
+   const handTarget=cycle?.grip===i?cycle.target:null;
+   const shoulder=[foot[0]+face,foot[1]-7.2];
+   const reaching=handTarget&&Math.hypot(handTarget[0]-shoulder[0],handTarget[1]-shoulder[1])<6;
+   // Keep both states visible when a cold scene switches to or from a grip.
+   // Populate the body before drawFolk marks it as decorative.
+   const pose=reaching?'sawGrip':'sawRest';
+   personSprite(actor,'E',pose,0,{});
+   drawFolk(c,actor,ox+foot[0],oy+foot[1],view,pose,0,{});
+   if(!reaching)return;
+   const skin=SKINS[lookOf(actor).skin%SKINS.length],coat=OUTFIT.woodcutter.coat;
+   const hx=ox+handTarget[0],hy=oy+handTarget[1],sx=ox+shoulder[0],sy=oy+shoulder[1];
+   // In profile the far arm stays behind the material.
+   const ex=(sx+hx)/2,ey=(sy+hy)/2+.55;
+   ln(c,sx,sy,ex,ey,P.ink,1.5);
+   ln(c,ex,ey,hx,hy,P.ink,1.5);
+   ln(c,sx,sy,ex,ey,coat,.85);
+   ln(c,ex,ey,hx,hy,coat,.85);
+   r(c,hx-.5,hy-.5,1.5,1.25,skin[2]);
+   r(c,hx-.5,hy-.5,1,.5,skin[0]);
+ }
+ drawSawYard=function(c,b,s,ox,oy){
+   if(!s._publishedYard||!s.saw||b.state!=='done'||(s.workers?.length||0)<2)return A.native.drawSawYard(c,b,s,ox,oy);
+   const [x,y]=s.saw,rad=s.sawR,X=ox+x,Y=oy+y,t=Game.time;
+   const cycle=b.working?sawmillCycle(s,t):null;
+   c.save();
+   c.imageSmoothingEnabled=false;
+   if(cycle){
+     c.save();
+     c.translate(ox,oy);
+     sawWood(c,cycle);
+     c.restore();
+   }
+   c.save();
+   c.beginPath();
+   c.rect(X-rad-2,Y-rad-2,2*rad+4,rad+9);
+   c.clip();
+   disc(c,X,Y,rad,cycle?t*14:0,s.sawSide?.45:1);
+   c.restore();
+   for(const dx of(s.sawSide?[]:[-6,8])){
+     r(c,X+dx,Y+4,1.5,3,P.iron);
+     r(c,X+dx,Y+4,1.5,.5,P.silver);
+     bolt(c,X+dx,Y+5.5);
+   }
+   if(cycle?.cut)for(let k=0;k<8;k++){
+     const f=(t*3+k/8)%1;
+     r(c,X-cycle.axis[0]*f*10+Math.sin(k*3.1)*3,Y+2-Math.sin(f*Math.PI)*6+f*6,1,1,['#e8c868','#c8a448','#f2e0a0'][k%3]);
+   }
+   for(let i=0;i<2;i++)sawWorker(c,b,s,ox,oy,i,cycle);
+   c.restore();
+ };
  // A plate is painted underneath the dish, retaining contrast at actual zoom.
  function food(c,kind,x,y,scale=1){c.save();c.translate(x,y);c.scale(scale,scale);oval(c,.4,.6,3.9,1.1,'#3e4032');oval(c,0,0,3.8,1.1,'#b9c0a3');oval(c,0,-.2,3.1,.7,'#e3dbc0');
   if(kind==='beer'||kind==='darkbeer'){r(c,-1.5,-4,3,3.5,kind==='darkbeer'?'#775135':'#bb8a3e');r(c,-1,-3.5,.5,2.5,'#e6bd70');r(c,-1.5,-4.5,3,.7,'#ece1ba');ln(c,1.5,-3.5,2.5,-3.5,P.iron);ln(c,2.5,-3.5,2.5,-1.5,P.iron);ln(c,1.5,-1.5,2.5,-1.5,P.iron)}

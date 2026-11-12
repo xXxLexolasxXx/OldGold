@@ -333,12 +333,13 @@ function fpaCarryLoad(c,u,view,pose,opt){
 function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
  const trunkGrip=fpaTrunkGrip(u,pose);
  if((u.carry&&!trunkGrip)||u.type==='kid')return {removed:0,filled:0,components:0};
- const W=opt.wpn?wpnParse(opt.wpn):null,both=trunkGrip||pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
+ const W=opt.wpn?wpnParse(opt.wpn):null,both=trunkGrip||pose==='sawGrip'||pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
  if(!both&&!one)return {removed:0,filled:0,components:0};
  const c=cv.getContext('2d'),im=c.getImageData(0,0,cv.width,cv.height),src=new Uint8ClampedArray(im.data),d=im.data,k=cv.width/PW,w=cv.width,h=cv.height,dh=geometry.dh||33,dw=geometry.dw||25,dip=geometry.dip||0,shear=geometry.shear||0,top=PFY-dh;
- const mask=new Uint8Array(w*h),visited=new Uint8Array(w*h),skin=i=>src[i+3]>=160&&src[i]>140&&src[i+1]>95&&src[i+2]>69&&src[i]>src[i+1]*1.08&&src[i+1]>src[i+2]*1.08;
+ const saw=pose==='sawGrip';
+ const mask=new Uint8Array(w*h),visited=new Uint8Array(w*h),skin=i=>src[i+3]>=160&&src[i]>(saw?108:140)&&src[i+1]>(saw?67:95)&&src[i+2]>(saw?43:69)&&src[i]>src[i+1]*1.08&&src[i+1]>src[i+2]*1.08;
  const xy=p=>{const y=(Math.floor(p/w)+.5)/k-dip,x=(p%w+.5)/k-shear*(y-PFY);return[x,y];};
- const roi=p=>{const[x,y]=xy(p),a=Math.abs(x-PFX);return y>=top+dh*.5&&y<PFY-5&&a>=4.5&&a<=dw*.57&&!(a<6.5&&y<top+dh*.64);};
+ const roi=p=>{const[x,y]=xy(p),a=Math.abs(x-PFX);return y>=top+dh*.5&&y<PFY-5&&a>=(saw?3.5:4.5)&&a<=dw*.57&&!(a<6.5&&y<top+dh*.64);};
  const comps=[];for(let p=0;p<w*h;p++){if(visited[p]||!roi(p)||!skin(p*4))continue;const pixels=[],queue=[p];visited[p]=1;for(let at=0;at<queue.length;at++){const q=queue[at];pixels.push(q);const x=q%w,y=Math.floor(q/w);for(const r of [x?q-1:-1,x<w-1?q+1:-1,y?q-w:-1,y<h-1?q+w:-1])if(r>=0&&!visited[r]&&roi(r)&&skin(r*4)){visited[r]=1;queue.push(r);}}if(pixels.length>=Math.max(3,k*k*.7)){let x=0,y=0,y0=1e6,y1=-1e6;for(const q of pixels){const a=xy(q);x+=a[0];y+=a[1];y0=Math.min(y0,a[1]);y1=Math.max(y1,a[1]);}comps.push({pixels,x:x/pixels.length,y:y/pixels.length,y0,y1});}}
  let chosen=comps;if(one){const side=view==='N'?-1:1;if(view==='E'||view==='W'){const sorted=comps.slice().sort((a,b)=>a.x-b.x);chosen=sorted.length?[sorted[0]]:[];}else chosen=comps.filter(q=>(q.x-PFX)*side>0);}
  for(const comp of chosen){
