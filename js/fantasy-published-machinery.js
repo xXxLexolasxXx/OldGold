@@ -44,7 +44,7 @@
  }
  if(type==='brewery'&&Q.brewer){if(Q.vat)copper(c,...Q.vat);const[x,y]=Q.brewer;barrel(c,x+mash.x,y,mash.w,-mash.y,true);barrel(c,x+19,y+3,9,9);if(lv>1)crate(c,x+24,y-8,10,6)}
  if(type==='butchery'&&Q.block){const[x,y]=Q.block;beam(c,x-5,y+1,11,7);oval(c,x+.5,y+1,6,1.8,P.hi);for(const dx of[-3,0,3])ln(c,x+dx,y+.5,x+dx+1,y+1.5,P.deep);oval(c,x+2,y-.2,3.5,1.7,'#8d5139');oval(c,x+1.5,y-.5,2.3,1,'#c9906c');r(c,x+2,y-1,1.5,.5,'#ead2a6');if(Q.hooks){const a=Q.hooks[0],z=Q.hooks[Q.hooks.length-1];beam(c,a[0]-2,a[1]-5,z[0]-a[0]+4,2);for(const p of Q.hooks){ln(c,p[0],p[1]-3,p[0],p[1]+1,P.silver);oval(c,p[0],p[1]+3,1.8,3,'#ad7954')}}}
- if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=goldWashBench(Q.panner);bench(c,x,y,16);for(const dx of[-6,6])bolt(c,x+dx,y+.4)}if(Q.sorter){const[x,y]=Q.sorter;bench(c,x+3,y-7,18);for(const dx of[-2,2,5]){poly(c,[[x+dx,y-7],[x+dx+1,y-10],[x+dx+2,y-7]],'#a3c5bc');r(c,x+dx+1,y-9,.5,1,'#dbe0c1')}}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.stamp){const[x,y]=Q.stamp;masonry(c,x-9,y-2,19,5);for(const dx of[-8,8])beam(c,x+dx,y-20,2,20);beam(c,x-10,y-21,22,3);for(const dx of[-5,0,5]){beam(c,x+dx,y-17,1.5,13);r(c,x+dx-1,y-5,3,3,P.iron);r(c,x+dx-1,y-5,3,.5,P.silver)}bolt(c,x-8,y-20);bolt(c,x+8,y-20)}if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
+ if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=goldWashBench(Q.panner);bench(c,x,y,16);for(const dx of[-6,6])bolt(c,x+dx,y+.4)}if(Q.sorter){const[x,y]=Q.sorter;bench(c,x+3,y-7,18);for(const dx of[-2,2,5]){poly(c,[[x+dx,y-7],[x+dx+1,y-10],[x+dx+2,y-7]],'#a3c5bc');r(c,x+dx+1,y-9,.5,1,'#dbe0c1')}}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.stamp)paintStampFrame(c,...Q.stamp);if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
  if(['metallurgist','smeltery','weaponsmith','armory'].includes(type)){const[x,y]=s.glow||[s.padx+s.fw*.78,s.baseY-15];if(type!=='armory')forge(c,x,y+2,19);if(type==='smeltery'){masonry(c,x+11,y-4,10,8);r(c,x+12,y-3,8,2,'#7e4b32');r(c,x+12,y-3,6,.5,'#e0aa58');for(const dx of[-4,1,6]){r(c,x+dx,y+8,4,1.5,'#926c3a');r(c,x+dx,y+8,4,.5,'#ddbb76')}}else{anvil(c,x-17,y+4,.9);bellows(c,x+14,y+1);if(type==='armory'){bench(c,x+3,y+1,21);poly(c,[[x,y-5],[x+6,y-5],[x+6,y-1],[x+3,y+1],[x,y-1]],P.iron);ln(c,x+3,y-4,x+3,y,P.silver);ln(c,x+1,y-2,x+5,y-2,P.mid)}}}
  if(type==='mill'){const[x,y]=[s.padx+s.fw*.78,s.baseY-9];millstone(c,x,y-2);sack(c,x-11,y+4);if(lv>1)sack(c,x+11,y+4);beam(c,x+4,y-20,8,2);poly(c,[[x+3,y-19],[x+13,y-19],[x+10,y-12],[x+6,y-12]],P.ink);poly(c,[[x+4,y-18],[x+12,y-18],[x+9,y-13],[x+7,y-13]],P.mid);for(const dx of[5,7,9])r(c,x+dx,y-18,1,.5,'#e2c47c');beam(c,x+7,y-13,2,5)}
  if(type==='tannery'){const x=s.padx+s.fw*.78,y=s.baseY-9;for(const dx of[-9,9])beam(c,x+dx,y-23,2,24);beam(c,x-10,y-24,22,2);beam(c,x-10,y-3,22,2);hide(c,x,y-3,15,19);for(const dx of[-6,6])for(const dy of[-20,-14,-7])ln(c,x+dx,y+dy,x+(dx<0?-9:9),y+dy-1,'#c5b37e');barrel(c,x+19,y+3,11,8,true);const [bx,by]=tanneryBench(s);bench(c,bx,by,13);hide(c,bx,by+.45,9,3)}
@@ -104,7 +104,7 @@
    // Replace that strip before laying either working sleeve over the torso.
    c.scale(body.width/PW,body.height/PH);
    c.translate(PFX,PFY);
-   if(view!=='E'||actor.type==='butcher'||actor.type==='tanner'){
+   if(view!=='E'||['butcher','tanner','miner'].includes(actor.type)){
      c.clearRect(-13,-15,26,10);
      fpaSowPolygon(c,[[-5.5,-14.5],[-2.5,-15],[4.5,-14],[5.5,-10],[4.5,-5],[-4.5,-5],[-5.5,-8]],'#352722');
      fpaSowPolygon(c,[[-4.5,-14],[-2,-14.5],[4,-13.5],[4.5,-10],[3.8,-6],[-4,-6],[-5,-8.5]],shade(cloth,-.2));
@@ -295,6 +295,87 @@
      workHands(c,left,right,skin);
    },0,1,'S');
  }
+ const ironFeedPoses=[
+   [0,.98,false],[0,.98,true],[.34,.69,true],[.7,.27,true],
+   [1,-.16,true],[1,.04,false],[.72,.32,false],[.36,.66,false],
+ ];
+ function ironOre(c,x,y,scale=1,full=true){
+   for(const [i,[dx,dy]] of [[-1.25,0],[.15,-.6],[1.45,.1]].entries()){
+     if(!full&&i===1)continue;
+     const X=x+dx*scale,Y=y+dy*scale,k=scale;
+     fpaSowPolygon(c,[[X-1.1*k,Y-.15*k],[X-.55*k,Y-.9*k],[X+.4*k,Y-1.15*k],
+       [X+1.05*k,Y-.5*k],[X+.75*k,Y+.45*k],[X-.65*k,Y+.55*k]],'#4d3730');
+     fpaSowPolygon(c,[[X-.6*k,Y-.4*k],[X-.28*k,Y-.75*k],[X+.42*k,Y-.65*k],
+       [X+.65*k,Y-.18*k],[X-.45*k,Y+.15*k]],i===1?'#b87750':'#8e6652');
+   }
+ }
+ function drawIronFeed(c,actor,x,y,target,t,face){
+   const f=Math.floor(t*5)%ironFeedPoses.length,[slide,angle,loaded]=ironFeedPoses[f];
+   const scoop=[6,-.9],tip=pxLerp(scoop,target,slide),cs=Math.cos(angle),sn=Math.sin(angle);
+   const at=(u,v)=>[tip[0]+u*cs-v*sn,tip[1]+u*sn+v*cs];
+   const near=at(-8.15,0),far=at(-5.95,0);
+   workScene(c,actor,x,y,(cloth,skin)=>{
+     ironOre(c,scoop[0],scoop[1]+.8,1,!loaded&&f!==5);
+     workSleeve(c,[1.6,-8.1],far,shade(cloth,-.23));
+     workSleeve(c,[-1.1,-7.7],near,cloth);
+     c.save();
+     if(slide===1){
+       // The opening covers the leading lip at full insertion.
+       c.beginPath();c.rect(-9,-20,target[0]+10,22);c.clip();
+     }
+     fpaSowBand(c,at(-10.1,0),at(-1,0),1.25,'#493328');
+     fpaSowBand(c,at(-10,-.25),at(-1.4,-.25),.5,'#bb9462');
+     fpaSowPolygon(c,[at(-2.45,-.55),at(-1.1,-1.45),at(1.25,-1.25),
+       at(1.65,-.1),at(1.1,1.15),at(-1.15,1.35)],'#3a4240');
+     fpaSowPolygon(c,[at(-1.9,-.5),at(-.95,-1.08),at(1,-.95),
+       at(1.2,-.08),at(.85,.75),at(-.95,.85)],'#677872');
+     fpaSowBand(c,at(.9,-.85),at(1.25,.4),.55,'#cdd0b6');
+     fpaSowBand(c,at(-1.72,-.65),at(-1.55,.6),.5,'#a18a67');
+     if(loaded){const [ox,oy]=at(.02,-.35);ironOre(c,ox,oy,.67);}
+     c.restore();
+     workHands(c,near,far,skin);
+   },0,face);
+ }
+ function paintStampFrame(c,x,y){
+   masonry(c,x-9,y-2,19,5);
+   for(const dx of[-8,7]){
+     beam(c,x+dx,y-20,2,20);
+     ln(c,x+dx+.5,y-17,x+dx+.5,y-2,'#bd9259');
+     bolt(c,x+dx+.5,y-1);
+   }
+   beam(c,x-10,y-21,22,3);
+   beam(c,x-7,y-3.4,15,1.1);
+   ln(c,x-6.5,y-3.3,x+7.5,y-3.3,P.steel);
+   ironOre(c,x+4.7,y-3.15,.8);
+ }
+ function drawIronStamp(c,x,y,t,working){
+   for(let k=0;k<3;k++){
+     const ph=(t*1.6+k/3)%1,px=x-5+k*4;
+     const rise=Math.max(0,Math.min(1,(ph-.12)/.35,(1-ph)/.25));
+     const lift=working?5.8*rise*rise*(3-2*rise):5.8;
+     const bottom=y-3-lift,head=bottom-2.7;
+     r(c,px-.65,y-19,1.3,head-y+19,'#50463b');
+     r(c,px-.2,y-19,.5,head-y+19,'#b6a177');
+     r(c,px-1.4,head,2.8,2.7,'#495250');
+     r(c,px-.85,head+.4,1.75,1.4,'#89948b');
+     r(c,px-1.4,bottom-.5,2.8,.5,'#bbc0a5');
+   }
+   beam(c,x-10,y-21,22,3);
+   for(const dx of[-7,7])bolt(c,x+dx,y-19.8);
+ }
+ function drawIronYard(c,b,s,ox,oy,t){
+   const P=s.pt;
+   if(P.stamp)drawIronStamp(c,ox+P.stamp[0],oy+P.stamp[1],t,b.working);
+   M.native.drawFoodYard(c,b,{...s,pt:{...P,stoker:null,crusher:null,stamp:b.working?P.stamp:null}},ox,oy);
+   if(P.kiln&&P.stoker){
+     const x=ox+P.kiln[0],y=oy+P.kiln[1];
+     drawIronFeed(c,{type:'miner',look:b.id*71+13},x-12.8,y+4.6,[12.8,-8.4],t,1);
+   }
+   if(P.stamp&&P.crusher&&b.working){
+     const x=ox+P.stamp[0],y=oy+P.stamp[1];
+     drawIronFeed(c,{type:'miner',look:b.id*71+21},x+17,y+5.6,[11.5,-8.4],t,-1);
+   }
+ }
  drawFoodYard=function(c,b,s,ox,oy){
    const P=s.pt,t=Game.time+b.id*5;
    if(b.state!=='done'||!P)return M.native.drawFoodYard(c,b,s,ox,oy);
@@ -306,6 +387,8 @@
      const world=([x,y])=>[ox+x,oy+y];
      drawCleaverCycle(c,b,world(P.block),world(P.butcher),t);
      M.native.drawFoodYard(c,b,{...s,pt:{...P,butcher:null}},ox,oy);
+   }else if(s.px==='ironmine'&&s._publishedMachinery&&(P.kiln||P.stamp)){
+     drawIronYard(c,b,s,ox,oy,t);
    }else if(s.px==='goldmine'&&s._publishedMachinery&&P.panner){
      M.native.drawFoodYard(c,b,{...s,pt:{...P,panner:null}},ox,oy);
      drawGoldWashCycle(c,b,ox+P.panner[0],oy+P.panner[1],t);
