@@ -745,6 +745,24 @@ function drawPenAnimals(c, b, spr, ox, oy) {
 }
 
 // ---------- Торговый пост (bldpx.js): торговая телега подъезжает, торговец грузит товар из пристройки ----------
+function tradeYardCarrier(cx,cy,lx,ly,n,phase){
+  const scale=YARD_K*2/3;
+  const load=[cx+20-(n%3)*6.5,cy-17-Math.floor(n/3)*4.4];
+  const foot=[load[0]+FPA_CRATE_HOLD[0]*scale,load[1]+(PFY-FPA_CRATE_HOLD[1])*scale];
+  const tail=cx+31,lane=Math.max(cy+8,ly);
+  const path=[[lx,ly],[lx,lane],[tail,lane],[tail,foot[1]],foot];
+  const distances=path.slice(1).map(([x,y],i)=>Math.hypot(x-path[i][0],y-path[i][1]));
+  const go=phase<.5,travel=Math.min(1,(go?phase:1-phase)/.46);
+  let remaining=travel*distances.reduce((sum,length)=>sum+length,0);
+  let leg=0;
+  while(leg<distances.length-1&&remaining>=distances[leg])remaining-=distances[leg++];
+  const [ax,ay]=path[leg],[bx,by]=path[leg+1];
+  const weight=distances[leg]>0?Math.max(0,Math.min(1,remaining/distances[leg])):0;
+  const position=[ax+(bx-ax)*weight,ay+(by-ay)*weight];
+  const dx=(bx-ax)*(go?1:-1),dy=(by-ay)*(go?1:-1);
+  const view=travel===1?'W':Math.abs(dx)>.1?(dx<0?'W':'E'):(dy<0?'N':'S');
+  return {position,view,load,held:go&&n<4,placed:!go&&n<4,paused:travel===1};
+}
 function drawTradeYard(c, b, spr, ox, oy) {
   if (b.state !== 'done' || !spr.cartSpot) return;
   const t = Game.time + b.id * 3, cyc = t % 24, [cx, cy] = spr.cartSpot, [lx, ly] = spr.loadFrom || [cx - 12, cy + 30];
@@ -753,12 +771,21 @@ function drawTradeYard(c, b, spr, ox, oy) {
   let x = cx, moving = false;
   if (cyc < 4) { x = cx + (4 - cyc) * 14; moving = true; } else if (cyc > 18) { x = cx - (cyc - 18) * 14; moving = true; }
   const n = cyc < 4 ? 0 : Math.min(4, Math.floor((cyc - 4) / 3));
-  drawCreatureAt(c, 'cart', ox + x, oy + cy, cyc > 18 ? -1 : -1, moving, t * 6, n ? 'crate' : null, n);
-  if (cyc >= 4 && cyc <= 18) {   // торговец ходит от пристройки к телеге с ящиком
-    const ph = ((cyc - 4) % 3) / 3, go = ph < 0.5, f = go ? ph * 2 : (1 - ph) * 2;
-    const px = lx + (cx - 6 - lx) * f, py = ly + (cy + 4 - ly) * f;
-    drawFolk(c, { type: 'serf', look: b.id * 71 + 9, carry: go ? 'crate' : null }, ox + px, oy + py, go ? (cx > lx ? 'E' : 'W') : (cx > lx ? 'W' : 'E'), 'walk', Math.floor(t * 9) & 7, {});
-  }
+  const carrier=cyc>=4&&cyc<=18&&n<4?tradeYardCarrier(cx,cy,lx,ly,n,((cyc-4)%3)/3):null;
+  const drawCarrier=()=>{
+    const [px,py]=carrier.position,pose=carrier.paused?'idle':'walk';
+    const atBed=py<cy&&px<cx+31;
+    drawFolk(c,{type:'serf',look:b.id*71+9,carry:carrier.held?'crate':null,_exactYardPose:atBed},
+      ox+px,oy+py,carrier.view,pose,carrier.paused?0:Math.floor(t*9)&7,{});
+  };
+  const behind=carrier&&carrier.position[1]<cy;
+  if(behind)drawCarrier();
+  const loaded=n+(carrier?.placed?1:0),cargo=loaded?'crate':null;
+  // Load changes on the release frame. Resolve the stationary cart before
+  // blitting it so a cold cache cannot drop the cart during the hand-off.
+  if(!moving)creatureSprite('cart',null,cargo,loaded);
+  drawCreatureAt(c,'cart',ox+x,oy+cy,-1,moving,t*6,cargo,loaded);
+  if(carrier&&!behind)drawCarrier();
   c.imageSmoothingEnabled = R.smooth;
 }
 

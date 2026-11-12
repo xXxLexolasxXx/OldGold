@@ -139,7 +139,7 @@
   const fallback=canDefer?cache.get(lastFrame.get(motion)):null;
   // A queued frame can reuse another phase of the same action and costume.
   // It never substitutes idle for a swing or a different tool/view.
-  if(R.inFrame&&(fallback||u._decorativeSprite||(R.cam.z<=1&&canDefer&&!fpaTrunkGrip(q.holder,pose)))){
+  if(R.inFrame&&!u._exactYardPose&&(fallback||u._decorativeSprite||(R.cam.z<=1&&canDefer&&!fpaTrunkGrip(q.holder,pose)))){
    const snapshot={...u,_spr:null};
    if(spriteDefer('fpa:'+key,()=>render(snapshot,view,pose,frame,opt)))return fallback||pendingDecorativeSprite;
   }

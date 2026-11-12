@@ -299,10 +299,28 @@ function fpaCropGrip(u,pose){
  return (u.carry==='wheat'||u.carry==='hay'||u.carry==='hops')&&
    (u.type==='farmer'||u.type==='hopgrower'||u.type==='builder')&&(pose==='idle'||pose==='walk');
 }
+function fpaBoxGrip(u,pose){
+ return (u.carry==='crate'||u.carry==='bread')&&(pose==='idle'||pose==='walk');
+}
+const FPA_CRATE_HOLD=[4,24.5];
+const fpaNativeDrawLoad=drawLoad;
+drawLoad=function(c,g){
+ if(g!=='crate')return fpaNativeDrawLoad(c,g);
+ fpaSowPolygon(c,[[-4.75,-2.5],[-2.75,-4],[4.5,-4],[5,-2.25],[5,5],[-4.75,5]],'#3b291e');
+ fpaSowPolygon(c,[[-4.25,-2],[-2.5,-3.5],[4,-3.5],[4.5,-2],[-2,-1.75]],'#c79960');
+ fpaSowPolygon(c,[[-4.25,-1.75],[4.5,-1.75],[4.5,3],[-4.25,3]],'#9d6940');
+ fpaSowPolygon(c,[[-4.25,-1.75],[-2.75,-1],[-2.75,3],[-4.25,3]],'#6b442c');
+ c.fillStyle='#67442b';c.fillRect(-2.5,0,7,.5);c.fillRect(-2.5,1.5,7,.5);
+ c.fillStyle='#c18c53';c.fillRect(-3.25,-1.75,1,4.75);c.fillRect(3.25,-1.75,1,4.75);
+ c.fillStyle='#d8bd82';c.fillRect(-3,-1.25,.5,.5);c.fillRect(3.5,-1.25,.5,.5);
+ c.fillStyle='#67442b';c.fillRect(-4.25,3,8.75,1.5);
+ c.fillStyle='#ae7745';c.fillRect(-4.25,3,8.75,.5);
+ c.fillStyle='#58645b';c.fillRect(-3,2,.5,.5);c.fillRect(3.5,2,.5,.5);
+};
 function fpaCarryLoad(c,u,view,pose,opt){
  const n=opt.carryN||u.carryN||1;
- const crop=fpaCropGrip(u,pose);
- if(!fpaTrunkGrip(u,pose)&&!crop){
+ const crop=fpaCropGrip(u,pose),box=fpaBoxGrip(u,pose),crate=u.carry==='crate';
+ if(!fpaTrunkGrip(u,pose)&&!crop&&!box){
    c.save();
    c.translate(PFX,u.carry==='trunk'?13:23);
    if(u.carry==='trunk')c.scale(1.4,1.2);
@@ -312,9 +330,15 @@ function fpaCarryLoad(c,u,view,pose,opt){
  }
  const profile=view==='E'||view==='W',back=view==='N';
  const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
- const skin=SKINS[lookOf({...u,look}).skin%SKINS.length][0],coat=OUTFIT[u.type].coat;
+ const features=lookOf({...u,look}),skin=SKINS[features.skin%SKINS.length][0];
+ const coat=OUTFIT[u.type].coat||features.green;
+ const centerX=box?(profile?crate?FPA_CRATE_HOLD[0]:2.2:0):profile?1:back?-2.2:0;
+ const centerY=box?FPA_CRATE_HOLD[1]:crop?24.7:25.5;
  const narrow=crop&&u.carry==='hops';
- const arms=profile?[
+ const arms=box?[
+   {shoulder:[profile?1.5:4.5,22],grip:[centerX+4.5,centerY+.75],shade:-.22},
+   {shoulder:[profile?-3.5:-4.5,22],grip:[centerX-4.25,centerY+1.25],shade:0}
+ ]:profile?[
    {shoulder:[1.5,22.5],grip:[narrow?3.8:6,25],shade:-.22},
    {shoulder:[-3,22],grip:[-2,crop?25.5:26.5],shade:0}
  ]:[
@@ -326,22 +350,24 @@ function fpaCarryLoad(c,u,view,pose,opt){
  if(back){
    // From behind, the torso covers the log held in front of the body.
    c.beginPath();
-   c.rect(-PFX,18,PFX-5.2,16);
-   c.rect(5.2,18,PFX-5.2,16);
+   const edge=box?3.5:5.2;
+   c.rect(-PFX,18,PFX-edge,16);
+   c.rect(edge,18,PFX-edge,16);
    c.clip();
  }
  for(const {shoulder,grip,shade:shadow} of arms){
    const elbow=[shoulder[0]+Math.sign(grip[0])*1,shoulder[1]+2.5];
-   const width=crop?4.5:5.5;
+   const width=crop||box?4.5:5.5;
    fpaSowBand(c,shoulder,elbow,width,'#302923');
    fpaSowBand(c,elbow,grip,width-1,'#302923');
    fpaSowBand(c,shoulder,elbow,width-1,shade(coat,shadow));
    fpaSowBand(c,elbow,grip,width-2,shade(coat,shadow+.12));
  }
  c.save();
- c.translate(profile?1:back?-2.2:0,crop?24.7:25.5);
- c.rotate(crop?0:profile?-.08:back?.09:-.09);
- c.scale(crop?(back?-1:1):profile?1.23:back?-.94:.94,1.03);
+ c.translate(centerX,centerY);
+ c.rotate(crop||box?0:profile?-.08:back?.09:-.09);
+ if(crate)c.scale(.62/(YARD_K*2/3),.62/(YARD_K*2/3));
+ else c.scale(crop||box?(back?-1:1):profile?1.23:back?-.94:.94,1.03);
  drawLoads(c,u.carry,n);
  c.restore();
  for(const {grip} of arms)hand(c,grip[0],grip[1],skin);
@@ -350,7 +376,7 @@ function fpaCarryLoad(c,u,view,pose,opt){
 // Remove only the atlas's static skin/sleeve components for actively posed arms.
 // Ordinary idle/walk and other carriers take the no-op path.
 function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
- const cargoGrip=fpaTrunkGrip(u,pose)||fpaCropGrip(u,pose);
+ const cargoGrip=fpaTrunkGrip(u,pose)||fpaCropGrip(u,pose)||fpaBoxGrip(u,pose);
  if((u.carry&&!cargoGrip)||u.type==='kid')return {removed:0,filled:0,components:0};
  const W=opt.wpn?wpnParse(opt.wpn):null,both=cargoGrip||pose==='sawGrip'||pose==='yardGrip'||pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
  if(!both&&!one)return {removed:0,filled:0,components:0};
