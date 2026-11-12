@@ -430,7 +430,12 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
    [tx,ty]=fpaFitSpadeToSprite(c,hx,hy,tx,ty);
  }
  smoothLimb(c,[offset+.4,sh+.4],[(offset+.4+hx)/2+.6,(sh+hy)/2+.5],[hx,hy],2.1,coat);
- if(!['toss','pat','bucket','pick'].includes(tool))line(c,hx-(tx-hx)*.25,hy-(ty-hy)*.25,tx,ty,'#6e4428',.9);
+ if(!['toss','pat','bucket','pick'].includes(tool)){
+   const handle=[hx-(tx-hx)*.25,hy-(ty-hy)*.25],head=[tx,ty];
+   const peel=tool==='spade'&&u.type==='baker';
+   fpaSowBand(c,handle,head,peel?1:tool==='spade'?2:1.65,'#39291f');
+   fpaSowBand(c,handle,head,peel?.5:.75,'#b58a57');
+ }
  if(opt.fieldWork)fpaFieldHead(c,opt.fieldWork==='fork'?'fork':tool,hx,hy,tx,ty);
  else switch(tool){
  case 'toss':case 'pat':break; // Native bare hands; projectile belongs to its native effect.
@@ -438,10 +443,10 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  case 'axe':{
    const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,ux=dx/length,uy=dy/length;
    if(opt.woodcutting){
-     line(c,hx-ux,hy-uy,tx,ty,'#372723',1.45);
-     line(c,hx-ux,hy-uy-.25,tx,ty-.25,'#b58352',.65);
+     fpaSowBand(c,[hx-ux,hy-uy],[tx,ty],2,'#372723');
+     fpaSowBand(c,[hx-ux,hy-uy],[tx,ty],.75,'#b58352');
    }
-   const at=(along,across)=>[tx+ux*along+nx*across,ty+uy*along+ny*across];
+   const at=(along,across)=>[tx+ux*along*1.25+nx*across,ty+uy*along*1.25+ny*across];
    fpaSowPolygon(c,[at(.75,-.8),at(1,.65),at(.45,1.4),at(0,edge),
      at(-1.25,edge+.2),at(-2.6,edge),at(-2.35,1.35),at(-1.2,.35),at(-1.1,-.8)],'#303930');
    fpaSowPolygon(c,[at(.5,.5),at(0,edge-.2),at(-1.3,edge),at(-2.3,edge-.25),
@@ -452,20 +457,20 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  }
  case 'pick':{
    const sx=hx-(tx-hx)*.18,sy=hy-(ty-hy)*.18;
-   line(c,sx,sy,tx,ty,'#302621',1.55);
-   line(c,sx,sy-.25,tx,ty-.25,'#a97a4d',.7);
+   fpaSowBand(c,[sx,sy],[tx,ty],2,'#302621');
+   fpaSowBand(c,[sx,sy],[tx,ty],.85,'#a97a4d');
    const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1;
    const cx=tx+dx/length*.8,cy=ty+dy/length*.8;
    c.beginPath();
-   c.moveTo(tx-nx*3.2,ty-ny*3.2);
+   c.moveTo(tx-nx*4,ty-ny*4);
    c.quadraticCurveTo(cx,cy,tx+nx*3.2,ty+ny*3.2);
    c.strokeStyle='#252b29';
-   c.lineWidth=2;
+   c.lineWidth=2.5;
    c.stroke();
    c.strokeStyle='#cdd8d1';
-   c.lineWidth=1.1;
+   c.lineWidth=1.5;
    c.stroke();
-   const at=(along,across)=>[tx+dx/length*along+nx*across,ty+dy/length*along+ny*across];
+   const at=(along,across)=>[tx+dx/length*along*1.2+nx*across*1.2,ty+dy/length*along*1.2+ny*across*1.2];
    fpaSowPolygon(c,[at(-1.45,-1.15),at(.9,-1.25),at(1.15,.5),at(.3,1.3),
      at(-1.25,1.05)],'#543c2b');
    fpaSowPolygon(c,[at(-1,-.9),at(.65,-.85),at(.85,.45),at(.15,.95),at(-.9,.7)],'#c49559');
@@ -475,6 +480,7 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  }
  case 'hammer':{
    c.save();c.translate(tx,ty);c.rotate(Math.atan2(ty-hy,tx-hx));
+   c.scale(1.25,1.2);
    fpaSowPolygon(c,[[-1,-1.5],[-.5,-2],[1,-2],[1.25,-1.5],
      [1.25,1.5],[.75,2],[-.75,2],[-1,1.5]],'#303930');
    fpaSowPolygon(c,[[-.5,-1.5],[.75,-1.5],[.75,1.5],[-.5,1.5]],'#879790');
@@ -482,8 +488,12 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
    c.fillStyle='#c49559';c.fillRect(-.75,-.5,1,.5);
    c.restore();break;
  }
- case 'hook':{c.strokeStyle='#6e4428';c.lineWidth=.9;c.beginPath();c.moveTo(tx,ty);c.lineTo(tx+(tx-hx)*.9,ty+(ty-hy)*.9);c.stroke();const kx=tx+(tx-hx)*.9,ky=ty+(ty-hy)*.9;c.strokeStyle='#2a1c10';c.lineWidth=.8;c.beginPath();c.arc(kx+nx*1.4,ky+ny*1.4,1.5,0,Math.PI*1.5);c.stroke();ellipse(c,kx+nx*2.2,ky+ny*2.2,1,1.3,'#a8d860');break;}
- case 'sickle':c.strokeStyle='#d0d4d8';c.lineWidth=.8;c.beginPath();c.arc(tx+nx*1.6,ty+ny*1.6,2,Math.atan2(ny,nx)+Math.PI*.2,Math.atan2(ny,nx)+Math.PI*1.2);c.stroke();break;
+ case 'hook':{
+   const end=[tx+(tx-hx)*.9,ty+(ty-hy)*.9];
+   fpaSowBand(c,[tx,ty],end,1.65,'#6e4428');
+   fpaFieldHead(c,'hook',hx,hy,...end);break;
+ }
+ case 'sickle':fpaFieldHead(c,'sickle',hx,hy,tx,ty);break;
  case 'spade':{
    if(u.type!=='baker'){fpaSpadeHead(c,hx,hy,tx,ty);break;}
    // The bakery reuses the dig animation for its flat oven peel.
@@ -627,7 +637,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const along=(point,distance)=>[snap(point[0]-distance*Math.sin(angle)),
    snap(point[1]-distance*Math.cos(angle))];
  const spacing=5+aim*1.5;
- const far=strike?.far||along(near,spacing),handle=strike?.handle||along(near,spacing+2),socket=strike?.socket||along(tip,2);
+ const far=strike?.far||along(near,spacing),handle=strike?.handle||along(near,spacing+2.75),socket=strike?.socket||along(tip,2);
  const farBehind=far[0]<(strike?-3:-1)+gripLean[0];
  const outfit=OUTFIT[u.type];
  const look=lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]});
@@ -725,9 +735,9 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  part(.5,-17.5,10,5,.5+lx,-17.5+ly);
  if(farArm)fpaSowBand(c,farArm.cuff,farArm.wrist,2.5,farArm.cuffColor);
  arm(torso(-3,-15),near,false);
- fpaSowBand(c,handle,socket,strike?2:1.5,outline);
- fpaSowBand(c,handle,socket,.5,'#b58a57');
- fpaSowBand(c,near,far,.75,'#d4a775');
+ fpaSowBand(c,handle,socket,strike?2.5:2.25,outline);
+ fpaSowBand(c,handle,socket,1,'#b58a57');
+ fpaSowBand(c,near,far,.9,'#d4a775');
  if(tool==='pick')fpaMiningHead(c,socket,angle,strike.edge);
  else if(tool==='axe')fpaFellingHead(c,socket,angle,strike.edge);
  else if(tool==='hammer')fpaBuildingHammerHead(c,socket,angle,strike.edge);
@@ -742,11 +752,15 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  world.restore();
  return {tip:[px+tip[0]*face*scale,py+tip[1]*scale],near,far,shoulder,lean,shaft:strike?.shaft};
 }
-function fpaBuildingHammerHead(c,[x,y],angle,edge){
+function fpaHeavyHeadLayer(c,[x,y],angle,edge,width,depth){
  const ux=Math.sin(angle),uy=Math.cos(angle);
- const shape=(points,color)=>fpaSowPolygon(c,points.map(([along,side])=>[
-   x+ux*along-uy*side,y+uy*along+ux*side
- ]),color);
+ return (points,color)=>fpaSowPolygon(c,points.map(([along,side])=>{
+   const across=edge+(side-edge)*depth;
+   return [x+ux*along*width-uy*across,y+uy*along*width+ux*across];
+ }),color);
+}
+function fpaBuildingHammerHead(c,socket,angle,edge){
+ const shape=fpaHeavyHeadLayer(c,socket,angle,edge,1.28,1.16);
  shape([[-1.55,-2.9],[.95,-2.9],[1.85,-2.1],[1.85,edge-.6],
    [1.25,edge],[-1.2,edge],[-1.8,edge-.55],[-1.8,-2.35]],'#323730');
  shape([[-1.15,-2.4],[.8,-2.4],[1.3,-1.8],[1.3,edge-.55],
@@ -756,11 +770,8 @@ function fpaBuildingHammerHead(c,[x,y],angle,edge){
  shape([[-1.4,-.8],[1.45,-.8],[1.45,.55],[-1.4,.55]],'#63492e');
  shape([[-1,-.55],[.95,-.55],[.95,.3],[-1,.3]],'#cb9b56');
 }
-function fpaFellingHead(c,[x,y],angle,edge){
- const ux=Math.sin(angle),uy=Math.cos(angle);
- const shape=(points,color)=>fpaSowPolygon(c,points.map(([along,side])=>[
-   x+ux*along-uy*side,y+uy*along+ux*side
- ]),color);
+function fpaFellingHead(c,socket,angle,edge){
+ const shape=fpaHeavyHeadLayer(c,socket,angle,edge,1.3,1.18);
  shape([[1.25,-1.3],[1.75,.3],[.95,1.65],[.5,edge-.35],[0,edge],
    [-1.7,edge+.2],[-3.25,edge-.55],[-2.6,1.35],[-1.3,.3],[-1.55,-1.25]],'#303930');
  shape([[1,.15],[.45,1.55],[0,edge-.4],[-1.6,edge-.15],
@@ -770,11 +781,9 @@ function fpaFellingHead(c,[x,y],angle,edge){
  shape([[-1.1,-1.2],[.9,-1.2],[1.1,-.45],[.75,.75],[-1.1,.8]],'#573b2b');
  shape([[-.75,-1],[.55,-1],[.7,-.55],[.5,.5],[-.75,.55]],'#c39958');
 }
-function fpaMiningHead(c,[x,y],angle,edge){
- const ux=Math.sin(angle),uy=Math.cos(angle);
- const shape=(points,color)=>fpaSowPolygon(c,points.map(([along,side])=>[
-   x+ux*along-uy*side,y+uy*along+ux*side
- ]),color);
+function fpaMiningHead(c,socket,angle,edge){
+ const shape=fpaHeavyHeadLayer(c,socket,angle,edge,1.28,1.17);
+ const collar=fpaHeavyHeadLayer(c,socket,angle,0,1.22,1.18);
  shape([[0,edge],[1.35,edge-.9],[2.1,1.5],[1.8,-1.65],[.8,-3.9],
    [-.6,-3.25],[-.45,-1.4],[-1.35,0],[-.85,edge-1.3]],'#29332d');
  shape([[0,edge],[.75,edge-.85],[1.5,1.5],[1.15,-1.4],[.65,-3.45],
@@ -782,16 +791,17 @@ function fpaMiningHead(c,[x,y],angle,edge){
  shape([[0,edge],[.75,edge-.85],[1.2,1.8],[.65,1.9],
    [.3,edge-1.25]],'#dce7d3');
  shape([[.65,-3.45],[1.15,-1.4],[.6,-1.3],[.15,-2.65]],'#b7c8b9');
- shape([[-1.8,-1.45],[.55,-1.6],[1.25,-.8],[1.25,.9],
+ collar([[-1.8,-1.45],[.55,-1.6],[1.25,-.8],[1.25,.9],
    [.4,1.5],[-1.8,1.15]],'#553d2b');
- shape([[-1.4,-1.1],[.45,-1.15],[.85,-.55],[.85,.7],[.2,1.1],
+ collar([[-1.4,-1.1],[.45,-1.15],[.85,-.55],[.85,.7],[.2,1.1],
    [-1.35,.85]],'#c39958');
- shape([[-1,0],[-.3,-.85],[.6,-.35],[.35,.7],[-.55,.75]],'#439087');
- shape([[-1,0],[-.3,-.85],[.4,-.35],[-.5,.2]],'#c0e9d7');
+ collar([[-1,0],[-.3,-.85],[.6,-.35],[.35,.7],[-.55,.75]],'#439087');
+ collar([[-1,0],[-.3,-.85],[.4,-.35],[-.5,.2]],'#c0e9d7');
 }
 const FPA_SPADE_OUTLINE=[[0,-.9],[0,.9],[.5,1.6],[1,2.15],[2.65,2.15],[2.65,1.75],
  [3.25,1.75],[3.75,.9],[4.8,.9],[4.8,-.9],[3.75,-.9],[3.25,-1.75],[2.65,-1.75],
  [2.65,-2.15],[1,-2.15],[.5,-1.6]];
+const FPA_SPADE_WIDTH=1.3,FPA_SPADE_DEPTH=1.18;
 function fpaFitSpadeToSprite(c,hx,hy,tx,ty){
  const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,x=dx/length,y=dy/length;
  const m=c.getTransform(),vx=m.a*x+m.c*y,vy=m.b*x+m.d*y;
@@ -799,7 +809,8 @@ function fpaFitSpadeToSprite(c,hx,hy,tx,ty){
  const inset=Math.hypot(m.a,m.b)*1.25;
  let pull=0;
  for(const [depth,side] of FPA_SPADE_OUTLINE){
-   const px=tx-depth*x-side*y,py=ty-depth*y+side*x;
+   const px=tx-depth*FPA_SPADE_DEPTH*x-side*FPA_SPADE_WIDTH*y;
+   const py=ty-depth*FPA_SPADE_DEPTH*y+side*FPA_SPADE_WIDTH*x;
    const xx=m.a*px+m.c*py+m.e,yy=m.b*px+m.d*py+m.f;
    if(vx>0)pull=Math.max(pull,(xx-c.canvas.width+inset)/vx);
    if(vx<0)pull=Math.max(pull,(xx-inset)/vx);
@@ -814,7 +825,8 @@ function fpaSpadeHead(c,hx,hy,tx,ty){
  const x=dx/length,y=dy/length;
  // The middle of the cutting edge is the existing contact coordinate.
  const layer=(points,color)=>fpaSowPolygon(c,points.map(([depth,side])=>[
-   tx-depth*x-side*y,ty-depth*y+side*x
+   tx-depth*FPA_SPADE_DEPTH*x-side*FPA_SPADE_WIDTH*y,
+   ty-depth*FPA_SPADE_DEPTH*y+side*FPA_SPADE_WIDTH*x
  ]),color);
  layer(FPA_SPADE_OUTLINE,'#303930');
  layer([[.35,-.9],[.35,.9],[1.1,1.65],[2.45,1.65],[3.2,1.25],
@@ -829,10 +841,13 @@ function fpaSpadeHead(c,hx,hy,tx,ty){
 }
 function fpaFieldHead(c,tool,hx,hy,tx,ty){
  const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,ux=dx/length,uy=dy/length;
- const p=(along,across)=>[tx+ux*along-uy*across,ty+uy*along+ux*across];
+ const p=(along,across)=>[tx+ux*along*1.22-uy*across*1.25,ty+uy*along*1.22+ux*across*1.25];
  if(tool==='fork'){
-   line(c,...p(-2,-1.5),...p(-2,1.5),'#4f5b51',.9);
-   for(const tine of [-1.5,0,1.5])line(c,...p(-2,tine),...p(0,tine),'#c7d0bb',.7);
+   fpaSowBand(c,p(-2,-1.5),p(-2,1.5),1.15,'#4f5b51');
+   for(const tine of [-1.5,0,1.5]){
+     fpaSowBand(c,p(-2,tine),p(0,tine),1.15,'#48564e');
+     fpaSowBand(c,p(-2,tine),p(0,tine),.65,'#c7d0bb');
+   }
  }else if(tool==='spade'){
    fpaSpadeHead(c,hx,hy,tx,ty);
  }else{
@@ -840,10 +855,10 @@ function fpaFieldHead(c,tool,hx,hy,tx,ty){
    c.beginPath();
    c.moveTo(...p(-2.3,0));
    c.quadraticCurveTo(...p(-1.5,short?2.5:4),...p(0,0));
-   c.lineWidth=short?1.45:2;
+   c.lineWidth=short?1.9:2.45;
    c.strokeStyle='#343c33';
    c.stroke();
-   c.lineWidth=short?.65:1;
+   c.lineWidth=short?.85:1.25;
    c.strokeStyle='#d1ddc8';
    c.stroke();
  }

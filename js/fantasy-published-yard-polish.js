@@ -33,17 +33,17 @@
      let color=light<-radius*.28?'#aabeb1':light>radius*.28?'#6d8179':'#8c9f93';
      if(d>limit-.55)color=P.ink;
      else if(d>radius-.55)color=light<0?'#dbe2c8':'#788e84';
-     else if(d>radius-1.15)color='#52685f';
-     else if(d>radius-1.65)color='#b5c3ac';
-     else if(d<2.8){
-       color=d>2.35?P.ink:d>1.85?light<0?'#ecd08b':'#a77944':
-         d>1.25?light<0?'#b98a4b':'#755035':d>.55?P.silver:P.ink;
+     else if(d>radius-1.35)color='#52685f';
+     else if(d>radius-2.1)color='#b5c3ac';
+     else if(d<3.25){
+       color=d>2.75?P.ink:d>2.15?light<0?'#ecd08b':'#a77944':
+         d>1.4?light<0?'#b98a4b':'#755035':d>.65?P.silver:P.ink;
      }
      r(c,x+xx,y+yy,.5,.5,color);
    }
    for(let i=0;i<4;i++){
      const a=rotation+i*Math.PI/2+.35,dx=Math.cos(a)*aspect,dy=Math.sin(a);
-     ln(c,x+dx*3,y+dy*3,x+dx*(radius-1.7),y+dy*(radius-1.7),P.iron,.5);
+     ln(c,x+dx*3.35,y+dy*3.35,x+dx*(radius-2.15),y+dy*(radius-2.15),P.iron,.5);
      r(c,x+dx*radius*.64,y+dy*radius*.64,.5,.5,P.shine);
    }
  }

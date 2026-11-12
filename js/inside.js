@@ -69,8 +69,17 @@ function drawInsideLife(c, b, spr, ox, oy) {
     else if (tool === 'ladle') { ax = sx + 1.6 + Math.cos(t * 3 + ph) * 1.4; ay = hy + 3 + Math.sin(t * 3 + ph) * 0.8; }
     else { ax = sx + 2 + Math.max(0, sw) * 1.2; ay = hy + 0.6 + (1 - Math.max(0, sw)) * 2.6; }
     c.strokeStyle = '#1f1008'; c.lineWidth = 1; c.beginPath(); c.moveTo(sx + 0.8, hy + 2.4); c.lineTo(ax, ay); c.stroke();
-    c.fillStyle = tool === 'ladle' ? '#7a4a22' : '#6a6a72';
-    c.fillRect(Math.round(ax - 0.7), Math.round(ay - 0.7), 1.6, 1.6);
+    if(tool==='hammer'){
+      const hx=Math.round(ax*2)/2,hy=Math.round(ay*2)/2;
+      c.fillStyle='#3e2b21';c.fillRect(hx-.5,hy-.5,1,2);
+      c.fillStyle='#464d4b';c.fillRect(hx-1.5,hy-1,3,1.5);
+      c.fillRect(hx-1,hy-1.5,2,2.5);
+      c.fillStyle='#a9b5a5';c.fillRect(hx-1,hy-1.5,2,.5);
+      c.fillStyle='#c09255';c.fillRect(hx-.5,hy-.5,1,.5);
+    }else{
+      c.fillStyle = tool === 'ladle' ? '#7a4a22' : '#6a6a72';
+      c.fillRect(Math.round(ax - 0.7), Math.round(ay - 0.7), 1.6, 1.6);
+    }
     if (tool === 'hammer' && sw > 0.9) { c.fillStyle = '#fff2a0'; c.fillRect(Math.round(ax + 1), Math.round(ay + 1), 1, 1); }   // искорка при ударе
     c.restore();
   }
