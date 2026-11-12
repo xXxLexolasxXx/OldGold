@@ -35,7 +35,10 @@
      else if(d>radius-.55)color=light<0?'#dbe2c8':'#788e84';
      else if(d>radius-1.15)color='#52685f';
      else if(d>radius-1.65)color='#b5c3ac';
-     else if(d<2.8)color=d>2.25?P.ink:d>1.25?light<0?'#d6ac64':'#946638':d>.55?P.silver:P.ink;
+     else if(d<2.8){
+       color=d>2.35?P.ink:d>1.85?light<0?'#ecd08b':'#a77944':
+         d>1.25?light<0?'#b98a4b':'#755035':d>.55?P.silver:P.ink;
+     }
      r(c,x+xx,y+yy,.5,.5,color);
    }
    for(let i=0;i<4;i++){
@@ -126,7 +129,7 @@
    const center=[a[0]+dx*p,a[1]+dy*p],axis=[dx/length,dy/length];
    const grip=raw&&p<.2?0:!raw&&p>.8?1:-1;
    const target=grip<0?null:[center[0]+axis[0]*(raw?-2:2),center[1]+axis[1]*(raw?-2:2)];
-   return {center,axis,raw,grip,target,cut:Math.hypot(center[0]-joint[0],center[1]-joint[1])<4.5};
+   return {center,axis,raw,grip,target,p,length,cut:Math.hypot(center[0]-joint[0],center[1]-joint[1])<4.5};
  }
  A.sawmillCycle=sawmillCycle;
  function sawWood(c,{center:[x,y],axis:[dx,dy],raw}){
@@ -136,6 +139,7 @@
      poly(c,[point(-4.5,lo),point(4.5,lo),point(4.5,hi),point(-4.5,hi)],body);
      ln(c,...point(-4,lo),...point(4,lo),light,.5);
      ln(c,...point(-3,halfWidth),...point(1.5,halfWidth+.3),raw?'#69482f':'#af8252',.5);
+     ln(c,...point(-4,hi-.35),...point(3,hi-.35),raw?'#755134':'#8e623a',.5);
    }
    if(raw){
      piece(-1.8,1.8,.5,P.deep,'#a87645','#cda471');
@@ -143,33 +147,91 @@
      oval(c,ex,ey,1.6,1.7,P.deep);
      oval(c,ex,ey,1.2,1.25,'#ddb880');
      oval(c,ex,ey,.65,.75,'#ab7949');
+     r(c,ex-.25,ey-.5,.5,.5,'#eed4a0');
    }else{
      piece(-2.1,-.5,-1.4,P.deep,'#c4955b','#eed19c');
      piece(.5,2.1,1.3,P.deep,'#b6854f','#e8ba81');
    }
  }
- function sawWorker(c,b,s,ox,oy,i,cycle){
+ function sawWorkerPose(s,i,cycle){
    const foot=s.workers[i],face=s.saw[0]<foot[0]?-1:1;
-   const actor={type:'woodcutter',look:b.id*53+i+1},view=face<0?'W':'E';
-   const handTarget=cycle?.grip===i?cycle.target:null;
-   const shoulder=[foot[0]+face,foot[1]-7.2];
-   const reaching=handTarget&&Math.hypot(handTarget[0]-shoulder[0],handTarget[1]-shoulder[1])<6;
-   // Keep both states visible when a cold scene switches to or from a grip.
-   // Populate the body before drawFolk marks it as decorative.
-   const pose=reaching?'sawGrip':'sawRest';
-   personSprite(actor,'E',pose,0,{});
-   drawFolk(c,actor,ox+foot[0],oy+foot[1],view,pose,0,{});
-   if(!reaching)return;
-   const skin=SKINS[lookOf(actor).skin%SKINS.length],coat=OUTFIT.woodcutter.coat;
-   const hx=ox+handTarget[0],hy=oy+handTarget[1],sx=ox+shoulder[0],sy=oy+shoulder[1];
-   // In profile the far arm stays behind the material.
-   const ex=(sx+hx)/2,ey=(sy+hy)/2+.55;
-   ln(c,sx,sy,ex,ey,P.ink,1.5);
-   ln(c,ex,ey,hx,hy,P.ink,1.5);
-   ln(c,sx,sy,ex,ey,coat,.85);
-   ln(c,ex,ey,hx,hy,coat,.85);
-   r(c,hx-.5,hy-.5,1.5,1.25,skin[2]);
-   r(c,hx-.5,hy-.5,1,.5,skin[0]);
+   const moving=cycle&&(cycle.raw?i===0:i===1);
+   const bend=moving?Math.max(0,Math.min(1,cycle.raw?(1-cycle.p/.32):(cycle.p-.68)/.32)):0;
+   const resting=[[2.7,-5.1],[.2,-5.7]];
+   const rest={foot,face,bend,grips:null,hands:resting,showFar:false};
+   if(!moving)return rest;
+   const [x,y]=cycle.center,[dx,dy]=cycle.axis;
+   const travel=cycle.p*cycle.length+(cycle.raw?2:-2);
+   const sx=x-dx*travel-foot[0]-face,sy=y-dy*travel-foot[1]+7.2;
+   const across=-sx*dy+sy*dx;
+   if(Math.abs(across)>=6.8)return rest;
+   const along=sx*dx+sy*dy,reachRadius=Math.sqrt(6.8**2-across*across);
+   const first=(-reachRadius-along)/cycle.length,last=(reachRadius-along)/cycle.length;
+   if(cycle.raw?last<=0:first>=1)return rest;
+   const edge=cycle.raw?Math.min(.2,last):Math.max(.8,first);
+   const touching=cycle.grip===i&&(cycle.raw?cycle.p<edge:cycle.p>edge);
+   const transition=cycle.raw?cycle.p>=edge&&cycle.p<edge+.16:cycle.p>edge-.13&&cycle.p<=edge;
+   if(!touching&&!transition)return rest;
+   const shift=touching?0:(edge-cycle.p)*cycle.length;
+   const point=(along,across)=>[x+dx*(along+shift)-dy*across,y+dy*(along+shift)+dx*across];
+   const points=cycle.raw?[point(-2.7,-.8),point(-.6,.9)]
+     :[point(2.7,-1.3),point(.65,1.3)];
+   const reach=touching?1:cycle.raw?1-(cycle.p-edge)/.16:1-(edge-cycle.p)/.13;
+   const weight=reach*reach*(3-2*reach);
+   const hands=points.map(([x,y],i)=>[
+     resting[i][0]+((x-foot[0])*face-resting[i][0])*weight,
+     resting[i][1]+(y-foot[1]-resting[i][1])*weight,
+   ]);
+   return {foot,face,bend,grips:touching?points:null,hands,showFar:weight>.35};
+ }
+ A.sawmillWorkerPose=sawWorkerPose;
+ let sawWorkerCanvas;
+ function sawWorker(c,b,s,ox,oy,i,cycle){
+   const {foot,face,bend,hands,showFar}=A.sawmillWorkerPose(s,i,cycle);
+   const actor={type:'woodcutter',look:b.id*53+i+1};
+   const source=personSprite(actor,'E','work',{anim:'chop',f:9},{sowRigBase:true});
+   if(!source._fantasyAppearance){
+     drawFolk(c,actor,ox+foot[0],oy+foot[1],face<0?'W':'E','sawRest',0,{});
+     return;
+   }
+   const cv=sawWorkerCanvas??=mkCanvas(52,54),p=cv.getContext('2d');
+   p.setTransform(1,0,0,1,0,0);p.clearRect(0,0,cv.width,cv.height);
+   p.setTransform(2,0,0,2,26,45);p.imageSmoothingEnabled=false;
+   const scale=YARD_K*A.scale,lean=half(bend*1.5),dip=half(bend*.75);
+   const part=(x,y,w,h,dx=0,dy=0)=>p.drawImage(source,(PFX+x)*2,(PFY+y)*2,w*2,h*2,
+     x*scale+dx,y*scale+dy,w*scale,h*scale);
+   const fold=(points,color)=>poly(p,points.map(([x,y])=>[x+lean*Math.min(1,(-y-3)/5),
+     y+dip*Math.min(1,(-y-3)/5)]),color);
+   const normalized=(actor.look>>>0)>=0x20000?actor.look:LOOK_POOL[(actor.look>>>0)%LOOK_POOL.length];
+   const skin=SKINS[lookOf({...actor,look:normalized}).skin%SKINS.length];
+   const arm=(shoulder,hand,far)=>{
+     const elbow=[(shoulder[0]+hand[0])/2-.35,(shoulder[1]+hand[1])/2+.9];
+     ln(p,...shoulder,...elbow,P.ink,3);
+     ln(p,...elbow,...hand,P.ink,2.5);
+     ln(p,...shoulder,...elbow,far?'#29485d':'#365f7c',2.5);
+     ln(p,...elbow,...hand,far?'#365b71':'#4a7791',1.5);
+   };
+   const fist=([x,y],far)=>{
+     poly(p,[[x-1.25,y-.55],[x-.6,y-1],[x+.65,y-1],[x+1.1,y-.35],
+       [x+.9,y+.8],[x-.6,y+1],[x-1.15,y+.5]],P.ink);
+     r(p,x-.7,y-.55,1.5,1.15,far?skin[1]:skin[0]);
+     r(p,x-.55,y-.55,.75,.5,far?skin[2]:skin[1]);
+   };
+   part(-PFX,-6,PW,6);
+   fold([[-3,-8],[-1.5,-9.5],[2,-9],[3.3,-7.2],[2.8,-3.1],[-2.8,-3.1],[-3.4,-5.6]],P.ink);
+   fold([[-2.6,-7.7],[-1.4,-9],[1.5,-8.5],[2.7,-7],[2.3,-4],[-2.5,-4]],'#29475e');
+   fold([[-2.2,-7.5],[-1,-8.3],[1.1,-8],[2.2,-6.4],[1.4,-4.5],[-2.2,-4.4]],'#3e6887');
+   fold([[-2.2,-7.2],[-.7,-7.6],[.5,-7.1],[-.5,-6],[-2,-5.7]],'#527f98');
+   fold([[-2.5,-4.7],[2.5,-4.7],[2.3,-3.5],[-2.4,-3.5]],'#473225');
+   fold([[1,-4.7],[2,-4.7],[2,-3.7],[1,-3.7]],'#c39859');
+   arm([1+lean,-7.2+dip],hands[1],true);
+   part(-PFX,-PFY,PW,17.5,lean,dip);
+   part(.5,-17.5,10,5,lean,dip);
+   arm([-1.2+lean,-7.2+dip],hands[0],false);
+   if(showFar)fist(hands[1],true);
+   fist(hands[0],false);
+   c.save();c.translate(ox+foot[0],oy+foot[1]);c.scale(face,1);
+   c.imageSmoothingEnabled=false;c.drawImage(cv,-13,-22.5,26,27);c.restore();
  }
  drawSawYard=function(c,b,s,ox,oy){
    if(!s._publishedYard||!s.saw||b.state!=='done'||(s.workers?.length||0)<2)return A.native.drawSawYard(c,b,s,ox,oy);
