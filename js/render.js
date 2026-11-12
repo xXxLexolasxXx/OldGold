@@ -251,7 +251,11 @@ function drawUnit(c, u) {
     window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
   const fieldTarget=field&&!sowRig&&frame.f>=8&&fieldProgress<.86;
   const pickProgress=!wp&&pose==='work'&&frame.anim==='mine'&&frame.f>=8?swingProgress(u):1;
-  const pickTarget=pickProgress<.86&&typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
+  const mineContact=!wp&&pose==='work'&&frame.anim==='mine'&&u.type==='stonemason'?activeQuarryContact(a):null;
+  const mineRig=mineContact&&view==='E'&&typeof fpaDrawMinePose==='function'&&
+    window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
+  if(mineRig)face=mineContact.point[0]<px?-1:1;
+  const pickTarget=!mineRig&&pickProgress<.86&&typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
   const woodcut=!wp&&pose==='work'&&frame.anim==='chop'&&typeof fpaDrawWoodcutAxe==='function'&&OUTFIT[u.type]?activeWoodcutContact(a):null;
   const axeProgress=woodcut&&frame.f>=8?swingProgress(u):1;
   if(woodcut){
@@ -260,11 +264,13 @@ function drawUnit(c, u) {
   }
   const axeTarget=axeProgress<.86?woodcut.point:null;
   if(pickTarget||axeTarget||fieldTarget)opt.externalWorkTool=true;
-  const spr = sowRig
+  const spr = sowRig||mineRig
     ?personSprite(u,view,pose,{...frame,f:9},{...opt,sowRigBase:true})
     :personSprite(u,view,pose,frame,opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
-  if (sowRig&&spr._fantasyAppearance&&flyP<0) {
+  if (mineRig&&spr._fantasyAppearance&&flyP<0) {
+    fpaDrawMinePose(c,u,spr,px,py,face,mineContact.point,swingProgress(u));
+  } else if (sowRig&&spr._fantasyAppearance&&flyP<0) {
     fpaDrawSowPose(c,u,spr,px,py,face,field.point,fieldProgress);
   } else if (flyP >= 0) {
     // в полёте: подброшен вверх по дуге и заваливается на спину в сторону отлёта

@@ -557,30 +557,60 @@ function fpaSowFist(c,grip,angle,skin,far){
  form([[-.5,.5],[1,-.25],[2,.5],[1.5,1.5],[0,1.5],[-1,1]],far?shade(skin[1],-.2):skin[1]);
 }
 function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
+ return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,false,1);
+}
+const FPA_MINE_POSE_KEYS=[
+ [0,0,0,3.5,-12,.55],[.21,-1,-.5,2,-15,-.45],[.43,-2,-1,1,-17,-1.25],
+ [.50,2,1.5,6.5,-12,0],[.56,2,1.5,6.5,-12,0],
+ [.73,1,1,4.5,-11,.75],[1,0,0,3.5,-12,.55],
+];
+function fpaMineRig(targetX,targetY,progress){
+ const keys=FPA_MINE_POSE_KEYS,index=keys.findIndex(key=>key[0]>progress);
+ const next=index<0?keys.length-1:index,a=keys[next-1],b=keys[next];
+ const t=(progress-a[0])/(b[0]-a[0]),s=t*t*(3-2*t);
+ const [dx,dy,hx,hy,sweep]=a.slice(1).map((v,i)=>v+(b[i+1]-v)*s);
+ const [, , ,strikeX,strikeY]=keys[3];
+ const reach=Math.hypot(targetX-strikeX,targetY-strikeY);
+ const edge=Math.min(4.5,reach*.72),shaft=Math.sqrt(reach*reach-edge*edge);
+ const swing=Math.atan2(targetY-strikeY,targetX-strikeX)-Math.atan2(edge,shaft)+sweep;
+ const ux=Math.cos(swing),uy=Math.sin(swing);
+ const near=[hx,hy],far=[hx-ux*5,hy-uy*5];
+ const handle=[hx-ux*7,hy-uy*7],socket=[hx+ux*shaft,hy+uy*shaft];
+ const tip=[socket[0]-uy*edge,socket[1]+ux*edge];
+ return {dx,dy,near,far,handle,socket,tip,angle:Math.atan2(ux,uy),edge,shaft};
+}
+function fpaDrawMinePose(world,u,source,px,py,face,target,progress,scale=1){
+ return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,true,scale);
+}
+let fpaMineCanvas;
+function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,mining,scale){
  const snap=n=>Math.round(n*2)/2;
  const end=FPA_SOW_KEYS.findIndex(key=>key[0]>progress);
  const next=end<0?FPA_SOW_KEYS.length-1:end;
  const a=FPA_SOW_KEYS[next-1],b=FPA_SOW_KEYS[next];
  const t=(progress-a[0])/(b[0]-a[0]),mix=t*t*(3-2*t);
- const [dx,dy,tipX,tipY]=a.slice(1).map((v,i)=>v+(b[i+1]-v)*mix);
+ let [dx,dy,tipX,tipY]=a.slice(1).map((v,i)=>v+(b[i+1]-v)*mix);
+ const targetX=(target[0]-px)*face/scale,targetY=(target[1]-py)/scale;
+ const mine=mining?fpaMineRig(targetX,targetY,progress):null;
+ if(mine){dx=mine.dx;dy=mine.dy;}
  const gripLean=[snap(dx),snap(dy)];
  const lean=[snap(dx*1.65),snap(dy*1.2)];
  const aim=Math.max(0,Math.min(1,(progress-.42)/.08,(.73-progress)/.17));
- const targetX=(target[0]-px)*face,targetY=target[1]-py;
- const tip=[snap(tipX+(targetX-8)*aim),snap(tipY+(targetY-4.5)*aim)];
- const near=[snap(1.5+gripLean[0]+aim),snap(-12.5+gripLean[1]+aim)];
- const angle=Math.atan2(tip[0]-near[0],tip[1]-near[1]);
+ const tip=mine?.tip||[snap(tipX+(targetX-8)*aim),snap(tipY+(targetY-4.5)*aim)];
+ const near=mine?.near||[snap(1.5+gripLean[0]+aim),snap(-12.5+gripLean[1]+aim)];
+ const angle=mine?.angle??Math.atan2(tip[0]-near[0],tip[1]-near[1]);
  const along=(point,distance)=>[snap(point[0]-distance*Math.sin(angle)),
    snap(point[1]-distance*Math.cos(angle))];
  const spacing=5+aim*1.5;
- const far=along(near,spacing),handle=along(near,spacing+2),socket=along(tip,2);
- const farBehind=far[0]<-1+gripLean[0];
- const cloth=OUTFIT[u.type].coat,leather='#765232',outline='#32271e';
+ const far=mine?.far||along(near,spacing),handle=mine?.handle||along(near,spacing+2),socket=mine?.socket||along(tip,2);
+ const farBehind=far[0]<(mine?-3:-1)+gripLean[0];
+ const cloth=OUTFIT[u.type].coat,leather=mine?OUTFIT[u.type].apron:'#765232',outline='#32271e';
  const skin=SKINS[lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]}).skin%SKINS.length];
- const cv=fpaSowCanvas??=mkCanvas(96,90),c=cv.getContext('2d');
+ const cv=mine?(fpaMineCanvas??=mkCanvas(160,130)):(fpaSowCanvas??=mkCanvas(96,90));
+ const c=cv.getContext('2d'),left=mine?32:19,top=mine?54:37;
  c.setTransform(1,0,0,1,0,0);
  c.clearRect(0,0,cv.width,cv.height);
- c.setTransform(2,0,0,2,38,74);
+ c.setTransform(2,0,0,2,left*2,top*2);
  c.imageSmoothingEnabled=false;
  const part=(x,y,w,h,tx=x,ty=y)=>c.drawImage(source,(PFX+x)*2,(PFY+y)*2,w*2,h*2,tx,ty,w,h);
  // The torso leans over a smaller hip shift. Keep the upper legs joined to
@@ -595,6 +625,7 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  const garment=(points,color)=>fpaSowPolygon(c,points.map(([x,y])=>torso(x,y)),color);
  const arm=(start,grip,dark)=>{
    const elbow=dark?[snap((start[0]+grip[0])/2-1),snap((start[1]+grip[1])/2+1)]
+     :mine?[snap((start[0]+grip[0])/2-1.6),snap((start[1]+grip[1])/2+2.5)]
      :torso(-3.5,-11.5);
    const wrist=[snap(grip[0]+(elbow[0]-grip[0])*.43),snap(grip[1]+(elbow[1]-grip[1])*.43)];
    const hem=[start[0]+(elbow[0]-start[0])*.68,start[1]+(elbow[1]-start[1])*.68];
@@ -614,14 +645,14 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
    // Profile widths and half-pixel cloth clusters sampled from the standing
    // farmer. Both sleeves bend at the same elbow that drives the wrist.
    profile(dark?[6,5.5,4.5]:[6.5,6,5],'#28160c');
-   profile(dark?[5,4.5,3.5]:[5.5,5,4],dark?'#37461d':'#566f2d');
-   const sleeveLight=dark?'#4a5f27':'#627e34';
+   profile(dark?[5,4.5,3.5]:[5.5,5,4],mine?shade(cloth,dark?-.32:-.14):dark?'#37461d':'#566f2d');
+   const sleeveLight=mine?shade(cloth,dark?-.08:.16):dark?'#4a5f27':'#627e34';
    fpaSowPolygon(c,[edge(elbow,n1,1.75),edge(wrist,n1,1.5),
      edge(wrist,n1,.5),edge(elbow,n1,.5)],sleeveLight);
    fpaSowPolygon(c,[edge(start,n0,2.5),edge(hem,n0,2.25),
-     edge(hem,n0,-2),edge(start,n0,-2.5)],dark?'#5c4026':'#69482b');
+     edge(hem,n0,-2),edge(start,n0,-2.5)],mine?shade(leather,dark?-.28:0):dark?'#5c4026':'#69482b');
    fpaSowPolygon(c,[edge(start,n0,2),edge(hem,n0,1.5),
-     edge(hem,n0,.5),edge(start,n0,.5)],dark?'#69482b':'#714e2e');
+     edge(hem,n0,.5),edge(start,n0,.5)],mine?shade(leather,dark?-.1:.24):dark?'#69482b':'#714e2e');
    fpaSowBand(c,[hem[0]-.5,hem[1]-.5],hem,4,'#5c4026');
    const cuff=[wrist[0]+(elbow[0]-wrist[0])*.32,wrist[1]+(elbow[1]-wrist[1])*.32];
    const cuffColor=shade(cloth,dark?-.04:.34);
@@ -667,18 +698,38 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  part(.5,-17.5,10,5,.5+lx,-17.5+ly);
  if(farArm)fpaSowBand(c,farArm.cuff,farArm.wrist,2.5,farArm.cuffColor);
  arm(torso(-3,-15),near,false);
- fpaSowBand(c,handle,socket,1.5,outline);
+ fpaSowBand(c,handle,socket,mine?2:1.5,outline);
  fpaSowBand(c,handle,socket,.5,'#b58a57');
  fpaSowBand(c,near,far,.75,'#d4a775');
- fpaSpadeHead(c,near[0],near[1],tip[0],tip[1]);
+ if(mine)fpaMiningHead(c,socket,angle,mine.edge);
+ else fpaSpadeHead(c,near[0],near[1],tip[0],tip[1]);
  if(!farBehind)fpaSowFist(c,far,angle,skin,true);
  fpaSowFist(c,near,angle,skin,false);
  world.save();
  world.translate(px,py);
- world.scale(face,1);
- world.drawImage(cv,-19,-37,48,45);
+ world.scale(face*scale,scale);
+ world.drawImage(cv,-left,-top,cv.width/2,cv.height/2);
  world.restore();
- return {tip:[px+tip[0]*face,py+tip[1]],near,far,shoulder,lean};
+ return {tip:[px+tip[0]*face*scale,py+tip[1]*scale],near,far,shoulder,lean,shaft:mine?.shaft};
+}
+function fpaMiningHead(c,[x,y],angle,edge){
+ const ux=Math.sin(angle),uy=Math.cos(angle);
+ const shape=(points,color)=>fpaSowPolygon(c,points.map(([along,side])=>[
+   x+ux*along-uy*side,y+uy*along+ux*side
+ ]),color);
+ shape([[0,edge],[1.35,edge-.9],[2.1,1.5],[1.8,-1.65],[.8,-3.9],
+   [-.6,-3.25],[-.45,-1.4],[-1.35,0],[-.85,edge-1.3]],'#29332d');
+ shape([[0,edge],[.75,edge-.85],[1.5,1.5],[1.15,-1.4],[.65,-3.45],
+   [.15,-2.65],[.15,-1],[-.55,.35],[-.4,edge-1.3]],'#819992');
+ shape([[0,edge],[.75,edge-.85],[1.2,1.8],[.65,1.9],
+   [.3,edge-1.25]],'#dce7d3');
+ shape([[.65,-3.45],[1.15,-1.4],[.6,-1.3],[.15,-2.65]],'#b7c8b9');
+ shape([[-1.8,-1.45],[.55,-1.6],[1.25,-.8],[1.25,.9],
+   [.4,1.5],[-1.8,1.15]],'#553d2b');
+ shape([[-1.4,-1.1],[.45,-1.15],[.85,-.55],[.85,.7],[.2,1.1],
+   [-1.35,.85]],'#c39958');
+ shape([[-1,0],[-.3,-.85],[.6,-.35],[.35,.7],[-.55,.75]],'#439087');
+ shape([[-1,0],[-.3,-.85],[.4,-.35],[-.5,.2]],'#c0e9d7');
 }
 const FPA_SPADE_OUTLINE=[[0,-.9],[0,.9],[.5,1.6],[1,2.15],[2.65,2.15],[2.65,1.75],
  [3.25,1.75],[3.75,.9],[4.8,.9],[4.8,-.9],[3.75,-.9],[3.25,-1.75],[2.65,-1.75],

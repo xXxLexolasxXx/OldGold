@@ -683,7 +683,20 @@ function drawQuarryYard(c, b, spr, ox, oy) {
   if (b.state !== 'done' || !spr.work) return;
   const t = Game.time, on = !!b.working, [wx, wy] = spr.work, f = Math.floor(t * 7 + b.id) % 8;
   c.imageSmoothingEnabled = false;
-  drawFolk(c, { type: 'stonemason', look: b.id * 61 + 3 }, ox + wx, oy + wy, 'E', on ? 'work' : 'idle', on ? { anim: 'mine', f } : 0, {});
+  const actor={type:'stonemason',look:b.id*61+3};
+  // Keep the working stance clear of the block without moving the chip origin.
+  const side=spr.block&&spr.block[0]-4<wx?-1:1;
+  const footX=ox+wx-(spr.block?side*4.5:0),footY=oy+wy+(spr.block?3:0);
+  const ready=on&&spr.block&&typeof fpaDrawMinePose==='function'&&
+    window.FantasyPublishedYard&&window.FantasyPublishedAppearanceArt&&FantasyArt.images['gnome-walk'];
+  if(ready){
+    const source=personSprite(actor,'E','work',{anim:'mine',f:9},{sowRigBase:true});
+    const phase=[0,.12,.29,.43,.52,.56,.73,.9,1];
+    const progress=phase[f]+(phase[f+1]-phase[f])*((t*7+b.id)%1);
+    const target=[ox+spr.block[0]-4,oy+spr.block[1]-6];
+    fpaDrawMinePose(c,actor,source,footX,footY,target[0]<footX?-1:1,target,progress,
+      YARD_K*FantasyPublishedYard.scale);
+  }else drawFolk(c,actor,footX,footY,'E',on?'work':'idle',on?{anim:'mine',f}:0,{});
   if (on && spr.block && f >= 4) {   // удар: сколы и пыль от блока
     const [bx, by] = spr.block;
     for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI + (f - 4) * 0.3, r = (f - 3) * 2; c.fillStyle = k % 2 ? '#c6c9bf' : '#8792a4'; c.fillRect(Math.round(ox + bx - 4 + Math.cos(a) * r), Math.round(oy + by - 6 - Math.sin(a) * r), 1, 1); }
