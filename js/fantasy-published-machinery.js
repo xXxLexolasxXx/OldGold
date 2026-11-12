@@ -4,8 +4,8 @@
  if(window.FantasyPublishedMachinery)return;
  if(!window.FantasyPublishedYard?.paint||!FantasyPublishedYard.CanvasCache){window.FantasyPublishedMachinery={version:2,available:false,errors:['Missing FantasyPublishedYard renderer'],ready:Promise.resolve(false)};return;}
  const M=window.FantasyPublishedMachinery={version:2,available:true,cache:new FantasyPublishedYard.CanvasCache(),native:{buildingSprite,drawInsideLife,drawFoodYard},get errors(){return[...FantasyPublishedYard.errors]}},D=FantasyPublishedYard.paint,{r,ln,poly,oval,beam,board,bolt,P}=D;
- const breweryBodies=new FantasyPublishedYard.CanvasCache(32,2*1024*1024);
- M.ready=Promise.resolve(FantasyPublishedYard.ready).then(ok=>{M.cache.clear();breweryBodies.clear();return ok&&M.errors.length===0});
+ const yardBodies=new FantasyPublishedYard.CanvasCache(32,2*1024*1024);
+ M.ready=Promise.resolve(FantasyPublishedYard.ready).then(ok=>{M.cache.clear();yardBodies.clear();return ok&&M.errors.length===0});
  const types=new Set(['woodcutter','goldmine','ironmine','crystalmine','metallurgist','smeltery','weaponsmith','armory','farm','hopfarm','brewery','mill','bakery','butchery','tannery','magicworkshop','storehouse','infirmary','fisherhut']);
  function masonry(c,x,y,w,h){r(c,x-1,y-1,w+2,h+2,P.ink);r(c,x,y,w,h,'#82785c');for(let yy=0;yy<h;yy+=3)for(let xx=-3+(yy%6?0:3);xx<w;xx+=6){const X=Math.max(0,xx),W=Math.min(5,w-X);if(W<1)continue;r(c,x+X,y+yy,W,2.5,['#9d9170','#a89d7a','#8e8367'][(Math.floor(xx+yy)+12)%3]);r(c,x+X+.5,y+yy,W-.5,.5,'#bfb18a');r(c,x+X+W-.5,y+yy+.5,.5,1.5,'#6a614d')}}
  function barrel(c,x,y,w=12,h=11,open=false){oval(c,x,y+.5,w*.53,1.8,P.ink);poly(c,[[x-w/2+1,y-h],[x+w/2-1,y-h],[x+w/2+1,y-h*.6],[x+w/2,y-1],[x+w/2-2,y+1],[x-w/2+2,y+1],[x-w/2,y-1],[x-w/2-1,y-h*.6]],P.ink);for(let i=0;i<6;i++){const X=x-w/2+i*w/6;r(c,X,y-h+1,w/6-.5,h-1,['#6e492d','#9f713f','#bd8d50','#b28348','#8d6038','#60432d'][i]);ln(c,X+.5,y-h+2,X+.5,y-2,i===2?'#d4ac6b':'#805332')}
@@ -25,7 +25,23 @@
  function cauldron(c,x,y){for(const dx of[-5,4])beam(c,x+dx,y-2,1.5,4);oval(c,x,y-3,6,4,P.ink);oval(c,x,y-3,5.3,3.4,P.iron);oval(c,x-1,y-4,3.5,1.7,P.steel);oval(c,x,y-6,5.8,1.8,P.silver);oval(c,x,y-6,4.8,1.1,'#607f63');oval(c,x-.8,y-6.4,2.7,.5,'#a8bd86');for(const dx of[-6,5]){r(c,x+dx,y-5,1,2,P.iron);r(c,x+dx,y-5,1,.5,P.silver)}bolt(c,x-3,y-2);r(c,x-2,y+1,4,.5,'#bf7942')}
  function copper(c,x,y){masonry(c,x-10,y+12,21,10);r(c,x-5,y+16,10,6,P.ink);r(c,x-3,y+19,6,2,'#b77e3f');r(c,x-2,y+19,3,.5,'#e8bf6c');oval(c,x,y+11,10,5,P.ink);r(c,x-10,y-5,20,16,P.ink);for(let i=0;i<10;i++)r(c,x-9+i*1.8,y-5,1.8,16,['#704931','#855532','#9e6c3c','#b27e43','#ce9a56','#d5a35b','#bd8a49','#a37140','#8c5f38','#6b4831'][i]);oval(c,x,y+9,9.5,4,'#9d6d3d');oval(c,x,y-6,10,4.5,P.ink);oval(c,x,y-6.5,9.3,3.8,'#b48347');oval(c,x,y-7.5,8,3,'#d0a263');oval(c,x,y-8,5.5,1.8,'#e0bd7c');for(const yy of[-3,8]){r(c,x-9,y+yy,18,1.2,P.iron);r(c,x-9,y+yy,18,.5,P.steel);for(const dx of[-7,-2,3,7])bolt(c,x+dx,y+yy+.4)}beam(c,x-1,y-13,2,4);r(c,x-2,y-13,4,1,P.iron);ln(c,x-9,y+8,x-14,y+8,P.mid,2);ln(c,x-14,y+8,x-14,y+16,P.mid,2);ln(c,x-9,y+7.5,x-14,y+7.5,P.edge,.5);bolt(c,x-14.5,y+10)}
  function paint(c,s,type){const Q=s.pt||{},lv=s.pxLv||s._machineryLevel||1;
- if(type==='bakery'){if(Q.oven){const[x,y]=Q.oven;forge(c,x,y-2,19);beam(c,x-18,y-7,19,2);ln(c,x-19,y-7,x-5,y-7,'#d5b079',1);for(const dx of[-10,-6]){oval(c,x+dx,y-8,2,1,'#d8ba77');ln(c,x+dx-.5,y-8.5,x+dx,y-7.7,'#9e793f')}}if(Q.knead){const[x,y]=Q.knead;bench(c,x+3,y-7,17);oval(c,x+.5,y-7.5,4,1,'#e2d2a2');r(c,x+1,y-8,3,.5,'#f0dfb2');sack(c,x+9,y+1);ln(c,x-3,y-9,x+6,y-9,P.mid,1)} }
+ if(type==='bakery'){
+   if(Q.oven){
+     const[x,y]=Q.oven;
+     forge(c,x,y-2,19);
+     beam(c,x-18,y-2,10,2);
+     for(const dx of[-15,-11]){
+       oval(c,x+dx,y-3.5,1.8,1,'#d8ba77');
+       ln(c,x+dx-.5,y-4,x+dx+.5,y-3.4,'#9e793f');
+     }
+   }
+   if(Q.knead){
+     const[x,y]=Q.knead,X=x+dough.x,Y=y+dough.y;
+     bench(c,X,Y,15);
+     sack(c,X+8,Y+7);
+     ln(c,X-5,Y-.8,X+5,Y-.8,P.mid,1);
+   }
+ }
  if(type==='brewery'&&Q.brewer){if(Q.vat)copper(c,...Q.vat);const[x,y]=Q.brewer;barrel(c,x+mash.x,y,mash.w,-mash.y,true);barrel(c,x+19,y+3,9,9);if(lv>1)crate(c,x+24,y-8,10,6)}
  if(type==='butchery'&&Q.block){const[x,y]=Q.block;beam(c,x-5,y+1,11,7);oval(c,x+.5,y+1,6,1.8,P.hi);for(const dx of[-3,0,3])ln(c,x+dx,y+.5,x+dx+1,y+1.5,P.deep);oval(c,x+2,y-.2,3.5,1.7,'#8d5139');oval(c,x+1.5,y-.5,2.3,1,'#c9906c');r(c,x+2,y-1,1.5,.5,'#ead2a6');if(Q.hooks){const a=Q.hooks[0],z=Q.hooks[Q.hooks.length-1];beam(c,a[0]-2,a[1]-5,z[0]-a[0]+4,2);for(const p of Q.hooks){ln(c,p[0],p[1]-3,p[0],p[1]+1,P.silver);oval(c,p[0],p[1]+3,1.8,3,'#ad7954')}}}
  if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=Q.panner;bench(c,x+3,y-6,17);oval(c,x+3,y-6.5,5,1.4,P.iron);oval(c,x+3,y-7,4,1,'#89aaa0');for(const dx of[-1,2,4])r(c,x+dx,y-7,1,.5,'#dac575')}if(Q.sorter){const[x,y]=Q.sorter;bench(c,x+3,y-7,18);for(const dx of[-2,2,5]){poly(c,[[x+dx,y-7],[x+dx+1,y-10],[x+dx+2,y-7]],'#a3c5bc');r(c,x+dx+1,y-9,.5,1,'#dbe0c1')}}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.stamp){const[x,y]=Q.stamp;masonry(c,x-9,y-2,19,5);for(const dx of[-8,8])beam(c,x+dx,y-20,2,20);beam(c,x-10,y-21,22,3);for(const dx of[-5,0,5]){beam(c,x+dx,y-17,1.5,13);r(c,x+dx-1,y-5,3,3,P.iron);r(c,x+dx-1,y-5,3,.5,P.silver)}bolt(c,x-8,y-20);bolt(c,x+8,y-20)}if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
@@ -41,55 +57,136 @@
  if(type==='fisherhut'){const x=s.padx+s.fw*.8,y=s.baseY-6;bench(c,x,y-3,20);for(let j=0;j<3;j++){const X=x-5+j*4;poly(c,[[X-2,y-4],[X,y-5],[X+2,y-4],[X+3,y-5],[X+3,y-3],[X+2,y-4],[X,y-3]],'#9bb4aa');r(c,X-1,y-4,.5,.5,P.ink)}barrel(c,x+13,y+2,9,9)}
  }
  buildingSprite=function(type,...args){const s=M.native.buildingSprite(type,...args);if(!types.has(type)||!s._publishedArt)return s;let out=M.cache.get(s.canvas);if(out)return out;const cv=mkCanvas(s.canvas.width,s.canvas.height),c=cv.getContext('2d'),k=cv.width/s.w;c.imageSmoothingEnabled=false;c.drawImage(s.canvas,0,0);out={...s,canvas:cv,_publishedMachinery:true,_machineryLevel:args[1]||1};c.save();c.scale(k,k);paint(c,out,type);c.restore();M.cache.set(s.canvas,out);return out};
- // One anchor defines the barrel, the submerged end of the paddle and the grip.
+ // These offsets are shared by the painted work surfaces and their contacts.
+ const ovenMouthY=-5.5;
+ const dough={x:15.5,y:-8};
  const mash={x:7,y:-8,w:13};
- const stirOffsets=[
-   [-1,-.5,0],[-.5,-1,1],[.5,-1,1.5],[1,-.5,1],
-   [1,.5,0],[.5,1,-1],[-.5,1,-1.5],[-1,.5,-1],
- ];
- function brewerBody(actor){
-   const source=personSprite(actor,'E','idle',0,{});
-   let body=breweryBodies.get(source);
+ const peelTravel=[0,.5,2.5,5,6.5,5,2.5,.5];
+ const kneadPress=[0,.25,.65,1,.8,.5,.2,0];
+ const stirOffsets=[[-1,-.5],[-.5,-1],[.5,-1],[1,-.5],[1,.5],[.5,1],[-.5,1],[-1,.5]];
+ function workBody(actor,cloth){
+   const source=personSprite({...actor,_exactYardPose:true},'E','idle',0,{});
+   let body=yardBodies.get(source);
    if(body)return body;
    body=mkCanvas(source.width,source.height);
    const c=body.getContext('2d',{willReadFrequently:true});
    c.drawImage(source,0,0);
-   fpaCleanAtlasArms(body,actor,'E','work',0);
-   breweryBodies.set(source,body);
+   fpaCleanAtlasArms(body,actor,'E','yardGrip',0);
+   // The idle profile has a wrist tucked inside the front of the coat.
+   // Replace that strip before laying either working sleeve over the torso.
+   c.scale(body.width/PW,body.height/PH);
+   c.translate(PFX,PFY);
+   c.clearRect(-13,-15,11,9);
+   fpaSowPolygon(c,[[-5.5,-15],[-2,-15],[-2,-6],[-4.5,-6],[-5.5,-8]],'#352722');
+   fpaSowPolygon(c,[[-4.5,-14.5],[-2,-14.5],[-2,-7],[-4,-7],[-5,-8.5]],shade(cloth,-.2));
+   fpaSowPolygon(c,[[-4.5,-13],[-2,-13.5],[-2,-9],[-4,-9]],cloth);
+   fpaSowBand(c,[-4.5,-8],[-2,-8],.7,'#715039');
+   yardBodies.set(source,body);
    return body;
  }
- function drawMashCycle(c,b,x,y){
-   const actor={type:'brewer',look:b.id*37+3};
-   const body=brewerBody(actor),scale=YARD_K*FantasyPublishedYard.scale;
-   const phase=Math.floor((Game.time+b.id*5)*4)%stirOffsets.length;
-   const [handX,handY,tipX]=stirOffsets[phase];
-   const hx=4+handX*.5,hy=-10+handY*.5,tx=mash.x+tipX,ty=mash.y;
-   const coat=OUTFIT.brewer.coat,skin=SKINS[lookOf(actor).skin%SKINS.length];
+ function workScene(c,actor,x,y,paintPose,lean=0){
+   const outfit=OUTFIT[actor.type],look=lookOf({...actor,look:LOOK_POOL[(actor.look>>>0)%LOOK_POOL.length]});
+   const cloth=outfit.coat||look.green,body=workBody(actor,cloth),scale=YARD_K*FantasyPublishedYard.scale;
    c.save();
    c.imageSmoothingEnabled=false;
-   c.drawImage(body,x-PFX*scale,y-PFY*scale,PW*scale,PH*scale);
    c.translate(x,y);
-   // A short sleeve meets the grip. The shaft stops at the liquid and the
-   // barrel's near rim stays in front of the submerged part.
-   ln(c,1,-7,2.5,-7.5,'#30232f',2);
-   ln(c,2.5,-7.5,hx,hy,'#30232f',2);
-   ln(c,1,-7,2.5,-7.5,coat,1);
-   ln(c,2.5,-7.5,hx,hy,coat,1);
-   const endX=hx-(tx-hx)*.45,endY=hy-(ty-hy)*.45;
-   ln(c,endX,endY,tx,ty,'#563722',1);
-   ln(c,endX,endY-.5,tx,ty-.5,'#caa570');
-   r(c,hx-.5,hy-.5,1.5,1.5,skin[2]);
-   r(c,hx-.5,hy-.5,1,.5,skin[0]);
-   r(c,tx+.5,ty,1,.5,'#e2d2a0');
+   const left=-PFX*scale,top=-PFY*scale,width=PW*scale,height=PH*scale;
+   if(lean){
+     const pivot=PFY-5,split=body.height*pivot/PH;
+     c.save();
+     c.transform(1,0,-lean/12,1,-lean*5*scale/12,0);
+     c.drawImage(body,0,0,body.width,split,left,top,width,pivot*scale);
+     c.restore();
+     c.drawImage(body,0,split,body.width,body.height-split,left,-5*scale,width,height-pivot*scale);
+   }else c.drawImage(body,left,top,width,height);
+   paintPose(cloth,SKINS[look.skin%SKINS.length]);
    c.restore();
  }
- drawFoodYard=function(c,b,s,ox,oy){
-   const brewer=s.pt?.brewer;
-   if(s.px!=='brewery'||b.state!=='done'||!b.working||!brewer||typeof fpaCleanAtlasArms!=='function'){
-     return M.native.drawFoodYard(c,b,s,ox,oy);
+ function workSleeve(c,shoulder,grip,cloth){
+   const elbow=[(shoulder[0]+grip[0])*.5-.45,(shoulder[1]+grip[1])*.5+1.05];
+   for(const [from,to,width] of [[shoulder,elbow,2.8],[elbow,grip,2.4]]){
+     fpaSowBand(c,from,to,width,'#352722');
+     fpaSowBand(c,from,to,width-1,cloth);
    }
-   M.native.drawFoodYard(c,b,{...s,pt:{...s.pt,brewer:null}},ox,oy);
-   drawMashCycle(c,b,ox+brewer[0],oy+brewer[1]);
+ }
+ function workHands(c,near,far,skin){
+   for(const [grip,fill] of [[far,skin[1]],[near,skin[0]]]){
+     const [x,y]=grip;
+     fpaSowPolygon(c,[[x-1.1,y-.7],[x+.7,y-1.1],[x+1.2,y-.2],
+       [x+.9,y+1],[x-.9,y+1]],'#5f4132');
+     r(c,x-.65,y-.6,1.4,1.15,fill);
+   }
+ }
+ function drawPeelCycle(c,b,x,y,t){
+   const actor={type:'baker',look:b.id*53+2};
+   const phase=Math.floor(t*5)%peelTravel.length,slide=peelTravel[phase];
+   const footX=x-15,footY=y+1;
+   workScene(c,actor,footX,footY,(cloth,skin)=>{
+     const shaftY=ovenMouthY-1.7;
+     const near=[2.6+slide*.43,shaftY],far=[near[0]+2.5,shaftY];
+     const blade=8.5+slide;
+     workSleeve(c,[1.6,-8.1],far,shade(cloth,-.23));
+     workSleeve(c,[-1.1,-7.7],near,cloth);
+     c.save();
+     // The far edge of the oven mouth hides the inserted part of the peel.
+     c.beginPath();c.rect(-6,-13,21.5,13);c.clip();
+     fpaSowBand(c,[blade-12,shaftY],[blade-1,shaftY],1.25,'#513722');
+     fpaSowBand(c,[blade-12,shaftY-.2],[blade-1,shaftY-.2],.5,'#d4a266');
+     fpaSowPolygon(c,[[blade-2,-7.8],[blade+.7,-8.4],[blade+2.3,-7.5],
+       [blade+2,-6.6],[blade-.8,-6.4]],'#c4ab7c');
+     ln(c,blade-.6,-6.5,blade+1.9,-6.5,'#76573a');
+     if(phase<4){
+       oval(c,blade+.2,-8.7,1.8,1.2,'#e5ce9a');
+       ln(c,blade-.45,-9.4,blade+.55,-8.85,'#ad7a42');
+     }
+     c.restore();
+     workHands(c,near,far,skin);
+   });
+ }
+ function drawKneadCycle(c,b,x,y,t){
+   const actor={type:'baker',look:b.id*53+7};
+   const press=kneadPress[Math.floor(t*6)%kneadPress.length];
+   const shift=(1-press)*1.8,lean=press*1.15;
+   const footX=x+dough.x-6,footY=y-1;
+   workScene(c,actor,footX,footY,(cloth,skin)=>{
+     const near=[4.7+press*.65,-8.1-shift],far=[6.8+press*.45,-8.5-shift*.75];
+     oval(c,6,dough.y+1,3.8+press*.45,1.35-press*.3,'#b99563');
+     oval(c,5.8,dough.y+.7,3.1+press*.4,1.05-press*.22,'#e7d3a7');
+     r(c,5.2,dough.y+.2,2,.5,'#f5e6c2');
+     workSleeve(c,[1.6+lean*.45,-8.1],far,shade(cloth,-.23));
+     workSleeve(c,[-1.1+lean*.45,-7.7],near,cloth);
+     workHands(c,near,far,skin);
+   },lean);
+ }
+ function drawMashCycle(c,b,x,y,t){
+   const actor={type:'brewer',look:b.id*37+3};
+   const [dx,dy]=stirOffsets[Math.floor(t*4)%stirOffsets.length];
+   workScene(c,actor,x,y,(cloth,skin)=>{
+     const tip=[mash.x+dx,mash.y+dy*.45],top=[1.1-dx*.7,-14.5-dy*.6];
+     const grip=f=>[top[0]+(tip[0]-top[0])*f,top[1]+(tip[1]-top[1])*f];
+     const near=grip(.33),far=grip(.63);
+     workSleeve(c,[1.6,-8],far,shade(cloth,-.23));
+     workSleeve(c,[-.8,-7.7],near,cloth);
+     fpaSowBand(c,top,tip,1.15,'#503525');
+     fpaSowBand(c,[top[0]+.2,top[1]],[tip[0]+.2,tip[1]],.5,'#cfaa6a');
+     fpaSowBand(c,grip(.85),tip,1.4,'#b48a53');
+     r(c,tip[0]+.7,tip[1],1,.5,'#e8cd8f');
+     r(c,tip[0]-1.5,tip[1]+.45,.5,.5,'#d6b576');
+     workHands(c,near,far,skin);
+     ln(c,mash.x-3.5,mash.y+1.3,mash.x+3.5,mash.y+1.3,'#9c743e');
+   });
+ }
+ drawFoodYard=function(c,b,s,ox,oy){
+   const P=s.pt,t=Game.time+b.id*5;
+   if(b.state!=='done'||!P)return M.native.drawFoodYard(c,b,s,ox,oy);
+   if(s.px==='bakery'&&s._publishedMachinery){
+     M.native.drawFoodYard(c,b,{...s,pt:{...P,baker:null,knead:null}},ox,oy);
+     if(P.oven&&P.baker)drawPeelCycle(c,b,ox+P.oven[0],oy+P.oven[1],t);
+     if(P.knead)drawKneadCycle(c,b,ox+P.knead[0],oy+P.knead[1],t);
+   }else if(s.px==='brewery'&&s._publishedMachinery&&b.working&&P.brewer){
+     M.native.drawFoodYard(c,b,{...s,pt:{...P,brewer:null}},ox,oy);
+     drawMashCycle(c,b,ox+P.brewer[0],oy+P.brewer[1],t);
+   }else M.native.drawFoodYard(c,b,s,ox,oy);
  };
  // The existing small window actor keeps the same hand motion; its material is now visible.
  drawInsideLife=function(c,b,s,ox,oy){M.native.drawInsideLife(c,b,s,ox,oy);if(!types.has(b.type)||(!b.working&&!(INS_CNT.get(b)||0)))return;const wins=s.wins||[],n=Math.min(wins.length,Math.max(1,b.working?1+((INS_CNT.get(b)||0)>1?1:0):Math.min(INS_CNT.get(b)||0,2))),order=wins.map((w,i)=>i).sort((p,q)=>((p*7+b.id*13)%17)-((q*7+b.id*13)%17)||p-q);let shown=0;for(const i of order){const[wx,wy,ww,wh,round]=wins[i];if(ww<5)continue;if(shown++>=n)break;const x=ox+wx,y=oy+wy,ph=i*1.7+b.id,sx=x+Math.sin(Game.time*.9+ph)*ww*.16;c.save();c.beginPath();if(round)c.arc(x,y,Math.min(ww,wh)/2,0,Math.PI*2);else c.rect(x-ww/2,y-wh/2,ww,wh);c.clip();if(['metallurgist','smeltery','weaponsmith','armory'].includes(b.type)){poly(c,[[sx,y+2.5],[sx+4,y+2.5],[sx+3,y+3.5],[sx+1,y+3.5]],P.steel);r(c,sx+1.5,y+3,1.5,2,P.iron);r(c,sx+2,y+2,1,.5,'#e4b96a')}else if(['brewery','mill','bakery','hopfarm','magicworkshop'].includes(b.type)){oval(c,sx+2,y+3.5,2.5,1.2,P.wood);oval(c,sx+2,y+3,2.3,.6,'#c5b27c')}else{r(c,sx-.5,y+3.5,5,.8,P.wood);r(c,sx,y+3.5,4,.5,P.hi);r(c,sx+2,y+3,1.5,.5,'#c8b88d')}c.restore()}};
