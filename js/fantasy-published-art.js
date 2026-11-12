@@ -196,15 +196,24 @@ const FPA_MINE_ANGLES=[1.2,1,.8,.55,.22,-.12,-.4,-.52,.49,2.28,2.4,1.68];
 const FPA_YARD_MINE_ANGLES=[1.2,1,.8,.55,.22,-.12,-.4,-.52,.49,1.38,.96,1.2];
 const FPA_YARD_MINE_PHASES=[0,2,5,7,9,10,11,1];
 const FPA_WOODCUT_ANGLES=[1.45,1.15,.8,.38,.02,-.32,-.71,-.94,.46,2.12,2.4,1.91];
+const FPA_FIELD_ANGLES={
+ sow:[1.98,1.82,1.66,1.48,1.27,1.07,.93,.79,1.65,2.52,2.75,2.24],
+ wheat:[2.3,2.19,2.04,1.9,1.75,1.58,1.39,1.18,1.75,2.28,2.48,2.15],
+ hay:[2.22,2.13,2.02,1.83,1.71,1.62,1.5,1.38,1.86,2.35,2.55,2.22],
+ hops:[1.35,1.17,.98,.79,.63,.48,.33,.21,.8,1.36,1.72,1.47],
+ fork:[1.89,1.74,1.55,1.37,1.19,1.08,.91,.77,1.58,2.32,2.46,1.93],
+};
 function fpaMinePhase(frame) {
   return Math.max(0,Math.min(11,frame.f|0));
 }
 function fpaBodyMotion(view,pose,frame,opt) {
+  if(opt.sowRigBase)return [0,0];
   if(pose==='fight'){const f=FIGHT_BODY[frame]||FIGHT_BODY.ready;return [f[0]*.42,f[1]];}
   if(pose==='idle')return [0,-(IDLE_BREATH[Number(frame)%IDLE_FRAMES]||0)];
   if(view!=='E'&&view!=='W')return [0,pose==='duck'||pose==='tame'?2:0];
   if(pose==='work'){
     const f=frame.f|0;
+    if(opt.fieldWork)return [(1.25-FPA_FIELD_ANGLES[opt.fieldWork][fpaMinePhase(frame)])*.1,0];
     if(frame.anim==='toss')return [-(TOSS_DIP[f]||0)*.23,0];
     if(frame.anim==='pat')return [-.1-((PAT_A[f]??1.8)-1.8)*.12,0];
     if(frame.anim==='mine'){
@@ -241,7 +250,7 @@ personSprite = function (u, view, pose, frame, opt = {}) {
   // Cache the phase actually consumed by the pose helpers. Atlas frame zero
   // alone cannot distinguish breathing or the named native fight states.
   const phaseKey=pose==='idle'?(Number(frame)||0)%IDLE_FRAMES:pose==='walk'?(Number(frame)||0)%WALK_FRAMES:pose==='fight'?String(frame):pose==='work'?`${frame.anim}:${frame.f}`:frame;
-  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, opt.yardMining, opt.woodcutting, opt.externalWorkTool, u.injury].join('|');
+  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, opt.yardMining, opt.woodcutting, opt.fieldWork, opt.externalWorkTool, opt.sowRigBase, u.injury].join('|');
   if (FA_RENDER_CACHE.has(key)) return FA_RENDER_CACHE.get(key);
   const cv = mkCanvas(PW * PART, PH * PART), c = cv.getContext('2d', { willReadFrequently: true });
   c.imageSmoothingEnabled = false; c.scale(PART, PART);
@@ -286,9 +295,14 @@ function fpaSmokingRig(u,view,frame){const v=view==='E'?'E':'S';return {hand:SMO
 function fpaTrunkGrip(u,pose){
  return u.type==='woodcutter'&&u.carry==='trunk'&&(pose==='idle'||pose==='walk');
 }
+function fpaCropGrip(u,pose){
+ return (u.carry==='wheat'||u.carry==='hay'||u.carry==='hops')&&
+   (u.type==='farmer'||u.type==='hopgrower'||u.type==='builder')&&(pose==='idle'||pose==='walk');
+}
 function fpaCarryLoad(c,u,view,pose,opt){
  const n=opt.carryN||u.carryN||1;
- if(!fpaTrunkGrip(u,pose)){
+ const crop=fpaCropGrip(u,pose);
+ if(!fpaTrunkGrip(u,pose)&&!crop){
    c.save();
    c.translate(PFX,u.carry==='trunk'?13:23);
    if(u.carry==='trunk')c.scale(1.4,1.2);
@@ -298,13 +312,14 @@ function fpaCarryLoad(c,u,view,pose,opt){
  }
  const profile=view==='E'||view==='W',back=view==='N';
  const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
- const skin=SKINS[lookOf({...u,look}).skin%SKINS.length][0],coat=OUTFIT.woodcutter.coat;
+ const skin=SKINS[lookOf({...u,look}).skin%SKINS.length][0],coat=OUTFIT[u.type].coat;
+ const narrow=crop&&u.carry==='hops';
  const arms=profile?[
-   {shoulder:[1.5,22.5],grip:[6,25],shade:-.22},
-   {shoulder:[-3,22],grip:[-2,26.5],shade:0}
+   {shoulder:[1.5,22.5],grip:[narrow?3.8:6,25],shade:-.22},
+   {shoulder:[-3,22],grip:[-2,crop?25.5:26.5],shade:0}
  ]:[
-   {shoulder:[-4.5,22],grip:[back?-6:-5.5,26],shade:-.12},
-   {shoulder:[4.5,22],grip:[back?4.2:5.5,back?26.5:25.5],shade:0}
+   {shoulder:[-4.5,22],grip:[back?-6:narrow?-3.2:-5.5,26],shade:-.12},
+   {shoulder:[4.5,22],grip:[back?4.2:narrow?3.2:5.5,back?26.5:25.5],shade:0}
  ];
  c.save();
  c.translate(PFX,0);
@@ -320,10 +335,10 @@ function fpaCarryLoad(c,u,view,pose,opt){
    smoothLimb(c,shoulder,elbow,grip,2.1,shade(coat,shadow));
  }
  c.save();
- c.translate(profile?1:back?-2.2:0,25.5);
- c.rotate(profile?-.08:back?.09:-.09);
- c.scale(profile?1.23:back?-.94:.94,1.03);
- drawLoads(c,'trunk',n);
+ c.translate(profile?1:back?-2.2:0,crop?24.7:25.5);
+ c.rotate(crop?0:profile?-.08:back?.09:-.09);
+ c.scale(crop?(back?-1:1):profile?1.23:back?-.94:.94,1.03);
+ drawLoads(c,u.carry,n);
  c.restore();
  for(const {grip} of arms)hand(c,grip[0],grip[1],skin);
  c.restore();
@@ -331,12 +346,12 @@ function fpaCarryLoad(c,u,view,pose,opt){
 // Remove only the atlas's static skin/sleeve components for actively posed arms.
 // Ordinary idle/walk and other carriers take the no-op path.
 function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
- const trunkGrip=fpaTrunkGrip(u,pose);
- if((u.carry&&!trunkGrip)||u.type==='kid')return {removed:0,filled:0,components:0};
- const W=opt.wpn?wpnParse(opt.wpn):null,both=trunkGrip||pose==='sawGrip'||pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
+ const cargoGrip=fpaTrunkGrip(u,pose)||fpaCropGrip(u,pose);
+ if((u.carry&&!cargoGrip)||u.type==='kid')return {removed:0,filled:0,components:0};
+ const W=opt.wpn?wpnParse(opt.wpn):null,both=cargoGrip||pose==='sawGrip'||pose==='yardGrip'||pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
  if(!both&&!one)return {removed:0,filled:0,components:0};
  const c=cv.getContext('2d'),im=c.getImageData(0,0,cv.width,cv.height),src=new Uint8ClampedArray(im.data),d=im.data,k=cv.width/PW,w=cv.width,h=cv.height,dh=geometry.dh||33,dw=geometry.dw||25,dip=geometry.dip||0,shear=geometry.shear||0,top=PFY-dh;
- const saw=pose==='sawGrip';
+ const saw=pose==='sawGrip'||pose==='yardGrip';
  const mask=new Uint8Array(w*h),visited=new Uint8Array(w*h),skin=i=>src[i+3]>=160&&src[i]>(saw?108:140)&&src[i+1]>(saw?67:95)&&src[i+2]>(saw?43:69)&&src[i]>src[i+1]*1.08&&src[i+1]>src[i+2]*1.08;
  const xy=p=>{const y=(Math.floor(p/w)+.5)/k-dip,x=(p%w+.5)/k-shear*(y-PFY);return[x,y];};
  const roi=p=>{const[x,y]=xy(p),a=Math.abs(x-PFX);return y>=top+dh*.5&&y<PFY-5&&a>=(saw?3.5:4.5)&&a<=dw*.57&&!(a<6.5&&y<top+dh*.64);};
@@ -353,13 +368,14 @@ function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
 // Work props use the current native grip, upper-body pivot and phase tables.
 // W is E geometry; native callers mirror the complete actor once at draw time.
 function fpaDrawWorkTool(c,u,view,frame,opt={}){
+ if(opt.sowRigBase)return {known:true,drawn:false};
  const tool=ANIM_TOOL[frame?.anim],known=['axe','pick','hammer','sickle','spade','hook','toss','pat','bucket'].includes(tool);
  if(!known)return {known:false,drawn:false};
  const mineAngles=opt.yardMining?FPA_YARD_MINE_ANGLES:FPA_MINE_ANGLES;
- const angles=tool==='pick'?mineAngles:tool==='axe'&&opt.woodcutting?FPA_WOODCUT_ANGLES:tool==='toss'?TOSS_A:tool==='pat'?PAT_A:tool==='sickle'||tool==='spade'?SWING_SICKLE:SWING_A;
+ const angles=FPA_FIELD_ANGLES[opt.fieldWork]||(tool==='pick'?mineAngles:tool==='axe'&&opt.woodcutting?FPA_WOODCUT_ANGLES:tool==='toss'?TOSS_A:tool==='pat'?PAT_A:tool==='sickle'||tool==='spade'?SWING_SICKLE:SWING_A);
  const f=Math.max(0,Math.min(angles.length-1,frame.f|0));
  const fr={anim:frame.anim,f};
- const windup=tool!=='pick'&&!opt.woodcutting&&f<8?Math.sin(f/8*Math.PI):0;
+ const windup=tool!=='pick'&&!opt.woodcutting&&!opt.fieldWork&&f<8?Math.sin(f/8*Math.PI):0;
  const a=angles[f]+(FPA_WORK_ARC[frame.anim]||0)*windup,dip=swingDip(fr);
  const lean=tool==='pick'?.1:frame.anim==='reap'||frame.anim==='dig'?.28:frame.anim==='pat'?.42:0,hip=-6.2+dip,sh=-12+dip;
  const O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),skin=SKINS[L.skin%SKINS.length],coat=O.coat||L.green||'#66863d';
@@ -388,11 +404,11 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  const arm=3.8;
  // The pick points into the depth of the scene during the lift. It shows
  // its full shaft at impact, while the shoulder and short arm stay fixed.
- const shaft=tool!=='pick'?6.5:opt.yardMining?6.8:f===9||f===10?9.5:8.1;
+ const shaft=opt.fieldWork?(tool==='sickle'?4.7:6.6):tool!=='pick'?6.5:opt.yardMining?6.8:f===9||f===10?9.5:8.1;
  const hx=offset+.4+Math.sin(a)*arm*reach,hy=sh-Math.cos(a)*arm;
  let tx=hx+Math.sin(a)*shaft*reach,ty=hy-Math.cos(a)*shaft;
  let nx=-(ty-hy)/shaft,ny=(tx-hx)/shaft;
- const edge=tool==='pick'?3.2:2.4;
+ const edge=opt.fieldWork?0:tool==='pick'?3.2:2.4;
  if(opt.workContact){
    const [x,y]=opt.workContact,co=Math.cos(lean),si=Math.sin(lean);
    const cx=x*co+(y-hip)*si,cy=hip-x*si+(y-hip)*co;
@@ -406,7 +422,8 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  }
  smoothLimb(c,[offset+.4,sh+.4],[(offset+.4+hx)/2+.6,(sh+hy)/2+.5],[hx,hy],2.1,coat);
  if(!['toss','pat','bucket','pick'].includes(tool))line(c,hx-(tx-hx)*.25,hy-(ty-hy)*.25,tx,ty,'#6e4428',.9);
- switch(tool){
+ if(opt.fieldWork)fpaFieldHead(c,opt.fieldWork==='fork'?'fork':tool,hx,hy,tx,ty);
+ else switch(tool){
  case 'toss':case 'pat':break; // Native bare hands; projectile belongs to its native effect.
  case 'bucket':{const bx=hx+Math.sin(a)*2.2,by=hy-Math.cos(a)*2.2;c.fillStyle='#5a3a1e';c.fillRect(Math.round(bx-2),Math.round(by-1),4,3);c.fillStyle='#9a6a3a';c.fillRect(Math.round(bx-2),Math.round(by-1),4,1);c.fillStyle='#3a3a3e';c.fillRect(Math.round(bx-2),Math.round(by),4,1);if(f<5){c.fillStyle='#6ab8ff';c.fillRect(Math.round(bx-1),Math.round(by-2),2,1);}break;}
  case 'axe':{
@@ -448,7 +465,7 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  const blade=tool==='pick'||tool==='axe';
  return{known:true,drawn:true,projection:profile?'native-profile':'front-working-tool',tool,frame:f,frames:angles.length,hand:world(hx,hy),tip:world(blade?tx+nx*edge:tx,blade?ty+ny*edge:ty)};
 }
-function fpaDrawContactTool(c,u,frame,px,py,face,target,progress,woodcutting){
+function fpaDrawContactTool(c,u,frame,px,py,face,target,progress,options={}){
  const side=face<0?-1:1;
  const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
  const t=Math.max(0,Math.min(1,progress<.5?(progress-.46)/.04:(.86-progress)/.32));
@@ -456,15 +473,178 @@ function fpaDrawContactTool(c,u,frame,px,py,face,target,progress,woodcutting){
  c.save();
  c.translate(px-side*PFX,py-PFY);
  c.scale(side,1);
- const rig=fpaDrawWorkTool(c,{...u,look},'E',frame,{workContact:[(target[0]-px)*side,target[1]-py],workAim:aim,woodcutting});
+ const rig=fpaDrawWorkTool(c,{...u,look},'E',frame,{...options,workContact:[(target[0]-px)*side,target[1]-py],workAim:aim});
  c.restore();
  return rig;
 }
 function fpaDrawQuarryPick(c,u,frame,px,py,face,target,progress){
- return fpaDrawContactTool(c,u,frame,px,py,face,target,progress,false);
+ return fpaDrawContactTool(c,u,frame,px,py,face,target,progress);
 }
 function fpaDrawWoodcutAxe(c,u,frame,px,py,face,target,progress,kind){
- return fpaDrawContactTool(c,u,frame,px,py,face,target,progress,kind);
+ return fpaDrawContactTool(c,u,frame,px,py,face,target,progress,{woodcutting:kind});
+}
+function fpaDrawFieldTool(c,u,frame,px,py,face,target,progress,kind){
+ return fpaDrawContactTool(c,u,frame,px,py,face,target,progress,{fieldWork:kind});
+}
+
+// Each key controls the hip-to-shoulder lean and the shovel tip, in profile
+// and relative to the planted soles. The grips are computed on the same shaft.
+const FPA_SOW_KEYS=[
+ [0,0,0,9,-4], [.19,-1,-.5,10,-10], [.42,-2,-1,5,-20],
+ [.50,2,2,8,4.5], [.56,2.5,2.5,8,4.5],
+ [.73,1,1,11,-2], [1,0,0,9,-4],
+];
+let fpaSowCanvas;
+function fpaSowPolygon(c,points,color){
+ const top=Math.floor(Math.min(...points.map(p=>p[1]))*2)/2;
+ const bottom=Math.max(...points.map(p=>p[1]));
+ c.fillStyle=color;
+ for(let y=top;y<bottom;y+=.5){
+   const row=y+.25,edges=[];
+   for(let i=0;i<points.length;i++){
+     const a=points[i],b=points[(i+1)%points.length];
+     if((a[1]<=row)===(b[1]<=row))continue;
+     edges.push(a[0]+(row-a[1])*(b[0]-a[0])/(b[1]-a[1]));
+   }
+   edges.sort((a,b)=>a-b);
+   for(let i=0;i+1<edges.length;i+=2){
+     const x=Math.round(edges[i]*2)/2,end=Math.round(edges[i+1]*2)/2;
+     c.fillRect(x,y,end-x,.5);
+   }
+ }
+}
+function fpaSowBand(c,a,b,width,color){
+ const length=Math.hypot(b[0]-a[0],b[1]-a[1])||1;
+ const x=(b[1]-a[1])*width/(2*length),y=(a[0]-b[0])*width/(2*length);
+ fpaSowPolygon(c,[[a[0]+x,a[1]+y],[b[0]+x,b[1]+y],[b[0]-x,b[1]-y],[a[0]-x,a[1]-y]],color);
+}
+function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
+ const snap=n=>Math.round(n*2)/2;
+ const end=FPA_SOW_KEYS.findIndex(key=>key[0]>progress);
+ const next=end<0?FPA_SOW_KEYS.length-1:end;
+ const a=FPA_SOW_KEYS[next-1],b=FPA_SOW_KEYS[next];
+ const t=(progress-a[0])/(b[0]-a[0]),mix=t*t*(3-2*t);
+ const [dx,dy,tipX,tipY]=a.slice(1).map((v,i)=>v+(b[i+1]-v)*mix);
+ const lean=[snap(dx),snap(dy)];
+ const aim=Math.max(0,Math.min(1,(progress-.42)/.08,(.73-progress)/.17));
+ const targetX=(target[0]-px)*face,targetY=target[1]-py;
+ const tip=[snap(tipX+(targetX-8)*aim),snap(tipY+(targetY-4.5)*aim)];
+ const shoulder=[-1+lean[0],-15+lean[1]];
+ const near=[snap(shoulder[0]+2.5+aim),snap(shoulder[1]+2.5+aim)];
+ const angle=Math.atan2(tip[0]-near[0],tip[1]-near[1]);
+ const along=(point,distance)=>[snap(point[0]-distance*Math.sin(angle)),
+   snap(point[1]-distance*Math.cos(angle))];
+ const far=along(near,3),handle=along(near,4.5),socket=along(tip,2);
+ const cloth=OUTFIT[u.type].coat,leather='#765232',outline='#32271e';
+ const skin=SKINS[lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]}).skin%SKINS.length];
+ const cv=fpaSowCanvas??=mkCanvas(96,90),c=cv.getContext('2d');
+ c.setTransform(1,0,0,1,0,0);
+ c.clearRect(0,0,cv.width,cv.height);
+ c.setTransform(2,0,0,2,38,74);
+ c.imageSmoothingEnabled=false;
+ const part=(x,y,w,h,tx=x,ty=y)=>c.drawImage(source,(PFX+x)*2,(PFY+y)*2,w*2,h*2,tx,ty,w,h);
+ const garment=(points,color)=>fpaSowPolygon(c,points.map(([x,y])=>[x+lean[0],y+lean[1]]),color);
+ const arm=(start,grip,dark)=>{
+   const elbow=[snap((start[0]+grip[0])/2-1),snap((start[1]+grip[1])/2+1)];
+   const upper=shade(leather,dark?-.26:.06),sleeve=shade(cloth,dark?-.2:0);
+   fpaSowBand(c,start,elbow,4,outline);
+   fpaSowBand(c,elbow,grip,3,outline);
+   fpaSowBand(c,elbow,grip,2.5,sleeve);
+   fpaSowBand(c,start,elbow,3,upper);
+   fpaSowBand(c,[start[0]-.5,start[1]-.5],[elbow[0]-.5,elbow[1]-.5],.5,shade(upper,.25));
+ };
+ part(-PFX,-6,PW,6);
+ const hip=(x,y)=>[x+snap(lean[0]*.65),y+snap(lean[1]*.65)];
+ fpaSowPolygon(c,[[-6,-5.5],hip(-5.5,-10.5),hip(4,-11),[5.5,-5.5]],outline);
+ fpaSowPolygon(c,[[-5,-6],hip(-4.5,-10),hip(.5,-9.5),[.5,-6]],'#624a34');
+ fpaSowPolygon(c,[[1,-6],hip(0,-10),hip(3.5,-10),[5,-6]],'#483626');
+ fpaSowPolygon(c,[[-4.5,-6.5],hip(-4,-8.5),hip(-1.5,-8.5),[-1.5,-7]],'#7b5b3e');
+ fpaSowBand(c,hip(2,-9),[3.5,-7],.5,'#775638');
+ arm([shoulder[0]+2,shoulder[1]-.5],far,true);
+ garment([[-6,-16],[-3,-18],[4,-17],[6,-13],[5,-8],[-5,-8],[-6,-11]],outline);
+ garment([[-5.5,-15.5],[-3,-17],[3.5,-16],[5,-13],[4,-8.5],[-4,-8.5],[-5.5,-11]],shade(cloth,-.24));
+ garment([[-4.5,-15.5],[-2,-16.5],[2,-16],[4.5,-12.5],[3.5,-9.5],[-3.5,-9.5],[-4.5,-11]],cloth);
+ garment([[-4.5,-12],[-2,-12],[.5,-11],[3,-11.5],[2.5,-10.5],[-1,-10],[-4,-10.5]],shade(cloth,.19));
+ garment([[-5.5,-15.5],[-3.5,-17],[1.5,-16.5],[2,-14],[.5,-12.5],[-2,-12],[-4.5,-12.5]],outline);
+ garment([[-5,-15.5],[-3.5,-16.5],[1,-16],[1.5,-14.5],[.5,-13],[-2,-12.5],[-4.5,-13]],leather);
+ garment([[-4.5,-15.5],[-3,-16],[.5,-15.5],[0,-14.5],[-2.5,-14],[-4,-14.5]],'#946e48');
+ garment([[-4.5,-13.5],[-2,-13],[.5,-13.5],[.5,-13],[-2,-12.5],[-4.5,-13]],'#59402a');
+ garment([[-4.5,-10], [4.5,-10],[4,-8.5],[-4.5,-8.5]],outline);
+ garment([[-4.5,-9.5],[4,-9.5],[4,-9],[-4.5,-9]],'#715034');
+ garment([[2.5,-10],[4,-10],[4,-8.5],[2.5,-8.5]],'#cda75e');
+ garment([[3,-9.5],[3.5,-9.5],[3.5,-9],[3,-9]],outline);
+ const [lx,ly]=lean;
+ // Keep the original cap, face and beard. The lower atlas rectangle is
+ // limited to the front of the head, above the original sleeve and wrist.
+ part(-PFX,-PFY,PW,17.5,-PFX+lx,-PFY+ly);
+ part(.5,-17.5,10,5,.5+lx,-17.5+ly);
+ arm(shoulder,near,false);
+ fpaSowBand(c,handle,socket,1.5,outline);
+ fpaSowBand(c,handle,socket,.5,'#b58a57');
+ const bladePoint=(distance,side)=>{
+   const [x,y]=along(tip,distance);
+   return [x+side*Math.cos(angle),y-side*Math.sin(angle)];
+ };
+ fpaSowPolygon(c,[bladePoint(0,-.8),bladePoint(0,.8),bladePoint(1.3,1.65),
+   bladePoint(3,1.2),bladePoint(3,-1.2),bladePoint(1.3,-1.65)],'#384039');
+ fpaSowPolygon(c,[bladePoint(.5,-.65),bladePoint(.5,.65),bladePoint(1.4,1.1),
+   bladePoint(2.6,.75),bladePoint(2.6,-.75),bladePoint(1.4,-1.1)],'#b2bcb2');
+ for(const [grip,light] of [[far,skin[1]],[near,skin[0]]]){
+   c.fillStyle=outline;c.fillRect(grip[0]-1.5,grip[1]-1,3,2.5);
+   c.fillStyle=light;c.fillRect(grip[0]-1,grip[1]-.5,2,1.5);
+ }
+ world.save();
+ world.translate(px,py);
+ world.scale(face,1);
+ world.drawImage(cv,-19,-37,48,45);
+ world.restore();
+ return {tip:[px+tip[0]*face,py+tip[1]],near,far,shoulder,lean};
+}
+function fpaFieldHead(c,tool,hx,hy,tx,ty){
+ const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,ux=dx/length,uy=dy/length;
+ const p=(along,across)=>[tx+ux*along-uy*across,ty+uy*along+ux*across];
+ if(tool==='fork'){
+   line(c,...p(-2,-1.5),...p(-2,1.5),'#4f5b51',.9);
+   for(const tine of [-1.5,0,1.5])line(c,...p(-2,tine),...p(0,tine),'#c7d0bb',.7);
+ }else if(tool==='spade'){
+   poly(c,[p(0,-.65),p(0,.65),p(-1.2,1.65),p(-3,1.2),p(-3,-1.2),p(-1.2,-1.65)],'#9ba9a2','#313b36',.55);
+   line(c,...p(0,-.6),...p(0,.6),'#dfe7d3',.65);
+ }else{
+   const short=tool==='hook';
+   c.beginPath();
+   c.moveTo(...p(-2.3,0));
+   c.quadraticCurveTo(...p(-1.5,short?2.5:4),...p(0,0));
+   c.lineWidth=short?1.45:2;
+   c.strokeStyle='#343c33';
+   c.stroke();
+   c.lineWidth=short?.65:1;
+   c.strokeStyle='#d1ddc8';
+   c.stroke();
+ }
+}
+let fpaFieldSample;
+function fpaFieldSurface(u,x,y,o,kind){
+ if(!R.canvas||!FPA_FIELD_ANGLES[kind])return null;
+ const side=u.face<0?-1:1,footX=u.x*TILE,footY=u.y*TILE+6;
+ if(kind==='sow')return [footX+side*8,y*TILE+26.5];
+ const sprite=SPR.fields[o.crop]?.[fieldStage(o.g)];
+ if(!sprite)return null;
+ if(!fpaFieldSample)fpaFieldSample=mkCanvas(TILE,TILE).getContext('2d',{willReadFrequently:true});
+ const c=fpaFieldSample;
+ c.clearRect(0,0,TILE,TILE);
+ c.drawImage(sprite,0,0,TILE,TILE);
+ const data=c.getImageData(0,0,TILE,TILE).data;
+ const hops=kind==='hops',targetX=footX+side*(hops?10:8),targetY=footY-(hops?14:6);
+ let point=null,best=Infinity;
+ for(let j=1;j<TILE-1;j++)for(let i=1;i<TILE-1;i++){
+   const at=(j*TILE+i)*4,r=data[at],g=data[at+1],b=data[at+2];
+   if(hops?g<103||g<r*1.06||g<b*1.19:r<132||g<121||g<b*1.15)continue;
+   const px=x*TILE+i+.5,py=y*TILE+j+.5;
+   if(Math.abs(px-footX)<5)continue;
+   const d=(px-targetX)**2+1.3*(py-targetY)**2;
+   if(d<best){best=d;point=[px,py];}
+ }
+ return point;
 }
 let fpaWoodcutSample;
 function fpaWoodcutSurface(u,{x,y,o}){

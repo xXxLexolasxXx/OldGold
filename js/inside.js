@@ -806,6 +806,50 @@ function pxShuttle(t, a, q, go, wk, anim, carry) {
   return Object.assign({ p: a, view: 'S' }, work());
 }
 function pxFolk(c, type, look, s, ox, oy, opt) { drawFolk(c, { type, look, carry: s.carry || null }, ox + s.p[0], oy + s.p[1], s.view, s.pose, s.fr, opt || {}); }
+const FIELD_YARD_PHASES=[0,2,5,7,9,10,11,1];
+function fieldYardWorker(c,look,state,ox,oy,kind){
+  if(state.pose!=='work'||typeof fpaDrawFieldTool!=='function')return pxFolk(c,'farmer',look,state,ox,oy);
+  const [x,y]=state.p,px=ox+x,py=oy+y,target=[px+5,py-4];
+  const {ln,r,oval}=FantasyPublishedYard.paint;
+  // The tines land in loose hay. The second worker cuts upright stems.
+  if(kind==='fork'){
+    oval(c,target[0]+.5,target[1]+2,4,1.6,'#634931');
+    oval(c,target[0]+.5,target[1]+.75,3.5,1.7,'#a58346');
+  }
+  for(let j=0;j<5;j++){
+    const sx=target[0]-2+j;
+    if(kind==='fork')ln(c,sx,target[1]+1,sx+2,target[1]-1,j%2?'#b28b50':'#d8b66c');
+    else{
+      ln(c,sx,target[1]+3,sx+.5,target[1]-2-(j%2),'#bb9039');
+      r(c,sx+.5,target[1]-2-(j%2),.5,1,'#edcd73');
+    }
+  }
+  const actor={type:'farmer',look},f=FIELD_YARD_PHASES[state.fr.f],frame={...state.fr,f};
+  const progress=f===9?.52:f===10?.61:f===11?.76:1;
+  const opt={fieldWork:kind,externalWorkTool:progress<1};
+  personSprite(actor,'E','work',frame,opt);
+  drawFolk(c,actor,px,py,'E','work',frame,opt);
+  if(progress===1)return;
+  const scale=YARD_K*FantasyPublishedYard.scale;
+  c.save();
+  c.translate(px,py);
+  c.scale(scale,scale);
+  fpaDrawFieldTool(c,actor,frame,0,0,1,[(target[0]-px)/scale,(target[1]-py)/scale],progress,kind);
+  c.restore();
+}
+function hopRackWorker(c,look,x,y,t){
+  if(typeof fpaFieldHead!=='function')return drawFolk(c,{type:'hopgrower',look},x,y,'E','work',{anim:'reap',f:Math.floor(t*6)%8},{});
+  const actor={type:'hopgrower',look},f=Math.floor(t*6)%8;
+  const {ln,r,oval,P}=FantasyPublishedYard.paint;
+  const hx=x+4+(f>=3&&f<=5?1:0),hy=y-7-(f>=2&&f<=5?1:0);
+  personSprite(actor,'E','yardGrip',0,{});
+  drawFolk(c,actor,x,y,'E','yardGrip',0,{});
+  ln(c,x+.5,y-7,hx-1,hy+.5,P.ink,1.55);
+  ln(c,hx-1,hy+.5,hx,hy,P.ink,1.55);
+  ln(c,x+.5,y-7,hx,hy,OUTFIT.hopgrower.coat,.85);
+  oval(c,hx+.6,hy-.8,.8,1,'#83a44c');
+  r(c,hx-.45,hy-.45,1.25,1.1,SKINS[lookOf(actor).skin%SKINS.length][0]);
+}
 function pxSmoke(c, X, Y, t, n, col) {
   for (let k = 0; k < n; k++) { const p = (t * 0.3 + k / n) % 1; c.globalAlpha = 0.5 * (1 - p); c.fillStyle = col || '#d8d4cc'; c.fillRect(Math.round(X - 1 + Math.sin(p * 5 + k) * 2 + p * 4), Math.round(Y - p * 18), 2 + Math.round(p * 2), 2); }
   c.globalAlpha = 1;
@@ -822,8 +866,8 @@ function drawFoodYard(c, b, spr, ox, oy) {
       drawCreatureAt(c, 'chicken', ox + x + k * 5, oy + y + (k % 2) * 3, Math.cos(t * 0.21 + k * 2.1) > 0 ? 1 : -1, !peck, t * 6 + k, peck ? 'peck' : null);
     }
     if (P.horse) drawCreatureAt(c, 'horse', ox + P.horse[0], oy + P.horse[1], -1, false, t * 2);
-    if (P.farmer) pxFolk(c, 'farmer', b.id * 41 + 1, pxShuttle(t, P.farmer[0], P.farmer[1], 4, 3, 'dig', 'hay'), ox, oy);   // носит сено в сенник, ворошит вилами
-    if (P.hand) pxFolk(c, 'farmer', b.id * 41 + 9, pxShuttle(t + 6, P.hand[0], P.hand[1], 5, 2, 'reap', 'wheat'), ox, oy);
+    if (P.farmer) fieldYardWorker(c,b.id*41+1,pxShuttle(t,P.farmer[0],P.farmer[1],4,3,'dig','hay'),ox,oy,'fork');
+    if (P.hand) fieldYardWorker(c,b.id*41+9,pxShuttle(t+6,P.hand[0],P.hand[1],5,2,'reap','wheat'),ox,oy,'wheat');
   }
   if (spr.px === 'bakery') {
     if (P.oven) {
@@ -843,7 +887,7 @@ function drawFoodYard(c, b, spr, ox, oy) {
   }
   if (spr.px === 'hopfarm') {
     if (P.vent) pxSmoke(c, ox + P.vent[0], oy + P.vent[1], t, 5, '#e8ecd8');   // сушильня курится
-    if (P.racks) P.racks.forEach((r, i) => drawFolk(c, { type: 'hopgrower', look: b.id * 29 + i }, ox + r[0], oy + r[1], 'E', 'work', { anim: i ? 'pat' : 'reap', f: Math.floor(t * 6 + i * 3) % 8 }, {}));   // развешивают шишки
+    if (P.racks) P.racks.forEach((r,i)=>hopRackWorker(c,b.id*29+i,ox+r[0],oy+r[1],t+i*.5));
   }
   if (spr.px === 'brewery') {
     if (P.vat) {   // чан кипит: жар под постаментом и пар

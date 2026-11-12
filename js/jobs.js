@@ -771,6 +771,19 @@ function fertilize(b, o) {
   if (b.stock.ash > 0) { b.stock.ash--; o.ash = true; }
 }
 
+const FIELD_VISUAL_TARGETS=new WeakMap();
+function fieldWorkWait(u,x,y,o,wait,anim) {
+  const action={wait,anim};
+  const kind=anim==='dig'?'sow':o.crop;
+  const point=typeof fpaFieldSurface==='function'&&fpaFieldSurface(u,x,y,o,kind);
+  if(point)FIELD_VISUAL_TARGETS.set(action,{x,y,o,point,kind,start:Game.time});
+  return action;
+}
+function activeFieldContact(action) {
+  const target=FIELD_VISUAL_TARGETS.get(action);
+  return target&&World.obj[idx(target.x,target.y)]===target.o?target:null;
+}
+
 function* farmWork(u, b) {
   const fields = farmFields(b);
   claimFields(b, fields);                                   // поля игрока рядом переходят под присмотр фермы
@@ -786,7 +799,7 @@ function* farmWork(u, b) {
     if (target === ripe) {
       const hopCrop = target.o.crop === 'hops';
       for (let k = 0; k < 4; k++) fxLater(0.45 + k * 0.95, () => harvestFx(target.x, target.y, target.o.crop));
-      yield { wait: 4, anim: hopCrop ? 'hoppick' : 'reap' };
+      yield fieldWorkWait(u,target.x,target.y,target.o,4,hopCrop?'hoppick':'reap');
       let extra = false;
       if (World.obj[idx(target.x, target.y)] === target.o) {
         target.o.g = -1;
@@ -805,7 +818,7 @@ function* farmWork(u, b) {
         u.carry = null;
       }
     } else {
-      yield { wait: 3, anim: 'dig' };
+      yield fieldWorkWait(u,target.x,target.y,target.o,3,'dig');
       if (World.obj[idx(target.x, target.y)] === target.o) {
         target.o.g = 0;
         fertilize(b, target.o);
@@ -918,7 +931,7 @@ function* helpHarvestGen(u, i) {
   const hopCrop = o.crop === 'hops';
   u.vdir = 'E'; u.face = x + 0.5 > u.x ? 1 : -1;
   for (let k = 0; k < 4; k++) fxLater(0.45 + k * 0.95, () => harvestFx(x, y, o.crop));
-  yield { wait: 4, anim: hopCrop ? 'hoppick' : 'reap' };
+  yield fieldWorkWait(u,x,y,o,4,hopCrop?'hoppick':'reap');
   let extra = false;
   if (World.obj[i] !== o) return;
   o.g = -1; o.res = false;

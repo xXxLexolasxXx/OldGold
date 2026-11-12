@@ -146,7 +146,9 @@ function swingProgress(u) {
   return a && a.T ? ((1 - Math.max(0, a.t) / a.T) * n) % 1 : 1;
 }
 function swingFrame(u) {
-  const p=swingProgress(u);
+  return swingFrameAt(swingProgress(u));
+}
+function swingFrameAt(p) {
   // 12 кадров (SWING_A в people.js): подъём 0–6, назад 7, разгон 8, удар 9, низ 10, возврат 11
   if (p < 0.4) return Math.floor(p / 0.4 * 7);
   if (p < 0.46) return 7;
@@ -234,6 +236,20 @@ function drawUnit(c, u) {
   if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 12 тактов, позы по высоте груди
   // жест и так движется: в покое без дыхания, на ходу — две опорные позы (шаг уже даёт 8 кадров), чтобы не множить спрайты
   if (opt.gest && opt.gest !== 'five') { if (pose === 'idle') frame = 0; else if (pose === 'walk') opt.gf = gestK(opt.gf) >= 0.5 ? 1 : 0; }
+  const field=!wp&&pose==='work'&&typeof fpaDrawFieldTool==='function'&&OUTFIT[u.type]?activeFieldContact(a):null;
+  let fieldProgress=1;
+  if(field){
+    // Existing harvest FX fire at .45 + .95*k. Hold the visual strike over
+    // those moments without changing the action or effect timers.
+    const elapsed=Math.max(0,Game.time-field.start);
+    fieldProgress=field.kind==='sow'?swingProgress(u):((elapsed+.044)/.95)%1;
+    frame={...frame,f:swingFrameAt(fieldProgress)};
+    opt.fieldWork=field.kind;
+    face=field.point[0]<px?-1:1;
+  }
+  const sowRig=field?.kind==='sow'&&view==='E'&&typeof fpaDrawSowPose==='function'&&
+    window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
+  const fieldTarget=field&&!sowRig&&frame.f>=8&&fieldProgress<.86;
   const pickProgress=!wp&&pose==='work'&&frame.anim==='mine'&&frame.f>=8?swingProgress(u):1;
   const pickTarget=pickProgress<.86&&typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
   const woodcut=!wp&&pose==='work'&&frame.anim==='chop'&&typeof fpaDrawWoodcutAxe==='function'&&OUTFIT[u.type]?activeWoodcutContact(a):null;
@@ -243,10 +259,14 @@ function drawUnit(c, u) {
     face=woodcut.point[0]<px?-1:1;
   }
   const axeTarget=axeProgress<.86?woodcut.point:null;
-  if(pickTarget||axeTarget)opt.externalWorkTool=true;
-  const spr = personSprite(u, view, pose, frame, opt);
+  if(pickTarget||axeTarget||fieldTarget)opt.externalWorkTool=true;
+  const spr = sowRig
+    ?personSprite(u,view,pose,{...frame,f:9},{...opt,sowRigBase:true})
+    :personSprite(u,view,pose,frame,opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
-  if (flyP >= 0) {
+  if (sowRig&&spr._fantasyAppearance&&flyP<0) {
+    fpaDrawSowPose(c,u,spr,px,py,face,field.point,fieldProgress);
+  } else if (flyP >= 0) {
     // в полёте: подброшен вверх по дуге и заваливается на спину в сторону отлёта
     const lift = Math.sin(flyP * Math.PI) * 10, back = u.knock.dx >= 0 ? 1 : -1;
     c.save(); c.translate(px, py - lift); c.rotate(flyP * Math.PI / 2 * 0.95 * back);
@@ -291,6 +311,7 @@ function drawUnit(c, u) {
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
   if(pickTarget&&spr._fantasyAppearance)fpaDrawQuarryPick(c,u,frame,px,py,face,pickTarget,pickProgress);
   if(axeTarget&&spr._fantasyAppearance)fpaDrawWoodcutAxe(c,u,frame,px,py,face,axeTarget,axeProgress,opt.woodcutting);
+  if(fieldTarget&&spr._fantasyAppearance)fpaDrawFieldTool(c,u,frame,px,py,face,field.point,fieldProgress,field.kind);
   c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
   if (bw && typeof brawlFx === 'function') brawlFx(c, u, bw, px, py);
