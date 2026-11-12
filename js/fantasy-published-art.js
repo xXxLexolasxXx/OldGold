@@ -191,6 +191,13 @@ const FA_RENDER_CACHE = FantasyPublishedArt.people;
 // The infirmary's yard worker is a presentation role, not a simulation job.
 OUTFIT.healer = { ...OUTFIT.serf, cap: '#739887', coat: '#3e675a' };
 const FPA_WORK_ARC = {chop:-.48,mine:-.13,build:.42,reap:.12,dig:.34,hoppick:-.28,douse:.26};
+// The quarry yard emits its first chips on frame 4. Both clocks use the same strike pose.
+const FPA_MINE_ANGLES=[1.2,1,.8,.55,.22,-.12,-.4,-.52,.49,2.28,2.4,1.68];
+const FPA_YARD_MINE_ANGLES=[1.2,1,.8,.55,.22,-.12,-.4,-.52,.49,1.38,1.64,1.4];
+const FPA_YARD_MINE_PHASES=[0,2,5,7,9,10,11,1];
+function fpaMinePhase(frame) {
+  return Math.max(0,Math.min(11,frame.f|0));
+}
 function fpaBodyMotion(view,pose,frame,opt) {
   if(pose==='fight'){const f=FIGHT_BODY[frame]||FIGHT_BODY.ready;return [f[0]*.42,f[1]];}
   if(pose==='idle')return [0,-(IDLE_BREATH[Number(frame)%IDLE_FRAMES]||0)];
@@ -199,6 +206,10 @@ function fpaBodyMotion(view,pose,frame,opt) {
     const f=frame.f|0;
     if(frame.anim==='toss')return [-(TOSS_DIP[f]||0)*.23,0];
     if(frame.anim==='pat')return [-.1-((PAT_A[f]??1.8)-1.8)*.12,0];
+    if(frame.anim==='mine'){
+      const angles=opt.yardMining?FPA_YARD_MINE_ANGLES:FPA_MINE_ANGLES;
+      return [(1.14-angles[fpaMinePhase(frame)])*.12+.025,0];
+    }
     const angle=SWING_A[f]??SWING_A[SWING_A.length-1];
     return [(1.14-angle)*.12+(FPA_WORK_ARC[frame.anim]||0)*.19,0];
   }
@@ -225,7 +236,7 @@ personSprite = function (u, view, pose, frame, opt = {}) {
   // Cache the phase actually consumed by the pose helpers. Atlas frame zero
   // alone cannot distinguish breathing or the named native fight states.
   const phaseKey=pose==='idle'?(Number(frame)||0)%IDLE_FRAMES:pose==='walk'?(Number(frame)||0)%WALK_FRAMES:pose==='fight'?String(frame):pose==='work'?`${frame.anim}:${frame.f}`:frame;
-  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, u.injury].join('|');
+  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, opt.yardMining, opt.externalPick, u.injury].join('|');
   if (FA_RENDER_CACHE.has(key)) return FA_RENDER_CACHE.get(key);
   const cv = mkCanvas(PW * PART, PH * PART), c = cv.getContext('2d', { willReadFrequently: true });
   c.imageSmoothingEnabled = false; c.scale(PART, PART);
@@ -256,7 +267,7 @@ personSprite = function (u, view, pose, frame, opt = {}) {
     if (u.carry === 'trunk') c.scale(1.4, 1.2);
     drawLoads(c, u.carry, opt.carryN || u.carryN || 1); c.restore();
   }
-  if (pose === 'work') fpaDrawWorkTool(c,{...u,look:normalizedLook},view,frame,opt);
+  if (pose === 'work'&&!opt.externalPick) fpaDrawWorkTool(c,{...u,look:normalizedLook},view,frame,opt);
   if (pose === 'smoke') {
     const rig = fpaSmokingRig(u, view, frame), O = OUTFIT[u.type];
     const coat = O.coat || '#66863d', hx = PFX + rig.hand[0], hy = PFY + rig.hand[1];
@@ -296,11 +307,13 @@ function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
 function fpaDrawWorkTool(c,u,view,frame,opt={}){
  const tool=ANIM_TOOL[frame?.anim],known=['axe','pick','hammer','sickle','spade','hook','toss','pat','bucket'].includes(tool);
  if(!known)return {known:false,drawn:false};
- const angles=tool==='toss'?TOSS_A:tool==='pat'?PAT_A:tool==='sickle'||tool==='spade'?SWING_SICKLE:SWING_A;
- const f=Math.max(0,Math.min(angles.length-1,frame.f|0)),fr={anim:frame.anim,f};
- // Vary the wind-up without moving the grip during contact and recovery.
- const windup=f<8?Math.sin(f/8*Math.PI):0;
- const a=angles[f]+(FPA_WORK_ARC[frame.anim]||0)*windup,dip=swingDip(fr),lean=frame.anim==='reap'||frame.anim==='dig'?.28:frame.anim==='pat'?.42:0,hip=-6.2+dip,sh=-12+dip;
+ const mineAngles=opt.yardMining?FPA_YARD_MINE_ANGLES:FPA_MINE_ANGLES;
+ const angles=tool==='pick'?mineAngles:tool==='toss'?TOSS_A:tool==='pat'?PAT_A:tool==='sickle'||tool==='spade'?SWING_SICKLE:SWING_A;
+ const f=Math.max(0,Math.min(angles.length-1,frame.f|0));
+ const fr={anim:frame.anim,f};
+ const windup=tool!=='pick'&&f<8?Math.sin(f/8*Math.PI):0;
+ const a=angles[f]+(FPA_WORK_ARC[frame.anim]||0)*windup,dip=swingDip(fr);
+ const lean=tool==='pick'?.1:frame.anim==='reap'||frame.anim==='dig'?.28:frame.anim==='pat'?.42:0,hip=-6.2+dip,sh=-12+dip;
  const O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),skin=SKINS[L.skin%SKINS.length],coat=O.coat||L.green||'#66863d';
  const profile=view==='E'||view==='W';
  c.save();c.translate(PFX,PFY);
@@ -324,7 +337,24 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
   hand(c,-4.8,hip-.4,skin[0]);
  }
  c.translate(0,hip);c.rotate(lean);c.translate(0,-hip);
- const hx=offset+.4+Math.sin(a)*3.8*reach,hy=sh-Math.cos(a)*3.8,tx=hx+Math.sin(a)*6.5*reach,ty=hy-Math.cos(a)*6.5,nx=-(ty-hy)/6.5,ny=(tx-hx)/6.5;
+ const arm=3.8;
+ // The pick points into the depth of the scene during the lift. It shows
+ // its full shaft at impact, while the shoulder and short arm stay fixed.
+ const shaft=tool!=='pick'?6.5:opt.yardMining?6.8:f===9||f===10?9.5:8.1;
+ const hx=offset+.4+Math.sin(a)*arm*reach,hy=sh-Math.cos(a)*arm;
+ let tx=hx+Math.sin(a)*shaft*reach,ty=hy-Math.cos(a)*shaft;
+ let nx=-(ty-hy)/shaft,ny=(tx-hx)/shaft;
+ if(tool==='pick'&&opt.pickContact){
+   const [x,y]=opt.pickContact,co=Math.cos(lean),si=Math.sin(lean);
+   const cx=x*co+(y-hip)*si,cy=hip-x*si+(y-hip)*co;
+   const aim=f===8?.45:f===10?.83:1;
+   const dx=cx-hx,dy=cy-hy,length=Math.hypot(dx,dy)||1;
+   const targetNX=-dy/length,targetNY=dx/length;
+   tx+=(cx-targetNX*3.2-tx)*aim;
+   ty+=(cy-targetNY*3.2-ty)*aim;
+   nx+=(targetNX-nx)*aim;
+   ny+=(targetNY-ny)*aim;
+ }
  smoothLimb(c,[offset+.4,sh+.4],[(offset+.4+hx)/2+.6,(sh+hy)/2+.5],[hx,hy],2.1,coat);
  if(!['toss','pat','bucket'].includes(tool))line(c,hx-(tx-hx)*.25,hy-(ty-hy)*.25,tx,ty,'#6e4428',.9);
  switch(tool){
@@ -339,7 +369,58 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  }
  hand(c,hx,hy,skin[1]);c.restore();
  const world=(x,y)=>[PFX+(view==='N'?-1:1)*(x*Math.cos(lean)-(y-hip)*Math.sin(lean)),PFY+hip+x*Math.sin(lean)+(y-hip)*Math.cos(lean)];
- return{known:true,drawn:true,projection:profile?'native-profile':'front-working-tool',tool,frame:f,frames:angles.length,hand:world(hx,hy),tip:world(tx,ty)};
+ return{known:true,drawn:true,projection:profile?'native-profile':'front-working-tool',tool,frame:f,frames:angles.length,hand:world(hx,hy),tip:world(tool==='pick'?tx+nx*3.2:tx,tool==='pick'?ty+ny*3.2:ty)};
+}
+function fpaDrawQuarryPick(c,u,frame,px,py,face,target){
+ const side=face<0?-1:1;
+ const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
+ c.save();
+ c.translate(px-side*PFX,py-PFY);
+ c.scale(side,1);
+ const rig=fpaDrawWorkTool(c,{...u,look},'E',frame,{pickContact:[(target[0]-px)*side,target[1]-py]});
+ c.restore();
+ return rig;
+}
+// Sample a small world-space patch once per target. The gameplay tile can
+// extend past the visible rock, particularly on its eastern edge.
+let fpaQuarrySample;
+function fpaQuarrySurface(target,origin){
+ if(!R.canvas)return null;
+ const {x,y,stone}=target,radius=14,size=radius*2+1;
+ if(!fpaQuarrySample)fpaQuarrySample=mkCanvas(size,size).getContext('2d',{willReadFrequently:true});
+ const c=fpaQuarrySample,left=Math.round(origin[0])-radius,top=Math.round(origin[1])-radius;
+ const solid=new Uint8Array(size*size),depths=new Float64Array(solid.length);
+ function sample(draw,depth){
+   c.clearRect(0,0,size,size);
+   c.save();
+   c.translate(-left,-top);
+   draw();
+   c.restore();
+   const pixels=c.getImageData(0,0,size,size).data;
+   for(let i=0;i<solid.length;i++)if(pixels[i*4+3]>244){
+     solid[i]=1;
+     depths[i]=depth;
+   }
+ }
+ if(stone){
+   // Ignore hit shake so the point remains stable through the strike.
+   sample(()=>drawRock(c,x,y,{...stone,hitT:0,dmg:0},idx(x,y)),0);
+ }else{
+   for(const mount of MOUNTS){
+     const s=MT_SIZES[mount.size],mx=mount.x-s.w/2,my=mount.y-s.h+9;
+     if(mx>left+size||mx+s.w<left||my>top+size||my+s.h<top)continue;
+     sample(()=>drawMountain(c,mount),mount.y/TILE+.12);
+   }
+ }
+ let best=null,distance=Infinity;
+ for(let j=1;j<size-1;j++)for(let i=1;i<size-1;i++){
+   const at=j*size+i;
+   if(!solid[at]||!solid[at-1]||!solid[at+1])continue;
+   const px=left+i+.5,py=top+j+.5;
+   const d=(px-origin[0])**2+1.5*(py-origin[1])**2;
+   if(d<distance){best={point:[px,py],depth:stone?null:depths[at]};distance=d;}
+ }
+ return best;
 }
 // Weapon-only native pose projection. The atlas body and all hitboxes stay fixed.
 function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
@@ -419,7 +500,13 @@ FantasyPublishedArt.ready.then(()=>{
 // Native yard anchors are closer together than full-width atlas silhouettes.
 // Scale around the foot, keeping the existing animation call and prop contact.
 const fpaNativeFolkDraw=drawFolk;
-drawFolk=function(c,u,x,y,...args){
- if(!OUTFIT[u.type])return fpaNativeFolkDraw(c,u,x,y,...args);
- c.save();c.translate(x,y);c.scale(2/3,2/3);fpaNativeFolkDraw(c,u,0,0,...args);c.restore();
+drawFolk=function(c,u,x,y,view,pose,frame,opt,flip){
+ if(!OUTFIT[u.type])return fpaNativeFolkDraw(c,u,x,y,view,pose,frame,opt,flip);
+ if(pose==='work'&&frame.anim==='mine'){
+   // Pass the mapped phase before sprite scheduling. Contact and follow-through
+   // then use the same immediate path as their world counterparts.
+   frame={...frame,f:FPA_YARD_MINE_PHASES[Math.max(0,Math.min(7,frame.f|0))]};
+   opt={...opt,yardMining:true};
+ }
+ c.save();c.translate(x,y);c.scale(2/3,2/3);fpaNativeFolkDraw(c,u,0,0,view,pose,frame,opt,flip);c.restore();
 };

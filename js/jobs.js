@@ -476,8 +476,8 @@ function rockFaceNear(x, y, r) {
   return false;
 }
 
-function rockFaceHit(x, y, u, last) {
-  const hx = (u.x + (x + 0.5 - u.x) * 0.6) * TILE, hy = (u.y + (y + 0.5 - u.y) * 0.6) * TILE - 6;
+function rockFaceHit(x, y, u, last, point) {
+  const [hx,hy]=point||[(u.x+(x+.5-u.x)*.6)*TILE,(u.y+(y+.5-u.y)*.6)*TILE-6];
   fxBurst(hx, hy, last ? 10 : 6, ['#fff6c0', '#ffd860', '#ffb040'], 110, 50, 0.3, 1.1, 320);
   fxBurst(hx, hy, last ? 14 : 5, [ROCK_COL.base, ROCK_COL.mid, ROCK_COL.light, ROCK_COL.dark], 70, 60, 0.75, last ? 2.6 : 1.8, 300);
   fxBurst(hx, hy + 4, last ? 8 : 3, ['rgba(200,186,160,0.55)', 'rgba(170,156,130,0.5)'], 18, 14, 1.1, 3.5, -12);
@@ -535,6 +535,26 @@ function rockMirrorIn(m) {
 // (+2 клетки за уровень) и с уровнем каменоломни (+3). Ночью и вечером далеко не ходит — работает у дома.
 // Куда не смог дойти (стройка перегородила, скалу окружили) — минуту туда не рвётся, берёт другое.
 const QUARRY_FAR_MAX = 24;
+// The wait object is local to the current action. Visual targets never enter saves or co-op snapshots.
+const QUARRY_VISUAL_TARGETS = new WeakMap();
+function quarryContact(u,x,y,stone=null) {
+  const reach=stone ? .55 : .6;
+  const origin=[(u.x+(x+.5-u.x)*reach)*TILE,(u.y+(y+.5-u.y)*reach)*TILE-6];
+  const surface=typeof fpaQuarrySurface==='function'&&fpaQuarrySurface({x,y,stone},origin);
+  return {x,y,stone,point:surface?.point||origin,depth:surface?.depth??null};
+}
+function quarryMineWait(target) {
+  const action={wait:1,anim:'mine'};
+  QUARRY_VISUAL_TARGETS.set(action,target);
+  return action;
+}
+function activeQuarryContact(action) {
+  const target=QUARRY_VISUAL_TARGETS.get(action);
+  if(!target)return null;
+  const {x,y,stone}=target,i=idx(x,y);
+  if(stone?World.obj[i]!==stone:World.terrain[i]!==T_ROCK)return null;
+  return target;
+}
 const QUARRY_BAD = new WeakMap(), QUARRY_BAD_STONE = new WeakMap();
 function quarryReach(u, b) {
   return Math.min(QUARRY_FAR_MAX, ROCK_FACE_R + 2 * (unitLevel(u) - 1) + 3 * ((b.level || 1) - 1));
@@ -568,10 +588,12 @@ function* quarryWork(u, b) {
     ROCKMINE.res.add(fi);
     const ok = yield { walk: f.spot };
     if (!ok) { ROCKMINE.res.delete(fi); quarryBadOf(b).set(fi, Game.time + 60); yield { wait: 2 }; return; }
+    const contact=quarryContact(u,f.x,f.y);
     for (let k = 0; k < 5; k++) {
       u.face = f.x + 0.5 > u.x ? 1 : -1; u.vdir = 'E';
-      fxLater(0.52, () => rockFaceHit(f.x, f.y, u, k === 4));
-      yield { wait: 1, anim: 'mine' };
+      const action=quarryMineWait(contact);
+      fxLater(0.52, () => rockFaceHit(f.x, f.y, u, k === 4, activeQuarryContact(action)?.point));
+      yield action;
     }
     ROCKMINE.res.delete(fi);
     if (World.terrain[fi] === T_ROCK) {
@@ -602,10 +624,12 @@ function* quarryWork(u, b) {
   u.face = s.x + 0.5 > u.x ? 1 : -1;
   // пять ударов киркой: искры и осколки, камень трескается; последним откалывается кусок
   const HITS = 5;
+  const contact=quarryContact(u,s.x,s.y,s.o);
   for (let k = 0; k < HITS; k++) {
     u.face = s.x + 0.5 > u.x ? 1 : -1; u.vdir = 'E';
-    fxLater(0.52, () => rockHit(s.x, s.y, s.o, u, k === HITS - 1));   // в момент удара внутри замаха
-    yield { wait: 1, anim: 'mine' };
+    const action=quarryMineWait(contact);
+    fxLater(0.52, () => rockHit(s.x, s.y, s.o, u, k === HITS - 1, activeQuarryContact(action)?.point));   // в момент удара внутри замаха
+    yield action;
     if (World.obj[idx(s.x, s.y)] !== s.o) break;
   }
   s.o.res = false;

@@ -231,6 +231,9 @@ function drawUnit(c, u) {
   if (pose === 'idle' && frame === 0) frame = IDLE_POSE[Math.floor(((Game.time / 2.6 + (u.id || 0) * 0.37) % 1) * IDLE_FRAMES)];   // дыхание: 12 тактов, позы по высоте груди
   // жест и так движется: в покое без дыхания, на ходу — две опорные позы (шаг уже даёт 8 кадров), чтобы не множить спрайты
   if (opt.gest && opt.gest !== 'five') { if (pose === 'idle') frame = 0; else if (pose === 'walk') opt.gf = gestK(opt.gf) >= 0.5 ? 1 : 0; }
+  const pickTarget=!wp&&pose==='work'&&frame.anim==='mine'&&frame.f>=8&&frame.f<=10&&
+    typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
+  if(pickTarget)opt.externalPick=true;
   const spr = personSprite(u, view, pose, frame, opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
   if (flyP >= 0) {
@@ -276,6 +279,7 @@ function drawUnit(c, u) {
     c.drawImage(spr, -PFX, py - PFY, PW, PH);
     c.restore();
   } else c.drawImage(spr, px - PFX, py - PFY, PW, PH);
+  if(pickTarget&&spr._fantasyAppearance)fpaDrawQuarryPick(c,u,frame,px,py,face,pickTarget);
   c.imageSmoothingEnabled = R.smooth;
   drawUnitFx(c, u, px, py, moving);
   if (bw && typeof brawlFx === 'function') brawlFx(c, u, bw, px, py);
@@ -1077,7 +1081,9 @@ function render() {
     // that trunk, including when the forest is rendered as cached rows.
     const tx=Math.floor(u.x),ty=Math.floor(u.y);
     const tree=u.anim==='chop'&&inb(tx,ty)?World.obj[idx(tx,ty)]:null;
-    const depth=tree?.t==='tree'&&!tree.awake?Math.max(u.y+0.2,ty+0.91):u.y+0.2;
+    let depth=tree?.t==='tree'&&!tree.awake?Math.max(u.y+0.2,ty+0.91):u.y+0.2;
+    const quarryDepth=u.anim==='mine'?activeQuarryContact(u.action)?.depth:null;
+    if(quarryDepth!=null)depth=Math.max(depth,quarryDepth+.001);
     list.push([depth, () => drawUnit(c, u)]);
   }
   for (const a of Game.animals) {

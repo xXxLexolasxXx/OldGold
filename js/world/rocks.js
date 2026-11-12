@@ -213,11 +213,11 @@ function fxTimersTick() {
 }
 
 // кирка бьёт в камень: искры, осколки, пыль; камень вздрагивает и трескается
-function rockHit(tx, ty, o, u, last) {
+function rockHit(tx, ty, o, u, last, point) {
   if (World.obj[idx(tx, ty)] !== o) return;
   o.hitT = Game.time;
   o.dmg = Math.min(1, (o.dmg || 0) + 0.22);
-  const hx = (u.x + (tx + 0.5 - u.x) * 0.55) * TILE, hy = (u.y + (ty + 0.5 - u.y) * 0.55) * TILE - 6;
+  const [hx,hy]=point||[(u.x+(tx+.5-u.x)*.55)*TILE,(u.y+(ty+.5-u.y)*.55)*TILE-6];
   fxBurst(hx, hy, last ? 10 : 6, ['#fff6c0', '#ffd860', '#ffb040'], 110, 50, 0.3, 1.1, 320);            // искры
   fxBurst(hx, hy, last ? 14 : 5, [ROCK_COL.base, ROCK_COL.mid, ROCK_COL.light, ROCK_COL.dark], 70, 60, 0.75, last ? 2.6 : 1.8, 300);   // осколки
   fxBurst(hx, hy + 4, last ? 8 : 3, ['rgba(200,186,160,0.55)', 'rgba(170,156,130,0.5)'], 18, 14, 1.1, 3.5, -12);  // пыль
