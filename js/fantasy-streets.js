@@ -3,55 +3,95 @@
 (() => {
  const native={shape:roadShape,mask:roadMaskCanvas,tile:drawRoadTile},cache=new Map(),RADIUS=7,EDGE=1,S=TILE+ROAD_M*2;
  const names=['Ровная мостовая','Мягкий скол','Мох в швах','Старая трещинка','Тёплый камень','Резная метка','Земляной шов','Лист у обочины'];
- const api=window.FantasyRoadArt={version:2,rasterScale:2,paintedWidth:16,coreWidth:14,variantNames:names,cache,native,ready:Promise.resolve(),errors:[],variantAt:(x,y)=>variant(x*TILE+16,y*TILE+16)};
+ const api=window.FantasyRoadArt={version:3,rasterScale:2,paintedWidth:16,coreWidth:14,variantNames:names,cache,native,ready:Promise.resolve(),errors:[],variantAt:(x,y)=>variant(x*TILE+16,y*TILE+16)};
  const hash2=(x,y,s=0)=>{let n=Math.imul(x|0,73856093)^Math.imul(y|0,19349663)^(Game.seed|0)^s;n=Math.imul(n^(n>>>16),0x45d9f3b);return(n^(n>>>16))>>>0;};
  const variant=(x,y)=>hash2(Math.floor(x/64),Math.floor(y/64),871)&7;
- function graph(x,y){
+ const directions = [[1,0],[0,1],[-1,0],[0,-1]];
+ const turnTrim = 9, shortcutRadius = 4.5;
+ function roadTurn(x,y) {
+  const neighbors = directions.filter(([dx,dy])=>isRoadAt(x+dx,y+dy));
+  if (neighbors.length !== 2) return null;
+  const [[ax,ay],[bx,by]] = neighbors;
+  if (ax*bx+ay*by !== 0 || isRoadAt(x+ax+bx,y+ay+by)) return null;
+  return neighbors;
+ }
+ function graph(x,y) {
   const segments=[],fills=[];
+  const add=(x,y,dx,dy,radius=RADIUS)=>segments.push([x,y,dx,dy,dx*dx+dy*dy,radius]);
+  const turns=new Map();
+  const turn=(a,b)=>{
+   const key=a+':'+b;
+   if(!turns.has(key))turns.set(key,roadTurn(a,b));
+   return turns.get(key);
+  };
   for(let yy=y-1;yy<=y+1;yy++)for(let xx=x-1;xx<=x+1;xx++){
-   const px=(xx+.5)*TILE,py=(yy+.5)*TILE;
-   const corners=[[0,0],[1,0],[1,1],[0,1]];
-   const present=corners.filter(([dx,dy])=>isRoadAt(xx+dx,yy+dy));
-   if(present.length>=3)fills.push({x:px,y:py,corners:present});
    if(!isRoadAt(xx,yy))continue;
-   segments.push([px,py,0,0,0]);
-   for(const[dx,dy]of[[1,0],[0,1],[1,1],[1,-1]]){
+   const px=(xx+.5)*TILE,py=(yy+.5)*TILE;
+   if(isRoadAt(xx+1,yy)&&isRoadAt(xx,yy+1)&&isRoadAt(xx+1,yy+1))fills.push([px,py]);
+   const corner=turn(xx,yy);
+   if(corner){
+    const [[ax,ay],[bx,by]]=corner;
+    let lastX=px+ax*turnTrim,lastY=py+ay*turnTrim;
+    for(let i=1;i<=6;i++){
+     const t=i/6,u=1-t;
+     const X=px+(u*u*ax+t*t*bx)*turnTrim,Y=py+(u*u*ay+t*t*by)*turnTrim;
+     add(lastX,lastY,X-lastX,Y-lastY);
+     lastX=X;lastY=Y;
+    }
+   }else add(px,py,0,0);
+   for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1]]){
     if(!isRoadAt(xx+dx,yy+dy))continue;
-    // Keep diagonal shortcuts inside the stone at bends. A full two-lane
-    // junction already covers the diagonal with the shared square.
-    if(dx&&dy&&isRoadAt(xx+dx,yy)&&isRoadAt(xx,yy+dy))continue;
-    const vx=dx*TILE,vy=dy*TILE;
-    segments.push([px,py,vx,vy,vx*vx+vy*vy]);
+    if(dx&&dy){
+     const a=Boolean(isRoadAt(xx+dx,yy)), b=Boolean(isRoadAt(xx,yy+dy));
+     if(a&&b)continue;
+     // A courier can walk the diagonal when exactly one side is paved.
+     // Keep the shortcut narrow, without filling the enclosed triangle.
+     add(px,py,dx*TILE,dy*TILE,a||b?shortcutRadius:RADIUS);
+    }else{
+     const start=corner?turnTrim:0,end=turn(xx+dx,yy+dy)?turnTrim:0;
+     add(px+dx*start,py+dy*start,dx*(TILE-start-end),dy*(TILE-start-end));
+    }
    }
   }
   return {segments,fills};
  }
  function distance2(px,py,{segments,fills}){
-  let best=Infinity;
-  for(const{x,y,corners}of fills){
-   const lx=(px-x)/TILE,ly=(py-y)/TILE;
-   if(lx<0||lx>1||ly<0||ly>1)continue;
-   if(corners.every(([ax,ay],i)=>{
-    const[bx,by]=corners[(i+1)%corners.length];
-    return (bx-ax)*(ly-ay)-(by-ay)*(lx-ax)>=0;
-   }))return 0;
-  }
-  for(const[x,y,dx,dy,L]of segments){
-   const t=L?Math.max(0,Math.min(1,((px-x)*dx+(py-y)*dy)/L)):0;
+  for(const [x,y] of fills)if(px>=x&&px<=x+TILE&&py>=y&&py<=y+TILE)return 0;
+  let best=Infinity,shortcut=Infinity;
+  for(const [x,y,dx,dy,length,radius] of segments){
+   const t=length?Math.max(0,Math.min(1,((px-x)*dx+(py-y)*dy)/length)):0;
    const X=px-x-t*dx,Y=py-y-t*dy;
-   best=Math.min(best,X*X+Y*Y);
+   const d2=X*X+Y*Y;
+   if(radius===RADIUS){best=Math.min(best,d2);continue;}
+   shortcut=Math.min(shortcut,d2);
   }
+  if(best<=RADIUS**2)return best;
+  // Distinguish the worn shortcut from the wider stone surface.
+  if(shortcut<=(shortcutRadius+EDGE)**2)return -(shortcut+1);
   return best;
  }
- roadShape=function(c,x,y,px,py,grow,bands,chamfers){
-  const r=RADIUS+(grow||0)*.5,{segments,fills}=graph(x,y);
+ function trailTexture(wx,wy,distance){
+  const h=hash2(Math.floor(wx/3),Math.floor(wy/3),197);
+  const tone=h%4;
+  const edge=shortcutRadius-.75+(h%5)*.25;
+  if(distance>edge){
+   if(distance>shortcutRadius+.35&&h%4!==0)return null;
+   return [72+tone,99+tone,60+tone,48+tone*6];
+  }
+  if(h%13===0)return [103,104,72,145];
+  return [87+tone*2,101+tone,64+tone,82+tone*10];
+ }
+ roadShape=function(c,x,y,px,py,grow){
+  const {segments,fills}=graph(x,y),ox=px-x*TILE,oy=py-y*TILE;
   c.beginPath();
-  for(const f of fills)pathPolyCW(c,f.corners.map(([dx,dy])=>[f.x+px+(dx-x)*TILE,f.y+py+(dy-y)*TILE]));
-  for(const[ax,ay,dx,dy,L]of segments){
-   const X=ax+px-x*TILE,Y=ay+py-y*TILE;
-   if(!L){octPath(c,X,Y,r);continue;}
-   const len=Math.sqrt(L),nx=-dy/len*r,ny=dx/len*r;
+  for(const [ax,ay] of fills)c.rect(ax+ox,ay+oy,TILE,TILE);
+  for(const [ax,ay,dx,dy,length,radius] of segments){
+   const r=Math.max(.5,radius+(grow||0)*.5),X=ax+ox,Y=ay+oy;
+   c.moveTo(X+r,Y);c.arc(X,Y,r,0,Math.PI*2);
+   if(!length)continue;
+   const len=Math.sqrt(length),nx=-dy/len*r,ny=dx/len*r;
    pathPolyCW(c,[[X+nx,Y+ny],[X+dx+nx,Y+dy+ny],[X+dx-nx,Y+dy-ny],[X-nx,Y-ny]]);
+   c.moveTo(X+dx+r,Y+dy);c.arc(X+dx,Y+dy,r,0,Math.PI*2);
   }
  };
  const stoneSeeds=new Map();let stoneSeedTag=null;
@@ -70,7 +110,16 @@
  }
  function pair(x,y,forced){let neighbors='';for(let yy=y-2;yy<=y+2;yy++)for(let xx=x-2;xx<=x+2;xx++)neighbors+=isRoadAt(xx,yy)?'1':'0';const key=[Game.seed,x,y,neighbors,forced??'world'].join(':');if(cache.has(key))return cache.get(key);const geometry=graph(x,y),fine=[mkCanvas(S*2,S*2),mkCanvas(S*2,S*2)],ox=x*TILE-ROAD_M,oy=y*TILE-ROAD_M;
   const contexts=fine.map(cv=>cv.getContext('2d')),images=contexts.map(c=>c.createImageData(S*2,S*2));
-  for(let py=0;py<S*2;py++)for(let px=0;px<S*2;px++){const wx=ox+(px+.5)/2,wy=oy+(py+.5)/2,d2=distance2(wx,wy,geometry);if(d2>(RADIUS+EDGE)**2)continue;const d=Math.sqrt(d2),o=(py*S*2+px)*4;let rgb;if(d2<=RADIUS*RADIUS){rgb=texture(wx,wy,d,forced);for(let k=0;k<3;k++)images[1].data[o+k]=rgb[k];images[1].data[o+3]=255;}else{const h=hash2(Math.floor(wx/5),Math.floor(wy/5),61);rgb=h%5===0?[82,94,59]:[89,84,63];for(let k=0;k<3;k++)images[0].data[o+k]=rgb[k];images[0].data[o+3]=255;}}
+  for(let py=0;py<S*2;py++)for(let px=0;px<S*2;px++){const wx=ox+(px+.5)/2,wy=oy+(py+.5)/2,d2=distance2(wx,wy,geometry);if(d2>(RADIUS+EDGE)**2)continue;const o=(py*S*2+px)*4;
+   if(d2<0){
+    const rgb=trailTexture(wx,wy,Math.sqrt(-d2-1));
+    if(rgb){
+     for(let k=0;k<3;k++)images[0].data[o+k]=rgb[k];
+     images[0].data[o+3]=rgb[3];
+    }
+    continue;
+   }
+   const d=Math.sqrt(d2);let rgb;if(d2<=RADIUS*RADIUS){rgb=texture(wx,wy,d,forced);for(let k=0;k<3;k++)images[1].data[o+k]=rgb[k];images[1].data[o+3]=255;}else{const h=hash2(Math.floor(wx/5),Math.floor(wy/5),61);rgb=h%5===0?[82,94,59]:[89,84,63];for(let k=0;k<3;k++)images[0].data[o+k]=rgb[k];images[0].data[o+3]=255;}}
   const output=fine.map((cv,i)=>{contexts[i].putImageData(images[i],0,0);const out=mkCanvas(S,S),c=out.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(cv,0,0,S,S);return out;});cache.set(key,output);if(cache.size>384)cache.delete(cache.keys().next().value);return output;
  }
  roadMaskCanvas=function(x,y,grow,cobbles){return pair(x,y)[cobbles?1:0];};
