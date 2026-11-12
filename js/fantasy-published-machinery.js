@@ -20,7 +20,7 @@
  function hide(c,x,y,w=11,h=11){poly(c,[[x-w*.45,y-h],[x-w*.18,y-h+.8],[x,y-h-1],[x+w*.2,y-h+.7],[x+w*.45,y-h],[x+w*.3,y-h*.55],[x+w*.5,y-1],[x+w*.18,y-1.5],[x,y],[x-w*.18,y-1.5],[x-w*.5,y-1],[x-w*.3,y-h*.55]],'#694832');poly(c,[[x-w*.33,y-h+1],[x,y-h],[x+w*.3,y-h+1],[x+w*.2,y-h*.55],[x+w*.32,y-2],[x,y-1],[x-w*.32,y-2],[x-w*.2,y-h*.55]],'#bd9964');ln(c,x-2,y-h+3,x-1,y-3,'#d8b87e');ln(c,x+1,y-h+4,x+2,y-2,'#9a764b');poly(c,[[x-w*.2,y-h+2],[x-w*.08,y-h*.6],[x-w*.12,y-3],[x-w*.25,y-2],[x-w*.3,y-h*.6]],'#d5b17b');poly(c,[[x+w*.23,y-h+2],[x+w*.12,y-h*.5],[x+w*.25,y-2],[x+w*.31,y-2],[x+w*.21,y-h*.5]],'#a78352');for(let yy=2;yy<h-1;yy+=2){r(c,x-w*.3,y-yy,.5,.5,'#ead1a0');r(c,x+w*.3,y-yy,.5,.5,'#704e33')}for(const[dx,dy]of[[-1,-3],[1,-5],[-2,-7],[2,-9]])r(c,x+dx,y+dy,1,.5,'#e3c18c')}
  function stone(c,x,y,w=16,h=10,ore='stone'){const col=ore==='crystal'?'#7c9d9a':ore==='gold'?'#90947d':'#858d86';poly(c,[[x-w/2,y],[x-w/2+2,y-h+2],[x-2,y-h],[x+w/2-2,y-h+2],[x+w/2,y-2],[x+4,y+1]],P.ink);poly(c,[[x-w/2+2,y-h+2],[x-2,y-h+1],[x+w/2-3,y-h+2],[x+2,y-h/2],[x-w/2+1,y-h/2]],'#b4bba0');poly(c,[[x-w/2+1,y-h/2],[x+2,y-h/2],[x+4,y],[x-w/2+1,y-1]],col);poly(c,[[x+w/2-3,y-h+2],[x+w/2-1,y-2],[x+4,y],[x+2,y-h/2]],'#5c7168');for(let i=0;i<7;i++){const dx=((i*7)%Math.floor(w-3))-w/2+2,dy=-2-(i*3)%(h-3);r(c,x+dx,y+dy,1.5,.5,i%2?'#ced0ac':'#66796a')}
  if(ore!=='stone')for(const[dx,dy]of[[-3,-4],[1,-7],[3,-2]]){r(c,x+dx,y+dy,1.5,1.5,ore==='gold'?'#ba9446':ore==='crystal'?'#65b6b7':'#647c83');r(c,x+dx,y+dy,1,.5,ore==='gold'?'#ead27c':ore==='crystal'?'#b0e0cb':'#b9c8c0')}}
- function millstone(c,x,y){beam(c,x-8,y+3,16,3);oval(c,x,y,8,3,P.ink);oval(c,x,y-1,7.5,2.5,'#a9aa8a');oval(c,x,y-1.5,6.5,1.8,'#cfca9e');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a)*2,y-1.5+Math.sin(a)*.5,x+Math.cos(a)*6,y-1.5+Math.sin(a)*1.6,'#8e977d')}oval(c,x,y-1.5,1.2,.7,'#535f50');beam(c,x-.5,y-8,1,6);beam(c,x-1,y-8,7,1);bolt(c,x+5,y-8)}
+ function millstone(c,x,y){beam(c,x-8,y+3,16,3);oval(c,x,y,8,3,P.ink);oval(c,x,y-1,7.5,2.5,'#a9aa8a');oval(c,x,y-1.5,6.5,1.8,'#cfca9e');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a)*2,y-1.5+Math.sin(a)*.5,x+Math.cos(a)*6,y-1.5+Math.sin(a)*1.6,'#8e977d')}oval(c,x,y-1.5,1.2,.7,'#535f50');beam(c,x-.5,y-8,1,6);bolt(c,x,y-8)}
  function alchemy(c,x,y){bench(c,x,y,21);beam(c,x-9,y-11,18,1);for(const dx of[-8,7])beam(c,x+dx,y-11,1,11);for(let i=0;i<5;i++){const xx=x-6+i*2.7; r(c,xx-.8,y-15,1.5,3.5,P.ink);r(c,xx-.5,y-13.5,1,1.5,['#79a3a0','#aa8eae','#9ba967'][i%3]);r(c,xx-.5,y-15,1,.5,'#d9c894');r(c,xx-.5,y-14,.5,.5,'#d7e0bf')}poly(c,[[x-5,y-3],[x,y-4],[x+5,y-3],[x+5,y],[x,y-.5],[x-5,y]],'#d8c697');ln(c,x,y-3,x,y-.5,'#80664b');for(const dx of[-3,2])ln(c,x+dx,y-2.5,x+dx+1.5,y-2.5,'#a38864');oval(c,x+7,y-1.5,1.5,1.5,'#749d9b');r(c,x+6.5,y-5,1,2,'#d3d4a5');r(c,x+7,y-3.5,.5,1,'#c7e1c7')}
  function cauldron(c,x,y){for(const dx of[-5,4])beam(c,x+dx,y-2,1.5,4);oval(c,x,y-3,6,4,P.ink);oval(c,x,y-3,5.3,3.4,P.iron);oval(c,x-1,y-4,3.5,1.7,P.steel);oval(c,x,y-6,5.8,1.8,P.silver);oval(c,x,y-6,4.8,1.1,'#607f63');oval(c,x-.8,y-6.4,2.7,.5,'#a8bd86');for(const dx of[-6,5]){r(c,x+dx,y-5,1,2,P.iron);r(c,x+dx,y-5,1,.5,P.silver)}bolt(c,x-3,y-2);r(c,x-2,y+1,4,.5,'#bf7942')}
  function copper(c,x,y){masonry(c,x-10,y+12,21,10);r(c,x-5,y+16,10,6,P.ink);r(c,x-3,y+19,6,2,'#b77e3f');r(c,x-2,y+19,3,.5,'#e8bf6c');oval(c,x,y+11,10,5,P.ink);r(c,x-10,y-5,20,16,P.ink);for(let i=0;i<10;i++)r(c,x-9+i*1.8,y-5,1.8,16,['#704931','#855532','#9e6c3c','#b27e43','#ce9a56','#d5a35b','#bd8a49','#a37140','#8c5f38','#6b4831'][i]);oval(c,x,y+9,9.5,4,'#9d6d3d');oval(c,x,y-6,10,4.5,P.ink);oval(c,x,y-6.5,9.3,3.8,'#b48347');oval(c,x,y-7.5,8,3,'#d0a263');oval(c,x,y-8,5.5,1.8,'#e0bd7c');for(const yy of[-3,8]){r(c,x-9,y+yy,18,1.2,P.iron);r(c,x-9,y+yy,18,.5,P.steel);for(const dx of[-7,-2,3,7])bolt(c,x+dx,y+yy+.4)}beam(c,x-1,y-13,2,4);r(c,x-2,y-13,4,1,P.iron);ln(c,x-9,y+8,x-14,y+8,P.mid,2);ln(c,x-14,y+8,x-14,y+16,P.mid,2);ln(c,x-9,y+7.5,x-14,y+7.5,P.edge,.5);bolt(c,x-14.5,y+10)}
@@ -454,9 +454,25 @@
      workHands(c,steady,grip,skin);
    },0,1,'S');
  }
+ function drawMineFace(c,b,ox,oy,t){
+   const actor={type:'miner',look:b.id*71+5};
+   const source=personSprite(actor,'E','work',{anim:'mine',f:9},{sowRigBase:true});
+   if(!source._fantasyAppearance)return false;
+   const phase=[0,.12,.29,.43,.52,.56,.73,.9,1];
+   const tick=(t*7)%8,step=Math.floor(tick);
+   const progress=phase[step]+(phase[step+1]-phase[step])*(tick-step);
+   fpaDrawMinePose(c,actor,source,ox+24,oy+3,-1,[ox+13,oy-4],progress,YARD_K*FantasyPublishedYard.scale);
+   return true;
+ }
  drawFoodYard=function(c,b,s,ox,oy){
-   const P=s.pt,t=Game.time+b.id*5;
+   let P=s.pt;
+   const t=Game.time+b.id*5;
    if(b.state!=='done'||!P)return M.native.drawFoodYard(c,b,s,ox,oy);
+   if(b.working&&s._publishedMachinery&&/mine$/.test(s.px)&&P.miner&&
+      drawMineFace(c,b,ox+P.miner[0],oy+P.miner[1],t)){
+     P={...P,miner:null};
+     s={...s,pt:P};
+   }
    if(s.px==='bakery'&&s._publishedMachinery){
      M.native.drawFoodYard(c,b,{...s,pt:{...P,baker:null,knead:null}},ox,oy);
      if(P.oven&&P.baker)drawPeelCycle(c,b,ox+P.oven[0],oy+P.oven[1],t);
@@ -478,14 +494,29 @@
      drawMashCycle(c,b,ox+P.brewer[0],oy+P.brewer[1],t);
    }else M.native.drawFoodYard(c,b,s,ox,oy);
  };
- function drawMetalworkWindow(c,x,y,w,h,round,t,phase,working,forge=false){
+ function drawMillYard(c,b,s,ox,oy){
+   const x=ox+s.padx+s.fw*.78,y=oy+s.baseY-9;
+   const turn=b.working?Game.time*3+b.id:0;
+   const axle=[0,-10],grip=[-5.2+1.5*Math.cos(turn),-10+1.1*Math.sin(turn)];
+   fpaSowBand(c,[x+axle[0],y+axle[1]],[x+grip[0],y+grip[1]],1.35,P.iron);
+   if(!b.working)return;
+   const worker=b.worker,actor={type:'miller',look:worker?.look??b.id*37+5,sx:worker?personSex(worker):''};
+   const offset=[-10,4],near=[grip[0]-offset[0],grip[1]-offset[1]],far=[5,-7.5];
+   workScene(c,actor,x+offset[0],y+offset[1],(cloth,skin)=>{
+     workSleeve(c,[1.65,-8.2],far,shade(cloth,-.23));
+     workSleeve(c,[-1.3,-8.6],near,cloth);
+     workHands(c,near,far,skin);
+   });
+ }
+ function drawCraftWindow(c,x,y,w,h,round,t,phase,working,tool){
+   const forge=tool==='hammer',mill=tool==='mill',magic=tool==='wand';
    c.save();c.translate(x,y);c.beginPath();
    if(round)c.arc(0,0,Math.min(w,h)/2,0,Math.PI*2);
    else c.rect(-w/2,-h/2,w,h);
    c.clip();
    c.fillStyle=`rgb(255,${190+Math.round(Math.sin(t*9+phase)*18)},96)`;
    c.fillRect(-w/2,-h/2,w,h);
-   const wave=(1+Math.sin(t*8+phase))/2;
+   const rotation=t*(mill?3:8)+phase,wave=(1+Math.sin(rotation))/2;
    const reach=working?Math.min(1,wave/.72):0;
    const hold=working&&wave>=.84;
    const rise=hold?Math.min(1,(wave-.84)/.16):0;
@@ -494,7 +525,9 @@
    const angle=.48-.23*reach,ux=Math.cos(angle),uy=Math.sin(angle);
    const hammerRise=1.8*(1-wave);
    const hammer=[1.8-.6*(1-wave),1.55-hammerRise];
-   const grip=working?(forge?[hammer[0]-1.75,hammer[1]+.75]:[jaw[0]-1.9*ux,jaw[1]-1.9*uy]):[-1.45,2.35];
+   const crank=[1.85+Math.cos(rotation)*.88,1.75+Math.sin(rotation)*.35];
+   const wand=[2,2.1-1.3*(1-wave)];
+   const grip=working?(mill?crank:magic?[wand[0]-1.7,wand[1]-.65]:forge?[hammer[0]-1.75,hammer[1]+.75]:[jaw[0]-1.9*ux,jaw[1]-1.9*uy]):[-1.45,2.35];
    const elbow=working?[-.85+(grip[0]+1.45)*.25,1.1+grip[1]*.25]:[-1.75,1.55];
    fpaSowPolygon(c,[[-3.1,3.7],[-2.9,.65],[-2.15,-.1],[-.9,.05],
      [-.5,1.55],[-.9,3.7]],'#2b1c17');
@@ -511,38 +544,53 @@
    fpaSowBand(c,elbow,grip,.5,'#986c50');
    fpaSowPolygon(c,[[.65,2.55],[3.4,2.55],[3.1,3.25],[1.1,3.25]],'#4b3b31');
    fpaSowBand(c,[.65,2.55],[3.4,2.55],.5,'#aa8a63');
-   const ingotY=hold&&!forge?jaw[1]+.45:2.43,ingotX=hold&&!forge?jaw[0]:2;
-   fpaSowPolygon(c,[[ingotX-1,ingotY-.6],[ingotX+.62,ingotY-.6],
-     [ingotX+.93,ingotY-.2],[ingotX+.67,ingotY+.1],[ingotX-.8,ingotY+.1]],working&&!forge?'#bc6938':'#655d4e');
-   r(c,ingotX-.58,ingotY-.6,1.1,.5,working&&!forge?'#f5b35e':'#aa9882');
-   if(working&&forge){
-     fpaSowBand(c,grip,hammer,.75,'#4a352a');
-     fpaSowBand(c,[grip[0],grip[1]-.2],[hammer[0],hammer[1]-.2],.5,'#b18a60');
-     r(c,hammer[0]-.6,hammer[1]-.4,1.6,.9,'#424844');
-     r(c,hammer[0]-.45,hammer[1]-.4,1.25,.5,'#a6ada1');
-   }else if(working){
-     const pivot=[jaw[0]-.58*ux,jaw[1]-.58*uy],gap=hold?.16:.47;
-     fpaSowBand(c,grip,pivot,.68,'#3d3f3b');
-     fpaSowBand(c,[grip[0],grip[1]-.2],[pivot[0],pivot[1]-.2],.5,'#87877c');
-     fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]-gap],.5,'#595e57');
-     fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]+gap],.5,'#595e57');
+   if(mill){
+     oval(c,1.85,2.54,1.48,.55,'#797868');
+     oval(c,1.85,2.29,1.48,.51,'#b7ac87');
+     fpaSowBand(c,[1.85,2.17],working?crank:[2.65,1.75],.55,'#4d4737');
+     if(working)r(c,crank[0]-.3,crank[1]-.7,.6,.7,'#9e7651');
+   }else if(magic){
+     poly(c,[[1.3,2.47],[1.75,1.55],[2.2,1.49],[2.65,2.39],[2.1,2.63]],'#476c79');
+     poly(c,[[1.75,1.55],[2.2,1.49],[2.12,2.22],[1.55,2.43]],'#90cad1');
+     if(working){
+       fpaSowBand(c,grip,wand,.55,'#725140');
+       r(c,wand[0]-.22,wand[1]-.2,.48,.48,wave>.83?'#dcfff1':'#90a5bc');
+     }
    }else{
-     fpaSowBand(c,[.4,2.55],[1.3,2.35],.5,'#535751');
+     const ingotY=hold&&!forge?jaw[1]+.45:2.43,ingotX=hold&&!forge?jaw[0]:2;
+     fpaSowPolygon(c,[[ingotX-1,ingotY-.6],[ingotX+.62,ingotY-.6],
+       [ingotX+.93,ingotY-.2],[ingotX+.67,ingotY+.1],[ingotX-.8,ingotY+.1]],working&&!forge?'#bc6938':'#655d4e');
+     r(c,ingotX-.58,ingotY-.6,1.1,.5,working&&!forge?'#f5b35e':'#aa9882');
+     if(working&&forge){
+       fpaSowBand(c,grip,hammer,.75,'#4a352a');
+       fpaSowBand(c,[grip[0],grip[1]-.2],[hammer[0],hammer[1]-.2],.5,'#b18a60');
+       r(c,hammer[0]-.6,hammer[1]-.4,1.6,.9,'#424844');
+       r(c,hammer[0]-.45,hammer[1]-.4,1.25,.5,'#a6ada1');
+     }else if(working){
+       const pivot=[jaw[0]-.58*ux,jaw[1]-.58*uy],gap=hold?.16:.47;
+       fpaSowBand(c,grip,pivot,.68,'#3d3f3b');
+       fpaSowBand(c,[grip[0],grip[1]-.2],[pivot[0],pivot[1]-.2],.5,'#87877c');
+       fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]-gap],.5,'#595e57');
+       fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]+gap],.5,'#595e57');
+     }else{
+       fpaSowBand(c,[.4,2.55],[1.3,2.35],.5,'#535751');
+     }
    }
    r(c,grip[0]-.35,grip[1]-.33,.7,.65,'#cf9b70');
    c.restore();
  }
- function drawMetalworkWindows(c,b,s,ox,oy){
+ const WINDOW_CRAFT={smeltery:'tongs',weaponsmith:'hammer',armory:'hammer',metallurgist:'hammer',mill:'mill',magicworkshop:'wand'};
+ function drawCraftWindows(c,b,s,ox,oy){
    const occ=INS_CNT.get(b)||0;
    if(!b.working&&!occ)return;
    const count=b.working?1+(occ>1?1:0):Math.min(occ,2);
    const windows=s.wins.map((w,i)=>({w,i})).filter(({w})=>w[2]>=5)
      .sort((p,q)=>((p.i*7+b.id*13)%17)-((q.i*7+b.id*13)%17)||p.i-q.i);
    for(const {w:[x,y,width,height,round],i} of windows.slice(0,count))
-     drawMetalworkWindow(c,ox+x,oy+y,width,height,round,Game.time,i*1.7+b.id,b.working,b.type==='weaponsmith');
+     drawCraftWindow(c,ox+x,oy+y,width,height,round,Game.time,i*1.7+b.id,b.working,WINDOW_CRAFT[b.type]);
  }
  // The existing small window actor keeps the same hand motion; its material is now visible.
- drawInsideLife=function(c,b,s,ox,oy){if((b.type==='smeltery'||b.type==='weaponsmith')&&s._publishedMachinery&&s.wins?.some(w=>w[2]>=5))return drawMetalworkWindows(c,b,s,ox,oy);M.native.drawInsideLife(c,b,s,ox,oy);if(b.type==='tannery'&&s._publishedMachinery&&b.state==='done'&&b.working)drawLeatherCycle(c,b,s,ox,oy);if(!types.has(b.type)||(!b.working&&!(INS_CNT.get(b)||0)))return;const wins=s.wins||[],n=Math.min(wins.length,Math.max(1,b.working?1+((INS_CNT.get(b)||0)>1?1:0):Math.min(INS_CNT.get(b)||0,2))),order=wins.map((w,i)=>i).sort((p,q)=>((p*7+b.id*13)%17)-((q*7+b.id*13)%17)||p-q);let shown=0;for(const i of order){const[wx,wy,ww,wh,round]=wins[i];if(ww<5)continue;if(shown++>=n)break;const x=ox+wx,y=oy+wy,ph=i*1.7+b.id,sx=x+Math.sin(Game.time*.9+ph)*ww*.16;c.save();c.beginPath();if(round)c.arc(x,y,Math.min(ww,wh)/2,0,Math.PI*2);else c.rect(x-ww/2,y-wh/2,ww,wh);c.clip();if(['metallurgist','smeltery','weaponsmith','armory'].includes(b.type)){poly(c,[[sx,y+2.5],[sx+4,y+2.5],[sx+3,y+3.5],[sx+1,y+3.5]],P.steel);r(c,sx+1.5,y+3,1.5,2,P.iron);r(c,sx+2,y+2,1,.5,'#e4b96a')}else if(['brewery','mill','bakery','hopfarm','magicworkshop'].includes(b.type)){oval(c,sx+2,y+3.5,2.5,1.2,P.wood);oval(c,sx+2,y+3,2.3,.6,'#c5b27c')}else{r(c,sx-.5,y+3.5,5,.8,P.wood);r(c,sx,y+3.5,4,.5,P.hi);r(c,sx+2,y+3,1.5,.5,'#c8b88d')}c.restore()}};
+ drawInsideLife=function(c,b,s,ox,oy){if(b.type==='mill'&&s._publishedMachinery&&b.state==='done')drawMillYard(c,b,s,ox,oy);if(WINDOW_CRAFT[b.type]&&s._publishedMachinery&&s.wins?.some(w=>w[2]>=5))return drawCraftWindows(c,b,s,ox,oy);M.native.drawInsideLife(c,b,s,ox,oy);if(b.type==='tannery'&&s._publishedMachinery&&b.state==='done'&&b.working)drawLeatherCycle(c,b,s,ox,oy);if(!types.has(b.type)||(!b.working&&!(INS_CNT.get(b)||0)))return;const wins=s.wins||[],n=Math.min(wins.length,Math.max(1,b.working?1+((INS_CNT.get(b)||0)>1?1:0):Math.min(INS_CNT.get(b)||0,2))),order=wins.map((w,i)=>i).sort((p,q)=>((p*7+b.id*13)%17)-((q*7+b.id*13)%17)||p-q);let shown=0;for(const i of order){const[wx,wy,ww,wh,round]=wins[i];if(ww<5)continue;if(shown++>=n)break;const x=ox+wx,y=oy+wy,ph=i*1.7+b.id,sx=x+Math.sin(Game.time*.9+ph)*ww*.16;c.save();c.beginPath();if(round)c.arc(x,y,Math.min(ww,wh)/2,0,Math.PI*2);else c.rect(x-ww/2,y-wh/2,ww,wh);c.clip();if(['metallurgist','smeltery','weaponsmith','armory'].includes(b.type)){poly(c,[[sx,y+2.5],[sx+4,y+2.5],[sx+3,y+3.5],[sx+1,y+3.5]],P.steel);r(c,sx+1.5,y+3,1.5,2,P.iron);r(c,sx+2,y+2,1,.5,'#e4b96a')}else if(['brewery','mill','bakery','hopfarm','magicworkshop'].includes(b.type)){oval(c,sx+2,y+3.5,2.5,1.2,P.wood);oval(c,sx+2,y+3,2.3,.6,'#c5b27c')}else{r(c,sx-.5,y+3.5,5,.8,P.wood);r(c,sx,y+3.5,4,.5,P.hi);r(c,sx+2,y+3,1.5,.5,'#c8b88d')}c.restore()}};
 })();
 
 

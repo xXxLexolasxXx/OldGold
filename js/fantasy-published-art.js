@@ -557,9 +557,9 @@ function fpaDrawFieldTool(c,u,frame,px,py,face,target,progress,kind){
 // and relative to the planted soles. The grips are computed on the same shaft.
 // Phase, torso shift, front grip, and shaft rotation relative to ground contact.
 const FPA_SOW_KEYS=[
- [0,0,0,2,-12.5,.48], [.16,-.65,-.5,1.5,-14,.72], [.32,-1.4,-1,.5,-15.5,1.04],
+ [0,0,0,2,-12.5,.40], [.16,-.65,-.5,1.5,-13,.58], [.32,-1.4,-1,.5,-13.5,.78],
  [.50,2,2,4.5,-9.5,0], [.56,2,2,4.5,-9.5,0],
- [.73,.75,.75,3,-11.5,.32], [1,0,0,2,-12.5,.48],
+ [.66,1.4,1.5,4,-10,.48], [.79,.5,0,3,-13.5,.82], [1,0,0,2,-12.5,.40],
 ];
 let fpaSowCanvas;
 function fpaSowPolygon(c,points,color){
@@ -601,17 +601,17 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  return fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,'spade',1);
 }
 const FPA_MINE_POSE_KEYS=[
- [0,0,0,3.5,-12,.55],[.21,-1,-.5,2,-15,-.45],[.43,-2,-1,1,-17,-1.25],
+ [0,0,0,3.5,-12,.55],[.21,-1,-.5,2,-15,-.45],[.34,-1.5,-1,1.5,-15.5,-.95],
  [.50,2,1.5,6.5,-12,0],[.56,2,1.5,6.5,-12,0],
  [.73,1,1,4.5,-11,.75],[1,0,0,3.5,-12,.55],
 ];
 const FPA_AXE_POSE_KEYS=[
- [0,0,0,3.5,-13,.45],[.20,-1,-.5,1,-16,-.9],[.43,-2,-1,-2,-18,-2.75],
+ [0,0,0,3.5,-13,.45],[.20,-1,-.5,1,-16,-.9],[.34,-1.5,-1,-.5,-16.5,-2.05],
  [.50,2,1.5,3.5,-15,0],[.56,2,1.5,3.5,-15,0],
  [.74,.5,1,4,-12,.65],[1,0,0,3.5,-13,.45],
 ];
 const FPA_HAMMER_POSE_KEYS=[
- [0,0,0,3.5,-13,.35],[.20,-.75,-.5,2,-16,-.75],[.43,-1.5,-1,.5,-18,-2.25],
+ [0,0,0,3.5,-13,.35],[.20,-.75,-.5,2,-16,-.75],[.34,-1.25,-1,1,-16.5,-1.75],
  [.50,1.5,1.5,4,-15,0],[.56,1.5,1.5,4,-15,0],
  [.74,.5,1,4,-12,.6],[1,0,0,3.5,-13,.35],
 ];
@@ -696,7 +696,6 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
    :fpaStrikeRig(targetX,targetY,progress,FPA_HAMMER_POSE_KEYS,2.5);
  const [dx,dy,sowGripX,sowGripY,sowSweep]=sow;
  const bodyX=strike?.dx??dx,bodyY=strike?.dy??dy;
- const gripLean=[snap(bodyX),snap(bodyY)];
  const lean=[snap(bodyX*1.65),snap(bodyY*1.2)];
  const spade=tool==='spade';
  const reach=single?Math.max(0,Math.min(1,(progress-.28)/.21,(.86-progress)/.30)):0;
@@ -709,15 +708,14 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
    const x=point[0]-distance*Math.sin(angle),y=point[1]-distance*Math.cos(angle);
    return spade?[x,y]:[snap(x),snap(y)];
  };
- const spacing=6.5;
+ const spacing=6;
  const support=single&&FPA_HARVEST_SUPPORTS.get(target);
  const supportX=support?(support[0]-px)*face/scale:targetX-(tool==='rack'?2.5:1.5);
  const supportY=support?(support[1]-py)/scale:targetY-(tool==='rack'?1:3);
  const far=single?[1+(supportX-1)*reach,-11+(supportY+11)*reach]
    :strike?.far||along(near,spacing);
- const handle=single?along(near,1.5):strike?.handle||along(near,spacing+2.75);
- const socket=fieldKeys?along(tip,tool==='fork'?2.45:2.75):strike?.socket||along(tip,2);
- const farBehind=spade||far[0]<-3+gripLean[0];
+ const handle=single?along(near,1.5):strike?.handle||along(near,spacing+1.25);
+ const socket=fieldKeys?along(tip,tool==='fork'?2.45:2.75):strike?.socket||along(tip,5.75);
  const outfit=OUTFIT[u.type];
  const look=lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]});
  const cloth=outfit.coat||look.green,leather=(strike&&outfit.apron)||'#765232',outline='#32271e';
@@ -773,7 +771,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
    const cuff=[wrist[0]+(elbow[0]-wrist[0])*.32,wrist[1]+(elbow[1]-wrist[1])*.32];
    const cuffColor=shade(cloth,dark?-.04:.34);
    fpaSowBand(c,cuff,wrist,3.25,cuffColor);
-   return {cuff,wrist,cuffColor};
+   return {elbow,cuff,wrist,cuffColor,sleeveLight};
  };
  part(-PFX,-6,PW,6);
  const hip=(x,y)=>[x+hipShift[0],y+hipShift[1]];
@@ -782,11 +780,8 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  fpaSowPolygon(c,[[1,-6],hip(0,-10),hip(3.5,-10),[5,-6]],'#483626');
  fpaSowPolygon(c,[[-4.5,-6.5],hip(-4,-8.5),hip(-1.5,-8.5),[-1.5,-7]],'#7b5b3e');
  fpaSowBand(c,hip(2,-9),[3.5,-7],.5,'#775638');
- const farShoulder=[shoulder[0]+2,shoulder[1]-.5];
- if(farBehind){
-   arm(farShoulder,far,true);
-   if(!spade)fpaSowFist(c,far,angle,skin,true);
- }
+ const farShoulder=[shoulder[0]+(spade?-1:2),shoulder[1]-.5];
+ const rearArm=arm(farShoulder,far,true);
  garment([[-6,-16],[-3,-18],[4,-17],[6,-13],[5,-8],[-5,-8],[-6,-11]],outline);
  garment([[-5.5,-15.5],[-3,-17],[3.5,-16],[5,-13],[4,-8.5],[-4,-8.5],[-5.5,-11]],shade(cloth,-.24));
  garment([[-4.5,-15.5],[-2,-16.5],[2,-16],[4.5,-12.5],[3.5,-9.5],[-3.5,-9.5],[-4.5,-11]],cloth);
@@ -806,13 +801,17 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  garment([[-4.5,-9.5],[4,-9.5],[4,-9],[-4.5,-9]],'#715034');
  garment([[2.5,-10],[4,-10],[4,-8.5],[2.5,-8.5]],'#cda75e');
  garment([[3,-9.5],[3.5,-9.5],[3.5,-9],[3,-9]],outline);
- const farArm=farBehind?null:arm(farShoulder,far,true);
  const [lx,ly]=lean;
  // Keep the original cap, face and beard. The lower atlas rectangle is
  // limited to the front of the head, above the original sleeve and wrist.
  part(-PFX,-PFY,PW,17.5,-PFX+lx,-PFY+ly);
  part(.5,-17.5,10,5,.5+lx,-17.5+ly);
- if(farArm)fpaSowBand(c,farArm.cuff,farArm.wrist,2.5,farArm.cuffColor);
+ {
+   const {elbow,cuff,wrist,cuffColor,sleeveLight}=rearArm;
+   fpaSowBand(c,elbow,wrist,3.5,outline);
+   fpaSowBand(c,elbow,wrist,2.5,sleeveLight);
+   fpaSowBand(c,cuff,wrist,3.25,cuffColor);
+ }
  arm(torso(-3,-15),near,false);
  if(tool!=='rack'){
    fpaSowBand(c,handle,socket,single?1.8:strike?2.5:2.25,outline);
@@ -828,8 +827,11 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
    c.fillStyle='#a9bd62';c.fillRect(snap(x+.5),snap(y-2.5),1,.5);
    c.fillRect(snap(x+1),snap(y-1.5),1,.5);
  }else if(fieldKeys)fpaFieldHead(c,tool==='fork'?'fork':tool==='hops'?'hook':'sickle',near[0],near[1],tip[0],tip[1]);
- else fpaSpadeHead(c,near[0],near[1],tip[0],tip[1]);
- if(spade||!farBehind)fpaSowFist(c,far,angle,skin,true);
+ else {
+   fpaSpadeHead(c,near[0],near[1],tip[0],tip[1]);
+   if(progress>.60&&progress<.83)fpaSowSoil(c,tip,angle,progress);
+ }
+ fpaSowFist(c,far,angle,skin,true);
  fpaSowFist(c,near,angle,skin,false);
  world.save();
  world.imageSmoothingEnabled=false;
@@ -839,6 +841,15 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  world.restore();
  const contact=tool==='rack'?near:tip;
  return {tip:[px+contact[0]*face*scale,py+contact[1]*scale],near,far,shoulder,lean,shaft:strike?.shaft};
+}
+function fpaSowSoil(c,[x,y],angle,progress){
+ const dx=Math.sin(angle),dy=Math.cos(angle);
+ const fall=Math.max(0,(progress-.76)/.07);
+ const point=(depth,side)=>[x-depth*dx-side*dy,y-depth*dy+side*dx+5*fall*fall];
+ const size=1-.55*fall;
+ const clump=(points,color)=>fpaSowPolygon(c,points.map(([d,s])=>point(1.8+d*size,-1.2+s*size)),color);
+ clump([[-1.5,-1],[-.5,-2],[1,-1.75],[2,-.5],[1.5,1.25],[0,1.5],[-1.5,.5]],'#4d311f');
+ clump([[-1,-1],[-.5,-1.6],[.75,-1.25],[1.25,-.5],[.75,.25],[-.75,.5]],'#946344');
 }
 function fpaHeavyHeadLayer(c,[x,y],angle,edge,width,depth){
  const ux=Math.sin(angle),uy=Math.cos(angle);
@@ -889,7 +900,7 @@ function fpaMiningHead(c,socket,angle,edge){
 const FPA_SPADE_OUTLINE=[[0,-.9],[0,.9],[.5,1.6],[1,2.15],[2.65,2.15],[2.65,1.75],
  [3.25,1.75],[3.75,.9],[4.8,.9],[4.8,-.9],[3.75,-.9],[3.25,-1.75],[2.65,-1.75],
  [2.65,-2.15],[1,-2.15],[.5,-1.6]];
-const FPA_SPADE_WIDTH=1.3,FPA_SPADE_DEPTH=1.18;
+const FPA_SPADE_WIDTH=1.62,FPA_SPADE_DEPTH=1.42;
 function fpaFitSpadeToSprite(c,hx,hy,tx,ty){
  const dx=tx-hx,dy=ty-hy,length=Math.hypot(dx,dy)||1,x=dx/length,y=dy/length;
  const m=c.getTransform(),vx=m.a*x+m.c*y,vy=m.b*x+m.d*y;
