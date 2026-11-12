@@ -433,7 +433,10 @@
    const [progress,lift]=crystalSortMotion[f];
    const source=-4.35,slots=[2.7,5.2],destination=slots[color],previous=slots[1-color];
    const itemX=source+(destination-source)*progress,itemY=seat-lift;
-   const grip=f===0?[-1.9,seat-1.1]:f===7?[.2,seat-1.1]:[itemX+.68,itemY-1.58];
+   const pickup=source+.68,lastGrip=previous+.68,release=destination+.68;
+   const grip=f===0?[lastGrip+(pickup-lastGrip)*2/3,seat-.75]
+     :f===7?[release+(pickup-release)/3,seat-.6]
+     :[itemX+.68,itemY-1.58];
    const steady=[-6.6,seat+.15],actor={type:'miner',look:b.id*71+17};
    workScene(c,actor,bx,by+foot,(cloth,skin)=>{
      beam(c,-9,-foot,18,2);
