@@ -520,16 +520,15 @@ function fpaSowBand(c,a,b,width,color){
 }
 function fpaSowFist(c,grip,angle,skin,far){
  const [x,y]=grip,dx=Math.sin(angle),dy=Math.cos(angle);
- const width=far?1:1.125;
  const form=(points,color)=>fpaSowPolygon(c,points.map(([across,along])=>[
-   x+(across*dy+along*dx)*width,y+(-across*dx+along*dy)*width
+   x+across*dy+along*dx,y-across*dx+along*dy
  ]),color);
- form([[-2.5,-1],[-1.5,-2.5],[.5,-2.5],[2,-1.5],[2.5,0],
-   [1.5,2.5],[-.5,2.5],[-2,1.5]],'#3b2b21');
- form([[-2,-.5],[-1,-2],[.5,-2],[1.5,-1],[2,0],
-   [1,2],[-.5,2],[-1.5,1]],far?skin[1]:skin[0]);
- form([[-1,-1.5],[.5,-1.5],[1,-.5],[-.5,.5],[-1.5,0]],far?skin[1]:shade(skin[0],.19));
- form([[-.5,.5],[.5,0],[1.5,.5],[1,1.5],[0,2],[-1,1.5]],far?shade(skin[1],-.22):skin[1]);
+ form([[-2.5,-1.5],[-1.5,-2.5],[1,-2.5],[2.5,-1.5],[2.5,.5],
+   [1.5,2],[-1,2],[-2.5,1]],far?'#5b4031':'#73513b');
+ form([[-2,-1.5],[-1.5,-2],[1,-2],[2,-1.5],[2,.5],
+   [1.5,1.5],[-1,1.5],[-2,1]],far?skin[1]:skin[0]);
+ form([[-1.5,-1.5],[.5,-1.5],[1,-.5],[-.5,0],[-1.5,-.5]],far?skin[1]:shade(skin[0],.18));
+ form([[-.5,.5],[1,-.25],[2,.5],[1.5,1.5],[0,1.5],[-1,1]],far?shade(skin[1],-.2):skin[1]);
 }
 function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  const snap=n=>Math.round(n*2)/2;
@@ -562,17 +561,19 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  const arm=(start,grip,dark)=>{
    const elbow=dark?[snap((start[0]+grip[0])/2-1),snap((start[1]+grip[1])/2+1)]
      :[start[0]-.5,start[1]+3.5];
-   const wrist=[snap(grip[0]+(elbow[0]-grip[0])*.3),snap(grip[1]+(elbow[1]-grip[1])*.3)];
+   const wrist=[snap(grip[0]+(elbow[0]-grip[0])*.43),snap(grip[1]+(elbow[1]-grip[1])*.43)];
    const upper=shade(leather,dark?-.26:.06),sleeve=shade(cloth,dark?-.2:0);
    const hem=[start[0]+(elbow[0]-start[0])*.75,start[1]+(elbow[1]-start[1])*.75];
    fpaSowBand(c,start,elbow,4,outline);
-   fpaSowBand(c,elbow,wrist,3.5,outline);
+   fpaSowBand(c,elbow,wrist,4,outline);
    fpaSowBand(c,start,elbow,3,sleeve);
-   fpaSowBand(c,elbow,wrist,2.5,sleeve);
+   fpaSowBand(c,elbow,wrist,3,sleeve);
    fpaSowBand(c,start,hem,3,upper);
    fpaSowBand(c,[hem[0]-.5,hem[1]-.5],hem,3,shade(upper,-.27));
    const cuff=[wrist[0]+(elbow[0]-wrist[0])*.32,wrist[1]+(elbow[1]-wrist[1])*.32];
-   fpaSowBand(c,cuff,wrist,3,shade(sleeve,dark?.2:.34));
+   const cuffColor=shade(sleeve,dark?.2:.34);
+   fpaSowBand(c,cuff,wrist,3.25,cuffColor);
+   return {cuff,wrist,cuffColor};
  };
  part(-PFX,-6,PW,6);
  const hip=(x,y)=>[x+snap(lean[0]*.65),y+snap(lean[1]*.65)];
@@ -605,15 +606,17 @@ function fpaDrawSowPose(world,u,source,px,py,face,target,progress){
  garment([[-4.5,-9.5],[4,-9.5],[4,-9],[-4.5,-9]],'#715034');
  garment([[2.5,-10],[4,-10],[4,-8.5],[2.5,-8.5]],'#cda75e');
  garment([[3,-9.5],[3.5,-9.5],[3.5,-9],[3,-9]],outline);
- if(!farBehind)arm(farShoulder,far,true);
+ const farArm=farBehind?null:arm(farShoulder,far,true);
  const [lx,ly]=lean;
  // Keep the original cap, face and beard. The lower atlas rectangle is
  // limited to the front of the head, above the original sleeve and wrist.
  part(-PFX,-PFY,PW,17.5,-PFX+lx,-PFY+ly);
  part(.5,-17.5,10,5,.5+lx,-17.5+ly);
+ if(farArm)fpaSowBand(c,farArm.cuff,farArm.wrist,2.5,farArm.cuffColor);
  arm([shoulder[0]-2,shoulder[1]],near,false);
  fpaSowBand(c,handle,socket,1.5,outline);
  fpaSowBand(c,handle,socket,.5,'#b58a57');
+ fpaSowBand(c,near,far,.75,'#d4a775');
  const bladePoint=(distance,side)=>{
    const [x,y]=along(tip,distance);
    return [x+side*Math.cos(angle),y-side*Math.sin(angle)];
