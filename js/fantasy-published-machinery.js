@@ -44,7 +44,7 @@
  }
  if(type==='brewery'&&Q.brewer){if(Q.vat)copper(c,...Q.vat);const[x,y]=Q.brewer;barrel(c,x+mash.x,y,mash.w,-mash.y,true);barrel(c,x+19,y+3,9,9);if(lv>1)crate(c,x+24,y-8,10,6)}
  if(type==='butchery'&&Q.block){const[x,y]=Q.block;beam(c,x-5,y+1,11,7);oval(c,x+.5,y+1,6,1.8,P.hi);for(const dx of[-3,0,3])ln(c,x+dx,y+.5,x+dx+1,y+1.5,P.deep);oval(c,x+2,y-.2,3.5,1.7,'#8d5139');oval(c,x+1.5,y-.5,2.3,1,'#c9906c');r(c,x+2,y-1,1.5,.5,'#ead2a6');if(Q.hooks){const a=Q.hooks[0],z=Q.hooks[Q.hooks.length-1];beam(c,a[0]-2,a[1]-5,z[0]-a[0]+4,2);for(const p of Q.hooks){ln(c,p[0],p[1]-3,p[0],p[1]+1,P.silver);oval(c,p[0],p[1]+3,1.8,3,'#ad7954')}}}
- if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=goldWashBench(Q.panner);bench(c,x,y,16);for(const dx of[-6,6])bolt(c,x+dx,y+.4)}if(Q.sorter){const[x,y]=Q.sorter;bench(c,x+3,y-7,18);for(const dx of[-2,2,5]){poly(c,[[x+dx,y-7],[x+dx+1,y-10],[x+dx+2,y-7]],'#a3c5bc');r(c,x+dx+1,y-9,.5,1,'#dbe0c1')}}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.stamp)paintStampFrame(c,...Q.stamp);if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
+ if(/mine$/.test(type)){const ore=type==='goldmine'?'gold':type==='crystalmine'?'crystal':'iron';if(Q.miner)stone(c,Q.miner[0]+8,Q.miner[1]+1,17,10,ore);if(Q.panner){const[x,y]=goldWashBench(Q.panner);bench(c,x,y,16);for(const dx of[-6,6])bolt(c,x+dx,y+.4)}if(Q.sorter){const[x,y]=Q.sorter;bench(c,x+3,y-7,18);for(const dx of[-2,2,5]){poly(c,[[x+dx,y-7],[x+dx+1,y-10],[x+dx+2,y-7]],'#a3c5bc');r(c,x+dx+1,y-9,.5,1,'#dbe0c1')}}if(Q.kiln)forge(c,Q.kiln[0],Q.kiln[1],18);if(Q.wheel){const[x,y]=Q.wheel;oval(c,x,y,8,8,P.ink);oval(c,x,y,7,7,P.wood);oval(c,x,y,5.3,5.3,'#47594b');for(let i=0;i<10;i++){const a=i*Math.PI/5;ln(c,x+Math.cos(a),y+Math.sin(a),x+Math.cos(a)*7,y+Math.sin(a)*7,P.hi,1)}bolt(c,x-.5,y-.5)}}
  if(['metallurgist','smeltery','weaponsmith','armory'].includes(type)){const[x,y]=s.glow||[s.padx+s.fw*.78,s.baseY-15];if(type!=='armory')forge(c,x,y+2,19);if(type==='smeltery'){masonry(c,x+11,y-4,10,8);r(c,x+12,y-3,8,2,'#7e4b32');r(c,x+12,y-3,6,.5,'#e0aa58');for(const dx of[-4,1,6]){r(c,x+dx,y+8,4,1.5,'#926c3a');r(c,x+dx,y+8,4,.5,'#ddbb76')}}else{anvil(c,x-17,y+4,.9);bellows(c,x+14,y+1);if(type==='armory'){bench(c,x+3,y+1,21);poly(c,[[x,y-5],[x+6,y-5],[x+6,y-1],[x+3,y+1],[x,y-1]],P.iron);ln(c,x+3,y-4,x+3,y,P.silver);ln(c,x+1,y-2,x+5,y-2,P.mid)}}}
  if(type==='mill'){const[x,y]=[s.padx+s.fw*.78,s.baseY-9];millstone(c,x,y-2);sack(c,x-11,y+4);if(lv>1)sack(c,x+11,y+4);beam(c,x+4,y-20,8,2);poly(c,[[x+3,y-19],[x+13,y-19],[x+10,y-12],[x+6,y-12]],P.ink);poly(c,[[x+4,y-18],[x+12,y-18],[x+9,y-13],[x+7,y-13]],P.mid);for(const dx of[5,7,9])r(c,x+dx,y-18,1,.5,'#e2c47c');beam(c,x+7,y-13,2,5)}
  if(type==='tannery'){const x=s.padx+s.fw*.78,y=s.baseY-9;for(const dx of[-9,9])beam(c,x+dx,y-23,2,24);beam(c,x-10,y-24,22,2);beam(c,x-10,y-3,22,2);hide(c,x,y-3,15,19);for(const dx of[-6,6])for(const dy of[-20,-14,-7])ln(c,x+dx,y+dy,x+(dx<0?-9:9),y+dy-1,'#c5b37e');barrel(c,x+19,y+3,11,8,true);const [bx,by]=tanneryBench(s);bench(c,bx,by,13);hide(c,bx,by+.45,9,3)}
@@ -336,6 +336,7 @@
      workHands(c,near,far,skin);
    },0,face);
  }
+ let ironStampFrame;
  function paintStampFrame(c,x,y){
    masonry(c,x-9,y-2,19,5);
    for(const dx of[-8,7]){
@@ -343,10 +344,20 @@
      ln(c,x+dx+.5,y-17,x+dx+.5,y-2,'#bd9259');
      bolt(c,x+dx+.5,y-1);
    }
-   beam(c,x-10,y-21,22,3);
    beam(c,x-7,y-3.4,15,1.1);
    ln(c,x-6.5,y-3.3,x+7.5,y-3.3,P.steel);
    ironOre(c,x+4.7,y-3.15,.8);
+ }
+ function drawStampFrame(c,x,y){
+   if(!ironStampFrame){
+     ironStampFrame=mkCanvas(48,54);
+     const ctx=ironStampFrame.getContext('2d');
+     ctx.scale(2,2);
+     paintStampFrame(ctx,12,22);
+   }
+   c.save();c.imageSmoothingEnabled=false;
+   c.drawImage(ironStampFrame,x-12,y-22,24,27);
+   c.restore();
  }
  function drawIronStamp(c,x,y,t,working){
    for(let k=0;k<3;k++){
@@ -363,10 +374,25 @@
    beam(c,x-10,y-21,22,3);
    for(const dx of[-7,7])bolt(c,x+dx,y-19.8);
  }
+ function ironCartBehindStamp(points,stamp,t){
+   if(!points)return false;
+   const u=t%14/14;
+   const travel=u<.4?u/.4:u<.55?1:u<.95?1-(u-.55)/.4:0;
+   const [x,y]=pxLerp(points[0],points[1],travel);
+   return y<stamp[1]+3&&Math.abs(x-stamp[0])<18;
+ }
  function drawIronYard(c,b,s,ox,oy,t){
    const P=s.pt;
-   if(P.stamp)drawIronStamp(c,ox+P.stamp[0],oy+P.stamp[1],t,b.working);
-   M.native.drawFoodYard(c,b,{...s,pt:{...P,stoker:null,crusher:null,stamp:b.working?P.stamp:null}},ox,oy);
+   const station=()=>{
+     const x=ox+P.stamp[0],y=oy+P.stamp[1];
+     drawStampFrame(c,x,y);
+     drawIronStamp(c,x,y,t,b.working);
+     if(b.working)M.native.drawFoodYard(c,b,{...s,piles:null,pt:{stamp:P.stamp}},ox,oy);
+   };
+   const behind=P.stamp&&ironCartBehindStamp(P.cart,P.stamp,t);
+   if(P.stamp&&!behind)station();
+   M.native.drawFoodYard(c,b,{...s,pt:{...P,stoker:null,crusher:null,stamp:null}},ox,oy);
+   if(behind)station();
    if(P.kiln&&P.stoker){
      const x=ox+P.kiln[0],y=oy+P.kiln[1];
      drawIronFeed(c,{type:'miner',look:b.id*71+13},x-12.8,y+4.6,[12.8,-8.4],t,1);
