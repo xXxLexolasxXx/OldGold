@@ -555,10 +555,11 @@ function fpaDrawFieldTool(c,u,frame,px,py,face,target,progress,kind){
 
 // Each key controls the hip-to-shoulder lean and the shovel tip, in profile
 // and relative to the planted soles. The grips are computed on the same shaft.
+// Phase, torso shift, front grip, and shaft rotation relative to ground contact.
 const FPA_SOW_KEYS=[
- [0,0,0,9,-4], [.16,-1,-.5,10,-10], [.32,-2,-1,5,-20],
- [.50,2,2,8,4.5], [.56,2.5,2.5,8,4.5],
- [.73,1,1,11,-2], [1,0,0,9,-4],
+ [0,0,0,2,-12.5,.48], [.16,-.65,-.5,1.5,-14,.72], [.32,-1.4,-1,.5,-15.5,1.04],
+ [.50,2,2,4.5,-9.5,0], [.56,2,2,4.5,-9.5,0],
+ [.73,.75,.75,3,-11.5,.32], [1,0,0,2,-12.5,.48],
 ];
 let fpaSowCanvas;
 function fpaSowPolygon(c,points,color){
@@ -684,7 +685,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const next=end<0?FPA_SOW_KEYS.length-1:end;
  const a=FPA_SOW_KEYS[next-1],b=FPA_SOW_KEYS[next];
  const t=(progress-a[0])/(b[0]-a[0]),mix=t*t*(3-2*t);
- let [dx,dy]=a.slice(1,3).map((v,i)=>v+(b[i+1]-v)*mix);
+ const sow=a.slice(1).map((v,i)=>v+(b[i+1]-v)*mix);
  const targetX=(target[0]-px)*face/scale,targetY=(target[1]-py)/scale;
  const fieldKeys=FPA_HARVEST_POSE_KEYS[tool==='rack'?'hops':tool];
  const single=fieldKeys&&tool!=='fork';
@@ -693,22 +694,15 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
    ?fpaStrikeRig(targetX,targetY,progress,FPA_MINE_POSE_KEYS,4.5)
    :tool==='axe'?fpaStrikeRig(targetX,targetY,progress,FPA_AXE_POSE_KEYS,3.5)
    :fpaStrikeRig(targetX,targetY,progress,FPA_HAMMER_POSE_KEYS,2.5);
- if(strike){dx=strike.dx;dy=strike.dy;}
- const gripLean=[snap(dx),snap(dy)];
- const lean=[snap(dx*1.65),snap(dy*1.2)];
+ const [dx,dy,sowGripX,sowGripY,sowSweep]=sow;
+ const bodyX=strike?.dx??dx,bodyY=strike?.dy??dy;
+ const gripLean=[snap(bodyX),snap(bodyY)];
+ const lean=[snap(bodyX*1.65),snap(bodyY*1.2)];
  const spade=tool==='spade';
- const aimPhase=Math.max(0,Math.min(1,(progress-.32)/.18,(.80-progress)/.24));
- const aim=aimPhase*aimPhase*(3-2*aimPhase);
- const spadeAngle=([phase,x,y,bladeX,bladeY])=>phase>=.50&&phase<=.56
-   ?Math.atan2(targetX-4.5,targetY+9.5)
-   :Math.atan2(bladeX-1.5-x,bladeY+12.5-y);
  const reach=single?Math.max(0,Math.min(1,(progress-.28)/.21,(.86-progress)/.30)):0;
  const near=tool==='rack'?[3+(targetX-3)*reach,-13+(targetY+13)*reach]
-   :strike?.near||[(1.5+dx)*(1-aim)+4.5*aim,(-12.5+dy)*(1-aim)-9.5*aim];
- const angle=strike?.angle??(()=>{
-   const start=spadeAngle(a),delta=spadeAngle(b)-start;
-   return start+Math.atan2(Math.sin(delta),Math.cos(delta))*mix;
- })();
+   :strike?.near||[sowGripX,sowGripY];
+ const angle=strike?.angle??(Math.atan2(targetX-4.5,targetY+9.5)+sowSweep);
  const spadeLength=Math.hypot(targetX-4.5,targetY+9.5);
  const tip=strike?.tip||[near[0]+Math.sin(angle)*spadeLength,near[1]+Math.cos(angle)*spadeLength];
  const along=(point,distance)=>{
@@ -737,7 +731,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const part=(x,y,w,h,tx=x,ty=y)=>c.drawImage(source,(PFX+x)*2,(PFY+y)*2,w*2,h*2,tx,ty,w,h);
  // The torso leans over a smaller hip shift. Keep the upper legs joined to
  // that pivot while the original soles stay planted.
- const hipShift=[snap(dx*.55),snap(Math.max(0,dy)*.65)];
+ const hipShift=[snap(bodyX*.55),snap(Math.max(0,bodyY)*.65)];
  const torso=(x,y)=>{
    const weight=Math.max(0,Math.min(1,(-y-8)/8));
    return [snap(x+hipShift[0]+(lean[0]-hipShift[0])*weight),
