@@ -629,8 +629,10 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const spacing=5+aim*1.5;
  const far=strike?.far||along(near,spacing),handle=strike?.handle||along(near,spacing+2),socket=strike?.socket||along(tip,2);
  const farBehind=far[0]<(strike?-3:-1)+gripLean[0];
- const cloth=OUTFIT[u.type].coat,leather=(strike&&OUTFIT[u.type].apron)||'#765232',outline='#32271e';
- const skin=SKINS[lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]}).skin%SKINS.length];
+ const outfit=OUTFIT[u.type];
+ const look=lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]});
+ const cloth=outfit.coat||look.green,leather=(strike&&outfit.apron)||'#765232',outline='#32271e';
+ const skin=SKINS[look.skin%SKINS.length];
  const cv=strike?(fpaStrikeCanvas??=mkCanvas(160,130)):(fpaSowCanvas??=mkCanvas(96,90));
  const c=cv.getContext('2d'),left=strike?32:19,top=strike?54:37;
  c.setTransform(1,0,0,1,0,0);

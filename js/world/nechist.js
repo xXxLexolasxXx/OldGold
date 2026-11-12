@@ -261,7 +261,10 @@ function* repairBody(u, b) {
     u.face = b.x + b.w / 2 > u.x ? 1 : -1; u.vdir = 'E';
     fxLater(0.5, () => {
       const px = (b.doorX + 0.5) * TILE, py = (b.doorY - 0.2) * TILE - 8;
-      fxBurst(px + (Math.random() - 0.5) * 30, py, 5, ['#d8b070', '#a0703a', '#e8cc90'], 50, 40, 0.5, 1.6, 260);
+      const impact=typeof repairHammerVisualImpact==='function'?repairHammerVisualImpact(u,b):null;
+      const scatter=Math.random()-.5;
+      fxBurst((impact?.[0]??px)+scatter*(impact?3:30),impact?.[1]??py,5,
+        ['#d8b070','#a0703a','#e8cc90'],50,40,0.5,1.6,260);
       sfxAt('build', px, py, 0.8);
     });
     yield { wait: 1, anim: 'build' };
@@ -272,24 +275,41 @@ function* repairBody(u, b) {
 }
 
 // следы повреждений на здании: сажа, трещины и дымок
+const repairDamageLayers=new Map();
+function repairDamageLayer(b,spr,d){
+  const cached=repairDamageLayers.get(b);
+  if(cached?.sprite===spr.canvas&&cached.damage===d)return cached.canvas;
+  const cv=mkCanvas(Math.ceil(spr.w*2),Math.ceil(spr.h*2)),c=cv.getContext('2d');
+  c.scale(2,2);
+  c.imageSmoothingEnabled=false;
+  c.globalAlpha=Math.min(.9,.25+d);
+  const r=mulberry32(b.id*977+3);
+  const n=Math.round(4+d*14);
+  for(let k=0;k<n;k++){
+    let x=12+r()*(spr.w-24),y=spr.h*(.35+r()*.5);
+    c.strokeStyle='rgba(20,14,8,0.85)';c.lineWidth=1;
+    c.beginPath();c.moveTo(x,y);
+    for(let s=0;s<3;s++){x+=(r()-.5)*7;y+=3+r()*5;c.lineTo(x,y);}
+    c.stroke();
+  }
+  for(let k=0;k<3+d*6;k++){
+    c.fillStyle='rgba(30,24,20,0.28)';c.beginPath();
+    c.ellipse(14+r()*(spr.w-28),spr.h*(.4+r()*.5),4+r()*6,2+r()*3,0,0,7);c.fill();
+  }
+  c.globalAlpha=1;
+  c.globalCompositeOperation='destination-in';
+  c.drawImage(spr.canvas,0,0,spr.w,spr.h);
+  repairDamageLayers.delete(b);
+  if(repairDamageLayers.size>=24)repairDamageLayers.delete(repairDamageLayers.keys().next().value);
+  repairDamageLayers.set(b,{sprite:spr.canvas,damage:d,canvas:cv});
+  return cv;
+}
 function drawDamage(c, b, ox, oy, spr) {
   const d = b.dmg || 0;
   if (d <= 0.02) return;
-  const r = mulberry32(b.id * 977 + 3);
-  const W = b.w * TILE, H = spr.h - 10;
-  c.save();
-  c.globalAlpha = Math.min(0.9, 0.25 + d);
-  const n = Math.round(4 + d * 14);
-  for (let k = 0; k < n; k++) {
-    let x = ox + 12 + r() * (spr.w - 24), y = oy + spr.h * (0.35 + r() * 0.5);
-    c.strokeStyle = 'rgba(20,14,8,0.85)'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(x, y);
-    for (let s = 0; s < 3; s++) { x += (r() - 0.5) * 7; y += 3 + r() * 5; c.lineTo(x, y); }
-    c.stroke();
-  }
-  for (let k = 0; k < 3 + d * 6; k++) { c.fillStyle = 'rgba(30,24,20,0.28)'; c.beginPath(); c.ellipse(ox + 14 + r() * (spr.w - 28), oy + spr.h * (0.4 + r() * 0.5), 4 + r() * 6, 2 + r() * 3, 0, 0, 7); c.fill(); }
+  c.save();c.imageSmoothingEnabled=false;
+  c.drawImage(repairDamageLayer(b,spr,d),ox,oy,spr.w,spr.h);
   c.restore();
-  void W; void H;
   if (d >= 0.5) {
     // из повреждённого здания идёт дымок
     for (let k = 0; k < 3; k++) {

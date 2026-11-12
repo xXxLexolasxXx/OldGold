@@ -231,6 +231,36 @@ function drawUnit(c, u) {
     flyP = 1 - Math.max(0, a.t) / a.T;
     px = Math.round((u.knock.x0 + u.knock.dx * flyP) * TILE); py = Math.round((u.knock.y0 + u.knock.dy * flyP) * TILE + 6);
   }
+  const repair=u.repairBusy;
+  let repairTarget,repairStep;
+  if(!wp&&pose==='work'&&frame.anim==='build'&&a?.T&&repair?.dmg>0&&!repair.removed&&
+    OUTFIT[u.type]&&u.type!=='kid'&&window.FantasyPublishedAppearanceArt&&
+    FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk']){
+    const approach=repairHammerPoint(repair,px,py,face);
+    if(approach){
+      const [ox,oy]=approach.origin,placement=approach.placement;
+      const foot=[ox+placement.foot[0],oy+placement.foot[1]];
+      const point=[ox+placement.point[0],oy+placement.point[1]];
+      let step=repairHammerSteps.get(u);
+      if(step?.building!==repair||step.placement!==placement){
+        step={building:repair,placement,point,start:Game.time,clear:repairHammerClear(repair,px,py,foot)};
+        repairHammerSteps.set(u,step);
+      }
+      if(step.clear){
+        const arrival=Math.min(1,(Game.time-step.start)/.28);
+        const departure=repair.dmg<=.200001?Math.min(1,a.t/.23):1;
+        const weight=Math.max(0,Math.min(arrival,departure));
+        const blend=weight*weight*(3-2*weight);
+        px+=Math.round((foot[0]-px)*blend*2)/2;
+        py+=Math.round((foot[1]-py)*blend*2)/2;
+        if(weight<1){
+          const distance=arrival<1?arrival:1-departure;
+          repairStep=Math.floor(distance*WALK_FRAMES)%WALK_FRAMES;
+          view=arrival<1?'N':'S';
+        }else repairTarget=point;
+      }
+    }
+  }else repairHammerSteps.delete(u);
   const woodcut=!wp&&pose==='work'&&frame.anim==='chop'&&typeof fpaDrawWoodcutAxe==='function'&&OUTFIT[u.type]?activeWoodcutContact(a):null;
   const axeRig=woodcut&&u.type==='woodcutter'&&view==='E'&&typeof fpaDrawAxePose==='function'&&
     window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
@@ -275,20 +305,22 @@ function drawUnit(c, u) {
   if(mineRig)face=mineContact.point[0]<px?-1:1;
   const pickTarget=!mineRig&&pickProgress<.86&&typeof fpaDrawQuarryPick==='function'&&OUTFIT[u.type]?activeQuarryContact(a)?.point:null;
   const buildJob=u.job;
-  const hammerRig=!wp&&pose==='work'&&frame.anim==='build'&&u.type==='builder'&&a?.T&&
-    buildJob&&!buildJob.removed&&!buildJob.isRoad&&!buildJob.selfBuild&&
-    (buildJob.state==='site'||buildJob.state==='build')&&typeof fpaDrawHammerPose==='function'&&
+  const hammerReady=!wp&&pose==='work'&&frame.anim==='build'&&OUTFIT[u.type]&&u.type!=='kid'&&a?.T&&
+    typeof fpaDrawHammerPose==='function'&&
     window.FantasyPublishedAppearanceArt&&FantasyArt.images[personSex(u)==='f'?'gnome-woman-walk':'gnome-walk'];
-  const hammerTarget=hammerRig?siteHammerPoint(buildJob):null;
+  const buildingWork=hammerReady&&!repair&&u.type==='builder'&&buildJob&&!buildJob.removed&&
+    !buildJob.isRoad&&!buildJob.selfBuild&&(buildJob.state==='site'||buildJob.state==='build');
+  const hammerTarget=repairTarget||(buildingWork?siteHammerPoint(buildJob):null);
   if(hammerTarget)face=hammerTarget[0]<px?-1:1;
   const axeProgress=woodcut&&frame.f>=8?swingProgress(u):1;
   const axeTarget=!axeRig&&axeProgress<.86?woodcut.point:null;
   if(pickTarget||axeTarget||fieldTarget)opt.externalWorkTool=true;
-  const spr = sowRig||mineRig||axeRig||hammerRig
+  const spr = repairStep!==undefined?personSprite(u,view,'walk',repairStep,{})
+    :sowRig||mineRig||axeRig||hammerTarget
     ?personSprite(u,view,pose,{...frame,f:9},{...opt,sowRigBase:true})
     :personSprite(u,view,pose,frame,opt);
   c.imageSmoothingEnabled = R.smooth;   // гномы — пиксель-арт
-  if (hammerRig&&spr._fantasyAppearance&&flyP<0) {
+  if (hammerTarget&&spr._fantasyAppearance&&flyP<0) {
     fpaDrawHammerPose(c,u,spr,px,py,face,hammerTarget,swingProgress(u));
   } else if (axeRig&&spr._fantasyAppearance&&flyP<0) {
     fpaDrawAxePose(c,u,spr,px,py,face,axeGoal,swingProgress(u));
@@ -744,6 +776,75 @@ function siteGround(b, fw, fh) {
 
 function siteHammerPoint(b){
   return [(b.doorX+.5)*TILE+13,(b.doorY+.5)*TILE-3];
+}
+const repairHammerSurfaces=new WeakMap();
+const repairHammerSteps=new WeakMap();
+let repairHammerSurfaceId=0;
+function repairHammerVisualImpact(u,b){
+  const step=repairHammerSteps.get(u);
+  return step?.building===b&&step.clear&&Game.time-step.start>=.28?step.point:null;
+}
+function repairHammerPoint(b,footX,footY,face){
+  let spr=buildingSprite(b.type,b.rot||0,b.level,undefined,b.hv||0);
+  if(b.foreign&&typeof campForeignSpr==='function')spr=campForeignSpr(spr);
+  const ox=b.x*TILE-spr.padx,oy=b.y*TILE-spr.top,x=footX-ox,y=footY-oy;
+  let entry=repairHammerSurfaces.get(spr.canvas);
+  if(!entry){
+    entry={id:++repairHammerSurfaceId,points:new Map()};
+    repairHammerSurfaces.set(spr.canvas,entry);
+  }
+  const key=[x,y,face].join(':');
+  if(!entry.points.has(key)){
+    const find=()=>{
+      const point=sampleRepairHammerPoint(spr,x,y,face);
+      if(entry.points.size>=24)entry.points.delete(entry.points.keys().next().value);
+      entry.points.set(key,point);
+    };
+    if(spriteDefer('repair-surface:'+entry.id+':'+key,find))return null;
+    find();
+  }
+  const placement=entry.points.get(key);
+  return placement?{placement,origin:[ox,oy]}:null;
+}
+function sampleRepairHammerPoint(spr,x,y,face){
+  const {canvas}=spr,kx=canvas.width/spr.w,ky=canvas.height/spr.h;
+  const left=Math.max(0,Math.floor((x-24)*kx)),right=Math.min(canvas.width,Math.ceil((x+24)*kx));
+  const top=Math.max(0,Math.floor((y-64)*ky)),bottom=Math.min(canvas.height,Math.ceil((y-6)*ky));
+  const w=right-left,h=bottom-top;
+  if(w<=0||h<=0)return null;
+  const pixels=canvas.getContext('2d').getImageData(left,top,w,h).data;
+  const occupied=(x,y)=>{
+    const i=Math.floor(x*kx)-left,j=Math.floor(y*ky)-top;
+    return i>=0&&i<w&&j>=0&&j<h&&pixels[(j*w+i)*4+3]>=220;
+  };
+  let placement=null,best=Infinity;
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){
+    const at=(j*w+i)*4,r=pixels[at],g=pixels[at+1],b=pixels[at+2];
+    if(pixels[at+3]<220||r<48||g<32)continue;
+    const px=(left+i+.5)/kx,py=(top+j+.5)/ky;
+    if(Math.abs(px-x)<4)continue;
+    const wood=r>g*1.06&&g>b*1.08,stone=Math.max(r,g,b)-Math.min(r,g,b)<45;
+    if(!wood&&!stone)continue;
+    const below=j<h-1&&pixels[at+w*4+3]>=220;
+    const score=(px-x-face*9)**2+.75*(py-y+18)**2+(below?12:0);
+    if(score>=best)continue;
+    const foot=[px-face*11,Math.min(y,py+14)];
+    if([-3,0,3].some(dx=>occupied(foot[0]+dx,foot[1]-2)))continue;
+    best=score;placement={point:[px,py],foot};
+  }
+  return placement;
+}
+function repairHammerClear(b,x,y,[tx,ty]){
+  if(Math.hypot(tx-x,ty-y)>42)return false;
+  const start=idx(Math.floor(x/TILE),Math.floor(y/TILE));
+  for(let k=1;k<=8;k++){
+    const sx=Math.floor((x+(tx-x)*k/8)/TILE),sy=Math.floor((y+(ty-y)*k/8)/TILE);
+    if(!inb(sx,sy))return false;
+    const i=idx(sx,sy),terrain=World.terrain[i],object=World.obj[i];
+    if(terrain===T_WATER||terrain===T_ROCK||(World.bmap[i]&&World.bmap[i]!==b.id)||
+      (i!==start&&World.road[i])||['tree','stone','log'].includes(object?.t)||object?.blk)return false;
+  }
+  return true;
 }
 function sitePropShadow(c,x,y,width){
   c.fillStyle='rgba(39,33,23,0.44)';
