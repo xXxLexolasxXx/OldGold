@@ -530,7 +530,7 @@ function fpaDrawFieldTool(c,u,frame,px,py,face,target,progress,kind){
 // Each key controls the hip-to-shoulder lean and the shovel tip, in profile
 // and relative to the planted soles. The grips are computed on the same shaft.
 const FPA_SOW_KEYS=[
- [0,0,0,9,-4], [.19,-1,-.5,10,-10], [.42,-2,-1,5,-20],
+ [0,0,0,9,-4], [.16,-1,-.5,10,-10], [.32,-2,-1,5,-20],
  [.50,2,2,8,4.5], [.56,2.5,2.5,8,4.5],
  [.73,1,1,11,-2], [1,0,0,9,-4],
 ];
@@ -658,7 +658,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const next=end<0?FPA_SOW_KEYS.length-1:end;
  const a=FPA_SOW_KEYS[next-1],b=FPA_SOW_KEYS[next];
  const t=(progress-a[0])/(b[0]-a[0]),mix=t*t*(3-2*t);
- let [dx,dy,tipX,tipY]=a.slice(1).map((v,i)=>v+(b[i+1]-v)*mix);
+ let [dx,dy]=a.slice(1,3).map((v,i)=>v+(b[i+1]-v)*mix);
  const targetX=(target[0]-px)*face/scale,targetY=(target[1]-py)/scale;
  const fieldKeys=FPA_HARVEST_POSE_KEYS[tool==='rack'?'hops':tool];
  const single=fieldKeys&&tool!=='fork';
@@ -670,15 +670,26 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  if(strike){dx=strike.dx;dy=strike.dy;}
  const gripLean=[snap(dx),snap(dy)];
  const lean=[snap(dx*1.65),snap(dy*1.2)];
- const aim=Math.max(0,Math.min(1,(progress-.42)/.08,(.73-progress)/.17));
- const tip=strike?.tip||[snap(tipX+(targetX-8)*aim),snap(tipY+(targetY-4.5)*aim)];
+ const spade=tool==='spade';
+ const aimPhase=Math.max(0,Math.min(1,(progress-.32)/.18,(.80-progress)/.24));
+ const aim=aimPhase*aimPhase*(3-2*aimPhase);
+ const spadeAngle=([phase,x,y,bladeX,bladeY])=>phase>=.50&&phase<=.56
+   ?Math.atan2(targetX-4.5,targetY+9.5)
+   :Math.atan2(bladeX-1.5-x,bladeY+12.5-y);
  const reach=single?Math.max(0,Math.min(1,(progress-.28)/.21,(.86-progress)/.30)):0;
  const near=tool==='rack'?[3+(targetX-3)*reach,-13+(targetY+13)*reach]
-   :strike?.near||[snap(1.5+gripLean[0]+aim),snap(-12.5+gripLean[1]+aim)];
- const angle=strike?.angle??Math.atan2(tip[0]-near[0],tip[1]-near[1]);
- const along=(point,distance)=>[snap(point[0]-distance*Math.sin(angle)),
-   snap(point[1]-distance*Math.cos(angle))];
- const spacing=5+aim*1.5;
+   :strike?.near||[(1.5+dx)*(1-aim)+4.5*aim,(-12.5+dy)*(1-aim)-9.5*aim];
+ const angle=strike?.angle??(()=>{
+   const start=spadeAngle(a),delta=spadeAngle(b)-start;
+   return start+Math.atan2(Math.sin(delta),Math.cos(delta))*mix;
+ })();
+ const spadeLength=Math.hypot(targetX-4.5,targetY+9.5);
+ const tip=strike?.tip||[near[0]+Math.sin(angle)*spadeLength,near[1]+Math.cos(angle)*spadeLength];
+ const along=(point,distance)=>{
+   const x=point[0]-distance*Math.sin(angle),y=point[1]-distance*Math.cos(angle);
+   return spade?[x,y]:[snap(x),snap(y)];
+ };
+ const spacing=6.5;
  const support=single&&FPA_HARVEST_SUPPORTS.get(target);
  const supportX=support?(support[0]-px)*face/scale:targetX-(tool==='rack'?2.5:1.5);
  const supportY=support?(support[1]-py)/scale:targetY-(tool==='rack'?1:3);
@@ -686,7 +697,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
    :strike?.far||along(near,spacing);
  const handle=single?along(near,1.5):strike?.handle||along(near,spacing+2.75);
  const socket=fieldKeys?along(tip,tool==='fork'?2.45:2.75):strike?.socket||along(tip,2);
- const farBehind=far[0]<(strike?-3:-1)+gripLean[0];
+ const farBehind=spade||far[0]<-3+gripLean[0];
  const outfit=OUTFIT[u.type];
  const look=lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]});
  const cloth=outfit.coat||look.green,leather=(strike&&outfit.apron)||'#765232',outline='#32271e';
@@ -754,7 +765,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const farShoulder=[shoulder[0]+2,shoulder[1]-.5];
  if(farBehind){
    arm(farShoulder,far,true);
-   fpaSowFist(c,far,angle,skin,true);
+   if(!spade)fpaSowFist(c,far,angle,skin,true);
  }
  garment([[-6,-16],[-3,-18],[4,-17],[6,-13],[5,-8],[-5,-8],[-6,-11]],outline);
  garment([[-5.5,-15.5],[-3,-17],[3.5,-16],[5,-13],[4,-8.5],[-4,-8.5],[-5.5,-11]],shade(cloth,-.24));
@@ -798,7 +809,7 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
    c.fillRect(snap(x+1),snap(y-1.5),1,.5);
  }else if(fieldKeys)fpaFieldHead(c,tool==='fork'?'fork':tool==='hops'?'hook':'sickle',near[0],near[1],tip[0],tip[1]);
  else fpaSpadeHead(c,near[0],near[1],tip[0],tip[1]);
- if(!farBehind)fpaSowFist(c,far,angle,skin,true);
+ if(spade||!farBehind)fpaSowFist(c,far,angle,skin,true);
  fpaSowFist(c,near,angle,skin,false);
  world.save();
  world.imageSmoothingEnabled=false;
