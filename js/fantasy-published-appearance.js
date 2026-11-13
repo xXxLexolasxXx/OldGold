@@ -77,6 +77,23 @@
   for(let i=0;i<d.length/4;i++){const j=i*4;if(!original[j+3])continue;if(f[j+3]>100){for(let k=0;k<3;k++)d[j+k]=f[j+k];continue;}if(!raw[j+3])continue;const r=raw[j],g=raw[j+1],b=raw[j+2],lum=(r+g+b)/3;if(lum<48)continue;const{x,y}=pos(i);let key=null,level=1;if(M.skin[i]||M.face[i]&&skinSeed(r,g,b)){key='skin';level=Math.max(.64,Math.min(1.15,(r+g+b)/3/190));}else if(M.beard[i]){key='beard';level=Math.max(.25,Math.min(1.15,lum/211));}else if(M.hair[i]){key='hair';level=Math.max(.3,Math.min(1.38,lum/110));}else if(M.cap[i]){key='cap';level=Math.max(.28,Math.min(1.35,Math.max(r,g,b)/(q.sex==='f'?225:135)));}else if(r<=185&&b<=110&&g>r*.83&&g>b*1.35&&y>G.capY+1){key=q.sex==='f'||q.O.vest&&view!=='N'&&Math.abs(x-PFX)<6&&y>PFY-16&&y<PFY-7?'vest':'coat';level=Math.max(.3,Math.min(1.35,g/119));}else if(q.sex==='f'&&y>PFY-13&&y<PFY-2&&r>g*1.15&&g>b*1.2){key='skirt';level=Math.max(.3,Math.min(1.3,lum/94));}if(key)for(let k=0;k<3;k++)d[j+k]=Math.max(0,Math.min(255,Math.round(colours[key][k]*level)));}
   c.putImageData(im,0,0);return{cv:out,data:im,original,fore:f};
  }
+ function dress(paint,info,q,G,view){
+  const layer=mkCanvas(info.w,info.h),c=layer.getContext('2d',{willReadFrequently:true});
+  c.scale(K,K);
+  transformed(c,G,()=>paintDwarfWorkwear(c,q,view,shape,rect));
+  const pixels=c.getImageData(0,0,info.w,info.h).data,d=paint.data.data,{M}=info;
+  const beardColor=[73,51,38];
+  for(let i=0;i<M.face.length;i++){
+   const j=i*4;
+   if(M.beard[i]&&q.sex!=='f'&&!q.L.noBeard&&d[j+3]&&paint.fore[j+3]<=100){
+    const light=Math.max(.48,Math.min(1.25,(d[j]+d[j+1]+d[j+2])/460));
+    for(let k=0;k<3;k++)d[j+k]=beardColor[k]*light;
+   }
+   if(!pixels[j+3]||!d[j+3]||M.face[i]||M.skin[i]||M.hair[i]||M.beard[i]||M.cap[i]||paint.fore[j+3]>100)continue;
+   for(let k=0;k<3;k++)d[j+k]=pixels[j+k];
+  }
+  paint.cv.getContext('2d').putImageData(paint.data,0,0);
+ }
  function maskCanvas(info,mask){const cv=mkCanvas(info.w,info.h),c=cv.getContext('2d'),im=c.createImageData(info.w,info.h);for(let i=0;i<mask.length;i++)if(mask[i])im.data[i*4+3]=255;c.putImageData(im,0,0);return cv;}
  function texture(info,paint,mask){const cv=mkCanvas(info.w,info.h),c=cv.getContext('2d'),im=c.createImageData(info.w,info.h);let x0=info.w,y0=info.h,x1=-1,y1=-1;for(let i=0;i<mask.length;i++)if(mask[i]){for(let j=0;j<4;j++)im.data[i*4+j]=paint.data.data[i*4+j];const x=i%info.w,y=Math.floor(i/info.w);x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}c.putImageData(im,0,0);return x1<0?null:{cv,bounds:[x0,y0,x1-x0+1,y1-y0+1]};}
  // The preserved base has a one-physical-pixel cap outline outside its raw mask.
@@ -146,11 +163,14 @@
   if(R.inFrame)spriteBudgetOk(false);
   const t0=performance.now();
   const source=previous({...u,_spr:null},view,pose,frame,{...opt,nohat:false}),info=cachedMask(q,G,view),fore=makeParts(q,view,pose,frame,opt),paint=colour(q,G,view,source,info,fore);let out=paint.cv;
+  const workwear=dwarfWorkwear(q.holder);
+  if(workwear)dress(paint,info,q,G,view);
   if(special){if(beardChange)q.beardTexture=texture(info,paint,info.M.beard);if(!opt.nohat)q.capTexture=texture(info,paint,info.capCloth);if(capChange){clearComponent(paint,info,info.M.cap,false);if(!opt.nohat)cleanupOldCapOutline(paint,info,G);}if(beardChange)clearComponent(paint,info,info.M.beard,true);if(hairChange){const removeHair=info.M.hair.map((v,i)=>v&&info.pos(i).y>G.headY+5.2?1:0);clearComponent(paint,info,removeHair,true,q);}out=mkCanvas(PW*K,PH*K);const c=out.getContext('2d');c.scale(K,K);c.imageSmoothingEnabled=false;
    if(capeChange&&view!=='N'){c.save();c.translate(PFX,PFY);c.scale(1.75,1);skinCape(c,q.O.skCape,view,-13,-6,false);c.restore();}c.drawImage(paint.cv,0,0,PW,PH);
    const layer=mkCanvas(PW*K,PH*K),l=layer.getContext('2d');l.scale(K,K);l.imageSmoothingEnabled=false;
    if(capChange){const crown=mkCanvas(PW*K,PH*K),cc=crown.getContext('2d');cc.scale(K,K);transformed(cc,G,()=>bareCrown(cc,q,G,view));cc.setTransform(1,0,0,1,0,0);cc.globalCompositeOperation='destination-in';cc.drawImage(info.capMaskCanvas??=maskCanvas(info,info.M.cap),0,0);l.drawImage(crown,0,0,PW,PH);}
    transformed(l,G,()=>{if(hairChange)hair(l,q,G,view);if(beardChange){beard(l,q,G,view);moustache(l,q,G,view);}});eraseProtected(layer,info);c.drawImage(layer,0,0,PW,PH);
+   if(workwear&&q.sex!=='f'&&!q.L.noBeard&&!beardChange)transformed(c,G,()=>paintWorkwearBeard(c,G,view,shape));
    let capLayer=null;if(capChange&&!opt.nohat){const H=capLayout(q,G,view);capLayer=mkCanvas(PW*K,PH*K);const hc=capLayer.getContext('2d');hc.scale(K,K);hc.imageSmoothingEnabled=false;transformed(hc,G,()=>{cap(hc,q,{...G,capY:H.anchor},H.view,frame);lowBrim(hc,q,G,view);});cropCapBelow(capLayer,info,H.bottom);if(G.child)transformed(hc,G,()=>childCapNose(hc,q,G,view));c.drawImage(capLayer,0,0,PW,PH);}
    if(capeChange&&view==='N'){c.save();c.translate(PFX,PFY);c.scale(1.6,1);skinCape(c,q.O.skCape,view,-13,-6,true);c.restore();}if(!ap&&!opt.nohat&&!cls){if(capLayer)drawHeadForeground(c,capLayer,paint.fore);}else c.drawImage(fore,0,0,PW,PH);
   }

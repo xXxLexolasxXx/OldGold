@@ -542,6 +542,11 @@
    fpaSowBand(c,elbow,grip,.9,'#342219');
    fpaSowBand(c,[-1.55,.55],elbow,.5,'#986c50');
    fpaSowBand(c,elbow,grip,.5,'#986c50');
+   if(!mill&&!magic){
+     fpaSowPolygon(c,[[-2.7,.5],[-2.15,.1],[-1.25,.25],[-1,.85],[-1.35,1.1],[-2.55,1]],'#3c3435');
+     fpaSowBand(c,[-2.45,.58],[-1.35,.52],.5,'#a47860');
+     r(c,-1.65,.7,.5,.5,'#c49b68');
+   }
    fpaSowPolygon(c,[[.65,2.55],[3.4,2.55],[3.1,3.25],[1.1,3.25]],'#4b3b31');
    fpaSowBand(c,[.65,2.55],[3.4,2.55],.5,'#aa8a63');
    if(mill){
@@ -564,14 +569,16 @@
      if(working&&forge){
        fpaSowBand(c,grip,hammer,.75,'#4a352a');
        fpaSowBand(c,[grip[0],grip[1]-.2],[hammer[0],hammer[1]-.2],.5,'#b18a60');
-       r(c,hammer[0]-.6,hammer[1]-.4,1.6,.9,'#424844');
-       r(c,hammer[0]-.45,hammer[1]-.4,1.25,.5,'#a6ada1');
+       r(c,hammer[0]-.8,hammer[1]-.5,1.9,1.1,'#373a39');
+       r(c,hammer[0]-.55,hammer[1]-.5,1.4,.5,'#a6ada1');
+       r(c,hammer[0]+.65,hammer[1]-.25,.5,.75,'#716b62');
      }else if(working){
        const pivot=[jaw[0]-.58*ux,jaw[1]-.58*uy],gap=hold?.16:.47;
        fpaSowBand(c,grip,pivot,.68,'#3d3f3b');
        fpaSowBand(c,[grip[0],grip[1]-.2],[pivot[0],pivot[1]-.2],.5,'#87877c');
        fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]-gap],.5,'#595e57');
        fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]+gap],.5,'#595e57');
+       r(c,pivot[0]-.25,pivot[1]-.25,.5,.5,'#bb9869');
      }else{
        fpaSowBand(c,[.4,2.55],[1.3,2.35],.5,'#535751');
      }

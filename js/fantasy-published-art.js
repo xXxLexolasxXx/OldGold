@@ -510,12 +510,14 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  }
  case 'hammer':{
    c.save();c.translate(tx,ty);c.rotate(Math.atan2(ty-hy,tx-hx));
+   const forge=u.type==='smelter'||u.type==='armorer';
    c.scale(1.25,1.2);
-   fpaSowPolygon(c,[[-1,-1.5],[-.5,-2],[1,-2],[1.25,-1.5],
-     [1.25,1.5],[.75,2],[-.75,2],[-1,1.5]],'#303930');
-   fpaSowPolygon(c,[[-.5,-1.5],[.75,-1.5],[.75,1.5],[-.5,1.5]],'#879790');
-   c.fillStyle='#d9e2ca';c.fillRect(-.5,-1.5,1.25,.5);
-   c.fillStyle='#c49559';c.fillRect(-.75,-.5,1,.5);
+   fpaSowPolygon(c,[[-1.4,-2.1],[-.75,-2.7],[1.25,-2.7],[1.75,-2],
+     [1.75,2],[1.05,2.6],[-.95,2.6],[-1.4,2]],'#303432');
+   fpaSowPolygon(c,[[-.9,-2.05],[1.25,-2.05],[1.25,1.8],[-.9,1.8]],forge?'#716e6c':'#879790');
+   c.fillStyle=forge?'#a89d93':'#d9e2ca';c.fillRect(-.8,-2.05,1.75,.5);
+   c.fillStyle='#4a514d';c.fillRect(.75,-1.55,.5,3.2);
+   c.fillStyle=forge?'#a76e50':'#c49559';c.fillRect(-.55,-.5,.5,.5);c.fillRect(-.55,.65,.5,.5);
    c.restore();break;
  }
  case 'hook':{
@@ -725,6 +727,8 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  const outfit=OUTFIT[u.type];
  const look=lookOf({...u,look:(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]});
  const cloth=outfit.coat||look.green,leather=(strike&&outfit.apron)||'#765232',outline='#32271e';
+ const workwear=typeof dwarfWorkwear==='function'?dwarfWorkwear(u):null;
+ const plate=workwear?.[2]||leather,plateEdge=workwear?.[3]||'#a47a50';
  const skin=SKINS[look.skin%SKINS.length];
  const cv=strike?(fpaStrikeCanvas??=mkCanvas(160,130)):(fpaSowCanvas??=mkCanvas(96,90));
  const c=cv.getContext('2d'),left=strike?32:19,top=strike?54:37;
@@ -797,11 +801,11 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  garment([[-6,-15.5],[-4.5,-17],[.5,-17],[3,-15.5],[2,-14],
    [.5,-13],[-1.5,-12],[-4.5,-12.5],[-5.5,-13.5]],outline);
  garment([[-5.5,-15.5],[-4,-16.5],[.5,-16.5],[2.5,-15.5],[1,-14],
-   [-1,-13],[-4,-13],[-5,-13.5]],leather);
+   [-1,-13],[-4,-13],[-5,-13.5]],plate);
  garment([[-5,-15.5],[-4,-16],[-.5,-16],[1.5,-15.5],[.5,-15],
-   [-2,-15],[-4.5,-14.5]],'#a47a50');
+   [-2,-15],[-4.5,-14.5]],plateEdge);
  garment([[-5,-14],[-3,-13.5],[-1.5,-13.5],[1,-14.5],[1,-14],
-   [-1,-13],[-4,-13],[-5,-13.5]],'#523c2b');
+   [-1,-13],[-4,-13],[-5,-13.5]],shade(plate,-.34));
  garment([[-4.5,-12.5],[-2,-12],[.5,-12.5],[-.5,-11.5],[-3.5,-11.5]],shade(cloth,.16));
  garment([[-4.5,-10], [4.5,-10],[4,-8.5],[-4.5,-8.5]],outline);
  garment([[-4.5,-9.5],[4,-9.5],[4,-9],[-4.5,-9]],'#715034');
