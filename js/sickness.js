@@ -229,7 +229,7 @@ function sickCheck(u, now, units) {
     if (typeof logEvent === 'function') logEvent('med', `${UNIT_TYPES[u.type].name} не пережил чумную хворь`, u.x, u.y);
     skSay(`${UNIT_TYPES[u.type].name} умер от чумной хвори. Нужен лазарет`);
     u.ill = null;
-    removeUnit(u);
+    removeGroundVictim(u);
     return;
   }
   // тяжёлый: в лазарет или отлежаться

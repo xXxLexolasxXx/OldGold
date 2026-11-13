@@ -215,7 +215,7 @@ function resolveFight(e) {
     // нечисть берёт одного; остальных, если они выжили, расшвыривает
     entTakes(e, fs[0]);
     for (const o of fs.slice(1)) {
-      if (outcome === 'wipe' && !o.hero) { floater(o.x, o.y - 1, '!', '#ff6040'); fxBurst(o.x * TILE, o.y * TILE - 6, 8, ['#ffc0c0', '#a02818'], 40, 30, 0.7, 1.8, 160); removeUnit(o); }
+      if (outcome === 'wipe' && !o.hero) { floater(o.x, o.y - 1, '!', '#ff6040'); fxBurst(o.x * TILE, o.y * TILE - 6, 8, ['#ffc0c0', '#a02818'], 40, 30, 0.7, 1.8, 160); removeGroundVictim(o); }
       else { e.escaped = o; knockBack(o, e); injure(o, Math.random() < 0.5 ? 'leg' : 'arm'); }
     }
     if (outcome === 'wipe') { toast(`${entName(e)} расправилась со всеми, кто осмелился напасть!`); logEvent('tree', `Нечисть перебила всех нападавших: ${n}`, e.x, e.y); }
@@ -590,6 +590,12 @@ function entReact(u) {
 }
 
 // ---------- Гибель гнома ----------
+
+function removeGroundVictim(u) {
+  if (u.dead) return;
+  removeUnit(u);
+  if (u.dead && typeof queueFallenGnome === 'function') queueFallenGnome(u);
+}
 
 function removeUnit(u) {
   if (u.dead) return;

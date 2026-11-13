@@ -250,7 +250,7 @@ personSprite = function (u, view, pose, frame, opt = {}) {
   // Cache the phase actually consumed by the pose helpers. Atlas frame zero
   // alone cannot distinguish breathing or the named native fight states.
   const phaseKey=pose==='idle'?(Number(frame)||0)%IDLE_FRAMES:pose==='walk'?(Number(frame)||0)%WALK_FRAMES:pose==='fight'?String(frame):pose==='work'?`${frame.anim}:${frame.f}`:frame;
-  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, opt.yardMining, opt.woodcutting, opt.fieldWork, opt.externalWorkTool, opt.sowRigBase, u.injury].join('|');
+  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, opt.yardMining, opt.woodcutting, opt.fieldWork, opt.externalWorkTool, opt.sowRigBase, opt.trayLower, u.injury].join('|');
   if (FA_RENDER_CACHE.has(key)) return FA_RENDER_CACHE.get(key);
   const cv = mkCanvas(PW * PART, PH * PART), c = cv.getContext('2d', { willReadFrequently: true });
   c.imageSmoothingEnabled = false; c.scale(PART, PART);
@@ -302,6 +302,9 @@ function fpaCropGrip(u,pose){
 function fpaBoxGrip(u,pose){
  return (u.carry==='crate'||u.carry==='bread')&&(pose==='idle'||pose==='walk');
 }
+function fpaTrayGrip(u,pose){
+ return u.type==='waitress'&&u.carry?.startsWith('tray:')&&(pose==='idle'||pose==='walk');
+}
 const FPA_CRATE_HOLD=[4,24.5];
 const fpaNativeDrawLoad=drawLoad;
 drawLoad=function(c,g){
@@ -319,8 +322,8 @@ drawLoad=function(c,g){
 };
 function fpaCarryLoad(c,u,view,pose,opt){
  const n=opt.carryN||u.carryN||1;
- const crop=fpaCropGrip(u,pose),box=fpaBoxGrip(u,pose),crate=u.carry==='crate';
- if(!fpaTrunkGrip(u,pose)&&!crop&&!box){
+ const crop=fpaCropGrip(u,pose),box=fpaBoxGrip(u,pose),crate=u.carry==='crate',tray=fpaTrayGrip(u,pose);
+ if(!fpaTrunkGrip(u,pose)&&!crop&&!box&&!tray){
    c.save();
    c.translate(PFX,u.carry==='trunk'?13:23);
    if(u.carry==='trunk')c.scale(1.4,1.2);
@@ -332,10 +335,13 @@ function fpaCarryLoad(c,u,view,pose,opt){
  const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
  const features=lookOf({...u,look}),skin=SKINS[features.skin%SKINS.length][0];
  const coat=OUTFIT[u.type].coat||features.green;
- const centerX=box?(profile?crate?FPA_CRATE_HOLD[0]:2.2:0):profile?1:back?-2.2:0;
- const centerY=box?FPA_CRATE_HOLD[1]:crop?24.7:25.5;
+ const centerX=tray?(profile?2:0):box?(profile?crate?FPA_CRATE_HOLD[0]:2.2:0):profile?1:back?-2.2:0;
+ const centerY=tray?23.5+(opt.trayLower||0)*.45:box?FPA_CRATE_HOLD[1]:crop?24.7:25.5;
  const narrow=crop&&u.carry==='hops';
- const arms=box?[
+ const arms=tray?[
+   {shoulder:[profile?1.5:4.5,22],grip:[centerX+5.4,centerY+2.8],shade:-.22},
+   {shoulder:[profile?-3.5:-4.5,22],grip:[centerX-5.4,centerY+2.8],shade:0}
+ ]:box?[
    {shoulder:[profile?1.5:4.5,22],grip:[centerX+4.5,centerY+.75],shade:-.22},
    {shoulder:[profile?-3.5:-4.5,22],grip:[centerX-4.25,centerY+1.25],shade:0}
  ]:profile?[
@@ -357,7 +363,7 @@ function fpaCarryLoad(c,u,view,pose,opt){
  }
  for(const {shoulder,grip,shade:shadow} of arms){
    const elbow=[shoulder[0]+Math.sign(grip[0])*1,shoulder[1]+2.5];
-   const width=crop||box?4.5:5.5;
+   const width=tray?3.5:crop||box?4.5:5.5;
    fpaSowBand(c,shoulder,elbow,width,'#302923');
    fpaSowBand(c,elbow,grip,width-1,'#302923');
    fpaSowBand(c,shoulder,elbow,width-1,shade(coat,shadow));
@@ -365,9 +371,9 @@ function fpaCarryLoad(c,u,view,pose,opt){
  }
  c.save();
  c.translate(centerX,centerY);
- c.rotate(crop||box?0:profile?-.08:back?.09:-.09);
+ c.rotate(crop||box||tray?0:profile?-.08:back?.09:-.09);
  if(crate)c.scale(.62/(YARD_K*2/3),.62/(YARD_K*2/3));
- else c.scale(crop||box?(back?-1:1):profile?1.23:back?-.94:.94,1.03);
+ else c.scale(crop||box||tray?(back?-1:1):profile?1.23:back?-.94:.94,1.03);
  drawLoads(c,u.carry,n);
  c.restore();
  for(const {grip} of arms)hand(c,grip[0],grip[1],skin);
@@ -376,7 +382,7 @@ function fpaCarryLoad(c,u,view,pose,opt){
 // Remove only the atlas's static skin/sleeve components for actively posed arms.
 // Ordinary idle/walk and other carriers take the no-op path.
 function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
- const cargoGrip=fpaTrunkGrip(u,pose)||fpaCropGrip(u,pose)||fpaBoxGrip(u,pose);
+ const cargoGrip=fpaTrunkGrip(u,pose)||fpaCropGrip(u,pose)||fpaBoxGrip(u,pose)||fpaTrayGrip(u,pose);
  if((u.carry&&!cargoGrip)||u.type==='kid')return {removed:0,filled:0,components:0};
  const W=opt.wpn?wpnParse(opt.wpn):null,both=cargoGrip||pose==='sawGrip'||pose==='yardGrip'||pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
  if(!both&&!one)return {removed:0,filled:0,components:0};
@@ -1109,6 +1115,18 @@ function fpaDrawGestureProps(c,u,view,pose,frame,opt={}){
  let head=PFY-20;const [,dip]=fpaBodyMotion(v,pose,frame,opt);
  if(art){const row=profile?1:v==='N'?2:0,f=pose==='walk'?Math.floor((Number(frame)%WALK_FRAMES)*8/WALK_FRAMES):0,src=art.frames[child?(pose==='walk'?Math.floor((Number(frame)%WALK_FRAMES)*4/WALK_FRAMES):0):row*8+f],sc=Math.min((child?21:25)/art.maxW,(child?27:33)/art.maxH),dh=src[3]*sc;head=PFY-Math.round(dh)+dh*.30;}
  const sh=PFY-14+dip,headY=head+dip,O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),coat=O.coat||L.green||'#66863d',skin=SKINS[L.skin%SKINS.length],raw=Number(opt.gf)||0,gf=['five','flirt','wslap','cheek'].includes(gest)?raw:gestK(raw),sides=['clap','stretch','panic','five','six7'].includes(gest)?[1,-1]:[v==='N'?-1:1],joints=[];
+ if(gest==='read'&&child&&v==='S'){
+  const y=PFY-10+dip,x=PFX;
+  const left=[x-3.5,y+.5],right=[x+3.5,y+.5-(gf>.68?1:0)];
+  smoothLimb(c,[x-4,sh],[x-5,y+1],left,2.1,shade(coat,-.12));
+  smoothLimb(c,[x+4,sh],[x+5,y+1],right,2.1,coat);
+  poly(c,[[x-4.5,y-2],[x,y-1],[x+4.5,y-2],[x+3.5,y+2],[x,y+3],[x-3.5,y+2]],'#392b20');
+  poly(c,[[x-4,y-2.5],[x,y-1.5],[x+4,y-2.5],[x+3,y+1],[x,y+2],[x-3,y+1]],'#d9bf86');
+  line(c,x,y-1.4,x,y+1.8,'#8e6e48',.5);
+  if(gf>.68)line(c,x,y-1.5,x+3*gf,y-3,'#f3db9c',.7);
+  hand(c,...left,skin[0]);hand(c,...right,skin[0]);
+  return {drawn:true,gest,hand:right};
+ }
  for(const side of sides){const q=gestPts(gest,gf,side,sh,headY,v),S=[PFX+(profile?.4:side*4.2),sh+.5],E=[PFX+q[0][0],q[0][1]],H=[PFX+q[1][0],q[1][1]],raised=H[1]<sh+1;
   c.save();if(raised){c.beginPath();c.rect(-80,-80,180,240);c.moveTo(PFX+(profile?1:0)+5.8,headY+3.3);c.ellipse(PFX+(profile?1:0),headY+3.3,5.8,7.3,0,0,Math.PI*2);c.clip('evenodd');}
   smoothLimb(c,S,E,H,2.1,side>0?coat:shade(coat,-.12));c.restore();hand(c,H[0],H[1],skin[0]);

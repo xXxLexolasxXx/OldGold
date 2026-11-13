@@ -160,6 +160,51 @@ function swingFrameAt(p) {
 
 // ---------- Жители ----------
 
+const fallenGnomesByMap = new WeakMap();
+
+function queueFallenGnome(u) {
+  if (!World.terrain || u.inside || u.hero || u.type === 'hero' ||
+      u.type === 'carter' || !UNIT_TYPES[u.type] || !isPerson(u)) return;
+  let entries = fallenGnomesByMap.get(World.terrain);
+  if (!entries) fallenGnomesByMap.set(World.terrain, entries = []);
+  if (entries.length >= 32) entries.shift();
+  const actor = {type:u.type, look:u.look, sx:personSex(u), injury:u.injury, _exactYardPose:true};
+  entries.push({actor, x:u.x, y:u.y, face:u.face < 0 ? -1 : 1, time:Game.time});
+}
+
+function addFallenGnomeDraws(list,c,x0,y0,x1,y1) {
+  const entries=fallenGnomesByMap.get(World.terrain);
+  if (!entries) return;
+  for (let i=entries.length-1;i>=0;i--) {
+    const entry=entries[i], elapsed=Game.time-entry.time;
+    if (elapsed<0 || elapsed>=.85) { entries.splice(i,1); continue; }
+    const {actor,x,y,face}=entry;
+    if (x<x0-2 || x>x1+2 || y<y0-2 || y>y1+2) continue;
+    list.push([y+.19,()=>{
+      const sprite=personSprite(actor,'E','idle',0);
+      if(sprite && !sprite._pendingSprite) drawFallenGnome(c,sprite,Math.round(x*TILE),Math.round(y*TILE+6),face,elapsed);
+    }]);
+  }
+}
+
+function drawFallenGnome(c,sprite,x,y,face,elapsed){
+  const turn=Math.min(1,Math.max(0,elapsed/.34));
+  const eased=turn*turn*(3-2*turn);
+  const opacity=Math.min(1,Math.max(0,(.85-elapsed)/.29));
+  c.save();
+  c.imageSmoothingEnabled=false;
+  c.globalAlpha*=opacity;
+  c.translate(x,y);
+  c.fillStyle='rgba(30,24,17,0.22)';
+  c.beginPath();
+  c.ellipse(-face*7*eased,0,4+8*eased,1.5,0,0,Math.PI*2);
+  c.fill();
+  c.rotate(-face*Math.PI*.5*eased);
+  c.scale(face,1);
+  c.drawImage(sprite,-PFX,-PFY,PW,PH);
+  c.restore();
+}
+
 function drawUnit(c, u) {
   let px = Math.round(u.x * TILE), py = Math.round(u.y * TILE + 6);
   const a = u.action;
@@ -1275,6 +1320,7 @@ function render() {
     if (b.x + b.w < x0 - 2 || b.x > x1 + 2 || b.y > y1 + 2 || b.y + b.h < y0 - 2) continue;
     list.push([b.y + b.h - 0.05, () => drawBuilding(c, b, false)]);
   }
+  addFallenGnomeDraws(list,c,x0,y0,x1,y1);
   for (const u of Game.units) {
     if (u.inside) continue;
     if (u.x < x0 - 1 || u.x > x1 + 1 || u.y < y0 - 1 || u.y > y1 + 2) continue;

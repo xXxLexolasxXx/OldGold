@@ -242,8 +242,9 @@ function drawWaitress(c, b, spr, tx, ty, ox, oy, guests, n, hw) {
     if (walkTo(dx, dy, 15)) { w.st = 'in'; w.t = 3 + Math.random() * 4; vis = false; }
   }
   if (!vis) return;
+  const trayLower = w.st === 'serve' ? Math.max(0, Math.min(6, Math.floor((2.2 - w.t) * 6))) : 0;
   if (w.st === 'serve') carry = w.t > 1 ? 'tray:' + (w.food || 'bread') : null;
-  const sp = folkSprite({ type: 'waitress', look: b.id * 37 + 5, carry }, view, pose, pose === 'walk' ? (Math.floor(w.f * 1.5) % WALK_FRAMES) : 0, {});
+  const sp = folkSprite({ type: 'waitress', look: b.id * 37 + 5, carry }, view, pose, pose === 'walk' ? (Math.floor(w.f * 1.5) % WALK_FRAMES) : 0, { trayLower });
   const px = Math.round(w.x), py = Math.round(w.y);
   c.fillStyle = 'rgba(12,10,6,0.3)'; c.beginPath(); c.ellipse(px + 1, py, 5.5, 2, 0, 0, 7); c.fill();
   if (w.face < 0 && view === 'E') { c.save(); c.translate(px, py); c.scale(-1, 1); c.drawImage(sp, -PFX, -PFY, PW, PH); c.restore(); }
@@ -657,7 +658,7 @@ function drawSchoolYard(c, b, spr, ox, oy) {
   // 1-й уровень: классики, качели, чтение под деревом
   if (P.hop) { const ph = (t * 0.6 + b.id) % 1, jump = Math.abs(Math.sin(ph * Math.PI * 4)) * 2; drawKid(c, b, 0, X(P.hop), Y(P.hop) + 6 - ph * 12 - jump, 'N', 'idle', 0); }
   if (P.swing) { const s = P.swing[0], a = Math.sin(t * 2.4); drawKid(c, b, 1, X(s) + a * 2, Y(s) - Math.abs(a) * 1.5, 'S', 'idle', 0, { gest: 'clap', gf: gestCyc(t) }); }
-  if (P.read) drawKid(c, b, 3, X(P.read), Y(P.read), 'S', 'idle', Math.floor(t * 2) % 6, { gest: 'eat', gf: 10 });
+  if (P.read) drawKid(c, b, 3, X(P.read), Y(P.read), 'S', 'idle', 0, { gest: 'read', gf: gestCyc(t * 2) });
   // 2-й: песочница и огородик
   if (lv >= 2 && P.sand) drawKid(c, b, 4, X(P.sand), Y(P.sand), 'S', 'work', { anim: 'pat', f: Math.floor(t * 8) % 8 });
   if (lv >= 2 && P.garden) drawKid(c, b, 11, X(P.garden), Y(P.garden), 'S', 'work', { anim: 'dig', f: Math.floor(t * 6) % 8 });

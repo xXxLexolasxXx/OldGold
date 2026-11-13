@@ -204,7 +204,7 @@ function skelResolve(s) {
     // скелет хватает одного костлявой рукой и тащит к могиле; остальных, если выжили, отбрасывает
     const v = fs[0];
     for (const o of fs.slice(1)) {
-      if (outcome === 'wipe') { floater(o.x, o.y - 1, '!', '#ff6040'); removeUnit(o); }
+      if (outcome === 'wipe') { floater(o.x, o.y - 1, '!', '#ff6040'); removeGroundVictim(o); }
       else { s.escaped = o; knockBack(o, s); injure(o, Math.random() < 0.5 ? 'leg' : 'arm'); }
     }
     skTakes(s, v);

@@ -480,7 +480,7 @@ function* petAvengeGen(u, enemy, rec) {
     const nm = unitNm(u), vx = u.x, vy = u.y;
     toast(`${nm} погиб, защищая ${PET_ACC[rec.kind]}`);
     logEvent('animal', `${nm} погиб, защищая ${PET_ACC[rec.kind]}`, vx, vy);
-    removeUnit(u);
+    removeGroundVictim(u);
     if (enemy.kind) { enemy.stolenPet = null; enemy.loot = null; }
   }
 }
