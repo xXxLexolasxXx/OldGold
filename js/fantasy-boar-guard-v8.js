@@ -59,13 +59,17 @@
     if(key==='i0') c.drawImage(raster,0,0);
     else {
       const scale=NA_SPEC.boar.sc||1;
-      c.save();c.translate(base.ax*2,base.ay*2);c.scale(scale,scale);
-      c.translate(p.x*2,p.y*2);
-      if(p.up>.5){c.translate(-20,0);c.rotate(-.38*p.up);c.translate(20,0);}
-      c.rotate(p.dead?0:p.rot*.4);
-      if(p.dead){c.translate(0,-26);c.scale(1,-1);c.translate(0,26);}
-      c.scale(1,p.sq);
-      c.scale(1/scale,1/scale);
+      // Stage the whole pose before fitting it back into the native frame.
+      const margin=32, stage=mkCanvas(168+margin*2,120+margin*2);
+      const draw=stage.getContext('2d',{willReadFrequently:true});
+      draw.imageSmoothingEnabled=false;
+      draw.translate(margin+base.ax*2,margin+base.ay*2);draw.scale(scale,scale);
+      draw.translate(p.x*2,p.y*2);
+      if(p.up>.5){draw.translate(-20,0);draw.rotate(-.38*p.up);draw.translate(20,0);}
+      draw.rotate(p.dead?0:p.rot*.4);
+      if(p.dead){draw.translate(0,-26);draw.scale(1,-1);draw.translate(0,26);}
+      draw.scale(1,p.sq);
+      draw.scale(1/scale,1/scale);
       const step=p.leg||0;
       const diagonal=view==='SE'||view==='NE';
       for(let y=0;y<120;y++){
@@ -75,27 +79,29 @@
           const depth=diagonal && side===(view==='SE'?-1:1)?.55:1;
           const shift=Math.round(step*weight*4*side*depth);
           const lift=Math.round(Math.max(0,step*side)*weight*3*depth);
-          c.drawImage(raster,start,y,end-start,1,start-base.ax*2+shift,y-base.ay*2-lift,end-start,1);
+          draw.drawImage(raster,start,y,end-start,1,start-base.ax*2+shift,y-base.ay*2-lift,end-start,1);
         }
       }
-      c.restore();
-      // Seat the visible silhouette against the native support line before fading.
+      function bounds(surface) {
+        const {width,height}=surface;
+        const {data}=surface.getContext('2d').getImageData(0,0,width,height);
+        let left=width,right=-1,top=height,bottom=-1;
+        for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+          if(data[(y*width+x)*4+3]<128)continue;
+          left=Math.min(left,x);right=Math.max(right,x);
+          top=Math.min(top,y);bottom=Math.max(bottom,y);
+        }
+        return {left,right,top,bottom};
+      }
+      const box=bounds(stage);
+      let dy=-margin;
       if(step || key.startsWith('d')){
-        const bottom=(surface)=>{
-          const {data}=surface.getContext('2d').getImageData(0,0,168,120);
-          for(let y=119;y>=0;y--)for(let x=0;x<168;x++){
-            if(data[(y*168+x)*4+3]>=128)return y;
-          }
-          return -1;
-        };
-        const support=bottom((p.fade>0?native('d6',heading):base).cv);
-        const current=bottom(cv);
-        if(current>=0 && support>=0 && current!==support){
-          const pixels=c.getImageData(0,0,168,120);
-          c.clearRect(0,0,168,120);
-          c.putImageData(pixels,0,support-current);
-        }
+        const support=bounds((p.fade>0?native('d6',heading):base).cv).bottom;
+        if(support>=0)dy=support-box.bottom;
       }
+      const dx=Math.max(1-box.left,Math.min(166-box.right,-margin));
+      dy=Math.max(1-box.top,Math.min(118-box.bottom,dy));
+      c.drawImage(stage,dx,dy);
       if(p.fade>0){
         const pixels=c.getImageData(0,0,168,120);
         for(let y=0;y<120;y++)for(let x=0;x<168;x++){
