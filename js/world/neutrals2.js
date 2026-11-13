@@ -588,7 +588,10 @@ if (typeof hmCast === 'function') {
   neuDraw = function (c, N) {
     const rk = n2Rk(N);
     if (!N2_KINDS[N.k] && rk <= 1) return _nd(c, N);
-    const S = NSPEC[N.k], art = N.k === 'goblin' && N.id % 2 ? 'goblinB' : N.k, sp = naFrame(art, N.fr || 'i0'), sc = n2Sz(N);
+    const S = NSPEC[N.k], art = N.k === 'goblin' && N.id % 2 ? 'goblinB' : N.k, sc = n2Sz(N);
+    const dir = N.k === 'armad' && typeof ArmadilloArt !== 'undefined' ? ArmadilloArt.orientation(N) : null;
+    const sp = dir === null ? naFrame(art, N.fr || 'i0') : ArmadilloArt.frame(N.fr || 'i0', dir);
+    if (!sp) return;
     const px = Math.round(N.x * TILE), py = Math.round(N.y * TILE + 6), dead = N.st === 'die';
     const al = dead ? Math.max(0, Math.min(1, 1 - (N.dt - 0.9) / 2.3)) : 1;
     if (al <= 0) return;
@@ -598,7 +601,7 @@ if (typeof hmCast === 'function') {
     c.beginPath(); c.ellipse(px, py + 1, S.sz * sc * (dead ? 1.1 : 0.8), S.sz * sc * 0.28, 0, 0, 7); c.fill();
     const bob = (N.k === 'fairy' || N.k === 'pixie') && !dead ? Math.round(Math.sin(Game.time * 3.2 + N.id) * 1.3) : 0;
     c.translate(px, py + bob);
-    c.scale(N.face < 0 ? -sc : sc, sc);
+    c.scale((dir === null ? N.face < 0 : dir > 4) ? -sc : sc, sc);
     // 3× пиксельный кадр (pxbeasts.js) — в его размер w×h, как в neuDraw; иначе грибник-вожак выходил втрое больше (отчёт 261026-1356-2931)
     if (sp.hi) { c.imageSmoothingEnabled = false; c.drawImage(sp.cv, -sp.ax, -sp.ay, sp.w, sp.h); }
     else blitFine(c, sp.cv, -sp.ax, -sp.ay);
