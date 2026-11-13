@@ -14,22 +14,27 @@
   const originalFrame = naFrame, originalNeutral = neuDraw, originalCamp = campDrawGoblin;
   const originalLair = neuDrawLair, originalLairList = neuDrawList, originalLairSprite = naLairSprite;
   const originalRaider = foeDrawRaider;
-  let heading, outerActor;
+  let heading, drawingActor, outerActor;
 
   function enabled(kind) { return kinds.has(kind) && window.GoblinPolish?.enabled !== false; }
+  function contactFrame(actor, fr) {
+    // The simulation strikes before the authored contact cell in both attack timelines.
+    return actor?.st === 'atk' && actor.hit && (fr === 'a4' || fr === 'a5') ? 'a6' : fr;
+  }
   naFrame = function(kind,fr) {
     if (enabled(kind)) {
-      const sprite = art.request(kind,fr,heading || 'E');
+      const sprite = art.request(kind,contactFrame(drawingActor,fr),heading || 'E');
       if (sprite) return sprite;
     }
     return originalFrame(kind,fr);
   };
   neuDraw = function(c,actor) {
     if (!enabled(actor.k)) return originalNeutral(c,actor);
-    const previous = heading;
+    const previous = heading, previousActor = drawingActor;
     heading = family.headingOf(actor);
+    drawingActor = actor;
     try { return originalNeutral(c,actor); }
-    finally { heading = previous; }
+    finally { heading = previous; drawingActor = previousActor; }
   };
   foeDrawRaider = function(c,actor) {
     const previous = outerActor;
@@ -43,20 +48,21 @@
     const direction = family.headingOf(actor);
     // The family renderer already selects animation frames and cancels the generic fall transform.
     if (kind !== 'shnyrKing') {
-      const previous = heading;
+      const previous = heading, previousActor = drawingActor;
       heading = direction;
+      drawingActor = actor;
       c.save();
       try {
         if (west.has(direction) !== (outerActor === actor && actor.face < 0)) c.scale(-1,1);
         return originalCamp(c,actor,kind);
-      } finally { c.restore(); heading = previous; }
+      } finally { c.restore(); heading = previous; drawingActor = previousActor; }
     }
     // Shnyr has a separate campaign sprite path with the same visual timing as the family.
     const dead = actor.st === 'die';
     let fr = dead ? naDieFr(actor.dt || 0) : actor.st === 'atk' ? naAtkFr(actor.atkT,0.6)
       : actor.st === 'chase' ? 'w'+((Game.time*16.5+actor.id)%NA_N|0) : naIdleFr(Game.time,actor.id);
     if (!dead && Game.time-(actor.hurtT??-9)<0.3) fr = naHurtFr(Game.time-actor.hurtT);
-    const sprite = art.request(kind,fr,direction);
+    const sprite = art.request(kind,contactFrame(actor,fr),direction);
     if (!sprite) return originalCamp(c,actor,kind);
     c.save();
     try {
