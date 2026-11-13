@@ -244,11 +244,12 @@ function camp1DrawShnyr(c, p) {
   if (typeof naFrame !== 'function') return;
   const t = Game.time, x = Math.round(p[0] * TILE + 16), y = Math.round(p[1] * TILE + 26);
   const ph = t % 3.2, fr = ph < 0.8 ? naAtkFr(ph, 0.8) : naIdleFr(t);
-  const sp = naFrame('shnyrKing', fr);
+  const sp = window.OldGoldGoblinRuntime?.shnyrSceneFrame(fr) ?? naFrame('shnyrKing', fr);
   c.save(); c.translate(x, y); c.scale(-1, 1); blitFine(c, sp.cv, -sp.ax, -sp.ay); c.restore();
   // искры фитиля на скипетре
   c.fillStyle = (t * 9 | 0) % 2 ? '#fff2a0' : '#ff9030';
-  c.fillRect(x - 22 + Math.round(Math.sin(t * 17) * 2), y - 52 + Math.round(Math.cos(t * 13) * 2), 2, 2);
+  const [fuseX, fuseY] = sp.spark ?? [22, -52];
+  c.fillRect(x - fuseX + Math.round(Math.sin(t * 17) * 2), y + fuseY + Math.round(Math.cos(t * 13) * 2), 2, 2);
 }
 
 function camp1Draw(list, c, x0, y0, x1, y1) {

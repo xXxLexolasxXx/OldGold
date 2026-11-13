@@ -1,0 +1,7536 @@
+{
+  "source": "artwork-index.json",
+  "status": "key-placement-plan",
+  "notes": "A repeated key is a hold. Null requires an authored key or an earlier isolated preview. This plan supplies no new timing or simulation.",
+  "mirrors": {
+    "S": {
+      "art": "S"
+    },
+    "SE": {
+      "art": "SE"
+    },
+    "E": {
+      "art": "E"
+    },
+    "NE": {
+      "art": "NE"
+    },
+    "N": {
+      "art": "N"
+    },
+    "NW": {
+      "art": "NE",
+      "mirror": true
+    },
+    "W": {
+      "art": "E",
+      "mirror": true
+    },
+    "SW": {
+      "art": "SE",
+      "mirror": true
+    }
+  },
+  "roles": {
+    "goblin": {
+      "kind": "goblin",
+      "frames": {
+        "S": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 20
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 20
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 40
+          }
+        },
+        "SE": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 21
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 21
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 41
+          }
+        },
+        "E": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 22
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 22
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 42
+          }
+        },
+        "NE": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 23
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 23
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 43
+          }
+        },
+        "N": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 24
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 24
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 44
+          }
+        }
+      }
+    },
+    "goblinB": {
+      "kind": "goblinB",
+      "frames": {
+        "S": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 20
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 20
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 40
+          }
+        },
+        "SE": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 21
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 21
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 41
+          }
+        },
+        "E": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 22
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 22
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 42
+          }
+        },
+        "NE": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 23
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 23
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 43
+          }
+        },
+        "N": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 24
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 24
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 44
+          }
+        }
+      }
+    },
+    "goblinKing": {
+      "kind": "goblinKing",
+      "frames": {
+        "S": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 20
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 20
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 40
+          }
+        },
+        "SE": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 21
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 21
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 41
+          }
+        },
+        "E": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 22
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 22
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 42
+          }
+        },
+        "NE": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 23
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 23
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 43
+          }
+        },
+        "N": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 24
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 24
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 44
+          }
+        }
+      }
+    },
+    "shnyrKing": {
+      "kind": "shnyrKing",
+      "frames": {
+        "S": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 10
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 20
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 40
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 50
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 45
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 0
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 5
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 15
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 20
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 25
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 35
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 30
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 40
+          }
+        },
+        "SE": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 11
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 21
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 41
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 51
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 46
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 1
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 6
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 16
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 21
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 26
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 36
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 31
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 41
+          }
+        },
+        "E": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 12
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 22
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 42
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 52
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 47
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 2
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 7
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 17
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 22
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 27
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 37
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 32
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 42
+          }
+        },
+        "NE": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 13
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 23
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 43
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 53
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 48
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 3
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 8
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 18
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 23
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 28
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 38
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 33
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 43
+          }
+        },
+        "N": {
+          "i0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i2": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i3": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i6": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i7": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i8": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i9": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "i11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w2": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w3": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w4": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "w5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w6": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w7": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "w8": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w9": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w10": {
+            "asset": "keys-v10",
+            "frame": 14
+          },
+          "w11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "a2": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a3": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a4": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a5": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "a6": {
+            "asset": "keys-v10",
+            "frame": 24
+          },
+          "a7": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a8": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a9": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a10": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "a11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "h0": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h1": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h2": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h3": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "h4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "h5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p1": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p2": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p3": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "p4": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "p5": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r2": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r3": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r4": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r5": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r6": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r7": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r8": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "r9": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "r11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v0": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v1": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v2": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v3": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v4": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v5": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v6": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v7": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v8": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v9": {
+            "asset": "keys-v10",
+            "frame": 44
+          },
+          "v10": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "v11": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "d0": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "d1": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "d2": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d3": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d4": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d5": {
+            "asset": "keys-v10",
+            "frame": 54
+          },
+          "d6": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d7": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d8": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d9": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d10": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "d11": {
+            "asset": "keys-v10",
+            "frame": 49
+          },
+          "ready": {
+            "asset": "keys-v10",
+            "frame": 4
+          },
+          "step": {
+            "asset": "keys-v10",
+            "frame": 9
+          },
+          "windup": {
+            "asset": "keys-v10",
+            "frame": 19
+          },
+          "strike": {
+            "asset": "keys-v10",
+            "frame": 24
+          },
+          "recover": {
+            "asset": "keys-v10",
+            "frame": 29
+          },
+          "parry": {
+            "asset": "keys-v10",
+            "frame": 39
+          },
+          "hurt": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "stagger": {
+            "asset": "keys-v10",
+            "frame": 34
+          },
+          "roar": {
+            "asset": "keys-v10",
+            "frame": 44
+          }
+        }
+      }
+    }
+  }
+}
