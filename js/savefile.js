@@ -16,7 +16,10 @@ function saveFileOpen() {
   const mk = (label, fn) => { const b = document.createElement('button'); b.textContent = label; b.style.cssText = btnCss; b.onclick = fn; return b; };
   const describe = slot => {
     const m = saveMeta(slot);
-    if (!m) return null;
+    if (!m) {
+      try { return localStorage.getItem(SAVE_KEY + slot) ? 'Файл доступен для скачивания' : null; }
+      catch (e) { return null; }
+    }
     return `${Math.floor((m.time || 0) / 60)} мин игры, ${m.people || 0} жителей${m.gv ? ', версия ' + m.gv : ''}${m.at ? ', ' + new Date(m.at).toLocaleString('ru-RU') : ''}`;
   };
   const render = () => {
@@ -29,7 +32,14 @@ function saveFileOpen() {
     hint.style.cssText = 'font-size:12px;opacity:.8;margin-bottom:8px';
     hint.textContent = 'Игра хранит сохранения в браузере. Файл — страховка на случай очистки данных браузера и способ перенести игру на другое устройство.';
     win.appendChild(hint);
-    for (const [slot, name] of [['auto', 'Автосохранение'], ['manual', 'Ручное сохранение'], ['auto.pre', 'Копия до обновления игры (автосохранение)'], ['manual.pre', 'Копия до обновления игры (ручное)']]) {
+    const slots = [['auto', 'Автосохранение'], ['manual', 'Ручное сохранение'],
+      ['camp', 'Кампания'], ['campcp', 'Контрольная точка кампании']];
+    for (const [slot, name] of slots.slice()) {
+      slots.push([slot + '.bak', name + ' · резервная копия'],
+        [slot + '.pre', name + ' · копия до обновления'],
+        [slot + '.broken', name + ' · файл после ошибки']);
+    }
+    for (const [slot, name] of slots) {
       const d = describe(slot);
       if (!d) continue;
       const row = document.createElement('div');

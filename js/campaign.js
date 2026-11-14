@@ -934,7 +934,7 @@ function campToMenu() {
 // ---------- Стартовое меню: «Кампания» ----------
 
 function campMenuHTML() {
-  const p = campProg(), meta = typeof saveMeta === 'function' ? saveMeta(CAMP_SLOT) : null;
+  const p = campProg(), meta = saveAvailableMeta(CAMP_SLOT) || saveAvailableMeta(CAMP_CP);
   let h = '<div class="sm-title">Кампания «Исход из Подгорья»</div>';
   if (meta) h += `<button class="sm-btn primary" data-sm="camp-cont"><b>Продолжить кампанию</b><small>${new Date(meta.at).toLocaleString().slice(0, 17)}</small></button>`;
   const names = { 1: 'Праздник Первого Камня', 2: 'Гора ложится', 3: 'Гости и рыба', 4: 'Игра не стоит свеч', 5: 'Тишина дороже золота' };
@@ -990,7 +990,15 @@ if (typeof initStartMenu === 'function' && typeof smAction === 'function') {
       smShow('camp'); return;
     }
     if (a.startsWith('camp:')) { campMenuPlay(+a.slice(5)); return; }
-    if (a === 'camp-cont') { smLoadPrepared(CAMP_SLOT, document.querySelector('#start-menu [data-sm="camp-cont"] small')); return; }
+    if (a === 'camp-cont') {
+      const label = document.querySelector('#start-menu [data-sm="camp-cont"] small');
+      const hasCheckpoint = saveAvailableMeta(CAMP_CP);
+      const slot = saveAvailableMeta(CAMP_SLOT) || !hasCheckpoint ? CAMP_SLOT : CAMP_CP;
+      smLoadPrepared(slot, label, null, () => {
+        if (slot !== CAMP_CP && hasCheckpoint) smLoadPrepared(CAMP_CP, label);
+      });
+      return;
+    }
     _act(a);
   };
 }

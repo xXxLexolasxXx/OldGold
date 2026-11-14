@@ -215,18 +215,22 @@ section = 'loadGame';
   R('saveBrokenNotice.last = ""');
   ok(R('loadGame("auto")') === true && R('Game.buildings.length') === nbSample, 'резервная копия не подхватилась');
   ok(/резервная копия/.test(R('saveBrokenNotice.last')), 'игрок не получил сообщения о копии');
-  // б) битый и нет копий → новая игра, живой мир (не пустой экран), битый файл отложен, понятное сообщение
+  // б) битый и нет копий → текущий мир и сохранения остаются на месте
   put('auto', sample.slice(0, 5000)); sim.h.run('localStorage.removeItem(SAVE_KEY + "auto.bak")');
   R('saveBrokenNotice.last = ""');
+  const previousWorld = R('JSON.stringify([Game.seed, Game.time, Game.buildings.length, Game.units.length])');
   ok(R('loadGame("auto")') === false, 'loadGame с битым сейвом и без копий вернул true');
-  ok(R('Game.buildings.length > 0 && Game.units.length > 0'), 'после битого сейва пустой мир (нет зданий/жителей)');
-  ok(/новая игра/i.test(R('saveBrokenNotice.last')) && /повреждён|обрезан|испорчен/.test(R('saveBrokenNotice.last')), 'сообщение о битом сейве непонятное: ' + R('saveBrokenNotice.last'));
+  ok(R('JSON.stringify([Game.seed, Game.time, Game.buildings.length, Game.units.length])') === previousWorld, 'ошибка разбора заменила текущий мир');
+  ok(/повреждён|обрезан|испорчен/.test(R('saveBrokenNotice.last')), 'сообщение о битом сейве непонятное: ' + R('saveBrokenNotice.last'));
   ok(get('auto.broken') === sample.slice(0, 5000), 'повреждённый файл не отложен в сторону');
   L.stepN(sim, 400); ok(!sim.errors.length, 'новая игра после битого сейва: исключения ' + sim.errors.slice(0, 2));
   // в) битый + копия «до обновления» (старая версия) → поднимается она
   R('localStorage.removeItem(SAVE_KEY + "auto.bak")');
-  put('auto', '{"v":2,'); put('auto.pre', sample);
+  put('auto', '{"v":2,"gv":"0.12.3",'); put('auto.pre', sample);
   ok(R('loadGame("auto")') === true && /копия до обновления/.test(R('saveBrokenNotice.last')), 'копия до обновления не подхватилась');
+  ok(get('auto.pre') === sample, 'битый основной файл затёр рабочую копию до обновления');
+  R('localStorage.removeItem(SAVE_KEY + "auto")');
+  ok(!!R('saveAvailableMeta("auto")') && R('loadGame("auto")'), 'копия не обнаружена при отсутствии основного файла');
   R('localStorage.removeItem(SAVE_KEY + "auto.pre")');
   // г) копия «до обновления»: сейв другой версии откладывается при первой загрузке, повторно не затирается
   const old = JSON.parse(sample); old.gv = '0.0.1'; old.sv = 0;

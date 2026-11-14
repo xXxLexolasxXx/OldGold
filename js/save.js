@@ -5,6 +5,7 @@
 const SAVE_KEY = 'feod.save.';
 
 function resetGameState() {
+  Game.saveLoadFailed = false;
   Game.buildings = [];
   Game.units = [];
   Game.unitMap.clear();
@@ -318,6 +319,7 @@ function saveStore(key, data) {   // запись с попыткой освоб
 }
 
 function saveGame(slot = 'manual') {
+  if (Game.saveLoadFailed) return false;
   try {
     const obj = serializeGame();
     obj.sv = SAVE_REV;
@@ -360,47 +362,59 @@ function savePreBackup(slot, raw) {
     if (gv === GAME_VERSION) return false;
     const m = saveMeta(slot + '.pre');
     if (m && m.gv === gv) return false;
-    if (!saveStore(SAVE_KEY + slot + '.pre', raw)) return false;
+    localStorage.setItem(SAVE_KEY + slot + '.pre', raw);
     localStorage.setItem(SAVE_KEY + slot + '.pre.meta', JSON.stringify({ at: Date.now(), gv, to: GAME_VERSION }));
     return true;
   } catch (e) { return false; }
 }
 
 // Безопасная загрузка: битый или непонятный сейв не должен оставлять полупустой мир и чёрный экран.
-// При ошибке пробуем резервные копии (автосохранение минутной давности, затем «до обновления»), а если и они не годятся —
-// начинаем новую игру и честно говорим об этом; повреждённый файл откладывается и его можно скачать из окна сообщения.
+// Пробуем резервные копии даже при отсутствии основного файла. Ошибка разбора
+// не заменяет текущую игру и не расходует резервные копии.
 function loadGame(slot = 'manual') {
   const get = k => { try { return localStorage.getItem(SAVE_KEY + k); } catch (e) { return null; } };
   const raw = get(slot);
-  if (!raw) return false;
-  savePreBackup(slot, raw);
-  const err = loadSaveText(raw);
+  let applying = false;
+  const load = text => {
+    const error = loadSaveText(text);
+    applying ||= loadSaveText.applied;
+    return error;
+  };
+  const err = raw ? load(raw) : 'основной файл отсутствует';
   if (!err) {
+    savePreBackup(slot, raw);
     const n = loadSaveText.notes;
     if (n && n.length) saveBrokenNotice(`Сохранение загружено, но часть данных пришлось пропустить: ${n.join(', ')}.`, null);
     return true;
   }
-  console.warn('сохранение ' + slot + ' не загрузилось:', err);
-  if (typeof crashNote === 'function') crashNote('save', slot + ': ' + err);
-  if (!/\.(bak|pre)$/.test(slot)) {
+  if (raw) {
+    console.warn('сохранение ' + slot + ' не загрузилось:', err);
+    if (typeof crashNote === 'function') crashNote('save', slot + ': ' + err);
+    try {
+      if (!get(slot + '.broken')) localStorage.setItem(SAVE_KEY + slot + '.broken', raw);
+    } catch (e) { /* копию можно скачать из сообщения */ }
+  }
+  if (!/\.(bak|pre|broken)$/.test(slot)) {
     for (const [suf, what] of [['.bak', 'резервная копия'], ['.pre', 'копия до обновления']]) {
       const b = get(slot + suf);
-      if (b && !loadSaveText(b)) {
-        saveBrokenNotice(`Сохранение повреждено (${err}). Загружена ${what} — до нескольких минут игры могли пропасть.`, raw);
+      if (b && !load(b)) {
+        saveBrokenNotice(`Основное сохранение недоступно (${err}). Загружена ${what}. Проверьте, до какого момента сохранился прогресс.`, raw);
         return true;
       }
     }
   }
-  // битый текст откладываем в сторону (если хватит места): автосейв новой игры его иначе затрёт, а по нему можно найти причину
-  try { localStorage.setItem(SAVE_KEY + slot + '.broken', raw); } catch (e) { /* нет места — не страшно */ }
-  try { newGame(); } catch (e) { console.warn('newGame после битого сейва', e); }
-  saveBrokenNotice(`Не удалось загрузить сохранение: ${err}. Начата новая игра, повреждённый файл отложен в сторону.`, raw);
+  if (applying) {
+    Game.paused = true;
+    Game.saveLoadFailed = true;
+  }
+  saveBrokenNotice(`Не удалось загрузить сохранение: ${err}. Попробуйте другой слот или скачайте файл сейва для восстановления.`, raw || get(slot + '.broken'));
   return false;
 }
 
 // Разбор и применение текста сейва; возвращает текст ошибки или null. Пропущенное при уборке — в loadSaveText.notes
 function loadSaveText(raw) {
   loadSaveText.notes = [];
+  loadSaveText.applied = false;
   if (typeof raw !== 'string') return 'неизвестный формат';
   if (raw.length > SAVE_MAX.bytes) return `файл слишком большой (${Math.round(raw.length / 1e6)} МБ) — это не сохранение игры`;
   let s;
@@ -408,8 +422,11 @@ function loadSaveText(raw) {
   if (!s || typeof s !== 'object' || s.v !== 2 || !Array.isArray(s.obj) || !Array.isArray(s.buildings) || !Array.isArray(s.units)) return 'неизвестный формат';
   try { s = migrateSave(s); } catch (e) { return e.message; }
   try { loadSaveText.notes = saveSanitize(s); } catch (e) { return e.message; }
+  if (!s.buildings.length) return 'в сохранении нет ни одного здания';
+  loadSaveText.applied = true;
   try { applySave(s); } catch (e) { return 'ошибка при разборе: ' + (e && e.message || e); }
   if (!Game.buildings.length) return 'в сохранении нет ни одного здания';
+  Game.saveLoadFailed = false;
   return null;
 }
 
@@ -482,4 +499,22 @@ function saveBrokenNotice(text, raw) {
 
 function saveMeta(slot) {
   try { return JSON.parse(localStorage.getItem(SAVE_KEY + slot + '.meta')); } catch (e) { return null; }
+}
+
+function saveAvailableMeta(slot) {
+  try {
+    for (const name of [slot, slot + '.bak', slot + '.pre']) {
+      const raw = localStorage.getItem(SAVE_KEY + name);
+      if (!raw) continue;
+      const meta = saveMeta(name);
+      if (meta && Number.isFinite(meta.time)) return meta;
+      try {
+        const data = JSON.parse(raw);
+        if (Array.isArray(data?.units) && Number.isFinite(data.time)) {
+          return { at: meta?.at || 0, time: data.time, people: data.units.length, df: data.df };
+        }
+      } catch (e) { /* следующая копия */ }
+    }
+  } catch (e) { /* недоступное хранилище */ }
+  return null;
 }

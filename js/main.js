@@ -562,7 +562,7 @@ function frame(now) {
   scrollByKeys(dt);
   statsTick(dt);
   const s0 = performance.now();
-  if (!Game.paused) {
+  if (!Game.paused && !Game.saveLoadFailed) {
     acc += dt * Game.speed;
     let steps = 0;
     // ошибка в одном шаге не должна замораживать всю игру

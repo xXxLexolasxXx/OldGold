@@ -1,7 +1,7 @@
 'use strict';
 // Офлайн-кэш OldGold. Сеть в приоритете (чтобы не залипали старые js после обновления), при обрыве — кэш.
 // Предзагрузка: index.html + все его скрипты/стили + шрифты + иконки. Кооп (/coop, /e, ws) и чужие домены не кэшируются.
-const CACHE = 'oldgold-fantasy-20261114-r3';
+const CACHE = 'oldgold-fantasy-20261114-save-recovery';
 const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kurale-Regular.ttf', 'fonts/RuslanDisplay-Regular.ttf',
   'icons/icon-192.png', 'icons/icon-512.png', 'assets/fantasy/menu-village.png', 'assets/fantasy/frog-village-v2.png',
   'js/fantasy-frog-frequent-frames.bin.gz', 'js/fantasy-frog-rare-frames.bin.gz', 'assets/fantasy/goblin-family-frame-bank.json',

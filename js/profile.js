@@ -198,7 +198,7 @@ function profLoad_ensure() { if (!Prof) profLoad(); }
 function profClose() { document.getElementById('prof-win').classList.add('hidden'); }
 
 function slotLine(label, key, opts) {
-  const m = saveMeta(key);
+  const m = saveAvailableMeta(key);
   const info = m ? `${new Date(m.at).toLocaleString(I18N.locale())} · ${Math.floor(m.time / 60)} мин · ${m.people} жит.` : 'пусто';
   return `<div class="prof-slot${m ? '' : ' empty'}"><div class="ps-t"><b>${label}</b><small>${info}</small></div>` +
     `<div class="ps-b">${opts.save ? `<button data-pa="save" data-k="${key}">Сохранить</button>` : ''}` +

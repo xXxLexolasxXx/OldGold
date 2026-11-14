@@ -20,7 +20,7 @@ function mpConfig() {
 function mpSave(c) { try { localStorage.setItem(MP_KEY, JSON.stringify(c)); } catch (e) { /* нет доступа к хранилищу */ } }
 
 function smBestSave() {
-  const a = saveMeta('auto'), m = saveMeta('manual');
+  const a = saveAvailableMeta('auto'), m = saveAvailableMeta('manual');
   if (!a && !m) return null;
   if (a && (!m || a.at >= m.at)) return { slot: 'auto', meta: a, name: 'Автосохранение' };
   return { slot: 'manual', meta: m, name: 'Сохранение' };
@@ -138,7 +138,11 @@ function smAction(a) {
   if (a === 'continue') {
     const sv = smBestSave();
     if (!sv) return;
-    smLoadPrepared(sv.slot, root.querySelector('[data-sm="continue"] small'));
+    const label = root.querySelector('[data-sm="continue"] small');
+    const other = sv.slot === 'auto' ? 'manual' : 'auto';
+    smLoadPrepared(sv.slot, label, null, () => {
+      if (saveAvailableMeta(other)) smLoadPrepared(other, label);
+    });
   } else if (a === 'more') {
     // главное меню — три кнопки и «Ещё»; второстепенное (вызов дня, редактор, ачивки, справка, язык) — по нажатию
     const main = root.querySelector('[data-panel="main"]'), on = main.classList.toggle('sm-more');
