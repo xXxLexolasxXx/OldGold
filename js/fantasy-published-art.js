@@ -123,7 +123,7 @@ function fpaPaintProps(c,s,k,type){
 const fpaNativeBuilding=buildingSprite,fpaCanvasIDs=new WeakMap();let fpaCanvasID=0;
 buildingSprite=function(type,rot=0,level=1,settle,vr=0){
  const base=fpaNativeBuilding(type,rot,level,settle,vr),a=FantasyPublishedArt.images[type==='bonfire'?'bonfire-hearth':type]||(FPA_NEW_TYPES.has(type)?fpaCodeAsset(type,vr):null);if(!a)return base;
- if(!fpaCanvasIDs.has(base.canvas))fpaCanvasIDs.set(base.canvas,++fpaCanvasID);const key=[type,rot,level,settle,vr,fpaCanvasIDs.get(base.canvas)].join('|');if(FantasyPublishedArt.cache.has(key))return FantasyPublishedArt.cache.get(key);
+ if(!fpaCanvasIDs.has(base.canvas))fpaCanvasIDs.set(base.canvas,++fpaCanvasID);const key=[type,rot,level,settle,vr,fpaCanvasIDs.get(base.canvas),typeof fpaArrangeCareYard==='function'?2:0].join('|');if(FantasyPublishedArt.cache.has(key))return FantasyPublishedArt.cache.get(key);
  const cv=mkCanvas(Math.round(base.w*2),Math.round(base.h*2)),c=cv.getContext('2d'),k=2;
  // Match the native architecture envelope: activities retain every native anchor.
  const depth=bDims(type,rot).h*TILE, special=['bonfire','pier','well','magiccircle'].includes(type);
@@ -151,7 +151,16 @@ buildingSprite=function(type,rot=0,level=1,settle,vr=0){
  if(level>=2&&type!=='pier'&&type!=='magiccircle'&&type!=='bonfire'){
   c.fillStyle='#523a25';c.fillRect(x+w*.15,y+h*.37,2*k,16*k);c.fillStyle=level>=3?'#8d3c77':'#b34132';c.fillRect(x+w*.15+2*k,y+h*.37,9*k,6*k);c.fillStyle='#f1cc6c';c.fillRect(x+w*.15+5*k,y+h*.37+2*k,2*k,3*k);
   if(level>=3){c.fillStyle='#f0cb67';c.fillRect(x+w*.5,y-3*k,2*k,7*k);c.fillRect(x+w*.5-2*k,y-2*k,6*k,2*k);}
- }fpaPaintProps(c,base,k,type);const shadow=mkCanvas(cv.width,cv.height),sc=shadow.getContext('2d');sc.fillStyle='rgba(27,31,15,.22)';sc.beginPath();sc.ellipse(x+w*.5,y+h-2*k,w*.46,7*k,0,0,Math.PI*2);sc.fill();const spr={...base,shadow,canvas:cv,_publishedArt:true,_publishedArtSource:a.procedural?'procedural:'+type:'png:'+type};if(base.wins?.length)spr.wins=base.wins.map((q,i)=>[(x+w*(i%2?.68:.28))/k,(y+h*.68)/k,Math.min(q[2],9),Math.min(q[3],10),q[4]]);if(base.bar)spr.bar=[(x+w*.5)/k,(y+h*.45)/k];spr.perches=[[((x+w*.45)/k),((y+8*k)/k)]];if(['well','watchtower','pier','magiccircle','graveyard','goatpen','stable'].includes(type))spr.chimneys=null;else if(base.chimneys?.length)spr.chimneys=[[((x+w*.8)/k),((y+6*k)/k)],...(type==='inn'&&base.oven?[[base.oven[0],base.oven[1]-13]]:[])];FantasyPublishedArt.cache.set(key,spr);return spr;
+ }
+ const artBox=[x/k,y/k,w/k,h/k];
+ let yardBase={...base,_artBox:artBox,_artRotation:rot};
+ if(type==='sawmill'&&base.saw){
+   const sx=base.w-36,sy=base.baseY-10;
+   yardBase={...yardBase,saw:[sx,sy],sawSide:false,
+     workers:[[sx-17,sy+8],[sx+17,sy+8]]};
+ }
+ if(typeof fpaArrangeCareYard==='function')yardBase=fpaArrangeCareYard(yardBase,type,artBox);
+ fpaPaintProps(c,yardBase,k,type);const shadow=mkCanvas(cv.width,cv.height),sc=shadow.getContext('2d');sc.fillStyle='rgba(27,31,15,.22)';sc.beginPath();sc.ellipse(x+w*.5,y+h-2*k,w*.46,7*k,0,0,Math.PI*2);sc.fill();const spr={...yardBase,shadow,canvas:cv,_publishedArt:true,_publishedArtSource:a.procedural?'procedural:'+type:'png:'+type};if(base.wins?.length)spr.wins=base.wins.map((q,i)=>[(x+w*(i%2?.68:.28))/k,(y+h*.68)/k,Math.min(q[2],9),Math.min(q[3],10),q[4]]);if(base.bar)spr.bar=[(x+w*.5)/k,(y+h*.45)/k];spr.perches=[[((x+w*.45)/k),((y+8*k)/k)]];if(['well','watchtower','pier','magiccircle','graveyard','goatpen','stable'].includes(type))spr.chimneys=null;else if(base.chimneys?.length)spr.chimneys=[[((x+w*.8)/k),((y+6*k)/k)],...(type==='inn'&&base.oven?[[base.oven[0],base.oven[1]-13]]:[])];FantasyPublishedArt.cache.set(key,spr);return spr;
 };
 const fpaNativeBuildingDraw=drawBuilding;
 drawBuilding=function(c,b,...args){const prev=FantasyPublishedArt.drawingType;FantasyPublishedArt.drawingType=b.type;try{return fpaNativeBuildingDraw(c,b,...args);}finally{FantasyPublishedArt.drawingType=prev;}};
@@ -233,15 +242,21 @@ function fpaBodyMotion(view,pose,frame,opt) {
   }
   return [0,0];
 }
+let fpaPendingDwarf;
+function fpaWaitingDwarf(){
+ if(!fpaPendingDwarf){fpaPendingDwarf=mkCanvas(1,1);fpaPendingDwarf._pendingSprite=true;}
+ return fpaPendingDwarf;
+}
 personSprite = function (u, view, pose, frame, opt = {}) {
-  if(pose==='work'&&!Object.prototype.hasOwnProperty.call(ANIM_TOOL,frame?.anim))return faNativePersonSprite(u,view,pose,frame,opt);
+  if(pose==='work'&&!Object.prototype.hasOwnProperty.call(ANIM_TOOL,frame?.anim)&&OUTFIT[u.type]){pose='idle';frame=0;}
   if(window.FantasyPublishedAppearance)u=FantasyPublishedAppearance.resolve(u).holder||u;
   const child=u.type==='kid';
   const female = personSex(u)==='f' || !!OUTFIT[u.type]?.fem || u.type === 'waitress';
   const art = FantasyArt.images[child?'gnome-child':female ? 'gnome-woman-walk' : 'gnome-walk'];
-  if (!art || !OUTFIT[u.type]) {
+  if (!OUTFIT[u.type]) {
     return faNativePersonSprite(u, view, pose, frame, opt);
   }
+  if(!art?.frames)return fpaWaitingDwarf();
   const f = pose === 'walk' ? Math.floor((frame % WALK_FRAMES) * 8 / WALK_FRAMES) : 0;
   const row = view === 'E' ? 1 : view === 'N' ? 2 : 0;
   const workF = pose === 'work' ? frame.f : 0;
@@ -279,11 +294,7 @@ personSprite = function (u, view, pose, frame, opt = {}) {
   if (u.carry)fpaCarryLoad(c,u,view,pose,opt);
   if (pose === 'work'&&!opt.externalWorkTool) fpaDrawWorkTool(c,{...u,look:normalizedLook},view,frame,opt);
   if (pose === 'smoke') {
-    const rig = fpaSmokingRig(u, view, frame), O = OUTFIT[u.type];
-    const coat = O.coat || '#66863d', hx = PFX + rig.hand[0], hy = PFY + rig.hand[1];
-    pline(c, PFX + 4, PFY - 12, hx, hy, '#3e2c20', 3);
-    pline(c, PFX + 4, PFY - 12, hx, hy, coat, 2);
-    faRect(c, hx, hy, 2, 2, '#efc394');
+    fpaDrawSmokingHand(c,{...u,look:normalizedLook},view,frame);
   }
   fpaAction(c,u,view,pose,frame,opt);
   if (FA_RENDER_CACHE.size > 1600) FA_RENDER_CACHE.delete(FA_RENDER_CACHE.keys().next().value);
@@ -320,36 +331,75 @@ drawLoad=function(c,g){
  c.fillStyle='#ae7745';c.fillRect(-4.25,3,8.75,.5);
  c.fillStyle='#58645b';c.fillRect(-3,2,.5,.5);c.fillRect(3.5,2,.5,.5);
 };
+function fpaBackpackGrip(u,pose){
+ return !!u.carry&&!u.carry.startsWith('tray:')&&u.type!=='carter'&&u.type!=='goat'&&
+   !fpaTrunkGrip(u,pose)&&!fpaCropGrip(u,pose)&&!fpaBoxGrip(u,pose);
+}
+function fpaDrawBackpack(c,u,view,n,foregroundOnly=false){
+ const profile=view==='E'||view==='W',back=view==='N',x=PFX+(profile?-6.2:0),y=PFY-11;
+ const straps=()=>{
+   const sides=profile?[-1]:[-1,1];
+   for(const side of sides){
+     fpaSowBand(c,[PFX+side*(profile?3.7:4),PFY-16],
+       [PFX+side*(profile?3.4:3.6),PFY-7.5],1.2,'#493729');
+     fpaSowBand(c,[PFX+side*(profile?3.7:4),PFY-16],
+       [PFX+side*(profile?3.4:3.6),PFY-7.5],.5,'#aa8252');
+   }
+ };
+ if(foregroundOnly&&!back){straps();return;}
+ c.save();
+ if(!back)c.globalCompositeOperation='destination-over';
+ // The pack is behind the body in front/profile views, fully visible on
+ // the back. Its four stable slots represent the native carryN directly.
+ c.save();c.translate(x,y);
+ fpaSowPolygon(c,[[-4.6,-5],[-3.7,-6.1],[3.3,-6.1],[4.3,-4.7],
+   [4.1,3.8],[2.6,5],[-3.5,4.5],[-4.6,3]],'#332b20');
+ fpaSowPolygon(c,[[-3.9,-4.7],[-3.2,-5.4],[2.9,-5.4],[3.6,-4.3],
+   [3.4,3.4],[2.3,4.3],[-3.1,3.8],[-3.9,2.6]],'#8b7149');
+ fpaSowPolygon(c,[[-3.9,-4.7],[-3.2,-5.4],[-1.5,-5.4],[-1.5,3.9],
+   [-3.1,3.8],[-3.9,2.6]],'#b1915e');
+ for(const yy of [-2.5,0,2.5]){
+   fpaSowBand(c,[-3.4,yy],[3.2,yy+.35],.65,'#5b4933');
+   fpaSowBand(c,[-3.4,yy-.6],[3.2,yy-.25],.5,'#c2a676');
+ }
+ for(const xx of [-2.2,1.7])fpaSowBand(c,[xx,-4.7],[xx,3.8],.6,'#6a5438');
+ for(let i=0;i<Math.max(1,Math.min(4,n));i++){
+   c.save();c.translate(-1.6+(i%2)*3.15,-5.2-Math.floor(i/2)*2.8);
+   c.scale(.38,.38);if(u.carry==='trunk')c.rotate(-.4);
+   drawLoad(c,u.carry);c.restore();
+ }
+ fpaSowBand(c,[-4,-4.2],[3.5,-4.2],1.4,'#4b3a29');
+ fpaSowBand(c,[-3.5,-4.7],[3.2,-4.7],.6,'#c5a16b');
+ fpaSowPolygon(c,[[-.7,-2.4],[.7,-2.4],[.7,1],[-.7,1]],'#4a3b2a');
+ c.fillStyle='#c4a165';c.fillRect(-1,-.5,2,1.5);c.fillStyle='#51432d';c.fillRect(-.5,0,1,.5);
+ c.restore();c.restore();if(!back)straps();
+}
 function fpaCarryLoad(c,u,view,pose,opt){
  const n=opt.carryN||u.carryN||1;
  const crop=fpaCropGrip(u,pose),box=fpaBoxGrip(u,pose),crate=u.carry==='crate',tray=fpaTrayGrip(u,pose);
  if(!fpaTrunkGrip(u,pose)&&!crop&&!box&&!tray){
-   c.save();
-   c.translate(PFX,u.carry==='trunk'?13:23);
-   if(u.carry==='trunk')c.scale(1.4,1.2);
-   drawLoads(c,u.carry,n);
-   c.restore();
+   fpaDrawBackpack(c,u,view,n,!!opt.carryForeground);
    return;
  }
  const profile=view==='E'||view==='W',back=view==='N';
  const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
- const features=lookOf({...u,look}),skin=SKINS[features.skin%SKINS.length][0];
+ const features=lookOf({...u,look}),skin=SKINS[features.skin%SKINS.length];
  const coat=OUTFIT[u.type].coat||features.green;
  const centerX=tray?(profile?2:0):box?(profile?crate?FPA_CRATE_HOLD[0]:2.2:0):profile?1:back?-2.2:0;
  const centerY=tray?23.5+(opt.trayLower||0)*.45:box?FPA_CRATE_HOLD[1]:crop?24.7:25.5;
  const narrow=crop&&u.carry==='hops';
  const arms=tray?[
-   {shoulder:[profile?1.5:4.5,22],grip:[centerX+5.4,centerY+2.8],shade:-.22},
-   {shoulder:[profile?-3.5:-4.5,22],grip:[centerX-5.4,centerY+2.8],shade:0}
+   {shoulder:[profile?2.5:4.5,profile?21:20],grip:[centerX+5.4,centerY+2.8],shade:-.22},
+   {shoulder:[profile?-3.5:-4.5,20],grip:[centerX-5.4,centerY+2.8],shade:0}
  ]:box?[
-   {shoulder:[profile?1.5:4.5,22],grip:[centerX+4.5,centerY+.75],shade:-.22},
-   {shoulder:[profile?-3.5:-4.5,22],grip:[centerX-4.25,centerY+1.25],shade:0}
+   {shoulder:[profile?2.5:4.5,profile?21.5:20],grip:[centerX+4.5,centerY+.75],shade:-.22},
+   {shoulder:[profile?-3.5:-4.5,20],grip:[centerX-4.25,centerY+1.25],shade:0}
  ]:profile?[
-   {shoulder:[1.5,22.5],grip:[narrow?3.8:6,25],shade:-.22},
-   {shoulder:[-3,22],grip:[-2,crop?25.5:26.5],shade:0}
+   {shoulder:[1.5,20.5],grip:[narrow?3.8:6,25],shade:-.22},
+   {shoulder:[-3,20],grip:[-2,crop?25.5:26.5],shade:0}
  ]:[
-   {shoulder:[-4.5,22],grip:[back?-6:narrow?-3.2:-5.5,26],shade:-.12},
-   {shoulder:[4.5,22],grip:[back?4.2:narrow?3.2:5.5,back?26.5:25.5],shade:0}
+   {shoulder:[-4.5,20],grip:[back?-6:narrow?-3.2:-5.5,26],shade:-.12},
+   {shoulder:[4.5,20],grip:[back?4.2:narrow?3.2:5.5,back?26.5:25.5],shade:0}
  ];
  c.save();
  c.translate(PFX,0);
@@ -376,14 +426,14 @@ function fpaCarryLoad(c,u,view,pose,opt){
  else c.scale(crop||box||tray?(back?-1:1):profile?1.23:back?-.94:.94,1.03);
  drawLoads(c,u.carry,n);
  c.restore();
- for(const {grip} of arms)hand(c,grip[0],grip[1],skin);
+ for(const {grip,shade:shadow} of arms)fpaSowFist(c,grip,Math.PI/2,skin,shadow<0);
  c.restore();
 }
 // Remove only the atlas's static skin/sleeve components for actively posed arms.
 // Ordinary idle/walk and other carriers take the no-op path.
 function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
  const cargoGrip=fpaTrunkGrip(u,pose)||fpaCropGrip(u,pose)||fpaBoxGrip(u,pose)||fpaTrayGrip(u,pose);
- if((u.carry&&!cargoGrip)||u.type==='kid')return {removed:0,filled:0,components:0};
+ if(u.carry&&!cargoGrip)return {removed:0,filled:0,components:0};
  const W=opt.wpn?wpnParse(opt.wpn):null,both=cargoGrip||pose==='sawGrip'||pose==='yardGrip'||pose==='work'||pose==='fight'||(W?.out&&(pose==='idle'||pose==='walk'))||['clap','stretch','panic','five','six7'].includes(opt.gest),one=!both&&(!!opt.gest||pose==='smoke'||pose==='tame'||pose==='duck');
  if(!both&&!one)return {removed:0,filled:0,components:0};
  const c=cv.getContext('2d'),im=c.getImageData(0,0,cv.width,cv.height),src=new Uint8ClampedArray(im.data),d=im.data,k=cv.width/PW,w=cv.width,h=cv.height,dh=geometry.dh||33,dw=geometry.dw||25,dip=geometry.dip||0,shear=geometry.shear||0,top=PFY-dh;
@@ -403,6 +453,19 @@ function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
 }
 // Work props use the current native grip, upper-body pivot and phase tables.
 // W is E geometry; native callers mirror the complete actor once at draw time.
+// The ordinary tool rig shares the accepted fist size and sleeve volume with
+// the contact-driven field and building poses. Grip coordinates stay native.
+function fpaWorkSleeve(c,start,grip,cloth,far=false){
+ const elbow=[(start[0]+grip[0])*.5-1,(start[1]+grip[1])*.5+1.4];
+ const cuff=[grip[0]+(elbow[0]-grip[0])*.25,grip[1]+(elbow[1]-grip[1])*.25];
+ fpaSowBand(c,start,elbow,far?5:5.5,'#32271e');
+ fpaSowBand(c,elbow,grip,far?4.5:5,'#32271e');
+ fpaSowBand(c,start,elbow,far?4:4.5,shade(cloth,far?-.23:0));
+ fpaSowBand(c,elbow,grip,far?3.5:4,shade(cloth,far?-.23:0));
+ fpaSowBand(c,[elbow[0]-.5,elbow[1]-.5],[cuff[0]-.5,cuff[1]-.5],1,shade(cloth,far?-.05:.2));
+ fpaSowBand(c,cuff,grip,4,shade(cloth,far?-.08:.28));
+ return {elbow,cuff};
+}
 function fpaDrawWorkTool(c,u,view,frame,opt={}){
  if(opt.sowRigBase)return {known:true,drawn:false};
  const tool=ANIM_TOOL[frame?.anim],known=['axe','pick','hammer','sickle','spade','hook','toss','pat','bucket'].includes(tool);
@@ -424,7 +487,10 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
    else if(side===(front?1:-1)){hx=side*(4.2+Math.sin(a)*3.4);hy=-13.5-Math.cos(a)*4.4;}
    else{hx=side*4.4+Math.sin(phase)*.4;hy=-12.5+Math.sin(phase)*.6;}
    const shoulder=-14.5+Math.sin(phase)*.2;
-   smoothLimb(c,[side*4.2,shoulder],[side*5.8,(shoulder+hy)/2+1.9],[hx,hy],2.1,side>0===front?shade(coat,-.2):coat);hand(c,hx,hy,skin[1]);hands.push([PFX+hx,PFY+hy]);
+   const dark=(side>0)===front;
+   fpaWorkSleeve(c,[side*4.2,shoulder],[hx,hy],coat,dark);
+   fpaSowFist(c,[hx,hy],Math.atan2(hx-side*4.2,hy-shoulder),skin,dark);
+   hands.push([PFX+hx,PFY+hy]);
   }
   c.restore();return{known:true,drawn:true,projection:'front-working-hands',tool,frame:f,frames:angles.length,hand:hands[1],hands,tip:null};
  }
@@ -433,8 +499,8 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  if(!profile&&view==='N')c.scale(-1,1);
  const offset=profile?(opt.woodcutting==='tree'?-1.6:0):4, reach=profile?1:.68;
  if(!profile){
-  smoothLimb(c,[-4.2,sh+.6],[-5.4,(sh+hip)/2],[-4.8,hip-.4],2.1,shade(coat,-.25));
-  hand(c,-4.8,hip-.4,skin[0]);
+  fpaWorkSleeve(c,[-4.2,sh-2.8],[-4.8,hip-.4],coat,true);
+  fpaSowFist(c,[-4.8,hip-.4],0,skin,true);
  }
  c.translate(0,hip);c.rotate(lean);c.translate(0,-hip);
  const arm=3.8;
@@ -459,7 +525,7 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
  if(tool==='spade'&&!opt.fieldWork&&u.type!=='baker'){
    [tx,ty]=fpaFitSpadeToSprite(c,hx,hy,tx,ty);
  }
- smoothLimb(c,[offset+.4,sh+.4],[(offset+.4+hx)/2+.6,(sh+hy)/2+.5],[hx,hy],2.1,coat);
+ fpaWorkSleeve(c,[profile?-3.2:4.2,sh-2.8],[hx,hy],coat);
  if(profile&&typeof dwarfWorkwear==='function'){
    const wear=dwarfWorkwear(u);
    if(wear)paintWorkwearShoulder(wear,(x,y)=>[-3.2-x,sh-3+y],
@@ -539,7 +605,7 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
    break;
  }
  }
- hand(c,hx,hy,skin[1]);c.restore();
+ fpaSowFist(c,[hx,hy],Math.atan2(tx-hx,ty-hy),skin,false);c.restore();
  const world=(x,y)=>[PFX+(view==='N'?-1:1)*(x*Math.cos(lean)-(y-hip)*Math.sin(lean)),PFY+hip+x*Math.sin(lean)+(y-hip)*Math.cos(lean)];
  const blade=tool==='pick'||tool==='axe';
  return{known:true,drawn:true,projection:profile?'native-profile':'front-working-tool',tool,frame:f,frames:angles.length,hand:world(hx,hy),tip:world(blade?tx+nx*edge:tx,blade?ty+ny*edge:ty)};
@@ -1086,10 +1152,105 @@ function fpaQuarrySurface(target,origin){
  }
  return best;
 }
+// Articulated presentation arms retain every native prop grip while using the
+// same broad sleeve and hand volume as the accepted working dwarf.
+function fpaPoseCoat(u,look=lookOf(u)){
+ const outfit=OUTFIT[u.type]||OUTFIT.serf;
+ return (outfit.robe?outfit.robeCol||outfit.coat:outfit.coat)||look.green||'#66863d';
+}
+function fpaPoseArm(c,start,grip,cloth,far=false,size=1,bend=1){
+ const dx=grip[0]-start[0],dy=grip[1]-start[1],d=Math.hypot(dx,dy)||.01;
+ const reach=Math.max(4.75*size,d*.505),along=d*.5;
+ const height=Math.sqrt(Math.max(.12*size,reach*reach-along*along));
+ const elbow=[start[0]+dx*.5-dy/d*height*bend,start[1]+dy*.5+dx/d*height*bend];
+ const wrist=[grip[0]+(elbow[0]-grip[0])*.2,grip[1]+(elbow[1]-grip[1])*.2];
+ const normal=(a,b)=>{const x=b[0]-a[0],y=b[1]-a[1],n=Math.hypot(x,y)||1;return[-y/n,x/n];};
+ const a=normal(start,elbow),b=normal(elbow,wrist),join=[a[0]+b[0],a[1]+b[1]],jlen=Math.hypot(...join)||1;
+ join[0]/=jlen;join[1]/=jlen;
+ const edge=(point,n,width)=>[point[0]+n[0]*width,point[1]+n[1]*width];
+ const layer=(width,color)=>{
+  const [u,e,w]=width.map(n=>n*size*.5);
+  fpaSowPolygon(c,[edge(start,a,u),edge(elbow,a,e),edge(elbow,join,e),edge(elbow,b,e),
+    edge(wrist,b,w),edge(wrist,b,-w),edge(elbow,b,-e),edge(elbow,join,-e),
+    edge(elbow,a,-e),edge(start,a,-u)],color);
+ };
+ layer(far?[5.4,4.9,4.1]:[6,5.4,4.5],'#30261e');
+ layer(far?[4.4,3.9,3.1]:[5,4.4,3.5],shade(cloth,far?-.24:0));
+ fpaSowBand(c,[elbow[0]-.45*size,elbow[1]-.45*size],[wrist[0]-.45*size,wrist[1]-.45*size],size,shade(cloth,far?-.07:.2));
+ fpaSowBand(c,[wrist[0]+(elbow[0]-wrist[0])*.28,wrist[1]+(elbow[1]-wrist[1])*.28],wrist,3.6*size,shade(cloth,far?-.08:.28));
+ return {shoulder:start,elbow,wrist,hand:grip};
+}
+function fpaPoseHand(c,point,angle,skin,far=false,size=1,open=false){
+ const cs=Math.cos(angle),sn=Math.sin(angle);
+ const at=([x,y])=>[point[0]+(x*cs+y*sn)*size,point[1]+(-x*sn+y*cs)*size];
+ const form=(points,color)=>fpaSowPolygon(c,points.map(at),color);
+ const band=(a,b,w,color)=>fpaSowBand(c,at(a),at(b),w*size,color);
+ if(!open){
+  // The accepted work-fist geometry, projected before scan conversion so a
+  // rotated hand still lands on the world's half-pixel grid.
+  form([[-2.5,-1.5],[-1.5,-2.5],[1,-2.5],[2.5,-1.5],[2.5,.5],
+    [1.5,2],[-1,2],[-2.5,1]],far?'#5b4031':'#73513b');
+  form([[-2,-1.5],[-1.5,-2],[1,-2],[2,-1.5],[2,.5],
+    [1.5,1.5],[-1,1.5],[-2,1]],far?skin[1]:skin[0]);
+  form([[-1.5,-1.5],[.5,-1.5],[1,-.5],[-.5,0],[-1.5,-.5]],far?skin[1]:shade(skin[0],.18));
+  form([[-.5,.5],[1,-.25],[2,.5],[1.5,1.5],[0,1.5],[-1,1]],far?shade(skin[1],-.2):skin[1]);
+ }else{
+  form([[-2,2],[-2.5,.5],[-2.2,-2],[-1.5,-2.75],[0,-2.75],[1,-2.3],
+    [1.8,-.75],[2.75,-1],[3.2,-.2],[2.2,1.4],[.8,2.5]],far?'#654431':'#73513b');
+  form([[-1.5,1.8],[-2,.2],[-1.75,-1.75],[-1.1,-2.2],[.1,-2.2],[.9,-1.8],
+    [1.3,-.15],[2.3,-.4],[2.5,.1],[1.5,1.3],[.5,2]],far?skin[1]:skin[0]);
+  band([-.75,-1.9],[-.75,-.65],.5,far?skin[2]:skin[1]);
+  band([.15,-1.8],[.15,-.55],.5,far?skin[2]:skin[1]);
+  band([-1.3,.5],[.1,1],.7,far?skin[1]:shade(skin[0],.16));
+ }
+}
+function fpaPoseShoulder(c,u,project){
+ const wear=typeof dwarfWorkwear==='function'?dwarfWorkwear(u):null;
+ if(wear)paintWorkwearShoulder(wear,project,(points,color)=>fpaSowPolygon(c,points,color));
+}
+const FPA_STORY_BODIES=new Map();
+function fpaDrawStoryDwarf(c,u,paint){
+ if(!OUTFIT[u.type])return false;
+ const moving=!!(u.action?.walk&&u.action.path&&!(u.action.block>0&&!u.action.squeeze)&&!(u.pauseUntil>Game.time));
+ const view=moving?(u.vdir||'E'):'S',profile=view==='E'||view==='W',face=profile?(u.face<0?-1:1):1;
+ const frame=moving?Math.floor((u.walkPhase||0)/(1.1*8/WALK_FRAMES))%WALK_FRAMES:0;
+ const source=personSprite({...u,carry:null,_spr:null,_exactYardPose:true},profile?'E':view,moving?'walk':'idle',frame);
+ if(!source||source._pendingSprite||!source._fantasyAppearance)return true;
+ let body=FPA_STORY_BODIES.get(source);
+ if(!body){
+  body=mkCanvas(source.width,source.height);const b=body.getContext('2d');b.drawImage(source,0,0);
+  fpaCleanAtlasArms(body,{...u,carry:null},profile?'E':view,'yardGrip',0);
+  if(profile){
+   const cloth=fpaPoseCoat(u);b.save();b.scale(body.width/PW,body.height/PH);b.translate(PFX,PFY);
+   b.clearRect(-13,-15,11,9);
+   fpaSowPolygon(b,[[-5.5,-15],[-2,-15],[-2,-6],[-4.5,-6],[-5.5,-8]],'#352722');
+   fpaSowPolygon(b,[[-4.5,-14.5],[-2,-14.5],[-2,-7],[-4,-7],[-5,-8.5]],shade(cloth,-.2));
+   fpaSowPolygon(b,[[-4.5,-13],[-2,-13.5],[-2,-9],[-4,-9]],cloth);b.restore();
+  }
+  FPA_STORY_BODIES.set(source,body);
+  if(FPA_STORY_BODIES.size>24)FPA_STORY_BODIES.delete(FPA_STORY_BODIES.keys().next().value);
+ }
+ const actor=(u.look>>>0)>=0x20000?u:{...u,look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length]},skin=SKINS[lookOf(actor).skin%SKINS.length];
+ c.save();c.imageSmoothingEnabled=false;c.translate(Math.round(u.x*TILE),Math.round(u.y*TILE+6));c.scale(face,1);
+ c.fillStyle='rgba(20,25,14,.22)';c.beginPath();c.ellipse(0,0,6,1.7,0,0,Math.PI*2);c.fill();
+ paint({view:profile?'E':view,profile,face,moving,frame,skin,cloth:fpaPoseCoat(actor),
+  drawBody:()=>c.drawImage(body,-PFX,-PFY,PW,PH)});
+ c.restore();return true;
+}
+if(typeof FantasyPublishedArt!=='undefined')FantasyPublishedArt.ready.then(()=>FPA_STORY_BODIES.clear());
+function fpaDrawSmokingHand(c,u,view,frame){
+ const rig=fpaSmokingRig(u,view,frame),profile=view==='E'||view==='W',side=view==='N'?-1:1;
+ const look=lookOf(u),coat=fpaPoseCoat(u,look),skin=SKINS[look.skin%SKINS.length];
+ const start=[PFX+(profile?-2.2:side*4.2),PFY-14.8],grip=[PFX+rig.hand[0],PFY+rig.hand[1]];
+ fpaPoseArm(c,start,grip,coat,false,1,profile?1:grip[1]>=start[1]?-side:side);
+ fpaPoseShoulder(c,u,(x,y)=>[PFX+(profile?-3.2-x:side*(3.7+x)),PFY-15+y]);
+ fpaPoseHand(c,grip,Math.atan2(grip[0]-start[0],grip[1]-start[1]),skin);
+ return {hand:grip,shoulder:start};
+}
 // Weapon-only native pose projection. The atlas body and all hitboxes stay fixed.
 function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
  const W=opt.wpn?wpnParse(opt.wpn):pose==='fight'?{m:'fists',o:'',out:true}:null;if(!W)return;
- const v=view==='W'?'E':view,fight=pose==='fight'?(FIGHT_BODY[frame]?frame:'ready'):null,ff=fight||'ready',style=WPN_STYLE[W.m]||'fist',O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),skin=SKINS[L.skin%SKINS.length],coat=O.coat||L.green||'#66863d';
+ const v=view==='W'?'E':view,fight=pose==='fight'?(FIGHT_BODY[frame]?frame:'ready'):null,ff=fight||'ready',style=WPN_STYLE[W.m]||'fist',O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),skin=SKINS[L.skin%SKINS.length],coat=fpaPoseCoat(u,L);
  const ph=pose==='walk'?Number(frame)/WALK_FRAMES*Math.PI*2:0,sw=Math.sin(ph),breath=pose==='idle'?(IDLE_BREATH[(Number(frame)||0)%IDLE_FRAMES]||0):0,crouch=(fight?FIGHT_BODY[fight][1]:pose==='duck'||pose==='tame'?1.8:0)-breath+(pose==='work'?swingDip(frame):0),hip=-6.2+crouch,sh=-12+crouch;
  let lean=fight?FIGHT_BODY[fight][0]:pose==='walk'?(u.carry?.16:.05):pose==='work'&&(frame.anim==='reap'||frame.anim==='dig')?.28:pose==='work'&&frame.anim==='pat'?.42:0;
  if(pose==='walk'&&opt.gait==='tired')lean+=.16;if(pose==='walk'&&opt.gait==='drunk')lean+=Math.cos(ph)*.1;
@@ -1101,19 +1262,29 @@ function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
   const f=(FIGHT_ARM[style]||FIGHT_ARM.fist)[ff]||(FIGHT_ARM[style]||FIGHT_ARM.fist).ready,[a,tilt,reach=4.2]=f,wk=!fight&&pose==='walk'&&(style==='blade'||style==='stab')?sw:0;
   const hx=.4+Math.sin(a)*reach+wk*.3,hy=sh+.4-Math.cos(a)*reach+wk*.5,dx=Math.sin(tilt+wk*.16),dy=-Math.cos(tilt+wk*.16),fk=fightKey(ff),two=(style==='heavy'||style==='staff')&&ff!=='draw'&&ff!=='d0'&&ff!=='s5'&&!(style==='staff'&&(fk==='win0'||fk==='win1'||isCastF(ff)));
   let bx,by;if(two){bx=hx-dx*2.4;by=hy-dy*2.4;}else if(style==='bow'){const q=FIGHT_BACK.bow[fk];if(q){bx=-.4+q[0];by=sh+.4+q[1];}else{bx=hx-.9;by=hy+.3;}}else{const q=(W.o==='wshield'?FIGHT_BACK.shield:FIGHT_BACK.free)[ff]||FIGHT_BACK.free.ready;bx=-.4+q[0];by=sh+.4+q[1];}
-  smoothLimb(c,[-.4,sh+.4],[(-.4+bx)/2+.3,(sh+.4+by)/2+.7],[bx,by],2.2,shade(coat,-.35));hand(c,bx,by,skin[2]);
+  fpaPoseArm(c,[1.5,sh-2.8],[bx,by],coat,true);
+  fpaPoseHand(c,[bx,by],Math.atan2(dx,dy),skin,true);
   if(W.o&&WPN_STYLE[W.o]==='stab'){const d=fk==='windup'||fk==='parry'?[.95,-.3]:[.85,.52];drawWeapon(c,W.o,bx,by,d[0],d[1]);}
   if(W.o==='wshield')drawShield(c,bx+.9,by-.6,1.7,3.9);
   if(style==='bow')drawBow(c,W.m,hx,hy,tilt,fk==='windup'?[bx,by]:null);else if(style!=='fist')drawWeapon(c,W.m,hx,hy,dx,dy,(ff==='draw'||ff==='d0'||ff==='s5')&&(style==='blade'||style==='stab')?'hilt':undefined);
-  smoothLimb(c,[.4,sh+.4],[(.4+hx)/2+.4,(sh+.4+hy)/2+.6],[hx,hy],2.1,coat);
-  if(style==='fist'){ellipse(c,hx,hy,fk==='strike'||ff==='bhit'?1.95:1.5,fk==='strike'||ff==='bhit'?1.9:1.45,skin[1]);if(fight&&BOTTLE_POSE[fight])drawBottle(c,hx,hy,BOTTLE_POSE[fight][0],BOTTLE_POSE[fight][1]);if(W.m==='fists'){line(c,hx-1.2,hy-.4,hx+1.2,hy-.4,'#e8dcc0',.45);line(c,hx-1.2,hy+.5,hx+1.2,hy+.5,'#e8dcc0',.45);}}else hand(c,hx,hy,skin[1]);
+  fpaPoseArm(c,[-2.2,sh-2.8],[hx,hy],coat);
+  fpaPoseShoulder(c,u,(x,y)=>[-3.2-x,sh-3+y]);
+  fpaPoseHand(c,[hx,hy],Math.atan2(dx,dy),skin);
+  if(style==='fist'){
+    if(fight&&BOTTLE_POSE[fight])drawBottle(c,hx,hy,BOTTLE_POSE[fight][0],BOTTLE_POSE[fight][1]);
+    if(W.m==='fists'){line(c,hx-1.6,hy-.4,hx+1.5,hy-.4,'#e8dcc0',.5);line(c,hx-1.6,hy+.6,hx+1.5,hy+.6,'#e8dcc0',.5);}
+  }
  }else{
   const front=v==='S';c.translate(0,lean*2.4);
   if(!armed){if(WPN_BACK[W.m])drawOnBack(c,W.m,front?3.6:-1.2,sh+2.6,v);if(!front&&W.o==='wshield')drawShield(c,0,sh+3.8,3.1,3.6);c.restore();return;}
   for(const side of [-1,1]){const h=hip-.2,main=side===(front?-1:1),off=!main&&W.o;
    if(main&&style!=='fist'){const d=style==='heavy'?[side*.3,-.95]:style==='staff'?[side*.12,-.99]:style==='blade'?[side*.34,-.94]:[side*.42,.9];if(style==='bow')drawBow(c,W.m,side*5.1,h+.5,0,null);else drawWeapon(c,W.m,side*5.1,h+.5,d[0],d[1]);}
    if(off&&W.o!=='wshield')drawWeapon(c,W.o,side*5.1,h+.5,side*.4,.92);
-   smoothLimb(c,[side*4.2,sh+.6],[side*5.4,(sh+h)/2],[side*5,h],2.3,side>0===front?shade(coat,-.25):coat);hand(c,side*5.1,h+.5,skin[0]);if(off==='wshield')drawShield(c,side*5.4,h-.4,front?2.6:2.2,3.2);
+   const dark=(side>0)===front;
+   fpaPoseArm(c,[side*4.2,sh-2.8],[side*5.1,h+.5],coat,dark,1,-side);
+   fpaPoseShoulder(c,u,(x,y)=>[side*(3.7+x),sh-3+y]);
+   fpaPoseHand(c,[side*5.1,h+.5],0,skin,dark);
+   if(off==='wshield')drawShield(c,side*5.4,h-.4,front?2.6:2.2,3.2);
   }
  }
  c.restore();
@@ -1121,43 +1292,77 @@ function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
 // Native GF is 10..21 for a 12-frame cycle, not a 0..1 interpolation.
 // Preserve that clock, use both native joints and attach items to the wrist.
 function fpaDrawGestureProps(c,u,view,pose,frame,opt={}){
- const gest=opt.gest;if(!gest||u.carry)return {drawn:false};const W=opt.wpn?wpnParse(opt.wpn):null;if(pose==='fight'||W?.out&&(pose==='idle'||pose==='walk'))return {drawn:false};
- const v=view==='W'?'E':view,profile=v==='E',child=u.type==='kid',female=personSex(u)==='f'||OUTFIT[u.type]?.fem||u.type==='waitress',art=FantasyArt.images[child?'gnome-child':female?'gnome-woman-walk':'gnome-walk'];
+ const gest=opt.gest;if(!gest||u.carry)return {drawn:false};
+ const W=opt.wpn?wpnParse(opt.wpn):null;
+ if(pose==='fight'||W?.out&&(pose==='idle'||pose==='walk'))return {drawn:false};
+ const v=view==='W'?'E':view,profile=v==='E',child=u.type==='kid';
+ const female=personSex(u)==='f'||OUTFIT[u.type]?.fem||u.type==='waitress';
+ const art=FantasyArt.images[child?'gnome-child':female?'gnome-woman-walk':'gnome-walk'];
  let head=PFY-20;const [,dip]=fpaBodyMotion(v,pose,frame,opt);
- if(art){const row=profile?1:v==='N'?2:0,f=pose==='walk'?Math.floor((Number(frame)%WALK_FRAMES)*8/WALK_FRAMES):0,src=art.frames[child?(pose==='walk'?Math.floor((Number(frame)%WALK_FRAMES)*4/WALK_FRAMES):0):row*8+f],sc=Math.min((child?21:25)/art.maxW,(child?27:33)/art.maxH),dh=src[3]*sc;head=PFY-Math.round(dh)+dh*.30;}
- const sh=PFY-14+dip,headY=head+dip,O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),coat=O.coat||L.green||'#66863d',skin=SKINS[L.skin%SKINS.length],raw=Number(opt.gf)||0,gf=['five','flirt','wslap','cheek'].includes(gest)?raw:gestK(raw),sides=['clap','stretch','panic','five','six7'].includes(gest)?[1,-1]:[v==='N'?-1:1],joints=[];
+ if(art){
+  const row=profile?1:v==='N'?2:0,f=pose==='walk'?Math.floor((Number(frame)%WALK_FRAMES)*8/WALK_FRAMES):0;
+  const src=art.frames[child?(pose==='walk'?Math.floor((Number(frame)%WALK_FRAMES)*4/WALK_FRAMES):0):row*8+f];
+  const sc=Math.min((child?21:25)/art.maxW,(child?27:33)/art.maxH),dh=src[3]*sc;
+  head=PFY-Math.round(dh)+dh*.30;
+ }
+ const size=child?.76:1,sh=PFY-(child?11.5:14.8)+dip,headY=head+dip;
+ const O=OUTFIT[u.type]||OUTFIT.serf,L=lookOf(u),coat=fpaPoseCoat(u,L),skin=SKINS[L.skin%SKINS.length];
+ const raw=Number(opt.gf)||0,gf=['five','flirt','wslap','cheek'].includes(gest)?raw:gestK(raw);
+ const sides=['clap','stretch','panic','five','six7'].includes(gest)?[1,-1]:[v==='N'?-1:1],joints=[];
  if(gest==='read'&&child&&v==='S'){
-  const y=PFY-10+dip,x=PFX;
-  const left=[x-3.5,y+.5],right=[x+3.5,y+.5-(gf>.68?1:0)];
-  smoothLimb(c,[x-4,sh],[x-5,y+1],left,2.1,shade(coat,-.12));
-  smoothLimb(c,[x+4,sh],[x+5,y+1],right,2.1,coat);
-  poly(c,[[x-4.5,y-2],[x,y-1],[x+4.5,y-2],[x+3.5,y+2],[x,y+3],[x-3.5,y+2]],'#392b20');
-  poly(c,[[x-4,y-2.5],[x,y-1.5],[x+4,y-2.5],[x+3,y+1],[x,y+2],[x-3,y+1]],'#d9bf86');
+  const y=PFY-9+dip,x=PFX,left=[x-3.5,y+.5],right=[x+3.5,y+.5-(gf>.68?1:0)];
+  fpaPoseArm(c,[x-3.5,sh],left,coat,true,size,1);
+  fpaPoseArm(c,[x+3.5,sh],right,coat,false,size,-1);
+  fpaSowPolygon(c,[[x-4.5,y-2],[x,y-1],[x+4.5,y-2],[x+3.5,y+2],[x,y+3],[x-3.5,y+2]],'#392b20');
+  fpaSowPolygon(c,[[x-4,y-2.5],[x,y-1.5],[x+4,y-2.5],[x+3,y+1],[x,y+2],[x-3,y+1]],'#d9bf86');
   line(c,x,y-1.4,x,y+1.8,'#8e6e48',.5);
   if(gf>.68)line(c,x,y-1.5,x+3*gf,y-3,'#f3db9c',.7);
-  hand(c,...left,skin[0]);hand(c,...right,skin[0]);
+  fpaPoseHand(c,left,.3,skin,true,size);fpaPoseHand(c,right,-.3,skin,false,size);
   return {drawn:true,gest,hand:right};
  }
- for(const side of sides){const q=gestPts(gest,gf,side,sh,headY,v),S=[PFX+(profile?.4:side*4.2),sh+.5],E=[PFX+q[0][0],q[0][1]],H=[PFX+q[1][0],q[1][1]],raised=H[1]<sh+1;
-  c.save();if(raised){c.beginPath();c.rect(-80,-80,180,240);c.moveTo(PFX+(profile?1:0)+5.8,headY+3.3);c.ellipse(PFX+(profile?1:0),headY+3.3,5.8,7.3,0,0,Math.PI*2);c.clip('evenodd');}
-  smoothLimb(c,S,E,H,2.1,side>0?coat:shade(coat,-.12));c.restore();hand(c,H[0],H[1],skin[0]);
-  if(gest==='eat'){line(c,H[0],H[1],H[0]+.9,H[1]-.7,'#aa9660',.5);ellipse(c,H[0]+.9,H[1]-.7,.6,.45,'#dac99a');}
-  if(gest==='drink'||gest==='chest'&&gf>=.5)drawFlask(c,H[0]+1,H[1],.3);
-  joints.push({side,shoulder:S,elbow:E,hand:H});
+ for(const side of sides){
+  const far=profile?side<0:side===(v==='S'?-1:1),q=gestPts(gest,gf,side,sh,headY,v);
+  const S=[PFX+(profile?(far?1.5:-2.2):side*4.2*size),sh];
+  let H=[PFX+q[1][0],q[1][1]];
+  if(profile&&far){H=[H[0]+.5,H[1]-.5];}
+  // Free gestures bend at a fixed-size arm rather than stretching to the old
+  // atlas's hat top. Contact gestures retain their native shared grip anchor.
+  const contact=['five','flirt','wslap','cheek'].includes(gest);
+  const dx=H[0]-S[0],dy=H[1]-S[1],distance=Math.hypot(dx,dy),limit=9.4*size;
+  if(!contact&&distance>limit)H=[S[0]+dx/distance*limit,S[1]+dy/distance*limit];
+  const raised=H[1]<sh+1;
+  c.save();
+  if(raised){
+   c.beginPath();c.rect(-80,-80,180,240);
+   c.moveTo(PFX+(profile?1:0)+5.8,headY+3.3);
+   c.ellipse(PFX+(profile?1:0),headY+3.3,5.8,7.3,0,0,Math.PI*2);c.clip('evenodd');
+  }
+  const joint=fpaPoseArm(c,S,H,coat,far,size,profile?1:H[1]>=S[1]?-side:side);
+  if(!child)fpaPoseShoulder(c,u,(x,y)=>[PFX+(profile?-3.2-x:side*(3.7+x)),sh-.2+y]);
+  c.restore();
+  const open=['wave','clap','stretch','panic','five','six7','wslap','point','hat'].includes(gest);
+  fpaPoseHand(c,H,Math.atan2(H[0]-joint.elbow[0],H[1]-joint.elbow[1]),skin,far,size,open);
+  if(gest==='eat'){line(c,H[0],H[1],H[0]+1.3,H[1]-.9,'#aa9660',.6);ellipse(c,H[0]+1.3,H[1]-.9,.8,.55,'#dac99a');}
+  if(gest==='drink'||gest==='chest'&&gf>=.5)drawFlask(c,H[0]+1.2,H[1],.3);
+  joints.push({side,...joint});
  }
- return{drawn:true,gest,rawGF:raw,gf,headY,shoulderY:sh,joints,hand:joints.at(-1)?.hand};
+ return {drawn:true,gest,rawGF:raw,gf,headY,shoulderY:sh,joints,hand:joints.at(-1)?.hand};
 }
 function fpaAction(c,u,view,pose,frame,opt){
- const O=OUTFIT[u.type],L=lookOf(u),coat=O.coat||L.green||'#66863d';
+ const O=OUTFIT[u.type],L=lookOf(u),coat=fpaPoseCoat(u,L);
  if(opt.gest)fpaDrawGestureProps(c,u,view,pose,frame,opt);
  if(pose==='duck'||pose==='tame'){
   const phase=[0,.35,.8,1,.62,.2][Number(frame)]||0,side=view==='N'?-1:1,profile=view==='E'||view==='W';
-  const shoulder=[PFX+(profile?.4:side*4.2),PFY-11];
+  const size=u.type==='kid'?.76:1,[,dip]=fpaBodyMotion(view,pose,frame,opt);
+  const shoulder=[PFX+(profile?-1:side*4.2*size),PFY-(u.type==='kid'?11.5:14.8)+dip];
   const reach=pose==='tame'?6.1+phase*2.3:opt.posture==='forage'?4.4+phase*4:opt.posture==='sit'?4:5.8-phase*3;
   const hy=PFY-(pose==='tame'?7.8+phase:opt.posture==='forage'?6.4-phase*3.8:opt.posture==='sit'?5+phase*1.4:6.8+phase*5.1);
-  const hx=PFX+side*reach;
-  smoothLimb(c,shoulder,[(shoulder[0]+hx)/2+side,PFY-8], [hx,hy],2.1,coat);
-  hand(c,hx,hy,SKINS[L.skin%SKINS.length][0]);
+  let H=[PFX+side*reach*size,hy];
+  const dx=H[0]-shoulder[0],dy=H[1]-shoulder[1],distance=Math.hypot(dx,dy),limit=8.3*size;
+  if(distance>limit)H=[shoulder[0]+dx/distance*limit,shoulder[1]+dy/distance*limit];
+  const joint=fpaPoseArm(c,shoulder,H,coat,false,size,profile?1:H[1]>=shoulder[1]?-side:side);
+  if(u.type!=='kid')fpaPoseShoulder(c,u,(x,y)=>[PFX+(profile?-3.2-x:side*(3.7+x)),shoulder[1]-.2+y]);
+  fpaPoseHand(c,H,Math.atan2(H[0]-joint.elbow[0],H[1]-joint.elbow[1]),SKINS[L.skin%SKINS.length],false,size,true);
  }
  fpaDrawWeaponProps(c,u,view,pose,frame,opt);
 }

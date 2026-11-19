@@ -351,6 +351,7 @@ function slapHatOf(type, look) {
   if (SLAP_HATS[key]) return SLAP_HATS[key];
   const o = { gait: '', gest: '', gf: 0 }, u = { type, look, carry: null };
   const full = personSprite(u, 'E', 'idle', 0, o), w = full.width, h = full.height;
+  if(full._pendingSprite)return {cv:full,cx:0,cy:-24,vx:-17,vy:-38,tl:1.1,land:-18.7};
   const rd = cv => { const t = document.createElement('canvas'); t.width = w; t.height = h; const x = t.getContext('2d'); x.drawImage(cv, 0, 0); return x.getImageData(0, 0, w, h); };
   const A = rd(full);                                       // сразу копируем: личный холст спрайта могут переиспользовать
   const B = rd(personSprite(u, 'E', 'idle', 0, Object.assign({ nohat: true }, o))), cv = document.createElement('canvas'); cv.width = w; cv.height = h;
@@ -742,6 +743,7 @@ function drawPenAnimals(c, b, spr, ox, oy) {
     drawCreatureAt(c, kind, ox + a.x, oy + a.y, a.face, moving, a.ph);
   }
   if (!goats && spr.cartSpot) drawCreatureAt(c, 'cart', ox + spr.cartSpot[0], oy + spr.cartSpot[1], 1, false, 0, null, 0);   // телега у дома извозчика
+  if (!goats && window.FantasyDwarfCareers) FantasyDwarfCareers.drawStableYard(c,b,spr,ox,oy);
   c.imageSmoothingEnabled = R.smooth;
 }
 
@@ -802,7 +804,8 @@ function drawInfYard(c, b, spr, ox, oy) {
     const n = Math.max(1, Math.floor((e[0] - a[0]) / 4));
     for (let k = 0; k <= n; k++) {
       const x = a[0] + (e[0] - a[0]) * k / n, y = a[1] + (e[1] - a[1]) * k / n;
-      const cut = bi === bedI && cyc < 6 && k <= n * cyc / 6 ? (cyc - 6 * k / n) : 99;   // срезано в этом обходе — растёт с нуля
+      const cutK=spr._careLayout?.flipped?n-k:k;
+      const cut = bi === bedI && cyc < 6 && cutK <= n * cyc / 6 ? (cyc - 6 * cutK / n) : 99;   // срезано в этом обходе — растёт с нуля
       const g = Math.min(1, ((t * 0.025 + k * 0.17 + bi * 0.31) % 1.3) * (cut < 99 ? 0 : 1) + (cut < 99 ? Math.min(1, cut * 0.05) : 0));
       const h = Math.round(1 + g * 4), X = Math.round(ox + x), Y = Math.round(oy + y);
       c.fillStyle = PL[(k + bi) % 3]; c.fillRect(X, Y - h, 1, h); if (g > 0.4) { c.fillRect(X - 1, Y - h + 1, 1, 1); c.fillRect(X + 1, Y - h + 2, 1, 1); }
@@ -819,15 +822,17 @@ function drawInfYard(c, b, spr, ox, oy) {
   }
   // лекарь
   const bed = spr.beds[bedI], rack = spr.rack, cau = spr.cauldron;
+  const care=spr._careLayout,bedStart=care?.flipped?bed[1]:bed[0],bedEnd=care?.flipped?bed[0]:bed[1],stirSide=care?.stirSide||1;
   let px, py, pose = 'walk', fr = Math.floor(t * 9) & 7, view = 'E', opt = {};
   const lerp = (p, q, f) => [p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f];
-  if (cyc < 6) { [px, py] = lerp(bed[0], bed[1], cyc / 6); py += 3; pose = 'work'; fr = { anim: 'reap', f: Math.floor(t * 8) % 8 }; }
-  else if (cyc < 8) { [px, py] = lerp([bed[1][0], bed[1][1] + 3], [rack[0], rack[1] + 4], (cyc - 6) / 2); view = rack[0] < bed[1][0] ? 'W' : 'E'; }
+  if (cyc < 6) { [px, py] = lerp(bedStart, bedEnd, cyc / 6); py += 3; pose = 'work'; fr = { anim: 'reap', f: Math.floor(t * 8) % 8 }; view=bedEnd[0]<bedStart[0]?'W':'E'; }
+  else if (cyc < 8) { [px, py] = lerp([bedEnd[0], bedEnd[1] + 3], [rack[0], rack[1] + 4], (cyc - 6) / 2); view = rack[0] < bedEnd[0] ? 'W' : 'E'; }
   else if (cyc < 11) { [px, py] = [rack[0] + 4, rack[1] + 4]; pose = 'idle'; fr = 0; opt = { gest: 'stretch', gf: gestCyc(t) }; view = 'S'; }
-  else if (cyc < 13) { [px, py] = lerp([rack[0] + 4, rack[1] + 4], [cau[0] + 10, cau[1] + 2], (cyc - 11) / 2); view = 'W'; }
-  else if (cyc < 17) { [px, py] = [cau[0] + 10, cau[1] + 2]; pose = 'work'; fr = { anim: 'dig', f: Math.floor(t * 5) % 8 }; view = 'W'; }
-  else { [px, py] = lerp([cau[0] + 10, cau[1] + 2], [bed[0][0], bed[0][1] + 3], cyc - 17); }
-  drawFolk(c, { type: 'healer', look: b.id * 83 + 4, carry: cyc >= 6 && cyc < 8 ? 'hay' : null }, ox + px, oy + py, view, pose, fr, opt);
+  else if (cyc < 13) { [px, py] = lerp([rack[0] + 4, rack[1] + 4], [cau[0] + stirSide*10, cau[1] + 2], (cyc - 11) / 2); view = cau[0]+stirSide*10<rack[0]+4?'W':'E'; }
+  else if (cyc < 17) { [px, py] = [cau[0] + stirSide*10, cau[1] + 2]; pose = 'work'; fr = { anim: 'dig', f: Math.floor(t * 5) % 8 }; view = stirSide>0?'W':'E'; }
+  else { [px, py] = lerp([cau[0] + stirSide*10, cau[1] + 2], [bedStart[0], bedStart[1] + 3], cyc - 17); view=bedStart[0]<cau[0]+stirSide*10?'W':'E'; }
+  if(!window.FantasyDwarfCareers?.drawHealer(c,b,spr,ox,oy,px,py,view,cyc,t))
+    drawFolk(c, { type: 'healer', look: b.id * 83 + 4, carry: cyc >= 6 && cyc < 8 ? 'hay' : null }, ox + px, oy + py, view, pose, fr, opt);
   c.imageSmoothingEnabled = R.smooth;
 }
 

@@ -15,9 +15,21 @@ const DWARF_WORKWEAR = {
   hopgrower: ['#758b3e', '#7e6036', '#56633c', '#a9a056', 'quilt'],
   miller: ['#cec3a5', '#847859', '#7c7560', '#c6b48b', 'quilt'],
   herder: ['#4a7288', '#68624f', '#7c694d', '#c5b18c', 'leather'],
+  carpenter: ['#b97c3c', '#506b70', '#886544', '#c5a16c', 'leather'],
+  enchanter: ['wizard', '#574765', '#626078', '#bdac79', 'rune'],
+  stableman: ['#776087', '#65513d', '#79624a', '#c4a477', 'leather'],
+  carter: ['#515d70', '#665d4b', '#756a54', '#b9ac83', 'leather'],
+  healer: ['#d0d1b0', '#456e61', '#6a8874', '#c0cda6', 'quilt'],
+  fisher: ['#416e82', '#a18c45', '#796c43', '#d1bb79', 'leather'],
+  lamplighter: ['#526179', '#3e4e60', '#6e6550', '#baa56e', 'leather'],
+  scribe: ['#385e4d', '#3b5e50', '#61735a', '#b7b58a', 'quilt'],
 };
 DWARF_WORKWEAR.armorer = DWARF_WORKWEAR.smelter;
 DWARF_WORKWEAR.breeder = DWARF_WORKWEAR.herder;
+// Quest companions are ordinary dwarves too. Their former missing outfit
+// entries silently sent them through the legacy body renderer.
+OUTFIT.lamplighter={...OUTFIT.serf,frame:false,coat:'#3e4e60'};
+OUTFIT.scribe={...OUTFIT.serf,frame:false,coat:'#3b5e50'};
 
 function dwarfWorkwear(u) {
   return DWARF_WORKWEAR[u.type] || null;
@@ -39,6 +51,10 @@ function paintWorkwearShoulder(style, project, draw) {
   if(material==='quilt'){
     layer([[.5,-.5],[1.5,.5],[.5,1.5],[-.5,.5]],shade(edge,-.25));
     layer([[2.5,0],[3.5,1],[2.5,2],[1.5,1]],shade(edge,-.3));
+  }
+  if(material==='rune'){
+    layer([[.5,-.75],[1.5,.25],[.5,1.25],[-.5,.25]],'#d6c59a');
+    layer([[.5,-.25],[1,.25],[.5,.75],[0,.25]],'#777e9d');
   }
   layer([[3,1],[3.75,1],[3.75,1.75],[3,1.75]],material==='forge'?'#d6a078':'#cfad6c');
 }
@@ -83,6 +99,42 @@ function paintWorkwearBeard(c,G,view,shape) {
   tuft([[-.15,4.2],[.05,4.8],[.35,5.6],[.66,5.3],[.6,6.45],[.31,6.9],[.01,6.3]],'#52392a');
 }
 
+// The cart keeps its native horse, wheels, cargo and seat. Only its dwarf
+// driver uses the same approved body as the walking carter.
+const FPA_CART_DRIVER_BODIES=new Map();
+function fpaDrawCartDriver(c,x,seatY,view){
+  if(!window.FantasyPublishedAppearanceArt||!FantasyPublishedArt.images['gnome-walk'])return true;
+  const actor={type:'carter',look:15,_exactYardPose:true};
+  const source=personSprite(actor,view,'idle',0);
+  if(!source._fantasyAppearance)return true;
+  let body=FPA_CART_DRIVER_BODIES.get(source);
+  if(!body){
+    body=mkCanvas(source.width,source.height);
+    body.getContext('2d').drawImage(source,0,0);
+    fpaCleanAtlasArms(body,actor,view,'yardGrip',0);
+    FPA_CART_DRIVER_BODIES.set(source,body);
+    if(FPA_CART_DRIVER_BODIES.size>6)FPA_CART_DRIVER_BODIES.delete(FPA_CART_DRIVER_BODIES.keys().next().value);
+  }
+  const k=.42,footY=seatY+3.5,cloth=OUTFIT.carter.coat;
+  const look=lookOf({...actor,look:LOOK_POOL[15]}),skin=SKINS[look.skin%SKINS.length];
+  c.save();c.imageSmoothingEnabled=false;
+  c.beginPath();c.rect(x-7,seatY-17,14,18.2);c.clip();
+  c.translate(x,footY);c.scale(k,k);
+  const near=view==='E'?[2.6,-10.8]:[-4,-10.5],far=view==='E'?[5.5,-15.3]:[4,-10.5];
+  fpaWorkSleeve(c,view==='E'?[1.5,-15]:[4.2,-15],far,cloth,true);
+  fpaSowFist(c,far,view==='E'?1.3:0,skin,true);
+  c.drawImage(body,-PFX,-PFY,PW,PH);
+  fpaWorkSleeve(c,[-3.2,-15],near,cloth);
+  paintWorkwearShoulder(dwarfWorkwear(actor),(px,py)=>[-3.2-px,-15+py],
+    (points,color)=>fpaSowPolygon(c,points,color));
+  fpaSowFist(c,near,view==='E'?1.3:0,skin,false);
+  c.restore();
+  const handX=x+near[0]*k,handY=footY+near[1]*k;
+  line(c,handX,handY,view==='E'?x+10:x-2,seatY+1,'#443426',.5);
+  return true;
+}
+
 for (const [role, [cap, coat]] of Object.entries(DWARF_WORKWEAR)) {
   if (OUTFIT[role]) Object.assign(OUTFIT[role], { cap, coat });
 }
+if(typeof FantasyPublishedArt!=='undefined')FantasyPublishedArt.ready.then(()=>{CR_CACHE.clear();FPA_CART_DRIVER_BODIES.clear();});

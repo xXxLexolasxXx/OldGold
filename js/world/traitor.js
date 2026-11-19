@@ -362,10 +362,9 @@ function spyEpilogue() {
   };
   const _du = drawUnit;
   drawUnit = function (c, u) {
-    _du(c, u);
-    if (u.inside || u.dead) return;
-    const S = spyMir();
-    if (u.pim || (S && S.id && S.id === u.id)) spyDrawBook(c, u, S);
+    const S=spyMir(),scribe=!u.inside&&!u.dead&&(u.pim||(S&&S.id&&S.id===u.id));
+    if(scribe&&u.type==='scribe'&&typeof fpaDrawStoryDwarf==='function'){spyDrawBook(c,u,S);return;}
+    _du(c,u);if(scribe)spyDrawBook(c,u,S);
   };
   const _ds = drawSkeletons;
   drawSkeletons = function (list, c, x0, y0, x1, y1) {
@@ -393,6 +392,54 @@ function spySyncFx() {
   }
 }
 function spyDrawBook(c, u, S) {
+  if(u.type==='scribe')SpyUI.scribeAppearance={terrain:World.terrain,look:u.look,sx:personSex(u)};
+  // A forgiven recruit uses the real combat rig; the diary must not replace
+  // his weapon or leave a second hand floating beside it.
+  if(u.type!=='scribe'&&typeof fpaDrawStoryDwarf==='function')return;
+  if(typeof fpaDrawStoryDwarf==='function'&&fpaDrawStoryDwarf(c,u,({view,profile,moving,frame,skin,cloth,drawBody})=>{
+    const st=S?.st||'tag',letter=st==='reveal'||st==='open',writing=!moving&&(st==='tag'||st==='forgiven');
+    const phase=Math.floor(Game.time/.15+u.id)%6,stroke=[0,1,2,3,2,1][phase]*.35;
+    const bob=moving?[0,.5,.5,0,0,.5,.5,0][Math.floor(frame*8/WALK_FRAMES)%8]:0;
+    const near=writing?[3.5+stroke,-12+bob]:letter?[3.8,-10.2]:[2.2,-10.5+bob];
+    const far=writing?[-3.8,-10.5+bob]:letter?[-3.8,-10.2]:[4.8,-8.4+bob];
+    const prop=()=>{
+      if(letter){
+        fpaSowPolygon(c,[[-4.3,-14],[4.3,-14],[4.7,-9],[-4.2,-8.8]],'#705f42');
+        fpaSowPolygon(c,[[-3.8,-13.5],[3.8,-13.5],[4.1,-9.5],[-3.7,-9.3]],'#eee0b7');
+        fpaSowPolygon(c,[[-.9,-11.9],[.7,-12.2],[1.3,-11.2],[.8,-10.2],[-.6,-10.1],[-1.2,-11]],'#5a8d5f');
+      }else if(writing){
+        fpaSowPolygon(c,[[-5,-14],[-.5,-13],[5.4,-14],[5,-9.4],[0,-8.3],[-4.8,-9.2]],'#4a3427');
+        fpaSowPolygon(c,[[-4.5,-13.4],[-.4,-12.7],[4.9,-13.4],[4.5,-9.9],[0,-8.9],[-4.3,-9.7]],'#d9c28e');
+        fpaSowBand(c,[0,-12.6],[0,-9],.5,'#886b47');
+        for(const [x,y]of [[-3.5,-12],[-3.5,-10.8],[1,-11.5]])fpaSowBand(c,[x,y],[x+1.8,y+.2],.5,'#9b875c');
+        const nib=[near[0]-1.6,near[1]+1.8];
+        fpaSowBand(c,nib,[near[0]+.2,near[1]-3.2],.7,'#e8e3bf');
+        fpaSowPolygon(c,[[near[0],near[1]-1],[near[0]+.2,near[1]-4.2],
+          [near[0]+1.3,near[1]-3.4],[near[0]+1.3,near[1]-1.8]],'#b6c4a1');
+        fpaSowBand(c,nib,[nib[0]-.5,nib[1]+.4],.55,'#4c6043');
+      }else{
+        fpaSowPolygon(c,[[near[0]-.8,near[1]-5],[near[0]+3.5,near[1]-5.7],
+          [near[0]+4,near[1]+1],[near[0]-.4,near[1]+1.7]],'#2d4737');
+        fpaSowPolygon(c,[[near[0]-.3,near[1]-4.5],[near[0]+3,near[1]-5.1],
+          [near[0]+3.4,near[1]+.5],[near[0]+.1,near[1]+1]],'#c7b17c');
+        fpaSowBand(c,[near[0]-.4,near[1]-3.6],[near[0]+3.3,near[1]-4.1],.6,'#62866a');
+      }
+    };
+    fpaPoseArm(c,profile?[1.5,-15]:[-4.2,-15],far,cloth,true,1,1);
+    if(view==='N'){fpaPoseArm(c,profile?[-2.2,-15]:[4.2,-15],near,cloth,false,1,profile?1:-1);prop();
+      fpaPoseHand(c,far,0,skin,true);fpaPoseHand(c,near,0,skin);}
+    drawBody();
+    if(view!=='N'){
+      fpaPoseArm(c,profile?[-2.2,-15]:[4.2,-15],near,cloth,false,1,profile?1:-1);
+      fpaPoseShoulder(c,u,(x,y)=>[profile?-3.2-x:3.7+x,-15+y]);
+      prop();fpaPoseHand(c,far,.4,skin,true);fpaPoseHand(c,near,writing?.35:0,skin);
+    }
+    if(view!=='N'){
+      fpaSowBand(c,[-5,-23],[-4.5,-27],.8,'#d9ddbe');
+      fpaSowBand(c,[-4.5,-27],[-4.3,-28],.8,'#7ba278');
+    }
+  }))return;
+
   const t = Game.time, a = u.action, moving = a && a.walk && a.path;
   const wf = moving ? Math.floor(u.walkPhase / 1.1) & 7 : 0, fc = u.face || 1;
   const bob = moving ? [0, 1, 1, 0, 0, 1, 1, 0][wf] : 0;
@@ -437,12 +484,21 @@ function spyDrawFx(c, f) {
     if (k < 7 && age < 1.6) {
       const tilt = [0, -0.2, 0.25, -0.35, -0.6, -1.1, -1.6][k] * f.face, drop = [0, 0, 0, 0, 4, 12, 24][k], sc = [1, 1, 1, 1, 0.9, 0.7, 0.45][k];
       c.translate(px, py + drop); c.rotate(tilt); c.scale(sc, sc); c.globalAlpha *= k >= 5 ? 0.6 : 1;
-      asFp(c, -3, -9, 7, 8, '#2e5a46'); asFp(c, -2, -14, 5, 5, '#e8c09a'); asFp(c, -3, -11, 7, 4, '#d8d0c0');    // рубаха, лицо, борода
-      asFp(c, -3, -16, 7, 2, '#3a6a52'); asFp(c, -1, -18, 3, 2, '#3a6a52');                                          // колпак
-      const arm = k & 1 ? -3 : 3;
-      asFp(c, -5, -9 + arm, 2, 4, '#e8c09a'); asFp(c, 4, -9 - arm, 2, 4, '#e8c09a');                                // машет руками
-      asFp(c, -1, -1, 2, 3, '#3a2a20'); asFp(c, 2, -1, 2, 3, '#3a2a20');
-      if (k >= 3) { asFp(c, 5, -20, 3, 4, '#f4ecd0'); asFp(c, 6, -21, 1, 1, '#f0ece0'); }                          // летопись улетает
+      const known=SpyUI.scribeAppearance?.terrain===World.terrain?SpyUI.scribeAppearance:null;
+      const actor={type:'scribe',look:f.look??known?.look??32,sx:known?.sx||'m',_exactYardPose:true};
+      const phase=k<2?'hurt':k<4?'fl0':['fy0','fy1','fy2'][k-4];
+      const body=personSprite(actor,'E','fight',phase,{wpn:'fists||1'});
+      if(body&&!body._pendingSprite&&body._fantasyAppearance){
+        c.save();c.scale(f.face<0?-1:1,1);c.imageSmoothingEnabled=false;
+        c.drawImage(body,-PFX,-PFY,PW,PH);c.restore();
+      }
+      if(k>=3){
+        // The only book in this phase is the released diary, on its original
+        // native flight anchor. The fallen pose carries no second copy.
+        fpaSowPolygon(c,[[5,-20],[8.5,-20.5],[9,-15.5],[5.4,-15]],'#2d4737');
+        fpaSowPolygon(c,[[5.5,-19.5],[8,-20],[8.4,-16],[5.9,-15.6]],'#d9c28e');
+        fpaSowBand(c,[5.4,-18.7],[8.2,-19.1],.5,'#62866a');
+      }
     } else if (age < 2.4) {                                      // пыль с края
       const d = (age - 1.05) / 1.3;
       c.globalAlpha *= Math.max(0, 0.7 - d * 0.7);

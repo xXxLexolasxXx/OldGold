@@ -560,7 +560,10 @@ function asTick(dt) {
   };
   // фонарщик несёт Лампу предков
   const _du = drawUnit;
-  drawUnit = function (c, u) { _du(c, u); if (u.lamp && !u.inside && !u.dead) asDrawLamp(c, u); };
+  drawUnit = function (c, u) {
+    if(u.lamp&&!u.inside&&!u.dead&&typeof fpaDrawStoryDwarf==='function'){asDrawLamp(c,u);return;}
+    _du(c,u);if(u.lamp&&!u.inside&&!u.dead)asDrawLamp(c,u);
+  };
   const _ds = drawSkeletons;
   drawSkeletons = function (list, c, x0, y0, x1, y1) {
     _ds(list, c, x0, y0, x1, y1);
@@ -580,7 +583,51 @@ function asTick(dt) {
 // пламя дрожит 6 кадрами; гибель — 6 кадров (лампа падает и гаснет); клетка: пленники в покое 6, дверь открывается 4.
 
 const asFp = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+// Shared lantern material for the carried and falling native frames.
+function asDrawAncestralLantern(c,lx,ly,flame,phase,light=.3){
+ fpaSowPolygon(c,[[lx-3.7,ly+1],[lx-2.6,ly-.4],[lx+2.4,ly-.4],[lx+3.6,ly+1],
+   [lx+3.3,ly+9],[lx-3.4,ly+9]],'#463c29');
+ fpaSowPolygon(c,[[lx-2.7,ly+1],[lx+2.5,ly+1],[lx+2.3,ly+8],[lx-2.6,ly+8]],'#82683b');
+ fpaSowPolygon(c,[[lx-2.1,ly+1.7],[lx+1.9,ly+1.7],[lx+1.8,ly+7.3],[lx-2,ly+7.3]],flame?'#b7a765':'#756e53');
+ fpaSowBand(c,[lx-3.2,ly+.8],[lx+3.1,ly+.8],.8,'#d3b972');
+ fpaSowBand(c,[lx-3.1,ly+8],[lx+3,ly+8],1,'#d3b972');
+ fpaSowBand(c,[lx-.3,ly+1.5],[lx-.3,ly+7.5],.5,'#6a5936');
+ if(flame){
+  fpaSowPolygon(c,[[lx-1.3,ly+7.3],[lx-.8,ly+6-flame],[lx+.2,ly+5-flame],
+    [lx+1.1,ly+6.3],[lx+.7,ly+7.5]],'#f0b960');
+  fpaSowBand(c,[lx,ly+6.8],[lx,ly+5],.7,'#fff1b7');
+  if(light)glow(c,lx,ly+5,18+phase%3,'255,210,120',light);
+ }
+}
 function asDrawLamp(c, u) {
+  if(typeof fpaDrawStoryDwarf==='function'&&fpaDrawStoryDwarf(c,u,({view,profile,moving,frame,skin,cloth,drawBody})=>{
+    const side=profile?1:u.face<0?-1:1,px=side*(profile?5.7:3.2),lampX=profile?px:px+side*3.3;
+    const bob=moving?Math.sin(frame/WALK_FRAMES*Math.PI*2)*.3:Math.sin(Game.time*2)*.15;
+    const near=[px,-9.5+bob],far=[px,-15.2+bob],ff=Math.floor(Game.time/.11+u.id)%6;
+    const lamp=()=>{
+      fpaSowBand(c,[px,-31],[px,-5.5],1.5,'#3b3024');
+      fpaSowBand(c,[px-.2,-30.5],[px-.2,-6],.55,'#b18b51');
+      fpaSowBand(c,[profile?px-3:px-side*.7,-31],[profile?px+3:lampX+side*1.1,-31],1.3,'#b79b5c');
+      const sw=moving?Math.sin(frame/WALK_FRAMES*Math.PI*2)*.16:Math.sin(Game.time*2)*.035;
+      const lx=lampX+Math.sin(sw)*2,ly=-28.4;
+      fpaSowBand(c,[lampX,-31],[lx,ly],.7,'#3e4238');
+      asDrawAncestralLantern(c,lx,ly,[3,4,3,2,3,4][ff],ff);
+    };
+    fpaPoseArm(c,profile?[1.5,-15]:[-side*4.2,-15],far,cloth,true);
+    if(view==='N'){fpaPoseArm(c,profile?[-2.2,-15]:[side*4.2,-15],near,cloth);lamp();
+      fpaPoseHand(c,far,0,skin,true);fpaPoseHand(c,near,0,skin);}
+    drawBody();
+    if(view!=='N'){
+      fpaPoseArm(c,profile?[-2.2,-15]:[side*4.2,-15],near,cloth);
+      fpaPoseShoulder(c,u,(x,y)=>[profile?-3.2-x:side*(3.7+x),-15+y]);
+      lamp();fpaPoseHand(c,far,0,skin,true);fpaPoseHand(c,near,0,skin);
+    }
+  })){
+    if(u.lampHp<u.lampMax){const x=Math.round(u.x*TILE)-8,y=Math.round(u.y*TILE+6)-36,k=Math.max(0,u.lampHp/u.lampMax);
+      asFp(c,x-1,y-1,18,4,'rgba(0,0,0,.6)');asFp(c,x,y,16*k,2,'#ffd070');}
+    return;
+  }
+
   const t = Game.time, a = u.action, moving = a && a.walk && a.path;
   const wf = moving ? Math.floor(u.walkPhase / 1.1) & 7 : 0, ff = Math.floor(t / 0.11 + u.id) % 6;
   const sw = moving ? [0, 1, 2, 1, 0, -1, -2, -1][wf] : [0, 0, 1, 1, 0, 0][Math.floor(t / 0.2) % 6] * 0.5;
@@ -608,9 +655,13 @@ function asDrawLamp(c, u) {
 function asDrawLampFall(c, f) {
   const k = Math.min(5, Math.floor((Game.time - f.t0) / 0.2)), px = f.x * TILE + f.face * 6, py = f.y * TILE + 6;
   c.save(); c.translate(px, py - 4 + k * 0.6); c.rotate(f.face * k * 0.3);
-  asFp(c, -3, -4, 7, 1, '#b08a3a'); asFp(c, -3, 3, 7, 1, '#b08a3a'); asFp(c, -3, -3, 1, 6, '#8a6a2a'); asFp(c, 3, -3, 1, 6, '#8a6a2a');
-  const fl = [4, 3, 3, 2, 1, 0][k];
-  if (fl) asFp(c, -1, 3 - fl, 3, fl, '#ffd070');
+  const fl=[4,3,3,2,1,0][k];
+  if(typeof fpaSowPolygon==='function')asDrawAncestralLantern(c,0,-4,fl,k,Math.max(0,.25-k*.04));
+  else {
+    asFp(c,-3,-4,7,1,'#b08a3a');asFp(c,-3,3,7,1,'#b08a3a');
+    asFp(c,-3,-3,1,6,'#8a6a2a');asFp(c,3,-3,1,6,'#8a6a2a');
+    if(fl)asFp(c,-1,3-fl,3,fl,'#ffd070');
+  }
   if (k >= 3) { c.globalAlpha *= 0.5; asFp(c, -1 + k - 3, -8 - (k - 3) * 3, 2, 2, '#8a8090'); asFp(c, -2, -12 - (k - 3) * 3, 2, 2, '#6a6070'); }
   c.restore();
 }
@@ -629,15 +680,23 @@ function asDrawCage(c, cg) {
   const W = 12;
   c.save(); c.translate(px, py);
   asFp(c, -W - 1, -2, W * 2 + 2, 4, '#2a2224'); asFp(c, -W - 1, -2, W * 2 + 2, 1, '#4a4248');   // дно
-  if (!cg.open) for (let k = 0; k < Math.min(cg.n, 3); k++) {   // пленники: покой 6 (переминаются, вцепились в прутья)
-    const f = Math.floor(t / 0.2 + k * 2) % 6, b = [0, 0, -1, -1, 0, 0][f], x = -10 + k * 7, sh = ['#8a5a3a', '#6a6a76', '#4a6e33'][k];
-    asFp(c, x + 1, -2, 2, 2, '#3a2a20'); asFp(c, x + 4, -2, 2, 2, '#3a2a20');                 // ноги
-    asFp(c, x, -9 + b, 7, 7, sh); asFp(c, x, -9 + b, 7, 1, 'rgba(255,255,255,0.15)');       // рубаха
-    asFp(c, x + 1, -14 + b, 5, 5, '#e8c09a');                                                   // лицо
-    asFp(c, x + 2, -12 + b, 1, 1, '#2a1a10'); asFp(c, x + 4, -12 + b, 1, 1, '#2a1a10');       // глаза
-    asFp(c, x, -11 + b, 7, 4, '#e0dcd0'); asFp(c, x + 1, -8 + b, 5, 2, '#e0dcd0');            // борода
-    asFp(c, x, -16 + b, 7, 2, '#b03a2a'); asFp(c, x + 1, -18 + b, 5, 2, '#b03a2a'); asFp(c, x + 2, -20 + b, 3, 2, '#b03a2a'); asFp(c, x + 3, -21 + b, 1, 1, '#b03a2a');   // колпак
-    if (f >= 2 && f <= 3) { asFp(c, x - 1, -8 + b, 1, 3, '#e8c09a'); asFp(c, x + 7, -8 + b, 1, 3, '#e8c09a'); }     // руки на прутьях
+  if(!cg.open&&typeof fpaDrawStoryDwarf==='function'){
+    const n=Math.min(cg.n,3),positions=n===3?[[-6,-3],[6,-3],[0,0]]:n===2?[[-6,0],[6,0]]:[[0,0]],scale=.52;
+    c.save();c.beginPath();c.rect(-W+.5,-24,W*2-1,24);c.clip();
+    for(let k=0;k<n;k++){
+      const [x,y]=positions[k],f=Math.floor(t/.2+k*2)%6,breathe=[0,0,-.25,-.25,0,0][f];
+      const actor={type:AS_PRIS_CLS[((cg.i||0)+k)%AS_PRIS_CLS.length],look:11+k*7,sx:'m',x:0,y:-6/TILE,face:1,action:null};
+      const left=(Math.round((x-2.5)/4)*4-x)/scale,right=(Math.round((x+2.5)/4)*4-x)/scale;
+      c.save();c.translate(x,y+breathe);c.scale(scale,scale);
+      fpaDrawStoryDwarf(c,actor,({skin,cloth,drawBody})=>{
+        const far=[left,-10],near=[right,-10];
+        fpaPoseArm(c,[-4.2,-15],far,cloth,true,1,1);drawBody();
+        fpaPoseArm(c,[4.2,-15],near,cloth,false,1,-1);
+        fpaPoseHand(c,far,0,skin,true);fpaPoseHand(c,near,0,skin);
+      });
+      c.restore();
+    }
+    c.restore();
   }
   for (let x = -W; x <= W; x += 4) {                             // прутья
     if (cg.open && x > 3) continue;

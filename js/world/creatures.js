@@ -296,14 +296,8 @@ function drawCartRig(c, f, load, n) {
   c.beginPath(); c.moveTo(3.6, 12); c.quadraticCurveTo(0.6, 16, 2, 21); c.lineTo(3.6, 15); c.fill();
   // упряжь
   line(c, 6, 13, 22, 9, '#3a2414', 0.6); line(c, 21, 10, 25, 6, '#3a2414', 0.5);
-  // возница — гном в колпаке
-  c.fillStyle = '#6a5a4a'; c.beginPath(); c.ellipse(-4, 11, 3, 3.6, 0, 0, Math.PI * 2); c.fill();
-  ellipse(c, -3.6, 5.6, 2.6, 2.6, SKINS[0][0]);
-  c.fillStyle = '#e8e2d8'; c.beginPath(); c.moveTo(-3.6, 6.6); c.quadraticCurveTo(-2.4, 10.6, -0.8, 8.6); c.lineTo(-1, 6.4); c.fill();
-  ellipse(c, -1.2, 6, 0.9, 0.8, SKINS[0][1]);
-  c.fillStyle = lingrad(c, -6, 0, -1, 0, [[0, '#7a7a9a'], [1, '#3a3a5a']]);
-  c.beginPath(); c.moveTo(-6.2, 4.6); c.quadraticCurveTo(-5.6, -1, -3, -2.4); c.quadraticCurveTo(-5.6, -4, -8.4, -2.2); c.quadraticCurveTo(-3.4, -2.6, -1, 4.2); c.closePath(); c.fill();
-  line(c, -1.6, 10, 6, 12, '#3a2414', 0.4);
+  // A delayed graphics module never substitutes the retired mini-gnome.
+  if(typeof fpaDrawCartDriver==='function')fpaDrawCartDriver(c,-4,12,'E');
 }
 
 // Лошадь без телеги (та же, что в упряжке извозчика): для конюшни и выгула
@@ -381,12 +375,8 @@ function drawCartFront(c, f, load, n, dir) {
     if (!load) return;
     for (let k = 0; k < Math.min(n, 5); k++) { c.save(); c.translate(-5.4 + (k % 3) * 5.4, y0 - Math.floor(k / 3) * 4.2); c.scale(0.62, 0.62); drawLoad(c, load); c.restore(); }
   };
-  const gnome = (x, y, back) => {
-    c.fillStyle = '#6a5a4a'; c.beginPath(); c.ellipse(x, y + 5, 3.4, 3.4, 0, 0, Math.PI * 2); c.fill();
-    ellipse(c, x, y + 0.4, 2.7, 2.7, back ? shade(SKINS[0][0], -0.1) : SKINS[0][0]);
-    if (!back) { c.fillStyle = '#e8e2d8'; c.beginPath(); c.moveTo(x - 2.4, y + 1.6); c.quadraticCurveTo(x, y + 6, x + 2.4, y + 1.6); c.fill(); c.fillStyle = '#1a1210'; c.fillRect(x - 1.4, y, 0.7, 0.7); c.fillRect(x + 0.8, y, 0.7, 0.7); }
-    c.fillStyle = lingrad(c, x - 3, 0, x + 3, 0, [[0, '#7a7a9a'], [1, '#3a3a5a']]);
-    c.beginPath(); c.moveTo(x - 3.2, y - 1.4); c.quadraticCurveTo(x - 1, y - 7, x + 1.4, y - 8.4); c.quadraticCurveTo(x + 2.4, y - 5, x + 3.2, y - 1.4); c.closePath(); c.fill();
+  const gnome = (x,y,back) => {
+    if(typeof fpaDrawCartDriver==='function')fpaDrawCartDriver(c,x,y+7,back?'N':'S');
   };
   if (south) {
     wheel(-9.6); wheel(9.6);

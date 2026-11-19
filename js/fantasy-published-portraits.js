@@ -35,13 +35,14 @@
   if((who==='hero'||who==='heroF')&&Game.hero&&(personSex(Game.hero)==='f')===!!r.female)return Game.hero;
   const type='portrait_'+who;
   if(!OUTFIT[type]){OUTFIT[type]={...OUTFIT[p.base],cap:r.cap,coat:r.coat,robeCol:r.coat,fem:false,candle:!!p.candle};
+   if(typeof DWARF_WORKWEAR!=='undefined'&&DWARF_WORKWEAR[p.base])DWARF_WORKWEAR[type]=[r.cap,r.coat,...DWARF_WORKWEAR[p.base].slice(2)];
    HA.look[type]={bcol:r.hair,hair:r.hair,capStyle:p.capStyle,beardStyle:p.beardStyle||0,beardLen:who==='tan'||who==='elder'?2:1,deco:p.deco??5,skin:who==='elder'?1:0,noBeard:!!r.female,...(r.female?{fem:true,hs:p.hs||0}: {})};}
   return{type,look:p.look,sx:r.female?'f':'',carry:null};
  }
  function personCrop(u,f=0,n=72,background=false){
   // Low caps intentionally hide the eyes. Both UI frames are actual native idle
   // samples; do not paint artificial open eyes or a separate face over the cap.
-  const sp=personSprite(u,'S','idle',f?8:0);if(!sp)return '';
+  const sp=personSprite(u,'S','idle',f?8:0);if(!sp||sp._pendingSprite)return fpaWaitingDwarf().toDataURL();
   const key='person|'+n+'|'+background+'|'+sourceId(sp);if(cache.has(key))return cache.get(key);
   const cv=make(n),c=cv.getContext('2d');c.imageSmoothingEnabled=false;
   if(background){c.fillStyle='#263929';c.fillRect(0,0,n,n);}

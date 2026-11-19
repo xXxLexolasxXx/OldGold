@@ -339,6 +339,8 @@ function ocCacheCv(n, w, h) {
 function ocCacheFree() { const C = OCN.cache; if (C) { for (const cv of C.cv) if (cv) cv.width = cv.height = 0; OCN.cache = null; } }
 
 function oceanDraw(c, x0, y0, x1, y1) {
+  // An off-map camera has no water window to cache or blit.
+  if (x0 > x1 || y0 > y1 || x1 < 0 || y1 < 0 || x0 >= MAP_W || y0 >= MAP_H) return;
   const O = oceanPrep();
   if (!O) return;
   const ice = typeof SEA === 'function' ? Math.min(1, SEA().ice || 0) : 0;

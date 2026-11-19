@@ -49,9 +49,9 @@
   if(O.candle&&view!=='N'){rect(c,-1,-3.8,2,3.5,'#d9d2ac');rect(c,-1,-1,2,1,'#967344');const f=Math.floor(Game.time*5)%4;shape(c,[[-.8,-4],[Math.sin(f)*.6,-7-f*.3],[1,-4]],f%2?'#eabf71':'#e0a254');rect(c,0,-5,.5,1,'#f3ddb0');}
   c.restore();
  }
- function foreground(c,q,view,pose,frame,opt){const u=q.holder;if(u.carry)fpaCarryLoad(c,u,view,pose,opt);
+ function foreground(c,q,view,pose,frame,opt){const u=q.holder;if(u.carry)fpaCarryLoad(c,u,view,pose,{...opt,carryForeground:true});
   if(pose==='work'&&typeof fpaDrawWorkTool==='function')fpaDrawWorkTool(c,u,view,frame,opt);
-  if(pose==='smoke'){const r=fpaSmokingRig(u,view,frame),hx=PFX+r.hand[0],hy=PFY+r.hand[1];pline(c,PFX+4,PFY-12,hx,hy,'#3e2c20',3);pline(c,PFX+4,PFY-12,hx,hy,q.coat,2);rect(c,hx,hy,2,2,SKINS[q.L.skin%3][0]);}
+  if(pose==='smoke')fpaDrawSmokingHand(c,u,view,frame);
 
   fpaAction(c,u,view,pose,frame,opt);
  }
@@ -154,7 +154,7 @@
   c.drawImage(source,0,pivot+blend,source.width,source.height-pivot-blend,0,pivot+blend,source.width,source.height-pivot-blend);
   return cv;
  }
- function render(u,view='S',pose='idle',frame=0,opt={}){if(view==='W')view='E';if(!u||!OUTFIT[u.type])return previous(u,view,pose,frame,opt);const q=resolve(u),G=geometry(q,view,pose,frame,opt);if(!G)return previous(u,view,pose,frame,opt);const ap=q.app,explicit=i=>!!ap&&ap[i]>=0,cls=typeof q.O.cap==='string'&&q.O.cap.startsWith('cls:'),hairChange=q.sex==='f'&&explicit(11),beardChange=q.sex!=='f'&&!q.L.noBeard&&(explicit(3)||explicit(4)||explicit(5)||explicit(13)),capChange=true,capeChange=explicit(14),special=capChange||beardChange||hairChange||capeChange;
+ function render(u,view='S',pose='idle',frame=0,opt={}){if(view==='W')view='E';if(!u||!OUTFIT[u.type])return previous(u,view,pose,frame,opt);const q=resolve(u),G=geometry(q,view,pose,frame,opt);if(!G)return fpaWaitingDwarf();const ap=q.app,explicit=i=>!!ap&&ap[i]>=0,cls=typeof q.O.cap==='string'&&q.O.cap.startsWith('cls:'),hairChange=q.sex==='f'&&explicit(11),beardChange=q.sex!=='f'&&!q.L.noBeard&&(explicit(3)||explicit(4)||explicit(5)||explicit(13)),capChange=true,capeChange=explicit(14),special=capChange||beardChange||hairChange||capeChange;
   const {gf,...options}=opt,candle=capChange&&q.O.candle?Math.floor(Game.time*5)%4:0;
   const motion=JSON.stringify([q.holder.type,q.look,q.sex,view,pose,frame?.anim,options,u.carry,u.carryN,u.injury,candle]);
   const key=motion+'|'+(pose==='work'?frame.f:frame)+'|'+(opt.gest?gf||0:0);
@@ -190,7 +190,7 @@
   u._spr=out;return out;
  }
  personSprite=render;
- portraitURL=function(type,look=3,sx=''){if(!OUTFIT[type]||(UNIT_TYPES[type]&&UNIT_TYPES[type].animal))return previousPortrait(type,look,sx);const me=type==='hero'?(Game.hero?.look===look?Game.hero:Game.units.find(u=>u.type==='hero'&&u.look===look)):null,u=me||{type,look,sx},q=resolve(u),key=JSON.stringify([q.holder.type,q.look,q.sex]);if(portraitCache.has(key))return portraitCache.get(key);const s=render(u,'S','idle',0,{}),cv=mkCanvas(48,48),c=cv.getContext('2d');c.fillStyle='#263929';c.fillRect(0,0,48,48);c.imageSmoothingEnabled=false;c.drawImage(s,2,0,48,48,0,0,48,48);const url=cv.toDataURL();portraitCache.set(key,url);if(portraitCache.size>500)portraitCache.delete(portraitCache.keys().next().value);return url;};
+ portraitURL=function(type,look=3,sx=''){if(!OUTFIT[type]||(UNIT_TYPES[type]&&UNIT_TYPES[type].animal))return previousPortrait(type,look,sx);const me=type==='hero'?(Game.hero?.look===look?Game.hero:Game.units.find(u=>u.type==='hero'&&u.look===look)):null,u=me||{type,look,sx},q=resolve(u),key=JSON.stringify([q.holder.type,q.look,q.sex]);if(portraitCache.has(key))return portraitCache.get(key);const s=render(u,'S','idle',0,{});if(s._pendingSprite)return fpaWaitingDwarf().toDataURL();const cv=mkCanvas(48,48),c=cv.getContext('2d');c.fillStyle='#263929';c.fillRect(0,0,48,48);c.imageSmoothingEnabled=false;c.drawImage(s,2,0,48,48,0,0,48,48);const url=cv.toDataURL();portraitCache.set(key,url);if(portraitCache.size>500)portraitCache.delete(portraitCache.keys().next().value);return url;};
  api.ready.then(()=>{cache.clear();portraitCache.clear();if(typeof PORTRAIT_CACHE!=='undefined')PORTRAIT_CACHE.clear();if(window.FantasyPublishedPortraits)FantasyPublishedPortraits.cache.clear();});
 })();
 

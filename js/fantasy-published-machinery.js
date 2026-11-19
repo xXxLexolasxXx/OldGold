@@ -94,6 +94,7 @@
  const stirOffsets=[[-1,-.5],[-.5,-1],[.5,-1],[1,-.5],[1,.5],[.5,1],[-.5,1],[-1,.5]];
  function workBody(actor,cloth,view){
    const source=personSprite({...actor,_exactYardPose:true},view,'idle',0,{});
+   if(source._pendingSprite||!source._fantasyAppearance)return null;
    let body=yardBodies.get(source);
    if(body)return body;
    body=mkCanvas(source.width,source.height);
@@ -123,14 +124,17 @@
    yardBodies.set(source,body);
    return body;
  }
- function workScene(c,actor,x,y,paintPose,lean=0,face=1,view='E'){
-   const outfit=OUTFIT[actor.type],look=lookOf({...actor,look:LOOK_POOL[(actor.look>>>0)%LOOK_POOL.length]});
+ let workBodyOffset=[0,0];
+ function workScene(c,actor,x,y,paintPose,lean=0,face=1,view='E',bodyOffset=[0,0]){
+   const outfit=OUTFIT[actor.type],look=lookOf({...actor,look:(actor.look>>>0)>=0x20000?actor.look:LOOK_POOL[(actor.look>>>0)%LOOK_POOL.length]});
    const cloth=outfit.coat||look.green,body=workBody(actor,cloth,view),scale=YARD_K*FantasyPublishedYard.scale;
+   if(!body)return false;
    c.save();
    c.imageSmoothingEnabled=false;
    c.translate(x,y);
    if(face<0)c.scale(-1,1);
    const left=-PFX*scale,top=-PFY*scale,width=PW*scale,height=PH*scale;
+   c.save();c.translate(...bodyOffset);
    if(lean){
      const pivot=PFY-5,split=body.height*pivot/PH;
      c.save();
@@ -139,10 +143,13 @@
      c.restore();
      c.drawImage(body,0,split,body.width,body.height-split,left,-5*scale,width,height-pivot*scale);
    }else c.drawImage(body,left,top,width,height);
-   paintPose(cloth,SKINS[look.skin%SKINS.length]);
+   c.restore();
+   const previousOffset=workBodyOffset;workBodyOffset=bodyOffset;
+   try{paintPose(cloth,SKINS[look.skin%SKINS.length]);}finally{workBodyOffset=previousOffset;}
    c.restore();
  }
  function workSleeve(c,shoulder,grip,cloth){
+   shoulder=[shoulder[0]+workBodyOffset[0],shoulder[1]+workBodyOffset[1]];
    const elbow=[(shoulder[0]+grip[0])*.5-.45,(shoulder[1]+grip[1])*.5+1.05];
    for(const [from,to,width] of [[shoulder,elbow,2.8],[elbow,grip,2.4]]){
      fpaSowBand(c,from,to,width,'#352722');
@@ -181,7 +188,7 @@
      }
      c.restore();
      workHands(c,near,far,skin);
-   });
+   },0,1,'E',[2.5,0]);
  }
  function drawKneadCycle(c,b,x,y,t){
    const actor={type:'baker',look:b.id*53+7};
@@ -196,7 +203,7 @@
      workSleeve(c,[1.6+lean*.45,-8.1],far,shade(cloth,-.23));
      workSleeve(c,[-1.1+lean*.45,-7.7],near,cloth);
      workHands(c,near,far,skin);
-   },lean);
+   },lean,1,'E',[3.2,0]);
  }
  function drawMashCycle(c,b,x,y,t){
    const actor={type:'brewer',look:b.id*37+3};
@@ -204,7 +211,7 @@
    workScene(c,actor,x,y,(cloth,skin)=>{
      const tip=[mash.x+dx,mash.y+dy*.45],top=[1.1-dx*.7,-14.5-dy*.6];
      const grip=f=>[top[0]+(tip[0]-top[0])*f,top[1]+(tip[1]-top[1])*f];
-     const near=grip(.33),far=grip(.63);
+     const near=grip(.45),far=grip(.75);
      workSleeve(c,[1.6,-8],far,shade(cloth,-.23));
      workSleeve(c,[-.8,-7.7],near,cloth);
      fpaSowBand(c,top,tip,1.15,'#503525');
@@ -214,7 +221,7 @@
      r(c,tip[0]-1.5,tip[1]+.45,.5,.5,'#d6b576');
      workHands(c,near,far,skin);
      ln(c,mash.x-3.5,mash.y+1.3,mash.x+3.5,mash.y+1.3,'#9c743e');
-   });
+   },0,1,'E',[3.2,0]);
  }
  const cleaverSwing=[.4,-.35,-1.15,-.68,0,0,0,.28];
  const leatherStroke=[0,.15,.4,.78,1,.76,.4,.15];
@@ -240,7 +247,7 @@
      fpaSowBand(c,at(3.3,.75),at(4.8,1.05),.55,'#e1e0ba');
      fpaSowBand(c,at(2.85,-.6),at(2.85,.7),.55,'#a77d50');
      workHands(c,near,far,skin);
-   },0,face);
+   },0,face,'E',[1.2,0]);
  }
  function tanneryBench(s){return [s.padx+s.fw*.78-17,s.baseY-8];}
  function drawLeatherCycle(c,b,s,ox,oy){
@@ -250,7 +257,8 @@
    const elapsed=action?.T?Math.max(0,action.T-action.t):Game.time+b.id*.31;
    const press=leatherStroke[Math.floor(elapsed*7)%leatherStroke.length];
    const lean=.65*press;
-   const x=ox+benchX-6.3,y=oy+benchY+8.5;
+   const face=b.rot===1||b.rot===2?-1:1;
+   const x=ox+benchX-face*6.3,y=oy+benchY+8.5;
    workScene(c,actor,x,y,(cloth,skin)=>{
      const u=3.4+press*1.35,v=-9+press*.35;
      const near=[u,v],far=[u+1.9,v-.5];
@@ -258,12 +266,12 @@
      workSleeve(c,[-1.1+lean*.45,-7.7],near,cloth);
      fpaSowBand(c,[u-.95,v+.3],[u+3.6,v-1.05],1.1,'#513b28');
      fpaSowBand(c,[u-1,v+.1],[u+3.5,v-1.25],.5,'#c19255');
-     fpaSowPolygon(c,[[u+2.65,v-2.3],[u+4.6,v-2.15],[u+4.3,v-.65],
+     fpaSowPolygon(c,[[u+2.65,v-3.1],[u+4.6,v-2.95],[u+4.3,v-.65],
        [u+2.85,v+.25],[u+2.1,v+.15]],'#48534d');
-     fpaSowPolygon(c,[[u+2.8,v-1.9],[u+4.25,v-1.8],[u+4.05,v-.85],[u+2.7,v-.05]],'#899b91');
+     fpaSowPolygon(c,[[u+2.8,v-2.7],[u+4.25,v-2.6],[u+4.05,v-.85],[u+2.7,v-.05]],'#899b91');
      fpaSowBand(c,[u+2.85,v+.08],[u+4.15,v-.68],.55,'#e2dfbd');
      workHands(c,near,far,skin);
-   },lean);
+   },lean,face,'E',[2.5,0]);
  }
  const washTilt=[0,-.55,-1,-.6,0,.6,1,.55];
  function goldWashBench([x,y]){return [x+3,y-6];}
@@ -503,89 +511,162 @@
    fpaSowBand(c,[x+axle[0],y+axle[1]],[x+grip[0],y+grip[1]],1.35,P.iron);
    if(!b.working)return;
    const worker=b.worker,actor={type:'miller',look:worker?.look??b.id*37+5,sx:worker?personSex(worker):''};
-   const offset=[-10,4],near=[grip[0]-offset[0],grip[1]-offset[1]],far=[5,-7.5];
+   const offset=[-5.8,1],near=[grip[0]-offset[0],grip[1]-offset[1]],far=[2,-6.2];
    workScene(c,actor,x+offset[0],y+offset[1],(cloth,skin)=>{
      workSleeve(c,[1.65,-8.2],far,shade(cloth,-.23));
      workSleeve(c,[-1.3,-8.6],near,cloth);
      workHands(c,near,far,skin);
    });
  }
- function drawCraftWindow(c,x,y,w,h,round,t,phase,working,tool){
-   const forge=tool==='hammer',mill=tool==='mill',magic=tool==='wand';
+ function enchantStation(s,rot){
+   if(!s.cauldron)return null;
+   const [x,y]=s.cauldron,face=rot===1||rot===2?1:-1;
+   return {x:x-face*10,y:y+3,face};
+ }
+ M.enchantStation=enchantStation;
+ function drawEnchantYard(c,b,s,ox,oy){
+   if(!b.working||b.state!=='done')return;
+   const station=enchantStation(s,b.rot||0);if(!station)return;
+   const worker=b.worker,actor={type:'enchanter',look:worker?.look??b.id*43+7,sx:worker?personSex(worker):''};
+   const t=Game.time*2+b.id,near=[1.7+Math.sin(t)*.35,-7.5+Math.cos(t)*.35],far=[2.5,-5.8];
+   workScene(c,actor,ox+station.x,oy+station.y,(cloth,skin)=>{
+     workSleeve(c,[.9,-8.1],far,shade(cloth,-.23));
+     poly(c,[[.7,-6.6],[2.2,-7],[4.2,-6.3],[3.8,-4.9],[2.1,-5.5],[.6,-5.2]],'#463626');
+     poly(c,[[.9,-6.6],[2.2,-6.8],[3.9,-6.2],[3.6,-5.3],[2.1,-5.8],[.9,-5.6]],'#d9c28e');
+     ln(c,2.2,-6.7,2.1,-5.8,'#8b734e');
+     workSleeve(c,[-1.3,-7.8],near,cloth);
+     const wear=dwarfWorkwear(actor),scale=YARD_K*FantasyPublishedYard.scale;
+     if(wear)paintWorkwearShoulder(wear,(x,y)=>[(-3.2-x)*scale,(-15+y)*scale],
+       (points,color)=>fpaSowPolygon(c,points,color));
+     const end=[near[0]+4.5,near[1]-2];
+     fpaSowBand(c,[near[0]-.8,near[1]+.35],end,1,'#3c3028');
+     fpaSowBand(c,[near[0]-.8,near[1]+.35],end,.5,'#bd9b61');
+     poly(c,[[end[0]-1,end[1]],[end[0],end[1]-1.5],[end[0]+1,end[1]],
+       [end[0]+.2,end[1]+1]],'#507b83');
+     poly(c,[[end[0]-.6,end[1]-.2],[end[0],end[1]-1.2],[end[0]+.45,end[1]-.2],
+       [end[0],end[1]+.5]],'#c9e2c0');
+     for(const [grip,dark]of [[far,true],[near,false]]){
+       c.save();c.translate(...grip);c.scale(scale,scale);
+       fpaSowFist(c,[0,0],dark?1.3:Math.atan2(4.5,-2),skin,dark);c.restore();
+     }
+     const pulse=(t%2+2)%2;
+     if(pulse<.8){r(c,end[0]+1+pulse*2,end[1]-1-pulse*2,.5,.5,'#d9e5aa');
+       r(c,end[0]-1+pulse,end[1]-2-pulse,.5,.5,'#98b8b0');}
+   },0,station.face);
+ }
+ const forgeKeys=[
+   [0,1.8,-8.2,5.8,-9.3], [.28,-1,-11.1,-2,-15.4],
+   [.43,-1.2,-11.2,-2.7,-15.6], [.58,2.1,-8.3,6,-9],
+   [.66,2.1,-8.3,6,-9], [1,1.8,-8.2,5.8,-9.3],
+ ];
+ function forgePose(t){
+   const phase=((t*8/(Math.PI*2))%1+1)%1;
+   const i=Math.max(1,forgeKeys.findIndex(key=>key[0]>=phase));
+   const a=forgeKeys[i-1],b=forgeKeys[i],q=(phase-a[0])/(b[0]-a[0]);
+   const blend=q*q*(3-2*q),p=a.slice(1).map((n,j)=>n+(b[j+1]-n)*blend);
+   return {phase,near:p.slice(0,2),head:p.slice(2),far:[1.7,-6.8]};
+ }
+ function drawForgeActor(c,actor,x,y,t,face=1,working=true){
+   const rig=working?forgePose(t):{phase:0,near:[-.8,-5.5],head:[3.1,-6.2],far:[1.7,-6.8]};
+   const {near,far,head,phase}=rig,scale=YARD_K*FantasyPublishedYard.scale;
+   workScene(c,actor,x,y,(cloth,skin)=>{
+     workSleeve(c,[.9,-8.1],far,shade(cloth,-.23));
+     // The other hand holds tongs against the same hot workpiece throughout
+     // the swing. Its jaws stay at the anvil, independent of the hammer lift.
+     const jaw=[6,-8.6],pivot=[4.7,-8.1];
+     for(const d of [-.35,.35]){
+       fpaSowBand(c,[far[0],far[1]+d],pivot,.8,P.ink);
+       fpaSowBand(c,pivot,[jaw[0],jaw[1]+d],.65,P.steel);
+     }
+     bolt(c,pivot[0]-.2,pivot[1]-.2);
+     workSleeve(c,[-1.65,-7.8],near,cloth);
+     const wear=dwarfWorkwear(actor);
+     if(wear)paintWorkwearShoulder(wear,(px,py)=>[(-3.2-px)*scale,(-15+py)*scale],
+       (points,color)=>fpaSowPolygon(c,points,color));
+     const dx=head[0]-near[0],dy=head[1]-near[1],length=Math.hypot(dx,dy)||1;
+     fpaSowBand(c,[near[0]-dx/length,near[1]-dy/length],head,1.2,'#35281f');
+     fpaSowBand(c,[near[0]-dx/length,near[1]-dy/length],head,.5,'#b38a57');
+     c.save();c.translate(...head);c.rotate(Math.atan2(dy,dx));
+     poly(c,[[-1,-1.8],[.8,-1.8],[1.4,-1.1],[1.4,1.3],[.9,1.7],[-1,1.7]],P.ink);
+     poly(c,[[-.7,-1.3],[.6,-1.3],[1,-.85],[1,1.1],[-.7,1.2]],'#8d9b90');
+     ln(c,-.7,-1.3,.6,-1.3,'#d8dfc6');
+     r(c,-.2,-.3,.5,.6,'#d0a061');c.restore();
+     for(const [grip,dark]of [[far,true],[near,false]]){
+       c.save();c.translate(...grip);c.scale(scale,scale);
+       fpaSowFist(c,[0,0],dark?Math.atan2(pivot[0]-far[0],pivot[1]-far[1]):Math.atan2(dx,dy),skin,dark);c.restore();
+     }
+     if(working&&phase>=.58&&phase<.67){
+       const spread=(phase-.58)/.09;
+       for(const [dx,dy]of [[-1,-1],[1.5,-1.8],[2.5,-.4]])
+         r(c,6+dx*(1+spread),-9+dy*(1+spread),.5,.5,spread<.5?'#ffe3a2':'#c68d4d');
+     }
+   },0,face);
+   return rig;
+ }
+ function drawForgeYard(c,b,s,ox,oy){
+   if(!b.working||b.state!=='done')return;
+   const [gx,gy]=s.glow||[s.padx+s.fw*.78,s.baseY-15];
+   const ax=gx-17,ay=gy+4,face=b.rot===1||b.rot===2?-1:1;
+   const worker=b.worker,actor={type:worker?.type||'smelter',look:worker?.look??b.id*37+5,sx:worker?personSex(worker):''};
+   // Both placements share the exact painted anvil top. Only the worker's
+   // side changes with the façade, so the entry path stays unobstructed.
+   const x=ox+ax-face*6,y=oy+ay+4.5;
+   drawForgeActor(c,actor,x,y,Game.time+b.id,face);
+   poly(c,[[ox+ax-1.8,oy+ay-5],[ox+ax+2.1,oy+ay-5],
+     [ox+ax+2.8,oy+ay-4.2],[ox+ax-1.5,oy+ay-4.1]],'#683e29');
+   r(c,ox+ax-1.4,oy+ay-5,3.2,.5,'#e6ad66');
+ }
+ function drawCraftWindow(c,x,y,w,h,round,t,phase,working,tool,actor){
    c.save();c.translate(x,y);c.beginPath();
    if(round)c.arc(0,0,Math.min(w,h)/2,0,Math.PI*2);
    else c.rect(-w/2,-h/2,w,h);
    c.clip();
-   c.fillStyle=`rgb(255,${190+Math.round(Math.sin(t*9+phase)*18)},96)`;
-   c.fillRect(-w/2,-h/2,w,h);
-   const rotation=t*(mill?3:8)+phase,wave=(1+Math.sin(rotation))/2;
-   const reach=working?Math.min(1,wave/.72):0;
-   const hold=working&&wave>=.84;
-   const rise=hold?Math.min(1,(wave-.84)/.16):0;
-   const lift=.8*rise*rise*(3-2*rise);
-   const jaw=[.55+1.45*reach,1.3+.68*reach-lift];
-   const angle=.48-.23*reach,ux=Math.cos(angle),uy=Math.sin(angle);
-   const hammerRise=1.8*(1-wave);
-   const hammer=[1.8-.6*(1-wave),1.55-hammerRise];
-   const crank=[1.85+Math.cos(rotation)*.88,1.75+Math.sin(rotation)*.35];
-   const wand=[2,2.1-1.3*(1-wave)];
-   const grip=working?(mill?crank:magic?[wand[0]-1.7,wand[1]-.65]:forge?[hammer[0]-1.75,hammer[1]+.75]:[jaw[0]-1.9*ux,jaw[1]-1.9*uy]):[-1.45,2.35];
-   const elbow=working?[-.85+(grip[0]+1.45)*.25,1.1+grip[1]*.25]:[-1.75,1.55];
-   fpaSowPolygon(c,[[-3.1,3.7],[-2.9,.65],[-2.15,-.1],[-.9,.05],
-     [-.5,1.55],[-.9,3.7]],'#2b1c17');
-   fpaSowPolygon(c,[[-2.75,.65],[-2.1,.15],[-1.4,.45],[-1.2,2.5],
-     [-2.25,3],[-2.65,2.3]],'#664438');
-   fpaSowPolygon(c,[[-2.9,-.55],[-2.55,-1.65],[-1.8,-3.1],[-1.3,-2.85],
-     [-.65,-.9],[-.6,-.45],[-2.6,-.37]],'#321e19');
-   fpaSowBand(c,[-2.85,-.55],[-.55,-.55],.55,'#502d22');
-   r(c,-2.35,-.45,1.45,.9,'#8d5e3d');
-   r(c,-2.1,.1,1.1,.55,'#594134');
-   fpaSowBand(c,[-1.6,.55],elbow,1.05,'#342219');
-   fpaSowBand(c,elbow,grip,.9,'#342219');
-   fpaSowBand(c,[-1.55,.55],elbow,.5,'#986c50');
-   fpaSowBand(c,elbow,grip,.5,'#986c50');
-   if(!mill&&!magic){
-     fpaSowPolygon(c,[[-2.7,.5],[-2.15,.1],[-1.25,.25],[-1,.85],[-1.35,1.1],[-2.55,1]],'#3c3435');
-     fpaSowBand(c,[-2.45,.58],[-1.35,.52],.5,'#a47860');
-     r(c,-1.65,.7,.5,.5,'#c49b68');
-   }
-   fpaSowPolygon(c,[[.65,2.55],[3.4,2.55],[3.1,3.25],[1.1,3.25]],'#4b3b31');
-   fpaSowBand(c,[.65,2.55],[3.4,2.55],.5,'#aa8a63');
-   if(mill){
-     oval(c,1.85,2.54,1.48,.55,'#797868');
-     oval(c,1.85,2.29,1.48,.51,'#b7ac87');
-     fpaSowBand(c,[1.85,2.17],working?crank:[2.65,1.75],.55,'#4d4737');
-     if(working)r(c,crank[0]-.3,crank[1]-.7,.6,.7,'#9e7651');
-   }else if(magic){
-     poly(c,[[1.3,2.47],[1.75,1.55],[2.2,1.49],[2.65,2.39],[2.1,2.63]],'#476c79');
-     poly(c,[[1.75,1.55],[2.2,1.49],[2.12,2.22],[1.55,2.43]],'#90cad1');
-     if(working){
-       fpaSowBand(c,grip,wand,.55,'#725140');
-       r(c,wand[0]-.22,wand[1]-.2,.48,.48,wave>.83?'#dcfff1':'#90a5bc');
-     }
+   r(c,-w/2,-h/2,w,h,'#594434');
+   r(c,-w/2,-h/2,w,h*.38,'#796044');
+   const face=phase%2<1?1:-1;
+   if(tool==='hammer'){
+     const k=Math.min(w/17,h/20);
+     c.scale(k,k);
+     drawForgeActor(c,actor,-face*2,9,t+phase,face,working);
+     anvil(c,face*4,4.5,.42);
+   }else if(tool==='tongs'){
+     const k=Math.min(w/18,h/21),wave=working?(1+Math.sin(t*8+phase))/2:0;
+     c.scale(k,k);
+     const jaw=[6,1-wave*2.2],near=[1.7,jaw[1]+1.2],far=[3,jaw[1]+.65];
+     workScene(c,actor,-face*2,9,(cloth,skin)=>{
+       const a=[near[0],near[1]-9],b=[far[0],far[1]-9],end=[jaw[0],jaw[1]-9];
+       workSleeve(c,[.9,-8.1],b,shade(cloth,-.23));
+       workSleeve(c,[-1.65,-7.8],a,cloth);
+       for(const d of [-.35,.35])fpaSowBand(c,[a[0],a[1]+d],[end[0],end[1]+d],.8,P.steel);
+       poly(c,[[end[0]-1,end[1]-.5],[end[0]+1.5,end[1]-.5],
+         [end[0]+2,end[1]+.4],[end[0]-.8,end[1]+.6]],'#bf7c42');
+       r(c,end[0]-.7,end[1]-.5,1.8,.5,'#f2bf75');
+       workHands(c,a,b,skin);
+     },0,face);
    }else{
-     const ingotY=hold&&!forge?jaw[1]+.45:2.43,ingotX=hold&&!forge?jaw[0]:2;
-     fpaSowPolygon(c,[[ingotX-1,ingotY-.6],[ingotX+.62,ingotY-.6],
-       [ingotX+.93,ingotY-.2],[ingotX+.67,ingotY+.1],[ingotX-.8,ingotY+.1]],working&&!forge?'#bc6938':'#655d4e');
-     r(c,ingotX-.58,ingotY-.6,1.1,.5,working&&!forge?'#f5b35e':'#aa9882');
-     if(working&&forge){
-       fpaSowBand(c,grip,hammer,.75,'#4a352a');
-       fpaSowBand(c,[grip[0],grip[1]-.2],[hammer[0],hammer[1]-.2],.5,'#b18a60');
-       r(c,hammer[0]-.8,hammer[1]-.5,1.9,1.1,'#373a39');
-       r(c,hammer[0]-.55,hammer[1]-.5,1.4,.5,'#a6ada1');
-       r(c,hammer[0]+.65,hammer[1]-.25,.5,.75,'#716b62');
-     }else if(working){
-       const pivot=[jaw[0]-.58*ux,jaw[1]-.58*uy],gap=hold?.16:.47;
-       fpaSowBand(c,grip,pivot,.68,'#3d3f3b');
-       fpaSowBand(c,[grip[0],grip[1]-.2],[pivot[0],pivot[1]-.2],.5,'#87877c');
-       fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]-gap],.5,'#595e57');
-       fpaSowBand(c,pivot,[jaw[0]+.18,jaw[1]+gap],.5,'#595e57');
-       r(c,pivot[0]-.25,pivot[1]-.25,.5,.5,'#bb9869');
-     }else{
-       fpaSowBand(c,[.4,2.55],[1.3,2.35],.5,'#535751');
-     }
+     const k=Math.min(w/18,h/21),rotation=working?t*(tool==='mill'?3:8)+phase:0;
+     c.scale(k,k);
+     workScene(c,actor,-face*2,9,(cloth,skin)=>{
+       const mill=tool==='mill',near=mill?[2+Math.cos(rotation)*.9,-7.2+Math.sin(rotation)*.7]
+         :[1.7,-7.1-Math.sin(rotation)*.6],far=[2.4,-5.3];
+       workSleeve(c,[.9,-8.1],far,shade(cloth,-.23));
+       workSleeve(c,[-1.2,-7.8],near,cloth);
+       if(mill){
+         oval(c,2,-5.8,3,1.1,'#6b6e5c');oval(c,2,-6.3,3,1.1,'#b3ad89');
+         fpaSowBand(c,[2,-6.3],near,.8,P.iron);
+         r(c,near[0]-.4,near[1]-.8,.8,1,'#a88350');
+       }else{
+         const end=[near[0]+2.6,near[1]-2.3];
+         fpaSowBand(c,near,end,.8,'#a17f54');
+         poly(c,[[end[0]-.8,end[1]],[end[0],end[1]-1.3],
+           [end[0]+.8,end[1]],[end[0],end[1]+.7]],'#c5d4bb');
+         r(c,end[0]-.25,end[1]-.5,.5,.5,working?'#e9f5c5':'#889d8a');
+         poly(c,[[3,-4.5],[3.5,-7],[5,-7],[5.5,-4.5]],'#628f8a');
+         r(c,3.5,-6,.5,.5,'#bbdbb5');
+       }
+       workHands(c,near,far,skin);
+     },0,face);
    }
-   r(c,grip[0]-.35,grip[1]-.33,.7,.65,'#cf9b70');
    c.restore();
  }
  const WINDOW_CRAFT={smeltery:'tongs',weaponsmith:'hammer',armory:'hammer',metallurgist:'hammer',mill:'mill',magicworkshop:'wand'};
@@ -596,10 +677,11 @@
    const windows=s.wins.map((w,i)=>({w,i})).filter(({w})=>w[2]>=5)
      .sort((p,q)=>((p.i*7+b.id*13)%17)-((q.i*7+b.id*13)%17)||p.i-q.i);
    for(const {w:[x,y,width,height,round],i} of windows.slice(0,count))
-     drawCraftWindow(c,ox+x,oy+y,width,height,round,Game.time,i*1.7+b.id,b.working,WINDOW_CRAFT[b.type]);
+     drawCraftWindow(c,ox+x,oy+y,width,height,round,Game.time,i*1.7+b.id,b.working,WINDOW_CRAFT[b.type],
+       {type:b.worker?.type||(b.type==='mill'?'miller':b.type==='magicworkshop'?'enchanter':'smelter'),look:b.worker?.look??b.id*37+5,sx:b.worker?personSex(b.worker):''});
  }
- // The existing small window actor keeps the same hand motion; its material is now visible.
- drawInsideLife=function(c,b,s,ox,oy){if(b.type==='mill'&&s._publishedMachinery&&b.state==='done')drawMillYard(c,b,s,ox,oy);if(WINDOW_CRAFT[b.type]&&s._publishedMachinery&&s.wins?.some(w=>w[2]>=5))return drawCraftWindows(c,b,s,ox,oy);M.native.drawInsideLife(c,b,s,ox,oy);if(b.type==='tannery'&&s._publishedMachinery&&b.state==='done'&&b.working)drawLeatherCycle(c,b,s,ox,oy);if(!types.has(b.type)||(!b.working&&!(INS_CNT.get(b)||0)))return;const wins=s.wins||[],n=Math.min(wins.length,Math.max(1,b.working?1+((INS_CNT.get(b)||0)>1?1:0):Math.min(INS_CNT.get(b)||0,2))),order=wins.map((w,i)=>i).sort((p,q)=>((p*7+b.id*13)%17)-((q*7+b.id*13)%17)||p-q);let shown=0;for(const i of order){const[wx,wy,ww,wh,round]=wins[i];if(ww<5)continue;if(shown++>=n)break;const x=ox+wx,y=oy+wy,ph=i*1.7+b.id,sx=x+Math.sin(Game.time*.9+ph)*ww*.16;c.save();c.beginPath();if(round)c.arc(x,y,Math.min(ww,wh)/2,0,Math.PI*2);else c.rect(x-ww/2,y-wh/2,ww,wh);c.clip();if(['metallurgist','smeltery','weaponsmith','armory'].includes(b.type)){poly(c,[[sx,y+2.5],[sx+4,y+2.5],[sx+3,y+3.5],[sx+1,y+3.5]],P.steel);r(c,sx+1.5,y+3,1.5,2,P.iron);r(c,sx+2,y+2,1,.5,'#e4b96a')}else if(['brewery','mill','bakery','hopfarm','magicworkshop'].includes(b.type)){oval(c,sx+2,y+3.5,2.5,1.2,P.wood);oval(c,sx+2,y+3,2.3,.6,'#c5b27c')}else{r(c,sx-.5,y+3.5,5,.8,P.wood);r(c,sx,y+3.5,4,.5,P.hi);r(c,sx+2,y+3,1.5,.5,'#c8b88d')}c.restore()}};
+ // Windows use the same full model and hand rig as the visible workstations.
+ drawInsideLife=function(c,b,s,ox,oy){if(b.type==='magicworkshop'&&s._publishedMachinery)drawEnchantYard(c,b,s,ox,oy);if(b.type==='mill'&&s._publishedMachinery&&b.state==='done')drawMillYard(c,b,s,ox,oy);if(WINDOW_CRAFT[b.type]&&s._publishedMachinery&&s.wins?.some(w=>w[2]>=5)){drawCraftWindows(c,b,s,ox,oy);if(['weaponsmith','armory','metallurgist'].includes(b.type))drawForgeYard(c,b,s,ox,oy);return;}M.native.drawInsideLife(c,b,s,ox,oy);if(b.type==='tannery'&&s._publishedMachinery&&b.state==='done'&&b.working)drawLeatherCycle(c,b,s,ox,oy);if(!types.has(b.type)||(!b.working&&!(INS_CNT.get(b)||0)))return;const wins=s.wins||[],n=Math.min(wins.length,Math.max(1,b.working?1+((INS_CNT.get(b)||0)>1?1:0):Math.min(INS_CNT.get(b)||0,2))),order=wins.map((w,i)=>i).sort((p,q)=>((p*7+b.id*13)%17)-((q*7+b.id*13)%17)||p-q);let shown=0;for(const i of order){const[wx,wy,ww,wh,round]=wins[i];if(ww<5)continue;if(shown++>=n)break;const x=ox+wx,y=oy+wy,ph=i*1.7+b.id,sx=x+Math.sin(Game.time*.9+ph)*ww*.16;c.save();c.beginPath();if(round)c.arc(x,y,Math.min(ww,wh)/2,0,Math.PI*2);else c.rect(x-ww/2,y-wh/2,ww,wh);c.clip();if(['metallurgist','smeltery','weaponsmith','armory'].includes(b.type)){poly(c,[[sx,y+2.5],[sx+4,y+2.5],[sx+3,y+3.5],[sx+1,y+3.5]],P.steel);r(c,sx+1.5,y+3,1.5,2,P.iron);r(c,sx+2,y+2,1,.5,'#e4b96a')}else if(['brewery','mill','bakery','hopfarm','magicworkshop'].includes(b.type)){oval(c,sx+2,y+3.5,2.5,1.2,P.wood);oval(c,sx+2,y+3,2.3,.6,'#c5b27c')}else{r(c,sx-.5,y+3.5,5,.8,P.wood);r(c,sx,y+3.5,4,.5,P.hi);r(c,sx+2,y+3,1.5,.5,'#c8b88d')}c.restore()}};
 })();
 
 

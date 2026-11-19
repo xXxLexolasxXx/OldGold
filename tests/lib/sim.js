@@ -12,7 +12,11 @@ function mulberry(seed) {
 
 function newSim(seed, opts = {}) {
   const errors = [];
-  const h = createHost(m => errors.push(m), { files: opts.files });
+  // Client scenarios keep coop/UI command handlers, but this VM has no real
+  // browser URL, fetch or canvas APIs. As in simhost's normal script list,
+  // presentation-only fantasy adapters belong to the browser/render tests.
+  const files = opts.files && opts.files.filter(f => !f.split('/').pop().startsWith('fantasy-'));
+  const h = createHost(m => errors.push(m), { files });
   const rnd = mulberry(seed);
   h.run('Math'); // убеждаемся, что контекст жив
   h.ctx.__rnd = rnd;

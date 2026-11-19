@@ -856,7 +856,10 @@ drawUnit = function (c, u) {
       drawUnitXform(c, u, Math.sin(fp * Math.PI) * 11, -fp * Math.PI * 2 * (u.face || 1), 0, 1);
       return;
     }
-    if (f.k === 'rod') { _drawUnitBase(c, u); drawFlower(c, u); drawRod(c, u, f); return; }
+    if (f.k === 'rod') {
+      if(window.FantasyDwarfFishing?.draw(c,u,f)){drawFlower(c,u);return;}
+      _drawUnitBase(c, u); drawFlower(c, u); drawRod(c, u, f); return;
+    }
   }
   _drawUnitBase(c, u);
   drawFlower(c, u);

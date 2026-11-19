@@ -188,7 +188,9 @@
  let sawWorkerCanvas;
  function sawWorker(c,b,s,ox,oy,i,cycle){
    const {foot,face,bend,hands,showFar}=A.sawmillWorkerPose(s,i,cycle);
-   const actor={type:'woodcutter',look:b.id*53+i+1};
+   // The simulation still employs a woodcutter at the mill. Its work clothes
+   // belong to the carpentry station, without changing that worker's job.
+   const actor={type:'carpenter',look:b.worker?.look??b.id*53+i+1,sx:b.worker?personSex(b.worker):''};
    const source=personSprite(actor,'E','work',{anim:'chop',f:9},{sowRigBase:true});
    if(!source._fantasyAppearance){
      drawFolk(c,actor,ox+foot[0],oy+foot[1],face<0?'W':'E','sawRest',0,{});
@@ -204,12 +206,13 @@
      y+dip*Math.min(1,(-y-3)/5)]),color);
    const normalized=(actor.look>>>0)>=0x20000?actor.look:LOOK_POOL[(actor.look>>>0)%LOOK_POOL.length];
    const skin=SKINS[lookOf({...actor,look:normalized}).skin%SKINS.length];
+   const cloth=OUTFIT[actor.type].coat,wear=dwarfWorkwear(actor);
    const arm=(shoulder,hand,far)=>{
      const elbow=[(shoulder[0]+hand[0])/2-.35,(shoulder[1]+hand[1])/2+.9];
      ln(p,...shoulder,...elbow,P.ink,3);
      ln(p,...elbow,...hand,P.ink,2.5);
-     ln(p,...shoulder,...elbow,far?'#29485d':'#365f7c',2.5);
-     ln(p,...elbow,...hand,far?'#365b71':'#4a7791',1.5);
+     ln(p,...shoulder,...elbow,shade(cloth,far?-.25:0),2.5);
+     ln(p,...elbow,...hand,shade(cloth,far?-.1:.18),1.5);
    };
    const fist=([x,y],far)=>{
      poly(p,[[x-1.25,y-.55],[x-.6,y-1],[x+.65,y-1],[x+1.1,y-.35],
@@ -219,15 +222,17 @@
    };
    part(-PFX,-6,PW,6);
    fold([[-3,-8],[-1.5,-9.5],[2,-9],[3.3,-7.2],[2.8,-3.1],[-2.8,-3.1],[-3.4,-5.6]],P.ink);
-   fold([[-2.6,-7.7],[-1.4,-9],[1.5,-8.5],[2.7,-7],[2.3,-4],[-2.5,-4]],'#29475e');
-   fold([[-2.2,-7.5],[-1,-8.3],[1.1,-8],[2.2,-6.4],[1.4,-4.5],[-2.2,-4.4]],'#3e6887');
-   fold([[-2.2,-7.2],[-.7,-7.6],[.5,-7.1],[-.5,-6],[-2,-5.7]],'#527f98');
+   fold([[-2.6,-7.7],[-1.4,-9],[1.5,-8.5],[2.7,-7],[2.3,-4],[-2.5,-4]],shade(cloth,-.25));
+   fold([[-2.2,-7.5],[-1,-8.3],[1.1,-8],[2.2,-6.4],[1.4,-4.5],[-2.2,-4.4]],cloth);
+   fold([[-2.2,-7.2],[-.7,-7.6],[.5,-7.1],[-.5,-6],[-2,-5.7]],shade(cloth,.2));
    fold([[-2.5,-4.7],[2.5,-4.7],[2.3,-3.5],[-2.4,-3.5]],'#473225');
    fold([[1,-4.7],[2,-4.7],[2,-3.7],[1,-3.7]],'#c39859');
    arm([1+lean,-7.2+dip],hands[1],true);
    part(-PFX,-PFY,PW,17.5,lean,dip);
    part(.5,-17.5,10,5,lean,dip);
    arm([-1.2+lean,-7.2+dip],hands[0],false);
+   if(wear)paintWorkwearShoulder(wear,(px,py)=>[(-3.2-px)*scale+lean,(-15+py)*scale+dip],
+     (points,color)=>poly(p,points,color));
    if(showFar)fist(hands[1],true);
    fist(hands[0],false);
    c.save();c.translate(ox+foot[0],oy+foot[1]);c.scale(face,1);
