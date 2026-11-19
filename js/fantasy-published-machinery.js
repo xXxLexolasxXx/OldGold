@@ -118,6 +118,8 @@
      fpaSowPolygon(c,[[-4.5,-13],[-2,-13.5],[-2,-9],[-4,-9]],cloth);
      fpaSowBand(c,[-4.5,-8],[-2,-8],.7,'#715039');
    }
+   const wear=dwarfWorkwear(actor);
+   if(wear)paintWorkwearShoulder(wear,(x,y)=>[-3.2-x,-15+y],(points,color)=>fpaSowPolygon(c,points,color));
    yardBodies.set(source,body);
    return body;
  }

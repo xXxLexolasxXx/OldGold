@@ -23,25 +23,40 @@ function dwarfWorkwear(u) {
   return DWARF_WORKWEAR[u.type] || null;
 }
 
-function paintDwarfWorkwear(c, q, view, shape, rect) {
+function paintWorkwearShoulder(style, project, draw) {
+  const [, , plate, edge, material] = style;
+  const layer = (points,color) => draw(points.map(([x,y])=>project(x,y)),color);
+  layer([[-2.5,1],[-2,-1],[-.5,-2.5],[2,-2.5],[4,-1.5],[5,0],[5.5,2.5],
+    [4.5,4],[2,4.5],[-1.5,3.5]],'#2d241e');
+  layer([[-2,1],[-1.5,-.75],[0,-2],[2,-2],[3.5,-1],[4.5,.5],[4.75,2.5],
+    [3.75,3.5],[1.5,4],[-1,3]],shade(plate,-.23));
+  layer([[-1.75,.75],[-1.25,-.75],[0,-1.75],[2,-1.75],[3.5,-.75],[4.25,.75],
+    [3.75,2],[2,2.5],[0,2],[-1.5,1.75]],plate);
+  layer([[-1.5,.25],[-.75,-1],[.5,-1.75],[2,-1.75],[3.5,-.75],[3.75,0],
+    [2,-.75],[.5,-.75],[-.5,.25]],edge);
+  layer([[-1.5,1.75],[0,2],[2,2.5],[3.75,2],[4.25,1.25],[4,2.75],
+    [2,3.25],[.5,3],[-1.5,2.5]],shade(edge,-.18));
+  if(material==='quilt'){
+    layer([[.5,-.5],[1.5,.5],[.5,1.5],[-.5,.5]],shade(edge,-.25));
+    layer([[2.5,0],[3.5,1],[2.5,2],[1.5,1]],shade(edge,-.3));
+  }
+  layer([[3,1],[3.75,1],[3.75,1.75],[3,1.75]],material==='forge'?'#d6a078':'#cfad6c');
+}
+
+function paintDwarfWorkwear(c, q, view, shape, rect, shoulderOnly=false) {
   const style = dwarfWorkwear(q.holder);
   if (!style) return;
-  const [, coat, plate, edge, material] = style;
+  const [, coat, , , material] = style;
   const x = PFX, y = PFY - 15;
   const profile = view === 'E';
-  const shoulder = side => {
-    const cx = x + side * (profile ? 3.5 : 4.5);
-    const project = points => points.map(([px, py]) => [cx + side * px, y + py]);
-    shape(c, project([[-2.5,.5],[-1.5,-1],[1,-1],[3,0],[4,2.5],[2.5,3.5],[-1,2.5]]), shade(plate,-.45));
-    shape(c, project([[-2,0],[-1,-.5],[1,-.5],[2.5,.5],[3,2],[1.5,2.5],[-1,1.75]]), plate);
-    shape(c, project([[-1.5,0],[.5,-.5],[2,.25],[2.75,1.25],[.5,.5],[-1,.75]]), edge);
-    if (material === 'steel' || material === 'forge') {
-      shape(c, project([[-.5,2],[2,1.75],[3,1.5],[3,2.25],[1.5,2.75],[-.5,2.75]]), shade(edge,-.25));
-    } else if (material === 'quilt') {
-      rect(c, cx - .5, y + .5, 1, 1, shade(plate,-.27));
-    }
-    rect(c, cx + side * 1.5 - .25, y + 1.5, .5, .5, '#c39b60');
-  };
+  if(shoulderOnly){
+    const shoulder=side=>paintWorkwearShoulder(style,
+      (px,py)=>[x+side*((profile?3.2:3.7)+px),y+py],
+      (points,color)=>shape(c,points,color));
+    shoulder(-1);
+    if(!profile)shoulder(1);
+    return;
+  }
   if (material === 'plaid') {
     for (const dx of [-4,-1,2]) rect(c,x+dx,y+4,1.5,4,shade(coat,-.24));
     for (const dy of [4,6.5]) rect(c,x-4,y+dy,8,1,shade(coat,.14));
@@ -54,11 +69,6 @@ function paintDwarfWorkwear(c, q, view, shape, rect) {
     rect(c,center-2,y+7,2,.5,shade(apron,.28));
     rect(c,center-2.5,y+5.5,6,1,'#4f3524');
     rect(c,center+.5,y+5.5,1.5,1,'#b48c54');
-  }
-  if (profile) shoulder(-1);
-  else {
-    shoulder(-1);
-    shoulder(1);
   }
 }
 

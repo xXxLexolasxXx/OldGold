@@ -1767,7 +1767,7 @@ function personSprite(u, view, pose, frame, opt = {}) {
 // детализация и шапка/борода наследия (они меняют всех гномов): сменились — старое стирается. feod.sprcache=0 — выкл.
 // Там же (раздел art) — тяжёлые кадры нечисти ×3: тролли и прочие нейтралы ручного арта, призраки, банши, жнец,
 // волки, моховик — их кадр строится десятки и сотни мс (тролль на телефоне ~260 мс).
-const PSTORE = { q: [], db: null, prefix: '', saved: 0, max: 4000, aq: [], asaved: 0, amax: 900 };
+const PSTORE = { q: [], db: null, epoch: 0, prefix: '', saved: 0, max: 4000, aq: [], asaved: 0, amax: 900 };
 function pstoreOn() { try { return typeof indexedDB !== 'undefined' && localStorage.getItem('feod.sprcache') !== '0'; } catch (e) { return false; } }
 function pstorePrefix() {
   let eq = '';
@@ -1784,14 +1784,19 @@ function pstoreOpen() {
 // при старте игры: подгрузить сохранённые позы своей версии, чужие стереть
 async function peopleStoreLoad() {
   if (!pstoreOn() || PSTORE.db) return 0;
+  const epoch = PSTORE.epoch;
   try {
-    const db = PSTORE.db = await pstoreOpen(), prefix = PSTORE.prefix = pstorePrefix();
+    const db = await pstoreOpen();
+    if (epoch !== PSTORE.epoch) { db.close(); return 0; }
+    PSTORE.db = db;
+    const prefix = PSTORE.prefix = pstorePrefix();
     const scan = store => new Promise((ok, bad) => {
       const out = [], tx = db.transaction(store, 'readwrite'), st = tx.objectStore(store);
       st.openCursor().onsuccess = e => { const c = e.target.result; if (!c) return; if (String(c.key).startsWith(prefix)) out.push([c.key, c.value]); else c.delete(); c.continue(); };
       tx.oncomplete = () => ok(out); tx.onerror = () => bad(tx.error);
     });
     const all = await scan('people'), art = await scan('art');
+    if (epoch !== PSTORE.epoch) return 0;
     PSTORE.saved = all.length; PSTORE.asaved = art.length;
     // кадры нечисти — сразу в их кэши (naCache в neutralart.js, FZ_CVC в fairy2.js) со своими полями
     for (const [k, v] of art) {
@@ -1799,9 +1804,11 @@ async function peopleStoreLoad() {
         const key = String(k).slice(prefix.length), fam = key.slice(0, 3), sub = key.slice(3), m = v.meta || {};
         if (fam === 'na:' && typeof naCache !== 'undefined' && !naCache.has(sub) && naCachePx < NA_CACHE_PX / 2) {
           const bmp = await createImageBitmap(v.blob); bmp.fine = m.fine;
+          if (epoch !== PSTORE.epoch) { bmp.close(); return 0; }
           naCache.set(sub, { cv: bmp, ax: m.ax, ay: m.ay, w: m.w, h: m.h }); naCachePx += bmp.width * bmp.height;
         } else if (fam === 'fz:' && typeof FZ_CVC !== 'undefined' && !FZ_CVC[sub] && FZ_PX < fzMaxPx() / 2) {
           const bmp = await createImageBitmap(v.blob); bmp.fzO = m.fzO; bmp.fzPx = true;
+          if (epoch !== PSTORE.epoch) { bmp.close(); return 0; }
           FZ_CVC[sub] = bmp; FZ_ORD.set(sub, bmp.width * bmp.height); FZ_PX += bmp.width * bmp.height;
         }
       } catch (e) { /* битая запись — соберётся заново */ }
@@ -1810,10 +1817,17 @@ async function peopleStoreLoad() {
     for (const [k, blob] of all) {
       const key = String(k).slice(prefix.length);
       if (PEOPLE_CACHE.has(key) || PEOPLE_CACHE.size >= PEOPLE_CACHE_MAX - 500) continue;
-      try { PEOPLE_CACHE.set(key, await createImageBitmap(blob)); n++; } catch (e) { /* битая запись — соберётся заново */ }
+      try {
+        const bitmap = await createImageBitmap(blob);
+        if (epoch !== PSTORE.epoch) { bitmap.close(); return 0; }
+        PEOPLE_CACHE.set(key, bitmap); n++;
+      } catch (e) { /* битая запись — соберётся заново */ }
     }
     return n;
-  } catch (e) { console.warn('peopleStore', e); PSTORE.db = null; return 0; }
+  } catch (e) {
+    if (epoch === PSTORE.epoch) { console.warn('peopleStore', e); PSTORE.db = null; }
+    return 0;
+  }
 }
 // кадр нечисти — в очередь сохранения: fam 'na:' (нейтралы, naFrame) или 'fz:' (fzPxSprite), meta — поля кадра
 function artStorePush(fam, key, cv, meta) {
@@ -1822,6 +1836,7 @@ function artStorePush(fam, key, cv, meta) {
 // раз в 3 с: до 150 новых поз и 30 кадров нечисти — в хранилище (кодирование PNG — асинхронно, кадр не держит)
 function peopleStoreFlush() {
   const db = PSTORE.db;
+  const epoch = PSTORE.epoch;
   if (PSTORE.saved >= PSTORE.max) PSTORE.q.length = 0;
   if (PSTORE.asaved >= PSTORE.amax) PSTORE.aq.length = 0;
   if (!db || !(PSTORE.q.length || PSTORE.aq.length) || (typeof document !== 'undefined' && document.hidden)) return;
@@ -1830,7 +1845,7 @@ function peopleStoreFlush() {
   for (const [key, cv, meta] of abatch) {
     if (!cv.toBlob || PSTORE.asaved >= PSTORE.amax) continue;
     cv.toBlob(blob => {
-      if (!blob || !PSTORE.db) return;
+      if (!blob || PSTORE.db !== db || PSTORE.epoch !== epoch) return;
       try { PSTORE.db.transaction('art', 'readwrite').objectStore('art').put({ blob, meta }, PSTORE.prefix + key); PSTORE.asaved++; } catch (e) { /* место кончилось */ }
     }, 'image/png');
   }
@@ -1839,7 +1854,7 @@ function peopleStoreFlush() {
   for (const [key, cv] of batch) {
     if (!cv.toBlob) continue;
     cv.toBlob(blob => {
-      if (!blob || !PSTORE.db) return;
+      if (!blob || PSTORE.db !== db || PSTORE.epoch !== epoch) return;
       try { PSTORE.db.transaction('people', 'readwrite').objectStore('people').put(blob, PSTORE.prefix + key); PSTORE.saved++; } catch (e) { /* место кончилось — не страшно */ }
     }, 'image/png');
   }

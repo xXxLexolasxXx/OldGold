@@ -3,6 +3,40 @@
 // Нужно, чтобы прогресс не зависел от одного браузера: перенос на другой телефон/компьютер, страховка перед обновлением,
 // отправка файла разработчику вместе с отчётом. Вся работа с данными — в save.js (saveExport / saveImportText / savePreBackup).
 
+async function clearGraphicsCache() {
+  if (clearGraphicsCache.running) return clearGraphicsCache.running;
+  const clear = async () => {
+    if (typeof PSTORE !== 'undefined') {
+      PSTORE.epoch++;
+      PSTORE.q.length = 0;
+      PSTORE.aq.length = 0;
+      if (PSTORE.db) PSTORE.db.close();
+      PSTORE.db = null;
+      PSTORE.saved = 0;
+      PSTORE.asaved = 0;
+    }
+    if (typeof indexedDB !== 'undefined') {
+      const db = await pstoreOpen();
+      try {
+        await new Promise((resolve, reject) => {
+          const transaction = db.transaction(['people', 'art'], 'readwrite');
+          transaction.objectStore('people').clear();
+          transaction.objectStore('art').clear();
+          transaction.oncomplete = resolve;
+          transaction.onerror = transaction.onabort = () => reject(transaction.error || new Error('Кэш занят'));
+        });
+      } finally { db.close(); }
+    }
+    if (typeof caches !== 'undefined') {
+      const names = await caches.keys();
+      await Promise.all(names.filter(name => name.startsWith('oldgold-')).map(name => caches.delete(name)));
+    }
+  };
+  clearGraphicsCache.running = clear();
+  try { await clearGraphicsCache.running; }
+  finally { clearGraphicsCache.running = null; }
+}
+
 function saveFileOpen() {
   if (typeof document === 'undefined' || !document.body || !document.createElement) return;
   const old = document.getElementById('save-file-win');
@@ -76,6 +110,17 @@ function saveFileOpen() {
     const bar = document.createElement('div');
     bar.style.cssText = 'margin-top:8px';
     bar.appendChild(mk('Загрузить из файла…', () => file.click()));
+    bar.appendChild(mk('Очистить кэш графики', async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      msg.textContent = 'Очищаем кэш графики…';
+      try {
+        await clearGraphicsCache();
+        msg.textContent = 'Кэш графики очищен. При следующем запуске изображения загрузятся заново. Сохранения доступны в прежних слотах.';
+      } catch (error) {
+        msg.textContent = 'Не удалось очистить кэш: ' + error.message;
+      } finally { button.disabled = false; }
+    }));
     bar.appendChild(mk('Закрыть', () => win.remove()));
     win.appendChild(bar);
     win.appendChild(msg);

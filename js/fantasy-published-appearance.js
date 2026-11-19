@@ -82,6 +82,11 @@
   c.scale(K,K);
   transformed(c,G,()=>paintDwarfWorkwear(c,q,view,shape,rect));
   const pixels=c.getImageData(0,0,info.w,info.h).data,d=paint.data.data,{M}=info;
+  c.setTransform(1,0,0,1,0,0);
+  c.clearRect(0,0,info.w,info.h);
+  c.scale(K,K);
+  transformed(c,G,()=>paintDwarfWorkwear(c,q,view,shape,rect,true));
+  const plates=c.getImageData(0,0,info.w,info.h).data;
   const beardColor=[73,51,38];
   for(let i=0;i<M.face.length;i++){
    const j=i*4;
@@ -89,8 +94,12 @@
     const light=Math.max(.48,Math.min(1.25,(d[j]+d[j+1]+d[j+2])/460));
     for(let k=0;k<3;k++)d[j+k]=beardColor[k]*light;
    }
-   if(!pixels[j+3]||!d[j+3]||M.face[i]||M.skin[i]||M.hair[i]||M.beard[i]||M.cap[i]||paint.fore[j+3]>100)continue;
-   for(let k=0;k<3;k++)d[j+k]=pixels[j+k];
+   if(M.face[i]||M.skin[i]||M.hair[i]||M.beard[i]||M.cap[i]||paint.fore[j+3]>100)continue;
+   if(plates[j+3]){
+    for(let k=0;k<4;k++)d[j+k]=plates[j+k];
+   }else if(pixels[j+3]&&d[j+3]){
+    for(let k=0;k<3;k++)d[j+k]=pixels[j+k];
+   }
   }
   paint.cv.getContext('2d').putImageData(paint.data,0,0);
  }

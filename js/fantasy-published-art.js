@@ -460,6 +460,11 @@ function fpaDrawWorkTool(c,u,view,frame,opt={}){
    [tx,ty]=fpaFitSpadeToSprite(c,hx,hy,tx,ty);
  }
  smoothLimb(c,[offset+.4,sh+.4],[(offset+.4+hx)/2+.6,(sh+hy)/2+.5],[hx,hy],2.1,coat);
+ if(profile&&typeof dwarfWorkwear==='function'){
+   const wear=dwarfWorkwear(u);
+   if(wear)paintWorkwearShoulder(wear,(x,y)=>[-3.2-x,sh-3+y],
+     (points,color)=>fpaSowPolygon(c,points,color));
+ }
  if(!['toss','pat','bucket','pick'].includes(tool)){
    const handle=[hx-(tx-hx)*.25,hy-(ty-hy)*.25],head=[tx,ty];
    const peel=tool==='spade'&&u.type==='baker';
@@ -823,6 +828,8 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
    fpaSowBand(c,cuff,wrist,3.25,cuffColor);
  }
  arm(torso(-3,-15),near,false);
+ if(workwear)paintWorkwearShoulder(workwear,(x,y)=>torso(-3.2-x,-15+y),
+   (points,color)=>fpaSowPolygon(c,points,color));
  if(tool!=='rack'){
    fpaSowBand(c,handle,socket,single?1.8:strike?2.5:2.25,outline);
    fpaSowBand(c,handle,socket,single?.75:1,'#b58a57');
