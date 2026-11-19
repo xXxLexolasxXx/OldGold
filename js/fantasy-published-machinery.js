@@ -92,8 +92,8 @@
  const peelTravel=[0,.5,2.5,5,6.5,5,2.5,.5];
  const kneadPress=[0,.25,.65,1,.8,.5,.2,0];
  const stirOffsets=[[-1,-.5],[-.5,-1],[.5,-1],[1,-.5],[1,.5],[.5,1],[-.5,1],[-1,.5]];
- function workBody(actor,cloth,view){
-   const source=personSprite({...actor,_exactYardPose:true},view,'idle',0,{});
+ function workBody(actor,cloth,view,posedShoulder){
+   const source=personSprite({...actor,_exactYardPose:true},view,'idle',0,{posedWorkwearShoulder:posedShoulder?'both':-1});
    if(source._pendingSprite||!source._fantasyAppearance)return null;
    let body=yardBodies.get(source);
    if(body)return body;
@@ -120,14 +120,14 @@
      fpaSowBand(c,[-4.5,-8],[-2,-8],.7,'#715039');
    }
    const wear=dwarfWorkwear(actor);
-   if(wear)paintWorkwearShoulder(wear,(x,y)=>[-3.2-x,-15+y],(points,color)=>fpaSowPolygon(c,points,color));
+   if(wear&&!posedShoulder)paintWorkwearShoulder(wear,(x,y)=>[-3.2-x,-15+y],(points,color)=>fpaSowPolygon(c,points,color));
    yardBodies.set(source,body);
    return body;
  }
  let workBodyOffset=[0,0];
- function workScene(c,actor,x,y,paintPose,lean=0,face=1,view='E',bodyOffset=[0,0]){
+ function workScene(c,actor,x,y,paintPose,lean=0,face=1,view='E',bodyOffset=[0,0],posedShoulder=false){
    const outfit=OUTFIT[actor.type],look=lookOf({...actor,look:(actor.look>>>0)>=0x20000?actor.look:LOOK_POOL[(actor.look>>>0)%LOOK_POOL.length]});
-   const cloth=outfit.coat||look.green,body=workBody(actor,cloth,view),scale=YARD_K*FantasyPublishedYard.scale;
+   const cloth=outfit.coat||look.green,body=workBody(actor,cloth,view,posedShoulder),scale=YARD_K*FantasyPublishedYard.scale;
    if(!body)return false;
    c.save();
    c.imageSmoothingEnabled=false;
@@ -552,7 +552,7 @@
      const pulse=(t%2+2)%2;
      if(pulse<.8){r(c,end[0]+1+pulse*2,end[1]-1-pulse*2,.5,.5,'#d9e5aa');
        r(c,end[0]-1+pulse,end[1]-2-pulse,.5,.5,'#98b8b0');}
-   },0,station.face);
+   },0,station.face,'E',[0,0],true);
  }
  const forgeKeys=[
    [0,1.8,-8.2,5.8,-9.3], [.28,-1,-11.1,-2,-15.4],
@@ -600,7 +600,7 @@
        for(const [dx,dy]of [[-1,-1],[1.5,-1.8],[2.5,-.4]])
          r(c,6+dx*(1+spread),-9+dy*(1+spread),.5,.5,spread<.5?'#ffe3a2':'#c68d4d');
      }
-   },0,face);
+   },0,face,'E',[0,0],true);
    return rig;
  }
  function drawForgeYard(c,b,s,ox,oy){

@@ -64,8 +64,9 @@ for (const seed of [7, 22]) {
   }
   ok(has, 'каменоломня с каменотёсом не появилась за 6 минут');
   if (has) {
-    // вокруг каменоломни чисто на 12 клеток, одна глыба в 15 клетках
+    // Оставляем только созданные тестом цели: природные глыбы имеют приоритет над дальней скалой.
     const r = J(sim, `const b = Game.buildings.find(b => b.type === 'quarry' && b.state === 'done'), u = Game.units.find(u => u.type === 'stonemason' && u.home === b);
+      REGROW.stoneChance = 0;
       for (let y = b.doorY - 30; y <= b.doorY + 30; y++) for (let x = b.doorX - 30; x <= b.doorX + 30; x++) {
         if (!inb(x, y)) continue; const i = idx(x, y), o = World.obj[i];
         if (o && o.t === 'stone') World.obj[i] = null;

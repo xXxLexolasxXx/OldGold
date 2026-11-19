@@ -3,10 +3,11 @@
 // (рампа из 6 оттенков: свет тёплый, тень холодная; вокруг — 1-px тёмный контур).
 // Анимация курения — 6 кадров: 0 достал, 1 поднёс, 2 вдох, 3 затяжка (огонёк горит ярче), 4 убрал ото рта, 5 выдох с дымком.
 // Рука гнома запекается в спрайт по кадру (SMOKE_ARM), сама трубка рисуется поверх (drawSmoking).
-// Один пиксель курева = 1/3 мирового пикселя, как в остальной графике.
+// Трубка под новый хват рисуется на сетке 1/2, сигарета сохраняет тонкую сетку 1/3.
 
 const SM_U = 1 / 3, SM_PAD = 1, SM_W = 48, SM_H = 22, SM_A = 12;   // SM_A — строка оси (там рот)
 const SM_GRIP = 7;                                                  // в пикселях курева от губ: где рука держит
+const SM_PIPE_U = 1 / 2, SM_PIPE_GRIP = 4;
 const SM_INK = '#1c1216';                                           // контур
 const SM_NF = 12;                                                   // кадров: 6 опорных (достал, поднёс, вдох, затяжка, убрал, выдох) и по одному промежуточному после каждого
 const SM_DUR = [0.5, 0.4, 0.5, 0.9, 0.6, 1.5].flatMap(d => [d / 2, d / 2]);   // сколько держится каждый кадр, сек (цикл прежний)
@@ -24,6 +25,7 @@ const SMOKE_ARM = {
 };
 for (const V of ['E', 'S']) { SMOKE_ARM[V].hand = smExp(SMOKE_ARM[V].hand); SMOKE_ARM[V].elbow = smExp(SMOKE_ARM[V].elbow); }
 const SMOKE_MOUTH = { E: [4.3, -13.3], S: [1.4, -13.0] };
+const SM_MOUTH_CONTACT = smExp([0, .25, 1, 1, .35, 0]);
 
 // ---------- палитры ----------
 function smHex(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
@@ -233,14 +235,29 @@ const SM_ALL = [...SM_PIPES.map(p => ({ ...p, kind: 'pipe' })), ...SM_CIGS.map(p
 
 // ---------- сборка спрайта: контур, свечение, наклон по кадру ----------
 const SM_CACHE = new Map();
-function smokeItemSprite(id, frame, view = 'E') {
-  const key = (id * SM_NF + frame) * 2 + (view === 'S' ? 1 : 0);
+function smokeItemSprite(id, frame, view = 'E', fitted = false) {
+  const key = ((id * SM_NF + frame) * 2 + (view === 'S' ? 1 : 0)) * 2 + Number(fitted);
   let s = SM_CACHE.get(key);
   if (s) return s;
   const lvl = SM_EMBER_LVL[frame], slope = SM_SLOPE[view][frame];
   const g = new SmGrid(lvl);
   SM_ALL[id].build(g);
-  const W = SM_W, H = SM_H, src = g.c.getImageData(0, 0, W, H), d = src.data;
+  const W = SM_W, H = SM_H;
+  const extension = fitted && SM_ALL[id].kind === 'pipe' && g.len <= 18 ? 5 : 0;
+  const join = SM_PAD + SM_PIPE_GRIP + 1;
+  const stretchedColumn = x => x < join ? x : x + extension;
+  let sprite = g.c;
+  if (extension) {
+    const widened = document.createElement('canvas');
+    widened.width = W; widened.height = H;
+    sprite = widened.getContext('2d');
+    sprite.imageSmoothingEnabled = false;
+    sprite.drawImage(g.cv, 0, 0);
+    sprite.clearRect(join, 0, W - join, H);
+    sprite.drawImage(g.cv, join - 1, 0, 1, H, join, 0, extension, H);
+    sprite.drawImage(g.cv, join, 0, W - join - extension, H, join + extension, 0, W - join - extension, H);
+  }
+  const d = sprite.getImageData(0, 0, W, H).data;
   const has = (x, y) => x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] > 0;
   const out = document.createElement('canvas'); out.width = W; out.height = H;
   const o = out.getContext('2d'), od = o.createImageData(W, H);
@@ -252,7 +269,7 @@ function smokeItemSprite(id, frame, view = 'E') {
   }
   // свечение вокруг огонька: ярче на затяжке
   if (lvl) for (const [hx, hy] of g.hot) for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
-    const x = hx + SM_PAD + dx, y = hy + dy;
+    const x = stretchedColumn(hx + SM_PAD) + dx, y = hy + dy;
     if (x < 0 || y < 0 || x >= W || y >= H || od.data[(y * W + x) * 4 + 3]) continue;
     const dist = Math.max(Math.abs(dx), Math.abs(dy));
     if (dist > lvl) continue;
@@ -266,7 +283,7 @@ function smokeItemSprite(id, frame, view = 'E') {
   const base = slope < 0 ? hs : 0;
   for (let x = 0; x < W; x++) c.drawImage(out, x, 0, 1, H, x, base + Math.round(x * slope), 1, H);
   const shift = x => base + Math.round(x * slope);
-  s = { cv, w: W, h: H + hs, shift, len: g.len, ember: [g.ember[0] + SM_PAD, g.ember[1]], kind: SM_ALL[id].kind, name: SM_ALL[id].name };
+  s = { cv, w: W, h: H + hs, shift, len: g.len + extension, ember: [stretchedColumn(g.ember[0] + SM_PAD), g.ember[1]], kind: SM_ALL[id].kind, name: SM_ALL[id].name };
   SM_CACHE.set(key, s);
   return s;
 }
@@ -298,28 +315,55 @@ function smPuff(c, x, y, size, age, a) {
   c.fillRect(Math.round(x / SM_U) * SM_U, Math.round(y / SM_U) * SM_U, s, s);
 }
 
-// Рисует курево в руке гнома и дымок. (px, py) — ноги, view — 'E' или 'S', face — взгляд (±1) для E.
-function drawSmoking(c, u, px, py, view) {
-  const fr = smokeFrameOf(u), id = smokeKindOf(u), sp = smokeItemSprite(id, fr, view === 'E' ? 'E' : 'S');
-  const face = view === 'E' ? (u.face < 0 ? -1 : 1) : 1, V = view === 'E' ? 'E' : 'S';
-  const hand = SMOKE_ARM[V].hand[fr];
+function smokePlacement(u, view, frame, mouth) {
+  const V = view === 'E' ? 'E' : 'S';
+  const sp = smokeItemSprite(smokeKindOf(u), frame, V, !!mouth);
+  const pipe = mouth && sp.kind === 'pipe';
+  const unit = pipe ? SM_PIPE_U : SM_U;
+  const gripColumn = SM_PAD + (pipe ? SM_PIPE_GRIP : mouth ? 5 : SM_GRIP);
+  const stemY = column => (SM_A + sp.shift(column)) * unit;
+  const base = SMOKE_ARM[V].hand[frame];
+  const snap = value => Math.round(value / unit) * unit;
+  if (!mouth) {
+    const ox = snap(base[0] - gripColumn * unit);
+    const oy = snap(base[1] + .25 - stemY(gripColumn));
+    return { sp, unit, hand: base, mouth: SMOKE_MOUTH[V], ox, oy };
+  }
+  const p = SM_MOUTH_CONTACT[frame];
+  const restedOrigin = [base[0] - gripColumn * unit, base[1] - stemY(gripColumn)];
+  const mouthOrigin = [mouth[0] - SM_PAD * unit, mouth[1] - stemY(SM_PAD)];
+  const ox = snap(restedOrigin[0] + (mouthOrigin[0] - restedOrigin[0]) * p);
+  const oy = snap(restedOrigin[1] + (mouthOrigin[1] - restedOrigin[1]) * p);
+  const hand = [ox + gripColumn * unit, oy + stemY(gripColumn)];
+  return { sp, unit, hand, mouth, ox, oy, mouthpiece: [ox + SM_PAD * unit, oy + stemY(SM_PAD)] };
+}
+
+// (px, py) — опора гнома. Профиль зеркалируется вместе с куревом.
+function drawSmoking(c, u, px, py, view, fitted = false, posture = null) {
+  const fr = smokeFrameOf(u), V = view === 'E' ? 'E' : 'S';
+  const face = V === 'E' && u.face < 0 ? -1 : 1;
+  const rig = fitted ? fpaSmokingRig(u, V, fr) : smokePlacement(u, V, fr);
+  const { sp, unit, hand, mouth, ox, oy } = rig;
   const fb = fr >> 1, pb = ((fr & 1) + smokePhaseOf(u)) / 2;   // опорный кадр (0–5) и доля его длительности
-  // колонка SM_PAD+SM_GRIP спрайта должна лечь в кулак
-  const gc = SM_PAD + SM_GRIP;
-  const ox = hand[0] - gc * SM_U, oy = hand[1] + 0.25 - (SM_A + sp.shift(gc)) * SM_U;
   const prev = c.imageSmoothingEnabled;
-  c.save(); c.translate(px, py); if (face < 0) c.scale(-1, 1);
+  c.save();
+  c.translate(px, py - (posture?.off ? 1 : 0) - (posture?.lift || 0));
+  if (posture?.rot) c.rotate(posture.rot);
+  if (face < 0) c.scale(-1, 1);
+  if (posture?.off) c.translate(0, posture.off);
   c.imageSmoothingEnabled = false;
-  c.drawImage(sp.cv, Math.round(ox / SM_U) * SM_U, Math.round(oy / SM_U) * SM_U, sp.w * SM_U, sp.h * SM_U);
-  // кулак поверх курева: оно зажато в руке, а не лежит перед ней
-  const sk = SKINS[lookOf({ type: u.type, look: LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length] }).skin];
-  const fx = Math.round(hand[0] / SM_U) * SM_U - 2 * SM_U, fy = Math.round((hand[1] + 0.25) / SM_U) * SM_U - 2 * SM_U;
-  c.fillStyle = '#3a2214'; c.fillRect(fx - SM_U, fy, 6 * SM_U, 4 * SM_U); c.fillRect(fx, fy - SM_U, 4 * SM_U, 6 * SM_U);
-  c.fillStyle = sk[0]; c.fillRect(fx, fy, 4 * SM_U, 3 * SM_U);
-  c.fillStyle = sk[1]; c.fillRect(fx, fy + 3 * SM_U, 4 * SM_U, SM_U); c.fillRect(fx + 3 * SM_U, fy, SM_U, 4 * SM_U);
-  c.fillStyle = sk[2]; c.fillRect(fx + SM_U, fy + SM_U, SM_U, SM_U);   // костяшка
+  c.drawImage(sp.cv, ox, oy, sp.w * unit, sp.h * unit);
+  if (fitted) fpaPaintSmokingGrip(c, u, rig);
+  else {
+    const sk = SKINS[lookOf({ type: u.type, look: LOOK_POOL[(u.look >>> 0) % LOOK_POOL.length] }).skin];
+    const fx = Math.round(hand[0] / SM_U) * SM_U - 2 * SM_U, fy = Math.round((hand[1] + 0.25) / SM_U) * SM_U - 2 * SM_U;
+    c.fillStyle = '#3a2214'; c.fillRect(fx - SM_U, fy, 6 * SM_U, 4 * SM_U); c.fillRect(fx, fy - SM_U, 4 * SM_U, 6 * SM_U);
+    c.fillStyle = sk[0]; c.fillRect(fx, fy, 4 * SM_U, 3 * SM_U);
+    c.fillStyle = sk[1]; c.fillRect(fx, fy + 3 * SM_U, 4 * SM_U, SM_U); c.fillRect(fx + 3 * SM_U, fy, SM_U, 4 * SM_U);
+    c.fillStyle = sk[2]; c.fillRect(fx + SM_U, fy + SM_U, SM_U, SM_U);
+  }
   // тонкая струйка от огонька всегда; на выдохе — клуб изо рта
-  const ex = ox + sp.ember[0] * SM_U, ey = oy + sp.shift(sp.ember[0]) * SM_U + sp.ember[1] * SM_U - 0.3;
+  const ex = ox + sp.ember[0] * unit, ey = oy + (sp.shift(sp.ember[0]) + sp.ember[1]) * unit - .3;
   const T = Game.time + u.id * 0.37;
   for (let k = 0; k < 3; k++) {
     const p = (T * 0.5 + k / 3) % 1;
@@ -327,11 +371,10 @@ function drawSmoking(c, u, px, py, view) {
   }
   if (fb === 5 || (fb === 0 && pb < 0.5)) {
     const ph = fb === 5 ? pb : 0.6 + pb * 0.4;   // шлейф доходит и до следующего кадра
-    const m = SMOKE_MOUTH[V];
-    const mx = m[0] + 1.2 + ph * 5, my = m[1] + 0.8 - ph * (V === 'S' ? 7 : 4);
+    const mx = mouth[0] + 1.2 + ph * 5, my = mouth[1] + .8 - ph * (V === 'S' ? 7 : 4);
     for (let k = 0; k < 7; k++) {
       const a = k * 2.4 + u.id, r = ph * 2.2 + k * 0.18;
-      smPuff(c, mx + Math.cos(a) * r - (V === 'S' ? 0 : 0), my + Math.sin(a) * r * 0.7, 2 + (k & 1) + (ph > 0.5 ? 1 : 0), ph, 0.85);
+      smPuff(c, mx + Math.cos(a) * r, my + Math.sin(a) * r * 0.7, 2 + (k & 1) + (ph > 0.5 ? 1 : 0), ph, 0.85);
     }
   }
   c.restore();

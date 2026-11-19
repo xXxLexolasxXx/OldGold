@@ -3,6 +3,7 @@
 // Native bands, lazy restore, seasons, ocean, map cells and road caches stay native.
 (() => {
   if (window.FantasyPublishedGround) return;
+  if(typeof gsMakeSet==='function' && !GS_SETS.coast) gsMakeSet('coast',[['meadow',35],['glades',20],['trails',15],['mossy',20],['spring',10]]);
   const finished = new WeakMap();
   let generation=-1, shore=new Map();
   const info = window.FantasyPublishedGround = {version:1,bands:0,pixels:0,finished};
@@ -149,13 +150,26 @@
 
 
     const cv=b.cv,w=cv.width,H=cv.height,c=cv.getContext('2d',{willReadFrequently:true});
-    if(biomePal().snow){marks.set(cv,TERR.gen);return;}
+    const snow=!!biomePal().snow;
     const im=c.getImageData(0,0,w,H),d=im.data,seed=Game.seed|0;
-    const themes={meadow:[73,109,57],forest:[49,83,44],steppe:[142,132,78],mountain:[82,98,66],swamp:[57,77,47],coast:[78,115,60]};
-    const center=themes[MapOpt.biome]||themes.meadow;
+    const themes={meadow:[76,100,54],forest:[51,72,43],steppe:[130,117,67],mountain:[83,93,69],swamp:[60,72,46],coast:[91,111,84],cavern:[76,72,65],winter:[217,231,235]};
+    const biome = snow ? 'winter' : (MapOpt.biome || 'meadow');
+    const center = themes[biome] || themes.meadow;
     const G=8,gw=Math.ceil(w/G)+2,gh=Math.ceil(H/G)+2,field=new Float32Array(gw*gh);
-    for(let y=0;y<gh;y++)for(let x=0;x<gw;x++)field[y*gw+x]=(gsVNW(x*G,y*G+b.y0,19,seed+713)-.5)*7+(gsVNW(x*G,y*G+b.y0,85,seed+907)-.5)*4;
-    function pigment(x,y){const ix=x>>3,iy=y>>3,fx=(x&7)/8,fy=(y&7)/8,i=iy*gw+ix;return (field[i]*(1-fx)+field[i+1]*fx)*(1-fy)+(field[i+gw]*(1-fx)+field[i+gw+1]*fx)*fy;}
+    function sampleField(x, y) {
+      const wx = x * G, wy = y * G + b.y0;
+      return (gsVNW(wx, wy, 19, seed + 713) - .5) * 7 + (gsVNW(wx, wy, 85, seed + 907) - .5) * 4;
+    }
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) field[y * gw + x] = sampleField(x, y);
+    function fieldAt(x, y) {
+      if (y < 0 || y >= gh) return Math.fround(sampleField(x, y));
+      return field[y * gw + x];
+    }
+    function pigment(x, y) {
+      const ix = x >> 3, iy = y >> 3, fx = (x & 7) / G, fy = (y & 7) / G;
+      return (fieldAt(ix, iy) * (1 - fx) + fieldAt(ix + 1, iy) * fx) * (1 - fy)
+        + (fieldAt(ix, iy + 1) * (1 - fx) + fieldAt(ix + 1, iy + 1) * fx) * fy;
+    }
     const alpha=new Uint8Array(w*H);
     // The cell map is read-only. Native coast/rock blends survive at their borders.
     for(let y=0;y<H;y++){
@@ -168,7 +182,7 @@
         if(tx>0&&World.terrain[i-1]!==T_GRASS)a=Math.min(a,smoothstep(1,13,px));
         if(tx<MAP_W-1&&World.terrain[i+1]!==T_GRASS)a=Math.min(a,smoothstep(1,13,31-px));
         alpha[y*w+x]=Math.round(a*255);if(!a)continue;
-        const tone=pigment(x&~1,y&~1),o=(y*w+x)*4;
+        const tone=pigment(x&~1,y&~1)*(snow?2.5:1),o=(y*w+x)*4;
         for(let q=0;q<3;q++){const v=center[q]+tone*(q===1?1:.7);d[o+q]=clamp(d[o+q]*(1-a)+v*a);}
       }
     }
@@ -179,11 +193,58 @@
       if((tx&15)===0)yield;
       const i=idx(tx,ty);if(World.terrain[i]!==T_GRASS)continue;
       const r=mulberry32((hash(i+seed)^0x6e31)>>>0),ox=tx*TILE,oy=ty*TILE-b.y0;
-      const base=shift(center,pigment(ox+15,Math.max(0,Math.min(H-1,oy+16)))*.7,pigment(ox+15,Math.max(0,Math.min(H-1,oy+16))),0);
+      // A brush can straddle two bands. Sample the same world-space centre on both sides.
+      const tone = pigment(ox + 15, oy + 16);
+      const base = shift(center, tone * .7, tone, 0);
+      // Biome-specific silhouettes are baked into this band once.
+      const patch=(cx,cy,points,tones)=>{
+        const top=Math.floor(Math.min(...points.map(p=>p[1]))),bottom=Math.ceil(Math.max(...points.map(p=>p[1])));
+        for(let yy=top;yy<=bottom;yy++){
+          const hits=[];
+          for(let j=0;j<points.length;j++){
+            const a=points[j],b=points[(j+1)%points.length];
+            if((a[1]>yy+.5)!==(b[1]>yy+.5))hits.push(a[0]+(b[0]-a[0])*(yy+.5-a[1])/(b[1]-a[1]));
+          }
+          hits.sort((a,b)=>a-b);
+          for(let j=0;j+1<hits.length;j+=2)for(let xx=Math.ceil(hits[j]);xx<hits[j+1];xx++){
+            const tone=yy>bottom-2?0:yy<top+2?2:1;
+            ink(cx+xx,cy+yy,tones[tone]);
+          }
+        }
+      };
+      if(biome==='winter'){
+        if(r()<.025){const x=ox+5+(r()*22|0),y=oy+6+(r()*19|0);for(let n=0;n<3;n++){ink(x+n*3,y+n,[190,207,216]);ink(x+n*3+1,y+n,[202,217,223]);}}
+        continue;
+      }
+      if(biome==='mountain'||biome==='cavern'){
+        if(r()<.31){
+          const x=ox+(r()*32|0),y=oy+(r()*32|0),size=.7+r()*.7;
+          const pts=[[-8,0],[-6,-4],[-1,-5],[4,-3],[8,-3],[10,0],[7,3],[1,4],[-5,3]].map(([x,y])=>[Math.round(x*size),Math.round(y*size)]);
+          const tones=biome==='cavern'?[[70,64,54],[88,81,69],[105,96,80]]:[[91,94,80],[111,112,96],[128,127,107]];
+          patch(x,y,pts,tones);
+          if(r()<.3)patch(x-4,y+2,[[-4,0],[-1,-1],[3,-1],[5,1],[1,2],[-3,1]],[[87,96,60],[105,114,70],[119,124,80]]);
+        }
+        continue;
+      }
+      if(['meadow','forest','swamp'].includes(biome)&&r()<.34){
+        const x=ox+(r()*32|0),y=oy+(r()*32|0),radius=7+r()*8;
+        const pts=[[-1,0],[-.8,-.4],[-.3,-.6],[.1,-.4],[.6,-.5],[1,-.1],[.8,.2],[.3,.3],[-.1,.5],[-.6,.3]].map(([a,b])=>[Math.round(a*radius),Math.round(b*radius)]);
+        const moss=biome==='forest'?[51,77,38]:biome==='swamp'?[65,80,42]:[76,103,48];
+        patch(x,y,pts,[shift(moss,-5,-7,-3),moss,shift(moss,5,7,2)]);
+        if(biome==='forest'&&r()<.3){
+          const line=(a,b,width)=>{const dx=b[0]-a[0],dy=b[1]-a[1],n=Math.max(Math.abs(dx),Math.abs(dy));for(let k=0;k<=n;k++){const px=x+a[0]+dx*k/n,py=y+a[1]+dy*k/n;for(let t=0;t<width;t++){ink(px,py+t,[61,48,31]);if(t===0)ink(px,py-1,[99,77,46]);}}};
+          line([-8,-4],[-1,-1],3);line([-1,-1],[7,5],2);line([-1,-1],[9,-3],1);
+        }
+      }
+      if(biome==='swamp'&&r()<.16){
+        const x=ox+12,y=oy+18;
+        for(let yy=-2;yy<=2;yy++)for(let xx=-6;xx<=6;xx++)if(xx*xx/36+yy*yy/5<1)ink(x+xx,y+yy,yy<0?[43,51,36]:[67,73,48]);
+        ink(x-3,y-1,[94,99,66]);ink(x-2,y-1,[94,99,66]);
+      }
       // Small pockets of real-looking earth, rather than broad noise blotches.
       if(r()<.09){
         const cx=ox+9+r()*14,cy=oy+11+r()*13,rx=4+r()*4,ry=2+r()*2;
-        const soil=MapOpt.biome==='swamp'?[87,81,55]:[123,100,70];
+        const soils={meadow:[112,92,60],forest:[82,64,44],steppe:[147,111,66],mountain:[110,105,89],swamp:[73,66,44],coast:[150,132,91],cavern:[93,76,57],winter:[170,195,211]}; const soil=soils[MapOpt.biome]||soils.meadow;
         for(let y=-Math.ceil(ry);y<=ry;y++){
           const span=Math.floor(Math.sqrt(Math.max(0,1-y*y/(ry*ry)))*rx);
           for(let x=-span;x<=span;x++){
@@ -198,7 +259,7 @@
         for(let k=0;k<3;k++){const x=cx-rx+1+k*rx*.8;ink(x,cy+ry,shift(base,-8,-10,-4));ink(x+1,cy+ry-1,shift(base,11,15,5));}
       }
       // Layered 3–7 px leaf clusters: dark contact, body, warm upper-left tips.
-      const count=5+(r()*4|0);
+      const count=1+(r()*2|0);
       for(let k=0;k<count;k++){
         const x=ox+3+r()*25,y=oy+4+r()*25;
         const dark=shift(base,-10,-13,-6),mid=shift(base,3,5,1),light=shift(base,14,20,7);
@@ -221,7 +282,7 @@
       }
       // Soft storybook undergrowth: clustered clover, moss and rare tiny blossoms.
       const detail=mulberry32((hash(i+seed)^0x39a1)>>>0);
-      const accents=2+(detail()*3|0);
+      const accents=1;
       for(let k=0;k<accents;k++){
         const x=ox+5+detail()*21,y=oy+5+detail()*22,kind=detail()*4|0;
         const shadow=shift(base,-9,-12,-4),leaf=shift(base,7,12,5),tip=shift(base,17,22,10);
@@ -240,7 +301,7 @@
           ink(x,y+1,shadow);ink(x-1,y,shift(base,19,11,3));ink(x,y-1,shift(base,28,19,8));ink(x+1,y,shift(base,12,8,2));
         }
       }
-      if(detail()<.09&&MapOpt.biome!=='steppe'){
+      if(detail()<.025&&!['steppe','cavern'].includes(MapOpt.biome)){
         const x=ox+6+detail()*20,y=oy+7+detail()*19;
         for(const [dx,dy,tint]of [[0,0,0],[4,1,-9],[7,-1,5]]){
           ink(x+dx,y+dy+1,shift(base,-8,-10,-3));ink(x+dx,y+dy,shift(base,1,6,1));
@@ -249,7 +310,7 @@
         }
       }
       // Rare little seed/flower heads are grouped accents, not confetti.
-      if(r()<.055){const x=ox+5+r()*21,y=oy+6+r()*21;ink(x,y+1,shift(base,-9,-9,-4));ink(x,y,[205,195,129]);ink(x-1,y-1,[227,218,166]);ink(x,y-1,[238,226,174]);}
+      if(MapOpt.biome!=='cavern'&&r()<.015){const x=ox+5+r()*21,y=oy+6+r()*21;ink(x,y+1,shift(base,-9,-9,-4));ink(x,y,[205,195,129]);ink(x-1,y-1,[227,218,166]);ink(x,y-1,[238,226,174]);}
     }
     yield;
     c.putImageData(im,0,0);

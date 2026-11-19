@@ -53,10 +53,16 @@ ok(!tgt.far, 'нетронутого жнеца видно в foesNear — ре�
 ok(tgt.click === 'attack' && tgt.label === 'Бой со жнецом', 'клик по жнецу не даёт приказа «Бой со жнецом»: ' + JSON.stringify(tgt));
 ok(tgt.abil, 'способности героя не видят жнеца');
 
-// мимоходом (жнеца не трогали) коса бьёт героя по-старому: 5–8
+// Мимоходом коса наносит 5–8 базового урона, который масштабируется силой героя.
 const pass = J(`const h = Game.hero, H = h.hero, g = Game.ghosts[0]; H.hp = H.maxhp; const hp0 = H.hp; g.prov = -99; g.x = h.x + 1; g.y = h.y;
-  ghostStrike(g, h); for (let k = 0; k < 30; k++) ghostStrikeTick(g, 0.05); return hp0 - H.hp;`);
-ok(pass <= 8.01, 'нетронутый жнец бьёт героя сильнее прежнего: ' + pass);
+  const scale = fsEnvMul(h);
+  const random = Math.random;
+  Math.random = () => 0.5;
+  try { ghostStrike(g, h); for (let k = 0; k < 30; k++) ghostStrikeTick(g, 0.05); }
+  finally { Math.random = random; }
+  return { damage: hp0 - H.hp, scale };`);
+ok(pass.scale > 1 && Math.abs(pass.damage - 6.5 * pass.scale) < 0.01,
+  'нетронутый жнец не нанёс 6,5 базового урона с учётом силы героя: ' + JSON.stringify(pass));
 
 // ---------- Стихии ----------
 const el = J(`const out = {}; for (const e of ['sacred', 'holy', 'fire', 'steel', 'pierce']) { const g = Game.ghosts[0]; g.hp = g.mhp = 1000; g.ph3 = 1; rpHurt(g, Game.hero, 10, e); out[e] = Math.round(1000 - g.hp); } return out;`);

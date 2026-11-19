@@ -61,9 +61,25 @@ h.run(`(() => { const u = Game.hero; u.cmd = null; u.home = null; const p = __pi
 let rod = false;
 for (let k = 0; k < 60 && !rod; k++) { h.run(`(() => { const u = Game.hero, p = __pier || __hut; WX.k = 0; WX.target = 0; if (!u.heroFishing && (u.brk || !findShore(Math.floor(u.x), Math.floor(u.y), 14))) { u.brk = null; u.proc = null; u.action = null; u.x = p.doorX + 0.5; u.y = p.doorY + 0.5; } })()`); S.runFor(sim, 1, 1); rod = h.run('!!(Game.hero.fun && Game.hero.fun.k === "rod")'); }
 ok(rod, 'герой без дела идёт на берег и закидывает удочку');
-h.run(`Game.hero.cmd = { kind: 'move', x: Math.floor(Game.hero.x), y: Math.floor(Game.hero.y), tx: Math.floor(Game.hero.x), ty: Math.floor(Game.hero.y), label: '' }; issueCmd(Game.hero, Game.hero.cmd)`);
+h.run(`(() => {
+  const u = Game.hero;
+  const x = Math.floor(u.x), y = Math.floor(u.y);
+  const cmd = { kind: 'move', x, y, tx: x, ty: y, label: '' };
+  issueCmd(u, cmd);
+})()`);
+ok(h.run('!Game.hero.heroFishing && Game.hero.fun?.k !== "rod"'), 'приказ сразу убирает удочку и завершает рыбалку');
 S.runFor(sim, 2, 1);
-ok(h.run('!Game.hero.fun'), 'приказ прерывает рыбалку героя');
+ok(h.run('!Game.hero.heroFishing && Game.hero.fun?.k !== "rod"'), 'герой не возвращается к рыбалке сразу после приказа');
+ok(h.run(`(() => {
+  const u = Game.hero;
+  const x = Math.floor(u.x), y = Math.floor(u.y);
+  // Другое занятие заменило генератор, а удочка ещё видна.
+  u.proc = (function* () { yield { wait: 1 }; })();
+  u.heroFishing = true;
+  u.fun = { k: 'rod' };
+  issueCmd(u, { kind: 'move', x, y, tx: x, ty: y, label: '' });
+  return !u.heroFishing && u.fun?.k !== 'rod';
+})()`), 'приказ убирает удочку даже после замены генератора рыбалки');
 h.run(`isNightNow = __hr.fn; isEveningNow = __hr.ev; Game.hero.cmd = null;`);
 
 console.log('кракен');

@@ -62,7 +62,7 @@ for (const c of CLASSES) {
   setup(c, 15);
   const L = D.abil[c];
   L.forEach((a, i) => {
-    if (a.passive) return;
+    if (a.passive || a.k === 'leap') return; // отскоку нужно место для приземления, проверяем его отдельно
     spawnSkels(3);
     const r = J(`const h = Game.hero, H = h.hero; H.mana = hmMax(H); H.rs = abResMax(H); const before = abResGet(H); const done = heroAbilityFor(h, ${i});
       return { done, spent: before - abResGet(H), cd: (H.abCd['${a.k}'] || 0) > Game.time };`);
@@ -77,6 +77,41 @@ for (const c of CLASSES) {
   ok(!again, `${c}: первая способность сработала дважды подряд`);
   sim.h.run('Game.skels = []; Game.abz = [];');
 }
+
+// Отскок: скелет к востоку, свободная полоса к западу, затем та же полоса залита водой.
+setup('archer', 15);
+const leap = J(`const h = Game.hero, H = h.hero;
+  const i = heroAbils(H).findIndex(a => a.k === 'leap');
+  let start;
+  for (let y = 6; y < MAP_H - 6 && !start; y++) for (let x = 6; x < MAP_W - 6 && !start; x++) {
+    if ([-3, -2, -1, 0, 1].every(dx => isWalkable(x + dx, y)) && !nearBonfire(x, y, 16) && !abFoes({ x: x + 0.5, y: y + 0.5 }, 7).length) start = [x, y];
+  }
+  if (!start || i < 0) return null;
+  const [x, y] = start;
+  h.x = x + 0.5; h.y = y + 0.5;
+  skelRise(h.x + 1, h.y);
+  const target = Game.skels[Game.skels.length - 1]; target.state = 'roam'; target.k = 1;
+  if (abFoes(h, 6)[0]?.o !== target) return null;
+  const before = abResGet(H);
+  const done = heroAbilityFor(h, i);
+  const open = { done, spent: before - abResGet(H), cd: H.abCd.leap > Game.time, dx: h.roll && h.roll.dx, dy: h.roll && h.roll.dy };
+  H.rs = abResMax(H); H.abCd = {}; H.abNext = 0; h.roll = null;
+  const tiles = [-3, -2, -1].map(dx => idx(x + dx, y));
+  const terrain = tiles.map(tile => World.terrain[tile]);
+  for (const tile of tiles) World.terrain[tile] = T_WATER;
+  try {
+    const resource = abResGet(H);
+    const done = heroAbilityFor(h, i);
+    return { open, blocked: { done, spent: resource - abResGet(H), cd: !!H.abCd.leap, roll: !!h.roll } };
+  } finally {
+    tiles.forEach((tile, j) => { World.terrain[tile] = terrain[j]; });
+  }`);
+ok(leap && leap.open.done && leap.open.dx === -3 && leap.open.dy === 0 && leap.open.cd && leap.open.spent === D.abil.archer.find(a => a.k === 'leap').cost,
+  'отскок не переносит лучника на три клетки от скелета: ' + JSON.stringify(leap));
+ok(leap && !leap.blocked.done && !leap.blocked.spent && !leap.blocked.cd && !leap.blocked.roll,
+  'отскок в воду срабатывает или расходует ресурс: ' + JSON.stringify(leap));
+sim.h.run('Game.skels = [];');
+
 // ресурса не хватает — не срабатывает
 setup('mage', 5);
 const lack = J(`const H = Game.hero.hero; H.mana = 2; return heroAbilityFor(Game.hero, 0);`);

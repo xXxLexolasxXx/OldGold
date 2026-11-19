@@ -76,7 +76,17 @@ for (const [src, name] of [[camp, 'campaign'], [lore, 'lore']]) {
   check(!!blk, name + ': не найден список собеседников');
   if (blk) for (const m of blk[1].matchAll(/^\s*(\w+): \{/gm)) if (!WHO.includes(m[1])) check(false, `${name}: у «${m[1]}» нет портрета`);
 }
-check(/campFaceUrl\('elder'/.test(fs.readFileSync(path.join(__dirname, '..', 'js', 'world', 'golemlife.js'), 'utf8')), 'Старец голема без портрета');
+const noop = () => {};
+Object.assign(ctx, { golemTick: noop, spireGo: noop, spireEnsureRoute: noop, resetGameState: noop, setupStart: noop, serializeGame: noop, applySave: noop });
+load('world/golemlife.js');
+const elder = run(`(() => {
+  const portrait = campPortraitFrames;
+  let requested;
+  campPortraitFrames = who => { requested = who; return portrait(who); };
+  try { const html = glElderPortrait(); return { requested, html }; }
+  finally { campPortraitFrames = portrait; }
+})()`);
+check(elder.requested === 'elder' && elder.html.includes('class="gl-pt"') && elder.html.includes('src="data:72x72"'), 'Старец голема без портрета');
 
 // без рисования — пусто
 const bare = vm.createContext({ console, Math, Object, Array, String, Map, JSON, mulberry32: ctx.mulberry32 });

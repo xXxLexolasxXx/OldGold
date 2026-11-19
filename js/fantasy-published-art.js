@@ -265,7 +265,8 @@ personSprite = function (u, view, pose, frame, opt = {}) {
   // Cache the phase actually consumed by the pose helpers. Atlas frame zero
   // alone cannot distinguish breathing or the named native fight states.
   const phaseKey=pose==='idle'?(Number(frame)||0)%IDLE_FRAMES:pose==='walk'?(Number(frame)||0)%WALK_FRAMES:pose==='fight'?String(frame):pose==='work'?`${frame.anim}:${frame.f}`:frame;
-  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, opt.yardMining, opt.woodcutting, opt.fieldWork, opt.externalWorkTool, opt.sowRigBase, opt.trayLower, u.injury].join('|');
+  const smokeKind=pose==='smoke'?smokeKindOf(u):null;
+  const key = [u.type, female?'f':'m',u.sx||'', variant, view, pose, f, workF, phaseKey, smokeKind, pose === 'work' ? frame.anim : '', u.carry, opt.carryN || u.carryN || 1, opt.gest, opt.gest?opt.gf:0, opt.wpn, opt.gait, opt.nohat, opt.posture, opt.yardMining, opt.woodcutting, opt.fieldWork, opt.externalWorkTool, opt.sowRigBase, opt.trayLower, u.injury].join('|');
   if (FA_RENDER_CACHE.has(key)) return FA_RENDER_CACHE.get(key);
   const cv = mkCanvas(PW * PART, PH * PART), c = cv.getContext('2d', { willReadFrequently: true });
   c.imageSmoothingEnabled = false; c.scale(PART, PART);
@@ -302,7 +303,14 @@ personSprite = function (u, view, pose, frame, opt = {}) {
   return out;
 };
 
-function fpaSmokingRig(u,view,frame){const v=view==='E'?'E':'S';return {hand:SMOKE_ARM[v].hand[Number(frame)%SMOKE_ARM[v].hand.length],mouth:SMOKE_MOUTH[v]};}
+function fpaSmokingRig(u,view,frame){
+ const v=view==='E'||view==='W'?'E':'S';
+ const appearance=window.FantasyPublishedAppearanceArt;
+ const q=u.type==='kid'?null:appearance?.resolve(u),G=q&&appearance.geometry(q,v,'smoke',frame);
+ const mouth=u.type==='kid'?null:(G?[v==='E'?6:1.5,G.headY-PFY+4.25]:SMOKE_MOUTH[v]);
+ const shoulder=[v==='E'?-2.2:4.2,-14.8];
+ return {...smokePlacement(u,v,Number(frame)%SM_NF,mouth),shoulder};
+}
 function fpaTrunkGrip(u,pose){
  return u.type==='woodcutter'&&u.carry==='trunk'&&(pose==='idle'||pose==='walk');
 }
@@ -466,9 +474,10 @@ function fpaWorkSleeve(c,start,grip,cloth,far=false){
  fpaSowBand(c,cuff,grip,4,shade(cloth,far?-.08:.28));
  return {elbow,cuff};
 }
+const FPA_WORK_TOOLS=new Set(['axe','pick','hammer','sickle','spade','hook','toss','pat','bucket']);
 function fpaDrawWorkTool(c,u,view,frame,opt={}){
  if(opt.sowRigBase)return {known:true,drawn:false};
- const tool=ANIM_TOOL[frame?.anim],known=['axe','pick','hammer','sickle','spade','hook','toss','pat','bucket'].includes(tool);
+ const tool=ANIM_TOOL[frame?.anim],known=FPA_WORK_TOOLS.has(tool);
  if(!known)return {known:false,drawn:false};
  const mineAngles=opt.yardMining?FPA_YARD_MINE_ANGLES:FPA_MINE_ANGLES;
  const angles=FPA_FIELD_ANGLES[opt.fieldWork]||(tool==='pick'?mineAngles:tool==='axe'&&opt.woodcutting?FPA_WOODCUT_ANGLES:tool==='toss'?TOSS_A:tool==='pat'?PAT_A:tool==='sickle'||tool==='spade'?SWING_SICKLE:SWING_A);
@@ -867,16 +876,17 @@ function fpaDrawTwoHandWork(world,u,source,px,py,face,target,progress,tool,scale
  garment([[-5.5,-15.5],[-3,-17],[3.5,-16],[5,-13],[4,-8.5],[-4,-8.5],[-5.5,-11]],shade(cloth,-.24));
  garment([[-4.5,-15.5],[-2,-16.5],[2,-16],[4.5,-12.5],[3.5,-9.5],[-3.5,-9.5],[-4.5,-11]],cloth);
  garment([[-4.5,-12],[-2,-12],[.5,-11],[3,-11.5],[2.5,-10.5],[-1,-10],[-4,-10.5]],shade(cloth,.19));
- // The brown shoulder piece wraps over the green sleeve and stops before
- // the elbow. Its shaded hem meets the posed sleeve instead of framing it.
- garment([[-6,-15.5],[-4.5,-17],[.5,-17],[3,-15.5],[2,-14],
-   [.5,-13],[-1.5,-12],[-4.5,-12.5],[-5.5,-13.5]],outline);
- garment([[-5.5,-15.5],[-4,-16.5],[.5,-16.5],[2.5,-15.5],[1,-14],
-   [-1,-13],[-4,-13],[-5,-13.5]],plate);
- garment([[-5,-15.5],[-4,-16],[-.5,-16],[1.5,-15.5],[.5,-15],
-   [-2,-15],[-4.5,-14.5]],plateEdge);
- garment([[-5,-14],[-3,-13.5],[-1.5,-13.5],[1,-14.5],[1,-14],
-   [-1,-13],[-4,-13],[-5,-13.5]],shade(plate,-.34));
+ // A custom workwear plate follows the posed sleeve below.
+ if(!workwear){
+   garment([[-6,-15.5],[-4.5,-17],[.5,-17],[3,-15.5],[2,-14],
+     [.5,-13],[-1.5,-12],[-4.5,-12.5],[-5.5,-13.5]],outline);
+   garment([[-5.5,-15.5],[-4,-16.5],[.5,-16.5],[2.5,-15.5],[1,-14],
+     [-1,-13],[-4,-13],[-5,-13.5]],plate);
+   garment([[-5,-15.5],[-4,-16],[-.5,-16],[1.5,-15.5],[.5,-15],
+     [-2,-15],[-4.5,-14.5]],plateEdge);
+   garment([[-5,-14],[-3,-13.5],[-1.5,-13.5],[1,-14.5],[1,-14],
+     [-1,-13],[-4,-13],[-5,-13.5]],shade(plate,-.34));
+ }
  garment([[-4.5,-12.5],[-2,-12],[.5,-12.5],[-.5,-11.5],[-3.5,-11.5]],shade(cloth,.16));
  garment([[-4.5,-10], [4.5,-10],[4,-8.5],[-4.5,-8.5]],outline);
  garment([[-4.5,-9.5],[4,-9.5],[4,-9],[-4.5,-9]],'#715034');
@@ -1156,6 +1166,12 @@ function fpaQuarrySurface(target,origin){
 // same broad sleeve and hand volume as the accepted working dwarf.
 function fpaPoseCoat(u,look=lookOf(u)){
  const outfit=OUTFIT[u.type]||OUTFIT.serf;
+ const guild=typeof dwarfGuildWear==='function'?dwarfGuildWear(u):null;
+ if(guild){
+  const app=u.type==='hero'?haOf(u):null;
+  const index=app?.[7]??Number(u.type.split('~')[1]?.split('.')[7]);
+  return index>=0&&HA_COAT_COLS[index]?HA_COAT_COLS[index]:guild.style.coat;
+ }
  return (outfit.robe?outfit.robeCol||outfit.coat:outfit.coat)||look.green||'#66863d';
 }
 function fpaPoseArm(c,start,grip,cloth,far=false,size=1,bend=1){
@@ -1240,12 +1256,18 @@ function fpaDrawStoryDwarf(c,u,paint){
 if(typeof FantasyPublishedArt!=='undefined')FantasyPublishedArt.ready.then(()=>FPA_STORY_BODIES.clear());
 function fpaDrawSmokingHand(c,u,view,frame){
  const rig=fpaSmokingRig(u,view,frame),profile=view==='E'||view==='W',side=view==='N'?-1:1;
- const look=lookOf(u),coat=fpaPoseCoat(u,look),skin=SKINS[look.skin%SKINS.length];
- const start=[PFX+(profile?-2.2:side*4.2),PFY-14.8],grip=[PFX+rig.hand[0],PFY+rig.hand[1]];
- fpaPoseArm(c,start,grip,coat,false,1,profile?1:grip[1]>=start[1]?-side:side);
- fpaPoseShoulder(c,u,(x,y)=>[PFX+(profile?-3.2-x:side*(3.7+x)),PFY-15+y]);
- fpaPoseHand(c,grip,Math.atan2(grip[0]-start[0],grip[1]-start[1]),skin);
- return {hand:grip,shoulder:start};
+ const {shoulder,hand}=rig;
+ c.save();c.translate(PFX,PFY);
+ fpaPoseArm(c,shoulder,hand,fpaPoseCoat(u),false,1,profile?1:hand[1]>=shoulder[1]?-side:side);
+ fpaPoseShoulder(c,u,(x,y)=>[profile?-3.2-x:side*(3.7+x),-15+y]);
+ fpaPaintSmokingGrip(c,u,rig);
+ c.restore();
+ return {hand:[PFX+hand[0],PFY+hand[1]],shoulder:[PFX+shoulder[0],PFY+shoulder[1]]};
+}
+function fpaPaintSmokingGrip(c,u,{hand,shoulder}){
+ const look=(u.look>>>0)>=0x20000?u.look:LOOK_POOL[(u.look>>>0)%LOOK_POOL.length];
+ const skin=SKINS[lookOf({...u,look}).skin%SKINS.length];
+ fpaPoseHand(c,hand,Math.atan2(hand[0]-shoulder[0],hand[1]-shoulder[1]),skin);
 }
 // Weapon-only native pose projection. The atlas body and all hitboxes stay fixed.
 function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){

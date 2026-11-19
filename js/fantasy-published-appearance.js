@@ -11,7 +11,9 @@
  function shape(c,p,col){c.fillStyle=col;for(let y=Math.floor(Math.min(...p.map(a=>a[1]))*2)/2;y<Math.max(...p.map(a=>a[1]));y+=.5){const hits=[];for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length],q=y+.25;if((a[1]<=q&&b[1]>q)||(b[1]<=q&&a[1]>q))hits.push(a[0]+(q-a[1])*(b[0]-a[0])/(b[1]-a[1]));}hits.sort((a,b)=>a-b);for(let i=0;i+1<hits.length;i+=2){const x=Math.ceil(hits[i]*2)/2,z=Math.ceil(hits[i+1]*2)/2;if(z>x)c.fillRect(x,y,z-x,.5);}}}
  function rgb(s,fallback='#66834e'){return hexToRgb(typeof s==='string'&&/^#[0-9a-f]{3,6}$/i.test(s)?s:fallback);}
  function resolve(u){let holder=u,app=typeof haOf==='function'?haOf(u):null;if(!app&&u.type.includes('~')){const tail=u.type.slice(u.type.indexOf('~')+1).split('.').map(Number);if(tail.length===HA_MAX.length&&tail.every(Number.isInteger))app=haClean(tail);}if(u.type==='hero'){const t=app?haType(haBase(u),app):haBase(u);holder={...u,type:t,sx:personSex(u)};}const O=OUTFIT[holder.type]||OUTFIT.serf,sex=personSex(holder)==='f'||O.fem||holder.type==='waitress'?'f':'';const look=(holder.look>>>0)>=0x20000?holder.look:LOOK_POOL[(holder.look>>>0)%LOOK_POOL.length];holder={...holder,look,sx:sex};const L=lookOf(holder);const cap=O.cap==='serf'?L.serfCap:O.cap==='wizard'?'#6b527c':O.cap==='baker'?'#eee5d1':O.cap==='waitress'?'#efe8d9':typeof O.cap==='string'&&O.cap.startsWith('cls:')?O.tint||HA_CLS_CAP[O.cap.slice(4)]||'#9a9c99':O.cap;
-  return{holder,app,O,L,sex,look,cap,coat:O.robe?O.robeCol||O.coat||L.green:O.coat||L.green,beard:L.bcol||BEARDS[L.beard%BEARDS.length],hair:O.fem?HAIR:L.hair||L.bcol||BEARDS[L.beard%BEARDS.length]};}
+  const guild=dwarfGuildWear(holder),nativeCoat=O.robe?O.robeCol||O.coat||L.green:O.coat||L.green;
+  const coat=guild&&!(app?.[7]>=0)?guild.style.coat:nativeCoat;
+  return{holder,app,O,L,sex,look,cap,coat,guild,beard:L.bcol||BEARDS[L.beard%BEARDS.length],hair:O.fem?HAIR:L.hair||L.bcol||BEARDS[L.beard%BEARDS.length]};}
  function geometry(q,view,pose,frame,opt={}){const child=q.holder.type==='kid',a=FantasyArt.images[child?'gnome-child':q.sex==='f'?'gnome-woman-walk':'gnome-walk'];if(!a?.frames)return null;const f=pose==='walk'?Math.floor((frame%WALK_FRAMES)*8/WALK_FRAMES):0,row=view==='E'?1:view==='N'?2:0;const src=a.frames[child?((pose==='work'?4:0)+(pose==='walk'?Math.floor((frame%WALK_FRAMES)*4/WALK_FRAMES):pose==='work'?Math.floor((frame.f%WORK_FRAMES)*4/WORK_FRAMES):0)):row*8+f],s=Math.min((child?21:25)/a.maxW,(child?27:33)/a.maxH),dh=src[3]*s,top=PFY-Math.round(dh),[shear,dip]=fpaBodyMotion(view,pose,frame,opt);
   return{art:a,src,scale:s,dw:src[2]*s,top,dh,dip,shear,capY:top+dh*(q.sex==='f'?.22:.23),headY:top+dh*.30,child};}
  function transformed(c,G,fn){c.save();c.translate(PFX,PFY);c.transform(1,0,G.shear,1,0,G.dip);c.translate(-PFX,-PFY);fn();c.restore();}
@@ -32,6 +34,42 @@
  }
  function moustache(c,q,G,view){if(view==='N'||q.sex==='f'||q.L.noBeard)return;const x=PFX+(view==='E'?1.5:0),y=G.headY-.1;c.save();c.translate(x,y);c.scale(1.1,.78);drawMoustache(c,view,0,0,q.beard,q.L.must);c.restore();}
  function capLayout(q,G,view){const child=G.child,profile=child||view==='E',eyeY=child?G.headY+2.05:q.sex==='f'?G.headY+.1:view==='E'?G.headY-1:G.headY-.2;return{view:child?'E':view,x:PFX+(child?1.1:0),eyeY,bottom:eyeY+1.3,anchor:eyeY-.15,profile};}
+ function guildHat(c,q,G,H){
+  if(!q.guild||q.app?.[0]>=0||q.O.skHat>=0)return false;
+  if(q.O.tint)c=haTintCtx(c,q.O.tint);
+  const yscale=Math.min(1,Math.max(.5,(H.eyeY+Math.min(0,G.dip)-.5)/12));
+  const draw={
+   poly:(points,color)=>shape(c,points.map(([x,y])=>[H.x+x,H.eyeY+y*yscale]),color),
+   rect:(x,y,w,h,color)=>rect(c,H.x+x,H.eyeY+y*yscale,w,Math.max(.5,h*yscale),color),
+   shade,
+  };
+  q.guild.style.head(draw,H.view,q.guild.rank);
+  return true;
+ }
+ function clearDetachedFightOutline(cv,G){
+  const c=cv.getContext('2d'),w=cv.width,h=cv.height,im=c.getImageData(0,0,w,h),d=im.data;
+  const seen=new Uint8Array(w*h),maxX=(PFX-4.5)*K;
+  const y0=(G.headY+G.dip-4)*K,y1=(G.headY+G.dip+4.5)*K;
+  const isolatedDark=p=>p%w<maxX&&p/w>=y0&&Math.floor(p/w)<y1&&
+    Math.max(d[p*4],d[p*4+1],d[p*4+2])<100;
+  let changed=false;
+  for(let p=0;p<seen.length;p++){
+   if(seen[p]||d[p*4+3]<64||!isolatedDark(p))continue;
+   const component=[p];seen[p]=1;
+   for(let at=0;at<component.length;at++){
+    const pixel=component[at],px=pixel%w,py=Math.floor(pixel/w);
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+     const x=px+dx,y=py+dy,i=y*w+x;
+     if(x<0||x>=w||y<0||y>=h||seen[i]||d[i*4+3]<64)continue;
+     seen[i]=1;component.push(i);
+    }
+   }
+   if(component.length>12||!component.every(isolatedDark))continue;
+   for(const pixel of component)d[pixel*4+3]=0;
+   changed=true;
+  }
+  if(changed)c.putImageData(im,0,0);
+ }
  function capClothPath(c,hx,b,s,tall,style){if(style!==4){capShape(c,hx,b,s,tall,style);return;}const X=x=>hx+x*s;c.beginPath();c.moveTo(X(-4.3),b);c.quadraticCurveTo(X(-4.6),b-tall*.7,X(-.4),b-tall*.96);c.quadraticCurveTo(X(3.6),b-tall*1.02,X(5.8),b-tall*.5);c.quadraticCurveTo(X(7.6),b-tall*.05,X(7.2),b+.55);c.quadraticCurveTo(X(6.2),b+.2,X(4.8),b-tall*.34);c.quadraticCurveTo(X(4.7),b-tall*.1,X(4.3),b);c.closePath();}
  function lowBrim(c,q,G,view){const H=capLayout(q,G,view),x=H.x,y=H.eyeY,col=q.cap,back=view==='N'&&!G.child,profile=H.profile;const outer=profile?(G.child?[[-6,-1.05],[-2,-1.1],[3,-.9],[6.6,-.35],[7.1,.25],[6.8,1.1],[3,1.2],[-3,1.05],[-5.9,.5]]:[[-6,-1.05],[-2,-1.1],[3,-.9],[7.6,-.35],[8.25,.25],[7.7,1.1],[3,1.2],[-3,1.05],[-5.9,.5]]):back?[[-6.2,-.9],[-3,-.55],[3,-.55],[6.2,-.9],[6,1],[3,1.2],[-3,1.2],[-6,1]]:[[-6.2,-1.05],[-3,-.7],[2,-.7],[6.2,-1.05],[6,1],[3,1.2],[-3,1.2],[-6,1]];const pts=outer.map(([a,b])=>[x+a,y+b]);shape(c,pts,shade(col,-.48));shape(c,outer.map(([a,b])=>[x+a*.95,y+b*.6-.25]),shade(col,-.08));shape(c,outer.slice(0,profile?6:4).map(([a,b])=>[x+a*.92,y+b*.45-.6]).concat([[x+4,y-.15],[x-4,y-.15]]),shade(col,.19));rect(c,x-4.5,y-.5,2,.5,shade(col,.31));rect(c,x+.5,y-.5,2.5,.5,shade(col,.22));if(profile)rect(c,x+5,y-.25,1.5,.5,shade(col,.17));if(q.O.cap==='waitress'){pline(c,x-4.8,y-.65,x-3.4,y+.45,'#b4a180',.5);pline(c,x+3.2,y+.45,x+4.7,y-.65,'#b4a180',.5);rect(c,x-2.5,y+.55,5,.5,'#c3b18c');rect(c,x-2,y-.9,2,.5,'#fff7df');for(const dx of[-3,-1,1,3])rect(c,x+dx,y+.2,.5,.5,'#d3c4a2');}if(q.O.rivets||q.O.cap==='cls:warrior'||q.O.cap==='cls:paladin'){rect(c,x-3.5,y+.25,.5,.5,'#d8ba78');rect(c,x+3.5,y+.25,.5,.5,'#d8ba78');}}
  function childCapNose(c,q,G,view){const H=capLayout(q,G,view),sk=SKINS[q.L.skin%3],x=H.x+6.9,y=H.bottom+.45;oval(c,x,y,1.65,1.1,sk[2]);oval(c,x+.15,y-.2,1.35,.85,sk[0]);rect(c,x+.3,y-.75,.7,.5,shade(sk[0],.15));rect(c,x-.8,y+.55,1,.5,sk[1]);}
@@ -50,7 +88,7 @@
   c.restore();
  }
  function foreground(c,q,view,pose,frame,opt){const u=q.holder;if(u.carry)fpaCarryLoad(c,u,view,pose,{...opt,carryForeground:true});
-  if(pose==='work'&&typeof fpaDrawWorkTool==='function')fpaDrawWorkTool(c,u,view,frame,opt);
+  if(pose==='work'&&!opt.externalWorkTool)fpaDrawWorkTool(c,u,view,frame,opt);
   if(pose==='smoke')fpaDrawSmokingHand(c,u,view,frame);
 
   fpaAction(c,u,view,pose,frame,opt);
@@ -77,7 +115,21 @@
   for(let i=0;i<d.length/4;i++){const j=i*4;if(!original[j+3])continue;if(f[j+3]>100){for(let k=0;k<3;k++)d[j+k]=f[j+k];continue;}if(!raw[j+3])continue;const r=raw[j],g=raw[j+1],b=raw[j+2],lum=(r+g+b)/3;if(lum<48)continue;const{x,y}=pos(i);let key=null,level=1;if(M.skin[i]||M.face[i]&&skinSeed(r,g,b)){key='skin';level=Math.max(.64,Math.min(1.15,(r+g+b)/3/190));}else if(M.beard[i]){key='beard';level=Math.max(.25,Math.min(1.15,lum/211));}else if(M.hair[i]){key='hair';level=Math.max(.3,Math.min(1.38,lum/110));}else if(M.cap[i]){key='cap';level=Math.max(.28,Math.min(1.35,Math.max(r,g,b)/(q.sex==='f'?225:135)));}else if(r<=185&&b<=110&&g>r*.83&&g>b*1.35&&y>G.capY+1){key=q.sex==='f'||q.O.vest&&view!=='N'&&Math.abs(x-PFX)<6&&y>PFY-16&&y<PFY-7?'vest':'coat';level=Math.max(.3,Math.min(1.35,g/119));}else if(q.sex==='f'&&y>PFY-13&&y<PFY-2&&r>g*1.15&&g>b*1.2){key='skirt';level=Math.max(.3,Math.min(1.3,lum/94));}if(key)for(let k=0;k<3;k++)d[j+k]=Math.max(0,Math.min(255,Math.round(colours[key][k]*level)));}
   c.putImageData(im,0,0);return{cv:out,data:im,original,fore:f};
  }
- function dress(paint,info,q,G,view){
+ function workwearPoseShoulder(u,view,pose,frame,opt){
+  if(opt.posedWorkwearShoulder)return opt.posedWorkwearShoulder;
+  const profile=view==='E';
+  if(profile&&pose==='work'&&(opt.sowRigBase||opt.externalWorkTool||FPA_WORK_TOOLS.has(ANIM_TOOL[frame?.anim])))return -1;
+  const weaponOut=opt.wpn&&wpnParse(opt.wpn).out&&(pose==='idle'||pose==='walk');
+  if(!u.carry&&(pose==='fight'||weaponOut))return profile?-1:'both';
+  if(!u.carry&&opt.gest){
+   if(profile)return -1;
+   if(['clap','stretch','panic','five','six7'].includes(opt.gest))return 'both';
+   return view==='N'?-1:1;
+  }
+  if(pose==='smoke'||pose==='duck'||pose==='tame')return profile||view==='N'?-1:1;
+  return 0;
+ }
+ function dress(paint,info,q,G,view,posedShoulder){
   const layer=mkCanvas(info.w,info.h),c=layer.getContext('2d',{willReadFrequently:true});
   c.scale(K,K);
   transformed(c,G,()=>paintDwarfWorkwear(c,q,view,shape,rect));
@@ -85,9 +137,9 @@
   c.setTransform(1,0,0,1,0,0);
   c.clearRect(0,0,info.w,info.h);
   c.scale(K,K);
-  transformed(c,G,()=>paintDwarfWorkwear(c,q,view,shape,rect,true));
+  transformed(c,G,()=>paintDwarfWorkwear(c,q,view,shape,rect,true,posedShoulder));
   const plates=c.getImageData(0,0,info.w,info.h).data;
-  const beardColor=[73,51,38];
+  const beardColor=q.guild?rgb(q.beard):[73,51,38];
   for(let i=0;i<M.face.length;i++){
    const j=i*4;
    if(M.beard[i]&&q.sex!=='f'&&!q.L.noBeard&&d[j+3]&&paint.fore[j+3]<=100){
@@ -156,7 +208,8 @@
  }
  function render(u,view='S',pose='idle',frame=0,opt={}){if(view==='W')view='E';if(!u||!OUTFIT[u.type])return previous(u,view,pose,frame,opt);const q=resolve(u),G=geometry(q,view,pose,frame,opt);if(!G)return fpaWaitingDwarf();const ap=q.app,explicit=i=>!!ap&&ap[i]>=0,cls=typeof q.O.cap==='string'&&q.O.cap.startsWith('cls:'),hairChange=q.sex==='f'&&explicit(11),beardChange=q.sex!=='f'&&!q.L.noBeard&&(explicit(3)||explicit(4)||explicit(5)||explicit(13)),capChange=true,capeChange=explicit(14),special=capChange||beardChange||hairChange||capeChange;
   const {gf,...options}=opt,candle=capChange&&q.O.candle?Math.floor(Game.time*5)%4:0;
-  const motion=JSON.stringify([q.holder.type,q.look,q.sex,view,pose,frame?.anim,options,u.carry,u.carryN,u.injury,candle]);
+  const smokeKind=pose==='smoke'?smokeKindOf(u):null;
+  const motion=JSON.stringify([q.holder.type,q.look,q.sex,view,pose,frame?.anim,options,u.carry,u.carryN,u.injury,candle,smokeKind,dwarfGuildCacheKey(q.guild)]);
   const key=motion+'|'+(pose==='work'?frame.f:frame)+'|'+(opt.gest?gf||0:0);
   if(cache.has(key)){const s=cache.get(key);cache.delete(key);cache.set(key,s);u._spr=s;return s;}
   // Timing-sensitive external props (the thrown object, pipe, and combat FX)
@@ -173,16 +226,17 @@
   const t0=performance.now();
   const source=previous({...u,_spr:null},view,pose,frame,{...opt,nohat:false}),info=cachedMask(q,G,view),fore=makeParts(q,view,pose,frame,opt),paint=colour(q,G,view,source,info,fore);let out=paint.cv;
   const workwear=dwarfWorkwear(q.holder);
-  if(workwear)dress(paint,info,q,G,view);
+  if(workwear)dress(paint,info,q,G,view,workwearPoseShoulder(q.holder,view,pose,frame,opt));
   if(special){if(beardChange)q.beardTexture=texture(info,paint,info.M.beard);if(!opt.nohat)q.capTexture=texture(info,paint,info.capCloth);if(capChange){clearComponent(paint,info,info.M.cap,false);if(!opt.nohat)cleanupOldCapOutline(paint,info,G);}if(beardChange)clearComponent(paint,info,info.M.beard,true);if(hairChange){const removeHair=info.M.hair.map((v,i)=>v&&info.pos(i).y>G.headY+5.2?1:0);clearComponent(paint,info,removeHair,true,q);}out=mkCanvas(PW*K,PH*K);const c=out.getContext('2d');c.scale(K,K);c.imageSmoothingEnabled=false;
    if(capeChange&&view!=='N'){c.save();c.translate(PFX,PFY);c.scale(1.75,1);skinCape(c,q.O.skCape,view,-13,-6,false);c.restore();}c.drawImage(paint.cv,0,0,PW,PH);
    const layer=mkCanvas(PW*K,PH*K),l=layer.getContext('2d');l.scale(K,K);l.imageSmoothingEnabled=false;
    if(capChange){const crown=mkCanvas(PW*K,PH*K),cc=crown.getContext('2d');cc.scale(K,K);transformed(cc,G,()=>bareCrown(cc,q,G,view));cc.setTransform(1,0,0,1,0,0);cc.globalCompositeOperation='destination-in';cc.drawImage(info.capMaskCanvas??=maskCanvas(info,info.M.cap),0,0);l.drawImage(crown,0,0,PW,PH);}
    transformed(l,G,()=>{if(hairChange)hair(l,q,G,view);if(beardChange){beard(l,q,G,view);moustache(l,q,G,view);}});eraseProtected(layer,info);c.drawImage(layer,0,0,PW,PH);
-   if(workwear&&q.sex!=='f'&&!q.L.noBeard&&!beardChange)transformed(c,G,()=>paintWorkwearBeard(c,G,view,shape));
-   let capLayer=null;if(capChange&&!opt.nohat){const H=capLayout(q,G,view);capLayer=mkCanvas(PW*K,PH*K);const hc=capLayer.getContext('2d');hc.scale(K,K);hc.imageSmoothingEnabled=false;transformed(hc,G,()=>{cap(hc,q,{...G,capY:H.anchor},H.view,frame);lowBrim(hc,q,G,view);});cropCapBelow(capLayer,info,H.bottom);if(G.child)transformed(hc,G,()=>childCapNose(hc,q,G,view));c.drawImage(capLayer,0,0,PW,PH);}
+   if(workwear&&q.sex!=='f'&&!q.L.noBeard&&!beardChange)transformed(c,G,()=>paintWorkwearBeard(c,G,view,shape,q.guild?q.beard:null));
+   let capLayer=null;if(capChange&&!opt.nohat){const H=capLayout(q,G,view);capLayer=mkCanvas(PW*K,PH*K);const hc=capLayer.getContext('2d');hc.scale(K,K);hc.imageSmoothingEnabled=false;transformed(hc,G,()=>{if(!guildHat(hc,q,G,H)){cap(hc,q,{...G,capY:H.anchor},H.view,frame);lowBrim(hc,q,G,view);}});cropCapBelow(capLayer,info,H.bottom);if(G.child)transformed(hc,G,()=>childCapNose(hc,q,G,view));c.drawImage(capLayer,0,0,PW,PH);}
    if(capeChange&&view==='N'){c.save();c.translate(PFX,PFY);c.scale(1.6,1);skinCape(c,q.O.skCape,view,-13,-6,true);c.restore();}if(!ap&&!opt.nohat&&!cls){if(capLayer)drawHeadForeground(c,capLayer,paint.fore);}else c.drawImage(fore,0,0,PW,PH);
   }
+  if(q.guild&&view==='E'&&pose==='fight')clearDetachedFightOutline(out,G);
   if(pose==='walk')out=walkWeight(out,q,view,frame,opt);
   out._fantasyAppearance=true;out._fpaNoHat=!!opt.nohat;out._fpaColourOnly=!special;cache.set(key,out);if(cache.size>800)cache.delete(cache.keys().next().value);
   lastFrame.delete(motion);lastFrame.set(motion,key);if(lastFrame.size>800)lastFrame.delete(lastFrame.keys().next().value);

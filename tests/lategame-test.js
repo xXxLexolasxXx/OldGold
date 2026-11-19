@@ -121,12 +121,18 @@ const B = id => `Game.buildings.find(b => b.id === ${id})`;
     u.x = spot[0] + 1.5; u.y = spot[1] + 0.5; u.proc = null; u.action = null; u.idleFlag = true;
     Game.__u = u; Game.__comp = compAt(spot[0], spot[1]);
     return 'ok'; })()`);
-  if (res !== 'ok') info('обрывок дороги: ' + res);
+  if (res !== 'ok') ok(false, 'не удалось создать обрывок дороги: ' + res);
   else {
-    sim.step(60);
-    const c = sim.R('(function(){ const u = Game.__u, st = Game.buildings.find(b => b.isStore()); return compNear(Math.floor(u.x), Math.floor(u.y)) === compAt(st.doorX, st.doorY); })()');
-    info('трудяга с обрывка дороги вернулся в сеть склада: ' + c);
-    ok(c, 'трудяга остался стоять на обрывке дороги без склада');
+    const stComp = sim.R('(function(){ const st = Game.buildings.find(b => b.isStore()); return compAt(st.doorX, st.doorY); })()');
+    const startComp = sim.R('Game.__comp');
+    ok(stComp && startComp && startComp !== stComp, 'обрывок дороги должен быть отдельной сетью без склада');
+    const inStoreNet = () => sim.R(`compAt(Math.floor(Game.__u.x), Math.floor(Game.__u.y)) === ${stComp}`);
+    // После возвращения трудяга может уйти за грузом или на досуг, поэтому следим за первым входом в сеть.
+    let seconds = 0;
+    while (seconds < 60 && !inStoreNet()) { sim.step(1); seconds++; }
+    const arrived = inStoreNet();
+    info('трудяга с обрывка дороги вернулся в сеть склада: ' + (arrived ? `да, за ${seconds} с` : 'нет'));
+    ok(arrived, 'трудяга не вернулся с обрывка дороги в сеть склада за 60 с');
   }
 }
 

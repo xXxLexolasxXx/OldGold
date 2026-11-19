@@ -31,7 +31,7 @@ S.runFor(sim, 15, 5);
 ok(h.run('__ward.worker === __doc'), 'лекарь не устроился в лазарет');
 
 // 1. Калибровка: днём, бодрый, трезвый — около 30 %; гномёнок — реже; ночью и хмельной — чаще
-h.run(`globalThis.__a = Game.units.find(u => u.type === 'serf'); globalThis.__b = Game.units.find(u => u.type !== 'serf' && isPerson(u) && u.type !== 'hero' && u !== __doc)`);
+h.run(`globalThis.__b = Game.units.find(u => u.type !== 'serf' && isPerson(u) && u.type !== 'hero' && u !== __doc)`);
 const base = h.run('bumpInjuryChance({ type: "builder", md: { rest: 0.8 } }, { carry: "bread" })');
 const kid = h.run('bumpInjuryChance({ type: "kid", md: { rest: 0.8 } }, { carry: "bread" })');
 const drunk = h.run('bumpInjuryChance({ type: "builder", md: { rest: 0.1 }, drunkAt: 5 }, { carry: "bread" })');
@@ -50,8 +50,19 @@ ok(!h.run('__b.injury'), 'раненый не вылечился у лекаря
 // занятого нельзя оторвать от дела: к нему через CALL с выходит лекарь (injTick) — тоже верный исход, зависит от того, чем занят житель
 ok(['ward', 'doc'].includes(h.run('__b.healedBy')), 'вылечился не у лекаря и не в лазарете: ' + h.run('__b.healedBy'));
 
-// 3. Не может дойти — лекарь выходит к нему сам
-h.run(`__a.carry = null; injure(__a, 'arm'); __a.injTry = Game.time + 1e6;`);
+// 3. Не может дойти — лекарь выходит к нему сам.
+// Пациент ждёт рядом с деревней за пределами радиуса перевязки, чтобы проверять выезд, а не погоню за охотником через карту.
+h.run(`(function () {
+  const { doorX, doorY } = __ward;
+  const spot = [[0, 4], [4, 0], [-4, 0], [0, -4]]
+    .map(([dx, dy]) => [doorX + dx, doorY + dy])
+    .find(([x, y]) => findPath(doorX, doorY, x, y));
+  if (!spot) throw new Error('не нашлось доступного места для вызова лекаря');
+  const u = globalThis.__a = spawnUnit('serf', ...spot);
+  u.proc = (function* () { yield { wait: 75 }; })();
+  injure(u, 'arm');
+  u.injTry = Game.time + 1e6;
+})()`);
 t = 0;
 let doc = false;
 while (t < 75 && h.run('!!__a.injury')) { S.runFor(sim, 3, 3); t += 3; doc = doc || h.run('!!__a.injDoc'); }

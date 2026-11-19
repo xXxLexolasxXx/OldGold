@@ -552,6 +552,11 @@ function masterOf(b) { return Game.units.find(u => u.gm === b.id && !u.dead) || 
 function recruitsOf(b) { return Game.units.filter(u => { const R = recOf(u); return R && R.guild === b.id && !u.dead; }); }
 const isGuild = b => b && !b.isRoad && b.def && b.def.guild && b.state === 'done' && !b.removed;
 
+function guildPortraitURL(unit) {
+  return globalThis.FantasyPublishedPortraits?.personCrop(unit,0,48,true) ||
+    portraitURL(unit.type,unit.look,personSex(unit));
+}
+
 function spawnMaster(b) {
   const cls = b.def.guild, C = GCLS[cls];
   const u = spawnUnit(C.gm, b.doorX, b.doorY);
@@ -906,7 +911,7 @@ function guildAdoptOrphans() {
 function guildHTML(b) {
   const cls = b.def.guild, C = GCLS[cls], gm = masterOf(b), h = Game.hero, H = h && h.hero;
   let x = `<div class="isec">Глава гильдии</div>`;
-  x += gm ? `<div class="irow"><img class="portrait" src="${portraitURL(C.gm, gm.look)}" alt=""><div><div><b>${gm.gmName || UNIT_TYPES[C.gm].name}</b></div><div class="small muted">${UNIT_TYPES[C.gm].name} · учит героя и рекрутов</div></div></div>`
+  x += gm ? `<div class="irow"><img class="portrait" src="${guildPortraitURL(gm)}" alt=""><div><div><b>${gm.gmName || UNIT_TYPES[C.gm].name}</b></div><div class="small muted">${UNIT_TYPES[C.gm].name} · учит героя и рекрутов</div></div></div>`
     : `<div class="irow muted">Глава гильдии скоро придёт…</div>`;
   if (H) {
     x += '<div class="isec">Герой</div>';
@@ -926,7 +931,7 @@ function guildHTML(b) {
   for (const u of rs) {
     const R = recOf(u), need = 60 * R.lvl;
     const ord = R.train > 0 ? 'учится' : { guard: 'охраняет гильдию', follow: 'идёт за героем', hold: 'стоит на посту', post: 'на башне', drill: 'тренируется' }[R.order] || '';
-    x += `<div class="irow g-rec" data-gd="sel:${u.id}"><img class="portrait" src="${portraitURL(u.type, u.look)}" alt=""><div style="flex:1"><div>${R.name || ''} · ур. ${R.lvl}${R.armor ? ' · в доспехе' : ''}</div><div class="g-xp"><i style="width:${R.lvl >= recLvlMaxOf(R) ? 100 : Math.round(R.xp / need * 100)}%"></i></div><div class="small muted">${ord}${durTag(u)}</div></div><button data-coop="1" data-gd="drill:${u.id}" title="Тренировка с главой: 1 золото, +${drillXpOf(b)} опыта">⚔</button></div>`;
+    x += `<div class="irow g-rec" data-gd="sel:${u.id}"><img class="portrait" src="${guildPortraitURL(u)}" alt=""><div style="flex:1"><div>${R.name || ''} · ур. ${R.lvl}${R.armor ? ' · в доспехе' : ''}</div><div class="g-xp"><i style="width:${R.lvl >= recLvlMaxOf(R) ? 100 : Math.round(R.xp / need * 100)}%"></i></div><div class="small muted">${ord}${durTag(u)}</div></div><button data-coop="1" data-gd="drill:${u.id}" title="Тренировка с главой: 1 золото, +${drillXpOf(b)} опыта">⚔</button></div>`;
   }
   if (b.hireQ > 0) x += `<div class="irow small warn">Ждут свободного трудягу: ${b.hireQ}</div>`;
   x += `<button class="g-wide" data-coop="1" data-gd="hire:${b.id}" ${bad ? 'disabled' : ''}><b>Набрать рекрута</b><small>${bad || `трудяга + ${GOODS[C.weapon].name.toLowerCase()} + 1 золото${cls === 'mage' ? ' + мана' : ''}; ${GOODS[C.armor].name.toLowerCase()} — если есть`}</small></button>`;
@@ -937,7 +942,7 @@ function guildHTML(b) {
 function recCardHTML(u) {
   const R = recOf(u), C = GCLS[R.cls], need = 60 * R.lvl;
   const btn = (k, t, on) => `<button class="hp-ab${on ? ' on' : ''}" data-rc="${k}">${t}</button>`;
-  return `<div class="ihead"><img class="bpic" src="${portraitURL(u.type, u.look)}" alt=""><div><h3 style="color:${C.col}">${R.name || C.name}</h3><span class="muted small">${C.name} · уровень ${R.lvl}${R.armor ? ' · в доспехе' : ''}</span></div></div>
+  return `<div class="ihead"><img class="bpic" src="${guildPortraitURL(u)}" alt=""><div><h3 style="color:${C.col}">${R.name || C.name}</h3><span class="muted small">${C.name} · уровень ${R.lvl}${R.armor ? ' · в доспехе' : ''}</span></div></div>
     <div class="hp-xp"><i style="width:${R.lvl >= recLvlMaxOf(R) ? 100 : Math.round(R.xp / need * 100)}%"></i></div>
     <div class="irow small">Сила удара: <b>${Math.round(Math.min(0.92, 0.3 + 0.06 * R.lvl + (R.armor ? 0.04 : 0)) * 100)}%</b> · дальность: <b>${C.range}</b></div>
     ${durRecHTML(u)}

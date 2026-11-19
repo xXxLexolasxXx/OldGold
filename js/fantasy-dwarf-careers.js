@@ -60,7 +60,7 @@ function fpaCareStableStation(spr,box){
  function rect(c,x,y,w,h,color){c.fillStyle=color;c.fillRect(half(x),half(y),Math.max(.5,half(w)),Math.max(.5,half(h)));}
  function ready(){return window.FantasyPublishedAppearanceArt&&FantasyPublishedArt.images['gnome-walk']&&FantasyPublishedArt.images['gnome-woman-walk'];}
  function bodyFor(actor,view,walk,frame){
-   const source=personSprite({...actor,carry:null,_exactYardPose:true},view,walk?'walk':'idle',walk?frame:0);
+   const source=personSprite({...actor,carry:null,_exactYardPose:true},view,walk?'walk':'idle',walk?frame:0,{posedWorkwearShoulder:'both'});
    if(!source._fantasyAppearance)return null;
    const key=[actor.type,actor.look,actor.sx,view,walk?frame:'idle'].join('|');
    if(bodies.has(key)){const out=bodies.get(key);bodies.delete(key);bodies.set(key,out);return out;}

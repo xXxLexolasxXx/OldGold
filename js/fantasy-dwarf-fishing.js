@@ -47,7 +47,7 @@
   }
 
   function bodyFor(actor,view,cloth) {
-    const source=personSprite({...actor,carry:null,_exactYardPose:true},view,'idle',0,{});
+    const source=personSprite({...actor,carry:null,_exactYardPose:true},view,'idle',0,{posedWorkwearShoulder:'both'});
     if(!source?._fantasyAppearance)return null;
     if(bodies.has(source)){
       const body=bodies.get(source);bodies.delete(source);bodies.set(source,body);return body;

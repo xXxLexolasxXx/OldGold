@@ -186,9 +186,9 @@ function drawToyPipe(c, u, px, py, view) {
 }
 
 const _drawSmokingKids = drawSmoking;
-drawSmoking = function (c, u, px, py, view) {
+drawSmoking = function (c, u, px, py, view, ...presentation) {
   if (u.type === 'kid') { drawToyPipe(c, u, px, py, view); return; }
-  _drawSmokingKids(c, u, px, py, view);
+  _drawSmokingKids(c, u, px, py, view, ...presentation);
 };
 
 // ---------- Приручение ----------

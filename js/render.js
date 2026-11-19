@@ -439,7 +439,9 @@ function drawUnit(c, u) {
   if (!wp) drawUmbrella(c, u, px, py, face, pose, lying);
   if (u.noseUntil > Game.time && !lying) drawRedNose(c, u, px, py, view, face);
   // трубка или сигарета в руке и дымок (smoking.js)
-  if ((u.anim === 'smoke' || u.anim === 'smokeup') && pose === 'smoke') drawSmoking(c, u, px, py, view);
+  if ((u.anim === 'smoke' || u.anim === 'smokeup') && pose === 'smoke') {
+    drawSmoking(c, u, px, py, view, !!spr._fantasyAppearance, wp);
+  }
   if (u.food <= 0) {
     c.fillStyle = '#160e0a'; c.fillRect(px + 4, py - 36, 4, 8);
     c.fillStyle = '#e04030'; c.fillRect(px + 5, py - 35, 2, 4); c.fillRect(px + 5, py - 30, 2, 1);

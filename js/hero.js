@@ -266,6 +266,12 @@ function leaveTeam(u) {
 // Сбросить текущее дело: освободить занятое, выйти из здания
 function heroStopUnit(u) {
   if (u.proc && u.proc.return) { try { u.proc.return(); } catch (e) { /* ничего */ } }
+  // Досуг мог уже заменить генератор рыбалки, оставив удочку и флаг на герое.
+  if (u.heroFishing || (u.fun && u.fun.k === 'rod')) {
+    u.heroFishing = false;
+    u.fishIdle = 0;
+    if (u.fun && u.fun.k === 'rod') u.fun = null;
+  }
   if (u.brk) dropBreak(u);   // перекур/сон прерван приказом: иначе brk висит до конца нового дела, а клетка перекура занята
   u.proc = null; u.action = null; u.anim = null; u.lastRes = undefined;
   if (u.inside) { const b = u.inside; u.inside = null; u.x = b.doorX + 0.5; u.y = b.doorY + 0.5; }

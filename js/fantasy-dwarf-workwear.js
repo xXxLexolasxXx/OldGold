@@ -32,6 +32,8 @@ OUTFIT.lamplighter={...OUTFIT.serf,frame:false,coat:'#3e4e60'};
 OUTFIT.scribe={...OUTFIT.serf,frame:false,coat:'#3b5e50'};
 
 function dwarfWorkwear(u) {
+  const guild=dwarfGuildWear(u);
+  if(guild)return dwarfGuildShoulder(guild);
   return DWARF_WORKWEAR[u.type] || null;
 }
 
@@ -59,18 +61,29 @@ function paintWorkwearShoulder(style, project, draw) {
   layer([[3,1],[3.75,1],[3.75,1.75],[3,1.75]],material==='forge'?'#d6a078':'#cfad6c');
 }
 
-function paintDwarfWorkwear(c, q, view, shape, rect, shoulderOnly=false) {
+function paintDwarfWorkwear(c, q, view, shape, rect, shoulderOnly=false, posedShoulder=0) {
   const style = dwarfWorkwear(q.holder);
   if (!style) return;
   const [, coat, , , material] = style;
   const x = PFX, y = PFY - 15;
   const profile = view === 'E';
   if(shoulderOnly){
+    if(posedShoulder==='both')return;
     const shoulder=side=>paintWorkwearShoulder(style,
       (px,py)=>[x+side*((profile?3.2:3.7)+px),y+py],
       (points,color)=>shape(c,points,color));
-    shoulder(-1);
-    if(!profile)shoulder(1);
+    if(posedShoulder!==-1)shoulder(-1);
+    if(!profile&&posedShoulder!==1)shoulder(1);
+    return;
+  }
+  if(q.guild){
+    const draw={
+      poly:(points,color)=>shape(c,points.map(([dx,dy])=>[x+dx,y+dy]),color),
+      rect:(dx,dy,w,h,color)=>rect(c,x+dx,y+dy,w,h,color),
+      shade,
+    };
+    if(!(q.app?.[7]>=0||q.app?.[9]>=0))q.guild.style.chest(draw,view,q.guild.rank);
+    drawGuildInsignia(draw,q.guild,view);
     return;
   }
   if (material === 'plaid') {
@@ -88,11 +101,15 @@ function paintDwarfWorkwear(c, q, view, shape, rect, shoulderOnly=false) {
   }
 }
 
-function paintWorkwearBeard(c,G,view,shape) {
+function paintWorkwearBeard(c,G,view,shape,colour) {
   if (view === 'N') return;
   const x = PFX + (view === 'E' ? 1.9 : 0);
   const y = G.headY, w = view === 'E' ? 4.1 : 5.2;
-  const tuft = (points, colour) => shape(c, points.map(([dx,dy]) => [x+dx*w,y+dy]), colour);
+  const beardShades=colour?{
+    '#30221b':shade(colour,-.4), '#493326':colour,
+    '#5b4231':shade(colour,.12), '#52392a':shade(colour,-.09),
+  }:null;
+  const tuft = (points, tone) => shape(c, points.map(([dx,dy]) => [x+dx*w,y+dy]), beardShades?.[tone]||tone);
   tuft([[-1,-.25],[.55,-.25],[.55,2],[1,2.6],[.98,6.5],[.45,8],[-.45,7.5],[-1,5]],'#30221b');
   tuft([[-.92,.35],[.46,.4],[.48,2.05],[.89,3],[.83,6.25],[.32,7.25],[-.45,6.8],[-.84,4.5]],'#493326');
   tuft([[-.84,1],[-.52,1],[-.23,2.65],[.38,3.35],[.29,4.25],[-.25,3.7],[-.74,2.7]],'#5b4231');
@@ -105,7 +122,7 @@ const FPA_CART_DRIVER_BODIES=new Map();
 function fpaDrawCartDriver(c,x,seatY,view){
   if(!window.FantasyPublishedAppearanceArt||!FantasyPublishedArt.images['gnome-walk'])return true;
   const actor={type:'carter',look:15,_exactYardPose:true};
-  const source=personSprite(actor,view,'idle',0);
+  const source=personSprite(actor,view,'idle',0,{posedWorkwearShoulder:-1});
   if(!source._fantasyAppearance)return true;
   let body=FPA_CART_DRIVER_BODIES.get(source);
   if(!body){

@@ -24,16 +24,20 @@ function place(sim, type) {
   return id;
 }
 const B = id => `Game.buildings.find(b => b.id === ${id})`;
-// убрать работника здания (меряем только природу) и очистить круг R от объектов типа t
-const noWorker = id => `for (const u of Game.units) if (u.home && u.home.id === ${id}) u.dead = true; ${B(id)}.worker = null`;
+// Приостановить добычу, пока измеряем рост ресурсов. Природа работает и у приостановленных зданий.
+const pauseWork = id => `${B(id)}.paused = true`;
 const clearAround = (id, t, R) => `(() => { const b = ${B(id)}; for (let y = b.doorY - ${R}; y <= b.doorY + ${R}; y++) for (let x = b.doorX - ${R}; x <= b.doorX + ${R}; x++) { if (!inb(x, y)) continue; const o = World.obj[idx(x, y)]; if (o && o.t === '${t}') { World.obj[idx(x, y)] = null; World.growing.delete(idx(x, y)); } } })()`;
 const countAround = (id, t, R) => `(() => { const b = ${B(id)}; let n = 0; for (let y = b.doorY - ${R}; y <= b.doorY + ${R}; y++) for (let x = b.doorX - ${R}; x <= b.doorX + ${R}; x++) { if (!inb(x, y) || (x - b.doorX) ** 2 + (y - b.doorY) ** 2 > ${R * R}) continue; const o = World.obj[idx(x, y)]; if (o && o.t === '${t}') n++; } return n; })()`;
 // новые объекты не на дорогах и не вплотную к зданиям/входам
 const badSpots = `(() => { let bad = 0; for (const i of Game.__rgNew || []) { const x = i % MAP_W, y = (i / MAP_W) | 0; for (let yy = y - 1; yy <= y + 1; yy++) for (let xx = x - 1; xx <= x + 1; xx++) { if (!inb(xx, yy)) continue; const j = idx(xx, yy); if (World.bmap[j] || World.door[j] || World.road[j]) bad++; } } return bad; })()`;
 // что вырастила сама природа (regrowAt), а не лесничий, осыпь скалы и прочие
-const spy = `Game.__rgNew = []; { const r0 = regrowAt, s0 = setStone, t0 = setTree; let on = false;
+const spy = `Game.__rgNew = []; Game.__rgStoneReserves = []; { const r0 = regrowAt, s0 = setStone, t0 = setTree; let on = false;
   regrowAt = function (...a) { on = true; try { return r0(...a); } finally { on = false; } };
-  setStone = function (i, n) { if (on) Game.__rgNew.push(i); return s0(i, n); };
+  setStone = function (i, n) {
+    const result = s0(i, n);
+    if (on) { Game.__rgNew.push(i); Game.__rgStoneReserves.push(World.obj[i]?.n); }
+    return result;
+  };
   setTree = function (i, g) { if (on) Game.__rgNew.push(i); return t0(i, g); }; }`;
 const made = t => `Game.__rgNew.filter(i => World.obj[i] && World.obj[i].t === '${t}').length`;
 
@@ -42,7 +46,7 @@ const made = t => `Game.__rgNew.filter(i => World.obj[i] && World.obj[i].t === '
   const sim = sim0(31);
   sim.step(3);
   const q = place(sim, 'quarry');
-  sim.R(noWorker(q));
+  sim.R(pauseWork(q));
   sim.R(clearAround(q, 'stone', 12));
   sim.R(spy);
   const R = sim.R('REGROW.stoneR'), cap = sim.R('REGROW.stoneCap');
@@ -57,7 +61,7 @@ const made = t => `Game.__rgNew.filter(i => World.obj[i] && World.obj[i].t === '
   ok(n70 <= cap && n70 >= Math.min(cap, 2), `через час глыб ${n70} — ждём от 2 до ${cap}`);
   const nn = sim.R(made('stone'));
   ok(sim.R(badSpots) === 0, 'новая глыба выросла вплотную к зданию, входу или на дороге');
-  const ns = sim.R(`Game.__rgNew.filter(i => { const o = World.obj[i]; return o && o.t === 'stone' && !(o.n >= REGROW.stoneN[0] && o.n <= REGROW.stoneN[1]); }).length`);
+  const ns = sim.R(`Game.__rgStoneReserves.filter(n => !(n >= REGROW.stoneN[0] && n <= REGROW.stoneN[1])).length`);
   ok(ns === 0, 'запас новой глыбы вне REGROW.stoneN');
   info(`новых глыб по карте: ${nn}`);
   ok(sim.errors.length === 0, 'исключения: ' + sim.errors.join('; '));
@@ -68,7 +72,7 @@ const made = t => `Game.__rgNew.filter(i => World.obj[i] && World.obj[i].t === '
   const sim = sim0(32);
   sim.step(3);
   const w = place(sim, 'woodcutter');
-  sim.R(noWorker(w));
+  sim.R(pauseWork(w));
   sim.R(clearAround(w, 'tree', 13));
   sim.R(clearAround(w, 'stump', 13));
   sim.R(spy);
