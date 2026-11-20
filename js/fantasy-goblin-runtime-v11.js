@@ -59,12 +59,14 @@
       r.imageSmoothingEnabled=false;r.translate(idle.ax*4,0);r.scale(-1,1);r.drawImage(idle.cv,0,0);idle={cv:repair};
     }
     const origin=spear?[66,68]:[66,65];
-    const crop=spear?[[64,65],[72,65],[103,64],[103,78],[64,79]]:[[64,63],[70,63],[94,62],[94,73],[64,75]];
+    const crop=spear?[[64,65],[72,65],[103,64],[103,78],[64,79]]:view==='NE'
+      ?[[60,64],[65,62],[94,62],[94,73],[60,75]]:[[64,63],[70,63],[94,62],[94,73],[64,75]];
     const erase=view==='S'?(spear?[[54,59],[65,58],[67,96],[55,97]]:[[54,59],[67,59],[68,78],[54,78]])
       :view==='N'?[[55,62],[90,62],[90,79],[55,79]]
       :spear?[[63,64],[105,64],[105,80],[63,80]]:[[64,62],[100,62],[100,76],[64,76]];
-    const anchor=view==='S'?(spear?[67,64]:[66,63]):view==='N'?[70,64]:spear?[62,67]:[62,61];
-    const theta=spear?{S:1.47,SE:.67,NE:-.89,N:-1.23}[view]:{S:1.66,SE:.74,NE:-.83,N:-1.28}[view];
+    // Rear-quarter scout: register at the visible shoulder edge, outside the hood.
+    const anchor=view==='S'?(spear?[67,64]:[66,63]):view==='N'?[70,64]:!spear&&view==='NE'?[70,65]:spear?[62,67]:[62,61];
+    const theta=spear?{S:1.47,SE:.67,NE:-.89,N:-1.23}[view]:{S:1.66,SE:.74,NE:-.45,N:-1.28}[view];
     const cv=compositeLimb(sprite,source,idle,erase,crop,origin,anchor,theta,view==='N'||view==='NE');
     const point=p=>{const x=(p[0]+source.ax)*2-origin[0],y=(p[1]+source.ay)*2-origin[1];return[
       (anchor[0]+Math.cos(theta)*x-Math.sin(theta)*y)/2-sprite.ax,
