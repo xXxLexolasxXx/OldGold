@@ -611,7 +611,9 @@ if (typeof hmCast === 'function') {
     if (A && !dead) {
       const k = (Game.time - A.t) / 0.3;
       if (k >= 0 && k < 1) {
-        const x0 = N.x * TILE + N.face * 10, y0 = N.y * TILE - 26, x1 = A.x * TILE, y1 = A.y * TILE - 14;
+        const origin = globalThis.FantasyGnomtaurs?.arrowOrigin(N);
+        const x0 = origin?.x ?? N.x * TILE + N.face * 10, y0 = origin?.y ?? N.y * TILE - 26;
+        const x1 = A.x * TILE, y1 = A.y * TILE - 14;
         const x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k - Math.sin(k * Math.PI) * 10, ang = Math.atan2(y1 - y0 - Math.cos(k * Math.PI) * 10 * Math.PI, x1 - x0);
         c.save(); c.translate(Math.round(x), Math.round(y)); c.rotate(ang);
         c.fillStyle = '#8a6038'; c.fillRect(-7, -0.5, 9, 1); c.fillStyle = '#d8d8e0'; c.fillRect(2, -1, 3, 2); c.fillStyle = '#e8e0c8'; c.fillRect(-8, -1.5, 2, 1); c.fillRect(-8, 0.5, 2, 1);

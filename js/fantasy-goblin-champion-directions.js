@@ -5,7 +5,7 @@
  const kindKey='goblinChamp';
  const headings=['S','SE','E','NE','N','NW','W','SW'],views=['S','SE','E','NE','N','NE','E','SE'];
  const oldFrame=naFrame,oldNeu=neuDraw,oldCamp=campDrawGoblin;
- const cache=new Map(),facing=new WeakMap();let bytes=0,hits=0,active='E';
+ const cache=new Map(),facing=new WeakMap();let bytes=0,hits=0,active='E',activeActor;
  const maxBytes=24*1024*1024,maxEntries=900;
  const frameNames=new Set([...NA_ALL,...NA_FRAMES.parry,...NA_FRAMES.roar]);
  const normalized=fr=>frameNames.has(fr)?fr:'i0';
@@ -19,6 +19,7 @@
   else if(r&&N.face!==r.face&&N.st!=='die')h=N.face<0?6:2;
   facing.set(N,{x:N.x,y:N.y,face:N.face,h});return headings[h];
  }
+ const renderHeading=N=>{const live=heading(N);return window.OldGoldGoblinRuntime?.attackHeading?.(N,live)||live;};
  const raised=P=>Math.max(0,Math.min(1,P.up||0));
  const theta=P=>naTheta({...P,up:0})*(1-raised(P))-3*raised(P);
  function rig(kind,P){
@@ -28,7 +29,21 @@
   if(!champ)return{shoulder:[sx,sy],elbow:e,hand:[e[0]+v[0]*l2,e[1]+v[1]*l2],angle:Math.atan2(...naDir(b+.15).slice().reverse()),fxAngle:b};
   const base=P.a>0?-.2+P.a*1.5:-.6+P.a*1.9,t=base*(1-raised(P))-2.7*raised(P);
   const ex=4+Math.cos(t+1.25)*5.2,ey=-20+Math.sin(t+1.25)*5.2;
-  return{shoulder:[4,-20],elbow:[ex,ey],hand:[ex+Math.cos(t+.45)*4.8,ey+Math.sin(t+.45)*4.8],angle:t-.2,fxAngle:t-.35};
+  const result={shoulder:[4,-20],elbow:[ex,ey],hand:[ex+Math.cos(t+.45)*4.8,ey+Math.sin(t+.45)*4.8],angle:t-.2,fxAngle:t-.35};
+  if(P.contactView){
+   const [vx,vy]={S:[0,1],SE:[Math.SQRT1_2,Math.SQRT1_2],E:[1,0],NE:[Math.SQRT1_2,-Math.SQRT1_2],N:[0,-1]}[P.contactView];
+   const scale=NA_SPEC.goblinChamp.sc,hand={S:[8,-14],SE:[8.5,-14.5],E:[11.5,-16],NE:[8.5,-22],N:[8.5,-22.5]}[P.contactView];
+   const dx=vx*60.8/scale-hand[0],dy=(vy*60.8-17)/scale-hand[1],length=Math.hypot(dx,dy),ux=dx/length,uy=dy/length;
+   const hx=hand[0]-4,hy=hand[1]+20,d=Math.hypot(hx,hy),nx=hx/d,ny=hy/d;
+   const along=(5.2*5.2-4.8*4.8+d*d)/(2*d),height=Math.sqrt(Math.max(0,5.2*5.2-along*along));
+   const elbows=[[4+nx*along-ny*height,-20+ny*along+nx*height],[4+nx*along+ny*height,-20+ny*along-nx*height]],elbow=elbows[0][0]>elbows[1][0]?elbows[0]:elbows[1];
+   const mix=(a,b)=>a+(b-a)*P.contactBlend;
+   result.elbow=[mix(result.elbow[0],elbow[0]),mix(result.elbow[1],elbow[1])];
+   result.hand=[mix(result.hand[0],hand[0]),mix(result.hand[1],hand[1])];
+   const angle=Math.atan2(uy,ux),delta=Math.atan2(Math.sin(angle-result.angle),Math.cos(angle-result.angle));
+   result.angle+=delta*P.contactBlend;result.fxAngle=result.angle;
+  }
+  return result;
  }
  function paint(c,kind,P,view){
   const shnyr=kind==='shnyrKing',king=kind==='goblinKing'||shnyr,champ=kind==='goblinChamp',spear=kind==='goblinB',elite=king||champ;
@@ -81,6 +96,8 @@
    if(wrapSwordGrip&&!quarter)c.lineWidth=.2;
   }
   function farArm(){const a=shnyr?(P.up>.5?-2.7:.4):(elite?.5+P.b*.9:.3+P.b*.4)*(1-raised(P))-(elite?2.5:2.7)*raised(P),sx=shnyr?-3:elite?-3*B:-2.8,sy=shnyr?-14.4:elite?-15*T:-14.1,l1=shnyr?3.6:elite?4.3:3.6,l2=shnyr?3.2:elite?3.8:3.4,bend=shnyr?.4:elite?.6:.3,u=naDir(a),v=naDir(a+bend),ex=sx+u[0]*l1,ey=sy+u[1]*l1,x=ex+v[0]*l2,y=ey+v[1]*l2;for(const[w,col]of[[elite?2.5:1.8,C.ink],[elite?1.8:1.1,C.shadow]]){line(sx,sy,ex,ey,w,col);line(ex,ey,x,y,w*.9,col)}ball(x,y,elite?1:.75,elite?.9:.65,C.shadow);for(const z of[-.3,.3])line(x+z,y-.3,x+z+.25,y+.4,.2,C.light)}
+  function shield(){const a=(.5+P.b*.9)*(1-raised(P))-2.5*raised(P),u=naDir(a),v=naDir(a+.6),x=-3*B+u[0]*4.3+v[0]*3.8+1,y=-15*T+u[1]*4.3+v[1]*3.8-1;volume(x,y,6.2,6.7,C.leather,C.dark,C.leather);for(const d of[-3.3,-1.6,0,1.6,3.3])line(x+d,y-4.3,x+d,y+4.3,.3,C.dark);line(x-4.3,y-2.2,x+4.3,y-2.2,.8,C.steel);line(x-4.3,y+2.2,x+4.3,y+2.2,.8,C.steel);if(back)line(x-1.4,y-2,x+1,y+2,1,C.dark);else volume(x,y,1.4,1.5,C.steel,C.dark,C.silver)}
+  if(champ&&back)shield();
   if(back)farArm();
   if(back)armAndWeapon();
   // Each projection has its own feet and leg construction, not a compressed side.
@@ -140,9 +157,9 @@
    dot(x+.7,hy+.5,.6,.5,C.gold);
   }
   if(shnyr){line(-4.5*B,-4.2,4.5*B,-4.2,1.4,C.ivory);for(const x of[-3,-1,1,3])dot(x*B,-4.5,.35,.8,C.ink);if(!back){for(const x of(side?[2.2]:[-.8,2.2])){volume(hx+x,hy-2.6,1.4,1.1,C.gold,C.dark,C.ivory);ball(hx+x,hy-2.6,.8,.6,K('#9ad8e8'))}volume(.8,-12.6,1.5,1.5,C.gold,C.dark,C.ivory);ball(.8,-12.6,.9,.9,C.ink);for(const x of[-3.4,3.6]){volume(x,-8.8,1.2,1.5,C.leather,C.dark,C.leather);line(x-.5,-9.4,x+.4,-9.4,.3,C.gold)}}}
+  // The shield belongs to the far arm; the attacking near hand stays visible.
+  if(champ&&!back)shield();
   if(!back)armAndWeapon();
-  // Shield has its own front boss / rear grip, and follows the original far hand.
-  if(champ){const a=(.5+P.b*.9)*(1-raised(P))-2.5*raised(P),u=naDir(a),v=naDir(a+.6),x=-3*B+u[0]*4.3+v[0]*3.8+1,y=-15*T+u[1]*4.3+v[1]*3.8-1;volume(x,y,6.2,6.7,C.leather,C.dark,C.leather);for(const d of[-3.3,-1.6,0,1.6,3.3])line(x+d,y-4.3,x+d,y+4.3,.3,C.dark);line(x-4.3,y-2.2,x+4.3,y-2.2,.8,C.steel);line(x-4.3,y+2.2,x+4.3,y+2.2,.8,C.steel);if(back)line(x-1.4,y-2,x+1,y+2,1,C.dark);else volume(x,y,1.4,1.5,C.steel,C.dark,C.silver)}
   if(P.a>.6){c.strokeStyle='rgba(255,242,190,.65)';c.lineWidth=.5;c.beginPath();c.arc(...R.hand,champ?16:king?10:8,R.fxAngle-1.2,R.fxAngle-.2);c.stroke()}if(!elite&&P.b>.5){c.strokeStyle='rgba(220,230,200,.85)';c.lineWidth=.6;c.beginPath();c.arc(4,-13,4.6,-1.2,1.2);c.stroke()}
   c.restore();
  }
@@ -159,21 +176,34 @@
 
   const key=kind+'|'+view+'|'+fr;if(cache.has(key)){hits++;const s=cache.get(key);cache.delete(key);cache.set(key,s);return s}
   const S=NA_SPEC[kind],P=naPose(fr);P.pal=S.pal||null;
-  const [cv,c]=mkSprite(S.w,S.h,4);c.lineCap='round';c.lineJoin='round';c.translate(S.ax,S.ay);if(S.sc)c.scale(S.sc,S.sc);if(view==='E'&&kind!=='shnyrKing')NA_DRAW[kind](boundedContext(c),P,fr);else paint(boundedContext(c),kind,P,view);
+  const contactBlend={a5:.45,a6:1,a7:1,a8:.7,a9:.3}[fr]||0;
+  if(contactBlend){P.contactView=view;P.contactBlend=contactBlend;}
+  const [cv,c]=mkSprite(S.w,S.h,4);c.lineCap='round';c.lineJoin='round';c.translate(S.ax,S.ay);if(S.sc)c.scale(S.sc,S.sc);if(view==='E'&&kind!=='shnyrKing'&&!contactBlend)NA_DRAW[kind](boundedContext(c),P,fr);else paint(boundedContext(c),kind,P,view);
   const out=toPixelArt(cv,2,{outline:false,alphaCut:100});out.fine=2;out.fantasyGoblin=true;
   if(P.fade>0){const q=out.getContext('2d'),im=q.getImageData(0,0,out.width,out.height);for(let y=0;y<out.height;y++)for(let x=0;x<out.width;x++){const i=(y*out.width+x)*4;if(!im.data[i+3])continue;if(naHash(x,y)<P.fade)im.data[i+3]=0;else{im.data[i]+=(230-im.data[i])*P.fade*.4;im.data[i+1]+=(240-im.data[i+1])*P.fade*.4;im.data[i+2]+=(200-im.data[i+2])*P.fade*.4}}q.putImageData(im,0,0)}
-  const s={cv:out,w:S.w,h:S.h,ax:S.ax,ay:S.ay,view};bytes+=out.width*out.height*4;cache.set(key,s);while(bytes>maxBytes||cache.size>maxEntries){const k=cache.keys().next().value,v=cache.get(k);bytes-=v.cv.width*v.cv.height*4;cache.delete(k)}return s;
+  let weapon;
+  if(contactBlend){
+   const R=rig(kind,P),point=(x,y)=>[(P.x+Math.cos(P.rot)*x-Math.sin(P.rot)*y*P.sq)*S.sc,(P.y+Math.sin(P.rot)*x+Math.cos(P.rot)*y*P.sq)*S.sc];
+   weapon={grip:point(...R.hand),tip:point(R.hand[0]+Math.cos(R.angle)*17,R.hand[1]+Math.sin(R.angle)*17)};
+  }
+  const s={cv:out,w:S.w,h:S.h,ax:S.ax,ay:S.ay,view,weapon};bytes+=out.width*out.height*4;cache.set(key,s);while(bytes>maxBytes||cache.size>maxEntries){const k=cache.keys().next().value,v=cache.get(k);bytes-=v.cv.width*v.cv.height*4;cache.delete(k)}return s;
  }
- naFrame=function(kind,fr){return kind===kindKey?frame(kind,fr,active):oldFrame(kind,fr)};
+ naFrame=function(kind,fr){
+  if(kind!==kindKey)return oldFrame(kind,fr);
+  // Damage is attempted at .24 s, before the default attack timeline reaches a6.
+  // A missed attempt uses the same committed swing; range and damage stay native.
+  if(activeActor?.st==='atk'&&activeActor.hit&&(fr==='a4'||fr==='a5'))fr='a6';
+  return frame(kind,fr,active);
+ };
  neuDraw=function(c,N){
   if(N.k!==kindKey)return oldNeu(c,N);
-  const previous=active;active=heading(N);
-  try{return oldNeu(c,N)}finally{active=previous}
+  const previous=active,previousActor=activeActor;active=renderHeading(N);activeActor=N;
+  try{return oldNeu(c,N)}finally{active=previous;activeActor=previousActor}
  };
  campDrawGoblin=function(c,N,art){
   if((art||N.k)!==kindKey)return oldCamp(c,N,art);
-  const previous=active;active=heading(N);
-  try{return oldCamp(c,N,art)}finally{active=previous}
+  const previous=active,previousActor=activeActor;active=renderHeading(N);activeActor=N;
+  try{return oldCamp(c,N,art)}finally{active=previous;activeActor=previousActor}
  };
  window.GoblinChampionDirections={ready:true,errors:[],headings,frame,headingOf:heading,rig,portrait:(fr='i0')=>frame(kindKey,fr,'S'),cacheStats:()=>({entries:cache.size,rgbaBytes:bytes,maxEntries,maxRgbaBytes:maxBytes,hits})};
 })();
