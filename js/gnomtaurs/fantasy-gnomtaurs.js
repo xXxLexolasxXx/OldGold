@@ -69,6 +69,23 @@
     ctx.putImageData(cloth, 102, 59);
   }
 
+  function removeSideShaft(ctx, view) {
+    // The projected spear gets one straight shaft. Restore the sleeve behind
+    // the horizontal stock drawing while preserving the wrist and closed fist.
+    const [left, arm, right] = view === 'SE' ? [109, 119, 135] : [109, 123, 136];
+    const top = 54, bottom = 63, width = right - left;
+    const image = ctx.getImageData(left, 47, width, 18);
+    const before = new Uint8ClampedArray(image.data);
+    for (let y = top; y < bottom; y++) for (let x = left; x < right; x++) {
+      if (x >= arm && y < 56) continue;
+      const offset = ((y - 47) * width + x - left) * 4;
+      const row = x < arm ? 63 + (y % 2) : 50 + (y % 4);
+      const sample = ((row - 47) * width + x - left) * 4;
+      if (before[sample + 3] && before[offset + 3]) image.data.set(before.subarray(sample, sample + 4), offset);
+    }
+    ctx.putImageData(image, left, 47);
+  }
+
   function load(kind, poses, image) {
     const size = FantasyPublishedForestfolk.before(kind, 'i0');
     const width = size.w * 2, height = size.h * 2;
@@ -83,6 +100,7 @@
       } else {
         ctx.drawImage(image, col * width, row * height, width, height, 0, 0, width, height);
       }
+      if (kind === 'gtSpear' && pose === 'thrust' && (view === 'SE' || view === 'E')) removeSideShaft(ctx, view);
       let bodyOnly;
       if (kind === 'gtSpear' && pose === 'thrust' && axisGrips[view]) {
         bodyOnly = canvas(width, height);
@@ -124,9 +142,9 @@
   const axisShaft = canvas(63, 45);
   // Segment beyond the closed fist in the side and three-quarter views.
   const spearPieces = {
-    SE: { grip: [146, 57], tip: [190, 56] },
-    E: { grip: [151, 57], tip: [206, 56] },
-    NE: { grip: [155, 56], tip: [194, 54] },
+    SE: { start: [146, 57], grip: [140, 57], tip: [190, 56] },
+    E: { start: [151, 57], grip: [144, 57], tip: [206, 56] },
+    NE: { start: [155, 56], grip: [150, 56], tip: [194, 54] },
   };
   const aimedSpear = canvas(380, 328);
   aimedSpear.fine = 2;
@@ -247,9 +265,10 @@
     } else if (kind === 'gtSpear' && pose === 'thrust' && spearPieces[direction]) {
       const piece = spearPieces[direction];
       const grip = projectedPoint(piece.grip), tip = projectedPoint(piece.tip);
+      const start = projectedPoint(piece.start);
       const outer = flip ? Math.max(0, tip[0] - 5) : Math.min(cv.width, tip[0] + 5);
-      const clipX = Math.min(grip[0], outer);
-      result.spear = { grip, tip, clip: [clipX, grip[1] - 13, Math.abs(grip[0] - outer), 45] };
+      const clipX = Math.min(start[0], outer);
+      result.spear = { grip, tip, clip: [clipX, start[1] - 13, Math.abs(start[0] - outer), 45] };
     }
     cache.set(key, result);
     if (cache.size > limit) cache.delete(cache.keys().next().value);
@@ -308,6 +327,13 @@
     ctx.translate(px + grip[0], py + grip[1]);
     ctx.rotate(targetAngle);
     ctx.scale(stretch, 1);
+    if (clip) {
+      // Bridge the grip from the same wood texture along the new axis, behind
+      // the fingers. The tip and this handle therefore turn as a single piece.
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.drawImage(axisShaft, 8, 10, 17, 7, -13, -3, 23, 7);
+      ctx.globalCompositeOperation = 'source-over';
+    }
     ctx.rotate(-shaftAngle);
     if (axis) ctx.drawImage(axisShaft, -1, -13);
     else {
