@@ -1,7 +1,7 @@
 'use strict';
 // Офлайн-кэш OldGold. Сеть в приоритете (чтобы не залипали старые js после обновления), при обрыве — кэш.
 // Предзагрузка: index.html + все его скрипты/стили + шрифты + иконки. Кооп (/coop, /e, ws) и чужие домены не кэшируются.
-const CACHE = 'oldgold-fantasy-20261121-forest-troll-01211';
+const CACHE = 'oldgold-fantasy-salamander-01212';
 const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kurale-Regular.ttf', 'fonts/RuslanDisplay-Regular.ttf',
   'icons/icon-192.png', 'icons/icon-512.png', 'assets/fantasy/menu-village.png', 'assets/fantasy/frog-village-v2.png',
   'js/fantasy-frog-frequent-frames.bin.gz', 'js/fantasy-frog-rare-frames.bin.gz', 'assets/fantasy/goblin-family-frame-bank.json',
@@ -9,6 +9,7 @@ const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kur
   'assets/fantasy/school-inn-bank.json', 'assets/fantasy/school-inn-bank.png', 'assets/fantasy/fairy-ring.png', 'assets/fantasy/leshy-stump.png',
   'js/gnomtaurs/camp-atlas.png', 'js/gnomtaurs/spear-atlas.png', 'js/gnomtaurs/archer-atlas.png',
   'assets/fantasy/forest-troll-combat/forest-troll.png', 'assets/fantasy/forest-troll-combat/frames.json',
+  'assets/fantasy/magicbeasts/salamander-frames.png',
   ...['S','SE','E','NE','N'].map(view=>'assets/fantasy/boar-guard/boar-guard-'+view+'-i0-2x.png'),
   ...['0','1','d'].map(phase=>'assets/fantasy/boar-guard/boar-bed-v7-'+phase+'-transparent-2x.png')];
 
