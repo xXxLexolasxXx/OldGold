@@ -382,7 +382,7 @@ function sfxSteps() {
   }
 }
 
-// ---------- Фон: сверчки, ветер, костёр ----------
+// ---------- Фон: ветер, костёр ----------
 // Непрерывные источники с медленно меняющейся громкостью; создаются один раз.
 function sfxAmbInit() {
   if (Sfx.amb || !Sfx.ctx) return;
@@ -392,19 +392,6 @@ function sfxAmbInit() {
 function sfxAmbBuild() {
   const ctx = Sfx.ctx, A = Sfx.amb = {};
   const mkGain = () => { const g = ctx.createGain(); g.gain.value = 0; g.connect(AudioCore.amb); return g; };
-  // сверчки: два стрекочущих тона, прерывистые, в разной фазе
-  A.cricket = mkGain();
-  for (const [f, rate, ph] of [[4100, 1.3, 0], [4650, 1.05, 0.5]]) {
-    const o = ctx.createOscillator(), g = ctx.createGain(), bp = ctx.createBiquadFilter();
-    o.type = 'triangle'; o.frequency.value = f;
-    bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 6;
-    const trill = ctx.createOscillator(), tg = ctx.createGain(); trill.type = 'square'; trill.frequency.value = 26 + ph * 6; tg.gain.value = 0.5;
-    const slow = ctx.createOscillator(), sg = ctx.createGain(); slow.type = 'sine'; slow.frequency.value = rate; sg.gain.value = 0.5;
-    g.gain.value = 0;                     // = 0.5 (trill) + 0.5 (slow) → стрекот то есть, то нет
-    trill.connect(tg); tg.connect(g.gain); slow.connect(sg); sg.connect(g.gain);
-    o.connect(bp); bp.connect(g); g.connect(A.cricket);
-    o.start(); trill.start(ph); slow.start(ph);
-  }
   // ветер: тёмный шум с гуляющим срезом
   A.wind = mkGain();
   { const src = ctx.createBufferSource(); src.buffer = Sfx.noise; src.loop = true; src.playbackRate.value = 0.5;
@@ -441,9 +428,6 @@ function sfxAmbTick(dt) {
   const ctx = Sfx.ctx, t = ctx.currentTime;
   const night = typeof nightAmt === 'function' ? nightAmt() : 0;
   const rain = typeof WX !== 'undefined' ? WX.k || 0 : 0;
-  const zoom = Math.min(1.1, Math.max(0.6, 0.45 + R.cam.z * 0.22));
-  // сверчки — ночью, стихают под дождём и когда камера высоко
-  A.cricket.gain.setTargetAtTime(0.028 * Math.max(0, night - 0.25) * (1 - 0.85 * rain) * zoom, t, 1.2);
   // ветер — лёгкий днём, сильнее ночью и в дождь
   A.wind.gain.setTargetAtTime(0.05 + 0.05 * night + 0.1 * rain, t, 2);
   // костёр
