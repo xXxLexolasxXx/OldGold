@@ -60,6 +60,7 @@
     polygon(c,[...ridge,...foot.slice().reverse()],p[0]);
     c.save();c.beginPath();ridge.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));foot.slice().reverse().forEach(([x,y])=>c.lineTo(x,y));c.closePath();c.clip();
     c.fillStyle=p[2];c.fillRect(2,0,w-4,base+6);
+    yield;
     for(let k=0;k<peaks.length;k++){
       const [x,y]=peaks[k],span=w/count;
       polygon(c,[[x,y],[x+span*.18,base-h*.36],[x+span*.55,base+5],[x+span*.9,base+5],[x+span*.65,base-h*.25],[x+span*.42,y+h*.2]],p[1]);
@@ -76,6 +77,7 @@
         polygon(c,[pts[0],pts[1],pts[2],pts[3],[xx+rw*.2,yy-rh*.1],[xx-rw*.5,yy+rh*.12]],col?p[2]:p[3]);
         c.strokeStyle=col?p[0]:p[1];c.lineWidth=.5;c.beginPath();c.moveTo(xx-rw*.6,yy+rh*.65);c.lineTo(xx-rw*.15,yy+rh*.8);c.lineTo(xx+rw*.35,yy+rh*.7);c.stroke();
         if(row%2===0){polygon(c,[[xx-rw*.55,yy-rh*.68],[xx-rw*.1,yy-rh*.93],[xx+rw*.3,yy-rh*.65],[xx,yy-rh*.55]],p[4]);}
+        if(col===1)yield;
       }
     }
     yield;
@@ -87,6 +89,7 @@
         const sw=2+Math.round(rng()*3),sh=1+Math.round(rng()*3);
         polygon(c,[[x,y],[x+sw*.4,y-1],[x+sw,y],[x+sw+1,y+sh*.5],[x+sw*.6,y+sh+1],[x+1,y+sh]],k%3?p[2]:p[3]);
         c.fillStyle=p[1];c.fillRect(x+1,y+sh+1,sw,.5);
+        if(k%4===3)yield;
       }
       for(let k=0;k<3;k++){
         let x=Math.round(px+(k-1)*span*.2),y=Math.round(py+(base-py)*(.3+k*.13));
@@ -102,6 +105,7 @@
       polygon(c,[[x-s,y],[x-s+1,y-s],[x+1,y-s-1],[x+s,y-1],[x+s-1,y+1]],p[k%2?2:1]);
       c.fillStyle=p[3];c.fillRect(x-s+1,y-s,Math.max(1,s-1),1);
       if(k%3===0){c.fillStyle='#526141';c.fillRect(x-1,y+1,s,2);c.fillStyle='#85935c';c.fillRect(x,y,s-1,1);}
+      if(k%4===3)yield;
     }
     if(level>=0){const frac=MT_CAP_LEVELS[level];
       for(const [x,y]of peaks){const depth=Math.max(3,Math.round(h*frac*.65));polygon(c,[[x,y-1],[x+depth*.6,y+depth],[x+depth*.18,y+depth*.72],[x-2,y+depth],[x-depth*.6,y+depth*.85]],'#ccd8cf');polygon(c,[[x-1,y],[x+depth*.15,y+depth*.65],[x-depth*.54,y+depth*.82]],'#f0ecd6');}

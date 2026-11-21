@@ -95,9 +95,9 @@ function blitFine(c, cv, x, y, w = cv.width / (cv.fine || 1), h = cv.height / (c
 
 // Канвас со сверхвыборкой SS -> пиксельный 1× канвас.
 // opts: outline (bool), alphaCut (порог), keepAlpha (для теней)
-function toPixelArt(src, scale, opts = {}) {
+function toPixelArt(src, scale, opts = {}, pixels) {
   const W = Math.round(src.width / scale), H = Math.round(src.height / scale);
-  const sd = src.getContext('2d').getImageData(0, 0, src.width, src.height).data;
+  const sd = pixels || src.getContext('2d').getImageData(0, 0, src.width, src.height).data;
   const out = mkCanvas(W, H);
   const oc = out.getContext('2d', opts.cpu ? { willReadFrequently: true } : undefined);
   const img = oc.createImageData(W, H);

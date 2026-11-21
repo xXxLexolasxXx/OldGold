@@ -7,6 +7,37 @@
 const AK_TAU = Math.PI * 2;
 const AK_LIGHT = (() => { const v = [-0.5, -0.72, 0.48], l = Math.hypot(...v); return v.map(a => a / l); })();
 
+// Canvas premultiplies colours when pixels are uploaded. Reproduce the current
+// browser's exact round trip for translucent fur without synchronising the GPU
+// on every cold animation frame. The lookup is independent of the animal.
+const akAlphaRoundTrip = PX_FINE === 1 ? makeAkAlphaTable() : null;
+function makeAkAlphaTable() {
+    const cv = mkCanvas(256, 256), ctx = cv.getContext('2d');
+    const sample = ctx.createImageData(256, 256);
+    for (let a = 0; a < 256; a++) for (let channel = 0; channel < 256; channel++) {
+      const i = (a * 256 + channel) * 4;
+      sample.data[i] = channel;
+      sample.data[i + 3] = a;
+    }
+    ctx.putImageData(sample, 0, 0);
+    const result = ctx.getImageData(0, 0, 256, 256).data;
+    const table = new Uint8Array(65536);
+    for (let i = 0; i < table.length; i++) table[i] = result[i * 4];
+    return table;
+}
+function akCoarsePixels(kit) {
+  const data = kit.pixels;
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha === 255 || alpha === 0) continue;
+    const row = alpha * 256;
+    for (let c = 0; c < 3; c++) data[i + c] = akAlphaRoundTrip[row + data[i + c]];
+  }
+  const out = toPixelArt(kit.cv, 3, {alphaCut: 110, outline: false}, data);
+  out.fine = 1;
+  return out;
+}
+
 // Рампа тонов от тени к свету: тени холоднее (в лиловое), свет теплее (в золото) — как у художника
 function akRamp(hex, n = 7, spread = 0.62) {
   const [r, g, b] = hexToRgb(hex), out = [];
@@ -22,7 +53,7 @@ function akRamp(hex, n = 7, spread = 0.62) {
 
 // Набор зверя: холст w×h игровых пикселей (×3 мельче), начало координат — (ox, oy) в игровых; рисуем в мелких пикселях,
 // y вверх отрицательный. Поверх fzPxKit: объёмные эллипсоиды, ноги-цилиндры, мех, глаз, обводка.
-function akKit(w, h, ox, oy) {
+function akKit(w, h, ox, oy, coarseFromPixels = false) {
   const K = fzPxKit(w * 3, h * 3, Math.round(ox * 3), Math.round(oy * 3)), { P, R, dth, hsh } = K;
   // тон рампы по освещённости v (0..1) с дизерингом между ступенями
   K.tone = (ramp, v, x, y) => { const f = Math.max(0, Math.min(0.999, v)) * (ramp.length - 1), i = Math.floor(f), q = (f - i - 0.5) * 2.6 + 0.5; return ramp[Math.min(ramp.length - 1, i + (q > dth(x, y) ? 1 : 0))]; };   // дизеринг — только узкой полосой на стыке тонов
@@ -92,7 +123,11 @@ function akKit(w, h, ox, oy) {
   };
   // закрытый глаз — дужка
   K.blink = (x, y, r, col) => { for (let k = -r; k <= r; k++) P(x + k, y + (Math.abs(k) >= r ? -1 : 0), col); };
-  K.fin = (outline) => { K.outline(outline, 0.95); const cv = K.done(); cv.fine = 3; return pxToCoarse(cv); };
+  K.fin = (outline) => {
+    K.outline(outline, 0.95);
+    if (coarseFromPixels && PX_FINE === 1) return akCoarsePixels(K);
+    const cv = K.done(); cv.fine = 3; return pxToCoarse(cv);
+  };
   return K;
 }
 // фаза шага кадра f из N → угол
@@ -714,7 +749,7 @@ const akWl = key => { const [, k, fr] = key.split(':'); return { win: k.endsWith
 
 // Заяц: бурый (зимой белый), длинные уши, светлое брюхо, белый «цветок»-хвостик; столбиком — привстал
 afHand(/^wl:hareW?:/, (rows, pal, key) => {
-  const [w, h] = akWH(rows), g = v => v * 3, K = akKit(w, h, 0, h), P = pal, F = akWl(key);
+  const [w, h] = akWH(rows), g = v => v * 3, K = akKit(w, h, 0, h, true), P = pal, F = akWl(key);
   const Hh = akRamp(P.h, 6, 0.5), Hl = akRamp(P.H, 4, 0.35), WH = akRamp(P.w, 3, 0.3), EARt = akRamp(P.e, 3), NOSE = hexToRgb(P.n), D = akRamp(P.d, 4);
   const ears = (x, y, back) => {
     for (const [dx, a, dk] of [[-0.5, back ? 1.2 : -0.25, true], [0.4, back ? 1.0 : 0.1, false]]) {

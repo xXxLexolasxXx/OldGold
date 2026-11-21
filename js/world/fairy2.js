@@ -1035,6 +1035,7 @@ function fzPxKit(W, H, OX, OY) {
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext('2d'), img = c.createImageData(W, H), D = img.data, SOL = new Uint8Array(W * H);
   const K = {
+    pixels: D,
     cv, W, H, ox: 0, oy: 0,                                                             // ox, oy — сдвиг всего, что рисуется (покачивание корпуса)
     dth: (x, y) => (FZ_B4[(Math.round(y) + OY) & 3][(Math.round(x) + OX) & 3] + 0.5) / 16,
     hsh: n => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); },
