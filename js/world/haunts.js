@@ -121,9 +121,23 @@ function fzNear(F, s, d) {
     const F = Game.fairy2, vis = (x, y) => x >= x0 - 3 && x <= x1 + 3 && y >= y0 - 4 && y <= y1 + 4;
     for (const P of F.wp || []) if (vis(P.x, P.y) && P.vod.alpha > 0) {
       const v = P.vod;
-      list.push([v.y + 0.9, () => {
-        fzDrawHi(c, fzVodSprite(v.state === 'grab' ? fzLv(Math.min(1, v.t / 1.8), 0.17, 0.8) : 0, (Math.floor(v.ph * 6) % FZ_N) / 3), v.x, v.y - 0.1 + Math.sin(v.ph * 2) * 0.03, v.alpha, v.face, 4);
-      }]);
+      const anchor = globalThis.FantasyPublishedHaunts?.wellAnchor?.(P);
+      const draw = () => {
+        const currentAnchor = globalThis.FantasyPublishedHaunts?.wellAnchor?.(P);
+        const vx = currentAnchor ? currentAnchor.x : v.x;
+        const vy = (currentAnchor ? currentAnchor.y : v.y - 0.1) + Math.sin(v.ph * 2) * 0.03;
+        if (v.dying) {
+          const frame = fzLive(v, () => FZ_DIE.vod(fzDieF(v.alpha, v.da)));
+          fzDrawHi(c, frame, vx, vy, 1, v.face, 4);
+        } else {
+          const lv = v.state === 'grab' ? fzLv(Math.min(1, v.t / 1.8), 0.17, 0.8) : 0;
+          const phase = (Math.floor(v.ph * 6) % FZ_N) / 3;
+          const frame = fzLive(v, () => fzVodSprite(lv, phase));
+          fzDrawHi(c, frame, vx, vy, v.alpha, v.face, 4);
+        }
+      };
+      list.push([v.y + 0.9, draw]);
+      if(anchor)list.push([anchor.depth,()=>globalThis.FantasyPublishedHaunts.wellUpper(c,P,draw)]);
     }
   };
 }
