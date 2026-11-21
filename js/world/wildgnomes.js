@@ -695,7 +695,10 @@ function wgDrawArena(c, D) {
 function wgDrawChiefNeu(c, N) {
   const X = Math.round(N.x * TILE), Y = Math.round(N.y * TILE + 6), fr = N.fr || 'i0', f = N.face || 1;
   const SS = Game.wgs && Game.wgs.list.find(q => q.id === N.wgc), ck = 'chief:' + N.fac + (SS && SS.evil && !SS.own ? '!' : '');
-  const k0 = naFightKey(fr), fk = k0 === 'recover' || k0 === 'parry' ? null : k0;
+  // These native frames already have matching body and weapon-arm tables.
+  // Keep their interpolation instead of collapsing guard/recovery into idle.
+  const fightFrame = fr === 'recover' ? 'follow' : fr === 'stagger' ? 'hurt' : fr;
+  const fk = Object.hasOwn(FIGHT_BODY, fightFrame) ? fightFrame : null;
   tvDrawGnome(c, X, Y, { wk: ck, f, id: N.id, _v: 'E' }, 0, fr[0] === 'w' || fr === 'step', fk);
   if (N.rollT > 0) { c.save(); c.globalAlpha = 0.4; c.fillStyle = '#cfe8ff'; c.fillRect(X - 8, Y - 40, 16, 40); c.restore(); }
   const w = 26, hy = Y - 56, r = Math.max(0, N.hp / N.mhp);
