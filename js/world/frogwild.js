@@ -376,6 +376,25 @@ function fwMirror() {
     }
   };
 }
+let fwMothHalo;
+function fwDrawMothHalo(c, x, y, night) {
+  const radius = 30 + night * 26;
+  if (!fwMothHalo) {
+    fwMothHalo = mkCanvas(224, 224);
+    const ctx = fwMothHalo.getContext('2d', {willReadFrequently:true});
+    const gradient = ctx.createRadialGradient(112, 112, 3, 112, 112, 112);
+    gradient.addColorStop(0, 'rgb(220,255,130)');
+    gradient.addColorStop(1, 'rgba(220,255,130,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 224, 224);
+  }
+  c.save();
+  c.globalCompositeOperation = 'lighter';
+  c.globalAlpha *= 0.18 + night * 0.34;
+  c.imageSmoothingEnabled = true;
+  c.drawImage(fwMothHalo, x - radius, y - radius, radius * 2, radius * 2);
+  c.restore();
+}
 function fwDraw(c, W) {
   const sp = naFrame(fwArt(W), W.fr || 'i0'), t = Game.time;
   const px = Math.round(W.x * TILE), py = Math.round(W.y * TILE + 6);
@@ -402,11 +421,7 @@ function fwDraw(c, W) {
   // свет мотылька-фонарика: ночью ярче
   if (W.k === 'moth') {
     const night = typeof nightAmt === 'function' ? nightAmt() : 0;
-    c.save(); c.globalCompositeOperation = 'lighter';
-    const g = c.createRadialGradient(px, py - 16 + bob, 1, px, py - 16 + bob, 30 + night * 26);
-    g.addColorStop(0, `rgba(220,255,130,${0.18 + night * 0.34})`); g.addColorStop(1, 'rgba(220,255,130,0)');
-    c.fillStyle = g; c.fillRect(px - 60, py - 76, 120, 120);
-    c.restore();
+    fwDrawMothHalo(c, px, py - 16 + bob, night);
   }
   // ошейник раба — красный огонёк над головой
   if (W.own && W.k !== 'moth') { c.fillStyle = '#1a1008'; c.fillRect(px - 2, py - (W.k === 'goblin' ? 30 : W.k === 'snail' ? 30 : 14), 5, 5); c.fillStyle = '#c84a3a'; c.fillRect(px - 1, py - (W.k === 'goblin' ? 29 : W.k === 'snail' ? 29 : 13), 3, 3); }
