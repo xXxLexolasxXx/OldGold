@@ -7,12 +7,16 @@
  const base=new URL('../assets/fantasy/forest-neutrals-v4/',document.currentScript.src),dirs=['S','SE','E','NE','N','NW','W','SW'],views=dirs.slice(0,5),models={},cache=new Map(),motion=new WeakMap();
  const old={naFrame,neuDraw,lepFrame,lepDraw,sprBrownie,brownieDraw,sprEnder,endermanDraw,garA,garB,garC},stones={};
  let active=null,bytes=0,staticBytes=0,hits=0,misses=0;
+ let brownieAtlas=null,brownieSourceReady=false,brownieSourceMode=false,brownieSourcePromise=null;
+ A.brownieAssetErrors=[];
+ const brownieAtlasFrames=['i0',...Array.from({length:9},(_,i)=>'peek'+i)];
+ const brownieModelMeta={"S":{"p":{"id":5,"x":83,"y":49,"w":193,"h":600,"n":78983},"foot":96.5,"footY":649,"sockets":[[-3.7426829268292683,-18.180487804878048],[3.7426829268292683,-18.180487804878048]],"hips":[[-1.6671951219512193,-5.404878048780488],[1.5991463414634148,-5.404878048780488]]},"SE":{"p":{"id":1,"x":380,"y":45,"w":189,"h":607,"n":77100},"foot":102.5,"footY":652,"sockets":[[-3.7426829268292683,-18.312195121951216],[3.7426829268292683,-18.312195121951216]],"hips":[[-1.6331707317073172,-5.536585365853659],[1.6331707317073172,-5.536585365853659]]},"E":{"p":{"id":2,"x":678,"y":45,"w":165,"h":604,"n":66474},"foot":93.5,"footY":649,"sockets":[[-1.4970731707317073,-18.180487804878048],[1.4970731707317073,-18.180487804878048]],"hips":[[-0.5784146341463414,-5.404878048780488],[0.5103658536585365,-5.404878048780488]]},"NE":{"p":{"id":3,"x":962,"y":45,"w":181,"h":604,"n":74336},"foot":108.5,"footY":649,"sockets":[[-3.7426829268292683,-18.180487804878048],[3.7426829268292683,-18.180487804878048]],"hips":[[-1.6671951219512193,-5.404878048780488],[1.5991463414634148,-5.404878048780488]]},"N":{"p":{"id":4,"x":1260,"y":45,"w":192,"h":604,"n":79561},"foot":97.5,"footY":649,"sockets":[[-3.7426829268292683,-18.180487804878048],[3.7426829268292683,-18.180487804878048]],"hips":[[-1.6671951219512193,-5.404878048780488],[1.5991463414634148,-5.404878048780488]]}};
  const MAX_BYTES=48*1024*1024,MAX_STATIC=96*1024*1024,MAX_ENTRIES=512;
  const cfg={
   fairy:{scale:35.2833333333/500,sole:.4833333333,face:142,shoulder:220,legCut:515,wing:true,eye:{S:[[166,121,20,15],[198,120,20,15]],SE:[[516,121,21,15]],E:[[809,120,18,16]]}},
   leshy:{scale:47.6666666667/412,sole:1.6666666667,face:175,shoulder:240,legCut:470,eye:{S:[[139,164,17,15],[177,163,17,15]],SE:[[505,164,18,15]],E:[[813,166,17,15]]}},
   leprechaun:{scale:23.8833333333/374,sole:14.2833333333,face:174,shoulder:280,legCut:525,headCut:270,headScale:.08,headScaleX:.08,headY:-17.4,hatCut:150,hatScale:.123,eye:{S:[[126,161,22,16],[172,160,22,16]],SE:[[485,163,22,16]],E:[[815,158,21,18]]}},
-  brownie:{scale:17/410,scaleX:1.8,sole:-.4,face:140,shoulder:240,legCut:535,headCut:215,headScale:16/90,headScaleX:.13,headY:-24,eye:{S:[[151,126,20,17],[193,125,20,17]],SE:[[485,126,22,17]],E:[[805,125,18,17]]}},
+  brownie:{scale:18/410,scaleX:1.55,sole:-.4,face:140,shoulder:244,legCut:535,headCut:215,headScale:.098,headScaleX:.078,headY:-24,eye:{S:[[151,126,20,17],[193,125,20,17]],SE:[[485,126,22,17]],E:[[805,125,18,17]]}},
   enderman:{scale:58/634,sole:-1.3333333333,face:70,shoulder:156,legCut:280}
  };
  function cv(w,h){const out=document.createElement('canvas');out.width=Math.max(1,Math.ceil(w));out.height=Math.max(1,Math.ceil(h));return out;}
@@ -40,6 +44,32 @@
    const wingTops=wings?.map(image=>{const data=image.getContext('2d').getImageData(0,0,image.width,image.height).data;for(let y=0;y<image.height;y++)for(let x=0;x<image.width;x++)if(data[(y*image.width+x)*4+3])return y;return 0;});models[kind][view]={kind,Q,p,src,body,wings,wingTops,head,hat,foot,footY,limbs,legs,sockets};
   });
  }
+ function brownieReady(){return !!brownieAtlas||brownieSourceReady;}
+ function loadBrownieSource(){
+  if(brownieSourceReady)return Promise.resolve(true);
+  if(brownieSourcePromise)return brownieSourcePromise;
+  brownieSourcePromise=new Promise(resolve=>{
+   const im=new Image();im.onload=()=>{try{build('brownie',im);brownieSourceReady=true;resolve(true);}catch(e){A.brownieAssetErrors.push('source: '+e.message);resolve(false);}};
+   im.onerror=()=>{A.brownieAssetErrors.push('brownie authoring source');resolve(false);};im.src=new URL('brownie-pixel.png',base).href;
+  });return brownieSourcePromise;
+ }
+ function loadBrownieAtlas(){return new Promise(resolve=>{
+  const fail=message=>{A.brownieAssetErrors.push(message);loadBrownieSource();resolve(false);},im=new Image();
+  im.onload=()=>{
+   if(im.width!==960||im.height!==896)return fail('brownie atlas envelope');
+   const weight=im.width*im.height*4;if(staticBytes+weight>MAX_STATIC)return fail('brownie atlas static budget');
+   staticBytes+=weight;brownieAtlas=im;models.brownie=Object.fromEntries(views.map(view=>{const m=brownieModelMeta[view];return[view,{kind:'brownie',Q:cfg.brownie,...m,legs:m.hips.map(hip=>({hip})),baked:true}];}));resolve(true);
+  };
+  im.onerror=()=>fail('brownie atlas');im.src=new URL('brownie-peek-v1.png',base).href;
+ });}
+ function brownieBakedFrame(spec,dir,fr){
+  const column=brownieAtlasFrames.indexOf(fr),row=dirs.indexOf(dir),out=cv(96,112),c=out.getContext('2d');c.imageSmoothingEnabled=false;
+  c.drawImage(brownieAtlas,column*96,row*112,96,112,0,0,96,112);out.fine=2;return{...spec,cv:out,pixelRatio:2};
+ }
+ function brownieSourceFrame(fr='i0',dir='S',nativeFlip=false){
+  if(!brownieSourceReady)return null;const prior=brownieSourceMode;brownieSourceMode=true;try{return frame('brownie',fr,dir,0,nativeFlip);}finally{brownieSourceMode=prior;}
+ }
+ function brownieAtlasStats(){return{ready:!!brownieAtlas,sourceReady:brownieSourceReady,frames:brownieAtlas?80:0,rgbaBytes:brownieAtlas?960*896*4:0};}
  function segment(c,image,a,b,width){c.save();c.translate(...a);c.rotate(Math.atan2(b[1]-a[1],b[0]-a[0])-Math.PI/2);c.drawImage(image,-width/2,-.3,width,Math.hypot(b[0]-a[0],b[1]-a[1])+.6);c.restore();}
  function blit(c,image,M){const q=M.Q,s=q.scale,sx=s*(q.scaleX||1),x=-M.foot*sx,y=q.sole-M.p.h*s;
   if(M.kind==='enderman'){const split=140-M.p.y,h=280-140,join=y+split*s;c.drawImage(image,0,0,image.width,split,x,y,image.width*sx,split*s+.25);c.drawImage(image,0,split,image.width,h,x,join,image.width*sx,-25-join+.25);return;}
@@ -53,6 +83,58 @@
   if(kind==='leprechaun'){const s=near?[3.6,-9.6]:[-3.4,-9.6],hand=near?P.rh:P.ep==='tug'?[P.lh[0]-1.2,P.lh[1]+1.4]:P.lh;let pref=[-.5,1];if(P.ep==='hip')pref=near?[-1,.3]:[1,.2];else if(P.ep==='tug')pref=[.2,1];else if(P.ep==='up')pref=[near?-1:1,.4];else if(P.ep==='cheek')pref=[.4,1];const r=lepIK(...s,...hand,5.4,5.6,pref);return {e:r.e,h:r.b,angle:0};}
   if(kind==='enderman'){const h=carry?[16.5,near?-42:-36]:[near?9.7:-9.7,-22];return {e:[(M.sockets[near?1:0][0]+h[0])*.5,-32],h,angle:0};}
   const h=[near?10:-10,-9];return {e:[near?8:-8,-14],h,angle:0};
+ }
+ // X is relative to the torso axis; Y is relative to the authored shoulder height.
+ // Each pair is ordered far/near so the far sleeve can pass behind the torso.
+ const brownieArms={
+  S: [[[-3.5,-.5],[-5,3],[-5,6.5]],[[3.5,-.5],[4.5,3],[4.5,6.5]]],
+  SE:[[[-3,-.5],[-4.5,3],[-4.5,6]],[[3,-.5],[5,3.5],[5.5,6.5]]],
+  E: [null,[[1,-.5],[2,3],[4,5.5]]],
+  NE:[null,[[2.5,-1],[4.5,2.5],[5.5,6]]],
+  N: [[[-3.5,-.5],[-4.5,3],[-4.5,6.5]],[[3.5,-.5],[4.5,3],[4.5,6.5]]],
+ };
+ function brownieArm(c,M,near,view){
+  const chain=brownieArms[view][near?1:0];
+  if(!chain)return;
+  const shoulderY=Math.round(M.sockets[0][1]*2)/2;
+  const [s,e,h]=chain.map(([x,y])=>[x,shoulderY+y]);
+  const side=near?1:-1, profile=view==='E', rear=view==='NE'||view==='N';
+  const even=view==='S'||view==='N';
+  const seam='#2e2833', cloth=near||even?'#444e6b':'#414b64', lit=near?'#76839c':even?'#6b7892':'#5d6880';
+  const w=1.65, u=1.4, v=1.15;
+  const sleeve=(points,color)=>{
+   c.beginPath();c.moveTo(...points[0]);
+   for(const point of points.slice(1))c.lineTo(...point);
+   c.closePath();c.fillStyle=color;c.fill();
+  };
+  sleeve([[s[0]-w,s[1]+.5],[s[0]+w,s[1]+.5],[e[0]+u,e[1]],[h[0]+v,h[1]+.5],
+   [h[0]-v,h[1]+.5],[e[0]-u,e[1]]],seam);
+  sleeve([[s[0]-w,s[1]],[s[0]+w-.4,s[1]],[e[0]+u-.5,e[1]],[h[0]+v-.5,h[1]],
+   [h[0]-v+.5,h[1]],[e[0]-u+.5,e[1]]],cloth);
+  sleeve([[s[0]-w+.15,s[1]],[s[0]+.4,s[1]+.5],[e[0]-.4,e[1]],[h[0]-.5,h[1]-.5],
+   [e[0]-u+.5,e[1]]],lit);
+  c.save();c.translate(...h);c.rotate(-Math.atan2(h[0]-e[0],h[1]-e[1]));
+  const thumb=profile?-1:rear?side:-side;
+  c.scale(thumb,1);
+  const palm=1.5;
+  c.fillStyle='#433036';
+  c.fillRect(-palm,-.5,palm*2,3);
+  c.fillRect(-1.5,2,1,1);
+  c.fillRect(0,2,1,1.5);
+  c.fillRect(palm-.25,.75,1.25,1.5);
+  c.fillStyle=near?'#a56a4d':'#86543e';
+  c.fillRect(-1,0,2,2);
+  c.fillRect(-1,2,.5,.5);
+  c.fillRect(.5,2,.5,1);
+  c.fillRect(palm-.5,1,1.5,1);
+  c.fillStyle=near?'#e3aa7e':'#b77e5d';
+  c.fillRect(-1,.5,near&&view==='S'?2:1.5,near&&view==='S'?1.5:1);
+  c.fillRect(.5,1,.5,.5);
+  c.fillRect(palm,1,.75,.5);
+  c.fillStyle='#714534';c.fillRect(palm-.5,1.5,.5,1);
+  c.fillRect(-.5,2,1,.5);
+  c.fillStyle='#d9b178';c.fillRect(-palm,-.5,palm*2,.5);
+  c.restore();
  }
  function arm(c,M,P,near,carry){const r=armRig(M,P,near,carry),s=M.sockets[near?1:0],im=M.limbs[near?1:0],width=M.kind==='leshy'?4.8:M.kind==='leprechaun'?3:M.kind==='brownie'?2.8:M.kind==='enderman'?2.2:2.5;segment(c,im.upper,s,r.e,width);segment(c,im.lower,r.e,r.h,width*.85);
   if(near&&M.kind==='fairy'){const sc=NA_SPEC.fairy.sc||1,a=r.angle+.2,tip=[r.h[0]+Math.sin(a)*7.3*sc,r.h[1]+Math.cos(a)*7.3*sc];c.strokeStyle='#846744';c.lineWidth=1;c.beginPath();c.moveTo(...r.h);c.lineTo(...tip);c.stroke();c.fillStyle=P.dark?'#ac80c0':'#e5ddac';c.fillRect(tip[0]-1,tip[1]-1,2,2);if(P.cast){c.strokeStyle=c.fillStyle;c.lineWidth=.5;c.beginPath();c.ellipse(...tip,3+P.cast*7,(3+P.cast*7)*.8,0,0,7);c.stroke();}}
@@ -91,20 +173,26 @@
  const treeBoxes=new WeakMap();function treeBox(tree){let b=treeBoxes.get(tree);if(b)return b;const source=cv(tree.width,tree.height),c=source.getContext('2d');c.drawImage(tree,0,0);const d=c.getImageData(0,0,source.width,source.height).data;let l=source.width,t=source.height,r=0,bottom=0;for(let y=0;y<source.height;y++)for(let x=0;x<source.width;x++)if(d[(y*source.width+x)*4+3]>=128){l=Math.min(l,x);t=Math.min(t,y);r=Math.max(r,x+1);bottom=Math.max(bottom,y+1);}b={x:l,y:t,w:r-l,h:bottom-t};treeBoxes.set(tree,b);return b;}
  function cargo(c,M){const tree=typeof SPR!=='undefined'?SPR.trees?.[0]:null;if(!tree)return;const b=treeBox(tree);c.save();c.translate(15.5,-20);c.imageSmoothingEnabled=false;c.drawImage(tree,b.x,b.y,b.w,b.h,-25,-75,50,75);c.fillStyle='#59442e';c.fillRect(-7,-2.5,14,5);c.strokeStyle='#9c7d50';c.lineWidth=1.5;for(const x of [-4,0,4]){c.beginPath();c.moveTo(x,0);c.lineTo(x*1.8,8);c.stroke();}c.restore();}
  const transientCrop=new WeakMap();function cutTransient(src,x,y,w,h){let p=transientCrop.get(src);if(!p){p=cut(src,x,y,w,h);transientCrop.set(src,p);}return p;}
- function paint(c,kind,P,view,carry){const M=models[kind][view],rear=view==='N'||view==='NE';c.save();
+ function paint(c,kind,P,view,carry){const M=models[kind][view],rear=view==='N'||view==='NE';
+  if(kind==='brownie'){c.save();leg(c,M,P,false,view);leg(c,M,P,true,view);if(Number.isFinite(P.browniePeek)){const y=M.legs[0].hip[1];c.save();c.beginPath();c.rect(-24,y,48,16);c.clip();blit(c,M.body,M);c.restore();c.beginPath();c.rect(-24,-56,48,56+y+.5);c.clip();c.translate(0,y);c.rotate((1-P.browniePeek)*-.055);c.translate(0,-y);}brownieArm(c,M,false,view);blit(c,M.body,M);brownieArm(c,M,true,view);head(c,M,P,view);c.restore();return;}
+  c.save();
   if(kind==='fairy'){const sc=NA_SPEC.fairy.sc||1;c.translate(P.x*sc,(P.y-(P.dead?0:P.sleep?1:7))*sc);c.rotate(P.rot);}
   else if(kind==='leshy'){c.translate(P.x,P.y);c.rotate(P.rot);c.scale(1,P.sq);}
   else if(kind==='leprechaun'){c.scale(LEP_SPEC.sc,LEP_SPEC.sc);c.translate(P.x,-12.2+P.y);c.rotate(P.rot);c.scale(1/Math.sqrt(P.sq),P.sq);}
   else if(kind==='enderman')c.translate(-3.5,0);
   wing(c,M,P,false);if(!rear)wing(c,M,P,true);leg(c,M,P,false,view);leg(c,M,P,true,view);arm(c,M,P,false,carry);if(carry&&!rear)cargo(c,M);blit(c,M.body,M);caps(c,M);head(c,M,P,view);mouth(c,M,P,view);if(rear)wing(c,M,P,true);if(carry&&rear)cargo(c,M);arm(c,M,P,true,carry);c.restore();
  }
- function raster(spec,paint,fade,hurt){const out=cv(spec.w*2,spec.h*2),c=out.getContext('2d');c.imageSmoothingEnabled=false;c.scale(2,2);c.translate(spec.ax,spec.ay);paint(c);const data=c.getImageData(0,0,out.width,out.height),d=data.data;for(let y=0;y<out.height;y++)for(let x=0;x<out.width;x++){const i=(y*out.width+x)*4;if(d[i+3]<128||fade&&naHash(x>>1,y>>1)<fade){d[i+3]=0;continue;}d[i+3]=255;for(let j=0;j<3;j++){let v=d[i+j];if(hurt)v+=(245-v)*hurt*.26;d[i+j]=Math.min(255,Math.round(v/8)*8);}}c.putImageData(data,0,0);out.fine=2;return {...spec,cv:out,pixelRatio:2};}
+ function raster(spec,paint,fade,hurt,brownieHead=false){const out=cv(spec.w*2,spec.h*2),c=out.getContext('2d');c.imageSmoothingEnabled=false;c.scale(2,2);c.translate(spec.ax,spec.ay);paint(c);const data=c.getImageData(0,0,out.width,out.height),d=data.data;for(let y=0;y<out.height;y++)for(let x=0;x<out.width;x++){const i=(y*out.width+x)*4;if(d[i+3]<128||fade&&naHash(x>>1,y>>1)<fade){d[i+3]=0;continue;}d[i+3]=255;if(brownieHead&&y/2-spec.ay< -23&&d[i]>d[i+1]*1.15&&d[i+1]>d[i+2]*1.1&&(!x||!y||x===out.width-1||y===out.height-1||d[i-4+3]<128||d[i+4+3]<128||d[i-out.width*4+3]<128||d[i+out.width*4+3]<128)){d[i]=40;d[i+1]=32;d[i+2]=40;}for(let j=0;j<3;j++){let v=d[i+j];if(hurt)v+=(245-v)*hurt*.26;d[i+j]=Math.min(255,Math.round(v/8)*8);}}c.putImageData(data,0,0);out.fine=2;return {...spec,cv:out,pixelRatio:2};}
  function put(key,make){if(cache.has(key)){hits++;const out=cache.get(key);cache.delete(key);cache.set(key,out);return out;}misses++;const out=make(),cost=out.cv.width*out.cv.height*4;while(cache.size&&(cache.size>=MAX_ENTRIES||bytes+cost>MAX_BYTES)){const k=cache.keys().next().value,s=cache.get(k);bytes-=s.cv.width*s.cv.height*4;cache.delete(k);}if(cost<=MAX_BYTES){cache.set(key,out);bytes+=cost;}return out;}
  function canonicalLep(fr){if(LEP_ALL.includes(fr))return fr;const m=/^m([^~]+)~([^~]+)~([\d.]+)$/.exec(fr);if(!m)return 'i0';const t=+m[3],u=t===.33||t===.67?t:Math.round(Math.max(0,Math.min(1,t))*12)/12;return 'm'+(LEP_ALL.includes(m[1])?m[1]:'i0')+'~'+(LEP_ALL.includes(m[2])?m[2]:'i0')+'~'+u.toFixed(4);}
  const validNa=new Set(NA_ALL.concat(NA_FRAMES.parry||[],NA_FRAMES.roar||[],...(NA_EXTRA.fairy||[]).map(k=>NA_FRAMES[k])));
- function frame(kind,fr='i0',dir='E',carry=0,nativeFlip=false){if(!models[kind]||!A.ready)return null;const mirror=['SW','W','NW'].includes(dir),view=({SW:'SE',W:'E',NW:'NE'})[dir]||dir;if(!models[kind][view])return frame(kind,fr,'E',carry,nativeFlip);fr=kind==='leprechaun'?canonicalLep(fr):validNa.has(fr)?fr:'i0';const P=kind==='leprechaun'?lepPose(fr):naPose(fr),S=kind==='leprechaun'?LEP_SPEC:kind==='enderman'?{w:carry?84:40,h:carry?100:62,ax:carry?42:20,ay:carry?100:62}:kind==='brownie'?{w:40,h:48,ax:20,ay:48}:NA_SPEC[kind],pad=kind==='fairy'||kind==='leshy'?48:kind==='brownie'?4:0,spec={w:S.w+pad*2,h:S.h+pad*2,ax:S.ax+pad,ay:S.ay+pad};
-  const key=[kind,fr,dir,carry,+nativeFlip].join('|');if(nativeFlip)return put(key,()=>{const original=frame(kind,fr,dir,carry,false),out=cv(original.cv.width,original.cv.height),c=out.getContext('2d');c.imageSmoothingEnabled=false;c.translate(out.width,0);c.scale(-1,1);c.drawImage(original.cv,0,0);out.fine=2;return {...original,ax:original.w-original.ax,cv:out};});
-  return put(key,()=>raster(spec,c=>{if(mirror)c.scale(-1,1);paint(c,kind,P,view,carry);},P.fade,P.hurt));}
+ function frame(kind,fr='i0',dir='E',carry=0,nativeFlip=false){
+  const baked=kind==='brownie'&&!!brownieAtlas&&!brownieSourceMode&&(!validNa.has(fr)||fr==='i0');
+  if(kind==='brownie'&&!baked&&!brownieSourceReady){if(brownieAtlas){loadBrownieSource();return frame(kind,'i0',dir,carry,nativeFlip);}return null;}
+  if((!baked&&!models[kind])||!A.ready)return null;const mirror=['SW','W','NW'].includes(dir),view=({SW:'SE',W:'E',NW:'NE'})[dir]||dir;if(baked&&!dirs.includes(dir)||!baked&&!models[kind][view])return frame(kind,fr,'E',carry,nativeFlip);const peek=kind==='brownie'&&/^peek[0-8]$/.test(fr)?+fr.slice(4):null;fr=peek!==null?fr:kind==='leprechaun'?canonicalLep(fr):validNa.has(fr)?fr:'i0';const P=peek!==null?{...naPose('i0'),browniePeek:peek/8}:kind==='leprechaun'?lepPose(fr):naPose(fr),S=kind==='leprechaun'?LEP_SPEC:kind==='enderman'?{w:carry?84:40,h:carry?100:62,ax:carry?42:20,ay:carry?100:62}:kind==='brownie'?{w:40,h:48,ax:20,ay:48}:NA_SPEC[kind],pad=kind==='fairy'||kind==='leshy'?48:kind==='brownie'?4:0,spec={w:S.w+pad*2,h:S.h+pad*2,ax:S.ax+pad,ay:S.ay+pad};
+  const key=(kind==='brownie'&&!baked?'source|':'')+[kind,fr,dir,carry,+nativeFlip].join('|');if(nativeFlip)return put(key,()=>{const original=frame(kind,fr,dir,carry,false),out=cv(original.cv.width,original.cv.height),c=out.getContext('2d');c.imageSmoothingEnabled=false;c.translate(out.width,0);c.scale(-1,1);c.drawImage(original.cv,0,0);out.fine=2;return {...original,ax:original.w-original.ax,cv:out};});
+  if(baked)return put(key,()=>brownieBakedFrame(spec,dir,fr));
+  return put(key,()=>raster(spec,c=>{if(mirror)c.scale(-1,1);paint(c,kind,P,view,carry);},P.fade,P.hurt,kind==='brownie'));}
  const visibleFrames=new Map();
  function visibleFrame(kind,fr,dir){
    if(!R.inFrame||R.cam.z>1)return frame(kind,fr,dir);
@@ -138,12 +226,40 @@
  lepFrame=function(fr){return A.ready?frame('leprechaun',fr,active?.dir||'E',0,!!active?.flip):old.lepFrame(fr);};
  lepDraw=function(c,o){if(!A.ready)return old.lepDraw(c,o);const u=o.st==='go'?Game.unitMap?.get(o.tg):null,t=o.st==='roam'?[o.wx,o.wy]:u?[u.x,u.y]:o.st==='duel'?[o.gx,o.gy]:null,before=active;active={dir:heading(o,t),flip:o.face<0};try{return old.lepDraw(c,o);}finally{active=before;}};
  function natural(kind,carry,dir,flip){const s=frame(kind,'i0',dir,carry,flip);if(kind!=='brownie')return s.cv;return put('natural|brownie|'+dir,()=>{const out=cv(80,96),c=out.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(s.cv,8,8,80,96,0,0,80,96);out.fine=2;return {cv:out,w:40,h:48,ax:20,ay:48,pixelRatio:2};}).cv;}
- sprBrownie=function(){return A.ready?natural('brownie',0,active?.dir||'S',false):old.sprBrownie();};
- brownieDraw=function(list,c,F,x0,y0,x1,y1){if(!A.ready)return old.brownieDraw(list,c,F,x0,y0,x1,y1);const nt=nightAmt(),k=nightIndex();for(const br of F.bw){const b=fyBuilding(br.bid);if(!b||!FY_SEE(b.doorX,b.doorY,x0,y0,x1,y1))continue;const [dx,dy]=fyDoor(b);if(isEveningNow()&&br.milk===k)list.push([dy+.3,()=>fyBlit(c,sprBowl(1),(dx+.75)*TILE,(dy+.1)*TILE+6)]);if(nt<.3)continue;list.push([dy+.35,()=>{const a=Math.min(1,(nt-.3)*2);if(br.pk>0){const f=Math.min(1,br.pk/1.2,(5-br.pk)/.8+.01),s=frame('brownie','i0','S'),x=Math.round((dx-.8)*TILE),y=Math.round((dy+.25)*TILE);c.save();c.imageSmoothingEnabled=false;c.globalAlpha=.82*Math.max(0,Math.min(1,f))*a;c.drawImage(s.cv,x-s.ax,y-s.ay,s.w,s.h);c.restore();}else if(Math.sin(br.ph*.7)>-.2){const ex=Math.round((dx-.9)*TILE),ey=Math.round((dy-.5)*TILE),blink=Math.sin(br.ph*2.3)>.93;if(!blink){c.fillStyle=`rgba(250,226,70,${.9*a})`;c.fillRect(ex,ey,2,1);c.fillRect(ex+5,ey,2,1);c.fillStyle=`rgba(250,226,70,${.18*a})`;c.fillRect(ex-1,ey-1,4,3);c.fillRect(ex+4,ey-1,4,3);}}}]);}};
+ // Source-space doorstep landmarks in the approved PNGs; artBox handles levels and mirrors.
+ const brownieDoors={bakery:{size:[1303,1207],at:[528,1098]},mill:{size:[1199,1312],at:[496,1214]}};
+ function brownieDoorAnchor(b){
+  const point=brownieDoors[b.type],art=globalThis.FantasyPublishedArt?.images?.[b.type];
+  if(!point||!art||art.image.width!==point.size[0]||art.image.height!==point.size[1])return null;
+  const eraFx=b.eraFx&&!b.upg&&b.state==='done'&&typeof ERA_FX!=='undefined'&&Game.time-b.eraFx.t0<=ERA_FX.dur;
+  let spr=buildingSprite(b.type,b.rot||0,b.level||1,eraFx?b.eraFx.from:undefined,b.hv||0);if(b.foreign&&typeof campForeignSpr==='function')spr=campForeignSpr(spr);const box=spr._artBox;
+  if(!box||spr._publishedArtSource!=='png:'+b.type)return null;
+  const bounds=art.bounds,u=(point.at[0]-bounds[0])/bounds[2],v=(point.at[1]-bounds[1])/bounds[3],x=(b.rot===1||b.rot===2)?1-u:u;
+  return{x:Math.round((b.x*TILE-spr.padx+box[0]+x*box[2]-2)*2)/2,y:Math.round((b.y*TILE-spr.top+box[1]+v*box[3])*2)/2,depth:b.y+b.h+.001};
+ }
+ sprBrownie=function(){return A.ready&&brownieReady()?natural('brownie',0,active?.dir||'S',false):old.sprBrownie();};
+ brownieDraw=function(list,c,F,x0,y0,x1,y1){
+  if(!A.ready||!brownieReady())return old.brownieDraw(list,c,F,x0,y0,x1,y1);
+  const nt=nightAmt(),k=nightIndex();
+  for(const br of F.bw){
+   const b=fyBuilding(br.bid);if(!b||!FY_SEE(b.doorX,b.doorY,x0,y0,x1,y1))continue;
+   const [dx,dy]=fyDoor(b),anchor=brownieDoorAnchor(b),px=anchor?anchor.x:Math.round((dx-.8)*TILE),py=anchor?anchor.y:Math.round((dy+.25)*TILE);
+   if(isEveningNow()&&br.milk===k)list.push([anchor?anchor.depth-.001:dy+.3,()=>fyBlit(c,sprBowl(1),anchor?px+9:(dx+.75)*TILE,anchor?py+2:(dy+.1)*TILE+6)]);
+   if(nt<.3)continue;
+   list.push([anchor?anchor.depth:dy+.35,()=>{
+    const a=Math.min(1,(nt-.3)*2);
+    if(br.pk>0){
+     const f=Math.min(1,br.pk/1.2,(5-br.pk)/.8+.01),reveal=Math.max(0,Math.min(1,f)),phase=Math.round(reveal*reveal*(3-2*reveal)*8),s=frame('brownie','peek'+phase,'S');
+     c.save();c.imageSmoothingEnabled=false;c.globalAlpha=.82*Math.max(0,Math.min(1,f))*a;c.drawImage(s.cv,px-s.ax,py-s.ay,s.w,s.h);c.restore();
+    }else if(Math.sin(br.ph*.7)>-.2){
+     const ex=anchor?Math.round(px-.1*TILE):Math.round((dx-.9)*TILE),ey=anchor?Math.round(py-.75*TILE):Math.round((dy-.5)*TILE),blink=Math.sin(br.ph*2.3)>.93;
+     if(!blink){c.fillStyle=`rgba(250,226,70,${.9*a})`;c.fillRect(ex,ey,2,1);c.fillRect(ex+5,ey,2,1);c.fillStyle=`rgba(250,226,70,${.18*a})`;c.fillRect(ex-1,ey-1,4,3);c.fillRect(ex+4,ey-1,4,3);}
+    }
+   }]);
+  }
+ };
  sprEnder=function(carry){return A.ready?natural('enderman',carry,active?.dir||'E',!!active?.flip):old.sprEnder(carry);};
  endermanDraw=function(list,c,F,...bounds){if(!A.ready)return old.endermanDraw(list,c,F,...bounds);const local=[];old.endermanDraw(local,c,F,...bounds);for(const [z,draw]of local)list.push([z,()=>{const o=F.end;if(!o)return;const t=o.st==='carry'?o.dest:o.st==='goto'||o.st==='dig'?o.tg:o.go,before=active;active={dir:heading(o,Array.isArray(t)?t:t?[t.x,t.y]:null),flip:o.face<0};try{draw();}finally{active=before;}}]);};
- Object.assign(A,{frame,portrait:kind=>frame(kind,'i0','S'),models,stoneFrame,stones,headings:dirs,views,cfg,originals:old,nativeArm:(kind,P,near)=>kind==='fairy'?fairyArm(P,near):barkArm(P,near),stats:()=>({entries:cache.size,rgbaBytes:bytes,maxEntries:MAX_ENTRIES,maxRgbaBytes:MAX_BYTES,staticBytes,maxStaticBytes:MAX_STATIC,hits,misses}),clear:()=>{cache.clear();bytes=0;}});
- A.readyPromise=Promise.all(Object.keys(cfg).concat('gargoyles').map(kind=>new Promise(resolve=>{const im=new Image();im.onload=()=>{try{kind==='gargoyles'?buildStones(im):build(kind,im);}catch(e){A.assetErrors.push(e.message);}resolve();};im.onerror=()=>{A.assetErrors.push(kind+' asset');resolve();};im.src=new URL(kind==='fairy'?'fairy-rig-source-v2.png':kind+'-pixel.png',base).href;}))).then(()=>{A.ready=!A.assetErrors.length;return A;});
+ Object.assign(A,{frame,brownieDoorAnchor,loadBrownieSource,brownieSourceFrame,brownieAtlasStats,portrait:kind=>frame(kind,'i0','S'),models,stoneFrame,stones,headings:dirs,views,cfg,originals:old,nativeArm:(kind,P,near)=>kind==='fairy'?fairyArm(P,near):barkArm(P,near),stats:()=>({entries:cache.size,rgbaBytes:bytes,maxEntries:MAX_ENTRIES,maxRgbaBytes:MAX_BYTES,staticBytes,maxStaticBytes:MAX_STATIC,hits,misses}),clear:()=>{cache.clear();bytes=0;}});
+ const ordinaryRoster=Object.keys(cfg).filter(kind=>kind!=='brownie').concat('gargoyles').map(kind=>new Promise(resolve=>{const im=new Image();im.onload=()=>{try{kind==='gargoyles'?buildStones(im):build(kind,im);}catch(e){A.assetErrors.push(e.message);}resolve();};im.onerror=()=>{A.assetErrors.push(kind+' asset');resolve();};im.src=new URL(kind==='fairy'?'fairy-rig-source-v2.png':kind+'-pixel.png',base).href;}));A.readyPromise=Promise.all([...ordinaryRoster,loadBrownieAtlas()]).then(()=>{A.ready=!A.assetErrors.length;return A;});
 })();
-
-
