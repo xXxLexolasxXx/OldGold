@@ -347,6 +347,7 @@ function ftAfter(N, tg) {
     N.abT = now + 7 + ftRand() * 3;
     N.ov = NA_FRAMES.cast; N.ovT = 0; N.ovP = 0.065; N.face = tg.x >= N.x ? 1 : -1;
     N.dart = { x: Math.round(tg.x * 100) / 100, y: Math.round(tg.y * 100) / 100, t: Math.round(now * 100) / 100, o: 2 };
+    if (typeof globalThis.FrogDirections?.observeProjectileLaunch === 'function') globalThis.FrogDirections.observeProjectileLaunch(N, N.dart, N.fr || 'i0');
     floater(N.x, N.y - 2.4, 'Огненный шар!', '#ffb050'); sfxAt('ftFire', N.x * TILE, N.y * TILE, 1);
     for (const u of Game.units) {
       if (u.dead || u.inside || ftKid(u) || !(u.hero || u.rec || isPerson(u)) || Math.hypot(u.x - tg.x, u.y - tg.y) > 2) continue;
@@ -459,6 +460,7 @@ const FT_TOUCH = { ftG: 0.15, ftB: 0.18, ftP: 0.28, ftR: 0.2, ftK: 0.4, ftQ: 0.5
     FT.src = N;
     if (N.k === 'ftB' || N.k === 'ftP' || N.k === 'ftR') {
       N.dart = { x: Math.round(tg.x * 100) / 100, y: Math.round(tg.y * 100) / 100, t: Math.round(now * 100) / 100, o: N.k === 'ftP' ? 1 : N.k === 'ftR' ? 2 : 0 };
+      if (N.k === 'ftR' && typeof globalThis.FrogDirections?.observeProjectileLaunch === 'function') globalThis.FrogDirections.observeProjectileLaunch(N, N.dart, N.ov?.[Math.floor(N.ovT / (N.ovP || .14))] || naAtkFr(N.atkT));
       sfxAt(N.k === 'ftB' ? 'ftDart' : N.k === 'ftR' ? 'ftFire' : 'ftZap', N.x * TILE, N.y * TILE, N.k === 'ftB' ? 0.7 : 0.45);
     } else sfxAt(N.k === 'ftK' ? 'ftCroakLow' : 'ftCroak', N.x * TILE, N.y * TILE, 0.3);
     try { _ns(N, tg); } finally { FT.mul = m; FT.src = s0; }
@@ -995,7 +997,8 @@ function ftDrawFog(c, F, t) {
     if (A) {
       const k = (t - A.t) / 0.28;
       if (k >= 0 && k < 1) {
-        const x0 = N.x * TILE + N.face * 12, y0 = N.y * TILE - 24 - (N.pch ? 20 : 0), x1 = A.x * TILE, y1 = A.y * TILE - 14;
+        const origin = N.k === 'ftR' ? globalThis.FrogDirections?.projectileOrigin?.(N, A) : null;
+        const x0 = origin?.[0] ?? N.x * TILE + N.face * 12, y0 = origin?.[1] ?? N.y * TILE - 24 - (N.pch ? 20 : 0), x1 = A.x * TILE, y1 = A.y * TILE - 14;
         const x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k - Math.sin(k * Math.PI) * 7;
         if (A.o) ftDrawOrb(c,x,y,A.o===2);
         else {

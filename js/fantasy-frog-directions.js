@@ -19,7 +19,7 @@
   facing.set(n,{x:n.x,y:n.y,face:n.face,h});
   return headings[h];
  }
- const cache=new Map(),publicFrames=new WeakMap(),lastWorldFrame=new WeakMap();
+ const cache=new Map(),publicFrames=new WeakMap(),lastWorldFrame=new WeakMap(),projectileStarts=new WeakMap();
  const errors=[];
  const startup=window.FrogStartFrames;
  let frequent,rare,activeActor=null,proceduralBuilds=0,pendingHolds=0,fullMaterializations=0;
@@ -578,6 +578,40 @@
   return full;
  }
  function frame(kind,fr,direction='E'){return resolvedFrame(kind,fr,direction,null);}
+ // Presentation only. No actor, projectile, mirror or saved-state fields.
+ function projectileOrigin(actor,event,birthFrame){
+  if(actor.k!=='ftR'||event?.o!==2||actor.st==='die'||window.FantasyPublishedFrogs?.enabled===false)return null;
+  const now=typeof ftNow==='function'?ftNow():Game.time;
+  const key=[actor.id,Game.seed,event.t,event.x,event.y,event.o].join('|');
+  const saved=projectileStarts.get(actor);
+  // Replacing a network snapshot or correcting its clock must not move an
+  // already observed shot. A new actor/id, seed or event starts a new record.
+  if(saved?.key===key)return saved.point;
+  const age=Math.max(0,now-event.t),shown=lastWorldFrame.get(actor)?.fr||actor.fr||'i0';
+  let fr=birthFrame??'ready';
+  if(birthFrame===undefined){
+   // A first network snapshot has no launch history. Ordinary attacks can be
+   // reconstructed from their clock/numbered phase. The special fireball is
+   // emitted before its cast override, while the native body is ready/walking.
+   const elapsed=/^c\d+$/.test(shown)?null:Number.isFinite(actor.atkT)&&actor.atkT>=0&&actor.atkT<NA_ATK_T?actor.atkT:/^a\d+$/.test(shown)?(+shown.slice(1)+.5)*NA_ATK_T/NA_N:actor.st==='atk'?.24+age:null;
+   if(elapsed!==null&&elapsed-age>=.23)fr=naAtkFr(Math.max(.24,elapsed-age));
+  }
+  const P=pose(actor.k,fr),rig=frogRig(actor.k,P),S=NA_SPEC[actor.k];
+  // The authored flame/core is at (24,1.6) in the weapon's own coordinates.
+  const a=rig.angle,lx=rig.hand[0]+Math.cos(a)*24-Math.sin(a)*1.6;
+  const ly=(rig.hand[1]+Math.sin(a)*24+Math.cos(a)*1.6)*P.sq;
+  const rotation=P.sleep?0:P.rot,cos=Math.cos(rotation),sin=Math.sin(rotation);
+  const dx=(P.sleep?0:P.x)+lx*cos-ly*sin,dy=(P.sleep?0:P.y)+lx*sin+ly*cos;
+  const size=(S.sc||1)*(typeof n2Sz==='function'?n2Sz(actor):1);
+  // The caster may turn before first observation. The event retains the
+  // original aim; avoid guessing a side inside its coordinate rounding.
+  const aimX=event.x-actor.x;
+  const mirror=birthFrame!==undefined?(actor.face<0?-1:1):Math.abs(aimX)>.01?(aimX<0?-1:1):(actor.face<0?-1:1);
+  const x=Math.round(actor.x*TILE)+dx*size*mirror;
+  const y=Math.round((actor.y-(actor.pch ? .62 : 0))*TILE+6)+dy*size;
+  const point=[Math.round(x*2)/2,Math.round(y*2)/2];
+  projectileStarts.set(actor,{key,point});return point;
+ }
  naFrame=function(kind,fr){return kinds.includes(kind)?resolvedFrame(kind,fr,active,activeActor):oldFrame(kind,fr)};
  blitFine=function(c,cv,x,y,w,h){if(!cv.creatureDirections)return oldBlit(c,cv,x,y,w,h);const smooth=c.imageSmoothingEnabled;c.imageSmoothingEnabled=R.smooth;c.drawImage(cv,x,y,w??cv.width/2,h??cv.height/2);c.imageSmoothingEnabled=smooth};
  neuDraw=function(c,N){
@@ -588,5 +622,5 @@
  };
 
  const stats=bank=>bank?{frames:bank.frames.size,unique:bank.unique,bytes:bank.bytes}:null;
- window.FrogDirections={ready:true,frequentReady,rareReady,bakedReady,errors,kinds,headings,frame,headingOf,rig:(kind,fr)=>frogRig(kind,pose(kind,fr),kind==='ftZF'&&/^[iw]/.test(fr)),portrait:(kind,fr='i0')=>frame(kind,fr,'S'),setHeading:(n,d)=>headings.includes(d)?forced.set(n,d):forced.delete(n),cacheStats:()=>({entries:cache.size,rgbaBytes:bytes,maxEntries,maxRgbaBytes:maxBytes,hits}),bankStats:()=>({frequent:stats(frequent),rare:stats(rare),frequentPending,rarePending,proceduralBuilds,pendingHolds,fullMaterializations}),states:kind=>[...(statesByKind.get(kind)||stateSet(kind))]};
+ window.FrogDirections={ready:true,frequentReady,rareReady,bakedReady,errors,kinds,headings,frame,headingOf,projectileOrigin,observeProjectileLaunch:(n,event,fr)=>{projectileOrigin(n,event,fr||n.fr||'i0')},rig:(kind,fr)=>frogRig(kind,pose(kind,fr),kind==='ftZF'&&/^[iw]/.test(fr)),portrait:(kind,fr='i0')=>frame(kind,fr,'S'),setHeading:(n,d)=>headings.includes(d)?forced.set(n,d):forced.delete(n),cacheStats:()=>({entries:cache.size,rgbaBytes:bytes,maxEntries,maxRgbaBytes:maxBytes,hits}),bankStats:()=>({frequent:stats(frequent),rare:stats(rare),frequentPending,rarePending,proceduralBuilds,pendingHolds,fullMaterializations}),states:kind=>[...(statesByKind.get(kind)||stateSet(kind))]};
 })();
