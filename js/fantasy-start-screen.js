@@ -19,6 +19,7 @@
       storehouse: [0, 232, 130, 108], 'bonfire-hearth': [144, 232, 108, 53] };
     for (const [name, rect] of Object.entries(sprites)) art[name] = { image: atlas, rect };
     revision++;
+    refresh();
   };
   atlas.onerror = () => failures.push('menu-village');
   atlas.src = 'assets/fantasy/menu-village.png';
@@ -111,13 +112,27 @@
     sprite('inn', cx + W * .29, cy - 7, house, house);
   }
 
-  const people = new Map();
-  function person(x, y, female, frame, view = 'S') {
-    if (!hadPeople) return;
+  const people = new Map(), personFrames = new Map();
+  let spriteSource, idleReady = 0;
+  function personFrame(female, frame, view) {
+    if (spriteSource !== personSprite) {
+      spriteSource = personSprite;
+      personFrames.clear();
+    }
     const key = (female ? 'f' : 'm') + view;
     if (!people.has(key)) people.set(key, { type: 'serf', look: female ? 14 : 23, sx: female ? 'f' : '', carry: null });
     const walking = view === 'E', phase = walking ? Math.floor(frame % 8 * WALK_FRAMES / 8) : 0;
-    const image = personSprite(people.get(key), view, walking ? 'walk' : 'idle', phase, {});
+    const frameKey = key + ':' + phase;
+    let image = personFrames.get(frameKey);
+    if (!image) {
+      image = spriteSource(people.get(key), view, walking ? 'walk' : 'idle', phase, {});
+      if (!image._pendingSprite) personFrames.set(frameKey, image);
+    }
+    return image;
+  }
+  function person(x, y, female, frame, view = 'S') {
+    if (!hadPeople) return;
+    const image = personFrame(female, frame, view);
     const scale = .65;
     c.drawImage(image, Math.round(x - PFX * scale), Math.round(y - PFY * scale), PW * scale, PH * scale);
     state.people++;
@@ -151,15 +166,60 @@
     }
   }
 
-  let running = true, last = -Infinity;
+  let running = true, pending = null, last = -Infinity;
   const observer = new MutationObserver(() => { if (screen.classList.contains('hidden')) stop(); });
+  const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(refresh) : null;
   observer.observe(screen, { attributes: true, attributeFilter: ['class'] });
-  function stop() { running = false; observer.disconnect(); }
+  if (resize) resize.observe(canvas);
+  else window.addEventListener('resize', refresh);
+
+  function queueFrame() {
+    if (running && !document.hidden && pending === null) pending = requestAnimationFrame(frame);
+  }
+  function cancelFrame() {
+    if (pending === null) return;
+    cancelAnimationFrame(pending);
+    pending = null;
+  }
+  function refresh() {
+    last = -Infinity;
+    queueFrame();
+  }
+  function onVisibilityChange() {
+    if (document.hidden) cancelFrame();
+    else refresh();
+  }
+  function onScriptsReady() {
+    const ready = window.FantasyPublishedAppearanceArt?.ready;
+    if (ready) ready.then(refresh, refresh);
+    refresh();
+  }
+  function stop() {
+    running = false;
+    cancelFrame();
+    observer.disconnect();
+    if (resize) resize.disconnect();
+    else window.removeEventListener('resize', refresh);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    document.removeEventListener('DOMContentLoaded', onScriptsReady);
+    if (reduced.removeEventListener) reduced.removeEventListener('change', refresh);
+    else reduced.removeListener(refresh);
+    people.clear();
+    personFrames.clear();
+    background.width = background.height = 0;
+  }
   window.loadingStop = stop;
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  if (reduced.addEventListener) reduced.addEventListener('change', refresh);
+  else reduced.addListener(refresh);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onScriptsReady, { once: true });
+  else onScriptsReady();
+
   function frame(now) {
-    if (!running) return;
-    requestAnimationFrame(frame);
-    if (document.hidden || now - last < 66) return;
+    pending = null;
+    if (!running || document.hidden) return;
+    if (!reduced.matches) queueFrame();
+    if (!reduced.matches && now - last < 66) return;
     last = now;
     const W = Math.max(100, Math.ceil(canvas.clientWidth / 3)), H = Math.max(60, Math.ceil(canvas.clientHeight / 3));
     const mobile = canvas.clientWidth < 700;
@@ -168,12 +228,18 @@
     const house = Math.min(101, W * .29, H * (shortLandscape ? .27 : .35));
     const nextTrees = window.FantasyTreesPolish?.base;
     if (nextTrees !== trees) { trees = nextTrees; revision++; }
-    const key = W + ':' + H + ':' + revision;
+    const key = `${W}:${H}:${mobile}:${shortLandscape}:${revision}`;
     const peopleReady = !!(window.FantasyPublishedAppearanceArt && typeof FantasyArt !== 'undefined' &&
       FantasyArt.images['gnome-walk']?.frames && FantasyArt.images['gnome-woman-walk']?.frames);
     const fireReady = typeof FantasyArt !== 'undefined' && !!FantasyArt.images['bonfire-flames']?.frames?.length;
-    if (reduced.matches && key === cached && peopleReady === hadPeople && fireReady === hadFire && state.frames) return;
-    hadPeople = peopleReady; hadFire = fireReady;
+    hadPeople = peopleReady && idleReady === 2;
+    hadFire = fireReady;
+    // Generate one cold idle sprite per frame before drawing the group together.
+    if (peopleReady && idleReady < 2) {
+      personFrame(idleReady === 1, 0, 'S');
+      idleReady++;
+      if (reduced.matches) queueFrame();
+    }
     if (key !== cached) {
       cached = key;
       canvas.width = background.width = W * 2; canvas.height = background.height = H * 2;
@@ -187,5 +253,5 @@
     paintMotion(reduced.matches ? 0 : now / 1000, W, cx, cy, house, shortLandscape);
     state.frames++;
   }
-  frame(performance.now());
+  queueFrame();
 })();

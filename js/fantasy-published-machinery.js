@@ -149,12 +149,8 @@
    c.restore();
  }
  function workSleeve(c,shoulder,grip,cloth){
-   shoulder=[shoulder[0]+workBodyOffset[0],shoulder[1]+workBodyOffset[1]];
-   const elbow=[(shoulder[0]+grip[0])*.5-.45,(shoulder[1]+grip[1])*.5+1.05];
-   for(const [from,to,width] of [[shoulder,elbow,2.8],[elbow,grip,2.4]]){
-     fpaSowBand(c,from,to,width,'#352722');
-     fpaSowBand(c,from,to,width-1,cloth);
-   }
+   const root=[shoulder[0]+workBodyOffset[0],shoulder[1]+workBodyOffset[1]];
+   fpaWorkSleeve(c,root,grip,cloth,false,.5);
  }
  function workHands(c,near,far,skin){
    for(const [grip,fill] of [[far,skin[1]],[near,skin[0]]]){

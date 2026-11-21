@@ -256,6 +256,12 @@ function golemSprite(view, pose, f, force) {
   const key = view + pose + f;
   let cv = GL_CACHE.get(key);
   if (cv) return cv;
+  cv = globalThis.FantasyPublishedGolem?.firstPose?.(GL_LOOK, key);
+  if (cv) { GL_CACHE.set(key, cv); return cv; }
+  // The previous complete pose is already the native fallback. Build the
+  // expensive supersampled replacement outside the world drawing pass.
+  if (!force && R.inFrame && (Game.golem?.last || GL_CACHE.size) &&
+      spriteDefer('golem:' + GL_LOOK + ':' + key, () => golemSprite(view, pose, f, true))) return null;
   if (!force && !spriteBudgetOk(true)) return null;   // у голема всегда есть запасной кадр (g.last)
   const t0 = performance.now();
   if (!GL_SCRATCH) GL_SCRATCH = mkScratch(GL_W, GL_H, PS);
@@ -404,7 +410,8 @@ function drawGolem(c, g) {
   const [pose, f] = golemFrameOf(g);
   const view0 = golemDorm() ? 'S' : g.view;
   let spr = golemSprite(view0, pose, f), view = view0;
-  if (!spr) spr = g.last || golemSprite('S', 'idle', 0, true);
+  if (!spr) spr = g.last || GL_CACHE.get(view0 + 'idle0') || GL_CACHE.get('Sidle0') ||
+    GL_CACHE.values().next().value || golemSprite('S', 'idle', 0, true);
   g.last = spr;
   const lift = g.state === 'emote' && g.emote === 'wave' ? 1 : 0;
   // тень: широкая мягкая и плотное пятно под ступнями

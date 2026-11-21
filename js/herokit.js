@@ -622,6 +622,7 @@ function heroParry(u) {
   const _fg = fightGen;
   fightGen = function (u, f) {
     if (!isFighter(u) || !f || !f.kind) return _fg(u, f);
+    if (typeof guildFightTargets !== 'undefined') guildFightTargets.set(u,f);
     return heroFightWrap(_fg(u, f), u, () => foeAlive(f), () => foeDied(f));
   };
   // если героя затянуло в ночную драку как простого гнома — те же кадры

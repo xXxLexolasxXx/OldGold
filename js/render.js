@@ -163,13 +163,23 @@ function swingFrameAt(p) {
 const fallenGnomesByMap = new WeakMap();
 
 function queueFallenGnome(u) {
-  if (!World.terrain || u.inside || u.hero || u.type === 'hero' ||
-      u.type === 'carter' || !UNIT_TYPES[u.type] || !isPerson(u)) return;
+  if (!World.terrain || u.inside || u.type === 'carter' ||
+      !UNIT_TYPES[u.type] || !isPerson(u)) return;
   let entries = fallenGnomesByMap.get(World.terrain);
   if (!entries) fallenGnomesByMap.set(World.terrain, entries = []);
   if (entries.length >= 32) entries.shift();
   const actor = {type:u.type, look:u.look, sx:personSex(u), injury:u.injury, _exactYardPose:true};
-  entries.push({actor, x:u.x, y:u.y, face:u.face < 0 ? -1 : 1, time:Game.time});
+  if (u.rec) actor.rec = {...u.rec};
+  if (u.gx) actor.gx = {...u.gx};
+  if (u.gm) actor.gm = u.gm;
+  if (u.hero) {
+    actor.hero = {clsKey:u.hero.clsKey, app:u.hero.app?.slice()};
+  }
+  const armed = u.hero || u.rec || u.gx || u.gm;
+  const snapshot = armed ? {...u} : null;
+  const frame = snapshot ? fightFrameRaw(snapshot) : null;
+  const wpn = snapshot ? heroWpnOf(snapshot) : '';
+  entries.push({actor, x:u.x, y:u.y, face:u.face < 0 ? -1 : 1, time:Game.time, frame, wpn});
 }
 
 function addFallenGnomeDraws(list,c,x0,y0,x1,y1) {
@@ -178,19 +188,19 @@ function addFallenGnomeDraws(list,c,x0,y0,x1,y1) {
   for (let i=entries.length-1;i>=0;i--) {
     const entry=entries[i], elapsed=Game.time-entry.time;
     if (elapsed<0 || elapsed>=.85) { entries.splice(i,1); continue; }
-    const {actor,x,y,face}=entry;
+    const {actor,x,y,face,frame,wpn}=entry;
     if (x<x0-2 || x>x1+2 || y<y0-2 || y>y1+2) continue;
     list.push([y+.19,()=>{
-      const sprite=personSprite(actor,'E','idle',0);
+      const sprite=personSprite(actor,'E',frame?'fight':'idle',frame||0,{wpn});
       if(sprite && !sprite._pendingSprite) drawFallenGnome(c,sprite,Math.round(x*TILE),Math.round(y*TILE+6),face,elapsed);
     }]);
   }
 }
 
-function drawFallenGnome(c,sprite,x,y,face,elapsed){
+function drawFallenGnome(c,sprite,x,y,face,elapsed,fade=true){
   const turn=Math.min(1,Math.max(0,elapsed/.34));
   const eased=turn*turn*(3-2*turn);
-  const opacity=Math.min(1,Math.max(0,(.85-elapsed)/.29));
+  const opacity=fade?Math.min(1,Math.max(0,(.85-elapsed)/.29)):1;
   c.save();
   c.imageSmoothingEnabled=false;
   c.globalAlpha*=opacity;
@@ -203,6 +213,21 @@ function drawFallenGnome(c,sprite,x,y,face,elapsed){
   c.scale(face,1);
   c.drawImage(sprite,-PFX,-PFY,PW,PH);
   c.restore();
+}
+
+const guildFightTargets = new WeakMap();
+
+function guildCombatView(unit, fallback) {
+  if (typeof dwarfGuildWear !== 'function' || !dwarfGuildWear(unit)) return 'E';
+  const target = guildFightTargets.get(unit);
+  if (target?.o && unit.combatUntil > Game.time && foeAlive(target)) {
+    const dx = target.o.x - unit.x, dy = target.o.y - unit.y;
+    if (Number.isFinite(dx) && Number.isFinite(dy)) {
+      if (Math.abs(dy) > Math.max(.18, Math.abs(dx) * 2)) return dy > 0 ? 'S' : 'N';
+      return 'E';
+    }
+  }
+  return fallback === 'N' || fallback === 'S' ? fallback : 'E';
 }
 
 function drawUnit(c, u) {
@@ -230,11 +255,15 @@ function drawUnit(c, u) {
   if (wp) { pose = wp.pose; view = 'E'; if (wp.frame) frame = wp.frame; }
   if (pose === 'smoke') frame = smokeFrameOf(u);   // 6 кадров курения
   // герой в бою: 9 кадров из people.js (стойка, замах, удар, довод, парирование, удар по нему, победа, выхватывание)
-  const ffr = !wp && fightFrameOf(u, moving);
-  if (ffr) { pose = 'fight'; view = 'E'; frame = ffr; }
-  else if (!wp && !moving && u._wanim && typeof heroWpnFrame === 'function') {   // выхватывает / убирает оружие (герой, рекруты)
+  // The down timers already start when combat knocks the actor over.
+  const knockElapsed = u.anim !== 'knocked' ? null :
+    u.hero?.downT > Game.time ? Game.time - (u.hero.downT - dif().heroDown) :
+    u.downUntil > Game.time ? Game.time - (u.downUntil - 8) : null;
+  const ffr = !wp && knockElapsed === null && fightFrameOf(u, moving);
+  if (ffr) { pose = 'fight'; view = guildCombatView(u,view); frame = ffr; }
+  else if (!wp && knockElapsed === null && !moving && u._wanim && typeof heroWpnFrame === 'function') {   // выхватывает / убирает оружие (герой, рекруты)
     const wf = heroWpnFrame(u);
-    if (wf) { pose = 'fight'; view = 'E'; frame = wf; }
+    if (wf) { pose = 'fight'; view = guildCombatView(u,view); frame = wf; }
   }
   // просто стоит — лицом к зрителю, а не боком, как после ходьбы
   if (pose === 'idle' && !u.anim && !(u.gestUntil > Game.time)) view = 'S';
@@ -399,6 +428,8 @@ function drawUnit(c, u) {
     if (wp.rollA !== undefined) c.scale(Math.cos(wp.rollA), 1);   // вращение вокруг продольной оси: спина → живот
     c.drawImage(spr, -PFX, -PFY + wp.off, PW, PH);
     c.restore();
+  } else if (knockElapsed !== null) {
+    drawFallenGnome(c,spr,px,py,face < 0 ? -1 : 1,knockElapsed,false);
   } else if (lying) {
     // лежит на земле: пьяный бормочет «Zzz», голодный — без сил, кружатся «звёздочки»
     c.save(); c.translate(px, py - 1); c.rotate(-Math.PI / 2 * (u.face < 0 ? -1 : 1));
@@ -1178,7 +1209,10 @@ function rowcPaint(e, y, cx0, cx1, k) {
   const w = Math.round(((cx1 - cx0 + 1) * TILE + 2 * ROWC_PAD) * k), h = Math.round((ROWC_UP + ROWC_DN) * k);
   if (!e.cv) { e.cv = mkCanvas(w, h); ROWC.px += w * h; }
   else if (e.cv.width !== w || e.cv.height !== h) { ROWC.px += w * h - e.cv.width * e.cv.height; e.cv.width = w; e.cv.height = h; }
-  const g = e.cv.getContext('2d');
+  // Rasterise each small cache chunk while its build budget is measured.
+  // Deferred GPU commands otherwise flush on the first main-canvas drawImage,
+  // outside ROWC_BUDGET_MS, when a cold zoom exposes many new chunks at once.
+  const g = e.cv.getContext('2d', { willReadFrequently: true });
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
   g.setTransform(k, 0, 0, k, -X0 * k, -Y0 * k);
   g.imageSmoothingEnabled = R.smooth; g.imageSmoothingQuality = 'low';
@@ -1320,6 +1354,7 @@ function render() {
   }
   for (const b of Game.buildings) {
     if (b.x + b.w < x0 - 2 || b.x > x1 + 2 || b.y > y1 + 2 || b.y + b.h < y0 - 2) continue;
+    window.FantasyDoorApproaches?.draw(c, b);
     list.push([b.y + b.h - 0.05, () => drawBuilding(c, b, false)]);
   }
   addFallenGnomeDraws(list,c,x0,y0,x1,y1);

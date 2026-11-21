@@ -83,14 +83,7 @@ function fpaCareStableStation(spr,box){
    return cv;
  }
  function sleeve(c,start,grip,cloth,dark=false){
-   const elbow=[(start[0]+grip[0])*.5-.65,(start[1]+grip[1])*.5+1.1];
-   const cuff=[grip[0]+(elbow[0]-grip[0])*.26,grip[1]+(elbow[1]-grip[1])*.26];
-   band(c,start,elbow,dark?5:5.5,'#332a22');band(c,elbow,grip,dark?4.5:5,'#332a22');
-   band(c,start,elbow,dark?4:4.5,shade(cloth,dark?-.23:0));
-   band(c,elbow,grip,dark?3.5:4,shade(cloth,dark?-.23:0));
-   band(c,[elbow[0]-.4,elbow[1]-.5],[cuff[0]-.4,cuff[1]-.5],1,shade(cloth,dark?-.08:.22));
-   band(c,cuff,grip,4,shade(cloth,dark?-.02:.3));
-   return elbow;
+   return fpaWorkSleeve(c,start,grip,cloth,dark).elbow;
  }
  function herbs(c,x,y,k=1){
    for(const [dx,h,col]of [[-2.1,5.5,'#668948'],[0,7,'#8ba05b'],[2,5,'#546c3b']]){

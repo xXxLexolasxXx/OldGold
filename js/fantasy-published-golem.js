@@ -5,6 +5,21 @@
  if(window.FantasyPublishedGolem||typeof drawGolemBody!=='function')return;
  const nativeBody=drawGolemBody,nativeBlob=gBlob,cache=new Map(),K=2;
  const A=window.FantasyPublishedGolem={nativeBody,nativeBlob,cache,version:1,draws:0};
+ const openingFrames=new Map();
+ const openingAtlas=new Image();
+ openingAtlas.src='assets/fantasy/golem-first-idle.png';
+ A.firstPose=(look,key)=>{
+  if(key!=='Sidle0'||!openingAtlas.complete||openingAtlas.naturalWidth!==8*GL_W||
+     openingAtlas.naturalHeight!==4*GL_H||!(/^[0-3][ad]$/).test(look))return null;
+  const cached=openingFrames.get(look);
+  if(cached)return cached;
+  const width=GL_W*2,height=GL_H*2;
+  const frame=mkCanvas(width,height),context=frame.getContext('2d');
+  context.imageSmoothingEnabled=false;
+  context.drawImage(openingAtlas,Number(look[0])*width,look[1]==='d'?height:0,width,height,0,0,width,height);
+  openingFrames.set(look,frame);
+  return frame;
+ };
  const STONE=['#302f29','#454d42','#5e6859','#7a8270','#979b83','#b6b69a','#d6cfb0','#ebe0bd'];
  const rgb=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16));
  const inside=(x,y,p)=>{let yes=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])yes=!yes;}return yes;};
@@ -14,7 +29,9 @@
   const rng=mulberry32(seed*7919+11),n=o.n||9,pts=[];
   // Native outline and deterministic stone spacing, with hand clustered bevels.
   for(let i=0;i<n;i++){const a=(i+(rng()-.5)*.5)/n*Math.PI*2,r=.84+rng()*.28;pts.push([Math.cos(a)*rx*r,Math.sin(a)*ry*r]);}
-  const pad=3,w=Math.ceil((rx*2.4+pad*2)*K),h=Math.ceil((ry*2.4+pad*2)*K),ox=w/2,oy=h/2,cv=mkCanvas(w,h),c=cv.getContext('2d'),im=c.createImageData(w,h),tone=o.tone||0;
+  // These tiles feed a CPU scratch canvas that is read by toPixelArt.
+  // Keep their raster on the CPU instead of forcing GPU readback per pose.
+  const pad=3,w=Math.ceil((rx*2.4+pad*2)*K),h=Math.ceil((ry*2.4+pad*2)*K),ox=w/2,oy=h/2,cv=mkCanvas(w,h),c=cv.getContext('2d',{willReadFrequently:true}),im=c.createImageData(w,h),tone=o.tone||0;
   for(let py=0;py<h;py++)for(let px=0;px<w;px++){
    const x=(px+.5-ox)/K,y=(py+.5-oy)/K;if(!inside(x,y,pts))continue;
    const edge=!inside(x-.6,y,pts)||!inside(x+.6,y,pts)||!inside(x,y-.6,pts)||!inside(x,y+.6,pts);

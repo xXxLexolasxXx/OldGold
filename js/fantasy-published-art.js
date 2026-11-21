@@ -292,14 +292,14 @@ personSprite = function (u, view, pose, frame, opt = {}) {
     }
     c.putImageData(data, 0, 0);
   }
-  if (u.carry)fpaCarryLoad(c,u,view,pose,opt);
+  if (u.carry)fpaCarryLoad(c,u,view,pose,opt,frame);
   if (pose === 'work'&&!opt.externalWorkTool) fpaDrawWorkTool(c,{...u,look:normalizedLook},view,frame,opt);
   if (pose === 'smoke') {
     fpaDrawSmokingHand(c,{...u,look:normalizedLook},view,frame);
   }
   fpaAction(c,u,view,pose,frame,opt);
   if (FA_RENDER_CACHE.size > 1600) FA_RENDER_CACHE.delete(FA_RENDER_CACHE.keys().next().value);
-  const out=mkCanvas(PW*2,PH*2),oc=out.getContext('2d');oc.imageSmoothingEnabled=false;oc.drawImage(cv,0,0,out.width,out.height);FA_RENDER_CACHE.set(key,out); u._spr=out;
+  const out=mkCanvas(PW*2,PH*2),oc=out.getContext('2d',{willReadFrequently:true});oc.imageSmoothingEnabled=false;oc.drawImage(cv,0,0,out.width,out.height);FA_RENDER_CACHE.set(key,out); u._spr=out;
   return out;
 };
 
@@ -382,7 +382,18 @@ function fpaDrawBackpack(c,u,view,n,foregroundOnly=false){
  c.fillStyle='#c4a165';c.fillRect(-1,-.5,2,1.5);c.fillStyle='#51432d';c.fillRect(-.5,0,1,.5);
  c.restore();c.restore();if(!back)straps();
 }
-function fpaCarryLoad(c,u,view,pose,opt){
+function fpaCarryLoad(c,u,view,pose,opt,frame){
+ c.save();
+ // Carry anchors belong to the body raster rather than the stationary foot.
+ // Both passes need the same transform so recoloring cannot duplicate a wrist.
+ if(pose==='idle'||pose==='walk'){
+   const [shear,dip]=fpaBodyMotion(view,pose,frame,opt);
+   c.translate(PFX,PFY);c.transform(1,0,shear,1,0,dip);c.translate(-PFX,-PFY);
+ }
+ fpaPaintCarryLoad(c,u,view,pose,opt);
+ c.restore();
+}
+function fpaPaintCarryLoad(c,u,view,pose,opt){
  const n=opt.carryN||u.carryN||1;
  const crop=fpaCropGrip(u,pose),box=fpaBoxGrip(u,pose),crate=u.carry==='crate',tray=fpaTrayGrip(u,pose);
  if(!fpaTrunkGrip(u,pose)&&!crop&&!box&&!tray){
@@ -422,10 +433,18 @@ function fpaCarryLoad(c,u,view,pose,opt){
  for(const {shoulder,grip,shade:shadow} of arms){
    const elbow=[shoulder[0]+Math.sign(grip[0])*1,shoulder[1]+2.5];
    const width=tray?3.5:crop||box?4.5:5.5;
-   fpaSowBand(c,shoulder,elbow,width,'#302923');
-   fpaSowBand(c,elbow,grip,width-1,'#302923');
-   fpaSowBand(c,shoulder,elbow,width-1,shade(coat,shadow));
-   fpaSowBand(c,elbow,grip,width-2,shade(coat,shadow+.12));
+   const outline='#302923',cloth=shade(coat,shadow);
+   const upper=[(shoulder[0]+elbow[0])/2,(shoulder[1]+elbow[1])/2];
+   const lower=[(elbow[0]+grip[0])/2,(elbow[1]+grip[1])/2];
+   const bridge=[(upper[0]+2*elbow[0]+lower[0])/4,(upper[1]+2*elbow[1]+lower[1])/4];
+   fpaSowBand(c,shoulder,upper,width,outline);
+   fpaSowBand(c,upper,bridge,width,outline);
+   fpaSowBand(c,bridge,lower,width-.5,outline);
+   fpaSowBand(c,lower,grip,width-1,outline);
+   fpaSowBand(c,shoulder,upper,width-1,cloth);
+   fpaSowBand(c,upper,bridge,width-1,cloth);
+   fpaSowBand(c,bridge,lower,width-1.5,shade(coat,shadow+.07));
+   fpaSowBand(c,lower,grip,width-2,shade(coat,shadow+.12));
  }
  c.save();
  c.translate(centerX,centerY);
@@ -456,6 +475,39 @@ function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
   const cloth=i=>{const a=[src[i],src[i+1],src[i+2]],v=Math.max(...a);if(v<65)return true;return seed.some(b=>{const z=Math.max(...b);return Math.abs(a[0]/v-b[0]/z)+Math.abs(a[1]/v-b[1]/z)+Math.abs(a[2]/v-b[2]/z)<.34;});};
   const queue=comp.pixels.slice(),seen=new Set(queue);for(let at=0;at<queue.length;at++){const q=queue[at],a=xy(q),i=q*4;if(!src[i+3])continue;mask[q]=1;const x=q%w,y=Math.floor(q/w);for(const r of [x?q-1:-1,x<w-1?q+1:-1,y?q-w:-1,y<h-1?q+w:-1]){if(r<0||seen.has(r)||!roi(r))continue;const b=xy(r),j=r*4;if(Math.abs(b[0]-comp.x)>3.2||b[1]<comp.y0-5||b[1]>comp.y1+1||src[j+3]<160||(!skin(j)&&!cloth(j)))continue;seen.add(r);queue.push(r);}}
  }
+ // The active profile always uses the first body cell. Its near hand is
+ // partly inside the outboard skin scan, leaving a second arm under a tool.
+ const apronGlove=new Set();
+ if(pose==='work'&&u.type!=='kid'&&(view==='E'||view==='W')){
+   const female=personSex(u)==='f'||OUTFIT[u.type]?.fem;
+   const left=PFX+(female?-3.1:-7.6),right=PFX+(female?2.65:-.85);
+   const top=female?21.5:22.3,bottom=female?27:27.5;
+   for(let py=Math.max(0,Math.floor((top+dip)*k));py<Math.min(h,Math.ceil((bottom+dip)*k));py++){
+     const drift=shear*((py+.5)/k-dip-PFY);
+     const low=Math.max(0,Math.floor((left+drift)*k));
+     const high=Math.min(w,Math.ceil((right+drift)*k));
+     for(let px=low;px<high;px++){
+       const p=py*w+px,[x,y]=xy(p),j=p*4,[r,g,b,a]=src.subarray(j,j+4);
+       if(a<160||x<left||x>right||y<top||y>bottom)continue;
+       const oldHand=female?g>=150&&g>=r*1.06&&g>=b*1.45:r>=133&&g>=73&&r>=g*1.15&&g>=b*1.17;
+       if(oldHand){apronGlove.add(p);mask[p]=1;}
+     }
+   }
+ }
+ for(const p of apronGlove){
+   const y=Math.floor(p/w),x=p%w,j=p*4;
+   // Recover the coat or apron at the same height from its adjacent edge.
+   // The new sleeve and cuff are painted later at the native grip.
+   let sample=-1;
+   for(let dx=1;dx<=Math.ceil(5*k)&&x+dx<w;dx++){
+     const q=y*w+x+dx,i=q*4;
+     if(!mask[q]&&src[i+3]>=180&&!skin(i)){sample=i;break;}
+   }
+   if(sample<0)continue;
+   src.copyWithin(j,sample,sample+4);
+   d.set(src.subarray(j,j+4),j);
+   mask[p]=0;
+ }
  let removed=0,filled=0;for(let p=0;p<mask.length;p++)if(mask[p]){const[x,y]=xy(p),i=p*4;if(Math.abs(x-PFX)<=6.2){const step=x<PFX?1:-1;let q=p,didFill=false;while(q>=Math.floor(p/w)*w&&q<(Math.floor(p/w)+1)*w&&Math.abs((q%w+.5)/k-PFX)>1){q+=step;const j=q*4;if(!mask[q]&&src[j+3]>=180&&!skin(j)){d[i]=src[j];d[i+1]=src[j+1];d[i+2]=src[j+2];d[i+3]=src[j+3];filled++;didFill=true;break;}}if(!didFill){d[i+3]=0;removed++;}}else{d[i+3]=0;removed++;}}
  c.putImageData(im,0,0);const result={removed,filled,components:chosen.length,mask,width:w,height:h};FantasyPublishedArt.lastArmCleanup={pose,view,removed,filled,components:chosen.length};return result;
 }
@@ -463,15 +515,26 @@ function fpaCleanAtlasArms(cv,u,view,pose,frame,opt={},geometry={}){
 // W is E geometry; native callers mirror the complete actor once at draw time.
 // The ordinary tool rig shares the accepted fist size and sleeve volume with
 // the contact-driven field and building poses. Grip coordinates stay native.
-function fpaWorkSleeve(c,start,grip,cloth,far=false){
- const elbow=[(start[0]+grip[0])*.5-1,(start[1]+grip[1])*.5+1.4];
- const cuff=[grip[0]+(elbow[0]-grip[0])*.25,grip[1]+(elbow[1]-grip[1])*.25];
- fpaSowBand(c,start,elbow,far?5:5.5,'#32271e');
- fpaSowBand(c,elbow,grip,far?4.5:5,'#32271e');
- fpaSowBand(c,start,elbow,far?4:4.5,shade(cloth,far?-.23:0));
- fpaSowBand(c,elbow,grip,far?3.5:4,shade(cloth,far?-.23:0));
- fpaSowBand(c,[elbow[0]-.5,elbow[1]-.5],[cuff[0]-.5,cuff[1]-.5],1,shade(cloth,far?-.05:.2));
- fpaSowBand(c,cuff,grip,4,shade(cloth,far?-.08:.28));
+function fpaWorkSleeve(c,start,grip,cloth,far=false,widthScale=1){
+ const dx=grip[0]-start[0],dy=grip[1]-start[1],reach=Math.hypot(dx,dy);
+ const unit=(x,y)=>{const length=Math.hypot(x,y);return length>1e-4?[x/length,y/length]:[0,1];};
+ const axis=unit(dx,dy),bend=Math.min(1.4*widthScale,reach*.21);
+ const elbow=[start[0]+dx*.52-axis[1]*bend,start[1]+dy*.52+axis[0]*bend];
+ const root=[start[0]-axis[0]*.45*widthScale,start[1]-axis[1]*.45*widthScale];
+ const upper=unit(elbow[0]-root[0],elbow[1]-root[1]);
+ const lower=unit(grip[0]-elbow[0],grip[1]-elbow[1]);
+ const middle=unit(upper[0]+lower[0],upper[1]+lower[1]);
+ const cuff=[grip[0]-lower[0]*Math.min(1.35*widthScale,reach*.3),grip[1]-lower[1]*Math.min(1.35*widthScale,reach*.3)];
+ const cross=(p,t,n)=>[p[0]-t[1]*n*widthScale,p[1]+t[0]*n*widthScale];
+ const edge=(widths,light=false)=>{
+   const points=[cross(root,upper,widths[0]),cross(elbow,middle,widths[1]),cross(grip,lower,widths[2])];
+   const sign=light?.24:-1;
+   return [...points,cross(grip,lower,widths[2]*sign),cross(elbow,middle,widths[1]*sign),cross(root,upper,widths[0]*sign)];
+ };
+ fpaSowPolygon(c,edge(far?[2.5,2.25,1.9]:[2.85,2.55,2.1]),'#32271e');
+ fpaSowPolygon(c,edge(far?[2,1.75,1.45]:[2.35,2.05,1.65]),shade(cloth,far?-.25:-.03));
+ fpaSowPolygon(c,edge(far?[1.65,1.4,1.1]:[1.9,1.65,1.25],true),shade(cloth,far?-.06:.16));
+ fpaSowPolygon(c,[cross(cuff,lower,1.65),cross(grip,lower,1.5),cross(grip,lower,-1.5),cross(cuff,lower,-1.65)],shade(cloth,far?-.07:.19));
  return {elbow,cuff};
 }
 const FPA_WORK_TOOLS=new Set(['axe','pick','hammer','sickle','spade','hook','toss','pat','bucket']);
@@ -1269,6 +1332,60 @@ function fpaPaintSmokingGrip(c,u,{hand,shoulder}){
  const skin=SKINS[lookOf({...u,look}).skin%SKINS.length];
  fpaPoseHand(c,hand,Math.atan2(hand[0]-shoulder[0],hand[1]-shoulder[1]),skin);
 }
+function guildBehindTorso(c,project,outline,draw) {
+  c.save();
+  c.beginPath();
+  c.rect(-80,-100,160,200);
+  for(const [index,point] of outline.entries()){
+    const xy=project(...point);
+    if(index===0)c.moveTo(...xy);
+    else c.lineTo(...xy);
+  }
+  c.closePath();
+  c.clip('evenodd');
+  draw();
+  c.restore();
+}
+
+function portraitCombat(c,u,view,ff,style,W,sh,skin,coat,project) {
+  const front=view==='S',side=front?-1:1;
+  const [a,tilt,reach=4.2]=(FIGHT_ARM[style]||FIGHT_ARM.fist)[ff];
+  const phase=fightKey(ff),fx=Math.sin(a),fy=Math.cos(a);
+  const staff=style==='staff',heavy=style==='heavy',bow=style==='bow';
+  const double=(heavy||staff)&&ff!=='draw'&&ff!=='d0'&&ff!=='s5'&&
+    !(staff&&(phase==='win0'||phase==='win1'||isCastF(ff)));
+  const sweep=Math.sin(tilt);
+  const direction=[side*(sweep*.55+.12),-Math.cos(tilt)*.88+(front?.34:-.34)*Math.max(0,sweep)];
+  const main=[side*((double?3.5:5.1)-1.4*Math.max(0,fx)-1.05*Math.min(0,fx)),
+    sh+.4-fy*reach*.86];
+  const brace=(W.o==='wshield'?FIGHT_BACK.shield:FIGHT_BACK.free)[ff]||FIGHT_BACK.free.ready;
+  const release=bow&&FIGHT_BACK.bow[phase];
+  const far=double?[main[0]-direction[0]*2.4,main[1]-direction[1]*2.4]:
+    release?[side*1.25,sh+.4+release[1]]:[-side*(3.25+brace[0]*.37),sh+.4+brace[1]*.83];
+  const shadowArm=(s,hand,shadow)=>{
+    fpaPoseArm(c,project(s*4.2,-15),hand,coat,shadow,1,-s);
+  };
+  const shoulder=s=>fpaPoseShoulder(c,u,(x,y)=>project(s*(3.7+x),-15+y));
+  const fist=(hand,dx,dy,shadow)=>fpaPoseHand(c,hand,Math.atan2(dx,dy),skin,shadow);
+  const drawGrip=()=>{
+    shadowArm(-side,far,true);
+    if(W.o&&W.o!=='wshield')drawWeapon(c,W.o,far[0],far[1],-side*.54,.76);
+    fist(far,direction[0],direction[1],true);
+    if(W.o==='wshield')drawShield(c,far[0]-side*.5,far[1]-.7,2.4,3.8);
+    shadowArm(side,main,!front);
+    if(bow)drawBow(c,W.m,main[0],main[1],tilt*.62,phase==='windup'?far:null);
+    else if(style!=='fist')drawWeapon(c,W.m,...main,...direction,
+      (ff==='draw'||ff==='d0'||ff==='s5')&&(style==='blade'||style==='stab')?'hilt':undefined);
+    fist(main,direction[0],direction[1],!front);
+    if(style==='fist'&&BOTTLE_POSE[ff])drawBottle(c,...main,...BOTTLE_POSE[ff]);
+  };
+  if(front)drawGrip();
+  else guildBehindTorso(c,project,[[-4.8,-19.5],[4.8,-19.5],[5,-15.5],
+    [4.1,-11],[-4.1,-11],[-5,-15.5]],drawGrip);
+  shoulder(-side);
+  shoulder(side);
+}
+
 // Weapon-only native pose projection. The atlas body and all hitboxes stay fixed.
 function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
  const W=opt.wpn?wpnParse(opt.wpn):pose==='fight'?{m:'fists',o:'',out:true}:null;if(!W)return;
@@ -1277,6 +1394,18 @@ function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
  let lean=fight?FIGHT_BODY[fight][0]:pose==='walk'?(u.carry?.16:.05):pose==='work'&&(frame.anim==='reap'||frame.anim==='dig')?.28:pose==='work'&&frame.anim==='pat'?.42:0;
  if(pose==='walk'&&opt.gait==='tired')lean+=.16;if(pose==='walk'&&opt.gait==='drunk')lean+=Math.cos(ph)*.1;
  const amp=opt.gait==='drunk'?.3:opt.gait==='tired'?.07:.15,roll=pose==='walk'?sw*amp*(v==='E'?.35:1)+(opt.gait==='drunk'?Math.cos(ph)*.08:0):0,sway=pose==='walk'?sw*(v==='E'?.25:.8):0,bob=pose==='walk'?-Math.abs(Math.cos(ph))*(injLeg(u.injury)?1.2:opt.gait==='tired'?.3:.7)+.3:0,armed=!u.carry&&(fight||(W.out&&(pose==='walk'||pose==='idle')));
+ const guild = dwarfGuildWear(u);
+ const [bodyShear,bodyDip] = fpaBodyMotion(v,pose,frame,opt);
+ // Convert the atlas shoulder into weapon-rig coordinates. Grips and tool
+ // poses still use the authored weapon trajectory.
+ function shoulderOnCoat(x,y){
+  const tx=x+y*bodyShear-sway,ty=y+bodyDip-bob;
+  const rx=Math.cos(roll)*tx+Math.sin(roll)*ty;
+  const ry=Math.cos(roll)*ty-Math.sin(roll)*tx;
+  if(v!=='E')return [rx,ry-lean*2.4];
+  return [Math.cos(lean)*rx+Math.sin(lean)*(ry-hip),
+    hip+Math.cos(lean)*(ry-hip)-Math.sin(lean)*rx];
+ }
  c.save();c.translate(PFX+sway,PFY+bob);c.rotate(roll);
  if(v==='E'){
   c.translate(0,hip);c.rotate(lean);c.translate(0,-hip);
@@ -1284,13 +1413,23 @@ function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
   const f=(FIGHT_ARM[style]||FIGHT_ARM.fist)[ff]||(FIGHT_ARM[style]||FIGHT_ARM.fist).ready,[a,tilt,reach=4.2]=f,wk=!fight&&pose==='walk'&&(style==='blade'||style==='stab')?sw:0;
   const hx=.4+Math.sin(a)*reach+wk*.3,hy=sh+.4-Math.cos(a)*reach+wk*.5,dx=Math.sin(tilt+wk*.16),dy=-Math.cos(tilt+wk*.16),fk=fightKey(ff),two=(style==='heavy'||style==='staff')&&ff!=='draw'&&ff!=='d0'&&ff!=='s5'&&!(style==='staff'&&(fk==='win0'||fk==='win1'||isCastF(ff)));
   let bx,by;if(two){bx=hx-dx*2.4;by=hy-dy*2.4;}else if(style==='bow'){const q=FIGHT_BACK.bow[fk];if(q){bx=-.4+q[0];by=sh+.4+q[1];}else{bx=hx-.9;by=hy+.3;}}else{const q=(W.o==='wshield'?FIGHT_BACK.shield:FIGHT_BACK.free)[ff]||FIGHT_BACK.free.ready;bx=-.4+q[0];by=sh+.4+q[1];}
-  fpaPoseArm(c,[1.5,sh-2.8],[bx,by],coat,true);
-  fpaPoseHand(c,[bx,by],Math.atan2(dx,dy),skin,true);
+  if(guild){
+   const exposedGrip=Boolean(W.o||two||style==='bow');
+   guildBehindTorso(c,shoulderOnCoat,[[-3.4,-20.4],[2.25,-20.4],[3.55,-17.4],
+     [2.4,-11.7],[-2.8,-11.7]],()=>{
+       fpaPoseArm(c,shoulderOnCoat(1.5,-15),[bx,by],coat,true);
+       if(!exposedGrip)fpaPoseHand(c,[bx,by],Math.atan2(dx,dy),skin,true);
+   });
+   if(exposedGrip)fpaPoseHand(c,[bx,by],Math.atan2(dx,dy),skin,true);
+  }else{
+   fpaPoseArm(c,[1.5,sh-2.8],[bx,by],coat,true);
+   fpaPoseHand(c,[bx,by],Math.atan2(dx,dy),skin,true);
+  }
   if(W.o&&WPN_STYLE[W.o]==='stab'){const d=fk==='windup'||fk==='parry'?[.95,-.3]:[.85,.52];drawWeapon(c,W.o,bx,by,d[0],d[1]);}
   if(W.o==='wshield')drawShield(c,bx+.9,by-.6,1.7,3.9);
   if(style==='bow')drawBow(c,W.m,hx,hy,tilt,fk==='windup'?[bx,by]:null);else if(style!=='fist')drawWeapon(c,W.m,hx,hy,dx,dy,(ff==='draw'||ff==='d0'||ff==='s5')&&(style==='blade'||style==='stab')?'hilt':undefined);
-  fpaPoseArm(c,[-2.2,sh-2.8],[hx,hy],coat);
-  fpaPoseShoulder(c,u,(x,y)=>[-3.2-x,sh-3+y]);
+  fpaPoseArm(c,guild?shoulderOnCoat(-3.2,-15):[-2.2,sh-2.8],[hx,hy],coat);
+  fpaPoseShoulder(c,u,(x,y)=>guild?shoulderOnCoat(-3.2-x,-15+y):[-3.2-x,sh-3+y]);
   fpaPoseHand(c,[hx,hy],Math.atan2(dx,dy),skin);
   if(style==='fist'){
     if(fight&&BOTTLE_POSE[fight])drawBottle(c,hx,hy,BOTTLE_POSE[fight][0],BOTTLE_POSE[fight][1]);
@@ -1299,12 +1438,17 @@ function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
  }else{
   const front=v==='S';c.translate(0,lean*2.4);
   if(!armed){if(WPN_BACK[W.m])drawOnBack(c,W.m,front?3.6:-1.2,sh+2.6,v);if(!front&&W.o==='wshield')drawShield(c,0,sh+3.8,3.1,3.6);c.restore();return;}
+  if(guild&&fight){
+   portraitCombat(c,u,v,ff,style,W,sh,skin,coat,shoulderOnCoat);
+   c.restore();
+   return;
+  }
   for(const side of [-1,1]){const h=hip-.2,main=side===(front?-1:1),off=!main&&W.o;
    if(main&&style!=='fist'){const d=style==='heavy'?[side*.3,-.95]:style==='staff'?[side*.12,-.99]:style==='blade'?[side*.34,-.94]:[side*.42,.9];if(style==='bow')drawBow(c,W.m,side*5.1,h+.5,0,null);else drawWeapon(c,W.m,side*5.1,h+.5,d[0],d[1]);}
    if(off&&W.o!=='wshield')drawWeapon(c,W.o,side*5.1,h+.5,side*.4,.92);
    const dark=(side>0)===front;
-   fpaPoseArm(c,[side*4.2,sh-2.8],[side*5.1,h+.5],coat,dark,1,-side);
-   fpaPoseShoulder(c,u,(x,y)=>[side*(3.7+x),sh-3+y]);
+   fpaPoseArm(c,guild?shoulderOnCoat(side*4.2,-15):[side*4.2,sh-2.8],[side*5.1,h+.5],coat,dark,1,-side);
+   fpaPoseShoulder(c,u,(x,y)=>guild?shoulderOnCoat(side*(3.7+x),-15+y):[side*(3.7+x),sh-3+y]);
    fpaPoseHand(c,[side*5.1,h+.5],0,skin,dark);
    if(off==='wshield')drawShield(c,side*5.4,h-.4,front?2.6:2.2,3.2);
   }

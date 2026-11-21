@@ -27,7 +27,7 @@
     return v%3===2?['#44372c','#73604b','#a78f6b','#c8b38c','#e5d4aa']:['#3b352e','#6c6253','#a09277','#c1b290','#e4d3ab'];
   }
   function groupKey(g,level){return (typeof MapOpt==='undefined'?'meadow':MapOpt.biome)+':'+level+':'+g.members.map(m=>[m.x,m.y,m.size,m.v]).join('|');}
-  function paintGroup(g,level){
+  function* buildGroup(g,level){
     const key=groupKey(g,level);
     if(info.cache.has(key)){const hit=info.cache.get(key);info.cache.delete(key);info.cache.set(key,hit);return hit;}
     const bounds=g.members.map(box),x0=Math.min(...bounds.map(b=>b.x)),y0=Math.min(...bounds.map(b=>b.y)),x1=Math.max(...bounds.map(b=>b.x+b.w)),y1=Math.max(...bounds.map(b=>b.y+b.h));
@@ -78,6 +78,7 @@
         if(row%2===0){polygon(c,[[xx-rw*.55,yy-rh*.68],[xx-rw*.1,yy-rh*.93],[xx+rw*.3,yy-rh*.65],[xx,yy-rh*.55]],p[4]);}
       }
     }
+    yield;
     // Short fractured seams and stone facets, at the same fine detail scale as masonry.
     for(const [px,py]of peaks){
       const span=w/count;
@@ -93,6 +94,7 @@
         for(let j=0;j<4;j++){x+=Math.round((rng()-.45)*5);y+=3+Math.round(rng()*4);c.lineTo(x,y);}c.stroke();
       }
     }
+    yield;
     // Unified talus base ties peaks together without a row of identical pebbles.
     polygon(c,[...foot.map(([x,y],i)=>[x,y-7-(i%3)*2]),...foot.slice().reverse()],p[1]);
     for(let k=0;k<w/11;k++){
@@ -106,12 +108,19 @@
     }
     c.restore();
     c.strokeStyle=p[0];c.lineWidth=.6;c.beginPath();ridge.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke();
+    yield;
     // Keep binary half-world-pixel outlines, same 2x buffer convention as buildings.
     const im=c.getImageData(0,0,cv.width,cv.height),d=im.data;
-    for(let i=3;i<d.length;i+=4)d[i]=d[i]>=128?255:0;
+    const rowBytes=cv.width*4;
+    for(let row=0;row<cv.height;row+=24){
+      const end=Math.min(d.length,(row+24)*rowBytes);
+      for(let i=row*rowBytes+3;i<end;i+=4)d[i]=d[i]>=128?255:0;
+      yield;
+    }
     // Pigment lives in small connected pixel clusters, like the building masonry.
     // Low contrast follows the existing facet colour; it does not sprinkle bright noise.
-    for(let y=4;y<h-3;y+=3)for(let x=3;x<w-3;x+=4){
+    for(let y=4;y<h-3;y+=3){
+      for(let x=3;x<w-3;x+=4){
       if(rng()>.48)continue;
       const xx=x+(rng()*2|0),yy=y+(rng()*2|0),o=((yy*2)*cv.width+xx*2)*4;
       const lum=(d[o]+d[o+1]+d[o+2])/3;if(d[o+3]<255||lum<65||lum>205)continue;
@@ -122,26 +131,43 @@
         if(d[q+3]<255||Math.abs(d[q]-d[o])>22||Math.abs(d[q+1]-d[o+1])>22)continue;
         d[q]=Math.max(0,Math.min(255,d[q]+tint));d[q+1]=Math.max(0,Math.min(255,d[q+1]+tint));d[q+2]=Math.max(0,Math.min(255,d[q+2]+tint-1));
       }
+      }
+      if((y-4)%24===0)yield;
     }
     c.putImageData(im,0,0);
+    yield;
     const slices=new WeakMap();
     for(let i=0;i<g.members.length;i++){
       const m=g.members[i],b=bounds[i],left=i?Math.round((g.members[i-1].x+m.x)*.5):b.x,right=i+1<g.members.length?Math.round((m.x+g.members[i+1].x)*.5):b.x+b.w;
       const slice=document.createElement('canvas');slice.width=b.w*2;slice.height=b.h*2;const sc=slice.getContext('2d');sc.imageSmoothingEnabled=false;
       sc.save();sc.beginPath();sc.rect(Math.max(0,left-b.x)*2,0,Math.min(b.w,right-b.x)*2-Math.max(0,left-b.x)*2,b.h*2);sc.clip();sc.drawImage(cv,(x0-b.x)*2,(y0-b.y)*2);sc.restore();slices.set(m,{cv:slice,b});
+      yield;
     }
     const result={slices,members:g.members.length};info.cache.set(key,result);while(info.cache.size>128)info.cache.delete(info.cache.keys().next().value);return result;
   }
-  info.compose=members=>{const g={members:members.slice().sort((a,b)=>a.x-b.x)};return paintGroup(g,typeof mtCapLevel==='function'?mtCapLevel():0);};
+  info.compose=members=>{
+    const group={members:members.slice().sort((a,b)=>a.x-b.x)};
+    const steps=buildGroup(group,typeof mtCapLevel==='function'?mtCapLevel():0);
+    let result=steps.next();
+    while(!result.done)result=steps.next();
+    return result.value;
+  };
   const queue=new Map();
   let queued=false;
-  function warmGroups(){
+  function warmGroups(deadline){
     queued=false;
     const next=queue.entries().next();
     if(next.done)return;
     const [key,job]=next.value;
-    queue.delete(key);
-    if(job.source===MOUNTS)paintGroup(job.group,job.level);
+    if(job.source!==MOUNTS)queue.delete(key);
+    else {
+      const steps=job.steps??=buildGroup(job.group,job.level);
+      const end=performance.now()+4;
+      let result;
+      do result=steps.next();
+      while(!result.done&&performance.now()<end&&(!deadline||deadline.timeRemaining()>1));
+      if(result.done)queue.delete(key);
+    }
     if(queue.size)scheduleGroups();
   }
   function scheduleGroups(){

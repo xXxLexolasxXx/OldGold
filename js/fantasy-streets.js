@@ -7,7 +7,7 @@
  const hash2=(x,y,s=0)=>{let n=Math.imul(x|0,73856093)^Math.imul(y|0,19349663)^(Game.seed|0)^s;n=Math.imul(n^(n>>>16),0x45d9f3b);return(n^(n>>>16))>>>0;};
  const variant=(x,y)=>hash2(Math.floor(x/64),Math.floor(y/64),871)&7;
  const directions = [[1,0],[0,1],[-1,0],[0,-1]];
- const turnTrim = 9, shortcutRadius = 4.5;
+ const turnTrim = 12;
  function roadTurn(x,y) {
   const neighbors = directions.filter(([dx,dy])=>isRoadAt(x+dx,y+dy));
   if (neighbors.length !== 2) return null;
@@ -43,10 +43,8 @@
     if(!isRoadAt(xx+dx,yy+dy))continue;
     if(dx&&dy){
      const a=Boolean(isRoadAt(xx+dx,yy)), b=Boolean(isRoadAt(xx,yy+dy));
-     if(a&&b)continue;
-     // A courier can walk the diagonal when exactly one side is paved.
-     // Keep the shortcut narrow, without filling the enclosed triangle.
-     add(px,py,dx*TILE,dy*TILE,a||b?shortcutRadius:RADIUS);
+     if(a||b)continue;
+     add(px,py,dx*TILE,dy*TILE);
     }else{
      const start=corner?turnTrim:0,end=turn(xx+dx,yy+dy)?turnTrim:0;
      add(px+dx*start,py+dy*start,dx*(TILE-start-end),dy*(TILE-start-end));
@@ -57,29 +55,13 @@
  }
  function distance2(px,py,{segments,fills}){
   for(const [x,y] of fills)if(px>=x&&px<=x+TILE&&py>=y&&py<=y+TILE)return 0;
-  let best=Infinity,shortcut=Infinity;
-  for(const [x,y,dx,dy,length,radius] of segments){
+  let best=Infinity;
+  for(const [x,y,dx,dy,length] of segments){
    const t=length?Math.max(0,Math.min(1,((px-x)*dx+(py-y)*dy)/length)):0;
    const X=px-x-t*dx,Y=py-y-t*dy;
-   const d2=X*X+Y*Y;
-   if(radius===RADIUS){best=Math.min(best,d2);continue;}
-   shortcut=Math.min(shortcut,d2);
+   best=Math.min(best,X*X+Y*Y);
   }
-  if(best<=RADIUS**2)return best;
-  // Distinguish the worn shortcut from the wider stone surface.
-  if(shortcut<=(shortcutRadius+EDGE)**2)return -(shortcut+1);
   return best;
- }
- function trailTexture(wx,wy,distance){
-  const h=hash2(Math.floor(wx/3),Math.floor(wy/3),197);
-  const tone=h%4;
-  const edge=shortcutRadius-.75+(h%5)*.25;
-  if(distance>edge){
-   if(distance>shortcutRadius+.35&&h%4!==0)return null;
-   return [72+tone,99+tone,60+tone,48+tone*6];
-  }
-  if(h%13===0)return [103,104,72,145];
-  return [87+tone*2,101+tone,64+tone,82+tone*10];
  }
  roadShape=function(c,x,y,px,py,grow){
   const {segments,fills}=graph(x,y),ox=px-x*TILE,oy=py-y*TILE;
@@ -111,14 +93,6 @@
  function pair(x,y,forced){let neighbors='';for(let yy=y-2;yy<=y+2;yy++)for(let xx=x-2;xx<=x+2;xx++)neighbors+=isRoadAt(xx,yy)?'1':'0';const key=[Game.seed,x,y,neighbors,forced??'world'].join(':');if(cache.has(key))return cache.get(key);const geometry=graph(x,y),fine=[mkCanvas(S*2,S*2),mkCanvas(S*2,S*2)],ox=x*TILE-ROAD_M,oy=y*TILE-ROAD_M;
   const contexts=fine.map(cv=>cv.getContext('2d')),images=contexts.map(c=>c.createImageData(S*2,S*2));
   for(let py=0;py<S*2;py++)for(let px=0;px<S*2;px++){const wx=ox+(px+.5)/2,wy=oy+(py+.5)/2,d2=distance2(wx,wy,geometry);if(d2>(RADIUS+EDGE)**2)continue;const o=(py*S*2+px)*4;
-   if(d2<0){
-    const rgb=trailTexture(wx,wy,Math.sqrt(-d2-1));
-    if(rgb){
-     for(let k=0;k<3;k++)images[0].data[o+k]=rgb[k];
-     images[0].data[o+3]=rgb[3];
-    }
-    continue;
-   }
    const d=Math.sqrt(d2);let rgb;if(d2<=RADIUS*RADIUS){rgb=texture(wx,wy,d,forced);for(let k=0;k<3;k++)images[1].data[o+k]=rgb[k];images[1].data[o+3]=255;}else{const h=hash2(Math.floor(wx/5),Math.floor(wy/5),61);rgb=h%5===0?[82,94,59]:[89,84,63];for(let k=0;k<3;k++)images[0].data[o+k]=rgb[k];images[0].data[o+3]=255;}}
   const output=fine.map((cv,i)=>{contexts[i].putImageData(images[i],0,0);const out=mkCanvas(S,S),c=out.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(cv,0,0,S,S);return out;});cache.set(key,output);if(cache.size>384)cache.delete(cache.keys().next().value);return output;
  }
@@ -126,6 +100,55 @@
  // Keep native dirty regions/rver/lazy state; replace only its dithered paint.
  drawRoadTile=function(x,y){const result=native.tile(x,y);if(!TERR.ready||(!World.road[idx(x,y)]&&!diagBands(x,y).length&&!roadChamfers(x,y).length))return result;const bi=Math.floor(y/TBAND),b=TERR.rb[bi];if(!b)return result;const c=b.cv.getContext('2d'),px=x*TILE,py=y*TILE-b.y0;c.save();c.beginPath();c.rect(px,py,TILE,TILE);c.clip();c.clearRect(px,py,TILE,TILE);const p=pair(x,y);c.imageSmoothingEnabled=false;c.drawImage(p[0],px-ROAD_M,py-ROAD_M);c.drawImage(p[1],px-ROAD_M,py-ROAD_M);c.restore();return result;};
  api.sample=(x,y,v)=>pair(x,y,v);api.clear=()=>cache.clear();
+ // Pixel grid, seed material and edge colors are shared with the main road.
+ api.paintApproach = function (points, obstacles) {
+  const widthRadius = RADIUS + EDGE;
+  const x = Math.floor(Math.min(...points.map(point => point[0])) - widthRadius);
+  const y = Math.floor(Math.min(...points.map(point => point[1])) - widthRadius);
+  const width = Math.ceil(Math.max(...points.map(point => point[0])) + widthRadius) - x;
+  const height = Math.ceil(Math.max(...points.map(point => point[1])) + widthRadius) - y;
+  const canvas = mkCanvas(width * 2, height * 2);
+  const context = canvas.getContext('2d');
+  const image = context.createImageData(canvas.width, canvas.height);
+  const bezier = (a, b, c, t) => (1-t)**2 * a + 2*(1-t)*t*b + t*t*c;
+  const around = ([wx, wy], radius) => obstacles.some(([left, top, right, bottom]) => {
+   const dx = Math.max(left - wx, 0, wx - right);
+   const dy = Math.max(top - wy, 0, wy - bottom);
+   return dx*dx + dy*dy < radius*radius;
+  });
+  const route = [points[0]];
+  for (let i = 1; i < points.length - 1; i++) {
+   const prev = points[i - 1], corner = points[i], next = points[i + 1];
+   const inLength = Math.hypot(prev[0]-corner[0], prev[1]-corner[1]);
+   const outLength = Math.hypot(next[0]-corner[0], next[1]-corner[1]);
+   if (!inLength || !outLength) continue;
+   const trim = Math.min(9, inLength * .43, outLength * .43);
+   const a = corner.map((value, j) => value + (prev[j] - value) * trim / inLength);
+   const c = corner.map((value, j) => value + (next[j] - value) * trim / outLength);
+   const samples = Math.ceil(trim * 4);
+   const curve = Array.from({length:samples+1}, (_, s) => corner.map((value,j) => bezier(a[j],value,c[j],s/samples)));
+   if (curve.some(point => around(point, widthRadius+.5))) route.push(corner);
+   else route.push(...curve);
+  }
+  route.push(points.at(-1));
+  const segments = route.slice(1).map(([bx, by], index) => {
+   const [ax, ay] = route[index], dx = bx-ax, dy = by-ay;
+   return [ax, ay, dx, dy, dx*dx+dy*dy, RADIUS];
+  });
+  for (let row = 0; row < canvas.height; row++) for (let col = 0; col < canvas.width; col++) {
+   const wx = x + (col + .5) / 2, wy = y + (row + .5) / 2;
+   const distance = distance2(wx, wy, {segments, fills:[]});
+   if (distance > widthRadius**2) continue;
+   const color = distance <= RADIUS**2 ? texture(wx,wy,Math.sqrt(distance))
+     : hash2(Math.floor(wx/5),Math.floor(wy/5),61)%5===0 ? [82,94,59] : [89,84,63];
+   const at = (row * canvas.width + col) * 4;
+   image.data.set(color, at);
+   image.data[at+3] = 255;
+  }
+  context.putImageData(image, 0, 0);
+  return { canvas, x, y, width, height };
+ };
+
 })();
 
 function faStoneFoot(c, x, y, w = 8) {

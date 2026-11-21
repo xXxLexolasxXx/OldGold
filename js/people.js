@@ -1675,26 +1675,41 @@ function heavySpent(t0) { const t = performance.now(); HEAVY_NEXT = t + (t - t0)
 // сброса нарисованного на главном холсте: 50–100 мс вместо 1–2 (замер 27.10, сейв 261023-2109-e00a: при отдалении
 // в кадре много новых поз — сборки съедали больше половины времени, 5 к/с).
 const SPR_QUEUE = new Map(), SPR_QUEUE_MAX = 256, SPR_QUEUE_MS = 8;
+let spriteAsyncKey = null;
 function spriteDefer(key, build) {
   if (!R.inFrame) return false;
-  if (!SPR_QUEUE.has(key)) {
-    if (SPR_QUEUE.size >= SPR_QUEUE_MAX) SPR_QUEUE.delete(SPR_QUEUE.keys().next().value);
+  if (key !== spriteAsyncKey && !SPR_QUEUE.has(key)) {
+    if (SPR_QUEUE.size >= SPR_QUEUE_MAX - (spriteAsyncKey === null ? 0 : 1)) SPR_QUEUE.delete(SPR_QUEUE.keys().next().value);
     SPR_QUEUE.set(key, build);
   }
   return true;
 }
 // render() зовёт в самом начале кадра: очередь по бюджету времени, недостроенное — в следующий раз
 let spriteIdleScheduled = false;
+function spriteQueueBuild(key, build) {
+  SPR_QUEUE.delete(key);
+  try {
+    const result = build();
+    if (!result || typeof result.then !== 'function') return true;
+    spriteAsyncKey = key;
+    Promise.resolve(result).catch(error => console.warn('spriteQueue', error)).finally(() => {
+      spriteAsyncKey = null;
+      if (SPR_QUEUE.size && R.cam.z <= 1) scheduleSpriteQueueIdle();
+    });
+    return false;
+  } catch (error) {
+    console.warn('spriteQueue', error);
+    return true;
+  }
+}
 function spriteQueueIdle() {
   spriteIdleScheduled = false;
-  if (!SPR_QUEUE.size || R.cam.z > 1) return;
+  if (!SPR_QUEUE.size || spriteAsyncKey !== null || R.cam.z > 1) return;
   const [key, build] = SPR_QUEUE.entries().next().value;
-  SPR_QUEUE.delete(key);
-  try { build(); } catch (e) { console.warn('spriteQueue', e); }
-  if (SPR_QUEUE.size) scheduleSpriteQueueIdle();
+  if (spriteQueueBuild(key, build) && SPR_QUEUE.size) scheduleSpriteQueueIdle();
 }
 function scheduleSpriteQueueIdle() {
-  if (spriteIdleScheduled) return;
+  if (spriteIdleScheduled || spriteAsyncKey !== null) return;
   spriteIdleScheduled = true;
   setTimeout(() => {
     if (typeof requestIdleCallback === 'function') requestIdleCallback(spriteQueueIdle, { timeout: 100 });
@@ -1703,13 +1718,12 @@ function scheduleSpriteQueueIdle() {
 }
 function spriteQueueRun() {
   R.inFrame = false;
-  if (!SPR_QUEUE.size) return;
+  if (!SPR_QUEUE.size || spriteAsyncKey !== null) return;
   if (R.cam.z <= 1) { scheduleSpriteQueueIdle(); return; }
   const t0 = performance.now();
   let n = 0;
   for (const [key, build] of SPR_QUEUE) {
-    SPR_QUEUE.delete(key);
-    try { build(); } catch (e) { console.warn('spriteQueue', e); }
+    if (!spriteQueueBuild(key, build)) break;
     if (performance.now() - t0 > SPR_QUEUE_MS || (R.smooth && ++n >= 2)) break;   // отдалено: гномы мелкие — по 2 новых кадра
   }
   R.newSprites = 0;   // бюджет новых спрайтов в самом кадре — заново
