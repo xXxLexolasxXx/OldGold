@@ -12,11 +12,12 @@ const { createArena, leagueOf, eloDelta } = require('../server/arena.js');
 const fails = [];
 const ok = (c, m) => { if (!c) fails.push(m); };
 const DATA = fs.mkdtempSync(path.join(os.tmpdir(), 'og-arena-'));
-let dir = DATA;
+process.on('exit', () => fs.rmSync(DATA, { recursive: true, force: true }));
+let dir;
 
 let clock = 1e9;
 const mk = same => {
-  if (!same) dir = fs.mkdtempSync(path.join(os.tmpdir(), 'og-arena-'));
+  if (!same) dir = fs.mkdtempSync(path.join(DATA, 'run-'));
   const kinds = {}, rooms = createRooms({ kinds, now: () => clock, grace: 60000, maxRooms: 10, log: (...a) => { if (process.env.ARDBG) console.log(...a); } });
   const arena = createArena({ DATA: dir, rooms, now: () => clock, saveEvery: 1e9, log: (...a) => { if (process.env.ARDBG) console.log(...a); } });
   kinds.arena = arena.kind;
@@ -246,7 +247,6 @@ const msgIn = (k, i) => { const w = ((k * 7 + i * 13) % 40); return { t: 'arena'
   env2.arena.stop();
 }
 
-fs.rmSync(DATA, { recursive: true, force: true });
 if (fails.length) { console.log('arena-net-test: ПРОВАЛ\n  ' + fails.join('\n  ')); process.exit(1); }
 console.log('arena-net-test: ок');
 process.exit(0);

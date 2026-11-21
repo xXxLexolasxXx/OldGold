@@ -333,7 +333,7 @@ function dropPile(x, y, g, n) {
   let p = Game.piles.get(i);
   if (!p || p.removed) { p = new Pile(x, y); Game.piles.set(i, p); }
   p.stock[g] += n;
-  if (GOODS[g].noStore && !p.ageAt[g]) p.ageAt[g] = Game.time;
+  if (GOODS[g].noStore && p.ageAt[g] === undefined) p.ageAt[g] = Game.time;
   return p;
 }
 

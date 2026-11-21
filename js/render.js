@@ -694,28 +694,40 @@ function onScreen(px, py, m = 64) {
 // сглаживание 'high' заново уменьшает огромный холст на каждом кадре, и на отдалении 40 зданий съедали треть кадра
 // (замер 27.10, сейв 261023-2109-e00a). Копия считается тем же фильтром один раз — на экране то же самое.
 // Спрайты зданий после сборки не меняются (как и для COLD_FX_CACHE), поэтому ключ — сам холст.
-const HQ_CACHE = new WeakMap();
+const HQ_CACHE = new WeakMap(), HQ_HALF_CACHE = new WeakMap();
 // Повторно используем копии при небольших изменениях масштаба камеры.
 function farRasterScale(k) { return Math.max(0.25, Math.round(k * 4) / 4); }
-function blitHQ(c, src, x, y, w, h) {
-  const scale = devScale();
-  if (scale > 1 || !src || !src.width) { if (src) c.drawImage(src, x, y, w, h); return; }
-  const k = farRasterScale(scale);
+function buildingRaster(src, w, h, k) {
   const W = Math.max(1, Math.round(w * k)), H = Math.max(1, Math.round(h * k));
-  let e = HQ_CACHE.get(src);
+  const cache = k <= .5 ? HQ_HALF_CACHE : HQ_CACHE;
+  let e = cache.get(src);
   if (!e || e.cv.width !== W || e.cv.height !== H) {
     const cv = e ? e.cv : mkCanvas(W, H);
     cv.width = W; cv.height = H;
     const g = cv.getContext('2d');
     g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
     g.drawImage(src, 0, 0, W, H);
-    HQ_CACHE.set(src, e = { cv });
+    cache.set(src, e = { cv });
   }
+  return e.cv;
+}
+// All ordinary scene draws share the world transform, rounded to the nearest
+// device pixel. Keep two world pixels on each edge for filtering and rounding.
+function outsideWorldView(left, top, right, bottom) {
+  const z = devScale(), pad = 2/z;
+  return right < R.cam.x-pad || bottom < R.cam.y-pad ||
+    left > R.cam.x+R.canvas.width/z+pad || top > R.cam.y+R.canvas.height/z+pad;
+}
+function blitHQ(c, src, x, y, w, h) {
+  const scale = devScale();
+  if (scale > 1 || !src || !src.width) { if (src) c.drawImage(src, x, y, w, h); return; }
+  const k = farRasterScale(scale);
+  const raster = buildingRaster(src,w,h,k);
   const sm = c.imageSmoothingEnabled;
   const quality = c.imageSmoothingQuality;
   c.imageSmoothingEnabled = k !== scale;
   c.imageSmoothingQuality = 'low';
-  c.drawImage(e.cv, x, y, w, h);
+  c.drawImage(raster, x, y, w, h);
   c.imageSmoothingEnabled = sm;
   c.imageSmoothingQuality = quality;
 }
@@ -736,8 +748,10 @@ function drawBuilding(c, b, ghost) {
     return;
   }
   if (b._gnd) b._gnd = null;     // достроено — холст земли больше не нужен
-  blitHQ(c, spr.shadow, ox, oy, spr.w, spr.h);
-  blitHQ(c, spr.canvas, ox, oy, spr.w, spr.h);
+  if (ghost || c !== R.ctx || !R.inFrame || !outsideWorldView(ox,oy,ox+spr.w,oy+spr.h)) {
+    blitHQ(c, spr.shadow, ox, oy, spr.w, spr.h);
+    blitHQ(c, spr.canvas, ox, oy, spr.w, spr.h);
+  }
   if (eraFx) eraDrawFx(c, b, spr, ox, oy);
   if (!ghost && b.upg) drawUpgradeLayer(c, b);
   if (!ghost && b.dmg > 0) drawDamage(c, b, ox, oy, spr);
@@ -1131,19 +1145,41 @@ function drawWaterSparkles(c, x0, y0, x1, y1) {
   }
 }
 
+function cloudGradient(c, radius) {
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, radius);
+  g.addColorStop(0, 'rgba(20,30,50,0.16)');
+  g.addColorStop(0.6, 'rgba(20,30,50,0.08)');
+  g.addColorStop(1, 'rgba(20,30,50,0)');
+  c.fillStyle = g;
+  c.fillRect(-radius, -radius, radius*2, radius*2);
+}
+
+let overviewCloud;
 function drawClouds(c) {
-  const W = MAP_W * TILE;
+  const W = MAP_W * TILE, z = devScale(), cam = R.cam;
+  const right = cam.x + R.canvas.width / z, bottom = cam.y + R.canvas.height / z;
   for (const cl of R.clouds) {
     const x = ((cl.x + Game.time * cl.v) % (W + 800)) - 400, y = cl.y;
+    if (x + cl.rx < cam.x - 2 || x - cl.rx > right + 2 ||
+        y + cl.ry < cam.y - 2 || y - cl.ry > bottom + 2) continue;
     c.save();
-    c.translate(x, y);
-    c.scale(1, cl.ry / cl.rx);
-    const g = c.createRadialGradient(0, 0, 0, 0, 0, cl.rx);
-    g.addColorStop(0, 'rgba(20,30,50,0.16)');
-    g.addColorStop(0.6, 'rgba(20,30,50,0.08)');
-    g.addColorStop(1, 'rgba(20,30,50,0)');
-    c.fillStyle = g;
-    c.fillRect(-cl.rx, -cl.rx, cl.rx * 2, cl.rx * 2);
+    if (R.cam.z <= 1 || (typeof Fps !== 'undefined' && Fps.eco)) {
+      // At overview scale a transformed radial shader stalls the first GPU
+      // submission. These seven shadows share the same three colour stops.
+      if (!overviewCloud) {
+        overviewCloud = mkCanvas(512, 512);
+        const g = overviewCloud.getContext('2d', {willReadFrequently:true});
+        g.translate(256, 256);
+        cloudGradient(g, 256);
+      }
+      c.imageSmoothingEnabled = true;
+      c.imageSmoothingQuality = 'low';
+      c.drawImage(overviewCloud, x-cl.rx, y-cl.ry, cl.rx*2, cl.ry*2);
+    } else {
+      c.translate(x, y);
+      c.scale(1, cl.ry / cl.rx);
+      cloudGradient(c, cl.rx);
+    }
     c.restore();
   }
 }
@@ -1191,10 +1227,25 @@ function drawStatusIcons(c, x0, y0, x1, y1) {
 // (CW клеток в ширину) в разрешении экрана, а в кадре кусок — один блит на месте дерева ряда в порядке глубины:
 // гномы за деревьями остаются за ними. Кусок перерисовывается, когда в нём что-то поменялось (подпись по клеткам).
 // Только при devScale() <= 1 (на экране пиксель мира не крупнее физического) — вблизи объектов мало.
-const ROWC = { k: 0, trees: null, map: new Map(), frame: 0, px: 0 };
+const ROWC = { world: null, trees: null, map: new Map(), frame: 0, px: 0 };
 const ROWC_UP = 64, ROWC_DN = 40, ROWC_PAD = 40;   // запас холста над рядом (кроны), под ним (тени) и по бокам
 const ROWC_BUDGET_MS = 5, ROWC_MAX_PX = 16e6;        // перерисовка кусков за кадр; предел памяти кусков (~64 МБ, в экономном режиме ~24)
-function rowcFree() { for (const e of ROWC.map.values()) e.cv.width = e.cv.height = 0; ROWC.map.clear(); ROWC.px = 0; }
+let overviewRows = null, overviewRowIdle = false;
+function rowcFree() {
+  for (const e of ROWC.map.values()) e.cv.width = e.cv.height = 0;
+  ROWC.map.clear();
+  ROWC.px = 0;
+  overviewRows = null;
+}
+function rowcSyncWorld() {
+  if (ROWC.world === World.terrain && ROWC.trees === SPR.trees) return;
+  rowcFree();
+  ROWC.world = World.terrain;
+  ROWC.trees = SPR.trees;
+}
+function rowcKey(y, chunk, k) {
+  return (y * 4096 + chunk) * 4 + Math.round(k * 4);
+}
 function rowcMB() { return ROWC.px * 4 / 1048576; }
 // клетка рисуется куском: дерево и камень не проснулись, камень не вздрагивает от удара
 function rowcKind(o) {
@@ -1204,7 +1255,13 @@ function rowcKind(o) {
   if (o.t === 'stump' || o.t === 'log') return 1;
   return 0;
 }
-function rowcPaint(e, y, cx0, cx1, k) {
+function rowcPaint(e, y, cx0, cx1, k, ahead = false) {
+  if (ahead) {
+    for (let x = cx0; x <= cx1; x++) {
+      const i = idx(x, y), o = World.obj[i];
+      if (rowcKind(o) === 2 && !rockArtReady(o, i)) return false;
+    }
+  }
   const X0 = cx0 * TILE - ROWC_PAD, Y0 = y * TILE - ROWC_UP;
   const w = Math.round(((cx1 - cx0 + 1) * TILE + 2 * ROWC_PAD) * k), h = Math.round((ROWC_UP + ROWC_DN) * k);
   if (!e.cv) { e.cv = mkCanvas(w, h); ROWC.px += w * h; }
@@ -1215,15 +1272,16 @@ function rowcPaint(e, y, cx0, cx1, k) {
   const g = e.cv.getContext('2d', { willReadFrequently: true });
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
   g.setTransform(k, 0, 0, k, -X0 * k, -Y0 * k);
-  g.imageSmoothingEnabled = R.smooth; g.imageSmoothingQuality = 'low';
+  const smooth = ahead ? k < 1 : R.smooth;
+  g.imageSmoothingEnabled = smooth; g.imageSmoothingQuality = 'low';
   // порядок как в общем списке: пни и брёвна (y+0.7), камни (y+0.8), деревья (y+0.9), внутри — слева направо
   let ready = true;
   for (let pass = 1; pass <= 3; pass++) for (let x = cx0; x <= cx1; x++) {
     const i = idx(x, y), o = World.obj[i];
     if (rowcKind(o) !== pass) continue;
     if (pass === 1) { if (o.t === 'log') drawLog(g, x, y); else drawStump(g, x, y); }
-    else if (pass === 2) { if (drawRock(g, x, y, o, i) === false) ready = false; }
-    else drawTree(g, x, y, o, i);
+    else if (pass === 2) { if (drawRock(g, x, y, o, i, smooth) === false) ready = false; }
+    else drawTree(g, x, y, o, i, smooth);
   }
   e.X0 = X0; e.Y0 = Y0; e.w = w / k; e.h = h / k;
   return ready;
@@ -1252,10 +1310,10 @@ function rowcPush(list, c, x0, y0, x1, y1) {
   const maxPx = typeof Fps !== 'undefined' && Fps.eco ? ROWC_MAX_PX * 0.375 : ROWC_MAX_PX;
   const chunkPx = Math.round((CW * TILE + 2 * ROWC_PAD) * k) * Math.round((ROWC_UP + ROWC_DN) * k);
   if ((cB - cA + 1) * chunkPx * (y1 - y0 + 1) > maxPx) { if (ROWC.map.size) rowcFree(); return false; }
-  if (ROWC.k !== k || ROWC.trees !== SPR.trees) { rowcFree(); ROWC.k = k; ROWC.trees = SPR.trees; }
+  rowcSyncWorld();
   const fr = ++ROWC.frame, t0 = performance.now();
   for (let y = y0; y <= y1; y++) for (let cx = cA; cx <= cB; cx++) {
-    const ax = cx * CW, bx = Math.min(MAP_W - 1, ax + CW - 1), key = y * 4096 + cx;
+    const ax = cx * CW, bx = Math.min(MAP_W - 1, ax + CW - 1), key = rowcKey(y, cx, k);
     const sig = rowcSig(y, ax, bx);
     let e = ROWC.map.get(key);
     if (!e || e.sig !== sig) {
@@ -1282,6 +1340,59 @@ function rowcPush(list, c, x0, y0, x1, y1) {
     for (const [key, e] of ROWC.map) if (fr - e.fr > 90 || (e.fr !== fr && ROWC.px > maxPx)) { ROWC.px -= e.cv.width * e.cv.height; e.cv.width = e.cv.height = 0; ROWC.map.delete(key); }
   }
   return true;
+}
+
+// A cold overview otherwise paints every uncached tree individually while
+// waiting for its row. Build the same row canvases incrementally at rest.
+function requestOverviewRows() {
+  if (!R.cam || !R.canvas || typeof requestIdleCallback !== 'function' ||
+      typeof Fps === 'undefined' || !Fps.eco || R.noFarCache || R.cam.z < 1) return;
+  rowcSyncWorld();
+  if (overviewRowIdle) return;
+  const k = .5 * screenDPR(), cw = Math.round(16 / k);
+  const width = R.canvas.width / k, height = R.canvas.height / k;
+  const scale = devScale();
+  const x = Math.max(-2 * TILE, Math.min(MAP_W * TILE - width + 2 * TILE,
+    R.cam.x + R.canvas.width / (2 * scale) - width / 2));
+  const y = Math.max(-3 * TILE, Math.min(MAP_H * TILE - height + 2 * TILE,
+    R.cam.y + R.canvas.height / (2 * scale) - height / 2));
+  const a = Math.floor(Math.max(0, Math.floor(x / TILE) - 2) / cw);
+  const b = Math.floor(Math.min(MAP_W - 1, Math.ceil((x + width) / TILE) + 2) / cw);
+  const first = Math.max(0, Math.floor(y / TILE) - 1);
+  const last = Math.min(MAP_H - 1, Math.ceil((y + height) / TILE) + 4);
+  const chunkPixels = ((cw * TILE + 2 * ROWC_PAD) * k) * ((ROWC_UP + ROWC_DN) * k);
+  const maxPixels = ROWC_MAX_PX * .375;
+  if (chunkPixels * (b - a + 1) * (last - first + 1) > maxPixels || ROWC.px + chunkPixels > maxPixels) return;
+  if (!overviewRows || overviewRows.a !== a || overviewRows.b !== b ||
+      overviewRows.first !== first || overviewRows.last !== last) {
+    overviewRows = {a, b, first, last, row: first, chunk: a};
+  }
+  const job = overviewRows;
+  if (job.row > last) return;
+  overviewRowIdle = true;
+  requestIdleCallback(deadline => {
+    overviewRowIdle = false;
+    if (document.hidden || R.cam.z < 1 || job !== overviewRows || ROWC.world !== World.terrain ||
+        ROWC.trees !== SPR.trees || !Fps.eco || R.noFarCache) return;
+    const mode = typeof seaVisMode === 'function' ? seaVisMode() : 'base';
+    if (window.FantasyTreesPolish && !window.FantasyTreesPolish.cache[mode]) return;
+    const end = performance.now() + 2;
+    while (job.row <= last && ROWC.px + chunkPixels <= maxPixels &&
+           performance.now() < end && (deadline.didTimeout || deadline.timeRemaining() >= 1)) {
+      const row = job.row, chunk = job.chunk;
+      if (++job.chunk > b) { job.chunk = a; job.row++; }
+      const id = rowcKey(row, chunk, k);
+      if (ROWC.map.has(id)) continue;
+      const left = chunk * cw, right = Math.min(MAP_W - 1, left + cw - 1);
+      const sig = rowcSig(row, left, right);
+      if (sig === 0x811c9dc5) continue;
+      const entry = {cv: null, sig: 0, fr: ROWC.frame};
+      if (rowcPaint(entry, row, left, right, k, true)) {
+        entry.sig = sig;
+        ROWC.map.set(id, entry);
+      }
+    }
+  }, {timeout:80});
 }
 
 function render() {
@@ -1418,6 +1529,8 @@ function render() {
   drawLogMark(c);
   drawTutMarks(c);
   drawOverlay(c);
+  requestOverviewRows();
+
   R.inFrame = false;
 }
 

@@ -1347,7 +1347,36 @@ function guildBehindTorso(c,project,outline,draw) {
   c.restore();
 }
 
-function portraitCombat(c,u,view,ff,style,W,sh,skin,coat,project) {
+function fixedCombatArm(unit,guild) {
+  return ['archer','mage','warrior'].includes(guild?.key||unit.type);
+}
+
+function boundedCombatGrip(grip,shoulder,otherCenter) {
+  // Two 4.75 px links, with room for an elbow bend at full reach.
+  const radius=9.25;
+  const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+  const inReach=(point,center)=>distance(point,center)<=radius+1e-8;
+  const project=center=>{
+    const scale=radius/Math.max(radius,distance(grip,center));
+    return center.map((v,i)=>v+(grip[i]-v)*scale);
+  };
+  const near=project(shoulder);
+  if(!otherCenter||inReach(near,otherCenter))return near;
+  const far=project(otherCenter);
+  if(inReach(far,shoulder))return far;
+
+  // The second disc is the far shoulder translated by the spacing on the
+  // weapon. At their intersection both hands still fit the same rigid shaft.
+  const dx=otherCenter[0]-shoulder[0],dy=otherCenter[1]-shoulder[1];
+  const span=Math.hypot(dx,dy);
+  const mid=[shoulder[0]+dx/2,shoulder[1]+dy/2];
+  const height=Math.sqrt(Math.max(0,radius*radius-span*span/4))/span;
+  const first=[mid[0]-dy*height,mid[1]+dx*height];
+  const second=[mid[0]+dy*height,mid[1]-dx*height];
+  return distance(first,grip)<distance(second,grip)?first:second;
+}
+
+function portraitCombat(c,u,view,ff,style,W,sh,skin,coat,project,fixed) {
   const front=view==='S',side=front?-1:1;
   const [a,tilt,reach=4.2]=(FIGHT_ARM[style]||FIGHT_ARM.fist)[ff];
   const phase=fightKey(ff),fx=Math.sin(a),fy=Math.cos(a);
@@ -1356,12 +1385,16 @@ function portraitCombat(c,u,view,ff,style,W,sh,skin,coat,project) {
     !(staff&&(phase==='win0'||phase==='win1'||isCastF(ff)));
   const sweep=Math.sin(tilt);
   const direction=[side*(sweep*.55+.12),-Math.cos(tilt)*.88+(front?.34:-.34)*Math.max(0,sweep)];
-  const main=[side*((double?3.5:5.1)-1.4*Math.max(0,fx)-1.05*Math.min(0,fx)),
+  let main=[side*((double?3.5:5.1)-1.4*Math.max(0,fx)-1.05*Math.min(0,fx)),
     sh+.4-fy*reach*.86];
   const brace=(W.o==='wshield'?FIGHT_BACK.shield:FIGHT_BACK.free)[ff]||FIGHT_BACK.free.ready;
   const release=bow&&FIGHT_BACK.bow[phase];
-  const far=double?[main[0]-direction[0]*2.4,main[1]-direction[1]*2.4]:
+  const shoulders=[project(side*4.2,-15),project(-side*4.2,-15)];
+  const spacing=direction.map(value=>value*2.4);
+  if(fixed)main=boundedCombatGrip(main,shoulders[0],double?shoulders[1].map((v,i)=>v+spacing[i]):null);
+  let far=double?main.map((v,i)=>v-spacing[i]):
     release?[side*1.25,sh+.4+release[1]]:[-side*(3.25+brace[0]*.37),sh+.4+brace[1]*.83];
+  if(fixed&&!double)far=boundedCombatGrip(far,shoulders[1]);
   const shadowArm=(s,hand,shadow)=>{
     fpaPoseArm(c,project(s*4.2,-15),hand,coat,shadow,1,-s);
   };
@@ -1395,6 +1428,7 @@ function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
  if(pose==='walk'&&opt.gait==='tired')lean+=.16;if(pose==='walk'&&opt.gait==='drunk')lean+=Math.cos(ph)*.1;
  const amp=opt.gait==='drunk'?.3:opt.gait==='tired'?.07:.15,roll=pose==='walk'?sw*amp*(v==='E'?.35:1)+(opt.gait==='drunk'?Math.cos(ph)*.08:0):0,sway=pose==='walk'?sw*(v==='E'?.25:.8):0,bob=pose==='walk'?-Math.abs(Math.cos(ph))*(injLeg(u.injury)?1.2:opt.gait==='tired'?.3:.7)+.3:0,armed=!u.carry&&(fight||(W.out&&(pose==='walk'||pose==='idle')));
  const guild = dwarfGuildWear(u);
+ const fixed=Boolean(fight&&fixedCombatArm(u,guild));
  const [bodyShear,bodyDip] = fpaBodyMotion(v,pose,frame,opt);
  // Convert the atlas shoulder into weapon-rig coordinates. Grips and tool
  // poses still use the authored weapon trajectory.
@@ -1411,24 +1445,29 @@ function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
   c.translate(0,hip);c.rotate(lean);c.translate(0,-hip);
   if(!armed){if(WPN_BACK[W.m]){c.save();c.globalCompositeOperation='destination-over';drawOnBack(c,W.m,-2.4,sh+3.4,'E');c.restore();}if(W.o==='wshield'){c.save();c.globalCompositeOperation='destination-over';drawOnBack(c,'wshield',-3.4,sh+3.6,'E');c.restore();}c.restore();return;}
   const f=(FIGHT_ARM[style]||FIGHT_ARM.fist)[ff]||(FIGHT_ARM[style]||FIGHT_ARM.fist).ready,[a,tilt,reach=4.2]=f,wk=!fight&&pose==='walk'&&(style==='blade'||style==='stab')?sw:0;
-  const hx=.4+Math.sin(a)*reach+wk*.3,hy=sh+.4-Math.cos(a)*reach+wk*.5,dx=Math.sin(tilt+wk*.16),dy=-Math.cos(tilt+wk*.16),fk=fightKey(ff),two=(style==='heavy'||style==='staff')&&ff!=='draw'&&ff!=='d0'&&ff!=='s5'&&!(style==='staff'&&(fk==='win0'||fk==='win1'||isCastF(ff)));
+  let hx=.4+Math.sin(a)*reach+wk*.3,hy=sh+.4-Math.cos(a)*reach+wk*.5;
+  const dx=Math.sin(tilt+wk*.16),dy=-Math.cos(tilt+wk*.16),fk=fightKey(ff),two=(style==='heavy'||style==='staff')&&ff!=='draw'&&ff!=='d0'&&ff!=='s5'&&!(style==='staff'&&(fk==='win0'||fk==='win1'||isCastF(ff)));
+  const frontShoulder=guild?shoulderOnCoat(-3.2,-15):[-2.2,sh-2.8];
+  const backShoulder=guild?shoulderOnCoat(1.5,-15):[1.5,sh-2.8];
+  if(fixed)[hx,hy]=boundedCombatGrip([hx,hy],frontShoulder,two?[backShoulder[0]+dx*2.4,backShoulder[1]+dy*2.4]:null);
   let bx,by;if(two){bx=hx-dx*2.4;by=hy-dy*2.4;}else if(style==='bow'){const q=FIGHT_BACK.bow[fk];if(q){bx=-.4+q[0];by=sh+.4+q[1];}else{bx=hx-.9;by=hy+.3;}}else{const q=(W.o==='wshield'?FIGHT_BACK.shield:FIGHT_BACK.free)[ff]||FIGHT_BACK.free.ready;bx=-.4+q[0];by=sh+.4+q[1];}
+  if(fixed&&!two)[bx,by]=boundedCombatGrip([bx,by],backShoulder);
   if(guild){
    const exposedGrip=Boolean(W.o||two||style==='bow');
    guildBehindTorso(c,shoulderOnCoat,[[-3.4,-20.4],[2.25,-20.4],[3.55,-17.4],
      [2.4,-11.7],[-2.8,-11.7]],()=>{
-       fpaPoseArm(c,shoulderOnCoat(1.5,-15),[bx,by],coat,true);
+       fpaPoseArm(c,backShoulder,[bx,by],coat,true);
        if(!exposedGrip)fpaPoseHand(c,[bx,by],Math.atan2(dx,dy),skin,true);
    });
    if(exposedGrip)fpaPoseHand(c,[bx,by],Math.atan2(dx,dy),skin,true);
   }else{
-   fpaPoseArm(c,[1.5,sh-2.8],[bx,by],coat,true);
+   fpaPoseArm(c,backShoulder,[bx,by],coat,true);
    fpaPoseHand(c,[bx,by],Math.atan2(dx,dy),skin,true);
   }
   if(W.o&&WPN_STYLE[W.o]==='stab'){const d=fk==='windup'||fk==='parry'?[.95,-.3]:[.85,.52];drawWeapon(c,W.o,bx,by,d[0],d[1]);}
   if(W.o==='wshield')drawShield(c,bx+.9,by-.6,1.7,3.9);
   if(style==='bow')drawBow(c,W.m,hx,hy,tilt,fk==='windup'?[bx,by]:null);else if(style!=='fist')drawWeapon(c,W.m,hx,hy,dx,dy,(ff==='draw'||ff==='d0'||ff==='s5')&&(style==='blade'||style==='stab')?'hilt':undefined);
-  fpaPoseArm(c,guild?shoulderOnCoat(-3.2,-15):[-2.2,sh-2.8],[hx,hy],coat);
+  fpaPoseArm(c,frontShoulder,[hx,hy],coat);
   fpaPoseShoulder(c,u,(x,y)=>guild?shoulderOnCoat(-3.2-x,-15+y):[-3.2-x,sh-3+y]);
   fpaPoseHand(c,[hx,hy],Math.atan2(dx,dy),skin);
   if(style==='fist'){
@@ -1439,7 +1478,7 @@ function fpaDrawWeaponProps(c,u,view,pose,frame,opt={}){
   const front=v==='S';c.translate(0,lean*2.4);
   if(!armed){if(WPN_BACK[W.m])drawOnBack(c,W.m,front?3.6:-1.2,sh+2.6,v);if(!front&&W.o==='wshield')drawShield(c,0,sh+3.8,3.1,3.6);c.restore();return;}
   if(guild&&fight){
-   portraitCombat(c,u,v,ff,style,W,sh,skin,coat,shoulderOnCoat);
+   portraitCombat(c,u,v,ff,style,W,sh,skin,coat,shoulderOnCoat,fixed);
    c.restore();
    return;
   }

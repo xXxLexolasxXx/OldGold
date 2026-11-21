@@ -1,7 +1,7 @@
 'use strict';
 // Офлайн-кэш OldGold. Сеть в приоритете (чтобы не залипали старые js после обновления), при обрыве — кэш.
 // Предзагрузка: index.html + все его скрипты/стили + шрифты + иконки. Кооп (/coop, /e, ws) и чужие домены не кэшируются.
-const CACHE = 'oldgold-brownie-01219';
+const CACHE = 'oldgold-dwarves-camera-01220';
 const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kurale-Regular.ttf', 'fonts/RuslanDisplay-Regular.ttf',
   'icons/icon-192.png', 'icons/icon-512.png', 'assets/fantasy/menu-village.png', 'assets/fantasy/frog-village-v2.png',
   'js/fantasy-frog-frequent-frames.bin.gz', 'js/fantasy-frog-rare-frames.bin.gz', 'assets/fantasy/goblin-family-frame-bank.json',
@@ -44,13 +44,19 @@ self.addEventListener('fetch', e => {
   if (/\/(e|coop-info|coop)$/.test(u.pathname)) return;
   e.respondWith((async () => {
     const c = await caches.open(CACHE);
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), 6000);
+    let res;
     try {
-      const ac = new AbortController(), t = setTimeout(() => ac.abort(), 6000);
-      const res = await fetch(r, { signal: ac.signal }); clearTimeout(t);
-      if (res.ok) c.put(r, res.clone()).catch(() => {});
-      return res;
+      res = await fetch(r, { signal: ac.signal });
     } catch (err) {
-      return (await c.match(r, { ignoreSearch: true })) || (r.mode === 'navigate' ? await c.match('index.html') : Response.error());
+      // При недоступной сети ищем тот же ресурс или оболочку игры.
+    } finally {
+      clearTimeout(t);
     }
+    if (res?.ok) c.put(r, res.clone()).catch(() => {});
+    if (res && res.status < 500) return res;
+    const cached = await c.match(r, { ignoreSearch: true });
+    const shell = !cached && r.mode === 'navigate' ? await c.match('index.html') : undefined;
+    return cached || shell || res || Response.error();
   })());
 });

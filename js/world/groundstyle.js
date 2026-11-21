@@ -261,7 +261,14 @@ function* gsBaseGen(st) {
   let g1 = null, g2 = null;
   if (!fixed) {   // шум биомов по узлам сетки полосы
     g1 = new Float32Array(gw * gh); g2 = new Float32Array(gw * gh);
-    for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) { const wx = ox + i * G, wy = oy + j * G; g1[j * gw + i] = gsFW(wx, wy, 150, sd + 101); g2[j * gw + i] = gsFW(wx, wy, 380, sd + 102); }
+    for (let j = 0; j < gh; j++) {
+      for (let i = 0; i < gw; i++) {
+        const wx = ox+i*G, wy = oy+j*G;
+        g1[j*gw+i] = gsFW(wx, wy, 150, sd+101);
+        g2[j*gw+i] = gsFW(wx, wy, 380, sd+102);
+      }
+      yield;
+    }
   }
   for (let y = 0; y < H; y++) {
     const wy = y + oy, ty = (wy & M) * N;

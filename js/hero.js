@@ -116,6 +116,7 @@ function spawnHero(name) {
   return u;
 }
 
+let spawnSignLabel;
 function drawSpawnSign(c) {
   const spot = heroSpawnSpot();
   if (!spot || !Game.buildings.includes(spot.b)) return;
@@ -125,14 +126,32 @@ function drawSpawnSign(c) {
   const text = t(SPAWN_SIGNS[(k + n) % n]);
   c.save();
   c.font = 'bold 6px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
-  // перенос по словам: ширина доски ~64 px
-  const lines = []; let cur = '';
-  for (const w of text.split(' ')) {
-    const t = cur ? cur + ' ' + w : w;
-    if (c.measureText(t).width > 62 && cur) { lines.push(cur); cur = w; } else cur = t;
+  if (spawnSignLabel?.text !== text) {
+    const lines = [];
+    let cur = '';
+    for (const word of text.split(' ')) {
+      const next = cur ? cur + ' ' + word : word;
+      if (cur && c.measureText(next).width > 62) { lines.push(cur); cur = word; }
+      else cur = next;
+    }
+    lines.push(cur);
+    let halfWidth = 36;
+    for (const line of lines) {
+      const m = c.measureText(line);
+      halfWidth = Math.max(halfWidth, m.width / 2, m.actualBoundingBoxLeft || 0, m.actualBoundingBoxRight || 0);
+    }
+    spawnSignLabel = {text, lines, halfWidth};
   }
-  lines.push(cur);
+  const {lines, halfWidth} = spawnSignLabel;
   const bw = 70, bh = 8 + lines.length * 8, top = py - 14 - bh;
+  if (c === R.ctx && R.inFrame) {
+    const z = devScale(), cam = R.cam;
+    // Include the frame, text stroke and fractional camera rounding.
+    if (px + halfWidth + 4 < cam.x || px - halfWidth - 4 > cam.x + R.canvas.width / z ||
+        py + 4 < cam.y || top - 8 > cam.y + R.canvas.height / z) {
+      c.restore(); return;
+    }
+  }
   c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(px - 6 + 3, py - 3, 12, 3);                 // тень у основания
   c.fillStyle = '#4a3220'; c.fillRect(px - 1, top + bh - 2, 3, py - top - bh + 2);       // столб
   c.fillStyle = '#6a4a2c'; c.fillRect(px - 1, top + bh - 2, 1, py - top - bh + 2);

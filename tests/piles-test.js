@@ -32,10 +32,21 @@ J(`for (let i = 0; i < PILE_CAP + 60; i++) { const x = (i * 5) % MAP_W, y = ((i 
 run(8);
 ok(h.run('Game.piles.size') <= h.run('PILE_CAP'), 'кучек больше потолка: ' + h.run('Game.piles.size'));
 
-// золото и прочий ходовой груз не пропадает
-J(`dropPile(10, 10, 'gold', 5); return 1;`);
-run(h.run('TRASH_TTL') + 30);
-ok(J(`const p = Game.piles.get(idx(10, 10)); return p ? p.stock.gold : 0;`) >= 0, 'проверка золота');
+// добавка не продлевает срок мусора, положенного в момент 0; золото в той же кучке остаётся
+const sweep = L.newSim(7).h.run(`(() => {
+  Game.time = 0;
+  const p = dropPile(10, 10, 'trash', 1);
+  if (!p) throw new Error('не удалось поставить кучку для проверки уборки');
+  dropPile(p.x, p.y, 'gold', 5);
+  Game.time = 30;
+  dropPile(p.x, p.y, 'trash', 1);
+  Game.time = TRASH_TTL + 1;
+  pileSweep();
+  const remaining = Game.piles.get(idx(p.x, p.y));
+  return { trash: remaining?.stock.trash ?? 0, gold: remaining?.stock.gold ?? 0 };
+})()`);
+ok(sweep.trash === 0, 'добавка продлила срок мусора, положенного в момент 0: ' + sweep.trash);
+ok(sweep.gold === 5, 'уборка изменила запас золота в кучке: ' + sweep.gold);
 ok(sim.errors.length === 0, 'ошибки симуляции: ' + sim.errors.join(' || '));
 
 // подбор с земли показывает «Подобрано: …»

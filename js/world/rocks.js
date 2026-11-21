@@ -163,11 +163,16 @@ function tuftPebbles(c, x, y, h) {
 
 function rockSizeOf(n) { return n >= 5 ? 'L' : n >= 3 ? 'M' : 'S'; }
 
-function drawRock(c, x, y, o, i) {
+function rockCellSize(n, h) {
+  const size = rockSizeOf(n);
+  return ((h >>> 17) % 3) === 0 ? (size === 'L' ? 'M' : 'S') : size;
+}
+function rockArtReady(o, i) {
   const h = hash(i);
-  // не сеткой: у каждой клетки свой масштаб, сдвиг и иногда размер на ступень меньше
-  let size = rockSizeOf(o.n);
-  if (((h >>> 17) % 3) === 0) size = size === 'L' ? 'M' : 'S';
+  return !!ROCK_SPR[rockCellSize(o.n, h) + (h % ROCK_VARIANTS)];
+}
+function drawRock(c, x, y, o, i, smooth = R.smooth) {
+  const h = hash(i), size = rockCellSize(o.n, h);
   const S = ROCK_SIZES[size];
   const variant = h % ROCK_VARIANTS, key = size + variant;
   const cached = ROCK_SPR[key];
@@ -184,7 +189,7 @@ function drawRock(c, x, y, o, i) {
   c.scale(flip ? -sc : sc, sc);
   c.drawImage(spr, -Math.round(S.w / 2), -(S.h - 6), S.w, S.h);
   c.restore();
-  c.imageSmoothingEnabled = R.smooth;
+  c.imageSmoothingEnabled = smooth;
   // свежие трещины от кирки
   if (o.dmg > 0) {
     const r = mulberry32(i * 7 + o.n);

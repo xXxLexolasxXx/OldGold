@@ -657,6 +657,7 @@ function wgDrawChief(c, S) {
     tvDrawGnome(c, X, Y, { wk: ck, f: 1, id: S.id }, 0, false);
     tvDrawEmo(c, S.own ? 'good' : S.evil ? 'evil' : S.rel < -20 ? 'neu' : 'good', X, Y - 58, false, ck);
   }
+  if (c === R.ctx && R.inFrame && outsideWorldView(-Infinity,Y-91,Infinity,Y-69)) return;
   const tier = S.own ? 'наши' : S.evil ? 'злые' : S.rel >= 50 ? 'союзники' : S.rel < -20 ? 'в обиде' : 'нейтральны';
   c.save();
   c.font = 'bold 11px sans-serif'; c.textAlign = 'center';

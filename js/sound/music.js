@@ -16,7 +16,10 @@ function audioPhoneApp() {
   try {
     const C = window.Capacitor;
     if (C && C.isNativePlatform && C.isNativePlatform()) return true;
-    return !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches && matchMedia('(pointer: coarse)').matches);
+    if (!window.matchMedia || !matchMedia('(pointer: coarse)').matches) return false;
+    // Установленная игра и полноэкранный режим, включённый кнопкой внутри вкладки, используют разные настройки по умолчанию.
+    return matchMedia('(display-mode: standalone)').matches ||
+      (matchMedia('(display-mode: fullscreen)').matches && !document.fullscreenElement);
   } catch (e) { return false; }
 }
 

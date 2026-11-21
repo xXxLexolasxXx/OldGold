@@ -109,14 +109,14 @@
   }
   const legacy=drawTree;
   const info=window.FantasyTreesPolish={version:2,kinds:kinds.slice(),base,cache,drawn:0};
-  drawTree=function(c,x,y,o,i){
+  drawTree=function(c,x,y,o,i,smooth=R.smooth){
     if(o.awake)return legacy(c,x,y,o,i);
     const mode=typeof seaVisMode==='function'?seaVisMode():'base';
     if(!cache[mode])cache[mode]=base.map(cv=>seasonal(cv,mode));
     const h=hash(i),spr=cache[mode][h%base.length];
     const s=o.g>=1?1:0.35+0.55*o.g;
     const bx=x*TILE+16+((h>>>4)%7)-3,by=y*TILE+28+((h>>>12)%5)-2;
-    c.save();c.imageSmoothingEnabled=R.smooth;
+    c.save();c.imageSmoothingEnabled=smooth;
     c.fillStyle='rgba(12,18,6,0.35)';c.beginPath();c.ellipse(bx+6*s,by-1,16*s,6*s,0,0,7);c.fill();
     const w=Math.round(64*s),hh=Math.round(92*s);
     c.drawImage(spr,Math.round(bx-w/2),Math.round(by-hh*(88/92)),w,hh);

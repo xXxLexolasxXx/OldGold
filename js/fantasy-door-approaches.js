@@ -141,6 +141,17 @@
     const era = building.eraFx && !building.upg && Game.time - building.eraFx.t0 <= ERA_FX.dur ? building.eraFx.from : undefined;
     const sprite = buildingSprite(building.type, building.rot || 0, building.level, era, building.hv || 0);
     if (!sprite._artBox) return;
+    if (context === R.ctx && R.inFrame) {
+      const {x,y,w,h,doorX,doorY} = building;
+      const [artX,artY,artW,artH] = sprite._artBox;
+      const left = x*TILE-sprite.padx+artX, top = y*TILE-sprite.top+artY;
+      // The path search stays within the lot/gate bounds; its final point is
+      // on the facade. Allow the port, rounding, and the full road width.
+      if (outsideWorldView(Math.min(x*TILE,doorX*TILE,left)-24,
+          Math.min(y*TILE,doorY*TILE,top)-24,
+          Math.max((x+w)*TILE,(doorX+1)*TILE,left+artW)+24,
+          Math.max((y+h)*TILE,(doorY+1)*TILE,top+artH)+24)) return;
+    }
     const key = [Game.seed, building.x, building.y, building.doorX, building.doorY].join(':');
     let entry = cache.get(building);
     if (entry?.key !== key || entry.sprite !== sprite) {

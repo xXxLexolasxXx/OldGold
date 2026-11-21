@@ -76,10 +76,13 @@
     // Coarse continuous colour fields, sampled into small pixel clusters.
     // Native K/B classification is retained for ecology and the variant catalogue.
     const G=16,gw=Math.ceil(W/G)+2,gh=Math.ceil(H/G)+2,field=new Float32Array(gw*gh),soil=new Float32Array(gw*gh),detail=new Float32Array(gw*gh);
-    for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){
+    for(let y=0;y<gh;y++){
+     for(let x=0;x<gw;x++){
       const wx=ox+x*G,wy=oy+y*G,i=y*gw+x;
       field[i]=gsVNW(wx,wy,135,seed+517)*.78+gsVNW(wx,wy,42,seed+518)*.22;
       soil[i]=gsVNW(wx,wy,115,seed+619)*.85+gsVNW(wx,wy,27,seed+620)*.15;detail[i]=gsVNW(wx,wy,18,seed+751);
+     }
+     yield;
     }
     const sample=(a,x,y)=>{const ix=x>>4,iy=y>>4,fx=(x&15)/16,fy=(y&15)/16,i=iy*gw+ix;return (a[i]*(1-fx)+a[i+1]*fx)*(1-fy)+(a[i+gw]*(1-fx)+a[i+gw+1]*fx)*fy;};
     for(let y=0;y<H;y+=2){
@@ -160,7 +163,10 @@
       const wx = x * G, wy = y * G + b.y0;
       return (gsVNW(wx, wy, 19, seed + 713) - .5) * 7 + (gsVNW(wx, wy, 85, seed + 907) - .5) * 4;
     }
-    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) field[y * gw + x] = sampleField(x, y);
+    for (let y = 0; y < gh; y++) {
+      for (let x = 0; x < gw; x++) field[y * gw + x] = sampleField(x, y);
+      yield;
+    }
     function fieldAt(x, y) {
       if (y < 0 || y >= gh) return Math.fround(sampleField(x, y));
       return field[y * gw + x];

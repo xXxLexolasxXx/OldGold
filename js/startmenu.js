@@ -256,9 +256,17 @@ function initStartMenu() {
   smMusicBtnInit();
   root.addEventListener('click', e => { const b = e.target.closest('[data-sm]'); if (b && !b.disabled) smAction(b.dataset.sm); });
   window.addEventListener('keydown', e => {
-    if (!StartMenu.open) return;
-    if (e.target && e.target.tagName === 'INPUT') { if (e.key === 'Enter') { const c = root.querySelector('[data-sm="connect"]'); if (!root.querySelector('[data-panel="mp"]').classList.contains('hidden')) c.click(); } return; }
-    if (e.key === 'Enter') { const sv = smBestSave(); smAction(sv ? 'continue' : 'new'); }
+    if (!StartMenu.open || e.defaultPrevented || e.isComposing) return;
+    if (e.target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) {
+      if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.closest('[data-panel="mp"]:not(.hidden)')) {
+        root.querySelector('[data-sm="connect"]').click();
+      }
+      return;
+    }
+    if (e.key === 'Enter' && !e.target?.closest?.('button, a[href]') && root.querySelector('[data-panel="main"]:not(.hidden)')) {
+      const sv = smBestSave();
+      smAction(sv ? 'continue' : 'new');
+    }
     if (e.key === 'Escape') smShow('main');
   });
 }

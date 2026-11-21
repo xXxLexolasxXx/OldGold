@@ -78,7 +78,7 @@
  };
  const stoneSeeds=new Map();let stoneSeedTag=null;
  function stone(col,row){if(stoneSeedTag!==Game.seed){stoneSeedTag=Game.seed;stoneSeeds.clear();}const key=col+':'+row;if(stoneSeeds.has(key))return stoneSeeds.get(key);const h=hash2(col,row,493),p={x:col*12+(row&1)*6+6+((h&255)/255-.5)*3,y:row*10+5+(((h>>>8)&255)/255-.5)*2.5,h};stoneSeeds.set(key,p);if(stoneSeeds.size>4096)stoneSeeds.delete(stoneSeeds.keys().next().value);return p;}
- function texture(wx,wy,dist,forced){const row=Math.floor(wy/10);let first=1e9,second=1e9,A=null,B=null;for(let r=row-1;r<=row+1;r++){const col=Math.floor((wx-(r&1)*6)/12);for(let k=col-1;k<=col+1;k++){const p=stone(k,r),dx=wx-p.x,dy=wy-p.y,d=dx*dx+dy*dy;if(d<first){second=first;B=A;first=d;A=p;}else if(d<second){second=d;B=p;}}}const edge=(second-first)/(2*Math.hypot(A.x-B.x,A.y-B.y)),dx=wx-A.x,dy=wy-A.y,h=A.h,v=forced==null?variant(A.x,A.y):forced;
+ function texture(wx,wy,dist,forced,stoneAt=stone){const row=Math.floor(wy/10);let first=1e9,second=1e9,A=null,B=null;for(let r=row-1;r<=row+1;r++){const col=Math.floor((wx-(r&1)*6)/12);for(let k=col-1;k<=col+1;k++){const p=stoneAt(k,r),dx=wx-p.x,dy=wy-p.y,d=dx*dx+dy*dy;if(d<first){second=first;B=A;first=d;A=p;}else if(d<second){second=d;B=p;}}}const edge=(second-first)/(2*Math.hypot(A.x-B.x,A.y-B.y)),dx=wx-A.x,dy=wy-A.y,h=A.h,v=forced==null?variant(A.x,A.y):forced;
   if(edge<.65)return v===2&&h%3===0?[83,98,61]:[99,93,72];
   const t=((h>>>2)%3-1)*2,warm=v===4&&h%4===0?4:0;let p=[129+t+warm,121+t,95+t-warm];
   if(edge<1.3)p=dx+dy<0?[151+t,141+t,111+t]:[110+t,104+t,82+t];else if(dy<-1.2&&dx<2.8)p=[141+t+warm,132+t,103+t];else if(dy>1.7)p=[123+t+warm,116+t,92+t];
@@ -131,15 +131,40 @@
    else route.push(...curve);
   }
   route.push(points.at(-1));
-  const segments = route.slice(1).map(([bx, by], index) => {
-   const [ax, ay] = route[index], dx = bx-ax, dy = by-ay;
-   return [ax, ay, dx, dy, dx*dx+dy*dy, RADIUS];
-  });
+  // A segment can colour only the pixels inside its expanded bounds. Retain
+  // squared distances in double precision so stone and edge pixels match.
+  const distances = new Float64Array(canvas.width * canvas.height);
+  distances.fill(Infinity);
+  for (let i = 1; i < route.length; i++) {
+   const [ax, ay] = route[i-1], [bx, by] = route[i];
+   const dx = bx-ax, dy = by-ay, length = dx*dx + dy*dy;
+   const left = Math.max(0, Math.floor((Math.min(ax,bx) - widthRadius - x)*2));
+   const top = Math.max(0, Math.floor((Math.min(ay,by) - widthRadius - y)*2));
+   const right = Math.min(canvas.width, Math.ceil((Math.max(ax,bx) + widthRadius - x)*2));
+   const bottom = Math.min(canvas.height, Math.ceil((Math.max(ay,by) + widthRadius - y)*2));
+   for (let row = top; row < bottom; row++) {
+    const py = y + (row + .5)/2 - ay;
+    for (let col = left; col < right; col++) {
+     const px = x + (col + .5)/2 - ax;
+     const t = length ? Math.max(0, Math.min(1, (px*dx + py*dy)/length)) : 0;
+     const qx = px-t*dx, qy = py-t*dy, at = row*canvas.width+col;
+     distances[at] = Math.min(distances[at], qx*qx + qy*qy);
+    }
+   }
+  }
+  // Adjacent half-pixels repeatedly sample the same nine Voronoi sites.
+  const firstCol = Math.floor((x-6)/12)-1, lastCol = Math.floor((x+width)/12)+1;
+  const firstRow = Math.floor(y/10)-1, lastRow = Math.floor((y+height)/10)+1;
+  const stride = lastCol-firstCol+1, sites = [];
+  for (let row = firstRow; row <= lastRow; row++) {
+   for (let col = firstCol; col <= lastCol; col++) sites.push(stone(col,row));
+  }
+  const stoneAt = (col,row) => sites[(row-firstRow)*stride+col-firstCol];
   for (let row = 0; row < canvas.height; row++) for (let col = 0; col < canvas.width; col++) {
-   const wx = x + (col + .5) / 2, wy = y + (row + .5) / 2;
-   const distance = distance2(wx, wy, {segments, fills:[]});
+   const distance = distances[row*canvas.width+col];
    if (distance > widthRadius**2) continue;
-   const color = distance <= RADIUS**2 ? texture(wx,wy,Math.sqrt(distance))
+   const wx = x + (col + .5)/2, wy = y + (row + .5)/2;
+   const color = distance <= RADIUS**2 ? texture(wx,wy,Math.sqrt(distance),undefined,stoneAt)
      : hash2(Math.floor(wx/5),Math.floor(wy/5),61)%5===0 ? [82,94,59] : [89,84,63];
    const at = (row * canvas.width + col) * 4;
    image.data.set(color, at);
