@@ -1,7 +1,7 @@
 'use strict';
 // Офлайн-кэш OldGold. Сеть в приоритете (чтобы не залипали старые js после обновления), при обрыве — кэш.
 // Предзагрузка: index.html + все его скрипты/стили + шрифты + иконки. Кооп (/coop, /e, ws) и чужие домены не кэшируются.
-const CACHE = 'oldgold-fantasy-20261121-dwarves-and-doors-01216';
+const CACHE = 'oldgold-golden-goose-01217';
 const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kurale-Regular.ttf', 'fonts/RuslanDisplay-Regular.ttf',
   'icons/icon-192.png', 'icons/icon-512.png', 'assets/fantasy/menu-village.png', 'assets/fantasy/frog-village-v2.png',
   'js/fantasy-frog-frequent-frames.bin.gz', 'js/fantasy-frog-rare-frames.bin.gz', 'assets/fantasy/goblin-family-frame-bank.json',
@@ -10,6 +10,7 @@ const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kur
   'js/gnomtaurs/camp-atlas.png', 'js/gnomtaurs/spear-atlas.png', 'js/gnomtaurs/archer-atlas.png',
   'assets/fantasy/forest-troll-combat/forest-troll.png', 'assets/fantasy/forest-troll-combat/frames.json',
   'assets/fantasy/magicbeasts/salamander-frames.png',
+  'assets/fantasy-birds/gold-goose-runtime-v1.png',
   'assets/fantasy/bog-troll-combat/atlas.png', 'assets/fantasy/bog-troll-combat/frames.json',
   'js/elemental-land-art/land-parts.json', 'js/elemental-land-art/land-parts.png',
   'assets/fantasy/golem-first-idle.png', 'assets/fantasy/dwarf-mask-bank-v1.bin.gz', 'js/fantasy-pixel-read-worker.js',
