@@ -1,0 +1,160 @@
+/* The title scene and its controls have separate screen areas. */
+#loading[data-scene="fantasy"] {
+  --menu-rail: clamp(270px, 30vw, 390px);
+  --menu-scene-height: 47%;
+  --menu-brass: #b98548;
+  --menu-ink: #ebdcb5;
+  --menu-surface: #25382c;
+  background: #111a16;
+}
+
+#loading[data-scene="fantasy"] #fantasy-load-cv {
+  inset: 0 0 0 var(--menu-rail);
+  width: calc(100% - var(--menu-rail));
+  height: 100%;
+}
+
+#loading[data-scene="fantasy"] .load-title {
+  inset: clamp(12px, 3vh, 24px) 0 auto var(--menu-rail);
+  width: auto;
+  transform: none;
+  text-align: center;
+  pointer-events: none;
+}
+
+#loading[data-scene="fantasy"] h1 {
+  font-size: clamp(38px, 7vw, 94px);
+  line-height: 1;
+  margin: 0;
+  color: #e8be70;
+  -webkit-text-fill-color: currentColor;
+  background: none;
+  text-shadow: 0 3px #643c25, 0 6px #191911, 0 0 20px #1c130e;
+}
+
+#loading[data-scene="fantasy"] .fantasy-subtitle {
+  display: none;
+}
+
+#loading[data-scene="fantasy"].with-menu #start-menu {
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--menu-rail);
+  display: block;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: clamp(13px, 5vh, 46px) clamp(13px, 2vw, 27px);
+  align-content: safe center;
+  background: linear-gradient(145deg, #24342aee, #101812f8 75%), var(--menu-wood) center / 384px;
+  border-right: 3px ridge var(--menu-brass);
+}
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  gap: 8px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel[data-panel="main"] > button {
+  width: 100%;
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+#loading[data-scene="fantasy"] #start-menu .sm-sub:not(.hidden) {
+  position: relative;
+  inset: auto;
+}
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel button,
+#loading[data-scene="fantasy"] #sm-music {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 44px;
+  color: var(--menu-ink);
+  padding: 6px 9px;
+  border: 3px solid #694525;
+  border-radius: 4px;
+  background: linear-gradient(#ffffff08, #00000026), var(--menu-surface);
+  box-shadow: inset 0 0 0 1px #af7c40, inset 0 3px #71846a55, 0 2px 0 #120e09;
+  text-shadow: 0 2px #151811;
+  animation: none;
+}
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel button::before,
+#loading[data-scene="fantasy"] #start-menu .sm-panel button::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  width: 4px;
+  height: 4px;
+  background: #d3a05e;
+  box-shadow: 1px 1px #442e1c, 1px 0 #9e6d3c;
+  pointer-events: none;
+}
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel button::after { left: auto; right: 5px; }
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel button b {
+  font-size: clamp(14px, 1.6vw, 20px);
+  letter-spacing: .01em;
+}
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel button small {
+  white-space: normal;
+  line-height: 1.2;
+  color: #d7cdb5;
+}
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel[data-panel="main"] button small { display: none; }
+#loading[data-scene="fantasy"] #start-menu .sm-panel[data-panel="main"] [data-sm="continue"] small { display: block; }
+#loading[data-scene="fantasy"] #start-menu .sm-panel[data-panel="main"] [data-sm="continue"]:disabled { display: none; }
+#loading[data-scene="fantasy"] #start-menu .sm-panel[data-panel="main"]:not(.sm-more) > [data-sm="arena"] { display: none; }
+#loading[data-scene="fantasy"] #start-menu .sm-panel[data-panel="main"].sm-more > [data-sm="arena"] { display: flex; }
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel .primary,
+#loading[data-scene="fantasy"] #start-menu .sm-panel[data-panel="main"]:has([data-sm="continue"]:disabled) [data-sm="new"] {
+  border-color: #e2b370;
+  background-color: #364534;
+}
+
+#loading[data-scene="fantasy"] #start-menu .sm-panel button:is(:hover, :focus-visible, .sm-sel):not(:disabled) {
+  border-color: #f0c271;
+  outline: 2px solid #d5ab62;
+  outline-offset: -2px;
+}
+
+#loading[data-scene="fantasy"] #start-menu :is(.sm-vine, .sm-grow) { display:none; }
+#loading[data-scene="fantasy"] #start-menu :is(.sm-sub, .sm-help, input, select) {
+  background: #18271e;
+  color: var(--menu-ink);
+  border: 1px solid #91724b;
+}
+#loading[data-scene="fantasy"] #start-menu .sm-boot-status { position: static; text-align:center; }
+
+@media (orientation: portrait) and (max-width: 700px) {
+  #loading[data-scene="fantasy"] #fantasy-load-cv { inset: 0 0 auto; width: 100%; height: var(--menu-scene-height); }
+  #loading[data-scene="fantasy"] .load-title { inset: 26px 0 auto; }
+  #loading[data-scene="fantasy"] h1 { font-size: clamp(31px, 10vw, 58px); }
+  #loading[data-scene="fantasy"] .fantasy-subtitle { display: none; }
+  #loading[data-scene="fantasy"].with-menu #start-menu {
+    inset: var(--menu-scene-height) 0 0;
+    width: 100%;
+    padding: 11px max(16px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-right));
+    border: 0;
+    border-top: 3px ridge var(--menu-brass);
+    align-content: start;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  #loading[data-scene="fantasy"] .load-title { top: 16px; }
+  #loading[data-scene="fantasy"] h1 { font-size: clamp(32px, 7vw, 54px); }
+  #loading[data-scene="fantasy"] .fantasy-subtitle { display: none; }
+  #loading[data-scene="fantasy"].with-menu #start-menu { padding-block: 9px; }
+}

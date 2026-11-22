@@ -622,13 +622,7 @@ function smSubToggle(open) {
   if (!sub || !mp) return;
   const show = open === undefined ? sub.classList.contains('hidden') : open;
   sub.classList.toggle('hidden', !show);
-  if (show) {
-    const r = mp.getBoundingClientRect(), root = document.getElementById('start-menu').getBoundingClientRect(), w = Math.max(r.width, 220);
-    sub.style.width = w + 'px';
-    sub.style.left = Math.max(8, Math.min(root.width - w - 8, r.left - root.left)) + 'px';
-    sub.style.bottom = (root.bottom - r.top + 8) + 'px';
-    requestAnimationFrame(decorateVines);
-  }
+  mp.setAttribute('aria-expanded', String(show));
 }
 {
   const _act = smAction;

@@ -14,6 +14,10 @@
 
   // Cropped from the game sprites at the title scene's maximum backing size.
   const atlas = new Image();
+  const scenery = new Image();
+  scenery.onload = () => { state.sceneryReady = true; revision++; refresh(); };
+  scenery.onerror = () => failures.push('menu-pim-clearing');
+  scenery.src = 'assets/fantasy/menu-pim-clearing.png';
   atlas.onload = () => {
     const sprites = { school: [0, 0, 191, 230], inn: [224, 0, 204, 187],
       storehouse: [0, 232, 130, 108], 'bonfire-hearth': [144, 232, 108, 53] };
@@ -65,6 +69,18 @@
   }
 
   function paintBackground(W, H, cx, cy, house, mobile) {
+    if (scenery.naturalWidth) {
+      const scale = Math.max(W / scenery.naturalWidth, H / scenery.naturalHeight);
+      const sourceW = W / scale, sourceH = H / scale;
+      c.drawImage(scenery, (scenery.naturalWidth - sourceW) / 2,
+        (scenery.naturalHeight - sourceH) / 2, sourceW, sourceH, 0, 0, W, H);
+    } else paintFallback(W, H, cx, cy);
+    if (!mobile) sprite('storehouse', cx - W * .40, cy + 2, house * .58, house * .62);
+    sprite('school', cx - W * .27, cy - 6, house * .86, house * 1.13);
+    sprite('inn', cx + W * .29, cy - 7, house, house);
+  }
+
+  function paintFallback(W, H, cx, cy) {
     const sky = ['#192d3c', '#1d3241', '#223b49', '#284451', '#304c55', '#38565b', '#42605f', '#4f6863', '#606f65', '#777d6a'];
     sky.forEach((color, i) => rect(0, i * H / 18, W, H / 18 + 1, color));
     for (let i = 0; i < 34; i++) rect(rand(i + 3) * W, rand(i + 54) * H * .35, 1, 1, i % 5 ? '#708993' : '#d3c9a3');
@@ -107,12 +123,10 @@
         rect(px, y + 3, 4, 1, '#535c49');
       }
     }
-    if (!mobile) sprite('storehouse', cx - W * .40, cy + 2, house * .58, house * .62);
-    sprite('school', cx - W * .27, cy - 6, house * .86, house * 1.13);
-    sprite('inn', cx + W * .29, cy - 7, house, house);
   }
 
   const people = new Map(), personFrames = new Map();
+  const idleViews = [[false,'S'],[true,'S'],[false,'N'],[true,'N']];
   let spriteSource, idleReady = 0;
   function personFrame(female, frame, view) {
     if (spriteSource !== personSprite) {
@@ -137,6 +151,71 @@
     c.drawImage(image, Math.round(x - PFX * scale), Math.round(y - PFY * scale), PW * scale, PH * scale);
     state.people++;
   }
+  const ringSpots = [
+    [-21,-6,'S',false], [0,-11,'S',true], [21,-6,'S',false],
+    [21,8,'N',true], [0,14,'N',false], [-21,8,'N',true],
+  ];
+  const ringBodies = new WeakMap();
+  const ringScale = .84;
+  const ringTempo = 2 * Math.PI * 1.2;
+  function ringPose(cx, cy, time) {
+    const sway = Math.sin(time * ringTempo) * 1.2;
+    const actors = ringSpots.map(([dx,dy,view,female],index) => {
+      const source = personFrame(female,0,view);
+      if (source._pendingSprite) return null;
+      let prepared = ringBodies.get(source);
+      if (!prepared) {
+        const unit = people.get((female?'f':'m')+view);
+        const body = mkCanvas(source.width,source.height);
+        body.getContext('2d').drawImage(source,0,0);
+        fpaCleanAtlasArms(body,unit,view,'yardGrip',0);
+        const look = lookOf({...unit,look:LOOK_POOL[unit.look % LOOK_POOL.length]});
+        prepared = {body,cloth:fpaPoseCoat(unit,look),skin:SKINS[look.skin % SKINS.length]};
+        ringBodies.set(source,prepared);
+      }
+      return {...prepared, x:cx+dx,y:cy+dy,sway,view,index,arms:[]};
+    });
+    if (actors.some(actor=>!actor)) return null;
+    const shoulder = (actor,side) => [actor.x + actor.sway + side * 5.1 * ringScale,
+      actor.y - 15.5 * ringScale];
+    const links = actors.map((actor,index) => {
+      const next = actors[(index+1)%actors.length];
+      const side = index<3 ? 1 : -1;
+      const a = shoulder(actor,side), b = shoulder(next,next.index<3?-1:1);
+      // The end pairs join outside the hats of the near row.
+      const outside = index===2 ? 2 : index===5 ? -2 : 0;
+      const grip = [(a[0]+b[0])/2+outside,(a[1]+b[1])/2+.22];
+      actor.arms.push({shoulder:a,grip,side,outer:outside<0});
+      next.arms.push({shoulder:b,grip,side:next.index<3?-1:1,outer:outside>0});
+      return {hand:grip, actor, outside:outside!==0, depth:Math.max(index,next.index), reach:Math.max(
+        Math.hypot(grip[0]-a[0],grip[1]-a[1]),Math.hypot(grip[0]-b[0],grip[1]-b[1]))/ringScale};
+    });
+    state.ring = { links:links.length, maxReach:Math.max(...links.map(link=>link.reach)), sway,
+      feet:actors.map(actor=>[actor.x-cx,actor.y-cy]) };
+    return {actors,links};
+  }
+  function paintRing(ring,front) {
+    const cut = PFY - 7;
+    for (const actor of ring.actors.filter(actor=>(actor.index>=3)===front)) {
+      for (const arm of actor.arms) {
+        // fpaPoseArm uses its native limb length for every reachable ring link.
+        if (Math.hypot(arm.grip[0]-arm.shoulder[0],arm.grip[1]-arm.shoulder[1]) <= 9*ringScale) {
+          fpaPoseArm(c,arm.shoulder,arm.grip,actor.cloth,!front,ringScale,front && arm.outer ? arm.side : -arm.side);
+        }
+      }
+      const {body,x,y,sway} = actor;
+      const sourceCut = Math.round(body.height * cut / PH);
+      const left = x-PFX*ringScale, top = y-PFY*ringScale;
+      c.drawImage(body,0,sourceCut,body.width,body.height-sourceCut,
+        Math.round(left),Math.round(top+cut*ringScale),PW*ringScale,(PH-cut)*ringScale);
+      c.drawImage(body,0,0,body.width,sourceCut,
+        Math.round(left+sway),Math.round(top),PW*ringScale,cut*ringScale);
+      state.people++;
+    }
+    for (const link of ring.links.filter(link=>(link.depth>=3)===front)) {
+      if (link.reach<=9) fpaPoseHand(c,link.hand,0,link.actor.skin,!front,ringScale*(link.outside ? .9 : .76));
+    }
+  }
   function paintMotion(t, W, cx, cy, house, shortLandscape) {
     for (let i = 0; i < 5; i++) {
       const p = (t * .18 + i * .2) % 1;
@@ -144,8 +223,8 @@
       rect(cx + W * .29 + house * .26 + Math.sin(p * 5) * 4, cy - house * .96 - p * 22, 2 + p * 4, 2 + p * 3, '#c0beb0');
     }
     c.globalAlpha = 1;
-    person(cx - 27, cy - (shortLandscape ? 4 : 8), false, 0);
-    person(cx + 27, cy - (shortLandscape ? 3 : 7), true, 0);
+    const ring = hadPeople && typeof fpaPoseArm === 'function' ? ringPose(cx,cy,t) : null;
+    if (ring) paintRing(ring,false);
     sprite('bonfire-hearth', cx, cy + 10, 53, 29);
     if (hadFire) {
       const a = FantasyArt.images['bonfire-flames'];
@@ -157,13 +236,24 @@
       rect(cx - 3, cy - 12 - step, 6, 11 + step, '#eea548');
       rect(cx - 1, cy - 8, 3, 7, '#ffe49b');
     }
-    person(cx - 29, cy + 18, true, 0);
-    person(cx + 28, cy + 17, false, 0);
-    person(cx - W * .22 + t * 7 % (W * .44), cy + 29, false, Math.floor(t * 7), 'E');
+    if (ring) paintRing(ring,true);
+    person(cx - W * .43 + t * 7 % (W * .20), cy + 24, false, Math.floor(t * 7), 'E');
     for (let i = 0; i < 7; i++) {
       const p = (t * .27 + i / 7) % 1;
       rect(cx + Math.sin(i * 7 + p * 5) * 9, cy - 8 - p * 28, 1, 1, p < .6 ? '#e7c784' : '#a57b51');
     }
+    for (let i = 0; i < 2; i++) {
+      const age = (t + i * 1.7) % 4;
+      if (age >= 2.4) continue;
+      const x = cx + (i ? 12 : -16) + age * (i ? 1 : -1);
+      const y = cy - 27 - age * 10;
+      const ink = '#f6d794';
+      c.globalAlpha = Math.min(1, (2.4 - age) * 2);
+      rect(x - 2, y + 4, 3, 2, ink);
+      rect(x, y, 1, 5, ink);
+      rect(x + 1, y + 1, 2, 1, ink);
+    }
+    c.globalAlpha = 1;
   }
 
   let running = true, pending = null, last = -Infinity;
@@ -223,8 +313,9 @@
     last = now;
     const W = Math.max(100, Math.ceil(canvas.clientWidth / 3)), H = Math.max(60, Math.ceil(canvas.clientHeight / 3));
     const mobile = canvas.clientWidth < 700;
-    const shortLandscape = canvas.clientHeight < 520 && canvas.clientWidth > canvas.clientHeight;
-    const cx = W / 2, cy = H * (shortLandscape ? .51 : mobile ? .62 : .73);
+    const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 520px)').matches;
+    const cx = W / 2, cy = H * (shortLandscape ? .60 : mobile ? .72 : .73);
+    state.hearth = { x: (cx - 27) / W, y: (cy - 31) / H, w: 54 / W, h: 42 / H };
     const house = Math.min(101, W * .29, H * (shortLandscape ? .27 : .35));
     const nextTrees = window.FantasyTreesPolish?.base;
     if (nextTrees !== trees) { trees = nextTrees; revision++; }
@@ -232,12 +323,12 @@
     const peopleReady = !!(window.FantasyPublishedAppearanceArt && typeof FantasyArt !== 'undefined' &&
       FantasyArt.images['gnome-walk']?.frames && FantasyArt.images['gnome-woman-walk']?.frames);
     const fireReady = typeof FantasyArt !== 'undefined' && !!FantasyArt.images['bonfire-flames']?.frames?.length;
-    hadPeople = peopleReady && idleReady === 2;
+    hadPeople = peopleReady && idleReady === idleViews.length;
     hadFire = fireReady;
     // Generate one cold idle sprite per frame before drawing the group together.
-    if (peopleReady && idleReady < 2) {
-      personFrame(idleReady === 1, 0, 'S');
-      idleReady++;
+    if (peopleReady && idleReady < idleViews.length) {
+      const [female,view] = idleViews[idleReady];
+      if (!personFrame(female,0,view)._pendingSprite) idleReady++;
       if (reduced.matches) queueFrame();
     }
     if (key !== cached) {
