@@ -36,6 +36,14 @@
   display: none;
 }
 
+#loading[data-scene="fantasy"][data-concept-art] {
+  --menu-rail: clamp(235px, 24vw, 330px);
+}
+
+#loading[data-scene="fantasy"][data-concept-art] .load-title {
+  opacity: 0;
+}
+
 #loading[data-scene="fantasy"].with-menu #start-menu {
   box-sizing: border-box;
   position: absolute;
@@ -138,6 +146,9 @@
 #loading[data-scene="fantasy"] #start-menu .sm-boot-status { position: static; text-align:center; }
 
 @media (orientation: portrait) and (max-width: 700px) {
+  #loading[data-scene="fantasy"][data-concept-art] {
+    --menu-scene-height: min(63%, calc(100% - 286px));
+  }
   #loading[data-scene="fantasy"] #fantasy-load-cv { inset: 0 0 auto; width: 100%; height: var(--menu-scene-height); }
   #loading[data-scene="fantasy"] .load-title { inset: 26px 0 auto; }
   #loading[data-scene="fantasy"] h1 { font-size: clamp(31px, 10vw, 58px); }

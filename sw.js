@@ -1,7 +1,7 @@
 'use strict';
 // Офлайн-кэш OldGold. Сеть в приоритете (чтобы не залипали старые js после обновления), при обрыве — кэш.
 // Предзагрузка: index.html + все его скрипты/стили + шрифты + иконки. Кооп (/coop, /e, ws) и чужие домены не кэшируются.
-const CACHE = 'oldgold-title-bonfire-01223';
+const CACHE = 'oldgold-title-storybook-01224';
 const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kurale-Regular.ttf', 'fonts/RuslanDisplay-Regular.ttf',
   ...['newt','snail','moth'].flatMap(kind=>['webp','json'].map(ext=>'assets/approved-marsh/'+kind+'-directions.'+ext)),
   'icons/icon-192.png', 'icons/icon-512.png', 'assets/fantasy/menu-village.png', 'assets/fantasy/frog-village-v2.png',
@@ -11,6 +11,8 @@ const EXTRA = ['favicon.svg', 'manifest.webmanifest', 'privacy.html', 'fonts/Kur
   'assets/fantasy/leshy-elf-review/art-runtime.js', 'assets/fantasy/leshy-elf-review/gargoyle-atlas.png',
   'assets/fantasy/leshy-elf-review/mound-atlas.png', 'assets/fantasy/leshy-elf-review/prince-atlas.png',
   'assets/fantasy/menu-pim-clearing.png',
+  'assets/fantasy/menu-concept-wide.webp', 'assets/fantasy/menu-concept-wide-rig.png',
+  'assets/fantasy/menu-concept-tall.webp', 'assets/fantasy/menu-concept-tall-rig.png',
   'js/gnomtaurs/camp-atlas.png', 'js/gnomtaurs/spear-atlas.png', 'js/gnomtaurs/archer-atlas.png',
   'assets/fantasy/forest-troll-combat/forest-troll.png', 'assets/fantasy/forest-troll-combat/frames.json',
   'assets/fantasy/magicbeasts/salamander-frames.png',

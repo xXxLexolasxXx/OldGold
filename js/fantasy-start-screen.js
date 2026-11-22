@@ -12,6 +12,121 @@
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let c = output, revision = 0, cached = '', trees, hadPeople = false, hadFire = false;
 
+  const portraitConcept = matchMedia('(orientation: portrait) and (max-width: 700px)');
+  const conceptLayouts = {
+    wide: { patch: [268,302,530,264], hearth: [474,300,120,246] },
+    tall: { patch: [18,322,273,187], hearth: [132,322,56,177] },
+  };
+  let conceptFrame = '', conceptBounds = '';
+
+  function conceptAsset(layout, name, key, extension) {
+    if (layout[key]) return layout[key];
+    const image = new Image();
+    image.onload = refresh;
+    image.onerror = () => failures.push(name);
+    layout[key] = image;
+    image.src = 'assets/fantasy/' + name + '.' + extension;
+    return image;
+  }
+
+  function prepareConceptRig(still, field, patch) {
+    const [x,y,width,height] = patch;
+    const layer = document.createElement('canvas');
+    layer.width = width;
+    layer.height = height;
+    const draw = layer.getContext('2d', { willReadFrequently: true });
+    draw.drawImage(field, 0, 0);
+    const vectors = draw.getImageData(0, 0, width, height).data;
+    draw.drawImage(still, -x, -y);
+    const source = draw.getImageData(0, 0, width, height);
+    const frame = draw.createImageData(width, height);
+    frame.data.set(source.data);
+    const moving = [];
+    for (let pixel = 0; pixel < width * height; pixel++) {
+      const offset = pixel * 4, dx = vectors[offset] - 128, dy = vectors[offset + 1] - 128;
+      if (dx || dy) moving.push(offset, pixel % width, Math.floor(pixel / width), dx, dy);
+    }
+    return { layer, draw, source, frame, moving: Int32Array.from(moving) };
+  }
+
+  function poseConceptRig(rig, sway) {
+    const { layer, draw, source, frame, moving } = rig;
+    const width = layer.width, height = layer.height;
+    const weight = sway / 8;
+    const pixels = source.data, next = frame.data;
+    for (let index = 0; index < moving.length; index += 5) {
+      const dest = moving[index];
+      const x = Math.max(0, Math.min(width - 1.001, moving[index + 1] - weight * moving[index + 3]));
+      const y = Math.max(0, Math.min(height - 1.001, moving[index + 2] - weight * moving[index + 4]));
+      const left = Math.floor(x), top = Math.floor(y);
+      const fx = x - left, fy = y - top;
+      const a = (top * width + left) * 4, b = a + width * 4;
+      for (let channel = 0; channel < 3; channel++) {
+        const upper = pixels[a + channel] + fx * (pixels[a + 4 + channel] - pixels[a + channel]);
+        const lower = pixels[b + channel] + fx * (pixels[b + 4 + channel] - pixels[b + channel]);
+        next[dest + channel] = upper + fy * (lower - upper);
+      }
+    }
+    draw.putImageData(frame, 0, 0);
+  }
+
+  function paintConcept(now) {
+    const name = portraitConcept.matches ? 'tall' : 'wide';
+    const layout = conceptLayouts[name];
+    const still = conceptAsset(layout, 'menu-concept-' + name, 'still', 'webp');
+    if (!still.naturalWidth) {
+      delete screen.dataset.conceptArt;
+      conceptFrame = '';
+      conceptBounds = '';
+      return false;
+    }
+
+    screen.dataset.conceptArt = 'true';
+    const field = reduced.matches ? null : conceptAsset(layout, 'menu-concept-' + name + '-rig', 'field', 'png');
+    if (field?.naturalWidth && !layout.rig) layout.rig = prepareConceptRig(still, field, layout.patch);
+    const moving = !!field?.naturalWidth;
+    const step = moving ? Math.floor(now * .03) : 0;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return true;
+    const bounds = name + ':' + w + ':' + h;
+    const key = bounds + ':' + moving + ':' + step;
+    if (key === conceptFrame) return true;
+    conceptFrame = key;
+    cached = '';
+    if (canvas.width !== w) canvas.width = w;
+    if (canvas.height !== h) canvas.height = h;
+
+    const scale = Math.min(w / still.naturalWidth, h / still.naturalHeight);
+    const left = Math.round((w - still.naturalWidth * scale) / 2);
+    const top = Math.round((h - still.naturalHeight * scale) / 2);
+    if (bounds !== conceptBounds || !moving) {
+      conceptBounds = bounds;
+      output.setTransform(1, 0, 0, 1, 0, 0);
+      const matte = output.createLinearGradient(0, 0, 0, h);
+      matte.addColorStop(0, '#151714');
+      matte.addColorStop(.63, '#24201b');
+      matte.addColorStop(1, '#161b15');
+      output.fillStyle = matte;
+      output.fillRect(0, 0, w, h);
+      output.setTransform(scale, 0, 0, scale, left, top);
+      output.imageSmoothingEnabled = false;
+      output.drawImage(still, 0, 0);
+    }
+    const sway = moving ? Math.sin(now * (Math.PI * 2 / 1460)) : 0;
+    if (moving) {
+      const [x,y,width,height] = layout.patch;
+      poseConceptRig(layout.rig, sway);
+      output.drawImage(layout.rig.layer, x, y, width, height);
+    }
+    const [fireX,fireY,fireW,fireH] = layout.hearth;
+    state.hearth = { x: (left + fireX * scale) / w, y: (top + fireY * scale) / h,
+      w: fireW * scale / w, h: fireH * scale / h };
+    state.people = 5;
+    state.frames++;
+    state.concept = { layout: name, moving, sway, frame: state.frames };
+    return true;
+  }
+
   // Cropped from the game sprites at the title scene's maximum backing size.
   const atlas = new Image();
   const scenery = new Image();
@@ -296,6 +411,11 @@
     else reduced.removeListener(refresh);
     people.clear();
     personFrames.clear();
+    for (const layout of Object.values(conceptLayouts)) {
+      delete layout.rig;
+      delete layout.field;
+      delete layout.still;
+    }
     background.width = background.height = 0;
   }
   window.loadingStop = stop;
@@ -309,8 +429,10 @@
     pending = null;
     if (!running || document.hidden) return;
     if (!reduced.matches) queueFrame();
+    if (paintConcept(now)) return;
     if (!reduced.matches && now - last < 66) return;
     last = now;
+    delete state.concept;
     const W = Math.max(100, Math.ceil(canvas.clientWidth / 3)), H = Math.max(60, Math.ceil(canvas.clientHeight / 3));
     const mobile = canvas.clientWidth < 700;
     const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 520px)').matches;
